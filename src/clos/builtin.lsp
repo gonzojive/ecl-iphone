@@ -35,7 +35,7 @@
   (call-next-method)
   (dolist (slot (class-slots class))
     (unless (eq :INSTANCE (slotd-allocation slot))
-      (error "The structure class ~S can't have shared slots" name))))
+      (error "The structure class ~S can't have shared slots" (class-name class)))))
 
 ;;; ----------------------------------------------------------------------
 ;;; Structure-object

@@ -69,7 +69,8 @@
 		  slotd (list* 'list slotd)))
 	(setf (first l) slotd)))
     (dolist (option args)
-      (let ((option-name (first option)))
+      (let ((option-name (first option))
+	    option-value)
 	(if (member option-name processed-options)
 	    (si:simple-program-error
 	     "Option ~s for DEFCLASS specified more than once"
@@ -94,9 +95,9 @@
 ;;; ENSURE-CLASS
 ;;;
 (defun ensure-class (name &rest initargs)
-  (setf class (apply #'ensure-class-using-class (find-class name nil) name
-		     initargs))
-  (when name (setf (find-class name) class)))
+  (let ((class (apply #'ensure-class-using-class (find-class name nil) name
+		      initargs)))
+    (when name (setf (find-class name) class))))
 (eval-when (compile)
   (defun ensure-class (name &rest initargs)
     (warn "Ignoring definition for class ~S" name)))

@@ -468,7 +468,7 @@ q (or Q):             quits the inspection.~%~
     (setf (documentation (class-name object) 'structure) new-value)))
 
 (defmethod documentation ((object list) doc-type)
-  (when (and (si::valid-function-name-p list)
+  (when (and (si::valid-function-name-p object)
 	     (member doc-type '(function compiler-macro)))
     (si::get-documentation object doc-type)))
 

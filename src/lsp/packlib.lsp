@@ -92,7 +92,7 @@ is used."
   (declare (si::c-local))
   (let* ((i (gensym))
 	 (found (gensym))
-	 declaration)
+	 declaration doc)
     (multiple-value-setq (declaration body doc)
       (find-declarations body nil))
     `(do* ((,i (packages-iterator ,package ',options t))

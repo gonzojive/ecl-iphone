@@ -271,4 +271,4 @@ NIL, then all packages are searched."
 ;;; Import functions which are useful for user interaction
 
 (in-package "CL-USER")
-(import '(sys::help sys::help* #-boehm-gc sys::room sys::gc sys::autoload))
+(import '(sys::help sys::help* #-boehm-gc sys::room sys::gc sys::autoload ext::quit))

@@ -372,7 +372,7 @@
 	  (if (symbolp name)
 	      (push name group-names)
 	      (syntax-error))
-	  (setf condition
+	  (let ((condition
 		(cond ((eql predicate '*) 'T)
 		      ((symbolp predicate) `(,predicate .METHOD-QUALIFIERS.))
 		      ((and (listp predicate)
@@ -382,8 +382,8 @@
 				(if (eql q '*)
 				    `(every #'equal ',p .METHOD-QUALIFIERS.)
 				    `(equal ',p .METHOD-QUALIFIERS.))))))
-		      (t (syntax-error))))
-	  (push `(,condition (push .METHOD. ,name)) group-checks)
+		      (t (syntax-error)))))
+	    (push `(,condition (push .METHOD. ,name)) group-checks))
 	  (when required
 	    (push `(unless ,name
 		    (invalid-method-error "Method combination: ~S. No methods ~

@@ -28,7 +28,7 @@ Returns the version of your ECL as a string."
 (defun machine-type ()
   "Args: ()
 Returns, as a string, the type of the machine on which ECL runs."
-  @ARCHITECTURE@)
+  "@ARCHITECTURE@")
 
 ;; obtained from uname(2) where available
 (defun machine-instance ()
