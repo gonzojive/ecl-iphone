@@ -20,6 +20,7 @@
 	   *cc*
 	   *cc-optimize*
 	   build-ecl
+	   build-program
 	   build-static-library
 	   build-shared-library
 	   shared-library-pathname
