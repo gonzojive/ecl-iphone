@@ -175,19 +175,19 @@ cl_truename(cl_object pathname)
 	 * the filesystem.
 	 */
 	CL_UNWIND_PROTECT_BEGIN {
-#ifdef HAVE_LSTAT
 		cl_object kind, filename;
 	BEGIN:
 		filename = si_coerce_to_filename(pathname);
 		kind = file_kind(filename->string.self, FALSE);
 		if (kind == Cnil) {
 			FEcannot_open(pathname);
+#ifdef HAVE_LSTAT
 		} else if (kind == @':link') {
 			filename = si_readlink(filename);
+#endif
 		} else {
 			filename = OBJNULL;
 		}
-#endif
 #if defined(_MSC_VER) || defined(mingw32)
 		if (pathname->pathname.device != Cnil)
 		{
