@@ -56,8 +56,8 @@
 	    (var-changed-in-forms loc forms)))
 	(let ((check-specials (or (eq kind 'SPECIAL) (eq kind 'GLOBAL))))
 	  (dolist (form forms)
-	    (when (or (member var (info-changed-vars (second form)))
-		      (and check-specials (info-sp-change (second form))))
+	    (when (or (member var (c1form-changed-vars form))
+		      (and check-specials (c1form-sp-change form)))
 	      (return t)))))))
 
 ;;; Valid property names for open coded functions are:
@@ -88,8 +88,9 @@
 (defun inline-args (forms &optional types)
   (flet ((all-locations (args &aux (res t))
 	   (dolist (arg args res)
-	     (unless (member (car arg) '(LOCATION VAR SYS:STRUCTURE-REF
-					 #+clos SYS:INSTANCE-REF)
+	     (unless (member (c1form-name arg)
+			     '(LOCATION VAR SYS:STRUCTURE-REF
+			       #+clos SYS:INSTANCE-REF)
 			     :test #'eq)
 	       (setq res nil)))))
 
@@ -97,11 +98,11 @@
 	 (form) (locs))
 	((endp forms) (nreverse locs))
       (setq form (car forms))
-      (case (car form)
+      (case (c1form-name form)
 	(LOCATION
-	 (push (list (c1form-type form) (third form)) locs))
+	 (push (list (c1form-type form) (c1form-arg 0 form)) locs))
 	(VAR
-	 (let ((var (third form)))
+	 (let ((var (c1form-arg 0 form)))
 	   (if (var-changed-in-forms var (cdr forms))
 	       (let* ((var-rep-type (var-rep-type var))
 		      (lcl (make-lcl-var :rep-type var-rep-type :type (var-type var))))
@@ -111,8 +112,8 @@
 	       (push (list (c1form-type form) var) locs))))
 
 	(CALL-GLOBAL
-	 (let* ((fname (third form))
-		(args (fourth form))
+	 (let* ((fname (c1form-arg 0 form))
+		(args (c1form-arg 1 form))
 		(return-type (c1form-type form))
 		(arg-locs (inline-args args))
 		(loc (inline-function fname arg-locs return-type)))
@@ -167,9 +168,9 @@
 	       (push (list type
 			   (list 'SYS:STRUCTURE-REF
 				 (first (coerce-locs
-					  (inline-args (list (third form)))))
-				 (fourth form)
-				 (fifth form)))
+					  (inline-args (list (c1form-arg 0 form)))))
+				 (c1form-arg 1 form)
+				 (c1form-arg 2 form)))
 		     locs))))
 	#+clos
 	(SYS:INSTANCE-REF
@@ -182,18 +183,18 @@
 	       (push (list type
 			   (list 'SYS:INSTANCE-REF
 				 (first (coerce-locs
-					  (inline-args (list (third form)))))
-				 (fourth form)
-				#+nil (fifth form))) ; JJGR
+					  (inline-args (list (c1form-arg 0 form)))))
+				 (c1form-arg 1 form)
+				#+nil (c1form-arg 2 form))) ; JJGR
 		     locs))))
 	(SETQ
-	 (let ((vref (third form))
-	       (form1 (fourth form)))
+	 (let ((vref (c1form-arg 0 form))
+	       (form1 (c1form-arg 1 form)))
 	   (let ((*destination* vref)) (c2expr* form1))
-	   (if (eq (car form1) 'LOCATION)
-	       (push (list (c1form-type form1) (third form1)) locs)
+	   (if (eq (c1form-name form1) 'LOCATION)
+	       (push (list (c1form-type form1) (c1form-arg 0 form1)) locs)
 	       (setq forms (list* nil	; discarded at iteration
-				  (make-c1form 'VAR (second form) vref)
+				  (make-c1form 'VAR form vref)
 				  (cdr forms))
 		     ))))
 
@@ -307,14 +308,14 @@
       ((or res (endp forms)) res)
     (let ((form (car forms)))
       (declare (object form))
-      (case (car form)
+      (case (c1form-name form)
 	(LOCATION)
 	(VAR
-	 (when (var-changed-in-forms (third form) (cdr forms))
+	 (when (var-changed-in-forms (c1form-arg 0 form) (cdr forms))
 	   (setq res t)))
 	(CALL-GLOBAL
-	 (let ((fname (third form))
-	       (args (fourth form)))
+	 (let ((fname (c1form-arg 0 form))
+	       (args (c1form-arg 1 form)))
 	   (when (or (not (inline-possible fname))
 		     (null (setq ii (get-inline-info
 				     fname
@@ -325,7 +326,7 @@
 		     (need-to-protect args))
 	     (setq res t))))
 	(SYS:STRUCTURE-REF
-	 (when (need-to-protect (list (third form)))
+	 (when (need-to-protect (list (c1form-arg 0 form)))
 	   (setq res t)))
 	(t (setq res t)))))
   )

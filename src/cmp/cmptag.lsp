@@ -56,11 +56,14 @@
   ;; then increment the var-ref slot.
   (labels ((add-reg1 (form)
 	     ;; increase the var-ref in FORM for all vars
-	     (if (consp form)
-		 (dolist (v form)
-		   (add-reg1 v))
-		 (when (var-p form)
-		   (incf (var-ref form) (the fixnum *reg-amount*)))))
+	     (cond ((c1form-p form)
+		    (dolist (v (c1form-args form))
+		      (add-reg1 v)))
+		   ((consp form)
+		    (dolist (v form)
+		      (add-reg1 v)))
+		   ((var-p form)
+		    (incf (var-ref form) (the fixnum *reg-amount*)))))
 	   (jumps-to-p (clause tag-name)
 	     ;; Does CLAUSE have a go TAG-NAME in it?
 	     (cond ((c1form-p clause)

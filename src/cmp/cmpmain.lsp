@@ -224,11 +224,11 @@ int init_~A(cl_object cblock)
     (delete-file o-name)
     output-name))
 
+(defun build-fasl (&rest args)
+  (apply #'builder :fasl args))
+
 (defun build-program (&rest args)
   (apply #'builder :program args))
-
-(defun build-module (&rest args)
-  (apply #'builder :fasl args))
 
 (defun build-static-library (&rest args)
   (apply #'builder :static-library args))

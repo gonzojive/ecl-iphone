@@ -61,9 +61,9 @@
 		   (c1expr (first args))))
   (if (or (endp args)
 	  (and (eq (c1form-name stream) 'VAR)
-	       (member (var-kind (third stream)) '(GLOBAL SPECIAL))))
+	       (member (var-kind (c1form-arg 0 stream)) '(GLOBAL SPECIAL))))
       (make-c1form* 'C2PRINC :args  #\Newline
-		    (if (endp args) nil (third stream))
+		    (if (endp args) nil (c1form-arg 0 stream))
 		    stream)
       (c1call-global 'TERPRI args)))
 

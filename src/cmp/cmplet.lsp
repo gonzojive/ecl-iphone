@@ -113,14 +113,15 @@
     continue))
 
 (defun update-var-type (var type x)
-  (when (listp x)
-    (if (and (eq (car x) 'VAR)
-	     (eq var (third x)))
-	(setf (c1form-type x)
-	      ;; some occurrences might be typed with 'the'
-	      (type-and (c1form-type x) type))
-	(dolist (e x)
-	  (update-var-type var type e)))))
+  (cond ((consp x)
+	 (dolist (e x)
+	   (update-var-type var type e)))
+	((not (c1form-p x)))
+	((eq (c1form-name x) 'VAR)
+	 (when (eq var (c1form-arg 0 x))
+	   (setf (c1form-type x) (type-and (c1form-type x) type))))
+	(t
+	 (update-var-type var type (c1form-args x)))))
 
 ;(defun read-only-variable-p (v l) (eq 'READ-ONLY (cdr (assoc v l))))
 
@@ -179,10 +180,10 @@
 	      (LOCATION
 	       (if (can-be-replaced var body)
 		   (setf (var-kind var) 'REPLACED
-			 (var-loc var) (third form))
-		   (push (cons var (third form)) bindings)))
+			 (var-loc var) (c1form-arg 0 form))
+		   (push (cons var (c1form-arg 0 form)) bindings)))
 	      (VAR
-	       (let* ((var1 (third form)))
+	       (let* ((var1 (c1form-arg 0 form)))
 		 (cond ((or (var-changed-in-forms var1 (cdr fl))
 			    (and (member (var-kind var1) '(SPECIAL GLOBAL))
 				 (member (var-name var1) prev-ss)))
@@ -369,9 +370,9 @@
         (LOCATION
          (when (can-be-replaced* var body (cdr fl))
            (setf (var-kind var) 'REPLACED
-                 (var-loc var) (third form))))
+                 (var-loc var) (c1form-arg 0 form))))
         (VAR
-         (let* ((var1 (third form)))
+         (let* ((var1 (c1form-arg 0 form)))
            (declare (type var var1))
            (when (and (can-be-replaced* var body (cdr fl))
 		      (member (var-kind var1) '(LEXICAL REPLACED :OBJECT))
@@ -426,7 +427,7 @@
 		 (last-form (car (last (first args)))))
 	       ((LET LET* FLET LABELS BLOCK CATCH)
 		(last-form (car (last args))))
-	       (VAR (first x))
+	       (VAR (c1form-arg 0 x))
 	       (t x))))
     (and (not (form-causes-side-effect form))
 	 (or (< (var-ref var) 1)

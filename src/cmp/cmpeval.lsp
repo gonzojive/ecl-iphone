@@ -52,7 +52,7 @@
 	 (let* ((forms (c1args* args))
 		(fun (c1form-arg 0 fd))
 		(return-type (or (get-local-return-type fun) 'T)))
-	   (let ((arg-types (get-local-arg-types (third fd))))
+	   (let ((arg-types (get-local-arg-types fun)))
 	     ;; Add type information to the arguments.
 	     (when arg-types
 	       (let ((fl nil))
@@ -248,9 +248,9 @@
 	      (cmpwarn "The type of the form ~s is not ~s."
 		       (fourth args) slot-type)
 	      (progn
-		(when (eq 'VAR (car y))
+		(when (eq 'VAR (c1form-name y))
 		  ;; it's a variable, propagate type
-		  (setf (var-type (third y)) new-type))
+		  (setf (var-type (c1form-arg 0 y)) new-type))
 		(setf (c1form-type y) new-type))))
 	(make-c1form* 'SYS:STRUCTURE-SET :type (c1form-type y)
 		      :args x (add-symbol name) (third args) y))

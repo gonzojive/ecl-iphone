@@ -57,7 +57,7 @@
   (setq symbols (nreverse symbols))
   (setq values (nreverse values))
   (setq args (progv symbols values (c1progn (cdr args))))
-  (make-c1form 'COMPILER-LET (second args) symbols values args))
+  (make-c1form 'COMPILER-LET args symbols values args))
 
 (defun c2compiler-let (symbols values body)
   (progv symbols values (c2expr body)))
@@ -85,35 +85,33 @@
            (cmpck (endp (cdr fun))
                   "The lambda expression ~s is illegal." fun)
            (let* ((funob (c1lambda-expr (cdr fun)))
-		  (info (second funob))
 		  (closure (closure-p funob))
 		  (body (cddr fun))
 		  (fun (make-fun :name NIL
 				 :cfun (next-cfun)
 				 :closure closure)))
 	     (if closure
-		 (make-c1form 'FUNCTION info 'CLOSURE funob fun)
+		 (make-c1form 'FUNCTION funob 'CLOSURE funob fun)
 		 (progn
 		   (push (make-c1form* 'FUNCTION-CONSTANT :args funob fun)
 			 *top-level-forms*)
-		   (make-c1form 'FUNCTION info 'CONSTANT funob fun)))))
+		   (make-c1form 'FUNCTION funob 'CONSTANT funob fun)))))
 	  ((and (consp fun) (eq (car fun) 'LAMBDA-BLOCK))
            (cmpck (endp (cdr fun))
                   "The lambda expression ~s is illegal." fun)
            (let* ((name (second fun))
 		  (funob (c1lambda-expr (cddr fun) name))
-		  (info (second funob))
 		  (closure (closure-p funob))
 		  (fun (make-fun :name NIL
 				 :description name
 				 :cfun (next-cfun)
 				 :closure closure)))
 	     (if closure
-		 (make-c1form 'FUNCTION info 'CLOSURE funob fun)
+		 (make-c1form 'FUNCTION funob 'CLOSURE funob fun)
 		 (progn
 		   (push (make-c1form* 'FUNCTION-CONSTANT :args funob fun)
 			 *top-level-forms*)
-		   (make-c1form 'FUNCTION info 'CONSTANT funob fun)))))
+		   (make-c1form 'FUNCTION funob 'CONSTANT funob fun)))))
 	  (t (cmperr "The function ~s is illegal." fun)))))
 
 (defun c2function (kind funob fun)

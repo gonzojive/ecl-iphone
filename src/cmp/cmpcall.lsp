@@ -54,7 +54,7 @@
 	 ;; Don't create closure boundary like in c1function
 	 ;; since funob is used in this same environment
 	 (let ((lambda-expr (c1lambda-expr (rest function))))
-	   (make-c1form 'LAMBDA (second lambda-expr) lambda-expr (next-cfun))))
+	   (make-c1form 'LAMBDA lambda-expr lambda-expr (next-cfun))))
 	((and (consp function)
 	      (eq (first function) 'LAMBDA-BLOCK)
 	      (consp (rest function)))
@@ -62,7 +62,7 @@
 	 ;; since funob is used in this same environment
 	 (let* ((block-name (second function)))
 	   (let ((lambda-expr (c1lambda-expr (cddr function) block-name)))
-	     (make-c1form 'LAMBDA (second lambda-expr) lambda-expr (next-cfun)))))
+	     (make-c1form 'LAMBDA lambda-expr lambda-expr (next-cfun)))))
 	(t (cmperr "Malformed function: ~A" fun))))
 
 (defun c1funcall (args)
@@ -85,13 +85,13 @@
 	   (make-c1form* 'FUNCALL :args (c1funob fun) (c1args* arguments))))))
 
 (defun c2funcall (funob args &optional loc narg
-			&aux (form (third funob)))
+			&aux (form (c1form-arg 0 funob)))
   ;; Usually, ARGS holds a list of forms, which are arguments to the
   ;; function.  If, however, the arguments are on VALUES,
   ;; ARGS should be set to the symbol ARGS-PUSHED, and NARG to a location
   ;; containing the number of arguments.
   ;; LOC is the location of the function object (created by save-funob).
-  (case (first funob)
+  (case (c1form-name funob)
     (GLOBAL (c2call-global form args loc t narg))
     (LOCAL (c2call-local form args narg))
     (ORDINARY		;;; An ordinary expression.  In this case, if
@@ -283,7 +283,7 @@
 	   temp))))
     (ORDINARY (let* ((temp (make-temp-var))
                      (*destination* temp))
-                (c2expr* (third funob))
+                (c2expr* (c1form-arg 0 funob))
                 temp))
     (otherwise (baboon))
     ))

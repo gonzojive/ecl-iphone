@@ -16,8 +16,7 @@
   (check-args-number 'MULTIPLE-VALUE-CALL args 1)
   (cond ((endp (rest args)) (c1funcall args))
         (t (setq funob (c1funob (first args)))
-           (setq info (copy-info (second funob)))
-           (make-c1form 'MULTIPLE-VALUE-CALL info funob (c1args* (rest args))))))
+           (make-c1form 'MULTIPLE-VALUE-CALL funob funob (c1args* (rest args))))))
 
 (defun c2multiple-value-call (funob forms)
   (let ((tot (make-lcl-var :rep-type :cl-index))
@@ -223,7 +222,9 @@
 	(dolist (v vars)
 	  (wt-label (first labels))
 	  (pop labels)
-	  (bind (third (default-init v)) v)))
+	  ;; DEFAULT-INIT returns a LOCATION form, whose only argument
+	  ;; is the location that we pass to BIND.
+	  (bind (c1form-arg 0 (default-init v)) v)))
       (wt-label label))
 
     ;; 6) Compile the body. If there are bindings of special variables,

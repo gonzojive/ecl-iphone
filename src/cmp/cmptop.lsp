@@ -74,7 +74,7 @@
   (when form
     (emit-local-funs)
     (setq *funarg-vars* nil)
-    (let ((def (get-sysprop (car form) 'T3)))
+    (let ((def (get-sysprop (c1form-name form) 'T3)))
       (when def
 	;; new local functions get pushed into *local-funs*
 	(apply def (c1form-args form))))
@@ -229,7 +229,7 @@
 
     (setq lambda-expr (c1lambda-expr (cdr args) (si::function-block-name fname)))
     (unless (eql setjmps *setjmps*)
-      (setf (info-volatile (second lambda-expr)) t))
+      (setf (c1form-volatile lambda-expr) t))
     (multiple-value-bind (decl body doc)
 	(si::process-declarations (cddr args) nil)
       (cond ((and (assoc 'si::c-local decl) *allow-c-local-declaration*)
@@ -242,7 +242,7 @@
       (and
        (symbolp fname)
        (get-sysprop fname 'PROCLAIMED-FUNCTION)
-       (let ((lambda-list (third lambda-expr)))
+       (let ((lambda-list (c1form-arg 0 lambda-expr)))
          (declare (list lambda-list))
          (and (null (second lambda-list))	; no optional
               (null (third lambda-list))	; no rest
@@ -342,9 +342,9 @@
   (setq *funarg-vars* funarg-vars)
   (when *compile-print* (print-emitting fname))
   (when lambda-expr		; Not sharing code.
-    (setq lambda-list (third lambda-expr)
+    (setq lambda-list (c1form-arg 0 lambda-expr)
           requireds (car lambda-list))
-    (analyze-regs (info-referred-vars (second lambda-expr)))
+    (analyze-regs (c1form-referred-vars lambda-expr))
 
     (if (setq inline-info (assoc fname *inline-functions* :test #'same-fname-p))
       
@@ -391,7 +391,7 @@
 		(*unwind-exit* *unwind-exit*))
 	    (wt-nl1 "{")
 	    (wt-function-prolog nil 'LOCAL-ENTRY)
-	    (c2lambda-expr lambda-list (third (cddr lambda-expr)) cfun fname
+	    (c2lambda-expr lambda-list (c1form-arg 2 lambda-expr) cfun fname
 			   nil 'LOCAL-ENTRY)
 	    (wt-nl1 "}")
 	    (wt-function-epilogue)))
@@ -425,7 +425,7 @@
       
 	  (wt-nl1 "{")
 	  (wt-function-prolog sp)
-	  (c2lambda-expr lambda-list (third (cddr lambda-expr)) cfun fname)
+	  (c2lambda-expr lambda-list (c1form-arg 2 lambda-expr) cfun fname)
 	  (wt-nl1 "}")
 	  (wt-function-epilogue)))))
 
@@ -733,7 +733,7 @@
                               &aux (level (fun-level fun))
 			      (nenvs level)
 			      (*volatile* (c1form-volatile* lambda-expr))
-                              (lambda-list (third lambda-expr))
+                              (lambda-list (c1form-arg 0 lambda-expr))
                               (requireds (car lambda-list))
                               (va_args (or (second lambda-list)
                                            (third lambda-list)
@@ -762,7 +762,7 @@
   (wt-h1 ");")
   (wt ")")
 
-  (analyze-regs (info-referred-vars (second lambda-expr)))
+  (analyze-regs (c1form-referred-vars lambda-expr))
   (let* ((*lcl* 0) (*temp* 0) (*max-temp* 0)
 	 (*lex* 0) (*max-lex* 0)
 	 (*env* (fun-env fun))		; continue growing env
@@ -786,7 +786,7 @@
 			    ;; parameter of this closure
 			    ;; (not yet bound, therefore var-loc is OBJECT)
 			    (eq (var-loc x) 'OBJECT)))
-		       (info-local-referred (second lambda-expr)))))
+		       (c1form-local-referred lambda-expr))))
         (setq clv-used (sort clv-used #'> :key #'var-loc))
         (when clv-used
           (wt-nl "{cl_object scan=env0;")
@@ -800,7 +800,8 @@
             (unless bs (return))
             (when (plusp n) (wt " scan=CDR(scan);")))
           (wt "}"))))
-    (c2lambda-expr (third lambda-expr) (third (cddr lambda-expr))
+    (c2lambda-expr (c1form-arg 0 lambda-expr)
+		   (c1form-arg 2 lambda-expr)
 		   (fun-cfun fun) (fun-name fun)
 		   (fun-closure fun))
     (wt-nl1 "}")

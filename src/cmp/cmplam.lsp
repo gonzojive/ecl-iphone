@@ -306,8 +306,8 @@
 	  (var (second kwd))
 	  (init (third kwd))
 	  (flag (fourth kwd)))
-      (cond ((and (eq (car init) 'LOCATION)
-		  (null (third init)))
+      (cond ((and (eq (c1form-name init) 'LOCATION)
+		  (null (c1form-arg 0 init)))
 	     ;; no initform
 	     ;; Cnil has been set in keyvars if keyword parameter is not supplied.
 	     (setf (second KEYVARS[i]) i)
@@ -379,7 +379,7 @@
 
 (defun c1dm (macro-name vl body
                         &aux (whole nil) (env nil)
-                        (vnames nil) (dm-info (make-info)) (dm-vars nil)
+                        (vnames nil) (dm-vars nil)
 			(setjmps *setjmps*) ; Beppe
                         doc ss is ts other-decls ppn)
 
@@ -507,7 +507,6 @@
   (check-vdecl vnames ts is)
   (setq body (c1decl-body other-decls body))
   (unless (eql setjmps *setjmps*)
-    (setf (info-volatile dm-info) t)
     (put-sysprop macro-name 'CONTAINS-SETJMP t))
   (dolist (v dm-vars) (check-vref v))
 

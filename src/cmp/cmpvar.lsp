@@ -320,8 +320,8 @@
 
 (defun c2setq (vref form)
   (let ((*destination* vref)) (c2expr* form))
-  (if (eq (car form) 'LOCATION)
-    (c2location (third form))
+  (if (eq (c1form-name form) 'LOCATION)
+    (c2location (c1form-arg 0 form))
     (unwind-exit vref))
   )
 
@@ -413,8 +413,8 @@
 	  form (car forms))
     (if (or (var-changed-in-forms var (cdr forms))
             (var-referred-in-forms var (cdr forms)))
-        (case (car form)
-          (LOCATION (push (cons var (third form)) saves))
+        (case (c1form-name form)
+          (LOCATION (push (cons var (c1form-arg 0 form)) saves))
           (otherwise
             (if (local var)
                 (let* ((rep-type (var-rep-type var))
