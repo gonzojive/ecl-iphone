@@ -97,9 +97,9 @@ static cl_object
 stream_or_default_output(cl_object stream)
 {
 	if (Null(stream))
-		return symbol_value(@'*standard-output*');
+		return SYM_VAL(@'*standard-output*');
 	else if (stream == Ct)
-		return symbol_value(@'*terminal-io*');
+		return SYM_VAL(@'*terminal-io*');
 	return stream;
 }	
 
