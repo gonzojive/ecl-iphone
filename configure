@@ -23,7 +23,7 @@ echo Switching to directory "\`${buildir}'" to continue configuration.
 # There are two ways to configure ECL. If we use our own version of GMP,
 # we let it configure itself and later on retrieve the appropiate flags
 #
-if ( echo $* | grep guess-host-cflags )
+if ( echo $* | grep guess-host-cflags ); then
   #
   # In some architectures/OS, a flag is required to select the ABI. GMP
   # guesses these flags, and stores them in CFLAGS and GMP_LDFLAGS.
