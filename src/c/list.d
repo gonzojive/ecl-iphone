@@ -38,14 +38,14 @@ static cl_object (*kf)(cl_object);
 	cl_object old_item_compared = item_compared;  \
 	bool (*old_tf)(cl_object) = tf;  \
 	cl_object old_key_function = key_function;  \
-	cl_object (*old_kf)(cl_object) = kf;
+	cl_object (*old_kf)(cl_object) = kf
 
 #define restoreTEST  \
 	test_function = old_test_function;  \
 	item_compared = old_item_compared;  \
 	tf = old_tf;  \
 	key_function = old_key_function;  \
-	kf = old_kf;
+	kf = old_kf
 
 static bool
 test_compare(cl_object x)
