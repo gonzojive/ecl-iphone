@@ -1,0 +1,1342 @@
+\input texinfo   @c -*-texinfo-*-
+@c %**start of header
+@setfilename eclsdev.info
+@settitle ECLS Developers' Guide
+@setchapternewpage odd
+@c %**end of header
+
+@include macros.txi
+
+@ifinfo
+@ecls{} is an implementation of @clisp{} designed for being @emph{embeddable}
+into C based applications. This manual documents the interface for C programmers.
+
+@noindent
+Copyright @copyright{} 2001, Juan Jose Garcia-Ripoll
+@end ifinfo
+
+@titlepage
+@title ECLS Developers' Guide
+@author Juan Jose Garcia Ripoll
+
+@page
+@vskip 0pt plus 1filll
+Copyright @copyright{} 2001, Juan Jose Garcia Ripoll
+@end titlepage
+
+@c ************************ TOP NODE **************************
+
+@ifnottex
+@node Top, Introduction, (dir), (dir)
+@top Top
+@end ifnottex
+
+@iftex
+@page
+@titlefont{Preface}
+@vskip 1cm
+@end iftex
+
+@ecls{} is an implementation of @clisp{} originally designed for being
+@emph{embeddable} into C based applications.  This document describes
+the guts of the @ecls{} implementation and how it can cooperate with
+code written in other languages, such as C and C++. See
+@inforef{Top,,ecls} for details about the @clisp{} implementation and how it
+differs from standards.
+
+
+@menu
+* Introduction::                How @ecls{} relates to C/C++.
+* Building executables::        How to build executables.
+* Lisp objects::                Dealing with lisp object from C.
+* The interpreter::             Understanding the interpreter.
+* The compiler::                How the Lisp2C translator works.
+* Examples::                    Examples of mixed programming.
+* Porting @ecls{}::             Porting @ecls{} to other architectures.
+@end menu
+
+@c ---------------------------------------------------------------------
+
+@node Introduction, Building executables, Top, Top
+@chapter Introduction
+
+@ecls{} is an implementation of the @clisp{} language that is based on a kernel
+written in C plus a set of libraries written in @clisp{}. The kernel includes a
+bytecodes compiler, an interpreter, and enough functions to create and
+manipulate all lisp objects. The lisp libraries provide higher level constructs
+such as macro definitions, LOOPs, an implementation of CLOS, and a translator
+from Lisp to C.
+
+As a result of this design, which dates back to the Kyoto CL and was later
+improved in Giusseppe Attardi's ECoLisp, @ecls{} can be used as
+@itemize
+@item As a standalone implementation of the @clisp{} language
+@item As an embedded interpreter subject to the control of a larger C program.
+@item As a @clisp{} environment with C/C++ extensions.
+@end itemize
+@noindent
+This manual describes the facility of @ecls{} to interface the C language and
+@ecls{}.  With this facility, the user can arrange his or her C-language
+programs so that they can be invoked from @ecls{}. In addition, the user can
+write Lisp function definitions in the C language to increase runtime
+efficiency.
+
+@node Building executables, Lisp objects, Introduction, Top
+@chapter Building a customized image
+
+@ecls{} can be used to control a C library, or it can be used as an embedded
+language to provide some flexibility to an already existing C program. In both
+cases @ecls{} should perform equally well, as far as you follow these rules:
+@enumerate
+@item Organize the C code as a library, let it be static or dynamic.
+@item Build a function, say @code{mymain()}, in which the initialization phase
+for your library is performed.
+@item Group the code that interfaces to Lisp in separate C files, all of which
+should include @code{#include <ecls.h>} at the beginning.
+@item Let @ecls{} build the final executable.
+@end enumerate
+
+The final step, that is building the executable should be performed within a
+working @ecls{} image. The function to build customized images is
+@var{c::build-ecls}. The description of this function is as follows.
+
+@defun {c::build-ecls} {@var{image-name} @keys{} :components :prologue-code :epilogue-code}
+
+This function builds a lisp image up from the core lisp library, plus all
+listed components.  Each component is either:
+@itemize
+@item A symbol: Names a compiled lisp library. Currenty only @code{'CMP} is
+supported, which corresponds to the lisp->C translator.
+@item A string: Denotes an object file, a library, or any flag which is passed
+to the compiler.
+@end itemize
+
+In order to build the lisp image, @var{c::build-ecls} first writes down a piece
+of C code which initializes the lisp environment. You can customize the
+initialization process by suppling code to be executed before
+(@var{prologue-code}) or after (@var{epilogue-code}) setting up the lisp
+environment. Typically @var{prologue-code} defaults to an empty string, while
+@var{epilogue-code} invokes the classical lisp @var{top-level}.
+@end defun
+
+@c ---------------------------------------------------------------------
+
+@node Lisp objects, The interpreter, Building executables, Top
+@chapter Manipulating lisp objects
+
+If you want to extend, fix or simply customize @ecls{} for your own needs,
+you should understand how the implementation works.
+
+@menu
+* Objects representation::      
+* Constructing objects::        
+* Integers::                    
+* Characters::                  
+* Arrays::                      
+* Strings::                     
+* Bitvectors::                  
+* Streams::                     
+* Structures::                  
+* Instances::                   
+* Bytecodes::                   
+@end menu
+
+
+@node Objects representation, Constructing objects, Lisp objects, Lisp objects
+@section Objects representation
+
+In @ecls{} a lisp object is represented by a type called @code{cl_object}. This
+type is a word which is long enough to host both an integer and a pointer. The
+least significant bits of this word, also called the tag bits, determine
+whether it is a pointer to a C structure representing a complex object, or
+whether it is an immediate data, such as a fixnum or a character.
+@example
+	|-------------------|--| 
+	|    Fixnum value   |01|
+	|-------------------|--| 
+
+	|------------|------|--| 
+	| Unused bits| char |10|
+	|------------|------|--| 
+
+	|----------------------|     |--------|--------|-----|--------|
+	|    Pointer to cell   |---->| word-1 | word-2 | ... | word-n |
+	|----------------------|     |--------|--------|-----|--------|
+	| ...................00|     |    actual data of the object   |
+	|----------------------|     |--------------------------------|
+@end example
+
+The fixnums and characters are called immediate datatypes, because they require
+no more than the @code{cl_object} datatype to store all information.  All other
+@ecls{} objects are non-immediate and they are represented by a pointer to a
+cell that is allocated on the heap.  Each cell consists of several words of
+memory and contains all the information related to that object. By storing data
+in multiples of a word size, we make sure that the least significant bits of a
+pointer are zero, which distinguishes pointers from immediate data.
+
+In an immediate datatype, the tag bits determine the type of the object. In
+non-immediate datatyps, the first byte in the cell contains the secondary type
+indicator, and distinguishes between different types of non immediate data. The
+use of the remaining bytes differs for each type of object.  For instance, a
+cons cell consists of three words:
+@example
+	|---------|----------| 
+	|CONS|    |          |
+	|---------|----------| 
+	|     car-pointer    |
+	|--------------------| 
+	|     cdr-pointer    |
+	|--------------------| 
+@end example
+
+There is one important function which tells the type of an object, plus several
+macros which group several tests.
+
+@deftp {C type} cl_object
+This is the type of a lisp object. For your C/C++ program, a @code{cl_object}
+can be either a fixnum, a character, or a pointer to a union of structures (See
+the header @file{object.h}). The actual interpretation of that object can be
+guessed with the macro @code{type_of}.
+
+For example, if @var{x} is of type @code{cl_object}, and it is of type fixnum,
+we may retrieve its value
+@example
+        if (type_of(x) == t_fixnum)
+        	printf("Integer value: %d\n", fix(x));
+@end example
+@noindent
+If @var{x} is of type @code{cl_object} and it does not contain an immediate
+datatype, you may inspect the cell associated to the lisp object using @var{x}
+as a pointer. For example,
+@example
+        if (type_of(x) == t_cons)
+                printf("CAR = %x, CDR = %x\n", x->cons.car, x->cons.cdr);
+        else if (type_of(x) == t_string)
+                printf("String: %s\n", x->string.self);
+@end example
+@noindent
+You should see the following sections and the header @file{object.h} to learn
+how to use the different fields of a @code{cl_object} pointer.
+@end deftp
+
+@deftp {C type} cl_type
+Enumeration type which distinguishes the different types of lisp objects.  The
+most important values are t_cons, t_fixnum, t_character, t_bignum, t_ratio,
+t_shortfloat, t_longfloat, t_complex, t_symbol, t_package, t_hashtable,
+t_array, t_vector, t_string, t_bitvector, t_stream, t_random, t_readtable,
+t_pathname, t_bytecodes, t_cfun, t_cclosure, t_gfun, t_instance, t_cond and
+t_thread.
+@end deftp
+
+@deftypefun cl_type type_of (cl_object @var{O})
+If @var{O} is a valid lisp object, @code{type_of(@var{O})} returns an integer
+denoting the type that lisp object. That integer is one of the values of the
+enumeration type @code{cl_type}.
+@end deftypefun
+
+@deftypefun bool FIXNUMP (cl_object @var{o})
+@deftypefunx bool CHARACTERP (cl_object @var{o})
+@deftypefunx bool CONSP (cl_object @var{o})
+@deftypefunx bool LISTP (cl_object @var{o})
+@deftypefunx bool ATOM (cl_object @var{o})
+@deftypefunx bool ARRAYP (cl_object @var{o})
+@deftypefunx bool VECTORP (cl_object @var{o})
+@deftypefunx bool STRINGP (cl_object @var{o})
+
+Different macros that check whether @var{o} belongs to the specified type.
+These checks have been optimized, and are preferred over several calls to
+@code{type_of}.
+@end deftypefun
+
+@deftypefun bool IMMEDIATE (cl_object @var{o})
+Tells whether @var{o} is an immediate datatype.
+@end deftypefun
+
+@c ----------------------------------------------------------------------
+
+@node Constructing objects, Integers, Objects representation, Lisp objects
+@section Constructing objects
+
+On each of the following sections we will document the standard interface for
+building objects of different types. For some objects, though, it is too
+difficult to make a C interface that resembles all of the functionality in the
+lisp environment. In those cases you need to
+
+@enumerate
+@item build the objects from their textual representation, or
+@item use the evaluator to build these objects.
+@end enumerate
+@noindent
+The first way makes use of a C or Lisp string to construct an object. The two
+functions you need to know are the following ones.
+
+@deftypefun cl_object c_string_to_object (const char *@var{s})
+@deftypefunx cl_object string_to_object (cl_object @var{o})
+@code{c_string_to_object} builds a lisp object from a C string which contains a
+suitable representation of a lisp object. @code{string_to_object} performs the
+same task, but uses a lisp string, and therefore it is less useful. Two
+examples of their use
+
+@example
+/* Using a C string */
+cl_object array1 = c_string_to_object("#(1 2 3 4)");
+
+/* Using a Lisp string */
+cl_object string = make_simple_string("#(1 2 3 4)");
+cl_object array2 = string_to_object(string);
+@end example
+@end deftypefun
+
+@c ----------------------------------------------------------------------
+
+@node Integers, Characters, Constructing objects, Lisp objects
+@section Integers
+
+@clisp{} distinguishes two types of integer types: bignums and fixnums. A
+fixnum is a small integer, which ideally occupies only a word of memory and
+which is between the values @var{MOST-NEGATIVE-FIXNUM} and
+@var{MOST-POSITIVE-FIXNUM}. A bignum is any integer which is not a fixnum and
+it is only constrained by the amount of memory available to represent it.
+
+In @ecls{} a fixnum is an integer that, together with the tag bits, fits in a
+word of memory. The size of a word, and thus the size of a fixnum, varies from
+one architecture to another, and you should refer to the types and constants in
+the @file{ecls.h} header to make sure that your C extensions are portable.
+All other integers are stored as bignums, they are not immediate objects, they
+take up a variable amount of memory and the GNU Multiprecision Library is
+required to create, manipulate and calculate with them.
+
+@deftp {C type} cl_fixnum
+This is a C signed integer type capable of holding a whole fixnum without any
+loss of precision. The oposite is not true, and you may create a
+@code{cl_fixnum} which exceeds the limits of a fixnum and should be stored as a
+bignum.
+@end deftp
+
+@deftp {C type} cl_index
+This is a C unsigned integer type capable of holding a nonnegative fixnum without
+loss of precision. Typically, a @code{cl_index} is used as an index into an array,
+or into a proper list, etc.
+@end deftp
+
+@defvr {Constant} MOST_NEGATIVE_FIXNUM
+@defvrx {Constant} MOST_POSITIVE_FIXNUM
+These constants mark the limits of a fixnum.
+@end defvr
+
+@deftypefun bool FIXNUM_MINUSP (cl_object @var{o})
+@deftypefunx bool FIXNUM_PLUSP (cl_object @var{o})
+These functions perform the checks (@var{o} < 0) and (0 <= @var{o}),
+respectively.
+@end deftypefun
+
+@deftypefun cl_object MAKE_FIXNUM (cl_fixnum @var{n})
+@deftypefunx cl_fixnum fix (cl_object @var{o})
+
+@code{MAKE_FIXNUM} and @code{fix} convert from an integer to a lisp object
+of fixnum type and viceversa. These functions no not check their arguments.
+@end deftypefun
+
+@deftypefun cl_fixnum fixint (cl_object @var{o})
+Converts a lisp fixnum to a C integer of the appropiate size. Signals an error
+if @var{o} is not of fixnum type.
+@end deftypefun
+
+@deftypefun cl_index fixnnint (cl_object @var{o})
+Similar to @code{fixint} but also ensures that @var{o} is not negative.
+@end deftypefun
+
+@c ----------------------------------------------------------------------
+
+@node Characters, Arrays, Integers, Lisp objects
+@section Characters
+
+@ecls{} has only one type of characters, which fits in the C type @code{char}.
+The following constants and functions operate on characters.
+
+@defvr {Constant} CHAR_CODE_LIMIT
+Each character is assigned an integer code which ranges from 0 to
+(@var{CHAR_CODE_LIMIT}-1).
+@end defvr
+
+@deftypefun cl_fixnum CHAR_CODE (cl_object @var{o})
+@deftypefunx cl_fixnum char_code (cl_object @var{o})
+Returns the integer code associated to a lisp character. Only @code{char_code}
+checks its arguments.
+@end deftypefun
+
+@deftypefun cl_object CODE_CHAR (cl_fixnum @var{o})
+Returns the lisp character associated to an integer code. It does not check
+its arguments.
+@end deftypefun
+
+@deftypefun cl_object coerce_to_character (cl_object @var{o})
+Coerces a lisp object to type character. Valid arguments are a character,
+or a string designator of length 1. In all other cases an error is signaled.
+@end deftypefun
+
+@deftypefun bool char_eq (cl_object @var{x}, cl_object @var{y})
+@deftypefunx bool char_equal (cl_object @var{x}, cl_object @var{y})
+Compare two characters for equality. @code{char_eq} take case into account and
+@code{char_equal} ignores it.
+@end deftypefun
+
+@deftypefun int char_cmp (cl_object @var{x}, cl_object @var{y})
+@deftypefunx int char_compare (cl_object @var{x}, cl_object @var{y})
+Compare the relative order of two characters. @code{char_cmp} takes care of
+case and @code{char_compare} converts all characters to uppercase before
+comparing them.
+@end deftypefun
+
+@c ----------------------------------------------------------------------
+
+@node Arrays, Strings, Characters, Lisp objects
+@section Arrays
+
+An array is an aggregate of data of a common type, which can be accessed with
+one or more nonnegative indices. @ecls{} stores arrays as a C structure with a
+pointer to the region of memory which contains the actual data. The cell
+of an array datatype varies depending on whether it is a vector, a bytevector,
+a multidimensional array or a string.
+
+If @var{x} contains a vector, you can access the following fields:
+@table @code
+@item x->vector.elttype
+The type of the elements of the vector.
+@item x->vector.dim
+The maximum number of elements.
+@item x->vector.fillp
+Actual number of elements in the vector or "fill pointer".
+@item x->vector.self
+Union of pointers of different types. You should choose the right pointer
+depending on @code{x->vector.elltype}
+@item x->vector.hasfillp
+Whether @code{x->vector.fillp} can be smaller than @code{x->vector.dim}.
+@end table
+
+If @var{x} contains a multidimensional array, the cell elements become
+@table @code
+@item x->array.elttype
+The type of the elements of the array.
+@item x->array.dim
+Number of elements in the array.
+@item x->array.rank
+Number of dimensions of the array.
+@item x->array.dims[]
+Array with the dimensions of the array. The elements range from
+@code{x->array.dim[0]} to @code{x->array.dim[x->array.rank-1]}.
+@item x->array.self
+Union of pointers to the actual data. You should choose the right pointer
+depending on @code{x->array.elltype}.
+@item x->array.rank
+Whether @code{x->vector.fillp} can be smaller than @code{x->vector.dim}.
+@end table
+@noindent
+Bitvectors and strings are treated separately.
+
+Each array is of an specialized type which is the type of the elements of the
+array. @ecls{} has arrays only a few following specialized types, and for each
+of these types there is a C integer which is the corresponding value of
+@code{x->array.elttype} or @code{x->vector.elttype}. We list those types
+together with the C constant that denotes that type:
+@table @var
+@item T
+@code{aet_object}
+@item CHARACTER
+@code{aet_ch}
+@item FIXNUM
+@code{aet_fix}
+@item BIT
+@code{aet_bit}
+@item SHORT-FLOAT
+@code{aet_sf}
+@item LONG-FLOAT
+@code{aet_lf}
+@end table
+
+@deftypefun cl_elttype array_elttype (cl_object @var{o})
+Returns the element type of the array @var{o}, which can be a string, a
+bitvector, vector, or a multidimensional array. For example, the code
+@code{array_elttype(c_string_to_object("\"AAA\""))} returns @code{aet_ch},
+while the @code{array_elttype(c_string_to_object("#(A B C)"))} returns
+@code{aet_object}.
+@end deftypefun
+
+@deftypefun cl_object aref (cl_object @var{array}, cl_index @var{index})
+@deftypefunx cl_object aset (cl_object @var{array}, cl_index @var{index}, cl_object @var{value})
+These functions are used to retrieve and set the elements of an array. The
+elements are accessed with one index, @var{index}, as in the lisp function
+@code{ROW-MAJOR-AREF}. For example
+
+@example
+        cl_object array = c_string_to_object("#2A((1 2) (3 4))");
+        cl_object x = aref(array, 3);
+        clLprint(1, x);	/* Outputs 4 */
+        aset(array, 3, MAKE_FIXNUM(5));
+        clLprint(1, array); /* Outputs #2A((1 2) (3 5)) */
+@end example
+@end deftypefun
+
+@deftypefun cl_object aref1 (cl_object @var{vector}, cl_index @var{index})
+@deftypefunx cl_object aset1 (cl_object @var{vector}, cl_index @var{index}, cl_object @var{value})
+These functions are similar to @code{aref} and @code{aset}, but they operate on
+vectors.
+@example
+        cl_object array = c_string_to_object("#(1 2 3 4)");
+        cl_object x = aref1(array, 3);
+        clLprint(1, x);	/* Outputs 4 */
+        aset1(array, 3, MAKE_FIXNUM(5));
+        clLprint(1, array); /* Outputs #(1 2 3 5) */
+@end example
+@end deftypefun
+
+@c ----------------------------------------------------------------------
+
+@node Strings, Bitvectors, Arrays, Lisp objects
+@section Strings
+
+A string, both in @clisp{} and in @ecls{} is nothing but a vector of
+characters. Therefore, almost everything mentioned in the section of arrays
+remains valid here. The only important difference is that @ecls{} stores
+strings as a lisp object with a pointer to a zero terminated C string. Thus, if
+a string has @var{n} characters, @ecls{} will reserve @var{n}+1 bytes for the
+string. This allows us to pass the string @code{self} pointer to any C
+routine.
+
+If @var{x} is a lisp object of type string, we can access the following fields:
+@table @code
+@item x->string.dim
+Maximum number of characters that it can contain.
+@item x->string.fillp
+Actual number of characters in the string.
+@item x->string.self
+Pointer to the characters.
+@item x->string.hasfillp
+True if @code{x->string.fillp} can be smaller than @code{x->string.dim}.
+@end table
+
+@deftypefun cl_object make_simple_string (char *@var{s})
+@deftypefunx cl_object make_string_copy (char *@var{s})
+Both routines build a lisp string from a C string. @code{make_string_copy}
+allocates new space and copies the content of the string to
+it. @code{make_simple_string} simply uses the memory pointed by @var{s}, which
+should not be deallocated. Both routines use @code{strlen} to calculate the
+length of the string.
+@end deftypefun
+
+@node Bitvectors, Streams, Strings, Lisp objects
+@section Bitvectors
+
+@node Streams, Structures, Bitvectors, Lisp objects
+@section Streams
+
+@node Structures, Instances, Streams, Lisp objects
+@section Structures
+
+@node Instances, Bytecodes, Structures, Lisp objects
+@section Instances
+
+@c ---------------------------------------------------------------------
+
+@node Bytecodes,  , Instances, Lisp objects
+@section Bytecodes
+
+A bytecodes object is a lisp object with a piece of code that can be
+interpreted. The objects of type @code{t_bytecode} are implicitely constructed
+by a call to @code{eval}, but can also be explicitely constructed with the
+@code{make_lambda} function.
+
+@deftypefun cl_object eval (cl_object @var{form}, cl_object *@var{bytecodes}, cl_object @var{env})
+Evaluates @var{form} in the lexical environment @var{env}, which can be
+@var{nil}. Before evaluating it, the expression @var{form} must be
+bytecompiled. If @var{bytecodes} is not @code{NULL}, the space used during the
+compilation of @var{form} is returned in @code{*bytecodes}. This space can be
+reused in further calls to @code{eval}. For example
+@example
+        cl_object form = c_string_to_object("(print 1)");
+        cl_object buffer = OBJNULL;
+        eval(form, &buffer, Cnil);
+        eval(form, &buffer, Cnil);
+@end example
+@noindent
+In most cases you will just want to make @var{bytecodes} @code{NULL}.
+@end deftypefun
+
+@deftypefun cl_object make_lambda (cl_object @var{name}, cl_object @var{def})
+Builds an interpreted lisp function with name given by the symbol @var{name}
+and body given by @var{def}. For instance, we would achieve the equivalent of
+@example
+        (funcall #'(lambda (x y) (block foo (+ x y)))
+                 1 2)
+@end example
+@noindent
+with the following code
+@example
+        cl_object def = c_string_to_object("(x y) (+ x y)");
+        cl_object name = _intern("foo")
+        cl_object fun = make_lambda(name, def);
+        return funcall(fun, MAKE_FIXNUM(1), MAKE_FIXNUM(2));
+@end example
+@end deftypefun
+
+@c ---------------------------------------------------------------------
+
+@node The interpreter, The compiler, Lisp objects, Top
+@chapter The interpreter
+
+@menu
+* @ecls{} stacks::              
+* Procedure Call Conventions::  
+* The lexical environment::     
+* The interpreter stack::       
+@end menu
+
+
+@node @ecls{} stacks, Procedure Call Conventions, The interpreter, The interpreter
+@section @ecls{} stacks
+
+@ecls{} uses the following stacks:
+
+@table @sc
+@item Frame Stack
+consisting of catch, block, tagbody frames
+
+@item Bind Stack
+for shallow binding of dynamic variables
+
+@item Interpreter Stack
+acts as a Forth data stack, keeping intermediate arguments to
+interpreted functions, plus a history of called functions.
+
+@item C Control Stack
+used for arguments/values passing, typed lexical variables,
+temporary values, and function invocation.
+@end table
+
+
+@node Procedure Call Conventions, The lexical environment, @ecls{} stacks, The interpreter
+@section Procedure Call Conventions
+ 
+@ecls{} employs standard C calling conventions to achieve efficiency and
+interoperability with other languages.
+Each Lisp function is implemented as a C function whcih takes as many
+argument as the Lisp original plus one additional integer argument
+which holds the number of actual arguments.  The function sets @code{NValues}
+to the number of Lisp values produced, it returns the first one and the
+remaining ones are kept in  a global (per thread) array (@code{VALUES}).
+
+To show the argument/value passing mechanism, here we list the actual
+code for the @clisp{} function @code{cons}.
+
+@example
+clLcons(int narg, object car, object cdr)
+@{       object x;
+        check_arg(2);
+        x = alloc_object(t_cons);
+        CAR(x) = car;
+        CDR(x) = cdr;
+        NValues = 1;
+        return x;
+@}
+@end example
+
+@ecls{} adopts the convention that the name of a function that implements a
+@clisp{} function begins with a short package name (@code{cl} for COMMON-LISP,
+@code{si} for SYSTEM, etc), followed by @code{L}, and followed by the name of
+the @clisp{} function.  (Strictly speaking, `@code{-}' and `@code{*}' in the
+@clisp{} function name are replaced by `@code{_}' and `@code{A}', respectively,
+to obey the syntax of C.)
+
+@code{check_arg(2)} in the code of @code{clLcons} checks that exactly two
+arguments are supplied to @code{cons}.  That is, it checks that @code{narg} is
+2, and otherwise, it causes an error.  @code{allocate_object(t_cons)} allocates
+a cons cell in the heap and returns the pointer to the cell.  After the
+@code{CAR} and the @code{CDR} fields of the cell are set, the cell pointer is
+returned directly. The number assigned to NValues set by the function (1 in
+this case) represents the number of values of the function.
+
+In general, if one is to play with the C kernel of @ecls{} there is no need to
+know about all these conventions. There is a preprocessor that takes care of
+the details, by using a lispy representation of the statements that output
+values, and of the function definitions. For instance, the actual source code
+for @code{clLcons} in @file{src/c/lists.d}
+
+@example
+@@(defun cons (car cdr)
+@@
+        @@(return CONS(car, cdr))
+@@)
+@end example
+
+@node The lexical environment, The interpreter stack, Procedure Call Conventions, The interpreter
+@section The lexical environment
+
+The @ecls{} interpreter uses two A-lists (Association lists) to
+represent lexical environments.
+
+@itemize
+@item One for variable bindings
+@item One for local function/macro/tag/block bindings
+@end itemize
+
+When a function closure is created, the current two A-lists are
+saved in the closure along with the lambda expression.  Later, when the
+closure is invoked, the saved A-lists are
+used to recover the lexical environment.
+
+
+@node The interpreter stack,  , The lexical environment, The interpreter
+@section The interpreter stack
+ 
+The bytecodes interpreter uses a stack of its own to save and restore values
+from intermediate calculations. This Forth-like data stack is also used in
+other parts of the C kernel for various purposes, such as saving compiled code,
+keeping arguments to FORMAT, etc.
+
+However, one of the most important roles of the Interpreter Stack is to keep a
+log of the functions which are called during the execution of bytecodes. For
+each function invoked, the interpreter keeps three lisp objects on the stack:
+@example
++----------+------------------------------------------------+
+| function | lexical environment | index to previous record |
++----------+---------------------+--------------------------+
+@end example
+
+The first item is the object which is funcalled. It can be a bytecodes object,
+a compiled function or a generic function. In the last two cases the lexical
+environment is just NIL. In the first case, the second item on the stack is
+the lexical environment on which the code is executed. Each of these records
+are popped out of the stack after function invocation.
+
+Let us see how these invocation records are used for debugging.
+
+@example
+>(defun fact (x)                ;;;  Wrong definition of the 
+   (if (= x 0)                  ;;;  factorial function. 
+       one                      ;;;  one  should be  1. 
+       (* x (fact (1- x)))))
+FACT
+
+>(fact 3)                       ;;;  Tries  3!
+Error: The variable ONE is unbound.
+Error signalled by IF.
+Broken at IF.
+>>:b                            ;;;  Backtrace. 
+Backtrace: eval > fact > if > fact > if > fact > if > fact > IF
+                                ;;;  Currently at the last  IF.
+>>:h                            ;;;  Help. 
+
+Break commands:
+:q(uit)         Return to some previous break level.
+:pop            Pop to previous break level.
+:c(ontinue)     Continue execution.
+:b(acktrace)    Print backtrace.
+:f(unction)     Show current function.
+:p(revious)     Go to previous function.
+:n(ext)         Go to next function.
+:g(o)           Go to next function.
+:fs             Search forward for function.
+:bs             Search backward for function.
+:v(ariables)    Show local variables, functions, blocks, and tags.
+:l(ocal)        Return the nth local value on the stack.
+:hide           Hide function.
+:unhide         Unhide function.
+:hp             Hide package.
+:unhp           Unhide package.
+:unhide-all     Unhide all variables and packages.
+:bds            Show binding stack.
+:m(essage)      Show error message.
+:hs             Help stack.
+Top level commands:
+:cf             Compile file.
+:exit or ^D     Exit Lisp.
+:ld             Load file.
+:step           Single step form.
+:tr(ace)        Trace function.
+:untr(ace)      Untrace function.
+
+Help commands:
+:apropos        Apropos.
+:doc(ument)     Document.
+:h(elp) or ?    Help.  Type ":help help" for more information.
+
+>>:p                        ;;;  Move to the last call of  FACT.
+Broken at IF.
+
+>>:b
+Backtrace: eval > fact > if > fact > if > fact > if > FACT > if
+                            ;;;  Now at the last  FACT.
+>>:v                        ;;;  The environment at the last call 
+Local variables:            ;;;  to  FACT  is recovered. 
+  X: 0                      ;;;  X  is the only bound variable. 
+Block names: FACT.          ;;;  The block  FACT  is established. 
+                   
+>>x
+0                           ;;;  The value of  x  is  0.
+        
+>>(return-from fact 1)      ;;;  Return from the last call of 
+6                           ;;;  FACT  with the value of  0.
+                            ;;;  The execution is resumed and 
+>                           ;;;  the value  6  is returned. 
+                            ;;;  Again at the top-level loop. 
+@end example
+
+@c ---------------------------------------------------------------------
+
+@node The compiler, Examples, The interpreter, Top
+@chapter The compiler
+ 
+@menu
+* The compiler translates to C::  
+* The compiler mimics human C programmer::  
+* Implementation of Compiled Closures::  
+* Use of Declarations to Improve Efficiency::  
+* Inspecting generated C code::  
+* The C language interface::    
+* Embedding C code::            
+@end menu
+
+@node The compiler translates to C, The compiler mimics human C programmer, The compiler, The compiler
+@section The compiler translates to C
+
+The @ecls{} compiler is essentially a translator from @clisp{} to C.  Given
+a Lisp source file, the compiler first generates three intermediate
+files:
+
+@itemize
+@item a C-file which consists of the C version of the Lisp program
+@item an H-file which consists of declarations referenced in the C-file
+@item a Data-file which consists of Lisp data to be used at load time
+@end itemize
+
+The @ecls{} compiler then invokes the C compiler to compile the
+C-file into an object file.  Finally, the contents of the Data-file is
+appended to the object file to make a @emph{Fasl-file}.  The generated
+Fasl-file can be loaded into the @ecls{} system by the @clisp{}
+function @code{load}.  By default, the three intermediate files are
+deleted after the compilation, but, if asked, the compiler leaves
+them.
+
+The merits of the use of C as the intermediate language are:
+
+@itemize -
+@item  The @ecls{} compiler is highly portable.  Indeed the four versions
+of @ecls{} share the same compiler.  Only the calling sequence
+of the C compiler and the handling of the intermediate files are different
+in these versions. 
+
+@item Cross compilation is possible, because the contents of the
+intermediate files are common to all versions of @ecls{}.  For example,
+one can compile his or her Lisp program by the @ecls{} compiler on
+a Sun, bring the intermediate files to DOS, compile the C-file with
+the gcc compiler under DOS, and then append the Data-file to the object
+file.  This procedure generates the Fasl-file for the @ecls{} system on
+DOS.  This kind of cross compilation makes it easier to port @ecls{}.
+
+@item Hardware-dependent optimizations such as register allocations
+are done by the C compiler.
+@end itemize
+
+The demerits are:
+
+@itemize -
+@item  At those sites where no C compiler is available,
+the users cannot compile their Lisp programs.
+
+@item The compilation time is long.  70% to 80% of the
+compilation time is used by the C compiler.  The @ecls{} compiler is
+therefore slower than compiler generating machine code directly.
+@end itemize
+
+@node The compiler mimics human C programmer, Implementation of Compiled Closures, The compiler translates to C, The compiler
+@section The compiler mimics human C programmer
+ 
+The format of the intermediate C code generated by the @ecls{} compiler is the
+same as the hand-coded C code of the @ecls{} source programs.  For example,
+supposing that the Lisp source file contains the
+following function definition:
+
+@example
+            (defun add1 (x) (1+ x))
+@end example
+
+@noindent
+The compiler generates the following intermediate C code.
+
+@example
+init_code(char *start,int size,object data)
+@{      VT2
+       Cblock.cd_start=start;Cblock.cd_size=size;Cblock.cd_data=data;
+       set_VV(VV,VM1,data);
+       MF0(VV[0],L1);
+@}
+/*     function definition for ADD1     */
+   
+static L1(int narg, object V1)
+@{      
+       check_arg(1);
+       NValues=1;
+       return one_plus(V1);
+@}
+@end example
+
+The C function @code{L1} implements the Lisp function @code{add1}.  This
+relation is established by @code{MF0} in the initialization function
+@code{init_code}, which is invoked at load time.  There, the vector @code{VV}
+consists of Lisp objects; @code{VV[0]} in this example holds the Lisp symbol
+@code{add1}.  @code{VM1} in the definition of @code{L1} is a C macro declared
+in the corresponding H-file.  The actual value of @code{VM1} is the number of
+value stack locations used by @code{L1}, i.e., 2 in this example.  Thus the
+following macro definition is found in the H-file.
+
+@example
+#define VM1 2
+@end example
+
+
+@node Implementation of Compiled Closures, Use of Declarations to Improve Efficiency, The compiler mimics human C programmer, The compiler
+@section Implementation of Compiled Closures
+ 
+The @ecls{} compiler takes two passes before it invokes the C
+compiler.  The major role of the first pass is to detect function
+closures and to detect, for each function closure, those lexical
+objects (i.e., lexical variable, local function definitions, tags, and
+block-names) to be enclosed within the closure.  This check must be
+done before the C code generation in the second pass, because lexical
+objects to be enclosed in function closures are treated in a different
+way from those not enclosed.
+
+Ordinarily, lexical variables in a compiled function @emph{f}
+are allocated on the C stack.  However, if a lexical variable is
+to be enclosed in function closures, it is allocated on a list, called
+the ``environment list'', which is local to @emph{f}.  In addition, a
+local variable is created which points to the lexical
+variable's location (within the environment list), so that
+the variable may be accessed through an indirection rather than by list
+traversal.
+
+@ignore
+\bf{Rewrite this}
+@end ignore
+
+The environment list is a pushdown list: It is empty when @emph{f} is called.
+An element is pushed on the environment list when a variable to be enclosed in
+closures is bound, and is popped when the binding is no more in effect.  That
+is, at any moment during execution of @emph{f}, the environment list contains
+those lexical variables whose binding is still in effect and which should be
+enclosed in closures.  When a compiled closure is created during execution of
+@emph{f}, the compiled code for the closure is coupled with the environment
+list at that moment to form the compiled closure.
+
+Later, when the compiled closure is invoked, a pointer is set up to each
+lexical variable in the environment list, so that each object may be referenced
+through a memory indirection.
+
+Let us see an example.  Suppose the following function has been compiled.
+
+@lisp
+(defun foo (x)
+    (let ((a #'(lambda () (incf x)))
+          (y x))
+      (values a #'(lambda () (incf x y)))))
+@end lisp
+
+@code{foo} returns two compiled closures.  The first closure increments @var{x}
+by one, whereas the second closure increments @var{x} by the initial value of
+@var{x}.  Both closures return the incremented value of @var{x}.
+
+@example
+>(multiple-value-setq (f g) (foo 10))
+#<compiled-closure nil>
+
+>(funcall f)
+11
+
+>(funcall g)
+21
+
+>
+@end example
+
+After this, the two compiled closures look like:
+
+@example
+second closure       y:                     x:
+|-------|------|      |-------|------|       |------|------| 
+|  **   |    --|----->|  10   |    --|------>|  21  | nil  |
+|-------|------|      |-------|------|       |------|------| 
+                                                ^
+                      first closure             |
+                      |-------|------|          |
+                      |   *   |    --|----------| 
+                      |-------|------| 
+
+ * : address of the compiled code for #'(lambda () (incf x))
+** : address of the compiled code for #'(lambda () (incf x y))
+@end example
+
+
+@node Use of Declarations to Improve Efficiency, Inspecting generated C code, Implementation of Compiled Closures, The compiler
+@section Use of Declarations to Improve Efficiency
+
+Declarations, especially  type  and  function  declarations,
+increase the efficiency of the compiled code.  For example, for the
+following Lisp source file, with two @clisp{} declarations added,
+
+@lisp
+(eval-when (compile)
+  (proclaim '(function tak (fixnum fixnum fixnum) fixnum))
+
+(defun tak (x y z)
+  (declare (fixnum x y z))
+  (if (not (< y x))
+      z
+      (tak (tak (1- x) y z)
+           (tak (1- y) z x)
+           (tak (1- z) x y))))
+@end lisp
+
+The compiler generates the following C code:
+
+@example
+/*      local entry for function TAK                                  */
+static int LI1(register int V1,register int V2,register int V3)
+@{ VT3 VLEX3 CLSR3
+TTL:
+        if (V2 < V1) @{
+        goto L2;@}
+        return(V3);
+L2:
+        @{ int V5;
+          V5 = LI1((V1)-1,V2,V3);
+        @{ int V6;
+          V6 = LI1((V2)-1,V3,V1);
+          V3 = LI1((V3)-1,V1,V2);
+          V2 = V6;
+          V1 = V5;@}@}
+        goto TTL;
+;;; Note: Tail-recursive call of TAK was replaced by iteration.
+@}
+@end example
+
+
+@node Inspecting generated C code, The C language interface, Use of Declarations to Improve Efficiency, The compiler
+@section Inspecting generated C code
+
+@clisp{} defines a function disassemble, which is
+supposed to disassemble a compiled function and to display the
+assembler code.  According to @cltl{},
+
+     @emph{This is primary useful for debugging the compiler}, ..\\
+ 
+This is, however, @emph{useless} in our case, because we are
+not concerned with assembly language.  Rather, we are interested in
+the C code generated by the @ecls{} compiler.  Thus the disassemble
+function in @ecls{} accepts not-yet-compiled functions only and displays
+the translated C code.
+
+@example
+> (defun add1 (x) (1+ x))
+ADD1
+> (disassemble *)
+;;; Compiling (DEFUN ADD1 ...).
+;;; Emitting code for ADD1.
+
+/*      function definition for ADD1                                  */
+static L1(int narg, object V1)
+@{ VT3 VLEX3 CLSR3
+TTL:
+        VALUES(0) = one_plus((V1));
+        RETURN(1);
+@}
+@end example
+
+
+@node The C language interface, Embedding C code, Inspecting generated C code, The compiler
+@section The C language interface
+
+There are several mechanism to integrate C code within @ecls{}.
+
+The user can embed his/her own C code into Lisp source code.  The
+idea is quite simple: the specified C code is inserted in the intermediate
+C code that is generated by the @ecls{} compiler.  In the following example,
+@code{Clines}  and @code{defentry}  are top-level macros specific
+to @ecls{}.  The @code{Clines}  macro form specifies the C code to be embedded,
+in terms of strings, and the @code{defentry}  form defines an entry
+of the specified C function from @ecls{}.
+
+@lisp
+(Clines
+"   int tak(x, y, z)                       "
+"   int x, y, z;                           "
+"   @{   if (y >= x) return(z);             "
+"       else return(tak(tak(x-1, y, z),    "
+"                       tak(y-1, z, x),    "
+"                       tak(z-1, x, y)));  "
+"   @}                                      "
+)
+
+(defentry tak (int int int) (int "tak"))
+@end lisp
+
+@node Embedding C code,  , The C language interface, The compiler
+@section Embedding C code in lisp source
+
+The basic idea of interfacing the C language is this: As mentioned before,
+the @ecls{} compiler, given a Lisp source file, creates an intermediate
+C-language program file, called @emph{c-file}, which is then compiled by the
+C-language compiler to obtain the final fasl-file.  Usually, the c-file
+consists of C-language function definitions.  The first C-language function in
+the c-file is the ``initializer'', which is executed when the fasl file is
+loaded, and the other C-language functions are the C versions of the Lisp
+functions (including macro expansion functions) defined in the source file.  By
+using the top-level macros @code{Clines} and @code{defCfun} described below,
+the user can direct the compiler to insert his or her own C-language function
+definitions and/or C-language preprocessor macros such as @code{#define} and
+@code{#include} into the c-file.  In order that such C-language functions be
+invoked from @ecls{}, another top-level macro @code{defentry} is used.  This
+macro defines a Lisp function whose body consists of the calling sequence to
+the specified C-language function.
+
+The C-language function definitions are placed in the c-file in the order of
+the corresponding Lisp functions defined in the source file.  That is, the C
+code for the first Lisp function comes first, the C code for the second Lisp
+function comes second, and so on.  If a @code{Clines} or @code{defCfun} macro
+form appears between two Lisp function definitions in the source file, then the
+C code specified by the macro is placed in between the C code for the Lisp
+functions.
+
+We define some terminology here which is used throughout this Chapter. A
+@emph{C-id} is either a Lisp string consisting of a valid C-language
+identifier, or a Lisp symbol whose print-name, with all its alphabetic
+characters turned into lower case, is a valid C identifier.  Thus the symbol
+@code{foo} is equivalent to the string @code{"foo"} when used as a C-id.
+Similarly, a @emph{C-expr} is a string or a symbol that may be regarded as a
+C-language expression.  A @emph{C-type} is one of the Lisp symbols @code{int,
+char, float, double,} and @code{object}.  Each corresponds to a data type in
+the C language; @code{object} is the type of Lisp object and other C-types are
+primitive data types in C.
+
+@defmac {Clines} {@{string@}*}
+When the @ecls{} compiler encounters a macro form @code{(Clines @var{string1
+...  stringn})}, it simply outputs the @var{strings} into the c-file.  The
+arguments are not evaluated and each argument must be a string.  Each
+@var{string} may consist of any number of lines, and separate lines in the
+@var{string} are placed in separate lines in the c-file.  In addition, each
+@var{string} opens a fresh line in the c-file, i.e., the first character in the
+@var{string} is placed at the first column of a line.  Therefore, C-language
+preprocessor commands such as @code{#define} and @code{#include} will be
+recognized as such by the C compiler, if the ' # ' sign appears as the first
+character of the @var{string} or as the first character of a line within the
+@var{string}.
+
+When interpreted, a @code{Clines} macro form expands to @nil{}.
+
+@end defmac
+
+@defmac {defentry} {function parameter-list C-function}
+
+@code{defentry} defines a Lisp function whose body consists of the calling
+sequence to a C-language function. @var{function} is the name of the Lisp
+function to be defined, and @var{C-function} specifies the C function to be
+invoked. @var{C-function} must be either a list @code{(@var{type C-id})} or
+@var{C-id}, where @var{type} and @var{C-id} are the type and the name of the C
+function. @var{type} must be a C-type or the symbol @code{void} which means
+that the C function returns no value.  @code{(object @var{C-id})} may be
+abbreviated as @var{C-id}.  @var{parameter-list} is a list of C-types for the
+parameters of the C function.  For example, the following @code{defentry} form
+defines a Lisp function @code{tak} from which the C function @code{tak} above
+is called.
+
+@end defmac
+
+@example
+(defentry tak (int int int) (int tak))
+@end example
+
+The Lisp function @code{tak} defined by this @code{defentry} form requires
+three arguments.  The arguments are converted to @code{int} values before they
+are passed to the C function.  On return from the C function, the returned
+@code{int} value is converted to a Lisp integer (actually a fixnum) and this
+fixnum will be returned as the value of the Lisp function.  See below for type
+conversion between Lisp and the C language.
+
+A @code{defentry} form is treated in the above way only when it appears as a
+top-level form of a Lisp source file.  Otherwise, a @code{defentry} form
+expands to @nil{}.
+
+@defmac {defla} {name lambda-list @{declaration | doc-string@}*}
+
+When interpreted, @code{defla} is exactly the same as @code{defun}.  That is,
+@code{(defla @var{name lambda-list .  body})} expands to @code{(defun @var{name
+lambda-list .  body})}.  However, @code{defla} forms are completely ignored by
+the compiler; no C-language code will be generated for @code{defla} forms.  The
+primary use of @code{defla} is to define a Lisp function in two ways within a
+single Lisp source file; one in the C language and the other in Lisp.
+@code{defla} is short for @emph{DEF}ine @emph{L}isp @emph{A}lternative.
+@end defmac
+
+Suppose you have a Lisp source file whose contents are:
+
+@example 
+;;; C version of TAK.
+(Clines "
+
+       int tak(x, y, z)                           
+       int x, y, z;
+       @{      if (y >= x) return(z);
+               else return(tak(tak(x-1, y, z),
+                               tak(y-1, z, x),
+                               tak(z-1, x, y)));
+       @}
+"
+)
+
+;;;  TAK calls the C function tak defined above.
+(defentry tak (int int int) (int tak))
+;;;  The alternative Lisp definition of TAK.
+(defla tak (x y z)
+   (if (>= y x)
+       z
+       (tak (tak (1- x) y z)
+            (tak (1- y) z x)
+            (tak (1- z) x y))))
+@end example
+
+When this file is loaded into @ecls{}, the interpreter uses the Lisp version of
+the @code{tak} definition.  Once this file has been compiled, and when the
+generated fasl file is loaded into @ecls{}, a function call to @code{tak} is
+actually the call to the C version of @code{tak}.
+
+@defun {defCbody} {name args-types result-type C-expr}
+The @ecls{} compiler produces a function named @var{name} with as many
+arguments as @var{arg-types}.  The @var{C-expr} is an arbitrary C expression
+where the arguments to the function are denoted by @code{#@emph{i}}, where
+@code{@emph{i}} is the integer corresponding to the argument position.  The
+@var{args-types} is the list of \clisp types of the arguments to the function,
+while @var{result-type} is the \clisp type of the result.  The actual arguments
+are coerced to the required types before executing the @var{C-expr} and the
+result is converted into a Lisp object.  @code{defCbody} is ignored by the
+interpreter.
+@end defun
+
+For example, the logical AND of two integers could be defined as:
+@example
+(defCbody logand (fixnum fixnum) fixnum "(#0) & (#1)")
+@end example
+
+@defun {definline} {name args-types result-type C-expr}
+@code{definline} behaves exactly as @code{defCbody}.  Moreover, after a
+@code{definline} definition has been supplied, the @ecls{} compiler will expand
+inline any call to function @var{name} into code corresponding to the C
+language expression @var{C-expr}, provided that the actual arguments are of the
+specified type.  If the actual arguments cannot be coerced to those types, the
+inline expansion is not performed.  @code{definline} is ignored by the
+interpreter.
+
+@end defun
+
+For example, a function to access the n-th byte of a string and return it as an
+integer can be defined as follows:
+
+@example
+(definline aref-byte (string fixnum) fixnum
+   "(#0)->ust.ust_self[#1]")
+@end example
+
+The definitions of the C data structures used to represent \clisp objects can
+be found in file @code{ecl.h} in the directory @code{"src/h"} of the source
+distribution.
+
+@ecls{} converts a Lisp object into a C-language data by using the @clisp{}
+function @code{coerce}: For the C-type @code{int} (or @code{char}), the object
+is first coerced to a Lisp integer and the least significant 32-bit (or 8-bit)
+field is used as the C @code{int} (or @code{char}).  For the C-type
+@code{float} (or @code{double}), the object is coerced to a short-float (or a
+long-float) and this value is used as the @code{C float} (or @code{double}).
+Conversion from a C data into a Lisp object is obvious: @code{C char, int,
+float,} and @code{double} become the equivalent Lisp @code{character},
+@code{fixnum}, @code{short-float}, and @code{long-float}, respectively.
+
+Here we list the complete syntax of @code{Clines}, @code{defentry},
+@code{definline} and @code{defCbody} macro forms.
+
+@example
+Clines-form:
+        (Clines @{string@}*)
+
+defentry-form:
+        (defentry symbol (@{C-type@}*)
+                  @{C-function-name | (@{C-type | void@} C-function-name)@})
+
+defCbody-form:
+        (defCbody symbol (@{type@}*) type C-expr)
+
+definline-form:
+        (defCbody symbol (@{type@}*) type C-expr)
+
+C-function-name:
+C-expr:
+        @{ string | symbol @}
+ 
+C-type:
+        @{ object | int | char | float | double @}
+@end example
+
+@c ---------------------------------------------------------------------
+
+@node Examples, Porting @ecls{}, The compiler, Top
+@chapter Examples of customization
+
+Let us see how this all works in practice. We will assume that @ecls{} is
+installed and that it works. The first example simply gives @ecls{} another
+boot message. You just have to type this at the @ecls{} prompt
+
+@example
+(c::build-ecls "myecls"
+	:prologue-code "printf(\"Lisp image to be initialized...\\n\");"
+        :epilogue-code "printf(\"...lisp image initialized!!!\\n\");
+	funcall(1,_intern(\"TPL\",system_package));")
+@end example
+
+@noindent
+With the following text you have a new image:
+
+@example
+% ./myecls
+Lisp image to be initialized...
+*+*+*+
+...lisp image initialized!!!
+ECLS (ECoLisp-Spain) 0.4
+Copyright (C) 1984 Taiichi Yuasa and Masami Hagiya
+Copyright (C) 1993 Giuseppe Attardi
+Copyright (C) 2000 Juan J. Garcia-Ripoll
+	ECLS is free software, and you are welcome to redistribute it
+under certain conditions; see file 'Copyright' for details.
+Type :h for Help.  Top level.
+@end example
+
+@c ---------------------------------------------------------------------
+
+@node Porting @ecls{},  , Examples, Top
+@chapter Porting @ecls{}
+
+To port @ecls{} to a new architecture, the following steps are required:
+
+@enumerate
+@item Ensure that the GNU Multiprecision library supports this machine.
+
+@item Ensure that the Boehm-Weiser garbage collector is supported by that
+architecture. Alternatively, port ECLS's own garbage collector
+@file{src/c/alloc.d} and @file{src/c/gbc.d} to that platform.
+
+@item Fix @file{src/configure.in} and @file{src/h/machines.h} so that they
+both supply flags for the new host machine.
+
+@item Fix the machine dependent code in @file{src/c/}. The most critical
+parts are in the @file{unix*.d} files.
+
+@item Compile as in any other platform.
+
+@item Run the tests and compare to the results of other platforms.
+@end enumerate
