@@ -242,7 +242,8 @@ extern void init_cmpaux(void);
 
 /* compiler.c */
 
-extern cl_object si_process_lambda_list(cl_object lambda);
+extern cl_object si_process_lambda_list(cl_object lambda_list, cl_object context);
+extern cl_object si_process_lambda(cl_object lambda);
 extern cl_object si_make_lambda(cl_object name, cl_object body);
 extern cl_object si_function_block_name(cl_object name);
 extern cl_object si_process_declarations _ARGS((int narg, cl_object body, ...));

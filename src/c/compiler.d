@@ -1993,16 +1993,11 @@ compile_body(cl_object body) {
 @)
 
 cl_object
-si_process_lambda_list(cl_object lambda)
+si_process_lambda(cl_object lambda)
 {
 	cl_object documentation, declarations, specials;
-	cl_object lambda_list, body, form;
-	cl_object x, v, key, init, spp;
-	cl_object reqs = Cnil, opts = Cnil, keys = Cnil, rest = Cnil, auxs = Cnil;
-	int nreq = 0, nopt = 0, nkey = 0, naux = 0;
-	cl_object allow_other_keys = Cnil;
+	cl_object lambda_list, body;
 
-	bds_check;
 	if (ATOM(lambda))
 		FEprogram_error("LAMBDA: No lambda list.", 0);
 	lambda_list = CAR(lambda);
@@ -2012,44 +2007,81 @@ si_process_lambda_list(cl_object lambda)
 	documentation = VALUES(2);
 	specials = VALUES(3);
 
-REQUIRED:
-	while (1) {
-		if (endp(lambda_list))
+	VALUES(0) = si_process_lambda_list(lambda_list, @'function');
+	VALUES(NValues++) = documentation;
+	VALUES(NValues++) = specials;
+	VALUES(NValues++) = declarations;
+	VALUES(NValues++) = body;
+	return VALUES(0);
+}
+
+cl_object
+si_process_lambda_list(cl_object org_lambda_list, cl_object context)
+{
+#define AT_REQUIREDS	0
+#define AT_OPTIONALS	1
+#define AT_REST		2
+#define AT_KEYS		3
+#define AT_OTHER_KEYS	4
+#define AT_AUXS		5
+
+	cl_object v, key, init, spp, lambda_list = org_lambda_list;
+	cl_object reqs = Cnil, opts = Cnil, keys = Cnil, rest = Cnil, auxs = Cnil;
+	int nreq = 0, nopt = 0, nkey = 0, naux = 0, stage = 0;
+	cl_object allow_other_keys = Cnil;
+
+LOOP:
+	if (ATOM(lambda_list)) {
+		if (lambda_list == Cnil)
 			goto OUTPUT;
-		v = CAR(lambda_list);
-		lambda_list = CDR(lambda_list);
-		if (v == @'&allow-other-keys')
+		else if (context == @'function')
 			goto ILLEGAL_LAMBDA;
-		if (v == @'&optional')
-			goto OPTIONAL;
-		if (v == @'&rest')
+		else
 			goto REST;
-		if (v == @'&key')
-			goto KEYWORD;
-		if (v == @'&aux')
-			goto AUX;
+	}
+	v = CAR(lambda_list);
+	lambda_list = CDR(lambda_list);
+	if (v == @'&optional') {
+		if (stage >= AT_OPTIONALS)
+			goto ILLEGAL_LAMBDA;
+		stage = AT_OPTIONALS;
+		goto LOOP;
+	}
+	if (v == @'&rest' || (v == @'&body' && context != @'function')) {
+REST:		if (stage >= AT_REST)
+			goto ILLEGAL_LAMBDA;
+		stage = AT_REST;
+		goto LOOP;
+	}
+	if (v == @'&key') {
+		if (stage >= AT_KEYS)
+			goto ILLEGAL_LAMBDA;
+		stage = AT_KEYS;
+		goto LOOP;
+	}
+	if (v == @'&aux') {
+		if (stage >= AT_AUXS)
+			goto ILLEGAL_LAMBDA;
+		stage = AT_AUXS;
+		goto LOOP;
+	}
+	if (v == @'&allow-other-keys') {
+		allow_other_keys = Ct;
+		if (stage != AT_KEYS)
+			goto ILLEGAL_LAMBDA;
+		stage = AT_OTHER_KEYS;
+		goto LOOP;
+	}
+	switch (stage) {
+	case AT_REQUIREDS:
 		nreq++;
 		push_var(v, reqs);
-	}
-OPTIONAL:
-	while (1) {
-		if (endp(lambda_list))
-			goto OUTPUT;
-		x = CAR(lambda_list);
-		lambda_list = CDR(lambda_list);
+		break;
+	case AT_OPTIONALS:
 		spp = Cnil;
 		init = Cnil;
-		if (ATOM(x)) {
-			if (x == @'&optional' || x == @'&allow-other-keys')
-				goto ILLEGAL_LAMBDA;
-			if (x == @'&rest')
-				goto REST;
-			if (x == @'&key')
-				goto KEYWORD;
-			if (x == @'&aux')
-				goto AUX;
-			v = x;
-		} else {
+		if (!ATOM(v)) {
+			cl_object x = v;
 			v = CAR(x);
 			if (!endp(x = CDR(x))) {
 				init = CAR(x);
@@ -2068,53 +2100,19 @@ OPTIONAL:
 		} else {
 			push(Cnil, opts);
 		}
-	}
-
-REST:
-	if (endp(lambda_list))
-		goto ILLEGAL_LAMBDA;
-	v = CAR(lambda_list);
-	push_var(v, rest);
-
-	lambda_list = CDR(lambda_list);
-	if (endp(lambda_list))
-		goto OUTPUT;
-	v = CAR(lambda_list);
-	lambda_list = CDR(lambda_list);
-	if (v == @'&optional' || v == @'&rest' || v == @'&allow-other-keys')
-		goto ILLEGAL_LAMBDA;
-	if (v == @'&key')
-		goto KEYWORD;
-	if (v == @'&aux')
-		goto AUX;
-	goto ILLEGAL_LAMBDA;
-
-KEYWORD:
-	while (1) {
-		if (endp(lambda_list))
-			goto OUTPUT;
+		break;
+	case AT_REST:
+		if (rest == Cnil) {
+			push_var(v, rest);
+		} else {
+			goto ILLEGAL_LAMBDA;
+		}
+		break;
+	case AT_KEYS:
 		init = Cnil;
 		spp = Cnil;
-		x = CAR(lambda_list);
-		lambda_list = CDR(lambda_list);
-		if (ATOM(x)) {
-			if (x == @'&allow-other-keys') {
-				if (!Null(allow_other_keys))
-					goto ILLEGAL_LAMBDA;
-				allow_other_keys = Ct;
-				if (endp(lambda_list))
-					goto OUTPUT;
-				x = CAR(lambda_list);
-				lambda_list = CDR(lambda_list);
-				if (key != @'&aux')
-					goto ILLEGAL_LAMBDA;
-				goto AUX;
-			} else if (x == @'&optional' || x == @'&rest' || x == @'&key')
-				goto ILLEGAL_LAMBDA;
-			else if (x == @'&aux')
-				goto AUX;
-			v = x;
-		} else {
+		if (!ATOM(v)) {
+			cl_object x = v;
 			v = CAR(x);
 			if (!endp(x = CDR(x))) {
 				init = CAR(x);
@@ -2146,22 +2144,12 @@ KEYWORD:
 		} else {
 			push_var(spp, keys);
 		}
-	}
-
-AUX:
-	while (1) {
-		if (endp(lambda_list))
-			goto OUTPUT;
-		x = CAR(lambda_list);
-		lambda_list = CDR(lambda_list);
-		if (ATOM(x)) {
-			if (x == @'&optional' || x == @'&rest' ||
-			    x == @'&key' || x == @'&allow-other-keys' ||
-			    x == @'&aux')
-				goto ILLEGAL_LAMBDA;
-			v = x;
+		break;
+	default:
+		if (ATOM(v)) {
 			init = Cnil;
-		} else if (endp(CDDR(x))) {
+		} else if (endp(CDDR(v))) {
+			cl_object x = v;
 			v = CAR(x);
 			init = CADR(x);
 		} else
@@ -2170,24 +2158,21 @@ AUX:
 		push_var(v, auxs);
 		push(init, auxs);
 	}
+	goto LOOP;
 
 OUTPUT:
 	if ((nreq+nopt+(!Null(rest))+nkey) >= CALL_ARGUMENTS_LIMIT)
 		FEprogram_error("LAMBDA: Argument list ist too long, ~S.", 1,
-				CAR(lambda));
+				org_lambda_list);
 	@(return CONS(MAKE_FIXNUM(nreq), cl_nreverse(reqs))
 		 CONS(MAKE_FIXNUM(nopt), cl_nreverse(opts))
 		 cl_nreverse(rest)
 		 allow_other_keys
 		 CONS(MAKE_FIXNUM(nkey), cl_nreverse(keys))
-		 cl_nreverse(auxs)
-		 documentation
-		 specials
-		 declarations
-		 body)
+		 cl_nreverse(auxs))
 
 ILLEGAL_LAMBDA:
-	FEprogram_error("LAMBDA: Illegal lambda list ~S.", 1, CAR(lambda));
+	FEprogram_error("LAMBDA: Illegal lambda list ~S.", 1, org_lambda_list);
 }
 
 static void
@@ -2232,7 +2217,7 @@ make_lambda(cl_object name, cl_object lambda) {
 
 	c_env.lexical_level++;
 
-	reqs = si_process_lambda_list(lambda);
+	reqs = si_process_lambda(lambda);
 	opts = VALUES(1);
 	rest = VALUES(2);
 	allow_other_keys = VALUES(3);
