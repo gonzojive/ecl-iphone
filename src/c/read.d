@@ -1078,9 +1078,9 @@ static
 @
 	if(d != Cnil && !READsuppress)
 		extra_argument('.', d);
+	in = read_object(in);
 	if (READsuppress)
 		@(return Cnil)
-	in = read_object(in);
 	in = eval(in, NULL, Cnil);
 	@(return in)
 @)

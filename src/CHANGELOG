@@ -808,6 +808,8 @@ ECLS 0.5
 
   - In unsafe mode, inlining AREF lead to bogus code.
 
+  - The order of evaluation of arguments in a PSETQ was not respected.
+
 * System design and portability:
 
   - Remove function_entry_table.
@@ -847,6 +849,8 @@ ECLS 0.5
     C:BUILD-SHARED-LIBRARY, all of which accept similar parameters,
     :PROLOGUE-CODE, :EPILOGE-CODE, :LISP-FILES, and :LD-FLAGS. Exhaustive
     documentation with examples included in the Developer's Guide.
+
+  - Symbolic's update of the MIT LOOP macro imported.
 
 TODO:
 =====

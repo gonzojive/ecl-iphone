@@ -184,6 +184,10 @@ init_main(void)
 	 ADD_FEATURE("DLOPEN");
 #endif
 
+#ifdef ECLS_OLD_LOOP
+	 ADD_FEATURE("OLD-LOOP");
+#endif
+
 #ifdef PDE
 	 ADD_FEATURE("PDE");
 #endif PDE

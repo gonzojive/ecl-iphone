@@ -178,6 +178,7 @@
 	  logtest
 	  long-site-name
 	  loop
+	  loop-finish
 	  machine-instance
 	  machine-type
 	  machine-version

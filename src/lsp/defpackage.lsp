@@ -108,50 +108,63 @@
 	      "~s is not a valid DEFPACKAGE option." option)))
   (labels ((option-test (arg1 arg2)
 	     (when (consp arg2) (equal (car arg2) arg1)))
-	   (option-values-list (option options)
-	     (loop for result first (member option options
-					    ':test #'option-test)
-			      then (member option (rest result)
-					   ':test #'option-test)
-		   until (null result)
-		   when result collect (rest (first result))))
-	   (option-values (option options)
-	     (loop for result first (member option options
-					    ':test #'option-test)
-			      then (member option (rest result)
-					   ':test #'option-test)
-		   until (null result)
-		   when result append (rest (first result)))))
+	   (option-values-list (option options &aux output)
+	     (dolist (o options)
+	       (let ((o-option (string (first o)))
+		     (o-package (string (second o)))
+		     (o-symbols (mapcar #'string (cddr o))))
+		 (when (string= o-option option)
+		   (setf (cdr (assoc output o-package))
+			 (union o-symbols (cdr (assoc output o-package))
+				:test #'equal)))))
+	     output)
+	   (option-values (option options &aux output)
+	     (dolist (o options)
+	       (let ((o-option (string (first o)))
+		     (o-symbols (mapcar #'string (cdr o))))
+		 (when (string= o-option option)
+		   (setq output (union o-symbols output :test #'equal)))))
+	     output))
     (dolist (option '(:SIZE :DOCUMENTATION))
       (when (<= 2 (count option options ':key #'car))
 	(warn "DEFPACKAGE option ~s specified more than once.  The first value \"~a\" will be used."
 	      option (first (option-values option options)))))
     (setq name (string name))
-    (let ((nicknames (mapcar #'string (option-values ':nicknames options)))
-	  (documentation (first (option-values ':documentation options)))
-	  (shadowed-symbol-names (mapcar #'string
-					 (option-values ':shadow options)))
-	  (interned-symbol-names (mapcar #'string
-					 (option-values ':intern options)))
-	  (exported-symbol-names (mapcar #'string
-					 (option-values ':export options)))
+    (let ((nicknames (option-values ':nicknames options))
+	  (documentation (option-values ':documentation options))
+	  (shadowed-symbol-names (option-values ':shadow options))
+	  (interned-symbol-names (option-values ':intern options))
+	  (exported-symbol-names (option-values ':export options))
 	  (shadowing-imported-from-symbol-names-list
-	   (loop for list in (option-values-list
-			      ':shadowing-import-from options)
-		 collect (cons (string (first list))
-			       (mapcar #'string (rest list)))))
+	   (option-values-list ':shadowing-import-from options))
 	  (imported-from-symbol-names-list
-	   (loop for list in (option-values-list ':import-from options)
-		 collect (cons (string (first list)) (mapcar #'string
-							     (rest list)))))
-	  (exported-from-package-names (mapcar #'string
-					       (option-values ':export-from
-							      options))))
+	   (option-values-list ':import-from options))
+	  (exported-from-package-names (option-values ':export-from options)))
+      (dolist (duplicate (find-duplicates shadowed-symbol-names
+					  interned-symbol-names
+					  (loop for list in shadowing-imported-from-symbol-names-list append (rest list))
+					  (loop for list in imported-from-symbol-names-list append (rest list))))
+	(error "The symbol ~s cannot coexist in these lists:~{ ~s~}"
+	       (first duplicate)
+	       (loop for num in (rest duplicate)
+		     collect (case num
+			       (1 ':SHADOW)
+			       (2 ':INTERN)
+			       (3 ':SHADOWING-IMPORT-FROM)
+			       (4 ':IMPORT-FROM)))))
+      (dolist (duplicate (find-duplicates exported-symbol-names
+					  interned-symbol-names))
+	(error "The symbol ~s cannot coexist in these lists:~{ ~s~}"
+	       (first duplicate)
+	       (loop for num in (rest duplicate) collect
+		     (case num
+		       (1 ':EXPORT)
+		       (2 ':INTERN)))))
       `(si::%defpackage
 	,name
 	',nicknames
 	,documentation
-	',(mapcar #'string (option-values ':use options))
+	',(option-values ':use options)
 	',shadowed-symbol-names
 	',interned-symbol-names
 	',exported-symbol-names
@@ -170,45 +183,6 @@
 		    shadowing-imported-from-symbol-names-list
 		    imported-from-symbol-names-list
 		    exported-from-package-names)
-  (flet ((find-duplicates (&rest lists)
-	   (let (results)
-	     (loop for list in lists
-		   for more on (cdr lists)
-		   for i from 1
-		   do
-		   (loop for elt in list
-			 as entry = (find elt results :key #'car
-					  :test #'string=)
-			 unless (member i entry)
-			 do
-			 (loop for l2 in more
-			       for j from (1+ i)
-			       do
-			       (if (member elt l2 :test #'string=)
-				 (if entry
-				   (nconc entry (list j))
-				   (setq entry (car (push (list elt i j)
-							  results))))))))
-	     results)))
-    (dolist (duplicate (find-duplicates shadowed-symbol-names
-					interned-symbol-names
-					(loop for list in shadowing-imported-from-symbol-names-list append (rest list))
-					(loop for list in imported-from-symbol-names-list append (rest list))))
-      (error "The symbol ~s cannot coexist in these lists:~{ ~s~}"
-	     (first duplicate)
-	     (loop for num in (rest duplicate)
-		   collect (case num
-			     (1 ':SHADOW)
-			     (2 ':INTERN)
-			     (3 ':SHADOWING-IMPORT-FROM)
-			     (4 ':IMPORT-FROM)))))
-    (dolist (duplicate (find-duplicates exported-symbol-names interned-symbol-names))
-      (error "The symbol ~s cannot coexist in these lists:~{ ~s~}"
-	     (first duplicate)
-	     (loop for num in (rest duplicate) collect
-		   (case num
-		     (1 ':EXPORT)
-		     (2 ':INTERN))))))
   (if (find-package name)
     (progn ; (rename-package name name)
       (when nicknames
@@ -239,6 +213,26 @@
 			(find-symbol (string symbol))))
 	    (export (list (intern (string symbol)))))))))
   (find-package name))
+
+(defun find-duplicates (&rest lists)
+  (let (results)
+    (loop for list in lists
+	  for more on (cdr lists)
+	  for i from 1
+	  do
+	  (loop for elt in list
+		as entry = (find elt results :key #'car
+				 :test #'string=)
+		unless (member i entry)
+		do
+		(loop for l2 in more
+		      for j from (1+ i)
+		      do
+		      (if (member elt l2 :test #'string=)
+			(if entry
+			  (nconc entry (list j))
+			  (setq entry (car (push (list elt i j)
+						 results))))))))))
 
 ;;;; ------------------------------------------------------------
 ;;;;	End of File

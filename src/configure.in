@@ -74,7 +74,10 @@ dnl 	[--enable-runtime	Build no compiler.],
 dnl 	runtime="$enable_runtime")
 AC_ARG_ENABLE(shared,
 	[--disable-shared	Enable building dynamically loadable extensions.],
-	shared="$enable_shared")
+	shared="$enable_shared",shared="yes")
+AC_ARG_WITH(oldloop,
+	[--with-oldloop		Use the old MIT LOOP macro.],
+	oldloop="yes")
 
 ### ----------------------------------------------------------------------
 ###           Checks for programs
@@ -182,6 +185,9 @@ fi
 if test "${tcp}" -o "${clx}"; then
   AC_DEFINE(TCP)
   EXTRA_OBJS="${EXTRA_OBJS} tcp.o"
+fi
+if test "${oldloop}"; then
+  AC_DEFINE(ECLS_OLD_LOOP)
 fi
 if test "${locative}" ; then
   EXTRA_OBJS="${EXTRA_OBJS} unify.o"

@@ -20,7 +20,10 @@
 (load "@srcdir@/seqlib.lsp")
 (load "@srcdir@/trace.lsp")
 (load "@srcdir@/ansi.lsp")
+#+old-loop
 (load "@srcdir@/loop.lsp")
+#-old-loop
+(load "@srcdir@/loop2.lsp")
 (load "@srcdir@/defpackage.lsp")
  #+threads
 (load "@srcdir@/threads.lsp")

@@ -27,6 +27,8 @@
 #undef CLX
 /* Locatives								*/
 #undef LOCATIVE
+/* Use old MIT LOOP macro system					*/
+#undef ECLS_OLD_LOOP
 
 /* Define this if you want a runtime version only without compiler	*/
 #undef RUNTIME

@@ -28,7 +28,10 @@
     (seqlib	()		()			())
     (iolib	()		()			())
     (ansi	()		()			())
+#+old-loop
     (loop	()		()			())
+#-old-loop
+    (loop2	()		()			())
     (defpackage ()		()			())
 #-runtime
     (describe	()		()			())
