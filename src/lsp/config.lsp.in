@@ -65,4 +65,5 @@ Returns, as a string, the version of the software under which ECL runs."
 ;; * Set configuration pathnames. Notice the trailing slash!
 ;;   Otherwise it would not be a directory.
 ;;
-(si::pathname-translations "SYS" '(("*.*" "@libdir@/*.*")))
+(si::pathname-translations "SYS" '(("**;*.*" "@libdir@/**/*.*")))
+(si::pathname-translations "HOME" '(("**;*.*" "~/**/*.*")))

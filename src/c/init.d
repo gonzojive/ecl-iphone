@@ -44,6 +44,9 @@ init_lisp(void)
 	SYM_VAL(@'*package*') = lisp_package;
 	SYM_VAL(@'*gensym_counter*') = MAKE_FIXNUM(0);
 
+	init_compiler();
+	init_interpreter();
+	init_eval();
 	init_typespec();
 	init_number();
 	init_character();
@@ -84,9 +87,6 @@ init_lisp(void)
 /*  	init_unixfsys(); */
 	init_unixtime();
 #endif
-	init_compiler();
-	init_interpreter();
-	init_eval();
 /*  	init_reference(); */
 	init_assignment();
 	init_error();

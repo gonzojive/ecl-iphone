@@ -520,9 +520,10 @@ nconc(cl_object l, cl_object y)
 	return l;
 }
 
-@(defun nreconc (l y)
+cl_object
+cl_nreconc(cl_object l, cl_object y)
+{
 	cl_object x, z;
-@
 	/* INV: when a circular list is "reconc'ed", the pointer ends
 	   up at the beginning of the original list, hence we need no
 	   slow pointer */
@@ -536,7 +537,7 @@ nconc(cl_object l, cl_object y)
 	if (x != Cnil)
 		FEtype_error_proper_list(l);
 	@(return y)
-@)
+}
 
 /* CONTINUE HERE!!!! */
 @(defun butlast (lis &optional (nn MAKE_FIXNUM(1)))

@@ -18,7 +18,7 @@
 (sbt::operate-on-system lsp :library)
 #+dlopen
 (sbt::operate-on-system lsp :load)
-(si::pathname-translations "SYS" '(("*.*" "./*.*")))
+(si::pathname-translations "SYS" '(("**;*.*" "@abs_builddir@/**/*.*")))
 (setq compiler::*cc-flags* (concatenate 'string compiler::*cc-flags* " -I@srcdir@/h -I@srcdir@/gmp -I@builddir@/h"))
 
 ;;;

@@ -239,7 +239,7 @@ logical_hostname_p(cl_object host)
 {
 	if (type_of(host) != t_string)
 		return FALSE;
-	return assoc(host, pathname_translations) != Cnil;
+	return !Null(@assoc(4, host, pathname_translations, @':test', @'string-equal'));
 }
 
 /*
@@ -908,6 +908,7 @@ path_list_match(cl_object a, cl_object mask) {
 	cl_object item_mask;
 	while (!endp(mask)) {
 		item_mask = CAR(mask);
+		mask = CDR(mask);
 		if (item_mask == @':wild-inferiors') {
 			if (endp(mask))
 				return TRUE;
@@ -917,13 +918,16 @@ path_list_match(cl_object a, cl_object mask) {
 				a = CDR(a);
 			}
 			return FALSE;
+		} else if (endp(a)) {
+			/* A NIL directory should match against :absolute
+			   or :relative, in order to perform suitable translations. */
+			if (item_mask != @':absolute' && item_mask != @':relative')
+				return FALSE;
+		} else if (!path_item_match(CAR(a), item_mask)) {
+			return FALSE;
+		} else {
+			a = CDR(a);
 		}
-		if (endp(a))
-			return FALSE;
-		if (!path_item_match(CAR(a), item_mask))
-			return FALSE;
-		a = CDR(a);
-		mask = CDR(mask);
 	}
 	if (!endp(a))
 		return FALSE;
@@ -942,8 +946,7 @@ pathname_match_p(cl_object path, cl_object mask)
 	if (!path_item_match(path->pathname.host, mask->pathname.host))
 		return FALSE;
 #endif
-	if (!path_list_match(path->pathname.directory,
-			     path->pathname.directory))
+	if (!path_list_match(path->pathname.directory, mask->pathname.directory))
 		return FALSE;
 	if (!path_item_match(path->pathname.name, mask->pathname.name))
 		return FALSE;
@@ -994,7 +997,7 @@ coerce_to_from_pathname(cl_object x, cl_object host)
 		FEerror("Wrong host syntax ~S", 1, host);
 
 	/* Find its translation list */
-	pair = assoc(host, pathname_translations);
+	pair = @assoc(4, host, pathname_translations, @':test', @'string-equal');
 	if (set == OBJNULL)
 		@(return ((pair == Cnil)? Cnil : CADR(pair)))
 
@@ -1014,7 +1017,7 @@ coerce_to_from_pathname(cl_object x, cl_object host)
 		  FEerror("~S is not a valid to-pathname translation", 1, from);
 		set = CONS(CONS(from, CONS(to, Cnil)), set);
 	}
-	CADR(pair) = @nreconc(2, set, Cnil);
+	CADR(pair) = @nreverse(set);
 	@(return set)
 @)
 
@@ -1053,24 +1056,37 @@ find_wilds(cl_object l, cl_object source_item, cl_object match)
 }
 
 static cl_object
-find_list_wilds(cl_object a, cl_object b)
+find_list_wilds(cl_object a, cl_object mask)
 {
-	cl_object l;
+	cl_object l = Cnil, l2;
 
-	for (l = Cnil; !endp(b); a=CDR(a), b=CDR(b)) {
-		if (CAR(b) == @':wild-inferiors') {
-			cl_object l2 = Cnil;
-			b = CDR(b);
-			while (!path_list_match(a, b)) {
+	while (!endp(mask)) {
+		cl_object item_mask = CAR(mask);
+		mask = CDR(mask);
+		if (item_mask == @':wild-inferiors') {
+			l2 = Cnil;
+			while (!path_list_match(a, mask)) {
+				if (endp(a))
+					return @':error';
 				l2 = CONS(CAR(a),l2);
 				a = CDR(a);
 			}
 			l = CONS(l2, l);
+		} else if (endp(a)) {
+			/* A NIL directory should match against :absolute
+			   or :relative, in order to perform suitable translations. */
+			if (item_mask != @':absolute' && item_mask != @':relative')
+				return @':error';
 		} else {
-			l = find_wilds(l, CAR(a), CAR(b));
+			l2 = find_wilds(l, CAR(a), item_mask);
+			if (l == @':error')
+				return @':error';
+			if (!Null(l2))
+				l = CONS(l2, l);
+			a = CDR(a);
 		}
 	}
-	return @nreconc(2, l, Cnil);
+	return @nreverse(l);
 }		
 
 static cl_object
@@ -1127,11 +1143,17 @@ copy_list_wildcards(cl_object *wilds, cl_object to)
 	while (!endp(to)) {
 		cl_object d, mask = CAR(to);
 		if (mask == @':wild-inferiors') {
-			if (CONSP(CAR(*wilds)))
-				l = append(CAR(*wilds), l);
-			else
+			cl_object list = *wilds;
+			if (endp(list))
 				return @':error';
-			*wilds = CDR(*wilds);
+			else {
+				cl_object dirlist = CAR(list);
+				if (CONSP(dirlist))
+					l = append(CAR(list), l);
+				else if (!Null(CAR(list)))
+					return @':error';
+			}
+			*wilds = CDR(list);
 		} else {
 			d = copy_wildcards(wilds, CAR(to));
 			if (d == @':error')
@@ -1141,7 +1163,7 @@ copy_list_wildcards(cl_object *wilds, cl_object to)
 		to = CDR(to);
 	}
 	if (CONSP(l))
-		l = @nreconc(2, l, Cnil);
+		l = @nreverse(l);
 	return l;
 }
 
@@ -1160,7 +1182,7 @@ cl_translate_pathname(cl_object source, cl_object from, cl_object to)
 	out->pathname.logical = to->pathname.logical;
 
 	/* Match host names */
-	if (!equal(source->pathname.host, from->pathname.host))
+	if (!cl_string_equal(2, source->pathname.host, from->pathname.host))
 		goto error;
 	out->pathname.host = to->pathname.host;
 
