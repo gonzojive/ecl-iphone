@@ -1,10 +1,14 @@
-Announcement of ECL v0.9c
+Announcement of ECL v0.9d
 =========================
 
 ECL stands for Embeddable Common-Lisp. The ECL project is an effort to
-modernize Giusseppe Attardi's ECL (ECoLisp) environment to produce an
+modernize Giuseppe Attardi's ECL (ECoLisp) environment to produce an
 implementation of the Common-Lisp language which complies to the ANSI
 X3J13 definition of the language.
+
+ECL supports the operating systems Linux, FreeBSD, NetBSD, Solaris,
+Windows/Cygwin and OSX, running on top of the Intel, Sparc, Alpha and PowerPC
+processors. Porting to other architectures should be rather easy.
 
 ECL is currently hosted at SourceForge. The home page of the project
 is http://ecls.sourceforge.net, and in it you will find source code
@@ -13,79 +17,10 @@ releases, a CVS tree and an up to date documentation.
 Notes for this release
 ======================
 
-This is mainly a bugfix release.
+This release add support for compiling lisp code as shared libraries under the
+OSX operating system, and makes ECL compile and run again under Solaris/Sparc,
+now using 64-bit pointers/fixnums when available.
 
 
-ECL 0.9c
+ECL 0.9d
 ========
-
-* System design:
-
-  - The data structures of the lisp->C translator are being changed
-    from pure lists, to lisp structures, and the routines for handling
-    them have now more meaningful names.
-
-  - In different systems, dlopen() handles files with name "lib*.so"
-    differently, causing ECL to crash. To avoid this problem, compiled
-    code that can be dynamically loaded has the extension "fas".
-
-  - COMPILE-FILE-PATHNAME now acquires the functionality of
-    SHARED-LIBRARY-PATHNAME and STATIC-LIBRARY-PATHNAME, and it
-    provides information about the usual name conventions for
-    executables, libraries, object files, C files, etc.
-
-  - Many internal types, such as those used to represent arrays,
-    vectors, etc, and which do not need to be used directly, have
-    received the prefix "ecl" to avoid name clashes with C/C++
-    libraries.
-
-  - New tools and makefile rules for building RPM files kindly
-    contributed by Robert Lehr.
-
-  - The interpreter now uses by default 16-bit bytecodes. This avoids
-    pointer misalignments and SIGBUS signals on architectures which
-    are sensitive to this, and does not cost too much space. A
-    fallback option for the Intel, --enable-opcode8, has been
-    introduced.
-
-  - The GMP Library is updated to 4.1.2.
-
-* Errors fixed:
-
-  - The compiler was too eager when replacing variables, so that
-	(let ((exit *exit*) (*exit* (1+ *exit*)))
-	     (declare (special *exit*))
-	     ...
-	     (print exit))
-    would be changed into
-        (let ((*exit* (1+ *exit*)))
-	     (declare (special *exit*))
-	     ...
-	     (print *exit*))
-
-  - Fix a bug that prevented ECL from compiling under CYGWIN.
-
-  - Remove spurious references that prevented loaded libraries to be
-    garbage collected. Unfortunately, this also means that the
-    Boehm-Weiser garbage collector cannot scan the data sections of
-    any libraries, and that register_root must be used everywhere.
-
-  - READ/WRITE-SEQUENCE would read or write one element more than
-    required.
-
-  - LOAD-TIME-VALUE was broken.
-
-  - Invoking finalizers during GC could trash the environment of a
-    running function, either interpreted or compiled.
-
-* ANSI compatibility:
-
-  - Hashtables can now have EQUALP as test function.
-
-  - The compiler no longer handles IN-PACKAGE and DEFPACKAGE specially.
-    When a symbol is loaded from a compiled file, and the home package
-    of this symbol does not exist, a new incomplete package is
-    created. If MAKE-PACKAGE is invoked subsequently in this binary
-    file, the incomplete package is finished and returned. If at the
-    end of the load process there are still incomplete packages, a
-    correctable error is signaled.
