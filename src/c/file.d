@@ -540,18 +540,18 @@ make_string_output_stream(cl_index line_length)
 }
 
 cl_object
-make_string_output_stream_from_string(cl_object string)
+make_string_output_stream_from_string(cl_object s)
 {
 	cl_object strm;
 
-	if (type_of(strng) != t_string || !strng->string.hasfillp)
-		FEerror("~S is not a string with a fill-pointer.", 1, strng);
+	if (type_of(s) != t_string || !s->string.hasfillp)
+		FEerror("~S is not a string with a fill-pointer.", 1, s);
 	strm = cl_alloc_object(t_stream);
 	strm->stream.mode = (short)smm_string_output;
 	strm->stream.file = NULL;
-	strm->stream.object0 = strng;
+	strm->stream.object0 = s;
 	strm->stream.object1 = OBJNULL;
-	strm->stream.int0 = strng->string.fillp;
+	strm->stream.int0 = s->string.fillp;
 	strm->stream.int1 = 0;
 	return strm;
 }
@@ -1585,10 +1585,10 @@ for the file-stream ~S.",
 	@(return MAKE_FIXNUM(strm->stream.int0))
 @)
 
-@(defun si::make_string_output_stream_from_string (strng)
+@(defun si::make_string_output_stream_from_string (s)
 	cl_object strm;
 @
-	@(return make_string_output_stream_from_string(string))
+	@(return make_string_output_stream_from_string(s))
 @)
 
 @(defun si::copy_stream (in out)
