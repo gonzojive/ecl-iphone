@@ -194,23 +194,13 @@ build_symbol_table()
 {
    cl_object file;
    const char *tmpfile;
-   file = namestring(@merge-pathnames(2, SYM_VAL(@'si::*symbol-table*'),
-				      SYM_VAL(@'si::*system-directory*')));
+   file = coerce_to_filename(SYM_VAL(@'si::*symbol-table*'));
    tmpfile = file->string.self;
    if (!symbol_table_built)
      if (read_special_symbols(tmpfile) < 0)
        FEerror("Could not read symbol table from ~A", 1, make_string_copy(tmpfile));
 }
 #endif
-
-const char *
-system_directory()
-{
-  cl_object dir = SYM_VAL(@'si::*system-directory*');
-  while (type_of(dir) != t_string)
-    FEerror("The value of sys::*system-directory* is not a string, ~A", 1, dir);
-  return dir->string.self;
-}
 
 /* ---------------------------------------------------------------------- */
 #if 0
@@ -253,6 +243,6 @@ init_load(void)
 				CONS(Cnil, load_source));
 
 #ifdef RSYM
-  SYM_VAL(@'si::*symbol-table*') = make_simple_string("ecl.sym");
+  SYM_VAL(@'si::*symbol-table*') = make_simple_string("SYS:ecls.sym");
 #endif
 }

@@ -151,7 +151,6 @@ const struct symbol_info all_symbols[] = {
 {&siVinhibit_macro_special, "*INHIBIT-MACRO-SPECIAL*", SI_SPECIAL},
 
 /* main.c */
-{&siVsystem_directory, "*SYSTEM-DIRECTORY*", SI_SPECIAL},
 {&clVfeatures, "*FEATURES*", CL_SPECIAL},
 
 /* num_rand.c */

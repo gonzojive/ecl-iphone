@@ -541,7 +541,7 @@ q (or Q):             quits the inspection.~%~
   ;; where F means Function, V Variable and T Type.
   ;;
   (let* ((name (symbol-name symbol))
-	 (path (merge-pathnames *system-directory* "help.doc"))
+	 (path "SYS:help.doc")
 	 (pos 0))
 
     (labels ((bin-search (file start end &aux (delta 0) (middle 0) sym)

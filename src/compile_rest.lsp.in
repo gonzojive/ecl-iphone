@@ -5,12 +5,8 @@
 ;;; * Learn where we come from and where we go to
 ;;;
 (in-package "SYSTEM")
-(*make-special '*ecls-srcdir*) ; defparameter is missing
-(*make-special '*ecls-builddir*)
-(setq *ecls-srcdir* #P"@srcdir@/")
-(setq *ecls-builddir* (sys::chdir *ecls-srcdir*))
-(setq *system-directory* *ecls-builddir*)
-(setq compiler::*cc-flags* (concatenate 'string compiler::*cc-flags* " -I@srcdir@/h -I@srcdir@/gmp "))
+(si::pathname-translations "SYS" '(("*.*" "./*.*")))
+(setq compiler::*cc-flags* (concatenate 'string compiler::*cc-flags* " -I@srcdir@/h -I@srcdir@/gmp -I@builddir@/h"))
 
 ;;;
 ;;; * Load system builder tool
@@ -34,11 +30,9 @@
 ;;; * Compile and link MIT CLX extensions
 ;;;
 (push :clx-ansi-common-lisp *features*)
-(sys::chdir (merge-pathnames "clx/" sys::*ecls-builddir*))
 (load "defsys.lsp")
 (sbt::operate-on-system clx :library)
 
-(sys::chdir sys::*ecls-builddir*)
 (compiler::build-ecls "eclx"
 #ifndef RUNTIME
 	   'cmp

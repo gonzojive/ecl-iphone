@@ -34,4 +34,4 @@
 ;; * Set configuration pathnames. Notice the trailing slash!
 ;;   Otherwise it would not be a directory.
 ;;
-(setq sys:*system-directory* "@libdir@/")
+(si::pathname-translations "SYS" '(("*.*" "@libdir@/*.*")))

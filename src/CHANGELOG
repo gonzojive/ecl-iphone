@@ -622,8 +622,8 @@ ECLS 0.1a
 * SETF revised. Now it, and all accessors are implemented as macros
   with no special support from the interpreter.
 
-ECLS 0.1b
-=========
+ECLS 0.2
+========
 
 * Due to human errors, the bytecompiler shipped with 0.1a was not the
   finished version. In 0.1b we shipped a more polished files. Some of
@@ -660,6 +660,28 @@ ECLS 0.1b
 * NIL is no longer valid as the first of a pair of bounding index
   designators, i.e. (nstring-upcase "aa" :start nil :end nil) causes
   an error.
+
+ECLS 0.3
+========
+
+* Add name mangling to ECLS:
+  - In the preprocessed files (*.d) @package::symbol can be used to
+    refer to a lisp function, while @'package::symbol can be used to
+    refer to a lisp symbol. The preprocessor translates these names
+    into valid C names.
+  - Function SI::MANGLE-NAME returns the C name for a lisp symbol
+    or function, and tells whether that symbol has been defined as
+    external C function already.
+  - A new proclamation
+	(proclaim '(si::c-export-fname union))
+    advises the lisp->C translator to produce a C function with
+    mangle named (clLunion in this case), that can be directly called
+    from other translated files and from user written code.
+  - The dynamic loader can now reexport symbols from object files,
+    so that they become available to other files.
+
+* Remove variable si::*system-directory* and use logical hostname
+  "SYS:" instead.
 
 
 TODO:

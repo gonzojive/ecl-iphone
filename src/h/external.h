@@ -448,7 +448,6 @@ extern void init_list(void);
 extern void init_load(void);
 extern void load_until_tag(cl_object stream, cl_object end_tag);
 extern void build_symbol_table();
-extern const char *system_directory();
 
 /* lwp.c */
 #ifdef THREADS

@@ -44,7 +44,6 @@ int data_start = (int)&data_start;
 /******************************* EXPORTS ******************************/
 
 cl_object clVfeatures;
-cl_object @'si::*system-directory*';
 const char *ecl_self;
 
 /******************************* ------- ******************************/
@@ -195,8 +194,6 @@ init_main(void)
 	register_root(&@'si::top-level');
 
 	make_ordinary("LISP-IMPLEMENTATION-VERSION");
-
-	SYM_VAL(@'si::*system-directory*') = make_simple_string("./");
 
 	{ cl_object features;
 	  features =

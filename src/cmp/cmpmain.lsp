@@ -84,12 +84,12 @@ init_~A(cl_object)
    (format nil
 	   *ld-format*
 	   *cc* (namestring o-pathname)
-	   (namestring sys::*system-directory*)
+	   (namestring (translate-logical-pathname "SYS:"))
 	   options *ld-flags*)))
 
 (defun rsym (name)
   (let ((output (make-pathname :name (pathname-name name) :type "sym"))
-	(rsym (make-pathname :name "rsym" :defaults sys::*system-directory*)))
+	(rsym (translate-logical-pathname "SYS:rsym")))
     (cond ((not (probe-file rsym))
 	   (error "rsym executable not found"))
 	  ((not (probe-file name))
@@ -124,7 +124,7 @@ init_lisp_libs(void)
 	       (error "compiler::build-ecls wrong argument ~A" item))))
       (format c-file "
 #ifdef RSYM
-	SYM_VAL(siVsymbol_table) = make_simple_string(\"~A.sym\");
+	SYM_VAL(siVsymbol_table) = make_simple_string(\"SYS:~A.sym\");
 #endif
 	return;~%}~%" name))
     (compiler-cc c-name o-name)
@@ -468,7 +468,7 @@ Cannot compile ~a."
    (format nil
 	   *cc-format*
 	   *cc* *cc-flags* (>= *speed* 2) *cc-optimize*
-	   (namestring sys::*system-directory*)
+	   (namestring (translate-logical-pathname "SYS:"))
 	   (namestring c-pathname)
 	   (namestring o-pathname))
 ; Since the SUN4 assembler loops with big files, you might want to use this:

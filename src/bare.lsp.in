@@ -24,10 +24,10 @@
 (load "cmp/load.lsp")
 
 ;;;
-;;; * By redefining *system-directory* ECLS will be able to
+;;; * By redefining "SYS:" ECLS will be able to
 ;;;   find headers and libraries in the build directory.
 ;;;
-(setq si::*system-directory* (namestring (sys::chdir "./")))
+(si::pathname-translations "SYS" '(("*.*" "./*.*")))
 
 ;;;
 ;;; * Add include path to not yet installed headers

@@ -51,13 +51,13 @@
                (unless (sys::specialp var) (return nil)))))
 
 (defun compile-file (&rest args)
-  (load (merge-pathnames sys:*system-directory* "compiler"))
+  (load "SYS:compiler")
   (apply 'compile-file args))
 (defun compile (&rest args)
-  (load (merge-pathnames sys:*system-directory* "compiler"))
+  (load "SYS:compiler")
   (apply 'compile args))
 (defun disassemble (&rest args)
-  (load (merge-pathnames sys:*system-directory* "compiler"))
+  (load "SYS:compiler")
   (apply 'disassemble args))
 )
 

@@ -480,7 +480,6 @@ extern cl_object clLmacroexpand_1 _ARGS((int narg, cl_object form, ...));
 /* main.c */
 
 extern cl_object clVfeatures;
-extern cl_object siVsystem_directory;
 extern cl_object clLquit _ARGS((int narg, ...));
 extern cl_object siLargc _ARGS((int narg));
 extern cl_object siLargv _ARGS((int narg, cl_object index));

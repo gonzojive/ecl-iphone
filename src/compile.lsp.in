@@ -11,7 +11,7 @@
 (proclaim '(optimize (safety 2) (space 3)))
 (sbt::operate-on-system lsp :library)
 (sbt::operate-on-system lsp :load)
-(setq si::*system-directory* (namestring (sys::chdir "./")))
+(si::pathname-translations "SYS" '(("*.*" "./*.*")))
 (setq compiler::*cc-flags* (concatenate 'string compiler::*cc-flags* " -I@srcdir@/h -I@srcdir@/gmp -I@builddir@/h"))
 
 #ifndef RUNTIME

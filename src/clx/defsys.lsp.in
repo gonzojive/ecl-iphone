@@ -58,7 +58,7 @@
 					    display)         (display))))
 ;;
  :source-directory "@srcdir@/"
- :fasl-directory "./"
- :library-directory "../")
+ :fasl-directory "@builddir@/clx/"
+ :library-directory "@builddir@/")
 ;;
 ;;; ----------------------------------------------------------------------
