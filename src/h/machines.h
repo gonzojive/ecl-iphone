@@ -21,11 +21,11 @@
 
 #ifndef ecl_setjmp
 #if defined(linux)
-#  define ecl_setjmp	setjmp
-#  define ecl_longjmp	longjmp
+#  define ecl_setjmp	"setjmp"
+#  define ecl_longjmp	"longjmp"
 #else
-#  define ecl_setjmp	_setjmp
-#  define ecl_longjmp	_longjmp
+#  define ecl_setjmp	"_setjmp"
+#  define ecl_longjmp	"_longjmp"
 #endif
 #endif
 
@@ -97,45 +97,45 @@
 #endif
 
 #ifdef	MSDOS
-#  define SOFTWARE_TYPE	MSDOS
+#  define SOFTWARE_TYPE	"MSDOS"
 #elif	defined(unix)
-#  define SOFTWARE_TYPE	UNIX
+#  define SOFTWARE_TYPE	"UNIX"
 #elif	defined(__WIN32__) || defined(cygwin)
-#  define SOFTWARE_TYPE WIN32
+#  define SOFTWARE_TYPE "WIN32"
 #else
-#  define SOFTWARE_TYPE	UNKNOWN
+#  define SOFTWARE_TYPE	"UNKNOWN"
 #endif
 
 #ifdef  aix
-#  define SOFTWARE_VERSION	AIX
+#  define SOFTWARE_VERSION	"AIX"
 #elif	defined(__FreeBSD__)
-#  define SOFTWARE_VERSION	FreeBSD
+#  define SOFTWARE_VERSION	"FreeBSD"
 #elif	defined(__NetBSD__)
-#  define SOFTWARE_VERSION	NetBSD
+#  define SOFTWARE_VERSION	"NetBSD"
 #elif	defined(__linux__)
-#  define SOFTWARE_VERSION	Linux
+#  define SOFTWARE_VERSION	"Linux"
 #elif	defined(__NeXT)
-#  define SOFTWARE_VERSION	MACH
+#  define SOFTWARE_VERSION	"MACH"
 #elif	defined(ultrix)
-#  define SOFTWARE_VERSION	ULTRIX
+#  define SOFTWARE_VERSION	"ULTRIX"
 #elif	defined(hpux)
-#  define SOFTWARE_VERSION	HPUX
+#  define SOFTWARE_VERSION	"HPUX"
 #elif	defined(domain)
-#  define SOFTWARE_VERSION	DOMAIN
+#  define SOFTWARE_VERSION	"DOMAIN"
 #elif	defined(sgi)
-#  define SOFTWARE_VERSION	IRIX
+#  define SOFTWARE_VERSION	"IRIX"
 #elif	defined(bsd4_3)
-#  define SOFTWARE_VERSION	BSD4.3
+#  define SOFTWARE_VERSION	"BSD4.3"
 #elif	defined(bsd4_2)
-#  define SOFTWARE_VERSION	BSD4.2
+#  define SOFTWARE_VERSION	"BSD4.2"
 #elif	defined(BSD)
-#  define SOFTWARE_VERSION	BSD
+#  define SOFTWARE_VERSION	"BSD"
 #elif	defined(sysv)
-#  define SOFTWARE_VERSION	SYSTEM-V
+#  define SOFTWARE_VERSION	"SYSTEM-V"
 #elif	defined(cygwin)
-#  define SOFTWARE_VERSION	CYGWIN
+#  define SOFTWARE_VERSION	"CYGWIN"
 #else
-#  define SOFTWARE_VERSION	UNKNOWN
+#  define SOFTWARE_VERSION	"UNKNOWN"
 #endif
 
 /***********************************************************************/
@@ -157,9 +157,9 @@
 #define	IEEEFLOAT
 #define	JB_SP 2
 #define	BRAND "IBM-PC"
-#define	CLIBS -lcompat
-#define	LDFLAGS -Wl,--export-dynamic
-#define SHARED_LDFLAGS -shared
+#define	CLIBS "-lcompat"
+#define	LDFLAGS "-Wl,--export-dynamic"
+#define SHARED_LDFLAGS "-shared"
 #define USE_DLOPEN
 #define HAVE_ISOC99
 #ifndef unix
@@ -172,9 +172,9 @@
 #define	BRAND "IBM-PC"
 #define	IEEEFLOAT
 #define	BSD
-#define CLIBS -ldl
-#define LDFLAGS -Wl,--export-dynamic
-#define SHARED_LDFLAGS -shared
+#define CLIBS "-ldl"
+#define LDFLAGS "-Wl,--export-dynamic"
+#define SHARED_LDFLAGS "-shared"
 #define USE_DLOPEN
 #define _ISOC99_SOURCE
 #define HAVE_ISOC99
@@ -188,8 +188,8 @@
 #include <dlfcn.h>
 #define	IEEEFLOAT
 #define	JB_SP 4
-#define LDFLAGS -Wl,--export-dynamic
-#define SHARED_LDFLAGS -shared
+#define LDFLAGS "-Wl,--export-dynamic"
+#define SHARED_LDFLAGS "-shared"
 #define USE_DLOPEN
 #ifndef BSD
 #  define BSD
@@ -198,7 +198,7 @@
 #  define unix
 #endif
 #define	BRAND "IBM-PC"
-#define	CLIBS -lcompat
+#define	CLIBS "-lcompat"
 #define	LDFLAGS
 #endif	/*__NetBSD__*/
 
@@ -213,9 +213,9 @@
 #  include <link.h>
 #  define USE_DLOPEN
 #ifdef TCP
-#  define CLIBS -lsocket -lnsl -lintl -ldl
+#  define CLIBS "-lsocket -lnsl -lintl -ldl"
 #else
-#  define CLIBS -ldl
+#  define CLIBS "-ldl"
 #endif
 #endif /* sun4sol2 */
 #endif /* sun */

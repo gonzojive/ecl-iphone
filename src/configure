@@ -904,7 +904,7 @@ esac
 # Don't blindly perform a `cd "$ac_dir"/$ac_foo && pwd` since $ac_foo can be
 # absolute.
 ac_abs_builddir=`cd "$ac_dir" && cd $ac_builddir && pwd`
-ac_abs_top_builddir=`cd "$ac_dir" && cd ${ac_top_builddir}. && pwd`
+ac_abs_top_builddir=`cd "$ac_dir" && cd $ac_top_builddir && pwd`
 ac_abs_srcdir=`cd "$ac_dir" && cd $ac_srcdir && pwd`
 ac_abs_top_srcdir=`cd "$ac_dir" && cd $ac_top_srcdir && pwd`
 
@@ -1284,8 +1284,6 @@ build_cpu=`echo $ac_cv_build | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\1/'`
 build_vendor=`echo $ac_cv_build | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\2/'`
 build_os=`echo $ac_cv_build | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\3/'`
 
-test -z "$build_alias" &&
-  build_alias=$ac_cv_build
 
 echo "$as_me:$LINENO: checking host system type" >&5
 echo $ECHO_N "checking host system type... $ECHO_C" >&6
@@ -1308,8 +1306,6 @@ host_cpu=`echo $ac_cv_host | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\1/'`
 host_vendor=`echo $ac_cv_host | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\2/'`
 host_os=`echo $ac_cv_host | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\3/'`
 
-test -z "$host_alias" &&
-  host_alias=$ac_cv_host
 
 
 
@@ -3766,50 +3762,68 @@ case $host_os in
 esac
 
 
-
-echo "Extracting parameters from the machine description file"
-
-tempcname="conftest.c"
-
-echo '
+echo "$as_me:$LINENO: checking parameters from the machine description file" >&5
+echo $ECHO_N "checking parameters from the machine description file... $ECHO_C" >&6
+if test "$cross_compiling" = yes; then
+  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling" >&5
+echo "$as_me: error: cannot run test program while cross compiling" >&2;}
+   { (exit 1); exit 1; }; }
+else
+  cat >conftest.$ac_ext <<_ACEOF
+#line $LINENO "configure"
 #include "confdefs.h"
-#include "'${srcdir}'/h/machines.h"
+#include <stdio.h>
+#include "confdefs.h"
+#include "${srcdir}/h/machines.h"
+
+int
+main() {
+FILE *f=fopen("conftestval", "w");
+if (f == NULL)
+  exit(1);
+
 #ifdef CFLAGS
-configure___CFLAGS=CFLAGS
+fprintf(f,"CFLAGS='%s';\n", CFLAGS);
 #endif
 
 #ifdef LSPCFLAGS
-configure___LSPCFLAGS=LSPCFLAGS
+fprintf(f,"LSPCFLAGS='%s';\n", LSPCFLAGS);
 #endif
 
 #ifdef CLIBS
-configure___CLIBS=CLIBS
+fprintf(f,"CLIBS='%s';\n", CLIBS);
 #endif
 
 #ifdef LDFLAGS
-configure___LDFLAGS=LDFLAGS
+fprintf(f,"LDFLAGS='%s';\n", LDFLAGS);
 #endif
 
 #ifdef SHARED_LDFLAGS
-configure___SHARED_LDFLAGS=SHARED_LDFLAGS
+fprintf(f,"SHARED_LDFLAGS='%s';\n", SHARED_LDFLAGS);
 #endif
 
-configure___ecl_setjmp=ecl_setjmp
-configure___ecl_longjmp=ecl_longjmp
+fprintf(f,"SETJMP='%s';\n", ecl_setjmp);
+fprintf(f,"ecl_setjmp='%s';\n", ecl_setjmp);
+fprintf(f,"ecl_longjmp='%s';\n", ecl_longjmp);
+fprintf(f,"architecture='\"%s\"';\n", ARCHITECTURE);
+fprintf(f,"software_type='\"%s\"';\n", SOFTWARE_TYPE);
+fprintf(f,"software_version='\"%s\"';\n", SOFTWARE_VERSION);
+exit(0);
+}
 
-configure___architecture=ARCHITECTURE
-configure___software_type=SOFTWARE_TYPE
-configure___software_version=SOFTWARE_VERSION
-' > ${tempcname}
-
-# The value of CPP is a quoted variable reference, so we need to do this
-# to get its actual value...
-CPP=`eval "echo $CPP"`
-eval `${CPP} -D${host} ${tempcname} \
-       | grep 'configure___' \
-       | sed -e 's/^configure___\([^=]*\)=[ ]*\(.*[^ ]\) */\1="$\1 \2"/'`
-rm ${tempcname}
-
+_ACEOF
+rm -f conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  eval "`cat conftestval`"
 echo "$as_me:$LINENO: checking for ld flags when building shared libraries" >&5
 echo $ECHO_N "checking for ld flags when building shared libraries... $ECHO_C" >&6
 if test "${shared}" = "yes" -a "${SHARED_LDFLAGS}" ; then
@@ -3844,6 +3858,17 @@ echo "$as_me:$LINENO: checking use longjmp or _longjmp" >&5
 echo $ECHO_N "checking use longjmp or _longjmp... $ECHO_C" >&6
 echo "$as_me:$LINENO: result: ${ecl_longjmp}" >&5
 echo "${ECHO_T}${ecl_longjmp}" >&6
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+cat conftest.$ac_ext >&5
+( exit $ac_status )
+{ { echo "$as_me:$LINENO: error: \"Unable to parse machines.h\"" >&5
+echo "$as_me: error: \"Unable to parse machines.h\"" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+rm -f core core.* *.core conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
 
 
 if test "x$prefix" = "xNONE"; then prefix=${ac_default_prefix}; fi
@@ -6344,7 +6369,7 @@ esac
 # Don't blindly perform a `cd "$ac_dir"/$ac_foo && pwd` since $ac_foo can be
 # absolute.
 ac_abs_builddir=`cd "$ac_dir" && cd $ac_builddir && pwd`
-ac_abs_top_builddir=`cd "$ac_dir" && cd ${ac_top_builddir}. && pwd`
+ac_abs_top_builddir=`cd "$ac_dir" && cd $ac_top_builddir && pwd`
 ac_abs_srcdir=`cd "$ac_dir" && cd $ac_srcdir && pwd`
 ac_abs_top_srcdir=`cd "$ac_dir" && cd $ac_top_srcdir && pwd`
 

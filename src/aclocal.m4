@@ -71,50 +71,47 @@ dnl Extract some information from the machine description file.
 dnl WARNING: file confdefs.h may depend on version of Autoconf
 dnl
 AC_DEFUN(ECL_PROCESS_MACHINES_H,[
-[
-echo "Extracting parameters from the machine description file"
-
-tempcname="conftest.c"
-
-echo '
+AC_MSG_CHECKING(parameters from the machine description file)
+AC_TRY_RUN([#include <stdio.h>
 #include "confdefs.h"
-#include "'${srcdir}'/h/machines.h"
+#include "${srcdir}/h/machines.h"
+
+int
+main() {
+FILE *f=fopen("conftestval", "w");
+if (f == NULL)
+  exit(1);
+
 #ifdef CFLAGS
-configure___CFLAGS=CFLAGS
+fprintf(f,"CFLAGS='%s';\n", CFLAGS);
 #endif
 
 #ifdef LSPCFLAGS
-configure___LSPCFLAGS=LSPCFLAGS
+fprintf(f,"LSPCFLAGS='%s';\n", LSPCFLAGS);
 #endif
 
 #ifdef CLIBS
-configure___CLIBS=CLIBS
+fprintf(f,"CLIBS='%s';\n", CLIBS);
 #endif
 
 #ifdef LDFLAGS
-configure___LDFLAGS=LDFLAGS
+fprintf(f,"LDFLAGS='%s';\n", LDFLAGS);
 #endif
 
 #ifdef SHARED_LDFLAGS
-configure___SHARED_LDFLAGS=SHARED_LDFLAGS
+fprintf(f,"SHARED_LDFLAGS='%s';\n", SHARED_LDFLAGS);
 #endif
 
-configure___ecl_setjmp=ecl_setjmp
-configure___ecl_longjmp=ecl_longjmp
-
-configure___architecture=ARCHITECTURE
-configure___software_type=SOFTWARE_TYPE
-configure___software_version=SOFTWARE_VERSION
-' > ${tempcname}
-
-# The value of CPP is a quoted variable reference, so we need to do this
-# to get its actual value...
-CPP=`eval "echo $CPP"`
-eval `${CPP} -D${host} ${tempcname} \
-       | grep 'configure___' \
-       | sed -e 's/^configure___\([^=]*\)=[ ]*\(.*[^ ]\) */\1="$\1 \2"/'`
-rm ${tempcname}
-]
+fprintf(f,"SETJMP='%s';\n", ecl_setjmp);
+fprintf(f,"ecl_setjmp='%s';\n", ecl_setjmp);
+fprintf(f,"ecl_longjmp='%s';\n", ecl_longjmp);
+fprintf(f,"architecture='\"%s\"';\n", ARCHITECTURE);
+fprintf(f,"software_type='\"%s\"';\n", SOFTWARE_TYPE);
+fprintf(f,"software_version='\"%s\"';\n", SOFTWARE_VERSION);
+exit(0);
+}
+],
+eval "`cat conftestval`"
 AC_MSG_CHECKING(for ld flags when building shared libraries)
 if test "${shared}" = "yes" -a "${SHARED_LDFLAGS}" ; then
 AC_MSG_RESULT([${SHARED_LDFLAGS}])
@@ -133,7 +130,8 @@ AC_MSG_RESULT([${software_version}])
 AC_MSG_CHECKING(use setjmp or _setjmp)
 AC_MSG_RESULT([${ecl_setjmp}])
 AC_MSG_CHECKING(use longjmp or _longjmp)
-AC_MSG_RESULT([${ecl_longjmp}])
+AC_MSG_RESULT([${ecl_longjmp}]),
+AC_MSG_ERROR("Unable to parse machines.h"))
 ])
 dnl
 dnl --------------------------------------------------------------
