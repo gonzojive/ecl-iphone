@@ -288,7 +288,7 @@
 "lsp/seq.lsp"
 "lsp/seqlib.lsp"
 "lsp/setf.lsp"
-"lsp/thread.lsp"
+"lsp/mp.lsp"
 "lsp/top.lsp"
 "lsp/trace.lsp"
 "lsp/util.lsp"
