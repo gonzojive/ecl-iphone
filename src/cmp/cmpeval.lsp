@@ -111,7 +111,7 @@
 
 (defun c1call-global (fname args)
   (let* ((forms (c1args* args))
-	 (return-type (or (get-return-type fname) 'T)))
+	 (return-type (or (get-return-type fname) '(VALUES &REST T))))
     (let ((arg-types (get-arg-types fname)))
       ;; Add type information to the arguments.
       (when arg-types
@@ -240,7 +240,7 @@
 	    (name (cadadr args)))       ; remove QUOTE.
 	;; Beppe. Type check added:
 	(let* ((slot-type (get-slot-type name (third args)))
-	       (new-type (type-and slot-type (c1form-type y))))
+	       (new-type (type-and slot-type (c1form-primary-type y))))
 	  (if (null new-type)
 	      (cmpwarn "The type of the form ~s is not ~s."
 		       (fourth args) slot-type)
@@ -248,8 +248,8 @@
 		(when (eq 'VAR (c1form-name y))
 		  ;; it's a variable, propagate type
 		  (setf (var-type (c1form-arg 0 y)) new-type))
-		(setf (c1form-type y) new-type))))
-	(make-c1form* 'SYS:STRUCTURE-SET :type (c1form-type y)
+		(setf (c1form-primary-type y) new-type))))
+	(make-c1form* 'SYS:STRUCTURE-SET :type (c1form-primary-type y)
 		      :args x (add-symbol name) (third args) y))
       (c1call-global 'SYS:STRUCTURE-SET args)))
 

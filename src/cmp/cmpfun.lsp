@@ -296,8 +296,8 @@
 	  (and (constantp op-code)
 	       (sys:fixnump (setq op-code (eval op-code)))
 	       (setq c1args (c1args* (rest args)))
-	       (eq 'FIXNUM (c1form-type (first c1args)))
-	       (eq 'FIXNUM (c1form-type (second c1args)))
+	       (eq 'FIXNUM (c1form-primary-type (first c1args)))
+	       (eq 'FIXNUM (c1form-primary-type (second c1args)))
 	       (make-c1form* 'C-INLINE :type 'fixnum :args
 			     c1args '(fixnum fixnum) 'fixnum
 			     (boole-inline-string op-code)
@@ -360,7 +360,7 @@
 ;; Return the most particular type we can EASILY obtain from x.  
 (defun result-type (x)
   (cond ((symbolp x)
-	 (c1form-type (c1expr x)))
+	 (c1form-primary-type (c1expr x)))
 	((constantp x)
 	 (type-filter (type-of x)))
 	((and (consp x) (eq (car x) 'the))

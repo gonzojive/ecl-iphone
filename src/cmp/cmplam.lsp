@@ -126,6 +126,25 @@
 				allow-other-keys)
 		    doc body))))
 
+(defun lambda-form-allowed-nargs (lambda)
+  (let ((minarg 0)
+	(maxarg call-arguments-limit))
+    (destructuring-bind (requireds optionals rest key-flag keywords a-o-k)
+	(c1form-arg 0 lambda)
+      (when (and (null rest) (not key-flag) (not a-o-k))
+	(setf minarg (length requireds)
+	      maxarg (+ minarg (/ (length optionals) 3)))))
+    (values minarg maxarg)))
+
+(defun set-fun-lambda (fun lambda)
+  (setf (fun-lambda fun) lambda)
+  (multiple-value-bind (minarg maxarg)
+      (lambda-form-allowed-nargs lambda)
+    (when (fun-closure fun)
+      (setf minarg 0 maxarg call-arguments-limit))
+    (setf (fun-minarg fun) minarg
+	  (fun-maxarg fun) maxarg)))
+
 #| Steps:
  1. defun creates declarations for requireds + va_alist
  2. c2lambda-expr adds declarations for:
@@ -140,7 +159,7 @@
 |#
 
 (defun c2lambda-expr
-    (lambda-list body cfun fname &optional closure-p local-entry-p
+    (lambda-list body cfun fname use-narg &optional closure-p local-entry-p
 		 &aux (requireds (first lambda-list))
 		 (optionals (second lambda-list))
 		 (rest (third lambda-list)) rest-loc
@@ -177,14 +196,13 @@
   ;; check arguments
   (unless (or local-entry-p (not (compiler-check-args)))
     (setq block-p t)
-    (cond (varargs
-	   (when requireds
-	     (wt-nl "if(narg<" nreq ") FEwrong_num_arguments_anonym();"))
-	   (unless (or rest keywords allow-other-keys)
-	     (wt-nl "if(narg>" (+ nreq nopt)
-		    ") FEwrong_num_arguments_anonym();")))
-	  (t
-	   (wt-nl "check_arg(" nreq ");")))
+    (if (and use-narg (not varargs))
+	(wt-nl "if(narg!=" nreq ") FEwrong_num_arguments_anonym();")
+	(when varargs
+	  (when requireds
+	    (wt-nl "if(narg<" nreq ") FEwrong_num_arguments_anonym();"))
+	  (unless (or rest keywords allow-other-keys)
+	    (wt-nl "if(narg>" (+ nreq nopt) ") FEwrong_num_arguments_anonym();"))))
     (wt-nl "{"))
 
   ;; For each variable, set its var-loc.

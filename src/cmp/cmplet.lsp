@@ -41,7 +41,7 @@
 					   "In LET bindings"))))
 	       ;; :read-only variable handling. Beppe
 ;	       (when (read-only-variable-p vname ts)
-;		     (setf (var-type v) (c1form-type form)))
+;		     (setf (var-type v) (c1form-primary-type form)))
 	       (push vname vnames)
 	       (push v vars)
 	       (push form forms)))))
@@ -71,7 +71,7 @@
     (let* ((var (first vars))
 	   (form (and-form-type (var-type var) (first forms) (var-name var)
 				:unsafe "In LET body"))
-	   (form-type (c1form-type form)))
+	   (form-type (c1form-primary-type form)))
       (declare (type var var))
       ;; Automatic treatement for READ-ONLY variables:
       (unless (var-changed-in-forms var (list body))
@@ -266,7 +266,7 @@
 					     "In LET* bindings"))))
 	       ;; :read-only variable handling.
 ;	       (when (read-only-variable-p (car x) ts)
-;		     (setf (var-type v) (c1form-type form)))
+;		     (setf (var-type v) (c1form-primary-type form)))
 	       (push (car x) vnames)
 	       (push form forms)
 	       (push v vars)
@@ -290,7 +290,7 @@
     (let* ((var (first vs))
 	   (form (and-form-type (var-type var) (car fs) (cadar args)
 				:unsafe "~&;;; In LET* body"))
-	   (form-type (c1form-type form))
+	   (form-type (c1form-primary-type form))
 	   (rest-forms (cons body (rest fs))))
       ;; Automatic treatement for READ-ONLY variables:
       (unless (var-changed-in-forms var rest-forms)
@@ -335,7 +335,7 @@
 	)
       #+nil
       ;; Force unboxing
-      (when (member-type (c1form-type form)
+      (when (member-type (c1form-primary-type form)
 			 '(FIXNUM CHARACTER LONG-FLOAT SHORT-FLOAT))
 	(incf (var-ref var)))
       (check-vref var)

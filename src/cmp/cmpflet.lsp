@@ -44,14 +44,14 @@
     (let ((fun (car def)) CB/LB)
       (when (plusp (fun-ref fun))
 	(setf local-funs (cons fun local-funs)
-	      CB/LB (if (fun-ref-ccb fun) 'CB 'LB)
-	      (fun-lambda fun)
-	      (let ((*funs* (cons CB/LB *funs*))
-		    (*vars* (cons CB/LB *vars*))
-		    (*blocks* (cons CB/LB *blocks*))
-		    (*tags* (cons CB/LB *tags*)))
-		(c1lambda-expr (second def)
-			       (si::function-block-name (fun-name fun)))))
+	      CB/LB (if (fun-ref-ccb fun) 'CB 'LB))
+	(let ((*funs* (cons CB/LB *funs*))
+	      (*vars* (cons CB/LB *vars*))
+	      (*blocks* (cons CB/LB *blocks*))
+	      (*tags* (cons CB/LB *tags*)))
+	  (set-fun-lambda
+	   fun (c1lambda-expr (second def)
+			      (si::function-block-name (fun-name fun)))))
 	(setf (fun-cfun fun) (next-cfun "LC~D")))))
 
   ;; cant do in previous loop since closed var may be in later function
@@ -176,7 +176,7 @@
               (*funs* (cons 'LB *funs*))
               (*blocks* (cons 'LB *blocks*))
               (*tags* (cons 'LB *tags*)))
-	  (setf (fun-lambda fun)
+	  (set-fun-lambda fun
 		(c1lambda-expr (third def)
 				    (si::function-block-name (fun-name fun))))
 	  (push fun local-funs))
@@ -199,7 +199,7 @@
 	      (*funs* (cons 'CB *funs*))
 	      (*blocks* (cons 'CB *blocks*))
 	      (*tags* (cons 'CB *tags*)))
-	  (setf (fun-lambda fun)
+	  (set-fun-lambda fun
 		(c1lambda-expr (third def)
 				    (si::function-block-name (fun-name fun))))
 	  (push fun local-funs))

@@ -279,7 +279,7 @@
     (return-from c1setq1 (c1expr `(setf ,name ,form))))
   (let* ((name1 (c1vref name))
 	 (form1 (c1expr form))
-	 (type (type-and (var-type name1) (c1form-type form1))))
+	 (type (type-and (var-type name1) (c1form-primary-type form1))))
     (unless type
       (cmpwarn "Type mismatch between ~s and ~s." name form)
       (setq type T))
@@ -360,7 +360,7 @@
 		     :args (reverse vrefs) (nreverse forms)))
       (let* ((vref (c1vref (first l)))
              (form (c1expr (second l)))
-             (type (type-and (var-type vref) (c1form-type form))))
+             (type (type-and (var-type vref) (c1form-primary-type form))))
 	(unless type
 	  (cmpwarn "Type mismatch between ~s and ~s." name form)
 	  (setq type T))

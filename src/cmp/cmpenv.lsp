@@ -147,6 +147,18 @@
       (caddr x)
       nil))
 
+(defun get-proclaimed-narg (fun)
+  (multiple-value-bind (x found)
+      (get-sysprop fun 'PROCLAIMED-ARG-TYPES)
+    (if found
+      (let ((minarg (length x)))
+	(if (eq (last x) '*)
+	  (setf minarg (1- minarg)
+		maxarg call-arguments-limit)
+	  (setf maxarg minarg))
+	(values minarg maxarg))
+      (values 0 call-arguments-limit))))
+
 ;;; Proclamation and declaration handling.
 
 (defun inline-possible (fname)

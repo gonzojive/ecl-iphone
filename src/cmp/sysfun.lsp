@@ -50,7 +50,7 @@
 			 arg-types)))
   (when (and return-type (not (eq 'T return-type)))
     (put-sysprop fname 'return-type
-		 (if (eql return-type '*) '* (type-filter return-type))))
+		 (if (eql return-type '*) '* (type-filter return-type t))))
   (when never-change-special-var-p (put-sysprop fname 'no-sp-change t))
   (when predicate (put-sysprop fname 'predicate t))
   (rem-sysprop fname ':inline-always)

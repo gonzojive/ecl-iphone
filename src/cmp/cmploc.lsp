@@ -161,6 +161,9 @@
       (C-INLINE t) ; We do not know, so guess yes
       (otherwise nil))))
 
+(defun values-loc (n)
+  (list 'VALUE n))
+
 ;;; -----------------------------------------------------------------
 
 (put-sysprop 'TEMP 'WT-LOC #'wt-temp)

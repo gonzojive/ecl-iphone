@@ -104,12 +104,12 @@
 		   (unw (setf type 'UNWIND-PROTECT)
 			(incf (var-ref var))))
 	     (incf (blk-ref blk))
-	     (setf (blk-type blk) (type-or (blk-type blk) (c1form-type val)))
+	     (setf (blk-type blk) (type-or (blk-type blk) (c1form-primary-type val)))
              (return (make-c1form* 'RETURN-FROM
 				   :local-referred (list var)
 				   ;;:referred-tags (list blk)
 				   :referred-vars (list var)
-				   :type (and (c1form-type val) 'T)
+				   :type 'T
 				   :args blk type val))))))))
 
 (defun c2return-from (blk type val)

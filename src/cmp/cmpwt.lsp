@@ -20,6 +20,9 @@
 ;;; rest of it. This way it is possible to save some space by writing the
 ;;; symbol's package only when it does not belong to the current package.
 
+(defun wt-label (label)
+  (when (cdr label) (wt-nl1 "L" (car label) ":;")))
+
 (defun wt-comment (message &optional extra)
   (if extra
     ;; Message is a prefix string for EXTRA. All fits in a single line.

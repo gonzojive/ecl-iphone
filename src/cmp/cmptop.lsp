@@ -20,13 +20,18 @@
 	(*special-binding* nil))
     (push (t1expr* form) *top-level-forms*)))
 
+(defvar *toplevel-forms-to-print*
+  '(defun defmacro defvar defparameter defclass defmethod defgeneric))
+
 (defun t1expr* (form &aux (*current-form* form) (*first-error* t)
 		    (*setjmps* 0))
   ;(let ((*print-level* 3)) (print form))
   (catch *cmperr-tag*
     (when (consp form)
       (let ((fun (car form)) (args (cdr form)) fd)
-	(when *compile-print* (print-current-form))
+	(when (and *compile-print*
+		   (member fun *toplevel-forms-to-print*))
+	  (print-current-form))
 	(cond
             ((symbolp fun)
              (cond ((setq fd (get-sysprop fun 'T1))
@@ -245,16 +250,31 @@
 (defun new-defun (fname lambda-expr &optional no-entry)
   (multiple-value-bind (cfun exported)
       (exported-fname fname)
-    (unless exported
-      (dolist (f *global-funs*)
-	(when (similar lambda-expr (fun-lambda f))
-	  (cmpnote "Sharing code among functions ~A and ~A" fname (fun-name f))
-	  (setf cfun (fun-cfun f) lambda-expr nil)
-	  (return))))
-    (let ((fun (make-fun :name fname :cfun cfun :global t :exported exported
-			 :lambda lambda-expr)))
-      (push fun *global-funs*)
-      (make-c1form* 'DEFUN :args fun no-entry))))
+    (multiple-value-bind (minarg maxarg)
+	(lambda-form-allowed-nargs lambda-expr)
+      (if exported
+	  ;; Check whether the function was proclaimed to have a certain
+	  ;; number of arguments, and otherwise produce a function with
+	  ;; a flexible signature.
+	  (progn
+	    (multiple-value-setq (minarg maxarg) (get-proclaimed-narg fname))
+	    (unless minarg
+	      (setf minarg 0 maxarg call-arguments-limit)))
+	  ;; Check whether this function is similar to a previous one and
+	  ;; share code with it.
+	  (dolist (f *global-funs*)
+	    (when (similar lambda-expr (fun-lambda f))
+	      (cmpnote "Sharing code among functions ~A and ~A" fname (fun-name f))
+	      (setf cfun (fun-cfun f)
+		    lambda-expr nil
+		    minarg (fun-minarg f)
+		    maxarg (fun-maxarg f))
+	      (return))))
+      (let ((fun (make-fun :name fname :cfun cfun :global t :exported exported
+			   :minarg minarg :maxarg maxarg
+			   :lambda lambda-expr)))
+	(push fun *global-funs*)
+	(make-c1form* 'DEFUN :args fun no-entry)))))
 
 (defun similar (x y)
   (or (equal x y)
@@ -277,9 +297,12 @@
   (unless no-entry
     (let* ((fname (fun-name fun))
 	   (vv (add-object fname))
-	   (cfun (fun-cfun fun)))
-      (if (numberp cfun)
-	(wt-nl "cl_def_c_function_va(" vv ",(cl_objectfn)L" cfun ");")
+	   (cfun (fun-cfun fun))
+	   (minarg (fun-minarg fun))
+	   (maxarg (fun-maxarg fun))
+	   (narg (if (= minarg maxarg) maxarg nil)))
+      (if narg
+	(wt-nl "cl_def_c_function(" vv ",(cl_objectfn)" cfun "," narg ");")
 	(wt-nl "cl_def_c_function_va(" vv ",(cl_objectfn)" cfun ");")))))
 
 (defun wt-function-prolog (&optional sp local-entry)
@@ -509,14 +532,14 @@
 			      (lambda-expr (fun-lambda fun))
 			      (level (fun-level fun))
 			      (cfun (fun-cfun fun))
+		    	      (minarg (fun-minarg fun))
+		    	      (maxarg (fun-maxarg fun))
+		    	      (narg (if (= minarg maxarg) nil t))
 			      (nenvs level)
 			      (*volatile* (c1form-volatile* lambda-expr))
 			      (*tail-recursion-info* fun)
                               (lambda-list (c1form-arg 0 lambda-expr))
-                              (requireds (car lambda-list))
-                              (va_args (or (second lambda-list)
-                                           (third lambda-list)
-                                           (fourth lambda-list))))
+                              (requireds (car lambda-list)))
   (declare (fixnum level nenvs))
   (when *compile-print* (print-emitting fun))
   (wt-comment (cond ((fun-global fun) "function definition for ")
@@ -529,24 +552,30 @@
 	(t
 	 (wt-h "static cl_object " cfun "(")
 	 (wt-nl1 "static cl_object " cfun "(")))
-  (wt-h1 "cl_narg")
-  (wt "cl_narg narg")
-  (dotimes (n level)
-    (wt-h1 ",cl_object *")
-    (wt ",cl_object *lex" n))
-  (when closure-p
-    (wt-h1 ", cl_object")
-    (wt ", cl_object env0"))
-  (let ((lcl 0))
-    (declare (fixnum lcl))
-    (dolist (var requireds)
-      (wt-h1 ", cl_object ")
-      (wt ", cl_object ") (wt-lcl (incf lcl))))
-  (when va_args
-    (wt-h1 ", ...")
-    (wt ", ..."))
-  (wt-h1 ");")
-  (wt ")")
+  (let ((comma ""))
+    (when narg
+      (wt-h1 "cl_narg")
+      (wt "cl_narg narg")
+      (setf comma ", "))
+    (dotimes (n level)
+      (wt-h1 comma) (wt-h1 "cl_object *")
+      (wt comma "cl_object *lex" n)
+      (setf comma ", "))
+    (when closure-p
+      (wt-h1 comma) (wt-h1 "cl_object ")
+      (wt comma "cl_object env0")
+      (setf comma ", "))
+    (let ((lcl 0))
+      (declare (fixnum lcl))
+      (dolist (var requireds)
+	(wt-h1 comma) (wt-h1 "cl_object ")
+	(wt comma "cl_object ") (wt-lcl (incf lcl))
+	(setf comma ", ")))
+    (when narg
+      (wt-h1 ", ...")
+      (wt ", ..."))
+    (wt-h1 ");")
+    (wt ")"))
 
   (let* ((*lcl* 0) (*temp* 0) (*max-temp* 0)
 	 (*lex* 0) (*max-lex* 0)
@@ -588,6 +617,7 @@
     (c2lambda-expr (c1form-arg 0 lambda-expr)
 		   (c1form-arg 2 lambda-expr)
 		   (fun-cfun fun) (fun-name fun)
+		   narg
 		   (fun-closure fun))
     (wt-nl1 "}")
     (wt-function-epilogue closure-p))	; we should declare in CLSR only those used
@@ -629,13 +659,20 @@
 (defun c2fset (fname funob fun macro pprint)
   (let* ((*inline-blocks* 0)
 	 (fname (first (coerce-locs (inline-args (list fname)))))
-	 (cfun (fun-cfun fun)))
+	 (cfun (fun-cfun fun))
+	 (minarg (fun-minarg fun))
+	 (maxarg (fun-maxarg fun))
+	 (narg (if (= minarg maxarg) maxarg nil)))
     ;; FIXME! Look at c2function!
     (new-local 0 fun funob)
     (if macro
-	(wt-nl "cl_def_c_macro(" fname "," cfun ",-1);")
-	(wt-nl "cl_def_c_function_va(" fname "," cfun ");"))
-    (close-inline-blocks)))  
+	(if narg
+	    (wt-nl "cl_def_c_macro(" fname "," cfun "," narg ");")
+	    (wt-nl "cl_def_c_macro(" fname "," cfun ",-1);"))
+	(if narg
+	    (wt-nl "cl_def_c_function(" fname "," cfun "," narg ");")
+	    (wt-nl "cl_def_c_function_va(" fname "," cfun ");")))
+    (close-inline-blocks)))
 
 ;;; ----------------------------------------------------------------------
 

@@ -107,21 +107,21 @@
       (setq form (car forms))
       (case (c1form-name form)
 	(LOCATION
-	 (push (list (c1form-type form) (c1form-arg 0 form)) locs))
+	 (push (list (c1form-primary-type form) (c1form-arg 0 form)) locs))
 	(VAR
 	 (let ((var (c1form-arg 0 form)))
 	   (if (var-changed-in-forms var (cdr forms))
 	       (let* ((var-rep-type (var-rep-type var))
 		      (lcl (make-lcl-var :rep-type var-rep-type :type (var-type var))))
 		 (wt-nl "{" (rep-type-name var-rep-type) " " lcl "= " var ";")
-		 (push (list (c1form-type form) lcl) locs)
+		 (push (list (c1form-primary-type form) lcl) locs)
 		 (incf *inline-blocks*))
-	       (push (list (c1form-type form) var) locs))))
+	       (push (list (c1form-primary-type form) var) locs))))
 
 	(CALL-GLOBAL
 	 (let* ((fname (c1form-arg 0 form))
 		(args (c1form-arg 1 form))
-		(return-type (c1form-type form))
+		(return-type (c1form-primary-type form))
 		(arg-locs (inline-args args))
 		(loc (inline-function fname arg-locs return-type)))
 	   (if loc
@@ -166,7 +166,7 @@
 		  locs)))))
 
 	(SYS:STRUCTURE-REF
-	 (let ((type (c1form-type form)))
+	 (let ((type (c1form-primary-type form)))
 	   (if (args-cause-side-effect (cdr forms))
 	       (let* ((temp (make-temp-var))
 		      (*destination* temp))
@@ -181,7 +181,7 @@
 		     locs))))
 	#+clos
 	(SYS:INSTANCE-REF
-	 (let ((type (c1form-type form)))
+	 (let ((type (c1form-primary-type form)))
 	   (if (args-cause-side-effect (cdr forms))
 	       (let* ((temp (make-temp-var))
 		      (*destination* temp))
@@ -199,7 +199,7 @@
 	       (form1 (c1form-arg 1 form)))
 	   (let ((*destination* vref)) (c2expr* form1))
 	   (if (eq (c1form-name form1) 'LOCATION)
-	       (push (list (c1form-type form1) (c1form-arg 0 form1)) locs)
+	       (push (list (c1form-primary-type form1) (c1form-arg 0 form1)) locs)
 	       (setq forms (list* nil	; discarded at iteration
 				  (make-c1form 'VAR form vref)
 				  (cdr forms))
@@ -207,7 +207,7 @@
 
 	(t (let ((temp (make-temp-var)))
 	     (let ((*destination* temp)) (c2expr* form))
-	     (push (list (c1form-type form) temp) locs))))))
+	     (push (list (c1form-primary-type form) temp) locs))))))
   )
 
 (defun destination-type ()
@@ -326,8 +326,8 @@
 	   (when (or (not (inline-possible fname))
 		     (null (setq ii (get-inline-info
 				     fname
-				     (mapcar #'c1form-type args)
-				     (c1form-type form))))
+				     (mapcar #'c1form-primary-type args)
+				     (c1form-primary-type form))))
 		     (third ii)
 		     (fourth ii)
 		     (need-to-protect args))
@@ -353,8 +353,8 @@
        (not (and (inline-possible fname)
 		 (notany #'form-causes-side-effect args)
 		 (setq ii (get-inline-info
-			   fname (mapcar #'c1form-type args)
-			   (c1form-type form)))
+			   fname (mapcar #'c1form-primary-type args)
+			   (c1form-primary-type form)))
 		 (not (third ii))	; no side-effectp
 		 ))))
     (t t)))

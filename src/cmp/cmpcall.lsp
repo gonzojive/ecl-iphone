@@ -115,7 +115,7 @@
   (unless (eq 'ARGS-PUSHED args)
     (case fname
       (AREF
-       (let (etype (elttype (c1form-type (car args))))
+       (let (etype (elttype (c1form-primary-type (car args))))
 	 (when (or (and (eq elttype 'STRING)
 			(setq elttype 'CHARACTER))
 		   (and (consp elttype)
@@ -129,8 +129,8 @@
 	   (setf return-type etype))))
       (SYS:ASET				; (sys:aset value array i0 ... in)
        (let (etype
-	     (valtype (c1form-type (first args)))
-	     (elttype (c1form-type (second args))))
+	     (valtype (c1form-primary-type (first args)))
+	     (elttype (c1form-primary-type (second args))))
 	 (when (or (and (eq elttype 'STRING)
 			(setq elttype 'CHARACTER))
 		   (and (consp elttype)
@@ -163,28 +163,8 @@
 ;;;   ARGS: 'ARGS-PUSHED or a list of typed locs with arguments
 ;;;   RETURN-TYPE: the type to which the output is coerced
 ;;;
-(defun call-global (fname loc narg args return-type &aux found fd maxarg)
-  (labels ((call-loc (fname loc narg args)
-	     (if (eq args 'ARGS-PUSHED)
-		 `(CALL-ARGS-PUSHED ,loc ,narg)
-		 `(CALL-NORMAL ,loc ,(coerce-locs args))))
-	   (emit-linking-call (fname narg args &aux i)
-	     (cond ((null *linking-calls*)
-		    (cmpwarn "Emitting linking call for ~a" fname)
-		    (push (list fname 0 (add-symbol fname))
-			  *linking-calls*)
-		    (setq i 0))
-		   ((setq i (assoc fname *linking-calls*))
-		    (setq i (second i)))
-		   (t (setq i (1+ (cadar *linking-calls*)))
-		      (cmpwarn "Emitting linking call for ~a" fname)
-		      (push (list fname i (add-symbol fname))
-			    *linking-calls*)))
-	     (let ((fun (make-fun :name fname :global t :lambda 'NIL
-				  :cfun (format nil "(*LK~d)" i)
-				  :minarg 0 :maxarg call-arguments-limit)))
-	       (unwind-exit (call-loc fname fun narg args)))))
-    (cond
+(defun call-global (fname loc narg args return-type &aux found fd minarg maxarg)
+   (cond
      ;; Check whether it is a global function that we cannot call directly.
      ((and (or (null loc) (fun-global loc)) (not (inline-possible fname)))
       (if *compile-to-linking-call*
@@ -212,29 +192,64 @@
      ;; Call to a function whose C language function name is known,
      ;; either because it has been proclaimed so, or because it belongs
      ;; to the runtime.
-     ((or (setq maxarg -1 fd (get-sysprop fname 'Lfun))
-	  (multiple-value-setq (found fd maxarg) (si::mangle-name fname t)))
-      (multiple-value-bind (val found)
-	  (gethash fd *compiler-declared-globals*)
-	;; We only write declarations for functions which are not
-	;; in lisp_external.h
-	(when (and (not found) (not (si::mangle-name fname t)))
-	  (wt-h "#ifdef __cplusplus")
-	  (wt-h "extern cl_object " fd "(...);")
-	  (wt-h "#else")
-	  (wt-h "extern cl_object " fd "();")
-	  (wt-h "#endif")
-	  (setf (gethash fd *compiler-declared-globals*) 1)))
-      (let ((fun (make-fun :name fname :global t :cfun fd :lambda 'NIL
-			   :minarg (if (minusp maxarg) 0 maxarg)
-			   :maxarg (if (minusp maxarg) call-arguments-limit maxarg))))
-	(unwind-exit (call-loc fname fun narg args))))
+     ((and (setf fd (get-sysprop fname 'Lfun))
+	   (multiple-value-setq (minarg maxarg) (get-proclaimed-narg fname)))
+      (call-exported-function fname narg args fd minarg maxarg nil))
+
+     ((multiple-value-setq (found fd minarg maxarg) (si::mangle-name fname t))
+      (call-exported-function fname narg args fd minarg maxarg t))
 
      ;; Linking calls can only be made to symbols
      (*compile-to-linking-call*
       (emit-linking-call fname narg args))
 
-     (t (c2call-unknown-global fname loc narg args)))))
+     (t (c2call-unknown-global fname loc narg args))))
+
+(defun call-loc (fname loc narg args)
+  (if (eq args 'ARGS-PUSHED)
+      `(CALL-ARGS-PUSHED ,loc ,narg)
+      `(CALL-NORMAL ,loc ,(coerce-locs args))))
+
+(defun emit-linking-call (fname narg args &aux i)
+  (cond ((null *linking-calls*)
+	 (cmpwarn "Emitting linking call for ~a" fname)
+	 (push (list fname 0 (add-symbol fname))
+	       *linking-calls*)
+	 (setq i 0))
+	((setq i (assoc fname *linking-calls*))
+	 (setq i (second i)))
+	(t (setq i (1+ (cadar *linking-calls*)))
+	   (cmpwarn "Emitting linking call for ~a" fname)
+	   (push (list fname i (add-symbol fname))
+		 *linking-calls*)))
+  (let ((fun (make-fun :name fname :global t :lambda 'NIL
+		       :cfun (format nil "(*LK~d)" i)
+		       :minarg 0 :maxarg call-arguments-limit)))
+    (unwind-exit (call-loc fname fun narg args))))
+
+(defun call-exported-function (fname narg args fun-c-name minarg maxarg in-core)
+  (unless in-core
+    ;; We only write declarations for functions which are not in lisp_external.h
+    (multiple-value-bind (val declared)
+	(gethash fun-c-name *compiler-declared-globals*)
+      (unless declared
+	(if (= maxarg minarg)
+	    (progn
+	      (wt-h1 "extern cl_object ") (wt-h1 fun-c-name) (wt-h1 "(")
+	      (dotimes (i maxarg)
+		(when (> i 0) (wt-h1 ","))
+		(wt-h1 "cl_object"))
+	      (wt-h1 ")"))
+	    (progn
+	      (wt-h "#ifdef __cplusplus")
+	      (wt-h "extern cl_object " fun-c-name "(...);")
+	      (wt-h "#else")
+	      (wt-h "extern cl_object " fun-c-name "();")
+	      (wt-h "#endif")))
+	(setf (gethash fun-c-name *compiler-declared-globals*) 1))))
+  (let ((fun (make-fun :name fname :global t :cfun fun-c-name :lambda 'NIL
+		       :minarg minarg :maxarg maxarg)))
+    (unwind-exit (call-loc fname fun narg args))))
 
 ;;; Functions that use MAYBE-SAVE-VALUE should rebind *temp*.
 (defun maybe-save-value (value &optional (other-forms nil other-forms-flag))

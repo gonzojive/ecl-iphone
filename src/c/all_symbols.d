@@ -76,7 +76,8 @@ mangle_name(cl_object output, char *source, int l)
 	cl_object output;
 	cl_object package;
 	cl_object found = Cnil;
-	cl_object maxarg = MAKE_FIXNUM(-1);
+	cl_object maxarg = MAKE_FIXNUM(CALL_ARGUMENTS_LIMIT);
+	cl_object minarg = MAKE_FIXNUM(0);
 	bool is_symbol;
 @
 	assert_type_symbol(symbol);
@@ -106,7 +107,10 @@ mangle_name(cl_object output, char *source, int l)
 				if (fun == SYM_FUN(s)) {
 					symbol = s;
 					found = Ct;
-					maxarg = MAKE_FIXNUM(fun->cfun.narg);
+					if (fun->cfun.narg >= 0) {
+					    minarg =
+					    maxarg = MAKE_FIXNUM(fun->cfun.narg);
+					}
 					break;
 				}
 			}
@@ -151,7 +155,7 @@ mangle_name(cl_object output, char *source, int l)
 	if (dest[-1] == '_')
 		dest[-1] = 'M';
 	*(dest++) = '\0';
-	@(return found output maxarg)
+	@(return found output minarg maxarg)
 @)
 
 static void

@@ -33,11 +33,13 @@
   (check-args-number 'THE args 2 2)
   (let* ((form (c1expr (second args)))
 	 (the-type (type-filter (first args)))
-	 (type (type-and the-type (c1form-type form))))
-    (unless type
-      (cmpwarn "Type mismatch was found in ~s." (cons 'THE args))
-      (setq type T))
-    (setf (c1form-type form) type)
+	 type)
+    (cond ((and (consp the-type) (eq (first the-type) 'VALUES))
+	   (cmpwarn "Ignoring THE form with type ~A" the-type))
+	  ((not (setf type (type-and the-type (c1form-primary-type form))))
+	   (cmpwarn "Type mismatch was found in ~s." (cons 'THE args)))
+	  (t
+	   (setf (c1form-type form) type)))
     form))
 
 (defun c1compiler-let (args &aux (symbols nil) (values nil))
@@ -90,6 +92,7 @@
 		  (fun (make-fun :name NIL
 				 :cfun (next-cfun "LC~D")
 				 :closure closure)))
+	     (set-fun-lambda fun funob)
 	     (if closure
 		 (make-c1form 'FUNCTION funob 'CLOSURE funob fun)
 		 (progn
@@ -110,6 +113,7 @@
 				 :description name
 				 :cfun (next-cfun "LC~D")
 				 :closure closure)))
+	     (set-fun-lambda fun funob)
 	     (if closure
 		 (make-c1form 'FUNCTION funob 'CLOSURE funob fun)
 		 (progn
@@ -145,12 +149,12 @@
           (if (fun-closure fun)
 	      (cmpnote "Sharing code for closure")
 	      (cmpnote "Sharing code for local function ~A" (fun-name fun)))
-	  (setf (fun-cfun fun) (fun-cfun previous)
-		(fun-lambda fun) (fun-lambda previous))
+	  (setf (fun-cfun fun) (fun-cfun previous))
+	  (set-fun-lambda fun (fun-lambda previous))
 	  previous)
         (progn
+	  (set-fun-lambda fun funob)
           (setf (fun-level fun) (if (fun-ref-ccb fun) 0 level)
-		(fun-lambda fun) funob
                 (fun-env fun) *env*
 		*local-funs* (cons fun *local-funs*))
 	  NIL))))
@@ -166,10 +170,15 @@
 
 (defun wt-make-closure (fun &aux (cfun (fun-cfun fun)))
   (declare (type fun fun))
-  (if (fun-closure fun)
-      (wt "cl_make_cclosure_va((cl_objectfn)" cfun ",env" *env-lvl*)
-      (wt "cl_make_cfun_va((cl_objectfn)" cfun ",Cnil")) ; empty environment
-  (wt ",Cblock)"))
+  (let* ((minarg (fun-minarg fun))
+	 (maxarg (fun-maxarg fun))
+	 (narg (if (= minarg maxarg) maxarg nil)))
+    (cond ((fun-closure fun)
+	   (wt "cl_make_cclosure_va((cl_objectfn)" cfun ",env" *env-lvl* ",Cblock)"))
+	  (narg ; empty environment fixed number of args
+	   (wt "cl_make_cfun((cl_objectfn)" cfun ",Cnil,Cblock," narg ")"))
+	  (t ; empty environment variable number of args
+	   (wt "cl_make_cfun_va((cl_objectfn)" cfun ",Cnil,Cblock)")))))
 
 
 ;;; ----------------------------------------------------------------------

@@ -1009,6 +1009,7 @@ extern bool logical_hostname_p(cl_object host);
 
 extern cl_object cl_identity(cl_object x);
 extern cl_object cl_null(cl_object x);
+#define cl_not cl_null
 extern cl_object cl_symbolp(cl_object x);
 extern cl_object cl_atom(cl_object x);
 extern cl_object cl_consp(cl_object x);

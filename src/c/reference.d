@@ -57,7 +57,7 @@ cl_fboundp(cl_object fname)
 			if (CONSP(sym)) {
 				sym = CAR(sym);
 				if (SYMBOLP(sym))
-					return si_get_sysprop(sym, @'si::setf-symbol');
+					@(return si_get_sysprop(sym, @'si::setf-symbol'))
 			}
 		}
 	}

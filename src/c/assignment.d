@@ -117,7 +117,12 @@ cl_object
 si_get_sysprop(cl_object sym, cl_object prop)
 {
 	cl_object plist = gethash_safe(sym, cl_core.system_properties, Cnil);
-	@(return ecl_getf(plist, prop, Cnil));
+	prop = ecl_getf(plist, prop, OBJNULL);
+	if (prop == OBJNULL) {
+		@(return Cnil Cnil);
+	} else {
+		@(return prop Ct);
+	}
 }
 
 cl_object

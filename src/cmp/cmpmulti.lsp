@@ -140,45 +140,89 @@
 	       (make-c1form 'MULTIPLE-VALUE-SETQ info (nreverse vrefs) value))
 	(setq var (c1vref var))
 	(push var vrefs)
+	#+nil
 	(unless (subtypep 'T (var-type var))
 	  (cmpwarn "Variable ~s appeared in a MULTIPLE-VALUE-SETQ and declared to have type ~S."
 		   (var-name var)
 		   (var-type var)))
 	(push var (info-changed-vars info))))))
 
-(defun multiple-value-check (vrefs form)
-  (and (rest vrefs)
-       (eq (c1form-name form) 'CALL-GLOBAL)
-       (let ((fname (c1form-arg 0 form)))
-         (when (and (symbolp fname)
-                    (get-sysprop fname 'PROCLAIMED-RETURN-TYPE))
-           (cmpwarn "~A was proclaimed to have only one return value. ~
-                     ~%;;; But you appear to want multiple values." fname)))))
+(defun c1form-values-number (form)
+  (let ((type (c1form-type form)))
+    (cond ((eq type 'T)
+	   (values 0 MULTIPLE-VALUES-LIMIT))
+	  ((or (atom type) (not (eq (first type) 'VALUES)))
+	   (values 1 1))
+	  ((or (member '&rest type) (member 'optional type))
+	   (values 0 MULTIPLE-VALUES-LIMIT))
+	  (t
+	   (let ((l (1- (length type))))
+	     (values l l))))))
 
-(defun c2multiple-value-setq (vrefs form)
-  (multiple-value-check vrefs form)
+(defun do-m-v-setq-fixed (nvalues vars form use-bind)
+  (if (= nvalues 1)
+      (let ((*destination* (first vars)))
+	(c2expr* form))
+      (let ((*destination* 'VALUES))
+	(c2expr* form)
+	(dotimes (i nvalues)
+	  (set-var (list 'VALUE i) (pop vars)))))
+  (dolist (v vars)
+    (if use-bind
+	(bind (c1form-arg 0 (default-init v)) v)
+	(set-var '(C-INLINE :object "Cnil" () t nil) v))))
+
+(defun do-m-v-setq-any (min-values max-values vars use-bind)
   (let* ((*lcl* *lcl*)
-         (nr (make-lcl-var :type :int)))
-    (let ((*destination* 'VALUES)) (c2expr* form))
-    (wt-nl "{int " nr "=NVALUES;")
-    (do ((vs vrefs (rest vs))
-         (i 0 (1+ i))
-         (vref))
-        ((endp vs))
-      (declare (fixnum i))
-      (setq vref (first vs))
-      (wt-nl "if (" nr ">0) {")
-      (set-var (list 'VALUE i) vref)
-      (unless (endp (rest vs)) (wt-nl nr "--;"))
-      (wt-nl "} else {")
-      ;; FIXME! M-V-S does not take care of the type of the variable
-      ;; and does not optimize the case in which we know the number
-      ;; of values which are output.
-      (set-var '(C-INLINE :object "Cnil" () t nil) vref)
-      (wt "}"))
-    (unless (eq *exit* 'RETURN) (wt-nl))
-    (wt-nl "if (NVALUES>1) NVALUES=1;}")
-    (unwind-exit (if vrefs (first vrefs) '(VALUE 0)))))
+         (nr (make-lcl-var :type :int))
+	 (output (first vars))
+	 (labels '()))
+    ;; We know that at least MIN-VALUES variables will get a value
+    (dotimes (i min-values)
+      (let ((v (pop vars))
+	    (loc (values-loc i)))
+	(if use-bind (bind loc v) (set-var loc v))))
+    ;; If there are more variables, we have to check whether there
+    ;; are enough values left in the stack.
+    (when vars
+      (wt-nl "{int " nr "=NVALUES-" min-values ";")
+      ;;
+      ;; Loop for assigning values to variables
+      ;;
+      (do ((vs vars (rest vs))
+	   (i min-values (1+ i)))
+	  ((or (endp vs) (= i max-values)))
+	(declare (fixnum i))
+	(let ((loc (values-loc i))
+	      (v (first vs))
+	      (label (next-label)))
+	  (wt-nl "if (" nr "--<=0) ") (wt-go label)
+	  (push label labels)
+	  (if use-bind (bind loc v) (set-var loc v))))
+      ;;
+      ;; Loop for setting default values when there are less output than vars.
+      ;;
+      (let ((label (next-label)))
+	(wt-nl) (wt-go label) (wt "}")
+	(push label labels)
+	(setq labels (nreverse labels))
+	(dolist (v vars)
+	  (when labels (wt-label (pop labels)))
+	  (if use-bind
+	      (bind '(C-INLINE :object "Cnil" () t nil) v)
+	      (set-var '(C-INLINE :object "Cnil" () t nil) v)))
+	(when labels (wt-label label))))
+    output))
+
+(defun c2multiple-value-setq (vars form)
+  (multiple-value-bind (min-values max-values)
+      (c1form-values-number form)
+    (print (list (c1form-type form) min-values max-values))
+    (if (= min-values max-values)
+	(do-m-v-setq-fixed min-values vars form nil)
+	(progn
+	  (let ((*destination* 'VALUES)) (c2expr* form))
+	  (unwind-exit (do-m-v-setq-any min-values max-values vars nil))))))
 
 (defun c1multiple-value-bind (args &aux (vars nil) (vnames nil) init-form
                                    ss is ts body other-decls
@@ -204,8 +248,6 @@
   )
 
 (defun c2multiple-value-bind (vars init-form body)
-  (multiple-value-check vars init-form)
-
   ;; 0) Compile the form which is going to give us the values
   (let ((*destination* 'VALUES)) (c2expr* init-form))
 
@@ -215,9 +257,12 @@
 	 (*lcl* *lcl*)
 	 (labels nil)
 	 (env-grows nil)
-	 (nr (make-lcl-var :type :int)))
+	 (nr (make-lcl-var :type :int))
+	 min-values max-values)
     ;; 1) Retrieve the number of output values
-    (wt-nl "{ int " nr "=NVALUES;")
+    (wt-nl "{")
+    (multiple-value-setq (min-values max-values)
+      (c1form-values-number init-form))
 
     ;; 2) For all variables which are not special and do not belong to
     ;;    a closure, make a local C variable.
@@ -234,41 +279,17 @@
     ;; 3) If there are closure variables, set up an environment.
     (when (setq env-grows (env-grows env-grows))
       (let ((env-lvl *env-lvl*))
-	(wt-nl "{ volatile cl_object env" (incf *env-lvl*)
+	(wt-nl "volatile cl_object env" (incf *env-lvl*)
 	       " = env" env-lvl ";")))
 
-    ;; 4) Loop for assigning values to variables 
-    (do ((vs vars (rest vs))
-	 (i 0 (1+ i))
-	 (value '(VALUE 0)))
-	((endp vs))
-      (declare (fixnum i))
-      (push (next-label) labels)
-      (wt-nl "if (" nr "--<=0) ") (wt-go (first labels))
-      (setf (second value) i)
-      (bind value (first vs)))
+    ;; 4) Assign the values to the variables
+    (do-m-v-setq-any min-values max-values vars t)
 
-    ;; 5) Loop for setting default values when there are less output
-    ;;    than variables.
-    (let ((label (next-label)))
-      (wt-nl) (wt-go label)
-      (setq labels (nreverse labels))
-      (let ((*suppress-compiler-warnings* t))
-	;; suppress the warning by default-init
-	(dolist (v vars)
-	  (wt-label (first labels))
-	  (pop labels)
-	  ;; DEFAULT-INIT returns a LOCATION form, whose only argument
-	  ;; is the location that we pass to BIND.
-	  (bind (c1form-arg 0 (default-init v)) v)))
-      (wt-label label))
-
-    ;; 6) Compile the body. If there are bindings of special variables,
+    ;; 5) Compile the body. If there are bindings of special variables,
     ;;    these bindings are undone here.
     (c2expr body)
 
-    ;; 7) Close the C expression.
-    (when env-grows (wt "}"))
+    ;; 6) Close the C expression.
     (wt "}"))
   )
 

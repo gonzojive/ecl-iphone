@@ -56,7 +56,7 @@
       (STRUCTURE-OBJECT 'STRUCTURE-OBJECT)
       (t t))))
 
-(defun type-filter (type)
+(defun type-filter (type &optional values-allowed)
   (multiple-value-bind (type-name type-args) (sys::normalize-type type)
     (case type-name
         ((FIXNUM CHARACTER SHORT-FLOAT LONG-FLOAT SYMBOL) type-name)
@@ -82,9 +82,14 @@
 	((LONG-FLOAT DOUBLE-FLOAT) 'LONG-FLOAT)
 	((STREAM) 'STREAM)	; Beppe
 	(t (cond ((eq type-name 'VALUES)
-		  (if (null (cdr type-args))
-		    (list 'VALUES (type-filter (car type-args)))
-		    t))
+		  (unless values-allowed
+		    (error "VALUES type found in a place where it is not allowed."))
+		  `(VALUES ,@(mapcar #'(lambda (x)
+					(if (or (eq x '&optional)
+						(eq x '&rest))
+					    x
+					    (type-filter x)))
+				    type-args)))
 		 #+clos
 		 ((subtypep type 'STANDARD-OBJECT) type)
 		 #+clos
@@ -126,10 +131,11 @@
 		 (t
 		  `(AND ,t1 ,t2))))
 	  ((null tag1)
-	   (cmpwarn "Unkonwn type ~S" t1)
+	   (cmpwarn "Unknown type ~S" t1)
 	   t2)
 	  (t
-	   (cmpwarn "Unkonwn type ~S" t2)
+	   (error t2)
+	   (cmpwarn "Unknown type ~S" t2)
 	   t1))))
 
 (defun type-or (t1 t2)
@@ -170,7 +176,7 @@
 ;;;
 (defun and-form-type (type form original-form &optional (mode :safe)
 		      (format-string "") &rest format-args)
-  (let* ((type2 (c1form-type form))
+  (let* ((type2 (c1form-primary-type form))
 	 (type1 (type-and type type2)))
     (unless type1
       (funcall (if (eq mode :safe) #'cmperr #'cmpwarn)
@@ -181,17 +187,14 @@
       (setf (c1form-type form) type1))
     form))
 
-(defun default-init (var)
+(defun default-init (var &optional warn)
   (let ((new-value (cdr (assoc (var-type var)
 			       '((fixnum . 0) (character . #\space)
 				 (long-float . 0.0L1) (short-float . 0.0S1))
 			       :test #'subtypep))))
-    (cond (new-value
-	   (cmpwarn "The default value of ~s is not ~s. Using ~s instead."
-		    (var-name var) (var-type var) new-value)
-	   (c1constant-value new-value nil))
-	  (t
-	   (c1nil)))))
+    (if new-value
+	(c1constant-value new-value nil)
+        (c1nil))))
 
 ;;----------------------------------------------------------------------
 ;; (FUNCTION ...) types. This code is a continuation of predlib.lsp.
