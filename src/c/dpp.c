@@ -644,8 +644,8 @@ put_declaration(void)
 	fprintf(out, "\tKEYS[%d]=K%s;\n", i, keyword[i].k_key);
       }
       put_lineno();
-      fprintf(out, "\tva_parse_key(narg-%d, ARGS, %d, KEYS, KEY_VARS, %s, %d);\n",
-	      nreq+nopt, nkey, rest_flag ? rest_var : "OBJNULL", allow_other_keys_flag);
+      fprintf(out, "\tva_parse_key(narg-%d, ARGS, %d, KEYS, KEY_VARS, NULL, %d);\n",
+	      nreq+nopt, nkey, allow_other_keys_flag);
       for (i = 0;  i < nkey;  i++) {
 	put_lineno();
 	fprintf(out, "\tif (KEY_VARS[%d]==Cnil) {\n", nkey+i);

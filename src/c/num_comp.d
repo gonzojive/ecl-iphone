@@ -256,15 +256,17 @@ number_compare(cl_object x, cl_object y)
 	}
 }
 
-@(defun /= (&rest nums)
+@(defun /= (&rest nums &aux numi)
 	int i, j;
 @
 	if (narg == 0)
 		FEtoo_few_arguments(&narg);
-	for (i = narg-1; i; i--) {
-		cl_object numi = cl_nextarg(nums);
-		va_list numb = nums;
-		for (j = i; j; j--)
+	numi = cl_nextarg(nums);
+	for (i = 2; i<=narg; i++) {
+		va_list numb;
+		va_start(numb, narg);
+		numi = cl_nextarg(nums);
+		for (j = 1; j<i; j++)
 			if (number_equalp(numi, cl_nextarg(numb)))
 				@(return Cnil)
 	}

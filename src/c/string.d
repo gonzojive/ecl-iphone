@@ -322,7 +322,7 @@ string_cmp(int narg, int sign, int boundary, va_list ARGS)
 	KEYS[1]=@':end1';
 	KEYS[2]=@':start2';
 	KEYS[3]=@':end2';
-	va_parse_key(narg-2, ARGS, 4, KEYS, KEY_VARS, OBJNULL, 0);
+	va_parse_key(narg-2, ARGS, 4, KEYS, KEY_VARS, NULL, FALSE);
 
 	string1 = coerce_to_string_designator(string1);
 	string2 = coerce_to_string_designator(string2);
@@ -407,7 +407,7 @@ string_compare(int narg, int sign, int boundary, va_list ARGS)
 	KEYS[1]=@':end1';
 	KEYS[2]=@':start2';
 	KEYS[3]=@':end2';
-	va_parse_key(narg-2, ARGS, 4, KEYS, KEY_VARS, OBJNULL, 0);
+	va_parse_key(narg-2, ARGS, 4, KEYS, KEY_VARS, NULL, FALSE);
 
 	string1 = coerce_to_string_designator(string1);
 	string2 = coerce_to_string_designator(string2);
@@ -565,7 +565,7 @@ string_case(int narg, int (*casefun)(), va_list ARGS)
 	if (narg < 1) FEtoo_few_arguments(&narg);
 	KEYS[0]=@':start';
 	KEYS[1]=@':end';
-	va_parse_key(narg-1, ARGS, 2, KEYS, KEY_VARS, OBJNULL, 0);
+	va_parse_key(narg-1, ARGS, 2, KEYS, KEY_VARS, NULL, FALSE);
 
 	strng = coerce_to_string_designator(strng);
 	conv = copy_simple_string(strng);
@@ -639,7 +639,7 @@ nstring_case(int narg, int (*casefun)(), va_list ARGS)
 	if (narg < 1) FEtoo_few_arguments(&narg);
 	KEYS[0]=@':start';
 	KEYS[1]=@':end';
-	va_parse_key(narg-1, ARGS, 2, KEYS, KEY_VARS, OBJNULL, 0);
+	va_parse_key(narg-1, ARGS, 2, KEYS, KEY_VARS, NULL, FALSE);
 
 	assert_type_string(strng);
 	if (startp == Cnil) start = MAKE_FIXNUM(0);

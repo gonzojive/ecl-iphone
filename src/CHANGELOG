@@ -741,6 +741,12 @@ ECLS 0.3b
   - Bit fiddling operations with negative fixnums now work (i.e.
     LOGAND, LOGOR, LOGBITP, etc).
 
+* System design and portability:
+
+  - Remove unportable code of the type "va_list d = cs".
+
+  - Simplify gathering of &rest and &key arguments in compiled code.
+
 TODO:
 =====
 

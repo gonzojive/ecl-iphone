@@ -83,7 +83,7 @@ big_register_normalize(cl_object x)
 	  if (y <= MOST_POSITIVE_FIX)
 	    return(MAKE_FIXNUM(y));
 	} else if (s == -1) {
-	  if (y <= -MOST_POSITIVE_FIX)
+	  if (y <= -MOST_NEGATIVE_FIX)
 	    return(MAKE_FIXNUM(-y));
 	}
 	return big_register_copy(x);

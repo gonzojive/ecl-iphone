@@ -153,14 +153,17 @@ char_eq(cl_object x, cl_object y)
 
 @(defun char/= (&rest cs)
 	int i, j;
+	cl_object c;
 @
 	/* INV: char_eq() checks types of its arguments */
 	if (narg == 0)
 		@(return Ct)
-	for (i = narg-1; i; i--) {
-		cl_object c = cl_nextarg(cs);
-		va_list ds = cs;
-		for (j = i; j; j--)
+	c = cl_nextarg(cs);
+	for (i = 2; i<=narg; i++) {
+		va_list ds;
+		va_start(ds, narg);
+		c = cl_nextarg(cs);
+		for (j = 1; j<i; j++)
 			if (char_eq(cl_nextarg(ds), c))
 				@(return Cnil)
 	}
@@ -241,12 +244,17 @@ char_equal(cl_object x, cl_object y)
 
 @(defun char-not-equal (&rest cs)
 	int i, j;
+	cl_object c;
 @
+	if (narg == 0)
+		@(return Ct)
 	/* INV: char_equal() checks the type of its arguments */
-	for (i = narg-1;  i;  i--) {
-		cl_object c = cl_nextarg(cs);
-		va_list ds = cs;
-		for (j = i;  j;  j--)
+	c = cl_nextarg(cs);
+	for (i = 2;  i<=narg;  i++) {
+		va_list ds;
+		va_start(ds, narg);
+		c = cl_nextarg(cs);
+		for (j=1;  j<i;  j++)
 			if (char_equal(c, cl_nextarg(ds)))
 				@(return Cnil)
 	}

@@ -223,9 +223,17 @@ go(cl_object tag_id, cl_object label)
   unwind(fr, label);
 }
 
-#define NOT_YET         10
-#define FOUND           11
-#define NOT_KEYWORD     1
+cl_object
+grab_rest_args(int narg, cl_object *args)
+{
+	cl_object rest = Cnil;
+	cl_object *r = &rest;
+	while (narg--) {
+		*r = CONS(*(args++), Cnil);
+		r = &CDR(*r);
+	}
+	return rest;
+}
 
 void
 parse_key(
@@ -235,19 +243,14 @@ parse_key(
      cl_object *keys,		/* keywords for the function */
      cl_object *vars,		/* where to put values (vars[0..nkey-1])
 				   and suppliedp (vars[nkey..2*nkey-1]) */
-     cl_object rest,		/* rest variable or NULL */
+     cl_object *rest,		/* if rest!=NULL, collect arguments in a list */
      bool allow_other_keys)	/* whether other key are allowed */
 {
   int i;
+  cl_object supplied_allow_other_keys = OBJNULL;
+  cl_object unknown_keyword = OBJNULL;
 
-  /* fill in the rest arg list */
-  if (rest != OBJNULL) {
-    cl_object *p = args;
-    for (i = narg; i > 0; i--) {
-      CAR(rest) = *(p++);
-      rest = CDR(rest);
-    }
-  }
+  if (rest != NULL) *rest = Cnil;
 
   for (i = 0; i < 2*nkey; i++)
     vars[i] = Cnil;             /* default values: NIL, supplied: NIL */
@@ -256,6 +259,10 @@ parse_key(
   for (; narg>=2; narg-= 2) {
     cl_object keyword = *(args++);
     cl_object value = *(args++);
+    if (rest != NULL) {
+      rest = &CDR(*rest = CONS(keyword, Cnil));
+      rest = &CDR(*rest = CONS(value, Cnil));
+    }
     for (i = 0; i < nkey; i++) {
       if (keys[i] == keyword) {
 	if (vars[nkey+i] == Cnil) {
@@ -266,27 +273,33 @@ parse_key(
       }
     }
     /* the key is a new one */
-    if (!allow_other_keys) {
-      if (keyword == @':allow-other-keys')
-	allow_other_keys = (value != Cnil);
-      else {
-	cl_object *p = args;
-	/* look for :allow-other-keys t */
-	for (i = narg-2; i >= 0; i -= 2, p -=2)
-	  if (*(p++) == @':allow-other-keys') {
-	    allow_other_keys = (*(p++) != Cnil);
-	    break;
-	  }
-	if (!allow_other_keys)
-	  FEprogram_error("Unrecognized key ~a", 1, keyword);
-      }
-    }
+    if (keyword == @':allow-other-keys') {
+      if (supplied_allow_other_keys == OBJNULL)
+	supplied_allow_other_keys = value;
+    } else if (unknown_keyword != OBJNULL)
+      unknown_keyword = keyword;
   go_on:
   }
-  if (narg != 0) FEprogram_error("Odd number of keys", 0);
+  if (narg != 0)
+    FEprogram_error("Odd number of keys", 0);
+  if (unknown_keyword != OBJNULL && !allow_other_keys &&
+      supplied_allow_other_keys != Cnil)
+    FEprogram_error("Unknown keyword ~S", 1, unknown_keyword);
 }
 
 #ifdef NO_ARGS_ARRAY
+cl_object
+va_grab_rest_args(int narg, va_list args)
+{
+	cl_object rest = Cnil;
+	cl_object *r = &rest;
+	while (narg--) {
+		*r = CONS(cl_nextarg(args), Cnil);
+		r = &CDR(*r);
+	}
+	return rest;
+}
+
 void
 va_parse_key(
      int narg,			/* number of actual args */
@@ -295,19 +308,14 @@ va_parse_key(
      cl_object *keys,		/* keywords for the function */
      cl_object *vars,		/* where to put values (vars[0..nkey-1])
 				   and suppliedp (vars[nkey..2*nkey-1]) */
-     cl_object rest,		/* rest variable or NULL */
+     cl_object *rest,		/* if rest != NULL, where to collect rest values */
      bool allow_other_keys)	/* whether other key are allowed */
 {
   int i;
+  cl_object supplied_allow_other_keys = OBJNULL;
+  cl_object unknown_keyword = OBJNULL;
 
-  /* fill in the rest arg list */
-  if (rest != OBJNULL) {
-    va_list p = args;
-    for (i = narg; i > 0; i--) {
-      CAR(rest) = cl_nextarg(p);
-      rest = CDR(rest);
-    }
-  }
+  if (rest != NULL) *rest = Cnil;
 
   for (i = 0; i < 2*nkey; i++)
     vars[i] = Cnil;             /* default values: NIL, supplied: NIL */
@@ -316,6 +324,10 @@ va_parse_key(
   for (; narg>=2; narg-= 2) {
     cl_object keyword = cl_nextarg(args);
     cl_object value = cl_nextarg(args);
+    if (rest != NULL) {
+      rest = &CDR(*rest = CONS(keyword, Cnil));
+      rest = &CDR(*rest = CONS(value, Cnil));
+    }
     for (i = 0; i < nkey; i++) {
       if (keys[i] == keyword) {
 	if (vars[nkey+i] == Cnil) {
@@ -326,24 +338,18 @@ va_parse_key(
       }
     }
     /* the key is a new one */
-    if (!allow_other_keys) {
-      if (keyword == @':allow-other-keys')
-	allow_other_keys = (value != Cnil);
-      else {
-	va_list p = args;
-	/* look for :allow-other-keys t */
-	for (i = narg-2; i >= 0; i -= 2, p -=2)
-	  if (cl_nextarg(p) == @':allow-other-keys') {
-	    allow_other_keys = (cl_nextarg(p) != Cnil);
-	    break;
-	  }
-	if (!allow_other_keys)
-	  FEprogram_error("Unrecognized key ~a", 1, keyword);
-      }
-    }
+    if (keyword == @':allow-other-keys') {
+      if (supplied_allow_other_keys == OBJNULL)
+	supplied_allow_other_keys = value;
+    } else if (unknown_keyword != OBJNULL)
+      unknown_keyword = keyword;
   go_on:
   }
-  if (narg != 0) FEprogram_error("Odd number of keys", 0);
+  if (narg != 0)
+    FEprogram_error("Odd number of keys", 0);
+  if (unknown_keyword != OBJNULL && !allow_other_keys &&
+      supplied_allow_other_keys != Cnil)
+    FEprogram_error("Unknown keyword ~S", 1, unknown_keyword);
 }
 #endif NO_ARGS_ARRAY
 

@@ -17,7 +17,7 @@
  *	OPTIONS								*
  * -------------------------------------------------------------------- */
 
-#undef CLOS
+#define CLOS			/* Always use CLOS			*/
 #undef THREADS
 #undef TK
 

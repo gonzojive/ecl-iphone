@@ -462,12 +462,9 @@
 	(wt-nl "narg -= i;")
 	(wt-nl "narg -=" nreq ";"))
     (wt-nl rest-loc)
-    (if (eq (var-type rest) :DYNAMIC-EXTENT)
-	(wt "=(ALLOCA_CONS(narg),ON_STACK_MAKE_LIST(narg));")
-	(wt "=make_list(narg);"))
-    (wt-nl "{ cl_object p=" rest-loc ";")
-    (wt-nl " for(;narg-->0;p=CDR(p))")
-    (wt-nl "   CAR(p)=") (wt-va_arg (eq 'CALL-LAMBDA kind)) (wt ";i++;}")
+    (if (eq 'CALL-LAMBDA kind)
+      (wt "=grab_rest_args(narg,args);")
+      (wt "=va_grab_rest_args(narg,args);"))
     (bind rest-loc rest))
 
   (when *tail-recursion-info*
@@ -584,32 +581,17 @@
   (if optionals
       (wt-nl "narg -= i;")
       (wt-nl "narg -=" nreq ";"))
-  (when rest
-    (wt-nl rest-loc)
-    (if (eq (var-type rest) :DYNAMIC-EXTENT)
-	(wt "=(ALLOCA_CONS(narg), ON_STACK_MAKE_LIST(narg));")
-	(wt "=make_list(narg);"))
-    ;; don't clobber narg, needed by parse_key
-    (wt-nl "{ int n=narg; cl_object p=" rest-loc ";")
-    (wt-nl " for(;n-->0;p=CDR(p))")
-    (wt-nl "   CAR(p)=") (wt-va_arg call-lambda) (wt ";i++;}")
-    (bind rest-loc rest))
 
   (wt-h "#define L" cfun "keys (&" (add-keyword (caar keywords)) ")")
   (dolist (kwd (rest keywords))
     (add-keyword (first kwd)))
 
   (wt-nl "{ cl_object keyvars[" (* 2 nkey) "];")
-  (when rest
-    (if call-lambda
-	(wt-nl "args -= narg;")
-	(wt-nl "va_start(args," last-arg ");")))
   (wt-nl (if call-lambda "parse_key(narg,args," "va_parse_key(narg,args,")
-	 (length keywords) ",L" cfun "keys,keyvars,")
-  (if rest
-      (wt rest-loc)
-    (wt "OBJNULL"))
+	 (length keywords) ",L" cfun "keys,keyvars")
+  (if rest (wt ",&" rest-loc) (wt ",NULL"))
   (wt (if allow-other-keys ",TRUE);" ",FALSE);"))
+  (when rest (bind rest-loc rest))
 
   ;;; Bind keywords.
   (let ((KEYVARS[i] `(KEYVARS 0))	; create, since we clobber it

@@ -114,8 +114,8 @@
         (*print-array* t)
 	(*read-default-float-format* 'single-float)
 	;(*package* *compiler-package*)
-	;(sys::*print-package* *compiler-package*)
-	(sys::*print-package* (symbol-package 'nil))
+	;(sys::*print-package* (symbol-package nil))
+	(sys::*print-package* *compiler-package*)
         (sys::*print-structure* t))
     (wt-filtered-data
      (typecase expr
@@ -140,8 +140,10 @@
     (si::select-package
      (let ((output (t1ordinary form)))
        (cmp-eval form)
-       (let ((package-name (cadr form)))
-	 (setq *compiler-package* (si::select-package package-name)))
+       (let ((package-name (string (cadr form))))
+	 (setq *compiler-package* (si::select-package package-name))
+	 (setq package-name (package-name *compiler-package*))
+	 (wt-filtered-data (format nil "#!0 ~s" package-name)))
        output))
 	 ;#+nil(wt-filtered-data (format nil "#!0 ~s" (string package-name)))))
     (si::%defpackage
