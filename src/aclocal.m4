@@ -335,12 +335,12 @@ int main() {
     for (bits=1; ((t << 1) >> 1) == t; bits++, t <<= 1);
     l = (~l) << (bits - 3);
 #if 1
-    fprintf(f,"CL_FIXNUM_MIN='%d';",l);
-    fprintf(f,"CL_FIXNUM_MAX='%d';",-(l+1));
+    fprintf(f,"CL_FIXNUM_MIN='%ld';",l);
+    fprintf(f,"CL_FIXNUM_MAX='%ld';",-(l+1));
 #else
     l++;
-    fprintf(f,"CL_FIXNUM_MIN='%d';",l);
-    fprintf(f,"CL_FIXNUM_MAX='%d';",-l);
+    fprintf(f,"CL_FIXNUM_MIN='%ld';",l);
+    fprintf(f,"CL_FIXNUM_MAX='%ld';",-l);
 #endif
   } else
     exit(1);
