@@ -65,6 +65,8 @@ bignums."
 (deftype mod (n)
   `(INTEGER 0 ,(1- n)))
 
+(deftype compiled-function () 'FUNCTION)
+
 (deftype signed-byte (&optional s)
   "As a type specifier, (SIGNED-BYTE n) specifies those integers that can be
 represented with N bits in 2's complement representation."
@@ -141,7 +143,6 @@ fill-pointer, and is not adjustable."
 has no fill-pointer, and is not adjustable."
   (if size `(simple-array bit (,size)) '(simple-array bit (*))))
 
-
 (defun simple-array-p (x)
   (and (arrayp x)
        (not (adjustable-array-p x))
@@ -190,8 +191,9 @@ has no fill-pointer, and is not adjustable."
 Returns T if X belongs to TYPE; NIL otherwise."
   (cond ((symbolp type)
 	 (let ((f (get type 'TYPE-PREDICATE)))
-	   (when f (return-from typep (funcall f object)))
-	   (setq tp type i nil)))
+	   (cond (f (return-from typep (funcall f object)))
+		 ((eq (type-of object) type) (return-from typep t))
+		 (t (setq tp type i nil)))))
 	((consp type)
 	 (setq tp (car type) i (cdr type)))
 	#+clos
@@ -275,8 +277,7 @@ Returns T if X belongs to TYPE; NIL otherwise."
            #+clos
 	   ((setq c (find-class type nil))
 	    ;; Follow the inheritance chain
-	    (and (sys:instancep object)
-		 (subclassp (sys:instance-class object) c)))
+	    (subclassp (class-of object) c))
 	   #-clos
 	   ((get tp 'IS-A-STRUCTURE)
             (when (sys:structurep object)
@@ -330,7 +331,7 @@ Returns T if X belongs to TYPE; NIL otherwise."
                     SHORT-FLOAT SINGLE-FLOAT DOUBLE-FLOAT LONG-FLOAT COMPLEX
                     CHARACTER BASE-CHAR STANDARD-CHAR EXTENDED-CHAR
                     PACKAGE STREAM PATHNAME READTABLE HASH-TABLE RANDOM-STATE
-                    #-clos STRUCTURE ARRAY SIMPLE-ARRAY FUNCTION COMPILED-FUNCTION
+                    #-clos STRUCTURE ARRAY SIMPLE-ARRAY FUNCTION FUNCTION
 		    REAL))
 	     #+clos
 	     (find-class type nil)

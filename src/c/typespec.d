@@ -63,7 +63,15 @@ cl_object @'single-float';
 cl_object @'bignum';
 cl_object @'random-state';
 cl_object @'double-float';
+
 cl_object @'stream';
+cl_object @'file-stream';
+cl_object @'string-stream';
+cl_object @'synonym-stream';
+cl_object @'two-way-stream';
+cl_object @'broadcast-stream';
+cl_object @'concatenated-stream';
+cl_object @'echo-stream';
 
 cl_object @'bit';
 cl_object @'readtable';
@@ -418,7 +426,16 @@ TYPE_OF(cl_object x)
 #endif
 
 	case t_stream:
-		return(@'stream');
+		switch (x->stream.mode) {
+		case smm_synonym:	return @'synonym-stream';
+		case smm_broadcast:	return @'broadcast-stream';
+		case smm_concatenated:	return @'concatenated-stream';
+		case smm_two_way:	return @'two-way-stream';
+		case smm_string_input:
+		case smm_string_output:	return @'string-stream';
+		case smm_echo:		return @'echo-stream';
+		default:		return @'file-stream';
+		}
 
 	case t_readtable:
 		return(@'readtable');
@@ -434,7 +451,7 @@ TYPE_OF(cl_object x)
 	case t_bytecodes:
 	case t_cfun:
 	case t_cclosure:
-		return(@'compiled-function');
+		return(@'function');
 
 #ifdef THREADS
 	case t_cont:
