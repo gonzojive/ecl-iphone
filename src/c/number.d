@@ -40,7 +40,7 @@ fixnnint(cl_object x)
 			return i;
 	} else if (type_of(x) == t_bignum) {
 		if (x->big.big_size == 1)
-			return big_to_long(x);
+			return big_to_ulong(x);
 	}
 	FEcondition(9, @'simple-type-error', @':format-control',
 		    make_simple_string("Not a non-negative fixnum ~S"),
