@@ -249,6 +249,9 @@
 	    (dolist (v (cddr decl))
 		    (add-function-proclamation v (cdr (second decl)))
 		    ))
+	   ((and (equal (length decl) 4)
+		 (consp (third decl)))
+	    (add-function-proclamation (second decl) (cddr decl)))
 	   (t (cmpwarn "Bad function proclamation ~a" decl))))
     (INLINE
      (dolist (fun (cdr decl))
@@ -422,14 +425,15 @@
 	     (t (warn "The OPTIMIZE quality ~s is unknown."
 		      (car x)))))))
       (FTYPE
-       (if (or (endp (cdr decl))
-	       (not (consp (second decl)))
-	       (not (eq (caadr decl) 'FUNCTION))
-	       (endp (cdadr decl)))
-	 (warn "The function declaration ~s is illegal." decl)
-	 (dolist (fname (cddr decl))
-	   (add-function-declaration
-	    fname (cadadr decl) (cddadr decl)))))
+       (cond ((and (consp (cdr decl))
+		   (consp (second decl))
+		   (eq (caadr decl) 'FUNCTION))
+	      (dolist (v (cddr decl))
+		(add-function-declaration v (cadr (second decl)) (caddr (second decl)))))
+	     ((and (equal (length decl) 4)
+		   (consp (third decl)))
+	      (add-function-declaration (second decl) (third decl) (cdddr decl)))
+	     (t (cmpwarn "The function declaration ~a is illegal" decl))))
       (INLINE
        (push decl dl)
        (dolist (fun (cdr decl))
