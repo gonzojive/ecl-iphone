@@ -69,7 +69,10 @@
   		;;; For REPLACED: the actual location of the variable.
   		;;; For :FIXNUM, :CHAR, :FLOAT, :DOUBLE, :OBJECT:
   		;;;   the cvar for the C variable that holds the value.
-  		;;; For LEXICAL or CLOSURE: the frame-relative address for the variable.
+  		;;; For LEXICAL or CLOSURE: the frame-relative address for
+		;;; the variable in the form of a cons '(lex-levl . lex-ndx)
+		;;;	lex-levl is the level of lexical environment
+		;;;	lex-ndx is the index within the array for this env.
 		;;; For SPECIAL and GLOBAL: the vv-index for variable name.
   (type t)	;;; Type of the variable.
   (index -1)    ;;; position in *vars*. Used by similar.
@@ -87,7 +90,7 @@
 ;;;   (flet ((foo () (bar))) #'(lambda () (foo)))
 ;;;   [the lambda also need not be a closure]
 ;;; and it can be a closure without being referred across ccb, e.g.:
-;;;   (flet ((foo () x)) #'foo)  [ is this a mistake in c1local-closure?]
+;;;   (flet ((foo () x)) #'foo)  [ is this a mistake in local-function-ref?]
 ;;; Here instead the lambda must be a closure, but no closure is needed for foo
 ;;;   (flet ((foo () x)) #'(lambda () (foo)))
 ;;; So we use two separate fields: ref-ccb and closure.
@@ -114,7 +117,8 @@
 			;;; During Pass2, the vs-address for the
 			;;; function closure, or NIL.
 ;  ref-ccb		;;; Cross closure reference.
- 			;;; During Pass1, T or NIL.
+ 			;;; During Pass1, T or NIL, depending on whether a
+			;;; function object will be built.
 			;;; During Pass2, the vs-address for the function
 			;;; closure, or NIL.
 ;  ref-clb		;;; Unused.

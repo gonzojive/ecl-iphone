@@ -236,15 +236,20 @@
     (push def *vars*))
   (c1locally (cdr args)))
 
-(defun local-closure (fname &aux (ccb nil) (clb nil))
+(defun local-function-ref (fname &optional build-object &aux (ccb nil) (clb nil))
   (dolist (fun *funs*)
     (cond ((eq fun 'CB) (setq ccb t))
 	  ((eq fun 'LB) (setq clb t))
 	  ((and (symbolp fname) (consp fun))	; macro
 	   (when (eq fname (car fun))
+	     (when build-object
+	       (cmperr "The name of a macro ~A was found in a call to FUNCTION."
+		       fname))
 	     (return nil)))
           ((same-fname-p (fun-name fun) fname)
 	   (incf (fun-ref fun))
+	   (when build-object
+	     (setf (fun-ref-ccb fun) t))
 	   ;; we introduce a variable to hold the funob
 	   (let ((var (or (fun-var fun)
 			  (setf (fun-var fun)
@@ -258,7 +263,7 @@
 
 (defun c1call-local (fname)
   ;; used by c1funob and c1call-symbol
-  (let ((fun (local-closure fname)))
+  (let ((fun (local-function-ref fname)))
     (when fun
       (make-c1form* 'LOCAL :local-referred (list (fun-var fun))
 		    :referred-vars  (list (fun-var fun))
