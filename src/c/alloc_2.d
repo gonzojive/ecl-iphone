@@ -101,7 +101,7 @@ alloc_atomic(size_t n)
 {
 	void *output;
 	start_critical_section(); 
-	output = GC_malloc_atomic(n);
+	output = GC_malloc_atomic_ignore_off_page(n);
 	end_critical_section();
 	return output;
 }
@@ -142,7 +142,7 @@ alloc_atomic_align(size_t size, size_t align)
 	char *output;
 	start_critical_section();
 	align--;
-	output = GC_malloc(size + align);
+	output = GC_malloc_atomic_ignore_off_page(size + align);
 	output = (char*)(((cl_fixnum)output + align) & ~align);
 	end_critical_section();
 	return output;

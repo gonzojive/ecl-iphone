@@ -256,7 +256,7 @@ mp_realloc(void *ptr, size_t osize, size_t nsize)
 static void
 mp_free(void *ptr, size_t size)
 {
-  /*dealloc(ptr,size);*/
+	dealloc(ptr,size);
 }
 
 void
