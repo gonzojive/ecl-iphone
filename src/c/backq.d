@@ -16,10 +16,6 @@
 
 #include "ecl.h"
 
-/******************************* EXPORTS ******************************/
-#ifndef THREADS
-int backq_level;
-#endif
 /******************************* ------- ******************************/
 
 /* #define attach(x)	(*px = CONS(x, *px)) */
@@ -254,9 +250,11 @@ backq(cl_object x)
 }
 
 static
-@(defun "comma_reader" (in c)
+cl_object comma_reader(cl_object in, cl_object c)
+{
 	cl_object x, y;
-@
+	cl_fixnum backq_level = fix(SYM_VAL(@'si::*backq-level*'));
+
 	if (backq_level <= 0)
 		FEerror("A comma has appeared out of a backquote.", 0);
 	c = peek_char(FALSE, in);
@@ -268,22 +266,23 @@ static
 		read_char(in);
 	} else
 		x = @'si::,';
-	--backq_level;
+	SYM_VAL(@'si::*backq-level*') = MAKE_FIXNUM(backq_level-1);
 	y = read_object(in);
-	backq_level++;
+	SYM_VAL(@'si::*backq-level*') = MAKE_FIXNUM(backq_level);
 	@(return CONS(x, y))
-@)
+}
 
 static
-@(defun "backquote_reader" (in c)
-@
-	backq_level++;
+cl_object backquote_reader(cl_object in, cl_object c)
+{
+	cl_fixnum backq_level = fix(SYM_VAL(@'si::*backq-level*'));
+	SYM_VAL(@'si::*backq-level*') = MAKE_FIXNUM(backq_level+1);
 	in = read_object(in);
-	--backq_level;
+	SYM_VAL(@'si::*backq-level*') = MAKE_FIXNUM(backq_level);
 	@(return backq(in))
-@)
+}
 
-#define	make_cf(f)	cl_make_cfun_va((f), Cnil, NULL);
+#define	make_cf(f)	cl_make_cfun((f), Cnil, NULL, 2);
 
 void
 init_backq(void)
@@ -292,9 +291,9 @@ init_backq(void)
 
 	r = standard_readtable;
 	r->readtable.table['`'].syntax_type = cat_terminating;
-	r->readtable.table['`'].macro = make_cf((cl_objectfn)backquote_reader);
+	r->readtable.table['`'].macro = make_cf(backquote_reader);
 	r->readtable.table[','].syntax_type = cat_terminating;
-	r->readtable.table[','].macro = make_cf((cl_objectfn)comma_reader);
+	r->readtable.table[','].macro = make_cf(comma_reader);
 
-	backq_level = 0;
+	SYM_VAL(@'si::*backq-level*') = MAKE_FIXNUM(0);
 }

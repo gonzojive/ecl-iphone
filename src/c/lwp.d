@@ -115,7 +115,6 @@ make_pd()
   npd->lwp_frs_limit = &npd->lwp_frs_org[npd->lwp_frs_size - 2*FRSGETA];
   
   npd->lwp_alloc_temporary = OBJNULL;
-  npd->lwp_backq_level = 0;
   npd->lwp_eval1 = 0;
   /* for gc */
   npd->lwp_fmt_temporary_stream = OBJNULL;

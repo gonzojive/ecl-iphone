@@ -37,12 +37,6 @@ cl_object sharp_eq_context;
 
 /******************************* ------- ******************************/
 
-#ifndef THREADS
-extern int backq_level;
-#else
-#define backq_level lwp->lwp_backq_level
-#endif
-
 static cl_object dispatch_reader;
 static cl_object default_dispatch_macro;
 
@@ -88,20 +82,18 @@ cl_object
 read_object_non_recursive(cl_object in)
 {
 	volatile cl_object x;
-	int old_backq_level;
 	cl_object old_sharp_eq_context;
 
 	old_sharp_eq_context = sharp_eq_context;
-	old_backq_level = backq_level;
 	CL_UNWIND_PROTECT_BEGIN {
+		bds_bind(@'si::*backq-level*', MAKE_FIXNUM(0));
 		sharp_eq_context = Cnil;
-		backq_level = 0;
 		x = read_object(in);
 		if (!Null(sharp_eq_context))
 			x = patch_sharp(x);
+		bds_unwind1;
 	} CL_UNWIND_PROTECT_EXIT {
 		sharp_eq_context = old_sharp_eq_context;
-		backq_level = old_backq_level;
 	} CL_UNWIND_PROTECT_END;
 	return(x);
 }
@@ -758,7 +750,7 @@ static
 		fixed_size = TRUE;
 		dim = fixnnint(d);
 	}
-	if (backq_level > 0) {
+	if (fix(SYM_VAL(@'si::*backq-level*')) > 0) {
 		unreadc_stream('(', in);
 		x = read_object(in);
 		a = _cl_backq_car(&x);
@@ -1382,16 +1374,15 @@ do_read_delimited_list(cl_object d, cl_object strm)
 		l = do_read_delimited_list(d, strm);
 	else {
 		volatile cl_object old_sharp_eq_context = sharp_eq_context;
-		volatile int old_backq_level = backq_level;
 		CL_UNWIND_PROTECT_BEGIN {
+			bds_bind(@'si::*backq-level*', MAKE_FIXNUM(0));
 			sharp_eq_context = Cnil;
-			backq_level = 0;
 			l = do_read_delimited_list(d, strm);
 			if (!Null(sharp_eq_context))
 				l = patch_sharp(l);
+			bds_unwind1;
 		} CL_UNWIND_PROTECT_EXIT {
 			sharp_eq_context = old_sharp_eq_context;
-			backq_level = old_backq_level;
 		} CL_UNWIND_PROTECT_END;
 	}
 	@(return l)
