@@ -131,44 +131,49 @@ SHAREDPREFIX='lib'
 LIBPREFIX='lib'
 LIBEXT='a'
 PICFLAG='-fPIC'
-BUNDLE_LDFLAGS=''
 LDINSTALLNAME=''
 case "${host_os}" in
 	# libdir may have a dollar expression inside
 	linux*)
-		thehost="linux"
-		SHARED_LDFLAGS="-shared"
-		LDRPATH="-Wl,--rpath,~A"
+		thehost='linux'
+		SHARED_LDFLAGS='-shared'
+		BUNDLE_LDFLAGS='-shared'
+		LDRPATH='-Wl,--rpath,~A'
 		CLIBS="-ldl"
 		# Maybe CFLAGS="-D_ISOC99_SOURCE ${CFLAGS}" ???
 		;;
 	freebsd*)
-		thehost="freebsd"
-		SHARED_LDFLAGS="-shared"
+		thehost='freebsd'
+		SHARED_LDFLAGS='-shared'
+		BUNDLE_LDFLAGS='-shared'
 		LDRPATH="-Wl,--rpath,~A"
 		CLIBS=""
 		;;
 	netbsd*)
-		thehost="netbsd"
-		SHARED_LDFLAGS="-shared"
+		thehost='netbsd'
+		SHARED_LDFLAGS='-shared'
+		BUNDLE_LDFLAGS='-shared'
 		LDRPATH="-Wl,--rpath,~A"
 		CLIBS=""
 		;;
 	solaris*)
-		thehost="sun4sol2"
-		SHARED_LDFLAGS="-dy -G"
-		LDRPATH="-Wl,-R,~A"
-		TCPLIBS="-lsocket -lnsl -lintl"
-		CLIBS="-ldl"
+		thehost='sun4sol2'
+		SHARED_LDFLAGS='-dy -G'
+		BUNDLE_LDFLAGS='-dy -G'
+		LDRPATH='-Wl,-R,~A'
+		TCPLIBS='-lsocket -lnsl -lintl'
+		CLIBS='-ldl'
 		;;
 	cygwin*)
-		thehost="cygwin"
-		shared="no"
+		thehost='cygwin'
+		shared='no'
+		SHARED_LDFLAGS=''
+		BUNDLE_LDFLAGS=''
 		SHAREDEXT='dll'
 		;;
 	darwin*)
-		thehost="darwin"
-		shared="yes"
+		thehost='darwin'
+		shared='yes'
 		SHAREDEXT='dylib'
 		PICFLAG='-fPIC -fno-common'
 		SHARED_LDFLAGS='-dynamiclib -flat_namespace -undefined suppress'
