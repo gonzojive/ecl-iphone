@@ -1,0 +1,24 @@
+(defconstant +eclx-module-files+
+'("src:eclx;split-sequence.lisp"
+  "src:eclx;package.lisp"
+  "src:eclx;depdefs.lisp"
+  "src:eclx;clx.lisp"
+  "src:eclx;dependent.lisp"
+  "src:eclx;macros.lisp"			; these are just macros
+  "src:eclx;bufmac.lisp"			; these are just macros
+  "src:eclx;buffer.lisp"
+  "src:eclx;display.lisp"
+  "src:eclx;gcontext.lisp"
+  "src:eclx;input.lisp"
+  "src:eclx;requests.lisp"
+  "src:eclx;fonts.lisp"
+  "src:eclx;graphics.lisp"
+  "src:eclx;text.lisp"
+  "src:eclx;attributes.lisp"
+  "src:eclx;translate.lisp"
+  "src:eclx;keysyms.lisp"
+  "src:eclx;manager.lisp"
+  "src:eclx;image.lisp"
+  "src:eclx;resource.lisp"))
+
+(mapc #'(lambda (x) (load x :verbose nil)) +eclx-module-files+)

@@ -140,7 +140,7 @@
 	       (make-c1form 'MULTIPLE-VALUE-SETQ info (nreverse vrefs) value))
 	(setq var (c1vref var))
 	(push var vrefs)
-	(unless (type-and 'T (var-type var))
+	(unless (subtypep 'T (var-type var))
 	  (cmpwarn "Variable ~s appeared in a MULTIPLE-VALUE-SETQ and declared to have type ~S."
 		   (var-name var)
 		   (var-type var)))
@@ -168,9 +168,13 @@
       (declare (fixnum i))
       (setq vref (first vs))
       (wt-nl "if (" nr ">0) {")
-      (set-var (list 'VALUE i) vref) ; (second vref) ccb
+      (set-var (list 'VALUE i) vref)
       (unless (endp (rest vs)) (wt-nl nr "--;"))
-      (wt-nl "} else {") (set-var nil vref) ; (second vref) ccb
+      (wt-nl "} else {")
+      ;; FIXME! M-V-S does not take care of the type of the variable
+      ;; and does not optimize the case in which we know the number
+      ;; of values which are output.
+      (set-var '(C-INLINE :object "Cnil" () t nil) vref)
       (wt "}"))
     (unless (eq *exit* 'RETURN) (wt-nl))
     (wt-nl "if (NVALUES>1) NVALUES=1;}")

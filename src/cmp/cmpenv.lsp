@@ -13,7 +13,7 @@
 (in-package "COMPILER")
 
 ;;; Only these flags are set by the user.
-;;; If *safe-compile* is ON, some kind of run-time checks are not
+;;; If (safe-compile) is ON, some kind of run-time checks are not
 ;;; included in the compiled code.  The default value is OFF.
 
 (defun init-env ()
@@ -146,7 +146,7 @@
 ;;; Proclamation and declaration handling.
 
 (defun inline-possible (fname)
-  (not (or ; *compiler-push-events*
+  (not (or ; (compiler-push-events)
 	(member fname *notinline* :test #'same-fname-p)
 	(and (symbolp fname) (get-sysprop fname 'CMP-NOTINLINE)))))
 
@@ -170,9 +170,7 @@
            (warn "The OPTIMIZE proclamation ~s is illegal." x)
            (case (car x)
 		 (DEBUG)
-                 (SAFETY (setq *compiler-check-args* (>= (second x) 1))
-                         (setq *safe-compile* (>= (second x) 2))
-                         (setq *compiler-push-events* (>= (second x) 3)))
+                 (SAFETY (setq *safety* (second x)))
                  (SPACE (setq *space* (second x)))
                  (SPEED (setq *speed* (second x)))
                  (COMPILATION-SPEED (setq *speed* (- 3 (second x))))
@@ -199,7 +197,8 @@
                (if (symbolp fun)
                    (put-sysprop fun 'CMP-NOTINLINE t)
                    (warn "The function name ~s is not a symbol." fun))))
-    ((OBJECT IGNORE)
+    ((OBJECT IGNORE DYNAMIC-EXTENT IGNORABLE)
+     ;; FIXME! IGNORED!
      (dolist (var (cdr decl))
        (unless (symbolp var)
                (warn "The variable name ~s is not a symbol." var))))
@@ -343,12 +342,7 @@
 	   (warn "The OPTIMIZE proclamation ~s is illegal." x)
 	   (case (car x)
 	     (DEBUG)
-	     (SAFETY
-	      (let ((level (second x)))
-		(declare (fixnum level))
-		(setq *compiler-check-args* (>= level 1)
-		      *safe-compile* (>= level 2)
-		      *compiler-push-events* (>= level 3))))
+	     (SAFETY (setq *safety* (second x)))
 	     (SPACE (setq *space* (second x)))
 	     ((SPEED COMPILATION-SPEED))
 	     (t (warn "The OPTIMIZE quality ~s is unknown."
@@ -380,6 +374,9 @@
 	   (warn "The declaration specifier ~s is not a symbol."
 		 x))))
       (SI::C-LOCAL)
+      ((DYNAMIC-EXTENT IGNORABLE)
+       ;; FIXME! SOME ARE IGNORED!
+       )
       (otherwise
        (unless (member (car decl) *alien-declarations*)
 	 (warn "The declaration specifier ~s is unknown."
@@ -391,9 +388,9 @@
       (let* ((*function-declarations* *function-declarations*)
 	     (*alien-declarations* *alien-declarations*)
 	     (*notinline* *notinline*)
+	     (*safety* *safety*)
 	     (*space* *space*)
-	     (*compiler-check-args* *compiler-check-args*)
-	     (*compiler-push-events* *compiler-push-events*)
+ 	     (*speed* *speed*)
 	     (dl (c1add-declarations decls)))
 	(setq body (c1progn body))
 	(make-c1form 'DECL-BODY body dl body))))
@@ -401,11 +398,10 @@
 (put-sysprop 'decl-body 'c2 'c2decl-body)
 
 (defun c2decl-body (decls body)
-  (let ((*compiler-check-args* *compiler-check-args*)
-        (*safe-compile* *safe-compile*)
-        (*compiler-push-events* *compiler-push-events*)
-        (*notinline* *notinline*)
-        (*space* *space*))
+  (let ((*safety* *safety*)
+        (*space* *space*)
+	(*speed* *speed*)
+        (*notinline* *notinline*))
     (c1add-declarations decls)
     (c2expr body)))
 

@@ -780,8 +780,9 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 	} else if (end > limit) {
 		FEtype_error_index(seq, MAKE_FIXNUM(end));
 	} else if (end <= start) {
-		;
-	} else if (t == t_cons || t == t_symbol) {
+		goto OUTPUT;
+	}
+	if (t == t_cons || t == t_symbol) {
 		seq = nthcdr(start, seq);
 		loop_for_in(seq) {
 			if (start < end) {
@@ -790,24 +791,31 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 				goto OUTPUT;
 			}
 		} end_loop_for_in;
-	} else if ((t == t_bitvector) ||
-		   (t != t_string &&  seq->vector.elttype != aet_b8))
+		goto OUTPUT;
+	}
+	if ((t == t_bitvector) ||
+	    (t != t_string &&  seq->vector.elttype != aet_b8))
 	{
 		FEerror("~S is not of a valid sequence type for WRITE-BYTES",
 			1, seq);
-	} else if (type_of(stream) == t_stream &&
-		   (stream->stream.mode == smm_io ||
-		    stream->stream.mode == smm_output))
+	}
+ AGAIN:
+	if ((t = type_of(stream)) == t_stream &&
+	    (stream->stream.mode == smm_io ||
+	     stream->stream.mode == smm_output))
 	{
 		size_t towrite = end - start;
 		if (fwrite(seq->vector.self.ch + start, sizeof(char),
 			   towrite, stream->stream.file) < towrite) {
 			io_error(stream);
 		}
+	} else if (t == t_stream && stream->stream.mode == smm_two_way) {
+		stream = stream->stream.object1;
+		goto AGAIN;
 	} else {
 		unsigned char *p;
-		for (p= seq->vector.self.ch; start < end; start++, p++) {
-			writec_stream(*p, stream);
+		for (p= seq->vector.self.ch; start < end; start++) {
+			writec_stream(p[start], stream);
 		}
 	}
  OUTPUT:
@@ -830,8 +838,9 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 	} else if (end > limit) {
 		FEtype_error_index(seq, MAKE_FIXNUM(end));
 	} else if (end <= start) {
-		;
-	} else if (t == t_cons || t == t_symbol) {
+		goto OUTPUT;
+	}
+	if (t == t_cons || t == t_symbol) {
 		seq = nthcdr(start, seq);
 		loop_for_in(seq) {
 			if (start >= end) {
@@ -844,14 +853,18 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 				start++;
 			}
 		} end_loop_for_in;
-	} else if (t == t_bitvector ||
-		   (t != t_string && seq->vector.elttype != aet_b8))
+		goto OUTPUT;
+	}
+	if (t == t_bitvector ||
+	    (t != t_string && seq->vector.elttype != aet_b8))
 	{
 		FEerror("~S is not of a valid sequence type for READ-BYTES",
 			1, seq);
-	} else  if (type_of(stream) == t_stream &&
-		    (stream->stream.mode == smm_io ||
-		     stream->stream.mode == smm_output))
+	}
+ AGAIN:
+	if ((t = type_of(stream)) == t_stream &&
+	    (stream->stream.mode == smm_io ||
+	     stream->stream.mode == smm_output))
 	{
 		size_t toread = end - start;
 		size_t n = fread(seq->vector.self.ch + start, sizeof(char),
@@ -859,13 +872,16 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 		if (n < toread && ferror(stream->stream.file))
 			io_error(stream);
 		start += n;
+	} else if (t == t_stream && stream->stream.mode == smm_two_way) {
+		stream = stream->stream.object0;
+		goto AGAIN;
 	} else {
 		unsigned char *p;
-		for (p = seq->vector.self.ch; start < end; start++, p++) {
+		for (p = seq->vector.self.ch; start < end; start++) {
 			int c = ecl_getc(stream);
 			if (c == EOF)
 				break;
-			*p = c;
+			p[start] = c;
 		}
 	}
  OUTPUT:

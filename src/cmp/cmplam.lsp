@@ -175,7 +175,7 @@
     (baboon))
 
   ;; check arguments
-  (unless (or local-entry-p (not (or *safe-compile* *compiler-check-args*)))
+  (unless (or local-entry-p (not (compiler-check-args)))
     (setq block-p t)
     (cond (varargs
 	   (when requireds
@@ -334,17 +334,6 @@
 
   (when block-p (wt-nl "}"))
   )
-
-(defun need-to-set-vs-pointers (lambda-list)
-				;;; On entry to in-line lambda expression,
-				;;; vs_base and vs_top must be set iff,
-   (or *safe-compile*
-       *compiler-check-args*
-       (nth 1 lambda-list)	;;; optional,
-       (nth 2 lambda-list)	;;; rest, or
-       (nth 3 lambda-list)	;;; key-flag.
-       ))
-
 
 ;;; The DEFMACRO compiler.
 
@@ -575,12 +564,12 @@
 	     (do ((reqs requireds (cdr reqs)))
 		 ((endp reqs))
 	       (declare (object reqs))
-	       (when (or *safe-compile* *compiler-check-args*)
+	       (when (compiler-check-args)
 		 (wt-nl "if(endp(" lcl "))FEinvalid_macro_call("
 			(add-symbol name) ");"))
 	       (dm-bind-loc (car reqs) `(CAR ,lcl))
 	       (when (or (cdr reqs) optionals rest key-flag
-			 *safe-compile* *compiler-check-args*)
+			 (compiler-check-args))
 		 (wt-nl lcl "=CDR(" lcl ");")))
 	     (do ((opts optionals (cdr opts))
 		  (opt))
@@ -596,8 +585,7 @@
 	       (wt-nl "} else {")
 	       (dm-bind-loc (car opt) `(CAR ,lcl))
 	       (when (third opt) (dm-bind-loc (third opt) t))
-	       (when (or (cdr opts) rest key-flag
-			 *safe-compile* *compiler-check-args*)
+	       (when (or (cdr opts) rest key-flag (compiler-check-args))
 		 (wt-nl lcl "=CDR(" lcl ");"))
 	       (wt "}"))
 	     (when rest (dm-bind-loc rest lcl))
@@ -617,12 +605,12 @@
 		   (when (fourth kwd) (dm-bind-loc (fourth kwd) t))
 		   (wt "}"))
 		 (wt "}")))
-	     (when (and (or *safe-compile* *compiler-check-args*)
+	     (when (and (compiler-check-args)
 			(null rest)
 			(null key-flag))
 	       (wt-nl "if(!endp(" lcl "))FEinvalid_macro_call("
 		      (add-symbol name) ");"))
-	     (when (and (or *safe-compile* *compiler-check-args*)
+	     (when (and (compiler-check-args)
 			key-flag
 			(not allow-other-keys))
 	       (wt-nl "check_other_key(" lcl "," (length keywords))

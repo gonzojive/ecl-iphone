@@ -859,20 +859,21 @@ Optional Features:
 --disable-boehm        Disable Boehm's garbage collector.
 --enable-local-boehm   Use already installed Boehm GC library.
 --enable-local-gmp     Use already installed GMP library.
---enable-threads	Include the multiple thread facility.
+--enable-threads       Include the multiple thread facility.
 --disable-shared       Disable building dynamically loadable extensions.
 --enable-opcode8       Interpreter uses 8-bit codes (only Intel!).
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+--with-clx             Include CLX.
 --with-tcp             Include socket interface.
 --with-gmp=args        Configure supplied GMP library with arguments.
 --with-config-file=f	Supply configuration for a cross compiler.
 --with-oldloop         Use the old MIT LOOP macro.
 --with-cmuformat       Use the FORMAT routine from CMUCL.
 --with-clos-streams    Allow user defined stream objects.
---with-ffi		Run-time foreign data manipulation.
+--with-ffi             Run-time foreign data manipulation.
 --with-cxx             Build ECL using C++ compiler.
   --with-x                use the X Window System
 
@@ -1396,6 +1397,12 @@ host_os=`echo $ac_cv_host | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\3/'`
 
 
 
+
+# Check whether --with-clx or --without-clx was given.
+if test "${with_clx+set}" = set; then
+  withval="$with_clx"
+  clx="yes"
+fi;
 
 # Check whether --with-tcp or --without-tcp was given.
 if test "${with_tcp+set}" = set; then
@@ -4358,8 +4365,11 @@ _ACEOF
 
 fi
 if test ${clx} ; then
-  TARGETS="${TARGETS} eclx${EXEEXT}"
-  LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}clx.${LIBEXT}"
+  if test ${shared} = "yes" ; then
+    LSP_LIBRARIES="${LSP_LIBRARIES} clx.fas"
+  else
+    LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}clx.${LIBEXT}"
+  fi
   cat >>confdefs.h <<\_ACEOF
 #define CLX 1
 _ACEOF
@@ -6068,7 +6078,7 @@ else
   echo "$as_me:$LINENO: result: already installed" >&5
 echo "${ECHO_T}already installed" >&6
 fi
-                                                                                                                                            ac_config_files="$ac_config_files bare.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp ../Makefile Makefile c/Makefile doc/Makefile doc/ecl.man tk/Makefile tests/Makefile ansi-tests/Makefile gabriel/Makefile"
+                                                                                                                                                      ac_config_files="$ac_config_files bare.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp eclx/load.lsp ../Makefile Makefile c/Makefile doc/Makefile doc/ecl.man tk/Makefile tests/Makefile ansi-tests/Makefile gabriel/Makefile"
 
           ac_config_files="$ac_config_files ecl-config.pre:util/ecl-config"
 
@@ -6609,6 +6619,7 @@ do
   "lsp/load.lsp" ) CONFIG_FILES="$CONFIG_FILES lsp/load.lsp" ;;
   "clos/load.lsp" ) CONFIG_FILES="$CONFIG_FILES clos/load.lsp" ;;
   "cmp/load.lsp" ) CONFIG_FILES="$CONFIG_FILES cmp/load.lsp" ;;
+  "eclx/load.lsp" ) CONFIG_FILES="$CONFIG_FILES eclx/load.lsp" ;;
   "../Makefile" ) CONFIG_FILES="$CONFIG_FILES ../Makefile" ;;
   "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile" ;;
   "c/Makefile" ) CONFIG_FILES="$CONFIG_FILES c/Makefile" ;;

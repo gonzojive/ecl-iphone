@@ -246,9 +246,7 @@ The default value is NIL.")
 ;;;
 ;;; These default settings are equivalent to (optimize (speed 3) (space 0) (safety 2))
 ;;;
-(defvar *safe-compile* t)
-(defvar *compiler-check-args* t)
-(defvar *compiler-push-events* nil)
+(defvar *safety* 2)
 (defvar *speed* 3)
 (defvar *space* 0)
 

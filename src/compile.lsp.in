@@ -91,7 +91,7 @@ cd ..; rm -rf tmp/*'")))
 			'("@LDINSTALLNAME@"))))
 
 ;;;
-;;; * Compile, load and link Common-Lisp to C compiler
+;;; * Compile and link Common-Lisp to C compiler
 ;;;
 (proclaim '(optimize (safety 2) (space 3)))
 
@@ -104,20 +104,20 @@ cd ..; rm -rf tmp/*'")))
   #+dlopen
   (c::build-fasl "cmp" :lisp-files objects))
 
+#+WANTS-CLX
+(progn
+  (proclaim '(optimize (safety 2) (speed 1)))
+  (load "eclx/load.lsp")
+  (push :clx-ansi-common-lisp *features*)
+  (let* ((objects (compile-if-old "build:eclx;" +eclx-module-files+
+				  :system-p t :c-file t :data-file t :h-file t)))
+    (c::build-static-library "clx" :lisp-files objects)
+    #+dlopen
+    (c::build-fasl "clx" :lisp-files objects)))
+
 (compiler::build-program
  #+(or cross stage1) "ecl"
  #-(or cross stage1) "ecl2"
- :lisp-files '(#+(and (not dlopen) WANTS-CMP) cmp)
+ :lisp-files '(#+(and (not dlopen) WANTS-CMP) cmp
+	       #+(and (not dlopen) WANTS-CLX) clx)
  :ld-flags '("-L./"))
-
-#+WANTS-CLX
-(progn
-  (proclaim '(optimize (safety 2) (space 3)))
-  (load "clx/load.lsp")
-  (push :clx-ansi-common-lisp *features*)
-  (let* ((objects (compile-if-old "build:clx;" +clx-module-files+
-				  :system-p t :c-file t :data-file t :h-file t)))
-    (c::build-program "eclx" :lisp-files `(#+(and (not dlopen) wants-cmp) cmp
-					   ,@objects))))
-
-(quit)

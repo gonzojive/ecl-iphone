@@ -195,9 +195,9 @@
     (LEXICAL (wt-lex var-loc))
     (SPECIAL (wt "SYM_VAL(" var-loc ")"))
     (REPLACED (wt var-loc))
-    (GLOBAL (if *safe-compile*
-              (wt "symbol_value(" var-loc ")")
-              (wt "SYM_VAL(" var-loc ")")))
+    (GLOBAL (if (safe-compile)
+		(wt "symbol_value(" var-loc ")")
+		(wt "SYM_VAL(" var-loc ")")))
     (t (wt var-loc))
     ))
 
@@ -223,11 +223,11 @@
        (wt-coerce-loc (var-rep-type var) loc)
        (wt #\;))
       (GLOBAL
-       (if *safe-compile*
+       (if (safe-compile)
 	   (wt-nl "cl_set(" var-loc ",")
 	   (wt-nl "SYM_VAL(" var-loc ")= "))
        (wt-coerce-loc (var-rep-type var) loc)
-       (wt (if *safe-compile* ");" ";")))
+       (wt (if (safe-compile) ");" ";")))
       (t
        (wt-nl var-loc "= ")
        (wt-coerce-loc (var-rep-type var) loc)
@@ -321,7 +321,7 @@
     (let ((*destination* val-loc)) (c2expr* values))
     
     (wt-nl "while(!endp(" sym-loc ")) {")
-    (when *safe-compile*
+    (when (safe-compile)
       (wt-nl "if(type_of(CAR(" sym-loc "))!=t_symbol)")
       (wt-nl
        "FEinvalid_variable(\"~s is not a symbol.\",CAR(" sym-loc "));"))

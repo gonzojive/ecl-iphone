@@ -31,7 +31,6 @@
            (cmperr "The lambda list ~s is illegal." vl)))
 
 ;;; fromcmputil.sp
-(defmacro safe-compile (&rest forms) `(when *safe-compile* ,@forms))
 (defmacro cmpck (condition string &rest args)
   `(if ,condition (cmperr ,string ,@args)))
 
@@ -56,6 +55,15 @@
 
 (defmacro wt-nl1 (&rest forms)
   `(wt #\Newline ,@forms))
+
+(defmacro safe-compile ()
+  `(>= *safety* 2))
+
+(defmacro compiler-check-args ()
+  `(>= *safety* 1))
+
+(defmacro compiler-push-events ()
+  `(>= *safety* 3))
 
 ;; ----------------------------------------------------------------------
 ;; C1-FORMS

@@ -94,7 +94,7 @@
   (setq args (coerce-locs (inline-args args))
 	x (first args)
 	y (second args))
-  (safe-compile
+  (when (safe-compile)
    (wt-nl "if(ATOM(" x "))"
 	  "FEtype_error_cons(" x ");"))
   (wt-nl "CAR(" x ") = " y ";")
@@ -109,7 +109,7 @@
   (setq args (coerce-locs (inline-args args))
 	x (first args)
 	y (second args))
-  (safe-compile
+  (when (safe-compile)
    (wt-nl "if(ATOM(" x "))"
 	  "FEtype_error_cons(" x ");"))
   (wt-nl "CDR(" x ") = " y ";")
@@ -214,7 +214,7 @@
 					&aux (*inline-blocks* 0))
   (declare (fixnum index))
   (setq args (coerce-locs (inline-args args)))
-  (if *safe-compile*
+  (if (safe-compile)
       (progn
        (wt-nl "{cl_object l= ")
        (dotimes (i index) (declare (fixnum i)) (wt "cl_cdr("))
@@ -244,7 +244,7 @@
   (declare (fixnum index))
   (setq args (coerce-locs (inline-args args)))
   (wt-nl "{cl_object " l "= ")
-  (if *safe-compile*
+  (if (safe-compile)
       (progn
        (dotimes (i index) (declare (fixnum i)) (wt "cl_cdr("))
        (wt (car args))
@@ -391,7 +391,7 @@
 (defun co1vector-push (args) (co1vector-push1 nil args))
 (defun co1vector-push-extend (args) (co1vector-push1 t args))
 (defun co1vector-push1 (extend args)
-  (unless (or *safe-compile*
+  (unless (or (safe-compile)
 	      (> *space* 3)
 	      (null (cdr args)))
     (let ((*space* 10))

@@ -46,7 +46,7 @@ all:	$(TARGETS) ecl-config doc
 %Makefile: $(srcdir)/%Makefile.in config.status
 	./config.status
 
-ecl$(EXE) eclx$(EXE): ecl_min$(EXE) compile.lsp sysfun.lsp
+ecl$(EXE): ecl_min$(EXE) compile.lsp sysfun.lsp
 	if [ -f CROSS-COMPILER ]; then \
 		./CROSS-COMPILER < compile.lsp; \
 	else \

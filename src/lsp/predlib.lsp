@@ -899,8 +899,9 @@ if not possible."
 	   (COMPLEX (canonical-complex-type (second type)))
 	   (CONS (apply #'register-cons-type (rest type)))
 	   ((ARRAY SIMPLE-ARRAY) (register-array-type type))
-	   (FUNCTION (register-function-type type))
-	   (VALUES (register-values-type type))
+	   ;;(FUNCTION (register-function-type type))
+	   ;;(VALUES (register-values-type type))
+	   (FUNCTION (canonical-type 'FUNCTION))
 	   (t (let ((expander (get-sysprop (first type) 'DEFTYPE-DEFINITION)))
 		(if expander
 		    (canonical-type (apply expander (rest type)))

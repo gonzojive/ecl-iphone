@@ -240,13 +240,12 @@
   (dolist (fun *funs*)
     (cond ((eq fun 'CB) (setq ccb t))
 	  ((eq fun 'LB) (setq clb t))
-	  ((and (symbolp fname) (consp fun))	; macro
-	   (when (eq fname (car fun))
-	     (when build-object
-	       (cmperr "The name of a macro ~A was found in a call to FUNCTION."
-		       fname))
-	     (return nil)))
-          ((same-fname-p (fun-name fun) fname)
+	  ((and (consp fun) (equal fname (first fun))) ; macro
+	   (when build-object
+	     (cmperr "The name of a macro ~A was found in a call to FUNCTION."
+		     fname))
+	   (return nil))
+          ((and (fun-p fun) (same-fname-p (fun-name fun) fname))
 	   (incf (fun-ref fun))
 	   (when build-object
 	     (setf (fun-ref-ccb fun) t))

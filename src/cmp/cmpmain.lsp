@@ -643,12 +643,8 @@ Cannot compile ~a."
    ))
 
 (defun print-compiler-info ()
-  (format t "~&;;; OPTIMIZE levels: Safety=~d~:[ (No runtime error checking)~;~], Space=~d, Speed=~d~%"
-          (cond ((null *compiler-check-args*) 0)
-                ((null *safe-compile*) 1)
-                ((null *compiler-push-events*) 2)
-                (t 3))
-          *safe-compile* *space* *speed*))
+  (format t "~&;;; OPTIMIZE levels: Safety=~d, Space=~d, Speed=~d~%"
+	  *safety* *space* *speed*))
 
 #+dlopen
 (defun load-o-file (file verbose print)

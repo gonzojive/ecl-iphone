@@ -156,7 +156,7 @@
 (defun wt-fdefinition (fun-name)
   (let ((vv (add-object fun-name)))
     (if (and (symbolp fun-name)
-	     (or (not *safe-compile*)
+	     (or (not (safe-compile))
 		 (and (eql (symbol-package fun-name) (find-package "CL"))
 		      (fboundp fun-name) (functionp (fdefinition fun-name)))))
 	(wt "(" vv "->symbol.gfdef)")

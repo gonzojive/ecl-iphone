@@ -235,9 +235,9 @@
     (when (and (eq (car x) fname)
 	       (setq ii (inline-type-matches (cdr x) types return-type)))
       (return-from get-inline-info ii)))
-  (dolist (x (get-sysprop fname (if *safe-compile*
-			    ':INLINE-SAFE
-			    ':INLINE-UNSAFE)))
+  (dolist (x (get-sysprop fname (if (safe-compile)
+				    ':INLINE-SAFE
+				    ':INLINE-UNSAFE)))
     (when (setq ii (inline-type-matches x types return-type))
       (return)))
   (dolist (x (get-sysprop fname ':INLINE-ALWAYS))
