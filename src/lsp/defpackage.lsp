@@ -201,10 +201,9 @@
       (when use
 	(unuse-package (package-use-list (find-package name)) name)))
     (make-package name :use nil :nicknames nicknames))
-  #+nil
-  (when documentation ((put-sysprop (intern name :keyword) :package-documentation
-				    documentation)))
   (let ((*package* (find-package name)))
+    (when documentation
+      (setf (documentation *package* t) documentation))
     (shadow shadowed-symbol-names)
     (dolist (item shadowing-imported-from-symbol-names-list)
       (let ((package (find-package (first item))))

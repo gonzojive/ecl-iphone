@@ -32,12 +32,12 @@
     (defclass  (kernel slot)     (kernel slot)          (boot))
     (standard  (boot defclass precomp)
 	      			 (boot defclass)	(method defclass))
-    (inspect   (standard)        (standard)             (standard))
     (change    (standard)	 (standard)		(standard))
     (builtin   (standard)        (standard)	   	(standard))
     (stdmethod (builtin)	 (builtin)	        (builtin))
     (generic   (stdmethod)       (stdmethod)            ())
     (fixup     (stdmethod)       (stdmethod)            (standard))
+    (inspect   (standard)        (standard)             (standard))
     (conditions ()		 ()			())
     ))
 

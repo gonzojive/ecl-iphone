@@ -46,7 +46,8 @@
 		 hash-table)
 	(setq hash-table (pop *documentation-pool*))))
     (maphash #'(lambda (key doc)
-		 (when doc (push (cons key doc) entries)))
+		 (when (and (symbolp key) doc)
+		   (push (cons key doc) entries)))
 	     hash-table)
     (setq entries (sort entries #'string-lessp :key #'car))
     (let* ((*package* (find-package "CL"))
@@ -96,7 +97,6 @@
   (setq *documentation-pool* nil)
   (*make-special '*keep-documentation*)
   (setq *keep-documentation* t))
-
 #-ecl-min
 (progn
   (defvar *documentation-pool* (list (make-hash-table :test #'eq :size 128)
@@ -119,35 +119,30 @@ the help file."
       (dump-help-file dict file merge)
       (rplaca *documentation-pool* file))))
 
-(defun get-documentation (symbol doc-type &aux output)
-  (when (not (member doc-type '(variable function setf type structure)))
-    (error "~S is not a valid documentation type" doc-type))
+(defun get-documentation (object doc-type &aux output)
   (dolist (dict *documentation-pool*)
     (cond ((hash-table-p dict)
-	   (when (and (setq output (gethash symbol dict))
+	   (when (and (setq output (gethash object dict))
 		      (setq output (getf output doc-type)))
 	     (return-from get-documentation output)))
-	  ((stringp dict)
-	   (when (and (setq output (search-help-file symbol dict))
+	  ((and (symbolp object) (stringp dict))
+	   (when (and (setq output (search-help-file object dict))
 		      (setq output (getf output doc-type)))
 	     (return-from get-documentation output)))))))
 
-(defun set-documentation (symbol doc-type string)
-  (tan 1.0)
-  (when (not (member doc-type '(variable function setf type structure)))
-    (error "~S is not a valid documentation type" doc-type))
+(defun set-documentation (object doc-type string)
   (when (not (or (stringp string) (null string)))
     (error "~S is not a valid documentation string" string))
   (let ((dict (first *documentation-pool*)))
     (when (hash-table-p dict)
-      (let ((plist (gethash symbol dict)))
+      (let ((plist (gethash object dict)))
 	(setq plist (if string
 			(put-f plist string doc-type)
 			(rem-f plist doc-type)))
 	(if plist
-	  (si::hash-set symbol dict plist)
-	  (remhash symbol dict)))))
-  nil)
+	  (si::hash-set object dict plist)
+	  (remhash object dict)))))
+  string)
 
 (defun expand-set-documentation (symbol doc-type string)
   (when (and *keep-documentation* string)
@@ -155,6 +150,7 @@ the help file."
       (error "~S is not a valid documentation string" string))
     `((set-documentation ',symbol ',doc-type ,string))))
 
+#-clos
 (defun documentation (object type)
   "Args: (symbol doc-type)
 Returns the DOC-TYPE doc-string of SYMBOL; NIL if none exists.  Possible doc-

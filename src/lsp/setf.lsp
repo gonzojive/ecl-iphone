@@ -206,6 +206,7 @@ Does not check if the third gang is a single-element list."
 (defsetf fill-pointer sys:fill-pointer-set)
 (defsetf symbol-plist sys:set-symbol-plist)
 (defsetf gethash (k h &optional d) (v) `(sys:hash-set ,k ,h ,v))
+#-clos
 (defsetf documentation (s d) (v) `(sys::set-documentation ,s ,d ,v))
 #+clos
 (defsetf sys:instance-ref sys:instance-set)

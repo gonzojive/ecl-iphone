@@ -61,15 +61,14 @@
                      (:documentation     (push value documentation)))))))
 
     (setf (slotd-name slotd)       name
-;	  (slotd-keyword slotd)    (make-keyword name)
 	  (slotd-initargs slotd)   initargs
 	  (slotd-initform slotd)   initform
 	  (slotd-accessors slotd)  accessors
 	  (slotd-readers slotd)    readers
 	  (slotd-writers slotd)    writers
 	  (slotd-allocation slotd) allocation
-	  (slotd-type slotd)       type)
-;	  (slotd-documentation slotd)    documentation
+	  (slotd-type slotd)       type
+	  (slotd-documentation slotd)    documentation)
 
     slotd))
 

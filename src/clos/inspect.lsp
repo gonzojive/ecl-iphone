@@ -456,3 +456,65 @@ q (or Q):             quits the inspection.~%~
   (incf si::*inspect-level*))
 
 ;;; -------------------------------------------------------------------------
+;;;
+;;; Documentation
+;;;
+
+(defconstant +valid-documentation-types+
+    '(compiler-macro function method-combination setf structure
+      t type variable))
+
+(defgeneric documentation (object doc-type))
+(defgeneric (setf documentation) (new-value object doc-type))
+
+(defmethod documentation ((object symbol) doc-type)
+  (when (member doc-type +valid-documentation-types+)
+    (or (when (eq doc-type 'type)
+	  (let ((c (find-class object nil)))
+	    (and c (documentation c t))))
+	(si::get-documentation object doc-type))))
+
+(defmethod (setf documentation) (new-value (object symbol) doc-type)
+  (when (member doc-type +valid-documentation-types+)
+    (or (when (eq doc-type 'type)
+	  (let ((c (find-class object nil)))
+	    (when c
+	      (si::set-documentation object 'type nil)
+	      (si::set-documentation object 'structure nil)
+	      (setf (documentation c t) new-value))))
+	(si::get-documentation object doc-type)))
+  new-value)
+
+(defmethod documentation ((object package) doc-type)
+  (when (member doc-type '(t package))
+    (si::get-documentation object 'package)))
+
+(defmethod (setf documentation) (new-value (object package) doc-type)
+  (when (member doc-type '(t package))
+    (si::set-documentation object 'package new-value)))
+
+(defmethod documentation ((object class) doc-type)
+  (when (member doc-type '(t type))
+    (clos::documentation-of object)))
+
+(defmethod (setf documentation) (new-value (object class) doc-type)
+  (when (member doc-type '(t type))
+    (setf (clos::documentation-of object) new-value)))
+
+(defmethod documentation ((object structure-class) doc-type)
+  (when (member doc-type '(t type))
+    (si::get-documentation (class-name object) 'structure)))
+
+(defmethod (setf documentation) (new-value (object class) doc-type)
+  (when (member doc-type '(t type))
+    (setf (documentation (class-name object) 'structure) new-value)))
+
+(defmethod documentation ((object list) doc-type)
+  (when (and (si::valid-function-name-p list)
+	     (member doc-type '(function compiler-macro)))
+    (si::get-documentation object doc-type)))
+
+(defmethod (setf documentation) (new-value (object list) doc-type)
+  (when (and (si::valid-function-name-p object)
+	     (member doc-type '(function compiler-macro)))
+    (si::set-documentation object doc-type new-value)))

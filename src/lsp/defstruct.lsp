@@ -250,6 +250,7 @@
   (put-sysprop name 'STRUCTURE-NAMED named)
   (put-sysprop name 'STRUCTURE-OFFSET offset)
   (put-sysprop name 'STRUCTURE-CONSTRUCTORS constructors)
+  #+clos
   (when *keep-documentation*
     (sys:set-documentation name 'STRUCTURE documentation))
   (and (consp type) (eq (car type) 'VECTOR)
