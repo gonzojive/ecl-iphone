@@ -72,6 +72,9 @@ extern bds_ptr bds_top;	/*  bind stack top  */
 #define	bds_unwind1  \
 	(SYM_VAL(bds_top->bds_sym) = bds_top->bds_val, --bds_top)
 
+#define bds_unwind_n(n) \
+	bds_unwind(bds_top - (n))
+
 /****************************
  * INVOCATION HISTORY STACK
  ****************************/
