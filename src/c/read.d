@@ -458,7 +458,8 @@ right_parenthesis_reader(cl_object in, cl_object character)
 static cl_object
 left_parenthesis_reader(cl_object in, cl_object character)
 {
-	@(return do_read_delimited_list(')', in, 0))
+	const char c = ')';
+	@(return do_read_delimited_list(c, in, 0))
 }
 /*
 	read_string(delim, in) reads
@@ -1279,7 +1280,7 @@ stream_or_default_input(cl_object stream)
 @)
 
 static cl_object
-do_read_delimited_list(int d, cl_object strm, bool proper_list)
+do_read_delimited_list(int d, cl_object in, bool proper_list)
 {
 	int after_dot = 0;
 	bool suppress = read_suppress;
@@ -1293,7 +1294,7 @@ do_read_delimited_list(int d, cl_object strm, bool proper_list)
 				/* Something like (1 . ) */
 				FEreader_error("Object missing after a list dot", in, 0);
 			}
-			return l;
+			return y;
 		} else if (x == @'si::.') {
 			if (proper_list) {
 				FEreader_error("A dotted list was found where a proper list was expected.", in, 0);
