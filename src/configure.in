@@ -96,9 +96,9 @@ AC_ARG_WITH(clos-streams,
 AC_ARG_WITH(ffi,
 	[--with-ffi		Run-time foreign data manipulation.],
 	ffi="yes")
-AC_ARG_ENABLE(cxx,
-	[--enable-cxx           Build ECL using C++ compiler.],
-	usecxx=${enableval},usecxx="no")
+AC_ARG_WITH(cxx,
+	[--with-cxx             Build ECL using C++ compiler.],
+	usecxx="${withval}",usecxx="no")
 AC_ARG_ENABLE(opcode8,
 	[--enable-opcode8       Interpreter uses 8-bit codes (only Intel!).],
 	opcode8=${enableval},opcode8="no")

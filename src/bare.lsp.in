@@ -21,15 +21,18 @@
 ;;;
 ;;; * Load Common-Lisp base library
 ;;;
-(if (member "ECL-MIN" *features* :test #'string-equal)
+(if (or (member "ECL-MIN" *features* :test #'string-equal)
+	(member "CROSS" *features* :test #'string-equal))
   (load "lsp/load.lsp" :verbose nil))
+
 (defun si::process-command-args () )
 
 ;;;
 ;;; * Load PCL-based Common-Lisp Object System
 ;;;
 (setf sys::*gc-verbose* nil)
-#+(and wants-clos ecl-min)
+(print *features*)
+#+(or (and wants-clos ecl-min) cross)
 (load "clos/load.lsp")
 
 ;;;

@@ -1789,14 +1789,12 @@ init_read(void)
  *----------------------------------------------------------------------
  */
 cl_object
-read_VV(cl_object block, void *entry)
+read_VV(cl_object block, void (*entry_point)(cl_object))
 {
 	volatile cl_object old_eptbc = cl_core.packages_to_be_created;
-	typedef void (*entry_point_ptr)(cl_object);
 	volatile cl_object x;
 	cl_index i, len;
 	cl_object in;
-	entry_point_ptr entry_point = (entry_point_ptr)entry;
 	cl_object *VV;
 
 	if (block == NULL)

@@ -18,4 +18,5 @@
   "src:clos;inspect.lsp"
   "src:clos;conditions.lsp"))
 
+#-cross
 (mapc #'(lambda (x) (load x :verbose nil)) +clos-module-files+)

@@ -861,7 +861,6 @@ Optional Features:
 --enable-local-gmp     Use already installed GMP library.
 --enable-threads	Include the multiple thread facility.
 --disable-shared       Disable building dynamically loadable extensions.
---enable-cxx           Build ECL using C++ compiler.
 --enable-opcode8       Interpreter uses 8-bit codes (only Intel!).
 
 Optional Packages:
@@ -874,6 +873,7 @@ Optional Packages:
 --with-cmuformat       Use the FORMAT routine from CMUCL.
 --with-clos-streams    Allow user defined stream objects.
 --with-ffi		Run-time foreign data manipulation.
+--with-cxx             Build ECL using C++ compiler.
   --with-x                use the X Window System
 
 Some influential environment variables:
@@ -1475,10 +1475,11 @@ if test "${with_ffi+set}" = set; then
   withval="$with_ffi"
   ffi="yes"
 fi;
-# Check whether --enable-cxx or --disable-cxx was given.
-if test "${enable_cxx+set}" = set; then
-  enableval="$enable_cxx"
-  usecxx=${enableval}
+
+# Check whether --with-cxx or --without-cxx was given.
+if test "${with_cxx+set}" = set; then
+  withval="$with_cxx"
+  usecxx="${withval}"
 else
   usecxx="no"
 fi;

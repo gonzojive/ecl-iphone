@@ -1126,7 +1126,7 @@ extern cl_object ecl_current_readtable(void);
 extern int ecl_current_read_base(void);
 extern char ecl_current_read_default_float_format(void);
 extern cl_object c_string_to_object(const char *s);
-extern cl_object read_VV(cl_object block, void *entry);
+extern cl_object read_VV(cl_object block, void (*entry)(cl_object));
 
 
 /* reference.c */
@@ -1416,7 +1416,7 @@ extern cl_object si_chdir _ARGS((cl_narg narg, cl_object directory, ...));
 extern cl_object si_mkdir(cl_object directory, cl_object mode);
 extern cl_object cl_directory _ARGS((cl_narg narg, cl_object directory, ...));
 extern cl_object cl_user_homedir_pathname _ARGS((cl_narg narg, ...));
-extern cl_object si_mkstemp(cl_object template);
+extern cl_object si_mkstemp(cl_object templ);
 
 extern const char *expand_pathname(const char *name);
 extern cl_object ecl_string_to_pathname(char *s);

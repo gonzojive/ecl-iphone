@@ -8,7 +8,7 @@ VPATH	= @srcdir@
 # Programs used by "make":
 #
 TRUE_CC = @CC@
-CC	= @ECL_CC@
+CC	= @CC@
 CFLAGS	= -c -I$(srcdir) -I$(HDIR) -I../h @BOEHM_HEADERS@ @CFLAGS@ @ECL_CFLAGS@ \
 #	  -Wall -W -Wfloat-equal -Wundef -Wendif-labels -Wpointer-arith -Wcast-align \
 #	  -Wwrite-strings -Wconversion -Wsign-compare -Wmissing-prototypes -Wredundant-decls \

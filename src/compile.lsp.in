@@ -8,6 +8,8 @@
 ;;;	- On a second stage, using the final ECL executable, to test it.
 ;;;
 
+(setq *package* (find-package "SYSTEM"))
+
 ;;;
 ;;; * Ensure that we have the whole of Common-Lisp to compile
 ;;;
@@ -95,7 +97,7 @@ cd ..; rm -rf tmp/*'")))
 
 (si::pathname-translations "SYS" '(("**;*.*.*" "@ecldir@/**/*.*")))
 
-#+(or (not stage1) WANTS-CMP)
+#+(and (not cross) (or (not stage1) WANTS-CMP))
 (let ((objects (compile-if-old "build:cmp;" +cmp-module-files+
 				:system-p t :c-file t :data-file t :h-file t)))
   (c::build-static-library "cmp" :lisp-files objects)

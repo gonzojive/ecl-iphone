@@ -535,7 +535,15 @@ typedef enum {
 /*
 	Type_of.
 */
-#define	type_of(obje)	((cl_type)(IMMEDIATE(obje) ? IMMEDIATE(obje) : (((cl_object)(obje)) ->d.t)))
+#if defined(__cplusplus) || defined(__GNUC__)
+static inline cl_type type_of(cl_object o) {
+	int i = IMMEDIATE(o);
+	return (i? (cl_type)i : (cl_type)(o->d.t));
+}
+#else
+#define	type_of(o) \
+	((cl_type)(IMMEDIATE(o) ? IMMEDIATE(o) : ((o)->d.t)))
+#endif
 
 /*
 	This is used to retrieve optional arguments

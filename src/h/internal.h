@@ -41,8 +41,8 @@ extern void init_stacks(int *);
 extern void init_unixint(void);
 extern void init_unixtime(void);
 extern void ecl_init_env(struct cl_env_struct *);
-extern void init_LSP(void);
-extern void init_CLOS(void);
+extern void init_LSP(cl_object);
+extern void init_CLOS(cl_object);
 
 /* all_functions.d */
 

@@ -51,8 +51,7 @@
 	      (LOAD)
 	    (SI:RECORD-SOURCE-PATHNAME
 	     ',name '(DEFMETHOD ',qualifiers ',specializers)))
-	  (EVAL-WHEN (COMPILE LOAD EVAL)
-	    (INSTALL-METHOD
+	  (INSTALL-METHOD
 	     ',name
 	     ',qualifiers
 	     ',specializers
@@ -60,7 +59,7 @@
 	     ',doc
 	     ',plist
 	     ,fn-form)
-	    ))))))
+	    )))))
 
 
 ;;; ----------------------------------------------------------------------

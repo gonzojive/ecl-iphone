@@ -69,9 +69,9 @@ main(int argc, char **args)
 }
 
 #ifdef __cplusplus
-extern "C" void init_LSP(void);
-extern "C" void init_CLOS(void);
+extern "C" void init_LSP(cl_object);
+extern "C" void init_CLOS(cl_object);
 #endif
 
-void init_LSP(void) {}
-void init_CLOS(void) {}
+void init_LSP(cl_object o) {}
+void init_CLOS(cl_object o) {}

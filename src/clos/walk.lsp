@@ -229,7 +229,7 @@
 		  (if wfop walk-form         (second lock))
 		  (if decp declarations      (third lock))
 		  (if lexp lexical-variables (fourth lock)))))))
-		  
+
 (defun env-walk-function (env)
   (declare (si::c-local))
   (first (env-lock env)))
@@ -353,7 +353,7 @@
 ;;;       walker.
 ;;;
 
-(eval-when (compile load eval)
+(eval-when (#-cross compile load eval)
 
 (defmacro get-walker-template-internal (x) ;Has to be inside eval-when because
   `(get-sysprop ,x 'WALKER-TEMPLATE))	   ;Golden Common Lisp doesn't hack

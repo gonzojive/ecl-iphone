@@ -220,7 +220,11 @@
 	;; We only write declarations for functions which are not
 	;; in lisp_external.h
 	(when (and (not found) (not (si::mangle-name fname t)))
+	  (wt-h "#ifdef __cplusplus")
+	  (wt-h "extern cl_object " fd "(...);")
+	  (wt-h "#else")
 	  (wt-h "extern cl_object " fd "();")
+	  (wt-h "#endif")
 	  (setf (gethash fd *compiler-declared-globals*) 1)))
       (unwind-exit
        (if (minusp maxarg)

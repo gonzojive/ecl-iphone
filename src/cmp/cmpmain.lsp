@@ -111,7 +111,7 @@ coprocessor).")
 #define ECL_CPP_TAG
 #endif
 
-~{	extern ECL_CPP_TAG void init_~A();~%~}
+~{	extern ECL_CPP_TAG void init_~A(cl_object);~%~}
 
 ")
 
@@ -119,7 +119,7 @@ coprocessor).")
 #ifdef __cplusplus
 extern \"C\"
 #endif
-int init_~A(cl_object cblock)
+void init_~A(cl_object cblock)
 {
 	static cl_object Cblock;
 	cl_object subblock;
@@ -137,7 +137,7 @@ int init_~A(cl_object cblock)
 	VV = Cblock->cblock.data;
 #endif
 	~A
-~:[~{	subblock = read_VV(OBJNULL,init_~A); subblock->cblock.next = Cblock;~%~}
+~:[~{	subblock = read_VV(OBJNULL, init_~A); subblock->cblock.next = Cblock;~%~}
 ~;~{	init_~A(Cblock);~%~}~]
 
 	~A

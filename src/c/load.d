@@ -155,7 +155,7 @@ si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 
 	/* Finally, perform initialization */
 GO_ON:	
-	read_VV(block, block->cblock.entry);
+	read_VV(block, (void (*)(cl_object))(block->cblock.entry));
 	output = Cnil;
 OUTPUT:
 #ifdef ECL_THREADS
