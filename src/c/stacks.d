@@ -367,8 +367,16 @@ alloc_stacks(int *new_cs_org)
 	cssize = CSSIZE;
 #endif
 #ifdef DOWN_STACK
+	/* Sanity check - in case rlimit is set too high */
+	if (cs_org - cssize > cs_org) {
+	  cssize = CSSIZE;
+	}
 	cs_limit = cs_org - cssize; /* in THREADS I'm assigning to the main thread clwp */
 #else
+	/* Sanity check - in case rlimit is set too high */
+	if (cs_org + cssize < cs_org) {
+	  cssize = CSSIZE;
+	}
 	cs_limit = cs_org + cssize;
 #endif
 }
