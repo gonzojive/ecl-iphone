@@ -40,8 +40,8 @@ PROLOGUE(mpn_submul_1)
 PROLOGUE(mpn_submul_1c)
 	mtctr	r5
 	addic	r0,r0,0
-	cal	r3,-8(r3)
-	cal	r4,-8(r4)
+	addi	r3, r3, -8
+	addi	r4, r4, -8
 .Loop:
 	ldu	r0,8(r4)
 	ld	r10,8(r3)

@@ -1,6 +1,6 @@
 dnl  Intel Pentium-4 mpn_divexact_by3 -- mpn exact division by 3.
 
-dnl  Copyright 2001, 2002 Free Software Foundation, Inc.
+dnl  Copyright 2001, 2002, 2003 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -68,7 +68,8 @@ deflit(`FRAME',0)
 	movd	PARAM_CARRY, %mm1
 	pcmpeqd	%mm6, %mm6
 
-	movd	L(inverse), %mm7
+	movl	$0xAAAAAAAB, %edx
+	movd	%edx, %mm7
 
 	movl	PARAM_DST, %edx
 	psrlq	$32, %mm6		C 0x00000000FFFFFFFF

@@ -1,8 +1,8 @@
 /* Reference mpn functions, designed to be simple, portable and independent
    of the normal gmp code.  Speed isn't a consideration.
 
-Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002 Free Software Foundation,
-Inc.
+Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2004 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -1320,7 +1320,6 @@ refmpn_mod2 (mp_limb_t r[2], const mp_limb_t a[2], const mp_limb_t d[2])
   mp_limb_t  D[2];
   int        n;
 
-  ASSERT (! refmpn_overlap_p (r, 2, a, 2));
   ASSERT (! refmpn_overlap_p (r, 2, d, 2));
   ASSERT_MPN (a, 2);
   ASSERT_MPN (d, 2);
