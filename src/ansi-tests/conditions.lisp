@@ -7,7 +7,7 @@
 ;;; Helpers
 ;;;
 
-#+(or clisp allegro cmu sbcl)
+#+(or clisp allegro cmu sbcl ecl)
 (check-for-bug :conditions-legacy-11
   #+CLISP
   (defun my-cpl (class)
@@ -33,7 +33,7 @@
 
 (check-for-bug :conditions-legacy-31
   (defun check-superclasses (class expected)
-    (let ((expected (list* class 't
+    (let ((expected (list* #-ecl class 't
                            #+(or CLISP ALLEGRO ecl) 'standard-object
                            #+(or cmu sbcl) 'instance
                            'condition expected))
