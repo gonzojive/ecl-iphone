@@ -1,4 +1,3 @@
-25210: Permission denied, please try again.
 dnl --------------------------------------------------------------
 dnl Make srcdir absolute, if it isn't already.  It's important to
 dnl avoid running the path through pwd unnecessarily, since pwd can
