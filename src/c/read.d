@@ -244,6 +244,10 @@ read_object(cl_object in)
 cl_object
 parse_number(const char *s, cl_index end, cl_index *ep, int radix)
 {
+#ifdef mingw32
+  /* FIXME! Why does Mingw32 insist on using a float pow() ? */
+#define pow powl
+#endif
 	cl_object x, y;
 	int sign;
 	cl_object integer_part;
