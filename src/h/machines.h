@@ -174,6 +174,7 @@
 #define LDFLAGS -Wl,--export-dynamic
 #define SHARED_LDFLAGS -shared
 #define USE_DLOPEN
+#define _ISOC99_SOURCE
 #define HAVE_ISOC99
 #define HAVE_POSIX
 #ifndef unix

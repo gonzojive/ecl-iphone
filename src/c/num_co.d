@@ -22,210 +22,39 @@
 */
 
 #include "ecl.h"
+#include <float.h>
 #include <math.h>
 #ifndef HAVE_ISOC99
 # define floorf floor
 # define ceilf ceil
 # define fabsf fabs
+# error "We need ISOC99 mathematical functions for compiling ECL"
 #endif
 
 static cl_object plus_half, minus_half;
 
-
-#ifdef VAX
-/*
-	radix = 2
-
-	SEEEEEEEEHHHHHHH	The redundant most significant fraction bit
-	HHHHHHHHHHHHHHHH	is not expressed.
-	LLLLLLLLLLLLLLLL
-	LLLLLLLLLLLLLLLL
-*/
-#endif
-#ifdef IEEEFLOAT
-# ifndef WORDS_BIGENDIAN
-/*
-	radix = 2
-
-	LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL	The redundant most
-	SEEEEEEEEEEEHHHHHHHHHHHHHHHHHHHH	significant fraction bit
-						is not expressed.
-*/
-# else
-/*
-	radix = 2
-
-	SEEEEEEEEEEEHHHHHHHHHHHHHHHHHHHH	The redundant most
-	LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL	significant fraction bit
-						is not expressed.
-*/
-# endif
-#endif
-#ifdef TAHOE
-/*
-        radix = 2
-
-        SEEEEEEEEHHHHHHHHHHHHHHHHHHHHHHH       The redundant most significant
-        LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL       fraction bit is not expressed.
-
-*/
-#endif
-
-static void
-integer_decode_double(double d, unsigned *hp, unsigned *lp, int *ep, int *sp)
-{
-	unsigned h, l;
-
-	if (d == 0.0) {
-		*hp = *lp = 0;
-		*ep = 0;
-		*sp = 1;
-		return;
-	}
-	h = *((unsigned *)&d + HIND);
-	l = *((unsigned *)&d + LIND);
-#ifdef VAX
-	*ep = ((h >> 7) & 0xff) - 128 - 56;
-	h = ((h >> 15) & 0x1fffe) | (((h & 0x7f) | 0x80) << 17);
-	l = ((l >> 16) & 0xffff) | (l << 16);
-#endif
-#ifdef IEEEFLOAT
-	*ep = ((h & 0x7ff00000) >> 20) - 1022 - 53;
-	h = (h & 0x000fffff) | 0x00100000;
-#endif
-#ifdef TAHOE
-        *ep = ((h & 0x7f800000) >> 23) - 128 - 56;
-        h = (h & 0x007fffff) | 0x00800000;
-#endif
-	*hp = h;
-	*lp = l;
-	*sp = (d > 0.0 ? 1 : -1);
-}
-
-#ifdef VAX
-/*
-	radix = 2
-
-	SEEEEEEEEMMMMMMM	The redundant most significant fraction bit
-	MMMMMMMMMMMMMMMM	is not expressed.
-*/
-#endif
-#ifdef IEEEFLOAT
-/*
-	radix = 2
-
-	SEEEEEEEEMMMMMMMMMMMMMMMMMMMMMMM	The redundant most
-						significant fraction bit
-						is not expressed.
-*/
-#endif
-#ifdef TAHOE
-/*
-        radix = 2
-        
-        SEEEEEEEEMMMMMMMMMMMMMMMMMMMMMMM        The redundant most significant
-                                                fraction bit is not expressed.
-*/
-#endif
-static void
-integer_decode_float(double d, unsigned int *mp, int *ep, int *sp)
-{
-	float f;
-	int m;
-
-	f = d;
-	if (f == 0.0) {
-		*mp = 0;
-		*ep = 0;
-		*sp = 1;
-		return;
-	}
-	m = *(int *)(&f);
-#ifdef VAX
-	*ep = ((m >> 7) & 0xff) - 128 - 24;
-	*mp = ((m >> 16) & 0xffff) | (((m & 0x7f) | 0x80) << 16);
-#endif
-#ifdef IEEEFLOAT
-	*ep = ((m & 0x7f800000) >> 23) - 126 - 24;
-	*mp = (m & 0x007fffff) | 0x00800000;
-#endif
-#ifdef TAHOE
-        *ep = ((m & 0x7f800000) >> 23) - 128 -24;
-        *mp = (m & 0x007fffff) | 0x00800000;
-#endif
-	*sp = (f > 0.0 ? 1 : -1);
-}
-
-static int
-double_exponent(double value)
-{
-	int *d = (int*)&value;
-	if (value == 0.0)
-		return(0);
-#ifdef VAX
-	return(((d[0] >> 7) & 0xff) - 128);
-#endif
-#ifdef IEEEFLOAT
-	return(((d[HIND] & 0x7ff00000) >> 20) - 1022);
-#endif
-#ifdef TAHOE
-        return(((d[0] & 0x7f800000) >> 23) - 128);
-#endif
-}
-
-static void
-set_exponent(double *value, int e)
-{
-	unsigned int *d = (unsigned int *)value;
-	if (*value == 0.0)
-		return;
-#ifdef VAX
-	d[0] = (d[0] & 0xffff807f) | (((e + 128) << 7) & 0x7f80);
-#endif
-#ifdef IEEEFLOAT
-	d[HIND] = (d[HIND] & 0x800fffff) | (((e + 1022) << 20) & 0x7ff00000);
-#endif
-#ifdef TAHOE
-        d[0] = (d[0] & 0x807fffff) | (((e + 128) << 23) & 0x7f800000);
-#endif
-}
-
-
 cl_object
 double_to_integer(double d)
 {
-	unsigned int h, l;
-	int e, s;
-	cl_object x;
-
-	if (d == 0.0)
-		return(MAKE_FIXNUM(0));
-	integer_decode_double(d, &h, &l, &e, &s);
-
-#if defined(VAX) || defined(TAHOE)
-	if (e <= -32) {
-		h >>= (-e) - 32;
-		return(MAKE_FIXNUM(s*h));
+	if (d <= MOST_POSITIVE_FIXNUM && d >= MOST_NEGATIVE_FIXNUM)
+		return MAKE_FIXNUM((cl_fixnum)d);
+	else {
+		cl_object x = big_register0_get();
+		mpz_set_d(x->big.big_num, d);
+		return big_register_copy(x);
 	}
-#endif
-#ifdef IEEEFLOAT
-	if (e <= -32) {
-		e = (-e) - 32;
-		if (e >= 32)
-			return(MAKE_FIXNUM(0));
-		h >>= e;
-		return(MAKE_FIXNUM(s*h));
-	}
-#endif
-	if (h != 0)
-		x = bignum2(h, l);
-	else
-		x = MAKE_FIXNUM(l);
+}
 
-	x = integer_shift(x, e);
-	if (s < 0)
-		x = number_negate(x);
-	return(x);
+cl_object
+float_to_integer(float d)
+{
+	if (d <= MOST_POSITIVE_FIXNUM && d >= MOST_NEGATIVE_FIXNUM)
+		return MAKE_FIXNUM((cl_fixnum)d);
+	else {
+		cl_object x = big_register0_get();
+		mpz_set_d(x->big.big_num, d);
+		return big_register_copy(x);
+	}
 }
 
 static cl_object
@@ -329,14 +158,14 @@ floor1(cl_object x)
 	case t_shortfloat: {
 		float d = sf(x);
 		float y = floorf(d);
-		VALUES(0) = double_to_integer(y);
+		VALUES(0) = float_to_integer(y);
 		VALUES(1) = make_shortfloat(d - y);
 		break;
 	}
 	case t_longfloat: {
 		double d = lf(x);
 		double y = floor(d);
-		VALUES(0) = double_to_integer(y);
+		VALUES(0) = float_to_integer(y);
 		VALUES(1) = make_longfloat(d - y);
 		break;
 	}
@@ -383,7 +212,7 @@ floor2(cl_object x, cl_object y)
 		  float n = sf(y);
 		  float p = fix(x) / n;
 		  float q = floorf(p);
-		  VALUES(0) = double_to_integer(q);
+		  VALUES(0) = float_to_integer(q);
 		  VALUES(1) = make_shortfloat((p - q)*n);
 		  break;
 		}
@@ -427,7 +256,7 @@ floor2(cl_object x, cl_object y)
 		  float n = sf(y);
 		  float p = big_to_double(x) / n;
 		  float q = floorf(p);
-		  VALUES(0) = double_to_integer(q);
+		  VALUES(0) = float_to_integer(q);
 		  VALUES(1) = make_shortfloat((p - q)*n);
 		  break;
 		}
@@ -459,7 +288,7 @@ floor2(cl_object x, cl_object y)
 		float n = number_to_double(y);
 		float p = sf(x)/n;
 		float q = floorf(p);
-		VALUES(0) = double_to_integer(q);
+		VALUES(0) = float_to_integer(q);
 		VALUES(1) = make_shortfloat((p - q)*n);
 		break;
 	}
@@ -501,14 +330,14 @@ ceiling1(cl_object x)
 		VALUES(1) = make_ratio(VALUES(1), x->ratio.den);
 		break;
 	case t_shortfloat: {
-		double d = (double)(sf(x));
-		double y = ceil(d);
-		VALUES(0) = double_to_integer(y);
+		float d = sf(x);
+		float y = ceilf(d);
+		VALUES(0) = float_to_integer(y);
 		VALUES(1) = make_shortfloat(d - y);
 		break;
 	}
 	case t_longfloat: {
-		double d = (double)(sf(x));
+		double d = lf(x);
 		double y = ceil(d);
 		VALUES(0) = double_to_integer(y);
 		VALUES(1) = make_longfloat(d - y);
@@ -557,7 +386,7 @@ ceiling2(cl_object x, cl_object y)
 		  float n = sf(y);
 		  float p = fix(x)/n;
 		  float q = ceilf(p);
-		  VALUES(0) = double_to_integer(q);
+		  VALUES(0) = float_to_integer(q);
 		  VALUES(1) = make_shortfloat((p - q)*n);
 		  break;
 		}
@@ -601,7 +430,7 @@ ceiling2(cl_object x, cl_object y)
 		  float n = sf(y);
 		  float p = big_to_double(x)/n;
 		  float q = ceilf(p);
-		  VALUES(0) = double_to_integer(q);
+		  VALUES(0) = float_to_integer(q);
 		  VALUES(1) = make_shortfloat((p - q)*n);
 		  break;
 		}
@@ -633,7 +462,7 @@ ceiling2(cl_object x, cl_object y)
 		float n = number_to_double(y);
 		float p = sf(x)/n;
 		float q = ceilf(p);
-		VALUES(0) = double_to_integer(q);
+		VALUES(0) = float_to_integer(q);
 		VALUES(1) = make_shortfloat((p - q)*n);
 		break;
 	}
@@ -677,7 +506,7 @@ truncate1(cl_object x)
 	case t_shortfloat: {
 		float d = sf(x);
 		float y = d > 0? floorf(d) : ceilf(d);
-		VALUES(0) = double_to_integer(y);
+		VALUES(0) = float_to_integer(y);
 		VALUES(1) = make_shortfloat(d - y);
 		break;
 	}
@@ -725,8 +554,8 @@ round1(cl_object x)
 	case t_ratio:
 		return round2(x->ratio.num, x->ratio.den);
 	case t_shortfloat: {
-		double d = (double)(sf(x));
-		cl_object q = double_to_integer(d + (d>=0? 0.5 : -0.5));
+		float d = sf(x);
+		cl_object q = float_to_integer(d + (d>=0? 0.5 : -0.5));
 		d -= number_to_double(q);
 		if (d == 0.5) {
 		  if (number_oddp(q)) {
@@ -794,11 +623,24 @@ round2(cl_object x, cl_object y)
 		VALUES(1) = number_remainder(x, y, q1);
 		break;
 	}
-	case t_shortfloat:
+	case t_shortfloat: {
+		float d = sf(q);
+		float aux = d + (d >= 0.0 ? 0.5 : -0.5);
+		cl_object q1 = float_to_integer(aux);
+		d -= aux;
+		if (d == 0.5 && number_oddp(q1))
+			q1 = one_plus(q1);
+		if (d == -0.5 && number_oddp(q1))
+			q1 = one_minus(q1);
+		VALUES(0) = q1;
+		VALUES(1) = number_remainder(x, y, q1);
+		break;
+	}
 	case t_longfloat: {
-		double d = number_to_double(q);
-		cl_object q1 = double_to_integer(d + (d >= 0.0 ? 0.5 : -0.5));
-		d -= number_to_double(q1);
+		double d = lf(q);
+		double aux = d + (d >= 0.0 ? 0.5 : -0.5);
+		cl_object q1 = double_to_integer(aux);
+		d -= aux;
 		if (d == 0.5 && number_oddp(q1))
 			q1 = one_plus(q1);
 		if (d == -0.5 && number_oddp(q1))
@@ -845,62 +687,55 @@ round2(cl_object x, cl_object y)
 	cl_type tx = type_of(x);
 @
 	switch (tx) {
-	case t_shortfloat:
-		d = sf(x); break;
-	case t_longfloat:
-		d = lf(x); break;
+	case t_shortfloat: {
+		float d = sf(x);
+		if (d >= 0.0)
+			s = 1;
+		else {
+			d = -d;
+			s = 0;
+		}
+		d = frexpf(d, &e);
+		x = make_shortfloat(d);
+		break;
+	}
+	case t_longfloat: {
+		double d = lf(x);
+		if (d >= 0.0)
+			s = 1;
+		else {
+			d = -d;
+			s = 0;
+		}
+		d = frexp(d, &e);
+		x = make_shortfloat(d);
+		break;
+	}
 	default:
 		FEtype_error_float(x);
 	}
-	if (d >= 0.0)
-		s = 1;
-	else {
-		d = -d;
-		s = -1;
-	}
-	e = double_exponent(d);
-	set_exponent(&d, 0);
-	if (tx == t_shortfloat) {
-		@(return make_shortfloat(d)
-			 MAKE_FIXNUM(e)
-			 make_shortfloat(s))
-	} else {
-		@(return make_longfloat(d)
-			 MAKE_FIXNUM(e)
-			 make_longfloat(s))
-	}
+	@(return x MAKE_FIXNUM(e) make_shortfloat(s))
 @)
 
 
 @(defun scale_float (x y)
-	double d;
-	int e, k;
-	cl_type tx = type_of(x);
+	int k;
 @
 	if (FIXNUMP(y))
 		k = fix(y);
 	else
 		FEerror("~S is an illegal exponent.", 1, y);
-	switch (tx) {
+	switch (type_of(x)) {
 	case t_shortfloat:
-		d = sf(x); break;
+		x = make_shortfloat(ldexpf(sf(x), k));
+		break;
 	case t_longfloat:
-		d = lf(x); break;
+		x = make_longfloat(ldexp(lf(x), k));
+		break;
 	default:
 		FEtype_error_float(x);
 	}
-	e = double_exponent(d) + k;
-#if defined(VAX) || defined(TAHOE)
-	if (e <= -128 || e >= 128)
-#endif
-#ifdef IEEEFLOAT
-	if (tx == t_shortfloat && (e <= -126 || e >= 130) ||
-	    tx == t_longfloat && (e <= -1022 || e >= 1026))
-#endif
-		FEerror("~S is an illegal exponent.", 1, y);
-	set_exponent(&d, e);
-	@(return ((tx == t_shortfloat) ? make_shortfloat(d)
-				       : make_longfloat(d)))
+	@(return x)
 @)
 
 
@@ -972,14 +807,44 @@ round2(cl_object x, cl_object y)
 	int e, s;
 @
 	switch (type_of(x)) {
-	case t_longfloat:
-		integer_decode_double(lf(x), &h, &l, &e, &s);
-		x = (h != 0) ? bignum2(h, l) : MAKE_FIXNUM(l);
+	case t_longfloat: {
+		double d = lf(x);
+		if (d == 0.0) {
+			e = 0;
+			s = 1;
+			x = MAKE_FIXNUM(0);
+		} else {
+			if (d < 0.0) {
+				s = -1;
+				d = -frexp(d, &e);
+			} else {
+				s = 1;
+				d = frexp(d, &e);
+			}
+			x = double_to_integer(ldexp(d, DBL_MANT_DIG));
+			e -= DBL_MANT_DIG;
+		}
 		break;
-	case t_shortfloat:
-		integer_decode_float((double)(sf(x)), &h, &e, &s);
-		x = MAKE_FIXNUM(h);
+	}
+	case t_shortfloat: {
+		float d = sf(x);
+		if (d == 0.0) {
+			e = 0;
+			s = 1;
+			x = MAKE_FIXNUM(0);
+		} else {
+			if (d < 0.0) {
+				s = -1;
+				d = -frexpf(d, &e);
+			} else {
+				s = 1;
+				d = frexpf(d, &e);
+			}
+			x = double_to_integer(ldexp(d, FLT_MANT_DIG));
+			e -= FLT_MANT_DIG;
+		}
 		break;
+	}
 	default:
 		FEtype_error_float(x);
 	}
@@ -1038,130 +903,51 @@ round2(cl_object x, cl_object y)
 void
 init_num_co(void)
 {
-	float smallest_float, biggest_float;
-	double smallest_double, biggest_double;
-	float float_epsilon, float_negative_epsilon;
-	double double_epsilon, double_negative_epsilon;
-	double lf1, lf2;
-	float sf1, sf2;
 	cl_object num;
 
-#define LF_EQL(a,b) (lf1 = a, lf2 = b, lf1 == lf2)
-#define SF_EQL(a,b) (sf1 = a, sf2 = b, sf1 == sf2)
-
-#ifdef VAX
-	l[0] = 0x80;
-	l[1] = 0;
-	smallest_float = *(float *)l;
-	smallest_double = *(double *)l;
-#endif
-
-#ifdef IEEEFLOAT
-	((int *) &smallest_float)[0]= 1;
-	((int *) &smallest_double)[HIND] = 0;
-	((int *) &smallest_double)[LIND] = 1;
-#endif
-
-#ifdef VAX
-	l[0] = 0xffff7fff;
-	l[1] = 0xffffffff;
-	biggest_float = *(float *)l;
-	biggest_double = *(double *)l;
-#endif
-
-#ifdef IEEEFLOAT
-	((unsigned int *) &biggest_float)[0]= (unsigned int)0x7f7fffff;
-	((unsigned int *) &biggest_double)[HIND] = (unsigned int)0x7fefffff;
-	((unsigned int *) &biggest_double)[LIND] = (unsigned int)0xffffffff;
-#endif
-
-#ifdef TAHOE
-        l[0] = 0x00800000;
-        l[1] = 0;
-        smallest_float = *(float *)l;
-        smallest_double = *(double *)l;
-#endif
-
-/* We want the smallest number not satisfying something,
-   and so we go quickly down, and then back up.  We have
-   to use a function call for test, since in line code may keep
-   too much precision, while the usual lisp eql,is not
-   in line.
-   We use SMALL as a multiple to come back up by.
-*/
-
-#define SMALL 1.05	
-
-	for (float_epsilon = 1.0;
-	     !SF_EQL((float)(1.0 + float_epsilon),(float)1.0);
-	     float_epsilon /= 2.0)
-		;
-	while(SF_EQL((float)(1.0 + float_epsilon),(float)1.0))
-	  float_epsilon=float_epsilon*SMALL;
-	for (float_negative_epsilon = 1.0;
-	     !SF_EQL((float)(1.0 - float_negative_epsilon) ,(float)1.0);
-	     float_negative_epsilon /= 2.0)
-		;
-	while(SF_EQL((float)(1.0 - float_negative_epsilon) ,(float)1.0))
-	  float_negative_epsilon=float_negative_epsilon*SMALL;
-	for (double_epsilon = 1.0;
-	     !(LF_EQL(1.0 + double_epsilon, 1.0));
-	     double_epsilon /= 2.0)
-		;
-	while((LF_EQL(1.0 + double_epsilon, 1.0)))
-	  double_epsilon=double_epsilon*SMALL;
-	  ;
-	for (double_negative_epsilon = 1.0;
-	     !LF_EQL(1.0 - double_negative_epsilon , 1.0);
-	     double_negative_epsilon /= 2.0)
-		;
-	while(LF_EQL(1.0 - double_negative_epsilon , 1.0))
-	  double_negative_epsilon=double_negative_epsilon*SMALL;
-	  ;
-
-	num = make_shortfloat(biggest_float);
+	num = make_shortfloat(FLT_MAX);
 	make_constant("MOST-POSITIVE-SHORT-FLOAT", num);
 	make_constant("MOST-POSITIVE-SINGLE-FLOAT", num);
 
-	num = make_shortfloat(smallest_float);
+	num = make_shortfloat(FLT_MIN);
 	make_constant("LEAST-POSITIVE-SHORT-FLOAT", num);
 	make_constant("LEAST-POSITIVE-SINGLE-FLOAT", num);
 
-	num = make_shortfloat(-smallest_float);
+	num = make_shortfloat(-FLT_MIN);
 	make_constant("LEAST-NEGATIVE-SHORT-FLOAT", num);
 	make_constant("LEAST-NEGATIVE-SINGLE-FLOAT", num);
 
-	num = make_shortfloat(-biggest_float);
+	num = make_shortfloat(-FLT_MAX);
 	make_constant("MOST-NEGATIVE-SHORT-FLOAT", num);
 	make_constant("MOST-NEGATIVE-SINGLE-FLOAT", num);
 
-	num = make_longfloat(biggest_double);
+	num = make_longfloat(DBL_MAX);
 	make_constant("MOST-POSITIVE-DOUBLE-FLOAT", num);
 	make_constant("MOST-POSITIVE-LONG-FLOAT", num);
 
-	num = make_longfloat(smallest_double);
+	num = make_longfloat(DBL_MIN);
 	make_constant("LEAST-POSITIVE-DOUBLE-FLOAT", num);
 	make_constant("LEAST-POSITIVE-LONG-FLOAT", num);
 
-	num = make_longfloat(-smallest_double);
+	num = make_longfloat(-DBL_MIN);
 	make_constant("LEAST-NEGATIVE-DOUBLE-FLOAT", num);
 	make_constant("LEAST-NEGATIVE-LONG-FLOAT", num);
 
-	num = make_longfloat(-biggest_double);
+	num = make_longfloat(-DBL_MAX);
 	make_constant("MOST-NEGATIVE-DOUBLE-FLOAT", num);
 	make_constant("MOST-NEGATIVE-LONG-FLOAT", num);
 
-	num = make_shortfloat(float_epsilon);
+	num = make_shortfloat(FLT_EPSILON);
 	make_constant("SHORT-FLOAT-EPSILON", num);
 	make_constant("SINGLE-FLOAT-EPSILON", num);
-	num = make_longfloat(double_epsilon);
+	num = make_longfloat(DBL_EPSILON);
 	make_constant("DOUBLE-FLOAT-EPSILON", num);
 	make_constant("LONG-FLOAT-EPSILON", num);
 
-	num = make_shortfloat(float_negative_epsilon);
+	num = make_shortfloat(-FLT_EPSILON);
 	make_constant("SHORT-FLOAT-NEGATIVE-EPSILON", num);
 	make_constant("SINGLE-FLOAT-NEGATIVE-EPSILON", num);
-	num = make_longfloat(double_negative_epsilon);
+	num = make_longfloat(-DBL_EPSILON);
 	make_constant("DOUBLE-FLOAT-NEGATIVE-EPSILON", num);
 	make_constant("LONG-FLOAT-NEGATIVE-EPSILON", num);
 

@@ -508,6 +508,7 @@ extern void init_number(void);
 /* num_co.c */
 
 extern cl_object double_to_integer(double d);
+extern cl_object float_to_integer(float d);
 extern cl_object floor1(cl_object x);
 extern cl_object ceiling1(cl_object x);
 extern cl_object truncate1(cl_object x);

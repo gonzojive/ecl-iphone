@@ -87,3 +87,5 @@
 #undef HAVE_NANOSLEEP
 /* Float version if isnan()						*/
 #undef HAVE_ISNANF
+/* float.h for epsilons, maximum real numbers, etc			*/
+#undef HAVE_FLOAT_H
