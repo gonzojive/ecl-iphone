@@ -3944,6 +3944,10 @@ else
   ECL_CC="${CXX}"
 fi
 
+if test "${GCC}" = "yes"; then
+  CFLAGS="${CFLAGS} -fstrict-aliasing"
+fi
+
 
   echo "$as_me:$LINENO: checking whether stack growns downwards" >&5
 echo $ECHO_N "checking whether stack growns downwards... $ECHO_C" >&6

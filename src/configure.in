@@ -223,6 +223,13 @@ else
   ECL_CC="${CXX}"
 fi
 
+dnl ---------------------------------------------------------------------
+dnl		This flag is an optimization for GNU
+dnl ---------------------------------------------------------------------
+if test "${GCC}" = "yes"; then
+  CFLAGS="${CFLAGS} -fstrict-aliasing"
+fi
+
 dnl ----------------------------------------------------------------------
 dnl		Study the call conventions
 dnl
