@@ -16,7 +16,7 @@
 (in-package "SYSTEM")
 
 (defmacro docfun (symbol kind args doc)
-  (print symbol)
+  ;(print symbol)
   (si::set-documentation
    symbol 'function
    (format nil "~A in ~A package:~%~A: ~A~A~%"
@@ -28,14 +28,14 @@
 	   (if (macro-function symbol) "Syntax" "Args") args doc)))
 
 (defmacro docvar (symbol kind doc)
-  (print symbol)
+  ;(print symbol)
   (si::set-documentation
    symbol 'variable
    (format nil "~@(~A~) in ~A package:~A~%"
 	   kind (package-name (symbol-package symbol)) doc)))
 
 (defmacro doctype (symbol doc)
-  (print symbol)
+  ;(print symbol)
   (si::set-documentation symbol 'type doc))
 
 #|
