@@ -90,7 +90,7 @@ structure_to_list(cl_object x)
 @)
 
 #ifdef CLOS
-#define ecl_copy_structure ecl_copy_instance
+#define ecl_copy_structure si_copy_instance
 #else
 cl_object
 ecl_copy_structure(cl_object x)

@@ -17,7 +17,7 @@
 ;;; SLOT-VALUE does not work.
 
 (defun make-empty-standard-class (name metaclass)
-  (let ((class (si:allocate-raw-instance metaclass 12)))
+  (let ((class (si:allocate-raw-instance nil metaclass 12)))
     (unless metaclass
       (si:instance-class-set class class))
     (setf (class-name                class) name
@@ -72,6 +72,11 @@
 	(class-direct-subclasses the-class) (list standard-class)
 	(class-direct-superclasses standard-class) (list the-class))
 
+  (si::instance-sig-set the-class)
+  (si::instance-sig-set standard-class)
+  (si::instance-sig-set standard-object)
+  (si::instance-sig-set the-t)
+
   ;; 4) Fix the class precedence list
   (let ((cpl (list standard-class the-class standard-object the-t)))
     (setf (class-precedence-list standard-class) cpl
@@ -91,6 +96,7 @@
 ;;;
 
     (defmethod slot-value ((self class) slot-name)
+      (ensure-up-to-date-instance self)
       (let* ((class (si:instance-class self))
 	     (index (position slot-name (class-slots class)
 			      :key #'slotd-name :test #'eq)))
@@ -104,6 +110,7 @@
 			   'SLOT-VALUE)))))
 
     (defmethod slot-boundp ((self class) slot-name)
+      (ensure-up-to-date-instance self)
       (let* ((class (si:instance-class self))
 	     (index (position slot-name (class-slots class)
 			      :key #'slotd-name :test #'eq)))
@@ -114,6 +121,7 @@
 			   'SLOT-VALUE)))))
 
     (defmethod (setf slot-value) (val (self class) slot-name)
+      (ensure-up-to-date-instance self)
       (let* ((class (si:instance-class self))
 	     (index (position slot-name (class-slots class)
 			      :key #'slotd-name :test #'eq)))

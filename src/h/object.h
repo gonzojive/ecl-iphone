@@ -437,6 +437,7 @@ struct ecl_instance {		/*  instance header  */
 	HEADER1(isgf);
 	cl_index length;	/*  instance length  */
 	cl_object clas;		/*  instance class  */
+	cl_object sig;		/*  generation signature  */
 	cl_object *slots;	/*  instance slots  */
 };
 #endif /* CLOS */

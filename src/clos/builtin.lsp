@@ -15,9 +15,6 @@
 (defmethod make-instance ((class-name symbol) &rest initargs)
   (apply #'make-instance (find-class class-name) initargs))
 
-(defmethod change-class ((instance t) (new-class symbol))
-  (funcall #'change-class instance (find-class new-class)))
-
 ;;; ======================================================================
 ;;; STRUCTURES
 ;;;

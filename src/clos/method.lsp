@@ -556,7 +556,7 @@
 
 (defun make-method (qualifiers specializers lambda-list
 		    fun plist options gf method-class)
-  (let ((method (si:allocate-raw-instance (find-class 'standard-method nil)
+  (let ((method (si:allocate-raw-instance nil (find-class 'standard-method nil)
 		   #.(length +standard-method-slots+))))
     (setf (method-generic-function method) gf
 	  (method-lambda-list method) lambda-list

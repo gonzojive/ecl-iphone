@@ -27,40 +27,29 @@ ecl_allocate_instance(cl_object clas, int size)
 }
 
 cl_object
-si_allocate_raw_instance(cl_object clas, cl_object size)
+si_allocate_raw_instance(cl_object orig, cl_object clas, cl_object size)
 {
-	@(return ecl_allocate_instance(clas, fixnnint(size)))
+	cl_object output = ecl_allocate_instance(clas, fixnnint(size));
+	if (orig == Cnil) {
+		orig = output;
+	} else {
+		orig->instance.clas = clas;
+		orig->instance.length = output->instance.length;
+		orig->instance.slots = output->instance.slots;
+	}
+	@(return orig)
 }
 
-/* corr is a list of (newi . oldi) describing which of the new slots
-   retains a value from an old slot
- */
 cl_object
-si_change_instance(cl_object x, cl_object clas, cl_object size, cl_object corr)
+si_instance_sig(cl_object x)
 {
-	int nslot, i;
-	cl_object * oldslots;
+	@(return x->instance.sig);
+}
 
-	if (type_of(x) != t_instance)
-	  FEwrong_type_argument(@'ext::instance', x);
-
-	if (type_of(clas) != t_instance)
-	  FEwrong_type_argument(@'ext::instance', clas);
-
-	nslot = fixnnint(size);
-	CLASS_OF(x) = clas;
-	x->instance.length = nslot;
-	oldslots = x->instance.slots;
-	x->instance.slots = (cl_object *)cl_alloc_align(sizeof(cl_object)*nslot,sizeof(cl_object));
-	for (i = 0;  i < nslot;  i++) {
-	  if (!Null(corr) && fix(CAAR(corr)) == i) {
-	    x->instance.slots[i] = oldslots[fix(CDAR(corr))];
-	    corr = CDR(corr);
-	  }
-	  else
-	    x->instance.slots[i] = ECL_UNBOUND;
-	}
-	@(return) /* FIXME! Is this what we need? */
+cl_object
+si_instance_sig_set(cl_object x)
+{
+	@(return (x->instance.sig = CLASS_SLOTS(CLASS_OF(x))));
 }
 
 cl_object
@@ -181,13 +170,14 @@ si_sl_makunbound(cl_object x, cl_object index)
 }
 
 cl_object
-ecl_copy_instance(cl_object x)
+si_copy_instance(cl_object x)
 {
 	cl_object y;
 
 	if (type_of(x) != t_instance)
 		FEwrong_type_argument(@'ext::instance', x);
 	y = ecl_allocate_instance(x->instance.clas, x->instance.length);
+	y->instance.sig = x->instance.sig;
 	memcpy(y->instance.slots, x->instance.slots,
 	       x->instance.length * sizeof(cl_object));
 	@(return y)

@@ -480,7 +480,6 @@ file.  When the saved image is invoked, it will start the redefined top-level."
      (when (catch *quit-tag*
 	     (tpl-prompt)
 	     (setq - (notinline (tpl-read)))
-	     (cos 1.0)
 	     (setq values
 		   (multiple-value-list
 		    (eval-with-env - *break-env*)))

@@ -192,7 +192,7 @@
   (if (and (fboundp name) (si::instancep (fdefinition name)))
       (fdefinition name)
       ;; create a fake standard-generic-function object:
-      (let ((gfun (si:allocate-raw-instance (find-class 't)
+      (let ((gfun (si:allocate-raw-instance nil (find-class 't)
 		     #.(length +standard-generic-function-slots+)))
 	    (hash (make-hash-table
 		   :test #'eql
@@ -202,6 +202,7 @@
 		   :rehash-threshold 0.5s0)))
 	(declare (type standard-object gfun))
 	;; create a new gfun
+	(si::instance-sig-set gfun)
 	(setf (generic-function-name gfun) name
 	      (generic-function-lambda-list gfun) lambda-list
 	      (generic-function-argument-precedence-order gfun) 'default
@@ -222,8 +223,6 @@
   (let* ((methods (generic-function-methods gf))
 	 applicable-list
 	 args-specializers)
-    ;(print (generic-function-name gf))
-    ;(print (mapcar #'method-specializers methods))
     ;; first compute the applicable method list
     (dolist (method methods)
       ;; for each method in the list
@@ -240,10 +239,7 @@
 	      spec (first scan-specializers))
 	(unless (or (null spec)
 		    (and (consp spec) (eql arg (cadr spec)))
-		    (typep arg spec)
-		    (and (eq 'INVALID spec)
-			 (si:instancep arg)
-			 (eq 'INVALID (class-name (class-of arg)))))
+		    (typep arg spec))
 	  (return))))
     (dolist (arg args) 
       (push (type-of arg) args-specializers))

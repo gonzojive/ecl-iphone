@@ -32,24 +32,29 @@ Unknown variables
 KNOWN BUGS:
 ===========
 
-(From Paul F. Dietz' test suite)
+* When building :AROUND, :AFTER or :BEFORE methods for REINITIALIZE-INSTANCE,
+  one may introduce new initialization options, that CHECK-INITARGS ignores.
+  (See REINITIALIZE-INSTANCE.10 in Paul Dietz' test suite).
 
-Test DEPOSIT-FIELD.1 failed
-Form: (LOOP FOR POS = (RANDOM 32) FOR SIZE = (RANDOM 32) FOR NEWBYTE =
-            (RANDOM (ASH 1 (+ POS SIZE))) FOR VAL =
-            (RANDOM (1+ (RANDOM (ASH 1 (+ POS SIZE))))) FOR RESULT =
-            (DEPOSIT-FIELD NEWBYTE (BYTE SIZE POS) VAL) REPEAT 100
-            UNLESS
-            (LOOP FOR I FROM 0 TO (+ POS SIZE) ALWAYS
-                  (IF (OR (< I POS) (>= I (+ POS SIZE)))
-                      (IF (LOGBITP I VAL) (LOGBITP I RESULT)
-                          (NOT (LOGBITP I RESULT)))
-                      (IF (LOGBITP I NEWBYTE) (LOGBITP I RESULT)
-                          (NOT (LOGBITP I RESULT)))))
-            COLLECT (LIST POS SIZE NEWBYTE VAL RESULT))
-Expected value: NIL
-Actual value: ((11 21 1980658428 89050977 1980659553)
-               (9 23 154003420 2827351845 154003237)).
+* Why is this considered a failure? What does (SETF CLASS-NAME) have to do?
+
+Test CLASS-0309.1 failed
+Form: (PROGN
+        (SETF (FIND-CLASS 'CLASS-0309) NIL)
+        (LET* ((CLASS1 (EVAL '(DEFCLASS CLASS-0309 NIL ((A) (B) (C)))))
+               (OBJ1 (MAKE-INSTANCE 'CLASS-0309)))
+          (SETF (CLASS-NAME CLASS1) NIL)
+          (LET ((CLASS2 (EVAL '(DEFCLASS CLASS-0309 NIL ((A) (B) (C))))))
+            (VALUES (EQT (CLASS-OF OBJ1) CLASS1) (EQT CLASS1 CLASS2)
+                    (TYPEP* OBJ1 CLASS1) (TYPEP* OBJ1 CLASS2)))))
+Expected values: T
+                 NIL
+                 T
+                 NIL
+Actual values: T
+               T
+               T
+               T.
 
 
 OLD: (Maybe out of date)

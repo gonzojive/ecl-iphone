@@ -11,83 +11,185 @@
 
 ;;; The mechanism for updating classes.
 
-;;; ----------------------------------------------------------------------
-;;; Invalid Class
-;;; ----------------------------------------------------------------------
+(defclass forward-referenced-class (class) ())
 
-(defclass invalid () ())
+;;; ----------------------------------------------------------------------
 
 (defmethod OPTIMIZE-SLOT-VALUE ((class class) form) form)
-    
+
 (defmethod OPTIMIZE-SET-SLOT-VALUE ((class class) form) form)
 
-(defmethod slot-value ((object invalid) slot-name)
-  ;; first update the instance
-  (update-instance object)
-  ;; now access the slot
-  (slot-value object slot-name))
-
-(defmethod (setf slot-value) (val (object invalid) slot-name)
-  ;; first update the instance
-  (update-instance object)
-  ;; now modify the slot
-  (setf (slot-value object slot-name) val))
-
 ;;; ----------------------------------------------------------------------
+;;; INSTANCE UPDATE PROTOCOL
+;;;
+;;;
+;;; PART 1: CHANGING THE CLASS OF AN INSTANCE
+;;;
+;;; The method CHANGE-CLASS performs most of the work.
+;;;
+;;;	a) The structure of the instance is changed to match the new
+;;;	   number of local slots.
+;;;	b) The new local slots are filled with the value of the old
+;;;	   slots. Only the name is used, so that a new local slot may
+;;;	   get the value of old slots that were eithe local or shared.
+;;;	c) Finally, UPDATE-INSTANCE-FOR-DIFFERENT-CLASS is invoked
+;;;	   with a copy of the instance as it looked before the change,
+;;;	   the changed instance and enough information to perform any
+;;;	   extra processing.
+;;;
+
+(defmethod update-instance-for-different-class
+    ((old-data standard-object) (new-data standard-object) &rest initargs)
+  (let ((old-local-slotds (si::instance-sig old-data))
+	(new-local-slotds (remove :instance (si::instance-sig new-data)
+				  :test-not #'eq :key #'slotd-allocation))
+	added-slots)
+    (setf added-slots (set-difference (mapcar #'slotd-name new-local-slotds)
+				      (mapcar #'slotd-name old-local-slotds)))
+    (apply #'shared-initialize new-data added-slots initargs)))
+
+(defmethod change-class ((instance standard-object) (new-class standard-class)
+			 &rest initargs)
+  (let* ((old-instance (si::copy-instance instance))
+	 (new-size (count-instance-slots new-class))
+	 (instance (si::allocate-raw-instance instance new-class new-size)))
+    (si::instance-sig-set instance)
+    ;; "The values of local slots specified by both the class Cto and
+    ;; Cfrom are retained.  If such a local slot was unbound, it remains
+    ;; unbound."
+    ;; "The values of slots specified as shared in the class Cfrom and
+    ;; as local in the class Cto are retained."
+    (let* ((old-local-slotds (class-slots (class-of old-instance)))
+	   (new-local-slotds (class-slots (class-of instance))))
+      (dolist (new-slot new-local-slotds)
+	;; CHANGE-CLASS can only operate on the value of local slots.
+	(when (eq (slotd-allocation new-slot) :INSTANCE)
+	  (let ((name (slotd-name new-slot)))
+	    (if (and (slot-exists-p old-instance name)
+		     (slot-boundp old-instance name))
+		(setf (slot-value instance name) (slot-value old-instance name))
+		(slot-makunbound instance name))))))
+    (apply #'update-instance-for-different-class old-instance instance
+	   initargs)
+    instance))
+
+(defmethod change-class ((instance class) new-class &rest initargs)
+  (if (forward-referenced-class-p instance)
+      (call-next-method)
+      (error "The metaclass of a class metaobject cannot be changed.")))
+
+(defmethod change-class ((instance t) (new-class symbol) &rest initargs)
+  (apply #'change-class instance (find-class new-class) initargs))
+
+;;;
+;;; PART 2: UPDATING AN INSTANCE THAT BECAME OBSOLETE
+;;;
+;;; Each instance has a hidden field (readable with SI::INSTANCE-SIG), which
+;;; contains the list of slots of its class. This field is updated every time
+;;; the class is initialized or reinitialized. Generally
+;;;	(EQ (SI::INSTANCE-SIG x) (CLASS-SLOTS (CLASS-OF x)))
+;;; returns NIL whenever the class became obsolete.
+;;;
+;;; There are two circumstances under which a instance may become obsolete:
+;;; either the class has been modified using REDEFINE-INSTANCE (and thus the
+;;; list of slots changed), or MAKE-INSTANCES-OBSOLETE has been used.
+;;;
+;;; The function UPDATE-INSTANCE (hidden to the user) does the job of
+;;; updating an instance that has become obsolete.
+;;;
+;;;	a) A copy of the instance is saved to check the old values.
+;;;	b) The structure of the instance is changed to match the new
+;;;	   number of local slots.
+;;;	c) The new local slots are filled with the value of the old
+;;;	   local slots.
+;;;	d) Finally, UPDATE-INSTANCE-FOR-REDEFINED-CLASS is invoked
+;;;	   with enough information to perform any extra initialization,
+;;;	   for instance of new slots.
+;;;
+;;; It is not clear when the function UPDATE-INSTANCE is invoked. At least
+;;; this will happen whenever the functions SLOT-VALUE, (SETF SLOT-VALUE),
+;;; SLOT-BOUNDP or SLOT-EXISTS-P are used.
+;;;
+
+(defmethod update-instance-for-redefined-class
+    ((instance standard-object) added-slots discarded-slots property-list
+     &rest initargs)
+  (declare (ignore discarded-slots property-list))
+  (check-initargs (class-of instance) initargs)
+  (apply #'shared-initialize instance added-slots initargs))
 
 (defun update-instance (instance)
-  (let* ((old-class (class-of instance))
-	 (new-class (slot-value old-class 'FORWARD))
-					; was saved here by redefine-class
-	 (old-slots (class-slots old-class))
-	 (new-slots (class-slots new-class))
-	 discarded-slots
-	 added-slots
-	 retained-correspondance
-	 property-list
-	 position)
-    ;; dont (declare (fixnum position)) otherwise if position will fail.
-    (unless (equal old-slots new-slots)
-      (setq discarded-slots
-	    (set-difference (mapcar #'slotd-name old-slots)
-			    (mapcar #'slotd-name new-slots)))
-      ;; compute the property list
-      (dolist (slot-name discarded-slots)
-	;; can't use slot-value or we loop
-	(push (cons slot-name (standard-instance-get instance slot-name))
-	      property-list)))
+  (let* ((class (class-of instance))
+	 (old-slotds (si::instance-sig instance))
+	 (new-slotds (class-slots class))
+	 (old-instance (si::copy-instance instance))
+	 (discarded-slots '())
+	 (added-slots '())
+	 (property-list '()))
+    (unless (equal old-slotds new-slotds)
+      (setf instance (si::allocate-raw-instance instance class
+						(count-instance-slots class)))
+      (si::instance-sig-set instance)
+      (let* ((new-i 0)
+	     (old-local-slotds (remove :instance old-slotds :test-not #'eq
+				       :key #'slotd-allocation))
+	     (new-local-slotds (remove :instance new-slotds :test-not #'eq
+				       :key #'slotd-allocation)))
+	(declare (fixnum new-i))
+	(setq discarded-slots
+	      (set-difference (mapcar #'slotd-name old-local-slotds)
+			      (mapcar #'slotd-name new-local-slotds)))
+	(dolist (slot-name discarded-slots)
+	  (let* ((ndx (position slot-name old-local-slotds :key #'slotd-name)))
+	    (push (cons slot-name (si::instance-ref old-instance ndx))
+		  property-list)))
+	(dolist (new-slot new-local-slotds)
+	  (let* ((name (slotd-name new-slot))
+		 (old-i (position name old-local-slotds :key #'slotd-name)))
+	    (if old-i
+		(si::instance-set instance new-i
+				  (si::instance-ref old-instance old-i))
+		(push name added-slots))
+	    (incf new-i))))
+      (update-instance-for-redefined-class instance added-slots
+					   discarded-slots property-list))))
 
-    ;; compute retained local slots and update instance:
-    (let*((new-i 0)
-	  (old-i 0)
-	  (index-table (slot-index-table old-class))
-	  name
-	  old-slot)
-      (declare (fixnum new-i old-i))
-      (dolist (new-slot new-slots)
-	(setq name (slotd-name new-slot)
-	      old-slot (find name old-slots :key #'slotd-name :test #'eq))
-	(if old-slot
-	    (when (and (eq :INSTANCE (slotd-allocation new-slot))
-		       (eq :INSTANCE (slotd-allocation old-slot)))
-	      (push (cons new-i (gethash name index-table))
-		    retained-correspondance))
-	    (push new-slot added-slots))
-	(incf new-i))
+;;; ----------------------------------------------------------------------
+;;; CLASS REDEFINITION PROTOCOL
 
-      (si:change-instance instance new-class
-			  (count-instance-slots new-class)
-			  (nreverse retained-correspondance)))
+(defmethod reinitialize-instance ((class class) &rest initargs
+				  &key direct-superclasses &allow-other-keys)
+  (let ((name (class-name class)))
+    (if (member name '(CLASS BUILT-IN-CLASS) :test #'eq)
+	(error "The kernel CLOS class ~S cannot be changed." name)
+	(warn "Redefining class ~S" name)))
 
-    ;; initialize newly added slots
-    (update-instance-for-redefined-class instance added-slots
-					 discarded-slots property-list)
-    ))
+  ;; remove previous defined accessor methods
+  (when (class-finalized-p class)
+    (remove-optional-slot-accessors class))
+
+  (call-next-method)
+
+  ;; set up inheritance checking that it makes sense
+  (dolist (l (setf (class-direct-superclasses class)
+		   (check-direct-superclasses class direct-superclasses)))
+    (add-direct-subclass l class))
+
+  (setf (class-finalized-p class) nil)
+  (unless (find-if #'forward-referenced-class-p
+		   (class-direct-superclasses class))
+    (finalize-inheritance class))
+  class)
+
+(defmethod make-instances-obsolete ((class class))
+  (setf (class-slots class) (copy-list (class-slots class))))
+
+(defmethod make-instances-obsolete ((class symbol))
+  (make-instances-obsolete (find-class class)))
 
 (defun remove-optional-slot-accessors (class)
   (let ((class-name (class-name class)))
     (dolist (slotd (class-slots class))
-      
       (dolist (accessor (slotd-accessors slotd))
 	(let* ((gf-object (symbol-function accessor))
 	       (setf-accessor (list 'setf accessor))
@@ -121,7 +223,7 @@
 	    (remove-method setf-gf-object found))
 	  (when (null (generic-function-methods gf-object))
 	    (fmakunbound setf-accessor))))
-      
+
       ;; remove previous defined reader methods
       (dolist (reader (slotd-readers slotd))
 	(let* ((gf-object (symbol-function reader))
@@ -140,7 +242,7 @@
 	    (remove-method gf-object found))
 	(when (null (generic-function-methods gf-object))
 	  (fmakunbound reader))))
-      
+
       ;; remove previous defined writer methods
       (dolist (writer (slotd-writers slotd))
 	(let* ((gf-object (symbol-function writer))
@@ -160,5 +262,3 @@
 	(when (null (generic-function-methods gf-object))
 	  (fmakunbound writer)))))))
 
-
-;;; ----------------------------------------------------------------------

@@ -620,8 +620,7 @@ extern struct ecl_hashtable_entry *ecl_search_hash(cl_object key, cl_object hash
 /* instance.c */
 
 #ifdef CLOS
-extern cl_object si_allocate_raw_instance(cl_object clas, cl_object size);
-extern cl_object si_change_instance(cl_object x, cl_object clas, cl_object size, cl_object corr);
+extern cl_object si_allocate_raw_instance(cl_object orig, cl_object clas, cl_object size);
 extern cl_object si_instance_class(cl_object x);
 extern cl_object si_instance_class_set(cl_object x, cl_object y);
 extern cl_object si_instance_ref(cl_object x, cl_object index);
@@ -631,11 +630,13 @@ extern cl_object si_instancep(cl_object x);
 extern cl_object si_unbound();
 extern cl_object si_sl_boundp(cl_object x);
 extern cl_object si_sl_makunbound(cl_object x, cl_object index);
+extern cl_object si_instance_sig(cl_object x);
+extern cl_object si_instance_sig_set(cl_object x);
 
 extern cl_object ecl_allocate_instance(cl_object clas, int size);
 extern cl_object instance_ref(cl_object x, int i);
 extern cl_object instance_set(cl_object x, int i, cl_object v);
-extern cl_object ecl_copy_instance(cl_object x);
+extern cl_object si_copy_instance(cl_object x);
 #endif /* CLOS */
 
 
@@ -796,7 +797,7 @@ extern cl_object cl_P _ARGS((int narg, ...));
 extern cl_object cl_M _ARGS((int narg, cl_object num, ...));
 extern cl_object cl_N _ARGS((int narg, cl_object num, ...));
 extern cl_object cl_gcd _ARGS((int narg, ...));
-extern cl_object cl_lcm _ARGS((int narg, cl_object lcm, ...));
+extern cl_object cl_lcm _ARGS((int narg, ...));
 
 extern cl_object fixnum_times(cl_fixnum i, cl_fixnum j);
 extern cl_object number_times(cl_object x, cl_object y);

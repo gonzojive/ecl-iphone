@@ -75,7 +75,12 @@
   (count :instance (class-slots class) :key #'slotd-allocation))
 
 (defmethod allocate-instance ((class class) &key &allow-other-keys)
-  (si::allocate-raw-instance class (count-instance-slots class)))
+  ;; FIXME! Inefficient! We should keep a list of dependent classes.
+  (unless (class-finalized-p class)
+    (finalize-inheritance class))
+  (let ((x (si::allocate-raw-instance nil class (count-instance-slots class))))
+    (si::instance-sig-set x)
+    x))
 
 (defmethod make-instance ((class class) &rest initargs)
   (let ((instance (allocate-instance class)))
@@ -122,8 +127,9 @@
   (dolist (l (setf (class-direct-superclasses class)
 		   (check-direct-superclasses class direct-superclasses)))
     (add-direct-subclass l class))
-
-  (finalize-inheritance class)
+  (if (find-if #'forward-referenced-class-p (class-direct-superclasses class))
+      (print (find-if #'forward-referenced-class-p (class-direct-superclasses class)))
+      (finalize-inheritance class))
 )
 
 (defmethod add-direct-subclass ((parent class) child)
@@ -147,21 +153,54 @@ argument was supplied for metaclass ~S." (class-of class))))))))
   ;; etc, are the first classes.
   supplied-superclasses)
 
-(defmethod reinitialize-instance ((class class) &rest initargs)
-  (error "Class reinitialization is not supported. If you wish to reinitialize ~
-a class metaobject, use REDEFINE-CLASS instead."))
-
 ;;; ----------------------------------------------------------------------
 ;;; FINALIZATION OF CLASS INHERITANCE
 ;;;
+(defun forward-referenced-class-p (x)
+  (let ((y (find-class 'FORWARD-REFERENCED-CLASS nil)))
+    (and y (si::subclassp (class-of x) y))))
 
 (defmethod finalize-inheritance ((class class))
-  (unless (class-finalized-p class)
-    (setf (class-precedence-list class) (compute-class-precedence-list class)
+  ;; FINALIZE-INHERITANCE computes the guts of what defines a class: the
+  ;; slots, the list of parent class, etc. It is called when either the
+  ;; class was not finalized before, or when one of the parents has been
+  ;; modified.
+  ;;
+  (let ((cpl (compute-class-precedence-list class)))
+    ;; A class cannot be finalized if any of its parents is either
+    ;; a not yet defined class or it has not yet been finalized.
+    ;; In the first case we can just signal an error...
+    ;;
+    (let ((x (find-if #'forward-referenced-class-p (rest cpl))))
+      (when x
+	(error "Cannot finish building the class~%  ~A~%~
+because it contains a reference to the undefined class~%  ~A"
+	       (class-name class) (class-name x))))
+    ;;
+    ;; ... and in the second case we just finalize the top-most class
+    ;; which is not yet finalized and rely on the fact that this
+    ;; class will also try to finalize all of its children.
+    ;;
+    (let ((x (find-if-not #'class-finalized-p cpl :from-end t)))
+      (unless (or (null x) (eq x class))
+	(return-from finalize-inheritance
+	  (finalize-inheritance x))))
+    (setf (class-precedence-list class) cpl
 	  (class-slots class) (compute-slots class)
 	  (class-default-initargs class) (compute-default-initargs class)
-	  (class-finalized-p class) t))
-)
+	  (class-finalized-p class) t)
+    ;;
+    ;; This is not really needed, because when we modify the list of slots
+    ;; all instances automatically become obsolete (See change.lsp)
+    ;(make-instances-obsolete class)
+    )
+  ;; As mentioned above, when a parent is finalized, it is responsible for
+  ;; invoking FINALIZE-INHERITANCE on all of its children. Obviously,
+  ;; this only makes sense when the class has been defined.
+  (dolist (subclass (reverse (class-direct-subclasses class)))
+    (reinitialize-instance subclass
+			   :direct-superclasses (class-direct-superclasses subclass)))
+  )
 
 (defmethod finalize-inheritance ((class standard-class))
   (call-next-method)
@@ -221,58 +260,46 @@ a class metaobject, use REDEFINE-CLASS instead."))
 ;;; ======================================================================
 ;;; STANDARD-CLASS specializations
 ;;;
-;;; IMPORTANT:
+;;; IMPORTANT: The following implementation of ENSURE-CLASS-USING-CLASS is
+;;; shared by the metaclasses STANDARD-CLASS and STRUCTURE-CLASS.
 ;;;
-;;; 1) The following implementation of ENSURE-CLASS-USING-CLASS is shared by
-;;; the metaclasses STANDARD-CLASS and STRUCTURE-CLASS.
-;;;
-;;; 2) The implementation does not follow the AMOP in that a call to
-;;; ENSURE-CLASS-... with a valid class does not reinitialize the class,
-;;; but replace it with a new one using the function REDEFINE-CLASS.
-;;;
-
 (defmethod ensure-class-using-class ((class class) name &rest rest
 				     &key direct-slots direct-default-initargs
 				     &allow-other-keys)
   (multiple-value-bind (metaclass direct-superclasses options)
       (apply #'help-ensure-class rest)
-    (let ((new-class (apply #'ensure-class-using-class nil name rest)))
-      (if (and (eq metaclass (si:instance-class class))
-	       (every #'eql (class-precedence-list new-class)
-		      (class-precedence-list class))
-	       (equal (class-slots new-class)
-		      (class-slots class))
-	       (equal (class-default-initargs new-class)
-		      (class-default-initargs class)))
-	  class
-	  (redefine-class class new-class))
-    )))
+    (cond ((forward-referenced-class-p class)
+	   (change-class class metaclass))
+	  ((not (eq (class-of class) metaclass))
+	   (error "When redefining a class, the metaclass can not change.")))
+    (apply #'reinitialize-instance class :name name options)))
 
 (defmethod ensure-class-using-class ((class null) name &rest rest)
   (multiple-value-bind (metaclass direct-superclasses options)
       (apply #'help-ensure-class rest)
     (apply #'make-instance metaclass :name name options)))
 
-(defun coerce-to-class (class-or-symbol)
-  (if (si::instancep class-or-symbol)
-      class-or-symbol
-      (find-class class-or-symbol t)))
+(defun coerce-to-class (class-or-symbol &optional (fail nil))
+  (cond ((si:instancep class-or-symbol) class-or-symbol)
+	((not (symbolp class-or-symbol))
+	 (error "~a is not a valid class specifier." class-or-symbol))
+	((find-class class-or-symbol fail))
+	(t
+	 (warn "Class ~A has been forward referenced." class-or-symbol)
+	 (ensure-class class-or-symbol
+		       :metaclass 'forward-referenced-class
+		       :direct-superclasses (list (find-class 'standard-object))
+		       :direct-slots '()))))
 
 (defun help-ensure-class (&rest options
 			  &key (metaclass 'standard-class) direct-superclasses
 			  &allow-other-keys)
   (remf options :metaclass)
   (remf options :direct-superclasses)
-  (setf metaclass (coerce-to-class metaclass)
+  (setf metaclass (coerce-to-class metaclass t)
 	direct-superclasses (mapcar #'coerce-to-class direct-superclasses))
   (values metaclass direct-superclasses
 	  (list* :direct-superclasses direct-superclasses options)))
-
-;;; Bootstrap version
-(defun redefine-class (class new-class)
-  (declare (ignore superclasses-names inferiors))
-  (format t "~%Redefinition of class ~A." (class-name class))
-  new-class)
 
 ;;; ----------------------------------------------------------------------
 ;;; Slots hashing for standard classes
@@ -403,54 +430,6 @@ a class metaobject, use REDEFINE-CLASS instead."))
 		      'SLOT-MAKUNBOUND)))
   instance)
 
-(defmethod change-class ((instance standard-object) (new-class standard-class))
-    (let* ((old-class (si:instance-class instance))
-	   (old-slotds (class-slots old-class))
-	   (new-slotds (class-slots new-class)))
-
-      ;; "The values of local slots specified by both the class Cto and
-      ;; Cfrom are retained.  If such a local slot was unbound, it remains
-      ;; unbound."
-      ;; "The values of slots specified as shared in the class Cfrom and
-      ;; as local in the class Cto are retained."
-      (let* ((new-i 0)
-	     (old-i 0)
-	     retained-correspondance)
-	(declare (fixnum new-i))
-	(dolist (new-slot new-slotds)
-	  (setq old-i (position (slotd-name new-slot) old-slotds
-				:key #'slotd-name :test #'eq))
-	  (when old-i
-	    (push (cons new-i old-i) retained-correspondance))
-	  (incf new-i))
-	(si:change-instance instance new-class
-			    (count-instance-slots new-class)
-			    (nreverse retained-correspondance)))
-
-      ;; Compute the newly added slots.  The spec defines
-      ;; newly added slots as "those local slots for which no slot of
-      ;; the same name exists in the previous class."
-      (let (added-slots)
-	(dolist (slotd new-slotds)
-	  (if (and (not (member slotd old-slotds :key #'slotd-name :test #'eq))
-		   (eq (slotd-allocation slotd) ':INSTANCE))
-	      (push (slotd-name slotd) added-slots)))
-	(shared-initialize instance added-slots)))
-
-  instance)
-
-
-(defmethod update-instance-for-redefined-class ((instance standard-object)
-						added-slots
-						discarded-slots
-						property-list
-						&rest initargs)
-  (declare (ignore discarded-slots property-list))
-  ;; ***
-  ;; *** Later we need to do initarg checking here.
-  ;; ***
-  (apply #'shared-initialize instance added-slots initargs))
-
 (defmethod describe-object ((obj standard-object))
   (let* ((class (si:instance-class obj))
 	 (slotds (class-slots class))
@@ -486,7 +465,6 @@ a class metaobject, use REDEFINE-CLASS instead."))
 ;;; check-initargs
 
 (defun check-initargs (class initargs)
-  (declare (si::c-local))
   ;; scan initarg list 
   (do* ((name-loc initargs (cddr name-loc))
 	(allow-other-keys nil)
@@ -518,6 +496,7 @@ a class metaobject, use REDEFINE-CLASS instead."))
 ;;; Basic access to instances
 
 (defun standard-instance-get (instance slot-name)
+  (ensure-up-to-date-instance instance)
   (let* ((class (si:instance-class instance))
 	 (index (gethash slot-name (slot-index-table class))))
     (declare (type standard-class class))
@@ -533,6 +512,7 @@ a class metaobject, use REDEFINE-CLASS instead."))
 	      (values nil :UNBOUND))))))
 
 (defun standard-instance-set (val instance slot-name)
+  (ensure-up-to-date-instance instance)
   (let* ((class (si:instance-class instance))
 	 (index (gethash slot-name (slot-index-table class))))
     (declare (type standard-class class))

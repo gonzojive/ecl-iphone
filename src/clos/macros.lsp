@@ -61,3 +61,9 @@
 
 (defun mapappend (fun &rest args)
   (reduce #'append (apply #'mapcar fun args)))
+
+(defmacro ensure-up-to-date-instance (instance)
+  `(let ((i ,instance))
+    (unless (eq (si::instance-sig i) (class-slots (si::instance-class i)))
+      (update-instance i))))
+

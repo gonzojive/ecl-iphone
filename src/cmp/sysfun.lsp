@@ -1036,7 +1036,7 @@ type_of(#0)==t_bitvector"))
 #+clos
 (mapcar #'(lambda (x) (apply #'defsysfun x)) '(
 ; file instance.c
-(si::ALLOCATE-RAW-INSTANCE (t fixnum) T)
+(si::ALLOCATE-RAW-INSTANCE (t t fixnum) T)
 (si::INSTANCE-REF-SAFE (t fixnum) T nil nil)
 (si::INSTANCE-REF (t fixnum) T nil nil
 	:inline-always ((t fixnum) t nil nil "instance_ref((#0),(#1))")

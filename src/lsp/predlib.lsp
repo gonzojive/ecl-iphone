@@ -908,9 +908,9 @@ if not possible."
 		      (throw '+canonical-type-failure+ nil)))))))
 	((clos::classp type)
 	 (register-class type))
-	((function-type-p type)
+	((and (fboundp 'function-type-p) (function-type-p type))
 	 (register-function-type type))
-	((values-type-p type)
+	((and (fboundp 'values-type-p) (values-type-p type))
 	 (register-values-type type))
 	(t
 	 (error-type-specifier type))))
