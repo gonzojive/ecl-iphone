@@ -1044,7 +1044,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		WRITE_MARK(stream);
 		write_ch('(', stream);
 		WRITE_SET_INDENT(stream);
-#ifndef ECL_CMU_FORMAT
+#if !defined(ECL_CMU_FORMAT)
 		if (cl_env.print_pretty && CAR(x) != OBJNULL &&
 		    type_of(CAR(x)) == t_symbol &&
 		    (r = si_get_sysprop(CAR(x), @'si::pretty-print-format')) != Cnil)
