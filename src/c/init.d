@@ -34,7 +34,6 @@ init_lisp(void)
 	/* These must come _after_ init_symbol() and init_package() */
 	GC_disable();
 	init_all_symbols();
-	init_all_functions();
 	GC_enable();
 
 #if !defined(GBC_BOEHM)

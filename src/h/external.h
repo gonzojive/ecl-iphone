@@ -44,6 +44,7 @@ typedef union {
 		const char *name;
 		int type;
 		cl_object *loc;
+		void *fun;
 	} init;
 	struct symbol data;
 } cl_symbol_initializer;

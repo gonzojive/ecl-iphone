@@ -43,7 +43,7 @@ OBJS	= main.o symbol.o package.o list.o\
 	time.o unixint.o\
 	mapfun.o multival.o hash.o format.o pathname.o\
 	structure.o load.o unixfsys.o unixsys.o \
-	all_symbols.o all_functions.o init.o @EXTRA_OBJS@
+	all_symbols.o init.o @EXTRA_OBJS@
 
 .SUFFIXES: .c .o .d
 
@@ -67,8 +67,13 @@ clean:
 
 # Build rules
 
-$(DPP): $(srcdir)/dpp.c $(srcdir)/symbols_list.h $(srcdir)/functions_list.h
-	$(TRUE_CC) @CFLAGS@ -I../h -I$(HDIR) $(DEFS) $(srcdir)/dpp.c  -o $@
+$(DPP): $(srcdir)/dpp.c symbols_list2.h
+	$(TRUE_CC) @CFLAGS@ -I../h -I./ -I$(HDIR) $(DEFS) $(srcdir)/dpp.c  -o $@
+symbols_list2.h: $(srcdir)/symbols_list.h Makefile
+	cat $(srcdir)/symbols_list.h | \
+	sed -e 's%{"\(.*\)",.*,.*,[ ]*NULL}%{"\1",NULL}%g' \
+	    -e 's%{"\(.*\)",.*,.*,[ ]*\(.*\)}%{"\1","\2"}%g' \
+	    -e 's%{NULL.*%{NULL,NULL}};%' > $@
 
 #
 # Some files may break due to gcc optimizations
@@ -82,5 +87,6 @@ gbc.o: gbc.c $(HFILES)
 	$(CC) $(CFLAGS) -O0 gbc.c -o $@
 all_symbols.o: all_symbols.c symbols_def.h
 	$(CC) $(CFLAGS) -I./ all_symbols.c -o $@
-symbols_def.h: $(srcdir)/symbols_list.h
-	cat $(srcdir)/symbols_list.h | grep 'SW("' | grep -v 'NULL[,)]' | sed 's/SW(".*&\([a-zA-Z_0-9]*\)),/cl_object \1;/g' >> symbols_def.h
+symbols_def.h: $(srcdir)/symbols_list.h Makefile
+	cat $(srcdir)/symbols_list.h | grep '[ ]&' | \
+	sed 's/^.* &\([a-zA-Z_0-9]*\),.*/cl_object \1;/g' > symbols_def.h

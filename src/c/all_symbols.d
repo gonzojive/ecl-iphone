@@ -8,6 +8,7 @@
 #define SI_ORDINARY 4
 #define SI_SPECIAL 5
 #define KEYWORD 10
+#define FORM_ORDINARY 16
 
 #include "symbols_def.h"
 #include "symbols_list.h"
@@ -42,15 +43,16 @@ cl_index cl_num_symbols_in_core = 0;
 	} else {
 		cl_object fun;
 		fun = symbol->symbol.gfdef;
-		if (fun != OBJNULL && type_of(fun) == t_cfun) {
-			for (l = 0; all_functions[l].name != NULL; l++)
-				if ((cl_objectfn)fun->cfun.entry ==
-				    (cl_objectfn)all_functions[l].f) {
-					if (fun->cfun.name != Cnil)
-						symbol = fun->cfun.name;
+		if (fun != OBJNULL && type_of(fun) == t_cfun &&
+		    fun->cfun.block == OBJNULL) {
+			for (l = 0; l <= cl_num_symbols_in_core; l++) {
+				cl_object s = (cl_object)(cl_symbols + l);
+				if (fun == SYM_FUN(s)) {
+					symbol = s;
 					found = Ct;
 					break;
 				}
+			}
 		}
 	}
 	package= symbol->symbol.hpack;
@@ -124,7 +126,8 @@ cl_index cl_num_symbols_in_core = 0;
 @)
 
 static void
-make_this_symbol(int i, cl_object s, int code, const char *name, cl_object *loc)
+make_this_symbol(int i, cl_object s, int code, const char *name, cl_object *loc,
+		 cl_objectfn fun)
 {
 	enum stype stp;
 	cl_object package;
@@ -150,12 +153,19 @@ make_this_symbol(int i, cl_object s, int code, const char *name, cl_object *loc)
 	s->symbol.isform = FALSE;
 	s->symbol.hpack = package;
 	s->symbol.name = make_constant_string(name);
-	sethash(s->symbol.name, package->pack.external, s);
 	if (package == keyword_package) {
+		sethash(s->symbol.name, package->pack.external, s);
 		SYM_VAL(s) = s;
+	} else {
+		cl_import(s, package);
+		cl_export(s, package);
 	}
 	if (loc != NULL)
 		*loc = s;
+	if (code == FORM_ORDINARY)
+		s->symbol.isform = TRUE;
+	else if (fun != NULL)
+		SYM_FUN(s) = make_cfun(fun, s, NULL);
 	cl_num_symbols_in_core = i + 1;
 }
 
@@ -165,6 +175,7 @@ init_all_symbols(void)
 	int i, code;
 	const char *name;
 	cl_object s, *loc;
+	cl_objectfn fun;
 
 	/* We skip NIL and T */
 	for (i = 2; cl_symbols[i].init.name != NULL; i++) {
@@ -172,6 +183,7 @@ init_all_symbols(void)
 		code = cl_symbols[i].init.type;
 		name = cl_symbols[i].init.name;
 		loc = cl_symbols[i].init.loc;
-		make_this_symbol(i, s, code, name, loc);
+		fun = (cl_objectfn)cl_symbols[i].init.fun;
+		make_this_symbol(i, s, code, name, loc, fun);
 	}
 }

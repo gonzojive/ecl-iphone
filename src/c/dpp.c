@@ -74,8 +74,7 @@
 #define DPP
 #include "config.h"
 #include "machines.h"
-#include "functions_list.h"
-#include "symbols_list.h"
+#include "symbols_list2.h"
 
 #define POOLSIZE        2048
 #define MAXREQ          16
@@ -253,6 +252,8 @@ read_symbol()
 		if (!strcasecmp(name, cl_symbols[i].name)) {
 			poolp = name;
 			pushstr("(cl_object)(cl_symbols+");
+			if (i >= 1000)
+				pushc((i / 1000) % 10 + '0');
 			if (i >= 100)
 				pushc((i / 100) % 10 + '0');
 			if (i >= 10)
@@ -292,10 +293,11 @@ read_function()
 	unreadc(c);
 	pushc(0);
 
-	for (i = 0; all_functions[i].name != NULL; i++) {
-		if (!strcasecmp(name, all_functions[i].name)) {
+	for (i = 0; cl_symbols[i].name != NULL; i++) {
+		if (cl_symbols[i].translation != NULL &&
+		    !strcasecmp(name, cl_symbols[i].name)) {
 			poolp = name;
-			pushstr(all_functions[i].translation);
+			pushstr(cl_symbols[i].translation);
 			return name;
 		}
 	}
