@@ -1310,13 +1310,10 @@ stream_or_default_input(cl_object stream)
 	/* Skip whitespace characters, but stop at beginning of new line or token */
 	if (Null(recursivep)) {
 		cl_object rtbl = ecl_current_readtable();
-		while (!stream_at_end(strm)) {
+		if (!stream_at_end(strm)) {
 			int c = readc_stream(strm);
-			if (c == '\n')
-				break;
 			if (cat(rtbl, c) != cat_whitespace) {
 				unreadc_stream(c, strm);
-				break;
 			}
 		}
 	}
