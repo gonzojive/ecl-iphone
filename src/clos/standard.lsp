@@ -480,7 +480,7 @@
 	  ;; check if the class inherits from a structure. 
 	  ;; A structure can be the first one in the list of superclasses.
 	  (dolist (super (cdr supplied-superclasses))
-	    (when (typep super 'STRUCTURE)
+	    (when (typep super 'STRUCTURE-CLASS) ;; JJGR FIXME! IS THIS RIGHT?
 	      (error
 	       "The standard class ~A can have the structure class ~A only~
 		as first superclass in the list" class super)))
