@@ -15,6 +15,7 @@
 */
 
 #include "ecl.h"
+#include <math.h>
 #include <ctype.h>
 #include <unistd.h>
 

@@ -20,25 +20,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include <stdlib.h>
 #include <setjmp.h>
-
-#ifdef __GNUC__
-#define VOID void
-#else
-#define VOID char
-#endif
-
-#ifdef BSD
-# include <sys/time.h>
-#endif BSD
-
-#ifdef SYSV
-# ifndef MAXPATHLEN
-#  define MAXPATHLEN	PATH_MAX
-# endif MAXPATHLEN
-#endif SYSV
-
 #include "gmp.h"
 #include "object.h"
 #include "stacks.h"

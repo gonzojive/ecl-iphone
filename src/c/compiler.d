@@ -124,7 +124,7 @@ static void compile_body(cl_object args);
 static void compile_form(cl_object args, bool push);
 
 static void FEillegal_variable_name(cl_object) __attribute__((noreturn));
-static void FEill_formed_input() __attribute__((noreturn));
+static void FEill_formed_input(void) __attribute__((noreturn));
 
 /* -------------------- SAFE LIST HANDLING -------------------- */
 

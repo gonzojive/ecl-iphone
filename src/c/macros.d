@@ -32,7 +32,7 @@ cl_object @'si::expand-defmacro';
 	the expansion function if the form is a macro form.  Otherwise,
 	MACRO_DEF returns NIL.
 */
-cl_object
+static cl_object
 search_symbol_macro(cl_object name, cl_object env)
 {
 	cl_object record = assq(name, CAR(env));
@@ -50,7 +50,7 @@ search_macro(cl_object name, cl_object env)
 	return Cnil;
 }
 
-cl_object
+static cl_object
 macro_def(cl_object form, cl_object env)
 {
 	cl_object head, fd;

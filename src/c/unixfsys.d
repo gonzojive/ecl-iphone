@@ -21,10 +21,18 @@
 #include <pwd.h>
 #include <sys/stat.h>
 #include "ecl.h"
+#include <stdlib.h>
 #ifdef BSD
 #include <dirent.h>
 #else
 #include <sys/dir.h>
+#endif
+#ifndef MAXPATHLEN
+# ifdef PATH_MAX
+#   define MAXPATHLEN PATH_MAX
+# else
+#   error "Either MAXPATHLEN or PATH_MAX should be defined"
+# endif
 #endif
 
 cl_object @':list-all';
@@ -147,7 +155,7 @@ error_no_dir(cl_object pathname) {
 	return Cnil;
 }
 
-cl_object
+static cl_object
 truedirectory(cl_object pathname)
 {
 	cl_object directory;
@@ -236,12 +244,12 @@ FILE *
 backup_fopen(const char *filename, const char *option)
 {
 	char backupfilename[MAXPATHLEN];
-	char command[MAXPATHLEN * 2];
 
 	strcat(strcpy(backupfilename, filename), ".BAK");
-	sprintf(command, "mv %s %s", filename, backupfilename);
-	system(command);
-	return(fopen(filename, option));
+	if (rename(filename, backupfilename))
+	    FEfilesystem_error("Cannot rename the file ~S to ~S.", 2,
+			       filename, backupfilename);
+	return fopen(filename, option);
 }
 
 int

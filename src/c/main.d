@@ -33,6 +33,7 @@ int data_start = (int)&data_start;
 
 /******************************** IMPORTS *****************************/
 
+#include <stdlib.h>
 #include "ecl.h"
 #ifdef TK
 # include "tk.h"

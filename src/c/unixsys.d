@@ -15,6 +15,7 @@
 */
 
 #include "ecl.h"
+#include <stdlib.h>
 
 #if 0
 #if !defined(__stdlib_h) && !defined(_STDLIB_H_) && !defined(__STDLIB_H__) &&  !defined(_STDLIB_H)

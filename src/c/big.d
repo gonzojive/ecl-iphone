@@ -93,7 +93,7 @@ big_register_normalize(cl_object x)
  * Different from mpz_init since we initialize with NULL limbs
  */
 
-cl_object
+static cl_object
 big_alloc(int size)
 {
   volatile cl_object x = cl_alloc_object(t_bignum);

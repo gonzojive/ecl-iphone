@@ -27,8 +27,8 @@ extern cl_object *cl_stack_top;
 extern cl_object *cl_stack_limit;
 
 extern void cl_stack_push(cl_object o);
-extern cl_object cl_stack_pop();
-extern cl_index cl_stack_index();
+extern cl_object cl_stack_pop(void);
+extern cl_index cl_stack_index(void);
 extern void cl_stack_set_index(cl_index sp);
 extern void cl_stack_pop_n(cl_index n);
 extern void cl_stack_insert(cl_index where, cl_index n);
@@ -79,8 +79,8 @@ extern bds_ptr bds_top;	/*  bind stack top  */
 extern cl_index ihs_top;
 
 extern void ihs_push(cl_object fun);
-extern cl_object ihs_top_function_name();
-extern void ihs_pop();
+extern cl_object ihs_top_function_name(void);
+extern void ihs_pop(void);
 
 /***************
  * FRAME STACK

@@ -98,7 +98,6 @@ extern mp_limb_t bignum_register_limbs[3][BIGNUM_REGISTER_SIZE];
 extern cl_object big_register_copy(cl_object x);
 extern cl_object big_register_normalize(cl_object x);
 extern void big_register_free(cl_object x);
-/*extern cl_object big_alloc(int size);*/
 extern cl_object bignum1(int val);
 extern cl_object bignum2(mp_limb_t hi, mp_limb_t lo);
 extern cl_object big_set_fixnum(cl_object x, cl_object fix);
@@ -298,8 +297,8 @@ extern void init_format(void);
 #define GC_disable() GC_enable = FALSE;
 extern bool GC_enable;
 extern int gc_time;
-extern cl_object (*GC_enter_hook)();
-extern cl_object (*GC_exit_hook)();
+extern cl_object (*GC_enter_hook)(void);
+extern cl_object (*GC_exit_hook)(void);
 extern void register_root(cl_object *p);
 extern void gc(cl_type t);
 extern void init_GC(void);
@@ -566,6 +565,9 @@ extern cl_object number_atan(cl_object y);
 extern cl_object number_sin(cl_object x);
 extern cl_object number_cos(cl_object x);
 extern cl_object number_tan(cl_object x);
+extern cl_object number_sinh(cl_object x);
+extern cl_object number_cosh(cl_object x);
+extern cl_object number_tanh(cl_object x);
 extern void init_num_sfun(void);
 
 

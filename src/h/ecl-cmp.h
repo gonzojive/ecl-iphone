@@ -21,15 +21,6 @@
 #include <setjmp.h>
 #include <math.h>
 #include <sys/types.h>
-
-#ifdef __GNUC__
-#define VOID void
-#define VOL volatile
-#else
-#define VOID char
-#define VOL
-#endif
-
 #include "gmp.h"
 #include "object.h"
 #include "stacks.h"

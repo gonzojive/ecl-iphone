@@ -22,6 +22,13 @@
 
 #include "ecl.h"
 #include <ctype.h>
+#ifndef MAXPATHLEN
+# ifdef PATH_MAX
+#   define MAXPATHLEN PATH_MAX
+# else
+#   error "Either MAXPATHLEN or PATH_MAX should be defined"
+# endif
+#endif
 
 /******************************* EXPORTS ******************************/
 

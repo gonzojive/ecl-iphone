@@ -51,7 +51,7 @@ cl_stack_set_size(cl_index new_size)
 	end_critical_section();
 }
 
-void
+static void
 cl_stack_grow(void)
 {
 	cl_stack_set_size(cl_stack_size + LISP_PAGESIZE);
@@ -999,7 +999,7 @@ interpret(cl_object *vector) {
 		break;
 	}
 	case OP_NTHVAL: {
-		cl_index n = fix(cl_stack_pop());
+		cl_fixnum n = fix(cl_stack_pop());
 		if (n < 0 || n >= NValues)
 			VALUES(0) = Cnil;
 		else

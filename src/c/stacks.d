@@ -129,7 +129,7 @@ ihs_push(cl_object function)
 }
 
 void
-ihs_pop()
+ihs_pop(void)
 {
 	cl_stack_set_index(ihs_top);
 	ihs_top = fix(cl_stack_top[-1]);
