@@ -844,23 +844,22 @@ interpreted. The objects of type @code{t_bytecode} are implicitely constructed
 by a call to @code{eval}, but can also be explicitely constructed with the
 @code{make_lambda} function.
 
-@deftypefun cl_object eval (cl_object @var{form}, cl_object *@var{bytecodes}, cl_object @var{env})
-Evaluates @var{form} in the lexical environment @var{env}, which can be
-@var{nil}. Before evaluating it, the expression @var{form} must be
-bytecompiled. If @var{bytecodes} is not @code{NULL}, the space used during the
-compilation of @var{form} is returned in @code{*bytecodes}. This space can be
-reused in further calls to @code{eval}. For example
+@deftypefun cl_object cl_safe_eval (cl_object @var{form}, cl_object @var{env}, cl_object @var{err_value}
+@deftypefunx cl_object cl_eval (cl_object @var{form})
+
+@code{cl_safe_eval} evaluates @var{form} in the lexical environment @var{env},
+which can be @var{nil}. Before evaluating it, the expression @var{form} must
+be bytecompiled. @code{cl_eval} is the equivalent of @code{cl_safe_eval} but
+without environment and with @var{err_value} set to @var{nil}. It exists only
+for compatibility with previous versions.
 @example
-        cl_object form = c_string_to_object("(print 1)");
-        cl_object buffer = OBJNULL;
-        eval(form, &buffer, Cnil);
-        eval(form, &buffer, Cnil);
+	cl_object form = c_string_to_object("(print 1)");
+	cl_safe_eval(form,Cnil);
+	cl_safe_eval(form, Cnil);
 @end example
-@noindent
-In most cases you will just want to make @var{bytecodes} @code{NULL}.
 @end deftypefun
 
-@deftypefun cl_object make_lambda (cl_object @var{name}, cl_object @var{def})
+@deftypefun cl_object si_make_lambda (cl_object @var{name}, cl_object @var{def})
 Builds an interpreted lisp function with name given by the symbol @var{name}
 and body given by @var{def}. For instance, we would achieve the equivalent of
 @example
@@ -870,9 +869,18 @@ and body given by @var{def}. For instance, we would achieve the equivalent of
 @noindent
 with the following code
 @example
-        cl_object def = c_string_to_object("(x y) (+ x y)");
+        cl_object def = c_string_to_object("((x y) (+ x y))");
         cl_object name = _intern("foo")
-        cl_object fun = make_lambda(name, def);
+        cl_object fun = si_make_lambda(name, def);
+        return funcall(fun, MAKE_FIXNUM(1), MAKE_FIXNUM(2));
+@end example
+@noindent Notice that @code{si_safe_lambda} performs a bytecodes compilation
+of the definition and thus it may signal some errors. Such errors are not
+handled by the routine itself you might consider using @code{cl_safe_eval}
+or @code{cl_eval} instead:
+@example
+        cl_object def = c_string_to_object("#'(lambda-block foo (x y) (+ x y))");
+        cl_object fun = cl_eval(def);
         return funcall(fun, MAKE_FIXNUM(1), MAKE_FIXNUM(2));
 @end example
 @end deftypefun
