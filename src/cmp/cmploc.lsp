@@ -107,7 +107,7 @@
 	((eq loc 'VALUES)
 	 (wt "VALUES(0)"))
 	((eq loc 'VA-ARG)
-	 (wt "cl_va_arg(args);"))
+	 (wt "cl_va_arg(args)"))
         ((or (not (consp loc))
              (not (symbolp (car loc))))
          (baboon))
