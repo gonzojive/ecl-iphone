@@ -1397,8 +1397,12 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 	int c;
 @
 	strm = stream_or_default_input(strm);
-	cl_env.token->string.fillp = 0;
-	for (;;) {
+#ifdef CLOS_STREAMS
+	if (type_of(strm) != t_stream) {
+		return funcall(2, @'stream-read-line', strm);
+	}
+#endif
+	for (cl_env.token->string.fillp = 0;;) {
 		c = ecl_read_char(strm);
 		if (c == EOF || c == '\n')
 			break;
@@ -1491,6 +1495,14 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 	int f;
 @
 	strm = stream_or_default_input(strm);
+#ifdef CLOS_STREAMS
+	if (type_of(strm) != t_stream) {
+		cl_object output = funcall(2,@'ext::stream-read-char-no-hang', strm);
+		if (output == @':eof')
+			goto END_OF_FILE;
+		@(return output);
+	}
+#endif
 	f = ecl_listen_stream(strm);
 	if (f == ECL_LISTEN_AVAILABLE) {
 		int c = ecl_read_char(strm);
@@ -1501,6 +1513,7 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 		@(return @'nil');
 	}
 	/* We reach here if there was an EOF */
+  END_OF_FILE:
 	if (Null(eof_errorp) && Null(recursivep))
 		@(return eof_value)
 	else
@@ -1571,7 +1584,12 @@ CANNOT_PARSE:
 
 @(defun read_sequence (sequence stream &key (start MAKE_FIXNUM(0)) end)
 @
-	return si_do_read_sequence(sequence, stream, start, end);
+#ifdef CLOS_STREAMS
+	if (type_of(stream) != t_stream)
+		return funcall(5, @'ext::stream-read-sequence', stream, sequence, start, end);
+	else
+#endif
+		return si_do_read_sequence(sequence, stream, start, end);
 @)
 
 

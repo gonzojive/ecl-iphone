@@ -288,6 +288,11 @@
 
 ;----------------------------------------------------------------------
 
+;;;
+;;; FIXME! We should replace this with a compiler macro + inliner for each
+;;; logical operation.
+;;;
+
 (defun co1boole (args)
    (and (not (endp (cddr args)))
 	(endp (cdddr args))
@@ -298,11 +303,9 @@
 	       (setq c1args (c1args* (rest args)))
 	       (eq 'FIXNUM (c1form-primary-type (first c1args)))
 	       (eq 'FIXNUM (c1form-primary-type (second c1args)))
-	       (make-c1form* 'C-INLINE :type 'fixnum :args
-			     c1args '(fixnum fixnum) '(fixnum)
-			     (boole-inline-string op-code)
-			     nil
-			     t)))))
+	       (c1expr `(c-inline ,(rest args) (FIXNUM FIXNUM) (FIXNUM)
+				  ,(boole-inline-string op-code)
+				  :side-effects nil :one-liner t))))))
 
 (defun boole-inline-string (op-code)
   (ecase op-code

@@ -85,6 +85,13 @@ ECL 0.9f
    representation is preserved:
 	(format nil '`(foo ,@a)) => "`(foo ,@a)"
 
+ - Our implementation of CLOS streams now builds on the Gray streams proposal
+   except for the generic functions CLOSE, STREAM-ELEMENT-TYPE, INPUT-STREAM-P,
+   OUTPUT-STREAM-P and OPEN-STREAM-P. We rather keep these as normal functions
+   that call the user extensible EXT:STREAM-{CLOSE, ELT-TYPE, INPUT-P,
+   OUTPUT-P, OPEN-P}. Care has been taken to ensure compatibility with previous
+   versions of ECL.
+
 * ANSI Compatibility:
 
  - DEFSETF forms are enclosed in a block with the name of the accessor.

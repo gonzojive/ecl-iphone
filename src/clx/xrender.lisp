@@ -869,8 +869,8 @@ by every function, which attempts to generate RENDER requests."
 
 
 ;; $Log$
-;; Revision 1.11  2005-02-25 16:17:39  jjgarcia
-;; Implemented SLOT-DEFINITION objects together with the associated protocols (Field position still missing).
+;; Revision 1.12  2005-03-17 16:47:57  jjgarcia
+;; Implemented our version of Gray streams.
 ;;
 ;; Revision 1.1  2004/06/10 07:59:31  jlr
 ;; Portable CLX library imported

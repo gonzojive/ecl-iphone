@@ -95,7 +95,8 @@
 	   (CHARACTER-VALUE 'CHARACTER)
 	   (LONG-FLOAT-VALUE 'LONG-FLOAT)
 	   (SHORT-FLOAT-VALUE 'SHORT-FLOAT)
-	   (C-INLINE (rep-type->lisp-type (first (second loc))))
+	   (C-INLINE (let ((type (first (second loc))))
+		       (if (lisp-type-p type) type (rep-type->lisp-type type))))
 	   (BIND (var-type (second loc)))
 	   (otherwise T)))))
 
@@ -110,7 +111,8 @@
 	   (CHARACTER-VALUE :char)
 	   (LONG-FLOAT-VALUE :double)
 	   (SHORT-FLOAT-VALUE :float)
-	   (C-INLINE (first (second loc)))
+	   (C-INLINE (let ((type (first (second loc))))
+		       (if (lisp-type-p type) (lisp-type->rep-type type) type)))
 	   (BIND (var-rep-type (second loc)))
 	   (otherwise :object)))))
 

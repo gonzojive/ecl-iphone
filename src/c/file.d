@@ -154,9 +154,8 @@ cl_stream_element_type(cl_object strm)
 	cl_object output = @'base-char';
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
-	/* This is a hack to get a TYPE-ERROR if strm is not a valid stream. */
 	if (type_of(strm) == t_instance)
-		funcall(2, @'ext::stream-input-p', strm);
+		return funcall(2, @'ext::stream-elt-type', strm);
 #endif
 	if (type_of(strm) != t_stream)
 		FEtype_error_stream(strm);
@@ -1147,13 +1146,8 @@ ecl_peek_char(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		cl_object c = funcall(2, @'ext::stream-read-char', strm);
-		if (CHARACTERP(c)) {
-			funcall(3, @'ext::stream-unread-char', strm, c);
-			return CHAR_CODE(c);
-		} else {
-			return EOF;
-		}
+		cl_object c = funcall(2, @'ext::stream-peek-char', strm);
+		return CHARACTERP(c)? CHAR_CODE(c) : EOF;
 	}
 #endif
 	if (type_of(strm) != t_stream) 
@@ -2244,8 +2238,9 @@ file_column(cl_object strm)
 
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
-	if (type_of(strm) == t_instance)
-		return 0;
+	if (type_of(strm) == t_instance) {
+		return fixint(funcall(2, @'ext::stream-line-column', strm));
+	}
 #endif
 	if (type_of(strm) != t_stream)
 		FEtype_error_stream(strm);
@@ -2739,9 +2734,6 @@ ecl_make_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm)
       break;
     case smm_output:
       mode = "w";
-      break;
-    case smm_io:
-      mode = "w+";
       break;
 #if defined(ECL_WSOCK)
     case smm_input_wsock:

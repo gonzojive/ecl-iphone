@@ -1094,9 +1094,9 @@ extern cl_object cl_write_char _ARGS((cl_narg narg, cl_object c, ...));
 extern cl_object cl_write_string _ARGS((cl_narg narg, cl_object strng, ...));
 extern cl_object cl_write_line _ARGS((cl_narg narg, cl_object strng, ...));
 extern cl_object cl_terpri _ARGS((cl_narg narg, ...));
+extern cl_object cl_finish_output _ARGS((cl_narg narg, ...));
 extern cl_object cl_fresh_line _ARGS((cl_narg narg, ...));
 extern cl_object cl_force_output _ARGS((cl_narg narg, ...));
-#define cl_finish_output cl_force_output
 extern cl_object cl_clear_output _ARGS((cl_narg narg, ...));
 extern cl_object si_write_object(cl_object object, cl_object stream);
 extern cl_object si_write_ugly_object(cl_object object, cl_object stream);
