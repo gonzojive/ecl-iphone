@@ -52,12 +52,8 @@ extern int backq_level;
 
 static cl_object dispatch_reader;
 
-#define	token_buffer	cl_token->string.self
-
 #define	cat(c)	(READtable->readtable.table[char_code((c))].syntax_type)
 
-static void too_long_token (void);
-static void too_long_string (void);
 static void extra_argument (int c, cl_object d);
 
 static void
@@ -266,6 +262,7 @@ BEGIN:
 	escape_flag = FALSE;
 	length = 0;
 	colon_type = 0;
+	cl_token->string.fillp = 0;
 	for (;;) {
 		if (a == cat_single_escape) {
 			c = read_char(in);
@@ -283,12 +280,11 @@ BEGIN:
 					a = cat_constituent;
 				} else if (a == cat_multiple_escape)
 					break;
-				if (length >= cl_token->string.dim)
-					too_long_token();
-				token_buffer[length++] = char_code(c);
+				cl_string_push_extend(cl_token, char_code(c));
+				length++;
 			}
 			goto NEXT;
-		} else if ('a' <= char_code(c) && char_code(c) <= 'z')
+		} else if (islower(char_code(c)))
 			c = CODE_CHAR(toupper(char_code(c)));
 		else if (char_code(c) == ':') {
 			if (colon_type == 0) {
@@ -306,9 +302,8 @@ BEGIN:
 				unread_char(c, in);
 			break;
 		}
-		if (length >= cl_token->string.dim)
-			too_long_token();
-		token_buffer[length++] = char_code(c);
+		cl_string_push_extend(cl_token, char_code(c));
+		length++;
 	NEXT:
 		if (stream_at_end(in))
 			break;
@@ -317,10 +312,9 @@ BEGIN:
 		a = cat(c);
 	}
 
-	if (READsuppress) {
-		cl_token->string.fillp = length;
+	if (READsuppress)
 		return(Cnil);
-	}
+
 	if (ilf && !escape_flag &&
 	    length == 1 && cl_token->string.self[0] == '.') {
 		dot_flag = TRUE;
@@ -333,10 +327,9 @@ BEGIN:
 	}
 
 N:
-	cl_token->string.fillp = length;
-	if (escape_flag || (READbase <= 10 && token_buffer[0] > '9'))
+	if (escape_flag || (READbase <= 10 && isalpha(cl_token->string.self[0])))
 		goto SYMBOL;
-	x = parse_number(token_buffer, length, &i, READbase);
+	x = parse_number(cl_token->string.self, cl_token->string.fillp, &i, READbase);
 	if (x != OBJNULL && length == i)
 		return(x);
 
@@ -351,10 +344,10 @@ SYMBOL:
 			    FEerror("There is no package with the name ~A.",
 				    1, copy_simple_string(cl_token));
 		}
-		for (i = colon + 1;  i < length;  i++)
-			token_buffer[i - (colon + 1)]
-			= token_buffer[i];
 		cl_token->string.fillp = length - (colon + 1);
+		memmove(cl_token->string.self,
+			cl_token->string.self + colon + 1,
+			sizeof(*cl_token->string.self) * cl_token->string.fillp);
 		if (colon > 0) {
 			cl_token->string.self[cl_token->string.fillp] = '\0';
 			x = find_symbol(cl_token, p, &intern_flag);
@@ -369,12 +362,13 @@ SYMBOL:
 		if (Null(p))
 			FEerror("There is no package with the name ~A.",
 				1, copy_simple_string(cl_token));
-		for (i = colon + 2;  i < length;  i++)
-			token_buffer[i - (colon + 2)] = token_buffer[i];
 		cl_token->string.fillp = length - (colon + 2);
+		memmove(cl_token->string.self,
+			cl_token->string.self + colon + 2,
+			sizeof(*cl_token->string.self) * cl_token->string.fillp);
 	} else
 		p = current_package();
-	token_buffer[cl_token->string.fillp] = '\0';
+	cl_token->string.self[cl_token->string.fillp] = '\0';
 	x = intern(cl_token, p, &intern_flag);
 	if (x->symbol.name == cl_token)
 		x->symbol.name = copy_simple_string(cl_token);
@@ -400,7 +394,7 @@ SYMBOL:
 	If not, OBJNULL is returned.
 */
 cl_object
-parse_number(char *s, cl_index end, cl_index *ep, int radix)
+parse_number(const char *s, cl_index end, cl_index *ep, int radix)
 {
 	cl_object x, y;
 	int sign;
@@ -600,7 +594,7 @@ NO_NUMBER:
 }
 
 cl_object
-parse_integer(char *s, cl_index end, cl_index *ep, int radix)
+parse_integer(const char *s, cl_index end, cl_index *ep, int radix)
 {
 	cl_object x;
 	int sign, d;
@@ -671,45 +665,38 @@ static
 static void
 read_string(int delim, cl_object in)
 {
-	cl_index i;
 	cl_object c;
 
-	i = 0;
+	cl_token->string.fillp = 0;
 	for (;;) {
 		c = read_char(in);
 		if (char_code(c) == delim)
 			break;
 		else if (cat(c) == cat_single_escape)
 			c = read_char(in);
-		if (i >= cl_token->string.dim)
-			too_long_string();
-		token_buffer[i++] = char_code(c);
+		cl_string_push_extend(cl_token, char_code(c));
 	}
-	cl_token->string.fillp = i;
-	cl_token->string.self[i] = '\0';
 }
 
 /*
 	Read_constituent(in) reads
 	a sequence of constituent characters from stream in
-	and places it in token_buffer.
+	and places it in cl_token.
 */
 static void
 read_constituent(cl_object in)
 {
-	size_t i;
 	cl_object c;
 
-	i = 0;
+	cl_token->string.fillp = 0;
 	for (;;) {
 		c = read_char(in);
 		if (cat(c) != cat_constituent) {
 			unread_char(c, in);
 			break;
 		}
-		token_buffer[i++] = char_code(c);
+		cl_string_push_extend(cl_token, char_code(c));
 	}
-	cl_token->string.fillp = i;
 }
 
 static
@@ -963,7 +950,6 @@ static
 
 static
 @(defun "sharp_colon_reader" (in c d)
-	cl_index length;
 	enum chattrib a;
 @
 	if (d != Cnil && !READsuppress)
@@ -971,12 +957,10 @@ static
 	c = read_char(in);
 	a = cat(c);
 	escape_flag = FALSE;
-	length = 0;
+	cl_token->string.fillp = 0;
 	goto L;
 	for (;;) {
-		if (length >= cl_token->string.dim)
-			too_long_token();
-		token_buffer[length++] = char_code(c);
+		cl_string_push_extend(cl_token, char_code(c));
 	K:
 		if (stream_at_end(in))
 			goto M;
@@ -999,12 +983,10 @@ static
 					a = cat_constituent;
 				} else if (a == cat_multiple_escape)
 					break;
-				if (length >= cl_token->string.dim)
-					too_long_token();
-				token_buffer[length++] = char_code(c);
+				cl_string_push_extend(cl_token, char_code(c));
 			}
 			goto K;
-		} else if ('a' <= char_code(c) && char_code(c) <= 'z')
+		} else if (islower(char_code(c)))
 			c = CODE_CHAR(toupper(char_code(c)));
 		if (a == cat_whitespace || a == cat_terminating)
 			break;
@@ -1015,7 +997,6 @@ static
 M:
 	if (READsuppress)
 		@(return Cnil)
-	cl_token->string.fillp = length;
 	@(return make_symbol(copy_simple_string(cl_token)))
 @)
 
@@ -1077,7 +1058,7 @@ static
 	read_constituent(in);
 	if (READsuppress)
 		@(return Cnil)
-	x = parse_number(token_buffer, cl_token->string.fillp, &i, 2);
+	x = parse_number(cl_token->string.self, cl_token->string.fillp, &i, 2);
 	if (x == OBJNULL || i != cl_token->string.fillp)
 		FEerror("Cannot parse the #B readmacro.", 0);
 	if (type_of(x) == t_shortfloat ||
@@ -1097,7 +1078,7 @@ static
 	read_constituent(in);
 	if (READsuppress)
 		@(return Cnil)
-	x = parse_number(token_buffer, cl_token->string.fillp, &i, 8);
+	x = parse_number(cl_token->string.self, cl_token->string.fillp, &i, 8);
 	if (x == OBJNULL || i != cl_token->string.fillp)
 		FEerror("Cannot parse the #O readmacro.", 0);
 	if (type_of(x) == t_shortfloat ||
@@ -1117,7 +1098,7 @@ static
 	read_constituent(in);
 	if (READsuppress)
 		@(return Cnil)
-	x = parse_number(token_buffer, cl_token->string.fillp, &i, 16);
+	x = parse_number(cl_token->string.self, cl_token->string.fillp, &i, 16);
 	if (x == OBJNULL || i != cl_token->string.fillp)
 		FEerror("Cannot parse the #X readmacro.", 0);
 	if (type_of(x) == t_shortfloat ||
@@ -1144,7 +1125,7 @@ static
 	read_constituent(in);
 	if (READsuppress)
 		@(return Cnil)
-	x = parse_number(token_buffer, cl_token->string.fillp, &i, radix);
+	x = parse_number(cl_token->string.self, cl_token->string.fillp, &i, radix);
 	if (x == OBJNULL || i != cl_token->string.fillp)
 		FEerror("Cannot parse the #R readmacro.", 0);
 	if (type_of(x) == t_shortfloat ||
@@ -1499,7 +1480,6 @@ READ:
 			     eof_value
 			     recursivep
 		   &aux c)
-	cl_index i;
 @
 	if (Null(strm))
 		strm = symbol_value(@'*standard_input*');
@@ -1511,25 +1491,24 @@ READ:
 		else
 			FEend_of_file(strm);
 	}
-	i = 0;
+	cl_token->string.fillp = 0;
 	for (;;) {
 		c = read_char(strm);
 		if (char_code(c) == '\n') {
 			c = Cnil;
 			break;
 		}
-		if (i >= cl_token->string.dim)
-			too_long_string();
-		cl_token->string.self[i++] = char_code(c);
+		cl_string_push_extend(cl_token, char_code(c));
 		if (stream_at_end(strm)) {
 			c = Ct;
 			break;
 		}
 	}
 #ifdef CRLF
-	if (i > 0 && cl_token->string.self[i-1] == '\r') i--;
+	if (cl_token->string.fillp > 0 &&
+	    cl_token->string.self[cl_token->string.fillp-1] == '\r')
+		cl_token->string.fillp--;
 #endif
-	cl_token->string.fillp = i;
 	@(return copy_simple_string(cl_token) c)
 @)
 
@@ -1851,7 +1830,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 	if (entry->macro != dispatch_reader || entry->dispatch_table == NULL)
 		FEerror("~S is not a dispatch character.", 1, dspchr);
 	subcode = char_code(subchr);
-	if ('a' <= subcode && subcode <= 'z')
+	if (islower(subcode))
 		subcode = toupper(subcode);
 	entry->dispatch_table[subcode] = fnc;
 	@(return Ct)
@@ -1901,28 +1880,6 @@ string_to_object(cl_object x)
 @
 	@(return standard_readtable)
 @)
-
-static void
-too_long_token(void)
-{
-	char *q;
-
-	q = (char *)cl_alloc_atomic(cl_token->string.dim*2);
-	memcpy(q, cl_token->string.self, cl_token->string.dim);
-	cl_token->string.self = q;
-	cl_token->string.dim *= 2;
-}
-
-static void
-too_long_string(void)
-{
-	char *q;
-
-	q = (char *)cl_alloc_atomic(cl_token->string.dim*2);
-	memcpy(q, cl_token->string.self, cl_token->string.dim);
-	cl_token->string.self = q;
-	cl_token->string.dim *= 2;
-}
 
 static void
 extra_argument(int c, cl_object d)
