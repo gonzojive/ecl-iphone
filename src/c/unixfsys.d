@@ -155,10 +155,9 @@ cl_truename(cl_object pathname)
 	cl_object previous = current_dir();
 
 	pathname = coerce_to_file_pathname(pathname);
+	assert_non_wild_pathname(pathname);
 	if (pathname->pathname.directory == Cnil)
 		pathname = merge_pathnames(previous, pathname, @':newest');
-	if (cl_wild_pathname_p(1, pathname) != Cnil)
-		cl_error(3, @'file-error', @':pathname', pathname);
 
 	/* First we ensure that PATHNAME itself does not point to a symlink. */
 	filename = si_follow_symlink(pathname);
@@ -227,14 +226,21 @@ file_len(FILE *fp)
 cl_object
 cl_rename_file(cl_object oldn, cl_object newn)
 {
-	cl_object filename, newfilename, old_truename, new_truename;
+	cl_object old_filename, new_filename, old_truename, new_truename;
 
-	/* INV: coerce_to_file_pathname() checks types */
-	newn = merge_pathnames(newn, oldn, Cnil);
+	/* 1) Get the old filename, and complain if it has wild components,
+	 *    or if it does not exist. Notice that the filename to be renamed
+	 *    is not the truename, because we might be renaming a symbolic link.
+	 */
+	old_filename = si_coerce_to_filename(oldn);
 	old_truename = cl_truename(oldn);
-	filename = si_coerce_to_filename(oldn);
-	newfilename = si_coerce_to_filename(newn);
-	if (rename(filename->string.self, newfilename->string.self) < 0)
+
+	/* 2) Create the new file name. */
+	newn = merge_pathnames(newn, oldn, @':newest');
+	new_filename = si_coerce_to_filename(newn);
+
+	/* 3) Try renaming and signal an error when it was not possible. */
+	if (rename(old_filename->string.self, new_filename->string.self) < 0)
 		FElibc_error("Cannot rename the file ~S to ~S.", 2, oldn, newn);
 	new_truename = cl_truename(newn);
 	@(return newn old_truename new_truename)
@@ -254,8 +260,7 @@ cl_delete_file(cl_object file)
 cl_object
 cl_probe_file(cl_object file)
 {
-	if (cl_wild_pathname_p(1, file) != Cnil)
-		cl_error(3, @'file-error', @':pathname', file);
+	/* INV: Both SI:FILE-KIND and TRUENAME complain if "file" has wildcards */
 	@(return (si_file_kind(file, Ct) != Cnil? cl_truename(file) : Cnil))
 }
 
@@ -653,7 +658,7 @@ si_getcwd(void)
 	if (directory->pathname.name != Cnil ||
 	    directory->pathname.type != Cnil)
 		FEerror("~A is not a directory pathname.", 1, directory);
-	namestring = si_coerce_to_filename(directory);
+	namestring = cl_namestring(directory);
 	if (chdir(namestring->string.self) <0)
 		FElibc_error("Can't change the current directory to ~A",
 			     1, namestring);

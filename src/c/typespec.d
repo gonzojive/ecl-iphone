@@ -209,6 +209,13 @@ assert_type_vector(cl_object p)
 		FEwrong_type_argument(@'vector', p);
 }
 
+void
+assert_non_wild_pathname(cl_object p)
+{
+	if (cl_wild_pathname_p(1,p) != Cnil)
+		cl_error(3, @'file-error', @':pathname', p);
+}
+
 cl_object
 cl_type_of(cl_object x)
 {

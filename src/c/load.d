@@ -112,7 +112,7 @@ si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 	si_gc(Ct);
 
 	/* We need the full pathname */
-	filename = si_coerce_to_filename(cl_truename(filename));
+	filename = cl_namestring(cl_truename(filename));
 
 #ifdef ECL_THREADS
 	/* Loading binary code is not thread safe. When another thread tries
@@ -216,6 +216,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 		function = Cnil;
 		goto NOT_A_FILENAME;
 	}
+	/* INV: coerce_to_file_pathname() creates a fresh new pathname object */
 	pathname = coerce_to_file_pathname(source);
 	pntype   = pathname->pathname.type;
 
@@ -250,8 +251,8 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 	} else loop_for_in(hooks) {
 		/* Otherwise try with known extensions until a matching
 		   file is found */
-		pathname->pathname.type = CAAR(hooks);
-		filename = si_coerce_to_filename(pathname);
+		filename = pathname;
+		filename->pathname.type = CAAR(hooks);
 		function = CDAR(hooks);
 		if (si_file_kind(filename, Ct) == @':file')
 			break;
@@ -262,7 +263,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 		if (Null(if_does_not_exist))
 			@(return Cnil)
 		else
-			FEcannot_open(pathname);
+			FEcannot_open(source);
 	}
 NOT_A_FILENAME:
 	if (verbose != Cnil) {
@@ -270,8 +271,8 @@ NOT_A_FILENAME:
 			  filename);
 	}
 	bds_bind(@'*package*', symbol_value(@'*package*'));
-	bds_bind(@'*load-pathname*', pathname);
-	bds_bind(@'*load-truename*', cl_truename(pathname));
+	bds_bind(@'*load-pathname*', filename);
+	bds_bind(@'*load-truename*', cl_truename(filename));
 	if (Null(function))
 		ok = si_load_source(filename, verbose, print);
 	else
@@ -284,5 +285,5 @@ NOT_A_FILENAME:
 		cl_format(3, Ct, make_simple_string("~&;;; Loading ~s~%"),
 			  filename);
 	}
-	@(return pathname)
+	@(return filename)
 @)

@@ -674,6 +674,8 @@ cl_logical_pathname(cl_object x)
 /*
  * coerce_to_file_pathname(P) converts P to a physical pathname,
  * for a file which is accesible in our filesystem.
+ * INV: Wildcards are allowed.
+ * INV: A fresh new copy of the pathname is created.
  */
 cl_object
 coerce_to_file_pathname(cl_object pathname)
@@ -707,6 +709,7 @@ coerce_to_physical_pathname(cl_object x)
  * si_coerce_to_filename(P) converts P to a physical pathname and then to
  * a namestring. The output must always be a simple-string which can
  * be used by the C library.
+ * INV: No wildcards are allowed.
  */
 cl_object
 si_coerce_to_filename(cl_object pathname)
@@ -714,6 +717,7 @@ si_coerce_to_filename(cl_object pathname)
 	cl_object namestring;
 
 	pathname = coerce_to_file_pathname(pathname);
+	assert_non_wild_pathname(pathname);
 	namestring = coerce_to_simple_string(cl_namestring(pathname));
 	if (namestring->string.fillp >= MAXPATHLEN - 16)
 		FEerror("Too long filename: ~S.", 1, namestring);

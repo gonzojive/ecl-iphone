@@ -1393,6 +1393,7 @@ extern void assert_type_array(cl_object p);
 extern void assert_type_vector(cl_object p);
 extern void assert_type_list(cl_object p);
 extern void assert_type_proper_list(cl_object p);
+extern void assert_non_wild_pathname(cl_object p);
 extern cl_object cl_type_of(cl_object x);
 
 extern void FEtype_error_character(cl_object x) __attribute__((noreturn));
