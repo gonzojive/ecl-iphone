@@ -32,9 +32,7 @@
 (defvar // nil "The list of all values of the last-but-one top-level form.")
 (defvar /// nil "The list of all values of the last-but-two top-level form.")
 
-; Can't use ~ on Solaris 2:
-;(defvar *lisp-init-file-list* '("./init" "~/.ecl"))
-(defvar *lisp-init-file-list* '("./init")
+(defvar *lisp-init-file-list* '("./init" "home:.ecl")
   "List of files automatically loaded when ECL is invoked.")
 
 (defvar *quit-tag* (cons nil nil))
