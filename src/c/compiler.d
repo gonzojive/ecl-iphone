@@ -270,52 +270,51 @@ asm_complete(register int op, register cl_index original) {
 
 typedef struct {
   cl_object symbol;
-  const char *const name;
   void (*compiler)(cl_object);
   int lexical_increment;
 } compiler_record;
 
 static compiler_record database[] = {
-  {OBJNULL, "AND", c_and, 1},
-  {OBJNULL, "BLOCK", c_block, 1},
-  {OBJNULL, "CASE", c_case, 1},
-  {OBJNULL, "CATCH", c_catch, 1},
-  {OBJNULL, "COMPILER-LET", c_compiler_let, 0},
-  {OBJNULL, "COND", c_cond, 1},
-  {OBJNULL, "DO", c_do, 1},
-  {OBJNULL, "DO*", c_doa, 1},
-  {OBJNULL, "DOLIST", c_dolist, 1},
-  {OBJNULL, "DOTIMES", c_dotimes, 1},
-  {OBJNULL, "EVAL-WHEN", c_eval_when, 0},
-  {OBJNULL, "FLET", c_flet, 1},
-  {OBJNULL, "FUNCTION", c_function, 1},
-  {OBJNULL, "GO", c_go, 1},
-  {OBJNULL, "IF", c_if, 1},
-  {OBJNULL, "LABELS", c_labels, 1},
-  {OBJNULL, "LET", c_let, 1},
-  {OBJNULL, "LET*", c_leta, 1},
-  {OBJNULL, "LOCALLY", c_locally, 0},
-  {OBJNULL, "MACROLET", c_macrolet, 0},
-  {OBJNULL, "MULTIPLE-VALUE-BIND", c_multiple_value_bind, 1},
-  {OBJNULL, "MULTIPLE-VALUE-CALL", c_multiple_value_call, 1},
-  {OBJNULL, "MULTIPLE-VALUE-PROG1", c_multiple_value_prog1, 1},
-  {OBJNULL, "MULTIPLE-VALUE-SETQ", c_multiple_value_setq, 1},
-  {OBJNULL, "NTH-VALUE", c_nth_value, 1},
-  {OBJNULL, "OR", c_or, 1},
-  {OBJNULL, "PROGN", compile_body, 0},
-  {OBJNULL, "PROGV", c_progv, 1},
-  {OBJNULL, "PSETQ", c_psetq, 1},
-  {OBJNULL, "RETURN", c_return, 1},
-  {OBJNULL, "RETURN-FROM", c_return_from, 1},
-  {OBJNULL, "SETQ", c_setq, 1},
-  {OBJNULL, "SYMBOL-MACROLET", c_symbol_macrolet, 0},
-  {OBJNULL, "TAGBODY", c_tagbody, 1},
-  {OBJNULL, "THROW", c_throw, 1},
-  {OBJNULL, "UNWIND-PROTECT", c_unwind_protect, 1},
-  {OBJNULL, "UNLESS", c_unless, 1},
-  {OBJNULL, "VALUES", c_values, 1},
-  {OBJNULL, "WHEN", c_when, 1},
-  {OBJNULL, "", c_when, 1}
+  {@'and',  c_and, 1},
+  {@'block', c_block, 1},
+  {@'case', c_case, 1},
+  {@'catch', c_catch, 1},
+  {@'compiler-let', c_compiler_let, 0},
+  {@'cond', c_cond, 1},
+  {@'do', c_do, 1},
+  {@'do*', c_doa, 1},
+  {@'dolist', c_dolist, 1},
+  {@'dotimes', c_dotimes, 1},
+  {@'eval-when', c_eval_when, 0},
+  {@'flet', c_flet, 1},
+  {@'function', c_function, 1},
+  {@'go', c_go, 1},
+  {@'if', c_if, 1},
+  {@'labels', c_labels, 1},
+  {@'let', c_let, 1},
+  {@'let*', c_leta, 1},
+  {@'locally', c_locally, 0},
+  {@'macrolet', c_macrolet, 0},
+  {@'multiple-value-bind', c_multiple_value_bind, 1},
+  {@'multiple-value-call', c_multiple_value_call, 1},
+  {@'multiple-value-prog1', c_multiple_value_prog1, 1},
+  {@'multiple-value-setq', c_multiple_value_setq, 1},
+  {@'nth-value', c_nth_value, 1},
+  {@'or', c_or, 1},
+  {@'progn', compile_body, 0},
+  {@'progv', c_progv, 1},
+  {@'psetq', c_psetq, 1},
+  {@'return', c_return, 1},
+  {@'return-from', c_return_from, 1},
+  {@'setq', c_setq, 1},
+  {@'symbol-macrolet', c_symbol_macrolet, 0},
+  {@'tagbody', c_tagbody, 1},
+  {@'throw', c_throw, 1},
+  {@'unwind-protect', c_unwind_protect, 1},
+  {@'unless', c_unless, 1},
+  {@'values', c_values, 1},
+  {@'when', c_when, 1},
+  {NULL, NULL, 1}
 };
 
 /* ----------------- LEXICAL ENVIRONMENT HANDLING -------------------- */
@@ -2385,6 +2384,4 @@ init_compiler(void)
 	ecl_register_static_root(&c_env.bytecodes);
 	c_env.bytecodes = alloc_bytecodes();
 #endif
-	for (l = database; l->name[0] != 0; l++)
-	  l->symbol = _intern(l->name, lisp_package);
 }
