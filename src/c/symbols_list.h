@@ -1057,7 +1057,11 @@ cl_symbols[] = {
 {SYS_ "FILL-POINTER-SET", SI_ORDINARY, si_fill_pointer_set, 2, OBJNULL},
 {SYS_ "FIXNUMP", SI_ORDINARY, si_fixnump, 1, OBJNULL},
 {SYS_ "FORMAT-ERROR", SI_ORDINARY, NULL, -1, OBJNULL},
+#ifndef ECL_CMU_FORMAT
+{SYS_ "FORMATTER-AUX", SI_ORDINARY, NULL, -1, OBJNULL},
+#else
 {SYS_ "FORMATTER-AUX", SI_ORDINARY, si_formatter_aux, -1, OBJNULL},
+#endif
 {SYS_ "FRS-BDS", SI_ORDINARY, si_frs_bds, 1, OBJNULL},
 {SYS_ "FRS-CLASS", SI_ORDINARY, si_frs_class, 1, OBJNULL},
 {SYS_ "FRS-IHS", SI_ORDINARY, si_frs_ihs, 1, OBJNULL},
