@@ -53,8 +53,11 @@
 	    `',constants-list
 	    `(list* ,@lambdas-list ',constants-list)))
     (when (endp (cdr scan))
-      (error "Wrong number of elements in :DEFAULT-INITARGS option."))
+      (si::simple-program-error "Wrong number of elements in :DEFAULT-INITARGS option."))
     (setq slot-name (second scan) initform (first scan))
+    (when (getf scan slot-name)
+      (si::simple-program-error "~S is duplicated in :DEFAULT-INITARGS form ~S"
+				slot-name default-initargs))
     (cond ((typep initform '(or number character string array keyword))
 	   (setq constants-list (list* slot-name initform constants-list)))
 	  ((and (consp initform) (eq 'quote (first initform)))
@@ -141,40 +144,46 @@
   (let* (name superclasses slots options
 	 metaclass-name default-initargs documentation)
     (unless args
-      (error "Illegal defclass form: the class name, the superclasses and the slots should always be provided"))
+      (si::simple-program-error "Illegal defclass form: the class name, the superclasses and the slots should always be provided"))
     (setq name (pop args))
     (unless args
-      (error "Illegal defclass form: the class name, the superclasses list and the slot specifier list should always be provided"))
+      (si::simple-program-error "Illegal defclass form: the class name, the superclasses list and the slot specifier list should always be provided"))
     (unless (listp (first args))
-      (error "Illegal defclass form: the superclasses should be a list"))
+      (si::simple-program-error "Illegal defclass form: the superclasses should be a list"))
     (setq superclasses (pop args))
     (unless args
-      (error "Illegal defclass form: the class name, the superclasses list and the slot specifier list should always be provided"))
+      (si::simple-program-error "Illegal defclass form: the class name, the superclasses list and the slot specifier list should always be provided"))
     (unless (listp (first args))
-      (error "Illegal defclass form: the slots should be a list"))
+      (si::simple-program-error "Illegal defclass form: the slots should be a list"))
     (setq slots (pop args))
     (setq options args)
     (unless (legal-class-name-p name)
-      (error "Illegal defclass form: the class name should be a symbol"))
+      (si::simple-program-error "Illegal defclass form: the class name should be a symbol"))
     ;; process options
     (dolist (option options)
       (case (first option)
 	(:metaclass
 	 (if metaclass-name
-	     (error "Option :metaclass specified more than once for class ~A" 
-		    name)
+	     (si::simple-program-error
+	      "Option :metaclass specified more than once for class ~A" 
+	      name)
 	   ;; else
 	   (setq metaclass-name (second option))))
 	(:default-initargs
 	  (if default-initargs
-	      (error "Option :default-initargs specified more than once for class ~A" name)
+	      (si::simple-program-error
+	       "Option :default-initargs specified more than once for class ~A"
+	       name)
 	      (setq default-initargs (cdr option))))
 	(:documentation
 	  (if documentation
-	      (error "Option :documentation specified more than once for class ~A"
-		     name)
+	      (si::simple-program-error
+	       "Option :documentation specified more than once for class ~A"
+	       name)
 	      (setq documentation (second option))))  
-	(otherwise (error "~S is not a legal class-option." (first option)))))
+	(otherwise
+	 (si::simple-program-error "~S is not a legal class-option."
+				   (first option)))))
     (values name superclasses slots 
 	    metaclass-name default-initargs documentation)))
 

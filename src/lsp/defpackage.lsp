@@ -129,9 +129,8 @@
 	     output))
     (dolist (option '(:SIZE :DOCUMENTATION))
       (when (<= 2 (count option options ':key #'car))
-	(error 'simple-program-error
-	       :format-control "DEFPACKAGE option ~s specified more than once."
-	       :format-arguments (list option))))
+	(si::simple-program-error "DEFPACKAGE option ~s specified more than once."
+				  option)))
     (setq name (string name))
     (let* ((nicknames (option-values ':nicknames options))
 	   (documentation (option-values ':documentation options))
@@ -147,30 +146,24 @@
 					  interned-symbol-names
 					  (loop for list in shadowing-imported-from-symbol-names-list append (rest list))
 					  (loop for list in imported-from-symbol-names-list append (rest list))))
-	(error 'simple-program-error
-	       :format-control
-	       "The symbol ~s cannot coexist in these lists:~{ ~s~}"
-	       :format-arguments
-	       (list
-		(first duplicate)
-		(loop for num in (rest duplicate)
-		      collect (case num
-				(1 ':SHADOW)
-				(2 ':INTERN)
-				(3 ':SHADOWING-IMPORT-FROM)
-				(4 ':IMPORT-FROM))))))
+	(si::simple-program-error
+	 "The symbol ~s cannot coexist in these lists:~{ ~s~}"
+	 (first duplicate)
+	 (loop for num in (rest duplicate)
+	       collect (case num
+			 (1 ':SHADOW)
+			 (2 ':INTERN)
+			 (3 ':SHADOWING-IMPORT-FROM)
+			 (4 ':IMPORT-FROM)))))
       (dolist (duplicate (find-duplicates exported-symbol-names
 					  interned-symbol-names))
-	(error 'simple-program-error
-	       :format-control
-	       "The symbol ~s cannot coexist in these lists:~{ ~s~}"
-	       :format-arguments
-	       (list
-		(first duplicate)
-		(loop for num in (rest duplicate) collect
-		      (case num
-			(1 ':EXPORT)
-			(2 ':INTERN))))))
+	(si::simple-program-error
+	 "The symbol ~s cannot coexist in these lists:~{ ~s~}"
+	 (first duplicate)
+	 (loop for num in (rest duplicate) collect
+	       (case num
+		 (1 ':EXPORT)
+		 (2 ':INTERN)))))
       `(si::%defpackage
 	,name
 	',nicknames

@@ -54,9 +54,10 @@
 
 (defun classp (obj)
   (and (si:instancep obj)
-       (search-make-instance obj)
+       (subclassp (si::instance-class obj) (find-class 'CLASS))
        t))
 
+#+nil
 (defun metaclassp (obj)
   (declare (si::c-local))
   (and (si:instancep obj)

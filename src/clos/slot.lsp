@@ -42,14 +42,19 @@
              (loop (when (null options) (return t))
 		   (setq option (pop options))
 		   (unless (legal-slot-option-p option)
-		     (error "In the slot description ~S,~%~
-                             the option ~S is not legal."
-			    slot option))
+		     (si::simple-program-error
+		      "In the slot description ~S,~%the option ~S is not legal"
+		      slot option))
 		   (if (endp options)
-		     (error "In the slot description ~S,~%~
-			     the option ~S is missing an argument"
-			    slot option)
+		     (si::simple-program-error
+		      "In the slot description ~S,~%the option ~S is missing an argument"
+		      slot option)
 		     (setq value (pop options)))
+		   (when (and (member option '(:allocation initform :type :documentation))
+			      (getf options option))
+		     (si::simple-program-error
+		      "In the slot descrition ~S,~%the option ~S is duplicated"
+		      slot option))
                    (case option
                      (:initarg    (push value initargs))
                      (:initform   (setq initform value))
