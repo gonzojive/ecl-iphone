@@ -76,7 +76,7 @@ dnl AC_ARG_ENABLE(runtime,
 dnl 	[--enable-runtime	Build no compiler.],
 dnl 	runtime="$enable_runtime")
 AC_ARG_ENABLE(shared,
-	[--disable-shared       Enable building dynamically loadable extensions.],
+	[--disable-shared       Disable building dynamically loadable extensions.],
 	shared="$enable_shared",shared="yes")
 AC_ARG_WITH(oldloop,
 	[--with-oldloop         Use the old MIT LOOP macro.],

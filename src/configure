@@ -859,7 +859,7 @@ Optional Features:
 --enable-local-boehm   Use already installed Boehm GC library.
 --enable-local-gmp     Use already installed GMP library.
 --enable-threads	Include the multiple thread facility.
---disable-shared       Enable building dynamically loadable extensions.
+--disable-shared       Disable building dynamically loadable extensions.
 --enable-cxx           Build ECL using C++ compiler
 
 Optional Packages:
