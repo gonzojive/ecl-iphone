@@ -463,7 +463,7 @@ q (or Q):             quits the inspection.~%~
   (when (member doc-type '(t type))
     (si::get-documentation (class-name object) 'structure)))
 
-(defmethod (setf documentation) (new-value (object class) doc-type)
+(defmethod (setf documentation) (new-value (object structure-class) doc-type)
   (when (member doc-type '(t type))
     (setf (documentation (class-name object) 'structure) new-value)))
 
