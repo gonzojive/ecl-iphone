@@ -376,7 +376,7 @@
       (cmpck (endp (cdr l))
              "No form was given for the value of ~s." var)
       (setq var (chk-symbol-macrolet var))
-      (setq args (list* var (second l) args))
+      (setq args (nconc args (list var (second l))))
       (if (symbolp var)
 	(cmpck (constantp var)
 	       "The constant ~s is being assigned a value." var)
