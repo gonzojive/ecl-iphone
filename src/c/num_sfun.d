@@ -138,28 +138,26 @@ cl_expt(cl_object x, cl_object y)
 	if (number_zerop(x)) {
 		if (!number_plusp(ty==t_complex?y->complex.real:y))
 			FEerror("Cannot raise zero to the power ~S.", 1, y);
-		return1(number_times(x, y));
-	}
-	if (ty == t_fixnum || ty == t_bignum) {
-		if (number_minusp(y)) {
-			z = number_negate(y);
-			z = cl_expt(x, z);
-			z = number_divide(MAKE_FIXNUM(1), z);
-			return1(z);
-		}
+		z = number_times(x, y);
+	} else if (ty != t_fixnum && ty != t_bignum) {
+		z = cl_log1(x);
+		z = number_times(z, y);
+		z = cl_exp(z);
+	} else if (number_minusp(y)) {
+		z = number_negate(y);
+		z = cl_expt(x, z);
+		z = number_divide(MAKE_FIXNUM(1), z);
+	} else {
 		z = MAKE_FIXNUM(1);
 		do {
 			/* INV: integer_divide outputs an integer */
 			if (!number_evenp(y))
 				z = number_times(z, x);
-			x = number_times(x, x);
 			y = integer_divide(y, MAKE_FIXNUM(2));
-		} while (number_plusp(y));
-		return1(z);
+			if (number_zerop(y)) break;
+			x = number_times(x, x);
+		} while (1);
 	}
-	z = cl_log1(x);
-	z = number_times(z, y);
-	z = cl_exp(z);
 	return1(z);
 }
 

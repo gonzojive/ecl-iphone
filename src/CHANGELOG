@@ -28,6 +28,10 @@ ECL 0.9f
  - Where available, ECL now uses _setjmp/_longjmp for control structures. These
    functions are faster, as they do not save signals.
 
+ - (EXPT 10.0l0 308) failed because the routine EXPT computed too many powers
+   of 10.0l0, some of which (in particular 10^512) were not required and
+   overflowed the machine accuracy.
+
 * Foreign function interface (FFI):
 
  - ext:c-uint-max and ext:c-ulong-max did not have the right bignum value.
