@@ -636,7 +636,6 @@ extern bool numberp(cl_object x);
 extern bool eql(cl_object x, cl_object y);
 extern bool equal(register cl_object x, cl_object y);
 extern bool equalp(cl_object x, cl_object y);
-extern bool contains_sharp_comma(cl_object x);
 extern void init_predicate(void);
 
 

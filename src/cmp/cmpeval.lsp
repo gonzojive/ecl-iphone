@@ -29,10 +29,8 @@
 		  (list 'LOCATION (make-info :type (object-type form))
 			(list 'VV (add-object form))))
 		 ((constantp form)
-		  (let ((val (symbol-value form)))
-		    (or (c1constant-value val nil)
-			(list 'LOCATION (make-info :type (object-type val))
-			      (list 'VV (add-constant form))))))
+		  (or (c1constant-value (symbol-value form) nil)
+		      (c1var form)))
 		 (t (c1var form))))
 	  ((consp form)
 	   (let ((fun (car form))
@@ -45,14 +43,9 @@
 		    (c1call-symbol setf-symbol (cdr form)))
 		   ((and (consp fun) (eq (car fun) 'LAMBDA))
 		    (c1call-lambda (cdr fun) (cdr form)))
-		   ((and (consp fun) (eq (car fun) 'sys:|#,|))
-		    (cmperr "Sharp-comma-macro was found in a bad place."))
 		   (t (cmperr "The function ~s is illegal." fun)))))
 	  (t (c1constant-value form t)))))
   (if (eq form '*cmperr-tag*) (c1nil) form))
-
-(defun c1sharp-comma (arg)
-  (c1constant-value (cons 'sys:|#,| arg) t))
 
 (defvar *c1nil* (list 'LOCATION (make-info :type (object-type nil)) nil))
 (defun c1nil () *c1nil*)
@@ -76,9 +69,8 @@
 	       (let ((fl nil))
 		 (dolist (form forms)
 		   (cond ((endp arg-types) (push form fl))
-			 (t (push (and-form-type
-				   (car arg-types) form
-				   (car args))
+			 (t (push (and-form-type (car arg-types) form (car args)
+				      "In a call to ~a" fname)
 				  fl)
 			    (pop arg-types)
 			    (pop args))))
@@ -110,8 +102,6 @@
 	   (t (c1structure-ref1 (car args) (car fd) (cdr fd)))
 	   )
 	 )
-	((eq fname 'SYS:|#,|)
-	 (cmperr "Sharp-comma-macro was found in a bad place."))
 	(t (let* ((info (make-info
 			 :sp-change (null (get fname 'NO-SP-CHANGE))))
 		  (forms (c1args args info)))
@@ -126,9 +116,8 @@
 		     ((endp fl)
 		      (setq forms (nreverse fl1)))
 		   (cond ((endp arg-types) (push (car fl) fl1))
-			 (t (push (and-form-type (car arg-types)
-						 (car fl)
-						 (car al))
+			 (t (push (and-form-type (car arg-types) (car fl) (car al)
+				     "In a call to ~a" fname)
 				  fl1)
 			    (pop arg-types))))))
 	     (let ((arg-types (get fname 'ARG-TYPES)))
@@ -137,8 +126,8 @@
 		 (do ((fl forms (cdr fl))
 		      (al args (cdr al)))
 		     ((or (endp arg-types) (endp fl)))
-		   (check-form-type (car arg-types)
-				    (car fl) (car al))
+		   (and-form-type (car arg-types) (car fl) (car al)
+				  "In a call to ~a" fname)
 		   (pop arg-types))))
 #|
 	;; Do this in c2call-global, when we know types of variables rebound
@@ -420,8 +409,6 @@
 
 (setf (get 'PROGN 'C1SPECIAL) 'c1progn)
 (setf (get 'PROGN 'C2) 'c2progn)
-
-(setf (get 'sys:|#,| 'c1 ) 'c1sharp-comma)
 
 (setf (get 'SYS:STRUCTURE-REF 'C1) 'c1structure-ref)
 (setf (get 'SYS:STRUCTURE-REF 'C2) 'c2structure-ref)

@@ -191,7 +191,6 @@ const struct symbol_info all_symbols[] = {
 {&clVread_default_float_format, "*READ-DEFAULT-FLOAT-FORMAT*", CL_SPECIAL},
 {&clVread_base, "*READ-BASE*", CL_SPECIAL},
 {&clVread_suppress, "*READ-SUPPRESS*", CL_SPECIAL},
-{&siSsharp_comma, "#,", SI_ORDINARY},
 #ifdef CLOS
 {&clSstream_read_line, "STREAM-READ-LINE", CL_ORDINARY},
 {&clSstream_read_char, "STREAM-READ-CHAR", CL_ORDINARY},

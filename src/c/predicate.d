@@ -452,62 +452,6 @@ ARRAY:
 	@(return (equalp(x, y) ? Ct : Cnil))
 @)
 
-/*
-	Contains_sharp_comma returns TRUE, iff the argument contains
-	a cons whose car is si:|#,| or a STRUCTURE.
-	Refer to the compiler about this magic.
-*/
-bool
-contains_sharp_comma(cl_object x)
-{
-	enum type tx;
-
-	cs_check(x);
-
-BEGIN:
-	tx = type_of(x);
-	if (tx == t_complex)
-		return(contains_sharp_comma(x->complex.real) ||
-		       contains_sharp_comma(x->complex.imag));
-	if (tx == t_vector) {
-		cl_index i;
-		for (i = 0;  i < x->vector.fillp;  i++)
-			if (contains_sharp_comma(x->vector.self.t[i]))
-				return(TRUE);
-		return(FALSE);
-	}
-	if (tx == t_cons) {
-		if (CAR(x) == @'si::sharp-comma')
-			return(TRUE);
-		if (contains_sharp_comma(CAR(x)))
-			return(TRUE);
-		x = CDR(x);
-		goto BEGIN;
-	}
-	if (tx == t_array) {
-		cl_index i, j;
-		for (i = 0, j = 1;  i < x->array.rank;  i++)
-			j *= x->array.dims[i];
-		for (i = 0;  i < j;  i++)
-			if (contains_sharp_comma(x->array.self.t[i]))
-				return(TRUE);
-		return(FALSE);
-	}
-#ifdef CLOS
-	if (tx == t_instance)
-		return(TRUE);		/*  Oh, my god!  */
-#else
-	if (tx == t_structure)
-		return(TRUE);		/*  Oh, my god!  */
-#endif CLOS
-	return(FALSE);
-}
-
-@(defun si::contains_sharp_comma (x)
-@
-	@(return (contains_sharp_comma(x) ? Ct : Cnil))
-@)
-
 @(defun si::fixnump (x)
 @
 	@(return (FIXNUMP(x) ? Ct : Cnil))

@@ -151,7 +151,6 @@ FEprogram_error(const char *s, int narg, ...)
 	va_start(args, narg);
 	while (narg--) {
 		*r = CONS(va_arg(args, cl_object), Cnil);
-		printf("%d\n",type_of(CAR(*r)));
 		r = &CDR(*r);
 	}
 	funcall(4, @'si::universal-error-handler',

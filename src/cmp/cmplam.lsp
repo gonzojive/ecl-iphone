@@ -111,7 +111,9 @@
 		 (v (c1make-var (car spec) ss is ts)))
 	     (push (car spec) vnames)
 	     (setf (car specs)
-		   (list v (and-form-type (var-type v) init (second spec)) nil))
+		   (list v (and-form-type (var-type v) init (second spec)
+					  "In (LAMBDA ~a...)" block-name)
+			 nil))
 	     (push-vars v)))
 	  (t
 	   (ck-spec (null (cdddr spec)))
@@ -122,7 +124,9 @@
 	     (push (car spec) vnames)
 	     (push (third spec) vnames)
 	     (setf (car specs)
-		   (list v (and-form-type (var-type v) init (second spec)) sv))
+		   (list v (and-form-type (var-type v) init (second spec)
+					  "In (LAMBDA ~a...)" block-name)
+			 sv))
 	     (push-vars v)
 	     (push-vars sv)))))
 
@@ -151,7 +155,8 @@
 	     (push (second spec) vnames)
 	     (setf (car specs)
 		   (list (car spec) v
-			 (and-form-type (var-type v) init (third spec))
+			 (and-form-type (var-type v) init (third spec)
+					"In (LAMBDA ~a...)" block-name)
 			 (make-var :kind 'DUMMY)))
 	     (push-vars v)))
 	  (t
@@ -163,7 +168,8 @@
 	     (push (fourth spec) vnames)
 	     (setf (car specs)
 		   (list (car spec) v
-			 (and-form-type (var-type v) init (third spec))
+			 (and-form-type (var-type v) init (third spec)
+					"In (LAMBDA ~a...)" block-name)
 			 sv))
 	     (push-vars v)
 	     (push-vars sv)))))
@@ -186,7 +192,8 @@
 		 (let ((init (c1expr* (second spec) aux-info))
 		       (v (c1make-var (car spec) ss is ts)))
 		   (push (car spec) vnames)
-		   (push (and-form-type (var-type v) init (second spec))
+		   (push (and-form-type (var-type v) init (second spec)
+					"In (LAMBDA ~a...)" block-name)
 			 aux-inits)
 		   (setf (car specs) v)
 		   (push-vars v))))

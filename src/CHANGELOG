@@ -834,6 +834,9 @@ ECLS 0.5
     before initialization; and :EPILOGUE-CODE, a string with C code to
     be executed after initializing Lisp. 
 
+  - Reader macro '#,' has been dropped. LOAD-TIME-VALUE added to both
+    the interpreter and the compiler.
+
 TODO:
 =====
 

@@ -34,8 +34,6 @@ cl_object @'*read_suppress*';
 
 cl_object @':junk_allowed';
 
-cl_object siSsharp_comma;
-
 #ifndef THREADS
 cl_object READtable;
 int READdefault_float_format;
@@ -852,15 +850,8 @@ static
 		FEerror("A right parenthesis is expected.", 0);
 	if (READsuppress)
 		@(return Cnil)
-	if (contains_sharp_comma(real) ||
-	    contains_sharp_comma(imag)) {
-		x = alloc_object(t_complex);
-		x->complex.real = real;
-		x->complex.imag = imag;
-	} else {
-		/* INV: make_complex() checks its types */
-		x = make_complex(real, imag);
-	}
+	/* INV: make_complex() checks its types */
+	x = make_complex(real, imag);
 	@(return x)
 @)
 
@@ -1092,27 +1083,6 @@ static
 	in = read_object(in);
 	in = eval(in, NULL, Cnil);
 	@(return in)
-@)
-
-static
-@(defun si::sharp_comma_reader (in c d)
-@
-	if(d != Cnil && !READsuppress)
-		extra_argument(',', d);
-	if (READsuppress)
-		@(return Cnil)
-	in = read_object(in);
-	in = eval(in, NULL, Cnil);
-	@(return in)
-@)
-
-@(defun si::sharp_comma_reader_for_compiler (in c d)
-@
-	if(d != Cnil && !READsuppress)
-		extra_argument(',', d);
-	if (READsuppress)
-		@(return Cnil)
-	@(return CONS(siSsharp_comma, read_object(in)))
 @)
 
 /*
@@ -2228,7 +2198,6 @@ init_read(void)
 	dtab['.'] = make_cf(@si::sharp_dot_reader);
 	dtab['!'] = make_cf(@si::sharp_exclamation_reader);
 	/*  Used for fasload only. */
-	dtab[','] = make_cf(@si::sharp_comma_reader);
 	dtab['B'] = dtab['b'] = make_cf(@si::sharp_B_reader);
 	dtab['O'] = dtab['o'] = make_cf(@si::sharp_O_reader);
 	dtab['X'] = dtab['x'] = make_cf(@si::sharp_X_reader);

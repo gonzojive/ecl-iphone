@@ -483,7 +483,7 @@
       (muffle-warning ()
 	  :REPORT "Skip warning."
 	(return-from warn nil)))
-    (format *error-output* "~&Warning:~%~A~%" condition)
+    (format *error-output* "~&;;; Warning: ~A~%" condition)
     nil))
 
 

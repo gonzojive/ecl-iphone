@@ -607,8 +607,6 @@ const struct function_info all_functions[] = {
 
 	{"NOT", clLnull, cl},
 
-	{"CONTAINS-SHARP-COMMA", siLcontains_sharp_comma, si},
-
 	{"FIXNUMP", siLfixnump, si},
 
 	/* print.d */
@@ -673,7 +671,6 @@ const struct function_info all_functions[] = {
 	{"MAKE-DISPATCH-MACRO-CHARACTER", clLmake_dispatch_macro_character, cl},
 	{"SET-DISPATCH-MACRO-CHARACTER", clLset_dispatch_macro_character, cl},
 	{"GET-DISPATCH-MACRO-CHARACTER", clLget_dispatch_macro_character, cl},
-	{"SHARP-COMMA-READER-FOR-COMPILER", siLsharp_comma_reader_for_compiler, si},
 	{"STRING-TO-OBJECT", siLstring_to_object, si},
 	{"STANDARD-READTABLE", siLstandard_readtable, si},
 
@@ -784,8 +781,8 @@ const struct function_info all_functions[] = {
 
 	/* tcp.c */
 #ifdef TCP
-	{"OPEN-CLIENT-STREAM", clLopen_client_stream, si},
-	{"OPEN-SERVER-STREAM", clLopen_server_stream, si},
+	{"OPEN-CLIENT-STREAM", siLopen_client_stream, si},
+	{"OPEN-SERVER-STREAM", siLopen_server_stream, si},
 #endif
 
 	/* time.c */

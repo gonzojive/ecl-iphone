@@ -56,7 +56,7 @@ main(int argc, char **args)
 	SYM_VAL(@'*features*') = CONS(make_keyword("WANTS-CMP"), SYM_VAL(@'*features*'));
 #endif
 #ifdef CLX
-	SYM_VAL(@'*features*') = CONS(make_kewyord("WANTS-CLX"), SYM_VAL(@'*features*'));
+	SYM_VAL(@'*features*') = CONS(make_keyword("WANTS-CLX"), SYM_VAL(@'*features*'));
 #endif
 	make_si_function("TOP-LEVEL", @si::simple-toplevel);
 

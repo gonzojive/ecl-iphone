@@ -276,3 +276,6 @@
 
 (defmacro nth-value (n expr)
   `(nth ,n (multiple-value-list ,expr)))
+
+(defmacro load-time-value (form)
+  `(quote ,(eval form)))

@@ -144,12 +144,7 @@
   (setq *compiler-output1* *standard-output*)
   (setq *compiler-output2* *standard-output*)
   (setq *compiler-output-data* *standard-output*)
-  (let ((prev (get-dispatch-macro-character #\# #\,)))
-       (set-dispatch-macro-character #\# #\,
-                                     'sys:sharp-comma-reader-for-compiler)
-       (unwind-protect
-        (t1expr *previous-form*)
-        (set-dispatch-macro-character #\# #\, prev)))
+  (t1expr *previous-form*)
   (catch *cmperr-tag* (ctop-write "test"))
   t)
 

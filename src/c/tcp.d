@@ -229,7 +229,7 @@ make_stream(cl_object host, int fd, enum smmode smm)
    (read-line s)
    "Wed Jun 22 19:44:36 METDST 1994"
 */
-@(defun open_client_stream (host port)
+@(defun si::open_client_stream (host port)
    int fd;			/* file descriptor */
    cl_object streamIn, streamOut;
 @
@@ -260,7 +260,7 @@ make_stream(cl_object host, int fd, enum smmode smm)
    @(return make_two_way_stream(streamIn, streamOut))
 @)
 
-@(defun open_server_stream (port)
+@(defun si::open_server_stream (port)
    int fd;			/* file descriptor */
    cl_object streamIn, streamOut;
    cl_object output;

@@ -14,7 +14,7 @@
 
 (defun cmperr (string &rest args &aux (*print-case* :upcase))
   (print-current-form)
-  (format t "~&;;; ")
+  (format t "~&;;; Error: ")
   (apply #'format t string args)
   (incf *error-count*)
   (throw *cmperr-tag* '*cmperr-tag*))
@@ -59,15 +59,9 @@
 (defun print-current-form ()
   (when *first-error*
         (setq *first-error* nil)
-        (cond
-         #-:CCL
-         ((and (consp *current-form*)
-               (eq (car *current-form*) 'sys:|#,|))
-          (format t "~&;;; Compiling #,~s.~%" (cdr *current-form*)))
-         (t
-          (let ((*print-length* 2)
-                (*print-level* 2))
-               (format t "~&;;; Compiling ~s.~%" *current-form*)))))
+	(let ((*print-length* 2)
+	      (*print-level* 2))
+	  (format t "~&;;; Compiling ~s.~%" *current-form*)))
   nil)
 
 (defun print-emitting (name)

@@ -229,25 +229,19 @@
 ;;;   returns a copy of form whose type is the type-and of type and the form's
 ;;;   type
 ;;;
-(defun and-form-type (type form original-form)
+(defun and-form-type (type form original-form &optional
+		      (format-string "") &rest format-args)
   (let* ((type2 (info-type (cadr form)))
 	 (type1 (or (type-and type type2)
 		    (when (subtypep type2 type) type2)))) ; class types. Beppe
-    (if type1
-	(if (eq type1 type2)
-	    form
-	    (let ((info (copy-info (cadr form))))
-	      (setf (info-type info) type1)
-	      (list* (car form) info (cddr form))))
-	(progn
-;	  (cmpwarn "The type of the form ~s is not ~s." original-form type)
-	  (cmperr "The type of the form ~s is not ~s." original-form type)
-	  form))))
-
-(defun check-form-type (type form original-form)
-  (when (null (type-and type (info-type (cadr form))))
-        (cmperr "The type of the form ~s is not ~s." original-form type)))
-;        (cmpwarn "The type of the form ~s is not ~s." original-form type)))
+    (unless type1
+      (cmperr "~?, the type of the form ~s is ~s, not ~s." format-string
+	      format-args original-form type2 type))
+    (if (eq type1 type2)
+      form
+      (let ((info (copy-info (cadr form))))
+	(setf (info-type info) type1)
+	(list* (car form) info (cddr form))))))
 
 (defun default-init (type)
   (let ((new-value (getf '(fixnum 0 character #\space long-float 0.0L1

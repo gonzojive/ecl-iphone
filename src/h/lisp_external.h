@@ -694,7 +694,6 @@ extern cl_object clLeq _ARGS((int narg, cl_object x, cl_object y));
 extern cl_object clLeql _ARGS((int narg, cl_object x, cl_object y));
 extern cl_object clLequal _ARGS((int narg, cl_object x, cl_object y));
 extern cl_object clLequalp _ARGS((int narg, cl_object x, cl_object y));
-extern cl_object siLcontains_sharp_comma _ARGS((int narg, cl_object x));
 extern cl_object siLfixnump _ARGS((int narg, cl_object x));
 
 /* print.c */
@@ -761,14 +760,12 @@ extern cl_object clVread_default_float_format;
 extern cl_object clVread_base;
 extern cl_object clVread_suppress;
 extern cl_object Kjunk_allowed;
-extern cl_object siSsharp_comma;
 extern cl_object clSstream_read_line;
 extern cl_object clSstream_read_char;
 extern cl_object clSstream_unread_char;
 extern cl_object clSstream_peek_char;
 extern cl_object clSstream_listen;
 extern cl_object clSstream_clear_input;
-extern cl_object siLsharp_comma_reader_for_compiler _ARGS((int, cl_object, cl_object, cl_object));
 extern cl_object clLread _ARGS((int narg, ...));
 extern cl_object clLread_preserving_whitespace _ARGS((int narg, ...));
 extern cl_object clLread_delimited_list _ARGS((int narg, cl_object d, ...));
@@ -914,8 +911,8 @@ extern cl_object siLXmake_constant _ARGS((int narg, cl_object sym, cl_object val
 /* tcp.c */
 
 #ifdef TCP
-extern cl_object clLopen_client_stream _ARGS((int narg, cl_object host, cl_object port));
-extern cl_object clLopen_server_stream _ARGS((int narg, cl_object port));
+extern cl_object siLopen_client_stream _ARGS((int narg, cl_object host, cl_object port));
+extern cl_object siLopen_server_stream _ARGS((int narg, cl_object port));
 #endif
 
 /* time.c */

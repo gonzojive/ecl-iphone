@@ -17,7 +17,6 @@
 	(*funs* nil)
 	(*blocks* nil)
 	(*tags* nil)
-	(*sharp-commas* nil)
 	(*special-binding* nil))
     (push (t1expr* form) *top-level-forms*)))
 
@@ -30,9 +29,7 @@
       (let ((fun (car form)) (args (cdr form)) fd setf-symbol) ; #+cltl2
 	(cond
             ((symbolp fun)
-             (cond ((eq fun 'sys:|#,|)
-                    (cmperr "Sharp-comma-macro is in a bad place."))
-                   ((get fun 'PACKAGE-OPERATION)
+             (cond ((get fun 'PACKAGE-OPERATION)
                     (when *non-package-operation*
                       (cmpwarn "The package operation ~s was in a bad place."
                                form))
@@ -242,7 +239,7 @@
       (setf (info-volatile (second lambda-expr)) t))
     (when (fourth lambda-expr)
       (setq doc (add-object (fourth lambda-expr))))
-    (add-load-time-sharp-comma)
+    (add-load-time-values)
     (setq output (new-defun fname cfun lambda-expr doc *special-binding*))
     (when
       (and
@@ -385,26 +382,29 @@
 	  (push (list fname cfun (second inline-info) (third inline-info))
 		*global-entries*)
 	  (wt-comment "local entry for function " fname)
-	  (wt-h "static " (rep-type (third inline-info)) "LI" cfun "();")
-	  (wt-nl1 "static " (rep-type (third inline-info)) "LI" cfun "(")
-	  (do ((vl requireds (cdr vl))
-	       (types (second inline-info) (cdr types))
-	       (prev-type nil) (var)
-	       (lcl (1+ *lcl*) (1+ lcl)))
-	      ((endp vl))
-	    (declare (fixnum lcl))
-	    (setq var (first vl))
-	    (when (member (car types)
-			  '(FIXNUM CHARACTER LONG-FLOAT SHORT-FLOAT)
-			  :test #'eq)
-	      ;; so that c2lambda-expr will know its proper type.
-	      (setf (var-kind var) (car types)))
-	    (when prev-type (wt ","))
-	    (wt *volatile* (register var)
-		(rep-type (car types)))
-	    (setq prev-type (car types))
-	    (wt-lcl lcl))
-	  (wt ")")
+	  (let ((string
+		 (with-output-to-string (*compiler-output1*)
+		   (wt-nl1 "static " (rep-type (third inline-info)) "LI" cfun "(")
+		   (do ((vl requireds (cdr vl))
+			(types (second inline-info) (cdr types))
+			(prev-type nil) (var)
+			(lcl (1+ *lcl*) (1+ lcl)))
+		       ((endp vl))
+		     (declare (fixnum lcl))
+		     (setq var (first vl))
+		     (when (member (car types)
+				   '(FIXNUM CHARACTER LONG-FLOAT SHORT-FLOAT)
+				   :test #'eq)
+		       ;; so that c2lambda-expr will know its proper type.
+		       (setf (var-kind var) (car types)))
+		     (when prev-type (wt ","))
+		     (wt *volatile* (register var)
+			 (rep-type (car types)))
+		     (setq prev-type (car types))
+		     (wt-lcl lcl))
+		   (wt ")"))))
+	    (wt-h string ";")
+	    (wt-nl1 string))
 
 	  ;; Now the body.
 	  (let ((*tail-recursion-info* (cons fname requireds))
@@ -579,7 +579,7 @@
     (setq macro-lambda (c1dm (car args) (second args) (cddr args)))
     (when (car macro-lambda) (setq doc (add-object (car macro-lambda))))
     (when (second macro-lambda) (setq ppn (add-object (second macro-lambda))))
-    (add-load-time-sharp-comma)
+    (add-load-time-values)
     (list 'DEFMACRO (car args) cfun (cddr macro-lambda) doc ppn
 		*special-binding*)))
 
@@ -622,7 +622,7 @@
   (when *compile-time-too* (cmp-eval form))
   (setq *non-package-operation* t)
   (setq form (c1expr form))
-  (add-load-time-sharp-comma)
+  (add-load-time-values)
   (list 'ORDINARY form))
 
 (defun t2ordinary (form)
@@ -631,12 +631,26 @@
         (c2expr form)
         (wt-label *exit*)))
 
-(defun add-load-time-sharp-comma ()
-  (dolist (vv (reverse *sharp-commas*))
-    (push (list 'SHARP-COMMA vv) *top-level-forms*)))
+(defun add-load-time-values ()
+  (when (listp *load-time-values*)
+    (setq *top-level-forms* (nconc *load-time-values* *top-level-forms*))
+    (setq *load-time-values* nil)))
 
-(defun t2sharp-comma (vv)
-  (wt-nl "VV[" vv "]=string_to_object(VV[" vv "]);"))
+(defun c1load-time-value (form)
+  (cond ((listp *load-time-values*)
+	 (incf *next-vv*)
+	 (push (list 'LOAD-TIME-VALUE *next-vv* (c1expr form)) *load-time-values*)
+	 (wt-data 0)
+	 (list 'LOCATION (make-info :type t)
+	       (list 'VV (format nil "VV[~d]" *next-vv*))))
+	(t
+	 (add-object (cmp-eval form)))))
+
+(defun t2load-time-value (ndx form)
+  (let* ((*exit* (next-label)) (*unwind-exit* (list *exit*))
+         (*destination* (list 'VV ndx)))
+        (c2expr form)
+        (wt-label *exit*)))
 
 (defun t2declare (vv)
   (wt-nl vv "->symbol.stype=(short)stp_special;"))
@@ -650,7 +664,7 @@
       (progn
 	(unless (endp (cddr args)) (setq doc (add-object (third args))))
 	(setq form (c1expr (second args)))
-	(add-load-time-sharp-comma)
+	(add-load-time-values)
 	(list 'DEFVAR (make-var :name name :kind 'SPECIAL
 				      :loc (add-symbol name)) form doc))))
 
@@ -1270,6 +1284,7 @@
 (setf (get 'DEFLA 'T1) 't1defla)
 (setf (get 'DEFCBODY 'T1) 't1defCbody)	; Beppe
 ;(setf (get 'DEFUNC 'T1) 't1defunC)	; Beppe
+(setf (get 'LOAD-TIME-VALUE 'C1) 'c1load-time-value)
 
 ;;; Pass 2 initializers.
 
@@ -1279,12 +1294,12 @@
 (setf (get 'DEFMACRO 'T2) #'t2defmacro)
 (setf (get 'ORDINARY 'T2) #'t2ordinary)
 (setf (get 'DECLARE 'T2) #'t2declare)
-(setf (get 'SHARP-COMMA 'T2) #'t2sharp-comma)
 (setf (get 'DEFVAR 'T2) #'t2defvar)
 ;(setf (get 'DEFENTRY 'T2) 't2defentry)
 (setf (get 'DEFCBODY 'T2) 't2defCbody)	; Beppe
 ;(setf (get 'DEFUNC 'T2)	't2defunC); Beppe
 (setf (get 'FUNCTION-CONSTANT 'T2) 't2function-constant); Beppe
+(setf (get 'LOAD-TIME-VALUE 'T2) 't2load-time-value)
 
 ;;; Pass 2 C function generators.
 

@@ -165,6 +165,7 @@
 	  ldb
 	  ldb-test
 	  lisp-implementation-type
+	  load-time-value
 	  locally
 	  logandc1
 	  logandc2

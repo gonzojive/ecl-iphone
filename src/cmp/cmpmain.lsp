@@ -190,6 +190,7 @@ Cannot compile ~a."
             (namestring input-pathname)))
 
   (let* ((eof '(NIL))
+	 (*load-time-values* nil) ;; Load time values are compiled
 	 (output-default (if (or (eq output-file 'T)
 				 (null output-file))
 			     input-pathname
@@ -215,22 +216,10 @@ Cannot compile ~a."
 
       (with-open-file
           (*compiler-input* input-pathname)
-        (let* ((rtb *readtable*)
-               (prev (when (eq (get-macro-character #\# rtb)
-			       (get-macro-character
-				#\# (si:standard-readtable)))
-		       (get-dispatch-macro-character #\# #\, rtb))))
-          (if (and prev (eq prev (get-dispatch-macro-character
-                                   #\# #\, (si:standard-readtable))))
-              (set-dispatch-macro-character #\# #\,
-                'SYS:SHARP-COMMA-READER-FOR-COMPILER rtb)
-              (setq prev nil))
-          (unwind-protect
-            (do ((form (read *compiler-input* nil eof)
-                       (read *compiler-input* nil eof)))
-                ((eq form eof))
-              (t1expr form))
-            (when prev (set-dispatch-macro-character #\# #\, prev rtb)))))
+	(do ((form (read *compiler-input* nil eof)
+		   (read *compiler-input* nil eof)))
+	    ((eq form eof))
+	  (t1expr form)))
 
       (when (zerop *error-count*)
         (when *compile-verbose* (format t "~&;;; End of Pass 1.  "))
@@ -345,7 +334,8 @@ Cannot compile ~a."
     (unless (probe-file data-pathname)
       (return)))
 
-  (let ((c-pathname (make-pathname :name gazonk-name :type "c"))
+  (let ((*load-time-values* 'values) ;; Only the value is kept
+	(c-pathname (make-pathname :name gazonk-name :type "c"))
         (h-pathname (make-pathname :name gazonk-name :type "h"))
         (o-pathname (make-pathname :name gazonk-name :type "o"))
 	(so-pathname (make-pathname :name gazonk-name :type "so")))

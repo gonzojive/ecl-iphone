@@ -347,10 +347,9 @@
 
 (defvar *objects* nil)			; holds { ( object vv-index ) }*
 (defvar *constants* nil)		; holds { ( symbol vv-index ) }*
-(defvar *sharp-commas* nil)		; holds { vv-index }*, where
-;;;  each vv-index should be turned into an object from a string before
-;;;  defining the current function during loading process, so that
-;;;  sharp-comma-macros may be evaluated correctly.
+(defvar *load-time-values* nil)		; holds { ( vv-index form ) }*,
+;;;  where each vv-index should be given an object before
+;;;  defining the current function during loading process.
 
 (defvar *proclaim-fixed-args* nil)	; proclaim automatically functions
 					; with fixed number of arguments.
@@ -370,7 +369,7 @@
 ;;;	| ( 'DEFVAR'	var-name-vv expr doc-vv )
 ;;;	| ( 'CLINES'	string* )
 ;;;	| ( 'DEFCFUN'	header vs-size body )
-;;;	| ( 'SHARP-COMMA' vv )
+;;;	| ( 'LOAD-TIME-VALUE' vv )
 ;;;	| ( 'DEFCBODY'	fun-name cfun arg-types type body ) ;;; Beppe
 ;;;	| ( 'FUNCTION-CONSTANT'	vv-index fun )              ;;; Beppe
 ;;; Eliminated:

@@ -1119,11 +1119,6 @@ write_object(cl_object x, int level)
 		break;
 
 	case t_cons:
-		if (CAR(x) == @'si::sharp-comma') {
-			write_str("#.");
-			x = CDR(x);
-			goto BEGIN;
-		}
 		if (CAR(x) == @'si::sharp-exclamation') {
 			write_str("#!");
 			x = CDR(x);

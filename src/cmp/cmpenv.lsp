@@ -73,14 +73,7 @@
 
 (defun add-object (object &aux x found)
   ;;; Used only during Pass 1.
-  (cond ((sys:contains-sharp-comma object)
-         ;;; SYS:CONTAINS-SHARP-COMMA returns T iff OBJECT
-         ;;; contains a sharp comma OR a structure.
-         (incf *next-vv*)
-         (push *next-vv* *sharp-commas*)
-         (wt-data (prin1-to-string object))
-         (format nil "VV[~d]" *next-vv*))
-        ((setq x (assoc object *objects*))
+  (cond ((setq x (assoc object *objects*))
          (second x))
 	((and (symbolp object)
 	      (multiple-value-setq (found x) (si::mangle-name object)))
@@ -89,17 +82,6 @@
 	   (setq x (format nil "VV[~d]" *next-vv*))
 	   (push (list object x) *objects*)
            (wt-data object)
-           x)))
-
-(defun add-constant (symbol &aux x)
-  ;;; Used only during Pass 1.
-  (cond ((setq x (assoc symbol *constants*))
-         (second x))
-        (t (incf *next-vv*)
-           (push *next-vv* *sharp-commas*)
-           (wt-data (prin1-to-string (cons 'sys:|#,| symbol)))
-	   (setq x (format nil "VV[~d]" *next-vv*))
-           (push (list symbol x) *constants*)
            x)))
 
 (defun function-arg-types (arg-types &aux (types nil))
