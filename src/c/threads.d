@@ -284,11 +284,7 @@ init_threads()
 
 	cl_core.processes = OBJNULL;
 	pthread_mutexattr_init(&attr);
-#if defined(__APPLE__)
-	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
-#else
 	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK_NP);
-#endif
 	pthread_mutex_init(&cl_core.global_lock, &attr);
 	pthread_mutexattr_destroy(&attr);
 
