@@ -118,7 +118,6 @@ extern cl_object cl_set(cl_object var, cl_object val);
 extern cl_object si_setf_namep(cl_object arg);
 extern cl_object cl_makunbound(cl_object sym);
 extern cl_object cl_fmakunbound(cl_object sym);
-extern cl_object si_clear_compiler_properties(cl_object sym);
 extern cl_object si_fset _ARGS((int narg, cl_object fun, cl_object def, ...));
 
 extern cl_object setf_namep(cl_object fun_spec);
@@ -484,6 +483,7 @@ extern void cl_clear_hashtable(cl_object hashtable);
 
 /* init.c */
 
+extern bool ecl_booted;
 extern void init_lisp(void);
 extern void init_libs(void);
 
@@ -605,7 +605,6 @@ extern cl_object cl_rassoc_if _ARGS((int narg, cl_object pred, cl_object arg, cl
 extern cl_object cl_rassoc_if_not _ARGS((int narg, cl_object pred, cl_object arg, cl_object key, cl_object val));
 
 extern cl_object list_length(cl_object x);
-extern cl_object identity(cl_object x);
 extern cl_object cl_car(cl_object x);
 extern cl_object cl_cdr(cl_object x);
 extern cl_object append(cl_object x, cl_object y);

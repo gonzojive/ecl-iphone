@@ -144,7 +144,7 @@
      ((*break-on-errors* *compiler-break-enable*))
          (eval form)))
 
-(defun compiler-clear-compiler-properties (symbol)
+(defun si::compiler-clear-compiler-properties (symbol)
   #-:CCL
   ;(sys::unlink-symbol symbol)
   (remprop symbol 'package-operation)

@@ -945,7 +945,7 @@ cl_symbols[] = {
 {"SI::C-ARGUMENTS-LIMIT", SI_ORDINARY, NULL, -1},
 {"SI::CHAR-SET", SI_ORDINARY, si_char_set, 3},
 {"SI::CHDIR", SI_ORDINARY, si_chdir, 1},
-{"SI::CLEAR-COMPILER-PROPERTIES", SI_ORDINARY, si_clear_compiler_properties, 1},
+{"SI::CLEAR-COMPILER-PROPERTIES", SI_ORDINARY, cl_identity, 1},
 {"SI::COERCE-TO-FUNCTION", SI_ORDINARY, si_coerce_to_function, 1},
 {"SI::COERCE-TO-PACKAGE", SI_ORDINARY, si_coerce_to_package, 1},
 {"SI::COMPILED-FUNCTION-BLOCK", SI_ORDINARY, si_compiled_function_block, 1},

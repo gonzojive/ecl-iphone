@@ -12,8 +12,6 @@
 
 (in-package "SYSTEM")
 
-(eval-when (eval compile) (defun sys::clear-compiler-properties (symbol)))
-
 ;;; DEFSETF macro.
 (defmacro defsetf (access-fn &rest rest &aux doc)
   "Syntax: (defsetf symbol update-fun [doc])

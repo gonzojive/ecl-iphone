@@ -17,6 +17,8 @@
 
 /******************************* ------- ******************************/
 
+extern bool ecl_booted = 0;
+
 #ifdef __cplusplus
 extern "C" void init_LSP(void);
 extern "C" void init_CLOS(void);
@@ -110,4 +112,6 @@ init_lisp(void)
 	lex_env = Cnil;
 	init_LSP();
 	init_CLOS();
+
+	ecl_booted = 1;
 }

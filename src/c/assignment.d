@@ -135,14 +135,10 @@ cl_fmakunbound(cl_object sym)
 void
 clear_compiler_properties(cl_object sym)
 {
-	si_unlink_symbol(sym);
-	funcall(2, @'si::clear-compiler-properties', sym);
-}
-
-cl_object
-si_clear_compiler_properties(cl_object sym)
-{
-	@(return sym)
+	if (ecl_booted) {
+		si_unlink_symbol(sym);
+		funcall(2, @'si::clear-compiler-properties', sym);
+	}
 }
 
 #ifdef PDE
