@@ -399,7 +399,7 @@ si_reset_stack_limits()
 void
 init_stacks(int *new_cs_org)
 {
-	static struct ihs_frame ihs_org = { Cnil, NULL, NULL, 0};
+	static struct ihs_frame ihs_org = { NULL, NULL, NULL, 0};
 	cl_index size;
 
 	cl_env.frs_size = size = FRSSIZE + 2*FRSGETA;

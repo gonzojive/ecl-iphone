@@ -176,7 +176,6 @@ dnl		Set options
 dnl
 TARGETS="ecl${EXEEXT}"
 LIBRARIES=""
-LSP_LIBRARIES="${LIBPREFIX}ecl.${LIBEXT}"
 SUBDIR=c
 CLIBS="${CLIBS} -lm"
 if test ${boehm} = "no" ; then
@@ -195,8 +194,9 @@ else
 fi
 if test ${shared} = "yes"; then
   AC_DEFINE(ENABLE_DLOPEN)
-  LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}ecl.${SHAREDEXT}"
+  LSP_LIBRARIES="${SHAREDPREFIX}ecl.${SHAREDEXT}"
 else
+  LSP_LIBRARIES="${LIBPREFIX}ecl.${LIBEXT}"
   LDRPATH='~*'
 fi
 if test ${local_gmp} = "no" ; then

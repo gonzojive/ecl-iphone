@@ -41,16 +41,10 @@ finalize(cl_object o, cl_object data)
 #ifdef ENABLE_DLOPEN
 	case t_codeblock:
 		cl_mapc(2, @'si::unlink-symbol', o->cblock.links);
-		if (o->cblock.handle != NULL) {
-			const char *name = o->cblock.name?
-				(const char *)o->cblock.name->string.self :
-				"<anonymous>";
-			printf("\n;;; Freeing library %s\n", name);
-			ecl_library_close(o);
-		}
 #ifdef ECL_DYNAMIC_VV
 		/* GC_free(o->cblock.data); */
 #endif
+		ecl_library_close(o);
 		break;
 #endif
 	case t_stream:

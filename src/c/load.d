@@ -27,16 +27,17 @@
 #ifdef HAVE_MACH_O_DYLD_H
 #include <mach-o/dyld.h>
 #endif
+#ifdef mingw32
+#include <windef.h>
+#include <winbase.h>
 #endif
-
-#ifdef __mips
-#include <sys/cachectl.h>
 #endif
 
 #ifdef ENABLE_DLOPEN
-cl_object 
+cl_object
 ecl_library_open(cl_object filename) {
 	cl_object block;
+	cl_object libraries = cl_core.libraries;
 	block = cl_alloc_object(t_codeblock);
 	block->cblock.data = NULL;
 	block->cblock.data_size = 0;
@@ -44,13 +45,14 @@ ecl_library_open(cl_object filename) {
 #ifdef HAVE_DLFCN_H
 	block->cblock.handle = dlopen(filename->string.self,
 				      RTLD_NOW|RTLD_GLOBAL);
-#else /* HAVE_MACH_O_DYLD */
+#endif
+#ifdef HAVE_MACH_O_DYLD_H
 	{
 	NSObjectFileImage file;
         static NSObjectFileImageReturnCode code;
 	code = NSCreateObjectFileImageFromFile(filename->string.self, &file);
 	if (code != NSObjectFileImageSuccess) {
-		block->cblock.handle = NULL; 
+		block->cblock.handle = NULL;
 	} else {
 		NSModule out = NSLinkModule(file, filename->string.self,
 					    NSLINKMODULE_OPTION_PRIVATE|
@@ -59,6 +61,25 @@ ecl_library_open(cl_object filename) {
 		block->cblock.handle = out;
 	}}
 #endif
+#ifdef mingw32
+	block->cblock.handle = LoadLibrary(filename->string.self);
+#endif
+	/* INV: We can modify "libraries" in a multithread
+	   environment because we have already taken the
+	   +load-compile-lock+ */
+	if (libraries->vector.fillp == libraries->vector.dim) {
+		cl_object nvector = cl_alloc_object(t_vector);
+		nvector->vector = libraries->vector;
+		libraries->vector.dim *= 2;
+		libraries->vector.self.t =
+			cl_alloc_atomic(libraries->vector.dim *
+					sizeof(cl_object));
+		memcpy(libraries->vector.self.t,
+		       nvector->vector.self.t,
+		       nvector->vector.fillp * sizeof(cl_object));
+	}
+	libraries->vector.self.t[libraries->vector.fillp++]
+		= block;
 	return block;
 }
 
@@ -66,7 +87,12 @@ void *
 ecl_library_symbol(cl_object block, const char *symbol) {
 #ifdef HAVE_DLFCN_H
 	return dlsym(block->cblock.handle, symbol);
-#else /* HAVE_MACH_O_DYLD */
+#endif
+#ifdef mingw32
+	HMODULE h = (HMODULE)(block->cblock.handle);
+	return GetProcAddress(h, symbol);
+#endif
+#ifdef HAVE_MACH_O_DYLD
 	NSSymbol sym;
 	sym = NSLookupSymbolInModule((NSModule)(block->cblock.handle),
 				     symbol);
@@ -80,24 +106,72 @@ ecl_library_error(cl_object block) {
 	const char *message;
 #ifdef HAVE_DLFCN_H
 	message = dlerror();
-#else /* HAVE_MACH_O_DYLD */
+#endif
+#ifdef HAVE_MACH_O_DYLD
 	NSLinkEditErrors c;
 	int number;
 	const char *filename;
 	NSLinkEditError(&c, &number, &filename, &message);
+#endif
+#ifdef mingw32
+	cl_object output;
+	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
+		      FORMAT_MESSAGE_ALLOCATE_BUFFER,
+		      0, GetLastError(), 0, (void*)&message, 0, NULL);
+	output = make_string_copy(message);
+	LocalFree(message);
+	return output;
 #endif
 	return make_string_copy(message);
 }
 
 void
 ecl_library_close(cl_object block) {
+	const char *filename;
+	cl_object libraries = cl_core.libraries;
+	int i;
+
+	if (block->cblock.handle == NULL)
+		return;
+	if (block->cblock.name)
+		filename = block->cblock.name->string.self;
+	else
+		filename = "<anonymous>";
+	printf("\n;;; Freeing library %s\n", filename);
 #ifdef HAVE_DLFCN_H
 #define INIT_PREFIX "init_"
 	dlclose(block->cblock.handle);
-#else /* HAVE_MACH_O_DYLD */
+#endif
+#ifdef HAVE_MACH_O_DYLD
 #define INIT_PREFIX "_init_"
 	NSUnLinkModule(block->cblock.handle, NSUNLINKMODULE_OPTION_NONE);
 #endif
+#ifdef mingw32
+#define INIT_PREFIX "init_"
+	FreeLibrary(block->cblock.handle);
+#endif
+	if (block->cblock.self_destruct)
+		unlink(filename);
+	for (i = 0; i <= libraries->vector.fillp; i++) {
+		if (libraries->vector.self.t[i] == block) {
+			memcpy(libraries->vector.self.t+i,
+			       libraries->vector.self.t+i+1,
+			       (libraries->vector.fillp-i) *
+			       sizeof(cl_object));
+			libraries->vector.fillp--;
+			break;
+		}
+	}
+}
+
+void
+ecl_library_close_all(void)
+{
+	cl_object libraries = cl_core.libraries;
+	int i;
+	for (i = libraries->vector.fillp; i>=0; i--) {
+		ecl_library_close(libraries->vector.self.t[i]);
+	}
 }
 
 cl_object

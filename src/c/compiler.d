@@ -229,7 +229,7 @@ asm_complete(register int op, register cl_index pc) {
 /* ------------------------------ COMPILER ------------------------------ */
 
 typedef struct {
-  cl_object symbol;
+  void *symbol;
   int (*compiler)(cl_object, int);
   int lexical_increment;
 } compiler_record;

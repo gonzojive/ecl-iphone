@@ -349,7 +349,7 @@ struct ecl_pathname {
 };
 
 struct ecl_codeblock {
-	HEADER;
+	HEADER1(self_destruct);		/*  delete DLL after gc */
 	void	*handle;		/*  handle returned by dlopen  */
 	void	*entry;			/*  entry point  */
  	cl_object *data;		/*  data vector  */

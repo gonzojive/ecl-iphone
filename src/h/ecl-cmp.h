@@ -21,10 +21,10 @@
 #include <setjmp.h>
 #include <math.h>
 #include <inttypes.h>
-#include "config.h"
-#include "gmp.h"
-#include "object.h"
-#include "stacks.h"
+#include <config.h>
+#include <gmp.h>
+#include <object.h>
+#include <stacks.h>
 #ifdef ECL_THREADS
 # include <pthread.h>
 # define start_critical_section()
@@ -33,11 +33,11 @@
 # define start_critical_section()
 # define end_critical_section()
 #endif
-#include "external.h"
-#include "eval.h"
-#include "number.h"
+#include <external.h>
+#include <eval.h>
+#include <number.h>
 #ifdef LOCATIVE
-#include "unify.h"
+#include <unify.h>
 #endif
 
 #undef cs_check

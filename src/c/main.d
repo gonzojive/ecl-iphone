@@ -26,10 +26,17 @@
 /******************************* EXPORTS ******************************/
 
 bool ecl_booted = 0;
-#ifndef ECL_THREADS
+#if !defined(ECL_THREADS)
+# if 0 /* defined(mingw32) */
+static struct cl_env_struct ___cl_env;
+static struct cl_core_struct ___cl_core;
+struct cl_env_struct * const __cl_env = &___cl_env;
+struct cl_core_struct * const __cl_core = &___cl_core;
+# else
 struct cl_env_struct cl_env;
-#endif
 struct cl_core_struct cl_core;
+# endif
+#endif
 const char *ecl_self;
 
 /************************ GLOBAL INITIALIZATION ***********************/
@@ -258,6 +265,10 @@ cl_boot(int argc, char **argv)
 	cl_core.gensym_prefix = make_constant_string("G");
 	cl_core.gentemp_prefix = make_constant_string("T");
 	cl_core.gentemp_counter = MAKE_FIXNUM(0);
+
+	cl_core.libraries = si_make_vector(@'t', MAKE_FIXNUM(128),
+					   @'nil', MAKE_FIXNUM(0),
+					   @'nil', @'nil');
 
 	ECL_SET(@'si::c-int-max', make_integer(INT_MAX));
 	ECL_SET(@'si::c-int-min', make_integer(INT_MIN));

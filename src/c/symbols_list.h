@@ -1454,7 +1454,9 @@ cl_symbols[] = {
 {MP_ "WITHOUT-INTERRUPTS", MP_CONSTANT, NULL, -1, OBJNULL},
 #endif
 
+#ifndef mingw32
 {EXT_ "RUN-PROGRAM", SI_ORDINARY, si_run_program, -1, OBJNULL},
+#endif
 
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1, OBJNULL}};

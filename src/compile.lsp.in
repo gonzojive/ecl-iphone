@@ -62,8 +62,9 @@
 ;;;
 (setq si::*keep-documentation* nil)
 (proclaim '(optimize (safety 2) (space 3)))
-(let ((lsp-objects (compile-if-old "build:lsp;" +lisp-module-files+
-				   :system-p t :c-file t :data-file t :h-file t)))
+(let* ((c::*cc-flags* (concatenate 'string "-I@true_builddir@/c " c::*cc-flags*))
+       (lsp-objects (compile-if-old "build:lsp;" +lisp-module-files+
+				    :system-p t :c-file t :data-file t :h-file t)))
   #+CLOS
   (let* ((c::*compile-to-linking-call* nil))
     (proclaim '(optimize (safety 2) (space 3)))
@@ -72,20 +73,22 @@
 					      :system-p t :c-file t :data-file t :h-file t))))
   (c::build-static-library "lsp" :lisp-files lsp-objects))
 
-(si::system (print (format nil "sh -c 'mkdir tmp; ~
-cd tmp; rm -f *; ~
-ar -x ../liblsp.a; for i in *.o; do mv $i lsp_$i; done; ar -r ../libecl.a *.o; rm *.o; ~
-ranlib ../libecl.a; ~
-cd ..; rm -rf tmp/*'")))
+#-dlopen
+(si::system "sh -c 'mkdir tmp; rm -f tmp/*; ~
+cp @LIBPREFIX@eclmin.@LIBEXT@ @LIBPREFIX@ecl.@LIBEXT@
+for i in lsp/*.@OBJEXT@ clos/*.@OBJEXT@; do mv $i tmp/lsp_`basename $i`; done; ar -r ../@LIBPREFIX@ecl.@LIBEXT@ tmp/*.@OBJEXT@; rm tmp/*.@OBJEXT@; ~
+ranlib ../@LIBPREFIX@ecl.@LIBEXT@")
 
 #+dlopen
 ;;;
 ;;; We do not need the -rpath flag for the library, nor -lecl.
 ;;;
-(let ((c::*ld-shared-flags* "@SHARED_LDFLAGS@ @CLIBS@"))
+(let ((c::*ld-shared-flags* "@SHARED_LDFLAGS@ @LDFLAGS@ @CLIBS@")
+      (c::*cc-flags* (concatenate 'string "-I@true_builddir@/c " c::*cc-flags*)))
   (c::shared-cc (compile-file-pathname "ecl" :type :dll)
 		"c/main.@OBJEXT@"
-		(compile-file-pathname "ecl" :type :lib)
+		"@LIBPREFIX@lsp.@LIBEXT@"
+		"@LIBPREFIX@eclmin.@LIBEXT@"
 		"-lgmp @GCLIB@"
 		. #.(unless (equalp "@LDINSTALLNAME@" "")
 			'("@LDINSTALLNAME@"))))
@@ -100,6 +103,7 @@ cd ..; rm -rf tmp/*'")))
 #+(and (not cross) (or (not stage1) WANTS-CMP))
 (let ((objects (compile-if-old "build:cmp;" +cmp-module-files+
 				:system-p t :c-file t :data-file t :h-file t)))
+  #-dlopen
   (c::build-static-library "cmp" :lisp-files objects)
   #+dlopen
   (c::build-fasl "cmp" :lisp-files objects))

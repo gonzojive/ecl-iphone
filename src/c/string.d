@@ -223,7 +223,6 @@ for the string designator ~S.", 3, start, end, string);
 bool
 string_eq(cl_object x, cl_object y)
 {
-	/* INV: Works with either a symbol or a string */
 	cl_index i, j;
 	i = x->string.fillp;
 	j = y->string.fillp;

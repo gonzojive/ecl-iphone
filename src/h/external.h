@@ -98,10 +98,13 @@ struct cl_env_struct {
 	int interrupt_pending;
 };
 
-#ifdef ECL_THREADS
+#if defined(ECL_THREADS)
 #define cl_env (*ecl_process_env())
 extern struct cl_env_struct *ecl_process_env(void) __attribute__((const));
 #else
+#ifdef mingw32
+__declspec(dllimport)
+#endif
 extern struct cl_env_struct cl_env;
 #endif
 
@@ -150,12 +153,16 @@ struct cl_core_struct {
 
 	cl_object system_properties;
 
+	cl_object libraries;
 #ifdef ECL_THREADS
 	cl_object processes;
 	pthread_mutex_t global_lock;
 #endif
 };
 
+#ifdef mingw32
+__declspec(dllimport)
+#endif
 extern struct cl_core_struct cl_core;
 
 /* alloc.c / alloc_2.c */
@@ -208,6 +215,9 @@ typedef union {
 	} init;
 	struct ecl_symbol data;
 } cl_symbol_initializer;
+#ifdef mingw32
+__declspec(dllimport)
+#endif
 extern cl_symbol_initializer cl_symbols[];
 extern cl_index cl_num_symbols_in_core;
 
@@ -727,6 +737,11 @@ extern void ecl_delete_eq(cl_object x, cl_object *l);
 
 /* load.c */
 
+extern cl_object ecl_library_open(cl_object filename);
+extern void *ecl_library_symbol(cl_object block, const char *symbol);
+extern cl_object ecl_library_error(cl_object block);
+extern void ecl_library_close(cl_object block);
+extern void ecl_library_close_all(void);
 extern cl_object si_load_source(cl_object file, cl_object verbose, cl_object print);
 extern cl_object si_load_binary(cl_object file, cl_object verbose, cl_object print);
 extern cl_object cl_load _ARGS((cl_narg narg, cl_object pathname, ...));

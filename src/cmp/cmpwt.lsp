@@ -126,7 +126,8 @@
     ((or pathname string)
      (setf stream (open stream :direction :output
 			:if-does-not-exist :create
-			:if-exists :overwrite)))
+			:if-exists :overwrite)
+	   must-close t))
     (stream))
   (let ((*print-radix* nil)
 	(*print-base* 10)

@@ -392,6 +392,14 @@ The default value is NIL.")
 
 (defvar *global-entries* nil)
 
+;;; *self-destructing-fasl* = T means that, when a FASL module is
+;;; being unloaded (for instance during garbage collection), the
+;;; associated file will be deleted. We need this because on windows
+;;; DLLs cannot be deleted if they have been opened with LoadLibrary.
+;;; Thus, (COMPILE ...) cannot create a DLL, load it and delete it
+;;; while it is being used.
+(defvar *self-destructing-fasl* nil)
+
 ;;; *global-entries* holds (... ( fname cfun return-types arg-type ) ...).
 
 ;;; --cmpvar.lsp--

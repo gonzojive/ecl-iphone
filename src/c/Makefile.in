@@ -9,7 +9,7 @@ VPATH	= @srcdir@
 #
 TRUE_CC = @CC@
 CC	= @CC@
-CFLAGS	= -c -I$(srcdir) -I$(HDIR) -I../h @BOEHM_HEADERS@ @CFLAGS@ @ECL_CFLAGS@ \
+CFLAGS	= -c -I./ -I$(srcdir) -I$(HDIR) -I../h @BOEHM_HEADERS@ @CFLAGS@ @ECL_CFLAGS@ \
 #	  -Wall -W -Wfloat-equal -Wundef -Wendif-labels -Wpointer-arith -Wcast-align \
 #	  -Wwrite-strings -Wconversion -Wsign-compare -Wmissing-prototypes -Wredundant-decls \
 #	  -Wunreachable-code -Winline
@@ -56,8 +56,16 @@ OBJS	= main.o symbol.o package.o list.o\
 %.c: %.d $(DPP) $(HFILES)
 	if test -f ../CROSS-DPP ; then ../CROSS-DPP $< $@ ; else $(DPP) $< $@ ; fi
 
-all:	$(DPP) ../libecl.a cinit.o
+all:	$(DPP) external.h ../libeclmin.a ../cinit.o
 .PHONY:	all
+
+#
+# When compiling the library itself, we have to remove the dllimport
+# declarations, because the variables that they mark are in the
+# in the library and can be referenced without indirection.
+#
+external.h: $(top_srcdir)/h/external.h
+	sed 's,__declspec(dllimport),,g' $(top_srcdir)/h/external.h > $@
 
 install: $(HFILES)
 	for i in $(HFILES); do $(INSTALL_DATA) $$i $(libdir)/h/; done
@@ -73,7 +81,7 @@ flatinstall: $(HFILES)
 	rm $(prefix)/h/config.h
 	mv $(prefix)/h/config-install.h $(prefix)/h/config.h
 
-../libecl.a: $(OBJS)
+../libeclmin.a: $(OBJS)
 	$(RM) $@
 	ar cr $@ $(OBJS)
 	ranlib $@
@@ -108,3 +116,8 @@ apply.o: apply.c $(HFILES) $(HDIR)/cs.h
 #
 all_symbols.o: all_symbols.c
 	$(CC) $(CFLAGS) -I./ all_symbols.c -o $@
+#
+# This is in another directory
+#
+../cinit.o: cinit.c
+	$(CC) $(CFLAGS) -I./ cinit.c -o $@

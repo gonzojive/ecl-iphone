@@ -80,6 +80,7 @@ coprocessor).")
 
 #+dlopen
 (defun shared-cc (o-pathname &rest options)
+  #-(or mingw32)
   (safe-system
    (format nil
 	   *ld-format*
@@ -88,14 +89,43 @@ coprocessor).")
 	   (namestring (translate-logical-pathname "SYS:"))
 	   options
 	   *ld-shared-flags*
-	   (namestring (translate-logical-pathname "SYS:")))))
+	   (namestring (translate-logical-pathname "SYS:"))))
+  #+(or mingw32)
+  (let ((lib-file (compile-file-pathname o-pathname :type :lib)))
+    (safe-system
+     (format nil
+	     "dllwrap --verbose --export-all-symbols -o ~A -L~A ~{~A ~} ~@?"
+	     (si::coerce-to-filename o-pathname)
+	     (namestring (translate-logical-pathname "SYS:"))
+	     options
+	     *ld-shared-flags*
+	     (namestring (translate-logical-pathname "SYS:")))
+     #+nil
+     (format nil
+	     "dllwrap --export-all-symbols -o ~A --output-lib ~A  -L~A ~{~A ~} ~@?"
+	     (si::coerce-to-filename o-pathname)
+	     (si::coerce-to-filename lib-file)
+	     (namestring (translate-logical-pathname "SYS:"))
+	     options
+	     *ld-shared-flags*
+	     (namestring (translate-logical-pathname "SYS:"))))))
 
 #+dlopen
 (defun bundle-cc (o-pathname &rest options)
+  #-(or mingw32)
   (safe-system
    (format nil
 	   *ld-format*
 	   *cc*
+	   (si::coerce-to-filename o-pathname)
+	   (namestring (translate-logical-pathname "SYS:"))
+	   options
+	   *ld-bundle-flags*
+	   (namestring (translate-logical-pathname "SYS:"))))
+  #+(or mingw32)
+  (safe-system
+   (format nil
+	   "dllwrap -o ~A --export-all-symbols -L~A ~{~A ~} ~@?"
 	   (si::coerce-to-filename o-pathname)
 	   (namestring (translate-logical-pathname "SYS:"))
 	   options
@@ -178,6 +208,7 @@ main(int argc, char **argv)
 		(prologue-code "")
 		(epilogue-code (if (eq target :program) "
 	funcall(1,_intern(\"TOP-LEVEL\",cl_core.system_package));
+	ecl_library_close_all();
 	return 0;" "")))
   (let* ((c-name (si::coerce-to-filename
 		  (compile-file-pathname output-name :type :c)))
@@ -505,7 +536,8 @@ Cannot compile ~a."
       (t1expr form)
       (when (zerop *error-count*)
 	(when *compile-verbose* (format t "~&;;; End of Pass 1.  "))
-	(compiler-pass2 c-pathname h-pathname data-pathname nil "code" nil))
+	(let (#+mingw32(*self-destructing-fasl* t))
+	  (compiler-pass2 c-pathname h-pathname data-pathname nil "code" nil)))
       (data-dump data-pathname)
       (init-env)
       )
@@ -520,19 +552,18 @@ Cannot compile ~a."
           ;(delete-file c-pathname)
           ;(delete-file h-pathname)
 	  (delete-file o-pathname)
+	  (delete-file data-pathname)
           (cond ((probe-file so-pathname)
                  (load so-pathname :verbose nil)
+		 #-mingw32 (delete-file so-pathname)
                  (when *compile-verbose* (print-compiler-info))
-                 (delete-file so-pathname)
-		 (delete-file data-pathname)
 		 (setf name (or name (symbol-value 'GAZONK)))
 		 ;; By unsetting GAZONK we avoid spurious references to the
 		 ;; loaded code.
 		 (set 'GAZONK nil)
 		 (si::gc t)
 		 (values name nil nil))
-		(t (delete-file data-pathname)
-                   (format t "~&;;; The C compiler failed to compile~
+		(t (format t "~&;;; The C compiler failed to compile~
 			~the intermediate code for ~s.~%" name)
                    (setq *error-p* t)
 		   (values name t t))))

@@ -185,14 +185,16 @@ case "${host_os}" in
 		shared='no'
 		SHARED_LDFLAGS=''
 		BUNDLE_LDFLAGS=''
+		SHARED_PREFIX=''
 		SHAREDEXT='dll'
 		;;
 	mingw*)
 		thehost='mingw32'
 		CLIBS='-lwsock32'
-		shared='no'
+		shared='yes'
 		SHARED_LDFLAGS=''
 		BUNDLE_LDFLAGS=''
+		SHARED_PREFIX=''
 		SHAREDEXT='dll'
 		PICFLAG=''
 		;;

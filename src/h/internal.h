@@ -40,6 +40,9 @@ extern void init_read(void);
 extern void init_stacks(int *);
 extern void init_unixint(void);
 extern void init_unixtime(void);
+#ifdef mingw32
+extern void init_compiler(void);
+#endif
 extern void ecl_init_env(struct cl_env_struct *);
 extern void init_LSP(cl_object);
 extern void init_CLOS(cl_object);
@@ -117,6 +120,7 @@ cl_object ecl_library_open(cl_object filename);
 void *ecl_library_symbol(cl_object block, const char *symbol);
 cl_object ecl_library_error(cl_object block);
 void ecl_library_close(cl_object block);
+void ecl_library_close_all(void);
 #endif
 
 /* package.d */

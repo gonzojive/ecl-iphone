@@ -69,6 +69,7 @@ si_close_pipe(cl_object stream)
 	@(return)
 }
 
+#ifndef mingw32
 @(defun ext::run-program (command argv &key (input @':stream') (output @':stream')
 	  		  (error @'nil'))
 	cl_object input_pipe_read, input_pipe_write;
@@ -162,3 +163,4 @@ si_close_pipe(cl_object stream)
 		  make_two_way_stream(stream_read, stream_write) :
 		  Cnil))
 @)
+#endif

@@ -23,9 +23,9 @@
 #ifndef cygwin
 #include <inttypes.h>
 #endif
-#include "gmp.h"
-#include "object.h"
-#include "stacks.h"
+#include <gmp.h>
+#include <object.h>
+#include <stacks.h>
 #ifdef ECL_THREADS
 # include <pthread.h>
 # define start_critical_section()
@@ -37,10 +37,10 @@
 #ifndef _ARGS
 # define _ARGS(x) x
 #endif
-#include "external.h"
+#include <external.h>
 /*#include "ecl-inl.h"*/
-#include "eval.h"
-#include "number.h"
+#include <eval.h>
+#include <number.h>
 #ifdef LOCATIVE
-#include "unify.h"
+#include <unify.h>
 #endif

@@ -113,6 +113,8 @@
       (wt-nl "#ifndef ECL_DYNAMIC_VV")
       (wt-nl "flag->cblock.data = VV;")
       (wt-nl "#endif")
+      (wt-nl "flag->cblock.self_destruct="
+	     (if *self-destructing-fasl* "1;" "0;"))
       (wt-nl "flag->cblock.data_size = VM;")
       (wt-nl "flag->cblock.data_text = compiler_data_text;")
       (wt-nl "flag->cblock.data_text_size = compiler_data_text_size;")

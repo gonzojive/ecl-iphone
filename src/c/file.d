@@ -297,14 +297,11 @@ open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 					FEcannot_open(fn);
 			} else if (if_exists == @':rename_and_delete' ||
 				   if_exists == @':new_version' ||
-				   if_exists == @':supersede') {
+				   if_exists == @':supersede' ||
+				   if_exists == @':overwrite') {
 				fp = fopen(fname, (smm == smm_output)
 					   ? OPEN_W
 					   : OPEN_RW);
-				if (fp == NULL)
-					FEcannot_open(fn);
-			} else if (if_exists == @':overwrite') {
-				fp = fopen(fname, OPEN_RW);
 				if (fp == NULL)
 					FEcannot_open(fn);
 			} else if (if_exists == @':append') {
@@ -1183,7 +1180,7 @@ flisten(FILE *fp)
 	}
 #endif /* FIONREAD */
 #endif
-	return ECL_LISTEN_AVAILABLE;
+	return !ECL_LISTEN_AVAILABLE;
 }
 
 int

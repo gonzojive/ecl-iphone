@@ -698,7 +698,7 @@ si_mkstemp(cl_object template)
 	fd = mkstemp(output->string.self);
 #else
 	fd = mktemp(output->string.self);
-	fd = open(fd, O_CREAT|O_TRUNC);
+	fd = open(fd, O_CREAT|O_TRUNC, 0666);
 #endif
 	if (fd < 0)
 		@(return Cnil)

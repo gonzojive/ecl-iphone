@@ -567,12 +567,7 @@ sweep_phase(void)
 #ifdef ENABLE_DLOPEN
 			case t_codeblock:
 				cl_mapc(2, @'si::unlink-symbol', x->cblock.links);
-				if (x->cblock.handle != NULL) {
-					printf("\n;;; Freeing library %s\n", x->cblock.name?
-					       (const char *)x->cblock.name->string.self :
-					       "<anonymous>");
-					ecl_library_close(x);
-				}
+				ecl_library_close(x);
 				break;
 #endif
 			case t_stream:
