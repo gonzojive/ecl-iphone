@@ -813,24 +813,33 @@ L:
 }
 
 @(defun parse_namestring (thing
-	&o host
-	   (defaults symbol_value(@'*default-pathname-defaults*'))
+	&o host (defaults OBJNULL)
 	&k (start MAKE_FIXNUM(0)) end junk_allowed
 	&a output)
 	cl_index s, e, ee;
 @
-	if (type_of(defaults) != t_pathname) {
-		FEwrong_type_argument(@'pathname', defaults);
-	}
 	if (host != Cnil) {
 		host = cl_string(host);
-	}
+	}			       
 	if (type_of(thing) != t_string) {
 		output = cl_pathname(thing);
 	} else {
+		cl_object default_host = host;
+		if (default_host == Cnil && defaults != Cnil) {
+			/* We must avoid getting in an infinite loop when
+			 * *default-pathname-defaults* is a namestring that
+			 * needs to be parsed. */
+			if (defaults == OBJNULL) {
+				defaults = symbol_value(@'*default-pathname-defaults*');
+				defaults = cl_parse_namestring(1, defaults, Cnil, Cnil);
+			} else {
+				defaults = cl_pathname(defaults);
+			}
+			default_host = defaults->pathname.host;
+		}
 		get_string_start_end(thing, start, end, &s, &e);
 		output = parse_namestring(thing->string.self, s, e - s, &ee,
-					  host == Cnil? defaults->pathname.host : host);
+					  default_host);
 		start = MAKE_FIXNUM(s + ee);
 		if (output == Cnil || ee != e - s) {
 			if (Null(junk_allowed)) {

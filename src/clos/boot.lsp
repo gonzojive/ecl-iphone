@@ -137,7 +137,7 @@
       (error "~A is not a slot of ~A" slot-name object))
 
     (defmethod slot-unbound ((class t) object slot-name)
-      (error 'slot-unbound :instance object :name slot-name))
+      (error 'unbound-slot :instance object :name slot-name))
 
 (defmethod slot-exists-p ((instance t) slot-name)
   nil)

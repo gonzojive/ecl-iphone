@@ -193,3 +193,87 @@ si_copy_instance(cl_object x)
 	}
 	@(return class)
 @)
+
+cl_object
+cl_class_of(cl_object x)
+{
+	cl_object t;
+
+	switch (type_of(x)) {
+	case t_instance:
+		return CLASS_OF(x);
+	case t_fixnum:
+	case t_bignum:
+		t = @'integer'; break;
+	case t_ratio:
+		t = @'ratio'; break;
+	case t_shortfloat:
+	case t_longfloat:
+		t = @'float'; break;
+		t = @'long-float'; break;
+	case t_complex:
+		t = @'complex'; break;
+	case t_character:
+		t = @'character'; break;
+	case t_symbol:
+		if (x == Cnil)
+			t = @'null';
+		else if (x->symbol.hpack == cl_core.keyword_package)
+			t = @'keyword';
+		else
+			t = @'symbol';
+		break;
+	case t_package:
+		t = @'package'; break;
+	case t_cons:
+		t = @'cons'; break;
+	case t_hashtable:
+		t = @'hash-table'; break;
+	case t_array:
+		t = @'array'; break;
+	case t_vector:
+		t = @'vector'; break;
+	case t_string:
+		t = @'string'; break;
+	case t_bitvector:
+		t = @'bit-vector'; break;
+	case t_stream:
+		switch (x->stream.mode) {
+		case smm_synonym:	t = @'synonym-stream'; break;
+		case smm_broadcast:	t = @'broadcast-stream'; break;
+		case smm_concatenated:	t = @'concatenated-stream'; break;
+		case smm_two_way:	t =  @'two-way-stream'; break;
+		case smm_string_input:
+		case smm_string_output:	t = @'string-stream'; break;
+		case smm_echo:		t = @'echo-stream'; break;
+		default:		t = @'file-stream'; break;
+		}
+		break;
+	case t_readtable:
+		t = @'readtable'; break;
+	case t_pathname:
+		t = @'pathname'; break;
+	case t_random:
+		t = @'random-state'; break;
+	case t_bytecodes:
+	case t_cfun:
+	case t_cclosure:
+		t = @'function'; break;
+#ifdef ECL_FFI
+	case t_foreign:
+		t = @'si::foreign-data'; break;
+#endif
+#ifdef ECL_THREADS
+	case t_process:
+		t = @'mp::process'; break;
+	case t_lock:
+		t = @'mp::lock'; break;
+#endif
+	default:
+		error("not a lisp data object");
+	}
+	t = cl_find_class(2, t, Cnil);
+	if (t == Cnil)
+		t = cl_find_class(1, Ct);
+	@(return t)
+}

@@ -78,9 +78,6 @@
       (call-next-method)
       (error "The metaclass of a class metaobject cannot be changed.")))
 
-(defmethod change-class ((instance t) (new-class symbol) &rest initargs)
-  (apply #'change-class instance (find-class new-class) initargs))
-
 ;;;
 ;;; PART 2: UPDATING AN INSTANCE THAT BECAME OBSOLETE
 ;;;
@@ -183,9 +180,6 @@
 
 (defmethod make-instances-obsolete ((class class))
   (setf (class-slots class) (copy-list (class-slots class))))
-
-(defmethod make-instances-obsolete ((class symbol))
-  (make-instances-obsolete (find-class class)))
 
 (defun remove-optional-slot-accessors (class)
   (let ((class-name (class-name class)))

@@ -110,7 +110,7 @@ compute_method(int narg, cl_object gf, cl_object *args)
 			argtype[spec_no++] =
 				(ATOM(spec_how) ||
 				 Null(memql(args[i], spec_how))) ?
-				cl_type_of(args[i]) :
+				cl_class_of(args[i]) :
 				args[i];
 		}
 		spec_how_list = CDR(spec_how_list);

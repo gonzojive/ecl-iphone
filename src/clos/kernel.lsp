@@ -127,24 +127,6 @@
 
 ;;; ----------------------------------------------------------------------
 
-(defun class-of (object)
-  (if (si:instancep object)
-      (si:instance-class object)
-      (closest-class (type-of object))))
-
-(defun closest-class (type)
-  (or (find-class type nil)
-      (case type
-	((FIXNUM BIGNUM) (find-class 'integer))
-	((SHORT-FLOAT LONG-FLOAT) (find-class 'float))
-	((BASE-CHAR STANDARD-CHAR EXTENDED-CHAR) (find-class 'character))
-	(SIMPLE-ARRAY (find-class 'array))
-	(SIMPLE-VECTOR (find-class 'vector))
-	(SIMPLE-BIT-VECTOR (find-class 'bit-vector))
-	(SIMPLE-STRING (find-class 'string))
-	((MP::PROCESS MP::LOCK) (find-class type))
-	(otherwise (find-class 't)))))
-
 (defun classp (obj)
   (and (si:instancep obj)
        (si::subclassp (si::instance-class obj) (find-class 'CLASS))
@@ -159,6 +141,12 @@
 	   (notinline ensure-generic-function))
 ;  (record-definition 'method `(method ,name ,@qualifiers ,specializers))
   (let* ((gf (ensure-generic-function name :lambda-list lambda-list))
+	 (specializers (mapcar #'(lambda (x)
+				   (cond ((null x) x)
+					 ((consp x) x)
+					 ((si::instancep x) x)
+					 (t (find-class x))))
+			       specializers))
 	 (method (make-method qualifiers specializers lambda-list
 			      fun plist options gf
 			      (generic-function-method-class gf))))
@@ -238,11 +226,11 @@
 	(setq arg (first scan-args)
 	      spec (first scan-specializers))
 	(unless (or (null spec)
-		    (and (consp spec) (eql arg (cadr spec)))
+		    (and (consp spec) (eql arg (second spec)))
 		    (typep arg spec))
 	  (return))))
-    (dolist (arg args) 
-      (push (type-of arg) args-specializers))
+    (dolist (arg args)
+      (push (class-of arg) args-specializers))
     (setq args-specializers (nreverse args-specializers))
     ;; then order the list
     (do* ((scan applicable-list)
@@ -291,13 +279,9 @@
 	      (car args-specializers)))))
   )
 
-(defun compare-specializers (spec-1 spec-2 arg-spec)
+(defun compare-specializers (spec-1 spec-2 arg-class)
   (declare (si::c-local))
-  (let* ((arg-class (closest-class arg-spec))
-	 (cpl (cons arg-class (class-precedence-list arg-class)))
-	 (cpl-names))
-    (setq cpl-names (dolist (e cpl (nreverse cpl-names))
-		      (push (class-name e) cpl-names)))
+  (let* ((cpl (class-precedence-list arg-class)))
     (cond ((equal spec-1 spec-2) '=)
 	  ((null spec-1) '2)
 	  ((null spec-2) '1)
@@ -305,12 +289,7 @@
 	  ((subtypep spec-2 spec-1) '2)
 	  ((and (listp spec-1) (eq (car spec-1) 'eql)) '1) ; is this engough?
 	  ((and (listp spec-2) (eq (car spec-2) 'eql)) '2) ; Beppe
-	  ((member spec-1 (member spec-2 cpl-names)) '2)
-	  ((member spec-2 (member spec-1 cpl-names)) '1)
-	  (t (compare-complex-specializers spec-1 spec-2 arg-spec)))))
-
-(defun compare-complex-specializers (spec-1 spec-2 arg-spec)
-  (declare (ignore spec-1 spec-2 arg-spec)
-	   (si::c-local))
-  (error "Complex type specifiers are not yet supported."))
-
+	  ((member spec-1 (member spec-2 cpl)) '2)
+	  ((member spec-2 (member spec-1 cpl)) '1)
+	  (t (error "Complex type specifiers are not yet supported."))
+	  )))

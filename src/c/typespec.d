@@ -215,14 +215,13 @@ cl_type_of(cl_object x)
 	cl_object t;
 	switch (type_of(x)) {
 #ifdef CLOS
-        case t_instance:
-		{ cl_object cl = CLASS_OF(x);
-		  if (CLASS_NAME(cl) != Cnil)
-		    t = CLASS_NAME(cl);
-		  else
-		    t = cl;
-		}
+        case t_instance: {
+		cl_object cl = CLASS_OF(x);
+		t = CLASS_NAME(cl);
+		if (t == Cnil || cl != cl_find_class(2, t, Cnil))
+			t = cl;
 		break;
+	}
 #endif
 	case t_fixnum:
 		t = @'fixnum'; break;

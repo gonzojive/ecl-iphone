@@ -366,6 +366,7 @@ extern short digit_weight(int w, int r);
 
 #ifdef CLOS
 extern cl_object cl_find_class _ARGS((int narg, cl_object name, ...));
+extern cl_object cl_class_of(cl_object x);
 
 extern cl_object class_class;
 extern cl_object class_object;

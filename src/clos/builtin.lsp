@@ -12,6 +12,91 @@
 ;;; ----------------------------------------------------------------------
 ;;; Methods
 
+;;; ======================================================================
+;;; Built-in classes
+;;; ----------------------------------------------------------------------
+;;;
+;;; IMPORTANT!
+;;; This class did not exist until now. This was no problem, because it is
+;;; not used anywhere in ECL. However, we have to define and we have to
+;;; ensure that "T" becomes an instance of BUILT-IN-CLASS.
+
+;;; We have to build the class manually, because
+;;;	(ENSURE-CLASS-USING-CLASS NIL ...)
+;;; does not work yet, since the class NULL does not exist.
+;;;
+(setf (find-class 'built-in-class)
+      (make-instance (find-class 'class)
+		     :name 'built-in-class
+		     :direct-superclasses (list (find-class 'class))
+		     :direct-slots nil))
+
+(si:instance-class-set (find-class 't) (find-class 'built-in-class))
+
+(defun create-built-in-class (options)
+  (let* ((name (first options))
+	 (direct-superclasses (mapcar #'find-class (or (rest options)
+						       '(t)))))
+    (setf (find-class name)
+	  (make-instance (find-class 'built-in-class)
+			 :name name
+			 :direct-superclasses direct-superclasses
+			 :direct-slots nil))))
+
+(defmethod make-instance ((class built-in-class) &rest initargs)
+  (declare (ignore initargs))
+  (error "The built-in class (~A) cannot be instantiated" class))
+
+(mapcar #'create-built-in-class
+	  '(;(t object)
+	    (sequence)
+	      (list sequence)
+	        (cons list)
+	    (array)
+	      (vector array sequence)
+	        (string vector)
+	        (bit-vector vector)
+	    (stream)
+	      (file-stream stream)
+	      (echo-stream stream)
+	      (string-stream stream)
+	      (two-way-stream stream)
+	      (synonym-stream stream)
+	      (broadcast-stream stream)
+	      (concatenated-stream stream)
+	    (character)
+	    (number)
+	      (real number)
+	        (rational real)
+		  (integer rational)
+		  (ratio rational)
+	        (float real)
+	      (complex number)
+	    (symbol)
+	      (null symbol list)
+	      (keyword symbol)
+	    (method-combination)
+	    (package)
+	    (function)
+	    (pathname)
+	      (logical-pathname pathname)
+	    (hash-table)
+	    (random-state)
+	    (readtable)
+	    #+threads (mp::process)
+	    #+threads (mp::lock)))
+
+(defmethod ensure-class-using-class ((class null) name &rest rest)
+  (multiple-value-bind (metaclass direct-superclasses options)
+      (apply #'help-ensure-class rest)
+    (apply #'make-instance metaclass :name name options)))
+
+(defmethod change-class ((instance t) (new-class symbol) &rest initargs)
+  (apply #'change-class instance (find-class new-class) initargs))
+
+(defmethod make-instances-obsolete ((class symbol))
+  (make-instances-obsolete (find-class class)))
+
 (defmethod make-instance ((class-name symbol) &rest initargs)
   (apply #'make-instance (find-class class-name) initargs))
 
@@ -72,69 +157,3 @@
 	 (member slot-name (slot-value class 'slots) :key #'slotd-name)
 	 t)))
 
-;;; ======================================================================
-;;; Built-in classes
-;;; ----------------------------------------------------------------------
-;;;
-;;; IMPORTANT!
-;;; This class did not exist until now. This was no problem, because it is
-;;; not used anywhere in ECL. However, we have to define and we have to
-;;; ensure that "T" becomes an instance of BUILT-IN-CLASS.
-
-(defclass built-in-class (class)
-  ())
-
-(si:instance-class-set (find-class 't) (find-class 'built-in-class))
-
-(defun create-built-in-class (options)
-  (let* ((name (first options))
-	 (direct-superclasses (mapcar #'find-class (or (rest options)
-						       '(t)))))
-    (setf (find-class name)
-	  (make-instance (find-class 'built-in-class)
-			 :name name
-			 :direct-superclasses direct-superclasses
-			 :direct-slots nil))))
-
-(defmethod make-instance ((class built-in-class) &rest initargs)
-  (declare (ignore initargs))
-  (error "The built-in class (~A) cannot be instantiated" class))
-
-(mapcar #'create-built-in-class
-	  '(;(t object)
-	    (sequence)
-	      (list sequence)
-	        (cons list)
-	    (array)
-	      (vector array sequence)
-	        (string vector)
-	        (bit-vector vector)
-	    (stream)
-	      (file-stream stream)
-	      (echo-stream stream)
-	      (string-stream stream)
-	      (two-way-stream stream)
-	      (synonym-stream stream)
-	      (broadcast-stream stream)
-	      (concatenated-stream stream)
-	    (character)
-	    (number)
-	      (real number)
-	        (rational real)
-		  (integer rational)
-		  (ratio rational)
-	        (float real)
-	      (complex number)
-	    (symbol)
-	      (null symbol list)
-	      (keyword symbol)
-	    (method-combination)
-	    (package)
-	    (function)
-	    (pathname)
-	      (logical-pathname pathname)
-	    (hash-table)
-	    (random-state)
-	    (readtable)
-	    #+threads (mp::process)
-	    #+threads (mp::lock)))

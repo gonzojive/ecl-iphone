@@ -274,11 +274,6 @@ because it contains a reference to the undefined class~%  ~A"
 	   (error "When redefining a class, the metaclass can not change.")))
     (apply #'reinitialize-instance class :name name options)))
 
-(defmethod ensure-class-using-class ((class null) name &rest rest)
-  (multiple-value-bind (metaclass direct-superclasses options)
-      (apply #'help-ensure-class rest)
-    (apply #'make-instance metaclass :name name options)))
-
 (defun coerce-to-class (class-or-symbol &optional (fail nil))
   (cond ((si:instancep class-or-symbol) class-or-symbol)
 	((not (symbolp class-or-symbol))
@@ -353,7 +348,6 @@ because it contains a reference to the undefined class~%  ~A"
     (declare (fixnum i))
     (let* ((slotd (first slots))
 	   (accessor (slotd-accessors slotd))
-	   (class-name (class-name standard-class))
 	   (slot-name (slotd-name slotd))
 	   (index i)
 	   reader setter)
@@ -372,13 +366,13 @@ because it contains a reference to the undefined class~%  ~A"
 		setter #'(lambda (value self)
 			   (setf (slot-value self slot-name) value))))
       (dolist (fname (append (slotd-accessors slotd) (slotd-readers slotd)))
-	(install-method fname nil `(,class-name) '(self) nil nil
+	(install-method fname nil `(,standard-class) '(self) nil nil
 			reader))
       (dolist (fname (slotd-accessors slotd))
-	(install-method `(setf ,fname) nil `(nil ,class-name) '(value self)
+	(install-method `(setf ,fname) nil `(nil ,standard-class) '(value self)
 			nil nil setter))
       (dolist (fname (slotd-writers slotd))
-	(install-method fname nil `(nil ,class-name) '(value self)
+	(install-method fname nil `(nil ,standard-class) '(value self)
 			nil nil setter)))))
 
 ;;; ======================================================================
