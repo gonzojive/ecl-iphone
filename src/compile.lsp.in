@@ -43,7 +43,7 @@
       "~A -o ~S -L\"@true_builddir@\"~* ~{~S ~} ~@?")
 #-dlopen 
 (setf c::*ld-flags*
-      "@LDFLAGS@ @LDRPATH@ @LIBPREFIX@ecl.@LIBEXT@ -lgmp @GCLIB@ @CLIBS@")
+      "@LDFLAGS@ @LDRPATH@ @LIBPREFIX@ecl.@LIBEXT@ @STATICLIBS@ @CLIBS@")
 #+dlopen
 (setf c::*ld-flags*
       "@LDFLAGS@ @LDRPATH@ @SHAREDPREFIX@ecl.@SHAREDEXT@ @CLIBS@"
@@ -74,10 +74,12 @@
   (c::build-static-library "lsp" :lisp-files lsp-objects))
 
 #-dlopen
-(si::system "sh -c 'mkdir tmp; rm -f tmp/*; ~
-cp @LIBPREFIX@eclmin.@LIBEXT@ @LIBPREFIX@ecl.@LIBEXT@
-for i in lsp/*.@OBJEXT@ clos/*.@OBJEXT@; do mv $i tmp/lsp_`basename $i`; done; ar -r ../@LIBPREFIX@ecl.@LIBEXT@ tmp/*.@OBJEXT@; rm tmp/*.@OBJEXT@; ~
-ranlib ../@LIBPREFIX@ecl.@LIBEXT@")
+(si::system "sh -c 'mkdir tmp; rm -f tmp/*;
+cp @LIBPREFIX@eclmin.@LIBEXT@ @LIBPREFIX@ecl.@LIBEXT@;
+cd tmp; ar -x ../@LIBPREFIX@lsp.@LIBEXT@;
+for i in *.@OBJEXT@; do mv $i lsp_`basename $i`; done;
+ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@; rm *.@OBJEXT@;
+ranlib ../@LIBPREFIX@ecl.@LIBEXT@'")
 
 #+dlopen
 ;;;
@@ -89,8 +91,7 @@ ranlib ../@LIBPREFIX@ecl.@LIBEXT@")
 		"c/main.@OBJEXT@"
 		"@LIBPREFIX@lsp.@LIBEXT@"
 		"@LIBPREFIX@eclmin.@LIBEXT@"
-		"-lgmp"
-		"@GCLIB@"
+		"@STATICLIBS@"
 		. #.(unless (equalp "@LDINSTALLNAME@" "")
 			'("@LDINSTALLNAME@"))))
 

@@ -114,8 +114,8 @@ AC_EXEEXT dnl			Guess whether .exe is needed for executables
 AC_SUBST(ECL_CC)dnl		Which compiler should we use for building ECL
 AC_SUBST(CFLAGS)dnl		Flags for the compiler
 AC_SUBST(ECL_CFLAGS)dnl		Similar, but specific to ECL (see src/util/ecl-config)
-AC_SUBST(CLIBS)dnl		System libraries to be linked in
-AC_SUBST(GCLIB)dnl		Library for the Boehm-Weiser garbage collector
+AC_SUBST(CLIBS)dnl		System & ECL libraries to be linked in
+AC_SUBST(STATICLIBS)dnl		Libraries used when linking ECL statically
 AC_SUBST(LDFLAGS)dnl		Flags for program linker
 AC_SUBST(SHARED_LDFLAGS)dnl	Flags for shared libraries linker
 AC_SUBST(BUNDLE_LDFLAGS)dnl	Flags for FASL files linker
@@ -180,18 +180,22 @@ TARGETS="ecl${EXEEXT}"
 LIBRARIES=""
 SUBDIR=c
 CLIBS="${CLIBS} -lm"
+STATICLIBS=""
 if test ${boehm} = "no" ; then
   EXTRA_OBJS="${EXTRA_OBJS} alloc.${OBJEXT} gbc.${OBJEXT}"
-  GCLIB=""
 else
   if test ${local_boehm} = "no"; then
     SUBDIR="${SUBDIR} gc"
     BOEHM_HEADERS="-I../include"
+    STATICLIBS="-leclgc"
+    if test ${shared} = "no"; then
+      LIBRARIES="${LIBRARIES} ${LIBPREFIX}eclgc.${LIBEXT}"
+    fi
   else
     BOEHM_HEADERS=""
+    CLIBS="-lgc ${CLIBS}"
   fi
   EXTRA_OBJS="${EXTRA_OBJS} alloc_2.${OBJEXT}"
-  GCLIB="-lgc"
   AC_DEFINE(GBC_BOEHM)
 fi
 if test ${shared} = "yes"; then
@@ -202,8 +206,13 @@ else
   LDRPATH='~*'
 fi
 if test ${local_gmp} = "no" ; then
-  LIBRARIES="${LIBRARIES} ${LIBPREFIX}gmp.${LIBEXT}"
   SUBDIR="${SUBDIR} gmp"
+  STATICLIBS="-leclgmp ${STATICLIBS}"
+  if test ${shared} = "no"; then
+    LIBRARIES="${LIBRARIES} ${LIBPREFIX}eclgmp.${LIBEXT}"
+  fi
+else
+  CLIBS="-lgmp ${CLIBS}"
 fi
 if test ${runtime} ; then
   AC_DEFINE(RUNTIME)
