@@ -72,6 +72,8 @@ ECL 1.0
 
   - User break with Ctrl+C is now also capture under Windows.
 
+  - Temporary files are now also cleaned up when exiting via #'QUIT.
+
 * Internals:
 
   - The compiler now uses a more detailed tree to represent the code, keeping

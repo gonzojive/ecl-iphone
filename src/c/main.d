@@ -443,6 +443,7 @@ cl_boot(int argc, char **argv)
 	if (!FIXNUMP(code))
 		FEerror("Illegal exit code: ~S.", 1, code);
 	i = fix(code);
+	cl_shutdown();
 	exit(i);
 @)
 
