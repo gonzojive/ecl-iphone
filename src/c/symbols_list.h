@@ -843,6 +843,7 @@ cl_symbols[] = {
 {"UNTRACE", CL_ORDINARY, NULL, -1},
 {"UNUSE-PACKAGE", CL_ORDINARY, cl_unuse_package, -1},
 {"UNWIND-PROTECT", FORM_ORDINARY, NULL, -1},
+{"UPGRADED-ARRAY-ELEMENT-TYPE", CL_ORDINARY, NULL, -1},
 {"UPPER-CASE-P", CL_ORDINARY, cl_upper_case_p, 1},
 {"USE-PACKAGE", CL_ORDINARY, cl_use_package, -1},
 {"USER-HOMEDIR-PATHNAME", CL_ORDINARY, cl_user_homedir_pathname, -1},
@@ -1278,7 +1279,7 @@ cl_symbols[] = {
 #endif
 
 #if !defined(GBC_BOEHM)
-{"SI::GC", SI_ORDINARY, si_gc, -1},
+{"SI::GC", SI_ORDINARY, si_gc, 1},
 {"SI::ALLOCATE", SI_ORDINARY, si_allocate, -1},
 {"SI::ALLOCATED-PAGES", SI_ORDINARY, si_allocated_pages, -1},
 {"SI::MAXIMUM-ALLOCATABLE-PAGES", SI_ORDINARY, si_maximum_allocatable_pages, -1},
