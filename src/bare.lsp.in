@@ -9,28 +9,26 @@
 ;;; * Load Common-Lisp base library
 ;;;
 (if (member "ECL-MIN" *features* :test #'string-equal)
-  (load "lsp/load.lsp"))
+  (load "@abs_builddir@/lsp/load.lsp"))
+(defun si::process-command-args () )
 
 ;;;
 ;;; * Load PCL-based Common-Lisp Object System
 ;;;
 (setf sys::*gc-verbose* nil)
 #+(and wants-clos ecl-min)
-(load "clos/load.lsp")
+(load "@abs_builddir@/clos/load.lsp")
 
 ;;;
 ;;; * Load the compiler.
 ;;;
-(load #+ecl-min "cmp/load.lsp" #-ecl-min "./cmp.so")
-
-(load "@srcdir@/doc/help.lsp")
-(si::dump-documentation "help.doc")
+(load #+ecl-min "@abs_builddir@/cmp/load.lsp" #-ecl-min "@abs_builddir@/cmp.so")
 
 ;;;
 ;;; * By redefining "SYS:" ECL will be able to
 ;;;   find headers and libraries in the build directory.
 ;;;
-(si::pathname-translations "SYS" '(("*.*" "./*.*")))
+(si::pathname-translations "SYS" '(("*.*" "@abs_builddir@/*.*")))
 
 ;;;
 ;;; * Add include path to not yet installed headers

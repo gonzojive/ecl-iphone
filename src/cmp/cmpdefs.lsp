@@ -50,8 +50,6 @@
   kind		;;; One of LEXICAL, SPECIAL, GLOBAL, OBJECT, FIXNUM,
   		;;; CHARACTER, LONG-FLOAT, SHORT-FLOAT, or REPLACED (used for
 		;;; LET variables).
-		;;; A value DUMMY is used for missing supplied-p keyword
-		;;; variables
   (loc 'OBJECT)	;;; During Pass 1: indicates whether the variable can
 		;;; be allocated on the c-stack: OBJECT means
 		;;; the variable is declared as OBJECT, and CLB means
@@ -345,8 +343,6 @@ The default value is NIL.")
 
 (defvar *compile-time-too* nil)
 (defvar *not-compile-time* nil)
-
-(defvar *non-package-operation* nil)
 
 (defvar *objects* nil)			; holds { ( object text vv-index ) }*
 (defvar *keywords* nil)			; holds { ( key-list text vv-index ) }*

@@ -19,6 +19,7 @@ static cl_object si_simple_toplevel ()
 {
 	cl_object sentence;
 	cl_object lex_old = lex_env;
+	int i;
 
 	/* Simple minded top level loop */
 	printf(";*** Lisp core booted ****\nECLS (Embeddable Common Lisp)  %d pages\n", MAXPAGE);
@@ -27,6 +28,10 @@ static cl_object si_simple_toplevel ()
 	StdinResume();
 #endif
 	lex_new();
+	for (i = 1; i<fix(si_argc()); i++) {
+	  cl_object arg = si_argv(MAKE_FIXNUM(i));
+	  cl_load(1, arg);
+	}
 	while (1) {
 	  cl_object bytecodes = Cnil;
 	  printf("\n> ");

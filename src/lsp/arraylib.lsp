@@ -336,7 +336,6 @@ adjustable array."
                    initial-element
                    initial-contents
                    fill-pointer
-                   displaced-to
                    displaced-index-offset))
   (when (integerp new-dimensions)
         (setq new-dimensions (list new-dimensions)))

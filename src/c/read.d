@@ -599,8 +599,8 @@ semicolon_reader(cl_object in, cl_object c)
 	int auxc;
 
 	do
-		auxc = ecl_getc_noeof(in);
-	while (auxc != '\n');
+		auxc = ecl_getc(in);
+	while (auxc != '\n' && auxc != EOF);
 	/*  no result  */
 	@(return)
 }

@@ -1,4 +1,4 @@
-/*
+</*
     main.c --
 */
 /*
@@ -168,7 +168,6 @@ cl_boot(int argc, char **argv)
 	  /* never reached */
 	}
 #endif
-	printf("Bye.\n");
 	exit(i);
 @)
 

@@ -61,20 +61,20 @@
 (defpackage "WALKER"
   (:export define-walker-template
 	   walk-form
-	   #+NEW
 	   walk-form-expand-macros-p
 	   #-ecl nested-walk-form
 	   variable-lexical-p
 	   variable-special-p
 	   *variable-declarations*
 	   variable-declaration
-	   #+NEW
 	   macroexpand-all
 	   ))
 
 (in-package "WALKER")
 (declaim (notinline note-lexical-binding walk-bindings-1 walk-let/let*
 		    walk-form-internal))
+(push :new *features*)
+
 
 ;;;
 ;;; On the following pages are implementations of the implementation specific
@@ -251,18 +251,14 @@
   (push declaration (third (env-lock env))))
 
 (defun note-lexical-binding (thing env)
-  (push #+NEW (list thing :LEXICAL-VAR) #-NEW thing (fourth (env-lock env))))
+  (push (list thing :LEXICAL-VAR) (fourth (env-lock env))))
 
 (defun VARIABLE-LEXICAL-P (var env)
   (declare (si::c-local))
-  #+NEW
   (let ((entry (member var (env-lexical-variables env) :key #'car)))
     (when (eq (cadar entry) :LEXICAL-VAR)
-      entry))
-  #-NEW
-  (member var (env-lexical-variables env)))
+      entry)))
 
-#+NEW
 (defun variable-symbol-macro-p (var env)
   (declare (si::c-local))
   (let ((entry (member var (env-lexical-variables env) :key #'car)))
@@ -272,7 +268,6 @@
 (defvar *VARIABLE-DECLARATIONS* '(SPECIAL TYPE)) ; Beppe
 
 (defun VARIABLE-DECLARATION (declaration var env)
-  (declare (si::c-local))
   (if (not (member declaration *variable-declarations*))
       (error "~S is not a recognized variable declaration." declaration)
       (let ((id (or (variable-lexical-p var env) var)))
@@ -284,7 +279,6 @@
 	    (return decl))))))
 
 (defun VARIABLE-SPECIAL-P (var env)
-  (declare (si::c-local))
   (or (not (null (variable-declaration 'SPECIAL var env)))
       (variable-globally-special-p var)))
 
@@ -402,27 +396,18 @@
 (define-walker-template LAMBDA               walk-lambda)
 (define-walker-template LET                  walk-let)
 (define-walker-template LET*                 walk-let*)
-#+NEW
 (define-walker-template LOCALLY              walk-locally)
 (define-walker-template MACROLET             walk-macrolet)
 (define-walker-template MULTIPLE-VALUE-CALL  (NIL EVAL REPEAT (EVAL)))
 (define-walker-template MULTIPLE-VALUE-PROG1 (NIL RETURN REPEAT (EVAL)))
-#+NEW
 (define-walker-template MULTIPLE-VALUE-SETQ  walk-multiple-value-setq)
-#-NEW
-(define-walker-template MULTIPLE-VALUE-SETQ  (NIL (REPEAT (SET)) EVAL))
 (define-walker-template MULTIPLE-VALUE-BIND  walk-multiple-value-bind)
 (define-walker-template PROGN                (NIL REPEAT (EVAL)))
 (define-walker-template PROGV                (NIL EVAL EVAL REPEAT (EVAL)))
 (define-walker-template QUOTE                (NIL QUOTE))
 (define-walker-template RETURN-FROM          (NIL QUOTE REPEAT (RETURN)))
-#+NEW
 (define-walker-template SETQ                 walk-setq)
-#-NEW
-(define-walker-template SETQ                 (NIL REPEAT (SET EVAL)))
-#+NEW
 (define-walker-template SYMBOL-MACROLET      walk-symbol-macrolet)
-#-NEW
 (define-walker-template TAGBODY              walk-tagbody)
 (define-walker-template THE                  (NIL QUOTE EVAL))
 (define-walker-template THROW                (NIL EVAL EVAL))
@@ -453,9 +438,8 @@
 
 
 ;;; Controls whether macros are expanded by walk-form
-#+NEW
 (defvar WALK-FORM-EXPAND-MACROS-P nil)
-#+NEW
+
 (defun macroexpand-all (form &optional environment)
   (let ((walk-form-expand-macros-p t))
     (walk-form form environment)))
@@ -566,7 +550,6 @@
 	      ((not (eq form newform))
 	       (walk-form-internal newform context env))
 	      ((not (consp newform))
-	       #+NEW
 	       (let ((symmac (car (variable-symbol-macro-p newform env))))
 		 (if symmac
 		     (let ((newnewform (walk-form-internal (cddr symmac)
@@ -574,9 +557,7 @@
 		       (if (eq newnewform (cddr symmac))
 			   (if walk-form-expand-macros-p newnewform newform)
 			   newnewform))
-		     newform))
-	       #-NEW
-	       newform)
+		     newform)))
 	      ((setq template (get-walker-template (setq fn (car newform))))
 	       (if (symbolp template)
 		   (funcall template newform context env)
@@ -587,14 +568,11 @@
 					  (macroexpand-1 newform new-env))
 		 (cond
 		   (macrop
-		    #+NEW
 		    (let ((newnewnewform
 			   (walk-form-internal newnewform context env)))
 		      (if (eq newnewnewform newnewform)
 			  (if walk-form-expand-macros-p newnewform newform)
-			  newnewnewform))
-		    #-NEW
-		    (walk-form-internal newnewform context env))
+			  newnewnewform)))
 		   ((and (symbolp fn)
 			 (not (fboundp fn))
 			 (special-operator-p fn))
@@ -699,7 +677,6 @@
 	       (walk-repeat-eval (cdr form) env))))
 
 (defun recons (x car cdr)
-  (declare (si::c-local))
   (if (or (not (eq (car x) car))
           (not (eq (cdr x) cdr)))
       (cons car cdr)
@@ -850,7 +827,6 @@
       (relist*
 	form let/let* walked-bindings walked-body))))
 
-#+NEW
 (defun walk-locally (form context env)
   (declare (ignore context))
   (let* ((locally (car form))
@@ -926,7 +902,6 @@
 	       (walk-bindings-2 bindings walked-bindings context new-env)
 	       walked-body))))
 
-#+NEW
 (defun walk-multiple-value-setq (form context env)
   (let ((vars (cadr form)))
     (if (some #'(lambda (var)
@@ -1035,7 +1010,6 @@
 	       walked-arglist
                walked-body))))  
 
-#+NEW
 (defun walk-setq (form context env)
   (if (cdddr form)
       (let* ((expanded (let* ((rforms nil)
@@ -1060,7 +1034,6 @@
 		    (walk-form-internal var :set env)
 		    (walk-form-internal val :eval env))))))
 
-#+NEW
 (defun walk-symbol-macrolet (form context old-env)
   (declare (ignore context))
   (let* ((bindings (second form)))

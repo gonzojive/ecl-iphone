@@ -535,6 +535,34 @@ cl_hash_table_count(cl_object ht)
 	@(return (MAKE_FIXNUM(ht->hash.entries)))
 }
 
+static cl_object
+si_hash_table_iterate(int narg, cl_object env)
+{
+	cl_object index = CAR(env);
+	cl_object ht = CADR(env);
+	cl_fixnum i;
+	if (!Null(index)) {
+		i = fix(index);
+		if (i < 0)
+			i = -1;
+		for (; ++i < ht->hash.size; )
+			if (ht->hash.data[i].key != OBJNULL) {
+				@(return (CAR(env) = MAKE_FIXNUM(i))
+					 ht->hash.data[i].key
+					 ht->hash.data[i].value)
+			}
+		CAR(env) = Cnil;
+	}
+	@(return Cnil)
+}
+
+cl_object
+si_hash_table_iterator(cl_object ht)
+{
+	@(return cl_make_cclosure_va((cl_objectfn)si_hash_table_iterate,
+				     cl_list(2, MAKE_FIXNUM(-1), ht),
+				     @'si::hash-table-iterator'))
+}
 cl_object
 cl_hash_table_rehash_size(cl_object ht)
 {

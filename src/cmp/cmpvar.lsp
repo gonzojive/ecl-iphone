@@ -74,9 +74,10 @@
 		 (setq form expansion)
 		 (return-from chk-symbol-macrolet form))))
       ;; Search for a SYMBOL-MACROLET definition
-      (cond ((and (consp v) (eq (first v) form))
-	     (setq form (second v))
-	     (return))
+      (cond ((consp v)
+	     (when (eq (first v) form)
+	       (setq form (second v))
+	       (return)))
 	    ((symbolp v))
 	    ((eq (var-name v) form)
 	     ;; Any macro definition has been shadowed by LET/LET*, etc.
@@ -160,8 +161,9 @@
     (declare (type var var))
     (cond ((eq var 'CB) (setq ccb t))	; closure boundary
           ((eq var 'LB) (setq clb t))	; level boundary
-	  ((and (consp var) (eq (first var) name)) ; symbol macrolet
-	   (c1expr (second var)))
+	  ((consp var)
+	   (when (eq (first var) name) ; symbol macrolet
+	     (return-from c1vref (c1expr (second var)))))
           ((eq (var-name var) name)
            (when (minusp (var-ref var)) ; IGNORE.
              (cmpwarn "The ignored variable ~s is used." name)

@@ -119,6 +119,7 @@ as a VARIABLE doc and can be retrieved by (documentation 'NAME 'variable)."
 	 ',name))))
 
 (defun compiler-macro-function (name &optional env)
+  (declare (ignore env))
   (get name 'sys::compiler-macro))
 
 (defun sys::undef-compiler-macro (name)
@@ -389,6 +390,7 @@ SECOND-FORM."
 
 ;; FIXME!
 (defmacro the (type value)
+  (declare (ignore type))
   value)
 
 (defmacro define-symbol-macro (symbol expansion)

@@ -33,7 +33,6 @@
   (setq *reservations* nil)
   (setq *top-level-forms* nil)
   (setq *compile-time-too* nil)
-  (setq *non-package-operation* nil)
   (setq *function-declarations* nil)
   (setq *inline-functions* nil)
   (setq *inline-blocks* 0)

@@ -13,7 +13,7 @@
 (in-package "SYSTEM")
 
 ;;; DEFSETF macro.
-(defmacro defsetf (access-fn &rest rest &aux doc)
+(defmacro defsetf (access-fn &rest rest)
   "Syntax: (defsetf symbol update-fun [doc])
 	or
 	(defsetf symbol lambda-list (store-var) {decl | doc}* {form}*)
@@ -53,7 +53,7 @@ by (documentation 'SYMBOL 'setf)."
 
 
 ;;; DEFINE-SETF-METHOD macro.
-(defmacro define-setf-expander (access-fn args &rest body &aux doc)
+(defmacro define-setf-expander (access-fn args &rest body)
   "Syntax: (define-setf-expander symbol defmacro-lambda-list {decl | doc}*
           {form}*)
 Defines the SETF-method for generalized-variables (SYMBOL ...).
@@ -306,7 +306,7 @@ Does not check if the third gang is a single-element list."
 
 
 ;;; The expansion function for SETF.
-(defun setf-expand-1 (place newvalue env &aux g)
+(defun setf-expand-1 (place newvalue env)
   (declare (si::c-local))
   (multiple-value-bind (vars vals stores store-form access-form)
       (get-setf-expansion place env)

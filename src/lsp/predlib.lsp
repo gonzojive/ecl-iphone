@@ -30,14 +30,15 @@ type specifier.  When the symbol NAME is used as a type specifier, the
 expansion function is called with no argument.
 The doc-string DOC, if supplied, is saved as a TYPE doc and can be retrieved
 by (documentation 'NAME 'type)."
-  (multiple-value-setq (body doc) (remove-documentation body))
+  (multiple-value-bind (body doc)
+      (remove-documentation body)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
           (setf (get ',name 'DEFTYPE-FORM)
 	   '(DEFTYPE ,name ,lambda-list ,@body))
           (setf (get ',name 'DEFTYPE-DEFINITION)
 	   #'(LAMBDA ,lambda-list ,@body))
 	  ,@(si::expand-set-documentation name 'type doc)
-          ',name))
+          ',name)))
 
 
 ;;; Some DEFTYPE definitions.
@@ -293,7 +294,9 @@ Returns T if X belongs to TYPE; NIL otherwise."
       (dolist (class (sys:instance-ref low 1)) ; (class-superiors low)
 	(when (subclassp class high) (return t)))))
 #+clos
-(defun clos::classp (foo) nil)
+(defun clos::classp (foo)
+  (declare (ignore foo))
+  nil)
 
 ;;; NORMALIZE-TYPE normalizes the type using the DEFTYPE definitions.
 ;;; The result is a pair of values

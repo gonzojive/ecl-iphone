@@ -86,12 +86,16 @@ disassemble_lambda(cl_object *vector) {
 	vector++;
 
 	/* Print keyword arguments */
+	if (vector[0] == MAKE_FIXNUM(0)) {
+		vector++;
+		goto NO_KEYS;
+	}
 	if (vector[0] != Cnil) {
 		print_arg("\nOther keys:\t", vector[0]);
 	}
 	vector++;
 	vector = disassemble_vars("Keywords:\t", vector, 4);
-
+NO_KEYS:
 	/* Print aux arguments */
 	print_arg("\nDocumentation:\t", next_code(vector));
 	print_arg("\nDeclarations:\t", next_code(vector));

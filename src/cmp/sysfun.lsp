@@ -214,14 +214,19 @@
 ; file character.c
 (STANDARD-CHAR-P (character) T nil t)
 (GRAPHIC-CHAR-P (character) T nil t)
-(ALPHA-CHAR-P (character) T nil t)
-(UPPER-CASE-P (character) T nil t)
-(LOWER-CASE-P (character) T nil t)
-(BOTH-CASE-P (character) T nil t)
+(ALPHA-CHAR-P (character) T nil t
+	:inline-always ((character) boolean nil nil "isalpha(#0)"))
+(UPPER-CASE-P (character) T nil t
+	:inline-always ((character) boolean nil nil "isupper(#0)"))
+(LOWER-CASE-P (character) T nil t
+	:inline-always ((character) boolean nil nil "islower(#0)"))
+(BOTH-CASE-P (character) T nil t
+	:inline-always ((character) boolean nil nil "(islower(#0)||isupper(#0))"))
 (DIGIT-CHAR-P (character *) T nil nil
 	:inline-always
 	((character) boolean nil nil "@0; ((#0) <= '9' && (#0) >= '0')"))
-(ALPHANUMERICP (character) T nil t)
+(ALPHANUMERICP (character) T nil t
+	:inline-always ((character) boolean nil nil "isalnum(#0)"))
 (CHARACTER (T) CHARACTER)
 (CHAR= (character *) T nil t
 	:inline-always ((character character) boolean nil nil "(#0)==(#1)")
@@ -248,8 +253,10 @@
 	:inline-always ((character) fixnum nil nil "#0"))
 (CODE-CHAR (fixnum) character nil nil
 	:inline-always ((fixnum) character nil nil "#0"))
-(CHAR-UPCASE (character) character nil nil)
-(CHAR-DOWNCASE (character) character nil nil)
+(CHAR-UPCASE (character) character nil nil
+	:inline-always ((character) character nil nil "toupper(#0)"))
+(CHAR-DOWNCASE (character) character nil nil
+	:inline-always ((character) character nil nil "tolower(#0)"))
 (DIGIT-CHAR (fixnum *) character nil nil)
 (CHAR-INT (character) fixnum nil nil
 	:inline-always ((character) fixnum nil nil "#0"))

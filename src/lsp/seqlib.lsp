@@ -708,4 +708,4 @@ the output"
 (defun constantly (n)
   "Args: (n)
 Builds a new function which accepts any number of arguments but always outputs N."
-  #'(lambda (&rest x) n))
+  #'(lambda (&rest x) (declare (ignore x)) n))

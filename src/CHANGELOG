@@ -1162,6 +1162,32 @@ ECL 0.8
     operator. Complain when user tries to redefine a special operator
     as a function.
 
+ECLS 0.9
+========
+
+* Errors fixed:
+
+  - The PCL relied on the compiler to optimize certain method
+    combinations. However, the compiler is not always present, and
+    therefore it is safer to use interpreted functions instead.
+
+* Visible changes:
+
+  - No "Bye" message in QUIT.
+
+* ANSI compatibility:
+
+  - WITH-HASH-TABLE-ITERATOR implemented.
+
+  - In DEFGENERIC, only SPACE and SPEED declarations were allowed.
+
+  - The bytecodes compiler did not contemplate the possibility of
+    a lambda list with &key and no keyword variables.
+
+  - In MAKE-PATHNAME, values which are supplied (even if NIL), are not
+    overwritten by the :DEFAULTS. For instance, (MAKE-PATHNAME :TYPE
+    NIL :DEFAULTS "FOO.LISP") => #P"FOO"
+
 TODO:
 =====
 

@@ -30,9 +30,6 @@
 	(cond
             ((symbolp fun)
              (cond ((get fun 'PACKAGE-OPERATION)
-                    (when *non-package-operation*
-                      (cmpwarn "The package operation ~s was in a bad place."
-                               form))
 		    (cmp-eval form)
                     (wt-data-package-operation form))
                    ((setq fd (get fun 'T1))
@@ -233,7 +230,6 @@
   (when (not (symbolp (car args)))
     (return-from t1defun (t1expr* (macroexpand (cons 'defun args)))))
   (when *compile-time-too* (cmp-eval (cons 'DEFUN args)))
-  (setq *non-package-operation* t)
   (let* (lambda-expr
 	 (fname (car args))
 	 (cfun (exported-fname fname))
@@ -573,7 +569,6 @@
   (cmpck (not (symbolp (car args)))
          "The macro name ~s is not a symbol." (car args))
   (cmp-eval (cons 'DEFMACRO args))
-  (setq *non-package-operation* t)
   (let (macro-lambda (cfun (next-cfun)) (doc nil) (ppn nil))
     (setq macro-lambda (c1dm (car args) (second args) (cddr args)))
     (when (second macro-lambda) (setq ppn (add-object (second macro-lambda))))
@@ -615,7 +610,6 @@
 
 (defun t1ordinary (form)
   (when *compile-time-too* (cmp-eval form))
-  (setq *non-package-operation* t)
   (setq form (c1expr form))
   (add-load-time-values)
   (list 'ORDINARY form))
@@ -652,7 +646,6 @@
 
 (defun t1defvar (args &aux form (doc nil) (name (car args)))
   (when *compile-time-too* (cmp-eval `(defvar ,@args)))
-  (setq *non-package-operation* nil)
   (push name *global-vars*)
   (if (endp (cdr args))
       (list 'DECLARE (add-symbol name))
@@ -814,6 +807,8 @@
 			   (or
 			    ;; non closure variable
 			    (not (ref-ref-ccb x))
+			    ;; special variable
+			    (eq (var-kind x) 'special)
 			    ;; parameter of this closure
 			    ;; (not yet bound, therefore var-loc is OBJECT)
 			    (eq (var-loc x) 'OBJECT)))

@@ -21,7 +21,7 @@ Evaluates FORM, outputs the realtime and runtime used for the evaluation to
 	(real-end (gentemp))
 	(run-start (gentemp))
 	(run-end (gentemp))
-	(gc-start (gentemp))
+	#-boehm-gc(gc-start (gentemp))
 	(gc-end (gentemp))
 	(x (gentemp)))
     `(let*((,real-start (get-internal-real-time))
@@ -143,3 +143,14 @@ Sunday is the *last* day of the week!!"
 			      :device (pathname-device a-pathname))))
 	(unless (si::file-exists p)
 	  (si::mkdir p #o777)))))))
+
+(defmacro with-hash-table-iterator ((iterator package) &body body)
+  `(let ((,iterator (hash-table-iterator ,package)))
+    (macrolet ((,iterator () (list 'funcall ',iterator)))
+      ,@body)))
+
+(defun sharp-!-reader (stream subchar arg)
+  (read-line stream)
+  (values))
+
+(set-dispatch-macro-character #\# #\! 'sharp-!-reader)

@@ -142,7 +142,6 @@ SI::ARGS."
   (cons fname nil)))
 
 (defun trace-print (direction fname vals &rest extras)
-  (declare (si::c-local))
   (let ((indent (min (* (1- *trace-level*) 2) 20)))
     (fresh-line *trace-output*)
     (case direction

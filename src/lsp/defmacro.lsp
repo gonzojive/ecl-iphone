@@ -105,7 +105,7 @@
 		    (ppn 0)
 		    (no-check nil)
 		    all-keywords)
-	       (multiple-value-bind (reqs opts rest allow-other-keys keys auxs)
+	       (multiple-value-bind (reqs opts rest key-flag keys allow-other-keys auxs)
 		   (si::process-lambda-list vl (if macro 'macro 'destructuring-bind))
 		 (dolist (v (cdr reqs))
 		   (dm-v v `(if ,(dm-nth-cdr n whole)
@@ -121,7 +121,7 @@
 		     (when sv (dm-v sv `(not (null ,(dm-nth-cdr n whole)))))
 		     (incf n)))
 		 (when rest
-		   (dm-v (setq rest (first rest)) (dm-nth-cdr n whole))
+		   (dm-v rest (dm-nth-cdr n whole))
 		   (setq no-check t
 			 rest nil)
 		   (when (and (null (last vl 0)) (member '&body vl))
@@ -145,7 +145,7 @@
 		   (let* ((v (first l))
 			  (init (second l)))
 		     (dm-v v init)))
-		 (when (and rest (not allow-other-keys))
+		 (when (and key-flag (not allow-other-keys))
 		   (push (cons rest all-keywords) *key-check*))
 		 (unless no-check (push (cons whole n) *arg-check*)))
 	       ppn))

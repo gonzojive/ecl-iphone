@@ -112,11 +112,10 @@
            (cmpck (endp (cdr fun))
                   "The lambda expression ~s is illegal." fun)
            (let* ((name (second fun))
-		  (funob (c1lambda-expr (cddr fun)))
+		  (funob (c1lambda-expr (cddr fun) name))
 		  (info (second funob))
 		  (closure (closure-p funob))
-		  (body `(BLOCK ,name ,@(cdddr fun)))
-		  (fun (make-fun :name name
+		  (fun (make-fun :name (list name)
 				 :cfun (next-cfun)
 				 :closure closure)))
 	     (if closure

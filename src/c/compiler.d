@@ -2016,6 +2016,33 @@ si_process_lambda(cl_object lambda)
 	return VALUES(0);
 }
 
+/*
+ * (si::process-lambda-list lambda-list context)
+ *
+ * Parses different types of lambda lists. CONTEXT may be MACRO, FUNCTION or
+ * DESTRUCTURING-BIND, and determines the valid sytax. The output is made of
+ * several values:
+ *
+ * VALUES(0) = (N req1 ... )			; required values
+ * VALUES(1) = (N opt1 init1 flag1 ... )	; optional values
+ * VALUES(2) = rest-var				; rest-variable, if any
+ * VALUES(3) = key-flag				; T if &key was supplied
+ * VALUES(4) = (N key1 var1 init1 flag1 ... )	; keyword arguments
+ * VALUES(5) = allow-other-keys			; flag &allow-other-keys
+ * VALUES(6) = (N aux1 init1 ... )		; auxiliary variables
+ *
+ * 1°) The prefix "N" is an integer value denoting the number of
+ * variables which are declared within this section of the lambda
+ * list.
+ *
+ * 2°) The INIT* arguments are lisp forms which are evaluated when
+ * no value is provided.
+ *
+ * 3°) The FLAG* arguments is the name of a variable which holds a
+ * boolean value in case an optional or keyword argument was
+ * provided. If it is NIL, no such variable exists.
+ */
+
 cl_object
 si_process_lambda_list(cl_object org_lambda_list, cl_object context)
 {
@@ -2030,6 +2057,7 @@ si_process_lambda_list(cl_object org_lambda_list, cl_object context)
 	cl_object reqs = Cnil, opts = Cnil, keys = Cnil, rest = Cnil, auxs = Cnil;
 	int nreq = 0, nopt = 0, nkey = 0, naux = 0, stage = 0;
 	cl_object allow_other_keys = Cnil;
+	cl_object key_flag = Cnil;
 
 	if (!CONSP(lambda_list) && lambda_list != Cnil)
 		goto ILLEGAL_LAMBDA;
@@ -2061,12 +2089,13 @@ LOOP:
 REST:		if (stage >= AT_REST)
 			goto ILLEGAL_LAMBDA;
 		stage = AT_REST;
-		push_var(v, rest);
+		rest = v;
 		goto LOOP;
 	}
 	if (v == @'&key') {
 		if (stage >= AT_KEYS)
 			goto ILLEGAL_LAMBDA;
+		key_flag = Ct;
 		stage = AT_KEYS;
 		goto LOOP;
 	}
@@ -2174,9 +2203,10 @@ OUTPUT:
 				org_lambda_list);
 	@(return CONS(MAKE_FIXNUM(nreq), cl_nreverse(reqs))
 		 CONS(MAKE_FIXNUM(nopt), cl_nreverse(opts))
-		 cl_nreverse(rest)
-		 allow_other_keys
+		 rest
+		 key_flag
 		 CONS(MAKE_FIXNUM(nkey), cl_nreverse(keys))
+		 allow_other_keys
 		 cl_nreverse(auxs))
 
 ILLEGAL_LAMBDA:
@@ -2216,7 +2246,7 @@ c_register_var2(register cl_object var, register cl_object *specials)
 
 cl_object
 make_lambda(cl_object name, cl_object lambda) {
-	cl_object reqs, opts, rest, keys, auxs, allow_other_keys;
+	cl_object reqs, opts, rest, key, keys, auxs, allow_other_keys;
 	cl_object specials, doc, decl, body, l;
 	cl_index specials_pc, opts_pc, keys_pc, label;
 	int nopts, nkeys;
@@ -2228,13 +2258,14 @@ make_lambda(cl_object name, cl_object lambda) {
 	reqs = si_process_lambda(lambda);
 	opts = VALUES(1);
 	rest = VALUES(2);
-	allow_other_keys = VALUES(3);
+	key  = VALUES(3);
 	keys = VALUES(4);
-	auxs = VALUES(5);
-	doc  = VALUES(6);
-	specials = VALUES(7);
-	decl = VALUES(8);
-	body = VALUES(9);
+	allow_other_keys = VALUES(5);
+	auxs = VALUES(6);
+	doc  = VALUES(7);
+	specials = VALUES(8);
+	decl = VALUES(9);
+	body = VALUES(10);
 
 	handle = asm_begin();
 
@@ -2257,13 +2288,17 @@ make_lambda(cl_object name, cl_object lambda) {
 	nopts = fix(CAR(opts));
 	asm_list(opts);
 
-	asm_list(rest);			/* Name of &rest argument */
+	asm1(rest);			/* Name of &rest argument */
 
-	asm1(allow_other_keys);		/* Value of &allow-other-keys */
-
-	keys_pc = current_pc()+1;	/* Keyword arguments */
-	nkeys = fix(CAR(keys));
-	asm_list(keys);
+	if (Null(key)) {
+		asm1(MAKE_FIXNUM(0));		/* &key was not supplied */
+		nkeys = 0;
+	} else {
+		asm1(allow_other_keys);		/* Value of &allow-other-keys */
+		keys_pc = current_pc()+1;	/* Keyword arguments */
+		nkeys = fix(CAR(keys));
+		asm_list(keys);
+	}
 	asm1(doc);
 	asm1(decl);
 
@@ -2275,7 +2310,7 @@ make_lambda(cl_object name, cl_object lambda) {
 		c_register_var2(asm_ref(opts_pc+2), &specials);
 		opts_pc+=3;
 	}
-	c_register_var2(cl_car(rest), &specials);
+	c_register_var2(rest, &specials);
 	while (nkeys--) {
 		c_default(keys_pc+2);
 		c_register_var2(asm_ref(keys_pc+1), &specials);

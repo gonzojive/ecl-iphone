@@ -447,6 +447,7 @@ extern cl_object cl_sxhash(cl_object key);
 extern cl_object cl_maphash(cl_object fun, cl_object ht);
 extern cl_object cl_hash_table_rehash_size(cl_object ht);
 extern cl_object cl_hash_table_rehash_threshold(cl_object ht);
+extern cl_object si_hash_table_iterator(cl_object ht);
 extern cl_object cl_make_hash_table _ARGS((int narg, ...));
 extern cl_object cl_gethash _ARGS((int narg, cl_object key, cl_object ht, ...));
 

@@ -4,6 +4,12 @@
 (load "bare.lsp")
 
 ;;;
+;;; Dump documentation
+;;;
+(load "@srcdir@/doc/help.lsp")
+(si::dump-documentation "@abs_builddir@/help.doc")
+
+;;;
 ;;; Trick to make names shorter
 ;;;
 (rename-package "CL" "CL" '("COMMON-LISP" "LISP"))

@@ -284,7 +284,11 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 	}
 	data++;
 
-	/* 4) ALLOW-OTHER-KEYS: { T | NIL } */
+	/* 4) ALLOW-OTHER-KEYS: { T | NIL | 0} */
+	if (data[0] == MAKE_FIXNUM(0)) {
+	  data++; other_keys = 0;
+	  goto NO_KEYS;
+	}
 	other_keys = !Null(next_code(data));
 
 	/* 5) KEYWORDS: N key1 var1 value1 flag1 ... keyN varN valueN flagN */
@@ -335,10 +339,11 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 	      lambda_bind_var(data[3],(spp[i] != OBJNULL)? Ct : Cnil,specials);
 	  }
 	}
+ NO_KEYS:
 	if (narg && !other_keys && check_remaining)
 	  FEprogram_error("LAMBDA: Too many arguments to function ~S.", 1,
 			  lambda_list->bytecodes.data[0]);
-
+	/* Skip documentation and declarations */
 	return &data[2];
 }
 

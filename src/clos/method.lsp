@@ -630,8 +630,6 @@
 		(push `(,(caar scan)
 			(slot-value ,temp ',(cadar scan))) res)))))
     `(let ((,temp ,instance-form))
-       ,@(and (symbolp instance-form)
-	      `((declare (variable-rebinding ,temp ,instance-form))))
        (symbol-macrolet ,accessors ,@body))))
 
 ;(with-slots (x (y2 y)) inst (setq x y2))
@@ -646,8 +644,6 @@
 		       ((null scan) (nreverse res))
 		       (push `(,(caar scan) (,(cadar scan) ,temp)) res))))
     `(let ((,temp ,instance-form))
-       ,@(and (symbolp instance-form)
-	      `((declare (variable-rebinding ,temp ,instance-form))))
        (symbol-macrolet ,accessors ,@body))))
 
 

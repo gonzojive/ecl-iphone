@@ -746,8 +746,9 @@ L:
 	@(return merge_pathnames(path, defaults, default_version))
 @)
 
-@(defun make_pathname (&key host device directory name
-			    type version defaults
+@(defun make_pathname (&key (host OBJNULL) (device OBJNULL) (directory OBJNULL)
+			    (name OBJNULL) (type OBJNULL) (version OBJNULL)
+		            defaults
 		       &aux x)
 @
 	if (Null(defaults)) {
@@ -759,8 +760,12 @@ L:
 			        Cnil, Cnil, Cnil, Cnil, Cnil);
 	} else
 		defaults = cl_pathname(defaults);
-	x = make_pathname(host, device, directory, name, type, version);
-	x = merge_pathnames(x, defaults, Cnil);
+	x = make_pathname(host != OBJNULL? host : defaults->pathname.host,
+			  device != OBJNULL? device : defaults->pathname.device,
+			  directory != OBJNULL? directory : defaults->pathname.directory,
+			  name != OBJNULL? name : defaults->pathname.name,
+			  type != OBJNULL? type : defaults->pathname.type,
+			  version != OBJNULL? version : defaults->pathname.version);
 	@(return x)
 @)
 

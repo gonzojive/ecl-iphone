@@ -236,18 +236,18 @@
     (dolist (subclass (nreverse inferiors))
       (let* ((subclass-superclasses
 	      (mapcar #'(lambda (x) (class-name x)) (class-superiors subclass)))
-	     (subclass-name (class-name subclass)))
+	     (subclass-name (class-name subclass))
+	     (slots (collect-slotds
+		     (compute-class-precedence-list
+		      subclass-name (mapcar #'find-class superclasses-names))
+		     (slot-value subclass 'DIRECT-SLOTS))))
 	(print subclass)
 	(pushnew
 	 (ensure-class (class-name (si:instance-class subclass))
 		       subclass-name
 		       subclass-superclasses
 		       (slot-value subclass 'DIRECT-SLOTS)
-		       (collect-slotds
-			(compute-class-precedence-list
-			 subclass-name
-			 (mapcar #'find-class superclasses-names))
-			(slot-value subclass 'DIRECT-SLOTS))
+		       slots
 		       (default-initargs-of subclass)
 		       (documentation-of subclass))
 	 (class-inferiors new-class))

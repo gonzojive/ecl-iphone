@@ -454,7 +454,7 @@ inspect commands, or type '?' to the inspector."
   (values))
 
 (defun print-doc (symbol &optional (called-from-apropos-doc-p nil)
-                         &aux (f nil) x (*notify-gbc* nil))
+                         &aux (f nil) x)
   (flet ((doc1 (doc ind)
            (setq f t)
            (format t

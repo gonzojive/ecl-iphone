@@ -69,7 +69,9 @@
 	  (setq entry
 		(multiple-value-bind (template predicate constructor)
 		    (compile-effective-method-template-entry form)
-		  (list template predicate (compile () constructor)
+		  (list template predicate
+			#+ecl(coerce constructor 'function)
+			#-ecl(compile () constructor)
 			'ON-THE-FLY 0)))
 	  (add-effective-method-template-entry entry))
 	(incf (fifth entry))

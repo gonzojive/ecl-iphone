@@ -12,16 +12,6 @@
 
 (in-package "COMPILER")
 
-(eval-when (compile eval)
-  (defmacro ck-spec (condition)
-    `(unless ,condition
-      (cmperr "The parameter specification ~s is illegal." spec)))
-
-  (defmacro ck-vl (condition)
-    `(unless ,condition
-      (cmperr "The lambda list ~s is illegal." vl)))
-  )
-
 ;;; During Pass1, a lambda-list
 ;;;
 ;;; (	{ var }*
@@ -35,15 +25,14 @@
 ;;; is transformed into
 ;;;
 ;;; (	( { var }* )				; required
-;;; 	( { (var initform svar) }* )		; optional
+;;; 	( { var initform svar }* )		; optional
 ;;; 	{ var | nil }				; rest
-;;; 	key-flag
-;;; 	( { ( kwd-vv-index var initform svar ) }* )	; key
 ;;; 	allow-other-keys-flag
+;;; 	( { kwd-vv-index var initform svar }* )	; key
 ;;; )
 ;;;
 ;;; where
-;;; 	svar:	(make-var :kind 'DUMMY)	; means svar is not supplied
+;;; 	svar:	NIL	; means svar is not supplied
 ;;;	        | var
 ;;;
 ;;; &aux parameters will be embedded into LET*.
@@ -59,15 +48,11 @@
 
 (defun c1lambda-expr (lambda-expr
                       &optional (block-name nil block-it)
-                      &aux (requireds nil) (optionals nil) (rest nil)
-                           (keywords nil) (key-flag nil)
-                           (allow-other-keys nil) (aux-vars nil)
-                           (aux-inits nil) doc spec body ss is ts
-                           other-decls vnames
+                      &aux doc body ss is ts
+                           other-decls
                            (*vars* *vars*)
-                           (info (make-info))
-                           (aux-info nil)
-                      )
+		           (old-vars *vars*)
+                           (info (make-info)))
   (cmpck (endp lambda-expr)
          "The lambda expression ~s is illegal." (cons 'LAMBDA lambda-expr))
 
@@ -78,203 +63,72 @@
 
   (c1add-globals ss)
 
-  (multiple-value-setq (requireds optionals rest
-				  key-flag keywords allow-other-keys
-				  aux-vars)
-    (parse-lambda-list (car lambda-expr)))
+  (multiple-value-bind (requireds optionals rest key-flag keywords
+			allow-other-keys aux-vars)
+      (si::process-lambda-list (car lambda-expr) 'function)
 
-  (do ((specs requireds (cdr specs)))
-      ((null specs))
-    (setq spec (car specs))
-    (let ((v (c1make-var spec ss is ts)))
-      (push spec vnames)
-      (push-vars v)
-      (setf (car specs) v)))
+    (do ((specs (setq requireds (cdr requireds)) (cdr specs)))
+	((endp specs))
+      (let* ((var (first specs)))
+	(push-vars (setf (first specs) (c1make-var var ss is ts)))))
+ 
+    (do ((specs (setq optionals (cdr optionals)) (cdddr specs)))
+	((endp specs))
+      (let* ((var (c1make-var (first specs) ss is ts))
+	     (init (second specs))
+	     (flag (third specs)))
+	(push-vars var)
+	(when flag
+	  (push-vars (setq flag (c1make-var flag ss is ts))))
+	(setq init (if init
+		       (and-form-type (var-type var) (c1expr* init info) init
+				      :safe "In (LAMBDA ~a...)" block-name)
+		       (default-init (var-type var))))
+	(setf (first specs) var
+	      (second specs) init
+	      (third specs) flag)))
 
-  (do ((specs optionals (cdr specs)))
-      ((null specs))
-    (setq spec (car specs))
-    (cond ((symbolp spec)
-	   (let ((v (c1make-var spec ss is ts)))
-	     (push spec vnames)
-	     (setf (car specs) (list v (default-init (var-type v)) nil))
-	     (push-vars v)))
-	  ((symbolp (cdr spec))
-	   (ck-spec (null (cdr spec)))
-	   (let ((v (c1make-var (car spec) ss is ts)))
-	     (push (car spec) vnames)
-	     (setf (car specs) (list v (default-init (var-type v)) nil))
-	     (push-vars v)))
-	  ((symbolp (cddr spec))
-	   (ck-spec (null (cddr spec)))
-	   (let ((init (c1expr* (second spec) info))
-		 (v (c1make-var (car spec) ss is ts)))
-	     (push (car spec) vnames)
-	     (setf (car specs)
-		   (list v (and-form-type (var-type v) init (second spec) :safe
-					  "In (LAMBDA ~a...)" block-name)
-			 nil))
-	     (push-vars v)))
-	  (t
-	   (ck-spec (null (cdddr spec)))
-	   (let ((init (c1expr* (second spec) info))
-		 (v (c1make-var (car spec) ss is ts))
-		 (sv (c1make-var (third spec) ss is ts))
-		 )
-	     (push (car spec) vnames)
-	     (push (third spec) vnames)
-	     (setf (car specs)
-		   (list v (and-form-type (var-type v) init (second spec) :safe
-					  "In (LAMBDA ~a...)" block-name)
-			 sv))
-	     (push-vars v)
-	     (push-vars sv)))))
+    (when rest
+      (push-vars (setq rest (c1make-var rest ss is ts))))
 
-  (when rest
-    (push rest vnames)
-    (setq rest (c1make-var rest ss is ts))
-    (push-vars rest))
+    (do ((specs (setq keywords (cdr keywords)) (cddddr specs)))
+	((endp specs))
+      (let* ((key (first specs))
+	     (var (c1make-var (second specs) ss is ts))
+	     (init (third specs))
+	     (flag (fourth specs)))
+	(push-vars var)
+	(when flag
+	  (push-vars (setq flag (c1make-var flag ss is ts))))
+	(setq init (if init
+		       (and-form-type (var-type var) (c1expr* init info) init
+				      :safe "In (LAMBDA ~a...)" block-name)
+		       (default-init (var-type var))))
+	(setf (second specs) var
+	      (third specs) init
+	      (fourth specs) flag)))
 
-  (do ((specs keywords (cdr specs)))
-      ((null specs))
-    (setq spec (car specs))
-    ;; spec is:
-    ;; 	( kwd-vv-index var [ initform [ svar ]])
-    (cond ((null (cddr spec))
-	   (ck-spec (null (cddr spec)))
-	   (let ((v (c1make-var (second spec) ss is ts)))
-	     (push (second spec) vnames)
-	     (setf (car specs)
-	      (list (car spec) v (default-init (var-type v))
-		    (make-var :kind 'DUMMY)))
-	     (push-vars v)))
-	  ((null (cdddr spec))
-	   (ck-spec (null (cdddr spec)))
-	   (let ((init (c1expr* (third spec) info))
-		 (v (c1make-var (second spec) ss is ts)))
-	     (push (second spec) vnames)
-	     (setf (car specs)
-		   (list (car spec) v
-			 (and-form-type (var-type v) init (third spec) :safe
-					"In (LAMBDA ~a...)" block-name)
-			 (make-var :kind 'DUMMY)))
-	     (push-vars v)))
-	  (t
-	   (ck-spec (null (cddddr spec)))
-	   (let ((init (c1expr* (third spec) info))
-		 (v (c1make-var (second spec) ss is ts))
-		 (sv (c1make-var (fourth spec) ss is ts)))
-	     (push (second spec) vnames)
-	     (push (fourth spec) vnames)
-	     (setf (car specs)
-		   (list (car spec) v
-			 (and-form-type (var-type v) init (third spec) :safe
-					"In (LAMBDA ~a...)" block-name)
-			 sv))
-	     (push-vars v)
-	     (push-vars sv)))))
+    (when aux-vars
+      (let ((let nil))
+	(do ((specs aux-vars (cddr specs)))
+	    ((endp specs))
+	  (let ((var (first specs))
+		(init (second specs)))
+	    (setq let (cons (if init (list var init) var) let))))
+	(setq body `((let* ,(nreverse let) (declare ,@other-decls) ,@body)))))
 
-  (when aux-vars
-    (setq body `((let* ,aux-vars ,(list* 'declare other-decls) ,@body))))
+    (let ((new-vars (ldiff *vars* old-vars)))
+      (setq body (c1decl-body other-decls body))
+      (add-info info (second body))
+      (dolist (var new-vars)
+	(check-vref var)))
 
-  (check-vdecl vnames ts is)
+    (list 'LAMBDA
+	  info
+	  (list requireds optionals rest key-flag keywords allow-other-keys)
+	  doc
+	  body)))
 
-  (setq body (c1decl-body other-decls body))
-
-  (add-info info (second body))
-
-  (dolist (var requireds) (check-vref var))
-  (dolist (opt optionals)
-            (check-vref (car opt))
-            (when (third opt) (check-vref (third opt))))
-  (when rest (check-vref rest))
-  (dolist (kwd keywords)
-            (check-vref (second kwd))
-            (when (fourth kwd) (check-vref (fourth kwd))))
-
-  (list 'LAMBDA
-        info
-        (list requireds optionals rest key-flag keywords allow-other-keys)
-        doc
-        body)
-  )
-
-(defun parse-lambda-list (vl &aux spec requireds optionals rest
-			     key-flag keywords allow-other-keys aux-vars)
-  (block parse
-   (tagbody
-    Lreq
-      (when (null vl) (return-from parse))
-      (ck-vl (consp vl))
-      (case (setq spec (pop vl))
-            (&optional (go Lopt))
-            (&rest (go Lrest))
-            (&key (go Lkey))
-            (&aux (go Laux)))
-      (push spec requireds)
-      (go Lreq)
-
-    Lopt
-      (when (null vl) (return-from parse))
-      (ck-vl (consp vl))
-      (case (setq spec (pop vl))
-            (&rest (go Lrest))
-            (&key (go Lkey))
-            (&aux (go Laux)))
-      (push spec optionals)
-      (go Lopt)
-
-    Lrest
-      (ck-vl (consp vl))
-      (setq rest (pop vl))
-      (when (null vl) (return-from parse))
-      (ck-vl (consp vl))
-      (case (setq spec (pop vl))
-            (&key (go Lkey))
-            (&aux (go Laux)))
-      (cmperr "Either &key or &aux is missing before ~s." spec)
-
-    Lkey
-      (setq key-flag t)
-      (when (null vl) (return-from parse))
-      (ck-vl (consp vl))
-      (case (setq spec (pop vl))
-            (&aux (go Laux))
-            (&allow-other-keys (setq allow-other-keys t)
-                               (when (null vl) (return-from parse))
-                               (ck-vl (consp vl))
-                               (case (setq spec (pop vl))
-                                     (&aux (go Laux)))
-                               (cmperr "&aux is missing before ~s." spec)))
-      ;; { var || ( { var || ( kwd var ) } [initform [ svar ]] ) }
-      (unless (consp spec) (setq spec (list spec)))
-      (cond ((consp (car spec))
-             (ck-spec (and (keywordp (caar spec))
-                           (consp (cdar spec))
-                           (null (cddar spec))))
-             (setq spec (cons (caar spec) (cons (cadar spec) (cdr spec)))))
-            (t
-             (ck-spec (symbolp (car spec)))
-             (setq spec (cons (intern (string (car spec)) 'KEYWORD)
-                              (cons (car spec) (cdr spec))))))
-      (push spec keywords)
-      (go Lkey)
-
-    Laux
-      (when (null vl) (return-from parse))
-      (ck-vl (consp vl))
-      (push (pop vl) aux-vars)
-      (go Laux)
-      )
-   )
-  (values (nreverse requireds)
-	  (nreverse optionals)
-	  rest
-	  key-flag
-	  (nreverse keywords)
-	  allow-other-keys
-	  (nreverse aux-vars))
-  )
 
 (defun c2lambda-expr (lambda-list body cfun fname
 				  &optional closure-p call-lambda)
@@ -289,7 +143,7 @@
               (null (third lambda-list))	;;; no rest parameter, and
               (null (fourth lambda-list))	;;; no keywords.
               (cons fname (car lambda-list)))))
-    (if (fourth lambda-list)			;;; key-flag
+    (if (fourth lambda-list)
       (c2lambda-expr-with-key lambda-list body closure-p call-lambda cfun)
       (c2lambda-expr-without-key lambda-list body closure-p call-lambda)))
   )
@@ -316,19 +170,19 @@
                                   (optionals (second lambda-list))
                                   (rest (third lambda-list)) rest-loc
                                   (nreq (length requireds))
+				  (nopt (/ (length optionals) 3))
                                   (labels nil)
                                   (*unwind-exit* *unwind-exit*)
                                   (*env* *env*)
                                   (block-p nil))
-  (declare (fixnum nreq))
+  (declare (fixnum nreq nopt))
 
   ;; kind is either:
   ;; 1. CALL-LAMBDA, for a lambda expression
   ;; 2. LOCAL-ENTRY, for the local entry of a proclaimed function
   ;; 3. NIL, otherwise
 
-  (if
-   (eq 'LOCAL-ENTRY kind)
+  (if (eq 'LOCAL-ENTRY kind)
 
    ;; for local entry functions arguments are processed by t3defun
    (do ((reqs requireds (cdr reqs))
@@ -349,6 +203,18 @@
    (let* ((req0 (if (eq 'CALL-LAMBDA kind) (- *lcl* nreq) *lcl*))
 	  (lcl (+ req0 nreq)))
      (declare (fixnum lcl))
+
+     ;; check arguments
+     (when (or *safe-compile* *compiler-check-args*)
+       (cond ((or rest optionals)
+	      (when requireds
+		(wt-nl "if(narg<" nreq ") FEwrong_num_arguments_anonym();"))
+	      (unless rest
+		(wt-nl "if(narg>" (+ nreq nopt)
+		       ") FEwrong_num_arguments_anonym();")))
+	     (t (wt-nl "check_arg(" nreq ");"))))
+
+     ;; declare variables
      (labels ((wt-decl (var)
 		(wt-nl)
 		(unless block-p
@@ -373,13 +239,14 @@
 	   (wt-nl "{") (setq block-p t))
 	 ;; count optionals
 	 (wt "int i=" (if (eq 'CALL-LAMBDA kind) 0 nreq) ";"))
-       (dolist (opt optionals)
-	 (do-decl (car opt))
+       (do ((opt optionals (cdddr opt)))
+	   ((endp opt))
+	 (do-decl (first opt))
 	 (when (third opt) (do-decl (third opt))))
        (when rest (setq rest-loc `(LCL ,(wt-decl rest)))))
 
      (unless (eq 'CALL-LAMBDA kind)
-       (when (or optionals rest)	; (not (null requireds))
+       (when (or optionals rest)
 	 (unless block-p
 	   (wt-nl "{") (setq block-p t))
 	 (wt-nl "cl_va_list args; cl_va_start(args,"
@@ -387,17 +254,6 @@
 		      (closure-p "env0")
 		      (t "narg"))
 		(format nil ",narg,~d);" nreq))))
-
-     ;; check arguments
-     (when (or *safe-compile* *compiler-check-args*)
-       (cond ((or (third lambda-list) ; rest=NIL if not used
-		  optionals)
-	      (when requireds
-		(wt-nl "if(narg<" nreq ") FEwrong_num_arguments_anonym();"))
-	      (unless (third lambda-list)
-		(wt-nl "if(narg>" (+ nreq (length optionals))
-		       ") FEwrong_num_arguments_anonym();")))
-	     (t (wt-nl "check_arg(" nreq ");"))))
 
      ;; Bind required parameters.
      (do ((reqs requireds (cdr reqs))
@@ -417,10 +273,11 @@
     ;; to bds_unwind1, which is wrong. A possible fix is to save *unwind-exit*
     (let ((*unwind-exit* *unwind-exit*)
 	  (va-arg-loc 'VA-ARG))
-      (dolist (opt optionals)
+      (do ((opt optionals (cdddr opt)))
+	  ((endp opt))
 	(push (next-label) labels)
 	(wt-nl "if (i==narg) ") (wt-go (car labels))
-	(bind va-arg-loc (car opt))
+	(bind va-arg-loc (first opt))
 	(when (third opt) (bind t (third opt)))
 	(wt-nl "i++;")
 	))
@@ -428,7 +285,8 @@
       (wt-nl) (wt-go label)
       (setq labels (nreverse labels))
       ;;; Bind unspecified optional parameters.
-      (dolist (opt optionals)
+      (do ((opt optionals (cdddr opt)))
+	  ((endp opt))
         (wt-label (car labels))
         (pop labels)
 	(bind-init (first opt) (second opt))
@@ -457,11 +315,11 @@
 		 &aux (requireds (first lambda-list))
 		 (optionals (second lambda-list))
 		 (rest (third lambda-list)) rest-loc
-		 (key-flag (fourth lambda-list))
 		 (keywords (fifth lambda-list))
 		 (allow-other-keys (sixth lambda-list))
 		 (nreq (length requireds))
-		 (nkey (length keywords))
+		 (nopt (/ (length optionals) 3))
+		 (nkey (/ (length keywords) 4))
 		 (labels nil)
 		 (*unwind-exit* *unwind-exit*)
 		 (*env* *env*)
@@ -500,11 +358,13 @@
           (wt-nl "{") (setq block-p t))
 	;; count optionals
         (wt "int i=" (if call-lambda 0 nreq) ";"))
-      (dolist (opt optionals)
-        (do-decl (car opt))
+      (do ((opt optionals (cdddr opt)))
+	  ((endp opt))
+        (do-decl (first opt))
         (when (third opt) (do-decl (third opt))))
       (when rest (setq rest-loc `(LCL ,(wt-decl rest))))
-      (dolist (key keywords)
+      (do ((key keywords (cddddr key)))
+	  ((endp key))
         (do-decl (second key))
         (when (fourth key) (do-decl (fourth key)))))
 
@@ -539,10 +399,11 @@
     ;; to bds_unwind1, which is wrong. A possible fix is to save *unwind-exit*
     (let ((*unwind-exit* *unwind-exit*)
 	  (va-arg-loc 'VA-ARG))
-      (dolist (opt optionals)
+      (do ((opt optionals (cdddr opt)))
+	  ((endp opt))
 	(push (next-label) labels)
 	(wt-nl "if (i==narg) ") (wt-go (car labels))
-	(bind va-arg-loc (car opt))
+	(bind va-arg-loc (first opt))
 	(when (third opt) (bind t (third opt)))
 	(wt-nl "i++;")
 	))
@@ -550,8 +411,9 @@
       (wt-nl) (wt-go label)
       (setq labels (nreverse labels))
       ;;; Bind unspecified optional parameters.
-      (dolist (opt optionals)
-        (wt-label (car labels))
+      (do ((opt optionals (cdddr opt)))
+	  ((endp opt))
+        (wt-label (first labels))
         (pop labels)
 	(bind-init (first opt) (second opt))
         (when (third opt) (bind nil (third opt))))
@@ -562,41 +424,43 @@
       (wt-nl "narg -= i;")
       (wt-nl "narg -=" nreq ";"))
 
-  (wt-h "#define L" cfun "keys (&"
-	(add-keywords (mapcar #'car keywords))
-	")")
-
   (wt-nl "{ cl_object keyvars[" (* 2 nkey) "];")
-  (wt-nl "cl_parse_key(args," (length keywords) ",L" cfun "keys,keyvars")
+  (wt-nl "cl_parse_key(args," nkey ",L" cfun "keys,keyvars")
   (if rest (wt ",&" rest-loc) (wt ",NULL"))
   (wt (if allow-other-keys ",TRUE);" ",FALSE);"))
   (when rest (bind rest-loc rest))
 
   ;;; Bind keywords.
-  (let ((KEYVARS[i] `(KEYVARS 0))	; create, since we clobber it
-	(i 0))
+  (do ((kwd keywords (cddddr kwd))
+       (all-kwd nil)
+       (KEYVARS[i] `(KEYVARS 0))
+       (i 0 (1+ i)))
+      ((endp kwd)
+       (wt-h "#define L" cfun "keys (&" (add-keywords (nreverse all-kwd)) ")"))
     (declare (fixnum i))
-    (dolist (kwd keywords)
-      (cond ((and (eq (car (third kwd)) 'LOCATION)
-		  (null (third (third kwd))))
+    (push (first kwd) all-kwd)
+    (let ((key (first kwd))
+	  (var (second kwd))
+	  (init (third kwd))
+	  (flag (fourth kwd)))
+      (cond ((and (eq (car init) 'LOCATION)
+		  (null (third init)))
 	     ;; no initform
 	     ;; Cnil has been set in keyvars if keyword parameter is not supplied.
 	     (setf (second KEYVARS[i]) i)
-	     (bind KEYVARS[i] (second kwd)))
+	     (bind KEYVARS[i] var))
 	    (t
 	     ;; with initform
 	     (setf (second KEYVARS[i]) (+ nkey i))
 	     (wt-nl "if(") (wt-loc KEYVARS[i]) (wt "==Cnil){")
-	     (bind-init (second kwd) (third kwd))
+	     (bind-init var init)
 	     (wt-nl "}else{")
 	     (setf (second KEYVARS[i]) i)
-	     (bind KEYVARS[i] (second kwd))
+	     (bind KEYVARS[i] var)
 	     (wt "}")))
-      (unless (eq (var-kind (fourth kwd)) 'DUMMY)
+      (when flag
 	(setf (second KEYVARS[i]) (+ nkey i))
-	(bind KEYVARS[i] (fourth kwd)))
-      (incf i))
-    )
+	(bind KEYVARS[i] flag))))
   (wt-nl "}")
 
   ;;; Now the parameters are ready, after all!

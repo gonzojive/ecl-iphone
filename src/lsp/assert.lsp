@@ -88,7 +88,7 @@ signals an error."
       (case ,key ,@clauses
 	    (t (si::ecase-error ',keyform ,key ,@(case-values clauses)))))))
 
-(defun ccase-error (keyform value &rest values)
+(defun ccase-error (keyform key &rest values)
   (let ((*print-level* 4)
 	(*print-length* 4)
 	(value))

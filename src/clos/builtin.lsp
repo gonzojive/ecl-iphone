@@ -123,7 +123,7 @@
 			       superclasses-names
 			       direct-slots all-slots
 			       default-initargs documentation)
-  (declare (ignore class-slots default-initargs documentation))
+  (declare (ignore default-initargs direct-slots))
   (dolist (slot all-slots)
     (unless (eq :INSTANCE (slotd-allocation slot))
       (error "The structure class ~S can't have shared slots" name)))
