@@ -41,7 +41,7 @@ LIBRARIES = @LIBRARIES@
 LSP_LIBRARIES = @LSP_LIBRARIES@
 TARGETS = @TARGETS@
 
-all:	$(TARGETS) doc
+all:	(TARGETS) doc
 .PHONY:	all
 
 %Makefile: $(srcdir)/%Makefile.in config.status
@@ -73,24 +73,33 @@ libgmp.a:
 BUILD-STAMP: config.status
 	(echo "#"; uname -a) > $@
 	head -8 config.status | tail -6 >> $@
+directory:
+	test -d $(DIRECTORY) || (mkdir $(DIRECTORY); chmod 755 $(DIRECTORY))
 install: BUILD-STAMP
 	for i in $(TARGETS); do	\
 	  $(INSTALL_PROGRAM) $$i $(PREFIX)$(bindir); \
 	  strip $(PREFIX)$(bindir)/$$i; \
 	done
 	$(INSTALL_DATA) $(srcdir)/etc/ecl.1 $(PREFIX)$(mandir)
-	test -d $(PREFIX)$(libdir) || \
-	  (mkdir $(PREFIX)$(libdir); chmod 755 $(PREFIX)$(libdir))
-	test -d $(PREFIX)$(libdir)/h || \
-	  (mkdir $(PREFIX)$(libdir)/h; chmod 755 $(PREFIX)$(libdir)/h)
+	$(MAKE) directory DIRECTORY=$(PREFIX)$(libdir)
+	$(MAKE) directory DIRECTORY=$(PREFIX)$(libdir)/h
 	$(INSTALL_DATA) BUILD-STAMP $(PREFIX)$(libdir)
 	$(INSTALL_DATA) h/config.h $(PREFIX)$(libdir)/h
 	for i in $(LSP_LIBRARIES) $(LIBRARIES); do \
 	  $(INSTALL_DATA) $$i $(PREFIX)$(libdir); \
 	done
 	$(INSTALL_DATA) help.doc $(PREFIX)$(libdir)
+	if (echo $(SUBDIR) | grep gc); then $(MAKE) installgc; fi
 	cd c; $(MAKE) PREFIX="$(PREFIX)" install
 	cd doc; $(MAKE) PREFIX="$(PREFIX)" install
+installgc:
+	$(MAKE) directory DIRECTORY=$(PREFIX)$(libdir)/h/private
+	for i in $(srcdir)/gc/include/*.h; do \
+	  $(INSTALL_DATA) $$i $(PREFIX)$(libdir)/h/; \
+	done
+	for i in $(srcdir)/gc/include/private/*.h; do \
+	  $(INSTALL_DATA) $$i $(PREFIX)$(libdir)/h/private/; \
+	done
 
 uninstall:
 	rm -rf $(mandir)/ecl.1
