@@ -108,12 +108,14 @@ const struct symbol_info all_symbols[] = {
 {&clVtrace_output, "*TRACE-OUTPUT*", CL_SPECIAL},
 {&siVignore_eof_on_terminal_io, "*IGNORE-EOF-ON-TERMINAL-IO*", SI_SPECIAL},
 #ifdef ECL_CLOS_STREAMS
+{&clSstream_input_p, "STREAM-INPUT-P", CL_ORDINARY},
 /*{&clSstream_read_line, "STREAM-READ-LINE", CL_ORDINARY},*/
 {&clSstream_read_char, "STREAM-READ-CHAR", CL_ORDINARY},
 {&clSstream_unread_char, "STREAM-UNREAD-CHAR", CL_ORDINARY},
 /*{&clSstream_peek_char, "STREAM-PEEK-CHAR", CL_ORDINARY},*/
 {&clSstream_listen, "STREAM-LISTEN", CL_ORDINARY},
 {&clSstream_clear_input, "STREAM-CLEAR-INPUT", CL_ORDINARY},
+{&clSstream_output_p, "STREAM-OUTPUT-P", CL_ORDINARY},
 {&clSstream_write_char, "STREAM-WRITE-CHAR", CL_ORDINARY},
 /*{&clSstream_write_string, "STREAM-WRITE-STRING", CL_ORDINARY},*/
 {&clSstream_clear_output, "STREAM-CLEAR-OUTPUT", CL_ORDINARY},

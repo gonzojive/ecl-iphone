@@ -236,17 +236,21 @@ extern cl_object Kprint;
 extern cl_object Kif_does_not_exist;
 extern cl_object Kset_default_pathname;
 extern cl_object siVignore_eof_on_terminal_io;
+#ifdef ECL_CLOS_STREAMS
+extern cl_object clSstream_input_p;
 /*extern cl_object clSstream_read_line;*/
 extern cl_object clSstream_read_char;
 extern cl_object clSstream_unread_char;
 /*extern cl_object clSstream_peek_char;*/
 extern cl_object clSstream_listen;
 extern cl_object clSstream_clear_input;
+extern cl_object clSstream_output_p;
 extern cl_object clSstream_write_char;
 /*extern cl_object clSstream_write_string;*/
 extern cl_object clSstream_clear_output;
 extern cl_object clSstream_force_output;
 extern cl_object clSstream_close;
+#endif /* ECL_CLOS_STREAMS */
 extern cl_object clLmake_synonym_stream _ARGS((int narg, cl_object sym));
 extern cl_object clLmake_broadcast_stream _ARGS((int narg, ...));
 extern cl_object clLmake_concatenated_stream _ARGS((int narg, ...));

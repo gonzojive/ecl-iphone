@@ -58,12 +58,14 @@ cl_object @':if_does_not_exist';
 cl_object @':set_default_pathname';
 
 #ifdef ECL_CLOS_STREAMS
+cl_object @'stream-input-p';
 /*cl_object @'stream-read-line';*/
 cl_object @'stream-read-char';
 cl_object @'stream-unread-char';
 /*cl_object @'stream-peek-char';*/
 cl_object @'stream-listen';
 cl_object @'stream-clear-input';
+cl_object @'stream-output-p';
 cl_object @'stream-write-char';
 /*cl_object @'stream-write-string';*/
 cl_object @'stream-clear-output';
@@ -111,7 +113,7 @@ input_stream_p(cl_object strm)
 {
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
-		return (TRUE);
+		return !Null(funcall(2, @'stream-input-p'));
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
@@ -159,7 +161,7 @@ output_stream_p(cl_object strm)
 {
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
-		return (TRUE);
+		return !Null(funcall(2, @'stream-output-p'));
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
