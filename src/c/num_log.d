@@ -439,12 +439,24 @@ ecl_ash(cl_object x, cl_fixnum w)
 		return(x);
 	y = big_register0_get();
 	if (w < 0) {
+		cl_index bits = -w;
 		if (FIXNUMP(x)) {
+			/* The result of shifting a number further than the number
+			 * of digits it has is unpredictable in C. For instance, GCC
+			 * on intel masks out all bits of "bits" beyond the 5 and
+			 * it may happen that a shift of 37 becomes a shift of 5.
+			 * Furthermore, in general, shifting negative numbers leads
+			 * to implementation-specific results :-/
+			 */
 			cl_fixnum y = fix(x);
-			y >>= -w;
+			if (bits >= FIXNUM_BITS) {
+				y = (y < 0)? -1 : 0;
+			} else {
+				y >>= bits;
+			}
 			return MAKE_FIXNUM(y);
 		}
-		mpz_div_2exp(y->big.big_num, x->big.big_num, -w);
+		mpz_div_2exp(y->big.big_num, x->big.big_num, bits);
 	} else {
 		if (FIXNUMP(x)) {
 			mpz_set_si(y->big.big_num, fix(x));
