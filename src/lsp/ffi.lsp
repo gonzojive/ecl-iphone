@@ -26,6 +26,9 @@
 
 (in-package "FFI")
 
+#-ecl-min
+(clines "#include <string.h>")
+
 ;;;----------------------------------------------------------------------
 ;;; FOREIGN TYPES
 ;;;
@@ -313,7 +316,8 @@
        "{
 	cl_index length = #1;
 	cl_object output = cl_alloc_simple_string(length);
-	@(return) = memcpy(output->string.self, (#0)->foreign.data, length);
+	memcpy(output->string.self, (#0)->foreign.data, length);
+	@(return) = output;
 	}"
        :one-liner nil
        :side-effects t))
