@@ -20,6 +20,8 @@ ECL 0.9f
    reference the variable that it was going to initialize, as in
 	(LAMBDA (&OPTIONAL (FOO (1+ FOO))) ...)
 
+ - ext:c-uint-max and ext:c-ulong-max did not have the right bignum value.
+
 * Visible changes:
 
  - Multithreaded ECL now in Windows, either with Microsoft VC++

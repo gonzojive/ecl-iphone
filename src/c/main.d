@@ -290,8 +290,8 @@ cl_boot(int argc, char **argv)
 	ECL_SET(@'si::c-int-min', make_integer(INT_MIN));
 	ECL_SET(@'si::c-long-max', make_integer(LONG_MAX));
 	ECL_SET(@'si::c-long-min', make_integer(LONG_MIN));
-	ECL_SET(@'si::c-uint-max', make_integer(UINT_MAX));
-	ECL_SET(@'si::c-ulong-max', make_integer(ULONG_MAX));
+	ECL_SET(@'si::c-uint-max', make_unsigned_integer(UINT_MAX));
+	ECL_SET(@'si::c-ulong-max', make_unsigned_integer(ULONG_MAX));
 
 	init_number();
 	init_unixtime();
