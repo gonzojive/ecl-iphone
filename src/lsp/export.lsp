@@ -278,6 +278,7 @@
 	  with-open-file
 	  with-open-stream
 	  with-output-to-string
+	  with-standard-io-syntax
 	  write-to-string
 	  y-or-n-p
 	  yes-or-no-p
