@@ -267,7 +267,7 @@ error
 	'(last butlast nbutlast))
 ((nil (1) (1 2) (1 2 3) (2 3 4) (3 4 5) error (1 . 2) (1 2 . 3) (1 2 3 . 4) (2 3 4 . 5))
  (nil nil nil nil (1) (1 2) error nil nil nil (1))
- (nil nil nil nil (1) (1 2) error nil nil nil (1))))
+ (nil nil nil nil (1) (1 2) error nil nil nil (1)))
 
 (let ((a (list 1 2 3)))
   (rplacd (last a) a)
