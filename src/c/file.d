@@ -1795,7 +1795,8 @@ flisten(FILE *fp)
 	return (c > 0)? ECL_LISTEN_AVAILABLE : ECL_LISTEN_NO_CHAR;
 	}
 #endif /* FIONREAD */
-#else
+#endif
+#if 0
 	if (isatty(fileno(fp))) {
 		/* console input */
 		HANDLE hnd = _get_osfhandle(_fileno(fp));
