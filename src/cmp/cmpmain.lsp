@@ -165,6 +165,8 @@ main(int argc, char **argv)
 		  #\x)
 		 ((eq c #\?)
 		  #\a)
+		 ((digit-char-p c)
+		  c)
 		 (t
 		  #\p))))
     (setq s (map 'string #'translate-char (string s)))
