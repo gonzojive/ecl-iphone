@@ -32,9 +32,9 @@ coprocessor).")
 
 (defvar *cc-flags* "-g -I.")
 (defvar *cc-optimize* "-O")		; C compiler otimization flag
-(defvar *cc-format* "\"~A\" ~A ~:[~*~;~A~] \"-I~A/h\" -w -c \"~A\" -o \"~A\""))
+(defvar *cc-format* "~A ~A ~:[~*~;~A~] \"-I~A/h\" -w -c \"~A\" -o \"~A\""))
 (defvar *ld-flags* "")
-(defvar *ld-format* "~S -o ~S -L~S ~{~S ~} ~@?")
+(defvar *ld-format* "~A -o ~S -L~S ~{~S ~} ~@?")
 #+dlopen
 (defvar *ld-shared-flags* "")
 #+dlopen
@@ -284,8 +284,8 @@ cl_object Cblock;
        (print o-name)
        (compiler-cc c-name o-name)
        (apply #'bundle-cc output-name o-name ld-flags)))
-    (delete-file c-name)
-    (delete-file o-name)
+    ;(delete-file c-name)
+    ;(delete-file o-name)
     output-name))
 
 (defun build-fasl (&rest args)
