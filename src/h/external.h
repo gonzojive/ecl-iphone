@@ -1645,12 +1645,14 @@ extern cl_object cl_pprint_dispatch _ARGS((cl_narg narg, cl_object V1, ...));
 extern cl_object cl_set_pprint_dispatch _ARGS((cl_narg narg, cl_object V1, cl_object V2, ...));
 
 #ifdef CLOS
-/* defclass.lsp */
-extern cl_object clos_ensure_class _ARGS((cl_narg narg, cl_object V1, ...));
 
 /* combin.lsp */
 extern cl_object cl_method_combination_error _ARGS((cl_narg narg, cl_object format, ...));
 extern cl_object cl_invalid_method_error _ARGS((cl_narg narg, cl_object method, cl_object format, ...));
+
+#if 0
+/* defclass.lsp */
+extern cl_object clos_ensure_class _ARGS((cl_narg narg, cl_object V1, ...));
 
 /* kernel.lsp */
 extern cl_object clos_class_id _ARGS((cl_narg narg, cl_object V1, ...));
@@ -1676,6 +1678,7 @@ extern cl_object clos_install_method _ARGS((cl_narg narg, cl_object V1, cl_objec
 
 /* standard.lsp */
 extern cl_object clos_standard_instance_set _ARGS((cl_narg narg, cl_object V1, cl_object V2, cl_object V3, ...));
+#endif
 #endif
 
 #ifdef __cplusplus

@@ -97,6 +97,8 @@
   (wt-h "#ifdef __cplusplus")
   (wt-h "extern \"C\" {")
   (wt-h "#endif")
+  (when si::*compiler-constants*
+    (wt-h "#include <string.h>"))
   ;;; Initialization function.
   (let* ((*lcl* 0) (*lex* 0) (*max-lex* 0) (*max-env* 0) (*max-temp* 0)
 	 (*reservation-cmacro* (next-cmacro))

@@ -194,7 +194,9 @@
      ;; to the runtime.
      ((and (setf fd (get-sysprop fname 'Lfun))
 	   (multiple-value-setq (minarg maxarg) (get-proclaimed-narg fname)))
-      (call-exported-function fname narg args fd minarg maxarg nil))
+      (call-exported-function fname narg args fd minarg maxarg
+			      #-ecl-min nil
+			      #+ecl-min (member fname *in-all-symbols-functions*)))
 
      ((multiple-value-setq (found fd minarg maxarg) (si::mangle-name fname t))
       (call-exported-function fname narg args fd minarg maxarg t))
