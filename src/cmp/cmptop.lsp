@@ -110,7 +110,7 @@
     (wt-nl1 "#ifdef __cplusplus")
     (wt-nl1 "extern \"C\"")
     (wt-nl1 "#endif")
-    (wt-nl1 "void init_" (init-function-name name) "(cl_object flag)")
+    (wt-nl1 "void " (init-function-name name) "(cl_object flag)")
     (wt-nl1 "{ VT" *reservation-cmacro* " CLSR" *reservation-cmacro*)
     (wt-nl "cl_object value0;")
     (when shared-data

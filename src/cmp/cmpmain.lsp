@@ -132,7 +132,7 @@ coprocessor).")
 #define ECL_CPP_TAG
 #endif
 
-~{	extern ECL_CPP_TAG void init_~A(cl_object);~%~}
+~{	extern ECL_CPP_TAG void ~A(cl_object);~%~}
 
 ")
 
@@ -140,7 +140,7 @@ coprocessor).")
 #ifdef __cplusplus
 extern \"C\"
 #endif
-void init_~A(cl_object cblock)
+void ~A(cl_object cblock)
 {
 	static cl_object Cblock;
 	cl_object subblock;
@@ -158,8 +158,8 @@ void init_~A(cl_object cblock)
 	VV = Cblock->cblock.data;
 #endif
 	~A
-~:[~{	subblock = read_VV(OBJNULL, init_~A); subblock->cblock.next = Cblock;~%~}
-~;~{	init_~A(Cblock);~%~}~]
+~:[~{	subblock = read_VV(OBJNULL, ~A); subblock->cblock.next = Cblock;~%~}
+~;~{	~A(Cblock);~%~}~]
 
 	~A
 }")
@@ -170,7 +170,7 @@ main(int argc, char **argv)
 {
 	~A
 	cl_boot(argc, argv);
-	read_VV(OBJNULL, init_~A);
+	read_VV(OBJNULL, ~A);
 	~A
 }")
 
@@ -191,11 +191,13 @@ main(int argc, char **argv)
 		 (t
 		  #\p))))
     (setq s (map 'string #'translate-char (string s)))
-    (if si::*init-function-prefix*
-	(concatenate 'string si::*init-function-prefix* "_" s)
-	s)))
+    (concatenate 'string "init_"
+		 (if si::*init-function-prefix*
+		     (concatenate 'string si::*init-function-prefix* "_" s)
+		   s))))
 
 (defun builder (target output-name &key lisp-files ld-flags shared-data-file
+		(init-name nil)
 		(prologue-code "")
 		(epilogue-code (if (eq target :program) "
 	funcall(1,_intern(\"TOP-LEVEL\",cl_core.system_package));
@@ -205,7 +207,6 @@ main(int argc, char **argv)
 		  (compile-file-pathname output-name :type :c)))
 	 (o-name (si::coerce-to-filename
 		  (compile-file-pathname output-name :type :object)))
-	 (init-name (string-upcase (pathname-name c-name)))
 	 submodules
 	 c-file)
     (dolist (item (reverse lisp-files))
@@ -242,6 +243,8 @@ cl_object Cblock;
       (:program
        (when (or (symbolp output-name) (stringp output-name))
 	 (setf output-name (compile-file-pathname output-name :type :program)))
+       (unless init-name
+	 (setf init-name (init-function-name (pathname-name output-name) nil)))
        (format c-file +lisp-program-init+ init-name "" shared-data-file
 	       submodules "")
        (format c-file +lisp-program-main+ prologue-code init-name epilogue-code)
@@ -249,10 +252,12 @@ cl_object Cblock;
        (compiler-cc c-name o-name)
        (apply #'linker-cc output-name (namestring o-name) ld-flags))
       ((:library :static-library :lib)
-       (if (or (symbolp output-name) (stringp output-name))
-	   (setf output-name (compile-file-pathname output-name :type :lib))
-	   ;; Remove the leading "lib"
-	   (setf init-name (subseq init-name #.(length +static-library-prefix+))))
+       (when (or (symbolp output-name) (stringp output-name))
+	 (setf output-name (compile-file-pathname output-name :type :lib)))
+       (unless init-name
+	 ;; Remove the leading "lib"
+	 (setf init-name (subseq (pathname-name output-name) #.(length +static-library-prefix+)))
+	 (setf init-name (init-function-name init-name nil)))
        (format c-file +lisp-program-init+ init-name prologue-code
 	       shared-data-file submodules epilogue-code)
        (close c-file)
@@ -274,10 +279,13 @@ cl_object Cblock;
        )
       #+dlopen
       ((:shared-library :dll)
-       (if (or (symbolp output-name) (stringp output-name))
-	   (setf output-name (compile-file-pathname output-name :type :dll))
-	   ;; Remove the leading "lib"
-	   (setf init-name (subseq init-name #.(length +static-library-prefix+))))
+       (when (or (symbolp output-name) (stringp output-name))
+	 (setf output-name (compile-file-pathname output-name :type :dll)))
+       (unless init-name
+	 ;; Remove the leading "lib"
+	 (setf init-name (subseq (pathname-name output-name)
+				 #.(length +static-library-prefix+)))
+	 (setf init-name (init-function-name init-name nil)))
        (format c-file +lisp-program-init+ init-name prologue-code
 	       shared-data-file submodules epilogue-code)
        (close c-file)
@@ -287,7 +295,9 @@ cl_object Cblock;
       (:fasl
        (when (or (symbolp output-name) (stringp output-name))
 	 (setf output-name (compile-file-pathname output-name :type :fasl)))
-       (format c-file +lisp-program-init+ "CODE" prologue-code
+       (unless init-name
+	 (setf init-name (init-function-name "CODE" nil)))
+       (format c-file +lisp-program-init+ init-name prologue-code
 	       shared-data-file submodules epilogue-code)
        (close c-file)
        (print o-name)
