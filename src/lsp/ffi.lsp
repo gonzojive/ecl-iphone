@@ -24,6 +24,10 @@
 	   "NULL-POINTER-P" "+NULL-CSTRING-POINTER+" "WITH-FOREIGN-OBJECTS"
 	   "MAKE-POINTER" "CHAR-ARRAY-TO-POINTER" "CONVERT-TO-FOREIGN-STRING"
 	   "CONVERT-FROM-FOREIGN-STRING" "WITH-FOREIGN-OBJECT"
+	   "FIND-FOREIGN-LIBRARY" "LOAD-FOREIGN-LIBRARY" "WITH-FOREIGN-STRING"
+	   "WITH-FOREIGN-STRINGS" "ENSURE-CHAR-STORABLE" "DEF-TYPE"
+	   "WITH-CSTRING" "CONVERT-TO-CSTRING" "CONVERT-FROM-CSTRING" "FREE-CSTRING"
+	   "WITH-CAST-POINTER" "WITH-CSTRINGS"
 	   ))
 
 (in-package "FFI")
@@ -65,6 +69,10 @@
 (defmacro def-foreign-type (name definition)
   `(eval-when (compile load eval)
      (setf (gethash ',name ffi::*ffi-types*) ',definition)))
+
+(defmacro def-type (name definition)
+  (declare (ignore definition))
+  `(deftype ,name () t))
 
 (defun %convert-to-ffi-type (type &optional context)
   (if (atom type)
@@ -251,7 +259,7 @@
     (unless (or (eq length '*)
 		(> length position -1))
       (error "Out of bounds when accessing array ~A." array))
-    (%foreign-data-ref array ndx element-type element-size)))
+    (%foreign-data-ref (si::foreign-data-recast array (+ ndx element-size) array-type) ndx element-type element-size)))
 
 (defun (setf deref-array) (value array array-type position)
   (setf array-type (%convert-to-ffi-type array-type))
@@ -262,7 +270,7 @@
     (unless (or (eq length '*)
 		(> length position -1))
       (error "Out of bounds when accessing array ~A." array))
-    (%foreign-data-set array ndx element-type value)))
+    (%foreign-data-set (si::foreign-data-recast array (+ ndx element-size) array-type) ndx element-type value)))
 
 (defun %foreign-data-set (obj ndx type value)
   (cond ((foreign-elt-type-p type)
@@ -270,7 +278,7 @@
 	((atom type)
 	 (error "Unknown foreign primitive type: ~A" type))
 	((eq (first type) '*)
-	 (si::foreign-data-set-elt obj ndx :object value))
+	 (si::foreign-data-set-elt obj ndx :pointer-void value))
 	(t
 	 (si::foreign-data-set obj ndx value))))
 
@@ -280,7 +288,9 @@
 	((atom type)
 	 (error "Unknown foreign primitive type: ~A" type))
 	((eq (first type) '*)
-	 (si::foreign-data-ref-elt obj ndx :object))
+	 (si::foreign-data-recast (si::foreign-data-ref-elt obj ndx :pointer-void)
+	                          (size-of-foreign-type (second type))
+				  type))
 	(t
 	 (si::foreign-data-ref obj ndx (if size-p size (size-of-foreign-type type)) type))))
 
@@ -313,9 +323,17 @@
 (defun deref-pointer (ptr type)
   ;; FIXME! No checking!
   (setf type (%convert-to-ffi-type type))
-  (if (foreign-elt-type-p type)
-      (si::foreign-data-ref-elt ptr 0 type)
-      (error "Cannot dereference pointer to foreign data, ~A" ptr)))
+  (cond ((foreign-elt-type-p type)
+         (si::foreign-data-ref-elt ptr 0 type))
+	((atom type)
+	 (error "Unknown foreign primitive type: ~A" type))
+	((eq (first type) '*)
+	 (si::foreign-data-recast (si::foreign-data-ref-elt ptr 0 :pointer-void)
+	                          (size-of-foreign-type (second type))
+				  (second type)))
+	(t
+	 (error "Cannot dereference pointer to foreign data, ~A" ptr))
+  ))
 
 (defun (setf deref-pointer) (value ptr type)
   ;; FIXME! No checking!
@@ -357,6 +375,9 @@
 	((integerp char) char)
 	(t (error "~a cannot be coerced to type INTEGER" char))))
 
+(defun ensure-char-storable (char)
+  char)
+
 (defun char-array-to-pointer (obj)
   (si::foreign-data-pointer obj 0 1 '(* :unsigned-char)))
 
@@ -372,6 +393,13 @@
 (defmacro with-cstring ((cstring string) &body body)
   `(let ((,cstring ,string)) ,@body))
 
+(defmacro with-cstrings (bindings &rest body)
+  (if bindings
+    `(with-cstring ,(car bindings)
+      (with-cstrings ,(cdr bindings)
+        ,@body))
+    `(progn ,@body)))
+
 (defun foreign-string-length (foreign-string)
   (c-inline (foreign-string) (t) :int
 	    "strlen((#0)->foreign.data)"
@@ -379,7 +407,7 @@
 	    :one-liner t))
 
 (defun convert-from-foreign-string (foreign-string
-				    &key length null-terminated-p)
+				    &key length (null-terminated-p t))
   (cond ((and (not length) null-terminated-p)
 	 (setf length (foreign-string-length foreign-string)))
 	((not (integerp length))
@@ -412,6 +440,20 @@
   (si::allocate-foreign-data `(* ,(if unsigned :unsigned-char :char))
 			     (1+ size)))
 
+(defmacro with-foreign-string ((foreign-string lisp-string) &rest body)
+  (let ((result (gensym)))
+    `(let* ((,foreign-string (convert-to-foreign-string ,lisp-string))
+            (,result (progn ,@body)))
+       (free-foreign-object ,foreign-string)
+       ,result)))
+
+(defmacro with-foreign-strings (bindings &rest body)
+  (if bindings
+    `(with-foreign-string ,(car bindings)
+      (with-foreign-strings ,(cdr bindings)
+        ,@body))
+    `(progn ,@body)))
+
 ;;;----------------------------------------------------------------------
 ;;; MACROLOGY
 ;;;
@@ -439,7 +481,7 @@
 	       ptr (second bind)
 	       type (third bind)))
       (otherwise (error "Arguments missing in WITH-CAST-POINTER")))
-    `(let ((,binding-name (si::foreign-data-pointer ,ptr 0
+    `(let ((,binding-name (si::foreign-data-pointer (si::foreign-data-recast ,ptr (size-of-foreign-type ',type) :void) 0
 						    (size-of-foreign-type ',type)
 						    ',type)))
        ,@body)))
@@ -463,11 +505,18 @@
 	  (t (error "Unsupported argument type: ~A" type))
     )))
 
+(defun %convert-to-return-type (type)
+  (let ((type (%convert-to-ffi-type type)))
+    (cond ((atom type) type)
+          ((eq (first type) '*) (second type))
+	  (t type))))
+
 (defmacro def-function (name args &key module (returning :void))
   (multiple-value-bind (c-name lisp-name)
       (lisp-to-c-name name)
     (let* ((arguments (mapcar #'first args))
 	   (arg-types (mapcar #'(lambda (type) (%convert-to-arg-type (second type))) args))
+	   (return-type (%convert-to-return-type returning))
 	   (nargs (length arguments))
 	   (c-string (format nil "~a(~a)" c-name
 			     (subseq "#0,#1,#2,#3,#4,#5,#6,#7,#8,#9,#a,#b,#c,#d,#e,#f,#g,#h,#i,#j,#k,#l,#m,#n,#o,#p,#q,#r,#s,#t,#u,#v,#w,#x,#y,#z"
@@ -482,8 +531,8 @@
       (when casting-required
 	(setf inline-form
 	      `(si::foreign-data-recast ,inline-form
-					(size-of-foreign-type ',returning)
-					',returning)))
+					(size-of-foreign-type ',return-type)
+					',return-type)))
       (when (> nargs 36)
 	(error "FFI can only handle C functions with up to 36 arguments"))
       `(defun ,lisp-name (,@arguments)
@@ -506,3 +555,52 @@
 			          `(ffi:deref-pointer ,s ',type)
 				  s)))
       ))))
+
+(defun find-foreign-library (names directories &key drive-letters types)
+  (unless (listp names)
+    (setq names (list names)))
+  (unless (listp directories)
+    (setq directories (list directories)))
+  (unless types
+    (setq types #+win32 '("lib")
+                #-win32 '("so" "a")))
+  (unless (listp types)
+    (setq types (list types)))
+  (unless (listp drive-letters)
+    (setq drive-letters (list drive-letters)))
+  #-msvc
+  (setq drive-letters '(nil))
+  #+msvc
+  (unless drive-letters
+    (setq drive-letters '(nil)))
+  (dolist (d drive-letters)
+    (dolist (p directories)
+      (dolist (n names)
+        (dolist (e types)
+	  (let ((full-path (truename (make-pathname
+					  :device d
+	                                  :directory (etypecase p
+					               (pathname (pathname-directory p))
+						       (string (pathname-directory (parse-namestring p)))
+						       (list p))
+					  :name n
+					  :type e))))
+	    (when (probe-file full-path)
+	      (return-from find-foreign-library full-path))
+	  )))))
+  nil)
+
+(defvar +loaded-libraries+ nil)
+
+(defmacro load-foreign-library (filename &key module supporting-libraries force-load)
+  (declare (ignore module force-load))
+  `(eval-when (compile)
+     (let* ((tmp ,filename)
+            (filename (if (pathnamep tmp) (namestring tmp) (string tmp)))
+	    (pack (find-package "COMPILER")))
+       (unless (find filename ffi::+loaded-libraries+ :test #'string-equal)
+         (setf (symbol-value (intern "*LD-FLAGS*" pack)) (concatenate 'string (symbol-value (intern "*LD-FLAGS*" pack)) " " filename))
+         (setf (symbol-value (intern "*LD-BUNDLE-FLAGS*" pack)) (concatenate 'string (symbol-value (intern "*LD-BUNDLE-FLAGS*" pack)) " " filename))
+         (setf (symbol-value (intern "*LD-SHARED-FLAGS*" pack)) (concatenate 'string (symbol-value (intern "*LD-SHARED-FLAGS*" pack)) " " filename))
+         (push filename ffi::+loaded-libraries+))
+       t)))

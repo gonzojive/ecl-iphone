@@ -193,7 +193,7 @@
 	   ((:char :unsigned-char)
 	    (wt "CODE_CHAR(" loc ")"))
 	   ((:cstring)
-	    (wt "make_string_copy(" loc ")"))
+	    (wt "ecl_cstring_to_string_or_nil(" loc ")"))
 	   ((:pointer-void)
 	    (wt "ecl_make_foreign_data(Cnil, 0, " loc ")"))
 	   (otherwise

@@ -1239,6 +1239,7 @@ extern cl_object cl_alloc_adjustable_string(cl_index l);
 extern cl_object make_simple_string(char *s);
 #define make_constant_string(s) (make_simple_string((char *)s))
 extern cl_object make_string_copy(const char *s);
+extern cl_object ecl_cstring_to_string_or_nil(const char *s);
 extern cl_object copy_simple_string(cl_object x);
 extern cl_object coerce_to_simple_string(cl_object x);
 extern bool string_eq(cl_object x, cl_object y);

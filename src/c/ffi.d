@@ -188,16 +188,16 @@ si_foreign_data_ref_elt(cl_object f, cl_object andx, cl_object tag)
 		output = MAKE_FIXNUM(*(unsigned short *)p);
 	} else if (tag == @':int') {
 		if (ndx + sizeof(int) > limit) goto ERROR;
-		output = MAKE_FIXNUM(*(int *)p);
+		output = make_integer(*(int *)p);
 	} else if (tag == @':unsigned-int') {
 		if (ndx + sizeof(unsigned int) > limit) goto ERROR;
-		output = MAKE_FIXNUM(*(unsigned int *)p);
+		output = make_unsigned_integer(*(unsigned int *)p);
 	} else if (tag == @':long') {
 		if (ndx + sizeof(long) > limit) goto ERROR;
-		output = MAKE_FIXNUM(*(long *)p);
+		output = make_integer(*(long *)p);
 	} else if (tag == @':unsigned-long') {
 		if (ndx + sizeof(unsigned long) > limit) goto ERROR;
-		output = MAKE_FIXNUM(*(unsigned long *)p);
+		output = make_unsigned_integer(*(unsigned long *)p);
 	} else if (tag == @':pointer-void') {
 		if (ndx + sizeof(void *) > limit) goto ERROR;
 		output = ecl_make_foreign_data(@':pointer-void', 0, *(void **)p);

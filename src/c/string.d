@@ -101,6 +101,15 @@ make_string_copy(const char *s)
 	return(x);
 }
 
+cl_object
+ecl_cstring_to_string_or_nil(const char *s)
+{
+	if (s == NULL)
+		return Cnil;
+	else
+		return make_string_copy(s);
+}
+
 
 /*
 	Copy_simple_string(x) copies string x to a simple string.

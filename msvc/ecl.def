@@ -981,6 +981,7 @@ EXPORTS
 	cl_alloc_adjustable_string
 	make_simple_string
 	make_string_copy
+	ecl_cstring_to_string_or_nil
 	copy_simple_string
 	coerce_to_simple_string
 	string_eq
