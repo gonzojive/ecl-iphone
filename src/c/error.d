@@ -20,7 +20,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <stdlib.h>
-#ifdef _MSC_VER
+#if defined(mingw32) || defined(_MSC_VER)
 #include <windows.h>
 #endif
 
