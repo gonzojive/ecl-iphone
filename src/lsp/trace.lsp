@@ -56,7 +56,6 @@ SI::ARGS."
 (defvar *inside-trace* nil)
 
 (defun trace-one (spec)
-  (declare (si::c-local))
   (let* (break exitbreak (entrycond t) (exitcond t) entry exit
 	       step (barfp t) fname oldf)
     (cond ((atom spec)
@@ -122,7 +121,7 @@ SI::ARGS."
 		  (setq values
 			(let (*inside-trace*)
 			  (multiple-value-list
-			      `(apply ',oldf args)
+			      (apply ',oldf args)
 			      #+nil
 			      ,(if step
 				   `(let (*step-quit*)
@@ -173,7 +172,6 @@ SI::ARGS."
 	      extras))))
 
 (defun untrace-one (fname)
-  (declare (si::c-local))
   (cond ((get fname 'TRACED)
          (if (tracing-body fname)
 	   (sys:fset fname (symbol-function (get fname 'TRACED)))
