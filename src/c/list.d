@@ -630,11 +630,17 @@ cl_object
 sublis(cl_object alist, cl_object tree)
 {
 	cl_object x = alist;
-
+	cl_object (*old_kf)(cl_object) = kf;
+	kf = cl_identity;
+	item_compared = (*old_kf)(tree);
 	loop_for_in(x) {
-		item_compared = cl_car(CAR(x));
-		if (TEST(tree)) return(cl_cdr(CAR(x)));
+		cl_object node = CAR(x);
+		if (TEST(cl_car(node))) {
+			kf = old_kf;
+			return CDR(node);
+		}
 	} end_loop_for_in;
+	kf = old_kf;
 	if (CONSP(tree))
 		return(CONS(sublis(alist, CAR(tree)), sublis(alist, CDR(tree))));
 	else
@@ -662,14 +668,18 @@ void
 nsublis(cl_object alist, cl_object *treep)
 {
 	cl_object x = alist;
-
+	cl_object (*old_kf)(cl_object) = kf;
+	kf = cl_identity;
+	item_compared = (*old_kf)(*treep);
 	loop_for_in(x) {
-		item_compared = cl_car(CAR(x));
-		if (TEST(*treep)) {
-			*treep = CDAR(x);
+		cl_object node = CAR(x);
+		if (TEST(cl_car(node))) {
+			*treep = CDR(node);
+			kf = old_kf;
 			return;
 		}
 	} end_loop_for_in;
+	kf = old_kf;
 	if (CONSP(*treep)) {
 		nsublis(alist, &CAR(*treep));
 		nsublis(alist, &CDR(*treep));
