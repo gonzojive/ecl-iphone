@@ -403,7 +403,6 @@ BEGIN:
 #endif CLOS
 	case t_codeblock:
 		mark_object(x->cblock.name);
-		mark_contblock(x->cblock.start, x->cblock.size);
 		if (x->cblock.data) {
 			cl_index i = x->cblock.data_size;
 			cl_object *p = x->cblock.data;

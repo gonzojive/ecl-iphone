@@ -46,8 +46,5 @@ init_lisp_libs(void)
 {
 	SYM_VAL(@'*package*') = system_package;
 	SYM_VAL(@'*features*') = CONS(make_keyword("ECLS-MIN"), SYM_VAL(@'*features*'));
-#ifdef RSYM
-	SYM_VAL(@'si::*symbol_table*') = make_simple_string("SYS:ecls_min.sym");
-#endif
 	make_si_function("TOP-LEVEL", @si::simple-toplevel);
 }

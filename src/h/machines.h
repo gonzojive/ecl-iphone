@@ -71,12 +71,6 @@
 #  define unix
 #endif
 
-#ifdef MSDOS
-#  define RSYM rsym.exe
-#elif !defined(__NeXT) && !defined(NeXT) /* cpp (configure) only defines NeXT */
-#  define RSYM rsym
-#endif
-
 #if defined(unix) && !defined(__MACH__)
 #  define NEED_MALLOC
 #endif
@@ -154,39 +148,27 @@
 
 /***********************************************************************/
 
-#ifdef	apollo
-#define	IEEEFLOAT
-#define	DATA_START 0
-#define	DOWN_STACK
-#define JB_SP 3
-#define	BSD
-#define COFF
-#define	BRAND "HP"
-#endif	apollo
-
 #ifdef	__FreeBSD__
+#include <dlfcn.h>
 #define	IEEEFLOAT
 #define	DOWN_STACK
 #define	JB_SP 4
-#ifdef __ELF__
-# define ELF
-# define UNEXEC unexelf
-# define DATA_START 0x8000000
-# define LDFLAGS -static
-#else
-# define DATA_START 0
-# define AOUT <a.out.h>
-#endif
 #define	BRAND "IBM-PC"
 #define	CLIBS -lcompat
-#define	LDFLAGS -static
+#define	LDFLAGS -Wl,--export-dynamic
 #define HAVE_ISOC99
+#ifdef __ELF__
+# define DATA_START 0x8000000
+#else
+# define DATA_START 0
+#endif
 #ifndef unix
 #define unix
 #endif
 #endif	__FreeBSD__
 
 #ifdef	__NetBSD__
+#include <dlfcn.h>
 #define	IEEEFLOAT
 #define	DOWN_STACK
 #define	JB_SP 4
@@ -197,164 +179,15 @@
 # define unix
 #endif
 #ifdef __ELF__
-# define ELF
 # define DATA_START 0x8000000
 #else
 #error "A.out not yet supported in NetBSD"
-# define AOUT <a.out.h>
 # define DATA_START 0
 #endif
 #define	BRAND "IBM-PC"
 #define	CLIBS -lcompat
-#define	LDFLAGS -static
+#define	LDFLAGS
 #endif	__NetBSD__
-
-#ifdef	hp9000s300
-#define	IEEEFLOAT
-#define	DATA_START 0
-#define	DOWN_STACK
-#define JB_SP 14
-#define	SYSV
-#define	AOUT <a.out.h>
-#define	BRAND "HP"
-#define CFLAGS +Ns2000 +Nd2000
-#endif	hp9000s300
- 
-#ifdef	hp9000s800
-#define	IEEEFLOAT
-#define	DATA_START 0x40000000
-#undef	DOWN_STACK
-#define JB_SP 14
-#define	SYSV
-#define COFF
-#define UNEXEC unexhp9k800
-#define	BRAND "HP"
-#endif	hp9000s800
-
-#ifdef	IBMRT
-#define	IEEEFLOAT
-#define	DATA_START 0x20000000
-#define	DOWN_STACK
-#define JB_SP 0
-#define	BSD
-#define	AOUT <a.out.h>
-#define	BRAND "IBM"
-#endif	IBMRT
-
-#ifdef	__linux__
-#define	IEEEFLOAT
-#define	DOWN_STACK
-#define	BSD
-#ifdef __ELF__
-# define ELF
-# define UNEXEC unexelf
-# define DATA_START 0x8000000
-# define LDFLAGS -static
-#else
-# define DATA_START 0
-# define AOUT <a.out.h>
-#endif
-#define	BRAND "IBM-PC"
-#define HAVE_ISOC99
-#define HAVE_POSIX
-#ifndef unix
-#define unix
-#endif
-#endif	linux
-
-#ifdef	mips_dec
-#define	IEEEFLOAT
-#define	DATA_START 0xA00000	/* normally 0x10000000 */
-#define	DOWN_STACK
-/* #define JB_SP 32 */
-#define	BSD
-#define COFF
-#define ECOFF
-#define UNEXEC unexelf
-#define	BRAND "DEC"
-#define	LDFLAGS -Wl,-D -Wl,A00000
-#define ILDFLAGS -T 0 -d -N
-#define LSPCFLAGS -G 0
-#endif	mips_dec
-
-#ifdef	NEWS
-#define	IEEEFLOAT
-#define	DATA_START 0
-#define	DOWN_STACK
-#define	BSD
-#define	AOUT <a.out.h>
-#define	BRAND "SONY"
-#endif	NEWS
-
-#ifdef	__NeXT
-#define	IEEEFLOAT
-#define	DATA_START 0
-#define	DOWN_STACK
-/* #define JB_SP 2 in <setjmp.h> */
-/* #define	BSD is in <param.h>	*/
-#define UNEXEC unexnext
-#define DLD dldNeXT
-#define	BRAND "NeXT"
-#define LDFLAGS -seglinkedit -segprot __TEXT rwx rwx
-#define	CLIBS -lsys_s
-#undef	AOUT
-#endif
-
-#ifdef	MSDOS
-#include "dos.h"
-#define	IEEEFLOAT
-#define	DOWN_STACK
-#define JB_SP 3
-#define	BSD
-#ifdef  __GO32__
-# define DATA_START 0
-# define COFF
-#else	/* __EMX__ */
-# define DATA_START 0x20000	/* 2 * SEGMENT_SIZE */
-# define AOUT <a_out.h>
-# define LDFLAGS -Zbsd-signals
-#endif  __GO32__
-#define	BRAND "IBM-PC"
-#endif	MSDOS
-
-#ifdef	OMRON
-#define	IEEEFLOAT
-#define	DATA_START 0
-#define	DOWN_STACK
-#define	SYSV
-#define COFF
-#define	BRAND "OMRON"
-#endif	OMRON
-
-#ifdef	SEQ
-#define	IEEEFLOAT
-#define	DATA_START 0
-#define	DOWN_STACK
-#define	BSD
-#define	AOUT <a.out.h>
-#define	BRAND "SEQUENT"
-#endif	SEQ
-
-#ifdef	sgi
-#define	IEEEFLOAT
-#define	DATA_START 0xA00000	/* normally 0x10000000 */
-#define	DOWN_STACK
-/* #define JB_SP 32 */
-#define	BSD
-#define	BRAND "SGI"
-#define _BSD_SIGNALS
-#define	LDFLAGS -Wl,-D -Wl,A00000
-#define ILDFLAGS -T 0 -d -N
-#define LSPCFLAGS -G 0
-# ifdef SVR3			/* Irix Release 4 */
-#define COFF
-#define ECOFF
-#define UNEXEC unexmips
-# else
-#define ELF
-#define UNEXEC unexelfsgi
-# endif
-#endif	sgi
 
 #ifdef	sun
 #define	IEEEFLOAT
@@ -362,63 +195,17 @@
 #define	DOWN_STACK
 #define	BSD
 #define	BRAND "SUN"
-#define LDFLAGS -Wl,-Bstatic
+#define LDFLAGS
 
 #ifdef	sun4sol2
-#  define ELF
-#  define UNEXEC unexelf
-#elif	defined(sun386)
-#  define COFF
+#  include <dlfcn.h>
+#  include <link.h>
+#ifdef TCP
+#  define CLIBS -lsocket -lnsl -lintl -ldl
 #else
-#  define AOUT <a.out.h>
+#  define CLIBS -ldl
 #endif
-
-#ifdef	mc68000
-#  define JB_SP 14
-#elif	defined(sparc)
-#  define JB_SP 1
-#  define JB_FP 3
-#elif	defined(i386)
-#  define JB_SP 2
-#endif
-
-#ifdef	sun4
-#  define SETJMP	setjmpsparc.s
-#  define sigsetjmp(x,y) _setjmp(x)
-#  define siglongjmp(x,y) _longjmp(x,y)
-#endif
-
-#if defined(TCP) && defined(sun4sol2)
-#  define CLIBS -lsocket -lnsl -lintl -Wl,-Bdynamic -ldl -Wl,-Bstatic
-#endif
-
+#endif sun4sol2
 #endif	sun
-
-#ifdef	TAHOE
-#define	DATA_START 0
-#define	DOWN_STACK
-#define BSD
-#define	AOUT <a.out.h>
-#define	BRAND "TAHOE"
-#endif	TAHOE
-
-#ifdef	vax
-#define	DATA_START 0
-#define	DOWN_STACK
-#define JB_SP 13
-#define	BSD
-#define AOUT <a.out.h>
-#define	BRAND "DEC"
-#endif	vax
-
-#ifdef	__WIN32__
-#define	IEEEFLOAT
-#define	DATA_START 0
-#define	DOWN_STACK
-#define	BSD
-# define PFI
-# define UNEXEC unexec
-#define	BRAND "IBM-PC"
-#endif	__WIN32__
 
 /**********************************************************************/

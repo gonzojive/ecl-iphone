@@ -131,9 +131,6 @@ const struct symbol_info all_symbols[] = {
 #ifdef PDE
 {&siVsource_pathname, "*SOURCE-PATHNAME*", CL_SPECIAL},
 #endif
-#ifdef RSYM
-{&siVsymbol_table, "*SYMBOL-TABLE*", CL_SPECIAL},
-#endif
 
 /* lwp.c */
 #ifdef THREADS

@@ -29,7 +29,7 @@ static cl_object SVinterrupt_enable;
 
 #ifndef THREADS
 
-void
+static void
 sigalrm(void)
 {
 	if (interrupt_flag) {
@@ -92,7 +92,7 @@ sigint()
 
 #endif /*THREADS */
 
-void
+static void
 sigfpe(void)
 {
 	signal(SIGFPE, sigfpe);

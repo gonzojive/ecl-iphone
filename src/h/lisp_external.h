@@ -429,7 +429,6 @@ extern cl_object clLrassoc_if_not _ARGS((int narg, cl_object pred, cl_object arg
 
 extern cl_object Kverbose;
 extern cl_object clVload_verbose, clVload_print;
-extern cl_object siVsymbol_table;
 extern cl_object siVload_hooks;
 extern cl_object clLload _ARGS((int narg, cl_object pathname, ...));
 extern cl_object siLload_source _ARGS((int narg, cl_object file, cl_object verbose,

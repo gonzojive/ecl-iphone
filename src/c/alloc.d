@@ -322,8 +322,8 @@ ONCE_MORE:
 #endif CLOS
 	case t_codeblock:
 	  obj->cblock.name = Cnil;
-	  obj->cblock.start = NULL;
-	  obj->cblock.size = 0;
+	  obj->cblock.handle = NULL;
+	  obj->cblock.entry = NULL;
 	  obj->cblock.data = NULL;
 	  obj->cblock.data_size = 0;
 	  obj->cblock.data_text = NULL;

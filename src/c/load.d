@@ -29,34 +29,57 @@ cl_object @'si::*load-hooks*';
 #ifdef PDE
 cl_object @'si::*source-pathname*';
 #endif PDE
-#ifdef RSYM
-cl_object @'si::*symbol-table*';
-#endif
 
 /******************************* ------- ******************************/
 
 @(defun si::load_binary (filename verbose print)
 	cl_object block;
+	cl_object basename;
 @
+	/* We need the full pathname */
+	filename = coerce_to_filename(truename(filename));
+
+	/* Try to load shared object file */
 	block = alloc_object(t_codeblock);
 	block->cblock.name = filename;
-	dld(filename->string.self, &block->cblock.start, &block->cblock.size);
+	block->cblock.handle = dlopen(filename->string.self, RTLD_NOW|RTLD_GLOBAL);
+	if (block->cblock.handle == NULL)
+		@(return make_string_copy(dlerror()))
 
-	if (!Null(verbose)) {
+	/* Fist try to call "init_CODE()" */
+	block->cblock.entry = dlsym(block->cblock.handle, "init_CODE");
+	if (block->cblock.entry != NULL)
+		goto GO_ON;
+
+	/* Next try to call "init_FILE()" where FILE is the file name */
+	basename = coerce_to_pathname(filename);
+	basename = @pathname-name(1,basename);
+	basename = @si::string-concatenate(2,
+					   make_simple_string("init_"),
+					   @string-upcase(1,basename));
+	block->cblock.entry = dlsym(block->cblock.handle, basename->string.self);
+	if (block->cblock.entry == "NULL") {
+		dlclose(block->cblock.handle);
+		@(return make_string_copy(dlerror()))
+	}
+	if (1 || !Null(verbose)) {
+		extern char * heap_start, * heap_end;
+		setupPRINT(filename, symbol_value(@'*standard-output*'));
 		write_str(";;; Address = ");
 		PRINTescape = FALSE;
-		write_addr(block->cblock.start);
+		write_addr(block->cblock.handle);
+		write_str(", heap = ");
+		write_addr(heap_start);
+		write_str(", heap end = ");
+		write_addr(heap_end);
 		write_str("\n");
+		cleanupPRINT();
+		flush_stream(PRINTstream);
 	}
-	/* call the init_code function */
-#ifdef __mips
-	cacheflush(block->cblock.start, block->cblock.size, BCACHE);
-#endif __mips
-#ifdef __NeXT__
-	asm("trap #2");		/* MC68040-specific */
-#endif __NeXT__
-	read_VV(block, block->cblock.start);
-	@(return Ct)
+	/* Finally, perform initialization */
+GO_ON:	
+	read_VV(block, block->cblock.entry);
+	@(return Cnil)
 @)
 
 @(defun si::load_source (filename verbose print)
@@ -98,13 +121,14 @@ cl_object @'si::*symbol-table*';
 	}
 	close_stream(strm, TRUE);
 	frs_pop();
+	@(return Cnil)
 @)	
 
 @(defun load (pathname
 	      &key (verbose symbol_value(@'*load-verbose*'))
 		   (print symbol_value(@'*load-print*'))
 		   (if_does_not_exist @':error')
-	      &aux pntype hooks filename function defaults)
+	      &aux pntype hooks filename function defaults ok)
 	bds_ptr old_bds_top;
 @
 	pathname = coerce_to_physical_pathname(pathname);
@@ -162,9 +186,12 @@ cl_object @'si::*symbol-table*';
 		unwind(nlj_fr, nlj_tag);
 	}
 	if (Null(function))
-		@si::load-source(3, filename, verbose, print);
+		ok = @si::load-source(3, filename, verbose, print);
 	else
-		funcall(4, function, filename, verbose, print);
+		ok = funcall(4, function, filename, verbose, print);
+	if (!Null(ok))
+		FEerror("LOAD: Could not load file ~S (Error: ~S)",
+			2, filename, ok);
 	frs_pop();
 	bds_unwind(old_bds_top);
 	if (print != Cnil) {
@@ -182,26 +209,6 @@ cl_object @'si::*symbol-table*';
 @)
 
 
-/* ----------------------------------------------------------------------
- * Binary file loader utilities
- * ----------------------------------------------------------------------
- */
-#ifdef RSYM
-static int symbol_table_built = 0;
-extern int read_special_symbols(const char *);
-void
-build_symbol_table()
-{
-   cl_object file;
-   const char *tmpfile;
-   file = coerce_to_filename(SYM_VAL(@'si::*symbol-table*'));
-   tmpfile = file->string.self;
-   if (!symbol_table_built)
-     if (read_special_symbols(tmpfile) < 0)
-       FEerror("Could not read symbol table from ~A", 1, make_string_copy(tmpfile));
-}
-#endif
-
 /* ---------------------------------------------------------------------- */
 #if 0
 
@@ -237,12 +244,11 @@ init_load(void)
   load_source = make_si_ordinary("LOAD-SOURCE");
   load_binary = make_si_ordinary("LOAD-BINARY");
   SYM_VAL(@'si::*load-hooks*') = list(4,
-				CONS(make_simple_string("o"), load_binary),
+				CONS(make_simple_string("so"), load_binary),
 				CONS(make_simple_string("lsp"), load_source),
 				CONS(make_simple_string("lisp"), load_source),
 				CONS(Cnil, load_source));
 
-#ifdef RSYM
-  SYM_VAL(@'si::*symbol-table*') = make_simple_string("SYS:ecls.sym");
-#endif
+  if (dlopen(NULL, RTLD_NOW|RTLD_GLOBAL) == NULL)
+    printf(";;; Error dlopening self file\n;;; Error: %s\n", dlerror());
 }

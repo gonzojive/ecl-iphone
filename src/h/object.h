@@ -395,11 +395,11 @@ struct pathname {
 
 struct codeblock {
 	HEADER;
-	char	*start;		/*  start address of the code  */
-	size_t	size;		/*  code size  */
- 	cl_object *data;	/*  data vector  */
+	void	*handle;		/*  handle returned by dlopen  */
+	void	*entry;			/*  entry point  */
+ 	cl_object *data;		/*  data vector  */
 	int	data_size;
-	const char *data_text;
+	const char *data_text;		/*  string with objects to be defined  */
 	int	data_text_size;
 #ifdef PDE
 	int	source_pathname;
