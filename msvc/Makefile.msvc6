@@ -69,7 +69,7 @@ TARGETS       = ecl.exe
 # 	p4 -> Pentium IV processor
 GMP_TYPE      = gc
 
-all:	$(TARGETS) h/external-lsp.h doc ecl-config.bat
+all:	$(TARGETS) doc ecl-config.bat
 .PHONY:	all
 
 %Makefile: $(srcdir)/%Makefile.in config.status
@@ -77,15 +77,6 @@ all:	$(TARGETS) h/external-lsp.h doc ecl-config.bat
 
 ecl$(EXE): ecl_min$(EXE) compile.lsp sysfun.lsp
 	.\ecl_min < compile.lsp
-
-h/external-lsp.h: ecl$(EXE)
-	echo #ifdef __cplusplus > $@
-	echo extern "C" { >> $@
-	echo #endif >> $@
-	( grep -h -e "dllexport" lsp\*.h clos\*.h | sed -e "s,__declspec(dllexport) ,,g" ) >> $@
-	echo #ifdef __cplusplus >> $@
-	echo } >> $@
-	echo #endif >> $@
 
 ecl_min$(EXE): $(LIBRARIES) eclmin.lib
 	$(CC) $(LDFLAGS) /Fe$@ cinit.obj c\all_symbols.obj eclmin.lib $(LIBS)
@@ -189,7 +180,6 @@ install: install-base
 	           gc_config_macros.h leak_detector.h gc_typed.h) \
 	    do $(CP) h\%h $(libdir)\h
 	$(CP) h\gmp.h $(libdir)\h\gmp.h
-	$(CP) h\external-lsp.h $(libdir)\h\external-lsp.h
 	cd c
 	$(MAKE) -f Makefile.msvc6 install "prefix=$(prefix)"
 	cd ..\doc
@@ -244,7 +234,7 @@ clean_ecl:
 	-for %i in (eclgc.lib eclgmp.lib lsp\config.lsp compile.lsp bare.lsp \
 	            lsp\load.lsp clos\load.lsp cmp\load.lsp cmp\cmpcfg.lsp \
 		    ecl.lib ecl.dll ecl_min$(EXE) eclmin.lib help.doc sysfun.lsp \
-		    ecl$(EXE) *.exp *.ilk *.pdb *.c *.obj h\external-lsp.h ecl-config.bat) \
+		    ecl$(EXE) *.exp *.ilk *.pdb *.c *.obj ecl-config.bat) \
 	     do $(RM) %i
 	cd c
 	-$(MAKE) -f Makefile.msvc6 clean

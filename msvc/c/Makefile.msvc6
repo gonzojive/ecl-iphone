@@ -84,7 +84,7 @@ flatinstall: $(HFILES)
 	$(RM) $(prefix)\h\config.h
 	$(MV) $(prefix)\h\config-install.h $(prefix)\h\config.h
 
-..\eclmin.lib: $(OBJS:.obj=.c) $(OBJS) all_symbols.obj all_symbols2.obj
+..\eclmin.lib: $(OBJS:.obj=.c) all_symbols.c $(OBJS) all_symbols.obj all_symbols2.obj
 	-$(RM) $@
 	$(LINK) -lib -nodefaultlib -out:$@ $(OBJS)
 
@@ -93,8 +93,8 @@ clean:
 	            ..\eclmin.lib ..\cinit.obj cinit.c \
 		    symbols_list2.h) \
 	     do $(RM) %f
-	-for %f in ($(OBJS:.obj=.c)) do $(RM) %f
-	-for %f in ($(OBJS)) do $(RM) %f
+	-for %f in ($(OBJS:.obj=.c) all_symbols.c) do $(RM) %f
+	-for %f in ($(OBJS) all_symbols.obj all_symbols2.obj) do $(RM) %f
 	-$(RM) *.pdb
 
 # Build rules

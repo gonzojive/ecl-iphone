@@ -112,6 +112,8 @@ ranlib ../@LIBPREFIX@ecl.@LIBEXT@'")
 
 (si::pathname-translations "SYS" '(("**;*.*.*" "@ecldir@/**/*.*")))
 
+(setq si::*init-function-prefix* "CMP")
+
 #+(and (not cross) (or (not stage1) WANTS-CMP))
 (let ((objects (compile-if-old "build:cmp;" +cmp-module-files+
 				:system-p t :c-file t :data-file t :h-file t
@@ -148,6 +150,8 @@ ranlib ../@LIBPREFIX@ecl.@LIBEXT@'")
   "src:clx;image.lisp"
   "src:clx;resource.lisp"))
 
+(setq si::*init-function-prefix* "CLX")
+
 #+WANTS-CLX
 (progn
   (proclaim '(optimize (safety 2) (speed 1)))
@@ -160,6 +164,8 @@ ranlib ../@LIBPREFIX@ecl.@LIBEXT@'")
     (c::build-static-library "clx" :lisp-files objects)
     #+dlopen
     (c::build-fasl "clx" :lisp-files objects)))
+
+(setq si::*init-function-prefix* "ECL")
 
 (compiler::build-program
  #+(or cross stage1) "ecl"
