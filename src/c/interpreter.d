@@ -906,7 +906,7 @@ interpret(cl_object *vector) {
 		environment. This last value takes precedence.
 	*/
 	case OP_FUNCTION:
-		VALUES(0) = cl_fdefinition(next_code(vector));
+		VALUES(0) = ecl_fdefinition(next_code(vector));
 		NValues = 1;
 		break;
 
