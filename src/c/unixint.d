@@ -170,6 +170,18 @@ LONG WINAPI W32_exception_filter(struct _EXCEPTION_POINTERS* ep)
 
 	return excpt_result;
 }
+
+BOOL WINAPI W32_console_ctrl_handler(DWORD type)
+{
+	switch (type)
+	{
+		/* Catch CTRL-C */
+		case CTRL_C_EVENT:
+			handle_signal(SIGINT);
+			return TRUE;
+	}
+	return FALSE;
+}
 #endif
 
 void
@@ -182,6 +194,7 @@ init_unixint(void)
 #endif
 #ifdef _MSC_VER
 	SetUnhandledExceptionFilter(W32_exception_filter);
+	SetConsoleCtrlHandler(W32_console_ctrl_handler, TRUE);
 #endif
 	ECL_SET(@'si::*interrupt-enable*', Ct);
 	ecl_interrupt_enable = 1;
