@@ -10,10 +10,6 @@
 
 ;;;;                              predicate routines
 
-
-(in-package "CL")
-(export '(DEFTYPE TYPEP SUBTYPEP COERCE #+clos subclassp))
-
 (in-package "SYSTEM")
 
 ;;; DEFTYPE macro.

@@ -258,7 +258,7 @@
   (put-sysprop name 'STRUCTURE-CONSTRUCTORS constructors)
   #+clos
   (when *keep-documentation*
-    (sys:set-documentation name 'STRUCTURE documentation))
+    (set-documentation name 'STRUCTURE documentation))
   (and (consp type) (eq (car type) 'VECTOR)
        (setq type 'VECTOR))
   (dolist (x slot-descriptions)

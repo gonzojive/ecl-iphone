@@ -26,25 +26,12 @@
 
 (in-package "FFI")
 
-(defmacro clines (&whole all)
-  (error "The FFI special form ~S cannot be used in the interpreter."
-	 (car all)))
-
-(defmacro defcfun (&whole all)
-  (error "The FFI special form ~S cannot be used in the interpreter."
-	 (car all)))
-
-(defmacro defentry (&whole all)
-  (error "The FFI special form ~S cannot be used in the interpreter."
-	 (car all)))
-
-(defmacro defla (&whole all)
-  (error "The FFI special form ~S cannot be used in the interpreter."
-	 (car all)))
-
-(defmacro defcbody (&whole all)
-  (error "The FFI special form ~S cannot be used in the interpreter."
-	 (car all)))
+(dolist (i '(clines defcfun defentry defla defcbody defunC))
+  (let ((fname i))
+    (si::fset i
+       #'(lambda (x)
+	   (error "The special form ~S cannot be used in the interpreter"
+		  fname)))))
 
 (defmacro definline (fun arg-types type code)
   `(eval-when (compile load eval)
@@ -55,7 +42,3 @@
                     '((,arg-types ,type
                        t                ; side-effect-p
                        nil ,code)))))
-
-(defmacro defunC (&whole all)
-  (error "The FFI special form ~S cannot be used in the interpreter."
-	 (car all)))

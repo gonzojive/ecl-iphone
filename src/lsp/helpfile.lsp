@@ -10,8 +10,6 @@
 
 (in-package "SYSTEM")
 
-(export '(get-documentation set-documentation))
-
 ;;;;----------------------------------------------------------------------
 ;;;;  Help files
 ;;;;
