@@ -4565,6 +4565,7 @@ else
   INFOEXT=info
 fi
 
+gc_flags=""
 TARGETS="ecl${EXEEXT}"
 LIBRARIES=""
 SUBDIR=c
@@ -4681,6 +4682,7 @@ echo "$as_me:$LINENO: checking for threads support" >&5
 echo $ECHO_N "checking for threads support... $ECHO_C" >&6
 if test "${threads}" ; then
   if test -z "${THREAD_LDFLAGS}"; then
+    gc_flags="${gc_flags} --disable-threads"
     threads='';
     echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6
@@ -4703,6 +4705,7 @@ if test ${usecxx} = "no" ; then
   ECL_CC="${CC}"
 else
   ECL_CC="${CXX}"
+  gc_flags="${gc_flags} --enable-cplusplus"
 fi
 if test ! ${opcode8} = "no" ; then
   cat >>confdefs.h <<\_ACEOF
@@ -6540,17 +6543,10 @@ elif test "${local_boehm}" = "no" ; then
 echo "${ECHO_T}configuring local copy" >&6
   test -d gc && rm -rf gc
   if mkdir gc; then
-    if test "${threads}" ; then
-      (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
-       $srcdir/gc/configure --disable-shared --prefix=${destdir} \
+     (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
+        $srcdir/gc/configure --disable-threads --disable-shared --prefix=${destdir} \
 	--includedir=${destdir}/h --libdir=${destdir} --build=${build_alias} \
-	--host=${host_alias})
-    else
-      (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
-       $srcdir/gc/configure --disable-threads --disable-shared --prefix=${destdir} \
-	--includedir=${destdir}/h --libdir=${destdir} --build=${build_alias} \
-	--host=${host_alias})
-    fi
+	--host=${host_alias} ${gc_flags})
   fi
 else
   echo "$as_me:$LINENO: result: already installed" >&5

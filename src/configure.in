@@ -176,6 +176,7 @@ fi
 dnl ----------------------------------------------------------------------
 dnl		Set options
 dnl
+gc_flags=""
 TARGETS="ecl${EXEEXT}"
 LIBRARIES=""
 SUBDIR=c
@@ -261,6 +262,7 @@ fi
 AC_MSG_CHECKING(for threads support)
 if test "${threads}" ; then
   if test -z "${THREAD_LDFLAGS}"; then
+    gc_flags="${gc_flags} --disable-threads"
     threads='';
     AC_MSG_RESULT(no)
   else
@@ -277,6 +279,7 @@ if test ${usecxx} = "no" ; then
   ECL_CC="${CC}"
 else
   ECL_CC="${CXX}"
+  gc_flags="${gc_flags} --enable-cplusplus"
 fi
 if test ! ${opcode8} = "no" ; then
   AC_DEFINE(ECL_SMALL_BYTECODES)
@@ -369,17 +372,10 @@ elif test "${local_boehm}" = "no" ; then
   AC_MSG_RESULT(configuring local copy)
   test -d gc && rm -rf gc
   if mkdir gc; then
-    if test "${threads}" ; then
-      (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
-       $srcdir/gc/configure --disable-shared --prefix=${destdir} \
+     (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
+        $srcdir/gc/configure --disable-threads --disable-shared --prefix=${destdir} \
 	--includedir=${destdir}/h --libdir=${destdir} --build=${build_alias} \
-	--host=${host_alias})
-    else
-      (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
-       $srcdir/gc/configure --disable-threads --disable-shared --prefix=${destdir} \
-	--includedir=${destdir}/h --libdir=${destdir} --build=${build_alias} \
-	--host=${host_alias})
-    fi
+	--host=${host_alias} ${gc_flags})
   fi
 else
   AC_MSG_RESULT(already installed)
