@@ -173,8 +173,12 @@ else
     LIBRARIES="${LIBRARIES} ${LIBPREFIX}gc.${LIBEXT}"
     SUBDIR="${SUBDIR} gc"
     BOEHM_HEADERS="-I\$(top_srcdir)/gc/include"
+    if test ${shared} = "no"; then
+      CLIBS="-lgc ${CLIBS}"
+    fi
   else
     BOEHM_HEADERS=""
+    CLIBS="-lgc ${CLIBS}"
   fi
   EXTRA_OBJS="${EXTRA_OBJS} alloc_2.${OBJEXT}"
   AC_DEFINE(GBC_BOEHM)
@@ -188,11 +192,10 @@ fi
 if test ${local_gmp} = "no" ; then
   LIBRARIES="${LIBRARIES} ${LIBPREFIX}gmp.${LIBEXT}"
   SUBDIR="${SUBDIR} gmp"
-fi
-if test ${shared} = "no"; then
-  if test ! ${boehm} = "no"; then
-    CLIBS="-lgc ${CLIBS}"
+  if test ${shared} = "no"; then
+    CLIBS="-lgmp ${CLIBS}"
   fi
+else
   CLIBS="-lgmp ${CLIBS}"
 fi
 if test ${runtime} ; then
