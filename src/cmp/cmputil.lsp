@@ -172,7 +172,6 @@
          (eval form)))
 
 (defun compiler-clear-compiler-properties (symbol)
-  (remprop symbol 'sys::cdefn)
   #-:CCL
   (sys::unlink-symbol symbol)
   (remprop symbol 'package-operation)

@@ -283,19 +283,15 @@
 
 (defun wt-if-proclaimed (fname cfun vv lambda-expr)
   (when (fast-link-proclaimed-type-p fname)
-    (if (assoc fname *inline-functions*)
-      (wt-nl "(void)putprop(" vv ",make_fixnum((int)LI"
-             cfun ")," (add-object 'SYS::CDEFN) ");")
-      (let ((arg-c (length (car (third lambda-expr))))
-            (arg-p (length (get fname 'PROCLAIMED-ARG-TYPES))))
-        (if (= arg-c arg-p)
-          (cmpwarn
-           " ~a is proclaimed but not in *inline-functions* ~
-            ~%T1defun could not assure suitability of args for C call" fname
-           )
-          (cmpwarn
-           "Number of proclaimed args for ~a was ~a. ~
-            ~%;;; Its definition had ~a." fname arg-p arg-c))))))
+    (let ((arg-c (length (car (third lambda-expr))))
+	  (arg-p (length (get fname 'PROCLAIMED-ARG-TYPES))))
+      (if (= arg-c arg-p)
+	(cmpwarn
+	 " ~a is proclaimed but not in *inline-functions* ~
+          ~%T1defun could not assure suitability of args for C call" fname)
+	(cmpwarn
+	 "Number of proclaimed args for ~a was ~a. ~
+          ~%;;; Its definition had ~a." fname arg-p arg-c)))))
 
 (defun volatile (info)
    (if (info-volatile info) "volatile " ""))

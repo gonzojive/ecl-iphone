@@ -10,7 +10,8 @@ MKDIR=mkdir -p
 ecls:
 	ln -sf ../../src/h/*.h ../h/
 	(echo '(load "$(srcdir)/tests")'; \
-	 echo '(setq si::*system-directory* "../")'; \
+	 echo '(setf (logical-pathname-translations "SYS")'; \
+	 echo "      '"'(("*.*" "../*.*")))'; \
 	 echo "(run-all-tests \"$(srcdir)/\")"; \
 	 echo "(quit)") | ../ecls
 	true
@@ -18,7 +19,8 @@ ecls:
 ecls_min:
 	ln -sf ../../src/h/*.h ../h/
 	(echo '(load "bare.lsp")'; \
-	 echo '(setq si::*system-directory* "../")'; \
+	 echo '(setf (logical-pathname-translations "SYS")'; \
+	 echo "      '"'(("*.*" "../*.*")))'; \
 	 echo '(sys::chdir "ansi-tests")'; \
 	 echo '(load "$(srcdir)/tests")'; \
 	 echo "(run-all-tests \"$(srcdir)/\")"; \
