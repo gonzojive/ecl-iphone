@@ -15,6 +15,7 @@
 ;;; Valid locations are:
 ;;;	NIL
 ;;;	T
+;;;	fixnum
 ;;;	'VALUES'
 ;;;	var-object
 ;;;	( 'VALUE' i )			VALUES(i)

@@ -74,6 +74,7 @@
 (defun loc-type (loc)
   (cond ((eq loc NIL) 'NULL)
 	((var-p loc) (var-type loc))
+	((si::fixnump loc) 'fixnum)
 	((atom loc) 'T)
 	(t
 	 (case (first loc)
@@ -86,8 +87,9 @@
 	   (otherwise T)))))
 
 (defun loc-representation-type (loc)
-  (cond ((eq loc NIL) :object)
+  (cond ((member loc '(NIL T)) :object)
 	((var-p loc) (var-rep-type loc))
+	((si::fixnump loc) :fixnum)
 	((atom loc) :object)
 	(t
 	 (case (first loc)
