@@ -2,6 +2,7 @@
 #include "ecl.h"
 #include "internal.h"
 
+#include "symbols_def.h"
 #include "symbols_list.h"
 
 cl_index cl_num_symbols_in_core = 0;

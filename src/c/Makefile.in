@@ -43,7 +43,7 @@ OBJS	= main.o symbol.o package.o list.o\
 	time.o unixint.o\
 	mapfun.o multival.o hash.o format.o pathname.o\
 	structure.o load.o unixfsys.o unixsys.o \
-	all_symbols.o all_functions.o init.o symbols_def.o @EXTRA_OBJS@
+	all_symbols.o all_functions.o init.o @EXTRA_OBJS@
 
 .SUFFIXES: .c .o .d
 
@@ -80,7 +80,7 @@ assignment.o: assignment.c $(HFILES)
 	$(CC) $(CFLAGS) -O0 assignment.c -o $@
 gbc.o: gbc.c $(HFILES)
 	$(CC) $(CFLAGS) -O0 gbc.c -o $@
-symbols_def.o: $(srcdir)/symbols_list.h
-	echo '#include "ecl.h"' > symbols_def.c
-	cat $(srcdir)/symbols_list.h | grep 'SW("' | grep -v 'NULL[,)]' | sed 's/SW(".*&\([a-zA-Z_0-9]*\)),/cl_object \1;/g' >> symbols_def.c
-	$(CC) $(CFLAGS) symbols_def.c -o $@
+all_symbols.o: all_symbols.c symbols_def.h
+	$(CC) $(CFLAGS) -I./ all_symbols.c -o $@
+symbols_def.h: $(srcdir)/symbols_list.h
+	cat $(srcdir)/symbols_list.h | grep 'SW("' | grep -v 'NULL[,)]' | sed 's/SW(".*&\([a-zA-Z_0-9]*\)),/cl_object \1;/g' >> symbols_def.h
