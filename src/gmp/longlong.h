@@ -1,7 +1,7 @@
 /* longlong.h -- definitions for mixed size 32/64 bit arithmetic.
 
-Copyright 1991, 1992, 1993, 1994, 1996, 1997, 1999, 2000, 2001, 2002 Free
-Software Foundation, Inc.
+Copyright 1991, 1992, 1993, 1994, 1996, 1997, 1999, 2000, 2001, 2002, 2003
+Free Software Foundation, Inc.
 
 This file is free software; you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -94,7 +94,25 @@ MA 02111-1307, USA. */
    and is lost.
 
    If any of these macros are left undefined for a particular CPU,
-   C macros are used.  */
+   C macros are used.
+
+
+   Notes:
+
+   For add_ssaaaa the two high and two low addends can both commute, but
+   unfortunately gcc only supports one "%" commutative in each asm block.
+   This has always been so but is only documented in recent versions
+   (eg. pre-release 3.3).  Having two or more "%"s can cause an internal
+   compiler error in certain rare circumstances.
+
+   Apparently it was only the last "%" that was ever actually respected, so
+   the code has been updated to leave just that.  Clearly there's a free
+   choice whether high or low should get it, if there's a reason to favour
+   one over the other.  Also obviously when the constraints on the two
+   operands are identical there's no benefit to the reloader in any "%" at
+   all.
+
+   */
 
 /* The CPUs come in alphabetical order below.
 
@@ -183,11 +201,14 @@ long __MPN(count_leading_zeros) _PROTO ((UDItype));
 #endif /* _CRAY */
 
 #if defined (__hppa) && W_TYPE_SIZE == 64
-#if defined (__GNUC__)
+/* These macros are for ABI=2.0w.  In ABI=2.0n they can't be used, since GCC
+   (3.2) puts longlong into two adjacent 32-bit registers.  Presumably this
+   is just a case of no direct support for 2.0n but treating it like 1.0. */
+#if defined (__GNUC__) && ! defined (_LONG_LONG_LIMB)
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
   __asm__ ("add %4,%5,%1\n\tadd,dc %2,%3,%0"				\
 	   : "=r" (sh), "=&r" (sl)					\
-	   : "%rM" (ah), "rM" (bh), "%rM" (al), "rM" (bl))
+	   : "rM" (ah), "rM" (bh), "%rM" (al), "rM" (bl))
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
   __asm__ ("sub %4,%5,%1\n\tsub,db %2,%3,%0"				\
 	   : "=r" (sh), "=&r" (sl)					\
@@ -269,7 +290,7 @@ extern UWtype __MPN(udiv_qrnnd) _PROTO ((UWtype, UWtype, UWtype, UWtype *));
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
   __asm__ ("add %1,%4,%5\n\taddc %0,%2,%3"				\
 	   : "=r" (sh), "=&r" (sl)					\
-	   : "%r" (ah), "rI" (bh), "%r" (al), "rI" (bl))
+	   : "r" (ah), "rI" (bh), "%r" (al), "rI" (bl))
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
   __asm__ ("sub %1,%4,%5\n\tsubc %0,%2,%3"				\
 	   : "=r" (sh), "=&r" (sl)					\
@@ -300,7 +321,7 @@ extern UWtype __MPN(udiv_qrnnd) _PROTO ((UWtype, UWtype, UWtype, UWtype *));
   __asm__ ("add.f\t%1, %4, %5\n\tadc\t%0, %2, %3"			\
 	   : "=r" ((USItype) (sh)),					\
 	     "=&r" ((USItype) (sl))					\
-	   : "%r" ((USItype) (ah)),					\
+	   : "r"  ((USItype) (ah)),					\
 	     "rIJ" ((USItype) (bh)),					\
 	     "%r" ((USItype) (al)),					\
 	     "rIJ" ((USItype) (bl)))
@@ -318,7 +339,7 @@ extern UWtype __MPN(udiv_qrnnd) _PROTO ((UWtype, UWtype, UWtype, UWtype *));
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
   __asm__ ("adds\t%1, %4, %5\n\tadc\t%0, %2, %3"			\
 	   : "=r" (sh), "=&r" (sl)					\
-	   : "%r" (ah), "rI" (bh), "%r" (al), "rI" (bl) __CLOBBER_CC)
+	   : "r" (ah), "rI" (bh), "%r" (al), "rI" (bl) __CLOBBER_CC)
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
   do {									\
     if (__builtin_constant_p (al))					\
@@ -456,7 +477,7 @@ extern UWtype __MPN(udiv_qrnnd) _PROTO ((UWtype *, UWtype, UWtype, UWtype));
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
   __asm__ ("add.w %5,%1\n\taddx %3,%0"					\
 	   : "=g" ((USItype)(sh)), "=&g" ((USItype)(sl))		\
-	   : "%0" ((USItype)(ah)), "g" ((USItype)(bh)),			\
+	   : "0"  ((USItype)(ah)), "g" ((USItype)(bh)),			\
 	     "%1" ((USItype)(al)), "g" ((USItype)(bl)))
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
   __asm__ ("sub.w %5,%1\n\tsubx %3,%0"					\
@@ -480,7 +501,7 @@ extern UWtype __MPN(udiv_qrnnd) _PROTO ((UWtype *, UWtype, UWtype, UWtype));
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
   __asm__ ("add %4,%5,%1\n\taddc %2,%3,%0"				\
 	   : "=r" (sh), "=&r" (sl)					\
-	   : "%rM" (ah), "rM" (bh), "%rM" (al), "rM" (bl))
+	   : "rM" (ah), "rM" (bh), "%rM" (al), "rM" (bl))
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
   __asm__ ("sub %4,%5,%1\n\tsubb %2,%3,%0"				\
 	   : "=r" (sh), "=&r" (sl)					\
@@ -560,7 +581,7 @@ extern UWtype __MPN(udiv_qrnnd) _PROTO ((UWtype *, UWtype, UWtype, UWtype));
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
   __asm__ ("addl %5,%1\n\tadcl %3,%0"					\
 	   : "=r" ((USItype)(sh)), "=&r" ((USItype)(sl))		\
-	   : "%0" ((USItype)(ah)), "g" ((USItype)(bh)),			\
+	   : "0"  ((USItype)(ah)), "g" ((USItype)(bh)),			\
 	     "%1" ((USItype)(al)), "g" ((USItype)(bl)))
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
   __asm__ ("subl %5,%1\n\tsbbl %3,%0"					\
@@ -691,7 +712,7 @@ extern UWtype __MPN(udiv_qrnnd) _PROTO ((UWtype *, UWtype, UWtype, UWtype));
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
   __asm__ ("addq %5,%1\n\tadcq %3,%0"					\
 	   : "=r" ((UDItype)(sh)), "=&r" ((UDItype)(sl))		\
-	   : "%0" ((UDItype)(ah)), "g" ((UDItype)(bh)),			\
+	   : "0"  ((UDItype)(ah)), "g" ((UDItype)(bh)),			\
 	     "%1" ((UDItype)(al)), "g" ((UDItype)(bl)))
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
   __asm__ ("subq %5,%1\n\tsbbq %3,%0"					\
@@ -713,10 +734,12 @@ extern UWtype __MPN(udiv_qrnnd) _PROTO ((UWtype *, UWtype, UWtype, UWtype));
     __asm__ ("bsrq %1,%0" : "=r" (__cbtmp) : "rm" ((UDItype)(x)));	\
     (count) = __cbtmp ^ 63;						\
   } while (0)
+/* bsfq destination must be a 64-bit register, "%q0" forces this in case
+   count is only an int. */
 #define count_trailing_zeros(count, x)					\
   do {									\
     ASSERT ((x) != 0);							\
-    __asm__ ("bsfq %1,%0" : "=r" (count) : "rm" ((UDItype)(x)));	\
+    __asm__ ("bsfq %1,%q0" : "=r" (count) : "rm" ((UDItype)(x)));	\
   } while (0)
 #endif /* x86_64 */
 
@@ -730,7 +753,7 @@ extern UWtype __MPN(udiv_qrnnd) _PROTO ((UWtype *, UWtype, UWtype, UWtype));
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
   __asm__ ("cmpo 1,0\;addc %5,%4,%1\;addc %3,%2,%0"			\
 	   : "=r" (sh), "=&r" (sl)					\
-	   : "%dI" (ah), "dI" (bh), "%dI" (al), "dI" (bl))
+	   : "dI" (ah), "dI" (bh), "%dI" (al), "dI" (bl))
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
   __asm__ ("cmpo 0,0\;subc %5,%4,%1\;subc %3,%2,%0"			\
 	   : "=r" (sh), "=&r" (sl)					\
@@ -781,7 +804,7 @@ extern UWtype __MPN(udiv_qrnnd) _PROTO ((UWtype *, UWtype, UWtype, UWtype));
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
   __asm__ ("add%.l %5,%1\n\taddx%.l %3,%0"				\
 	   : "=d" ((USItype)(sh)), "=&d" ((USItype)(sl))		\
-	   : "%0" ((USItype)(ah)), "d" ((USItype)(bh)),			\
+	   : "0"  ((USItype)(ah)), "d" ((USItype)(bh)),			\
 	     "%1" ((USItype)(al)), "g" ((USItype)(bl)))
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
   __asm__ ("sub%.l %5,%1\n\tsubx%.l %3,%0"				\
@@ -840,12 +863,15 @@ extern UWtype __MPN(udiv_qrnnd) _PROTO ((UWtype *, UWtype, UWtype, UWtype));
 #define UMUL_TIME 100
 #define UDIV_TIME 400
 #endif /* not mc68020 */
-/* The '020, '030, '040 and '060 have bitfield insns.  */
-#if defined (__mc68020__) || defined (mc68020) \
+/* The '020, '030, '040 and '060 have bitfield insns.
+   GCC 3.4 defines __mc68020__ when in CPU32 mode, check for __mcpu32__ to
+   exclude bfffo on that chip (bitfield insns not available).  */
+#if (defined (__mc68020__) || defined (mc68020)    \
      || defined (__mc68030__) || defined (mc68030) \
      || defined (__mc68040__) || defined (mc68040) \
      || defined (__mc68060__) || defined (mc68060) \
-     || defined (__NeXT__)
+     || defined (__NeXT__))                        \
+  && ! defined (__mcpu32__)
 #define count_leading_zeros(count, x) \
   __asm__ ("bfffo %1{%b2:%b2},%0"					\
 	   : "=d" ((USItype) (count))					\
@@ -858,7 +884,7 @@ extern UWtype __MPN(udiv_qrnnd) _PROTO ((UWtype *, UWtype, UWtype, UWtype));
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
   __asm__ ("addu.co %1,%r4,%r5\n\taddu.ci %0,%r2,%r3"			\
 	   : "=r" (sh), "=&r" (sl)					\
-	   : "%rJ" (ah), "rJ" (bh), "%rJ" (al), "rJ" (bl))
+	   : "rJ" (ah), "rJ" (bh), "%rJ" (al), "rJ" (bl))
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
   __asm__ ("subu.co %1,%r4,%r5\n\tsubu.ci %0,%r2,%r3"			\
 	   : "=r" (sh), "=&r" (sl)					\
@@ -955,15 +981,15 @@ extern UWtype __MPN(udiv_qrnnd) _PROTO ((UWtype *, UWtype, UWtype, UWtype));
 #endif /* __ns32000__ */
 
 /* FIXME: We should test _IBMR2 here when we add assembly support for the
-   system vendor compilers.
-   FIXME: What's needed for gcc PowerPC VxWorks?  __vxworks__ is not good
-   enough, since that hits ARM and m68k too.  */
+   system vendor compilers. */
 #if (defined (_ARCH_PPC)	/* AIX */				\
      || defined (_ARCH_PWR)	/* AIX */				\
      || defined (__powerpc__)	/* gcc */				\
      || defined (__POWERPC__)	/* BEOS */				\
      || defined (__ppc__)	/* Darwin */				\
-     || defined (PPC)		/* GNU/Linux, SysV */			\
+     || (defined (PPC) && ! defined (CPU_FAMILY)) /* gcc 2.7.x GNU&SysV */    \
+     || (defined (PPC) && defined (CPU_FAMILY)    /* VxWorks */               \
+         && CPU_FAMILY == PPC)                                                \
      ) && W_TYPE_SIZE == 32
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
   do {									\
@@ -976,7 +1002,7 @@ extern UWtype __MPN(udiv_qrnnd) _PROTO ((UWtype *, UWtype, UWtype, UWtype));
     else								\
       __asm__ ("{a%I5|add%I5c} %1,%4,%5\n\t{ae|adde} %0,%2,%3"		\
 	     : "=r" (sh), "=&r" (sl)					\
-	     : "%r" (ah), "r" (bh), "%r" (al), "rI" (bl));		\
+	     : "r" (ah), "r" (bh), "%r" (al), "rI" (bl));		\
   } while (0)
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
   do {									\
@@ -1001,7 +1027,10 @@ extern UWtype __MPN(udiv_qrnnd) _PROTO ((UWtype *, UWtype, UWtype, UWtype));
   __asm__ ("{cntlz|cntlzw} %0,%1" : "=r" (count) : "r" (x))
 #define COUNT_LEADING_ZEROS_0 32
 #if defined (_ARCH_PPC) || defined (__powerpc__) || defined (__POWERPC__) \
-  || defined (__ppc__) || defined (PPC) || defined (__vxworks__)
+  || defined (__ppc__)                                                    \
+  || (defined (PPC) && ! defined (CPU_FAMILY)) /* gcc 2.7.x GNU&SysV */       \
+  || (defined (PPC) && defined (CPU_FAMILY)    /* VxWorks */                  \
+         && CPU_FAMILY == PPC)
 #define umul_ppmm(ph, pl, m0, m1) \
   do {									\
     USItype __m0 = (m0), __m1 = (m1);					\
@@ -1042,7 +1071,7 @@ extern UWtype __MPN(udiv_qrnnd) _PROTO ((UWtype *, UWtype, UWtype, UWtype));
     else								\
       __asm__ ("{a%I5|add%I5c} %1,%4,%5\n\t{ae|adde} %0,%2,%3"		\
 	     : "=r" (sh), "=&r" (sl)					\
-	     : "%r" (ah), "r" (bh), "%r" (al), "rI" (bl));		\
+	     : "r" (ah), "r" (bh), "%r" (al), "rI" (bl));		\
   } while (0)
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
   do {									\
@@ -1087,7 +1116,7 @@ extern UWtype __MPN(udiv_qrnnd) _PROTO ((UWtype *, UWtype, UWtype, UWtype));
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
   __asm__ ("addw %5,%1\n\taddwc %3,%0"					\
 	   : "=r" ((USItype)(sh)), "=&r" ((USItype)(sl))		\
-	   : "%0" ((USItype)(ah)), "g" ((USItype)(bh)),			\
+	   : "0"  ((USItype)(ah)), "g" ((USItype)(bh)),			\
 	     "%1" ((USItype)(al)), "g" ((USItype)(bl)))
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
   __asm__ ("subw %5,%1\n\tsubwb %3,%0"					\
@@ -1109,7 +1138,7 @@ extern UWtype __MPN(udiv_qrnnd) _PROTO ((UWtype *, UWtype, UWtype, UWtype));
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
   __asm__ ("a %1,%5\n\tae %0,%3"					\
 	   : "=r" ((USItype)(sh)), "=&r" ((USItype)(sl))		\
-	   : "%0" ((USItype)(ah)), "r" ((USItype)(bh)),			\
+	   : "0"  ((USItype)(ah)), "r" ((USItype)(bh)),			\
 	     "%1" ((USItype)(al)), "r" ((USItype)(bl)))
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
   __asm__ ("s %1,%5\n\tse %0,%3"					\
@@ -1168,7 +1197,7 @@ extern UWtype __MPN(udiv_qrnnd) _PROTO ((UWtype *, UWtype, UWtype, UWtype));
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
   __asm__ ("addcc %r4,%5,%1\n\taddx %r2,%3,%0"				\
 	   : "=r" (sh), "=&r" (sl)					\
-	   : "%rJ" (ah), "rI" (bh),"%rJ" (al), "rI" (bl)		\
+	   : "rJ" (ah), "rI" (bh),"%rJ" (al), "rI" (bl)			\
 	   __CLOBBER_CC)
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
   __asm__ ("subcc %r4,%5,%1\n\tsubx %r2,%3,%0"				\
@@ -1353,7 +1382,7 @@ extern UWtype __MPN(udiv_qrnnd) _PROTO ((UWtype *, UWtype, UWtype, UWtype));
       "	addccc	%r6,%7,%%g0\n"						\
       "	addc	%r2,%3,%0"						\
 	  : "=r" (sh), "=&r" (sl)					\
-	  : "%rJ" (ah), "rI" (bh), "%rJ" (al), "rI" (bl),		\
+	  : "rJ" (ah), "rI" (bh), "%rJ" (al), "rI" (bl),		\
 	    "%rJ" ((al) >> 32), "rI" ((bl) >> 32)			\
 	   __CLOBBER_CC)
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
@@ -1371,7 +1400,7 @@ extern UWtype __MPN(udiv_qrnnd) _PROTO ((UWtype *, UWtype, UWtype, UWtype));
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
   __asm__ ("addl2 %5,%1\n\tadwc %3,%0"					\
 	   : "=g" ((USItype)(sh)), "=&g" ((USItype)(sl))		\
-	   : "%0" ((USItype)(ah)), "g" ((USItype)(bh)),			\
+	   : "0"  ((USItype)(ah)), "g" ((USItype)(bh)),			\
 	     "%1" ((USItype)(al)), "g" ((USItype)(bl)))
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
   __asm__ ("subl2 %5,%1\n\tsbwc %3,%0"					\
@@ -1413,7 +1442,7 @@ extern UWtype __MPN(udiv_qrnnd) _PROTO ((UWtype *, UWtype, UWtype, UWtype));
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
   __asm__ ("add	%H1,%H5\n\tadc	%H0,%H3"				\
 	   : "=r" ((unsigned int)(sh)), "=&r" ((unsigned int)(sl))	\
-	   : "%0" ((unsigned int)(ah)), "r" ((unsigned int)(bh)),	\
+	   : "0"  ((unsigned int)(ah)), "r" ((unsigned int)(bh)),	\
 	     "%1" ((unsigned int)(al)), "rQR" ((unsigned int)(bl)))
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
   __asm__ ("sub	%H1,%H5\n\tsbc	%H0,%H3"				\

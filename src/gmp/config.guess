@@ -3,7 +3,7 @@
 # GMP config.guess wrapper.
 
 
-# Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
+# Copyright 2000, 2001, 2002, 2003 Free Software Foundation, Inc.
 #
 # This file is part of the GNU MP Library.
 #
@@ -76,7 +76,7 @@ exact_cpu=
 
 
 dummy=dummy-$$
-trap 'rm -f $dummy.c $dummy.o $dummy ${dummy}1.s ${dummy}2.c ; exit 1' 1 2 15
+trap 'rm -f $dummy.c $dummy.o $dummy.core $dummy ${dummy}1.s ${dummy}2.c ; exit 1' 1 2 15
 
 # Use $HOST_CC if defined. $CC may point to a cross-compiler
 if test x"$CC_FOR_BUILD" = x; then
@@ -87,7 +87,7 @@ if test x"$CC_FOR_BUILD" = x; then
       CC_FOR_BUILD="$CC"
     else
       echo 'dummy(){}' >$dummy.c
-      for c in cc c89 gcc; do 
+      for c in cc gcc c89 c99; do 
 	  ($c $dummy.c -c) >/dev/null 2>&1
 	  if test $? = 0; then
 	      CC_FOR_BUILD="$c"; break
@@ -144,7 +144,7 @@ EOF
     2-1307)	exact_cpu=alphaev68  ;;
     esac
   fi
-  rm -f $dummy.s $dummy
+  rm -f $dummy.s $dummy.o $dummy
   ;;
 
 mips-*-irix[6789]*)
@@ -251,7 +251,7 @@ EOF
         exact_cpu=m68020
       fi
     fi
-    rm -f $dummy.s $dummy $dummy.core core
+    rm -f $dummy.s $dummy.o $dummy $dummy.core core
   fi
   if test -z "$exact_cpu"; then
     case "$guess_full" in
@@ -313,13 +313,14 @@ main ()
 }
 EOF
   if ($CC_FOR_BUILD $dummy.c -o $dummy) >/dev/null 2>&1; then
-    # use $SHELL -c to avoid a segv message when this program is run on AIX
-    x=`$SHELL -c ./$dummy 2>/dev/null`
+    # This style construct is needed on AIX 4.3 to suppress the SIGILL error
+    # from (*fun)().  Using $SHELL -c ./$dummy 2>/dev/null doesn't work.
+    { x=`./$dummy`; } 2>/dev/null
     if test -n "$x"; then
       exact_cpu=$x
     fi
   fi
-  rm -f $dummy.c $dummy
+  rm -f $dummy.c $dummy.o $dummy $dummy.core
 
   # Grep the linux kernel /proc/cpuinfo pseudo-file.
   # Anything unrecognised is ignored, since of course we mustn't spit out
@@ -383,7 +384,7 @@ EOF
         exact_cpu=$x
       fi
     fi
-    rm -f $dummy.c $dummy
+    rm -f $dummy.c $dummy.o $dummy
   fi
 
   if test -z "$exact_cpu"; then
@@ -422,7 +423,7 @@ EOF
         exact_cpu=$x
       fi
     fi
-    rm -f $dummy.c $dummy
+    rm -f $dummy.c $dummy.o $dummy
   fi
   ;;
 
@@ -598,11 +599,26 @@ main ()
 	case 6:
 	  modelstr = "athlon";
 	  break;
+	case 15:
+	  /* We might want to return opteron, athlon64, or the CPU core name
+	     hammer here instead of the architecture name x86_64.  */
+	  modelstr = "x86_64";
+	  break;
 	}
     }
   else if (strcmp (vendor_string, "CyrixInstead") == 0)
     {
       /* Should recognize Cyrix' processors too.  */
+    }
+  else if (strcmp (vendor_string, "CentaurHauls") == 0)
+    {
+      switch (family)
+	{
+	case 6:
+	  if (model < 9)	modelstr = "viac3";
+	  else			modelstr = "viac32";
+	  break;
+	}
     }
 
   printf ("%s\n", modelstr);

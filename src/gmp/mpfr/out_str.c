@@ -1,6 +1,6 @@
 /* mpfr_out_str -- output a floating-point number to a stream
 
-Copyright 1999, 2001 Free Software Foundation, Inc.
+Copyright 1999, 2001, 2003 Free Software Foundation, Inc.
 
 This file is part of the MPFR Library.
 
@@ -34,6 +34,10 @@ mpfr_out_str (FILE *stream, int base, size_t n_digits, mpfr_srcptr op,
   char *s, *s0;
   size_t l;
   mp_exp_t e;
+
+  /* when stream=NULL, output to stdout */
+  if (stream == NULL)
+    stream = stdout;
 
   if (MPFR_IS_NAN(op))
     {

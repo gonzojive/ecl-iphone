@@ -1,8 +1,8 @@
 ## Process this file with automake to generate Makefile.in
 
 
-# Copyright 1991, 1993, 1994, 1996, 1997, 1999, 2000, 2001, 2002 Free
-# Software Foundation, Inc.
+# Copyright 1991, 1993, 1994, 1996, 1997, 1999, 2000, 2001, 2002, 2003, 2004
+# Free Software Foundation, Inc.
 #
 # This file is part of the GNU MP Library.
 #
@@ -47,6 +47,7 @@
 #        4.1      6:0:3    3:2:0   4:4:1
 #        4.1.1    6:1:3    3:3:0   4:5:1
 #        4.1.2    6:2:3    3:4:0   4:6:1
+#        4.1.3    6:3:3    3:5:0   4:7:1
 #
 # Starting at 3:0:0 is a slight abuse of the versioning system, but it
 # ensures we're past soname libgmp.so.2, which was used on Debian GNU/Linux
@@ -54,15 +55,15 @@
 # gmp 3 mean 3:0:0 is right.
 
 LIBGMP_LT_CURRENT =  6
-LIBGMP_LT_REVISION = 2
+LIBGMP_LT_REVISION = 3
 LIBGMP_LT_AGE =      3
 
 LIBGMPXX_LT_CURRENT =  3
-LIBGMPXX_LT_REVISION = 4
+LIBGMPXX_LT_REVISION = 5
 LIBGMPXX_LT_AGE =      0
 
 LIBMP_LT_CURRENT =  4
-LIBMP_LT_REVISION = 6
+LIBMP_LT_REVISION = 7
 LIBMP_LT_AGE =      1
 
 
@@ -93,8 +94,19 @@ if WANT_MPFR
 MPFRXX_HEADERS_OPTION = mpfrxx.h
 endif
 endif
+
+# gmp.h and mp.h are architecture dependent, mainly since they encode the
+# limb size used in libgmp.  For that reason they belong under $exec_prefix
+# not $prefix, strictly speaking.
+#
+# $exec_prefix/include is not in the default include path for gcc built to
+# the same $prefix and $exec_prefix, which might mean gmp.h is not found,
+# but anyone knowledgable enough to be playing with exec_prefix will be able
+# to address that.
+#
+includeexecdir = $(exec_prefix)/include
 include_HEADERS = $(GMPXX_HEADERS_OPTION) $(MPFRXX_HEADERS_OPTION)
-nodist_include_HEADERS = gmp.h $(MPBSD_HEADERS_OPTION)
+nodist_includeexec_HEADERS = gmp.h $(MPBSD_HEADERS_OPTION)
 lib_LTLIBRARIES = libgmp.la $(GMPXX_LTLIBRARIES_OPTION) $(MPBSD_LTLIBRARIES_OPTION)
 
 EXTRA_DIST = doc macos \
@@ -209,10 +221,11 @@ SCANF_OBJECTS =							\
   scanf/scanf$U.lo scanf/sscanf$U.lo scanf/sscanffuns$U.lo	\
   scanf/vfscanf$U.lo scanf/vscanf$U.lo scanf/vsscanf$U.lo
 
-CXX_OBJECTS =							\
-  cxx/isfuns$U.lo cxx/ismpf$U.lo cxx/ismpq$U.lo cxx/ismpz$U.lo	\
-  cxx/osdoprnti$U.lo cxx/osfuns$U.lo				\
-  cxx/osmpf$U.lo cxx/osmpq$U.lo cxx/osmpz$U.lo
+# no $U for C++ files
+CXX_OBJECTS =								\
+  cxx/isfuns.lo cxx/ismpf.lo cxx/ismpq.lo cxx/ismpz.lo			\
+  cxx/osdoprnti.lo cxx/osfuns.lo					\
+  cxx/osmpf.lo cxx/osmpq.lo cxx/osmpz.lo
 
 MPBSD_OBJECTS = mpbsd/add$U.lo mpbsd/tdiv_qr$U.lo mpbsd/set$U.lo	\
   mpbsd/powm$U.lo mpbsd/sub$U.lo mpbsd/cmp$U.lo mpbsd/mfree$U.lo	\

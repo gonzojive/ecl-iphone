@@ -27,6 +27,7 @@ MA 02111-1307, USA. */
 #if  defined (__STDC__)                                 \
   || defined (__cplusplus)                              \
   || defined (_AIX)                                     \
+  || defined (__DECC)                                   \
   || (defined (__mips) && defined (_SYSTYPE_SVR4))      \
   || defined (_MSC_VER)                                 \
   || defined(_WIN32)

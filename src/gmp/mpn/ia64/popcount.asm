@@ -48,6 +48,7 @@ PROLOGUE(mpn_popcount)
 
 .L0:		mov	ar.lc = r23	;;
 		br.cloop.dptk	.L1	;;
+		mov	ar.lc = r2
 		br.ret.sptk.many b0	;;
 .L1:		ld8	r16 = [r32], 8	;;
 		ld8	r17 = [r32], 8	;;
@@ -94,6 +95,7 @@ PROLOGUE(mpn_popcount)
 		add	r23 = r23, r22	;;
 		add	r8 = r8, r21	;;
 		add	r8 = r8, r23
+		mov	ar.lc = r2
 		br.ret.sptk.many b0
 
 .Ldone1:
@@ -106,6 +108,6 @@ PROLOGUE(mpn_popcount)
 		add	r8 = r8, r21	;;
 		add	r8 = r8, r23
 		mov	ar.lc = r2
-	br.ret.sptk.many b0
+		br.ret.sptk.many b0
 EPILOGUE(mpn_popcount)
 ASM_END()

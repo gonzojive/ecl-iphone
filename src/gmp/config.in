@@ -465,6 +465,12 @@ MA 02111-1307, USA. */
 /* ./configure --enable-fft option, to enable FFTs for multiplication */
 #undef WANT_FFT
 
+/* Define to 1 if --enable-profiling=gprof */
+#undef WANT_PROFILING_GPROF
+
+/* Define to 1 if --enable-profiling=prof */
+#undef WANT_PROFILING_PROF
+
 /* --enable-alloca=yes */
 #undef WANT_TMP_ALLOCA
 

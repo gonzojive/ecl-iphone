@@ -13,8 +13,8 @@
 
 @SET_MAKE@
 
-# Copyright 1991, 1993, 1994, 1996, 1997, 1999, 2000, 2001, 2002 Free
-# Software Foundation, Inc.
+# Copyright 1991, 1993, 1994, 1996, 1997, 1999, 2000, 2001, 2002, 2003, 2004
+# Free Software Foundation, Inc.
 #
 # This file is part of the GNU MP Library.
 #
@@ -58,6 +58,7 @@
 #        4.1      6:0:3    3:2:0   4:4:1
 #        4.1.1    6:1:3    3:3:0   4:5:1
 #        4.1.2    6:2:3    3:4:0   4:6:1
+#        4.1.3    6:3:3    3:5:0   4:7:1
 #
 # Starting at 3:0:0 is a slight abuse of the versioning system, but it
 # ensures we're past soname libgmp.so.2, which was used on Debian GNU/Linux
@@ -168,15 +169,15 @@ mpn_objs_in_libgmp = @mpn_objs_in_libgmp@
 mpn_objs_in_libmp = @mpn_objs_in_libmp@
 
 LIBGMP_LT_CURRENT = 6
-LIBGMP_LT_REVISION = 2
+LIBGMP_LT_REVISION = 3
 LIBGMP_LT_AGE = 3
 
 LIBGMPXX_LT_CURRENT = 3
-LIBGMPXX_LT_REVISION = 4
+LIBGMPXX_LT_REVISION = 5
 LIBGMPXX_LT_AGE = 0
 
 LIBMP_LT_CURRENT = 4
-LIBMP_LT_REVISION = 6
+LIBMP_LT_REVISION = 7
 LIBMP_LT_AGE = 1
 
 AUTOMAKE_OPTIONS = gnu no-dependencies ansi2knr
@@ -196,8 +197,19 @@ SUBDIRS = tests mpn mpz mpq mpf printf scanf cxx mpbsd $(MPFR_DIR) demos tune
 
 @WANT_CXX_TRUE@GMPXX_HEADERS_OPTION = gmpxx.h
 @WANT_CXX_TRUE@@WANT_MPFR_TRUE@MPFRXX_HEADERS_OPTION = mpfrxx.h
+
+# gmp.h and mp.h are architecture dependent, mainly since they encode the
+# limb size used in libgmp.  For that reason they belong under $exec_prefix
+# not $prefix, strictly speaking.
+#
+# $exec_prefix/include is not in the default include path for gcc built to
+# the same $prefix and $exec_prefix, which might mean gmp.h is not found,
+# but anyone knowledgable enough to be playing with exec_prefix will be able
+# to address that.
+#
+includeexecdir = $(exec_prefix)/include
 include_HEADERS = $(GMPXX_HEADERS_OPTION) $(MPFRXX_HEADERS_OPTION)
-nodist_include_HEADERS = gmp.h $(MPBSD_HEADERS_OPTION)
+nodist_includeexec_HEADERS = gmp.h $(MPBSD_HEADERS_OPTION)
 lib_LTLIBRARIES = libgmp.la $(GMPXX_LTLIBRARIES_OPTION) $(MPBSD_LTLIBRARIES_OPTION)
 
 EXTRA_DIST = doc macos \
@@ -317,10 +329,11 @@ SCANF_OBJECTS = \
   scanf/vfscanf$U.lo scanf/vscanf$U.lo scanf/vsscanf$U.lo
 
 
+# no $U for C++ files
 CXX_OBJECTS = \
-  cxx/isfuns$U.lo cxx/ismpf$U.lo cxx/ismpq$U.lo cxx/ismpz$U.lo	\
-  cxx/osdoprnti$U.lo cxx/osfuns$U.lo				\
-  cxx/osmpf$U.lo cxx/osmpq$U.lo cxx/osmpz$U.lo
+  cxx/isfuns.lo cxx/ismpf.lo cxx/ismpq.lo cxx/ismpz.lo			\
+  cxx/osdoprnti.lo cxx/osfuns.lo					\
+  cxx/osmpf.lo cxx/osmpq.lo cxx/osmpz.lo
 
 
 MPBSD_OBJECTS = mpbsd/add$U.lo mpbsd/tdiv_qr$U.lo mpbsd/set$U.lo	\
@@ -449,10 +462,10 @@ CXXLINK = $(LIBTOOL) --mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) \
 CXXFLAGS = @CXXFLAGS@
 DIST_SOURCES = $(libdummy_la_SOURCES) $(libgmp_la_SOURCES) \
 	$(libgmpxx_la_SOURCES) $(libmp_la_SOURCES)
-#INFO_DEPS = gmp.info
-#DVIS = gmp.dvi
+INFO_DEPS = gmp.info
+DVIS = gmp.dvi
 TEXINFOS = gmp.texi
-HEADERS = $(include_HEADERS) $(nodist_include_HEADERS)
+HEADERS = $(include_HEADERS) $(nodist_includeexec_HEADERS)
 
 
 RECURSIVE_TARGETS = info-recursive dvi-recursive install-info-recursive \
@@ -755,22 +768,22 @@ uninstall-includeHEADERS:
 	  echo " rm -f $(DESTDIR)$(includedir)/$$f"; \
 	  rm -f $(DESTDIR)$(includedir)/$$f; \
 	done
-install-nodist_includeHEADERS: $(nodist_include_HEADERS)
+install-nodist_includeexecHEADERS: $(nodist_includeexec_HEADERS)
 	@$(NORMAL_INSTALL)
-	$(mkinstalldirs) $(DESTDIR)$(includedir)
-	@list='$(nodist_include_HEADERS)'; for p in $$list; do \
+	$(mkinstalldirs) $(DESTDIR)$(includeexecdir)
+	@list='$(nodist_includeexec_HEADERS)'; for p in $$list; do \
 	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
 	  f="`echo $$p | sed -e 's|^.*/||'`"; \
-	  echo " $(INSTALL_HEADER) $$d$$p $(DESTDIR)$(includedir)/$$f"; \
-	  $(INSTALL_HEADER) $$d$$p $(DESTDIR)$(includedir)/$$f; \
+	  echo " $(INSTALL_HEADER) $$d$$p $(DESTDIR)$(includeexecdir)/$$f"; \
+	  $(INSTALL_HEADER) $$d$$p $(DESTDIR)$(includeexecdir)/$$f; \
 	done
 
-uninstall-nodist_includeHEADERS:
+uninstall-nodist_includeexecHEADERS:
 	@$(NORMAL_UNINSTALL)
-	@list='$(nodist_include_HEADERS)'; for p in $$list; do \
+	@list='$(nodist_includeexec_HEADERS)'; for p in $$list; do \
 	  f="`echo $$p | sed -e 's|^.*/||'`"; \
-	  echo " rm -f $(DESTDIR)$(includedir)/$$f"; \
-	  rm -f $(DESTDIR)$(includedir)/$$f; \
+	  echo " rm -f $(DESTDIR)$(includeexecdir)/$$f"; \
+	  rm -f $(DESTDIR)$(includeexecdir)/$$f; \
 	done
 
 # This directory's subdirectories are mostly independent; you can cd
@@ -954,7 +967,7 @@ all-am: Makefile $(INFO_DEPS) $(ANSI2KNR) $(LTLIBRARIES) $(HEADERS) \
 		config.h
 installdirs: installdirs-recursive
 installdirs-am:
-	$(mkinstalldirs) $(DESTDIR)$(libdir) $(DESTDIR)$(infodir) $(DESTDIR)$(includedir) $(DESTDIR)$(includedir)
+	$(mkinstalldirs) $(DESTDIR)$(libdir) $(DESTDIR)$(infodir) $(DESTDIR)$(includedir) $(DESTDIR)$(includeexecdir)
 
 install: install-recursive
 install-exec: install-exec-recursive
@@ -1002,10 +1015,10 @@ info: info-recursive
 
 info-am: $(INFO_DEPS)
 
-install-data-am: install-includeHEADERS install-info-am \
-	install-nodist_includeHEADERS
+install-data-am: install-includeHEADERS install-info-am
 
-install-exec-am: install-libLTLIBRARIES
+install-exec-am: install-libLTLIBRARIES \
+	install-nodist_includeexecHEADERS
 
 install-info: install-info-recursive
 
@@ -1047,7 +1060,7 @@ mostlyclean-am: mostlyclean-aminfo mostlyclean-compile \
 	mostlyclean-vti
 
 uninstall-am: uninstall-includeHEADERS uninstall-info-am \
-	uninstall-libLTLIBRARIES uninstall-nodist_includeHEADERS
+	uninstall-libLTLIBRARIES uninstall-nodist_includeexecHEADERS
 
 uninstall-info: uninstall-info-recursive
 
@@ -1061,17 +1074,17 @@ uninstall-info: uninstall-info-recursive
 	install-exec install-exec-am install-exec-recursive \
 	install-includeHEADERS install-info install-info-am \
 	install-info-recursive install-libLTLIBRARIES install-man \
-	install-nodist_includeHEADERS install-recursive install-strip \
-	installcheck installcheck-am installdirs installdirs-am \
-	installdirs-recursive maintainer-clean maintainer-clean-aminfo \
-	maintainer-clean-generic maintainer-clean-recursive \
-	maintainer-clean-vti mostlyclean mostlyclean-aminfo \
-	mostlyclean-compile mostlyclean-generic mostlyclean-kr \
-	mostlyclean-libtool mostlyclean-recursive mostlyclean-vti tags \
-	tags-recursive uninstall uninstall-am uninstall-includeHEADERS \
-	uninstall-info-am uninstall-info-recursive \
-	uninstall-libLTLIBRARIES uninstall-nodist_includeHEADERS \
-	uninstall-recursive
+	install-nodist_includeexecHEADERS install-recursive \
+	install-strip installcheck installcheck-am installdirs \
+	installdirs-am installdirs-recursive maintainer-clean \
+	maintainer-clean-aminfo maintainer-clean-generic \
+	maintainer-clean-recursive maintainer-clean-vti mostlyclean \
+	mostlyclean-aminfo mostlyclean-compile mostlyclean-generic \
+	mostlyclean-kr mostlyclean-libtool mostlyclean-recursive \
+	mostlyclean-vti tags tags-recursive uninstall uninstall-am \
+	uninstall-includeHEADERS uninstall-info-am \
+	uninstall-info-recursive uninstall-libLTLIBRARIES \
+	uninstall-nodist_includeexecHEADERS uninstall-recursive
 
 
 # Avoid: CVS - cvs directories

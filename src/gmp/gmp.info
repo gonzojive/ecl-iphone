@@ -1,0 +1,165 @@
+This is gmp.info, produced by makeinfo version 4.6 from gmp.texi.
+
+This manual describes how to install and use the GNU multiple precision
+arithmetic library, version 4.1.4.
+
+   Copyright 1991, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
+2001, 2002, 2003, 2004 Free Software Foundation, Inc.
+
+   Permission is granted to copy, distribute and/or modify this
+document under the terms of the GNU Free Documentation License, Version
+1.1 or any later version published by the Free Software Foundation;
+with no Invariant Sections, with the Front-Cover Texts being "A GNU
+Manual", and with the Back-Cover Texts being "You have freedom to copy
+and modify this GNU Manual, like GNU software".  A copy of the license
+is included in *Note GNU Free Documentation License::.
+INFO-DIR-SECTION GNU libraries
+START-INFO-DIR-ENTRY
+* gmp: (gmp).                   GNU Multiple Precision Arithmetic Library.
+END-INFO-DIR-ENTRY
+
+
+Indirect:
+gmp.info-1: 913
+gmp.info-2: 297472
+
+Tag Table:
+(Indirect)
+Node: Top913
+Node: Copying3097
+Node: Introduction to GMP4950
+Node: Installing GMP8141
+Node: Build Options8835
+Node: ABI and ISA25028
+Node: Notes for Package Builds30470
+Node: Notes for Particular Systems32506
+Node: Known Build Problems39091
+Node: GMP Basics44563
+Node: Headers and Libraries45207
+Node: Nomenclature and Types46722
+Node: Function Classes47774
+Node: Variable Conventions49209
+Node: Parameter Conventions50810
+Node: Memory Management52863
+Node: Reentrancy53983
+Node: Useful Macros and Constants55817
+Node: Compatibility with older versions56583
+Node: Demonstration Programs57536
+Node: Efficiency58795
+Node: Debugging66429
+Node: Profiling72955
+Node: Autoconf74574
+Node: Emacs77217
+Node: Reporting Bugs77883
+Node: Integer Functions80409
+Node: Initializing Integers81151
+Node: Assigning Integers84847
+Node: Simultaneous Integer Init & Assign86291
+Node: Converting Integers87903
+Node: Integer Arithmetic90304
+Node: Integer Division91883
+Node: Integer Exponentiation97719
+Node: Integer Roots98558
+Node: Number Theoretic Functions100013
+Node: Integer Comparisons106025
+Node: Integer Logic and Bit Fiddling107213
+Node: I/O of Integers109695
+Node: Integer Random Numbers112166
+Node: Integer Import and Export114774
+Node: Miscellaneous Integer Functions118759
+Node: Rational Number Functions120717
+Node: Initializing Rationals121905
+Node: Rational Conversions124101
+Node: Rational Arithmetic125422
+Node: Comparing Rationals126741
+Node: Applying Integer Functions128095
+Node: I/O of Rationals129564
+Node: Floating-point Functions131414
+Node: Initializing Floats134295
+Node: Assigning Floats137984
+Node: Simultaneous Float Init & Assign140315
+Node: Converting Floats141830
+Node: Float Arithmetic144144
+Node: Float Comparison146164
+Node: I/O of Floats147499
+Node: Miscellaneous Float Functions149812
+Node: Low-level Functions151692
+Node: Random Number Functions172917
+Node: Random State Initialization173950
+Node: Random State Seeding176418
+Node: Formatted Output177762
+Node: Formatted Output Strings178001
+Node: Formatted Output Functions182875
+Node: C++ Formatted Output186853
+Node: Formatted Input189433
+Node: Formatted Input Strings189663
+Node: Formatted Input Functions194107
+Node: C++ Formatted Input196130
+Node: C++ Class Interface197500
+Node: C++ Interface General198518
+Node: C++ Interface Integers201582
+Node: C++ Interface Rationals204702
+Node: C++ Interface Floats208071
+Node: C++ Interface MPFR212401
+Node: C++ Interface Random Numbers212980
+Node: C++ Interface Limitations215381
+Node: BSD Compatible Functions218197
+Node: Custom Allocation222885
+Node: Language Bindings226651
+Node: Algorithms230633
+Node: Multiplication Algorithms231328
+Node: Basecase Multiplication232361
+Node: Karatsuba Multiplication234238
+Node: Toom-Cook 3-Way Multiplication237862
+Node: FFT Multiplication245614
+Node: Other Multiplication250941
+Node: Division Algorithms253420
+Node: Single Limb Division253757
+Node: Basecase Division256662
+Node: Divide and Conquer Division257851
+Node: Exact Division260070
+Node: Exact Remainder263239
+Node: Small Quotient Division265498
+Node: Greatest Common Divisor Algorithms267082
+Node: Binary GCD267345
+Node: Accelerated GCD268829
+Node: Extended GCD270612
+Node: Jacobi Symbol272267
+Node: Powering Algorithms273169
+Node: Normal Powering Algorithm273422
+Node: Modular Powering Algorithm273936
+Node: Root Extraction Algorithms274985
+Node: Square Root Algorithm275290
+Node: Nth Root Algorithm276254
+Node: Perfect Square Algorithm277025
+Node: Perfect Power Algorithm278018
+Node: Radix Conversion Algorithms278625
+Node: Binary to Radix278991
+Node: Radix to Binary282906
+Node: Other Algorithms284823
+Node: Factorial Algorithm285109
+Node: Binomial Coefficients Algorithm286448
+Node: Fibonacci Numbers Algorithm287770
+Node: Lucas Numbers Algorithm290240
+Node: Assembler Coding290914
+Node: Assembler Code Organisation291819
+Node: Assembler Basics292421
+Node: Assembler Carry Propagation293500
+Node: Assembler Cache Handling295322
+Node: Assembler Floating Point297472
+Node: Assembler SIMD Instructions301252
+Node: Assembler Software Pipelining302226
+Node: Assembler Loop Unrolling303482
+Node: Internals305857
+Node: Integer Internals306363
+Node: Rational Internals308376
+Node: Float Internals309604
+Node: Raw Output Internals316698
+Node: C++ Interface Internals317882
+Node: Contributors321192
+Node: References324952
+Node: GNU Free Documentation License329658
+Node: Concept Index352073
+Node: Function Index366046
+
+End Tag Table

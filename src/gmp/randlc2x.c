@@ -2,7 +2,7 @@
    state STATE for a linear congruential generator with multiplier A,
    adder C, and modulus 2 ^ M2EXP.
 
-Copyright 2000, 2002 Free Software Foundation, Inc.
+Copyright 2000, 2002, 2004 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -37,7 +37,11 @@ gmp_randinit_lc_2exp (gmp_randstate_t rstate,
   rstate->_mp_algdata._mp_lc = (__gmp_randata_lc *)
     (*__gmp_allocate_func) (sizeof (__gmp_randata_lc));
 
-  mpz_init_set (rstate->_mp_algdata._mp_lc->_mp_a, a);
+  mpz_init (rstate->_mp_algdata._mp_lc->_mp_a);
+  mpz_fdiv_r_2exp (rstate->_mp_algdata._mp_lc->_mp_a, a, m2exp);
+
+  if (m2exp < BITS_PER_ULONG)
+    c &= ((1L << m2exp) - 1);
   rstate->_mp_algdata._mp_lc->_mp_c = c;
 
   /* Cover weird case where m2exp is 0, which means that m is used

@@ -1,7 +1,7 @@
 /* mpfr_exp_2 -- exponential of a floating-point number 
                 using Brent's algorithms in O(n^(1/2)*M(n)) and O(n^(1/3)*M(n))
 
-Copyright 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 1999, 2000, 2001, 2002, 2003 Free Software Foundation, Inc.
 
 This file is part of the MPFR Library.
 
@@ -23,6 +23,7 @@ MA 02111-1307, USA. */
 #include <stdio.h>
 #include "gmp.h"
 #include "gmp-impl.h"
+#include "longlong.h"
 #include "mpfr.h"
 #include "mpfr-impl.h"
 
@@ -109,11 +110,19 @@ mpfr_exp_2 (mpfr_ptr y, mpfr_srcptr x, mp_rnd_t rnd_mode)
 {
   int n, K, precy, q, k, l, err, exps, inexact;
   mpfr_t r, s, t; mpz_t ss;
+  int error_r;
   TMP_DECL(marker);
 
   precy = MPFR_PREC(y);
 
   n = (int) (mpfr_get_d1 (x) / LOG2);
+
+  /* error bounds the cancelled bits in x - n*log(2) */
+  if (n == 0)
+    error_r = 0;
+  else
+    count_leading_zeros (error_r, (mp_limb_t) (n < 0) ? -n : n);
+  error_r = BITS_PER_MP_LIMB - error_r + 2;
 
   /* for the O(n^(1/2)*M(n)) method, the Taylor series computation of
      n/K terms costs about n/(2K) multiplications when computed in fixed
@@ -123,8 +132,8 @@ mpfr_exp_2 (mpfr_ptr y, mpfr_srcptr x, mp_rnd_t rnd_mode)
   err = K + (int) _mpfr_ceil_log2 (2.0 * (double) l + 18.0);
   /* add K extra bits, i.e. failure probability <= 1/2^K = O(1/precy) */
   q = precy + err + K + 3;
-  mpfr_init2 (r, q);
-  mpfr_init2 (s, q);
+  mpfr_init2 (r, q + error_r);
+  mpfr_init2 (s, q + error_r);
   mpfr_init2 (t, q);
   /* the algorithm consists in computing an upper bound of exp(x) using
      a precision of q bits, and see if we can round to MPFR_PREC(y) taking
@@ -157,6 +166,7 @@ mpfr_exp_2 (mpfr_ptr y, mpfr_srcptr x, mp_rnd_t rnd_mode)
     if (n<0) mpfr_neg(r, r, GMP_RNDD);
     mpfr_sub(r, x, r, GMP_RNDU);
   }
+  mpfr_round_prec (r, GMP_RNDU, q);
 #ifdef DEBUG
   printf("x-r=%1.20e\n", mpfr_get_d1 (r));
   printf(" ="); mpfr_print_binary(r); putchar('\n');

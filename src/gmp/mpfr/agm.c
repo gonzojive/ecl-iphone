@@ -1,6 +1,6 @@
 /* mpfr_agm -- arithmetic-geometric mean of two floating-point numbers
 
-Copyright 1999, 2000, 2001, 2002 Free Software Foundation.
+Copyright 1999, 2000, 2001, 2002, 2003 Free Software Foundation.
 
 This file is part of the MPFR Library.
 
@@ -117,14 +117,18 @@ mpfr_agm (mpfr_ptr r, mpfr_srcptr op2, mpfr_srcptr op1, mp_rnd_t rnd_mode)
   while (go_on) {
     int err, can_round;
     mp_prec_t eq;
+    double erraux;
     
-    err=1 + (int) ((3.0/2.0*(double)_mpfr_ceil_log2((double)p)+1.0)*_mpfr_ceil_exp2(-(double)p)
-	     +3.0*_mpfr_ceil_exp2(-2.0*(double)p*uo/(vo-uo)));
+    erraux = (vo == uo) ? 0.0 : _mpfr_ceil_exp2 (-2.0 * (double) p * uo
+                                                   / (vo - uo));
+    err = 1 + (int) ((3.0 / 2.0 * (double) _mpfr_ceil_log2 ((double) p)
+                      + 1.0) * _mpfr_ceil_exp2 (- (double) p)
+                     + 3.0 * erraux);
     if(p-err-3<=q) {
       p=q+err+4;
       err= 1 + 
 	(int) ((3.0/2.0*_mpfr_ceil_log2((double)p)+1.0)*_mpfr_ceil_exp2(-(double)p)
-	       +3.0*_mpfr_ceil_exp2(-2.0*(double)p*uo/(vo-uo)));
+	       +3.0 * erraux);
     }
 
     /* Calculus of un and vn */

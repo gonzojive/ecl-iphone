@@ -1,6 +1,6 @@
 /* mpfrxx.h -- C++ class wrapper for MPFR.  -*- C++ -*-
 
-Copyright 2001, 2002 Free Software Foundation, Inc.
+Copyright 2001, 2002, 2004 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -480,7 +480,7 @@ template <class T>
 inline void __gmp_set_expr
 (mpfr_ptr f, const __gmp_expr<__gmpf_value, T> &expr)
 {
-  mpq_class temp(expr);
+  mpf_class temp(expr);
   mpfr_set_f(f, temp.get_mpf_t(), __gmp_default_rounding_mode);
 }
 

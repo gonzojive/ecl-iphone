@@ -35,7 +35,7 @@ dnl  MA 02111-1307, USA.
 
 
 define(X86_PATTERN,
-[[i?86*-*-* | k[5-8]*-*-* | pentium*-*-* | athlon-*-*]])
+[[i?86*-*-* | k[5-8]*-*-* | pentium*-*-* | athlon-*-* | viac3*-*-*]])
 
 define(POWERPC64_PATTERN,
 [[powerpc64-*-* | powerpc64le-*-* | powerpc620-*-* | powerpc630-*-*]])

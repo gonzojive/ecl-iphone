@@ -1,6 +1,6 @@
 dnl  HP-PA 2.0 mpn_lshift -- Left shift.
 
-dnl  Copyright 1997, 2000, 2002 Free Software Foundation, Inc.
+dnl  Copyright 1997, 2000, 2002, 2003 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 
@@ -31,8 +31,8 @@ define(`n',`%r24')
 define(`cnt',`%r23')
 
 ifdef(`HAVE_ABI_2_0w',
-`       .level  2.0W
-',`     .level  2.0N
+`       .level  2.0w
+',`     .level  2.0
 ')
 PROLOGUE(mpn_lshift)
 	shladd		n, 3, up, up

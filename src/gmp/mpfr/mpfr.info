@@ -1,4 +1,4 @@
-This is mpfr.info, produced by makeinfo version 4.2 from mpfr.texi.
+This is mpfr.info, produced by makeinfo version 4.6 from mpfr.texi.
 
 START-INFO-DIR-ENTRY
 * mpfr: (mpfr.info).               Multiple Precision Floating-Point Reliable Library.
@@ -7,7 +7,7 @@ END-INFO-DIR-ENTRY
    This file documents MPFR, a library for reliable multiple precision
 floating-point arithmetic
 
-   Copyright (C) 1999-2002, Free Software Foundation.
+   Copyright (C) 1999-2002, 2004 Free Software Foundation.
 
    Permission is granted to make and distribute verbatim copies of this
 manual provided the copyright notice and this permission notice are
@@ -29,7 +29,7 @@ File: mpfr.info,  Node: Top,  Next: Copying,  Prev: (dir),  Up: (dir)
 MPFR
 ****
 
-   This manual documents how to install and use the Multiple Precision
+This manual documents how to install and use the Multiple Precision
 Floating-Point Reliable Library, version 2.0.1
 
 * Menu:
@@ -52,8 +52,8 @@ File: mpfr.info,  Node: Copying,  Next: Introduction to MPFR,  Prev: Top,  Up: T
 MPFR Copying Conditions
 ***********************
 
-   This library is "free"; this means that everyone is free to use it
-and free to redistribute it on a free basis.  The library is not in the
+This library is "free"; this means that everyone is free to use it and
+free to redistribute it on a free basis.  The library is not in the
 public domain; it is copyrighted and there are restrictions on its
 distribution, but these restrictions are designed to permit everything
 that a good cooperating citizen would want to do.  What is not allowed
@@ -87,7 +87,7 @@ File: mpfr.info,  Node: Introduction to MPFR,  Next: Installing MPFR,  Prev: Cop
 Introduction to MPFR
 ********************
 
-   MPFR is a portable library written in C for arbitrary precision
+MPFR is a portable library written in C for arbitrary precision
 arithmetic on reliable floating-point numbers. It is based on the GNU
 MP library.  It aims to extend the class of floating-point numbers
 provided by the GNU MP library by "reliable" floating-point numbers. It
@@ -116,8 +116,8 @@ a modified MPFR is provided.
 How to use this Manual
 ======================
 
-   Everyone should read *Note MPFR Basics::.  If you need to install
-the library yourself, you need to read *Note Installing MPFR::, too.
+Everyone should read *Note MPFR Basics::.  If you need to install the
+library yourself, you need to read *Note Installing MPFR::, too.
 
    The rest of the manual can be used for later reference, although it
 is probably a good idea to glance through it.
@@ -128,7 +128,7 @@ File: mpfr.info,  Node: Installing MPFR,  Next: Reporting Bugs,  Prev: Introduct
 Installing MPFR
 ***************
 
-   To build MPFR, you first have to install GNU MP (version 4.0.1 or
+To build MPFR, you first have to install GNU MP (version 4.0.1 or
 higher) on your computer.  You need a C compiler, preferably GCC, but
 any reasonable compiler should work.  And you need a standard Unix
 `make' program, plus some other standard Unix utility programs.
@@ -189,8 +189,7 @@ any reasonable compiler should work.  And you need a standard Unix
 Known Build Problems
 ====================
 
-   MPFR suffers from all bugs from the GNU MP library, plus many many
-more.
+MPFR suffers from all bugs from the GNU MP library, plus many many more.
 
    Please report other problems to `mpfr@loria.fr'.  *Note Reporting
 Bugs::.  Some bug fixes are available on the MPFR web page
@@ -202,7 +201,7 @@ File: mpfr.info,  Node: Reporting Bugs,  Next: MPFR Basics,  Prev: Installing MP
 Reporting Bugs
 **************
 
-   If you think you have found a bug in the MPFR library, first have a
+If you think you have found a bug in the MPFR library, first have a
 look on the MPFR web page `http://www.loria.fr/projets/mpfr/' or
 `http://www.mpfr.org/': perhaps this bug is already known, in which
 case you will find a workaround for it.  Otherwise, please investigate
@@ -239,7 +238,7 @@ File: mpfr.info,  Node: MPFR Basics,  Next: Floating-point Functions,  Prev: Rep
 MPFR Basics
 ***********
 
-   All declarations needed to use MPFR are collected in the include file
+All declarations needed to use MPFR are collected in the include file
 `mpfr.h'.  It is designed to work with both C and C++ compilers.  You
 should include that file in any program using the MPFR library:
 
@@ -275,7 +274,7 @@ Normally a limb contains 32 or 64 bits.  The C data type for a limb is
 Function Classes
 ================
 
-   There is only one class of functions in the MPFR library:
+There is only one class of functions in the MPFR library:
 
   1. Functions for floating-point arithmetic, with names beginning with
      `mpfr_'.  The associated type is `mpfr_t'.
@@ -283,7 +282,7 @@ Function Classes
 MPFR Variable Conventions
 =========================
 
-   As a general rule, all MPFR functions expect output arguments before
+As a general rule, all MPFR functions expect output arguments before
 input arguments.  This notation is based on an analogy with the
 assignment operator.
 
@@ -315,9 +314,9 @@ its life.
 Compatibility with MPF
 ======================
 
-   A header file `mpf2mpfr.h' is included in the distribution of MPFR
-for compatibility with the GNU MP class MPF.  After inserting the
-following two lines after the `#include "gmp.h"' line,
+A header file `mpf2mpfr.h' is included in the distribution of MPFR for
+compatibility with the GNU MP class MPF.  After inserting the following
+two lines after the `#include "gmp.h"' line,
 
    `#include "mpfr.h"'
 
@@ -333,7 +332,7 @@ rounding mode, which can be reset with `mpfr_set_default_rounding_mode'.
 Getting the Latest Version of MPFR
 ==================================
 
-   The latest version of MPFR is available from
+The latest version of MPFR is available from
 `http://www.loria.fr/projets/mpfr/' or `http://www.mpfr.org/'.
 
 
@@ -342,7 +341,7 @@ File: mpfr.info,  Node: Floating-point Functions,  Next: Contributors,  Prev: MP
 Floating-point Functions
 ************************
 
-   The floating-point functions expect arguments of type `mpfr_t'.
+The floating-point functions expect arguments of type `mpfr_t'.
 
    The MPFR floating-point functions have an interface that is similar
 to the GNU MP integer functions.  The function prefix for
@@ -389,7 +388,7 @@ File: mpfr.info,  Node: Rounding Modes,  Next: Exceptions,  Prev: Floating-point
 Rounding Modes
 ==============
 
-   The following four rounding modes are supported:
+The following four rounding modes are supported:
    * `GMP_RNDN': round to nearest
 
    * `GMP_RNDZ': round towards zero
@@ -453,9 +452,9 @@ File: mpfr.info,  Node: Exceptions,  Next: Initializing Floats,  Prev: Rounding 
 Exceptions
 ==========
 
-   Note: Overflow handling is still experimental and currently
-implemented very partially. If an overflow occurs internally at the
-wrong place, anything can happen (crash, wrong results, etc).
+Note: Overflow handling is still experimental and currently implemented
+very partially. If an overflow occurs internally at the wrong place,
+anything can happen (crash, wrong results, etc).
 
  - Function: mp_exp_t mpfr_get_emin (void)
  - Function: mp_exp_t mpfr_get_emax (void)
@@ -585,13 +584,13 @@ File: mpfr.info,  Node: Assigning Floats,  Next: Simultaneous Float Init & Assig
 Assignment Functions
 ====================
 
-   These functions assign new values to already initialized floats
-(*note Initializing Floats::).
+These functions assign new values to already initialized floats (*note
+Initializing Floats::).
 
  - Function: int mpfr_set (mpfr_t ROP, mpfr_t OP, mp_rnd_t RND)
  - Function: int mpfr_set_ui (mpfr_t ROP, unsigned long int OP,
           mp_rnd_t RND)
- - Function: int mpfr_set_si (mpfr_t ROP, long int OP, mp_rnd_t RND
+ - Function: int mpfr_set_si (mpfr_t ROP, long int OP, mp_rnd_t RND)
  - Function: int mpfr_set_d (mpfr_t ROP, double OP, mp_rnd_t RND)
  - Function: int mpfr_set_z (mpfr_t ROP, mpz_t OP, mp_rnd_t RND)
  - Function: int mpfr_set_q (mpfr_t ROP, mpq_t OP, mp_rnd_t RND)
@@ -1022,8 +1021,8 @@ File: mpfr.info,  Node: I/O of Floats,  Next: Miscellaneous Float Functions,  Pr
 Input and Output Functions
 ==========================
 
-   Functions that perform input from a standard input/output stream,
-and functions that output to a standard input/output stream.  Passing a
+Functions that perform input from a standard input/output stream, and
+functions that output to a standard input/output stream.  Passing a
 null pointer for a STREAM argument to any of these functions will make
 them read from `stdin' and write to `stdout', respectively.
 
@@ -1113,10 +1112,10 @@ Miscellaneous Functions
 Internals
 =========
 
-   These types and functions were mainly designed for the
-implementation of `mpfr', but may be useful for users too.  However no
-upward compatibility is guaranteed.  You need to include `mpfr-impl.h'
-to use them.
+These types and functions were mainly designed for the implementation
+of `mpfr', but may be useful for users too.  However no upward
+compatibility is guaranteed.  You need to include `mpfr-impl.h' to use
+them.
 
    The `mpfr_t' type consists of four fields.  The `_mpfr_prec' field
 is used to store the precision of the variable (in bits); this is not
@@ -1180,7 +1179,7 @@ File: mpfr.info,  Node: Contributors,  Next: References,  Prev: Floating-point F
 Contributors
 ************
 
-   The main developers consist of Guillaume Hanrot, Vincent Lefèvre and
+The main developers consist of Guillaume Hanrot, Vincent Lefèvre and
 Paul Zimmermann.
 
    We would like to thank Jean-Michel Muller and Joris van der Hoeven
@@ -1402,26 +1401,26 @@ Function and Type Index
 
 
 Tag Table:
-Node: Top1010
-Node: Copying1677
-Node: Introduction to MPFR3397
-Node: Installing MPFR5133
-Node: Reporting Bugs7665
-Node: MPFR Basics9195
-Node: Floating-point Functions13276
-Node: Rounding Modes15114
-Node: Exceptions18227
-Node: Initializing Floats20496
-Node: Assigning Floats24168
-Node: Simultaneous Float Init & Assign27386
-Node: Converting Floats28627
-Node: Float Arithmetic31301
-Node: Float Comparison37456
-Node: I/O of Floats45234
-Node: Miscellaneous Float Functions47671
-Node: Contributors52903
-Node: References54098
-Node: Concept Index54714
-Node: Function Index56376
+Node: Top1015
+Node: Copying1679
+Node: Introduction to MPFR3396
+Node: Installing MPFR5126
+Node: Reporting Bugs7652
+Node: MPFR Basics9179
+Node: Floating-point Functions13245
+Node: Rounding Modes15080
+Node: Exceptions18190
+Node: Initializing Floats20456
+Node: Assigning Floats24128
+Node: Simultaneous Float Init & Assign27344
+Node: Converting Floats28585
+Node: Float Arithmetic31259
+Node: Float Comparison37414
+Node: I/O of Floats45192
+Node: Miscellaneous Float Functions47626
+Node: Contributors52855
+Node: References54047
+Node: Concept Index54663
+Node: Function Index56325
 
 End Tag Table

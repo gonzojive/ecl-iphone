@@ -13,17 +13,20 @@
 This manual describes how to install and use the GNU multiple precision
 arithmetic library, version @value{VERSION}.
 
-Copyright 1991, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002
-Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
+2003, 2004 Free Software Foundation, Inc.
 
 Permission is granted to copy, distribute and/or modify this document under
 the terms of the GNU Free Documentation License, Version 1.1 or any later
 version published by the Free Software Foundation; with no Invariant Sections,
 with the Front-Cover Texts being ``A GNU Manual'', and with the Back-Cover
 Texts being ``You have freedom to copy and modify this GNU Manual, like GNU
-software''.  A copy of the license is included in @ref{GNU Free Documentation
-License}.
+software''.  A copy of the license is included in
+@ref{GNU Free Documentation License}.
 @end copying
+@c  Note the @ref above must be on one line, a line break in an @ref within
+@c  @copying will bomb in recent texinfo.tex (eg. 2004-04-07.08 which comes
+@c  with texinfo 4.7), with messages about missing @endcsname.
 
 
 @c  Texinfo version 4.2 or up will be needed to process this into .info files.
@@ -460,6 +463,7 @@ The proper place for bug reports is @email{bug-gmp@@gnu.org}.  See
 
 @cindex Home page
 @cindex Web page
+@noindent
 For up-to-date information on GMP, please see the GMP web pages at
 
 @display
@@ -469,6 +473,7 @@ For up-to-date information on GMP, please see the GMP web pages at
 @cindex Latest version of GMP
 @cindex Anonymous FTP of latest version
 @cindex FTP of latest version
+@noindent
 The latest version of the library is available at
 
 @display
@@ -478,7 +483,20 @@ The latest version of the library is available at
 Many sites around the world mirror @samp{ftp.gnu.org}, please use a mirror
 near you, see @uref{http://www.gnu.org/order/ftp.html} for a full list.
 
+@cindex Mailing lists
+There are three public mailing lists of interest.  One for release
+announcements, one for general questions and discussions about usage of the
+GMP library and one for discussions about development of GMP.  These lists are
+@strong{not} for bug reports.  For more information, see
 
+@display
+@uref{http://swox.com/mailman/listinfo/}.  
+@end display
+
+The proper place for bug reports is @email{bug-gmp@@gnu.org}.  See
+@ref{Reporting Bugs} for information about reporting bugs.
+
+@sp 1
 @section How to use this Manual
 @cindex About this manual
 
@@ -548,7 +566,7 @@ installation information too.
 can be used, and on MS Windows Cygwin or MINGW can be used,
 
 @display
-@uref{http://www.cygnus.com/cygwin}
+@uref{http://www.cygwin.com/}
 @uref{http://www.delorie.com/djgpp}
 @uref{http://www.mingw.org}
 @end display
@@ -579,6 +597,23 @@ Not all @samp{make} programs have the necessary features (@code{VPATH}) to
 support this.  In particular, SunOS and Slowaris @command{make} have bugs that
 make them unable to build in a separate directory.  Use GNU @command{make}
 instead.
+
+@item @option{--prefix} and @option{--exec-prefix}
+@cindex Prefix
+@cindex Exec prefix
+@cindex Install prefix
+@cindex @code{--prefix}
+@cindex @code{--exec-prefix}
+The @option{--prefix} option can be used in the normal way to direct GMP to
+install under a particular tree.  The default is @samp{/usr/local}.
+
+@option{--exec-prefix} can be used to direct architecture-dependent files like
+@file{libgmp.a} to a different location.  This can be used to share
+architecture-independent parts like the documentation, but separate the
+dependent parts.  Note however that @file{gmp.h} and @file{mp.h} are
+architecture-dependent since they encode certain aspects of @file{libgmp}, so
+it will be necessary to ensure both @file{$prefix/include} and
+@file{$exec_prefix/include} are available to the compiler.
 
 @item @option{--disable-shared}, @option{--disable-static}
 
@@ -686,6 +721,10 @@ HPPA:
 @nisamp{hppa2.0w}
 
 @item
+IA-64:
+@nisamp{ia64}
+
+@item
 MIPS:
 @nisamp{mips},
 @nisamp{mips3},
@@ -751,7 +790,7 @@ SPARC:
 @nisamp{sparc64}
 
 @item
-80x86 family:
+x86 family:
 @nisamp{i386},
 @nisamp{i486},
 @nisamp{i586},
@@ -764,7 +803,10 @@ SPARC:
 @nisamp{k6},
 @nisamp{k62},
 @nisamp{k63},
-@nisamp{athlon}
+@nisamp{athlon},
+@nisamp{x86_64},
+@nisamp{viac3},
+@nisamp{viac32}
 
 @item
 Other:
@@ -991,10 +1033,9 @@ The document you're now reading is @file{gmp.texi}.  The usual automake
 targets are available to make PostScript @file{gmp.ps} and/or DVI
 @file{gmp.dvi}.
 
-HTML can be produced with @samp{makeinfo --html}, see @ref{makeinfo
-html,Generating HTML,Generating HTML,texinfo,Texinfo}.  Or alternately
-@samp{texi2html}, see @ref{Top,Texinfo to HTML,About,texi2html,Texinfo To
-HTML}.
+HTML can be produced with @samp{makeinfo --html}, see @ref{Generating HTML,,,
+texinfo, Texinfo}.  Or alternately @samp{texi2html}, see @ref{Top,Texinfo to
+HTML,About,texi2html,Texinfo To HTML}.
 
 PDF can be produced with @samp{texi2dvi --pdf} (@pxref{PDF
 Output,PDF,,texinfo,Texinfo}) or with @samp{pdftex}.
@@ -1049,8 +1090,8 @@ as simple as configuring with a special @samp{libdir}, or it might require
 more than that.  Note that builds for different ABIs need to done separately,
 with a fresh @command{./configure} and @command{make} each.
 
-@table @asis
 @sp 1
+@table @asis
 @need 1000
 @item HPPA 2.0 (@samp{hppa2.0*})
 
@@ -1275,6 +1316,18 @@ defining @code{__USE_STD_IOSTREAM}.  Configure with for instance
 ./configure --enable-cxx CPPFLAGS=-D__USE_STD_IOSTREAM
 @end example
 
+@item Floating Point Mode
+@cindex Floating point mode
+@cindex Hardware floating point mode
+@cindex Precision of hardware floating point
+@cindex x87
+On some systems, the hardware floating point has a control mode which can set
+all operations to be done in a particular precision, for instance single,
+double or extended on x86 systems (x87 floating point).  The GMP functions
+involving a @code{double} cannot be expected to operate to their full
+precision when the hardware is in single precision mode.  Of course this
+affects all code, including application code, not just GMP.
+
 @item Microsoft Windows
 On systems @samp{*-*-cygwin*}, @samp{*-*-mingw*} and @samp{*-*-pw32*} by
 default GMP builds only a static library, but a DLL can be built instead using
@@ -1295,15 +1348,16 @@ following commands, where @file{/my/inst/dir} is the install directory (with a
 @file{lib} subdirectory).
 
 @example
-lib /machine:IX86 /def:_libs/libgmp-3.dll-def
+lib /machine:IX86 /def:.libs/libgmp-3.dll-def
 cp libgmp-3.lib /my/inst/dir/lib
-cp _libs/libgmp-3.dll-exp /my/inst/dir/lib/libgmp-3.exp
+cp .libs/libgmp-3.dll-exp /my/inst/dir/lib/libgmp-3.exp
 @end example
 
-MINGW uses @samp{msvcrt.dll} for I/O, so applications wanting to use the GMP
-I/O routines must be compiled with @samp{cl /MD} to do the same.  If one of
-the other I/O choices provided by MS C is desired then the suggestion is to
-use the GMP string functions and confine I/O to the application.
+MINGW uses the C runtime library @samp{msvcrt.dll} for I/O, so applications
+wanting to use the GMP I/O routines must be compiled with @samp{cl /MD} to do
+the same.  If one of the other C runtime library choices provided by MS C is
+desired then the suggestion is to use the GMP string functions and confine I/O
+to the application.
 
 @item Motorola 68k CPU Types
 
@@ -1478,6 +1532,22 @@ static-only build should work though (@samp{--disable-shared}).
 Also, libtool currently cannot build C++ shared libraries on MacOS X, so if
 @samp{--enable-cxx} is desired then @samp{--disable-shared} must be used.
 Hopefully this will be fixed in the future.
+
+@item Motorola 68k ABI
+@cindex 68000
+@cindex PalmOS
+The GMP assembler code has been written for the SVR4 standard ABI.  GCC option
+@samp{-mshort} changes the calling conventions and is not currently supported.
+We believe the PalmOS calling conventions are similarly different and are
+likewise not currently supported.
+@c
+@c  For reference, -mshort doesn't just change the size of an int but also
+@c  changes the stack alignment to only 16-bits, where in svr4 it's 32-bits.
+@c  This affects mpn_lshift and mpn_rshift in the gmp code, but perhaps
+@c  nowhere else.  Having those routines understand the variant stack frame
+@c  wouldn't be hard, if anyone was keen.  (PalmOS had problems building due
+@c  to lack of stdio.h last time it was tried, so it's not yet really a
+@c  target.)
 
 @item NeXT prior to 3.3
 
@@ -1831,12 +1901,18 @@ then naturally GMP is not reentrant.
 
 @item
 @code{mpf_set_default_prec} and @code{mpf_init} use a global variable for the
-selected precision.  @code{mpf_init2} can be used instead.
+selected precision.  @code{mpf_init2} can be used instead, and in the C++
+interface an explicit precision to the @code{mpf_class} constructor.
 
 @item
 @code{mpz_random} and the other old random number functions use a global
 random state and are hence not reentrant.  The newer random number functions
 that accept a @code{gmp_randstate_t} parameter can be used instead.
+
+@item
+@code{gmp_randinit} (obsolete) returns an error indication through a global
+variable, which is not thread safe.  Applications are advised to use
+@code{gmp_randinit_lc_2exp} instead.
 
 @item
 @code{mp_set_memory_functions} uses global variables to store the selected
@@ -1857,11 +1933,6 @@ but it's not safe for one to read while the another might be writing, nor for
 two threads to write simultaneously.  It's not safe for two threads to
 generate a random number from the same @code{gmp_randstate_t} simultaneously,
 since this involves an update of that variable.
-
-@item
-On SCO systems the default @code{<ctype.h>} macros use per-file static
-variables and may not be reentrant, depending whether the compiler optimizes
-away fetches from them.  The GMP text-based input functions are affected.
 @end itemize
 
 
@@ -2208,7 +2279,6 @@ the standard C library @code{malloc} has some diagnostic facilities, see
 
 @display
 @uref{http://www.inf.ethz.ch/personal/biere/projects/ccmalloc}
-@uref{http://quorum.tamu.edu/jon/gnu} @ (debauch)
 @uref{http://dmalloc.com}
 @uref{http://www.perens.com/FreeSoftware} @ (electric fence)
 @uref{http://packages.debian.org/fda}
@@ -2302,14 +2372,15 @@ the checking scheme.  The GMP C++ features cannot be used, since current
 versions of checker (0.9.9.1) don't yet support the standard C++ library.
 
 @item Valgrind
-The valgrind program (@uref{http://devel-home.kde.org/~sewardj}) is a memory
+@cindex Valgrind
+The valgrind program (@uref{http://valgrind.kde.org/}) is a memory
 checker for x86s.  It translates and emulates machine instructions to do
 strong checks for uninitialized data (at the level of individual bits), memory
 accesses through bad pointers, and memory leaks.
 
-Current versions (20020226 snapshot) don't support MMX or SSE, so GMP must be
-configured for an x86 without those (eg. plain @samp{i386}), or with a special
-@code{MPN_PATH} that excludes those subdirectories (@pxref{Build Options}).
+Recent versions of Valgrind are getting support for MMX and SSE/SSE2
+instructions, for past versions GMP will need to be configured not to use
+those, ie.@: for an x86 without them (for instance plain @samp{i486}).
 
 @item Other Problems
 Any suspected bug in GMP itself should be isolated to make sure it's not an
@@ -2690,14 +2761,13 @@ assumed, otherwise decimal is assumed.
 
 This function returns 0 if the entire string is a valid number in base
 @var{base}.  Otherwise it returns @minus{}1.
-
-[It turns out that it is not entirely true that this function ignores
-white-space.  It does ignore it between digits, but not after a minus sign or
-within or after ``0x''.  We are considering changing the definition of this
-function, making it fail when there is any white-space in the input, since
-that makes a lot of sense.  Send your opinion of this change to
-@email{bug-gmp@@gnu.org}.  Do you really want it to accept @nicode{"3 14"} as
-meaning 314 as it does now?]
+@c
+@c  It turns out that it is not entirely true that this function ignores
+@c  white-space.  It does ignore it between digits, but not after a minus sign
+@c  or within or after ``0x''.  Some thought was given to disallowing all
+@c  whitespace, but that would be an incompatible change, whitespace has been
+@c  documented as ignored ever since GMP 1.
+@c
 @end deftypefun
 
 @deftypefun void mpz_swap (mpz_t @var{rop1}, mpz_t @var{rop2})
@@ -3269,9 +3339,6 @@ Compare the absolute values of @var{op1} and @var{op2}.  Return a positive
 value if @math{@GMPabs{@var{op1}} > @GMPabs{@var{op2}}}, zero if
 @math{@GMPabs{@var{op1}} = @GMPabs{@var{op2}}}, or a negative value if
 @math{@GMPabs{@var{op1}} < @GMPabs{@var{op2}}}.
-
-Note that @code{mpz_cmpabs_si} is a macro and will evaluate its arguments more
-than once.
 @end deftypefn
 
 @deftypefn Macro int mpz_sgn (mpz_t @var{op})
@@ -3297,15 +3364,15 @@ sign-magnitude is the actual implementation).  The least significant bit is
 number 0.
 
 @deftypefun void mpz_and (mpz_t @var{rop}, mpz_t @var{op1}, mpz_t @var{op2})
-Set @var{rop} to @var{op1} logical-and @var{op2}.
+Set @var{rop} to @var{op1} bitwise-and @var{op2}.
 @end deftypefun
 
 @deftypefun void mpz_ior (mpz_t @var{rop}, mpz_t @var{op1}, mpz_t @var{op2})
-Set @var{rop} to @var{op1} inclusive-or @var{op2}.
+Set @var{rop} to @var{op1} bitwise inclusive-or @var{op2}.
 @end deftypefun
 
 @deftypefun void mpz_xor (mpz_t @var{rop}, mpz_t @var{op1}, mpz_t @var{op2})
-Set @var{rop} to @var{op1} exclusive-or @var{op2}.
+Set @var{rop} to @var{op1} bitwise exclusive-or @var{op2}.
 @end deftypefun
 
 @deftypefun void mpz_com (mpz_t @var{rop}, mpz_t @var{op})
@@ -3315,7 +3382,7 @@ Set @var{rop} to the one's complement of @var{op}.
 @deftypefun {unsigned long int} mpz_popcount (mpz_t @var{op})
 If @math{@var{op}@ge{}0}, return the population count of @var{op}, which is
 the number of 1 bits in the binary representation.  If @math{@var{op}<0}, the
-number of 1s is infinite, and the return value is @var{MAX_ULONG}, the largest
+number of 1s is infinite, and the return value is @var{ULONG_MAX}, the largest
 possible @code{unsigned long}.
 @end deftypefun
 
@@ -3324,7 +3391,7 @@ If @var{op1} and @var{op2} are both @math{@ge{}0} or both @math{<0}, return
 the hamming distance between the two operands, which is the number of bit
 positions where @var{op1} and @var{op2} have different bit values.  If one
 operand is @math{@ge{}0} and the other @math{<0} then the number of bits
-different is infinite, and the return value is @var{MAX_ULONG}, the largest
+different is infinite, and the return value is @var{ULONG_MAX}, the largest
 possible @code{unsigned long}.
 @end deftypefun
 
@@ -3337,7 +3404,7 @@ the found bit.
 If the bit at @var{starting_bit} is already what's sought, then
 @var{starting_bit} is returned.
 
-If there's no bit found, then @var{MAX_ULONG} is returned.  This will happen
+If there's no bit found, then @var{ULONG_MAX} is returned.  This will happen
 in @code{mpz_scan0} past the end of a positive number, or @code{mpz_scan1}
 past the end of a negative.
 @end deftypefun
@@ -3495,10 +3562,14 @@ first or -1 for least significant first.  Within each word @var{endian} can be
 the native endianness of the host CPU.  The most significant @var{nails} bits
 of each word are skipped, this can be 0 to use the full words.
 
+There is no sign taken from the data, @var{rop} will simply be a positive
+integer.  An application can handle any sign itself, and apply it for instance
+with @code{mpz_neg}.
+
 There are no data alignment restrictions on @var{op}, any address is allowed.
 
 Here's an example converting an array of @code{unsigned long} data, most
-significant element first and host byte order within each value.
+significant element first, and host byte order within each value.
 
 @example
 unsigned long  a[20];
@@ -3515,7 +3586,7 @@ feature can account for this, by passing for instance
 @code{8*sizeof(int)-INT_BIT}.
 @end deftypefun
 
-@deftypefun void *mpz_export (void *@var{rop}, size_t *@var{count}, int @var{order}, int @var{size}, int @var{endian}, size_t @var{nails}, mpz_t @var{op})
+@deftypefun {void *} mpz_export (void *@var{rop}, size_t *@var{countp}, int @var{order}, int @var{size}, int @var{endian}, size_t @var{nails}, mpz_t @var{op})
 @cindex Integer export
 @cindex Export
 Fill @var{rop} with word data from @var{op}.
@@ -3527,25 +3598,29 @@ most significant byte first, -1 for least significant first, or 0 for the
 native endianness of the host CPU.  The most significant @var{nails} bits of
 each word are unused and set to zero, this can be 0 to produce full words.
 
-The number of words produced is written to @code{*@var{count}}.  @var{rop}
-must have enough space for the data, or if @var{rop} is @code{NULL} then a
-result array of the necessary size is allocated using the current GMP
-allocation function (@pxref{Custom Allocation}).  In either case the return
-value is the destination used, @var{rop} or the allocated block.
+The number of words produced is written to @code{*@var{countp}}, or
+@var{countp} can be @code{NULL} to discard the count.  @var{rop} must have
+enough space for the data, or if @var{rop} is @code{NULL} then a result array
+of the necessary size is allocated using the current GMP allocation function
+(@pxref{Custom Allocation}).  In either case the return value is the
+destination used, either @var{rop} or the allocated block.
 
 If @var{op} is non-zero then the most significant word produced will be
 non-zero.  If @var{op} is zero then the count returned will be zero and
 nothing written to @var{rop}.  If @var{rop} is @code{NULL} in this case, no
 block is allocated, just @code{NULL} is returned.
 
+The sign of @var{op} is ignored, just the absolute value is exported.  An
+application can use @code{mpz_sgn} to get the sign and handle it as desired.
+(@pxref{Integer Comparisons})
+
 There are no data alignment restrictions on @var{rop}, any address is allowed.
-The sign of @var{op} is ignored, just the absolute value is used.
 
 When an application is allocating space itself the required size can be
 determined with a calculation like the following.  Since @code{mpz_sizeinbase}
 always returns at least 1, @code{count} here will be at least one, which
 avoids any portability problems with @code{malloc(0)}, though if @code{z} is
-zero no space at all is actually needed.
+zero no space at all is actually needed (or written).
 
 @example
 numb = 8*size - nail;
@@ -3586,16 +3661,24 @@ the returned value will be zero.
 @end deftypefun
 
 @deftypefun size_t mpz_sizeinbase (mpz_t @var{op}, int @var{base})
-Return the size of @var{op} measured in number of digits in base @var{base}.
-The base may vary from 2 to 36.  The sign of @var{op} is ignored, just the
-absolute value is used.  The result will be exact or 1 too big.  If @var{base}
-is a power of 2, the result will always be exact.  If @var{op} is zero the
-return value is always 1.
+@cindex Size in digits
+@cindex Digits in an integer
+Return the size of @var{op} measured in number of digits in the given
+@var{base}.  @var{base} can vary from 2 to 36.  The sign of @var{op} is
+ignored, just the absolute value is used.  The result will be either exact or
+1 too big.  If @var{base} is a power of 2, the result is always exact.  If
+@var{op} is zero the return value is always 1.
 
-This function is useful in order to allocate the right amount of space before
-converting @var{op} to a string.  The right amount of allocation is normally
-two more than the value returned by @code{mpz_sizeinbase} (one extra for a
-minus sign and one for the null-terminator).
+This function can be used to determine the space required when converting
+@var{op} to a string.  The right amount of allocation is normally two more
+than the value returned by @code{mpz_sizeinbase}, one extra for a minus sign
+and one for the null-terminator.
+
+@cindex Most significant bit
+It will be noted that @code{mpz_sizeinbase(@var{op},2)} can be used to locate
+the most significant 1 bit in @var{op}, counting from 1.  (Unlike the bitwise
+functions which start from 0, @xref{Integer Logic and Bit Fiddling,, Logical
+and Bit Manipulation Functions}.)
 @end deftypefun
 
 
@@ -4413,10 +4496,10 @@ invoking this function.
 @deftypefun void mpf_random2 (mpf_t @var{rop}, mp_size_t @var{max_size}, mp_exp_t @var{exp})
 Generate a random float of at most @var{max_size} limbs, with long strings of
 zeros and ones in the binary representation.  The exponent of the number is in
-the interval @minus{}@var{exp} to @var{exp}.  This function is useful for
-testing functions and algorithms, since this kind of random numbers have proven
-to be more likely to trigger corner-case bugs.  Negative random numbers are
-generated when @var{max_size} is negative.
+the interval @minus{}@var{exp} to @var{exp} (in limbs).  This function is
+useful for testing functions and algorithms, since these kind of random
+numbers have proven to be more likely to trigger corner-case bugs.  Negative
+random numbers are generated when @var{max_size} is negative.
 @end deftypefun
 
 @c @deftypefun size_t mpf_size (mpf_t @var{op})
@@ -4529,7 +4612,8 @@ Multiply @{@var{s1p}, @var{n}@} and @{@var{s2p}, @var{n}@}, and write the
 2*@var{n}-limb result to @var{rp}.
 
 The destination has to have space for 2*@var{n} limbs, even if the product's
-most significant limb is zero.
+most significant limb is zero.  No overlap is permitted between the
+destination and either source.
 @end deftypefun
 
 @deftypefun mp_limb_t mpn_mul_1 (mp_limb_t *@var{rp}, const mp_limb_t *@var{s1p}, mp_size_t @var{n}, mp_limb_t @var{s2limb})
@@ -4840,7 +4924,8 @@ Count the number of set bits in @{@var{s1p}, @var{n}@}.
 
 @deftypefun {unsigned long int} mpn_hamdist (const mp_limb_t *@var{s1p}, const mp_limb_t *@var{s2p}, mp_size_t @var{n})
 Compute the hamming distance between @{@var{s1p}, @var{n}@} and @{@var{s2p},
-@var{n}@}.
+@var{n}@}, which is the number of bit positions where the two operands have
+different bit values.
 @end deftypefun
 
 @deftypefun int mpn_perfect_square_p (const mp_limb_t *@var{s1p}, mp_size_t @var{n})
@@ -4975,18 +5060,31 @@ table data provides then the return value is zero.  The maximum @var{size}
 currently supported is 128.
 @end deftypefun
 
+@c  Although gmp_randinit, gmp_errno and related constants are obsolete, we
+@c  still put @findex entries for them, since they're still documented and
+@c  someone might be looking them up when perusing old application code.
+
 @deftypefun void gmp_randinit (gmp_randstate_t @var{state}, @w{gmp_randalg_t @var{alg}}, ...)
 @strong{This function is obsolete.}
 
+@findex GMP_RAND_ALG_LC
+@findex GMP_RAND_ALG_DEFAULT
 Initialize @var{state} with an algorithm selected by @var{alg}.  The only
-choice is @code{GMP_RAND_ALG_LC}, which is @code{gmp_randinit_lc_2exp_size}.
-A third parameter of type @code{unsigned long} is required, this is the
-@var{size} for that function.  @code{GMP_RAND_ALG_DEFAULT} or 0 are the same
-as @code{GMP_RAND_ALG_LC}.
+choice is @code{GMP_RAND_ALG_LC}, which is @code{gmp_randinit_lc_2exp_size}
+described above.  A third parameter of type @code{unsigned long} is required,
+this is the @var{size} for that function.  @code{GMP_RAND_ALG_DEFAULT} or 0
+are the same as @code{GMP_RAND_ALG_LC}.
 
-@code{gmp_randinit} sets bits in @code{gmp_errno} to indicate an error.
-@code{GMP_ERROR_UNSUPPORTED_ARGUMENT} if @var{alg} is unsupported, or
-@code{GMP_ERROR_INVALID_ARGUMENT} if the @var{size} parameter is too big.
+@c  For reference, this is the only place gmp_errno has been documented, and
+@c  due to being non thread safe we won't be adding to it's uses.
+@findex gmp_errno
+@findex GMP_ERROR_UNSUPPORTED_ARGUMENT
+@findex GMP_ERROR_INVALID_ARGUMENT
+@code{gmp_randinit} sets bits in the global variable @code{gmp_errno} to
+indicate an error.  @code{GMP_ERROR_UNSUPPORTED_ARGUMENT} if @var{alg} is
+unsupported, or @code{GMP_ERROR_INVALID_ARGUMENT} if the @var{size} parameter
+is too big.  It may be noted this error reporting is not thread safe (a good
+reason to use @code{gmp_randinit_lc_2exp_size} instead).
 @end deftypefun
 
 @c  Not yet in the library.
@@ -5333,8 +5431,9 @@ cout << "iteration " << n << " value " << z << "\n";
 @end example
 
 But note that @code{ostream} output (and @code{istream} input, @pxref{C++
-Formatted Input}) is the only overloading available and using for instance
-@code{+} with an @code{mpz_t} will have unpredictable results.
+Formatted Input}) is the only overloading available for the GMP types and that
+for instance using @code{+} with an @code{mpz_t} will have unpredictable
+results.  For classes with overloading, see @ref{C++ Class Interface}.
 
 
 @node Formatted Input, C++ Class Interface, Formatted Output, Top
@@ -5458,9 +5557,9 @@ hexadecimal.
 @samp{o}, @samp{u}, @samp{x} and @samp{X} all read positive or negative
 values.  For the standard C types these are described as ``unsigned''
 conversions, but that merely affects certain overflow handling, negatives are
-still allowed (see @code{strtoul}, @ref{Parsing of Integers,,,libc,The GNU C
-Library Reference Manual}).  For GMP types there are no overflows, and
-@samp{d} and @samp{u} are identical.
+still allowed (per @code{strtoul}, @pxref{Parsing of Integers,, Parsing of
+Integers, libc, The GNU C Library Reference Manual}).  For GMP types there are
+no overflows, so @samp{d} and @samp{u} are identical.
 
 @samp{Q} type reads the numerator and (optional) denominator as given.  If the
 value might not be in canonical form then @code{mpq_canonicalize} must be
@@ -5574,8 +5673,10 @@ cin >> z;
 @end example
 
 But note that @code{istream} input (and @code{ostream} output, @pxref{C++
-Formatted Output}) is the only overloading available and using for instance
-@code{+} with an @code{mpz_t} will have unpredictable results.
+Formatted Output}) is the only overloading available for the GMP types and
+that for instance using @code{+} with an @code{mpz_t} will have unpredictable
+results.  For classes with overloading, see @ref{C++ Class Interface}.
+
 
 
 @node C++ Class Interface, BSD Compatible Functions, Formatted Input, Top
@@ -5740,10 +5841,9 @@ given then 0 is used.
 @deftypefunx mpz_class operator% (mpz_class @var{a}, mpz_class @var{d})
 Divisions involving @code{mpz_class} round towards zero, as per the
 @code{mpz_tdiv_q} and @code{mpz_tdiv_r} functions (@pxref{Integer Division}).
-This corresponds to the rounding used for plain @code{int} calculations on
-most machines.
+This is the same as the C99 @code{/} and @code{%} operators.
 
-The @code{mpz_fdiv...} or @code{mpz_cdiv...} functions can always be called
+The @code{mpz_fdiv@dots{}} or @code{mpz_cdiv@dots{}} functions can always be called
 directly if desired.  For example,
 
 @example
@@ -5903,6 +6003,31 @@ mpf_class f(abs(x));     // precision of x
 mpf_class f(-g, 1000);   // 1000 bits (at least)
 mpf_class f(x+y);        // greater of precisions of x and y
 @end example
+@end deftypefun
+
+@deftypefun {mpf_class&} mpf_class::operator= (type @var{op})
+Convert and store the given @var{op} value to an @code{mpf_class} object.  The
+same types are accepted as for the constructors above.
+
+Note that @code{operator=} only stores a new value, it doesn't copy or change
+the precision of the destination, instead the value is truncated if necessary.
+This is the same as @code{mpf_set} etc.  Note in particular this means for
+@code{mpf_class} a copy constructor is not the same as a default constructor
+plus assignment.
+
+@example
+mpf_class x (y);   // x created with precision of y
+
+mpf_class x;       // x created with default precision
+x = y;             // value truncated to that precision
+@end example
+
+Applications using templated code may need to be careful about the assumptions
+the code makes in this area, when working with @code{mpf_class} values of
+various different or non-default precisions.  For instance implementations of
+the standard @code{complex} template have been seen in both styles above,
+though of course @code{complex} is normally only actually specified for use
+with the builtin float types.
 @end deftypefun
 
 @deftypefun mpf_class abs (mpf_class @var{op})
@@ -6201,6 +6326,11 @@ undefined.
 
 @deftypefun void pow (MINT *@var{base}, MINT *@var{exp}, MINT *@var{mod}, MINT *@var{dest})
 Set @var{dest} to (@var{base} raised to @var{exp}) modulo @var{mod}.
+
+Note that the name @code{pow} clashes with @code{pow} from the standard C math
+library (@pxref{Exponents and Logarithms,, Exponentiation and Logarithms,
+libc, The GNU C Library Reference Manual}).  An application will only be able
+to use one or the other.
 @end deftypefun
 
 @deftypefun void rpow (MINT *@var{base}, signed short int @var{exp}, MINT *@var{dest})
@@ -6364,8 +6494,7 @@ polynomials using templates.
 Arithmos @spaceuref{http://win-www.uia.ac.be/u/cant/arithmos} @* Rationals
 with infinities and square roots.
 @item
-CLN @spaceuref{http://clisp.cons.org/~haible/packages-cln.html} @* High level
-classes for arithmetic.
+CLN @spaceuref{http://www.ginac.de/CLN/} @* High level classes for arithmetic.
 @item
 LiDIA @spaceuref{http://www.informatik.tu-darmstadt.de/TI/LiDIA} @* A C++
 library for computational number theory.
@@ -6378,8 +6507,8 @@ NTL @spaceuref{http://www.shoup.net/ntl} @* A C++ number theory library.
 @item Fortran
 @itemize @bullet
 @item
-Omni F77 @spaceuref{http://pdplab.trc.rwcp.or.jp/pdperf/Omni/home.html} @*
-Arbitrary precision floats.
+Omni F77 @spaceuref{http://phase.hpcc.jp/Omni/home.html} @* Arbitrary
+precision floats.
 @end itemize
 
 @item Haskell
@@ -6403,6 +6532,11 @@ GNU Common Lisp @spaceuref{http://www.gnu.org/software/gcl/gcl.html} @* In the
 process of switching to GMP for bignums.
 @item
 Librep @spaceuref{http://librep.sourceforge.net}
+@item
+@c  FIXME: When there's a stable release with gmp support, just refer to it
+@c  rather than bothering to talk about betas.
+XEmacs (21.5.18 beta and up) @spaceuref{http://www.xemacs.org} @* Optional
+big integers, rationals and floats using GMP.
 @end itemize
 
 @item M4
@@ -6418,6 +6552,15 @@ an arbitrary precision @code{mpeval}.
 MLton compiler @spaceuref{http://www.mlton.org}
 @end itemize
 
+@item Objective Caml
+@itemize @bullet
+@item
+MLGMP @spaceuref{http://www.di.ens.fr/~monniaux/programmes.html.en}
+@item
+Numerix @spaceuref{http://pauillac.inria.fr/~quercia/} @* Optionally using
+GMP.
+@end itemize
+
 @item Oz
 @itemize @bullet
 @item
@@ -6428,6 +6571,9 @@ Mozart @spaceuref{http://www.mozart-oz.org}
 @itemize @bullet
 @item
 GNU Pascal Compiler @spaceuref{http://www.gnu-pascal.de} @* GMP unit.
+@item
+Numerix @spaceuref{http://pauillac.inria.fr/~quercia/} @* For Free Pascal,
+optionally using GMP.
 @end itemize
 
 @item Perl
@@ -6446,7 +6592,7 @@ normal Math::BigInt operations.
 @item Pike
 @itemize @bullet
 @item
-mpz module in the standard distribution, @uref{http://pike.idonex.com}
+mpz module in the standard distribution, @uref{http://pike.ida.liu.se/}
 @end itemize
 
 @need 500
@@ -6468,6 +6614,9 @@ GMPY @uref{http://gmpy.sourceforge.net}
 @item Scheme
 @itemize @bullet
 @item
+GNU Guile (upcoming 1.8)
+@spaceuref{http://www.gnu.org/software/guile/guile.html}
+@item
 RScheme @spaceuref{http://www.rscheme.org}
 @item
 STklos @spaceuref{http://kaolin.unice.fr/STklos}
@@ -6482,10 +6631,16 @@ GNU Smalltalk @spaceuref{http://www.smalltalk.org/versions/GNUSmalltalk.html}
 @item Other
 @itemize @bullet
 @item
+Axiom @uref{http://savannah.nongnu.org/projects/axiom} @* Computer algebra
+using GCL.
+@item
 DrGenius @spaceuref{http://drgenius.seul.org} @* Geometry system and
 mathematical programming language.
 @item
 GiNaC @spaceuref{http://www.ginac.de} @* C++ computer algebra using CLN.
+@item
+GOO @spaceuref{http://www.googoogaga.org/} @* Dynamic object oriented
+language.
 @item
 Maxima @uref{http://www.ma.utexas.edu/users/wfs/maxima.html} @* Macsyma
 computer algebra using GCL.
@@ -6793,20 +6948,23 @@ above.
 
 Karatsuba multiplication is asymptotically an @math{O(N^@W{1.585})} algorithm,
 the exponent being @m{\log3/\log2,log(3)/log(2)}, representing 3 multiplies
-each 1/2 the size of the inputs.  This is a big improvement over the basecase
-multiply at @math{O(N^2)} and the advantage soon overcomes the extra additions
-Karatsuba performs.
+each @math{1/2} the size of the inputs.  This is a big improvement over the
+basecase multiply at @math{O(N^2)} and the advantage soon overcomes the extra
+additions Karatsuba performs.  @code{MUL_KARATSUBA_THRESHOLD} can be as little
+as 10 limbs.  The @code{SQR} threshold is usually about twice the @code{MUL}.
 
-@code{MUL_KARATSUBA_THRESHOLD} can be as little as 10 limbs.  The @code{SQR}
-threshold is usually about twice the @code{MUL}.  The basecase algorithm will
-take a time of the form @m{M(N) = aN^2 + bN + c, M(N) = a*N^2 + b*N + c} and
-the Karatsuba algorithm @m{K(N) = 3M(N/2) + dN + e, K(N) = 3*M(N/2) + d*N +
-e}.  Clearly per-crossproduct speedups in the basecase code reduce @math{a}
-and decrease the threshold, but linear style speedups reducing @math{b} will
-actually increase the threshold.  The latter can be seen for instance when
-adding an optimized @code{mpn_sqr_diagonal} to @code{mpn_sqr_basecase}.  Of
-course all speedups reduce total time, and in that sense the algorithm
-thresholds are merely of academic interest.
+The basecase algorithm will take a time of the form @m{M(N) = aN^2 + bN + c,
+M(N) = a*N^2 + b*N + c} and the Karatsuba algorithm @m{K(N) = 3M(N/2) + dN +
+e, K(N) = 3*M(N/2) + d*N + e}, which expands to @m{K(N) = {3\over4} aN^2 +
+{3\over2} bN + 3c + dN + e, K(N) = 3/4*a*N^2 + 3/2*b*N + 3*c + d*N + e}.  The
+factor @m{3\over4, 3/4} for @math{a} means per-crossproduct speedups in the
+basecase code will increase the threshold since they benefit @math{M(N)} more
+than @math{K(N)}.  And conversely the @m{3\over2, 3/2} for @math{b} means
+linear style speedups of @math{b} will increase the threshold since they
+benefit @math{K(N)} more than @math{M(N)}.  The latter can be seen for
+instance when adding an optimized @code{mpn_sqr_diagonal} to
+@code{mpn_sqr_basecase}.  Of course all speedups reduce total time, and in
+that sense the algorithm thresholds are merely of academic interest.
 
 
 @node Toom-Cook 3-Way Multiplication, FFT Multiplication, Karatsuba Multiplication, Multiplication Algorithms
@@ -7336,7 +7494,7 @@ throughput.
 
 A similar approach in reverse can be taken to process just half a limb at a
 time if the divisor is only a half limb.  In this case the 1@cross{}1 multiply
-for the inverse effectively becomes two @m{1\over2@cross{}1, (1/2)x1} for each
+for the inverse effectively becomes two @m{{1\over2}\times1, (1/2)x1} for each
 limb, which can be a saving on CPUs with a fast half limb multiply, or in fact
 if the only multiply is a half limb, and especially if it's not pipelined.
 
@@ -7882,7 +8040,7 @@ is certainly not optimal.
 
 The @math{r/b^n} scheme described above for using multiplications to bring out
 digits might be useful for more than a single limb.  Some brief experiments
-with it on the base case when recursing didn't give a noticable improvement,
+with it on the base case when recursing didn't give a noticeable improvement,
 but perhaps that was only due to the implementation.  Something similar would
 work for the sub-quadratic divisions too, though there would be the cost of
 calculating a bigger radix power.
@@ -9159,6 +9317,12 @@ the GCC package @uref{ftp://ftp.gnu.org/gnu/gcc/}
 @section Papers
 
 @itemize @bullet
+@item
+Yves Bertot, Nicolas Magaud and Paul Zimmermann, ``A Proof of GMP Square
+Root'', Journal of Automated Reasoning, volume 29, 2002, pp.@: 225-252.  Also
+available online as INRIA Research Report 4475, June 2001,
+@uref{http://www.inria.fr/rrrt/rr-4475.html}
+
 @item
 Christoph Burnikel and Joachim Ziegler, ``Fast Recursive Division'',
 Max-Planck-Institut fuer Informatik Research Report MPI-I-98-1-022, @texlinebreak{}

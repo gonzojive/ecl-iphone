@@ -32,7 +32,7 @@ END-INFO-DIR-ENTRY
 @ifinfo
 This file documents MPFR, a library for reliable multiple precision floating-point arithmetic
 
-Copyright (C) 1999-2002, Free Software Foundation.
+Copyright (C) 1999-2002, 2004 Free Software Foundation.
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -102,7 +102,7 @@ by the Foundation.
 @end titlepage
 @headings double
 
-@ifinfo
+@ifnottex
 @node Top, Copying, (dir), (dir)
 
 @top MPFR
@@ -110,7 +110,7 @@ by the Foundation.
 This manual documents how to install and use the Multiple Precision
 Floating-Point Reliable Library, version 2.0.1
 
-@end ifinfo
+@end ifnottex
 
 @menu
 * Copying::                   GMP Copying Conditions (LGPL).
@@ -726,7 +726,7 @@ These functions assign new values to already initialized floats
 
 @deftypefun int mpfr_set (mpfr_t @var{rop}, mpfr_t @var{op}, mp_rnd_t @var{rnd})
 @deftypefunx int mpfr_set_ui (mpfr_t @var{rop}, unsigned long int @var{op}, mp_rnd_t @var{rnd})
-@deftypefunx int mpfr_set_si (mpfr_t @var{rop}, long int @var{op}, mp_rnd_t @var{rnd}
+@deftypefunx int mpfr_set_si (mpfr_t @var{rop}, long int @var{op}, mp_rnd_t @var{rnd})
 @deftypefunx int mpfr_set_d (mpfr_t @var{rop}, double @var{op}, mp_rnd_t @var{rnd})
 @deftypefunx int mpfr_set_z (mpfr_t @var{rop}, mpz_t @var{op}, mp_rnd_t @var{rnd})
 @deftypefunx int mpfr_set_q (mpfr_t @var{rop}, mpq_t @var{op}, mp_rnd_t @var{rnd})

@@ -2,7 +2,7 @@
    length NBITS in RP.  RP must have enough space allocated to hold
    NBITS.
 
-Copyright 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 1999, 2000, 2001, 2002, 2004 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -98,6 +98,17 @@ lc (mp_ptr rp, gmp_randstate_t rstate)
   mp_limb_t c;
   TMP_DECL (mark);
 
+  /* Zero out the limbs _gmp_rand below expects us to write.  This is a hack
+     to cover the seedn==0 case, and in case tn < cn due to small "a" and
+     seed.  (Incidentally, the "return m2exp" for the seedn==0 case is
+     bogus, _gmp_rand ignores the return, it expects and looks at just
+     "m2exp/2" always.)  */
+  {
+    int chunk_nbits = rstate->_mp_algdata._mp_lc->_mp_m2exp / 2;
+    mp_size_t cn = (chunk_nbits + GMP_NUMB_BITS - 1) / GMP_NUMB_BITS;
+    MPN_ZERO (rp, cn);
+  }
+
   m2exp = rstate->_mp_algdata._mp_lc->_mp_m2exp;
 
   /* The code below assumes the mod part is a power of two.  Make sure
@@ -109,19 +120,29 @@ lc (mp_ptr rp, gmp_randstate_t rstate)
   seedp = PTR (rstate->_mp_seed);
   seedn = SIZ (rstate->_mp_seed);
 
-  if (seedn == 0)
+  ap = PTR (rstate->_mp_algdata._mp_lc->_mp_a);
+  an = SIZ (rstate->_mp_algdata._mp_lc->_mp_a);
+
+  if (seedn == 0 || an == 0)
     {
       /* Seed is 0.  Result is C % M.  Assume table is sensibly stored,
        with C smaller than M*/
       *rp = c;
 
+      /* Discard the lower m2exp/2 bits of result.  */
+      {
+        unsigned long int bits = m2exp / 2;
+        mp_size_t xn = bits / GMP_NUMB_BITS;
+        if (bits >= GMP_LIMB_BITS)
+          *rp = 0;
+        else
+          *rp >>= bits;
+      }
+
       *seedp = c;
       SIZ (rstate->_mp_seed) = 1;
       return m2exp;
     }
-
-  ap = PTR (rstate->_mp_algdata._mp_lc->_mp_a);
-  an = SIZ (rstate->_mp_algdata._mp_lc->_mp_a);
 
   /* Allocate temporary storage.  Let there be room for calculation of
      (A * seed + C) % M, or M if bigger than that.  */
@@ -141,11 +162,12 @@ lc (mp_ptr rp, gmp_randstate_t rstate)
   tp[tn] = 0;			/* sentinel, stops MPN_INCR_U */
   MPN_INCR_U (tp, tn, c);
 
-  ASSERT_ALWAYS (m2exp / GMP_NUMB_BITS < ta);
-
+  if (tn > m2exp / GMP_NUMB_BITS)
+    {
   /* t = t % m */
   tp[m2exp / GMP_NUMB_BITS] &= ((mp_limb_t) 1 << m2exp % GMP_NUMB_BITS) - 1;
   tn = (m2exp + GMP_NUMB_BITS - 1) / GMP_NUMB_BITS;
+    }
 
   /* Save result as next seed.  */
   MPN_COPY (PTR (rstate->_mp_seed), tp, tn);

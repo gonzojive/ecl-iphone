@@ -1,6 +1,6 @@
 # GMP mpf module.
 
-# Copyright 2001 Free Software Foundation, Inc.
+# Copyright 2001, 2003 Free Software Foundation, Inc.
 #
 # This file is part of the GNU MP Library.
 #
@@ -73,20 +73,17 @@ sub import {
 
 sub overload_string {
   my $fmt;
-  {
-    # don't whinge about $# being deprecated
-    local $^W = 0;
+  BEGIN { $^W = 0; }
+  if (defined ($#)) {
     $fmt = $#;
-  }
-  if (! defined $fmt) {
-    $fmt = '%.Fg';
-  } else {
+    BEGIN { $^W = 1; }
     # protect against calling sprintf_internal with a bad format
-    if ($# !~ /^(%%|[^%])*%[-+ .\d]*[eEfgG](%%|[^%])*$/) {
+    if ($fmt !~ /^((%%|[^%])*%[-+ .\d]*)([eEfgG](%%|[^%])*)$/) {
       die "GMP::Mpf: invalid \$# format: $#\n";
     }
-    $fmt = $OFMT;
-    $fmt =~ s/(.)$/F$1/;
+    $fmt = $1 . 'F' . $3;
+  } else {
+    $fmt = '%.Fg';
   }
   GMP::sprintf_internal ($fmt, $_[0]);
 }

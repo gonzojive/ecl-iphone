@@ -4,7 +4,8 @@ dnl            cycles/limb
 dnl         shift==1  shift>1
 dnl  68040:    7.0      9.5
 
-dnl  Copyright 1996, 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
+dnl  Copyright 1996, 1999, 2000, 2001, 2002, 2003 Free Software Foundation,
+dnl  Inc.
 dnl
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -29,8 +30,8 @@ include(`../config.m4')
 C INPUT PARAMETERS
 C res_ptr	(sp + 4)
 C s_ptr		(sp + 8)
-C s_size	(sp + 16)
-C cnt		(sp + 12)
+C s_size	(sp + 12)
+C cnt		(sp + 16)
 
 define(res_ptr, `a1')
 define(s_ptr,   `a0')

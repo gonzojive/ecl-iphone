@@ -1,7 +1,7 @@
 dnl  HP-PA 2.0 mpn_sub_n -- Subtract two limb vectors of the same length > 0
 dnl  and store difference in a third limb vector.
 
-dnl  Copyright 1997, 2000, 2002 Free Software Foundation, Inc.
+dnl  Copyright 1997, 2000, 2002, 2003 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 
@@ -35,8 +35,8 @@ define(`vp',`%r24')
 define(`n',`%r23')
 
 ifdef(`HAVE_ABI_2_0w',
-`       .level  2.0W
-',`     .level  2.0N
+`       .level  2.0w
+',`     .level  2.0
 ')
 PROLOGUE(mpn_sub_n)
 	sub		%r0, n, %r22
@@ -77,7 +77,7 @@ L(2)	ldd		48(up), %r20
 	std		%r20, 48(rp)
 L(1)	ldd		56(up), %r21
 	ldd		56(vp),%r19
-	sub, db		%r21, %r19, %r21
+	sub,db		%r21, %r19, %r21
 	ldo		64(up), up
 	std		%r21, 56(rp)
 	ldo		64(vp), vp

@@ -1,6 +1,6 @@
 /* mpfr_set_machine_rnd_mode -- set the rounding mode for machine floats
 
-Copyright 1999, 2001, 2002 Free Software Foundation, Inc.
+Copyright 1999, 2001, 2002, 2004 Free Software Foundation, Inc.
 
 This file is part of the MPFR Library.
 
@@ -28,16 +28,61 @@ MA 02111-1307, USA. */
 #ifdef MPFR_HAVE_FESETROUND
 #include <fenv.h>
 
-/* sets the machine rounding mode to the value rnd_mode */
+/* sets the machine rounding mode to the value rnd_mode
+
+   Doing an exit(0) when an FE mode is not available is a nasty hack.  It's
+   done to let the test programs stop gracefully when they attempt an
+   unsupported mode.  This happens for instance on ARM systems, which lack
+   FE_TOWARDZERO.
+
+   Applications which have been using this function are not harmed by this
+   hack.  In the past the code didn't even compile on systems with an
+   incomplete set of FE choices.  Applications won't want to be using this
+   anyway, it's been moved to the test suite in newer mpfr.  */
+
 void 
 mpfr_set_machine_rnd_mode (mp_rnd_t rnd_mode)
 {
   switch (rnd_mode) {
-  case GMP_RNDN: fesetround(FE_TONEAREST); break;
-  case GMP_RNDZ: fesetround(FE_TOWARDZERO); break;
-  case GMP_RNDU: fesetround(FE_UPWARD); break;
-  case GMP_RNDD: fesetround(FE_DOWNWARD); break;
-  default: fprintf(stderr, "invalid rounding mode\n"); exit(1);
+
+  case GMP_RNDN:
+#ifdef FE_TONEAREST
+    fesetround(FE_TONEAREST);
+    return;
+#else
+    break;
+#endif
+
+  case GMP_RNDZ:
+#ifdef FE_TOWARDZERO
+    fesetround(FE_TOWARDZERO);
+    return;
+#else
+    break;
+#endif
+
+  case GMP_RNDU:
+#ifdef FE_UPWARD
+    fesetround(FE_UPWARD);
+    return;
+#else
+    break;
+#endif
+
+  case GMP_RNDD:
+#ifdef FE_DOWNWARD
+    fesetround(FE_DOWNWARD);
+    return;
+#else
+    break;
+#endif
+
+  default:
+    fprintf(stderr, "invalid rounding mode\n");
+    exit(1);
   }
+
+  printf ("mpfr_set_machine_rnd_mode(): rounding mode %d not available, exiting\n", rnd_mode);
+  exit (0);
 }
 #endif

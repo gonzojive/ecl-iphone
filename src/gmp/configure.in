@@ -3,7 +3,7 @@ dnl  Process this file with autoconf to produce a configure script.
 
 AC_COPYRIGHT([
 
-Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002 Free Software
+Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004 Free Software
 Foundation, Inc.
 
 This file is part of the GNU MP Library.
@@ -124,7 +124,7 @@ fi
 
 AC_ARG_ENABLE(mpbsd,
 AC_HELP_STRING([--enable-mpbsd],
-               [build Berkley MP compatibility library [[default=no]]]),
+               [build Berkeley MP compatibility library [[default=no]]]),
 [case $enableval in
 yes|no) ;;
 *) AC_MSG_ERROR([bad value $enableval for --enable-mpbsd, need yes or no]) ;;
@@ -167,6 +167,17 @@ no|prof|gprof) ;;
 *) AC_MSG_ERROR([bad value $enableval for --enable-profiling, need no/prof/gprof]) ;;
 esac],
 [enable_profiling=no])
+
+case $enable_profiling in
+  prof)
+    AC_DEFINE(WANT_PROFILING_PROF, 1,
+              [Define to 1 if --enable-profiling=prof])
+    ;;
+  gprof)
+    AC_DEFINE(WANT_PROFILING_GPROF, 1,
+              [Define to 1 if --enable-profiling=gprof])
+    ;;
+esac
 
 GMP_DEFINE_RAW(["define(<WANT_PROFILING>,<\`$enable_profiling'>)"])
 
@@ -557,7 +568,7 @@ case $host in
     m68020-*-*)  gcc_cflags_arch="-m68020" ;;
     m68030-*-*)  gcc_cflags_arch="-m68030" ;;
     m68040-*-*)  gcc_cflags_arch="-m68040" ;;
-    m68060-*-*)  gcc_cflags_arch="-m68060 -m68040" ;;
+    m68060-*-*)  gcc_cflags_arch="-m68060 -m68000" ;;
     m68360-*-*)  gcc_cflags_arch="-mcpu32 -m68000" ;;
     *)           gcc_cflags_arch="-m68000" ;;
     esac
@@ -566,9 +577,9 @@ case $host in
     # tested.  Will need to introduce an m68k/cpu32 if m68k/mc62020 ever uses
     # the bitfield instructions.
     case $host in
-    [m680[2346]0-*-* | m68360-*-*])  path="m68k/mc68020 m68k"
-                                     extra_functions="udiv umul" ;;
-    *)                               path="m68k" ;; 
+    [m680[234]0-*-* | m68360-*-*])  path="m68k/mc68020 m68k"
+                                    extra_functions="udiv umul" ;;
+    *)                              path="m68k" ;; 
     esac
     ;;
 
@@ -747,6 +758,30 @@ case $host in
             path_aix64="powerpc64"
             extra_functions_aix64="umul"
             ;;
+	  *-*-linux*)
+	    # On GNU/Linux, assume the processor is in 64-bit mode.  Some
+	    # environments have a gcc that is always in 64-bit mode, while
+	    # others require -m64, hence the use of cflags_maybe.  The
+	    # sizeof-long-8 test checks the mode is right (for the no option
+	    # case).
+            #
+            # -mpowerpc64 is not used, since it should be the default in
+            # 64-bit mode.  (We need its effect for the various longlong.h
+            # asm macros to be right of course.)
+            #
+            # gcc64 was an early port of gcc to 64-bit mode, but should be
+            # obsolete before too long.  We prefer plain gcc when it knows
+            # 64-bits.
+	    #
+	    abilist="64 $abilist"
+	    cclist_64="gcc gcc64"
+	    gcc_64_cflags_maybe="-m64"
+	    gcc_64_cflags="-O3"
+	    gcc_64_cflags_optlist="cpu"
+	    path_64="powerpc64"
+	    any_64_testlist="sizeof-long-8"
+	    gmp_cv_asm_underscore=no		# Kludge
+	    ;;
         esac
         ;;
     esac
@@ -849,7 +884,9 @@ case $host in
         gcc_cflags="-g -O2 -Wa,-xarch=v8plus"
         gcc_cflags_cpu="-mcpu=ultrasparc -mcpu=v9 -mcpu=v8 -mv8"
 
-        cc_cflags="-xtarget=native -xarch=v8 -xO4"
+        # must have -xarch=v8plus here, to get the right assembler options
+        # for our mpn/sparc32/v9 code
+        cc_cflags="-xtarget=native -xarch=v8plus -xO4"
 
         case $host in
           [*-*-solaris2.[7-9]])
@@ -894,7 +931,7 @@ case $host in
 
 
   # AMD and Intel x86 configurations
-  X86_PATTERN)
+  X86_PATTERN | x86_64-*-*)
     AC_DEFINE(HAVE_HOST_CPU_FAMILY_x86)
     # Rumour has it gcc -O2 used to give worse register allocation than just
     # -O, but lets assume that's no longer true.
@@ -951,12 +988,27 @@ case $host in
         gcc_cflags_cpu="-mcpu=athlon -mcpu=pentiumpro -mcpu=i486 -m486"
         gcc_cflags_arch="-march=athlon -march=pentiumpro -march=pentium -march=i486"
         ;;
-      pentium4-*-*)
+      pentium4-*-* | i786-*-*)
         # pentium4 is known to gcc 3.1 and up, not sure what cpu choice
         # would best suit previous versions, pentiumpro will get us cmov
         # from gcc 2.95.4 up, otherwise let's just try i486.
         gcc_cflags_cpu="-mcpu=pentium4 -mcpu=pentiumpro -mcpu=i486 -m486"
-        gcc_cflags_arch="-march=pentium4 -march=pentiumpro -march=pentium -march=i486"
+        gcc_cflags_arch="-march=pentium4~-mno-sse2 -march=pentiumpro -march=pentium -march=i486"
+        ;;
+      viac32-*-*)
+        # Not sure of the best fallbacks here for -mcpu.
+        # c3-2 has sse and mmx, so pentium3 is good for -march.
+        gcc_cflags_cpu="-mtune=c3-2 -mcpu=c3-2 -mcpu=i486 -m486"
+        gcc_cflags_arch="-march=c3-2 -march=pentium3 -march=pentiumpro -march=pentium"
+        ;;
+      viac3*-*-*)
+        # Not sure of the best fallbacks here.
+        gcc_cflags_cpu="-mtune=c3 -mcpu=c3 -mcpu=i486 -m486"
+        gcc_cflags_arch="-march=c3 -march=pentium-mmx -march=pentium"
+        ;;
+      x86_64-*-*)
+        gcc_cflags_cpu="-mtune=k8 -mcpu=athlon -mcpu=pentiumpro -mcpu=i486 -m486"
+        gcc_cflags_arch="-march=k8 -march=k8~-mno-sse2 -march=athlon -march=pentiumpro -march=pentium"
         ;;
     esac
 
@@ -969,8 +1021,25 @@ case $host in
       pentium3-*-*)   path="x86/p6/p3mmx x86/p6/mmx x86/p6 x86";;
       [k6[23]*-*-*])  path="x86/k6/k62mmx x86/k6/mmx x86/k6 x86" ;;
       k6*-*-*)        path="x86/k6/mmx x86/k6 x86" ;;
-      athlon-*-*)     path="x86/k7/mmx x86/k7 x86" ;;
-      pentium4-*-*)   path="x86/pentium4/sse2 x86/pentium4/mmx x86/pentium4 x86" ;;
+      # we don't have any specific 32-bit code for opteron (x86_64), the
+      # athlon code should be reasonable
+      athlon-*-* | x86_64-*-*)    path="x86/k7/mmx x86/k7 x86" ;;
+      i786-*-* | pentium4-*-*)
+        path="x86/pentium4/sse2 x86/pentium4/mmx x86/pentium4 x86" ;;
+      # VIA/Centaur processors, sold as CyrixIII and C3.
+      viac32-*-*)   path="x86/p6/p3mmx x86/p6/mmx x86/p6 x86";;
+      viac3*-*-*)   path="x86/pentium/mmx x86/pentium x86";;
+      *)              path="x86" ;;
+    esac
+
+    case $host in
+      x86_64-*-*)
+        abilist="64 32"
+        path_64="x86-64"
+        cclist_64="gcc"
+        gcc_64_cflags="-O2 -m64"
+        gcc_64_cflags_optlist="cpu"
+        ;;
     esac
     ;;
 
@@ -1587,7 +1656,7 @@ test -n "$CCAS" || CCAS="$CC -c"
 AC_SUBST(CCAS)
 
 case $host in
-  X86_PATTERN)
+  X86_PATTERN | x86_64-*-*)
     # If there's any sse2 or mmx in the path, check whether the assembler
     # supports it, and remove if not.
     case "$path" in
@@ -1948,6 +2017,11 @@ if test "$gmp_asm_syntax_testing" != no; then
             *)          GMP_INCLUDE_MPN(powerpc32/aix.m4) ;;
           esac
           ;;
+        powerpc*-*-linux*)
+	  case $ABI in
+	    64) GMP_INCLUDE_MPN(powerpc64/linux64.m4) ;;
+          esac
+          ;;
       esac
       ;;
     power*-*-aix*)
@@ -1960,7 +2034,7 @@ if test "$gmp_asm_syntax_testing" != no; then
           ;;
       esac
       ;;
-    X86_PATTERN)
+    X86_PATTERN | x86_64-*-*)
       GMP_ASM_ALIGN_FILL_0x90
       GMP_ASM_X86_SHLDL_CL
       if test "$enable_profiling" != no; then

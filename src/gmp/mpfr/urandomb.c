@@ -3,7 +3,7 @@
    using STATE as the random state previously initialized by a call to
    gmp_randinit().
 
-Copyright 2000, 2001 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2003 Free Software Foundation, Inc.
 
 This file is part of the MPFR Library.
 
@@ -60,13 +60,16 @@ mpfr_urandomb (mpfr_ptr rop, gmp_randstate_t rstate)
       exp--;
     }
 
-  count_leading_zeros (cnt, rp[nlimbs - 1]); 
-  if (cnt) mpn_lshift (rp, rp, nlimbs, cnt); 
-  exp -= cnt; 
+  if (nlimbs != 0) /* otherwise value is zero */
+    {
+      count_leading_zeros (cnt, rp[nlimbs - 1]);
+      if (cnt) mpn_lshift (rp, rp, nlimbs, cnt); 
+      exp -= cnt;
 
-  cnt = nlimbs*BITS_PER_MP_LIMB - nbits; 
-  /* cnt is the number of non significant bits in the low limb */
-  rp[0] &= ~((MP_LIMB_T_ONE << cnt) - 1);
+      cnt = nlimbs*BITS_PER_MP_LIMB - nbits; 
+      /* cnt is the number of non significant bits in the low limb */
+      rp[0] &= ~((MP_LIMB_T_ONE << cnt) - 1);
+    } 
 
   MPFR_EXP (rop) = exp;
 }

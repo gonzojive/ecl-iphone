@@ -1,4 +1,4 @@
-Copyright 2001 Free Software Foundation, Inc.
+Copyright 2001, 2003, 2004 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -29,12 +29,53 @@ This directory contains mpn functions for various m68k family chips.
 
 CODE ORGANIZATION
 
-	m68k             m68000, m68010
-	m68k/mc68020     m68020 and up, including CPU32
+	m68k             m68000, m68010, m68060
+	m68k/mc68020     m68020, m68030, m68040, and CPU32
 
 
 The m5200 "coldfire", which is m68000 less a few instructions, currently has
 no assembler code support.
+
+
+STATUS
+
+The code herein is old and poorly maintained.  If somebody really cared, it
+could be optimized substantially.  For example,
+
+* mpn_add_n and mpn_sub_n could, with more unrolling be improved from 6 to
+  close to 4 c/l (on m68040).
+
+* The multiplication loops could be sped up by using the FPU.
+
+* mpn_lshift by 31 should use the special-case mpn_rshift by 1 code, and
+  vice versa mpn_rshift by 31 use the special lshift by 1, when operand
+  overlap permits.
+
+* On 68000, mpn_mul_1, mpn_addmul_1 and mpn_submul_1 could check for a
+  16-bit multiplier and use two multiplies per limb, not four.
+
+  Similarly various other _1 operations like mpn_mod_1, mpn_divrem_1,
+  mpn_divexact_1, mpn_modexact_1c_odd.
+
+* On 68000, mpn_lshift and mpn_rshift could use a roll and mask instead of
+  lsrl and lsll.  This promises to be a speedup, effectively trading a 6+2*n
+  shift for one or two 4 cycle masks.  Suggested by Jean-Charles Meyrignac.
+
+* config.guess detects 68000, 68010, CPU32 and 68020 by running some code,
+  but relies on system information for 030, 040 and 060.  Can they be
+  identified by running some code?  Currently this only makes a difference
+  to the compiler options selected, since we have no specific asm code for
+  those chips.
+
+One novel idea for 68000 would be to use a 16-bit limb instead of 32-bits.
+This would suit the native 16x16 multiply, but might make it difficult to
+get full value from the native 32x32 add/sub/etc.  This would be an ABI
+option, and would select "__GMP_SHORT_LIMB" in gmp.h.
+
+Naturally an entirely new set of asm subroutines would be needed for a
+16-bit limb.  Also there's various places in the C code assuming limb>=long,
+which would need to be updated, eg. mpz_set_ui.  Some of the nails changes
+may have helped cover some of this.
 
 
 ASM FILES
@@ -48,12 +89,11 @@ instance has things like $ for immediates on CRDS or reversed cmp order for
 AT&T SGS.  These could probably be handled if anyone really needs it.
 
 
-
 REFERENCES
 
 "Motorola M68000 Family Programmer's Reference Manual", available online,
 
-	http://e-www.motorola.com/collateral/M68000PM.pdf
+	http://e-www.motorola.com/brdata/PDFDB/docs/M68000PM.pdf
 
 "System V Application Binary Interface: Motorola 68000 Processor Family
 Supplement", AT&T, 1990, ISBN 0-13-877553-6.  Has details of calling

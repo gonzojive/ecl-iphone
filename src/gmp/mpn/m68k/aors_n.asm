@@ -1,10 +1,7 @@
 dnl  mc68020 mpn_add_n, mpn_sub_n -- add or subtract limb vectors
-dnl
-dnl        cycles/limb
-dnl  68040:    4.5
 
-dnl  Copyright 1992, 1994, 1996, 1999, 2000, 2001 Free Software Foundation,
-dnl  Inc.
+dnl  Copyright 1992, 1994, 1996, 1999, 2000, 2001, 2002, 2003 Free Software
+dnl  Foundation, Inc.
 dnl
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -25,6 +22,8 @@ dnl  Suite 330, Boston, MA 02111-1307, USA.
 
 include(`../config.m4')
 
+C         cycles/limb
+C 68040:      6
 
 ifdef(`OPERATION_add_n',`
   define(M4_inst,       addxl)
@@ -42,8 +41,8 @@ MULFUNC_PROLOGUE(mpn_addmul_1 mpn_submul_1)
 C INPUT PARAMETERS
 C res_ptr	(sp + 4)
 C s1_ptr	(sp + 8)
-C s2_ptr	(sp + 16)
-C size		(sp + 12)
+C s2_ptr	(sp + 12)
+C size		(sp + 16)
 
 
 PROLOGUE(M4_function_n)
