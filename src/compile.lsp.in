@@ -28,11 +28,27 @@
 (rename-package "CL" "CL" '("COMMON-LISP" "LISP"))
 
 ;;;
-;;; * Add include path to not yet installed headers
+;;; * Add include path to not yet installed headers, and remove include flag
+;;;   (-I) to installed directory, and Notice that we must explicitely mention
+;;;   libecl.so/ecl.dll instead of using -lecl. This is to avoid interference
+;;;   with an already installed copy of ECL.
 ;;;
-(setq compiler::*cc-flags*
-      (concatenate 'string compiler::*cc-flags*
-	" -I@true_srcdir@/h -I@true_srcdir@/gmp -I@true_builddir@/h"))
+(setq c::*cc-flags*
+      "@CFLAGS@ @LSPCFLAGS@ -I@true_srcdir@/h -I@true_srcdir@/gmp -I@true_builddir@/h"
+      c::*cc-format*
+      "~A ~A ~:[~*~;~A~] -I@true_builddir@/h~* -w -c ~A -o ~A"
+      c::*ld-format*
+      "~A -o ~A -L@true_builddir@~* ~{~A ~} ~@?")
+#-dlopen 
+(setf c::*ld-flags*
+      "@LDFLAGS@ @LDRPATH@ @LIBPREFIX@ecl.@LIBEXT@ -lgmp -lgc @CLIBS@")
+#+dlopen
+(setf c::*ld-flags*
+      "@LDFLAGS@ @LDRPATH@ @SHAREDPREFIX@ecl.@SHAREDEXT@ @CLIBS@"
+      c::*ld-shared-flags*
+      "@LDRPATH@ @SHARED_LDFLAGS@ @LDFLAGS@ @SHAREDPREFIX@ecl.@SHAREDEXT@ @CLIBS@"
+      c::*ld-bundle-flags*
+      "@LDRPATH@ @BUNDLE_LDFLAGS@ @LDFLAGS@ @SHAREDPREFIX@ecl.@SHAREDEXT@ @CLIBS@")
 
 ;;;
 ;;; * Compile, load and link Common-Lisp base library
@@ -60,21 +76,11 @@ ar -x ../libclos.a; for i in *.o; do mv $i lsp_$i; done; ar -r ../libecl.a *.o; 
 ranlib ../libecl.a; ~
 cd ..; rm -rf tmp/*'")))
 
-;;
-;; Notice that we must explicitely mention libecl.so/ecl.dll instead
-;; of using -lecl. This is to avoid interference with an already
-;; installed copy of ECL.
-;;
-(setf c::*ld-flags*
-#+dlopen "@LDFLAGS@ @LDRPATH@ @SHAREDPREFIX@ecl.@SHAREDEXT@ @CLIBS@"
-#-dlopen "@LDFLAGS@ @LDRPATH@ @LIBPREFIX@ecl.@LIBEXT@ -lgmp -lgc @CLIBS@"
-)
-
 #+dlopen
-;;
-;; We do not need the -rpath flag for the library, nor -lecl.
-;;
-(let ((c::*ld-shared-flags* "-L./ @SHARED_LDFLAGS@ -lgmp -lgc @CLIBS@"))
+;;;
+;;; We do not need the -rpath flag for the library, nor -lecl.
+;;;
+(let ((c::*ld-shared-flags* "@SHARED_LDFLAGS@ @CLIBS@"))
   (c::shared-cc (compile-file-pathname "ecl" :type :dll)
 		"c/main.@OBJEXT@"
 		(compile-file-pathname "ecl" :type :lib)
@@ -87,14 +93,15 @@ cd ..; rm -rf tmp/*'")))
 ;;; * Compile, load and link Common-Lisp to C compiler
 ;;;
 (proclaim '(optimize (safety 2) (space 3)))
+
+(si::pathname-translations "SYS" '(("**;*.*" "@ecldir@/**/*.*")))
+
 #+(or (not stage1) WANTS-CMP)
 (let ((objects (compile-if-old "build:cmp;" +cmp-module-files+
 				:system-p t :c-file t :data-file t :h-file t)))
   (c::build-static-library "cmp" :lisp-files objects)
   #+dlopen
   (c::build-fasl "cmp" :lisp-files objects))
-
-(si::pathname-translations "SYS" '(("**;*.*" "@ecldir@/**/*.*")))
 
 (compiler::build-program
  #+(or cross stage1) "ecl"
