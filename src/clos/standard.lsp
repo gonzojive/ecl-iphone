@@ -128,7 +128,7 @@
 		   (check-direct-superclasses class direct-superclasses)))
     (add-direct-subclass l class))
   (if (find-if #'forward-referenced-class-p (class-direct-superclasses class))
-      (print (find-if #'forward-referenced-class-p (class-direct-superclasses class)))
+      (find-if #'forward-referenced-class-p (class-direct-superclasses class))
       (finalize-inheritance class))
 )
 
@@ -415,7 +415,8 @@ because it contains a reference to the undefined class~%  ~A"
 (defmethod slot-exists-p ((instance standard-object) slot-name)
   (let ((class (si:instance-class instance)))
     (declare (type standard-class class))
-    (nth-value 0 (gethash slot-name (slot-index-table class) nil))))
+    (and (nth-value 0 (gethash slot-name (slot-index-table class) nil))
+	 t)))
 
 (defmethod slot-makunbound ((instance standard-object) slot-name)
   (let* ((class (si:instance-class instance))
