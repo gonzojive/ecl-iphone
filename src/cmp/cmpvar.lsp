@@ -181,11 +181,8 @@
            (return-from c1vref (list var))))) ; ccb
   (let ((var (sch-global name)))
     (unless var
-      (if *compile-time-too* 
-        (unless (sys:specialp name) (undefined-variable name))
-        (unless (or (sys:specialp name)
-                    (check-global name))
-          (undefined-variable name)))
+      (unless (or (sys:specialp name) (check-global name))
+	(undefined-variable name))
       (setq var (make-var :name name
                           :kind 'GLOBAL
                           :loc (add-symbol name)

@@ -274,7 +274,7 @@
 (unless (fboundp 'sys::fpp)
   (defun find-class (n &optional err env) (declare (ignore n err env)) nil))
 #+clos
-(proclaim '(NOTINLINE FIND-CLASS))
+(declaim (NOTINLINE FIND-CLASS))
 
 ;;; SUBTYPEP predicate.
 (defun subtypep (type1 type2 &aux t1 t2 i1 i2 ntp1 ntp2 c1 c2)

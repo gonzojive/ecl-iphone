@@ -91,17 +91,16 @@
 )
 
 (defun cmp-eval (form &aux (throw-flag t))
-  (unless *not-compile-time*
-    (unwind-protect
-	 (prog1
-	     (cmp-toplevel-eval form)
-	   (setq throw-flag nil))
-      (when throw-flag
-	(let ((*print-case* :upcase))
-	  (print-current-form)
-	  (format t "~&;;; The form ~s was not evaluated successfully.~
-                     ~%;;; You are recommended to compile again.~%"
-		  form))))))
+  (unwind-protect
+       (prog1
+	   (cmp-toplevel-eval form)
+	 (setq throw-flag nil))
+    (when throw-flag
+      (let ((*print-case* :upcase))
+	(print-current-form)
+	(format t "~&;;; The form ~s was not evaluated successfully.~
+                   ~%;;; You are recommended to compile again.~%"
+		form)))))
 
 
 (defun cmp-macroexpand (form &aux env (throw-flag t))

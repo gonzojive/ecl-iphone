@@ -247,8 +247,8 @@
 ;; Declarations
 (defmacro declaim (&rest decl-specs)
   (if (cdr decl-specs)
-    `(eval-when (compile load) (mapcar #'proclaim ',decl-specs))
-    `(eval-when (compile load) (proclaim ',(car decl-specs)))))
+    `(eval-when (compile load eval) (mapcar #'proclaim ',decl-specs))
+    `(eval-when (compile load eval) (proclaim ',(car decl-specs)))))
 
 (defmacro c-declaim (&rest decl-specs)
   (if (cdr decl-specs)

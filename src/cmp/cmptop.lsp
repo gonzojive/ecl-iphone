@@ -154,8 +154,7 @@
       ((EVAL :EXECUTE))
       (otherwise (cmperr "The EVAL-WHEN situation ~s is illegal."
 			 situation))))
-  (let ((*not-compile-time* (not compile-flag))
-	(*compile-time-too* compile-flag))
+  (let ((*compile-time-too* compile-flag))
     (cond (load-flag
 	   (t1progn (rest args)))
 	  (compile-flag
@@ -589,11 +588,7 @@
   )
 
 (defun t1ordinary (form)
-  (when (or *compile-time-too*
-	    (eq (car form) 'SYS:*MAKE-CONSTANT)
-	    (eq (car form) 'SYS:*MAKE-SPECIAL)
-	    (eq (car form) 'LISP:PROCLAIM))
-	(cmp-eval form))
+  (when *compile-time-too* (cmp-eval form))
   (setq *non-package-operation* t)
   (let ((*vars* nil) (*funs* nil) (*blocks* nil) (*tags* nil)
         (*sharp-commas* nil))
