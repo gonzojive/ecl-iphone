@@ -1099,4 +1099,16 @@ output to *verbose-out*.  Returns the shell's exit code."
   
   (pushnew 'module-provide-asdf sb-ext:*module-provider-functions*))
 
+;; Hook into ECL's require/provide
+#+ecl
+(progn
+  (defun module-provide-asdf (name)
+    (handler-bind ((style-warning #'muffle-warning))
+      (let* ((*verbose-out* (make-broadcast-stream))
+	     (system (asdf:find-system name nil)))
+	(when system
+	  (asdf:operate 'asdf:load-op name)
+	  t))))
+  (pushnew 'module-provide-asdf ext:*module-provider-functions*))
+
 (provide 'asdf)
