@@ -29,13 +29,14 @@
 #ifdef HAVE_DIRENT_H
 # include <dirent.h>
 #else
-# ifndef _MSC_VER
+# if !defined(_MSC_VER)
 #  include <sys/dir.h>
-# else
-#  include <windows.h>
-#  undef ERROR
-#  define MAXPATHLEN 512
 # endif
+#endif
+#if defined(_MSC_VER) || defined(mingw32)
+# include <windows.h>
+# undef ERROR
+# define MAXPATHLEN 512
 #endif
 #ifndef HAVE_MKSTEMP
 # include <fcntl.h>
@@ -92,7 +93,7 @@ current_dir(void) {
 
 static cl_object
 file_kind(char *filename, bool follow_links) {
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(mingw32)
 	DWORD dw = GetFileAttributes( filename );
 	if (dw == -1)
 		return Cnil;
@@ -187,11 +188,11 @@ cl_truename(cl_object pathname)
 			filename = OBJNULL;
 		}
 #endif
-#ifdef _MSC_VER
-		if (filename->pathname.device != Cnil)
+#if defined(_MSC_VER) || defined(mingw32)
+		if (pathname->pathname.device != Cnil)
 		{
 			char device[3] = {'\0', ':', '\0'};
-			device[0] = filename->pathname.device->string.self[0];
+			device[0] = pathname->pathname.device->string.self[0];
 			if (chdir( device ) < 0)
 				goto ERROR;
 		}
@@ -704,7 +705,7 @@ si_getcwd(void)
 	return cl_parse_namestring(3, current_dir(), Cnil, Cnil);
 }
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(mingw32)
 cl_object
 si_get_library_pathname(void)
 {

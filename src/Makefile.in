@@ -108,7 +108,7 @@ install-base:
 flatinstall: BUILD-STAMP
 	$(MAKE) bindir=$(prefix) libdir=$(prefix) install-base
 	cd c; $(MAKE) prefix=$(prefix) flatinstall
-	cd doc; $(MAKE) prefix=$(prefix) flatinstall
+	cd doc; $(MAKE) prefix=$(prefix) docdir=$(prefix)/doc flatinstall
 
 uninstall:
 	for i in $(TARGETS) ecl-config; do rm -rf $(bindir)/$$i; done
