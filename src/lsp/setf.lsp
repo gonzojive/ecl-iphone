@@ -12,6 +12,10 @@
 
 (in-package "SYSTEM")
 
+(defun check-stores-number (context stores-list n)
+  (unless (= (length stores-list) n)
+    (error "~d store-variables expected in setf form ~a." n context)))
+
 ;;; DEFSETF macro.
 (defmacro defsetf (access-fn &rest rest)
   "Syntax: (defsetf symbol update-fun [doc])
@@ -39,8 +43,7 @@ by (documentation 'SYMBOL 'setf)."
 		(args (first rest))
 		(body (cddr rest))
 		(doc (find-documentation body)))
-	   (unless (and (= (list-length store) 1) (symbolp (first store)))
-		(error "Single store-variable expected."))
+	   (check-stores-number 'DEFSETF store 1)
 	   (setq rest `(lambda ,args #'(lambda ,store ,@body)))
 	   `(eval-when (compile load eval)
 	      (put-sysprop ',access-fn 'SETF-LAMBDA #'(lambda (,@store ,@args) ,@body))
@@ -91,23 +94,9 @@ by (DOCUMENTATION 'SYMBOL 'SETF)."
           ',access-fn))
 
 
-;;; GET-SETF-METHOD.
-;;; It just calls GET-SETF-METHOD-MULTIPLE-VALUE
-;;;  and checks the number of the store variable.
-(defun get-setf-expansion (form &optional env)
-  "Args: (place)
-Returns the 'five gangs' (see DEFINE-SETF-EXPANDER) for PLACE as five values.
-Checks if the third gang is a single-element list."
-  (multiple-value-bind (vars vals stores store-form access-form)
-      (get-setf-method-multiple-value form env)
-    (unless (= (list-length stores) 1)
-	    (error "Multiple store-variables are not allowed."))
-    (values vars vals stores store-form access-form)))
+;;;; get-setf-expansion.
 
-
-;;;; GET-SETF-METHOD-MULTIPLE-VALUE.
-
-(defun get-setf-method-multiple-value (form &optional env &aux f)
+(defun get-setf-expansion (form &optional env &aux f)
   "Args: (form)
 Returns the 'five gangs' (see DEFINE-SETF-EXPANDER) for PLACE as five values.
 Does not check if the third gang is a single-element list."
@@ -121,7 +110,7 @@ Does not check if the third gang is a single-element list."
 	   (values (gensym) (nreverse names) (nreverse values) (nreverse all-args))))
     (cond ((symbolp form)
 	   (if (and (setq f (macroexpand form env)) (not (equal f form)))
-	       (get-setf-method-multiple-value f env)
+	       (get-setf-expansion f env)
 	       (let ((store (gensym)))
 		 (values nil nil (list store) `(setq ,form ,store) form))))
 	  ((or (not (consp form)) (not (symbolp (car form))))
@@ -140,8 +129,8 @@ Does not check if the third gang is a single-element list."
 			   ((setq f (get-sysprop (car form) 'SETF-LAMBDA))
 			    (apply f store all))
 			   ((and (setq f (macroexpand form env)) (not (equal f form)))
-			    (return-from get-setf-method-multiple-value
-			      (get-setf-method-multiple-value f env)))
+			    (return-from get-setf-expansion
+			      (get-setf-expansion f env)))
 			   (t
 			    `(funcall #'(SETF ,name) ,store ,@all))))
 	       (values vars inits (list store) writer (cons name all))))))))
@@ -308,11 +297,17 @@ Does not check if the third gang is a single-element list."
   (multiple-value-bind (vars vals stores store-form access-form)
       (get-setf-expansion place env)
     (declare (ignore access-form))
-    `(let* ,(mapcar #'list
-		    (append vars stores)
-		    (append vals (list newvalue)))
-       (declare (:read-only ,@ (append vars stores))) ; Beppe
-       ,store-form)))
+    (let ((declaration `(declare (:read-only ,@(append vars stores)))))
+      (if (= (length stores) 1)
+	`(let* ,(mapcar #'list
+			(append vars stores)
+			(append vals (list newvalue)))
+	  ,declaration
+	  ,store-form)
+	`(let* ,(mapcar #'list vars vals)
+	  (multiple-value-bind ,stores ,newvalue
+	    ,declaration
+	    ,store-form))))))
 
 (defun setf-structure-access (struct type index newvalue)
   (declare (si::c-local))
@@ -566,10 +561,10 @@ Decrements the value of PLACE by the value of FORM.  FORM defaults to 1.")
   "Syntax: (push form place)
 Evaluates FORM, conses the value of FORM to the value stored in PLACE, and
 makes it the new value of PLACE.  Returns the new value of PLACE."
-  (when (symbolp place)
-    (return-from push `(setq ,place (cons ,item ,place))))
   (multiple-value-bind (vars vals stores store-form access-form)
       (get-setf-expansion place env)
+    (when (and (null vars) (eq access-form place))
+      (return-from push `(setq ,place (cons ,item ,place))))
     ;; The item to be pushed has to be evaluated before the destination
     (unless (constantp item)
       (setq vals (cons item vals)
@@ -588,10 +583,10 @@ does nothing.  Else, conses the value onto the list and makes the result the
 new value of PLACE.  Returns NIL.  KEYWORD-FORMs and VALUE-FORMs are used to
 check if the value of FORM is already in PLACE as if their values are passed
 to MEMBER."
-  (cond ((symbolp place)
-	 (return-from pushnew `(setq ,place (adjoin ,item ,place ,@rest)))))
   (multiple-value-bind (vars vals stores store-form access-form)
       (get-setf-expansion place env)
+    (when (and (null vars) (eq access-form place))
+      (return-from pushnew `(setq ,place (adjoin ,item ,place ,@rest))))
     ;; The item to be pushed has to be evaluated before the destination
     (unless (constantp item)
       (setq vals (cons item vals)
@@ -608,20 +603,39 @@ to MEMBER."
   "Syntax: (pop place)
 Gets the cdr of the value stored in PLACE and makes it the new value of PLACE.
 Returns the car of the old value in PLACE."
-  (when (symbolp place)
-        (return-from pop
-          (let ((temp (gensym)))
-            `(let ((,temp (car ,place)))
-                (setq ,place (cdr ,place))
-                ,temp))))
   (multiple-value-bind (vars vals stores store-form access-form)
       (get-setf-expansion place env)
-    `(let* ,(mapcar #'list
-		    (append vars stores)
-		    (append vals (list (list 'cdr access-form))))
-       (declare (:read-only ,@vars)) ; Beppe
-       (prog1 (car ,access-form)
-              ,store-form))))
+    (if (and (null vars) (eq access-form place))
+	`(prog1 (car ,place) (setq ,place (cdr ,place)))
+	`(let* ,(mapcar #'list
+			(append vars stores)
+			(append vals (list (list 'cdr access-form))))
+	  (declare (:read-only ,@vars)) ; Beppe
+	  (prog1 (car ,access-form)
+	    ,store-form)))))
+
+(define-setf-expander values (&rest values &environment env)
+  (let ((vars '())
+	(vals '())
+	(stores '())
+	(storing-form '())
+	(get-form '()))
+    (dolist (item (nreverse values))
+      (multiple-value-bind (v vr s sf gf)
+	  (get-setf-expansion item)
+	;; If a place has more than one store variable, the other ones
+	;; are set to nil.
+	(let ((extra (rest s)))
+	  (unless (endp extra)
+	    (setf vars (append endp vars)
+		  vals (append (make-list (length s)) vals)
+		  s (list (first s)))))
+	(setf vars (append vr vars)
+	      vals (append v vals)
+	      stores (append s stores)
+	      storing-form (cons sf storing-form)
+	      get-form (cons gf get-form))))
+    (values vars vals stores `(values ,@storing-form) `(values ,@get-form))))
 #|
 ;;; Proposed extension:
 ; Expansion of (SETF (VALUES place1 ... placek) form)
