@@ -535,25 +535,25 @@ make_string_input_stream(cl_object strng, cl_index istart, cl_index iend)
 cl_object
 make_string_output_stream(cl_index line_length)
 {
-	cl_object strng, strm;
+	cl_object s = cl_alloc_adjustable_string(line_length);
+	return make_string_output_stream_from_string(s);
+}
 
-	line_length++;
-	strng = cl_alloc_object(t_string);
-	strng->string.hasfillp = TRUE;
-	strng->string.adjustable = TRUE;
-	strng->string.displaced = Cnil;
-	strng->string.dim = line_length;
-	strng->string.fillp = 0;
-	strng->string.self = NULL; /*  For GC sake  */
-	strng->string.self = (char *)cl_alloc(line_length);
-	strng->string.self[0] = '\0';
+cl_object
+make_string_output_stream_from_string(cl_object string)
+{
+	cl_object strm;
+
+	if (type_of(strng) != t_string || !strng->string.hasfillp)
+		FEerror("~S is not a string with a fill-pointer.", 1, strng);
 	strm = cl_alloc_object(t_stream);
 	strm->stream.mode = (short)smm_string_output;
 	strm->stream.file = NULL;
 	strm->stream.object0 = strng;
 	strm->stream.object1 = OBJNULL;
-	strm->stream.int0 = strm->stream.int1 = 0;
-	return(strm);
+	strm->stream.int0 = strng->string.fillp;
+	strm->stream.int1 = 0;
+	return strm;
 }
 
 cl_object
@@ -739,7 +739,6 @@ int
 writec_stream(int c, cl_object strm)
 {
 	cl_object x;
-	char *p;
 	cl_index i;
 	FILE *fp;
 
@@ -804,28 +803,7 @@ BEGIN:
 			strm->stream.int1 = (strm->stream.int1&~07) + 8;
 		else
 			strm->stream.int1++;
-		x = strm->stream.object0;
-		if (x->string.fillp >= x->string.dim) {
-			if (!x->string.adjustable)
-				FEerror("The string ~S is not adjustable.",
-					1, x);
-#ifdef THREADS
-			start_critical_section(); /* avoid losing p */
-#endif
-			p = (char *)cl_alloc(x->string.dim * 2 + 16);
-			for (i = 0;  i < x->string.dim;  i++)
-				p[i] = x->string.self[i];
-			i = x->string.dim * 2 + 16;
-#define ADIMLIM         16*1024*1024
-			if (i >= ADIMLIM)
-				FEerror("Can't extend the string.", 0);
-			x->string.dim = i;
-			adjust_displaced(x, p - x->string.self);
-#ifdef THREADS
-			end_critical_section();
-#endif
-		}
-		x->string.self[x->string.fillp++] = c;
+		cl_string_push_extend(strm->stream.object0, c);
 		break;
 
 	case smm_input:
@@ -1610,16 +1588,7 @@ for the file-stream ~S.",
 @(defun si::make_string_output_stream_from_string (strng)
 	cl_object strm;
 @
-	if (type_of(strng) != t_string || !strng->string.hasfillp)
-		FEerror("~S is not a string with a fill-pointer.", 1, strng);
-	strm = cl_alloc_object(t_stream);
-	strm->stream.mode = (short)smm_string_output;
-	strm->stream.file = NULL;
-	strm->stream.object0 = strng;
-	strm->stream.object1 = OBJNULL;
-	strm->stream.int0 = strng->string.fillp;
-	strm->stream.int1 = 0;
-	@(return strm)
+	@(return make_string_output_stream_from_string(string))
 @)
 
 @(defun si::copy_stream (in out)

@@ -694,3 +694,33 @@ nstring_case(int narg, int (*casefun)(int, bool *), va_list ARGS)
 	}
 	@(return v)
 @)
+
+int
+cl_string_push_extend(cl_object s, int c)
+{
+	char *p;
+	cl_index new_length;
+
+	if (type_of(s) != t_string) {
+		FEtype_error_string(s);
+	} else if (s->string.fillp >= s->string.dim) {
+		if (!s->string.adjustable)
+			FEerror("string-push-extend: the string ~S is not adjustable.",
+				1, s);
+#ifdef THREADS
+		start_critical_section(); /* avoid losing p */
+#endif
+		if (s->string.dim >= ADIMLIM/2)
+			FEerror("Can't extend the string.", 0);
+		new_length = s->string.dim * 2;
+		p = (char *)cl_alloc(new_length);
+		memcpy(p, s->string.self, s->string.dim * sizeof(char));
+		s->string.dim = new_length;
+		adjust_displaced(s, p - s->string.self);
+#ifdef THREADS
+		end_critical_section();
+#endif
+	}
+	s->string.self[s->string.fillp++] = c;
+	return c;
+}

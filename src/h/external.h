@@ -266,6 +266,7 @@ extern cl_object make_two_way_stream(cl_object istrm, cl_object ostrm);
 extern cl_object make_echo_stream(cl_object istrm, cl_object ostrm);
 extern cl_object make_string_input_stream(cl_object strng, cl_index istart, cl_index iend);
 extern cl_object make_string_output_stream(cl_index line_length);
+extern cl_object make_string_output_stream_from_string(cl_object s);
 extern cl_object get_output_stream_string(cl_object strm);
 extern int readc_stream(cl_object strm);
 extern void unreadc_stream(int c, cl_object strm);
@@ -758,7 +759,8 @@ extern cl_object coerce_to_string_designator(cl_object x);
 extern bool string_eq(cl_object x, cl_object y);
 extern bool string_equal(cl_object x, cl_object y);
 extern bool member_char(int c, cl_object char_bag);
-extern void get_string_start_end(cl_object string, cl_object start, cl_object end, cl_index *ps, cl_index *pe);
+extern int cl_string_push_extend(cl_object s, int c);
+extern void get_string_start_end(cl_object s, cl_object start, cl_object end, cl_index *ps, cl_index *pe);
 extern void init_string(void);
 
 
