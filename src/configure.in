@@ -301,7 +301,7 @@ elif test "${local_boehm}" = "no" ; then
   test -d gc && rm -rf gc
   if mkdir gc; then
    (cd gc;
-     $srcdir/gc/configure --disable-shared --prefix=$bindir \
+     $srcdir/gc/configure --disable-threads --disable-shared --prefix=$bindir \
 	--includedir=${builddir}/h --libdir=${builddir})
   fi
 else
