@@ -6,7 +6,7 @@
 (setq *cc* "@ECL_CC@")
 (setq *cc-flags* "@CFLAGS@ @ECL_CFLAGS@")
 (setq *ld-flags* "@LDRPATH@ @LDFLAGS@ -lecl -lgmp -lgc @CLIBS@")
-(setq *ld-format* "@ECL_CC@ -o ~A -L~A ~{~A ~} ~@?")
+(setq *ld-format* "~A -o ~A -L~A ~{~A ~} ~@?")
 #+dlopen
 (setq *ld-shared-flags* "@LDRPATH@ @SHARED_LDFLAGS@ @LDFLAGS@ -lecl @CLIBS@")
 #+dlopen
