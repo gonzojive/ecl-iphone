@@ -217,7 +217,6 @@
 (defun c2multiple-value-setq (vars form)
   (multiple-value-bind (min-values max-values)
       (c1form-values-number form)
-    (print (list (c1form-type form) min-values max-values))
     (if (= min-values max-values)
 	(do-m-v-setq-fixed min-values vars form nil)
 	(progn
