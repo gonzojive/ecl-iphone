@@ -392,14 +392,12 @@ struct ecl_cclosure {		/*  compiled closure header  */
 	cl_object block;	/*  descriptor of C code block for GC  */
 };
 
-#ifdef ECL_FFI
 struct ecl_foreign {		/*  user defined datatype  */
 	HEADER;
 	cl_object tag;		/*  a tag identifying the type  */
 	cl_index size;		/*  the amount of memory allocated  */
 	char *data;		/*  the data itself  */
 };
-#endif
 
 /*
 	dummy type
@@ -478,9 +476,7 @@ union cl_lispunion {
 	struct ecl_lock		lock; /*  lock  */
 #endif
 	struct ecl_codeblock	cblock; /*  codeblock  */
-#ifdef ECL_FFI
 	struct ecl_foreign	foreign; /* user defined data type */
-#endif
 };
 
 /*
@@ -522,9 +518,7 @@ typedef enum {
 	t_lock,
 #endif
 	t_codeblock,		/* 21 */
-#ifdef ECL_FFI
 	t_foreign,		/* 22 */
-#endif
 	t_end,
 	t_other,
 	t_contiguous,		/*  contiguous block  */

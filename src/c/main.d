@@ -311,7 +311,8 @@ cl_boot(int argc, char **argv)
 			   make_keyword("COMMON"),
 			   make_keyword("ANSI-CL"),
 			   make_keyword("COMMON-LISP"),
-			   make_keyword(ECL_ARCHITECTURE));
+			   make_keyword(ECL_ARCHITECTURE),
+			   make_keyword("FFI"));
 
 #define ADD_FEATURE(name) features = CONS(make_keyword(name),features)
 
@@ -332,9 +333,6 @@ cl_boot(int argc, char **argv)
 #endif
 #ifdef PDE
 	ADD_FEATURE("PDE");
-#endif
-#ifdef ECL_FFI
-	ADD_FEATURE("FFI");
 #endif
 #ifdef unix
 	ADD_FEATURE("UNIX");

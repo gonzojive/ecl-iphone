@@ -23,7 +23,11 @@ The complete syntax of a lambda-list is:
 The doc-string DOC, if supplied, is saved as a FUNCTION doc and can be
 retrieved by (documentation 'NAME 'function)."
   (multiple-value-setq (body doc-string) (remove-documentation body))
-  (let* ((function `#'(ext::lambda-block ,name ,vl ,@body)))
+  (let* ((block-name (if (and (consp name)
+			      (eq (first name) 'setf))
+			 (second name)
+			 name))
+	 (function `#'(ext::lambda-block ,block-name ,vl ,@body)))
     (when *dump-defun-definitions*
       (print function)
       (setq function `(si::bc-disassemble ,function)))
@@ -82,9 +86,6 @@ as a VARIABLE doc and can be retrieved by (documentation 'NAME 'variable)."
   `(PROGN (SYS:*MAKE-SPECIAL ',var)
     ,@(si::expand-set-documentation var 'variable doc-string)
     (SETQ ,var ,form)
-    (EVAL-WHEN (COMPILE)		; Beppe
-      (WHEN ,(CONSTANTP form)
-	(PROCLAIM '(TYPE ,(type-of form) ,var))))
 ;    (eval-when (load eval)		; Beppe
 ;      (compiler::proclaim-var (type-of ,var) ',var))
     #+PDE (SYS:RECORD-SOURCE-PATHNAME ',var 'DEFPARAMETER)

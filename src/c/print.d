@@ -1152,7 +1152,6 @@ _write_object(cl_object x, int level)
 		call_print_object(x, level);
 		break;
 #endif /* CLOS */
-#ifdef ECL_FFI
 	case t_foreign:
 		if (cl_env.print_readably) FEprint_not_readable(x);
 		write_str("#<foreign ");
@@ -1160,7 +1159,6 @@ _write_object(cl_object x, int level)
 		write_addr(x->foreign.data);
 		write_ch('>');
 		break;
-#endif /* ECL_FFI */
 #ifdef ECL_THREADS
 	case t_process:
 		if (cl_env.print_readably) FEprint_not_readable(x);

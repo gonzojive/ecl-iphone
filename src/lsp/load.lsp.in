@@ -35,8 +35,6 @@
   "src:lsp;format.lsp"
   "src:lsp;defpackage.lsp"
   "src:lsp;ffi.lsp"
-#+ffi
-  "src:lsp;ffi-objects.lsp"
 #+tk
   "src:lsp;tk-init.lsp"
   "build:lsp;config.lsp"

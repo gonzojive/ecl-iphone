@@ -271,7 +271,7 @@
 (defun call-loc-fixed (fname fun args narg-loc maxarg)
   (cond ((not (eq 'ARGS-PUSHED args))
 	 (when (/= (length args) maxarg)
-	     (error "Too many arguments to function ~S." fname))
+	   (cmperr "Wrong number of arguments to function ~S." fname))
 	 (list 'CALL-FIX fun (coerce-locs args) fname))
 	((stringp fun)
 	 (wt "if(" narg-loc "!=" maxarg ") FEwrong_num_arguments_anonym();")

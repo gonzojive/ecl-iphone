@@ -340,6 +340,9 @@ BEGIN:
 		       equal(x->pathname.type, y->pathname.type) &&
 		       equal(x->pathname.version, y->pathname.version));
 
+	case t_foreign:
+		return (x->foreign.data == y->foreign.data);
+
 	default:
 		return(eql(x,y));
 	}

@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include "ecl.h"
 #include "internal.h"
+#include <limits.h>
 
 #define CL_PACKAGE 0
 #define SI_PACKAGE 4

@@ -186,9 +186,7 @@ init_alloc(void)
 #else
 	init_tm(t_instance, "INSTANCE", sizeof(struct ecl_instance));
 #endif /* CLOS */
-#ifdef ECL_FFI
-	init_tm(t_instance, "FOREIGN", sizeof(struct ecl_foreign));
-#endif
+	init_tm(t_foreign, "FOREIGN", sizeof(struct ecl_foreign));
 #ifdef ECL_THREADS
 	init_tm(t_process, "PROCESS", sizeof(struct ecl_process));
 	init_tm(t_lock, "LOCK", sizeof(struct ecl_lock));

@@ -93,9 +93,6 @@ AC_ARG_WITH(cmuformat,
 AC_ARG_WITH(clos-streams,
 	[--with-clos-streams    Allow user defined stream objects.],
 	closstreams="yes")
-AC_ARG_WITH(ffi,
-	[--with-ffi             Run-time foreign data manipulation.],
-	ffi="yes")
 AC_ARG_WITH(cxx,
 	[--with-cxx             Build ECL using C++ compiler.],
 	usecxx="${withval}",usecxx="no")
@@ -240,10 +237,6 @@ if test "${cmuformat}"; then
 fi
 if test "${closstreams}"; then
   AC_DEFINE(ECL_CLOS_STREAMS)
-fi
-if test "${ffi}"; then
-  AC_DEFINE(ECL_FFI)
-  EXTRA_OBJS="${EXTRA_OBJS} ffi.${OBJEXT}"
 fi
 if test "${locative}" ; then
   EXTRA_OBJS="${EXTRA_OBJS} unify.${OBJEXT}"

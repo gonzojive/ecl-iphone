@@ -16,26 +16,38 @@
 ;;
 
 (defconstant +representation-types+
-  '(:byte ((signed-byte 8) "byte")
+  '(;; These types can be used by ECL to unbox data
+    ;; They are sorted from the most specific, to the least specific one.
+    :byte ((signed-byte 8) "byte")
     :unsigned-byte ((unsigned-byte 8) "unsigned byte")
     :fixnum (fixnum "cl_fixnum")
-    :int ((signed-byte 32) "int")
-    :unsigned-int ((unsigned-byte 32) "unsigned int")
-    :long ((signed-byte 32) "long")
-    :unsigned-long ((unsigned-byte 32) "unsigned long")
+    :int ((integer #.si:c-int-min #.si:c-int-max) "int")
+    :unsigned-int ((integer 0 #.si:c-uint-max) "unsigned int")
+    :long ((integer #.si:c-long-min #.si:c-long-max) "long")
+    :unsigned-long ((integer 0 #.si:c-ulong-max) "unsigned long")
     :cl-index ((integer 0 #.most-positive-fixnum) "cl_index")
     :float (short-float "float")
     :double (long-float "double")
     :char (character "char")
     :unsigned-char (character "char")
-    :void (nil "void")
     :object (t "cl_object")
-    :bool (t "bool")))
+    :bool (t "bool")
+    ;; These types are never selected to unbox data.
+    ;; They are here, because we need to know how to print them.
+    :void (nil "void")
+    :pointer-void (nil "void*")
+    :cstring (nil "char*")
+    :short ((integer #.si:c-short-min #.si:c-short-max) "short")
+    :unsigned-short ((integer 0 #.si:c-short-max) "unsigned short")
+    ))
 
 
 (defun rep-type->lisp-type (rep-type)
   (let ((output (getf +representation-types+ rep-type)))
-    (cond (output (first output))
+    (cond (output
+	   (or (first output)
+	       (error "Representation type ~S cannot be coerced to lisp"
+		      rep-type)))
 	  ((lisp-type-p rep-type) rep-type)
 	  (t (error "Unknown representation type ~S" rep-type)))))
 
@@ -49,7 +61,7 @@
 
 (defun rep-type-name (type)
   (or (second (getf +representation-types+ type))
-      (error "Unknown type name ~S found in compiled expression" type)))
+      (error "Not a valid type name ~S" type)))
 
 (defun lisp-type-p (type)
   (subtypep type 'T))
@@ -179,8 +191,31 @@
 	    (wt "((" loc ")?Ct:Cnil)"))
 	   ((:char :unsigned-char)
 	    (wt "CODE_CHAR(" loc ")"))
+	   ((:cstring)
+	    (wt "make_string_copy(" loc ")"))
+	   ((:pointer-void)
+	    (wt "ecl_make_foreign_data(Cnil, 0, " loc ")"))
 	   (otherwise
 	    (coercion-error))))
+	((:pointer-void)
+	 (case loc-rep-type
+	   ((:object)
+	    ;; Only foreign data types can be coerced to a pointer
+	    (wt "ecl_foreign_data_pointer_safe(" loc ")"))
+	   ((:cstring)
+	    (wt "(char *)(" loc ")"))
+	   (otherwise
+	    (coercion-error))))
+	((:cstring)
+	 (case loc-rep-type
+	   ((:object)
+	    (if (safe-compile)
+		(wt "ecl_string_pointer_safe(" loc ")")
+	        (wt "(" loc ")->string.self")))
+	   ((:pointer-void)
+	    (wt "(char *)(" loc ")"))
+	   (otherwise
+	    (coercion error))))
 	(t
 	 (coercion-error))))))
 
@@ -190,8 +225,9 @@
 ;;
 
 (defun c1c-inline (args)
+  ;; We are on the safe side by assuming that the form has side effects
   (destructuring-bind (arguments arg-types output-type c-expression
-				 &key side-effects one-liner
+				 &key (side-effects t) one-liner
 				 &aux output-rep-type)
       args
     (if (lisp-type-p output-type)
@@ -307,9 +343,8 @@
 		  (wt (add-object object))))))
 	(#\#
 	 (let* ((k (char-downcase (read-char s)))
-		(index (- (char-code k)
-			  (char-code (if (char<= #\0 k #\9) #\0 #\a)))))
-	   (when (or (< index 0) (>= index (length coerced-arguments)))
+		(index (digit-char-p k 36)))
+	   (unless (and index (< index (length coerced-arguments)))
 	     (cmperr "C-INLINE: Variable code exceeds number of arguments"))
 	   (wt (nth index coerced-arguments))))
 	(otherwise

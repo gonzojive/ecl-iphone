@@ -375,13 +375,11 @@ BEGIN:
 		i = x->cblock.data_size;
 		p = x->cblock.data;
 		goto MARK_DATA;
-#ifdef ECL_FFI
 	case t_foreign:
 		if (x->foreign.size)
 			mark_contblock(x->foreign.data, x->foreign.size);
 		mark_next(x->foreign.tag);
 		break;
-#endif /* ECL_FFI */
 	MARK_DATA:
 		if (p) {
 			mark_contblock(p, i * sizeof(cl_object));

@@ -475,13 +475,23 @@ extern cl_object cl_safe_eval(cl_object form, cl_object env, cl_object err_value
 
 /* ffi.c */
 
-#ifdef ECL_FFI
 extern cl_object si_allocate_foreign_data(cl_object tag, cl_object size);
-extern cl_object si_free_foreign_data(cl_object x);
+extern cl_object si_foreign_data_address(cl_object f);
+extern cl_object si_foreign_data_pointer(cl_object f, cl_object ndx, cl_object size, cl_object tag);
+extern cl_object si_foreign_data_ref(cl_object f, cl_object ndx, cl_object size, cl_object tag);
+extern cl_object si_foreign_data_ref_elt(cl_object f, cl_object ndx, cl_object tag);
+extern cl_object si_foreign_data_set(cl_object f, cl_object ndx, cl_object value);
+extern cl_object si_foreign_data_set_elt(cl_object f, cl_object ndx, cl_object tag, cl_object value);
 extern cl_object si_foreign_data_tag(cl_object x);
+extern cl_object si_foreign_data_recast(cl_object f, cl_object size, cl_object tag);
+extern cl_object si_free_foreign_data(cl_object x);
+extern cl_object si_null_pointer_p(cl_object f);
+extern cl_object si_size_of_foreign_elt_type(cl_object tag);
+
 extern cl_object ecl_make_foreign_data(cl_object tag, cl_index size, void *data);
-extern void *ecl_foreign_data_pointer_safe(cl_object f, cl_object tag);
-#endif
+extern cl_object ecl_allocate_foreign_data(cl_object tag, cl_index size);
+extern void *ecl_foreign_data_pointer_safe(cl_object f);
+extern char *ecl_string_pointer_safe(cl_object f);
 
 /* file.c */
 

@@ -873,7 +873,6 @@ Optional Packages:
 --with-oldloop         Use the old MIT LOOP macro.
 --with-cmuformat       Use the FORMAT routine from CMUCL.
 --with-clos-streams    Allow user defined stream objects.
---with-ffi             Run-time foreign data manipulation.
 --with-cxx             Build ECL using C++ compiler.
   --with-x                use the X Window System
 
@@ -1475,12 +1474,6 @@ fi;
 if test "${with_clos_streams+set}" = set; then
   withval="$with_clos_streams"
   closstreams="yes"
-fi;
-
-# Check whether --with-ffi or --without-ffi was given.
-if test "${with_ffi+set}" = set; then
-  withval="$with_ffi"
-  ffi="yes"
 fi;
 
 # Check whether --with-cxx or --without-cxx was given.
@@ -4400,13 +4393,6 @@ if test "${closstreams}"; then
 #define ECL_CLOS_STREAMS 1
 _ACEOF
 
-fi
-if test "${ffi}"; then
-  cat >>confdefs.h <<\_ACEOF
-#define ECL_FFI 1
-_ACEOF
-
-  EXTRA_OBJS="${EXTRA_OBJS} ffi.${OBJEXT}"
 fi
 if test "${locative}" ; then
   EXTRA_OBJS="${EXTRA_OBJS} unify.${OBJEXT}"

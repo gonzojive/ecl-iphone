@@ -260,10 +260,8 @@ cl_class_of(cl_object x)
 	case t_cfun:
 	case t_cclosure:
 		t = @'function'; break;
-#ifdef ECL_FFI
 	case t_foreign:
 		t = @'si::foreign-data'; break;
-#endif
 #ifdef ECL_THREADS
 	case t_process:
 		t = @'mp::process'; break;

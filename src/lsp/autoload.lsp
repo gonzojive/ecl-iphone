@@ -114,7 +114,7 @@ number is zero.  The optional X is simply ignored."
 			bytecodes cfun cclosure
 			#-clos structure #+clos instance #+clos generic-function
 			#+threads mp::process #+threads mp::lock
-			#+ffi si::foreign))
+			si::foreign))
 	   (tl type-list (cdr tl))
 	   (i 0 (+ i (if (nth 2 l) (nth 2 l) 0))))
 	  ((null l) (setq npage i))
