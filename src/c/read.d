@@ -29,7 +29,6 @@ cl_object standard_readtable;
 
 #ifndef THREADS
 cl_object READtable;
-int READdefault_float_format;
 bool READsuppress;
 bool preserving_whitespace_flag;
 bool escape_flag;
@@ -67,16 +66,6 @@ setup_READ(void)
 	cl_object x;
 
 	READtable = current_readtable();
-	x = symbol_value(@'*read_default_float_format*');
-	if (x == @'single-float' || x == @'short-float')
-		READdefault_float_format = 'S';
-	else if (x == @'double_float' || x == @'long_float')
-		READdefault_float_format = 'F';
-	else {
-		SYM_VAL(@'*read_default_float_format*') = @'single-float';
-	FEerror("The value of *READ-DEFAULT-FLOAT-FORMAT*, ~S, was illegal.",
-			1, x);
-	}
 	READsuppress = symbol_value(@'*read_suppress*') != Cnil;
 }
 
@@ -84,7 +73,6 @@ static void
 setup_standard_READ(void)
 {
 	READtable = standard_readtable;
-	READdefault_float_format = 'S';
 	READsuppress = FALSE;
 	sharp_eq_context = Cnil;
 	backq_level = 0;
@@ -127,7 +115,6 @@ read_object_recursive(cl_object in)
 	bool e;
 
 	cl_object old_READtable = READtable;
-	int old_READdefault_float_format = READdefault_float_format;
 	bool old_READsuppress = READsuppress;
 
 	if (frs_push(FRS_PROTECT, Cnil))
@@ -140,7 +127,6 @@ read_object_recursive(cl_object in)
 	frs_pop();
 
 	READtable = old_READtable;
-	READdefault_float_format = old_READdefault_float_format;
 	READsuppress = old_READsuppress;
 
 	if (e) unwind(nlj_fr, nlj_tag);
@@ -155,13 +141,11 @@ read_object_non_recursive(cl_object in)
 	volatile cl_object x;
 	bool e;
 	cl_object old_READtable;
-	int old_READdefault_float_format;
 	int old_READsuppress;
 	int old_backq_level;
 	cl_object old_sharp_eq_context;
 
 	old_READtable = READtable;
-	old_READdefault_float_format = READdefault_float_format;
 	old_READsuppress = READsuppress;
 	old_sharp_eq_context = sharp_eq_context;
 	old_backq_level = backq_level;
@@ -180,7 +164,6 @@ read_object_non_recursive(cl_object in)
 	frs_pop();
 
 	READtable = old_READtable;
-	READdefault_float_format = old_READdefault_float_format;
 	READsuppress = old_READsuppress;
 	sharp_eq_context = old_sharp_eq_context;
 	backq_level = old_backq_level;
@@ -547,7 +530,7 @@ MAKE_FLOAT:
 	switch (exponent_marker) {
 
 	case 'e':  case 'E':
-		exponent_marker = READdefault_float_format;
+		exponent_marker = cl_current_read_default_float_format();
 		goto MAKE_FLOAT;
 
 	case 's':  case 'S':
@@ -1360,6 +1343,23 @@ cl_current_read_base(void)
 	FEerror("The value of *READ-BASE*, ~S, was illegal.", 1, x);
 }
 
+char
+cl_current_read_default_float_format(void)
+{
+	cl_object x;
+
+	/* INV: *READ-DEFAULT-FLOAT-FORMAT* is always bound to something */
+	x = SYM_VAL(@'*read-default-float-format*');
+	if (x == @'single-float' || x == @'short-float')
+		return 'S';
+	if (x == @'double-float' || x == @'long-float')
+		return 'F';
+	SYM_VAL(@'*read-default-float-format*') = @'single-float';
+	FEerror("The value of *READ-DEFAULT-FLOAT-FORMAT*, ~S, was illegal.",
+		1, x);
+}
+	
+
 
 @(defun read (&optional (strm Cnil)
 			(eof_errorp Ct)
@@ -1987,7 +1987,6 @@ init_read(void)
 
 	READtable = symbol_value(@'*readtable*');
 	register_root(&READtable);
-	READdefault_float_format = 'S';
 	READsuppress = FALSE;
 
 	sharp_eq_context = Cnil;
@@ -2020,7 +2019,6 @@ read_VV(cl_object block, void *entry)
 	bool e;
 	cl_object in;
 	cl_object old_READtable;
-	int old_READdefault_float_format;
 	int old_READsuppress;
 	int old_backq_level;
 	cl_object old_sharp_eq_context;
@@ -2044,7 +2042,6 @@ read_VV(cl_object block, void *entry)
 #endif
 
 	old_READtable = READtable;
-	old_READdefault_float_format = READdefault_float_format;
 	old_READsuppress = READsuppress;
 	old_sharp_eq_context = sharp_eq_context;
 	old_backq_level = backq_level;
@@ -2052,6 +2049,7 @@ read_VV(cl_object block, void *entry)
 	old_package = SYM_VAL(@'*package*');
 	bds_bind(@'*package*', lisp_package);
 	bds_bind(@'*read-base*', MAKE_FIXNUM(10));
+	bds_bind(@'*read-default-float-format*', @'single-float');
 
 	setup_standard_READ();
 
@@ -2091,7 +2089,6 @@ read_VV(cl_object block, void *entry)
 	bds_unwind(old_bds_top);
 
 	READtable = old_READtable;
-	READdefault_float_format = old_READdefault_float_format;
 	READsuppress = old_READsuppress;
 	sharp_eq_context = old_sharp_eq_context;
 	backq_level = old_backq_level;
