@@ -507,6 +507,8 @@ StdinResume()
  * CLOS-STREAMS and S is an instance object, STREAM-READ-CHAR is invoked
  * to retrieve the character. Then STREAM-READ-CHAR should either
  * output the character, or NIL, indicating EOF.
+ *
+ * INV: ecl_getc(strm) checks the type of STRM.
  */
 int
 ecl_getc(cl_object strm)
@@ -1580,9 +1582,13 @@ cl_output_stream_p(cl_object strm)
 		   (element_type @'base-char')
 		   (if_exists Cnil iesp)
 		   (if_does_not_exist Cnil idnesp)
+	           (external_format @':default')
 	      &aux strm)
 	enum smmode smm;
 @
+	if (external_format != @':default')
+		FEerror("~S is not a valid stream external format.", 1,
+			external_format);
 	/* INV: open_stream() checks types */
 	if (direction == @':input') {
 		smm = smm_input;

@@ -347,7 +347,7 @@ FEillegal_variable_name(cl_object v)
 static void
 FEill_formed_input()
 {
-	FEprogram_error("Unproper list handled to the compiler.", 0);
+	FEprogram_error("Improper list handled to the compiler.", 0);
 }
 
 static void

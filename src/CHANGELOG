@@ -1528,6 +1528,9 @@ ECLS 0.9b
 
   - READ/WRITE-SEQUENCE implemented.
 
+  - OPEN now accepts the parameter :EXTERNAL-FORMAT, which can only be
+    :DEFAULT, as ECL does not support the notion of external formats
+    (all streams have element type (UNSIGNED-BYTE 8)).
 
 TODO:
 =====

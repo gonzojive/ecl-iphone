@@ -1517,7 +1517,6 @@ CANNOT_PARSE:
 		   &optional eof_errorp eof_value)
 	int c;
 @
-	assert_type_stream(binary_input_stream);
 	c = ecl_getc(binary_input_stream);
 	if (c == EOF) {
 		if (Null(eof_errorp))
