@@ -138,7 +138,7 @@ Sunday is the *last* day of the week!!"
   (let* (d)
     (dolist (item (pathname-directory a-pathname))
       (setf d (nconc d (list item)))
-      (let ((p (make-pathname :directory d :default a-pathname)))
+      (let ((p (make-pathname :directory d :defaults a-pathname)))
 	(unless (or (symbolp item) (si::file-kind p nil))
 	  (si::mkdir p #o777))))))
 
