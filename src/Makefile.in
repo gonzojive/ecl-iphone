@@ -147,6 +147,6 @@ test3:
 	./ecl < compile.lsp
 	-for i in lsp clos cmp clx tk; do test -d $$i && diff --exclude=\*.o $$i stage2/$$i; done | less
 test:
-	make -C tests
-	make -C ansi-tests > ansi-tests/log
+	$(MAKE) -C tests
+	$(MAKE) -C ansi-tests > ansi-tests/log
 	-(diff tests ~/src/tests; diff --exclude log ansi-tests ~/src/ansi-tests) | less
