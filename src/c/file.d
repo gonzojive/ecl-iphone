@@ -702,7 +702,7 @@ BEGIN:
 		cl_object strmi = strm->stream.object0;
 		c = EOF;
 		while (!endp(strmi)) {
-			c = ecl_getc(CAR(strmi));
+			c = ecl_peek_char(CAR(strmi));
 			if (c != EOF)
 				break;
 			strm->stream.object0 = strmi = CDR(strmi);
