@@ -183,42 +183,6 @@ create_server_port(int port)
 }
 
 /***********************************************************************
- * Interface from file descriptors to streams
- **********************************************************************/
-
-cl_object
-make_stream(cl_object host, int fd, enum ecl_smmode smm)
-{
-   cl_object stream;
-   char *mode;			/* file open mode */
-   FILE *fp;			/* file pointer */
-
-   switch(smm) {
-    case smm_input:
-      mode = "r";
-      break;
-    case smm_output:
-      mode = "w";
-      break;
-    default:
-      FEerror("make_stream: wrong mode", 0);
-   }
-   fp = fdopen(fd, mode);
-
-   stream = cl_alloc_object(t_stream);
-   stream->stream.mode = (short)smm;
-   stream->stream.file = fp;
-   stream->stream.object0 = @'base-char';
-   stream->stream.object1 = host; /* not really used */
-   stream->stream.int0 = stream->stream.int1 = 0;
-#if !defined(GBC_BOEHM)
-   fp->_IO_buf_base = NULL; /* BASEFF */; 
-   setbuf(fp, stream->stream.buffer = cl_alloc_atomic(BUFSIZ)); 
-#endif
-   return(stream);
-}
-
-/***********************************************************************
  * Public interface to lisp environment
  **********************************************************************/
 
@@ -252,8 +216,8 @@ si_open_client_stream(cl_object host, cl_object port)
    if (fd == 0)
      @(return Cnil)
 
-   streamIn = make_stream(host, fd, smm_input);
-   streamOut = make_stream(host, fd, smm_output);
+   streamIn = ecl_make_stream_from_fd(host, fd, smm_input);
+   streamOut = ecl_make_stream_from_fd(host, fd, smm_output);
 
    @(return make_two_way_stream(streamIn, streamOut))
 }
@@ -272,8 +236,8 @@ si_open_server_stream(cl_object port)
    if (fd == 0)
      output = Cnil;
    else {
-     streamIn = make_stream(Cnil, fd, smm_input);
-     streamOut = make_stream(Cnil, fd, smm_output);
+     streamIn = ecl_make_stream_from_fd(Cnil, fd, smm_input);
+     streamOut = ecl_make_stream_from_fd(Cnil, fd, smm_output);
      output = make_two_way_stream(streamIn, streamOut);
    }
    @(return output)
@@ -311,8 +275,8 @@ si_open_unix_socket_stream(cl_object path)
 		@(return Cnil)
 	}
 
-	streamIn = make_stream(path, fd, smm_input);
-	streamOut = make_stream(path, fd, smm_output);
+	streamIn = ecl_make_stream_from_fd(path, fd, smm_input);
+	streamOut = ecl_make_stream_from_fd(path, fd, smm_output);
 
 	@(return make_two_way_stream(streamIn, streamOut))
 }

@@ -15,6 +15,7 @@
 */
 
 #include <stdlib.h>
+#include <fcntl.h>
 #include "ecl.h"
 #include "internal.h"
 
@@ -67,3 +68,93 @@ si_close_pipe(cl_object stream)
 	}
 	@(return)
 }
+
+@(defun ext::run-program (command argv &key (input @':stream') (output @':stream')
+	  		  (error @'nil'))
+	cl_object input_pipe_read, input_pipe_write;
+	cl_object output_pipe_read, output_pipe_write;
+	int input_pipe[2], output_pipe[2];
+	int child_stdin, child_stdout, child_stderr;
+	int parent_write = 0, parent_read = 0;
+	int child_pid;
+	cl_object stream_write;
+	cl_object stream_read;
+@{
+	if (input == @':stream') {
+		int fd[2];
+		pipe(fd);
+		parent_write = fd[1];
+		child_stdin = fd[0];
+	} else if (input == @'t') {
+		child_stdin = dup(0);
+	} else {
+		child_stdin = open("/dev/null", O_RDONLY);
+	}
+	if (output == @':stream') {
+		int fd[2];
+		pipe(fd);
+		parent_read = fd[0];
+		child_stdout = fd[1];
+	} else if (output == @'t') {
+		child_stdout = dup(1);
+	} else {
+		child_stdout = open("/dev/null", O_WRONLY);
+	}
+	if (error == @'t') {
+		child_stderr = dup(2);
+	} else {
+		child_stderr = open("/dev/null", O_WRONLY);
+	}
+	command = cl_string(command);
+	argv = cl_mapcar(2, @'string', argv);
+	argv = CONS(command, nconc(argv, CONS(Cnil, Cnil)));
+	argv = cl_funcall(3, @'coerce', argv, @'vector');
+	child_pid = fork();
+	if (child_pid == 0) {
+		/* Child */
+		int j;
+		void **argv_ptr = (void **)argv->vector.self.t;
+		close(0);
+		dup(child_stdin);
+		if (parent_write) close(parent_write);
+		close(1);
+		dup(child_stdout);
+		if (parent_read) close(parent_read);
+		close(2);
+		dup(child_stderr);
+		for (j = 0; j < argv->vector.fillp; j++) {
+			cl_object arg = argv->vector.self.t[j];
+			if (arg == Cnil) {
+				argv_ptr[j] = NULL;
+			} else {
+				argv_ptr[j] = arg->string.self;
+			}
+		}
+		execv(command->string.self, (const char **)argv_ptr);
+	} else {
+		/* Parent */
+		close(child_stdin);
+		close(child_stdout);
+		close(child_stderr);
+		if (child_pid < 0) {
+			if (parent_write) close(parent_write);
+			if (parent_read) close(parent_read);
+			FEerror("Could not spawn subprocess to run ~S.", 1, command);
+		}
+		if (parent_write) {
+			stream_write = ecl_make_stream_from_fd(command, parent_write,
+							       smm_output);
+		} else {
+			stream_write = cl_core.null_stream;
+		}
+		if (parent_read) {
+			stream_read = ecl_make_stream_from_fd(command, parent_read,
+							      smm_input);
+		} else {
+			stream_read = cl_core.null_stream;
+		}
+	}
+	@(return ((parent_read || parent_write)?
+		  make_two_way_stream(stream_write, stream_read) :
+		  Cnil))
+@)

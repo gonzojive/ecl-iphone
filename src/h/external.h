@@ -534,6 +534,7 @@ extern long file_position(cl_object strm);
 extern long file_position_set(cl_object strm, long disp);
 extern long file_length(cl_object strm);
 extern int file_column(cl_object strm);
+extern cl_object ecl_make_stream_from_fd(cl_object host, int fd, enum ecl_smmode smm);
 
 
 /* format.c */
@@ -1314,7 +1315,6 @@ extern cl_object si_open_client_stream(cl_object host, cl_object port);
 extern cl_object si_open_server_stream(cl_object port);
 extern cl_object si_open_unix_socket_stream(cl_object path);
 extern cl_object si_lookup_host_entry(cl_object host_or_address);
-extern cl_object make_stream(cl_object host, int fd, enum ecl_smmode smm);
 #endif
 
 
@@ -1430,6 +1430,7 @@ extern cl_object si_check_pending_interrupts(void);
 extern cl_object si_system(cl_object cmd);
 extern cl_object si_open_pipe(cl_object cmd);
 extern cl_object si_close_pipe(cl_object stream);
+extern cl_object si_run_program _ARGS((int narg, cl_object command, cl_object args, ...));
 
 #ifdef __cplusplus
 }

@@ -1864,6 +1864,39 @@ cl_interactive_stream_p(cl_object strm)
 	@(return output)
 }
 
+cl_object
+ecl_make_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm)
+{
+   cl_object stream;
+   char *mode;			/* file open mode */
+   FILE *fp;			/* file pointer */
+
+   switch(smm) {
+    case smm_input:
+      mode = "r";
+      break;
+    case smm_output:
+      mode = "w";
+      break;
+    default:
+      FEerror("make_stream: wrong mode", 0);
+   }
+   fp = fdopen(fd, mode);
+
+   stream = cl_alloc_object(t_stream);
+   stream->stream.mode = (short)smm;
+   stream->stream.file = fp;
+   stream->stream.object0 = @'base-char';
+   stream->stream.object1 = fname; /* not really used */
+   stream->stream.int0 = stream->stream.int1 = 0;
+#if !defined(GBC_BOEHM)
+   fp->_IO_buf_base = NULL; /* BASEFF */; 
+   setbuf(fp, stream->stream.buffer = cl_alloc_atomic(BUFSIZ)); 
+#endif
+   return(stream);
+}
+
+
 void
 init_file(void)
 {
