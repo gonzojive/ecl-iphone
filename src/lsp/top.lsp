@@ -498,7 +498,7 @@ file.  When the saved image is invoked, it will start the redefined top-level."
 	  (- *tpl-level* *step-level* -1)
 	  ""))
 
-(defun tpl-read (&aux (*readtable* (sys::standard-readtable)))
+(defun tpl-read ()
   (finish-output)
   (loop
     (case (peek-char nil *standard-input* nil :EOF)
