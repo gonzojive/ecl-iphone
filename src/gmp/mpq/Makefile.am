@@ -1,6 +1,6 @@
 ## Process this file with automake to generate Makefile.in
 
-# Copyright (C) 1996, 1998, 2000 Free Software Foundation, Inc.
+# Copyright 1996, 1998, 2000, 2001 Free Software Foundation, Inc.
 #
 # This file is part of the GNU MP Library.
 #
@@ -20,14 +20,15 @@
 # MA 02111-1307, USA.
 
 
-AUTOMAKE_OPTIONS = gnu no-dependencies
+AUTOMAKE_OPTIONS = gnu no-dependencies $(top_builddir)/ansi2knr
 
-SUBDIRS = tests
-
-INCLUDES = -I$(top_srcdir)
+INCLUDES = -D__GMP_WITHIN_GMP -I$(top_srcdir)
 
 noinst_LTLIBRARIES = libmpq.la
-libmpq_la_SOURCES = \
-  add.c canonicalize.c clear.c cmp.c cmp_ui.c div.c get_d.c \
-  get_den.c get_num.c init.c inv.c mul.c neg.c out_str.c set.c set_den.c \
-  set_num.c set_si.c set_ui.c sub.c equal.c set_z.c set_d.c swap.c
+libmpq_la_SOURCES =							\
+  abs.c aors.c canonicalize.c clear.c					\
+  cmp.c cmp_si.c cmp_ui.c div.c equal.c					\
+  get_d.c get_den.c get_num.c get_str.c					\
+  init.c inp_str.c inv.c md_2exp.c mul.c neg.c out_str.c		\
+  set.c set_den.c set_num.c set_si.c set_str.c set_ui.c set_z.c set_d.c	\
+  set_f.c swap.c

@@ -1,6 +1,6 @@
 /* mpf_cmp_ui -- Compare a float with an unsigned integer.
 
-Copyright (C) 1993, 1994, 1995, 1999 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1995, 1999, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,13 +23,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 int
-#if __STDC__
 mpf_cmp_ui (mpf_srcptr u, unsigned long int vlimb)
-#else
-mpf_cmp_ui (u, vlimb)
-     mpf_srcptr u;
-     unsigned long int vlimb;
-#endif
 {
   mp_srcptr up;
   mp_size_t usize;

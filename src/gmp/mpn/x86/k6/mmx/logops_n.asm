@@ -13,7 +13,7 @@ dnl  K6    2.0   2.0   2.25  2.25  2.25  2.25  2.0   2.0   iorn,xnor
 dnl  K6    2.0   2.25  2.25  2.25  2.25  2.25  2.25  2.0   nand,nior
 
 
-dnl  Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+dnl  Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -105,7 +105,7 @@ defframe(PARAM_SRC1,8)
 defframe(PARAM_DST, 4)
 deflit(`FRAME',0)
 
-	.text
+	TEXT
 	ALIGN(32)
 PROLOGUE(M4_function)
 			movl	PARAM_SIZE, %ecx
@@ -136,8 +136,6 @@ L(two_or_more):
 			C esi
 			C edi
 			C ebp
-			C
-			C carry bit is low of size
 
 			pushl	%esi
 		FRAME_pushl()

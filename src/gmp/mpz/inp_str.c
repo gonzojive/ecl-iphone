@@ -1,7 +1,12 @@
 /* mpz_inp_str(dest_integer, stream, base) -- Input a number in base
    BASE from stdio stream STREAM and store the result in DEST_INTEGER.
 
-Copyright (C) 1991, 1993, 1994, 1996, 1998, 2000 Free Software Foundation, Inc.
+   OF THE FUNCTIONS IN THIS FILE, ONLY mpz_inp_str IS FOR EXTERNAL USE, THE
+   REST ARE INTERNALS AND ARE ALMOST CERTAIN TO BE SUBJECT TO INCOMPATIBLE
+   CHANGES OR DISAPPEAR COMPLETELY IN FUTURE GNU MP RELEASES.
+
+Copyright 1991, 1993, 1994, 1996, 1998, 2000, 2001 Free Software Foundation,
+Inc.
 
 This file is part of the GNU MP Library.
 
@@ -26,13 +31,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 static int
-#if __STDC__
 digit_value_in_base (int c, int base)
-#else
-digit_value_in_base (c, base)
-     int c;
-     int base;
-#endif
 {
   int digit;
 
@@ -51,20 +50,9 @@ digit_value_in_base (c, base)
 }
 
 size_t
-#if __STDC__
 mpz_inp_str (mpz_ptr x, FILE *stream, int base)
-#else
-mpz_inp_str (x, stream, base)
-     mpz_ptr x;
-     FILE *stream;
-     int base;
-#endif
 {
-  char *str;
-  size_t alloc_size, str_size;
   int c;
-  int negative;
-  mp_size_t xsize;
   size_t nread;
 
   if (stream == 0)
@@ -79,6 +67,18 @@ mpz_inp_str (x, stream, base)
       nread++;
     }
   while (isspace (c));
+
+  return mpz_inp_str_nowhite (x, stream, base, c, nread);
+}
+
+/* shared by mpq_inp_str */
+size_t
+mpz_inp_str_nowhite (mpz_ptr x, FILE *stream, int base, int c, size_t nread)
+{
+  char *str;
+  size_t alloc_size, str_size;
+  int negative;
+  mp_size_t xsize;
 
   negative = 0;
   if (c == '-')
@@ -124,7 +124,7 @@ mpz_inp_str (x, stream, base)
     }
 
   alloc_size = 100;
-  str = (char *) (*_mp_allocate_func) (alloc_size);
+  str = (char *) (*__gmp_allocate_func) (alloc_size);
   str_size = 0;
 
   for (;;)
@@ -134,7 +134,7 @@ mpz_inp_str (x, stream, base)
 	{
 	  size_t old_alloc_size = alloc_size;
 	  alloc_size = alloc_size * 3 / 2;
-	  str = (char *) (*_mp_reallocate_func) (str, old_alloc_size, alloc_size);
+	  str = (char *) (*__gmp_reallocate_func) (str, old_alloc_size, alloc_size);
 	}
       dig = digit_value_in_base (c, base);
       if (dig < 0)
@@ -142,26 +142,28 @@ mpz_inp_str (x, stream, base)
       str[str_size++] = dig;
       c = getc (stream);
     }
+  nread += str_size;
 
   ungetc (c, stream);
+  nread--;
 
   /* Make sure the string is not empty, mpn_set_str would fail.  */
   if (str_size == 0)
     {
       x->_mp_size = 0;
-      (*_mp_free_func) (str, alloc_size);
-      return nread;
     }
+  else
+    {
+      xsize = (((mp_size_t)
+                (str_size / __mp_bases[base].chars_per_bit_exactly))
+               / BITS_PER_MP_LIMB + 2);
+      if (x->_mp_alloc < xsize)
+        _mpz_realloc (x, xsize);
 
-  xsize = (((mp_size_t) (str_size / __mp_bases[base].chars_per_bit_exactly))
-	   / BITS_PER_MP_LIMB + 2);
-  if (x->_mp_alloc < xsize)
-    _mpz_realloc (x, xsize);
-
-  /* Convert the byte array in base BASE to our bignum format.  */
-  xsize = mpn_set_str (x->_mp_d, (unsigned char *) str, str_size, base);
-  x->_mp_size = negative ? -xsize : xsize;
-
-  (*_mp_free_func) (str, alloc_size);
-  return str_size + nread;
+      /* Convert the byte array in base BASE to our bignum format.  */
+      xsize = mpn_set_str (x->_mp_d, (unsigned char *) str, str_size, base);
+      x->_mp_size = negative ? -xsize : xsize;
+    }
+  (*__gmp_free_func) (str, alloc_size);
+  return nread;
 }

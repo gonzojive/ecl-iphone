@@ -2,7 +2,7 @@
    length NBITS in RP.  RP must have enough space allocated to hold
    NBITS.
 
-Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -116,13 +116,7 @@ the most-significant bits. */
 
 static
 unsigned long int
-#if __STDC__
 lc (mp_ptr rp, gmp_randstate_t rstate)
-#else
-lc (rp, rstate)
-     mp_ptr rp;
-     gmp_randstate_t rstate;
-#endif
 {
   mp_ptr tp, seedp, ap;
   mp_size_t ta;
@@ -133,11 +127,11 @@ lc (rp, rstate)
   mp_limb_t c;
   TMP_DECL (mark);
 
-  m2exp = rstate->algdata.lc->m2exp;
-  c = (mp_limb_t) rstate->algdata.lc->c;
+  m2exp = rstate->_mp_algdata._mp_lc->_mp_m2exp;
+  c = (mp_limb_t) rstate->_mp_algdata._mp_lc->_mp_c;
 
-  seedp = PTR (rstate->seed);
-  seedn = SIZ (rstate->seed);
+  seedp = PTR (rstate->_mp_seed);
+  seedn = SIZ (rstate->_mp_seed);
 
   if (seedn == 0)
     {
@@ -156,17 +150,17 @@ lc (rp, rstate)
       else
 	{
 	  /* M is not a power of 2.  */
-	  abort ();		/* FIXME.  */
+          ASSERT_ALWAYS (0);	/* FIXME.  */
 	}
 
       /* Save result as next seed.  */
       *seedp = *rp;
-      SIZ (rstate->seed) = 1;
+      SIZ (rstate->_mp_seed) = 1;
       return BITS_PER_MP_LIMB;
     }
 
-  ap = PTR (rstate->algdata.lc->a);
-  an = SIZ (rstate->algdata.lc->a);
+  ap = PTR (rstate->_mp_algdata._mp_lc->_mp_a);
+  an = SIZ (rstate->_mp_algdata._mp_lc->_mp_a);
 
   /* Allocate temporary storage.  Let there be room for calculation of
      (A * seed + C) % M, or M if bigger than that.  */
@@ -180,13 +174,13 @@ lc (rp, rstate)
 
   /* t = a * seed */
   if (seedn >= an)
-    mpn_mul_basecase (tp, seedp, seedn, ap, an);
+    mpn_mul (tp, seedp, seedn, ap, an);
   else
-    mpn_mul_basecase (tp, ap, an, seedp, seedn);
+    mpn_mul (tp, ap, an, seedp, seedn);
   tn = an + seedn;
 
   /* t = t + c */
-  mpn_incr_u (tp, c);
+  MPN_INCR_U (tp, tn, c);
 
   /* t = t % m */
   if (m2exp != 0)
@@ -198,12 +192,12 @@ lc (rp, rstate)
     }
   else
     {
-      abort ();			/* FIXME.  */
+      ASSERT_ALWAYS (0);	/* FIXME.  */
     }
 
   /* Save result as next seed.  */
-  MPN_COPY (PTR (rstate->seed), tp, tn);
-  SIZ (rstate->seed) = tn;
+  MPN_COPY (PTR (rstate->_mp_seed), tp, tn);
+  SIZ (rstate->_mp_seed) = tn;
 
   if (m2exp != 0)
     {
@@ -234,7 +228,7 @@ lc (rp, rstate)
   if (m2exp != 0)
     retval = (m2exp + 1) / 2;
   else
-    retval = SIZ (rstate->algdata.lc->m) * BITS_PER_MP_LIMB - shiftcount;
+    retval = SIZ (rstate->_mp_algdata._mp_lc->_mp_m) * BITS_PER_MP_LIMB - shiftcount;
   return retval;
 }
 
@@ -248,7 +242,7 @@ lc_test (mp_ptr rp, gmp_randstate_t s, const int evenbits)
   unsigned long int rn, nbits;
   int f;
 
-  nbits = s->algdata.lc->m2exp / 2;
+  nbits = s->_mp_algdata._mp_lc->_mp_m2exp / 2;
   rn = nbits / BITS_PER_MP_LIMB + (nbits % BITS_PER_MP_LIMB != 0);
   MPN_ZERO (rp, rn);
 
@@ -264,20 +258,13 @@ lc_test (mp_ptr rp, gmp_randstate_t s, const int evenbits)
 #endif /* RAWRANDEBUG */
 
 void
-#if __STDC__
 _gmp_rand (mp_ptr rp, gmp_randstate_t rstate, unsigned long int nbits)
-#else
-_gmp_rand (rp, rstate, nbits)
-     mp_ptr rp;
-     gmp_randstate_t rstate;
-     unsigned long int nbits;
-#endif
 {
   mp_size_t rn;			/* Size of R.  */
 
   rn = (nbits + BITS_PER_MP_LIMB - 1) / BITS_PER_MP_LIMB;
 
-  switch (rstate->alg)
+  switch (rstate->_mp_alg)
     {
     case GMP_RAND_ALG_LC:
       {
@@ -289,7 +276,7 @@ _gmp_rand (rp, rstate, nbits)
 
 	TMP_MARK (lcmark);
 
-	chunk_nbits = rstate->algdata.lc->m2exp / 2;
+	chunk_nbits = rstate->_mp_algdata._mp_lc->_mp_m2exp / 2;
 	tn = (chunk_nbits + BITS_PER_MP_LIMB - 1) / BITS_PER_MP_LIMB;
 
 	tp = (mp_ptr) TMP_ALLOC (tn * BYTES_PER_MP_LIMB);
@@ -354,7 +341,7 @@ _gmp_rand (rp, rstate, nbits)
       }
 
     default:
-      gmp_errno |= GMP_ERROR_UNSUPPORTED_ARGUMENT;
+      ASSERT (0);
       break;
     }
 }

@@ -3,7 +3,7 @@ dnl
 dnl  P5: 1.75 cycles/limb.
 
 
-dnl  Copyright (C) 2000 Free Software Foundation, Inc.
+dnl  Copyright 2000 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -51,7 +51,7 @@ deflit(`FRAME',0)
 dnl  Minimum 5, because the unrolled loop can't handle less.
 deflit(UNROLL_THRESHOLD, 5)
 
-	.text
+	TEXT
 	ALIGN(8)
 
 PROLOGUE(mpn_rshift)

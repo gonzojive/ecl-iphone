@@ -2,7 +2,7 @@
    long runs of consecutive ones and zeros in the binary representation.
    Intended for testing of other MP routines.
 
-Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+Copyright 1995, 1996, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -24,30 +24,13 @@ MA 02111-1307, USA. */
 #include "gmp.h"
 #include "gmp-impl.h"
 
-#if defined (__hpux) || defined (__alpha)  || defined (__svr4__) || defined (__SVR4)
-/* HPUX lacks random().  DEC OSF/1 1.2 random() returns a double.  */
-long mrand48 ();
-static inline long
-random ()
-{
-  return mrand48 ();
-}
-#else
-long random ();
-#endif
 
 void
-#if __STDC__
 mpf_random2 (mpf_ptr x, mp_size_t size, mp_exp_t exp)
-#else
-mpf_random2 (x, size, exp)
-     mpf_ptr x;
-     mp_size_t size;
-     mp_exp_t exp;
-#endif
 {
   mp_size_t asize;
   mp_size_t prec = x->_mp_prec;
+  mp_limb_t elimb;
 
   asize = ABS (size);
   if (asize != 0)
@@ -59,7 +42,10 @@ mpf_random2 (x, size, exp)
     }
 
   if (exp != 0)
-    exp = random () % (2 * exp) - exp;
+    {
+      _gmp_rand (&elimb, RANDS, BITS_PER_MP_LIMB);
+      exp = elimb % (2 * exp) - exp;
+    }
   x->_mp_exp = asize == 0 ? 0 : exp;
   x->_mp_size = size < 0 ? -asize : asize;
 }

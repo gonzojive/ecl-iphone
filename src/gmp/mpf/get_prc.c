@@ -1,6 +1,6 @@
 /* mpf_get_prec(x) -- Return the precision in bits of x.
 
-Copyright (C) 1996, 2000 Free Software Foundation, Inc.
+Copyright 1996, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,12 +23,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 unsigned long int
-#if __STDC__
 mpf_get_prec (mpf_srcptr x)
-#else
-mpf_get_prec (x)
-     mpf_srcptr x;
-#endif
 {
-  return (unsigned long int) x->_mp_prec * BITS_PER_MP_LIMB - BITS_PER_MP_LIMB;
+  return __GMPF_PREC_TO_BITS (x->_mp_prec);
 }

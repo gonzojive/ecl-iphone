@@ -1,6 +1,6 @@
 ## Process this file with automake to generate Makefile.in
 
-# Copyright (C) 2000 Free Software Foundation, Inc.
+# Copyright 2000, 2001 Free Software Foundation, Inc.
 #
 # This file is part of the GNU MP Library.
 #
@@ -36,10 +36,8 @@ spect_LDADD = libstat.la
 stat_LDADD = libstat.la
 
 EXTRA_LTLIBRARIES = libstat.la
-libstat_la_SOURCES = statlib.c zdiv_round.c
-libstat_la_LIBADD = $(top_builddir)/libgmp.la -lm
-
-EXTRA_DIST = gmpstat.h
+libstat_la_SOURCES = gmpstat.h statlib.c zdiv_round.c
+libstat_la_LIBADD = $(top_builddir)/libgmp.la $(LIBM)
 
 CLEANFILES = $(EXTRA_PROGRAMS) $(EXTRA_LTLIBRARIES)
 

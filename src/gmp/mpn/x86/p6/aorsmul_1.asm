@@ -3,7 +3,7 @@ dnl
 dnl  P6: 6.35 cycles/limb (at 16 limbs/loop).
 
 
-dnl  Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+dnl  Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -82,7 +82,7 @@ defframe(PARAM_SIZE,      12)
 defframe(PARAM_SRC,       8)
 defframe(PARAM_DST,       4)
 
-	.text
+	TEXT
 	ALIGN(32)
 
 PROLOGUE(M4_function_1c)
@@ -228,7 +228,7 @@ L(pic_calc):
 	shll	$4, %edx
 	negl	%ecx
 
-	C See README.family about old gas bugs
+	C See mpn/x86/README about old gas bugs
 	leal	(%edx,%ecx,1), %edx
 	addl	$L(entry)-L(here), %edx
 

@@ -1,6 +1,6 @@
 /* mpf_sub -- Subtract two floats.
 
-Copyright (C) 1993, 1994, 1995, 1996, 1999, 2000 Free Software Foundation,
+Copyright 1993, 1994, 1995, 1996, 1999, 2000, 2001 Free Software Foundation,
 Inc.
 
 This file is part of the GNU MP Library.
@@ -24,14 +24,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpf_sub (mpf_ptr r, mpf_srcptr u, mpf_srcptr v)
-#else
-mpf_sub (r, u, v)
-     mpf_ptr r;
-     mpf_srcptr u;
-     mpf_srcptr v;
-#endif
 {
   mp_srcptr up, vp;
   mp_ptr rp, tp;
@@ -53,7 +46,8 @@ mpf_sub (r, u, v)
     }
   if (vsize == 0)
     {
-      mpf_set (r, u);
+      if (r != u)
+        mpf_set (r, u);
       return;
     }
 

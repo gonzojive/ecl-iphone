@@ -5,7 +5,7 @@
    FUNCTION WILL CHANGE OR DISAPPEAR IN A FUTURE GNU MP RELEASE.
 
 
-Copyright (C) 1993, 1994, 1995, 2000 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1995, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -25,16 +25,12 @@ the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
 MA 02111-1307, USA. */
 
 #include <stdio.h>
+#include <string.h> /* for strlen */
 #include "gmp.h"
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpf_dump (mpf_srcptr u)
-#else
-mpf_dump (u)
-     mpf_srcptr u;
-#endif
 {
   mp_exp_t exp;
   char *str;
@@ -44,5 +40,5 @@ mpf_dump (u)
     printf ("-0.%se%ld\n", str + 1, exp);
   else
     printf ("0.%se%ld\n", str, exp);
-  (*_mp_free_func) (str, 0);/* ??? broken alloc interface, pass what size ??? */
+  (*__gmp_free_func) (str, strlen (str) + 1);
 }

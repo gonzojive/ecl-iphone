@@ -3,7 +3,7 @@ dnl
 dnl  K6: normal 3.25 cycles/limb, in-place 2.75 cycles/limb.
 
 
-dnl  Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+dnl  Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -69,7 +69,7 @@ deflit(`FRAME',0)
 dnl  minimum 5 because the unrolled code can't handle less
 deflit(UNROLL_THRESHOLD, 5)
 
-	.text
+	TEXT
 	ALIGN(32)
 
 PROLOGUE(M4_function_nc)
@@ -110,7 +110,7 @@ L(simple):
 	C
 	C The store to (%edi) could be done with a stosl; it'd be smaller
 	C code, but there's no speed gain and a cld would have to be added
-	C (per mpn/x86/README.family).
+	C (per mpn/x86/README).
 
 	movl	(%ebx), %eax
 	leal	4(%ebx), %ebx

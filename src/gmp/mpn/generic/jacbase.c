@@ -4,7 +4,7 @@
    INCOMPATIBLE CHANGES IN A FUTURE RELEASE OF GMP. */
 
 /*
-Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -74,7 +74,7 @@ MA 02111-1307, USA.  */
    with a restricted range of inputs accepted, namely b>1, b odd, and a<=b.
 
    The initial result_bit1 is taken as a parameter for the convenience of
-   mpz_kronecker_zi_ui() et al.  The sign changes both here and in those
+   mpz_kronecker_ui() et al.  The sign changes both here and in those
    routines accumulate nicely in bit 1, see the JACOBI macros.
 
    The return value here is the normal +1, 0, or -1.  Note that +1 and -1
@@ -89,14 +89,7 @@ MA 02111-1307, USA.  */
    relaxed.  All the places this is used currently call with a<=b though.  */
 
 int
-#if __STDC__
 mpn_jacobi_base (mp_limb_t a, mp_limb_t b, int result_bit1)
-#else
-mpn_jacobi_base (a, b, result_bit1)
-     mp_limb_t a;
-     mp_limb_t b;
-     int       result_bit1;
-#endif
 {
   ASSERT (b & 1);  /* b odd */
   ASSERT (b != 1);

@@ -3,7 +3,7 @@ dnl
 dnl  K7: 1.21 cycles/limb (at 16 limbs/loop).
 
 
-dnl  Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+dnl  Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -61,7 +61,7 @@ defframe(SAVE_ESI, -8)
 defframe(SAVE_EBX, -12)
 deflit(SAVE_SIZE, 12)
 
-	.text
+	TEXT
 	ALIGN(32)
 
 PROLOGUE(mpn_lshift)
@@ -276,7 +276,7 @@ L(here):
 
 ifdef(`PIC',`
 L(pic_calc):
-	C See README.family about old gas bugs
+	C See mpn/x86/README about old gas bugs
 	leal	(%eax,%eax,4), %esi
 	addl	$L(entry)-L(here), %esi
 	addl	(%esp), %esi
@@ -313,24 +313,24 @@ forloop(i, 0, UNROLL_COUNT/CHUNK_COUNT-1, `
 	deflit(`disp0', eval(-i*CHUNK_COUNT*4 ifelse(UNROLL_BYTES,256,-128)))
 	deflit(`disp1', eval(disp0 - 8))
 
- 	movq	disp0(%edx), %mm0
+Zdisp(	movq,	disp0,(%edx), %mm0)
  	psllq	%mm6, %mm2
 
  	movq	%mm0, %mm1
  	psrlq	%mm7, %mm0
 
  	por	%mm2, %mm0
- 	movq	%mm0, disp0(%edi)
+Zdisp(	movq,	%mm0, disp0,(%edi))
 
 
- 	movq	disp1(%edx), %mm0
+Zdisp(	movq,	disp1,(%edx), %mm0)
  	psllq	%mm6, %mm1
 
  	movq	%mm0, %mm2
  	psrlq	%mm7, %mm0
 
  	por	%mm1, %mm0
- 	movq	%mm0, disp1(%edi)
+Zdisp(	movq,	%mm0, disp1,(%edi))
 ')
 
 	subl	$UNROLL_BYTES, %edx

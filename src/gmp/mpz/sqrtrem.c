@@ -1,7 +1,7 @@
 /* mpz_sqrtrem(root,rem,x) -- Set ROOT to floor(sqrt(X)) and REM
    to the remainder, i.e. X - ROOT**2.
 
-Copyright (C) 1991, 1993, 1994, 1996, 2000 Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 1996, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -27,26 +27,11 @@ MA 02111-1307, USA. */
 #include "mp.h"
 #endif
 
+void
 #ifndef BERKELEY_MP
-void
-#if __STDC__
 mpz_sqrtrem (mpz_ptr root, mpz_ptr rem, mpz_srcptr op)
-#else
-mpz_sqrtrem (root, rem, op)
-     mpz_ptr root;
-     mpz_ptr rem;
-     mpz_srcptr op;
-#endif
 #else /* BERKELEY_MP */
-void
-#if __STDC__
 msqrt (mpz_srcptr op, mpz_ptr root, mpz_ptr rem)
-#else
-msqrt (op, root, rem)
-     mpz_srcptr op;
-     mpz_ptr root;
-     mpz_ptr rem;
-#endif
 #endif /* BERKELEY_MP */
 {
   mp_size_t op_size, root_size, rem_size;
@@ -57,8 +42,14 @@ msqrt (op, root, rem)
 
   TMP_MARK (marker);
   op_size = op->_mp_size;
-  if (op_size < 0)
-    SQRT_OF_NEGATIVE;
+  if (op_size <= 0)
+    {
+      if (op_size < 0)
+        SQRT_OF_NEGATIVE;
+      SIZ(root) = 0;
+      SIZ(rem) = 0;
+      return;
+    }
 
   if (rem->_mp_alloc < op_size)
     _mpz_realloc (rem, op_size);
@@ -77,10 +68,10 @@ msqrt (op, root, rem)
 	  free_me_size = root->_mp_alloc;
 	}
       else
-	(*_mp_free_func) (root_ptr, root->_mp_alloc * BYTES_PER_MP_LIMB);
+	(*__gmp_free_func) (root_ptr, root->_mp_alloc * BYTES_PER_MP_LIMB);
 
       root->_mp_alloc = root_size;
-      root_ptr = (mp_ptr) (*_mp_allocate_func) (root_size * BYTES_PER_MP_LIMB);
+      root_ptr = (mp_ptr) (*__gmp_allocate_func) (root_size * BYTES_PER_MP_LIMB);
       root->_mp_d = root_ptr;
     }
   else
@@ -106,6 +97,6 @@ msqrt (op, root, rem)
   rem->_mp_size = rem_size;
 
   if (free_me != NULL)
-    (*_mp_free_func) (free_me, free_me_size * BYTES_PER_MP_LIMB);
+    (*__gmp_free_func) (free_me, free_me_size * BYTES_PER_MP_LIMB);
   TMP_FREE (marker);
 }

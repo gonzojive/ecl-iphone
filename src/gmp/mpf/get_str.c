@@ -4,7 +4,7 @@
   example, the number 3.1416 would be returned as "31416" in DIGIT_PTR and
   1 in EXP.
 
-Copyright (C) 1993, 1994, 1995, 1996, 1997, 2000 Free Software Foundation,
+Copyright 1993, 1994, 1995, 1996, 1997, 2000, 2001 Free Software Foundation,
 Inc.
 
 This file is part of the GNU MP Library.
@@ -24,6 +24,7 @@ along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
 the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
 MA 02111-1307, USA. */
 
+#include <string.h> /* for strlen */
 #include "gmp.h"
 #include "gmp-impl.h"
 #include "longlong.h"
@@ -40,16 +41,7 @@ MA 02111-1307, USA. */
 */
 
 char *
-#if __STDC__
 mpf_get_str (char *digit_ptr, mp_exp_t *exp, int base, size_t n_digits, mpf_srcptr u)
-#else
-mpf_get_str (digit_ptr, exp, base, n_digits, u)
-     char *digit_ptr;
-     mp_exp_t *exp;
-     int base;
-     size_t n_digits;
-     mpf_srcptr u;
-#endif
 {
   mp_ptr up;
   mp_size_t usize;
@@ -65,6 +57,7 @@ mpf_get_str (digit_ptr, exp, base, n_digits, u)
   unsigned char *tstr;
   mp_exp_t exp_in_base;
   int cnt;
+  size_t alloc_size = 0;
   TMP_DECL (marker);
 
   TMP_MARK (marker);
@@ -88,8 +81,8 @@ mpf_get_str (digit_ptr, exp, base, n_digits, u)
      Also, if 0 digits were requested, give *exactly* as many digits
      as can be accurately represented.  */
   {
-    size_t max_digits = 2 + (size_t) (((prec - 2) * BITS_PER_MP_LIMB)
-				      * __mp_bases[base].chars_per_bit_exactly);
+    size_t max_digits;
+    MPF_SIGNIFICANT_DIGITS (max_digits, base, prec-1);
     if (n_digits == 0 || n_digits > max_digits)
       n_digits = max_digits;
 #if 0
@@ -107,14 +100,15 @@ mpf_get_str (digit_ptr, exp, base, n_digits, u)
     {
       /* We didn't get a string from the user.  Allocate one (and return
 	 a pointer to it) with space for `-' and terminating null.  */
-      digit_ptr = (char *) (*_mp_allocate_func) (n_digits + 2);
+      alloc_size = n_digits + 2;
+      digit_ptr = (char *) (*__gmp_allocate_func) (n_digits + 2);
     }
 
   if (usize == 0)
     {
       *exp = 0;
       *digit_ptr = 0;
-      return digit_ptr;
+      goto done;
     }
 
   str = (unsigned char *) digit_ptr;
@@ -155,7 +149,7 @@ mpf_get_str (digit_ptr, exp, base, n_digits, u)
       count_leading_zeros (cnt, exp_in_base);
       for (i = BITS_PER_MP_LIMB - cnt - 2; i >= 0; i--)
 	{
-	  mpn_mul_n (tp, rp, rp, rsize);
+	  mpn_sqr_n (tp, rp, rsize);
 	  rsize = 2 * rsize;
 	  rsize -= tp[rsize - 1] == 0;
 
@@ -261,7 +255,7 @@ mpf_get_str (digit_ptr, exp, base, n_digits, u)
 	  count_leading_zeros (cnt, exp_in_base);
 	  for (i = BITS_PER_MP_LIMB - cnt - 2; i >= 0; i--)
 	    {
-	      mpn_mul_n (tp, rp, rp, rsize);
+	      mpn_sqr_n (tp, rp, rsize);
 	      rsize = 2 * rsize;
 	      rsize -= tp[rsize - 1] == 0;
 	      if (rsize > prec)
@@ -332,16 +326,13 @@ mpf_get_str (digit_ptr, exp, base, n_digits, u)
        digits_computed_so_far += dig_per_u)
     {
       mp_limb_t cy;
-      /* For speed: skip trailing zeroes.  */
+      /* For speed: skip trailing zero limbs.  */
       if (rp[0] == 0)
 	{
 	  rp++;
 	  rsize--;
 	  if (rsize == 0)
-	    {
-	      n_digits = digits_computed_so_far;
-	      break;
-	    }
+	    break;
 	}
 
       cy = mpn_mul_1 (rp, rp, rsize, big_base);
@@ -374,58 +365,70 @@ mpf_get_str (digit_ptr, exp, base, n_digits, u)
 	  digits_computed_so_far--;
 	  exp_in_base--;
 
-	  if (tstr[0] == 0)
-	    abort ();
+	  ASSERT_ALWAYS (tstr[0] != 0);
 	}
     }
 
-  {
-    size_t i;
-
-    /* We should normally have computed too many digits.  Round the result
-       at the point indicated by n_digits.  */
-    if (digits_computed_so_far > n_digits)
-      {
-	/* Round the result.  */
-	if (tstr[n_digits] * 2 >= base)
-	  {
-	    digits_computed_so_far = n_digits;
-	    for (i = n_digits - 1;; i--)
-	      {
-		unsigned int x;
-		x = ++(tstr[i]);
-		if (x != base)
+  /* We should normally have computed too many digits.  Round the result
+     at the point indicated by n_digits.  */
+  if (digits_computed_so_far > n_digits)
+    {
+      size_t i;
+      /* Round the result.  */
+      if (tstr[n_digits] * 2 >= base)
+	{
+	  digits_computed_so_far = n_digits;
+	  for (i = n_digits - 1;; i--)
+	    {
+	      unsigned int x;
+	      x = ++(tstr[i]);
+	      if (x != base)
+		break;
+	      digits_computed_so_far--;
+	      if (i == 0)
+		{
+		  /* We had something like `bbbbbbb...bd', where 2*d >= base
+		     and `b' denotes digit with significance base - 1.
+		     This rounds up to `1', increasing the exponent.  */
+		  tstr[0] = 1;
+		  digits_computed_so_far = 1;
+		  exp_in_base++;
 		  break;
-		digits_computed_so_far--;
-		if (i == 0)
-		  {
-		    /* We had something like `9999999...9d', where 2*d >= base.
-		       This rounds up to `1', increasing the exponent.  */
-		    tstr[0] = 1;
-		    digits_computed_so_far = 1;
-		    exp_in_base++;
-		    break;
-		  }
-	      }
-	  }
-      }
+		}
+	    }
+	}
+    }
 
-    /* We might have fewer digits than requested as a result of rounding above,
-       (i.e. 0.999999 => 1.0) or because we have a number that simply doesn't
-       need many digits in this base (i.e., 0.125 in base 10).  */
-    if (n_digits > digits_computed_so_far)
-      n_digits = digits_computed_so_far;
+  /* We might have fewer digits than requested as a result of rounding above,
+     (i.e. 0.999999 => 1.0) or because we have a number that simply doesn't
+     need many digits in this base (e.g., 0.125 in base 10).  */
+  if (n_digits > digits_computed_so_far)
+    n_digits = digits_computed_so_far;
 
-    /* Remove trailing 0.  There can be many zeros.  */
-    while (n_digits != 0 && tstr[n_digits - 1] == 0)
+  /* Remove trailing 0.  There can be many zeros.  */
+  while (n_digits != 0 && tstr[n_digits - 1] == 0)
+    n_digits--;
+
+  /* Translate to ASCII and copy to result string.  */
+  while (n_digits != 0)
+    {
+      *str++ = num_to_text[*tstr++];
       n_digits--;
+    }
 
-    /* Translate to ascii and null-terminate.  */
-    for (i = 0; i < n_digits; i++)
-      *str++ = num_to_text[tstr[i]];
-  }
   *str = 0;
   *exp = exp_in_base;
+
+ done:
   TMP_FREE (marker);
+
+  /* If the string was alloced then resize it down to the actual space
+     required.  */
+  if (alloc_size != 0)
+    {
+      size_t  actual_size = strlen (digit_ptr) + 1;
+      __GMP_REALLOCATE_FUNC_MAYBE (digit_ptr, alloc_size, actual_size);
+    }
+
   return digit_ptr;
 }

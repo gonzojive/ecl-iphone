@@ -1,7 +1,8 @@
 /* mpn_mul_1 -- Multiply a limb vector with a single limb and
    store the product in a second limb vector.
 
-Copyright (C) 1991, 1992, 1993, 1994, 1996 Free Software Foundation, Inc.
+Copyright 1991, 1992, 1993, 1994, 1996, 2000, 2001 Free Software Foundation,
+Inc.
 
 This file is part of the GNU MP Library.
 
@@ -24,16 +25,23 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 #include "longlong.h"
 
+
+/* For reference, "incr" style overlaps are wanted in mpf_mul_ui, where an
+   mpf_mul_ui(x,x,y) if SIZ(x)>PREC(x) (either SIZ(x)==PREC(x)+1 as occurs
+   normally, or due to an mpf_set_prec_raw).  */
+
 mp_limb_t
-mpn_mul_1 (res_ptr, s1_ptr, s1_size, s2_limb)
-     register mp_ptr res_ptr;
-     register mp_srcptr s1_ptr;
-     mp_size_t s1_size;
-     register mp_limb_t s2_limb;
+mpn_mul_1 (mp_ptr res_ptr,
+	   mp_srcptr s1_ptr,
+	   mp_size_t s1_size,
+	   mp_limb_t s2_limb)
 {
   register mp_limb_t cy_limb;
   register mp_size_t j;
   register mp_limb_t prod_high, prod_low;
+
+  ASSERT (s1_size >= 1);
+  ASSERT (MPN_SAME_OR_INCR_P (res_ptr, s1_ptr, s1_size));
 
   /* The loop counter and index J goes from -S1_SIZE to -1.  This way
      the loop becomes faster.  */

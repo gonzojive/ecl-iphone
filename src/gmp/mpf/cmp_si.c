@@ -1,6 +1,6 @@
 /* mpf_cmp_si -- Compare a float with a signed integer.
 
-Copyright (C) 1993, 1994, 1995, 1999, 2000 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1995, 1999, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,13 +23,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 int
-#if __STDC__
 mpf_cmp_si (mpf_srcptr u, long int vslimb)
-#else
-mpf_cmp_si (u, vslimb)
-     mpf_srcptr u;
-     long int vslimb;
-#endif
 {
   mp_srcptr up;
   mp_size_t usize;

@@ -3,7 +3,7 @@ dnl
 dnl  K7: 8.0 cycles/limb
 
 
-dnl  Copyright (C) 2000 Free Software Foundation, Inc.
+dnl  Copyright 2000 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -41,7 +41,7 @@ dnl  ceil(b/3) and floor(b*2/3) where b=2^32
 deflit(ONE_THIRD_CEIL,   0x55555556)
 deflit(TWO_THIRDS_FLOOR, 0xAAAAAAAA)
 
-	.text
+	TEXT
 	ALIGN(32)
 
 PROLOGUE(mpn_divexact_by3c)
@@ -109,7 +109,7 @@ L(last):
 	C edi	&dst[size-1]
 	C ebp
 
-	imull	$INVERSE_3, %eax
+	imull	$INVERSE_3, %eax, %eax
 
 	cmpl	$ONE_THIRD_CEIL, %eax
 	movl	%eax, (%edi)

@@ -1,6 +1,6 @@
 /* mpf_div_2exp -- Divide a float by 2^n.
 
-Copyright (C) 1993, 1994, 1996, 2000 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1996, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,14 +23,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpf_div_2exp (mpf_ptr r, mpf_srcptr u, unsigned long int exp)
-#else
-mpf_div_2exp (r, u, exp)
-     mpf_ptr r;
-     mpf_srcptr u;
-     unsigned long int exp;
-#endif
 {
   mp_srcptr up;
   mp_ptr rp = r->_mp_d;

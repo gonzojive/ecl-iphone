@@ -2,7 +2,7 @@
    state STATE for a linear congruential generator with multiplier A,
    adder C, and modulus 2 ^ M2EXP.
 
-Copyright (C) 2000  Free Software Foundation, Inc.
+Copyright 2000  Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -25,35 +25,27 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 gmp_randinit_lc_2exp (gmp_randstate_t rstate,
-		      mpz_t a,
+		      mpz_srcptr a,
 		      unsigned long int c,
 		      unsigned long int m2exp)
-#else
-gmp_randinit_lc_2exp (rstate, a, c, m2exp)
-     gmp_randstate_t rstate;
-     mpz_t a;
-     unsigned long int c;
-     unsigned long int m2exp;
-#endif
 {
-  mpz_init_set_ui (rstate->seed, 1);
-  _mpz_realloc (rstate->seed, m2exp / BITS_PER_MP_LIMB
+  mpz_init_set_ui (rstate->_mp_seed, 1);
+  _mpz_realloc (rstate->_mp_seed, m2exp / BITS_PER_MP_LIMB
 		+ (m2exp % BITS_PER_MP_LIMB != 0));
 
   /* Allocate algorithm specific data. */
-  rstate->algdata.lc = (__gmp_randata_lc *)
-    (*_mp_allocate_func) (sizeof (__gmp_randata_lc));
+  rstate->_mp_algdata._mp_lc = (__gmp_randata_lc *)
+    (*__gmp_allocate_func) (sizeof (__gmp_randata_lc));
 
-  mpz_init_set (rstate->algdata.lc->a, a);
-  rstate->algdata.lc->c = c;
+  mpz_init_set (rstate->_mp_algdata._mp_lc->_mp_a, a);
+  rstate->_mp_algdata._mp_lc->_mp_c = c;
 
   /* Cover weird case where m2exp is 0, which means that m is used
      instead of m2exp.  */
   if (m2exp == 0)
-    mpz_init_set_ui (rstate->algdata.lc->m, 0);
-  rstate->algdata.lc->m2exp = m2exp;
+    mpz_init_set_ui (rstate->_mp_algdata._mp_lc->_mp_m, 0);
+  rstate->_mp_algdata._mp_lc->_mp_m2exp = m2exp;
 
-  rstate->alg = GMP_RAND_ALG_LC;
+  rstate->_mp_alg = GMP_RAND_ALG_LC;
 }

@@ -1,7 +1,7 @@
 /* Program for computing integer expressions using the GNU Multiple Precision
    Arithmetic Library.
 
-Copyright (C) 1997, 1999, 2000 Free Software Foundation, Inc.
+Copyright 1997, 1999, 2000, 2001 Free Software Foundation, Inc.
 
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -33,6 +33,7 @@ Place - Suite 330, Boston, MA 02111-1307, USA.  */
    -<NUM>    print output in base NUM
    -t        print timing information
    -html     output html
+   -wml      output wml
    -nosplit  do not split long lines each 60th digit
 */
 
@@ -40,11 +41,9 @@ Place - Suite 330, Boston, MA 02111-1307, USA.  */
    use up extensive resources (cpu, memory).  Useful for the GMP demo on the
    GMP web site, since we cannot load the server too much.  */
 
-#ifdef LIMIT_RESOURCE_USAGE
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
-#endif
 
 #include <string.h>
 #include <stdio.h>
@@ -54,6 +53,23 @@ Place - Suite 330, Boston, MA 02111-1307, USA.  */
 #include <ctype.h>
 
 #include "gmp.h"
+
+#define TIME(t,func)							\
+  do { int __t0, __times, __t, __tmp;					\
+    __times = 1;							\
+    __t0 = cputime ();							\
+    {func;}								\
+    __tmp = cputime () - __t0;						\
+    while (__tmp < 100)							\
+      {									\
+	__times <<= 1;							\
+	__t0 = cputime ();						\
+	for (__t = 0; __t < __times; __t++)				\
+	  {func;}							\
+	__tmp = cputime () - __t0;					\
+      }									\
+    (t) = (double) __tmp / __times;					\
+  } while (0)
 
 /* GMP version 1.x compatibility.  */
 #if ! (__GNU_MP_VERSION >= 2)
@@ -76,7 +92,7 @@ jmp_buf errjmpbuf;
 
 enum op_t {NOP, LIT, NEG, NOT, PLUS, MINUS, MULT, DIV, MOD, REM, INVMOD, POW,
 	   AND, IOR, XOR, SLL, SRA, POPCNT, HAMDIST, GCD, LCM, SQRT, ROOT, FAC,
-	   LOG, LOG2, FERMAT, MERSENNE, FIBONACCI};
+	   LOG, LOG2, FERMAT, MERSENNE, FIBONACCI, RANDOM, NEXTPRIME};
 
 /* Type for the expression tree.  */
 struct expr
@@ -91,31 +107,42 @@ struct expr
 
 typedef struct expr *expr_t;
 
-void cleanup_and_exit (int);
+void cleanup_and_exit _PROTO ((int));
 
-char *skipspace (char *);
-void makeexp (expr_t *, enum op_t, expr_t, expr_t);
-void free_expr (expr_t);
-char *expr (char *, expr_t *);
-char *term (char *, expr_t *);
-char *power (char *, expr_t *);
-char *factor (char *, expr_t *);
-int match (char *, char *);
-int matchp (char *, char *);
-int cputime (void);
+char *skipspace _PROTO ((char *));
+void makeexp _PROTO ((expr_t *, enum op_t, expr_t, expr_t));
+void free_expr _PROTO ((expr_t));
+char *expr _PROTO ((char *, expr_t *));
+char *term _PROTO ((char *, expr_t *));
+char *power _PROTO ((char *, expr_t *));
+char *factor _PROTO ((char *, expr_t *));
+int match _PROTO ((char *, char *));
+int matchp _PROTO ((char *, char *));
+int cputime _PROTO ((void));
 
-void mpz_eval_expr (mpz_ptr, expr_t);
-void mpz_eval_mod_expr (mpz_ptr, expr_t, mpz_ptr);
+void mpz_eval_expr _PROTO ((mpz_ptr, expr_t));
+void mpz_eval_mod_expr _PROTO ((mpz_ptr, expr_t, mpz_ptr));
 
 char *error;
 int flag_print = 1;
 int print_timing = 0;
 int flag_html = 0;
+int flag_wml = 0;
 int flag_splitup_output = 0;
 char *newline = "";
+gmp_randstate_t rstate;
 
 #ifdef _AIX
 #define sigaltstack sigstack
+#endif
+
+#define HAVE_sigaltstack
+
+#if (defined (__linux__) && !defined (SA_ONSTACK)) \
+    || defined (_UNICOS)	\
+    || defined (__hpux)
+/* Older Linux have limited signal handling */
+#undef HAVE_sigaltstack
 #endif
 
 #if !defined(_WIN32) && !defined(__DJGPP__)
@@ -123,8 +150,9 @@ void
 setup_error_handler ()
 {
   struct sigaction act;
-  struct sigaltstack sigstk;
 
+#ifdef HAVE_sigaltstack
+  struct sigaltstack sigstk;
   /* Set up a stack for signal handling.  A typical cause of error is stack
      overflow, and in such situation a signal can not be delivered on the
      overflown stack.  */
@@ -134,7 +162,6 @@ setup_error_handler ()
   sigstk.ss_flags = 0;
 #endif /* ! _AIX */
 
-#ifndef _UNICOS
   if (sigaltstack (&sigstk, 0) < 0)
     perror("sigaltstack");
 #endif
@@ -142,7 +169,11 @@ setup_error_handler ()
   /* Initialize structure for sigaction (called below).  */
   act.sa_handler = cleanup_and_exit;
   sigemptyset (&(act.sa_mask));
+#ifdef HAVE_sigaltstack
   act.sa_flags = SA_ONSTACK;
+#else
+  act.sa_flags = 0;
+#endif
 
 #ifdef LIMIT_RESOURCE_USAGE
   {
@@ -155,7 +186,7 @@ setup_error_handler ()
     limit.rlim_max = 4;
     setrlimit (RLIMIT_CPU, &limit);
 
-    limit.rlim_cur = limit.rlim_max = 4 * 1024 * 1024;
+    limit.rlim_cur = limit.rlim_max = 16 * 1024 * 1024;
     setrlimit (RLIMIT_DATA, &limit);
 
     getrlimit (RLIMIT_STACK, &limit);
@@ -170,6 +201,7 @@ setup_error_handler ()
   sigaction (SIGSEGV, &act, 0);
   sigaction (SIGBUS, &act, 0);
   sigaction (SIGFPE, &act, 0);
+  sigaction (SIGABRT, &act, 0);
 }
 #endif /* ! _WIN32 && ! __DJGPP__ */
 
@@ -185,6 +217,13 @@ main (int argc, char **argv)
 #if !defined(_WIN32) && !defined(__DJGPP__)
   setup_error_handler ();
 #endif
+
+  gmp_randinit (rstate, GMP_RAND_ALG_LC, 128);
+  {
+    struct timeval tv;
+    gettimeofday (&tv, NULL);
+    gmp_randseed_ui (rstate, tv.tv_sec + tv.tv_usec);
+  }
 
   mpz_init (r);
 
@@ -217,7 +256,12 @@ main (int argc, char **argv)
       else if (strcmp (arg, "-html") == 0)
 	{
 	  flag_html = 1;
-	  newline = "<BR>";
+	  newline = "<br>";
+	}
+      else if (strcmp (arg, "-wml") == 0)
+	{
+	  flag_wml = 1;
+	  newline = "<br/>";
 	}
       else if (strcmp (arg, "-split") == 0)
 	{
@@ -303,40 +347,32 @@ main (int argc, char **argv)
 	  continue;
 	}
 
-      {
-	int t0;
-
-	if (print_timing)
-	  t0 = cputime ();
-
+      if (print_timing)
+	{
+	  double t;
+	  TIME (t, mpz_eval_expr (r, e));
+	  printf ("computation took %.2f ms%s\n", t, newline);
+	}
+      else
 	mpz_eval_expr (r, e);
-
-	if (print_timing)
-	  printf ("computation took %d ms%s\n", cputime () - t0, newline);
-      }
 
       if (flag_print)
 	{
 	  size_t out_len;
 	  char *tmp, *s;
-	  int t0;
 
-	  out_len = mpz_sizeinbase (r, base) + 1;
+	  out_len = mpz_sizeinbase (r, base) + 2;
 	  tmp = malloc (out_len);
 
 	  if (print_timing)
-	    t0 = cputime ();
-
-	  if (print_timing)
-	    /* Print first half of message... */
-	    printf ("output conversion ");
-
-	  mpz_get_str (tmp, -base, r);
-
-	  if (print_timing)
-	    /* ...print 2nd half of message unless we caught a time limit
-	       and therefore longjmp'ed */
-	    printf ("took %d ms%s\n", cputime () - t0, newline);
+	    {
+	      double t;
+	      printf ("output conversion ");
+	      TIME (t, mpz_get_str (tmp, -base, r));
+	      printf ("took %.2f ms%s\n", t, newline);
+	    }
+	  else
+	    mpz_get_str (tmp, -base, r);
 
 	  out_len = strlen (tmp);
 	  if (flag_splitup_output)
@@ -584,6 +620,7 @@ struct functions fns[] =
 #if __GNU_MP_VERSION >= 2
   {"root", ROOT, 2},
   {"popc", POPCNT, 1},
+  {"hamdist", HAMDIST, 2},
 #endif
   {"gcd", GCD, 0},
 #if __GNU_MP_VERSION > 2 || __GNU_MP_VERSION_MINOR >= 1
@@ -595,6 +632,7 @@ struct functions fns[] =
   {"xor", XOR, 0},
 #endif
   {"plus", PLUS, 0},
+  {"pow", POW, 2},
   {"minus", MINUS, 2},
   {"mul", MULT, 0},
   {"div", DIV, 2},
@@ -609,6 +647,8 @@ struct functions fns[] =
   {"M", MERSENNE, 1},
   {"fib", FIBONACCI, 1},
   {"Fib", FIBONACCI, 1},
+  {"random", RANDOM, 1},
+  {"nextprime", NEXTPRIME, 1},
   {"", NOP, 0}
 };
 
@@ -999,9 +1039,19 @@ mpz_eval_expr (mpz_ptr r, expr_t e)
 #if __GNU_MP_VERSION >= 2
     case POPCNT:
       mpz_eval_expr (r, e->operands.ops.lhs);
-      { unsigned long int cnt;
+      { long int cnt;
 	cnt = mpz_popcount (r);
-	mpz_set_ui (r, cnt);
+	mpz_set_si (r, cnt);
+      }
+      return;
+    case HAMDIST:
+      { long int cnt;
+        mpz_init (lhs); mpz_init (rhs);
+	mpz_eval_expr (lhs, e->operands.ops.lhs);
+	mpz_eval_expr (rhs, e->operands.ops.rhs);
+	cnt = mpz_hamdist (lhs, rhs);
+	mpz_clear (lhs); mpz_clear (rhs);
+	mpz_set_si (r, cnt);
       }
       return;
 #endif
@@ -1103,6 +1153,28 @@ mpz_eval_expr (mpz_ptr r, expr_t e)
 	  }
 	mpz_clear (t);
 #endif
+      }
+      return;
+    case RANDOM:
+      {
+	unsigned long int n;
+	mpz_init (lhs);
+	mpz_eval_expr (lhs, e->operands.ops.lhs);
+	if (mpz_sgn (lhs) <= 0 || mpz_cmp_si (lhs, 1000000000) > 0)
+	  {
+	    error = "random number size out of range";
+	    mpz_clear (lhs);
+	    longjmp (errjmpbuf, 1);
+	  }
+	n = mpz_get_ui (lhs);
+	mpz_clear (lhs);
+	mpz_urandomb (r, rstate, n);
+      }
+      return;
+    case NEXTPRIME:
+      {
+	mpz_eval_expr (r, e->operands.ops.lhs);
+	mpz_nextprime (r, r);
       }
       return;
     default:

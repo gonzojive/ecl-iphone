@@ -3,7 +3,7 @@
    FUNCTION WILL CHANGE OR DISAPPEAR IN A FUTURE GNU MP RELEASE.
 
 
-Copyright (C) 1996, 2000 Free Software Foundation, Inc.
+Copyright 1996, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -28,13 +28,7 @@ MA 02111-1307, USA.
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpn_dump (mp_srcptr ptr, mp_size_t size)
-#else
-mpn_dump (ptr, size)
-     mp_srcptr ptr;
-     mp_size_t size;
-#endif
 {
   MPN_NORMALIZE (ptr, size);
 
@@ -56,7 +50,7 @@ mpn_dump (ptr, size)
 	    printf ("%lX", (unsigned long) ptr[size]);
 	}
       else
-	printf ("%lX", ptr[size]);
+	printf ("%lX", (unsigned long) ptr[size]);
 
       while (size)
 	{
@@ -69,7 +63,8 @@ mpn_dump (ptr, size)
 		(unsigned long) ptr[size]);
 	    }
 	  else
-	    printf ("%0*lX", (int) (2 * BYTES_PER_MP_LIMB), ptr[size]);
+	    printf ("%0*lX", (int) (2 * BYTES_PER_MP_LIMB),
+                    (unsigned long) ptr[size]);
 	}
       printf ("\n");
     }

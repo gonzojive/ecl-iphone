@@ -3,7 +3,7 @@ divert(-1)
 dnl  m4 macros for x86 assembler.
 
 
-dnl  Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+dnl  Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -44,9 +44,16 @@ dnl     nor in macro parameters like text passed to forloop() or ifdef().
 deflit(BYTES_PER_MP_LIMB, 4)
 
 
+dnl  Libtool gives -DPIC -DDLL_EXPORT to indicate a cygwin or mingw DLL.  We
+dnl  undefine PIC since we don't need to be position independent in this
+dnl  case and definitely don't want the ELF style _GLOBAL_OFFSET_TABLE_ etc.
+
+ifdef(`DLL_EXPORT',`undefine(`PIC')')
+
+
 dnl  --------------------------------------------------------------------------
-dnl  Replacement PROLOGUE/EPILOGUE with more sophisticated error checking.
-dnl  Nesting and overlapping not allowed.
+dnl  Replacement PROLOGUE/EPILOGUE with more error checking.  Nesting and
+dnl  overlapping not allowed.
 dnl
 
 
@@ -118,12 +125,12 @@ dnl
 dnl         L(bar)          => L__gmpn_add_n__bar
 dnl         LF(somefun,bar) => Lsomefun__bar
 dnl
-dnl  The funtion name and label name get two underscores between them rather
-dnl  than one to guard against clashing with a separate external symbol that
-dnl  happened to be called functionname_labelname.  (Though this would only
-dnl  happen if the local label prefix is is empty.)  Underscores are used so
-dnl  the whole label will still be a valid C identifier and so can be easily
-dnl  used in gdb.
+dnl  The function name and label name get two underscores between them
+dnl  rather than one to guard against clashing with a separate external
+dnl  symbol that happened to be called functionname_labelname.  (Though this
+dnl  would only happen if the local label prefix is is empty.)  Underscores
+dnl  are used so the whole label will still be a valid C identifier and so
+dnl  can be easily used in gdb.
 
 dnl  LSYM_PREFIX can be L$, so defn() is used to prevent L expanding as the
 dnl  L macro and making an infinite recursion.
@@ -145,12 +152,77 @@ define(PROLOGUE_cpu,
 m4_assert_numargs(1)
 	`GLOBL	$1
 	TYPE($1,`function')
-$1:')
+$1:
+ifelse(WANT_PROFILING,`no',,`call_mcount
+')')')
 
 define(EPILOGUE_cpu,
 m4_assert_numargs(1)
 `	SIZE($1,.-$1)')
 
+
+dnl  Usage: call_mcount
+dnl
+dnl  For `gprof' style profiling, %ebp is setup as a frame pointer.  None of
+dnl  the assembler routines use %ebp this way, so it's done only for the
+dnl  benefit of mcount.  glibc sysdeps/i386/i386-mcount.S shows how mcount
+dnl  gets the current function from (%esp) and the parent from 4(%ebp).
+dnl
+dnl  For `prof' style profiling gcc generates mcount calls without setting
+dnl  up %ebp, and the same is done here.
+
+define(`call_mcount',
+m4_assert_defined(`WANT_PROFILING')
+m4_assert_defined(`MCOUNT_PIC_REG')
+m4_assert_defined(`MCOUNT_NONPIC_REG')
+m4_assert_defined(`MCOUNT_PIC_CALL')
+m4_assert_defined(`MCOUNT_NONPIC_CALL')
+`ifelse(ifdef(`PIC',`MCOUNT_PIC_REG',`MCOUNT_NONPIC_REG'),,,
+`	DATA
+	ALIGN(4)
+L(mcount_data):
+	W32	0
+	TEXT
+')dnl
+ifelse(WANT_PROFILING,`gprof',
+`	pushl	%ebp
+	movl	%esp, %ebp
+')dnl
+ifdef(`PIC',
+`	pushl	%ebx
+	mcount_movl_GOT_ebx
+ifelse(MCOUNT_PIC_REG,,,
+`	leal	L(mcount_data)@GOTOFF(%ebx), MCOUNT_PIC_REG')
+MCOUNT_PIC_CALL
+	popl	%ebx
+',`dnl non-PIC
+ifelse(MCOUNT_NONPIC_REG,,,
+`	movl	`$'L(mcount_data), MCOUNT_NONPIC_REG
+')dnl
+MCOUNT_NONPIC_CALL
+')dnl
+ifelse(WANT_PROFILING,`gprof',
+`	popl	%ebp
+')')
+
+dnl  Called: mcount_movl_GOT_ebx
+dnl  Label H is "here", the %eip obtained from the call.  C is the called
+dnl  subroutine.  J is the jump across that subroutine.  A fetch and "ret"
+dnl  is always done so calls and returns are balanced for the benefit of the
+dnl  various x86s that have return stack branch prediction.
+define(mcount_movl_GOT_ebx,
+m4_assert_numargs(-1)
+`	call	L(mcount_movl_GOT_ebx_C`'mcount_movl_GOT_ebx_counter)
+L(mcount_movl_GOT_ebx_H`'mcount_movl_GOT_ebx_counter):
+	jmp	L(mcount_movl_GOT_ebx_J`'mcount_movl_GOT_ebx_counter)
+L(mcount_movl_GOT_ebx_C`'mcount_movl_GOT_ebx_counter):
+	movl	(%esp), %ebx
+	ret
+L(mcount_movl_GOT_ebx_J`'mcount_movl_GOT_ebx_counter):
+	addl	$_GLOBAL_OFFSET_TABLE_+[.-L(mcount_movl_GOT_ebx_H`'mcount_movl_GOT_ebx_counter)], %ebx
+define(`mcount_movl_GOT_ebx_counter',incr(mcount_movl_GOT_ebx_counter))')
+
+define(mcount_movl_GOT_ebx_counter,1)
 
 
 dnl  --------------------------------------------------------------------------
@@ -196,8 +268,7 @@ dnl  delete any following parenthesized expression.  name(%edi) will come
 dnl  out say as 16(%esp)(%edi).  This isn't valid assembler and should
 dnl  provoke an error, which is better than silently giving just 16(%esp).
 dnl
-dnl  See README.family for more on the suggested way to access the stack
-dnl  frame.
+dnl  See README for more on the suggested way to access the stack frame.
 
 define(defframe,
 m4_assert_numargs(2)
@@ -256,7 +327,7 @@ m4_assert_defined(`FRAME')
 
 dnl  Usage: defframe_pushl(name)
 dnl
-dnl  Do a combination of a FRAME_pushl() and a defframe() to name the stack
+dnl  Do a combination FRAME_pushl() and a defframe() to name the stack
 dnl  location just pushed.  This should come after a pushl instruction.
 dnl  Putting it on the same line works and avoids lengthening the code.  For
 dnl  example,
@@ -292,9 +363,9 @@ dnl  emms may as well be used.
 define(femms_available_p,
 m4_assert_numargs(-1)
 `m4_ifdef_anyof_p(
-	`HAVE_TARGET_CPU_k62',
-	`HAVE_TARGET_CPU_k63',
-	`HAVE_TARGET_CPU_athlon')')
+	`HAVE_HOST_CPU_k62',
+	`HAVE_HOST_CPU_k63',
+	`HAVE_HOST_CPU_athlon')')
 
 define(emms_or_femms,
 m4_assert_numargs(-1)
@@ -303,7 +374,7 @@ m4_assert_numargs(-1)
 
 dnl  Usage: femms
 dnl
-dnl  The gas 2.9.1 that comes with FreeBSD 3.4 doesn't support femms, so the
+dnl  Gas 2.9.1 which comes with FreeBSD 3.4 doesn't support femms, so the
 dnl  following is a replacement using .byte.
 dnl
 dnl  If femms isn't available, an emms is generated instead, for convenience
@@ -320,31 +391,33 @@ m4_warning(`warning, using emms in place of femms, use for testing only
 
 dnl  Usage: jadcl0(op)
 dnl
-dnl  Issue a jnc/incl as a substitute for adcl $0,op.  This isn't an exact
-dnl  replacement, since it doesn't set the flags like adcl does.
+dnl  Generate a jnc/incl as a substitute for adcl $0,op.  Note this isn't an
+dnl  exact replacement, since it doesn't set the flags like adcl does.
 dnl
 dnl  This finds a use in K6 mpn_addmul_1, mpn_submul_1, mpn_mul_basecase and
 dnl  mpn_sqr_basecase because on K6 an adcl is slow, the branch
 dnl  misprediction penalty is small, and the multiply algorithm used leads
 dnl  to a carry bit on average only 1/4 of the time.
 dnl
-dnl  jadcl0_disabled can be set to 1 to instead issue an ordinary adcl for
-dnl  comparison.  For example,
+dnl  jadcl0_disabled can be set to 1 to instead generate an ordinary adcl
+dnl  for comparison.  For example,
 dnl
 dnl		define(`jadcl0_disabled',1)
 dnl
 dnl  When using a register operand, eg. "jadcl0(%edx)", the jnc/incl code is
 dnl  the same size as an adcl.  This makes it possible to use the exact same
-dnl  computed jump code when testing the relative speed of jnc/incl and adcl
-dnl  with jadcl0_disabled.
+dnl  computed jump code when testing the relative speed of the two.
 
 define(jadcl0,
 m4_assert_numargs(1)
 `ifelse(jadcl0_disabled,1,
 	`adcl	$`'0, $1',
-	`jnc	1f
+	`jnc	L(jadcl0_`'jadcl0_counter)
 	incl	$1
-1:dnl')')
+L(jadcl0_`'jadcl0_counter):
+define(`jadcl0_counter',incr(jadcl0_counter))')')
+
+define(jadcl0_counter,1)
 
 
 dnl  Usage: cmov_available_p
@@ -353,10 +426,11 @@ dnl  Expand to 1 if cmov is available, 0 if not.
 
 define(cmov_available_p,
 `m4_ifdef_anyof_p(
-	`HAVE_TARGET_CPU_pentiumpro',
-	`HAVE_TARGET_CPU_pentium2',
-	`HAVE_TARGET_CPU_pentium3',
-	`HAVE_TARGET_CPU_athlon')')
+	`HAVE_HOST_CPU_pentiumpro',
+	`HAVE_HOST_CPU_pentium2',
+	`HAVE_HOST_CPU_pentium3',
+	`HAVE_HOST_CPU_pentium4',
+	`HAVE_HOST_CPU_athlon')')
 
 
 dnl  Usage: x86_lookup(target, key,value, key,value, ...)
@@ -440,7 +514,7 @@ define(x86_opcode_tttn_list,
 
 dnl  Usage: cmovCC(srcreg,dstreg)
 dnl
-dnl  Generate a cmov instruction if the target supports cmov, or simulate it
+dnl  Generate a cmov instruction if the host supports cmov, or simulate it
 dnl  with a conditional jump if not (the latter being meant only for
 dnl  testing).  For example,
 dnl
@@ -489,10 +563,14 @@ dnl  need to be changed to do a fetch even if the condition is false, so as
 dnl  to trigger exceptions the same way a real cmov does.
 define(cmov_simulate,
 m4_assert_numargs(3)
-	`j$1	1f	C cmov$1 $2, $3
-	jmp	2f
-1:	movl	$2, $3
-2:')
+`j$1	L(cmov_T`'cmov_counter)	C cmov$1 $2, $3
+	jmp	L(cmov_F`'cmov_counter)
+L(cmov_T`'cmov_counter):
+	movl	$2, $3
+L(cmov_F`'cmov_counter):
+define(`cmov_counter',incr(cmov_counter))')
+
+define(cmov_counter,1)
 
 dnl  Called: cmov_bytes_tttn(name,tttn,src,dst)
 define(cmov_bytes_tttn,
@@ -502,6 +580,78 @@ m4_assert_numargs(4)
 eval(64+$2), dnl
 eval(192+8*x86_opcode_reg32(`$4')+x86_opcode_reg32(`$3')) dnl
 	C `$1 $3, $4'')
+
+
+dnl  Usage: x86_opcode_regmmx(reg)
+dnl
+dnl  Validate the given mmx register, and return its number, 0 to 7.
+
+define(x86_opcode_regmmx,
+m4_assert_numargs(1)
+`x86_lookup(`$1',x86_opcode_regmmx_list)')
+
+define(x86_opcode_regmmx_list,
+``%mm0',0,
+`%mm1',1,
+`%mm2',2,
+`%mm3',3,
+`%mm4',4,
+`%mm5',5,
+`%mm6',6,
+`%mm7',7')
+
+
+dnl  Usage: psadbw(src,dst)
+dnl
+dnl  Only recent versions of gas know psadbw, in particular gas 2.9.1 on
+dnl  FreeBSD 3.3 and 3.4 doesn't recognise it, so instead emit .byte
+dnl  sequences.
+dnl
+dnl  Only register->register forms are supported here, which suffices for
+dnl  the current code.
+
+define(psadbw,
+m4_instruction_wrapper()
+m4_assert_numargs(2)
+`ifelse(psadbw_available_p,1,
+`psadbw_bytes(`$1',`$2')',
+`psadbw_simulate(`$1',`$2')')')
+
+define(psadbw_available_p,
+m4_assert_numargs(-1)
+`m4_ifdef_anyof_p(`HAVE_HOST_CPU_pentium3',
+                  `HAVE_HOST_CPU_pentium4',
+                  `HAVE_HOST_CPU_athlon')')
+
+dnl  Called: psadbw_bytes(src,dst)
+define(psadbw_bytes,
+m4_assert_numargs(2)
+`.byte 0x0f,0xf6,dnl
+eval(192+x86_opcode_regmmx(`$2')*8+x86_opcode_regmmx(`$1')) dnl
+	C `psadbw $1, $2'')
+
+dnl  Called: psadbw_simulate(src,dst)
+define(psadbw_simulate,
+m4_assert_numargs(2)
+`m4_warning(`warning, using simulated and only partly functional psadbw, use testing only
+')	C This works enough for the sum of bytes done in some of the popcounts,
+	C but is otherwise a long way short of correct.
+	pushl	%eax
+	pushl	%edx
+	pushf
+	subl	$`'8, %esp
+	movq	$2, (%esp)
+	movzbl	(%esp), %eax
+forloop(i,1,7,
+`	movzbl	i`'(%esp), %edx
+	addl	%edx, %eax
+')
+	movd	%eax, $2
+	addl	$`'8, %esp
+	popf
+	popl	%edx
+	popl	%eax
+')
 
 
 dnl  Usage: loop_or_decljnz label
@@ -521,10 +671,10 @@ define(loop_or_decljnz,
 	jnz')')
 
 define(loop_is_better_p,
-`m4_ifdef_anyof_p(`HAVE_TARGET_CPU_k6',
-                  `HAVE_TARGET_CPU_k62',
-                  `HAVE_TARGET_CPU_k63',
-                  `HAVE_TARGET_CPU_i386')')
+`m4_ifdef_anyof_p(`HAVE_HOST_CPU_k6',
+                  `HAVE_HOST_CPU_k62',
+                  `HAVE_HOST_CPU_k63',
+                  `HAVE_HOST_CPU_i386')')
 
 
 dnl  Usage: Zdisp(inst,op,op,op)
@@ -553,39 +703,63 @@ dnl  displacement argument is eval()ed.
 dnl
 dnl  Because there aren't many places a 0(reg) form is wanted, Zdisp is
 dnl  implemented with a table of instructions and encodings.  A new entry is
-dnl  needed for any different operation or registers.
+dnl  needed for any different operation or registers.  The table is split
+dnl  into separate macros to avoid overflowing BSD m4 macro expansion space.
 
 define(Zdisp,
 `define(`Zdisp_found',0)dnl
-Zdisp_match( movl, %eax, 0,(%edi), `137,71,0',    $@)`'dnl
-Zdisp_match( movl, %ebx, 0,(%edi), `137,95,0',    $@)`'dnl
-Zdisp_match( movl, %esi, 0,(%edi), `137,119,0',   $@)`'dnl
-Zdisp_match( movl, 0,(%ebx), %eax, `139,67,0',    $@)`'dnl
-Zdisp_match( movl, 0,(%ebx), %esi, `139,115,0',   $@)`'dnl
-Zdisp_match( movl, 0,(%esi), %eax, `139,70,0',    $@)`'dnl
+Zdisp_1($@)dnl
+Zdisp_2($@)dnl
+Zdisp_3($@)dnl
+Zdisp_4($@)dnl
+ifelse(Zdisp_found,0,
+`m4_error(`unrecognised instruction in Zdisp: $1 $2 $3 $4
+')')')
+
+define(Zdisp_1,`dnl
+Zdisp_match( adcl, 0,(%edx), %eax,        `0x13,0x42,0x00',           $@)`'dnl
+Zdisp_match( adcl, 0,(%edx), %ebx,        `0x13,0x5a,0x00',           $@)`'dnl
+Zdisp_match( adcl, 0,(%edx), %esi,        `0x13,0x72,0x00',           $@)`'dnl
+Zdisp_match( addl, %ebx, 0,(%edi),        `0x01,0x5f,0x00',           $@)`'dnl
+Zdisp_match( addl, %ecx, 0,(%edi),        `0x01,0x4f,0x00',           $@)`'dnl
+Zdisp_match( addl, %esi, 0,(%edi),        `0x01,0x77,0x00',           $@)`'dnl
+Zdisp_match( sbbl, 0,(%edx), %eax,        `0x1b,0x42,0x00',           $@)`'dnl
+Zdisp_match( sbbl, 0,(%edx), %esi,        `0x1b,0x72,0x00',           $@)`'dnl
+Zdisp_match( subl, %ecx, 0,(%edi),        `0x29,0x4f,0x00',           $@)`'dnl
+Zdisp_match( movzbl, 0,(%eax,%ebp), %eax, `0x0f,0xb6,0x44,0x28,0x00', $@)`'dnl
+Zdisp_match( movzbl, 0,(%ecx,%edi), %edi, `0x0f,0xb6,0x7c,0x39,0x00', $@)`'dnl
+')
+define(Zdisp_2,`dnl
+Zdisp_match( movl, %eax, 0,(%edi),        `0x89,0x47,0x00',           $@)`'dnl
+Zdisp_match( movl, %ebx, 0,(%edi),        `0x89,0x5f,0x00',           $@)`'dnl
+Zdisp_match( movl, %esi, 0,(%edi),        `0x89,0x77,0x00',           $@)`'dnl
+Zdisp_match( movl, 0,(%ebx), %eax,        `0x8b,0x43,0x00',           $@)`'dnl
+Zdisp_match( movl, 0,(%ebx), %esi,        `0x8b,0x73,0x00',           $@)`'dnl
+Zdisp_match( movl, 0,(%edx), %eax,        `0x8b,0x42,0x00',           $@)`'dnl
+Zdisp_match( movl, 0,(%esi), %eax,        `0x8b,0x46,0x00',           $@)`'dnl
 Zdisp_match( movl, 0,(%esi,%ecx,4), %eax, `0x8b,0x44,0x8e,0x00',      $@)`'dnl
-Zdisp_match( addl, %ebx, 0,(%edi), `1,95,0',      $@)`'dnl
-Zdisp_match( addl, %ecx, 0,(%edi), `1,79,0',      $@)`'dnl
-Zdisp_match( addl, %esi, 0,(%edi), `1,119,0',     $@)`'dnl
-Zdisp_match( subl, %ecx, 0,(%edi), `41,79,0',     $@)`'dnl
-Zdisp_match( adcl, 0,(%edx), %esi, `19,114,0',    $@)`'dnl
-Zdisp_match( sbbl, 0,(%edx), %esi, `27,114,0',    $@)`'dnl
+')
+define(Zdisp_3,`dnl
 Zdisp_match( movq, 0,(%eax,%ecx,8), %mm0, `0x0f,0x6f,0x44,0xc8,0x00', $@)`'dnl
 Zdisp_match( movq, 0,(%ebx,%eax,4), %mm0, `0x0f,0x6f,0x44,0x83,0x00', $@)`'dnl
 Zdisp_match( movq, 0,(%ebx,%eax,4), %mm2, `0x0f,0x6f,0x54,0x83,0x00', $@)`'dnl
-Zdisp_match( movq, 0,(%esi),        %mm0, `15,111,70,0',     $@)`'dnl
-Zdisp_match( movq, %mm0,        0,(%edi), `15,127,71,0',     $@)`'dnl
+Zdisp_match( movq, 0,(%ebx,%ecx,4), %mm0, `0x0f,0x6f,0x44,0x8b,0x00', $@)`'dnl
+Zdisp_match( movq, 0,(%edx), %mm0,        `0x0f,0x6f,0x42,0x00',      $@)`'dnl
+Zdisp_match( movq, 0,(%esi), %mm0,        `0x0f,0x6f,0x46,0x00',      $@)`'dnl
+Zdisp_match( movq, %mm0, 0,(%edi),        `0x0f,0x7f,0x47,0x00',      $@)`'dnl
 Zdisp_match( movq, %mm2, 0,(%ecx,%eax,4), `0x0f,0x7f,0x54,0x81,0x00', $@)`'dnl
 Zdisp_match( movq, %mm2, 0,(%edx,%eax,4), `0x0f,0x7f,0x54,0x82,0x00', $@)`'dnl
 Zdisp_match( movq, %mm0, 0,(%edx,%ecx,8), `0x0f,0x7f,0x44,0xca,0x00', $@)`'dnl
+')
+define(Zdisp_4,`dnl
+Zdisp_match( movd, 0,(%eax,%ecx,4), %mm0, `0x0f,0x6e,0x44,0x88,0x00', $@)`'dnl
 Zdisp_match( movd, 0,(%eax,%ecx,8), %mm1, `0x0f,0x6e,0x4c,0xc8,0x00', $@)`'dnl
 Zdisp_match( movd, 0,(%edx,%ecx,8), %mm0, `0x0f,0x6e,0x44,0xca,0x00', $@)`'dnl
 Zdisp_match( movd, %mm0, 0,(%eax,%ecx,4), `0x0f,0x7e,0x44,0x88,0x00', $@)`'dnl
 Zdisp_match( movd, %mm0, 0,(%ecx,%eax,4), `0x0f,0x7e,0x44,0x81,0x00', $@)`'dnl
 Zdisp_match( movd, %mm2, 0,(%ecx,%eax,4), `0x0f,0x7e,0x54,0x81,0x00', $@)`'dnl
-ifelse(Zdisp_found,0,
-`m4_error(`unrecognised instruction in Zdisp: $1 $2 $3 $4
-')')')
+Zdisp_match( movd, %mm0, 0,(%edx,%ecx,4), `0x0f,0x7e,0x44,0x8a,0x00', $@)`'dnl
+')
 
 define(Zdisp_match,
 `ifelse(eval(m4_stringequal_p(`$1',`$6')
@@ -657,7 +831,7 @@ m4_assert_defined(`WANT_SHLDL_CL')
 ``$1'	`$2', `$3', `$4'')')
 
 
-dnl  Usage: ASSERT(cond, instructions)
+dnl  Usage: ASSERT([cond][,instructions])
 dnl
 dnl  If WANT_ASSERT is 1, output the given instructions and expect the given
 dnl  flags condition to then be satisfied.  For example,
@@ -673,18 +847,28 @@ dnl  When `instructions' is not empty, a pushf/popf is added to preserve the
 dnl  flags, but the instructions themselves must preserve any registers that
 dnl  matter.  FRAME is adjusted for the push and pop, so the instructions
 dnl  given can use defframe() stack variables.
+dnl
+dnl  The condition can be omitted to just output the given instructions when
+dnl  assertion checking is wanted.  In this case the pushf/popf is omitted.
+dnl  For example,
+dnl
+dnl         ASSERT(, `movl %eax, VAR_KEEPVAL')
 
 define(ASSERT,
 m4_assert_numargs_range(1,2)
 `ifelse(WANT_ASSERT,1,
+`ifelse(`$1',,
+	`$2',
 	`C ASSERT
 ifelse(`$2',,,`	pushf	ifdef(`FRAME',`FRAME_pushl()')')
 	$2
-	j`$1'	1f
+	j`$1'	L(ASSERT_ok`'ASSERT_counter)
 	ud2	C assertion failed
-1:
+L(ASSERT_ok`'ASSERT_counter):
 ifelse(`$2',,,`	popf	ifdef(`FRAME',`FRAME_popl()')')
-')')
+define(`ASSERT_counter',incr(ASSERT_counter))')')')
+
+define(ASSERT_counter,1)
 
 
 dnl  Usage: movl_text_address(label,register)
@@ -698,16 +882,20 @@ dnl  This macro is only meant for use in ASSERT()s or when testing, since
 dnl  the PIC sequence it generates will want to be done with a ret balancing
 dnl  the call on CPUs with return address branch predition.
 dnl
-dnl  The addl generated here has a backward reference to 1b, and so won't
-dnl  suffer from the two forwards references bug in old gas (described in
-dnl  mpn/x86/README.family).
+dnl  The addl generated here has a backward reference to the label, and so
+dnl  won't suffer from the two forwards references bug in old gas (described
+dnl  in mpn/x86/README).
 
 define(movl_text_address,
 `ifdef(`PIC',
-	`call	1f
-1:	popl	$2	C %eip
-	addl	`$'$1-1b, $2',
+	`call	L(movl_text_address_`'movl_text_address_counter)
+L(movl_text_address_`'movl_text_address_counter):
+	popl	$2	C %eip
+	addl	`$'$1-L(movl_text_address_`'movl_text_address_counter), $2
+define(`movl_text_address_counter',incr(movl_text_address_counter))',
 	`movl	`$'$1, $2')')
+
+define(movl_text_address_counter,1)
 
 
 divert`'dnl

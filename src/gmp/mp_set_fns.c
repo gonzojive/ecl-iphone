@@ -1,7 +1,7 @@
 /* mp_set_memory_functions -- Set the allocate, reallocate, and free functions
    for use by the mp package.
 
-Copyright (C) 1991, 1993, 1994 Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -24,25 +24,18 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mp_set_memory_functions (void *(*alloc_func) (size_t),
 			 void *(*realloc_func) (void *, size_t, size_t),
 			 void (*free_func) (void *, size_t))
-#else
-mp_set_memory_functions (alloc_func, realloc_func, free_func)
-     void *(*alloc_func) ();
-     void *(*realloc_func) ();
-     void (*free_func) ();
-#endif
 {
   if (alloc_func == 0)
-    alloc_func = _mp_default_allocate;
+    alloc_func = __gmp_default_allocate;
   if (realloc_func == 0)
-    realloc_func = _mp_default_reallocate;
+    realloc_func = __gmp_default_reallocate;
   if (free_func == 0)
-    free_func = _mp_default_free;
+    free_func = __gmp_default_free;
 
-  _mp_allocate_func = alloc_func;
-  _mp_reallocate_func = realloc_func;
-  _mp_free_func = free_func;
+  __gmp_allocate_func = alloc_func;
+  __gmp_reallocate_func = realloc_func;
+  __gmp_free_func = free_func;
 }

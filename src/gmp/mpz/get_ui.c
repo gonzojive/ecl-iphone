@@ -1,6 +1,6 @@
 /* mpz_get_ui(integer) -- Return the least significant digit from INTEGER.
 
-Copyright (C) 1991, 1993, 1994, 1995 Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 1995, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -19,19 +19,7 @@ along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
 the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
 MA 02111-1307, USA. */
 
+#define __GMP_FORCE_mpz_get_ui 1
+
 #include "gmp.h"
 #include "gmp-impl.h"
-
-unsigned long int
-#if __STDC__
-mpz_get_ui (mpz_srcptr integer)
-#else
-mpz_get_ui (integer)
-     mpz_srcptr integer;
-#endif
-{
-  if (integer->_mp_size == 0)
-    return 0;
-  else
-    return integer->_mp_d[0];
-}

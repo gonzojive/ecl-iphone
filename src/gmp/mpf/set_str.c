@@ -2,7 +2,7 @@
    in base BASE to a float in dest.  If BASE is zero, the leading characters
    of STRING is used to figure out the base.
 
-Copyright (C) 1993, 1994, 1995, 1996, 1997, 2000 Free Software Foundation,
+Copyright 1993, 1994, 1995, 1996, 1997, 2000, 2001 Free Software Foundation,
 Inc.
 
 This file is part of the GNU MP Library.
@@ -22,23 +22,22 @@ along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
 the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
 MA 02111-1307, USA. */
 
+#include "config.h"
+
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
+#if HAVE_LOCALE_H
+#include <locale.h>    /* for localeconv */
+#endif
+
 #include "gmp.h"
 #include "gmp-impl.h"
 #include "longlong.h"
 
-
-long int strtol _PROTO ((const char *, char **ptr, int));
-
 static int
-#if __STDC__
 digit_value_in_base (int c, int base)
-#else
-digit_value_in_base (c, base)
-     int c;
-     int base;
-#endif
 {
   int digit;
 
@@ -56,15 +55,23 @@ digit_value_in_base (c, base)
   return -1;
 }
 
-int
-#if __STDC__
-mpf_set_str (mpf_ptr x, const char *str, int base)
+#if HAVE_LOCALECONV
+/* Avoid memcmp for the usual case that point is one character.  Don't
+   bother with str+1,point+1,pointlen-1 since those offsets would add to the
+   code size.  */
+#define POINTCMP_FAST(c, str)                                           \
+  ((c) == point0                                                        \
+   && (pointlen == 1 || memcmp (str, point, pointlen) == 0))
+#define POINTCMP_SMALL(c, str)   (memcmp (str, point, pointlen) == 0)
+#define POINTLEN                 (pointlen)
 #else
-mpf_set_str (x, str, base)
-     mpf_ptr x;
-     char *str;
-     int base;
+#define POINTCMP_FAST(c, str)    ((c) == '.')
+#define POINTCMP_SMALL(c, str)   ((c) == '.')
+#define POINTLEN                 1
 #endif
+
+int
+mpf_set_str (mpf_ptr x, const char *str, int base)
 {
   size_t str_size;
   char *s, *begs;
@@ -75,6 +82,11 @@ mpf_set_str (x, str, base)
   char *dotpos = 0;
   int expflag;
   int decimal_exponent_flag;
+#if HAVE_LOCALECONV
+  const char  *point = localeconv()->decimal_point;
+  size_t      pointlen = strlen (point);
+  int         point0 = point[0];
+#endif
   TMP_DECL (marker);
 
   TMP_MARK (marker);
@@ -95,9 +107,14 @@ mpf_set_str (x, str, base)
   decimal_exponent_flag = base < 0;
   base = ABS (base);
 
-  if (digit_value_in_base (c, base == 0 ? 10 : base) < 0
-      && (c != '.' || digit_value_in_base (str[1], base == 0 ? 10 : base) < 0))
-    return -1;			/* error if no digits */
+  /* require at least one digit, possibly after an initial decimal point */
+  if (digit_value_in_base (c, base == 0 ? 10 : base) < 0)
+    {
+      if (! POINTCMP_SMALL (c, str))
+        return -1;
+      if (digit_value_in_base (str[POINTLEN], base == 0 ? 10 : base) < 0)
+        return -1;
+    }
 
   /* If BASE is 0, try to find out the base by looking at the initial
      characters.  */
@@ -141,14 +158,16 @@ mpf_set_str (x, str, base)
 	{
 	  int dig;
 
-	  if (c == '.')
-	    {
+	  if (POINTCMP_FAST (c, str))
+            {
 	      if (dotpos != 0)
 		{
 		  TMP_FREE (marker);
 		  return -1;
 		}
 	      dotpos = s;
+              str += POINTLEN - 1;
+              i += POINTLEN - 1;
 	    }
 	  else
 	    {
@@ -227,7 +246,7 @@ mpf_set_str (x, str, base)
     count_leading_zeros (cnt, exp_in_base);
     for (i = BITS_PER_MP_LIMB - cnt - 2; i >= 0; i--)
       {
-	mpn_mul_n (tp, rp, rp, rsize);
+	mpn_sqr_n (tp, rp, rsize);
 	rsize = 2 * rsize;
 	rsize -= tp[rsize - 1] == 0;
 	radj <<= 1;
@@ -271,10 +290,10 @@ mpf_set_str (x, str, base)
 	    madj -= rsize - msize;
 	    msize = rsize;
 	  }
-	count_leading_zeros (cnt, rp[rsize - 1]);
-	if (cnt != 0)
+	if (! (rp[rsize-1] & MP_LIMB_T_HIGHBIT))
 	  {
 	    mp_limb_t cy;
+            count_leading_zeros (cnt, rp[rsize - 1]);
 	    mpn_lshift (rp, rp, rsize, cnt);
 	    cy = mpn_lshift (mp, mp, msize, cnt);
 	    if (cy)

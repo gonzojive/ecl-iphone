@@ -2,7 +2,7 @@
    integer in the range 0 to N-1, using STATE as the random state
    previously initialized by a call to gmp_randinit().
 
-Copyright (C) 2000  Free Software Foundation, Inc.
+Copyright 2000  Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -26,19 +26,15 @@ MA 02111-1307, USA. */
 #include "longlong.h"
 
 void
-#if __STDC__
-mpz_urandomm (mpz_t rop, gmp_randstate_t rstate, mpz_t n)
-#else
-mpz_urandomm (rop, rstate, n)
-     mpz_t rop;
-     gmp_randstate_t rstate;
-     mpz_t n;
-#endif
+mpz_urandomm (mpz_ptr rop, gmp_randstate_t rstate, mpz_srcptr n)
 {
   mpz_t t, p, m;
   mp_ptr tp;
   mp_size_t nbits, size;
   int count;
+  TMP_DECL (marker);
+
+  TMP_MARK (marker);
 
   /* FIXME: Should check for n == 0 and report error */
 
@@ -70,4 +66,6 @@ mpz_urandomm (rop, rstate, n)
   while (mpz_cmp (t, p) >= 0);
 
   mpz_mod (rop, t, n);
+
+  TMP_FREE (marker);
 }

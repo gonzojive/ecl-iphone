@@ -3,7 +3,7 @@ dnl
 dnl  K7: 17.0 cycles/limb integer part, 15.0 cycles/limb fraction part.
 
 
-dnl  Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+dnl  Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -82,7 +82,7 @@ defframe(VAR_DST_STOP,-36)
 
 deflit(STACK_SPACE, 36)
 
-	.text
+	TEXT
 	ALIGN(32)
 
 PROLOGUE(mpn_divrem_1c)
@@ -383,7 +383,7 @@ L(integer_top):
 	C
 
 	addl	%ebx, %eax         C m*(n2+n1) + nadj, low giving carry flag
-	leal	1(%edi), %ebx      C n2<<32 + m*(n2+n1))
+	leal	1(%edi), %ebx      C n2+1
 	movl	%ebp, %eax	   C d
 
 	C
@@ -458,7 +458,7 @@ L(integer_two_left):
 	C
 
 	addl	%ebx, %eax         C m*(n2+n1) + nadj, low giving carry flag
-	leal	1(%edi), %ebx      C n2<<32 + m*(n2+n1))
+	leal	1(%edi), %ebx      C n2+1
 	movl	%ebp, %eax	   C d
 
 	adcl	%edx, %ebx         C 1 + high(n2<<32 + m*(n2+n1) + nadj) = q1+1
@@ -519,7 +519,7 @@ L(integer_one_left):
 	C
 
 	addl	%ebx, %eax         C m*(n2+n1) + nadj, low giving carry flag
-	leal	1(%edi), %ebx      C n2<<32 + m*(n2+n1))
+	leal	1(%edi), %ebx      C n2+1
 	movl	%ebp, %eax	   C d
 
 	C

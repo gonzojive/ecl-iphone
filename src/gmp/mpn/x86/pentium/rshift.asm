@@ -5,7 +5,7 @@ dnl  P5,P54:    6.0
 dnl  P55:       5.375
 
 
-dnl  Copyright (C) 1992, 1994, 1995, 1996, 1999, 2000 Free Software
+dnl  Copyright 1992, 1994, 1995, 1996, 1999, 2000 Free Software
 dnl  Foundation, Inc.
 dnl
 dnl  This file is part of the GNU MP Library.
@@ -40,7 +40,7 @@ defframe(PARAM_SIZE, 12)
 defframe(PARAM_SRC,  8)
 defframe(PARAM_DST,  4)
 
-	.text
+	TEXT
 	ALIGN(8)
 PROLOGUE(mpn_rshift)
 

@@ -1,7 +1,7 @@
 /* mpf_clear -- de-allocate the space occupied by the dynamic digit space of
    an integer.
 
-Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1995, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -24,12 +24,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpf_clear (mpf_ptr m)
-#else
-mpf_clear (m)
-     mpf_ptr m;
-#endif
 {
-  (*_mp_free_func) (m->_mp_d, (m->_mp_prec + 1) * BYTES_PER_MP_LIMB);
+  (*__gmp_free_func) (m->_mp_d, (m->_mp_prec + 1) * BYTES_PER_MP_LIMB);
 }

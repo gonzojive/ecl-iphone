@@ -1,6 +1,6 @@
 /* Memory allocation routines.
 
-Copyright (C) 1991, 1993, 1994, 2000 Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -30,22 +30,17 @@ MA 02111-1307, USA. */
 #endif
 
 
-void *	(*_mp_allocate_func) _PROTO ((size_t)) = _mp_default_allocate;
-void *	(*_mp_reallocate_func) _PROTO ((void *, size_t, size_t))
-     = _mp_default_reallocate;
-void	(*_mp_free_func) _PROTO ((void *, size_t)) = _mp_default_free;
+void *	(*__gmp_allocate_func) _PROTO ((size_t)) = __gmp_default_allocate;
+void *	(*__gmp_reallocate_func) _PROTO ((void *, size_t, size_t))
+     = __gmp_default_reallocate;
+void	(*__gmp_free_func) _PROTO ((void *, size_t)) = __gmp_default_free;
 
 
 /* Default allocation functions.  In case of failure to allocate/reallocate
    an error message is written to stderr and the program aborts.  */
 
 void *
-#if __STDC__
-_mp_default_allocate (size_t size)
-#else
-_mp_default_allocate (size)
-     size_t size;
-#endif
+__gmp_default_allocate (size_t size)
 {
   void *ret;
 #ifdef DEBUG
@@ -73,14 +68,7 @@ _mp_default_allocate (size)
 }
 
 void *
-#if __STDC__
-_mp_default_reallocate (void *oldptr, size_t old_size, size_t new_size)
-#else
-_mp_default_reallocate (oldptr, old_size, new_size)
-     void *oldptr;
-     size_t old_size;
-     size_t new_size;
-#endif
+__gmp_default_reallocate (void *oldptr, size_t old_size, size_t new_size)
 {
   void *ret;
 
@@ -128,13 +116,7 @@ _mp_default_reallocate (oldptr, old_size, new_size)
 }
 
 void
-#if __STDC__
-_mp_default_free (void *blk_ptr, size_t blk_size)
-#else
-_mp_default_free (blk_ptr, blk_size)
-     void *blk_ptr;
-     size_t blk_size;
-#endif
+__gmp_default_free (void *blk_ptr, size_t blk_size)
 {
 #ifdef DEBUG
   {

@@ -2,7 +2,7 @@
    quotient.  This is now just a middle layer for calling the new
    internal mpn_tdiv_qr.
 
-Copyright (C) 1993, 1994, 1995, 1996, 1997, 1999, 2000 Free Software
+Copyright 1993, 1994, 1995, 1996, 1997, 1999, 2000, 2001 Free Software
 Foundation, Inc.
 
 This file is part of the GNU MP Library.
@@ -27,20 +27,18 @@ MA 02111-1307, USA. */
 #include "longlong.h"
 
 mp_limb_t
-#if __STDC__
 mpn_divrem (mp_ptr qp, mp_size_t qxn,
 	    mp_ptr np, mp_size_t nn,
 	    mp_srcptr dp, mp_size_t dn)
-#else
-mpn_divrem (qp, qxn, np, nn, dp, dn)
-     mp_ptr qp;
-     mp_size_t qxn;
-     mp_ptr np;
-     mp_size_t nn;
-     mp_srcptr dp;
-     mp_size_t dn;
-#endif
 {
+  ASSERT (qxn >= 0);
+  ASSERT (nn >= dn);
+  ASSERT (dn >= 1);
+  ASSERT (dp[dn-1] & MP_LIMB_T_HIGHBIT);
+  ASSERT (! MPN_OVERLAP_P (np, nn, dp, dn));
+  ASSERT (! MPN_OVERLAP_P (qp, nn-dn+qxn, np, nn) || qp==np+dn+qxn);
+  ASSERT (! MPN_OVERLAP_P (qp, nn-dn+qxn, dp, dn));
+
   if (dn == 1)
     {
       mp_limb_t ret;

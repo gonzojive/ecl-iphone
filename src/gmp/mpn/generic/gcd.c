@@ -1,6 +1,6 @@
 /* mpn/gcd.c: mpn_gcd for gcd of two odd integers.
 
-Copyright (C) 1991, 1993, 1994, 1995, 1996, 1997, 1998, 2000 Free Software
+Copyright 1991, 1993, 1994, 1995, 1996, 1997, 1998, 2000, 2001 Free Software
 Foundation, Inc.
 
 This file is part of the GNU MP Library.
@@ -66,14 +66,8 @@ enum
 
 /* Use binary algorithm to compute V <-- GCD (V, U) for usize, vsize == 2.
    Both U and V must be odd.  */
-static __gmp_inline mp_size_t
-#if __STDC__
+static inline mp_size_t
 gcd_2 (mp_ptr vp, mp_srcptr up)
-#else
-gcd_2 (vp, up)
-     mp_ptr vp;
-     mp_srcptr up;
-#endif
 {
   mp_limb_t u0, u1, v0, v1;
   mp_size_t vsize;
@@ -123,17 +117,16 @@ gcd_2 (vp, up)
    precision.  If N2 > N1 initially, the first iteration of the while loop
    will swap them.  In all other situations, N1 >= N2 is maintained.  */
 
+#if HAVE_NATIVE_mpn_gcd_finda
+#define find_a(cp)  mpn_gcd_finda (cp)
+
+#else
 static
 #if ! defined (__i386__)
-__gmp_inline			/* don't inline this for the x86 */
+inline				/* don't inline this for the x86 */
 #endif
 mp_limb_t
-#if __STDC__
 find_a (mp_srcptr cp)
-#else
-find_a (cp)
-     mp_srcptr cp;
-#endif
 {
   unsigned long int leading_zero_bits = 0;
 
@@ -171,23 +164,35 @@ find_a (cp)
 
   return n2_l;
 }
+#endif
+
 
 mp_size_t
-#if __STDC__
 mpn_gcd (mp_ptr gp, mp_ptr up, mp_size_t usize, mp_ptr vp, mp_size_t vsize)
-#else
-mpn_gcd (gp, up, usize, vp, vsize)
-     mp_ptr gp;
-     mp_ptr up;
-     mp_size_t usize;
-     mp_ptr vp;
-     mp_size_t vsize;
-#endif
 {
   mp_ptr orig_vp = vp;
   mp_size_t orig_vsize = vsize;
   int binary_gcd_ctr;		/* Number of times binary gcd will execute.  */
   TMP_DECL (marker);
+
+  ASSERT (usize >= 1);
+  ASSERT (vsize >= 1);
+  ASSERT (usize >= vsize);
+  ASSERT (vp[0] & 1);
+  ASSERT (up[usize-1] != 0);
+  ASSERT (vp[vsize-1] != 0);
+#if WANT_ASSERT
+  if (usize == vsize)
+    {
+      int  uzeros, vzeros;
+      count_leading_zeros (uzeros, up[usize-1]);
+      count_leading_zeros (vzeros, vp[vsize-1]);
+      ASSERT (uzeros <= vzeros);
+    }
+#endif    
+  ASSERT (! MPN_OVERLAP_P (up, usize, vp, vsize));
+  ASSERT (MPN_SAME_OR_SEPARATE2_P (gp, vsize, up, usize));
+  ASSERT (MPN_SAME_OR_SEPARATE2_P (gp, vsize, vp, vsize));
 
   TMP_MARK (marker);
 
@@ -207,6 +212,7 @@ mpn_gcd (gp, up, usize, vp, vsize)
       d = usize * BITS_PER_MP_LIMB - d;
       count_leading_zeros (vbitsize, vp[vsize-1]);
       vbitsize = vsize * BITS_PER_MP_LIMB - vbitsize;
+      ASSERT (d >= vbitsize);
       d = d - vbitsize + 1;
 
       /* Use bmod reduction to quickly discover whether V divides U.  */
@@ -408,7 +414,7 @@ mpn_gcd (gp, up, usize, vp, vsize)
 
 done:
   if (vp != gp)
-    MPN_COPY (gp, vp, vsize);
+    MPN_COPY_INCR (gp, vp, vsize);
   TMP_FREE (marker);
   return vsize;
 }

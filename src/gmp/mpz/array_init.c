@@ -1,6 +1,6 @@
 /* mpz_array_init (array, array_size, size_per_elem) --
 
-Copyright (C) 1991, 1993, 1994, 1995 Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 1995, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,21 +23,14 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpz_array_init (mpz_ptr arr, mp_size_t arr_size, mp_size_t nbits)
-#else
-mpz_array_init (arr, arr_size, nbits)
-     mpz_ptr arr;
-     mp_size_t arr_size;
-     mp_size_t nbits;
-#endif
 {
   register mp_ptr p;
   register size_t i;
   mp_size_t nlimbs;
 
   nlimbs = (nbits + BITS_PER_MP_LIMB - 1) / BITS_PER_MP_LIMB;
-  p = (mp_ptr) (*_mp_allocate_func) (arr_size * nlimbs * BYTES_PER_MP_LIMB);
+  p = (mp_ptr) (*__gmp_allocate_func) (arr_size * nlimbs * BYTES_PER_MP_LIMB);
 
   for (i = 0; i < arr_size; i++)
     {

@@ -7,7 +7,7 @@
    FUTURE GNU MP RELEASE.
 
 
-Copyright (C) 1993, 1994, 1995, 1996, 2000 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1995, 1996, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -30,11 +30,32 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 #include "longlong.h"
 
+
+/* The size where udiv_qrnnd_preinv should be used rather than udiv_qrnnd,
+   meaning the quotient size where that should happen, the quotient size
+   being how many udiv divisions will be done.  */
+
+#ifndef SB_PREINV_THRESHOLD
+# if UDIV_PREINV_ALWAYS
+#  define SB_PREINV_THRESHOLD     0
+# else
+#  ifdef DIVREM_1_NORM_THRESHOLD
+#   define SB_PREINV_THRESHOLD    DIVREM_1_NORM_THRESHOLD
+#  else
+#   if UDIV_TIME <= UDIV_NORM_PREINV_TIME
+#    define SB_PREINV_THRESHOLD   MP_LIMB_T_MAX
+#   else
+#    define SB_PREINV_THRESHOLD \
+       (1 + UDIV_TIME / (UDIV_TIME - UDIV_NORM_PREINV_TIME))
+#   endif
+#  endif
+# endif
+#endif
+
+
 /* Divide num (NP/NSIZE) by den (DP/DSIZE) and write
    the NSIZE-DSIZE least significant quotient limbs at QP
-   and the DSIZE long remainder at NP.  If QEXTRA_LIMBS is
-   non-zero, generate that many fraction bits and append them after the
-   other quotient limbs.
+   and the DSIZE long remainder at NP.
    Return the most significant limb of the quotient, this is always 0 or 1.
 
    Preconditions:
@@ -44,36 +65,30 @@ MA 02111-1307, USA. */
       QP + DSIZE >= NP must hold true.  (This means that it's
       possible to put the quotient in the high part of NUM, right after the
       remainder in NUM.
-   3. NSIZE >= DSIZE, even if QEXTRA_LIMBS is non-zero.
+   3. NSIZE >= DSIZE.
    4. DSIZE >= 2.  */
 
 
-#define PREINVERT_VIABLE \
-  (UDIV_TIME > 2 * UMUL_TIME + 6 /* && ! TARGET_REGISTER_STARVED */)
-
 mp_limb_t
-#if __STDC__
 mpn_sb_divrem_mn (mp_ptr qp,
-	       mp_ptr np, mp_size_t nsize,
-	       mp_srcptr dp, mp_size_t dsize)
-#else
-mpn_sb_divrem_mn (qp, np, nsize, dp, dsize)
-     mp_ptr qp;
-     mp_ptr np;
-     mp_size_t nsize;
-     mp_srcptr dp;
-     mp_size_t dsize;
-#endif
+                  mp_ptr np, mp_size_t nsize,
+                  mp_srcptr dp, mp_size_t dsize)
 {
   mp_limb_t most_significant_q_limb = 0;
+  mp_size_t qsize = nsize - dsize;
   mp_size_t i;
   mp_limb_t dx, d1, n0;
   mp_limb_t dxinv;
-  int have_preinv;
+  int use_preinv;
 
-  ASSERT_ALWAYS (dsize > 2);
+  ASSERT (dsize > 2);
+  ASSERT (nsize >= dsize);
+  ASSERT (dp[dsize-1] & MP_LIMB_T_HIGHBIT);
+  ASSERT (! MPN_OVERLAP_P (np, nsize, dp, dsize));
+  ASSERT (! MPN_OVERLAP_P (qp, nsize-dsize, dp, dsize));
+  ASSERT (! MPN_OVERLAP_P (qp, nsize-dsize, np, nsize) || qp+dsize >= np);
 
-  np += nsize - dsize;
+  np += qsize;
   dx = dp[dsize - 1];
   d1 = dp[dsize - 2];
   n0 = np[dsize - 1];
@@ -87,19 +102,13 @@ mpn_sb_divrem_mn (qp, np, nsize, dp, dsize)
 	}
     }
 
-  /* If multiplication is much faster than division, preinvert the
-     most significant divisor limb before entering the loop.  */
-  if (PREINVERT_VIABLE)
-    {
-      have_preinv = 0;
-      if ((UDIV_TIME - (2 * UMUL_TIME + 6)) * (nsize - dsize) > UDIV_TIME)
-	{
-	  invert_limb (dxinv, dx);
-	  have_preinv = 1;
-	}
-    }
+  /* use_preinv is possibly a constant, but it's left to the compiler to
+     optimize away the unused code in that case.  */
+  use_preinv = ABOVE_THRESHOLD (qsize, SB_PREINV_THRESHOLD);
+  if (use_preinv)
+    invert_limb (dxinv, dx);
 
-  for (i = nsize - dsize - 1; i >= 0; i--)
+  for (i = qsize-1; i >= 0; i--)
     {
       mp_limb_t q;
       mp_limb_t nx;
@@ -142,7 +151,7 @@ mpn_sb_divrem_mn (qp, np, nsize, dp, dsize)
              problem. */
           {
             mp_limb_t  workaround = np[dsize - 1];
-            if (PREINVERT_VIABLE && have_preinv)
+            if (use_preinv)
               udiv_qrnnd_preinv (q, r1, nx, workaround, dx, dxinv);
             else
               udiv_qrnnd (q, r1, nx, workaround, dx);

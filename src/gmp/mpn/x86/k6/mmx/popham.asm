@@ -6,7 +6,7 @@ dnl  K6-2:    9.0       11.5   cycles/limb
 dnl  K6:      12.5      13.0
 
 
-dnl  Copyright (C) 2000 Free Software Foundation, Inc.
+dnl  Copyright 2000, 2001 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -67,7 +67,7 @@ MULFUNC_PROLOGUE(mpn_popcount mpn_hamdist)
 ifdef(`PIC',,`
 	dnl  non-PIC
 
-	.section .rodata
+	RODATA
 	ALIGN(8)
 
 define(LS,
@@ -91,7 +91,7 @@ LS(rodata_000000FF000000FF):
 	.long	0x000000FF
 ')
 
-	.text
+	TEXT
 	ALIGN(32)
 
 POP(`ifdef(`PIC', `
@@ -102,8 +102,6 @@ PROLOGUE(M4_function)
 deflit(`FRAME',0)
 
 	movl	PARAM_SIZE, %ecx
-	orl	%ecx, %ecx
-	jz	L(zero)
 
 ifdef(`PIC',`
 	movl	$0xAAAAAAAA, %eax
@@ -229,10 +227,6 @@ HAM(`	nop			C code alignment')
 
 	movd	%mm2, %eax
 	emms_or_femms
-	ret
-
-L(zero):
-	movl	$0, %eax
 	ret
 
 EPILOGUE()

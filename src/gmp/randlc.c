@@ -2,7 +2,7 @@
    linear congruential generator with multiplier A, adder C, and
    modulus M.
 
-Copyright (C) 1999, 2000  Free Software Foundation, Inc.
+Copyright 1999, 2000  Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -25,32 +25,24 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 gmp_randinit_lc (gmp_randstate_t rstate,
-		 mpz_t a,
+		 mpz_srcptr a,
 		 unsigned long int c,
-		 mpz_t m)
-#else
-gmp_randinit_lc (rstate, a, c, m)
-     gmp_randstate_t rstate;
-     mpz_t a;
-     unsigned long int c;
-     mpz_t m;
-#endif
+		 mpz_srcptr m)
 {
   /* FIXME: Not finished.  We don't handle this in _gmp_rand() yet. */
   abort ();			
 
-  mpz_init_set_ui (rstate->seed, 1);
-  _mpz_realloc (rstate->seed, ABSIZ (m));
+  mpz_init_set_ui (rstate->_mp_seed, 1);
+  _mpz_realloc (rstate->_mp_seed, ABSIZ (m));
 
   /* Allocate algorithm specific data. */
-  rstate->algdata.lc = (__gmp_randata_lc *)
-    (*_mp_allocate_func) (sizeof (__gmp_randata_lc));
+  rstate->_mp_algdata._mp_lc = (__gmp_randata_lc *)
+    (*__gmp_allocate_func) (sizeof (__gmp_randata_lc));
 
-  mpz_init_set (rstate->algdata.lc->a, a);
-  rstate->algdata.lc->c = c;
-  mpz_init_set (rstate->algdata.lc->m, m);
+  mpz_init_set (rstate->_mp_algdata._mp_lc->_mp_a, a);
+  rstate->_mp_algdata._mp_lc->_mp_c = c;
+  mpz_init_set (rstate->_mp_algdata._mp_lc->_mp_m, m);
 
-  rstate->alg = GMP_RAND_ALG_LC;
+  rstate->_mp_alg = GMP_RAND_ALG_LC;
 }

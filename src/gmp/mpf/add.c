@@ -1,6 +1,6 @@
 /* mpf_add -- Add two floats.
 
-Copyright (C) 1993, 1994, 1996 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1996, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,14 +23,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpf_add (mpf_ptr r, mpf_srcptr u, mpf_srcptr v)
-#else
-mpf_add (r, u, v)
-     mpf_ptr r;
-     mpf_srcptr u;
-     mpf_srcptr v;
-#endif
 {
   mp_srcptr up, vp;
   mp_ptr rp, tp;
@@ -48,13 +41,15 @@ mpf_add (r, u, v)
   /* Handle special cases that don't work in generic code below.  */
   if (usize == 0)
     {
-      mpf_set (r, v);
+    set_r_v_maybe:
+      if (r != v)
+        mpf_set (r, v);
       return;
     }
   if (vsize == 0)
     {
-      mpf_set (r, u);
-      return;
+      v = u;
+      goto set_r_v_maybe;
     }
 
   /* If signs of U and V are different, perform subtraction.  */
@@ -122,8 +117,8 @@ mpf_add (r, u, v)
   if (ediff >= prec)
     {
       /* V completely cancelled.  */
-      if (tp != up)
-	MPN_COPY (rp, up, usize);
+      if (rp != up)
+	MPN_COPY_INCR (rp, up, usize);
       rsize = usize;
     }
   else

@@ -1,11 +1,11 @@
-/* mpn_sqr_basecase -- Internal routine to square two natural numbers
-   of length m and n.
+/* mpn_sqr_basecase -- Internal routine to square a natural number
+   of length n.
 
    THIS IS AN INTERNAL FUNCTION WITH A MUTABLE INTERFACE.  IT IS ONLY
    SAFE TO REACH THIS FUNCTION THROUGH DOCUMENTED INTERFACES.
 
 
-Copyright (C) 1991, 1992, 1993, 1994, 1996, 1997, 2000 Free Software
+Copyright 1991, 1992, 1993, 1994, 1996, 1997, 2000, 2001 Free Software
 Foundation, Inc.
 
 This file is part of the GNU MP Library.
@@ -30,16 +30,12 @@ MA 02111-1307, USA. */
 #include "longlong.h"
 
 void
-#if __STDC__
 mpn_sqr_basecase (mp_ptr prodp, mp_srcptr up, mp_size_t n)
-#else
-mpn_sqr_basecase (prodp, up, n)
-     mp_ptr prodp;
-     mp_srcptr up;
-     mp_size_t n;
-#endif
 {
   mp_size_t i;
+
+  ASSERT (n >= 1);
+  ASSERT (! MPN_OVERLAP_P (prodp, 2*n, up, n));
 
   {
     /* N.B.!  We need the superfluous indirection through argh to work around
@@ -67,12 +63,16 @@ mpn_sqr_basecase (prodp, up, n)
 	  cy = mpn_addmul_1 (tp + 2 * i - 2, up + i, n - i, up[i - 1]);
 	  tp[n + i - 2] = cy;
 	}
+#if HAVE_NATIVE_mpn_sqr_diagonal
+      mpn_sqr_diagonal (prodp + 2, up + 1, n - 1);
+#else
       for (i = 1; i < n; i++)
 	{
 	  mp_limb_t x;
 	  x = up[i];
 	  umul_ppmm (prodp[2 * i + 1], prodp[2 * i], x, x);
 	}
+#endif
       {
 	mp_limb_t cy;
 	cy = mpn_lshift (tp, tp, 2 * n - 2, 1);

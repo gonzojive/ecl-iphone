@@ -1,7 +1,14 @@
 dnl  x86 mpn_mod_1 -- mpn by limb remainder.
+dnl
+dnl       cycles/limb
+dnl  486     42 approx, maybe
+dnl  P5      44
+dnl  P6      39
+dnl  K6      20
+dnl  K7      41
+dnl  P4      58
 
-
-dnl  Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+dnl  Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -20,20 +27,6 @@ dnl  License along with the GNU MP Library; see the file COPYING.LIB.  If
 dnl  not, write to the Free Software Foundation, Inc., 59 Temple Place -
 dnl  Suite 330, Boston, MA 02111-1307, USA.
 
-
-dnl        cycles/limb
-dnl  K6        20
-dnl  P5        44
-dnl  P6        39
-dnl  486   approx 42 maybe
-dnl
-dnl  The following have their own optimized mod_1 implementations, but for
-dnl  reference the code here runs as follows.
-dnl
-dnl  P6MMX     39
-dnl  K7        41
-
-
 include(`../config.m4')
 
 
@@ -51,7 +44,7 @@ defframe(PARAM_DIVISOR,12)
 defframe(PARAM_SIZE,   8)
 defframe(PARAM_SRC,    4)
 
-	.text
+	TEXT
 	ALIGN(16)
 
 PROLOGUE(mpn_mod_1c)

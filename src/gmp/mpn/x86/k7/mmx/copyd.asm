@@ -5,7 +5,7 @@ dnl        A/A   A/N   N/A   N/N
 dnl  K7    0.75  1.0   1.0   0.75
 
 
-dnl  Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+dnl  Copyright 1999, 2000 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -44,7 +44,7 @@ define(SAVE_ESI,`PARAM_SRC')
 dnl  minimum 5 since the unrolled code can't handle less than 5
 deflit(UNROLL_THRESHOLD, 5)
 
-	.text
+	TEXT
 	ALIGN(32)
 PROLOGUE(mpn_copyd)
 

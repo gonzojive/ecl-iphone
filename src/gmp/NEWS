@@ -1,3 +1,71 @@
+Copyright 1996, 1999, 2000, 2001 Free Software Foundation, Inc.
+
+This file is part of the GNU MP Library.
+
+The GNU MP Library is free software; you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation; either version 2.1 of the License, or (at your
+option) any later version.
+
+The GNU MP Library is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
+License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
+the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+02111-1307, USA.
+
+Changes between MP version 3.1.1 and 4.0
+
+* Bug fixes.
+* Speed improvements.
+* Upwardly binary compatible with 3.x versions.
+* New CPU support: IA-64, Pentium 4.
+* Improved CPU support: 21264, Cray vector systems.
+* Support for all MIPS ABIs: o32, n32, 64.
+* New systems supported: Darwin, SCO, Windows DLLs.
+* New divide-and-conquer square root algorithm.
+* New algorithms chapter in the manual.
+* New malloc reentrant temporary memory method.
+* New C++ class interface by Gerardo Ballabio (beta).
+* Revamped configure, featuring ABI selection.
+* Speed improvements for mpz_powm and mpz_powm_ui (mainly affecting small
+  operands).
+* mpz_perfect_power_p now properly recognizes 0, 1, and negative perfect
+  powers.
+* mpz_hamdist now supports negative operands.
+* mpz_jacobi now accepts non-positive denominators.
+* mpz_powm now supports negative exponents.
+* mpn_mul_1 operand overlap requirements relaxed.
+* Float input and output uses locale specific decimal point where available.
+* New gmp_printf, gmp_scanf and related functions.
+* New division functions: mpz_cdiv_q_2exp, mpz_cdiv_r_2exp, mpz_divexact_ui.
+* New divisibility tests: mpz_divisible_p, mpz_divisible_ui_p,
+  mpz_divisible_2exp_p, mpz_congruent_p, mpz_congruent_ui_p,
+  mpz_congruent_2exp_p.
+* New Fibonacci function: mpz_fib2_ui.
+* New Lucas number functions: mpz_lucnum_ui, mpz_lucnum2_ui.
+* Other new integer functions: mpz_cmp_d, mpz_cmpabs_d, mpz_get_d_2exp,
+  mpz_init2, mpz_kronecker, mpz_lcm_ui, mpz_realloc2.
+* New rational I/O: mpq_get_str, mpq_inp_str, mpq_out_str, mpq_set_str.
+* Other new rational functions: mpq_abs, mpq_cmp_si, mpq_div_2exp,
+  mpq_mul_2exp, mpq_set_f.
+* New float tests: mpf_integer_p, mpf_fits_sint_p, mpf_fits_slong_p,
+  mpf_fits_sshort_p, mpf_fits_uint_p, mpf_fits_ulong_p, mpf_fits_ushort_p.
+* Other new float functions: mpf_cmp_d, mpf_get_default_prec, mpf_get_si,
+  mpf_get_ui, mpf_get_d_2exp.
+* New random functions: gmp_randinit_default, gmp_randinit_lc_2exp_size.
+* New demo expression string parser (see demos/expr).
+* New preliminary perl interface (see demos/perl).
+* Tuned algorithm thresholds for many more CPUs.
+
+Changes between MP version 3.1 and 3.1.1
+
+* Bug fixes for division (rare), mpf_get_str, FFT, and miscellaneous minor
+  things.
+
 Changes between MP version 3.0 and 3.1
 
 * Bug fixes.

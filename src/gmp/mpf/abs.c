@@ -1,6 +1,6 @@
 /* mpf_abs -- Compute the absolute value of a float.
 
-Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1995, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,13 +23,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpf_abs (mpf_ptr r, mpf_srcptr u)
-#else
-mpf_abs (r, u)
-     mpf_ptr r;
-     mpf_srcptr u;
-#endif
 {
   mp_size_t size;
 

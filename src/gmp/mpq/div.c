@@ -1,6 +1,6 @@
 /* mpq_div -- divide two rational numbers.
 
-Copyright (C) 1991, 1994, 1995, 1996, 2000 Free Software Foundation, Inc.
+Copyright 1991, 1994, 1995, 1996, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -22,15 +22,9 @@ MA 02111-1307, USA. */
 #include "gmp.h"
 #include "gmp-impl.h"
 
+
 void
-#if __STDC__
 mpq_div (mpq_ptr quot, mpq_srcptr op1, mpq_srcptr op2)
-#else
-mpq_div (quot, op1, op2)
-     mpq_ptr quot;
-     mpq_srcptr op1;
-     mpq_srcptr op2;
-#endif
 {
   mpz_t gcd1, gcd2;
   mpz_t tmp1, tmp2;
@@ -53,27 +47,13 @@ mpq_div (quot, op1, op2)
   mpz_gcd (gcd1, &(op1->_mp_num), &(op2->_mp_num));
   mpz_gcd (gcd2, &(op2->_mp_den), &(op1->_mp_den));
 
-  if (gcd1->_mp_size > 1 || gcd1->_mp_d[0] != 1)
-    mpz_divexact (tmp1, &(op1->_mp_num), gcd1);
-  else
-    mpz_set (tmp1, &(op1->_mp_num));
-
-  if (gcd2->_mp_size > 1 || gcd2->_mp_d[0] != 1)
-    mpz_divexact (tmp2, &(op2->_mp_den), gcd2);
-  else
-    mpz_set (tmp2, &(op2->_mp_den));
+  mpz_divexact_gcd (tmp1, &(op1->_mp_num), gcd1);
+  mpz_divexact_gcd (tmp2, &(op2->_mp_den), gcd2);
 
   mpz_mul (numtmp, tmp1, tmp2);
 
-  if (gcd1->_mp_size > 1 || gcd1->_mp_d[0] != 1)
-    mpz_divexact (tmp1, &(op2->_mp_num), gcd1);
-  else
-    mpz_set (tmp1, &(op2->_mp_num));
-
-  if (gcd2->_mp_size > 1 || gcd2->_mp_d[0] != 1)
-    mpz_divexact (tmp2, &(op1->_mp_den), gcd2);
-  else
-    mpz_set (tmp2, &(op1->_mp_den));
+  mpz_divexact_gcd (tmp1, &(op2->_mp_num), gcd1);
+  mpz_divexact_gcd (tmp2, &(op1->_mp_den), gcd2);
 
   mpz_mul (&(quot->_mp_den), tmp1, tmp2);
 

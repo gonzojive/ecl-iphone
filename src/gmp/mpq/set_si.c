@@ -1,7 +1,7 @@
 /* mpq_set_si(dest,ulong_num,ulong_den) -- Set DEST to the retional number
    ULONG_NUM/ULONG_DEN.
 
-Copyright (C) 1991, 1994, 1995 Free Software Foundation, Inc.
+Copyright 1991, 1994, 1995, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -24,14 +24,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpq_set_si (MP_RAT *dest, signed long int num, unsigned long int den)
-#else
-mpq_set_si (dest, num, den)
-     MP_RAT *dest;
-     signed long int num;
-     unsigned long int den;
-#endif
 {
   unsigned long int abs_num;
 
@@ -50,5 +43,5 @@ mpq_set_si (dest, num, den)
     }
 
   dest->_mp_den._mp_d[0] = den;
-  dest->_mp_den._mp_size = 1;
+  dest->_mp_den._mp_size = (den != 0);
 }

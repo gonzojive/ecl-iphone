@@ -1,6 +1,6 @@
-# VAX __gmpn_rshift -- right shift.
+# VAX mpn_rshift -- right shift.
 
-# Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+# Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
 
 # This file is part of the GNU MP Library.
 
@@ -48,7 +48,7 @@ Loop:	movl	(r6)+,r3
 	ashq	r8,r2,r4
 	movl	r5,(r7)+
 	movl	r3,r2
-	jsobgtr	r1,Loop
+	sobgtr	r1,Loop
 
 Lend:	clrl	r3
 	ashq	r8,r2,r4

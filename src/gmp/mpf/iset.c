@@ -1,6 +1,6 @@
 /* mpf_init_set -- Initialize a float and assign it from another float.
 
-Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1995, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,20 +23,14 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpf_init_set (mpf_ptr r, mpf_srcptr s)
-#else
-mpf_init_set (r, s)
-     mpf_ptr r;
-     mpf_srcptr s;
-#endif
 {
   mp_ptr rp, sp;
   mp_size_t ssize, size;
   mp_size_t prec;
 
   prec = __gmp_default_fp_limb_precision;
-  r->_mp_d = (mp_ptr) (*_mp_allocate_func) ((prec + 1) * BYTES_PER_MP_LIMB);
+  r->_mp_d = (mp_ptr) (*__gmp_allocate_func) ((prec + 1) * BYTES_PER_MP_LIMB);
   r->_mp_prec = prec;
 
   prec++;		/* lie not to lose precision in assignment */

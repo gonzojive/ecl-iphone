@@ -1,7 +1,7 @@
 /* mtox -- Convert OPERAND to hexadecimal and return a malloc'ed string
    with the result of the conversion.
 
-Copyright (C) 1991, 1994, 2000 Free Software Foundation, Inc.
+Copyright 1991, 1994, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -25,12 +25,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 char *
-#if __STDC__
 mtox (const MINT *x)
-#else
-mtox (x)
-     const MINT *x;
-#endif
 {
   mp_ptr xp;
   mp_size_t xsize = x->_mp_size;
@@ -38,12 +33,11 @@ mtox (x)
   unsigned char *str, *s;
   size_t str_size, i;
   int zeros;
-  char *num_to_text;
   TMP_DECL (marker);
 
   if (xsize == 0)
     {
-      str = (unsigned char *) (*_mp_allocate_func) (2);
+      str = (unsigned char *) (*__gmp_allocate_func) (2);
       str[0] = '0';
       str[1] = 0;
       return (char *) str;
@@ -55,7 +49,7 @@ mtox (x)
   TMP_MARK (marker);
   str_size = ((size_t) (xsize * BITS_PER_MP_LIMB
 			* __mp_bases[16].chars_per_bit_exactly)) + 3;
-  str = (unsigned char *) (*_mp_allocate_func) (str_size);
+  str = (unsigned char *) (*__gmp_allocate_func) (str_size);
   s = str;
 
   if (xsign < 0)

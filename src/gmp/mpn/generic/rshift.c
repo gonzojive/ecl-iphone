@@ -1,6 +1,6 @@
 /* mpn_rshift -- Shift right a low-level natural-number integer.
 
-Copyright (C) 1991, 1993, 1994, 1996 Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 1996, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -28,61 +28,34 @@ MA 02111-1307, USA. */
 
    Argument constraints:
    1. 0 < CNT < BITS_PER_MP_LIMB
-   2. If the result is to be written over the input, WP must be <= UP.
+   2. If the result is to be written over the input, RP must be <= UP.
 */
 
 mp_limb_t
-#if __STDC__
-mpn_rshift (register mp_ptr wp,
-	    register mp_srcptr up, mp_size_t usize,
-	    register unsigned int cnt)
-#else
-mpn_rshift (wp, up, usize, cnt)
-     register mp_ptr wp;
-     register mp_srcptr up;
-     mp_size_t usize;
-     register unsigned int cnt;
-#endif
+mpn_rshift (mp_ptr rp, mp_srcptr up, mp_size_t n, unsigned int cnt)
 {
-  register mp_limb_t high_limb, low_limb;
-  register unsigned sh_1, sh_2;
-  register mp_size_t i;
+  mp_limb_t high_limb, low_limb;
+  unsigned tnc;
+  mp_size_t i;
   mp_limb_t retval;
 
-#ifdef DEBUG
-  if (usize == 0 || cnt == 0)
-    abort ();
-#endif
+  ASSERT (n >= 1);
+  ASSERT (cnt >= 1);
+  ASSERT (cnt < BITS_PER_MP_LIMB);
+  ASSERT (MPN_SAME_OR_INCR_P (rp, up, n));
 
-  sh_1 = cnt;
+  tnc = BITS_PER_MP_LIMB - cnt;
+  high_limb = *up++;
+  retval = high_limb << tnc;
+  low_limb = high_limb >> cnt;
 
-#if 0
-  if (sh_1 == 0)
+  for (i = n - 1; i != 0; i--)
     {
-      if (wp != up)
-	{
-	  /* Copy from low end to high end, to allow specified input/output
-	     overlapping.  */
-	  for (i = 0; i < usize; i++)
-	    wp[i] = up[i];
-	}
-      return usize;
+      high_limb = *up++;
+      *rp++ = low_limb | (high_limb << tnc);
+      low_limb = high_limb >> cnt;
     }
-#endif
-
-  wp -= 1;
-  sh_2 = BITS_PER_MP_LIMB - sh_1;
-  high_limb = up[0];
-  retval = high_limb << sh_2;
-  low_limb = high_limb;
-
-  for (i = 1; i < usize; i++)
-    {
-      high_limb = up[i];
-      wp[i] = (low_limb >> sh_1) | (high_limb << sh_2);
-      low_limb = high_limb;
-    }
-  wp[i] = low_limb >> sh_1;
+  *rp = low_limb;
 
   return retval;
 }

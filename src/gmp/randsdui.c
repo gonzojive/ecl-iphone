@@ -1,7 +1,7 @@
 /* gmp_randseed_ui (state, seed) -- Set initial seed SEED in random
    state STATE.
 
-Copyright (C) 2000  Free Software Foundation, Inc.
+Copyright 2000  Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -24,14 +24,8 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 gmp_randseed_ui (gmp_randstate_t rstate,
-		  unsigned long int seed)
-#else
-gmp_randseed_ui (rstate, seed)
-     gmp_randstate_t rstate;
-     mpz_t seed;
-#endif
+                 unsigned long int seed)
 {
-  mpz_set_ui (rstate->seed, seed);
+  mpz_set_ui (rstate->_mp_seed, seed);
 }

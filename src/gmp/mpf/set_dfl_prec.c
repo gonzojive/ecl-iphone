@@ -1,6 +1,6 @@
 /* mpf_set_default_prec --
 
-Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1995, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -22,19 +22,10 @@ MA 02111-1307, USA. */
 #include "gmp.h"
 #include "gmp-impl.h"
 
-mp_size_t __gmp_default_fp_limb_precision
-  = (53 + 2 * BITS_PER_MP_LIMB - 1) / BITS_PER_MP_LIMB;
+mp_size_t __gmp_default_fp_limb_precision = __GMPF_BITS_TO_PREC (53);
 
 void
-#if __STDC__
 mpf_set_default_prec (unsigned long int prec_in_bits)
-#else
-mpf_set_default_prec (prec_in_bits)
-     unsigned long int prec_in_bits;
-#endif
 {
-  mp_size_t prec;
-
-  prec = (MAX (53, prec_in_bits) + 2 * BITS_PER_MP_LIMB - 1)/BITS_PER_MP_LIMB;
-  __gmp_default_fp_limb_precision = prec;
+  __gmp_default_fp_limb_precision = __GMPF_BITS_TO_PREC (prec_in_bits);
 }

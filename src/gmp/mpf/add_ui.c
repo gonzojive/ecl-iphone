@@ -1,6 +1,6 @@
 /* mpf_add_ui -- Add a float and an unsigned integer.
 
-Copyright (C) 1993, 1994, 1996 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1996, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,14 +23,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpf_add_ui (mpf_ptr sum, mpf_srcptr u, unsigned long int v)
-#else
-mpf_add_ui (sum, u, v)
-     mpf_ptr sum;
-     mpf_srcptr u;
-     unsigned long int v;
-#endif
 {
   mp_srcptr up = u->_mp_d;
   mp_ptr sump = sum->_mp_d;
@@ -112,7 +105,7 @@ mpf_add_ui (sum, u, v)
 		  usize -= usize - prec; /* Eq. usize = prec */
 		}
 	      if (sump != up)
-		MPN_COPY (sump, up, usize - uexp);
+		MPN_COPY_INCR (sump, up, usize - uexp);
 	      cy_limb = mpn_add_1 (sump + usize - uexp, up + usize - uexp,
 				   uexp, (mp_limb_t) v);
 	      sump[usize] = cy_limb;
@@ -141,7 +134,7 @@ mpf_add_ui (sum, u, v)
 	      usize -= usize + (-uexp) + 1 - prec;
 	    }
 	  if (sump != up)
-	    MPN_COPY (sump, up, usize);
+	    MPN_COPY_INCR (sump, up, usize);
 	  MPN_ZERO (sump + usize, -uexp);
 	  sump[usize + (-uexp)] = v;
 	  sum->_mp_size = usize + (-uexp) + 1;

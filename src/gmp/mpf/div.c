@@ -1,6 +1,6 @@
 /* mpf_div -- Divide two floats.
 
-Copyright (C) 1993, 1994, 1996, 2000 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1996, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -24,14 +24,7 @@ MA 02111-1307, USA. */
 #include "longlong.h"
 
 void
-#if __STDC__
 mpf_div (mpf_ptr r, mpf_srcptr u, mpf_srcptr v)
-#else
-mpf_div (r, u, v)
-     mpf_ptr r;
-     mpf_srcptr u;
-     mpf_srcptr v;
-#endif
 {
   mp_srcptr up, vp;
   mp_ptr rp, tp, rtp;
@@ -39,7 +32,6 @@ mpf_div (r, u, v)
   mp_size_t rsize, tsize;
   mp_size_t sign_quotient;
   mp_size_t prec;
-  unsigned normalization_steps;
   mp_limb_t q_limb;
   mp_exp_t rexp;
   TMP_DECL (marker);
@@ -89,13 +81,15 @@ mpf_div (r, u, v)
       rtp = tp + (tsize - usize);
     }
 
-  count_leading_zeros (normalization_steps, vp[vsize - 1]);
 
   /* Normalize the divisor and the dividend.  */
-  if (normalization_steps != 0)
+  if (! (vp[vsize-1] & MP_LIMB_T_HIGHBIT))
     {
       mp_ptr tmp;
       mp_limb_t nlimb;
+      unsigned normalization_steps;
+      
+      count_leading_zeros (normalization_steps, vp[vsize - 1]);
 
       /* Shift up the divisor setting the most significant bit of
 	 the most significant limb.  Use temporary storage not to clobber

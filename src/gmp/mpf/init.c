@@ -1,6 +1,6 @@
 /* mpf_init() -- Make a new multiple precision number with value 0.
 
-Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1995, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,15 +23,10 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpf_init (mpf_ptr r)
-#else
-mpf_init (r)
-     mpf_ptr r;
-#endif
 {
   mp_size_t prec = __gmp_default_fp_limb_precision;
-  r->_mp_d = (mp_ptr) (*_mp_allocate_func) ((prec + 1) * BYTES_PER_MP_LIMB);
+  r->_mp_d = (mp_ptr) (*__gmp_allocate_func) ((prec + 1) * BYTES_PER_MP_LIMB);
   r->_mp_prec = prec;
   r->_mp_size = 0;
   r->_mp_exp = 0;

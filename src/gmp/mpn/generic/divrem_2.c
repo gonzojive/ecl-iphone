@@ -7,7 +7,7 @@
    RELEASE.
 
 
-Copyright (C) 1993, 1994, 1995, 1996, 1999, 2000 Free Software Foundation,
+Copyright 1993, 1994, 1995, 1996, 1999, 2000, 2001 Free Software Foundation,
 Inc.
 
 This file is part of the GNU MP Library.
@@ -31,6 +31,29 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 #include "longlong.h"
 
+
+/* The size where udiv_qrnnd_preinv should be used rather than udiv_qrnnd,
+   meaning the quotient size where that should happen, the quotient size
+   being how many udiv divisions will be done.  */
+
+#ifndef DIVREM_2_THRESHOLD
+# if UDIV_PREINV_ALWAYS
+#  define DIVREM_2_THRESHOLD      0
+# else
+#  ifdef DIVREM_1_NORM_THRESHOLD
+#   define DIVREM_2_THRESHOLD     DIVREM_1_NORM_THRESHOLD
+#  else
+#   if UDIV_TIME <= UDIV_NORM_PREINV_TIME
+#    define DIVREM_2_THRESHOLD    MP_LIMB_T_MAX
+#   else
+#    define DIVREM_2_THRESHOLD \
+       (1 + UDIV_TIME / (UDIV_TIME - UDIV_NORM_PREINV_TIME))
+#   endif
+#  endif
+# endif
+#endif
+
+
 /* Divide num (NP/NSIZE) by den (DP/2) and write
    the NSIZE-2 least significant quotient limbs at QP
    and the 2 long remainder at NP.  If QEXTRA_LIMBS is
@@ -48,25 +71,21 @@ MA 02111-1307, USA. */
    3. NSIZE >= 2, even if QEXTRA_LIMBS is non-zero.  */
 
 mp_limb_t
-#if __STDC__
 mpn_divrem_2 (mp_ptr qp, mp_size_t qxn,
 	      mp_ptr np, mp_size_t nsize,
 	      mp_srcptr dp)
-#else
-mpn_divrem_2 (qp, qxn, np, nsize, dp)
-     mp_ptr qp;
-     mp_size_t qxn;
-     mp_ptr np;
-     mp_size_t nsize;
-     mp_srcptr dp;
-#endif
 {
   mp_limb_t most_significant_q_limb = 0;
   mp_size_t i;
   mp_limb_t n1, n0, n2;
   mp_limb_t d1, d0;
   mp_limb_t d1inv;
-  int have_preinv;
+  int use_preinv;
+
+  ASSERT (nsize >= 2);
+  ASSERT (qxn >= 0);
+  ASSERT (dp[1] & MP_LIMB_T_HIGHBIT);
+  ASSERT (! MPN_OVERLAP_P (qp, nsize-2+qxn, np, nsize) || qp+2 >= np);
 
   np += nsize - 2;
   d1 = dp[1];
@@ -80,17 +99,9 @@ mpn_divrem_2 (qp, qxn, np, nsize, dp)
       most_significant_q_limb = 1;
     }
 
-  /* If multiplication is much faster than division, preinvert the most 
-     significant divisor limb before entering the loop.  */
-  if (UDIV_TIME > 2 * UMUL_TIME + 6)
-    {
-      have_preinv = 0;
-      if ((UDIV_TIME - (2 * UMUL_TIME + 6)) * (nsize - 2) > UDIV_TIME)
-	{
-	  invert_limb (d1inv, d1);
-	  have_preinv = 1;
-	}
-    }
+  use_preinv = ABOVE_THRESHOLD (qxn + nsize - 2, DIVREM_2_THRESHOLD);
+  if (use_preinv)
+    invert_limb (d1inv, d1);
 
   for (i = qxn + nsize - 2 - 1; i >= 0; i--)
     {
@@ -120,7 +131,7 @@ mpn_divrem_2 (qp, qxn, np, nsize, dp)
 	}
       else
 	{
-	  if (UDIV_TIME > 2 * UMUL_TIME + 6 && have_preinv)
+	  if (use_preinv)
 	    udiv_qrnnd_preinv (q, r, n1, n0, d1, d1inv);
 	  else
 	    udiv_qrnnd (q, r, n1, n0, d1);

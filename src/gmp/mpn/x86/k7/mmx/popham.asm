@@ -4,7 +4,7 @@ dnl
 dnl  K7: popcount 5.0 cycles/limb, hamdist 6.0 cycles/limb
 
 
-dnl  Copyright (C) 2000 Free Software Foundation, Inc.
+dnl  Copyright 2000, 2001 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -25,32 +25,6 @@ dnl  Suite 330, Boston, MA 02111-1307, USA.
 
 
 include(`../config.m4')
-
-
-dnl  Only recent versions of gas know psadbw, in particular gas 2.9.1 on
-dnl  FreeBSD 3.3 and 3.4 doesn't recognise it.
-
-define(psadbw_mm4_mm0,
-`ifelse(m4_ifdef_anyof_p(`HAVE_TARGET_CPU_athlon',
-                         `HAVE_TARGET_CPU_pentium3'),1,
-	`.byte 0x0f,0xf6,0xc4	C psadbw %mm4, %mm0',
-
-`m4_warning(`warning, using simulated and only partly functional psadbw, use for testing only
-')	C this works enough for the sum of bytes done below, making it
-	C possible to test on an older cpu
-	leal	-8(%esp), %esp
-	movq	%mm4, (%esp)
-	movq	%mm0, %mm4
-forloop(i,1,7,
-`	psrlq	$ 8, %mm4
-	paddb	%mm4, %mm0
-')
-	pushl	$ 0
-	pushl	$ 0xFF
-	pand	(%esp), %mm0
-	movq	8(%esp), %mm4
-	leal	16(%esp), %esp
-')')
 
 
 C unsigned long mpn_popcount (mp_srcptr src, mp_size_t size);
@@ -96,7 +70,7 @@ MULFUNC_PROLOGUE(mpn_popcount mpn_hamdist)
 ifdef(`PIC',,`
 	dnl  non-PIC
 
-	.section .rodata
+	RODATA
 	ALIGN(8)
 
 define(LS,
@@ -116,15 +90,13 @@ LS(rodata_0F0F0F0F0F0F0F0F):
 	.long	0x0F0F0F0F
 ')
 
-	.text
+	TEXT
 	ALIGN(32)
 
 PROLOGUE(M4_function)
 deflit(`FRAME',0)
 
 	movl	PARAM_SIZE, %ecx
-	orl	%ecx, %ecx
-	jz	L(zero)
 
 ifdef(`PIC',`
 	movl	$0xAAAAAAAA, %eax
@@ -166,7 +138,7 @@ HAM(`	movl	PARAM_SRC2, %edx')
 
 	movd	(%eax,%ecx,8), %mm1
 
-HAM(`	movd	0(%edx,%ecx,8), %mm0
+HAM(`	movd	(%edx,%ecx,8), %mm0
 	pxor	%mm0, %mm1
 ')
 	orl	%ecx, %ecx
@@ -221,7 +193,7 @@ L(loaded):
 	paddd	%mm1, %mm0	C bytes
 
 
-	psadbw_mm4_mm0
+	psadbw(	%mm4, %mm0)
 
 	paddd	%mm0, %mm2	C add to total
 	jnz	L(top)
@@ -229,11 +201,6 @@ L(loaded):
 
 	movd	%mm2, %eax
 	emms
-	ret
-
-
-L(zero):
-	movl	$0, %eax
 	ret
 
 EPILOGUE()

@@ -5,7 +5,7 @@
    - 2^BITS_PER_MP_LIMB.
    Return the single-limb remainder.
 
-Copyright (C) 1991, 1993, 1994, Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -28,39 +28,23 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 #include "longlong.h"
 
-#ifndef UMUL_TIME
-#define UMUL_TIME 1
-#endif
-
-#ifndef UDIV_TIME
-#define UDIV_TIME UMUL_TIME
-#endif
 
 mp_limb_t
-#if __STDC__
 mpn_preinv_mod_1 (mp_srcptr dividend_ptr, mp_size_t dividend_size,
 		  mp_limb_t divisor_limb, mp_limb_t divisor_limb_inverted)
-#else
-mpn_preinv_mod_1 (dividend_ptr, dividend_size, divisor_limb, divisor_limb_inverted)
-     mp_srcptr dividend_ptr;
-     mp_size_t dividend_size;
-     mp_limb_t divisor_limb;
-     mp_limb_t divisor_limb_inverted;
-#endif
 {
   mp_size_t i;
   mp_limb_t n0, r;
-  int dummy;
+  mp_limb_t dummy;
 
-  i = dividend_size - 1;
-  r = dividend_ptr[i];
+  ASSERT (dividend_size >= 1);
+  ASSERT (divisor_limb & MP_LIMB_T_HIGHBIT);
 
+  r = dividend_ptr[dividend_size-1];
   if (r >= divisor_limb)
-    r = 0;
-  else
-    i--;
+    r -= divisor_limb;
 
-  for (; i >= 0; i--)
+  for (i = dividend_size - 2; i >= 0; i--)
     {
       n0 = dividend_ptr[i];
       udiv_qrnnd_preinv (dummy, r, r, n0, divisor_limb, divisor_limb_inverted);

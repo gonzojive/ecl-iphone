@@ -1,7 +1,7 @@
 /* t-rand -- Test random number generators.  */
 
 /*
-Copyright (C) 2000 Free Software Foundation, Inc.
+Copyright 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -105,7 +105,7 @@ static struct rt zarr[] =
   {z65, 65},
   {z127, 127},
   {z128, 128},
-  {0, NULL}
+  {NULL, 0}
 };
 
 static struct rt farr[] =
@@ -127,7 +127,7 @@ static struct rt farr[] =
   {f65, 65},
   {f127, 127},
   {f128, 128},
-  {0, NULL}
+  {NULL, 0}
 };
   
 

@@ -2,7 +2,7 @@
    allocation.  For proper operation, the original precision need to be reset
    sooner or later.
 
-Copyright (C) 1996 Free Software Foundation, Inc.
+Copyright 1996, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -25,15 +25,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpf_set_prec_raw (mpf_ptr x, unsigned long int prec_in_bits)
-#else
-mpf_set_prec_raw (x, prec_in_bits)
-     mpf_ptr x;
-     unsigned long int prec_in_bits;
-#endif
 {
-  mp_size_t prec;
-  prec = (MAX (53, prec_in_bits) + 2 * BITS_PER_MP_LIMB - 1)/BITS_PER_MP_LIMB;
-  x->_mp_prec = prec;
+  x->_mp_prec = __GMPF_BITS_TO_PREC (prec_in_bits);
 }

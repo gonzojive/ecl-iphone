@@ -3,7 +3,7 @@ dnl
 dnl  K6-2: 1.75 cycles/limb
 
 
-dnl  Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+dnl  Copyright 1999, 2000 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -42,7 +42,7 @@ define(VAR_RETVAL,`PARAM_SRC')
 dnl  minimum 9, because unrolled loop can't handle less
 deflit(UNROLL_THRESHOLD, 9)
 
-	.text
+	TEXT
 	ALIGN(32)
 
 PROLOGUE(mpn_lshift)

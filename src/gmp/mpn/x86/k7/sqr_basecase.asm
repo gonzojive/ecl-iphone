@@ -5,7 +5,7 @@ dnl  (measured on the speed difference between 25 and 50 limbs, which is
 dnl  roughly the Karatsuba recursing range).
 
 
-dnl  Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+dnl  Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -51,7 +51,7 @@ defframe(PARAM_SIZE,12)
 defframe(PARAM_SRC, 8)
 defframe(PARAM_DST, 4)
 
-	.text
+	TEXT
 	ALIGN(32)
 PROLOGUE(mpn_sqr_basecase)
 deflit(`FRAME',0)
@@ -468,8 +468,8 @@ Zdisp(  movl,	disp_src,(%esi), %eax)
 
 	mull    %ebp
 
-dnl Zdisp(	addl	%ebx, disp_src,(%edi))
-	addl	%ebx, disp_dst(%edi)
+Zdisp(	addl,	%ebx, disp_dst,(%edi))
+
 ifelse(forloop_last,0,
 `	movl	$0, %ebx')
 

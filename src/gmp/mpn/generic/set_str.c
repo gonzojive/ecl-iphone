@@ -3,7 +3,7 @@
    limb vector pointed to by RES_PTR.  Return the number of limbs in
    RES_PTR.
 
-Copyright (C) 1991, 1992, 1993, 1994, 1996, 2000 Free Software Foundation,
+Copyright 1991, 1992, 1993, 1994, 1996, 2000, 2001 Free Software Foundation,
 Inc.
 
 This file is part of the GNU MP Library.
@@ -27,20 +27,16 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 mp_size_t
-#if __STDC__
 mpn_set_str (mp_ptr xp, const unsigned char *str, size_t str_len, int base)
-#else
-mpn_set_str (xp, str, str_len, base)
-     mp_ptr xp;
-     const unsigned char *str;
-     size_t str_len;
-     int base;
-#endif
 {
   mp_size_t size;
   mp_limb_t big_base;
   int indigits_per_limb;
   mp_limb_t res_digit;
+
+  ASSERT (base >= 2);
+  ASSERT (base < numberof (__mp_bases));
+  ASSERT (str_len >= 1);
 
   big_base = __mp_bases[base].big_base;
   indigits_per_limb = __mp_bases[base].chars_per_limb;

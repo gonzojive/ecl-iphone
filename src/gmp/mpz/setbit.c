@@ -1,6 +1,6 @@
 /* mpz_setbit -- set a specified bit.
 
-Copyright (C) 1991, 1993, 1994, 1995, 1997, 1999 Free Software Foundation,
+Copyright 1991, 1993, 1994, 1995, 1997, 1999, 2001 Free Software Foundation,
 Inc.
 
 This file is part of the GNU MP Library.
@@ -24,13 +24,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpz_setbit (mpz_ptr d, unsigned long int bit_index)
-#else
-mpz_setbit (d, bit_index)
-     mpz_ptr d;
-     unsigned long int bit_index;
-#endif
 {
   mp_size_t dsize = d->_mp_size;
   mp_ptr dp = d->_mp_d;
@@ -78,9 +72,11 @@ mpz_setbit (d, bit_index)
       if (limb_index > zero_bound)
 	{
 	  if (limb_index < dsize)
-	    dp[limb_index] &= ~((mp_limb_t) 1 << (bit_index % BITS_PER_MP_LIMB));
-	  else
-	    ;
+            {
+              dp[limb_index] &= ~((mp_limb_t) 1 << (bit_index % BITS_PER_MP_LIMB));
+              MPN_NORMALIZE (dp, dsize);
+              d->_mp_size = -dsize;
+            }
 	}
       else if (limb_index == zero_bound)
 	{

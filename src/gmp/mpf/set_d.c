@@ -1,6 +1,6 @@
 /* mpf_set_d -- Assign a float from a IEEE double.
 
-Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1995, 1996, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,13 +23,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpf_set_d (mpf_ptr r, double d)
-#else
-mpf_set_d (r, d)
-     mpf_ptr r;
-     double d;
-#endif
 {
   int negative;
 

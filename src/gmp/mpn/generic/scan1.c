@@ -1,6 +1,6 @@
 /* mpn_scan1 -- Scan from a given bit position for the next set bit.
 
-Copyright (C) 1994, 1996 Free Software Foundation, Inc.
+Copyright 1994, 1996, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -28,18 +28,12 @@ MA 02111-1307, USA. */
    2. Bit index should be 'unsigned'?
 
    Argument constraints:
-   1. U must sooner ot later have a limb != 0.
+   1. U must sooner or later have a limb != 0.
  */
 
 unsigned long int
-#if __STDC__
 mpn_scan1 (register mp_srcptr up,
 	   register unsigned long int starting_bit)
-#else
-mpn_scan1 (up, starting_bit)
-     register mp_srcptr up;
-     register unsigned long int starting_bit;
-#endif
 {
   mp_size_t starting_word;
   mp_limb_t alimb;

@@ -1,6 +1,7 @@
-# Makefile.in generated automatically by automake 1.4a from Makefile.am
+# Makefile.in generated automatically by automake 1.5 from Makefile.am.
 
-# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
+# Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001
+# Free Software Foundation, Inc.
 # This Makefile.in is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
@@ -9,6 +10,50 @@
 # but WITHOUT ANY WARRANTY, to the extent permitted by law; without
 # even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE.
+
+@SET_MAKE@
+
+# Copyright 1996, 1998, 1999, 2000, 2001 Free Software Foundation, Inc.
+#
+# This file is part of the GNU MP Library.
+#
+# The GNU MP Library is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or (at your
+# option) any later version.
+#
+# The GNU MP Library is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
+# License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
+# the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+# MA 02111-1307, USA.
+
+
+# Copyright 1996, 1998, 1999, 2000, 2001 Free Software Foundation, Inc.
+#
+# This file is part of the GNU MP Library.
+#
+# The GNU MP Library is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or (at your
+# option) any later version.
+#
+# The GNU MP Library is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
+# License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
+# the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+# MA 02111-1307, USA.
+
+# COMPILE minus CC.
+#
 
 SHELL = @SHELL@
 
@@ -30,13 +75,9 @@ infodir = @infodir@
 mandir = @mandir@
 includedir = @includedir@
 oldincludedir = /usr/include
-
-DESTDIR =
-
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
-
 top_builddir = ..
 
 ACLOCAL = @ACLOCAL@
@@ -48,24 +89,16 @@ INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
-INSTALL_STRIP_FLAG =
+INSTALL_HEADER = $(INSTALL_DATA)
 transform = @program_transform_name@
-
 NORMAL_INSTALL = :
 PRE_INSTALL = :
 POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-
-@SET_MAKE@
-build_alias = @build_alias@
-build_triplet = @build@
 host_alias = @host_alias@
 host_triplet = @host@
-target_alias = @target_alias@
-target_triplet = @target@
-AMDEP = @AMDEP@
 AMTAR = @AMTAR@
 AR = @AR@
 AS = @AS@
@@ -76,136 +109,162 @@ CCAS = @CCAS@
 CPP = @CPP@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
+DEFN_LONG_LONG_LIMB = @DEFN_LONG_LONG_LIMB@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
+ECHO = @ECHO@
 EXEEXT = @EXEEXT@
+GCJ = @GCJ@
+GCJFLAGS = @GCJFLAGS@
+GMP_LDFLAGS = @GMP_LDFLAGS@
+HAVE_MPFR = @HAVE_MPFR@
+INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+LIBM = @LIBM@
 LIBTOOL = @LIBTOOL@
 LN_S = @LN_S@
 M4 = @M4@
 MAINT = @MAINT@
-MAKEINFO = @MAKEINFO@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 PACKAGE = @PACKAGE@
 RANLIB = @RANLIB@
-SPEED_CYCLECOUNTER_OBJS = @SPEED_CYCLECOUNTER_OBJS@
+RC = @RC@
+REPL_VSNPRINTF_OBJ = @REPL_VSNPRINTF_OBJ@
+REPL_VSNPRINTF_PRINTF_OBJ = @REPL_VSNPRINTF_PRINTF_OBJ@
+SPEED_CYCLECOUNTER_OBJ = @SPEED_CYCLECOUNTER_OBJ@
 STRIP = @STRIP@
+TAL_OBJECT = @TAL_OBJECT@
+TUNE_SQR_OBJ = @TUNE_SQR_OBJ@
 U = @U@
 VERSION = @VERSION@
+__GMP_BITS_PER_MP_LIMB = @__GMP_BITS_PER_MP_LIMB@
+__GMP_HAVE_HOST_CPU_FAMILY_power = @__GMP_HAVE_HOST_CPU_FAMILY_power@
+__GMP_HAVE_HOST_CPU_FAMILY_powerpc = @__GMP_HAVE_HOST_CPU_FAMILY_powerpc@
+__GMP_LIBGMP_SHARED = @__GMP_LIBGMP_SHARED@
+__GMP_LIBGMP_STATIC = @__GMP_LIBGMP_STATIC@
+am__include = @am__include@
+am__quote = @am__quote@
 gmp_srclinks = @gmp_srclinks@
 install_sh = @install_sh@
 mpn_objects = @mpn_objects@
 mpn_objs_in_libgmp = @mpn_objs_in_libgmp@
+mpn_objs_in_libmp = @mpn_objs_in_libmp@
 
-# Copyright (C) 1996, 1998, 1999, 2000 Free Software Foundation, Inc.
-#
-# This file is part of the GNU MP Library.
-#
-# The GNU MP Library is free software; you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation; either version 2.1 of the License, or (at your
-# option) any later version.
-#
-# The GNU MP Library is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-# License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-# the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-# MA 02111-1307, USA.
+AUTOMAKE_OPTIONS = gnu no-dependencies $(top_builddir)/ansi2knr
+
+INCLUDES = -D__GMP_WITHIN_GMP -I$(top_srcdir) \
+  -DOPERATION_`echo $* | sed 's/_$$//'`
 
 
-AUTOMAKE_OPTIONS = gnu no-dependencies
-SUBDIRS = tests
-
-CPP = @CPP@
-
-# -DOPERATION_$* tells multi-function files which function to produce.
-INCLUDES = -I$(top_srcdir) -DOPERATION_$*
-
-GENERIC_SOURCES = mp_bases.c
 OFILES = @mpn_objects@
 
+# All possible mpn normal and optional function files are listed here as C
+# sources for a dummy library, to get automake to generate ansi2knr rules
+# for each.  Such rules will be ignored for any that are instead implemented
+# with a .asm (or whatever) for a particular target.
+#
+EXTRA_LTLIBRARIES = libdummy.la
+nodist_libdummy_la_SOURCES = \
+  add.c add_1.c add_n.c addmul_1.c and_n.c andn_n.c bdivmod.c		    \
+  cmp.c com_n.c copyd.c copyi.c						    \
+  dc_divrem_n.c dive_1.c diveby3.c divis.c divrem.c divrem_1.c divrem_2.c   \
+  dump.c fib2_ui.c gcd.c						    \
+  gcd_finda.c gcd_1.c gcdext.c get_str.c hamdist.c invert_limb.c	    \
+  ior_n.c iorn_n.c jacbase.c lshift.c mod_1.c mode1o.c mul.c mul_1.c	    \
+  mul_fft.c mul_n.c mul_basecase.c nand_n.c nior_n.c perfsqr.c popcount.c   \
+  pre_mod_1.c random.c random2.c rshift.c				    \
+  sb_divrem_mn.c scan0.c scan1.c set_str.c sqr_basecase.c sqr_diagonal.c    \
+  sqrtrem.c sub.c sub_1.c sub_n.c submul_1.c				    \
+  tdiv_qr.c udiv_qrnnd.c udiv_w_sdiv.c xor_n.c xnor_n.c
+
+
 noinst_LTLIBRARIES = libmpn.la
-libmpn_la_SOURCES = $(GENERIC_SOURCES)
+libmpn_la_SOURCES = mp_bases.c
 libmpn_la_LIBADD = $(OFILES)
 libmpn_la_DEPENDENCIES = $(OFILES)
 
-TARG_DIST = a29k alpha arm clipper cray generic hppa i960 lisp m68k m88k \
-  mips2 mips3 ns32k pa64 pa64w power powerpc32 powerpc64 pyr sh sparc32 \
+TARG_DIST = a29k alpha arm clipper cray generic hppa i960 ia64 lisp m68k m88k \
+  mips2 mips3 ns32k pa64 pa64w power powerpc32 powerpc64 pyr s390 sh sparc32 \
   sparc64 thumb vax x86 z8000 z8000x
 
 
-EXTRA_DIST = underscore.h asm-defs.m4 $(TARG_DIST)
+EXTRA_DIST = Makeasm.am asm-defs.m4 cpp-ccas m4-ccas $(TARG_DIST)
 
-# COMPILE minus CC.  FIXME: Really pass *_CFLAGS to CPP?
-COMPILE_FLAGS = \
-	$(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+COMPILE_FLAGS = $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 
 
+# Flags used for preprocessing (in ansi2knr rules).
+#
+PREPROCESS_FLAGS = $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS)
+
+
+# Recent versions of automake (1.5 and up for instance) append automake
+# generated suffixes to this $(SUFFIXES) list.  This is essential for us,
+# since .c must come after .s, .S and .asm.  If .c is before .s, for
+# instance, then in the mpn directory "make" will see add_n.c mentioned in
+# an explicit rule (the ansi2knr stuff) and decide it must have add_n.c,
+# even if add_n.c doesn't exist but add_n.s does.  See GNU make
+# documentation "(make)Implicit Rule Search", part 5c.
+#
+# On IRIX 6 native make this doesn't work properly though.  Somehow .c
+# remains ahead of .s, perhaps because .c.s is a builtin rule.  .asm works
+# fine though, and mpn/mips3 uses this.
+#
 SUFFIXES = .s .S .asm
+
+# can be overridden during development, eg. "make RM_TMP=: mul_1.lo"
+RM_TMP = rm -f
 subdir = mpn
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
-CONFIG_HEADER = ../config.h
-CONFIG_CLEAN_FILES = 
-LTLIBRARIES =  $(noinst_LTLIBRARIES)
+CONFIG_HEADER = $(top_builddir)/config.h
+CONFIG_CLEAN_FILES =
+LTLIBRARIES = $(noinst_LTLIBRARIES)
 
+libdummy_la_LDFLAGS =
+libdummy_la_LIBADD =
+nodist_libdummy_la_OBJECTS = add$U.lo add_1$U.lo add_n$U.lo \
+	addmul_1$U.lo and_n$U.lo andn_n$U.lo bdivmod$U.lo cmp$U.lo \
+	com_n$U.lo copyd$U.lo copyi$U.lo dc_divrem_n$U.lo dive_1$U.lo \
+	diveby3$U.lo divis$U.lo divrem$U.lo divrem_1$U.lo divrem_2$U.lo \
+	dump$U.lo fib2_ui$U.lo gcd$U.lo gcd_finda$U.lo gcd_1$U.lo \
+	gcdext$U.lo get_str$U.lo hamdist$U.lo invert_limb$U.lo \
+	ior_n$U.lo iorn_n$U.lo jacbase$U.lo lshift$U.lo mod_1$U.lo \
+	mode1o$U.lo mul$U.lo mul_1$U.lo mul_fft$U.lo mul_n$U.lo \
+	mul_basecase$U.lo nand_n$U.lo nior_n$U.lo perfsqr$U.lo \
+	popcount$U.lo pre_mod_1$U.lo random$U.lo random2$U.lo \
+	rshift$U.lo sb_divrem_mn$U.lo scan0$U.lo scan1$U.lo \
+	set_str$U.lo sqr_basecase$U.lo sqr_diagonal$U.lo sqrtrem$U.lo \
+	sub$U.lo sub_1$U.lo sub_n$U.lo submul_1$U.lo tdiv_qr$U.lo \
+	udiv_qrnnd$U.lo udiv_w_sdiv$U.lo xor_n$U.lo xnor_n$U.lo
+libdummy_la_OBJECTS = $(nodist_libdummy_la_OBJECTS)
+libmpn_la_LDFLAGS =
+am_libmpn_la_OBJECTS = mp_bases$U.lo
+libmpn_la_OBJECTS = $(am_libmpn_la_OBJECTS)
 
-DEFS = @DEFS@ -I. -I$(srcdir) -I..
+DEFS = @DEFS@
+DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
-libmpn_la_LDFLAGS = 
-am_libmpn_la_OBJECTS =  mp_bases.lo
-libmpn_la_OBJECTS =  $(am_libmpn_la_OBJECTS)
-COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-CFLAGS = @CFLAGS@
+depcomp =
+COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
+	$(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
-LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-DIST_SOURCES =  $(libmpn_la_SOURCES)
-DIST_COMMON =  README Makefile.am Makefile.in
+LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+CFLAGS = @CFLAGS@
+DIST_SOURCES = $(libmpn_la_SOURCES)
+DIST_COMMON = README Makefile.am Makefile.in
+SOURCES = $(nodist_libdummy_la_SOURCES) $(libmpn_la_SOURCES)
 
+all: all-am
 
-DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-
-GZIP_ENV = --best
-depcomp = 
-SOURCES = $(libmpn_la_SOURCES)
-OBJECTS = $(am_libmpn_la_OBJECTS)
-
-all: all-redirect
 .SUFFIXES:
-.SUFFIXES: .S .asm .c .lo .o .obj .s
-$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
-	cd $(top_srcdir) && $(AUTOMAKE) --gnu mpn/Makefile
-
-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
-	cd $(top_builddir) \
-	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
-
-
-mostlyclean-noinstLTLIBRARIES:
-
-clean-noinstLTLIBRARIES:
-	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
-
-distclean-noinstLTLIBRARIES:
-
-maintainer-clean-noinstLTLIBRARIES:
-
-mostlyclean-compile:
-	-rm -f *.o core *.core
-	-rm -f *.$(OBJEXT)
-
-clean-compile:
-
-distclean-compile:
-	-rm -f *.tab.c
-
-maintainer-clean-compile:
+.SUFFIXES: .s .S .asm .c .lo .o .obj
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -214,70 +273,201 @@ clean-libtool:
 	-rm -rf .libs _libs
 
 distclean-libtool:
+	-rm -f libtool
+$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(srcdir)/Makeasm.am $(top_srcdir)/configure.in $(ACLOCAL_M4)
+	cd $(top_srcdir) && \
+	  $(AUTOMAKE) --gnu  mpn/Makefile
+Makefile: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.in  $(top_builddir)/config.status
+	cd $(top_builddir) && \
+	  CONFIG_HEADERS= CONFIG_LINKS= \
+	  CONFIG_FILES=$(subdir)/$@ $(SHELL) ./config.status
 
-maintainer-clean-libtool:
-
-libmpn.la: $(libmpn_la_OBJECTS) $(libmpn_la_DEPENDENCIES)
+clean-noinstLTLIBRARIES:
+	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
+libdummy.la: $(libdummy_la_OBJECTS) $(libdummy_la_DEPENDENCIES) 
+	$(LINK)  $(libdummy_la_LDFLAGS) $(libdummy_la_OBJECTS) $(libdummy_la_LIBADD) $(LIBS)
+libmpn.la: $(libmpn_la_OBJECTS) $(libmpn_la_DEPENDENCIES) 
 	$(LINK)  $(libmpn_la_LDFLAGS) $(libmpn_la_OBJECTS) $(libmpn_la_LIBADD) $(LIBS)
+
+mostlyclean-compile:
+	-rm -f *.$(OBJEXT) core *.core
+
+distclean-compile:
+	-rm -f *.tab.c
+
+ANSI2KNR = $(top_builddir)/ansi2knr
+$(top_builddir)/ansi2knr:
+	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) ansi2knr
+
+mostlyclean-kr:
+	-test "$U" = "" || rm -f *_.c
+
 .c.o:
-	$(COMPILE) -c $<
+	$(COMPILE) -c `test -f $< || echo '$(srcdir)/'`$<
+
 .c.obj:
 	$(COMPILE) -c `cygpath -w $<`
+
 .c.lo:
-	$(LTCOMPILE) -c -o $@ $<
-
-# This directory's subdirectories are mostly independent; you can cd
-# into them and run `make' without going through this Makefile.
-# To change the values of `make' variables: instead of editing Makefiles,
-# (1) if the variable is set in `config.status', edit `config.status'
-#     (which will cause the Makefiles to be regenerated when you run `make');
-# (2) otherwise, pass the desired values on the `make' command line.
-
-all-recursive install-data-recursive install-exec-recursive \
-installdirs-recursive install-recursive uninstall-recursive  \
-check-recursive installcheck-recursive info-recursive dvi-recursive:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	dot_seen=no; \
-	target=`echo $@ | sed s/-recursive//`; \
-	list='$(SUBDIRS)'; for subdir in $$list; do \
-	  echo "Making $$target in $$subdir"; \
-	  if test "$$subdir" = "."; then \
-	    dot_seen=yes; \
-	    local_target="$$target-am"; \
-	  else \
-	    local_target="$$target"; \
-	  fi; \
-	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target) \
-	   || case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
-	done; \
-	if test "$$dot_seen" = "no"; then \
-	  $(MAKE) $(AM_MAKEFLAGS) "$$target-am" || exit 1; \
-	fi; test -z "$$fail"
-
-mostlyclean-recursive clean-recursive distclean-recursive \
-maintainer-clean-recursive:
-	@set fnord $(MAKEFLAGS); amf=$$2; \
-	dot_seen=no; \
-	rev=''; list='$(SUBDIRS)'; for subdir in $$list; do \
-	  rev="$$subdir $$rev"; \
-	  if test "$$subdir" = "."; then dot_seen=yes; else :; fi; \
-	done; \
-	test "$$dot_seen" = "no" && rev=". $$rev"; \
-	target=`echo $@ | sed s/-recursive//`; \
-	for subdir in $$rev; do \
-	  echo "Making $$target in $$subdir"; \
-	  if test "$$subdir" = "."; then \
-	    local_target="$$target-am"; \
-	  else \
-	    local_target="$$target"; \
-	  fi; \
-	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target) \
-	   || case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
-tags-recursive:
-	list='$(SUBDIRS)'; for subdir in $$list; do \
-	  test "$$subdir" = . || (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) tags); \
-	done
+	$(LTCOMPILE) -c -o $@ `test -f $< || echo '$(srcdir)/'`$<
+add_.c: add.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/add.c; then echo $(srcdir)/add.c; else echo add.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > add_.c || rm -f add_.c
+add_1_.c: add_1.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/add_1.c; then echo $(srcdir)/add_1.c; else echo add_1.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > add_1_.c || rm -f add_1_.c
+add_n_.c: add_n.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/add_n.c; then echo $(srcdir)/add_n.c; else echo add_n.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > add_n_.c || rm -f add_n_.c
+addmul_1_.c: addmul_1.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/addmul_1.c; then echo $(srcdir)/addmul_1.c; else echo addmul_1.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > addmul_1_.c || rm -f addmul_1_.c
+and_n_.c: and_n.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/and_n.c; then echo $(srcdir)/and_n.c; else echo and_n.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > and_n_.c || rm -f and_n_.c
+andn_n_.c: andn_n.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/andn_n.c; then echo $(srcdir)/andn_n.c; else echo andn_n.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > andn_n_.c || rm -f andn_n_.c
+bdivmod_.c: bdivmod.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/bdivmod.c; then echo $(srcdir)/bdivmod.c; else echo bdivmod.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > bdivmod_.c || rm -f bdivmod_.c
+cmp_.c: cmp.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/cmp.c; then echo $(srcdir)/cmp.c; else echo cmp.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > cmp_.c || rm -f cmp_.c
+com_n_.c: com_n.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/com_n.c; then echo $(srcdir)/com_n.c; else echo com_n.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > com_n_.c || rm -f com_n_.c
+copyd_.c: copyd.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/copyd.c; then echo $(srcdir)/copyd.c; else echo copyd.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > copyd_.c || rm -f copyd_.c
+copyi_.c: copyi.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/copyi.c; then echo $(srcdir)/copyi.c; else echo copyi.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > copyi_.c || rm -f copyi_.c
+dc_divrem_n_.c: dc_divrem_n.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/dc_divrem_n.c; then echo $(srcdir)/dc_divrem_n.c; else echo dc_divrem_n.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > dc_divrem_n_.c || rm -f dc_divrem_n_.c
+dive_1_.c: dive_1.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/dive_1.c; then echo $(srcdir)/dive_1.c; else echo dive_1.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > dive_1_.c || rm -f dive_1_.c
+diveby3_.c: diveby3.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/diveby3.c; then echo $(srcdir)/diveby3.c; else echo diveby3.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > diveby3_.c || rm -f diveby3_.c
+divis_.c: divis.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/divis.c; then echo $(srcdir)/divis.c; else echo divis.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > divis_.c || rm -f divis_.c
+divrem_.c: divrem.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/divrem.c; then echo $(srcdir)/divrem.c; else echo divrem.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > divrem_.c || rm -f divrem_.c
+divrem_1_.c: divrem_1.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/divrem_1.c; then echo $(srcdir)/divrem_1.c; else echo divrem_1.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > divrem_1_.c || rm -f divrem_1_.c
+divrem_2_.c: divrem_2.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/divrem_2.c; then echo $(srcdir)/divrem_2.c; else echo divrem_2.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > divrem_2_.c || rm -f divrem_2_.c
+dump_.c: dump.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/dump.c; then echo $(srcdir)/dump.c; else echo dump.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > dump_.c || rm -f dump_.c
+fib2_ui_.c: fib2_ui.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/fib2_ui.c; then echo $(srcdir)/fib2_ui.c; else echo fib2_ui.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > fib2_ui_.c || rm -f fib2_ui_.c
+gcd_.c: gcd.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/gcd.c; then echo $(srcdir)/gcd.c; else echo gcd.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > gcd_.c || rm -f gcd_.c
+gcd_1_.c: gcd_1.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/gcd_1.c; then echo $(srcdir)/gcd_1.c; else echo gcd_1.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > gcd_1_.c || rm -f gcd_1_.c
+gcd_finda_.c: gcd_finda.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/gcd_finda.c; then echo $(srcdir)/gcd_finda.c; else echo gcd_finda.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > gcd_finda_.c || rm -f gcd_finda_.c
+gcdext_.c: gcdext.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/gcdext.c; then echo $(srcdir)/gcdext.c; else echo gcdext.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > gcdext_.c || rm -f gcdext_.c
+get_str_.c: get_str.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/get_str.c; then echo $(srcdir)/get_str.c; else echo get_str.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > get_str_.c || rm -f get_str_.c
+hamdist_.c: hamdist.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/hamdist.c; then echo $(srcdir)/hamdist.c; else echo hamdist.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > hamdist_.c || rm -f hamdist_.c
+invert_limb_.c: invert_limb.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/invert_limb.c; then echo $(srcdir)/invert_limb.c; else echo invert_limb.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > invert_limb_.c || rm -f invert_limb_.c
+ior_n_.c: ior_n.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/ior_n.c; then echo $(srcdir)/ior_n.c; else echo ior_n.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > ior_n_.c || rm -f ior_n_.c
+iorn_n_.c: iorn_n.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/iorn_n.c; then echo $(srcdir)/iorn_n.c; else echo iorn_n.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > iorn_n_.c || rm -f iorn_n_.c
+jacbase_.c: jacbase.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/jacbase.c; then echo $(srcdir)/jacbase.c; else echo jacbase.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > jacbase_.c || rm -f jacbase_.c
+lshift_.c: lshift.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/lshift.c; then echo $(srcdir)/lshift.c; else echo lshift.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > lshift_.c || rm -f lshift_.c
+mod_1_.c: mod_1.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/mod_1.c; then echo $(srcdir)/mod_1.c; else echo mod_1.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > mod_1_.c || rm -f mod_1_.c
+mode1o_.c: mode1o.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/mode1o.c; then echo $(srcdir)/mode1o.c; else echo mode1o.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > mode1o_.c || rm -f mode1o_.c
+mp_bases_.c: mp_bases.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/mp_bases.c; then echo $(srcdir)/mp_bases.c; else echo mp_bases.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > mp_bases_.c || rm -f mp_bases_.c
+mul_.c: mul.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/mul.c; then echo $(srcdir)/mul.c; else echo mul.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > mul_.c || rm -f mul_.c
+mul_1_.c: mul_1.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/mul_1.c; then echo $(srcdir)/mul_1.c; else echo mul_1.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > mul_1_.c || rm -f mul_1_.c
+mul_basecase_.c: mul_basecase.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/mul_basecase.c; then echo $(srcdir)/mul_basecase.c; else echo mul_basecase.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > mul_basecase_.c || rm -f mul_basecase_.c
+mul_fft_.c: mul_fft.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/mul_fft.c; then echo $(srcdir)/mul_fft.c; else echo mul_fft.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > mul_fft_.c || rm -f mul_fft_.c
+mul_n_.c: mul_n.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/mul_n.c; then echo $(srcdir)/mul_n.c; else echo mul_n.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > mul_n_.c || rm -f mul_n_.c
+nand_n_.c: nand_n.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/nand_n.c; then echo $(srcdir)/nand_n.c; else echo nand_n.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > nand_n_.c || rm -f nand_n_.c
+nior_n_.c: nior_n.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/nior_n.c; then echo $(srcdir)/nior_n.c; else echo nior_n.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > nior_n_.c || rm -f nior_n_.c
+perfsqr_.c: perfsqr.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/perfsqr.c; then echo $(srcdir)/perfsqr.c; else echo perfsqr.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > perfsqr_.c || rm -f perfsqr_.c
+popcount_.c: popcount.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/popcount.c; then echo $(srcdir)/popcount.c; else echo popcount.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > popcount_.c || rm -f popcount_.c
+pre_mod_1_.c: pre_mod_1.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/pre_mod_1.c; then echo $(srcdir)/pre_mod_1.c; else echo pre_mod_1.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > pre_mod_1_.c || rm -f pre_mod_1_.c
+random_.c: random.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/random.c; then echo $(srcdir)/random.c; else echo random.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > random_.c || rm -f random_.c
+random2_.c: random2.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/random2.c; then echo $(srcdir)/random2.c; else echo random2.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > random2_.c || rm -f random2_.c
+rshift_.c: rshift.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/rshift.c; then echo $(srcdir)/rshift.c; else echo rshift.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > rshift_.c || rm -f rshift_.c
+sb_divrem_mn_.c: sb_divrem_mn.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/sb_divrem_mn.c; then echo $(srcdir)/sb_divrem_mn.c; else echo sb_divrem_mn.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > sb_divrem_mn_.c || rm -f sb_divrem_mn_.c
+scan0_.c: scan0.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/scan0.c; then echo $(srcdir)/scan0.c; else echo scan0.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > scan0_.c || rm -f scan0_.c
+scan1_.c: scan1.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/scan1.c; then echo $(srcdir)/scan1.c; else echo scan1.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > scan1_.c || rm -f scan1_.c
+set_str_.c: set_str.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/set_str.c; then echo $(srcdir)/set_str.c; else echo set_str.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > set_str_.c || rm -f set_str_.c
+sqr_basecase_.c: sqr_basecase.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/sqr_basecase.c; then echo $(srcdir)/sqr_basecase.c; else echo sqr_basecase.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > sqr_basecase_.c || rm -f sqr_basecase_.c
+sqr_diagonal_.c: sqr_diagonal.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/sqr_diagonal.c; then echo $(srcdir)/sqr_diagonal.c; else echo sqr_diagonal.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > sqr_diagonal_.c || rm -f sqr_diagonal_.c
+sqrtrem_.c: sqrtrem.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/sqrtrem.c; then echo $(srcdir)/sqrtrem.c; else echo sqrtrem.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > sqrtrem_.c || rm -f sqrtrem_.c
+sub_.c: sub.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/sub.c; then echo $(srcdir)/sub.c; else echo sub.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > sub_.c || rm -f sub_.c
+sub_1_.c: sub_1.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/sub_1.c; then echo $(srcdir)/sub_1.c; else echo sub_1.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > sub_1_.c || rm -f sub_1_.c
+sub_n_.c: sub_n.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/sub_n.c; then echo $(srcdir)/sub_n.c; else echo sub_n.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > sub_n_.c || rm -f sub_n_.c
+submul_1_.c: submul_1.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/submul_1.c; then echo $(srcdir)/submul_1.c; else echo submul_1.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > submul_1_.c || rm -f submul_1_.c
+tdiv_qr_.c: tdiv_qr.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/tdiv_qr.c; then echo $(srcdir)/tdiv_qr.c; else echo tdiv_qr.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > tdiv_qr_.c || rm -f tdiv_qr_.c
+udiv_qrnnd_.c: udiv_qrnnd.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/udiv_qrnnd.c; then echo $(srcdir)/udiv_qrnnd.c; else echo udiv_qrnnd.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > udiv_qrnnd_.c || rm -f udiv_qrnnd_.c
+udiv_w_sdiv_.c: udiv_w_sdiv.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/udiv_w_sdiv.c; then echo $(srcdir)/udiv_w_sdiv.c; else echo udiv_w_sdiv.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > udiv_w_sdiv_.c || rm -f udiv_w_sdiv_.c
+xnor_n_.c: xnor_n.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/xnor_n.c; then echo $(srcdir)/xnor_n.c; else echo xnor_n.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > xnor_n_.c || rm -f xnor_n_.c
+xor_n_.c: xor_n.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) `if test -f $(srcdir)/xor_n.c; then echo $(srcdir)/xor_n.c; else echo xor_n.c; fi` | sed 's/^# \([0-9]\)/#line \1/' | $(ANSI2KNR) > xor_n_.c || rm -f xor_n_.c
+add_.$(OBJEXT) add_.lo add_1_.$(OBJEXT) add_1_.lo add_n_.$(OBJEXT) \
+add_n_.lo addmul_1_.$(OBJEXT) addmul_1_.lo and_n_.$(OBJEXT) and_n_.lo \
+andn_n_.$(OBJEXT) andn_n_.lo bdivmod_.$(OBJEXT) bdivmod_.lo \
+cmp_.$(OBJEXT) cmp_.lo com_n_.$(OBJEXT) com_n_.lo copyd_.$(OBJEXT) \
+copyd_.lo copyi_.$(OBJEXT) copyi_.lo dc_divrem_n_.$(OBJEXT) \
+dc_divrem_n_.lo dive_1_.$(OBJEXT) dive_1_.lo diveby3_.$(OBJEXT) \
+diveby3_.lo divis_.$(OBJEXT) divis_.lo divrem_.$(OBJEXT) divrem_.lo \
+divrem_1_.$(OBJEXT) divrem_1_.lo divrem_2_.$(OBJEXT) divrem_2_.lo \
+dump_.$(OBJEXT) dump_.lo fib2_ui_.$(OBJEXT) fib2_ui_.lo gcd_.$(OBJEXT) \
+gcd_.lo gcd_1_.$(OBJEXT) gcd_1_.lo gcd_finda_.$(OBJEXT) gcd_finda_.lo \
+gcdext_.$(OBJEXT) gcdext_.lo get_str_.$(OBJEXT) get_str_.lo \
+hamdist_.$(OBJEXT) hamdist_.lo invert_limb_.$(OBJEXT) invert_limb_.lo \
+ior_n_.$(OBJEXT) ior_n_.lo iorn_n_.$(OBJEXT) iorn_n_.lo \
+jacbase_.$(OBJEXT) jacbase_.lo lshift_.$(OBJEXT) lshift_.lo \
+mod_1_.$(OBJEXT) mod_1_.lo mode1o_.$(OBJEXT) mode1o_.lo \
+mp_bases_.$(OBJEXT) mp_bases_.lo mul_.$(OBJEXT) mul_.lo \
+mul_1_.$(OBJEXT) mul_1_.lo mul_basecase_.$(OBJEXT) mul_basecase_.lo \
+mul_fft_.$(OBJEXT) mul_fft_.lo mul_n_.$(OBJEXT) mul_n_.lo \
+nand_n_.$(OBJEXT) nand_n_.lo nior_n_.$(OBJEXT) nior_n_.lo \
+perfsqr_.$(OBJEXT) perfsqr_.lo popcount_.$(OBJEXT) popcount_.lo \
+pre_mod_1_.$(OBJEXT) pre_mod_1_.lo random_.$(OBJEXT) random_.lo \
+random2_.$(OBJEXT) random2_.lo rshift_.$(OBJEXT) rshift_.lo \
+sb_divrem_mn_.$(OBJEXT) sb_divrem_mn_.lo scan0_.$(OBJEXT) scan0_.lo \
+scan1_.$(OBJEXT) scan1_.lo set_str_.$(OBJEXT) set_str_.lo \
+sqr_basecase_.$(OBJEXT) sqr_basecase_.lo sqr_diagonal_.$(OBJEXT) \
+sqr_diagonal_.lo sqrtrem_.$(OBJEXT) sqrtrem_.lo sub_.$(OBJEXT) sub_.lo \
+sub_1_.$(OBJEXT) sub_1_.lo sub_n_.$(OBJEXT) sub_n_.lo \
+submul_1_.$(OBJEXT) submul_1_.lo tdiv_qr_.$(OBJEXT) tdiv_qr_.lo \
+udiv_qrnnd_.$(OBJEXT) udiv_qrnnd_.lo udiv_w_sdiv_.$(OBJEXT) \
+udiv_w_sdiv_.lo xnor_n_.$(OBJEXT) xnor_n_.lo xor_n_.$(OBJEXT) xor_n_.lo \
+: $(ANSI2KNR)
+uninstall-info-am:
 
 tags: TAGS
 
@@ -288,17 +478,12 @@ ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	  done | \
 	  $(AWK) '    { files[$$0] = 1; } \
 	       END { for (i in files) print i; }'`; \
-	mkid -f$$here/ID $$unique $(LISP)
+	mkid -fID $$unique $(LISP)
 
-TAGS: tags-recursive $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
+TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
 		$(TAGS_FILES) $(LISP)
 	tags=; \
 	here=`pwd`; \
-	list='$(SUBDIRS)'; for subdir in $$list; do \
-   if test "$$subdir" = .; then :; else \
-	    test -f $$subdir/TAGS && tags="$$tags -i $$here/$$subdir/TAGS"; \
-   fi; \
-	done; \
 	list='$(SOURCES) $(HEADERS) $(TAGS_FILES)'; \
 	unique=`for i in $$list; do \
 	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
@@ -308,165 +493,171 @@ TAGS: tags-recursive $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
 	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
 	  || etags $(ETAGS_ARGS) $$tags  $$unique $(LISP)
 
-mostlyclean-tags:
-
-clean-tags:
+GTAGS:
+	here=`CDPATH=: && cd $(top_builddir) && pwd` \
+	  && cd $(top_srcdir) \
+	  && gtags -i $(GTAGS_ARGS) $$here
 
 distclean-tags:
-	-rm -f TAGS ID
+	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH
 
-maintainer-clean-tags:
+DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 
-distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
+top_distdir = ..
+distdir = $(top_distdir)/$(PACKAGE)-$(VERSION)
 
 distdir: $(DISTFILES)
 	@for file in $(DISTFILES); do \
-	  d=$(srcdir); \
+	  if test -f $$file; then d=.; else d=$(srcdir); fi; \
+	  dir=`echo "$$file" | sed -e 's,/[^/]*$$,,'`; \
+	  if test "$$dir" != "$$file" && test "$$dir" != "."; then \
+	    $(mkinstalldirs) "$(distdir)/$$dir"; \
+	  fi; \
 	  if test -d $$d/$$file; then \
-	    cp -pR $$d/$$file $(distdir); \
+	    cp -pR $$d/$$file $(distdir) \
+	    || exit 1; \
 	  else \
 	    test -f $(distdir)/$$file \
-	    || cp -p $$d/$$file $(distdir)/$$file || :; \
-	  fi; \
-	done
-	for subdir in $(SUBDIRS); do \
-	  if test "$$subdir" = .; then :; else \
-	    test -d $(distdir)/$$subdir \
-	    || mkdir $(distdir)/$$subdir \
+	    || cp -p $$d/$$file $(distdir)/$$file \
 	    || exit 1; \
-	    (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) top_distdir=../$(top_distdir) distdir=../$(distdir)/$$subdir distdir) \
-	      || exit 1; \
 	  fi; \
 	done
-info-am:
-info: info-recursive
-dvi-am:
-dvi: dvi-recursive
 check-am: all-am
-check: check-recursive
-installcheck-am:
-installcheck: installcheck-recursive
-install-exec-am:
-install-exec: install-exec-recursive
+check: check-am
+all-am: Makefile $(LTLIBRARIES)
 
-install-data-am:
-install-data: install-data-recursive
+installdirs:
+
+install: install-am
+install-exec: install-exec-am
+install-data: install-data-am
+uninstall: uninstall-am
 
 install-am: all-am
 	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
-install: install-recursive
-uninstall-am:
-uninstall: uninstall-recursive
-all-am: Makefile $(LTLIBRARIES)
-all-redirect: all-recursive
+
+installcheck: installcheck-am
 install-strip:
-	$(MAKE) $(AM_MAKEFLAGS) INSTALL_STRIP_FLAG=-s install
-installdirs: installdirs-recursive
-installdirs-am:
-
-
+	$(MAKE) $(AM_MAKEFLAGS) INSTALL_PROGRAM="$(INSTALL_STRIP_PROGRAM)" \
+	  `test -z '$(STRIP)' || \
+	    echo "INSTALL_PROGRAM_ENV=STRIPPROG='$(STRIP)'"` install
 mostlyclean-generic:
 
 clean-generic:
 
 distclean-generic:
-	-rm -f Makefile $(CONFIG_CLEAN_FILES)
-	-rm -f config.cache config.log stamp-h stamp-h[0-9]*
+	-rm -f Makefile $(CONFIG_CLEAN_FILES) stamp-h stamp-h[0-9]*
 
 maintainer-clean-generic:
-	-rm -f Makefile.in
-mostlyclean-am:  mostlyclean-noinstLTLIBRARIES mostlyclean-compile \
-		mostlyclean-libtool mostlyclean-tags \
-		mostlyclean-generic
-
-mostlyclean: mostlyclean-recursive
-
-clean-am:  clean-noinstLTLIBRARIES clean-compile clean-libtool \
-		clean-tags clean-generic mostlyclean-am
-
-clean: clean-recursive
-
-distclean-am:  distclean-noinstLTLIBRARIES distclean-compile \
-		distclean-libtool distclean-tags distclean-generic \
-		clean-am
-	-rm -f libtool
-
-distclean: distclean-recursive
-
-maintainer-clean-am:  maintainer-clean-noinstLTLIBRARIES \
-		maintainer-clean-compile maintainer-clean-libtool \
-		maintainer-clean-tags maintainer-clean-generic \
-		distclean-am
-	@echo "This command is intended for maintainers to use;"
+	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+clean: clean-am
 
-maintainer-clean: maintainer-clean-recursive
+clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
+	mostlyclean-am
 
-.PHONY: mostlyclean-noinstLTLIBRARIES distclean-noinstLTLIBRARIES \
-clean-noinstLTLIBRARIES maintainer-clean-noinstLTLIBRARIES \
-mostlyclean-compile distclean-compile clean-compile \
-maintainer-clean-compile mostlyclean-libtool distclean-libtool \
-clean-libtool maintainer-clean-libtool install-recursive \
-uninstall-recursive install-data-recursive uninstall-data-recursive \
-install-exec-recursive uninstall-exec-recursive installdirs-recursive \
-uninstalldirs-recursive all-recursive check-recursive \
-installcheck-recursive info-recursive dvi-recursive \
-mostlyclean-recursive distclean-recursive clean-recursive \
-maintainer-clean-recursive tags tags-recursive mostlyclean-tags \
-distclean-tags clean-tags maintainer-clean-tags distdir info-am info \
-dvi-am dvi check check-am installcheck-am installcheck install-exec-am \
-install-exec install-data-am install-data install-am install \
-uninstall-am uninstall all-redirect all-am all install-strip \
-installdirs-am installdirs mostlyclean-generic distclean-generic \
-clean-generic maintainer-clean-generic clean mostlyclean distclean \
-maintainer-clean
+distclean: distclean-am
+
+distclean-am: clean-am distclean-compile distclean-generic \
+	distclean-libtool distclean-tags
+
+dvi: dvi-am
+
+dvi-am:
+
+info: info-am
+
+info-am:
+
+install-data-am:
+
+install-exec-am:
+
+install-info: install-info-am
+
+install-man:
+
+installcheck-am:
+
+maintainer-clean: maintainer-clean-am
+
+maintainer-clean-am: distclean-am maintainer-clean-generic
+
+mostlyclean: mostlyclean-am
+
+mostlyclean-am: mostlyclean-compile mostlyclean-generic mostlyclean-kr \
+	mostlyclean-libtool
+
+uninstall-am: uninstall-info-am
+
+.PHONY: GTAGS all all-am check check-am clean clean-generic \
+	clean-libtool clean-noinstLTLIBRARIES distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags distdir dvi dvi-am info info-am install \
+	install-am install-data install-data-am install-exec \
+	install-exec-am install-info install-info-am install-man \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-kr \
+	mostlyclean-libtool tags uninstall uninstall-am \
+	uninstall-info-am
 
 
-# *.s are not preprocessed at all.
+# .s assembler, no preprocessing.
+#
 .s.o:
-	$(CCAS) $(COMPILE_FLAGS) $<
+	$(CCAS) $(COMPILE_FLAGS) `test -f $< || echo '$(srcdir)/'`$<
 .s.obj:
 	$(CCAS) $(COMPILE_FLAGS) `cygpath -w $<`
 .s.lo:
-	$(LIBTOOL) --mode=compile $(CCAS) $(COMPILE_FLAGS) $<
+	$(LIBTOOL) --mode=compile $(CCAS) $(COMPILE_FLAGS) `test -f $< || echo '$(srcdir)/'`$<
 
-# *.S are preprocessed with CPP.
+# .S assembler, preprocessed with cpp.
+#
+# It's necessary to run $(CPP) separately, since it seems not all compilers
+# recognise .S files, in particular "cc" on HP-UX 10 and 11 doesn't (and
+# will silently do nothing if given a .S).
+#
+# For .lo we need a helper script, as described below for .asm.lo.
+#
 .S.o:
-	$(CPP) $(COMPILE_FLAGS) $< | grep -v '^#' >tmp-$*.s
+	$(CPP) $(PREPROCESS_FLAGS) `test -f $< || echo '$(srcdir)/'`$< | grep -v '^#' >tmp-$*.s
 	$(CCAS) $(COMPILE_FLAGS) tmp-$*.s -o $@
-	rm -f tmp-$*.s
+	$(RM_TMP) tmp-$*.s
 .S.obj:
-	$(CPP) $(COMPILE_FLAGS) `cygpath -w $<` | grep -v '^#' >tmp-$*.s
+	$(CPP) $(PREPROCESS_FLAGS) `cygpath -w $<` | grep -v '^#' >tmp-$*.s
 	$(CCAS) $(COMPILE_FLAGS) tmp-$*.s -o $@
-	rm -f tmp-$*.s
-
-# We have to rebuild the static object file without passing -DPIC to
-# preprocessor.  The overhead cost is one extra assemblation.  FIXME:
-# Teach libtool how to assemble with a preprocessor pass (CPP or m4).
-
+	$(RM_TMP) tmp-$*.s
 .S.lo:
-	$(CPP) $(COMPILE_FLAGS) -DPIC $< | grep -v '^#' >tmp-$*.s
-	$(LIBTOOL) --mode=compile $(CCAS) $(COMPILE_FLAGS) tmp-$*.s -o $@
-	$(CPP) $(COMPILE_FLAGS) $< | grep -v '^#' >tmp-$*.s
-	$(CCAS) $(COMPILE_FLAGS) tmp-$*.s -o $*.o
-	rm -f tmp-$*.s
+	$(LIBTOOL) --mode=compile --tag=CC $(top_srcdir)/mpn/cpp-ccas --cpp="$(CPP) $(PREPROCESS_FLAGS)" $(CCAS) $(COMPILE_FLAGS) `test -f $< || echo '$(srcdir)/'`$<
 
-# *.m4 are preprocessed with m4.
+# .asm assembler, preprocessed with m4.
+#
+# .o and .obj are non-PIC and just need m4 followed by a compile.
+#
+# .lo is a bit tricky.  Libtool (as of version 1.5) has foo.lo as a little
+# text file, and .libs/foo.o and foo.o as the PIC and non-PIC objects,
+# respectively.  It'd be asking for lots of trouble to try to create foo.lo
+# ourselves, so instead arrange to invoke libtool like a --mode=compile, but
+# with a special m4-ccas script which first m4 preprocesses, then compiles.
+# --tag=CC is necessary since foo.asm is otherwise unknown to libtool.
+#
+# Libtool adds -DPIC when building a shared object and the .asm files look
+# for that.  But it should be noted that the other PIC flags are on occasion
+# important too, in particular FreeBSD 2.2.8 gas 1.92.3 requires -k before
+# it accepts PIC constructs like @GOT, and gcc adds that flag only under
+# -fPIC.  (Later versions of gas are happy to accept PIC stuff any time.)
+#
 .asm.o:
-	$(M4) -DOPERATION_$* $< >tmp-$*.s
+	$(M4) -DOPERATION_$* `test -f $< || echo '$(srcdir)/'`$< >tmp-$*.s
 	$(CCAS) $(COMPILE_FLAGS) tmp-$*.s -o $@
-	rm -f tmp-$*.s
+	$(RM_TMP) tmp-$*.s
 .asm.obj:
 	$(M4) -DOPERATION_$* `cygpath -w $<` >tmp-$*.s
 	$(CCAS) $(COMPILE_FLAGS) tmp-$*.s -o $@
-	rm -f tmp-$*.s
+	$(RM_TMP) tmp-$*.s
 .asm.lo:
-	$(M4) -DPIC -DOPERATION_$* $< >tmp-$*.s
-	$(LIBTOOL) --mode=compile $(CCAS) $(COMPILE_FLAGS) tmp-$*.s -o $@
-	$(M4) -DOPERATION_$* $< >tmp-$*.s
-	$(CCAS) $(COMPILE_FLAGS) tmp-$*.s -o $*.o
-	rm -f tmp-$*.s
-
+	$(LIBTOOL) --mode=compile --tag=CC $(top_srcdir)/mpn/m4-ccas --m4="$(M4)" $(CCAS) $(COMPILE_FLAGS) `test -f $< || echo '$(srcdir)/'`$<
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

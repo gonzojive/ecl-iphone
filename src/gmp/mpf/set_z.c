@@ -1,6 +1,6 @@
 /* mpf_set_z -- Assign a float from an integer.
 
-Copyright (C) 1996 Free Software Foundation, Inc.
+Copyright 1996, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,13 +23,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpf_set_z (mpf_ptr r, mpz_srcptr u)
-#else
-mpf_set_z (r, u)
-     mpf_ptr r;
-     mpz_srcptr u;
-#endif
 {
   mp_ptr rp, up;
   mp_size_t size, asize;

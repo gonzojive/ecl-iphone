@@ -1,7 +1,6 @@
-/* Shared speed subroutines.  */
+/* Shared speed subroutines.
 
-/*
-Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -18,8 +17,7 @@ License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
 the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA.
-*/
+MA 02111-1307, USA. */
 
 #include <errno.h>
 #include <fcntl.h>
@@ -36,16 +34,21 @@ MA 02111-1307, USA.
 #include "gmp-impl.h"
 #include "longlong.h"
 
+#include "tests.h"
 #include "speed.h"
-
-/* Change this to "#define TRACE(x) x" to get traces. */
-#define TRACE(x)
-
-
-typedef int (*qsort_function_t) _PROTO ((const void *, const void *));
 
 
 int   speed_option_addrs = 0;
+int   speed_option_verbose = 0;
+
+
+/* Provide __clz_tab even if it's not required, for the benefit of new code
+   being tested with many.pl. */
+#ifndef COUNT_LEADING_ZEROS_NEED_CLZ_TAB
+#define COUNT_LEADING_ZEROS_NEED_CLZ_TAB
+#include "mp_clz_tab.c"
+#undef COUNT_LEADING_ZEROS_NEED_CLZ_TAB
+#endif
 
 
 void
@@ -90,7 +93,8 @@ pentium_wbinvd(void)
 #endif
 }
 
-static int
+
+int
 double_cmp_ptr (const double *p, const double *q)
 {
   if (*p > *q)  return 1;
@@ -125,6 +129,7 @@ speed_measure (double (*fun) _PROTO ((struct speed_params *s)),
   int     i, j, e;
   double  t[30];
   double  t_unsorted[30];
+  double  reps_d;
 
   /* Use dummy parameters if caller doesn't provide any.  Only a few special
      "fun"s will cope with this, speed_noop() is one.  */
@@ -144,10 +149,10 @@ speed_measure (double (*fun) _PROTO ((struct speed_params *s)),
           s->dst_num = 0;
 
           t[i] = (*fun) (s);
-          t_unsorted[i] = t[i];
 
-          TRACE (printf("size=%ld reps=%u r=%d attempt=%d  %.9f\n", 
-                        s->size, s->reps, s->r, i, t[i]));
+          if (speed_option_verbose >= 3)
+            printf("size=%ld reps=%u r=%ld attempt=%d  %.9f\n", 
+                   s->size, s->reps, s->r, i, t[i]);
 
           if (t[i] == -1.0)
             return -1.0;
@@ -156,11 +161,20 @@ speed_measure (double (*fun) _PROTO ((struct speed_params *s)),
             break;
 
           /* go to a value of reps to make t[i] >= precision */
-          s->reps = (unsigned) ceil (1.1 * s->reps
-                                     * speed_unittime * speed_precision
-                                     / MAX (t[i], speed_unittime));
+          reps_d = ceil (1.1 * s->reps
+                         * speed_unittime * speed_precision
+                         / MAX (t[i], speed_unittime));
+          if (reps_d > 2e9 || reps_d < 1.0)
+            {
+              fprintf (stderr, "Fatal error: new reps bad: %.2f\n", reps_d);
+              fprintf (stderr, "  (old reps %u, unittime %.4g, precision %d, t[i] %.4g)\n",
+                       s->reps, speed_unittime, speed_precision, t[i]);
+              abort ();
+            }
+          s->reps = (unsigned) reps_d;
         }
       t[i] /= s->reps;
+      t_unsorted[i] = t[i];
 
       if (speed_precision == 0)
         return t[i];
@@ -184,9 +198,11 @@ speed_measure (double (*fun) _PROTO ((struct speed_params *s)),
 
   fprintf (stderr, "speed_measure() could not get %d results within %.1f%%\n",
            e, (TOLERANCE-1.0)*100.0);
-  fprintf (stderr, "  %.12f is about 0.5%%\n", t[0]*(TOLERANCE-1.0));
+  fprintf (stderr, "    unsorted         sorted\n");
+  fprintf (stderr, "  %.12f    %.12f    is about 0.5%%\n",
+           t_unsorted[0]*(TOLERANCE-1.0), t[0]*(TOLERANCE-1.0));
   for (i = 0; i < numberof (t); i++)
-    fprintf (stderr, "  %.09f\n", t_unsorted[i]);
+    fprintf (stderr, "  %.09f       %.09f\n", t_unsorted[i], t[i]);
 
   return -1.0;
 }
@@ -317,37 +333,6 @@ speed_cache_fill (struct speed_params *s)
 }
 
 
-/* Return p advanced to the next multiple of "align" bytes.  "align" must be
-   a power of 2.  Care is taken not to assume sizeof(int)==sizeof(pointer).
-   Using "unsigned long" avoids a warning on hpux.  */
-void *
-align_pointer (void *p, size_t align)
-{
-  unsigned long  d;
-  d = ((unsigned long) p) & (align-1);
-  d = (d != 0 ? align-d : 0);
-  return (void *) (((char *) p) + d);
-}
-
-/* Note that memory allocated with this function can never be freed, because
-   the start address of the block allocated is discarded. */
-void *
-_mp_allocate_func_aligned (size_t bytes, size_t align)
-{
-  return align_pointer ((*_mp_allocate_func) (bytes + align-1), align);
-}
-
-
-void *
-_mp_allocate_or_reallocate (void *ptr, size_t oldsize, size_t newsize)
-{
-  if (ptr == NULL)
-    return (*_mp_allocate_func) (newsize);
-  else
-    return (*_mp_reallocate_func) (ptr, oldsize, newsize);
-}
-
-
 /* Adjust ptr to align to CACHE_LINE_SIZE bytes plus "align" limbs.  ptr
    needs to have room for up to CACHE_LINE_SIZE-4 extra bytes.  */
 
@@ -368,23 +353,25 @@ speed_tmp_alloc_adjust (void *ptr, mp_size_t align)
 }
 
 
-void
-mpz_set_n (mpz_ptr z, mp_srcptr p, mp_size_t size)
-{
-  ASSERT (size >= 0);
-  MPN_NORMALIZE (p, size);
-  MPZ_REALLOC (z, size);
-  MPN_COPY (PTR(z), p, size);
-  SIZ(z) = size;
-}
-
-
 /* Miscellanous options accepted by tune and speed programs under -o. */
 
 void
 speed_option_set (const char *s)
 {
-  if (strcmp (s, "addrs") == 0)  speed_option_addrs = 1;
+  int  n;
+
+  if (strcmp (s, "addrs") == 0)
+    {
+      speed_option_addrs = 1;
+    }
+  else if (strcmp (s, "verbose") == 0)
+    {
+      speed_option_verbose++;
+    }
+  else if (sscanf (s, "verbose=%d", &n) == 1)
+    {
+      speed_option_verbose = n;
+    }
   else 
     {
       printf ("Unrecognised -o option: %s\n", s);
@@ -439,23 +426,41 @@ speed_option_set (const char *s)
 double
 speed_MPN_COPY (struct speed_params *s)
 {
-  SPEED_ROUTINE_MPN_COPY_CALL (MPN_COPY (wp, s->xp, s->size));
+  SPEED_ROUTINE_MPN_COPY (MPN_COPY);
 }
 double
 speed_MPN_COPY_INCR (struct speed_params *s)
 {
-  SPEED_ROUTINE_MPN_COPY_CALL (MPN_COPY_INCR (wp, s->xp, s->size));
+  SPEED_ROUTINE_MPN_COPY (MPN_COPY_INCR);
 }
 double
 speed_MPN_COPY_DECR (struct speed_params *s)
 {
-  SPEED_ROUTINE_MPN_COPY_CALL (MPN_COPY_DECR (wp, s->xp, s->size));
+  SPEED_ROUTINE_MPN_COPY (MPN_COPY_DECR);
 }
+#if HAVE_NATIVE_mpn_copyi
+double
+speed_mpn_copyi (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_COPY (mpn_copyi);
+}
+#endif
+#if HAVE_NATIVE_mpn_copyd
+double
+speed_mpn_copyd (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_COPY (mpn_copyd);
+}
+#endif
 double
 speed_memcpy (struct speed_params *s)
 {
-  SPEED_ROUTINE_MPN_COPY_CALL
-    (memcpy (wp, s->xp, s->size * BYTES_PER_MP_LIMB));
+  SPEED_ROUTINE_MPN_COPY_BYTES (memcpy);
+}
+double
+speed_mpn_com_n (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_COPY (mpn_com_n);
 }
 
 
@@ -476,6 +481,19 @@ speed_mpn_mul_1 (struct speed_params *s)
 {
   SPEED_ROUTINE_MPN_UNARY_1 (mpn_mul_1);
 }
+double
+speed_mpn_mul_1_inplace (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_UNARY_1_INPLACE (mpn_mul_1);
+}
+
+#if HAVE_NATIVE_mpn_mul_2
+double
+speed_mpn_mul_2 (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_UNARY_2 (mpn_mul_2);
+}
+#endif
 
 
 double
@@ -517,9 +535,56 @@ speed_mpn_divrem_1cf (struct speed_params *s)
 #endif
 
 double
+speed_mpn_divrem_1_div (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_DIVREM_1 (mpn_divrem_1_div);
+}
+double
+speed_mpn_divrem_1f_div (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_DIVREM_1F (mpn_divrem_1_div);
+}
+double
+speed_mpn_divrem_1_inv (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_DIVREM_1 (mpn_divrem_1_inv);
+}
+double
+speed_mpn_divrem_1f_inv (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_DIVREM_1F (mpn_divrem_1_inv);
+}
+double
+speed_mpn_mod_1_div (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_MOD_1 (mpn_mod_1_div);
+}
+double
+speed_mpn_mod_1_inv (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_MOD_1 (mpn_mod_1_inv);
+}
+
+double
+speed_mpn_mod_34lsub1 (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_MOD_34LSUB1 (mpn_mod_34lsub1);
+}
+
+double
 speed_mpn_divrem_2 (struct speed_params *s)
 {
   SPEED_ROUTINE_MPN_DIVREM_2 (mpn_divrem_2);
+}
+double
+speed_mpn_divrem_2_div (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_DIVREM_2 (mpn_divrem_2_div);
+}
+double
+speed_mpn_divrem_2_inv (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_DIVREM_2 (mpn_divrem_2_inv);
 }
 
 double
@@ -534,29 +599,90 @@ speed_mpn_mod_1c (struct speed_params *s)
   SPEED_ROUTINE_MPN_MOD_1C (mpn_mod_1c);
 }
 #endif
+double
+speed_mpn_preinv_mod_1 (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_PREINV_MOD_1 (mpn_preinv_mod_1);
+}
+
+double
+speed_mpn_divexact_1 (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_DIVEXACT_1 (mpn_divexact_1);
+}
 
 double
 speed_mpn_divexact_by3 (struct speed_params *s)
 {
-  /* mpn_divexact_by3 is a macro, so the _CALL form is necessary */
-  SPEED_ROUTINE_MPN_COPY_CALL(mpn_divexact_by3 (wp, s->xp, s->size));
+  SPEED_ROUTINE_MPN_COPY (mpn_divexact_by3);
+}
+
+#if HAVE_NATIVE_mpn_modexact_1_odd
+double
+speed_mpn_modexact_1_odd (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_MODEXACT_1_ODD (mpn_modexact_1_odd);
+}
+#endif
+
+double
+speed_mpn_modexact_1c_odd (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_MODEXACT_1C_ODD (mpn_modexact_1c_odd);
 }
 
 
 double
-speed_mpn_bz_divrem_n (struct speed_params *s)
+speed_mpn_dc_tdiv_qr (struct speed_params *s)
 {
-  SPEED_ROUTINE_MPN_BZ_DIVREM_N (mpn_bz_divrem_n);
+  SPEED_ROUTINE_MPN_DC_TDIV_QR (mpn_tdiv_qr);
 }
 double
-speed_mpn_bz_divrem_sb (struct speed_params *s)
+speed_mpn_dc_divrem_n (struct speed_params *s)
 {
-  SPEED_ROUTINE_MPN_BZ_DIVREM_SB (mpn_sb_divrem_mn);
+  SPEED_ROUTINE_MPN_DC_DIVREM_N (mpn_dc_divrem_n);
 }
 double
-speed_mpn_bz_tdiv_qr (struct speed_params *s)
+speed_mpn_dc_divrem_sb (struct speed_params *s)
 {
-  SPEED_ROUTINE_MPN_BZ_TDIV_QR (mpn_tdiv_qr);
+  SPEED_ROUTINE_MPN_DC_DIVREM_SB (mpn_sb_divrem_mn);
+}
+double
+speed_mpn_dc_divrem_sb_div (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_DC_DIVREM_SB (mpn_sb_divrem_mn_div);
+}
+double
+speed_mpn_dc_divrem_sb_inv (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_DC_DIVREM_SB (mpn_sb_divrem_mn_inv);
+}
+
+double
+speed_mpn_sb_divrem_m3 (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_SB_DIVREM_M3 (mpn_sb_divrem_mn);
+}
+double
+speed_mpn_sb_divrem_m3_div (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_SB_DIVREM_M3 (mpn_sb_divrem_mn_div);
+}
+double
+speed_mpn_sb_divrem_m3_inv (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_SB_DIVREM_M3 (mpn_sb_divrem_mn_inv);
+}
+
+double
+speed_mpz_mod (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPZ_MOD (mpz_mod);
+}
+double
+speed_redc (struct speed_params *s)
+{
+  SPEED_ROUTINE_REDC (redc);
 }
 
 
@@ -666,6 +792,14 @@ speed_mpn_sqr_basecase (struct speed_params *s)
   SPEED_ROUTINE_MPN_SQR (mpn_sqr_basecase);
 }
 
+#if HAVE_NATIVE_mpn_sqr_diagonal
+double
+speed_mpn_sqr_diagonal (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_SQR (mpn_sqr_diagonal);
+}
+#endif
+
 double
 speed_mpn_kara_mul_n (struct speed_params *s)
 {
@@ -686,6 +820,27 @@ double
 speed_mpn_toom3_sqr_n (struct speed_params *s)
 {
   SPEED_ROUTINE_MPN_TOOM3_SQR_N (mpn_toom3_sqr_n);
+}
+
+double
+speed_mpn_toom3_mul_n_mpn (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_TOOM3_MUL_N (mpn_toom3_mul_n_mpn);
+}
+double
+speed_mpn_toom3_mul_n_open (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_TOOM3_MUL_N (mpn_toom3_mul_n_open);
+}
+double
+speed_mpn_toom3_sqr_n_mpn (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_TOOM3_SQR_N (mpn_toom3_sqr_n_mpn);
+}
+double
+speed_mpn_toom3_sqr_n_open (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_TOOM3_SQR_N (mpn_toom3_sqr_n_open);
 }
 
 double
@@ -764,17 +919,62 @@ speed_mpn_gcd (struct speed_params *s)
   SPEED_ROUTINE_MPN_GCD (mpn_gcd);
 }
 double
+speed_mpn_gcd_binary (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_GCD (mpn_gcd_binary);
+}
+
+#if HAVE_NATIVE_mpn_gcd_finda
+double
+speed_mpn_gcd_finda (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_GCD_FINDA (mpn_gcd_finda);
+}  
+#endif
+
+
+double
 speed_mpn_gcdext (struct speed_params *s)
 {
   SPEED_ROUTINE_MPN_GCDEXT (mpn_gcdext);
+}
+double
+speed_mpn_gcdext_single (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_GCDEXT (mpn_gcdext_single);
+}
+double
+speed_mpn_gcdext_double (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_GCDEXT (mpn_gcdext_double);
+}
+double
+speed_mpn_gcdext_one_single (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_GCDEXT_ONE (mpn_gcdext_one_single);
+}
+double
+speed_mpn_gcdext_one_double (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_GCDEXT_ONE (mpn_gcdext_one_double);
 }
 double
 speed_mpn_gcd_1 (struct speed_params *s)
 {
   SPEED_ROUTINE_MPN_GCD_1 (mpn_gcd_1);
 }
+double
+speed_mpn_gcd_1N (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_GCD_1N (mpn_gcd_1);
+}
 
 
+double
+speed_mpz_jacobi (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPZ_JACOBI (mpz_jacobi);
+}
 double
 speed_mpn_jacobi_base (struct speed_params *s)
 {
@@ -783,14 +983,43 @@ speed_mpn_jacobi_base (struct speed_params *s)
 
 
 double
+speed_mpn_sqrtrem (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_SQRTREM (mpn_sqrtrem);
+}
+
+
+double
 speed_mpz_fac_ui (struct speed_params *s)
 {
-  SPEED_ROUTINE_MPZ_UI (mpz_fac_ui);
+  SPEED_ROUTINE_MPZ_FAC_UI (mpz_fac_ui);
+}
+
+
+double
+speed_mpn_fib2_ui (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_FIB2_UI (mpn_fib2_ui);
 }
 double
 speed_mpz_fib_ui (struct speed_params *s)
 {
-  SPEED_ROUTINE_MPZ_UI (mpz_fib_ui);
+  SPEED_ROUTINE_MPZ_FIB_UI (mpz_fib_ui);
+}
+double
+speed_mpz_fib2_ui (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPZ_FIB2_UI (mpz_fib2_ui);
+}
+double
+speed_mpz_lucnum_ui (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPZ_LUCNUM_UI (mpz_lucnum_ui);
+}
+double
+speed_mpz_lucnum2_ui (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPZ_LUCNUM2_UI (mpz_lucnum2_ui);
 }
 
 
@@ -798,6 +1027,21 @@ double
 speed_mpz_powm (struct speed_params *s)
 {
   SPEED_ROUTINE_MPZ_POWM (mpz_powm);
+}
+double
+speed_mpz_powm_mod (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPZ_POWM (mpz_powm_mod);
+}
+double
+speed_mpz_powm_redc (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPZ_POWM (mpz_powm_redc);
+}
+double
+speed_mpz_powm_ui (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPZ_POWM_UI (mpz_powm_ui);
 }
 
 
@@ -883,7 +1127,7 @@ speed_noop_wxys (struct speed_params *s)
 
 
 /* Compare these to see how much malloc/free costs and then how much
-   _mp_default_allocate/free and mpz_init/clear add.  mpz_init/clear or
+   __gmp_default_allocate/free and mpz_init/clear add.  mpz_init/clear or
    mpq_init/clear will be doing a 1 limb allocate, so use that as the size
    when including them in comparisons.  */
 
@@ -907,23 +1151,23 @@ speed_malloc_realloc_free (struct speed_params *s)
 }  
 
 double
-speed_mp_allocate_free (struct speed_params *s)
+speed_gmp_allocate_free (struct speed_params *s)
 {
   size_t  bytes = s->size * BYTES_PER_MP_LIMB;
   SPEED_ROUTINE_ALLOC_FREE (void *p,
-                            p = (*_mp_allocate_func) (bytes);
-                            (*_mp_free_func) (p, bytes));
+                            p = (*__gmp_allocate_func) (bytes);
+                            (*__gmp_free_func) (p, bytes));
 }  
 
 double
-speed_mp_allocate_reallocate_free (struct speed_params *s)
+speed_gmp_allocate_reallocate_free (struct speed_params *s)
 {
   size_t  bytes = s->size * BYTES_PER_MP_LIMB;
   SPEED_ROUTINE_ALLOC_FREE
     (void *p,
-     p = (*_mp_allocate_func) (BYTES_PER_MP_LIMB);
-     p = (*_mp_reallocate_func) (p, bytes, BYTES_PER_MP_LIMB);
-     (*_mp_free_func) (p, bytes));
+     p = (*__gmp_allocate_func) (BYTES_PER_MP_LIMB);
+     p = (*__gmp_reallocate_func) (p, bytes, BYTES_PER_MP_LIMB);
+     (*__gmp_free_func) (p, bytes));
 }  
 
 double
@@ -1058,31 +1302,30 @@ speed_mpz_bin_uiui (struct speed_params *s)
     h = s->xp[0];               \
     l = s->yp[0];               \
                                 \
-    switch (s->r) {             \
-    case 1:                     \
-      speed_starttime ();       \
-      i = s->reps;              \
-      do                        \
-        {
+    if (s->r == 1)              \
+      {                         \
+        speed_starttime ();     \
+        i = s->reps;            \
+        do                      \
+          {
 
 #define SPEED_MACRO_UMUL_PPMM_B \
-        }                       \
-      while (--i != 0);         \
-      t = speed_endtime ();     \
-      break;                    \
-                                \
-    default:                    \
-      speed_starttime ();       \
-      i = s->reps;              \
-      do                        \
-        {
+          }                     \
+        while (--i != 0);       \
+        t = speed_endtime ();   \
+      }                         \
+    else                        \
+      {                         \
+        speed_starttime ();     \
+        i = s->reps;            \
+        do                      \
+          {
 
 #define SPEED_MACRO_UMUL_PPMM_C                                         \
-        }                                                               \
-      while (--i != 0);                                                 \
-      t = speed_endtime ();                                             \
-      break;                                                            \
-    }                                                                   \
+          }                                                             \
+        while (--i != 0);                                               \
+        t = speed_endtime ();                                           \
+      }                                                                 \
                                                                         \
     /* stop the compiler optimizing away the whole calculation! */      \
     noop_1 (h);                                                         \
@@ -1202,7 +1445,7 @@ speed_mpn_umul_ppmm (struct speed_params *s)
     /* divisor from "r" parameter, or a default */      \
     d = s->r;                                           \
     if (d == 0)                                         \
-      d = 0x12345678;                                   \
+      d = __mp_bases[10].big_base;                      \
                                                         \
     if (normalize)                                      \
       {                                                 \
@@ -1289,6 +1532,25 @@ speed_udiv_qrnnd_preinv2norm (struct speed_params *s)
   SPEED_ROUTINE_UDIV_QRNND_B;
 }
 
+double
+speed_udiv_qrnnd_c (struct speed_params *s)
+{
+  SPEED_ROUTINE_UDIV_QRNND_A (1);
+  {
+    __udiv_qrnnd_c (q, r, r, q, d);
+     __udiv_qrnnd_c (q, r, r, q, d);
+     __udiv_qrnnd_c (q, r, r, q, d);
+    __udiv_qrnnd_c (q, r, r, q, d);
+     __udiv_qrnnd_c (q, r, r, q, d);
+     __udiv_qrnnd_c (q, r, r, q, d);
+    __udiv_qrnnd_c (q, r, r, q, d);
+     __udiv_qrnnd_c (q, r, r, q, d);
+     __udiv_qrnnd_c (q, r, r, q, d);
+    __udiv_qrnnd_c (q, r, r, q, d);
+  }
+  SPEED_ROUTINE_UDIV_QRNND_B;
+}  
+
 #if HAVE_NATIVE_mpn_udiv_qrnnd
 
 #if defined (__hppa) && W_TYPE_SIZE == 64
@@ -1300,7 +1562,6 @@ speed_udiv_qrnnd_preinv2norm (struct speed_params *s)
 double
 speed_mpn_udiv_qrnnd (struct speed_params *s)
 {
-
   SPEED_ROUTINE_UDIV_QRNND_A (1);
   {
     CALL_MPN_UDIV_QRNND;
@@ -1317,3 +1578,192 @@ speed_mpn_udiv_qrnnd (struct speed_params *s)
   SPEED_ROUTINE_UDIV_QRNND_B;
 }
 #endif
+
+
+double
+speed_invert_limb (struct speed_params *s)
+{
+  SPEED_ROUTINE_INVERT_LIMB_CALL (invert_limb (dinv, d));
+}
+
+
+/* xp[0] might not be particularly random, but should give an indication how
+   "/" runs.  Same for speed_operator_mod below.  */
+double
+speed_operator_div (struct speed_params *s)
+{
+  double     t;
+  unsigned   i;
+  mp_limb_t  x, q, d;
+
+  s->time_divisor = 10;
+
+  /* divisor from "r" parameter, or a default */
+  d = s->r;
+  if (d == 0)
+    d = __mp_bases[10].big_base;
+
+  x = s->xp[0];
+  q = 0;
+
+  speed_starttime ();
+  i = s->reps;
+  do
+    {
+      q ^= x; q /= d;
+       q ^= x; q /= d;
+       q ^= x; q /= d;
+      q ^= x; q /= d;
+       q ^= x; q /= d;
+       q ^= x; q /= d;
+      q ^= x; q /= d;
+       q ^= x; q /= d;
+       q ^= x; q /= d;
+      q ^= x; q /= d;
+    }
+  while (--i != 0);
+  t = speed_endtime ();
+
+  /* stop the compiler optimizing away the whole calculation! */
+  noop_1 (q);
+
+  return t;
+}
+
+double
+speed_operator_mod (struct speed_params *s)
+{
+  double     t;
+  unsigned   i;
+  mp_limb_t  x, r, d;
+
+  s->time_divisor = 10;
+
+  /* divisor from "r" parameter, or a default */
+  d = s->r;
+  if (d == 0)
+    d = __mp_bases[10].big_base;
+
+  x = s->xp[0];
+  r = 0;
+
+  speed_starttime ();
+  i = s->reps;
+  do
+    {
+      r ^= x; r %= d;
+       r ^= x; r %= d;
+       r ^= x; r %= d;
+      r ^= x; r %= d;
+       r ^= x; r %= d;
+       r ^= x; r %= d;
+      r ^= x; r %= d;
+       r ^= x; r %= d;
+       r ^= x; r %= d;
+      r ^= x; r %= d;
+    }
+  while (--i != 0);
+  t = speed_endtime ();
+
+  /* stop the compiler optimizing away the whole calculation! */
+  noop_1 (r);
+
+  return t;
+}
+
+
+/* r==0 measures on data with the values uniformly distributed.  This will
+   be typical for count_trailing_zeros in a GCD etc.
+
+   r==1 measures on data with the resultant count uniformly distributed
+   between 0 and BITS_PER_MP_LIMB-1.  This is probably sensible for
+   count_leading_zeros on the high limbs of divisors.  */
+
+int
+speed_routine_count_zeros_setup (struct speed_params *s,
+                                 mp_ptr xp, int leading, int zero)
+{
+  int        i, c;
+  mp_limb_t  n;
+
+  if (s->r == 0)
+    {
+      /* Make uniformly distributed data.  If zero isn't allowed then change
+         it to 1 for leading, or 0x800..00 for trailing.  */
+      MPN_COPY (xp, s->xp_block, SPEED_BLOCK_SIZE);
+      if (! zero)
+        for (i = 0; i < SPEED_BLOCK_SIZE; i++)
+          if (xp[i] == 0)
+            xp[i] = leading ? 1 : MP_LIMB_T_HIGHBIT;
+    }
+  else if (s->r == 1)
+    {
+      /* Make counts uniformly distributed.  A randomly chosen bit is set, and
+         for leading the rest above it are cleared, or for trailing then the
+         rest below.  */
+      for (i = 0; i < SPEED_BLOCK_SIZE; i++)
+        {
+          mp_limb_t  set = CNST_LIMB(1) << (s->yp_block[i] % BITS_PER_MP_LIMB);
+          mp_limb_t  keep_below = set-1;
+          mp_limb_t  keep_above = MP_LIMB_T_MAX ^ keep_below;
+          mp_limb_t  keep = (leading ? keep_below : keep_above);
+          xp[i] = (s->xp_block[i] & keep) | set;
+        }
+    }
+  else
+    {
+      return 0;
+    }
+
+  /* Account for the effect of n^=c. */
+  c = 0;
+  for (i = 0; i < SPEED_BLOCK_SIZE; i++)
+    {
+      n = xp[i];
+      xp[i] ^= c;
+
+      if (leading)
+        count_leading_zeros (c, n);
+      else
+        count_trailing_zeros (c, n);
+    }
+
+  return 1;
+}
+
+double
+speed_count_leading_zeros (struct speed_params *s)
+{
+#ifdef COUNT_LEADING_ZEROS_0
+#define COUNT_LEADING_ZEROS_0_ALLOWED   1
+#else
+#define COUNT_LEADING_ZEROS_0_ALLOWED   0
+#endif
+  SPEED_ROUTINE_COUNT_LEADING_ZEROS_C (count_leading_zeros (c, n),
+                                       COUNT_LEADING_ZEROS_0_ALLOWED)
+}
+double
+speed_count_trailing_zeros (struct speed_params *s)
+{
+  SPEED_ROUTINE_COUNT_TRAILING_ZEROS_C (count_trailing_zeros (c, n), 0)
+}
+
+
+double
+speed_mpn_get_str (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_GET_STR (mpn_get_str);
+}  
+
+double
+speed_mpn_set_str (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_SET_STR (mpn_set_str);
+}  
+
+
+double
+speed_MPN_ZERO (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_ZERO_CALL (MPN_ZERO (wp, s->size));
+}  

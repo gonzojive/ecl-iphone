@@ -1,6 +1,6 @@
 ## Process this file with automake to generate Makefile.in
 
-# Copyright (C) 1996, 1999, 2000 Free Software Foundation, Inc.
+# Copyright 1996, 1999, 2000, 2001 Free Software Foundation, Inc.
 #
 # This file is part of the GNU MP Library.
 #
@@ -20,52 +20,24 @@
 # MA 02111-1307, USA.
 
 
-AUTOMAKE_OPTIONS = gnu no-dependencies
+AUTOMAKE_OPTIONS = gnu no-dependencies $(top_builddir)/ansi2knr
 
-SUBDIRS = tests
+# -I$(top_srcdir)/mpz is for #includes done by mpz .c files.  Perhaps most
+# compilers are smart enough to look in the same directory as the .c file
+# already, but lets make absolutely sure.
+#
+INCLUDES = -DBERKELEY_MP -D__GMP_WITHIN_GMP -D__gmpz_realloc=_mp_realloc \
+	-I$(top_srcdir) -I$(top_srcdir)/mpz
 
-
-INCLUDES = -DBERKELEY_MP -D__gmpz_realloc=_mp_realloc -I$(top_srcdir)
-
-nodist_libmpbsd_la_SOURCES = \
-	add.c cmp.c gcd.c mul.c pow_ui.c powm.c realloc.c sqrtrem.c sub.c \
-	tdiv_qr.c
-libmpbsd_la_SOURCES = \
-	itom.c mfree.c min.c mout.c move.c mtox.c sdiv.c xtom.c
+# The mpz sources here all know to look for -DBERKELEY_MP to compile to in
+# mpbsd form.
+#
+libmpbsd_la_SOURCES =							  \
+	itom.c mfree.c min.c mout.c mtox.c rpow.c sdiv.c xtom.c		  \
+	../mpz/add.c ../mpz/cmp.c ../mpz/gcd.c ../mpz/mul.c ../mpz/powm.c \
+	../mpz/realloc.c ../mpz/set.c ../mpz/sqrtrem.c ../mpz/sub.c	  \
+	../mpz/tdiv_qr.c
 
 if WANT_MPBSD
 noinst_LTLIBRARIES = libmpbsd.la
 endif
-
-CLEANFILES = $(nodist_libmpbsd_la_SOURCES)
-
-
-add.c: $(top_srcdir)/mpz/add.c
-	cp $(top_srcdir)/mpz/add.c add.c
-
-cmp.c: $(top_srcdir)/mpz/cmp.c
-	cp $(top_srcdir)/mpz/cmp.c cmp.c
-
-gcd.c: $(top_srcdir)/mpz/gcd.c
-	cp $(top_srcdir)/mpz/gcd.c gcd.c
-
-mul.c: $(top_srcdir)/mpz/mul.c
-	cp $(top_srcdir)/mpz/mul.c mul.c
-
-pow_ui.c: $(top_srcdir)/mpz/pow_ui.c
-	cp $(top_srcdir)/mpz/pow_ui.c pow_ui.c
-
-powm.c: $(top_srcdir)/mpz/powm.c
-	cp $(top_srcdir)/mpz/powm.c powm.c
-
-realloc.c: $(top_srcdir)/mpz/realloc.c
-	cp $(top_srcdir)/mpz/realloc.c realloc.c
-
-sqrtrem.c: $(top_srcdir)/mpz/sqrtrem.c
-	cp $(top_srcdir)/mpz/sqrtrem.c sqrtrem.c
-
-sub.c: $(top_srcdir)/mpz/sub.c
-	cp $(top_srcdir)/mpz/sub.c sub.c
-
-tdiv_qr.c: $(top_srcdir)/mpz/tdiv_qr.c
-	cp $(top_srcdir)/mpz/tdiv_qr.c tdiv_qr.c

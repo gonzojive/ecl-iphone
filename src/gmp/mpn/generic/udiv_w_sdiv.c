@@ -9,7 +9,7 @@
    GNU MP RELEASE.
 
 
-Copyright (C) 1992, 1994, 1996, 2000 Free Software Foundation, Inc.
+Copyright 1992, 1994, 1996, 2000 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -38,6 +38,9 @@ mpn_udiv_w_sdiv (rp, a1, a0, d)
 {
   mp_limb_t q, r;
   mp_limb_t c0, c1, b1;
+
+  ASSERT (d != 0);
+  ASSERT (a1 < d);
 
   if ((mp_limb_signed_t) d >= 0)
     {

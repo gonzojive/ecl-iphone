@@ -1,7 +1,10 @@
-/* GMP assertion failure handler. */
+/* GMP assertion failure handler.
 
-/*
-Copyright (C) 2000 Free Software Foundation, Inc.
+   THE FUNCTIONS IN THIS FILE ARE FOR INTERNAL USE ONLY.  THEY'RE ALMOST
+   CERTAIN TO BE SUBJECT TO INCOMPATIBLE CHANGES OR DISAPPEAR COMPLETELY IN
+   FUTURE GNU MP RELEASES.
+
+Copyright 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -18,24 +21,16 @@ License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
 the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA.
-*/
+MA 02111-1307, USA. */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "gmp.h"
 #include "gmp-impl.h"
 
 
-int
-#if __STDC__
-__gmp_assert_fail (const char *filename, int linenum,
-                   const char *expr)
-#else
-__gmp_assert_fail (filename, linenum, expr)
-char *filename;
-int  linenum;
-char *expr;
-#endif
+void
+__gmp_assert_header (const char *filename, int linenum)
 {
   if (filename != NULL && filename[0] != '\0')
     {
@@ -43,10 +38,13 @@ char *expr;
       if (linenum != -1)
         fprintf (stderr, "%d: ", linenum);
     }
+}
 
+void
+__gmp_assert_fail (const char *filename, int linenum,
+                   const char *expr)
+{
+  __gmp_assert_header (filename, linenum);
   fprintf (stderr, "GNU MP assertion failed: %s\n", expr);
   abort();
-
-  /*NOTREACHED*/
-  return 0;
 }

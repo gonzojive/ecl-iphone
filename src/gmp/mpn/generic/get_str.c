@@ -1,7 +1,7 @@
 /* mpn_get_str -- Convert a MSIZE long limb vector pointed to by MPTR
    to a printable string in STR in base BASE.
 
-Copyright (C) 1991, 1992, 1993, 1994, 1996, 2000 Free Software Foundation,
+Copyright 1991, 1992, 1993, 1994, 1996, 2000, 2001 Free Software Foundation,
 Inc.
 
 This file is part of the GNU MP Library.
@@ -40,15 +40,7 @@ MA 02111-1307, USA. */
    The limb vector pointed to by MPTR is clobbered.  */
 
 size_t
-#if __STDC__
 mpn_get_str (unsigned char *str, int base, mp_ptr mptr, mp_size_t msize)
-#else
-mpn_get_str (str, base, mptr, msize)
-     unsigned char *str;
-     int base;
-     mp_ptr mptr;
-     mp_size_t msize;
-#endif
 {
   mp_limb_t big_base;
 #if UDIV_NEEDS_NORMALIZATION || UDIV_TIME > 2 * UMUL_TIME
@@ -60,6 +52,11 @@ mpn_get_str (str, base, mptr, msize)
   unsigned int dig_per_u;
   mp_size_t out_len;
   register unsigned char *s;
+
+  ASSERT (msize >= 0);
+  ASSERT (base >= 2);
+  ASSERT (base < numberof (__mp_bases));
+  ASSERT (msize == 0 || mptr[msize-1] != 0);
 
   big_base = __mp_bases[base].big_base;
 

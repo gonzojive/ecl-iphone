@@ -1,6 +1,15 @@
 dnl  x86 mpn_lshift -- mpn left shift.
+dnl
+dnl      cycles/limb
+dnl  P54:   7.5
+dnl  P55:   7.0
+dnl  P6:    2.5
+dnl  K6:    4.5
+dnl  K7:    5.0
+dnl  P4:   14.5
 
-dnl  Copyright (C) 1992, 1994, 1996, 1999, 2000 Free Software Foundation,
+
+dnl  Copyright 1992, 1994, 1996, 1999, 2000, 2001 Free Software Foundation,
 dnl  Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
@@ -32,7 +41,7 @@ defframe(PARAM_SIZE, 12)
 defframe(PARAM_SRC,  8)
 defframe(PARAM_DST,  4)
 
-	.text
+	TEXT
 	ALIGN(8)
 PROLOGUE(mpn_lshift)
 

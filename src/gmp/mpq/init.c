@@ -1,6 +1,6 @@
 /* mpq_init -- Make a new rational number with value 0/1.
 
-Copyright (C) 1991, 1994, 1995 Free Software Foundation, Inc.
+Copyright 1991, 1994, 1995, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,18 +23,13 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpq_init (MP_RAT *x)
-#else
-mpq_init (x)
-     MP_RAT *x;
-#endif
 {
   x->_mp_num._mp_alloc = 1;
-  x->_mp_num._mp_d = (mp_ptr) (*_mp_allocate_func) (BYTES_PER_MP_LIMB);
+  x->_mp_num._mp_d = (mp_ptr) (*__gmp_allocate_func) (BYTES_PER_MP_LIMB);
   x->_mp_num._mp_size = 0;
   x->_mp_den._mp_alloc = 1;
-  x->_mp_den._mp_d = (mp_ptr) (*_mp_allocate_func) (BYTES_PER_MP_LIMB);
+  x->_mp_den._mp_d = (mp_ptr) (*__gmp_allocate_func) (BYTES_PER_MP_LIMB);
   x->_mp_den._mp_d[0] = 1;
   x->_mp_den._mp_size = 1;
 }

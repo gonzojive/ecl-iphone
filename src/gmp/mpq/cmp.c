@@ -1,7 +1,7 @@
 /* mpq_cmp(u,v) -- Compare U, V.  Return postive, zero, or negative
    based on if U > V, U == V, or U < V.
 
-Copyright (C) 1991, 1994, 1996 Free Software Foundation, Inc.
+Copyright 1991, 1994, 1996, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -25,13 +25,7 @@ MA 02111-1307, USA. */
 #include "longlong.h"
 
 int
-#if __STDC__
 mpq_cmp (const MP_RAT *op1, const MP_RAT *op2)
-#else
-mpq_cmp (op1, op2)
-     const MP_RAT *op1;
-     const MP_RAT *op2;
-#endif
 {
   mp_size_t num1_size = op1->_mp_num._mp_size;
   mp_size_t den1_size = op1->_mp_den._mp_size;
@@ -42,6 +36,10 @@ mpq_cmp (op1, op2)
   mp_size_t num1_sign;
   int cc;
   TMP_DECL (marker);
+
+  /* need canonical signs to get right result */
+  ASSERT (den1_size > 0);
+  ASSERT (den2_size > 0);
 
   if (num1_size == 0)
     return -num2_size;
@@ -91,8 +89,7 @@ mpq_cmp (op1, op2)
   /* 3. Finally, cross multiply and compare.  */
 
   TMP_MARK (marker);
-  tmp1_ptr = (mp_ptr) TMP_ALLOC (tmp1_size * BYTES_PER_MP_LIMB);
-  tmp2_ptr = (mp_ptr) TMP_ALLOC (tmp2_size * BYTES_PER_MP_LIMB);
+  TMP_ALLOC_LIMBS_2 (tmp1_ptr,tmp1_size, tmp2_ptr,tmp2_size);
 
   if (num1_size >= den2_size)
     tmp1_size -= 0 == mpn_mul (tmp1_ptr,

@@ -1,6 +1,13 @@
 dnl  x86 mpn_add_n/mpn_sub_n -- mpn addition and subtraction.
+dnl
+dnl      cycles/limb
+dnl  P5:   3.375
+dnl  P6:   3.7
+dnl  K6:   3.5
+dnl  K7:   2.25
+dnl  P4:   8.75
 
-dnl  Copyright (C) 1992, 1994, 1995, 1996, 1999, 2000 Free Software
+dnl  Copyright 1992, 1994, 1995, 1996, 1999, 2000, 2001 Free Software
 dnl  Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
@@ -51,7 +58,7 @@ defframe(PARAM_SRC2, 12)
 defframe(PARAM_SRC1, 8)
 defframe(PARAM_DST,  4)
 
-	.text
+	TEXT
 	ALIGN(8)
 
 PROLOGUE(M4_function_nc)

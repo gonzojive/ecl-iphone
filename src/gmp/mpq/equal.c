@@ -1,7 +1,7 @@
 /* mpq_equal(u,v) -- Compare U, V.  Return non-zero if they are equal, zero
    if they are non-equal.
 
-Copyright (C) 1996 Free Software Foundation, Inc.
+Copyright 1996, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -24,20 +24,37 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 int
-#if __STDC__
 mpq_equal (mpq_srcptr op1, mpq_srcptr op2)
-#else
-mpq_equal (op1, op2)
-     mpq_srcptr op1;
-     mpq_srcptr op2;
-#endif
 {
-  mp_size_t num1_size = op1->_mp_num._mp_size;
-  mp_size_t den1_size = op1->_mp_den._mp_size;
-  mp_size_t num2_size = op2->_mp_num._mp_size;
-  mp_size_t den2_size = op2->_mp_den._mp_size;
+  int        num1_size, num2_size, den1_size, den2_size, i;
+  mp_srcptr  num1_ptr,  num2_ptr,  den1_ptr,  den2_ptr;
 
-  return (num1_size == num2_size && den1_size == den2_size
-	  && mpn_cmp (op1->_mp_num._mp_d, op2->_mp_num._mp_d, ABS (num1_size)) == 0
-	  && mpn_cmp (op1->_mp_den._mp_d, op2->_mp_den._mp_d, den1_size) == 0);
+  /* need fully canonical for correct results */
+  ASSERT_MPQ_CANONICAL (op1);
+  ASSERT_MPQ_CANONICAL (op2);
+
+  num1_size = op1->_mp_num._mp_size;
+  num2_size = op2->_mp_num._mp_size;
+  if (num1_size != num2_size)
+    return 0;
+
+  num1_ptr = op1->_mp_num._mp_d;
+  num2_ptr = op2->_mp_num._mp_d;
+  num1_size = ABS (num1_size);
+  for (i = 0; i < num1_size; i++)
+    if (num1_ptr[i] != num2_ptr[i])
+      return 0;
+
+  den1_size = op1->_mp_den._mp_size;
+  den2_size = op2->_mp_den._mp_size;
+  if (den1_size != den2_size)
+    return 0;
+
+  den1_ptr = op1->_mp_den._mp_d;
+  den2_ptr = op2->_mp_den._mp_d;
+  for (i = 0; i < den1_size; i++)
+    if (den1_ptr[i] != den2_ptr[i])
+      return 0;
+
+  return 1;
 }

@@ -1,7 +1,16 @@
 dnl  x86 mpn_copyi -- copy limb vector, incrementing.
+dnl
+dnl      cycles/limb  startup (approx)
+dnl  P5:     1.0         35
+dnl  P6      0.75        45
+dnl  K6      1.0         30
+dnl  K7:     1.3         65
+dnl  P4:     1.0        120
+dnl
+dnl  (Startup time includes some function call overheads.)
 
 
-dnl  Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+dnl  Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -31,21 +40,24 @@ C
 C The code here is very generic and can be expected to be reasonable on all
 C the x86 family.
 C
-C P5 - 1.0 cycles/limb.
+C P6 -  An MMX based copy was tried, but was found to be slower than a rep
+C       movs in all cases.  The fastest MMX found was 0.8 cycles/limb (when
+C       fully aligned).  A rep movs seems to have a startup time of about 15
+C       cycles, but doing something special for small sizes could lead to a
+C       branch misprediction that would destroy any saving.  For now a plain
+C       rep movs seems ok.
 C
-C P6 - 0.75 cycles/limb.  An MMX based copy was tried, but was found to be
-C      slower than a rep movs in all cases.  The fastest MMX found was 0.8
-C      cycles/limb (when fully aligned).  A rep movs seems to have a startup
-C      time of about 15 cycles, but doing something special for small sizes
-C      could lead to a branch misprediction that would destroy any saving.
-C      For now a plain rep movs seems ok for P6.
+C K62 - We used to have a big chunk of code doing an MMX copy at 0.56 c/l if
+C       aligned or a 1.0 rep movs if not.  But that seemed excessive since
+C       it only got an advantage half the time, and even then only showed it
+C       above 50 limbs or so.
 
 defframe(PARAM_SIZE,12)
 defframe(PARAM_SRC, 8)
 defframe(PARAM_DST, 4)
 deflit(`FRAME',0)
 
-	.text
+	TEXT
 	ALIGN(32)
 
 	C eax	saved esi
@@ -66,7 +78,7 @@ PROLOGUE(mpn_copyi)
 
 	movl	PARAM_DST, %edi
 
-	cld	C better safe than sorry, see mpn/x86/README.family
+	cld	C better safe than sorry, see mpn/x86/README
 
 	rep
 	movsl

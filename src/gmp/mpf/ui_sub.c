@@ -1,6 +1,6 @@
 /* mpf_ui_sub -- Subtract a float from an unsigned long int.
 
-Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1995, 1996, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,14 +23,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpf_ui_sub (mpf_ptr r, unsigned long int u, mpf_srcptr v)
-#else
-mpf_ui_sub (r, u, v)
-     mpf_ptr r;
-     unsigned long int u;
-     mpf_srcptr v;
-#endif
 {
   mp_srcptr up, vp;
   mp_ptr rp, tp;

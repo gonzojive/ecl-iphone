@@ -1,6 +1,6 @@
 /* mpf_eq -- Compare two floats up to a specified bit #.
 
-Copyright (C) 1993, 1995, 1996 Free Software Foundation, Inc.
+Copyright 1993, 1995, 1996, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,14 +23,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 int
-#if __STDC__
 mpf_eq (mpf_srcptr u, mpf_srcptr v, unsigned long int n_bits)
-#else
-mpf_eq (u, v, n_bits)
-     mpf_srcptr u;
-     mpf_srcptr v;
-     unsigned long int n_bits;
-#endif
 {
   mp_srcptr up, vp;
   mp_size_t usize, vsize, size, i;

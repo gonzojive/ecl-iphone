@@ -1,6 +1,6 @@
 /* double mpq_get_d (mpq_t src) -- Return the double approximation to SRC.
 
-Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+Copyright 1995, 1996, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -49,12 +49,7 @@ MA 02111-1307, USA. */
 */
 
 double
-#if __STDC__
 mpq_get_d (const MP_RAT *src)
-#else
-mpq_get_d (src)
-     const MP_RAT *src;
-#endif
 {
   mp_ptr np, dp;
   mp_ptr rp;
@@ -62,7 +57,6 @@ mpq_get_d (src)
   mp_size_t dsize = src->_mp_den._mp_size;
   mp_size_t qsize, rsize;
   mp_size_t sign_quotient = nsize ^ dsize;
-  unsigned normalization_steps;
   mp_limb_t qlimb;
 #define N_QLIMBS (1 + (sizeof (double) + BYTES_PER_MP_LIMB-1) / BYTES_PER_MP_LIMB)
   mp_limb_t qarr[N_QLIMBS + 1];
@@ -81,15 +75,16 @@ mpq_get_d (src)
   rsize = dsize + N_QLIMBS;
   rp = (mp_ptr) TMP_ALLOC ((rsize + 1) * BYTES_PER_MP_LIMB);
 
-  count_leading_zeros (normalization_steps, dp[dsize - 1]);
-
   /* Normalize the denominator, i.e. make its most significant bit set by
      shifting it NORMALIZATION_STEPS bits to the left.  Also shift the
      numerator the same number of steps (to keep the quotient the same!).  */
-  if (normalization_steps != 0)
+  if (! (dp[dsize - 1] & MP_LIMB_T_HIGHBIT))
     {
       mp_ptr tp;
       mp_limb_t nlimb;
+      unsigned normalization_steps;
+
+      count_leading_zeros (normalization_steps, dp[dsize - 1]);
 
       /* Shift up the denominator setting the most significant bit of
 	 the most significant limb.  Use temporary storage not to clobber

@@ -1,5 +1,5 @@
 /*
-Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -27,15 +27,7 @@ MA 02111-1307, USA.
 #define TWO63 9223372036854775808.0
 
 mp_limb_t
-#if __STDC__
 __MPN(udiv_qrnnd) (mp_limb_t n1, mp_limb_t n0, mp_limb_t d, mp_limb_t *r)
-#else
-__MPN(udiv_qrnnd) (n1, n0, d, r)
-     mp_limb_t n1;
-     mp_limb_t n0;
-     mp_limb_t d;
-     mp_limb_t *r;
-#endif
 {
   mp_limb_t q1, q2, q;
   mp_limb_t p1, p0;

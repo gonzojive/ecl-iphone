@@ -6,7 +6,7 @@ dnl  K6-2  1.0   1.18  1.18  1.18  cycles/limb
 dnl  K6    1.5   1.85  1.75  1.85
 
 
-dnl  Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+dnl  Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -37,8 +37,8 @@ defframe(PARAM_SIZE,12)
 defframe(PARAM_SRC, 8)
 defframe(PARAM_DST, 4)
 
-	.text
-	ALIGN(32)
+	TEXT
+	ALIGN(16)
 PROLOGUE(mpn_com_n)
 deflit(`FRAME',0)
 
@@ -62,7 +62,7 @@ FRAME_pushl()
 	pcmpeqd	%mm7, %mm7	C all ones
 
 
-	ALIGN(16)
+	ALIGN(8)
 L(top):
 	C eax	src
 	C ebx	floor(size/2)

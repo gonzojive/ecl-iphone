@@ -1,3 +1,4953 @@
+Copyright 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999 2000, 2001
+Free Software Foundation, Inc.
+.
+This file is part of the GNU MP Library.
+.
+The GNU MP Library is free software; you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation; either version 2.1 of the License, or (at your
+option) any later version.
+.
+The GNU MP Library is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
+License for more details.
+.
+You should have received a copy of the GNU Lesser General Public License
+along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
+the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+MA 02111-1307, USA.
+
+
+2001-12-01  Torbjorn Granlund  <tege@swox.com>
+
+	* Version 4.0 released.
+
+	* mpfr/README: Replace contents with explanation of why mpfr is gone.
+
+2001-12-01  Kevin Ryde  <kevin@swox.se>
+
+	* Makefile.am, configure.in: Temporarily remove mpfr, just leave a
+	README.
+
+	* mpn/Makefile.am (EXTRA_DIST): Add Makeasm.am.
+
+2001-11-30  Gerardo Ballabio  <ballabio@sissa.it>
+
+	* tests/cxx/t-constr.cc, tests/cxx/t-expr.cc: New files.
+	* tests/cxx/Makefile.am (check_PROGRAMS): Add them.
+
+2001-11-30  Kevin Ryde  <kevin@swox.se>
+
+	* mpfr: Update to 2001-11-16.  Patch TMP handling of agm.c and sqrt.c,
+	use plain mpn_sqrtrem in sqrt.c, separate .c files for floor and ceil,
+	disable an expression style assert in add1.c.
+
+	* mpn/s370: Rename to s390.
+	* configure.in (s3[6-9]0*-*-*): Update.
+	* mpn/Makefile.am (TARG_DIST): Add s390.
+
+	* mpz/fits_s.c, mpf/fits_s.c, mpf/fits_u.c: Remove files, unused since
+	change to .h style.
+
+2001-11-29  Torbjorn Granlund  <tege@swox.com>
+
+	* gmp-h.in: Declare mpz_get_d_2exp and mpf_get_d_2exp.
+	* Makefile.am: Add mpz/get_d_2exp$U.lo and mpf/get_d_2exp$U.lo.
+	* mpf/Makefile.am: Add get_d_2exp.c.
+	* mpz/Makefile.am: Add get_d_2exp.c.
+
+2001-11-29  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/*/gmp-mparam.h: Update measured thresholds.
+	* mpn/s370/gmp-mparam.h: New file.
+
+	* mpz/millerrabin.c: Mark for internal use only, for now.
+	* gmp.texi (Number Theoretic Functions): Remove documentation.
+
+2001-11-28  Torbjorn Granlund  <tege@swox.com>
+
+	* mpf/get_d_2exp.c: New file.
+	* mpz/get_d_2exp.c: New file.
+
+	* mpz/realloc2.c: Fix typo.  Make more similar to mpz_realloc.
+	* mpz/realloc.c: Use __GMP_REALLOCATE_FUNC_LIMBS.
+
+2001-11-27  Gerardo Ballabio  <ballabio@sissa.it>
+
+	* gmpxx.h, mpfrxx.h: Various updates and improvements.
+
+2001-11-27  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (Useful Macros and Constants): Add gmp_version, add @findex
+	for mp_bits_per_limb.
+
+	* demos/perl/GMP.pm, demos/perl/GMP.xs: Use new style gmp_randinit's.
+	* demos/perl/test.pl: Update for this, and for mpz_perfect_power_p
+	handling of 0 and 1.
+
+2001-11-26  Torbjorn Granlund  <tege@swox.com>
+
+	* mpz/realloc.c: Clear variable when decreasing allocation to less than
+	needed.  Misc updates.
+
+2001-11-25  Kevin Ryde  <kevin@swox.se>
+
+	* tests/misc/t-locale.c: Avoid printf in the normal case, since the
+	replacement localeconv breaks it on SunOS 4.
+
+	* gmp.texi (Build Options, Notes for Package Builds): Note libgmpxx
+	depends on libgmp from same GMP version.
+
+	* acinclude.m4, configure.in (GMP_FUNC_SSCANF_WRITABLE_INPUT): New
+	test.
+	* scanf/sscanf.c, scanf/vsscanf.c: Use it to ensure sscanf input is
+	writable, if necessary.
+
+	* tests/misc/t-scanf.c: Ensure sscanf arguments are writable, always.
+	* configure.in (AC_CHECK_DECLS): Remove sscanf, no longer required.
+
+	* configure.in (none-*-*): Fix default CFLAGS setups.
+
+	* doc/configuration: Misc updates.
+
+2001-11-23  Kevin Ryde  <kevin@swox.se>
+
+	* mpz/init2.c, mpz/realloc2.c: New files.
+	* Makefile.am, mpz/Makefile.am: Add them.
+	* gmp-h.in: Add prototypes.
+	* gmp.texi (Efficiency): Mention these instead of _mpz_realloc.
+	(Initializing Integers): Add documentation, reword other parts.
+
+2001-11-22  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/cray/ieee/addmul_1.c: Fix logic for more_carries scalar loop.
+	* mpn/cray/ieee/submul_1.c: Likewise.
+
+2001-11-20  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (Known Build Problems): Note an out of memory on DJGPP.
+	(Function Classes): Update function counts.
+	Misc tweaks elsewhere.
+
+	* configure.in (AC_CHECK_DECLS): Add sscanf.
+	* tests/misc/t-scanf.c: Use it, for the benefit of SunOS 4.
+
+	* tal-debug.c, gmp-impl.h: More checks of TMP_DECL/TMP_MARK/TMP_FREE
+	consistency.
+
+	* mpfr/Makefile.am (AR): Explicit AR=@AR@ to override automake
+	default, necessary for powerpc64 ABI=aix64.
+
+2001-11-18  Torbjorn Granlund  <tege@swox.com>
+
+	* mpz/powm.c: Move TMP_MARK to before any TMP_ALLOCs.
+
+2001-11-18  Kevin Ryde  <kevin@swox.se>
+
+	* configure.in (--enable-fft): Make this the default.
+	* gmp.texi (Build Options): Update.
+
+	* Makefile.am (libmp_la_DEPENDENCIES): Revise mpz objects needed by
+	new mpz/powm.c.
+
+	* gmp.texi (Random State Initialization): Add gmp_randinit_default and
+	gmp_randinit_lc_2exp_size, mark gmp_randinit as obsolete.
+	(Random State Seeding): New section, taken from "Random State
+	Initialization" and "Random Number Functions".
+
+	* configure.in (AC_CHECK_DECLS): Add fgetc, fscanf, ungetc.
+	* scanf/fscanffuns.c: Use these, for the benefit of SunOS 4.
+
+	* gmp-impl.h, gmp-h.in (__gmp_default_fp_limb_precision): Move back to
+	gmp-impl.h now not required for inlined mpf.
+
+	* randlc2s.c (gmp_randinit_lc_2exp_size): New file, the size-based LC
+	selection from rand.c.
+	* rand.c (gmp_randinit): Use it.
+	* randdef.c (gmp_randinit_default): New file.
+	* gmp-impl.h (RANDS): Use it.
+	(ASSERT_CARRY): New macro.
+	* gmp-h.in (gmp_randinit_default, gmp_randinit_lc_2exp_size: Add
+	prototypes.
+	* Makefile.am (libgmp_la_SOURCES): Add randdef.c and randlc2s.c.
+
+	* printf/asprntffuns.c: Include config.h before using its defines.
+
+	* gmp-impl.h: Move C++ <string> to top of file to avoid the memset
+	redefine upsetting configure tests.  Remove <iostream> since <iosfwd>
+	in gmp.h suffices.
+
+2001-11-16  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (Integer Exponentiation): mpz_powm supports negative
+	exponents.
+	(Assigning Floats, I/O of Floats, C++ Formatted Output, C++ Formatted
+	Input): Decimal point follows locale.
+	(Formatted Output Strings): %n accepts any type.
+	(Formatted Input Strings): New section.
+	(Formatted Input Functions): New section.
+	(C++ Class Interface): Corrections and clarifications suggested by
+	Gerardo.
+
+	* scanf/doscan.c, scanf/fscanf.c, scanf/fscanffuns.c, scanf/scanf.c,
+	scanf/sscanf.c, scanf/sscanffuns.c, scanf/vfscanf.c, scanf/vscanf.c,
+	scanf/vsscanf.c, scanf/Makefile.am, tests/misc/t-scanf.c: New files.
+	* gmp-h.in, gmp-impl.h, Makefile.am, configure.in: Consequent
+	additions.
+
+	* tests/misc: New directory.
+	* tests/misc/Makefile.am: New file.
+	* tests/misc/t-locale.c: New file.
+	* tests/misc/t-printf.c: Moved from tests/printf.
+	* tests/printf: Remove directory.
+	* configure.in, tests/Makefile.am: Update.
+
+	* tests/cxx/t-locale.cc: New file.
+	* tests/cxx/Makefile.am: Add it.
+
+	* mpf/set_str.c, cxx/ismpf.cc: Use localeconv for the decimal point.
+
+	* acinclude.m4 (GMP_ASM_X86_MCOUNT): Update to $lt_prog_compiler_pic
+	for current libtool, recognise non-PIC style mcount in windows DLLs.
+
+	* gmp-impl.h (__gmp_replacement_vsnprintf): Add prototype.
+
+	* gmp-impl.h (__gmp_rands, __gmp_rands_initialized,
+	modlimb_invert_table): Add __GMP_DECLSPEC for the benefit of test
+	programs using them from a windows DLL.
+	* longlong.h (__clz_tab): Ditto.
+
+	* mpn/x86/t-zdisp2.pl: New file.
+
+	* mpn/x86/pentium4/README: New file.
+
+2001-11-15  Torbjorn Granlund  <tege@swox.com>
+
+	* mpz/powm.c (HANDLE_NEGATIVE_EXPONENT): #define to 1.
+	* tests/mpz/reuse.c (main): Use	mpz_invert to avoid undefined mpz_powm
+	cases.
+
+2001-11-14  Torbjorn Granlund  <tege@swox.com>
+
+	* mpz/powm_ui.c: Rewrite along the lines of mpz/powm.c (except still no
+	redc).
+	* mpz/powm.c: Adjust for negative b, after exponentiation done.  Add
+	(still disabled) code for handling negative exponents.  Misc cleanups.
+
+2001-11-14  Kevin Ryde  <kevin@swox.se>
+
+	* mpf/out_str.c: Use localeconv for the decimal point.
+
+	* tests/misc.c (tests_rand_end): Use time() if gettimeofday() not
+	available (eg. on mingw).
+
+2001-11-11  Kevin Ryde  <kevin@swox.se>
+
+	* gmp-h.in: Remove parameter names from prototypes, to keep out of
+	application namespace.
+
+2001-11-08  Kevin Ryde  <kevin@swox.se>
+
+	* acinclude.m4 (GMP_GCC_VERSION_GE): Fix sed regexps to work on
+	Solaris 8.
+
+	* printf/doprnt.c: Support %n of all types, per glibc.
+
+	* gmp-h.in, gmp-impl.h, mpf/abs.c, mpf/neg.c, mpf/get_prc.c,
+	mpf/get_dfl_prec.c, mpf/set_dfl_prec.c, mpf/set_prc_raw.c,
+	mpf/set_si.c, mpf/set_ui.c, mpf/size.c: Revert mpf inlining, in order
+	to leave open the possibility of keeping binary compatibility if mpf
+	becomes mpfr.
+
+	* mpn/x86/k7/mmx/lshift.asm, mpn/x86/k7/mmx/rshift.asm: Use Zdisp to
+	force code size for computed jumps.
+	* mpn/x86/k6/mod_34lsub1.asm, mpn/x86/k6/k62mmx/copyd.asm: Use Zdisp
+	to force good code alignment.
+	* mpn/x86/x86-defs.m4 (Zdisp): More instructions.
+
+	* mpn/x86/pentium/sqr_basecase.asm, mpn/x86/k7/mmx/mod_1.asm,
+	mpn/x86/k7/mmx/popham.asm: Remove some unnecessary "0" address offsets.
+
+	* mpq/set_si.c, mpq/set_ui.c: Set _mp_den._mp_size correctly if	den==0.
+
+2001-11-07  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/hppa/hppa1_1/udiv_qrnnd.asm: Work around gas bug.
+
+	* mpn/asm-defs.m4 (PROLOGUE): Change alignment to 8 (probably a good
+	idea in general; required for hppa/hppa1_1/udiv_qrnnd.asm).
+
+2001-11-06  Torbjorn Granlund  <tege@swox.com>
+
+	* gmp-impl.h (MPN_COPY_INCR): Prepend local variable by `__'.
+	(MPN_COPY_DECR): Likewise.
+
+2001-11-05  Torbjorn Granlund  <tege@swox.com>
+
+	* mpz/powm.c: Call mpn functions, not mpz functions, for computation
+	mod m.  Streamline allocations to use a mixture of stack allocation and
+	heap allocation.  Add currently disabled phi(m) exponent reduction
+	code.  Misc optimizations and cleanups.
+
+2001-11-05  Kevin Ryde  <kevin@swox.se>
+
+	* mpq/inp_str.c: Remove unused variable "ret".
+
+	* mpn/x86/k7/sqr_basecase.asm: Fix a 0(%edi) to use Zdisp, so the
+	computed jumps hit the right spot on old gas.
+
+	* mpq/canonicalize.c: DIVIDE_BY_ZERO if denominator is zero.
+
+	* mpn/lisp/gmpasm-mode.el (comment-start-skip): Correction to the way
+	the first \( \) pair is setup.
+	(gmpasm-font-lock-keywords): Don't fontify the space before a "#" etc.
+	Misc tweaks to some comments.
+
+2001-11-03  Torbjorn Granlund  <tege@swox.com>
+
+	* tests/refmpn.c (refmpn_overlap_p): Reverse return values.
+
+2001-11-02  Kevin Ryde  <kevin@swox.se>
+
+	* tune/many.pl: Setup CFLAGS_PIC and ASMFLAGS_PIC, since that's no
+	longer done by configure.
+
+	* mpn/x86/pentium4/mmx/popham.asm: New file.
+
+	* mpn/x86/x86-defs.m4 (psadbw): New macro.
+	* mpn/x86/k7/mmx/popham.asm: Use it.
+
+	* tests/refmpn.c (refmpn_overlap_p): New function, independent of
+	MPN_OVERLAP_P.
+
+2001-10-31  Torbjorn Granlund  <tege@swox.com>
+
+	* tests/mpz/t-powm.c: Print proper error message when finding
+	discrepancy.
+
+2001-10-31  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/x86/pentium/mod_34lsub1.asm: New file.
+	* mpn/x86/k7/mod_34lsub1.asm: New file.
+	* mpn/x86/mod_34lsub1.asm: New file.
+
+2001-10-30  Kevin Ryde  <kevin@swox.se>
+
+	* tests/printf/t-printf.c (check_misc): Add checks from the glibc docs.
+	(check_vasprintf, check_vsnprintf): Run these unconditionally.
+
+	* gmp-impl.h (ASSERT_MPQ_CANONICAL): New macro.
+	* mpq/cmp.c, mpq/cmp_si.c, mpq/cmp_ui.c, mpq/equal.c: Add ASSERTs for
+	canonical inputs, where correctness depends on it.
+
+	* mpn/lisp/gmpasm-mode.el (comment-start-skip): Add "dnl".
+
+2001-10-27  Torbjorn Granlund  <tege@swox.com>
+
+	* demos/pexpr.c: Remove some unused variables.
+	(main): Allocate more buffer space to accommodate minus sign.
+
+2001-10-27  Kevin Ryde  <kevin@swox.se>
+
+	* gmp-impl.h, mpn/asm-defs.m4, configure.in, tune/speed.h,
+	tune/speed.c, tune/common.c, tune/many.pl, tests/devel/try.c: Add
+	mpn_mod_34lsub1.
+	* tests/refmpn.c, tests/tests.h (refmpn_mod_34lsub1): New function.
+
+	* mpn/generic/mod_34lsub1.c: New file.
+	* mpn/x86/k6/mod_34lsub1.asm: New file.
+	* mpn/x86/pentium4/sse2/mod_34lsub1.asm: New file.
+	* mpn/x86/x86-defs.m4 (Zdisp): Add another instruction.
+
+	* gmp-h.in, gmpxx.h: Use <iosfwd> not whole <iostream>.
+
+	* gmp.texi (Known Build Problems): Add note on test programs with
+	Windows DLLs.
+
+
+2001-10-26  Kevin Ryde  <kevin@swox.se>
+
+	* tests/mpq/t-get_d.c: Limit the size of "eps" for vax.
+
+	* gmp.texi (maybepagebreak): New macro, use it in a few places.
+	(Notes for Particular Systems): C++ Windows DLLs are not supported.
+	(Known Build Problems): Note sparc solaris 2.7 gcc 2.95.2 shared
+	library problems.
+	(Autoconf): Tweak version numbers shown.
+	(Integer Roots): mpz_perfect_square_p and mpz_perfect_power_p consider
+	0 and 1 perfect powers, mpz_perfect_power_p accepts negatives.
+	(Number Theoretic Functions): Add mpz_millerrabin, combined with a
+	reworded mpz_probab_prime_p.
+	(Formatted Output Strings): Misc clarifications.
+	(Formatted Output Functions): gmp_asprintf, gmp_vasprintf,
+	gmp_snprintf, gmp_vsnprintf always available.
+	(C++ Formatted Output): Misc rewordings.
+	(Formatted Input): New chapter.
+	(C++ Class Interface): New chapter, by Gerardo and me.
+	(Language Bindings): Update GMP++ now in GMP.
+	(C++ Interface Internals): New section, by Gerardo and me.
+
+	* printf/repl-vsnprintf.c: New file.
+	* configure.in, acinclude.m4, Makefile.am, printf/Makefile.am: Use it
+	if libc vsnprintf missing or bad.
+	* configure.in (AC_CHECK_FUNCS): Add strnlen.
+
+	* printf/snprntffuns.c, printf/vasprintf.c: Use
+	__gmp_replacement_vsnprintf if libc vsnprintf not available.
+	* printf/asprintf.c, printf/snprintf.c, printf/vasprintf.c,
+	printf/vsnprintf.c: Provide these functions unconditionally.
+	* acinclude.m4 (GMP_FUNC_VSNPRINTF): Remove warning about omissions
+	when vsnprintf not available.
+
+2001-10-24  Kevin Ryde  <kevin@swox.se>
+
+	* configure, aclocal.m4: Regenerate with a libtool patch for a stray
+	quote in AC_LIBTOOL_PROG_LD_SHLIBS under mingw and cygwin.
+
+	* gmp-impl.h (modlimb_invert): More comments.
+
+	* printf/doprnt.c, printf/doprnti.c: Use the precision field to print
+	leading zeros.
+	* tests/printf/t-printf.c: Test this.
+	* cxx/osdoprnti.cc, gmp-impl.h: Ignore precision in operator<<.
+
+	* tune/speed.c, tune/speed.h, tune/common.c: Add mpn_mul_1_inplace.
+
+2001-10-23  Torbjorn Granlund  <tege@swox.com>
+
+	* mpz/pprime_p.c (mpz_millerrabin): Remove function and its descendant.
+
+	* mpz/millerrabin.c: New file with code from pprime.c.
+	* mpz/Makefile.am: Compile millerrabin.c.
+	* Makefile.am (MPZ_OBJECTS): Ditto.
+	* gmp-h.in: Declare mpz_millerrabin.
+
+2001-10-22  Torbjorn Granlund  <tege@swox.com>
+
+	* tests/mpz/t-perfsqr.c: New file.
+	* tests/mpz/Makefile.am (check_PROGRAMS): Add it.
+
+	* demos/factorize.c (factor): Check for number to factor == 0.
+	(main): When invoked without arguments, read from stdin.
+
+	* mpz/perfpow.c: Add code to handle negative perfect powers ((-b)^odd).
+	Treat 0 and 1 as perfect powers.
+
+	* mpn/sparc32/v9/sqr_diagonal.asm: Jump past .align.
+
+2001-10-21  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/generic/perfsqr.c	(sq_res_0x100): Remove bogus final `,'.
+	(mpn_perfect_square_p): Suppress superfluous `&1' in sq_res_0x100 test.
+	(mpn_perfect_square_p, O(n) test): Improve comments.  Combine remainder
+	tests for some small primes.  Don't share code for different limb
+	sizes.  Use single `if' with many `||' for better code density.
+
+2001-10-22  Kevin Ryde  <kevin@swox.se>
+
+	* demos/perl/GMP.xs (mutate_mpz, tmp_mpf_grow): Make these "static".
+
+	* mpn/x86/pentium/popcount.asm, mpn/x86/pentium/hamdist.asm
+	(mpn_popcount_table): Use GSYM_PREFIX.
+
+2001-10-19  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/x86/*.asm: Add some measured speeds on various x86s.
+
+	* tests/mpz/reuse.c, tests/mpf/reuse.c: Disable tests when using a
+	windows DLL, because certain global variable usages won't compile.
+
+	* configure.in (AC_CHECK_FUNCS): Add alarm.
+	* tests/spinner.c: Conditionalize alarm and SIGALRM availability, for
+	the benefit of mingw32.
+
+	* acinclude.m4 (GMP_ASM_TYPE, GMP_ASM_SIZE): Suppress .type and .size
+	on COFF.
+
+	* acinclude.m4 (GMP_PROG_HOST_CC): New macro.
+	* configure.in: Use it for windows DLL cross-compiles.
+	* aclocal.m4, configure: Regenerate with libtool patch to hold HOST_CC
+	in the generated libtool script.
+
+	* aclocal.m4, configure: Regenerate with libtool patch to suppress
+	warnings when probing command line limit on FreeBSD.
+
+	* demos/qcn.c (M_PI): Define if not already provided, helps mingw32.
+
+2001-10-17  Kevin Ryde  <kevin@swox.se>
+
+	* printf/doprnt.c: Use <stdint.h> for intmax_t.
+
+	* longlong.h: Recognise __sparcv8 for gcc on Solaris.  Reported by
+	Mark Mentovai <mark@mentovai.com>.
+
+	* gmp-impl.h (gmp_allocated_string): No need for inline on member funs.
+
+2001-10-16  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (Debugging): Add mpatrol.
+	(Integer Comparisons, Comparing Rationals, Float Comparison): Index
+	entries for sign tests.
+	(I/O of Floats): Clarify mpf_out_str exponent is in decimal.
+	(C++ Formatted Output): mpf_t operator<< exponent now in decimal.
+	(FFT Multiplication): Use an ascii art sigma.
+	(Contributors): Add Gerardo Ballabio.
+
+	* cxx/osfuns.cc (__gmp_doprnt_params_from_ios): Always give mpf_t
+	exponent in decimal, irrespective of ios::hex or ios::oct.
+	* tests/cxx/t-ostream.cc (check_mpf): Update.
+
+	* printf/doprnt.c: Support %lln and %hhn.
+
+	* mpn/x86/pentium4/sse2/submul_1.asm: Use a psubq to negate the
+	initial carry (helps the submul_1c case), and improve the comments.
+
+2001-10-11  Kevin Ryde  <kevin@swox.se>
+
+	* acinclude.m4, configure.in (GMP_IMPL_H_IEEE_FLOATS): New macro.
+
+	* ltmain.sh: Send some rm errors to /dev/null, helps during compiles
+	on Solaris 2.7 and HP-UX 10.
+
+	* tal-notreent.c: Renamed from stack-alloc.c.
+	* Makefile.am, acinclude.m4, gmp-impl.h: Update.
+
+	* gmp-h.in: Don't give both prototypes and inlines, except on gcc.
+
+	* gmp-h.in, gmp-impl.h: Use #includes to get necessary standard
+	classes, add std:: to prototypes.
+	* cxx/*.cc, tests/cxx/t-ostream.cc: Add "use namespace std".
+	* acinclude.m4 (GMP_PROG_CXX_WORKS): Ditto.
+
+	* tests/*/Makefile.in, mpfr/tests/Makefile.in: Regenerate with
+	automake patch to avoid Ultrix problem with empty $(TESTS).
+
+	* */Makefile.in: Regenerate with automake patch to only rm *_.c in
+	"make clean" when ansi2knr actually in use, helps DOS 8.3.
+
+	* Makefile.in: Regenerate with automake patch to fix stamp-h
+	numbering, avoiding an unnecessary config.status run.
+
+2001-10-09  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/hppa/hppa1_1/udiv_qrnnd.asm: Use L macros for labels.
+	Quote L reloc operator.
+
+	* gmp-impl.h: Declare class string.
+
+	* mpn/asm-defs.m4 (INT32, INT64): Quote $1 to prevent further
+	expansion.
+
+	* mpn/alpha/ev6/mul_1.asm: New file.
+
+2001-10-09  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (Introduction to GMP): Add pentium 4 to optimized CPUs.
+	(Build Options): Note macos directory.
+	(Notes for Package Builds): GMP 4 series binary compatible with 3.
+	(Known Build Problems): Remove $* and ansi2knr note, now fixed, except
+	possibly under --host=none.
+	(Formatted Output Strings): Remove -1 prec for all digits.
+
+	* mpz/add.c, mpz/sub.c: Don't use mpz path on #include (helps macos).
+	* mpbsd/Makefile.am (INCLUDES): Add -I$(top_srcdir)/mpz.
+
+	* printf/doprnt.c, tests/printf/t-printf.c: Remove support for %.*Fe
+	prec -1 meaning all digits.
+
+	* acinclude.m4 (GMP_PROG_AR): Override libtool, use AR_FLAGS="cq".
+	(GMP_HPC_HPPA_2_0): Print version string to config.log.
+
+	* Makefile.am (AUTOMAKE_OPTIONS): Remove check-news (permission notice
+	in NEWS file is too big).
+	(dist-hook): Don't distribute numbered or unnumbered emacs backups.
+
+	* Makefile.am, cxx/Makefile.am: Updates for Gerardo's stuff.
+
+2001-10-09  Gerardo Ballabio  <ballabio@sissa.it>
+
+	* cxx/isfuns.cc: New file.
+	* gmp-impl.h: Add prototypes.
+	* cxx/ismpf.cc, cxx/ismpq.cc, cxx/ismpz.cc: New files.
+	* gmp-h.in: Add prototypes.
+	* gmpxx.h, mpfrxx.h: New files.
+
+2001-10-08  Kevin Ryde  <kevin@swox.se>
+
+	* configure.in (with_tags): Establish a default based on --enable-cxx.
+
+	* aclocal.m4: Regenerate with libtool patches for sed char range to
+	help Cray, LTCC quotes and +Z warnings grep to help HP-UX.
+
+	* gmp-impl.h (doprnt_format_t, doprnt_memory_t, doprnt_reps_t,
+	doprnt_final_t): Use _PROTO.
+
+2001-10-05  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/asm-defs.m4 (INT32, INT64): Use LABEL_SUFFIX.
+
+	* mpn/hppa: Convert files to `.asm'.
+
+2001-10-05  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/Makeasm.am (.S files): Revert to separate CPP and CCAS, use
+	cpp-ccas, and only pass CPPFLAGS to CPP, not whole CFLAGS.
+	* mpn/cpp-ccas: New file.
+	* mpn/Makefile.am (EXTRA_DIST): Add it.
+
+	* tune/common.c, tune/speed.h: Change SPEED_ROUTINE_MPN_COPY_CALL uses
+	to SPEED_ROUTINE_MPN_COPY or new SPEED_ROUTINE_MPN_COPY_BYTES.  Avoids
+	macro expansion problems on Cray.
+
+	* configure.in (AC_PROG_CXXCPP): Add this, to make libtool happier.
+
+2001-10-04  Torbjorn Granlund  <tege@swox.com>
+
+	* mpz/rrandomb.c (gmp_rrandomb): Change bit_pos to be 0-based (was
+	1-based); shift 2 (was 1) when making bit mask.  These two changes
+	avoid undefined shift counts.
+	(gmp_rrandomb): Avoid most calls to _gmp_rand by caching random values.
+
+	* mpn/generic/random2.c: Changes for mirroring mpz/rrandomb.c.
+
+2001-10-04  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (Build Options): Add --enable-cxx.
+	(Notes for Particular Systems): Mention pentium4 performance and SSE2.
+	(Known Build Problems): Remove vax jsobgtr note, no longer needed.
+	(Converting Floats): Tweak mpf_get_str description.
+	(Low-level Functions): Correction to mpn_gcdext destination space
+	requirements.
+	(C++ Formatted Output): New section.
+	(Language Bindings): Add ALP
+	(Contributors): Add Paul Zimmermann's square root, update my things.
+
+	* acinclude.m4 (GMP_PROG_CC_IS_GNU, GMP_PROG_CXX_WORKS): Send compiler
+	errors to config.log.
+
+	* mpq/Makefile.am (INCLUDES): Remove -DOPERATION_$*, not needed.
+
+	* mpn/x86/*.asm: Change references to old README.family to just README.
+
+	* mpz/README: Remove file, now adequately covered in the manual.
+
+2001-10-03  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/x86/pentium4/copyi.asm: New file.
+	* mpn/x86/pentium4/copyd.asm: New file.
+
+	* gmp-impl.h: Implement separate MPN_COPY_INCR and MPN_COPY_DECR
+	macros for CRAY systems.
+	(CRAY _MPN_COPY): Delete.
+
+2001-10-02  Kevin Ryde  <kevin@swox.se>
+
+	* tests/mpz/t-popcount.c (check_data): Use "~ (unsigned long) 0" to
+	avoid compiler warnings on sco.
+
+	* mpbsd/Makefile.am: Compile mpz files directly, no copying.
+	Use mpz/add.c and mpz/sub.c rather than mpz/aors.c.
+	(INCLUDES): Remove -DOPERATION_$*, no longer needed (by mpz).
+
+	* mpz/aors.h: Renamed from mpz/aors.c.
+	* mpz/add.c, mpz/sub.c: New files, using mpz/aors.h.
+	* mpz/aors_ui.h: Renamed from mpz/aors_ui.c.
+	* mpz/add_ui.c, mpz/sub_ui.c: New files, using mpz/aors_ui.h.
+	* mpz/fits_s.h: Renamed and adapted from mpz/fits_s.c.
+	* mpz/fits_sshort.c, mpz/fits_sint.c, mpz/fits_slong.c: New files.
+	* mpz/mul_i.h: Renamed from mpz/mul_siui.c.
+	* mpz/mul_ui.c, mpz/mul_ui.c: New files, using mpz/mul_i.h.
+	* mpz/Makefile.am: Consequent updates.
+	(INCLUDES): Remove -DOPERATION_$*.
+
+	* mpf/fits_s.h: Renamed and adapted from mpf/fits_s.c.
+	* mpf/fits_sshort.c, mpf/fits_sint.c, mpf/fits_slong.c: New files.
+	* mpf/fits_u.h: Renamed and adapted from mpf/fits_u.c.
+	* mpf/fits_ushort.c, mpf/fits_uint.c, mpf/fits_ulong.c: New files.
+	* mpf/Makefile.am: Consequent updates.
+	(INCLUDES): Remove -DOPERATION_$*.
+
+	* cxx/osfuns.cc (__gmp_doprnt_params_from_ios): Don't use ios::hex etc
+	as cases in a switch, they're not constant in g++ 3.0.
+
+	* mpn/Makeasm.am (.s.o, .s.obj, .S.o, .S.obj, .asm.o, .asm.obj):
+	Locate source file with test -f the same as automake.
+	(.S): Let CCAS do the preprocessing, and run libtool for .S.lo.
+	(.asm.lo): Run libtool via m4-ccas to get new style foo.lo right.
+	(COMPILE_FLAGS): Add $(DEFAULT_INCLUDES), per new automake.
+	* mpn/m4-ccas: New file.
+	* mpn/Makefile.am (EXTRA_DIST): Add it.
+	* mpn/asm-defs.m4: Add m4_not_for_expansion(`DLL_EXPORT').
+	* mpn/x86/x86-defs.m4: Undefine PIC if DLL_EXPORT is set.
+	* configure.in (CFLAGS_PIC, ASMFLAGS_PIC): Remove, no longer needed.
+
+	* acinclude.m4 (GMP_FUNC_VSNPRINTF): Warn what's omitted when
+	vsnprintf not available.
+
+	* mpn/underscore.h: Remove file, not used since m68k converted to asm.
+	* mpn/Makefile.am (EXTRA_DIST): Remove it.
+
+	* tests/refmpz.c: Add <stdlib.h>, for free().
+
+2001-10-01  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/x86/pentium4/sse2/submul_1.asm: Apply some algebraic
+	simplifications.
+	* mpn/x86/pentium4/sse2/addmul_1.asm: Comment.
+
+2001-10-01  Kevin Ryde  <kevin@swox.se>
+
+	* configure.in (--enable-cxx): New option for C++ support.
+	Add cxx and tests/cxx subdirectories.
+	* ltmain.sh, aclocal.m4: Update to libtool 2001-09-30.
+
+	* cxx/Makefile.am, cxx/Makefile.in, cxx/osdoprnti.cc, cxx/osfuns.cc,
+	cxx/osmpf.cc, cxx/osmpq.cc, cxx/osmpz.cc: New files.
+	* Makefile.am: Add them, in new libgmpxx.
+	* gmp-h.in, gmp-impl.h: Prototypes and support.
+	* tests/cxx/Makefile.am, tests/cxx/Makefile.in,
+	tests/cxx/t-ostream.cc: New files.
+
+	* tune/speed.h (SPEED_ROUTINE_MPN_GCD_CALL,
+	SPEED_ROUTINE_MPN_GCDEXT_ONE): mpn_gcdext needs size+1 for
+	destinations.  Found by Torbjorn.
+
+	* gmp-h.in (__GNU_MP__, __GNU_MP_VERSION): Bump to 4.0.
+	* mp-h.in (__GNU_MP__): Ditto.
+	* gmp.texi, Makefile.am, compat.c: Amend version 3.2 to 4.0.
+
+	* acinclude.m4 (GMP_PROG_CXX_WORKS): New macro.
+	(GMP_PROG_CC_WORKS): Write "conftest" test program, not a.out.
+
+	* gmp-impl.h (struct gmp_asprintf_t): Moved from printf/vasprintf.c.
+	(GMP_ASPRINTF_T_INIT): New macro.
+	(GMP_ASPRINTF_T_NEED): New macro, adapted from vasprintf.c NEED().
+	* printf/vasprintf.c: Use these.
+
+	* printf/asprntffuns.c: New file.
+	* printf/Makefile.am, Makefile.am: Add it.
+	* printf/asprntffuns.c, printf/vasprintf.c, gmp-impl.h
+	(__gmp_asprintf_memory, __gmp_asprintf_reps, __gmp_asprintf_final):
+	Move to asprntffuns.c, rename to __gmp and make global, remove
+	spurious formal parameters from __gmp_asprintf_final.
+
+	* configure.in (j90-*-*, sv1-*-*): Don't duplicate $path in $add_path.
+	(*-*-mingw*): Don't assemble with -DPIC (as per cygwin).
+
+	* printf/snprntffuns.c (gmp_snprintf_final): Remove spurious formal
+	parameters.
+
+	* tune/tuneup.c (POWM_THRESHOLD): Reduce stop_factor to 1.1 to help
+	Cray vector systems.
+
+	* tests/misc.c (tests_rand_start): Print GMP_CHECK_RANDOMIZE=NN to
+	facilitate cut and paste when re-running.
+	* tests/mpz/t-inp_str.c (check_data): Add more diagnostic prints.
+
+2001-09-30  Kent Boortz  <kent@swox.com>
+
+	* macos/configure, macos/Makefile.in, macos/README: Updates for gmp 4.
+	* gmp-h.in (_GMP_H_HAVE_FILE): Recognise Apple MPW.
+
+2001-09-30  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/cray/ieee/submul_1.c: Rewrite.  Streamline multiplications;
+	use `majority' logic.
+
+2001-09-27  Torbjorn Granlund  <tege@swox.com>
+
+	* gmp-h.in (__GMPN_AORS_1): Rewrite to work around Cray compiler bug.
+
+2001-09-26  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/x86/pentium4/sse2/gmp-mparam.h: New file.
+
+2001-09-26  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/x86/pentium4/sse2/dive_1.asm: New file.
+	* mpn/x86/pentium4/sse2/submul_1.asm: New file.
+	* mpn/x86/pentium4/sse2/sqr_basecase.asm: New file.
+
+	* mpn/x86/pentium/copyi.asm: New file, based on past work by Torbjorn.
+	* mpn/x86/pentium/copyi.asm: New file, ditto.
+	* mpn/x86/pentium/com_n.asm: Rewrite, ditto.
+
+	* printf/snprntffuns.c (gmp_snprintf_format): Copy va_list in case
+	vsnprintf trashes it.
+	* printf/vasprintf.c (gmp_asprintf_format): Ditto.
+	* gmp-impl.h, doprnt.c (va_copy): Move to gmp-impl.h.
+
+	* tests/mpz/t-cmp_d.c (check_low_z_one): Patch by Torbjorn for vax
+	limited float range.
+
+2001-09-23  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/vax/lshift.s: Change `jsob*' to `sob*'.
+	* mpn/vax/rshift.s: Likewise.
+
+2001-09-23  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/x86/pentium4/sse2/mul_basecase.asm: Some simple but real code.
+
+	* printf/doprnt.c: Use va_copy for va_list variables, copy function
+	parameter in case it's call-by-reference.
+
+	* tune/freq.c (speed_cpu_frequency_bsd_dmesg): New function.
+	(speed_cpu_frequency_table): Use it.
+
+        * tune/many.pl (popcount, hamdist): Fix declared return value.
+	(sb_divrem_mn): Remove a spurious duplicate entry.
+	(CLEAN): Add tmp-$objbase.c when using that for .h files.
+	(macro_speed): Give a default for .h files.
+	Add ATTRIBUTE_CONST or __GMP_ATTRIBUTE_PURE as appropriate.
+
+	* tune/speed.h (SPEED_ROUTINE_MPN_MOD_CALL,
+	SPEED_ROUTINE_MPN_PREINV_MOD_1, SPEED_ROUTINE_MPN_POPCOUNT,
+	SPEED_ROUTINE_MPN_HAMDIST, SPEED_ROUTINE_MPN_GCD_1N,
+	SPEED_ROUTINE_MPN_GCD_1_CALL, SPEED_ROUTINE_MPZ_JACOBI): Use return
+	values so gcc 3 won't discard calls to pure or const functions.
+	(mpn_mod_1_div, mpn_mod_1_inv): Add __GMP_ATTRIBUTE_PURE.
+
+2001-09-22  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/x86/pentium4/sse2/mul_basecase.asm: New file, placeholder
+	for real code, hiding the default x86 mul_basecase.asm.
+
+2001-09-22  Kevin Ryde  <kevin@swox.se>
+
+	* configure.in (AC_PREREQ): Bump to 2.52.
+	(m4_pattern_forbid, m4_pattern_allow): New calls, forbid GMP_.
+	(AC_CHECK_HEADERS): Remove sys/types.h, already done by autoconf.
+	* acinclude.m4, configure.in (GMP_GCC_NO_CPP_PRECOMP): New macro.
+
+	* tests/devel/try.c (TYPE_PREINV_MOD_1): Don't run size==0.
+	(malloc_region): Need fd=-1 for mmap MAP_ANON on BSD.
+
+2001-09-20  Torbjorn Granlund  <tege@swox.com>
+
+	* mpz/cong.c (mpz_congruent_p): Fix one-limb c<d test.
+
+	* longlong.h: Rewrite __i370__ smul_ppmm; enable also for __s390__.
+
+	* configure.in: Add support for IBM 360, 370, 390 families.
+
+2001-09-20  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/x86/pentium4/sse2/diveby3.asm: New file.
+	* mpn/x86/pentium4/sse2/mode1o.asm: New file.
+
+2001-09-16  Kevin Ryde  <kevin@swox.se>
+
+	* printf/doprnt.c: '#' means showpoint and showtrailing for %e, %f, %g.
+	* tests/printf/t-printf.c (check_f): More test cases.
+
+2001-09-15  Torbjorn Granlund  <tege@swox.com>
+
+	* gmp-h.in (__GMPN_AORS_1): Remove param TEST, add OP and CB.
+	Postpone zeroing of (cout).
+	(__GMPN_ADD_1, __GMPN_SUB_1): Corresponding changes.
+
+2001-09-14  Kevin Ryde  <kevin@swox.se>
+
+	* ChangeLog: Merge in tests/rand/ChangeLog.
+	* tests/rand/ChangeLog: Remove file.
+
+	* printf/doprnt.c: Fix handling of a plain format after a GMP one; no
+	need to protect against negative precision internally.
+	* tests/printf/t-printf.c (check_misc): More checks.
+
+2001-09-12  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/cray/ieee/invert_limb.c: Add a PROLOGUE in a comment to have
+	HAVE_NATIVE_... defined.
+
+2001-09-11  Kevin Ryde  <kevin@swox.se>
+
+	* configure.in, gmp-h.in (__GMP_HAVE_HOST_CPU_FAMILY_power,
+	__GMP_HAVE_HOST_CPU_FAMILY_powerpc): New AC_SUBSTs.
+	* gmp-h.in (__GMPN_COPY_INCR): Use them to select the power/powerpc
+	code, rather than preprocessor defines.
+
+	* acinclude.m4, configure.in (GMP_H_ANSI): New macro.
+
+	* gmp-h.in (__GMP_EXTERN_INLINE): Add a definition for SCO 8 cc.
+
+	* gmp-h.in, version.c (gmp_version): Make the pointer "const" as well
+	as the string.
+
+	* acinclude.m4, configure.in (GMP_PROG_CC_IS_XLC): Recognise xlc when
+	invoked under another name (cc, xlc128, etc).
+	* acinclude.m4 (GMP_PROG_CC_IS_GCC): Print a message when recognised.
+
+2001-09-11  Torbjorn Granlund  <tege@swox.com>
+
+	* gmp-h.in: Let __DECC mean __GMP_HAVE_CONST, etc.
+	* mp-h.in: Likewise.
+
+2001-09-10  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/x86/pentium4/mmx/lshift.asm: New file.
+	* mpn/x86/pentium4/mmx/rshift.asm: New file.
+
+	* tests/mpn/t-iord_u.c (check_incr_data): Work around HP compiler bug.
+	(check_decr_data): Likewise.
+
+2001-09-08  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (Integer Logic and Bit Fiddling): Update mpz_hamdist
+	behaviour, clarify mpz_popcount a touch.
+	(Language Bindings): Add mlton, fix alphabetical order.
+	(Single Limb Division): Describe 2 or 1/2 limbs at a time style.
+
+	* configure.in (AC_CHECK_FUNCS): Add mmap.
+	* tests/devel/try.c (malloc_region): Use mmap if available.
+
+	* tests/refmpz.c, tests/tests.h (refmpz_hamdist): New function.
+	* tests/mpz/t-hamdist.c: New file.
+	* tests/mpz/Makefile.am: Add it.
+
+	* mpz/hamdist.c: Support neg/neg operands.
+
+	* macos/Makefile.in: Remove dual compile of mpq/aors.c and
+	mpn/generic/popham.c.
+
+	* gmp-impl.h (popc_limb): New macro, adapted from mpn/generic/popham.c.
+	For 64-bits reuse 0x33...33 constant.
+	* mpn/generic/popcount.c, mpn/generic/hamdist.c: Split from popham.c,
+	use popc_limb macro, remove unused "i", don't bother with "register"
+	qualifiers.
+	* mpn/generic/popham.c: Remove file.
+
+	* ltmain.sh, configure, aclocal.m4: Update to libtool 1.4.1, with one
+	ltdll.c generation patch.
+	* doc/configuration: Misc updates, note libtool patch used.
+
+	* mpn/x86/pentium4/sse2/mul_1.asm: Use pointer increments not indexed
+	addressing, to get 4.0 c/l flat.
+
+	* tests/mpq/t-cmp_si.c (check_data): Use ULONG_MAX for denominators.
+
+	* tests/misc.c (mpz_negrandom): Use given rstate, not RANDS.
+
+2001-09-07  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/x86/pentium4/sse2/addmul_1.asm: New file.
+
+2001-09-04  Kevin Ryde  <kevin@swox.se>
+
+	* tune/freq.c: Define a HAVE for each speed_cpu_frequency routine to
+	avoid duplicating conditionals.
+	(speed_cpu_frequency_sco_etchw): New function.
+	(speed_cpu_frequency_table): Use it.
+	* tune/README: Mention SCO openunix 8 /etc/hw.
+
+	* mpz/fib_ui.c: Use ?: to avoid a gcc 3 bug on powerpc64.
+	Store back a carry for limb<long.
+
+	* mpn/x86/k7/mmx/divrem_1.asm, mpn/x86/k7/mmx/mod_1.asm,
+	mpn/x86/p6/mmx/divrem_1.asm: Fix a couple of comments.
+
+	* config.guess: Give m68020 for 68020 or better, not m68k.
+	* configfsf.guess: Update to 2001-09-04.
+
+2001-09-02  Kevin Ryde  <kevin@swox.se>
+
+	* configure.in (m68k-*-*): Let m68k mean 68000, not 68020.
+	* gmp.texi (Notes for Particular Systems): Update.
+
+	* gmp-impl.h (union ieee_double_extract) [m68k]: Use longs, since int
+	might be only 16 bits.
+
+	* tests/mpq/t-aors.c: New file.
+	* tests/mpq/Makefile.am: Add it.
+
+	* tests/refmpq.c: New file.
+	* tests/Makefile.am: Add it.
+	* tests/tests.h: Add prototypes.
+
+	* mpq/aors.c: Share object code for mpq_add and mpq_sub.
+	* Makefile.am, mpq/Makefile.am: Single mpq/aors.lo now.
+
+	* tests/devel/try.c (TYPE_SUBMUL_1): Use correct reference routine.
+
+2001-08-30  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/x86/x86-defs.m4 (cmov_available_p): Add pentium4.
+
+	* gmp-h.in: Put #define renamings with prototypes.
+	Remove commented out #defines of gmp-impl.h things.
+	(mpn_invert_limb): Remove #define, already in gmp-impl.h.
+	(mpn_lshiftc, mpn_rshiftc): Remove #defines, unused.
+	(mpn_addsub_nc): Add prototype to #define.
+
+2001-08-28  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi: Switch to GFDL.
+	(Top): Arrange copyright and conditions to appear here too.  For
+	clarity have all this before the miscellaneous macro definitions.
+	(Copying): Refer to COPYING.LIB file, mention plain GPL2 in demo
+	programs.
+	(Contributors, References): Use @appendix rather than @unnumbered.
+	(GNU Free Documentation License): New appendix.
+	(@contents): Move to start of document, use only for tex (not html).
+	(Debugging): Add leakbug.
+	(Build Options): Add pentium4.
+	(I/O of Rationals): Add mpq_inp_str.
+
+	* fdl.texi: New file, with two @appendix directive tweaks.
+	* Makefile.am (gmp_TEXINFOS): Add it.
+
+	* tests/mpz/io.c: Check mpz_inp_str return against ftell, send error
+	messages just to stdout.
+
+	* mpz/inp_str.c, gmp-impl.h (__gmpz_inp_str_nowhite): New function,
+	and share a __gmp_free_func call.
+	* mpq/inp_str.c: New file.
+	* Makefile.am, mpq/Makefile.am: Add it.
+	* tests/mpq/t-inp_str.c: New file.
+	* tests/mpq/Makefile.am (check_PROGRAMS): Add it.
+
+	* configure.in, acconfig.h (HAVE_HOST_CPU_FAMILY_power,
+	HAVE_HOST_CPU_FAMILY_powerpc, HAVE_HOST_CPU_FAMILY_x86): AC_DEFINEs
+	for processor families.
+	* gmp-impl.h: Use them, rather than cpp defines.
+
+	* demos/Makefile.am (primes_LDADD): Use $(LIBM), for log().
+
+	* tune/many.pl, tune/Makefile.am: Fix some from clean and distclean.
+
+2001-08-26  Kevin Ryde  <kevin@swox.se>
+
+	* tests/devel/try.c (ARRAY_ITERATION): Make types match on "?:" legs.
+	(TYPE_MPZ_JACOBI, TYPE_MPZ_KRONECKER): Remove some superseded code.
+
+	* tests/printf/t-printf.c (check_plain): Don't compare "all digits"
+	precision against plain printf.
+
+	* tune/Makefile.am: Eliminate empty TUNE_MPZ_SRCS.
+
+	* configure, config.in, INSTALL.autoconf: Update to autoconf 2.52.
+	* */Makefile.in, mdate-sh, missing, aclocal.m4, configure: Update to
+	automake 1.5.
+	* configfsf.guess, configfsf.sub: Update to 2001-08-23.
+
+2001-08-24  Torbjorn Granlund  <tege@swox.com>
+
+	* demos/primes.c: Complete rewrite.
+
+2001-08-24  Kevin Ryde  <kevin@swox.se>
+
+	* longlong.h: Test __ppc__ for apple darwin cc, reported by Jon
+	Becker.  Also test __POWERPC__, PPC and __vxworks__.
+
+	* tune/speed.h (speed_cyclecounter) [x86]: Don't clobber ebx in PIC.
+
+2001-08-22  Kevin Ryde  <kevin@swox.se>
+
+	* configure.in (x86 mmx): Correction to mmx path stripping.
+
+2001-08-17  Kevin Ryde  <kevin@swox.se>
+
+	* configure.in, acinclude.m4, Makefile.am, printf/Makefile.am,
+	tests/printf/Makefile.am, gmp-h.in, gmp-impl.h, gmp.texi: Remove C++
+	support, for the time being.
+	* printf/doprntfx.cc, doprntix.cc, osfuns.cc, osmpf.cc, osmpq.cc,
+	osmpz.cc, tests/printf/t-ostream.cc: Remove files.
+
+	* printf/doprnt.c, printf/doprntf.c, gmp-impl.h: Use a single
+	__gmp_doprnt_mpf, rather than a separate ndigits calculation.
+	* printf/doprnt.c, printf/doprntf.c, gmp-impl.h, gmp.texi,
+	tests/printf/t-printf.c: Let empty or -1 prec mean all digits for mpf.
+	* printf/doprnt.c, tests/printf/t-printf.c: Accept h or l in %n; let
+	negative "*" style width mean left justify.
+
+	* gmp-impl.h, mpf/get_str.c (MPF_SIGNIFICANT_DIGITS): New macro,
+	extracted from mpf/get_str.c.
+
+	* libmp.sym: New file.
+	* Makefile.am (libmp_la_LDFLAGS): Use it.
+	(DISTCLEANFILES): Remove asm-syntax.h, no longer generated.
+	Remove some comments about "make check".
+
+	* demos/perl/GMP.pm, GMP.xs, GMP/Mpf.pm: Add printf and sprintf,
+	change get_str to string/exponent for floats, remove separate
+	mpf_get_str.
+	* demos/perl/GMP/Mpf.pm (overload_string): Use $# (default "%.g").
+	* demos/perl/typemap: Fix some duplicate string entries.
+	* demos/perl/test.pl: Update tests, split overloaded constants into ...
+	* demos/perl/test2.pl: ... this new file.
+	* demos/perl/Makefile.PL (clean): Add test.tmp.
+
+2001-08-16  Kevin Ryde  <kevin@swox.se>
+
+	* printf/snprntffuns.c (gmp_snprintf_format): Correction to bufsize-1
+	return value handling.
+
+	* demos/calc/calc.y: Reposition "%{" so copyright notice gets into
+	generated files.
+
+	* INSTALL: Use gmp_printf.
+
+2001-08-14  Kevin Ryde  <kevin@swox.se>
+
+	* mpz/inp_str.c: Fix return value (was 1 too big).
+	* tests/mpz/t-inp_str.c: New file.
+	* tests/mpz/Makefile.am: Add it.
+
+	* mpn/x86/pentium4/sse2/add_n.asm: New file.
+	* mpn/x86/pentium4/sse2/sub_n.asm: New file.
+	* mpn/x86/pentium4/sse2/mul_1.asm: New file.
+
+2001-08-12  Kevin Ryde  <kevin@swox.se>
+
+	* printf/sprintffuns.c, printf/doprntf.c: Don't use sprintf return
+	value (it's a pointer on SunOS 4).
+
+	* acinclude.m4 (GMP_ASM_X86_SSE2, GMP_STRIP_PATH): New macros.
+	* configure.in: Add pentium4 support.
+	* mpn/x86/pentium4, mpn/x86/pentium4/mmx, mpn/x86/pentium4/sse2: New
+	directories.
+	* mpn/x86/README: Update.
+
+2001-08-10  Torbjorn Granlund  <tege@swox.com>
+
+	* demos/pexpr.c (setup_error_handler): Catch also SIGABRT.
+
+2001-07-31  Kevin Ryde  <kevin@swox.se>
+
+	* tests/refmpn.c (refmpn_mul_1c): Allow low to high overlaps.
+
+	* gmp-h.in, gmp-impl.h (_gmp_rand): Move prototype to gmp-impl.h.
+
+	* tune/Makefile.am (EXTRA_DIST): Add many.pl.
+
+2001-07-28  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (Random Number Functions): Old rand functions no longer use
+	the C library.
+
+	* configure.in, acinclude.m4 (GMP_FUNC_VSNPRINTF): New macro.
+
+	* mpn/generic/get_str.c: Add an ASSERT for high limb non-zero.
+
+2001-07-24  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (Build Options): Add --enable-cxx.
+	(Converting Floats): Note mpf_get_str only generates accurately
+	representable digits.
+	(Low-level Functions): Note mpn_get_str requires non-zero high limb.
+	(Formatted Output): New chapter.
+	(Multiplication Algorithms): Use @quotation with @multitable.
+	(Toom-Cook 3-Way Multiplication): Ditto.
+
+	* tests/memory.c (tests_free_nosize): New function.
+	* tests/tests.h (tests_allocate etc): Add prototypes.
+
+	* tests/printf: New directory.
+	* tests/printf/Makefile.am, t-printf.c, t-ostream.cc: New files.
+	* configure.in, tests/Makefile.am: Add them.
+
+	* configure.in, acinclude.m4 (GMP_PROG_CXX): New macro.
+	* configure.in (--enable-cxx): New option.
+	(AC_CHECK_HEADERS): Add locale.h and sys/types.h, remove unistd.h.
+	(AC_CHECK_TYPES): Add intmax_t, long double, long long, ptrdiff_t,
+	quad_t.
+	(AC_CHECK_FUNCS): Add localeconv, memset, obstack_vprintf, snprintf,
+	strchr, vsnprintf.
+	(AC_CHECK_DECLS): Add vfprintf.
+
+	* gmp-h.in, gmp-impl.h: Additions for gmp_printf etc.
+
+	* printf: New directory.
+	* printf/Makefile.am, asprintf.c, doprnt.c, doprntf.c, doprntfx.cc,
+	doprnti.c, doprntix.cc, fprintf.c, obprintf.c, obprntffuns.c,
+	obvprintf.c, osfuns.cc, osmpf.cc, osmpq.cc, osmpz.cc, printf.c,
+	printffuns.c, snprintf.c, snprntffuns.c, sprintf.c, sprintffuns.c,
+	vasprintf.c, vfprintf.c, vprintf.c, vsnprintf.c, vsprintf.c: New
+	files.
+	* configure.in, Makefile.am: Add them.
+
+	* configure.in (HAVE_INLINE): Remove AC_DEFINE, unused.
+	(AC_CHECK_TYPES): Don't test for void, assume it always exists.
+
+	* gmp-impl.h (__GMP_REALLOCATE_FUNC_MAYBE): New macro.
+	* mpz/get_str.c, mpq/get_str.c, mpf/get_str.c: Use it.
+
+	* gmp-impl.h (mpn_fib2_ui): Use __MPN.
+	(MPN_COPY_DECR): Fix an ASSERT.
+	(CAST_TO_VOID): Remove macro.
+
+	* gmp-h.in (mpq_out_str): Give #define even without prototype.
+	(mpz_cmp_d, mpz_cmpabs_d): Corrections to #defines.
+
+	* tests/devel/try.c: Add mpn_add and mpn_sub, don't use CAST_TO_VOID.
+
+2001-07-23  Torbjorn Granlund  <tege@swox.com>
+
+	* config.guess: Recognize pentium4.
+	* config.sub: Recognize pentium4.
+
+2001-07-17  Kevin Ryde  <kevin@swox.se>
+
+	* gmp-h.in (__GMPN_AORS_1): Remove x86 and gcc versions, leave just
+	one version.
+	(__GMPN_ADD, __GMPN_SUB): New macros, rewrite of mpn_add and mpn_sub.
+	(mpn_add, mpn_sub): Use them.
+	(__GMPN_COPY_REST): New macro.
+
+	* gmp-h.in, gmp-impl.h, acinclude.m4: Remove __GMP_ASM_L and
+	__GMP_LSYM_PREFIX, revert to ASM_L in gmp-impl.h and AC_DEFINE of
+	LSYM_PREFIX.
+
+2001-07-11  Kevin Ryde  <kevin@swox.se>
+
+	* gmp-h.in (__GMPN_ADD_1 etc) [x86]: Don't use this on egcs 2.91.
+
+        * mpz/fits_uint.c, fits_ulong.c, mpz/fits_ushort.c: Split up fits_u.c.
+	* mpz/fits_u.c: Remove file.
+	* mpz/Makefile.am, macos/Makefile.in: Update.
+
+	* tests/refmpn.c,tests.h (refmpn_copy): New function.
+	* tests/devel/try.c (TYPE_ZERO): No return value from call.
+	(TYPE_MODEXACT_1_ODD, TYPE_MODEXACT_1C_ODD): Share call with
+	TYPE_MOD_1 and TYPE_MOD_1C.
+	(MPN_COPY, __GMPN_COPY, __GMPN_COPY_INCR): Add testing.
+
+2001-07-10  Kevin Ryde  <kevin@swox.se>
+
+	* gmp-h.in (__GMPN_COPY): Add form to help gcc on power and powerpc.
+	* gmp-impl.h (MPN_COPY_INCR, MPN_COPY_DECR, MPN_ZERO): Ditto.
+	* mpn/powerpc64/copyi.asm, mpn/powerpc64/copyd.asm: Remove files.
+
+	* mpz/tdiv_ui.c: Eliminate some local variables (seems to save code on
+	i386 gcc 2.95.x), remove a bogus comment about quotient.
+
+	* errno.c, gmp-impl.h (__gmp_exception, __gmp_divide_by_zero,
+	__gmp_sqrt_of_negative): New functions.
+	* gmp-impl.h (GMP_ERROR, DIVIDE_BY_ZERO, SQRT_OF_NEGATIVE): Use them.
+
+	* randclr.c, randraw.c: Use ASSERT(0) for unrecognised algorithms.
+
+2001-07-07  Kevin Ryde  <kevin@swox.se>
+
+	* configure.in (powerpc*-*-*): Use -no-cpp-precomp for Darwin.
+
+	* tests/mpbsd/t-itom.c: Renamed from t-misc.c.
+	* tests/mpbsd/t-misc.c: Remove file.
+	* tests/mpbsd/Makefile.am: Update.
+
+	* tests/mpf/t-set_si.c,t-cmp_si.c,t-gsprec.c: Split from t-misc.c.
+	* tests/mpf/t-misc.c: Remove file.
+	* tests/mpf/Makefile.am: Update.
+
+	* tests/mpz/t-oddeven.c,t-set_si.c,t-cmp_si.c: Split from t-misc.c.
+	* tests/mpz/t-misc.c: Remove file.
+	* tests/mpz/Makefile.am: Update.
+
+	* stack-alloc.c: Add some alignment ASSERTs.
+
+	* gmp-impl.h (MPN_NORMALIZE): Add notes on x86 repe/scasl slow.
+
+	* tests/devel/try.c (MPN_ZERO): Add testing.
+	* tune/speed.c,speed.h,common.c,many.pl (MPN_ZERO): Add measuring.
+
+	* mpn/x86/divrem_1.asm: Update a remark about gcc and "loop".
+
+	* tests/mpq/t-cmp_si.c: New file.
+	* tests/mpq/Makefile.am: Add it.
+
+	* tests/misc.c,tests.h (mpq_set_str_or_abort): New function.
+
+	* mpq/cmp_si.c: New file.
+	* Makefile.am, mpq/Makefile.am: Add it.
+	* gmp-h.in (mpq_cmp_si): Add prototype.
+	* gmp.texi (Comparing Rationals): Add doco.
+
+	* gmp-h.in (_GMP_H_HAVE_FILE): Add _FILE_DEFINED for microsoft, add
+	notes on what symbols are for what systems.
+
+2001-07-06  Torbjorn Granlund  <tege@swox.com>
+
+	* longlong.h (ibm032 umul_ppmm): Fix typo.
+	* longlong.h (sparclite sdiv_qrnnd): Fix typo.
+
+2001-07-03  Kevin Ryde  <kevin@swox.se>
+
+	* mpz/bin_ui.c (DIVIDE): Use MPN_DIVREM_OR_DIVEXACT_1.
+	* mpz/bin_uiui.c (MULDIV): Ditto, and use local variables for size and
+	pointer.
+
+	* acinclude.m4 (GMP_INCLUDE_GMP_H): New macro, use it everywhere gmp.h
+	is wanted at configure time.
+	* acinclude.m4, configure.in (GMP_H_EXTERN_INLINE, GMP_H_HAVE_FILE):
+	New macros.
+
+	* gmp-h.in (__GMP_EXTERN_INLINE): Set to "inline" for C++.
+	(mpn_add, mpn_sub): Use new style __GMP_EXTERN_INLINE.
+	* gmp-h.in, mp-h.in, gmp-impl.h (_EXTERN_INLINE): Remove, unused.
+	* mpn/generic/add.c, mpn/generic/sub.c: New files.
+	* mpn/generic/inlines.c: Remove file.
+	* configure.in, mpn/Makefile.am: Update.
+
+	* gmp.texi (GMP Basics): Note the need for stdio.h to get FILE
+	prototypes.
+
+2001-07-01  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (Build Options, Reentrancy): Updates for new
+	--enable-alloca behaviour.
+	(Debugging): Describe --enable-alloca=debug.
+	(Miscellaneous Integer Functions): Note mpz_sizeinbase ignores signs.
+	(Low-level Functions): Give a formula for mpn_gcdext cofactor.
+	(Factorial Algorithm): New section.
+	(Binomial Coefficients Algorithm): New section.
+	Misc tweaks elsewhere.
+
+	* mpf/set_prc.c: Merge the two truncation conditionals, misc cleanups,
+	no functional changes.
+
+	* mpn/*/gmp-mparam.h (DIVEXACT_1_THRESHOLD): Add tuned values.
+	* gmp-impl.h (DIVEXACT_1_THRESHOLD): Make the default 0 when
+	2*UMUL_TIME < UDIV_TIME.
+
+	* mpn/x86/p6/dive_1.asm: New file.
+
+	* mpn/x86/dive_1.asm: New file.
+	* mpn/x86/gmp-mparam.h (DIVEXACT_1_THRESHOLD): Use it always.
+
+	* tests/refmpn.c, tests.h (refmpn_zero): New function.
+	* tests/devel/try.c: Use it.
+
+	* tests/refmpn.c (refmpn_sb_divrem_mn): Use refmpn_cmp, not mpn_cmp.
+
+	* tests/mpf/t-get_d.c (main): Use || not |.
+
+	* tests/misc.c, tests/t-modlinv.c, tests/mpq/t-get_str.c,
+	tests/mpf/reuse.c: Add string.h.
+
+2001-06-29  Kevin Ryde  <kevin@swox.se>
+
+	* tune/speed.h (SPEED_ROUTINE_MPN_FIB2_UI,
+	SPEED_ROUTINE_COUNT_ZEROS_C): Corrections to TMP block handling.
+
+	* gmp-impl.h (MPN_TOOM3_MUL_N_MINSIZE, MPN_TOOM3_SQR_N_MINSIZE):
+	Corrections to these to account for adding tD into E.
+	(MPN_INCR_U, MPN_DECR_U) [WANT_ASSERT]: Add size
+	assertions, since mpn_add_1 and mpn_sub_1 from gmp.h don't get them.
+	(MPN_DIVREM_OR_DIVEXACT_1): Add an assert of no remainder.
+
+	* assert.c: Add stdlib.h for abort prototype.
+	* tests/spinner.c, trace.c, t-constants.c, t-count_zeros.c,
+	t-gmpmax.c, t-modlinv.c: Ditto.
+	* tests/mpz/t-bin.c, t-cmp.c, t-get_si.c, t-misc.c, t-popcount.c,
+	t-set_str.c, t-sizeinbase.c: Ditto.
+	* tests/mpq/t-equal.c, t-get_str.c, t-set_f.c, t-set_str.c: Ditto.
+	* tests/mpf/t-fits.c, t-get_d.c, t-get_si.c, t-int_p.c, t-misc.c,
+	t-trunc.c: Ditto.
+	* tests/mpbsd/allfuns.c, t-misc.c: Ditto.
+
+	* mpn/generic/mul_n.c, mpz/cfdiv_r_2exp.c: Use MPN_INCR_U rather than
+	mpn_incr_u.
+
+	* tests/devel/try.c (TYPE_SB_DIVREM_MN): More fixes for calling method.
+
+	* mpn/x86/k6/cross.pl: More insn exceptions.
+
+2001-06-23  Kevin Ryde  <kevin@swox.se>
+
+	* gmp-h.in (__GMPN_ADD_1, __GMPN_SUB_1) [i386]: Fix some asm output
+	constraints.
+
+	* gmp-impl.h (modlimb_invert): Mask after shifting, so mask constant
+	fits a signed byte.
+
+	* tests/devel/try.c (TYPE_SB_DIVREM_MN): Fix initial fill of quotient
+	with garbage.
+
+2001-06-20  Kevin Ryde  <kevin@swox.se>
+
+	* config.guess (rs6000-*-aix4* | powerpc-*-aix4*): Suppress error
+	messages if $CC_FOR_BUILD or program don't work.
+
+	* mpz/sqrt.c,sqrtrem.c: Special case for op==0, to avoid TMP_ALLOC(0).
+	* tests/refmpf.c (refmpf_add, refmpf_sub): Avoid TMP_ALLOC(0).
+
+	* tests/mpn/t-aors_1.c: New file.
+	* tests/mpn/Makefile.am: Add it.
+
+	* gmp-h.in (__GMPN_ADD_1, __GMPN_SUB_1): New macros, rewrite of
+	mpn_add_1 and mpn_sub_1, better code for src==dst and/or n==1,
+	separate versions for gcc x86, gcc generic, and non-gcc.
+	(mpn_add_1, mpn_sub_1): Use them.
+	(mpn_add, mpn_sub): Ditto, to get inlines on all compilers.
+	(extern "C") [__cplusplus]: Let this encompass the extern inlines too.
+	* mpn/generic/add_1.c,sub_1.c: New files, force code from gmp.h.
+	* configure.in, mpn/Makefile.am: Add them.
+
+	* acinclude.m4 (GMP_ASM_LSYM_PREFIX): AC_SUBST __GMP_LSYM_PREFIX
+	rather than AC_DEFINE LSYM_PREFIX.
+	* gmp-h.in (__GMP_LSYM_PREFIX): New substitution.
+	(__GMP_ASM_L): New macro.
+	* gmp-impl.h (ASM_L): Use it.
+
+	* acinclude.m4, configure.in (GMP_C_ATTRIBUTE_MALLOC): New macro.
+	* gmp-impl.h: Use it for all the malloc based TMP_ALLOCs.
+
+	* stack-alloc.h: Remove file.
+	* tal-reent.c: New file.
+	* Makefile.am: Update.
+
+	* acinclude.m4, configure.in (GMP_OPTION_ALLOCA): New macro, add
+	malloc-reentrant method, use stack-alloc.c as malloc-notreentrant,
+	make "reentrant" the default.
+	* gmp-impl.h (__TMP_ALIGN): Moved from stack-alloc.c, use a union to
+	determine the value, and demand only 4 bytes align on 32-bit systems.
+	* gmp-impl.h (WANT_TMP_NOTREENTRANT): Move global parts of
+	stack-alloc.h to here, allow non power-of-2 __TMP_ALIGN in TMP_ALLOC.
+	* gmp-impl.h: Extend extern "C" to TMP_ALLOC declarations.
+	* stack-alloc.c (tmp_stack): Move private parts of stack-alloc.h to
+	here, use gmp-impl.h.
+
+	* gmp-impl.h (TMP_ALLOC_LIMBS_2): New macro.
+	* mpz/fib_ui.c, mpz/jacobi.c, mpq/cmp.c, mpn/generic/fib2_ui.c: Use it.
+
+	* mpfr/exp2.c: Patch by Paul to match TMP_MARK and TMP_FREE in loop.
+	* mpfr/sqrt.c: Scope nested TMP_DECL into nested { } block, patch by
+	Paul, tweaked by me.
+	* mpfr/agm.c: Ditto, and add a final TMP_FREE(marker2).
+
+	* gmp-h.in (mpn_cmp): Add __GMP_ATTRIBUTE_PURE.
+
+	* INSTALL: Clarify "make install", tweak formatting a bit.
+
+2001-06-17  Kevin Ryde  <kevin@swox.se>
+
+	* configure.in, Makefile.am, gmp-impl.h: Add a debugging TMP_ALLOC,
+	selected with --enable-alloca=debug.
+	* tal-debug.c: New file.
+	* configure.in, Makefile.am: Compile stack-alloc.c only for
+	--disable-alloca.
+	* assert.c (__gmp_assert_header): New function, split from
+	__gmp_assert_fail.
+
+	* mpz/lcm.c: Don't TMP_MARK and then just return. Remove unnecessary
+	_mpz_realloc prototype.
+
+	* mpn/generic/mul.c (mpn_sqr_n): Use __gmp_allocate_func for toom3
+	temporary workspace.
+
+2001-06-15  Kevin Ryde  <kevin@swox.se>
+
+	* tests/mpz/t-set_f.c: New file.
+	* tests/mpz/Makefile.am (check_PROGRAMS): Add it.
+
+	* mpz/set_f.c: Share MPN_COPY between pad and trunc cases, do exp<=0
+	test earlier, store SIZ(w) earlier.
+
+	* tests/t-count_zeros.c: New file.
+	* tests/t-gmpmax.c: New file.
+	* tests/Makefile.am (check_PROGRAMS): Add them.
+
+	* mp_clz_tab.c: Compile the table only if longlong.h says it's needed;
+	add an internal-use-only comment.
+	* tune/common.c: Force a __clz_tab for convenience when testing.
+
+	* mpn/x86/pentium/gmp-mparam.h, mpn/x86/pentium/mmx/gmp-mparam.h: Add
+	COUNT_LEADING_ZEROS_NEED_CLZ_TAB, for mod_1.asm.
+
+	* longlong.h (count_leading_zeros) [pentium]: Decide to go with float
+	method for p54.
+	(count_leading_zeros) [alpha]: Add COUNT_LEADING_ZEROS_NEED_CLZ_TAB.
+	(__clz_tab): Provide a prototype only if it's needed.
+
+	* tests/trace.c (mpz_trace): Don't use = on structures.
+	(mpn_trace): Set _mp_alloc when creating mpz.
+
+2001-06-12  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/x86/divrem_1.asm: Amend some comments about P5 speed.
+
+	* tune/README: Clarify reconfigure on gmp-mparam.h update.
+
+	* mpn/x86/p6/copyd.asm: New file.
+	* mpn/x86/p6/README: Update copyd and mod_1.
+	* mpn/x86/copyd.asm: Amend some comments.
+
+	* gmp-impl.h (__builtin_constant_p): Add dummy for non-gcc.
+	(mpn_incr_u, mpn_decr_u): Recognise incr==1 at compile time in the
+	generic code on gcc.
+
+	* gmp-impl.h (ASSERT_ZERO_P, ASSERT_MPN_NONZERO_P): New macros.
+	* mpn/generic/gcd_1.c, mpn/generic/mul_fft.c: Use them.
+	* mpz/get_d.c: Add a private mpn_zero_p.
+	* mpfr/trunc.c: Use own mpn_zero_p.
+	* tune/speed.h (SPEED_ROUTINE_MPN_GCD_1N): Use refmpn_zero_p.
+	* gmp-impl.h (mpn_zero_p): Remove, no longer needed.
+
+	* gmp-h.in, gmp-impl.h: Move MPN_CMP to gmp.h as __GMPN_CMP, leave an
+	MPN_CMP alias in gmp-impl.h.
+	* gmp-h.in (mpn_cmp): Add an inline version.
+	* mpn/generic/cmp.c: Use __GMP_FORCE_mpn_cmp to get code from gmp.h.
+
+	* acinclude.m4 (GMP_C_ATTRIBUTE_MODE): New macro.
+	* configure.in: Call it.
+	* gmp-impl.h (SItype etc): Use it.
+
+	* randraw.c (lc): Change mpn_mul_basecase->mpn_mul,
+	mpn_incr_u->MPN_INCR_U, abort->ASSERT_ALWAYS(0).
+
+	* longlong.h (count_leading_zeros) [pentiumpro]: Work around a partial
+	register stall on gcc < 3.
+
+	* gmp.texi (Introduction to GMP): Add IA-64.
+	(Notes for Particular Systems): i386 means generic x86.
+
+	* tests/t-modlinv.c: Use tests_start and tests_end.
+
+2001-06-10  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (Number Theoretic Functions): mpz_jacobi only defined for b
+	odd.  Separate the jacobi/legendre/kronecker descriptions.
+	(Low-level Functions): Document mpn_mul_1 "incr" overlaps.
+	(Language Bindings): New chapter.
+
+	* mpz/jacobi.c: Don't retaining old behaviour of mpz_jacobi on even b
+	(it wasn't documented in 3.1.1).
+	* mpz/jacobi.c, gmp-h.in (mpz_kronecker, mpz_legendre): Remove
+	separate entrypoints, just #define to mpz_jacobi.
+	* compat.c (__gmpz_legendre): Add compatibility entrypoint.
+
+	* mpn/generic/mul_1.c: Allow "incr" style overlaps.
+	* tests/devel/try.c (param_init): Test this.
+
+	* mpf/mul_ui.c: Do size==0 test earlier.
+
+2001-06-08  Kevin Ryde  <kevin@swox.se>
+
+	* gmp-impl.h (ULONG_HIGHBIT, UINT_HIGHBIT, USHRT_HIGHBIT): Cast
+	ULONG_MAX etc to unsigned long etc before attempting to right shift.
+
+	* acinclude.m4 (GMP_ASM_LSYM_PREFIX): Add an AC_DEFINE of LSYM_PREFIX.
+	* gmp-impl.h (ASM_L): New macro.
+	(mpn_incr_u, mpn_decr_u, MPN_INCR_U, MPN_DECR_U): Add i386 optimized
+	versions.
+
+	* mpn/hppa/*.s,S,asm: Use .label so the code works with gas on hppa
+	GNU/Linux too, reported by LaMont Jones <lamont@smallone.fc.hp.com>.
+	* mpn/hppa/README: Add some notes on this.
+	* acinclude.m4 (GMP_ASM_LABEL_SUFFIX): Ditto.
+
+	* mpn/Makefile.am (nodist_libdummy_la_SOURCES): Add dive_1.c,
+	fib2_ui.c.
+
+	* tests/mpn/t-iord_u.c: New file.
+	* tests/mpn/Makefile.am (check_PROGRAMS): Add it.
+
+	* configure.in (mips*-*-irix[6789]*): Make ABI=n32 the default, same
+	as in gmp 3.1.
+	* gmp.texi (ABI and ISA): Update.
+
+	* gmp.texi (Build Options): Misc tweaks.
+	(Notes for Particular Systems): Describe windows DLL handling.
+	(Known Build Problems): DJGPP needs bash 2.04.
+	(Number Theoretic Functions): mpz_invert returns 0<=r<modulus; add
+	mpz_fib2_ui, mpz_lucnum_ui, mpz_lucnum2_ui.
+	(Fibonacci Numbers Algorithm): Update for new formulas used.
+	(Lucas Numbers Algorithm): New section.
+
+	* tune/speed.c,speed.h,common.c,many.pl: Add mpn_fib2_ui, mpz_fib2_ui,
+	mpz_lucnum_ui, mpz_lucnum2_ui.
+	* demos/expr/exprz.c,README: Add lucnum.
+	* demos/perl/GMP.pm,GMP.xs,GMP/Mpz.pm,test.pl: Add fib2, lucnum,
+	lucnum2.
+
+	* tests/mpz/t-lucnum_ui.c: New file.
+	* tests/mpz/Makefile.am (check_PROGRAMS): Add it.
+	* tests/mpz/t-fib_ui.c: Check mpz_fib2_ui too, updates for new style
+	MPN_FIB2_SIZE.
+
+	* tune/tuneup.c, tune/Makefile.am, gmp-impl.h, mpn/*/gmp-mparam.h:
+	Remove FIB_THRESHOLD, no longer required.
+
+	* mpz/fib2_ui.c, mpz/lucnum_ui.c mpz/lucnum2_ui.c: New files.
+	* Makefile.am, mpz/Makefile.am: Add them.
+	* gmp-h.in (mpz_fib2_ui, mpz_lucnum_ui, mpz_lucnum2_ui): Add
+	prototypes.
+
+	* mpn/generic/fib2_ui.c: New file.
+	* configure.in (gmp_mpn_functions): Add it.
+	* gmp-impl.h (mpn_fib2_ui, FIB_TABLE, etc): Add these.
+	* mpz/fib_ui.c: Rewrite.
+
+	* acinclude.m4 (GMP_C_SIZES): Fix _LONG_LONG_LIMB define for mp_limb_t
+	size test.
+	(GMP_FUNC_ALLOCA): Add dummy __GMP_BITS_PER_MP_LIMB for gmp-h.in work.
+
+	* configure.in (CPPFLAGS): Remove -D__GMP_WITHIN_GMP, don't want it
+	everywhere.
+	* Makefile.am, mpn/Makefile.am, mpz/Makefile.am, mpq/Makefile.am,
+	mpf/Makefile.am, mpbsd/Makefile.am (INCLUDES): Set -D__GMP_WITHIN_GMP.
+
+	* configure.in (*-*-msdosdjgpp*): Forcibly disable shared libraries,
+	to make libtests.la work.
+
+	* acconfig.h (_LONG_LONG_LIMB, HAVE_MPFR): Remove dummy defines, no
+	longer needed.
+
+	* mpz/set_ui.c: Store to _mp_d[0] unconditionally.
+
+2001-05-27  Kevin Ryde  <kevin@swox.se>
+
+	* configure.in, gmp-h.in, mp-h.in: Add support for windows DLLs.
+
+2001-05-26  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (ABI and ISA, Reentrancy): Minor tweaks
+	(Notes for Package Builds): Note gmp.h is a generated file.
+	(Notes for Particular Systems): -march=pentiumpro is used for gcc
+	2.95.4 and up.
+	(Assembler Loop Unrolling): Mention non power-of-2 unrolling.
+	(Internals): New chapter.
+	* mpf/README: Remove file.
+
+	* demos/expr/README: Miscellaneous rewordings.
+
+	* demos/perl: New directory.
+	* demos/Makefile.am: Add it.
+	* demos/perl/INSTALL, Makefile.PL, GMP.pm, GMP.xs, typemap,
+	GMP/Mpz.pm, GMP/Mpq.pm, GMP/mpf.pm, GMP/Rand.pm, sample.pl, test.pl:
+	New files.
+
+	* configure, aclocal.m4: Update to autoconf 2.50.
+
+	* configure, aclocal.m4, ltmain.sh: Update to libtool 1.4.
+
+	* configure, aclocal.m4, missing, ansi2knr.c, */Makefile.in: Update to
+	automake 1.4f.
+	* Makefile.am: Conditionalize mpfr in $(SUBDIRS) to handle mpfr.info.
+	* mpfr/Makefile.am (INFO_DEPS): Remove previous mpfr.info handling.
+	* mpn/Makefile.am (GENERIC_SOURCES): Remove this, just put mp_bases.c
+	in libmpn_la_SOURCES.
+	* tests/Makefile.am (tests.h): Move from EXTRA_HEADERS to
+	libtests_la_SOURCES.
+	* ltconfig: Remove file, no longer needed.
+
+	* Makefile.am (gmp-impl.h, longlong.h, stack-alloc.h): Move from
+	EXTRA_DIST to libgmp_la_SOURCES, so they get included in TAGS.
+	* tests/rand/Makefile.am (gmpstat.h): Move to libstat_la_SOURCES
+	similarly.
+
+	* config.guess (68k-*-*): Use $SHELL not "sh", tweak some comments.
+
+	* mpfr/mpfr.texi (Introduction to MPFR): Tweak table formatting, note
+	non-free programs must be able to be re-linked.
+
+2001-05-20  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/powerpc64/addmul_1.asm,mul_1.asm,submul_1.asm: Add carry-in
+	entrypoints.
+
+2001-05-17  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (ge): Fix definition for info.
+	(Notes for Particular Systems): Mention 68k dragonball and cpu32.
+	(Efficiency): Add static linking, more about in-place operations,
+	describe mpq+/-integer using addmul.
+	(Reporting Bugs): A couple of words about self-contained reports.
+	(Floating-point Functions): Note exponent limitations of mpf_get_str
+	and mpf_set_str.
+	(Initializing Floats): Clarify mpf_get_prec, mpf_set_prec and
+	mpf_set_prec_raw a bit.
+	(Float Comparison): Note current mpf_eq deficiencies.
+
+	* gmp-h.in (__GMP_HAVE_CONST, __GMP_HAVE_PROTOTYPES,
+	__GMP_HAVE_TOKEN_PASTE): Merge GNU ansidecl.h tests for ANSI compilers.
+	* demos/expr/expr-impl-h.in: Ditto.
+
+	* gmp-impl.h (BITS_PER_MP_LIMB): Define from __GMP_BITS_PER_MP_LIMB if
+	not already in gmp-mparam.h.
+	* tests/t-constants.c (BITS_PER_MP_LIMB, __GMP_BITS_PER_MP_LIMB):
+	Check these are the same.
+
+	* gmp-h.in (mpf_get_default_prec, mpf_get_prec, mpf_set_default_prec,
+	mpf_set_prec_raw): Provide "extern inline" versions, use __GMPF on the
+	macros.
+	* mpf/get_dfl_prc.c, mpf/get_prc.c, mpf/set_dfl_prc.c,
+	mpf/set_prc_raw.c: Get code from gmp.h using __GMP_FORCE.
+
+	* gmp-h.in, gmp-impl.h (__gmp_default_fp_limb_precision): Move from
+	gmp-impl.h to gmp-h.in.
+	(__GMPF_BITS_TO_PREC, __GMPF_PREC_TO_BITS): Ditto, and use __GMPF
+	prefix and add a couple of casts.
+	* gmp-h.in (__GMP_MAX): New macro.
+	* mpf/init2.c mpf/set_prc.c: Update for __GMPF prefix.
+
+	* gmp-h.in (__GMP_BITS_PER_MP_LIMB): New templated define.
+	* acinclude.m4 (GMP_C_SIZES): Add AC_SUBST __GMP_BITS_PER_MP_LIMB,
+	remove AC_DEFINE BITS_PER_MP_LIMB.
+
+2001-05-13  Kevin Ryde  <kevin@swox.se>
+
+	* gmp-h.in, gmp.texi, Makefile.am, mpz/Makefile.am, tests/mpz/t-pow.c:
+	Remove mpz_si_pow_ui, pending full si support.
+	* mpz/si_pow_ui.c: Remove file.
+
+2001-05-11  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/x86/pentium/dive_1.asm: New file.
+
+	* mpn/powerpc32/umul.asm: Use r on registers.
+	* mpn/powerpc64/umul.asm: New file.
+	* configure.in (powerpc*-*-*): Enable umul in extra_functions.
+
+	* tests/refmpn.c, tests/tests.h (refmpn_umul_ppmm): Use same arguments
+	as normal mpn_umul_ppmm.
+	(refmpn_mul_1c): Update.
+	* tests/devel/try.c, tune/many.pl: Add some umul_ppmm testing support.
+
+	* mpn/x86/k6/mmx/popham.asm, mpn/x86/k7/mmx/popham.asm: Don't support
+	size==0.
+	* mpn/x86/pentium/popcount.asm, mpn/x86/pentium/hamdist.asm: Ditto,
+	and shave a couple of cycles from the PIC entry code.
+
+	* mpz/mul.c: Use mpn_mul_1 for size==1 and mpn_mul_2 (if available)
+	for size==2, to avoid copying; do vsize==0 test earlier.
+
+	* mpf/sub.c: Test r!=u before calling mpf_set.
+	* mpf/add.c: Ditto, and share mpf_set between usize==0 and vsize==0.
+
+	* mpn/generic/tdiv_qr.c, mpq/get_d.c, mpf/div.c, mpf/set_q.c,
+	mpf/set_str.c, mpf/ui_div.c: Test for high bit set, not for
+	count_leading_zeros zero.
+
+	* acinclude.m4 (GMP_PROG_AR, GMP_PROG_NM): Print a message if extra
+	flags are added.
+
+	* tests/mpz/t-mul_i.c: New file.
+	* tests/mpz/Makefile.am: Add it.
+
+	* mpz/mul_siui.c (mpz_mul_si): Fix for -0x80..00 on long long limb.
+
+	* gmp-h.in (mpf_set_si, mpf_set_ui): Revert last change, set exp to 0
+	when n==0.
+	* mpf/ceilfloor.c, mpf/trunc.c: Fix exp to 0 when setting r to 0.
+	* gmp-impl.h (MPF_CHECK_FORMAT): Check exp==0 when size==0.
+
+2001-05-07  Kevin Ryde  <kevin@swox.se>
+
+	* gmp-h.in (mpf_set_si, mpf_set_ui): Don't bother setting _mp_exp to 0
+	when n==0 (use 1 unconditionally).
+	* tests/mpf/t-misc.c (check_mpf_set_si): Don't demand anything of
+	_mp_exp when _mp_size is zero.
+
+	* mpn/x86/README: Note gas _GLOBAL_OFFSET_TABLE_ with leal problem.
+
+	* gmp-h.in (mpz_fits_uint_p, mpz_fits_ulong_p, mpz_fits_ushort_p):
+	Provide these as "extern inline"s.
+	(__GMP_UINT_MAX, __GMP_ULONG_MAX, __GMP_USHRT_MAX): New macros.
+	(mpz_popcount): Use __GMP_ULONG_MAX.
+	* gmp-impl.h (UINT_MAX, ULONG_MAX, USHRT_MAX): Use __GMP_U*_MAX, if
+	not already defined.
+	* mpz/fits_u.c: Use the code from gmp.h.
+
+2001-05-06  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/x86/k7/dive_1.asm: New file.
+	* mpn/x86/k7/gcd_1.asm: New file.
+	* mpn/asm-defs.m4 (m4_count_trailing_zeros): New macro.
+
+	* gmp-h.in (mpz_get_ui, mpz_getlimbn, mpz_set_q, mpz_perfect_square_p,
+	mpz_popcount, mpz_size, mpf_set_ui, mpf_set_si, mpf_size): Provide
+	these as "extern inlines".
+	Use just one big extern "C" block.
+	* mpz/getlimbn.c, mpz/get_ui.c, mpz/perfsqr.c, mpz/popcount.c
+	mpz/set_q.c, mpz/size.c, mpf/set_si.c, mpf/set_ui.c, mpf/size.c: Use
+	__GMP_FORCE to get code from gmp.h.
+
+2001-05-03  Kevin Ryde  <kevin@swox.se>
+
+	* extract-dbl.c: Add ASSERT d>=0.
+
+	* gmp.texi (Efficiency): Add mpz_addmul etc for mpz+=integer, add
+	mpz_neg etc in-place.
+	(Integer Arithmetic): Add mpz_addmul, mpz_submul, mpz_submul_ui.
+	(Initializing Rationals): Add mpq_set_str.
+	(Low-level Functions): mpn_set_str requires strsize >= 1.
+
+	* gmp-h.in (__GMP_EXTERN_INLINE, __GMP_ABS): New macros.
+	(mpz_abs, mpq_abs, mpf_abs, mpz_neg, mpq_neg, mpf_neg): Provide inline
+	versions.
+	* mpz/abs.c, mpq/abs.c, mpf/abs.c, mpz/neg.c, mpq/neg.c, mpf/neg.c:
+	Add suitable __GMP_FORCE to turn off inline versions.
+
+	* tests/mpz/t-aorsmul.c,t-cmp_d.c,t-popcount,t-set_str.c: New files.
+	* tests/mpz/Makefile.am: Add them.
+
+	* mpz/aorsmul_i.c: New file, rewrite of addmul_ui.c.  Add
+	mpz_submul_ui entrypoint, share more code between some of the
+	conditionals, use mpn_mul_1c if available.
+	* mpz/addmul_ui.c: Remove file.
+	* mpz/aorsmul.c: New file.
+	* Makefile.am, mpz/Makefile.am: Update.
+	* gmp-h.in (mpz_addmul, mpz_submul, mpz_submul_ui): Add prototypes.
+	* gmp-impl.h (mpz_aorsmul_1): Add prototype.
+
+	* tests/mpq/t-set_str.c: New file.
+	* tests/mpq/Makefile.am: Add it.
+
+	* mpq/set_str.c: New file.
+	* Makefile.am, mpq/Makefile.am: Add it.
+	* gmp-h.in (mpq_set_str): Add prototype.
+
+	* mpz/set_str.c: Fix for trailing white space on zero, eg. "0 ".
+	* mpn/generic/set_str.c: Add ASSERT str_len >= 1.
+
+	* gmp-h.in, gmp-impl.h (mpn_incr_u, mpn_decr_u): Move to gmp-impl.h.
+	* gmp-impl.h (MPN_INCR_U, MPN_DECR_U): New macros.
+
+2001-04-30  Kevin Ryde  <kevin@swox.se>
+
+	* tests/mpz/t-lcm.c: New file.
+	* tests/mpz/Makefile.am (check_PROGRAMS): Add it.
+
+	* mpz/lcm.c: Add one limb special case.
+
+	* mpz/lcm_ui.c: New file.
+	* Makefile.am, mpz/Makefile.am: Add it.
+	* gmp-h.in (mpz_lcm_ui): Add prototype.
+	* gmp.texi (Number Theoretic Functions): Add mpz_lcm_ui, document lcm
+	now always positive.
+
+	* mp-h.in (mp_size_t, mp_exp_t): Fix typedefs to match gmp-h.in.
+
+	* gmp-h.in (mpn_add_1, mpn_add, mpn_sub_1, mpn_sub): Remove K&R
+	function defines (ansi2knr will handle mpn/inline.c, and just ansi is
+	enough for gcc extern inline).
+
+	* gmp-h.in (__GMP_HAVE_TOKEN_PASTE): New macro.
+	(__MPN): Use it.
+	* gmp-impl.h (CNST_LIMB): Ditto.
+
+	* gmp-h.in, mp-h.in (__gmp_const, __gmp_signed, _PROTO, __MPN): Use
+	ANSI forms on Microsoft C.
+	(__GMP_HAVE_CONST): New define.
+	* gmp-impl.h (const, signed): Use it.
+
+	* demos/expr/expr-impl-h.in (<stdarg.h>): Use this with Microsoft C.
+	(HAVE_STDARG): New define.
+	* demos/expr/expr.c,exprz.c,exprq.c,exprf.c,exprfr.c: Use it.
+
+	* acinclude.m4 (GMP_C_STDARG): New macro.
+	* configure.in: Call it.
+	* rand.c: Use it.
+
+	* configure.in (AC_PROG_CC_STDC): New test.
+
+2001-04-25  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/x86/k6/mmx/dive_1.asm: New file.
+	* mpn/x86/x86-defs.m4 (Zdisp): Two more insns.
+
+	* mpn/x86/pentium/mul_2.asm: New file.
+	* mpn/asm-defs.m4: Add define_mpn(mul_2).
+	* acconfig.h (HAVE_NATIVE_mpn_divexact_1, mul_2): Add templates.
+
+	* configure.in (ABI): Use AC_ARG_VAR.
+
+	* tests/devel/try.c: Run reference function when validate fails.
+
+	* mpq/get_str.c: Fixes for negative bases.
+	* tests/mpq/t-get_str.c: Check negative bases.
+	* tests/misc.c,tests.h (__gmp_allocate_strdup, strtoupper): New
+	functions.
+
+2001-04-24  Torbjorn Granlund  <tege@swox.com>
+
+	* mpz/lcm.c (mpz_lcm): Make result always positive.
+
+	* gmp-h.in (mpz_inp_binary, mpz_out_binary): Remove declarations.
+
+2001-04-22  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/powerpc64/addsub_n.asm: Use config.m4 not asm-syntax.m4.
+
+	* mpz/cmp_d.c, mpz/cmpabs_d.c: New files.
+	* Makefile.am, mpz/Makefile.am: Add them.
+	* mpf/cmp_d.c, mpf/get_dfl_prec.c: New files.
+	* Makefile.am, mpf/Makefile.am: Add them.
+	* gmp-h.in (mpz_cmp_d, mpz_cmpabs_d, mpf_cmp_d, mpf_get_default_prec):
+	Add prototypes.
+	* gmp.texi: Add documentation.
+
+	* mpf/set_prc.c: Avoid a realloc call if already the right precision.
+
+	* gmp-impl.h (MPF_BITS_TO_PREC, MPF_PREC_TO_BITS): New macros.
+	* mpf/get_prc.c, init2.c, set_dfl_prec.c, set_prc.c, set_prc_raw.c:
+	Use them.
+
+2001-04-20  Kevin Ryde  <kevin@swox.se>
+
+	* tests/devel/try.c: Don't test size==0 on mpn_popcount and
+	mpn_hamdist; add testing for mpn_divexact_1; print some limb values
+	with mpn_trace not printf.
+
+	* mpz/popcount.c, mpz/hamdist.c: Don't pass size==0 to mpn_popcount
+	and mpn_hamdist.
+	* mpn/generic/popham.c: Don't support size==0.
+
+	* config.guess (m68k-*-*): Detect m68010, return m68360 for cpu32,
+	cleanup the nesting a bit.
+
+	* gmp.texi (Integer Division): Fix mpz_congruent_2exp_p "c" type.
+	(Integer Division): Add mpz_divexact_ui.
+	(Number Theoretic Functions): Fix mpz_nextprime return type.
+	(Exact Remainder): Divisibility tests now implemented.
+	And more index entries in a few places.
+
+	* tests/mpz/dive_ui.c: New file.
+	* tests/mpz/Makefile.am (check_PROGRAMS): Add it.
+
+	* mpz/dive_ui.c: New file.
+	* Makefile.am, mpz/Makefile.am: Add it.
+	* gmp-h.in (mpz_divexact_ui): Add prototype.
+
+	* tune/many.pl, tune/speed.h: Add special mpn_back_to_back for
+	development.
+
+	* gmp-impl.h (MPN_DIVREM_OR_DIVEXACT_1): New macro.
+	* mpz/divexact.c: Use it.
+
+	* gmp-impl.h (DIVEXACT_1_THRESHOLD): New threshold.
+	* tune/tuneup.c: Tune it.
+
+	* tune/speed.c,speed.h,common.c,many.pl: Add measuring of
+	mpn_divexact_1, mpn_copyi, mpn_copyd.
+
+	* mpn/generic/dive_1.c: New file.
+	* configure.in (gmp_mpn_functions): Add it.
+	* gmp-impl.h (mpn_divexact_1): Add prototype.
+	* mpn/asm-defs.m4: Add define_mpn(divexact_1).
+
+	* tests/mpn: New directory.
+	* tests/Makefile.am: Add it.
+	* tests/mpn/Makefile.am: New file.
+	* configure.in (AC_OUTPUT): Add it.
+	* tests/mpn/t-asmtype.c: New file.
+
+	* configure, config.in: Update to autoconf 2.49d.
+
+	* configure.in, gmp-h.in, mp-h.in, demos/expr/expr-impl-h.in: Revert
+	to generating gmp.h, mp.h and expr-impl.h with AC_OUTPUT and AC_SUBST.
+
+	* configure.in (m68*-*-*): Oops, m683?2 is 68000, m68360 is cpu32.
+	* mpn/m68k/m68k-defs.m4 (scale_available_p): Ditto.
+
+	* configure.in (underscore, asm_align): Remove these variables,	unused.
+	(GMP_ASM_*): Sort by AC_REQUIREs, to avoid duplication.
+	* acinclude.m4 (GMP_ASM_UNDERSCORE, GMP_ASM_ALIGN_LOG): Remove support
+	for actions, no longer needed.
+
+2001-04-17  Kevin Ryde  <kevin@swox.se>
+
+	* config.guess (m68k-*-*): Look for cpu in linux kernel /proc/cpuinfo.
+
+	* acinclude.m4 (GMP_GCC_MARCH_PENTIUMPRO): The -mpentiumpro problem is
+	fixed in 2.95.4, so test for that.
+	(GMP_ASM_TYPE): Amend some comments.
+
+	* tune/freq.c (speed_cpu_frequency_sysctl): Avoid having unused
+	variables on GNU/Linux.
+
+	* mpn/asm-defs.m4 (m4_instruction_wrapper): Fix a quoting problem if
+	the name of the file is a macro.
+
+2001-04-15  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/powerpc64/*.asm: Add speeds on ppc630.
+
+	* acconfig.h: Add dummy templates for _LONG_LONG_LIMB and HAVE_MPFR.
+	* configure.in: Ensure config.in is the last AM_CONFIG_HEADER,
+	which autoheader requires.
+
+	* mpn/x86/pentium/popcount.asm: New file.
+	* mpn/x86/pentium/hamdist.asm: New file.
+
+	* mpn/asm-defs.m4: (m4_popcount): New macro.
+	Amend a few comments elsewhere.
+
+	* acinclude.m4 (GMP_ASM_RODATA): If possible, grep compiler output for
+	the right directive.
+
+	* tune/speed.c: Print clock speed in MHz, not cycle time.
+
+	* configure.in (AC_CHECK_HEADERS): Check for sys/processor.h.
+	* tune/freq.c (speed_cpu_frequency_processor_info): Require
+	<sys/processor.h> to exist, to differentiate the different
+	processor_info on Darwin.
+	(speed_cpu_frequency_sysctlbyname): Remove hw.model test which is in
+	speed_cpu_frequency_sysctl.
+	(speed_cpu_frequency_sysctl): Add hw.cpufrequency for Darwin.
+
+	* gmp-impl.h (MPN_LOGOPS_N_INLINE, mpn_and_n ... mpn_xnor_n): Use a
+	single expression argument for the different operations, necessary for
+	the Darwin "smart" preprocessor.
+
+	* mpn/m68k/t-m68k-defs.pl: Allow white space in m4_definsn and
+	m4_defbranch.
+
+	* tune/many.pl: Change RM_TMP_S to RM_TMP to match mpn/Makeasm.am,
+	avoid a possibly undefined array in a diagnostic, add more renaming to
+	hamdist.
+
+2001-04-13  Kevin Ryde  <kevin@swox.se>
+
+	* ltmain.sh, aclocal.m4, configure, config.in: Update to libtool 1.3d.
+	* configure.in: Change ac_ to lt_ in lt_cv_archive_cmds_need_lc and
+	lt_cv_proc_cc_pic.
+
+	* config.guess (m68*-*-*): Detect exact cpu with BSD sysctl hw.model,
+	detect 68000/68010 with trapf, detect 68302 with bfffo.
+
+2001-04-11  Kevin Ryde  <kevin@swox.se>
+
+	* acinclude.m4 (GMP_ASM_M68K_INSTRUCTION, GMP_ASM_M68K_ADDRESSING,
+	GMP_ASM_M68K_BRANCHES): New macros.
+	* configure.in: Use them, remove old 68k configs, use mc68020 udiv and
+	umul.
+
+	* mpn/m68k/m68k-defs.m4: New file.
+	* mpn/m68k/t-m68k-defs.pl: New file.
+	* mpn/m68k/*.asm: New files, converted from .S.  Merge add_n and sub_n
+	to aors_n, ditto mc68020 addmul_1 and submul_1 to aorsmul_1.  No
+	object code changes (except .type and .size now used on NetBSD 1.4).
+	* mpn/m68k/README: New file.
+	* mpn/m68k/*.S, */*.S, syntax.h: Remove files.
+
+	* configure.in (m68*-*-netbsd1.4*): Pretend getrusage doesn't exist.
+	* tune/README: Update.
+
+	* configure.in (powerpc*-*-*): For the benefit of Darwin 1.3, add cc
+	to cclist, make gcc_cflags -Wa,-mppc optional.
+
+2001-04-06  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/lisp/gmpasm-mode.el (gmpasm-comment-start-regexp): Add | for 68k.
+	(gmpasm-mode-syntax-table): Add to comments.
+
+	* tests/mpz/reuse.c (dsi_div_func_names): Add names for cdiv_[qr]_2exp.
+
+2001-04-04  Kevin Ryde  <kevin@swox.se>
+
+	* acinclude.m4 (GMP_M4_M4WRAP_SPURIOUS): Fix test so as to actually
+	detect the problem, add notes on m68k netbsd 1.4.1.
+
+	* gmp.texi (Compatibility with older versions): Note libmp
+	compatibility.
+
+2001-04-03  Kevin Ryde  <kevin@swox.se>
+
+	* tests/mpz/reuse.c: Add mpz_cdiv_q_2exp and mpz_cdiv_r_2exp.
+
+	* tests/mpz/t-pow.c: Drag in refmpn.o when testing mpz_pow_ui etc with
+	refmpn_mul_2.
+
+	* tune/speed.c,speed.h,common.c,many.pl: Add measuring of mpn_com_n
+	and mpn_mul_2.
+	* tests/devel/try.c: Add testing of mpn_mul_2, and a
+	DATA_MULTIPLE_DIVISOR attribute.
+
+	* gmp.texi (Build Options): List more m68k's.
+	(Build Options): Add cross reference to tex2html.
+	(Notes for Particular Systems): Add m68k means 68020 or up.
+	(Rational Conversions): New section, with mpq_get_d, mpq_set_d and
+	mpq_set_f from Miscellaneous, and new mpq_set_str.
+	(Applying Integer Functions): Move mpq_get_num, mpq_get_den,
+	mpq_set_num and mpq_set_den from Misc.
+	(Miscellaneous Rational Functions): Remove section.
+	(Custom Allocation): Partial rewrite for various clarifications.
+	(References): Improve line breaks near URLs.
+
+	* acinclude.m4 (GMP_GCC_M68K_OPTIMIZE): New macro.
+	* configure.in (m68*-*-*): Use it to run gcc 2.95.x at -O not -O2.
+	(m680?0-*-*, m683?2-*-*, m68360-*-*): Add optional gcc -m options.
+
+	* tests/mpz/t-cmp.c: New file.
+	* tests/mpz/t-sizeinbase.c: New file.
+	* tests/mpz/Makefile.am: Add them.
+
+	* gmp-impl.h (MPN_CMP): New macro.
+	* mpz/cmp.c,cmpabs.c: Use it, and minor cleanups too.
+
+	* tests/mpq/t-equal.c: New file.
+	* tests/mpq/t-get_str.c: New file.
+	* tests/mpq/Makefile.am: Add them.
+
+	* mpq/get_str.c: New file.
+	* Makefile.am, mpq/Makefile.am: Add it.
+	* gmp-h.in (mpq_get_str): Add prototype.
+
+	* mpq/equal.c: Rewrite using inline compare loops.
+
+	* tests/refmpn.c,tests.h (refmpn_mul_2): Fix parameter order.
+	* mpz/n_pow_ui.c: Fix mpn_mul_2 calls parameter order.
+
+2001-03-29  Kevin Ryde  <kevin@swox.se>
+
+	* tests/mpf/t-trunc.c: New file.
+	* tests/mpf/Makefile.am (check_PROGRAMS): Add it.
+	* gmp-impl.h (MPF_CHECK_FORMAT): New macro.
+
+	* mpf/trunc.c: New file, rewrite of integer.c, preserve prec+1 in
+	copy, don't copy if unnecessary.
+	* mpf/ceilfloor.c: New file likewise, and use common subroutine for
+	ceil and floor.
+	* mpf/integer.c: Remove file.
+	* Makefile.am, mpf/Makefile.am, macos/Makefile.in: Update.
+
+        * acinclude.m4 (GMP_GCC_VERSION_GE): New macro.
+        (GMP_GCC_MARCH_PENTIUMPRO): Use it, remove CCBASE parameter (don't
+	bother checking it's gcc).
+	(GMP_GCC_ARM_UMODSI): New macro.
+	* configure.in (GMP_GCC_MARCH_PENTIUMPRO): Update parameters.
+	(arm*-*-*): Use GMP_GCC_ARM_UMODSI.
+        * gmp.texi (Notes for Particular Systems): Add arm gcc requirements.
+
+2001-03-28  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (Converting Integers): Document mpz_getlimbn using absolute
+	value and giving zero for N out of range, move to end of section.
+
+	* tests/refmpn.c (refmpn_tdiv_qr): Use refmpn_divmod_1 rather than
+	refmpn_divrem_1.
+	* tests/tests.h: Add some prototypes that were missing.
+
+	* mpz/tdiv_q_ui.c: Remove a comment that belonged to mpz_tdiv_r_ui.
+
+2001-03-26  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/generic/gcdext.c: Handle carry overflow after m*n multiply code
+	in both arms.  Partially combine multiply arms.
+
+2001-03-24  Kevin Ryde  <kevin@swox.se>
+
+	* longlong.h: Add comments to P5 count_leading_zeros.
+
+	* demos/expr/exprz.c,t-expr.c,README: Add congruent_p and divisible_p.
+
+2001-03-23  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (GMPceil, GMPfloor, ge, le): New macros.
+	(Integer Division, mpn_cmp, mpn_sqrtrem, Algorithms): Use them.
+	(mpn_bdivmod): Refer to mp_bits_per_limb, not BITS_PER_MP_LIMB, and
+	improve formatting a bit.
+	(mpn_lshift, mpn_rshift): Clarify the return values, and use {rp,n}
+	for the destination.
+	Miscellaneous minor rewordings in a few places.
+
+	* mpn/arm/arm-defs.m4: New file.
+	* configure.in (arm*-*-*): Use it.
+	* mpn/arm/*.asm: Use changecom and registers from arm-defs.m4, use L()
+	for local labels.
+
+	* mpn/x86/k6/mmx/com_n.asm: Relax code alignment (same speed).
+
+	* gmp-h.in (__GMP_ATTRIBUTE_PURE): Use __pure__ to avoid application
+	namespace.
+
+	* gmp-impl.h (ABS): Add parens around argument.
+
+2001-03-20  Kevin Ryde  <kevin@swox.se>
+
+	* acinclude.m4 (GMP_PROG_M4): Use AC_ARG_VAR on $M4.
+
+	* acinclude.m4 (GMP_M4_M4WRAP_SPURIOUS): New macro.
+	* configure.in: Use it.
+	* mpn/asm-defs.m4: Ditto.
+
+2001-03-18  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/x86/pentium/logops_n.asm: New file.
+
+	* mpn/x86/k6/k62mmx/copyd.asm: Rewrite, smaller and simpler, faster on
+	small sizes, slower on big sizes (about half the time).
+	* mpn/x86/k6/k62mmx/copyi.asm: Remove file, in favour of generic x86.
+	* mpn/x86/copyi.asm: Add some comments.
+	* mpn/x86/k6/README: Update.
+
+	* mpn/x86/k6/gcd_1.asm: New file.
+
+	* gmp-impl.h (NEG_MOD): Fix type of __dnorm.
+
+	* acinclude.m4 (GMP_C_SIZES): Fix use of __GMP_WITHIN_CONFIGURE.
+
+2001-03-15  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (GMPabs): New macro.
+	(Float Comparison - mpf_reldiff): Use it.
+	(Integer Comparisons - mpz_cmpabs): Ditto, puts "abs" in info.
+	(Reentrancy): Update notes on old random functions.
+	(Karatsuba Multiplication): Better characterize the effect of basecase
+	speedups on the thresholds, pointed out by Torbjorn.
+
+	* tune/README: Notes on the 1x1 div threshold for mpn_gcd_1.
+
+	* tests/misc.c (mpz_pow2abs_p, mpz_flipbit, mpz_errandomb,
+	mpz_errandomb_nonzero, mpz_negrandom): New functions.
+	(mpz_erandomb, mpz_erandomb_nonzero): Use urandom().
+	* tests/spinner.c (spinner_wanted, spinner_tick): Make global.
+	* tests/tests.h: Update prototypes.
+
+	* tests/mpz/t-cong.c, tests/mpz/t-cong_2exp.c: New files.
+	* tests/mpz/Makefile.am (check_PROGRAMS): Add them.
+
+	* mpz/cong.c, mpz/cong_2exp.c, mpz/cong_ui.c: New files.
+	* Makefile.am, mpz/Makefile.am: Add them.
+	* gmp-impl.h (NEG_MOD): New macro.
+	* gmp-h.in (mpz_congruent_p, mpz_congruent_2exp_p,
+	mpz_congruent_ui_p): Add prototypes.
+	* gmp.texi (Integer Division, Efficiency): Add documentation.
+
+	* mpq/aors.c: No need for ABS on denominator sizes.
+
+	* gmp-impl.h (mpn_divisible_p): Use __MPN.
+
+	* gmp-impl.h (LOW_ZEROS_MASK): New macro.
+	* mpz/divis_ui.c, mpn/generic/divis.c: Use it.
+
+	* mpz/setbit.c: Fix normalization for case of a negative ending up
+	with a zero high limb.
+	* tests/mpz/bit.c (check_single): New test for this problem.
+
+	* configure.in (none-*-*): Fix cclist for default ABI=long.
+
+2001-03-10  Kevin Ryde  <kevin@swox.se>
+
+	* mpz/cfdiv_q_2exp.c: Don't scan for non-zero limbs if they don't
+	matter to the rounding.
+
+	* mpz/get_ui.c: Fetch _mp_d[0] unconditionally, so the code can come
+	out branch-free.
+
+2001-03-08  Kevin Ryde  <kevin@swox.se>
+
+	* tests/devel/try.c (param_init): Fix reference functions for and_n
+	and nand_n.
+
+	* tune/speed.c, tests/devel/try.c: Seed RANDS, not srandom etc.
+	* configure.in (AC_CHECK_FUNCS): Remove srand48 and srandom.
+	* macos/configure (coptions): Remove random/srandom, now unnecessary.
+
+	* configure.in (gmp.h, mp.h, demos/expr/expr-impl.h): Generate using
+	AM_CONFIG_HEADER.
+	(_LONG_LONG_LIMB, HAVE_MPFR): Change to AC_DEFINEs.
+	* gmp-h.in, mp-h.in, demos/expr/expr-impl-h.in: Change to #undef's.
+	* acinclude.m4 (GMP_FUNC_ALLOCA, GMP_C_SIZES): Use gmp-h.in, not gmp.h.
+	* Makefile.am (EXTRA_DIST): Remove gmp-h.in and mp-h.in, now done
+	automatically.
+	* acinclude.m4 (GMP_FUNC_ALLOCA), gmp-impl.h: Set and use
+	__GMP_WITHIN_CONFIGURE rather than GMP_FUNC_ALLOCA_TEST.
+
+	* mpf/random2.c: Use _gmp_rand and RANDS instead of random() for the
+	exponent, ensures full range of values too.
+
+	* tests/mpz/t-div_2exp.c (check_various): Start with d based on i, but
+	don't let it go negative.
+
+	* tune/tuneup.c (KARATSUBA_MUL_THRESHOLD): Limit probing to
+	TOOM3_MUL_THRESHOLD_LIMIT, the size of the workspace in mul_n.c.
+	Use a -1 with this too, so size<LIMIT not <=.
+
+2001-03-07  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/cray/cfp/mul_1.c: Don't call mpn_add_n with size 0.
+	* mpn/cray/cfp/addmul_1.c: Likewise.
+	* mpn/cray/cfp/submul_1.c: Don't call mpn_sub_n with size 0.
+
+	* tests/mpz/t-div_2exp.c (check_various): Start 2nd d loop from 0
+	(avoid problems with Cray compilers).
+
+2001-03-06  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/cray/ieee/submul_1.c: Don't call mpn_sub_n with size 0.
+
+	* mpn/cray/ieee/mul_basecase.c: New file.
+	* mpn/cray/ieee/sqr_basecase.c: New file, derived from mul_basecase.c.
+
+2001-03-06  Kevin Ryde  <kevin@swox.se>
+
+	* tests/devel/try.c (pointer_setup): Allow dst_size == SIZE_SIZE2 for
+	the benefit of mpn_tdiv_qr.
+
+	* tune/tuneup.c (all): Start karatsuba probing at size==4, for the
+	benefit of cray t90 ieee which has speed oddities at size==2.
+
+	* gmp-impl.h (USE_LEADING_REGPARM): Use __GMP_GNUC_PREREQ.
+	Use __GMP_ATTRIBUTE_PURE and ATTRIBUTE_CONST in a few places.
+
+	* gmp-h.in (__GMP_GNUC_PREREQ) New macro.
+	(__GMP_ATTRIBUTE_PURE): New macro, use it in many places.
+
+	* gmp-impl.h, gmp-h.in (mpn_jacobi_base): Move prototype to
+	gmp-impl.h, use ATTRIBUTE_CONST.
+
+	* tune/speed.h (speed_cyclecounter): Inline asm version for i386.
+
+	* mpz/cfdiv_r_2exp.c (cfdiv_r_2exp): Only reread "up" after second
+	realloc, first is under w!=u.
+
+2001-03-05  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/cray/sub_n.c: Rewrite using `majority' logic.
+
+	* mpz/cfdiv_r_2exp.c (cfdiv_r_2exp): Reread `up' after realloc of w.
+
+	* mpn/cray/ieee/mul_1.c: Rewrite.  Streamline multiplications;
+	use `majority' logic.
+	* mpn/cray/ieee/addmul_1.c: Likewise.
+
+	* mpn/cray/add_n.c: Rewrite using `majority' logic.
+
+2001-03-04  Torbjorn Granlund  <tege@swox.com>
+
+	* longlong.h (CRAY udiv_qrnnd): No longer conditional on CRAYMPP.
+	(64-bit hppa add_ssaaaa): New.
+	(64-bit hppa sub_ddmmss): New.
+
+	* mpn/cray/ieee/invert_limb.c: New file.
+
+	* gmp-impl.h (RANDS): Add a `,0' to make it compile on more compilers.
+
+2001-03-03  Kevin Ryde  <kevin@swox.se>
+
+	* mpz/n_pow_ui.c (ULONG_PARITY): Move to gmp-impl.h.
+	* gmp-impl.h (ULONG_PARITY): i386 part from n_pow_ui.c, new generic
+	form by Torbjorn.
+
+	* tests/mpz/t-div_2exp.c: New file, rewrite of t-2exp.c.
+	* tests/mpz/t-2exp.c: Remove file.
+	* tests/mpz/Makefile.am (check_PROGRAMS): Update.
+
+	* gmp-h.in (mpz_cdiv_q_2exp, mpz_cdiv_q_2exp): Add prototypes.
+	* gmp.texi (Integer Division): Add mpz_cdiv_q_2exp and mpz_cdiv_q_2exp.
+
+	* mpz/cfdiv_q_2exp.c: New file, partial rewrite of fdiv_q_2exp.c, add
+	mpz_cdiv_q_2exp entrypoint.
+	* mpz/cfdiv_r_2exp.c: New file, rewrite of fdiv_r_2exp.c, use all mpn,
+	add mpz_cdiv_r_2exp entrypoint.
+	* mpz/fdiv_q_2exp.c, mpz/fdiv_r_2exp.c: Remove files.
+	* mpz/Makefile.am (libmpz_la_SOURCES): Update.
+	* Makefile.am (MPZ_OBJECTS): Ditto.
+
+	* gmp-impl.h (USE_LEADING_REGPARM): Use __i386__ same as longlong.h
+	(REGPARM_2_1, REGPARM_3_1, REGPARM_ATTR): New macros.
+	* mpz/jacobi.c (jac_or_kron): Use them.
+
+	* configure.in (HAVE_ABI_$ABI): Re-enable this for config.m4, with
+	dots changed to underscores (necessary for hppa).
+
+	* tests/mpz/t-divis.c, tests/mpz/t-divis_2exp.c: New files.
+	* tests/mpz/Makefile.am (check_PROGRAMS): Add them.
+
+	* gmp-h.in (mpz_divisible_p, mpz_divisible_ui_p,
+	mpz_divisible_2exp_p): Add prototypes.
+	* gmp.texi (Integer Division): Add mpz_divisible_p.
+	(Efficiency): Add remarks about divisibility testing.
+
+	* mpz/divis.c, mpz/divis_ui.c, mpz/divis_2exp.c: New files.
+	* mpz/Makefile.am (libmpz_la_SOURCES): Add them.
+	* Makefile.am (MPZ_OBJECTS): Ditto.
+
+	* mpn/generic/divis.c: New file.
+	* configure.in (gmp_mpn_functions): Add it.
+	* mpn/Makefile.am (nodist_libdummy_la_SOURCES): Ditto.
+	* gmp-impl.h (mpn_divisible_p): Add prototype.
+
+	* urandom.h: Remove file.
+	* Makefile.am (EXTRA_DIST): Remove it.
+
+	* tests/mpz/convert.c, dive.c, io.c, logic.c, reuse.c, t-2exp.c,
+	t-fdiv.c, t-fdiv_ui.c, t-gcd.c, t-jac.c, t-mul.c, t-pow.c,
+	t-powm.c, t-powm_ui.c, t-root.c, t-sqrtrem.c, t-tdiv.c,
+	t-tdiv_ui.c: Use RANDS, initialized by tests_rand_start.
+
+	* tests/mpz/t-pow.c: New file, being t-pow_ui renamed and with some
+	further tests added.
+	* tests/mpz/t-pow_ui.c: Remove file.
+	* tests/mpz/Makefile.am (check_PROGRAMS): Update.
+
+	* tests/t-modlinv.c: Don't use urandom.h.
+	* tests/mpz/bit.c, tests/mpz/t-scan.c: Ditto.
+	* tests/mpq/t-cmp.c, tests/mpq/t-cmp_ui.c, tests/mpq/t-get_d.c: Ditto.
+	* tests/mpf/reuse.c, t-add.c, t-conv.c, t-dm2exp.c, t-muldiv.c,
+	t-sqrt.c, t-sub.c: Ditto.
+
+	* tests/misc.c (tests_rand_start, tests_rand_end): New functions.
+	(tests_start, tests_end): Use them.
+	(urandom): New function.
+	* tests/tests.h: Add prototypes.
+
+	* mpz/random.c: Rewrite using mpz_urandomb and RANDS.
+	* mpn/generic/random.c: Rewrite using _gmp_rand and RANDS.
+	* mpn/generic/random2.c: Use RANDS not random() etc.
+
+	* gmp-impl.h (__gmp_rands, __gmp_rands_initialized): Add externs.
+	(gmp_randstate_ptr): New typedef.
+	(RANDS, RANDS_CLEAR): New macros.
+
+	* rands.c: New file.
+	* Makefile.am (libgmp_la_SOURCES): Add it.
+
+	* configure.in (mpn_objs_in_libmp): New AC_SUBST.
+	* Makefile.am (libmp_la_DEPENDENCIES): Use it.
+
+2001-03-02  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/pa64/udiv_qrnnd.asm: New file.
+
+2001-03-01  Kevin Ryde  <kevin@swox.se>
+
+	* mpbsd/rpow.c: New file.
+	* mpbsd/Makefile.am (libmpbsd_la_SOURCES): Add it
+	(nodist_libmpbsd_la_SOURCES): Remove pow_ui.c.
+	* Makefile.am (MPBSD_OBJECTS): Add rpow.lo, remove pow_ui.lo.
+	(libmp_la_DEPENDENCIES): Add mpz/n_pow_ui.lo.
+
+	* mpz/ui_pow_ui.c: Rewrite using mpz_n_pow_ui.
+	* mpz/pow_ui.c: Ditto, and no longer provide rpow for mpbsd.
+
+	* mpz/n_pow_ui.c: New file, rewrite of pow_ui.c and ui_pow_ui.c.  Use
+	less temporary memory, strip factors of 2 from the base, use mpn_mul_2
+	if available.
+	* mpz/si_pow_ui.c: New file.
+	* mpz/Makefile.am (libmpz_la_SOURCES): Add them.
+	* Makefile.am (MPZ_OBJECTS): Ditto.
+	* gmp-impl.h (mpz_n_pow_ui): Add prototype.
+	* gmp-h.in (mpz_si_pow_ui): Add prototype.
+	* gmp.texi (Integer Exponentiation): Add mpz_si_pow_ui.
+
+	* acinclude.m4 (GMP_C_SIZES): Add BITS_PER_ULONG.
+	Correction to mp_limb_t working check.
+	* configure.in (limb_chosen): New variable.
+	* tests/t-constants.c (BITS_PER_ULONG): Check this value.
+	Add some reminders about tests that fail on Cray.
+
+	* tests/refmpn.c (refmpn_mul_2): New function.
+	* tests/refmpz.c (refmpz_pow_ui): Copied from tests/mpz/t-pow_ui.c
+	* tests/tests.h: Add prototypes.
+
+	* configure.in (none-*-*): Add ABI=longlong.
+	* doc/configuration (Long long limb testing): Describe it.
+
+	* gmp.texi (Low-level Functions): Move some commented out remarks ...
+	* mpn/generic/mul_basecase.c: ... to here.
+
+	* mpn/x86/README: Note "%=" as an alternative to "1:" in __asm__.
+
+	* tests/trace.c (mp_trace_start): Print "bin" for binary.
+
+	* mpn/generic/dump.c: Add a couple of casts to keep gcc quiet.
+
+	* gmp-h.in (mpn_incr_u, mpn_decr_u): Add parens around arguments.
+
+	* mpbsd/mout.c, mpbsd/mtox.c (num_to_text): Remove unused variable.
+
+	* mpfr/set_d.c (mpfr_get_d2): Declare "q" for 64-bit limbs.
+
+2001-02-28  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/pa64w/udiv_qrnnd.asm: Tune.
+
+2001-02-27  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/pa64w/udiv_qrnnd.asm: New file.
+
+2001-02-26  Torbjorn Granlund  <tege@swox.com>
+
+	* longlong.h (arm): Optimize sub_ddmmss by testing for constant
+	operands.
+	* mpn/arm/invert_limb.asm: New file.
+
+2001-02-24  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/generic/lshift.c: Rewrite.
+	* mpn/generic/rshift.c: Rewrite.
+
+	* longlong.h: Use UWtype for external interfaces that expect mp_limb_t.
+
+	* longlong.h (arm): #define invert_limb.
+
+	* mpn/arm: Make labels have local scope.
+
+	* configure.in (arm*-*-*): Set extra_functions.
+	* longlong.h (arm): #define udiv_qrnnd.
+	* mpn/arm/udiv.asm: New file.
+
+2001-02-24  Kevin Ryde  <kevin@swox.se>
+
+	* tune/many.pl: Add mpn_count_leading_zeros, mpn_count_trailing_zeros
+	and mpn_invert_limb.  Add count_leading_zeros, count_trailing_zeros
+	from a .h file.  Correction to modexact_1_odd prototype.  Support
+	ansi2knr.
+	* tune/speed.h, tune/common.c: Consequent changes.
+
+	* demos/expr/*: Make a few more functions available in expressions,
+	create only libexpr.a, misc minor updates.
+
+	* mpn/Makeasm.am: Add some comments about suffix ordering.
+
+	* tests/refmpn.c (rshift_make, lshift_make): No need to compare
+	unsigned to zero.
+
+	* mpq/mul.c: Detect and optimize squaring.
+
+2001-02-23  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/mips3: Convert files to `.asm'.
+
+	* mpn/arm: Convert files to `.asm'.  Misc cleanups.
+	* mpn/arm/submul_1.asm: New file.
+
+2001-02-21  Kevin Ryde  <kevin@swox.se>
+
+	* tune/tuneup.c (all): Only one compiler print should match, no need
+	for #undef PRINTED_COMPILER.
+
+	* mpfr/mpfr.h (mpfr_sgn): Use mpfr_cmp_ui (patch from Paul).
+
+	* mpz/fib_ui.c: Update some remarks about alternative algorithms.
+	* gmp.texi (Fibonacci Numbers Algorithm): Ditto.
+	(Assigning Floats): Clarify mpf_swap swaps the precisions too.
+	(Low-level Functions): Try to be clearer about negative cofactors.
+
+2001-02-21  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/sparc64/copyi.asm: Streamline for small operands.
+	* mpn/sparc64/add_n.asm: Likewise.
+	* mpn/sparc64/sub_n.asm: Likewise.
+
+	* mpn/sparc64/copyd.asm: New file.
+
+2001-02-20  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/sparc64/lshift.asm: Rewrite.
+	* mpn/sparc64/rshift.asm: Rewrite.
+
+2001-02-19  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/sparc64/add_n.asm: Rewrite using `majority' logic.
+	* mpn/sparc64/sub_n.asm: Likewise.
+
+	* tune/tuneup.c (all): Recognise DECC and MIPSpro compilers.
+
+	* mpn/pa64/sqr_diagonal.asm: Use PROLOGUE/EPILOGUE.
+	* mpn/pa642/sqr_diagonal.asm: Likewise.
+
+	* configure.in (HAVE_ABI_$abi): Disable for now.
+
+	* mpn/asm-defs.m4 (PROLOGUE): Use LABEL_SUFFIX.
+
+	* acinclude.m4 (GMP_ASM_ATTR): New check, for hppa oddities.
+
+2001-02-18  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/hppa/hppa1_1/gmp-mparam.h: New file.
+	* mpn/hppa/hppa2_0/gmp-mparam.h: New file.
+
+	* mpn/pa64/sqr_diagonal.asm: New file.
+	* mpn/pa64w/sqr_diagonal.asm: New file.
+	* mpn/hppa/hppa1_1/sqr_diagonal.asm: New file.
+	* mpn/hppa/hppa2_0/sqr_diagonal.asm: New file.
+
+	* mpn/sparc32/v9/add_n.asm: Use `fitod' instead of `fxtod' for dummy
+	FA-pipeline insns.
+	* mpn/sparc32/v9/sub_n.asm: Likewise.
+
+2001-02-18  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (Known Build Problems): Notes on make, $* and K&R, misc
+	tweaks elsewhere.
+	(Low-level Functions): Use {} notation in mpn_sqrtrem.
+	(Basecase Multiplication): Mention BASECASE_SQR_THRESHOLD.
+
+	* mpfr/isnan.c (mpfr_number_p): Infinity is not a number.
+	* mpfr/out_str.c: Pass strlen+1 for the block size to free.
+	* mpfr/get_str.c: Correction for realloc to strlen+1.
+
+	* acinclude.m4 (GMP_C_SIZES): Generate an error if mp_limb_t doesn't
+	seem to work for some reason.
+
+2001-02-16  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/sparc32/v9/gmp-mparam.h: Retune.
+
+	* mpn/sparc32/v9/add_n.asm: New file.
+	* mpn/sparc32/v9/sub_n.asm: New file.
+
+	* mpn/sparc32/v9/mul_1.asm: Tune function entry.
+	* mpn/sparc32/v9/addmul_1.asm: Likewise.
+	* mpn/sparc32/v9/submul_1.asm: Likewise.
+
+	* mpn/sparc32/v9/sqr_diagonal.asm: New file.
+
+2001-02-16  Kevin Ryde  <kevin@swox.se>
+
+	* configure.in: Fix flags selection when $CC is a compiler known to us.
+
+	* demos/expr/exprfr.c (e_mpfr_cos, e_mpfr_sin): mpfr_sin_cos now
+	allows NULL for one parameter.
+
+	* mpfr/*: Update to 20010215.
+	* mpfr/trunc.c: Use -DOPERATION scheme, and gmp mpn_zero_p.
+	* mpfr/sqrt.c: Use plain mpn_sqrtrem, not mpn_sqrtrem_new.
+	* mpfr/sqrtrem.c: Remove file.
+	* mpfr/Makefile.am (libmpfr_a_SOURCES): Add isnan.c and set_ui.c,
+	remove sqrtrem.c and srandom.h.
+
+	* configfsf.guess: Update to 2001-02-13.
+	* configfsf.sub: Update to 2001-02-16.
+	* config.sub (j90, t90): Remove special handing, configfsf.sub now ok.
+
+	* Makefile.am (MPF_OBJECTS): Add a couple of missing $U's.
+
+	* tune/tuneup.c: Identify compiler used (GCC and Sun C so far).
+
+2001-02-15  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/sparc32/v9/mul_1.asm: Change `ld' to `lduw' and `st' to `stw'.
+	* mpn/sparc32/v9/addmul_1.asm: Likewise.
+	* mpn/sparc32/v9/submul_1.asm: Likewise.
+
+2001-02-14  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/mips3/mips.m4: New file.
+	* configure.in (mips*-*-irix[6789]*): Use mips3/mips.m4.
+
+	* mpn/powerpc64/sqr_diagonal.asm: New file.
+
+	* mpn/mips3/sqr_diagonal.asm: New file.
+
+2001-02-12  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/powerpc32/sqr_diagonal.asm: New file.
+
+	* mpn/generic/sqr_basecase.c: Remove declaration of mpn_sqr_diagonal.
+	Fix typo in header comment.
+
+2001-02-12  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/generic/mul.c, mpn/generic/mul_n.c, gmp-impl.h: Use
+	mpn_mul_basecase for squaring below new BASECASE_SQR_THRESHOLD.
+	* tune/tuneup.c gmp-impl.h: Tune BASECASE_SQR_THRESHOLD.
+
+	* Makefile.am (libgmp.la, libmp.la): Revert change to build from
+	mpn/libmpn.la etc, go back to explicitly listed objects.
+
+	* configure.in: Recognise sparc64-*-*, not just sparc64-*-linux*.
+
+2001-02-11  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/asm-defs.m4 (sqr_diagonal): New define_mpn.
+
+	* mpn/alpha/sqr_diagonal.asm: New file.
+
+2001-02-11  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (Low-level Functions): Note mpn_get_str clobbers its input
+	plus 1 extra limb.
+
+	* mpfr/add.c,agm.c,exp2.c,exp3.c,generic.c,log2.c,pi.c,print_raw.c,
+	set_d.c,sin_cos.c,sqrtrem.c,sub.c: Apply some tweaks for K&R.
+	* tests/mpz/reuse.c, tests/mpq/t-md_2exp.c, demos/pexpr.c,
+	demos/expr/t-expr.c: Ditto.
+
+	* configure.in (HAVE_ABI_$abi): New define in config.m4.
+
+	* gmp-impl.h (mpn_sqr_diagonal): Add prototype and define.
+	* tune/speed.c,speed.h,common.c,many.pl: Add measuring of
+	mpn_sqr_diagonal.
+
+	* gmp.texi, acinclude.m4: Mention x86 solaris 2.7 has the reg->reg
+	movq bug the same as 2.6.
+
+	* mpfr/Makefile.am (EXTRA_DIST): Add mpfr-test.h and mpf2mpfr.h.
+
+	* mpn/x86/README: Merge contents of README.family.
+	* mpn/x86/README.family: Remove file.
+
+	* mpn/Makefile.am (nodist_libdummy_la_SOURCES): Add mode1o, gcd_finda,
+	invert_limb, sqr_diagonal; remove mod_1_rs; sort alphabetically.
+
+2001-02-10  Torbjorn Granlund  <tege@swox.com>
+
+	* configure.in (gmp_mpn_functions_optional): List sqr_diagonal.
+
+	* mpn/powerpc32/aix.m4: Use unnamed csects.
+	* mpn/powerpc64/aix.m4: Likewise.
+
+	* acconfig.h: Add #undef of mpn_sqr_diagonal.
+	Remove lots of spacing.
+
+	* configure.in (syntax testing section): Match power* instead of
+	powerpc*.
+	* mpn/power: Convert files to `.asm'.
+	Prefix umul_ppmm and sdiv_qrnnd.
+	Update some comments.
+
+2001-02-09  Kevin Ryde  <kevin@swox.se>
+
+	* acconfig.h: Add HAVE_NATIVE_mpn_modexact_1_odd and
+	HAVE_NATIVE_mpn_modexact_1c_odd.
+
+	* configure.in (CCAS): Don't override a user selection.
+
+	* mpq/cmp_ui.c: DIVIDE_BY_ZERO if den2==0.
+
+2001-02-08  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/generic/sqr_basecase.c: Use mpn_sqr_diagonal when appropriate.
+
+2001-02-07  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (Low-level Functions): mpn_preinv_mod_1 now undocumented.
+
+	* mpn/generic/random2.c (myrandom): Use rand() on mingw.
+
+	* mpn/alpha/gmp-mparam.h: Update tuned parameters.
+
+2001-02-05  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/alpha/ev6/gmp-mparam.h: Retune.
+
+2001-02-05  Kevin Ryde  <kevin@swox.se>
+
+	* Makefile.am (libgmp, libmp): Construct from mpn/libmpn.la etc rather
+	than explicitly listed objects.
+
+	* urandom.h: Use rand() on mingw.
+
+	* mpn/powerpc64/lshift.asm,addsub_n.asm: Use r1 not 1.
+
+2001-02-04  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/ia64/copyi.asm: New file.
+	* mpn/ia64/copyd.asm: New file.
+
+2001-02-04  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/alpha/ev5/gmp-mparam.h, mpn/mips3/gmp-mparam.h,
+	mpn/powerpc32/gmp-mparam.h, mpn/powerpc64/gmp-mparam.h,
+	mpn/sparc64/gmp-mparam.h, mpn/x86/*/gmp-mparam.h:
+	Update tuned parameters.
+
+	* mpn/x86/i486: New directory.
+	* configure.in (i486-*-*): Use it.
+	* mpn/x86/i486/gmp-mparam.h: New file.
+
+	* mpn/x86/pentium/mode1o.asm: New file.
+	* mpn/x86/p6/mode1o.asm: New file.
+
+	* tune/many.pl: Use $(ASMFLAGS_PIC) and $(CFLAGS_PIC).
+
+	* gmp.texi (Integer Division): Another rewording of 2exp divisions.
+
+2001-02-03  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/arm/gmp-mparam.h: Tune.
+
+	* mpn/ia64/popcount.asm: Put a `;;' break at end of main loop.
+
+	* configure.in (arm*-*-*): Set gcc_cflags in order to pass
+	$fomit_frame_pointer.
+
+	* tests/mpz/t-mul.c (base_mul): Remove an unused variable.
+
+2001-02-02  Torbjorn Granlund  <tege@swox.com>
+
+	* demos/pexpr.c (TIME): New macro.
+	(main): Use TIME--print timing more accurately.
+	(setup_error_handler): Increase RLIMIT_DATA to 16 Mibyte.
+
+	* longlong.h (arm): Add __CLOBBER_CC to add_ssaaaa and sub_ddmmss.
+
+2001-02-02  Kevin Ryde  <kevin@swox.se>
+
+	* configure.in: Don't remove gmp-mparam.h and mpn source links under
+	--no-create since in that case they're not re-created.
+
+	* demos/expr: New directory.
+	* Makefile.am (SUBDIRS, allprogs): Add it.
+	* demos/expr/README, Makefile.am, expr.c, exprv.c, exprz.c, exprza.c,
+	exprq.c, exprqa.c, exprfa.c, exprf.c, exprfr.c, exprfra.c, expr.h,
+	expr-impl-h.in, run-expr.c, t-expr.c: New files.
+	* configure.in: Generate demos/expr/Makefile & demos/expr/expr-impl.h.
+
+	* Makefile.am: Remove mpfr from main libgmp.
+	* mpfr/Makefile.am: Build and install separate libmpfr.a.
+	* mpfr/*: Update to mpfr 2001.
+
+	* gmp-h.in (__GNU_MP_VERSION_MINOR): Bump to 2.
+	* Makefile.am (libtool -version-info): Bump appropriately.
+	* NEWS: Updates.
+
+	* tune/divrem1div.c, tune/divrem1inv.c, tune/divrem2div.c,
+	tune/divrem2inv.c: Renamed from divrem_1_div.c, divrem_1_inv.c,
+	divrem_2_div.c, divrem_2_inv.c, to be unique in DOS 8.3 filenames.
+	* tune/Makefile.am (libspeed_la_SOURCES): Update.
+
+	* mpn/x86/*/README, mpn/x86/README.family: Misc updates.
+	* tune/README: Misc updates.
+	* doc/configuration: Misc updates.
+
+	* mpn/x86/pentium/mmx/gmp-mparam.h: Change UDIV_PREINV_TIME to
+	UDIV_NORM_PREINV_TIME.
+
+	* mpz/pprime_p.c: Use ASSERT_ALWAYS instead of abort.
+
+	* rand.c (__gmp_rand_lc_scheme): Add "const".
+	(struct __gmp_rand_lc_scheme_struct): Make astr "const char *".
+
+	* demos/calc/calc.y, demos/calc/calclex.l: Add kron function.
+
+	* tests/devel/try.c: Partial rewrite, new scheme of function types,
+	allow result validation functions, add sqrtrem and jacobi testing.
+	* tune/many.pl: Corresponding updates.
+	* tests/devel/Makefile.am: Add a convenience rule for libtests.la.
+
+	* tests/refmpz.c: New file.
+	* tests/Makefile.am: Add it.
+	* tests/misc.c (mpz_erandomb, mpz_erandomb_nonzero): New functions.
+	* tests/tests.h: Add prototypes.
+
+	* mpn/x86/k6/cross.pl: Add a couple more exceptions.
+
+	* gmp.texi: Don't use @nicode{'\0'}, it doesn't come out right in tex.
+	(Introduction to GMP): Mention Cray vector systems.
+	(Build Options): Describe --enable-mpfr, refer to its manual.  Add
+	Crays under supported CPUs.
+	(Debugging): Add notes on source file paths.
+	(Autoconf): New section.
+	(Assigning Integers): Note truncation by mpz_set_d, mpz_set_q and
+	mpz_set_f.
+	(Converting Integers): Note the size mpz_get_str allocates.
+	(Floating-point Functions): Rewrite introduction, clarifying some
+	points about precision handling.
+	(Converting Floats): Note the size mpf_get_str allocates, and that it
+	gives an empty string for zero.  Add mpf_get_si and mpf_get_ui.
+	(Float Comparison): Give the formula mpf_reldiff calculates.
+	(Miscellaneous Float Functions): Add mpf_integer_p and mpf_fits_*_p.
+	(Random Number Functions): Misc rewordings for clarity.
+	(Random State Initialization): Ditto.
+	(Custom Allocation): Remove note on deallocate_function called with 0,
+	misc rewording and clarifications.
+	(Exact Remainder): New section.
+	(Binary GCD): A few words on initial reduction using division.
+	(Accelerated GCD): Refer to exact remainder section.
+	(Extended GCD): Extra remarks on single versus double selection.
+	(Jacobi Symbol): Update for mpz/jacobi.c rewrite and modexact_1_odd.
+	(Modular Powering Algorithm): Refer to exact remainder section.
+	(Assembler SIMD Instructions): Update remarks on MMX.
+	(Contributors): Amend to "Divide and Conquer" division.
+	(References): Tweak some formatting.  Add "Proof of GMP Fast Division
+	and Square Root Implementations" by Paul Zimmermann.
+
+2001-01-31  Torbjorn Granlund  <tege@swox.com>
+
+	* configure.in: Don't ever pass -mips3; let ABI flags imply ISA.
+
+2001-01-31  Kevin Ryde  <kevin@swox.se>
+
+	* tune/time.c: Remove unnecessary longlong.h.
+	(speed_endtime): Add some extra diagnostics.
+
+	* tests/mpz/t-fdiv_ui.c, tests/mpz/t-tdiv_ui.c: Use unsigned long for
+	the divisor, not mp_limb_t.
+	* tests/mpz/t-jac.c (try_base): Use %llu for long long limb.
+	* tests/trace.c: Add <string.h> for strlen.
+
+	* tune/freq.c (speed_cpu_frequency_proc_cpuinfo): Ignore "cycle
+	frequency" of 0, allow "BogoMIPS" as well as "bogomips".
+
+	* macos/Makefile.in: Add mpf/fits_s.c and mpf/fits_u.c objects.
+
+2001-01-30  Torbjorn Granlund  <tege@swox.com>
+
+	* longlong.h: Add add_ssaaaa and sub_ddmmss for 64-bit sparc.
+
+2001-01-29  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/powerpc64/addmul_1.asm: Prefix registers with an `r'.
+	* mpn/powerpc64/submul_1.asm: Likewise.
+	* mpn/powerpc64/mul_1.asm: Likewise.
+
+	* configure.in (alpha*-*-*): Amend last change to handle pca*.
+
+2001-01-29  Kevin Ryde  <kevin@swox.se>
+
+	* tune/speed.h (SPEED_ROUTINE_INVERT_LIMB_CALL): Don't let the
+	compiler optimize everything away.
+
+	* tune/speed.c, tune/speed.h, tune/common.c, tune/Makefile.am: Measure
+	operator_div, operator_mod, mpn_divrem_2_div, mpn_divrem_2_inv,
+	mpn_sb_divrem_m3, mpn_sb_divrem_m3_div, mpn_sb_divrem_m3_inv,
+	mpn_dc_divrem_sb_div, mpn_dc_divrem_sb_inv.
+	* tune/divrem_2_div.c, tune/divrem_2_inv.c, tune/sb_div.c,
+	tune/sb_inv.c: New files.
+
+	* tune/tuneup.c, gmp-impl.h, tune/speed.h, tune/common.c,
+	tune/Makefile.am: Tune SB_PREINV_THRESHOLD and DIVREM_2_THRESHOLD.
+
+	* mpn/generic/divrem_2.c: Use new DIVREM_2_THRESHOLD.
+	* mpn/generic/sb_divrem_mn.c: Use new SB_PREINV_THRESHOLD.
+
+	* mpn/x86/p6/mmx/lshift.asm, mpn/x86/p6/mmx/rshift.asm: New files,
+	just m4 include()ing the P55 code.
+	* configure.in (pentium[23]-*-*): Remove x86/pentium/mmx from path.
+
+2001-01-27  Kevin Ryde  <kevin@swox.se>
+
+	* configure.in (AC_CHECK_FUNCS): Add srand48.
+	* tune/speed.c: Use this test.
+
+	* acinclude.m4 (GMP_GCC_MARCH_PENTIUMPRO): Allow "egcs-" prefix on gcc
+	--version, warn if the format is unrecognised.
+	(GMP_COMPARE_GE): Guard against empty $1 not only on last arg.
+	(GMP_INIT, GMP_FINISH, GMP_PROG_M4): Obscure or eliminate literal
+	"dnl"s since autoconf thinks they indicate faulty macros.
+
+	* mpz/get_str.c, mpf/get_str.c: Make allocated string block exactly
+	strlen(str)+1 bytes.
+	* mpz/dump.c, mpf/dump.c, tests/mpz/convert.c: Use this size when
+	freeing.
+	* tests/mpf/t-conv.c: Ditto, and ensure x==0 is exercised.
+
+	* tests/mpz/t-fits.c: New file.
+	* tests/mpz/Makefile.am: Add it.
+
+	* tests/mpf/t-fits.c: New file.
+	* tests/mpf/t-get_si.c: New file.
+	* tests/mpf/t-int.c: New file.
+	* tests/mpf/Makefile.am: Add them.
+
+	* mpf/fits_s.c: New file.
+	* mpf/fits_u.c: New file.
+	* mpf/get_si.c: New file.
+	* mpf/get_ui.c: New file.
+	* mpf/int_p.c: New file.
+	* Makefile.am, mpf/Makefile.am: Add them.
+	* gmp-h.in (mpf_fits_*_p, mpf_get_si, mpf_get_ui, mpf_integer_p): Add
+	prototypes.
+
+	* tests/memory.c (tests_allocate, tests_reallocate): Guard against
+	size==0.
+
+	* tests/mpz/*.c, tests/mpq/*.c, tests/mpf/*.c: Uses tests_start and
+	tests_end.
+
+	* gmp-impl.h (USE_LEADING_REGPARM): Fix conditionals.
+
+2001-01-23  Kevin Ryde  <kevin@swox.se>
+
+	* configure.in, mpn/Makeasm.am (ASMFLAGS_PIC): New substitution,
+	allowing -DPIC to be suppressed on cygwin.
+	(CFLAGS_PIC): New substitution, use it and $(CCAS) directly, rather
+	than $(LIBTOOL), avoiding a problem with FreeBSD 2.2.8.
+
+	* mpn/x86/k6/mode1o.asm, mpn/x86/k7/mode1o.asm: Remove an unnecessary
+	+[.-L(here)] from _GLOBAL_OFFSET_TABLE_, avoids a segv from gas 1.92.3.
+	* mpn/x86/README.family: Add notes on the problem.
+
+2001-01-20  Torbjorn Granlund  <tege@swox.com>
+
+	* configure.in (alpha*-*-*): Default `flavour' to ev4.
+
+2001-01-19  Kevin Ryde  <kevin@swox.se>
+
+	* assert.c, gmp-impl.h (__gmp_assert_fail): Change return type to
+	void, since it's no longer used in expressions.
+
+	* mpn/x86/addsub_n.S: Remove file, since it doesn't work and it upsets
+	tune/many.pl.
+
+	* mpz/jacobi.c: Rewrite, but still binary algorithm; accept zero and
+	negative denominators; merge mpz_jacobi and mpz_legendre, add
+	mpz_kronecker; use mpn directly, add special cases for size==1.
+	* gmp.texi (Number Theoretic Functions): Update.
+	* gmp-h.in (mpz_kronecker): Add prototype.
+	* gmp-impl.h (USE_LEADING_REGPARM): New macro.
+	* tests/mpz/t-jac.c: Test mpz_kronecker.
+	* mpz/legendre.c: Remove file.
+	* Makefile.am, mpz/Makefile.am: Update.
+
+	* longlong.h (alpha count_leading_zeros): Use __attribute__ ((const))
+	when possible, add parameter to prototype.
+	(ia64 udiv_qrnnd): Use for all compilers, not just gcc.
+	(pentium count_trailing_zeros): Use count_leading_zeros.
+
+	* acinclude.m4 (GMP_C_ATTRIBUTE_CONST, GMP_C_ATTRIBUTE_NORETURN): New
+	macros.
+	* configure.in: Use them.
+	* gmp-impl.h (ATTRIBUTE_CONST, ATTRIBUTE_NORETURN): New macros.
+	(mpn_invert_limb): Add ATTRIBUTE_CONST.
+	(__gmp_assert_fail): Add ATTRIBUTE_NORETURN.
+
+2001-01-18  Kevin Ryde  <kevin@swox.se>
+
+	* gmp-h.in, gmp-impl.h (__gmp_allocate_func, __gmp_reallocate_func,
+	__gmp_free_func): Move prototypes from gmp-impl.h to gmp-h.in, for the
+	benefit of gmp++.h.
+
+	* gmp-impl.h, tests/misc.c, tests/tests.h: Move MPZ_SET_STR_OR_ABORT
+	and MPF_SET_STR_OR_ABORT to mpz_set_str_or_abort and
+	mpf_set_str_or_abort in libtests.
+	* tests/mpz/convert.c, tests/mpz/t-bin.c, tests/mpz/t-get_si.c,
+	tests/mpz/t-jac.c, tests/mpz/t-misc.c, tests/mpq/t-md_2exp.c,
+	tests/mpq/t-set_f.c, tests/mpf/t-conv.c, tests/mpf/t-misc.c: Update.
+
+	* mpn/generic/sqrtrem.c: Use MPN_COPY_INCR (for when rp==NULL).
+
+	* tests/mpz/reuse.c: Only run mpz_divexact_gcd on positive divisors.
+
+2001-01-18  Torbjorn Granlund  <tege@swox.com>
+
+	* demos/pexpr.c (main): Accept -vml option.
+	(fns): List `hamdist', `pow', `nextprime'.
+	(mpz_eval_expr): Return -1 for `popc' of negative.
+	(mpz_eval_expr): Handle `hamdist', `pow', `nextprime'.
+
+2001-01-15  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/alpha/ev5/mode1o.c: New file.
+
+	* tune/freq.c (speed_cpu_frequency_measure): Check cycles_works_p
+	before running speed_cyclecounter.
+	* tune/speed.h (cycles_works_p): Add prototype.
+
+2001-01-13  Torbjorn Granlund  <tege@swox.com>
+
+	* tests/rand/t-rand.c (farr): Fix typo.
+	(zarr): Fix typo.
+
+2001-01-12  Kevin Ryde  <kevin@swox.se>
+
+	* mpz/kronsz.c: Don't depend on right shifting a negative.
+
+	* mpn/x86/gmp-mparam.h: New file.
+
+	* mpn/x86/pentium/mmx/mul_1.asm: New file.
+
+2001-01-11  Torbjorn Granlund  <tege@swox.com>
+
+	* mpz/kronsz.c: Temporary workaround for Cray right shift oddities.
+	Explicitly compare against zero in tests.
+
+2001-01-10  Kevin Ryde  <kevin@swox.se>
+
+	* mpz/kronzs.c: Don't depend on right shifting a negative.
+
+2001-01-09  Torbjorn Granlund  <tege@swox.com>
+
+	* tests/t-constants.c: Disable some undefined tests.
+	(CHECK_MAX_S): Remove workaround for gcc 2.95.2 bug recently added.
+
+2001-01-09  Kevin Ryde  <kevin@swox.se>
+
+	* tests/t-constants.c: Add more diagnostics.
+	(CHECK_MAX_S): Fix for gcc 2.95.2 -mpowerpc64 -maix64.
+
+	* mpn/x86/k6/mode1o.asm: New file.
+	* mpn/x86/k7/mode1o.asm: New file.
+
+	* mpn/asm-defs.m4 (modexact_1_odd, modexact_1c_odd): New define_mpn's.
+	(__clz_tab, modlimb_invert_table, PROLOGUE, EPILOGUE): Add asserts for
+	GSYM_PREFIX.
+	* mpn/x86/x86-defs.m4 (Zdisp): Add a movzbl.
+
+	* tests/mpz/t-jac.c (check_a_zero): New test.
+	(check_squares_zi): Fix to use (a^2/b), not (a*b/b); revert last
+	change avoiding a,b=0, both are fine.
+	(try_2den): Don't use mpz_kronecker_ui for the expected answer.
+	(try_*): Call abort rather than exit.
+
+	* mpz/kronzu.c, mpz/kronzs.c: Fix for a=0.
+
+	* tune/tuneup.c (USE_PREINV_MOD_1): Fix to use new DATA_HIGH_LT_R.
+
+2001-01-08  Torbjorn Granlund  <tege@swox.com>
+
+	* urandom.h: Amend 2000-11-21 change to also handle cygwin.
+
+2001-01-08  Kevin Ryde  <kevin@swox.se>
+
+	* tune/many.pl: Updates for move to tests/devel, add modexact_1_odd,
+	don't assume C files can't have carry-in entrypoints, remove
+	$(TRY_TESTS_OBJS) now in libtests.
+
+	* tests/devel/try.c, tests/refmpn.c, tests/tests.h: Remove
+	mpn_mod_1_rshift testing.
+
+	* tune/tuneup.c (fft_step_size): Test for overflow using the actual
+	mp_size_t, don't use BITS_PER_INT.
+
+	* tune/speed.c (r_string): "r" is a limb, use BITS_PER_MP_LIMB and
+	change LONG_ONES to LIMB_ONES.
+	* tune/time.c (M_2POWU): Use INT_MAX rather than BITS_PER_INT.
+
+	* extract-dbl.c (BITS_PER_PART): Use BITS_PER_MP_LIMB not
+	BITS_PER_LONGINT.
+
+	* mpz/inp_raw.c, mpz/out_raw.c: Add private defines of BITS_PER_CHAR.
+	* mpz/fac_ui.c, tests/mpz/t-fac_ui.c: Don't use BITS_PER_LONGINT.
+	* tests/mpz/t-get_si.c: Don't use BITS_PER_LONGINT, do the LONG_MAX
+	tests with some explicit code.
+
+	* mpn/*/gmp-mparam.h, acinclude.m4, tests/t-constants.c
+	(BITS_PER_LONGINT, BITS_PER_INT, BITS_PER_SHORTINT, BITS_PER_CHAR):
+	Remove defines, remove probings, remove tests.
+
+	* tune/tuneup.c (MODEXACT_1_ODD_THRESHOLD): Add tuning.
+
+	* tune/speed.c,speed.h,common.c: Add measuring of mpn_modexact_1_odd,
+	mpn_gcd_finda, and an "N" form for mpn_gcd_1.
+
+	* tests/mpz/t-jac.c (check_squares_zi): Ensure random a,b != 0.
+
+2001-01-07  Kevin Ryde  <kevin@swox.se>
+
+	* configure.in (gmp_mpn_functions): Add mode1o, remove mod_1_rs.
+
+	* mpn/generic/mod_1_rs.c: Remove file, no longer needed.
+	* gmp-h.in (mpn_mod_1_rshift): Remove prototype and define.
+
+	* mpq/set_f.c: Use MPN_STRIP_LOW_ZEROS_NOT_ZERO.
+
+	* mpz/kronzu.c, mpz/kronzs.c, mpz/kronuz.c, mpz/kronsz.c: Use
+	mpn_modexact_1_odd, new style MPN_STRIP_LOW_ZEROS_NOT_ZERO, and new
+	JACOBI macros.  Various rearrangements supporting all this.
+
+	* mpn/generic/gcd_1.c: Use mpn_modexact_1_odd, reduce u%v if u much
+	bigger than v when size==1, some rearrangements supporting this.
+
+	* gmp-impl.h (JACOBI_*): More macros, add some casts to "int".
+	(MPN_STRIP_LOW_ZEROS_NOT_ZERO): Add a "low" parameter.
+	(mpn_modexact_1_odd, mpn_modexact_1c_odd): Add prototype and defines.
+	(MODEXACT_1_ODD_THRESHOLD): New threshold.
+	(MPN_MOD_OR_MODEXACT_1_ODD, JACOBI_MOD_OR_MODEXACT_1_ODD): New macros.
+
+	* mpn/generic/mode1o.c: New file.
+
+	* tests/mpz/reuse.c: Add testing of mpz_divexact_gcd.
+	* tests/mpz/t-fac_ui.c: Use libtests for memory leak checking.
+	* tests/mpz/t-fib_ui.c: Add a usage comment.
+
+	* tests/mpz/bit.c: Use libtests.
+	* tests/mpz/t-scan.c: Remove unused subroutines.
+	* tests/devel/try.c: Use libtests, define PROT_NONE if the system
+	doesn't.
+
+	* tests/spinner.c, tests/x86check.c: Use tests.h.
+	* tests/trace.c: Use tests.h, add mpf_trace.
+	* tests/refmpn.c: Use tests.h, add refmpn_malloc_limbs_aligned,
+	refmpn_tstbit, refmpn_neg.
+
+	* tune/common.c, tune/speed.h: Update for functions moved to
+	tests/misc.c.
+
+	* tune/Makefile.am, tests/mpz/Makefile.am, tests/mpq/Makefile.am,
+	tests/mpf/Makefile.am: Use tests/libtests.la.
+
+	* configure.in (AC_OUTPUT): Update for new directories.
+	(x86 CALLING_CONVENTIONS_OBJS): Use .lo for libtests.la, allow
+	ansi2knr on x86check.c.
+
+	* tests/Makefile.am: Establish new libtests.la convenience library,
+	add mpz, mpq, mpf, mpbsd subdirectories.
+	* tests/tests.h: New file.
+	* mpn/tests/ref.h,try.h: Remove files, now in tests.h.
+
+	* tests/mpf/ref.c: Move to tests/refmpf.c, rename functions to refmpf.
+	* tests/mpf/t-add.c, tests/mpf/t-sub.c: Use libtests.
+	* tests/mpf/Makefile.am: Update.
+
+	* tests/memory.c: New file.
+	* tests/misc.c: New file, a few subroutines from the test programs.
+
+	* mpz/tests, mpq/tests, mpf/tests, mpbsd/tests: Move directories to
+	tests/mpz etc.
+	* mpz/Makefile.am, mpq/Makefile.am, mpf/Makefile.am, mpbsd/Makefile.am
+	(SUBDIRS): Remove.
+
+	* tests/devel: New directory.
+	* mpn/tests/*.c: Move programs to tests/devel.
+	* mpn/tests/Makefile.am, mpn/tests/README: Move to tests/devel, update.
+
+	* mpn/tests/ref.c: Move to tests/refmpn.c.
+	* mpn/tests/spinner.c,trace.c,x86call.asm,x86check.c: Move to tests
+	directory.
+
+	* tests/t-constants.c: Add checks of HIGHBIT, MAX and MIN constants,
+	simplify ANSI vs K&R stringizing, use correct printf format types, do
+	all tests before aborting.
+
+2001-01-05  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/cray/ieee/gmp-mparam.h: Retune.
+
+2001-01-05  Kevin Ryde  <kevin@swox.se>
+
+	* configure.in (mp.h): Only create this under --enable-mpbsd.
+
+	* demos/calc: New subdirectory, move demos/calc* to it.
+	* demos/calc/Makefile.am: New file, split from demos/Makefile.am.
+	* demos/Makefile.am: Update.
+	* configure.in (AC_OUTPUT): Add demos/calc/Makefile.
+
+	* tests/t-constants.c (CALC_BITS_PER_TYPE etc): Use a run-time test
+	for how many bits work in a give type, don't assume bits==8*sizeof.
+
+2001-01-04  Kevin Ryde  <kevin@swox.se>
+
+	* mpz/fits_s.c, mpz/fits_u.c: New files, split from fits.c, use plain
+	UINT_MAX etc, not MPZ_FITS_UTYPE_SDT etc.
+	* mpz/fits.c: Remove file.
+	* mpz/Makefile.am, macos/Makefile.in: Update.
+
+	* gmp-impl.h (UNSIGNED_TYPE_MAX etc): Remove these generic forms.
+	(MPZ_FITS_[SU]TYPE_SDT): Remove these.
+	(UINT_MAX etc): Provide a full set of defaults.
+	* gmp-h.in (__GMP_MP_SIZE_T_INT): New define.
+
+	* mpz/tests/t-scan.c: New file.
+	* mpz/tests/Makefile.am (check_PROGRAMS): Add it.
+
+	* mpz/scan0.c, mpz/scan1.c: Rewrite, don't read beyond allocated
+	memory, support negatives, return ULONG_MAX for no bit found.
+	* gmp.texi (Integer Logic and Bit Fiddling): Update.
+
+2001-01-03  Torbjorn Granlund  <tege@swox.com>
+
+	* mpz/tests/dive.c: Generate test operands using new random functions.
+	* mpz/tests/io.c: Likewise.
+	* mpz/tests/logic.c: Likewise.
+	* mpz/tests/t-2exp.c: Likewise.
+
+	* stack-alloc.c (__gmp_tmp_alloc): Round `now' to required alignment.
+
+	* stack-alloc.h (__TMP_ALIGN): Append `L'.
+
+	* gmp-impl.h: For Cray, #include limits.h.
+	(LONG_MIN): New #define.
+	(ULONG_HIGHBIT): #define in terms of ULONG_MAX.
+	(LONG_HIGHBIT): #define as LONG_MIN.
+	(USHRT_MAX): New name for USHORT_MAX.
+	(SHRT_MAX): New name for SHORT_MAX.
+	(SHRT_MIN): New #define.
+	(USHORT_HIGHBIT,SHORT_HIGHBIT): Removed.
+
+	* mpbsd/tests/t-misc.c (check_itom [data]): *SHORT* => *SHRT*;
+	remove code disabling a test for Cray.
+
+	* tests/t-constants.c (CHECK_CONSTANT): Cast parameters to long.
+
+	* mpn/generic/mul_n.c (mpn_kara_sqr_n): Remove unused variable `t'.
+	(mpn_kara_mul_n): Likewise.
+
+	* mpz/fac_ui.c (MPZ_SET_1_NZ): Actually use `__z'.
+
+	* mpz/tests/t-jac.c
+	(main, check_squares_zi): Generate test operands using new random
+	functions.
+
+	All changes below on this date for enabling `make; make check'
+	with C++ compilers:
+
+	* mpz/tests/t-pow_ui.c (debug_mp, ref_mpz_pow_ui): Provide prototypes.
+
+	* mpz/tests/t-mul.c (debug_mp, base_mul, ref_mpz_mul):
+	Provide prototypes.
+	(dump_abort): Provide prototype and declare properly for C++.
+
+	* mpz/tests/t-jac.c: #include stdlib.h and sys/time.h.
+
+	* mpz/tests/t-fdiv.c
+	(dump_abort): Provide prototype and declare properly for C++.
+	(debug_mp): Provide prototype.
+	* mpz/tests/t-fdiv_ui.c: Likewise.
+	* mpz/tests/t-gcd.c: Likewise.
+	* mpz/tests/t-powm.c: Likewise.
+	* mpz/tests/t-powm_ui.c: Likewise.
+	* mpz/tests/t-sqrtrem.c: Likewise.
+	* mpz/tests/t-tdiv_ui.c: Likewise.
+	* mpz/tests/t-tdiv.c: Likewise.
+
+	* mpz/tests/t-2exp.c: #include stdlib.h and sys/time.h.
+	Remove #include of longlong.h.
+
+	* mpz/tests/io.c: #include config.h, stdlib.h, sys/time.h, and
+	conditionally unistd.h.
+
+	* mpz/tests/dive.c: #include stdlib.h and sys/time.h.
+	(dump_abort): Provide prototype and declare properly for C++.
+	(debug_mp): Provide prototype.
+	* mpz/tests/logic.c: Likewise.
+
+	* mpz/tests/convert.c (debug_mp): Provide prototype.
+	* mpz/tests/t-root.c (debug_mp): Likewise.
+
+	* mpz/tests/bit.c: #include stdlib.h and sys/time.h.
+
+	* mpq/tests/t-get_d.c: #include stdlib.h and sys/time.h.
+	(dump): Provide prototype and declare properly for C++.
+
+	* mpq/tests/t-cmp_ui.c: #include stdio.h, stdlib.h and sys/time.h.
+	(ref_mpq_cmp_ui): Declare properly for C++.
+
+	* mpq/tests/t-cmp.c: #include stdlib.h and sys/time.h.
+	(ref_mpq_cmp): Declare properly for C++.
+	(dump): Delete unused function.
+
+	* mpf/random2.c (myrandom): New function.
+	(mpf_random2): Use it.
+
+	* mpn/generic/random2.c: #include stdlib.h (for random/mrand48).
+	(myrandom): New function.
+	(mpn_random2): Use it.
+
+	* mpf/tests/t-add.c: #include stdlib.h and sys/time.h.
+	(oo): Remove unused function.
+	* mpf/tests/t-conv.c: Likewise.
+	* mpf/tests/t-sub.c: Likewise.
+	* mpf/tests/t-dm2exp.c: Likewise.
+	* mpf/tests/t-muldiv.c: Likewise.
+	* mpf/tests/t-sqrt.c: Likewise.
+
+	* mpf/tests/reuse.c: #include stdlib.h and sys/time.h.
+	Use PROTO on some typedefs.
+	(oo): Remove function.
+	(dump_abort): Call mpf_dump instead of oo.
+
+	* mpf/set_str.c: #include stdlib.h (for strtol).
+
+	* mpf/random2.c: #include stdlib.h (for random/mrand48).
+	* mpn/alpha/udiv_arnnd: File deleted.
+
+	* Remove K&R function headers.
+
+2001-01-02  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/generic/mul.c: Clean up spacing and indentation.
+
+	* mpn/generic/mul_fft.c (mpn_fft_add_modF): Use mpn_decr_u.
+	Clean up spacing and indentation.
+
+	* extract-dbl.c: Generalize to handle smaller limb sizes.
+
+2001-01-01  Torbjorn Granlund  <tege@swox.com>
+
+	* mpbsd/mout.c: Output newline after "0".
+
+2000-12-31  Torbjorn Granlund  <tege@swox.com>
+
+	* ltmain.sh: Remove space between `#!' and `$SHELL' when generating
+	`libtool'.
+
+	* mpbsd/tests/t-misc.c (check_itom): Exclude test for all Cray
+	vector systems.  Correct comment.
+
+2000-12-31  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (ABI and ISA): New enough gcc needed for mips n32 etc, gcc
+	2.95 needed for sparc 64-bit ABI, gcc 2.8 needed for -mv8plus.
+
+	* configure.in ([cjt]90,sv1-cray-unicos*): Preserve user specified
+	MPN_PATH, amend test program indenting.
+	(none-*-*): Add -DNO_ASM to gcc to disable longlong.h asm macros in
+	generic C.
+
+	* config.sub (j90, t90): Preserve these, don't let configfsf.sub turn
+	them into c90.
+
+	* config.guess (m68k-*-nextstep*,m68k-*-openstep*): Don't transform
+	m68k to m68020, since m68k is already interpreted as 68020.
+
+2000-12-30  Kevin Ryde  <kevin@swox.se>
+
+	* mpq/neg.c: Rewrite, use mpn, avoid denominator copy if unnecessary.
+
+	* mpz/tstbit.c: Rewrite, slightly simplified.
+	* mpz/tests/bit.c (check_tstbit): New test, and add a couple more
+	diagnostics elsewhere.
+
+	* configure.in (x86 gcc_cflags_cpu): Add -m486 for gcc 2.7.2.
+	(ccbase): Only use a known compiler in eval statements (avoids
+	problems with non-symbol characters).
+	(ccbase): Use GMP_PROG_CC_IS_GNU to identify gcc installed under a
+	different name.
+	(cclist): Use same style $abi as other variables.
+
+	* acinclude.m4 (GMP_PROG_CC_IS_GNU): New macro.
+	(GMP_GCC_MARCH_PENTIUMPRO): Use $ccbase to identify gcc.
+	(GMP_ASM_TYPE): Define TYPE to empty, not "dnl", when no .type needed.
+	(GMP_ASM_SIZE): Ditto for SIZE, which ensures EPILOGUE on the last
+	line of a file doesn't leave a tab and no newline.
+	(GMP_ASM_UNDERSCORE): Add a prototype for C++.
+
+	* configure.in (sys/mman.h, mprotect): New tests.
+	* mpn/tests/try.c: Use them, and HAVE_UNISTD_H too.
+
+	* configure.in (getopt.h): Remove test.
+	* tune/speed.c, mpn/tests/try.c (getopt.h): Remove include, since
+	plain getopt() is in <unistd.h>.
+
+	* configure.in, gmp-h.in (mips*-*-irix6*): Set limb_n32=longlong
+	rather than using _ABIN32.
+
+2000-12-29  Torbjorn Granlund  <tege@swox.com>
+
+	* mpz/tests/reuse.c: Rename dump_abort => dump.
+	* mpz/tests/reuse.c: Generate operands using gmp_rand*.
+	* mpz/tests/convert.c: Likewise.
+
+	* configure.in: Detect T90-ieee systems; move Cray path
+	selection to after AC_PROG_CC.  Invoke AC_PROG_CPP.
+	* mpn/cray/cfp: New directory.  Move cfp specific files here.
+	* mpn/cray/cfp/mulwwc90.s: New file.
+	* mpn/cray/cfp/mulwwj90.s: New file.
+	* mpn/cray/mulww.s: Delete.
+
+2000-12-27  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/cray/ieee/mul_1.c: New file.
+	* mpn/cray/ieee/addmul_1.c: New file.
+	* mpn/cray/ieee/submul_1.c: New file.
+	* mpn/cray/ieee/gmp-mparam.h: New file.
+
+	* mpn/cray/gmp-mparam.h: Disable UMUL_TIME and UDIV_TIME.
+
+	* mpn/cray/hamdist.c: New file.
+	* mpn/cray/popcount.c: New file.
+	* mpn/cray/rshift.c: New file.
+	* mpn/cray/lshift.c: New file.
+
+	* longlong.h: Add count_leading_zeros for _CRAY.
+	Reorganize _CRAY stuff.
+
+2000-12-24  Kevin Ryde  <kevin@swox.se>
+
+	* configure.in (alpha*-cray-unicos*): Disable SPEED_CYCLECOUNTER_OBJ,
+	as tune/alpha.asm doesn't suit.
+
+	* mpn/generic/sqrtrem.c, mpz/pow_ui.c, mpz/powm_ui.c, mpf/get_str.c,
+	mpf/set_str.c: Use mpn_sqr_n when applicable, not mpn_mul_n.
+
+2000-12-23  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/generic/mul_fft.c: Reformat.
+	(mpn_fft_neg_modF): Remove.
+	(mpn_fft_mul_2exp_modF): Inline mpn_fft_neg_modF.
+
+	* mpn/cray/gmp-mparam.h: Retune.
+
+	* configure.in (*-cray-unicos*): Pass `-O3 -htask0'.
+	(vax*-*-*): Fix typo.
+
+	* mpn/cray/mul_1.c: Use dynamic arrays, get rid of TMP_*.
+	* mpn/cray/addmul_1.c: Likewise.
+	* mpn/cray/submul_1.c: Likewise.
+	* mpn/cray/add_n.c: Likewise.
+	* mpn/cray/sub_n.c: Likewise.
+
+	* configure.in (default cc_cflags,cc_64_cflags): Remove -g/add -O.
+	(mips*-*-irix[6789]*]): Remove -g from cc_*_cflags.
+
+2000-12-22  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/generic/mul_n.c: Delete K&R function headers.
+
+	* mpn/generic/mul_n.c (mpn_kara_mul_n): Clean up type confusion
+	between mp_limb_t and mp_size_t.
+	(mpn_kara_sqr_n): Likewise.
+
+	* mpn/generic/mul_n.c (mpn_kara_mul_n): Use mpn_incr_u.
+	(mpn_kara_sqr_n): Likewise.
+
+	* mpn/generic/mul_n.c (mpn_kara_mul_n): Change handling of `sign'
+	to work around GCC 2.8.1 MIPS bug.
+
+	* configure.in (implied alpha*-cray-unicos*): Remove -g from cc_cflags.
+
+2000-12-21  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/alpha/invert_limb.asm: Simplify a bit.
+	Add handling of bigend systems.
+	* mpn/alpha/unicos.m4: Define `bigend'.
+	* mpn/alpha/default.m4: Define `bigend' (to expand to nothing).
+
+	* tests/t-constants.c (CHECK_CONSTANT): Print using %lx.
+
+	* mpn/alpha/gmp-mparam.h: Remove sizes for plain C types.
+	* mpn/alpha/ev5/gmp-mparam.h: Likewise.
+	* mpn/alpha/ev6/gmp-mparam.h: Likewise.
+
+	* mpn/alpha/unicos.m4: Define LEA.
+	* mpn/alpha/default.m4: Likewise.
+	* mpn/alpha/invert_limb.asm: Use LEA for loading symbolic addresses.
+	* mpn/alpha/cntlz.asm: Likewise.
+
+	* mpn/alpha/cntlz.asm: Don't use `ldbu', use slightly slower
+	`ldq_u' + `extbl' instead.
+
+	* mpn/alpha/unicos.m4: Define EXTERN.
+	* mpn/alpha/default.m4: Define EXTERN (to expand to nothing).
+	* mpn/alpha/cntlz.asm: Declare __clz_tab usign `EXTERN' (for the
+	benefit of Unicos).
+
+2000-12-21  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/alpha/unicos.m4 (GSYM_PREFIX): Define for the benefit of
+	__clz_tab.
+
+2000-12-20  Torbjorn Granlund  <tege@swox.com>
+
+	* longlong.h: Add udiv_qrnnd and count_leading_zeros for _CRAYMPP
+	systems.
+
+2000-12-19  Torbjorn Granlund  <tege@swox.com>
+
+	* configure.in (*sparc*-*-*): Remove -g from cc_cflags and acc_cflags.
+
+	* mpn/generic/sqrtrem.c (mpn_sqrtrem): Separate `limb' values from
+	`size' values.
+
+	* configure.in (*-cray-unicos*): Add `-Wa,-B' to cc_cflags.
+
+	* demos/pexpr.c (rstate): New variable.
+	(main): Initialize rstate.
+	(enum op_t): Add RANDOM.
+	(fns): Add field for RANDOM.
+	(mpz_eval_expr): Handle RANDOM.
+
+2000-12-19  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/generic/sqrtrem.c: Rewrite by Paul Zimmermann, based on his
+	Karatsuba Square Root algorithm.
+	* gmp.texi (Square Root Algorithm): Update.
+
+	* tune/many.pl: New file.
+
+	* mpn/tests/try.c,ref.[ch] (mpn_preinv_mod_1, mpn_sb_divrem_mn,
+	mpn_tdiv_qr, mpn_gcd_finda, mpn_kara_mul_n, mpn_kara_sqr_n,
+	mpn_toom3_mul_n, mpn_toom3_sqr_n): Add testing.
+	* mpn/tests/ref.c: Cast some "0"s in function calls.
+
+	* mpn/x86/k7/mmx/mod_1.asm: Add preinv_mod_1 entrypoint, remove extra
+	variable for loop termination.
+
+	* mpn/x86/p6/mmx/mod_1.asm: Remove file, in favour of the following.
+	* mpn/x86/p6/mod_1.asm: New file.
+
+	* mpn/x86/pentium/mod_1.asm: New file.
+
+2000-12-18  Torbjorn Granlund  <tege@swox.com>
+
+	* configure.in (mips*-*-irix[6789]*): Pass options to compiler using
+	`-Wc'.
+
+2000-12-18  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/x86/k6/pre_mod_1.asm: New file.
+
+	* tune/tuneup.c (USE_PREINV_MOD_1): Tune this, rearrange mpn_divrem_1
+	and mpn_mod_1 handling in support of it.
+	* tune/Makefile.am: Consequent changes to divrem_1.c and mod_1.c.
+
+	* gmp-impl.h (USE_PREINV_MOD_1, MPN_MOD_OR_PREINV_MOD_1): New macros.
+	* mpn/generic/perfsqr.c, mpz/pprime_p.c: Use MPN_MOD_OR_PREINV_MOD_1.
+
+	* configure.in: Let an asm mod_1 provide a preinv_mod_1 entrypoint.
+
+	* mpn/alpha/default.m4: Remove some newlines, add some asserts.
+	(r0 etc, f0 etc): Use defreg and deflit.
+	(PROLOGUE, PROLOGUE_GP, EPILOGUE): Use GSYM_PREFIX.
+	* mpn/alpha/unicos.m4: Remove some newlines, add some asserts.
+	* mpn/alpha/invert_limb.asm: Remove unused second DATASTART parameter.
+	* mpn/alpha/cntlz.asm: Use mpn_count_leading_zeros and __clz_tab.
+
+	* mpn/asm-defs.m4 (changecom): Comments on portability.
+	(__clz_tab, modlimb_invert_table): New macros, matching gmp-impl.h.
+	(count_leading_zeros, count_trailing_zeros): New define_mpn's.
+	(PROLOGUE etc): Comments on usage, add some asserts.
+	(OPERATION_[lr]shift): Use m4_not_for_expansion, for the benefit of
+	lorrshift multifunc.
+
+	* mpn/Makeasm.am (RM_TMP): New variable controlling tmp-*.s
+	removal, for development purposes.
+
+	* mpz/fac_ui.c: Fix for long long limb by using mpn_mul_1 not
+	mpz_mul_ui, and note some possible enhancements.
+
+	* mpz/tests/t-fac_ui.c: New test.
+	* mpz/tests/Makefile.am (check_PROGRAMS): Add it.
+	* macos/Makefile.in: Ditto, and add t-fib_ui too.
+
+	* mpn/generic/[lr]shift.c: Remove some DEBUG code adequately covered
+	by new parameter ASSERTs.
+
+	* longlong.h (count_trailing_zeros): Assert x!=0.
+
+	* doc/configuration: Updates for new configure things, add some notes
+	on test setups.
+
+2000-12-16  Torbjorn Granlund  <tege@swox.com>
+
+	* configure.in (*-*-aix): Pass -qmaxmem=20000 to xlc also for 64-bit
+	compiles.
+	* configure.in: Disable shared libs for *-*-ultrix*.
+
+2000-12-15  Torbjorn Granlund  <tege@swox.com>
+
+	* configure.in (powerpc*-*-*): Pass -Wa,-mppc when using gcc.
+
+	* gmp-impl.h (_EXTERN_INLINE): #define different for GCC and other
+	compilers.
+
+	* gmp-h.in (__gmp_inline): Remove.
+	* mp-h.in: Likewise.
+	* mpn/generic/gcd.c: Use `inline' instead of `__gmp_inline'.
+
+	* configure.in (mips*-*-irix[6789]*): Define *_ldflags.
+
+2000-12-14  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/generic/pre_mod_1.c: Use proper type for udiv_qrnnd
+	parameter `dummy'.
+
+	* mpn/generic/divrem_1.c: Use explicit `!= 0' in if statement.
+	* mpn/generic/mod_1.c: Likewise.
+
+2000-12-14  Kevin Ryde  <kevin@swox.se>
+
+	* config.guess (mips-*-irix[6789]*): Transform to mips64.
+	(m68k-*-nextstep* | m68k-*-openstep*): Transform to m68020.
+
+2000-12-13  Torbjorn Granlund  <tege@swox.com>
+
+	* tests/t-constants.c (main): Conditionalize use of PP_INVERTED.
+
+	* mpn/mp_bases.c: Handle 4-bit limbs.
+	(main): Add code for generating tables.
+
+	* mpn/generic/popham.c: Handle limb bitsizes of 4, 8, 16.
+	Suffix all 32-bit constant with `L'.
+	Use CNST_LIMB for 64-bit constants.
+
+2000-12-13  Kevin Ryde  <kevin@swox.se>
+
+	* gmp-impl.h (FIB_THRESHOLD): Defaults for 4,8,16 bits per limb, and
+	an arbitrary fallback default.
+	(modlimb_invert): Add efficient code for 8,16 (or 4) bits per limb.
+
+	* configure.in (mips3, mips64): Don't bother with o32 (mips2 32-bit
+	limb) on IRIX 6.
+
+	* Makefile.am (SUBDIRS): Put "tests" first so tests/t-constants.c is
+	run first, to pick up any limb size mismatch.
+
+	* tune/tuneup.c (DIVREM_1, MOD_1): Fix result values, were off by 1.
+
+	* mpz/fib_ui.c (table1, table2): Add data for 4,8,16 bits per limb.
+
+2000-12-12  Torbjorn Granlund  <tege@swox.com>
+
+	* gmp-impl.h (LIMBS_PER_DOUBLE): Define for any limb bitsize.
+
+2000-12-11  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/mp_bases.c: Add tables for 8-bit and 16-bit limbs.
+	Round existing `double' values properly.
+
+	* gmp-h.in (__gmp_randstate_struct): Prefix field names with _mp_
+	to keep out of user name space.
+	(__gmp_randata_lc): Likewise.
+	* randclr.c, randlc.c, randlc2x.c, randraw.c, randsd.c, randsdui.c:
+	Corresponding changes.
+
+	* gmp-impl.h (PP): #define for machines with BITS_PER_MP_LIMB
+	of 2, 4, 8, and 16.
+	(PP_FIRST_OMITTED): New, define for various BITS_PER_MP_LIMB.
+	(PP_MASK): Remove.
+	(PP_MAXPRIME): Remove.
+
+	* mpn/generic/perfsqr.c: Generalize PP handling for machines with
+	limbs of < 32 bits.  Allow PP_INVERTED to be undefined.
+	* mpz/pprime_p.c: Likewise.
+
+2000-12-10  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/generic/mul_1.c: Declare parameters in C89 style.
+
+2000-12-10  Kevin Ryde  <kevin@swox.se>
+
+	* tune/Makefile.am ({speed_LDFLAGS, speed_ext_LDFLAGS, tune_LDFLAGS):
+	Don't use -all-static, as gcc 2.95.2 on i386 solaris 8 doesn't like
+	it.
+
+	* configure.in (mips3,mips64): Add ABI=64, name the others ABI=n32 and
+	ABI=o32.
+	* mpn/mips3/gmp-mparam.h (BITS_PER_LONGINT): Remove #define and let
+	configure determine it, since it varies with ABI=64 or ABI=n32.
+	* gmp.texi (ABI and ISA): Update.
+	(mpz_mod_ui): Remark that it's identical to mpz_fdiv_r_ui.
+	(mpn_divexact_by3): Qualify a statement needing mp_bits_per_limb even.
+
+	* mul_fft.c (mpn_fft_mul_modF_K etc): Patch by Paul Zimmermann to fix
+	results in certain cases of recursing into a further FFT.
+
+2000-12-09  Torbjorn Granlund  <tege@swox.com>
+
+	* mpz/cmpabs.c: Remove unused variable.
+	* mpz/rrandomb.c: Likewise.
+	* mpz/xor.c: Likewise.
+
+2000-12-07  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/generic/gcdext.c: Handle double carry when computing s1.
+	Merge two code blocks for computing s0 and s1.
+
+2000-12-07  Kevin Ryde  <kevin@swox.se>
+
+	* configure.in (hppa*-*-*): Remove -Aa -D_HPUX_SOURCE from
+	cc_cflags/cppflags, and instead let AM_C_PROTOTYPES add it, or -Ae,
+	whichever works.
+
+	* configure.in (*-*-aix[34]*): Disable shared by default, but let
+	the user override that, if desired.
+	* gmp.texi (Notes for Particular Systems): Update.
+
+2000-12-06  Torbjorn Granlund  <tege@swox.com>
+
+	* mpq/cmp_ui.c: Streamline.
+
+2000-12-06  Kevin Ryde  <kevin@swox.se>
+
+	* tune/divrem_1_div.c,divrem_1_inv.c,mod_1_div.c,mod_1_inv.c,
+	gcdext_double.c: New files for measuring.
+	* tune/Makefile.am (libspeed_la_SOURCES): Add them.
+	* tune/speed.c,speed.h,common.c: Add measuring of them.
+	(mpn_preinv_mod_1, mpz_jacobi, mpz_powm_ui): Add measuring.
+
+	* speed.c (getopt_long): Don't use this, just plain getopt.
+	* configure.in (getopt_long): Remove test.
+
+	* gmp-impl.h (MPN_KARA_MUL_N_TSIZE, MPN_KARA_MUL_N_MINSIZE,
+	MPN_TOOM3_MUL_N_TSIZE, MPN_TOOM3_MUL_N_MINSIZE): New macros, and
+	assume toom3 square tsize was meant to be the same as the mul (both
+	are overestimates).
+	* tune/tuneup.c, mpn/generic/mul.c, mpn/generic/mul_n.c: Use them.
+	* mpn/generic/mul_n.c (mpn_toom3_sqr_n): Fix an ASSERT to use
+	TOOM3_SQR_THRESHOLD not TOOM3_MUL_THRESHOLD, add a few that might
+	be more realistic size checks.
+	* tune/speed.h (SPEED_ROUTINE_MPN_MUL_N_TSPACE etc): Use minsize.
+
+	* mpn/generic/divrem_1.c: Partial rewrite, merge fractional part
+	calculation, skip a divide step in more cases, introduce
+	DIVREM_1_NORM_THRESHOLD and DIVREM_1_UNNORM_THRESHOLD.
+	* mpn/generic/mod_1.c: Partial rewrite, skip a divide step in more
+	cases, introduce MOD_1_NORM_THRESHOLD, MOD_1_UNNORM_THRESHOLD.
+	* longlong.h (UDIV_PREINV_ALWAYS): New define, set for alpha and ia64.
+	* tune/tuneup.c (DIVREM_1_NORM_THRESHOLD, DIVREM_1_UNNORM_THRESHOLD,
+	MOD_1_NORM_THRESHOLD, MOD_1_UNNORM_THRESHOLD): Tune these.
+	* gmp-impl.h [TUNE_PROGRAM_BUILD]: Support for this.
+	* tune/Makefile.am (TUNE_MPN_SRCS): Add divrem_1.c and mod_1.c.
+
+	* gmp-impl.h (UDIV_NORM_PREINV_TIME): Renamed from UDIV_PREINV_TIME.
+	* mpn/generic/perfsqr.c, mpn/generic/sb_divrem_mn.c,
+	mpn/x86/*/gmp-mparam.h: Ditto.
+	* gmp-impl.h (UDIV_UNNORM_PREINV_TIME): New define.
+
+	* configure.in (AC_C_INLINE, HAVE_INLINE): New test and define.
+	* gmp-impl.h (inline): Remove, use config.h.
+	(_EXTERN_INLINE): Redefine based on HAVE_INLINE.
+	(mpn_zero_p): Use HAVE_INLINE.
+
+	* acinclude.m4 (GMP_PROG_AR, GMP_PROG_NM): Don't add flags to a user
+	selected $AR or $NM.
+
+	* tune/tuneup.c (all): Print how long the tuning took.
+
+	* configure.in (AM_C_PROTOTYPES): Use this, not GMP_ANSI2KNR.
+	* acinclude.m4 (GMP_ANSI2KNR): Remove.
+
+	* Makefile.am (gmp.h, mp.h): In DISTCLEANFILES not CLEANFILES.
+
+	* gmp-h.in (mpn_divmod, mpn_divmod_1, mpn_divexact_by3): Cast some
+	zeros, for the benefit of K&R if long!=int.
+
+	* mpn/lisp/gmpasm-mode.el (gmpasm-comment-start-regexp): Add "*" for
+	the benefit of cray.
+
+	* compat.c (mpn_divexact_by3, mpn_divmod_1): Return types should be
+	mp_limb_t, not int, and need an actual "return".
+
+2000-12-05  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/sparc32/v8/supersparc/gmp-mparam.h: Retune.
+	* mpn/alpha/gmp-mparam.h: Tune for 21064.
+
+	* longlong.h: Reformat to avoid newlines within strings.
+
+	* gmp-impl.h (inline): Disable if GCC has defined __STRICT_ANSI__.
+
+	* configure.in: Do a `mkdir tune' before creating tune/sqr_basecase.c.
+
+	* Makefile.am: Treat mp.h analogously to gmp.h.
+
+	configure.in (*-*-aix): Pass -qmaxmem=20000 to xlc.
+
+	* mp-h.in: Renamed from mp.h.
+	Add #define for _LONG_LONG_LIMB.
+	Move some other fixes from gmp-h.in.
+	* mp.h: Removed.
+	* configure.in: Generate mp.h from mp-h.in like we handle
+	gmp-h.in/gmp.h.
+
+2000-12-04  Torbjorn Granlund  <tege@swox.com>
+
+	* acinclude.m4: Fix typo testing for bad HP compiler.
+
+2000-12-03  Torbjorn Granlund  <tege@swox.com>
+
+	* mpbsd/tests/t-misc.c (check_itom): Exclude some tests for Cray
+	CFP systems.
+
+	* longlong.h (CRAYIEEE umul_ppmm): New.
+
+	* mpn/cray/gmp-mparam.h (BITS_PER_SHORTINT): 32 => 64.
+	(*_THRESHOLD): Tune.
+
+	* configure.in: Disable shared libs for *-*-unicos*.
+
+2000-12-03  Kevin Ryde  <kevin@swox.se>
+
+	* configure.in, tune/Makefile.am: Create tune/sqr_basecase.c during
+	configure, and use it unconditionally in $(nodist_tuneup_SOURCES).
+	Fixes a problem with sqr_basecase.lo under --disable-static.
+
+2000-12-01  Torbjorn Granlund  <tege@swox.com>
+
+	* mpf/tests/t-get_d.c (LOW_BOUND,HIGH_BOUND): #define for non-IEEE
+	Cray systems.
+
+	* gmp-impl.h (union ieee_double_extract): Test for _CRAYIEEE.
+
+2000-11-30  Torbjorn Granlund  <tege@swox.com>
+
+	* mpz/tests/t-mul.c (base_mul): Fix re-evaluation problems in macro
+	invocations.
+	(ref_mpz_mul): New name from mpz_refmul.  Make static.
+	(base_mul): New name for _mpn_mul_classic.
+
+2000-11-30  Kevin Ryde  <kevin@swox.se>
+
+	* configure.in: Rewrite of CC/CFLAGS selection scheme, introduce a
+	notion of ABI, merge compiler and mpn path selection, add flags
+	selection for AR and NM, let CC without CFLAGS work.
+	(AC_PROG_CC): Use this, not GMP_SELECT_CC.
+	* acinclude.m4 (GMP_PROG_CC_WORKS): Don't use AC_TRY_COMPILE, combine
+	cc/cflags parameter.
+	(GMP_PROG_CC_FIND, GMP_CHECK_CC_64BIT, GMP_PROG_CC_SELECT): Remove.
+	* gmp.texi (Installing GMP): Updates for new scheme.
+
+	* configure.in (AC_CANONICAL_HOST): Use this and $host, not $target.
+	* acinclude.m4, acconfig.h, longlong.h, mpn/x86/x86-defs.m4,
+	mpn/x86/k7/mmx/popham.asm: Ditto, renaming HAVE_TARGET_CPU to
+	HAVE_HOST_CPU.
+	* gmp.texi (Build Options, and elsewhere): Update.
+
+	* acinclude.m4 (GMP_COMPARE_GE): New macro.
+	(GMP_GCC_MARCH_PENTIUMPRO): Use it, add CC parameter, check for GCC.
+	(GMP_HPC_HPPA_2_0): New macro, adapted from GMP_CHECK_CC_64BIT.
+
+	* acinclude.m4 (GMP_PROG_AR): New macro, using AC_CHECK_TOOL, adding
+	GMP flags.
+	* configure.in: Use it
+
+	* gmp-h.in: Renamed from gmp.h.
+	(@define_LONG_LONG_LIMB@): Placeholder for instantiation.
+	(__GNU_MP__): Bump to 3.
+	* acinclude.m4 (GMP_VERSION): Get version from gmp-h.in.
+	* configure.in: Create gmp.h from gmp-h.in to set _LONG_LONG_LIMB.
+	* gmp.texi.h (ABI and ISA): Mention this.
+	* acconfig.h (_LONG_LONG_LIMB): Remove undef.
+	* Makefile.am: Distribute gmp-h.in, not gmp.h.
+
+	* configure.in (AC_PROG_CPP, AC_PROG_INSTALL, AC_PROG_LN_S): Remove,
+	dragged in by other macros.
+	(gmp_asm_syntax_testing): Renamed from gmp_no_asm_syntax_testing.
+	(AC_EXEEXT, AC_OBJEXT): Remove, done automatically by libtool.
+	* configure.in, acinclude.m4: Remove "" from "`foo`", being
+	unnecessary and not portable.
+
+	* configure.in (GMP_LDFLAGS): New AC_SUBST flags for libtool link.
+	(powerpc64*-*-aix*): Use for -Wc,-maix to fix shared library creation,
+	but can't build shared and static at the same time.
+	* Makefile.am (libgmp_la_LDFLAGS, libmp_la_LDFLAGS): Use
+	$(GMP_LDFLAGS).
+	* gmp.texi (Notes for Particular Systems): Update AIX problem
+
+	* configure.in (AC_CONFIG_LINKS): Use where needed, not via gmp_links.
+	(gmp_srclinks): Build up as needed, not via gmp_links.
+
+	* acinclude.m4 (GMP_INIT): Do CONFIG_TOP_SRCDIR and asm-defs.m4 here.
+	* configure.in (asm-defs.m4): Consequent changes.
+
+	* acinclude.m4 (GMP_INCLUDE_MPN): Using include_mpn(), replacing
+	GMP_INCLUDE and GMP_SINCLUDE.
+	* configure.in (gmp_m4postinc): Remove this scheme, use
+	GMP_INCLUDE_MPN instead.
+
+	* configure.in (*-*-sco3.2v5*): Force ac_cv_archive_cmds_need_lc=no,
+	until libtool does this itself.
+	* gmp.texi (Known Build Problems): Remove SCO -lc problem.
+
+	* configure, INSTALL.autoconf, etc: Update to autoconf 2000-11-29.
+	* acinclude.m4 (GMP_C_SIZES): Use AC_CHECK_SIZEOF.
+	* gmp.texi (Known Build Problems): Remove version.c sed/config.h
+	problem, fixed.
+
+	* ltmain.sh, aclocal.m4: Update to libtool 2000-11-25.
+	* ltconfig: No longer required, but leave an empty dummy for automake.
+	* gmp.texi (Known Build Problems): Remove SunOS native ar ranlib
+	problem, fixed.
+
+	* */Makefile.in, aclocal.m4: Update to automake 2000-11-25.
+	* mpbsd/tests/Makefile.am, mpfr/tests/Makefile.am (check_PROGRAMS):
+	Remove dummy, no longer required.
+	* mpbsd/tests/dummy.c, mpfr/tests/dummy.c: Remove files.
+	* depcomp: Remove file, no longer required (with no-dependencies).
+
+	* texinfo.tex: Update to 2000-11-09.
+	* gmp.texi (Build Options): Mention PDF from gmp.texi.
+	* Makefile.am (MOSTLYCLEANFILES): Add gmp.tmp, from new texinfo.tex.
+
+	* gmp.texi (Build Options): List alphaev56, alphapca56, alphaev67,
+	hppa2.0n and power among supported CPUs.
+
+2000-11-30  Torbjorn Granlund  <tege@swox.com>
+
+	* mpz/tests/t-mul.c: Increase max operand size from 2^17 bits
+	to 2^19 bits.  Misc cleanups.
+
+2000-11-26  Kevin Ryde  <kevin@swox.se>
+
+	* tune/tuneup.c (FIB_THRESHOLD): Cope better with different speeds of
+	odd and even sizes.
+
+	* longlong.h (alpha): Use udiv_qrnnd and count_leading_zeros on all
+	compilers, not just gcc.
+
+	* pre_mod_1.c: Use conditional subtract to always skip a division.
+	(UMUL_TIME, UDIV_TIME): Remove defaults, now in longlong.h.
+
+2000-11-22  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/pa64w/gmp-mparam.h: Retune.
+	* mpn/pa64/gmp-mparam.h: Retune.
+	* mpn/sparc64/gmp-mparam.h: Retune.
+
+2000-11-22  Kevin Ryde  <kevin@swox.se>
+
+	* gmp-impl.h (ABOVE_THRESHOLD, BELOW_THRESHOLD): New macros.
+	* mpn/generic/gcdext.c: Use them.
+
+	* mpn/generic/gcdext.c [WANT_GCDEXT_ONE_STEP]: Force only one step.
+	* tune/gcdextos.c, tune/gcdextod.c: New files, one step gcdext, single
+	and double.
+	* tune/Makefile.am (libspeed_la_SOURCES): Add them.
+	(TUNE_MPN_SRCS): Remove gcdext.c.
+	* tune/{speed.h,common.c,speed.c}: Add measuring.
+	* tune/tuneup.c: Use for GCDEXT_THRESHOLD, plus check if double limb
+	is ever better.  Should be more accurate, and hopefully faster.
+
+	* tune/gcdext_single.c: New file, gcdext forced to single limbs.
+	* tune/Makefile.am: Add it.
+	* tune/{speed.h,common.c,speed.c}: Add measuring, and of invert_limb.
+
+	* tune/speed.h (speed_params r): Use mp_limb_t, not long.
+	* tune/{speed.h,common.c}: Don't "switch" on "r".
+	* tune/speed.c (r_string): Accept limb sized constants.
+	(choice scale): Add a scale factor (eg. "2.33*mpn_add_n").
+	* tune/common.c (SPEED_ROUTINE_UDIV_QRNND_A): Default r to
+	__mp_bases[10].big_base, being a full limb value.
+
+	* configure.in (alphapca56*-*-*): Use ev5 mpn path.
+	(am29000*-*-*): Remove this, leave the canonical a29k.
+	(z8k*-*-*, z8kx*-*-*): Changed from z8000, since z8k is canonical.
+	(gmp_mpn_functions_optional): Add invert_limb, use for alpha and ia64.
+
+	* configure.in (alloca): Accept yes/no/detect, generate an error if
+	"yes" but not available.
+	* gmp.texi (Build Options): Update.
+
+	* acinclude.m4 (GMP_TRY_ASSEMBLE): Make conftest.out available.
+	(GMP_ASM_ALIGN_FILL_0x90): Use it.
+
+	* acinclude.m4 (GMP_ASM_X86_MMX) [*-*-solaris*]: Check for solaris
+	2.6 "as" movq bug.
+	* gmp.texi (Notes for Particular Systems): Update x86 MMX note.
+
+2000-11-21  Torbjorn Granlund  <tege@swox.com>
+
+	* tune/Makefile.am (EXTRA_DIST): List hppa2w.asm.
+
+	* tune/hppa2.asm: Change level directive to "2.0n".
+	* tune/hppa2w.asm: New file.
+	* configure.in [SPEED_CYCLECOUNTER_OBJS switch]: Separate out hppa2.0w.
+
+	* mpn/pa64/gmp-mparam.h (BITS_PER_LONGINT): 64 => 32.
+
+2000-11-21  Kevin Ryde  <kevin@swox.se>
+
+	* urandom.h (random): No prototype if glibc stdlib.h has already
+	provided it (avoids an int32_t/long conflict).
+
+	* tune/Makefile.am (LDFLAGS): Use -all-static.
+	(speed-dynamic): Dynamic linked version of speed.c.
+	* tune/README: Update.
+
+	* mpn/generic/gcd.c (find_a): Use native version if available.
+	* acconfig.h (HAVE_NATIVE_mpn_gcd_finda): Add #undef.
+	* gmp-impl.h (mpn_gcd_finda): Add prototype and define.
+	* mpn/asm-defs.m4 (mpn_gcd_finda): New define_mpn.
+	* tune/gcd_finda_gen.c: #undef any HAVE_NATIVE_mpn_gcd_finda.
+	* configure.in (gmp_mpn_functions_optional): Add gcd_finda.
+	* mpn/x86/k6/gcd_finda.asm: New file.
+
+	* tune/tuneup.c (POWM_THRESHOLD): Slightly bigger size steps.
+
+	* gmp-impl.h (__GMP_IMPL_H__): Protect against multiple inclusion.
+	* tune/{gcd_bin,powm_mod,powm_redc}.c: Use #undef after gmp-impl.h to
+	force thresholds.
+	* tune/tuneup.c (print_define, fft): No need for #ifndefs on
+	thresholds any more.
+
+2000-11-20  Torbjorn Granlund  <tege@swox.com>
+
+	* mpz/tests/t-powm.c: Analogous changes as made 2000-11-12 to t-mul.c.
+	* mpz/tests/t-powm_ui.c: Likewise.
+	* mpz/tests/t-pow_ui.c: Likewise.
+	* mpz/tests/t-root.c: Likewise.
+
+	* configure.in [compiler switch]: Pass "-Aa -D_HPUX_SOURCE" to cc for
+	all hppa versions.
+
+	* mpn/hppa/hppa1_1/udiv_qrnnd.S: Reference data using PC relative
+	addressing (was r19 relative addressing).
+
+2000-11-18  Torbjorn Granlund  <tege@swox.com>
+
+	* rand.c: (__gmp_rand_lc_scheme): Convert strings to hexadecimal.
+	(gmp_randinit): Expect strings in hexadecimal.
+
+2000-11-18  Kevin Ryde  <kevin@swox.se>
+
+	* configfsf.guess, configfsf.sub: Update to 2000-11-16.
+	* config.guess (alpha*-*-openbsd*): Do exact cpu detection.
+
+2000-11-14  Torbjorn Granlund  <tege@swox.com>
+
+	* mpz/tests/t-fdiv.c: Analogous changes as made 2000-11-12 to t-mul.c.
+	* mpz/tests/t-tdiv_ui.c: Likewise.
+	* mpz/tests/t-fdiv_ui.c: Likewise.
+	* mpz/tests/t-sqrtrem.c: Likewise.
+	* mpz/tests/t-gcd.c: Likewise.
+
+2000-11-13  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/Makeasm.am: New file, splitting out assembler rules.
+	* mpn/Makefile.am, tune/Makefile.am: Use it.
+
+	* mpn/Makefile.am (@CPP@): Remove this, automake already gives it.
+
+	* configure.in (AC_CHECK_LIBM): New test, and AC_SUBST it.
+	* Makefile.am (MPFR_LIBADD_OPTION): Use it.
+	* demos/Makefile.am (qcn_LDADD): Ditto.
+	* tune/Makefile.am (libspeed_la_LIBADD): Ditto.
+	* tests/rand/Makefile.am (libstat_la_LIBADD): Ditto.
+
+	* tune/time.c (timeval_diff_secs): Better calculation.
+	(read_real_time): New measuring method for AIX power/powerpc.
+	(speed_endtime): Protect against negative times.
+	* tune/common.c (speed_measure): Protect against big reps.
+	* tune/freq.c (speed_cpu_frequency_measure_one): Better timeval diff.
+	* tune/speed.h (TIMEVAL_DIFF_SEC,USEC): Remove macros.
+	* configure.in: (sys/systemcfg.h, read_real_time): New tests.
+
+2000-11-13  Torbjorn Granlund  <tege@swox.com>
+
+	* mpz/tests/t-mul.c: Remove #include urandom.h.
+	* mpz/tests/t-tdiv.c: Likewise.
+
+	* configure.in [SPEED_CYCLECOUNTER_OBJS switch]:
+	Declare hppa.asm as just 32 bits (cyclecounter_size=1).
+
+2000-11-12  Torbjorn Granlund  <tege@swox.com>
+
+	* mpz/tests/t-mul.c
+	(main): Generate random numbers using gmp_rand* functions.
+	(main): Distribute random numbers non-uniformly.
+	(main): Seed by current time if GMP_CHECK_RANDOMIZE is set.
+	(_mpn_mul_classic): Streamline.
+	* mpz/tests/t-tdiv.c: Analogous changes.
+
+	* demos/pexpr.c (HAVE_sigaltstack): Fix typo in testing for _UNICOS.
+	Also test for __hpux.
+
+2000-11-11  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/alpha/ev5/gmp-mparam.h: Retune.
+
+	* mpn/alpha/ev6/gmp-mparam.h: Retune.
+
+	* mpn/alpha/ev6/add_n.asm: Misc cleanups.
+
+	* mpn/alpha/ev6/sub_n.asm: New file.
+
+2000-11-10  Torbjorn Granlund  <tege@swox.com>
+
+	* configure.in [path switch] (alphaev6*-*-*): Add alpha/ev5 to path.
+
+	* mpn/alpha/ev6/add_n.asm: New file.
+
+2000-11-10  Kevin Ryde  <kevin@swox.se>
+
+	* mpz/powm.c (redc): Make global under WANT_REDC_GLOBAL.
+	* tune/powm_mod.c, tune/powm_redc.c: New files.
+	* tune/Makefile.am (libspeed_la_SOURCES): Add them.
+	* tune/*: Add measuring of redc, mpz_mod, mpz_powm_mod,	mpz_powm_redc.
+
+	* tune/tuneup.c (POWM_THRESHOLD): Determine from redc and mpz_mod.
+	* tune/Makefile.am (TUNE_MPZ_SRCS): Remove powm.
+
+2000-11-10  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/mips3/gmp-mparam.h: Retune.
+
+	* configure.in (os_64bit): Rename to check_64bit_compiler.
+
+2000-11-09  Torbjorn Granlund  <tege@swox.com>
+
+	* configure.in [SPEED_CYCLECOUNTER_OBJS switch]: Choose hppa/hppa2 code
+	depending on $CC64.
+
+2000-11-09  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/x86/pentium/mul_1.asm: Unroll 2x, saving 1 c/l when in L1.
+	Add 1c entrypoint.
+	* mpn/x86/pentium/aorsmul_1.asm: Add 1c entrypoints, shave a couple
+	of cycles at entry and exit.
+
+	* configure.in (power1,2,2sc): Support these as synonyms for plain
+	power.
+
+	* acinclude.m4 (GMP_ASM_X86_SHLDL_CL): GMP_DEFINE WANT_SHLDL_CL here.
+	(GMP_ASM_X86_MMX, GMP_ASM_X86_SHLDL_CL): Add X86 into the names.
+	* configure.in: Consequent changes.
+
+	* gmp.texi (Notes for Particular Systems): Remarks about power/powerpc.
+	(Reentrancy): Remarks about simultaneous writing.
+	(Reporting Bugs): Ask for configfsf.guess.
+
+2000-11-08  Kevin Ryde  <kevin@swox.se>
+
+	* acinclude.m4 (GMP_FUNC_ALLOCA): New macro.
+	* configure.in: Use it.
+	* gmp-impl.h (alloca): Conditionals and setups as per autoconf
+	(should make alloca available on more non-gcc compilers).
+
+	* acinclude.m4: Misc reformatting, simplify some quoting.
+	(GMP_ASM_UNDERSCORE, GMP_ASM_X86_MCOUNT): Use $CC $CFLAGS $CPPFLAGS.
+	(GMP_ASM_UNDERSCORE, GMP_ASM_ALIGN_FILL_0x90, GMP_ASM_RODATA): Put
+	AC_REQUIREs outside AC_CACHE_CHECK.
+	(GMP_C_SIZES): Use $srcdir/gmp.h, not -I; use $CPPFLAGS.
+	(GMP_ASM_UNDERSCORE): Use "gmp_compile" variable, and only rm
+	conftes1* conftes2*.
+	(GMP_PROG_NM): New macro, require it in appropriate GMP_ASM_*.
+	(GMP_TRY_ASSEMBLE): New macro, use it in various GMP_ASM_*.
+	* configure.in: Use GMP_PROG_NM.
+
+	* mpn/tests/spinner.c (spinner_signal): Use RETSIGTYPE.
+	(spinner_init): Force output to unbuffered.
+
+	* mpn/x86/README.family: Notes about GOT table and imul, misc updates.
+	* mpn/x86/k7/diveby3.asm: Change to 3 operands for immediate imul.
+	* mpn/x86/k6/diveby3.asm: Ditto.
+
+2000-11-06  Torbjorn Granlund  <tege@swox.com>
+
+	* urandom.h: Simplify and make it work properly for 64-bit
+	machines also in environments without `random'.
+
+2000-11-04  Torbjorn Granlund  <tege@swox.com>
+
+	* configure.in [path switch]: Don't match rs6000-*-*, in
+	particular don't assume POWER.
+
+	* tune/tuneup.c (fft): Remove usleep calls.
+
+	* config.guess: Don't pass "$@" when it is known to be empty.
+
+	* Makefile.am (EXTRA_DIST): List configfsf.guess and configfsf.sub.
+
+2000-11-04  Kevin Ryde  <kevin@swox.se>
+
+	* configfsf.guess, configfsf.sub: Moved from config.guess and
+	config.sub.
+	* config.guess, config.sub: New files, wrappers around around
+	configfsf versions.
+	* configfsf.guess: Update to FSF 2000-10-23.
+	* configfsf.sub: Update to FSF 2000-10-25.
+
+	* acinclude.m4 (GMP_ASM_POWERPC_R_REGISTERS): New macro.
+	* mpn/powerpc32/powerpc-defs.m4: New file, regmap.m4 r0 etc macros
+	conditionalized by GMP_ASM_POWERPC_R_REGISTERS.
+	* mpn/powerpc32/regmap.m4: Remove file.
+	* configure.in (powerpc*-*-*): Use all this.
+
+	* mpz/divegcd.c: New file, providing mpz_divexact_gcd.
+	* Makefile.am, mpz/Makefile.am: Add it.
+	* gmp-impl.h (mpz_divexact_gcd): Add prototype.
+	* mpq/aors.c,canonicalize.c,div.c,mul.c: Use it.
+
+	* longlong.h [pentium] (count_leading_zeros): New macro.
+	(__clz_tab): Always provide prototype.
+	* acconfig.h (HAVE_TARGET_CPU_): Add x86s.
+
+	* tune/speed.[ch],common.c (count_leading_zeros,
+	count_trailing_zeros, __udiv_qrnnd_c): Add measuring.
+
+	* configure.in (X86_PATTERN): Move from here ...
+	* acinclude.m4 (X86_PATTERN): ... to here.
+	(GMP_ASM_RODATA): Use it.
+
+	* configure.in (srandom): New test.
+	* mpn/tests/try.c: Use it.
+	* tune/speed.c: Ditto, and conditionalize getrusage and headers.
+
+2000-11-02  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/Makefile.am (nodist_libdummy_la_SOURCES): Add udiv_qrnnd.c
+	and udiv_w_sdiv.c.
+
+	* mpn/generic/mul_n.c (mpn_kara_sqr_n): Remove a duplicate
+	subtract at the evaluate stage.
+
+2000-11-01  Torbjorn Granlund  <tege@swox.com>
+
+	* configure.in [compiler switch] (sparc64-*-linux*): Spell
+	gmp_xoptcflags_gcc properly, and pass same options as for other
+	sparcv9 configs.
+
+	* tune/speed.h (SPEED_ROUTINE_MPN_GET_STR): Fix type of wsize.
+
+2000-10-31  Torbjorn Granlund  <tege@swox.com>
+
+	* configure.in [compiler switch] (sparc64-*-linux*): Remove -mvis
+	from gmp_xoptflags_gcc, this might not be an ultrasparc.
+	Remove -m32 from gmp_cflags_gcc; add -Wa,-xarch=v8plus.
+
+2000-10-29  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/ia64/lorrshift.asm: New file.
+
+	* configure.in: New mulfunc `lorrshift' for lshift and rshift.
+
+2000-10-29  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/generic/mul_n.c (mpn_kara_sqr_n): Delete code performing
+	superfluous mpn_sub_n calls.
+
+	* configure.in (found_asm, M4): Account for SPEED_CYCLECOUNTER_OBJ,
+	for the benefit of targets whose only .asm is a cycle counter.
+
+	* tune/tuneup.c (fft): Remove bogus usleep calls.
+
+2000-10-28  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/ia64/invert_limb.asm: Get return value for 0x800...00 right.
+
+	* tune/Makefile.am (EXTRA_DIST): Add ia64.asm.
+
+	* tune/ia64.asm: Fix typo.
+
+	* add_n.asm addmul_1.asm mul_1.asm popcount.asm sub_n.asm:
+	Preserve ar.lc as required by ABI.
+	* longlong.h (ia64 udiv_qrnnd): New.
+
+	* configure.in [path switch] (ia64*-*-*): Set extra_functions.
+	* mpn/ia64/invert_limb.asm: New file.
+
+2000-10-27  Torbjorn Granlund  <tege@swox.com>
+
+	* configure.in [compiler switch]:
+	Get rid of c89 for all hppa flavours--it is an evil compiler!
+
+	* tune/speed.h (SPEED_ROUTINE_MPN_SET_STR): Fix type of xp.
+	(SPEED_ROUTINE_MPN_GET_STR): Fix type of wp.
+
+2000-10-27  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (Fibonacci Number Algorithm): New section.
+
+	* mpz/tests/t-fib_ui.c: New file.
+	* mpz/tests/Makefile.am (check_PROGRAMS): Add it.
+
+	* mpz/fib_ui.c: Rewrite, same formulas but using mpn functions and
+	some lookup tables, much faster at small to moderate sizes.
+	* gmp-impl.h (MPZ_FIB_SIZE): New macro.
+	(FIB_THRESHOLD): Establish default here.
+	* tune/tuneup.c (FIB_THRESHOLD): Start search after the new table
+	data.
+
+	* mpn/x86/x86-defs.m4 (mcount_movl_GOT_ebx): Rename from movl_GOT_ebx,
+	and don't use GSYM_PREFIX with _GLOBAL_OFFSET_TABLE_.
+
+	* tune/freq.c (speed_cpu_frequency_measure): New test comparing
+	gettimeofday and speed_cyclecounter, should cover many systems.
+
+2000-10-27  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/ia64/gmp-mparam.h: Retune.
+
+2000-10-26  Torbjorn Granlund  <tege@swox.com>
+
+	* longlong.h (ia64): Set UMUL_TIME and UDIV_TIME.
+
+	* mpn/ia64/submul_1.c: Fix typo.
+
+2000-10-25  Kevin Ryde  <kevin@swox.se>
+
+	* tune/freq.c (speed_cpu_frequency_sysctl): New test, supporting
+	hw.model for BSD flavours.
+	* configure.in (sysctl, sys/param.h): New tests.
+
+2000-10-24  Torbjorn Granlund  <tege@swox.com>
+
+	* tune/freq.c: Explicitly #include config.h before other include files.
+
+	* mpz/tests/reuse.c (FAIL2): New #define.
+	(main): Use FAIL2.  Now this test properly returns non-zero exit
+	status when it fails.
+
+	* mpn/powerpc32/gmp-mparam.h: Retune.
+	* mpn/powerpc64/gmp-mparam.h: Retune.
+
+2000-10-24  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/x86/k6/cross.pl: Support 8 and 16 byte code alignment.
+
+	* mpq/aors.c, mpq/canonicalize.c: Skip two mpz_divexact calls if
+	gcd gives 1, which should be 60% of the time.
+	* gmp-impl.h (MPZ_EQUAL_1_P): New macro.
+	* mpq/mul.c, mpq/div.c: Use it, and a new DIV_OR_SET.
+
+	* tune/tuneup.c (xp_block, yp_block): Initialize these with random
+	data.  Fixes GCD_ACCEL and GCDEXT thresholds, and latest POWM.
+
+2000-10-23  Torbjorn Granlund  <tege@swox.com>
+
+	* configure.in [SPEED_CYCLECOUNTER_OBJS switch]: Add ia64 case.
+
+	* mpn/ia64/gmp-mparam.h: Fill in some parameters.
+
+	* mpn/ia64/submul_1.c: New file.
+
+	* tune/ia64.asm: New file.
+
+	* gmp-impl.h (union ieee_double_extract): Handle ia64.
+
+	* mpn/mp_bases.c: Decrease chars_per_bit_exactly for entry 1 to
+	work around buggy ia64-linux.
+
+	* longlong.h (ia64 umul_ppmm): Update register flags to match new GCC.
+
+2000-10-22  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/alpha/ev6/gmp-mparam.h (DC_THRESHOLD): Update.
+	* mpn/alpha/ev6/submul_1.asm: New file.
+
+2000-10-22  Kevin Ryde  <kevin@swox.se>
+
+	* tune/gcd_bin.c: New file.
+	* tune/gcd_finda_gen.c: New file.
+	* tune/Makefile.am (libspeed_la_SOURCES): Add them.
+	* tune/speed.[ch],common.c (mpn_gcd_binary, find_a): Add measuring.
+
+	* * (__gmp_allocate_func etc): Rename from _mp_allocate_func etc.
+	(__gmp_default_allocate etc): Rename from _mp_default_allocate etc.
+	* gmp-impl.h (__GMP_REALLOCATE_FUNC_TYPE,
+	__GMP_REALLOCATE_FUNC_LIMBS): New macros.
+
+	* gmp-impl.h (DC_THRESHOLD): Establish default here, set to 3*KARA
+	since that's the measured average.
+	* mpn/generic/dc_divrem_n.c, mpn/generic/tdiv_qr.c (DC_THRESHOLD):
+	Remove default.
+
+2000-10-21  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/Makefile.am (TARG_DIST): Add ia64.
+
+2000-10-21  Kevin Ryde  <kevin@swox.se>
+
+	* *: Change BZ -> DC.
+	* mpn/generic/dc_divrem_n.c: Renamed from bz_divrem_n.c.
+
+	* doc/multiplication: Remove file, now in the manual.
+	* doc/assembly_code: Ditto.
+	* tune/README: Remove some parts now in the manual.
+
+	* gmp.texi (@m etc): Add and use some new macros.
+	(Integer Division - mpz_[cft]div_*): Merge descriptions, for brevity
+	and to emphasise similarities.
+	(Low-Level Functions - mpn_[lr]shift): Specify count as 1 to
+	mp_bits_per_limb-1.
+	(Algorithms): New chapter.
+	(References): Add some papers.
+
+	* mpn/generic/mul_n.c (mpn_toom3_mul_n, mpn_toom3_sqr_n): Remove some
+	unused variables.
+	* mpn/generic/mul_fft.c (mpn_fft_best_k): Ditto.
+
+	* tune/freq.c: New file, split from time.c.
+	* tune/time.c: Rewrite, now more automated.
+	* configure.in, tune/*: Consequent changes.
+
+2000-10-20  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/ia64/default.m4: New file.
+	* configure.in [config.m4 switch] (ia64*-*-*): Use ia64/default.m4.
+
+	* mpn/ia64/mul_1.asm: New file.
+	* mpn/ia64/addmul_1.asm: New file.
+	* mpn/ia64/add_n.asm: New file.
+	* mpn/ia64/sub_n.asm: New file.
+	* mpn/ia64/popcount.asm: New file.
+	* mpn/ia64/README: New file.
+
+	* mpn/alpha/cntlz.asm: Override `.set noat' from ASM_START.
+
+	* configure.in (HAVE_TARGET_CPU_*): Support hppa1.0, hppa1.1, hppa2.0
+	by sed'ing the period into `_'.
+
+	* acconfig.h: Add #undefs for hppa targets.
+
+	* longlong.h (udiv_qrnnd): Fix typo in last change.
+
+	* mpz/tstbit.c: Rewrite (partly to work around GCC 2.95.2 HPPA bug).
+
+	* configure.in [path switch]:
+	(hppa2.0*-*-*): For non-CC64 case, update path.
+
+	* configure.in [compiler switch]:
+	(hppa2.0w-*-*): Match with same regexp in both places.
+	(hppa*-*-*): New case.
+	(all hppa alternatives): Don't inherit default gmp_cflags_cc,
+	gmp_cflags_c89.
+
+2000-10-18  Torbjorn Granlund  <tege@swox.com>
+
+	* configure.in (alpha*-*-*): Define gmp_xoptcflags_gcc like for
+	alpha*-*-osf*.
+
+	* longlong.h (x86 udiv_qrnnd): Change `d' => `dx' to avoid K&R C
+	stringification.
+
+2000-10-15  Kevin Ryde  <kevin@swox.se>
+
+	* doc/configuration: Updates.
+
+	* demos/calc.y: Remove some comments.
+
+2000-10-14  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (Parameter Conventions, Memory Management): New sections
+	split from "Variable Conventions".
+	(Efficiency, Debugging, Profiling): New sections in "GMP Basics".
+	(Reentrancy): Some rewording, add note on standard I/O.
+	(Build options): Add --enable-assert and --enable-profiling.
+
+	* configure.in (--enable-profiling): New option.
+	* acinclude.m4 (GMP_ASM_X86_MCOUNT): New macro, finding how to profile.
+	* mpn/x86/x86-defs.m4 (PROLOGUE_cpu, call_mcount): Profiling support.
+
+	* acinclude.m4, configure.in (GMP_ASM_*): Rename from GMP_CHECK_ASM_*,
+	to follow autoconf conventions.
+
+	* configure.in: Run GMP_CHECK_ASM tests only if needed.
+	* acinclude.m4 (GMP_CHECK_ASM_MMX): Don't use GMP_CHECK_ASM_TEXT.
+
+	* mpn/x86/x86-defs.m4 (ASSERT): Allow no condition, to just emit code.
+
+2000-10-13  Kevin Ryde  <kevin@swox.se>
+
+	* mpq/md_2exp.c: New file.
+	* mpq/Makefile.am (libmpq_la_SOURCES): Add it.
+	* Makefile.am (MPQ_OBJECTS): Ditto.
+	* gmp.h (mpq_mul_2exp, mpq_div_2exp): Add prototypes.
+	* gmp.texi (Rational Arithmetic): Add documentation.
+
+	* mpq/tests/t-md_2exp.c: New file.
+	* mpq/tests/Makefile.am (check_PROGRAMS): Add it.
+
+	* mpn/generic/perfsqr.c: Add/amend some comments.
+
+	* gmp.texi (Known Build Problems): Note VERSION problem with old
+	sed, do some minor rewording.
+	(Build Options): Add cygwin and djgpp URLs, mention INSTALL.autoconf,
+	mention HTML.
+	(Getting the Latest Version of GMP): Move this ...
+	(Introduction to GMP): ... to here.
+	(Compatibility with older versions): Just refer to 2.x and 3.x, not
+	every minor version.
+	(Initializing Integers): Note restrictions on mpz_array_init'ed
+	variables.
+	(Integer Logic and Bit Fiddling): Note bits are numbered from 0.
+
+	* INSTALL.autoconf: New file.
+	* Makefile.am (EXTRA_DIST): Add it.
+
+	* tune/Makefile.am, tune/tuneup.c, configure.in, gmp-impl.h: New
+	scheme for recompiled objects used by tune program.  Don't use
+	libgmptune.a, make better use of libtool, work with ansi2knr.
+
+	* tune/speed.h,common.c (SPEED_ROUTINE_MPZ_POWM): Use s->yp and
+	s->xp_block, make exponent a fixed size.
+
+2000-10-07  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/mips3/gmp-mparam.h: Retune.
+
+	* mpn/generic/mul_n.c (USE_MORE_MPN): Revert last change.
+
+2000-10-06  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/mips3/add_n.s: Decrease carry recurrence from 4 to 3 cycles.
+	* mpn/mips3/sub_n.s: Likewise.
+
+2000-10-04  Torbjorn Granlund  <tege@swox.com>
+
+	* configure.in (sparc64-*-linux*): Set path according to CC64.
+
+2000-10-04  Kevin Ryde  <kevin@swox.se>
+
+	* acinclude.m4 (GMP_CHECK_ASM_UNDERSCORE): Use LABEL_SUFFIX, not a
+	hard-coded ":".
+
+	* config.sub: Don't demand "86" in CPU name for SCO.
+
+	* configure.in (supersparc-*-*): Remove -DSUPERSPARC.
+	* longlong.h: Use HAVE_TARGET_CPU_supersparc.
+
+	* configure.in (HAVE_TARGET_CPU_*): AC_DEFINE from $target_cpu.
+	* acconfig.h: Add #undefs, but only for targets of interest.
+
+2000-10-03  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/alpha/cntlz.asm: Rewrite.
+
+	* mp_clz_tab.c (__clz_tab): Half table size to 128 entires.
+	* longlong.h (count_leading_zeros): Demand just 128 entries from
+	__clz_tab.
+
+	* configure.in (mips-sgi-irix6.*): Pass -mips3 in addition to options
+	for n32 ABI.
+
+	* longlong.h: Move NO_ASM test around all assembly code.
+	From gcc:
+	* longlong.h (count_leading_zeros): Sparclite scan instruction was
+	being invoked incorrectly.
+	Replace __mc68332__ with __mcpu32__.
+	Add ARC support.
+
+2000-10-02  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/mips3/gmp-mparam.h: Retune for both gcc and cc.
+
+	* mpn/generic/mul_n.c (USE_MORE_MPN): Remove exception for __mips.
+	(interpolate3): Cast mp_limb_t variables to mp_limb_signed_t
+	when testing sign bit.
+
+	* mpn/alpha/ev6/gmp-mparam.h: Retune.
+	* mpn/powerpc32/gmp-mparam.h: Retune.
+	* mpn/powerpc64/gmp-mparam.h: Retune.
+	* mpn/x86/pentium/gmp-mparam.h: Retune.
+	* mpn/x86/pentium/mmx/gmp-mparam.h: Retune.
+	* mpn/sparc32/v9/gmp-mparam.h: Retune.
+	* mpn/x86/k6/gmp-mparam.h: Retune.
+	* mpn/x86/p6/gmp-mparam.h: Retune.
+	* mpn/x86/k7/gmp-mparam.h: Retune.
+	* mpn/sparc64/gmp-mparam.h: Retune.
+
+	* mpn/m68k/gmp-mparam.h: New file.
+	* mpn/alpha/ev5/gmp-mparam.h: New file.
+
+	* gmp-impl.h (default MPN_COPY): Remove final `;'.
+
+	* tune/time.c (speed_endtime): Rewrite.
+
+	* tune/speed.h (SPEED_ROUTINE_MPZ_POWM): Set base to a large value,
+	not 2.
+
+	* demos/pexpr.c (setup_error_handler): Fix typo.
+
+	* mpz/powm.c (redc): New function, based on old mpz_redc.  Don't
+	multiply here.
+	(mpz_redc): Remove.
+	(mpz_powm): Major changes, partially reverting to mpn calls.
+	Multiply before calling redc.
+	(mpz_powm): Use TMP_ allocation.
+	(mpz_powm): Refine calculation of k (width of exponent window).
+	(mpz_powm): Cast constants to mp_limb_t before left shifting.
+
+	* longlong.h: Use ia64 count_leading_zeros just when __GNUC__.
+
+2000-09-29  Kevin Ryde  <kevin@swox.se>
+
+	* acinclude.m4 (GMP_C_SIZES): New macro.
+	* configure.in: Use it.
+	* acconfig.in (BYTES_PER_MP_LIMB etc): Add #undefs.
+	* mpn/generic/gmp-mparam.h (BYTES_PER_MP_LIMB etc): Remove #defines.
+	* gmp.texi (Known Build Problems): Remove 64-bit generic C
+	gmp-mparam.h problem, now fixed.
+
+	* configure.in: Only run GMP_PROG_M4 if it's actually needed.
+
+2000-09-27  Torbjorn Granlund  <tege@swox.com>
+
+	* demos/pexpr.c: Clean up code for systems not supporting
+	sigaltstack.  Handle old Linux without sigaltstack.  Properly
+	disable all stuff related to sigaltstack under Unicos.
+
+	* mpn/alpha/ev6/addmul_1.asm: Use explicit offset for all load and
+	store insns.  Helps old gas.
+
+	* longlong.h (count_leading_zeros): Define for ia64.
+
+2000-09-27  Paul Zimmermann  <Paul.Zimmermann@loria.fr>
+
+	* mpn/generic/bz_divrem_n.c: Fix qhl handling, simplify.
+
+2000-09-27  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/Makefile.in (.SUFFIXES): Regenerate with patched automake to
+	get .s before .c, which is needed to override ansi2knr .c rules.
+
+	* gmp.texi (mpn_sqrtrem): Fix r2p==NULL return value description
+	to match the code (change by Torbjorn).
+	(mpn_gcd, mpn_gcdext, mpn_sqrtrem, mpn_tdiv_qr): Note most
+	significant limbs must be non-zero.
+	(mpn_gcd, mpn_gcdext, mpn_sqrtrem): Clarify destination size
+	requirements.
+	(mpn_gcd_1): Clarify value must be non-zero, not just size.
+
+	* gmp-impl.h (mpn_zero_p): New inline function.
+	* mpn/generic/inlines.c: Add gmp-impl.h.
+	* mpf/integer.c, mpz/get_d.c, mpn/generic/mul_fft.c: Use it.
+
+	* mpn/generic/gcd.c: Use MPN_COPY_INCR not MPN_COPY.
+	* mpf/add_ui.c: Ditto.
+	* mpf/add.c: Ditto, and fix test to skip copy.
+
+2000-09-26  Kevin Ryde  <kevin@swox.se>
+
+	* gmp-impl.h, longlong.h, mpn/generic/*.c: Add ASSERTs for various
+	parameter restrictions.
+
+	* gmp-impl.h (UDIV_PREINV_TIME): New macro.
+	* mpn/generic/sb_divrem_mn.c: Use it.
+	* mpn/generic/perfsqr.c: Ditto.
+	* mpn/x86/*/gmp-mparam.h (UDIV_PREINV_TIME): Add values.
+
+	* macos/Makefile.in: Add mpz/tests/t-get_si.c, mpf/tests/t-set_f.c,
+	and new multi-function mpz and mpq files.
+
+2000-09-25  Kevin Ryde  <kevin@swox.se>
+
+	* randlc.c, randlc2x.c, randsd.c, mpz/urandomb.c, mpz/urandomm.c:
+	Use mpz_ptr and mpz_srcptr for parameters.
+	* gmp.h (gmp_randinit_lc, gmp_randinit_lc_2exp, gmp_randseed,
+	mpz_urandomb, mpz_urandomm): Corresponding change to prototypes.
+	* randsdui.c: Remove wrong K&R parameters part.
+
+2000-09-12  Kevin Ryde  <kevin@swox.se>
+
+	* gmp-impl.h (mpn_tdiv_qr): Move prototype from here ...
+	* gmp.h (mpn_tdiv_qr): ... to here.
+
+	* gmp.texi (Miscellaneous Rational Functions): Comment-out and
+	move version 1 compatibility note to "Compatibility" section.
+	(Rational Number Functions): Ditto for canonicalization note.
+
+2000-09-10  Kevin Ryde  <kevin@swox.se>
+
+	* mpn/x86/pentium/com_n.asm: New file.
+
+	* gmp.texi (Rational Arithmetic): Add mpq_abs.
+	(Miscellaneous Rational Functions): Merge and simplify descriptions of
+	mpq_get_num, mpq_get_den, mpq_set_num, mpq_set_den.
+
+	* mpq/abs.c: New file.
+	* mpq/Makefile.am (libmpq_la_SOURCES): Add it.
+	* Makefile.am (MPQ_OBJECTS): Add it.
+	* gmp.h (mpq_abs): Add prototype.
+
+	* mpq/set_den.c: Don't discard sign when copying, this makes the
+	code match the manual.
+
+2000-09-07  Torbjorn Granlund  <tege@swox.com>
+
+	* tune/alpha.asm: Rewrite to actually work right.
+
+2000-09-07  Kevin Ryde  <kevin@swox.se>
+
+	* tune/common.c,speed.[ch]: Add measuring of mpn_sqrtrem,
+	mpn_get_str, mpn_set_str.
+	* tune/README: Various updates.
+
+2000-09-06  Torbjorn Granlund  <tege@swox.com>
+
+	* mpz/fits.c: Correct type of `data'.
+
+2000-09-06  Kevin Ryde  <kevin@swox.se>
+
+	* gmp.texi (Build Options): Clarify where to find CFLAGS.
+	(Known Build Problems): Note SCO -lc problem.
+
+	* tune/speed.h (SPEED_ROUTINE_MPN_GCD_CALL): Fix for sizes > 512 limbs.
+
+	* doc/multiplication: Corrections and additions suggested by Paul.
+
+	* tune/modlinv.c: New file with alternate modlimb_inverts.
+	* tune/Makefile.am, tune/speed.[ch]: Add measuring of them.
+	* tune/speed.c (FLAG_NODATA): New attribute, use for mpz_bin_uiui,
+	mpz_fib_ui, mpz_fac_ui.
+
+	* mpn/x86/t-zdisp.sh: New file.
+
+	* tests/t-modlinv.c: New file.
+	* tests/Makefile.am (check_PROGRAMS): Add it.
+
+	* mpq/tests/t-set_f.c: New file.
+	* mpq/tests/Makefile.am (check_PROGRAMS): Add it.
+
+	* gmp-impl.h (MPQ_CHECK_FORMAT): New macro.
+	* mpq/tests/t-get_d.c: Use it.
+
+	* mpq/set_f.c: New file.
+	* mpq/Makefile.am (libmpq_la_SOURCES): Add it.
+	* Makefile.am (MPQ_OBJECTS): Ditto.
+	* gmp.h: Add prototype.
+	* gmp.texi (Miscellaneous Rational Functions): Document mpq_set_f,
+	correct return type of mpq_set_d.
+
+2000-09-03  Kevin Ryde  <kevin@swox.se>
+
+	* mpz/aors_ui.c: New file merging add_ui.c and sub_ui.c, no object
+	code changes.
+	* mpz/add_ui.c, mpz/sub_ui.c: Remove files.
+	* mpz/Makefile.am: Update.
+
+	* gmp-impl.h (MPZ_FITS_STYPE_SDT, MPZ_FITS_UTYPE_SDT): New macros.
+	* mpz/fits.c: New file merging six separate fits*.c.
+	* mpz/fits_sshort_p.c, fits_sint_p.c, fits_slong_p.c, fits_ushort_p.c,
+	fits_uint_p.c, fits_ulong_p.c: Remove files
+	* mpz/Makefile.am: Use new fits.c, change object names from
+	fits_*_p.lo to fits_*.lo to avoid SunOS 4 native "ar" warnings.
+	* Makefile.am (MPZ_OBJECTS): Change from fits_*_p.lo to fits_*.lo.
+
+	* acinclude.m4 (GMP_CHECK_ASM_RODATA): New macro, defining RODATA.
+	* configure.in: Use it.
+	* mpn/x86/k[67]/mmx/popham.asm: Use it.
+
+	* mpn/x86/*/*.asm: Use "TEXT" not ".text".
+
+2000-09-02  Kevin Ryde  <kevin@swox.se>
+
+	* mpq/aors.c: New file merging add.c and sub.c, no object code changes.
+	* mpq/add.c, mpq/sub.c: Remove files.
+	* mpq/Makefile.am: Update.
+
+	* mpz/aors.c: New file merging add.c and sub.c, no object code changes.
+	* mpz/add.c, mpz/sub.c: Remove files.
+	* mpz/Makefile.am, mpbsd/Makefile.am: Update.
+
+	* configure.in: Re-apply "PROLOGUE.*" regexp change for the
+	benefit of alpha PROLOGUE_GP, lost in path search reorganisation.
+
+	* mpn/x86/x86-defs.m4 (jadcl0, cmov_simulate, ASSERT,
+	movl_text_address): Don't use "1:" style labels.
+	(Zdisp): Rearrange a bit, switch to all hex.
+	* mpn/x86/README.family: Note SCO "as" doesn't support "1:" style
+	local labels, misc rewordings.
+
+2000-08-29  Torbjorn Granlund  <tege@swox.com>
+
+	* demos/primes.c: Include string.h.
+
+	* config.guess (x86 variant recog code): Remove dummy*.o files
+	generated by some compilers.
+
+2000-08-28  Kevin Ryde  <kevin@swox.se>
+
+	* acinclude.m4 (GMP_CHECK_ASM_ALIGN_FILL_0x90): Fix Solaris 2.8
+	warning message supression, add notes about SCO.
+
+	* Makefile.am (MPZ_OBJECTS etc): Move some comments.
+
+2000-08-25  Kevin Ryde  <kevin@swox.se>
+
+	* mpz/pprime_p.c (mpz_millerrabin): Fix a TMP_FREE.
+
+	* gmp.texi (Copying): Refer to Lesser not Library GPL.
+	(GMP and Reentrancy): Note stack-alloc.c is not reentrant, and
+	that SCO <ctype.h> is potentially not reentrant.
+
+	* acinclude.m4 (GMP_CHECK_ASM_UNDERSCORE): Test by attempting to
+	link with or without an underscore.
+	* gmp.texi (Known Build Problems): Remove SunOS 4 native grep
+	GSYM_PREFIX problem, now fixed.
+
+	* gmp-impl.h (MODLIMB_INVERSE_3): New constant.
+	* mpn/generic/diveby3.c: Use it instead of own INVERSE_3.
+	* mpn/generic/mul_n.c: Ditto.
+	* tests/t-constants.c: Check it, and PP_INVERTED too.
+
+	* acinclude.m4 (GMP_GCC_MARCH_PENTIUMPRO): New macro.
+	* configure.in [p6 and athlon] (gmp_optcflags_gcc): Use it to
+	possibly add -march=pentiumpro.
+
+	* gmp-impl.h (MPZ_SET_STR_OR_ABORT, MPF_SET_STR_OR_ABORT): New macros.
+	* mpz/tests/{t-bin,t-get_si,t-jac,t-misc}.c: Use them.
+	* mpf/tests/{t-conv,t-misc}.c: Ditto.
+	* mpz/tests/convert.c: Ditto and amend diagnostics slightly.
+	* mpz/tests/t-misc.c (check_mpz_set_si): Remove a superfluous init.
+	* mpz/tests/io.c: Differentiate between I/O and data conversion errors.
+
+	* mpn/generic/aors_n.c: New file merging add_n and sub_n, no
+	object code changes.
+	* mpn/generic/add_n.c: Remove file.
+	* mpn/generic/sub_n.c: Remove file.
+
+	* mpn/generic/aorsmul_1.c: New file merging addmul_1 and submul_1,
+	no object code changes.
+	* mpn/generic/addmul_1.c: Remove file.
+	* mpn/generic/submul_1.c: Remove file.
+
+	* mpn/generic/popham.c: New file merging popcount and hamdist, no
+	object code changes.
+	* mpn/generic/popcount.c: Remove file.
+	* mpn/generic/hamdist.c: Remove file.
+
+2000-08-24  Torbjorn Granlund  <tege@swox.com>
+
+	* gmp-impl.h (mpn_com_n): Fix typo.
+
+2000-08-23  Torbjorn Granlund  <tege@swox.com>
+
+	* demos/primes.c (main): Don't call mpz_probab_prime_p for numbers
+	that are known to be prime after sieving.
+	(main): Declare and initialize max_s_prime_squared.
+	(MAX_S_PRIME): Increase.
+	(ST_SIZE): Increase.
+
+2000-08-23  Kevin Ryde  <kevin@swox.se>
+
+	* gmp-impl.h (ASSERT_ALWAYS): Change to statement style.
+	(JACOBI_TWO_U_BIT1): Remove ASSERT.
+	(MPZ_CHECK_FORMAT): Use ASSERT_ALWAYS as a statement.
+
+2000-08-21  Torbjorn Granlund  <tege@swox.com>
+
+	* gmp-impl.h (ASSERT): Use do..while for dummy version.
+
+	* mpf/get_str.c: Don't set n_digits from digits_computed_so_far
+	when the converted operand becomes zero.  Misc cleanups.
+
+2000-08-21  Kevin Ryde  <kevin@swox.se>
+
+	* mpz/{fdiv_r_2exp.c,lcm.c,urandomm.c}: Add missing TMP_MARK/FREE,
+	avoiding memory leak when using stack-alloc.c.
+
+2000-08-20  Kevin Ryde  <kevin@swox.se>
+
+	* mpz/set.c [BERKELEY_MP] (move): Add conditionals to build as
+	"move" for libmp.
+	* mpbsd/Makefile.am: Use mpz/set.c, not move.c.
+	* Makefile.am (MPBSD_OBJECTS): Corresponding change.
+	* mpbsd/move.c: Remove file.
+
+	* mp{n,z,q,f,mpbsd}/Makefile.am (-DOPERATION_foo): Use "foo" even
+	for ansi2knr "foo_" objects.  Do this with the makefiles to keep
+	the sources cleaner.
+	* mpz/mul_siui.c, mpf/integer.c: Revert to plain OPERATION_* forms.
+
+	* mpn/lisp/gmpasm-mode.el (gmpasm-remove-from-list): Renamed from
+	gmpasm-delete-from-list, because it's non-destructive.
+	(gmpasm-font-lock-keywords): Add some more keywords.
+
+2000-08-16  Kevin Ryde  <kevin@swox.se>
+
+	* tune/mul_n_mpn.c, tune/mul_n_open.c: New files, being forced
+	open-coded and mpn #includes of mpn/generic/mul_n.c.
+	* tune/*: Add measuring of them.
+	* tune/speed.c: Print command line into *.gnuplot file.
+
+	* mpn/generic/mul_n.c (USE_MORE_MPN): Change to #if not #ifdef for
+	using the value, add #ifndef for providing the default.
+	* mpn/sparc64/gmp-mparam.h (USE_MORE_MPN): Add #ifndef.
+
+	* tests/t-constants.c: New file.
+	* tests/Makefile.am (check_PROGRAMS): Add it.
+
+	* mpz/get_si.c: Use LONG_MAX, not BITS_PER_MP_LIMB, so the result
+	doesn't depend on limb size when outside the range of a long
+	(though such results are not actually documented).
+	* mpz/tests/t-get_si.c: New file.
+	* mpz/tests/Makefile.am (check_PROGRAMS): Add it.
+
+	* mpn/tests/try.c (call): Cast popcount and hamdist calls,
+	for the benefit of long long limb.
+
+2000-08-15  Kevin Ryde  <kevin@swox.se>
+
+	* mp.h (mp_set_memory_functions): Add missing #define.
+	* mpbsd/tests/allfuns.c (mp_set_memory_functions): Verify its
+	existance.
+
+	* mpf/tests/t-misc.c (check_mpf_getset_prec): New test, verifying
+	reverted behaviour of mpf_get_prec.
+
+	* mpn/tests/ref.c (refmpn_strip_twos): Use refmpn_copyi, not
+	MPN_COPY_INCR.
+
+	* mpz/mul_siui.c, mpf/integer.c: Recognise OPERATION_*_ forms
+	produced under ansi2knr.
+
+	* configure.in (mpn_objects, mpn_objs_in_libgmp): Add $U to .c
+	objects when ansi2knr in use.
+
+	* mpn/Makefile.am (AUTOMAKE_OPTIONS): Enable ansi2knr.
+	(libdummy.la): Add this, not built, to create ansi2knr style rules
+	for all potential .c files.
+	* mp{z,q,f,fr,bsd}/Makefile.am, mpq/tests/Makefile.am,
+	tests/Makefile.am (AUTOMAKE_OPTIONS): Enable ansi2knr (now everywhere).
+	* Makefile.am (MP{Z,Q,F,FR,BSD}_OBJECTS, libmp_la_DEPENDENCIES):
+	Add $U to all .lo filenames.
+
+2000-08-03  Torbjorn Granlund  <tege@swox.com>
+
+	* mpn/alpha/ev6/addmul_1.asm: Correct number of cycles to 3.5/28.
+
 2000-08-02  Torbjorn Granlund  <tege@swox.com>
 
 	* Version 3.1 released.
@@ -58,7 +5008,7 @@
 
 	* configure.in (--enable-fft): New option, default "no".
 	* gmp.texi (Build Options): Describe it.
-	* mpn/generic/{mul,mul_n}.c [WANT_FFT]: Use it.
+	* mpn/generic/mul.c, mpn/generic/mul_n.c [WANT_FFT]: Use it.
 	* tune/tuneup.c [WANT_FFT]: By default don't probe FFTs if not enabled.
 	* NEWS: Multiplication optionally using FFT.
 
@@ -89,7 +5039,7 @@
 	* mpn/generic/mul_fft.c: New file, by Paul Zimmermann, minor mods
 	applied.
 	* configure.in (gmp_mpn_functions): Add it.
-	* mpn/generic/{mul,mul_n}.c: Use it.
+	* mpn/generic/mul.c, mpn/generic/mul_n.c: Use it.
 	* doc/multiplication: Describe it (briefly).
 
 	* gmp-impl.h (FFT_MUL_THRESHOLD etc): New thresholds.
@@ -121,7 +5071,7 @@
 	(Notes for Package Builds): New section.
 	(Compatibility with older versions): Update for 3.1, add mpf_get_prec.
 
-	* demos/factorize.c: Don't declare random() for glibc.
+	* demos/factorize.c [__GLIBC__]: Don't declare random() under glibc.
 
 	* gmp.h (gmp_version): Add prototype and define.
 
@@ -258,13 +5208,14 @@
 
 	* mpn/x86/k6/k62mmx: New directory.
 	* configure.in (k6[23]*-*-*): Use it.
-	* mpn/x86/k6/k62mmx/copy{i,d}.asm: Move from mmx directory,
-	improve code alignment a bit.
-	* mpn/x86/k6/k62mmx/{l,r}shift.asm: Ditto, and improve addressing
-	modes for pre-CXT cores.
+	* mpn/x86/k6/k62mmx/copyi.asm, mpn/x86/k6/k62mmx/copyd.asm: Move from
+	mmx directory, improve code alignment a bit.
+	* mpn/x86/k6/k62mmx/lshift.asm, mpn/x86/k6/k62mmx/rshift.asm: Ditto,
+	and improve addressing modes for pre-CXT cores.
 	* mpn/x86/x86-defs.m4 (Zdisp): Add an instruction.
-	* mpn/x86/k6/mmx/{l,r}shift.asm: New files, suiting plain K6.
-	* mpn/x86/{README,k6/README}: Updates.
+	* mpn/x86/k6/mmx/lshift.asm, mpn/x86/k6/mmx/rshift.asm: New files,
+	suiting plain K6.
+	* mpn/x86/README, mpn/x86/k6/README: Updates.
 	* mpn/x86/k6/mmx/*.asm: Update some comments.
 
 	* mpn/tests/Makefile.am: Use $(MAKE) in .asm rules, not "m".
@@ -284,6 +5235,13 @@
 
 	* mpz/tests/io.c: Use one fp opened "w+", since separately opened
 	input and output doesn't work on MS-DOS 6.21.
+
+	* tests/rand/Makefile.am (allprogs): Pseudo-target to build everything.
+	(CLEANFILES): Add EXTRA_PROGRAMS and EXTRA_LTLIBRARIES.
+	(manual-test, manual-bigtest): Add $(EXEEXT) to	dependencies.
+
+	* tests/rand/*/Makefile.in: Regenerate with patched automake that adds
+	$(EXEEXT) to EXTRA_PROGRAMS.
 
 2000-07-13  Torbjorn Granlund  <tege@swox.com>
 
@@ -357,6 +5315,8 @@
 
 	* demos/factorize.c (random): New function, defined conditionally.
 	(factor_using_pollard_rho): Use it, not mrand48.
+
+	* mpn/cray/README: New file.
 
 2000-06-30  Kevin Ryde  <kevin@swox.se>
 
@@ -433,8 +5393,8 @@
 	parameters and "l" variables.
 	* gmp-impl.h (mpn_toom3_mul_n, mpn_toom3_sqr_n): Update prototypes.
 
-	* mpbsd/{itom,sdiv}.c: Add casts for correct handling of -0x80...00
-	on systems with sizeof(short)==sizeof(int).
+	* mpbsd/itom.c, mpbsd/sdiv.c: Add casts for correct handling of
+	-0x80...00 on systems with sizeof(short)==sizeof(int).
 
 	* mpz/tests/t-misc.c: Move "bin" test from here ...
 	* mpz/tests/t-bin.c: ... to here, and add a new (2k,k) test too.
@@ -518,22 +5478,25 @@
 	up in one $path traversal.
 	* doc/configuration: Updates.
 
+	* tests/rand/t-rand.c (main): Change "usage" to work with K&R.
+
 2000-06-10  Kevin Ryde  <kevin@swox.se>
 
-	* mpn/x86/{pentium/mmx,p6/mmx,p6/p3mmx}/popham.asm,
-	mpn/x86/p6/diveby3.asm: Add MULFUNC_PROLOGUE for correct
-	HAVE_NATIVE_* matching.
+	* mpn/x86/pentium/mmx/popham.asm, mpn/x86/p6/mmx/popham.asm,
+	mpn/x86/p6/p3mmx/popham.asm, mpn/x86/p6/diveby3.asm: Add
+	MULFUNC_PROLOGUE for correct HAVE_NATIVE_* matching.
 
 	* mpn/x86/x86-defs.m4 (cmov_bytes_tttn): Use eval() on expressions.
 	(cmov_available_p): Switch to list CPUs which do have cmov.
-	* mpn/x86/{p6,k6,k7}/sqr_basecase.asm: Use eval() for multiplication.
+	* mpn/x86/p6/sqr_basecase.asm, mpn/x86/k6/sqr_basecase.asm,
+	mpn/x86/k7/sqr_basecase.asm: Use eval() for multiplication.
 	* mpn/x86/README.family: Various updates.
 
 2000-06-09  Kevin Ryde  <kevin@swox.se>
 
 	* mpbsd/tests/allfuns.c (main): Call exit() instead of doing return.
 
-	* doc/{tasks.html,projects.html}: Moved from projects directory.
+	* doc/tasks.html, doc/projects.html: Moved from projects directory.
 	* doc/multiplication: New file.
 	* Makefile.am (EXTRA_DIST): Remove projects, add doc.
 
@@ -547,8 +5510,8 @@
 	* configure.in: Update configs for speed_cyclecounter.
 
 	* gmp-impl.h (MP_LIMB_T_MAX, MP_LIMB_T_HIGHBIT): New macros.
-	* mpn/generic/{diveby3,mul_n,gcd}, tune/speed.c, mpn/tests/ref.c:
-	Use them.
+	* mpn/generic/diveby3.c, mpn/generic/mul_n.c, mpn/generic/gcd.c,
+	tune/speed.c, mpn/tests/ref.c: Use them.
 
 	* mpn/tests/spinner.c: Remove setitimer, just alarm is enough.
 	* configure.in (AC_CHECK_FUNCS): Remove setitimer.
@@ -558,6 +5521,11 @@
 	* mpn/tests/Makefile.am (EXTRA_PROGRAMS): Remove addsub_n and
 	addsub_n_2 which don't currently build.
 	* mpn/tests/copy.c: Test MPN_COPY_INCR, not __gmpn_copy.
+
+	* tests/rand/Makefile.am (libstat_la_LIBADD): Add -lm, no longer on
+	libgmp.la.
+	(findlc_LDADD): Use libstat.la.
+	(AUTOMAKE_OPTIONS): Use ansi2knr.
 
 2000-06-08  Torbjorn Granlund  <tege@swox.com>
 
@@ -665,10 +5633,16 @@
 	* tune/Makefile.am (EXTRA_DIST): Add it.
 	* configure.in (alpha*-*-*): Use it.
 
+2000-05-31  Linus Nordberg  <linus@swox.se>
+
+	* doc/configuration: New file.
+
 2000-05-30  Torbjorn Granlund  <tege@swox.com>
 
 	* mpn/generic/mul_basecase.c: Call mpn_mul_2 and mpn_addmul_2
 	if available.  Don't include longlong.h.
+
+	* doc/isa_abi_headache: New file.
 
 2000-05-30  Linus Nordberg  <linus@swox.se>
 
@@ -1254,8 +6228,8 @@
 
 2000-04-23  Kevin Ryde  <kevin@swox.se>
 
-	* tune/Makefile.am, README, common.c, rdtsc.asm, speed.c, speed.h,
-	time.c, tuneup.c: New files.
+	* tune/Makefile.am, tune/README, tune/common.c, tune/rdtsc.asm,
+	tune/speed.c, tune/speed.h, tune/time.c, tune/tuneup.c: New files.
 	* tune/Makefile.in: New file, generated from Makefile.am.
 
 	* gmp-impl.h (ASSERT_NOREALLOC,TMP_ALLOC_LIMBS): New macros.
@@ -1308,7 +6282,7 @@
 	(SUBDIRS): Add tune, reorder directories.
 	(MPZ_OBJECTS): Add mpz/mul_si.lo.
 	(libmp_la_SOURCES): Use this for top-level objects, not .lo's.
-	* ansi2knr.{c,1}: New files, provided by automake.
+	* ansi2knr.c, ansi2knr.1: New files, provided by automake.
 
 	* mpn/x86/aors_n.asm: Convert add_n.S and sub_n.S to a
 	multi-function aors_n.asm, no object code change.
@@ -1412,6 +6386,11 @@
 	* aclocal.m4: Regenerate.
 	* configure: Regenerate.
 
+2000-04-16  Linus Nordberg  <linus@swox.se>
+
+	* tests/rand/t-rand.c (main): Add non-ANSI function declaration.
+	Don't use `const'.
+
 2000-04-16  Torbjorn Granlund  <tege@swox.com>
 
 	* mpn/generic/dump.c: Suppress output of leadign zeros.
@@ -1507,6 +6486,9 @@
 
 	* configure.in: Make all `-mcpu' options to gcc optional.
 	* configure: Regenerate.
+
+	* tests/rand/Makefile.am: Don't do anything for target 'all'.
+	* tests/rand/Makefile.in: Regenerate.
 
 2000-04-15  Kevin Ryde  <kevin@swox.se>
 
@@ -1627,6 +6609,8 @@
 
 	* gmp.h (gmp_randalg_t): Remove comma after last element.
 
+	* tests/rand/t-rand.c: Add copyright notice.
+
 2000-04-13  Kevin Ryde  <kevin@swox.se>
 
 	* mpn/generic/mul_n.c, mpn/generic/gcdext.c, mpz/nextprime.c,
@@ -1712,6 +6696,16 @@
 	Fix bug with 64-bit limbs.
 	Fix bug with small seed, small A and large M.
 
+	* tests/rand/gen.c (main): Include gmp.h.  Remove macros MIN, MAX.  Add
+	option '-q'.  Don't demand argument N.  Change parameters in call
+	to mpf_urandomb.
+
+	* tests/rand/t-rand.c: New file for testing random number generation.
+
+	* tests/rand/Makefile.am: Run t-rand for 'make check'.
+	(test, bigtest): Rename to manual-test, manual-bigtest.
+	* tests/rand/Makefile.in: Regenerate.
+
 2000-04-12  Kevin Ryde  <kevin@swox.se>
 
 	* gmp-impl.h: Include config.h before TMP_ALLOC, so
@@ -1763,6 +6757,10 @@
 	(DIVIDE_BY_ZERO): Use GMP_ERROR.
 	(__mp_bases): #define to __MPN(mp_bases).
 
+2000-04-11  Linus Nordberg  <linus@swox.se>
+
+	* tests/rand/stat.c (main): Initialize `l1runs' at declaration.
+
 2000-04-11  Kevin Ryde  <kevin@swox.se>
 
 	* mpz/fib_ui.c: Add K&R function definitions.
@@ -1807,6 +6805,20 @@
 	(Low-level Functions): Remove documentation for gmp_rand_getraw.
 	(Random Number Functions): Add info on where to find documentation
 	on the random number functions.
+
+	* tests/rand/Makefile.am (test, bigtest): Quote argument to grep.
+	* tests/rand/Makefile.in: Regenerate.
+
+	* tests/rand/gen.c: Declare optarg, optind, opterr if not already
+	declared.
+	(main): Use new names for the random stuff.
+	(main): Don't use strtoul() if we don't have it.  Use strtol()
+	instead, if we have it.  Otherwise, use atoi().
+	(main): Use srandom/srandomdev for __FreeBSD__ only.
+	(main): Use new parameter order to gmp_randinit().
+
+	* tests/rand/stat.c: Declare optarg, optind, opterr if not already
+	declared.
 
 2000-04-10  Torbjorn Granlund  <tege@swox.com>
 
@@ -1857,6 +6869,12 @@
 
 	* gmp.texi (Top): Use @ifnottex, to help makeinfo --html.
 	(Installing MP): Describe --enable-mpbsd and demo programs.
+
+	* tests/rand/statlib.c: mpz_cmp_abs => mpz_cmpabs.
+
+	* tests/rand/Makefile.am (LDADD): Don't need -lm (now in libgmp.la).
+	(EXTRA_PROGRAMS): Not noinst_PROGRAMS.
+	(INCLUDES): Shorten to -I$(top_srcdir) now using AM_CONFIG_HEADER.
 
 2000-04-09  Torbjorn Granlund  <tege@swox.com>
 
@@ -2140,6 +7158,14 @@
 	* mpz/Makefile.am (libmpz_la_SOURCES): Change urandom.c -->
 	urandomb.c.  Add urandomm.c.
 	* mpz/Makefile.in: Regenerate.
+
+	* tests/rand/Makefile.am (noinst_PROGRAMS): Change findcl --> findlc.
+	Add gen.static.
+	* tests/rand/Makefile.in: Regenerate.
+
+	* tests/rand/gen.c (main): Add mpz_urandomm.  Add command line options
+	`-C', `-m', extend `-a'.  Use *mp*_*rand*() with new parameters.  Call
+	gmp_rand_seed().
 
 2000-04-01  Kevin Ryde  <kevin@swox.se>
 
@@ -3399,6 +8425,11 @@
 	* mpn/generic/rawrandom.c (mpn_rawrandom): Set SIZ(s->seed) when
 	reallocating.
 
+	* tests/rand/Makefile (test, bigtest): Add 33-bit tests.
+
+	* tests/rand/gen.c (main): Set precision of variable passed to
+	mpf_urandomb().  Add option `-p'.
+
 1999-05-25  Linus Nordberg  <linus@swox.se>
 
 	* randcm.c: Remove.
@@ -3445,6 +8476,9 @@
 	* randcm.c (__gmp_rand_init_common): Ditto.
 	* randclr.c (gmp_rand_clear): Ditto.
 
+	* tests/rand/gen.c (main): Pass `s' to rand-funcs instead of address
+	of `s'.
+
 1999-05-20  Linus Nordberg  <linus@swox.se>
 
 	* Makefile.in: Rename randi.c --> rand.c, randi_lc.c --> randlc.c,
@@ -3484,6 +8518,47 @@
 	signal interface.
 	(main): Remove signal handler setup code; call setup_error_handler.
 
+1999-04-29  Linus Nordberg  <linus@swox.se>
+
+	* tests/rand/findcl.c (main): Add option '-i' for interval factor.
+	Separate v and merit lose figures.  Add '-v' for version.
+
+1999-04-28  Linus Nordberg  <linus@swox.se>
+
+	* tests/rand/statlib.c: Change debugging stuff.
+
+	* tests/rand/gmpstat.h: Add debug values definitions.
+
+	* tests/rand/findcl.c (main): Print low and high merit on startup.
+	Print version string on startup.  Catch SEGV and HUP.  Add option -d
+	for debug.  Fix bug making test for v too hard.
+	(sh_status): New function.
+	(sh_status): Flush stdout.  Add RCSID.
+
+1999-04-27  Linus Nordberg  <linus@swox.se>
+
+	* tests/rand/Makefile (clean): Add target.
+
+1999-04-27  Linus Nordberg  <linus.nordberg@canit.se>
+
+	* tests/rand/stat.c: Include gmpstat.h.
+	Add global int g_debug.
+
+	* tests/rand/spect.c: Include <unistd.h>.
+
+	* tests/rand/findcl.c (main): Input is `m', not all factors of `m'.
+	Print only the very first matching multiplier.  Include <unistd.h>.
+	Flush stdout.  Print "done." when done.
+
+	* tests/rand/spect.c: Move everything but main() to statlib.c.
+
+	* tests/rand/findcl.c: New file.
+
+	* tests/rand/gmpstat.h: New file.
+
+	* tests/rand/statlib.c (merit, merit_u, f_floor, vz_dot,
+	spectral_test): New functions.
+
 1999-04-27  Torbjorn Granlund  <tege@swox.com>
 
 	* mpn/configure.in: Fix typo, "sparc-*)" was "sparc)".
@@ -3516,6 +8591,18 @@
 	* gmp.h (__gmp_rand_data_lc): Now holds a, c, m instead of scheme
 	struct.
 	(__gmp_rand_lc_scheme_struct): Remove mpz_t's `a' and `m'.
+
+	* tests/rand/stat.c (f_freq): Don't print 2nd level results if doing
+	1st level.
+
+	* tests/rand/gen.c (main): Set default algorithm to mpz_urandomb.
+	(main): Add option -c.
+
+1999-03-24  Linus Nordberg  <linus.nordberg@canit.se>
+
+	* tests/rand/Makefile (GMPINC): Rename to GMPH.
+	(GMPH):	Add gmp-mparam.h.
+	(CFLAGS): Add -I$(GMPLIBDIR)/mpn
 
 1999-03-23  Linus Nordberg  <linus.nordberg@canit.se>
 
@@ -3564,6 +8651,10 @@
 
 	* make.bat: Compile mpz/urandom.c and mpf/urandom.c
 
+	* tests/rand/statlib.c (ks_table): Use mpf_pow_ui() and exp().
+
+	* tests/rand/gen.c: Include unistd.h for getopt.
+
 1999-03-15  Linus Nordberg  <linus.nordberg@canit.se>
 
 	* mpz/urandom.c (gmp_rand_init): New function.
@@ -3582,6 +8673,9 @@
 	functions.
 	(mpz_urandomb, mpf_urandomb): Add prototype.
 	(gmp_rand_init, gmp_rand_clear): Add prototype.
+
+	* tests/rand/gen.c, stat.c, statlib.c, statlib.h: New files.
+	* tests/rand/Makefile, tests/rand/ChangeLog: New files.
 
 1999-03-15  Torbjorn Granlund  <tege@matematik.su.se>
 
@@ -3615,6 +8709,8 @@
 	* mpn/sysv.h: Deleted.
 
 	* mpn/m68k/*: Don't include sysdep.h.
+
+	* mpn/pa64/README: New file.
 
 1999-03-11  Torbjorn Granlund  <tege@matematik.su.se>
 
@@ -4313,7 +9409,7 @@ Fri Oct 18 03:13:54 1996  Torbjorn Granlund  <tege@quiet.matematik.su.se>
 Wed Oct 16 03:50:34 1996  Torbjorn Granlund  <tege@quiet.matematik.su.se>
 
 	* mpf/set_str.c: Let `prec' determine precision used in
-	exponentialization code; decrease allocation accordingly.
+	exponentiation code; decrease allocation accordingly.
 
 	* mpn/vax: Change `jsob*' to `sob*' in all files.
 
@@ -4332,7 +9428,7 @@ Tue Oct 15 03:54:06 1996  Torbjorn Granlund  <tege@quiet.matematik.su.se>
 	field.
 
 	* mpf/get_str.c: Let `prec' determine precision used in
-	exponentialization code; decrease allocation accordingly.
+	exponentiation code; decrease allocation accordingly.
 
 Sun Oct 13 03:31:53 1996  Torbjorn Granlund  <tege@quiet.matematik.su.se>
 
@@ -5204,7 +10300,7 @@ Mon Mar  4 15:13:28 1996  Torbjorn Granlund  <tege@matematik.su.se>
 
 Sun Mar  3 07:45:46 1996  Torbjorn Granlund  <tege@matematik.su.se>
 
-	* mpf/set_str.c: In exponentialization code, allocate 3 extra
+	* mpf/set_str.c: In exponentiation code, allocate 3 extra
 	limbs, not just 2.
 
 	* mpf/get_str.c: Allocate sufficient space for tstr.
@@ -7963,10 +13059,20 @@ Tue Mar  3 18:50:10 1991  Torbjorn Granlund  (tege@musta.nada.kth.se)
 	* msqrt: Use the low level routines.  Use low precision in the
 	beginning, and increase the precision as the result converges.
 	(This optimization gave a 6-fold speedup.)
+
+
 
 Local Variables:
 mode: indented-text
 left-margin: 8
-fill-column: 75
+fill-column: 79
 version-control: never
+eval: (unless (string-match "GNU Emacs \\(21\.[2-9]\\|22\.\\)" (emacs-version))
+	(save-excursion
+	  (goto-char (point-min))
+	  (when (looking-at "Copyright")
+	    (search-forward "\n\n")
+	    (skip-chars-forward "\n")
+	    (narrow-to-region (point) (point-max))
+	    (message "Note! narrowed to hide copyright notice"))))
 End:

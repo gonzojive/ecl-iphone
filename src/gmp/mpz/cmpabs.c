@@ -1,7 +1,7 @@
 /* mpz_cmpabs(u,v) -- Compare U, V.  Return postive, zero, or negative
    based on if U > V, U == V, or U < V.
 
-Copyright (C) 1991, 1993, 1994, 1996, 1997, 2000 Free Software Foundation,
+Copyright 1991, 1993, 1994, 1996, 1997, 2000, 2001 Free Software Foundation,
 Inc.
 
 This file is part of the GNU MP Library.
@@ -24,34 +24,22 @@ MA 02111-1307, USA. */
 #include "gmp.h"
 #include "gmp-impl.h"
 
+
 int
-#if __STDC__
 mpz_cmpabs (mpz_srcptr u, mpz_srcptr v)
-#else
-mpz_cmpabs (u, v)
-     mpz_srcptr u;
-     mpz_srcptr v;
-#endif
 {
-  mp_size_t usize = u->_mp_size;
-  mp_size_t vsize = v->_mp_size;
-  mp_size_t size;
-  mp_srcptr up, vp;
-  int cmp;
+  mp_size_t  usize, vsize, dsize;
+  mp_srcptr  up, vp;
+  int        cmp;
 
-  usize = ABS (usize);
-  vsize = ABS (vsize);
+  usize = ABSIZ (u);
+  vsize = ABSIZ (v);
+  dsize = usize - vsize;
+  if (dsize != 0)
+    return dsize;
 
-  if (usize != vsize)
-    return usize - vsize;
-
-  if (usize == 0)
-    return 0;
-
-  up = u->_mp_d;
-  vp = v->_mp_d;
-
-  cmp = mpn_cmp (up, vp, usize);
-
+  up = PTR(u);
+  vp = PTR(v);
+  MPN_CMP (cmp, up, vp, usize);
   return cmp;
 }

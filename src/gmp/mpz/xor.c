@@ -1,6 +1,6 @@
 /* mpz_xor -- Logical xor.
 
-Copyright (C) 1991, 1993, 1994, 1996, 1997, 2000 Free Software Foundation,
+Copyright 1991, 1993, 1994, 1996, 1997, 2000, 2001 Free Software Foundation,
 Inc.
 
 This file is part of the GNU MP Library.
@@ -24,14 +24,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpz_xor (mpz_ptr res, mpz_srcptr op1, mpz_srcptr op2)
-#else
-mpz_xor (res, op1, op2)
-     mpz_ptr res;
-     mpz_srcptr op1;
-     mpz_srcptr op2;
-#endif
 {
   mp_srcptr op1_ptr, op2_ptr;
   mp_size_t op1_size, op2_size;
@@ -101,7 +94,6 @@ mpz_xor (res, op1, op2)
       if (op2_size < 0)
 	{
 	  mp_ptr opx;
-	  mp_limb_t cy;
 
 	  /* Both operands are negative, the result will be positive.
 	      (-OP1) ^ (-OP2) =
@@ -165,7 +157,6 @@ mpz_xor (res, op1, op2)
   {
     mp_ptr opx;
     mp_limb_t cy;
-    mp_size_t count;
 
     /* Operand 2 negative, so will be the result.
        -(OP1 ^ (-OP2)) = -(OP1 ^ ~(OP2 - 1)) =

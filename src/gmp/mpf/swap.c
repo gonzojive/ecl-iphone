@@ -1,6 +1,6 @@
 /* mpf_swap (U, V) -- Swap U and V.
 
-Copyright (C) 1997, 1998, 2000 Free Software Foundation, Inc.
+Copyright 1997, 1998, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,13 +23,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpf_swap (mpf_ptr u, mpf_ptr v)
-#else
-mpf_swap (u, v)
-     mpf_ptr u;
-     mpf_ptr v;
-#endif
 {
   mp_ptr up, vp;
   mp_size_t usize, vsize;

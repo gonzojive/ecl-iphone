@@ -1,6 +1,6 @@
 /* gmp_randclear (state) -- Clear and deallocate random state STATE.
 
-Copyright (C) 1999, 2000  Free Software Foundation, Inc.
+Copyright 1999, 2000, 2001  Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,32 +23,28 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 gmp_randclear (gmp_randstate_t rstate)
-#else
-gmp_randclear (rstate)
-     gmp_randstate_t rstate;
-#endif
 {
-  mpz_clear (rstate->seed);
+  mpz_clear (rstate->_mp_seed);
 
-  switch (rstate->alg)
+  switch (rstate->_mp_alg)
     {
     case GMP_RAND_ALG_LC:
-      mpz_clear (rstate->algdata.lc->a);
-      if (rstate->algdata.lc->m2exp == 0)
-	mpz_clear (rstate->algdata.lc->m);
-      (*_mp_free_func) (rstate->algdata.lc, sizeof (*rstate->algdata.lc));
+      mpz_clear (rstate->_mp_algdata._mp_lc->_mp_a);
+      if (rstate->_mp_algdata._mp_lc->_mp_m2exp == 0)
+	mpz_clear (rstate->_mp_algdata._mp_lc->_mp_m);
+      (*__gmp_free_func) (rstate->_mp_algdata._mp_lc, sizeof (*rstate->_mp_algdata._mp_lc));
       break;
 
 #if 0
     case GMP_RAND_ALG_BBS:
       mpz_clear (rstate->algdata.bbs->bi);
-      (*_mp_free_func) (rstate->algdata.bbs, sizeof (*rstate->algdata.bbs));
+      (*__gmp_free_func) (rstate->algdata.bbs, sizeof (*rstate->algdata.bbs));
       break;
 #endif /* 0 */
 
     default:
-      gmp_errno |= GMP_ERROR_UNSUPPORTED_ARGUMENT;
+      ASSERT (0);
+      break;
     }
 }

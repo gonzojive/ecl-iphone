@@ -12,7 +12,7 @@
    The time complexity of this is O(qn*qn+M(dn,qn)), where M(m,n) is the time
    complexity of multiplication.
 
-Copyright (C) 1997, 2000 Free Software Foundation, Inc.
+Copyright 1997, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -35,28 +35,14 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 #include "longlong.h"
 
-#ifndef BZ_THRESHOLD
-#define BZ_THRESHOLD (7 * KARATSUBA_MUL_THRESHOLD)
-#endif
 
 /* Extract the middle limb from ((h,,l) << cnt) */
 #define SHL(h,l,cnt) \
   ((h << cnt) | ((l >> 1) >> ((~cnt) & (BITS_PER_MP_LIMB - 1))))
 
 void
-#if __STDC__
 mpn_tdiv_qr (mp_ptr qp, mp_ptr rp, mp_size_t qxn,
 	     mp_srcptr np, mp_size_t nn, mp_srcptr dp, mp_size_t dn)
-#else
-mpn_tdiv_qr (qp, rp, qxn, np, nn, dp, dn)
-     mp_ptr qp;
-     mp_ptr rp;
-     mp_size_t qxn;
-     mp_srcptr np;
-     mp_size_t nn;
-     mp_srcptr dp;
-     mp_size_t dn;
-#endif
 {
   /* FIXME:
      1. qxn
@@ -64,6 +50,14 @@ mpn_tdiv_qr (qp, rp, qxn, np, nn, dp, dn)
   */
   if (qxn != 0)
     abort ();
+
+  ASSERT (qxn >= 0);
+  ASSERT (nn >= 0);
+  ASSERT (dn >= 0);
+  ASSERT (dn == 0 || dp[dn-1] != 0);
+  ASSERT (! MPN_OVERLAP_P (np, nn, dp, dn));
+  ASSERT (! MPN_OVERLAP_P (qp, nn-dn+1+qxn, np, nn));
+  ASSERT (! MPN_OVERLAP_P (qp, nn-dn+1+qxn, dp, dn));
 
   switch (dn)
     {
@@ -78,14 +72,14 @@ mpn_tdiv_qr (qp, rp, qxn, np, nn, dp, dn)
 
     case 2:
       {
-	int cnt;
 	mp_ptr n2p, d2p;
 	mp_limb_t qhl, cy;
 	TMP_DECL (marker);
 	TMP_MARK (marker);
-	count_leading_zeros (cnt, dp[dn - 1]);
-	if (cnt != 0)
+	if (! (dp[dn-1] & MP_LIMB_T_HIGHBIT))
 	  {
+            int cnt;
+            count_leading_zeros (cnt, dp[dn - 1]);
 	    d2p = (mp_ptr) TMP_ALLOC (dn * BYTES_PER_MP_LIMB);
 	    mpn_lshift (d2p, dp, dn, cnt);
 	    n2p = (mp_ptr) TMP_ALLOC ((nn + 1) * BYTES_PER_MP_LIMB);
@@ -94,6 +88,7 @@ mpn_tdiv_qr (qp, rp, qxn, np, nn, dp, dn)
 	    qhl = mpn_divrem_2 (qp, 0L, n2p, nn + (cy != 0), d2p);
 	    if (cy == 0)
 	      qp[nn - 2] = qhl;	/* always store nn-dn+1 quotient limbs */
+            mpn_rshift (rp, n2p, dn, cnt);
 	  }
 	else
 	  {
@@ -102,12 +97,8 @@ mpn_tdiv_qr (qp, rp, qxn, np, nn, dp, dn)
 	    MPN_COPY (n2p, np, nn);
 	    qhl = mpn_divrem_2 (qp, 0L, n2p, nn, d2p);
 	    qp[nn - 2] = qhl;	/* always store nn-dn+1 quotient limbs */
+            MPN_COPY (rp, n2p, dn);
 	  }
-
-	if (cnt != 0)
-	  mpn_rshift (rp, n2p, dn, cnt);
-	else
-	  MPN_COPY (rp, n2p, dn);
 	TMP_FREE (marker);
 	return;
       }
@@ -123,11 +114,11 @@ mpn_tdiv_qr (qp, rp, qxn, np, nn, dp, dn)
 	    mp_ptr n2p, d2p;
 	    mp_limb_t cy;
 	    int cnt;
-	    count_leading_zeros (cnt, dp[dn - 1]);
 
-	    qp[nn - dn] = 0;			/* zero high quotient limb */
-	    if (cnt != 0)			/* normalize divisor if needed */
+	    qp[nn - dn] = 0;			  /* zero high quotient limb */
+	    if (! (dp[dn-1] & MP_LIMB_T_HIGHBIT)) /* normalize divisor */
 	      {
+                count_leading_zeros (cnt, dp[dn - 1]);
 		d2p = (mp_ptr) TMP_ALLOC (dn * BYTES_PER_MP_LIMB);
 		mpn_lshift (d2p, dp, dn, cnt);
 		n2p = (mp_ptr) TMP_ALLOC ((nn + 1) * BYTES_PER_MP_LIMB);
@@ -137,6 +128,7 @@ mpn_tdiv_qr (qp, rp, qxn, np, nn, dp, dn)
 	      }
 	    else
 	      {
+                cnt = 0;
 		d2p = (mp_ptr) dp;
 		n2p = (mp_ptr) TMP_ALLOC ((nn + 1) * BYTES_PER_MP_LIMB);
 		MPN_COPY (n2p, np, nn);
@@ -146,7 +138,7 @@ mpn_tdiv_qr (qp, rp, qxn, np, nn, dp, dn)
 
 	    if (dn == 2)
 	      mpn_divrem_2 (qp, 0L, n2p, nn, d2p);
-	    else if (dn < BZ_THRESHOLD)
+	    else if (dn < DC_THRESHOLD)
 	      mpn_sb_divrem_mn (qp, n2p, nn, d2p, dn);
 	    else
 	      {
@@ -154,13 +146,13 @@ mpn_tdiv_qr (qp, rp, qxn, np, nn, dp, dn)
 		   in np last.  */
 		mp_ptr q2p = qp + nn - 2 * dn;
 		n2p += nn - 2 * dn;
-		mpn_bz_divrem_n (q2p, n2p, d2p, dn);
+		mpn_dc_divrem_n (q2p, n2p, d2p, dn);
 		nn -= dn;
 		while (nn >= 2 * dn)
 		  {
 		    mp_limb_t c;
 		    q2p -= dn;  n2p -= dn;
-		    c = mpn_bz_divrem_n (q2p, n2p, d2p, dn);
+		    c = mpn_dc_divrem_n (q2p, n2p, d2p, dn);
 		    ASSERT_ALWAYS (c == 0);
 		    nn -= dn;
 		  }
@@ -249,9 +241,9 @@ mpn_tdiv_qr (qp, rp, qxn, np, nn, dp, dn)
 	    /* Normalize denominator by shifting it to the left such that its
 	       most significant bit is set.  Then shift the numerator the same
 	       amount, to mathematically preserve quotient.  */
-	    count_leading_zeros (cnt, dp[dn - 1]);
-	    if (cnt != 0)
+	    if (! (dp[dn - 1] & MP_LIMB_T_HIGHBIT))
 	      {
+                count_leading_zeros (cnt, dp[dn - 1]);
 		d2p = (mp_ptr) TMP_ALLOC (qn * BYTES_PER_MP_LIMB);
 
 		mpn_lshift (d2p, dp + in, qn, cnt);
@@ -271,6 +263,7 @@ mpn_tdiv_qr (qp, rp, qxn, np, nn, dp, dn)
 	      }
 	    else
 	      {
+                cnt = 0;
 		d2p = (mp_ptr) dp + in;
 
 		n2p = (mp_ptr) TMP_ALLOC ((2 * qn + 1) * BYTES_PER_MP_LIMB);
@@ -299,10 +292,10 @@ mpn_tdiv_qr (qp, rp, qxn, np, nn, dp, dn)
 	      }
 	    else if (qn == 2)
 	      mpn_divrem_2 (qp, 0L, n2p, 4L, d2p);
-	    else if (qn < BZ_THRESHOLD)
+	    else if (qn < DC_THRESHOLD)
 	      mpn_sb_divrem_mn (qp, n2p, qn * 2, d2p, qn);
 	    else
-	      mpn_bz_divrem_n (qp, n2p, d2p, qn);
+	      mpn_dc_divrem_n (qp, n2p, d2p, qn);
 
 	    rn = qn;
 	    /* Multiply the first ignored divisor limb by the most significant

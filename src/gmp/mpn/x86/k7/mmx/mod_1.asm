@@ -3,7 +3,7 @@ dnl
 dnl  K7: 17.0 cycles/limb.
 
 
-dnl  Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+dnl  Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -29,6 +29,8 @@ include(`../config.m4')
 C mp_limb_t mpn_mod_1 (mp_srcptr src, mp_size_t size, mp_limb_t divisor);
 C mp_limb_t mpn_mod_1c (mp_srcptr src, mp_size_t size, mp_limb_t divisor,
 C                       mp_limb_t carry);
+C mp_limb_t mpn_preinv_mod_1 (mp_srcptr src, mp_size_t size, mp_limb_t divisor,
+C                             mp_limb_t inverse);
 C
 C The code here is the same as mpn_divrem_1, but with the quotient
 C discarded.  See mpn/x86/k7/mmx/divrem_1.c for some comments.
@@ -46,7 +48,8 @@ dnl  is set to 4 to get the smaller div code used at 3.
 deflit(MUL_THRESHOLD, 4)
 
 
-defframe(PARAM_CARRY,  16)
+defframe(PARAM_INVERSE,16)  dnl mpn_preinv_mod_1
+defframe(PARAM_CARRY,  16)  dnl mpn_mod_1c
 defframe(PARAM_DIVISOR,12)
 defframe(PARAM_SIZE,    8)
 defframe(PARAM_SRC,     4)
@@ -62,9 +65,65 @@ defframe(VAR_SRC_STOP,-28)
 
 deflit(STACK_SPACE, 28)
 
-	.text
-	ALIGN(32)
+	TEXT
 
+	ALIGN(32)
+PROLOGUE(mpn_preinv_mod_1)
+deflit(`FRAME',0)
+	movl	PARAM_SRC, %ecx
+	movl	PARAM_SIZE, %eax
+	subl	$STACK_SPACE, %esp	FRAME_subl_esp(STACK_SPACE)
+
+	movl	%ebp, SAVE_EBP
+	movl	PARAM_DIVISOR, %ebp
+
+	movl	%edi, SAVE_EDI
+	movl	PARAM_INVERSE, %edx
+
+	movl	%esi, SAVE_ESI
+	movl	-4(%ecx,%eax,4), %edi		C src high limb
+	leal	-16(%ecx,%eax,4), %ecx		C &src[size-4]
+
+	movl	%ebx, SAVE_EBX
+	movl	PARAM_INVERSE, %edx
+
+	movl	$0, VAR_NORM			C l==0
+
+	movl	%edi, %esi
+	subl	%ebp, %edi			C high-divisor
+
+	cmovc(	%esi, %edi)			C restore if underflow
+	decl	%eax
+	jz	L(done_edi)			C size==1, high-divisor only
+
+	movl	8(%ecx), %esi			C src second high limb
+	movl	%edx, VAR_INVERSE
+
+	movl	$32, %ebx			C 32-l
+	decl	%eax
+	jz	LF(mpn_mod_1,inverse_one_left)	C size==2, one divide
+
+	movd	%ebx, %mm7			C 32-l
+	decl	%eax
+	jz	LF(mpn_mod_1,inverse_two_left)	C size==3, two divides
+
+	jmp	LF(mpn_mod_1,inverse_top)	C size>=4
+
+
+L(done_edi):
+	movl	SAVE_ESI, %esi
+	movl	SAVE_EBP, %ebp
+	movl	%edi, %eax
+
+	movl	SAVE_EDI, %edi
+	addl	$STACK_SPACE, %esp
+
+	ret
+
+EPILOGUE()
+
+
+	ALIGN(32)
 PROLOGUE(mpn_mod_1c)
 deflit(`FRAME',0)
 	movl	PARAM_CARRY, %edx
@@ -176,12 +235,9 @@ L(mul_by_inverse):
 	bsrl	%ebp, %eax		C 31-l
 
 	movl	%ebx, SAVE_EBX
-	leal	-4(%esi), %ebx
-
-	movl	%ebx, VAR_SRC_STOP
-	movl	%edi, SAVE_EDI
-
 	movl	%ecx, %ebx		C size
+
+	movl	%edi, SAVE_EDI
 	movl	$31, %ecx
 
 	movl	%edx, %edi		C carry
@@ -195,7 +251,7 @@ L(mul_by_inverse):
 	shll	%cl, %ebp		C d normalized
 	movl	%ecx, VAR_NORM
 
-	movd	%eax, %mm7
+	movd	%eax, %mm7		C 32-l
 
 	movl	$-1, %eax
 	subl	%ebp, %edx		C (b-d)-1 so  edx:eax = b*(b-d)-1
@@ -270,7 +326,7 @@ L(inverse_top):
 	C
 
 	addl	%ebx, %eax         C m*(n2+n1) + nadj, low giving carry flag
-	leal	1(%edi), %ebx      C n2<<32 + m*(n2+n1))
+	leal	1(%edi), %ebx      C n2+1
 	movl	%ebp, %eax	   C d
 
 	C
@@ -282,18 +338,18 @@ L(inverse_top):
 	mull	%ebx		   C (q1+1)*d
 
 	psrlq	%mm7, %mm0
-	leal	0(%ecx), %ecx      C dummy
+	leal	(%ecx), %ecx	   C dummy
 
 	C
 
 	C
 
-	subl	%eax, %esi
-	movl	VAR_SRC_STOP, %eax
+	subl	%eax, %esi	   C low  n - (q1+1)*d
+	movl	PARAM_SRC, %eax
 
 	C
 
-	sbbl	%edx, %edi	   C n - (q1+1)*d
+	sbbl	%edx, %edi	   C high n - (q1+1)*d, 0 or -1
 	movl	%esi, %edi	   C remainder -> n2
 	leal	(%ebp,%esi), %edx
 
@@ -301,7 +357,7 @@ L(inverse_top):
 
 	cmovc(	%edx, %edi)	   C n - q1*d if underflow from using q1+1
 	cmpl	%eax, %ecx
-	jne	L(inverse_top)
+	jae	L(inverse_top)
 
 
 L(inverse_loop_done):
@@ -337,7 +393,7 @@ L(inverse_two_left):
 	C
 
 	addl	%ebx, %eax         C m*(n2+n1) + nadj, low giving carry flag
-	leal	1(%edi), %ebx      C n2<<32 + m*(n2+n1))
+	leal	1(%edi), %ebx      C n2+1
 	movl	%ebp, %eax	   C d
 
 	adcl	%edx, %ebx         C 1 + high(n2<<32 + m*(n2+n1) + nadj) = q1+1
@@ -365,8 +421,7 @@ L(inverse_two_left):
 	cmovc(	%edx, %edi)	   C n - q1*d if underflow from using q1+1
 
 
-C One limb left
-
+L(inverse_one_left):
 	C eax	scratch
 	C ebx	scratch (nadj, q1)
 	C ecx
@@ -394,7 +449,7 @@ C One limb left
 	C
 
 	addl	%ebx, %eax         C m*(n2+n1) + nadj, low giving carry flag
-	leal	1(%edi), %ebx      C n2<<32 + m*(n2+n1))
+	leal	1(%edi), %ebx      C n2+1
 	movl	%ebp, %eax	   C d
 
 	C
@@ -444,14 +499,14 @@ L(q1_ff):
 	C edi	(n2)
 	C ebp	divisor
 
-	movl	VAR_SRC_STOP, %edx
+	movl	PARAM_SRC, %edx
 	leal	(%ebp,%esi), %edi	C n-q*d remainder -> next n2
 	psrlq	%mm7, %mm0
 
 	movd	%mm0, %esi		C next n10
 
-	cmpl	%ecx, %edx
-	jne	L(inverse_top)
+	cmpl	%edx, %ecx
+	jae	L(inverse_top)
 	jmp	L(inverse_loop_done)
 
 EPILOGUE()

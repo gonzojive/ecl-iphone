@@ -1,6 +1,6 @@
-/* mpz_tstbit -- test a specified bit.  Simulate 2's complement representation.
+/* mpz_tstbit -- test a specified bit.
 
-Copyright (C) 1997 Free Software Foundation, Inc.
+Copyright 2000 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -22,49 +22,51 @@ MA 02111-1307, USA. */
 #include "gmp.h"
 #include "gmp-impl.h"
 
+
+/* For negatives the effective twos complement is achieved by negating the
+   limb tested, either with a ones or twos complement.  Twos complement
+   ("-") is used if there's only zero limbs below the one being tested.
+   Ones complement ("~") is used if there's a non-zero below.  Note that "-"
+   is correct even if the limb examined is 0 (and the true beginning of twos
+   complement is further up).
+
+   Testing the limbs below p is unavoidable on negatives, but will usually
+   need to examine only *(p-1).  The search is done from *(p-1) down to
+   *u_ptr, since that might give better cache locality, and because a
+   non-zero limb is perhaps a touch more likely in the middle of a number
+   than at the low end.
+
+   Bits past the end of available data simply follow sign of u.  Notice that
+   the limb_index >= abs_size test covers u=0 too.  */
+
 int
-#if __STDC__
-mpz_tstbit (mpz_srcptr d, unsigned long int bit_index)
-#else
-mpz_tstbit (d, bit_index)
-     mpz_srcptr d;
-     unsigned long int bit_index;
-#endif
+mpz_tstbit (mpz_srcptr u, unsigned long bit_index)
 {
-  mp_size_t dsize = d->_mp_size;
-  mp_ptr dp = d->_mp_d;
-  mp_size_t limb_index;
+  mp_srcptr      u_ptr      = PTR(u);
+  int            size       = SIZ(u);
+  unsigned       abs_size   = ABS(size);
+  unsigned long  limb_index = bit_index / BITS_PER_MP_LIMB;
+  mp_srcptr      p          = u_ptr + limb_index;
+  mp_limb_t      limb;
 
-  limb_index = bit_index / BITS_PER_MP_LIMB;
-  if (dsize >= 0)
+  if (limb_index >= abs_size)
+    return (size < 0);
+
+  limb = *p;
+  if (size < 0)
     {
-      if (limb_index < dsize)
-	return (dp[limb_index] >> (bit_index % BITS_PER_MP_LIMB)) & 1;
-      else
-	/* Testing a bit outside of a positive number.  */
-	return 0;
+      limb = -limb;     /* twos complement */
+
+      while (p != u_ptr)
+        {
+          p--;
+          if (*p != 0)
+            {
+              limb--;   /* make it a ones complement instead */
+              break;
+            }
+        }
     }
-  else
-    {
-      mp_size_t zero_bound;
 
-      dsize = -dsize;
-
-      /* Locate the least significant non-zero limb.  */
-      for (zero_bound = 0; dp[zero_bound] == 0; zero_bound++)
-	;
-
-      if (limb_index > zero_bound)
-	{
-	  if (limb_index < dsize)
-	    return (~dp[limb_index] >> (bit_index % BITS_PER_MP_LIMB)) & 1;
-	  else
-	    /* Testing a bit outside of a negative number.  */
-	    return 1;
-	}
-      else if (limb_index == zero_bound)
-	return (-dp[limb_index] >> (bit_index % BITS_PER_MP_LIMB)) & 1;
-      else
-	return 0;
-    }
+  return (limb >> (bit_index % BITS_PER_MP_LIMB)) & 1;
 }

@@ -1,6 +1,6 @@
 /* mpf_set_si() -- Assign a float from a signed int.
 
-Copyright (C) 1993, 1994, 1995, 2000 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1995, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,29 +23,9 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
-mpf_set_si (mpf_ptr x, long int val)
-#else
-mpf_set_si (x, val)
-     mpf_ptr x;
-     long int val;
-#endif
+mpf_set_si (mpf_ptr f, long n)
 {
-  if (val > 0)
-    {
-      x->_mp_d[0] = val;
-      x->_mp_size = 1;
-      x->_mp_exp = 1;
-    }
-  else if (val < 0)
-    {
-      x->_mp_d[0] = (unsigned long) -val;
-      x->_mp_size = -1;
-      x->_mp_exp = 1;
-    }
-  else
-    {
-      x->_mp_size = 0;
-      x->_mp_exp = 0;
-    }
+  f->_mp_d[0] = (unsigned long) (n >= 0 ? n : -n);
+  f->_mp_exp = (n != 0);
+  f->_mp_size = (n < 0 ? -1 : n != 0);
 }

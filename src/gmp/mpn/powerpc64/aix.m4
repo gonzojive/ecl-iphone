@@ -1,7 +1,7 @@
 divert(-1)
 dnl  m4 macros for AIX 64-bit assembly.
 
-dnl  Copyright (C) 2000 Free Software Foundation, Inc.
+dnl  Copyright 2000, 2001 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -28,10 +28,10 @@ define(`PROLOGUE',
 	`
 	.globl	$1
 	.globl	.$1
-	.csect	$1[DS],3
+	.csect	[DS],3
 $1:
 	.llong	.$1, TOC[tc0], 0
-	.csect	.text[PR]
+	.csect	[PR]
 	.align	2
 .$1:')
 

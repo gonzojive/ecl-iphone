@@ -1,10 +1,32 @@
+Copyright 1996, 1997, 1999, 2000, 2001 Free Software Foundation, Inc.
+
+This file is part of the GNU MP Library.
+
+The GNU MP Library is free software; you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation; either version 2.1 of the License, or (at your
+option) any later version.
+
+The GNU MP Library is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
+License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
+the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+02111-1307, USA.
+
+
+
+
 
                           INSTALLING GNU MP
                           =================
 
 
 These instructions are only for the impatient.  Others should read the install
-instructions in the manual, gmp.info.  Use
+instructions in gmp.info.  Use
 
 	info -f ./gmp.info
 
@@ -14,15 +36,19 @@ or in emacs
 
 
 Here are some brief instructions on how to install GMP, and some examples to
-help you get started using GMP.
+help you get started using it.  First you need to compile.  Since you're
+impatient, try this
 
-First, you need to compile, and optionally install, GMP.  Since you're
-impatient, try this:
-
-	./configure; make
+	./configure
+	make
 
 If that fails, or you care about the performance of GMP, you need to read the
-full instructions in the chapter "Installing GMP", in the manual.
+full instructions in the chapter "Installing GMP" in the manual.
+
+Optionally, you can install with the following.  This will be to /usr/local by
+default, and you'll probably need to be "root" to be able to write there.
+
+	make install
 
 Next, try some small test programs, for example the ones below.
 
@@ -40,7 +66,10 @@ command line, multiplies them, and prints the result to stdout.
       mpz_t a, b, p;
 
       if (argc != 3)
-        { printf ("Usage: %s <number> <number>\n", argv[0]); exit (1); }
+        {
+          printf ("Usage: %s <number> <number>\n", argv[0]);
+          exit (1);
+        }
 
       /* Initialize variables */
       mpz_init (a);
@@ -54,9 +83,8 @@ command line, multiplies them, and prints the result to stdout.
       /* Multiply a and b and put the result in p */
       mpz_mul (p, a, b);
 
-      /* Print p in base 10 */
-      mpz_out_str (stdout, 10, p);
-      fputc ('\n', stdout);
+      /* Print p in decimal */
+      gmp_printf ("%Zd\n", p);
 
       /* Clear out variables */
       mpz_clear (a);
@@ -79,7 +107,10 @@ avoided.  An experienced GMP user might write:
       mpz_t a, b, p;
 
       if (argc != 3)
-        { printf ("Usage: %s <number> <number>\n", argv[0]); exit (1); }
+        {
+          printf ("Usage: %s <number> <number>\n", argv[0]);
+          exit (1);
+        }
 
       /* Initialize and assign a and b from base 10 strings in argv */
       mpz_init_set_str (a, argv[1], 10);
@@ -90,9 +121,8 @@ avoided.  An experienced GMP user might write:
       /* Multiply a and b and put the result in p */
       mpz_mul (p, a, b);
 
-      /* Print p in base 10 */
-      mpz_out_str (stdout, 10, p);
-      fputc ('\n', stdout);
+      /* Print p in decimal */
+      gmp_printf ("%Zd\n", p);
 
       /* Since we're about to exit, no need to clear out variables */
       exit (0);
@@ -100,7 +130,7 @@ avoided.  An experienced GMP user might write:
 
 
 Now you have to compile your test program, and link it with the GMP library.
-Assuming your working directory is still the gmp source directory, and your
+Assuming your working directory is still the gmp build directory, and your
 source file is called example.c, enter:
 
 	gcc -g -I. example.c .libs/libgmp.a
@@ -115,7 +145,7 @@ Now try to run the example:
 
 The functions used here all operate on signed integers, and have names
 starting with "mpz_".  There are many more such functions than used in these
-examples.  See the chapter "Integer Functions" in the manual, for a complete
+examples.  See the chapter "Integer Functions" in the manual for a complete
 list.
 
 There are two other main classes of functions in GMP.  They operate on
@@ -127,9 +157,6 @@ To run a set of tests, do "make check".  This will take a while.
 
 To create the printable documentation from the texinfo source, type "make
 gmp.dvi" or "make gmp.ps".  This requires various "tex" commands.
-
-To install the library, do "make install" (then you can use -lgmp instead of
-.libs/libgmp.a).
 
 If you decide to use GMP, it is a good idea you at least read the chapter "GMP
 Basics" in the manual.

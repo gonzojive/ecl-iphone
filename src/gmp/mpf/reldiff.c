@@ -1,6 +1,6 @@
 /* mpf_reldiff -- Generate the relative difference of two floats.
 
-Copyright (C) 1996 Free Software Foundation, Inc.
+Copyright 1996, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,14 +23,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpf_reldiff (mpf_t rdiff, mpf_srcptr x, mpf_srcptr y)
-#else
-mpf_reldiff (rdiff, x, y)
-     mpf_t rdiff;
-     mpf_srcptr x;
-     mpf_srcptr y;
-#endif
 {
   if (mpf_cmp_ui (x, 0) == 0)
     {

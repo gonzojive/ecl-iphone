@@ -3,7 +3,7 @@ dnl
 dnl  K6: 11.0 cycles/limb
 
 
-dnl  Copyright (C) 2000 Free Software Foundation, Inc.
+dnl  Copyright 2000, 2001 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -40,7 +40,7 @@ defframe(PARAM_DST,   4)
 dnl  multiplicative inverse of 3, modulo 2^32
 deflit(INVERSE_3, 0xAAAAAAAB)
 
-	.text
+	TEXT
 	ALIGN(32)
 
 PROLOGUE(mpn_divexact_by3c)
@@ -70,7 +70,7 @@ deflit(`FRAME',0)
 	ALIGN(32)
 L(top):
 	C eax	scratch, low product
-	C ebx	carry limb (0 to 3)
+	C ebx	carry limb (0 to 2)
 	C ecx	counter, limbs, negative
 	C edx	scratch, high product
 	C esi	&src[size]
@@ -86,7 +86,7 @@ Zdisp(	movl,	0,(%esi,%ecx,4), %eax)
 
 	setc	%bl
 
-	imull	$INVERSE_3, %eax
+	imull	$INVERSE_3, %eax, %eax
 
 	movl	%eax, (%edi,%ecx,4)
 	addl	$2, %ecx

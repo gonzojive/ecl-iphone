@@ -1,49 +1,56 @@
-# PowerPC-64 mpn_mul_1 -- Multiply a limb vector with a limb and store
-# the result in a second limb vector.
+dnl  PowerPC-64 mpn_mul_1 -- Multiply a limb vector with a limb and store
+dnl  the result in a second limb vector.
 
-# Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+dnl  Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
 
-# This file is part of the GNU MP Library.
+dnl  This file is part of the GNU MP Library.
 
-# The GNU MP Library is free software; you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation; either version 2.1 of the License, or (at your
-# option) any later version.
+dnl  The GNU MP Library is free software; you can redistribute it and/or modify
+dnl  it under the terms of the GNU Lesser General Public License as published by
+dnl  the Free Software Foundation; either version 2.1 of the License, or (at your
+dnl  option) any later version.
 
-# The GNU MP Library is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-# License for more details.
+dnl  The GNU MP Library is distributed in the hope that it will be useful, but
+dnl  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+dnl  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
+dnl  License for more details.
 
-# You should have received a copy of the GNU Lesser General Public License
-# along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-# the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-# MA 02111-1307, USA.
-
-
-# INPUT PARAMETERS
-# res_ptr	r3
-# s1_ptr	r4
-# size		r5
-# s2_limb	r6
+dnl  You should have received a copy of the GNU Lesser General Public License
+dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
+dnl  the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+dnl  MA 02111-1307, USA.
 
 include(`../config.m4')
 
+C INPUT PARAMETERS
+C res_ptr	r3
+C s1_ptr	r4
+C size		r5
+C s2_limb	r6
+C cy_limb	r7
+
+C PPC630: 6 to 18 cycles/limb, depending on multiplier.  This cannot be
+C improved unless floating-point operations are used instead of the slow
+C mulld/mulhdu.
+
 ASM_START()
 PROLOGUE(mpn_mul_1)
-	mtctr	5
-	li	9,0		# cy_limb = 0
-	addic	0,0,0
-	cal	3,-8(3)
-	cal	4,-8(4)
+	li	r7,0		C cy_limb = 0
+
+PROLOGUE(mpn_mul_1c)
+	mtctr	r5
+	addic	r0,r0,0
+	cal	r3,-8(r3)
+	cal	r4,-8(r4)
 .Loop:
-	ldu	0,8(4)
-	mulld	7,0,6
-	adde	7,7,9
-	mulhdu	9,0,6
-	stdu	7,8(3)
+	ldu	r0,8(r4)
+	mulld	r9,r0,r6
+	adde	r9,r9,r7
+	mulhdu	r7,r0,r6
+	stdu	r9,8(r3)
 	bdnz	.Loop
 
-	addze	3,9
+	addze	r3,r7
 	blr
 EPILOGUE(mpn_mul_1)
+EPILOGUE(mpn_mul_1c)

@@ -1,6 +1,16 @@
 dnl  x86 mpn_divrem_1 -- mpn by limb division extending to fractional quotient.
+dnl
+dnl        cycles/limb
+dnl  486   approx 43 maybe
+dnl  P5        44
+dnl  P6        39
+dnl  P6MMX     39
+dnl  K6        20
+dnl  K7        42
+dnl  P4        58
 
-dnl  Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+
+dnl  Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -20,28 +30,14 @@ dnl  not, write to the Free Software Foundation, Inc., 59 Temple Place -
 dnl  Suite 330, Boston, MA 02111-1307, USA.
 
 
-dnl        cycles/limb
-dnl  K6        20
-dnl  P5        44
-dnl  P6        39
-dnl  486   approx 43 maybe
-dnl
-dnl
-dnl  The following have their own optimized divrem_1 implementations, but
-dnl  for reference the code here runs as follows.
-dnl
-dnl        cycles/limb
-dnl  P6MMX     39
-dnl  K7        42
-
-
 include(`../config.m4')
 
 
 C mp_limb_t mpn_divrem_1 (mp_ptr dst, mp_size_t xsize,
 C                         mp_srcptr src, mp_size_t size, mp_limb_t divisor);
 C mp_limb_t mpn_divrem_1c (mp_ptr dst, mp_size_t xsize,
-C                          mp_srcptr src, mp_size_t size, mp_limb_t divisor);
+C                          mp_srcptr src, mp_size_t size, mp_limb_t divisor,
+C                          mp_limb_t carry);
 C
 C Divide src,size by divisor and store the quotient in dst+xsize,size.
 C Extend the division to fractional quotient limbs in dst,xsize.  Return the
@@ -58,8 +54,8 @@ C
 C - If gcc isn't being used then divrem_1.c will get the generic C
 C   udiv_qrnnd() and be rather slow.
 C
-C - On K6, using the loop instruction is a 10% speedup, but gcc doesn't
-C   generate that instruction (as of gcc 2.95.2 at least).
+C - On K6, using the loop instruction is a 10% speedup, but gcc prior to 3.0
+C   doesn't generate that instruction.
 C
 C A test is done to see if the high limb is less the the divisor, and if so
 C one less div is done.  A div is between 20 and 40 cycles on the various
@@ -81,13 +77,13 @@ C     but that algorithm has been found to suffer from the releatively poor
 C     carry handling on K6 and too many auxiliary instructions.  The
 C     fractional part however could be done at about 13 c/l.
 C
-C P5: Moving the load down to pair with the store might save 1 cycle, but
-C     that doesn't seem worth bothering with, since it'd be only a 2.2%
-C     saving.
-C
-C     Again here the auxiliary instructions hinder a multiply-by-inverse,
+C P5: Again here the auxiliary instructions hinder a multiply-by-inverse,
 C     though there might be a 10-15% speedup available
-
+C
+C     It might be thought that moving the load down to pair with the store
+C     would save 1 cycle, but that doesn't seem to happen in practice, and
+C     in any case would be a mere 2.2% saving, so it hardly worth bothering
+C     about.
 
 defframe(PARAM_CARRY,  24)
 defframe(PARAM_DIVISOR,20)
@@ -96,7 +92,7 @@ defframe(PARAM_SRC,    12)
 defframe(PARAM_XSIZE,  8)
 defframe(PARAM_DST,    4)
 
-	.text
+	TEXT
 	ALIGN(16)
 
 PROLOGUE(mpn_divrem_1c)
@@ -221,7 +217,7 @@ deflit(`FRAME',8)
 
 	movl	PARAM_DST, %edi
 
-	cld	C better safe than sorry, see mpn/x86/README.family
+	cld	C better safe than sorry, see mpn/x86/README
 
 	rep
 	stosl

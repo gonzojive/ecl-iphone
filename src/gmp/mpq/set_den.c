@@ -1,6 +1,6 @@
 /* mpq_set_den(dest,den) -- Set the denominator of DEST from DEN.
 
-Copyright (C) 1991, 1994, 1995, 1996 Free Software Foundation, Inc.
+Copyright 1991, 1994, 1995, 1996, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,13 +23,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpq_set_den (MP_RAT *dest, const MP_INT *den)
-#else
-mpq_set_den (dest, den)
-     MP_RAT *dest;
-     const MP_INT *den;
-#endif
 {
   mp_size_t size = den->_mp_size;
   mp_size_t abs_size = ABS (size);
@@ -38,5 +32,5 @@ mpq_set_den (dest, den)
     _mpz_realloc (&(dest->_mp_den), abs_size);
 
   MPN_COPY (dest->_mp_den._mp_d, den->_mp_d, abs_size);
-  dest->_mp_den._mp_size = abs_size;
+  dest->_mp_den._mp_size = size;
 }

@@ -1,8 +1,15 @@
 dnl  x86 mpn_mul_basecase -- Multiply two limb vectors and store the result
 dnl  in a third limb vector.
+dnl
+dnl      cycles/crossproduct
+dnl  P5:     15
+dnl  P6:      7.5
+dnl  K6:     12.5
+dnl  K7:      5.5
+dnl  P4:     24
 
 
-dnl  Copyright (C) 1996, 1997, 1998, 1999, 2000 Free Software Foundation,
+dnl  Copyright 1996, 1997, 1998, 1999, 2000, 2001 Free Software Foundation,
 dnl  Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
@@ -53,7 +60,7 @@ defframe(VAR_MULTIPLIER, -4)
 defframe(VAR_COUNTER,    -8)
 deflit(VAR_STACK_SPACE,  8)
 
-	.text
+	TEXT
 	ALIGN(8)
 
 PROLOGUE(mpn_mul_basecase)

@@ -1,6 +1,6 @@
 /* mpn/bdivmod.c: mpn_bdivmod for computing U/V mod 2^d.
 
-Copyright (C) 1991, 1993, 1994, 1995, 1996, 1999, 2000 Free Software
+Copyright 1991, 1993, 1994, 1995, 1996, 1999, 2000, 2001 Free Software
 Foundation, Inc.
 
 This file is part of the GNU MP Library.
@@ -52,21 +52,19 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 #include "longlong.h"
 
+
 mp_limb_t
-#if __STDC__
 mpn_bdivmod (mp_ptr qp, mp_ptr up, mp_size_t usize,
 	     mp_srcptr vp, mp_size_t vsize, unsigned long int d)
-#else
-mpn_bdivmod (qp, up, usize, vp, vsize, d)
-     mp_ptr qp;
-     mp_ptr up;
-     mp_size_t usize;
-     mp_srcptr vp;
-     mp_size_t vsize;
-     unsigned long int d;
-#endif
 {
   mp_limb_t v_inv;
+
+  ASSERT (usize >= 1);
+  ASSERT (vsize >= 1);
+  ASSERT (usize * BITS_PER_MP_LIMB >= d);
+  ASSERT (! MPN_OVERLAP_P (up, usize, vp, vsize));
+  ASSERT (! MPN_OVERLAP_P (qp, d/BITS_PER_MP_LIMB, vp, vsize));
+  ASSERT (MPN_SAME_OR_INCR2_P (qp, d/BITS_PER_MP_LIMB, up, usize));
 
   /* 1/V mod 2^BITS_PER_MP_LIMB. */
   modlimb_invert (v_inv, vp[0]);

@@ -1,6 +1,6 @@
 /* mpf_pow_ui -- Compute b^e.
 
-Copyright (C) 1998, 1999 Free Software Foundation, Inc.
+Copyright 1998, 1999, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,14 +23,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpf_pow_ui (mpf_ptr r, mpf_srcptr b, unsigned long int e)
-#else
-mpf_pow_ui (r, b, e)
-     mpf_ptr r;
-     mpf_srcptr b;
-     unsigned long int e;
-#endif
 {
   mpf_t b2;
   unsigned long int e2;

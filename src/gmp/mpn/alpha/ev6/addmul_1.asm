@@ -1,7 +1,7 @@
 dnl Alpha ev6 mpn_addmul_1 -- Multiply a limb vector with a limb and add
 dnl the result to a second limb vector.
 
-dnl  Copyright (C) 2000 Free Software Foundation, Inc.
+dnl  Copyright 2000 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 
@@ -29,10 +29,10 @@ dnl  size	r18
 dnl  s2_limb	r19
 
 dnl  This code runs at 42 cycles/limb on EV4, 18 cycles/limb on EV5, and
-dnl  exactly 3.625 cycles/limb on EV6...
+dnl  exactly 3.5 cycles/limb on EV6...
 
 dnl This code was written in close cooperation with ev6 pipeline expert
-dnl Steve Root (root@toober.hlo.dec.com).  Any errors are tege's fault, though.
+dnl Steve Root.  Any errors are tege's fault, though.
 dnl
 dnl   Register usages for unrolled loop:
 dnl	  0-3     mul's
@@ -41,7 +41,7 @@ dnl	  8-15    mul results
 dnl	  20,21   carry's
 dnl	  22,23   save for stores
 
-dnl   Sustains 8 mul-adds in 29 cycles in the unrolled inner loop.
+dnl   Sustains 8 mul-adds in 28 cycles in the unrolled inner loop.
 
 dnl   The stores can issue a cycle late so we have paired no-op's to 'catch'
 dnl   them, so that further disturbance to the schedule is damped.
@@ -253,7 +253,7 @@ C ____ UNROLLED LOOP SOFTWARE PIPELINE STARTUP ____
 	umulh	r19,	r1,	r12	C U1
 	cmpult	r23,	r15,	r20	C L0 lo add => carry
 	addq	r23,	r14,	r23	C U0 hi add => answer
-	ldq	r0,	(r17)		C L1
+	ldq	r0,	0(r17)		C L1
 	mulq	r19,	r2,	r13	C U1
 	cmpult	r23,	r14,	r21	C L0 hi add => carry
 	addq	r8,	r20,	r8	C U0 hi mul + carry
@@ -274,7 +274,7 @@ $Loop:
 	bis	r31,	r31,	r31	C U1 mt
 	cmpult	r22,	r8,	r21	C L0 hi add => carry
 	addq	r10,	r20,	r10	C U0 hi mul + carry
-	ldq	r4,	(r16)		C L1
+	ldq	r4,	0(r16)		C L1
 
 	bis	r31,	r31,	r31	C U1 mt
 	addq	r5,	r11,	r23	C L0 lo + acc
@@ -363,7 +363,7 @@ $Loop:
 
 	umulh	r19,	r0,	r10	C U1
 	addq	r6,	r13,	r6	C L0 lo + acc
-	stq	r22,	(r16)		C L0
+	stq	r22,	0(r16)		C L0
 	stq	r23,	8(r16)		C L1
 
 	bis	r31,	r31,	r31	C L0 st slosh
@@ -389,7 +389,7 @@ $Loop:
 	umulh	r19,	r1,	r12	C U1
 	cmpult	r23,	r15,	r20	C L0 lo add => carry
 	addq	r23,	r14,	r23	C U0 hi add => answer
-	ldq	r0,	(r17)		C L1
+	ldq	r0,	0(r17)		C L1
 
 	mulq	r19,	r2,	r13	C U1
 	cmpult	r23,	r14,	r21	C L0 hi add => carry
@@ -415,7 +415,7 @@ C ____ UNROLLED LOOP SOFTWARE PIPELINE FINISH ____
 $Lend:
 	cmpult	r22,	r8,	r21	C L0 hi add => carry
 	addq	r10,	r20,	r10	C U0 hi mul + carry
-	ldq	r4,	(r16)		C L1
+	ldq	r4,	0(r16)		C L1
 	addq	r5,	r11,	r23	C L0 lo + acc
 	addq	r10,	r21,	r10	C L0 hi mul + carry
 	ldq	r5,	8(r16)		C L1
@@ -457,7 +457,7 @@ $Lend:
 	addq	r23,	r10,	r23	C U0 hi add => answer
 	cmpult	r23,	r10,	r21	C L0 hi add => carry
 	addq	r12,	r20,	r12	C U0 hi mul + carry
-	stq	r22,	(r16)		C L0
+	stq	r22,	0(r16)		C L0
 	stq	r23,	8(r16)		C L1
 	addq	r12,	r21,	r0	C U0 hi mul + carry
 

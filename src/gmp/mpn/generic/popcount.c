@@ -1,6 +1,6 @@
-/* popcount.c
+/* mpn_popcount -- mpn bit population count.
 
-Copyright (C) 1994, 1996, 2000 Free Software Foundation, Inc.
+Copyright 1994, 1996, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -22,72 +22,19 @@ MA 02111-1307, USA. */
 #include "gmp.h"
 #include "gmp-impl.h"
 
-#if defined __GNUC__
-/* No processor claiming to be SPARC v9 compliant seem to
-   implement the POPC instruction.  Disable pattern for now.  */
-#if 0 && defined __sparc_v9__ && BITS_PER_MP_LIMB == 64
-#define popc_limb(a) \
-  ({									\
-    DItype __res;							\
-    asm ("popc %1,%0" : "=r" (__res) : "rI" (a));			\
-    __res;								\
-  })
-#endif
-#endif
 
-#ifndef popc_limb
-
-/* Cool population count of a mp_limb_t.
-   You have to figure out how this works, I won't tell you!  */
-
-static inline unsigned int
-#if __STDC__
-popc_limb (mp_limb_t x)
-#else
-popc_limb (x)
-     mp_limb_t x;
-#endif
+unsigned long
+mpn_popcount (mp_srcptr p, mp_size_t size)
 {
-#if BITS_PER_MP_LIMB == 64
-  /* We have to go into some trouble to define these constants.
-     (For mp_limb_t being `long long'.)  */
-  mp_limb_t cnst;
-  cnst = 0xaaaaaaaaL | ((mp_limb_t) 0xaaaaaaaaL << BITS_PER_MP_LIMB/2);
-  x -= (x & cnst) >> 1;
-  cnst = 0x33333333L | ((mp_limb_t) 0x33333333L << BITS_PER_MP_LIMB/2);
-  x = ((x & ~cnst) >> 2) + (x & cnst);
-  cnst = 0x0f0f0f0fL | ((mp_limb_t) 0x0f0f0f0fL << BITS_PER_MP_LIMB/2);
-  x = ((x >> 4) + x) & cnst;
-  x = ((x >> 8) + x);
-  x = ((x >> 16) + x);
-  x = ((x >> 32) + x) & 0xff;
-#endif
-#if BITS_PER_MP_LIMB == 32
-  x -= (x & 0xaaaaaaaa) >> 1;
-  x = ((x >> 2) & 0x33333333L) + (x & 0x33333333L);
-  x = ((x >> 4) + x) & 0x0f0f0f0fL;
-  x = ((x >> 8) + x);
-  x = ((x >> 16) + x) & 0xff;
-#endif
-  return x;
-}
-#endif
+  unsigned long  result = 0;
+  unsigned long  n;
 
-unsigned long int
-#if __STDC__
-mpn_popcount (register mp_srcptr p, register mp_size_t size)
-#else
-mpn_popcount (p, size)
-     register mp_srcptr p;
-     register mp_size_t size;
-#endif
-{
-  unsigned long int popcnt;
-  mp_size_t i;
+  ASSERT (size >= 1);
 
-  popcnt = 0;
-  for (i = 0; i < size; i++)
-    popcnt += popc_limb (p[i]);
+  do {
+    popc_limb (n, *p++);
+    result += n;
+  } while (--size != 0);
 
-  return popcnt;
+  return result;
 }

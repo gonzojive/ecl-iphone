@@ -1,7 +1,7 @@
 /* mpz_size(x) -- return the number of lims currently used by the
    value of integer X.
 
-Copyright (C) 1991, 1993, 1994, 1995 Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 1995, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -20,16 +20,7 @@ along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
 the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
 MA 02111-1307, USA. */
 
+#define __GMP_FORCE_mpz_size 1
+
 #include "gmp.h"
 #include "gmp-impl.h"
-
-size_t
-#if __STDC__
-mpz_size (mpz_srcptr x)
-#else
-mpz_size (x)
-     mpz_srcptr x;
-#endif
-{
-  return ABS (x->_mp_size);
-}

@@ -3,7 +3,7 @@ dnl
 dnl  K6: 3.0 cycles/limb
 
 
-dnl  Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+dnl  Copyright 1999, 2000 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -39,7 +39,7 @@ defframe(PARAM_SRC,  8)
 defframe(PARAM_DST,  4)
 deflit(`FRAME',0)
 
-	.text
+	TEXT
 	ALIGN(32)
 
 PROLOGUE(mpn_rshift)

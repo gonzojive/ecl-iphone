@@ -4,7 +4,7 @@ dnl  K6: 7.65 to 8.5 cycles/limb (at 16 limbs/loop and depending on the data),
 dnl  PIC adds about 6 cycles at the start.
 
 
-dnl  Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+dnl  Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -153,7 +153,7 @@ defframe(PARAM_SIZE,      12)
 defframe(PARAM_SRC,       8)
 defframe(PARAM_DST,       4)
 
-	.text
+	TEXT
 	ALIGN(32)
 
 PROLOGUE(M4_function_1c)
@@ -307,7 +307,7 @@ L(noswap):
 
 ifdef(`PIC',`
 L(pic_calc):
-	C See README.family about old gas bugs
+	C See mpn/x86/README about old gas bugs
 	leal	(%edx,%ecx,1), %edx
 	addl	$L(entry)-L(here), %edx
 	addl	(%esp), %edx

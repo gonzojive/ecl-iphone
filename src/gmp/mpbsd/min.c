@@ -1,7 +1,7 @@
 /* min(MINT) -- Do decimal input from standard input and store result in
    MINT.
 
-Copyright (C) 1991, 1994, 1996, 2000 Free Software Foundation, Inc.
+Copyright 1991, 1994, 1996, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -27,13 +27,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 static int
-#if __STDC__
 digit_value_in_base (int c, int base)
-#else
-digit_value_in_base (c, base)
-     int c;
-     int base;
-#endif
 {
   int digit;
 
@@ -52,12 +46,7 @@ digit_value_in_base (c, base)
 }
 
 void
-#if __STDC__
 min (MINT *dest)
-#else
-min (dest)
-     MINT *dest;
-#endif
 {
   char *str;
   size_t alloc_size, str_size;
@@ -66,7 +55,7 @@ min (dest)
   mp_size_t dest_size;
 
   alloc_size = 100;
-  str = (char *) (*_mp_allocate_func) (alloc_size);
+  str = (char *) (*__gmp_allocate_func) (alloc_size);
   str_size = 0;
 
   /* Skip whitespace.  */
@@ -91,7 +80,7 @@ min (dest)
 	{
 	  size_t old_alloc_size = alloc_size;
 	  alloc_size = alloc_size * 3 / 2;
-	  str = (char *) (*_mp_reallocate_func) (str, old_alloc_size, alloc_size);
+	  str = (char *) (*__gmp_reallocate_func) (str, old_alloc_size, alloc_size);
 	}
       dig = digit_value_in_base (c, 10);
       if (dig < 0)
@@ -109,6 +98,6 @@ min (dest)
   dest_size = mpn_set_str (dest->_mp_d, (unsigned char *) str, str_size, 10);
   dest->_mp_size = negative ? -dest_size : dest_size;
 
-  (*_mp_free_func) (str, alloc_size);
+  (*__gmp_free_func) (str, alloc_size);
   return;
 }

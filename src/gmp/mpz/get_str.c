@@ -4,7 +4,7 @@
    result.  If STRING is not NULL, the caller must ensure enough space is
    available to store the result.
 
-Copyright (C) 1991, 1993, 1994, 1996 Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 1996, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,24 +23,19 @@ along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
 the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
 MA 02111-1307, USA. */
 
+#include <string.h> /* for strlen */
 #include "gmp.h"
 #include "gmp-impl.h"
 
 char *
-#if __STDC__
 mpz_get_str (char *res_str, int base, mpz_srcptr x)
-#else
-mpz_get_str (res_str, base, x)
-     char *res_str;
-     int base;
-     mpz_srcptr x;
-#endif
 {
   mp_ptr xp;
   mp_size_t x_size = x->_mp_size;
   unsigned char *str;
   char *return_str;
   size_t str_size;
+  size_t alloc_size = 0;
   char *num_to_text;
   int i;
   TMP_DECL (marker);
@@ -67,7 +62,8 @@ mpz_get_str (res_str, base, x)
     {
       /* We didn't get a string from the user.  Allocate one (and return
 	 a pointer to it).  */
-      res_str = (char *) (*_mp_allocate_func) (str_size);
+      alloc_size = str_size;
+      res_str = (char *) (*__gmp_allocate_func) (str_size);
       /* Make str, the variable used for raw result from mpn_get_str,
 	 point to the same string, but just after a possible minus sign.  */
       str = (unsigned char *) res_str + 1;
@@ -85,8 +81,7 @@ mpz_get_str (res_str, base, x)
     {
       res_str[0] = '0';
       res_str[1] = 0;
-      TMP_FREE (marker);
-      return res_str;
+      goto done;
     }
   if (x_size < 0)
     {
@@ -113,6 +108,15 @@ mpz_get_str (res_str, base, x)
     res_str[i] = num_to_text[str[i]];
   res_str[str_size] = 0;
 
+ done:
   TMP_FREE (marker);
+
+  /* If the string was alloced then resize it down to the actual space
+     required.  */
+  if (alloc_size != 0)
+    {
+      size_t  actual_size = strlen (return_str) + 1;
+      __GMP_REALLOCATE_FUNC_MAYBE (return_str, alloc_size, actual_size);
+    }
   return return_str;
 }

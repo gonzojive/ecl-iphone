@@ -1,7 +1,7 @@
 /* mpq_canonicalize(op) -- Remove common factors of the denominator and
    numerator in OP.
 
-Copyright (C) 1991, 1994, 1995, 1996 Free Software Foundation, Inc.
+Copyright 1991, 1994, 1995, 1996, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -24,15 +24,13 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mpq_canonicalize (MP_RAT *op)
-#else
-mpq_canonicalize (op)
-     MP_RAT *op;
-#endif
 {
   mpz_t gcd;
   TMP_DECL (marker);
+
+  if (op->_mp_den._mp_size == 0)
+    DIVIDE_BY_ZERO;
 
   TMP_MARK (marker);
 
@@ -41,8 +39,11 @@ mpq_canonicalize (op)
 			      ABS (op->_mp_den._mp_size)));
 
   mpz_gcd (gcd, &(op->_mp_num), &(op->_mp_den));
-  mpz_divexact (&(op->_mp_num), &(op->_mp_num), gcd);
-  mpz_divexact (&(op->_mp_den), &(op->_mp_den), gcd);
+  if (! MPZ_EQUAL_1_P (gcd))
+    {
+      mpz_divexact_gcd (&(op->_mp_num), &(op->_mp_num), gcd);
+      mpz_divexact_gcd (&(op->_mp_den), &(op->_mp_den), gcd);
+    }
 
   if (op->_mp_den._mp_size < 0)
     {

@@ -1,7 +1,7 @@
 /* mpf_size(x) -- return the number of limbs currently used by the
    value of the float X.
 
-Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1995, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -24,12 +24,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 size_t
-#if __STDC__
-mpf_size (mpf_srcptr x)
-#else
-mpf_size (x)
-     mpf_srcptr x;
-#endif
+mpf_size (mpf_srcptr f)
 {
-  return ABS (x->_mp_size);
+  return __GMP_ABS (f->_mp_size);
 }

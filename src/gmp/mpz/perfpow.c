@@ -1,7 +1,7 @@
 /* mpz_perfect_power_p(arg) -- Return non-zero if ARG is a perfect power,
    zero otherwise.
 
-Copyright (C) 1998, 1999, 2000 Free Software Foundation, Inc.
+Copyright 1998, 1999, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -31,8 +31,6 @@ MA 02111-1307, USA. */
     So for n prime, we readily have a solution.
   * If n is factorable into the non-trivial factors p1,p2,...
     Since m divides n, m has a subset of n's factors and b = n / m.
-
-    BUG: Should handle negative numbers, since they can be odd perfect powers.
 */
 
 /* This is a naive approach to recognizing perfect powers.
@@ -64,12 +62,7 @@ static const unsigned short primes[] =
 
 
 int
-#if __STDC__
 mpz_perfect_power_p (mpz_srcptr u)
-#else
-mpz_perfect_power_p (u)
-     mpz_srcptr u;
-#endif
 {
   unsigned long int prime;
   unsigned long int n, n2;
@@ -78,18 +71,22 @@ mpz_perfect_power_p (u)
   mpz_t u2, q;
   int exact;
   mp_size_t uns;
+  mp_size_t usize = SIZ (u);
   TMP_DECL (marker);
 
-  if (mpz_cmp_ui (u, 1) <= 0)
-    return 0;
+  if (usize == 0)
+    return 1;			/* consider 0 a perfect power */
 
   n2 = mpz_scan1 (u, 0);
   if (n2 == 1)
-    return 0;
+    return 0;			/* 2 divides exactly once.  */
+
+  if (n2 != 0 && (n2 & 1) == 0 && usize < 0)
+    return 0;			/* 2 has even multiplicity with negative U */
 
   TMP_MARK (marker);
 
-  uns = ABSIZ (u) - n2 / BITS_PER_MP_LIMB;
+  uns = ABS (usize) - n2 / BITS_PER_MP_LIMB;
   MPZ_TMP_INIT (q, uns);
   MPZ_TMP_INIT (u2, uns);
 
@@ -102,13 +99,13 @@ mpz_perfect_power_p (u)
     {
       prime = primes[i];
       rem = mpz_tdiv_ui (u2, prime);
-      if (rem == 0)		/* divisable? */
+      if (rem == 0)		/* divisable by this prime? */
 	{
 	  rem = mpz_tdiv_q_ui (q, u2, prime * prime);
 	  if (rem != 0)
 	    {
 	      TMP_FREE (marker);
-	      return 0;
+	      return 0;		/* prime divides exactly once, reject */
 	    }
 	  mpz_swap (q, u2);
 	  for (n = 2;;)
@@ -120,11 +117,23 @@ mpz_perfect_power_p (u)
 	      n++;
 	    }
 
+	  if ((n & 1) == 0 && usize < 0)
+	    {
+	      TMP_FREE (marker);
+	      return 0;		/* even multiplicity with negative U, reject */
+	    }
+
 	  n2 = gcd (n2, n);
 	  if (n2 == 1)
 	    {
 	      TMP_FREE (marker);
-	      return 0;
+	      return 0;		/* we have multiplicity 1 of some factor */
+	    }
+
+	  if (mpz_cmpabs_ui (u2, 1) == 0)
+	    {
+	      TMP_FREE (marker);
+	      return 1;		/* factoring completed; consistent power */
 	    }
 
 	  /* As soon as n2 becomes a prime number, stop factoring.
@@ -134,18 +143,11 @@ mpz_perfect_power_p (u)
 	}
     }
 
-  if (mpz_cmp_ui (u2, 1) == 0)
-    {
-      TMP_FREE (marker);
-      return 1;
-    }
-
   if (n2 == 0)
     {
+      /* We found no factors above; have to check all values of n.  */
       unsigned long int nth;
-      /* We did not find any factors above.  We have to consider all values
-	 of n.  */
-      for (nth = 2;; nth++)
+      for (nth = usize < 0 ? 3 : 2;; nth++)
 	{
 	  if (! isprime (nth))
 	    continue;
@@ -205,12 +207,7 @@ n2prime:
 }
 
 static unsigned long int
-#if __STDC__
 gcd (unsigned long int a, unsigned long int b)
-#else
-gcd (a, b)
-     unsigned long int a, b;
-#endif
 {
   int an2, bn2, n2;
 
@@ -249,12 +246,7 @@ gcd (a, b)
 }
 
 static int
-#if __STDC__
 isprime (unsigned long int t)
-#else
-isprime (t)
-     unsigned long int t;
-#endif
 {
   unsigned long int q, r, d;
 

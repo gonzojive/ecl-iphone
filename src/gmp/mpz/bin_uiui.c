@@ -1,6 +1,6 @@
 /* mpz_bin_uiui - compute n over k.
 
-Copyright (C) 1998, 1999, 2000 Free Software Foundation, Inc.
+Copyright 1998, 1999, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -24,37 +24,48 @@ MA 02111-1307, USA. */
 #include "longlong.h"
 
 
-/* Avoid reallocs by rounding up any new size */
-#define ROUNDUP_MASK  15
+/* Enhancement: It ought to be possible to calculate the size of the final
+   result in advance, to a rough approximation at least, and use it to do
+   just one realloc.  Stirling's approximation n! ~= sqrt(2*pi*n)*(n/e)^n
+   (Knuth section 1.2.5) might be of use.  */
 
-/* Enhancement: use mpn_divexact_1 when it exists */
-#define MULDIV()                                                \
-  MPZ_REALLOC (r, (SIZ(r)+1)|ROUNDUP_MASK);                     \
-  PTR(r)[SIZ(r)] = mpn_mul_1 (PTR(r), PTR(r), SIZ(r), nacc);    \
-  ASSERT_NOCARRY (mpn_divrem_1 (PTR(r), (mp_size_t) 0,          \
-                                PTR(r), SIZ(r)+1, kacc));       \
-  SIZ(r) += (PTR(r)[SIZ(r)] != 0);
+/* "inc" in the main loop allocates a chunk more space if not already
+   enough, so as to avoid repeated reallocs.  The final step on the other
+   hand requires only one more limb.  */
+#define MULDIV(inc)                                                     \
+  do {                                                                  \
+    ASSERT (rsize <= ralloc);                                           \
+                                                                        \
+    if (rsize == ralloc)                                                \
+      {                                                                 \
+        mp_size_t  new_ralloc = ralloc + (inc);                         \
+        rp = __GMP_REALLOCATE_FUNC_LIMBS (rp, ralloc, new_ralloc);      \
+        ralloc = new_ralloc;                                            \
+      }                                                                 \
+                                                                        \
+    rp[rsize] = mpn_mul_1 (rp, rp, rsize, nacc);                        \
+    MPN_DIVREM_OR_DIVEXACT_1 (rp, rp, rsize+1, kacc);                   \
+    rsize += (rp[rsize] != 0);                                          \
+                                                                        \
+} while (0)
 
 void
-#if __STDC__
 mpz_bin_uiui (mpz_ptr r, unsigned long int n, unsigned long int k)
-#else
-mpz_bin_uiui (r, n, k)
-     mpz_ptr r;
-     unsigned long int n;
-     unsigned long int k;
-#endif
 {
   unsigned long int  i, j;
   mp_limb_t          nacc, kacc;
   unsigned long int  cnt;
+  mp_size_t          rsize, ralloc;
+  mp_ptr             rp;
 
   /* bin(n,k) = 0 if k>n. */
   if (n < k)
     {
-      mpz_set_ui (r, 0);
+      SIZ(r) = 0;
       return;
     }
+
+  rp = PTR(r);
 
   /* Rewrite bin(n,k) as bin(n,n-k) if that is smaller. */
   k = MIN (k, n-k);
@@ -62,12 +73,15 @@ mpz_bin_uiui (r, n, k)
   /* bin(n,0) = 1 */
   if (k == 0)
     {
-      mpz_set_ui (r, 1);
+      SIZ(r) = 1;
+      rp[0] = 1;
       return;
     }
 
   j = n - k + 1;
-  mpz_set_ui (r, j);
+  rp[0] = j;
+  rsize = 1;
+  ralloc = ALLOC(r);
 
   /* Initialize accumulators.  */
   nacc = 1;
@@ -101,14 +115,15 @@ mpz_bin_uiui (r, n, k)
       umul_ppmm (k1, k0, kacc, i);
       if (n1 != 0)
         {
-          /* Accumulator overflow.  Perform bignum step.  */
-          MULDIV ();
+          /* Accumulator overflow.  Perform bignum step. */
+          MULDIV (32);
           nacc = j;
           kacc = i;
         }
       else
         {
-          if (k1 != 0) abort ();
+          ASSERT (k1 == 0); /* n>=k, so high k zero when high n zero */
+
           /* Save new products in accumulators to keep accumulating.  */
           nacc = n0;
           kacc = k0;
@@ -116,5 +131,9 @@ mpz_bin_uiui (r, n, k)
     }
 
   /* Take care of whatever is left in accumulators.  */
-  MULDIV ();
+  MULDIV (1);
+
+  ALLOC(r) = ralloc;
+  SIZ(r) = rsize;
+  PTR(r) = rp;
 }

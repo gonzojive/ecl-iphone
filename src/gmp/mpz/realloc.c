@@ -1,6 +1,6 @@
-/* _mpz_realloc -- make the mpz_t have NEW_SIZE digits allocated.
+/* _mpz_realloc -- make the mpz_t have NEW_ALLOC digits allocated.
 
-Copyright (C) 1991, 1993, 1994, 1995 Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 1995, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,30 +23,21 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void *
-#if __STDC__
-_mpz_realloc (mpz_ptr m, mp_size_t new_size)
-#else
-_mpz_realloc (m, new_size)
-     mpz_ptr m;
-     mp_size_t new_size;
-#endif
+_mpz_realloc (mpz_ptr m, mp_size_t new_alloc)
 {
+  mp_ptr mp;
+
   /* Never allocate zero space. */
-  if (new_size == 0)
-    new_size = 1;
+  new_alloc = MAX (new_alloc, 1);
 
-  m->_mp_d = (mp_ptr) (*_mp_reallocate_func) (m->_mp_d,
-					      m->_mp_alloc * BYTES_PER_MP_LIMB,
-					      new_size * BYTES_PER_MP_LIMB);
-  m->_mp_alloc = new_size;
+  mp = __GMP_REALLOCATE_FUNC_LIMBS (PTR(m), ALLOC(m), new_alloc);
+  PTR(m) = mp;
+  ALLOC(m) = new_alloc;
 
-#if 0
-  /* This might break some code that reads the size field after
-     reallocation, in the case the reallocated destination and a
-     source argument are identical.  */
-  if (ABS (m->_mp_size) > new_size)
-    m->_mp_size = 0;
-#endif
+  /* Don't create an invalid number; if the current value doesn't fit after
+     reallocation, clear it to 0.  */
+  if (ABSIZ(m) > new_alloc)
+    SIZ(m) = 0;
 
-  return (void *) m->_mp_d;
+  return (void *) mp;
 }

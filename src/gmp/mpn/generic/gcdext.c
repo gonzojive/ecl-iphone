@@ -1,6 +1,6 @@
 /* mpn_gcdext -- Extended Greatest Common Divisor.
 
-Copyright (C) 1996, 1998, 2000 Free Software Foundation, Inc.
+Copyright 1996, 1998, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -71,16 +71,7 @@ int arr[BITS_PER_MP_LIMB];
 /* Division optimized for small quotients.  If the quotient is more than one limb,
    store 1 in *qh and return 0.  */
 static mp_limb_t
-#if __STDC__
 div2 (mp_limb_t *qh, mp_limb_t n1, mp_limb_t n0, mp_limb_t d1, mp_limb_t d0)
-#else
-div2 (qh, n1, n0, d1, d0)
-     mp_limb_t *qh;
-     mp_limb_t n1;
-     mp_limb_t n0;
-     mp_limb_t d1;
-     mp_limb_t d0;
-#endif
 {
   if (d1 == 0)
     {
@@ -146,31 +137,11 @@ div2 (qh, n1, n0, d1, d0)
 
 mp_size_t
 #if EXTEND
-#if __STDC__
 mpn_gcdext (mp_ptr gp, mp_ptr s0p, mp_size_t *s0size,
 	    mp_ptr up, mp_size_t size, mp_ptr vp, mp_size_t vsize)
 #else
-mpn_gcdext (gp, s0p, s0size, up, size, vp, vsize)
-     mp_ptr gp;
-     mp_ptr s0p;
-     mp_size_t *s0size;
-     mp_ptr up;
-     mp_size_t size;
-     mp_ptr vp;
-     mp_size_t vsize;
-#endif
-#else
-#if __STDC__
 mpn_gcd (mp_ptr gp,
 	 mp_ptr up, mp_size_t size, mp_ptr vp, mp_size_t vsize)
-#else
-mpn_gcd (gp, up, size, vp, vsize)
-     mp_ptr gp;
-     mp_ptr up;
-     mp_size_t size;
-     mp_ptr vp;
-     mp_size_t vsize;
-#endif
 #endif
 {
   mp_limb_t A, B, C, D;
@@ -188,17 +159,31 @@ mpn_gcd (gp, up, size, vp, vsize)
   int use_double_flag;
   TMP_DECL (mark);
 
+  ASSERT (size >= vsize);
+  ASSERT (vsize >= 1);
+  ASSERT (up[size-1] != 0);
+  ASSERT (vp[vsize-1] != 0);
+  ASSERT (! MPN_OVERLAP_P (up, size+1, vp, vsize+1));
+#if EXTEND
+  ASSERT (! MPN_OVERLAP_P (s0p, size, up, size+1));
+  ASSERT (! MPN_OVERLAP_P (s0p, size, vp, vsize+1));
+#endif
+  ASSERT (MPN_SAME_OR_SEPARATE_P (gp, up, size));
+  ASSERT (MPN_SAME_OR_SEPARATE2_P (gp, size, vp, vsize));
+
   TMP_MARK (mark);
 
-  use_double_flag = (size >= GCDEXT_THRESHOLD);
+  use_double_flag = ABOVE_THRESHOLD (size, GCDEXT_THRESHOLD);
 
   tp = (mp_ptr) TMP_ALLOC ((size + 1) * BYTES_PER_MP_LIMB);
   wp = (mp_ptr) TMP_ALLOC ((size + 1) * BYTES_PER_MP_LIMB);
 #if EXTEND
   s1p = (mp_ptr) TMP_ALLOC ((size + 1) * BYTES_PER_MP_LIMB);
 
+#if ! WANT_GCDEXT_ONE_STEP
   MPN_ZERO (s0p, size);
   MPN_ZERO (s1p, size);
+#endif
 
   s0p[0] = 1;
   s1p[0] = 0;
@@ -455,13 +440,6 @@ mpn_gcd (gp, up, size, vp, vsize)
 		    cy = mpn_addmul_1 (tp + i, up + vsize, qsize, s1p[i]);
 		    tp[qsize + i] = cy;
 		  }
-		if (qh != 0)
-		  {
-		    mp_limb_t cy;
-		    cy = mpn_add_n (tp + qsize, tp + qsize, s1p, ssize);
-		    if (cy != 0)
-		      abort ();
-		  }
 	      }
 	    else
 	      {
@@ -472,16 +450,16 @@ mpn_gcd (gp, up, size, vp, vsize)
 		    cy = mpn_addmul_1 (tp + i, s1p, ssize, up[vsize + i]);
 		    tp[ssize + i] = cy;
 		  }
-		if (qh != 0)
+	      }
+	    if (qh != 0)
+	      {
+		mp_limb_t cy;
+		cy = mpn_add_n (tp + qsize, tp + qsize, s1p, ssize);
+		if (cy != 0)
 		  {
-		    mp_limb_t cy;
-		    cy = mpn_add_n (tp + qsize, tp + qsize, s1p, ssize);
-		    if (cy != 0)
-		      {
-			tp[qsize + ssize] = cy;
-			s1p[qsize + ssize] = 0;
-			ssize++;
-		      }
+		    tp[qsize + ssize] = cy;
+		    s1p[qsize + ssize] = 0;
+		    ssize++;
 		  }
 	      }
 	    ssize += qsize;
@@ -538,56 +516,64 @@ mpn_gcd (gp, up, size, vp, vsize)
 	    }
 	  else
 	    {
+	      mp_limb_t cy, cy1, cy2;
+
 	      if (asign)
 		{
-		  mp_limb_t cy;
 		  mpn_mul_1 (tp, vp, size, B);
 		  mpn_submul_1 (tp, up, size, A);
 		  mpn_mul_1 (wp, up, size, C);
 		  mpn_submul_1 (wp, vp, size, D);
-		  MP_PTR_SWAP (tp, up);
-		  MP_PTR_SWAP (wp, vp);
-#if EXTEND
-		  cy = mpn_mul_1 (tp, s1p, ssize, B);
-		  cy += mpn_addmul_1 (tp, s0p, ssize, A);
-		  tp[ssize] = cy;
-		  tsize = ssize + (cy != 0);
-		  cy = mpn_mul_1 (wp, s0p, ssize, C);
-		  cy += mpn_addmul_1 (wp, s1p, ssize, D);
-		  wp[ssize] = cy;
-		  wsize = ssize + (cy != 0);
-		  MP_PTR_SWAP (tp, s0p);
-		  MP_PTR_SWAP (wp, s1p);
-		  ssize = MAX (wsize, tsize);
-#endif
 		}
 	      else
 		{
-		  mp_limb_t cy;
 		  mpn_mul_1 (tp, up, size, A);
 		  mpn_submul_1 (tp, vp, size, B);
 		  mpn_mul_1 (wp, vp, size, D);
 		  mpn_submul_1 (wp, up, size, C);
-		  MP_PTR_SWAP (tp, up);
-		  MP_PTR_SWAP (wp, vp);
-#if EXTEND
-		  cy = mpn_mul_1 (tp, s0p, ssize, A);
-		  cy += mpn_addmul_1 (tp, s1p, ssize, B);
-		  tp[ssize] = cy;
-		  tsize = ssize + (cy != 0);
-		  cy = mpn_mul_1 (wp, s1p, ssize, D);
-		  cy += mpn_addmul_1 (wp, s0p, ssize, C);
-		  wp[ssize] = cy;
-		  wsize = ssize + (cy != 0);
-		  MP_PTR_SWAP (tp, s0p);
-		  MP_PTR_SWAP (wp, s1p);
-		  ssize = MAX (wsize, tsize);
-#endif
 		}
-	    }
+	      MP_PTR_SWAP (tp, up);
+	      MP_PTR_SWAP (wp, vp);
+#if EXTEND
+	      /* Compute new s0 */
+	      cy1 = mpn_mul_1 (tp, s0p, ssize, A);
+	      cy2 = mpn_addmul_1 (tp, s1p, ssize, B);
+	      cy = cy1 + cy2;
+	      tp[ssize] = cy;
+	      tsize = ssize + (cy != 0);
+	      if (cy < cy1)
+		{
+		  abort ();
+		  /* Should not happen, even it can happen below.  */
+		}
 
+	      /* Compute new s1 */
+	      cy1 = mpn_mul_1 (wp, s1p, ssize, D);
+	      cy2 = mpn_addmul_1 (wp, s0p, ssize, C);
+	      cy = cy1 + cy2;
+	      wp[ssize] = cy;
+	      wsize = ssize + (cy != 0);
+	      if (cy < cy1)
+		{
+		  wp[wsize] = 1;
+		  tp[wsize] = 0; /* Safe, s0 (here stored at tp) will be
+				    smaller than s1 (stored at wp), so
+				    we don't risk to overwrite s0's
+				    most significant limb.  */
+		  wsize++;
+		}
+
+	      MP_PTR_SWAP (tp, s0p);
+	      MP_PTR_SWAP (wp, s1p);
+	      ssize = MAX (wsize, tsize);
+#endif
+	    }
 	  size -= up[size - 1] == 0;
 	}
+
+#if WANT_GCDEXT_ONE_STEP
+      return 0;
+#endif
     }
 
 #if RECORD

@@ -1,7 +1,7 @@
 /* mpq_out_str(stream,base,integer) */
 
 /*
-Copyright (C) 2000 Free Software Foundation, Inc.
+Copyright 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -27,14 +27,7 @@ MA 02111-1307, USA.
 
 
 size_t
-#if __STDC__
 mpq_out_str (FILE *stream, int base, mpq_srcptr q)
-#else
-mpq_out_str (stream, base, q)
-     FILE       *stream;
-     int        base;
-     mpq_srcptr q;
-#endif
 {
   size_t  written;
 

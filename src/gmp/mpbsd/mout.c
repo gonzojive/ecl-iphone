@@ -1,6 +1,6 @@
 /* mout(MINT) -- Do decimal output of MINT to standard output.
 
-Copyright (C) 1991, 1994, 1996, 2000 Free Software Foundation, Inc.
+Copyright 1991, 1994, 1996, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -26,24 +26,19 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 void
-#if __STDC__
 mout (const MINT *x)
-#else
-mout (x)
-     const MINT *x;
-#endif
 {
   mp_ptr xp;
   mp_size_t x_size = x->_mp_size;
   unsigned char *str;
   size_t str_size;
-  char *num_to_text;
   int i;
   TMP_DECL (marker);
 
   if (x_size == 0)
     {
       fputc ('0', stdout);
+      fputc ('\n', stdout);
       return;
     }
   if (x_size < 0)

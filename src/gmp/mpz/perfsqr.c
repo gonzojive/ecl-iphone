@@ -1,7 +1,7 @@
 /* mpz_perfect_square_p(arg) -- Return non-zero if ARG is a perfect square,
    zero otherwise.
 
-Copyright (C) 1991, 1993, 1994, 1996, 2000 Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 1996, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -20,26 +20,7 @@ along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
 the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
 MA 02111-1307, USA. */
 
+#define __GMP_FORCE_mpz_perfect_square_p 1
+
 #include "gmp.h"
 #include "gmp-impl.h"
-
-int
-#if __STDC__
-mpz_perfect_square_p (mpz_srcptr a)
-#else
-mpz_perfect_square_p (a)
-     mpz_srcptr a;
-#endif
-{
-  mp_size_t asize = a->_mp_size;
-
-  /* No negative numbers are perfect squares.  */
-  if (asize < 0)
-    return 0;
-
-  /* Zero is a perfect square.  */
-  if (asize == 0)
-    return 1;
-
-  return mpn_perfect_square_p (a->_mp_d, asize);
-}

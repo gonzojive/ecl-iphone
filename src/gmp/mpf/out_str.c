@@ -2,7 +2,7 @@
    the float OP to STREAM in base BASE.  Return the number of characters
    written, or 0 if an error occurred.
 
-Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+Copyright 1996, 1997, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -21,21 +21,20 @@ along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
 the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
 MA 02111-1307, USA. */
 
+#include "config.h"
+
 #include <stdio.h>
 #include <string.h>
+
+#if HAVE_LOCALE_H
+#include <locale.h>    /* for localeconv */
+#endif
+
 #include "gmp.h"
 #include "gmp-impl.h"
 
 size_t
-#if __STDC__
 mpf_out_str (FILE *stream, int base, size_t n_digits, mpf_srcptr op)
-#else
-mpf_out_str (stream, base, n_digits, op)
-     FILE *stream;
-     int base;
-     size_t n_digits;
-     mpf_srcptr op;
-#endif
 {
   char *str;
   mp_exp_t exp;
@@ -69,8 +68,18 @@ mpf_out_str (stream, base, n_digits, op)
       n_digits--;
     }
 
+#if HAVE_LOCALECONV
+  {
+    const char  *point = localeconv()->decimal_point;
+    size_t      pointlen = strlen (point);
+    putc ('0', stream);
+    fwrite (point, 1, pointlen, stream);
+    written += pointlen + 1;
+  }
+#else
   fwrite ("0.", 1, 2, stream);
   written += 2;
+#endif
 
   /* Write mantissa */
   {

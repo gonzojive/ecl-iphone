@@ -1,7 +1,6 @@
-/* mpz_tdiv_ui(dividend, divisor_limb)
-   -- Return DIVDEND mod DIVISOR_LIMB.
+/* mpz_tdiv_ui(dividend, divisor_limb) -- Return DIVDEND mod DIVISOR_LIMB.
 
-Copyright (C) 1991, 1993, 1994, 1996, 1997, 1998 Free Software Foundation,
+Copyright 1991, 1993, 1994, 1996, 1997, 1998, 2001 Free Software Foundation,
 Inc.
 
 This file is part of the GNU MP Library.
@@ -25,29 +24,11 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 unsigned long int
-#if __STDC__
 mpz_tdiv_ui (mpz_srcptr dividend, unsigned long int divisor)
-#else
-mpz_tdiv_ui (dividend, divisor)
-     mpz_srcptr dividend;
-     unsigned long int divisor;
-#endif
 {
-  mp_size_t dividend_size;
-  mp_size_t size;
-  mp_limb_t remainder_limb;
-
   if (divisor == 0)
     DIVIDE_BY_ZERO;
 
-  dividend_size = dividend->_mp_size;
-  size = ABS (dividend_size);
-
-  /* No need for temporary allocation and copying if QUOT == DIVIDEND as
-     the divisor is just one limb, and thus no intermediate remainders
-     need to be stored.  */
-
-  remainder_limb = mpn_mod_1 (dividend->_mp_d, size, (mp_limb_t) divisor);
-
-  return remainder_limb;
+  return mpn_mod_1 (PTR(dividend), (mp_size_t) ABSIZ(dividend),
+                    (mp_limb_t) divisor);
 }

@@ -1,4 +1,4 @@
-# Copyright (C) 2000 Free Software Foundation, Inc.
+# Copyright 2000, 2001 Free Software Foundation, Inc.
 #
 # This file is part of the GNU MP Library.
 #
@@ -87,26 +87,6 @@ all	@dep@ {Lib}
 
 
 ###########################################################################
-# Special rules, got them from "mp[fqz]/Makefile.am"
-
-{MpzObjDir}mul_si.o @dep@ ::mpz:mul_siui.c Makefile
-	{C} ::mpz:mul_siui.c -o {Targ} {COptions} -d OPERATION_mul_si
-
-{MpzObjDir}mul_ui.o @dep@ ::mpz:mul_siui.c Makefile
-	{C} ::mpz:mul_siui.c -o {Targ} {COptions} -d OPERATION_mul_ui
-
-
-{MpfObjDir}floor.o @dep@ ::mpf:integer.c Makefile
-	{C} ::mpf:integer.c -o {Targ} {COptions} -d OPERATION_floor
-
-{MpfObjDir}ceil.o @dep@ ::mpf:integer.c Makefile
-	{C} ::mpf:integer.c -o {Targ} {COptions} -d OPERATION_ceil
-
-{MpfObjDir}trunc.o @dep@ ::mpf:integer.c Makefile
-	{C} ::mpf:integer.c -o {Targ} {COptions} -d OPERATION_trunc
-
-
-###########################################################################
 # Default rules/ directory rules
 
 {MpfObjDir} @dep@ ::mpf:
@@ -178,7 +158,7 @@ check @dep@ check-mpz check-mpq check-mpf
 check-mpz @dep@ z-mul z-tdiv z-tdiv_ui z-fdiv z-fdiv_ui @c@
 		z-gcd z-dive z-sqrtrem z-convert z-logic z-bit @c@
 		z-powm z-powm_ui z-pow_ui z-2exp z-reuse z-root @c@
-		z-jac z-bin z-misc
+		z-jac z-bin z-misc z-get_si z-fac_ui z-fib_ui
 
 # FIXME: Left out z-io, can't compile it.
 
@@ -245,8 +225,17 @@ z-bin @dep@ {MpzBinDir}t-bin.exe
 z-misc @dep@ {MpzBinDir}t-misc.exe
 	{MpzBinDir}t-misc.exe
 
+z-get_si @dep@ {MpzBinDir}t-get_si.exe
+	{MpzBinDir}t-get_si.exe
 
-check-mpq @dep@ q-cmp q-cmp_ui q-get_d
+z-fac_ui @dep@ {MpzBinDir}t-fac_ui.exe
+	{MpzBinDir}t-fac_ui.exe
+
+z-fib_ui @dep@ {MpzBinDir}t-fib_ui.exe
+	{MpzBinDir}t-fib_ui.exe
+
+
+check-mpq @dep@ q-cmp q-cmp_ui q-get_d q-set_f
 
 q-cmp @dep@ {MpqBinDir}t-cmp.exe
 	{MpqBinDir}t-cmp.exe
@@ -256,6 +245,9 @@ q-cmp_ui @dep@ {MpqBinDir}t-cmp_ui.exe
 
 q-get_d @dep@ {MpqBinDir}t-get_d.exe
 	{MpqBinDir}t-get_d.exe
+
+q-set_f @dep@ {MpqBinDir}t-set_f.exe
+	{MpqBinDir}t-set_f.exe
 
 
 check-mpf @dep@ f-add f-sub f-conv f-sqrt f-muldiv f-dm2exp f-reuse @c@

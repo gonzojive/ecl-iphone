@@ -1,6 +1,6 @@
 /* gmp_randinit (state, algorithm, ...) -- Initialize a random state.
 
-Copyright (C) 1999, 2000  Free Software Foundation, Inc.
+Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -19,56 +19,21 @@ along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
 the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
 MA 02111-1307, USA. */
 
+#include "config.h"
+
 #include <stdio.h> /* for NULL */
-#if __STDC__
-# include <stdarg.h>
+
+#if HAVE_STDARG
+#include <stdarg.h>
 #else
-# include <varargs.h>
+#include <varargs.h>
 #endif
 
 #include "gmp.h"
 #include "gmp-impl.h"
 
-/* Array of CL-schemes, ordered in increasing order of the first
-   member (the 'm2exp' value).  The end of the array is indicated with
-   an entry containing all zeros.  */
-
-/* All multipliers are in the range 0.01*m and 0.99*m, and are
-congruent to 5 (mod 8).
-They all pass the spectral test with Vt >= 2^(30/t) and merit >= 1.
-(Up to and including 196 bits, merit is >= 3.)  */
-
-struct __gmp_rand_lc_scheme_struct
-{
-  unsigned long int m2exp;	/* Modulus is 2 ^ m2exp. */
-  char *astr;			/* Multiplier in string form. */
-  unsigned long int c;		/* Adder. */
-};
-
-struct __gmp_rand_lc_scheme_struct __gmp_rand_lc_scheme[] =
-{
-  {32, "43840821", 	     1},
-  {33, "85943917", 	     1},
-  {34, "171799469", 	     1},
-  {35, "343825285", 	     1},
-  {36, "687285701", 	     1},
-  {37, "1374564613", 	     1},
-  {38, "2749193437", 	     1},
-  {39, "5497652029", 	     1},
-  {40, "10995212661", 	     1},
-  {56, "47988680294711517",  1},
-  {64, "13469374875402548381", 1},
-  {100, "203786806069096950756900463357", 1},	
-  {128, "96573135900076068624591706046897650309", 1},
-  {156, "43051576988660538262511726153887323360449035333", 1},
-  {196, "1611627857640767981443524165616850972435303571524033586421", 1},
-  {200, "491824250216153841876046962368396460896019632211283945747141", 1},
-  {256, "79336254595106925775099152154558630917988041692672147726148065355845551082677", 1},
-  {0, NULL, 0}			/* End of array. */
-};
-
 void
-#if __STDC__
+#if HAVE_STDARG
 gmp_randinit (gmp_randstate_t rstate,
 	      gmp_randalg_t alg,
 	      ...)
@@ -78,48 +43,29 @@ gmp_randinit (va_alist)
 #endif
 {
   va_list ap;
-#if __STDC__
+#if HAVE_STDARG
+  va_start (ap, alg);
 #else
   __gmp_randstate_struct *rstate;
   gmp_randalg_t alg;
-#endif
-
-#if __STDC__
-  va_start (ap, alg);
-#else
   va_start (ap);
-
   rstate = va_arg (ap, __gmp_randstate_struct *);
   alg = va_arg (ap, gmp_randalg_t);
 #endif
 
-  switch (alg)
-    {
-    case GMP_RAND_ALG_LC:	/* Linear congruential.  */
-      {
-	unsigned long int size;
-	struct __gmp_rand_lc_scheme_struct *sp;
-	mpz_t a;
+  switch (alg) {
+  case GMP_RAND_ALG_LC:
+    if (! gmp_randinit_lc_2exp_size (rstate, va_arg (ap, unsigned long)))
+      gmp_errno |= GMP_ERROR_INVALID_ARGUMENT;
+    break;
+  default:
+    gmp_errno |= GMP_ERROR_UNSUPPORTED_ARGUMENT;
+    break;
+  }
+  va_end (ap);
+}
 
-	size = va_arg (ap, unsigned long int);
 
-	/* Pick a scheme.  */
-	for (sp = __gmp_rand_lc_scheme; sp->m2exp != 0; sp++)
-	  if (sp->m2exp / 2 >= size)
-	    break;
-
-	if (sp->m2exp == 0)	/* Nothing big enough found.  */
-	  {
-	    gmp_errno |= GMP_ERROR_INVALID_ARGUMENT;
-	    return;
-	  }
-
-	/* Install scheme.  */
-	mpz_init_set_str (a, sp->astr, 0);
-	gmp_randinit_lc_2exp (rstate, a, sp->c, sp->m2exp);
-	mpz_clear (a);
-	break;
-      }
 
 #if 0
     case GMP_RAND_ALG_BBS:	/* Blum, Blum, and Shub. */
@@ -137,7 +83,7 @@ gmp_randinit (va_alist)
 	
 	/* Allocate algorithm specific data. */
 	rstate->data.bbs = (__gmp_rand_data_bbs *)
-	  (*_mp_allocate_func) (sizeof (__gmp_rand_data_bbs));
+	  (*__gmp_allocate_func) (sizeof (__gmp_rand_data_bbs));
 
 	mpz_init (rstate->data.bbs->bi); /* The Blum integer. */
 	mpz_mul (rstate->data.bbs->bi, p, q);
@@ -162,10 +108,3 @@ gmp_randinit (va_alist)
 	break;
       }
 #endif /* 0 */
-
-    default:			/* Bad choice. */
-      gmp_errno |= GMP_ERROR_UNSUPPORTED_ARGUMENT;
-    }
-
-  va_end (ap);
-}
