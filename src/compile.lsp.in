@@ -87,7 +87,7 @@
 cp @LIBPREFIX@eclmin.@LIBEXT@ @LIBPREFIX@ecl.@LIBEXT@;
 cd tmp; ar -x ../@LIBPREFIX@lsp.@LIBEXT@;
 for i in *.@OBJEXT@; do mv $i lsp_`basename $i`; done;
-ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@; rm *.@OBJEXT@;
+ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@ ../c/all_symbols2.@OBJEXT@; rm *.@OBJEXT@;
 ranlib ../@LIBPREFIX@ecl.@LIBEXT@'")
 
 #+dlopen
