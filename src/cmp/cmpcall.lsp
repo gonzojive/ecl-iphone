@@ -272,48 +272,51 @@
 			  *linking-calls*)))
 	   (unwind-exit
 	    (call-loc fname (format nil "(*LK~d)" i) locs narg))))
-    (if (inline-possible fname)
-	(cond 
-	  ;; Open-codable function call.
-	  ((and (not (eq 'ARGS-PUSHED locs))
-		(null loc)
-		(setq loc (inline-function fname locs return-type)))
-	   (unwind-exit (fix-loc loc)))
+    (cond 
+     ;; It is not possible to inline the function call
+     ((not (inline-possible fname))
+      (if *compile-to-linking-call*
+	(emit-linking-call fname locs narg)
+	(c2call-unknown-global fname locs loc t narg)))
 
-	  ;; Call to a function defined in the same file.
-	  ((setq fd (assoc fname *global-funs*))
-	   (let ((cfun (second fd)))
-	     (unwind-exit (call-loc fname
-				    (if (numberp cfun)
-				      (format nil "L~d" cfun)
-				      cfun)
-				    locs narg))))
+     ;; Open-codable function call.
+     ((and (not (eq 'ARGS-PUSHED locs))
+	   (null loc)
+	   (setq loc (inline-function fname locs return-type)))
+      (unwind-exit (fix-loc loc)))
 
-	  ;; Call to a function whose C language function name is known,
-	  ;; either because it has been proclaimed so, or because it belongs
-	  ;; to the runtime.
-	  ((or (setq maxarg -1 fd (get fname 'Lfun))
-	       (multiple-value-setq (found fd maxarg) (si::mangle-name fname t)))
-	   (multiple-value-bind (val found)
-	       (gethash fd *compiler-declared-globals*)
-	     ;; We only write declarations for functions which are not
-	     ;; in lisp_external.h
-	     (when (and (not found) (not (si::mangle-name fname t)))
-	       (wt-h "extern cl_object " fd "();")
-	       (setf (gethash fd *compiler-declared-globals*) 1)))
-	   (unwind-exit
-	    (if (minusp maxarg)
-		(call-loc fname fd locs narg)
-		(call-loc-fixed fname fd locs narg maxarg))))
+     ;; Call to a function defined in the same file.
+     ((setq fd (assoc fname *global-funs*))
+      (let ((cfun (second fd)))
+	(unwind-exit (call-loc fname
+			       (if (numberp cfun)
+				 (format nil "L~d" cfun)
+				 cfun)
+			       locs narg))))
 
-	  ;; Linking call
-	  (*compile-to-linking-call*	; disabled within init_code
-	   (emit-linking-call fname locs narg))
+     ;; Call to a function whose C language function name is known,
+     ;; either because it has been proclaimed so, or because it belongs
+     ;; to the runtime.
+     ((or (setq maxarg -1 fd (get fname 'Lfun))
+	  (multiple-value-setq (found fd maxarg) (si::mangle-name fname t)))
+      (multiple-value-bind (val found)
+	  (gethash fd *compiler-declared-globals*)
+	;; We only write declarations for functions which are not
+	;; in lisp_external.h
+	(when (and (not found) (not (si::mangle-name fname t)))
+	  (wt-h "extern cl_object " fd "();")
+	  (setf (gethash fd *compiler-declared-globals*) 1)))
+      (unwind-exit
+       (if (minusp maxarg)
+	 (call-loc fname fd locs narg)
+	 (call-loc-fixed fname fd locs narg maxarg))))
 
-	  (t (c2call-unknown-global fname locs loc t narg)))
+     ;; Linking call
+     (*compile-to-linking-call*		; disabled within init_code
+      (emit-linking-call fname locs narg))
 
-	;; else not inline-possible
-	(emit-linking-call fname locs narg)))
+     (t (c2call-unknown-global fname locs loc t narg)))
+    )
   )
 
 ;;; Functions that use SAVE-FUNOB should rebind *temp*.

@@ -30,7 +30,8 @@
 (progn
 (load "clos/defsys.lsp")
 (proclaim '(optimize (safety 2) (space 3)))
-(sbt::operate-on-system clos :library)
+(let ((c::*compile-to-linking-call* nil))
+  (sbt::operate-on-system clos :library))
 ;(sbt::operate-on-system clos :load)
 )
 
