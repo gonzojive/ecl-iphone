@@ -2325,7 +2325,8 @@ REST:		if (stage >= AT_REST)
 			if (endp(CDR(v)) || !endp(CDDR(v)))
 				goto ILLEGAL_LAMBDA;
 			v = CADR(v);
-			assert_type_symbol(v);
+			if (context == @'function')
+				assert_type_symbol(v);
 			assert_type_symbol(key);
 		} else {
 			int intern_flag;
@@ -2475,7 +2476,7 @@ make_lambda(cl_object name, cl_object lambda) {
 	}
 	
 	if (!Null(name))
-		c_register_block(name);
+		c_register_block(si_function_block_name(name));
 
 	if ((current_pc() - label) == 1)
 		set_pc(label);
