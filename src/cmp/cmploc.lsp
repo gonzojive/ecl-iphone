@@ -64,13 +64,13 @@
 	    (wt-nl "VALUES(0)=") (wt-coerce-loc :object loc) (wt ";"))
 	   ((eq loc 'VALUES) (return-from set-loc))
 	   (t
-	    (wt-nl "VALUES(0)=") (wt-coerce-loc :object loc) (wt "; NValues=1;"))))
+	    (wt-nl "VALUES(0)=") (wt-coerce-loc :object loc) (wt "; NVALUES=1;"))))
     (RETURN
      (cond ((or is-call (eq loc 'VALUES))
 	    (wt-nl "value0=") (wt-coerce-loc :object loc) (wt ";"))
 	   ((eq loc 'RETURN) (return-from set-loc))
 	   (t
-	    (wt-nl "value0=") (wt-coerce-loc :object loc) (wt "; NValues=1;"))))
+	    (wt-nl "value0=") (wt-coerce-loc :object loc) (wt "; NVALUES=1;"))))
     (TRASH
      (cond (is-call (wt-nl "(void)" loc ";"))
 	   ((and (consp loc)

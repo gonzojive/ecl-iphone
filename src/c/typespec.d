@@ -261,7 +261,7 @@ cl_type_of(cl_object x)
 	case t_symbol:
 		if (x == Cnil)
 			t = @'null';
-		else if (x->symbol.hpack == keyword_package)
+		else if (x->symbol.hpack == cl_core.keyword_package)
 			t = @'keyword';
 		else
 			t = @'symbol';
@@ -355,6 +355,10 @@ cl_type_of(cl_object x)
 #ifdef ECL_FFI
 	case t_foreign:
 		t = @'si::foreign-data'; break;
+#endif
+#ifdef ECL_THREADS
+	case t_thread:
+		t = @'si::thread'; break;
 #endif
 	default:
 		error("not a lisp data object");

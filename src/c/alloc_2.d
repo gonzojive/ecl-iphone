@@ -14,8 +14,7 @@
 
 #include "ecl.h"
 #include "page.h"
-#include "gc.h"
-#include "private/gc_priv.h"
+#include "gc/gc.h"
 
 #ifdef GBC_BOEHM
 
@@ -126,6 +125,7 @@ init_tm(cl_type t, char *name, cl_index elsize)
 
 static int alloc_initialized = FALSE;
 
+extern void (*GC_push_other_roots)();
 static void (*old_GC_push_other_roots)();
 
 void
@@ -172,6 +172,9 @@ init_alloc(void)
 #ifdef ECL_FFI
 	init_tm(t_instance, "FOREIGN", sizeof(struct ecl_foreign));
 #endif
+#ifdef ECL_THREADS
+	init_tm(t_thread, "THREAD", sizeof(struct ecl_thread));
+#endif
 #ifdef THREADS
 	init_tm(t_cont, "CONT", sizeof(struct ecl_cont));
 	init_tm(t_thread, "THREAD", sizeof(struct ecl_thread));
@@ -186,26 +189,55 @@ init_alloc(void)
  **********************************************************/
 
 static void
-stacks_scanner(void)
+ecl_mark_env(struct cl_env_struct *env)
 {
 #if 1
-	if (cl_stack) {
-		GC_push_conditional(cl_stack, cl_stack_top,1);
-		GC_set_mark_bit(cl_stack);
+	if (env->stack) {
+		GC_push_conditional(env->stack, env->stack_top,1);
+		GC_set_mark_bit(env->stack);
 	}
-	if (frs_top) {
-		GC_push_conditional(frs_org, frs_top+1,1);
-		GC_set_mark_bit(frs_org);
+	if (env->frs_top) {
+		GC_push_conditional(env->frs_org, env->frs_top+1,1);
+		GC_set_mark_bit(env->frs_org);
 	}
-	if (bds_top) {
-		GC_push_conditional(bds_org, bds_top+1,1);
-		GC_set_mark_bit(bds_org);
+	if (env->bds_top) {
+		GC_push_conditional(env->bds_org, env->bds_top+1,1);
+		GC_set_mark_bit(env->bds_org);
 	}
-	GC_push_all(cl_symbols, cl_symbols + cl_num_symbols_in_core);
-	GC_push_all(&lex_env, (&lex_env)+1);
 #endif
-	if (NValues)
-		GC_push_all(Values, Values+NValues+1);
+#if 0
+	GC_push_all(&(env->lex_env), &(env->lex_env)+1);
+	GC_push_all(&(env->token), &(env->print_base));
+	GC_push_all(&(env->circle_stack), &(env->qh));
+	GC_push_all(env->big_register, env->big_register + 3);
+	if (env->nvalues)
+		GC_push_all(env->values, env->values + env->nvalues + 1);
+#else
+	/*memset(env->values[env->nvalues], 0, (64-env->nvalues)*sizeof(cl_object));*/
+	GC_push_all(env, env + 1);
+#endif
+}
+
+static void
+stacks_scanner(void)
+{
+#ifdef ECL_THREADS
+	cl_object l = cl_core.threads;
+	struct cl_env_struct cl_env_ptr;
+	if (l == OBJNULL) {
+		ecl_mark_env(&cl_env);
+	} else {
+		for (l = cl_core.threads; l != Cnil; l = CDR(l)) {
+			cl_object thread = CAR(l);
+			struct cl_env_struct *env = thread->thread.env;
+			ecl_mark_env(env);
+		}
+	}
+#else
+	ecl_mark_env(&cl_env);
+#endif
+	GC_push_all(&cl_core, &cl_core + 1);
+	GC_push_all(cl_symbols, cl_symbols + cl_num_symbols_in_core);
 	if (old_GC_push_other_roots)
 		(*old_GC_push_other_roots)();
 }

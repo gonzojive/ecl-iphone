@@ -18,7 +18,6 @@
 static cl_object si_simple_toplevel ()
 {
 	cl_object sentence;
-	cl_object lex_old = lex_env;
 	int i;
 
 	/* Simple minded top level loop */
@@ -27,7 +26,6 @@ static cl_object si_simple_toplevel ()
 #ifdef TK
 	StdinResume();
 #endif
-	lex_new();
 	for (i = 1; i<fix(si_argc()); i++) {
 	  cl_object arg = si_argv(MAKE_FIXNUM(i));
 	  cl_load(1, arg);
@@ -42,7 +40,6 @@ static cl_object si_simple_toplevel ()
 	  StdinResume();
 #endif
 	}
-	lex_env = lex_old;
 }
 
 int
@@ -53,7 +50,7 @@ main(int argc, char **args)
 	/* This should be always the first call */
 	cl_boot(argc, args);
 
-	SYM_VAL(@'*package*') = system_package;
+	SYM_VAL(@'*package*') = cl_core.system_package;
 	SYM_VAL(@'*features*') = CONS(make_keyword("ECL-MIN"), SYM_VAL(@'*features*'));
 #ifdef CLOS
 	SYM_VAL(@'*features*') = CONS(make_keyword("WANTS-CLOS"), SYM_VAL(@'*features*'));
@@ -64,7 +61,7 @@ main(int argc, char **args)
 #ifdef CLX
 	SYM_VAL(@'*features*') = CONS(make_keyword("WANTS-CLX"), SYM_VAL(@'*features*'));
 #endif
-	top_level = _intern("TOP-LEVEL", system_package);
+	top_level = _intern("TOP-LEVEL", cl_core.system_package);
 	cl_def_c_function(top_level, si_simple_toplevel, 0);
 	funcall(1, top_level);
 	return(0);

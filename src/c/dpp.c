@@ -738,7 +738,7 @@ put_return(void)
 		fprintf(out, "cl_object value%d = %s;\n", i, result[i]);
 	  }
 	  put_tabs(t);
-	  fprintf(out, "NValues = %d;\n", nres);
+	  fprintf(out, "NVALUES = %d;\n", nres);
 	  for (i = nres-1;  i > 0;  i--) {
 		put_tabs(t);
 		fprintf(out, "VALUES(%d) = value%d;\n", i, i);

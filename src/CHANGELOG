@@ -1671,6 +1671,21 @@ ECL 0.9d
     ABIs (i.e. applications may use 32-bit or 64-pointers, 32-bit or
     64-registers, etc).
 
+* System design: Multithreading
+
+  - Almost all data specific to ECL has migrated into two structures:
+    CL_ENV and CL_CORE. The first one contains stacks and other data
+    that is specific to a process. The second one contains data common
+    to the whole environment. CL_ENV is an actual variable in
+    single-threaded ECL, and a pointer to a thread-local structure in
+    a multi-threaded ECL.
+
+  - The implementation of thread-local dynamic bindings uses hash
+    tables to keep the value of the symbols.
+
+  - The actual implementation uses POSIX threads under Linux. Ports to
+    other operating systems are being worked out.
+
 * Errors fixed:
 
   - Bugs in the mechanism for automatically creating packages when
@@ -1687,9 +1702,9 @@ ECL 0.9d
 * Visible changes:
 
   - New command line options -shell and -norc, which are useful for
-    scripting. New handling of command line options, is more robust
-    and allows combining the options -load, -eval, -shell in a number
-    of ways.
+    scripting. New and more robust handling of command line options,
+    permits combining (and repeating) the options -load, -eval, -shell
+    in a number of ways.
 
 TODO:
 =====

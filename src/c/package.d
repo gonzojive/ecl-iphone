@@ -18,27 +18,11 @@
 #include "ecl.h"
 #include "internal.h"
 
-/******************************* EXPORTS ******************************/
-
-cl_object lisp_package;
-cl_object user_package;
-cl_object keyword_package;
-cl_object system_package;
-#ifdef CLOS
-cl_object clos_package;
-#endif
-#ifdef TK
-cl_object tk_package;
-#endif
-
 /******************************* ------- ******************************/
 
 #define	INTERNAL	1
 #define	EXTERNAL	2
 #define	INHERITED	3
-
-cl_object ecl_package_list = Cnil;
-static cl_object uninterned_list = Cnil;
 
 static void
 FEpackage_error(char *message, cl_object package, int narg, ...)
@@ -110,8 +94,8 @@ make_package(cl_object name, cl_object nicknames, cl_object use_list)
 	assert_type_proper_list(nicknames);
 	assert_type_proper_list(use_list);
 
-	if (ecl_packages_to_be_created != OBJNULL) {
-		cl_object *p = &ecl_packages_to_be_created;
+	if (cl_core.packages_to_be_created != OBJNULL) {
+		cl_object *p = &cl_core.packages_to_be_created;
 		for (x = *p; x != Cnil; ) {
 			if (equal(CAAR(x), name)) {
 				*p = CDR(x);
@@ -155,7 +139,7 @@ make_package(cl_object name, cl_object nicknames, cl_object use_list)
 		x->pack.uses = CONS(y, x->pack.uses);
 		y->pack.usedby = CONS(x, y->pack.usedby);
 	}
-	ecl_package_list = CONS(x, ecl_package_list);
+	cl_core.packages = CONS(x, cl_core.packages);
 	return(x);
 }
 
@@ -211,8 +195,8 @@ find_package(cl_object name)
 	if (type_of(name) == t_package)
 		return name;
 	name = cl_string(name);
-	/* INV: ecl_package_list is a proper list */
-	for (l = ecl_package_list; CONSP(l); l = CDR(l)) {
+	/* INV: cl_core.packages is a proper list */
+	for (l = cl_core.packages; CONSP(l); l = CDR(l)) {
 		p = CAR(l);
 		if (string_eq(name, p->pack.name))
 			return p;
@@ -241,7 +225,7 @@ current_package(void)
 
 	x = symbol_value(@'*package*');
 	if (type_of(x) != t_package) {
-		SYM_VAL(@'*package*') = user_package;
+		ECL_SETQ(@'*package*', cl_core.user_package);
 		FEerror("The value of *PACKAGE*, ~S, was not a package",
 			1, x);
 	}
@@ -272,7 +256,7 @@ intern(cl_object name, cl_object p, int *intern_flag)
 		return s;
 	}
 	/* Keyword package has no intern section nor can it be used */
-	if (p == keyword_package) goto INTERN;
+	if (p == cl_core.keyword_package) goto INTERN;
 	s = gethash_safe(name, p->pack.internal, OBJNULL);
 	if (s != OBJNULL) {
 		*intern_flag = INTERNAL;
@@ -292,9 +276,9 @@ intern(cl_object name, cl_object p, int *intern_flag)
 	s = make_symbol(name);
 	s->symbol.hpack = p;
 	*intern_flag = 0;
-	if (p == keyword_package) {
+	if (p == cl_core.keyword_package) {
 		s->symbol.stype = stp_constant;
-		SYM_VAL(s) = s;
+		ECL_SET(s, s);
 		sethash(name, p->pack.external, s);
 	} else {
 		sethash(name, p->pack.internal, s);
@@ -317,7 +301,7 @@ find_symbol(cl_object name, cl_object p, int *intern_flag)
 		*intern_flag = EXTERNAL;
 		return s;
 	}
-	if (p == keyword_package) goto RETURN;
+	if (p == cl_core.keyword_package) goto RETURN;
 	s = gethash_safe(name, p->pack.internal, OBJNULL);
 	if (s != OBJNULL) {
 		*intern_flag = INTERNAL;
@@ -392,8 +376,6 @@ UNINTERN:
 	remhash(s->symbol.name, hash);
 	if (s->symbol.hpack == p)
 		s->symbol.hpack = Cnil;
-	if (s->symbol.stype != stp_ordinary)
-		uninterned_list = CONS(s, uninterned_list);
 	return(TRUE);
 }
 
@@ -449,7 +431,7 @@ cl_delete_package(cl_object p)
 		CEpackage_error("Cannot delete locked package ~S.", p, 0);
 	if (Null(p->pack.name))
 		@(return Cnil)
-	if (p == lisp_package || p == keyword_package)
+	if (p == cl_core.lisp_package || p == cl_core.keyword_package)
 		FEpackage_error("Cannot remove package ~S", p, 0);
 	for (list = p->pack.uses; !endp(list); list = CDR(list))
 		unuse_package(CAR(list), p);
@@ -461,7 +443,7 @@ cl_delete_package(cl_object p)
 	for (hash = p->pack.external, i = 0; i < hash->hash.size; i++)
 		if (hash->hash.data[i].key != OBJNULL)
 			unintern(hash->hash.data[i].value, p);
-	delete_eq(p, &ecl_package_list);
+	delete_eq(p, &cl_core.packages);
 	p->pack.shadowings = Cnil;
 	p->pack.name = Cnil;
 	@(return Ct)
@@ -475,9 +457,9 @@ cl_unexport2(cl_object s, cl_object p)
 
 	assert_type_symbol(s);
 	p = si_coerce_to_package(p);
-	if (p == keyword_package)
+	if (p == cl_core.keyword_package)
 		FEpackage_error("Cannot unexport a symbol from the keyword package.",
-				keyword_package, 0);
+				cl_core.keyword_package, 0);
 	if (p->pack.locked)
 		CEpackage_error("Cannot unexport symbol ~S from locked package ~S.",
 				p, 2, s, p);
@@ -546,8 +528,6 @@ shadowing_import(cl_object s, cl_object p)
 			remhash(x->symbol.name, p->pack.external);
 		if (x->symbol.hpack == p)
 			x->symbol.hpack = Cnil;
-		if (x->symbol.stype != stp_ordinary)
-			uninterned_list = CONS(x, uninterned_list);
 	}
 	p->pack.shadowings = CONS(s, p->pack.shadowings);
 	sethash(s->symbol.name, p->pack.internal, s);
@@ -582,14 +562,14 @@ use_package(cl_object x, cl_object p)
 	int intern_flag;
 
 	x = si_coerce_to_package(x);
-	if (x == keyword_package)
-		FEpackage_error("Cannot use keyword package.", keyword_package, 0);
+	if (x == cl_core.keyword_package)
+		FEpackage_error("Cannot use keyword package.", cl_core.keyword_package, 0);
 	p = si_coerce_to_package(p);
 	if (p->pack.locked)
 		CEpackage_error("Cannot use package ~S in locked package ~S.",
 				p, 2, x, p);
-	if (p == keyword_package)
-		FEpackage_error("Cannot use in keyword package.", keyword_package, 0);
+	if (p == cl_core.keyword_package)
+		FEpackage_error("Cannot use in keyword package.", cl_core.keyword_package, 0);
 	if (p == x)
 		return;
 	if (member_eq(x, p->pack.uses))
@@ -623,7 +603,7 @@ unuse_package(cl_object x, cl_object p)
 	delete_eq(p, &x->pack.usedby);
 }
 
-@(defun make_package (pack_name &key nicknames (use CONS(lisp_package, Cnil)))
+@(defun make_package (pack_name &key nicknames (use CONS(cl_core.lisp_package, Cnil)))
 @
 	/* INV: make_package() performs type checking */
 	@(return make_package(pack_name, nicknames, use))
@@ -633,7 +613,7 @@ cl_object
 si_select_package(cl_object pack_name)
 {
 	cl_object p = si_coerce_to_package(pack_name);
-	@(return (SYM_VAL(@'*package*') = p))
+	@(return (ECL_SETQ(@'*package*', p)))
 }
 
 cl_object
@@ -699,7 +679,7 @@ si_package_lock(cl_object p, cl_object t)
 cl_object
 cl_list_all_packages()
 {
-	return cl_copy_list(ecl_package_list);
+	return cl_copy_list(cl_core.packages);
 }
 
 @(defun intern (strng &optional (p current_package()) &aux sym)
@@ -915,51 +895,4 @@ si_package_hash_tables(cl_object p)
 {
 	assert_type_package(p);
 	@(return p->pack.external p->pack.internal p->pack.uses)
-}
-
-void
-init_package(void)
-{
-	ecl_register_static_root(&ecl_package_list);
-	ecl_register_static_root(&uninterned_list);
-
-	lisp_package    = make_package(make_simple_string("COMMON-LISP"),
-				       CONS(make_simple_string("CL"),
-					    CONS(make_simple_string("LISP"),Cnil)),
-				       Cnil);
-	ecl_register_static_root(&lisp_package);
-	user_package    = make_package(make_simple_string("COMMON-LISP-USER"),
-				       CONS(make_simple_string("CL-USER"),
-					    CONS(make_simple_string("USER"),Cnil)),
-				       CONS(lisp_package, Cnil));
-	ecl_register_static_root(&user_package);
-	keyword_package = make_package(make_simple_string("KEYWORD"),
-				       Cnil, Cnil);
-	ecl_register_static_root(&keyword_package);
-	system_package  = make_package(make_simple_string("SI"),
-				       CONS(make_simple_string("SYSTEM"),
-					    CONS(make_simple_string("SYS"),
-						 Cnil)),
-				       CONS(lisp_package, Cnil));
-	ecl_register_static_root(&system_package);
-#ifdef CLOS
-	clos_package    = make_package(make_simple_string("CLOS"),
-				       Cnil,
-				       CONS(lisp_package, Cnil));
-	ecl_register_static_root(&clos_package);
-#endif
-#ifdef TK
-	tk_package      = make_package(make_simple_string("TK"),
-				       Cnil,
-				       CONS(lisp_package, Cnil));
-	ecl_register_static_root(&tk_package);
-#endif
-
-	Cnil->symbol.hpack = lisp_package;
-	cl_import2(Cnil, lisp_package);
-	cl_export2(Cnil, lisp_package);
-
-	Ct->symbol.hpack = lisp_package;
-	cl_import2(Ct, lisp_package);
-	cl_export2(Ct, lisp_package);
 }

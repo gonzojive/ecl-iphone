@@ -31,8 +31,6 @@
 # endif
 #endif
 
-static cl_object pathname_translations = Cnil;
-
 static void
 error_directory(cl_object d) {
 	FEerror("make-pathname: ~A is not a valid directory", 1, d);
@@ -234,7 +232,7 @@ parse_word(const char *s, char delim, int flags, cl_index start, cl_index end,
 	case 0:
 		if (flags & WORD_EMPTY_IS_NIL)
 			return Cnil;
-		return null_string;
+		return cl_core.null_string;
 	case 1:
 		if (s[0] == '*')
 			return @':wild';
@@ -276,7 +274,7 @@ parse_directories(const char *s, int flags, cl_index start, cl_index end,
 		cl_object part = parse_word(s, delim, flags, j, end, &i);
 		if (part == @':error' || part == Cnil)
 			break;
-		if (part == null_string) {  /* "/", ";" */
+		if (part == cl_core.null_string) {  /* "/", ";" */
 			if (j != start) {
 				if (flags & WORD_LOGICAL)
 					return @':error';
@@ -295,7 +293,7 @@ logical_hostname_p(cl_object host)
 {
 	if (type_of(host) != t_string)
 		return FALSE;
-	return !Null(@assoc(4, host, pathname_translations, @':test', @'string-equal'));
+	return !Null(@assoc(4, host, cl_core.pathname_translations, @':test', @'string-equal'));
 }
 
 /*
@@ -618,7 +616,7 @@ do_namestring(cl_object x)
 	bool logical;
 	cl_object buffer, host;
 
-	buffer = cl_token;
+	buffer = cl_env.token;
 	buffer->string.fillp = 0;
 	logical = x->pathname.logical;
 	host = x->pathname.host;
@@ -690,7 +688,7 @@ M:
 	push_string(buffer, y);
 	/* INV: pathname.version is always @':unspecific' or Cnil */
 N:
-	return copy_simple_string(cl_token);
+	return copy_simple_string(cl_env.token);
 }
 
 cl_object
@@ -907,7 +905,7 @@ cl_host_namestring(cl_object pname)
 	pname = cl_pathname(pname);
 	pname = pname->pathname.host;
 	if (Null(pname) || pname == @':wild')
-		pname = null_string;
+		pname = cl_core.null_string;
 	@(return pname)
 }
 
@@ -1063,7 +1061,7 @@ coerce_to_from_pathname(cl_object x, cl_object host)
 		FEerror("Wrong host syntax ~S", 1, host);
 
 	/* Find its translation list */
-	pair = @assoc(4, host, pathname_translations, @':test', @'string-equal');
+	pair = @assoc(4, host, cl_core.pathname_translations, @':test', @'string-equal');
 	if (set == OBJNULL)
 		@(return ((pair == Cnil)? Cnil : CADR(pair)))
 
@@ -1071,7 +1069,7 @@ coerce_to_from_pathname(cl_object x, cl_object host)
 	assert_type_list(set);
 	if (pair == Cnil) {
 		pair = CONS(host, CONS(Cnil, Cnil));
-		pathname_translations = CONS(pair, pathname_translations);
+		cl_core.pathname_translations = CONS(pair, cl_core.pathname_translations);
 	}
 	for (l = set, set = Cnil; !endp(l); l = CDR(l)) {
 		cl_object item = CAR(l);
@@ -1178,7 +1176,7 @@ copy_wildcards(cl_object *wilds_list, cl_object pattern)
 	new_string = FALSE;
 	s = pattern->string.self;
 	l = pattern->string.fillp;
-	cl_token->string.fillp = 0;
+	cl_env.token->string.fillp = 0;
 
 	for (j = i = 0; i < l; ) {
 		if (s[i] != '*') {
@@ -1186,17 +1184,17 @@ copy_wildcards(cl_object *wilds_list, cl_object pattern)
 			continue;
 		}
 		if (i != j)
-			push_c_string(cl_token, &s[j], i-j);
+			push_c_string(cl_env.token, &s[j], i-j);
 		new_string = TRUE;
 		if (endp(wilds))
 			return @':error';
-		push_string(cl_token, CAR(wilds));
+		push_string(cl_env.token, CAR(wilds));
 		wilds = CDR(wilds);
 		j = i++;
 	}
 	/* Only create a new string when needed */
 	if (new_string)
-		pattern = copy_simple_string(cl_token);
+		pattern = copy_simple_string(cl_env.token);
 	*wilds_list = wilds;
 	return pattern;
 }
@@ -1321,15 +1319,4 @@ cl_translate_logical_pathname(cl_object source)
 	}
  error:
 	FEerror("~S admits no logical pathname translations", 1, source);
-}
-
-void
-init_pathname(void)
-{
-	ecl_register_static_root(&pathname_translations);
-	SYM_VAL(@'*default-pathname-defaults*') =
-	  make_pathname(Cnil, Cnil, Cnil, Cnil, Cnil, Cnil);
-	@si::pathname-translations(2,make_simple_string("SYS"),
-				   cl_list(1,cl_list(2,make_simple_string("*.*"),
-						     make_simple_string("./*.*"))));
 }

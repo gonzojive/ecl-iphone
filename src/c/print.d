@@ -21,31 +21,12 @@
 #include <unistd.h>
 #include "internal.h"
 
-/******************************* EXPORTS ******************************/
-
-#ifndef THREADS
-bool PRINTreadably;
-bool PRINTescape;
-bool PRINTpretty;
-bool PRINTcircle;
-int PRINTbase;
-bool PRINTradix;
-cl_object PRINTcase;
-bool PRINTgensym;
-int PRINTlevel;
-int PRINTlength;
-bool PRINTarray;
-cl_object PRINTpackage;
-bool PRINTstructure;
-cl_object PRINTstream;
-#endif /* THREADS */
-
 /******************************* ------- ******************************/
 
 #define	LINE_LENGTH	72
 
 #define	to_be_escaped(c) \
-	(standard_readtable->readtable.table[(c)&0377].syntax_type \
+	(cl_core.standard_readtable->readtable.table[(c)&0377].syntax_type \
 	 != cat_constituent || \
 	 islower((c)&0377) || (c) == ':')
 
@@ -58,35 +39,6 @@ cl_object PRINTstream;
 #define	INDENT2		0405
 
 #define	mod(x)		((x)%ECL_PPRINT_QUEUE_SIZE)
-
-#ifdef THREADS
-
-#define queue             clwp->lwp_queue
-#define indent_stack      clwp->lwp_indent_stack
-#define qh         clwp->lwp_qh
-#define qt         clwp->lwp_qt
-#define qc         clwp->lwp_qc
-#define isp        clwp->lwp_isp
-#define iisp       clwp->lwp_iisp
-
-#define CIRCLEstack clwp->lwp_CIRCLEstack
-#define CIRCLEcounter clwp->lwp_CIRCLEcounter
-
-#else
-static short queue[ECL_PPRINT_QUEUE_SIZE];
-static short indent_stack[ECL_PPRINT_INDENTATION_STACK_SIZE];
-
-static int qh;
-static int qt;
-static int qc;
-static int isp;
-static int iisp;
-
-static cl_object CIRCLEstack;
-static cl_fixnum CIRCLEcounter = -2;
-#endif /* THREADS */
-
-static cl_object no_stream;
 
 static void flush_queue (bool force);
 static void write_decimal1 (cl_fixnum i);
@@ -116,21 +68,21 @@ static void
 writec_PRINTstream(int c)
 {
 	if (c == INDENT || c == INDENT1)
-		writec_stream(' ', PRINTstream);
+		writec_stream(' ', cl_env.print_stream);
 	else if (c < 0400)
-		writec_stream(c, PRINTstream);
+		writec_stream(c, cl_env.print_stream);
 }
 
 static void
 writec_queue(int c)
 {
-	if (qc >= ECL_PPRINT_QUEUE_SIZE)
+	if (cl_env.qc >= ECL_PPRINT_QUEUE_SIZE)
 		flush_queue(FALSE);
-	if (qc >= ECL_PPRINT_QUEUE_SIZE)
+	if (cl_env.qc >= ECL_PPRINT_QUEUE_SIZE)
 		FEerror("Can't pretty-print.", 0);
-	queue[qt] = c;
-	qt = mod(qt+1);
-	qc++;
+	cl_env.queue[cl_env.qt] = c;
+	cl_env.qt = mod(cl_env.qt+1);
+	cl_env.qc++;
 }
 
 static void
@@ -139,43 +91,43 @@ flush_queue(bool force)
 	int c, i, j, k, l, i0;
 
 BEGIN:
-	while (qc > 0) {
-		c = queue[qh];
+	while (cl_env.qc > 0) {
+		c = cl_env.queue[cl_env.qh];
 		if (c == MARK)
 			goto DO_MARK;
 		else if (c == UNMARK)
-			isp -= 2;
+			cl_env.isp -= 2;
 		else if (c == SET_INDENT)
-			indent_stack[isp] = file_column(PRINTstream);
+			cl_env.indent_stack[cl_env.isp] = file_column(cl_env.print_stream);
 		else if (c == INDENT) {
 			goto DO_INDENT;
 		} else if (c == INDENT1) {
-			i = file_column(PRINTstream)-indent_stack[isp];
-			if (i < 8 && indent_stack[isp] < LINE_LENGTH/2) {
+			i = file_column(cl_env.print_stream)-cl_env.indent_stack[cl_env.isp];
+			if (i < 8 && cl_env.indent_stack[cl_env.isp] < LINE_LENGTH/2) {
 				writec_PRINTstream(' ');
-				indent_stack[isp]
-				= file_column(PRINTstream);
+				cl_env.indent_stack[cl_env.isp]
+				= file_column(cl_env.print_stream);
 			} else {
-				if (indent_stack[isp] < LINE_LENGTH/2) {
-					indent_stack[isp]
-					= indent_stack[isp-1] + 4;
+				if (cl_env.indent_stack[cl_env.isp] < LINE_LENGTH/2) {
+					cl_env.indent_stack[cl_env.isp]
+					= cl_env.indent_stack[cl_env.isp-1] + 4;
 				}
 				goto DO_INDENT;
 			}
 		} else if (c == INDENT2) {
-			indent_stack[isp] = indent_stack[isp-1] + 2;
+			cl_env.indent_stack[cl_env.isp] = cl_env.indent_stack[cl_env.isp-1] + 2;
 			goto PUT_INDENT;
 		} else if (c < 0400)
 			writec_PRINTstream(c);
-		qh = mod(qh+1);
-		--qc;
+		cl_env.qh = mod(cl_env.qh+1);
+		--cl_env.qc;
 	}
 	return;
 
 DO_MARK:
-	k = LINE_LENGTH - 1 - file_column(PRINTstream);
-	for (i = 1, j = 0, l = 1;  l > 0 && i < qc && j < k;  i++) {
-		c = queue[mod(qh + i)];
+	k = LINE_LENGTH - 1 - file_column(cl_env.print_stream);
+	for (i = 1, j = 0, l = 1;  l > 0 && i < cl_env.qc && j < k;  i++) {
+		c = cl_env.queue[mod(cl_env.qh + i)];
 		if (c == MARK)
 			l++;
 		else if (c == UNMARK)
@@ -187,22 +139,22 @@ DO_MARK:
 	}
 	if (l == 0)
 		goto FLUSH;
-	if (i == qc && !force)
+	if (i == cl_env.qc && !force)
 		return;
-	qh = mod(qh+1);
-	--qc;
-	if (++isp >= ECL_PPRINT_INDENTATION_STACK_SIZE-1)
+	cl_env.qh = mod(cl_env.qh+1);
+	--cl_env.qc;
+	if (++cl_env.isp >= ECL_PPRINT_INDENTATION_STACK_SIZE-1)
 		FEerror("Can't pretty-print.", 0);
-	indent_stack[isp++] = file_column(PRINTstream);
-	indent_stack[isp] = indent_stack[isp-1];
+	cl_env.indent_stack[cl_env.isp++] = file_column(cl_env.print_stream);
+	cl_env.indent_stack[cl_env.isp] = cl_env.indent_stack[cl_env.isp-1];
 	goto BEGIN;
 
 DO_INDENT:
-	if (iisp > isp)
+	if (cl_env.iisp > cl_env.isp)
 		goto PUT_INDENT;
-	k = LINE_LENGTH - 1 - file_column(PRINTstream);
-	for (i0 = 0, i = 1, j = 0, l = 1;  i < qc && j < k;  i++) {
-		c = queue[mod(qh + i)];
+	k = LINE_LENGTH - 1 - file_column(cl_env.print_stream);
+	for (i0 = 0, i = 1, j = 0, l = 1;  i < cl_env.qc && j < k;  i++) {
+		c = cl_env.queue[mod(cl_env.qh + i)];
 		if (c == MARK)
 			l++;
 		else if (c == UNMARK) {
@@ -228,7 +180,7 @@ DO_INDENT:
 		} else if (c < 0400)
 			j++;
 	}
-	if (i == qc && !force)
+	if (i == cl_env.qc && !force)
 		return;
 	if (i0 == 0)
 		goto PUT_INDENT;
@@ -236,23 +188,23 @@ DO_INDENT:
 	goto FLUSH;
 
 PUT_INDENT:
-	qh = mod(qh+1);
-	--qc;
+	cl_env.qh = mod(cl_env.qh+1);
+	--cl_env.qc;
 	writec_PRINTstream('\n');
-	for (i = indent_stack[isp];  i > 0;  --i)
+	for (i = cl_env.indent_stack[cl_env.isp];  i > 0;  --i)
 		writec_PRINTstream(' ');
-	iisp = isp;
+	cl_env.iisp = cl_env.isp;
 	goto BEGIN;
 
 FLUSH:
 	for (j = 0;  j < i;  j++) {
-		c = queue[qh];
+		c = cl_env.queue[cl_env.qh];
 		if (c == INDENT || c == INDENT1 || c == INDENT2)
 			writec_PRINTstream(' ');
 		else if (c < 0400)
 			writec_PRINTstream(c);
-		qh = mod(qh+1);
-		--qc;
+		cl_env.qh = mod(cl_env.qh+1);
+		--cl_env.qc;
 	}
 	goto BEGIN;
 }
@@ -260,12 +212,12 @@ FLUSH:
 static void
 write_ch(int c)
 {
-	if (PRINTpretty)
+	if (cl_env.print_pretty)
 		writec_queue(c);
 	else if (c == INDENT || c == INDENT1)
-		writec_stream(' ', PRINTstream);
+		writec_stream(' ', cl_env.print_stream);
 	else if (c < 0400)
-		writec_stream(c, PRINTstream);
+		writec_stream(c, cl_env.print_stream);
 }
 
 static void
@@ -312,20 +264,20 @@ write_addr(cl_object x)
 static void
 write_base(void)
 {
-	if (PRINTbase == 2)
+	if (cl_env.print_base == 2)
 		write_str("#b");
-	else if (PRINTbase == 8)
+	else if (cl_env.print_base == 8)
 		write_str("#o");
-	else if (PRINTbase == 16)
+	else if (cl_env.print_base == 16)
 		write_str("#x");
-	else if (PRINTbase >= 10) {
+	else if (cl_env.print_base >= 10) {
 		write_ch('#');
-		write_ch(PRINTbase/10+'0');
-		write_ch(PRINTbase%10+'0');
+		write_ch(cl_env.print_base/10+'0');
+		write_ch(cl_env.print_base%10+'0');
 		write_ch('r');
 	} else {
 		write_ch('#');
-		write_ch(PRINTbase+'0');
+		write_ch(cl_env.print_base+'0');
 		write_ch('r');
 	}
 }
@@ -473,18 +425,18 @@ call_print_object(cl_object x, int level)
 call_structure_print_function(cl_object x, int level)
 #endif
 {
-	bool re = PRINTreadably;
-	bool e = PRINTescape;
-	bool r = PRINTradix;
-	int b = PRINTbase;
-	bool c = PRINTcircle;
-	bool p = PRINTpretty;
-	int lv = PRINTlevel;
-	int ln = PRINTlength;
-	bool g = PRINTgensym;
-	bool a = PRINTarray;
-	cl_object ps = PRINTstream;
-	cl_object pc = PRINTcase;
+	bool re = cl_env.print_readably;
+	bool e = cl_env.print_escape;
+	bool r = cl_env.print_radix;
+	int b = cl_env.print_base;
+	bool c = cl_env.print_circle;
+	bool p = cl_env.print_pretty;
+	int lv = cl_env.print_level;
+	int ln = cl_env.print_length;
+	bool g = cl_env.print_gensym;
+	bool a = cl_env.print_array;
+	cl_object ps = cl_env.print_stream;
+	cl_object pc = cl_env.print_case;
 
 	short ois[ECL_PPRINT_INDENTATION_STACK_SIZE];
 
@@ -502,55 +454,55 @@ call_structure_print_function(cl_object x, int level)
 		terminal_interrupt(TRUE);
 	}
 
-	if (PRINTpretty)
+	if (cl_env.print_pretty)
 		flush_queue(TRUE);
 
-	oqh = qh;
-	oqt = qt;
-	oqc = qc;
-	oisp = isp;
-	oiisp = iisp;
-	memcpy(ois, indent_stack, isp * sizeof(*ois));
+	oqh = cl_env.qh;
+	oqt = cl_env.qt;
+	oqc = cl_env.qc;
+	oisp = cl_env.isp;
+	oiisp = cl_env.iisp;
+	memcpy(ois, cl_env.indent_stack, cl_env.isp * sizeof(*ois));
 
 	CL_UNWIND_PROTECT_BEGIN {
-		bds_bind(@'*print-readably*', PRINTreadably?Ct:Cnil);
-		bds_bind(@'*print-escape*', PRINTescape?Ct:Cnil);
-		bds_bind(@'*print-radix*', PRINTradix?Ct:Cnil);
-		bds_bind(@'*print-base*', MAKE_FIXNUM(PRINTbase));
-		bds_bind(@'*print-circle*', PRINTcircle?Ct:Cnil);
-		bds_bind(@'*print-pretty*', PRINTpretty?Ct:Cnil);
-		bds_bind(@'*print-level*', PRINTlevel<0?Cnil:MAKE_FIXNUM(PRINTlevel));
-		bds_bind(@'*print-length*', PRINTlength<0?Cnil:MAKE_FIXNUM(PRINTlength));
-		bds_bind(@'*print-gensym*', PRINTgensym?Ct:Cnil);
-		bds_bind(@'*print-array*', PRINTarray?Ct:Cnil);
-		bds_bind(@'*print-case*', PRINTcase);
+		bds_bind(@'*print-readably*', cl_env.print_readably?Ct:Cnil);
+		bds_bind(@'*print-escape*', cl_env.print_escape?Ct:Cnil);
+		bds_bind(@'*print-radix*', cl_env.print_radix?Ct:Cnil);
+		bds_bind(@'*print-base*', MAKE_FIXNUM(cl_env.print_base));
+		bds_bind(@'*print-circle*', cl_env.print_circle?Ct:Cnil);
+		bds_bind(@'*print-pretty*', cl_env.print_pretty?Ct:Cnil);
+		bds_bind(@'*print-level*', cl_env.print_level<0?Cnil:MAKE_FIXNUM(cl_env.print_level));
+		bds_bind(@'*print-length*', cl_env.print_length<0?Cnil:MAKE_FIXNUM(cl_env.print_length));
+		bds_bind(@'*print-gensym*', cl_env.print_gensym?Ct:Cnil);
+		bds_bind(@'*print-array*', cl_env.print_array?Ct:Cnil);
+		bds_bind(@'*print-case*', cl_env.print_case);
 #ifdef CLOS
-		funcall(3, @'print-object', x, PRINTstream);
+		funcall(3, @'print-object', x, cl_env.print_stream);
 #else
 		funcall(4, si_get_sysprop(x->str.name, @'si::structure-print-function'),
-			x, PRINTstream, MAKE_FIXNUM(level));
+			x, cl_env.print_stream, MAKE_FIXNUM(level));
 #endif
 		bds_unwind_n(11);
 	} CL_UNWIND_PROTECT_EXIT {
-		memcpy(indent_stack, ois, oisp * sizeof(*ois));
-		iisp = oiisp;
-		isp = oisp;
-		qc = oqc;
-		qt = oqt;
-		qh = oqh;
+		memcpy(cl_env.indent_stack, ois, oisp * sizeof(*ois));
+		cl_env.iisp = oiisp;
+		cl_env.isp = oisp;
+		cl_env.qc = oqc;
+		cl_env.qt = oqt;
+		cl_env.qh = oqh;
 
-		PRINTcase = pc;
-		PRINTstream = ps;
-		PRINTarray = a;
-		PRINTgensym = g;
-		PRINTlength = ln;
-		PRINTlevel = lv;
-		PRINTpretty = p;
-		PRINTcircle = c;
-		PRINTbase = b;
-		PRINTradix = r;
-		PRINTescape = e;
-		PRINTreadably = re;
+		cl_env.print_case = pc;
+		cl_env.print_stream = ps;
+		cl_env.print_array = a;
+		cl_env.print_gensym = g;
+		cl_env.print_length = ln;
+		cl_env.print_level = lv;
+		cl_env.print_pretty = p;
+		cl_env.print_circle = c;
+		cl_env.print_base = b;
+		cl_env.print_radix = r;
+		cl_env.print_escape = e;
+		cl_env.print_readably = re;
 	} CL_UNWIND_PROTECT_END;
 }
 
@@ -562,8 +514,8 @@ write_fixnum(cl_fixnum i)
 	   tagging */
 	short digits[FIXNUM_BITS];
 	int j;
-	for (j = 0;  j < FIXNUM_BITS && i != 0;  i /= PRINTbase)
-		digits[j++] = digit_weight(i%PRINTbase, PRINTbase);
+	for (j = 0;  j < FIXNUM_BITS && i != 0;  i /= cl_env.print_base)
+		digits[j++] = digit_weight(i%cl_env.print_base, cl_env.print_base);
 	while (j-- > 0)
 		write_ch(digits[j]);
 }
@@ -571,10 +523,10 @@ write_fixnum(cl_fixnum i)
 static void
 write_bignum(cl_object x)
 {
-	cl_fixnum str_size = mpz_sizeinbase(x->big.big_num, PRINTbase);
+	cl_fixnum str_size = mpz_sizeinbase(x->big.big_num, cl_env.print_base);
 	char str[str_size+2];		/* __GNUC__ */
 	char *s = str;
-	mpz_get_str(str, PRINTbase, x->big.big_num);
+	mpz_get_str(str, cl_env.print_base, x->big.big_num);
 	while (*s)
 	  write_ch(*s++);
 }
@@ -587,23 +539,23 @@ write_symbol(register cl_object x)
 	cl_object s = x->symbol.name;
 	int intern_flag;
 
-	if (!PRINTescape && !PRINTreadably) {
+	if (!cl_env.print_escape && !cl_env.print_readably) {
 		for (i = 0;  i < s->string.fillp;  i++) {
 			int c = s->string.self[i];
 			if (isupper(c) &&
-			    (PRINTcase == @':downcase' ||
-			     (PRINTcase == @':capitalize' && i != 0)))
+			    (cl_env.print_case == @':downcase' ||
+			     (cl_env.print_case == @':capitalize' && i != 0)))
 				c = tolower(c);
 			write_ch(c);
 		}
 		return;
 	}
 	if (Null(x->symbol.hpack)) {
-		if (PRINTgensym)
+		if (cl_env.print_gensym)
 			write_str("#:");
-	} else if (x->symbol.hpack == keyword_package)
+	} else if (x->symbol.hpack == cl_core.keyword_package)
 		write_ch(':');
-	else if ((PRINTpackage != OBJNULL && x->symbol.hpack != PRINTpackage)
+	else if ((cl_env.print_package != OBJNULL && x->symbol.hpack != cl_env.print_package)
 		 || find_symbol(x, current_package(), &intern_flag)!=x
 		 || intern_flag == 0) {
 		escaped = 0;
@@ -623,8 +575,8 @@ write_symbol(register cl_object x)
 			if (c == '|' || c == '\\')
 				write_ch('\\');
 			if (escaped == 0 && isupper(c) &&
-			    (PRINTcase == @':downcase' ||
-			     (PRINTcase == @':capitalize' && i!=0)))
+			    (cl_env.print_case == @':downcase' ||
+			     (cl_env.print_case == @':capitalize' && i!=0)))
 				c = tolower(c);
 			write_ch(c);
 		}
@@ -632,8 +584,8 @@ write_symbol(register cl_object x)
 			write_ch('|');
 		if (find_symbol(x, x->symbol.hpack, &intern_flag) != x)
 			error("can't print symbol");
-		if ((PRINTpackage != OBJNULL &&
-		     x->symbol.hpack != PRINTpackage)
+		if ((cl_env.print_package != OBJNULL &&
+		     x->symbol.hpack != cl_env.print_package)
 		    || intern_flag == INTERNAL)
 			write_str("::");
 		else if (intern_flag == EXTERNAL)
@@ -642,7 +594,7 @@ write_symbol(register cl_object x)
 			FEerror("Pathological symbol --- cannot print.", 0);
 	}
 	escaped = 0;
-	if (potential_number_p(s, PRINTbase))
+	if (potential_number_p(s, cl_env.print_base))
 		escaped = 1;
 	for (i = 0;  i < s->string.fillp;  i++) {
 		int c = s->string.self[i];
@@ -654,7 +606,7 @@ write_symbol(register cl_object x)
 			goto NOT_DOT;
 	escaped = 1;
 
- NOT_DOT:			
+ NOT_DOT:
 	if (escaped)
 		write_ch('|');
 	for (i = 0;  i < s->string.fillp;  i++) {
@@ -662,8 +614,8 @@ write_symbol(register cl_object x)
 		if (c == '|' || c == '\\')
 			write_ch('\\');
 		if (escaped == 0 && isupper(c) &&
-		    (PRINTcase == @':downcase' ||
-		     (PRINTcase == @':capitalize' && i != 0)))
+		    (cl_env.print_case == @':downcase' ||
+		     (cl_env.print_case == @':capitalize' && i != 0)))
 			c = tolower(c);
 		write_ch(c);
 	}
@@ -674,7 +626,7 @@ write_symbol(register cl_object x)
 static void
 write_character(register int i)
 {
-	if (!PRINTescape && !PRINTreadably) {
+	if (!cl_env.print_escape && !cl_env.print_readably) {
 		write_ch(i);
 		return;
 	}
@@ -713,15 +665,13 @@ _write_object(cl_object x, int level)
 	cl_fixnum i, j;
 	cl_index ndx, k;
 
-	cs_check(x);
-
  BEGIN:
 	if (x == OBJNULL) {
 		write_str("#<OBJNULL>");
 		return;
 	}
 
-	if (PRINTcircle &&
+	if (cl_env.print_circle &&
 	    !IMMEDIATE(x) &&
 	    !(type_of(x) == t_symbol && !Null(x->symbol.hpack)))
 	{
@@ -741,7 +691,7 @@ _write_object(cl_object x, int level)
 		return;
 
 	case t_fixnum:
-		if (PRINTradix && PRINTbase != 10)
+		if (cl_env.print_radix && cl_env.print_base != 10)
 			write_base();
 		if (x == MAKE_FIXNUM(0)) {
 			write_ch('0');
@@ -750,26 +700,26 @@ _write_object(cl_object x, int level)
 			write_fixnum(-fix(x));
 		} else
 			write_fixnum(fix(x));
-		if (PRINTradix && PRINTbase == 10)
+		if (cl_env.print_radix && cl_env.print_base == 10)
 			write_ch('.');
 		return;
 
 	case t_bignum:
-		if (PRINTradix && PRINTbase != 10)
+		if (cl_env.print_radix && cl_env.print_base != 10)
 			write_base();
 		write_bignum(x);
-		if (PRINTradix && PRINTbase == 10)
+		if (cl_env.print_radix && cl_env.print_base == 10)
 			write_ch('.');
 		return;
 
 	case t_ratio:
-		if (PRINTradix) {
+		if (cl_env.print_radix) {
 			write_base();
-			PRINTradix = FALSE;
+			cl_env.print_radix = FALSE;
 			_write_object(x->ratio.num, level);
 			write_ch('/');
 			_write_object(x->ratio.den, level);
-			PRINTradix = TRUE;
+			cl_env.print_radix = TRUE;
 		} else {
 			_write_object(x->ratio.num, level);
 			write_ch('/');
@@ -813,13 +763,13 @@ _write_object(cl_object x, int level)
 		cl_index subscripts[ARANKLIM];
 		cl_index n, m, k, i;
 
-		if (!PRINTarray && !PRINTreadably) {
+		if (!cl_env.print_array && !cl_env.print_readably) {
 			write_str("#<array ");
 			write_addr(x);
 			write_ch('>');
 			return;
 		}
-		if (!PRINTreadably && PRINTlevel >= 0 && level >= PRINTlevel) {
+		if (!cl_env.print_readably && cl_env.print_level >= 0 && level >= cl_env.print_level) {
 			write_ch('#');
 			return;
 		}
@@ -827,8 +777,8 @@ _write_object(cl_object x, int level)
 		write_ch('#');
 		write_decimal(n);
 		write_ch('A');
-		if (!PRINTreadably && PRINTlevel >= 0 && level+n >= PRINTlevel)
-			n = PRINTlevel - level;
+		if (!cl_env.print_readably && cl_env.print_level >= 0 && level+n >= cl_env.print_level)
+			n = cl_env.print_level - level;
 		for (j = 0;  j < n;  j++)
 			subscripts[j] = 0;
 		for (m = 0, j = 0;;) {
@@ -847,9 +797,9 @@ _write_object(cl_object x, int level)
 				}
 				if (subscripts[i] > 0)
 					write_ch(INDENT);
-				if (!PRINTreadably &&
-				    PRINTlength >= 0 &&
-				    subscripts[i] >= PRINTlength) {
+				if (!cl_env.print_readably &&
+				    cl_env.print_length >= 0 &&
+				    subscripts[i] >= cl_env.print_length) {
 					write_str("...)");
 					write_ch(UNMARK);
 					k=x->array.dims[i]-subscripts[i];
@@ -885,7 +835,7 @@ _write_object(cl_object x, int level)
 	}
 
 	case t_vector:
-		if (!PRINTarray && !PRINTreadably) {
+		if (!cl_env.print_array && !cl_env.print_readably) {
 			write_str("#<vector ");
 			write_decimal(x->vector.dim);
 			write_ch(' ');
@@ -893,7 +843,7 @@ _write_object(cl_object x, int level)
 			write_ch('>');
 			return;
 		}
-		if (!PRINTreadably && PRINTlevel >= 0 && level >= PRINTlevel) {
+		if (!cl_env.print_readably && cl_env.print_level >= 0 && level >= cl_env.print_level) {
 			write_ch('#');
 			return;
 		}
@@ -902,7 +852,7 @@ _write_object(cl_object x, int level)
 		write_ch('(');
 		write_ch(SET_INDENT);
 		if (x->vector.fillp > 0) {
-			if (!PRINTreadably && PRINTlength == 0) {
+			if (!cl_env.print_readably && cl_env.print_length == 0) {
 				write_str("...)");
 				write_ch(UNMARK);
 				return;
@@ -910,7 +860,7 @@ _write_object(cl_object x, int level)
 			_write_object(aref(x, 0), level+1);
 			for (ndx = 1;  ndx < x->vector.fillp;  ndx++) {
 				write_ch(INDENT);
-				if (!PRINTreadably && PRINTlength>=0 && ndx>=PRINTlength){
+				if (!cl_env.print_readably && cl_env.print_length>=0 && ndx>=cl_env.print_length){
 					write_str("...");
 					break;
 				}
@@ -922,7 +872,7 @@ _write_object(cl_object x, int level)
 		return;
 
 	case t_string:
-		if (!PRINTescape && !PRINTreadably) {
+		if (!cl_env.print_escape && !cl_env.print_readably) {
 			for (ndx = 0;  ndx < x->string.fillp;  ndx++)
 				write_ch(x->string.self[ndx]);
 			return;
@@ -938,7 +888,7 @@ _write_object(cl_object x, int level)
 		break;
 
 	case t_bitvector:
-		if (!PRINTarray && !PRINTreadably) {
+		if (!cl_env.print_array && !cl_env.print_readably) {
 			write_str("#<bit-vector ");
 			write_addr(x);
 			write_ch('>');
@@ -969,19 +919,19 @@ _write_object(cl_object x, int level)
 			x = CADR(x);
 			goto BEGIN;
 		}
-		if (!PRINTreadably && PRINTlevel >= 0 && level >= PRINTlevel) {
+		if (!cl_env.print_readably && cl_env.print_level >= 0 && level >= cl_env.print_level) {
 			write_ch('#');
 			return;
 		}
 		write_ch(MARK);
 		write_ch('(');
 		write_ch(SET_INDENT);
-		if (PRINTpretty && CAR(x) != OBJNULL &&
+		if (cl_env.print_pretty && CAR(x) != OBJNULL &&
 		    type_of(CAR(x)) == t_symbol &&
 		    (r = si_get_sysprop(CAR(x), @'si::pretty-print-format')) != Cnil)
 			goto PRETTY_PRINT_FORMAT;
 		for (i = 0;  ;  i++) {
-			if (!PRINTreadably && PRINTlength >= 0 && i >= PRINTlength) {
+			if (!cl_env.print_readably && cl_env.print_length >= 0 && i >= cl_env.print_length) {
 				write_str("...");
 				break;
 			}
@@ -990,7 +940,7 @@ _write_object(cl_object x, int level)
 			_write_object(y, level+1);
 			/* FIXME! */
 			if (x == OBJNULL || ATOM(x) ||
-			    (PRINTcircle && search_print_circle(x))) {
+			    (cl_env.print_circle && search_print_circle(x))) {
 				if (x != Cnil) {
 					write_ch(INDENT);
 					write_str(". ");
@@ -1012,7 +962,7 @@ _write_object(cl_object x, int level)
 	PRETTY_PRINT_FORMAT:
 		j = fixint(r);
 		for (i = 0;  ;  i++) {
-			if (!PRINTreadably && PRINTlength >= 0 && i >= PRINTlength) {
+			if (!cl_env.print_readably && cl_env.print_length >= 0 && i >= cl_env.print_length) {
 				write_str("...");
 				break;
 			}
@@ -1024,7 +974,7 @@ _write_object(cl_object x, int level)
 				_write_object(y, level+1);
 			/* FIXME! */
 			if (x == OBJNULL || ATOM(x) ||
-			    (PRINTcircle && search_print_circle(x))) {
+			    (cl_env.print_circle && search_print_circle(x))) {
 				if (x != Cnil) {
 					write_ch(INDENT);
 					write_str(". ");
@@ -1042,21 +992,21 @@ _write_object(cl_object x, int level)
 		goto RIGHT_PAREN;
 
 	case t_package:
-		if (PRINTreadably) FEprint_not_readable(x);
+		if (cl_env.print_readably) FEprint_not_readable(x);
 		write_str("#<");
 		_write_object(x->pack.name, level);
  		write_str(" package>");
 		break;
 
 	case t_hashtable:
-		if (PRINTreadably) FEprint_not_readable(x);
+		if (cl_env.print_readably) FEprint_not_readable(x);
 		write_str("#<hash-table ");
 		write_addr(x);
 		write_ch('>');
 		break;
 
 	case t_stream:
-		if (PRINTreadably) FEprint_not_readable(x);
+		if (cl_env.print_readably) FEprint_not_readable(x);
 		switch ((enum ecl_smmode)x->stream.mode) {
 		case smm_closed:
 			write_str("#<closed stream ");
@@ -1137,13 +1087,13 @@ _write_object(cl_object x, int level)
 
 #ifndef CLOS
 	case t_structure:
-		if (!PRINTreadably && PRINTlevel >= 0 && level >= PRINTlevel) {
+		if (!cl_env.print_readably && cl_env.print_level >= 0 && level >= cl_env.print_level) {
 			write_ch('#');
 			break;
 		}
 		if (type_of(x->str.name) != t_symbol)
 			FEwrong_type_argument(@'symbol', x->str.name);
-		if (PRINTstructure ||
+		if (cl_env.print_structure ||
 		    Null(si_get_sysprop(x->str.name, @'si::structure-print-function')))
 		{
 			write_str("#S");
@@ -1158,21 +1108,21 @@ _write_object(cl_object x, int level)
 #endif /* CLOS */
 
 	case t_readtable:
-		if (PRINTreadably) FEprint_not_readable(x);
+		if (cl_env.print_readably) FEprint_not_readable(x);
 		write_str("#<readtable ");
 		write_addr(x);
 		write_ch('>');
 		break;
 
 	case t_pathname:
-		if (PRINTescape || PRINTreadably)
+		if (cl_env.print_escape || cl_env.print_readably)
 			write_str("#P");
 		_write_object(cl_namestring(x), level);
 		break;
 
 	case t_bytecodes: {
 		cl_object name = x->bytecodes.name;
-		if (PRINTreadably) FEprint_not_readable(x);
+		if (cl_env.print_readably) FEprint_not_readable(x);
 		write_str("#<bytecompiled-function ");
 		if (name != Cnil)
 			_write_object(name, level);
@@ -1182,7 +1132,7 @@ _write_object(cl_object x, int level)
 		break;
 	}
 	case t_cfun:
-		if (PRINTreadably) FEprint_not_readable(x);
+		if (cl_env.print_readably) FEprint_not_readable(x);
 		write_str("#<compiled-function ");
 		if (x->cfun.name != Cnil)
 			_write_object(x->cfun.name, level);
@@ -1191,7 +1141,7 @@ _write_object(cl_object x, int level)
 		write_ch('>');
 		break;
 	case t_codeblock:
-		if (PRINTreadably) FEprint_not_readable(x);
+		if (cl_env.print_readably) FEprint_not_readable(x);
 		write_str("#<codeblock ");
 		if (x->cblock.name != Cnil)
 			_write_object(x->cblock.name, level);
@@ -1200,21 +1150,21 @@ _write_object(cl_object x, int level)
 		write_ch('>');
 		break;
 	case t_cclosure:
-		if (PRINTreadably) FEprint_not_readable(x);
+		if (cl_env.print_readably) FEprint_not_readable(x);
 		write_str("#<compiled-closure ");
 		write_addr(x);
 		write_ch('>');
 		break;
 #ifdef THREADS
       	case t_cont:
-		if (PRINTreadably) FEprint_not_readable(x);
+		if (cl_env.print_readably) FEprint_not_readable(x);
 		write_str("#<cont ");
 		_write_object(x->cn.cn_thread, level);
 		write_ch('>');
 		break;
 
 	case t_thread:
-		if (PRINTreadably) FEprint_not_readable(x);
+		if (cl_env.print_readably) FEprint_not_readable(x);
 		write_str("#<thread ");
 		_write_object(x->thread.entry, level);
 		write_ch(' ');
@@ -1231,15 +1181,24 @@ _write_object(cl_object x, int level)
 #endif /* CLOS */
 #ifdef ECL_FFI
 	case t_foreign:
-		if (PRINTreadably) FEprint_not_readable(x);
+		if (cl_env.print_readably) FEprint_not_readable(x);
 		write_str("#<foreign ");
 		/*_write_object(x->foreign.tag, level);*/
 		write_addr(x->foreign.data);
 		write_ch('>');
 		break;
 #endif /* ECL_FFI */
+#ifdef ECL_THREADS
+	case t_thread:
+		if (cl_env.print_readably) FEprint_not_readable(x);
+		write_str("#<thread ");
+		/*_write_object(x->foreign.tag, level);*/
+		write_addr(x->thread.pthread);
+		write_ch('>');
+		break;
+#endif /* ECL_THREADS */
 	default:
-		if (PRINTreadably) FEprint_not_readable(x);
+		if (cl_env.print_readably) FEprint_not_readable(x);
 		write_str("#<illegal pointer ");
 		write_addr(x);
 		write_ch('>');
@@ -1259,29 +1218,29 @@ search_print_circle(cl_object x)
 {
 	cl_object code;
 
-	if (CIRCLEcounter < 0) {
-		code = gethash_safe(x, CIRCLEstack, OBJNULL);
+	if (cl_env.circle_counter < 0) {
+		code = gethash_safe(x, cl_env.circle_stack, OBJNULL);
 		if (code == OBJNULL) {
 			/* Was not found before */
-			sethash(x, CIRCLEstack, Cnil);
+			sethash(x, cl_env.circle_stack, Cnil);
 			return 0;
 		} else if (code == Cnil) {
 			/* This object is referenced twice */
-			sethash(x, CIRCLEstack, Ct);
+			sethash(x, cl_env.circle_stack, Ct);
 			return 1;
 		} else {
 			return 2;
 		}
 	} else {
-		code = gethash_safe(x, CIRCLEstack, OBJNULL);
+		code = gethash_safe(x, cl_env.circle_stack, OBJNULL);
 		if (code == OBJNULL || code == Cnil) {
 			/* Is not referenced or was not found before */
-			sethash(x, CIRCLEstack, Cnil);
+			sethash(x, cl_env.circle_stack, Cnil);
 			return 0;
 		} else if (code == Ct) {
 			/* This object is referenced twice, but has no code yet */
-			cl_fixnum new_code = ++CIRCLEcounter;
-			sethash(x, CIRCLEstack, MAKE_FIXNUM(new_code));
+			cl_fixnum new_code = ++cl_env.circle_counter;
+			sethash(x, cl_env.circle_stack, MAKE_FIXNUM(new_code));
 			return -new_code;
 		} else {
 			return fix(code);
@@ -1292,7 +1251,7 @@ search_print_circle(cl_object x)
 static bool
 do_print_circle(cl_fixnum code)
 {
-	if (CIRCLEcounter < 0) {
+	if (cl_env.circle_counter < 0) {
 		/* Only run through object when it was not referenced before */
 		return (code == 0);
 	} else if (code == 0) {
@@ -1318,72 +1277,72 @@ cl_setup_printer(cl_object strm)
 {
 	cl_object y;
 
-	PRINTstream = stream_or_default_output(strm);
-	PRINTreadably = symbol_value(@'*print-readably*') != Cnil;
-	PRINTescape = symbol_value(@'*print-escape*') != Cnil;
-	PRINTpretty = symbol_value(@'*print-pretty*') != Cnil;
-	PRINTcircle = symbol_value(@'*print-circle*') != Cnil;
+	cl_env.print_stream = stream_or_default_output(strm);
+	cl_env.print_readably = symbol_value(@'*print-readably*') != Cnil;
+	cl_env.print_escape = symbol_value(@'*print-escape*') != Cnil;
+	cl_env.print_pretty = symbol_value(@'*print-pretty*') != Cnil;
+	cl_env.print_circle = symbol_value(@'*print-circle*') != Cnil;
 	y = symbol_value(@'*print-base*');
 	if (!FIXNUMP(y) || fix(y) < 2 || fix(y) > 36) {
-		SYM_VAL(@'*print-base*') = MAKE_FIXNUM(10);
+		ECL_SETQ(@'*print-base*', MAKE_FIXNUM(10));
 		FEerror("~S is an illegal PRINT-BASE.", 1, y);
 	} else
-		PRINTbase = fix(y);
-	PRINTradix = symbol_value(@'*print-radix*') != Cnil;
-	PRINTcase = symbol_value(@'*print-case*');
-	if (PRINTcase != @':upcase' && PRINTcase != @':downcase' &&
-	    PRINTcase != @':capitalize') {
-		SYM_VAL(@'*print-case*') = @':downcase';
-		FEerror("~S is an illegal PRINT-CASE.", 1, PRINTcase);
+		cl_env.print_base = fix(y);
+	cl_env.print_radix = symbol_value(@'*print-radix*') != Cnil;
+	cl_env.print_case = symbol_value(@'*print-case*');
+	if (cl_env.print_case != @':upcase' && cl_env.print_case != @':downcase' &&
+	    cl_env.print_case != @':capitalize') {
+		ECL_SETQ(@'*print-case*', @':downcase');
+		FEerror("~S is an illegal PRINT-CASE.", 1, cl_env.print_case);
 	}
-	PRINTgensym = symbol_value(@'*print-gensym*') != Cnil;
+	cl_env.print_gensym = symbol_value(@'*print-gensym*') != Cnil;
 	y = symbol_value(@'*print-level*');
 	if (Null(y))
-		PRINTlevel = -1;
+		cl_env.print_level = -1;
 	else if (!FIXNUMP(y) || fix(y) < 0) {
-		SYM_VAL(@'*print-level*') = Cnil;
+		ECL_SETQ(@'*print-level*', Cnil);
 		FEerror("~S is an illegal PRINT-LEVEL.", 1, y);
 	} else
-		PRINTlevel = fix(y);
+		cl_env.print_level = fix(y);
 	y = symbol_value(@'*print-length*');
 	if (Null(y))
-		PRINTlength = -1;
+		cl_env.print_length = -1;
 	else if (!FIXNUMP(y) || fix(y) < 0) {
-		SYM_VAL(@'*print-length*') = Cnil;
+		ECL_SETQ(@'*print-length*', Cnil);
 		FEerror("~S is an illegal PRINT-LENGTH.", 1, y);
 	} else
-		PRINTlength = fix(y);
-	PRINTarray = symbol_value(@'*print-array*') != Cnil;
-	PRINTpackage = symbol_value(@'si::*print-package*');
-	if (PRINTpackage == Cnil) PRINTpackage = OBJNULL;
-	PRINTstructure = symbol_value(@'si::*print-structure*') != Cnil;
+		cl_env.print_length = fix(y);
+	cl_env.print_array = symbol_value(@'*print-array*') != Cnil;
+	cl_env.print_package = symbol_value(@'si::*print-package*');
+	if (cl_env.print_package == Cnil) cl_env.print_package = OBJNULL;
+	cl_env.print_structure = symbol_value(@'si::*print-structure*') != Cnil;
 }
 
 void
 cl_write_object(cl_object x)
 {
-	if (PRINTcircle && CIRCLEcounter == -2) {
-		cl_object real_stream = PRINTstream;
+	if (cl_env.print_circle && cl_env.circle_counter == -2) {
+		cl_object real_stream = cl_env.print_stream;
 
-		CIRCLEcounter = -1;
-		PRINTstream = no_stream;
+		cl_env.circle_counter = -1;
+		cl_env.print_stream = cl_core.null_stream;
 		cl_write_object(x);
 
-		CIRCLEcounter = 0;
-		PRINTstream = real_stream;
+		cl_env.circle_counter = 0;
+		cl_env.print_stream = real_stream;
 		cl_write_object(x);
 
-		cl_clrhash(CIRCLEstack);
-		CIRCLEcounter = -2;
+		cl_clrhash(cl_env.circle_stack);
+		cl_env.circle_counter = -2;
 		return;
 	}
-	if (PRINTpretty) {
-		qh = qt = qc = 0;
-		isp = iisp = 0;
-		indent_stack[0] = 0;
+	if (cl_env.print_pretty) {
+		cl_env.qh = cl_env.qt = cl_env.qc = 0;
+		cl_env.isp = cl_env.iisp = 0;
+		cl_env.indent_stack[0] = 0;
 	}
 	_write_object(x, 0);
-	if (PRINTpretty)
+	if (cl_env.print_pretty)
 		flush_queue(TRUE);
 }
 
@@ -1434,40 +1393,40 @@ potential_number_p(cl_object strng, int base)
 		    (gensym symbol_value(@'*print-gensym*'))
 		    (array symbol_value(@'*print-array*')))
 @
-	PRINTstream = stream_or_default_output(strm);
-	PRINTreadably = readably != Cnil;
-	PRINTescape = escape != Cnil;
-	PRINTpretty = pretty != Cnil;
-	PRINTcircle = circle != Cnil;
+	cl_env.print_stream = stream_or_default_output(strm);
+	cl_env.print_readably = readably != Cnil;
+	cl_env.print_escape = escape != Cnil;
+	cl_env.print_pretty = pretty != Cnil;
+	cl_env.print_circle = circle != Cnil;
 	if (!FIXNUMP(base) || fix((base))<2 || fix((base))>36)
 		FEerror("~S is an illegal PRINT-BASE.", 1, base);
 	else
-		PRINTbase = fix((base));
-	PRINTradix = radix != Cnil;
-	PRINTcase = cas;
-	if (PRINTcase != @':upcase' && PRINTcase != @':downcase' &&
-	    PRINTcase != @':capitalize')
+		cl_env.print_base = fix((base));
+	cl_env.print_radix = radix != Cnil;
+	cl_env.print_case = cas;
+	if (cl_env.print_case != @':upcase' && cl_env.print_case != @':downcase' &&
+	    cl_env.print_case != @':capitalize')
 		FEerror("~S is an illegal PRINT-CASE.", 1, cas);
-	PRINTgensym = gensym != Cnil;
+	cl_env.print_gensym = gensym != Cnil;
 	if (Null(level))
-		PRINTlevel = -1;
+		cl_env.print_level = -1;
 	else if (!FIXNUMP(level) || fix((level)) < 0)
 		FEerror("~S is an illegal PRINT-LEVEL.", 1, level);
 	else
-		PRINTlevel = fix((level));
+		cl_env.print_level = fix((level));
 	if (Null(length))
-		PRINTlength = -1;
+		cl_env.print_length = -1;
 	else if (!FIXNUMP(length) || fix((length)) < 0)
 		FEerror("~S is an illegal PRINT-LENGTH.", 1, length);
 	else
-		PRINTlength = fix((length));
-	PRINTarray = array != Cnil;
-	PRINTpackage = symbol_value(@'si::*print-package*');
-	if (PRINTpackage == Cnil) PRINTpackage = OBJNULL;
-	PRINTstructure = symbol_value(@'si::*print-structure*') != Cnil;
+		cl_env.print_length = fix((length));
+	cl_env.print_array = array != Cnil;
+	cl_env.print_package = symbol_value(@'si::*print-package*');
+	if (cl_env.print_package == Cnil) cl_env.print_package = OBJNULL;
+	cl_env.print_structure = symbol_value(@'si::*print-structure*') != Cnil;
 
 	cl_write_object(x);
-	flush_stream(PRINTstream);
+	flush_stream(cl_env.print_stream);
 	@(return x)
 @)
 
@@ -1486,11 +1445,11 @@ potential_number_p(cl_object strng, int base)
 @(defun pprint (obj &optional strm)
 @
 	cl_setup_printer(strm);
-	PRINTescape = TRUE;
-	PRINTpretty = TRUE;
+	cl_env.print_escape = TRUE;
+	cl_env.print_pretty = TRUE;
 	writec_PRINTstream('\n');
 	cl_write_object(obj);
-	flush_stream(PRINTstream);
+	flush_stream(cl_env.print_stream);
 	@(return)
 @)
 
@@ -1579,39 +1538,12 @@ cl_write_byte(cl_object integer, cl_object binary_output_stream)
 	si_do_write_sequence(sequence, stream, start, end);
 @)
 
-void
-init_print(void)
-{
-	SYM_VAL(@'*print-case*') = @':upcase';
-
-	PRINTstream = Cnil;
-	ecl_register_static_root(&PRINTstream);
-	PRINTescape = TRUE;
-	PRINTpretty = FALSE;
-	PRINTcircle = FALSE;
-	PRINTbase = 10;
-	PRINTradix = FALSE;
-	PRINTcase = @':upcase';
-	ecl_register_static_root(&PRINTcase);
-	PRINTgensym = TRUE;
-	PRINTlevel = -1;
-	PRINTlength = -1;
-	PRINTarray = FALSE;
-
-	CIRCLEstack = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024), make_shortfloat(1.5),	
-					  make_shortfloat(0.7));
-	ecl_register_static_root(&CIRCLEstack);
-
-	no_stream = @make_broadcast_stream(0);
-	ecl_register_static_root(&no_stream);
-}
-
 cl_object
 princ(cl_object obj, cl_object strm)
 {
 	cl_setup_printer(strm);
-	PRINTescape = FALSE;
-	PRINTreadably = FALSE;
+	cl_env.print_escape = FALSE;
+	cl_env.print_readably = FALSE;
 	cl_write_object(obj);
 	return obj;
 }
@@ -1620,9 +1552,9 @@ cl_object
 prin1(cl_object obj, cl_object strm)
 {
 	cl_setup_printer(strm);
-	PRINTescape = TRUE;
+	cl_env.print_escape = TRUE;
 	cl_write_object(obj);
-	flush_stream(PRINTstream);
+	flush_stream(cl_env.print_stream);
 	return obj;
 }
 
@@ -1674,4 +1606,3 @@ princ_char(int c, cl_object strm)
 	if (c == '\n')
 		flush_stream(strm);
 }
-

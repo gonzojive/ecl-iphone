@@ -53,9 +53,9 @@ sigint(void)
     return;
   }
   if (symbol_value(@'si::*interrupt-enable*') == Cnil) {
-    SYM_VAL(@'si::*interrupt-enable*') = Ct;
-    signal(SIGINT, (signalfn)sigint);
-    return;
+      ECL_SETQ(@'si::*interrupt-enable*', Ct);
+      signal(SIGINT, (signalfn)sigint);
+      return;
   }
 #ifdef SIGALRM
 #ifdef __GO32__
@@ -88,7 +88,7 @@ sigint()
   }
 
   if (symbol_value(@'si::*interrupt-enable*') == Cnil) {
-    SYM_VAL(@'si::*interrupt-enable*') = Ct;
+    ECL_SETQ(@'si::*interrupt-enable*', Ct);
     return;
   }
 

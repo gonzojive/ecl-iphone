@@ -119,9 +119,8 @@ NO_KEYS:
 static cl_opcode *
 disassemble_dolist(cl_object bytecodes, cl_opcode *vector) {
 	cl_opcode *exit, *output;
-	cl_object lex_old = lex_env;
+	cl_object lex_old = cl_env.lex_env;
 
-	lex_copy();
 	GET_LABEL(exit, vector);
 	GET_LABEL(output, vector);
 	print_oparg("DOLIST\t", exit-base);
@@ -132,7 +131,7 @@ disassemble_dolist(cl_object bytecodes, cl_opcode *vector) {
 	vector = disassemble(bytecodes, vector);
 	print_noarg("\t\t; dolist");
 
-	lex_env = lex_old;
+	cl_env.lex_env = lex_old;
 	return vector;
 }
 
@@ -152,9 +151,8 @@ disassemble_dolist(cl_object bytecodes, cl_opcode *vector) {
 static cl_opcode *
 disassemble_dotimes(cl_object bytecodes, cl_opcode *vector) {
 	cl_opcode *exit, *output;
-	cl_object lex_old = lex_env;
+	cl_object lex_old = cl_env.lex_env;
 
-	lex_copy();
 	GET_LABEL(exit, vector);
 	GET_LABEL(output, vector);
 	print_oparg("DOTIMES\t", exit-base);
@@ -165,7 +163,7 @@ disassemble_dotimes(cl_object bytecodes, cl_opcode *vector) {
 	vector = disassemble(bytecodes, vector);
 	print_noarg("\t\t; dotimes");
 
-	lex_env = lex_old;
+	cl_env.lex_env = lex_old;
 	return vector;
 }
 
@@ -276,9 +274,8 @@ labeln:
 static cl_opcode *
 disassemble_tagbody(cl_object bytecodes, cl_opcode *vector) {
 	cl_index i, ntags = GET_OPARG(vector);
-	cl_object lex_old = lex_env;
+	cl_object lex_old = cl_env.lex_env;
 	cl_opcode *destination;
-	lex_copy();
 
 	print_noarg("TAGBODY");
 	for (i=0; i<ntags; i++) {
@@ -290,7 +287,7 @@ disassemble_tagbody(cl_object bytecodes, cl_opcode *vector) {
 	vector = disassemble(bytecodes, vector);
 	print_noarg("\t\t; tagbody");
 
-	lex_env = lex_old;
+	cl_env.lex_env = lex_old;
 	return vector;
 }
 
@@ -306,7 +303,7 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 	switch (GET_OPCODE(vector)) {
 
 	/* OP_NOP
-		Sets VALUES(0) = NIL and NValues = 1
+		Sets VALUES(0) = NIL and NVALUES = 1
 	*/
 	case OP_NOP:		string = "NOP";	goto NOARG;
 
@@ -318,14 +315,14 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 				goto ARG;
 
 	/* OP_VAR	n{arg}
-		Sets NValues=1 and VALUES(0) to the value of the n-th local.
+		Sets NVALUES=1 and VALUES(0) to the value of the n-th local.
 	*/
 	case OP_VAR:		string = "VAR\t";
 				n = GET_OPARG(vector);
 				goto OPARG;
 
 	/* OP_VARS	var{symbol}
-		Sets NValues=1 and VALUES(0) to the value of the symbol VAR.
+		Sets NVALUES=1 and VALUES(0) to the value of the symbol VAR.
 		VAR should be either a special variable or a constant.
 	*/
 	case OP_VARS:		string = "VARS\t";

@@ -424,21 +424,21 @@ cl_char_name(cl_object c)
 	/* INV: char_code() checks the type of `c' */
 	switch (char_code(c)) {
 	case '\000':
-		return1(STnull);
+		return1(cl_core.string_null);
 	case '\r':
-		return1(STreturn);
+		return1(cl_core.string_return);
 	case ' ':
-		return1(STspace);
+		return1(cl_core.string_space);
 	case '\177':
-		return1(STrubout);
+		return1(cl_core.string_rubout);
 	case '\f':
-		return1(STpage);
+		return1(cl_core.string_page);
 	case '\t':
-		return1(STtab);
+		return1(cl_core.string_tab);
 	case '\b':
-		return1(STbackspace);
+		return1(cl_core.string_backspace);
 	case '\n':
-		return1(STnewline);
+		return1(cl_core.string_newline);
 	}
 	return1(Cnil);
 }
@@ -449,47 +449,22 @@ cl_name_char(cl_object s)
 	char c;
 
 	s = cl_string(s);
-	if (string_equal(s, STreturn))
+	if (string_equal(s, cl_core.string_return))
 		c = '\r'; else
-	if (string_equal(s, STspace))
+	if (string_equal(s, cl_core.string_space))
 		c = ' '; else
-	if (string_equal(s, STrubout))
+	if (string_equal(s, cl_core.string_rubout))
 		c = '\177'; else
-	if (string_equal(s, STpage))
+	if (string_equal(s, cl_core.string_page))
 		c = '\f'; else
-	if (string_equal(s, STtab))
+	if (string_equal(s, cl_core.string_tab))
 		c = '\t'; else
-	if (string_equal(s, STbackspace))
+	if (string_equal(s, cl_core.string_backspace))
 		c = '\b'; else
-	if (string_equal(s, STlinefeed) || string_equal(s, STnewline))
+	if (string_equal(s, cl_core.string_linefeed) || string_equal(s, cl_core.string_newline))
 		c = '\n'; else
-	if (string_equal(s, STnull))
+	if (string_equal(s, cl_core.string_null))
 		c = '\000'; else
 		return1(Cnil);
 	return1(CODE_CHAR(c));
-}
-
-void
-init_character(void)
-{
-	SYM_VAL(@'char-code-limit') = MAKE_FIXNUM(CHAR_CODE_LIMIT);
-
-	STreturn = make_simple_string("Return");
-	ecl_register_static_root(&STreturn);
-	STspace = make_simple_string("Space");
-	ecl_register_static_root(&STspace);
-	STrubout = make_simple_string("Rubout");
-	ecl_register_static_root(&STrubout);
-	STpage = make_simple_string("Page");
-	ecl_register_static_root(&STpage);
-	STtab = make_simple_string("Tab");
-	ecl_register_static_root(&STtab);
-	STbackspace = make_simple_string("Backspace");
-	ecl_register_static_root(&STbackspace);
-	STlinefeed = make_simple_string("Linefeed");
-	ecl_register_static_root(&STlinefeed);
-	STnull = make_simple_string("Null");
-	ecl_register_static_root(&STnull);
-	STnewline = make_simple_string("Newline");
-	ecl_register_static_root(&STnewline);
 }

@@ -849,7 +849,7 @@ type_of(#0)==t_bitvector"))
 (FBOUNDP (symbol) T nil t)
 (SYMBOL-VALUE (symbol) T)
 (BOUNDP (symbol) T nil t
-	:inline-unsafe ((t) :bool nil nil "(#0)->symbol.dbind!=OBJNULL"))
+	:inline-unsafe ((t) :bool nil nil "SYM_VAL(#0)!=OBJNULL"))
 (MACRO-FUNCTION (symbol) T)
 (SPECIAL-OPERATOR-P (symbol) T nil t)
 
@@ -975,7 +975,7 @@ type_of(#0)==t_bitvector"))
 (SYMBOL-PACKAGE (symbol) T)
 (KEYWORDP (T) T NIL T
 ;  :inline-always ((t) :bool nil nil
-;        "@0;(type_of(#0)==t_symbol&&(#0)->symbol.hpack==keyword_package)")
+;        "@0;(type_of(#0)==t_symbol&&(#0)->symbol.hpack==cl_core.keyword_package)")
  )
 (SI::PUT-F NIL (T T))
 (SI::REM-F NIL (T T))

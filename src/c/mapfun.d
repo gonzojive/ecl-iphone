@@ -38,7 +38,7 @@ prepare_map(cl_va_list lists, cl_index *cdrs_sp)
 	res = Cnil;
 	while (TRUE) {
 		/* INV: The stack does not grow here. */
-		cl_object *cdrs = cl_stack + cdrs_sp;
+		cl_object *cdrs = cl_env.stack + cdrs_sp;
 		cl_object *cars = cdrs + nlist;
 		for (i = 0;  i < nlist;  i++) {
 			if (endp(cdrs[i])) {
@@ -60,7 +60,7 @@ prepare_map(cl_va_list lists, cl_index *cdrs_sp)
 	nlist = prepare_map(lists, &cdrs_sp);
 	res = Cnil;
 	while (TRUE) {
-		cl_object *cdrs = cl_stack + cdrs_sp;
+		cl_object *cdrs = cl_env.stack + cdrs_sp;
 		cl_object *cars = cdrs + nlist;
 		for (i = 0;  i < nlist;  i++) {
 			if (endp(cdrs[i])) {
@@ -80,9 +80,9 @@ prepare_map(cl_va_list lists, cl_index *cdrs_sp)
 	cl_index i, nlist, cdrs_sp;
 @
 	nlist = prepare_map(lists, &cdrs_sp);
-	onelist = cl_stack[cdrs_sp];
+	onelist = cl_env.stack[cdrs_sp];
 	while (TRUE) {
-		cl_object *cdrs = cl_stack + cdrs_sp;
+		cl_object *cdrs = cl_env.stack + cdrs_sp;
 		cl_object *cars = cdrs + nlist;
 		for (i = 0;  i < nlist;  i++) {
 			if (endp(cdrs[i])) {
@@ -101,9 +101,9 @@ prepare_map(cl_va_list lists, cl_index *cdrs_sp)
 	cl_index i, nlist, cdrs_sp;
 @
 	nlist = prepare_map(lists, &cdrs_sp);
-	onelist = cl_stack[cdrs_sp];
+	onelist = cl_env.stack[cdrs_sp];
 	while (TRUE) {
-		cl_object *cdrs = cl_stack + cdrs_sp;
+		cl_object *cdrs = cl_env.stack + cdrs_sp;
 		cl_object *cars = cdrs + nlist;
 		for (i = 0;  i < nlist;  i++) {
 			if (endp(cdrs[i])) {
@@ -124,7 +124,7 @@ prepare_map(cl_va_list lists, cl_index *cdrs_sp)
 	nlist = prepare_map(lists, &cdrs_sp);
 	res = Cnil;
 	while (TRUE) {
-		cl_object *cdrs = cl_stack + cdrs_sp;
+		cl_object *cdrs = cl_env.stack + cdrs_sp;
 		cl_object *cars = cdrs + nlist;
 		for (i = 0;  i < nlist;  i++) {
 			if (endp(cdrs[i])) {
@@ -147,7 +147,7 @@ prepare_map(cl_va_list lists, cl_index *cdrs_sp)
 	nlist = prepare_map(lists, &cdrs_sp);
 	res = Cnil;
 	while (TRUE) {
-		cl_object *cdrs = cl_stack + cdrs_sp;
+		cl_object *cdrs = cl_env.stack + cdrs_sp;
 		cl_object *cars = cdrs + nlist;
 		for (i = 0;  i < nlist;  i++) {
 			if (endp(cdrs[i])) {

@@ -193,11 +193,11 @@
   (case (var-kind var)
     (CLOSURE (wt-env var-loc))
     (LEXICAL (wt-lex var-loc))
-    (SPECIAL (wt "(" var-loc "->symbol.dbind)"))
+    (SPECIAL (wt "SYM_VAL(" var-loc ")"))
     (REPLACED (wt var-loc))
     (GLOBAL (if *safe-compile*
               (wt "symbol_value(" var-loc ")")
-              (wt "(" var-loc "->symbol.dbind)")))
+              (wt "SYM_VAL(" var-loc ")")))
     (t (wt var-loc))
     ))
 
@@ -219,13 +219,13 @@
        (wt-coerce-loc (var-rep-type var) loc)
        (wt #\;))
       (SPECIAL
-       (wt-nl "(" var-loc "->symbol.dbind)= ")
+       (wt-nl "SYM_VAL(" var-loc ")= ")
        (wt-coerce-loc (var-rep-type var) loc)
        (wt #\;))
       (GLOBAL
        (if *safe-compile*
 	   (wt-nl "cl_set(" var-loc ",")
-	   (wt-nl "(" var-loc "->symbol.dbind)= "))
+	   (wt-nl "SYM_VAL(" var-loc ")= "))
        (wt-coerce-loc (var-rep-type var) loc)
        (wt (if *safe-compile* ");" ";")))
       (t
@@ -313,7 +313,7 @@
          (sym-loc (make-lcl-var))
          (val-loc (make-lcl-var)))
     (wt-nl "{cl_object " sym-loc "," val-loc ";")
-    (wt-nl "bds_ptr " lcl "=bds_top;")
+    (wt-nl "bds_ptr " lcl "=cl_env.bds_top;")
     (push lcl *unwind-exit*)
     
     (let ((*destination* sym-loc)) (c2expr* symbols))

@@ -18,19 +18,16 @@
 #include "bytecodes.h"
 
 #undef frs_pop
-#define frs_pop() { cl_stack_top = cl_stack + frs_top->frs_sp; frs_top--; }
+#define frs_pop() { \
+	cl_env.stack_top = cl_env.stack + cl_env.frs_top->frs_sp; \
+	cl_env.frs_top--; }
 
 /* -------------------- INTERPRETER STACK -------------------- */
 
-cl_index cl_stack_size = 0;
-cl_object *cl_stack = NULL;
-cl_object *cl_stack_top = NULL;
-cl_object *cl_stack_limit = NULL;
-
-static void
+void
 cl_stack_set_size(cl_index new_size)
 {
-	cl_index top = cl_stack_top - cl_stack;
+	cl_index top = cl_env.stack_top - cl_env.stack;
 	cl_object *new_stack;
 
 	/*printf("*+*+*+\n");*/
@@ -41,17 +38,17 @@ cl_stack_set_size(cl_index new_size)
 	start_critical_section();
 
 	new_stack = (cl_object *)cl_alloc(new_size * sizeof(cl_object));
-	memcpy(new_stack, cl_stack, cl_stack_size * sizeof(cl_object));
+	memcpy(new_stack, cl_env.stack, cl_env.stack_size * sizeof(cl_object));
 
 #ifdef BOEHM_GBC
-	GC_free(cl_stack);
+	GC_free(cl_env.stack);
 #else
-	cl_dealloc(cl_stack, cl_stack_size);
+	cl_dealloc(cl_env.stack, cl_env.stack_size);
 #endif
-	cl_stack_size = new_size;
-	cl_stack = new_stack;
-	cl_stack_top = cl_stack + top;
-	cl_stack_limit = cl_stack + (new_size - 2);
+	cl_env.stack_size = new_size;
+	cl_env.stack = new_stack;
+	cl_env.stack_top = cl_env.stack + top;
+	cl_env.stack_limit = cl_env.stack + (new_size - 2);
 
 	end_critical_section();
 }
@@ -59,66 +56,66 @@ cl_stack_set_size(cl_index new_size)
 static void
 cl_stack_grow(void)
 {
-	cl_stack_set_size(cl_stack_size + LISP_PAGESIZE);
+	cl_stack_set_size(cl_env.stack_size + LISP_PAGESIZE);
 }
 
 void
 cl_stack_push(cl_object x) {
-	if (cl_stack_top >= cl_stack_limit)
+	if (cl_env.stack_top >= cl_env.stack_limit)
 		cl_stack_grow();
-	*(cl_stack_top++) = x;
+	*(cl_env.stack_top++) = x;
 }
 
 cl_object
 cl_stack_pop() {
-	if (cl_stack_top == cl_stack)
+	if (cl_env.stack_top == cl_env.stack)
 		FEerror("Internal error: stack underflow.",0);
-	return *(--cl_stack_top);
+	return *(--cl_env.stack_top);
 }
 
 cl_index
 cl_stack_index() {
-	return cl_stack_top - cl_stack;
+	return cl_env.stack_top - cl_env.stack;
 }
 
 void
 cl_stack_set_index(cl_index index) {
-	cl_object *new_top = cl_stack + index;
-	if (new_top > cl_stack_top)
+	cl_object *new_top = cl_env.stack + index;
+	if (new_top > cl_env.stack_top)
 		FEerror("Internal error: tried to advance stack.",0);
-	cl_stack_top = new_top;
+	cl_env.stack_top = new_top;
 }
 
 void
 cl_stack_insert(cl_index where, cl_index n) {
-	if (cl_stack_top + n > cl_stack_limit) {
+	if (cl_env.stack_top + n > cl_env.stack_limit) {
 		cl_index delta = (n + (LISP_PAGESIZE-1))/LISP_PAGESIZE;
-		cl_stack_set_size(cl_stack_size + delta * LISP_PAGESIZE);
+		cl_stack_set_size(cl_env.stack_size + delta * LISP_PAGESIZE);
 	}
-	cl_stack_top += n;
-	memmove(&cl_stack[where+n], &cl_stack[where],
-		(cl_stack_top - cl_stack) * sizeof(*cl_stack));
+	cl_env.stack_top += n;
+	memmove(&cl_env.stack[where+n], &cl_env.stack[where],
+		(cl_env.stack_top - cl_env.stack) * sizeof(cl_object));
 }
 
 void
 cl_stack_pop_n(cl_index index) {
-	cl_object *new_top = cl_stack_top - index;
-	if (new_top < cl_stack)
+	cl_object *new_top = cl_env.stack_top - index;
+	if (new_top < cl_env.stack)
 		FEerror("Internal error: stack underflow.",0);
-	cl_stack_top = new_top;
+	cl_env.stack_top = new_top;
 }
 
 int
 cl_stack_push_values(void) {
 	int i;
-	for (i=0; i<NValues; i++)
+	for (i=0; i<NVALUES; i++)
 		cl_stack_push(VALUES(i));
 	return i;
 }
 
 void
 cl_stack_pop_values(int n) {
-	NValues = n;
+	NVALUES = n;
 	while (n > 0)
 		VALUES(--n) = cl_stack_pop();
 }
@@ -127,12 +124,12 @@ cl_index
 cl_stack_push_va_list(cl_va_list args) {
 	cl_index sp;
 
-	sp = cl_stack_top - cl_stack;
-	while (cl_stack_top + args[0].narg > cl_stack_limit)
+	sp = cl_env.stack_top - cl_env.stack;
+	while (cl_env.stack_top + args[0].narg > cl_env.stack_limit)
 		cl_stack_grow();
 	while (args[0].narg > 0) {
 		args[0].narg--;
-		*(cl_stack_top++) = va_arg(args[0].args,cl_object);
+		*(cl_env.stack_top++) = va_arg(args[0].args,cl_object);
 	}
 	return sp;
 }
@@ -146,8 +143,8 @@ cl_stack_push_list(cl_object list)
 	/* INV: A list's length always fits in a fixnum */
 	fast = slow = list;
 	for (n = 0; CONSP(fast); n++, fast = CDR(fast)) {
-		*cl_stack_top = CAR(fast);
-		if (++cl_stack_top >= cl_stack_limit)
+		*cl_env.stack_top = CAR(fast);
+		if (++cl_env.stack_top >= cl_env.stack_limit)
 			cl_stack_grow();
 		if (n & 1) {
 			/* Circular list? */
@@ -162,32 +159,30 @@ cl_stack_push_list(cl_object list)
 
 /* ------------------------------ LEXICAL ENV. ------------------------------ */
 
-cl_object lex_env;
-
 static void
 bind_var(register cl_object var, register cl_object val)
 {
-	lex_env = CONS(var, CONS(val, lex_env));
+	cl_env.lex_env = CONS(var, CONS(val, cl_env.lex_env));
 }
 
 static void
 bind_function(cl_object name, cl_object fun)
 {
-	lex_env = CONS(@':function', CONS(CONS(name, fun), lex_env));
+	cl_env.lex_env = CONS(@':function', CONS(CONS(name, fun), cl_env.lex_env));
 }
 
 static cl_object
 bind_tagbody()
 {
 	cl_object id = new_frame_id();
-	lex_env = CONS(@':tag', CONS(id, lex_env));
+	cl_env.lex_env = CONS(@':tag', CONS(id, cl_env.lex_env));
 	return id;
 }
 
 static void
 bind_block(cl_object name, cl_object id)
 {
-	lex_env = CONS(@':block', CONS(CONS(name, id), lex_env));
+	cl_env.lex_env = CONS(@':block', CONS(CONS(name, id), cl_env.lex_env));
 }
 
 static void
@@ -199,7 +194,7 @@ bind_special(register cl_object var, register cl_object val)
 static cl_object
 search_local(register int s) {
 	cl_object x;
-	for (x = lex_env; s-- > 0 && !Null(x); x = CDDR(x));
+	for (x = cl_env.lex_env; s-- > 0 && !Null(x); x = CDDR(x));
 	if (Null(x))
 		FEerror("Internal error: local not found.", 0);
 	return CADR(x);
@@ -208,7 +203,7 @@ search_local(register int s) {
 static void
 setq_local(register int s, register cl_object v) {
 	cl_object x;
-	for (x = lex_env; s-- > 0 && !Null(x); x = CDDR(x));
+	for (x = cl_env.lex_env; s-- > 0 && !Null(x); x = CDDR(x));
 	if (Null(x))
 		FEerror("Internal error: local ~S not found.", 1, s);
 	CADR(x) = v;
@@ -238,12 +233,12 @@ lambda_bind(int narg, cl_object lambda, cl_index sp)
 	if (narg < n)
 	  FEwrong_num_arguments(lambda->bytecodes.name);
 	for (; n; n--, narg--)
-	  lambda_bind_var(*(data++), cl_stack[sp++], specials);
+	  lambda_bind_var(*(data++), cl_env.stack[sp++], specials);
 
 	/* 2) OPTIONAL ARGUMENTS:  N var1 value1 flag1 ... varN valueN flagN */
 	for (n = fix(*(data++)); n; n--, data+=3) {
 	  if (narg) {
-	    lambda_bind_var(data[0], cl_stack[sp], specials);
+	    lambda_bind_var(data[0], cl_env.stack[sp], specials);
 	    sp++; narg--;
 	    if (!Null(data[2]))
 	      lambda_bind_var(data[2], Ct, specials);
@@ -264,7 +259,7 @@ lambda_bind(int narg, cl_object lambda, cl_index sp)
 	  cl_object rest = Cnil;
 	  check_remaining = FALSE;
 	  for (i=narg; i; )
-	    rest = CONS(cl_stack[sp+(--i)], rest);
+	    rest = CONS(cl_env.stack[sp+(--i)], rest);
 	  lambda_bind_var(data[0], rest, specials);
 	}
 	data++;
@@ -292,8 +287,8 @@ lambda_bind(int narg, cl_object lambda, cl_index sp)
 	  for (i=0; i<n; i++)
 	    spp[i] = unbound;
 	  for (; narg; narg-=2) {
-	    cl_object key = cl_stack[sp++];
-	    cl_object value = cl_stack[sp++];
+	    cl_object key = cl_env.stack[sp++];
+	    cl_object value = cl_env.stack[sp++];
 	    if (!SYMBOLP(key))
 	      FEprogram_error("LAMBDA: Keyword expected, got ~S.", 1, key);
 	    keys = data;
@@ -348,15 +343,15 @@ lambda_apply(int narg, cl_object fun)
 
 	/* 1) Save the lexical environment and set up a new one */
 	ihs_push(&ihs, fun);
-	lex_env = fun->bytecodes.lex;
-	old_bds_top = bds_top;
+	cl_env.lex_env = fun->bytecodes.lex;
+	old_bds_top = cl_env.bds_top;
 
 	/* Establish bindings */
 	lambda_bind(narg, fun, args);
 
 	/* If it is a named lambda, set a block for RETURN-FROM */
 	VALUES(0) = Cnil;
-	NValues = 0;
+	NVALUES = 0;
 	name = fun->bytecodes.name;
 	if (Null(name))
 		interpret(fun, fun->bytecodes.code);
@@ -391,7 +386,7 @@ interpret_funcall(int narg, cl_object fun) {
 	cl_object *args;
 	cl_object x;
 
-	args = cl_stack_top - narg;
+	args = cl_env.stack_top - narg;
 	if (fun == OBJNULL)
 		goto ERROR;
  AGAIN:
@@ -488,18 +483,18 @@ interpret_dolist(cl_object bytecodes, cl_opcode *vector) {
 
 		/* 3) Repeat until list is exahusted */
 		while (!endp(list)) {
-			NValues = 1;
+			NVALUES = 1;
 			VALUES(0) = CAR(list);
 			interpret(bytecodes, vector);
 			list = CDR(list);
 		}
 		VALUES(0) = Cnil;
-		NValues = 1;
+		NVALUES = 1;
 		interpret(bytecodes, output);
 
 		/* 4) Restore environment */
-		lex_env = frs_top->frs_lex;
-		bds_unwind(frs_top->frs_bds_top);
+		cl_env.lex_env = cl_env.frs_top->frs_lex;
+		bds_unwind(cl_env.frs_top->frs_bds_top);
 	} CL_BLOCK_END;
 	return exit;
 }
@@ -538,7 +533,7 @@ interpret_dotimes(cl_object bytecodes, cl_opcode *vector) {
 		    cl_fixnum i, l = fix(length);
 		    /* 3) Loop while needed */
 		    for (i = 0; i < l; i++) {
-			NValues = 1;
+			NVALUES = 1;
 			VALUES(0) = MAKE_FIXNUM(i);
 			interpret(bytecodes, vector);
 		    }
@@ -549,19 +544,19 @@ interpret_dotimes(cl_object bytecodes, cl_opcode *vector) {
 			 number_compare(i, length) < 0;
 			 i = one_plus(i))
 		    {
-			NValues = 1;
+			NVALUES = 1;
 			VALUES(0) = i;
 			interpret(bytecodes, vector);
 		    }
 		    length = i;
 		}
-		NValues = 1;
+		NVALUES = 1;
 		VALUES(0) = length;
 		interpret(bytecodes, output);
 
 		/* 4) Restore environment */
-		lex_env = frs_top->frs_lex;
-		bds_unwind(frs_top->frs_bds_top);
+		cl_env.lex_env = cl_env.frs_top->frs_lex;
+		bds_unwind(cl_env.frs_top->frs_bds_top);
 	} CL_BLOCK_END;
 	return exit;
 }
@@ -590,7 +585,7 @@ interpret_flet(cl_object bytecodes, cl_opcode *vector) {
 
 	/* 1) Copy the environment so that functions get it without references
 	      to themselves. */
-	cl_object lex = lex_env;
+	cl_object lex = cl_env.lex_env;
 
 	/* 3) Add new closures to environment */
 	while (nfun--) {
@@ -623,9 +618,9 @@ interpret_labels(cl_object bytecodes, cl_opcode *vector) {
 	}
 
 	/* 2) Update the closures so that all functions can call each other */
-	for (i=0, l=lex_env; i<nfun; i++) {
+	for (i=0, l=cl_env.lex_env; i<nfun; i++) {
 		cl_object record = CADR(l);
-		CDR(record) = close_around(CDR(record), lex_env);
+		CDR(record) = close_around(CDR(record), cl_env.lex_env);
 		l = CDDR(l);
 	}
 	return vector;
@@ -649,7 +644,7 @@ interpret_msetq(cl_object bytecodes, cl_opcode *vector)
 	int i, n = GET_OPARG(vector);
 	for (i=0; i<n; i++) {
 		cl_fixnum var = GET_OPARG(vector);
-		value = (i < NValues) ? VALUES(i) : Cnil;
+		value = (i < NVALUES) ? VALUES(i) : Cnil;
 		if (var >= 0)
 			setq_local(var, value);
 		else {
@@ -657,10 +652,10 @@ interpret_msetq(cl_object bytecodes, cl_opcode *vector)
 			if (name->symbol.stype == stp_constant)
 				FEassignment_to_constant(name);
 			else
-				SYM_VAL(name) = value;
+				ECL_SETQ(name, value);
 		}
 	}
-	if (NValues > 1) NValues = 1;
+	if (NVALUES > 1) NVALUES = 1;
 	return vector;
 }
 
@@ -676,8 +671,8 @@ interpret_progv(cl_object bytecodes, cl_opcode *vector) {
 	cl_object vars = cl_stack_pop();
 
 	/* 1) Save current environment */
-	bds_ptr old_bds_top = bds_top;
-	cl_object old_lex_env = lex_env;
+	bds_ptr old_bds_top = cl_env.bds_top;
+	cl_object old_lex_env = cl_env.lex_env;
 
 	/* 2) Add new bindings */
 	while (!endp(vars)) {
@@ -692,7 +687,7 @@ interpret_progv(cl_object bytecodes, cl_opcode *vector) {
 	vector = interpret(bytecodes, vector);
 
 	/* 3) Restore environment */
-	lex_env = old_lex_env;
+	cl_env.lex_env = old_lex_env;
 	bds_unwind(old_bds_top);
 	return vector;
 }
@@ -794,7 +789,7 @@ interpret(cl_object bytecodes, void *pc) {
 	*/
 	case OP_FCALL: {
 		cl_fixnum n = GET_OPARG(vector);
-		cl_object fun = cl_stack_top[-n-1];
+		cl_object fun = cl_env.stack_top[-n-1];
 		VALUES(0) = reg0 = interpret_funcall(n, fun);
 		cl_stack_pop();
 		break;
@@ -806,7 +801,7 @@ interpret(cl_object bytecodes, void *pc) {
 	*/
 	case OP_MCALL: {
 		cl_fixnum n = fix(cl_stack_pop());
-		cl_object fun = cl_stack_top[-n-1];
+		cl_object fun = cl_env.stack_top[-n-1];
 		VALUES(0) = reg0 = interpret_funcall(n, fun);
 		cl_stack_pop();
 		break;
@@ -842,8 +837,8 @@ interpret(cl_object bytecodes, void *pc) {
 	*/
 	case OP_PFCALL: {
 		cl_fixnum n = GET_OPARG(vector);
-		cl_object fun = cl_stack_top[-n-1];
-		cl_stack_top[-1] = interpret_funcall(n, fun);
+		cl_object fun = cl_env.stack_top[-n-1];
+		cl_env.stack_top[-1] = interpret_funcall(n, fun);
 		break;
 	}
 
@@ -888,7 +883,7 @@ interpret(cl_object bytecodes, void *pc) {
 	*/
 	case OP_CLOSE: {
 		cl_object function_object = GET_DATA(vector, bytecodes);
-		reg0 = close_around(function_object, lex_env);
+		reg0 = close_around(function_object, cl_env.lex_env);
 		break;
 	}
 	/* OP_GO	n{arg}
@@ -940,14 +935,14 @@ interpret(cl_object bytecodes, void *pc) {
 	}
 	case OP_JNIL: {
 		cl_oparg jump = GET_OPARG(vector);
-		NValues = 1;
+		NVALUES = 1;
 		if (Null(VALUES(0)))
 			vector += jump - OPARG_SIZE;
 		break;
 	}
 	case OP_JT: {
 		cl_oparg jump = GET_OPARG(vector);
-		NValues = 1;
+		NVALUES = 1;
 		if (!Null(VALUES(0)))
 			vector += jump - OPARG_SIZE;
 		break;
@@ -975,7 +970,7 @@ interpret(cl_object bytecodes, void *pc) {
 	case OP_UNBIND: {
 		cl_index n = GET_OPARG(vector);
 		while (n--)
-			lex_env = CDDR(lex_env);
+			cl_env.lex_env = CDDR(cl_env.lex_env);
 		break;
 	}
 	/* OP_UNBINDS	n{arg}
@@ -1007,7 +1002,7 @@ interpret(cl_object bytecodes, void *pc) {
 	case OP_VBIND: {
 		int n = GET_OPARG(vector);
 		cl_object var_name = GET_DATA(vector, bytecodes);
-		cl_object value = (n < NValues) ? VALUES(n) : Cnil;
+		cl_object value = (n < NVALUES) ? VALUES(n) : Cnil;
 		bind_var(var_name, value);
 		break;
 	}
@@ -1025,7 +1020,7 @@ interpret(cl_object bytecodes, void *pc) {
 	case OP_VBINDS: {
 		int n = GET_OPARG(vector);
 		cl_object var_name = GET_DATA(vector, bytecodes);
-		cl_object value = (n < NValues) ? VALUES(n) : Cnil;
+		cl_object value = (n < NVALUES) ? VALUES(n) : Cnil;
 		bind_special(var_name, value);
 		break;
 	}
@@ -1046,7 +1041,7 @@ interpret(cl_object bytecodes, void *pc) {
 		cl_object var = GET_DATA(vector, bytecodes);
 		if (var->symbol.stype == stp_constant)
 			FEassignment_to_constant(var);
-		SYM_VAL(var) = reg0;
+		ECL_SETQ(var, reg0);
 		break;
 	}
 	case OP_PSETQ: {
@@ -1058,7 +1053,7 @@ interpret(cl_object bytecodes, void *pc) {
 		cl_object var = GET_DATA(vector, bytecodes);
 		if (var->symbol.stype == stp_constant)
 			FEassignment_to_constant(var);
-		SYM_VAL(var) = cl_stack_pop();
+		ECL_SETQ(var, cl_stack_pop());
 		break;
 	}
 
@@ -1081,7 +1076,7 @@ interpret(cl_object bytecodes, void *pc) {
 		if (frs_push(FRS_CATCH, id) == 0) {
 			bind_block(name, id);
 		} else {
-			lex_env = frs_top->frs_lex;
+			cl_env.lex_env = cl_env.frs_top->frs_lex;
 			frs_pop();
 			vector = (cl_opcode *)cl_stack_pop();
 		}
@@ -1104,7 +1099,7 @@ interpret(cl_object bytecodes, void *pc) {
 		if (frs_push(FRS_CATCH, id) == 0) {
 			bind_block(name, id);
 		} else {
-			lex_env = frs_top->frs_lex;
+			cl_env.lex_env = cl_env.frs_top->frs_lex;
 			frs_pop();
 			vector = (cl_opcode *)cl_stack_pop(); /* FIXME! */
 		}
@@ -1124,7 +1119,7 @@ interpret(cl_object bytecodes, void *pc) {
 		cl_stack_push((cl_object)exit);
 		if (frs_push(FRS_CATCH, reg0) != 0) {
 			reg0 = VALUES(0);
-			lex_env = frs_top->frs_lex;
+			cl_env.lex_env = cl_env.frs_top->frs_lex;
 			frs_pop();
 			vector = (cl_opcode *)cl_stack_pop(); /* FIXME! */
 		}
@@ -1156,15 +1151,15 @@ interpret(cl_object bytecodes, void *pc) {
 			   to ntags-1, depending on the tag. These
 			   numbers are indices into the jump table and
 			   are computed at compile time. */
-			cl_opcode *table = (cl_opcode *)cl_stack_top[-1];
+			cl_opcode *table = (cl_opcode *)cl_env.stack_top[-1];
 			table = table + fix(VALUES(0)) * OPARG_SIZE;
 			vector = table + *(cl_oparg *)table;
-			lex_env = frs_top->frs_lex;
+			cl_env.lex_env = cl_env.frs_top->frs_lex;
 		}
 		break;
 	}
 	case OP_EXIT_TAGBODY:
-		lex_env = CDDR(frs_top->frs_lex);
+		cl_env.lex_env = CDDR(cl_env.frs_top->frs_lex);
 		frs_pop();
 		cl_stack_pop();
 	case OP_NIL:
@@ -1175,15 +1170,15 @@ interpret(cl_object bytecodes, void *pc) {
 		break;
 	case OP_VALUEREG0:
 		VALUES(0) = reg0;
-		NValues = 1;
+		NVALUES = 1;
 		break;
 	case OP_NOP:
 		VALUES(0) = reg0 = Cnil;
-		NValues = 0;
+		NVALUES = 0;
 		break;
 	case OP_EXIT_FRAME:
-		bds_unwind(frs_top->frs_bds_top);
-		lex_env = frs_top->frs_lex;
+		bds_unwind(cl_env.frs_top->frs_bds_top);
+		cl_env.lex_env = cl_env.frs_top->frs_lex;
 		frs_pop();
 		cl_stack_pop();
 		break;
@@ -1210,9 +1205,9 @@ interpret(cl_object bytecodes, void *pc) {
 	PUSH_VALUES:
 	case OP_PUSHVALUES: {
 		int i;
-		for (i=0; i<NValues; i++)
+		for (i=0; i<NVALUES; i++)
 			cl_stack_push(VALUES(i));
-		cl_stack_push(MAKE_FIXNUM(NValues));
+		cl_stack_push(MAKE_FIXNUM(NVALUES));
 		break;
 	}
 	/* OP_PUSHMOREVALUES
@@ -1220,9 +1215,9 @@ interpret(cl_object bytecodes, void *pc) {
 	*/
 	case OP_PUSHMOREVALUES: {
 		int i, n = fix(cl_stack_pop());
-		for (i=0; i<NValues; i++)
+		for (i=0; i<NVALUES; i++)
 			cl_stack_push(VALUES(i));
-		cl_stack_push(MAKE_FIXNUM(n + NValues));
+		cl_stack_push(MAKE_FIXNUM(n + NVALUES));
 		break;
 	}
 	/* OP_POP
@@ -1230,13 +1225,13 @@ interpret(cl_object bytecodes, void *pc) {
 	*/
 	case OP_POP:
 		VALUES(0) = reg0 = cl_stack_pop();
-		NValues = 1;
+		NVALUES = 1;
 		break;
 	/* OP_POPVALUES
 		Pops all values pushed by a OP_PUSHVALUES operator.
 	*/
 	case OP_POPVALUES: {
-		int n = NValues = fix(cl_stack_pop());
+		int n = NVALUES = fix(cl_stack_pop());
 		if (n == 0) {
 			VALUES(0) = Cnil;
 		} else do {
@@ -1250,7 +1245,7 @@ interpret(cl_object bytecodes, void *pc) {
 	*/
 	case OP_VALUES: {
 		cl_fixnum n = GET_OPARG(vector);
-		NValues = n;
+		NVALUES = n;
 		while (--n)
 			VALUES(n) = cl_stack_pop();
 		VALUES(0) = reg0 = cl_stack_pop();
@@ -1262,11 +1257,11 @@ interpret(cl_object bytecodes, void *pc) {
 	*/
 	case OP_NTHVAL: {
 		cl_fixnum n = fix(cl_stack_pop());
-		if (n < 0 || n >= NValues)
+		if (n < 0 || n >= NVALUES)
 			VALUES(0) = reg0 = Cnil;
 		else
 			VALUES(0) = reg0 = VALUES(n);
-		NValues = 1;
+		NVALUES = 1;
 		break;
 	}
 	/* OP_PROTECT	label
@@ -1287,29 +1282,29 @@ interpret(cl_object bytecodes, void *pc) {
 		GET_LABEL(exit, vector);
 		cl_stack_push((cl_object)exit);
 		if (frs_push(FRS_PROTECT,Cnil) != 0) {
-			lex_env = frs_top->frs_lex;
+			cl_env.lex_env = cl_env.frs_top->frs_lex;
 			frs_pop();
 			vector = (cl_opcode *)cl_stack_pop();
-			cl_stack_push(MAKE_FIXNUM(nlj_fr - frs_top));
+			cl_stack_push(MAKE_FIXNUM(cl_env.nlj_fr - cl_env.frs_top));
 			goto PUSH_VALUES;
 		}
 		break;
 	}
 	case OP_PROTECT_NORMAL:
-		bds_unwind(frs_top->frs_bds_top);
-		lex_env = frs_top->frs_lex;
+		bds_unwind(cl_env.frs_top->frs_bds_top);
+		cl_env.lex_env = cl_env.frs_top->frs_lex;
 		frs_pop();
 		cl_stack_pop();
 		cl_stack_push(MAKE_FIXNUM(1));
 		goto PUSH_VALUES;
 	case OP_PROTECT_EXIT: {
-		volatile cl_fixnum n = NValues = fix(cl_stack_pop());
+		volatile cl_fixnum n = NVALUES = fix(cl_stack_pop());
 		while (n--)
 			VALUES(n) = cl_stack_pop();
 		reg0 = VALUES(0);
 		n = fix(cl_stack_pop());
 		if (n <= 0)
-			unwind(frs_top + n);
+			unwind(cl_env.frs_top + n);
 		break;
 	}
 	default:
@@ -1323,11 +1318,3 @@ interpret(cl_object bytecodes, void *pc) {
 @
 	@(return Cnil)
 @)
-
-void
-init_interpreter(void)
-{
-	cl_stack = NULL;
-	cl_stack_size = 0;
-	cl_stack_set_size(16*LISP_PAGESIZE);
-}

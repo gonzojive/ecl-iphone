@@ -49,36 +49,24 @@
 #define FLAG_IGNORE		0
 #define FLAG_USEFUL		(FLAG_PUSH | FLAG_VALUES | FLAG_REG0)
 
-typedef struct {
+typedef struct cl_compiler_env {
 	bool coalesce;
 	cl_object variables;
 	cl_object macros;
 	cl_fixnum lexical_level;
 	cl_object constants;
-#ifdef CL_COMP_OWN_STACK
-	cl_object bytecodes;
-#endif
-} cl_compiler_env;
+};
 
-static cl_compiler_env c_env;
+#define ENV cl_env.c_env
 
 /********************* PRIVATE ********************/
 
-#ifdef CL_COMP_OWN_STACK
-static cl_index current_pc();
-static void set_pc(cl_index pc);
-static cl_object asm_ref(register cl_index where);
-static cl_index asm_begin(void);
-static void asm_clear(cl_index);
-static void asm_op(register int op);
-#else
 #define asm_begin() cl_stack_index()
 #define asm_clear(h) cl_stack_set_index(h)
 #define current_pc() cl_stack_index()
 #define set_pc(n) cl_stack_set_index(n)
 #define asm_op(o) cl_stack_push((cl_object)(o))
-#define asm_ref(n) (cl_fixnum)(cl_stack[n])
-#endif
+#define asm_ref(n) (cl_fixnum)(cl_env.stack[n])
 static void asm_op2(int op, int arg);
 static cl_object asm_end(cl_index handle);
 static cl_index asm_jmp(register int op);
@@ -153,64 +141,6 @@ pop_maybe_nil(cl_object *l) {
 
 /* ------------------------------ ASSEMBLER ------------------------------ */
 
-#ifdef CL_COMP_OWN_STACK
-static cl_object
-alloc_bytecodes()
-{
-	cl_object vector = cl_alloc_simple_vector(128, aet_fix);
-	array_allocself(vector);
-	vector->vector.hasfillp = TRUE;
-	vector->vector.fillp = 0;
-	return vector;
-}
-
-static cl_index
-asm_begin(void) {
-	/* Save beginning of bytecodes for this session */
-	return current_pc();
-}
-
-static void
-asm_clear(cl_index beginning) {
-	cl_index i;
-	/* Remove data from this session */
-	c_env.bytecodes->vector.fillp = beginning;
-}
-
-static void
-asm_grow(void) {
-	cl_object *old_data = c_env.bytecodes->vector.self.t;
-	cl_index old_size = c_env.bytecodes->vector.fillp;
-	c_env.bytecodes->vector.dim += 128;
-	array_allocself(c_env.bytecodes);
-	memcpy(c_env.bytecodes->vector.self.t, old_data, old_size*sizeof(cl_object));
-}
-
-static void
-asm_op(register int op) {
-	int where = c_env.bytecodes->vector.fillp;
-	if (where >= c_env.bytecodes->vector.dim)
-		asm_grow();
-	c_env.bytecodes->vector.self.fix[where] = op;
-	c_env.bytecodes->vector.fillp++;
-}
-
-static cl_index
-current_pc(void) {
-	return c_env.bytecodes->vector.fillp;
-}
-
-static void
-set_pc(cl_index pc) {
-	c_env.bytecodes->vector.fillp = pc;
-}
-
-static cl_fixnum
-asm_ref(register cl_index n) {
-	return c_env.bytecodes->vector.self.fix[n];
-}
-#endif /* CL_COMP_OWN_STACK */
-
 static cl_object
 asm_end(cl_index beginning) {
 	cl_object bytecodes;
@@ -219,7 +149,7 @@ asm_end(cl_index beginning) {
 
 	/* Save bytecodes from this session in a new vector */
 	code_size = current_pc() - beginning;
-	data_size = length(c_env.constants);
+	data_size = length(ENV->constants);
 	bytecodes = cl_alloc_object(t_bytecodes);
 	bytecodes->bytecodes.code_size = code_size;
 	bytecodes->bytecodes.data_size = data_size;
@@ -228,15 +158,11 @@ asm_end(cl_index beginning) {
 	bytecodes->bytecodes.lex = Cnil;
 	for (i = 0, code = (cl_opcode *)bytecodes->bytecodes.code; i < code_size; i++) {
 		code[i] =
-#ifdef CL_COMP_OWN_STACK
-			c_env.bytecodes->vector.self.fix[beginning+i];
-#else
-			(cl_fixnum)cl_stack[beginning+i];
-#endif
+			(cl_fixnum)cl_env.stack[beginning+i];
 	}
 	for (i=0; i < data_size; i++) {
-		bytecodes->bytecodes.data[i] = CAR(c_env.constants);
-		c_env.constants = CDR(c_env.constants);
+		bytecodes->bytecodes.data[i] = CAR(ENV->constants);
+		ENV->constants = CDR(ENV->constants);
 	}
 	asm_clear(beginning);
 	return bytecodes;
@@ -268,7 +194,7 @@ asm_op2(register int code, register int n) {
 static void
 asm_constant(cl_object c)
 {
-	c_env.constants = nconc(c_env.constants, CONS(c, Cnil));
+	ENV->constants = nconc(ENV->constants, CONS(c, Cnil));
 }
 
 static cl_index
@@ -291,19 +217,10 @@ asm_complete(register int op, register cl_index pc) {
 #ifdef ECL_SMALL_BYTECODES
 		char low = delta & 0xFF;
 		char high = delta >> 8;
-#  ifdef ECL_OWN_STACK
-		c_env.bytecodes->vector.self.fix[pc] = low;
-		c_env.bytecodes->vector.self.fix[pc+1] = low;
-#  else
-		cl_stack[pc] = (cl_object)(cl_fixnum)low;
-		cl_stack[pc+1] = (cl_object)(cl_fixnum)high;
-#  endif
+		cl_env.stack[pc] = (cl_object)(cl_fixnum)low;
+		cl_env.stack[pc+1] = (cl_object)(cl_fixnum)high;
 #else
-#  ifdef ECL_OWN_STACK
-		c_env.bytecodes->vector.self.fix[pc] = delta;
-#  else
-		cl_stack[pc] = (cl_object)(cl_fixnum)delta;
-#  endif
+		cl_env.stack[pc] = (cl_object)(cl_fixnum)delta;
 #endif
 	}
 }
@@ -376,10 +293,10 @@ FEill_formed_input()
 static int
 c_register_constant(cl_object c)
 {
-	cl_object p = c_env.constants;
+	cl_object p = ENV->constants;
 	int n;
 	for (n = 0; !Null(p); n++, p=CDR(p)) {
-		if (c_env.coalesce && eql(CAR(p), c)) {
+		if (ENV->coalesce && eql(CAR(p), c)) {
 			return n;
 		}
 	}
@@ -400,60 +317,61 @@ asm_op2c(register int code, register cl_object o) {
 static void
 c_register_block(cl_object name)
 {
-	c_env.variables = CONS(cl_list(2, @':block', name), c_env.variables);
+	ENV->variables = CONS(cl_list(2, @':block', name), ENV->variables);
 }
 
 static void
 c_register_tags(cl_object all_tags)
 {
-	c_env.variables = CONS(cl_list(2, @':tag', all_tags), c_env.variables);
+	ENV->variables = CONS(cl_list(2, @':tag', all_tags), ENV->variables);
 }
 
 static void
 c_register_function(cl_object name)
 {
-	c_env.variables = CONS(cl_list(2, @':function', name), c_env.variables);
-	c_env.macros = CONS(cl_list(2, name, @'function'), c_env.macros);
+	ENV->variables = CONS(cl_list(2, @':function', name), ENV->variables);
+	ENV->macros = CONS(cl_list(2, name, @'function'), ENV->macros);
 }
 
 static cl_object
 c_macro_expand1(cl_object stmt)
 {
-	return macro_expand1(stmt, CONS(c_env.variables, c_env.macros));
+	return macro_expand1(stmt, CONS(ENV->variables, ENV->macros));
 }
 
 static void
 c_register_symbol_macro(cl_object name, cl_object exp_fun)
 {
-	c_env.variables = CONS(cl_list(3, name, @'si::symbol-macro', exp_fun),
-			       c_env.variables);
+	ENV->variables = CONS(cl_list(3, name, @'si::symbol-macro', exp_fun),
+			       ENV->variables);
 }
 
 static void
 c_register_macro(cl_object name, cl_object exp_fun)
 {
-	c_env.macros = CONS(cl_list(3, name, @'si::macro', exp_fun), c_env.macros);
+	ENV->macros = CONS(cl_list(3, name, @'si::macro', exp_fun), ENV->macros);
 }
 
 static void
 c_register_var(register cl_object var, bool special)
 {
-	c_env.variables = CONS(cl_list(2, var, special? @'special' : Cnil),
-			       c_env.variables);
+	ENV->variables = CONS(cl_list(2, var, special? @'special' : Cnil),
+			       ENV->variables);
 }
 
 static void
-c_new_env(cl_object env)
+c_new_env(struct cl_compiler_env *new_c_env, cl_object env)
 {
-	c_env.coalesce = TRUE;
-	c_env.constants = Cnil;
-	c_env.variables = Cnil;
-	c_env.macros = Cnil;
+	ENV = new_c_env;
+	ENV->coalesce = TRUE;
+	ENV->constants = Cnil;
+	ENV->variables = Cnil;
+	ENV->macros = Cnil;
 	if (Null(env)) {
-		c_env.lexical_level = 0;
+		ENV->lexical_level = 0;
 		return;
 	}
-	c_env.lexical_level = 1;
+	ENV->lexical_level = 1;
 	for (env = @revappend(env, Cnil); !Null(env); env = CDDR(env))
 	{
 		cl_object tag = CADR(env);
@@ -474,7 +392,7 @@ c_tag_ref(cl_object the_tag, cl_object the_type)
 {
 	cl_fixnum n = 0;
 	cl_object l;
-	for (l = c_env.variables; CONSP(l); l = CDR(l)) {
+	for (l = ENV->variables; CONSP(l); l = CDR(l)) {
 		cl_object record = CAR(l);
 		cl_object type = CAR(record);
 		cl_object name = CADR(record);
@@ -502,7 +420,7 @@ c_var_ref(cl_object var)
 {
 	cl_fixnum n = 0;
 	cl_object l;
-	for (l = c_env.variables; CONSP(l); l = CDR(l)) {
+	for (l = ENV->variables; CONSP(l); l = CDR(l)) {
 		cl_object record = CAR(l);
 		cl_object name = CAR(record);
 		cl_object special = CADR(record);
@@ -586,7 +504,7 @@ c_undo_bindings(cl_object old_env)
 	cl_index num_lexical = 0;
 	cl_index num_special = 0;
 
-	for (env = c_env.variables; env != old_env && !Null(env); env = CDR(env)) {
+	for (env = ENV->variables; env != old_env && !Null(env); env = CDR(env)) {
 		cl_object record = CAR(env);
 		cl_object name = CAR(record);
 		cl_object special = CADR(record);
@@ -599,7 +517,7 @@ c_undo_bindings(cl_object old_env)
 	}
 	if (num_lexical) asm_op2(OP_UNBIND, num_lexical);
 	if (num_special) asm_op2(OP_UNBINDS, num_special);
-	c_env.variables = old_env;
+	ENV->variables = old_env;
 }
 
 static void
@@ -673,7 +591,7 @@ maybe_reg0(int flags) {
 static int
 c_block(cl_object body, int flags) {
 	cl_object name = pop(&body);
-	cl_object old_env = c_env.variables;
+	cl_object old_env = ENV->variables;
 	cl_index labelz;
 
 	if (!SYMBOLP(name))
@@ -692,7 +610,7 @@ c_block(cl_object body, int flags) {
 	compile_body(body, flags);
 	asm_op(OP_EXIT_FRAME);
 	asm_complete(Null(name)? OP_DO : 0, labelz);
-	c_env.variables = old_env;
+	ENV->variables = old_env;
 	return flags;
 }
 
@@ -863,7 +781,7 @@ c_catch(cl_object args, int flags) {
 static int
 c_compiler_let(cl_object args, int flags) {
 	cl_object bindings;
-	bds_ptr old_bds_top = bds_top;
+	bds_ptr old_bds_top = cl_env.bds_top;
 
 	for (bindings = pop(&args); !endp(bindings); ) {
 		cl_object form = pop(&bindings);
@@ -892,7 +810,7 @@ c_compiler_let(cl_object args, int flags) {
 		[OP_JT + label]		; Jump if VALUES(0) != Cnil
 
 	It is important to remark that both OP_JNIL and OP_JT truncate
-	the values stack, so that always NValues = 1 after performing
+	the values stack, so that always NVALUES = 1 after performing
 	any of these operations.
 */
 static int
@@ -965,7 +883,7 @@ c_do_doa(int op, cl_object args, int flags) {
 	cl_object bindings, test, specials, body, l;
 	cl_object stepping = Cnil, vars = Cnil;
 	cl_index labelb, labelt, labelz;
-	cl_object old_variables = c_env.variables;
+	cl_object old_variables = ENV->variables;
 
 	bindings = pop(&args);
 	test = pop(&args);
@@ -1047,7 +965,7 @@ c_do_doa(int op, cl_object args, int flags) {
 	/* Compile return point of block */
 	asm_complete(OP_DO, labelz);
 
-	c_env.variables = old_variables;
+	ENV->variables = old_variables;
 	return flags;
 }
 
@@ -1090,7 +1008,7 @@ c_dolist_dotimes(int op, cl_object args, int flags) {
 	cl_object list = pop(&head);
 	cl_object specials, body;
 	cl_index labelz, labelo;
-	cl_object old_variables = c_env.variables;
+	cl_object old_variables = ENV->variables;
 
 	body = c_process_declarations(args);
 	specials = VALUES(3);
@@ -1135,7 +1053,7 @@ c_dolist_dotimes(int op, cl_object args, int flags) {
 	/* Exit point for block */
 	asm_complete(op, labelz);
 
-	c_env.variables = old_variables;
+	ENV->variables = old_variables;
 
 	return flags;
 }
@@ -1189,8 +1107,12 @@ c_register_functions(cl_object l)
 static int
 c_labels_flet(int op, cl_object args, int flags) {
 	cl_object l, def_list = pop(&args);
-	cl_compiler_env old_c_env = c_env;
+	struct cl_compiler_env *old_c_env, new_c_env;
 	cl_index nfun;
+
+	old_c_env = ENV;
+	new_c_env = *ENV;
+	ENV = &new_c_env;
 
 	/* Remove declarations */
 	args = c_process_declarations(args);
@@ -1221,11 +1143,10 @@ c_labels_flet(int op, cl_object args, int flags) {
 	   environment. */
 	flags = compile_body(args, flags);
 
-	c_undo_bindings(old_c_env.variables);
-
 	/* Restore and return */
-	old_c_env.constants = c_env.constants;
-	c_env = old_c_env;
+	c_undo_bindings(old_c_env->variables);
+	old_c_env->constants = ENV->constants;
+	ENV = old_c_env;
 
 	return flags;
 }
@@ -1379,7 +1300,7 @@ c_labels(cl_object args, int flags) {
 static int
 c_let_leta(int op, cl_object args, int flags) {
 	cl_object bindings, specials, body, l, vars;
-	cl_object old_variables = c_env.variables;
+	cl_object old_variables = ENV->variables;
 
 	bindings = cl_car(args);
 	body = c_process_declarations(CDR(args));
@@ -1433,7 +1354,7 @@ c_leta(cl_object args, int flags) {
 
 static int
 c_locally(cl_object args, int flags) {
-	cl_object old_env = c_env.variables;
+	cl_object old_env = ENV->variables;
 
 	/* First use declarations by declaring special variables... */
 	args = c_process_declarations(args);
@@ -1442,7 +1363,7 @@ c_locally(cl_object args, int flags) {
 	/* ...and then process body */
 	flags = compile_body(args, flags);
 
-	c_env.variables = old_env;
+	ENV->variables = old_env;
 
 	return flags;
 }
@@ -1458,7 +1379,7 @@ static int
 c_macrolet(cl_object args, int flags)
 {
 	cl_object def_list;
-	cl_object old_macros = c_env.macros;
+	cl_object old_macros = ENV->macros;
 
 	/* Pop the list of definitions */
 	for (def_list = pop(&args); !endp(def_list); ) {
@@ -1472,7 +1393,7 @@ c_macrolet(cl_object args, int flags)
 		c_register_macro(name, function);
 	}
 	flags = compile_body(args, flags);
-	c_env.macros = old_macros;
+	ENV->macros = old_macros;
 
 	return flags;
 }
@@ -1481,7 +1402,7 @@ c_macrolet(cl_object args, int flags)
 static int
 c_multiple_value_bind(cl_object args, int flags)
 {
-	cl_object old_env = c_env.variables;
+	cl_object old_env = ENV->variables;
 	cl_object vars, value, body, specials;
 	cl_index n;
 
@@ -1495,9 +1416,9 @@ c_multiple_value_bind(cl_object args, int flags)
 	if (n == 0) {
 		c_register_vars(specials);
 		flags = compile_body(body, flags);
-		c_env.variables = old_env;
+		ENV->variables = old_env;
 	} else {
-		cl_object old_variables = c_env.variables;
+		cl_object old_variables = ENV->variables;
 		for (vars=cl_reverse(vars); n--; ) {
 			cl_object var = pop(&vars);
 			if (!SYMBOLP(var))
@@ -1584,7 +1505,7 @@ c_multiple_value_setq(cl_object args, int flags) {
 	}
 
 	if (!Null(temp_vars)) {
-		old_variables = c_env.variables;
+		old_variables = ENV->variables;
 		do {
 			compile_form(Cnil, FLAG_REG0);
 			c_bind(CAR(temp_vars), Cnil);
@@ -1836,7 +1757,7 @@ static int
 c_symbol_macrolet(cl_object args, int flags)
 {
 	cl_object def_list, specials, body;
-	cl_object old_variables = c_env.variables;
+	cl_object old_variables = ENV->variables;
 
 	def_list = pop(&args);
 	body = c_process_declarations(args);
@@ -1858,14 +1779,14 @@ declared special and appear in a symbol-macrolet.", 1, name);
 		c_register_symbol_macro(name, function);
 	}
 	flags = compile_body(body, flags);
-	c_env.variables = old_variables;
+	ENV->variables = old_variables;
 	return flags;
 }
 
 static int
 c_tagbody(cl_object args, int flags)
 {
-	cl_object old_env = c_env.variables;
+	cl_object old_env = ENV->variables;
 	cl_fixnum tag_base;
 	cl_object labels = Cnil, label, body;
 	cl_type item_type;
@@ -1903,7 +1824,7 @@ c_tagbody(cl_object args, int flags)
 		}
 	}
 	asm_op(OP_EXIT_TAGBODY);
-	c_env.variables = old_env;
+	ENV->variables = old_env;
 	return FLAG_REG0;
 }
 
@@ -2038,7 +1959,7 @@ compile_form(cl_object stmt, int flags) {
 	}
 	for (l = database; l->symbol != OBJNULL; l++)
 		if (l->symbol == function) {
-			c_env.lexical_level += l->lexical_increment;
+			ENV->lexical_level += l->lexical_increment;
 			new_flags = (*(l->compiler))(CDR(stmt), flags);
 			goto OUTPUT;
 		}
@@ -2090,14 +2011,14 @@ for special form ~S.", 1, function);
 
 static int
 compile_body(cl_object body, int flags) {
-	if (c_env.lexical_level == 0 && !endp(body)) {
+	if (ENV->lexical_level == 0 && !endp(body)) {
 		while (!endp(CDR(body))) {
 			cl_index handle = asm_begin();
 			cl_object bytecodes;
 			compile_form(CAR(body), FLAG_VALUES);
 			asm_op(OP_EXIT);
 			VALUES(0) = Cnil;
-			NValues = 0;
+			NVALUES = 0;
 			bytecodes = asm_end(handle);
 			interpret(bytecodes, bytecodes->bytecodes.code);
 			asm_clear(handle);
@@ -2208,11 +2129,12 @@ si_process_lambda(cl_object lambda)
 	documentation = VALUES(2);
 	specials = VALUES(3);
 
+
 	VALUES(0) = si_process_lambda_list(lambda_list, @'function');
-	VALUES(NValues++) = documentation;
-	VALUES(NValues++) = specials;
-	VALUES(NValues++) = declarations;
-	VALUES(NValues++) = body;
+	VALUES(NVALUES++) = documentation;
+	VALUES(NVALUES++) = specials;
+	VALUES(NVALUES++) = declarations;
+	VALUES(NVALUES++) = body;
 	return VALUES(0);
 }
 
@@ -2371,7 +2293,7 @@ REST:		if (stage >= AT_REST)
 		} else {
 			int intern_flag;
 			assert_type_symbol(v);
-			key = intern(v->symbol.name, keyword_package, &intern_flag);
+			key = intern(v->symbol.name, cl_core.keyword_package, &intern_flag);
 		}
 		nkey++;
 		push(key, keys);
@@ -2455,10 +2377,14 @@ make_lambda(cl_object name, cl_object lambda) {
 	cl_index label;
 	int nopts, nkeys;
 	cl_index handle;
-	cl_compiler_env old_c_env = c_env;
+	struct cl_compiler_env *old_c_env, new_c_env;
 
-	c_env.lexical_level++;
-	c_env.coalesce = 0;
+	old_c_env = ENV;
+	new_c_env = *ENV;
+	ENV = &new_c_env;
+
+	ENV->lexical_level++;
+	ENV->coalesce = 0;
 
 	reqs = si_process_lambda(lambda);
 	opts = VALUES(1);
@@ -2478,7 +2404,7 @@ make_lambda(cl_object name, cl_object lambda) {
 	if (Null(si_valid_function_name_p(name)))
 		FEprogram_error("LAMBDA: Not a valid function name ~S",1,name);
 
-	c_env.constants = reqs;			/* Special arguments */
+	ENV->constants = reqs;			/* Special arguments */
 	reqs = CDR(reqs);
 	while (!endp(reqs)) {
 		cl_object v = pop(&reqs);
@@ -2486,7 +2412,7 @@ make_lambda(cl_object name, cl_object lambda) {
 	}
 
 	nopts = fix(CAR(opts));			/* Optional arguments */
-	c_env.constants = nconc(c_env.constants, opts);
+	ENV->constants = nconc(ENV->constants, opts);
 
 	asm_constant(rest);			/* Name of &rest argument */
 
@@ -2496,7 +2422,7 @@ make_lambda(cl_object name, cl_object lambda) {
 	} else {
 		asm_constant(allow_other_keys);	/* Value of &allow-other-keys */
 		nkeys = fix(CAR(keys));		/* Keyword arguments */
-		c_env.constants = nconc(c_env.constants, keys);
+		ENV->constants = nconc(ENV->constants, keys);
 	}
 	asm_constant(doc);
 	asm_constant(decl);
@@ -2519,7 +2445,7 @@ make_lambda(cl_object name, cl_object lambda) {
 		keys = CDDDDR(keys);
 	}
 
-	c_env.coalesce = TRUE;
+	ENV->coalesce = TRUE;
 
 	if (!Null(name))
 		c_register_block(si_function_block_name(name));
@@ -2544,7 +2470,7 @@ make_lambda(cl_object name, cl_object lambda) {
 	output->bytecodes.definition = Null(SYM_VAL(@'si::*keep-definitions*'))?
 		Cnil : lambda;
 
-	c_env = old_c_env;
+	ENV = old_c_env;
 
 	return output;
 }
@@ -2578,13 +2504,14 @@ cl_object
 si_make_lambda(cl_object name, cl_object rest)
 {
 	cl_object lambda;
-	cl_compiler_env old_c_env = c_env;
+	struct cl_compiler_env *old_c_env, new_c_env;
 
-	c_new_env(Cnil);
+	old_c_env = ENV;
+	c_new_env(&new_c_env, Cnil);
 	CL_UNWIND_PROTECT_BEGIN {
 		lambda = make_lambda(name,rest);
 	} CL_UNWIND_PROTECT_EXIT {
-		c_env = old_c_env;
+		ENV = old_c_env;
 	} CL_UNWIND_PROTECT_END;
 	@(return lambda)
 }
@@ -2592,27 +2519,35 @@ si_make_lambda(cl_object name, cl_object rest)
 cl_object
 si_eval_with_env(cl_object form, cl_object env)
 {
-	volatile cl_compiler_env old_c_env = c_env;
+	volatile struct cl_compiler_env *old_c_env = ENV;
+	struct cl_compiler_env new_c_env;
 	volatile cl_index handle;
 	struct ihs_frame ihs;
 	cl_object bytecodes;
 
-	c_new_env(env);
+	/*
+	 * Compile to bytecodes.
+	 */
+	ENV = &new_c_env;
+	c_new_env(&new_c_env, env);
 	handle = asm_begin();
 	CL_UNWIND_PROTECT_BEGIN {
 		compile_form(form, FLAG_VALUES);
 		asm_op(OP_EXIT);
 		bytecodes = asm_end(handle);
 	} CL_UNWIND_PROTECT_EXIT {
-#ifdef CL_COMP_OWN_STACK
-		asm_clear(handle);
-#endif
-		c_env = old_c_env;
+		/* Clear up */
+		ENV = old_c_env;
+		memset(&new_c_env, 0, sizeof(new_c_env));
 	} CL_UNWIND_PROTECT_END;
+
+	/*
+	 * Interpret using the given lexical environment.
+	 */
 	ihs_push(&ihs, @'eval');
-	lex_env = env;
+	cl_env.lex_env = env;
 	VALUES(0) = Cnil;
-	NValues = 0;
+	NVALUES = 0;
 	interpret(bytecodes, bytecodes->bytecodes.code);
 #ifdef GBC_BOEHM
 	GC_free(bytecodes->bytecodes.code);
@@ -2621,16 +2556,4 @@ si_eval_with_env(cl_object form, cl_object env)
 #endif
 	ihs_pop();
 	return VALUES(0);
-}
-
-void
-init_compiler(void)
-{
-	ecl_register_static_root(&c_env.variables);
-	ecl_register_static_root(&c_env.macros);
-	ecl_register_static_root(&c_env.constants);
-#ifdef CL_COMP_OWN_STACK
-	ecl_register_static_root(&c_env.bytecodes);
-	c_env.bytecodes = alloc_bytecodes();
-#endif
 }

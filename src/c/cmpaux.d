@@ -177,7 +177,7 @@ cl_go(cl_object tag_id, cl_object label)
   if (fr == NULL)
     FEcontrol_error("GO: The tagbody ~S is missing.", 1, tag_id);
   VALUES(0)=label;
-  NValues=1;
+  NVALUES=1;
   unwind(fr);
 }
 
@@ -277,12 +277,4 @@ check_other_key(cl_object l, int n, ...)
 	if (other_key != OBJNULL && !allow_other_keys)
 		FEprogram_error("The keyword ~S is not allowed or is duplicated.",
 				1, other_key);
-}
-
-void
-init_cmpaux(void)
-{
-	SYM_VAL(@'LAMBDA-LIST-KEYWORDS') =
-	cl_list(8, @'&optional', @'&rest', @'&key', @'&allow-other-keys', @'&aux',
-		@'&whole', @'&environment', @'&body');
 }

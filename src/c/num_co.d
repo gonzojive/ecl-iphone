@@ -40,8 +40,6 @@
 # define tanhf tanh
 #endif
 
-static cl_object plus_half, minus_half;
-
 cl_object
 double_to_integer(double d)
 {
@@ -185,7 +183,7 @@ floor1(cl_object x)
 	default:
 		FEtype_error_real(x);
 	}
-	NValues = 2;
+	NVALUES = 2;
 	return VALUES(0);
 }
 
@@ -316,7 +314,7 @@ floor2(cl_object x, cl_object y)
 	default:
 		FEtype_error_real(x);
 	}
-	NValues = 2;
+	NVALUES = 2;
 	return VALUES(0);
 }
   
@@ -359,7 +357,7 @@ ceiling1(cl_object x)
 	default:
 		FEtype_error_real(x);
 	}
-	NValues = 2;
+	NVALUES = 2;
 	return VALUES(0);
 }
 
@@ -490,7 +488,7 @@ ceiling2(cl_object x, cl_object y)
 	default:
 		FEtype_error_real(x);
 	}
-	NValues = 2;
+	NVALUES = 2;
 	return VALUES(0);
 }
   
@@ -533,7 +531,7 @@ truncate1(cl_object x)
 	default:
 		FEtype_error_real(x);
 	}
-	NValues = 2;
+	NVALUES = 2;
 	return VALUES(0);
 }
 
@@ -607,7 +605,7 @@ round1(cl_object x)
 	default:
 		FEtype_error_real(x);
 	}
-	NValues = 2;
+	NVALUES = 2;
 	return VALUES(0);
 }
 
@@ -626,7 +624,7 @@ round2(cl_object x, cl_object y)
 	case t_ratio: {
 		cl_object q1 = integer_divide(q->ratio.num, q->ratio.den);
 		cl_object r = number_minus(q, q1);
-		int c = number_compare(r, plus_half);
+		int c = number_compare(r, cl_core.plus_half);
 		if (c > 0 || (c == 0 && number_oddp(q1))) {
 			q1 = one_plus(q1);
 		} else if (c < 0 || (c == 0 && number_oddp(q1))) {
@@ -665,7 +663,7 @@ round2(cl_object x, cl_object y)
 	default:
 		FEerror("Complex arguments to round2 (~S, ~S)", 2, x, y);
 	}
-	NValues = 2;
+	NVALUES = 2;
 	return VALUES(0);
 }
 
@@ -905,10 +903,10 @@ cl_imagpart(cl_object x)
 		x = MAKE_FIXNUM(0);
 		break;
 	case t_shortfloat:
-		x = shortfloat_zero;
+		x = cl_core.shortfloat_zero;
 		break;
 	case t_longfloat:
-		x = longfloat_zero;
+		x = cl_core.longfloat_zero;
 		break;
 	case t_complex:
 		x = x->complex.imag;
@@ -917,72 +915,4 @@ cl_imagpart(cl_object x)
 		FEtype_error_number(x);
 	}
 	@(return x)
-}
-
-void
-init_num_co(void)
-{
-	cl_object num;
-
-	num = make_shortfloat(FLT_MAX);
-	SYM_VAL(@'MOST-POSITIVE-SHORT-FLOAT') = num;
-	SYM_VAL(@'MOST-POSITIVE-SINGLE-FLOAT') = num;
-
-	num = make_shortfloat(-FLT_MAX);
-	SYM_VAL(@'MOST-NEGATIVE-SHORT-FLOAT') = num;
-	SYM_VAL(@'MOST-NEGATIVE-SINGLE-FLOAT') = num;
-
-	num = make_shortfloat(FLT_MIN);
-	SYM_VAL(@'LEAST-POSITIVE-SHORT-FLOAT') = num;
-	SYM_VAL(@'LEAST-POSITIVE-SINGLE-FLOAT') = num;
-	SYM_VAL(@'LEAST-POSITIVE-NORMALIZED-SHORT-FLOAT') = num;
-	SYM_VAL(@'LEAST-POSITIVE-NORMALIZED-SINGLE-FLOAT') = num;
-
-	num = make_shortfloat(-FLT_MIN);
-	SYM_VAL(@'LEAST-NEGATIVE-SHORT-FLOAT') = num;
-	SYM_VAL(@'LEAST-NEGATIVE-SINGLE-FLOAT') = num;
-	SYM_VAL(@'LEAST-NEGATIVE-NORMALIZED-SHORT-FLOAT') = num;
-	SYM_VAL(@'LEAST-NEGATIVE-NORMALIZED-SINGLE-FLOAT') = num;
-
-	num = make_longfloat(DBL_MAX);
-	SYM_VAL(@'MOST-POSITIVE-DOUBLE-FLOAT') = num;
-	SYM_VAL(@'MOST-POSITIVE-LONG-FLOAT') = num;
-
-	num = make_longfloat(-DBL_MAX);
-	SYM_VAL(@'MOST-NEGATIVE-DOUBLE-FLOAT') = num;
-	SYM_VAL(@'MOST-NEGATIVE-LONG-FLOAT') = num;
-
-	num = make_longfloat(DBL_MIN);
-	SYM_VAL(@'LEAST-POSITIVE-DOUBLE-FLOAT') = num;
-	SYM_VAL(@'LEAST-POSITIVE-LONG-FLOAT') = num;
-	SYM_VAL(@'LEAST-POSITIVE-NORMALIZED-DOUBLE-FLOAT') = num;
-	SYM_VAL(@'LEAST-POSITIVE-NORMALIZED-LONG-FLOAT') = num;
-
-	num = make_longfloat(-DBL_MIN);
-	SYM_VAL(@'LEAST-NEGATIVE-DOUBLE-FLOAT') = num;
-	SYM_VAL(@'LEAST-NEGATIVE-LONG-FLOAT') = num;
-	SYM_VAL(@'LEAST-NEGATIVE-NORMALIZED-DOUBLE-FLOAT') = num;
-	SYM_VAL(@'LEAST-NEGATIVE-NORMALIZED-LONG-FLOAT') = num;
-
-	num = make_shortfloat(FLT_EPSILON);
-	SYM_VAL(@'SHORT-FLOAT-EPSILON') = num;
-	SYM_VAL(@'SINGLE-FLOAT-EPSILON') = num;
-
-	num = make_shortfloat(-FLT_EPSILON);
-	SYM_VAL(@'SHORT-FLOAT-NEGATIVE-EPSILON') = num;
-	SYM_VAL(@'SINGLE-FLOAT-NEGATIVE-EPSILON') = num;
-
-	num = make_longfloat(DBL_EPSILON);
-	SYM_VAL(@'DOUBLE-FLOAT-EPSILON') = num;
-	SYM_VAL(@'LONG-FLOAT-EPSILON') = num;
-
-	num = make_longfloat(-DBL_EPSILON);
-	SYM_VAL(@'DOUBLE-FLOAT-NEGATIVE-EPSILON') = num;
-	SYM_VAL(@'LONG-FLOAT-NEGATIVE-EPSILON') = num;
-
-	plus_half = make_ratio(MAKE_FIXNUM(1), MAKE_FIXNUM(2));
-	ecl_register_static_root(&plus_half);
-
-	minus_half = make_ratio(MAKE_FIXNUM(-1), MAKE_FIXNUM(2));
-	ecl_register_static_root(&minus_half);
 }

@@ -100,9 +100,3 @@ cl_random_state_p(cl_object x)
 {
 	@(return ((type_of(x) == t_random) ? Ct : Cnil))
 }
-
-void
-init_num_rand(void)
-{
-        SYM_VAL(@'*random-state*') = make_random_state(Ct);
-}

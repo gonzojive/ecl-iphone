@@ -20,7 +20,7 @@
       (wt "+" f))
     (wt ");"))
   (when bds-lcl (wt-nl "bds_unwind(" bds-lcl ");"))
-  (dotimes (n bds-bind) (declare (fixnum n)) (wt-nl "bds_unwind1;")))
+  (dotimes (n bds-bind) (declare (fixnum n)) (wt-nl "bds_unwind1();")))
 
 (defun unwind-exit (loc &optional (jump-p nil)
                         &aux (bds-lcl nil) (bds-bind 0) (stack-pop nil))

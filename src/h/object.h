@@ -76,6 +76,7 @@ typedef cl_object (*cl_objectfn)(int narg, ...);
 #define HEADER1(field)		int8_t t, m, field, padding
 #define HEADER2(field1,field2)	int8_t t, m, field1, field2
 #define HEADER3(field1,flag2,flag3) int8_t t, m, field1; unsigned flag2:4, flag3:4
+#define HEADER4(field1,flag2,flag3,flag4) int8_t t, m, field1; unsigned flag2:4, flag3:2, flag4:2
 
 struct ecl_shortfloat {
 	HEADER;
@@ -119,9 +120,9 @@ enum ecl_stype {		/*  symbol type  */
 #define	Ct			((cl_object)(cl_symbols+1))
 
 struct ecl_symbol {
-	HEADER3(stype, mflag, isform);
+	HEADER4(stype, mflag, isform, dynamic);
 				/*  symbol type and whether it names a macro */
-	cl_object dbind;	/*  dynamic binding  */
+	cl_object value;	/*  global value of the symbol  */
 	cl_object plist;	/*  property list  */
 				/*  This field coincides with cons.car  */
 	cl_object name;		/*  print name  */
@@ -132,7 +133,6 @@ struct ecl_symbol {
 	cl_object hpack;	/*  home package  */
 				/*  Cnil for uninterned symbols  */
 };
-#define SYM_VAL(sym)	((sym)->symbol.dbind)
 #define SYM_FUN(sym)	((sym)->symbol.gfdef)
 
 struct ecl_package {
@@ -399,6 +399,16 @@ struct ecl_dummy {
 	HEADER;
 };
 
+#ifdef ECL_THREADS
+struct ecl_thread {
+	HEADER;
+	struct cl_env_struct *env;
+	cl_object function;
+	cl_object args;
+	void *pthread;
+};
+#endif
+
 #ifdef THREADS
 struct ecl_cont {
 				/* already resumed */
@@ -463,6 +473,9 @@ union cl_lispunion {
 #else
 	struct ecl_structure	str;	/*  structure  */
 #endif /* CLOS */
+#ifdef ECL_THREADS
+	struct ecl_thread	thread; /*  thread  */
+#endif
 #ifdef THREADS
 	struct ecl_cont		cont;	/*  continuation  */
 	struct ecl_thread	thread;	/*  thread  */
@@ -505,6 +518,9 @@ typedef enum {
 #else
 	t_structure,		/* 17 */
 #endif /* CLOS */
+#ifdef ECL_THREADS
+	t_thread,
+#endif
 #ifdef THREADS
 	t_cont,			/* 19 */
 	t_thread,		/* 20 */

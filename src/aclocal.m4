@@ -73,6 +73,19 @@ EOF
 fi
 ])
 
+dnl --------------------------------------------------------------
+dnl Make srcdir absolute, if it isn't already.  It's important to
+dnl avoid running the path through pwd unnecessarily, since pwd can
+dnl give you automounter prefixes, which can go away.
+dnl
+AC_DEFUN(ECL_MAKE_ABSOLUTE_SRCDIR,[
+PWDCMD="pwd";
+case "${srcdir}" in
+  /* | ?:/* ) ;;
+  *  ) srcdir="`(cd ${srcdir}; ${PWDCMD})`";
+esac
+])
+
 dnl
 dnl --------------------------------------------------------------
 dnl Define a name for this operating system and set some defaults
@@ -115,10 +128,14 @@ LIBPREFIX='lib'
 LIBEXT='a'
 PICFLAG='-fPIC'
 LDINSTALLNAME=''
+THREAD_CFLAGS=''
+THREAD_LDFLAGS=''
 case "${host_os}" in
 	# libdir may have a dollar expression inside
 	linux*)
 		thehost='linux'
+		THREAD_CFLAGS='-D_THREAD_SAFE'
+		THREAD_LDFLAGS='-lpthread'
 		SHARED_LDFLAGS="-shared ${LDFLAGS}"
 		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
 		LDRPATH='-Wl,--rpath,~A'

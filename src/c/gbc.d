@@ -109,8 +109,6 @@ _mark_object(cl_object x)
 	cl_index i, j;
 	cl_object *p, y;
 	cl_ptr cp;
-
-	cs_check(x);
 BEGIN:
 #if 0
 	/* We cannot get here because mark_object() and mark_next() already check this */
@@ -431,6 +429,7 @@ static void
 mark_phase(void)
 {
 	int i;
+	cl_object p;
 	bds_ptr bdp;
 	frame_ptr frp;
 
@@ -454,27 +453,38 @@ mark_phase(void)
 	    clwp = pdp->pd_lpd;
 #endif /* THREADS */
 
-	    mark_contblock(cl_stack, cl_stack_size * sizeof(*cl_stack));
-	    mark_stack_conservative(cl_stack, cl_stack_top);
+	    mark_contblock(cl_env.stack, cl_env.stack_size * sizeof(cl_object));
+	    mark_stack_conservative(cl_env.stack, cl_env.stack_top);
 
-	    for (i=0; i<NValues; i++)
+	    for (i=0; i<NVALUES; i++)
 	      mark_object(VALUES(i));
 
 	    mark_contblock(frs_org, frs_size * sizeof(*frs_org));
 	    mark_contblock(bds_org, frs_size * sizeof(*bds_org));
 
-	    for (bdp = bds_org;  bdp <= bds_top;  bdp++) {
+	    for (bdp = cl_env.bds_org;  bdp <= cl_env.bds_top;  bdp++) {
 	      mark_object(bdp->bds_sym);
 	      mark_object(bdp->bds_val);
 	    }
-	    
-	    for (frp = frs_org;  frp <= frs_top;  frp++) {
+
+	    for (frp = cl_env.frs_org;  frp <= cl_env.frs_top;  frp++) {
 	      mark_object(frp->frs_val);
 	    }
-	    
-	    mark_object(lex_env);
 
-#ifdef THREADS	      
+	    mark_object(cl_env.lex_env);
+	    mark_object(cl_env.token);
+	    mark_object(cl_env.fmt_aux_stream);
+	    mark_object(cl_env.print_case);
+	    mark_object(cl_env.print_package);
+	    mark_object(cl_env.print_stream);
+	    mark_object(cl_env.circle_stack);
+	    mark_contblock(cl_env.queue, sizeof(short) * ECL_PPRINT_QUEUE_SIZE);
+	    mark_contblock(cl_env.indent_stack, sizeof(short) * ECL_PPRINT_INDENT_STACK_SIZE);
+	    mark_object(cl_env.big_register[0]);
+	    mark_object(cl_env.big_register[1]);
+	    mark_object(cl_env.big_register[2]);
+
+#ifdef THREADS
 	    /* added to mark newly allocated objects */
 	    mark_object(clwp->lwp_alloc_temporary);
 	    mark_object(clwp->lwp_fmt_temporary_stream);
@@ -525,6 +535,10 @@ mark_phase(void)
 	  clwp = old_clwp;
 	}
 #endif /* THREADS */
+
+	for (p = &cl_core.packages; p <= &cl_core.Jan1st1970UT; p++) {
+		mark_object(*p);
+	}
 
 	/* mark roots */
 	for (i = 0; i < gc_roots;  i++)
@@ -909,7 +923,7 @@ _mark_contblock(void *x, cl_index s)
 	int i;
 	cl_object *tl;
 @
-	NValues = 8;
+	NVALUES = 8;
 	VALUES(0) = MAKE_FIXNUM(real_maxpage);
 	VALUES(1) = MAKE_FIXNUM(available_pages());
 	VALUES(2) = MAKE_FIXNUM(ncbpage);

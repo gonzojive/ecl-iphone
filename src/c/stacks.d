@@ -20,47 +20,114 @@
 # include <sys/resource.h>
 #endif
 
-#ifndef THREADS
-size_t bds_size;
-bds_ptr bds_org;
-bds_ptr bds_limit;
-bds_ptr bds_top;
-
-struct ihs_frame ihs_org = { NULL, Cnil, Cnil, 0 };
-ihs_ptr ihs_top;
-
-size_t frs_size;
-frame_ptr frs_org;
-frame_ptr frs_limit;
-frame_ptr frs_top;
-frame_ptr nlj_fr;
-
-int *cs_org;
-int *cs_limit;
-size_t cssize;
-
-int NValues;
-cl_object Values[VSSIZE];
-#endif
-
 /********************* BINDING STACK ************************/
+
+#ifdef ECL_THREADS
+void
+bds_bind(cl_object s, cl_object value)
+{
+	struct ecl_hashtable_entry *h = ecl_search_hash(s, cl_env.bindings_hash);
+	struct bds_bd *slot = ++cl_env.bds_top;
+	if (h->key == OBJNULL) {
+		/* The previous binding was at most global */
+		slot->symbol = s;
+		slot->value = OBJNULL;
+		sethash(s, cl_env.bindings_hash, value);
+	} else {
+		/* We have to save a dynamic binding */
+		slot->symbol = h->key;
+		slot->value = h->value;
+		h->value = value;
+	}
+	s->symbol.dynamic |= 1;
+}
+
+void
+bds_push(cl_object s)
+{
+	struct ecl_hashtable_entry *h = ecl_search_hash(s, cl_env.bindings_hash);
+	struct bds_bd *slot = ++cl_env.bds_top;
+	if (h->key == OBJNULL) {
+		/* The previous binding was at most global */
+		slot->symbol = s;
+		slot->value = OBJNULL;
+		sethash(s, cl_env.bindings_hash, s->symbol.value);
+	} else {
+		/* We have to save a dynamic binding */
+		slot->symbol = h->key;
+		slot->value = h->value;
+	}
+	s->symbol.dynamic |= 1;
+}
+
+void
+bds_unwind1(void)
+{
+	struct bds_bd *slot = cl_env.bds_top--;
+	cl_object s = slot->symbol;
+	struct ecl_hashtable_entry *h = ecl_search_hash(s, cl_env.bindings_hash);
+	if (slot->value == OBJNULL) {
+		/* We have deleted all dynamic bindings */
+		h->key = OBJNULL;
+		h->value = OBJNULL;
+		cl_env.bindings_hash->hash.entries--;
+	} else {
+		/* We restore the previous dynamic binding */
+		h->value = slot->value;
+	}
+}
+
+void
+bds_unwind_n(int n)
+{
+	while (n--) bds_unwind1();
+}
+
+cl_object *
+ecl_symbol_slot(cl_object s)
+{
+	if (s->symbol.dynamic) {
+		struct ecl_hashtable_entry *h = ecl_search_hash(s, cl_env.bindings_hash);
+		if (h->key != OBJNULL)
+			return &h->value;
+	}
+	return &s->symbol.value;
+}
+
+cl_object
+ecl_set_symbol(cl_object s, cl_object value)
+{
+	if (s->symbol.dynamic) {
+		struct ecl_hashtable_entry *h = ecl_search_hash(s, cl_env.bindings_hash);
+		if (h->key != OBJNULL) {
+			return (h->value = value);
+		}
+	}
+	return (s->symbol.value = value);
+}
+#endif
 
 void
 bds_overflow(void)
 {
-	--bds_top;
-	if (bds_limit > bds_org + bds_size)
+	--cl_env.bds_top;
+	if (cl_env.bds_limit > cl_env.bds_org + cl_env.bds_size)
 		error("bind stack overflow.");
-	bds_limit += BDSGETA;
+	cl_env.bds_limit += BDSGETA;
 	FEerror("Bind stack overflow.", 0);
 }
 
 void
 bds_unwind(bds_ptr new_bds_top)
-{       register bds_ptr bds = bds_top;
+{
+	register bds_ptr bds = cl_env.bds_top;
 	for (;  bds > new_bds_top;  bds--)
-		SYM_VAL(bds->bds_sym) = bds->bds_val;
-	bds_top = new_bds_top;
+#ifdef ECL_THREADS
+		bds_unwind1();
+#else
+		bds->symbol->symbol.value = bds->value;
+#endif
+	cl_env.bds_top = new_bds_top;
 }
 
 static bds_ptr
@@ -69,8 +136,8 @@ get_bds_ptr(cl_object x)
 	bds_ptr p;
 
 	if (FIXNUMP(x)) {
-	  p = bds_org + fix(x);
-	  if (bds_org <= p && p <= bds_top)
+	  p = cl_env.bds_org + fix(x);
+	  if (cl_env.bds_org <= p && p <= cl_env.bds_top)
 	    return(p);
 	}
 	FEerror("~S is an illegal bds index.", 1, x);
@@ -79,19 +146,19 @@ get_bds_ptr(cl_object x)
 cl_object
 si_bds_top()
 {
-	@(return MAKE_FIXNUM(bds_top - bds_org))
+	@(return MAKE_FIXNUM(cl_env.bds_top - cl_env.bds_org))
 }
 
 cl_object
 si_bds_var(cl_object arg)
 {
-	@(return get_bds_ptr(arg)->bds_sym)
+	@(return get_bds_ptr(arg)->symbol)
 }
 
 cl_object
 si_bds_val(cl_object arg)
 {
-	@(return get_bds_ptr(arg)->bds_val)
+	@(return get_bds_ptr(arg)->value)
 }
 
 /******************** INVOCATION STACK **********************/
@@ -123,7 +190,7 @@ ihs_function_name(cl_object x)
 static ihs_ptr
 get_ihs_ptr(cl_index n)
 {
-	ihs_ptr p = ihs_top;
+	ihs_ptr p = cl_env.ihs_top;
 	if (n > p->index)
 		FEerror("~D is an illegal IHS index.", 1, MAKE_FIXNUM(n));
 	while (n < p->index)
@@ -134,13 +201,13 @@ get_ihs_ptr(cl_index n)
 cl_object
 ihs_top_function_name(void)
 {
-	return ihs_function_name(ihs_top->function);
+	return ihs_function_name(cl_env.ihs_top->function);
 }
 
 cl_object
 si_ihs_top(cl_object name)
 {
-	@(return MAKE_FIXNUM(ihs_top->index))
+	@(return MAKE_FIXNUM(cl_env.ihs_top->index))
 }
 
 cl_object
@@ -180,38 +247,38 @@ new_frame_id(void)
 int
 frs_overflow(void)		/* used as condition in list.d */
 {
-	--frs_top;
-	if (frs_limit > frs_org + frs_size)
+	--cl_env.frs_top;
+	if (cl_env.frs_limit > cl_env.frs_org + cl_env.frs_size)
 		error("frame stack overflow.");
-	frs_limit += FRSGETA;
+	cl_env.frs_limit += FRSGETA;
 	FEerror("Frame stack overflow.", 0);
 }
 
 frame_ptr
 _frs_push(register enum fr_class clas, register cl_object val)
 {
-	if (++frs_top >= frs_limit) frs_overflow();
-	frs_top->frs_lex = lex_env;
-	frs_top->frs_bds_top = bds_top;
-	frs_top->frs_class = clas;
-	frs_top->frs_val = val;
-	frs_top->frs_ihs = ihs_top;
-	frs_top->frs_sp = cl_stack_index();
-	return frs_top;
+	frame_ptr output = ++cl_env.frs_top;
+	if (output >= cl_env.frs_limit) frs_overflow();
+	output->frs_lex = cl_env.lex_env;
+	output->frs_bds_top = cl_env.bds_top;
+	output->frs_class = clas;
+	output->frs_val = val;
+	output->frs_ihs = cl_env.ihs_top;
+	output->frs_sp = cl_stack_index();
+	return output;
 }
 
 void
 unwind(frame_ptr fr)
 {
-	nlj_fr = fr;
-	while (frs_top != fr
-		&& frs_top->frs_class == FRS_CATCH)
-	  --frs_top;
-	lex_env = frs_top->frs_lex;
-	ihs_top = frs_top->frs_ihs;
-	bds_unwind(frs_top->frs_bds_top);
-	cl_stack_set_index(frs_top->frs_sp);
-	ecl_longjmp(frs_top->frs_jmpbuf, 1);
+	cl_env.nlj_fr = fr;
+	while (cl_env.frs_top != fr && cl_env.frs_top->frs_class == FRS_CATCH)
+		--cl_env.frs_top;
+	cl_env.lex_env = cl_env.frs_top->frs_lex;
+	cl_env.ihs_top = cl_env.frs_top->frs_ihs;
+	bds_unwind(cl_env.frs_top->frs_bds_top);
+	cl_stack_set_index(cl_env.frs_top->frs_sp);
+	ecl_longjmp(cl_env.frs_top->frs_jmpbuf, 1);
 	/* never reached */
 }
 
@@ -220,7 +287,7 @@ frs_sch (cl_object frame_id)
 {
 	frame_ptr top;
 
-	for (top = frs_top;  top >= frs_org;  top--)
+	for (top = cl_env.frs_top;  top >= cl_env.frs_org;  top--)
 		if (top->frs_val == frame_id && top->frs_class == FRS_CATCH)
 			return(top);
 	return(NULL);
@@ -231,7 +298,7 @@ frs_sch_catch(cl_object frame_id)
 {
 	frame_ptr top;
 
-	for(top = frs_top;  top >= frs_org  ;top--)
+	for(top = cl_env.frs_top;  top >= cl_env.frs_org  ;top--)
 	  if ((top->frs_val == frame_id && top->frs_class == FRS_CATCH)
 	      || top->frs_class == FRS_CATCHALL)
 	    return(top);
@@ -244,8 +311,8 @@ get_frame_ptr(cl_object x)
 	frame_ptr p;
 
 	if (FIXNUMP(x)) {
-	  p = frs_org + fix(x);
-	  if (frs_org <= p && p <= frs_top)
+	  p = cl_env.frs_org + fix(x);
+	  if (cl_env.frs_org <= p && p <= cl_env.frs_top)
 	    return(p);
 	}
 	FEerror("~S is an illegal frs index.", 1, x);
@@ -254,13 +321,13 @@ get_frame_ptr(cl_object x)
 cl_object
 si_frs_top()
 {
-	@(return MAKE_FIXNUM(frs_top - frs_org))
+	@(return MAKE_FIXNUM(cl_env.frs_top - cl_env.frs_org))
 }
 
 cl_object
 si_frs_bds(cl_object arg)
 {
-	@(return MAKE_FIXNUM(get_frame_ptr(arg)->frs_bds_top - bds_org))
+	@(return MAKE_FIXNUM(get_frame_ptr(arg)->frs_bds_top - cl_env.bds_org))
 }
 
 cl_object
@@ -296,8 +363,10 @@ si_sch_frs_base(cl_object fr, cl_object ihs)
 	cl_index y;
 
 	y = fixnnint(ihs);
-	for (x = get_frame_ptr(fr); x <= frs_top && x->frs_ihs->index < y; x++);
-	@(return ((x > frs_top) ? Cnil : MAKE_FIXNUM(x - frs_org)))
+	for (x = get_frame_ptr(fr); 
+	     x <= cl_env.frs_top && x->frs_ihs->index < y;
+	     x++);
+	@(return ((x > cl_env.frs_top) ? Cnil : MAKE_FIXNUM(x - cl_env.frs_org)))
 }
 
 /********************* INITIALIZATION ***********************/
@@ -306,23 +375,23 @@ cl_object
 si_reset_stack_limits()
 {
 	volatile int foo = 0;
-	if (bds_top < bds_org + (bds_size - 2*BDSGETA))
-		bds_limit = bds_org + (bds_size - 2*BDSGETA);
+	if (cl_env.bds_top < cl_env.bds_org + (cl_env.bds_size - 2*BDSGETA))
+		cl_env.bds_limit = cl_env.bds_org + (cl_env.bds_size - 2*BDSGETA);
 	else
 		error("can't reset bds_limit.");
-	if (frs_top < frs_org + (bds_size - 2*FRSGETA))
-		frs_limit = frs_org + (frs_size - 2*FRSGETA);
+	if (cl_env.frs_top < cl_env.frs_org + (cl_env.frs_size - 2*FRSGETA))
+		cl_env.frs_limit = cl_env.frs_org + (cl_env.frs_size - 2*FRSGETA);
 	else
 		error("can't reset frs_limit.");
 #ifdef DOWN_STACK
-	if (&foo > cs_org - cssize + 16)
-		cs_limit = cs_org - cssize;
+	if (&foo > cl_env.cs_org - cl_env.cs_size + 16)
+		cl_env.cs_limit = cl_env.cs_org - cl_env.cs_size;
 #else
-	if (&foo < cs_org + cssize - 16)
-		cs_limit = cs_org + cssize;
+	if (&foo < cl_env.cs_org + cl_env.cs_size - 16)
+		cl_env.cs_limit = cl_env.cs_org + cl_env.cs_size;
 #endif
 	else
-		error("can't reset cs_limit.");
+		error("can't reset cl_env.cs_limit.");
 
 	@(return Cnil)
 }
@@ -330,45 +399,49 @@ si_reset_stack_limits()
 void
 init_stacks(int *new_cs_org)
 {
-#ifdef THREADS
-	Values = main_lpd.lwp_Values;
+	static struct ihs_frame ihs_org = { Cnil, NULL, NULL, 0};
+	cl_index size;
+
+	cl_env.frs_size = size = FRSSIZE + 2*FRSGETA;
+	cl_env.frs_org = (frame_ptr)cl_alloc(size * sizeof(*cl_env.frs_org));
+	cl_env.frs_top = cl_env.frs_org-1;
+	cl_env.frs_limit = &cl_env.frs_org[size - 2*FRSGETA];
+	cl_env.bds_size = size = BDSSIZE + 2*BDSGETA;
+	cl_env.bds_org = (bds_ptr)cl_alloc(size * sizeof(*cl_env.bds_org));
+	cl_env.bds_top = cl_env.bds_org-1;
+	cl_env.bds_limit = &cl_env.bds_org[size - 2*BDSGETA];
+#ifdef ECL_THREADS
+	cl_env.bindings_hash = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024),
+						   make_shortfloat(1.5),	
+						   make_shortfloat(0.7));
 #endif
 
-	frs_size = FRSSIZE + 2*FRSGETA;
-	frs_org = (frame_ptr)cl_alloc(frs_size * sizeof(*frs_org));
-	frs_top = frs_org-1;
-	frs_limit = &frs_org[frs_size - 2*FRSGETA];
-	bds_size = BDSSIZE + 2*BDSGETA;
-	bds_org = (bds_ptr)cl_alloc(bds_size * sizeof(*bds_org));
-	bds_top = bds_org-1;
-	bds_limit = &bds_org[bds_size - 2*BDSGETA];
-
-	ihs_top = &ihs_org;
+	cl_env.ihs_top = &ihs_org;
 	ihs_org.function = @'si::top-level';
 	ihs_org.lex_env = Cnil;
 	ihs_org.index = 0;
 
-	cs_org = new_cs_org;
+	cl_env.cs_org = new_cs_org;
 #if defined(HAVE_SYS_RESOURCE_H) && defined(RLIMIT_STACK)
 	{
 	  struct rlimit rl;
 	  getrlimit(RLIMIT_STACK, &rl);
-	  cssize = rl.rlim_cur/4 - 4*CSGETA;
+	  cl_env.cs_size = rl.rlim_cur/4 - 4*CSGETA;
 	}
 #else
-	cssize = CSSIZE;
+	cl_env.cs_size = CSSIZE;
 #endif
 #ifdef DOWN_STACK
 	/* Sanity check - in case rlimit is set too high */
-	if (cs_org - cssize > cs_org) {
-	  cssize = CSSIZE;
+	if (cl_env.cs_org - cl_env.cs_size > cl_env.cs_org) {
+	  cl_env.cs_size = CSSIZE;
 	}
-	cs_limit = cs_org - cssize; /* in THREADS I'm assigning to the main thread clwp */
+	cl_env.cs_limit = cl_env.cs_org - cl_env.cs_size; /* in THREADS I'm assigning to the main thread clwp */
 #else
 	/* Sanity check - in case rlimit is set too high */
-	if (cs_org + cssize < cs_org) {
-	  cssize = CSSIZE;
+	if (cl_env.cs_org + cl_env.cs_size < cl_env.cs_org) {
+	  cl_env.cs_size = CSSIZE;
 	}
-	cs_limit = cs_org + cssize;
+	cl_env.cs_limit = cl_env.cs_org + cl_env.cs_size;
 #endif
 }

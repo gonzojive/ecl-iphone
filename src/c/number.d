@@ -16,13 +16,11 @@
 
 #include <math.h>
 #include "ecl.h"
+#include <float.h>
 
 #ifndef HAVE_ISNANF
 #define isnanf(x) isnan(x)
 #endif
-
-cl_object shortfloat_zero;
-cl_object longfloat_zero;
 
 cl_fixnum
 fixint(cl_object x)
@@ -109,7 +107,7 @@ make_shortfloat(float f)
 	cl_object x;
 
 	if (f == (float)0.0)
-		return(shortfloat_zero);
+		return(cl_core.shortfloat_zero);
 	if (isnanf(f) || !finite(f))
 		FEerror("Not a number.",0);
 	x = cl_alloc_object(t_shortfloat);
@@ -123,7 +121,7 @@ make_longfloat(double f)
 	cl_object x;
 
 	if (f == (double)0.0)
-		return(longfloat_zero);
+		return(cl_core.longfloat_zero);
 	if (isnan(f) || !finite(f))
 		FEerror("Not a number.",0);
 	x = cl_alloc_object(t_longfloat);
@@ -220,18 +218,85 @@ number_to_double(cl_object x)
 	}
 }
 
+
+
 void
 init_number(void)
 {
-	shortfloat_zero = cl_alloc_object(t_shortfloat);
-	sf(shortfloat_zero) = (float)0.0;
-	longfloat_zero = cl_alloc_object(t_longfloat);
-	lf(longfloat_zero) = (double)0.0;
-	ecl_register_static_root(&shortfloat_zero);
-	ecl_register_static_root(&longfloat_zero);
+	cl_object num;
+
+	num = make_shortfloat(FLT_MAX);
+	ECL_SET(@'MOST-POSITIVE-SHORT-FLOAT', num);
+	ECL_SET(@'MOST-POSITIVE-SINGLE-FLOAT', num);
+
+	num = make_shortfloat(-FLT_MAX);
+	ECL_SET(@'MOST-NEGATIVE-SHORT-FLOAT', num);
+	ECL_SET(@'MOST-NEGATIVE-SINGLE-FLOAT', num);
+
+	num = make_shortfloat(FLT_MIN);
+	ECL_SET(@'LEAST-POSITIVE-SHORT-FLOAT', num);
+	ECL_SET(@'LEAST-POSITIVE-SINGLE-FLOAT', num);
+	ECL_SET(@'LEAST-POSITIVE-NORMALIZED-SHORT-FLOAT', num);
+	ECL_SET(@'LEAST-POSITIVE-NORMALIZED-SINGLE-FLOAT', num);
+
+	num = make_shortfloat(-FLT_MIN);
+	ECL_SET(@'LEAST-NEGATIVE-SHORT-FLOAT', num);
+	ECL_SET(@'LEAST-NEGATIVE-SINGLE-FLOAT', num);
+	ECL_SET(@'LEAST-NEGATIVE-NORMALIZED-SHORT-FLOAT', num);
+	ECL_SET(@'LEAST-NEGATIVE-NORMALIZED-SINGLE-FLOAT', num);
+
+	num = make_longfloat(DBL_MAX);
+	ECL_SET(@'MOST-POSITIVE-DOUBLE-FLOAT', num);
+	ECL_SET(@'MOST-POSITIVE-LONG-FLOAT', num);
+
+	num = make_longfloat(-DBL_MAX);
+	ECL_SET(@'MOST-NEGATIVE-DOUBLE-FLOAT', num);
+	ECL_SET(@'MOST-NEGATIVE-LONG-FLOAT', num);
+
+	num = make_longfloat(DBL_MIN);
+	ECL_SET(@'LEAST-POSITIVE-DOUBLE-FLOAT', num);
+	ECL_SET(@'LEAST-POSITIVE-LONG-FLOAT', num);
+	ECL_SET(@'LEAST-POSITIVE-NORMALIZED-DOUBLE-FLOAT', num);
+	ECL_SET(@'LEAST-POSITIVE-NORMALIZED-LONG-FLOAT', num);
+
+	num = make_longfloat(-DBL_MIN);
+	ECL_SET(@'LEAST-NEGATIVE-DOUBLE-FLOAT', num);
+	ECL_SET(@'LEAST-NEGATIVE-LONG-FLOAT', num);
+	ECL_SET(@'LEAST-NEGATIVE-NORMALIZED-DOUBLE-FLOAT', num);
+	ECL_SET(@'LEAST-NEGATIVE-NORMALIZED-LONG-FLOAT', num);
+
+	num = make_shortfloat(FLT_EPSILON);
+	ECL_SET(@'SHORT-FLOAT-EPSILON', num);
+	ECL_SET(@'SINGLE-FLOAT-EPSILON', num);
+
+	num = make_shortfloat(-FLT_EPSILON);
+	ECL_SET(@'SHORT-FLOAT-NEGATIVE-EPSILON', num);
+	ECL_SET(@'SINGLE-FLOAT-NEGATIVE-EPSILON', num);
+
+	num = make_longfloat(DBL_EPSILON);
+	ECL_SET(@'DOUBLE-FLOAT-EPSILON', num);
+	ECL_SET(@'LONG-FLOAT-EPSILON', num);
+
+	num = make_longfloat(-DBL_EPSILON);
+	ECL_SET(@'DOUBLE-FLOAT-NEGATIVE-EPSILON', num);
+	ECL_SET(@'LONG-FLOAT-NEGATIVE-EPSILON', num);
+
+ 	cl_core.shortfloat_zero = cl_alloc_object(t_shortfloat);
+ 	sf(cl_core.shortfloat_zero) = (float)0.0;
+ 	cl_core.longfloat_zero = cl_alloc_object(t_longfloat);
+ 	lf(cl_core.longfloat_zero) = (double)0.0;
+	cl_core.plus_half = make_ratio(MAKE_FIXNUM(1), MAKE_FIXNUM(2));
+	cl_core.minus_half = make_ratio(MAKE_FIXNUM(-1), MAKE_FIXNUM(2));
+	cl_core.imag_unit =
+	    make_complex(make_shortfloat(0.0), make_shortfloat(1.0));
+	cl_core.minus_imag_unit =
+	    make_complex(make_shortfloat(0.0), make_shortfloat(-1.0));
+	cl_core.imag_two =
+	    make_complex(make_shortfloat(0.0), make_shortfloat(2.0));
+
+	ECL_SET(@'pi', make_longfloat(M_PI));
 
 	init_big();
-	init_num_co();
-	init_num_sfun();
-	init_num_rand();
+
+        ECL_SET(@'*random-state*', make_random_state(Ct));
 }

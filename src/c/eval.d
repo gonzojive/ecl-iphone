@@ -48,7 +48,7 @@ cl_va_arg(cl_va_list args)
 		FEwrong_num_arguments_anonym();
 	args[0].narg--;
 	if (args[0].sp)
-		return cl_stack[args[0].sp++];
+		return cl_env.stack[args[0].sp++];
 	return va_arg(args[0].args, cl_object);
 }
 
@@ -79,15 +79,15 @@ cl_apply_from_stack(cl_index narg, cl_object x)
 		if (fun->cfun.narg >= 0) {
 			if (narg != fun->cfun.narg)
 				FEwrong_num_arguments(fun);
-			return APPLY_fixed(narg, fun->cfun.entry, cl_stack_top - narg);
+			return APPLY_fixed(narg, fun->cfun.entry, cl_env.stack_top - narg);
 		}
-		return APPLY(narg, fun->cfun.entry, cl_stack_top - narg);
+		return APPLY(narg, fun->cfun.entry, cl_env.stack_top - narg);
 	case t_cclosure:
 		return APPLY_closure(narg, fun->cclosure.entry,
-				     fun->cclosure.env, cl_stack_top - narg);
+				     fun->cclosure.env, cl_env.stack_top - narg);
 #ifdef CLOS
 	case t_instance:
-		fun = compute_method(narg, fun, cl_stack_top - narg);
+		fun = compute_method(narg, fun, cl_env.stack_top - narg);
 		goto AGAIN;
 #endif
 	case t_symbol:
@@ -126,7 +126,7 @@ link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_va_lis
 		if (fun->cfun.narg >= 0) {
 			if (narg != fun->cfun.narg)
 				FEwrong_num_arguments(fun);
-			out = APPLY_fixed(narg, fun->cfun.entry, cl_stack_top - narg);
+			out = APPLY_fixed(narg, fun->cfun.entry, cl_env.stack_top - narg);
 		} else {
 			if (pLK) {
 				si_put_sysprop(sym, @'si::link-from',
@@ -137,19 +137,19 @@ link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_va_lis
 				cblock->cblock.links =
 				    CONS(sym, cblock->cblock.links);
 			}
-			out = APPLY(narg, fun->cfun.entry, cl_stack + sp);
+			out = APPLY(narg, fun->cfun.entry, cl_env.stack + sp);
 		}
 		break;
 #ifdef CLOS
 	case t_instance: {
-		fun = compute_method(narg, fun, cl_stack + sp);
+		fun = compute_method(narg, fun, cl_env.stack + sp);
 		pLK = NULL;
 		goto AGAIN;
 	}
 #endif /* CLOS */
 	case t_cclosure:
 		out = APPLY_closure(narg, fun->cclosure.entry,
-				    fun->cclosure.env, cl_stack + sp);
+				    fun->cclosure.env, cl_env.stack + sp);
 		break;
 	case t_bytecodes:
 		out = lambda_apply(narg, fun);
@@ -199,18 +199,18 @@ si_unlink_symbol(cl_object s)
 		if (fun->cfun.narg >= 0) {
 			if (narg != fun->cfun.narg)
 				FEwrong_num_arguments(fun);
-			out = APPLY_fixed(narg, fun->cfun.entry, cl_stack_top - narg);
+			out = APPLY_fixed(narg, fun->cfun.entry, cl_env.stack_top - narg);
 		} else {
-			out = APPLY(narg, fun->cfun.entry, cl_stack + sp);
+			out = APPLY(narg, fun->cfun.entry, cl_env.stack + sp);
 		}
 		break;
 	case t_cclosure:
 		out = APPLY_closure(narg, fun->cclosure.entry,
-				    fun->cclosure.env, cl_stack + sp);
+				    fun->cclosure.env, cl_env.stack + sp);
 		break;
 #ifdef CLOS
 	case t_instance:
-		fun = compute_method(narg, fun, cl_stack + sp);
+		fun = compute_method(narg, fun, cl_env.stack + sp);
 		goto AGAIN;
 #endif
 	case t_symbol:
@@ -245,7 +245,7 @@ cl_safe_eval(cl_object form, cl_object env, cl_object err_value)
 	} else {
 		bds_bind(@'si::*ignore-errors*', Ct);
 		output = si_eval_with_env(form, env);
-		bds_unwind1;
+		bds_unwind1();
 	}
 	frs_pop();
 	return output;

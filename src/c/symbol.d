@@ -16,19 +16,9 @@
 
 #include "ecl.h"
 
-/******************************* EXPORTS ******************************/
-
-#ifndef THREADS
-cl_object cl_token;
-#endif
-
 /******************************* ------- ******************************/
 
-static cl_object gensym_prefix;
-static cl_object gentemp_prefix;
-static cl_object gentemp_counter;
 static void FEtype_error_plist(cl_object x) __attribute__((noreturn));
-
 
 cl_object
 cl_make_symbol(cl_object str)
@@ -43,9 +33,10 @@ make_symbol(cl_object st)
 	cl_object x;
 
 	x = cl_alloc_object(t_symbol);
-	SYM_VAL(x) = OBJNULL;
 	/* FIXME! Should we copy? */
 	x->symbol.name = st;
+	x->symbol.dynamic = 0;
+	ECL_SET(x,OBJNULL);
 	SYM_FUN(x) = OBJNULL;
 	x->symbol.plist = Cnil;
 	x->symbol.hpack = Cnil;
@@ -65,7 +56,7 @@ cl_defvar(cl_object s, cl_object v)
 	assert_type_symbol(s);
 	s->symbol.stype = (short)stp_special;
 	if (SYM_VAL(s) == OBJNULL)
-	SYM_VAL(s) = v;
+		ECL_SET(s, v);
 }
 
 /*
@@ -75,9 +66,8 @@ cl_defvar(cl_object s, cl_object v)
 void
 cl_defparameter(cl_object s, cl_object v)
 {
-	assert_type_symbol(s);
-	s->symbol.stype = (short)stp_special;
-	SYM_VAL(s) = v;
+	cl_defvar(s, v);
+	ECL_SET(s, v);
 }
 
 /*
@@ -86,7 +76,7 @@ cl_defparameter(cl_object s, cl_object v)
 cl_object
 make_keyword(const char *s)
 {
-	cl_object x = _intern(s, keyword_package);
+	cl_object x = _intern(s, cl_core.keyword_package);
 	/* cl_export(x, keyword_package); this is implicit in intern() */
 	return x;
 }
@@ -95,9 +85,10 @@ cl_object
 symbol_value(cl_object s)
 {
 	/* FIXME: Should we check symbol type? */
-	if (SYM_VAL(s) == OBJNULL)
+	cl_object value = SYM_VAL(s);
+	if (value == OBJNULL)
 		FEunbound_variable(s);
-	return(SYM_VAL(s));
+	return value;
 }
 
 static void
@@ -204,7 +195,7 @@ remf(cl_object *place, cl_object indicator)
 bool
 keywordp(cl_object s)
 {
-	return (SYMBOLP(s) && s->symbol.hpack == keyword_package);
+	return (SYMBOLP(s) && s->symbol.hpack == cl_core.keyword_package);
 }
 
 @(defun get (sym indicator &optional deflt)
@@ -267,7 +258,8 @@ cl_symbol_name(cl_object x)
 	if (Null(cp))
 		@(return x)
 	x->symbol.stype = sym->symbol.stype;
-	SYM_VAL(x) = SYM_VAL(sym);
+	x->symbol.dynamic = 0;
+	ECL_SET(x, SYM_VAL(sym));
 	x->symbol.mflag = sym->symbol.mflag;
 	SYM_FUN(x) = SYM_FUN(sym);
 	x->symbol.plist = cl_copy_list(sym->symbol.plist);
@@ -275,7 +267,7 @@ cl_symbol_name(cl_object x)
 	@(return x)
 @)
 
-@(defun gensym (&optional (prefix gensym_prefix))
+@(defun gensym (&optional (prefix cl_core.gensym_prefix))
 	cl_type t;
 	cl_object counter, output;
 	bool increment;
@@ -286,7 +278,7 @@ cl_symbol_name(cl_object x)
 		increment = 1;
 	} else if (t == t_fixnum || t == t_bignum) {
 		counter = prefix;
-		prefix = gensym_prefix;
+		prefix = cl_core.gensym_prefix;
 		increment = 0;
 	} else {
 		FEwrong_type_argument(cl_list(3, @'or', @'string', @'integer'),
@@ -300,11 +292,11 @@ cl_symbol_name(cl_object x)
 	bds_unwind_n(2);
 	output = make_symbol(get_output_stream_string(output));
 	if (increment)
-		SYM_VAL(@'*gensym-counter*') = one_plus(counter);
+		ECL_SETQ(@'*gensym-counter*',one_plus(counter));
 	@(return output)
 @)
 
-@(defun gentemp (&optional (prefix gentemp_prefix) (pack current_package()))
+@(defun gentemp (&optional (prefix cl_core.gentemp_prefix) (pack current_package()))
 	cl_object output, s;
 	int intern_flag;
 @
@@ -316,9 +308,9 @@ ONCE_MORE:
 	bds_bind(@'*print-base*', MAKE_FIXNUM(10));
 	bds_bind(@'*print-radix*', Cnil);
 	princ(prefix, output);
-	princ(gentemp_counter, output);
+	princ(cl_core.gentemp_counter, output);
 	bds_unwind_n(2);
-	gentemp_counter = one_plus(gentemp_counter);
+	cl_core.gentemp_counter = one_plus(cl_core.gentemp_counter);
 	s = intern(get_output_stream_string(output), pack, &intern_flag);
 	if (intern_flag != 0)
 		goto ONCE_MORE;
@@ -403,43 +395,6 @@ cl_object
 		 "The argument ~S to DEFCONSTANT is a special variable.",
 		 1, sym);
 	sym->symbol.stype = (short)stp_constant;
-	SYM_VAL(sym) = val;
+	ECL_SET(sym, val);
 	@(return sym)
 }
-
-void
-init_symbol(void)
-{
-	Cnil->symbol.t = (short)t_symbol;
-	Cnil->symbol.dbind = Cnil;
-	Cnil->symbol.name = make_simple_string("NIL");
-	Cnil->symbol.gfdef = OBJNULL;
-	Cnil->symbol.plist = Cnil;
-	Cnil->symbol.hpack = Cnil;
-	Cnil->symbol.stype = (short)stp_constant;
-	Cnil->symbol.mflag = FALSE;
-	Cnil->symbol.isform = FALSE;
-	cl_num_symbols_in_core=1;
-
-	Ct->symbol.t = (short)t_symbol;
-	Ct->symbol.dbind = Ct;
-	Ct->symbol.name = make_simple_string("T");
-	Ct->symbol.gfdef = OBJNULL;
-	Ct->symbol.plist = Cnil;
-	Ct->symbol.hpack = Cnil;
-	Ct->symbol.stype = (short)stp_constant;
-	Ct->symbol.mflag = FALSE;
-	Ct->symbol.isform = FALSE;
-	cl_num_symbols_in_core=2;
-
-	gensym_prefix = make_simple_string("G");
-	gentemp_prefix = make_simple_string("T");
-	gentemp_counter = MAKE_FIXNUM(0);
-	cl_token = cl_alloc_adjustable_string(LISP_PAGESIZE);
-
-	ecl_register_static_root(&gensym_prefix);
-	ecl_register_static_root(&gentemp_prefix);
-	ecl_register_static_root(&gentemp_counter);
-	ecl_register_static_root(&cl_token);
-}
-

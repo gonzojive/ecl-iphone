@@ -26,7 +26,7 @@
 #endif
 
 /* Userland threads?							*/
-#undef THREADS
+#undef ECL_THREADS
 
 /* Network streams							*/
 #undef TCP
@@ -79,6 +79,9 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 /*	Numb. of args. which can be passed using the C stack		*/
 /*	See cmplam.lsp if you change this value				*/
 #define C_ARGUMENTS_LIMIT 64
+
+/*	Maximum number of output arguments				*/
+#define ECL_MULTIPLE_VALUES_LIMIT 64
 
 /* A setjmp that does not save signals					*/
 #define ecl_setjmp	@ECL_SETJMP@
@@ -202,7 +205,6 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #define	CSSIZE	20000		/* Size of C Stack			*/
 #define	CSGETA	4000
 #endif
-#define VSSIZE	128		/* Size of return values stack		*/
 
 /* We reserve these many bytes for computation with bignums registers	*/
 #define BIGNUM_REGISTER_SIZE 16

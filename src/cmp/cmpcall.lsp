@@ -313,7 +313,7 @@
 	 (baboon))))
 
 (defun wt-stack-pointer (narg)
-  (wt "cl_stack_top-" narg))
+  (wt "cl_env.stack_top-" narg))
 
 (defun wt-call (fun narg args &optional fname)
   (wt fun "(" narg)

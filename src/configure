@@ -271,6 +271,7 @@ PACKAGE_STRING=
 PACKAGE_BUGREPORT=
 
 ac_unique_file="configure.in"
+ac_unique_file="CHANGELOG"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stdio.h>
@@ -1297,6 +1298,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 ###
 ### Make sure we do not configure within source directory
 ###
+
 if test -f configure; then
 echo "***"
 echo "*** This program cannot be built within the source directory ***"
@@ -3748,6 +3750,13 @@ mandir="${prefix}/man"
 infodir="${prefix}/info"
 
 
+PWDCMD="pwd";
+case "${srcdir}" in
+  /* | ?:/* ) ;;
+  *  ) srcdir="`(cd ${srcdir}; ${PWDCMD})`";
+esac
+
+
 if test "x${cross_compiling}" = "xyes"; then
   if test -n "${cross_config}" -a -f "${cross_config}"; then
     . ${cross_config}
@@ -3851,10 +3860,14 @@ LIBPREFIX='lib'
 LIBEXT='a'
 PICFLAG='-fPIC'
 LDINSTALLNAME=''
+THREAD_CFLAGS=''
+THREAD_LDFLAGS=''
 case "${host_os}" in
 	# libdir may have a dollar expression inside
 	linux*)
 		thehost='linux'
+		THREAD_CFLAGS='-D_THREAD_SAFE'
+		THREAD_LDFLAGS='-lpthread'
 		SHARED_LDFLAGS="-shared ${LDFLAGS}"
 		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
 		LDRPATH='-Wl,--rpath,~A'
@@ -4235,9 +4248,8 @@ if test ${boehm} = "no" ; then
   EXTRA_OBJS="${EXTRA_OBJS} alloc.${OBJEXT} gbc.${OBJEXT}"
 else
   if test ${local_boehm} = "no"; then
-    LIBRARIES="${LIBRARIES} ${LIBPREFIX}gc.${LIBEXT}"
     SUBDIR="${SUBDIR} gc"
-    BOEHM_HEADERS="-I\$(top_srcdir)/gc/include"
+    BOEHM_HEADERS="-I../include"
   else
     BOEHM_HEADERS=""
   fi
@@ -4330,16 +4342,24 @@ fi
 echo "$as_me:$LINENO: checking Checking for threads support" >&5
 echo $ECHO_N "checking Checking for threads support... $ECHO_C" >&6
 if test "${threads}" ; then
-  EXTRA_OBJS="${EXTRA_OBJS} lwp.${OBJEXT}"
-  cat >>confdefs.h <<\_ACEOF
-#define THREADS 1
+  if test -z "${THREAD_LDFLAGS}"; then
+    threads='';
+    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+  else
+    EXTRA_OBJS="${EXTRA_OBJS} threads.${OBJEXT}"
+    CLIBS="${THREAD_LDFLAGS} ${CLIBS}"
+    CFLAGS="${CFLAGS} ${THREAD_CFLAGS}"
+    cat >>confdefs.h <<\_ACEOF
+#define ECL_THREADS 1
 _ACEOF
 
-  echo "$as_me:$LINENO: result: userland threads" >&5
-echo "${ECHO_T}userland threads" >&6
+    echo "$as_me:$LINENO: result: native threads" >&5
+echo "${ECHO_T}native threads" >&6
+  fi
 else
-  echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6
+  echo "$as_me:$LINENO: result: disabled" >&5
+echo "${ECHO_T}disabled" >&6
 fi
 if test ${usecxx} = "no" ; then
   ECL_CC="${CC}"
@@ -4352,7 +4372,6 @@ if test ! ${opcode8} = "no" ; then
 _ACEOF
 
 fi
-eval BUNDLE_CLIBS="${BUNDLE_CLIBS}"
 
 if test "${GCC}" = "yes"; then
   CFLAGS="${CFLAGS} -fstrict-aliasing"
@@ -5955,10 +5974,17 @@ elif test "${local_boehm}" = "no" ; then
 echo "${ECHO_T}configuring local copy" >&6
   test -d gc && rm -rf gc
   if mkdir gc; then
-   (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
-     $srcdir/gc/configure --disable-threads --disable-shared --prefix=$bindir \
+    if test "${threads}" ; then
+      (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
+       $srcdir/gc/configure --disable-shared --prefix=$bindir \
 	--includedir=${destdir}/h --libdir=${destdir} --build=${build} \
 	--host=${host})
+    else
+      (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
+       $srcdir/gc/configure --disable-threads --disable-shared --prefix=$bindir \
+	--includedir=${destdir}/h --libdir=${destdir} --build=${build} \
+	--host=${host})
+    fi
   fi
 else
   echo "$as_me:$LINENO: result: already installed" >&5

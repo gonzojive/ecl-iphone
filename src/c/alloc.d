@@ -275,8 +275,8 @@ ONCE_MORE:
 	  break;
 	case t_symbol:
 	  obj->symbol.plist = OBJNULL;
-	  SYM_FUN(obj) = OBJNULL;
-	  SYM_VAL(obj) = OBJNULL;
+	  obj->gfdef = OBJNULL;
+	  obj->value = OBJNULL;
 	  obj->symbol.name = OBJNULL;
 	  break;
 	case t_package:
@@ -369,6 +369,11 @@ ONCE_MORE:
 	  break;
 	case t_thread:
 	  obj->thread.entry = OBJNULL;
+	  break;
+#endif
+#ifdef ECL_THREADS
+	case t_thread:
+	  obj->thread.env = OBJNULL;
 	  break;
 #endif
 #ifdef CLOS
@@ -841,12 +846,6 @@ since ~D pages are already allocated.",
 	ignore_maximum_pages = Null(flag);
 	@(return flag)
 @)
-
-void
-init_alloc_function(void)
-{
-	ignore_maximum_pages = TRUE;
-}
 
 #ifdef NEED_MALLOC
 /*

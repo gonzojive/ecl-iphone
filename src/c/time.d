@@ -48,12 +48,10 @@ runtime(void)
 #endif
 }
 
-static cl_object Jan1st1970UT;
-
 cl_object
 UTC_time_to_universal_time(cl_fixnum i)
 {
-	return number_plus(bignum1(i), Jan1st1970UT);
+	return number_plus(bignum1(i), cl_core.Jan1st1970UT);
 }
 
 cl_object
@@ -146,7 +144,7 @@ si_get_local_time_zone()
   if (narg == 0)
     when = time(0);
   else { /* narg == 1 */
-    cl_object UTC = number_minus(UT, Jan1st1970UT);
+    cl_object UTC = number_minus(UT, cl_core.Jan1st1970UT);
     switch (type_of(UTC)) {
     case t_fixnum:
       when = fix(UTC);
@@ -167,10 +165,9 @@ init_unixtime(void)
 {
 	beginning = time(0);
 
-	SYM_VAL(@'internal-time-units-per-second') = MAKE_FIXNUM(HZ);
+	ECL_SET(@'internal-time-units-per-second', MAKE_FIXNUM(HZ));
 
-	Jan1st1970UT =
-	  number_times(MAKE_FIXNUM(24 * 60 * 60),
-		       MAKE_FIXNUM(17 + 365 * 70));
-	ecl_register_static_root(&Jan1st1970UT);
+	cl_core.Jan1st1970UT =
+	    number_times(MAKE_FIXNUM(24 * 60 * 60),
+			 MAKE_FIXNUM(17 + 365 * 70));
 }

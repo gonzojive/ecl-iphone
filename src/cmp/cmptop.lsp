@@ -479,7 +479,7 @@
     (wt-nl1 "{")
     (when (or *safe-compile* *compiler-check-args*)
           (wt-nl "check_arg(" (length arg-types) ");"))
-    (wt-nl "NValues=1;")
+    (wt-nl "NVALUES=1;")
     (wt-nl "return " (case return-type
                             (FIXNUM "MAKE_FIXNUM")
                             (CHARACTER "CODE_CHAR")
@@ -872,7 +872,7 @@
 	     (declare (object types) (fixnum i))
 	     (push (format nil (lisp2c-convert (car types)) i) lst)))
 	(wt ";")
-	(wt-nl "NValues=1;")
+	(wt-nl "NVALUES=1;")
 	(wt-nl "return ")
 	(case type
 	      ((NIL) (wt "Cnil"))

@@ -251,7 +251,7 @@
   (when optionals
     ;; When binding optional values, we use two calls to BIND. This means
     ;; 'BDS-BIND is pushed twice on *unwind-exit*, which results in two calls
-    ;; to bds_unwind1, which is wrong. A possible fix is to save *unwind-exit*
+    ;; to bds_unwind1(), which is wrong. A possible fix is to save *unwind-exit*
     (let ((*unwind-exit* *unwind-exit*)
 	  (va-arg-loc (if simple-varargs 'VA-ARG 'CL-VA-ARG)))
       (do ((opt optionals (cdddr opt)))

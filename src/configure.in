@@ -23,6 +23,7 @@ AC_PREREQ(2.1)		# You must have autoconf version 2.1 or later.
 ###
 ### Make sure we do not configure within source directory
 ###
+AC_CONFIG_SRCDIR(CHANGELOG)
 if test -f configure; then
 echo "***"
 echo "*** This program cannot be built within the source directory ***"
@@ -157,6 +158,7 @@ infodir="${prefix}/info"
 dnl ----------------------------------------------------------------------
 dnl		Checks which do not come with autoconf
 dnl
+ECL_MAKE_ABSOLUTE_SRCDIR()
 ECL_CROSS_CONFIG()
 ECL_GUESS_HOST_OS()
 ECL_LINEFEED_MODE()
@@ -175,9 +177,8 @@ if test ${boehm} = "no" ; then
   EXTRA_OBJS="${EXTRA_OBJS} alloc.${OBJEXT} gbc.${OBJEXT}"
 else
   if test ${local_boehm} = "no"; then
-    LIBRARIES="${LIBRARIES} ${LIBPREFIX}gc.${LIBEXT}"
     SUBDIR="${SUBDIR} gc"
-    BOEHM_HEADERS="-I\$(top_srcdir)/gc/include"
+    BOEHM_HEADERS="-I../include"
   else
     BOEHM_HEADERS=""
   fi
@@ -236,11 +237,18 @@ if test "${locative}" ; then
 fi
 AC_MSG_CHECKING(Checking for threads support)
 if test "${threads}" ; then
-  EXTRA_OBJS="${EXTRA_OBJS} lwp.${OBJEXT}"
-  AC_DEFINE(THREADS)
-  AC_MSG_RESULT(userland threads)
+  if test -z "${THREAD_LDFLAGS}"; then
+    threads='';
+    AC_MSG_RESULT(no)
+  else
+    EXTRA_OBJS="${EXTRA_OBJS} threads.${OBJEXT}"
+    CLIBS="${THREAD_LDFLAGS} ${CLIBS}"
+    CFLAGS="${CFLAGS} ${THREAD_CFLAGS}"
+    AC_DEFINE(ECL_THREADS)
+    AC_MSG_RESULT(native threads)
+  fi
 else
-  AC_MSG_RESULT(no)
+  AC_MSG_RESULT(disabled)
 fi
 if test ${usecxx} = "no" ; then
   ECL_CC="${CC}"
@@ -250,7 +258,6 @@ fi
 if test ! ${opcode8} = "no" ; then
   AC_DEFINE(ECL_SMALL_BYTECODES)
 fi
-eval BUNDLE_CLIBS="${BUNDLE_CLIBS}"
 
 dnl ---------------------------------------------------------------------
 dnl		This flag is an optimization for GNU
@@ -339,10 +346,17 @@ elif test "${local_boehm}" = "no" ; then
   AC_MSG_RESULT(configuring local copy)
   test -d gc && rm -rf gc
   if mkdir gc; then
-   (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
-     $srcdir/gc/configure --disable-threads --disable-shared --prefix=$bindir \
+    if test "${threads}" ; then
+      (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
+       $srcdir/gc/configure --disable-shared --prefix=$bindir \
 	--includedir=${destdir}/h --libdir=${destdir} --build=${build} \
 	--host=${host})
+    else
+      (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
+       $srcdir/gc/configure --disable-threads --disable-shared --prefix=$bindir \
+	--includedir=${destdir}/h --libdir=${destdir} --build=${build} \
+	--host=${host})
+    fi
   fi
 else
   AC_MSG_RESULT(already installed)

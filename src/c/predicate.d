@@ -266,7 +266,6 @@ equal(register cl_object x, cl_object y)
 {
 	register cl_type t;
 
-	cs_check(y);
 BEGIN:
 	if ((t = type_of(x)) != type_of(y))
 		return(FALSE);
@@ -372,8 +371,6 @@ equalp(cl_object x, cl_object y)
 {
 	cl_type tx, ty;
 	cl_index j;
-
-	cs_check(x);
 
 BEGIN:
 	if (eql(x, y))

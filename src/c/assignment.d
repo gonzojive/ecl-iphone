@@ -24,7 +24,7 @@ cl_set(cl_object var, cl_object val)
 		FEtype_error_symbol(var);
 	if (var->symbol.stype == stp_constant)
 		FEinvalid_variable("Cannot assign to the constant ~S.", var);
-	return1(SYM_VAL(var) = val);
+	return1(ECL_SETQ(var, val));
 }
 
 @(defun si::fset (fname def &optional macro pprint)
@@ -66,7 +66,9 @@ cl_makunbound(cl_object sym)
 		FEtype_error_symbol(sym);
 	if ((enum ecl_stype)sym->symbol.stype == stp_constant)
 		FEinvalid_variable("Cannot unbind the constant ~S.", sym);
-	SYM_VAL(sym) = OBJNULL;
+	/* FIXME! The semantics of MAKUNBOUND is not very clear with local
+	   bindings ... */
+	ECL_SET(sym, OBJNULL);
 	@(return sym)
 }
 	
@@ -112,12 +114,10 @@ record_source_pathname(cl_object sym, cl_object def)
 }
 #endif /* PDE */
 
-static cl_object system_properties = OBJNULL;
-
 cl_object
 si_get_sysprop(cl_object sym, cl_object prop)
 {
-	cl_object plist = gethash_safe(sym, system_properties, Cnil);
+	cl_object plist = gethash_safe(sym, cl_core.system_properties, Cnil);
 	@(return ecl_getf(plist, prop, Cnil));
 }
 
@@ -126,8 +126,8 @@ si_put_sysprop(cl_object sym, cl_object prop, cl_object value)
 {
 	cl_object plist;
 	assert_type_symbol(sym);
-	plist = gethash_safe(sym, system_properties, Cnil);
-	sethash(sym, system_properties, si_put_f(plist, value, prop));
+	plist = gethash_safe(sym, cl_core.system_properties, Cnil);
+	sethash(sym, cl_core.system_properties, si_put_f(plist, value, prop));
 	@(return value);
 }
 
@@ -136,22 +136,9 @@ si_rem_sysprop(cl_object sym, cl_object prop)
 {
 	cl_object plist, found;
 	assert_type_symbol(sym);
-	plist = gethash_safe(sym, system_properties, Cnil);
+	plist = gethash_safe(sym, cl_core.system_properties, Cnil);
 	plist = si_rem_f(plist, prop);
 	found = VALUES(1);
-	sethash(sym, system_properties, plist);
+	sethash(sym, cl_core.system_properties, plist);
 	@(return found);
-}
-
-void
-init_assignment(void)
-{
-#ifdef PDE
-	SYM_VAL(@'si::*record-source-pathname-p*') = Cnil;
-#endif
-	ecl_register_root(&system_properties);
-	system_properties =
-	    cl__make_hash_table(@'eq', MAKE_FIXNUM(1024), /* size */
-				make_shortfloat(1.5), /* rehash-size */
-				make_shortfloat(0.7)); /* rehash-threshold */
 }

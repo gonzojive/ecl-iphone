@@ -57,8 +57,6 @@ _cl_backq_cdr(cl_object *px)
 	cl_object x = *px;
 	int a, d;
 
-	cs_check(px);
-
 	if (ATOM(x))
 		return(QUOTE);
 	if (CAR(x) == @'si::,') {
@@ -188,8 +186,6 @@ _cl_backq_car(cl_object *px)
 	cl_object x = *px;
 	int d;
 
-	cs_check(px);
-
 	if (ATOM(x))
 		return(QUOTE);
 	if (CAR(x) == @'si::,') {
@@ -267,9 +263,9 @@ cl_object comma_reader(cl_object in, cl_object c)
 		read_char(in);
 	} else
 		x = @'si::,';
-	SYM_VAL(@'si::*backq-level*') = MAKE_FIXNUM(backq_level-1);
+	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level-1));
 	y = read_object(in);
-	SYM_VAL(@'si::*backq-level*') = MAKE_FIXNUM(backq_level);
+	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level));
 	@(return CONS(x, y))
 }
 
@@ -277,9 +273,9 @@ static
 cl_object backquote_reader(cl_object in, cl_object c)
 {
 	cl_fixnum backq_level = fix(SYM_VAL(@'si::*backq-level*'));
-	SYM_VAL(@'si::*backq-level*') = MAKE_FIXNUM(backq_level+1);
+	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level+1));
 	in = read_object(in);
-	SYM_VAL(@'si::*backq-level*') = MAKE_FIXNUM(backq_level);
+	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level));
 	@(return backq(in))
 }
 
@@ -290,7 +286,7 @@ init_backq(void)
 {
 	cl_object r;
 
-	r = standard_readtable;
+	r = cl_core.standard_readtable;
 	r->readtable.table['`'].syntax_type = cat_terminating;
 	r->readtable.table['`'].macro = make_cf(backquote_reader);
 	r->readtable.table[','].syntax_type = cat_terminating;

@@ -22,16 +22,6 @@
 #include "internal.h"
 #include "ecl-inl.h"
 
-/******************************* EXPORTS ******************************/
-
-cl_object standard_readtable;
-cl_object ecl_packages_to_be_created;
-
-/******************************* ------- ******************************/
-
-static cl_object dispatch_reader;
-static cl_object default_dispatch_macro;
-
 #define	cat(rtbl,c)	((rtbl)->readtable.table[c].syntax_type)
 #define read_suppress (SYM_VAL(@'*read-suppress*') != Cnil)
 
@@ -63,8 +53,8 @@ read_object_non_recursive(cl_object in)
 	x = read_object(in);
 	if (!Null(SYM_VAL(@'si::*sharp-eq-context*')))
 		x = patch_sharp(x);
-	bds_unwind1;
-	bds_unwind1;
+	bds_unwind1();
+	bds_unwind1();
 	return(x);
 }
 
@@ -80,8 +70,6 @@ read_object_with_delimiter(cl_object in, int delimiter)
 	bool escape_flag;
 	cl_object rtbl = ecl_current_readtable();
 
-	cs_check(in);
-
 BEGIN:
 	/* Beppe: */
 	do {
@@ -93,15 +81,15 @@ BEGIN:
 	if (a == cat_terminating || a == cat_non_terminating) {
 		cl_object x = rtbl->readtable.table[c].macro;
 		cl_object o = funcall(3, x, in, CODE_CHAR(c));
-		if (NValues == 0) goto BEGIN;
-		if (NValues > 1) FEerror("The readmacro ~S returned ~D values.",
+		if (NVALUES == 0) goto BEGIN;
+		if (NVALUES > 1) FEerror("The readmacro ~S returned ~D values.",
 					 2, x, MAKE_FIXNUM(i));
 		return o;
 	}
 	escape_flag = FALSE;
 	length = 0;
 	colon_type = 0;
-	cl_token->string.fillp = 0;
+	cl_env.token->string.fillp = 0;
 	for (;;) {
 		if (a == cat_single_escape) {
 			c = ecl_getc_noeof(in);
@@ -117,7 +105,7 @@ BEGIN:
 					a = cat_constituent;
 				} else if (a == cat_multiple_escape)
 					break;
-				cl_string_push_extend(cl_token, c);
+				cl_string_push_extend(cl_env.token, c);
 				length++;
 			}
 			goto NEXT;
@@ -137,7 +125,7 @@ BEGIN:
 			ecl_ungetc(c, in);
 			break;
 		}
-		cl_string_push_extend(cl_token, c);
+		cl_string_push_extend(cl_env.token, c);
 		length++;
 	NEXT:
 		c = ecl_getc(in);
@@ -149,79 +137,79 @@ BEGIN:
 	if (read_suppress)
 		return(Cnil);
 
-	if (!escape_flag && length == 1 && cl_token->string.self[0] == '.') {
+	if (!escape_flag && length == 1 && cl_env.token->string.self[0] == '.') {
 		return @'si::.';
 	} else if (!escape_flag && length > 0) {
 		for (i = 0;  i < length;  i++)
-			if (cl_token->string.self[i] != '.')
+			if (cl_env.token->string.self[i] != '.')
 				goto N;
 		FEreader_error("Dots appeared illegally.", in, 0);
 	}
 
 N:
 	base = ecl_current_read_base();
-	if (escape_flag || (base <= 10 && isalpha(cl_token->string.self[0])))
+	if (escape_flag || (base <= 10 && isalpha(cl_env.token->string.self[0])))
 		goto SYMBOL;
-	x = parse_number(cl_token->string.self, cl_token->string.fillp, &i, base);
+	x = parse_number(cl_env.token->string.self, cl_env.token->string.fillp, &i, base);
 	if (x != OBJNULL && length == i)
 		return(x);
 
 SYMBOL:
 	if (colon_type == 1 /* && length > colon + 1 */) {
 		if (colon == 0)
-			p = keyword_package;
+			p = cl_core.keyword_package;
 		else {
-			cl_token->string.fillp = colon;
-			p = find_package(cl_token);
+			cl_env.token->string.fillp = colon;
+			p = find_package(cl_env.token);
 			if (Null(p)) {
 				FEerror("There is no package with the name ~A.",
-						1, copy_simple_string(cl_token));
+						1, copy_simple_string(cl_env.token));
 			}
 		}
-		cl_token->string.fillp = length - (colon + 1);
-		memmove(cl_token->string.self,
-			cl_token->string.self + colon + 1,
-			sizeof(*cl_token->string.self) * cl_token->string.fillp);
+		cl_env.token->string.fillp = length - (colon + 1);
+		memmove(cl_env.token->string.self,
+			cl_env.token->string.self + colon + 1,
+			sizeof(*cl_env.token->string.self) * cl_env.token->string.fillp);
 		if (colon > 0) {
-			cl_token->string.self[cl_token->string.fillp] = '\0';
-			x = find_symbol(cl_token, p, &intern_flag);
+			cl_env.token->string.self[cl_env.token->string.fillp] = '\0';
+			x = find_symbol(cl_env.token, p, &intern_flag);
 			if (intern_flag != EXTERNAL)
 			FEerror("Cannot find the external symbol ~A in ~S.",
-				2, copy_simple_string(cl_token), p);
+				2, copy_simple_string(cl_env.token), p);
 			return(x);
 		}
 	} else if (colon_type == 2 /* && colon > 0 && length > colon + 2 */) {
-		cl_token->string.fillp = colon;
-		p = find_package(cl_token);
+		cl_env.token->string.fillp = colon;
+		p = find_package(cl_env.token);
 		if (Null(p)) {
 			/* When loading binary files, we sometimes must create
 			   symbols whose package has not yet been maked. We
 			   allow it, but later on in read_VV we make sure that
 			   all referenced packages have been properly built.
 			*/
-			cl_object name = copy_simple_string(cl_token);
-			if (ecl_packages_to_be_created == OBJNULL) {
+			cl_object name = copy_simple_string(cl_env.token);
+			if (cl_core.packages_to_be_created == OBJNULL) {
 				FEerror("There is no package with the name ~A.",
 					1, name);
-			} else if (!Null(p = assoc(name, ecl_packages_to_be_created))) {
+			} else if (!Null(p = assoc(name, cl_core.packages_to_be_created))) {
 				p = CDR(p);
 			} else {
 				p = make_package(name,Cnil,Cnil);
-				ecl_package_list = CDR(ecl_package_list);
-				ecl_packages_to_be_created =
-					cl_acons(name, p, ecl_packages_to_be_created);
+				cl_core.packages = CDR(cl_core.packages);
+				cl_core.packages_to_be_created =
+					cl_acons(name, p, cl_core.packages_to_be_created);
 			}
 		}
-		cl_token->string.fillp = length - (colon + 2);
-		memmove(cl_token->string.self,
-			cl_token->string.self + colon + 2,
-			sizeof(*cl_token->string.self) * cl_token->string.fillp);
+		cl_env.token->string.fillp = length - (colon + 2);
+		memmove(cl_env.token->string.self,
+			cl_env.token->string.self + colon + 2,
+			sizeof(*cl_env.token->string.self) * cl_env.token->string.fillp);
 	} else
 		p = current_package();
-	cl_token->string.self[cl_token->string.fillp] = '\0';
-	x = find_symbol(cl_token, p, &intern_flag);
+	cl_env.token->string.self[cl_env.token->string.fillp] = '\0';
+	x = find_symbol(cl_env.token, p, &intern_flag);
 	if (intern_flag == 0)
-		x = intern(copy_simple_string(cl_token), p, &intern_flag);
+		x = intern(copy_simple_string(cl_env.token), p, &intern_flag);
 	return(x);
 }
 
@@ -530,21 +518,21 @@ read_string(int delim, cl_object in)
 	int c;
 	cl_object rtbl = ecl_current_readtable();
 
-	cl_token->string.fillp = 0;
+	cl_env.token->string.fillp = 0;
 	for (;;) {
 		c = ecl_getc_noeof(in);
 		if (c == delim)
 			break;
 		else if (cat(rtbl, c) == cat_single_escape)
 			c = ecl_getc_noeof(in);
-		cl_string_push_extend(cl_token, c);
+		cl_string_push_extend(cl_env.token, c);
 	}
 }
 
 /*
 	Read_constituent(in) reads
 	a sequence of constituent characters from stream in
-	and places it in cl_token.
+	and places it in cl_env.token.
 */
 static void
 read_constituent(cl_object in)
@@ -552,14 +540,14 @@ read_constituent(cl_object in)
 	int c;
 	cl_object rtbl = ecl_current_readtable();
 
-	cl_token->string.fillp = 0;
+	cl_env.token->string.fillp = 0;
 	for (;;) {
 		c = ecl_getc_noeof(in);
 		if (cat(rtbl, c) != cat_constituent) {
 			ecl_ungetc(c, in);
 			break;
 		}
-		cl_string_push_extend(cl_token, c);
+		cl_string_push_extend(cl_env.token, c);
 	}
 }
 
@@ -567,7 +555,7 @@ static cl_object
 double_quote_reader(cl_object in, cl_object c)
 {
 	read_string('"', in);
-	@(return copy_simple_string(cl_token))
+	@(return copy_simple_string(cl_env.token))
 }
 
 static cl_object
@@ -677,10 +665,10 @@ sharp_backslash_reader(cl_object in, cl_object c, cl_object d)
 		(void)read_object(in);
 		@(return Cnil)
 	}
-	SYM_VAL(@'*read-suppress*') = Ct;
+	ECL_SETQ(@'*read-suppress*', Ct);
 	(void)read_object(in);
-	SYM_VAL(@'*read-suppress*') = Cnil;
-	c = cl_token;
+	ECL_SETQ(@'*read-suppress*', Cnil);
+	c = cl_env.token;
 	if (c->string.fillp == 1)
 		c = CODE_CHAR(c->string.self[0]);
 	/*	#\^x	*/
@@ -766,13 +754,13 @@ L:
 			FEreader_error("Too many elements in #(...).", in, 0);
 		if (dimcount == 0)
 			FEreader_error("Cannot fill the vector #().", in, 0);
-		else last = cl_stack_top[-1];
+		else last = cl_env.stack_top[-1];
 	} else
 		dim = dimcount;
 	x = cl_alloc_simple_vector(dim, aet_object);
 	x->vector.self.t = (cl_object *)cl_alloc_align(dim * sizeof(cl_object), sizeof(cl_object));
 	for (i = 0; i < dim; i++)
-		x->vector.self.t[i] = (i < dimcount) ? cl_stack[sp+i] : last;
+		x->vector.self.t[i] = (i < dimcount) ? cl_env.stack[sp+i] : last;
 	cl_stack_pop_n(dimcount);
 	@(return x)
 }
@@ -811,14 +799,14 @@ sharp_asterisk_reader(cl_object in, cl_object c, cl_object d)
 			FEreader_error("Too many elements in #*....", in, 0);
 		if (dimcount == 0)
 			FEreader_error("Cannot fill the bit-vector #*.", in, 0);
-		else last = cl_stack_top[-1];
+		else last = cl_env.stack_top[-1];
 	} else {
 		dim = dimcount;
 	}
 	x = cl_alloc_simple_bitvector(dim);
 	x->vector.self.bit = (byte *)cl_alloc_atomic((dim + CHAR_BIT - 1)/CHAR_BIT);
 	for (i = 0; i < dim; i++) {
-		elt = (i < dimcount) ? cl_stack[sp+i] : last;
+		elt = (i < dimcount) ? cl_env.stack[sp+i] : last;
 		if (elt == MAKE_FIXNUM(0))
 			x->vector.self.bit[i/CHAR_BIT] &= ~(0200 >> i%CHAR_BIT);
 		else
@@ -841,10 +829,10 @@ sharp_colon_reader(cl_object in, cl_object ch, cl_object d)
 	c = ecl_getc_noeof(in);
 	a = cat(rtbl, c);
 	escape_flag = FALSE;
-	cl_token->string.fillp = 0;
+	cl_env.token->string.fillp = 0;
 	goto L;
 	for (;;) {
-		cl_string_push_extend(cl_token, c);
+		cl_string_push_extend(cl_env.token, c);
 	K:
 		c = ecl_getc(in);
 		if (c == EOF)
@@ -865,7 +853,7 @@ sharp_colon_reader(cl_object in, cl_object ch, cl_object d)
 					a = cat_constituent;
 				} else if (a == cat_multiple_escape)
 					break;
-				cl_string_push_extend(cl_token, c);
+				cl_string_push_extend(cl_env.token, c);
 			}
 			goto K;
 		} else if (islower(c))
@@ -878,7 +866,7 @@ sharp_colon_reader(cl_object in, cl_object ch, cl_object d)
 M:
 	if (read_suppress)
 		@(return Cnil)
-	@(return make_symbol(copy_simple_string(cl_token)))
+	@(return make_symbol(copy_simple_string(cl_env.token)))
 }
 
 static cl_object
@@ -904,8 +892,8 @@ sharp_B_reader(cl_object in, cl_object c, cl_object d)
 	read_constituent(in);
 	if (read_suppress)
 		@(return Cnil)
-	x = parse_number(cl_token->string.self, cl_token->string.fillp, &i, 2);
-	if (x == OBJNULL || i != cl_token->string.fillp)
+	x = parse_number(cl_env.token->string.self, cl_env.token->string.fillp, &i, 2);
+	if (x == OBJNULL || i != cl_env.token->string.fillp)
 		FEreader_error("Cannot parse the #B readmacro.", in, 0);
 	if (type_of(x) == t_shortfloat ||
 	    type_of(x) == t_longfloat)
@@ -925,8 +913,8 @@ sharp_O_reader(cl_object in, cl_object c, cl_object d)
 	read_constituent(in);
 	if (read_suppress)
 		@(return Cnil)
-	x = parse_number(cl_token->string.self, cl_token->string.fillp, &i, 8);
-	if (x == OBJNULL || i != cl_token->string.fillp)
+	x = parse_number(cl_env.token->string.self, cl_env.token->string.fillp, &i, 8);
+	if (x == OBJNULL || i != cl_env.token->string.fillp)
 		FEreader_error("Cannot parse the #O readmacro.", in, 0);
 	if (type_of(x) == t_shortfloat ||
 	    type_of(x) == t_longfloat)
@@ -946,8 +934,8 @@ sharp_X_reader(cl_object in, cl_object c, cl_object d)
 	read_constituent(in);
 	if (read_suppress)
 		@(return Cnil)
-	x = parse_number(cl_token->string.self, cl_token->string.fillp, &i, 16);
-	if (x == OBJNULL || i != cl_token->string.fillp)
+	x = parse_number(cl_env.token->string.self, cl_env.token->string.fillp, &i, 16);
+	if (x == OBJNULL || i != cl_env.token->string.fillp)
 		FEreader_error("Cannot parse the #X readmacro.", in, 0);
 	if (type_of(x) == t_shortfloat ||
 	    type_of(x) == t_longfloat)
@@ -974,8 +962,8 @@ sharp_R_reader(cl_object in, cl_object c, cl_object d)
 	read_constituent(in);
 	if (read_suppress)
 		@(return Cnil)
-	x = parse_number(cl_token->string.self, cl_token->string.fillp, &i, radix);
-	if (x == OBJNULL || i != cl_token->string.fillp)
+	x = parse_number(cl_env.token->string.self, cl_env.token->string.fillp, &i, radix);
+	if (x == OBJNULL || i != cl_env.token->string.fillp)
 		FEreader_error("Cannot parse the #R readmacro.", in, 0);
 	if (type_of(x) == t_shortfloat ||
 	    type_of(x) == t_longfloat)
@@ -999,7 +987,7 @@ sharp_eq_reader(cl_object in, cl_object c, cl_object d)
 	if (assql(d, sharp_eq_context) != Cnil)
 		FEreader_error("Duplicate definitions for #~D=.", in, 1, d);
 	pair = CONS(d, Cnil);
-	SYM_VAL(@'si::*sharp-eq-context*') = CONS(pair, sharp_eq_context);
+	ECL_SETQ(@'si::*sharp-eq-context*', CONS(pair, sharp_eq_context));
 	value = read_object(in);
 	if (value == pair)
 		FEreader_error("#~D# is defined by itself.", in, 1, d);
@@ -1023,8 +1011,6 @@ sharp_sharp_reader(cl_object in, cl_object c, cl_object d)
 static cl_object
 do_patch_sharp(cl_object x)
 {
-	cs_check(x);
-
 	switch (type_of(x)) {
 	case t_cons: {
 	  	cl_object y = x;
@@ -1206,7 +1192,7 @@ ecl_current_readtable(void)
 	/* INV: *readtable* always has a value */
 	r = SYM_VAL(@'*readtable*');
 	if (type_of(r) != t_readtable) {
-		SYM_VAL(@'*readtable*') = copy_readtable(standard_readtable, Cnil);
+		ECL_SETQ(@'*readtable*', copy_readtable(cl_core.standard_readtable, Cnil));
 		FEerror("The value of *READTABLE*, ~S, was not a readtable.",
 			1, r);
 	}
@@ -1225,7 +1211,7 @@ ecl_current_read_base(void)
 		if (b >= 2 && b <= 36)
 			return b;
 	}
-	SYM_VAL(@'*read_base*') = MAKE_FIXNUM(10);
+	ECL_SETQ(@'*read_base*', MAKE_FIXNUM(10));
 	FEerror("The value of *READ-BASE*, ~S, was illegal.", 1, x);
 }
 
@@ -1240,7 +1226,7 @@ ecl_current_read_default_float_format(void)
 		return 'S';
 	if (x == @'double-float' || x == @'long-float')
 		return 'D';
-	SYM_VAL(@'*read-default-float-format*') = @'single-float';
+	ECL_SETQ(@'*read-default-float-format*', @'single-float');
 	FEerror("The value of *READ-DEFAULT-FLOAT-FORMAT*, ~S, was illegal.",
 		1, x);
 }
@@ -1335,8 +1321,8 @@ do_read_delimited_list(int d, cl_object strm)
 		l = do_read_delimited_list(delimiter, strm);
 		if (!Null(SYM_VAL(@'si::*sharp-eq-context*')))
 			l = patch_sharp(l);
-		bds_unwind1;
-		bds_unwind1;
+		bds_unwind1();
+		bds_unwind1();
 	}
 	@(return l)
 @)
@@ -1345,27 +1331,27 @@ do_read_delimited_list(int d, cl_object strm)
 	int c;
 @
 	strm = stream_or_default_input(strm);
-	cl_token->string.fillp = 0;
+	cl_env.token->string.fillp = 0;
 	for (;;) {
 		c = ecl_getc(strm);
 		if (c == EOF || c == '\n')
 			break;
-		cl_string_push_extend(cl_token, c);
+		cl_string_push_extend(cl_env.token, c);
 	}
-	if (c == EOF && cl_token->string.fillp == 0) {
+	if (c == EOF && cl_env.token->string.fillp == 0) {
 		if (!Null(eof_errorp) || !Null(recursivep))
 			FEend_of_file(strm);
 		@(return eof_value Ct)
 	}
 #ifdef ECL_NEWLINE_IS_CRLF	/* From \r\n, ignore \r */
-	if (cl_token->string.fillp > 0 &&
-	    cl_token->string.self[cl_token->string.fillp-1] == '\r')
-		cl_token->string.fillp--;
+	if (cl_env.token->string.fillp > 0 &&
+	    cl_env.token->string.self[cl_env.token->string.fillp-1] == '\r')
+		cl_env.token->string.fillp--;
 #endif
 #ifdef ECL_NEWLINE_IS_LFCR	/* From \n\r, ignore \r */
 	ecl_getc(strm);
 #endif
-	@(return copy_simple_string(cl_token) (c == EOF? Ct : Cnil))
+	@(return copy_simple_string(cl_env.token) (c == EOF? Ct : Cnil))
 @)
 
 @(defun read_char (&optional (strm Cnil) (eof_errorp Ct) eof_value recursivep)
@@ -1520,12 +1506,12 @@ CANNOT_PARSE:
 @(defun copy_readtable (&o (from ecl_current_readtable()) to)
 @
 	if (Null(from)) {
-		from = standard_readtable;
+		from = cl_core.standard_readtable;
 		if (to != Cnil)
 			assert_type_readtable(to);
 		to = copy_readtable(from, to);
 		to->readtable.table['#'].dispatch_table['!']
-		= default_dispatch_macro;
+		= cl_core.default_dispatch_macro;
 		/*  We must forget #! macro.  */
 		@(return to)
 	}
@@ -1558,7 +1544,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 @
 	/* INV: read_table_entry() checks all values */
 	if (Null(fromrdtbl))
-		fromrdtbl = standard_readtable;
+		fromrdtbl = cl_core.standard_readtable;
 	/* INV: char_code() checks the types of `tochar',`fromchar' */
 	torte = read_table_entry(tordtbl, tochr);
 	fromrte = read_table_entry(fromrdtbl, fromchr);
@@ -1594,7 +1580,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 
 	/* fix to allow NIL as readtable argument. Beppe */
 	if (Null(rdtbl))
-		rdtbl = standard_readtable;
+		rdtbl = cl_core.standard_readtable;
 	/* INV: read_table_entry() checks our arguments */
 	entry = read_table_entry(rdtbl, chr);
 	m = entry->macro;
@@ -1618,8 +1604,8 @@ read_table_entry(cl_object rdtbl, cl_object c)
 	table = (cl_object *)cl_alloc(RTABSIZE * sizeof(cl_object));
 	entry->dispatch_table = table;
 	for (i = 0;  i < RTABSIZE;  i++)
-		table[i] = default_dispatch_macro;
-	entry->macro = dispatch_reader;
+		table[i] = cl_core.default_dispatch_macro;
+	entry->macro = cl_core.dispatch_reader;
 	@(return Ct)
 @)
 
@@ -1629,7 +1615,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 	cl_fixnum subcode;
 @
 	entry = read_table_entry(rdtbl, dspchr);
-	if (entry->macro != dispatch_reader || entry->dispatch_table == NULL)
+	if (entry->macro != cl_core.dispatch_reader || entry->dispatch_table == NULL)
 		FEerror("~S is not a dispatch character.", 1, dspchr);
 	subcode = char_code(subchr);
 	if (islower(subcode))
@@ -1644,9 +1630,9 @@ read_table_entry(cl_object rdtbl, cl_object c)
 	cl_fixnum subcode;
 @
 	if (Null(rdtbl))
-		rdtbl = standard_readtable;
+		rdtbl = cl_core.standard_readtable;
 	entry = read_table_entry(rdtbl, dspchr);
-	if (entry->macro != dispatch_reader || entry->dispatch_table == NULL)
+	if (entry->macro != cl_core.dispatch_reader || entry->dispatch_table == NULL)
 		FEerror("~S is not a dispatch character.", 1, dspchr);
 	subcode = char_code(subchr);
 	if (digitp(subcode, 10) >= 0)
@@ -1676,7 +1662,7 @@ si_string_to_object(cl_object x)
 cl_object
 si_standard_readtable()
 {
-	@(return standard_readtable)
+	@(return cl_core.standard_readtable)
 }
 
 static void
@@ -1694,13 +1680,12 @@ void
 init_read(void)
 {
 	struct ecl_readtable_entry *rtab;
+	cl_object readtable;
 	cl_object *dtab;
 	int i;
 
-	standard_readtable = cl_alloc_object(t_readtable);
-	ecl_register_static_root(&standard_readtable);
-
-	standard_readtable->readtable.table
+	cl_core.standard_readtable = cl_alloc_object(t_readtable);
+	cl_core.standard_readtable->readtable.table
 	= rtab
 	= (struct ecl_readtable_entry *)cl_alloc(RTABSIZE * sizeof(struct ecl_readtable_entry));
 	for (i = 0;  i < RTABSIZE;  i++) {
@@ -1709,8 +1694,7 @@ init_read(void)
 		rtab[i].dispatch_table = NULL;
 	}
 
-	dispatch_reader = make_cf2(dispatch_reader_fun);
-	ecl_register_static_root(&dispatch_reader);
+	cl_core.dispatch_reader = make_cf2(dispatch_reader_fun);
 
 	rtab['\t'].syntax_type = cat_whitespace;
 	rtab['\n'].syntax_type = cat_whitespace;
@@ -1720,7 +1704,7 @@ init_read(void)
 	rtab['"'].syntax_type = cat_terminating;
 	rtab['"'].macro = make_cf2(double_quote_reader);
 	rtab['#'].syntax_type = cat_non_terminating;
-	rtab['#'].macro = dispatch_reader;
+	rtab['#'].macro = cl_core.dispatch_reader;
 	rtab['\''].syntax_type = cat_terminating;
 	rtab['\''].macro = make_cf2(single_quote_reader);
 	rtab['('].syntax_type = cat_terminating;
@@ -1743,14 +1727,13 @@ init_read(void)
 	rtab['|'].macro = make_cf2(vertical_bar_reader);
 */
 
-	default_dispatch_macro = make_cf3(default_dispatch_macro_fun);
-	ecl_register_static_root(&default_dispatch_macro);
+	cl_core.default_dispatch_macro = make_cf3(default_dispatch_macro_fun);
 
 	rtab['#'].dispatch_table
 	= dtab
 	= (cl_object *)cl_alloc(RTABSIZE * sizeof(cl_object));
 	for (i = 0;  i < RTABSIZE;  i++)
-		dtab[i] = default_dispatch_macro;
+		dtab[i] = cl_core.default_dispatch_macro;
 	dtab['C'] = dtab['c'] = make_cf3(sharp_C_reader);
 	dtab['\\'] = make_cf3(sharp_backslash_reader);
 	dtab['\''] = make_cf3(sharp_single_quote_reader);
@@ -1790,16 +1773,11 @@ init_read(void)
 
 	init_backq();
 
-	SYM_VAL(@'*readtable*') =
-	  copy_readtable(standard_readtable, Cnil);
-	SYM_VAL(@'*readtable*')->readtable.table['#'].dispatch_table['!']
-	  = default_dispatch_macro; /*  We must forget #! macro.  */
-	SYM_VAL(@'*read_default_float_format*')
-	  = @'single-float';
-	SYM_VAL(@'*read_base*') = MAKE_FIXNUM(10);
-	SYM_VAL(@'*read_suppress*') = Cnil;
-
-	ecl_register_static_root(&ecl_packages_to_be_created);
+	ECL_SET(@'*readtable*',
+		readtable=copy_readtable(cl_core.standard_readtable, Cnil));
+	readtable->readtable.table['#'].dispatch_table['!']
+	    = cl_core.default_dispatch_macro; /*  We must forget #! macro.  */
+	ECL_SET(@'*read_default_float_format*', @'single-float');
 }
 
 /*
@@ -1816,7 +1794,7 @@ init_read(void)
 cl_object
 read_VV(cl_object block, void *entry)
 {
-	volatile cl_object old_eptbc = ecl_packages_to_be_created;
+	volatile cl_object old_eptbc = cl_core.packages_to_be_created;
 	typedef void (*entry_point_ptr)(cl_object);
 	volatile cl_object x;
 	cl_index i, len;
@@ -1831,8 +1809,8 @@ read_VV(cl_object block, void *entry)
 	in = OBJNULL;
 	CL_UNWIND_PROTECT_BEGIN {
 		bds_bind(@'si::*cblock*', block);
-		if (ecl_packages_to_be_created == OBJNULL)
-			ecl_packages_to_be_created = Cnil;
+		if (cl_core.packages_to_be_created == OBJNULL)
+			cl_core.packages_to_be_created = Cnil;
 
 		/* Communicate the library which Cblock we are using, and get
 		 * back the amount of data to be processed.
@@ -1852,8 +1830,8 @@ read_VV(cl_object block, void *entry)
 		bds_bind(@'*read-base*', MAKE_FIXNUM(10));
 		bds_bind(@'*read-default-float-format*', @'single-float');
 		bds_bind(@'*read-suppress*', Cnil);
-		bds_bind(@'*readtable*', standard_readtable);
-		bds_bind(@'*package*', lisp_package);
+		bds_bind(@'*readtable*', cl_core.standard_readtable);
+		bds_bind(@'*package*', cl_core.lisp_package);
 		bds_bind(@'si::*sharp-eq-context*', Cnil);
 		for (i = 0 ; i < len; i++) {
 			x = read_object(in);
@@ -1872,7 +1850,7 @@ read_VV(cl_object block, void *entry)
 	NO_DATA:
 		/* Execute top-level code */
 		(*entry_point)(MAKE_FIXNUM(0));
-		x = ecl_packages_to_be_created;
+		x = cl_core.packages_to_be_created;
 		loop_for_on(x) {
 			if (!member(x, old_eptbc)) {
 				CEerror("The following package was referenced in a~"
@@ -1880,7 +1858,7 @@ read_VV(cl_object block, void *entry)
 				2, block->cblock.name, CAR(x));
 			}
 		} end_loop_for_on;
-		bds_unwind1;
+		bds_unwind1();
 	} CL_UNWIND_PROTECT_EXIT {
 		if (in != OBJNULL)
 			close_stream(in, 0);

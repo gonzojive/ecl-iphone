@@ -173,7 +173,7 @@ when_macro(cl_object whole, cl_object env)
 void
 init_macros(void)
 {
-	SYM_VAL(@'*macroexpand-hook*') = @'funcall';
+	ECL_SET(@'*macroexpand-hook*', @'funcall');
 	cl_def_c_macro(@'or', or_macro);
 	cl_def_c_macro(@'and', and_macro);
 	cl_def_c_macro(@'when', when_macro);

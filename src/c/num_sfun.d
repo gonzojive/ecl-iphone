@@ -265,19 +265,19 @@ cl_atan1(cl_object y)
 
 	if (type_of(y) == t_complex) {
 #if 0 /* FIXME! ANSI states it should be this first part */
-		z = number_times(imag_unit, y);
+		z = number_times(cl_core.imag_unit, y);
 		z = cl_log1(one_plus(z)) +
 		  cl_log1(number_minus(MAKE_FIXNUM(1), z));
-		z = number_divide(z, number_times(MAKE_FIXNUM(2), imag_unit));
+		z = number_divide(z, number_times(MAKE_FIXNUM(2), cl_core.imag_unit));
 #else
-		z = number_times(imag_unit, y);
+		z = number_times(cl_core.imag_unit, y);
 		z = one_plus(z);
 		z1 = number_times(y, y);
 		z1 = one_plus(z1);
 		z1 = cl_sqrt(z1);
 		z = number_divide(z, z1);
 		z = cl_log1(z);
-		z = number_times(minus_imag_unit, z);
+		z = number_times(cl_core.minus_imag_unit, z);
 #endif /* ANSI */
 		return1(z);
 	}
@@ -467,17 +467,3 @@ cl_tanh(cl_object x)
 		@(return cl_atan1(x))
 	@(return cl_atan2(x, y))
 @)
-
-void
-init_num_sfun(void)
-{
-	imag_unit = make_complex(make_shortfloat(0.0), make_shortfloat(1.0));
-	ecl_register_static_root(&imag_unit);
-	minus_imag_unit = make_complex(make_shortfloat(0.0),
-				       make_shortfloat(-1.0));
-	ecl_register_static_root(&minus_imag_unit);
-	imag_two = make_complex(make_shortfloat(0.0), make_shortfloat(2.0));
-	ecl_register_static_root(&imag_two);
-
-	SYM_VAL(@'pi') = make_longfloat(M_PI);
-}

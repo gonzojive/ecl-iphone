@@ -23,11 +23,11 @@ void
 cs_overflow(void)
 {
 #ifdef DOWN_STACK
-	if (cs_limit < cs_org - cssize)
-	  cs_limit -= CSGETA;
+	if (cl_env.cs_limit < cl_env.cs_org - cl_env.cs_size)
+	  cl_env.cs_limit -= CSGETA;
 #else
-	if (cs_limit > cs_org + cssize)
-	  cs_limit += CSGETA;
+	if (cl_env.cs_limit > cl_env.cs_org + cl_env.cs_size)
+	  cl_env.cs_limit += CSGETA;
 #endif
 	FEerror("Control stack overflow.", 0);
 }
@@ -57,8 +57,6 @@ internal_error(const char *s)
 /*****************************************************************************/
 /*		Support for Lisp Error Handler				     */
 /*****************************************************************************/
-
-cl_object null_string;
 
 void
 terminal_interrupt(bool correctable)
@@ -281,6 +279,4 @@ void
 init_error(void)
 {
 	cl_def_c_function_va(@'si::universal-error-handler', universal_error_handler);
-	null_string = make_constant_string("");
-	ecl_register_static_root(&null_string);
 }

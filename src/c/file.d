@@ -37,8 +37,6 @@
 #include <sys/ioctl.h>
 #endif
 
-static cl_object terminal_io;
-
 static bool flisten(FILE *fp);
 
 /*----------------------------------------------------------------------
@@ -555,8 +553,8 @@ BEGIN:
 		break;
 	}
 	case smm_two_way:
-		if (strm == terminal_io)
-			flush_stream(terminal_io->stream.object1);
+		if (strm == cl_core.terminal_io)
+			flush_stream(cl_core.terminal_io->stream.object1);
 		strm->stream.int1 = 0;
 		strm = strm->stream.object0;
 		goto BEGIN;
@@ -1097,8 +1095,8 @@ BEGIN:
 		}
 
 	case smm_two_way:
-		if (strm == terminal_io)
-			flush_stream(terminal_io->stream.object1);
+		if (strm == cl_core.terminal_io)
+			flush_stream(cl_core.terminal_io->stream.object1);
 		strm = strm->stream.object0;
 		goto BEGIN;
 
@@ -1719,11 +1717,10 @@ init_file(void)
 	standard_output->stream.int0 = 0;
 	standard_output->stream.int1 = 0;
 
-	terminal_io = standard
+	cl_core.terminal_io = standard
 	= make_two_way_stream(standard_input, standard_output);
-	ecl_register_static_root(&terminal_io);
 
-	SYM_VAL(@'*terminal-io*') = standard;
+	ECL_SET(@'*terminal-io*', standard);
 
 	x = cl_alloc_object(t_stream);
 	x->stream.mode = (short)smm_synonym;
@@ -1733,11 +1730,11 @@ init_file(void)
 	x->stream.int0 = x->stream.int1 = 0;
 	standard = x;
 
-	SYM_VAL(@'*standard-input*')  = standard;
-	SYM_VAL(@'*standard-output*') = standard;
-	SYM_VAL(@'*error-output*') = standard;
+	ECL_SET(@'*standard-input*', standard);
+	ECL_SET(@'*standard-output*', standard);
+	ECL_SET(@'*error-output*', standard);
 
-	SYM_VAL(@'*query-io*') = standard;
-	SYM_VAL(@'*debug-io*') = standard;
-	SYM_VAL(@'*trace-output*') = standard;
+	ECL_SET(@'*query-io*', standard);
+	ECL_SET(@'*debug-io*', standard);
+	ECL_SET(@'*trace-output*', standard);
 }

@@ -175,7 +175,7 @@ main(int argc, char **argv)
 (defun builder (target output-name &key lisp-files ld-flags shared-data-file
 		(prologue-code "")
 		(epilogue-code (if (eq target :program) "
-	funcall(1,_intern(\"TOP-LEVEL\",system_package));
+	funcall(1,_intern(\"TOP-LEVEL\",cl_core.system_package));
 	return 0;" "")))
   (let* ((c-name (namestring (compile-file-pathname output-name :type :c)))
 	 (o-name (namestring (compile-file-pathname output-name :type :object)))

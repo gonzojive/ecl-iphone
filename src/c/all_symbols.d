@@ -94,11 +94,11 @@ mangle_name(cl_object output, char *source, int l)
 		}
 	}
 	package= symbol->symbol.hpack;
-	if (package == lisp_package)
+	if (package == cl_core.lisp_package)
 		package = make_simple_string("cl");
-	else if (package == system_package)
+	else if (package == cl_core.system_package)
 		package = make_simple_string("si");
-	else if (package == keyword_package)
+	else if (package == cl_core.keyword_package)
 		package = Cnil;
 	else
 		package = package->pack.name;
@@ -117,7 +117,7 @@ mangle_name(cl_object output, char *source, int l)
 		source++;
 	} else if (!is_symbol) {
 		c = '_';
-	} else if (package == keyword_package) {
+	} else if (package == cl_core.keyword_package) {
 		c = 'K';
 	} else {
 		c = 'S';
@@ -148,13 +148,14 @@ make_this_symbol(int i, cl_object s, int code, const char *name,
 	case 2: stp = stp_constant; break;
 	}
 	switch (code & 12) {
-	case 0: package = lisp_package; break;
-	case 4: package = system_package; break;
-	case 8: package = keyword_package; break;
+	case 0: package = cl_core.lisp_package; break;
+	case 4: package = cl_core.system_package; break;
+	case 8: package = cl_core.keyword_package; break;
 	}
 	s->symbol.t = t_symbol;
+	s->symbol.dynamic = 0;
 	s->symbol.mflag = FALSE;
-	SYM_VAL(s) = OBJNULL;
+	ECL_SET(s, OBJNULL);
 	SYM_FUN(s) = OBJNULL;
 	s->symbol.plist = Cnil;
 	s->symbol.hpack = Cnil;
@@ -163,11 +164,11 @@ make_this_symbol(int i, cl_object s, int code, const char *name,
 	s->symbol.isform = FALSE;
 	s->symbol.hpack = package;
 	s->symbol.name = make_constant_string(name);
-	if (package == keyword_package) {
+	if (package == cl_core.keyword_package) {
 		sethash(s->symbol.name, package->pack.external, s);
-		SYM_VAL(s) = s;
+		ECL_SET(s, s);
 	} else {
-		SYM_VAL(s) = value;
+		ECL_SET(s, value);
 		cl_import2(s, package);
 		cl_export2(s, package);
 	}

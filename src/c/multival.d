@@ -19,8 +19,9 @@
 @(defun values (&rest args)
 	int i;
 @
-	/* INV: the number of arguments never exceeds VSSIZE */
-	NValues = narg;
+	if (narg > ECL_MULTIPLE_VALUES_LIMIT)
+		FEerror("Too many values in VALUES",0);
+	NVALUES = narg;
 	if (narg == 0)
 		VALUES(0) = Cnil;
 	else for (i = 0; i < narg; i++)
@@ -32,10 +33,10 @@ cl_object
 cl_values_list(cl_object list)
 {
 	VALUES(0) = Cnil;
-	for (NValues=0; !endp(list); list=CDR(list)) {
-		if (NValues == VSSIZE)
+	for (NVALUES=0; !endp(list); list=CDR(list)) {
+		if (NVALUES == ECL_MULTIPLE_VALUES_LIMIT)
 			FEerror("Too many values in VALUES-LIST",0);
-		VALUES(NValues++) = CAR(list);
+		VALUES(NVALUES++) = CAR(list);
 	}
 	returnn(VALUES(0));
 }

@@ -48,7 +48,7 @@
   ;; Here we compile the form which is protected. When this form
   ;; is aborted, it continues at the frs_pop() with unwinding=TRUE.
   (wt-nl "if (frs_push(FRS_PROTECT,Cnil)) {")
-  (wt-nl "unwinding = TRUE; next_fr=nlj_fr; } else {")
+  (wt-nl "unwinding = TRUE; next_fr=cl_env.nlj_fr; } else {")
   (let ((*unwind-exit* (cons 'FRAME *unwind-exit*))
 	(*destination* 'VALUES))
     (c2expr* form))

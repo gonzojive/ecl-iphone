@@ -16,14 +16,6 @@
 #include <string.h>
 #include "ecl.h"
 
-#ifndef THREADS
-cl_object bignum_register[3];
-mp_limb_t bignum_register_limbs[3][BIGNUM_REGISTER_SIZE];
-#else
-#define bignum_register_limbs lwp->lwp_bignum_register_limbs
-#define bignum_register lwp->lwp_bignum_register
-#endif
-
 /* 
  * Using GMP multiple precision integers:
  *
@@ -45,34 +37,34 @@ mp_limb_t bignum_register_limbs[3][BIGNUM_REGISTER_SIZE];
 cl_object
 big_register0_get(void)
 {
-	bignum_register[0]->big.big_size = 0;
-	return bignum_register[0];
+	cl_env.big_register[0]->big.big_size = 0;
+	return cl_env.big_register[0];
 }
 
 cl_object
 big_register1_get(void)
 {
-	bignum_register[1]->big.big_size = 0;
-	return bignum_register[1];
+	cl_env.big_register[1]->big.big_size = 0;
+	return cl_env.big_register[1];
 }
 
 cl_object
 big_register2_get(void)
 {
-	bignum_register[2]->big.big_size = 0;
-	return bignum_register[2];
+	cl_env.big_register[2]->big.big_size = 0;
+	return cl_env.big_register[2];
 }
 
 void
 big_register_free(cl_object x)
 {
 	/* FIXME! Is this thread safe? */
-	if (x == bignum_register[0])
-	  x->big.big_limbs = bignum_register_limbs[0];
-	else if (x == bignum_register[1])
-	  x->big.big_limbs = bignum_register_limbs[1];
-	else if (x == bignum_register[2])
-	  x->big.big_limbs = bignum_register_limbs[2];
+	if (x == cl_env.big_register[0])
+	  x->big.big_limbs = cl_env.big_register_limbs[0];
+	else if (x == cl_env.big_register[1])
+	  x->big.big_limbs = cl_env.big_register_limbs[1];
+	else if (x == cl_env.big_register[2])
+	  x->big.big_limbs = cl_env.big_register_limbs[2];
 	else
 	  error("big_register_free: unknown register");
 	x->big.big_size = 0;
@@ -89,7 +81,7 @@ big_register_copy(cl_object old)
 	  new_big->big = old->big;
 	  big_register_free(old);
 	} else {
-	  /* As the bignum points to the bignum_register_limbs[] area
+	  /* As the bignum points to the cl_env.big_register_limbs[] area
 	     we must duplicate its contents. */
 	  mpz_init_set(new_big->big.big_num,old->big.big_num);
 	}
@@ -282,8 +274,8 @@ static void
 mp_free(void *ptr, size_t size)
 {
 	char *x = ptr;
-	if (x < (char *)(bignum_register_limbs) ||
-	    x > (char *)(bignum_register_limbs+2))
+	if (x < (char *)(cl_env.big_register_limbs) ||
+	    x > (char *)(cl_env.big_register_limbs+2))
 		cl_dealloc(x,size);
 }
 
@@ -292,9 +284,8 @@ init_big(void)
 {
 	int i;
 	for (i = 0; i < 3; i++) {
-	  bignum_register[i] = cl_alloc_object(t_bignum);
-	  ecl_register_static_root(&bignum_register[i]);
-	  big_register_free(bignum_register[i]);
+		cl_env.big_register[i] = cl_alloc_object(t_bignum);
+		big_register_free(cl_env.big_register[i]);
 	}
 	mp_set_memory_functions(mp_alloc, mp_realloc, mp_free);
 }

@@ -202,13 +202,4 @@ ecl_copy_instance(cl_object x)
 			FEerror("No class named ~S.", 1, name);
 	}
 	@(return class)
-@)	
-
-void
-init_instance(void)
-{
-	SYM_VAL(@'si::*class-name-hash-table*') =
-	    cl__make_hash_table(@'eq', MAKE_FIXNUM(1024), /* size */
-				make_shortfloat(1.5), /* rehash-size */
-				make_shortfloat(0.7)); /* rehash-threshold */
-}
+@)

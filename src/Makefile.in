@@ -55,7 +55,7 @@ ecl_min$(EXE): $(LIBRARIES) .gdbinit libecl.a
 	if [ -f CROSS-COMPILER ]; then \
 		touch $@; \
 	else \
-		$(CC) $(LDFLAGS) -o $@ c/cinit.o -L./ libecl.a -lgmp $(LIBRARIES) $(LIBS);\
+		$(CC) $(LDFLAGS) -o $@ c/cinit.o -L./ libecl.a -lgmp -lgc $(LIBS);\
 	fi
 
 .gdbinit: $(srcdir)/util/gdbinit

@@ -273,27 +273,3 @@ NOT_A_FILENAME:
 	}
 	@(return pathname)
 @)
-
-
-/* ---------------------------------------------------------------------- */
-void
-init_load(void)
-{
-  SYM_VAL(@'si::*load-hooks*') = cl_list(
-#ifdef ENABLE_DLOPEN
-				4,CONS(make_simple_string("fas"), @'si::load-binary'),
-#else
-				3,
-
-#endif
-				CONS(make_simple_string("lsp"), @'si::load-source'),
-				CONS(make_simple_string("lisp"), @'si::load-source'),
-				CONS(Cnil, @'si::load-source'));
-
-#if 0
-#ifdef ENABLE_DLOPEN
-  if (dlopen(NULL, RTLD_NOW|RTLD_GLOBAL) == NULL)
-    printf(";;; Error dlopening self file\n;;; Error: %s\n", dlerror());
-#endif
-#endif
-}

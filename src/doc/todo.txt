@@ -11,8 +11,46 @@ GOODIES:
 
 * Optimize out (multiple-value-call ... (values ...)).
 
+THREADS:
+========
+
+Variables with locked access:
+	packages_list, ecl_packages_to_be_created,
+	pathname_translations
+Variables to be included in cl_env:
+	+ variables in list.d
+	+ bignum_register
+	+ fmt_aux_stream (format.d)
+	+ c_env (compiler.d)
+	+ base (disassembler.d)
+Variables to be redesigned as global:
+	ARGC, ARGV
+Unknown variables
+	dispatch_reader
+	default_dispatch_macro
+
 KNOWN BUGS:
 ===========
+
+(From Paul F. Dietz' test suite)
+
+Test DEPOSIT-FIELD.1 failed
+Form: (LOOP FOR POS = (RANDOM 32) FOR SIZE = (RANDOM 32) FOR NEWBYTE =
+            (RANDOM (ASH 1 (+ POS SIZE))) FOR VAL =
+            (RANDOM (1+ (RANDOM (ASH 1 (+ POS SIZE))))) FOR RESULT =
+            (DEPOSIT-FIELD NEWBYTE (BYTE SIZE POS) VAL) REPEAT 100
+            UNLESS
+            (LOOP FOR I FROM 0 TO (+ POS SIZE) ALWAYS
+                  (IF (OR (< I POS) (>= I (+ POS SIZE)))
+                      (IF (LOGBITP I VAL) (LOGBITP I RESULT)
+                          (NOT (LOGBITP I RESULT)))
+                      (IF (LOGBITP I NEWBYTE) (LOGBITP I RESULT)
+                          (NOT (LOGBITP I RESULT)))))
+            COLLECT (LIST POS SIZE NEWBYTE VAL RESULT))
+Expected value: NIL
+Actual value: ((11 21 1980658428 89050977 1980659553)
+               (9 23 154003420 2827351845 154003237)).
+
 
 OLD: (Maybe out of date)
 ========================

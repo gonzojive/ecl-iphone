@@ -23,10 +23,8 @@ extern "C" {
 /* booting */
 extern void init_all_symbols(void);
 extern void init_alloc(void);
-extern void init_assignment(void);
 extern void init_backq(void);
 extern void init_big(void);
-extern void init_character(void);
 #ifdef CLOS
 extern void init_clos(void);
 #endif
@@ -35,27 +33,13 @@ extern void init_compiler(void);
 extern void init_error(void);
 extern void init_eval(void);
 extern void init_file(void);
-#ifndef ECL_CMU_FORMAT
-extern void init_format(void);
-#endif
 #ifndef GBC_BOEHM
 extern void init_GC(void);
 #endif
-extern void init_hash(void);
-extern void init_interpreter(void);
-extern void init_load(void);
 extern void init_macros(void);
 extern void init_number(void);
-extern void init_num_co(void);
-extern void init_num_comp(void);
-extern void init_num_rand(void);
-extern void init_num_sfun(void);
-extern void init_package(void);
-extern void init_pathname(void);
-extern void init_print(void);
 extern void init_read(void);
 extern void init_stacks(int *);
-extern void init_symbol(void);
 extern void init_unixtime(void);
 
 
@@ -74,6 +58,11 @@ extern const struct {
 /* alloc.d/alloc_2.d */
 
 extern cl_object ecl_alloc_bytecodes(cl_index data_size, cl_index code_size);
+
+/* interpreter.d */
+
+#define cl_stack_ref(n) cl_env.stack[n]
+#define cl_stack_index() (cl_env.stack_top-cl_env.stack)
 
 /* file.d */
 
@@ -129,32 +118,12 @@ void ecl_library_close(cl_object block);
 #define ECL_PPRINT_QUEUE_SIZE			128
 #define ECL_PPRINT_INDENTATION_STACK_SIZE	256
 
-#ifndef THREADS
-extern bool PRINTreadably;
-extern bool PRINTescape;
-extern bool PRINTpretty;
-extern bool PRINTcircle;
-extern int PRINTbase;
-extern bool PRINTradix;
-extern cl_object PRINTcase;
-extern bool PRINTgensym;
-extern int PRINTlevel;
-extern int PRINTlength;
-extern bool PRINTarray;
-extern cl_object PRINTpackage;
-extern bool PRINTstructure;
-extern cl_object PRINTstream;
-#endif
-
 extern void edit_double(int n, double d, int *sp, char *s, int *ep);
 extern void cl_setup_printer(cl_object strm);
 extern void cl_write_object(cl_object x);
 
  /* read.d */
 #define	RTABSIZE	CHAR_CODE_LIMIT	/*  read table size  */
-
-extern cl_object ecl_packages_to_be_created;
-extern cl_object ecl_package_list;
 
 #ifdef __cplusplus
 }

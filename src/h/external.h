@@ -6,18 +6,173 @@ extern "C" {
 #define _ARGS(x) (int n, ...)
 #endif
 
-struct let {
-        cl_object let_var;
-        cl_object let_spp;
-        cl_object let_init;
+/*
+ * Per-thread data.
+ */
+
+struct cl_env_struct {
+	/* The four stacks in ECL. */
+
+	/*
+	 * The lexical environment stack, where local bindings of
+	 *    variables are kept by interpreted functions.
+	 */
+	cl_object lex_env;
+
+	/*
+	 * The lisp stack, which is used mainly for keeping the arguments of a
+	 * function before it is invoked, and also by the compiler and by the
+	 * reader when they are building some data structure.
+	 */
+	cl_index stack_size;
+	cl_object *stack;
+	cl_object *stack_top;
+	cl_object *stack_limit;
+
+	/*
+	 * The BinDing Stack stores the bindings of special variables.
+	 */
+	cl_index bds_size;
+	struct bds_bd *bds_org;
+	struct bds_bd *bds_top;
+	struct bds_bd *bds_limit;
+	cl_object bindings_hash;
+
+	/*
+	 * The Invocation History Stack (IHS) keeps a list of the names of the
+	 * functions that are invoked, together with their lexical
+	 * environments.
+	 */
+	struct ihs_frame *ihs_top;
+
+	/*
+	 * The FRames Stack (FRS) is a list of frames or jump points, and it
+	 * is used by different high-level constructs (BLOCK, TAGBODY, CATCH...)
+	 * to set return points.
+	 */
+	cl_index frs_size;
+	struct frame *frs_org;
+	struct frame *frs_top;
+	struct frame *frs_limit;
+	struct frame *nlj_fr;
+
+	/*
+	 * The following pointers to the C Stack are used to ensure that a
+	 * recursive function does not enter an infinite loop and exhausts all
+	 * memory. They will eventually disappear, because most operating
+	 * systems already take care of this.
+	 */
+	int *cs_org;
+	int *cs_limit;
+	cl_index cs_size;
+
+	/* Array where values are returned by functions. */
+	cl_index nvalues;
+	cl_object values[ECL_MULTIPLE_VALUES_LIMIT];
+
+	/* Private variables used by different parts of ECL: */
+	/* ... the reader ... */
+	cl_object token;
+
+	/* ... the compiler ... */
+	struct cl_compiler_env *c_env;
+
+	/* ... the formatter ... */
+	cl_object fmt_aux_stream;
+
+	/* ... the printer ... */
+	cl_object print_case;
+	cl_object print_package;
+	cl_object print_stream;
+	int print_base;
+	int print_level;
+	int print_length;
+	bool print_readably;
+	bool print_escape;
+	bool print_pretty;
+	bool print_circle;
+	bool print_radix;
+	bool print_gensym;
+	bool print_array;
+	bool print_structure;
+
+	/* ... the pretty printer ... */
+	cl_fixnum circle_counter;
+	cl_object circle_stack;
+	short *queue;
+	short *indent_stack;
+	int qh, qt, qc, isp, iisp;
+
+	/* ... arithmetics ... */
+	/* Note: if you change the size of these registers, change also
+	   BIGNUM_REGISTER_SIZE in config.h */
+	cl_object big_register[3];
+	mp_limb_t big_register_limbs[3][16];
 };
 
-struct iterator {
-        cl_object iter_var;
-        cl_object iter_spp;
-        cl_object iter_init;
-        cl_object iter_incr;
+#ifdef ECL_THREADS
+#define cl_env (*ecl_thread_env())
+extern struct cl_env_struct *ecl_thread_env(void) __attribute__((const));
+#else
+extern struct cl_env_struct cl_env;
+#endif
+
+/*
+ * Per-process data.
+ */
+
+struct cl_core_struct {
+	cl_object packages;
+	cl_object lisp_package;
+	cl_object user_package;
+	cl_object keyword_package;
+	cl_object system_package;
+#ifdef CLOS
+	cl_object clos_package;
+#endif
+	cl_object packages_to_be_created;
+
+	cl_object pathname_translations;
+
+	cl_object terminal_io;
+	cl_object null_stream;
+	cl_object standard_readtable;
+	cl_object dispatch_reader;
+	cl_object default_dispatch_macro;
+
+	cl_object string_return;
+	cl_object string_space;
+	cl_object string_rubout;
+	cl_object string_page;
+	cl_object string_tab;
+	cl_object string_backspace;
+	cl_object string_linefeed;
+	cl_object string_newline;
+	cl_object string_null;
+	cl_object null_string;
+
+	cl_object plus_half;
+	cl_object minus_half;
+	cl_object imag_unit;
+	cl_object minus_imag_unit;
+	cl_object imag_two;
+	cl_object shortfloat_zero;
+	cl_object longfloat_zero;
+
+	cl_object gensym_prefix;
+	cl_object gentemp_prefix;
+	cl_object gentemp_counter;
+
+	cl_object Jan1st1970UT;
+
+	cl_object system_properties;
+
+#ifdef ECL_THREADS
+	cl_object threads;
+#endif
 };
+
+extern struct cl_core_struct cl_core;
 
 /* alloc.c / alloc_2.c */
 
@@ -256,7 +411,6 @@ extern void cl_stack_push_n(cl_index n, cl_object *args);
 extern int cl_stack_push_values(void);
 extern void cl_stack_pop_values(int n);
 
-extern cl_object lex_env;
 extern cl_object lambda_apply(int narg, cl_object fun);
 extern void *interpret(cl_object bytecodes, void *pc);
 
@@ -270,7 +424,6 @@ extern cl_object si_bc_split(cl_object v);
 extern cl_object cl_error _ARGS((int narg, cl_object eformat, ...)) __attribute__((noreturn));
 extern cl_object cl_cerror _ARGS((int narg, cl_object cformat, cl_object eformat, ...));
 
-extern cl_object null_string;
 extern void internal_error(const char *s) __attribute__((noreturn));
 extern void cs_overflow(void) __attribute__((noreturn));
 extern void error(const char *s) __attribute__((noreturn));
@@ -444,7 +597,7 @@ extern void extend_hashtable(cl_object hashtable);
 extern cl_object gethash(cl_object key, cl_object hash);
 extern cl_object gethash_safe(cl_object key, cl_object hash, cl_object def);
 extern bool remhash(cl_object key, cl_object hash);
-
+extern struct ecl_hashtable_entry *ecl_search_hash(cl_object key, cl_object hashtable);
 
 /* instance.c */
 
@@ -676,8 +829,6 @@ extern cl_object one_minus(cl_object x);
 
 /* number.c */
 
-extern cl_object shortfloat_zero;
-extern cl_object longfloat_zero;
 extern cl_fixnum fixint(cl_object x);
 extern cl_index  fixnnint(cl_object x);
 extern cl_object make_integer(cl_fixnum i);
@@ -785,9 +936,6 @@ extern cl_object make_random_state(cl_object rs);
 
 /* num_sfun.c */
 
-extern cl_object imag_unit;
-extern cl_object minus_imag_unit;
-extern cl_object imag_two;
 extern cl_fixnum fixnum_expt(cl_fixnum x, cl_fixnum y);
 extern cl_object cl_exp(cl_object x);
 extern cl_object cl_expt(cl_object x, cl_object y);
@@ -832,11 +980,6 @@ extern cl_object cl_shadow _ARGS((int narg, cl_object symbols, ...));
 extern cl_object cl_use_package _ARGS((int narg, cl_object pack, ...));
 extern cl_object cl_unuse_package _ARGS((int narg, cl_object pack, ...));
 
-extern cl_object lisp_package;
-extern cl_object user_package;
-extern cl_object keyword_package;
-extern cl_object system_package;
-extern cl_object clos_package;
 extern cl_object make_package(cl_object n, cl_object ns, cl_object ul);
 extern cl_object rename_package(cl_object x, cl_object n, cl_object ns);
 extern cl_object find_package(cl_object n);
@@ -1146,9 +1289,6 @@ extern cl_object cl_gensym _ARGS((int narg, ...));
 extern cl_object cl_gentemp _ARGS((int narg, ...));
 extern cl_object si_put_properties _ARGS((int narg, cl_object sym, ...));
 
-#ifndef THREADS
-extern cl_object cl_token;
-#endif
 extern void cl_defvar(cl_object s, cl_object v);
 extern void cl_defparameter(cl_object s, cl_object v);
 extern cl_object make_symbol(cl_object st);
@@ -1202,6 +1342,16 @@ extern cl_object si_open_server_stream(cl_object port);
 extern cl_object si_open_unix_socket_stream(cl_object path);
 extern cl_object si_lookup_host_entry(cl_object host_or_address);
 extern cl_object make_stream(cl_object host, int fd, enum ecl_smmode smm);
+#endif
+
+
+/* threads.c */
+
+#ifdef ECL_THREADS
+extern cl_object si_thread_launch _ARGS((int narg, cl_object function, ...));
+extern cl_object si_thread_list(void);
+extern cl_object si_thread_kill(cl_object thread);
+extern cl_object si_thread_exit(void) __attribute__((noreturn));
 #endif
 
 

@@ -76,14 +76,14 @@
   (let ((nv (length forms)))
     (declare (fixnum nv))
     (case nv
-      (0 (wt-nl "value0=Cnil;NValues=0;")
+      (0 (wt-nl "value0=Cnil;NVALUES=0;")
 	 (unwind-exit 'RETURN))
       (1 (c2expr (first forms)))
       (t (let* ((*inline-blocks* 0)
 		(forms (nreverse (coerce-locs (inline-args forms)))))
 	   ;; 1) By inlining arguments we make sure that VL has no call to funct.
 	   ;; 2) Reverse args to avoid clobbering VALUES(0)
-	   (wt-nl "NValues=" nv ";")
+	   (wt-nl "NVALUES=" nv ";")
 	   (do ((vl forms (rest vl))
 		(i (1- (length forms)) (1- i)))
 	       ((null vl))
@@ -131,7 +131,7 @@
   (let* ((*lcl* *lcl*)
          (nr (make-lcl-var :type :int)))
     (let ((*destination* 'VALUES)) (c2expr* form))
-    (wt-nl "{int " nr "=NValues;")
+    (wt-nl "{int " nr "=NVALUES;")
     (do ((vs vrefs (rest vs))
          (i 0 (1+ i))
          (vref))
@@ -144,7 +144,7 @@
       (wt-nl "} else {") (set-var nil vref) ; (second vref) ccb
       (wt "}"))
     (unless (eq *exit* 'RETURN) (wt-nl))
-    (wt-nl "if (NValues>1) NValues=1;}")
+    (wt-nl "if (NVALUES>1) NVALUES=1;}")
     (unwind-exit (if vrefs (first vrefs) '(VALUE 0)))))
 
 (defun c1multiple-value-bind (args &aux (vars nil) (vnames nil) init-form
@@ -183,7 +183,7 @@
 	 (env-grows nil)
 	 (nr (make-lcl-var :type :int)))
     ;; 1) Retrieve the number of output values
-    (wt-nl "{ int " nr "=NValues;")
+    (wt-nl "{ int " nr "=NVALUES;")
 
     ;; 2) For all variables which are not special and do not belong to
     ;;    a closure, make a local C variable.

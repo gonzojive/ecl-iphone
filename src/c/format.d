@@ -36,8 +36,6 @@ typedef struct format_stack_struct {
   int		nparam;
 } *format_stack;
 
-static cl_object fmt_aux_stream;
-
 /******************* COMMON ***************************/
 
 #define NONE	0
@@ -82,11 +80,11 @@ get_aux_stream(void)
 	cl_object stream;
 
 	start_critical_section();
-	if (fmt_aux_stream == Cnil)
+	if (cl_env.fmt_aux_stream == Cnil)
 		stream = make_string_output_stream(64);
 	else {
-		stream = fmt_aux_stream;
-		fmt_aux_stream = Cnil;
+		stream = cl_env.fmt_aux_stream;
+		cl_env.fmt_aux_stream = Cnil;
 	}
 	end_critical_section();
 	return stream;
@@ -121,7 +119,7 @@ fmt_advance(format_stack fmt)
 {
 	if (fmt->index >= fmt->end)
 		fmt_error(fmt, "arguments exhausted");
-	return(cl_stack[fmt->index++]);
+	return(cl_env.stack[fmt->index++]);
 }
 
 static void
@@ -340,8 +338,8 @@ fmt_integer(format_stack fmt, cl_object x, bool colon, bool atsign,
 		fmt->aux_stream->stream.int0 = file_column(fmt->stream);
 		fmt->aux_stream->stream.int1 = file_column(fmt->stream);
 		cl_setup_printer(fmt->aux_stream);
-		PRINTescape = FALSE;
-		PRINTbase = radix;
+		cl_env.print_escape = FALSE;
+		cl_env.print_base = radix;
 		cl_write_object(x);
 		l = fmt->aux_string->string.fillp;
 		mincol -= l;
@@ -354,9 +352,9 @@ fmt_integer(format_stack fmt, cl_object x, bool colon, bool atsign,
 	fmt->aux_string->string.fillp = 0;
 	fmt->aux_stream->stream.int0 = file_column(fmt->stream);
 	fmt->aux_stream->stream.int1 = file_column(fmt->stream);
-	PRINTstream = fmt->aux_stream;
-	PRINTradix = FALSE;
-	PRINTbase = radix;
+	cl_env.print_stream = fmt->aux_stream;
+	cl_env.print_radix = FALSE;
+	cl_env.print_base = radix;
 	cl_write_object(x);
 	l = l1 = fmt->aux_string->string.fillp;
 	s = 0;
@@ -577,9 +575,9 @@ fmt_radix(format_stack fmt, bool colon, bool atsign)
 		fmt->aux_string->string.fillp = 0;
 		fmt->aux_stream->stream.int0 = file_column(fmt->stream);
 		fmt->aux_stream->stream.int1 = file_column(fmt->stream);
-		PRINTstream = fmt->aux_stream;
-		PRINTradix = FALSE;
-		PRINTbase = 10;
+		cl_env.print_stream = fmt->aux_stream;
+		cl_env.print_radix = FALSE;
+		cl_env.print_base = 10;
 		cl_write_object(x);
 		s = 0;
 		i = fmt->aux_string->string.fillp;
@@ -619,7 +617,7 @@ fmt_radix(format_stack fmt, bool colon, bool atsign)
 	if (radix < 0 || radix > 36)
 		FEerror("~D is illegal as a radix.", 1, MAKE_FIXNUM(radix));
 	fmt_integer(fmt, x, colon, atsign, radix, mincol, padchar, commachar);
-}	
+}
 
 static void
 fmt_plural(format_stack fmt, bool colon, bool atsign)
@@ -1687,7 +1685,7 @@ fmt_justification(format_stack fmt, volatile bool colon, bool atsign)
 	 */
 	fields_end = cl_stack_index();
 	for (i = fields_start, l = 0;  i < fields_end;  i++)
-		l += cl_stack[i]->string.fillp;
+		l += cl_env.stack[i]->string.fillp;
 	/*
 	 * Count the number of segments that need padding, "M". If the colon
 	 * modifier, the first item needs padding. If the @@ modifier is
@@ -1725,7 +1723,7 @@ fmt_justification(format_stack fmt, volatile bool colon, bool atsign)
 		if (i > fields_start || colon)
 			for (j = l / m, l -= j, --m;  j > 0;  --j)
 				writec_stream(padchar, fmt->stream);
-		princ(cl_stack[i], fmt->stream);
+		princ(cl_env.stack[i], fmt->stream);
 	}
 	if (atsign)
 		for (j = l;  j > 0;  --j)
@@ -1807,11 +1805,11 @@ doformat(int narg, cl_object strm, cl_object string, cl_va_list args, bool in_fo
 		flush_stream(strm);
 	}
 	cl_stack_set_index(fmt.base);
-	fmt_aux_stream = fmt.aux_stream;
+	cl_env.fmt_aux_stream = fmt.aux_stream;
 	args = Cnil;
 	if (in_formatter) {
 		while (fmt.index < fmt.end) {
-			args = CONS(cl_stack[fmt.index++], args);
+			args = CONS(cl_env.stack[fmt.index++], args);
 		}
 		args = cl_nreverse(args);
 	}
@@ -2038,13 +2036,6 @@ DIRECTIVE:
 		fmt_error(fmt, "illegal directive");
 	}
 	goto LOOP;
-}
-
-void
-init_format(void)
-{
-	fmt_aux_stream = make_string_output_stream(64);
-	ecl_register_static_root(&fmt_aux_stream);
 }
 #endif /* !ECL_CMU_FORMAT */
 

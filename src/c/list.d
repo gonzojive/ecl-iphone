@@ -241,8 +241,6 @@ cl_return @tenth	LENTH(9)
 static bool
 tree_equal(cl_object x, cl_object y)
 {
-	cs_check(x);
-
 BEGIN:
 	if (CONSP(x))
 		if (CONSP(y))
@@ -405,7 +403,6 @@ cl_copy_alist(cl_object x)
 static cl_object
 do_copy_tree(cl_object x)
 {
-	cs_check(x);
 	if (ATOM(x))
 		return x;
 	return CONS(do_copy_tree(CAR(x)), do_copy_tree(CDR(x)));
@@ -577,8 +574,6 @@ cl_rplacd(cl_object x, cl_object v)
 cl_object
 subst(cl_object new_obj, cl_object tree)
 {
-	cs_check(new_obj);
-
 	if (TEST(tree))
 		return(new_obj);
 	else if (CONSP(tree))
@@ -607,8 +602,6 @@ subst(cl_object new_obj, cl_object tree)
 void
 nsubst(cl_object new_obj, cl_object *treep)
 {
-	cs_check(new_obj);
-
 	if (TEST(*treep))
 		*treep = new_obj;
 	else if (CONSP(*treep)) {
@@ -638,7 +631,6 @@ sublis(cl_object alist, cl_object tree)
 {
 	cl_object x = alist;
 
-	cs_check(alist);
 	loop_for_in(x) {
 		item_compared = cl_car(CAR(x));
 		if (TEST(tree)) return(cl_cdr(CAR(x)));
@@ -671,7 +663,6 @@ nsublis(cl_object alist, cl_object *treep)
 {
 	cl_object x = alist;
 
-	cs_check(alist);
 	loop_for_in(x) {
 		item_compared = cl_car(CAR(x));
 		if (TEST(*treep)) {

@@ -35,9 +35,9 @@
   "@abs_srcdir@/ffi.lsp"
 #+ffi
   "@abs_srcdir@/ffi-objects.lsp"
- #+threads
-  "@abs_srcdir@/thread.lsp"
- #+tk
+; #+threads
+;  "@abs_srcdir@/thread.lsp"
+#+tk
   "@abs_srcdir@/tk-init.lsp"
   "@abs_builddir@/config.lsp"
   "@abs_srcdir@/top.lsp"))

@@ -161,7 +161,6 @@ _hash_equal(cl_hashkey h, int depth, cl_object x)
 	char *buffer;
 	cl_index len;
 
-	cs_check(x);
 BEGIN:
 	if (depth++ > 3) return h;
 	switch (type_of(x)) {
@@ -220,8 +219,8 @@ hash_equal(cl_object key)
 	return _hash_equal(~(cl_hashkey)0, 0, key);
 }
 
-static struct ecl_hashtable_entry *
-search_hash(cl_object key, cl_object hashtable)
+struct ecl_hashtable_entry *
+ecl_search_hash(cl_object key, cl_object hashtable)
 {
 	cl_hashkey h;
 	cl_index hsize, i, j, k;
@@ -280,8 +279,8 @@ search_hash(cl_object key, cl_object hashtable)
 cl_object
 gethash(cl_object key, cl_object hashtable)
 {
-	/* INV: search_hash() checks the type of hashtable */
-	return search_hash(key, hashtable)->value;
+	/* INV: ecl_search_hash() checks the type of hashtable */
+	return ecl_search_hash(key, hashtable)->value;
 }
 
 cl_object
@@ -289,8 +288,8 @@ gethash_safe(cl_object key, cl_object hashtable, cl_object def)
 {
 	struct ecl_hashtable_entry *e;
 
-	/* INV: search_hash() checks the type of hashtable */
-	e = search_hash(key, hashtable);
+	/* INV: ecl_search_hash() checks the type of hashtable */
+	e = ecl_search_hash(key, hashtable);
 	if (e->key == OBJNULL)
 		return def;
 	else
@@ -337,8 +336,8 @@ sethash(cl_object key, cl_object hashtable, cl_object value)
 	bool over;
 	struct ecl_hashtable_entry *e;
 
-	/* INV: search_hash() checks the type of hashtable */
-	e = search_hash(key, hashtable);
+	/* INV: ecl_search_hash() checks the type of hashtable */
+	e = ecl_search_hash(key, hashtable);
 	if (e->key != OBJNULL) {
 		e->value = value;
 		return;
@@ -468,8 +467,8 @@ cl_hash_table_p(cl_object ht)
 @(defun gethash (key ht &optional (no_value Cnil))
 	struct ecl_hashtable_entry *e;
 @
-	/* INV: search_hash() checks the type of hashtable */
-	e = search_hash(key, ht);
+	/* INV: ecl_search_hash() checks the type of hashtable */
+	e = ecl_search_hash(key, ht);
 	if (e->key != OBJNULL)
 		@(return e->value Ct)
 	else
@@ -489,8 +488,8 @@ remhash(cl_object key, cl_object hashtable)
 {
 	struct ecl_hashtable_entry *e;
 
-	/* INV: search_hash() checks the type of hashtable */
-	e = search_hash(key, hashtable);
+	/* INV: ecl_search_hash() checks the type of hashtable */
+	e = ecl_search_hash(key, hashtable);
 	if (e->key != OBJNULL) {
 		e->key = OBJNULL;
 		e->value = Cnil;
@@ -503,7 +502,7 @@ remhash(cl_object key, cl_object hashtable)
 cl_object
 cl_remhash(cl_object key, cl_object ht)
 {
-	/* INV: search_hash() checks the type of hashtable */
+	/* INV: ecl_search_hash() checks the type of hashtable */
 	@(return (remhash(key, ht)? Ct : Cnil));
 }
 

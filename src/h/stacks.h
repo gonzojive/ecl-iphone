@@ -17,54 +17,52 @@
 extern "C" {
 #endif
 
-/********************
- * INTERPRETER STACK
- ********************/
-
-extern cl_index cl_stack_size;
-extern cl_object *cl_stack;
-extern cl_object *cl_stack_top;
-extern cl_object *cl_stack_limit;
-
 /**************
  * BIND STACK
  **************/
 
 typedef struct bds_bd {
-	cl_object bds_sym;	/*  symbol  */
-	cl_object bds_val;	/*  previous value of the symbol  */
+	cl_object symbol;	/*  symbol  */
+	cl_object value;	/*  previous value of the symbol  */
 } *bds_ptr;
 
-#ifdef THREADS
-#define bds_limit       clwp->lwp_bds_limit
-#define bds_top         clwp->lwp_bds_top
-#define bds_org		clwp->lwp_bds_org
-#define bds_size	clwp->lwp_bds_size
-#else
-extern size_t bds_size;
-extern bds_ptr bds_org;
-extern bds_ptr bds_limit;
-extern bds_ptr bds_top;	/*  bind stack top  */
-#endif
-#define bind_stack      bds_org
-
 #define	bds_check  \
-	if (bds_top >= bds_limit)  \
+	if (cl_env.bds_top >= cl_env.bds_limit)  \
 		bds_overflow()
 
+#ifdef ECL_THREADS
+extern void bds_bind(cl_object symbol, cl_object value);
+extern void bds_push(cl_object symbol);
+extern void bds_unwind1();
+extern void bds_unwind_n(int n);
+extern cl_object *ecl_symbol_slot(cl_object s);
+#define SYM_VAL(s) (*ecl_symbol_slot(s))
+#if 0
+#define ECL_SET(s,v) ((s)->symbol.value=(v))
+#define ECL_SETQ(s,v) (*ecl_symbol_slot(s)=(v))
+#else
+extern cl_object ecl_set_symbol(cl_object s, cl_object v);
+#define ECL_SET(s,v) (ecl_set_symbol(s,v))
+#define ECL_SETQ(s,v) (ecl_set_symbol(s,v))
+#endif
+#else
+#define SYM_VAL(s) ((s)->symbol.value)
+#define ECL_SET(s,v) ((s)->symbol.value=(v))
+#define ECL_SETQ(s,v) ((s)->symbol.value=(v))
 #define	bds_bind(sym, val)  \
-	((++bds_top)->bds_sym = (sym),  \
-	bds_top->bds_val = SYM_VAL(sym),  \
+	((++cl_env.bds_top)->symbol = (sym),  \
+	cl_env.bds_top->value = SYM_VAL(sym),  \
 	SYM_VAL(sym) = (val))
 
 #define bds_push(sym) \
-	((++bds_top)->bds_sym = (sym), bds_top->bds_val = SYM_VAL(sym))
+	((++cl_env.bds_top)->symbol = (sym), cl_env.bds_top->value = SYM_VAL(sym))
 
-#define	bds_unwind1  \
-	(SYM_VAL(bds_top->bds_sym) = bds_top->bds_val, --bds_top)
+#define	bds_unwind1()  \
+	(SYM_VAL(cl_env.bds_top->symbol) = cl_env.bds_top->value, --cl_env.bds_top)
 
 #define bds_unwind_n(n) \
-	bds_unwind(bds_top - (n))
+	bds_unwind(cl_env.bds_top - (n))
+#endif /* ECL_THREADS */
 
 /****************************
  * INVOCATION HISTORY STACK
@@ -77,18 +75,16 @@ typedef struct ihs_frame {
 	cl_index index;
 } *ihs_ptr;
 
-extern ihs_ptr ihs_top;
-
 #define ihs_push(r,f) do {\
-	(r)->next=ihs_top; (r)->function=(f); (r)->lex_env= lex_env; \
-	(r)->index=ihs_top->index+1;\
-	ihs_top = (r); \
+	(r)->next=cl_env.ihs_top; (r)->function=(f); (r)->lex_env= cl_env.lex_env; \
+	(r)->index=cl_env.ihs_top->index+1;\
+	cl_env.ihs_top = (r); \
 } while(0)
 
 #define ihs_pop() do {\
-	lex_env=ihs_top->lex_env; \
-	if (ihs_top->next == NULL) internal_error("Underflow in IHS stack"); \
-	ihs_top=ihs_top->next; \
+	cl_env.lex_env = cl_env.ihs_top->lex_env; \
+	if (cl_env.ihs_top->next == NULL) internal_error("Underflow in IHS stack"); \
+	cl_env.ihs_top = cl_env.ihs_top->next; \
 } while(0)
 
 extern cl_object ihs_top_function_name(void);
@@ -126,86 +122,35 @@ typedef struct frame {
 	cl_index	frs_sp;
 } *frame_ptr;
 
-#ifdef THREADS
-#define frs_size	clwp->lwp_frs_size
-#define frs_org		clwp->lwp_frs_org
-#define frs_limit       clwp->lwp_frs_limit
-#define frs_top         clwp->lwp_frs_top
-#else
-extern size_t frs_size;
-extern frame_ptr frs_org;
-extern frame_ptr frs_limit;
-extern frame_ptr frs_top;
-#endif
-#define frame_stack	frs_org
-
 extern frame_ptr _frs_push(register enum fr_class clas, register cl_object val);
 
 #define frs_push(class, val)  ecl_setjmp(_frs_push(class, val)->frs_jmpbuf)
 
-#define frs_pop() (frs_top--)
-
-/*  global variables used during non-local jump  */
-
-#ifdef THREADS
-#define nlj_fr           clwp->lwp_nlj_fr
-#else
-extern frame_ptr nlj_fr;	/* frame to return  */
-#endif
+#define frs_pop() (cl_env.frs_top--)
 
 /*******************
  * C CONTROL STACK
  *******************/
 
-#ifdef THREADS
-#define cs_limit       clwp->lwp_cs_limit
-#define cs_org         clwp->lwp_cs_org
-#define cssize         clwp->lwp_cssize
-#else
-extern int *cs_org;
-extern int *cs_limit;
-extern size_t cssize;
-#endif
-
-#ifdef DOWN_STACK
-#define	cs_check(something) \
-	if ((int *)(&something) < cs_limit) \
-		cs_overflow()
-#else
-#define	cs_check(something) \
-	if ((int *)(&something) > cs_limit) \
-		cs_overflow()
-#endif
-
 #define	check_arg(n) \
 	do { if (narg != (n)) FEwrong_num_arguments_anonym();} while(0)
-
-#define cs_reserve(x)	if(&narg-(x) < cs_limit)  \
-				cs_overflow();
 
 /***********************
  * RETURN VALUES STACK
  ***********************/
 
-#define VALUES(n)	Values[n]
-#define return0()	return ((NValues = 0),Cnil)
-#define return1(x)	return ((Values[0]=(x)),(NValues = 1),Values[0])
+#define NVALUES		cl_env.nvalues
+#define VALUES(n)	cl_env.values[n]
+#define return0()	return ((NVALUES = 0),Cnil)
+#define return1(x)	return ((VALUES(0)=(x)),(NVALUES=1),VALUES(0))
 #define returnn(x)	return x
-
-#ifdef THREADS
-#error " Thread-safe NValues not yet implemented"
-extern cl_object *Values;
-#else
-extern int NValues;
-extern cl_object Values[];
-#endif
 
 /*****************************
  * LEXICAL ENVIRONMENT STACK
  *****************************/
 /*
 
-lex_env ------> ( tag0 value0 tag1 value1 ... )
+cl_env.lex_env ------> ( tag0 value0 tag1 value1 ... )
 
 	tag:		variable-name (symbol)
 	value:		variable-value (any lisp object)
@@ -218,32 +163,23 @@ lex_env ------> ( tag0 value0 tag1 value1 ... )
 
 */
 
-#ifdef THREADS
-#define lex_env       clwp->lwp_lex_env
-#else
-extern cl_object lex_env;
-#endif
-
-#define lex_copy()		(void)0
-#define lex_new()		lex_env = Cnil
-
 /*********************************
  * HIGH LEVEL CONTROL STRUCTURES *
  *********************************/
 
 #define CL_NEWENV_BEGIN {\
 	int __i = cl_stack_push_values(); \
-	cl_object __env = lex_env;
+	cl_object __env = cl_env.lex_env;
 
 #define CL_NEWENV_END \
 	cl_stack_pop_values(__i); \
-	lex_env = __env; }
+	cl_env.lex_env = __env; }
 
 #define CL_UNWIND_PROTECT_BEGIN {\
 	bool __unwinding; frame_ptr __next_fr; \
 	cl_index __nr; \
 	if (frs_push(FRS_PROTECT,Cnil)) { \
-		__unwinding=1; __next_fr=nlj_fr; \
+		__unwinding=1; __next_fr=cl_env.nlj_fr; \
 	} else {
 
 #define CL_UNWIND_PROTECT_EXIT \
