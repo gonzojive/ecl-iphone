@@ -1662,7 +1662,8 @@ ECL 0.9d
 
 * Supported platforms:
 
-  - ECL now builds under Windows using MinGW-32.
+  - ECL now builds under Windows using MinGW-32 and Microsoft VC++
+    (the last port is a contribution from Goffioul Michael).
 
   - It is possible now both under OS/X and Microsoft Windows to build
     ECL as a shared library and to compile and load code on the fly.
@@ -1738,7 +1739,8 @@ ECL 0.9d
 
   - A separate pass over the functions is used to find out which ones
     use a lexical environment, which functions are made into closures,
-    etc.
+    etc (This implied a much deeped rewrite of the compiler than what
+    these three lines seem to suggest).
 
   - FLET and LABELS are now compiled by the same routine.
 
@@ -1888,6 +1890,11 @@ ECL 0.9d
   - When comparing floats with bignums or rationals, the float has to
     be converted first to a rational number, or else the comparison
     will be inaccurate.
+
+  - :PRINT-OBJECT is now supported in structures.
+
+  - FORMAT directives now accept bignums as arguments, though they
+    are truncated to most-{positive/negative}-fixnum.
 
 TODO:
 =====
