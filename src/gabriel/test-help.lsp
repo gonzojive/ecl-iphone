@@ -73,7 +73,7 @@
   (gc :full t)
   #+clisp
   (system::gc)
-  #+ecls
+  #+ecl
   (system::gc t)
   (let ((source-file (merge-pathnames (merge-pathnames file *source-dir*) "foo.cl"))
 	(fasl-file (and compile (compile-file-pathname (merge-pathnames file *output-dir*))))
@@ -81,8 +81,8 @@
     (cond (compile
 	   (proclaim-file source-file)
 	   (compile-file source-file :output-file fasl-file
-			 #+ecls :c-file #+ecls t #+ecls :h-file #+ecls t
-			 #+ecls :verbose #+ecls t)
+			 #+ecl :c-file #+ecl t #+ecl :h-file #+ecl t
+			 #+ecl :verbose #+ecl t)
 	   (print fasl-file)
 	   (load fasl-file :verbose t))
 	  (t
