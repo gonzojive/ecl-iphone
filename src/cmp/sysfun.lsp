@@ -592,7 +592,7 @@
 		"@01;(#0>=0&&#1>0?(#0)/(#1):ifloor(#0,#1))"))
 (CEILING (T *) (VALUES T T) NIL NIL)
 (TRUNCATE (T *) (VALUES T T) NIL NIL
-	:inline-always ((fixnum-float) fixnum nil nil "(fixnum)(#0)"))
+	:inline-always ((fixnum-float) fixnum nil nil "(cl_fixnum)(#0)"))
 (ROUND (T *) (VALUES T T))
 (MOD (T T) T NIL NIL
 	:inline-always ((fixnum fixnum) fixnum nil nil
