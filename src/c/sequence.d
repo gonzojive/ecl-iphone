@@ -31,7 +31,7 @@
 	I know the following name is not good.
 */
 cl_object
-alloc_simple_vector(int l, enum aelttype aet)
+alloc_simple_vector(int l, cl_elttype aet)
 {
 	cl_object x;
 
@@ -94,7 +94,7 @@ elt(cl_object seq, cl_fixnum index)
 	case t_string:
 		if (index >= seq->string.fillp)
 			goto E;
-		return(code_char(seq->string.self[index]));
+		return(CODE_CHAR(seq->string.self[index]));
 
 	default:
 		FEerror("~S is not a sequence.", 1, seq);
@@ -198,7 +198,7 @@ E:
 			goto ILLEGAL_START_END;
 		x = alloc_simple_vector(e - s, sequence->vector.elttype);
 		array_allocself(x);
-		switch ((enum aelttype)sequence->vector.elttype) {
+		switch ((cl_elttype)sequence->vector.elttype) {
 		case aet_object:
 		case aet_fix:
 		case aet_sf:
@@ -328,7 +328,7 @@ reverse(cl_object seq)
 		k = x->vector.fillp;
 		y = alloc_simple_vector(k, x->vector.elttype);
 		array_allocself(y);
-		switch ((enum aelttype)x->vector.elttype) {
+		switch ((cl_elttype)x->vector.elttype) {
 		case aet_object:
 		case aet_fix:
 		case aet_sf:
@@ -403,7 +403,7 @@ nreverse(cl_object seq)
 	case t_vector:
 		x = seq;
 		k = x->vector.fillp;
-		switch ((enum aelttype)x->vector.elttype) {
+		switch ((cl_elttype)x->vector.elttype) {
 		case aet_object:
 		case aet_fix:
 			for (i = 0, j = k - 1;  i < j;  i++, --j) {

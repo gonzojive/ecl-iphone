@@ -74,7 +74,7 @@
 (defvar *type-list*
         '(cons
           ;; fixnum Beppe
-	  fixnum char locative
+	  fixnum char
 	  bignum ratio short-float long-float complex
           symbol package hash-table
           array vector string bit-vector

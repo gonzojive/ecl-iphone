@@ -20,7 +20,7 @@
 */
 
 /*
-  INV: CHCODELIM is a power of two
+  INV: CHAR_CODE_LIMIT is a power of two
   INV: PHTABSIZE is a power of two
   INV: ARANKLIM is of type "index"
   INV: fixnum, cl_index are large enough to hold a pointer
@@ -30,8 +30,7 @@
 #define	TRUE		1	/*  boolean true value  */
 #define	FALSE		0	/*  boolean false value  */
 
-#define	CHCODELIM	256	/*  ASCII character code limit  */
-#define	CHCODEFLEN	1	/*  character code field length  */
+#define	CHAR_CODE_LIMIT	256	/*  ASCII character code limit  */
 
 #define	PHTABSIZE	512	/*  number of entries in the package hash table  */
 
@@ -39,7 +38,7 @@
 #define	ADIMLIM		16*1024*1024	/*  array dimension limit  */
 #define	ATOTLIM		16*1024*1024	/*  array total limit  */
 
-#define	RTABSIZE	CHCODELIM	/*  read table size  */
+#define	RTABSIZE	CHAR_CODE_LIMIT	/*  read table size  */
 
 #define Q_SIZE    	128	/*  output character queue size (for print) */
 #define IS_SIZE   	256	/*  indentation stack size (for print)	*/
@@ -72,38 +71,19 @@ typedef cl_object cl_return;
 
 /* Immediate fixnums:		*/
 #define FIXNUM_TAG		1
-#define FIXNUM_BITS		((sizeof)(cl_fixnum)/sizeof(byte) - 2)
-#define MOST_NEGATIVE_FIX	(-MOST_POSITIVE_FIX-1)
+#define FIXNUM_BITS		((sizeof)(cl_fixnum)/sizeof(byte)*8 - 2)
+#define MOST_NEGATIVE_FIXNUM	(-MOST_POSITIVE_FIXNUM-1)
 #define MAKE_FIXNUM(n)		((cl_object)(((cl_fixnum)(n) << 2) | FIXNUM_TAG))
 #define FIXNUM_MINUSP(n)	((cl_fixnum)(n) < 0)
 #define FIXNUM_PLUSP(n)		((cl_fixnum)(n) >= (cl_fixnum)MAKE_FIXNUM(0))
 #define	fix(obje)		(((cl_fixnum)(obje)) >> 2)
-#ifdef LOCATIVE
-#define FIXNUMP(obje)		((((cl_fixnum)(obje)) & 3) == FIXNUM_TAG)
-#else
 #define FIXNUMP(obje)		(((cl_fixnum)(obje)) & FIXNUM_TAG)
-#endif
-
 
 /* Immediate characters:	*/
-#ifdef LOCATIVE
-#define CHARACTERP(obje)	((((cl_fixnum)(obje)) & 3) == 2)
-#else
+#define CHARACTER_TAG		2
 #define CHARACTERP(obje)	(((cl_fixnum)(obje)) & 2)
-#endif
-#define	code_char(c)		((cl_object)(((cl_fixnum)(c) << 2) | 2))
+#define	CODE_CHAR(c)		((cl_object)(((cl_fixnum)(c) << 2)|CHARACTER_TAG))
 #define	CHAR_CODE(obje)		((((cl_fixnum)(obje)) >> 2) & 0xffff)
-#define char_int(obje)		char_code(obje)
-#define int_char(i)		code_char(i)
-/* Locatives:	*/
-#ifdef LOCATIVE
-#define LOCATIVEP(obje)	((((cl_fixnum)(obje)) & 3) == 3)
-#define MAKE_LOCATIVE(n)((cl_object)(((cl_fixnum)(n) << 2) | 3))
-#define DEREF(loc)	(*(cl_object *)((ufixnum_t)(loc) >> 2))
-#define UNBOUNDP(loc)	(DEREF(loc) == OBJNULL)
-#define MAKE_SPICE(n)	MAKE_LOCATIVE(n)
-#define SPICE(n)	fix(n)
-#endif
 
 #define NUMBER_TYPE(t)	(t == t_fixnum || (t >= t_bignum && t <= t_complex))
 #define REAL_TYPE(t)	(t == t_fixnum || (t >= t_bignum && t < t_complex))
@@ -114,8 +94,7 @@ typedef cl_object cl_return;
 #define HEADER			byte t, m, padding[2]
 #define HEADER1(field)		byte t, m, field, padding
 #define HEADER2(field1,field2)	byte t, m, field1, field2
-#define HEADER3(field1,flag2,flag3) \
-	byte t, m, field1; unsigned flag2:4, flag3:4
+#define HEADER3(field1,flag2,flag3) byte t, m, field1; unsigned flag2:4, flag3:4
 
 struct shortfloat_struct {
 	HEADER;
@@ -164,10 +143,6 @@ struct symbol {
 	cl_object dbind;	/*  dynamic binding  */
 	cl_object plist;	/*  property list  */
 				/*  This field coincides with cons.car  */
-
-#define	NOT_SPECIAL		((cl_object (*)())Cnil)
-#define SPECIAL(fun)		((fun)->symbol.sfdef != NOT_SPECIAL)
-
 	cl_object name;		/*  print name  */
 	cl_object gfdef;	/*  global function definition  */
 				/*  For a macro,  */
@@ -231,7 +206,7 @@ struct hashtable {		/*  hash table header  */
 	cl_index size;		/*  hash table size  */
 };
 
-enum aelttype {			/*  array element type  */
+typedef enum {			/*  array element type  */
 	aet_object,		/*  t                */
 	aet_ch,			/*  string-char      */
 	aet_bit,		/*  bit              */
@@ -244,7 +219,7 @@ enum aelttype {			/*  array element type  */
 	aet_short,		/*  signed short     */
 	aet_ushort		/*  unsigned short   */
 #endif
-};
+} cl_elttype;
 
 union array_data {
 	cl_object *t;
@@ -521,8 +496,7 @@ typedef union { int i; cl_object o;} intUobject;
 /*
 	Implementation types.
 */
-#define cl_type type
-enum type {
+typedef enum {
 	t_cons = 0,
 #ifdef APOLLO
 	t_start = 0,
@@ -531,10 +505,6 @@ enum type {
 #endif APOLLO
 	t_fixnum,		/* 1 immediate fixnum */
 	t_character,		/* 2 immediate character */
-#ifdef LOCATIVE
-	t_locative,		/* 3 locative (also used as spice) */
-	t_spice = t_locative,
-#endif
 	t_bignum = 4,		/* 4 */
 	t_ratio,		/* 5 */
 	t_shortfloat,		/* 6 */
@@ -569,13 +539,13 @@ enum type {
 	t_other,
 	t_contiguous,		/*  contiguous block  */
 	FREE = 255		/*  free object  */
-};
+} cl_type;
 
 
 /*
 	Type_of.
 */
-#define	type_of(obje)	((enum type)(IMMEDIATE(obje) ? IMMEDIATE(obje) : (((cl_object)(obje)) ->d.t)))
+#define	type_of(obje)	((cl_type)(IMMEDIATE(obje) ? IMMEDIATE(obje) : (((cl_object)(obje)) ->d.t)))
 
 #define	ENDP(x)	(type_of(x) == t_cons ? \
 		 FALSE : x == Cnil ? TRUE : \

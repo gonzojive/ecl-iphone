@@ -199,7 +199,7 @@ BEGIN:
 		cp = (cl_ptr)x->array.self.t;
 		if (cp == NULL)
 			break;
-		switch ((enum aelttype)x->array.elttype) {
+		switch ((cl_elttype)x->array.elttype) {
 		case aet_object:
 			if (x->array.displaced == Cnil || CAR(x->array.displaced) == Cnil) {
 				cl_object *p = x->array.self.t;
@@ -420,7 +420,7 @@ mark_stack_conservative(cl_ptr bottom, cl_ptr top)
     cl_ptr aux = *((cl_ptr*)j);
     /* improved Beppe: */
     if (VALID_DATA_ADDRESS(aux) && type_map[p = page(aux)] < (char)t_end) {
-      tm = tm_of((enum type)type_map[p]);
+      tm = tm_of((cl_type)type_map[p]);
       x = (cl_object)(aux - (aux - pagetochar(p)) % tm->tm_size);
       m = x->d.m;
       if (m != FREE && m != TRUE) {
@@ -576,7 +576,7 @@ sweep_phase(void)
 		if (type_map[i] >= (int)t_end)
 			continue;
 
-		tm = tm_of((enum type)type_map[i]);
+		tm = tm_of((cl_type)type_map[i]);
 
 	/*
 		general sweeper
@@ -669,13 +669,13 @@ static int i, j;
 static sigjmp_buf old_env;
 static int val;
 static lpd *old_clwp;
-static enum type t;
+static cl_type t;
 static bool stack_switched = FALSE;
 
-static enum type garbage_parameter;
+static cl_type garbage_parameter;
 
 void
-gc(enum type new_name)
+gc(cl_type new_name)
 {
 	int tm;
 	int gc_start = runtime();
@@ -686,7 +686,7 @@ gc(enum type new_name)
 #else
 
 void
-gc(enum type t)
+gc(cl_type t)
 {
   int i, j;
   int tm;
@@ -807,7 +807,7 @@ gc(enum type t)
 
     if (debug) {
       for (i = 0, j = 0;  i < (int)t_end;  i++) {
-	if (tm_table[i].tm_type == (enum type)i) {
+	if (tm_table[i].tm_type == (cl_type)i) {
 	  printf("%13s: %8d used %8d free %4d/%d pages\n",
 		 tm_table[i].tm_name,
 		 tm_table[i].tm_nused,
@@ -893,7 +893,7 @@ _mark_contblock(void *x, cl_index s)
 	register cl_ptr p = x, q;
 	register ptrdiff_t pg = page(p);
 
-	if (pg < 0 || (enum type)type_map[pg] != t_contiguous)
+	if (pg < 0 || (cl_type)type_map[pg] != t_contiguous)
 		return;
 	q = p + s;
 	p = int2ptr(ptr2int(p) & ~3);
@@ -922,7 +922,7 @@ _mark_contblock(void *x, cl_index s)
 	VALUES(7) = Cnil;
 	tl = &VALUES(7);
 	for (i = 0;  i < (int)t_end;  i++) {
-	  if (tm_table[i].tm_type == (enum type)i) {
+	  if (tm_table[i].tm_type == (cl_type)i) {
 	    tl = &CDR(*tl = CONS(MAKE_FIXNUM(tm_table[i].tm_nused), Cnil));
 	    tl = &CDR(*tl = CONS(MAKE_FIXNUM(tm_table[i].tm_nfree), Cnil));
 	    tl = &CDR(*tl = CONS(MAKE_FIXNUM(tm_table[i].tm_npage), Cnil));

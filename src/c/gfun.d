@@ -253,7 +253,7 @@ gcall(int narg, cl_object fun, cl_object *args)
 }
 
 @(defun si::set_compiled_function_name (fn new_name)
-	enum cl_type t = type_of(fn);
+	cl_type t = type_of(fn);
 @
 	if (t == t_cfun)
 		@(return (fn->cfun.name = new_name))

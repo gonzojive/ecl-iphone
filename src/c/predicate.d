@@ -47,7 +47,7 @@
 @)
 
 @(defun numberp (x)
-	enum type t;
+	cl_type t;
 @
 	t = type_of(x);
 	@(return (NUMBER_TYPE(t) ? Ct : Cnil))
@@ -56,33 +56,33 @@
 /*	Used in compiled code		*/
 bool numberp(cl_object x)
 {
-  enum type t = type_of(x);
+  cl_type t = type_of(x);
   return(NUMBER_TYPE(t));
 }
 
 @(defun integerp (x)
-	enum type t;
+	cl_type t;
 @
 	t = type_of(x);
 	@(return ((t == t_fixnum || t == t_bignum) ? Ct : Cnil))
 @)
 
 @(defun rationalp (x)
-	enum type t;
+	cl_type t;
 @
 	t = type_of(x);
 	@(return ((t == t_fixnum || t == t_bignum || t == t_ratio) ? Ct : Cnil))
 @)
 
 @(defun floatp (x)
-	enum type t;
+	cl_type t;
 @
 	t = type_of(x);
 	@(return ((t == t_longfloat || t == t_shortfloat) ? Ct : Cnil))
 @)
 
 @(defun realp (x)
-	enum type t;
+	cl_type t;
 @
 	t = type_of(x);
 	@(return (REAL_TYPE(t) ? Ct : Cnil))
@@ -109,7 +109,7 @@ bool numberp(cl_object x)
 @)
 
 @(defun vectorp (x)
-	enum type t;
+	cl_type t;
 @
 	t = type_of(x);
 	@(return ((t == t_vector || t == t_string || t == t_bitvector) ? Ct : Cnil))
@@ -132,18 +132,18 @@ bool numberp(cl_object x)
 @)
 
 @(defun simple_vector_p (x)
-	enum type t;
+	cl_type t;
 @
 	t = type_of(x);
 	@(return ((t == t_vector &&
 		     !x->vector.adjustable &&
 		     !x->vector.hasfillp &&
 		     Null(CAR(x->vector.displaced)) &&
-		     (enum aelttype)x->vector.elttype == aet_object) ? Ct : Cnil))
+		     (cl_elttype)x->vector.elttype == aet_object) ? Ct : Cnil))
 @)
 
 @(defun arrayp (x)
-	enum type t;
+	cl_type t;
 @
 	t = type_of(x);
 	@(return (ARRAY_TYPE(t) ? Ct : Cnil))
@@ -155,7 +155,7 @@ bool numberp(cl_object x)
 @)
 
 @(defun functionp (x)
-	enum type t;
+	cl_type t;
 	cl_object output;
 @
 	t = type_of(x);
@@ -167,7 +167,7 @@ bool numberp(cl_object x)
 @)
 
 @(defun compiled_function_p (x)
-	enum type t;
+	cl_type t;
 @
 	t = type_of(x);
 	@(return ((t == t_bytecodes || t == t_cfun || t == t_cclosure) ? Ct : Cnil))
@@ -197,7 +197,7 @@ bool numberp(cl_object x)
 bool
 eql(cl_object x, cl_object y)
 {
-	enum type t;
+	cl_type t;
 
 	if (x == y)
 		return(TRUE);
@@ -244,7 +244,7 @@ eql(cl_object x, cl_object y)
 bool
 equal(register cl_object x, cl_object y)
 {
-	register enum type t;
+	register cl_type t;
 
 	cs_check(y);
 BEGIN:
@@ -338,7 +338,7 @@ BEGIN:
 bool
 equalp(cl_object x, cl_object y)
 {
-	enum type tx, ty;
+	cl_type tx, ty;
 	cl_index j;
 
 	cs_check(x);

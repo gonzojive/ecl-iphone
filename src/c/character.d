@@ -332,7 +332,7 @@ coerce_to_character(cl_object x)
 		x = x->symbol.name;
 	case t_string:
 		if (x->string.fillp == 1)
-			return(code_char(x->string.self[0]));
+			return(CODE_CHAR(x->string.self[0]));
 	default:
 		FEtype_error_character(x);
 	}
@@ -350,9 +350,9 @@ coerce_to_character(cl_object x)
 	/* INV: fixnnint() checks the type of `c' */
 	if (type_of(c) == t_bignum)
 		@(return Cnil)
-	if ((fc = fixnnint(c)) >= CHCODELIM)
+	if ((fc = fixnnint(c)) >= CHAR_CODE_LIMIT)
 		@(return Cnil)
-	@(return code_char(fc))
+	@(return CODE_CHAR(fc))
 @)
 
 @(defun char_upcase (c)
@@ -361,7 +361,7 @@ coerce_to_character(cl_object x)
 	/* INV: char_code() checks the type of `c' */
 	code = char_code(c);
 	@(return (islower(char_code(c)) ?
-				code_char(toupper(char_code(c))) :
+				CODE_CHAR(toupper(char_code(c))) :
 				c))
 @)
 
@@ -371,7 +371,7 @@ coerce_to_character(cl_object x)
 	/* INV: char_code() checks the type of `c' */
 	code = char_code(c);
 	@(return (isupper(char_code(c)) ?
-				code_char(tolower(char_code(c))) :
+				CODE_CHAR(tolower(char_code(c))) :
 				c))
 @)
 
@@ -384,7 +384,7 @@ coerce_to_character(cl_object x)
 	dw = digit_weight(fixnnint(w), fixnnint(r));
 	if (dw < 0)
 		@(return Cnil)
-	@(return code_char(dw))
+	@(return CODE_CHAR(dw))
 @)
 
 short
@@ -400,8 +400,8 @@ digit_weight(int w, int r)
 
 @(defun char_int (c)
 @
-	/* INV: char_int() checks the type of `c' */
-	@(return MAKE_FIXNUM(char_int(c)))
+	/* INV: char_code() checks the type of `c' */
+	@(return MAKE_FIXNUM(char_code(c)))
 @)
 
 @(defun int_char (x)
@@ -409,7 +409,7 @@ digit_weight(int w, int r)
 	/* INV: fixnnint(x) checks the type of `c' */
 	if (type_of(x) == t_bignum)
 		@(return Cnil)
-	@(return int_char(fixnnint(x)))
+	@(return CODE_CHAR(fixnnint(x)))
 @)
 
 @(defun char_name (c)
@@ -457,13 +457,13 @@ digit_weight(int w, int r)
 	if (string_equal(s, STnull))
 		c = '\000'; else
 		@(return Cnil)
-	@(return code_char(c))
+	@(return CODE_CHAR(c))
 @)
 
 void
 init_character(void)
 {
-	make_constant("CHAR-CODE-LIMIT", MAKE_FIXNUM(CHCODELIM));
+	make_constant("CHAR-CODE-LIMIT", MAKE_FIXNUM(CHAR_CODE_LIMIT));
 
 	STreturn = make_simple_string("RETURN");
 	register_root(&STreturn);

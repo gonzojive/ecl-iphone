@@ -51,7 +51,7 @@ fixnnint(cl_object x)
 cl_object
 make_integer(cl_fixnum l)
 {
-	if (l > MOST_POSITIVE_FIX || l < MOST_NEGATIVE_FIX) {
+	if (l > MOST_POSITIVE_FIXNUM || l < MOST_NEGATIVE_FIXNUM) {
 		cl_object z = alloc_object(t_bignum);
 		mpz_init_set_si(z->big.big_num, l);
 		return z;
@@ -62,7 +62,7 @@ make_integer(cl_fixnum l)
 cl_object
 make_unsigned_integer(cl_index l)
 {
-	if (l > MOST_POSITIVE_FIX) {
+	if (l > MOST_POSITIVE_FIXNUM) {
 		cl_object z = alloc_object(t_bignum);
 		mpz_init_set_ui(z->big.big_num, l);
 		return z;
@@ -224,8 +224,8 @@ init_number(void)
 	register_root(&shortfloat_zero);
 	register_root(&longfloat_zero);
 
-  	make_constant("MOST-POSITIVE-FIXNUM", MAKE_FIXNUM(MOST_POSITIVE_FIX));
-	make_constant("MOST-NEGATIVE-FIXNUM", MAKE_FIXNUM(MOST_NEGATIVE_FIX));
+  	make_constant("MOST-POSITIVE-FIXNUM", MAKE_FIXNUM(MOST_POSITIVE_FIXNUM));
+	make_constant("MOST-NEGATIVE-FIXNUM", MAKE_FIXNUM(MOST_NEGATIVE_FIXNUM));
 
 	init_big();
 	init_num_co();

@@ -124,7 +124,7 @@ interactive_readc(cl_object stream)
 cl_object
 readc(cl_object in)
 {
-	return(code_char(readc_stream(in)));
+	return(CODE_CHAR(readc_stream(in)));
 }
 
 #define	read_char(in)	(*read_ch_fun)(in)
@@ -247,7 +247,7 @@ extern bool no_input;
 	       GETC(ch, fp); \
 	       if (ch == EOF) \
 		 {eof_code;} \
-	       else res = code_char(ch);} \
+	       else res = CODE_CHAR(ch);} \
       else \
 	if (stream_at_end(in)) \
 	   {eof_code;} \
@@ -326,7 +326,7 @@ BEGIN:
 			}
 			goto NEXT;
 		} else if ('a' <= char_code(c) && char_code(c) <= 'z')
-			c = code_char(toupper(char_code(c)));
+			c = CODE_CHAR(toupper(char_code(c)));
 		else if (char_code(c) == ':') {
 			if (colon_type == 0) {
 				colon_type = 1;
@@ -683,7 +683,7 @@ static
 @
   y = Cnil;
   for (p = &y ; ; p = &(CDR(*p))) {
-    delimiting_char = code_char(')');
+    delimiting_char = CODE_CHAR(')');
     in_list_flag = TRUE;
     x = read_object(in);
     if (x == OBJNULL)
@@ -836,15 +836,15 @@ static
 	c = read_char(in);
 	if (char_code(c) != '(')
 		FEerror("A left parenthesis is expected.", 0);
-	delimiting_char = code_char(')');
+	delimiting_char = CODE_CHAR(')');
 	real = read_object(in);
 	if (real == OBJNULL)
 		FEerror("No real part.", 0);
-	delimiting_char = code_char(')');
+	delimiting_char = CODE_CHAR(')');
 	imag = read_object(in);
 	if (imag == OBJNULL)
 		FEerror("No imaginary part.", 0);
-	delimiting_char = code_char(')');
+	delimiting_char = CODE_CHAR(')');
 	x = read_object(in);
 	if (x != OBJNULL)
 		FEerror("A right parenthesis is expected.", 0);
@@ -863,7 +863,7 @@ static
 		    fix(d) != 0)
 			FEerror("~S is an illegal CHAR-FONT.", 1, d);
 			/*  assuming that CHAR-FONT-LIMIT is 1  */
-	unread_char(code_char('\\'), in);
+	unread_char(CODE_CHAR('\\'), in);
 	if (READsuppress) {
 		(void)read_object(in);
 		@(return Cnil)
@@ -873,10 +873,10 @@ static
 	READsuppress = FALSE;
 	c = cl_token;
 	if (c->string.fillp == 1)
-		c = code_char(c->string.self[0]);
+		c = CODE_CHAR(c->string.self[0]);
 	/*	#\^x	*/
 	else if (c->string.fillp == 2 && c->string.self[0] == '^')
-		c = code_char(c->string.self[1] & 037);
+		c = CODE_CHAR(c->string.self[1] & 037);
 	else if (c->string.self[0] =='\\' && c->string.fillp > 1) {
 		cl_index i, n;
 		for (n = 0, i = 1;  i < c->string.fillp;  i++)
@@ -885,7 +885,7 @@ static
 				FEerror("Octal digit expected.", 0);
 			else
 				n = 8*n + c->string.self[i] - '0';
-		c = code_char(n & 0377);
+		c = CODE_CHAR(n & 0377);
 	} else {
 		c = @name_char(1,c);
 		if (Null(c)) FEerror("~S is an illegal character name.", 1, c);
@@ -943,7 +943,7 @@ static
 			      CONS(@'quote', CONS(@'vector', Cnil)), x))
 	}
 	for (dimcount = 0 ;; dimcount++) {
-	  delimiting_char = code_char(')');
+	  delimiting_char = CODE_CHAR(')');
 	  x = read_object(in);
 	  if (x == OBJNULL)
 	    break;
@@ -1059,7 +1059,7 @@ static
 			}
 			goto K;
 		} else if ('a' <= char_code(c) && char_code(c) <= 'z')
-			c = code_char(toupper(char_code(c)));
+			c = CODE_CHAR(toupper(char_code(c)));
 		if (a == cat_whitespace || a == cat_terminating)
 			break;
 	}
@@ -2120,7 +2120,7 @@ static void
 extra_argument(int c, cl_object d)
 {
 	FEerror("~S is an extra argument for the #~C readmacro.",
-		2, d, code_char(c));
+		2, d, CODE_CHAR(c));
 }
 
 

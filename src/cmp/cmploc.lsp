@@ -144,7 +144,7 @@
     (t (wt vv))))
 
 (defun wt-character (value &optional vv)
-  (wt (format nil "code_char('\\~O')" value)))
+  (wt (format nil "CODE_CHAR('\\~O')" value)))
 
 (defun wt-fixnum-loc (loc)
   (if (consp loc)

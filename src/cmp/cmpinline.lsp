@@ -499,7 +499,7 @@
 
 (defun wt-inline-character (side-effectp fun locs)
   (declare (ignore side-effectp))
-  (wt "code_char(") (wt-inline-loc fun locs) (wt ")"))
+  (wt "CODE_CHAR(") (wt-inline-loc fun locs) (wt ")"))
 
 (defun wt-inline-long-float (side-effectp fun locs)
   (declare (ignore side-effectp))
@@ -558,7 +558,7 @@
 (defun wt-fixnum->object (loc)
   (wt "MAKE_FIXNUM(" loc ")"))
 (defun wt-character->object (loc)
-  (wt "code_char(" loc ")"))
+  (wt "CODE_CHAR(" loc ")"))
 (defun wt-short-float->object (loc)
   (wt "make_shortfloat(" loc ")"))
 (defun wt-long-float->object (loc)

@@ -170,10 +170,6 @@ init_main(void)
 	 ADD_FEATURE("BOEHM-GC");
 #endif
 
-#ifdef LOCATIVE
-	 ADD_FEATURE("LOCATIVE");
-#endif LOCATIVE
-
 #ifdef THREADS
 	 ADD_FEATURE("THREADS");
 #endif THREADS

@@ -925,7 +925,7 @@ type_of(#0)==t_bitvector"))
 (CHAR (string fixnum) character nil nil
 	:inline-always ((t t) t nil t "elt(#0,fixint(#1))")
 	:inline-always ((t fixnum) t nil t "elt(#0,#1)")
-	:inline-unsafe ((t t) t nil nil "code_char((#0)->string.self[fix(#1)])")
+	:inline-unsafe ((t t) t nil nil "CODE_CHAR((#0)->string.self[fix(#1)])")
 	:inline-unsafe ((t fixnum) fixnum nil nil "(#0)->string.self[#1]")
 	:inline-unsafe ((t fixnum) character nil nil "(#0)->string.self[#1]"))
 (si::CHAR-SET
@@ -939,7 +939,7 @@ type_of(#0)==t_bitvector"))
 (SCHAR (string fixnum) character nil nil
 	:inline-always ((t t) t nil t "elt(#0,fixint(#1))")
 	:inline-always ((t fixnum) t nil t "elt(#0,#1)")
-	:inline-unsafe ((t t) t nil nil "code_char((#0)->string.self[fix(#1)])")
+	:inline-unsafe ((t t) t nil nil "CODE_CHAR((#0)->string.self[fix(#1)])")
 	:inline-unsafe ((t t) fixnum nil nil "(#0)->string.self[fix(#1)]")
 	:inline-unsafe ((t fixnum) fixnum nil nil "(#0)->string.self[#1]")
 	:inline-unsafe ((t fixnum) character nil nil "(#0)->string.self[#1]"))
@@ -1074,35 +1074,6 @@ type_of(#0)==t_bitvector"))
 	:inline-always ((fixnum) boolean nil nil "1"))
 (si::put-properties (*) nil T)
 )) ; end of inlines
-
-;;; Prolog:
-#+locative
-(setf (get 'si::trail-restore 'proclaimed-return-type) 'null) ; C2OR optimization
-#+locative
-(mapcar #'(lambda (x) (apply #'defsysfun x)) '(
-(si::trail-mark nil nil nil nil nil
-	:inline-always (() nil t nil "trail_mark"))
-(si::trail-restore nil nil nil nil nil
-	:inline-always (() nil t nil "trail_restore"))
-(si::trail-unmark nil nil nil nil nil
-	:inline-always (() nil t nil "trail_unmark"))
-(si::get-value nil nil nil nil nil
-	:inline-always ((t t) boolean t nil "get_value(#0, #1)"))
-(si::get-constant nil nil nil nil nil
-	:inline-always ((t t) boolean t nil "get_constant(#0, #1)"))
-(si::get-nil nil nil nil nil nil
-	:inline-always ((t) boolean t nil "get_nil(#0)"))
-(si::get-cons nil nil nil nil nil
-	:inline-always ((t) boolean t nil "get_cons(#0)"))
-(si::unify-slot nil nil nil nil nil
-	:inline-always (() t t nil "(*slotf)(*slot)"))
-(si::unify-value nil nil nil nil nil
-	:inline-always ((t) boolean t nil "(*slotf)(#0)"))
-(si::unify-constant nil nil nil nil nil
-	:inline-always ((t) boolean t nil "(*slotf)(#0)"))
-(si::unify-nil nil nil nil nil nil
-	:inline-always (() boolean t nil "(*slotf)(Cnil)"))
-)) ; end of #+locative
 
 #+clos
 (mapcar #'(lambda (x) (apply #'defsysfun x)) '(

@@ -28,7 +28,7 @@ struct typemanager tm_table[(int)t_end];
 #endif
 
 cl_object
-alloc_object(enum type t)
+alloc_object(cl_type t)
 {
 	register cl_object obj;
 	register struct typemanager *tm;
@@ -37,7 +37,7 @@ alloc_object(enum type t)
 	case t_fixnum:
 	  return MAKE_FIXNUM(0); /* Immediate fixnum */
 	case t_character:
-	  return code_char(' '); /* Immediate character */
+	  return CODE_CHAR(' '); /* Immediate character */
 	default:
 	}
 	if (t < t_start || t >= t_end) {
@@ -149,7 +149,7 @@ alloc_atomic_align(size_t size, size_t align)
 }
 
 static void
-init_tm(enum type t, char *name, size_t elsize)
+init_tm(cl_type t, char *name, size_t elsize)
 {
 	struct typemanager *tm = &tm_table[(int)t];
 	tm->tm_name = name;
@@ -285,7 +285,7 @@ register_root(cl_object *p)
 @)
 
 void
-gc(enum type new_name)
+gc(cl_type new_name)
 {
 	start_critical_section();
 	GC_gcollect();

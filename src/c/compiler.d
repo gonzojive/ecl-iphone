@@ -1521,7 +1521,7 @@ c_tagbody(cl_object args)
 {
 	cl_fixnum tag_base;
 	cl_object label, body;
-	enum type item_type;
+	cl_type item_type;
 	int nt, i;
 
 	/* count the tags */
@@ -2017,7 +2017,7 @@ ILLEGAL_LAMBDA:
 static void
 c_default(cl_index deflt_pc) {
 	cl_object deflt = asm_ref(deflt_pc);
-	enum cl_type t = type_of(deflt);
+	cl_type t = type_of(deflt);
 	if ((t == t_symbol) && (deflt->symbol.stype == stp_constant))
 		/* FIXME! Shouldn't this happen only in unsafe mode */
 		asm_at(deflt_pc, SYM_VAL(deflt));

@@ -228,6 +228,6 @@ int main() {
 }],
 cl_fixnum_limit=`cat conftestval`
 AC_MSG_RESULT([${cl_fixnum_limit}])
-AC_DEFINE_UNQUOTED(MOST_POSITIVE_FIX, ${cl_fixnum_limit}),
+AC_DEFINE_UNQUOTED(MOST_POSITIVE_FIXNUM, ${cl_fixnum_limit}),
 AC_MSG_ERROR(There is no appropiate integer type for the cl_fixnum type))
 ])

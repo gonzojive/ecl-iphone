@@ -235,11 +235,6 @@
 	       (c2expr* form))
 	     (unwind-exit t 'JUMP)
 	     (wt-label label)))
-	  #+locative
-	  ((and (eq (car form) 'CALL-GLOBAL)
-		(eq (get (third form) 'PROCLAIMED-RETURN-TYPE) 'NULL))
-	   (let ((*destination* 'TRASH))
-	     (c2expr* form)))
 	  (t
 	   (let* ((label (next-label))
 		  (*unwind-exit* (cons label *unwind-exit*)))

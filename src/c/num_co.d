@@ -241,7 +241,7 @@ number_remainder(cl_object x, cl_object y, cl_object q)
    otherwise coerce to same float type as second arg */
 
 @(defun float (x &optional (y OBJNULL))
-	enum type t = t_shortfloat;
+	cl_type t = t_shortfloat;
 @
 	if (y != OBJNULL) {
 		t = type_of(y);
@@ -841,7 +841,7 @@ round2(cl_object x, cl_object y)
 @(defun decode_float (x)
 	double d;
 	int e, s;
-	enum cl_type tx = type_of(x);
+	cl_type tx = type_of(x);
 @
 	switch (tx) {
 	case t_shortfloat:
@@ -874,7 +874,7 @@ round2(cl_object x, cl_object y)
 @(defun scale_float (x y)
 	double d;
 	int e, k;
-	enum cl_type tx = type_of(x);
+	cl_type tx = type_of(x);
 @
 	if (FIXNUMP(y))
 		k = fix(y);
@@ -904,7 +904,7 @@ round2(cl_object x, cl_object y)
 
 
 @(defun float_radix (x)
-	enum cl_type t = type_of(x);
+	cl_type t = type_of(x);
 @
 	if (t != t_shortfloat && t != t_longfloat)
 		FEtype_error_float(x);

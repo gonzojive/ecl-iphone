@@ -349,7 +349,7 @@ disassemble_unwind_protect(cl_object *vector) {
 static cl_object *
 disassemble(cl_object *vector) {
 	const char *string;
-	enum cl_type t;
+	cl_type t;
 	cl_object s;
 	cl_fixnum n;
 

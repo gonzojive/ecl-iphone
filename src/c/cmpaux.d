@@ -79,7 +79,7 @@ object_to_char(cl_object x)
 	case t_fixnum:
 		return fix(x);
 	case t_bignum:
-		return big_to_long(x) & (CHCODELIM - 1);
+		return big_to_long(x) & (CHAR_CODE_LIMIT - 1);
 	case t_character:
 		return CHAR_CODE(x);
 	default:

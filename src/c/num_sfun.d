@@ -91,7 +91,7 @@ number_exp(cl_object x)
 cl_object
 number_expt(cl_object x, cl_object y)
 {
-	enum type tx, ty;
+	cl_type tx, ty;
 	cl_object z;
 
 	if (y == MAKE_FIXNUM(0))

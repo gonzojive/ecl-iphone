@@ -130,7 +130,7 @@ alloc_page(cl_index n)
 
 static void
 add_page_to_freelist(cl_ptr p, struct typemanager *tm)
-{ enum type t;
+{ cl_type t;
   cl_object x, f;
   cl_index i;
   t = tm->tm_type;
@@ -149,7 +149,7 @@ add_page_to_freelist(cl_ptr p, struct typemanager *tm)
 }
 
 cl_object
-alloc_object(enum type t)
+alloc_object(cl_type t)
 {
 	register cl_object obj;
 	register struct typemanager *tm;
@@ -159,7 +159,7 @@ alloc_object(enum type t)
 	case t_fixnum:
 	  return MAKE_FIXNUM(0); /* Immediate fixnum */
 	case t_character:
-	  return code_char(' '); /* Immediate character */
+	  return CODE_CHAR(''); /* Immediate character */
 	default:
 	}
 	
@@ -545,7 +545,7 @@ alloc_align(cl_index size, cl_index align)
 }
 
 static void
-init_tm(enum type t, char *name, cl_index elsize, cl_index maxpage)
+init_tm(cl_type t, char *name, cl_index elsize, cl_index maxpage)
 {
 	int i, j;
 	struct typemanager *tm = &tm_table[(int)t];
@@ -556,7 +556,7 @@ init_tm(enum type t, char *name, cl_index elsize, cl_index maxpage)
 	      (j < (int)t_start || tm_table[j].tm_size > tm_table[i].tm_size))
 	    j = i;
 	if (j >= (int)t_start) {
-		tm->tm_type = (enum type)j;
+		tm->tm_type = (cl_type)j;
 		tm_table[j].tm_maxpage += maxpage;
 		return;
 	}

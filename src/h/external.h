@@ -15,7 +15,7 @@ struct iterator {
 
 #if !defined(GBC_BOEHM)
 extern void *alloc_page(cl_index n);
-extern cl_object alloc_object(enum type t);
+extern cl_object alloc_object(cl_type t);
 extern cl_object alloc_instance(cl_index slots);
 extern cl_object make_cons(cl_object a, cl_object d);
 extern void *alloc(cl_index n);
@@ -31,7 +31,7 @@ extern void init_alloc_function(void);
 /* alloc_2.c */
 
 #if defined(GBC_BOEHM)
-extern cl_object alloc_object(enum type t);
+extern cl_object alloc_object(cl_type t);
 extern cl_object alloc_instance(cl_index slots);
 extern cl_object make_cons(cl_object a, cl_object d);
 extern void *alloc(cl_index n);
@@ -72,8 +72,8 @@ extern cl_object aset1(cl_object v, cl_index index, cl_object val);
 extern void array_allocself(cl_object x);
 extern void *array_address(cl_object x, cl_index inc);
 extern void adjust_displaced(cl_object x, ptrdiff_t diff);
-extern enum aelttype array_elttype(cl_object x);
-extern enum aelttype get_aelttype(cl_object x);
+extern cl_elttype array_elttype(cl_object x);
+extern cl_elttype get_elttype(cl_object x);
 extern void init_array(void);
 
 
@@ -305,7 +305,7 @@ extern int gc_time;
 extern cl_object (*GC_enter_hook)();
 extern cl_object (*GC_exit_hook)();
 extern void register_root(cl_object *p);
-extern void gc(enum type t);
+extern void gc(cl_type t);
 extern void init_GC(void);
 #endif
 
@@ -318,7 +318,7 @@ extern void init_GC(void);
 #define GC_disable() GC_dont_gc = TRUE;
 extern int GC_dont_gc;
 extern void register_root(cl_object *p);
-extern void gc(enum type t);
+extern void gc(cl_type t);
 #endif GBC_BOEHM
 
 
@@ -738,7 +738,7 @@ extern void init_reference(void);
 
 /* sequence.c */
 
-extern cl_object alloc_simple_vector(int l, enum aelttype aet);
+extern cl_object alloc_simple_vector(int l, cl_elttype aet);
 extern cl_object alloc_simple_bitvector(int l);
 extern cl_object elt(cl_object seq, cl_fixnum index);
 extern cl_object elt_set(cl_object seq, cl_fixnum index, cl_object val);
@@ -910,22 +910,6 @@ extern void FEtype_error_stream(cl_object x) __attribute__((noreturn));
 extern void FEcircular_list(cl_object x) __attribute__((noreturn));
 extern void FEtype_error_index(cl_object x) __attribute__((noreturn));
 extern void FEtype_error_string(cl_object x) __attribute__((noreturn));
-
-/* unify.c */
-
-#ifdef LOCATIVE
-extern cl_object *slot;
-extern cl_object (*slotf)();
-extern cl_object *trail[];
-extern cl_object **trail_top;
-extern bool get_slot(cl_object x);
-extern bool set_slot(cl_object x);
-extern bool get_cons(cl_object x);
-extern bool get_instance(cl_object x, cl_object class, int arity);
-extern bool unify(cl_object x, cl_object y);
-extern int init_unify(void);
-#endif
-
 
 /* unixfsys.c */
 

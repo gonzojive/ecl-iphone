@@ -45,7 +45,7 @@ cl_object @'nconc';
 static cl_object
 kwote(cl_object x)
 {
-	enum cl_type t = type_of(x);
+	cl_type t = type_of(x);
 	if ((t == t_symbol &&
 	     ((enum stype)x->symbol.stype != stp_constant || SYM_VAL(x) != x))
 	    || t == t_cons || t == t_vector)
@@ -267,10 +267,10 @@ backq(cl_object x)
 	if (backq_level <= 0)
 		FEerror("A comma has appeared out of a backquote.", 0);
 	c = peek_char(FALSE, in);
-	if (c == code_char('@@')) {
+	if (c == CODE_CHAR('@@')) {
 		x = siScomma_at;
 		read_char(in);
-	} else if (c == code_char('.')) {
+	} else if (c == CODE_CHAR('.')) {
 		x = siScomma_dot;
 		read_char(in);
 	} else

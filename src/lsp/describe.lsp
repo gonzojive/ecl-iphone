@@ -224,14 +224,7 @@
 
 (defun inspect-cons (cons)
   (format t
-          (case
-	      #-LOCATIVE (car cons)
-	      #+LOCATIVE
-	      (let ((acar (car cons)))
-		(cond ((locativep acar)
-		       (dereference acar))
-		      ((sl-boundp acar) acar)
-		      (t nil)))
+          (case (car cons)
             ((LAMBDA LAMBDA-BLOCK LAMBDA-CLOSURE LAMBDA-BLOCK-CLOSURE)
              "~S - function")
             (QUOTE "~S - constant")
@@ -400,8 +393,6 @@ q (or Q):             quits the inspection.~%~
   (push object *inspect-history*)
   (catch 'ABORT-INSPECT
          (cond
-	       #+LOCATIVE
-               ((not (sys:sl-boundp object)) nil)
 	       ((symbolp object) (inspect-symbol object))
                ((packagep object) (inspect-package object))
                ((characterp object) (inspect-character object))
@@ -413,8 +404,6 @@ q (or Q):             quits the inspection.~%~
                ((hash-table-p object) (inspect-hashtable object))
 	       #+clos
 	       ((sys:instancep object) (inspect-instance object))
-	       #+LOCATIVE
-	       ((sys:locativep object) (inspect-locative object))
                (t (format t "~S - ~S" object (type-of object))))))
 
 
@@ -602,19 +591,6 @@ q (or Q):             quits the inspection.~%~
               string package
               (and package (package-name (coerce-to-package package)))))
   (values))
-
-#+LOCATIVE
-(defun inspect-locative (locative)
-  (if (sys:sl-boundp (dereference locative))
-      (if *inspect-mode*
-	  (inspect-recursively "locative pointing to:"
-			       (dereference locative))
-	  (if (locativep (dereference locative))
-	      (format t "~S - ~S" locative "UNBOUND-LOCATIVE")
-	      (inspect-print "locative pointing to:~%   ~S"
-			     (dereference locative)
-			     )))
-      (format t "~S - ~S" locative "UNBOUND-LOCATIVE")))
 
 ;;;----------------------------------------------------------------------
           

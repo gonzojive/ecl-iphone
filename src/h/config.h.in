@@ -68,7 +68,7 @@
  * -------------------------------------------------------------------- */
 
 #define CL_FIXNUM_TYPE 1	/* Integer type for fixnums		*/
-#define MOST_POSITIVE_FIX 1	/* Positive limit for fixnums           */
+#define MOST_POSITIVE_FIXNUM 1	/* Positive limit for fixnums           */
 
 /* Stack grows downwards						*/
 #undef DOWN_STACK

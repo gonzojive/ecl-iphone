@@ -47,7 +47,7 @@ static cl_object big_log_op(cl_object x, cl_object y, bit_operator op);
 static cl_object
 log_op(int narg, bit_operator op, va_list ARGS)
 {
-	enum cl_type t;
+	cl_type t;
 	cl_object x, numi;
 	int i = 1, j;
 
@@ -564,14 +564,14 @@ init_num_log(void)
 	} else {
 		if (type_of(x) != t_array)
 			goto ERROR;
-		if ((enum aelttype)x->array.elttype != aet_bit)
+		if ((cl_elttype)x->array.elttype != aet_bit)
 			goto ERROR;
 		d = x->array.dim;
 		xp = x->vector.self.bit;
 		xo = x->vector.offset;
 		if (type_of(y) != t_array)
 			goto ERROR;
-		if ((enum aelttype)y->array.elttype != aet_bit)
+		if ((cl_elttype)y->array.elttype != aet_bit)
 			goto ERROR;
 		if (x->array.rank != y->array.rank)
 			goto ERROR;
@@ -585,7 +585,7 @@ init_num_log(void)
 		if (r != Cnil) {
 			if (type_of(r) != t_array)
 				goto ERROR;
-			if ((enum aelttype)r->array.elttype != aet_bit)
+			if ((cl_elttype)r->array.elttype != aet_bit)
 				goto ERROR;
 			if (r->array.rank != x->array.rank)
 				goto ERROR;
@@ -613,7 +613,7 @@ init_num_log(void)
 		  r->array.displaced = Cnil;
 		  r->array.rank = 1;
 		  r->array.dims = NULL;
-		  r->array.elttype = get_aelttype(@'bit');
+		  r->array.elttype = get_elttype(@'bit');
 		  r->array.dims = alloc_atomic_align(sizeof(int), sizeof(int));
 		  r->array.dim = x->array.dim;
 		  r->array.adjustable = FALSE;

@@ -805,7 +805,7 @@ interpret_pushenv(cl_object *vector) {
 
 cl_object *
 interpret(cl_object *vector) {
-	enum cl_type t;
+	cl_type t;
 	cl_object s;
 	cl_fixnum n;
 

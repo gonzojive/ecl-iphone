@@ -291,16 +291,7 @@ const struct symbol_info all_symbols[] = {
 {&clScont, "CONT", CL_ORDINARY},
 {&clSthread, "THREAD", CL_ORDINARY},
 #endif
-#ifdef LOCATIVE
-{&clSlocative, "LOCATIVE", CL_ORDINARY},
-#endif
 {&clSsubtypep, "SUBTYPEP", CL_ORDINARY},
-
-/* unify.c */
-#ifdef LOCATIVE
-{&clSsetq, "SETQ", CL_ORDINARY},
-{&clSunify_slot, "UNIFY-SLOT", CL_ORDINARY},
-#endif
 
 {NULL, (const char*)NULL, CL_ORDINARY}};
 

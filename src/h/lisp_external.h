@@ -1002,31 +1002,6 @@ extern cl_object TSor_pathname_string_symbol_stream;
 extern cl_object clSsubtypep;
 extern cl_object clLtype_of _ARGS((int narg, cl_object x));
 
-/* unify.c */
-
-#ifdef LOCATIVE
-extern cl_object clLtrail_mark _ARGS((int narg));
-extern cl_object clLtrail_restore _ARGS((int narg));
-extern cl_object clLtrail_unmark _ARGS((int narg));
-extern cl_object clLget_value _ARGS((int narg, cl_object v, cl_object x));
-extern cl_object clLget_constant _ARGS((int narg, cl_object c, cl_object x));
-extern cl_object clLget_nil _ARGS((int narg, cl_object arg));
-extern cl_object clLget_cons _ARGS((int narg, cl_object arg));
-extern cl_object clLget_instance _ARGS((int narg, cl_object x, cl_object class, cl_object arity));
-extern cl_object clLunify_slot _ARGS((int narg));
-extern cl_object clLunify_value _ARGS((int narg, cl_object loc));
-extern cl_object clLunify_constant _ARGS((int narg, cl_object c));
-extern cl_object clLunify_nil _ARGS((int narg));
-extern cl_object clLmake_locative _ARGS((int narg, ...));
-extern cl_object clLlocativep _ARGS((int narg, cl_object obje));
-extern cl_object clLunboundp _ARGS((int narg, cl_object loc));
-extern cl_object clLdereference _ARGS((int narg, cl_object x));
-extern cl_object clLmake_variable _ARGS((int narg, cl_object name));
-extern cl_object clSsetq;
-extern cl_object clSunify_slot;
-extern cl_object clLunify_variable _ARGS((cl_object var));
-#endif
-
 /* unixfsys.c */
 
 extern cl_object Klist_all;

@@ -22,7 +22,7 @@
 
 static void displace (cl_object from, cl_object to, cl_object offset);
 static void check_displaced (cl_object dlist, cl_object orig, cl_index newdim);
-extern enum aelttype get_aelttype (cl_object x);
+extern cl_elttype get_elttype (cl_object x);
 
 cl_index
 object_to_index(cl_object n)
@@ -96,12 +96,12 @@ aref(cl_object x, cl_index index)
 {
   if (index >= x->array.dim)
     FEerror("The index, ~D, is too large.", 1, MAKE_FIXNUM(index));
-  switch ((enum aelttype)array_elttype(x)) {
+  switch ((cl_elttype)array_elttype(x)) {
   case aet_object:
     return(x->array.self.t[index]);
 
   case aet_ch:
-    return(code_char(x->string.self[index]));
+    return(CODE_CHAR(x->string.self[index]));
 
   case aet_bit:
     index += x->vector.offset;
@@ -134,7 +134,7 @@ aref1(cl_object v, cl_index index)
   case t_string:
     if (index >= v->string.dim)
       FEerror("The index, ~D, is too large.", 1, MAKE_FIXNUM(index));
-    return(code_char(v->string.self[index]));
+    return(CODE_CHAR(v->string.self[index]));
 
   default:
     FEerror("~S is not a vector.", 1, v);
@@ -260,7 +260,7 @@ aset1(cl_object v, cl_index index, cl_object val)
   x->array.displaced = Cnil;
   x->array.self.t = NULL;		/* for GC sake */
   x->array.rank = r;
-  x->array.elttype = (short)get_aelttype(etype);
+  x->array.elttype = (short)get_elttype(etype);
   x->array.dims = alloc_atomic_align(sizeof(int)*r, sizeof(int));
   if (r >= ARANKLIM)
     FEerror("The array rank, ~R, is too large.", 1, MAKE_FIXNUM(r));
@@ -291,9 +291,9 @@ aset1(cl_object v, cl_index index, cl_object val)
 @(defun si::make_vector (etype dim adj fillp displ disploff)
   cl_index d, f;
   cl_object x;
-  enum aelttype aet;
+  cl_elttype aet;
 @
-  aet = get_aelttype(etype);
+  aet = get_elttype(etype);
   if ((d = fixnnint(dim)) > ADIMLIM)
     FEerror("The vector dimension, ~D, is too large.", 1, dim);
   f = d;
@@ -398,8 +398,8 @@ array_allocself(cl_object x)
 #endif THREADS
 }
 
-enum aelttype
-get_aelttype(cl_object x)
+cl_elttype
+get_elttype(cl_object x)
 {
 	if (x == @'base-char')
 		return(aet_ch);
@@ -470,7 +470,7 @@ static void
 displace(cl_object from, cl_object to, cl_object offset)
 {
 	cl_index j;
-	enum aelttype totype, fromtype;
+	cl_elttype totype, fromtype;
 
 	j = fixnnint(offset);
 	totype = array_elttype(to);
@@ -543,13 +543,13 @@ void adjust_displaced(cl_object x, ptrdiff_t diff)
 		adjust_displaced(CAR(x), diff);
 }
 
-enum aelttype
+cl_elttype
 array_elttype(cl_object x)
 {
 	switch(type_of(x)) {
 	case t_array:
 	case t_vector:
-		return((enum aelttype)x->array.elttype);
+		return((cl_elttype)x->array.elttype);
 
 	case t_string:
 		return(aet_ch);
@@ -625,7 +625,7 @@ ILLEGAL:		FEerror("~S is an illegal axis-number to the array ~S.",
       x->vector.adjustable ||
       x->vector.hasfillp ||
       CAR(x->vector.displaced) != Cnil ||
-      (enum aelttype)x->vector.elttype != aet_object)
+      (cl_elttype)x->vector.elttype != aet_object)
     FEwrong_type_argument(@'simple-vector', x);
   if ((i = fixnnint(index)) >= x->vector.dim)
     illegal_index(x, index);
@@ -639,7 +639,7 @@ ILLEGAL:		FEerror("~S is an illegal axis-number to the array ~S.",
       x->vector.adjustable ||
       x->vector.hasfillp ||
       CAR(x->vector.displaced) != Cnil ||
-      (enum aelttype)x->vector.elttype != aet_object)
+      (cl_elttype)x->vector.elttype != aet_object)
     FEwrong_type_argument(@'simple-vector', x);
   if ((i = fixnnint(index)) >= x->vector.dim)
     illegal_index(x, index);

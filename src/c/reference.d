@@ -86,7 +86,7 @@ symbol_function(cl_object sym)
 @)
 
 @(defun si::coerce_to_function (fun)
-	enum cl_type t = type_of(fun);
+	cl_type t = type_of(fun);
 @
 	if (t == t_symbol) {
 		cl_object fd = lex_fun_sch(fun);

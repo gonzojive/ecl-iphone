@@ -217,7 +217,7 @@
               (wt "(" var-loc "->symbol.dbind)")))
     (t (case (var-kind var)
          (FIXNUM    (wt "MAKE_FIXNUM"))
-         (CHARACTER (wt "code_char"))
+         (CHARACTER (wt "CODE_CHAR"))
          (LONG-FLOAT (wt "make_longfloat"))
          (SHORT-FLOAT (wt "make_shortfloat"))
          (OBJECT)

@@ -37,7 +37,7 @@ extern scheduler_interruption; /* in unixint.c */
 extern int writec_PRINTstream();
 extern cl_object readc();
 extern gc();
-extern enum type garbage_parameter;
+extern cl_type garbage_parameter;
 
 /******************************* ------- ******************************/
 

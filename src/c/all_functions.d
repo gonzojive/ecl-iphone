@@ -809,28 +809,6 @@ const struct function_info all_functions[] = {
 
 	{"TYPE-OF", clLtype_of, cl},
 
-	/* unify.d */
-#ifdef clLOCATIVE
-	{"TRAIL-MARK", clLtrail_mark, si},
-	{"TRAIL-UNMARK", clLtrail_unmark, si},
-	{"TRAIL-RESTORE", clLtrail_restore, si},
-	{"GET-VARIABLE", NULL, form},
-	{"GET-VALUE", clLget_value, si},
-	{"GET-CONSTANT", clLget_constant, si},
-	{"GET-NIL", clLget_nil, si},
-	{"GET-CONS", clLget_cons, si},
-	{"GET-INSTANCE", clLget_instance, si}, /* Mauro */
-	{"UNIFY-SLOT", clLunify_slot, si},
-	{"UNIFY-VALUE", clLunify_value, si},
-	{"UNIFY-CONSTANT", clLunify_constant, si},
-	{"UNIFY-NIL", clLunify_nil, si},
-	{"MAKE-LOCATIVE", clLmake_locative, si},
-	{"LOCATIVEP", clLlocativep, si},
-	{"UNBOUNDP", clLunboundp, si},
-	{"MAKE-VARIABLE", clLmake_variable, si},
-	{"DEREFERENCE", clLdereference, si},
-#endif clLOCATIVE
-
 	/* unixint.c */
 
 #ifdef unix

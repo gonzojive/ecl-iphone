@@ -90,10 +90,6 @@ cl_object @'instance';
 cl_object @'dispatch-function';
 #endif
 
-#ifdef LOCATIVE
-cl_object @'locative';
-#endif
-
 cl_object @'structure';
 cl_object @'satisfies';
 cl_object @'member';
@@ -223,7 +219,7 @@ FEtype_error_stream(cl_object strm)
 void
 assert_type_integer(cl_object p)
 {
-	enum type t = type_of(p);
+	cl_type t = type_of(p);
 	if (t != t_fixnum && t != t_bignum)
 		FEtype_error_integer(p);
 }
@@ -231,7 +227,7 @@ assert_type_integer(cl_object p)
 void
 assert_type_non_negative_integer(cl_object p)
 {
-	enum type t = type_of(p);
+	cl_type t = type_of(p);
 
 	if (t == t_fixnum) {
 		if (FIXNUM_PLUSP(p))
@@ -397,7 +393,7 @@ TYPE_OF(cl_object x)
 		if (x->vector.adjustable ||
 		    x->vector.hasfillp ||
 		    Null(CAR(x->vector.displaced)) ||
-		    (enum aelttype)x->vector.elttype != aet_object)
+		    (cl_elttype)x->vector.elttype != aet_object)
 			return(@'vector');
 		else
 			return(@'simple-vector');
@@ -452,10 +448,6 @@ TYPE_OF(cl_object x)
 #ifdef CLOS
 	case t_gfun:
 		return(@'dispatch-function');
-#endif
-#ifdef LOCATIVE
-	      case t_locative:
-		return(@'locative');
 #endif
 
 	default:

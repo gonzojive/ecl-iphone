@@ -74,9 +74,6 @@ init_lisp(void)
 #ifdef TK
 	init_tk();
 #endif TK
-#ifdef LOCATIVE
-	init_unify();
-#endif LOCATIVE
 /*  	init_hash(); */
 #ifdef unix
 /*  	init_unixfsys(); */

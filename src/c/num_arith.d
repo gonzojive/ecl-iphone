@@ -209,7 +209,7 @@ number_plus(cl_object x, cl_object y)
 	        switch (type_of(y)) {
 		case t_fixnum: {
 			int k = fix(x) + fix(y);
-			if (k >= MOST_NEGATIVE_FIX && k <= MOST_POSITIVE_FIX)
+			if (k >= MOST_NEGATIVE_FIXNUM && k <= MOST_POSITIVE_FIXNUM)
 			  return(MAKE_FIXNUM(k));
 			else
 			  return(bignum1(k));
@@ -362,8 +362,8 @@ number_minus(cl_object x, cl_object y)
 	case t_fixnum:
 		switch(type_of(y)) {
 		case t_fixnum:
-			if ((k = fix(x) - fix(y)) >= MOST_NEGATIVE_FIX &&
-			    k <= MOST_POSITIVE_FIX)
+			if ((k = fix(x) - fix(y)) >= MOST_NEGATIVE_FIXNUM &&
+			    k <= MOST_POSITIVE_FIXNUM)
 			  return(MAKE_FIXNUM(k));
 			else
 			  return(bignum1(k));
@@ -521,9 +521,9 @@ number_negate(cl_object x)
 	switch (type_of(x)) {
 	case t_fixnum: {
 		int k = fix(x);
-		/* -MOST_NEGATIVE_FIX > MOST_POSITIVE_FIX */
-		if (k == MOST_NEGATIVE_FIX)
-			return(bignum1(- MOST_NEGATIVE_FIX));
+		/* -MOST_NEGATIVE_FIXNUM > MOST_POSITIVE_FIXNUM */
+		if (k == MOST_NEGATIVE_FIXNUM)
+			return(bignum1(- MOST_NEGATIVE_FIXNUM));
 		else
 			return(MAKE_FIXNUM(-k));
 	}
@@ -685,7 +685,7 @@ number_divide(cl_object x, cl_object y)
 cl_object
 integer_divide(cl_object x, cl_object y)
 {
-	enum type tx, ty;
+	cl_type tx, ty;
 
 	tx = type_of(x);
 	ty = type_of(y);
@@ -730,8 +730,8 @@ integer_divide(cl_object x, cl_object y)
 cl_object
 get_gcd(cl_object x, cl_object y)
 {
-	enum cl_type tx = type_of(x);
-	enum cl_type ty = type_of(y);
+	cl_type tx = type_of(x);
+	cl_type ty = type_of(y);
 	cl_object gcd;
 
 	switch (tx) {
@@ -789,8 +789,8 @@ one_plus(cl_object x)
 	switch (type_of(x)) {
 
 	case t_fixnum:
- 		if (x == MAKE_FIXNUM(MOST_POSITIVE_FIX))
-		  return(bignum1(MOST_POSITIVE_FIX+1));
+ 		if (x == MAKE_FIXNUM(MOST_POSITIVE_FIXNUM))
+		  return(bignum1(MOST_POSITIVE_FIXNUM+1));
 		return (cl_object)((int)x + ((int)MAKE_FIXNUM(1) - FIXNUM_TAG));
 	case t_bignum:
 		return(number_plus(x, MAKE_FIXNUM(1)));
@@ -835,8 +835,8 @@ one_minus(cl_object x)
 	switch (type_of(x)) {
 
 	case t_fixnum:
- 		if (x == MAKE_FIXNUM(MOST_NEGATIVE_FIX))
-		  return(bignum1(MOST_NEGATIVE_FIX-1));
+ 		if (x == MAKE_FIXNUM(MOST_NEGATIVE_FIXNUM))
+		  return(bignum1(MOST_NEGATIVE_FIXNUM-1));
 		return (cl_object)((int)x - ((int)MAKE_FIXNUM(1) - FIXNUM_TAG));
 
 	case t_bignum:

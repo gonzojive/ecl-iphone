@@ -80,10 +80,10 @@ big_register_normalize(cl_object x)
 	  return(MAKE_FIXNUM(0));
 	y = x->big.big_limbs[0];
 	if (s == 1) {
-	  if (y <= MOST_POSITIVE_FIX)
+	  if (y <= MOST_POSITIVE_FIXNUM)
 	    return(MAKE_FIXNUM(y));
 	} else if (s == -1) {
-	  if (y <= -MOST_NEGATIVE_FIX)
+	  if (y <= -MOST_NEGATIVE_FIXNUM)
 	    return(MAKE_FIXNUM(-y));
 	}
 	return big_register_copy(x);
@@ -232,9 +232,9 @@ big_normalize(cl_object x)
   if (s == 0)
     return(MAKE_FIXNUM(0));
   y = x->big.big_limbs[0];
-  if (s == 1 && y <= MOST_POSITIVE_FIX)
+  if (s == 1 && y <= MOST_POSITIVE_FIXNUM)
     return(MAKE_FIXNUM(y));
-  if (s == -1 && y <= -MOST_NEGATIVE_FIX)
+  if (s == -1 && y <= -MOST_NEGATIVE_FIXNUM)
     return(MAKE_FIXNUM(-y));
   return(x);
 }

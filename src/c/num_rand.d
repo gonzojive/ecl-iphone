@@ -22,7 +22,7 @@ cl_object @'*random-state*';
 static cl_object
 rando(cl_object x, cl_object rs)
 {
-	enum type tx;
+	cl_type tx;
 	cl_object z;
 	double d;
 	

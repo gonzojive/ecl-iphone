@@ -140,7 +140,7 @@ static bool doPRINTcircle(cl_object x);
 void
 interactive_writec_stream(int c, cl_object stream)
 {
-	funcall(3, @'stream-write-char', stream, code_char(c));
+	funcall(3, @'stream-write-char', stream, CODE_CHAR(c));
 }
 
 void
@@ -1382,19 +1382,6 @@ write_object(cl_object x, int level)
 		write_addr(x);
 		write_ch('>');
 		break;
-#ifdef LOCATIVE
-	case t_spice:
-		write_str("#<\100"); /* at-sign is the escape for dpp */
-		for (i = 28;  i >= 0;  i -= 4) {
-			j = ((int)x >> i) & 0xf;
-			if (j < 10)
-				write_ch('0' + j);
-			else
-				write_ch('A' + (j - 10));
-		}
-		write_ch('>');
-		break;
-#endif
 #ifdef THREADS
       	case t_cont:
 		write_str("#<cont ");
@@ -1426,27 +1413,6 @@ write_object(cl_object x, int level)
 		write_ch('>');
 		break;
 #endif CLOS
-
-#ifdef LOCATIVE
-	case t_locative:
-		if (UNBOUNDP(x)) {
-		  /* The next location should contain the
-		     logical variable name */
-		  if (type_of(*(cl_object *)(((unsigned int)(x) >> 2)
-					  + sizeof(cl_object))) == t_symbol)
-		    write_object(*(cl_object *)(((unsigned int)(x) >> 2)
-					     + sizeof(cl_object)), level);
-		  else {
-		    write_str("#<locative ");
-		    write_addr(x);
-		    write_ch('>');
-		  }
-		}
-		else
-		  write_object(DEREF(x), level);
-		break;
-#endif LOCATIVE
-	
 	default:
 		error("illegal type --- cannot print");
 	}
@@ -1517,7 +1483,7 @@ doPRINTcircle(cl_object x)
 static void
 travel_push_object(cl_object x)
 {
-	enum type t;
+	cl_type t;
 	cl_index i;
 	cl_object *vp, *CIRCLEtop;
 
@@ -1545,13 +1511,13 @@ BEGIN:
 
 	switch (t) {
 	case t_array:
-	  if ((enum aelttype)x->array.elttype == aet_object)
+	  if ((cl_elttype)x->array.elttype == aet_object)
 	    for (i = 0;  i < x->array.dim;  i++)
 	      travel_push_object(x->array.self.t[i]);
 	  break;
 
 	case t_vector:
-	  if ((enum aelttype)x->vector.elttype == aet_object)
+	  if ((cl_elttype)x->vector.elttype == aet_object)
 	    for (i = 0;  i < x->vector.fillp;  i++)
 	      travel_push_object(x->vector.self.t[i]);
 	  break;

@@ -901,7 +901,7 @@ fmt_exponential_float(bool colon, bool atsign)
 	int i, j;
 	cl_object x, y;
 	int n, m;
-	enum type t;
+	cl_type t;
 
 	b = buff1 + 1;
 

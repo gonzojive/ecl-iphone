@@ -75,7 +75,7 @@ setf_namep(cl_object fun_spec)
 @)
 
 @(defun si::fset (fun def &optional macro pprint)
-	enum type t;
+	cl_type t;
 @
 	if (!SYMBOLP(fun)) {
 		cl_object sym;

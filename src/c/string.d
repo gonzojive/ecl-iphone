@@ -27,7 +27,7 @@ cl_object @':end2';
 cl_object @':start';
 cl_object @':end';
 
-@(defun make_string (size &key (initial_element code_char(' '))
+@(defun make_string (size &key (initial_element CODE_CHAR(' '))
 		     (element_type @'character')
 		     &aux x)
 	cl_index i, s, code;
@@ -185,7 +185,7 @@ coerce_to_string_designator(cl_object x)
 	/* CHAR bypasses fill pointers when accessing strings */
 	if (j >= s->string.dim-1)
 		illegal_index(s, i);
-	@(return code_char(s->string.self[j]))
+	@(return CODE_CHAR(s->string.self[j]))
 @)
 
 @(defun si::char_set (str index c)

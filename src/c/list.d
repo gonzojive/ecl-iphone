@@ -618,7 +618,7 @@ nconc(cl_object l, cl_object y)
 	cl_object r, res = Cnil, *fill = &res;
 	cl_fixnum delay;
 @
-	/* INV: No list has more than MOST_POSITIVE_FIX elements */
+	/* INV: No list has more than MOST_POSITIVE_FIXNUM elements */
 	if (!FIXNUMP(nn))
 		@(return Cnil)
 	delay = fixnnint(nn);
@@ -638,7 +638,7 @@ nconc(cl_object l, cl_object y)
 	cl_fixnum delay;
 	cl_object x, r;
 @
-	/* INV: No list has more than MOST_POSITIVE_FIX elements */
+	/* INV: No list has more than MOST_POSITIVE_FIXNUM elements */
 	if (!FIXNUMP(nn))
 		@(return Cnil)
 	/* We add 1 because at the end `r' must point to the
