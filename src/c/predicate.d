@@ -428,7 +428,7 @@ BEGIN:
 		if (CLASS_OF(x) != CLASS_OF(y))
 			return(FALSE);
 		for (i = 0;  i < x->instance.length;  i++)
-			if (!equal(x->instance.slots[i], y->instance.slots[i]))
+			if (!equalp(x->instance.slots[i], y->instance.slots[i]))
 				return(FALSE);
 		return(TRUE);
 	}
@@ -447,6 +447,24 @@ BEGIN:
 
 	case t_pathname:
 		return(equal(x, y));
+
+	case t_hashtable: {
+		cl_index i;
+		struct ecl_hashtable_entry *ex, *ey;
+
+		if (x->hash.entries != y->hash.entries ||
+		    x->hash.test != y->hash.test)
+			return(FALSE);
+		ex = x->hash.data;
+		for (i = 0;  i < x->hash.size;  i++) {
+			if (ex[i].key != OBJNULL) {
+				ey = ecl_search_hash(ex[i].key, y);
+				if (ey->key == OBJNULL || !equalp(ex[i].value, ey->value))
+					return(FALSE);
+			}
+		}
+		return(TRUE);
+	}
 
 	default:
 		return(FALSE);
