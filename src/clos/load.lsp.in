@@ -18,7 +18,10 @@
   "src:clos;inspect.lsp"
   #+cmu-format
   "src:lsp;pprint.lsp"
-  "src:clos;conditions.lsp"))
+  "src:clos;conditions.lsp"
+  #+clos-streams
+  "src:clos;streams.lsp"
+  ))
 
 #-cross
 (mapc #'(lambda (x) (load x :verbose nil)) +clos-module-files+)

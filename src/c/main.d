@@ -412,6 +412,9 @@ cl_boot(int argc, char **argv)
 #ifdef ECL_CMU_FORMAT
 	ADD_FEATURE("CMU-FORMAT");
 #endif
+#ifdef ECL_CLOS_STREAMS
+	ADD_FEATURE("CLOS-STREAMS");
+#endif
 	/* This is assumed in all systems */
 	ADD_FEATURE("IEEE-FLOATING-POINT");
 
