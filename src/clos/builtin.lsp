@@ -145,7 +145,7 @@
 
 (eval-when
  (compile load eval)
- (make-instance (find-class 'STANDARD-CLASS)
+ (make-instance (find-class 'STRUCTURE-CLASS)
 		:name 'STRUCTURE-OBJECT
 		:direct-superclasses (list (find-class 't))
 		:slots ()
@@ -153,7 +153,14 @@
 		:slot-index-table ()
 		:direct-slots ()
 		:default-initargs ()
-		:documentation "The root of inheritance for structures"))
+		:documentation "The root of inheritance for structures"
+		:slot-descriptions ()
+		:initial-offset 0
+		:defstruct-form ()
+		:constructors ()
+		:copier ()
+		:predicate ()
+		:print-function ()))
 
 (defmethod print-object ((obj structure-object) stream)
   (let* ((class (si:instance-class obj))
