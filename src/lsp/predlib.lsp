@@ -208,12 +208,12 @@ has no fill-pointer, and is not adjustable."
 (defconstant +upgraded-array-element-types+
   '(BIT BASE-CHAR BYTE8 INTEGER8 FIXNUM SHORT-FLOAT LONG-FLOAT T))
 
-(defun upgraded-array-element-type (element-type)
+(defun upgraded-array-element-type (element-type &optional env)
   (dolist (v +upgraded-array-element-types+ 'T)
     (when (subtypep element-type v)
       (return v))))
 
-(defun upgraded-complex-part-type (real-type)
+(defun upgraded-complex-part-type (real-type &optional env)
   (dolist (v '(INTEGER RATIO RATIONAL SHORT-FLOAT LONG-FLOAT FLOAT)
 	   (error "~S is not a valid part type for a complex." real-type))
     (when (subtypep real-type v)
