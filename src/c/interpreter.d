@@ -232,8 +232,8 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 	cl_object *data = lambda_list->bytecodes.data;
 	cl_object specials = lambda_list->bytecodes.specials;
 	int i, n;
-	bool other_keys = FALSE;
 	bool check_remaining = TRUE;
+	bool allow_other_keys = FALSE;
 	bool allow_other_keys_found = FALSE;
 
 	/* 1) REQUIRED ARGUMENTS:  N var1 ... varN */
@@ -274,14 +274,14 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 
 	/* 4) ALLOW-OTHER-KEYS: { T | NIL | 0} */
 	if (data[0] == MAKE_FIXNUM(0)) {
-	  data++; other_keys = 0;
+	  data++; allow_other_keys = 0;
 	  goto NO_KEYS;
 	}
-	other_keys = !Null(next_code(data));
+	allow_other_keys = allow_other_keys_found = !Null(next_code(data));
 
 	/* 5) KEYWORDS: N key1 var1 value1 flag1 ... keyN varN valueN flagN */
 	n = fix(next_code(data));
-	if (n != 0 || other_keys) {
+	if (n != 0 || allow_other_keys) {
 	  cl_object *keys;
 	  cl_object spp[n];
 	  bool other_found = FALSE;
@@ -296,7 +296,7 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 	    if (key == @':allow-other-keys') {
 	      if (!allow_other_keys_found) {
 		allow_other_keys_found = TRUE;
-		other_keys = !Null(value);
+		allow_other_keys = !Null(value);
 	      }
 	    }
 	    for (i = 0; i < n; i++, keys += 4) {
@@ -311,7 +311,7 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 	  FOUND:
 	    (void)0;
 	  }
-	  if (other_found && !other_keys)
+	  if (other_found && !allow_other_keys)
 	    FEprogram_error("LAMBDA: Unknown keys found in function ~S.",
 			    1, lambda_list->bytecodes.name);
 	  for (i=0; i<n; i++, data+=4) {
@@ -330,7 +330,7 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 	  }
 	}
  NO_KEYS:
-	if (narg && !other_keys && check_remaining)
+	if (narg && !allow_other_keys && check_remaining)
 	  FEprogram_error("LAMBDA: Too many arguments to function ~S.", 1,
 			  lambda_list->bytecodes.name);
 	/* Skip documentation and declarations */
@@ -440,7 +440,7 @@ interpret_funcall(int narg, cl_object fun) {
 		break;
 	case t_symbol: {
 		cl_object function = SYM_FUN(fun);
-		if (function == OBJNULL)
+		if (function == OBJNULL || fun->symbol.mflag)
 			FEundefined_function(fun);
 		fun = function;
 		goto AGAIN;
@@ -785,7 +785,7 @@ interpret(cl_object *vector) {
 	case OP_CALLG: {
 		cl_fixnum n = get_oparg(s);
 		cl_object fun = next_code(vector);
-		if (fun->symbol.gfdef == OBJNULL)
+		if (fun->symbol.gfdef == OBJNULL || fun->symbol.mflag)
 			FEundefined_function(fun);
 		VALUES(0) = interpret_funcall(n, fun->symbol.gfdef);
 		break;
@@ -905,15 +905,11 @@ interpret(cl_object *vector) {
 		may be defined in the global environment or in the local
 		environment. This last value takes precedence.
 	*/
-	case OP_FUNCTION: {
-		cl_object fun_name = next_code(vector);
-		cl_object fun_object = SYM_FUN(fun_name);
-		if (fun_object == OBJNULL || fun_name->symbol.mflag)
-			FEundefined_function(fun_name);
-		VALUES(0) = fun_object;
+	case OP_FUNCTION:
+		VALUES(0) = cl_fdefinition(next_code(vector));
 		NValues = 1;
 		break;
-	}
+
 	/* OP_CLOSE	name{symbol}
 		Extracts the function associated to a symbol. The function
 		may be defined in the global environment or in the local

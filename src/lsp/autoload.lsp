@@ -100,8 +100,8 @@ disassembled.  If THING is a lambda expression, it is disassembled as a
 function definition.  Otherwise, THING itself is disassembled as a top-level
 form.  H-FILE and DATA-FILE specify intermediate files to build a fasl file
 from the C language code.  NIL means \"do not create the file\"."
-  (when (or (symbolp f) (si::setf-namep f))
-    (setq function (eval `(function ,f))))
+  (when (si::valid-function-name-p f)
+    (setq function (fdefinition f)))
   (unless (si::bc-disassemble f)
     (load "SYS:cmp")
     (apply 'disassemble f args)))

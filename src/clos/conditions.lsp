@@ -377,7 +377,6 @@ strings."
 	    (dolist (handler cluster)
 	      (when (typep condition (car handler))
 		(funcall (cdr handler) condition)
-		(return nil) ;?
 		))))
     nil))
 

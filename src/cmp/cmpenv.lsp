@@ -63,32 +63,12 @@
 (defun add-symbol (symbol)
   (add-object symbol))
 
-#+nil
 (defun add-keywords (keywords)
   ;; We have to build, in the vector VV[], a sequence with all
   ;; the keywords that this function uses. It does not matter
-  ;; whether the same keywords appeared before, because
-  ;; cl_parse_key() needs the whole list. However, we can optimize
-  ;; the case of a single keyword, reusing the value of a previous
-  ;; occurrence.
-  (let ((x (assoc keywords *keywords* :test #'equalp)))
-    (cond (x
-	   (second x))
-	  ((and (setq x (assoc (first keywords) *objects*))
-		(= (length keywords) 1))
-	   (second x))
-	  (t
-	   (flet ((add-keyword (keyword)
-		   (let ((x (format nil "VV[~d]" (incf *next-vv*))))
-		     (push (list keyword x *next-vv*) *objects*)
-		     (wt-data keyword)
-		     x)))
-	     (setq x (add-keyword (first keywords)))
-	     (dolist (k keywords)
-	       (add-keyword k))
-	     x)))))
-
-(defun add-keywords (keywords)
+  ;; whether each keyword has appeared separately before, because
+  ;; cl_parse_key() needs the whole list. However, we can reuse
+  ;; keywords lists from other functions when they coincide with ours.
   (flet ((add-keyword (keyword &aux x)
 	   (incf *next-vv*)
 	   (setq x (format nil "VV[~d]" *next-vv*))
@@ -98,10 +78,17 @@
 	         (wt-data keyword)))
 	   (push (list keyword x *next-vv*) *objects*)
 	   x))
-    (let ((x (add-keyword (first keywords))))
-      (dolist (k (rest keywords))
-	(add-keyword k))
-      x)))
+    ;; We search for keyword lists that are similar. However, the list
+    ;; *OBJECTS* contains elements in decreasing order!!!
+    (let ((x (search (reverse keywords) *objects*
+		     :test #'(lambda (k rec) (eq k (first rec))))))
+      (if x
+	  (progn
+	    (cmpnote "Reusing keywords lists for ~S" keywords)
+	    (second (elt *objects* (+ x (length keywords) -1))))
+	  (let ((x (add-keyword (first keywords))))
+	    (dolist (k (rest keywords) x)
+	      (add-keyword k))))))))
 
 (defun add-object (object &aux x found)
   (cond ((setq x (assoc object *objects* :test 'equalp))
@@ -206,9 +193,9 @@
 ;;; Proclamation and declaration handling.
 
 (defun inline-possible (fname)
-       (not (or ; *compiler-push-events*
-                (member fname *notinline*)
-                (get-sysprop fname 'CMP-NOTINLINE))))
+  (not (or ; *compiler-push-events*
+	(member fname *notinline* :test #'same-fname-p)
+	(and (symbolp fname) (get-sysprop fname 'CMP-NOTINLINE)))))
 
 #-:CCL
 (defun proclaim (decl)

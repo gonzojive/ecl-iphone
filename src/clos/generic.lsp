@@ -61,9 +61,10 @@
 	   ;)
 	   )))))
 
+#|
 (defmacro generic-function (&rest args)
   (multiple-value-bind (lambda-list options)
-    (parse--generic-function args)
+    (parse-generic-function args)
     
     (parse-lambda-list lambda-list)
     ;; process options
@@ -92,6 +93,7 @@
 	 ;; add methods specified by defgeneric
 	 ;)
 	 gf-object)))))
+|#
 		
 ;;; ----------------------------------------------------------------------
 ;;;                                                                parsing
@@ -112,12 +114,14 @@
       (error "Illegal defgeneric  form: missing lambda-list"))
     (values function-specifier (first args) (rest args))))
 
+#|
 (defun parse-generic-function (args)
   (declare (si::c-local))
   ;; (values lambda-list options)
   (unless args
     (error "Illegal generic-function form: missing lambda-list"))
   (values (first args) (rest args)))
+|#
 	
 (defun parse-generic-options (options lambda-list)
   (declare (si::c-local))

@@ -318,11 +318,9 @@ si_make_vector(cl_object etype, cl_object dim, cl_object adj,
   f = d;
   if (aet == aet_ch) {
     x = cl_alloc_object(t_string);
-    d++;			/* extra for null terminator */
-  }
-  else if (aet == aet_bit)
+  } else if (aet == aet_bit) {
     x = cl_alloc_object(t_bitvector);
-  else {
+  } else {
     x = cl_alloc_object(t_vector);
     x->vector.elttype = (short)aet;
   }
@@ -368,10 +366,10 @@ array_allocself(cl_object x)
 	      }
 	case aet_ch: {
 		char *elts;
-		elts = (char *)cl_alloc_atomic(d);
+		elts = (char *)cl_alloc_atomic(d+1);
 		for (i = 0;  i < d;  i++)
 			elts[i] = ' ';
-		if (type_of(x) == t_string) elts[d-1] = '\0';
+		elts[d] = '\0';
 		x->string.self = elts;
 		break;
 	      }
@@ -502,7 +500,7 @@ cl_array_element_type(cl_object a)
 	The field is a cons; the car of the from-array points to
 	the to-array and the cdr of the to-array is a list of arrays
 	displaced to the to-array, so the from-array is pushed to the
-	cdr of the to-array's a_displaced.
+	cdr of the to-array's array.displaced.
 */
 static void
 displace(cl_object from, cl_object to, cl_object offset)
@@ -621,10 +619,6 @@ cl_array_dimension(cl_object a, cl_object index)
 		dim  = a->array.dims[i];
 		break;
 	case t_string:
-		if (i != 0)
-			goto ILLEGAL;
-		dim = a->string.fillp;
-		break;
 	case t_vector:
 	case t_bitvector:
 		if (i != 0)
@@ -656,10 +650,45 @@ cl_adjustable_array_p(cl_object a)
 	Internal function for checking if an array is displaced.
 */
 cl_object
-si_displaced_array_p(cl_object a)
+cl_array_displacement(cl_object a)
 {
+	cl_object to_array;
+	cl_index offset;
+
 	assert_type_array(a);
-	@(return ((CAR(a->array.displaced) != Cnil) ? Ct : Cnil))
+	to_array = a->array.displaced;
+	if (Null(to_array))
+		offset = 0;
+	else {
+		to_array = CAR(a->array.displaced);
+		switch (array_elttype(a)) {
+		case aet_object:
+			offset = a->array.self.t - to_array->array.self.t;
+			break;
+		case aet_ch:
+			offset = a->array.self.ch - to_array->array.self.ch;
+			break;
+		case aet_bit:
+			offset = a->array.self.bit - to_array->array.self.bit;
+			offset = offset * CHAR_BIT + a->array.offset;
+			break;
+		case aet_fix:
+			offset = a->array.self.fix - to_array->array.self.fix;
+			break;
+		case aet_sf:
+			offset = a->array.self.sf - to_array->array.self.sf;
+			break;
+		case aet_lf:
+			offset = a->array.self.lf - to_array->array.self.lf;
+			break;
+		case aet_b8:
+		case aet_i8:
+		default:
+			offset = a->array.self.b8 - to_array->array.self.b8;
+			break;
+		}
+	}
+	@(return to_array MAKE_FIXNUM(offset));
 }
 
 cl_object
@@ -716,10 +745,11 @@ cl_array_has_fill_pointer_p(cl_object a)
 cl_object
 cl_fill_pointer(cl_object a)
 {
-  assert_type_vector(a);
-  if (a->vector.hasfillp)
-    @(return MAKE_FIXNUM(a->vector.fillp))
-  FEerror("The vector ~S has no fill pointer.", 1, a);
+	assert_type_vector(a);
+	if (!a->vector.hasfillp)
+		FEwrong_type_argument(c_string_to_object("(AND VECTOR (SATISFIES ARRAY-HAS-FILL-POINTER-P))"),
+				      a);
+	@(return MAKE_FIXNUM(a->vector.fillp))
 }
 
 /*

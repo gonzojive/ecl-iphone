@@ -180,7 +180,7 @@
 (ARRAY-TOTAL-SIZE (array) T nil nil
 	:inline-unsafe ((t) fixnum nil nil "((#0)->string.dim)"))
 (ADJUSTABLE-ARRAY-P (array) T nil t)
-(si::DISPLACED-ARRAY-P (array) T nil t)
+(ARRAY-DISPLACEMENT (array) (VALUES T FIXNUM) nil t)
 (SVREF (simple-vector fixnum) T nil nil
 	:inline-always ((t t) t nil t "aref1(#0,fixint(#1))")
 	:inline-always ((t fixnum) t nil t "aref1(#0,#1)")
@@ -455,18 +455,18 @@
 	:inline-unsafe ((t t) t nil nil "nthcdr(fix(#0),#1)")
 	:inline-unsafe ((fixnum t) t nil nil "nthcdr(#0,#1)"))
 (LAST (T) T)
-(LIST (*) T NIL NIL
+(LIST (*) LIST NIL NIL
 	:inline-always (nil t nil nil "Cnil")
 	:inline-always ((t) t nil t "CONS(#0,Cnil)"))
-(LIST* (T *) T NIL NIL
+(LIST* (T *) LIST NIL NIL
 	:inline-always ((t) t nil nil "#0")
 	:inline-always ((t t) t nil t "CONS(#0,#1)"))
 (MAKE-LIST (fixnum *) T)
 (APPEND (*) T NIL NIL
 	:inline-always ((t t) t nil t "append(#0,#1)"))
-(COPY-LIST (T) T)
-(COPY-ALIST (T) T)
-(COPY-TREE (T) T)
+(COPY-LIST (T) LIST)
+(COPY-ALIST (T) LIST)
+(COPY-TREE (T) LIST)
 (REVAPPEND (T T) T)
 (NCONC (*) T NIL NIL
 	:inline-always ((t t) t t nil "nconc(#0,#1)"))
@@ -474,8 +474,8 @@
 (BUTLAST (T *) T)
 (NBUTLAST (T *) T)
 (LDIFF (T T) T)
-(RPLACA (cons T) T)
-(RPLACD (cons T) T)
+(RPLACA (cons T) CONS)
+(RPLACD (cons T) CONS)
 (SUBST (T T T *) T)
 (SUBST-IF (T T T *) T)
 (SUBST-IF-NOT (T T T *) T)
@@ -492,12 +492,12 @@
 (ADJOIN (T T *) T)
 (ACONS (T T T) T)
 (PAIRLIS (T T *) T)
-(ASSOC (T T *) T)
-(ASSOC-IF (T T) T)
-(ASSOC-IF-NOT (T T) T)
-(RASSOC (T T *) T)
-(RASSOC-IF (T T) T)
-(RASSOC-IF-NOT (T T) T)
+(ASSOC (T T *) LIST)
+(ASSOC-IF (T T) LIST)
+(ASSOC-IF-NOT (T T) LIST)
+(RASSOC (T T *) LIST)
+(RASSOC-IF (T T) LIST)
+(RASSOC-IF-NOT (T T) LIST)
 (si::MEMQ (T T T) T)
 
 ; file lwp.c
@@ -842,8 +842,7 @@ type_of(#0)==t_bitvector"))
 (GET-DISPATCH-MACRO-CHARACTER nil T)
 (SI::STRING-TO-OBJECT (T) T)
 (si::STANDARD-READTABLE (T) T)
-(SYMBOL-FUNCTION (T) T NIL NIL
-	:inline-always ((t) t nil t "symbol_function(#0)"))
+(SYMBOL-FUNCTION (T) T NIL NIL)
 (FBOUNDP (symbol) T nil t)
 (SYMBOL-VALUE (symbol) T)
 (BOUNDP (symbol) T nil t
@@ -935,7 +934,7 @@ type_of(#0)==t_bitvector"))
 
 ; file structure.d
 (si::MAKE-STRUCTURE (T *) T)
-(si::COPY-STRUCTURE (T T) T)
+(COPY-STRUCTURE (T) T)
 (SI::STRUCTURE-NAME (T) SYMBOL NIL NIL
 	:inline-always ((structure) symbol nil nil "SNAME(#0)"))
 (si::STRUCTURE-REF (t t fixnum) T nil nil
@@ -1030,9 +1029,6 @@ type_of(#0)==t_bitvector"))
 
 #+clos
 (mapcar #'(lambda (x) (apply #'defsysfun x)) '(
-; file setf.c
-(si::SETF-NAMEP nil T nil t)
-
 ; file instance.c
 (si::ALLOCATE-RAW-INSTANCE (t fixnum) T)
 (si::INSTANCE-REF (t fixnum) T nil nil

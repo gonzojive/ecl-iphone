@@ -18,7 +18,6 @@ Returns, as a list, the union of elements in LIST1 and in LIST2."
       ((null x)
        (when last (rplacd last list2))
        (or first list2))
-    (unless (consp x) (error "UNION not passed a list"))
     (unless (apply #'member1 (car x) list2 rest)
       (if last
 	  (progn (rplacd last (cons (car x) nil))
@@ -34,7 +33,6 @@ Destructive UNION.  Both LIST1 and LIST2 may be destroyed."
       ((null x)
        (when last (rplacd last list2))
        (or first list2))
-    (unless (consp x) (error "NUNION not passed a list"))
     (unless (apply #'member1 (car x) list2 rest)
       (if last
 	  (rplacd last x)
@@ -49,7 +47,6 @@ LIST2."
        (ans))
       ((null x)
        (nreverse ans)) ; optional nreverse: not required by CLtL
-    (unless (consp x) (error "INTERSECTION not passed a list"))
     (when (apply #'member1 (car x) list2 rest)
         (push (car x) ans))))
 
@@ -61,7 +58,6 @@ Destructive INTERSECTION.  Only LIST1 may be destroyed."
       ((null x)
        (when last (rplacd last nil))
        first)
-    (unless (consp x) (error "NINTERSECTION not passed a list"))
     (when (apply #'member1 (car x) list2 rest)
       (if last
 	  (rplacd last x)
@@ -74,7 +70,6 @@ Returns, as a list, those elements of LIST1 that are not elements of LIST2."
   (do ((x list1 (cdr x))
        (ans))
       ((null x) (nreverse ans))
-    (unless (consp x) (error "SET-DIFFERENCE not passed a list"))
     (unless (apply #'member1 (car x) list2 rest)
       (push (car x) ans))))
 
@@ -86,7 +81,6 @@ Destructive SET-DIFFERENCE.  Only LIST1 may be destroyed."
       ((null x)
        (when last (rplacd last nil))
        first)
-    (unless (consp x) (error "NSET-DIFFERENCE not passed a list"))
     (unless (apply #'member1 (car x) list2 rest)
       (if last
 	  (rplacd last x)
@@ -115,7 +109,6 @@ otherwise."
   (declare (ignore test test-not key))
   (do ((l list1 (cdr l)))
       ((null l) t)
-    (unless (consp l) (error "SUBSETP not passed a list"))
     (unless (apply #'member1 (car l) list2 rest)
       (return nil))))
 

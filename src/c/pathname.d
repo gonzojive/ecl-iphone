@@ -538,7 +538,7 @@ push_c_string(cl_object buffer, const char *s, cl_index length)
 	for (; length; length--, s++) {
 		dest[fillp++] = *s;
 		if (fillp >= dim) {
-			char *new_dest = (char *)cl_alloc_atomic(dim += 32);
+			char *new_dest = (char *)cl_alloc_atomic((dim += 32)+1);
 			memcpy(new_dest, dest, fillp);
 			buffer->string.dim = dim;
 			buffer->string.self = new_dest;

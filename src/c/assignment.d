@@ -27,83 +27,36 @@ cl_set(cl_object var, cl_object val)
 	return1(SYM_VAL(var) = val);
 }
 
-cl_object
-setf_namep(cl_object fun_spec)
-{	cl_object cdr;
-	int intern_flag; 
-	if (CONSP(fun_spec) && !endp(cdr = CDR(fun_spec)) &&
-	    endp(CDR(cdr)) && CAR(fun_spec) == @'setf') {
-		cl_object sym, fn_name = CAR(cdr);
-		sym = si_get_sysprop(fn_name, @'si::setf-symbol');
-		if (sym == Cnil) {
-			cl_object fn_str = fn_name->symbol.name;
-			cl_index l = fn_str->string.fillp + 7;
-			cl_object string = cl_alloc_simple_string(l);
-			char *str = string->string.self;
-			strncpy(str, "(SETF ", 6);
-			strncpy(str + 6, fn_str->string.self, fn_str->string.fillp);
-			str[l-1] = ')';
-			if (fn_name->symbol.hpack == Cnil)
-				sym = make_symbol(string);
-			else
-				sym = intern(string, fn_name->symbol.hpack, &intern_flag);
-			si_put_sysprop(fn_name, @'si::setf-symbol', sym);
-		}
-		return(sym);
-	} else {
-		return(OBJNULL);
-	}
-}
-
-cl_object
-si_setf_namep(cl_object arg)
-{
-	cl_object x;
-
-	x = setf_namep(arg);
-	@(return ((x != OBJNULL) ? x : Cnil))
-}
-
-@(defun si::fset (fun def &optional macro pprint)
+@(defun si::fset (fname def &optional macro pprint)
+	cl_object sym = si_function_block_name(fname);
 	cl_type t;
 	bool mflag;
 @
-	mflag = !Null(macro);
-	if (!SYMBOLP(fun)) {
-		cl_object sym = setf_namep(fun);
-		if (sym == OBJNULL)
-			FEtype_error_symbol(fun);
-		if (mflag)
-			FEerror("Cannot define a macro with name (SETF ~S).", 1, fun);
-		fun = CADR(fun);
-		si_put_sysprop(fun, @'si::setf-symbol', sym);
-		si_rem_sysprop(fun, @'si::setf-lambda');
-		si_rem_sysprop(fun, @'si::setf-method');
-		si_rem_sysprop(fun, @'si::setf-update');
-		fun = sym;
-	}
-	if (fun->symbol.isform && !mflag)
-		FEerror("~S, a special form, cannot be redefined as a function.",
-			1, fun);
-	clear_compiler_properties(fun);
-	if (fun->symbol.hpack &&
-	    fun->symbol.hpack->pack.locked &&
-	    SYM_FUN(fun) != OBJNULL)
-		funcall(3, @'warn', make_simple_string("~S is being redefined."), fun);
-	t = type_of(def);
-	if (t == t_bytecodes || t == t_cfun || t == t_cclosure) {
-	        SYM_FUN(fun) = def;
-#ifdef CLOS
-	} else if (t == t_gfun) {
-		SYM_FUN(fun) = def;
-#endif
-	} else {
+	if (Null(cl_functionp(def)))
 		FEinvalid_function(def);
+	if (sym->symbol.hpack != Cnil && sym->symbol.hpack->pack.locked)
+		funcall(3, @'warn', make_simple_string("~S is being redefined."), fname);
+	mflag = !Null(macro);
+	if (sym->symbol.isform && !mflag)
+		FEerror("Given that ~S is a special form, ~S cannot be defined as a function.",
+			2, sym, fname);
+	if (SYMBOLP(fname)) {
+		sym->symbol.mflag = mflag;
+		SYM_FUN(sym) = def;
+		clear_compiler_properties(sym);
+		if (pprint == Cnil)
+			si_rem_sysprop(sym, @'si::pretty-print-format');
+		else
+			si_put_sysprop(sym, @'si::pretty-print-format', pprint);
+	} else {
+		if (mflag)
+			FEerror("~S is not a valid name for a macro.", 1, fname);
+		si_put_sysprop(sym, @'si::setf-symbol', def);
+		si_rem_sysprop(sym, @'si::setf-lambda');
+		si_rem_sysprop(sym, @'si::setf-method');
+		si_rem_sysprop(sym, @'si::setf-update');
 	}
-	fun->symbol.mflag = !Null(macro);
-	if (pprint != Cnil)
-		si_put_sysprop(fun, @'si::pretty-print-format', pprint);
-	@(return fun)
+	@(return fname)
 @)
 
 cl_object
@@ -118,31 +71,27 @@ cl_makunbound(cl_object sym)
 }
 	
 cl_object
-cl_fmakunbound(cl_object sym)
+cl_fmakunbound(cl_object fname)
 {
-	if (!SYMBOLP(sym)) {
-		cl_object sym1 = setf_namep(sym);
-		if (sym1 == OBJNULL)
-			FEtype_error_symbol(sym);
-		sym = CADR(sym);
+	cl_object sym = si_function_block_name(fname);
+
+	if (sym->symbol.hpack != Cnil && sym->symbol.hpack->pack.locked)
+		funcall(3, @'warn', make_simple_string("~S is being redefined."),
+			fname);
+	if (SYMBOLP(fname)) {
+		clear_compiler_properties(sym);
+#ifdef PDE
+		cl_remprop(fname, @'defun');
+#endif
+		SYM_FUN(sym) = OBJNULL;
+		sym->symbol.mflag = FALSE;
+	} else {
+		cl_remprop(sym, @'si::setf-symbol');
 		cl_remprop(sym, @'si::setf-lambda');
 		cl_remprop(sym, @'si::setf-method');
 		cl_remprop(sym, @'si::setf-update');
-		cl_fmakunbound(sym1);
-		@(return sym)
 	}
-	clear_compiler_properties(sym);
-#ifdef PDE
-	cl_remprop(sym, @'defun');
-#endif
-	if (sym->symbol.hpack &&
-	    sym->symbol.hpack->pack.locked &&
-	    SYM_FUN(sym) != OBJNULL)
-		funcall(3, @'warn', make_simple_string("~S is being redefined."),
-			sym);
-	SYM_FUN(sym) = OBJNULL;
-	sym->symbol.mflag = FALSE;
-	@(return sym)
+	@(return fname)
 }
 
 void

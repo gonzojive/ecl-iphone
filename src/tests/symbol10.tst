@@ -14,7 +14,7 @@ NIL
          #+ALLEGRO (and (not (constantp var)) (eval `(let ((,var (list nil))) (and (boundp ',var) (eq (symbol-value ',var) ,var)))))
          (and (fboundp var) t)                       ; funktion. Eigenschaft
          (and (fboundp var) (macro-function var) t)  ; Macro?
-         (and (fboundp var) (special-form-p var) t)  ; Spezialform?
+         (and (fboundp var) (special-operator-p var) t)  ; Spezialform?
          #-(or ECL CLISP) (and (symbol-plist var) t)          ; p-Liste?
          #+(or ECL CLISP) (and (or (get var 'i1) (get var 'i2) (get var 'i3)) t) ; p-Liste?
          (get var 'i1)                               ; i1

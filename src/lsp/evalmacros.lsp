@@ -296,7 +296,7 @@ SECOND-FORM."
   )
 
 (defun do/do*-expand (control test result body let psetq
-			      &aux (decl nil) (label (gensym))
+			      &aux (decl nil) (label (gensym)) (exit (gensym))
 			      (vl nil) (step nil))
   (declare (si::c-local))
   (multiple-value-setq (decl body)
@@ -312,25 +312,17 @@ SECOND-FORM."
        (push (third c) step))
       (t
        (error "Too many arguments in init form of do/do*"))))
-  ;; This macroexpansion produces tinier code.
   `(BLOCK NIL
           (,let ,(nreverse vl)
                ,@decl
                (TAGBODY
-                ,label (UNLESS ,test
-			 ,@body
-			 ,@(when step (list (cons psetq (nreverse step))))
-			 (GO ,label)))
-	       ,@result))
-  #+nil
-  `(BLOCK NIL
-          (,let ,(nreverse vl)
-               ,@decl
-               (TAGBODY
-                ,label (IF ,test (RETURN (PROGN ,@result)))
-                       ,@body
-                       ,@(when step (list (cons psetq (nreverse step))))
-                       (GO ,label)))))
+		  (GO ,exit)
+		,label
+		  ,@body
+		  ,@(when step (list (cons psetq (nreverse step))))
+		,exit
+		  (UNLESS ,test (GO ,label)))
+	       ,@result)))
 
 (defmacro do (control (test . result) &rest body)
   (do/do*-expand control test result body 'LET 'PSETQ))

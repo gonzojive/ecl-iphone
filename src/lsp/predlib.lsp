@@ -165,7 +165,7 @@ has no fill-pointer, and is not adjustable."
   (and (arrayp x)
        (not (adjustable-array-p x))
        (not (array-has-fill-pointer-p x))
-       (not (sys:displaced-array-p x))))
+       (not (array-displacement x))))
 
 (dolist (l '((ARRAY . ARRAYP)
 	     (ATOM . ATOM)
@@ -256,9 +256,10 @@ has no fill-pointer, and is not adjustable."
 	      ((atom pat)
 	       (error "~S does not describe array dimensions." pat))))))
 
-(defun typep (object type &aux tp i c)
+(defun typep (object type &optional env &aux tp i c)
   "Args: (object type)
 Returns T if X belongs to TYPE; NIL otherwise."
+  (declare (ignore env))
   (cond ((symbolp type)
 	 (let ((f (get-sysprop type 'TYPE-PREDICATE)))
 	   (cond (f (return-from typep (funcall f object)))
@@ -397,53 +398,74 @@ Returns T if X belongs to TYPE; NIL otherwise."
 	 (values tp (list (car i) (1- (caadr i)))))
 	(t (values tp i))))
 
+(defun expand-deftype (type)
+  (cond ((symbolp type)
+	 (let ((fd (get-sysprop type 'DEFTYPE-DEFINITION)))
+	   (if fd
+	       (expand-deftype (funcall fd))
+	       type)))
+	((and (consp type)
+	      (symbolp type))
+	 (let ((fd (get-sysprop (first type) 'DEFTYPE-DEFINITION)))
+	   (if fd
+	       (expand-deftype (funcall fd (rest type)))
+	       type)))
+	(t
+	 type)))
 
 ;;************************************************************
 ;;			COERCE
 ;;************************************************************
 
-(defun coerce (object type &aux name args)
+(defun error-coerce (object type)
+  (error "Cannot coerce ~S to type ~S." object type))
+
+(defun coerce (object type &aux aux)
   "Args: (x type)
 Coerces X to an object of the specified type, if possible.  Signals an error
 if not possible."
   (when (typep object type)
-        ;; Just return as it is.
-        (return-from coerce object))
-  (when (eq type 'LIST)
-     (do ((l nil (cons (elt object i) l))
-          (i (1- (length object)) (1- i)))
-         ((< i 0) (return-from coerce l))
-       (declare (fixnum i))))
-  (multiple-value-setq (name args) (normalize-type type))
-  (case name
-    (FUNCTION
-     (coerce-to-function object))
-    ((ARRAY SIMPLE-ARRAY)
-     (unless (or (endp args)
-                 (endp (cdr args))
-                 (atom (cadr args))
-                 (endp (cdadr args)))
-             (error "Cannot coerce to a multi-dimensional array."))
-     (do* ((l (length object))
-	   (seq (make-sequence type l))
-	   (i 0 (1+ i)))
-	  ((>= i l) seq)
-       (declare (fixnum i l))
-       (setf (elt seq i) (coerce (elt object i)
-				 (if (eq (car args) '*)
-				     'T
-				     (car args))))))
-    ((CHARACTER BASE-CHAR) (character object))
-    (FLOAT (float object))
-    ((SINGLE-FLOAT SHORT-FLOAT) (float object 0.0S0))
-    ((DOUBLE-FLOAT LONG-FLOAT) (float object 0.0L0))
-    (COMPLEX
-     (if (or (null args) (null (car args)) (eq (car args) '*))
-         (complex (realpart object) (imagpart object))
-         (complex (coerce (realpart object) (car args))
-                  (coerce (imagpart object) (car args)))))
-    (t (error "Cannot coerce ~S to ~S." object type))))
-
+    ;; Just return as it is.
+    (return-from coerce object))
+  (setq type (expand-deftype type))
+  (cond ((atom type)
+	 (case type
+	   ((T) object)
+	   (LIST
+	    (do ((l nil (cons (elt object i) l))
+		 (i (1- (length object)) (1- i)))
+		((< i 0) l)
+	      (declare (fixnum i))))
+	   ((CHARACTER BASE-CHAR) (character object))
+	   (FLOAT (float object))
+	   ((SINGLE-FLOAT SHORT-FLOAT) (float object 0.0S0))
+	   ((DOUBLE-FLOAT LONG-FLOAT) (float object 0.0L0))
+	   (COMPLEX (complex (realpart object) (imagpart object)))
+	   (FUNCTION (coerce-to-function object))
+	   ((VECTOR SIMPLE-VECTOR SIMPLE-STRING STRING BIT-VECTOR SIMPLE-BIT-VECTOR)
+	    (concatenate type object))
+	   (t
+	    (if (or (listp object) (vector object))
+		(concatenate type object)
+		(error-coerce object type)))))
+	((eq (setq aux (first type)) 'COMPLEX)
+	 (if type
+	     (complex (coerce (realpart object) (second type))
+		      (coerce (imagpart object) (second type)))
+	     (complex (realpart object) (imagpart object))))
+	((member aux '(SINGLE-FLOAT SHORT-FLOAT DOUBLE-FLOAT LONG-FLOAT FLOAT))
+	 (setq aux (coerce object aux))
+	 (unless (typep object type)
+	   (error-coerce object type)))
+	((eq aux 'AND)
+	 (coerce object (second type))
+	 (unless (typep object type)
+	   (error-coerce object type)))
+	((or (listp object) (vector object))
+	 (concatenate type object))
+	(t
+	 (error-coerce object type))))
+	    
 ;;************************************************************
 ;;			SUBTYPEP
 ;;************************************************************
@@ -487,8 +509,7 @@ if not possible."
 
 (defparameter *elementary-types*
   #+ecl-min
-  '((T			-1)
-    (NIL		0))
+  '()
   #-ecl-min
   '#.*elementary-types*)
 
@@ -499,10 +520,10 @@ if not possible."
 
 ;; Find out the tag for a certain type, if it has been already registered.
 ;;
-(defun find-registered-tag (type)
+(defun find-registered-tag (type &optional (test #'equal))
   (declare (si::c-local))
-  (let* ((pos (assoc type *elementary-types* :test #'equal)))
-    (and pos (second pos))))
+  (let* ((pos (assoc type *elementary-types* :test test)))
+    (and pos (cdr pos))))
 
 ;; We are going to make changes in the types database. Save a copy if this
 ;; will cause trouble.
@@ -523,9 +544,8 @@ if not possible."
   (declare (si::c-local))
   (maybe-save-types)
   (dolist (i *elementary-types*)
-    (unless (or (eq (first i) 'T)
-		(zerop (logand (second i) type-mask)))
-      (setf (second i) (logior new-tag (second i))))))
+    (unless (zerop (logand (cdr i) type-mask))
+      (setf (cdr i) (logior new-tag (cdr i))))))
 
 ;; FIND-TYPE-BOUNDS => (VALUES TAG-SUPER TAG-SUB)
 ;;
@@ -543,20 +563,24 @@ if not possible."
 (defun find-type-bounds (type in-our-family-p type-<= minimize-super)
   (declare (si::c-local))
   (let* ((subtype-tag 0)
+	 (disjoint-tag 0)
 	 (supertype-tag (if minimize-super -1 0)))
     (dolist (i *elementary-types*)
-      (let ((other-type (first i))
-	    (other-tag (second i)))
-	(when (and (not (eq other-type 'T))
-		   (funcall in-our-family-p other-type))
+      (let ((other-type (car i))
+	    (other-tag (cdr i)))
+	(when (funcall in-our-family-p other-type)
 	  (cond ((funcall type-<= type other-type)
 		 (if minimize-super
 		     (when (zerop (logandc2 other-tag supertype-tag))
 		       (setq supertype-tag other-tag))
 		     (setq supertype-tag (logior other-tag supertype-tag))))
 		((funcall type-<= other-type type)
-		 (setq subtype-tag (logior other-tag subtype-tag)))))))
-    (values (if (= supertype-tag -1) 0 supertype-tag) subtype-tag)))
+		 (setq subtype-tag (logior other-tag subtype-tag)))
+		(t
+		 (setq disjoint-tag (logior disjoint-tag other-tag)))))))
+    (values (if (= supertype-tag -1) 0
+		(logandc2 supertype-tag (logior disjoint-tag subtype-tag)))
+	    subtype-tag)))
 
 ;; A new type is to be registered, which is not simply a composition of
 ;; previous types. A new tag has to be created, and all supertypes are to be
@@ -573,7 +597,7 @@ if not possible."
 	  (find-type-bounds type in-our-family-p type-<= nil)
 	(let ((tag (logior (new-type-tag) tag-sub)))
 	  (update-types (logandc2 tag-super tag-sub) tag)
-	  (push (list type tag) *elementary-types*)
+	  (push (cons type tag) *elementary-types*)
 	  tag))))
 
 ;;----------------------------------------------------------------------
@@ -584,18 +608,21 @@ if not possible."
   (declare (si::c-local))
   (let ((pos (assoc object *member-types*)))
     (or (and pos (cdr pos))
+	;; We convert number into intervals, so that (AND INTEGER (NOT
+	;; (EQL 10))) is detected as a subtype of (OR (INTEGER * 9)
+	;; (INTEGER 11 *)).
+	(and (numberp object)
+	     (let* ((base-type (if (integerp object) 'INTEGER (type-of object)))
+		    (type (list base-type object object)))
+	       (or (find-registered-tag type)
+		   (register-interval-type type))))
 	(let* ((tag (new-type-tag)))
 	  (maybe-save-types)
 	  (setq *member-types* (acons object tag *member-types*))
-	  ;;
-	  ;; FIXME! We should convert number into intervals, so that
-	  ;; (AND INTEGER (NOT (EQL 10))) is detected as a subtype of
-	  ;; (OR (INTEGER * 9) (INTEGER 11 *)).
-	  ;;
 	  (dolist (i *elementary-types*)
-	    (let ((type (first i)))
+	    (let ((type (car i)))
 	      (when (typep object type)
-		(setf (second i) (logior tag (second i))))))
+		(setf (cdr i) (logior tag (cdr i))))))
 	  tag))))
 
 ;;----------------------------------------------------------------------
@@ -611,35 +638,43 @@ if not possible."
 ;;
 (defun register-class (class)
   (declare (si::c-local))
-  (let* ((name (class-name class))
-	 (pos (and name
-		   (eq class (find-class name 'nil))
-		   (assoc name *elementary-types*))))
-    (if pos
-	;; We do not need to register classes which belong to the core type
-	;; system of LISP (ARRAY, NUMBER, etc).
-	(second pos)
-	(register-type class
-		       #'(lambda (c) (or (si::instancep c) (symbolp c)))
-		       #'(lambda (c1 c2)
-			   (when (symbolp c1)
-			     (setq c1 (find-class c1 nil)))
-			   (when (symbolp c2)
-			     (setq c2 (find-class c2 nil)))
-			   (and c1 c2 (subclassp c1 c2)))))))
+  (or (find-registered-tag class)
+      ;; We do not need to register classes which belong to the core type
+      ;; system of LISP (ARRAY, NUMBER, etc).
+      (let* ((name (class-name class)))
+	(and name
+	     (eq class (find-class name 'nil))
+	     (if (eq name 'T) -1 (find-registered-tag name))))
+      (register-type class
+		     #'(lambda (c) (or (si::instancep c) (symbolp c)))
+		     #'(lambda (c1 c2)
+			 (when (symbolp c1)
+			   (setq c1 (find-class c1 nil)))
+			 (when (symbolp c2)
+			   (setq c2 (find-class c2 nil)))
+			 (and c1 c2 (subclassp c1 c2))))))
 
 ;;----------------------------------------------------------------------
 ;; ARRAY types.
 ;;
 (defun register-array-type (type)
   (declare (si::c-local))
-  (setq type (parse-array-type type))
-  (if (eq (second type) '*)
-      (let* ((array-class (first type))
-	     (dimensions (third type)))
-	(canonical-type `(OR ,@(mapcar #'(lambda (type) `(,array-class ,type ,dimensions))
-				       +upgraded-array-element-types+))))
-      (register-type type #'array-type-p #'array-type-<=)))
+  (multiple-value-bind (array-class elt-type dimensions)
+      (parse-array-type type)
+    (cond ((eq elt-type '*)
+	   (canonical-type `(OR ,@(mapcar #'(lambda (type) `(,array-class ,type ,dimensions))
+					  +upgraded-array-element-types+))))
+	  ((find-registered-tag (setq type (list array-class elt-type dimensions))))
+	  (t
+	   #+nil
+	   (when (and (consp dimensions) (> (count-if #'numberp dimensions) 1))
+	     (dotimes (i (length dimensions))
+	       (when (numberp (elt dimensions i))
+		 (let ((dims (make-list (length dimensions) :initial-element '*)))
+		   (setf (elt dims i) (elt dimensions i))
+		   (register-type (list array-class elt-type dims)
+				  #'array-type-p #'array-type-<=)))))
+	   (register-type type #'array-type-p #'array-type-<=)))))
 
 ;;
 ;; We look for the most specialized type which is capable of containing
@@ -673,14 +708,14 @@ if not possible."
     (cond ((numberp dims)
 	   (unless (< -1 dims array-rank-limit)
 	     (error "Wrong rank size array type ~S." input))
-	   (setq dims (nthcdr (- array-rank-limit rank)
-			      #.(make-list array-rank-limit :initial-element '*))))
+	   (setq dims (nthcdr (- array-rank-limit dims)
+			      '#.(make-list array-rank-limit :initial-element '*))))
 	  ((consp dims)
 	   (dolist (i dims)
 	     (unless (or (eq i '*)
 			 (and (integerp i) (< -1 i array-dimension-limit)))
 	       (error "Wrong dimension size in array type ~S." input)))))
-    (list name elt-type dims)))
+    (values name elt-type dims)))
 
 ;;
 ;; This function checks whether the array type T1 is a subtype of the array
@@ -699,9 +734,8 @@ if not possible."
 		  (b pat (cdr b)))
 		 ((or (endp a)
 		      (endp b)
-		      (not (or (eq (car pat) '*)
-			   (eq (car dim) '*)
-			   (eql (car pat) (car dim)))))
+		      (not (or (eq (car b) '*)
+			       (eql (car b) (car a)))))
 		  (and (null a) (null b)))
 	       )))))
 
@@ -722,7 +756,7 @@ if not possible."
 (defun register-elementary-interval (type b)
   (declare (si::c-local))
   (setq type (list type b))
-  (or (find-registered-tag type)
+  (or (find-registered-tag type #'equalp)
       (multiple-value-bind (tag-super tag-sub)
 	  (find-type-bounds type
 			    #'(lambda (other-type)
@@ -735,7 +769,7 @@ if not possible."
 	(let ((tag (new-type-tag)))
 	  (update-types (logandc2 tag-super tag-sub) tag)
 	  (setq tag (logior tag tag-sub))
-	  (push (list type tag) *elementary-types*)
+	  (push (cons type tag) *elementary-types*)
 	  tag))))
 
 (defun register-interval-type (interval)
@@ -764,7 +798,7 @@ if not possible."
 			   (ceiling low)))))
 	 (tag (logandc2 tag-low tag-high)))
     (unless (eq high '*)
-      (push (list interval tag) *elementary-types*))
+      (push (cons interval tag) *elementary-types*))
     tag))
 
 ;; All comparisons between intervals operations may be defined in terms of
@@ -810,6 +844,20 @@ if not possible."
   (canonical-type `(COMPLEX ,(upgraded-complex-part-type (or real-type 'REAL)))))
 
 ;;----------------------------------------------------------------------
+;; CONS types. Only (CONS T T) and variants, as well as (CONS NIL *), etc
+;; are strictly supported.
+;;
+(defun register-cons-type (&optional (car-type '*) (cdr-type '*))
+  (let ((car-tag (if (eq car-type '*) -1 (canonical-type car-type)))
+	(cdr-tag (if (eq cdr-type '*) -1 (canonical-type cdr-type))))
+    (cond ((or (zerop car-tag) (zerop cdr-tag))
+	   0)
+	  ((and (= car-tag -1) (= cdr-tag -1))
+	   (canonical-type 'CONS))
+	  (t
+	   (throw '+canonical-type-failure+ 'cons)))))		     
+
+;;----------------------------------------------------------------------
 ;; (CANONICAL-TYPE TYPE)
 ;;
 ;; This function registers all types mentioned in the given expression,
@@ -818,8 +866,11 @@ if not possible."
 ;; *ELEMENTARY-TYPES* and *MEMBER-TYPES*.
 ;;
 (defun canonical-type (type)
-  (declare (notinline clos::classp))
+  (declare (notinline clos::classp)
+	   (si::cl-local))
   (cond ((find-registered-tag type))
+	((eq type 'T) -1)
+	((eq type 'NIL) 0)
         ((symbolp type)
 	 (let ((expander (get-sysprop type 'DEFTYPE-DEFINITION)))
 	   (if expander
@@ -849,6 +900,7 @@ if not possible."
 	    (canonical-type `(OR (INTEGER ,@(rest type))
 			      (RATIO ,@(rest type)))))
 	   (COMPLEX (canonical-complex-type (second type)))
+	   (CONS (apply #'register-cons-type (rest type)))
 	   ((ARRAY SIMPLE-ARRAY) (register-array-type type))
 	   (t (let ((expander (get-sysprop (first type) 'DEFTYPE-DEFINITION)))
 		(if expander
@@ -861,11 +913,12 @@ if not possible."
 	 (error-type-specifier type))))
 
 (defun safe-canonical-type (type)
+  (declare (si::c-local))
   (catch '+canonical-type-failure+
     (canonical-type type)))
 
 (defun subtypep (t1 t2 &optional env)
-  (when (equal t1 t2)
+  (when (eq t1 t2)
     (return-from subtypep (values t t)))
   (let* ((*highest-type-tag* *highest-type-tag*)
 	 (*save-types-database* t)
@@ -899,28 +952,29 @@ if not possible."
       (let ((tag (canonical-type type))
 	    (out))
 	(setq tag (canonical-type type))
-	(print-types-database *elementary-types* #'second)
+	(print-types-database *elementary-types*)
+	(print-types-database *member-types*)
 	(dolist (i *member-types*)
 	(unless (zerop (logand (cdr i) tag))
 	  (push (car i) out)))
 	(when out
 	  (setq out `((MEMBER ,@out))))
 	(dolist (i *elementary-types*)
-	  (unless (zerop (logand (second i) tag))
-	    (print (list tag (second i) (logand tag (second i))))
-	    (push (first i) out)))
+	  (unless (zerop (logand (cdr i) tag))
+	    (print (list tag (cdr i) (logand tag (cdr i))))
+	    (push (car i) out)))
 	(values tag `(OR ,@out)))))
 
-  (defun print-types-database (types func)
+  (defun print-types-database (types)
     (format t "~%-------------------------")
     (dolist (i types)
-      (format t "~%~20A~%~79,' B" (car i) (funcall func i))))
+      (format t "~%~20A~%~79,' B" (car i) (cdr i))))
 
   (defun extend-type-tag (tag minimal-supertype-tag)
     (dolist (type *elementary-types*)
-      (let ((other-tag (second type)))
+      (let ((other-tag (cdr type)))
 	(when (zerop (logandc2 minimal-supertype-tag other-tag))
-	  (setf (second type) (logior tag other-tag))))))
+	  (setf (cdr type) (logior tag other-tag))))))
 
   (dolist (i '((SYMBOL)
 	       (KEYWORD NIL SYMBOL)
@@ -1005,7 +1059,7 @@ if not possible."
 	       (FILE-STREAM)
 	       (STRING-STREAM)
 	       (SYNONYM-STREAM)
-	       (TWO-WAY-STREAM)
+ 	       (TWO-WAY-STREAM)
 	       (STREAM (OR BROADCAST-STREAM CONCATENATED-STREAM ECHO-STREAM
 			   FILE-STREAM STRING-STREAM SYNONYM-STREAM TWO-WAY-STREAM))
 
@@ -1021,13 +1075,13 @@ if not possible."
 	    (setq tag (new-type-tag))
 	    (unless (eq strict-supertype 't)
 	      (extend-type-tag tag strict-supertype-tag))))
-      (push (let ((*print-base* 2)) (print (list type tag))) *elementary-types*)
+      (push (let ((*print-base* 2)) (print (cons type tag))) *elementary-types*)
       ))
   #+nil
   (let ((tag (new-type-tag)))
     (extend-type-tag tag (canonical-type 'symbol))
     (setq *member-types* (acons 'NIL tag *member-types*))
-    (push (list 'NULL tag) *elementary-types*))
-  (print-types-database *elementary-types* #'second)
+    (push (cons 'NULL tag) *elementary-types*))
+  (print-types-database *elementary-types*)
   (format t "~%~70B" *highest-type-tag*)
 ); ngorp

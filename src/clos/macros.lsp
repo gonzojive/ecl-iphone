@@ -56,7 +56,7 @@
 
 (defun legal-class-name-p (x)
   (and (symbolp x)
-       (not (keywordp x))))
+       #+nil(not (keywordp x))))
 
 ;;; ----------------------------------------------------------------------
 

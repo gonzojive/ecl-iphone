@@ -1222,6 +1222,21 @@ ECLS 0.9
   - Wrong type information about NAME-CHAR, CHAR-NAME and DIGIT-CHAR
     lead to compilation errors.
 
+  - DEFPACKAGE would ignore the value of :INTERN and, would replace
+    empty :USE statements with (:USE "CL").
+
+  - :CONC-NAME alone is not interpreted as a lack of prefix in
+    structures. Furthermore, when no prefix is given, the package of
+    the slot name is not honored.
+
+  - MAP-INTO did not recognize strings and bit-vectors as vectors.
+
+  - In WITH-PACKAGE-ITERATOR, only symbols which are accessible in the
+    current package should be output, and the accesibility type returned
+    should correspond to that of FIND-SYMBOL.
+
+  - The expansion of DO/DO* would not enclose the body in a TAGBODY.
+
 * Errors of the interpreter:
 
   - CASE should use EQL to compare objects, not EQ.
@@ -1239,6 +1254,12 @@ ECLS 0.9
     as in (LAMBDA (&KEY ALLOW-OTHER-KEYS) (PRINT ALLOW-OTHER-KEYS)).
 
   - Excesive arguments to NOT or NULL were not detected.
+
+  - Under some circumstances, FUNCALL would not signal an error when
+    a symbol naming a macro is passed as a first argument.
+
+  - When &ALLOW-OTHER-KEYS was present in the lambda list, any
+    occurrence of :ALLOW-OTHER-KEYS is ignored.
 
 * Visible changes:
 
@@ -1266,6 +1287,10 @@ ECLS 0.9
 
   - Functions remf(), remprop() and putprop() removed. Use si_rem_f,
     cl_remprop and cl_putprop instead.
+
+  - A small optimization allows the compiler to produce smaller code
+    when two functions share the same keywords (Like FIND, POSITION,
+    etc).
 
 * ANSI compatibility:
 
@@ -1349,6 +1374,40 @@ ECLS 0.9
     portable LOOP!).
 
   - SLOT-UNBOUND now effectively signals an UNBOUND-SLOT condition.
+
+  - In structure constructors, lambda variables should not have the
+    name of slot names. This avoids problems with slots that whose
+    name is also a special variable or a constant.
+
+  - MAKE-SEQUENCE, CONCATENATE, etc (All sequence functions), now
+    recognize more sequence types and also signal errors when the type
+    denotes a length and the sequence does not match it.
+
+  - COERCE recognizes more types, and also signals an error in most
+    cases in which the output does not match the required type (For
+    instance, (COERCE 1 '(INTEGER 2 3)).
+
+  - Implemented ARRAY-DISPLACEMENT.
+
+  - BOA-constructors for structures should now work as expected (Among
+    other things, they now support &KEY arguments).
+
+  - DELETE and REMOVE now accept negative values of :COUNT.
+
+  - SHADOW should work with strings/lists of strings, instead of only
+    with symbols.
+
+  - STRUCTURE-OBJECT is now a STRUCTURE-CLASS.
+
+  - DELETE-PACKAGE and MAKE-PACKAGE now signal the right type of errors.
+
+  - When a handler refuses to process a condition, the remaining
+    handlers are processed.
+
+  - Both the compiler and the interpreter now properly handle function
+    names of the form (SETF fname). Instead of creating an uninterened
+    a symbol with the name "SETF fname", the function definition is
+    stored directly as a property list.
 
 TODO:
 =====

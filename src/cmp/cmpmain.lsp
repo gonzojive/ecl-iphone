@@ -492,8 +492,8 @@ Cannot compile ~a."
 			      &aux def disassembled-form
 			      (*compiler-in-use* *compiler-in-use*)
 			      (*print-pretty* nil))
-  (when (or (symbolp thing) (si::setf-namep thing))
-    (setq thing (eval `(function ,thing))))
+  (when (si::valid-function-name-p thing)
+    (setq thing (fdefinition thing)))
   (cond ((null thing))
 	((functionp thing)
 	 (unless (si::bc-disassemble thing)

@@ -202,8 +202,7 @@ compute_method(int narg, cl_object fun, cl_object *args)
 	  cl_object argtype[narg]; /* __GNUC__ */
 
 	  if (narg < fun->gfun.arg_no)
-	    FEerror("Generic function ~S requires more than ~R argument~:p.",
-		    2, fun->gfun.name, MAKE_FIXNUM(narg));
+	      FEwrong_num_arguments(fun->gfun.name);
 	  for (i = 0, spec_no = 0; i < fun->gfun.arg_no; i++, spec_how++) {
 	    if (*spec_how != Cnil)
 	      argtype[spec_no++] = (ATOM(*spec_how) ||

@@ -140,8 +140,8 @@ make_this_symbol(int i, cl_object s, int code, const char *name,
 	}
 	switch (code & 12) {
 	case 0: package = lisp_package; break;
-	case 4: package = system_package; name = name + 4; break;
-	case 8: package = keyword_package; name = name + 1; break;
+	case 4: package = system_package; break;
+	case 8: package = keyword_package; break;
 	}
 	s->symbol.t = t_symbol;
 	s->symbol.mflag = FALSE;

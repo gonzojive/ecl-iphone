@@ -20,19 +20,21 @@
 ;;; rest of it. This way it is possible to save some space by writing the
 ;;; symbol's package only when it does not belong to the current package.
 
-(defun wt-comment (message &optional symbol)
-  (if symbol
+(defun wt-comment (message &optional extra)
+  (if extra
+    ;; Message is a prefix string for EXTRA. All fits in a single line.
     (progn
       (terpri *compiler-output1*)
       (princ "/*	" *compiler-output1*)
       (princ message *compiler-output1*))
-    (if (symbol-package message)
+    ;; Message is a symbol.
+    (if (or (not (symbolp message)) (symbol-package message))
 	(progn
 	  (format *compiler-output1* "~50T/*  ")
-	  (setq symbol message))
+	  (setq extra message))
 	;; useless to show gensym's
 	(return-from wt-comment)))
-  (let* ((s (symbol-name symbol))
+  (let* ((s (if (symbolp extra) (symbol-name extra) (format nil "~A" extra)))
          (l (1- (length s)))
          c)
     (declare (string s) (fixnum l) (character c))

@@ -45,7 +45,7 @@
 	 (let ((x (c1expr fun)) (info (make-info :sp-change t)))
 	   (add-info info (second x))
 	   (list 'ORDINARY info x)))
-	((symbolp (setq function (second fun)))
+	((si::valid-function-name-p (setq function (second fun)))
 	 (or (c1call-local function)
 	     (list 'GLOBAL
 		   (make-info :sp-change
@@ -63,12 +63,8 @@
 	      (consp (rest function)))
 	 ;; Don't create closure boundary like in c1function
 	 ;; since funob is used in this same environment
-	 (let ((name (second function)))
-	   (unless (symbolp name)
-	     (if (si::setf-namep name)
-	       (setq name (si::setf-namep name))
-	       (error "~S is not a valid function name" name)))
-	   (let ((lambda-expr (c1lambda-expr (cddr function) name)))
+	 (let* ((block-name (second function)))
+	   (let ((lambda-expr (c1lambda-expr (cddr function) block-name)))
 	     (list 'LAMBDA (second lambda-expr) lambda-expr (next-cfun)))))
 	(t (cmperr "Malformed function: ~A" fun))))
 
@@ -228,7 +224,7 @@
   (if (and (inline-possible fname)
 	   (not (eq 'ARGS-PUSHED args))
 	   *tail-recursion-info*
-	   (eq (first *tail-recursion-info*) fname)
+	   (same-fname-p (first *tail-recursion-info*) fname)
 	   (last-call-p)
 	   (tail-recursion-possible)
 	   (= (length args) (length (cdr *tail-recursion-info*))))
@@ -275,7 +271,8 @@
     (cond 
      ;; It is not possible to inline the function call
      ((not (inline-possible fname))
-      (if *compile-to-linking-call*
+      ;; We can only emit linking calls when function name is a symbol.
+      (if (and (symbolp fname) *compile-to-linking-call*)
 	(emit-linking-call fname locs narg)
 	(c2call-unknown-global fname locs loc t narg)))
 
@@ -286,7 +283,7 @@
       (unwind-exit (fix-loc loc)))
 
      ;; Call to a function defined in the same file.
-     ((setq fd (assoc fname *global-funs*))
+     ((setq fd (assoc fname *global-funs* :test #'same-fname-p))
       (let ((cfun (second fd)))
 	(unwind-exit (call-loc fname
 			       (if (numberp cfun)
@@ -297,8 +294,9 @@
      ;; Call to a function whose C language function name is known,
      ;; either because it has been proclaimed so, or because it belongs
      ;; to the runtime.
-     ((or (setq maxarg -1 fd (get-sysprop fname 'Lfun))
-	  (multiple-value-setq (found fd maxarg) (si::mangle-name fname t)))
+     ((and (symbolp fname)
+	   (or (setq maxarg -1 fd (get-sysprop fname 'Lfun))
+	       (multiple-value-setq (found fd maxarg) (si::mangle-name fname t))))
       (multiple-value-bind (val found)
 	  (gethash fd *compiler-declared-globals*)
 	;; We only write declarations for functions which are not
@@ -311,8 +309,9 @@
 	 (call-loc fname fd locs narg)
 	 (call-loc-fixed fname fd locs narg maxarg))))
 
-     ;; Linking call
-     (*compile-to-linking-call*		; disabled within init_code
+     ;; Linking calls can only be made to symbols
+     ((and (symbolp fname)
+	   *compile-to-linking-call*)	; disabled within init_code
       (emit-linking-call fname locs narg))
 
      (t (c2call-unknown-global fname locs loc t narg)))
@@ -324,14 +323,14 @@
   (case (first funob)
     ((LAMBDA LOCAL))
     (GLOBAL
-     (unless (and (inline-possible (third funob))
-                  (or (get-sysprop (third funob) 'Lfun)
-                      (assoc (third funob) *global-funs*)))
-       (let ((temp (list 'TEMP (next-temp))))
-         (if *safe-compile*
-           (wt-nl temp "=symbol_function(" (add-symbol (third funob)) ");")
-           (wt-nl temp "=" (add-symbol (third funob)) "->symbol.gfdef;"))
-         temp)))
+     (let ((fun-name (third funob)))
+       (unless (and (inline-possible fun-name)
+		    (or (and (symbolp fun-name) (get-sysprop fun-name 'Lfun))
+			(assoc fun-name *global-funs* :test #'same-fname-p)))
+	 (let* ((temp (list 'TEMP (next-temp)))
+		(fdef (list 'FDEFINITION fun-name)))
+	   (wt-nl temp "=" fdef ";")
+	   temp))))
     (ORDINARY (let* ((temp (list 'TEMP (next-temp)))
                      (*destination* temp))
                 (c2expr* (third funob))
@@ -390,12 +389,7 @@
 ;;;
 (defun c2call-unknown-global (fname args loc inline-p narg)
   (unless loc
-    (setq loc
-	  (if *compiler-push-events*
-	      (add-symbol fname)
-	      (format nil
-		      (if *safe-compile* "symbol_function(~A)" "~A->symbol.gfdef")
-		      (add-symbol fname)))))
+    (setq loc (list 'FDEFINITION fname)))
   (unwind-exit
    (if (eq args 'ARGS-PUSHED)
        (list 'CALL "cl_apply_from_stack" narg (list loc) fname)

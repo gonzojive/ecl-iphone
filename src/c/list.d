@@ -527,11 +527,17 @@ cl_ldiff(cl_object x, cl_object y)
 	cl_object res = Cnil, *fill = &res;
 
 	loop_for_on(x) {
-		if (x == y)
-			break;
+		if (eql(x, y))
+			@(return res)
 		else
 			fill = &CDR(*fill = CONS(CAR(x), Cnil));
 	} end_loop_for_on;
+	/* INV: At the end of a loop_for_on(x), x has the CDR of the last cons
+	   in the list. When Y was not a member of the list, LDIFF must set
+	   this value in the output, because it produces an exact copy of the
+	   dotted list. */
+	if (!eql(x, y))
+		*fill = x;
 	@(return res)
 }
 
@@ -757,10 +763,10 @@ cl_object
 cl_tailp(cl_object y, cl_object x)
 {
 	loop_for_on(x) {
-		if (x == y)
+		if (eql(x, y))
 			@(return Ct)
 	} end_loop_for_on;
-	@(return ((x == y)? Ct : Cnil))
+	return cl_eql(x, y);
 }
 
 cl_return

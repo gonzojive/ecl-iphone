@@ -414,11 +414,11 @@ MAKE_FLOAT:
 		exponent_marker = ecl_current_read_default_float_format();
 		goto MAKE_FLOAT;
 
-	case 's':  case 'S':
+	case 'f':  case 'F':  case 's':  case 'S':
 		x = make_shortfloat((float)fraction);
 		break;
 
-	case 'f':  case 'F':  case 'd':  case 'D':  case 'l':  case 'L':
+	case 'd':  case 'D':  case 'l':  case 'L':
 		x = make_longfloat((double)fraction);
 		break;
 
@@ -1255,7 +1255,7 @@ ecl_current_read_default_float_format(void)
 	if (x == @'single-float' || x == @'short-float')
 		return 'S';
 	if (x == @'double-float' || x == @'long-float')
-		return 'F';
+		return 'D';
 	SYM_VAL(@'*read-default-float-format*') = @'single-float';
 	FEerror("The value of *READ-DEFAULT-FLOAT-FORMAT*, ~S, was illegal.",
 		1, x);

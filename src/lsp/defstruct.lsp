@@ -19,8 +19,9 @@
 	 ;; (slot-type (nth 2 slot-descr))
 	 (read-only (nth 3 slot-descr))
 	 (offset (nth 4 slot-descr))
-	 (access-function (intern (sys:string-concatenate (string conc-name)
-							 (string slot-name)))))
+	 (access-function (if conc-name
+			      (intern (string-concatenate conc-name slot-name))
+			      slot-name)))
     (cond ((null type)
            ;; If TYPE is NIL,
            ;;  the slot is at the offset in the structure-body.
@@ -50,168 +51,89 @@
 	))
   )
 
+(defun process-boa-lambda-list (slot-names slot-descriptions boa-list)
+  (declare (si::c-local))
+  (let ((mentioned-slots '())
+	(aux))
+    ;; With a call to PROCESS-LAMBDA-LIST we ensure that the lambda list is
+    ;; syntactically correct. This simplifies notably the code in the loop.
+    (process-lambda-list (setq boa-list (copy-list boa-list)) 'FUNCTION)
+    ;; Search for &optional or &key arguments without initialization.  Also,
+    ;; record all slot names which are initialized by means of the BOA call.
+    (do* ((i boa-list (rest i))
+	  (slot (first i) (first i))
+	  (modify nil))
+	 ((endp i))
+      (cond ((or (eq slot '&optional) (eq slot '&key))
+	     (setq modify t))
+	    ((eq slot '&rest)
+	     (setq modify nil))
+	    ((eq slot '&aux)
+	     (setq aux t modify nil))
+	    ((eq slot '&allow-other-keys)
+	     )
+	    ((atom slot)
+	     (push slot mentioned-slots)
+	     (when modify
+	       (setf (first i)
+		     (list slot (second (assoc slot slot-descriptions))))))
+	    (t
+	     (let ((slot-name (first slot)))
+	       (when (consp slot-name)
+		 (setq slot-name (second slot-name)))
+	       (push slot-name mentioned-slots)
+	       (when (and modify (endp (rest slot)))
+		 (setf (rest slot)
+		       (list (second (assoc slot-name slot-descriptions)))))))))
+    ;; For all slots not mentioned above, add the default values from
+    ;; the DEFSTRUCT slot description.
+    (let ((other-slots (nset-difference
+			(delete-if #'consp (copy-list slot-names))
+			mentioned-slots)))
+      (do ((l other-slots (cdr l)))
+	  ((endp l))
+	(let* ((slot (assoc (car l) slot-descriptions))
+	       (slot-init (second slot)))
+	  (when slot-init
+	    (setf (car l) (list (car l) slot-init)))))
+      (cond (other-slots
+	     (unless aux
+	       (push '&aux other-slots))
+	     (append boa-list other-slots))
+	    (t
+	     boa-list)))))
+
 (defun make-constructor (name constructor type named slot-descriptions)
   (declare (ignore named)
 	   (si::c-local))
-  (let*((slot-names
-	  ;; Collect the slot-names.
-	  (mapcar #'(lambda (x)
-                     (cond ((null x)
-                            ;; If the slot-description is NIL,
-                            ;;  it is in the padding of initial-offset.
-                            nil)
-                           ((null (car x))
-                            ;; If the slot name is NIL,
-                            ;;  it is the structure name.
-                            ;;  This is for typed structures with names.
-                            (list 'QUOTE (cadr x)))
-                           (t (car x))))
-                 slot-descriptions))
-        (keys
-         ;; Make the keyword parameters.
-         (mapcan #'(lambda (x)
-                     (cond ((null x) nil)
-                           ((null (car x)) nil)
-                           ((null (cadr x)) (list (car x)))
-                           (t (list (list  (car x) (cadr x))))))
-                 slot-descriptions)))
-    (cond ((consp constructor)
-           ;; The case for a BOA constructor.
-           ;; Dirty code!!
-           ;; We must add an initial value for an optional parameter,
-           ;;  if the default value is not specified
-           ;;  in the given parameter list and yet the initial value
-           ;;  is supplied in the slot description.
-           (do ((a (cadr constructor) (cdr a)) (l nil) (vs nil))
-               ((endp a)
-                ;; Add those options that do not appear in the parameter list
-                ;;  as auxiliary paramters.
-                ;; The parameters are accumulated in the variable VS.
-                (setq keys
-                      (nreconc (cons '&aux l)
-                               (mapcan #'(lambda (k)
-                                           (if (member (if (atom k) k (car k))
-                                                       vs)
-                                               nil
-                                               (list k)))
-                                       keys))))
-             ;; Skip until &OPTIONAL appears.
-             (cond ((eq (car a) '&optional)
-                    (setq l (cons '&optional l))
-                    (do ((aa (cdr a) (cdr aa)) (ov) (y))
-                        ((endp aa)
-                         ;; Add those options that do not appear in the
-                         ;;  parameter list.
-                         (setq keys
-                               (nreconc (cons '&aux l)
-                                        (mapcan #'(lambda (k)
-                                                    (if (member (if (atom k)
-                                                                    k
-                                                                    (car k))
-                                                                vs)
-                                                        nil
-                                                        (list k)))
-                                                keys)))
-                         (return nil))
-                      (when (member (car aa) lambda-list-keywords)
-                            (when (eq (car aa) '&rest)
-                                  ;; &REST is found.
-                                  (setq l (cons '&rest l))
-                                  (setq aa (cdr aa))
-                                  (unless (and (not (endp aa))
-                                               (symbolp (car aa)))
-                                          (illegal-boa))
-                                  (setq vs (cons (car aa) vs))
-                                  (setq l (cons (car aa) l))
-                                  (setq aa (cdr aa))
-                                  (when (endp aa)
-                                        (setq keys
-                                              (nreconc
-                                               (cons '&aux l)
-                                               (mapcan
-                                                #'(lambda (k)
-                                                    (if (member (if (atom k)
-                                                                    k
-                                                                    (car k))
-                                                                vs)
-                                                        nil
-                                                        (list k)))
-                                                keys)))
-                                        (return nil)))
-                            ;; &AUX should follow.
-                            (unless (eq (car aa) '&aux)
-                                    (illegal-boa))
-                            (setq l (cons '&aux l))
-                            (do ((aaa (cdr aa) (cdr aaa)))
-                                ((endp aaa))
-                              (setq l (cons (car aaa) l))
-                              (cond ((and (atom (car aaa))
-                                          (symbolp (car aaa)))
-                                     (setq vs (cons (car aaa) vs)))
-                                    ((and (symbolp (caar aaa))
-                                          (or (endp (cdar aaa))
-                                              (endp (cddar aaa))))
-                                     (setq vs (cons (caar aaa) vs)))
-                                    (t (illegal-boa))))
-                            ;; End of the parameter list.
-                            (setq keys
-                                  (nreconc l
-                                           (mapcan
-                                            #'(lambda (k)
-                                                (if (member (if (atom k)
-                                                                k
-                                                                (car k))
-                                                            vs)
-                                                    nil
-                                                    (list k)))
-                                            keys)))
-                            (return nil))
-                      ;; Checks if the optional paramter without a default
-                      ;;  value has a default value in the slot-description.
-                      (if (and (cond ((atom (car aa)) (setq ov (car aa)) t)
-                                     ((endp (cdar aa)) (setq ov (caar aa)) t)
-                                     (t nil))
-                               (setq y (member ov
-                                               keys
-                                               :key
-                                               #'(lambda (x)
-                                                   (if (consp x)
-                                                       ;; With default value.
-                                                       (car x))))))
-                          ;; If no default value is supplied for
-                          ;;  the optional parameter and yet appears
-                          ;;  in KEYS with a default value,
-                          ;;  then cons the pair to L,
-                          (setq l (cons (car y) l))
-                          ;;  otherwise cons just the parameter to L.
-                          (setq l (cons (car aa) l)))
-                      ;; Checks the form of the optional parameter.
-                      (cond ((atom (car aa))
-                             (unless (symbolp (car aa))
-                                     (illegal-boa))
-                             (setq vs (cons (car aa) vs)))
-                            ((not (symbolp (caar aa)))
-                             (illegal-boa))
-                            ((or (endp (cdar aa)) (endp (cddar aa)))
-                             (setq vs (cons (caar aa) vs)))
-                            ((not (symbolp (caddar aa)))
-                             (illegal-boa))
-                            ((not (endp (cdddar aa)))
-                             (illegal-boa))
-                            (t
-                             (setq vs (cons (caar aa) vs))
-                             (setq vs (cons (caddar aa) vs)))))
-                    ;; RETURN from the outside DO.
-                    (return nil))
-                   (t
-                    (unless (symbolp (car a))
-                            (illegal-boa))
-                    (setq l (cons (car a) l))
-                    (setq vs (cons (car a) vs)))))
-           (setq constructor (car constructor)))
-          (t
-           ;; If not a BOA constructor, just cons &KEY.
-           (setq keys (cons '&key keys))))
+  (let* (slot-names keys)
+    (dolist (slot slot-descriptions
+	     (setq slot-names (nreverse slot-names) keys (nreverse keys)))
+      (push
+       (cond ((null slot)
+	      ;; If slot-description is NIL, it is padding for initial-offset.
+	      nil)
+	     ((null (first slot))
+	      ;; If slot-name is NIL, it is the structure name of a typed
+	      ;; structure with name.
+	      (list 'QUOTE (second slot)))
+	     (t	  
+	      (let* ((slot-name (first slot))
+		     (init-form (second slot)))
+		;; Unless BOA constructors are used, we should avoid using
+		;; slot names as lambda variables in the constructor.
+		(unless (consp constructor)
+		  (setq slot-name (copy-symbol slot-name)))
+		(push (if init-form (list slot-name init-form) slot-name)
+		      keys)
+		slot-name)))
+       slot-names))
+    ;; CONSTRUCTOR := constructor-name | (constructor-name boa-lambda-list)
+    (if (atom constructor)
+	(setq keys (cons '&key keys))
+	(setq keys (process-boa-lambda-list slot-names slot-descriptions
+					    (second constructor))
+	      constructor (first constructor)))
     (cond ((null type)
            `(defun ,constructor ,keys
 	      #-CLOS
@@ -226,11 +148,6 @@
            `(defun ,constructor ,keys
               (list ,@slot-names)))
           ((error "~S is an illegal structure type" type)))))
-
-
-(defun illegal-boa ()
-  (declare (si::c-local))
-  (error "An illegal BOA constructor."))
 
 
 (defun make-predicate (name type named name-offset)
@@ -339,12 +256,7 @@
     (and x (car x)
 	 (funcall #'make-access-function name conc-name type named x)))
   (when copier
-    (fset copier
-	  (ecase type
-	    ((NIL) #'sys::copy-structure)
-	    (LIST #'copy-list)
-	    (VECTOR #'copy-seq))))
-  )
+    (fset copier #'copy-structure)))
 
 ;;; The DEFSTRUCT macro.
 
@@ -384,17 +296,17 @@ as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
           (setq name (car name)))
 
     ;; The default conc-name.
-    (setq conc-name (sys:string-concatenate (string name) "-"))
+    (setq conc-name (string-concatenate name "-"))
 
     ;; The default constructor.
     (setq default-constructor
-          (intern (sys:string-concatenate "MAKE-" (string name))))
+          (intern (string-concatenate "MAKE-" name)))
 
     ;; The default copier and predicate.
     (setq copier
-          (intern (sys:string-concatenate "COPY-" (string name)))
+          (intern (string-concatenate "COPY-" name))
           predicate
-          (intern (sys:string-concatenate (string name) "-P")))
+          (intern (string-concatenate name "-P")))
 
     ;; Parse the defstruct options.
     (do ((os options (cdr os)) (o) (v))
@@ -404,7 +316,7 @@ as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
              (case o
                (:CONC-NAME
                 (if (null v)
-                    (setq conc-name "")
+                    (setq conc-name nil)
                     (setq conc-name v)))
                (:CONSTRUCTOR
                 (if (null v)
@@ -432,11 +344,11 @@ as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
                (:CONSTRUCTOR
                 (setq constructors
                       (cons default-constructor constructors)))
-               ((:CONC-NAME :COPIER :PREDICATE :PRINT-FUNCTION))
+	       (:CONC-NAME
+		(setq conc-name nil))
+               ((:COPIER :PREDICATE :PRINT-FUNCTION))
                (:NAMED (setq named t))
                (t (error "~S is an illegal defstruct option." o))))))
-
-    (setq conc-name (intern (string conc-name)))
 
     ;; Skip the documentation string.
     (when (and (not (endp slot-descriptions))

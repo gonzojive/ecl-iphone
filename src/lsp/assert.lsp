@@ -27,12 +27,18 @@ value is used to indicate the expected type in the error message."
        (tagbody ,tag2
 	 (if (typep ,place ',type) (return-from ,tag1 nil))
 	 (restart-case ,(if type-string
-			    `(error "The value of ~S is ~S, ~
+			    `(error 'SIMPLE-TYPE-ERROR
+			      :FORMAT-CONTROL "The value of ~S is ~S, ~
 				     which is not ~A."
-				    ',place ,place ,type-string)
-			    `(error "The value of ~S is ~S, ~
+			      :FORMAT-ARGUMENTS (list ',place ,place, type-string)
+			      :DATUM ,place
+			      :EXPECTED-TYPE ',type)
+			    `(error 'SIMPLE-TYPE-ERROR
+			      :FORMAT-CONTROL "The value of ~S is ~S, ~
 				     which is not of type ~S."
-				    ',place ,place ',type))
+			      :FORMAT-ARGUMENTS (list ',place ,place ',type)
+			      :DATUM ,place
+			      :EXPECTED-TYPE ',type))
 	   (store-value (value)
 	       :REPORT (lambda (stream)
 			 (format stream "Supply a new value of ~S."

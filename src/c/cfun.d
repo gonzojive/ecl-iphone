@@ -103,19 +103,15 @@ cl_function_lambda_expression(cl_object fun)
 
 	switch(type_of(fun)) {
 	case t_bytecodes:
-		if (!Null(fun->bytecodes.lex))
-			output = Cnil;
-		else {
-			lex = fun->bytecodes.lex;
-			output = fun->bytecodes.definition;
-			name = fun->bytecodes.name;
-			if (!CONSP(output))
-				output = Cnil;
-			else if (name == Cnil)
-				output = cl_cons(@'lambda', output);
-			else
-				output = @list*(3, @'lambda-block', name, output);
-		}
+		lex = fun->bytecodes.lex;
+		name = fun->bytecodes.name;
+		output = fun->bytecodes.definition;
+		if (!CONSP(output))
+		    output = Cnil;
+		else if (name == Cnil)
+		    output = cl_cons(@'lambda', output);
+		else
+		    output = @list*(3, @'lambda-block', name, output);
 		break;
 	case t_cfun:
 		name = fun->cfun.name;

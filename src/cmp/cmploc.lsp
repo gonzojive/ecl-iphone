@@ -31,7 +31,7 @@
 ;;;	( 'INLINE-SHORT-FLOAT' side-effect-p fun/string locs )
 ;;;	( 'CAR' lcl )
 ;;;	( 'CADR' lcl )
-;;;	( 'SYMBOL-FUNCTION' vv-index )
+;;;	( 'FDEFINITION' vv-index )
 ;;;	( 'MAKE-CCLOSURE' cfun )
 ;;;	( 'FIXNUM-VALUE' fixnum-value )
 ;;;	( 'CHARACTER-VALUE' character-code )

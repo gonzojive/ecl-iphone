@@ -38,12 +38,9 @@
 		 setf-symbol)
 	     (cond ((symbolp fun)
 		    (c1call-symbol fun (cdr form)))
-		   ;; #+cltl2
-		   ((setq setf-symbol (si::setf-namep fun))
-		    (c1call-symbol setf-symbol (cdr form)))
 		   ((and (consp fun) (eq (car fun) 'LAMBDA))
 		    (c1call-lambda (cdr fun) (cdr form)))
-		   (t (cmperr "The function ~s is illegal." fun)))))
+		   (t (cmperr "~s is not a legal function name." fun)))))
 	  (t (c1constant-value form t)))))
   (if (eq form '*cmperr-tag*) (c1nil) form))
 

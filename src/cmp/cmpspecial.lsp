@@ -75,17 +75,17 @@
 	(*funs* (cons 'CB *funs*))
 	(*blocks* (cons 'CB *blocks*))
 	(*tags* (cons 'CB *tags*)))
-    (setq fun (or (si:setf-namep fun) fun))
-    (cond ((symbolp fun)
+    (cond ((si::valid-function-name-p fun)
 	   (let ((funob (local-closure fun)))
 	     (if funob
-		 (let ((vars (list (fun-var funob))))
+		 (let* ((vars (list (fun-var funob))))
 		   (incf (var-ref (fun-var funob)))
 		   (list 'VAR (make-info :referred-vars vars
 					 :local-referred vars)
 			 vars))
-		 `(FUNCTION ,(make-info :sp-change
-					(not (get-sysprop fun 'NO-SP-CHANGE)))
+		 `(FUNCTION ,(make-info :sp-change 
+					(not (and (symbolp fun)
+						  (get-sysprop fun 'NO-SP-CHANGE))))
 		   GLOBAL nil ,fun))))
           ((and (consp fun) (eq (car fun) 'LAMBDA))
            (cmpck (endp (cdr fun))
@@ -94,12 +94,7 @@
 		  (info (second funob))
 		  (closure (closure-p funob))
 		  (body (cddr fun))
-		  (fun (make-fun :name
-				 (when (and (consp body)
-					    (null (cdr body))
-					    (consp (first body))
-					    (eq 'BLOCK (first (first body))))
-				   (list (second (first body))))
+		  (fun (make-fun :name NIL
 				 :cfun (next-cfun)
 				 :closure closure)))
 	     (if closure
@@ -115,7 +110,7 @@
 		  (funob (c1lambda-expr (cddr fun) name))
 		  (info (second funob))
 		  (closure (closure-p funob))
-		  (fun (make-fun :name (list name)
+		  (fun (make-fun :name NIL
 				 :cfun (next-cfun)
 				 :closure closure)))
 	     (if closure
@@ -129,7 +124,7 @@
 (defun c2function (kind funob fun)
   (case kind
     (GLOBAL
-     (unwind-exit (list 'SYMBOL-FUNCTION (add-symbol fun))))
+     (unwind-exit (list 'FDEFINITION fun)))
     (CLOSURE
      (setf (fun-closure fun) (> *env* 0))
      (new-local 0 fun funob)	; 0 was *level*
@@ -161,10 +156,11 @@
           (push (list closure fun funob) *local-funs*)
 	  NIL))))
 
-(defun wt-symbol-function (vv)
-  (if *safe-compile*
-      (wt "symbol_function(" vv ")")
-      (wt "(" vv "->symbol.gfdef)")))
+(defun wt-fdefinition (fun-name)
+  (let ((vv (add-object fun-name)))
+    (if (and (symbolp fun-name) (not *safe-compile*))
+	(wt "(" vv "->symbol.gfdef)")
+	(wt "ecl_fdefinition(" vv ")"))))
 
 (defun wt-make-closure (fun &aux (cfun (fun-cfun fun)))
   (declare (type fun fun))
@@ -185,5 +181,5 @@
 (put-sysprop 'compiler-let 'c1special 'c1compiler-let)
 (put-sysprop 'compiler-let 'c2 'c2compiler-let)
 
-(put-sysprop 'symbol-function 'wt-loc 'wt-symbol-function)
+(put-sysprop 'fdefinition 'wt-loc 'wt-fdefinition)
 (put-sysprop 'make-cclosure 'wt-loc 'wt-make-closure)

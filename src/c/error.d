@@ -207,6 +207,16 @@ FEinvalid_function(cl_object obj)
 	FEwrong_type_argument(@'function', obj);
 }
 
+void
+FEinvalid_function_name(cl_object fname)
+{
+	cl_error(9, @'simple-type-error', @':format-control',
+		 make_simple_string("Not a valid function name ~D"),
+		 @':format-arguments', cl_list(1, fname),
+		 @':expected-type', Ct,
+		 @':datum', fname);
+}
+
 /*      bootstrap version                */
 static
 @(defun "universal_error_handler" (c err args)

@@ -92,7 +92,7 @@ extern cl_object cl_array_rank(cl_object a);
 extern cl_object cl_array_dimension(cl_object a, cl_object index);
 extern cl_object cl_array_total_size(cl_object a);
 extern cl_object cl_adjustable_array_p(cl_object a);
-extern cl_object si_displaced_array_p(cl_object a);
+extern cl_object cl_array_displacement(cl_object a);
 extern cl_object cl_svref(cl_object x, cl_object index);
 extern cl_object si_svset(cl_object x, cl_object index, cl_object v);
 extern cl_object cl_array_has_fill_pointer_p(cl_object a);
@@ -118,7 +118,6 @@ extern void init_array(void);
 /* assignment.c */
 
 extern cl_object cl_set(cl_object var, cl_object val);
-extern cl_object si_setf_namep(cl_object arg);
 extern cl_object cl_makunbound(cl_object sym);
 extern cl_object cl_fmakunbound(cl_object sym);
 extern cl_object si_fset _ARGS((int narg, cl_object fun, cl_object def, ...));
@@ -126,7 +125,6 @@ extern cl_object si_get_sysprop(cl_object sym, cl_object prop);
 extern cl_object si_put_sysprop(cl_object sym, cl_object prop, cl_object value);
 extern cl_object si_rem_sysprop(cl_object sym, cl_object prop);
 
-extern cl_object setf_namep(cl_object fun_spec);
 extern void clear_compiler_properties(cl_object sym);
 extern void init_assignment(void);
 
@@ -250,6 +248,7 @@ extern cl_object si_process_lambda_list(cl_object lambda_list, cl_object context
 extern cl_object si_process_lambda(cl_object lambda);
 extern cl_object si_make_lambda(cl_object name, cl_object body);
 extern cl_object si_function_block_name(cl_object name);
+extern cl_object si_valid_function_name_p(cl_object name);
 extern cl_object si_process_declarations _ARGS((int narg, cl_object body, ...));
 
 extern cl_object make_lambda(cl_object name, cl_object lambda);
@@ -308,6 +307,7 @@ extern void FEinvalid_variable(char *s, cl_object obj) __attribute__((noreturn,r
 extern void FEassignment_to_constant(cl_object v) __attribute__((noreturn,regparm(2)));
 extern void FEundefined_function(cl_object fname) __attribute__((noreturn,regparm(2)));
 extern void FEinvalid_function(cl_object obj) __attribute__((noreturn,regparm(2)));
+extern void FEinvalid_function_name(cl_object obj) __attribute__((noreturn,regparm(2)));
 extern cl_object CEerror(char *err_str, int narg, ...);
 extern void illegal_index(cl_object x, cl_object i);
 extern void FEtype_error_symbol(cl_object obj) __attribute__((noreturn,regparm(2)));
@@ -485,7 +485,7 @@ extern cl_object si_sl_makunbound(cl_object x, cl_object index);
 extern cl_object ecl_allocate_instance(cl_object clas, int size);
 extern cl_object instance_ref(cl_object x, int i);
 extern cl_object instance_set(cl_object x, int i, cl_object v);
-extern void init_instance(void);
+extern cl_object ecl_copy_instance(cl_object x);
 #endif /* CLOS */
 
 
@@ -1054,8 +1054,7 @@ extern cl_object cl_boundp(cl_object sym);
 extern cl_object cl_special_operator_p(cl_object form);
 extern cl_object cl_macro_function _ARGS((int narg, cl_object sym, ...));
 
-extern cl_object symbol_function(cl_object sym);
-
+extern cl_object ecl_fdefinition(cl_object fname);
 
 /* sequence.c */
 
@@ -1147,7 +1146,7 @@ extern void get_string_start_end(cl_object s, cl_object start, cl_object end, cl
 /* structure.c */
 
 extern cl_object si_structure_subtype_p(cl_object x, cl_object y);
-extern cl_object si_copy_structure(cl_object x);
+extern cl_object cl_copy_structure(cl_object s);
 extern cl_object si_structure_name(cl_object s);
 extern cl_object si_structure_ref(cl_object x, cl_object type, cl_object index);
 extern cl_object si_structure_set(cl_object x, cl_object type, cl_object index, cl_object val);

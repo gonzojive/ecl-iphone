@@ -43,9 +43,6 @@
 		    (t1expr* (cmp-expand-macro (third fd) fun (cdr form))))
                    (t (t1ordinary form))
                    ))
-	    ;; #+cltl2
-            ((setq setf-symbol (si::setf-namep fun))
-	     (t1ordinary form))
             ((consp fun) (t1ordinary form))
             (t (cmperr "~s is illegal function." fun)))
            ))))
@@ -221,14 +218,12 @@
   (mapcar #'t3expr args))
 
 (defun exported-fname (name)
-  (or (get-sysprop name 'Lfun)
+  (or (and (symbolp name) (get-sysprop name 'Lfun))
       (next-cfun)))
 
 (defun t1defun (args &aux (setjmps *setjmps*))
   (when (or (endp args) (endp (cdr args)))
         (too-few-args 'defun 2 (length args)))
-  (when (not (symbolp (car args)))
-    (return-from t1defun (t1expr* (macroexpand (cons 'defun args)))))
   (when *compile-time-too* (cmp-eval (cons 'DEFUN args)))
   (let* (lambda-expr
 	 (fname (car args))
@@ -237,7 +232,7 @@
 	 (doc nil)
 	 output)
     
-    (setq lambda-expr (c1lambda-expr (cdr args) fname))
+    (setq lambda-expr (c1lambda-expr (cdr args) (si::function-block-name fname)))
     (unless (eql setjmps *setjmps*)
       (setf (info-volatile (second lambda-expr)) t))
     (multiple-value-bind (decl body doc)
@@ -250,6 +245,7 @@
     (setq output (new-defun fname cfun lambda-expr *special-binding* no-entry))
     (when
       (and
+       (symbolp fname)
        (get-sysprop fname 'PROCLAIMED-FUNCTION)
        (let ((lambda-list (third lambda-expr)))
          (declare (list lambda-list))
@@ -282,9 +278,10 @@
     output))
 
 ;;; Mechanism for sharing code:
+;;; FIXME! Revise this 'DEFUN stuff.
 (defun new-defun (fname cfun lambda-expr special-binding &optional no-entry)
   (let ((previous (dolist (form *global-funs*)
-		    (when (and (eq 'DEFUN (car form))
+		    (when (and #+nil(eq 'DEFUN (car form))
 			       (equal special-binding (fifth form))
 			       (similar lambda-expr (third form)))
 		      (return (second form))))))
@@ -336,11 +333,11 @@
   (declare (ignore sp funarg-vars))
   (if no-entry
     (return-from t2defun nil))
-    (let ((vv (add-symbol fname)))
+    (let ((vv (add-object fname)))
       (if (numberp cfun)
 	(wt-nl "cl_def_c_function_va(" vv ",(cl_objectfn)L" cfun ");")
 	(wt-nl "cl_def_c_function_va(" vv ",(cl_objectfn)" cfun ");"))
-      (when (get-sysprop fname 'PROCLAIMED-FUNCTION)
+      (when (and (symbolp fname) (get-sysprop fname 'PROCLAIMED-FUNCTION))
 	(wt-if-proclaimed fname cfun vv lambda-expr))))
 
 (defun t3defun (fname cfun lambda-expr sp funarg-vars no-entry
@@ -358,9 +355,7 @@
           requireds (car lambda-list))
     (analyze-regs (info-referred-vars (second lambda-expr)))
 
-    (if (dolist (v *inline-functions*)
-	  (and (eq (car v) fname)
-	       (return (setq inline-info v))))
+    (if (setq inline-info (assoc fname *inline-functions* :test #'same-fname-p))
       
 	;; Local entry
 	(let* ((*exit* (case (third inline-info)
@@ -518,7 +513,8 @@
       (analyze-regs1 data *free-data-registers*))))
 
 (defun wt-global-entry (fname cfun arg-types return-type)
-    (when (get-sysprop fname 'NO-GLOBAL-ENTRY) (return-from wt-global-entry nil))
+    (when (and (symbolp fname) (get-sysprop fname 'NO-GLOBAL-ENTRY))
+      (return-from wt-global-entry nil))
     (wt-comment "global entry for the function " fname)
     (wt-nl1 "static cl_object L" cfun "(int narg")
     (wt-h "static cl_object L" cfun "(int")
@@ -761,9 +757,7 @@
                                            (fourth lambda-list))))
   (declare (fixnum level nenvs))
   (wt-comment (if (fun-closure fun) "closure " "local function ")
-	      (let ((name (fun-name fun)))
-		;; a list is used for lambda-block's
-		(if (symbolp name) (or name 'CLOSURE) (first name))))
+	      (or (fun-name fun) 'CLOSURE))
   (wt-h "static cl_object LC" (fun-cfun fun) "(")
   (wt-nl1 "static cl_object LC" (fun-cfun fun) "(")
   (wt-h1 "int")

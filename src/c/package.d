@@ -211,10 +211,12 @@ find_package(cl_object name)
 cl_object
 si_coerce_to_package(cl_object p)
 {
+	/* INV: find_package() signals an error if "p" is neither a package
+	   nor a string */
 	cl_object pp = find_package(p);
 	if (!Null(pp))
 		@(return pp);
-	FEwrong_type_argument(@'package', p);
+	FEpackage_error("There exists no package with name ~S", p, 0);
 }
 
 cl_object
@@ -225,7 +227,7 @@ current_package(void)
 	x = symbol_value(@'*package*');
 	if (type_of(x) != t_package) {
 		SYM_VAL(@'*package*') = user_package;
-		FEerror("The value of *PACKAGE*, ~S, was not a package.",
+		FEerror("The value of *PACKAGE*, ~S, was not a package",
 			1, x);
 	}
 	return(x);
@@ -465,7 +467,10 @@ cl_unexport2(cl_object s, cl_object p)
 		CEpackage_error("Cannot unexport symbol ~S from locked package ~S.",
 				p, 2, s, p);
 	x = find_symbol(s, p, &intern_flag);
-	if (intern_flag != EXTERNAL || x != s)
+	if (intern_flag == 0)
+		FEpackage_error("Cannot unexport ~S because it does not belong to package ~S.",
+				p, 2, s, p);
+	if (intern_flag != EXTERNAL)
 		/* According to ANSI & Cltl, internal symbols are
 		   ignored in unexport */
 		return;
@@ -539,7 +544,8 @@ shadow(cl_object s, cl_object p)
 	int intern_flag;
 	cl_object x;
 
-	assert_type_symbol(s);
+	/* Contrary to CLTL, in ANSI CL, SHADOW operates on strings. */
+	s = cl_string(s);
 	p = si_coerce_to_package(p);
 	if (p->pack.locked)
 		CEpackage_error("Cannot shadow symbol ~S in locked package ~S.",
@@ -814,20 +820,22 @@ BEGIN:
 @
 BEGIN:
 	switch (type_of(symbols)) {
+	case t_string:
 	case t_symbol:
+	case t_character:
+		/* Arguments to SHADOW may be: string designators ... */
 		if (Null(symbols))
 			break;
 		shadow(symbols, pack);
 		break;
-
 	case t_cons:
+		/* ... or lists of string designators */
 		pack = si_coerce_to_package(pack);
 		for (l = symbols;  !endp(l);  l = CDR(l))
 			shadow(CAR(l), pack);
 		break;
-
 	default:
-		assert_type_symbol(symbols);
+		assert_type_string(symbols);
 		goto BEGIN;
 	}
 	@(return Ct)
@@ -841,6 +849,7 @@ BEGIN:
 	case t_symbol:
 		if (Null(pack))
 			break;
+	case t_character:
 	case t_string:
 	case t_package:
 		use_package(pack, pa);
@@ -867,7 +876,7 @@ BEGIN:
 	case t_symbol:
 		if (Null(pack))
 			break;
-
+	case t_character:
 	case t_string:
 	case t_package:
 		unuse_package(pack, pa);

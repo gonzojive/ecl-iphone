@@ -435,7 +435,8 @@ c_tag_ref(cl_object the_tag, cl_object the_type)
 					    CDR(assql(the_tag, name)));
 			n++;
 		} else if (type == @':block' || type == @':function') {
-			if (type == the_type && name == the_tag)
+			/* We compare with EQUAL, because of (SETF fname) */
+			if (type == the_type && equal(name, the_tag))
 				return MAKE_FIXNUM(n);
 			n++;
 		} else if (Null(name)) {
@@ -678,6 +679,8 @@ c_arguments(cl_object args) {
 	return nargs;
 }
 
+static int asm_function(cl_object args, int flags);
+
 static int
 c_call(cl_object args, int flags) {
 	cl_object name;
@@ -686,31 +689,15 @@ c_call(cl_object args, int flags) {
 
 	name = pop(&args);
 	nargs = c_arguments(args);
-	if (ATOM(name)) {
-		cl_object ndx;
-		if (!SYMBOLP(name))
-			goto ERROR;
-		ndx = c_tag_ref(name, @':function');
-		if (Null(ndx) || (flags & FLAG_GLOBAL)) {
-			/* Globally defined function */
-			asm_op2(push? OP_PCALLG : OP_CALLG, nargs);
-			asm1(name);
-		} else {
-			/* Function from a FLET/LABELS form */
-			asm_op2(OP_LFUNCTION, fix(ndx));
-			asm_op2(push? OP_PCALL : OP_CALL, nargs);
-		}
-	} else if (CAR(name) == @'lambda') {
-		asm_op(OP_CLOSE);
-		asm1(make_lambda(Cnil, CDR(name)));
-		asm_op2(push? OP_PCALL : OP_CALL, nargs);
+	if (SYMBOLP(name) &&
+	    ((flags & FLAG_GLOBAL) || Null(c_tag_ref(name, @':function'))))
+	{
+		/* Globally defined function */
+		asm_op2(push? OP_PCALLG : OP_CALLG, nargs);
+		asm1(name);
 	} else {
-		cl_object aux = setf_namep(name);
-		if (aux == OBJNULL)
- ERROR:			FEprogram_error("FUNCALL: Invalid function name ~S.",
-					1, name);
-		/* The outcome of (SETF ...) may be a macro name */
-		return compile_form(CONS(aux, CDR(args)), flags);
+		asm_function(name, FLAG_VALUES);
+		asm_op2(push? OP_PCALL : OP_CALL, nargs);
 	}
 	return flags;
 }
@@ -1209,7 +1196,12 @@ c_function(cl_object args, int flags) {
 	cl_object setf_function, function = pop(&args);
 	if (!endp(args))
 		FEprogram_error("FUNCTION: Too many arguments.", 0);
-	if (SYMBOLP(function)) {
+	return asm_function(function, flags);
+}
+
+static int
+asm_function(cl_object function, int flags) {
+	if (!Null(si_valid_function_name_p(function))) {
 		cl_object ndx = c_tag_ref(function, @':function');
 		if (Null(ndx)) {
 			/* Globally defined function */
@@ -1227,11 +1219,9 @@ c_function(cl_object args, int flags) {
 		cl_object body = CDDR(function);
 		asm_op(OP_CLOSE);
 		asm1(make_lambda(name, body));
-	} else if ((setf_function = setf_namep(function)) != OBJNULL) {
-		asm_op(OP_FUNCTION);
-		asm1(setf_function);
-	} else
+	} else {
 		FEprogram_error("FUNCTION: Not a valid argument ~S.", 1, function);
+	}
 	return FLAG_VALUES;
 }
 
@@ -1483,7 +1473,7 @@ c_multiple_value_call(cl_object args, int flags) {
 	name = pop(&args);
 	if (endp(args)) {
 		/* If no arguments, just use ordinary call */
-		return c_call(cl_list(1, name), flags);
+		return c_funcall(cl_list(1, name), flags);
 	}
 	compile_form(name, FLAG_PUSH);
 	for (op = OP_PUSHVALUES; !endp(args); op = OP_PUSHMOREVALUES) {
@@ -2440,7 +2430,7 @@ make_lambda(cl_object name, cl_object lambda) {
 	handle = asm_begin();
 
 	/* Transform (SETF fname) => fname */
-	if (CONSP(name) && setf_namep(name) == OBJNULL)
+	if (Null(si_valid_function_name_p(name)))
 		FEprogram_error("LAMBDA: Not a valid function name ~S",1,name);
 
 	asm_list(reqs);			/* Special arguments */
@@ -2521,7 +2511,21 @@ si_function_block_name(cl_object name)
 	if (CONSP(name) && CAR(name) == @'setf' && CONSP(CDR(name)) &&
 	    SYMBOLP(CADR(name)) && Null(CDDR(name)))
 		@(return CADR(name))
-	FEerror("Not a valid function name ~S",1,name);
+	FEinvalid_function_name(name);
+}
+
+cl_object
+si_valid_function_name_p(cl_object name)
+{
+	cl_object output = Cnil;
+	if (SYMBOLP(name))
+		output = Ct;
+	else if (CONSP(name) && CAR(name) == @'setf') {
+		name = CDR(name);
+		if (CONSP(name) && SYMBOLP(CAR(name)) && ENDP(CDR(name)))
+			output = Ct;
+	}
+	@(return output);
 }
 
 cl_object

@@ -89,8 +89,11 @@ structure_to_list(cl_object x)
 	@(return x)
 @)
 
+#ifdef CLOS
+#define ecl_copy_structure ecl_copy_instance
+#else
 cl_object
-si_copy_structure(cl_object x)
+ecl_copy_structure(cl_object x)
 {
 	cl_index j, size;
 	cl_object y;
@@ -106,6 +109,25 @@ si_copy_structure(cl_object x)
 	memcpy(SLOTS(y), SLOTS(x), size);
 	@(return y)
 }
+#endif /* !CLOS */
+
+cl_object
+cl_copy_structure(cl_object s)
+{
+	switch (type_of(s)) {
+	case t_instance:
+		s = ecl_copy_structure(s);
+		break;
+	case t_cons:
+	case t_vector:
+		s = cl_copy_seq(s);
+		break;
+	default:
+		FEwrong_type_argument(@'structure', s);
+	}
+	@(return s)
+}
+
 
 /* Kept only for compatibility. One should use class-of or type-of. */
 cl_object

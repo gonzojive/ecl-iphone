@@ -38,7 +38,7 @@
   (let ((*funs* *funs*))
     (dolist (def (car args))
       (cmpck (or (endp def)
-                 (not (symbolp (car def)))
+                 (not (si::valid-function-name-p (car def)))
                  (endp (cdr def)))
              "The function definition ~s is illegal." def)
       (let ((fun (make-fun :name (car def))))
@@ -62,7 +62,8 @@
 		    (*vars* (cons CB/LB *vars*))
 		    (*blocks* (cons CB/LB *blocks*))
 		    (*tags* (cons CB/LB *tags*)))
-		(c1lambda-expr (second def) (fun-name fun))))
+		(c1lambda-expr (second def)
+			       (si::function-block-name (fun-name fun)))))
 	(add-info info (second lam) CB/LB)
 	(push (list fun lam) local-funs)
 	(setf (fun-cfun fun) (next-cfun)))))
@@ -156,7 +157,9 @@
 
   ;;; bind local-functions
   (dolist (def (car args))
-    (cmpck (or (endp def) (not (symbolp (car def))) (endp (cdr def)))
+    (cmpck (or (endp def)
+	       (not (si::valid-function-name-p (car def)))
+	       (endp (cdr def)))
            "The local function definition ~s is illegal." def)
     (cmpck (member (car def) fnames)
            "The function ~s was already defined." (car def))
@@ -189,7 +192,8 @@
               (*funs* (cons 'LB *funs*))
               (*blocks* (cons 'LB *blocks*))
               (*tags* (cons 'LB *tags*)))
-          (let ((lam (c1lambda-expr (third def) (fun-name fun))))
+          (let ((lam (c1lambda-expr (third def)
+				    (si::function-block-name (fun-name fun)))))
             (add-info info (second lam) 'LB)
             (push (list fun lam) local-funs)))
 	(setf (second def) T)))
@@ -211,7 +215,8 @@
 	      (*funs* (cons 'CB *funs*))
 	      (*blocks* (cons 'CB *blocks*))
 	      (*tags* (cons 'CB *tags*)))
-	  (let ((lam (c1lambda-expr (third def) (fun-name fun))))
+	  (let ((lam (c1lambda-expr (third def)
+				    (si::function-block-name (fun-name fun)))))
 	    (add-info info (second lam) 'CB)
 	    (push (list fun lam) local-funs)))
 	(setf (car def) NIL)))		; def processed
@@ -257,10 +262,10 @@
   (dolist (fun *funs*)
     (cond ((eq fun 'CB) (setq ccb t))
 	  ((eq fun 'LB) (setq clb t))
-	  ((consp fun)			; macro
+	  ((and (symbolp fname) (consp fun))	; macro
 	   (when (eq fname (car fun))
 	     (return nil)))
-          ((eq (fun-name fun) fname)
+          ((same-fname-p (fun-name fun) fname)
 	   (incf (fun-ref fun))
 	   ;; we introduce a variable to hold the funob
 	   (let ((var (or (fun-var fun)
@@ -286,7 +291,7 @@
   (dolist (fun *funs* fname)
     (when (and (not (eq fun 'CB))
                (not (consp fun))
-               (eq (fun-name fun) fname))
+               (same-fname-p (fun-name fun) fname))
           (return fun))))
 
 (defun sch-local-macro (fname)
@@ -306,7 +311,7 @@
   (cond
    ((and (listp args)
          *tail-recursion-info*
-         (eq (car *tail-recursion-info*) (fun-name fun))
+         (same-fname-p (car *tail-recursion-info*) (fun-name fun))
          (eq *exit* 'RETURN)
          (tail-recursion-possible)
          (= (length args) (length (cdr *tail-recursion-info*))))

@@ -4,6 +4,8 @@
 (in-package "COMPILER")
 (import 'sys::arglist "COMPILER")
 
+(defun same-fname-p (name1 name2) (equal name1 name2))
+
 ;;; from cmpenv.lsp
 (defmacro next-cmacro () '(incf *next-cmacro*))
 (defmacro next-cfun () '(incf *next-cfun*))

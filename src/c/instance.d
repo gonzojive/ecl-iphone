@@ -182,3 +182,16 @@ si_sl_makunbound(cl_object x, cl_object index)
 	x->instance.slots[i] = OBJNULL;
 	@(return x)
 }
+
+cl_object
+ecl_copy_instance(cl_object x)
+{
+	cl_object y;
+
+	if (type_of(x) != t_instance)
+		FEwrong_type_argument(@'instance', x);
+	y = ecl_allocate_instance(x->instance.clas, x->instance.length);
+	memcpy(y->instance.slots, x->instance.slots,
+	       x->instance.length * sizeof(cl_object));
+	@(return y)
+}

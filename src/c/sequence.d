@@ -94,8 +94,11 @@ elt(cl_object seq, cl_fixnum index)
 			goto E;
 		return(CODE_CHAR(seq->string.self[index]));
 
+	case t_symbol:
+		if (Null(seq))
+			break;
 	default:
-		FEerror("~S is not a sequence.", 1, seq);
+		FEwrong_type_argument(@'sequence', seq);
 	}
 E:
 	FEtype_error_index(MAKE_FIXNUM(index));
@@ -141,7 +144,7 @@ elt_set(cl_object seq, cl_fixnum index, cl_object val)
 		return(val);
 
 	default:
-		FEerror("~S is not a sequence.", 1, seq);
+		FEwrong_type_argument(@'sequence', seq);
 	}
 E:
 	FEtype_error_index(MAKE_FIXNUM(index));

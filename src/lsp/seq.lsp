@@ -12,38 +12,94 @@
 
 (in-package "SYSTEM")
 
-(defun make-sequence (type size	&key (initial-element nil iesp)
-                                &aux element-type sequence)
+(defun error-sequence-type (type)
+  (declare (si::c-local))
+  (error 'simple-type-error
+	 :datum type
+	 :expected-type 'sequence
+	 :format-control "~S does not specify a sequence type"
+	 :format-arguments (list type)))
+
+(defun error-sequence-length (type size)
+  (declare (si::c-local))
+  (error 'simple-type-error
+	 :format-control
+	 "Cannot create a sequnce of size ~S which matches type ~S."
+	 :format-arguments (list size type)
+	 :expected-type type
+	 :datum NIL))
+
+(defun closest-vector-type (type)
+  (declare (si::c-local))
+  (let (elt-type length name args)
+    (if (atom type)
+	(setq name type args nil)
+	(setq name (first type) args (cdr type)))
+    (case name
+      ((VECTOR SIMPLE-VECTOR)
+       (setq elt-type (if (endp args) '* (first args))
+	     length (if (endp (rest args)) '* (second args))))
+      ((STRING SIMPLE-STRING)
+       (setq elt-type 'BASE-CHAR
+	     length (if (endp args) '* (first args))))
+      ((BIT-VECTOR SIMPLE-BIT-VECTOR)
+       (setq elt-type 'BIT
+	     length (if (endp args) '* (first args))))
+      ((ARRAY SIMPLE-ARRAY)
+       (when (or (endp (rest args))
+		 (atom (setq length (second args)))
+		 (endp length)
+		 (not (endp (rest length))))
+	 (error-sequence-type type))
+       (setq elt-type (upgraded-array-element-type (first args))
+	     length (first (second args))))
+      (t
+       (dolist (i '((SIMPLE-STRING . BASE-CHAR)
+		    (STRING . BASE-CHAR)
+		    (BIT-VECTOR . BIT)
+		    ((VECTOR BYTE8) . BYTE8)
+		    ((VECTOR INTEGER8) . INTEGER8)
+		    ((VECTOR FIXNUM) . FIXNUM)
+		    ((VECTOR SHORT-FLOAT) . SHORT-FLOAT)
+		    ((VECTOR LONG-FLOAT) . LONG-FLOAT)
+		    (VECTOR . T))
+		(error-sequence-type type))
+	  (when (subtypep type (car i))
+	    (setq elt-type (cdr i) length '*)
+	    (return)))))
+    (values elt-type length)))
+
+(defun make-sequence (type size	&key (initial-element nil iesp) &aux sequence)
   "Args: (type length &key initial-element)
 Creates and returns a sequence of the given TYPE and LENGTH.  If INITIAL-
 ELEMENT is given, then it becomes the elements of the created sequence.  The
 default value of INITIAL-ELEMENT depends on TYPE."
-  (when (subtypep type 'LIST)
-    (return-from make-sequence
-      (if iesp
-	  (make-list size :initial-element initial-element)
-	  (make-list size))))
-  (setq element-type
-	(dolist (i '((SIMPLE-STRING . BASE-CHAR)
-		     (STRING . BASE-CHAR)
-		     (BIT-VECTOR . BIT)
-		     ((VECTOR BYTE8) . BYTE8)
-		     ((VECTOR INTEGER8) . INTEGER8)
-		     ((VECTOR SHORT-FLOAT) . SHORT-FLOAT)
-		     ((VECTOR LONG-FLOAT) . LONG-FLOAT)
-		     (VECTOR . T))
-		 (error "Not a valid sequence type ~S." type))
-	  (when (subtypep type (car i))
-	    (return (cdr i)))))
-  (setq sequence (sys:make-vector element-type size nil nil nil nil))
-  (when iesp
-        (do ((i 0 (1+ i))
-             (size size))
-            ((>= i size))
-          (declare (fixnum i size))
-          (setf (elt sequence i) initial-element)))
-  sequence)
-
+  (if (subtypep type 'LIST)
+      (progn
+	(cond ((subtypep 'LIST type)
+	       (make-list size :initial-element initial-element))
+	      ((subtypep type 'NIL)
+	       (error-sequence-type type))
+	      ((subtypep type 'NULL)
+	       (unless (zerop size)
+		 (error-sequence-length type size)))
+	      ((subtypep type 'CONS)
+	       (when (zerop size)
+		 (error-sequence-length type size))))
+	(make-list size :initial-element initial-element))
+      (multiple-value-bind (element-type length)
+	  (closest-vector-type type)
+	(setq sequence (sys:make-vector (if (eq element-type '*) T element-type)
+					size nil nil nil nil))
+	(unless (or (eql length '*) (eql length size))
+	  (error-sequence-length type size))
+	(when iesp
+	  (do ((i 0 (1+ i))
+	       (size size))
+	      ((>= i size))
+	    (declare (fixnum i size))
+	    (setf (elt sequence i) initial-element)))
+	sequence)))
 
 (defun concatenate (result-type &rest sequences)
   "Args: (type &rest sequences)

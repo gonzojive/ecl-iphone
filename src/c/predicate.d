@@ -174,7 +174,7 @@ cl_functionp(cl_object x)
 	cl_object output;
 
 	t = type_of(x);
-	if (t == t_bytecodes || t == t_cfun || t == t_cclosure)
+	if (t == t_bytecodes || t == t_cfun || t == t_cclosure || t == t_gfun)
 		output = Ct;
 	else
 		output = Cnil;

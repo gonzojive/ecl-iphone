@@ -73,7 +73,7 @@ cl_apply_from_stack(cl_index narg, cl_object x)
 	cl_object fun = x;
       AGAIN:
 	if (fun == OBJNULL)
-		FEundefined_function(fun);
+		FEundefined_function(x);
 	switch (type_of(fun)) {
 	case t_cfun:
 		if (fun->cfun.narg >= 0) {
@@ -91,12 +91,14 @@ cl_apply_from_stack(cl_index narg, cl_object x)
 		goto AGAIN;
 #endif
 	case t_symbol:
+		if (fun->symbol.mflag)
+			FEundefined_function(x);
 		fun = SYM_FUN(fun);
 		goto AGAIN;
 	case t_bytecodes:
 		return lambda_apply(narg, fun);
 	default:
-		FEinvalid_function(fun);
+		FEinvalid_function(x);
 	}
 }
 
@@ -108,7 +110,7 @@ cl_object
 link_call(cl_object sym, cl_objectfn *pLK, int narg, cl_va_list args)
 {
 	cl_index sp;
-	cl_object out, fun = symbol_function(sym);
+	cl_object out, fun = ecl_fdefinition(sym);
 
 	if (fun == OBJNULL)
 		FEerror("Undefined function.", 0);
@@ -206,6 +208,8 @@ si_unlink_symbol(cl_object s)
 		goto AGAIN;
 #endif
 	case t_symbol:
+		if (fun->symbol.mflag)
+			FEundefined_function(fun);
 		fun = SYM_FUN(fun);
 		goto AGAIN;
 	case t_bytecodes:

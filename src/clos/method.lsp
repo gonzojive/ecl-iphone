@@ -421,7 +421,7 @@
 ;;;                                                                parsing
 
 (defun legal-generic-function-name-p (name)
-  (or (symbolp name) (si:setf-namep name)))
+  (si::valid-function-name-p name))
 
 (defun parse-defmethod (args)
   (declare (si::c-local))

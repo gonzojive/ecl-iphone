@@ -34,45 +34,44 @@
   (declare (si::c-local))
   (error "both test and test are supplied"))
 
-(defun bad-seq-limit (x &optional y)
+(defun sequence-limits (start end seq)
   (declare (si::c-local))
-  (error "bad sequence limit ~a" (if y (list x y) x)))
+  (let* (x0 x1 (l (length seq)))
+    (declare (fixnum x0 x1 l))
+    (unless (and (fixnump start) (>= (setq x0 start) 0))
+      (error 'simple-type-error
+	     :format-control "~S is not a valid :START for sequence ~S"
+	     :format-arguments (list start seq)
+	     :datum start
+	     :expected-type `(integer 0 ,l)))
+    (if end
+	(unless (and (fixnump end) (>= (setq x1 end) 0))
+	  (error 'simple-type-error
+		 :format-control "~S is not a valid :END for sequence ~S"
+		 :format-arguments (list end seq)
+		 :datum end
+		 :expected-type `(or nil (integer 0 ,l))))
+	(setq x1 l))
+    (unless (<= x0 x1)
+      (error ":START = ~S should be smaller or equal to :END = ~S"
+	     start end))
+    (values x0 x1)))
 
+#+ecl-min
 (eval-when (compile eval)
   (defmacro with-start-end (start end seq &body body)
-    `(let* ((,start (if ,start (the-start ,start) 0))
-	    (,end (the-end ,end ,seq))) 
-	(declare (fixnum ,start ,end))
-	(unless (<= ,start ,end) (bad-seq-limit ,start ,end))
-	,@ body))
-  )
-
-(defun the-end (x y)
-  (declare (si::c-local))
-  (cond ((fixnump x)
-	 (unless (<= (the fixnum x) (the fixnum (length y)))
-	   (bad-seq-limit x))
-	 x)
-	((null x)
-	 (length y))
-	(t (bad-seq-limit x))))
-
-(defun the-start (x)
-  (declare (si::c-local))
-  (cond ((fixnump x)
-	 (unless (>= (the fixnum x) 0)
-	     (bad-seq-limit x))
-	 (the fixnum x))
-	((null x) 0)
-	(t (bad-seq-limit x))))
+    `(multiple-value-bind (,start ,end)
+        (sequence-limits ,start ,end ,seq) 
+      (declare (fixnum ,start ,end))
+      ,@body)))
 
 (defun reduce (function sequence
                &key from-end
-                    start 
+                    (start 0)
                     end
-                    (initial-value nil ivsp)
-		    (key #'identity))
+                    key (initial-value nil ivsp))
   (with-start-end start end sequence
+     (unless key (setq key #'identity))
      (cond ((not from-end)
 	    (when (null ivsp)
                   (when (>= start end)
@@ -96,16 +95,14 @@
                ((>= start end) x)
 	     (decf end))))))
 
-(defun fill (sequence item &key start end)
+(defun fill (sequence item &key (start 0) end)
   (with-start-end start end sequence
 		  (do ((i start (1+ i)))
 		      ((>= i end) sequence)
 		     (declare (fixnum i))
 		     (setf (elt sequence i) item))))
 
-(defun replace (sequence1 sequence2
-	        &key start1  end1
-		     start2 end2 )
+(defun replace (sequence1 sequence2 &key (start1 0) end1 (start2 0) end2)
   (with-start-end start1 end1 sequence1
      (with-start-end start2 end2 sequence2		  
     (if (and (eq sequence1 sequence2)
@@ -173,18 +170,22 @@
 		  (endp-i-everywhere '(< i 0)))
 	     (setq from-end-form ,(or from-end-form normal-form)))
            `(defun ,f (,@args item sequence
-                       &key from-end test test-not
-		       start end
+                       &key test test-not
+		       from-end (start 0) end
+		       key
 		       ,@(if countp '(count))
-		       (key #'identity)
                        ,@(if everywherep
                              (list '&aux '(l (length sequence)))
                              nil))
 	     ,@(if everywherep '((declare (fixnum l))))
+	     (unless key (setq key #'identity))
 	     (with-start-end start end sequence
 			     (let ,@(if countp
-					'(((count (if (null count)
-						      most-positive-fixnum count)))))	       
+					'(((count (cond ((null count)
+							 most-positive-fixnum)
+							((minusp count)
+							 0)
+							(t count))))))
 				  ,@(if countp '((declare (fixnum count))))
 				  nil
 				  (and test test-not (test-error))
@@ -195,9 +196,9 @@
 			     (symbol-package f))
 		 (,@args predicate sequence
 			 &key from-end
-			 start end
-			 ,@(if countp '(count))
-			 (key #'identity))
+			 (start 0) end
+			 key
+			 ,@(if countp '(count)))
 	       (,f ,@args predicate sequence
 		   :from-end from-end
 		   :test #'funcall
@@ -207,9 +208,8 @@
 	     (defun ,(intern (si:string-concatenate (string f) "-IF-NOT")
 			     (symbol-package f))
 		 (,@args predicate sequence
-			 &key from-end start end
-			 ,@(if countp '(count))
-			 (key #'identity))
+			 &key from-end (start 0) end
+			 key ,@(if countp '(count)))
 	       (,f ,@args predicate sequence
 		   :from-end from-end
 		   :test-not #'funcall
@@ -290,7 +290,7 @@
          (do ((newseq
                (make-sequence (seqtype sequence) (the fixnum (- l count))))
               ,iterate-i-everywhere
-              (j (- (the fixnum (1- end)) n))
+              (j (- (the fixnum (1- l)) n))
               ,kount-0)
              (,endp-i-everywhere newseq)
            (declare (fixnum i j k))
@@ -357,12 +357,9 @@
 
 
 (defun remove-duplicates (sequence
-                          &key from-end
-                               test test-not
-			       start end
-                               (key #'identity))
+                          &key test test-not from-end (start 0) end key)
   "Args: (sequence
-       &key (key '#'identity) (test '#'eql) test-not
+       &key key (test '#'eql) test-not
             (start 0) (end (length sequence)) (from-end nil))
 Returns a copy of SEQUENCE without duplicated elements."
   (and test test-not (test-error))
@@ -383,13 +380,9 @@ Returns a copy of SEQUENCE without duplicated elements."
        
 
 (defun delete-duplicates (sequence
-                          &key from-end
-                               test test-not
-                               start
-                               end 
-                               (key #'identity)
+			  &key test test-not from-end (start 0) end key
                           &aux (l (length sequence)))
-  "Args: (sequence &key (key '#'identity)
+  "Args: (sequence &key key
 		     (test '#'eql) test-not
                      (start 0) (end (length sequence)) (from-end nil))
 Destructive REMOVE-DUPLICATES.  SEQUENCE may be destroyed."
@@ -407,6 +400,7 @@ Destructive REMOVE-DUPLICATES.  SEQUENCE may be destroyed."
                    (rplacd l (cddr l)))
                   (t (setq l (cdr l))))))
   (with-start-end start end sequence
+    (unless key (setq key #'identity))
     (if (not from-end)
         (do ((n 0)
              (i start (1+ i)))
@@ -473,12 +467,11 @@ Destructive REMOVE-DUPLICATES.  SEQUENCE may be destroyed."
        
 
 (defun mismatch (sequence1 sequence2
-		 &key from-end test test-not
-		      (key #'identity)
-		      start1 start2
+		 &key from-end test test-not key
+		      (start1 0) (start2 0)
 		      end1 end2)
   "Args: (sequence1 sequence2
-       &key (key '#'identity) (test '#'eql) test-not
+       &key key (test '#'eql) test-not
             (start1 0) (end1 (length sequence1))
             (start2 0) (end2 (length sequence2))
             (from-end nil))
@@ -489,6 +482,7 @@ element that does not match."
   (and test test-not (test-error))
   (with-start-end start1 end1 sequence1
    (with-start-end start2 end2 sequence2
+    (unless key (setq key #'identity))
     (if (not from-end)
         (do ((i1 start1 (1+ i1))
              (i2 start2 (1+ i2)))
@@ -511,12 +505,11 @@ element that does not match."
 
 
 (defun search (sequence1 sequence2
-               &key from-end test test-not 
-                    (key #'identity)
-		    start1 start2
+               &key from-end test test-not key
+		    (start1 0) (start2 0)
 		    end1 end2)
   "Args: (sequence1 sequence2
-       &key (key '#'identity) (test '#'eql) test-not
+       &key key (test '#'eql) test-not
             (start1 0) (end1 (length sequence1))
             (start2 0) (end2 (length sequence2))
             (from-end nil))
@@ -526,6 +519,7 @@ subsequence is found.  Returns NIL otherwise."
   (and test test-not (test-error))
   (with-start-end start1 end1 sequence1
    (with-start-end start2 end2 sequence2  
+    (unless key (setq key #'identity))
     (if (not from-end)
         (loop
          (do ((i1 start1 (1+ i1))
@@ -551,8 +545,8 @@ subsequence is found.  Returns NIL otherwise."
          (decf end2))))))
 
 
-(defun sort (sequence predicate &key (key #'identity))
-  "Args: (sequence test &key (key '#'identity))
+(defun sort (sequence predicate &key key)
+  "Args: (sequence test &key key)
 Destructively sorts SEQUENCE and returns the result.  TEST should return non-
 NIL if its first argument is to precede its second argument.  The order of two
 elements X and Y is arbitrary if both
@@ -565,6 +559,7 @@ evaluates to NIL.  See STABLE-SORT."
 
 
 (defun list-merge-sort (l predicate key)
+  (unless key (setq key #'identity))
   (labels
    ((sort (l)
       (prog ((i 0) left right l0 l1 key-left key-right)
@@ -621,7 +616,8 @@ evaluates to NIL.  See STABLE-SORT."
 (declaim (ftype (function (t fixnum fixnum t t) t) quick-sort))
 
 (defun quick-sort (seq start end pred key)
-       (declare (fixnum start end))
+  (declare (fixnum start end))
+  (unless key (setq key #'identity))
   (if (<= end (the fixnum (1+ start)))
       seq
       (let* ((j start) (k end) (d (elt seq start)) (kd (funcall key d)))
@@ -644,8 +640,8 @@ evaluates to NIL.  See STABLE-SORT."
         (quick-sort seq (1+ j) end pred key))))
 
 
-(defun stable-sort (sequence predicate &key (key #'identity))
-  "Args: (sequence test &key (key '#'identity))
+(defun stable-sort (sequence predicate &key key)
+  "Args: (sequence test &key key)
 Destructively sorts SEQUENCE and returns the result.  TEST should return non-
 NIL if its first argument is to precede its second argument.  For two elements
 X and Y, if both
@@ -663,15 +659,15 @@ SEQUENCE.  See SORT."
                   (seqtype sequence)))))
 
 
-(defun merge (result-type sequence1 sequence2 predicate
-	      &key (key #'identity)
+(defun merge (result-type sequence1 sequence2 predicate &key key
 	      &aux (l1 (length sequence1)) (l2 (length sequence2)))
-  "Args: (type sequence1 sequence2 test &key (key '#'identity))
+  "Args: (type sequence1 sequence2 test &key key)
 Merges two sequences in the way specified by TEST and returns the result as a
 sequence of TYPE.  Both SEQUENCEs may be destroyed.  If both SEQUENCE1 and
 SEQUENCE2 are sorted in the sense of TEST, then the result is also sorted in
 the sense of TEST."
   (declare (fixnum l1 l2))
+  (unless key (setq key #'identity))
   (do ((newseq (make-sequence result-type (the fixnum (+ l1 l2))))
        (j 0 (1+ j))
        (i1 0)

@@ -107,8 +107,6 @@
       (cerror "Proceed, ignoring this option."
 	      "~s is not a valid DEFPACKAGE option." option)))
   (labels ((to-string (x) (if (numberp x) x (string x)))
-	   (option-test (arg1 arg2)
-	     (when (consp arg2) (equal (car arg2) arg1)))
 	   (option-values-list (option options &aux output)
 	     (dolist (o options)
 	       (let ((o-option (first o)))
@@ -131,8 +129,9 @@
 	     output))
     (dolist (option '(:SIZE :DOCUMENTATION))
       (when (<= 2 (count option options ':key #'car))
-	(warn "DEFPACKAGE option ~s specified more than once.  The first value \"~a\" will be used."
-	      option (first (option-values option options)))))
+	(error 'simple-program-error
+	       :format-control "DEFPACKAGE option ~s specified more than once."
+	       :format-arguments (list option))))
     (setq name (string name))
     (let* ((nicknames (option-values ':nicknames options))
 	   (documentation (option-values ':documentation options))
@@ -148,27 +147,35 @@
 					  interned-symbol-names
 					  (loop for list in shadowing-imported-from-symbol-names-list append (rest list))
 					  (loop for list in imported-from-symbol-names-list append (rest list))))
-	(error "The symbol ~s cannot coexist in these lists:~{ ~s~}"
-	       (first duplicate)
-	       (loop for num in (rest duplicate)
-		     collect (case num
-			       (1 ':SHADOW)
-			       (2 ':INTERN)
-			       (3 ':SHADOWING-IMPORT-FROM)
-			       (4 ':IMPORT-FROM)))))
+	(error 'simple-program-error
+	       :format-control
+	       "The symbol ~s cannot coexist in these lists:~{ ~s~}"
+	       :format-arguments
+	       (list
+		(first duplicate)
+		(loop for num in (rest duplicate)
+		      collect (case num
+				(1 ':SHADOW)
+				(2 ':INTERN)
+				(3 ':SHADOWING-IMPORT-FROM)
+				(4 ':IMPORT-FROM))))))
       (dolist (duplicate (find-duplicates exported-symbol-names
 					  interned-symbol-names))
-	(error "The symbol ~s cannot coexist in these lists:~{ ~s~}"
-	       (first duplicate)
-	       (loop for num in (rest duplicate) collect
-		     (case num
-		       (1 ':EXPORT)
-		       (2 ':INTERN)))))
+	(error 'simple-program-error
+	       :format-control
+	       "The symbol ~s cannot coexist in these lists:~{ ~s~}"
+	       :format-arguments
+	       (list
+		(first duplicate)
+		(loop for num in (rest duplicate) collect
+		      (case num
+			(1 ':EXPORT)
+			(2 ':INTERN))))))
       `(si::%defpackage
 	,name
 	',nicknames
 	,(car documentation)
-	',(option-values ':use options)
+	',(if (assoc ':use options) (option-values ':use options) "CL")
 	',shadowed-symbol-names
 	',interned-symbol-names
 	',exported-symbol-names
@@ -198,28 +205,40 @@
   (when documentation ((put-sysprop (intern name :keyword) :package-documentation
 				    documentation)))
   (let ((*package* (find-package name)))
-    (when shadowed-symbol-names
-      (shadow (mapcar #'intern shadowed-symbol-names)))
-    (when shadowing-imported-from-symbol-names-list
-      (shadowing-import (rest shadowing-imported-from-symbol-names-list)
-			(first shadowing-imported-from-symbol-names-list)))
-    (use-package (or use "CL"))
-    (when imported-from-symbol-names-list
-      (dolist (item imported-from-symbol-names-list)
-	(let ((package (find-package (car item))))
-	  (dolist (name (cdr item))
-	    (import (find-symbol name package) *package*)))))
-    (when exported-symbol-names
-      (export (mapcar #'intern exported-symbol-names)))
-    (when exported-from-package-names
-      (dolist (package exported-from-package-names)
-	(do-external-symbols (symbol (find-package package))
-	  (when (nth 1 (multiple-value-list
-			(find-symbol (string symbol))))
-	    (export (list (intern (string symbol)))))))))
+    (shadow shadowed-symbol-names)
+    (dolist (item shadowing-imported-from-symbol-names-list)
+      (let ((package (find-package (first item))))
+	(dolist (name (rest item))
+	  (shadowing-import (find-or-make-symbol name package)))))
+    (use-package use)
+    (dolist (item imported-from-symbol-names-list)
+      (let ((package (find-package (first item))))
+	(dolist (name (rest item))
+	  (import (find-or-make-symbol name package)))))
+    (mapc #'intern interned-symbol-names)
+    (export (mapcar #'intern exported-symbol-names))
+    (dolist (package exported-from-package-names)
+      (do-external-symbols (symbol (find-package package))
+	(when (nth 1 (multiple-value-list
+		      (find-symbol (string symbol))))
+	  (export (list (intern (string symbol))))))))
   (find-package name))
 
+(defun find-or-make-symbol (name package)
+  (declare (si::c-local))
+  (multiple-value-bind (symbol found)
+      (find-symbol name package)
+    (unless found
+      (cerror "INTERN it."
+	      'simple-package-error
+	      :format-control "Cannot find symbol ~S in package ~S"
+	      :format-arguments (list name package)
+	      :package package)
+      (setq symbol (intern name package)))
+    symbol))
+
 (defun find-duplicates (&rest lists)
+  (declare (si::c-local))
   (let (results)
     (loop for list in lists
 	  for more on (cdr lists)
@@ -237,7 +256,8 @@
 			(if entry
 			  (nconc entry (list j))
 			  (setq entry (car (push (list elt i j)
-						 results))))))))))
+						 results))))))))
+    results))
 
 ;;;; ------------------------------------------------------------
 ;;;;	End of File

@@ -133,8 +133,7 @@
 (defun c2lambda-expr (lambda-list body cfun fname
 				  &optional closure-p call-lambda)
   (let ((*tail-recursion-info*		;;; Tail recursion possible if
-         (and fname (symbolp fname)	;;; named function (a list is used for
-	      				;;; lambda-block's),
+         (and fname			;;; named function
 				        ;;; no required appears in closure,
               (dolist (var (car lambda-list) t)
                 (declare (type var var))
@@ -424,8 +423,11 @@
       (wt-nl "narg -= i;")
       (wt-nl "narg -=" nreq ";"))
 
-  (wt-nl "{ cl_object keyvars[" (* 2 nkey) "];")
-  (wt-nl "cl_parse_key(args," nkey ",L" cfun "keys,keyvars")
+  (cond (keywords
+	 (wt-nl "{ cl_object keyvars[" (* 2 nkey) "];")
+	 (wt-nl "cl_parse_key(args," nkey ",L" cfun "keys,keyvars"))
+	(t
+	 (wt-nl "cl_parse_key(args,0,NULL,NULL")))
   (if rest (wt ",&" rest-loc) (wt ",NULL"))
   (wt (if allow-other-keys ",TRUE);" ",FALSE);"))
   (when rest (bind rest-loc rest))
@@ -436,7 +438,9 @@
        (KEYVARS[i] `(KEYVARS 0))
        (i 0 (1+ i)))
       ((endp kwd)
-       (wt-h "#define L" cfun "keys (&" (add-keywords (nreverse all-kwd)) ")"))
+       (when all-kwd
+	 (wt-h "#define L" cfun "keys (&" (add-keywords (nreverse all-kwd)) ")")
+	 (wt-nl "}")))
     (declare (fixnum i))
     (push (first kwd) all-kwd)
     (let ((key (first kwd))
@@ -461,7 +465,6 @@
       (when flag
 	(setf (second KEYVARS[i]) (+ nkey i))
 	(bind KEYVARS[i] flag))))
-  (wt-nl "}")
 
   ;;; Now the parameters are ready, after all!
   (c2expr body)

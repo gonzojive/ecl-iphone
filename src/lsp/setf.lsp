@@ -141,7 +141,7 @@ Does not check if the third gang is a single-element list."
 			   ((setq f (get-sysprop (car form) 'SETF-LAMBDA))
 			    (apply f store all))
 			   (t
-			    `(,(si::setf-namep (list 'SETF name)) ,store ,@all))))
+			    `(funcall #'(SETF ,name) ,store ,@all))))
 	       (values vars inits (list store) writer (cons name all))))))))
 
 ;;;; SETF definitions.

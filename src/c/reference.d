@@ -17,51 +17,11 @@
 #include "ecl.h"
 #include "ecl-inl.h"
 
-cl_object
-cl_fboundp(cl_object sym)
-{
-	cl_object output;
-
-	if (!SYMBOLP(sym)) {
-		cl_object sym1 = setf_namep(sym);
-		if (sym1 != OBJNULL)
-			sym = sym1;
-		else
-			FEtype_error_symbol(sym);
-	}
-	if (sym->symbol.isform)
-		output = Ct;
-	else if (SYM_FUN(sym) == OBJNULL)
-		output = Cnil;
-	else
-		output = Ct;
-	@(return output)
-}
-
-cl_object
-symbol_function(cl_object sym)
-{
-	if (!SYMBOLP(sym)) {
-		cl_object sym1 = setf_namep(sym);
-		if (sym1 != OBJNULL)
-			sym = sym1;
-		else
-			FEtype_error_symbol(sym);
-	}
-	if (sym->symbol.isform || sym->symbol.mflag)
-		FEinvalid_function(sym);
-	if (SYM_FUN(sym) == OBJNULL)
-		FEundefined_function(sym);
-	return(SYM_FUN(sym));
-}
-
 /*
 	Symbol-function returns
                 function-closure		for function
 		(macro . function-closure)	for macros
-		(special . address)		for special forms.
-	(if defined CLOS it returns also
-		generic-function                for generic functions)
+		special				for special forms.
 */
 cl_object
 cl_symbol_function(cl_object sym)
@@ -83,34 +43,76 @@ cl_symbol_function(cl_object sym)
 cl_object
 cl_fdefinition(cl_object fname)
 {
-	if (!SYMBOLP(fname)) {
-		cl_object sym = setf_namep(fname);
-		if (sym == OBJNULL)
-			FEtype_error_symbol(fname);
-		fname = sym;
+	@(return ((SYMBOLP(fname))? cl_symbol_function(fname) : ecl_fdefinition(fname)))
+}
+
+cl_object
+cl_fboundp(cl_object fname)
+{
+	cl_object output;
+
+	if (SYMBOLP(fname)) {
+		@(return ((fname->symbol.isform || SYM_FUN(fname) != OBJNULL)? Ct : Cnil))
+	} else if (CONSP(fname)) {
+		if (CAR(fname) == @'setf') {
+			cl_object sym = CDR(fname);
+			if (CONSP(sym)) {
+				sym = CAR(sym);
+				if (SYMBOLP(sym))
+					return si_get_sysprop(sym, @'si::setf-symbol');
+			}
+		}
 	}
-	return cl_symbol_function(fname);
+	FEinvalid_function_name(fname);
+}
+
+cl_object
+ecl_fdefinition(cl_object fun)
+{
+	cl_type t = type_of(fun);
+	cl_object output;
+
+	if (t == t_symbol) {
+		output = SYM_FUN(fun);
+		if (output == OBJNULL)
+			FEundefined_function(fun);
+		if (fun->symbol.isform || fun->symbol.mflag)
+			FEundefined_function(fun);
+	} else if (t == t_cons) {
+		if (!CONSP(CDR(fun)))
+			FEinvalid_function_name(fun);
+		if (CAR(fun) == @'setf') {
+			output = si_get_sysprop(CADR(fun), @'si::setf-symbol');
+			if (Null(output))
+				FEundefined_function(fun);
+		} else if (CAR(fun) == @'lambda') {
+			return si_make_lambda(Cnil, CDR(fun));
+		} else {
+			FEinvalid_function(fun);
+		}
+	} else {
+		FEinvalid_function(fun);
+	}
+	return output;
+}
+
+cl_object
+ecl_coerce_to_function(cl_object fun)
+{
+	cl_type t = type_of(fun);
+	if (t == t_cfun || t == t_cclosure
+#ifdef CLOS
+		   || t == t_gfun
+#endif
+	    )
+		@(return fun)
+	@(return ecl_fdefinition(fun))
 }
 
 cl_object
 si_coerce_to_function(cl_object fun)
 {
-	cl_type t = type_of(fun);
-
-	if (t == t_symbol) {
-		if ((SYM_FUN(fun) == OBJNULL) || fun->symbol.mflag)
-			FEundefined_function(fun);
-		else
-			@(return SYM_FUN(fun))
-	} else if (t == t_cons && CAR(fun) == @'lambda') {
-		return si_make_lambda(Cnil, CDR(fun));
-	} else {
-	  	cl_object setf_sym = setf_namep(fun);
-		if ((setf_sym != OBJNULL) && (SYM_FUN(setf_sym) != OBJNULL))
-			@(return SYM_FUN(setf_sym))
-		else
-			FEinvalid_function(fun);
-	}
+	@(return ecl_coerce_to_function(fun))
 }
 
 cl_object
