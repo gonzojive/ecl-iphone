@@ -287,7 +287,7 @@ ecl_search_hash(cl_object key, cl_object hashtable)
 	default:	corrupted_hash(hashtable);
 	}
 	i = h % hsize;
-	h = h & 0xFFFF;
+	h = h & 0xFFFFFFF;
 	for (k = 0; k < hsize;  i = (i + 1) % hsize, k++) {
 		e = &hashtable->hash.data[i];
 		hkey = e->key;
@@ -371,7 +371,7 @@ add_new_to_hash(cl_object key, cl_object hashtable, cl_object value)
 		if (e[i].key == OBJNULL) {
 			hashtable->hash.entries++;
 			if (htest == htt_pack)
-				e[i].key = MAKE_FIXNUM(h & 0xFFFF);
+				e[i].key = MAKE_FIXNUM(h & 0xFFFFFFF);
 			else
 				e[i].key = key;
 			e[i].value = value;
