@@ -487,7 +487,7 @@
 (MEMBER (T T *) T)
 (MEMBER-IF (T T *) T)
 (MEMBER-IF-NOT (T T *) T)
-(MEMBER1 (T T *) T)
+(MEMBER1 (T T T T T) T)
 (TAILP (T T) T NIL T)
 (ADJOIN (T T *) T)
 (ACONS (T T T) T)
@@ -1087,6 +1087,7 @@ type_of(#0)==t_bitvector"))
 	    nsubstitute nsubstitute-if nsubstitute-if-not find find-if find-if-not
 	    position position-if position-if-not remove-duplicates
 	    delete-duplicates mismatch search sort stable-sort merge
+	    si::simple-program-error
 	    si::closest-vector-type si::packages-iterator .
 	    #-clos
 	    nil
