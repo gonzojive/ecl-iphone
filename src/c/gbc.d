@@ -200,18 +200,9 @@ BEGIN:
 		switch ((cl_elttype)x->array.elttype) {
 		case aet_object:
 			if (x->array.displaced == Cnil || CAR(x->array.displaced) == Cnil) {
-				if (x->array.t == t_vector && x->vector.hasfillp)
-					i = x->vector.fillp;
-				else
-					i = x->vector.dim;
+				i = x->vector.dim;
 				p = x->array.self.t;
-			MARK_DATA:
-				if (p >= heap_start && p < data_end) {
-					mark_contblock(p, i * sizeof(cl_object));
-					while (i-- > 0)
-						mark_object(p[i]);
-				}
-				return;
+				goto MARK_DATA;
 			}
 			j = sizeof(cl_object)*x->array.dim;
 			break;
@@ -263,12 +254,8 @@ BEGIN:
 	case t_structure:
 		mark_object(x->str.name);
 		p = x->str.self;
-		if (p == NULL)
-			break;
-		for (i = 0, j = x->str.length;  i < j;  i++)
-			mark_object(p[i]);
-		mark_contblock(p, j*sizeof(cl_object));
-		break;
+		i = x->str.length;
+		goto MARK_DATA;
 #endif /* CLOS */
 
 	case t_stream:
@@ -281,9 +268,9 @@ BEGIN:
 		case smm_output:
 		case smm_io:
 		case smm_probe:
-			mark_object(x->stream.object0);
-			mark_object(x->stream.object1);
 			mark_contblock(x->stream.buffer, BUFSIZ);
+			mark_object(x->stream.object0);
+			mark_next(x->stream.object1);
 			break;
 
 		case smm_synonym:
@@ -333,10 +320,10 @@ BEGIN:
 	case t_pathname:
 		mark_object(x->pathname.host);
 		mark_object(x->pathname.device);
-		mark_object(x->pathname.directory);
+		mark_object(x->pathname.version);
 		mark_object(x->pathname.name);
 		mark_object(x->pathname.type);
-		mark_object(x->pathname.version);
+		mark_next(x->pathname.directory);
 		break;
 
 	case t_bytecodes:
@@ -391,6 +378,13 @@ BEGIN:
 		mark_next(x->foreign.tag);
 		break;
 #endif ECL_FFI
+	MARK_DATA:
+		if (p) {
+			mark_contblock(p, i * sizeof(cl_object));
+			while (i-- > 0)
+				mark_object(p[i]);
+		}
+		return;
 	default:
 		if (debug)
 			printf("\ttype = %d\n", type_of(x));
@@ -578,10 +572,25 @@ sweep_phase(void)
 			if (x->d.m == FREE)
 				continue;
 			else if (x->d.m) {
-				/* FIXME!!! Here should come a finalization
-				   procedure for streams */
 				x->d.m = FALSE;
 				continue;
+			}
+			/* INV: Make sure this is the same as in alloc_2.d */
+			switch (x->d.t) {
+#ifdef ENABLE_DLOPEN
+			case t_codeblock:
+				cl_mapc(2, @'si::unlink-symbol', o->cblock.links);
+				if (o->cblock.handle != NULL) {
+					printf("\n;;; Freeing library %s\n", o->cblock.name?
+					       o->cblock.name->string.self : "<anonymous>");
+					dlclose(o->cblock.handle);
+				}
+				break;
+#endif
+			case t_stream:
+				if (o->stream.file != NULL)
+					fclose(o->stream.file);
+				o->stream.file = NULL;
 			}
 			((struct freelist *)x)->f_link = f;
 			x->d.m = FREE;

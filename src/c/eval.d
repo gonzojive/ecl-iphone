@@ -107,7 +107,7 @@ cl_apply_from_stack(cl_index narg, cl_object x)
  *----------------------------------------------------------------------*/
 
 cl_object
-link_call(cl_object sym, cl_objectfn *pLK, int narg, cl_va_list args)
+link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_va_list args)
 {
 	cl_index sp;
 	cl_object out, fun = ecl_fdefinition(sym);
@@ -134,6 +134,8 @@ link_call(cl_object sym, cl_objectfn *pLK, int narg, cl_va_list args)
 							 make_unsigned_integer((cl_index)*pLK)),
 						    si_get_sysprop(sym, @'si::link-from')));
 				*pLK = fun->cfun.entry;
+				cblock->cblock.links =
+				    CONS(sym, cblock->cblock.links);
 			}
 			out = APPLY(narg, fun->cfun.entry, cl_stack + sp);
 		}
@@ -169,9 +171,13 @@ si_unlink_symbol(cl_object s)
 		FEtype_error_symbol(s);
 	pl = si_get_sysprop(s, @'si::link-from');
 	if (!endp(pl)) {
-		for (; !endp(pl); pl = CDR(pl))
-			*(void **)(fixnnint(CAAR(pl))) = (void *)fixnnint(CDAR(pl));
-		cl_remprop(s, @'si::link-from');
+		for (; !endp(pl); pl = CDR(pl)) {
+			cl_object record = CAR(pl);
+			void **location = (void **)fixnnint(CAR(record));
+			void *original = (void *)fixnnint(CDR(record));
+			*location = original;
+		}
+		si_rem_sysprop(s, @'si::link-from');
 	}
 	@(return)
 }

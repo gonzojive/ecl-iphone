@@ -35,19 +35,15 @@ finalize(cl_object o, cl_object data)
 	switch (type_of(o)) {
 #ifdef ENABLE_DLOPEN
 	case t_codeblock:
-	AGAIN:
-		/*
-		printf("\n;;; Freeing library %s \n", o->cblock.name?
-		       o->cblock.name->string.self : "<anonymous>");
-		*/
+		cl_mapc(2, @'si::unlink-symbol', o->cblock.links);
 		if (o->cblock.handle != NULL) {
+			printf("\n;;; Freeing library %s\n", o->cblock.name?
+			       o->cblock.name->string.self : "<anonymous>");
 			dlclose(o->cblock.handle);
-			GC_free(o->cblock.data);
-		} else {
-			o = o->cblock.next;
-			if (o != NULL && o->cblock.handle != NULL)
-				goto AGAIN;
 		}
+#ifdef ECL_DYNAMIC_VV
+		/* GC_free(o->cblock.data); */
+#endif
 		break;
 #endif
 	case t_stream:
@@ -139,7 +135,7 @@ init_alloc(void)
 	if (alloc_initialized) return;
 	alloc_initialized = TRUE;
 
-	/* GC_no_dls = 1; */
+	GC_no_dls = 1;
 #if 0
 	GC_init_explicit_typing();
 #endif
@@ -196,14 +192,16 @@ stacks_scanner(void)
 		GC_push_conditional(cl_stack, cl_stack_top,1);
 		GC_set_mark_bit(cl_stack);
 	}
-	if (frs_top && (frs_top >= frs_org)) {
+	if (frs_top) {
 		GC_push_conditional(frs_org, frs_top+1,1);
 		GC_set_mark_bit(frs_org);
 	}
-	if (bds_top && (bds_top >= bds_org)) {
+	if (bds_top) {
 		GC_push_conditional(bds_org, bds_top+1,1);
 		GC_set_mark_bit(bds_org);
 	}
+	GC_push_all(cl_symbols, cl_symbols + cl_num_symbols_in_core);
+	GC_push_all(&lex_env, (&lex_env)+1);
 #endif
 	if (NValues)
 		GC_push_all(Values, Values+NValues+1);

@@ -83,12 +83,11 @@
 		 :type (system-fasl-extension system)
 		 :defaults (system-fasl-directory system)))
 
-(defun make-library-pathname (system shared)
+(defun make-library-pathname (system target)
   (let* ((name (string-downcase (system-name system)))
 	 (directory (system-library-directory system))
 	 (output-name (merge-pathnames name directory)))
-    (funcall (if shared #'c:shared-library-pathname #'c:static-library-pathname)
-	     output-name)))
+    (compile-file-pathname output-name :type target)))
 
 ;;; ----------------------------------------------------------------------
 ;;; Operations on modules
@@ -207,19 +206,16 @@
 
       (setq transformations
         (ecase mode
-	  ((:LIBRARY :SHARED-LIBRARY)
+	  ((:STATIC-LIBRARY :LIBRARY :SHARED-LIBRARY :FASL)
 	    (let* ((transforms (make-transformations system
 						     #'true
 						     #'make-load-transformation))
 		   (objects (mapcar #'(lambda (x) (make-binary-pathname (module-name (cadr x)) system))
 				    (remove-if-not #'(lambda (x) (eq (car x) :LOAD))
 						   transforms)))
-		   (shared (eq mode :shared-library))
-		   (library (make-library-pathname system shared)))
+		   (library (make-library-pathname system mode)))
 	      (operate-on-system system :COMPILE)
-	      (funcall (if shared #'c::build-shared-library
-			   #'c::build-static-library)
-		       library :lisp-files objects))
+	      (c::builder mode library :lisp-files objects))
 	    nil)
           (:COMPILE
             (make-transformations system

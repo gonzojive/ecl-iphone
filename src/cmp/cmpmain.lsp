@@ -41,15 +41,6 @@ coprocessor).")
 #+dlopen
 (defvar *ld-shared-format* "~A ~A -o ~A -L~A ~{~A ~} ~@?")
 
-(eval-when (compile eval)
-  (defmacro get-output-pathname (file ext)
-    `(make-pathname
-      :directory (or (and (or (stringp ,file) (pathnamep ,file))
-		          (pathname-directory ,file))
-		     directory)
-      :name (if (or (null ,file) (eq ,file T)) name (pathname-name ,file))
-      :type ,ext)))
-
 (defun safe-system (string)
   (print string)
   (let ((result (si:system string)))
@@ -59,25 +50,22 @@ coprocessor).")
 	      string result))
     result))
 
-(defun static-library-pathname (output-file)
-  (let* ((real-name (format nil "lib~A.a" (pathname-name output-file))))
-    (merge-pathnames real-name output-file)))
-
-(defun shared-library-pathname (output-file)
-  #-dlopen
-  (error "Dynamically loadable libraries not supported in this system.")
-  #+dlopen
-  (let* ((real-name (format nil "~A.so" (pathname-name output-file))))
-    (merge-pathnames real-name output-file)))
-
-(defun compile-file-pathname (name &key output-file system-p)
-  (let ((extension "o"))
-    (unless system-p
-      #+dlopen
-      (setq extension "so")
-      #-dlopen
-      (error "This platform only supports compiling files with :SYSTEM-P T"))
-    (make-pathname :type extension :defaults (or output-file name))))
+(defun compile-file-pathname (name &key (output-file name) (type :fasl))
+  (let ((format '())
+	(extension '()))
+    (case type
+      ((:shared-library :dll) (setf format #.+shared-library-format+))
+      ((:static-library :library :lib) (setf format #.+static-library-format+))
+      (:data (setf extension "data"))
+      (:c (setf extension "c"))
+      (:h (setf extension "h"))
+      (:object (setf extension #.+object-file-extension+))
+      (:program (setf format #.+executable-file-format+))
+      (:fasl (setf extension "fas")))
+    (if format
+	(merge-pathnames (format nil format (pathname-name output-file))
+			 output-file)
+	(make-pathname :type extension :defaults output-file))))
 
 (defun linker-cc (o-pathname &rest options)
   (safe-system
@@ -137,7 +125,7 @@ extern \"C\"
 #endif
 int init_~A(cl_object cblock)
 {
-	cl_object next;
+	cl_object subblock;
         if (FIXNUMP(cblock))
 		return;
 	cblock->cblock.data = NULL;
@@ -145,7 +133,7 @@ int init_~A(cl_object cblock)
 	cblock->cblock.data_text = \"\";
 	cblock->cblock.data_text_size = 0;
 	~A
-~{	next = read_VV(OBJNULL,init_~A); next->cblock.next = cblock; cblock = next; ~%~}
+~{	subblock = read_VV(OBJNULL,init_~A); subblock->cblock.next = cblock; ~%~}
 	~A
 }")
 
@@ -178,11 +166,11 @@ int init_~A(cl_object cblock)
 	     (push (format nil "-l~A" (string-downcase item)) ld-flags)
 	     (push (init-function-name item) init-name))
 	    (t
-	     (push (namestring (make-pathname :type "o" :defaults item)) ld-flags)
+	     (push (namestring (compile-file-pathname item :type :object)) ld-flags)
 	     (setq item (pathname-name item))
 	     (push (init-function-name item) init-name))))
-    (setq c-name (namestring (make-pathname :type "c" :defaults output-name))
-	  o-name (namestring (make-pathname :type "o" :defaults output-name)))
+    (setq c-name (namestring (compile-file-pathname output-name :type :c))
+	  o-name (namestring (compile-file-pathname output-name :type :object)))
     (ecase target
       (:program
        (setq output-name (namestring output-name))
@@ -193,26 +181,40 @@ int init_~A(cl_object cblock)
 		 epilogue-code))
        (compiler-cc c-name o-name)
        (apply #'linker-cc output-name (namestring o-name) ld-flags))
-      (:static-library
-       (when (symbolp output-name)
-	 (setq output-name (static-library-pathname output-name)))
+      ((:library :static-library :lib)
+       (print "***")
+       (print output-name)
+       (when (or (symbolp output-name) (stringp output-name))
+	 (print (compile-file-pathname output-name :type :lib))
+	 (setq output-name (compile-file-pathname output-name :type :lib)))
        (let ((library-name (string-upcase (pathname-name output-name))))
-	 (unless (equalp (subseq library-name 0 3) "LIB")
-	   (error "Filename ~A is not a valid library name."
-		  output-name))
+	 (print library-name)
+	 (print output-name)
 	 (with-open-file (c-file c-name :direction :output)
 	   (format c-file +lisp-library-main+ init-name
 		   ;; Remove the leading "lib"
-		   (subseq library-name 3)
+		   (subseq library-name #.(length +static-library-prefix+))
 		   prologue-code init-name epilogue-code)))
        (compiler-cc c-name o-name)
        (safe-system (format nil "ar cr ~A ~A ~{~A ~}"
 			    output-name o-name ld-flags))
        (safe-system (format nil "ranlib ~A" output-name)))
       #+dlopen
-      (:shared-library
-       (when (or (symbolp output-name) (not (pathname-type output-name)))
-	 (setq output-name (shared-library-pathname output-name)))
+      ((:shared-library :dll)
+       (when (or (symbolp output-name) (stringp output-name))
+	 (setq output-name (compile-file-pathname output-name :type :dll)))
+       (let ((library-name (string-upcase (pathname-name output-name))))
+	 (with-open-file (c-file c-name :direction :output)
+	   (format c-file +lisp-library-main+
+		   init-name 
+		   ;; Remove the leading lib
+		   (subseq library-name #.(length +shared-library-prefix+))
+		   prologue-code init-name epilogue-code)))
+       (compiler-cc c-name o-name)
+       (apply #'shared-cc output-name o-name ld-flags))
+      (:fasl
+       (when (or (symbolp output-name) (stringp output-name))
+	 (setq output-name (compile-file-pathname output-name :type :fasl)))
        (with-open-file (c-file c-name :direction :output)
 	 (format c-file +lisp-library-main+
 		 init-name "CODE" prologue-code init-name epilogue-code))
@@ -225,6 +227,9 @@ int init_~A(cl_object cblock)
 (defun build-program (&rest args)
   (apply #'builder :program args))
 
+(defun build-module (&rest args)
+  (apply #'builder :fasl args))
+
 (defun build-static-library (&rest args)
   (apply #'builder :static-library args))
 
@@ -233,6 +238,12 @@ int init_~A(cl_object cblock)
   (error "Dynamically loadable libraries not supported in this system.")
   #+dlopen
   (apply #'builder :shared-library args))
+
+(eval-when (compile eval)
+  (defmacro get-output-pathname (input-file output-file ext)
+    `(compile-file-pathname ,input-file
+      :output-file (if (member ,output-file '(T NIL)) ,input-file ,output-file)
+      :type ,ext)))
 
 (defun compile-file (input-pathname
                       &key (output-file 'T)
@@ -250,7 +261,7 @@ int init_~A(cl_object cblock)
 			   (*print-pretty* nil)
                            (*error-count* 0)
 			   (*compile-file-pathname* nil)
-			   (*compile-file-trueame* nil)
+			   (*compile-file-truename* nil)
 			   #+PDE sys:*source-pathname*)
   (declare (notinline compiler-cc))
 
@@ -292,19 +303,12 @@ Cannot compile ~a."
 
   (let* ((eof '(NIL))
 	 (*load-time-values* nil) ;; Load time values are compiled
-	 (output-default (if (or (eq output-file 'T)
-				 (null output-file))
-			     input-pathname
-			     output-file))
-         (directory (pathname-directory output-default))
-         (name (pathname-name output-default))
-	 (o-pathname (get-output-pathname output-file "o"))
+	 (o-pathname (get-output-pathname input-pathname output-file :object))
 	 #+dlopen
-         (so-pathname (if system-p o-pathname
-			  (get-output-pathname output-file "so")))
-         (c-pathname (get-output-pathname c-file "c"))
-         (h-pathname (get-output-pathname h-file "h"))
-         (data-pathname (get-output-pathname data-file "data")))
+         (so-pathname (unless system-p (compile-file-pathname o-pathname)))
+         (c-pathname (get-output-pathname o-pathname c-file :c))
+         (h-pathname (get-output-pathname o-pathname h-file :h))
+         (data-pathname (get-output-pathname o-pathname data-file :data)))
 
     (init-env)
 
@@ -435,10 +439,10 @@ Cannot compile ~a."
       (return-from compile (values nil t t))))
 
   (let ((*load-time-values* 'values) ;; Only the value is kept
-	(c-pathname (make-pathname :type "c" :defaults data-pathname))
-	(h-pathname (make-pathname :type "h" :defaults data-pathname))
-	(o-pathname (make-pathname :type "o" :defaults data-pathname))
-	(so-pathname (make-pathname :type "so" :defaults data-pathname)))
+	(c-pathname (compile-file-pathname data-pathname :type :c))
+	(h-pathname (compile-file-pathname data-pathname :type :h))
+	(o-pathname (compile-file-pathname data-pathname :type :object))
+	(so-pathname (compile-file-pathname data-pathname)))
 
     (init-env)
 
@@ -461,6 +465,7 @@ Cannot compile ~a."
         (progn
           (when *compile-verbose*
 	    (format t "~&;;; Calling the C compiler... "))
+	  ;;(si::system (format nil "cat ~A" (namestring c-pathname)))
           (compiler-cc c-pathname o-pathname)
 	  (shared-cc so-pathname o-pathname)
           (delete-file c-pathname)
@@ -471,7 +476,12 @@ Cannot compile ~a."
                  (when *compile-verbose* (print-compiler-info))
                  (delete-file so-pathname)
                  (delete-file data-pathname)
-		 (values (or name (symbol-value 'GAZONK)) nil nil))
+		 (setf name (or name (symbol-value 'GAZONK)))
+		 ;; By unsetting GAZONK we avoid spurious references to the
+		 ;; loaded code.
+		 (set 'GAZONK nil)
+		 (si::gc t)
+		 (values name nil nil))
 		(t (delete-file data-pathname)
                    (format t "~&;;; The C compiler failed to compile~
 			~the intermediate code for ~s.~%" name)
@@ -588,7 +598,7 @@ Cannot compile ~a."
 
 #+dlopen
 (defun load-o-file (file verbose print)
-  (let ((tmp (make-pathname :type "so" :defaults file)))
+  (let ((tmp (compile-file-pathname file)))
     (shared-cc tmp file)
     (when (probe-file tmp)
       (load tmp :verbose nil :print nil)
@@ -596,7 +606,7 @@ Cannot compile ~a."
       nil)))
 
 #+dlopen
-(push (cons "o" #'load-o-file) si::*load-hooks*)
+(push (cons #.+object-file-extension+ #'load-o-file) si::*load-hooks*)
 
 (defmacro with-compilation-unit (options &rest body)
   `(progn ,@body))

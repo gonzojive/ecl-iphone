@@ -108,9 +108,19 @@ MACHINE_INSTANCE="${host_cpu}"
 MACHINE_VERSION="unknown"
 ARCHITECTURE=`echo "${host_cpu}" | tr a-z A-Z` # i386 -> I386
 
-### Sometimes the path for finding DLLs must be hardcoded.
+
+AC_SUBST(LDRPATH)dnl	Sometimes the path for finding DLLs must be hardcoded.
+AC_SUBST(LIBPREFIX)dnl	Name components of a statically linked library
+AC_SUBST(LIBEXT)
+AC_SUBST(SHAREDEXT)dnl	Name components of a dynamically linked library
+AC_SUBST(SHAREDPREFIX)
+AC_SUBST(OBJEXT)dnl	These are set by autoconf
+AC_SUBST(EXEEXT)
 LDRPATH='~*'
-AC_SUBST(LDRPATH)
+SHAREDEXT='so'
+SHAREDPREFIX='lib'
+LIBPREFIX='lib'
+LIBEXT='a'
 case "${host_os}" in
 	# libdir may have a dollar expression inside
 	linux*)
@@ -142,6 +152,7 @@ case "${host_os}" in
 	cygwin*)
 		thehost="cygwin"
 		shared="no"
+		SHAREDEXT='dll'
 		;;
 	darwin*)
 		thehost="darwin"

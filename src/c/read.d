@@ -1825,6 +1825,7 @@ read_VV(cl_object block, void *entry)
 
 	if (block == NULL)
 		block = cl_alloc_object(t_codeblock);
+	block->cblock.links = Cnil;
 
 	in = OBJNULL;
 	CL_UNWIND_PROTECT_BEGIN {

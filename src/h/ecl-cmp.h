@@ -43,6 +43,6 @@
 	if ((int *)(&narg) < cs_limit) \
 		cs_overflow()
 
-#define TRAMPOLINK(narg, vv, lk) \
+#define TRAMPOLINK(narg, vv, lk, cblock) \
 	cl_va_list args; cl_va_start(args, narg, narg, 0); \
-	return(link_call(vv, (cl_objectfn *)lk, narg, args))
+	return(link_call(vv, (cl_objectfn *)lk, cblock, narg, args))

@@ -35,6 +35,10 @@ si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 	cl_object basename;
 	cl_object prefix;
 
+	/* A full garbage collection enables us to detect unused code
+	   and leave space for the library to be loaded. */
+	si_gc(Ct);
+
 	/* We need the full pathname */
 	filename = coerce_to_filename(cl_truename(filename));
 
@@ -209,7 +213,7 @@ init_load(void)
 {
   SYM_VAL(@'si::*load-hooks*') = cl_list(
 #ifdef ENABLE_DLOPEN
-				4,CONS(make_simple_string("so"), @'si::load-binary'),
+				4,CONS(make_simple_string("fas"), @'si::load-binary'),
 #else
 				3,
 

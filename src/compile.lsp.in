@@ -69,7 +69,7 @@ cd ..; rm -rf tmp/* liblsp* libclos* "))
 (progn
 (load "cmp/defsys.lsp")
 (proclaim '(optimize (safety 2) (space 3)))
-(sbt::operate-on-system cmp #-dlopen :library #+dlopen :shared-library)
+(sbt::operate-on-system cmp #-dlopen :library #+dlopen :fasl)
 ;(sbt::operate-on-system cmp :load)
 )
 

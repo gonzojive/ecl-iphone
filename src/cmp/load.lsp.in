@@ -1,4 +1,3 @@
-
 (load "@abs_srcdir@/cmpdefs" :verbose nil)
 (load "@abs_srcdir@/cmpmac" :verbose nil)
 (load "@abs_srcdir@/cmpinline" :verbose nil)
@@ -25,6 +24,6 @@
 (load "@abs_srcdir@/cmpvar" :verbose nil)
 (load "@abs_srcdir@/cmpwt" :verbose nil)
 (load "@abs_srcdir@/cmpffi" :verbose nil)
+(load "@abs_builddir@/cmpcfg.lsp" :verbose nil)
 (load "@abs_srcdir@/cmpmain" :verbose nil)
 (load "@abs_srcdir@/sysfun" :verbose nil)
-(load "@abs_builddir@/cmpcfg.lsp" :verbose nil)

@@ -21,6 +21,9 @@
 
 /* Use Boehm's garbage collector					*/
 #undef GBC_BOEHM
+#ifdef GBC_BOEHM
+#define ECL_DYNAMIC_VV
+#endif
 
 /* Userland threads?							*/
 #undef THREADS

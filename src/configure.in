@@ -31,7 +31,7 @@ exit 2;
 fi
 
 dnl Set the version number. This seems the best place to keep it.
-ECL_VERSION=0.9b
+ECL_VERSION=0.9c
 AC_SUBST(ECL_VERSION)
 
 dnl Guess operating system of host. We do not allow cross-compiling.
@@ -161,20 +161,20 @@ mandir="${prefix}/man/man1"
 infodir="${prefix}/info"
 TARGETS="ecl${EXEEXT}"
 LIBRARIES=""
-LSP_LIBRARIES="libecl.a"
+LSP_LIBRARIES="${LIBPREFIX}ecl.${LIBEXT}"
 SUBDIR=c
 CLIBS="${CLIBS} -lgmp -lm"
 if test ${boehm} = "no" ; then
-  EXTRA_OBJS="${EXTRA_OBJS} alloc.o gbc.o"
+  EXTRA_OBJS="${EXTRA_OBJS} alloc.${OBJEXT} gbc.${OBJEXT}"
 else
   if test ${local_boehm} = "no"; then
-    LIBRARIES="${LIBRARIES} libgc.a"
+    LIBRARIES="${LIBRARIES} ${LIBPREFIX}gc.${LIBEXT}"
     SUBDIR="${SUBDIR} gc"
     BOEHM_HEADERS="-I\$(top_srcdir)/gc/include"
   else
     BOEHM_HEADERS=""
   fi
-  EXTRA_OBJS="${EXTRA_OBJS} alloc_2.o"
+  EXTRA_OBJS="${EXTRA_OBJS} alloc_2.${OBJEXT}"
   AC_DEFINE(GBC_BOEHM)
 fi
 if test ${shared} = "yes"; then
@@ -184,16 +184,16 @@ else
   LDRPATH='~*'
 fi
 if test ${local_gmp} = "no" ; then
-  LIBRARIES="${LIBRARIES} libgmp.a"
+  LIBRARIES="${LIBRARIES} ${LIBPREFIX}gmp.${LIBEXT}"
   SUBDIR="${SUBDIR} gmp"
 fi
 if test ${runtime} ; then
   AC_DEFINE(RUNTIME)
 else
   if test ${shared} = "yes" ; then
-    LSP_LIBRARIES="${LSP_LIBRARIES} cmp.so sysfun.lsp"
+    LSP_LIBRARIES="${LSP_LIBRARIES} cmp.fas sysfun.lsp"
   else
-    LSP_LIBRARIES="${LSP_LIBRARIES} libcmp.a sysfun.lsp"
+    LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}cmp.${LIBEXT} sysfun.lsp"
   fi
 fi
 if test ${tk} ; then
@@ -202,12 +202,12 @@ if test ${tk} ; then
 fi
 if test ${clx} ; then
   TARGETS="${TARGETS} eclx${EXEEXT}"
-  LSP_LIBRARIES="${LSP_LIBRARIES} libclx.a"
+  LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}clx.${LIBEXT}"
   AC_DEFINE(CLX)
 fi
 if test "${tcp}" -o "${clx}"; then
   AC_DEFINE(TCP)
-  EXTRA_OBJS="${EXTRA_OBJS} tcp.o"
+  EXTRA_OBJS="${EXTRA_OBJS} tcp.${OBJEXT}"
   CLIBS="${CLIBS} ${TCPLIBS}"
 fi
 if test "${oldloop}"; then
@@ -221,15 +221,15 @@ if test "${closstreams}"; then
 fi
 if test "${ffi}"; then
   AC_DEFINE(ECL_FFI)
-  EXTRA_OBJS="${EXTRA_OBJS} ffi.o"
+  EXTRA_OBJS="${EXTRA_OBJS} ffi.${OBJEXT}"
 fi
 if test "${locative}" ; then
-  EXTRA_OBJS="${EXTRA_OBJS} unify.o"
+  EXTRA_OBJS="${EXTRA_OBJS} unify.${OBJEXT}"
   AC_DEFINE(LOCATIVE)
 fi
 AC_MSG_CHECKING(Checking for threads support)
 if test "${threads}" ; then
-  EXTRA_OBJS="${EXTRA_OBJS} lwp.o"
+  EXTRA_OBJS="${EXTRA_OBJS} lwp.${OBJEXT}"
   AC_DEFINE(THREADS)
   AC_MSG_RESULT(userland threads)
 else

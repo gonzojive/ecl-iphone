@@ -92,6 +92,7 @@ loadable extensions that you can later on distribute to other people.
 * Compiling files::             
 * Building standalone executables::  
 * Building libraries::          
+* File names::
 * Compiler examples::           
 @end menu
 
@@ -111,12 +112,12 @@ portable way, but not the fastest one.
 You translate all your lisp code to C using the @ecl{} compiler. The final
 object files can be linked against other C/C++ libraries to obtain a standalone
 executable.
-@item You can build statically linked libraries.
+@item You can build statically and dynamically linked libraries.
 You translate all your lisp code to C and combine the resulting object files
 into a single library with @file{.a} extension. You can distribute this library
 to other people and the final users can utilize these libraries to build
 standalone programs.
-@item You can build dynamically loadable libraries.
+@item You can build dynamically loadable files.
 This is the most flexible way. You translate all lisp code to C and link it
 against possibly other C/C++ libraries to obtain a dynamically loadable library
 (file type @file{.so} under unix). This library can be loaded a startup time to
@@ -158,18 +159,18 @@ intermediate file is later compiled using a C compiler. The result is an object
 file which may have different purposes.
 
 @table @sc
-@item dynamically loadable object files
+@item Dynamically loadable files or FASL (FASt Loadable) files
 These are produced in a @ecl{} built with support for dynamically loadable
 libraries (Feature @kwd{DLOPEN} is in @var{*features*}), when no extra
 arguments are passed to @code{compile-file}. These object files typically have
-the @file{.so} extension, and can be loaded with @code{load}. They cannot be used
+the @file{.fas} extension, and can be loaded with @code{load}. They cannot be used
 to build libraries nor standalone executable programs.
 
 @item linkable object files
 These are produced when invoking @code{compile-file} with the keyword argument
 @kwd{system-p} set to true. The object file typically has the @file{.o}
 extension. It cannot be loaded with @code{load}, but it can be used to build
-libraries or standalone executable programs.
+libraries, standalone executable programs, or larger FASL files.
 @end table
 
 @c ---------------------------------------------------------------------
@@ -205,12 +206,12 @@ empty string, while @var{epilogue-code} invokes the classical lisp
 
 @c ---------------------------------------------------------------------
 
-@node Building libraries, Compiler examples, Building standalone executables, Building programs
+@node Building libraries, File names, Building standalone executables, Building programs
 @section Building libraries
 
 To build a library you proceed more or less the same way as with standalone
 executables. There are two different functions depending on whether you need
-to build static or dynamically loadable libraries.
+to build static or shared libraries.
 
 @defun {c:build-static-library} {@var{library-name} @keys{} @var{lisp-files} @var{prologue-code} @var{epilogue-code}}
 @defunx {c:build-shared-library} {@var{library-name} @keys{} @var{lisp-files} @var{prologue-code} @var{epilogue-code} @var{ld-flags}}
@@ -221,8 +222,8 @@ object file produced with @code{compile-file}.
 
 @var{library-name} is the physical pathname corresponding to the library. The
 value of @var{library-name} must follow some system-specific conventions.  To
-make your program portable, @var{library-name} should be built using the output
-of @code{c:library-pathname}.
+make your program portable, @var{library-name} should be built using the
+output of @code{compile-file-pathname}.
 
 @var{prologue-code} and @var{epilogue-code} are strings with C code to be
 executed before and after initializing the library, respectively. For
@@ -231,25 +232,48 @@ dynamically linked libraries you can also provide a list of strings in
 their purpose is to link C/C++ extensions into the library.
 @end defun
 
-@defun {c:static-library-pathname} {@var{filename-base}}
-@defunx {c:shared-library-pathname} {@var{filename-base}}
+@c ----------------------------------------------------------------------
+@node File names, Compiler examples, Building libraries, Building programs
+@section File names
 
-These function outputs a valid library pathname built using @var{filename-base}
-to extract the directory and part of the file name, and using the type of
-library to determine the right file type.
+@defun {compile-file-pathname} {@var{filename-base} @keys{} @var{output-file} @var{type}}
+
+When compiling lisp files, creating libraries, etc, a number of files are
+produced which are of interest for the user or programmer. However, the name
+of these files will change from system to system. The purpose of the function
+@code{compile-file-pathname} is to query the compiler about the name of the
+different files that it can produce. Possible values of the @var{type}
+argument include:
+
+@table @sc
+@item :fas (default)
+Standard compiled files that can be loaded with @code{load}.
+@item :c, :data, :h
+Intermediate files produced by the Lisp-to-C translator.
+@item :o
+Linkable object files.
+@item :lib, :static-library
+A normal library produced with @code{c:build-static-library}.
+@item :dll, :shared-library
+A dynamically linked librariy produced with @code{c:build-shared-library}.
+@item :program
+An executable produced with @code{c:build-program}.
+@end table
 
 The output of this function is system specific. For example, under FreeBSD
 @example
-> (c:static-library-pathname "/this/path/mylib")
+> (compile-file-pathname "/this/path/mylib" :type :lib)
 #P"/this/path/libmylib.a"
-> (c:shared-library-pathname "/this/path/mylib")
-#P"/this/path/mylib.so"
+> (compile-file-pathname "/this/path/mylib" :type :dll)
+#P"/this/path/libmylib.so"
+> (compile-file-pathname "/this/path/mycode")
+#P"/this/path/mycode.fas"
 @end example
 @end defun
 
 @c ---------------------------------------------------------------------
 
-@node Compiler examples,  , Building libraries, Building programs
+@node Compiler examples, , File names, Building programs
 @section Compiler examples
 
 @subsection The @file{hello.lsp} file
@@ -351,7 +375,7 @@ Hello world!
 Bye.
 @end example
 
-@subsection Example of loadable library
+@subsection Combining files into a larger FASL
 You can only perform the example in this section if your @ecl{} image supports
 dynamically loading of object files. In this example we build a loadable
 library which prints the @code{"Hello world!"} message and does nothing
@@ -377,18 +401,18 @@ Type :h for Help.  Top level.
 The final step is to build the library using the @code{c:build-shared-library}
 instruction.
 @example
-> @b{(c:build-shared-library (c:shared-library-pathname "myecl") :lisp-files '("hello.o"))}
+> @b{(c:build-fasl "myecl" :lisp-files '("hello.o"))}
 "gcc -g -O2 -Dfreebsd  -O -I/home/worm/lib/ecl//h -w -c myecl.c -o myecl.o" 
-"gcc  -w -o myecl.so -L/home/worm/lib/ecl/ myecl.o hello.o -lecl -lclos -llsp  -lgmp -Wl,--export-dynamic -lgc -lcompat -lgmp -lm" 
-"myecl.so"
+"gcc  -w -o myecl.fas -L/home/worm/lib/ecl/ myecl.o hello.o -lecl -lclos -llsp  -lgmp -Wl,--export-dynamic -lgc -lcompat -lgmp -lm" 
+"myecl.fas"
 @end example
 @noindent
 Now you can load this extension from any @ecl{} image, even those you produce
-with @code{c:build-program}
+with @code{c:build-program}.
 
 @example
-> (load (c:shared-library-pathname "myecl"))
-;;; Loading myecl.so
+> (load "myecl")
+;;; Loading myecl.fas
 Hello world!
 Bye.
 @end example

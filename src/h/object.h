@@ -353,6 +353,7 @@ struct codeblock {
 	int	source_pathname;
 #endif
 	cl_object name;
+	cl_object links;		/*  list of symbols with linking calls  */
 };
 
 struct bytecodes {

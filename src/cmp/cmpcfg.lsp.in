@@ -3,9 +3,18 @@
 ;;   to the directory with our header files.
 ;;
 (in-package "COMPILER")
-(setq compiler::*cc* "@ECL_CC@")
-(setq compiler::*cc-flags* "@CFLAGS@ @LSPCFLAGS@")
-(setq compiler::*ld-flags* "@LDRPATH@ -lecl @LDFLAGS@ @CLIBS@")
+(setq *cc* "@ECL_CC@")
+(setq *cc-flags* "@CFLAGS@ @LSPCFLAGS@")
+(setq *ld-flags* "@LDRPATH@ -lecl @LDFLAGS@ @CLIBS@")
 #+dlopen
-(setq compiler::*ld-shared-flags* "@SHARED_LDFLAGS@")
+(setq *ld-shared-flags* "@SHARED_LDFLAGS@")
+(eval-when (eval)
+  (setq +shared-library-prefix+ "@SHAREDPREFIX@"
+        +shared-library-extension+ "@SHAREDEXT@"
+	+shared-library-format+ "@SHAREDPREFIX@~a.@SHAREDEXT@"
+	+static-library-prefix+ "@LIBPREFIX@"
+	+static-library-extension+ "@LIBEXT@"
+	+static-library-format+ "@LIBPREFIX@~a.@LIBEXT@"
+	+object-file-extension+ "@OBJEXT@"
+	+executable-file-format+ "~a@EXEEXT@"))
 (load "sys:sysfun.lsp" :verbose nil :print nil)

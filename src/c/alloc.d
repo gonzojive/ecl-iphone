@@ -386,6 +386,7 @@ ONCE_MORE:
 	  obj->cblock.data_size = 0;
 	  obj->cblock.data_text = NULL;
 	  obj->cblock.data_text_size = 0;
+	  obj->cblock.links = OBJNULL;
 	  break;
 #ifdef ECL_FFI
 	case t_foreign:

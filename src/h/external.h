@@ -36,7 +36,7 @@ extern void GC_free(void *);
 #define cl_alloc_align(s,d) GC_malloc(s)
 #define cl_alloc_atomic_align(s,d) GC_malloc_atomic_ignore_off_page(s)
 #define cl_dealloc(p,s)
-#define ecl_register_static_root(x)
+#define ecl_register_static_root(x) ecl_register_root(x)
 #else
 extern cl_object si_room_report _ARGS((int narg));
 extern cl_object si_allocate _ARGS((int narg, cl_object type, cl_object qty, ...));
@@ -313,7 +313,7 @@ extern cl_object cl_constantp(int narg, cl_object arg, ...);
 
 #define funcall cl_funcall
 extern cl_object cl_apply_from_stack(cl_index narg, cl_object fun);
-extern cl_object link_call(cl_object sym, cl_objectfn *pLK, int narg, cl_va_list args);
+extern cl_object link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_va_list args);
 extern cl_object cl_safe_eval(cl_object form, cl_object env, cl_object err_value);
 
 /* ffi.c */

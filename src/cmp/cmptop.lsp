@@ -160,7 +160,7 @@
   (dolist (x *linking-calls*)
     (let ((i (second x)))
       (wt-nl1 "static cl_object LKF" i
-	      "(int narg, ...) {TRAMPOLINK(narg," (third x) ",&LK" i ");}")))
+	      "(int narg, ...) {TRAMPOLINK(narg," (third x) ",&LK" i ",Cblock);}")))
 
   (wt-h "#define compiler_data_text_size " *wt-string-size*)
 
