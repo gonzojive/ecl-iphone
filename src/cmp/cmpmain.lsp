@@ -67,6 +67,13 @@ coprocessor).")
 			 output-file)
 	(make-pathname :type extension :defaults output-file))))
 
+#+msvc
+(defun delete-msvc-generated-files (output-pathname)
+  (loop for i in '("lib" "exp" "ilk" "pdb")
+        do (let ((the-pathname (merge-pathnames (make-pathname :type i) output-pathname)))
+	     (when (probe-file the-pathname)
+	       (delete-file the-pathname)))))
+
 (defun linker-cc (o-pathname &rest options)
   (safe-system
    (format nil
@@ -211,7 +218,7 @@ main(int argc, char **argv)
 	 c-file)
     (dolist (item (reverse lisp-files))
       (cond ((symbolp item)
-	     (push (format nil "-l~A" (string-downcase item)) ld-flags)
+	     (push (format nil #-msvc "-l~A" #+msvc "~A.lib" (string-downcase item)) ld-flags)
 	     (push (init-function-name item nil) submodules))
 	    (t
 	     (push (si::coerce-to-filename
@@ -567,6 +574,7 @@ Cannot compile ~a."
           (cond ((probe-file so-pathname)
                  (load so-pathname :verbose nil)
 		 #-(or mingw32 msvc)(delete-file so-pathname)
+		 #+msvc (delete-msvc-generated-files so-pathname)
                  (when *compile-verbose* (print-compiler-info))
 		 (setf name (or name (symbol-value 'GAZONK)))
 		 ;; By unsetting GAZONK we avoid spurious references to the
@@ -583,6 +591,7 @@ Cannot compile ~a."
           (when (probe-file h-pathname) (delete-file h-pathname))
           (when (probe-file so-pathname) (delete-file so-pathname))
           (when (probe-file data-pathname) (delete-file data-pathname))
+	  #+msvc (delete-msvc-generated-files so-pathname)
           (format t "~&;;; Failed to compile ~s.~%" name)
           (setq *error-p* t)
           (values name t t)))))
