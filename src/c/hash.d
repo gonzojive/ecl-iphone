@@ -324,7 +324,7 @@ add_new_to_hash(cl_object key, cl_object hashtable, cl_object value)
 			e[i].value = value;
 			return;
 		}
-	corrupted_hashtable();
+	corrupted_hash(hashtable);
 }
 
 void
