@@ -257,8 +257,6 @@
 (DIGIT-CHAR (fixnum *) character nil nil)
 (CHAR-INT (character) fixnum nil nil
 	:inline-always ((character) fixnum nil nil "#0"))
-(INT-CHAR (fixnum) character nil nil
-	:inline-always ((fixnum) character nil nil "#0"))
 (CHAR-NAME (character) symbol)
 (NAME-CHAR (symbol) character)
 
