@@ -395,18 +395,18 @@ Cannot compile ~a."
                         (when load (load so-pathname))
                         (when *compile-verbose*
 			  (print-compiler-info)
-			  (format t "~&;;; Finished compiling ~a."
+			  (format t "~&;;; Finished compiling ~a.~%"
 				  (namestring input-pathname))))
 		       ((and system-p (probe-file o-pathname))
                         (when *compile-verbose*
 			  (print-compiler-info)
-			  (format t "~&;;; Finished compiling ~a."
+			  (format t "~&;;; Finished compiling ~a.~%"
 				  (namestring input-pathname))))
                        (t (format t "~&;;; The C compiler failed to compile the intermediate file.~%")
                           (setq *error-p* t))))
 		(*compile-verbose*
 		 (print-compiler-info)
-		 (format t "~&;;; Finished compiling ~a."
+		 (format t "~&;;; Finished compiling ~a.~%"
 			 (namestring input-pathname))))
           (unless c-file (delete-file c-pathname))
           (unless h-file (delete-file h-pathname))
