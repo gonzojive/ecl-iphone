@@ -8,20 +8,20 @@
 ;;;
 ;;; * Load Common-Lisp base library
 ;;;
-(load "lsp/load.lsp")
+(if (member "ECL-MIN" *features* :test #'string-equal)
+  (load "lsp/load.lsp"))
 
 ;;;
 ;;; * Load PCL-based Common-Lisp Object System
 ;;;
-#+WANTS-CLOS
-(progn
 (setf sys::*gc-verbose* nil)
-(load "clos/load.lsp"))
+#+(and wants-clos ecl-min)
+(load "clos/load.lsp")
 
 ;;;
 ;;; * Load the compiler.
 ;;;
-(load "cmp/load.lsp")
+(load #+ecl-min "cmp/load.lsp" #-ecl-min "./cmp.so")
 
 (load "@srcdir@/doc/help.lsp")
 (si::dump-documentation "help.doc")
@@ -61,4 +61,5 @@
 ;;;
 ;;; * Go back to build directory to start compiling
 ;;;
+#+ecl-min
 (setq *features* (remove :ecl-min *features*))
