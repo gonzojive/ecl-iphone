@@ -2395,7 +2395,7 @@ for the string ~S.",
 
 @(defun make-string-output-stream (&key (element_type @'base-char'))
 @
-	if (Null(cl_subtypep(element_type, @'character'))) {
+	if (Null(funcall(3, @'subtypep', element_type, @'character'))) {
 		FEerror("In MAKE-STRING-OUTPUT-STREAM, the argument :ELEMENT-TYPE (~A) must be a subtype of character",
 			1, element_type);
 	}
