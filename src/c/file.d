@@ -352,7 +352,6 @@ open_stream(cl_object fn, enum smmode smm, cl_object if_exists,
 	x->stream.object1 = fn;
 	x->stream.int0 = x->stream.int1 = 0;
 #if !defined(GBC_BOEHM)
-	fp->_IO_buf_base = NULL; /* BASEFF; */
 	setbuf(fp, x->stream.buffer = alloc(BUFSIZ));
 #endif
 	return(x);

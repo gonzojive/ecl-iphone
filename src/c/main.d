@@ -34,9 +34,6 @@ int data_start = (int)&data_start;
 /******************************** IMPORTS *****************************/
 
 #include "ecls.h"
-#ifdef HAVE_SYS_UTSNAME_H
-# include <sys/utsname.h>
-#endif
 #ifdef TK
 # include "tk.h"
 #endif
@@ -62,7 +59,7 @@ static char stdout_buf[BUFSIZ];
 #endif
 
 int
-main(int argc, char **argv)
+cl_boot(int argc, char **argv)
 {
 #if !defined(GBC_BOEHM)
 	setbuf(stdin,  stdin_buf);
@@ -102,8 +99,6 @@ main(int argc, char **argv)
 		  NULL); /* geometry */
 	}
 #endif
-	funcall(1, @'si::top-level');
-	return(0);
 }
 
 @(defun quit (&optional (code MAKE_FIXNUM(0)))
@@ -156,36 +151,6 @@ main(int argc, char **argv)
 	@(return make_unsigned_integer((cl_index)x))
 @)
 
-#ifdef HAVE_SYS_UTSNAME_H
-@(defun machine_instance ()
-	struct utsname uts;
-@
-	uname(&uts);
-	@(return make_string_copy(uts.nodename))
-@)
-
-@(defun machine_version ()
-	struct utsname uts;
-@
-	uname(&uts);
-	@(return make_string_copy(uts.machine))
-@)
-
-@(defun software_type ()
-	struct utsname uts;
-@
-	uname (&uts);
-	@(return make_string_copy(uts.sysname))
-@)
-
-@(defun software_version ()
-	struct utsname uts;
-@
-	uname (&uts);
-	@(return make_string_copy(uts.release))
-@)
-#endif
-
 void
 init_main(void)
 {
@@ -218,6 +183,10 @@ init_main(void)
 #endif CLOS
 
 	 ADD_FEATURE("ANSI-CL");
+
+#ifdef USE_DLOPEN
+	 ADD_FEATURE("DLOPEN");
+#endif
 
 #ifdef PDE
 	 ADD_FEATURE("PDE");

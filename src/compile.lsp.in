@@ -10,6 +10,7 @@
 (load "lsp/defsys.lsp")
 (proclaim '(optimize (safety 2) (space 3)))
 (sbt::operate-on-system lsp :library)
+#+dlopen
 (sbt::operate-on-system lsp :load)
 (si::pathname-translations "SYS" '(("*.*" "./*.*")))
 (setq compiler::*cc-flags* (concatenate 'string compiler::*cc-flags* " -I@srcdir@/h -I@srcdir@/gmp -I@builddir@/h"))

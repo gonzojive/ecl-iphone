@@ -27,7 +27,7 @@
 (defvar ecl-search-string)
 
 (defun search-ecl (string)
-  (interactive "MString: ")
+  (interactive "sString: ")
   (setq ecl-search-string string)
   (let ((remaining (member (buffer-file-name (current-buffer)) ecl-files)))
     (dolist (i (or remaining ecl-files))
@@ -166,6 +166,12 @@
 (global-set-key [?\221 ?\C-n] 'search-next-ecl)
 (global-set-key [?\221 ?\C-m] 'next-ecl)
 (global-set-key [?\221 ?\C-p] 'ecl-load-symbols)
+
+(global-set-key [?\M-p ?\C-i] 'back-to-emacs)
+(global-set-key [?\M-p ?\C-s] 'search-ecl)
+(global-set-key [?\M-p ?\C-n] 'search-next-ecl)
+(global-set-key [?\M-p ?\C-m] 'next-ecl)
+(global-set-key [?\M-p ?\C-p] 'ecl-load-symbols)
 
 (setq auto-mode-alist (acons "\\.d\\'" 'c-mode auto-mode-alist))
 

@@ -31,7 +31,7 @@ exit 2;
 fi
 
 dnl Set the version number. This seems the best place to keep it.
-ECLS_VERSION=0.3
+ECLS_VERSION=0.4
 AC_SUBST(ECLS_VERSION)
 
 dnl Guess operating system of host. We do not allow cross-compiling.
@@ -45,32 +45,32 @@ AC_SUBST(infodir)
 AC_SUBST(builddir)
 AC_SUBST(top_srcdir)
 AC_ARG_ENABLE(boehm,
-	[  --enable-boehm	  Enable Boehm & Weiser's garbage collector.],
-	boehm="$enable_boehm")
+	AC_HELP_STRING([--disable-boehm],[Disable Boehm's garbage collector.]),
+	boehm="${enableval}", boehm="yes")
 dnl AC_ARG_ENABLE(tk,
-dnl 	[  --enable-tk		  Include Tk.],
+dnl 	AC_HELP_STRING([--enable-tk],[Include Tk.]),
 dnl 	tk="$enable_tk")
 dnl AC_ARG_ENABLE(clx,
-dnl 	[  --enable-clx		  Include CLX.],
+dnl 	AC_HELP_STRING([--enable-clx],[Include CLX.]),
 dnl 	clx="$enable_clx")
-AC_ARG_ENABLE(tcp,
-	[  --enable-tcp		  Include socket interface.],
-	tcp="$enable_tcp")
+AC_ARG_WITH(tcp,
+	AC_HELP_STRING([--with-tcp],[Include socket interface.]),
+	tcp="yes")
 AC_ARG_ENABLE(gmp,
-	[  --enable-local-gmp	  Use already installed GMP library.],
-	gmp="$enable_local_gmp")
+	AC_HELP_STRING([--enable-local-gmp],[Use already installed GMP library.]),
+	gmp="${enableval}")
 AC_ARG_WITH(gmp,
-	[  --with-gmp[=args]	  Configure supplied GMP library with arguments.],
+	AC_HELP_STRING([--with-gmp=args],[Configure supplied GMP library with arguments.]),
 	[gmp_flags=$withval; enable_local_gmp=no],
 	gmp_flags="")
 dnl AC_ARG_ENABLE(locative,
-dnl 	[  --enable-locative	  Include locative support.],
+dnl 	AC_HELP_STRING([--enable-locative],[Include locative support.]),
 dnl 	locative="$enable_locative")
 dnl AC_ARG_ENABLE(threads,
-dnl 	[  --enable-threads	  Include the multiple thread facility.],
+dnl 	AC_HELP_STRING([--enable-threads],[Include the multiple thread facility.]),
 dnl 	threads="$enable_threads")
 dnl AC_ARG_ENABLE(runtime,
-dnl 	[  --enable-runtime	  Build a RunTime Lisp with no compiler.],
+dnl 	AC_HELP_STRING([--enable-runtime],[Build no compiler.]),
 dnl 	runtime="$enable_runtime")
 
 ### ----------------------------------------------------------------------
@@ -84,29 +84,6 @@ AC_PROG_CPP           # sets variable CPP
 AC_PROG_RANLIB        # sets variable RANLIB
 AC_PROG_INSTALL       # sets variables INSTALL, INSTALL_DATA, INSTALL_PROGRAM
 AC_PROG_LN_S          # sets variable LN_S
-[
-#### Some command variations:
-
-if test ${host} = MSDOS -o ${host} = GO32 ; then
- RM="deltree /y"
- CP="copy"
- MV="move"
- if test ${host} = MSDOS ; then
-   RUN="emx "
-  else
-   RUN="go32 "
-  fi
-else
- RM="rm -f"
- CP="cp"
- MV="mv"
- RUN="./"
-fi
-]
-AC_SUBST(CP)
-AC_SUBST(RM)
-AC_SUBST(MV)
-AC_SUBST(RUN)
 AC_SUBST(CFLAGS)dnl		Flags for the compiler
 AC_SUBST(LSPCFLAGS)dnl		Additional flags needed to compile translated code
 AC_SUBST(CLIBS)dnl		System libraries to be linked in
@@ -157,7 +134,7 @@ includedir="${exec_prefix}/lib/ecls/h"
 mandir="${prefix}/man/man1"
 infodir="${prefix}/info"
 builddir=`pwd`
-TARGETS=ecls
+TARGETS="ecls${EXEEXT}"
 LIBRARIES=libecls.a
 LSP_LIBRARIES=liblsp.a
 SUBDIR=c
@@ -171,7 +148,7 @@ if test ${boehm} ; then
 else
   EXTRA_OBJS="${EXTRA_OBJS} alloc.o gbc.o"
 fi
-if test ${enable_local_gmp} ; then
+if test ${gmp} ; then
   AC_DEFINE(HAVE_LOCAL_GMP)
 else
   LIBRARIES="${LIBRARIES} libgmp.a"
@@ -187,7 +164,7 @@ if test ${tk} ; then
   AC_DEFINE(TK)
 fi
 if test ${clx} ; then
-  TARGETS="${TARGETS} eclx"
+  TARGETS="${TARGETS} eclx${EXEEXT}"
   LSP_LIBRARIES="${LSP_LIBRARIES} libclx.a"
   AC_DEFINE(CLX)
 fi
@@ -261,41 +238,38 @@ XLIBS="$XLIBS $X_PRE_LIBS -lX11 $X_EXTRA_LIBS"
 dnl ---------------------------------------------------------------------
 dnl		GNU multiprecision library
 dnl
-[
-echo -n "checking for gmp..."
-if test "$enable_local_gmp" = "yes"; then
-  echo "use local $enable_local_gmp"
+AC_MSG_CHECKING(checking for gmp...)
+if test ${gmp} ; then
+  AC_MSG_RESULT(no)
 else
-  echo "configuring gmp"
+  AC_MSG_RESULT(yes, configuring)
   test -d gmp && rm -rf gmp
   if mkdir gmp; then
-    (cd gmp;
+   (cd gmp;
      $srcdir/gmp/configure $gmp_flags)
   fi
 fi
-]
 dnl ---------------------------------------------------------------------
 dnl		Boehm-Weiser garbage collector
 dnl
-[
-echo -n "checking for Boehm-Weiser gc..." 
-if test "$enable_boehm" = "yes"; then
-  echo "configuring"
+AC_MSG_CHECKING(checking for Boehm-Weiser gc...)
+if test ${boehm} ; then
+  AC_MSG_RESULT(yes, configuring)
   test -d gc && rm -rf gc
   if mkdir gc; then
-    (cd gc;
+   (cd gc;
      $srcdir/gc/configure --libdir="$libdir" --bindir="$bindir" \
 	 --includedir="$includedir" --disable-shared)
   fi
 else
-  echo "no"
+  AC_MSG_RESULT(no)
 fi
-]
 dnl ---------------------------------------------------------------------
 dnl		Final pass over configuration files
 dnl
-AC_OUTPUT(h/config.h compile.lsp compile_rest.lsp bare.lsp
+AC_CONFIG_FILES(compile.lsp compile_rest.lsp bare.lsp
  lsp/config.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp
  ../Makefile Makefile c/Makefile doc/Makefile
  tk/Makefile clx/defsys.lsp tests/Makefile ansi-tests/Makefile gabriel/Makefile
  lsp/defsys.lsp cmp/defsys.lsp clos/defsys.lsp)
+AC_OUTPUT

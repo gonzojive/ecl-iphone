@@ -17,7 +17,8 @@
 
 /******************************* ------- ******************************/
 
-extern void init_lisp_libs(void);
+extern void init_LSP();
+extern void init_CLOS();
 
 void
 init_lisp(void)
@@ -110,5 +111,6 @@ init_lisp(void)
 	SYM_VAL(@'*features*') = CONS(make_keyword("RUNTIME"), SYM_VAL(@'*features*'));
 #endif
 	ihs_push(_intern("TOP-LEVEL", system_package), Cnil);
-	init_lisp_libs();
+	init_LSP();
+	init_CLOS();
 }

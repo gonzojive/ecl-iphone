@@ -15,10 +15,10 @@
 (defun lisp-implementation-version () "@ECLS_VERSION@")
 (defun machine-type () "@architecture@")
 ;; obtained from uname(2) where available
-;;(defun machine-instance () "@MACHINE_INSTANCE@")
-;;(defun machine-version () "@MACHINE@")
-;;(defun software-type () "@software_type@")
-;;(defun software-version () "@software_version@")
+(defun machine-instance () "@MACHINE_INSTANCE@")
+(defun machine-version () "@MACHINE@")
+(defun software-type () "@OS_TYPE@")
+(defun software-version () "@OS_RELEASE@")
 ;;
 ;; * Set up some room
 ;;

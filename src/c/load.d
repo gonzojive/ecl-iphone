@@ -32,6 +32,7 @@ cl_object @'si::*source-pathname*';
 
 /******************************* ------- ******************************/
 
+#ifdef USE_DLOPEN
 @(defun si::load_binary (filename verbose print)
 	cl_object block;
 	cl_object basename;
@@ -76,6 +77,7 @@ GO_ON:
 	read_VV(block, block->cblock.entry);
 	@(return Cnil)
 @)
+#endif /* USE_DLOPEN */
 
 @(defun si::load_source (filename verbose print)
 	cl_object x, strm;
@@ -211,13 +213,19 @@ init_load(void)
 #endif PDE
 
   load_source = make_si_ordinary("LOAD-SOURCE");
+#ifdef USE_DLOPEN
   load_binary = make_si_ordinary("LOAD-BINARY");
+#endif
   SYM_VAL(@'si::*load-hooks*') = list(4,
+#ifdef USE_DLOPEN
 				CONS(make_simple_string("so"), load_binary),
+#endif
 				CONS(make_simple_string("lsp"), load_source),
 				CONS(make_simple_string("lisp"), load_source),
 				CONS(Cnil, load_source));
 
+#ifdef USE_DLOPEN
   if (dlopen(NULL, RTLD_NOW|RTLD_GLOBAL) == NULL)
     printf(";;; Error dlopening self file\n;;; Error: %s\n", dlerror());
+#endif
 }

@@ -20,10 +20,27 @@ esac
 ])
 dnl
 dnl --------------------------------------------------------------
-dnl Define a name for this operating system.
+dnl Define a name for this operating system and set some defaults
 dnl
 AC_DEFUN(ECLS_GUESS_HOST_OS,[
+#### Some command variations:
+AC_SUBST(CP)
+AC_SUBST(RM)
+AC_SUBST(MV)
+AC_SUBST(EXE_SUFFIX)
+RM="rm -f"
+CP="cp"
+MV="mv"
+
 ### Guess the operating system
+AC_SUBST(MACHINE_INSTANCE)
+AC_SUBST(MACHINE_VERSION)
+AC_SUBST(OS_TYPE)
+AC_SUBST(OS_RELEASE)
+MACHINE_INSTANCE=`uname -m`
+MACHINE_VERSION=`uname -r`
+OS_TYPE=`uname -s`
+OS_RELEASE=`uname -r`
 case $host_os in
 	linux*)
 		host="linux"
@@ -36,6 +53,9 @@ case $host_os in
 		;;
 	solaris*)
 		host="sun4sol2"
+		;;
+	cygwin*)
+		host="cygwin"
 		;;
 	*)
 		host="$host_os"

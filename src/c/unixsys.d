@@ -83,13 +83,17 @@ system(command)
 #endif
 
 @(defun si::system (cmd)
+	volatile char *s;
+	volatile int code;
 @
 	assert_type_string(cmd);
+	s = cmd->string.self;
+	code = system(s);
 	/* FIXME! Are there any limits for system()? */
 	/* if (cmd->string.fillp >= 1024)
 		FEerror("Too long command line: ~S.", 1, cmd);*/
 	/* FIXME! This is a non portable way of getting the exit code */
-	@(return MAKE_FIXNUM(system(cmd->string.self) >> 8))
+	@(return MAKE_FIXNUM(code >> 8))
 @)
 
 @(defun si::open_pipe (cmd)
@@ -107,8 +111,6 @@ system(command)
   stream->stream.object1 = cmd;
   stream->stream.int0 = stream->stream.int1 = 0;
 #if !defined(GBC_BOEHM)
-  /* FIXME! This is not portable */
-  ptr->_IO_buf_base = NULL;
   setbuf(ptr, stream->stream.buffer = alloc_atomic(BUFSIZ));
 #endif
   @(return stream)

@@ -14,6 +14,7 @@ LIBS	= @LIBS@ @TKLIBS@ @CLIBS@
 CFLAGS	= @CFLAGS@
 LDFLAGS	= @LDFLAGS@
 RM	= @RM@
+EXE	= @EXEEXT@
 
 # ==================== Where To Install Things ====================
 
@@ -46,13 +47,13 @@ all:	$(TARGETS) doc
 %Makefile: $(srcdir)/%Makefile.in config.status
 	./config.status
 
-eclx: ecls compile_rest.lsp
+eclx$(EXE): ecls$(EXE) compile_rest.lsp
 	./ecls < compile_rest.lsp
 
-ecls: ecls_min compile.lsp
+ecls$(EXE): ecls_min$(EXE) compile.lsp
 	./ecls_min < compile.lsp
 
-ecls_min: $(LIBRARIES) .gdbinit
+ecls_min$(EXE): $(LIBRARIES) .gdbinit
 	$(CC) $(LDFLAGS) -o $@ c/cinit.o -L./ $(LIBRARIES) $(LIBS)
 
 .gdbinit: $(srcdir)/util/gdbinit
@@ -93,7 +94,7 @@ install: BUILD-STAMP
 
 uninstall:
 	rm -rf $(mandir)/ecls.1
-	rm -rf $(bindir)/ecls
+	rm -rf $(bindir)/ecls$(EXE)
 	rm -rf $(libdir)
 	cd doc; $(MAKE) uninstall
 
@@ -102,7 +103,7 @@ doc: $(TARGETS)
 
 clean: clean_lisp
 	for i in ${SUBDIR}; do (cd $$i; make clean); done
-	$(RM) ecls_min ecls_min.sym ecls ecls.sym help.doc core a.out
+	$(RM) ecls_min$(EXE) ecls$(EXE) help.doc core a.out
 	$(RM) config.version config.log config.cache
 	$(RM) *.c *.o *.a *.h *.data
 clean_lisp:

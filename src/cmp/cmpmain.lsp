@@ -28,8 +28,10 @@
 (defvar *cc-format* "~A ~A ~:[~*~;~A~] -I~A/h -w -c ~A -o ~A"))
 ;(defvar *cc-format* "~A ~A ~:[~*~;~A~] -I~A/h -c ~A -o ~A"))
 (defvar *ld-flags* "")
-(defvar *ld-format* "~A ~A -w -o ~A -L~A ~{~A ~} -llsp ~A")
+(defvar *ld-format* "~A ~A -w -o ~A -L~A ~{~A ~} ~A")
+#+dlopen
 (defvar *ld-shared-flags* "")
+#+dlopen
 (defvar *ld-shared-format* "ld ~A -o ~A -L~A ~{~A ~} ~A")
 
 (eval-when (compile eval)
@@ -54,7 +56,7 @@
   (make-pathname :name (concatenate 'string "lib" name) :type "a" :defaults directory))
 
 (defun compile-file-pathname (name &key output-file)
-  (merge-pathnames (or output-file name) #P".so"))
+  (merge-pathnames (or output-file name) #+dlopen #P".so" #-dlopen #P".o"))
 
 (defun make-library (lib objects &key (output-dir "./"))
   (let* ((lib (string-upcase lib))
@@ -91,6 +93,7 @@ init_~A(cl_object)
 	   (namestring (translate-logical-pathname "SYS:"))
 	   options *ld-flags*)))
 
+#+dlopen
 (defun shared-cc (o-pathname options &optional (shared nil))
   (safe-system
    (format nil
@@ -104,27 +107,28 @@ init_~A(cl_object)
 (defun build-ecls (name &rest components)
   (let ((c-name (make-pathname :name name :type "c"))
 	(o-name (make-pathname :name name :type "o"))
-	(ld-flags nil))
+	(ld-flags (list "-lecls" #+CLOS "-lclos" "-llsp")))
     (with-open-file (c-file c-name :direction :output)
       (format c-file "
 #include \"ecls.h\"
 
 extern cl_object lisp_package;
 
-void
-init_lisp_libs(void)
+int
+main(int argc, char **argv)
 {
-	init_LSP();
+	cl_boot(argc, argv);
 	siLpackage_lock(2, lisp_package, Ct);~%")
-      (dolist (item (append '(#+clos clos) components))
+      (dolist (item (reverse components))
 	(cond ((symbolp item)
 	       (format c-file "	init_~A();~%" (string-upcase item))
-	       (setq ld-flags (nconc ld-flags (list (format nil "-l~A" (string-downcase item))))))
+	       (push (format nil "-l~A" (string-downcase item)) ld-flags))
 	      ((stringp item)
-	       (setq ld-flags (nconc ld-flags (list item))))
+	       (push item ld-flags))
 	      (t
 	       (error "compiler::build-ecls wrong argument ~A" item))))
       (format c-file "
+	funcall(1,_intern(\"TOP-LEVEL\", system_package));
 	return;~%}~%" name))
     (compiler-cc c-name o-name)
     (linker-cc name (cons (namestring o-name) ld-flags))
@@ -148,6 +152,13 @@ init_lisp_libs(void)
                            (*error-count* 0)
 			   #+PDE sys:*source-pathname*)
   (declare (notinline compiler-cc))
+
+  #-dlopen
+  (unless system-p
+    (format t "~%;;;~
+~%;;; This system does not support loading dynamically linked libraries.~
+~%;;; Therefore, COMPILE-FILE without :SYSTEM-P T is unsupported.~
+~%;;;"))
 
   (setq input-pathname (merge-pathnames input-pathname #".lsp"))
 
@@ -184,6 +195,7 @@ Cannot compile ~a."
          (directory (pathname-directory output-default))
          (name (pathname-name output-default))
 	 (o-pathname (get-output-pathname output-file "o"))
+	 #+dlopen
          (so-pathname (if system-p o-pathname
 			  (get-output-pathname output-file "so")))
          (c-pathname (get-output-pathname c-file "c"))
@@ -237,9 +249,16 @@ Cannot compile ~a."
 		 (when *compile-verbose*
 		   (format t "~&;;; Calling the C compiler... "))
                  (compiler-cc c-pathname o-pathname)
+		 #+dlopen
 		 (unless system-p (shared-cc so-pathname (list o-pathname) t))
-                 (cond ((probe-file so-pathname)
+                 (cond #+dlopen
+		       ((and (not system-p) (probe-file so-pathname))
                         (when load (load so-pathname))
+                        (when *compile-verbose*
+			  (print-compiler-info)
+			  (format t "~&;;; Finished compiling ~a."
+				  (namestring input-pathname))))
+		       ((and system-p (probe-file o-pathname))
                         (when *compile-verbose*
 			  (print-compiler-info)
 			  (format t "~&;;; Finished compiling ~a."
@@ -253,8 +272,12 @@ Cannot compile ~a."
           (unless c-file (delete-file c-pathname))
           (unless h-file (delete-file h-pathname))
           (unless data-file (delete-file data-pathname))
+	  #+dlopen
 	  (unless system-p (delete-file o-pathname))
-	  so-pathname)
+	  #+dlopen
+	  (if system-p o-pathname so-pathname)
+	  #-dlopen
+	  o-pathname)
 
         (progn
           (when (probe-file c-pathname) (delete-file c-pathname))
@@ -267,6 +290,14 @@ Cannot compile ~a."
         ))
   )
 
+#-dlopen
+(defun compile (name &optional (def nil supplied-p))
+  (format t "~%;;;~
+~%;;; This system does not support loading dynamically linked libraries.~
+~%;;; Therefore, COMPILE is unsupported.~
+~%;;;"))
+
+#+dlopen
 (defun compile (name &optional (def nil supplied-p)
                       &aux form gazonk-name
                       data-pathname
@@ -488,6 +519,7 @@ Cannot compile ~a."
                 (t 3))
           *safe-compile* *space* *speed*))
 
+#+dlopen
 (defun load-o-file (file verbose print)
   (let ((tmp (merge-pathnames ".so" file)))
     (shared-cc tmp (list file))
@@ -496,6 +528,7 @@ Cannot compile ~a."
       ;(delete-file tmp)
       nil)))
 
+#+dlopen
 (push (cons "o" #'load-o-file) si::*load-hooks*)
 
 ;;; ----------------------------------------------------------------------

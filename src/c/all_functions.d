@@ -366,7 +366,9 @@ const struct function_info all_functions[] = {
 	/* load.d */
 
 	{"LOAD", clLload, cl},
+#ifdef USE_DLOPEN
 	{"LOAD-BINARY", siLload_binary, si},
+#endif
 	{"LOAD-SOURCE", siLload_source, si},
 
 	/* lwp.d */
@@ -406,12 +408,6 @@ const struct function_info all_functions[] = {
 	{"ARGV", siLargv, si},
 	{"GETENV", siLgetenv, si},
 	{"POINTER", siLpointer, si},
-#if !defined(MSDOS) && !defined(__NeXT)
-	{"MACHINE-INSTANCE", clLmachine_instance, cl},
-	{"MACHINE-VERSION", clLmachine_version, cl},
-	{"SOFTWARE-TYPE", clLsoftware_type, cl},
-	{"SOFTWARE-VERSION", clLsoftware_version, cl},
-#endif MSDOS
 
 	/* mapfun.c */
 

@@ -74,8 +74,14 @@ href="http://ecls.sourceforge.net">ECLS</a>, either statically or at runtime.
 
 <li><b>Portability to arbitrary environments.</b>
 
-<p><a href="http://ecls.sourceforge.net">ECLS</a> currently compiles and runs
-on Linux, FreeBSD 4.x and NetBSD 1.5. Most of the code is portable. The parts
+<p><a href="http://ecls.sourceforge.net">ECLS</a> is currently supported in
+<ul>
+<li>Debian Linux on Intel</li>
+<li>Debian Linux on PowerPC</li>
+<li>FreeBSD 4.x</li>
+<li>Cygwin on Intel Windows</li>
+</ul>
+Most of the code is portable. The parts
 which change from operating system to operating system are about the
 filesystem, sockets, signals and the allocation of big chunks of memory, but in
 all it is well below 1000 lines. The worst part is related to word-size and

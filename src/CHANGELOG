@@ -731,7 +731,7 @@ ECLS 0.3
   - Remove use of alloca() when printing circular structures.
 
 
-ECLS 0.3b
+ECLS 0.4
 =========
 
 * Errors fixed:
@@ -741,11 +741,42 @@ ECLS 0.3b
   - Bit fiddling operations with negative fixnums now work (i.e.
     LOGAND, LOGOR, LOGBITP, etc).
 
+  - When a PRINT-OBJECT method prints a circular structure which is itself
+    in another circular structure, the stack that keeps temporary data
+    may get deleted.
+
+  - Format clause "~<" now accepts any number of text segments.
+
+  - Format clause "~E" should not add spurious zeros past the decimal
+    dot. I.e. (format nil "~13,6,2,7E" 3.14159) should output "
+    3141590.E-06", not "3141590.0E-06". Similar problem happened to
+    "~F", which added a traling zero even when number of decimal
+    positions was specified as zero.
+
 * System design and portability:
+
+  - Ported to Debian Linux PPC and Cygwin.
+
+  - Small changes allow a static build of the executable in platforms
+    where dlopen() does not work, or ld does not allow undefined symbols
+    in libraries.
 
   - Remove unportable code of the type "va_list d = cs".
 
   - Simplify gathering of &rest and &key arguments in compiled code.
+
+  - Make the interpreter stack public, with variables and functions
+    prefixed with "cl_stack*".
+
+  - Remove the Invocation History Stack, and implement it as a "linked
+    list" of frame records on top of the interpreter stack. This
+    avoid previous size limitations.
+
+  - Compile code onto the interpreter stack instead of using a stack
+    of its own.
+
+  - Use the interpreter stack to simplify the implementations of the
+    printer and of the formater.
 
 TODO:
 =====

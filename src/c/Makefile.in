@@ -13,7 +13,8 @@ CFLAGS	= -c -I../h -I$(HDIR) -I$(top_srcdir)/gc/include @CFLAGS@ $(DEFS)
 
 SHELL	= /bin/sh
 RM	= @RM@
-DPP	= ./dpp
+EXE	= @EXEEXT@
+DPP	= ./dpp$(EXE)
 
 # Data for installation
 #
@@ -65,13 +66,8 @@ clean:
 
 # Build rules
 
-./dpp	: $(srcdir)/dpp.c
+./dpp$(EXE): $(srcdir)/dpp.c
 	$(CC) @CFLAGS@ -I$(HDIR) $(srcdir)/dpp.c  -o $@
-
-dpp.exe	: $(srcdir)/dpp.c
-	make dpp
-	coff2exe dpp
-	$(RM) dpp
 
 #
 # Some files may break due to gcc optimizations

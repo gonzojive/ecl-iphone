@@ -23,7 +23,6 @@
 
 #include "ecls.h"
 #include <math.h>
-#include <float.h>
 #ifndef HAVE_ISOC99
 # define floorf floor
 # define ceilf ceil
@@ -890,8 +889,13 @@ round2(cl_object x, cl_object y)
 		FEtype_error_float(x);
 	}
 	e = double_exponent(d) + k;
-	if (tx == t_shortfloat && (e < FLT_MIN_EXP || e > FLT_MAX_EXP) ||
-	    tx == t_longfloat && (e < DBL_MIN_EXP || e > DBL_MAX_EXP))
+#if defined(VAX) || defined(TAHOE)
+	if (e <= -128 || e >= 128)
+#endif
+#ifdef IEEEFLOAT
+	if (tx == t_shortfloat && (e <= -126 || e >= 130) ||
+	    tx == t_longfloat && (e <= -1022 || e >= 1026))
+#endif IEEEFLOAT
 		FEerror("~S is an illegal exponent.", 1, y);
 	set_exponent(&d, e);
 	@(return ((tx == t_shortfloat) ? make_shortfloat(d)
@@ -937,10 +941,10 @@ round2(cl_object x, cl_object y)
 @
 	switch (type_of(x)) {
 	case t_shortfloat:
-		x = MAKE_FIXNUM(FLT_DIG);
+		x = MAKE_FIXNUM(6);
 		break;
 	case t_longfloat:
-		x = MAKE_FIXNUM(DBL_DIG);
+		x = MAKE_FIXNUM(14);
 		break;
 	default:
 		FEtype_error_float(x);
@@ -953,9 +957,9 @@ round2(cl_object x, cl_object y)
 @
 	switch (type_of(x)) {
 	case t_shortfloat:
-		@(return ((sf(x) == 0.0) ? MAKE_FIXNUM(0) : MAKE_FIXNUM(FLT_MANT_DIG)))
+		@(return ((sf(x) == 0.0) ? MAKE_FIXNUM(0) : MAKE_FIXNUM(24)))
 	case t_longfloat:
-		@(return ((lf(x) == 0.0) ? MAKE_FIXNUM(0) : MAKE_FIXNUM(DBL_MANT_DIG)))
+		@(return ((lf(x) == 0.0) ? MAKE_FIXNUM(0) : MAKE_FIXNUM(53)))
 	default:
 		FEtype_error_float(x);
 	}
@@ -1032,53 +1036,130 @@ round2(cl_object x, cl_object y)
 void
 init_num_co(void)
 {
+	float smallest_float, biggest_float;
+	double smallest_double, biggest_double;
+	float float_epsilon, float_negative_epsilon;
+	double double_epsilon, double_negative_epsilon;
+	double lf1, lf2;
+	float sf1, sf2;
 	cl_object num;
 
-	num = make_shortfloat(FLT_MAX);
+#define LF_EQL(a,b) (lf1 = a, lf2 = b, lf1 == lf2)
+#define SF_EQL(a,b) (sf1 = a, sf2 = b, sf1 == sf2)
+
+#ifdef VAX
+	l[0] = 0x80;
+	l[1] = 0;
+	smallest_float = *(float *)l;
+	smallest_double = *(double *)l;
+#endif VAX
+
+#ifdef IEEEFLOAT
+	((int *) &smallest_float)[0]= 1;
+	((int *) &smallest_double)[HIND] = 0;
+	((int *) &smallest_double)[LIND] = 1;
+#endif IEEEFLOAT
+
+#ifdef VAX
+	l[0] = 0xffff7fff;
+	l[1] = 0xffffffff;
+	biggest_float = *(float *)l;
+	biggest_double = *(double *)l;
+#endif VAX
+
+#ifdef IEEEFLOAT
+	((unsigned int *) &biggest_float)[0]= (unsigned int)0x7f7fffff;
+	((unsigned int *) &biggest_double)[HIND] = (unsigned int)0x7fefffff;
+	((unsigned int *) &biggest_double)[LIND] = (unsigned int)0xffffffff;
+#endif IEEEFLOAT
+
+#ifdef TAHOE
+        l[0] = 0x00800000;
+        l[1] = 0;
+        smallest_float = *(float *)l;
+        smallest_double = *(double *)l;
+#endif
+
+/* We want the smallest number not satisfying something,
+   and so we go quickly down, and then back up.  We have
+   to use a function call for test, since in line code may keep
+   too much precision, while the usual lisp eql,is not
+   in line.
+   We use SMALL as a multiple to come back up by.
+*/
+
+#define SMALL 1.05	
+
+	for (float_epsilon = 1.0;
+	     !SF_EQL((float)(1.0 + float_epsilon),(float)1.0);
+	     float_epsilon /= 2.0)
+		;
+	while(SF_EQL((float)(1.0 + float_epsilon),(float)1.0))
+	  float_epsilon=float_epsilon*SMALL;
+	for (float_negative_epsilon = 1.0;
+	     !SF_EQL((float)(1.0 - float_negative_epsilon) ,(float)1.0);
+	     float_negative_epsilon /= 2.0)
+		;
+	while(SF_EQL((float)(1.0 - float_negative_epsilon) ,(float)1.0))
+	  float_negative_epsilon=float_negative_epsilon*SMALL;
+	for (double_epsilon = 1.0;
+	     !(LF_EQL(1.0 + double_epsilon, 1.0));
+	     double_epsilon /= 2.0)
+		;
+	while((LF_EQL(1.0 + double_epsilon, 1.0)))
+	  double_epsilon=double_epsilon*SMALL;
+	  ;
+	for (double_negative_epsilon = 1.0;
+	     !LF_EQL(1.0 - double_negative_epsilon , 1.0);
+	     double_negative_epsilon /= 2.0)
+		;
+	while(LF_EQL(1.0 - double_negative_epsilon , 1.0))
+	  double_negative_epsilon=double_negative_epsilon*SMALL;
+	  ;
+
+	num = make_shortfloat(biggest_float);
 	make_constant("MOST-POSITIVE-SHORT-FLOAT", num);
 	make_constant("MOST-POSITIVE-SINGLE-FLOAT", num);
 
-	num = make_shortfloat(FLT_MIN);
+	num = make_shortfloat(smallest_float);
 	make_constant("LEAST-POSITIVE-SHORT-FLOAT", num);
 	make_constant("LEAST-POSITIVE-SINGLE-FLOAT", num);
 
-	num = make_shortfloat(-FLT_MIN);
+	num = make_shortfloat(-smallest_float);
 	make_constant("LEAST-NEGATIVE-SHORT-FLOAT", num);
 	make_constant("LEAST-NEGATIVE-SINGLE-FLOAT", num);
 
-	num = make_shortfloat(-FLT_MAX);
+	num = make_shortfloat(-biggest_float);
 	make_constant("MOST-NEGATIVE-SHORT-FLOAT", num);
 	make_constant("MOST-NEGATIVE-SINGLE-FLOAT", num);
 
-	num = make_longfloat(DBL_MAX);
+	num = make_longfloat(biggest_double);
 	make_constant("MOST-POSITIVE-DOUBLE-FLOAT", num);
 	make_constant("MOST-POSITIVE-LONG-FLOAT", num);
 
-	num = make_longfloat(DBL_MIN);
+	num = make_longfloat(smallest_double);
 	make_constant("LEAST-POSITIVE-DOUBLE-FLOAT", num);
 	make_constant("LEAST-POSITIVE-LONG-FLOAT", num);
 
-	num = make_longfloat(-DBL_MIN);
+	num = make_longfloat(-smallest_double);
 	make_constant("LEAST-NEGATIVE-DOUBLE-FLOAT", num);
 	make_constant("LEAST-NEGATIVE-LONG-FLOAT", num);
 
-	num = make_longfloat(-DBL_MAX);
+	num = make_longfloat(-biggest_double);
 	make_constant("MOST-NEGATIVE-DOUBLE-FLOAT", num);
 	make_constant("MOST-NEGATIVE-LONG-FLOAT", num);
 
-	num = make_shortfloat(FLT_EPSILON);
+	num = make_shortfloat(float_epsilon);
 	make_constant("SHORT-FLOAT-EPSILON", num);
 	make_constant("SINGLE-FLOAT-EPSILON", num);
-
-	num = make_longfloat(DBL_EPSILON);
+	num = make_longfloat(double_epsilon);
 	make_constant("DOUBLE-FLOAT-EPSILON", num);
 	make_constant("LONG-FLOAT-EPSILON", num);
 
-	num = make_shortfloat(-FLT_EPSILON);
+	num = make_shortfloat(float_negative_epsilon);
 	make_constant("SHORT-FLOAT-NEGATIVE-EPSILON", num);
 	make_constant("SINGLE-FLOAT-NEGATIVE-EPSILON", num);
-
-	num = make_longfloat(-FLT_EPSILON);
+	num = make_longfloat(double_negative_epsilon);
 	make_constant("DOUBLE-FLOAT-NEGATIVE-EPSILON", num);
 	make_constant("LONG-FLOAT-NEGATIVE-EPSILON", num);
 

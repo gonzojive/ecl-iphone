@@ -29,15 +29,10 @@
 
 #ifdef __linux__
 #  define FILE_CNT(fp)	((fp)->_IO_read_end - (fp)->_IO_read_ptr)
-#elif defined(__FreeBSD__) || defined(__NetBSD__)
+#elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(cygwin)
 #  define FILE_CNT(fp)	((fp)->_r)
-#  define _IO_buf_base	_bf._base /* watch out */
-#elif defined(__EMX__)
-#  define FILE_CNT(fp)	((fp)->rcount)
-#  define _IO_buf_base	buffer
 #else
 #  define FILE_CNT(fp)	(fp)->_cnt
-#  define _IO_buf_base	_base
 #endif
 
 #ifdef	MSDOS
@@ -63,14 +58,6 @@
 #ifdef	MSDOS
 #  define CRLF
 #endif	MSDOS
-
-#if defined(__EMX__) || defined(__NetBSD__)
-#  define unix
-#endif
-
-#if defined(unix) && !defined(__MACH__)
-#  define NEED_MALLOC
-#endif
 
 /***********************************************************************
 
@@ -109,7 +96,7 @@
 #  define SOFTWARE_TYPE	MSDOS
 #elif	defined(unix)
 #  define SOFTWARE_TYPE	UNIX
-#elif	defined(__WIN32__)
+#elif	defined(__WIN32__) || defined(cygwin)
 #  define SOFTWARE_TYPE WIN32
 #else
 #  define SOFTWARE_TYPE	UNKNOWN
@@ -141,6 +128,8 @@
 #  define SOFTWARE_VERSION	BSD
 #elif	defined(sysv)
 #  define SOFTWARE_VERSION	SYSTEM-V
+#elif	defined(cygwin)
+#  define SOFTWARE_VERSION	CYGWIN
 #else
 #  define SOFTWARE_VERSION	UNKNOWN
 #endif
@@ -155,9 +144,10 @@
 #define	CLIBS -lcompat
 #define	LDFLAGS -Wl,--export-dynamic
 #define SHARED_LDFLAGS -shared
+#define USE_DLOPEN
 #define HAVE_ISOC99
 #ifndef unix
-#define unix
+#  define unix
 #endif
 #endif	__FreeBSD__
 
@@ -169,10 +159,11 @@
 #define CLIBS -ldl
 #define LDFLAGS -Wl,--export-dynamic
 #define SHARED_LDFLAGS -shared
+#define USE_DLOPEN
 #define HAVE_ISOC99
 #define HAVE_POSIX
 #ifndef unix
-#define unix
+#  define unix
 #endif
 #endif	linux
 
@@ -182,11 +173,12 @@
 #define	JB_SP 4
 #define LDFLAGS -Wl,--export-dynamic
 #define SHARED_LDFLAGS -shared
+#define USE_DLOPEN
 #ifndef BSD
-# define BSD
+#  define BSD
 #endif
 #ifndef unix
-# define unix
+#  define unix
 #endif
 #define	BRAND "IBM-PC"
 #define	CLIBS -lcompat
@@ -202,6 +194,7 @@
 #ifdef	sun4sol2
 #  include <dlfcn.h>
 #  include <link.h>
+#  define USE_DLOPEN
 #ifdef TCP
 #  define CLIBS -lsocket -lnsl -lintl -ldl
 #else
@@ -209,5 +202,19 @@
 #endif
 #endif sun4sol2
 #endif	sun
+
+#ifdef	cygwin
+#define	IEEEFLOAT
+#define	BSD
+#define	BRAND "REDHAT"
+#define LDFLAGS
+#define SHARED_LDFLAGS
+#define HAVE_ISOC99
+#define HAVE_POSIX
+#undef USE_DLOPEN
+#ifndef unix
+#  define unix
+#endif
+#endif	cygwin
 
 /**********************************************************************/

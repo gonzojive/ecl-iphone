@@ -584,7 +584,7 @@ init_alloc(void)
 	holepage = 0;
 	new_holepage = HOLEPAGE;
 
-#ifdef MSDOS
+#if defined(MSDOS) || defined(__CYGWIN__)
 	real_maxpage = MAXPAGE;
 #elif defined(BSD)
 	{

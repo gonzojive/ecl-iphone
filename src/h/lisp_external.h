@@ -483,10 +483,6 @@ extern cl_object siLgetenv _ARGS((int narg, cl_object var));
 extern cl_object siLpointer _ARGS((int narg, cl_object x));
 extern cl_object siLnani _ARGS((int narg, cl_object x));
 extern cl_object clLidentity _ARGS((int narg, cl_object x));
-extern cl_object clLmachine_instance _ARGS((int narg));
-extern cl_object clLmachine_version _ARGS((int narg));
-extern cl_object clLsoftware_type _ARGS((int narg));
-extern cl_object clLsoftware_version _ARGS((int narg));
 
 /* mapfun.c */
 

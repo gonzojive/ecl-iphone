@@ -173,6 +173,11 @@
   (let (transformations)
     (flet ((load-module (m s)
              (let ((name (module-name m)))
+	       #-dlopen
+	       (if print-only
+		 (format t "~&Loading source of ~A..." name)
+		 (load (make-source-pathname name s)))
+	       #+dlopen
                (if (or (eq mode :source)
 		       (dolist (trans transformations)
 			       (and (eq (first trans) :compile)

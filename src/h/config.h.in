@@ -21,17 +21,22 @@
 #undef THREADS
 #undef TK
 
-#undef TCP			/* Network streams			*/
-#undef CLX			/* CLX					*/
-#undef LOCATIVE			/* Locatives				*/
+/* Network streams							*/
+#undef TCP
+/* CLX									*/
+#undef CLX
+/* Locatives								*/
+#undef LOCATIVE
 
 /* Define this if you want a runtime version only without compiler	*/
 #undef RUNTIME
-#undef PROFILE			/* Profile tool				*/
-#undef PDE			/* Program Development Environment	*/
+/* Profile tool								*/
+#undef PROFILE			
+/* Program Development Environment					*/
+#undef PDE			
 
-#undef GBC_BOEHM		/* Use Boehm's garbage collector	*/
-#undef HAVE_LOCAL_GMP		/* Use GMP >= 2.0 as provided by system */
+/* Use Boehm's garbage collector					*/
+#undef GBC_BOEHM
 
 /* Undefine this if you do not want ECLS to check for circular lists    */
 #define ECLS_SAFE
@@ -62,13 +67,16 @@
  *	SYSTEM FEATURES							*
  * -------------------------------------------------------------------- */
 
-#undef CL_FIXNUM_TYPE		/* Integer type for fixnums		*/
+#define CL_FIXNUM_TYPE 1	/* Integer type for fixnums		*/
 #define MOST_POSITIVE_FIX 1	/* Positive limit for fixnums           */
-#undef DOWN_STACK		/* Stack grows downwards		*/
-#undef NO_ARGS_ARRAY		/* arguments can be accessed as array	*/
-#undef WORDS_BIGENDIAN		/* most significant byte first		*/
 
-#undef HAVE_SYS_RESOURCE_H	/* has <sys/resource.h>			*/
-#undef HAVE_SYS_UTSNAME_H	/* has <sys/utsname.h> and uname()	*/
-
-#undef HAVE_NANOSLEEP		/* high precision timer			*/
+/* Stack grows downwards						*/
+#undef DOWN_STACK
+/* Arguments cannot be accessed as array				*/
+#undef NO_ARGS_ARRAY
+/* Most significant byte first						*/
+#undef WORDS_BIGENDIAN
+/* Has <sys/resource.h>							*/
+#undef HAVE_SYS_RESOURCE_H
+/* High precision timer							*/
+#undef HAVE_NANOSLEEP

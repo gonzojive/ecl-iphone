@@ -41,9 +41,12 @@ static
 	lex_env = lex_old;
 @)
 
-void
-init_lisp_libs(void)
+int
+main(int argc, char **args)
 {
+	/* This should be always the first call */
+	cl_boot(argc, args);
+
 	SYM_VAL(@'*package*') = system_package;
 	SYM_VAL(@'*features*') = CONS(make_keyword("ECLS-MIN"), SYM_VAL(@'*features*'));
 #ifdef CLOS
@@ -56,4 +59,11 @@ init_lisp_libs(void)
 	SYM_VAL(@'*features*') = CONS(make_kewyord("WANTS-CLX"), SYM_VAL(@'*features*'));
 #endif
 	make_si_function("TOP-LEVEL", @si::simple-toplevel);
+
+	funcall(1, _intern("TOP-LEVEL", system_package));
+	return(0);
 }
+
+int init_LSP() {}
+
+int init_CLOS() {}
