@@ -302,8 +302,8 @@
 	   (maxarg (fun-maxarg fun))
 	   (narg (if (= minarg maxarg) maxarg nil)))
       (if narg
-	(wt-nl "cl_def_c_function(" vv ",(cl_objectfn)" cfun "," narg ");")
-	(wt-nl "cl_def_c_function_va(" vv ",(cl_objectfn)" cfun ");")))))
+	(wt-nl "cl_def_c_function(" vv ",(void*)" cfun "," narg ");")
+	(wt-nl "cl_def_c_function_va(" vv ",(void*)" cfun ");")))))
 
 (defun wt-function-prolog (&optional sp local-entry)
   (wt " VT" *reservation-cmacro*

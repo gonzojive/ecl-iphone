@@ -174,11 +174,11 @@
 	 (maxarg (fun-maxarg fun))
 	 (narg (if (= minarg maxarg) maxarg nil)))
     (cond ((fun-closure fun)
-	   (wt "cl_make_cclosure_va((cl_objectfn)" cfun ",env" *env-lvl* ",Cblock)"))
+	   (wt "cl_make_cclosure_va((void*)" cfun ",env" *env-lvl* ",Cblock)"))
 	  (narg ; empty environment fixed number of args
-	   (wt "cl_make_cfun((cl_objectfn)" cfun ",Cnil,Cblock," narg ")"))
+	   (wt "cl_make_cfun((void*)" cfun ",Cnil,Cblock," narg ")"))
 	  (t ; empty environment variable number of args
-	   (wt "cl_make_cfun_va((cl_objectfn)" cfun ",Cnil,Cblock)")))))
+	   (wt "cl_make_cfun_va((void*)" cfun ",Cnil,Cblock)")))))
 
 
 ;;; ----------------------------------------------------------------------
