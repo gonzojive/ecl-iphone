@@ -381,7 +381,12 @@ cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 			1, test);
   	if (!FIXNUMP(size) || FIXNUM_MINUSP(size))
 		FEerror("~S is an illegal hash-table size.", 1, size);
-	hsize = fix(size);
+
+	/* Do not allow hashtables of size 0 */
+	hsize = fixnnint(size);
+	if (hsize < 16)
+		hsize = 16;
+
 	t = type_of(rehash_size);
 	if ((t != t_fixnum && t != t_shortfloat && t != t_longfloat) ||
 	    (number_compare(rehash_size, MAKE_FIXNUM(1)) < 0)) {
