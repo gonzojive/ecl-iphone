@@ -1,73 +1,70 @@
 <h2>News in this release (ECLS-@VERSION@)</h2>
+<pre>
+ECLS 0.4
+=========
 
-<ul>
-<li> Errors fixed:
-<ul>
-<li> The dynamic linker in eval.d (link_call) truncated addresses
-    larger than MOST_POSITIVE_FIXNUM.
+* Errors fixed:
 
-<li> The routine that outputs addresses as hexadecimal numbers, and
-    which is used in print-unreadable, would only output the first
-    digit.
+  - Fixnum product would overflow: (* 65536 32768) => negative number.
 
-<li> Make sure that the proclamations in Gabriel's benchmark are
-    evaluated at compile time, too.
+  - Bit fiddling operations with negative fixnums now work (i.e.
+    LOGAND, LOGOR, LOGBITP, etc).
 
-<li> Fix the native compiler and the bytecodes compiler so that when
-    they finds LOCALLY, MACROLET or SYMBOL-MACROLET at the top level,
-    it processes their bodies as top level forms as well. For
-    instance, this now works:
-	(LOCALLY (EVAL-WHEN (:COMPILE-TOPLEVEL) (PRINT "HELLO")))
-</ul>
-<li> Add name mangling to ECLS:
-<ul>
-<li> In the preprocessed files (*.d) @package::symbol can be used to
-    refer to a lisp function, while @'package::symbol can be used to
-    refer to a lisp symbol. The preprocessor translates these names
-    into valid C names.
+  - When a PRINT-OBJECT method prints a circular structure which is itself
+    in another circular structure, the stack that keeps temporary data
+    may get deleted.
 
-<li> Function SI::MANGLE-NAME returns the C name for a lisp symbol
-    or function, and tells whether that symbol has been defined as
-    external C function already.
+  - Format clause "~<" now accepts any number of text segments.
 
-<li> A new proclamation
-	(proclaim '(si::c-export-fname union))
-    advises the lisp->C translator to produce a C function with
-    mangle named (clLunion in this case), that can be directly called
-    from other translated files and from user written code.
-</ul>
-<li> Visible changes and ANSI compatibility:
-<ul>
-<li> Remove variable si::*system-directory* and use logical hostname
-    "SYS:" instead.
+  - Format clause "~E" should not add spurious zeros past the decimal
+    dot. I.e. (format nil "~13,6,2,7E" 3.14159) should output "
+    3141590.E-06", not "3141590.0E-06". Similar problem happened to
+    "~F", which added a traling zero even when number of decimal
+    positions was specified as zero.
 
-<li> Remove *EVALHOOK*, *APPLYHOOK*, #'EVALHOOK and #'APPLYHOOK, which
-    make little sense when working in a early compilation environment.
+* System design and portability:
 
-<li> Stepper removed until we figure out how to implement this using
-    the bytecodes.
+  - Ported to Debian Linux PPC and Cygwin.
 
-<li> The library function eval() now accepts an environment as a third
-    parameter. On top of this function, SI:EVAL-WITH-ENV, evaluates
-    a form on a given environment.
+  - Small changes allow a static build of the executable in platforms
+    where either dlopen() does not work, or ld does not allow
+    undefined symbols in libraries.
 
-<li> New accessor ROW-MAJOR-AREF.
-</ul>
-<li> System design and portability:
-</ul>
-<li> Code has been revised so that it works in environments where stack
-    grows upwards, as well as in environments where the parameters to
-    a function cannot be accessed as an array and only va_list/va_arg
-    work.
+  - Remove unportable code of the type "va_list d = cs".
 
-<li> Implement loading of object files using the native "dlopen"
-    function which is present in most operating systems. Support for
-    "dld" has been dropped and the whole of the CRS library has been
-    removed
+  - Simplify gathering of &rest and &key arguments in compiled code.
 
-<li> Remove use of alloca() when printing circular structures. In a
-    near future, use of alloca() should be dropped completely.
-</ul>
+  - Make the interpreter stack public, with variables and functions
+    prefixed with "cl_stack*".
+
+  - Remove the Invocation History Stack, and implement it as a "linked
+    list" of frame records on top of the interpreter stack. This
+    avoids previous size limitations.
+
+  - Compile code onto the interpreter stack instead of using a stack
+    of its own.
+
+  - Use the interpreter stack to simplify the implementations of the
+    printer and of the formater.
+
+* Visible changes and ANSI compatibility:
+
+  - MAKE-PATHNAME now accepts all combinations denoted by ANSI. Namely,
+    (MAKE-PATHNAME :directory :wild), etc.
+
+  - :UNSPECIFIC is only allowed in pathname's version and in a logical
+    pathname's device.
+
+  - MSDOS style namestrings, such as "c:/my/path/to/this/file.txt" and
+    "//c/my/path/to/this/file.txt" finally work. Beware that these
+    paths are also allowed under Unix, even though they cause errors
+    when trying to access files. Besides (EQUALP #P"c:/foo/file.txt"
+    #P"//c/path/file.txt") => NIL
+
+  - (DECLARE (OPTIMIZE DEBUG)) is ignored, but no warning is printed.
+
+  - Implemented WITH-STANDARD-IO-SYNTAX.
+</pre>
 
 <h2>Known bugs</h2>
 
@@ -92,10 +89,9 @@ to tell me so.
 Some other bugs which need to be fixed are:
 <ul>
 <li>Threads and sockets haven't been tested yet.
-<li>#'format doesn't pass the Cltl-1 tests and fails when the number of
-arguments is large.
+<li>#'format doesn't pass the Cltl-1 tests.
 <li>Needs better support for wildcards in pathnames.
 <li>Bugs in logical operations among bignums.
 <li>Support for CLOS needs yet more optimization.
+<li>ECLS has its own pretty-printer, which does not conform ANSI.
 </ul>
-

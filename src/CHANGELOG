@@ -758,8 +758,8 @@ ECLS 0.4
   - Ported to Debian Linux PPC and Cygwin.
 
   - Small changes allow a static build of the executable in platforms
-    where dlopen() does not work, or ld does not allow undefined symbols
-    in libraries.
+    where either dlopen() does not work, or ld does not allow
+    undefined symbols in libraries.
 
   - Remove unportable code of the type "va_list d = cs".
 
@@ -770,7 +770,7 @@ ECLS 0.4
 
   - Remove the Invocation History Stack, and implement it as a "linked
     list" of frame records on top of the interpreter stack. This
-    avoid previous size limitations.
+    avoids previous size limitations.
 
   - Compile code onto the interpreter stack instead of using a stack
     of its own.
@@ -787,7 +787,10 @@ ECLS 0.4
     pathname's device.
 
   - MSDOS style namestrings, such as "c:/my/path/to/this/file.txt" and
-    "//c/my/path/to/this/file.txt" finally work.
+    "//c/my/path/to/this/file.txt" finally work. Beware that these
+    paths are also allowed under Unix, even though they cause errors
+    when trying to access files. Besides (EQUALP #P"c:/foo/file.txt"
+    #P"//c/path/file.txt") => NIL
 
   - (DECLARE (OPTIMIZE DEBUG)) is ignored, but no warning is printed.
 
