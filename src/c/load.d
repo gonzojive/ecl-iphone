@@ -349,13 +349,14 @@ NOT_A_FILENAME:
 			  filename);
 	}
 	bds_bind(@'*package*', symbol_value(@'*package*'));
+	bds_bind(@'*readtable*', symbol_value(@'*readtable*'));
 	bds_bind(@'*load-pathname*', filename);
 	bds_bind(@'*load-truename*', cl_truename(filename));
 	if (Null(function))
 		ok = si_load_source(filename, verbose, print);
 	else
 		ok = funcall(4, function, filename, verbose, print);
-	bds_unwind_n(3);
+	bds_unwind_n(4);
 	if (!Null(ok))
 		FEerror("LOAD: Could not load file ~S (Error: ~S)",
 			2, filename, ok);
