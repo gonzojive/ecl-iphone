@@ -59,14 +59,7 @@
 ;;; value.
 
 (defun check-global (name)
-  (let ((x (assoc name *objects*)))
-    (when x
-      (dolist (tlf *top-level-forms*)
-        (when (or (and (eq (car tlf) 'DEFVAR)
-		       (equalp (var-loc (second tlf)) (second x)))
-		  (and (eq (car tlf) 'DECLARE)
-		       (equalp (second tlf) (second x))))
-          (return tlf))))))
+  (member name *global-vars* :test #'eq))
 
 ;;;
 ;;; Check if the symbol has a symbol macro

@@ -19,7 +19,7 @@
 
 ;(proclaim '(DECLARATION VARIABLE-REBINDING))
 ;;; Make this stable:
-(declaim '(DECLARATION VARIABLE-REBINDING))
+(declaim (DECLARATION VARIABLE-REBINDING))
 
 (defvar *keyword-package* (find-package 'KEYWORD))
 
@@ -77,8 +77,8 @@
 
 ;;; ECL implementation:
 
-(proclaim '(function si:instance-ref (t fixnum) t))
-(proclaim '(function si:instance-set (t fixnum t) t))
+(declaim (function si:instance-ref (t fixnum) t))
+(declaim (function si:instance-set (t fixnum t) t))
 
 (defmacro unbound () '(sys:nani 0))
 

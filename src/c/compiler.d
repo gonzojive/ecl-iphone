@@ -1029,7 +1029,7 @@ c_let_leta(int op, cl_object args) {
 			var = pop(&aux);
 			value = pop_maybe_nil(&aux);
 			if (!Null(aux))
-				FEprogram_error("LET: Ill formed declaration ~S.",0);
+				FEprogram_error("LET: Ill formed declaration.",0);
 		}
 		if (!SYMBOLP(var))
 			FEillegal_variable_name(var);

@@ -253,10 +253,10 @@
 
 	  ;; Call to a function defined in the same file.
 	  ((setq fd (assoc fname *global-funs*))
-	   (let ((cfun (cdr fd)))
+	   (let ((cfun (second fd)))
 	     (unwind-exit (call-loc fname
 				    (if (numberp cfun)
-				      (format nil "L~d" (cdr fd))
+				      (format nil "L~d" cfun)
 				      cfun)
 				    locs narg))))
 

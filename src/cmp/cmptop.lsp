@@ -12,7 +12,16 @@
 
 (in-package "COMPILER")
 
-(defun t1expr (form &aux (*current-form* form) (*first-error* t)
+(defun t1expr (form)
+  (let ((*vars* nil)
+	(*funs* nil)
+	(*blocks* nil)
+	(*tags* nil)
+	(*sharp-commas* nil)
+	(*special-binding* nil))
+    (push (t1expr* form) *top-level-forms*)))
+
+(defun t1expr* (form &aux (*current-form* form) (*first-error* t)
                     *funarg-vars*
 		    (*setjmps* 0))
   (catch *cmperr-tag*
@@ -26,14 +35,17 @@
                     (when *non-package-operation*
                       (cmpwarn "The package operation ~s was in a bad place."
                                form))
-			  (cmp-eval form)
+		    (cmp-eval form)
                     (wt-data-package-operation form))
                    ((setq fd (get fun 'T1))
                     (when *compile-print* (print-current-form))
                     (funcall fd args))
                    ((get fun 'C1) (t1ordinary form))
                    ((setq fd (macro-function fun))
-                    (t1expr (cmp-expand-macro fd fun (cdr form))))
+                    (t1expr* (cmp-expand-macro fd fun (cdr form))))
+		   ((and (setq fd (assoc fun *funs*))
+			 (eq (second fd) 'MACRO))
+		    (t1expr* (cmp-expand-macro (third fd) fun (cdr form))))
                    (t (t1ordinary form))
                    ))
 	    ;; #+cltl2
@@ -41,8 +53,47 @@
 	     (t1ordinary form))
             ((consp fun) (t1ordinary form))
             (t (cmperr "~s is illegal function." fun)))
-           )))
-  )
+           ))))
+
+(defun t2expr (form)
+  ;(pprint (cons 'T2 form))
+  (when form
+    (let ((def (get (car form) 'T2)))
+      (when def (apply def (cdr form))))))
+
+(defvar *emitted-local-funs* nil)
+
+(defun emit-local-funs ()
+  ;; Local functions and closure functions
+  (do ()
+      ;; repeat until t3local-fun generates no more
+      ((eq *emitted-local-funs* *local-funs*))
+    ;; scan *local-funs* backwards
+    (do ((lfs *local-funs* (cdr lfs)))
+	((eq (cdr lfs) *emitted-local-funs*)
+	 (setq *emitted-local-funs* lfs)
+	 (when *compile-print*
+	   (print-emitting (fun-name (cadar lfs))))
+	 (locally (declare (notinline t3local-fun))
+	   ;; so disassemble can redefine it
+	   (apply 't3local-fun (car lfs)))))))
+
+(defun t3expr (form)
+  ;(pprint (cons 'T3 form))
+  (when form
+    (emit-local-funs)
+    (setq *funarg-vars* nil)
+    (let ((def (get (car form) 'T3)))
+      (when def
+	;; new local functions get pushed into *local-funs*
+	(when (and *compile-print*
+		   (member (car form)
+			   '(DEFUN DEFMACRO DEFCBODY) ; DEFENTRY DEFUNC
+			   :test #'eq))
+	  (print-emitting (second form)))
+	(apply def (cdr form))))
+    (emit-local-funs)
+    (setq *funarg-vars* nil)))
 
 (defun ctop-write (name h-namestring data-namestring
 		        &optional system-p
@@ -50,6 +101,7 @@
 		   	top-output-string
 			(*volatile* " volatile "))
 
+  ;(let ((*print-level* 3)) (pprint *top-level-forms*))
   (setq *top-level-forms* (nreverse *top-level-forms*))
 
   (wt-nl1 "#include \"" h-namestring "\"")
@@ -59,7 +111,7 @@
 	 (*reservation-cmacro* (next-cmacro))
 	 (c-output-file *compiler-output1*)
 	 (*compiler-output1* (make-string-output-stream))
-	 (local-funs)
+	 (*emitted-local-funs* nil)
 	 #+PDE (optimize-space (>= *space* 3)))
     (wt-nl1 "static const char *compiler_data_text;")
     (wt-nl1 "void")
@@ -73,39 +125,13 @@
     (wt-nl "flag->cblock.data_text = compiler_data_text;")
     (wt-nl "flag->cblock.data_text_size = compiler_data_text_size;")
     (wt-nl "return;}")
-    (flet ((emit-local-funs ()
-	   ;; Local functions and closure functions
-	   (do ()
-	       ;; repeat until t3local-fun generates no more
-	       ((eq local-funs *local-funs*))
-	     ;; scan *local-funs* backwards
-	     (do ((lfs *local-funs* (cdr lfs)))
-		 ((eq (cdr lfs) local-funs)
-		  (setq local-funs lfs)
-		  (when *compile-print*
-		    (print-emitting (fun-name (cadar lfs))))
-		  (locally (declare (notinline t3local-fun))
-		    ;; so disassemble can redefine it
-		    (apply 't3local-fun (car lfs))))))))
-      ;; useless in initialization.
-      (dolist (form *top-level-forms*)
-	(let ((*compile-to-linking-call* nil)
-	      (*env* 0) (*level* 0) (*temp* 0))
-	  (when (setq def (get (car form) 'T2))
-	    (apply def (cdr form))))
-	(let ((*compiler-output1* c-output-file))
-	  (emit-local-funs)
-	  (setq *funarg-vars* nil)
-	  (when (setq def (get (car form) 'T3))
-	    ;; new local functions get pushed into *local-funs*
-	    (when (and *compile-print*
-		       (member (car form)
-			       '(DEFUN DEFMACRO DEFCBODY) ; DEFENTRY DEFUNC
-			       :test #'eq))
-	      (print-emitting (second form)))
-	    (apply def (cdr form)))
-	  (emit-local-funs)
-	  (setq *funarg-vars* nil))))
+    ;; useless in initialization.
+    (dolist (form *top-level-forms*)
+      (let ((*compile-to-linking-call* nil)
+	    (*env* 0) (*level* 0) (*temp* 0))
+	  (t2expr form))
+      (let ((*compiler-output1* c-output-file))
+	(t3expr form)))
     (wt-function-epilogue)
     (wt-nl1 "}")
     (setq top-output-string (get-output-stream-string *compiler-output1*)))
@@ -158,8 +184,8 @@
     (cond (load-flag
 	   (t1progn (rest args)))
 	  (compile-flag
-	   (cmp-eval (cons 'PROGN (cdr args))))))
-  )
+	   (cmp-eval (cons 'PROGN (cdr args)))
+	   '(PROGN NIL)))))
 
 (defun t1compiler-let (args &aux (symbols nil) (values nil))
   (when (endp args) (too-few-args 'compiler-let 1 0))
@@ -180,7 +206,14 @@
   (setq args (progv symbols values (t1progn (cdr args))))
   )
 
-(defun t1progn (args) (dolist (form args) (t1expr form)))
+(defun t1progn (args)
+  (list 'PROGN (mapcar #'t1expr* args)))
+
+(defun t2progn (args)
+  (mapcar #'t2expr args))
+
+(defun t3progn (args)
+  (mapcar #'t3expr args))
 
 (defun exported-fname (name)
   (or (get name 'Lfun)
@@ -193,11 +226,11 @@
          "The function name ~s is not a symbol." (car args))
   (when *compile-time-too* (cmp-eval (cons 'DEFUN args)))
   (setq *non-package-operation* t)
-  (let* ((*vars* nil) (*funs* nil) (*blocks* nil) (*tags* nil) lambda-expr
-	 (*sharp-commas* nil) (*special-binding* nil)
+  (let* (lambda-expr
 	 (fname (car args))
 	 (cfun (exported-fname fname))
-	 (doc nil))
+	 (doc nil)
+	 output)
     
     (setq lambda-expr (c1lambda-expr (cdr args) fname))
     (unless (eql setjmps *setjmps*)
@@ -205,7 +238,7 @@
     (when (fourth lambda-expr)
       (setq doc (add-object (fourth lambda-expr))))
     (add-load-time-sharp-comma)
-    (new-defun fname cfun lambda-expr doc *special-binding*)
+    (setq output (new-defun fname cfun lambda-expr doc *special-binding*))
     (when
       (and
        (get fname 'PROCLAIMED-FUNCTION)
@@ -237,27 +270,24 @@
 				   :test #'eq))
 		      (make-inline-string cfun pat))
 		*inline-functions*))))
-    )
-  )
+    output))
 
 ;;; Mechanism for sharing code:
 (defun new-defun (fname cfun lambda-expr doc special-binding)
-  (let ((previous (dolist (form *top-level-forms*)
+  (let ((previous (dolist (form *global-funs*)
 		    (when (and (eq 'DEFUN (car form))
-			       (equal special-binding (sixth form))
-			       (similar lambda-expr (fourth form)))
-		      (return (third form))))))
+			       (equal special-binding (fifth form))
+			       (similar lambda-expr (third form)))
+		      (return (second form))))))
     (if previous
 	(progn
 	  (cmpnote "Sharing code for function ~A" fname)
-	  (push (list 'DEFUN fname previous nil doc special-binding
-                      *funarg-vars*)
-		*top-level-forms*))
-	(progn
-	  (push (list 'DEFUN fname cfun lambda-expr doc special-binding
-                      *funarg-vars*)
-		*top-level-forms*)
-	  (push (cons fname cfun) *global-funs*)))))
+	  (list 'DEFUN fname previous nil doc special-binding
+                      *funarg-vars*))
+	(let ((fun-desc (list fname cfun lambda-expr doc special-binding
+			      *funarg-vars*)))
+	  (push fun-desc *global-funs*)
+	  (cons 'DEFUN fun-desc)))))
 
 (defun similar (x y)
   (or (equal x y)
@@ -540,17 +570,13 @@
          "The macro name ~s is not a symbol." (car args))
   (cmp-eval (cons 'DEFMACRO args))
   (setq *non-package-operation* t)
-  (let ((*vars* nil) (*funs* nil) (*blocks* nil) (*tags* nil)
-        (*sharp-commas* nil) (*special-binding* nil)
-        macro-lambda (cfun (next-cfun)) (doc nil) (ppn nil))
+  (let (macro-lambda (cfun (next-cfun)) (doc nil) (ppn nil))
     (setq macro-lambda (c1dm (car args) (second args) (cddr args)))
     (when (car macro-lambda) (setq doc (add-object (car macro-lambda))))
     (when (second macro-lambda) (setq ppn (add-object (second macro-lambda))))
     (add-load-time-sharp-comma)
-    (push (list 'DEFMACRO (car args) cfun (cddr macro-lambda) doc ppn
-		*special-binding*)
-	  *top-level-forms*))
-  )
+    (list 'DEFMACRO (car args) cfun (cddr macro-lambda) doc ppn
+		*special-binding*)))
 
 (defun t2defmacro (fname cfun macro-lambda doc ppn sp
                          &aux (vv (add-symbol fname)))
@@ -590,11 +616,9 @@
 (defun t1ordinary (form)
   (when *compile-time-too* (cmp-eval form))
   (setq *non-package-operation* t)
-  (let ((*vars* nil) (*funs* nil) (*blocks* nil) (*tags* nil)
-        (*sharp-commas* nil))
-       (setq form (c1expr form))
-       (add-load-time-sharp-comma)
-       (push (list 'ORDINARY form) *top-level-forms*)))
+  (setq form (c1expr form))
+  (add-load-time-sharp-comma)
+  (list 'ORDINARY form))
 
 (defun t2ordinary (form)
   (let* ((*exit* (next-label)) (*unwind-exit* (list *exit*))
@@ -616,17 +640,14 @@
   (when *compile-time-too* (cmp-eval `(defvar ,@args)))
   (setq *non-package-operation* nil)
   (if (endp (cdr args))
-      (push (list 'DECLARE (add-symbol name)) *top-level-forms*)
+      (list 'DECLARE (add-symbol name))
       (progn
 	(unless (endp (cddr args)) (setq doc (add-object (third args))))
-	(let* ((*vars* nil) (*funs* nil) (*blocks* nil) (*tags* nil)
-	       (*sharp-commas* nil))
-	  (setq form (c1expr (second args)))
-	  (add-load-time-sharp-comma))
-	(push (list 'DEFVAR (make-var :name name :kind 'SPECIAL
-				      :loc (add-symbol name)) form doc)
-	      *top-level-forms*)))
-  )
+	(setq form (c1expr (second args)))
+	(add-load-time-sharp-comma)
+	(push name *global-vars*)
+	(list 'DEFVAR (make-var :name name :kind 'SPECIAL
+				      :loc (add-symbol name)) form doc))))
 
 (defun t2defvar (var form doc &aux (vv (var-loc var)))
   (wt-nl vv "->symbol.stype=(short)stp_special;")
@@ -641,10 +662,67 @@
     (wt-nl))
   )
 
+(defun t1decl-body (decls body)
+  (if (null decls)
+      (t1progn body)
+      (let* ((*function-declarations* *function-declarations*)
+	     (*alien-declarations* *alien-declarations*)
+	     (*notinline* *notinline*)
+	     (*space* *space*)
+	     (*compiler-check-args* *compiler-check-args*)
+	     (*compiler-push-events* *compiler-push-events*)
+	     (dl (c1add-declarations decls)))
+	(list 'DECL-BODY dl (t1progn body)))))
+
+(defun t2decl-body (decls body)
+  (let ((*compiler-check-args* *compiler-check-args*)
+        (*safe-compile* *safe-compile*)
+        (*compiler-push-events* *compiler-push-events*)
+        (*notinline* *notinline*)
+        (*space* *space*))
+    (c1add-declarations decls)
+    (t2expr body)))
+
+(defun t3decl-body (decls body)
+  (let ((*compiler-check-args* *compiler-check-args*)
+        (*safe-compile* *safe-compile*)
+        (*compiler-push-events* *compiler-push-events*)
+        (*notinline* *notinline*)
+        (*space* *space*))
+    (c1add-declarations decls)
+    (t3expr body)))
+
+(defun t1locally (args)
+  (multiple-value-bind (body ss ts is other-decl)
+      (c1body args t)
+    (c1add-globals ss)
+    (check-vdecl nil ts is)
+    (t1decl-body other-decl body)))
+
+(defun t1macrolet (args &aux (*funs* *funs*))
+  (when (endp args) (too-few-args 'macrolet 1 0))
+  (dolist (def (car args))
+    (cmpck (or (endp def) (not (symbolp (car def))) (endp (cdr def)))
+           "The macro definition ~s is illegal." def)
+    (push (list (car def)
+		'MACRO
+		(si::make-lambda (car def)
+				 (cdr (sys::expand-defmacro (car def) (second def) (cddr def)))))
+          *funs*))
+  (t1locally (cdr args)))
+
+(defun t1symbol-macrolet (args &aux (*vars* *vars*))
+  (when (endp args) (too-few-args 'symbol-macrolet 1 0))
+  (dolist (def (car args))
+    (cmpck (or (endp def) (not (symbolp (car def))) (endp (cdr def)))
+           "The symbol-macro definition ~s is illegal." def)
+    (push def *vars*))
+  (t1locally (cdr args)))
+
 (defun t1clines (args)
   (dolist (s args)
     (cmpck (not (stringp s)) "The argument to CLINE, ~s, is not a string." s))
-  (push (list 'CLINES args) *top-level-forms*))
+  (list 'CLINES args))
 
 (defun t3clines (ss) (dolist (s ss) (wt-nl1 s)))
 
@@ -939,12 +1017,8 @@
   (setq fun (first args))
   (cmpck (not (symbolp fun))
          "The function name ~s is not a symbol." fun)
-  (push (list 'DEFCBODY fun cfun (second args) (third args)
-	      (fourth args))
-        *top-level-forms*)
-  (push (cons fun cfun) *global-funs*)
-  )
-
+  (push (list fun cfun) *global-funs*)
+  (list 'DEFCBODY fun cfun (second args) (third args) (fourth args)))
 
 (defun t2defCbody (fname cfun arg-types type body
                          &aux (vv (add-symbol fname)))
@@ -1179,6 +1253,9 @@
 (setf (get 'DEFUN 'T1) #'t1defun)
 (setf (get 'DEFMACRO 'T1) #'t1defmacro)
 (setf (get 'DEFVAR 'T1) #'t1defvar)
+(setf (get 'MACROLET 'T1) #'t1macrolet)
+(setf (get 'LOCALLY 'T1) #'t1locally)
+(setf (get 'SYMBOL-MACROLET 'T1) #'t1symbol-macrolet)
 (setf (get 'CLINES 'T1) 't1clines)
 (setf (get 'DEFCFUN 'T1) 't1defcfun)
 ;(setf (get 'DEFENTRY 'T1) 't1defentry)
@@ -1188,6 +1265,8 @@
 
 ;;; Pass 2 initializers.
 
+(setf (get 'DECL-BODY 't2) #'t2decl-body)
+(setf (get 'PROGN 'T2) #'t2progn)
 (setf (get 'DEFUN 'T2) #'t2defun)
 (setf (get 'DEFMACRO 'T2) #'t2defmacro)
 (setf (get 'ORDINARY 'T2) #'t2ordinary)
@@ -1201,6 +1280,8 @@
 
 ;;; Pass 2 C function generators.
 
+(setf (get 'DECL-BODY 't3) #'t3decl-body)
+(setf (get 'PROGN 'T3) #'t3progn)
 (setf (get 'DEFUN 'T3) #'t3defun)
 (setf (get 'DEFMACRO 'T3) #'t3defmacro)
 (setf (get 'CLINES 'T3) 't3clines)

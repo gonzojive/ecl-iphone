@@ -14,7 +14,7 @@
 (defun get-method-function (method) (nth 4 method))
 
 ;;; They will be redefined later:
-(proclaim '(notinline get-method-qualifiers get-method-function))
+(declaim (notinline get-method-qualifiers get-method-function))
 
 
 ;;;

@@ -356,7 +356,8 @@
 					; with fixed number of arguments.
 					; watch out for multiple values.
 
-(defvar *global-funs* nil)		; holds	{ ( global-fun-name cfun ) }*
+(defvar *global-vars* nil)
+(defvar *global-funs* nil)		; holds	{ ( global-fun-name cfun ... ) }*
 (defvar *linking-calls* nil)		; holds { ( global-fun-name vv ) }*
 (defvar *local-funs* nil)		; holds { ( closurep fun funob ) }*
 (defvar *top-level-forms* nil)		; holds { top-level-form }*

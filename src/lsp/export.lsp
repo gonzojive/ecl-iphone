@@ -164,6 +164,7 @@
 	  ldb
 	  ldb-test
 	  lisp-implementation-type
+	  locally
 	  logandc1
 	  logandc2
 	  logical-pathname-translations

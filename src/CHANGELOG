@@ -683,6 +683,10 @@ ECLS 0.3
 * Remove variable si::*system-directory* and use logical hostname
   "SYS:" instead.
 
+* Fix the compiler so that when it finds LOCALLY, MACROLET or
+  SYMBOL-MACROLET at the top level, it processes their bodies as top
+  level forms as well.
+
 
 TODO:
 =====

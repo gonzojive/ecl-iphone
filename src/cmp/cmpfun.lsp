@@ -388,8 +388,8 @@
 			      'SHIFT>>)))))
       (c1expr (cons fun args)))))
 
-(defun shift>> (a b) (ash a b))
-(defun shift<< (a b) (ash a b))
+(setf (symbol-function 'shift<<) #'ash)
+(setf (symbol-function 'shift>>) #'ash)
 (setf (get 'SHIFT>> 'Lfun) "Lash")
 (setf (get 'SHIFT<< 'Lfun) "Lash")
 

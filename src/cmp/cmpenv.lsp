@@ -388,74 +388,80 @@
   (values body ss ts is others doc)
   )
 
-(defun c1decl-body (decls body &aux (dl nil))
+(defun c1add-declarations (decls &aux (dl nil))
+  (dolist (decl decls dl)
+    (case (car decl)
+      (OPTIMIZE
+       (push decl dl)
+       (dolist (x (cdr decl))
+	 (when (symbolp x) (setq x (list x 3)))
+	 (if (or (not (consp x))
+		 (not (consp (cdr x)))
+		 (not (numberp (second x)))
+		 (not (<= 0 (second x) 3)))
+	   (warn "The OPTIMIZE proclamation ~s is illegal." x)
+	   (case (car x)
+	     (SAFETY
+	      (let ((level (second x)))
+		(declare (fixnum level))
+		(setq *compiler-check-args* (>= level 1)
+		      *safe-compile* (>= level 2)
+		      *compiler-push-events* (>= level 3))))
+	     (SPACE (setq *space* (second x)))
+	     ((SPEED COMPILATION-SPEED))
+	     (t (warn "The OPTIMIZE quality ~s is unknown."
+		      (car x)))))))
+      (FTYPE
+       (if (or (endp (cdr decl))
+	       (not (consp (second decl)))
+	       (not (eq (caadr decl) 'FUNCTION))
+	       (endp (cdadr decl)))
+	 (warn "The function declaration ~s is illegal." decl)
+	 (dolist (fname (cddr decl))
+	   (add-function-declaration
+	    fname (cadadr decl) (cddadr decl)))))
+      (FUNCTION
+       (if (or (endp (cdr decl))
+	       (endp (cddr decl))
+	       (not (symbolp (second decl))))
+	 (warn "The function declaration ~s is illegal." decl)
+	 (add-function-declaration
+	  (second decl) (caddr decl) (cdddr decl))))
+      (INLINE
+       (push decl dl)
+       (dolist (fun (cdr decl))
+	 (if (symbolp fun)
+	   (setq *notinline* (remove fun *notinline*))
+	   (warn "The function name ~s is not a symbol." fun))))
+      (NOTINLINE
+       (push decl dl)
+       (dolist (fun (cdr decl))
+	 (if (symbolp fun)
+	   (push fun *notinline*)
+	   (warn "The function name ~s is not a symbol." fun))))
+      (DECLARATION
+       (dolist (x (cdr decl))
+	 (if (symbolp x)
+	   (pushnew x *alien-declarations*)
+	   (warn "The declaration specifier ~s is not a symbol."
+		 x))))
+      (otherwise
+       (unless (member (car decl) *alien-declarations*)
+	 (warn "The declaration specifier ~s is unknown."
+	       (car decl)))))))
+
+(defun c1decl-body (decls body)
   (if (null decls)
       (c1progn body)
-      (let ((*function-declarations* *function-declarations*)
-            (*alien-declarations* *alien-declarations*)
-            (*notinline* *notinline*)
-            (*space* *space*))
-           (dolist (decl decls dl)
-             (case (car decl)
-              (OPTIMIZE
-               (dolist (x (cdr decl))
-                 (when (symbolp x) (setq x (list x 3)))
-                 (if (or (not (consp x))
-                         (not (consp (cdr x)))
-                         (not (numberp (second x)))
-                         (not (<= 0 (second x) 3)))
-                     (warn "The OPTIMIZE proclamation ~s is illegal." x)
-                     (case (car x)
-                           (SAFETY (push (list 'SAFETY (second x)) dl))
-                           (SPACE (setq *space* (second x))
-                                  (push (list 'SPACE (second x)) dl))
-                           ((SPEED COMPILATION-SPEED))
-                           (t (warn "The OPTIMIZE quality ~s is unknown."
-                                    (car x)))))))
-              (FTYPE
-               (if (or (endp (cdr decl))
-                       (not (consp (second decl)))
-                       (not (eq (caadr decl) 'FUNCTION))
-                       (endp (cdadr decl)))
-                   (warn "The function declaration ~s is illegal." decl)
-                   (dolist (fname (cddr decl))
-                     (add-function-declaration
-                      fname (cadadr decl) (cddadr decl)))))
-              (FUNCTION
-               (if (or (endp (cdr decl))
-                       (endp (cddr decl))
-                       (not (symbolp (second decl))))
-                   (warn "The function declaration ~s is illegal." decl)
-                   (add-function-declaration
-                    (second decl) (caddr decl) (cdddr decl))))
-              (INLINE
-               (dolist (fun (cdr decl))
-                 (if (symbolp fun)
-                     (progn (push (list 'INLINE fun) dl)
-                            (setq *notinline* (remove fun *notinline*)))
-                     (warn "The function name ~s is not a symbol." fun))))
-              (NOTINLINE
-               (dolist (fun (cdr decl))
-                 (if (symbolp fun)
-                     (progn (push (list 'NOTINLINE fun) dl)
-                            (push fun *notinline*))
-                     (warn "The function name ~s is not a symbol." fun))))
-              (DECLARATION
-               (dolist (x (cdr decl))
-                 (if (symbolp x)
-                     (pushnew x *alien-declarations*)
-                     (warn "The declaration specifier ~s is not a symbol."
-                           x))))
-              (otherwise
-               (unless (member (car decl) *alien-declarations*)
-                 (warn "The declaration specifier ~s is unknown."
-                       (car decl))))
-              ))
-           (setq body (c1progn body))
-           (list 'DECL-BODY (second body) dl body)
-           )
-      )
-  )
+      (let* ((*function-declarations* *function-declarations*)
+	     (*alien-declarations* *alien-declarations*)
+	     (*notinline* *notinline*)
+	     (*space* *space*)
+	     (*compiler-check-args* *compiler-check-args*)
+	     (*compiler-push-events* *compiler-push-events*)
+	     (dl (c1add-declarations decls)))
+	(setq body (c1progn body))
+	(list 'DECL-BODY (second body) dl body))))
 
 (setf (get 'decl-body 'c2) 'c2decl-body)
 
@@ -465,21 +471,8 @@
         (*compiler-push-events* *compiler-push-events*)
         (*notinline* *notinline*)
         (*space* *space*))
-       (dolist (decl decls)
-         (case (car decl)
-               (SAFETY
-                (let ((level (second decl)))
-                     (declare (fixnum level))
-                     (setq *compiler-check-args* (>= level 1)
-                           *safe-compile* (>= level 2)
-                           *compiler-push-events* (>= level 3))))
-               (SPACE (setq *space* (second decl)))
-               (NOTINLINE (push (second decl) *notinline*))
-               (INLINE
-                (setq *notinline* (remove (second decl) *notinline*)))
-               (otherwise (baboon))))
-       (c2expr body))
-  )
+    (c1add-declarations decls)
+    (c2expr body)))
 
 (defun check-vdecl (vnames ts is)
   (dolist (x ts)
