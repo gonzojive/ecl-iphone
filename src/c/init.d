@@ -109,9 +109,11 @@ init_lisp(void)
 #ifdef RUNTIME
 	SYM_VAL(@'*features*') = CONS(make_keyword("RUNTIME"), SYM_VAL(@'*features*'));
 #endif
+	/* This has to come before init_LSP/CLOS, because we need
+	 * clear_compiler_properties() to work in init_CLOS(). */
+	ecl_booted = 1;
+
 	lex_env = Cnil;
 	init_LSP();
 	init_CLOS();
-
-	ecl_booted = 1;
 }
