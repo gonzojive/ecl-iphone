@@ -17,15 +17,22 @@
 
 pthread_mutex_t ecl_threads_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static struct cl_env_struct cl_envs_array[128];
 static pthread_key_t cl_env_key;
+
+static pthread_t main_thread;
 
 extern void ecl_init_env(struct cl_env_struct *env);
 
 struct cl_env_struct *
-ecl_thread_env(void)
+ecl_process_env(void)
 {
 	return pthread_getspecific(cl_env_key);
+}
+
+cl_object
+mp_current_process(void)
+{
+	return cl_env.own_process;
 }
 
 /*----------------------------------------------------------------------
@@ -42,13 +49,12 @@ assert_type_process(cl_object o)
 static void
 thread_cleanup(void *env)
 {
-	cl_object *p, l, process;
+	cl_object *p, l, process  = cl_env.own_process;
 
 	pthread_mutex_lock(&ecl_threads_mutex);
 	p = &cl_core.processes;
 	for (l = *p; l != Cnil; ) {
-		process = CAR(l);
-		if (process->process.env == env) {
+		if (CAR(l) == process) {
 			*p = CDR(l);
 			break;
 		}
@@ -69,18 +75,21 @@ thread_entry_point(cl_object process)
 	ecl_init_env(process->process.env);
 
 	/* 2) Execute the code */
-	bds_bind(@'mp::*current-process*', process);
-	cl_apply(2, process->process.function, process->process.args);
-	bds_unwind1();
+	CL_CATCH_ALL_BEGIN {
+		bds_bind(@'mp::*current-process*', process);
+		cl_apply(2, process->process.function, process->process.args);
+		bds_unwind1();
+	} CL_CATCH_ALL_END;
 
 	/* 3) Remove the thread. thread_cleanup is automatically invoked. */
 	pthread_cleanup_pop(1);
 	return NULL;
 }
 
-@(defun mp::make-process (&key name ((:initial-bindings initial_bindings)))
+@(defun mp::make-process (&key name ((:initial-bindings initial_bindings) Ct))
 @
 	cl_object process;
+	cl_object hash;
 
 	process = cl_alloc_object(t_process);
 	process->process.name = name;
@@ -88,8 +97,17 @@ thread_entry_point(cl_object process)
 	process->process.args = Cnil;
 	process->process.thread = NULL;
 	process->process.env = cl_alloc(sizeof(*process->process.env));
-	process->process.env->bindings_hash =
-		si_copy_hash_table(cl_env.bindings_hash);
+	/* FIXME! Here we should either use INITIAL-BINDINGS or copy lexical
+	 * bindings */
+	if (initial_bindings != OBJNULL) {
+		hash = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024),
+					   make_shortfloat(1.5),
+					   make_shortfloat(0.7));
+	} else {
+		hash = si_copy_hash_table(cl_env.bindings_hash);
+	}
+	process->process.env->bindings_hash = hash;
+	process->process.env->own_process = process;
 	@(return process)
 @)
 
@@ -142,7 +160,20 @@ mp_process_enable(cl_object process)
 cl_object
 mp_exit_process(void)
 {
-	pthread_exit(NULL);
+	if (pthread_equal(pthread_self(), main_thread)) {
+		/* This is the main thread. Quitting it means exiting the
+		   program. */
+		cl_quit(0);
+	} else {
+		cl_object tag = cl_env.bindings_hash;
+		/* We simply throw with a catch value that nobody can have. This
+		   brings up back to the thread entry point, going through all
+		   possible UNWIND-PROTECT.
+		*/
+		NVALUES=0;
+		VALUES(0)=Cnil;
+		cl_throw(tag);
+	}
 }
 
 cl_object
@@ -190,7 +221,6 @@ mp_process_run_function(int narg, cl_object name, cl_object function, ...)
 	return mp_process_enable(process);
 }
 
-
 /*----------------------------------------------------------------------
  * LOCKS or MUTEX
  */
@@ -232,8 +262,27 @@ mp_giveup_lock(cl_object lock)
 void
 init_threads()
 {
+	cl_object process;
+	struct cl_env_struct *env;
+
 	cl_core.processes = OBJNULL;
 	pthread_mutex_init(&ecl_threads_mutex, NULL);
+
+	process = cl_alloc_object(t_process);
+	process->process.name = @'si::top-level';
+	process->process.function = Cnil;
+	process->process.args = Cnil;
+	process->process.thread = NULL;
+	process->process.thread = cl_alloc(sizeof(pthread_t));
+	*((pthread_t *)process->process.thread) = pthread_self();
+	process->process.env = env = cl_alloc(sizeof(*env));
+
 	pthread_key_create(&cl_env_key, NULL);
-	pthread_setspecific(cl_env_key, cl_alloc(sizeof(struct cl_env_struct)));
+	pthread_setspecific(cl_env_key, env);
+	env->own_process = process;
+
+	ECL_SET(@'mp::*current-process*', process);
+	cl_core.processes = CONS(process, Cnil);
+
+	main_thread = pthread_self();
 }

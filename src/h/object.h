@@ -407,6 +407,7 @@ struct ecl_process {
 	cl_object args;
 	void *thread;
 	struct cl_env_struct *env;
+	cl_object interrupt;
 };
 
 struct ecl_lock {

@@ -108,11 +108,15 @@ struct cl_env_struct {
 	   BIGNUM_REGISTER_SIZE in config.h */
 	cl_object big_register[3];
 	mp_limb_t big_register_limbs[3][16];
+
+#ifdef ECL_THREADS
+	cl_object own_process;
+#endif
 };
 
 #ifdef ECL_THREADS
-#define cl_env (*ecl_thread_env())
-extern struct cl_env_struct *ecl_thread_env(void) __attribute__((const));
+#define cl_env (*ecl_process_env())
+extern struct cl_env_struct *ecl_process_env(void) __attribute__((const));
 #else
 extern struct cl_env_struct cl_env;
 #endif
@@ -749,7 +753,7 @@ extern cl_object si_argv(cl_object index);
 extern cl_object si_getenv(cl_object var);
 extern cl_object si_setenv(cl_object var, cl_object value);
 extern cl_object si_pointer(cl_object x);
-extern cl_object cl_quit _ARGS((int narg, ...));
+extern cl_object cl_quit _ARGS((int narg, ...)) __attribute__((noreturn));
 
 extern bool ecl_booted;
 extern const char *ecl_self;
@@ -1318,11 +1322,13 @@ extern cl_object make_stream(cl_object host, int fd, enum ecl_smmode smm);
 /* threads.c */
 
 #ifdef ECL_THREADS
+extern cl_object mp_own_process(void) __attribute__((const));
 extern cl_object mp_all_processes(void);
 extern cl_object mp_exit_process(void) __attribute__((noreturn));
 extern cl_object mp_make_process _ARGS((int narg, ...));
 extern cl_object mp_process_active_p(cl_object process);
 extern cl_object mp_process_enable(cl_object process);
+extern cl_object mp_process_interrupt(cl_object process, cl_object function);
 extern cl_object mp_process_kill(cl_object process);
 extern cl_object mp_process_name(cl_object process);
 extern cl_object mp_process_preset _ARGS((int narg, cl_object process, cl_object function, ...));

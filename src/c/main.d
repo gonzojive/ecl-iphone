@@ -105,10 +105,11 @@ cl_boot(int argc, char **argv)
 	ARGV = argv;
 	ecl_self = argv[0];
 
+	init_alloc();
+	GC_disable();
 #ifdef ECL_THREADS
 	init_threads();
 #endif
-	init_alloc();
 
 #if !defined(MSDOS) && !defined(cygwin)
 	ecl_self = expand_pathname(ecl_self);
@@ -186,7 +187,6 @@ cl_boot(int argc, char **argv)
 
 
 	/* These must come _after_ the packages and NIL/T have been created */
-	GC_disable();
 	init_all_symbols();
 	GC_enable();
 
@@ -232,16 +232,8 @@ cl_boot(int argc, char **argv)
 	ecl_init_env(&cl_env);
 #ifdef ECL_THREADS
 	cl_env.bindings_hash = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024),
-						   make_shortfloat(1.5),	
+						   make_shortfloat(1.5),
 						   make_shortfloat(0.7));
-	{ cl_object process = cl_alloc_object(t_process);
-	process->process.env = &cl_env;
-	process->process.thread = NULL;
-	process->process.function = Cnil;
-	process->process.args = Cnil;
-	ECL_SET(@'mp::*current-process*', process);
-	cl_core.processes = CONS(process, Cnil);
-	}
 #endif
 
 	/*
@@ -370,14 +362,6 @@ cl_boot(int argc, char **argv)
 	if (!FIXNUMP(code))
 		FEerror("Illegal exit code: ~S.", 1, code);
 	i = fix(code);
-#ifdef THREADS
-	if (clwp != &main_lpd) {
-	  VALUES(0) = Cnil;
-	  NVALUES = 0;
-	  cl_throw(_intern("*thread-top*", system_package));
-	  /* never reached */
-	}
-#endif
 	exit(i);
 @)
 
