@@ -31,6 +31,8 @@
 
 static cl_object terminal_io;
 
+static bool flisten(FILE *fp);
+
 /*----------------------------------------------------------------------
  *	Input_stream_p(strm) answers
  *	if stream strm is an input stream or not.
@@ -999,11 +1001,24 @@ BEGIN:
 static bool
 flisten(FILE *fp)
 {
+#ifdef HAVE_SELECT
+	fd_set fds;
+	int retv, fd;
+	struct timeval tv = { 0, 0 };
+#endif
 	if (feof(fp))
 		return(FALSE);
 	if (FILE_CNT(fp) > 0)
 		return(TRUE);
-#ifdef FIONREAD
+#if defined(HAVE_SELECT)
+	fd = fileno(fp);
+	FD_ZERO(&fds);
+	FD_SET(fd, &fds);
+	retv = select(fd + 1, &fds, NULL, NULL, &tv);
+	if (retv < 0)
+		FElibc_error("select() returned an error value", 0);
+	return (retv > 0);
+#elif defined(FIONREAD)
 	{ long c = 0;
 	ioctl(fileno(fp), FIONREAD, &c);
 	if (c <= 0)

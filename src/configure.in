@@ -136,6 +136,7 @@ AC_CHECK_HEADERS(sys/utsname.h)
 AC_CHECK_HEADERS(float.h)
 AC_CHECK_FUNCS(nanosleep)
 AC_CHECK_FUNCS(isnanf)
+AC_CHECK_FUNCS(select)
 AC_ISC_POSIX
 
 dnl ----------------------------------------------------------------------
