@@ -119,12 +119,11 @@ Does not check if the third gang is a single-element list."
 	       (push item names))
 	     (push item all-args))
 	   (values (gensym) (nreverse names) (nreverse values) (nreverse all-args))))
-    (cond ((and (setq f (macroexpand form env)) (not (equal f form)))
-	   (return-from get-setf-method-multiple-value
-	     (get-setf-method-multiple-value f env)))
-	  ((symbolp form)
-	   (let ((store (gensym)))
-	     (values nil nil (list store) `(setq ,form ,store) form)))
+    (cond ((symbolp form)
+	   (if (and (setq f (macroexpand form env)) (not (equal f form)))
+	       (get-setf-method-multiple-value f env)
+	       (let ((store (gensym)))
+		 (values nil nil (list store) `(setq ,form ,store) form))))
 	  ((or (not (consp form)) (not (symbolp (car form))))
 	   (error "Cannot get the setf-method of ~S." form))
 	  ((setq f (get-sysprop (car form) 'SETF-METHOD))
@@ -140,6 +139,9 @@ Does not check if the third gang is a single-element list."
 			    (setf-structure-access (car all) (car f) (cdr f) store))
 			   ((setq f (get-sysprop (car form) 'SETF-LAMBDA))
 			    (apply f store all))
+			   ((and (setq f (macroexpand form env)) (not (equal f form)))
+			    (return-from get-setf-method-multiple-value
+			      (get-setf-method-multiple-value f env)))
 			   (t
 			    `(funcall #'(SETF ,name) ,store ,@all))))
 	       (values vars inits (list store) writer (cons name all))))))))
