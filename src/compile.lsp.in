@@ -63,8 +63,8 @@ cd ..; rm -rf tmp/* @LIBPREFIX@{lsp,clos} "))
 ;; installed copy of ECL.
 ;;
 (setf c::*ld-flags*
-#+dlopen "@LDRPATH@ @SHAREDPREFIX@ecl.@SHAREDEXT@ @CLIBS@"
-#-dlopen "@LDRPATH@ @LIBPREFIX@ecl.@LIBEXT@ @CLIBS@"
+#+dlopen "@LDFLAGS@ @LDRPATH@ @SHAREDPREFIX@ecl.@SHAREDEXT@ @CLIBS@"
+#-dlopen "@LDFLAGS@ @LDRPATH@ @LIBPREFIX@ecl.@LIBEXT@ @CLIBS@"
 )
 
 #+dlopen
