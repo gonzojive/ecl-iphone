@@ -216,6 +216,7 @@
                (not (<= 0 (second x) 3)))
            (warn "The OPTIMIZE proclamation ~s is illegal." x)
            (case (car x)
+		 (DEBUG)
                  (SAFETY (setq *compiler-check-args* (>= (second x) 1))
                          (setq *safe-compile* (>= (second x) 2))
                          (setq *compiler-push-events* (>= (second x) 3)))
@@ -401,6 +402,7 @@
 		 (not (<= 0 (second x) 3)))
 	   (warn "The OPTIMIZE proclamation ~s is illegal." x)
 	   (case (car x)
+	     (DEBUG)
 	     (SAFETY
 	      (let ((level (second x)))
 		(declare (fixnum level))
