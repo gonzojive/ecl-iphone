@@ -49,8 +49,6 @@ cl_fdefinition(cl_object fname)
 cl_object
 cl_fboundp(cl_object fname)
 {
-	cl_object output;
-
 	if (SYMBOLP(fname)) {
 		@(return ((fname->symbol.isform || SYM_FUN(fname) != OBJNULL)? Ct : Cnil))
 	} else if (CONSP(fname)) {

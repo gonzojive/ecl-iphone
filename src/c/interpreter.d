@@ -640,7 +640,7 @@ interpret_labels(cl_object bytecodes, cl_opcode *vector) {
 static cl_opcode *
 interpret_msetq(cl_object bytecodes, cl_opcode *vector)
 {
-	cl_object var, value;
+	cl_object value;
 	int i, n = GET_OPARG(vector);
 	for (i=0; i<n; i++) {
 		cl_fixnum var = GET_OPARG(vector);

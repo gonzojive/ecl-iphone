@@ -16,8 +16,10 @@
 #include <pthread.h>
 #endif
 #include "ecl.h"
+#include "internal.h"
 #include "page.h"
 #include "gc/gc.h"
+#include "gc/private/gc_priv.h"
 
 #ifdef GBC_BOEHM
 
@@ -59,7 +61,8 @@ finalize(cl_object o, cl_object data)
 		pthread_mutex_destroy(&o->lock.mutex);
 		break;
 #endif
-	default:}
+	default:;
+	}
 	} CL_NEWENV_END;
 }
 
@@ -74,6 +77,7 @@ cl_alloc_object(cl_type t)
 		return MAKE_FIXNUM(0); /* Immediate fixnum */
 	case t_character:
 		return CODE_CHAR(' '); /* Immediate character */
+	default:;
 	}
 	if (t < t_start || t >= t_end) {
 		printf("\ttype = %d\n", t);
@@ -201,16 +205,16 @@ ecl_mark_env(struct cl_env_struct *env)
 {
 #if 1
 	if (env->stack) {
-		GC_push_conditional(env->stack, env->stack_top,1);
-		GC_set_mark_bit(env->stack);
+		GC_push_conditional((ptr_t)env->stack, (ptr_t)env->stack_top, 1);
+		GC_set_mark_bit((ptr_t)env->stack);
 	}
 	if (env->frs_top) {
-		GC_push_conditional(env->frs_org, env->frs_top+1,1);
-		GC_set_mark_bit(env->frs_org);
+		GC_push_conditional((ptr_t)env->frs_org, (ptr_t)(env->frs_top+1), 1);
+		GC_set_mark_bit((ptr_t)env->frs_org);
 	}
 	if (env->bds_top) {
-		GC_push_conditional(env->bds_org, env->bds_top+1,1);
-		GC_set_mark_bit(env->bds_org);
+		GC_push_conditional((ptr_t)env->bds_org, (ptr_t)(env->bds_top+1), 1);
+		GC_set_mark_bit((ptr_t)env->bds_org);
 	}
 #endif
 #if 0
@@ -228,7 +232,7 @@ ecl_mark_env(struct cl_env_struct *env)
 	GC_set_mark_bit(env);
 #else
 	/* When not using threads, "env" is a statically allocated structure. */
-	GC_push_all(env, env + 1);
+	GC_push_all((ptr_t)env, (ptr_t)(env + 1));
 #endif
 #endif
 }
@@ -251,8 +255,8 @@ stacks_scanner(void)
 #else
 	ecl_mark_env(&cl_env);
 #endif
-	GC_push_all(&cl_core, &cl_core + 1);
-	GC_push_all(cl_symbols, cl_symbols + cl_num_symbols_in_core);
+	GC_push_all((ptr_t)&cl_core, (ptr_t)(&cl_core + 1));
+	GC_push_all((ptr_t)cl_symbols, (ptr_t)(cl_symbols + cl_num_symbols_in_core));
 	if (old_GC_push_other_roots)
 		(*old_GC_push_other_roots)();
 }
@@ -343,6 +347,7 @@ cl_object
 si_gc_dump()
 {
 	GC_dump();
+	@(return)
 }
 
 #endif /* GBC_BOEHM */

@@ -228,7 +228,7 @@ cl_parse_key(
 	  vars[i] = value;
 	  vars[nkey+i] = Ct;
 	}
-	goto go_on;
+	goto goon;
       }
     }
     /* the key is a new one */
@@ -237,7 +237,7 @@ cl_parse_key(
 	supplied_allow_other_keys = value;
     } else if (unknown_keyword == OBJNULL)
       unknown_keyword = keyword;
-  go_on:
+  goon:;
   }
   if (args[0].narg != 0)
     FEprogram_error("Odd number of keys", 0);

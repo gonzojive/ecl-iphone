@@ -151,7 +151,7 @@ si_follow_symlink(cl_object filename) {
 cl_object
 cl_truename(cl_object pathname)
 {
-	cl_object dir, directory, filename;
+	cl_object dir, filename;
 	cl_object previous = current_dir();
 
 	pathname = coerce_to_file_pathname(pathname);
@@ -433,7 +433,7 @@ string_match(const char *s, const char *p) {
 static cl_object
 list_current_directory(const char *mask, bool only_dir)
 {
-	cl_object kind, out = Cnil;
+	cl_object out = Cnil;
 	cl_object *out_cdr = &out;
 	char *text;
 
@@ -496,7 +496,6 @@ dir_files(cl_object basedir, cl_object pathname)
 {
 	cl_object all_files, output = Cnil;
 	cl_object mask, name, type;
-	int everything;
 
 	name = pathname->pathname.name;
 	type = pathname->pathname.type;

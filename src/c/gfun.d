@@ -120,7 +120,7 @@ compute_method(int narg, cl_object gf, cl_object *args)
 
 	if (e->key == OBJNULL) { 
 		/* method not cached */
-		cl_object methods, meth_comb, arglist = Cnil;
+		cl_object methods, arglist = Cnil;
 		i = narg;
 		while (i-- > 0)
 			arglist = CONS(args[i], arglist);

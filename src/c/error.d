@@ -14,10 +14,11 @@
     See file '../Copyright' for full details.
 */
 
+#include "ecl.h"
 #include <string.h>
 #include <errno.h>
 #include <signal.h>
-#include "ecl.h"
+#include <stdlib.h>
 
 void
 cs_overflow(void)

@@ -368,6 +368,7 @@ cl_boot(int argc, char **argv)
 	ECL_SET(@'*package*', cl_core.user_package);
 	init_unixint();
 	si_catch_bad_signals();
+	return 1;
 }
 
 /************************* ENVIRONMENT ROUTINES ***********************/

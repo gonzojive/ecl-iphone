@@ -78,6 +78,7 @@ ecl-config: ecl-config.pre
 @LIBPREFIX@gc.@LIBEXT@:
 	if (echo $(SUBDIR) | grep gc); then \
 	  cd gc; $(MAKE) install; \
+	  cp -rf $(srcdir)/gc/include/private ../h/gc/; \
 	fi
 @LIBPREFIX@gmp.@LIBEXT@:
 	if (echo $(SUBDIR) | grep gmp); then \

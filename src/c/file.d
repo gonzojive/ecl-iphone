@@ -1780,7 +1780,7 @@ cl_interactive_stream_p(cl_object strm)
 		output = Cnil;
 #endif
 		break;
-	default:
+	default:;
 	}
 	@(return output)
 }

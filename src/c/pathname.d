@@ -37,7 +37,7 @@ static cl_object
 check_directory(cl_object directory, bool logical)
 {
 	/* INV: directory is always a list */
-	cl_object ptr, item;
+	cl_object ptr;
 	int i;
 
 	if (CAR(directory) != @':absolute'  && CAR(directory) != @':relative')
@@ -593,7 +593,7 @@ L:
 			x = symbol_value(x->stream.object0);
 			goto L;
 		default:
-			/* Fall through to error message */
+			;/* Fall through to error message */
 		}
 	default:
 		FEwrong_type_argument(cl_list(4, @'or', @'file-stream',

@@ -411,6 +411,7 @@ extern cl_object si_interpreter_stack _ARGS((int narg));
 extern void cl_stack_push(cl_object o);
 extern cl_object cl_stack_pop(void);
 extern cl_index cl_stack_index(void);
+extern void cl_stack_set_size(cl_index new_size);
 extern void cl_stack_set_index(cl_index sp);
 extern void cl_stack_pop_n(cl_index n);
 extern void cl_stack_insert(cl_index where, cl_index n);

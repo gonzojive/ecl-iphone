@@ -17,20 +17,6 @@
 #include "ecl.h"
 #include <ctype.h>
 
-/******************************* LOCALS *******************************/
-
-static cl_object STreturn;
-static cl_object STspace;
-static cl_object STrubout;
-static cl_object STpage;
-static cl_object STtab;
-static cl_object STbackspace;
-static cl_object STlinefeed;
-static cl_object STnewline;
-static cl_object STnull;
-
-/******************************* ------- ******************************/
-
 cl_fixnum
 char_code(cl_object c)
 {

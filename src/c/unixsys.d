@@ -21,7 +21,6 @@
 cl_object
 si_system(cl_object cmd)
 {
-	volatile char *s;
 	volatile int code;
 
 	assert_type_string(cmd);

@@ -14,9 +14,10 @@
     See file '../Copyright' for full details.
 */
 
-#include <math.h>
 #include "ecl.h"
+#include <math.h>
 #include <float.h>
+#include "internal.h"
 
 #ifndef HAVE_ISNANF
 #define isnanf(x) isnan(x)

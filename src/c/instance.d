@@ -14,6 +14,7 @@
 */
 
 #include "ecl.h"
+#include <string.h>
 
 cl_object
 ecl_allocate_instance(cl_object clas, int size)

@@ -1514,7 +1514,7 @@ cl_write_byte(cl_object integer, cl_object binary_output_stream)
 
 @(defun write-sequence (sequence stream &key (start MAKE_FIXNUM(0)) end)
 @
-	si_do_write_sequence(sequence, stream, start, end);
+	return si_do_write_sequence(sequence, stream, start, end);
 @)
 
 cl_object

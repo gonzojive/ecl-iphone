@@ -439,7 +439,7 @@ cl_export2(cl_object s, cl_object p)
 {
 	cl_object x, l, hash = OBJNULL;
 	int intern_flag;
- BEGIN:
+
 	assert_type_symbol(s);
 	p = si_coerce_to_package(p);
 
@@ -487,7 +487,6 @@ cl_delete_package(cl_object p)
 {
 	cl_object hash, list;
 	cl_index i;
-	cl_object output = Ct;
 
 	/* 1) Try to remove the package from the global list */
 	p = ecl_find_package_nolock(p);

@@ -1050,7 +1050,7 @@ do_patch_sharp(cl_object x)
 			x->complex = c->complex;
 		}
 	}
-	default:
+	default:;
 	}
 	return(x);
 }
@@ -1134,8 +1134,6 @@ sharp_P_reader(cl_object in, cl_object c, cl_object d)
 static cl_object
 sharp_dollar_reader(cl_object in, cl_object c, cl_object d)
 {
-	cl_object output;
-
 	if (d != Cnil && !read_suppress)
 		extra_argument('$', in, d);
 	c = read_object(in);

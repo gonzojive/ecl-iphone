@@ -49,7 +49,7 @@
 #define FLAG_IGNORE		0
 #define FLAG_USEFUL		(FLAG_PUSH | FLAG_VALUES | FLAG_REG0)
 
-typedef struct cl_compiler_env {
+struct cl_compiler_env {
 	cl_object variables;
 	cl_object macros;
 	cl_fixnum lexical_level;
@@ -66,7 +66,7 @@ typedef struct cl_compiler_env {
 #define asm_clear(h) cl_stack_set_index(h)
 #define current_pc() cl_stack_index()
 #define set_pc(n) cl_stack_set_index(n)
-#define asm_op(o) cl_stack_push((cl_object)(o))
+#define asm_op(o) cl_stack_push((cl_object)((cl_fixnum)(o)))
 #define asm_ref(n) (cl_fixnum)(cl_env.stack[n])
 static void asm_op2(int op, int arg);
 static cl_object asm_end(cl_index handle);
@@ -475,7 +475,7 @@ c_pbind(cl_object var, cl_object specials)
 	bool special;
 	if (!SYMBOLP(var))
 		FEillegal_variable_name(var);
-	else if (special = c_declared_special(var, specials)) {
+	else if ((special = c_declared_special(var, specials))) {
 		c_register_var(var, TRUE);
 		asm_op2c(OP_PBINDS, var);
 	} else {
@@ -491,7 +491,7 @@ c_bind(cl_object var, cl_object specials)
 	bool special;
 	if (!SYMBOLP(var))
 		FEillegal_variable_name(var);
-	else if (special = c_declared_special(var, specials)) {
+	else if ((special = c_declared_special(var, specials))) {
 		c_register_var(var, TRUE);
 		asm_op2c(OP_BINDS, var);
 	} else {
@@ -1185,7 +1185,7 @@ c_flet(cl_object args, int flags) {
 */
 static int
 c_function(cl_object args, int flags) {
-	cl_object setf_function, function = pop(&args);
+	cl_object function = pop(&args);
 	if (!endp(args))
 		FEprogram_error("FUNCTION: Too many arguments.", 0);
 	return asm_function(function, flags);
