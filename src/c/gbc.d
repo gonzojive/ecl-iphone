@@ -21,9 +21,6 @@
 
 /******************************* EXPORTS ******************************/
 
-cl_object @'si::*gc-verbose*';
-cl_object @'si::*gc-message*';
-
 bool GC_enable;
 
 /******************************* ------- ******************************/
@@ -543,13 +540,9 @@ mark_phase(void)
 
 	/* mark registered symbols & keywords */
 	{
-	const struct keyword_info *k;
-	const struct symbol_info *s;
-	for (k = all_keywords; k->loc != NULL; k++)
-		mark_object(*(k->loc));
-	for (s = all_symbols; s->loc != NULL; s++)
-		mark_object(*(s->loc));
-	}
+	int i;
+	for (i=0; i<ECL_NUM_SYMBOLS_IN_CORE; i++)
+		mark_object((cl_object)(cl_symbols + i));
 
 	if (debug) {
 		printf("symbol navigation\n");
@@ -960,10 +953,8 @@ _mark_contblock(void *x, cl_index s)
 void
 init_GC(void)
 {
-	register_root(&@'si::*gc-verbose*');
-	register_root(&@'si::*gc-message*');
-	@'si::*gc-verbose*' = make_si_special("*GC-VERBOSE*", Cnil);
-	@'si::*gc-message*' = make_si_special("*GC-MESSAGE*", Cnil);
+	SYM_VAL(@'si::*gc-verbose*') = Cnil;
+	SYM_VAL(@'si::*gc-message*') = Cnil;
 	GC_enable();
 	gc_time = 0;
 }

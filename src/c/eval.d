@@ -18,13 +18,6 @@
 #include "ecl.h"
 #include "ecl-inl.h"
 
-/******************************* EXPORTS ******************************/
-
-cl_object @'apply';
-cl_object @'funcall';
-
-/******************************* ------- ******************************/
-
 static struct nil3 { cl_object nil3_self[3]; } three_nils;
 
 #define SYMBOL_FUNCTION(sym)    (SYM_FUN(sym) == OBJNULL ? \
@@ -83,9 +76,6 @@ apply(int narg, cl_object fun, cl_object *args)
 /*----------------------------------------------------------------------*
  *	Linking mechanism						*
  *----------------------------------------------------------------------*/
-
-static cl_object @'si::link-to';
-static cl_object @'si::link-from';
 
 cl_object
 #ifdef CLOS
@@ -223,9 +213,4 @@ init_eval(void)
 	three_nils.nil3_self[0] = Cnil;
 	three_nils.nil3_self[1] = Cnil;
 	three_nils.nil3_self[2] = Cnil;
-
-	@'si::link-from' = make_si_ordinary("LINK-FROM");
-	register_root(&@'si::link-from');
-	@'si::link-to' = make_si_ordinary("LINK-TO");
-	register_root(&@'si::link-to');
 }

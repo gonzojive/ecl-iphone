@@ -20,13 +20,6 @@
 #include <string.h>
 #include "ecl-inl.h"
 
-cl_object @':start1';
-cl_object @':end1';
-cl_object @':start2';
-cl_object @':end2';
-cl_object @':start';
-cl_object @':end';
-
 @(defun make_string (size &key (initial_element CODE_CHAR(' '))
 		     (element_type @'character')
 		     &aux x)

@@ -17,8 +17,6 @@
 #include "ecl.h"
 #include <time.h>
 
-cl_object @'*random-state*';
-
 static cl_object
 rando(cl_object x, cl_object rs)
 {

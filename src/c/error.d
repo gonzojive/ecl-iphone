@@ -17,27 +17,6 @@
 
 #include "ecl.h"
 
-/******************************* EXPORTS ******************************/
-
-cl_object @'arithmetic-error', @'cell-error', @'condition';
-cl_object @'control-error', @'division-by-zero', @'end-of-file';
-cl_object @'error', @'file-error', @'floating-point-inexact';
-cl_object @'floating-point-invalid-operation', @'floating-point-overflow';
-cl_object @'floating-point-underflow', @'package-error', @'parse-error';
-cl_object @'print-not-readable', @'program-error', @'reader-error';
-cl_object @'serious-condition', @'simple-condition', @'simple-error';
-cl_object @'simple-type-error', @'simple-warning', @'storage-condition';
-cl_object @'stream-error', @'style-warning', @'type-error', @'unbound-slot';
-cl_object @'unbound-variable', @'undefined-function', @'warning';
-
-cl_object @'si::simple-program-error', @'si::simple-control-error';
-
-cl_object @':pathname';					/* file-error */
-cl_object @':datum', @':expected-type';			/* type-error */
-cl_object @':format-control', @':format-arguments';	/* simple-condition */
-
-/******************************* ------- ******************************/
-
 void
 cs_overflow(void)
 {
@@ -77,11 +56,7 @@ internal_error(const char *s)
 /*		Support for Lisp Error Handler				     */
 /*****************************************************************************/
 
-cl_object @'si::universal-error-handler';
-
 cl_object null_string;
-
-cl_object @'si::terminal-interrupt';
 
 void
 terminal_interrupt(bool correctable)
@@ -232,7 +207,7 @@ FEinvalid_function(cl_object obj)
 
 /*      bootstrap version                */
 static
-@(defun si::universal_error_handler (c err args)
+@(defun "universal_error_handler" (c err args)
 @
 	printf("\nLisp initialization error.\n");
 	@print(1, err);

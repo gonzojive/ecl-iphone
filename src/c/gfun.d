@@ -14,14 +14,6 @@
 
 #include "ecl.h"
 
-/*
- * Functions defined in the PCL code.
- */
-cl_object @'si::compute-applicable-methods';
-cl_object @'si::compute-effective-method';
-cl_object @'si::generic-function-method-combination';
-cl_object @'si::generic-function-method-combination-args';
-
 @(defun si::allocate_gfun (name arg_no ht)
 	cl_object x;
 	int n, i;
@@ -216,10 +208,10 @@ gcall(int narg, cl_object fun, cl_object *args)
 	    i = narg;
 	    while (i-- > 0)
 	      arglist = CONS(args[i], arglist);
-	    methods = funcall(3, siScompute_applicable_methods, gf, arglist);
-	    meth_comb = funcall(2, siSgeneric_function_method_combination, gf);
-	    meth_args = funcall(2, siSgeneric_function_method_combination_args,gf);
-	    func = funcall(5, siScompute_effective_method, gf, methods,
+	    methods = funcall(3, @'si::compute-applicable-methods', gf, arglist);
+	    meth_comb = funcall(2, @'si::generic-function-method-combination', gf);
+	    meth_args = funcall(2, @'si::generic-function-method-combination-args', gf);
+	    func = funcall(5, @'si::compute-effective-method', gf, methods,
 			   meth_comb, meth_args);
 	  
 	    /* update cache */

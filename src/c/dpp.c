@@ -71,6 +71,11 @@
 #include <ctype.h>
 #include <string.h>
 
+#define DPP
+#include "config.h"
+#include "functions_list.h"
+#include "symbols_list.h"
+
 #define POOLSIZE        2048
 #define MAXREQ          16
 #define MAXOPT          16
@@ -200,117 +205,103 @@ pushc(int c)
 	*poolp++ = c;
 }
 
-char *
-read_name(int is_symbol)
+pushstr(const char *s)
 {
-	int c, l;
-	int oneX = 0, oneC = 0;
-	char *colon = NULL;
-	char *p;
+	while (*s)
+		pushc(*(s++));
+}
+
+int
+search_keyword(const char *name)
+{
+	int i;
+	char c[256];
+
+	for (i=0; name[i] && i<255; i++)
+		if (name[i] == '_')
+			c[i] = '-';
+		else
+			c[i] = name[i];
+	if (i == 255)
+		error("Too long keyword");
+	c[i] = 0;
+	for (i = 0; all_symbols[i].name != NULL; i++) {
+		if (all_symbols[i].name[0] == ':')
+			if (!strcasecmp(c, all_symbols[i].name+1))
+				return i;
+	}
+	printf("Keyword not found: %s.\n", c);
+	return 0;
+}
+
+char *
+read_symbol()
+{
+	char c, *name = poolp;
+	int i;
 
 	c = readc();
-	while (isspace(c)) {
-		pushc(c);
+	while (c != '\'') {
+		if (c == '_') c = '-';
+		pushc(c); 
 		c = readc();
 	}
-	p = poolp;
-	do {
-		if (isalpha(c))
-			; /* c=tolower(c) */
-		else if (isdigit(c))
-			;
-		else if (c == '-' || c == '_')
-			c = '_';
-		else if (c == '&')
-			c = 'A';
-		else if (c == '*') {
-			if (is_symbol && !oneX && (poolp == colon || poolp == p))
-			{
-				if (poolp > p && poolp[-1] == 'S')
-					poolp--;
-				oneX = 1;
-				c = 'V';
-			} else {
-				c = 'X';
-			}
-		} else if (c == '+') {
-			if (is_symbol && !oneC && (poolp == colon || poolp == p))
-			{
-				if (poolp > p && poolp[-1] == 'S')
-					poolp--;
-				oneC = 1;
-				c = 'C';
-			} else {
-				c = 'P';
-			}
-		} else if (c == '<') {
-			c = 'L';
-		} else if (c == '>') {
-			c = 'G';
-		} else if (c == '=') {
-			c = 'E';
-		} else if (c == '/') {
-			c = 'N';
-		} else if (c == ':') {
-			if (colon == poolp) {
-				c = readc();
-				continue;
-			} else if (colon != NULL)
-				error("double colon ':' in symbol name");
-			else {
-				colon = poolp+1;
-				if (poolp == p)
-					c = 'K';	/* Keyword */
-				else if (!is_symbol)
-					c = 'L';	/* Function name */
-				else if (oneX == NULL)
-					c = 'S';	/* Symbol name */
-				else {
-					c = readc();
-					continue;
-				}
-			}
-		} else if (!is_symbol) {
-			unreadc(c);
-			break;
-		} else if (c == '\'') {
-			break;
-		} else {
-			error("Disallowed character in symbol name");
+	pushc(0);
+
+	for (i = 0; all_symbols[i].name != NULL; i++) {
+		if (!strcasecmp(name, all_symbols[i].name)) {
+			poolp = name;
+			pushstr("(cl_object)(cl_symbols+");
+			if (i >= 100)
+				pushc((i / 100) % 10 + '0');
+			if (i >= 10)
+				pushc((i / 10) % 10 + '0');
+			pushc(i % 10 + '0');
+			pushstr(")");
+			return name;
 		}
-		pushc(c);
-		c = readc();
-	} while (1);
-	l = poolp - p;
-	if (l > 2 && oneX && poolp[-1] == 'X')
-		poolp--;
-	if (l > 2 && oneC && poolp[-1] == 'P')
-		poolp--;
-	if (poolp[-1] == '_')
-		poolp[-1] = 'M';
-	if (colon == NULL) {
-		char buf[256];
-		poolp[0] = buf[0] = '\0';
-		strcpy(buf, "cl");
-		if (!oneX && p[0] != 'K')
-		  strcat(buf, is_symbol? "S" : "L");
-		strcat(buf, p);
-		strcpy(p, buf);
-		poolp = p + strlen(buf);
 	}
-	return p;
+	printf("\nUnknown symbol: %s\n", name);
+	poolp = name;
+	pushstr("unknown");
+	return name;
 }
 
 char *
-read_symbol_name(void)
+read_function()
 {
-	return read_name(1);
-}
+	char c, *name = poolp;
+	int i;
 
-char *
-read_func_name(void)
-{
-	return read_name(0);
+	c = readc();
+	if (c == '"') {
+		c = readc();
+		while (c != '"') {
+			pushc(c);
+			c = readc();
+		}
+		pushc(0);
+		return name;
+	}
+	while (c != '(' && !isspace(c) && c != ')') {
+		if (c == '_') c = '-';
+		pushc(c); 
+		c = readc();
+	}
+	unreadc(c);
+	pushc(0);
+
+	for (i = 0; all_functions[i].name != NULL; i++) {
+		if (!strcasecmp(name, all_functions[i].name)) {
+			poolp = name;
+			pushstr(all_functions[i].translation);
+			return name;
+		}
+	}
+	printf("\nUnknown function: %s\n", name);
+	poolp = name;
+	pushstr("unknown");
+	return name;
 }
 
 char *
@@ -343,12 +334,12 @@ read_token(void)
 		} else if (c == '@') {
 			c = readc();
 			if (c == '\'') {
-				(void)read_symbol_name();
+				(void)read_symbol();
 			} else if (c == '@') {
 				pushc(c);
 			} else {
 				unreadc(c);
-				(void)read_func_name();
+				(void)read_function();
 			}
 		} else {
 			pushc(c);
@@ -395,7 +386,7 @@ reset(void)
 
 get_function(void)
 {
-	function = read_func_name();
+	function = read_function();
 	pushc('\0');
 }
 
@@ -452,7 +443,7 @@ OPTIONAL:
 
 REST:
 	if (strcmp(p, "rest") != 0 && strcmp(p, "r") != 0)
-		goto KEYWORD;
+		goto KEY;
 	rest_flag = TRUE;
 	if ((c = nextc()) == ')' || c == '&')
 		error("&rest var missing");
@@ -463,9 +454,9 @@ REST:
 	if (c != '&')
 		error("& expected");
 	p = read_token();
-	goto KEYWORD;
+	goto KEY;
 
-KEYWORD:
+KEY:
 	if (strcmp(p, "key") != 0 && strcmp(p, "k") != 0)
 		goto AUX;
 	key_flag = TRUE;
@@ -587,7 +578,13 @@ put_declaration(void)
     }
   if (nkey > 0) {
     put_lineno();
-    fprintf(out, "\tcl_object KEYS[%d];\n", nkey);
+    fprintf(out, "\tstatic cl_object KEYS[%d] = {", nkey);
+    for (i = 0; i < nkey; i++) {
+      if (i > 0)
+	fprintf(out, ", ");
+      fprintf(out, "(cl_object)(cl_symbols+%d)", search_keyword(keyword[i].k_key));
+    }
+    fprintf(out, "};\n");
   }
   for (i = 0;  i < nkey;  i++) {
     fprintf(out, "\tcl_object %s;\n", keyword[i].k_var);
@@ -639,10 +636,6 @@ put_declaration(void)
       fprintf(out, "\t}\n");
     }
     if (key_flag) {
-      for (i = 0; i < nkey; i++) {
-	put_lineno();
-	fprintf(out, "\tKEYS[%d]=K%s;\n", i, keyword[i].k_key);
-      }
       put_lineno();
       fprintf(out, "\tva_parse_key(narg-%d, ARGS, %d, KEYS, KEY_VARS, NULL, %d);\n",
 	      nreq+nopt, nkey, allow_other_keys_flag);
@@ -739,7 +732,7 @@ LOOP:
 	} else if (c == '\'') {
 		char *p;
 		poolp = pool;
-		p = read_symbol_name();
+		p = read_symbol();
 		pushc('\0');
 		fprintf(out,"%s",p);
 		goto LOOP;
@@ -747,7 +740,7 @@ LOOP:
 		char *p;
 		unreadc(c);
 		poolp = pool;
-		p = read_func_name();
+		p = read_function();
 		pushc('\0');
 		fprintf(out,"%s",p);
 		goto LOOP;

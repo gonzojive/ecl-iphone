@@ -17,16 +17,6 @@
 
 #include "ecl.h"
 
-/******************************* EXPORTS ******************************/
-
-cl_object @'si::structure-print-function';
-cl_object @'si::structure-slot-descriptions';
-#ifdef CLOS
-cl_object @'structure-object';
-#else
-cl_object siSstructure_include;
-#endif
-
 /******************************* ------- ******************************/
 
 #ifdef CLOS
@@ -51,7 +41,7 @@ structure_subtypep(cl_object x, cl_object y)
 			return(FALSE);
 		if (x == y)
 			return(TRUE);
-		x = get(x, siSstructure_include, Cnil);
+		x = get(x, @'si::structure-include', Cnil);
 	} while (x != Cnil);
 	return(FALSE);
 }
@@ -72,7 +62,7 @@ structure_to_list(cl_object x)
 	int i, n;
 
 	s = getf(SNAME(x)->symbol.plist,
-	         siSstructure_slot_descriptions, Cnil);
+	         @'si::structure-slot-descriptions', Cnil);
 	p = &CDR(r = CONS(SNAME(x), Cnil));
 	for (i=0, n=SLENGTH(x);  !endp(s) && i<n;  s=CDR(s), i++) {
 		p = &(CDR(*p = CONS(car(CAR(s)), Cnil)));

@@ -17,15 +17,6 @@
 #include "ecl.h"
 #include "ecl-inl.h"
 
-/******************************* EXPORTS ******************************/
-
-cl_object @':test';
-cl_object @':test-not';
-cl_object @':key';
-cl_object @':initial-element';
-
-/******************************* ------- ******************************/
-
 #ifdef THREADS
 #define test_function   clwp->lwp_test_function
 #define item_compared   clwp->lwp_item_compared
@@ -211,7 +202,7 @@ list(int narg, ...)
 	return(p);
 }
 
-@(defun listX (&rest args)
+@(defun list* (&rest args)
 	cl_object p = Cnil, *z=&p;
 @
 	if (narg == 0)

@@ -27,13 +27,6 @@
 
 cl_object standard_readtable;
 
-cl_object @'*readtable*';
-cl_object @'*read_default_float_format*';
-cl_object @'*read_base*';
-cl_object @'*read_suppress*';
-
-cl_object @':junk_allowed';
-
 #ifndef THREADS
 cl_object READtable;
 int READdefault_float_format;
@@ -640,7 +633,7 @@ parse_integer(char *s, cl_index end, cl_index *ep, int radix)
 }
 
 static
-@(defun si::left_parenthesis_reader (in c)
+@(defun "left_parenthesis_reader" (in c)
   cl_object x, y;
   cl_object *p;
 @
@@ -720,14 +713,14 @@ read_constituent(cl_object in)
 }
 
 static
-@(defun si::double_quote_reader (in c)
+@(defun "double_quote_reader" (in c)
 @
 	read_string('"', in);
 	@(return copy_simple_string(cl_token))
 @)
 
 static
-@(defun si::dispatch_reader (in dc)
+@(defun "dispatch_reader_fun" (in dc)
 	cl_object c, x, y;
 	int i, d;
 @
@@ -752,27 +745,22 @@ static
 @)
 
 static
-@(defun si::single_quote_reader (in c)
+@(defun "single_quote_reader" (in c)
 @
 	@(return CONS(@'quote', CONS(read_object(in), Cnil)))
 @)
 
 static
-@(defun si::void_reader (in c)
+@(defun "void_reader" (in c)
 @
 	/*  no result  */
 	@(return)
 @)
 
-#define @si::right_parenthesis_reader @si::void_reader
-
-/*
-int
-@comma-reader(){} in backq.c
-*/
+#define right_parenthesis_reader void_reader
 
 static
-@(defun si::semicolon_reader (in c)
+@(defun "semicolon_reader" (in c)
 @
 	do
 		c = read_char(in);
@@ -782,16 +770,11 @@ static
 @)
 
 /*
-int
-@backquote-reader(){}
-*/
-
-/*
 	sharpmacro routines
 */
 
 static
-@(defun si::sharp_C_reader (in c d)
+@(defun "sharp_C_reader" (in c d)
 	cl_object x, real, imag;
 @
 	if (d != Cnil && !READsuppress)
@@ -819,7 +802,7 @@ static
 @)
 
 static
-@(defun si::sharp_backslash_reader (in c d)
+@(defun "sharp_backslash_reader" (in c d)
 @
 	if (d != Cnil && !READsuppress)
 		if (!FIXNUMP(d) ||
@@ -857,7 +840,7 @@ static
 @)
 
 static
-@(defun si::sharp_single_quote_reader (in c d)
+@(defun "sharp_single_quote_reader" (in c d)
 @
 	if(d != Cnil && !READsuppress)
 		extra_argument('#', d);
@@ -879,7 +862,7 @@ static
  */
 
 static
-@(defun si::sharp_left_parenthesis_reader (in c d)
+@(defun "sharp_left_parenthesis_reader" (in c d)
 	bool fixed_size;
 	cl_index dim, dimcount, i, a;
 	cl_index sp = cl_stack_index();
@@ -902,7 +885,7 @@ static
 		    cl_stack_push(CAR(x));
 		  goto L;
 		}
-		@(return list(4, siScomma, @'apply',
+		@(return list(4, @'si::,', @'apply',
 			      CONS(@'quote', CONS(@'vector', Cnil)), x))
 	}
 	for (dimcount = 0 ;; dimcount++) {
@@ -930,7 +913,7 @@ L:
 @)
 
 static
-@(defun si::sharp_asterisk_reader (in c d)
+@(defun "sharp_asterisk_reader" (in c d)
 	bool fixed_size;
 	cl_index dim, dimcount, i;
 	cl_index sp = cl_stack_index();
@@ -979,7 +962,7 @@ static
 @)
 
 static
-@(defun si::sharp_colon_reader (in c d)
+@(defun "sharp_colon_reader" (in c d)
 	cl_index length;
 	enum chattrib a;
 @
@@ -1037,7 +1020,7 @@ M:
 @)
 
 static
-@(defun si::sharp_dot_reader (in c d)
+@(defun "sharp_dot_reader" (in c d)
 @
 	if(d != Cnil && !READsuppress)
 		extra_argument('.', d);
@@ -1054,7 +1037,7 @@ static
 static cl_object read_VV_block = OBJNULL;
 
 static
-@(defun si::sharp_exclamation_reader (in c d)
+@(defun "sharp_exclamation_reader" (in c d)
 	cl_fixnum code;
 @
 	if(d != Cnil && !READsuppress)
@@ -1085,7 +1068,7 @@ static
 @)
 
 static
-@(defun si::sharp_B_reader (in c d)
+@(defun "sharp_B_reader" (in c d)
 	cl_index i;
 	cl_object x;
 @
@@ -1105,7 +1088,7 @@ static
 @)
 
 static
-@(defun si::sharp_O_reader (in c d)
+@(defun "sharp_O_reader" (in c d)
 	cl_index i;
 	cl_object x;
 @
@@ -1125,7 +1108,7 @@ static
 @)
 
 static
-@(defun si::sharp_X_reader (in c d)
+@(defun "sharp_X_reader" (in c d)
 	cl_index i;
 	cl_object x;
 @
@@ -1145,7 +1128,7 @@ static
 @)
 
 static
-@(defun si::sharp_R_reader (in c d)
+@(defun "sharp_R_reader" (in c d)
 	int radix;
 	cl_index i;
 	cl_object x;
@@ -1171,11 +1154,11 @@ static
 	@(return x)
 @)
 
-#define sharp_A_reader @void-reader
-#define sharp_S_reader @void-reader
+#define sharp_A_reader void_reader
+#define sharp_S_reader void_reader
 
 static
-@(defun si::sharp_eq_reader (in c d)
+@(defun "sharp_eq_reader" (in c d)
 	cl_object pair, value;
 @
 	if (READsuppress) @(return)
@@ -1192,7 +1175,7 @@ static
 @)
 
 static
-@(defun si::sharp_sharp_reader (in c d)
+@(defun "sharp_sharp_reader" (in c d)
 	cl_object pair;
 @
 	if (READsuppress) @(return)
@@ -1262,14 +1245,14 @@ patch_sharp(cl_object x)
 	return x;
 }
 
-#define @si::sharp_plus_reader @si::void_reader
-#define @si::sharp_minus_reader @si::void_reader
-#define @si::sharp_less_than_reader @si::void_reader
-#define @si::sharp_whitespace_reader @si::void_reader
-#define @si::sharp_right_parenthesis_reader @si::void_reader
+#define sharp_plus_reader void_reader
+#define sharp_minus_reader void_reader
+#define sharp_less_than_reader void_reader
+#define sharp_whitespace_reader void_reader
+#define sharp_right_parenthesis_reader void_reader
 
 static
-@(defun si::sharp_vertical_bar_reader (in ch d)
+@(defun "sharp_vertical_bar_reader" (in ch d)
 	int c;
 	int level = 0;
 @
@@ -1298,7 +1281,7 @@ static
 @)
 
 static
-@(defun si::default_dispatch_macro (in c d)
+@(defun "default_dispatch_macro_fun" (in c d)
 @
 	FEerror("Undefined dispatch macro character.", 1, c);
 @)
@@ -1307,7 +1290,7 @@ static
 	#P" ... " returns the pathname with namestring ... .
 */
 static
-@(defun si::sharp_P_reader (in c d)
+@(defun "sharp_P_reader" (in c d)
 @
 	@(return coerce_to_pathname(read_object(in)))
 @)
@@ -1316,7 +1299,7 @@ static
 	#" ... " returns the pathname with namestring ... .
 */
 static
-@(defun si::sharp_double_quote_reader (in c d)
+@(defun "sharp_double_quote_reader" (in c d)
 @
 	if (d != Cnil && !READsuppress)
 		extra_argument('"', d);
@@ -1329,7 +1312,7 @@ static
 	as its content.
 */
 static
-@(defun si::sharp_dollar_reader (in c d)
+@(defun "sharp_dollar_reader" (in c d)
 	cl_object output;
 @
 	if (d != Cnil && !READsuppress)
@@ -1970,7 +1953,7 @@ init_read(void)
 		rtab[i].dispatch_table = NULL;
 	}
 
-	dispatch_reader = make_cf(@si::dispatch_reader);
+	dispatch_reader = make_cf(dispatch_reader_fun);
 	register_root(&dispatch_reader);
 
 	rtab['\t'].syntax_type = cat_whitespace;
@@ -1979,32 +1962,32 @@ init_read(void)
 	rtab['\r'].syntax_type = cat_whitespace;
 	rtab[' '].syntax_type = cat_whitespace;
 	rtab['"'].syntax_type = cat_terminating;
-	rtab['"'].macro = make_cf(@si::double_quote_reader);
+	rtab['"'].macro = make_cf(double_quote_reader);
 	rtab['#'].syntax_type = cat_non_terminating;
 	rtab['#'].macro = dispatch_reader;
 	rtab['\''].syntax_type = cat_terminating;
-	rtab['\''].macro = make_cf(@si::single_quote_reader);
+	rtab['\''].macro = make_cf(single_quote_reader);
 	rtab['('].syntax_type = cat_terminating;
-	rtab['('].macro = make_cf(@si::left_parenthesis_reader);
+	rtab['('].macro = make_cf(left_parenthesis_reader);
 	rtab[')'].syntax_type = cat_terminating;
-	rtab[')'].macro = make_cf(@si::right_parenthesis_reader);
+	rtab[')'].macro = make_cf(right_parenthesis_reader);
 /*
 	rtab[','].syntax_type = cat_terminating;
-	rtab[','].macro = make_cf(@si::comma_reader);
+	rtab[','].macro = make_cf(comma_reader);
 */
 	rtab[';'].syntax_type = cat_terminating;
-	rtab[';'].macro = make_cf(@si::semicolon_reader);
+	rtab[';'].macro = make_cf(semicolon_reader);
 	rtab['\\'].syntax_type = cat_single_escape;
 /*
 	rtab['`'].syntax_type = cat_terminating;
-	rtab['`'].macro = make_cf(@si::backquote_reader);
+	rtab['`'].macro = make_cf(backquote_reader);
 */
 	rtab['|'].syntax_type = cat_multiple_escape;
 /*
-	rtab['|'].macro = make_cf(@si::vertical_bar_reader);
+	rtab['|'].macro = make_cf(vertical_bar_reader);
 */
 
-	default_dispatch_macro = make_cf(@si::default_dispatch_macro);
+	default_dispatch_macro = make_cf(default_dispatch_macro_fun);
 #ifndef THREADS
 	register_root(&default_dispatch_macro);
 #endif
@@ -2014,43 +1997,43 @@ init_read(void)
 	= (cl_object *)cl_alloc(RTABSIZE * sizeof(cl_object));
 	for (i = 0;  i < RTABSIZE;  i++)
 		dtab[i] = default_dispatch_macro;
-	dtab['C'] = dtab['c'] = make_cf(@si::sharp_C_reader);
-	dtab['\\'] = make_cf(@si::sharp_backslash_reader);
-	dtab['\''] = make_cf(@si::sharp_single_quote_reader);
-	dtab['('] = make_cf(@si::sharp_left_parenthesis_reader);
-	dtab['*'] = make_cf(@si::sharp_asterisk_reader);
-	dtab[':'] = make_cf(@si::sharp_colon_reader);
-	dtab['.'] = make_cf(@si::sharp_dot_reader);
-	dtab['!'] = make_cf(@si::sharp_exclamation_reader);
+	dtab['C'] = dtab['c'] = make_cf(sharp_C_reader);
+	dtab['\\'] = make_cf(sharp_backslash_reader);
+	dtab['\''] = make_cf(sharp_single_quote_reader);
+	dtab['('] = make_cf(sharp_left_parenthesis_reader);
+	dtab['*'] = make_cf(sharp_asterisk_reader);
+	dtab[':'] = make_cf(sharp_colon_reader);
+	dtab['.'] = make_cf(sharp_dot_reader);
+	dtab['!'] = make_cf(sharp_exclamation_reader);
 	/*  Used for fasload only. */
-	dtab['B'] = dtab['b'] = make_cf(@si::sharp_B_reader);
-	dtab['O'] = dtab['o'] = make_cf(@si::sharp_O_reader);
-	dtab['X'] = dtab['x'] = make_cf(@si::sharp_X_reader);
-	dtab['R'] = dtab['r'] = make_cf(@si::sharp_R_reader);
+	dtab['B'] = dtab['b'] = make_cf(sharp_B_reader);
+	dtab['O'] = dtab['o'] = make_cf(sharp_O_reader);
+	dtab['X'] = dtab['x'] = make_cf(sharp_X_reader);
+	dtab['R'] = dtab['r'] = make_cf(sharp_R_reader);
 /*
-	dtab['A'] = dtab['a'] = make_cf(@si::sharp_A_reader);
-	dtab['S'] = dtab['s'] = make_cf(@si::sharp_S_reader);
+	dtab['A'] = dtab['a'] = make_cf(sharp_A_reader);
+	dtab['S'] = dtab['s'] = make_cf(sharp_S_reader);
 */
 	dtab['A'] = dtab['a'] = make_si_ordinary("SHARP-A-READER");
 	dtab['S'] = dtab['s'] = make_si_ordinary("SHARP-S-READER");
-	dtab['P'] = dtab['p'] = make_cf(@si::sharp_P_reader);
+	dtab['P'] = dtab['p'] = make_cf(sharp_P_reader);
 
-	dtab['='] = make_cf(@si::sharp_eq_reader);
-	dtab['#'] = make_cf(@si::sharp_sharp_reader);
-	dtab['+'] = make_cf(@si::sharp_plus_reader);
-	dtab['-'] = make_cf(@si::sharp_minus_reader);
+	dtab['='] = make_cf(sharp_eq_reader);
+	dtab['#'] = make_cf(sharp_sharp_reader);
+	dtab['+'] = make_cf(sharp_plus_reader);
+	dtab['-'] = make_cf(sharp_minus_reader);
 /*
-	dtab['<'] = make_cf(@si::sharp_less_than_reader);
+	dtab['<'] = make_cf(sharp_less_than_reader);
 */
-	dtab['|'] = make_cf(@si::sharp_vertical_bar_reader);
-	dtab['"'] = make_cf(@si::sharp_double_quote_reader);
+	dtab['|'] = make_cf(sharp_vertical_bar_reader);
+	dtab['"'] = make_cf(sharp_double_quote_reader);
 	/*  This is specific to this implementation  */
-	dtab['$'] = make_cf(@si::sharp_dollar_reader);
+	dtab['$'] = make_cf(sharp_dollar_reader);
 	/*  This is specific to this implimentation  */
 /*
 	dtab[' '] = dtab['\t'] = dtab['\n'] = dtab['\f']
-	= make_cf(@si::sharp_whitespace_reader);
-	dtab[')'] = make_cf(@si::sharp_right_parenthesis_reader);
+	= make_cf(sharp_whitespace_reader);
+	dtab[')'] = make_cf(sharp_right_parenthesis_reader);
 */
 
 	init_backq();
@@ -2158,9 +2141,6 @@ read_VV(cl_object block, void *entry)
 	  }
 	  if (i < len)
 	    FEerror("Not enough data while loading binary file",0);
-#ifdef PDE
-	  bds_bind(@'si::*source-pathname*', VV[block->cblock.source_pathname]);
-#endif
 	NO_DATA:
 	  SYM_VAL(@'*package*') = old_package;
 	  (*entry_point)(MAKE_FIXNUM(0));

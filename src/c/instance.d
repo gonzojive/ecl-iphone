@@ -15,12 +15,6 @@
 
 #include "ecl.h"
 
-/******************************* EXPORTS ******************************/
-
-cl_object @'print-object';
-
-/******************************* ------- ******************************/
-
 cl_object
 cl_allocate_instance(cl_object clas, int size)
 {

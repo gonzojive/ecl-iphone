@@ -16,13 +16,6 @@
 
 #include "ecl.h"
 
-/*
-   For sake of profiler, put @all-the-same before number_compare,
-   so that all calls to number_compare are attributed to function =.
-   Similarly for @monotonically-decreasing.
-*/
-
-
 @(defun = (num &rest nums)
 	int i;
 @

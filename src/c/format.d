@@ -18,8 +18,6 @@
 #include <ctype.h>
 #include "internal.h"
 
-cl_object @'si::*indent-formatted-output*';
-
 #define FMT_MAX_PARAM	8
 typedef struct format_stack_struct {
   cl_object	stream;
@@ -1686,7 +1684,7 @@ fmt_justification(format_stack fmt, volatile bool colon, bool atsign)
 		l += cl_stack[i]->string.fillp;
 	/*
 	 * Count the number of segments that need padding, "M". If the colon
-	 * modifier, the first item needs padding. If the @ modifier is
+	 * modifier, the first item needs padding. If the @@ modifier is
 	 * present, the last modifier also needs padding.
 	 */
 	m = fields_end - fields_start - 1;

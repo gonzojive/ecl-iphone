@@ -1039,5 +1039,5 @@ init_interpreter(void)
 {
 	cl_stack = NULL;
 	cl_stack_size = 0;
-	cl_stack_set_size(8*LISP_PAGESIZE);
+	cl_stack_set_size(16*LISP_PAGESIZE);
 }

@@ -30,13 +30,6 @@ cl_object clos_package;
 #ifdef TK
 cl_object tk_package;
 #endif
-cl_object @'*package*';		/*  *package*  */
-
-cl_object @':internal';
-cl_object @':external';
-cl_object @':inherited';
-cl_object @':nicknames';
-cl_object @':use';
 
 /******************************* ------- ******************************/
 
@@ -926,8 +919,4 @@ init_package(void)
 	Ct->symbol.hpack = lisp_package;
 	cl_import(Ct, lisp_package);
 	cl_export(Ct, lisp_package);
-
-	/*  There is no need to enter a package as a mark origin.  */
-
-	@'*package*' = make_special("*PACKAGE*", lisp_package);
 }

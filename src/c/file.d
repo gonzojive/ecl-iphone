@@ -27,57 +27,7 @@
 #include <sys/ioctl.h>
 #endif
 
-/******************************* EXPORTS ******************************/
-cl_object @'*standard-input*';
-cl_object @'*standard-output*';
-cl_object @'*error-output*';
-cl_object @'*query-io*';
-cl_object @'*debug-io*';
-cl_object @'*terminal-io*';
-cl_object @'*trace-output*';
-
-cl_object @':abort';
-cl_object @':direction';
-cl_object @':input';
-cl_object @':output';
-cl_object @':io';
-cl_object @':probe';
-cl_object @':element_type';
-cl_object @':default';
-cl_object @':if_exists';
-cl_object @':error';
-cl_object @':new_version';
-cl_object @':rename';
-cl_object @':rename_and_delete';
-cl_object @':overwrite';
-cl_object @':append';
-cl_object @':supersede';
-cl_object @':create';
-cl_object @':print';
-cl_object @':if_does_not_exist';
-cl_object @':set_default_pathname';
-
-#ifdef ECL_CLOS_STREAMS
-cl_object @'stream-input-p';
-/*cl_object @'stream-read-line';*/
-cl_object @'stream-read-char';
-cl_object @'stream-unread-char';
-/*cl_object @'stream-peek-char';*/
-cl_object @'stream-listen';
-cl_object @'stream-clear-input';
-cl_object @'stream-output-p';
-cl_object @'stream-write-char';
-/*cl_object @'stream-write-string';*/
-cl_object @'stream-clear-output';
-cl_object @'stream-force-output';
-cl_object @'stream-close';
-#endif /* ECL_CLOS_STREAMS */
-
-/******************************* ------- ******************************/
-
 static cl_object terminal_io;
-
-cl_object @'si::*ignore-eof-on-terminal-io*';
 
 static bool
 feof1(FILE *fp)

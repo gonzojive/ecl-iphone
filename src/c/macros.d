@@ -20,11 +20,6 @@
 
 /* Requires expand-defmacro, from lsp/defmacro.lsp */
 
-/******************************* EXPORTS ******************************/
-
-cl_object @'*macroexpand-hook*';
-cl_object @'si::expand-defmacro';
-
 /******************************* ------- ******************************/
 
 /*

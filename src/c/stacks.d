@@ -43,8 +43,6 @@ int NValues;
 cl_object Values[VSSIZE];
 #endif
 
-cl_object @':catch', @':catchall', @':protect';
-
 /********************* BINDING STACK ************************/
 
 void

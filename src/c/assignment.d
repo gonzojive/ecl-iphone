@@ -17,18 +17,6 @@
 #include "ecl.h"
 #include <string.h>
 
-cl_object @'setf';
-cl_object @'psetf';
-cl_object @'si::setf-symbol';
-cl_object @'si::setf-lambda';
-cl_object @'si::setf-method';
-cl_object @'si::setf-update';
-cl_object @'si::clear-compiler-properties';
-#ifdef PDE
-cl_object @'si::*record-source-pathname-p*';
-cl_object @'si::record-source-pathname';
-#endif
-
 cl_object
 set(cl_object var, cl_object val)
 {

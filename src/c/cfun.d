@@ -17,10 +17,6 @@
 #include "ecl.h"
 #include <string.h>	/* for memmove() */
 
-#ifdef PDE
-cl_object @'defun', @'defmacro';
-#endif
-
 cl_object
 make_cfun(cl_objectfn self, cl_object name, cl_object cblock)
 {
@@ -55,9 +51,6 @@ MF(cl_object sym, cl_objectfn self, cl_object block)
 	if (sym->symbol.isform && sym->symbol.mflag)
 		sym->symbol.isform = FALSE;
 	clear_compiler_properties(sym);
-#ifdef PDE
-	record_source_pathname(sym, @'defun');
-#endif
 	cf = cl_alloc_object(t_cfun);
 	cf->cfun.entry = self;
 	cf->cfun.name = sym;

@@ -37,7 +37,6 @@ init_lisp(void)
 #endif
 
 	/* These must come _after_ init_symbol() and init_package() */
-	init_all_keywords();
 	init_all_symbols();
 	init_all_functions();
 

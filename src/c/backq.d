@@ -32,14 +32,6 @@ int backq_level;
 #define	APPEND	5
 #define	NCONC	6
 
-cl_object siScomma;
-cl_object siScomma_at;
-cl_object siScomma_dot;
-
-cl_object @'list*';
-cl_object @'append';
-cl_object @'nconc';
-
 static cl_object
 kwote(cl_object x)
 {
@@ -71,11 +63,11 @@ backq_cdr(cl_object *px)
 
 	if (ATOM(x))
 		return(QUOTE);
-	if (CAR(x) == siScomma) {
+	if (CAR(x) == @'si::,') {
 		*px = CDR(x);
 		return(EVAL);
 	}
-	if (CAR(x) == siScomma_at || CAR(x) == siScomma_dot)
+	if (CAR(x) == @'si::,@' || CAR(x) == @'si::,.')
 		FEerror(",@@ or ,. has appeared in an illegal position.", 0);
 	{ cl_object ax, dx;
 	  a = backq_car(&CAR(x));
@@ -202,15 +194,15 @@ backq_car(cl_object *px)
 
 	if (ATOM(x))
 		return(QUOTE);
-	if (CAR(x) == siScomma) {
+	if (CAR(x) == @'si::,') {
 		*px = CDR(x);
 		return(EVAL);
 	}
-	if (CAR(x) == siScomma_at) {
+	if (CAR(x) == @'si::,@') {
 		*px = CDR(x);
 		return(APPEND);
 	}
-	if (CAR(x) == siScomma_dot) {
+	if (CAR(x) == @'si::,.') {
 		*px = CDR(x);
 		return(NCONC);
 	}
@@ -259,27 +251,29 @@ backq(cl_object x)
 	return(x);
 }
 
-@(defun comma_reader (in c)
+static
+@(defun "comma_reader" (in c)
 	cl_object x, y;
 @
 	if (backq_level <= 0)
 		FEerror("A comma has appeared out of a backquote.", 0);
 	c = peek_char(FALSE, in);
 	if (c == CODE_CHAR('@@')) {
-		x = siScomma_at;
+		x = @'si::,@';
 		read_char(in);
 	} else if (c == CODE_CHAR('.')) {
-		x = siScomma_dot;
+		x = @'si::,.';
 		read_char(in);
 	} else
-		x = siScomma;
+		x = @'si::,';
 	--backq_level;
 	y = read_object(in);
 	backq_level++;
 	@(return CONS(x, y))
 @)
 
-@(defun backquote_reader (in c)
+static
+@(defun "backquote_reader" (in c)
 @
 	backq_level++;
 	in = read_object(in);
@@ -296,9 +290,9 @@ init_backq(void)
 
 	r = standard_readtable;
 	r->readtable.table['`'].syntax_type = cat_terminating;
-	r->readtable.table['`'].macro = make_cf((cl_objectfn)@backquote-reader);
+	r->readtable.table['`'].macro = make_cf((cl_objectfn)backquote_reader);
 	r->readtable.table[','].syntax_type = cat_terminating;
-	r->readtable.table[','].macro = make_cf((cl_objectfn)@comma-reader);
+	r->readtable.table[','].macro = make_cf((cl_objectfn)comma_reader);
 
 	backq_level = 0;
 }

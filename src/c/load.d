@@ -20,19 +20,6 @@
 #include <sys/cachectl.h>
 #endif
 
-/******************************* EXPORTS ******************************/
-
-cl_object @':verbose';
-cl_object @'*load-verbose*';
-cl_object @'*load-print*';
-cl_object @'si::*load-hooks*';
-#ifdef PDE
-cl_object @'si::*source-pathname*';
-#endif
-cl_object @'si::*init-function-prefix*';
-
-/******************************* ------- ******************************/
-
 #ifdef ENABLE_DLOPEN
 @(defun si::load_binary (filename verbose print)
 	cl_object block;
@@ -180,7 +167,7 @@ NOT_A_FILENAME:
 	old_bds_top = bds_top;
 	bds_bind(@'*package*', symbol_value(@'*package*'));
 #ifdef PDE
-	bds_bind(@'*source-pathname*', filename);
+	bds_bind(@'si::*source-pathname*', filename);
 #endif
 	if (frs_push(FRS_PROTECT, Cnil)) {
 		frs_pop();

@@ -35,8 +35,6 @@
 # endif
 #endif
 
-cl_object @':list-all';
-
 /*
  * Interprets an error code from the C library according to the POSIX
  * standard, and produces a suitable error message by combining the user

@@ -24,13 +24,6 @@ pd *running_head;		/* front of running pd's  */
 pd *running_tail;		/* back of running pd's   */
 pd main_pd;
 
-cl_object @'running';
-cl_object @'suspended';
-cl_object @'waiting';
-cl_object @'stopped';
-cl_object @'dead';
-cl_object @'si::thread-top-level';
-
 /******************************* IMPORTS ******************************/
 
 extern scheduler_interruption; /* in unixint.c */

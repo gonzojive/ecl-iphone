@@ -21,31 +21,6 @@
 #define REGISTER_SPECIALS	1
 #define IGNORE_DECLARATIONS	0
 
-cl_object @'lambda-block';
-cl_object @'declare';
-cl_object @'defun';
-cl_object @'compile', @'load', @'eval', @'progn', @'warn', @'typep', @'otherwise';
-cl_object @':execute', @':compile-toplevel', @':load-toplevel';
-cl_object @'si::*inhibit-macro-special*';
-cl_object @'si::*keep-definitions*';
-
-cl_object @'&optional';
-cl_object @'&rest';
-cl_object @'&key';
-cl_object @'&allow-other-keys';
-cl_object @'&aux';
-
-cl_object @'si::symbol-macro';
-cl_object @'tag';
-cl_object @'block';
-cl_object @'macro';
-cl_object @'function';
-cl_object @':block';
-cl_object @':tag';
-cl_object @':function';
-
-cl_object @':allow-other-keys';
-
 typedef struct {
 	cl_object variables;
 	cl_object macros;
@@ -999,7 +974,7 @@ c_dolist_dotimes(int op, cl_object args) {
 
 	/* Output */
 	asm_complete(OP_EXIT, labelo);
-	if (CDR(head) != Cnil)
+	if (head != Cnil && CDR(head) != Cnil)
 		FEprogram_error("DOLIST: Too many output forms.", 0);
 	if (Null(head))
 		compile_body(Cnil);

@@ -129,31 +129,6 @@ extern char *data_end;		/*  core end  */
  * SYMBOLS & KEYWORDS DATABASE *
  *******************************/
 
-
-
-struct symbol_info {
-  cl_object * const loc;
-  const char *name;
-  int type;
-};
-
-extern const struct symbol_info all_symbols[];
-
-struct keyword_info {
-  cl_object * const loc;
-  const char *name;
-};
-
-extern const struct keyword_info all_keywords[];
-
-struct function_info {
-  const char *name;
-  cl_object (*f)(int, ...);
-  short type;
-};
-
-extern const struct function_info all_functions[];
-
 #ifdef __cplusplus
 }
 #endif

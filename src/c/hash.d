@@ -16,15 +16,6 @@
 
 #include "ecl.h"
 
-cl_object @'eq';
-cl_object @'eql';
-cl_object @'equal';
-
-cl_object @':size';
-cl_object @':rehash-size';
-cl_object @':rehash-threshold';
-
-
 /*******************
  * CRC-32 ROUTINES *
  *******************/

@@ -22,10 +22,6 @@
 cl_object cl_token;
 #endif
 
-struct symbol Cnil_body, Ct_body;
-cl_object @'*gensym-counter*';
-cl_object @'si::pname';
-
 /******************************* ------- ******************************/
 
 static cl_object gensym_prefix;
@@ -497,25 +493,25 @@ ONCE_MORE:
 void
 init_symbol(void)
 {
-	Cnil_body.t = (short)t_symbol;
-	Cnil_body.dbind = Cnil;
-	Cnil_body.name = make_simple_string("NIL");
-	Cnil_body.gfdef = OBJNULL;
-	Cnil_body.plist = Cnil;
-	Cnil_body.hpack = Cnil;
-	Cnil_body.stype = (short)stp_constant;
-	Cnil_body.mflag = FALSE;
-	Cnil_body.isform = FALSE;
+	Cnil->symbol.t = (short)t_symbol;
+	Cnil->symbol.dbind = Cnil;
+	Cnil->symbol.name = make_simple_string("NIL");
+	Cnil->symbol.gfdef = OBJNULL;
+	Cnil->symbol.plist = Cnil;
+	Cnil->symbol.hpack = Cnil;
+	Cnil->symbol.stype = (short)stp_constant;
+	Cnil->symbol.mflag = FALSE;
+	Cnil->symbol.isform = FALSE;
 
-	Ct_body.t = (short)t_symbol;
-	Ct_body.dbind = Ct;
-	Ct_body.name = make_simple_string("T");
-	Ct_body.gfdef = OBJNULL;
-	Ct_body.plist = Cnil;
-	Ct_body.hpack = Cnil;
-	Ct_body.stype = (short)stp_constant;
-	Ct_body.mflag = FALSE;
-	Ct_body.isform = FALSE;
+	Ct->symbol.t = (short)t_symbol;
+	Ct->symbol.dbind = Ct;
+	Ct->symbol.name = make_simple_string("T");
+	Ct->symbol.gfdef = OBJNULL;
+	Ct->symbol.plist = Cnil;
+	Ct->symbol.hpack = Cnil;
+	Ct->symbol.stype = (short)stp_constant;
+	Ct->symbol.mflag = FALSE;
+	Ct->symbol.isform = FALSE;
 
 	gensym_prefix = make_simple_string("G");
 	gentemp_prefix = make_simple_string("T");

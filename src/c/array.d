@@ -20,9 +20,6 @@
 #define CHAR_BIT (sizeof(char)*8)
 #endif
 
-cl_object @'byte8';
-cl_object @'integer8';
-
 static void displace (cl_object from, cl_object to, cl_object offset);
 static void check_displaced (cl_object dlist, cl_object orig, cl_index newdim);
 extern cl_elttype get_elttype (cl_object x);

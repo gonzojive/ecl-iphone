@@ -22,36 +22,6 @@
 
 /******************************* EXPORTS ******************************/
 
-cl_object @':upcase';
-cl_object @':downcase';
-cl_object @':capitalize';
-
-cl_object @':stream';
-cl_object @':escape';
-cl_object @':pretty';
-cl_object @':circle';
-cl_object @':base';
-cl_object @':radix';
-cl_object @':case';
-cl_object @':gensym';
-cl_object @':level';
-cl_object @':length';
-cl_object @':array';
-
-cl_object @'*print-escape*';
-cl_object @'*print-pretty*';
-cl_object @'*print-circle*';
-cl_object @'*print-base*';
-cl_object @'*print-radix*';
-cl_object @'*print-case*';
-cl_object @'*print-gensym*';
-cl_object @'*print-level*';
-cl_object @'*print-length*';
-cl_object @'*print-array*';
-
-cl_object @'si::*print-package*';
-cl_object @'si::*print-structure*';
-
 #ifndef THREADS
 bool PRINTescape;
 bool PRINTpretty;
@@ -77,9 +47,6 @@ cl_object PRINTstream;
 	 != cat_constituent || \
 	 islower((c)&0377) || (c) == ':')
 
-
-cl_object @'si::pretty-print-format';
-cl_object @'si::sharp-exclamation';
 
 #define	MARK		0400
 #define	UNMARK		0401
@@ -991,7 +958,7 @@ _write_object(cl_object x, int level)
 		break;
 
 	case t_cons:
-		if (CAR(x) == @'si::sharp-exclamation') {
+		if (CAR(x) == @'si::#!') {
 			write_str("#!");
 			x = CDR(x);
 			goto BEGIN;
@@ -1521,7 +1488,7 @@ potential_number_p(cl_object strng, int base)
 	@(return obj)
 @)
 
-@(defun write_char (c &optional strm)
+@(defun write-char (c &optional strm)
 @
 	/* INV: char_code() checks the type of `c' */
  	strm = stream_or_default_output(strm);
@@ -1529,7 +1496,7 @@ potential_number_p(cl_object strng, int base)
 	@(return c)
 @)
 
-@(defun write_string (strng &o strm &k (start MAKE_FIXNUM(0)) end)
+@(defun write-string (strng &o strm &k (start MAKE_FIXNUM(0)) end)
 	cl_index s, e, i;
 @
 	get_string_start_end(strng, start, end, &s, &e);
@@ -1542,7 +1509,7 @@ potential_number_p(cl_object strng, int base)
 	@(return strng)
 @)
 
-@(defun write_line (strng &o strm &k (start MAKE_FIXNUM(0)) end)
+@(defun write-line (strng &o strm &k (start MAKE_FIXNUM(0)) end)
 	cl_index s, e, i;
 @
 	get_string_start_end(strng, start, end, &s, &e);
@@ -1562,7 +1529,7 @@ potential_number_p(cl_object strng, int base)
 	@(return Cnil)
 @)
 
-@(defun fresh_line (&optional strm)
+@(defun fresh-line (&optional strm)
 @
  	strm = stream_or_default_output(strm);
 	if (file_column(strm) == 0)
@@ -1572,21 +1539,21 @@ potential_number_p(cl_object strng, int base)
 	@(return Ct)
 @)
 
-@(defun force_output (&o strm)
+@(defun force-output (&o strm)
 @
  	strm = stream_or_default_output(strm);
 	flush_stream(strm);
 	@(return Cnil)
 @)
 
-@(defun clear_output (&o strm)
+@(defun clear-output (&o strm)
 @
  	strm = stream_or_default_output(strm);
 	clear_output_stream(strm);
 	@(return Cnil)
 @)
 
-@(defun write_byte (integer binary_output_stream)
+@(defun write-byte (integer binary_output_stream)
 @
 	if (!FIXNUMP(integer))
 		FEerror("~S is not a byte.", 1, integer);
@@ -1595,7 +1562,7 @@ potential_number_p(cl_object strng, int base)
 	@(return integer)
 @)
 
-@(defun si::write_bytes (stream string start end)
+@(defun si::write-bytes (stream string start end)
         cl_index is, ie; FILE *fp;
 	int written, sofarwritten, towrite;
 @

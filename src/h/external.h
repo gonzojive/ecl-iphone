@@ -38,11 +38,8 @@ extern void init_alloc(void);
 extern void init_all_functions(void);
 
 
-/* all_keywords.c */
-extern void init_all_keywords(void);
-
-
 /* all_symbols */
+extern struct symbol cl_symbols[];
 extern void init_all_symbols(void);
 
 

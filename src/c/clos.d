@@ -18,9 +18,6 @@
 /******************************* EXPORTS ******************************/
 
 cl_object class_class, class_object, class_built_in;
-cl_object @'si::*class-name-hash-table*';
-cl_object @'class';
-cl_object @'built-in-class';
 
 /******************************* ------- ******************************/
 

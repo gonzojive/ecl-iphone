@@ -41,18 +41,12 @@ int data_start = (int)&data_start;
 
 /******************************* EXPORTS ******************************/
 
-cl_object clVfeatures;
 const char *ecl_self;
 
 /******************************* ------- ******************************/
 
 static int	ARGC;
 static char	**ARGV;
-
-#ifdef THREADS
-static cl_object @'si::*thread-top*';
-#endif
-static cl_object @'si::top-level';
 
 #if !defined(GBC_BOEHM)
 static char stdin_buf[BUFSIZ];
@@ -112,7 +106,7 @@ cl_boot(int argc, char **argv)
 	if (clwp != &main_lpd) {
 	  VALUES(0) = Cnil;
 	  NValues = 0;
-	  cl_throw(@'si::*thread-top*');
+	  cl_throw(_intern("*thread-top*", system_package));
 	  /* never reached */
 	}
 #endif
@@ -169,9 +163,6 @@ cl_boot(int argc, char **argv)
 void
 init_main(void)
 {
-	@'si::top_level' = make_si_ordinary("TOP-LEVEL");
-	register_root(&@'si::top-level');
-
 	make_ordinary("LISP-IMPLEMENTATION-VERSION");
 
 	{ cl_object features;
@@ -230,9 +221,6 @@ init_main(void)
 
 	 SYM_VAL(@'*features*') = features;
        }
-#ifdef THREADS
-	@'si::*thread-top*' = make_si_ordinary("THREAD-TOP");
-#endif
 
 	make_si_constant("+OBJNULL+", OBJNULL);
 }

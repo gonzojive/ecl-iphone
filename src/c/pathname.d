@@ -30,28 +30,6 @@
 # endif
 #endif
 
-/******************************* EXPORTS ******************************/
-
-cl_object @'*default-pathname-defaults*';
-cl_object @':wild';
-cl_object @':wild-inferiors';
-cl_object @':newest';
-
-cl_object @':host';
-cl_object @':device';
-cl_object @':directory';
-cl_object @':name';
-cl_object @':type';
-cl_object @':version';
-cl_object @':defaults';
-cl_object @':unspecific';
-
-cl_object @':absolute';
-cl_object @':relative';
-cl_object @':up';
-
-/******************************* ------- ******************************/
-
 static cl_object pathname_translations = Cnil;
 
 static void

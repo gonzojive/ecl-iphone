@@ -136,8 +136,8 @@ enum stype {			/*  symbol type  */
         stp_special		/*  special  */
 };
 
-#define	Cnil			((cl_object)&Cnil_body)
-#define	Ct			((cl_object)&Ct_body)
+#define	Cnil			((cl_object)cl_symbols)
+#define	Ct			((cl_object)(cl_symbols+1))
 
 struct symbol {
 	HEADER3(stype, mflag, isform);
@@ -155,8 +155,6 @@ struct symbol {
 };
 #define SYM_VAL(sym)	((sym)->symbol.dbind)
 #define SYM_FUN(sym)	((sym)->symbol.gfdef)
-
-extern struct symbol Cnil_body, Ct_body;
 
 struct package {
 	HEADER1(locked);
