@@ -178,7 +178,7 @@ be used as a TYPE to specify the default case."
 
 (defun etypecase-error (keyform value types)
   (error 'CASE-FAILURE :name 'ETYPECASE
-	 :datum keyform
+	 :datum value
 	 :expected-type (cons 'OR types)
 	 :possibilities types))
 
