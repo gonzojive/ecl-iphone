@@ -136,22 +136,34 @@ doc: build/doc/index.html
 build/doc/index.html:
 	cd build/doc; $(MAKE)
 
-source-dist: ecl.tgz ecl-tests.tgz
+source-dist: $(TAR_DIR).tgz $(TAR_DIR)-tests.tgz
 
-ecl.tgz: doc
+rpmdir=$(shell rpm --showrc | grep '^-[0-9]*:.*[^{]_topdir' | sed 's,^.*topdir[ 	]*\(.*\)[ 	]*,\1,')
+rpmbuild=$(shell if [ -z `which rpmbuild` ]; then echo "rpm"; else echo "rpmbuild"; fi)
+
+rpm: doc
 	-rm -rf $(TAR_DIR)
 	mkdir $(TAR_DIR) $(TAR_DIR)/src \
 	$(TAR_DIR)/src/tests $(TAR_DIR)/src/ansi-tests && \
 	for i in $(TAR_CONTENTS); do cp -rf $$i $(TAR_DIR)/$$i; done && \
-	tar -cz --exclude '*~' --exclude '#*' --exclude 'CVS' -f ecl.tgz $(TAR_DIR)
+	tar -cz --exclude '*~' --exclude '#*' --exclude 'CVS' -f $(rpmdir)/SOURCES/$(TAR_DIR).tgz $(TAR_DIR)
+	if [ -f /etc/SuSE-release ]; then HOST=SUSE; else HOST=REDHAT; fi; \
+	cat src/util/ecl.spec |\
+	sed 's,ECL_VERSION,$(VERSION),;s,^#% '$${HOST}' ,,g;'|\
+	grep -v '^#% ' > $(rpmdir)/SPECS/ecl.spec;
+	rpm -ba $(rpmdir)/SPECS/ecl.spec
+$(TAR_DIR).tgz: doc
 	-rm -rf $(TAR_DIR)
-ecl-tests.tgz:
+	mkdir $(TAR_DIR) $(TAR_DIR)/src \
+	$(TAR_DIR)/src/tests $(TAR_DIR)/src/ansi-tests && \
+	for i in $(TAR_CONTENTS); do cp -rf $$i $(TAR_DIR)/$$i; done && \
+	tar -cz --exclude '*~' --exclude '#*' --exclude 'CVS' -f $(TAR_DIR).tgz $(TAR_DIR)
+$(TAR_DIR)-tests.tgz:
 	-rm -rf $(TAR_DIR)
 	mkdir $(TAR_DIR) && \
 	mkdir $(TAR_DIR)/src && \
 	cp -rf src/ansi-tests $(TAR_DIR)/src && \
-	tar -cz --exclude '*~' --exclude '#*' --exclude 'CVS' -f ecl-tests.tgz $(TAR_DIR);
-	-rm -rf $(TAR_DIR)
+	tar -cz --exclude '*~' --exclude '#*' --exclude 'CVS' -f $(TAR_DIR)-tests.tgz $(TAR_DIR);
 
 binary-dist: all
 	su -c "rm -rf tmp"
