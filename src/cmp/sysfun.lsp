@@ -1070,7 +1070,8 @@ type_of(#0)==t_bitvector"))
 	    bit-xor bit-eqv bit-nand bit-nor bit-andc1 bit-andc2 bit-orc1 bit-not
 	    vector-push vector-push-extend vector-pop adjust-array ecase-error
 	    ccase-error typecase-error-string find-documentation find-declarations
-	    remove-documentation si::check-keyword si::get-documentation
+	    si::check-keyword si::check-arg-length si::dm-too-few-arguments si::dm-bad-key
+	    remove-documentation si::get-documentation
 	    si::set-documentation si::expand-set-documentation read-from-string
 	    write-to-string prin1-to-string princ-to-string union nunion
 	    intersection nintersection set-difference nset-difference
