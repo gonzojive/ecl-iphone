@@ -425,7 +425,7 @@ struct thread {
 	cl_object fun;		/* initial function */
 	cl_object cont;		/* its cont */
 };
-#endif THREADS
+#endif /* THREADS */
 
 
 #ifdef CLOS
@@ -456,7 +456,7 @@ struct gfun {			/*  generic function header  */
 				/* 	 in eql specializers */
 	cl_object instance;	/*  the generic function object */
 };
-#endif CLOS
+#endif /* CLOS */
 
 /*
 	Definition of lispunion.
@@ -488,11 +488,11 @@ union lispunion {
 	struct gfun	gfun;	/*  generic function */
 #else
 	struct structure str;	/*  structure  */
-#endif CLOS
+#endif /* CLOS */
 #ifdef THREADS
 	struct cont     cont;	/*  continuation  */
 	struct thread   thread;	/*  thread  */
-#endif THREADS
+#endif /* THREADS */
 	struct codeblock cblock; /*  codeblock  */
 };
 
@@ -504,11 +504,7 @@ typedef union { int i; cl_object o;} intUobject;
 */
 typedef enum {
 	t_cons = 0,
-#ifdef APOLLO
 	t_start = 0,
-#else
-	t_start = t_cons,
-#endif APOLLO
 	t_fixnum,		/* 1 immediate fixnum */
 	t_character,		/* 2 immediate character */
 	t_bignum = 4,		/* 4 */
@@ -535,7 +531,7 @@ typedef enum {
 	t_gfun,			/* 18 */
 #else
 	t_structure,		/* 17 */
-#endif CLOS
+#endif /* CLOS */
 #ifdef THREADS
 	t_cont,			/* 19	18 */
 	t_thread,		/* 20	19 */
@@ -567,7 +563,7 @@ typedef enum {
 #else /* little endian */
 #define HIND 1  /* (int) of double where the exponent and most signif is */
 #define LIND 0  /* low part of a double */
-#endif WORDS_BIGENDIAN
+#endif /* WORDS_BIGENDIAN */
 
 #ifdef __cplusplus
 }

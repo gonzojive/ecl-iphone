@@ -48,7 +48,7 @@ bool dot_flag;
 cl_object default_dispatch_macro;
 cl_object sharp_eq_context;
 cl_object (*read_ch_fun)(cl_object) = readc;
-#endif THREADS
+#endif /* THREADS */
 
 #ifdef CLOS
 cl_object @'stream_read_line',
@@ -119,7 +119,7 @@ interactive_readc(cl_object stream)
 {
 	return funcall(2, @'stream_read_char', stream);
 }
-#endif CLOS
+#endif /* CLOS */
 
 cl_object
 readc(cl_object in)
@@ -256,7 +256,7 @@ extern bool no_input;
 #else
 #define READ_CHAR_TO(res, in, eof_code) \
   {if (stream_at_end(in)) {eof_code;} else res = read_char(in);}
-#endif unix
+#endif /* unix */
 
 /*
 	Read_object(in) reads an object from stream in.
@@ -1458,7 +1458,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 	  if (type_of(strm) == t_instance)
 	    read_ch_fun = interactive_readc;
 	  else
-#endif CLOS
+#endif /* CLOS */
 	    FEwrong_type_argument(@'stream', strm);
 	if (Null(recursivep))
 		preserving_whitespace_flag = FALSE;
@@ -1499,7 +1499,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 	  if (type_of(strm) == t_instance)
 	    read_ch_fun = interactive_readc;
 	  else
-#endif CLOS
+#endif /* CLOS */
 	    FEwrong_type_argument(@'stream', strm);
 	while (!stream_at_end(strm)) {
 		c = read_char(strm);
@@ -1616,7 +1616,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 	    }
 #ifdef CRLF
 	    if (i > 0 && cl_token->string.self[i-1] == '\r') i--;
-#endif CRLF
+#endif
 	    cl_token->string.fillp = i;
 	    @(return copy_simple_string(cl_token) c)
 	    }

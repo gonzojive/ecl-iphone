@@ -27,7 +27,7 @@ cl_object @'si::clear-compiler-properties';
 #ifdef PDE
 cl_object @'si::*record-source-pathname-p*';
 cl_object @'si::record-source-pathname';
-#endif PDE
+#endif
 
 cl_object
 set(cl_object var, cl_object val)
@@ -145,7 +145,7 @@ setf_namep(cl_object fun_spec)
 	clear_compiler_properties(sym);
 #ifdef PDE
 	remprop(sym, @'defun');
-#endif PDE
+#endif
 	if (sym->symbol.hpack->pack.locked && SYM_FUN(sym) != OBJNULL)
 	  funcall(3, @'warn', make_simple_string("~S is being redefined."), sym);
 	SYM_FUN(sym) = OBJNULL;
@@ -173,12 +173,12 @@ record_source_pathname(cl_object sym, cl_object def)
   if (symbol_value(@'si::*record-source-pathname-p*') != Cnil)
     (void)funcall(3, @'si::record-source-pathname', sym, def);
 }
-#endif PDE
+#endif /* PDE */
 
 void
 init_assignment(void)
 {
 #ifdef PDE
 	SYM_VAL(@'si::*record-source-pathname-p*') = Cnil;
-#endif PDE
+#endif
 }

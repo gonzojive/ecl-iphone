@@ -94,7 +94,7 @@ extern void init_backq(void);
 #else
 extern cl_object bignum_register[3];
 extern mp_limb_t bignum_register_limbs[3][BIGNUM_REGISTER_SIZE];
-#endif THREADS
+#endif /* THREADS */
 extern cl_object big_register_copy(cl_object x);
 extern cl_object big_register_normalize(cl_object x);
 extern void big_register_free(cl_object x);
@@ -315,7 +315,7 @@ extern void init_GC(void);
 extern int GC_dont_gc;
 extern void register_root(cl_object *p);
 extern void gc(cl_type t);
-#endif GBC_BOEHM
+#endif /* GBC_BOEHM */
 
 
 /* gfun.c */
@@ -323,7 +323,7 @@ extern void gc(cl_type t);
 #ifdef CLOS
 extern cl_object gcall(int narg, cl_object fun, cl_object *args);
 extern void init_gfun(void);
-#endif CLOS
+#endif /* CLOS */
 
 
 /* hash.c */
@@ -353,7 +353,7 @@ extern cl_object cl_allocate_instance(cl_object clas, int size);
 extern cl_object instance_ref(cl_object x, int i);
 extern cl_object instance_set(cl_object x, int i, cl_object v);
 extern void init_instance(void);
-#endif CLOS
+#endif /* CLOS */
 
 
 /* iteration.c */

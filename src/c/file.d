@@ -760,7 +760,7 @@ BEGIN:
 					1, x);
 #ifdef THREADS
 			start_critical_section(); /* avoid losing p */
-#endif THREADS
+#endif
 			p = (char *)cl_alloc(x->string.dim * 2 + 16);
 			for (i = 0;  i < x->string.dim;  i++)
 				p[i] = x->string.self[i];
@@ -772,7 +772,7 @@ BEGIN:
 			adjust_displaced(x, p - x->string.self);
 #ifdef THREADS
 			end_critical_section();
-#endif THREADS
+#endif
 		}
 		x->string.self[x->string.fillp++] = c;
 		break;
@@ -1051,7 +1051,7 @@ BEGIN:
 		  if (c <= 0)
 		    return(FALSE);
 		}
-#endif FIONREAD
+#endif /* FIONREAD */
 		return(TRUE);
 
 	case smm_synonym:

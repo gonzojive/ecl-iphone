@@ -18,7 +18,7 @@
 
 #ifdef __mips
 #include <sys/cachectl.h>
-#endif __mips
+#endif
 
 /******************************* EXPORTS ******************************/
 
@@ -28,7 +28,7 @@ cl_object @'*load-print*';
 cl_object @'si::*load-hooks*';
 #ifdef PDE
 cl_object @'si::*source-pathname*';
-#endif PDE
+#endif
 cl_object @'si::*init-function-prefix*';
 
 /******************************* ------- ******************************/
@@ -182,7 +182,7 @@ GO_ON:
 	bds_bind(@'*package*', symbol_value(@'*package*'));
 #ifdef PDE
 	bds_bind(@'*source-pathname*', filename);
-#endif PDE
+#endif
 	if (frs_push(FRS_PROTECT, Cnil)) {
 		frs_pop();
 		bds_unwind(old_bds_top); /* Beppe says this is necessary */
@@ -222,7 +222,7 @@ init_load(void)
   SYM_VAL(@'*load-print*') = Cnil;
 #ifdef PDE
   SYM_VAL(@'si::*source-pathname*') = Cnil;
-#endif PDE
+#endif
 
   load_source = make_si_ordinary("LOAD-SOURCE");
 #ifdef ENABLE_DLOPEN

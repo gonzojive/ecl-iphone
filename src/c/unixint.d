@@ -158,7 +158,7 @@ You should check the signal and exit from Lisp.", 1,
 #endif
 	@(return Ct)
 @)
-#endif unix
+#endif /* unix */
 
 void
 enable_interrupt(void)

@@ -32,17 +32,22 @@
    information.
 */
 
+#include <unistd.h>
 #include "ecl.h"
 #include "page.h"
 
-#ifndef GBC_BOEHM
+#define USE_MMAP
+#ifdef USE_MMAP
+#include <sys/types.h>
+#include <sys/mman.h>
+#endif
 
 #ifdef BSD
 #include <sys/resource.h>
-#endif BSD
+#endif
 #ifdef SYSV
 #include <ulimit.h>
-#endif SYSV
+#endif
 
 /******************************* EXPORTS ******************************/
 
@@ -64,28 +69,68 @@ cl_ptr data_end;		/*  end of data space  */
 
 /******************************* ------- ******************************/
 
-#define SIGINTENTRY 6
-
 static bool ignore_maximum_pages = TRUE;
-
-#ifdef unix
-# ifdef __MACH__
-# define  sbrk my_sbrk
-# endif
-extern void *sbrk(int);
-#endif unix
 
 #ifdef NEED_MALLOC
 static cl_object malloc_list;
 #endif
 
 /*
-   Allocates n pages starting at heap end, without worring about the
-   hole.  Basically just get the space from the Operating System.
+   Ensure that the hole is at least "n" pages large. If it is not,
+   allocate space from the operating system.
 */
 
+#if defined(USE_MMAP)
 void
-resize_hole(cl_index n)
+cl_resize_hole(cl_index n)
+{
+	cl_index m, bytes;
+	cl_ptr result, last_addr;
+	if (heap_start == NULL) {
+		/* First time use. We allocate the memory and keep the first
+		 * address in heap_start.
+		 */
+		bytes = n * LISP_PAGESIZE;
+		result = mmap(NULL, bytes, PROT_READ | PROT_WRITE,
+			      MAP_ANON | MAP_PRIVATE, -1 ,0);
+		if (result == MAP_FAILED)
+			error("Cannot allocate memory. Good-bye!");
+		data_end = heap_end = heap_start = result;
+		last_addr = heap_start + bytes;
+		holepage = n;
+	} else {
+		/* Next time use. We extend the region of memory that we had
+		 * mapped before.
+		 */
+		m = (data_end - heap_end)/LISP_PAGESIZE;
+		if (n <= m)
+			return;
+		bytes = n * LISP_PAGESIZE;
+		result = mmap(data_end, bytes, PROT_READ | PROT_WRITE,
+			      MAP_ANON | MAP_PRIVATE, -1, 0);
+		if (result == MAP_FAILED)
+			error("Cannot resize memory pool. Good-bye!");
+		last_addr = result + bytes;
+		if (result != data_end) {
+			cl_dealloc(heap_end, data_end - heap_end);
+			while (heap_end < result) {
+				cl_index p = page(heap_end);
+				if (p > real_maxpage)
+					error("Memory limit exceeded.");
+				type_map[p] = t_other;
+				heap_end += LISP_PAGESIZE;
+			}
+		}
+		holepage = (last_addr - heap_end) / LISP_PAGESIZE;
+	}
+	while (data_end < last_addr) {
+		type_map[page(data_end)] = t_other;
+		data_end += LISP_PAGESIZE;
+	}
+}
+#else
+void
+cl_resize_hole(cl_index n)
 {
 	cl_ptr e;
 	cl_index m;
@@ -98,7 +143,7 @@ resize_hole(cl_index n)
 	if (data_end == e)
 	  n -= m;
 	else {
- 	  dealloc(heap_end, data_end - heap_end);
+ 	  cl_dealloc(heap_end, data_end - heap_end);
 	  /* FIXME! Horrible hack! */
 	  /* mark as t_other pages not allocated by us */
 	  heap_end = e;
@@ -113,6 +158,7 @@ resize_hole(cl_index n)
 	data_end += LISP_PAGESIZE*(n);
 	holepage += n;
 }
+#endif
 
 /* Allocates n pages from the hole.  */
 static void *
@@ -121,7 +167,7 @@ alloc_page(cl_index n)
 	cl_ptr e = heap_end;
 	if (n >= holepage) {
 	  gc(t_contiguous);
-	  resize_hole(new_holepage+n);
+	  cl_resize_hole(new_holepage+n);
 	}
 	holepage -= n;
 	heap_end += LISP_PAGESIZE*n;
@@ -159,8 +205,7 @@ cl_alloc_object(cl_type t)
 	case t_fixnum:
 	  return MAKE_FIXNUM(0); /* Immediate fixnum */
 	case t_character:
-	  return CODE_CHAR(''); /* Immediate character */
-	default:
+	  return CODE_CHAR('\0'); /* Immediate character */
 	}
 	
 	start_critical_section(); 
@@ -170,7 +215,7 @@ ONCE_MORE:
 		interrupt_flag = FALSE;
 #ifdef unix
 		alarm(0);
-#endif unix
+#endif
 		terminal_interrupt(TRUE);
 	}
 
@@ -261,7 +306,7 @@ ONCE_MORE:
 	  obj->str.name = OBJNULL;
 	  obj->str.self = NULL;
 	  break;
-#endif CLOS
+#endif /* CLOS */
 	case t_stream:
 	  obj->stream.mode = (short)smm_closed;
 	  obj->stream.file = NULL;
@@ -318,7 +363,7 @@ ONCE_MORE:
 	  obj->gfun.instance = OBJNULL;
 	  obj->gfun.specializers = NULL;
 	  break;
-#endif CLOS
+#endif /* CLOS */
 	case t_codeblock:
 	  obj->cblock.name = Cnil;
 	  obj->cblock.handle = NULL;
@@ -334,7 +379,7 @@ ONCE_MORE:
 	}
 #ifdef THREADS
 	clwp->lwp_alloc_temporary = obj;
-#endif THREADS
+#endif
 	end_critical_section();
 	return(obj);
 CALL_GC:
@@ -376,7 +421,7 @@ ONCE_MORE:
 		interrupt_flag = FALSE;
 #ifdef unix
 		alarm(0);
-#endif unix
+#endif
 		terminal_interrupt(TRUE);
 	}
 	obj = tm->tm_free;
@@ -428,9 +473,9 @@ Use ALLOCATE to expand the space.",
 cl_object
 cl_alloc_instance(cl_index slots)
 {
-	cl_object i = alloc_object(t_instance);
+	cl_object i = cl_alloc_object(t_instance);
 	/* INV: slots > 0 */
-	i->instance.slots = alloc(sizeof(cl_object) * slots);
+	i->instance.slots = (cl_object*)cl_alloc(sizeof(cl_object) * slots);
 	i->instance.length = slots;
 	return i;
 }
@@ -438,12 +483,10 @@ cl_alloc_instance(cl_index slots)
 void *
 cl_alloc(cl_index n)
 {
-	register cl_ptr p;
-	register struct contblock **cbpp;
-	register cl_index i;
-	register cl_index m;
-	register bool g;
-	bool gg;
+	volatile cl_ptr p;
+	struct contblock **cbpp;
+	cl_index i, m;
+	bool g, gg;
 
 	g = FALSE;
 	n = round_up(n);
@@ -465,7 +508,7 @@ ONCE_MORE:
 			i = (*cbpp)->cb_size - n;
 			*cbpp = (*cbpp)->cb_link;
 			--ncb;
-			dealloc(p+n, i);
+			cl_dealloc(p+n, i);
 
 			end_critical_section();
 			return(p);
@@ -499,7 +542,7 @@ Use ALLOCATE-CONTIGUOUS-PAGES to expand the space.",
 	for (i = 0;  i < m;  i++)
 		type_map[page(p) + i] = (char)t_contiguous;
 	ncbpage += m;
-	dealloc(p+n, LISP_PAGESIZE*m - n);
+	cl_dealloc(p+n, LISP_PAGESIZE*m - n);
 
 	end_critical_section();
 	return(p);
@@ -539,7 +582,7 @@ cl_alloc_align(cl_index size, cl_index align)
 	void *output;
 	start_critical_section();
 	align--;
-	output = (void*)(((cl_fixnum)alloc(size + align) + align - 1) & ~align)
+	output = (void*)(((cl_index)cl_alloc(size + align) + align - 1) & ~align)
 	end_critical_section();
 	return output;
 }
@@ -584,20 +627,18 @@ init_alloc(void)
 	holepage = 0;
 	new_holepage = HOLEPAGE;
 
-#if defined(MSDOS) || defined(__CYGWIN__)
+#ifdef USE_MMAP
+	real_maxpage = MAXPAGE;
+#elif defined(MSDOS) || defined(__CYGWIN__)
 	real_maxpage = MAXPAGE;
 #elif defined(BSD)
 	{
 	  struct rlimit data_rlimit;
 # ifdef __MACH__
-	  extern int mach_maplimit;
 	  sbrk(0);
-	  real_maxpage = mach_maplimit/LISP_PAGESIZE;
-	  /* alternative
 	  getrlimit(RLIMIT_DATA, &data_rlimit);
 	  real_maxpage = ((unsigned)get_etext() +
 			  (unsigned)data_rlimit.rlim_cur)/LISP_PAGESIZE;
-			  */
 # else
 	  extern etext;
 
@@ -610,15 +651,18 @@ init_alloc(void)
 #elif defined(SYSV)
 	real_maxpage= ulimit(UL_GMEMLIM)/LISP_PAGESIZE;
 	if (real_maxpage > MAXPAGE) real_maxpage = MAXPAGE;
-#endif MSDOS
+#endif /* USE_MMAP, MSDOS, BSD or SYSV */
 
+#ifdef USE_MMAP
+	heap_start = NULL;
+#else
 	heap_end = sbrk(0);
 	i = (int)heap_end & (LISP_PAGESIZE - 1);
 	if (i)
 	  sbrk(LISP_PAGESIZE - i);
 	heap_end = heap_start = data_end = sbrk(0);
-
-	resize_hole(INIT_HOLEPAGE);
+#endif
+	cl_resize_hole(INIT_HOLEPAGE);
 	for (i = 0;  i < MAXPAGE;  i++)
 		type_map[i] = (char)t_other;
 
@@ -651,11 +695,11 @@ init_alloc(void)
 #else
 	init_tm(t_instance, "IINSTANCE", sizeof(struct instance), 32);
 	init_tm(t_gfun, "GGFUN", sizeof(struct gfun), 32);
-#endif CLOS
+#endif /* CLOS */
 #ifdef THREADS
 	init_tm(t_cont, "?CONT", sizeof(struct cont), 2);
 	init_tm(t_thread, "tTHREAD", sizeof(struct thread), 2);
-#endif THREADS
+#endif /* THREADS */
 
 	ncb = 0;
 	ncbpage = 0;
@@ -663,7 +707,7 @@ init_alloc(void)
 	maxcbpage = 2048;
 #else
 	maxcbpage = 512;
-#endif THREADS
+#endif /* THREADS */
 
 #ifdef NEED_MALLOC
 	malloc_list = Cnil;
@@ -734,7 +778,7 @@ since ~D pages are already allocated.",
 	for (i = 0;  i < m;  i++)
 		type_map[page(p + LISP_PAGESIZE*i)] = (char)t_contiguous;
 	ncbpage += m;
-	dealloc(p, LISP_PAGESIZE*m);
+	cl_dealloc(p, LISP_PAGESIZE*m);
 	@(return Ct)
 @)
 
@@ -803,13 +847,11 @@ malloc(size_t size)
 {
   cl_object x;
 
-#ifdef __GNUC__
   if (!GC_enabled() && !alloc_initialized)
     init_alloc();
-#endif __GNUC__
 
   x = alloc_simple_string(size-1);
-  x->string.self = alloc(size);
+  x->string.self = (char *)cl_alloc(size);
   malloc_list = make_cons(x, malloc_list);
   return(x->string.self);
 }
@@ -822,7 +864,7 @@ free(void *ptr)
   if (ptr) {
     for (p = &malloc_list;  !endp(*p);  p = &(CDR((*p))))
       if ((CAR((*p)))->string.self == ptr) {
-	dealloc(CAR((*p))->string.self, CAR((*p))->string.dim);
+	cl_dealloc(CAR((*p))->string.self, CAR((*p))->string.dim);
 	CAR((*p))->string.self = NULL;
 	*p = CDR((*p));
 	return;
@@ -847,10 +889,10 @@ realloc(void *ptr, size_t size)
 	return(ptr);
       } else {
 	j = x->string.dim;
-	x->string.self = alloc(size);
+	x->string.self = (char *)cl_alloc(size);
 	x->string.fillp = x->string.dim = size;
 	memcpy(x->string.self, ptr, j);
-	dealloc(ptr, j);
+	cl_dealloc(ptr, j);
 	return(x->string.self);
       }
     }
@@ -894,7 +936,5 @@ memalign(size_t align, size_t size)
 char *
 valloc(size_t size)
 { return memalign(getpagesize(), size);}
-# endif WANT_VALLOC
-#endif NEED_MALLOC
-
-#endif /* GBC_BOEHM */
+# endif /* WANT_VALLOC */
+#endif /* NEED_MALLOC */

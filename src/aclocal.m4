@@ -57,6 +57,9 @@ case $host_os in
 	cygwin*)
 		host="cygwin"
 		;;
+	darwin*)
+		host="darwin"
+		;;
 	*)
 		host="$host_os"
 		;;

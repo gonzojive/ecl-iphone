@@ -680,4 +680,4 @@ va_APPLY_closure(int n, cl_objectfn fn, cl_object cl, va_list args)
   for(i=1; i<=n; i++) x[i] = cl_nextarg(args);
   APPLY(n+1, fn, x);
 }
-#endif NO_ARGS_ARRAY
+#endif /* NO_ARGS_ARRAY */

@@ -210,7 +210,7 @@ const struct function_info all_functions[] = {
 	{"GFUNP", siLgfunp, si},
 	{"METHOD-HT-GET", siLmethod_ht_get, si},
 	{"SET-COMPILED-FUNCTION-NAME", siLset_compiled_function_name, si},
-#endif CLOS
+#endif /* CLOS */
 
 	/* hash.d */
 
@@ -238,7 +238,7 @@ const struct function_info all_functions[] = {
 	{"INSTANCEP", siLinstancep, si},
 	{"SL-BOUNDP", siLsl_boundp, si},
 	{"SL-MAKUNBOUND", siLsl_makunbound, si},
-#endif CLOS
+#endif /* CLOS */
 
 	/* interpreter.c */
 	{"INTERPRETER-STACK", siLinterpreter_stack, si},
@@ -389,7 +389,7 @@ const struct function_info all_functions[] = {
 	{"%DELAY", clLdelay, cl},
 	{"%THREAD-WAIT", clLthread_wait, cl},
 	{"%THREAD-WAIT-WITH-TIMEOUT", clLthread_wait_with_timeout, cl},
-#endif THREADS
+#endif /* THREADS */
 
 	/* macros.c */
 
@@ -631,7 +631,7 @@ const struct function_info all_functions[] = {
 	{"PROFILE", siLprofile, si},
 	{"CLEAR-PROFILE", siLclear_profile, si},
 	{"DISPLAY-PROFILE", siLdisplay_profile, si},
-#endif PROFILE
+#endif /* PROFILE */
 
 	/* prog.c */
 
@@ -813,7 +813,7 @@ const struct function_info all_functions[] = {
 #ifdef unix
 	{"CATCH-BAD-SIGNALS", siLcatch_bad_signals, si},
 	{"UNCATCH-BAD-SIGNALS", siLuncatch_bad_signals, si},
-#endif unix
+#endif /* unix */
 
 	/* unixfsys.c */
 

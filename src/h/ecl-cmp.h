@@ -45,6 +45,7 @@
 #include "unify.h"
 #endif LOCATIVE
 
+#undef cs_check
 #define	cs_check \
 	if ((int *)(&narg) < cs_limit) \
 		cs_overflow()

@@ -55,7 +55,7 @@ structure_subtypep(cl_object x, cl_object y)
 	} while (x != Cnil);
 	return(FALSE);
 }
-#endif CLOS
+#endif /* CLOS */
 
 @(defun si::structure_subtype_p (x y)
 @
@@ -85,7 +85,7 @@ cl_object
 structure_to_list(cl_object x)
 { FEerror("Should never be called!",0);
 }
-#endif CLOS
+#endif /* CLOS */
 
 @(defun si::make_structure (type &rest args)
 	cl_object x;

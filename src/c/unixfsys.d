@@ -401,7 +401,7 @@ homedir_pathname(cl_object user)
 	}
 #else
 	pathname = homedir_pathname(Cnil);
-#endif MSDOS
+#endif /* MSDOS */
 	@(return pathname)
 @)
 
@@ -603,12 +603,14 @@ actual_directory(cl_object namestring, cl_object mask, bool all)
 	@(return previous)
 @)
 
-@(defun si::mkdir (directory)
+@(defun si::mkdir (directory mode)
 	cl_object filename;
+	int modeint;
 @
 	/* INV: coerce_to_filename() checks types */
 	filename = coerce_to_filename(directory);
-	if (mkdir(filename->string.self, 0777) < 0) {
+	modeint = fixnnint(mode);
+	if (mkdir(filename->string.self, modeint) < 0) {
 		FEfilesystem_error("Could not create directory ~S", 1,
 				   filename);
 	}

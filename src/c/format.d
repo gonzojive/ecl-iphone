@@ -35,7 +35,7 @@ cl_object @'si::*indent-formatted-output*';
   }
 #define FILE_COLUMN(strm) \
   ((type_of(strm) == t_instance) ? -1 : file_column(strm))
-#endif CLOS
+#endif /* CLOS */
 
 /******************* WITHOUT CLOS *********************/
 #ifndef CLOS
@@ -43,7 +43,7 @@ cl_object @'si::*indent-formatted-output*';
 #define WRITESTR_STREAM(s, strm)	writestr_stream(s, strm);
 #define FLUSH_STREAM(strm)		flush_stream(strm)
 #define FILE_COLUMN(strm) 		file_column(strm)
-#endif !CLOS
+#endif /* !CLOS */
 
 /******************* WITH THREADS *********************/
 #ifdef THREADS
@@ -88,7 +88,7 @@ struct {
 } fmt_param[100];
 static int fmt_spare_spaces;
 static int fmt_line_length;
-#endif !THREADS
+#endif /* !THREADS */
 
 /******************* COMMON ***************************/
 
@@ -1856,7 +1856,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 	  if (type_of(strm) == t_instance)
 	    fmt_writec = interactive_writec_stream;
 	else
-#endif CLOS
+#endif /* CLOS */
 	  FEerror("~S is not a stream.", 1, strm);
 	assert_type_string(string);
 	if (frs_push(FRS_PROTECT, Cnil)) {

@@ -17,6 +17,10 @@
 #include <math.h>
 #include "ecl.h"
 
+#ifndef HAVE_ISNANF
+#define isnanf(x) isnan(x)
+#endif
+
 cl_object shortfloat_zero;
 cl_object longfloat_zero;
 

@@ -180,11 +180,11 @@ bool numberp(cl_object x)
 #ifdef THREADS
 		     || type_of(x) == t_thread
 		     || type_of(x) == t_cont
-#endif THREADS
+#endif
 #ifdef CLOS
 		     || type_of(x) == t_instance
 		     || type_of(x) == t_gfun
-#endif CLOS
+#endif
 		     ) ? Cnil : Ct;
 	@(return output)
 @)
@@ -315,7 +315,7 @@ BEGIN:
 				return(FALSE);
 		return(TRUE);
 	}
-#endif CLOS
+#endif /* CLOS */
 
 	case t_pathname:
 		return(equal(x->pathname.host, y->pathname.host) &&
@@ -425,7 +425,7 @@ BEGIN:
 				return(FALSE);
 		return(TRUE);
 	}
-#endif CLOS
+#endif /* CLOS */
 
 	case t_pathname:
 		return(equal(x, y));

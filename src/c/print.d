@@ -63,7 +63,7 @@ int PRINTlength;
 bool PRINTarray;
 void (*write_ch_fun)(int);	/* virtual output (for pretty-print) */
 void (*output_ch_fun)(int);	/* physical output */
-#endif THREADS
+#endif /* THREADS */
 
 /******************************* ------- ******************************/
 
@@ -84,7 +84,7 @@ cl_object @'stream-write-char',
   @'stream-fresh-line',
   @'stream-clear-output',
   @'stream-force-output';
-#endif CLOS
+#endif /* CLOS */
 
 #define	write_ch	(*write_ch_fun)
 #define	output_ch	(*output_ch_fun)
@@ -126,7 +126,7 @@ static int iisp;
 cl_fixnum CIRCLEbase;
 cl_object PRINTstream;
 
-#endif THREADS
+#endif /* THREADS */
 
 #ifdef CLOS
 
@@ -158,7 +158,7 @@ flush_interactive_stream(cl_object stream)
 #else
 #define FLUSH_STREAM(strm)	flush_stream(strm)
 #define FILE_COLUMN(strm) 	file_column(strm)
-#endif CLOS
+#endif /* CLOS */
 
 static void
 writec_queue(int c)
@@ -314,7 +314,7 @@ interactive_writec_PRINTstream(int c)
 	else if (c < 0400)
 		interactive_writec_stream(c, PRINTstream);
 }
-#endif CLOS
+#endif /* CLOS */
 
 void
 write_str(char *s)
@@ -415,7 +415,7 @@ edit_double(int n, double d, int *sp, char *s, int *ep)
 	if (buff[0] == '-')
 		*sp *= -1;
 	*ep = (buff[FPRC+5]-'0')*10 + (buff[FPRC+6]-'0');
-#endif IEEEFLOAT
+#endif /* IEEEFLOAT */
 
 	if (buff[FPRC+4] == '-')
 		*ep *= -1;
@@ -559,7 +559,7 @@ call_structure_print_function(cl_object x, int level)
 		interrupt_flag = FALSE;
 #ifdef unix
 		alarm(0);
-#endif unix
+#endif
 		terminal_interrupt(TRUE);
 	}
 
@@ -726,7 +726,7 @@ call_print_object(cl_object x, int level)
 
 	if (eflag) unwind(nlj_fr, nlj_tag);
 }
-#endif CLOS
+#endif /* CLOS */
 
 void
 write_fixnum(cl_fixnum i)
@@ -1338,7 +1338,7 @@ write_object(cl_object x, int level)
 		} else
 			call_structure_print_function(x, level);
 		break;
-#endif CLOS
+#endif /* CLOS */
 
 	case t_readtable:
 		write_str("#<readtable ");
@@ -1397,7 +1397,7 @@ write_object(cl_object x, int level)
 		write_addr(x);
 		write_ch('>');
 		break;
-#endif THREADS
+#endif /* THREADS */
 #ifdef CLOS
 	case t_instance:
 		if (type_of(CLASS_OF(x)) != t_instance)
@@ -1413,7 +1413,7 @@ write_object(cl_object x, int level)
 			write_addr(x);
 		write_ch('>');
 		break;
-#endif CLOS
+#endif /* CLOS */
 	default:
 		error("illegal type --- cannot print");
 	}
@@ -1498,7 +1498,7 @@ BEGIN:
 	    t != t_instance &&
 #else
 	    t != t_structure &&
-#endif CLOS
+#endif
 	    !(t == t_symbol && Null(x->symbol.hpack)))
 		return;
 	CIRCLEtop = cl_stack_top;
@@ -1537,7 +1537,7 @@ BEGIN:
 	case t_structure:
 	  for (i = 0;  i < x->str.length;  i++)
 	    travel_push_object(x->str.self[i]);
-#endif CLOS
+#endif /* CLOS */
 	/* INV: all types of 'x' have been handled */
 	}
 }
@@ -1559,7 +1559,7 @@ RETRY:	if (type_of(PRINTstream) == t_stream) {
 	  if (type_of(PRINTstream) == t_instance)
 	    output_ch_fun = interactive_writec_PRINTstream;
 	  else
-#endif CLOS
+#endif /* CLOS */
 	    { SYM_VAL(@'*standard-output*') = symbol_value(@'*terminal-io*');
 	      FEwrong_type_argument(@'stream', PRINTstream);
 	    }
@@ -1683,7 +1683,7 @@ RETRY:	if (type_of(strm) == t_stream) {
           if (type_of(strm) == t_instance)
 	    output_ch_fun = interactive_writec_PRINTstream;
           else
-#endif CLOS
+#endif /* CLOS */
             FEtype_error_stream(strm);
 	PRINTstream = strm;
 	PRINTescape = escape != Cnil;
@@ -1759,7 +1759,7 @@ RETRY:	if (type_of(strm) == t_stream) {
           if (type_of(strm) == t_instance)
 	    output_ch_fun = interactive_writec_PRINTstream;
           else
-#endif CLOS
+#endif /* CLOS */
             FEtype_error_stream(strm);
 	setupPRINT(obj, strm);
 	PRINTescape = TRUE;
@@ -1872,7 +1872,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 	  interactive_writec_stream('\n', strm);
 	  flush_interactive_stream(strm);
 	} else
-#endif CLOS
+#endif /* CLOS */
 	    FEtype_error_stream(strm);
 	@(return strng)
 @)
@@ -1928,7 +1928,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 	if (type_of(strm) == t_instance)
 	  flush_interactive_stream(strm);
 	else
-#endif CLOS
+#endif /* CLOS */
 	   FEtype_error_stream(strm);
 	@(return Cnil)
 @)
@@ -2058,7 +2058,7 @@ RETRY:		if (type_of(PRINTstream) == t_stream) {
 		  if (type_of(PRINTstream) == t_instance)
 		    write_ch_fun = interactive_writec_PRINTstream;
 		  else
-#endif CLOS
+#endif /* CLOS */
 		    FEtype_error_stream(strm);
 		write_object(obj, 0);
 		break;
@@ -2099,7 +2099,7 @@ RETRY:		if (type_of(PRINTstream) == t_stream) {
 		  if (type_of(PRINTstream) == t_instance)
 		    write_ch_fun = interactive_writec_PRINTstream;
 		  else
-#endif CLOS
+#endif /* CLOS */
 		    FEtype_error_stream(strm);
 		write_object(obj, 0);
 		break;
@@ -2144,7 +2144,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 	  if (type_of(strm) == t_instance)
 	    write_fun = interactive_writec_stream;
 	  else
-#endif CLOS
+#endif /* CLOS */
 	    FEtype_error_stream(strm);
 	write_fun('\n', strm);
 	FLUSH_STREAM(strm);
@@ -2178,7 +2178,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 		interactive_writec_stream(strng->string.self[i], strm);
 	  flush_interactive_stream(strm);
 	} else
-#endif CLOS
+#endif /* CLOS */
 	  FEtype_error_stream(strm);
 }
 
@@ -2206,7 +2206,7 @@ RETRY:	if (type_of(sym) == t_stream) {
 	  while (*s != '\0')
 		interactive_writec_stream(*s++, sym);
 	else
-#endif CLOS
+#endif /* CLOS */
 	  FEerror("~S is not a stream.", 1, sym);
 }
 
@@ -2235,6 +2235,6 @@ RETRY:	if (type_of(sym) == t_stream) {
 	  if (c == '\n')
 		flush_interactive_stream(sym);
 	} else
-#endif CLOS
+#endif /* CLOS */
 	  FEerror("~S is not a stream.", 1, sym);
 }

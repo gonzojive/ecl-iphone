@@ -112,7 +112,7 @@ make_pd()
 #else
   npd->lwp_cs_org = new_pd->pd_base;
   npd->lwp_cs_limit = npd->lwp_cs_org + STACK_SIZE;
-#endif    
+#endif   
   /* invocation history stack */
   npd->lwp_ihstop = 0
   /* frame stack */
@@ -258,7 +258,7 @@ activate_thread(cl_object thread)
     npd->pd_env[JB_SP] =
       stack_align((int)(npd->pd_base));
     npd->pd_lpd->lwp_cssize = sizeof(int) * STACK_SIZE - STACK_MARGIN;
-#endif DOWN_STACK
+#endif /* DOWN_STACK */
 #ifdef JB_FP
     npd->pd_env[JB_FP] = npd->pd_env[JB_SP];
 #endif
@@ -330,7 +330,7 @@ scheduler(int sig, int code, struct sigcontext *scp)
 
 #if defined(SYSV) || defined(__svr4__) || defined(__linux)
   signal(SIGALRM, scheduler);
-#endif SYSV
+#endif
 
   absolute_time++;
   if (critical_level > 0) {	/* within critical section */

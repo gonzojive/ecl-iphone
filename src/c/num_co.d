@@ -88,11 +88,11 @@ integer_decode_double(double d, unsigned *hp, unsigned *lp, int *ep, int *sp)
 	*ep = ((h >> 7) & 0xff) - 128 - 56;
 	h = ((h >> 15) & 0x1fffe) | (((h & 0x7f) | 0x80) << 17);
 	l = ((l >> 16) & 0xffff) | (l << 16);
-#endif VAX
+#endif
 #ifdef IEEEFLOAT
 	*ep = ((h & 0x7ff00000) >> 20) - 1022 - 53;
 	h = (h & 0x000fffff) | 0x00100000;
-#endif IEEEFLOAT
+#endif
 #ifdef TAHOE
         *ep = ((h & 0x7f800000) >> 23) - 128 - 56;
         h = (h & 0x007fffff) | 0x00800000;
@@ -109,7 +109,7 @@ integer_decode_double(double d, unsigned *hp, unsigned *lp, int *ep, int *sp)
 	SEEEEEEEEMMMMMMM	The redundant most significant fraction bit
 	MMMMMMMMMMMMMMMM	is not expressed.
 */
-#endif VAX
+#endif
 #ifdef IEEEFLOAT
 /*
 	radix = 2
@@ -118,7 +118,7 @@ integer_decode_double(double d, unsigned *hp, unsigned *lp, int *ep, int *sp)
 						significant fraction bit
 						is not expressed.
 */
-#endif IEEEFLOAT
+#endif
 #ifdef TAHOE
 /*
         radix = 2
@@ -144,11 +144,11 @@ integer_decode_float(double d, unsigned int *mp, int *ep, int *sp)
 #ifdef VAX
 	*ep = ((m >> 7) & 0xff) - 128 - 24;
 	*mp = ((m >> 16) & 0xffff) | (((m & 0x7f) | 0x80) << 16);
-#endif VAX
+#endif
 #ifdef IEEEFLOAT
 	*ep = ((m & 0x7f800000) >> 23) - 126 - 24;
 	*mp = (m & 0x007fffff) | 0x00800000;
-#endif IEEEFLOAT
+#endif
 #ifdef TAHOE
         *ep = ((m & 0x7f800000) >> 23) - 128 -24;
         *mp = (m & 0x007fffff) | 0x00800000;
@@ -164,10 +164,10 @@ double_exponent(double value)
 		return(0);
 #ifdef VAX
 	return(((d[0] >> 7) & 0xff) - 128);
-#endif VAX
+#endif
 #ifdef IEEEFLOAT
 	return(((d[HIND] & 0x7ff00000) >> 20) - 1022);
-#endif IEEEFLOAT
+#endif
 #ifdef TAHOE
         return(((d[0] & 0x7f800000) >> 23) - 128);
 #endif
@@ -181,10 +181,10 @@ set_exponent(double *value, int e)
 		return;
 #ifdef VAX
 	d[0] = (d[0] & 0xffff807f) | (((e + 128) << 7) & 0x7f80);
-#endif VAX
+#endif
 #ifdef IEEEFLOAT
 	d[HIND] = (d[HIND] & 0x800fffff) | (((e + 1022) << 20) & 0x7ff00000);
-#endif IEEEFLOAT
+#endif
 #ifdef TAHOE
         d[0] = (d[0] & 0x807fffff) | (((e + 128) << 23) & 0x7f800000);
 #endif
@@ -216,7 +216,7 @@ double_to_integer(double d)
 		h >>= e;
 		return(MAKE_FIXNUM(s*h));
 	}
-#endif IEEEFLOAT
+#endif
 	if (h != 0)
 		x = bignum2(h, l);
 	else
@@ -896,7 +896,7 @@ round2(cl_object x, cl_object y)
 #ifdef IEEEFLOAT
 	if (tx == t_shortfloat && (e <= -126 || e >= 130) ||
 	    tx == t_longfloat && (e <= -1022 || e >= 1026))
-#endif IEEEFLOAT
+#endif
 		FEerror("~S is an illegal exponent.", 1, y);
 	set_exponent(&d, e);
 	@(return ((tx == t_shortfloat) ? make_shortfloat(d)
@@ -1054,26 +1054,26 @@ init_num_co(void)
 	l[1] = 0;
 	smallest_float = *(float *)l;
 	smallest_double = *(double *)l;
-#endif VAX
+#endif
 
 #ifdef IEEEFLOAT
 	((int *) &smallest_float)[0]= 1;
 	((int *) &smallest_double)[HIND] = 0;
 	((int *) &smallest_double)[LIND] = 1;
-#endif IEEEFLOAT
+#endif
 
 #ifdef VAX
 	l[0] = 0xffff7fff;
 	l[1] = 0xffffffff;
 	biggest_float = *(float *)l;
 	biggest_double = *(double *)l;
-#endif VAX
+#endif
 
 #ifdef IEEEFLOAT
 	((unsigned int *) &biggest_float)[0]= (unsigned int)0x7f7fffff;
 	((unsigned int *) &biggest_double)[HIND] = (unsigned int)0x7fefffff;
 	((unsigned int *) &biggest_double)[LIND] = (unsigned int)0xffffffff;
-#endif IEEEFLOAT
+#endif
 
 #ifdef TAHOE
         l[0] = 0x00800000;

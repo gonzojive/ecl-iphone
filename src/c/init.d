@@ -54,7 +54,7 @@ init_lisp(void)
 #ifdef unix
 	init_load();
 /*  	init_unixsys(); */
-#endif unix
+#endif /* unix */
 	init_array();
 /*  	init_list(); */
 /*  	init_predicate(); */
@@ -67,23 +67,23 @@ init_lisp(void)
 #endif
 #ifdef TCP
 /*  	init_tcp(); */
-#endif TCP
+#endif
 #ifdef THREADS
 	init_lwp();
-#endif THREADS
+#endif
 #ifdef CLOS
 /*  	init_instance(); */
 	init_clos();
 /*  	init_gfun(); */
-#endif CLOS
+#endif
 #ifdef TK
 	init_tk();
-#endif TK
+#endif
 /*  	init_hash(); */
 #ifdef unix
 /*  	init_unixfsys(); */
 	init_unixtime();
-#endif unix
+#endif
 	init_compiler();
 	init_interpreter();
 	init_eval();

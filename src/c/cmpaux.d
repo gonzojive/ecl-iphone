@@ -14,7 +14,9 @@
     See file '../Copyright' for full details.
 */
 
+#ifndef darwin
 #include <malloc.h>
+#endif
 #include "ecl.h"
 #include "ecl-inl.h"
 
@@ -345,7 +347,7 @@ va_parse_key(
       supplied_allow_other_keys != Cnil)
     FEprogram_error("Unknown keyword ~S", 1, unknown_keyword);
 }
-#endif NO_ARGS_ARRAY
+#endif /* NO_ARGS_ARRAY */
 
 /* Used in compiled macros */
 void

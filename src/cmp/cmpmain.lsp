@@ -186,7 +186,8 @@ int init_~A(cl_object foo)
 		   prologue-code init-name epilogue-code)))
        (compiler-cc c-name o-name)
        (safe-system (format nil "ar cr ~A ~A ~{~A ~}"
-			    output-name o-name ld-flags)))
+			    output-name o-name ld-flags))
+       (safe-system (format nil "ranlib ~A" output-name)))
       #+dlopen
       (:shared-library
        (when (or (symbolp output-name) (not (pathname-type output-name)))

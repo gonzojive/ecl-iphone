@@ -50,7 +50,7 @@ static char	**ARGV;
 
 #ifdef THREADS
 static cl_object @'si::*thread-top*';
-#endif THREADS
+#endif
 static cl_object @'si::top-level';
 
 #if !defined(GBC_BOEHM)
@@ -75,7 +75,7 @@ cl_boot(int argc, char **argv)
 
 #ifndef MSDOS
 	ecl_self = expand_pathname(ecl_self);
-#endif MSDOS
+#endif
 
 	/*ihs_push(Cnil, lex);*/
 	lex_new();
@@ -89,7 +89,7 @@ cl_boot(int argc, char **argv)
 	@si::catch-bad-signals(0);
 #ifdef THREADS
 	enable_lwp();
-#endif THREADS
+#endif
 #ifdef TK
 	if (getenv("DISPLAY")) {
 	  Tk_main(FALSE, /* sync */
@@ -114,7 +114,7 @@ cl_boot(int argc, char **argv)
 	  cl_throw(@'si::*thread-top*');
 	  /* never reached */
 	}
-#endif THREADS
+#endif
 	printf("Bye.\n");
 	exit(i);
 @)
@@ -186,11 +186,11 @@ init_main(void)
 
 #ifdef THREADS
 	 ADD_FEATURE("THREADS");
-#endif THREADS
+#endif
 	
 #ifdef CLOS
 	 ADD_FEATURE("CLOS");
-#endif CLOS
+#endif
 
 	 ADD_FEATURE("ANSI-CL");
 
@@ -204,7 +204,7 @@ init_main(void)
 
 #ifdef PDE
 	 ADD_FEATURE("PDE");
-#endif PDE
+#endif
 
 /* ---------- Operating System ---------- */
 #ifdef unix
@@ -231,7 +231,7 @@ init_main(void)
        }
 #ifdef THREADS
 	@'si::*thread-top*' = make_si_ordinary("THREAD-TOP");
-#endif THREADS
+#endif
 
 	make_si_constant("+OBJNULL+", OBJNULL);
 }

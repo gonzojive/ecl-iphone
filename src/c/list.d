@@ -38,7 +38,7 @@ static cl_object item_compared;
 static bool (*tf)(cl_object);
 static cl_object key_function;
 static cl_object (*kf)(cl_object);
-#endif THREADS
+#endif /* THREADS */
 
 #define TEST(x)         (*tf)(x)
 

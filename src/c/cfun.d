@@ -19,7 +19,7 @@
 
 #ifdef PDE
 cl_object @'defun', @'defmacro';
-#endif PDE
+#endif
 
 cl_object
 make_cfun(cl_objectfn self, cl_object name, cl_object cblock)
@@ -57,7 +57,7 @@ MF(cl_object sym, cl_objectfn self, cl_object block)
 	clear_compiler_properties(sym);
 #ifdef PDE
 	record_source_pathname(sym, @'defun');
-#endif PDE
+#endif
 	cf = cl_alloc_object(t_cfun);
 	cf->cfun.entry = self;
 	cf->cfun.name = sym;
@@ -78,7 +78,7 @@ MM(cl_object sym, cl_objectfn self, cl_object block)
 	clear_compiler_properties(sym);
 #ifdef PDE
 	record_source_pathname(sym, @'defmacro');
-#endif PDE
+#endif
 	cf = cl_alloc_object(t_cfun);
 	cf->cfun.entry = self;
 	cf->cfun.name = sym;

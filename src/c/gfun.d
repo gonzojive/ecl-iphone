@@ -242,7 +242,7 @@ gcall(int narg, cl_object fun, cl_object *args)
 	    return CCALL(narg+1, func->cclosure.entry);
 #else
 	    return APPLY(narg+1, func->cclosure.entry, CSTACK_BOT);
-#endif CCALL
+#endif
 	  }
 	case t_bytecodes:
 	  return apply(narg, func, args);

@@ -72,7 +72,7 @@ extended_div(int d, int h, int l, int *qp, int *rp)
 	*qp = (lh/ld);
 	*rp = (lh%ld);
       }
-#endif CONVEX
+#endif /* CONVEX */
 
 #ifdef i386
 
@@ -110,7 +110,7 @@ extended_div(int d, int h, int l, int *qp, int *rp)
   asm("movl	%edx,(%ebx)");
   asm("popl	%ebx");
 }
-#endif i386
+#endif /* i386 */
 
 #ifdef IBMRT
 
@@ -235,7 +235,7 @@ extended_div(int d, int h, int l, int *qp, int *rp)
   asm(" put r2,0(r3)");
 }
 
-#endif IBMRT
+#endif /* IBMRT */
 
 #if defined(NEWS) || defined(MAC)
 
@@ -270,7 +270,7 @@ extended_div(int d, int h, int l, int *qp, int *rp)
 	");
 }
 
-#endif NEWS
+#endif /* NEWS || MAC */
 
 #ifdef __mips
 
@@ -308,7 +308,7 @@ extended_mul(unsigned int d, unsigned int q, unsigned int r, unsigned int *hp,
   asm("lw	$7, %0" :: "g" (lp));
 #else
   asm("lw	$7, 16($sp)");	/* fetch fifth actual argument from stack */
-#endif __GNUC__
+#endif
   asm("sw	$4, 0($7)"); 	/* *lp = a0 */
 }
 
@@ -336,10 +336,10 @@ extended_div(unsigned int d, unsigned int h, unsigned int l, unsigned int *qp,
   asm("lw	$7, %0" :: "g" (rp));
 #else
   asm("lw	$7, 16($sp)");	/* fetch fifth actual argument from stack */
-#endif __GNUC__
+#endif
   asm("sw	$5, 0($7)");	/* *rp = h */
 }
-#endif __mips
+#endif /* __mips */
 
 #if defined(sun3) || (defined __NeXT)
 
@@ -377,7 +377,7 @@ extended_div(int d, int h, int l, int *qp, int *rp)
 	");
 }
 
-#endif sun3
+#endif /* sun3 */
 
 /* Possible assembler version: 
 #ifdef sparc
@@ -467,7 +467,7 @@ extended_div(unsigned int d, unsigned int h, unsigned int l, unsigned int *qp,
   *rp = h;
 }
 
-#endif sparc
+#endif /* sparc */
 
 #ifdef vax
 
@@ -490,4 +490,4 @@ extended_div(int d, int h, int l, int *qp, int *rp)
 	asm("	addl2	12(ap),r0");
 	asm("	ediv	4(ap),r0,*16(ap),*20(ap)");
 }
-#endif vax
+#endif /* vax */

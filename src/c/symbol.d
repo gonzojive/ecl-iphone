@@ -22,7 +22,7 @@
 cl_object gensym_prefix;
 cl_object gentemp_prefix;
 cl_object cl_token;
-#endif THREADS
+#endif
 
 struct symbol Cnil_body, Ct_body;
 cl_object @'*gensym-counter*';

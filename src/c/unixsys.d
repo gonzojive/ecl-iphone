@@ -31,7 +31,7 @@ system(const char *command)
 	signal(SIGINT, sigint);
 	return(buf[0]<<8);
 }
-#endif __STDLIB_H__
+#endif /* __STDLIB_H__ */
 
 #if defined(__FreeBSD__) || defined(__NetBSD__)
 

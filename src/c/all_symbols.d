@@ -198,7 +198,7 @@ const struct symbol_info all_symbols[] = {
 /* profile.c */
 #ifdef PROFILE
 {&sSAprofile_arrayA, "*PROFILE-ARRAY*", SI_SPECIAL},
-#endif PROFILE
+#endif
 
 /* read.c */
 {&clVreadtable, "*READTABLE*", CL_SPECIAL},

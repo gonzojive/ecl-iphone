@@ -13,7 +13,7 @@ ecl:
 	 echo '(setf (logical-pathname-translations "SYS")'; \
 	 echo "      '"'(("*.*" "../*.*")))'; \
 	 echo "(run-all-tests \"$(srcdir)/\")"; \
-	 echo "(quit)") | ../ecl
+	 echo "(quit)") | ../ecl -dir ../
 	true
 
 ecl_min:

@@ -25,7 +25,7 @@ extern "C" {
 
 extern struct typemanager {
 	const char *tm_name;
-	size_t tm_size;
+	cl_index tm_size;
 } tm_table[(int)t_end];
 
 #define	tm_of(t)	(&tm_table[(int)(t)])
@@ -55,8 +55,8 @@ typedef char *cl_ptr;
 #define	round_up(n)	(((n) + 03) & ~03)
 #define	available_pages() ((cl_index)(real_maxpage-page(heap_end)-new_holepage-real_maxpage/32))
 
-extern size_t real_maxpage;
-extern size_t new_holepage;
+extern cl_index real_maxpage;
+extern cl_index new_holepage;
 
 /*
 	The struct of free lists.
@@ -77,17 +77,17 @@ extern char type_map[MAXPAGE];
 	Storage manager for each type.
 */
 struct typemanager {
-	enum type tm_type;	/*  type  */
-	size_t	tm_size;	/*  element size in bytes  */
-	size_t	tm_nppage;	/*  number per page  */
-	cl_object tm_free;	/*  free list  */
-				/*  Note that it is of type object.  */
-	size_t	tm_nfree;	/*  number of free elements  */
-	size_t	tm_nused;	/*  number of elements used  */
-	size_t	tm_npage;	/*  number of pages  */
-	size_t	tm_maxpage;	/*  maximum number of pages  */
-	char	*tm_name;	/*  type name  */
-	size_t	tm_gccount;	/*  GC count  */
+	cl_type		tm_type;	/*  type  */
+	cl_index	tm_size;	/*  element size in bytes  */
+	cl_index	tm_nppage;	/*  number per page  */
+	cl_object	tm_free;	/*  free list  */
+					/*  Note that it is of type object.  */
+	cl_index	tm_nfree;	/*  number of free elements  */
+	cl_index	tm_nused;	/*  number of elements used  */
+	cl_index	tm_npage;	/*  number of pages  */
+	cl_index	tm_maxpage;	/*  maximum number of pages  */
+	char		*tm_name;	/*  type name  */
+	cl_index	tm_gccount;	/*  GC count  */
 };
 
 /*
@@ -101,7 +101,7 @@ extern struct typemanager tm_table[(int)t_end];
 	Contiguous block header.
 */
 struct contblock {			/*  contiguous block header  */
-	size_t cb_size;			/*  size in bytes  */
+	cl_index cb_size;		/*  size in bytes  */
 	struct contblock *cb_link;	/*  contiguous block link  */
 };
 
@@ -113,15 +113,15 @@ extern struct contblock *cb_pointer;	/*  contblock pointer  */
 /*
 	Variables for memory management.
 */
-extern size_t ncb;			/*  number of contblocks  */
-extern size_t ncbpage;			/*  number of contblock pages  */
-extern size_t maxcbpage;		/*  maximum number of contblock pages  */
-extern size_t cbgccount;		/*  contblock gc count  */
-extern size_t holepage;			/*  hole pages  */
+extern cl_index ncb;		/*  number of contblocks  */
+extern cl_index ncbpage;	/*  number of contblock pages  */
+extern cl_index maxcbpage;	/*  maximum number of contblock pages  */
+extern cl_index cbgccount;	/*  contblock gc count  */
+extern cl_index holepage;	/*  hole pages  */
 
-extern char *heap_start;		/*  heap start  */
-extern char *heap_end;			/*  heap end  */
-extern char *data_end;			/*  core end  */
+extern char *heap_start;	/*  heap start  */
+extern char *heap_end;		/*  heap end  */
+extern char *data_end;		/*  core end  */
 
 #endif /* !GBC_BOEHM */
 

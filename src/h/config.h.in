@@ -85,3 +85,5 @@
 #undef HAVE_SYS_RESOURCE_H
 /* High precision timer							*/
 #undef HAVE_NANOSLEEP
+/* Float version if isnan()						*/
+#undef HAVE_ISNANF

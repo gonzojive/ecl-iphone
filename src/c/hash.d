@@ -203,7 +203,7 @@ BEGIN:
 		for (i = 0;  i < x->str.length;  i++)
 			h += _hash_equal(x->str.self[i], depth);
 		return(h);
-#endif CLOS
+#endif /* CLOS */
 #endif /* !ANSI */
         case t_package:		/* These two should actually */
 	case t_bitvector:	/* have visible changes under equal */

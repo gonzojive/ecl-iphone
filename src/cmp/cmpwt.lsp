@@ -66,16 +66,20 @@
   nil)
 
 ;;; This routine converts lisp data into C-strings. We have to take
-;;; care of escaping special characteres with backslashes.
+;;; care of escaping special characteres with backslashes. We also have
+;;; to split long lines using  the fact that multiple strings are joined
+;;; together by the compiler.
 ;;;
-;;; FIXME! With some compilers (GCC, for instance), four backslashes
-;;; at the end of a line are turned into a single backslash!!!!
-;;; Current fix is ugly.
 (defun wt-filtered-data (string)
-  (let ((N (length string)))
-    (incf *wt-string-size* (1+ N)) ; 1+ accounts for newline
-    (terpri *compiler-output-data*)
+  (let ((N (length string))
+	(wt-data-column 80))
+    (incf *wt-string-size* (1+ N)) ; 1+ accounts for space
+    (format *compiler-output-data* "~%\"")
     (dotimes (i N)
+      (decf wt-data-column)
+      (when (< wt-data-column 0)
+	(format *compiler-output-data* "\"~% \"")
+	(setq wt-data-column 79))
       (let ((x (aref string i)))
 	(cond
 	  ((or (< (char-code x) 32)
@@ -83,10 +87,7 @@
 	   (case x
 	     ; We avoid a trailing backslash+newline because some preprocessors
 	     ; remove them.
-	     (#\Newline
-	      (if (and (> i 0) (char= (aref string (1- i)) #\\))
-		(princ "\\n" *compiler-output-data*)
-		(princ #\Newline *compiler-output-data*)))
+	     (#\Newline (princ "\\n" *compiler-output-data*))
 	     (#\Tab (princ "\\t" *compiler-output-data*))
 	     (t (format *compiler-output-data* "\\~3,'0o" (char-code x)))))
 	  ((char= x #\\)
@@ -94,6 +95,7 @@
 	  ((char= x #\")
 	   (princ "\\\"" *compiler-output-data*))
 	  (t (princ x *compiler-output-data*)))))
+    (princ " \"" *compiler-output-data*)
     string))
 
 ;;; This routine outputs some data into the C file data section. The objects
@@ -128,12 +130,13 @@
 
 (defun wt-data-begin ()
   (setq *wt-string-size* 0)
-  (princ #\" *compiler-output-data*)
+  (setq *wt-data-column* 80)
+  (princ "static const char compiler_data_text[] = " *compiler-output-data*)
   (wt-filtered-data (format nil "#!0 ~s" "CL"))
   nil)
 
 (defun wt-data-end ()
-  (princ #\" *compiler-output-data*))
+  (princ #\; *compiler-output-data*))
 
 (defun wt-data-package-operation (form)
   (ecase (car form)

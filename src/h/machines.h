@@ -29,7 +29,7 @@
 
 #ifdef __linux__
 #  define FILE_CNT(fp)	((fp)->_IO_read_end - (fp)->_IO_read_ptr)
-#elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(cygwin)
+#elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(cygwin) || defined(darwin)
 #  define FILE_CNT(fp)	((fp)->_r)
 #else
 #  define FILE_CNT(fp)	(fp)->_cnt
@@ -39,6 +39,13 @@
 #  define IS_DIR_SEPARATOR(x) ((x=='/')||(x=='\\'))
 #  define DIR_SEPARATOR	'\\'
 #  define PATH_SEPARATOR	';'
+#else
+#  define IS_DIR_SEPARATOR(x) (x=='/')
+#  define DIR_SEPARATOR	'/'
+#  define PATH_SEPARATOR	':'
+#endif /* MSDOS */
+
+#if defined(MSDOS) || defined(cygwin) || defined(darwin)
 #  define OPEN_R	"rb"
 #  define OPEN_W	"wb"
 #  define OPEN_RW	"w+b"
@@ -46,15 +53,12 @@
 #  define OPEN_RA	"a+b"
 #  define CRLF
 #else
-#  define IS_DIR_SEPARATOR(x) (x=='/')
-#  define DIR_SEPARATOR	'/'
-#  define PATH_SEPARATOR	':'
 #  define OPEN_R	"r"
 #  define OPEN_W	"w"
 #  define OPEN_RW	"w+"
 #  define OPEN_A	"a"
 #  define OPEN_RA	"a+"
-#endif	MSDOS
+#endif /* MSDOS */
 
 
 /***********************************************************************
@@ -86,7 +90,7 @@
 #  define ARCHITECTURE	"ARM2"
 #elif	defined(arm) || defined(__arm)
 #  define ARCHITECTURE	"ARM"
-#elif	defined(PPC) || defined(__PPC__) || defined(__powerpc)
+#elif	defined(PPC) || defined(__PPC__) || defined(__powerpc) || defined(__ppc__)
 #  define ARCHITECTURE	"POWERPC"
 #endif
 
@@ -133,6 +137,18 @@
 #endif
 
 /***********************************************************************/
+
+#ifdef darwin
+#define IEEEFLOAT
+#define BRAND "APPLE"
+#define CLIBS
+#define LDFLAGS
+#define SHARED_LDFLAGS
+#define USE_DLOPEN
+#ifndef unix
+# define unix
+#endif
+#endif /* darwin */
 
 #ifdef	__FreeBSD__
 #include <dlfcn.h>

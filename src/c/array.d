@@ -357,9 +357,7 @@ array_allocself(cl_object x)
 	cl_index i, d;
 
 	d = x->array.dim;
-#ifdef THREADS
 	start_critical_section(); /* avoid losing elts */
-#endif THREADS
 	switch (array_elttype(x)) {
 
 	/* assign self field only after it has been filled, for GC sake  */
@@ -431,9 +429,7 @@ array_allocself(cl_object x)
 		break;
 	      }
 	}
-#ifdef THREADS
 	end_critical_section();
-#endif THREADS
 }
 
 cl_elttype

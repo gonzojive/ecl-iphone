@@ -18,7 +18,7 @@
 #ifndef THREADS
 cl_object bignum_register[3];
 mp_limb_t bignum_register_limbs[3][BIGNUM_REGISTER_SIZE];
-#endif THREADS
+#endif
 
 /* 
  * Using GMP multiple precision integers:

@@ -93,7 +93,7 @@ link_call(cl_object sym, cl_objectfn *pLK, cl_object *gfun,
 	  int narg, va_list args)
 #else
 link_call(cl_object sym, cl_objectfn *pLK, int narg, va_list args)
-#endif CLOS
+#endif /* CLOS */
 {
 	cl_object fun = symbol_function(sym);
 
@@ -115,7 +115,7 @@ link_call(cl_object sym, cl_objectfn *pLK, int narg, va_list args)
 			@'si::link-from');
 		*gfun = fun;
 		return va_gcall(narg, fun, args);
-#endif CLOS
+#endif /* CLOS */
 	case t_cclosure:
 		return va_APPLY_closure(narg, fun->cclosure.entry,
 					fun->cclosure.env, args);

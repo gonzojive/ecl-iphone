@@ -267,7 +267,7 @@ BEGIN:
 			mark_object(p[i]);
 		mark_contblock(p, j*sizeof(cl_object));
 		break;
-#endif CLOS
+#endif /* CLOS */
 
 	case t_stream:
 		switch ((enum smmode)x->stream.mode) {
@@ -367,7 +367,7 @@ BEGIN:
  */
 		mark_next(x->thread.entry);
 		break;
-#endif THREADS
+#endif /* THREADS */
 #ifdef CLOS
 	case t_instance:
 		mark_object(CLASS_OF(x));
@@ -390,7 +390,7 @@ BEGIN:
 			mark_object(p[i]);
 		mark_contblock(p, j*sizeof(cl_object));
 		break;
-#endif CLOS
+#endif /* CLOS */
 	case t_codeblock:
 		mark_object(x->cblock.name);
 		if (x->cblock.data) {
@@ -461,7 +461,7 @@ mark_phase(void)
 	  for (pdp = running_head; pdp != (pd *)NULL; pdp = pdp->pd_next) {
 
 	    clwp = pdp->pd_lpd;
-#endif THREADS
+#endif /* THREADS */
 
 	    mark_contblock(cl_stack, cl_stack_size * sizeof(*cl_stack));
 	    for (sp=cl_stack; sp < cl_stack_top; sp++)
@@ -499,7 +499,7 @@ mark_phase(void)
 	    /* (current-thread) can return it at any time
 	     */
 	    mark_object(clwp->lwp_thread);
-#endif THREADS	      
+#endif /* THREADS */
 	    
 	    /* now collect from the c-stack of the thread ... */
 	    
@@ -517,7 +517,7 @@ mark_phase(void)
 		where = (int *)pdp->pd_env[JB_SP];
 # endif
 	      else
-#endif THREADS
+#endif /* THREADS */
 		where = (int *)&where ;
 	      
 	      /* If the locals of type object in a C function could be
@@ -535,7 +535,7 @@ mark_phase(void)
 	  }
 	  clwp = old_clwp;
 	}
-#endif THREADS
+#endif /* THREADS */
 
 	/* mark roots */
 	for (i = 0; i < gc_roots;  i++)
@@ -646,7 +646,7 @@ contblock_sweep_phase(void)
 			q = p + 4;
 			while (q < e && !get_mark_bit((int *)q))
 				q += 4;
-			dealloc(p, q - p);
+			cl_dealloc(p, q - p);
 			p = q + 4;
 		}
 		i = j + 1;
@@ -697,7 +697,7 @@ gc(cl_type t)
   int i, j;
   int tm;
   int gc_start = runtime();
-#endif THREADS
+#endif /* THREADS */
 
   if (!GC_enabled())
     return;
@@ -740,7 +740,7 @@ gc(cl_type t)
 
   if (val == 1) {
 
-#endif THREADS
+#endif /* THREADS */
 
     if (GC_enter_hook != NULL)
       (*GC_enter_hook)(0);
@@ -769,13 +769,13 @@ gc(cl_type t)
 	512 bit = 16 word
       */
       int mark_table_size = maxpage * (LISP_PAGESIZE / 32);
-      extern void resize_hole(cl_index);
+      extern void cl_resize_hole(cl_index);
 
       if (holepage < mark_table_size*sizeof(int)/LISP_PAGESIZE + 1)
 	new_holepage = mark_table_size*sizeof(int)/LISP_PAGESIZE + 1;
       if (new_holepage < HOLEPAGE)
 	new_holepage = HOLEPAGE;
-      resize_hole(new_holepage);
+      cl_resize_hole(new_holepage);
 
       mark_table = (int*)heap_end;
       for (i = 0;  i < mark_table_size; i++)
@@ -858,7 +858,7 @@ gc(cl_type t)
       siglongjmp(old_env, 2);
     }
   }
-#endif THREADS
+#endif /* THREADS */
 
   gc_time += (gc_start = runtime() - gc_start);
 
@@ -870,11 +870,9 @@ gc(cl_type t)
 
 #ifdef unix
   if (interrupt_flag) sigint();
-#endif unix
+#endif
 
-#ifdef THREADS
   end_critical_section();
-#endif THREADS
 }
 
 /*

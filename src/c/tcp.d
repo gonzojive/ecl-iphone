@@ -243,13 +243,9 @@ make_stream(cl_object host, int fd, enum smmode smm)
    if (host->string.fillp > BUFSIZ - 1)
      FEerror("~S is a too long file name.", 1, host);
 
-#ifdef THREADS
    start_critical_section();
-#endif THREADS
    fd = connect_to_server(host->string.self, fix(port)); 
-#ifdef THREADS
    end_critical_section();
-#endif THREADS
 
    if (fd == 0)
      @(return Cnil)
@@ -268,13 +264,9 @@ make_stream(cl_object host, int fd, enum smmode smm)
    if (!FIXNUMP(port))
      FEwrong_type_argument(TSpositive_number, port);
 
-#ifdef THREADS
    start_critical_section();
-#endif THREADS
    fd = create_server_port(fix(port));
-#ifdef THREADS
    end_critical_section();
-#endif THREADS
 
    if (fd == 0)
      output = Cnil;

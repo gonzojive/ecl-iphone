@@ -86,7 +86,7 @@ cl_alloc_instance(cl_index slots)
 }
 
 void *
-cl_alloc(size_t n)
+cl_alloc(cl_index n)
 {
 	void *output;
 	start_critical_section(); 
@@ -96,7 +96,7 @@ cl_alloc(size_t n)
 }
 
 void *
-cl_alloc_atomic(size_t n)
+cl_alloc_atomic(cl_index n)
 {
 	void *output;
 	start_critical_section(); 
@@ -110,7 +110,7 @@ cl_alloc_atomic(size_t n)
  * sorted by increasing size.
  */
 void
-cl_dealloc(void *p, size_t s)
+cl_dealloc(void *p, cl_index s)
 {
 	GC_free(p);	
 }
@@ -120,7 +120,7 @@ cl_dealloc(void *p, size_t s)
  * required for the block.
  */
 void *
-cl_alloc_align(size_t size, size_t align)
+cl_alloc_align(cl_index size, cl_index align)
 {
 	char *output;
 	start_critical_section();
@@ -136,7 +136,7 @@ cl_alloc_align(size_t size, size_t align)
  * required for the block.
  */
 void *
-cl_alloc_atomic_align(size_t size, size_t align)
+cl_alloc_atomic_align(cl_index size, cl_index align)
 {
 	char *output;
 	start_critical_section();
@@ -148,7 +148,7 @@ cl_alloc_atomic_align(size_t size, size_t align)
 }
 
 static void
-init_tm(cl_type t, char *name, size_t elsize)
+init_tm(cl_type t, char *name, cl_index elsize)
 {
 	struct typemanager *tm = &tm_table[(int)t];
 	tm->tm_name = name;
@@ -193,11 +193,11 @@ init_alloc(void)
 #else
 	init_tm(t_instance, "INSTANCE", sizeof(struct instance));
 	init_tm(t_gfun, "GFUN", sizeof(struct gfun));
-#endif CLOS
+#endif /* CLOS */
 #ifdef THREADS
 	init_tm(t_cont, "CONT", sizeof(struct cont));
 	init_tm(t_thread, "THREAD", sizeof(struct thread));
-#endif THREADS
+#endif /* THREADS */
 }
 
 /**********************************************************
@@ -262,8 +262,8 @@ valloc(size_t size)
 {
 	return memalign(getpagesize(), size);
 }
-# endif WANT_VALLOC
-#endif NEED_MALLOC
+# endif /* WANT_VALLOC */
+#endif /* NEED_MALLOC */
 
 
 /**********************************************************

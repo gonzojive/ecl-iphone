@@ -959,7 +959,7 @@ pathname_match_p(cl_object path, cl_object mask)
 #if 0
 	if (!path_item_match(path->pathname.host, mask->pathname.host))
 		return FALSE;
-#endif 
+#endif
 	if (!path_list_match(path->pathname.directory,
 			     path->pathname.directory))
 		return FALSE;

@@ -82,7 +82,7 @@ cl_object @'logical-pathname';
 #ifdef THREADS
 cl_object @'cont';
 cl_object @'thread';
-#endif THREADS
+#endif
 
 #ifdef CLOS
 cl_object @'instance';
@@ -415,7 +415,7 @@ TYPE_OF(cl_object x)
 #ifndef CLOS
 	case t_structure:
 		return(x->str.name);
-#endif CLOS
+#endif
 
 	case t_stream:
 		return(@'stream');
@@ -442,7 +442,7 @@ TYPE_OF(cl_object x)
 
 	case t_thread:
 		return(@'thread');
-#endif THREADS
+#endif
 #ifdef CLOS
 	case t_gfun:
 		return(@'dispatch-function');
