@@ -20,7 +20,7 @@
 cl_object class_class, class_object, class_built_in;
 cl_object @'si::*class-name-hash-table*';
 cl_object @'class';
-cl_object @'built-in';
+cl_object @'built-in-class';
 
 /******************************* ------- ******************************/
 
@@ -56,11 +56,22 @@ make_our_hash_table(cl_object test, int size)
 	return(h);
 }
 
+@(defun find-class (name &optional (errorp Ct) env)
+	cl_object class;
+@
+	class = gethash_safe(name, SYM_VAL(@'si::*class-name-hash-table*'), Cnil);
+	if (class == Cnil) {
+		if (!Null(errorp))
+			FEerror("No class named ~S.", 1, name);
+	}
+	@(return class)
+@)	
+
 static void
 clos_boot(void)
 {
 
-	SYM_VAL(siVclass_name_hash_table) = make_our_hash_table(@'eq', 1024);
+	SYM_VAL(@'si::*class-name-hash-table*') = make_our_hash_table(@'eq', 1024);
 
 	/* booting Class CLASS */
 	
@@ -72,19 +83,19 @@ clos_boot(void)
 	CLASS_INFERIORS(class_class) = Cnil;
 	CLASS_SLOTS(class_class) = OBJNULL;	/* filled later */
 
-	sethash(@'class', SYM_VAL(siVclass_name_hash_table), class_class);
+	sethash(@'class', SYM_VAL(@'si::*class-name-hash-table*'), class_class);
 
-	/* booting Class BUILT-IN */
+	/* booting Class BUILT-IN-CLASS */
 	
   	class_built_in = cl_alloc_instance(4);
 	register_root(&class_built_in);
 	CLASS_OF(class_built_in) = class_class;
-	CLASS_NAME(class_built_in) = @'built-in';
+	CLASS_NAME(class_built_in) = @'built-in-class';
 	CLASS_SUPERIORS(class_built_in) = CONS(class_class, Cnil);
 	CLASS_INFERIORS(class_built_in) = Cnil;
 	CLASS_SLOTS(class_built_in) = OBJNULL;	/* filled later */
 
-	sethash(@'built-in', SYM_VAL(siVclass_name_hash_table), class_built_in);
+	sethash(@'built-in-class', SYM_VAL(@'si::*class-name-hash-table*'), class_built_in);
 
 	/* booting Class T (= OBJECT) */
 	
@@ -96,7 +107,7 @@ clos_boot(void)
 	CLASS_INFERIORS(class_object) = CONS(class_class, Cnil);
 	CLASS_SLOTS(class_object) = Cnil;
 
-	sethash(Ct, SYM_VAL(siVclass_name_hash_table), class_object);
+	sethash(Ct, SYM_VAL(@'si::*class-name-hash-table*'), class_object);
 
 	/* complete now Class CLASS */
 	CLASS_SUPERIORS(class_class) = CONS(class_object, Cnil);
@@ -106,7 +117,7 @@ clos_boot(void)
 void
 init_clos(void)
 {
-	SYM_VAL(siVclass_name_hash_table) = OBJNULL;
+	SYM_VAL(@'si::*class-name-hash-table*') = OBJNULL;
 
 	clos_boot();
 }

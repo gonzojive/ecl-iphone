@@ -299,8 +299,6 @@
 	  space
 	  safety
 	  compilation-speed
-
-	  *eval-when-compile*
 	  ))
 
 (si::select-package "SI")
@@ -391,7 +389,6 @@
 	  define-method-combination
 	  defmethod
 	  ensure-generic-function
-	  find-class
 	  find-method
 	  generic-flet
 	  generic-function
@@ -427,7 +424,7 @@
 	  with-slots
 
 	  class
-	  built-in
+	  built-in-class
 	  standard-class
 	  standard-generic-function
 	  standard-method

@@ -112,7 +112,7 @@ cl_alloc_atomic(cl_index n)
 void
 cl_dealloc(void *p, cl_index s)
 {
-	GC_free(p);	
+	/* GC_free(p); */
 }
 
 /*

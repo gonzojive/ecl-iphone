@@ -45,13 +45,6 @@
 ;(defvar *class-name-hash-table* (make-hash-table :test #'eq)
 ; "The hash table containing all classes")
 
-(defun find-class (name &optional (errorp t) environment)
-  (declare (ignore environment))
-  (let ((class (gethash name si:*class-name-hash-table*)))
-    (cond (class class)
-	  (errorp (error "No class named ~S." name))
-	  (t nil))))
-
 ;;; This is only used during boot. The real one is in built-in.
 (defun setf-find-class (name new-value)
   (if (classp new-value)
@@ -109,20 +102,3 @@
 ;;; a variable declared of type standard-class.
 (defmacro slot-index-table (a-standard-class)
   `(the hash-table (si:instance-ref ,a-standard-class 5)))
-
-;;; ----------------------------------------------------------------------
-;;; Low level printing
-;;;
-
-(defun set-function-name (fn new-name)
-  (cond ((compiled-function-p fn)
-	 (si::set-compiled-function-name fn new-name))
-	((and (listp fn)
-	      (eq (car fn) 'LAMBDA-BLOCK))
-	 (setf (cadr fn) new-name))
-	((and (listp fn)
-	      (eq (car fn) 'LAMBDA))
-	 (setf (car fn) 'LAMBDA-BLOCK
-	       (cdr fn) (cons new-name (cdr fn)))))
-  fn)
-

@@ -14,7 +14,7 @@
 
 (defun boot ()
   (let ((class (find-class 'class))
-	(built-in (find-class 'built-in)))
+	(built-in-class (find-class 'built-in-class)))
 
     ;; class CLASS	--------
     (setf (class-slots class)
@@ -56,25 +56,25 @@
       (or supplied-superclasses
 	  (list (find-class 't))))
 
-    ;; class BUILT-IN	--------
-    (setf (class-slots built-in)
+    ;; class BUILT-IN-CLASS	--------
+    (setf (class-slots built-in-class)
 	  (parse-slots '((NAME :INITARG :NAME :INITFORM NIL)
 			       (SUPERIORS :INITARG :DIRECT-SUPERCLASSES)
 			       (INFERIORS :INITFORM NIL)
 			       (SLOTS :INITARG :SLOTS))))
 
-    (defmethod slot-value ((self built-in) slot)
+    (defmethod slot-value ((self built-in-class) slot)
       (let ((position (position slot (class-slots (si:instance-class self))
 				:key #'slotd-name)))
 	(if position
 	    (si:instance-ref self position)
 	    (slot-missing (si:instance-class self) self slot 'slot-value))))
 
-    (defmethod make-instance ((class built-in) &rest initargs)
+    (defmethod make-instance ((class built-in-class) &rest initargs)
       (declare (ignore initargs))
       (error "The built-in class (~A) cannot be instantiated" class))
 
-    (defmethod initialize-instance ((class built-in)
+    (defmethod initialize-instance ((class built-in-class)
 				    &rest initargs &key &allow-other-keys)
 
 	(call-next-method)		; from class T
@@ -87,7 +87,7 @@
 	  (push class (class-inferiors s)))
 	class)
 
-    (defmethod print-object ((class built-in) stream)
+    (defmethod print-object ((class built-in-class) stream)
       (print-unreadable-object
        (class stream)
        (format stream "The ~A ~A" (class-name (si:instance-class class))

@@ -132,7 +132,8 @@ extern cl_object clLname_char _ARGS((int narg, cl_object s));
 #ifdef CLOS
 extern cl_object siVclass_name_hash_table;
 extern cl_object clSclass;
-extern cl_object clSbuilt_in;
+extern cl_object clSbuilt_in_class;
+extern cl_object clLfind_class _ARGS((int narg, cl_object name, ...));
 #endif
 
 /* cmpaux.c */

@@ -2453,12 +2453,6 @@ open-coded in-line.  To control runtime error checking, supply appropriate
 The @ecl{} compiler processes the @code{eval-when} special form exactly as
 specified in @bibcite{Steele:84} (see Section 5.3.3 of @bibcite{Steele:84}).
 
-Notice that KCL and AKCL instead behave differently from the @clisp{}
-specification, since they normally process all top-level forms in
-@emph{compile-time-too} mode.  If it is desired that each top-level form be
-processed in @emph{compile-time-too} mode, set the value of the @ecl{}
-specific variable @code{*eval-when-compiler*} to @true{}.
-
 The @ecl{} compiler is invoked by the functions @code{compile-file},
 @code{compile}, and @code{disassemble} described below.  In addition, the
 @ecl{} compiler may be invoked directly by the Shell commands @code{ecl}.
@@ -2589,13 +2583,6 @@ is created under the name specified by @kwd{h-file}.  Similarly, the
 intermediate data-file is specified by the keyword parameter @kwd{data-file}.
 
 @end defun
-
-@defvar {*eval-when-compile*}
-The compiler processes each top-level form in @dfn{not-compile-time} mode if
-the value of this variable is @nil{}, and in @dfn{compile-time-too} mode,
-otherwise.  See Section 5.3.3 of @bibcite{Steele:84} for these two modes.  The
-initial value of this variable is @nil{}.
-@end defvar
 
 
 @node Declarations, OS interface, The compiler, Top
@@ -3972,8 +3959,6 @@ that case @code{suspend} will return the values specified by @code{resume}.
 @defvar {*default-pathname-defaults*}
 @end defvar
 @defvar {*error-output*}
-@end defvar
-@defvar {*eval-when-compile*}
 @end defvar
 @defvar {*evalhook*}
 @end defvar

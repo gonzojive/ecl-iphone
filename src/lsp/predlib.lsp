@@ -340,11 +340,6 @@ Returns T if X belongs to TYPE; NIL otherwise."
 	 t)
 	(t nil)))
 
-;;; Dummy version before CLOS is loaded
-#+(and clos ecl-min)
-(unless (fboundp 'sys::fpp)
-  (defun find-class (n &optional err env) (declare (ignore n err env)) nil))
-
 ;;; SUBTYPEP predicate.
 (defun subtypep (type1 type2 &aux t1 t2 i1 i2 ntp1 ntp2 c1 c2)
   "Args: (type1 type2)

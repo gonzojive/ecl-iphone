@@ -57,7 +57,7 @@
 
 (eval-when (compile load eval)
   (mapcar #'(lambda (args &aux (class (first args)) (super (cdr args)))
-	      (eval `(defclass ,class ,super () (:metaclass built-in))))
+	      (eval `(defclass ,class ,super () (:metaclass built-in-class))))
 	  '(;(t object)
 	    (sequence t)
 	      (list sequence)
@@ -96,10 +96,10 @@
 ;;; Now we protect classes from redefinition:
 (defun setf-find-class (name new-value)
   (cond
-   ((typep (find-class name nil) 'built-in)
+   ((typep (find-class name nil) 'built-in-class)
     (error "The class associated to the CL specifier ~S cannot be changed."
 	   name))
-   ((member name '(CLASS BUILT-IN) :test #'eq)
+   ((member name '(CLASS BUILT-IN-CLASS) :test #'eq)
     (error "The kernel CLOS class ~S cannot be changed." name))
    ((classp new-value)
     (setf (gethash name si:*class-name-hash-table*) new-value))

@@ -47,7 +47,7 @@ const struct symbol_info all_symbols[] = {
 #ifdef CLOS
 {&siVclass_name_hash_table, "*CLASS-NAME-HASH-TABLE*", SI_SPECIAL},
 {&clSclass, "CLASS", CL_ORDINARY},
-{&clSbuilt_in, "BUILT-IN", CL_ORDINARY},
+{&clSbuilt_in_class, "BUILT-IN-CLASS", CL_ORDINARY},
 #endif
 
 /* compiler.c */

@@ -127,6 +127,9 @@ const struct function_info all_functions[] = {
 	{"CHAR-NAME", clLchar_name, cl},
 	{"NAME-CHAR", clLname_char, cl},
 
+	/* clos.c */
+	{"FIND-CLASS", clLfind_class, cl},
+
 	/* cmpaux.c */
 
 	{"SPECIALP", siLspecialp, si},
