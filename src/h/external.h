@@ -405,7 +405,7 @@ extern cl_object cddaar(cl_object x);
 extern cl_object cddadr(cl_object x);
 extern cl_object cdddar(cl_object x);
 extern cl_object cddddr(cl_object x);
-extern bool endp1(cl_object x);
+extern bool endp(cl_object x);
 extern cl_object nth(cl_fixnum n, cl_object x);
 extern cl_object nthcdr(cl_fixnum n, cl_object x);
 extern cl_object copy_list(cl_object x);
