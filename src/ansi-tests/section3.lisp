@@ -5,6 +5,11 @@
 
 (if (boundp 'x2q) (makunbound 'x2q) 'ok)
 
+(if (boundp 'a) (makunbound 'a) 'ok)
+(defvar a)
+(if (boundp 'b) (makunbound 'b) 'ok)
+(defvar b)
+
 (my-assert
  (let ((x2q 1))				;Binds a special variable X
    (declare (special x2q))
