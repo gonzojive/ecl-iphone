@@ -178,7 +178,7 @@
 	   (*destination* temp))
       (dolist (expr args)
 	(c2expr* expr)
-	(wt-nl "cl_stack_push(" temp "); " narg "++;")
+	(wt-nl "cl_stack_push(" temp "); " narg "++;")))
     (values `((STACK ,narg) ,@*unwind-exit*) 'ARGS-PUSHED narg)))
 
 ;;;
