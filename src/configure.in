@@ -153,6 +153,7 @@ if test "x$prefix" = "xNONE"; then prefix=${ac_default_prefix}; fi
 if test "x$exec_prefix" = "xNONE"; then exec_prefix=${prefix}; fi
 bindir="${exec_prefix}/bin"
 libdir="${exec_prefix}/lib/ecls"
+includedir="${exec_prefix}/lib/ecls/h"
 mandir="${prefix}/man/man1"
 infodir="${prefix}/info"
 builddir=`pwd`
@@ -260,14 +261,36 @@ XLIBS="$XLIBS $X_PRE_LIBS -lX11 $X_EXTRA_LIBS"
 dnl ---------------------------------------------------------------------
 dnl		GNU multiprecision library
 dnl
+[
 echo -n "checking for gmp..."
 if test "$enable_local_gmp" = "yes"; then
-echo "use local $enable_local_gmp"
+  echo "use local $enable_local_gmp"
 else
-echo "configuring gmp"
-(test -d gmp && rm -rf gmp; mkdir gmp; cd gmp; $srcdir/gmp/configure $gmp_flags)
+  echo "configuring gmp"
+  test -d gmp && rm -rf gmp
+  if mkdir gmp; then
+    (cd gmp;
+     $srcdir/gmp/configure $gmp_flags)
+  fi
 fi
-
+]
+dnl ---------------------------------------------------------------------
+dnl		Boehm-Weiser garbage collector
+dnl
+[
+echo -n "checking for Boehm-Weiser gc..." 
+if test "$enable_boehm" = "yes"; then
+  echo "configuring"
+  test -d gc && rm -rf gc
+  if mkdir gc; then
+    (cd gc;
+     $srcdir/gc/configure --libdir="$libdir" --bindir="$bindir" \
+	 --includedir="$includedir" --disable-shared)
+  fi
+else
+  echo "no"
+fi
+]
 dnl ---------------------------------------------------------------------
 dnl		Final pass over configuration files
 dnl
@@ -275,4 +298,4 @@ AC_OUTPUT(h/config.h compile.lsp compile_rest.lsp bare.lsp
  lsp/config.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp
  ../Makefile Makefile c/Makefile doc/Makefile
  tk/Makefile clx/defsys.lsp tests/Makefile ansi-tests/Makefile gabriel/Makefile
- lsp/defsys.lsp cmp/defsys.lsp clos/defsys.lsp gc/Makefile)
+ lsp/defsys.lsp cmp/defsys.lsp clos/defsys.lsp)
