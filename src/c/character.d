@@ -389,12 +389,11 @@ cl_object
 cl_char_name(cl_object c)
 {
 	assert_type_character(c);
-	return gethash_safe(c, cl_core.char_names, Cnil);
+	@(return gethash_safe(c, cl_core.char_names, Cnil))
 }
 
 cl_object
 cl_name_char(cl_object s)
 {
-	return gethash_safe(cl_string(s), cl_core.char_names, Cnil);
+	@(return gethash_safe(cl_string(s), cl_core.char_names, Cnil))
 }
-
