@@ -352,7 +352,7 @@ write_addr(cl_object x)
 	cl_fixnum i, j;
 
 	i = (cl_index)x;
-	for (j = sizeof(i)-4;  j >= 0;  j -= 4) {
+	for (j = sizeof(i)*8-4;  j >= 0;  j -= 4) {
 		int k = (i>>j) & 0xf;
 		if (k < 10)
 			write_ch('0' + k);
