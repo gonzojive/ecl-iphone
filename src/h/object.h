@@ -553,18 +553,6 @@ typedef enum {
 		 FALSE : x == Cnil ? TRUE : \
 		 (FEtype_error_list(x), FALSE))
 
-#define	endp(obje)	endp1(obje)
-
-#define	TIME_ZONE	(-1)
-
-#ifdef WORDS_BIGENDIAN
-#define HIND 0
-#define LIND 1
-#else /* little endian */
-#define HIND 1  /* (int) of double where the exponent and most signif is */
-#define LIND 0  /* low part of a double */
-#endif /* WORDS_BIGENDIAN */
-
 #ifdef __cplusplus
 }
 #endif

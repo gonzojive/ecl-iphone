@@ -151,7 +151,6 @@ init_unixtime(void)
 {
 	beginning = time(0);
 
-	make_si_special("*DEFAULT-TIME-ZONE*", MAKE_FIXNUM(TIME_ZONE));
 	make_constant("INTERNAL-TIME-UNITS-PER-SECOND", MAKE_FIXNUM(HZ));
 
 	Jan1st1970UT =
