@@ -38,21 +38,34 @@ si_system(cl_object cmd)
 cl_object
 si_open_pipe(cl_object cmd)
 {
-  FILE *ptr;
-  cl_object stream;
+	FILE *ptr;
+	cl_object stream;
 
-  assert_type_string(cmd);
- 
-  if ((ptr = popen(cmd->string.self, OPEN_R)) == NULL)
-    @(return Cnil)
-  stream = cl_alloc_object(t_stream);
-  stream->stream.mode = smm_input;
-  stream->stream.file = ptr;
-  stream->stream.object0 = @'base-char';
-  stream->stream.object1 = cmd;
-  stream->stream.int0 = stream->stream.int1 = 0;
+	assert_type_string(cmd);
+	ptr = popen(cmd->string.self, "r");
+	if (ptr == NULL)
+		@(return Cnil);
+	stream = cl_alloc_object(t_stream);
+	stream->stream.mode = smm_input;
+	stream->stream.file = ptr;
+	stream->stream.object0 = @'base-char';
+	stream->stream.object1 = @'si::open-pipe';
+	stream->stream.int0 = stream->stream.int1 = 0;
 #if !defined(GBC_BOEHM)
-  setbuf(ptr, stream->stream.buffer = cl_alloc_atomic(BUFSIZ));
+	setbuf(ptr, stream->stream.buffer = cl_alloc_atomic(BUFSIZ));
 #endif
-  @(return stream)
+	@(return stream)
+}
+
+cl_object
+si_close_pipe(cl_object stream)
+{
+	if (type_of(stream) == t_stream &&
+	    stream->stream.object1 == @'si::open-pipe') {
+		stream->stream.mode = smm_closed;
+		pclose(stream->stream.file);
+		stream->stream.file = NULL;
+		stream->stream.object0 = OBJNULL;
+	}
+	@(return)
 }

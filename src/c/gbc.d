@@ -598,6 +598,8 @@ sweep_phase(void)
 			if (x->d.m == FREE)
 				continue;
 			else if (x->d.m) {
+				/* FIXME!!! Here should come a finalization
+				   procedure for streams */
 				x->d.m = FALSE;
 				continue;
 			}

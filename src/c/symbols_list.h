@@ -1027,6 +1027,7 @@ cl_symbols[] = {
 {SYS_ "CHAR-SET", SI_ORDINARY, si_char_set, 3},
 {SYS_ "CHDIR", SI_ORDINARY, si_chdir, 1},
 {SYS_ "CLEAR-COMPILER-PROPERTIES", SI_ORDINARY, cl_identity, 1},
+{SYS_ "CLOSE-PIPE", SI_ORDINARY, si_close_pipe, 1},
 {SYS_ "COERCE-TO-FUNCTION", SI_ORDINARY, si_coerce_to_function, 1},
 {SYS_ "COERCE-TO-PACKAGE", SI_ORDINARY, si_coerce_to_package, 1},
 {SYS_ "COMPILED-FUNCTION-BLOCK", SI_ORDINARY, si_compiled_function_block, 1},

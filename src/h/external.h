@@ -1353,6 +1353,7 @@ extern void init_interrupt(void);
 
 extern cl_object si_system(cl_object cmd);
 extern cl_object si_open_pipe(cl_object cmd);
+extern cl_object si_close_pipe(cl_object stream);
 
 #ifdef __cplusplus
 }
