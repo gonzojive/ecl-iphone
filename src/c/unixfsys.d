@@ -126,44 +126,28 @@ si_file_kind(cl_object filename, cl_object follow_links) {
 	@(return file_kind(filename->string.self, !Null(follow_links)))
 }
 
-#if defined(mingw32) || defined(_MSC_VER)
-#define si_follow_symlink si_coerce_to_filename
-#else
-
+#if defined(HAVE_LSTAT) && !defined(mingw32) && !defined(_MSV_VER)
 static cl_object
-si_follow_symlink(cl_object filename) {
-	/* This routine outputs a namestring in which all the symbolic links
-	 * have been resolved.
-	 */
-	cl_object output, kind;
+si_readlink(cl_object filename) {
+	/* Given a filename which is a symlink, this routine returns
+	 * the value of this link in the form of a pathname. */
 	cl_index size = 128, written;
-
-	output = si_coerce_to_filename(filename);
+	cl_object output, kind;
+	do {
+		output = cl_alloc_adjustable_string(size);
+		written = readlink(filename->string.self, output->string.self, size);
+		size += 256;
+	} while(written == size);
+	output->string.self[written] = '\0';
 	kind = file_kind(output->string.self, FALSE);
-#ifdef HAVE_LSTAT
-	while (kind == @':link') {
-		cl_object aux;
-		do {
-			aux = cl_alloc_adjustable_string(size);
-			written = readlink(output->string.self, aux->string.self, size);
-			size += 256;
-		} while(written == size);
-		aux->string.self[written] = '\0';
-		output = aux;
-		kind = file_kind(output->string.self, FALSE);
-		if (kind == @':directory') {
-			output->string.self[written++] = '/';
-			output->string.self[written] = '\0';
-		}
-		output->string.fillp = written;
+	if (kind == @':directory') {
+		output->string.self[written++] = '/';
+		output->string.self[written] = '\0';
 	}
-#endif
-	if (kind == @':directory' &&
-	    output->string.self[output->string.fillp-1] != '/')
-		FEerror("Filename ~S actually points to a directory", 1, filename);
-	return ((kind == Cnil)? Cnil : output);
+	output->string.fillp = written;
+	return output;
 }
-#endif /* !mingw32 */
+#endif /* HAVE_LSTAT */
 
 
 /*
@@ -174,7 +158,7 @@ si_follow_symlink(cl_object filename) {
 cl_object
 cl_truename(cl_object pathname)
 {
-	cl_object dir, filename;
+	cl_object dir;
 	cl_object previous = current_dir();
 
 	pathname = coerce_to_file_pathname(pathname);
@@ -182,19 +166,27 @@ cl_truename(cl_object pathname)
 	if (pathname->pathname.directory == Cnil)
 		pathname = merge_pathnames(previous, pathname, @':newest');
 
-	/* First we ensure that PATHNAME itself does not point to a symlink. */
-	filename = si_follow_symlink(pathname);
-	if (filename == Cnil) {
-		FEcannot_open(pathname);
-	} else {
-		filename = cl_parse_namestring(3, filename, Cnil, Cnil);
-	}
-
-	/* Next we process the directory part of the filename, removing all
-	 * possible symlinks. To do so, we only have to change to the directory
-	 * which contains our file, and come back.
+	/* We process the directory part of the filename, removing all
+	 * possible symlinks. To do so, we only have to change to the
+	 * directory which contains our file, and come back. We also have to
+	 * ensure that the filename itself does not point to a symlink: if so,
+	 * then we resolve the value of the symlink and continue traversing
+	 * the filesystem.
 	 */
 	CL_UNWIND_PROTECT_BEGIN {
+#ifdef HAVE_LSTAT
+		cl_object kind, filename;
+	BEGIN:
+		filename = si_coerce_to_filename(pathname);
+		kind = file_kind(filename->string.self, FALSE);
+		if (kind == Cnil) {
+			FEcannot_open(pathname);
+		} else if (kind == @':link') {
+			filename = si_readlink(filename);
+		} else {
+			filename = OBJNULL;
+		}
+#endif
 #ifdef _MSC_VER
 		if (filename->pathname.device != Cnil)
 		{
@@ -204,7 +196,7 @@ cl_truename(cl_object pathname)
 				goto ERROR;
 		}
 #endif
-		for (dir = filename->pathname.directory;
+		for (dir = pathname->pathname.directory;
 		     !Null(dir);
 		     dir = CDR(dir))
 		{
@@ -212,7 +204,7 @@ cl_truename(cl_object pathname)
 			if (type_of(part) == t_string) {
 				if (chdir(part->string.self) < 0) {
 ERROR:					FElibc_error("Can't change the current directory to ~S",
-						     1, filename);
+						     1, pathname);
 				}
 			} else if (part == @':absolute') {
 				if (chdir("/") < 0)
@@ -226,12 +218,20 @@ ERROR:					FElibc_error("Can't change the current directory to ~S",
 				FEerror("~S is not allowed in TRUENAME", 1, part);
 			}
 		}
-		filename = merge_pathnames(si_getcwd(), filename, @':newest');
+#ifdef HAVE_LSTAT
+		if (filename) {
+			/* It was a symlink. We take the content of this
+			 * link and try to find its truename. */
+			pathname = cl_parse_namestring(3, filename, Cnil, Cnil);
+			goto BEGIN;
+		}
+#endif
+		pathname = merge_pathnames(si_getcwd(), pathname, @':newest');
 	} CL_UNWIND_PROTECT_EXIT {
 		chdir(previous->string.self);
 	} CL_UNWIND_PROTECT_END;
 
-	@(return filename)
+	@(return pathname)
 }
 
 FILE *
@@ -368,7 +368,7 @@ homedir_pathname(cl_object user)
 {
 	cl_index i;
 	cl_object namestring;
-	
+
 	if (Null(user)) {
 		char *h = getenv("HOME");
 		namestring = (h == NULL)? make_constant_string("/")
