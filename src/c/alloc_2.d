@@ -173,7 +173,7 @@ init_alloc(void)
 	init_tm(t_pathname, "PATHNAME", sizeof(struct pathname)); /* 28 */
 	init_tm(t_symbol, "SYMBOL", sizeof(struct symbol)); /* 32 */
 	init_tm(t_package, "PACKAGE", sizeof(struct package)); /* 36 */
-	init_tm(t_codeblock, "CODEBLOCK", sizeof(struct codeblock), 1);
+	init_tm(t_codeblock, "CODEBLOCK", sizeof(struct codeblock));
 	init_tm(t_bignum, "BIGNUM", sizeof(struct bignum));
 	init_tm(t_ratio, "RATIO", sizeof(struct ratio));
 	init_tm(t_complex, "COMPLEX", sizeof(struct complex));
