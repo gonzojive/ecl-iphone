@@ -1267,5 +1267,5 @@ cl_symbols[] = {
 {":WILD-INFERIORS", KEYWORD, NULL, -1},
 
 /* Tag for end of list */
-{NULL, CL_ORDINARY, NULL, NULL}};
+{NULL, CL_ORDINARY, NULL, -1}};
 
