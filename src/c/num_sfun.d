@@ -201,7 +201,7 @@ number_sqrt(cl_object x)
 	if (type_of(x) == t_complex)
 		goto COMPLEX;
 	if (number_minusp(x))
-		goto COMPLEX;
+		return make_complex(MAKE_FIXNUM(0), number_sqrt(number_negate(x)));
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
