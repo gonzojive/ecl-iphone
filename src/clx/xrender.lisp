@@ -869,8 +869,8 @@ by every function, which attempts to generate RENDER requests."
 
 
 ;; $Log$
-;; Revision 1.6  2004-10-29 13:50:27  jjgarcia
-;; Make the MSVC++ port relocatable, i.e. the installation path is not hardcoded in ECL. Also, suport for NSI under MSVC++.
+;; Revision 1.7  2005-01-07 13:48:00  jjgarcia
+;; Separate C prefixes for the compiler and the CLX library. Updates for the MSVC port (M. Goffioul)
 ;;
 ;; Revision 1.1  2004/06/10 07:59:31  jlr
 ;; Portable CLX library imported
