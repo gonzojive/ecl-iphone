@@ -154,6 +154,14 @@ LONG WINAPI W32_exception_filter(struct _EXCEPTION_POINTERS* ep)
 		case EXCEPTION_FLT_STACK_CHECK:
 			handle_signal(SIGFPE);
 			break;
+		/* Catch segmentation fault */
+		case EXCEPTION_ACCESS_VIOLATION:
+			handle_signal(SIGSEGV);
+			break;
+		/* Catch illegal instruction */
+		case EXCEPTION_ILLEGAL_INSTRUCTION:
+			handle_signal(SIGILL);
+			break;
 		/* Do not catch anything else */
 		default:
 			excpt_result = EXCEPTION_CONTINUE_SEARCH;
