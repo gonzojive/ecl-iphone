@@ -132,15 +132,15 @@ case "${host_os}" in
 		;;
 	freebsd*)
 		thehost="freebsd"
-		CLIBS="-lcompat"
 		SHARED_LDFLAGS="-shared"
 		LDRPATH="-Wl,--rpath,~A"
+		CLIBS=""
 		;;
 	netbsd*)
 		thehost="netbsd"
 		SHARED_LDFLAGS="-shared"
 		LDRPATH="-Wl,--rpath,~A"
-		CLIBS="-lcompat"
+		CLIBS=""
 		;;
 	solaris*)
 		thehost="sun4sol2"

@@ -163,7 +163,7 @@ TARGETS="ecl${EXEEXT}"
 LIBRARIES=""
 LSP_LIBRARIES="${LIBPREFIX}ecl.${LIBEXT}"
 SUBDIR=c
-CLIBS="${CLIBS} -lgmp -lm"
+CLIBS="${CLIBS} -lm"
 if test ${boehm} = "no" ; then
   EXTRA_OBJS="${EXTRA_OBJS} alloc.${OBJEXT} gbc.${OBJEXT}"
 else
@@ -186,6 +186,8 @@ fi
 if test ${local_gmp} = "no" ; then
   LIBRARIES="${LIBRARIES} ${LIBPREFIX}gmp.${LIBEXT}"
   SUBDIR="${SUBDIR} gmp"
+else
+  CLIBS="-lgmp ${CLIBS}"
 fi
 if test ${runtime} ; then
   AC_DEFINE(RUNTIME)

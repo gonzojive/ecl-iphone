@@ -52,15 +52,19 @@
 (si::system (format nil "
 mkdir tmp; ~
 cd tmp; ~
-ar -x ../liblsp.a; for i in *.o; do mv $i lsp_$i; done; ar -r ../libecl.a *o; rm *.o; ~
-ar -x ../libclos.a; for i in *.o; do mv $i lsp_$i; done; ar -r ../libecl.a *o; rm *.o; ~
-ranlib ../libecl.a; ~
-cd ..; rm -rf tmp/* liblsp* libclos* "))
+ar -x ../@LIBPREFIX@lsp.@LIBEXT@; for i in *.@OBJEXT@; do mv $i lsp_$i; done; ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@; rm *.@OBJEXT@; ~
+ar -x ../@LIBPREFIX@clos.@LIBEXT@; for i in *.@OBJEXT@; do mv $i lsp_$i; done; ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@; rm *.@OBJEXT@; ~
+@RANLIB@ ../@LIBPREFIX@ecl.@LIBEXT@; ~
+cd ..; rm -rf tmp/* @LIBPREFIX@{lsp,clos} "))
 
 #+dlopen
-(progn
-  (c::shared-cc "./tmp/libecl.so" "c/main.o" "./libecl.a" #+boehm-gc "-lgc")
-  (si::system "mv ./tmp/libecl.so ."))
+;; We do not need the -rpath flag for the library, nor -lecl.
+(let ((c::*ld-flags* "@CLIBS@"))
+  (c::shared-cc (compile-file-pathname "ecl" :type :dll)
+		"c/main.@OBJEXT@"
+		(compile-file-pathname "ecl" :type :lib)
+		#+boehm-gc "-lgc"
+		"-lgmp"))
 
 ;;;
 ;;; * Compile, load and link Common-Lisp to C compiler
