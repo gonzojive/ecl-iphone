@@ -120,6 +120,34 @@ default value of INITIAL-ELEMENT depends on TYPE."
 	    (setf (elt sequence i) initial-element)))
 	sequence)))
 
+(defun make-seq-iterator (sequence &optional (start 0))
+  (cond ((null start)
+	 (setf start 0))
+	((not (integerp start))
+	 (error "Value ~A is not a valid index into sequence ~A" start sequence)))
+  (cond ((>= start (length sequence))
+	 nil)
+	((consp sequence)
+	 (nthcdr start sequence))
+	(t
+	 start)))
+
+(defun seq-iterator-ref (sequence iterator)
+  (if (si::fixnump iterator)
+      (elt sequence iterator)
+      (first iterator)))
+
+(defun seq-iterator-set (sequence iterator value)
+  (if (si::fixnump iterator)
+      (setf (elt sequence iterator) value)
+      (setf (first iterator) value)))
+
+(defun seq-iterator-next (sequence iterator)
+  (if (fixnump iterator)
+      (and (< (incf iterator) (length sequence))
+	   iterator)
+      (rest iterator)))
+
 (defun concatenate (result-type &rest sequences)
   "Args: (type &rest sequences)
 Returns a new sequence of the specified type, consisting of all elements of
@@ -161,33 +189,54 @@ SEQUENCEs, where K is the minimum length of the given SEQUENCEs."
                   (apply function (mapcar #'(lambda (z) (elt z i))
                                           more-sequences))))))))
 
+(eval-when (eval compile)
+(defmacro def-seq-bool-parser (name doc test end-value)
+ `(defun ,name (predicate sequence &rest more-sequences)
+    ,doc
+    (setq more-sequences (cons sequence more-sequences))
+    (do ((it (mapcar #'make-seq-iterator more-sequences))
+         (val (make-sequence 'list (length more-sequences))))
+        (nil)
+      (declare (optimize (safety 0)))
+      (do ((i it (cdr i))
+           (v val (cdr v))
+	   (s more-sequences (cdr s)))
+          ((null i))
+        (unless (car i) (return-from ,name ,end-value))
+        (rplaca v (seq-iterator-ref (car s) (car i)))
+        (rplaca i (seq-iterator-next (car s) (car i))))
+      (let ((that-value
+             (apply predicate val)))
+        ,test)))))
 
-(defun some (predicate sequence &rest more-sequences)
+(def-seq-bool-parser some
   "Args: (predicate sequence &rest more-sequences)
 Returns T if at least one of the elements in SEQUENCEs satisfies PREDICATE;
 NIL otherwise."
-  (setq more-sequences (cons sequence more-sequences))
-  (do ((i 0 (1+ i))
-       (l (apply #'min (mapcar #'length more-sequences))))
-      ((>= i l) nil)
-    (declare (fixnum i l))
-    (let ((that-value
-           (apply predicate
-                  (mapcar #'(lambda (z) (elt z i)) more-sequences))))
-      (when that-value (return that-value)))))
+  (when that-value (return that-value))
+  nil)
 
-
-(defun every (predicate sequence &rest more-sequences)
+(def-seq-bool-parser every
   "Args: (predicate sequence &rest more-sequences)
 Returns T if every elements of SEQUENCEs satisfy PREDICATE; NIL otherwise."
-  (setq more-sequences (cons sequence more-sequences))
-  (do ((i 0 (1+ i))
-       (l (apply #'min (mapcar #'length more-sequences))))
-      ((>= i l) t)
-    (declare (fixnum i l))
-    (unless (apply predicate (mapcar #'(lambda (z) (elt z i)) more-sequences))
-            (return nil))))
+  (unless that-value (return nil))
+  t)
 
+#|
+(def-seq-bool-parser notany
+  "Args: (predicate sequence &rest more-sequences)
+Returns T if none of the elements in SEQUENCEs satisfies PREDICATE; NIL
+otherwise."
+  (when that-value (return nil))
+  t)
+
+(def-seq-bool-parser notevery
+  "Args: (predicate sequence &rest more-sequences)
+Returns T if at least one of the elements in SEQUENCEs does not satisfy
+PREDICATE; NIL otherwise."
+  (unless that-value (return t))
+  nil)
+|#
 
 (defun every* (predicate &rest sequences)
   "Args: (predicate sequence &rest more-sequences)

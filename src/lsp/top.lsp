@@ -486,7 +486,7 @@ file.  When the saved image is invoked, it will start the redefined top-level."
 		    (eval-with-env - *break-env*)))
 	     (setq /// // // / / values *** ** ** * * (car /))
 	     (tpl-print values)
-	     nil))
+	     nil)
 	   (break-where)))))
 
 (defun tpl-prompt ()
@@ -896,7 +896,7 @@ package."
     (when (listen *debug-io*)
       (clear-input *debug-io*))
     (princ *break-message*)
-    (tpl :commands (adjoin break-commands *tpl-commands*)))))
+    (tpl :commands (adjoin break-commands *tpl-commands*))))
 
 (defun invoke-debugger (condition)
   (let* ((old-hook *debugger-hook*)

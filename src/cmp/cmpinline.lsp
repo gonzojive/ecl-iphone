@@ -156,7 +156,7 @@
   )
 
 (defun destination-type ()
-  (rep-type->lisp-type (loc-representation-type *destination*)))
+  (rep-type->lisp-type (loc-representation-type *destination*))
   ;;(loc-type *destination*)
 )
 

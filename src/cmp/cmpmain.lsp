@@ -447,7 +447,7 @@ Cannot compile ~a."
 	  (data-dump data-pathname))
 
       (init-env)
-      )
+      );; with-lock
 
     (if (zerop *error-count*)
         (progn
@@ -498,8 +498,7 @@ Cannot compile ~a."
           (setq *error-p* t)
 	  (values nil t t))
         ))
-  ) ; with-lock
-)
+  )
 
 #-dlopen
 (defun compile (name &optional (def nil supplied-p))
@@ -535,6 +534,10 @@ Cannot compile ~a."
 	*compiler-in-use* t)
 
   (cond ((and supplied-p def)
+	 (when (functionp def)
+	   (unless (function-lambda-expression def)
+	     (return-from compile def))
+	   (setf def (function-lambda-expression def)))
          (setq form (if name
                         `(setf (symbol-function ',name) #',def)
                         `(set 'GAZONK #',def))))

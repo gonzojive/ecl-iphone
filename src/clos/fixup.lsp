@@ -121,7 +121,7 @@ their lambda lists ~A and ~A are not congruent."
   ;;  ECL does not need the discriminating function because we always use
   ;;  the same one, we just update the spec-how list of the generic function.
   (compute-g-f-spec-list gf)
-  gf))
+  gf)
 
 (setf (method-function
        (eval '(defmethod false-add-method ((gf standard-generic-function)

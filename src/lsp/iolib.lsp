@@ -155,9 +155,9 @@ printed.  If FORMAT-STRING is NIL, however, no prompt will appear."
 	      (initial-contents (caddr initial-contents)))
 	  (make-array dims :element-type elt-type :initial-contents initial-contents)))
       (t
-        (do ((i 0 (1+ i))
-             (d nil (cons (length ic) d))
-             (ic initial-contents (if (zerop (length ic)) ic (elt ic 0))))
+        (do* ((i 0 (1+ i))
+	      (d nil (cons (length ic) d))
+	      (ic initial-contents (if (zerop (length ic)) ic (elt ic 0))))
             ((>= i arg)
              (make-array (nreverse d) :initial-contents initial-contents))
 	  (declare (fixnum i)))))))

@@ -16,6 +16,7 @@
   "src:lsp;describe.lsp"
   "src:lsp;setf.lsp"
   "src:lsp;predlib.lsp"
+  "src:lsp;seq.lsp"
   "src:lsp;arraylib.lsp"
   "src:lsp;assert.lsp"
   "src:lsp;defstruct.lsp"
@@ -24,7 +25,6 @@
   "src:lsp;mislib.lsp"
   "src:lsp;numlib.lsp"
   "src:lsp;packlib.lsp"
-  "src:lsp;seq.lsp"
   "src:lsp;seqlib.lsp"
   "src:lsp;trace.lsp"
 #+old-loop

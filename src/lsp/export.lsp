@@ -78,49 +78,40 @@
   (si::fset 'do f t)
   (si::fset 'do* f t))
 
-(defun eval-feature (x)
+(defun eval-feature (x &aux operator)
   (declare (si::c-local))
   (cond ((symbolp x)
-         (member x *features*
-                 :test #'(lambda (a b)
-                           (or (eql a b)
-			       (and (symbolp a) (symbolp b)
-				    (string-equal (symbol-name a)
-						  (symbol-name b)))))))
+	 (and (member x *features* :test #'eq) t))
 	((atom x) (error "~ is not allowed as a feature" x))
-        ((eq (car x) 'AND)
+	((not (symbolp (setq operator (first x))))
+	 (error "~S is not a valid feature expression." x))
+        ((eql operator :AND)
          (dolist (x (cdr x) t) (when (not (eval-feature x)) (return nil))))
-        ((eq (car x) 'OR)
+        ((eql operator :OR)
          (dolist (x (cdr x) nil) (when (eval-feature x) (return t))))
-        ((eq (car x) 'NOT)
+        ((eql operator :NOT)
 	 (not (eval-feature (second x))))
-	(t (error "~S is not a feature expression." x))))
+	(t (error "~S is not a valid feature expression." x))))
 
-;;; Revised by G. Attardi
-(defun check-no-infix (stream subchar arg)
+(defun do-read-feature (stream subchar arg test)
   (declare (si::c-local))
   (when arg
     (error "Reading from ~S: no number should appear between # and ~A"
-	   stream subchar)))
-
-(defun sharp-+-reader (stream subchar arg)
-  (check-no-infix stream subchar arg)
-  (let ((feature (read stream t nil t)))
-    (if (and (not *read-suppress*) (eval-feature feature))
+	   stream subchar))
+  (let ((feature (let ((*package* (find-package "KEYWORD")))
+		   (read stream t nil t))))
+    (if (and (not *read-suppress*) (eq (eval-feature feature) test))
 	(read stream t nil t)
 	(let ((*read-suppress* t)) (read stream t nil t) (values)))))
 
-(set-dispatch-macro-character #\# #\+ 'sharp-+-reader)
-(set-dispatch-macro-character #\# #\+ 'sharp-+-reader
-                              (sys::standard-readtable))
+(defun sharp-+-reader (stream subchar arg)
+  (do-read-feature stream subchar arg T))
 
 (defun sharp---reader (stream subchar arg)
-  (check-no-infix stream subchar arg)
-  (let ((feature (read stream t nil t)))
-    (if (or *read-suppress* (eval-feature feature))
-	(let ((*read-suppress* t)) (read stream t nil t) (values))
-	(read stream t nil t))))
+  (do-read-feature stream subchar arg NIL))
+
+(set-dispatch-macro-character #\# #\+ 'sharp-+-reader)
+(set-dispatch-macro-character #\# #\+ 'sharp-+-reader (sys::standard-readtable))
 
 (set-dispatch-macro-character #\# #\- 'sharp---reader)
-(set-dispatch-macro-character #\# #\- 'sharp---reader
-                              (sys::standard-readtable))
+(set-dispatch-macro-character #\# #\- 'sharp---reader (sys::standard-readtable))

@@ -59,10 +59,14 @@
   (do ((scan optimizers (cddr scan))
        (safety) (inline-info))
       ((null scan))
-      (setq safety (first scan)
-	    inline-info (second scan))
-      (put-sysprop fname safety (cons inline-info (get-sysprop fname safety))))
-  )
+    (unless (member (first scan) '(:inline-always :inline-safe :inline-unsafe))
+      (format t ";;; ~%Wrong entry in file sys:sysfun.lsp for function ~A~%;;; ~A" fname
+	      optimizers)
+      #+nil
+      (error "Wrong entry in file sys:sysfun.lsp for function ~A" fname))
+    (setq safety (first scan)
+	  inline-info (second scan))
+    (put-sysprop fname safety (cons inline-info (get-sysprop fname safety)))))
 
 ; file alloc.c
 #-boehm-gc
@@ -79,7 +83,6 @@
 (si::SET-HOLE-SIZE)))
 
 (mapcar #'(lambda (x) (apply #'defsysfun x)) '(
-(si::RPLACA-NTHCDR nil T)
 (si::LIST-NTH nil T)
 (si::MAKE-PURE-ARRAY nil array)
 (si::MAKE-VECTOR nil vector)
@@ -961,7 +964,7 @@ type_of(#0)==t_bitvector"))
 (SI::STRUCTUREP (T) T NIL T
 	:inline-always ((t) :bool nil nil "type_of(#0)==t_structure"))
 (SI::STRUCTURE-SUBTYPE-P (T T) T NIL T)
-(si::RPLACA-NTHCDR (T T T) nil T nil t)
+(si::RPLACA-NTHCDR (T T T) T)
 (si::LIST-NTH (T T) T nil t)
 
 ; file toplevel.c
@@ -1024,21 +1027,28 @@ type_of(#0)==t_bitvector"))
 (SI::COPY-STREAM (T T) T)
 
 ;; file numlib.lsp:
-(LOGNOT nil nil nil NIL NIL
+(LOGNOT (integer) integer NIL NIL
 	:inline-always ((fixnum) fixnum nil nil "(~(#0))"))
+
+;; file seq.lsp
+
+(MAKE-SEQ-ITERATOR (T *) T T NIL)
+(SEQ-ITERATOR-REF (SEQUENCE T) T T NIL)
+(SEQ-ITERATOR-SET (SEQUENCE T T) T T NIL)
+(SEQ-ITERATOR-NEXT (SEQUENCE T) T T NIL)
 
 ;;; file cmpfun.lsp:
 ;;; The following functions are introduced by the compiler in pass 1 
 
-(shift>> nil nil nil NIL NIL
+(shift>> nil nil NIL NIL
 	:inline-always ((fixnum fixnum) fixnum nil nil "((#0) >> (- (#1)))"))
-(shift<< nil nil nil NIL NIL
+(shift<< nil nil NIL NIL
 	:inline-always ((fixnum fixnum) fixnum nil nil "((#0) << (#1))"))
-(short-float-p nil nil nil T T
+(short-float-p nil nil T T
 	:inline-always ((t) :bool nil nil "type_of(#0)==t_shortfloat"))
-(long-float-p nil nil nil T T
+(long-float-p nil nil T T
 	:inline-always ((t) :bool nil nil "type_of(#0)==t_longfloat"))
-(si:fixnump nil nil nil T T
+(si:fixnump nil nil T T
 	:inline-always ((t) :bool nil nil "FIXNUMP(#0)")
 	:inline-always ((fixnum) :bool nil nil "1"))
 (si::put-properties (*) nil T)
@@ -1129,6 +1139,7 @@ type_of(#0)==t_bitvector"))
     si::set-documentation si::expand-set-documentation
     si::closest-vector-type si::packages-iterator
     si::pprint-logical-block-helper si::pprint-pop-helper
+    si::make-seq-iterator si::seq-iterator-ref si::seq-iterator-set si::seq-iterator-next
     si::assert-slot-type si::define-structure .
     #-clos
     nil

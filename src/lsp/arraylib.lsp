@@ -43,63 +43,49 @@ with a non-nil value, then the body of the array is allocated as a
 contiguous block."
   (setq element-type (upgraded-array-element-type element-type))
 
-  (if (or (integerp dimensions)
-	  (when (= (length dimensions) 1)
-	    (setq dimensions (first dimensions))))
-      (let ((x (sys:make-vector element-type dimensions
-			       adjustable fill-pointer
-			       displaced-to displaced-index-offset)))
-	(declare (vector x))
-	(when initial-element-supplied-p
-	  (do ((n dimensions)
-	       (i 0 (1+ i)))
-	      ((>= i n))
-	    (declare (fixnum n i))
-	    (sys:aset initial-element x i)))
-	(when initial-contents-supplied-p
-	  (unless (= (length initial-contents) dimensions)
-	    (error "In MAKE-ARRAY: the number of elements in :INITIAL-CONTENTS does not match the array length"))
-	  (if (consp initial-contents)
-	      (do* ((l initial-contents (rest l))
-		    (n dimensions)
-		    (i 0 (1+ i)))
-		   ((>= i n))
-		(declare (fixnum n i))
-		(sys:aset (first l) x i))
-	      (do* ((n dimensions)
-		    (i 0 (1+ i)))
-		   ((>= i n))
-		(declare (fixnum n i))
-		(sys:aset (elt initial-contents i) x i))))
-	x)
-      (if fill-pointer
-	  (error ":FILL-POINTER may not be specified for an array of rank ~D"
-		 (length dimensions))
-	  (let ((x (apply #'sys:make-pure-array
-			  element-type adjustable
-			  displaced-to displaced-index-offset
-			  dimensions)))
-	    (declare (array x))
-	    (unless (member 0 dimensions)
-	      (when initial-element-supplied-p
-		(do ((cursor
-		      (make-list (length dimensions)
-				 :initial-element 0)))
-		    (nil)
-		  (apply #'aset initial-element x cursor)
-		  (when (increment-cursor cursor dimensions)
-		    (return nil))))
-	      (when initial-contents-supplied-p
-		(do ((cursor
-		      (make-list (length dimensions)
-				 :initial-element 0)))
-		    (nil)
-		  (apply #'aset (sequence-cursor initial-contents
-						 cursor)
-			 x cursor)
-		  (when (increment-cursor cursor dimensions)
-		    (return nil)))))
-	    x))))
+  (let (x)
+    (cond ((or (integerp dimensions)
+	       (when (= (length dimensions) 1)
+		 (setq dimensions (first dimensions))))
+	   (setf x (sys:make-vector element-type dimensions
+				    adjustable fill-pointer
+				    displaced-to displaced-index-offset)))
+	  (fill-pointer
+	   (error ":FILL-POINTER may not be specified for an array of rank ~D"
+		  (length dimensions)))
+	  (t
+	   (setf x (apply #'sys:make-pure-array element-type adjustable
+			  displaced-to displaced-index-offset dimensions))))
+    (when initial-element-supplied-p
+      (dotimes (i (array-total-size x))
+	(declare (fixnum i))
+	(sys::row-major-aset x i initial-element)))
+    (when initial-contents-supplied-p
+      (fill-array x initial-contents))
+    x))
+
+(defun fill-array (array initial-contents)
+  (declare (si::c-local))
+  (labels ((iterate-over-contents (array contents dims written)
+	     (declare (fixnum written))
+	     (when (/= (length contents) (first dims))
+	       (error "In MAKE-ARRAY: the elements in :INITIAL-CONTENTS do not match the array dimensions"))
+	     (if (= (length dims) 1)
+		 (do* ((it (make-seq-iterator contents) (seq-iterator-next contents it)))
+		      ((null it))
+		   (sys:row-major-aset array written (seq-iterator-ref contents it))
+		   (incf written))
+		 (do* ((it (make-seq-iterator contents) (seq-iterator-next contents it)))
+		      ((null it))
+		   (setf written (iterate-over-contents array
+							(seq-iterator-ref contents it)
+							(rest dims)
+							written))))
+	     written))
+    (let ((dims (array-dimensions array)))
+      (if dims
+	  (iterate-over-contents array initial-contents dims 0)
+	  (setf (aref array) initial-contents)))))
 
 (defun increment-cursor (cursor dimensions)
   (declare (si::c-local))

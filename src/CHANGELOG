@@ -1,6 +1,17 @@
 ECL 0.9f
 ========
 
+* Errors fixed:
+
+ - The reader macros for lists, ##, #C, #P and #' did not behave as expected
+   when *read-suppress* = t.
+
+ - No comments were allowed between the last list element and the parenthesis
+   in a dotted lists. In other words, this:
+	(1 . 2 ;; just a comment
+	)
+   produced an error.
+
 * Visible changes:
 
  - Improvements in the efficiency of macro readers for #a() and #()
@@ -8,9 +19,19 @@ ECL 0.9f
  - When supplied an :INITIAL-CONTENTS, MAKE-ARRAY now uses a more efficient
    algorithm.
 
+ - Optimized some routines that iterate over sequences: SOME, EVERY,
+   NOTANY, NOTEVERY (M. Goffioul)
+
 * ANSI Compatibility:
 
  - DEFSETF forms are enclosed in a block with the name of the accessor.
+
+ - When supplied a compiled function as second argument, COMPILE returns
+   this function. And also when the function is interpreted but we have
+   lost its original definition.
+
+ - Now an error is signaled for unmatched parenthesis as in "(1 2 3))".
+   The only exception is in the toplevel, where only a warning is issued.
 
 ;;; Local Variables: ***
 ;;; mode:text ***

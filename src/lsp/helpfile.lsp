@@ -125,7 +125,7 @@ the help file."
 	  ((and (symbolp object) (stringp dict))
 	   (when (and (setq output (search-help-file object dict))
 		      (setq output (getf output doc-type)))
-	     (return-from get-documentation output)))))))
+	     (return-from get-documentation output))))))
 
 (defun set-documentation (object doc-type string)
   (when (not (or (stringp string) (null string)))

@@ -30,8 +30,8 @@
 /* FIXME! *READ-EVAL* is not taken into account */
 
 static void extra_argument (int c, cl_object stream, cl_object d);
-
 static cl_object patch_sharp(cl_object x);
+static cl_object do_read_delimited_list(int d, cl_object strm, bool proper_list);
 
 cl_object
 read_object_non_recursive(cl_object in)
@@ -450,36 +450,15 @@ parse_integer(const char *s, cl_index end, cl_index *ep, int radix)
 }
 
 static cl_object
+right_parenthesis_reader(cl_object in, cl_object character)
+{
+	FEreader_error("Unmatched right parenthesis, #\\)", in, 0);
+}
+
+static cl_object
 left_parenthesis_reader(cl_object in, cl_object character)
 {
-	cl_object x, y;
-	cl_object *p;
-	int c;
-	cl_object rtbl = ecl_current_readtable();
-
-	y = Cnil;
-	for (p = &y ; ; p = &(CDR(*p))) {
-		x = read_object_with_delimiter(in, ')');
-		if (x == OBJNULL)
-			break;
-		if (x == @'si::.') {
-			if (p == &y)
-				FEreader_error("A dot appeared after a left parenthesis.", in, 0);
-			*p = read_object(in);
-			if (*p == OBJNULL)
-				FEend_of_file(in);
-			if (*p == @'si::.')
-				FEreader_error("Two dots appeared consecutively.", in, 0);
-			c = ecl_read_char_noeof(in);
-			while (cat(rtbl, c) == cat_whitespace)
-				c = ecl_read_char_noeof(in);
-			if (c != ')')
-				FEreader_error("More than one object after '.' in a list", in, 0);
-			break;
-		}
-		*p = CONS(x, Cnil);
-	}
-	@(return y)
+	@(return do_read_delimited_list(')', in, 0))
 }
 /*
 	read_string(delim, in) reads
@@ -583,8 +562,6 @@ void_reader(cl_object in, cl_object c)
 	@(return)
 }
 
-#define right_parenthesis_reader void_reader
-
 static cl_object
 semicolon_reader(cl_object in, cl_object c)
 {
@@ -611,13 +588,13 @@ sharp_C_reader(cl_object in, cl_object c, cl_object d)
 	x = read_object(in);
 	if (x == OBJNULL)
 		FEend_of_file(in);
+	if (read_suppress)
+		@(return Cnil);
 	if (type_of(x) != t_cons || length(x) != 2)
 		FEreader_error("Reader macro #C should be followed by a list",
 			       in, 0);
 	real = CAR(x);
 	imag = CADR(x);
-	if (read_suppress)
-		@(return Cnil);
 	/* INV: make_complex() checks its types. When reading circular
 	   structures, we cannot check the types of the elements, and we
 	   must build the complex number by hand. */
@@ -675,12 +652,18 @@ sharp_backslash_reader(cl_object in, cl_object c, cl_object d)
 static cl_object
 sharp_single_quote_reader(cl_object in, cl_object c, cl_object d)
 {
-	if(d != Cnil && !read_suppress)
-		extra_argument('#', in, d);
+	bool suppress = read_suppress;
+	if(d != Cnil && !suppress)
+		extra_argument('\'', in, d);
 	c = read_object(in);
-	if (c == OBJNULL)
+	if (c == OBJNULL) {
 		FEend_of_file(in);
-	@(return cl_list(2, @'function', c))
+	} else if (suppress) {
+		c = Cnil;
+	} else {
+		c = cl_list(2, @'function', c);
+	}
+	@(return c)
 }
 
 #define	QUOTE	1
@@ -713,8 +696,7 @@ sharp_left_parenthesis_reader(cl_object in, cl_object c, cl_object d)
 		dim = fixnnint(d);
 	}
 	if (fix(SYM_VAL(@'si::*backq-level*')) > 0) {
-		ecl_unread_char('(', in);
-		x = read_object(in);
+		x = do_read_delimited_list(')', in, 1);
 		a = _cl_backq_car(&x);
 		if (a == APPEND || a == NCONC)
 			FEreader_error(",at or ,. has appeared in an illegal position.", in, 0);
@@ -728,20 +710,22 @@ sharp_left_parenthesis_reader(cl_object in, cl_object c, cl_object d)
 	} else if (fixed_size) {
 		v = cl_alloc_simple_vector(dim, aet_object);
 		v->vector.self.t = (cl_object *)cl_alloc_align(dim * sizeof(cl_object), sizeof(cl_object));
-		for (i = 0; ; i++) {
-			x = read_object_with_delimiter(in, ')');
-			if (x == OBJNULL) {
-				if (i < dim)
-					FEreader_error("Too few elements in #()", in, 0);
-				break;
+		for (i = 0; i < dim; i++) {
+			if (in != OBJNULL) {
+				x = read_object_with_delimiter(in, ')');
+				if (x == OBJNULL) {
+					if (i == 0) {
+						x = Cnil;
+					} else {
+						x = aref1(v, i-1);
+					}
+					in = OBJNULL;
+				}
 			}
-			if (i >= dim)
-				FEreader_error("Too many elements in #().", in, 0);
 			aset1(v, i, x);
 		}
 	} else {
-		ecl_unread_char('(', in);
-		x = read_object(in);
+		x = do_read_delimited_list(')', in, 1);
 		if (!suppress)
 			v = funcall(4, @'make-array', cl_list(1, cl_length(x)), @':initial-contents', x);
 	}
@@ -871,7 +855,7 @@ sharp_dot_reader(cl_object in, cl_object c, cl_object d)
 	if (read_suppress)
 		@(return Cnil);
 	if (symbol_value(@'*read-eval*') == Cnil)
-		FEreader_error("Cannot evaluate the form #.~A", 1, c);
+		FEreader_error("Cannot evaluate the form #.~A", in, 1, c);
 	c = si_eval_with_env(1, c);
 	@(return c)
 }
@@ -994,7 +978,7 @@ sharp_sharp_reader(cl_object in, cl_object c, cl_object d)
 {
 	cl_object pair;
 
-	if (read_suppress) @(return)
+	if (read_suppress) @(return Cnil)
 	if (Null(d))
 		FEreader_error("The ## readmacro requires an argument.", in, 0);
 	pair = assq(d, SYM_VAL(@'si::*sharp-eq-context*'));
@@ -1118,9 +1102,16 @@ default_dispatch_macro_fun(cl_object in, cl_object c, cl_object d)
 static cl_object
 sharp_P_reader(cl_object in, cl_object c, cl_object d)
 {
-	if (d != Cnil && !read_suppress)
+	bool suppress = read_suppress;
+	if (d != Cnil && !suppress)
 		extra_argument('P', in, d);
-	@(return cl_parse_namestring(3, read_object(in), Cnil, Cnil))
+	d = read_object(in);
+	if (suppress) {
+		d = Cnil;
+	} else {
+		d = cl_parse_namestring(3, d, Cnil, Cnil);
+	}
+	@(return d)
 }
 
 /*
@@ -1288,19 +1279,45 @@ stream_or_default_input(cl_object stream)
 @)
 
 static cl_object
-do_read_delimited_list(int d, cl_object strm)
+do_read_delimited_list(int d, cl_object strm, bool proper_list)
 {
-	cl_object l, x, *p;
-	l = Cnil;
-	p = &l;
-	for (;;) {
-		x = read_object_with_delimiter(strm, d);
-		if (x == OBJNULL)
-			break;
-		*p = CONS(x, Cnil);
-		p = &(CDR((*p)));
-	}
-	return l;
+	int after_dot = 0;
+	bool suppress = read_suppress;
+	cl_object x, y = Cnil;
+	cl_object *p = &y;
+	do {
+		x = read_object_with_delimiter(in, d);
+		if (x == OBJNULL) {
+			/* End of the list. */
+			if (after_dot == 1) {
+				/* Something like (1 . ) */
+				FEreader_error("Object missing after a list dot", in, 0);
+			}
+			return l;
+		} else if (x == @'si::.') {
+			if (proper_list) {
+				FEreader_error("A dotted list was found where a proper list was expected.", in, 0);
+			}
+			if (p == &y) {
+				/* Something like (. 2) */
+				FEreader_error("A dot appeared after a left parenthesis.", in, 0);
+			}
+			if (after_dot) {
+				/* Something like (1 . . 2) */
+				FEreader_error("Two dots appeared consecutively.", in, 0);
+			}
+			after_dot = 1;
+		} else if (after_dot) {
+			if (after_dot++ > 1) {
+				/* Something like (1 . 2 3) */
+				FEreader_error("Too many objects after a list dot", in, 0);
+			}
+			*p = x;
+		} else if (!suppress) {
+			*p = CONS(x, Cnil);
+			p = &(CDR(*p));
+		}
+	} while (1);
 }
 
 @(defun read_delimited_list (d &optional (strm Cnil) recursivep)
@@ -1309,12 +1326,12 @@ do_read_delimited_list(int d, cl_object strm)
 @
 	delimiter = char_code(d);
 	strm = stream_or_default_input(strm);
-	if (Null(recursivep))
-		l = do_read_delimited_list(delimiter, strm);
-	else {
+	if (Null(recursivep)) {
+		l = do_read_delimited_list(delimiter, strm, 1);
+	} else {
 		bds_bind(@'si::*sharp-eq-context*', Cnil);
 		bds_bind(@'si::*backq-level*', MAKE_FIXNUM(0));
-		l = do_read_delimited_list(delimiter, strm);
+		l = do_read_delimited_list(delimiter, strm, 1);
 		if (!Null(SYM_VAL(@'si::*sharp-eq-context*')))
 			l = patch_sharp(l);
 		bds_unwind1();
