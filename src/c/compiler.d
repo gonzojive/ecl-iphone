@@ -2615,6 +2615,7 @@ init_compiler(void)
 {
 	ecl_register_static_root(&c_env.variables);
 	ecl_register_static_root(&c_env.macros);
+	ecl_register_static_root(&c_env.constants);
 #ifdef CL_COMP_OWN_STACK
 	ecl_register_static_root(&c_env.bytecodes);
 	c_env.bytecodes = alloc_bytecodes();

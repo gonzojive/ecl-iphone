@@ -127,19 +127,17 @@ BEGIN:
 
 	switch (type_of(x)) {
 
-	case t_bignum:
-		if (collect_blocks) {
-		  /* GMP may set num.alloc before actually allocating anything.
-		     With these checks we make sure we do not move anything
-		     we don't have to. Besides, we use big_dim as the size
-		     of the object, because big_size might even be smaller.
-		  */
-		  cl_ptr limbs = (cl_ptr)x->big.big_limbs;
-		  cl_index size = x->big.big_dim * sizeof(mp_limb_t);
-		  if (size) mark_contblock(limbs, size);
-		}
+	case t_bignum: {
+		/* GMP may set num.alloc before actually allocating anything.
+		   With these checks we make sure we do not move anything
+		   we don't have to. Besides, we use big_dim as the size
+		   of the object, because big_size might even be smaller.
+		*/
+		cl_ptr limbs = (cl_ptr)x->big.big_limbs;
+		cl_index size = x->big.big_dim * sizeof(mp_limb_t);
+		if (size) mark_contblock(limbs, size);
 		break;
-
+	}
 	case t_ratio:
 		mark_object(x->ratio.num);
 		mark_next(x->ratio.den);
@@ -202,14 +200,18 @@ BEGIN:
 		switch ((cl_elttype)x->array.elttype) {
 		case aet_object:
 			if (x->array.displaced == Cnil || CAR(x->array.displaced) == Cnil) {
-				cl_object *p = x->array.self.t;
-				cl_index i;
 				if (x->array.t == t_vector && x->vector.hasfillp)
 					i = x->vector.fillp;
 				else
 					i = x->vector.dim;
-				while (i-- > 0)
-					mark_object(p[i]);
+				p = x->array.self.t;
+			MARK_DATA:
+				if (p >= heap_start && p < data_end) {
+					mark_contblock(p, i * sizeof(cl_object));
+					while (i-- > 0)
+						mark_object(p[i]);
+				}
+				return;
 			}
 			j = sizeof(cl_object)*x->array.dim;
 			break;
@@ -337,20 +339,16 @@ BEGIN:
 		mark_object(x->pathname.version);
 		break;
 
-	case t_bytecodes: {
-		cl_index i, size;
+	case t_bytecodes:
 		mark_object(x->bytecodes.name);
 		mark_object(x->bytecodes.lex);
 		mark_object(x->bytecodes.specials);
-		size = x->bytecodes.code_size;
-		mark_contblock(x->bytecodes.code, size);
-		size = x->bytecodes.data_size;
-		mark_contblock(x->bytecodes.data, size * sizeof(cl_object));
-		for (i=0; i<size; i++)
-			mark_object(x->bytecodes.data[i]);
-		mark_next(x->bytecodes.definition);
-		break;
-	}
+		mark_object(x->bytecodes.definition);
+		mark_contblock(x->bytecodes.code, x->bytecodes.code_size);
+		p = x->bytecodes.data;
+		i = x->bytecodes.data_size;
+		goto MARK_DATA;
+
 	case t_cfun:
 		mark_object(x->cfun.block);
 		mark_next(x->cfun.name);
@@ -377,23 +375,15 @@ BEGIN:
 	case t_instance:
 		mark_object(CLASS_OF(x));
 		p = x->instance.slots;
-		if (p == NULL)
-			break;
-		for (i = 0, j = x->instance.length;  i < j;  i++)
-			mark_object(p[i]);
-		mark_contblock(p, j*sizeof(cl_object));
-		break;
+		i = x->instance.length;
+		goto MARK_DATA;
 #endif /* CLOS */
 	case t_codeblock:
 		mark_object(x->cblock.name);
-		if (x->cblock.data) {
-			cl_index i = x->cblock.data_size;
-			cl_object *p = x->cblock.data;
-			while (i--)
-				mark_object(p[i]);
-		}
-		mark_next(x->cblock.next);
-		break;
+		mark_object(x->cblock.next);
+		i = x->cblock.data_size;
+		p = x->cblock.data;
+		goto MARK_DATA;
 #ifdef ECL_FFI
 	case t_foreign:
 		if (x->foreign.size)
@@ -423,7 +413,7 @@ mark_stack_conservative(cl_ptr bottom, cl_ptr top)
 
   if (offset) mark_stack_conservative(bottom, ((char *) top) + offset, 0);
      */
-  for (j = bottom ; j <= top ; j+=sizeof(cl_ptr)) {
+  for (j = bottom ; j < top ; j+=sizeof(cl_ptr)) {
     cl_ptr aux = *((cl_ptr*)j);
     /* improved Beppe: */
     if (VALID_DATA_ADDRESS(aux) && type_map[p = page(aux)] < (char)t_end) {
