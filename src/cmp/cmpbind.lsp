@@ -62,25 +62,22 @@
 
 ;;; Used by let*, defmacro and lambda's &aux, &optional, &rest, &keyword
 (defun bind-init (form var)
-  (let ((*destination* `(BIND ,var))
-	(bds nil))
-    ;; assigning location must be done before calling c2expr*,
-    ;; otherwise the increment to *env* or *lex* is done during
-    ;; unwind-exit and will be shadowed by functions (like c2let)
-    ;; which rebind *env* or *lex*.
-    (case (var-kind var)
-      (CLOSURE
-       (unless (si:fixnump (var-loc var))
-	 (setf (var-loc var) (next-env))))
-      (LEXICAL
-       (unless (consp (var-loc var))
-	 (setf (var-loc var) (next-lex))))
-      ((SPECIAL GLOBAL)
-       (setf bds t)))
-    (c2expr* form)
-    (when bds
-      ;; now the binding is in effect
-      (push 'BDS-BIND *unwind-exit*))))
+  (let ((kind (var-kind var)))
+    (if (member kind '(CLOSURE LEXICAL SPECIAL GLOBAL))
+	;; Binding these variables is complicated and involves lexical
+	;; environments, global environments, etc. If we use `(BIND var)
+	;; as destination, BIND might receive the wrong environment.
+	(let* ((*inline-blocks* 0)
+	       (*temp* *temp*)
+	       (locs (coerce-locs (inline-args (list form)))))
+	  (bind (first locs) var)
+	  (close-inline-blocks)
+	  ;; Notice that we do not need to update *UNWIND-EXIT*
+	  ;; because BIND does it for us.
+	  )
+	;; The simple case of a variable which is local to a function.
+	(let ((*destination* `(BIND ,var)))
+	  (c2expr* form)))))
 
 (defun bds-bind (loc var)
   ;; Optimize the case (let ((*special-var* *special-var*)) ...)
