@@ -572,7 +572,7 @@ static void
 write_bignum(cl_object x)
 {
 	cl_fixnum str_size = mpz_sizeinbase(x->big.big_num, PRINTbase);
-	char str[str_size];		/* __GNUC__ */
+	char str[str_size+2];		/* __GNUC__ */
 	char *s = str;
 	mpz_get_str(str, PRINTbase, x->big.big_num);
 	while (*s)
