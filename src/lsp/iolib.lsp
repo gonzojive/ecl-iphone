@@ -141,14 +141,21 @@ printed.  If FORMAT-STRING is NIL, however, no prompt will appear."
 (defun sharp-a-reader (stream subchar arg)
   (declare (ignore subchar))
   (let ((initial-contents (read stream nil nil t)))
-    (if *read-suppress*
-        nil
+    (cond
+      (*read-suppress* nil)
+      ((null arg)
+        ;; readably-pretty-printed array: #A(type dims initial-contents)
+        (let ((elt-type (car initial-contents))
+	      (dims (cadr initial-contents))
+	      (initial-contents (caddr initial-contents)))
+	  (make-array dims :element-type elt-type :initial-contents initial-contents)))
+      (t
         (do ((i 0 (1+ i))
              (d nil (cons (length ic) d))
              (ic initial-contents (if (zerop (length ic)) ic (elt ic 0))))
             ((>= i arg)
              (make-array (nreverse d) :initial-contents initial-contents))
-	  (declare (fixnum i))))))
+	  (declare (fixnum i)))))))
 
 (set-dispatch-macro-character #\# #\a 'sharp-a-reader)
 (set-dispatch-macro-character #\# #\A 'sharp-a-reader)
@@ -248,3 +255,29 @@ the one defined in the ANSI standard. *print-base* is 10, *print-array* is t,
 (defmacro formatter (control-string)
   `#'(lambda (*standard-output* &rest args)
        (si::formatter-aux *standard-output* ,control-string args)))
+
+(defun print-unreadable-object-function (object stream type identity function)
+  (if *print-readably*
+    (error 'print-not-readable :object object)
+    (when (and *print-level* (zerop *print-level*))
+      (write-string "#" stream)
+      (return-from print-unreadable-object-function nil)))
+  (write-string "#<" stream)
+  (when type
+    (prin1 (type-of object) stream)
+    (write-string " " stream))
+  (when function (funcall function))
+  (when identity
+    (when (or function (not type)) (write-string " " stream))
+    (princ (si:pointer object) stream))
+  (write-string ">" stream)
+  nil)
+
+(defmacro print-unreadable-object
+	  ((object stream &key type identity) &body body)
+  (if body
+      `(flet ((.print-unreadable-object-body. () ,@body))
+	 (declare (:dynamic-extent function))
+	 (print-unreadable-object-function
+	   ,object ,stream ,type ,identity #'.print-unreadable-object-body.))
+    `(print-unreadable-object-function ,object ,stream ,type ,identity nil)))

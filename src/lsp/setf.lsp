@@ -631,9 +631,9 @@ Returns the car of the old value in PLACE."
 	;; are set to nil.
 	(let ((extra (rest stores)))
 	  (unless (endp extra)
-	    (setf all-vars (append extra all-vars)
-		  all-vals (append (make-list (length extra)) all-vals)
-		  all-stores (list (first stores)))))
+	    (setf vars (append extra vars)
+		  vals (append (make-list (length extra)) vals)
+		  stores (list (first stores)))))
 	(setf all-vars (append vars all-vars)
 	      all-vals (append vals all-vals)
 	      all-stores (append stores all-stores)

@@ -123,7 +123,7 @@ extern cl_object ecl_find_symbol_nolock(cl_object name, cl_object p, int *intern
 #define ECL_PPRINT_QUEUE_SIZE			128
 #define ECL_PPRINT_INDENTATION_STACK_SIZE	256
 
-extern void edit_double(int n, double d, int *sp, char *s, int *ep);
+extern int edit_double(int n, double d, int *sp, char *s, int *ep);
 extern void cl_write_object(cl_object x, cl_object stream);
 
 /* global locks */

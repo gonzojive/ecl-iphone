@@ -25,6 +25,14 @@ GOODIES:
 
 * Complete the MOP.
 
+* Write general functions that implement the ~E, ~F and ~G formatters and use
+  them in the printer, so that both PRINT, PRINC, etc and FORMAT produce
+  exactly the same representation of floating point numbers.
+
+* Better integration between core streams and CLOS streams.
+
+* Implemment type checking in structure slot setters.
+
 THREADS:
 ========
 
@@ -45,6 +53,10 @@ Unknown variables
 
 KNOWN BUGS:
 ===========
+
+* An array might have a->array.displaced != Cnil and still not be
+  displaced. This is the case of an array that had some vectors displaced
+  to it!!!
 
 * #'unread-char does not fail when the character differs from the
   original one.

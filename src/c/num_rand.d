@@ -52,23 +52,20 @@ rando(cl_object x, cl_object rs)
 cl_object
 make_random_state(cl_object rs)
 {
-        cl_object z;
+        cl_object z = cl_alloc_object(t_random);
 
-	if (Null(rs)) {
-		z = cl_alloc_object(t_random);
-		z->random.value = symbol_value(@'*random-state*')->random.value;
-		return(z);
-	} else if (rs == Ct) {
-		z = cl_alloc_object(t_random);
+	if (rs == Ct) {
 		z->random.value = time(0);
-		return(z);
-	} else if (type_of(rs) != t_random)
-   		FEwrong_type_argument(@'random-state', rs);
-	else {
-		z = cl_alloc_object(t_random);
+	} else {
+		if (Null(rs)) {
+			rs = symbol_value(@'*random-state*');
+		}
+		if (type_of(rs) != t_random) {
+			FEwrong_type_argument(@'random-state', rs);
+		}
 		z->random.value = rs->random.value;
-		return(z);
 	}
+	return(z);
 }
 
 static void

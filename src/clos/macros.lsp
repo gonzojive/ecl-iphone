@@ -10,7 +10,7 @@
 (defpackage "CLOS"
   (:use "WALKER" "CL")
   (:import-from "SI" "UNBOUND" "GET-SYSPROP" "PUT-SYSPROP" "REM-SYSPROP"
-		"COMPUTE-EFFECTIVE-METHOD"))
+		"COMPUTE-EFFECTIVE-METHOD" "SIMPLE-PROGRAM-ERROR"))
 
 (in-package "CLOS")
 
@@ -64,6 +64,6 @@
 
 (defmacro ensure-up-to-date-instance (instance)
   `(let ((i ,instance))
-    (unless (eq (si::instance-sig i) (class-slots (si::instance-class i)))
+    (unless (or (si::structurep i) (eq (si::instance-sig i) (class-slots (si::instance-class i))))
       (update-instance i))))
 

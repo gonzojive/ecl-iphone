@@ -21,13 +21,13 @@
 ;;;
 ;;; This is used by combined methods to communicate the next methods to
 ;;; the methods they call.
-;;; 
+;;;
 (defvar *next-methods* nil)
 
 
 ;;; ----------------------------------------------------------------------
-;;; defmethod
-
+;;; DEFMETHOD
+;;;
 ;;; For setf methods the syntax is:
 ;;;    (defmethod (setf foo) ((nv type) (x1 type1) ... (xn typen))
 ;;;       ...)
@@ -82,19 +82,23 @@
       ;; incrementally, or in COMPUTE-EFFECTIVE-METHOD.
       (when (and (member '&key lambda-list)
 		 (not (member '&allow-other-keys lambda-list)))
-	(setf lambda-list (append lambda-list '(&allow-other-keys))))
+	(let ((x (position '&aux lambda-list)))
+	  (setf lambda-list
+		(append (subseq lambda-list 0 x)
+			'(&allow-other-keys)
+			(and x (subseq lambda-list x))))))
       (let* ((required-parameters
 	      (mapcar #'(lambda (r s) (declare (ignore s)) r)
 		      parameters
 		      specializers))
-	     (class-declarations 
+	     (class-declarations
 	      `(declare
 		,@(mapcan #'(lambda (p s) (and (symbolp s) s
 					       (not (eq s 't))
 					       `((type ,s ,p))))
 			  parameters
 			  specializers)))
-	     (method-lambda 
+	     (method-lambda
 	      ;; Remove the documentation string and insert the
 	      ;; appropriate class declarations.  The documentation
 	      ;; string is removed to make it easy for us to insert
@@ -102,13 +106,10 @@
 	      ;; second of the method lambda.  The class declarations
 	      ;; are inserted to communicate the class of the method's
 	      ;; arguments to the code walk.
-	      `(ext::lambda-block ,(if (listp generic-function-name)
-				       (second generic-function-name)
-				       generic-function-name)
+	      `(ext::lambda-block ,generic-function-name
 		,lambda-list
 		,class-declarations
 		,@declarations
-		;; (progn ,@parameters-to-reference)
 		,@real-body))
 
 	     (original-args ())
@@ -135,7 +136,7 @@
 	  ;; Scan the lambda list to determine whether this method
 	  ;; takes &mumble arguments.  If it does, we set applyp and
 	  ;; save-original-args true.
-	  ;; 
+	  ;;
 	  ;; This is also the place where we construct the original
 	  ;; arguments lambda list if there has to be one.
 	  (dolist (p lambda-list)
@@ -155,11 +156,11 @@
 		(push (make-symbol (symbol-name p)) original-args)))
 	  (setq original-args (when save-original-args
 				(nreverse original-args)))
-	  
+
 	  (multiple-value-bind (walked-declarations walked-lambda-body)
 	      (sys::find-declarations (cdddr walked-lambda) t)
 	    (declare (ignore ignore))
-	    
+
 	    (when (some #'cdr slots)	; there are optimized slot accesses
 	      (setq walked-lambda-body
 		    (add-index-binding walked-lambda-body slots)))
@@ -167,25 +168,24 @@
 	      (setq plist (list* :needs-next-methods-p 'T plist)))
 
 	    (values
-	     `(function ,(if (or call-next-method-p next-method-p-p)
-			     (add-lexical-functions-to-method-lambda
-			      walked-declarations
-			      walked-lambda-body
-			      `(ext::lambda-block ,(second walked-lambda)
-				,lambda-list
-				,@walked-declarations
-				,.walked-lambda-body)
-			      original-args
-			      lambda-list
-			      save-original-args
-			      applyp
-			      aux-bindings
-			      call-next-method-p
-			      next-method-p-p)
-			     `(ext::lambda-block ,(second walked-lambda)
-			       ,lambda-list
-			       ,@walked-declarations
-			       ,.walked-lambda-body)))
+	     (let ((walked-lambda `(ext::lambda-block ,(second walked-lambda)
+				    ,lambda-list
+				    ,@walked-declarations
+				    ,.walked-lambda-body)))
+	       (if (or call-next-method-p next-method-p-p)
+		   `(function ,(add-lexical-functions-to-method-lambda
+				walked-declarations
+				walked-lambda-body
+				generic-function-name
+				walked-lambda
+				original-args
+				lambda-list
+				save-original-args
+				applyp
+				aux-bindings
+				call-next-method-p
+				next-method-p-p))
+		   `(function ,walked-lambda)))
 	     specializers
 	     documentation
 	     plist)))))))
@@ -298,6 +298,7 @@
 
 (defun add-lexical-functions-to-method-lambda (walked-declarations
 					       walked-lambda-body
+					       generic-function-name
 					       walked-lambda
 					       original-args
 					       lambda-list
@@ -307,6 +308,9 @@
 					       call-next-method-p
 					       next-method-p-p)
   (declare (si::c-local))
+  ;;
+  ;; WARNING: these &rest/apply combinations produce useless garbage. Beppe
+  ;;
   (cond ((and (null save-original-args)
 	      (null applyp))
 	 ;;
@@ -317,15 +321,12 @@
 	 ;;
 	 ;; We can expand this into a simple lambda expression with an
 	 ;; FLET to define the lexical functions.
-	 ;; 
-	 `(lambda ,lambda-list
+	 ;;
+	 `(ext::lambda-block ,generic-function-name ,lambda-list
 	    ,@walked-declarations
 	    (let* ((.next-method. (car *next-methods*))
 		   (*next-methods* (cdr *next-methods*)))
 	      (flet (,@(and call-next-method-p
-;;;
-;;; WARNING: these &rest/apply combinations produce useless garbage. Beppe
-;;;
 			    '((CALL-NEXT-METHOD (&REST CNM-ARGS)
 				;; (declare (static-extent cnm-args))
 				(IF .NEXT-METHOD.
@@ -335,24 +336,23 @@
 			    '((NEXT-METHOD-P ()
 				(NOT (NULL .NEXT-METHOD.))))))
 		,@walked-lambda-body)))
-
-;;; Assuming that we can determine statically which is the next method,
-;;; we could use this solution. Compute-effective-method can set
-;;; the value of .next-method. within each closure at the appropriate
-;;; value. Same thing for next case. 	Beppe
-;	 `(let (.next-method.)
-;	    (lambda ,lambda-list
-;	      ,@walked-declarations
-;	      (flet (,@(and call-next-method-p
-;			    '((CALL-NEXT-METHOD (&REST CNM-ARGS)
-;				;; (declare (static-extent cnm-args))
-;				(IF .NEXT-METHOD.
-;				    (APPLY .NEXT-METHOD. CNM-ARGS)
-;				    (ERROR "No next method.")))))
-;		     ,@(and next-method-p-p
-;			    '((NEXT-METHOD-P ()
-;				(NOT (NULL .NEXT-METHOD.))))))
-;		,@walked-lambda-body)))
+	 ;; Assuming that we can determine statically which is the next method,
+	 ;; we could use this solution. Compute-effective-method can set
+	 ;; the value of .next-method. within each closure at the appropriate
+	 ;; value. Same thing for next case. 	Beppe
+	 ;;	 `(let (.next-method.)
+	 ;;	    (lambda ,lambda-list
+	 ;;	      ,@walked-declarations
+	 ;;	      (flet (,@(and call-next-method-p
+	 ;;			    '((CALL-NEXT-METHOD (&REST CNM-ARGS)
+	 ;;				;; (declare (static-extent cnm-args))
+	 ;;				(IF .NEXT-METHOD.
+	 ;;				    (APPLY .NEXT-METHOD. CNM-ARGS)
+	 ;;				    (ERROR "No next method.")))))
+	 ;;		     ,@(and next-method-p-p
+	 ;;			    '((NEXT-METHOD-P ()
+	 ;;				(NOT (NULL .NEXT-METHOD.))))))
+	 ;;		,@walked-lambda-body)))
 	 )
 	((null applyp)
 	 ;;
@@ -362,8 +362,8 @@
 	 ;; Have to be careful though, there may be multiple calls to
 	 ;; call-next-method, all we know is that at least one of them
 	 ;; is with no arguments.
-	 ;; 
-	 `(lambda ,original-args
+	 ;;
+	 `(ext::lambda-block ,generic-function-name ,original-args
 	    (let* ((.next-method. (car *next-methods*))
 		   (*next-methods* (cdr *next-methods*)))
 	      (flet (,@(and call-next-method-p
@@ -390,7 +390,7 @@
 	 ;; We must allow for the lexical functions being used inside
 	 ;; the default value forms of &mumble arguments, and if must
 	 ;; allow for call-next-method being called with no arguments.
-	 ;; 
+	 ;;
 	 `(lambda ,original-args
 	    (let* ((.next-method. (car *next-methods*))
 		   (*next-methods* (cdr *next-methods*)))
@@ -400,7 +400,7 @@
 				(if .next-method.
 				    (if cnm-args
 					(apply .next-method. cnm-args)
-					(apply .next-method. 
+					(apply .next-method.
 					       ,@(remove '&REST original-args)))
 				    (error "No next method.")))))
 		     ,@(and next-method-p-p
@@ -409,30 +409,6 @@
 		(apply (function ,walked-lambda)
 		       ,@(remove '&REST original-args))))))))
 
-#|
-(defun make-parameter-references (specialized-lambda-list
-				  required-parameters
-				  declarations
-				  generic-function-name
-				  specializers)
-  (flet ((ignoredp (symbol)
-	   (dolist (decl (cdar declarations))
-	     (when (and (eq (car decl) 'IGNORE)
-			(member symbol (cdr decl) :test #'eq))
-	       (return t)))))	   
-    (do ((sscan specialized-lambda-list (cdr sscan))
-	 (pscan required-parameters (cdr pscan))
-	 (references nil))
-	((null sscan) (nreverse references))
-	(cond ((not (listp (car sscan))))
-	      ((ignoredp (caar sscan))
-	       (warn "In defmethod ~S ~S, there is a~%~
-                      redundant ignore declaration for the parameter ~S."
-		     generic-function-name
-		     specializers
-		     (caar sscan)))
-	      (t (push (caar sscan) references))))))
-|#
 
 ;;; ----------------------------------------------------------------------
 ;;;                                                                parsing
@@ -583,6 +559,9 @@
     (push method (cdr method-entry))
     (push method (generic-function-methods gf))
     (setf (method-generic-function method) gf)
+    (unless (si::sl-boundp (generic-function-lambda-list gf))
+      (setf (generic-function-lambda-list gf) (method-lambda-list method)))
+    (setf (generic-function-spec-list gf) (compute-g-f-spec-list gf))
     method))
 
 (defun find-method (gf qualifiers specializers &optional (errorp t))
@@ -594,14 +573,20 @@
     (dolist (method method-list)
       (when (and (equal qualifiers (method-qualifiers method))
 		 (equal specializers (method-specializers method)))
-	(setq found method)
-	(return)))
-    (if (and (not found) errorp)
-	(error "There is no method on the generic function ~S that agrees on 
-               qualifiers ~S and specializers ~S"
-	       (generic-function-name gf)
-	       qualifiers specializers)
-	found)))
+	(return-from find-method method)))
+    ;; If we did not find any matching method, then the list of
+    ;; specializers might have the wrong size and we must signal
+    ;; an error.
+    (cond ((/= (length specializers)
+	       (length (generic-function-spec-list gf)))
+	   (error
+	    "The specializers list~%~A~%does not match the number of required arguments in ~A"
+	    specializers (generic-function-name gf)))
+	  (errorp
+	   (error "There is no method on the generic function ~S that agrees on qualifiers ~S and specializers ~S"
+		  (generic-function-name gf)
+		  qualifiers specializers)))
+    nil))
 
 
 ;;; ----------------------------------------------------------------------

@@ -27,7 +27,8 @@
 	   "BUILD-SHARED-LIBRARY"
 	   "*SUPPRESS-COMPILER-WARNINGS*"
 	   "*SUPPRESS-COMPILER-NOTES*")
-  (:import-from "SI" "GET-SYSPROP" "PUT-SYSPROP" "REM-SYSPROP" "MACRO"))
+  (:import-from "SI" "GET-SYSPROP" "PUT-SYSPROP" "REM-SYSPROP" "MACRO"
+		"*COMPILER-CONSTANTS*"))
 
 (in-package "COMPILER")
 
@@ -367,6 +368,9 @@ The default value is NIL.")
 (defvar *load-time-values* nil)		; holds { ( vv-index form ) }*,
 ;;;  where each vv-index should be given an object before
 ;;;  defining the current function during loading process.
+
+(defvar *compiler-constants* nil)	; a vector with all constants
+					; only used in COMPILE
 
 (defvar *proclaim-fixed-args* nil)	; proclaim automatically functions
 					; with fixed number of arguments.

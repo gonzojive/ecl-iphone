@@ -19,6 +19,7 @@
 #include <math.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdlib.h>
 #include "ecl.h"
 #include "internal.h"
 #include "ecl-inl.h"
@@ -318,207 +319,96 @@ read_object(cl_object in)
 cl_object
 parse_number(const char *s, cl_index end, cl_index *ep, int radix)
 {
-#ifdef mingw32
-  /* FIXME! Why does Mingw32 insist on using a float pow() ? */
-#define pow powl
-#endif
-	cl_object x, y;
-	int sign;
-	cl_object integer_part;
-	double fraction, fraction_unit, f;
-	char exponent_marker;
-	int exponent, d;
-	cl_index i, j, k;
-
-	if (radix != 10) {
-		/* Floating point numbers are read always in base 10 */
-		for (i=0; i < end; i++) {
-			if (s[i] == '.') {
-				radix = 10;
-				break;
+	cl_index i, j, exp_marker_loc = 0;
+	bool is_float = 0;
+	for (i=0; i < end; i++) {
+		char c = s[i];
+		if (c == '/') {
+			cl_object num, den;
+			num = parse_number(s, i, &j, radix);
+			if (num == OBJNULL || (j < i) ||
+			    (!FIXNUMP(num) && type_of(num) != t_bignum))
+			{
+				*ep = j;
+				return OBJNULL;
 			}
-		}
-	}
-	/*
-	  DIRTY CODE!!
-	*/
-BEGIN:
-	exponent_marker = 'E';
-	i = 0;
-	sign = 1;
-	if (s[i] == '+')
-		i++;
-	else if (s[i] == '-') {
-		sign = -1;
-		i++;
-	}
-	integer_part = big_register0_get();
-	if (i >= end)
-		goto NO_NUMBER;
-	if (s[i] == '.') {
-		i++;
-		goto FRACTION;
-	}
-	if (!basep(radix) || (d = digitp(s[i], radix)) < 0)
-		goto NO_NUMBER;
-	do {
-		big_mul_ui(integer_part, radix);
-		big_add_ui(integer_part, d);
-		i++;
-	} while (i < end && (d = digitp(s[i], radix)) >= 0);
-	if (i >= end)
-		goto MAKE_INTEGER;
-	if (s[i] == '.') {
-		if (radix != 10) {
-			radix = 10;
-			goto BEGIN;
-		}
-		if (++i >= end)
-			goto MAKE_INTEGER;
-		else if (digitp(s[i], radix) >= 0)
-			goto FRACTION;
-		else if (is_exponent_marker(s[i])) {
-			fraction = (double)sign * big_to_double(integer_part);
-			goto EXPONENT;
-		} else
-			goto MAKE_INTEGER;
-	}
-	if (s[i] == '/') {
-	  i++;
-	  if (sign < 0)
-	    big_complement(integer_part);
-	  x = big_register_normalize(integer_part);
-
-	  /* 		DENOMINATOR			 */
-
-	  if ((d = digitp(s[i], radix)) < 0)
-	    goto NO_NUMBER;
-	  integer_part = big_register0_get();
-	  do {
-	    big_mul_ui(integer_part, radix);
-	    big_add_ui(integer_part, d);
-	    i++;
-	  } while (i < end && (d = digitp(s[i], radix)) >= 0);
-	  y = big_register_normalize(integer_part);
-	  x = make_ratio(x, y);
-	  goto END;
-	}
-
-	if (is_exponent_marker(s[i])) {
-		fraction = (double)sign * big_to_double(integer_part);
-		goto EXPONENT;
-	}
-
-	goto NO_NUMBER;
-
-MAKE_INTEGER:
-	if (sign < 0)
-		big_complement(integer_part);
-	x = big_register_normalize(integer_part);
-	goto END;
-
-FRACTION:
-
-	if (radix != 10)
-		goto NO_NUMBER;
-
-	radix = 10;
-	if ((d = digitp(s[i], radix)) < 0)
-		goto NO_NUMBER;
-	fraction = 0.0;
-	fraction_unit = 1000000000.0;
-	for (;;) {
-		k = j = 0;
-		do {
-			j = 10*j + d;
 			i++;
-			k++;
-			if (i < end)
-				d = digitp(s[i], radix);
-			else
-				break;
-		} while (k < 9 && d >= 0);
-		while (k++ < 9)
-			j *= 10;
-		fraction += ((double)j /fraction_unit);
-		if (i >= end || d < 0)
+			den = parse_number(s+i, end-i, ep, radix);
+			*ep += i;
+			if (num == OBJNULL || (*ep < end) ||
+			    (!FIXNUMP(num) && type_of(num) != t_bignum))
+			{
+				return OBJNULL;
+			}
+			return make_ratio(num, den);
+		} else if (c == '.') {
+			radix = 10;
+			if (i == (end-1)) {
+				cl_object aux = parse_integer(s, end-1, ep, radix);
+				(*ep)++;
+				return aux;
+			} else {
+				is_float = 1;
+			}
+		} else if ((digitp(c, radix) < 0) && is_exponent_marker(c)) {
+			exp_marker_loc = i;
+			is_float = 1;
 			break;
-		fraction_unit *= 1000000000.0;
+		}
 	}
-	fraction += big_to_double(integer_part);
-	fraction *= (double)sign;
-	if (i >= end)
-		goto MAKE_FLOAT;
-	if (is_exponent_marker(s[i]))
-		goto EXPONENT;
-	goto MAKE_FLOAT;
-
-EXPONENT:
-
-	if (radix != 10)
-		goto NO_NUMBER;
-
-	radix = 10;
-	exponent_marker = s[i];
-	i++;
-	if (i >= end)
-		goto NO_NUMBER;
-	sign = 1;
-	if (s[i] == '+')
-		i++;
-	else if (s[i] == '-') {
-		sign = -1;
-		i++;
+	if (!is_float) {
+		return parse_integer(s, end, ep, radix);
+	} else {
+		/* We use strtod() for parsing floating point numbers
+		 * accurately. However, this routine only accepts character
+		 * 'e' or 'E' as exponent markers and we have to make a copy
+		 * of the number with this exponent marker. */
+#ifdef __GNUC__
+		char buffer[end+1];
+#else
+		char *buffer = cl_alloc_atomic(end+1);
+#endif
+		char *parse_end;
+		char exp_marker;
+		cl_object output;
+		double d;
+		memcpy(buffer, s, end);
+		buffer[end] = '\0';
+		if (exp_marker_loc) {
+			buffer[exp_marker_loc] = 'e';
+			exp_marker = s[exp_marker_loc];
+		} else {
+			exp_marker = ecl_current_read_default_float_format();
+		}
+		d = strtod(buffer, &parse_end);
+		*ep = (parse_end - buffer);
+		if (*ep == 0) {
+			output = OBJNULL;
+			goto OUTPUT;
+		}
+		/* make_{short|long}float signals an error when an overflow
+		   occurred while reading the number. Thus, no safety check
+		   is required here. */
+	MAKE_FLOAT:
+		switch (exp_marker) {
+		case 'e':  case 'E':
+			exp_marker = ecl_current_read_default_float_format();
+			goto MAKE_FLOAT;
+		case 'f':  case 'F':  case 's':  case 'S':
+			output = make_shortfloat(d);
+			break;
+		case 'd':  case 'D':  case 'l':  case 'L':
+			output = make_longfloat(d);
+			break;
+		default:
+			output = OBJNULL;
+		}
+	OUTPUT:
+#ifndef __GNUC__
+		cl_dealloc(s, end+1);
+#endif
+		return output;
 	}
-	if (i >= end)
-		goto NO_NUMBER;
-	if ((d = digitp(s[i], radix)) < 0)
-		goto NO_NUMBER;
-	exponent = 0;
-	do {
-		exponent = 10 * exponent + d;
-		i++;
-	} while (i < end && (d = digitp(s[i], radix)) >= 0);
-	d = exponent * sign;
-	f = 10.0;
-	if (d < (DBL_MIN_10_EXP - 1)) {
-		fraction /= pow(10.0, (DBL_MIN_10_EXP - 1) - d);
-		d = DBL_MIN_10_EXP - 1;
-	} else if (d > (DBL_MAX_10_EXP - 1)) {
-		fraction *= pow(10.0, d - (DBL_MAX_10_EXP - 1));
-		d = DBL_MAX_10_EXP - 1;
-	}
-	fraction *= pow(10.0, d);
-
-MAKE_FLOAT:
-	/* make_{short|long}float signals an error when an overflow
-	   occurred while reading the number. Thus, no safety check
-	   is required here. */
-	switch (exponent_marker) {
-
-	case 'e':  case 'E':
-		exponent_marker = ecl_current_read_default_float_format();
-		goto MAKE_FLOAT;
-
-	case 'f':  case 'F':  case 's':  case 'S':
-		x = make_shortfloat((float)fraction);
-		break;
-
-	case 'd':  case 'D':  case 'l':  case 'L':
-		x = make_longfloat((double)fraction);
-		break;
-
-	case 'b':  case 'B':
-		goto NO_NUMBER;
-	}
-
-END:
-	*ep = i;
-	return(x);
-
-NO_NUMBER:
-	*ep = i;
-	return(OBJNULL);
 }
 
 cl_object
@@ -1221,10 +1111,13 @@ sharp_P_reader(cl_object in, cl_object c, cl_object d)
 static cl_object
 sharp_dollar_reader(cl_object in, cl_object c, cl_object d)
 {
+	cl_object rs;
 	if (d != Cnil && !read_suppress)
 		extra_argument('$', in, d);
 	c = read_object(in);
-	return cl_make_random_state(1, c);
+	rs = cl_alloc_object(t_random);
+	rs->random.value = fixnnint(c);
+	return rs;
 }
 
 /*
@@ -1946,7 +1839,7 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 #else
 		VV = block->cblock.data;
 #endif
-		if (len == 0) goto NO_DATA;
+		if ((len == 0) || (block->cblock.data_text == 0)) goto NO_DATA;
 
 		/* Read all data for the library */
 		in=make_string_input_stream(make_constant_string(block->cblock.data_text),

@@ -14,11 +14,14 @@
 ;;;
 
 (defmethod initialize-instance ((instance T) &rest initargs)
-  (check-initargs (class-of instance) initargs)
   (apply #'shared-initialize instance 'T initargs))
 
 (defmethod reinitialize-instance ((instance T) &rest initargs)
-  (check-initargs (class-of instance) initargs)
+  (check-initargs (class-of instance) initargs
+		  (append (compute-applicable-methods
+			   #'reinitialize-instance (list instance))
+			  (compute-applicable-methods
+			   #'shared-initialize (list instance t))))
   (apply #'shared-initialize instance '() initargs))
 
 (defmethod shared-initialize ((instance T) slot-names &rest initargs)
@@ -49,11 +52,18 @@
 	     (slot-name (slotd-name slotd)))
 	(or
 	 ;; Try to initialize the slot from one of the initargs.
-	 (doplist (initarg val)
-		  initargs
-		  (when (member initarg slot-initargs :test #'eq)
-		    (setf (slot-value instance slot-name) val)
-		    (return 'T)))
+	 (do ((l initargs) initarg val)
+	     ((null l) nil)
+	   (setf initarg (pop l))
+	   (when (endp l)
+	     (simple-program-error "Wrong number of keyword arguments for SHARED-INITIALIZE, ~A"
+				   initargs))
+	   (unless (symbolp initarg)
+	     (simple-program-error "Not a valid initarg: ~A" initarg))
+	   (setf val (pop l))
+	   (when (member initarg slot-initargs :test #'eq)
+	     (setf (slot-value instance slot-name) val)
+	     (return t)))
 	 ;; Try to initialize the slot from its initform.
 	 (when (and slot-names
 		    (or (eq slot-names 'T)
@@ -74,7 +84,7 @@
 (defun count-instance-slots (class)
   (count :instance (class-slots class) :key #'slotd-allocation))
 
-(defmethod allocate-instance ((class class) &key &allow-other-keys)
+(defmethod allocate-instance ((class class) &key)
   ;; FIXME! Inefficient! We should keep a list of dependent classes.
   (unless (class-finalized-p class)
     (finalize-inheritance class))
@@ -83,8 +93,21 @@
     x))
 
 (defmethod make-instance ((class class) &rest initargs)
+  ;; We add the default-initargs first, because one of these initargs might
+  ;; be (:allow-other-keys t), which disables the checking of the arguments.
+  ;; (Paul Dietz's ANSI test suite, test CLASS-24.4)
+  (setf initargs (add-default-initargs class initargs))
+  (check-initargs class initargs
+		  (append (compute-applicable-methods
+			   #'allocate-instance (list class))
+			  (compute-applicable-methods
+			   #'make-instance (list (class-prototype class)))
+			  (compute-applicable-methods
+			   #'initialize-instance (list (class-prototype class)))
+			  (compute-applicable-methods
+			   #'shared-initialize (list (class-prototype class) t))))
   (let ((instance (allocate-instance class)))
-    (apply #'initialize-instance instance (add-default-initargs class initargs))
+    (apply #'initialize-instance instance initargs)
     instance))
 
 (defun add-default-initargs (class initargs)
@@ -118,7 +141,7 @@
   initargs)
 
 (defmethod initialize-instance ((class class) &rest initargs
-				&key direct-superclasses &allow-other-keys)
+				&key direct-superclasses)
 
   ;; this sets up all the slots of the class
   (call-next-method)
@@ -188,7 +211,8 @@ because it contains a reference to the undefined class~%  ~A"
     (setf (class-precedence-list class) cpl
 	  (class-slots class) (compute-slots class)
 	  (class-default-initargs class) (compute-default-initargs class)
-	  (class-finalized-p class) t)
+	  (class-finalized-p class) t
+	  (class-prototype class) (allocate-instance class))
     ;;
     ;; This is not really needed, because when we modify the list of slots
     ;; all instances automatically become obsolete (See change.lsp)
@@ -264,8 +288,7 @@ because it contains a reference to the undefined class~%  ~A"
 ;;; shared by the metaclasses STANDARD-CLASS and STRUCTURE-CLASS.
 ;;;
 (defmethod ensure-class-using-class ((class class) name &rest rest
-				     &key direct-slots direct-default-initargs
-				     &allow-other-keys)
+				     &key direct-slots direct-default-initargs)
   (multiple-value-bind (metaclass direct-superclasses options)
       (apply #'help-ensure-class rest)
     (cond ((forward-referenced-class-p class)
@@ -381,7 +404,7 @@ because it contains a reference to the undefined class~%  ~A"
 ;;; Standard-object has no slots and inherits only from t:
 ;;; (defclass standard-object (t) ())
 
-(defmethod slot-value ((instance standard-object) slot-name)
+(defmethod slot-value-using-class ((class standard-class) instance slot-name)
   (multiple-value-bind (val condition)
       (standard-instance-get instance slot-name)
     (case condition
@@ -392,7 +415,7 @@ because it contains a reference to the undefined class~%  ~A"
 				      slot-name 'SLOT-VALUE)))
       )))
 
-(defmethod slot-boundp ((instance standard-object) slot-name)
+(defmethod slot-boundp-using-class ((class standard-class) instance slot-name)
   (multiple-value-bind (val condition)
       (standard-instance-get instance slot-name)
     (declare (ignore val))
@@ -403,18 +426,16 @@ because it contains a reference to the undefined class~%  ~A"
 				      slot-name 'SLOT-BOUNDP)))
       )))
 
-(defmethod (setf slot-value) (val (instance standard-object) slot-name)
+(defmethod (setf slot-value-using-class) (val (class standard-class) instance
+					  slot-name)
   (standard-instance-set val instance slot-name))
 
-(defmethod slot-exists-p ((instance standard-object) slot-name)
-  (let ((class (si:instance-class instance)))
-    (declare (type standard-class class))
-    (and (nth-value 0 (gethash slot-name (slot-index-table class) nil))
-	 t)))
+(defmethod slot-exists-p-using-class ((class standard-class) instance slot-name)
+  (and (nth-value 0 (gethash slot-name (slot-index-table class) nil))
+       t))
 
-(defmethod slot-makunbound ((instance standard-object) slot-name)
-  (let* ((class (si:instance-class instance))
-	 (index (slot-index slot-name (slot-index-table class))))
+(defmethod slot-makunbound-using-class ((class standard-class) instance slot-name)
+  (let* ((index (slot-index slot-name (slot-index-table class))))
     (if index
 	(if (atom index)
 	    (si:sl-makunbound instance (the fixnum index))
@@ -425,20 +446,20 @@ because it contains a reference to the undefined class~%  ~A"
 		      'SLOT-MAKUNBOUND)))
   instance)
 
-(defmethod describe-object ((obj standard-object))
+(defmethod describe-object ((obj standard-object) &optional (stream t))
   (let* ((class (si:instance-class obj))
 	 (slotds (class-slots class))
 	 slotname has-shared-slots)
-    (format t "~%~A is an instance of class ~A"
+    (format stream "~%~S is an instance of class ~A"
 	    obj (class-name class))
     (when slotds
       ;; print instance slots
-      (format t "~%it has the following instance slots")
+      (format stream "~%it has the following instance slots")
       (dolist (slot slotds)
 	(setq slotname (slotd-name slot))
 	(case (slotd-allocation slot)
 	  (:INSTANCE
-	   (format t "~%~A:~24,8T~A"
+	   (format stream "~%~A:~24,8T~A"
 		   slotname
 		   (if (slot-boundp obj slotname)
 		       (slot-value obj slotname) "Unbound")))
@@ -446,46 +467,72 @@ because it contains a reference to the undefined class~%  ~A"
 	  (T (setq has-shared-slots t))))
       (when has-shared-slots
 	;; print class slots
-	(format t "~%it has the following class slots")
+	(format stream "~%it has the following class slots")
 	(dolist (slot slotds)
 	  (setq slotname (slotd-name slot))
 	  (unless (eq (slotd-allocation slot) :INSTANCE)
-	    (format t "~%~A:~24,8T~A"
+	    (format stream "~%~A:~24,8T~A"
 		    slotname
 		    (if (slot-boundp obj slotname)
 			(slot-value obj slotname) "Unbound")))))))
   obj)
 
 ;;; ----------------------------------------------------------------------
-;;; check-initargs
+;;; CHECK INITARGS
+;;;
+;;; There are different sets of initialization arguments. First we have
+;;; those coming from the :INITARG option in the slots. Then we have
+;;; all declared initargs which are keyword arguments to methods defined
+;;; on SHARED-INITIALIZE, REINITIALIZE-INSTANCE, etc. (See ANSI 7.1.2)
+;;;
 
-(defun check-initargs (class initargs)
-  ;; scan initarg list 
-  (do* ((name-loc initargs (cddr name-loc))
-	(allow-other-keys nil)
-	(allow-other-keys-found nil)
-	(unknown-key nil))
-       ((null name-loc)
-	(when (and (not allow-other-keys) unknown-key)
-	  (error "Unknown initialization option ~A for class ~A"
-		 unknown-key class))
-	initargs)
-    (let ((name (first name-loc)))
-      (cond ((null (cdr name-loc))
-	     (error "No value supplied for the init-name ~S." name))
-	    ;; This check must be here, because :ALLOW-OTHER-KEYS is a valid
-	    ;; slot-initarg.
-	    ((and (eql name :ALLOW-OTHER-KEYS)
-		  (not allow-other-keys-found))
-	     (setf allow-other-keys (second name-loc)
-		   allow-other-keys-found t))
-	    (;; check if the arguments is associated with a slot
-	     (do ((scan-slot (class-slots class) (cdr scan-slot)))
-		 ((null scan-slot) ())
-	       (when (member name (slotd-initargs (first scan-slot)))
-		 (return t))))
-	    (t
-	     (setf unknown-key name))))))
+(defun valid-keywords-from-methods (methods)
+  (declare (si::c-local))
+  ;; Given a list of methods, build up the list of valid keyword arguments
+  (do ((m methods (rest m))
+       (keys '()))
+      ((null m)
+       (values keys nil))
+    (multiple-value-bind (reqs opts rest key-flag keywords allow-other-keys)
+	(si::process-lambda-list (method-lambda-list (first m)) t)
+      (when allow-other-keys
+	(return (values nil t)))
+      (do ((k (rest keywords) (cddddr k)))
+	  ((null k))
+	(push (first k) keys)))))
+
+(defun check-initargs (class initargs &optional methods
+		       (slots (class-slots class)))
+  ;; First get all initiargs which have been declared in the given
+  ;; methods, then check the list of initargs declared in the slots
+  ;; of the class.
+  (multiple-value-bind (method-initargs allow-other-keys)
+      (valid-keywords-from-methods methods)
+    (when allow-other-keys
+      (return-from check-initargs))
+    (do* ((name-loc initargs (cddr name-loc))
+	  (allow-other-keys nil)
+	  (allow-other-keys-found nil)
+	  (unknown-key nil))
+	 ((null name-loc)
+	  (when (and (not allow-other-keys) unknown-key)
+	    (simple-program-error "Unknown initialization option ~S for class ~A"
+				  unknown-key class)))
+      (let ((name (first name-loc)))
+	(cond ((null (cdr name-loc))
+	       (simple-program-error "No value supplied for the init-name ~S." name))
+	      ;; This check must be here, because :ALLOW-OTHER-KEYS is a valid
+	      ;; slot-initarg.
+	      ((and (eql name :ALLOW-OTHER-KEYS)
+		    (not allow-other-keys-found))
+	       (setf allow-other-keys (second name-loc)
+		     allow-other-keys-found t))
+	      ;; The initialization argument has been declared in some method
+	      ((member name method-initargs))
+	      ;; Check if the arguments is associated with a slot
+	      ((find name slots :test #'member :key #'slotd-initargs))
+	      (t
+	       (setf unknown-key name)))))))
 
 ;;; ----------------------------------------------------------------------
 ;;; Basic access to instances

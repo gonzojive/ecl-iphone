@@ -9,6 +9,10 @@
 
 (in-package "CLOS")
 
+;;; ----------------------------------------------------------------------
+;;; INTERACTIVE NAVIGATION THROUGH OBJECTS
+;;;
+
 (defmethod select-clos-N ((instance standard-object))
   (let* ((class (si:instance-class instance))
 	 (local-slotds (slot-value class 'CLOS::SLOTS))
@@ -476,3 +480,20 @@ q (or Q):             quits the inspection.~%~
   (when (and (si::valid-function-name-p object)
 	     (member doc-type '(function compiler-macro)))
     (si::set-documentation object doc-type new-value)))
+
+(defmethod documentation ((object standard-generic-function) doc-type)
+  (when (member doc-type '(t function))
+    (slot-value object 'documentation)))
+
+(defmethod (setf documentation) (new-value (object standard-generic-function) doc-type)
+  (when (member doc-type '(t function))
+    (setf (slot-value object 'documentation) new-value)))
+
+(defmethod documentation ((object standard-method) doc-type)
+  (when (member doc-type '(t function))
+    (slot-value object 'documentation)))
+
+(defmethod (setf documentation) (new-value (object standard-method) doc-type)
+  (when (member doc-type '(t function))
+    (setf (slot-value object 'documentation) new-value)))
+

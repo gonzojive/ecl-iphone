@@ -266,7 +266,6 @@
 "c/multival.d"
 "c/threads.d"
 "c/ffi.d"
-"lsp/ansi.lsp"
 "lsp/arraylib.lsp"
 "lsp/assert.lsp"
 "lsp/autoload.lsp"

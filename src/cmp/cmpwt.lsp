@@ -124,10 +124,9 @@
   (etypecase stream
     (null (return-from data-dump))
     ((or pathname string)
-     (setf stream (open stream :direction :output
-			:if-does-not-exist :create
-			:if-exists :overwrite)
-	   must-close t))
+     (setf stream (open stream :direction :output :if-does-not-exist :create
+			:if-exists :supersede)
+	   must-close stream))
     (stream))
   (let ((*print-radix* nil)
 	(*print-base* 10)
@@ -140,21 +139,27 @@
 	(*print-array* t)
 	(*read-default-float-format* 'single-float)
 	(sys::*print-package* (find-package "CL"))
-	(sys::*print-structure* t))
-    (if as-lisp-file
-	(progn
-	  (print *objects* stream)
-	  (print *next-vv* stream))
-	(unless (zerop (data-size))
-	  (wt-data-begin stream)
-	  (wt-filtered-data
-	   (subseq (prin1-to-string (nreverse (mapcar #'car *objects*))) 1)
-	   stream)
-	  (wt-data-end stream))))
-  (when must-close
-    (close stream))
-  (setf *objects* nil
-	*next-vv* -1))
+	(sys::*print-structure* t)
+	(output nil))
+    (cond (as-lisp-file
+	   (print *objects* stream)
+	   (print *next-vv* stream))
+	  (*compiler-constants*
+	   (format stream "~%#define compiler_data_text NULL~%#define compiler_data_text_size 0~%")
+	   (setf output (make-sequence 'vector (data-size)))
+	   (dolist (record *objects*)
+	     (setf (aref output (third record)) (first record))))
+	  ((plusp (data-size))
+	   (wt-data-begin stream)
+	   (wt-filtered-data
+	    (subseq (prin1-to-string (nreverse (mapcar #'car *objects*))) 1)
+	    stream)
+	   (wt-data-end stream)))
+    (when must-close
+      (close must-close))
+    (setf *objects* nil
+	  *next-vv* -1)
+    output))
 
 (defun wt-data (expr stream)
   (wt-filtered-data
@@ -185,8 +190,9 @@
 (defun add-object (object &optional (duplicate nil))
   (when (typep object '(or function package))
     (error "Object ~S cannot be externalized" object))
-  (let ((x (assoc object *objects* :test 'equal))
-	(found nil))
+  (let* ((test (if *compiler-constants* 'eq 'equal))
+	 (x (assoc object *objects* :test test))
+	 (found nil))
     (cond ((and x duplicate)
 	   (setq found `(VV ,(incf *next-vv*)))
 	   (push (list object found *next-vv* (- (1+ (third x)))) *objects*)

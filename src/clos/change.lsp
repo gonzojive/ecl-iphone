@@ -46,6 +46,12 @@
 	added-slots)
     (setf added-slots (set-difference (mapcar #'slotd-name new-local-slotds)
 				      (mapcar #'slotd-name old-local-slotds)))
+    (check-initargs (class-of new-data) initargs
+		    (append (compute-applicable-methods
+			     #'update-instance-for-different-class
+			     (list old-data new-data))
+			    (compute-applicable-methods
+			     #'shared-initialize (list new-data added-slots))))
     (apply #'shared-initialize new-data added-slots initargs)))
 
 (defmethod change-class ((instance standard-object) (new-class standard-class)
@@ -112,7 +118,13 @@
     ((instance standard-object) added-slots discarded-slots property-list
      &rest initargs)
   (declare (ignore discarded-slots property-list))
-  (check-initargs (class-of instance) initargs)
+  (check-initargs (class-of instance) initargs
+		  (append (compute-applicable-methods
+			   #'update-instance-for-redefined-class
+			   (list instance added-slots discarded-slots property-list))
+			  (compute-applicable-methods
+			   #'shared-initialize
+			   (list instance added-slots))))
   (apply #'shared-initialize instance added-slots initargs))
 
 (defun update-instance (instance)
@@ -154,8 +166,11 @@
 ;;; ----------------------------------------------------------------------
 ;;; CLASS REDEFINITION PROTOCOL
 
+(ensure-generic-function 'reinitialize-instance
+			 :lambda-list '(class &rest initargs))
+
 (defmethod reinitialize-instance ((class class) &rest initargs
-				  &key direct-superclasses &allow-other-keys)
+				  &key direct-superclasses)
   (let ((name (class-name class)))
     (if (member name '(CLASS BUILT-IN-CLASS) :test #'eq)
 	(error "The kernel CLOS class ~S cannot be changed." name)

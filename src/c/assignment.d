@@ -129,7 +129,6 @@ cl_object
 si_put_sysprop(cl_object sym, cl_object prop, cl_object value)
 {
 	cl_object plist;
-	assert_type_symbol(sym);
 	plist = gethash_safe(sym, cl_core.system_properties, Cnil);
 	sethash(sym, cl_core.system_properties, si_put_f(plist, value, prop));
 	@(return value);
@@ -139,7 +138,6 @@ cl_object
 si_rem_sysprop(cl_object sym, cl_object prop)
 {
 	cl_object plist, found;
-	assert_type_symbol(sym);
 	plist = gethash_safe(sym, cl_core.system_properties, Cnil);
 	plist = si_rem_f(plist, prop);
 	found = VALUES(1);

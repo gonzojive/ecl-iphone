@@ -11,6 +11,15 @@
 
 (in-package "SYSTEM")
 
+(defun si::assert-slot-type (value slot-type struct-name slot-name)
+  (unless (or (eq slot-type 'T)
+	      (typep value slot-type))
+    (error 'simple-type-error
+	   :format-control "Slot ~A in structure ~A only admits values of type ~A."
+	   :format-arguments (list slot-name struct-name slot-type)
+	   :datum value
+	   :expected-type slot-type)))
+
 (defun make-access-function (name conc-name type named slot-descr)
   (declare (ignore named)
 	   (si::c-local))
@@ -52,7 +61,7 @@
 	))
   )
 
-(defun process-boa-lambda-list (slot-names slot-descriptions boa-list)
+(defun process-boa-lambda-list (slot-names slot-descriptions boa-list assertions)
   (declare (si::c-local))
   (let ((mentioned-slots '())
 	(aux))
@@ -77,15 +86,20 @@
 	     (push slot mentioned-slots)
 	     (when modify
 	       (setf (first i)
-		     (list slot (second (assoc slot slot-descriptions))))))
+		     (list slot (second (assoc slot slot-descriptions)))))
+	     (when aux
+	       (setf assertions (delete slot assertions :key 'second))))
 	    (t
 	     (let ((slot-name (first slot)))
 	       (when (consp slot-name)
 		 (setq slot-name (second slot-name)))
 	       (push slot-name mentioned-slots)
-	       (when (and modify (endp (rest slot)))
-		 (setf (rest slot)
-		       (list (second (assoc slot-name slot-descriptions)))))))))
+	       (when (endp (rest slot))
+		 (when modify
+		   (setf (rest slot)
+			 (list (second (assoc slot-name slot-descriptions)))))
+		 (when aux
+		   (setf assertions (delete slot assertions :key 'second))))))))
     ;; For all slots not mentioned above, add the default values from
     ;; the DEFSTRUCT slot description.
     (let ((other-slots (nset-difference
@@ -97,61 +111,71 @@
 	       (slot-init (second slot)))
 	  (when slot-init
 	    (setf (car l) (list (car l) slot-init)))))
-      (cond (other-slots
-	     (unless aux
-	       (push '&aux other-slots))
-	     (append boa-list other-slots))
-	    (t
-	     boa-list)))))
+      (when other-slots
+	(unless aux
+	  (push '&aux other-slots))
+	(setf boa-list (append boa-list other-slots)))
+      (values boa-list assertions))))
 
 (defun make-constructor (name constructor type named slot-descriptions)
   (declare (ignore named)
 	   (si::c-local))
-  (let* (slot-names keys)
+  ;; CONSTRUCTOR := constructor-name | (constructor-name boa-lambda-list)
+  (let* ((boa-constructor-p (consp constructor))
+	 (keys (unless boa-constructor-p (list '&key)))
+	 (constructor-name (if boa-constructor-p (first constructor) constructor))
+	 (slot-names '())
+	 (assertions '()))
     (dolist (slot slot-descriptions
 	     (setq slot-names (nreverse slot-names) keys (nreverse keys)))
       (push
        (cond ((null slot)
 	      ;; If slot-description is NIL, it is padding for initial-offset.
-	      ;; FIXME! NIL could, in principle, be valid slot name.
 	      nil)
 	     ((eql (first slot) 'TYPED-STRUCTURE-NAME)
-	      ;; If slot-name is NIL, it is the structure name of a typed
-	      ;; structure with name.
+	      ;; This slot is the name of a typed structure with name.
 	      (list 'QUOTE (second slot)))
-	     (t	  
+	     (t
 	      (let* ((slot-name (first slot))
-		     (init-form (second slot)))
+		     (slot-type (third slot))
+		     (offset (fifth slot))
+		     (init-form (second slot))
+		     (var-name slot-name))
 		;; Unless BOA constructors are used, we should avoid using
 		;; slot names as lambda variables in the constructor.
-		(unless (consp constructor)
-		  (setq slot-name (copy-symbol slot-name)))
-		(push (if init-form (list slot-name init-form) slot-name)
-		      keys)
-		slot-name)))
+		(unless boa-constructor-p
+		  (setq var-name (copy-symbol slot-name))
+		  (push (if init-form (list var-name init-form) var-name)
+			keys))
+		;; We insert type checks for every slot and only in the
+		;; case of BOA lists we remove some of these checks for
+		;; uninitialized slots.
+		(unless (eq 'T slot-type)
+		  (push `(si::assert-slot-type ,var-name ',slot-type ',name ',slot-name)
+			assertions))
+		var-name)))
        slot-names))
-    ;; CONSTRUCTOR := constructor-name | (constructor-name boa-lambda-list)
-    (if (atom constructor)
-	(setq keys (cons '&key keys))
-	(setq keys (process-boa-lambda-list slot-names slot-descriptions
-					    (second constructor))
-	      constructor (first constructor)))
+    (when boa-constructor-p
+      (setf (values keys assertions)
+	    (process-boa-lambda-list slot-names slot-descriptions
+				     (second constructor) assertions)))
     (cond ((null type)
-           `(defun ,constructor ,keys
+           `(defun ,constructor-name ,keys
+	      ,@assertions
 	      #-CLOS
               (sys:make-structure ',name ,@slot-names)
 	      #+CLOS
 	      (sys:make-structure (find-class ',name) ,@slot-names)))
 	  ((subtypep type '(VECTOR T))
-	   `(defun ,constructor ,keys
+	   `(defun ,constructor-name ,keys
 	     (vector ,@slot-names)))
           ((subtypep type 'VECTOR)
-           `(defun ,constructor ,keys
+           `(defun ,constructor-name ,keys
               (make-array ',(list (length slot-names))
 			  :element-type ',(closest-vector-type type)
 	       		  :initial-contents (list ,@slot-names))))
           ((eq type 'LIST)
-           `(defun ,constructor ,keys
+           `(defun ,constructor-name ,keys
               (list ,@slot-names)))
           ((error "~S is an illegal structure type" type)))))
 
@@ -191,7 +215,8 @@
 
 (defun parse-slot-description (slot-description offset)
   (declare (si::c-local))
-  (let* (slot-name default-init slot-type read-only)
+  (let* ((slot-type 'T)
+	 slot-name default-init read-only)
     (cond ((atom slot-description)
            (setq slot-name slot-description))
           ((endp (cdr slot-description))

@@ -31,9 +31,12 @@
 
 (defun closest-vector-type (type)
   (let (elt-type length name args)
-    (if (atom type)
-	(setq name type args nil)
-	(setq name (first type) args (cdr type)))
+    (cond ((consp type)
+	   (setq name (first type) args (cdr type)))
+	  ((si::instancep type)
+	   (setf name (class-name type) args nil))
+	  (t
+	   (setq name type args nil)))
     (case name
       ((VECTOR)
        (setq elt-type (if (endp args) '* (first args))
@@ -56,6 +59,11 @@
        (setq elt-type (upgraded-array-element-type (first args))
 	     length (first (second args))))
       (t
+       ;; We arrive here when the sequence type is not easy to parse.
+       ;; We give up trying to guess the length of the sequence.
+       ;; Furthermore, we also give up trying to find if the element
+       ;; type is *. Instead we just compare with some specialized
+       ;; types and otherwise fail.
        (dolist (i '((SIMPLE-STRING . BASE-CHAR)
 		    (STRING . BASE-CHAR)
 		    (BIT-VECTOR . BIT)
@@ -64,8 +72,17 @@
 		    ((VECTOR FIXNUM) . FIXNUM)
 		    ((VECTOR SHORT-FLOAT) . SHORT-FLOAT)
 		    ((VECTOR LONG-FLOAT) . LONG-FLOAT)
-		    (VECTOR . T))
-		(error-sequence-type type))
+		    ((VECTOR T) . T))
+		(if (subtypep type 'vector)
+		    ;; Does this have to be a type-error?
+		    ;; 17.3 for MAKE-SEQUENCE says it should be an error,
+		    ;; but does not specialize what kind.
+		    (error 'simple-type-error
+			   :datum type
+			   :expected-type 'sequence
+			   :format-control "Cannot find the element type in sequence type ~S"
+			   :format-arguments (list type))
+		    (error-sequence-type type)))
 	  (when (subtypep type (car i))
 	    (setq elt-type (cdr i) length '*)
 	    (return)))))

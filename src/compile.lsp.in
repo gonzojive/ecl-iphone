@@ -67,14 +67,20 @@
 (proclaim '(optimize (safety 2) (space 3)))
 (let* ((c::*cc-flags* (concatenate 'string "-I@true_builddir@/c " c::*cc-flags*))
        (lsp-objects (compile-if-old "build:lsp;" +lisp-module-files+
-				    :system-p t :c-file t :data-file t :h-file t)))
+				    :system-p t :c-file t :data-file t :h-file t
+				    ;;:shared-data-file "build:ecl.sdat"
+				    )))
   #+CLOS
   (let* ((c::*compile-to-linking-call* nil))
     (proclaim '(optimize (safety 2) (space 3)))
     (setq lsp-objects (append lsp-objects
 			      (compile-if-old "build:clos;" +clos-module-files+
-					      :system-p t :c-file t :data-file t :h-file t))))
-  (c::build-static-library "lsp" :lisp-files lsp-objects))
+					      :system-p t :c-file t :data-file t :h-file t
+					      ;;:shared-data-file "build:ecl.sdat"
+					      ))))
+  (c::build-static-library "lsp" :lisp-files lsp-objects
+			   ;;:shared-data-file "build:ecl.sdat"
+			   ))
 
 #-dlopen
 (si::system "sh -c 'mkdir tmp; rm -f tmp/*;
@@ -108,11 +114,13 @@ ranlib ../@LIBPREFIX@ecl.@LIBEXT@'")
 
 #+(and (not cross) (or (not stage1) WANTS-CMP))
 (let ((objects (compile-if-old "build:cmp;" +cmp-module-files+
-				:system-p t :c-file t :data-file t :h-file t)))
-  #-dlopen
-  (c::build-static-library "cmp" :lisp-files objects)
-  #+dlopen
-  (c::build-fasl "cmp" :lisp-files objects))
+				:system-p t :c-file t :data-file t :h-file t
+				;;:shared-data-file "build:cmp.sdat"
+				)))
+  (#-dlopen c::build-static-library
+   #+dlopen c::build-fasl "cmp" :lisp-files objects
+   ;;:shared-data-file "build:cmp.sdat"
+   ))
 
 ;;;
 ;;; * Compile the portable CLX library.

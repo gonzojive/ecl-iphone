@@ -396,7 +396,7 @@ q (or Q):             quits the inspection.~%~
   (declare (si::c-local))
   (if *inspect-mode*
       (clos::inspect-obj instance)
-      (clos::describe-object instance)))
+      (clos::describe-object instance *standard-output*)))
 
 (defun inspect-object (object &aux (*inspect-level* *inspect-level*))
   (declare (si::c-local))
@@ -424,13 +424,20 @@ q (or Q):             quits the inspection.~%~
                (t (format t "~S - ~S" object (type-of object))))))
 
 
-(defun describe (object &aux (*inspect-mode* nil)
+(defun describe (object &optional (stream *standard-output*)
+			&aux (*inspect-mode* nil)
                              (*inspect-level* 0)
                              (*inspect-history* nil)
                              (*print-level* nil)
-                             (*print-length* nil))
-  "Args: (object)
-Prints information about OBJECT to the standard output."
+                             (*print-length* nil)
+			     (*standard-output* (cond ((streamp stream) stream)
+			                              ((null stream) *standard-output*)
+						      ((eq stream t) *terminal-io*)
+						      (t (error 'type-error
+						                :datum stream
+								:expected-type '(or stream t nil))))))
+  "Args: (object &optional (stream *standard-output*))
+Prints information about OBJECT to STREAM."
   (terpri)
   (catch 'QUIT-INSPECT (inspect-object object))
   (terpri)

@@ -75,7 +75,6 @@ Report for details."
 
 ;;; Allocator.
 
-#-boehm-gc
 (defun room (&optional x)
   "Args: (&optional (x t))
 Displays information about storage allocation in the following format.
@@ -97,6 +96,15 @@ Displays information about storage allocation in the following format.
 	* number of pages ECL can use.
 The number of times the garbage collector has been called is not shown, if the
 number is zero.  The optional X is simply ignored."
+  #+boehm-gc
+  (progn
+    (format t "
+Unfortunately, when linked against the Boehm-Weiser garbage collector,
+ECL has no means to find out the amount of memory used. Please use
+some other routine (such as top in Unix or the Ctrl+Alt+Del combination
+in Windows) to learn this.")
+    (values))
+  #-boehm-gc
   (let* (npage info-list link-alist)
     (multiple-value-bind
 	  (maxpage leftpage ncbpage maxcbpage ncb cbgbccount

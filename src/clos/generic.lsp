@@ -9,79 +9,45 @@
 
 (in-package "CLOS")
 
-(defun legal-generic-function-p (name)
-  (declare (si::c-local))
-  (cond ((not (fboundp name)))
-	; a generic function already exists
-	((si::instancep (fdefinition name)))
-	((special-operator-p name)
-	 (error "~A is a special form" name))
-	((macro-function name)
-	 (error "~A is a macro" name))
-	(t 
-	 (error "~A is a lisp function" name))))
+;;; ----------------------------------------------------------------------
+;;; DEFGENERIC
+;;;
 
 (defmacro defgeneric (&rest args)
   (multiple-value-bind (function-specifier lambda-list options)
     (parse-defgeneric args)
-    (when (legal-generic-function-p function-specifier)
-      (parse-lambda-list lambda-list)
-      
-      ;; process options
-      (multiple-value-bind (option-list method-list)
-	  (parse-generic-options options lambda-list)
-	#|
-	       (if (fboundp function-specifier)
-		   ;; remove methods defined by previous defgeneric
-		   (setf (methods 
-			   (symbol-function function-specifier)) nil)))
-|#
-	(let ((output `(ensure-generic-function ',function-specifier
-			,@option-list)))
-	  (if method-list
-	      (do* ((scan method-list (cdr scan)))
-		   ((endp scan)
-		    `(prog1 ,output ,@method-list))
-		(setf (first scan)
-		      `(defmethod ,function-specifier ,@(first scan))))
-	      output))
-	;;,(dolist (method method-list)
-	;; add methods specified by defgeneric
-	;;
-	))))
-
-;;; ----------------------------------------------------------------------
-;;;                                                                parsing
+    (parse-lambda-list lambda-list)
+    ;; process options
+    (multiple-value-bind (option-list method-list)
+	(parse-generic-options options lambda-list)
+      (let* ((output `(ensure-generic-function ',function-specifier
+		       :delete-methods t ,@option-list)))
+	(if method-list
+	    `(prog1 ,output
+	      ,@(mapcar #'(lambda (m)
+			  `(setf (method-from-defgeneric-p
+				    (defmethod ,function-specifier ,@m))
+			         t))
+		      method-list))
+	    output))
+      )))
 
 (defun parse-defgeneric (args)
   (declare (si::c-local))
   ;; (values function-specifier lambda-list options)
   (let (function-specifier)
     (unless args
-      (error "Illegal defgeneric form: missing generic function name"))
+      (simple-program-error "Illegal defgeneric form: missing generic function name"))
     (setq function-specifier (pop args))
-    (unless (legal-generic-function-name-p function-specifier)
-      (error "~A cannot be a generic function specifier.~%~
-             It must be either a non-nil symbol or ~%~
-             a list whose car is SETF and whose cadr is a non-nil symbol."
-	     function-specifier))
     (unless args
-      (error "Illegal defgeneric  form: missing lambda-list"))
+      (simple-program-error "Illegal defgeneric form: missing lambda-list"))
     (values function-specifier (first args) (rest args))))
 
-#|
-(defun parse-generic-function (args)
-  (declare (si::c-local))
-  ;; (values lambda-list options)
-  (unless args
-    (error "Illegal generic-function form: missing lambda-list"))
-  (values (first args) (rest args)))
-|#
-	
 (defun parse-generic-options (options lambda-list)
   (declare (si::c-local))
   (let* ((processed-options '())
 	 (method-list '())
+	 (declarations '())
 	 arg-list)
     (dolist (option options)
       (let ((option-name (first option))
@@ -90,104 +56,39 @@
 	       ;; We do not need to check the validity of this
 	       ;; because DEFMETHOD will do it.
 	       (push (rest option) method-list))
+	      ((eq option-name 'declare)
+	       (setf declarations (append (rest option) declarations)))
 	      ((member option-name processed-options)
-	       (error "Option ~s specified more than once" option-name))
+	       (simple-program-error "Option ~s specified more than once"
+				     option-name))
 	      (t
 	       (push option-name processed-options)
+	       ;; We leave much of the type checking for SHARED-INITIALIZE
 	       (setq option-value
 		     (case option-name
 		       (:argument-precedence-order
-			(parse-parameter-names (second option) lambda-list))
-		       (declare
-			(setq option-name :declare)
-			(mapcar #'parse-legal-declaration (rest option)))
-		       (:documentation
-			(parse-legal-documentation (second option)))
+			(rest option))
 		       (:method-combination
 			(rest option))
-		       (:generic-function-class
-			(legal-generic-function-classp (second option)))
-		       (:method-class
-			(parse-legal-method-class (second option)))
+		       ((:documentation :generic-function-class :method-class)
+			(unless (endp (cddr option))
+			  (simple-program-error "Too many arguments for option ~A"
+						option-name))
+			(second option))
 		       (otherwise
-			(error "~S is not a legal defgeneric option"
-			       option-name))))
+			(simple-program-error "~S is not a legal defgeneric option"
+					      option-name))))
 	       (setf arg-list `(,option-name ',option-value ,@arg-list))))))
-    (values `(:lambda-list ',lambda-list ,@arg-list)
+    (values `(:lambda-list ',lambda-list ,@arg-list
+	      ,@(when declarations `(:declarations ',declarations)))
 	    method-list)))
-
-(defun ensure-generic-function (name &rest args &key
-				lambda-list
-				(generic-function-class 'STANDARD-GENERIC-FUNCTION)
-				(method-class 'STANDARD-METHOD)
-				&allow-other-keys)
-  (unless (LEGAL-GENERIC-FUNCTION-NAME-P name)
-    (error "Generic function ~A has incorrect function specifier
-                  (a non-nil symbol, a list whose car is SETF)"
-	   name))
-  (when (LEGAL-GENERIC-FUNCTION-P name)
-    (setf args (copy-list args))
-    (remf args :generic-function-class)
-    (remf args :declare)
-    (remf args :environment)
-    (unless (classp method-class)
-      (setf args (list* :method-class (find-class method-class) args)))
-    (let ((gfun (and (fboundp name) (fdefinition name))))
-      (if (typep gfun 'generic-function)
-	  ;; modify the existing object
-	  ;; FIXME! WE MUST IMPLEMENT REINITIALIZATION OF GENERIC FUNCTIONS
-	  (apply #'reinitialize-instance gfun :name name args)
-	  ;; else create a new generic function object
-	  (setf gfun (apply #'make-instance generic-function-class
-			    :name name args)
-		(fdefinition name) (si::set-funcallable gfun t)))
-      gfun)))
-
-;;; ----------------------------------------------------------------------
-;;;                                                             congruence
-
-#+(or)
-(defun congruent-lambda-list-p (l1 l2)
-  (let (post-keyword)
-    (do ((scan1 l1 (cdr scan1))
-	 (scan2 l2 (cdr scan2)))
-	((and (null scan1) (null scan2)))
-	(cond ((and (not post-keyword)
-		    (or
-		     (and 
-		      (member (first scan1) 
-			      '(&REST &KEY &ALLOW-OTHER-KEYS &AUX))
-		      (not (member (first scan2) 
-			      '(&REST &KEY &ALLOW-OTHER-KEYS &AUX))))
-		     (and 
-		      (member (first scan2) 
-			      '(&REST &KEY &ALLOW-OTHER-KEYS &AUX))
-		      (not (member (first scan1) 
-			      '(&REST &KEY &ALLOW-OTHER-KEYS &AUX))))))
-	       (error "the two lambda lists ~S ~S have not the same number
-                       of required parameters" l1 l2))
-	      ((eq (first scan1) '&OPTIONAL)
-	       (unless (eq (first scan2) '&OPTIONAL)
-		       (error "the two lambda lists ~S ~S have not the same 
-                        number of optional parameters" l1 l2))
-	       (do ((scan-op1 (cdr scan1) (cdr scan-op1))
-		    (scan-op2 (cdr scan2) (cdr scan-op2)))
-		    ((and (null scan-op1) (null scan-op2)))
-		    (cond ((or (null scan-op2)
-			      (member (car scan-op2) 
-				      '(&REST &KEY &ALLOW-OTHER-KEYS &AUX)))
-			  (error "the two lambda lists ~S ~S have not the same 
-                        number of optional parameters" l1 l2)))))))))
-
-;;; ----------------------------------------------------------------------
-;;;                                                                parsing
 
 (defun parse-lambda-list (lambda-list &optional post-keyword)
   (declare (si::c-local))
   (let ((arg (car lambda-list)))
     (cond ((null lambda-list))
 	  ((eq arg '&AUX)
-	   (error "&aux is not allowed in a generic function lambda-list"))
+	   (simple-program-error "&aux is not allowed in a generic function lambda-list"))
 	  ((member arg lambda-list-keywords)
 	   (parse-lambda-list (cdr lambda-list) t))
 	  (post-keyword
@@ -195,52 +96,136 @@
 	   (parse-lambda-list (cdr lambda-list) t))
 	  (t
 	   (if (listp arg)
-	       (error "the parameters cannot be specialized in generic function lambda-list")
+	       (simple-program-error "the parameters cannot be specialized in generic function lambda-list")
 	       (parse-lambda-list (cdr lambda-list)))))))
 
-(defun parse-parameter-names (parameter-list lambda-list)
-  (declare (si::c-local))
-  (let* (required-list count)
-    (setf required-list
-	  (do ((l lambda-list (cdr l)))
-	      ((or (null l)
-		   (member (car l) '(&REST &KEY &ALLOW-OTHER-KEYS)))
-	       (nreverse required-list))
-	      (push l required-list)))
-    (dolist (l required-list parameter-list)
-	    (setf count (count l parameter-list))
-	    (when (not (= count 1))
-		  (error "the required parameter ~S must be included
-                                exactly once in the argument-precedence-order 
-                                option" l)))))
-
-(defun parse-legal-declaration (decl)
+(defun valid-declaration-p (decl)
   ;(declare (si::c-local))
   (unless (eq (first decl) 'OPTIMIZE)
-	  (error "The only declaration allowed is optimize"))
+	  (simple-program-error "The only declaration allowed is optimize"))
   (dolist (first (rest decl))
     (when (atom first)
       (setq first (cons first 3)))
     (unless (member (car first) '(SPEED SPACE COMPILATION-SPEED DEBUG SAFETY))
-      (error "The only qualities allowed are speed and space")))
+      (simple-program-error "The only qualities allowed are speed and space")))
   decl)
 
-(defun parse-legal-documentation (doc)
-  (declare (si::c-local))
-  (unless (stringp doc)
-	  (error "The documentation must be a string"))
-  doc)
+;;; ----------------------------------------------------------------------
+;;; GENERIC FUNCTION (RE)INITIALIZATION PROTOCOL
+;;
 
-(defun legal-generic-function-classp (class-name)
-  (declare (si::c-local))
-  ; until we don't know when a class can be the class of a generic function
-  (unless (subtypep (find-class class-name) 
-		    (find-class 'GENERIC-FUNCTION))
-	  (error "The class ~S cannnot be the class of a generic function" 
-		 class-name))
-  class-name)
+(defun lambda-list-required-arguments (lambda-list)
+  (rest (si::process-lambda-list lambda-list t)))
 
-(defun parse-legal-method-class (class-name)
-  (declare (si::c-local))
-  ; until we don't know when a class can be the class of a method
-  (error "At the moment the class of a method can be only standard-method"))
+(defmethod shared-initialize ((gfun generic-function) slot-names &rest initargs
+			      &key (lambda-list nil l-l-p)
+			      (argument-precedence-order nil a-o-p)
+			      (documentation nil)
+			      (declarations nil)
+			      method-combination
+			      (method-class (find-class 'method))
+			      )
+  ;;
+  ;; Check the validity of several fields.
+  ;;
+  (when a-o-p
+    (unless l-l-p
+      (simple-program-error "Supplied :argument-precedence-order, but :lambda-list is missing"))
+    (dolist (l (lambda-list-required-arguments lambda-list))
+      (unless (= (count l argument-precedence-order) 1)
+	(simple-program-error "The required argument ~A does not appear exactly once in the ARGUMENT-PRECEDENCE-ORDER list ~A"
+			      l argument-precedence-order))))
+  (unless (every #'valid-declaration-p declarations)
+    (simple-program-error "Not a valid declaration list: ~A" declarations))
+  (unless (or (null documentation) (stringp documentation))
+    (error 'simple-type-error
+	   :format-control "Not a valid documentation object ~"
+	   :format-arguments (list documentation)
+	   :datum documentation
+	   :expected-type (or nil string)))
+  (unless (or (null method-combination)
+	      (and (listp method-combination)
+		   (member (first method-combination) *method-combinations*)))
+    (error 'simple-type-error
+	   :format-control "Not a valid method combination, ~A"
+	   :list (list method-combination)
+	   :datum method-combination
+	   :expected-type 'list))
+  (unless (si::subclassp method-class (find-class 'method))
+    (error 'simple-type-error
+	   :format-control "Not a valid method class, ~A"
+	   :list (list method-class)
+	   :datum method-class
+	   :expected-type 'method))
+  ;;
+  ;; When supplying a new lambda-list, ensure that it is compatible with
+  ;; the old list of methods.
+  ;;
+  (when (and l-l-p (slot-boundp gfun 'methods))
+    (unless (every #'(lambda (x)
+		       (congruent-lambda-p lambda-list x))
+		 (mapcar #'method-lambda-list (generic-function-methods gfun)))
+      (simple-program-error "Cannot replace the lambda list of ~A with ~A because it is incongruent with some of the methods"
+			    gfun lambda-list)))
+  (call-next-method)
+  (when (and l-l-p (not a-o-p))
+    (setf (generic-function-argument-precedence-order gfun)
+	  (lambda-list-required-arguments lambda-list)))
+  gfun)
+
+(defmethod ensure-generic-function-using-class
+    ((gfun generic-function) name &rest args &key (method-class 'STANDARD-METHOD)
+     (generic-function-class (class-of gfun))
+     (delete-methods nil))
+  ;; modify the existing object
+  (setf args (copy-list args))
+  (remf args :generic-function-class)
+  (remf args :declare)
+  (remf args :environment)
+  (remf args :delete-methods)
+  (when (symbolp generic-function-class)
+    (setf generic-function-class (find-class generic-function-class)))
+  (unless (eq (class-of gfun) generic-function-class)
+    (simple-program-error "Tried to change the class of the generic function ~A"
+			  gfun))
+  (when delete-methods
+    (dolist (m (copy-list (generic-function-methods gfun)))
+      (when (method-from-defgeneric-p m)
+	(remove-method gfun m))))
+  (unless (classp method-class)
+    (setf args (list* :method-class (find-class method-class) args)))
+  ;; FIXME! WE MUST IMPLEMENT REINITIALIZATION OF GENERIC FUNCTIONS
+  (apply #'reinitialize-instance gfun :name name args))
+
+(defmethod ensure-generic-function-using-class
+    ((gfun null) name &rest args &key (method-class 'STANDARD-METHOD)
+     (generic-function-class 'STANDARD-GENERIC-FUNCTION)
+     (delete-methods nil))
+  ;; else create a new generic function object
+  (setf args (copy-list args))
+  (remf args :generic-function-class)
+  (remf args :declare)
+  (remf args :environment)
+  (remf args :delete-methods)
+  (unless (classp method-class)
+    (setf args (list* :method-class (find-class method-class) args)))
+  (si::set-funcallable (apply #'make-instance generic-function-class
+			      :name name args)
+		       t))
+
+(defun ensure-generic-function (name &rest args &key &allow-other-keys)
+  (let ((gfun nil))
+    (cond ((not (legal-generic-function-name-p name))
+	   (simple-program-error "~A is not a valid generic function name" name))
+          ((not (fboundp name)))
+	  ;; a generic function already exists
+	  ((si::instancep (setf gfun (fdefinition name))))
+	  ((special-operator-p name)
+	   (simple-program-error "The special operator ~A is not a valid name for a generic function" name))
+	  ((macro-function name)
+	   (simple-program-error "The symbol ~A is bound to a macro and is not a valid name for a generic function" name))
+	  (t
+	   (simple-program-error "The symbol ~A is bound to an ordinary function and is not a valid name for a generic function" name))
+	  )
+    (setf (fdefinition name)
+	  (apply #'ensure-generic-function-using-class gfun name args))))

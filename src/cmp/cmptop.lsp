@@ -114,7 +114,8 @@
     (wt-nl1 "{ VT" *reservation-cmacro* " CLSR" *reservation-cmacro*)
     (wt-nl "cl_object value0;")
     (when shared-data
-      (wt-nl "Cblock=flag;"))
+      (wt-nl "Cblock=flag;")
+      (wt-nl "VV = flag->cblock.data;"))
     (unless shared-data
       (wt-nl "if (!FIXNUMP(flag)){")
       (wt-nl "Cblock=flag;")
@@ -130,6 +131,11 @@
       (wt-nl "#ifdef ECL_DYNAMIC_VV")
       (wt-nl "VV = Cblock->cblock.data;")
       (wt-nl "#endif"))
+    (when si::*compiler-constants*
+      (wt-nl "{cl_object data = symbol_value("
+	     (nth-value 1 (si::mangle-name '*compiler-constants* nil))
+	     ");")
+      (wt-nl "memcpy(VV, data->vector.self.t, VM*sizeof(cl_object));}"))
     ;; useless in initialization.
     (dolist (form *top-level-forms*)
       (let ((*compile-to-linking-call* nil)
@@ -143,31 +149,23 @@
 
   ;; Declarations in h-file.
   (wt-h "static cl_object Cblock;")
-  (if shared-data
-      (progn
-	(wt-h "#ifdef ECL_DYNAMIC_VV")
-	(wt-h "extern cl_object *VV;")
-	(wt-h "#else")
-	(wt-h "extern cl_object VV[];")
-	(wt-h "#endif"))
-      (progn
-	(dolist (x *reservations*)
-	  (wt-h "#define VM" (car x) " " (cdr x)))
-	(let ((num-objects (data-size)))
-	  (if (zerop num-objects)
-	      (progn
-		(wt-h "#undef ECL_DYNAMIC_VV")
-		(wt-h "#define compiler_data_text \"\"")
-		(wt-h "#define compiler_data_text_size 0")
-		(wt-h "#define VM " num-objects 0)
-		(wt-h "#define VV NULL"))
-	      (progn
-		(wt-h "#define VM " num-objects)
-		(wt-h "#ifdef ECL_DYNAMIC_VV")
-		(wt-h "static cl_object *VV;")
-		(wt-h "#else")
-		(wt-h "static cl_object VV[VM];")
-		(wt-h "#endif"))))))
+  (dolist (x *reservations*)
+    (wt-h "#define VM" (car x) " " (cdr x)))
+  (let ((num-objects (data-size)))
+    (if (zerop num-objects)
+	(progn
+	  (wt-h "#undef ECL_DYNAMIC_VV")
+	  (wt-h "#define compiler_data_text \"\"")
+	  (wt-h "#define compiler_data_text_size 0")
+	  (wt-h "#define VM " num-objects 0)
+	  (wt-h "#define VV NULL"))
+	(progn
+	  (wt-h "#define VM " num-objects)
+	  (wt-h "#ifdef ECL_DYNAMIC_VV")
+	  (wt-h "static cl_object *VV;")
+	  (wt-h "#else")
+	  (wt-h "static cl_object VV[VM];")
+	  (wt-h "#endif"))))
   (dolist (l *linking-calls*)
     (let* ((c-name (fourth l))
 	   (var-name (fifth l)))

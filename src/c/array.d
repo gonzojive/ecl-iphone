@@ -660,10 +660,11 @@ cl_array_displacement(cl_object a)
 
 	assert_type_array(a);
 	to_array = a->array.displaced;
-	if (Null(to_array))
+	if (Null(to_array)) {
 		offset = 0;
-	else {
-		to_array = CAR(a->array.displaced);
+	} else if (Null(to_array = CAR(a->array.displaced))) {
+		offset = 0;
+	} else {
 		switch (array_elttype(a)) {
 		case aet_object:
 			offset = a->array.self.t - to_array->array.self.t;

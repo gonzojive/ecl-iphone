@@ -244,11 +244,10 @@ main(int argc, char **argv)
 	   (format c-file "
 #define VM ~A
 #ifdef ECL_DYNAMIC_VV
-cl_object *VV;
+static cl_object *VV;
 #else
-cl_object VV[VM];
+static cl_object VV[VM];
 #endif
-cl_object Cblock;
 #define ECL_SHARED_DATA_FILE 1
 " (data-size))
 	   (data-dump c-file))
@@ -289,7 +288,7 @@ cl_object Cblock;
        #+msvc
        (unwind-protect
          (progn
-           (with-open-file (f "static_lib.tmp" :direction :output :if-does-not-exist :create :if-exists :overwrite)
+           (with-open-file (f "static_lib.tmp" :direction :output :if-does-not-exist :create :if-exists :supersede)
              (format f "/NODEFAULTLIB /OUT:~A ~A ~{\"~&~A\"~}"
                      output-name o-name ld-flags))
            (safe-system "link -lib -debug @static_lib.tmp"))
@@ -521,6 +520,7 @@ Cannot compile ~a."
                       (*package* *package*)
                       (*compile-print* nil)
 		      (*print-pretty* nil)
+		      (*compiler-constants* t)
                       (*error-count* 0))
 
   (unless (symbolp name) (error "~s is not a symbol." name))
@@ -567,7 +567,7 @@ Cannot compile ~a."
 	(when *compile-verbose* (format t "~&;;; End of Pass 1.  "))
 	(let (#+(or mingw32 msvc)(*self-destructing-fasl* t))
 	  (compiler-pass2 c-pathname h-pathname data-pathname nil "code" nil)))
-      (data-dump data-pathname)
+      (setf *compiler-constants* (data-dump data-pathname))
       (init-env)
       )
 

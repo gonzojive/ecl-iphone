@@ -27,7 +27,6 @@
   "src:lsp;seq.lsp"
   "src:lsp;seqlib.lsp"
   "src:lsp;trace.lsp"
-  "src:lsp;ansi.lsp"
 #+old-loop
   "src:lsp;loop.lsp"
 #-old-loop

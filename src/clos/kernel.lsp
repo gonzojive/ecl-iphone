@@ -56,7 +56,8 @@
       (direct-default-initargs :initarg :direct-default-initargs
        :initform nil :accessor class-direct-default-initargs)
       (default-initargs :accessor class-default-initargs)
-      (finalized :initform nil :accessor class-finalized-p))))
+      (finalized :initform nil :accessor class-finalized-p)
+      (prototype :accessor class-prototype))))
 
 #.(create-accessors +class-slots+ 'class)
 
@@ -118,10 +119,11 @@
        :accessor method-lambda-list)
       (specializers :initarg :specializers :accessor method-specializers)
       (qualifiers :initform nil :initarg :qualifiers :accessor method-qualifiers)
-      (method-function :initarg :method-function :accessor method-function)
+      (function :initarg :function :accessor method-function)
       (documentation :initform nil :initarg documentation)
       (declarations :initform nil)
-      (plist :initform nil :initarg :plist :accessor method-plist))))
+      (plist :initform nil :initarg :plist :accessor method-plist)
+      (from-defgeneric-p :initform nil :accessor method-from-defgeneric-p))))
 
 #.(create-accessors +standard-method-slots+ 'standard-method)
 
@@ -140,7 +142,7 @@
   (declare (ignore doc)
 	   (notinline ensure-generic-function))
 ;  (record-definition 'method `(method ,name ,@qualifiers ,specializers))
-  (let* ((gf (ensure-generic-function name :lambda-list lambda-list))
+  (let* ((gf (ensure-generic-function name))
 	 (specializers (mapcar #'(lambda (x)
 				   (cond ((null x) x)
 					 ((consp x) x)
@@ -151,34 +153,6 @@
 	 (method (make-method qualifiers specializers lambda-list
 			      fun plist options gf
 			      (generic-function-method-class gf))))
-
-    ;; FIXME! This check should have happened before, shouldn't it???
-    (let ((l (length specializers)))
-      (if spec-how-list
-	  (unless (= (length spec-how-list) l)
-	    (error "The generic function ~A~%has ~D required arguments, but the new specialization provides ~D."
-		   gf (length spec-how-list) l))
-	  (setf spec-how-list (make-list l))))
-
-    ;; update the spec-how of the gfun 
-    ;; computing the or of the previous value and the new one
-    (do* ((spec-how-list (or (generic-function-spec-list gf)
-			     (make-list (length specializers))))
-	  (l specializers (cdr l))
-	  (l2 spec-how-list (cdr l2))
-	  (spec-how)
-	  (spec-how-old))
-	 ((null l)
-	  (setf (generic-function-spec-list gf) spec-how-list))
-      (setq spec-how (first l) spec-how-old (first l2))
-      (setf (first l2)
-	    (if (consp spec-how)		; an eql list
-		(if (consp spec-how-old)
-		    (list* (second spec-how) spec-how-old)
-		    (cdr spec-how))
-		(if (consp spec-how-old)
-		    spec-how-old
-		    (or spec-how spec-how-old)))))
     (add-method gf method)
     method))
 
@@ -186,7 +160,7 @@
 ;;;                                                         early versions
 
 ;;; early version used during bootstrap
-(defun ensure-generic-function (name &key lambda-list)
+(defun ensure-generic-function (name &key (lambda-list (si::unbound)))
   (if (and (fboundp name) (si::instancep (fdefinition name)))
       (fdefinition name)
       ;; create a fake standard-generic-function object:
@@ -303,3 +277,40 @@
 	  ((member spec-2 (member spec-1 cpl)) '1)
 	  (t (error "Complex type specifiers are not yet supported."))
 	  )))
+
+(defun compute-g-f-spec-list (gf)
+  (do* ((spec-how-list nil)
+	(methods (generic-function-methods gf) (rest methods))
+	method
+	specializers)
+       ((null methods)
+	spec-how-list)
+    (setf method (first methods)
+	  specializers (method-specializers method))
+    ;; FIXME! This check should have happened before, shouldn't it???
+    (let ((l (length specializers)))
+      (if spec-how-list
+	  (unless (= (length spec-how-list) l)
+	    (error "The generic function ~A~%has ~D required arguments, but the new specialization provides ~D."
+		   gf (length spec-how-list) l))
+	  (setf spec-how-list (make-list l))))
+    ;; update the spec-how of the gfun 
+    ;; computing the or of the previous value and the new one
+    (do* ((l specializers (cdr l))
+	  (l2 spec-how-list (cdr l2))
+	  (spec-how)
+	  (spec-how-old))
+	 ((null l))
+      (setq spec-how (first l) spec-how-old (first l2))
+      (setf (first l2)
+	    (if (consp spec-how)		; an eql list
+		(if (consp spec-how-old)
+		    (list* (second spec-how) spec-how-old)
+		    (cdr spec-how))
+		(if (consp spec-how-old)
+		    spec-how-old
+		    (or spec-how spec-how-old)))))
+    ))
+
+(defun print-object (object stream)
+  (print-unreadable-object (object stream)))

@@ -15,6 +15,8 @@
 */
 
 #include <string.h>
+#include <stdlib.h>
+#include <float.h>
 #include <math.h>
 #include <ctype.h>
 #ifndef _MSC_VER
@@ -452,131 +454,144 @@ write_base(int base, cl_object stream)
    If this is too small, then the rounded off fraction, may be too big
    to read */
 
-#define FPRC 17
+/* Maximum number of significant digits required to represent accurately
+ * a double or single float. */
 
-void
+#define LOG10_2 0.30103
+#define DBL_SIG ((int)(DBL_MANT_DIG * LOG10_2 + 1))
+#define FLT_SIG ((int)(FLT_MANT_DIG * LOG10_2 + 1))
+
+/* This is the maximum number of decimal digits that our numbers will have.
+ * Notice that we leave some extra margin, to ensure that reading the number
+ * again will produce the same floating point number.
+ */
+#define DBL_MAX_DIGITS (DBL_SIG + 3)
+
+/* The sinificant digits + the possible sign + the decimal dot.
+*/
+#define DBL_MANTISSA_SIZE (DBL_MAX_DIGITS + 1 + 1)
+
+/* The exponent marker, 'e', plus the sign and the digits of the exponent.
+*/
+#define DBL_EXPONENT_SIZE (1 + 1 + 3)
+
+#define DBL_SIZE (DBL_MANTISSA_SIZE + DBL_EXPONENT_SIZE)
+
+int
 edit_double(int n, double d, int *sp, char *s, int *ep)
 {
-	char *p, buff[FPRC + 9];
-	int i;
+	char *exponent, *p, buff[DBL_SIZE + 1];
+	int length;
 
 	if (isnan(d) || !finite(d))
 		FEerror("Can't print a non-number.", 0);
-	else
-		sprintf(buff, "%*.*e",FPRC+8,FPRC, d);
-	if (buff[FPRC+3] != 'e') {
-		sprintf(buff, "%*.*e",FPRC+7,FPRC,d);
-		*ep = (buff[FPRC+5]-'0')*10 + (buff[FPRC+6]-'0');
-	} else
-		*ep = (buff[FPRC+5]-'0')*100 +
-		  (buff[FPRC+6]-'0')*10 + (buff[FPRC+7]-'0');
-	*sp = 1;
-	if (buff[0] == '-')
-		*sp *= -1;
-
-	if (buff[FPRC+4] == '-')
-		*ep *= -1;
-	buff[2] = buff[1];
-	p = buff + 2;
-	if (n < FPRC+1) {
-		if (p[n] >= '5') {
-			for (i = n - 1;  i >= 0;  --i)
-				if (p[i] == '9')
-					p[i] = '0';
-				else {
-					p[i]++;
-					break;
-				}
-			if (i < 0) {
-				*--p = '1';
-				(*ep)++;
-			}
-		}
-		for (i = 0;  i < n;  i++)
-			s[i] = p[i];
+	if (n < -DBL_MAX_DIGITS)
+		n = DBL_MAX_DIGITS;
+	if (n < 0) {
+		double aux;
+		n = -n;
+		do {
+			sprintf(buff, "%- *.*e", n + 1 + 1 + DBL_EXPONENT_SIZE,
+				(n-1), d);
+			aux = strtod(buff, NULL);
+			if (n < DBL_SIG)
+				aux = (float)aux;
+			n++;
+		} while (d != aux && n <= DBL_MAX_DIGITS);
+		n--;
 	} else {
-		for (i = 0;  i < FPRC+1;  i++)
-			s[i] = p[i];
-		for (;  i < n;  i++)
+		sprintf(buff, "%- *.*e", DBL_SIZE,
+			(n <= DBL_MAX_DIGITS)? (n-1) : (DBL_MAX_DIGITS-1), d);
+	}
+	exponent = strchr(buff, 'e');
+
+	/* Get the exponent */
+	*ep = strtol(exponent+1, NULL, 10);
+
+	/* Get the sign */
+	*sp = (buff[0] == '-') ? -1 : +1;
+
+	/* Get the digits of the mantissa */
+	buff[2] = buff[1];
+
+	/* Get the actual number of digits in the mantissa */
+	length = exponent - (buff + 2);
+
+	/* The output consists of a string {d1,d2,d3,...,dn}
+	   with all N digits of the mantissa. If we ask for more
+	   digits than there are, the last ones are set to zero. */
+	if (n <= length) {
+		memcpy(s, buff+2, n);
+	} else {
+		cl_index i;
+		memcpy(s, buff+2, length);
+		for (i = length;  i < n;  i++)
 			s[i] = '0';
 	}
 	s[n] = '\0';
+	return length;
 }
 
 static void
 write_double(double d, int e, bool shortp, cl_object stream)
 {
-	int sign;
-	char buff[FPRC+5];
 	int exp;
-	int i;
-	int n = FPRC;		/* was FPRC+1 */
-
-	if (shortp)
-		n = 8;
-	edit_double(n, d, &sign, buff, &exp);
-	if (sign==2) {
-		write_str("#<", stream);
-		write_str(buff, stream);
-		write_ch('>', stream);
-		return;
-	      }
-	if (sign < 0)
+	if (d < 0) {
 		write_ch('-', stream);
-	if (-3 <= exp && exp < 7) {
-		if (exp < 0) {
-			write_ch('0', stream);
-			write_ch('.', stream);
-			exp = (-exp) - 1;
-			for (i = 0;  i < exp;  i++)
-				write_ch('0', stream);
-			for (;  n > 0;  --n)
-				if (buff[n-1] != '0')
-					break;
-			if (exp == 0 && n == 0)
-				n = 1;
-			for (i = 0;  i < n;  i++)
-				write_ch(buff[i], stream);
-		} else {
-			exp++;
-			for (i = 0;  i < exp;  i++)
-				if (i < n)
-					write_ch(buff[i], stream);
-				else
-					write_ch('0', stream);
-			write_ch('.', stream);
-			if (i < n)
-				write_ch(buff[i], stream);
-			else
-				write_ch('0', stream);
-			i++;
-			for (;  n > i;  --n)
-				if (buff[n-1] != '0')
-					break;
-			for (;  i < n;  i++)
-				write_ch(buff[i], stream);
-		}
+		d = -d;
+	}
+	if (d == 0.0) {
+		write_str("0.0", stream);
 		exp = 0;
-	} else {
+	} else if (d < 1e-3 || d > 1e7) {
+		int sign;
+		int n = shortp? FLT_SIG : DBL_SIG;
+		char buff[DBL_MANTISSA_SIZE + 1];
+		n = edit_double(-n, d, &sign, buff, &exp);
 		write_ch(buff[0], stream);
 		write_ch('.', stream);
-		write_ch(buff[1], stream);
-		for (;  n > 2;  --n)
-			if (buff[n-1] != '0')
+		for (;  --n > 1; ) {
+			if (buff[n] != '0') {
 				break;
-		for (i = 2;  i < n;  i++)
-			write_ch(buff[i], stream);
+			}
+			buff[n] = '\0';
+		}
+		write_str(buff+1, stream);
+	} else {
+		char buff[DBL_MANTISSA_SIZE + 1];
+		int i, n = shortp? FLT_SIG : DBL_SIG;
+		double aux;
+		/* Print in fixed point notation with enough number of
+		 * digits to preserve all information when reading again
+		 */
+		do {
+			sprintf(buff, "%0*.*g", DBL_MANTISSA_SIZE, n, d);
+			aux = strtod(buff, NULL);
+			if (shortp) aux = (float)aux;
+			n++;
+		} while (aux != d && n <= DBL_MAX_DIGITS);
+		n--;
+		/* We look for the first nonzero character. There is
+		 * always one because our floating point number is not
+		 * zero.*/
+		for (i = 0; buff[i] == '0' && buff[i+1] != '.'; i++)
+			;
+		write_str(buff + i, stream);
+		if (strchr(buff, '.') == 0) {
+			write_str(".0", stream);
+		}
+		exp = 0;
 	}
-	if (exp == 0 && e == 0)
-		return;
-	if (e == 0)
-		e = 'E';
-	write_ch(e, stream);
-	if (exp < 0) {
-		write_ch('-', stream);
-		exp *= -1;
+	if (exp || e) {
+		if (e == 0)
+			e = 'E';
+		write_ch(e, stream);
+		if (exp < 0) {
+			write_ch('-', stream);
+			exp = -exp;
+		}
+		write_decimal(exp, stream);
 	}
-	write_decimal(exp, stream);
 }
 
 
@@ -792,10 +807,9 @@ write_character(int i, cl_object stream)
 			cl_object name = cl_char_name(CODE_CHAR(i));
 			write_str(name->string.self, stream);
 		} else if (i >= 128) {
-			write_ch('\\', stream);
-			write_ch(((i>>6)&7) + '0', stream);
-			write_ch(((i>>3)&7) + '0', stream);
-			write_ch(((i>>0)&7) + '0', stream);
+			write_ch('A', stream);
+			write_ch(ecl_digit_char(i / 16, 16), stream);
+			write_ch(ecl_digit_char(i & 0xF, 16), stream);
 		} else {
 			write_ch(i, stream);
 		}
@@ -901,15 +915,15 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		bool readably = ecl_print_readably();
 
 		if (readably) {
+			print_length = MOST_POSITIVE_FIXNUM;
+			print_level = MOST_POSITIVE_FIXNUM;
+		} else {
 			if (!ecl_print_array()) {
 				write_str("#<array ", stream);
 				write_addr(x, stream);
 				write_ch('>', stream);
 				break;
 			}
-			print_length = MOST_POSITIVE_FIXNUM;
-			print_level = MOST_POSITIVE_FIXNUM;
-		} else {
 			print_level = ecl_print_level();
 			print_length = ecl_print_length();
 		}
@@ -917,8 +931,26 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		if (print_level == 0)
 			break;
 		n = x->array.rank;
-		write_decimal(n, stream);
-		write_ch('A', stream);
+		if (readably) {
+			write_ch('A', stream);
+			write_ch('(', stream);
+			si_write_object_recursive(ecl_elttype_to_symbol(x->array.elttype), stream);
+			write_ch(INDENT, stream);
+			if (n > 0) {
+				write_ch('(', stream);
+				for (j=0; j<n; j++) {
+					si_write_object_recursive(MAKE_FIXNUM(x->array.dims[j]), stream);
+					if (j < n-1)
+						write_ch(INDENT, stream);
+				}
+				write_ch(')', stream);
+			} else
+				si_write_object_recursive(Cnil, stream);
+			write_ch(INDENT, stream);
+		} else {
+			write_decimal(n, stream);
+			write_ch('A', stream);
+		}
 		if (print_level >= n) {
 			/* We can write the elements of the array */
 			print_level -= n;
@@ -982,6 +1014,9 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		if (print_level >= 0) {
 			bds_unwind1();
 		}
+		if (readably) {
+			write_ch(')', stream);
+		}
 		break;
 	}
 	case t_vector: {
@@ -990,6 +1025,9 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		cl_index n = x->vector.fillp;
 
 		if (readably) {
+			print_length = MOST_POSITIVE_FIXNUM;
+			print_level = MOST_POSITIVE_FIXNUM;
+		} else {
 			if (!ecl_print_array()) {
 				write_str("#<vector ", stream);
 				write_decimal(x->vector.dim, stream);
@@ -998,9 +1036,6 @@ si_write_ugly_object(cl_object x, cl_object stream)
 				write_ch('>', stream);
 				break;
 			}
-			print_length = MOST_POSITIVE_FIXNUM;
-			print_level = MOST_POSITIVE_FIXNUM;
-		} else {
 			print_level = ecl_print_level();
 			print_length = ecl_print_length();
 		}
@@ -1056,7 +1091,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		}
 		write_str("#*", stream);
 		for (ndx = 0;  ndx < x->vector.fillp;  ndx++)
-			if (x->vector.self.bit[ndx/8] & (0200 >> ndx%8))
+			if (x->vector.self.bit[(ndx+x->vector.offset)/8] & (0200 >> (ndx+x->vector.offset)%8))
 				write_ch('1', stream);
 			else
 				write_ch('0', stream);
@@ -1269,7 +1304,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 
 	case t_random:
 		write_str("#$", stream);
-		si_write_ugly_object(MAKE_FIXNUM(x->random.value), stream);
+		si_write_ugly_object(make_unsigned_integer(x->random.value), stream);
 		break;
 
 #ifndef CLOS
@@ -1394,7 +1429,17 @@ static cl_object
 si_write_object_recursive(cl_object x, cl_object stream)
 #endif
 {
-	bool circle = ecl_print_circle();
+	bool circle;
+#if defined(ECL_CMU_FORMAT)
+	if (symbol_value(@'*print-pretty*') != Cnil) {
+		cl_object f = funcall(2, @'pprint-dispatch', x);
+		if (VALUES(1) != Cnil) {
+			funcall(3, f, stream, x);
+			return x;
+		}
+	}
+#endif /* ECL_CMU_FORMAT */
+	circle = ecl_print_circle();
 	if (circle && !IMMEDIATE(x) &&
 	    ((type_of(x) != t_symbol) || (Null(x->symbol.hpack))))
 	{
@@ -1437,18 +1482,7 @@ si_write_object_recursive(cl_object x, cl_object stream)
 			return x;
 		}
 	}
-#if defined(ECL_CMU_FORMAT)
-	if (symbol_value(@'*print-pretty*') != Cnil) {
-		cl_object f = funcall(2, @'pprint-dispatch', x);
-		if (VALUES(1) != Cnil) {
-			funcall(3, f, stream, x);
-			return x;
-		}
-	}
 	return si_write_ugly_object(x, stream);
-#else /* !ECL_CMU_FORMAT */
-	return si_write_ugly_object(x, stream);
-#endif /* !ECL_CMU_FORMAT */
 }
  
 #if !defined(ECL_CMU_FORMAT)
@@ -1532,22 +1566,6 @@ search_print_circle(cl_object x)
 	}
 }
 
-cl_object
-si_check_for_circularity(cl_object x)
-{
-	cl_object output;
-	if (IMMEDIATE(x)
-	    || ((type_of(x) == t_symbol) && (Null(x->symbol.hpack)))
-	    || !ecl_print_circle()) {
-		output = Cnil;
-	} else if (symbol_value(@'si::*circle-counter*') == Cnil) {
-		output = Ct;
-	} else {
-		output = search_print_circle(x)? Ct : Cnil;
-	}
-	@(return output)
-}
-
 static bool
 potential_number_p(cl_object strng, int base)
 {
@@ -1583,35 +1601,43 @@ potential_number_p(cl_object strng, int base)
 
 @(defun write (x
 	       &key ((:stream strm) Cnil)
-		    (escape symbol_value(@'*print-escape*'))
-		    (readably symbol_value(@'*print-readably*'))
-		    (radix symbol_value(@'*print-radix*'))
+		    (array symbol_value(@'*print-array*'))
 		    (base symbol_value(@'*print-base*'))
-		    (circle symbol_value(@'*print-circle*'))
-		    (pretty symbol_value(@'*print-pretty*'))
-		    (level symbol_value(@'*print-level*'))
-		    (length symbol_value(@'*print-length*'))
 		    ((:case cas) symbol_value(@'*print-case*'))
+		    (circle symbol_value(@'*print-circle*'))
+		    (escape symbol_value(@'*print-escape*'))
 		    (gensym symbol_value(@'*print-gensym*'))
-		    (array symbol_value(@'*print-array*')))
+		    (length symbol_value(@'*print-length*'))
+		    (level symbol_value(@'*print-level*'))
+		    (lines symbol_value(@'*print-lines*'))
+		    (miser_width symbol_value(@'*print-miser-width*'))
+		    (pprint_dispatch symbol_value(@'*print-pprint-dispatch*'))
+		    (pretty symbol_value(@'*print-pretty*'))
+		    (radix symbol_value(@'*print-radix*'))
+		    (readably symbol_value(@'*print-readably*'))
+		    (right_margin symbol_value(@'*print-right-margin*')))
 @{
-	bds_bind(@'*print-escape*', escape);
-	bds_bind(@'*print-readably*', readably);
-	bds_bind(@'*print-radix*', radix);
+	bds_bind(@'*print-array*', array);
 	bds_bind(@'*print-base*', base);
+	bds_bind(@'*print-case*', cas);
 	bds_bind(@'*print-circle*', circle);
-	bds_bind(@'*print-pretty*', pretty);
+	bds_bind(@'*print-escape*', escape);
+	bds_bind(@'*print-gensym*', gensym);
 	bds_bind(@'*print-level*', level);
 	bds_bind(@'*print-length*', length);
-	bds_bind(@'*print-case*', cas);
-	bds_bind(@'*print-gensym*', gensym);
-	bds_bind(@'*print-array*', array);
+	bds_bind(@'*print-lines*', lines);
+	bds_bind(@'*print-miser-width*', miser_width);
+	bds_bind(@'*print-pprint-dispatch*', pprint_dispatch);
+	bds_bind(@'*print-pretty*', pretty);
+	bds_bind(@'*print-radix*', radix);
+	bds_bind(@'*print-readably*', readably);
+	bds_bind(@'*print-right-margin*', right_margin);
 
 	strm = stream_or_default_output(strm);
 	si_write_object(x, strm);
 	flush_stream(strm);
 
-	bds_unwind_n(11);
+	bds_unwind_n(15);
 	@(return x)
 @)
 

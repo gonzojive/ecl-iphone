@@ -9,12 +9,12 @@
   "src:clos;boot.lsp"
   "src:clos;defclass.lsp"
   "src:clos;standard.lsp"
-  "src:clos;print.lsp"
   "src:clos;builtin.lsp"
   "src:clos;change.lsp"
   "src:clos;stdmethod.lsp"
   "src:clos;generic.lsp"
   "src:clos;fixup.lsp"
+  "src:clos;print.lsp"
   "src:clos;inspect.lsp"
   #+cmu-format
   "src:lsp;pprint.lsp"

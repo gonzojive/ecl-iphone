@@ -408,12 +408,32 @@ cl_char_int(cl_object c)
 cl_object
 cl_char_name(cl_object c)
 {
-	assert_type_character(c);
-	@(return gethash_safe(c, cl_core.char_names, Cnil))
+	cl_index code = char_code(c);
+	cl_object output;
+	if (code > 127) {
+		char name[] = "A00";
+		name[2] = ecl_digit_char(code & 0xF, 16);
+		name[1] = ecl_digit_char(code / 16, 16);
+		output = make_string_copy(name);
+	} else {
+		output = gethash_safe(c, cl_core.char_names, Cnil);
+	}
+	@(return output);
 }
 
 cl_object
-cl_name_char(cl_object s)
+cl_name_char(cl_object name)
 {
-	@(return gethash_safe(cl_string(s), cl_core.char_names, Cnil))
+	cl_object c = gethash_safe((name = cl_string(name)), cl_core.char_names, Cnil);
+	if (c == Cnil && length(name) == 3) {
+		char *s = name->string.self;
+		if (s[0] == 'A' || s[0] == 'a') {
+			int d2 = digitp(s[2], 16);
+			int d1 = digitp(s[1], 16);
+			if (d1 >= 0 && d2 >= 0) {
+				c = CODE_CHAR(d1 * 16 + d2);
+			}
+		}
+	}
+	@(return c);
 }

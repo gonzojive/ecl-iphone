@@ -263,7 +263,7 @@ cl_boot(int argc, char **argv)
 	cl_core.null_stream = @make_broadcast_stream(0);
 
 	cl_core.system_properties =
-	    cl__make_hash_table(@'eq', MAKE_FIXNUM(1024), /* size */
+	    cl__make_hash_table(@'equal', MAKE_FIXNUM(1024), /* size */
 				make_shortfloat(1.5f), /* rehash-size */
 				make_shortfloat(0.75f), /* rehash-threshold */
 				Ct); /* thread-safe */

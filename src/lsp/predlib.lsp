@@ -40,6 +40,9 @@ by (documentation 'NAME 'type)."
   "A BOOLEAN is an object which is either NIL or T."
   `(member nil t))
 
+(deftype index ()
+  `(INTEGER 0 #.array-dimension-limit))
+
 (deftype fixnum ()
   "A FIXNUM is an integer between MOST-NEGATIVE-FIXNUM (= - 2^29 in ECL) and
 MOST-POSITIVE-FIXNUM (= 2^29 - 1 in ECL) inclusive.  Other integers are
@@ -208,10 +211,15 @@ has no fill-pointer, and is not adjustable."
       (return v))))
 
 (defun upgraded-complex-part-type (real-type &optional env)
-  (dolist (v '(INTEGER RATIO RATIONAL SHORT-FLOAT LONG-FLOAT FLOAT)
-	   (error "~S is not a valid part type for a complex." real-type))
-    (when (subtypep real-type v)
-      (return v))))
+  ;; ECL does not have specialized complex types. If we had them, the
+  ;; code would look as follows
+  ;;   (dolist (v '(INTEGER RATIO RATIONAL SHORT-FLOAT LONG-FLOAT FLOAT REAL)
+  ;; 	   (error "~S is not a valid part type for a complex." real-type))
+  ;;     (when (subtypep real-type v)
+  ;;       (return v))))
+  (unless (subtypep real-type 'REAL)
+    (error "~S is not a valid part type for a complex." real-type))
+  'REAL)
 
 (defun in-interval-p (x interval)
   (declare (si::c-local))

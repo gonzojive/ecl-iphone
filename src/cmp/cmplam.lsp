@@ -456,7 +456,7 @@
 			(t
 			 (error 'SIMPLE-PROGRAM-ERROR
 				:format-control "Too few arguments for lambda form ~S"
-				:format-args (cons 'LAMBDA lambda-form)))))
+				:format-arguments (cons 'LAMBDA lambda-form)))))
 	    let-vars))
     (do ((scan (cdr optionals) (cdddr optionals)))
 	((endp scan))

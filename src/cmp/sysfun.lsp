@@ -955,6 +955,9 @@ type_of(#0)==t_bitvector"))
 	:inline-always ((t t fixnum) t nil nil "structure_ref(#0,#1,#2)"))
 (si::STRUCTURE-SET (t t fixnum t) T nil nil
 	:inline-always ((t t fixnum t) t T nil "structure_set(#0,#1,#2,#3)"))
+#+clos
+(SI::STRUCTUREP (T) T NIL T)
+#-clos
 (SI::STRUCTUREP (T) T NIL T
 	:inline-always ((t) :bool nil nil "type_of(#0)==t_structure"))
 (SI::STRUCTURE-SUBTYPE-P (T T) T NIL T)
@@ -1084,7 +1087,7 @@ type_of(#0)==t_bitvector"))
     ;; mislib.lsp
     logical-pathname-translations load-logical-pathname-translations decode-universal-time
     encode-universal-time get-decoded-time
-    ensure-directories-exist
+    ensure-directories-exist si::simple-program-error
     ;; module.lsp
     provide require
     ;; numlib.lsp
@@ -1118,14 +1121,21 @@ type_of(#0)==t_bitvector"))
     si::check-keyword si::check-arg-length si::dm-too-few-arguments si::dm-bad-key
     remove-documentation si::get-documentation
     si::set-documentation si::expand-set-documentation
-    si::simple-program-error
     si::closest-vector-type si::packages-iterator
-    si::define-structure .
+    si::pprint-logical-block-helper si::pprint-pop-helper
+    si::assert-slot-type si::define-structure .
     #-clos
     nil
     #+clos
     (;; defclass.lsp
      clos::ensure-class
+     ;; boot.lsp
+     clos::slot-boundp
+     clos::slot-makunbound
+     clos::slot-value
+     clos::slot-exists-p
+     ;; combin.lsp
+     clos::simple-code-walker
      ;; standard.lsp
      clos::standard-instance-set
      ;; kernel.lsp
@@ -1149,5 +1159,8 @@ type_of(#0)==t_bitvector"))
      clos::method-specializers
      clos::method-qualifiers
      clos::method-function
-     clos::method-plist)))
+     clos::method-plist
+     ;; method.lsp
+     clos::pop-next-method
+     )))
 

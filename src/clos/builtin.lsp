@@ -100,6 +100,21 @@
 (defmethod make-instance ((class-name symbol) &rest initargs)
   (apply #'make-instance (find-class class-name) initargs))
 
+(defmethod slot-makunbound-using-class ((class built-in-class) self slot-name)
+  (error "SLOT-MAKUNBOUND-USING-CLASS cannot be applied on built-in objects"))
+
+(defmethod slot-boundp-using-class ((class built-in-class) self slot-name)
+  (error "SLOT-BOUNDP-USING-CLASS cannot be applied on built-in objects"))
+
+(defmethod slot-value-using-class ((class built-in-class) self slot-name)
+  (error "SLOT-VALUE-USING-CLASS cannot be applied on built-in objects"))
+
+(defmethod (setf slot-value-using-class) (val (class built-in-class) self slot-name)
+  (error "SLOT-VALUE-USING-CLASS cannot be applied on built-in objects"))
+
+(defmethod slot-exists-p-using-class ((class built-in-class) self slot-name)
+  nil)
+
 ;;; ======================================================================
 ;;; STRUCTURES
 ;;;
@@ -135,28 +150,28 @@
 (defmethod print-object ((obj structure-object) stream)
   (let* ((class (si:instance-class obj))
 	 (slotds (class-slots class)))
-    (princ "#S(" stream)
+    (when (and slotds
+	       *print-level*
+	       ;; *p-readably* effectively disables *p-level*
+	       (not *print-readably*)
+	       (zerop *print-level*))
+      (write-string "#" stream)
+      (return-from print-object obj))
+    (write-string "#S(" stream)
     (prin1 (class-name class) stream)
     (do ((scan slotds (cdr scan))
 	 (i 0 (1+ i))
+	 (limit (or *print-length* most-positive-fixnum))
 	 (sv))
 	((null scan))
-	(declare (fixnum i))
-	(setq sv (si:instance-ref obj i))
-	(princ " " stream)
-	(prin1 (slotd-name (car scan)) stream)
-	(princ " " stream)
-	(prin1 sv stream)
-	)
-    (princ ")" stream)
+      (declare (fixnum i))
+      (when (>= i limit)
+	(write-string " ..." stream)
+	(return))
+      (setq sv (si:instance-ref obj i))
+      (write-string " :" stream)
+      (prin1 (slotd-name (car scan)) stream)
+      (write-string " " stream)
+      (prin1 sv stream))
+    (write-string ")" stream)
     obj))
-
-(defmethod slot-exists-p ((obj structure-object) slot-name)
-  (let ((class (si:instance-class obj)))
-    ;(declare (type structure-class class))
-    ;; FIXME! NIL could, in principle, be valid slot name. We reject it here
-    ;; because DEFSTRUCT uses this name to mark padding slots for initial-offset.
-    (and slot-name
-	 (member slot-name (slot-value class 'slots) :key #'slotd-name)
-	 t)))
-

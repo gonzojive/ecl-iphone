@@ -43,21 +43,35 @@
 		 :qualifiers qualifiers
 		 :lambda-list arglist
 		 :specializers specializers
-		 :method-function function
+		 :function function
 		 :plist plist
 		 :allow-other-keys t))
 
+(defun all-keywords (l)
+  (declare (si::cl-local))
+  (let ((all-keys '()))
+    (do ((l (rest l) (cddddr l)))
+	((null l)
+	 all-keys)
+      (push (first l) all-keys))))
+
 (defun congruent-lambda-p (l1 l2)
-  (multiple-value-bind (r1 opts1 rest1 key-flag1 keywords1)
+  (multiple-value-bind (r1 opts1 rest1 key-flag1 keywords1 a-o-k1)
       (si::process-lambda-list l1 'FUNCTION)
-    (setf keywords1 (plusp (first keywords1)))
-    (multiple-value-bind (r2 opts2 rest2 key-flag2 keywords2)
+    (multiple-value-bind (r2 opts2 rest2 key-flag2 keywords2 a-o-k2)
 	(si::process-lambda-list l2 'FUNCTION)
-      (setf keywords2 (plusp (first keywords2)))
-      (and (= (length r2) (length r1))
-	   (= (length opts1) (length opts2))
-	   (if keywords1 keywords2 (not keywords2))
-	   t))))
+	(and (= (length r2) (length r1))
+	     (= (length opts1) (length opts2))
+	     (eq (and (null rest1) (null key-flag1))
+		 (and (null rest2) (null key-flag2)))
+	     ;; All keywords mentioned in the genericf function
+	     ;; must be accepted by the method.
+	     (or (null key-flag1)
+		 (null key-flag2)
+		 a-o-k2
+		 (null (set-difference (all-keywords keywords1)
+					   (all-keywords keywords2))))
+	     t))))
 
 (defun add-method (gf method)
   (declare (notinline method-qualifiers)) ; during boot it's a structure accessor
@@ -68,32 +82,54 @@
     (unless (or (null other-gf) (eq other-gf gf))
       (error "The method ~A belongs to the generic function ~A ~
 and cannot be added to ~A." method other-gf gf)))
-  (setf (method-generic-function method) gf)
   ;;
   ;; 2) The method and the generic function should have congruent lambda
   ;;    lists. That is, it should accept the same number of required and
   ;;    optional arguments, and only accept keyword arguments when the generic
   ;;    function does.
   ;;
-  (unless (congruent-lambda-p (generic-function-lambda-list gf)
-			      (method-lambda-list method))
-    (error "Cannot add the method ~A to the generic function ~A because ~
+  (let ((new-lambda-list (method-lambda-list method)))
+    (if (slot-boundp gf 'lambda-list)
+	(let ((old-lambda-list (generic-function-lambda-list gf)))
+	  (unless (congruent-lambda-p old-lambda-list new-lambda-list)
+	    (error "Cannot add the method ~A to the generic function ~A because ~
 their lambda lists ~A and ~A are not congruent."
-	   method gf
-	   (generic-function-lambda-list gf)
-	   (method-lambda-lits method)))
+		   method gf old-lambda-list new-lambda-list)))
+	(setf (generic-function-lambda-list gf) new-lambda-list)))
   ;;
   ;; 3) Finally, it is inserted in the list of methods, and the method is
   ;;    marked as belonging to a generic function.
   ;;
-  (let* ((method-qualifiers (method-qualifiers method)) 
-	 (specializers (method-specializers method))
-	 found)
-    (when (setq found (find-method gf method-qualifiers specializers nil))
-	  (remove-method gf found))
+  (when (generic-function-methods gf)
+    (let* ((method-qualifiers (method-qualifiers method)) 
+	   (specializers (method-specializers method))
+	   found)
+      (when (setq found (find-method gf method-qualifiers specializers nil))
+	(remove-method gf found))))
+  ;;
+  ;; We install the method by:
+  ;;  i) Adding it to the list of methods
   (push method (generic-function-methods gf))
+  (setf (method-generic-function method) gf)
+  ;;  ii) Updating the specializers list of the generic function. Notice that
+  ;;  we should call add-direct-method for each specializer but specializer
+  ;;  objects are not yet implemented
+  #+(or)
+  (dolist (spec (method-specializers method))
+    (add-direct-method spec method))
+  ;;  iii) Computing a new discriminating function... Well, since the core
+  ;;  ECL does not need the discriminating function because we always use
+  ;;  the same one, we just update the spec-how list of the generic function.
+  (setf (generic-function-spec-list gf) (compute-g-f-spec-list gf))
   (clrhash (generic-function-method-hash gf))
   gf))
+
+(setf (method-function
+       (eval '(defmethod false-add-method ((gf standard-generic-function)
+					   (method standard-method)))))
+      #'add-method)
+(setf (fdefinition 'add-method) #'false-add-method)
+(setf (generic-function-name #'add-method) 'add-method)
 
 (defun remove-method (gf method)
   (setf (generic-function-methods gf)
@@ -112,7 +148,7 @@ their lambda lists ~A and ~A are not congruent."
 
 (defmethod no-next-method (gf method &rest args)
   (declare (ignore gf args))
-  (error "No next method for method ~A" method))
+  (error "In method ~A~%No next method given arguments ~A" method args))
 
 (defun no-primary-method (gf &rest args)
   (error "Generic function: ~A. No primary method given arguments: ~S"

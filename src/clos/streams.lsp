@@ -18,7 +18,7 @@
 ;;;
 
 (defmethod ext::stream-input-p ((stream t))
-  (not-a-clos-stream stream 'ext::stream-input-))
+  (not-a-clos-stream stream 'ext::stream-input-p))
 
 (defmethod ext::stream-output-p ((stream t))
   (not-a-clos-stream stream 'ext:stream-output-p))

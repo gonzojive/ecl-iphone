@@ -537,7 +537,7 @@ extern bool input_stream_p(cl_object strm);
 extern bool output_stream_p(cl_object strm);
 extern cl_object stream_element_type(cl_object strm);
 extern cl_object open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists, cl_object if_does_not_exist,
-			     cl_fixnum byte_size, bool char_stream_p);
+			     cl_fixnum byte_size, bool char_stream_p, bool use_header_p);
 extern void close_stream(cl_object strm, bool abort_flag);
 extern cl_object make_two_way_stream(cl_object istrm, cl_object ostrm);
 extern cl_object make_string_input_stream(cl_object strng, cl_index istart, cl_index iend);
@@ -1097,7 +1097,6 @@ extern cl_object cl_force_output _ARGS((cl_narg narg, ...));
 extern cl_object cl_clear_output _ARGS((cl_narg narg, ...));
 extern cl_object si_write_object(cl_object object, cl_object stream);
 extern cl_object si_write_ugly_object(cl_object object, cl_object stream);
-extern cl_object si_check_for_circularity(cl_object object);
 
 extern cl_object princ(cl_object obj, cl_object strm);
 extern cl_object prin1(cl_object obj, cl_object strm);
@@ -1536,6 +1535,7 @@ extern cl_object cl_decode_universal_time _ARGS((cl_narg narg, cl_object V1, ...
 extern cl_object cl_encode_universal_time _ARGS((cl_narg narg, cl_object V1, cl_object V2, cl_object V3, cl_object V4, cl_object V5, cl_object V6, ...));
 extern cl_object cl_get_decoded_time _ARGS((cl_narg narg, ...));
 extern cl_object cl_ensure_directories_exist _ARGS((cl_narg narg, cl_object V1, ...));
+extern cl_object si_simple_program_error _ARGS((cl_narg narg, cl_object format, ...)) /*__attribute__((noreturn))*/;
 
 /* module.lsp */
 

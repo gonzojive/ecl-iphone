@@ -111,12 +111,12 @@
         (t (warn "The function procl ~s ~s is not valid." fname decl))))
 
 (defun add-function-declaration (fname arg-types return-types)
-  (if (symbolp fname)
+  (if (si::valid-function-name-p fname)
       (push (list (sch-local-fun fname)
 		  (function-arg-types arg-types)
 		  (function-return-type return-types))
 	    *function-declarations*)
-      (warn "The function name ~s is not a symbol." fname)))
+      (warn "In (DECLARE (FTYPE ...)): ~s is not a valid function name" fname)))
 
 (defun get-arg-types (fname &aux x)
   (if (setq x (assoc fname *function-declarations*))

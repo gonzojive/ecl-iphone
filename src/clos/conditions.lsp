@@ -612,6 +612,7 @@ returns with NIL."
 
 (define-condition format-error (simple-error)
   ((format-control :initarg :complaint)
+   (format-arguments :initarg :arguments)
    (control-string :reader format-error-control-string
 		   :initarg :control-string
 		   #+cmu-format :initform

@@ -56,6 +56,17 @@
 		(class-name (si:instance-class class)) (class-name class)))
   class)
 
+(defmethod print-object ((gf standard-generic-function) stream)
+  (print-unreadable-object (gf stream :type t)
+    (prin1 (generic-function-name gf) stream))
+  gf)
+
+(defmethod print-object ((m standard-method) stream)
+  (print-unreadable-object (m stream :type t)
+    (format stream "~A ~A" (generic-function-name (method-generic-function m))
+	    (method-specializers m)))
+  m)
+
 
 ;;; ----------------------------------------------------------------------
 ;;; Describe

@@ -14,6 +14,10 @@ ECL 1.0
 
   - Fixes in the documentation and error messages (J. Stecklina)
 
+  - The reader was not able to interpret RANDOM-STATE objects.
+
+  - The routines in the pretty printer now check the type of the arguments.
+
 * Visible changes:
 
   - SI:MKSTEMP now accepts and returns pathnames.
@@ -28,6 +32,9 @@ ECL 1.0
   - ECL now checks whether the lambda list of a DEFMETHOD is compatible in
     length with a previously specified one.
 
+  - When parsing a physical pathname, version is NIL unless the pathname
+    has a name or a type components, in which case version is :NEWEST.
+
 * Internals:
 
   - The compiler now uses a more detailed tree to represent the code, keeping
@@ -36,8 +43,8 @@ ECL 1.0
 
   - The compiler structures now print unreadably to simplify inspection.
 
-  - New algorithm for computing whether a function has to have a lexical
-    environment, a full environment or none.
+  - New algorithm for computing whether a function has to have a
+    stack-allocated lexical environment, a full environment or none.
 
   - Do not replace LET/LET* variables whose value has side effects.
 
@@ -50,11 +57,12 @@ ECL 1.0
 
   - Floats are properly read even when *read-base* is not 10.
 
-  - Support for binary streams of arbitrary byte size. By default, streams are
-    now of type CHARACTER which is equivalent to (UNSIGNED-BYTE 8). Streams of
-    other types, such as UNSIGNED-BYTE, (UNSIGNED-BYTE 100), (SIGNED-BYTE 2),
-    etc, are also supported, except for the function FILE-POSITION, which
-    will reject to work if the byte size is not a multiple of 8.
+  - Support for binary streams of arbitrary byte size. By default, binary
+    streams are written with an octet as header, which is used to determine
+    the actual length of the file. However, if you pass the argument
+    :use-header-p = NIL to the function OPEN, the header is not used and
+    instead the size in bits of the stream element type is rounded to a
+    multiple of 8 (M. Goffioul)
 
   - Fixed the order of evaluation of arguments in INCF,DECF,etc (M.Goffioul).
 
@@ -65,6 +73,98 @@ ECL 1.0
   - By default READ-BYTE signals an error when EOF is reached.
 
   - The space should print as #\  instead of #\Space.
+
+  - The implementation of (SETF VALUES) now produces the right result
+    when there are nested (SETF VALUES) forms.
+
+  - DEFGENERIC now signals a PROGRAM-ERROR when the syntax is incorrect.
+
+  - The sequence functions now also accept class objects.
+
+  - DESCRIBE takes an additional (in ECL optional) argument denoting the
+    stream to which the description is written (M. Goffioul)
+
+  - Important fixes in how arrays are printed with *print-readably* = T.
+    Displaced bitvectors now print properly. (M. Goffioul)
+
+  - SETF-functions can now be traced.
+
+  - In PATHNAME-MATCH-P, mask's missing components become :WILD.
+
+  - A physical namestring without file name/type has now version NIL.
+    Otherwise version defaults to :NEWEST. This ensures that directory
+    names have version set to NIL.
+
+  - The constants in the code created by COMPILE are now EQ to those in the
+    original forms.
+
+  - FIND-METHOD checks the validity of the specializers list.
+
+  * The indentation value in PPRINT-INDENT is a real number. We round it to the
+    nearest integer.
+
+  * PRINT-UNREADABLE-OBJECT always outputs a space before the identity and
+    after the type, even if the forms have been omitted.
+
+  * PPRINT-LOGICAL-BLOCK only accepts strings as :PREFIX and :SUFFIX arguments
+    and these strings need not be simple.
+
+  - All non graphic characters now have a name "A~D" where ~D is the character
+    code in hexadecimal form.
+
+  * The code for handling *PRINT-LINES* was broken.
+
+  - WRITE now accepts the keyword arguments :LINES, :MISER-WIDTH,
+    :PPRINT-DISPATCH, and :RIGHT-MARGIN.
+
+  * *PRINT-LEVEL* and *PRINT-LENGTH now affect printing of structures and
+     instances, as well as PPRINT-LOGICAL-BLOCK.
+
+  * In format directives, a negative value of "minpad" is converted to zero.
+
+  * PPRINT-LOGICAL-BLOCK now includes support for printing circular
+    structures when *PRINT-CIRCLE* = T.
+
+  - FLOAT-PRECISION now really returns the number of siginificant digits
+    in a denormalized float.
+
+  - PPRINT-TAB did not compute the tab positions properly in any case.
+
+  - "~<~>" removed all padding when the line length exceeded the minimal
+    number of columns.
+
+  - FORMAT now signals an error (as per ANSI 22.3.5.2) when a format string
+    mixes ~<...~:;...~> with ~W, ~I, ~_, ~<...~:> or ~T.
+
+  - DOCUMENTATION now works on generic functions and methods.
+
+  - Improved initarg checking in SHARED-INITIALIZE, REINITIALIZE-INSTANCE,
+    MAKE-INSTANCE, UPDATE-INSTANCE-FOR-{DIFFERENT-CLASS,REDEFINED-CLASS}.
+    Now the keyword arguments of the applicable methods are considered to
+    be valid initargs (ANSI 7.1.2)
+
+* MOP compliance:
+
+  - ADD-METHOD is now a generic function and implements most of the protocol in
+    the specification except for the calls to ADD-DIRECT-METHOD, because we do
+    not have specializer objects, and for the call to
+    COMPUTE-DISCRIMINATING-FUNCTION because of the differences in the function
+    calling protocol.
+
+  - Implemented all of the generic function initialization protocol including
+    ENSURE-GENERIC-FUNCTION, ENSURE-GENERIC-FUNCTION-USING-CLASS, and
+    (RE)INITIALIZE-INSTANCE specializations. Generic functions can now be
+    redefined and there are better checks to ensure the consistency between the
+    lambda lists of a generic function and it methods.
+
+  - Implemented SLOT-{EXISTS-P,VALUE,MAKUNBOUND,BOUNDP}-USING-CLASS.
+
+---
+
+NOTES:
+
+  - Remarks preceded by (*) apply only when ECL is configured with CMU CL's
+    format and pretty printing routines (configure flag --with-cmuformat).
 
 ;;; Local Variables: ***
 ;;; mode:text ***

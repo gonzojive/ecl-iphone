@@ -797,17 +797,42 @@ cl_float_digits(cl_object x)
 cl_object
 cl_float_precision(cl_object x)
 {
+	int precision;
 	switch (type_of(x)) {
-	case t_shortfloat:
-		x = (sf(x) == 0.0) ? MAKE_FIXNUM(0) : MAKE_FIXNUM(24);
+	case t_shortfloat: {
+		float f = sf(x);
+		if (f == 0.0) {
+			precision = 0;
+		} else {
+			int exp;
+			frexpf(f, &exp);
+			if (exp >= FLT_MIN_EXP) {
+				precision = FLT_MANT_DIG;
+			} else {
+				precision = FLT_MANT_DIG - (FLT_MIN_EXP - exp);
+			}
+		}
 		break;
-	case t_longfloat:
-		x = (lf(x) == 0.0) ? MAKE_FIXNUM(0) : MAKE_FIXNUM(53);
+	}
+	case t_longfloat: {
+		double f = lf(x);
+		if (f == 0.0) {
+			precision = 0;
+		} else {
+			int exp;
+			frexp(f, &exp);
+			if (exp >= DBL_MIN_EXP) {
+				precision = DBL_MANT_DIG;
+			} else {
+				precision = DBL_MANT_DIG - (DBL_MIN_EXP - exp);
+			}
+		}
 		break;
+	}
 	default:
 		FEtype_error_float(x);
 	}
-	@(return x)
+	@(return MAKE_FIXNUM(precision))
 }
 
 cl_object
@@ -825,7 +850,7 @@ cl_integer_decode_float(cl_object x)
 		} else {
 			if (d < 0.0) {
 				s = -1;
-				d = -frexp(d, &e);
+				d = frexp(-d, &e);
 			} else {
 				s = 1;
 				d = frexp(d, &e);
@@ -844,7 +869,7 @@ cl_integer_decode_float(cl_object x)
 		} else {
 			if (d < 0.0) {
 				s = -1;
-				d = -frexpf(d, &e);
+				d = frexpf(-d, &e);
 			} else {
 				s = 1;
 				d = frexpf(d, &e);

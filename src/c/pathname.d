@@ -525,7 +525,10 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 		if (type == @':error')
 			return Cnil;
 	}
-	version = @':newest';
+	if (name != Cnil || type != Cnil)
+		version = @':newest';
+	else
+		version = Cnil;
  make_it:
 	if (*ep >= end) *ep = end;
 	path = make_pathname(host, device, path, name, type, version);
@@ -889,8 +892,16 @@ NO_DIRECTORY:
 				}
 			}
 		}
-	} else if (y != @':newest' && !truncate_if_unreadable) {
-		return Cnil;
+	} else if (!truncate_if_unreadable) {
+		/* Namestrings of physical pathnames have restrictions... */
+		if (Null(x->pathname.name) && Null(x->pathname.type)) {
+			/* Directories cannot have a version number */
+			if (y != Cnil)
+				return Cnil;
+		} else if (y != @':newest') {
+			/* Filenames have an implicit version :newest */
+			return Cnil;
+		}
 	}
 	return get_output_stream_string(buffer);
 }
@@ -1112,6 +1123,8 @@ static bool
 path_item_match(cl_object a, cl_object mask) {
 	if (mask == @':wild')
 		return TRUE;
+	/* If a component in the tested path is a wildcard field, this
+	   can only be matched by the same wildcard field in the mask */
 	if (type_of(a) != t_string || mask == Cnil)
 		return (a == mask);
 	if (type_of(mask) != t_string)
@@ -1153,24 +1166,31 @@ path_list_match(cl_object a, cl_object mask) {
 cl_object
 cl_pathname_match_p(cl_object path, cl_object mask)
 {
+	cl_object output = Cnil;
 	path = cl_pathname(path);
 	mask = cl_pathname(mask);
 	if (path->pathname.logical != mask->pathname.logical)
-		return Cnil;
+		goto OUTPUT;
 #if 0
 	/* INV: This was checked in the calling routine */
 	if (!path_item_match(path->pathname.host, mask->pathname.host))
-		return Cnil;
+		goto OUTPUT;
 #endif
-	if (!path_list_match(path->pathname.directory, mask->pathname.directory))
-		return Cnil;
-	if (!path_item_match(path->pathname.name, mask->pathname.name))
-		return Cnil;
-	if (!path_item_match(path->pathname.type, mask->pathname.type))
-		return Cnil;
-	if (!path_item_match(path->pathname.version, mask->pathname.version))
-		return Cnil;
-	return Ct;
+	/* Missing components default to :WILD */
+	if (!Null(mask->pathname.directory) &&
+	    !path_list_match(path->pathname.directory, mask->pathname.directory))
+		goto OUTPUT;
+	if (!Null(mask->pathname.name) &&
+	    !path_item_match(path->pathname.name, mask->pathname.name))
+		goto OUTPUT;
+	if (!Null(mask->pathname.type) &&
+	    !path_item_match(path->pathname.type, mask->pathname.type))
+		goto OUTPUT;
+	if (Null(mask->pathname.version) ||
+	    path_item_match(path->pathname.version, mask->pathname.version))
+		output = Ct;
+ OUTPUT:
+	@(return output)
 }
 
 /* --------------- PATHNAME TRANSLATIONS ------------------ */

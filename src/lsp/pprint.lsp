@@ -30,7 +30,7 @@
 
 (defstruct (pretty-stream
 	    (:constructor make-pretty-stream (target))
-	    #-ecl(:print-function %print-pretty-stream))
+	    (:print-function %print-pretty-stream))
   ;;
   ;; Where the output is going to finally go.
   ;; 
@@ -71,13 +71,13 @@
   ;; Buffer holding the per-line prefix active at the buffer start.
   ;; Indentation is included in this.  The length of this is stored
   ;; in the logical block stack.
-  (prefix (make-string initial-buffer-size) :type simple-string)
+  (prefix (make-string initial-buffer-size) :type string)
   ;;
   ;; Buffer holding the total remaining suffix active at the buffer start.
   ;; The characters are right-justified in the buffer to make it easier
   ;; to output the buffer.  The length is stored in the logical block
   ;; stack.
-  (suffix (make-string initial-buffer-size) :type simple-string)
+  (suffix (make-string initial-buffer-size) :type string)
   ;;
   ;; Queue of pending operations.  When empty, HEAD=TAIL=NIL.  Otherwise,
   ;; TAIL holds the first (oldest) cons and HEAD holds the last (newest)
@@ -91,10 +91,8 @@
   (pending-blocks nil :type list)
   )
 
-#-ecl
 (defun %print-pretty-stream (pstream stream depth)
   (declare (ignore depth))
-  #+nil
   (print-unreadable-object (pstream stream :type t :identity t))
   #+nil
   (format stream "#<pretty stream {~8,'0X}>"
@@ -136,7 +134,8 @@
 
 (defun pretty-out (stream char)
   (declare (type pretty-stream stream)
-	   (type base-char char))
+	   (type base-char char)
+	   (si::c-local))
   (cond ((char= char #\newline)
 	 (enqueue-newline stream :literal))
 	(t
@@ -150,7 +149,8 @@
   (declare (type pretty-stream stream)
 	   (type simple-string string)
 	   (type index start)
-	   (type (or index null) end))
+	   (type (or index null) end)
+	   (si::c-local))
   (let ((end (or end (length string))))
     (unless (= start end)
       (let ((newline (position #\newline string :start start :end end)))
@@ -175,10 +175,6 @@
 		(when (zerop count)
 		  (return))
 		(incf start count))))))))))
-
-(defun pretty-misc (stream op &optional arg1 arg2)
-  (declare (ignore stream op arg1 arg2)))
-
 
 
 ;;;; Logical blocks.
@@ -247,6 +243,7 @@
   nil)
 
 (defun set-indentation (stream column)
+  (declare (si::c-local))
   (let* ((prefix (pretty-stream-prefix stream))
 	 (prefix-len (length prefix))
 	 (block (car (pretty-stream-blocks stream)))
@@ -267,6 +264,7 @@
     (setf (logical-block-prefix-length block) column)))
 
 (defun really-end-logical-block (stream)
+  (declare (si::c-local))
   (let* ((old (pop (pretty-stream-blocks stream)))
 	 (old-indent (logical-block-prefix-length old))
 	 (new (car (pretty-stream-blocks stream)))
@@ -338,26 +336,43 @@
 (defstruct (block-start
 	    (:include section-start))
   (block-end nil :type (or null block-end))
-  (prefix nil :type (or null simple-string))
-  (suffix nil :type (or null simple-string)))
+  (prefix nil :type (or null string))
+  (suffix nil :type (or null string)))
 
 (defun start-logical-block (stream prefix per-line-p suffix)
-  (declare (type (or null string) prefix))
-  (when prefix
-    (pretty-sout stream prefix 0 (length prefix)))
-  (let* ((pending-blocks (pretty-stream-pending-blocks stream))
-	 (start (enqueue stream block-start
-			 :prefix (and per-line-p prefix)
-			 :suffix suffix
-			 :depth (length pending-blocks))))
-    (setf (pretty-stream-pending-blocks stream)
-	  (cons start pending-blocks))))
+  (declare (si::c-local)
+	   (type string prefix))
+  #+ecl
+  (unless (stringp prefix)
+    (error 'simple-type-error
+	   :format-control "Not a valid PPRINT-LOGICAL-BLOCK prefix: ~A"
+	   :format-arguments (list prefix)
+	   :datum prefix
+	   :expected-type 'string))
+  #+ecl
+  (unless (stringp suffix)
+    (error 'simple-type-error
+	   :format-control "Not a valid PPRINT-LOGICAL-BLOCK suffix: ~A"
+	   :format-arguments (list suffix)
+	   :datum suffix
+	   :expected-type 'string))
+  (let ((prefix-len (length prefix)))
+    (when (plusp prefix-len)
+      (pretty-sout stream prefix 0 prefix-len))
+    (let* ((pending-blocks (pretty-stream-pending-blocks stream))
+	   (start (enqueue stream block-start
+			   :prefix (and (plusp prefix-len) per-line-p prefix)
+			   :suffix (and (plusp (length suffix)) suffix)
+			   :depth (length pending-blocks))))
+      (setf (pretty-stream-pending-blocks stream)
+	    (cons start pending-blocks)))))
 
 (defstruct (block-end
 	    (:include queued-op))
-  (suffix nil :type (or null simple-string)))
+  (suffix nil :type (or null string)))
 
 (defun end-logical-block (stream)
+  (declare (si::c-local))
   (let* ((start (pop (pretty-stream-pending-blocks stream)))
 	 (suffix (block-start-suffix start))
 	 (end (enqueue stream block-end :suffix suffix)))
@@ -389,9 +404,10 @@
 
 (defun compute-tab-size (tab section-start column)
   (declare (si::c-local))
-  (let ((origin (if (tab-sectionp tab) section-start 0))
-	(colnum (tab-colnum tab))
+  (let ((colnum (tab-colnum tab))
 	(colinc (tab-colinc tab)))
+    (when (tab-sectionp tab)
+      (setf column (- column section-start)))
     (cond ((tab-relativep tab)
 	   (unless (<= colinc 1)
 	     (let ((newposn (+ column colnum)))
@@ -399,11 +415,14 @@
 		 (unless (zerop rem)
 		   (incf colnum (- colinc rem))))))
 	   colnum)
-	  ((<= column (+ colnum origin))
-	   (- (+ colnum origin) column))
+	  ((< column colnum)
+	   (- colnum column))
+	  ((= column colnum)
+	   colinc)
+	  ((plusp colinc)
+	   (- colinc (rem (- column colnum) colinc)))
 	  (t
-	   (- colinc
-	      (rem (- column origin) colinc))))))
+	   0))))
 
 (defun index-column (index stream)
   (declare (si::c-local))
@@ -625,7 +644,7 @@
 	      (write-string suffix target
 			    :start (- len suffix-length)
 			    :end len))))
-	(throw #+ecl stream #-ecl'line-limit-abbreviation-happened t))
+	(throw 'line-limit-abbreviation-happened t))
       (setf (pretty-stream-line-number stream) line-number)
       (write-char #\newline target)
       (setf (pretty-stream-buffer-start-column stream) 0)
@@ -658,6 +677,7 @@
 	  (setf (logical-block-section-start-line block) line-number))))))
 
 (defun output-partial-line (stream)
+  (declare (si::c-local))
   (let* ((fill-ptr (pretty-stream-buffer-fill-pointer stream))
 	 (tail (pretty-stream-queue-tail stream))
 	 (count
@@ -676,6 +696,7 @@
     (incf (pretty-stream-buffer-offset stream) count)))
 
 (defun force-pretty-output (stream)
+  (declare (si::c-local))
   (maybe-output stream nil)
   (expand-tabs stream nil)
   (write-string (pretty-stream-buffer stream)
@@ -685,17 +706,7 @@
 
 ;;;; Utilities.
 
-(defun check-print-level (stream)
-  "Automatically handle *print-level* abbreviation.  If we are too deep, then
-   a # is printed to STREAM and BODY is ignored."
-  (cond ((not (pretty-stream-target stream))
-	 nil)
-	((and (null *print-readably*) *print-level* (zerop *print-level*))
-	 (write-char #\# stream)
-	 nil)
-	(t t)))
-
-(defun pprint-pop-helper (object count stream)
+(defun pprint-pop-helper (object count stream &aux code)
   (cond ((not (listp object))
 	 (write-string ". " stream)
 	 (write-object object stream)
@@ -704,73 +715,172 @@
 	      (eql count *print-length*))
 	 (write-string "..." stream)
 	 nil)
-	((and object (plusp count) (check-for-circularity object))
+	((or (null object)
+	     (zerop count)
+	     (fixnump object)
+	     (characterp object)
+	     (and (symbolp object) (symbol-package object))
+	     (null *circle-counter*))
+	 t)
+	((eql 'NULL (setf code (gethash object *circle-stack* 'NULL)))
+	 ;; We visit this part of the list for the first time and thus we must
+	 ;; register it in the hash, or we are on the second pass and have
+	 ;; found a completely new list. This should not happend, but anyway
+	 ;; we try to print it.
+	 (search-print-circle object)
+	 t)
+	((and (null code) (integerp *circle-counter*))
+	 ;; This object is not visited twice.
+	 t)
+	(t
+	 ;; In all other cases, WRITE-OBJECT
 	 (write-string ". " stream)
 	 (write-object object stream)
-	 nil)
-	(t)))
+	 nil)))
 
 ;;;; User interface to the pretty printer.
 
+(defun check-print-level ()
+  (declare (si::c-local))
+  "Automatically handle *print-level* abbreviation.  If we are too deep, then
+   a # is printed to STREAM and BODY is ignored."
+  (cond ((or *print-readably* (null *print-level*))
+	 t)
+	((zerop *print-level*)
+	 nil)
+	(t
+	 (setf *print-level* (1- *print-level*)))))
+
+(defun search-print-circle (object)
+  (declare (si::c-local))
+  (let ((code (gethash object *circle-stack* -1)))
+    (if (fixnump *circle-counter*)
+	(cond ((or (eql code -1) (null code))
+	       ;; Is not referenced or was not found before
+	       0)
+	      ((eql code t)
+	       ;; Reference twice but had no code yet
+	       (setf (gethash object *circle-stack*)
+		     (setf *circle-counter* (1+ *circle-counter*)))
+	       (- *circle-counter*))
+	      (t code))
+	(cond ((eql code -1)
+	       ;; Was not found before
+	       (setf (gethash object *circle-stack*) nil)
+	       0)
+	      ((null code)
+	       ;; Second reference
+	       (setf (gethash object *circle-stack*) t)
+	       1)
+	      (t
+	       ;; Further references
+	       2)))))
+
+(defun do-pprint-logical-block (function object stream prefix
+				per-line-prefix-p suffix)
+  (declare (si::c-local))
+  (unless (listp object)
+    (write-object object stream)
+    (return-from do-pprint-logical-block nil))
+  (when (and (not *print-readably*) (eql *print-level* 0))
+    (write-char #\# stream)
+    (return-from do-pprint-logical-block nil))
+  (unless (or (not *print-circle*)
+	      (fixnump object)
+	      (characterp object)
+	      (and (symbolp object) (symbol-package object)))
+    (let (code)
+      (cond ((not *circle-counter*)
+	     (let* ((hash (make-hash-table :test 'eq :size 1024
+					   :rehash-size 1.5
+					   :rehash-threshold 0.75))
+		    (*circle-counter* t)
+		    (*circle-stack* hash))
+	       (do-pprint-logical-block function object
+					(make-pretty-stream (make-broadcast-stream))
+					prefix per-line-prefix-p suffix)
+	       (setf *circle-counter* 0)
+	       (do-pprint-logical-block function object stream
+					prefix per-line-prefix-p suffix))
+	     (return-from do-pprint-logical-block nil))
+	    ((zerop (setf code (search-print-circle object)))
+	     ;; Object was not referenced before: we must either traverse it
+	     ;; or print it.
+	     )
+	    ((minusp code)
+	     ;; First definition, we write the #n=... prefix
+	     (write-string "#" stream)
+	     (let ((*print-radix* nil) (*print-base* 10))
+	       (write-ugly-object (- code) stream))
+	     (write-string "=" stream))
+	    (t
+	     ;; Further references, we write the #n# tag and exit
+	     (write-string "#" stream)
+	     (let ((*print-radix* nil) (*print-base* 10))
+	       (write-ugly-object code stream))
+	     (write-string "#" stream)
+	     (return-from do-pprint-logical-block nil)))))
+  (let ((*print-level* (and (not *print-readably*)
+			    *print-level*
+			    (1- *print-level*))))
+    (start-logical-block stream prefix per-line-prefix-p suffix)
+    (funcall function object stream)
+    (end-logical-block stream))
+  nil)
+
+(defun pprint-logical-block-helper (function object stream prefix
+				    per-line-prefix-p suffix)
+  (setf stream (case stream
+		 ((nil) *standard-output*)
+		 ((t) *terminal-io*)
+		 (t stream)))
+  (if (pretty-stream-p stream)
+      (do-pprint-logical-block function object stream prefix
+			       per-line-prefix-p suffix)
+      (let ((stream (make-pretty-stream stream)))
+	(catch 'line-limit-abbreviation-happened
+	  (do-pprint-logical-block function object stream prefix
+				   per-line-prefix-p suffix)
+	  (force-pretty-output stream))
+	nil)))
+
 (defmacro pprint-logical-block
-	  ((stream-symbol object &key prefix per-line-prefix suffix)
+	  ((stream-symbol object &key (prefix "" prefix-p)
+			  (per-line-prefix "" per-line-prefix-p)
+			  (suffix "" suffix-p))
 	   &body body)
   "Group some output into a logical block.  STREAM-SYMBOL should be either a
    stream, T (for *TERMINAL-IO*), or NIL (for *STANDARD-OUTPUT*).  The printer
    control variable *PRINT-LEVEL* is automatically handled."
-  (when (and prefix per-line-prefix)
-    (error "Cannot specify both a prefix and a per-line-prefix."))
-  (multiple-value-bind
-      (stream-var stream-expression)
-      (case stream-symbol
-	((nil)
-	 (values '*standard-output* '*standard-output*))
-	((t)
-	 (values '*terminal-io* '*terminal-io*))
-	(t
-	 (values stream-symbol
-		 (once-only ((stream stream-symbol))
-		   `(case ,stream
-		      ((nil) *standard-output*)
-		      ((t) *terminal-io*)
-		      (t ,stream))))))
-    (let* ((object-var (if object (gensym) nil))
-	   (block-name (gensym "PPRINT-LOGICAL-BLOCK-"))
-	   (count-name (gensym "PPRINT-LOGICAL-BLOCK-LENGTH-"))
-	   (body
-	    `(when (check-print-level ,stream-var)
-	       (let ((,count-name 0))
-		 (declare (type index ,count-name) (ignorable ,count-name))
-		 (start-logical-block ,stream-var ,(or prefix per-line-prefix)
-				      ,(if per-line-prefix t nil) ,suffix)
-		 (block ,block-name
-		   (macrolet ((pprint-pop ()
-			       '(progn
-				  (unless (pprint-pop-helper ,object-var ,count-name ,stream-var)
-				    (return-from ,block-name nil))
-				  (incf ,count-name)
-				  ,(if object `(pop ,object-var) nil)))
-			      (pprint-exit-if-list-exhausted ()
-			       ,(if object
-				  `'(when (null ,object-var)
-				      (return-from ,block-name nil))
-				  `'(return-from ,block-name nil))))
-		       ,@body))
-		 (end-logical-block ,stream-var)))))
-      (when object
-	(setf body
-	      `(let ((,object-var ,object))
-		 (if (listp ,object-var)
-		     ,body
-		     (write-object ,object-var ,stream-var)))))
-      `(let ((,stream-var ,stream-expression)
-	     (do-catch 'nothing-to-catch))
-	 (unless (pretty-stream-p ,stream-var)
-	   (setf ,stream-var (make-pretty-stream ,stream-var)
-		 do-catch ,stream-var))
-	 (catch ,stream-var
-	   ,body)
-	 (when (eq do-catch ,stream-var) (force-pretty-output ,stream-var))))))
+  (when per-line-prefix-p
+    (when prefix-p
+      (error "Cannot specify both a prefix and a per-line-prefix."))
+    (setf prefix per-line-prefix))
+  (let* ((object-var (gensym))
+	 (block-name (gensym "PPRINT-LOGICAL-BLOCK-"))
+	 (count-name (gensym "PPRINT-LOGICAL-BLOCK-LENGTH-"))
+	 (stream-var (case stream-symbol
+		       ((nil) '*standard-output*)
+		       ((t) '*terminal-io*)
+		       (t stream-symbol)))
+	 (function
+	  `(ext::lambda-block ,block-name (,object-var ,stream-var
+					   &aux (,count-name 0))
+	    (macrolet ((pprint-pop ()
+			 '(progn
+			   (unless (pprint-pop-helper ,object-var ,count-name
+						      ,stream-var)
+			     (return-from ,block-name nil))
+			   (incf ,count-name)
+			   ,(if object `(pop ,object-var) nil)))
+		       (pprint-exit-if-list-exhausted ()
+			 ,(if object
+			      `'(when (null ,object-var)
+				 (return-from ,block-name nil))
+			      `'(return-from ,block-name nil))))
+	      ,@body))))
+      `(pprint-logical-block-helper #',function ,object ,stream-symbol
+				    ,prefix ,per-line-prefix-p ,suffix)))
 
 (defmacro pprint-exit-if-list-exhausted ()
   "Cause the closest enclosing use of PPRINT-LOGICAL-BLOCK to return
@@ -787,7 +897,7 @@
    If the LIST argument to PPRINT-LOGICAL-BLOCK was NIL, then nothing
    is poped, but the *PRINT-LENGTH* testing still happens."
   (error "PPRINT-POP must be lexically inside PPRINT-LOGICAL-BLOCK."))
-  
+
 (defun pprint-newline (kind &optional stream)
   "Output a conditional newline to STREAM (which defaults to
    *STANDARD-OUTPUT*) if it is a pretty-printing stream, and do
@@ -810,6 +920,13 @@
   (declare (type (member :linear :miser :fill :mandatory) kind)
 	   (type (or stream (member t nil)) stream)
 	   (values null))
+  #+ecl
+  (unless (member kind '(:linear :miser :fill :mandatory))
+    (error 'simple-type-error
+	   :format-control "~A is not a valid argument to PPRINT-NEWLINE"
+	   :format-arguments (list kind)
+	   :datum kind
+	   :expected-type '(member :linear :miser :fill :mandatory)))
   (let ((stream (case stream
 		  ((t) *terminal-io*)
 		  ((nil) *standard-output*)
@@ -829,15 +946,22 @@
    The new indention value does not take effect until the following line
    break."
   (declare (type (member :block :current) relative-to)
-	   (type integer n)
+	   (type real n)
 	   (type (or stream (member t nil)) stream)
 	   (values null))
+  #+ecl
+  (unless (member relative-to '(:block :current))
+    (error 'simple-type-error
+	   :format-control "~A is not a valid argument to PPRINT-INDENT"
+	   :format-arguments (list kind)
+	   :datum kind
+	   :expected-type '(member :block :current)))
   (let ((stream (case stream
 		  ((t) *terminal-io*)
 		  ((nil) *standard-output*)
 		  (t stream))))
     (when (and (pretty-stream-p stream) *print-pretty*)
-      (enqueue-indent stream relative-to n)))
+      (enqueue-indent stream relative-to (round n))))
   nil)
 
 (defun pprint-tab (kind colnum colinc &optional stream)
@@ -856,6 +980,13 @@
 	   (type unsigned-byte colnum colinc)
 	   (type (or stream (member t nil)) stream)
 	   (values null))
+  #+ecl
+  (unless (member kind '(:line :section :line-relative :section-relative))
+    (error 'simple-type-error
+	   :format-control "~A is not a valid argument to PPRINT-TAB"
+	   :format-arguments (list kind)
+	   :datum kind
+	   :expected-type '(member :line :section :line-relative :section-relative)))
   (let ((stream (case stream
 		  ((t) *terminal-io*)
 		  ((nil) *standard-output*)
@@ -871,8 +1002,8 @@
    can be used with the ~/.../ format directive."
   (declare (ignore atsign?))
   (pprint-logical-block (stream list
-				:prefix (if colon? "(")
-				:suffix (if colon? ")"))
+				:prefix (if colon? "(" "")
+				:suffix (if colon? ")" ""))
     (pprint-exit-if-list-exhausted)
     (loop
       (write-object (pprint-pop) stream)
@@ -887,8 +1018,8 @@
    can be used with the ~/.../ format directive."
   (declare (ignore atsign?))
   (pprint-logical-block (stream list
-				:prefix (if colon? "(")
-				:suffix (if colon? ")"))
+				:prefix (if colon? "(" "")
+				:suffix (if colon? ")" ""))
     (pprint-exit-if-list-exhausted)
     (loop
       (write-object (pprint-pop) stream)
@@ -905,8 +1036,8 @@
    the ~/.../ format directive."
   (declare (ignore atsign?))
   (pprint-logical-block (stream list
-				:prefix (if colon? "(")
-				:suffix (if colon? ")"))
+				:prefix (if colon? "(" "")
+				:suffix (if colon? ")" ""))
     (pprint-exit-if-list-exhausted)
     (loop
       (write-object (pprint-pop) stream)
@@ -933,7 +1064,7 @@
   (initial-p (not (boundp '*initial-pprint-dispatch*)) :type (member t nil))
   ;;
   ;; And the associated function.
-  (function (required-argument) :type function))
+  (function (required-argument) :type (or function symbol)))
 
 (defun %print-pprint-dispatch-entry (entry stream depth)
   (declare (ignore depth))
@@ -1023,6 +1154,14 @@
   (declare (type (or null function) function)
 	   (type real priority)
 	   (type pprint-dispatch-table table))
+  ;; FIXME! This check should be automatically generated when compiling
+  ;; with high enough safety mode.
+  (unless (typep priority 'real)
+    (error 'simple-type-error
+	   :format-control "Not a valid priority for set-pprint-dispatch: ~A"
+	   :format-arguments (list priority)
+	   :expected-type 'real
+	   :datum priority))
   (if function
       (if (cons-type-specifier-p type)
 	  (setf (gethash (second (second type))
@@ -1080,11 +1219,11 @@
       (pprint-pop)
       (write-object (aref vector i) stream))))
 
-(defun pprint-array-contents (data array)
+(defun pprint-array-contents (stream array)
   (declare (si::c-local))
   (labels ((output-guts (stream index dimensions)
 	       (if (null dimensions)
-		   (write-object (aref data index) stream)
+		   (write-object (row-major-aref array index) stream)
 		   (pprint-logical-block
 		    (stream nil :prefix "(" :suffix ")")
 		    (let ((dim (car dimensions)))

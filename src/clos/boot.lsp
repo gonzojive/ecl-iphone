@@ -94,58 +94,85 @@
 ;;; ----------------------------------------------------------------------
 ;;; SLOTS READING AND WRITING
 ;;;
+;;;
+;;; 1) Functional interface
+;;;
 
-    (defmethod slot-value ((self class) slot-name)
-      (ensure-up-to-date-instance self)
-      (let* ((class (si:instance-class self))
-	     (index (position slot-name (class-slots class)
-			      :key #'slotd-name :test #'eq)))
-	(values
-	 (if index
-	     (let ((val (si:instance-ref self (the fixnum index))))
-	       (if (si:sl-boundp val)
-		   val
-		   (slot-unbound (si::instance-class class) class slot-name)))
-	     (slot-missing (si:instance-class class) class slot-name 
-			   'SLOT-VALUE)))))
+(defun slot-value (self slot-name)
+  (slot-value-using-class (class-of self) self slot-name))
 
-    (defmethod slot-boundp ((self class) slot-name)
-      (ensure-up-to-date-instance self)
-      (let* ((class (si:instance-class self))
-	     (index (position slot-name (class-slots class)
-			      :key #'slotd-name :test #'eq)))
-	(values
-	 (if index
-	     (si:sl-boundp (si:instance-ref self (the fixnum index)))
-	     (slot-missing (si:instance-class class) class slot-name
-			   'SLOT-BOUNDP)))))
+(defun slot-boundp (self slot-name)
+  (slot-boundp-using-class (class-of self) self slot-name))
 
-    (defmethod (setf slot-value) (val (self class) slot-name)
-      (ensure-up-to-date-instance self)
-      (let* ((class (si:instance-class self))
-	     (index (position slot-name (class-slots class)
-			      :key #'slotd-name :test #'eq)))
-	(if index
-	    (si:instance-set self (the fixnum index) val)
-	    (slot-missing (si:instance-class self) self slot-name
-			  'SETF val)))
-      val)
+(defun (setf slot-value) (value self slot-name)
+  (funcall #'(setf slot-value-using-class) value (class-of self) self slot-name))
 
-    (defmethod slot-missing ((class t) object slot-name operation 
-			     &optional new-value)
-      (declare (ignore operation new-value))
-      (error "~A is not a slot of ~A" slot-name object))
+(defun slot-makunbound (self slot-name)
+  (slot-makunbound-using-class (class-of self) self slot-name))
 
-    (defmethod slot-unbound ((class t) object slot-name)
-      (error 'unbound-slot :instance object :name slot-name))
+(defun slot-exists-p (self slot-name)
+  (slot-exists-p-using-class (class-of self) self slot-name))
 
-(defmethod slot-exists-p ((instance t) slot-name)
-  nil)
+;;;
+;;; 2) Overloadable methods on which the previous functions are based
+;;;
+
+(defmethod slot-value-using-class ((class class) self slot-name)
+  (ensure-up-to-date-instance self)
+  (let* ((index (position slot-name (class-slots class)
+			  :key #'slotd-name :test #'eq)))
+    (values
+     (if index
+	 (let ((val (si:instance-ref self (the fixnum index))))
+	   (if (si:sl-boundp val)
+	       val
+	       (slot-unbound (si::instance-class class) class slot-name)))
+	 (slot-missing (si:instance-class class) class slot-name 
+		       'SLOT-VALUE)))))
+
+(defmethod slot-boundp-using-class ((class class) self slot-name)
+  (ensure-up-to-date-instance self)
+  (let* ((index (position slot-name (class-slots class)
+			  :key #'slotd-name :test #'eq)))
+    (values
+     (if index
+	 (si:sl-boundp (si:instance-ref self (the fixnum index)))
+	 (slot-missing (si:instance-class class) class slot-name
+		       'SLOT-BOUNDP)))))
+
+(defmethod (setf slot-value-using-class) (val (class class) self slot-name)
+  (ensure-up-to-date-instance self)
+  (let* ((index (position slot-name (class-slots class)
+			  :key #'slotd-name :test #'eq)))
+    (if index
+	(si:instance-set self (the fixnum index) val)
+	(slot-missing (si:instance-class self) self slot-name
+		      'SETF val)))
+  val)
+
+(defmethod slot-exists-p-using-class ((class class) self slot-name)
+  (ensure-up-to-date-instance self)
+  (and (position slot-name (class-slots class) :key #'slotd-name :test #'eq)
+       t))
+
+;;;
+;;; 3) Error messages related to slot access
+;;;
+
+(defmethod slot-missing ((class t) object slot-name operation 
+			 &optional new-value)
+  (declare (ignore operation new-value))
+  (error "~A is not a slot of ~A" slot-name object))
+
+(defmethod slot-unbound ((class t) object slot-name)
+  (error 'unbound-slot :instance object :name slot-name))
+
+;;;
+;;; For the next accessor we define a method.
+;;;
 
 (defmethod class-name ((class class))
   (class-id class))
 
 (defmethod (setf class-name) (new-value (class class))
   (setf (class-id class) new-value))
-
-;;; ----------------------------------------------------------------------
