@@ -29,6 +29,36 @@ struct typemanager tm_table[(int)t_end];
 #undef alloc_object
 #endif
 
+static void
+finalize(cl_object o, cl_object data)
+{
+	switch (type_of(o)) {
+#ifdef ENABLE_DLOPEN
+	case t_codeblock:
+	AGAIN:
+		/*
+		printf("\n;;; Freeing library %s \n", o->cblock.name?
+		       o->cblock.name->string.self : "<anonymous>");
+		*/
+		if (o->cblock.handle != NULL) {
+			dlclose(o->cblock.handle);
+			GC_free(o->cblock.data);
+		} else {
+			o = o->cblock.next;
+			if (o != NULL && o->cblock.handle != NULL)
+				goto AGAIN;
+		}
+		break;
+#endif
+	case t_stream:
+		if (o->stream.file != NULL)
+			fclose(o->stream.file);
+		o->stream.file = NULL;
+		break;
+	default:
+	}
+}
+
 cl_object
 cl_alloc_object(cl_type t)
 {
@@ -37,20 +67,28 @@ cl_alloc_object(cl_type t)
 
 	switch (t) {
 	case t_fixnum:
-	  return MAKE_FIXNUM(0); /* Immediate fixnum */
+		return MAKE_FIXNUM(0); /* Immediate fixnum */
 	case t_character:
-	  return CODE_CHAR(' '); /* Immediate character */
+		return CODE_CHAR(' '); /* Immediate character */
 	}
 	if (t < t_start || t >= t_end) {
-	  printf("\ttype = %d\n", t);
-	  error("alloc botch.");
+		printf("\ttype = %d\n", t);
+		error("alloc botch.");
 	}
 	tm = tm_of(t);
 
 	obj = (cl_object)GC_malloc(tm->tm_size);
 	obj->d.t = t;
 	/* GC_malloc already resets objects */
-
+	if (t == t_stream
+#ifdef ENABLE_DLOPEN
+	    || t == t_codeblock
+#endif
+	) {
+		GC_finalization_proc ofn;
+		void *odata;
+		GC_register_finalizer_no_order(obj, finalize, NULL, &ofn, &odata);
+	}
 	return obj;
 }
 

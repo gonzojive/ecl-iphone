@@ -348,6 +348,7 @@ struct codeblock {
 	int	data_size;
 	const char *data_text;		/*  string with objects to be defined  */
 	int	data_text_size;
+	cl_object next;			/*  next codeblock within same library */
 #ifdef PDE
 	int	source_pathname;
 #endif

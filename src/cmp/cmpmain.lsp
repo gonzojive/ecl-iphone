@@ -134,10 +134,11 @@ main(int argc, char **argv)
 #ifdef __cplusplus
 extern \"C\"
 #endif
-int init_~A(cl_object foo)
+int init_~A(cl_object cblock)
 {
+	cl_object next;
 	~A
-~{	read_VV(OBJNULL,init_~A);~%~}
+~{	next = read_VV(OBJNULL,init_~A); next->cblock.next = cblock; cblock = next; ~%~}
 	~A
 }")
 

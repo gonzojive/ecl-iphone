@@ -1032,7 +1032,7 @@ extern int ecl_current_read_base(void);
 extern char ecl_current_read_default_float_format(void);
 extern cl_object c_string_to_object(const char *s);
 extern void init_read(void);
-extern void read_VV(cl_object block, void *entry);
+extern cl_object read_VV(cl_object block, void *entry);
 
 
 /* reference.c */

@@ -1851,7 +1851,7 @@ init_read(void)
  *
  *----------------------------------------------------------------------
  */
-void
+cl_object
 read_VV(cl_object block, void *entry)
 {
 	typedef void (*entry_point_ptr)(cl_object);
@@ -1900,5 +1900,7 @@ read_VV(cl_object block, void *entry)
 		if (in != OBJNULL)
 			close_stream(in, 0);
 	} CL_UNWIND_PROTECT_END;
+
+	return block;
 }
 
