@@ -136,8 +136,6 @@ typedef struct lpd {
 
   /* symbol.d */
   cl_object lwp_string_register;
-  cl_object lwp_gensym_prefix;
-  cl_object lwp_gentemp_prefix;
   cl_object lwp_token;		/* They have to be initialized with
 			         * alloc_simple_string and */
 } lpd;

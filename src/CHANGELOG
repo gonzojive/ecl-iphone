@@ -921,6 +921,15 @@ ECL 0.6
     libraries. For example, (LOAD (OPEN "foo.lsp")) is equivalent
     to (LOAD "foo.lsp").
 
+  - The arguments of GENSYM should not be remembered by ECLS. The
+    current behaviour is wrong:
+		> (gensym)
+		#:G36
+		> (gensym "F")
+		#:F37
+		> (gensym)
+		#:F38
+
 TODO:
 =====
 

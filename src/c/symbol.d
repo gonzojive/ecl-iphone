@@ -19,8 +19,6 @@
 /******************************* EXPORTS ******************************/
 
 #ifndef THREADS
-cl_object gensym_prefix;
-cl_object gentemp_prefix;
 cl_object cl_token;
 #endif
 
@@ -30,6 +28,8 @@ cl_object @'si::pname';
 
 /******************************* ------- ******************************/
 
+static cl_object gensym_prefix;
+static cl_object gentemp_prefix;
 static cl_index gentemp_counter;
 
 @(defun make_symbol (str)
@@ -342,21 +342,22 @@ symbol_name(cl_object x)
 	@(return x)
 @)
 
-@(defun gensym (&optional (x gensym_prefix) &aux str)
+@(defun gensym (&optional (prefix gensym_prefix) &aux str)
 	cl_index name_length, j, counter_value;
-	volatile cl_object counter;
+	cl_object counter;
 @
-	if (type_of(x) == t_string) {
-		gensym_prefix = x;
+	if (type_of(prefix) == t_string) {
 		counter = SYM_VAL(@'*gensym-counter*');
-	} else
-		counter = x;
+	} else {
+		counter = prefix;
+		prefix = gensym_prefix;
+	}
 	if (!FIXNUMP(counter) || FIXNUM_MINUSP(counter)) {
 		FEerror("*gensym-counter*, ~A, not a positive fixnum",
 			1, counter);
 	}
 	counter_value = fix(counter);
-	name_length = gensym_prefix->string.fillp;
+	name_length = prefix->string.fillp;
 	for (j = counter_value;  j > 0;  j /= 10)
 		name_length++;
 	if (name_length == 0)
@@ -364,14 +365,15 @@ symbol_name(cl_object x)
 	str = cl_alloc_simple_string(name_length);
 	str->string.self = (char *)cl_alloc_atomic(name_length+1);
 	str->string.self[name_length] = '\0';
-	for (j = 0;  j < gensym_prefix->string.fillp;  j++)
-		str->string.self[j] = gensym_prefix->string.self[j];
+	for (j = 0;  j < prefix->string.fillp;  j++)
+		str->string.self[j] = prefix->string.self[j];
 	if (counter_value == 0)
 		str->string.self[--name_length] = '0';
 	else
 		for (j=counter_value;  j > 0;  j /= 10)
 			str->string.self[--name_length] = j%10 + '0';
-	SYM_VAL(@'*gensym-counter*') = MAKE_FIXNUM(counter_value+1);
+	if (prefix == gensym_prefix)
+		SYM_VAL(@'*gensym-counter*') = MAKE_FIXNUM(counter_value+1);
 	@(return make_symbol(str))
 @)
 

@@ -151,8 +151,6 @@ make_pd()
   npd->lwp_sharp_eq_context_max = 0;
   
   /* for gc */
-  npd->lwp_gensym_prefix = OBJNULL;
-  npd->lwp_gentemp_prefix = OBJNULL;
   npd->lwp_token = OBJNULL;
     
   /* lex_env copy */
@@ -169,7 +167,6 @@ make_pd()
   npd->lwp_fmt_temporary_string =
     npd->lwp_fmt_temporary_stream->stream.object0;
   
-  npd->lwp_gentemp_prefix = make_simple_string("T");
   npd->lwp_token = cl_alloc_simple_string(LISP_PAGESIZE);
   npd->lwp_token->string.self = cl_alloc_atomic(LISP_PAGESIZE);
   npd->lwp_token->string.fillp = 0;

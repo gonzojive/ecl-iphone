@@ -759,9 +759,9 @@ extern void init_structure(void);
 
 /* symbol.c */
 
-extern cl_object gensym_prefix;
-extern cl_object gentemp_prefix;
+#ifndef THREADS
 extern cl_object cl_token;
+#endif
 extern cl_object make_symbol(cl_object st);
 extern cl_object make_ordinary(const char *s);
 extern cl_object make_special(const char *s, cl_object v);
