@@ -301,7 +301,7 @@ cl_symbol_name(cl_object x)
 	int intern_flag;
 @
 	assert_type_string(prefix);
-	assert_type_package(pack);
+	pack = si_coerce_to_package(pack);
 ONCE_MORE:
 	output = make_string_output_stream(64);
 	bds_bind(@'*print-base*', MAKE_FIXNUM(10));
