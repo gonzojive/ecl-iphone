@@ -206,19 +206,19 @@
 	     (t (cmpwarn "Bad function proclamation ~a" decl)))))
     (INLINE
      (dolist (fun (cdr decl))
-               (if (symbolp fun)
-                   (rem-sysprop fun 'CMP-NOTINLINE)
-                   (warn "The function name ~s is not a symbol." fun))))
+               (if (si::valid-function-name-p fun)
+		   (rem-sysprop fun 'CMP-NOTINLINE)
+		   (warn "Not a valid function name ~s" fun))))
     (NOTINLINE
      (dolist (fun (cdr decl))
-               (if (symbolp fun)
-                   (put-sysprop fun 'CMP-NOTINLINE t)
-                   (warn "The function name ~s is not a symbol." fun))))
+               (if (si::valid-function-name-p fun)
+		   (put-sysprop fun 'CMP-NOTINLINE t)
+		   (warn "Not a valid function name ~s" fun))))
     ((OBJECT IGNORE DYNAMIC-EXTENT IGNORABLE)
      ;; FIXME! IGNORED!
      (dolist (var (cdr decl))
-       (unless (symbolp var)
-               (warn "The variable name ~s is not a symbol." var))))
+       (unless (si:.valid-function-name-p var)
+	 (warn "Not a valid function name ~s" fun))))
     (DECLARATION
      (dolist (x (cdr decl))
        (if (symbolp x)
