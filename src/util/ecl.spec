@@ -25,8 +25,7 @@ Group:          Development/Languages/Lisp
 URL:            http://ecls.sourceforge.net/
 Source0:        http://easynews.dl.sourceforge.net/sourceforge/ecls/ecl-%{_ver}.tgz
 # want to add these later.
-#Source1:        eclx.tgz
-#Source2:        ecls-regexp.lisp
+#Source1:        ecls-regexp.lisp
 BuildRoot:      %{_buildtmp}/%{_nv}-buildroot
 #% REDHAT BuildRequires:  rpm-devel
 #% REDHAT BuildRequires:  gmp-devel
@@ -64,8 +63,9 @@ fi
         --with-x             \
         --with-ffi           \
         --with-clos-stream   \
-        --with-tcp
-        # --with-cmuformat     \          # broken
+        --with-tcp	     \
+        --with-cmuformat     \
+	--with-clx
         # --enable-local-boehm \          # broken
         # --enable-threads                # non-supported still.
 %{__make}
@@ -105,8 +105,6 @@ do
     done
 done
 
-# BUG:  to fix problems in the installation code 
-#
 # BUG:  the cause of the first problem is in the configure.in which set the
 # values of libdir, infodir, bindir
 #(
@@ -114,7 +112,7 @@ done
 #  %{__installdir} -m 755 share
 #  %{__mv} man info share
 #)
-# BUG: the cause of this problem is an 'install -m 644' that installs "cmp.so"
+# BUG: the cause of this problem is an 'install -m 644' that installs "cmp.fas"
 # with some archive files and lisp files.
 # find $_r -name "*.fas" | xargs chmod a+x
 
@@ -141,7 +139,7 @@ gen_filelist $RPM_BUILD_ROOT %{_filelist}
 
 # add info files to info dir in %post
 %post
-for _n in ecl ecldev; do
+for _n in ecl ecldev clx; do
     _d=%{_infodir}
     _f=$_d/$_n.info.gz
     if [ -f $_f ]; then
@@ -152,7 +150,7 @@ done
 
 # remove info files from info dir in %postun
 %postun
-for _n in ecl ecldev; do
+for _n in ecl ecldev clx; do
     _d=%{_infodir}
     _f=$_d/$_n.info.gz
     if [ -f $_f ]; then
