@@ -1087,4 +1087,9 @@ type_of(#0)==t_bitvector"))
 	    nsubstitute nsubstitute-if nsubstitute-if-not find find-if find-if-not
 	    position position-if position-if-not remove-duplicates
 	    delete-duplicates mismatch search sort stable-sort merge
-	    si::closest-vector-type))
+	    si::closest-vector-type .
+	    #-clos
+	    nil
+	    #+clos
+	    (clos::ensure-class clos::install-method)))
+
