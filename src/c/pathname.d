@@ -128,7 +128,7 @@ make_pathname(cl_object host, cl_object device, cl_object directory,
 		FEerror("make-pathname: ~A is not a valid file name", 1, name);
 	if (type != Cnil && type != @':wild' && type_of(type) != t_string)
 		FEerror("make-pathname: ~A is not a valid file type", 1, type);
-	if (version != @':unspecific' && version != Cnil)
+	if (version != @':unspecific' && version != @':newest' && version != Cnil)
 		FEerror("make-pathname: version numbers not allowed", 0);
 	x->pathname.host = host;
 	x->pathname.device = device;
@@ -178,6 +178,93 @@ static int is_semicolon(int c) { return c == ';'; }
 static int is_dot(int c) { return c == '.'; }
 static int is_null(int c) { return c == '\0'; }
 
+static int
+is_all_upper(cl_object s)
+{
+	int i;
+	const char *text;
+	for (i = 0, text = s->string.self; i <= s->string.dim; i++) {
+		if (!isupper(text[i]))
+			return 0;
+	}
+	return 1;
+}
+
+static int
+is_all_lower(cl_object s)
+{
+	int i;
+	const char *text;
+	for (i = 0, text = s->string.self; i <= s->string.dim; i++) {
+		if (!islower(text[i]))
+			return 0;
+	}
+	return 1;
+}
+
+/*
+ * Translates a string into the host's preferred case.
+ * See CLHS 19.2.2.1.2.2 Common Case in Pathname Components.
+ */
+
+static cl_object
+translate_common_case(cl_object str)
+{
+	if (type_of(str) != t_string) {
+		/* Pathnames may contain some other objects, such as symbols,
+		 * numbers, etc, which need not be translated */
+		return str;
+	} else if (is_all_upper(str)) {
+		/* We use UN*X conventions, so lower case is default.
+		 * However, this really should be conditionalised to the OS type,
+		 * and it should translate to the _local_ case.
+		 */
+		return cl_string_downcase(1, str);
+	} else if (is_all_lower(str)) {
+		/* We use UN*X conventions, so lower case is default.
+		 * However, this really should be conditionalised to the OS type,
+		 * and it should translate to _opposite_ of the local case.
+		 */
+		return cl_string_upcase(1, str);
+	} else {
+		/* Mixed case goes unchanged */
+		return str;
+	}
+}
+
+static cl_object
+translate_pathname_case(cl_object str, cl_object scase)
+{
+	if (scase == @':common') {
+		return translate_common_case(str);
+	} else if (scase == @':local') {
+		return str;
+	} else {
+		FEerror("~S is not a valid pathname case specificer.~S"
+			"Only :COMMON or :LOCAL are accepted.", 1, scase);
+	}
+}
+
+static cl_object
+translate_directory_case(cl_object list, cl_object scase)
+{
+	/* If the argument is really a list, translate all strings in it and
+	 * return this new list, else assume it is a string and translate it.
+	 */
+	if (!CONSP(list)) {
+		return translate_pathname_case(list,scase);
+	} else {
+		cl_object l = cl_copy_list(list);
+		for (l = cl_copy_list(list); !endp(l); l = CDR(l)) {
+			/* It is safe to pass anything to translate_pathname_case,
+			 * because it will only transform strings, leaving other
+			 * object (such as symbols) unchanged.*/
+			CAR(l) = translate_pathname_case(CAR(l), scase);
+		}
+	}
+}
+
+
 /*
  * Parses a word from string `S' until either:
  *	1) character `DELIM' is found
@@ -212,7 +299,7 @@ parse_word(const char *s, delim_fn delim, int flags, cl_index start,
 				wild_inferiors = (i > start && s[i-1] == '*');
 				valid_char = TRUE; /* single "*" */
 			}
-		}			
+		}
 #if 0
 		else if (flags & WORD_LOGICAL)
 			valid_char = is_upper(c) || is_digit(c) || c == '-';
@@ -770,11 +857,11 @@ L:
 		}
 		start = MAKE_FIXNUM(s + ee);
 		break;
-		
+
 	case t_pathname:
 		y = x;
 		break;
-		
+
 	case t_stream:
 		switch ((enum ecl_smmode)x->stream.mode) {
 		case smm_input:
@@ -814,6 +901,7 @@ L:
 
 @(defun make_pathname (&key (host OBJNULL) (device OBJNULL) (directory OBJNULL)
 			    (name OBJNULL) (type OBJNULL) (version OBJNULL)
+		            ((:case scase) @':local')
 		            defaults
 		       &aux x)
 @
@@ -826,11 +914,16 @@ L:
 			        Cnil, Cnil, Cnil, Cnil, Cnil);
 	} else
 		defaults = cl_pathname(defaults);
-	x = make_pathname(host != OBJNULL? host : defaults->pathname.host,
-			  device != OBJNULL? device : defaults->pathname.device,
-			  directory != OBJNULL? directory : defaults->pathname.directory,
-			  name != OBJNULL? name : defaults->pathname.name,
-			  type != OBJNULL? type : defaults->pathname.type,
+	x = make_pathname(host != OBJNULL? translate_pathname_case(host,scase)
+			                 : defaults->pathname.host,
+			  device != OBJNULL? translate_pathname_case(device,scase)
+			                   : defaults->pathname.device,
+			  directory != OBJNULL? translate_directory_case(directory,scase)
+			                      : defaults->pathname.directory,
+			  name != OBJNULL? translate_pathname_case(name,scase)
+			                      : defaults->pathname.name,
+			  type != OBJNULL? translate_pathname_case(type,scase)
+                                              : defaults->pathname.type,
 			  version != OBJNULL? version : defaults->pathname.version);
 	@(return x)
 @)
@@ -848,40 +941,35 @@ si_logical_pathname_p(cl_object pname)
 		  Ct : Cnil))
 }
 
-cl_object
-cl_pathname_host(cl_object pname)
-{
+@(defun pathname_host (pname &key ((:case scase) @':local'))
+@
 	pname = cl_pathname(pname);
-	@(return pname->pathname.host)
-}
+	@(return translate_pathname_case(pname->pathname.host,scase))
+@)
 
-cl_object
-cl_pathname_device(cl_object pname)
-{
+@(defun pathname_device (pname &key ((:case scase) @':local'))
+@
 	pname = cl_pathname(pname);
-	@(return pname->pathname.device)
-}
+	@(return translate_pathname_case(pname->pathname.device,scase))
+@)
 
-cl_object
-cl_pathname_directory(cl_object pname)
-{
+@(defun pathname_directory (pname &key ((:case scase) @':local'))
+@
 	pname = cl_pathname(pname);
-	@(return pname->pathname.directory)
-}
+        @(return translate_directory_case(pname->pathname.directory,scase))
+@)
 
-cl_object
-cl_pathname_name(cl_object pname)
-{
+@(defun pathname_name(pname &key ((:case scase) @':local'))
+@
 	pname = cl_pathname(pname);
-	@(return pname->pathname.name)
-}
+	@(return translate_pathname_case(pname->pathname.name,scase))
+@)
 
-cl_object
-cl_pathname_type(cl_object pname)
-{
+@(defun pathname_type(pname &key ((:case scase) @':local'))
+@
 	pname = cl_pathname(pname);
-	@(return pname->pathname.type)
-}
+        @(return translate_pathname_case(pname->pathname.type,scase))
+@)
 
 cl_object
 cl_pathname_version(cl_object pname)

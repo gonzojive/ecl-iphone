@@ -1738,6 +1738,9 @@ ECL 0.9d
 
   - SIGNUM now accepts complex arguments.
 
+  - COMPILE-FILE now handles files with relative pathnames (like
+    "foo/faa.lsp").
+
 * Documentation:
 
   - New manual page documents the scripting facilities of ECL
@@ -1793,6 +1796,9 @@ ECL 0.9d
   - Implemented the class redefinition protocol, which involves
     CHANGE-CLASS, UPDATE-INSTANCE-FOR-{REDEFINED,NEW}-CLASS, and
     MAKE-INSTANCES-OBSOLETE.
+
+  - There is support for the :CASE argument in all pathname functions
+    that require it (Contributed by Julian Stecklina).
 
 TODO:
 =====
