@@ -13,6 +13,8 @@
 ;;; SLOT descriptors
 ;;;
 
+(defconstant +initform-unsupplied+ '+initform-unsupplied+)
+
 (defvar *slot-initform-lambdas* nil)
 
 (defstruct (slotd (:type list))
@@ -23,7 +25,7 @@
   (declare (si::c-local))
   (let*((name nil)
         (initargs nil)
-        (initform 'INITFORM-UNSUPPLIED)	; default
+        (initform '+INITFORM-UNSUPPLIED+)	; default
         (accessors ())
         (readers ())
         (writers ())

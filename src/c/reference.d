@@ -102,7 +102,7 @@ ecl_coerce_to_function(cl_object fun)
 	cl_type t = type_of(fun);
 	if (t == t_cfun || t == t_cclosure
 #ifdef CLOS
-		   || t == t_gfun
+	    || (t == t_instance && fun->instance.isgf)
 #endif
 	    )
 		@(return fun)

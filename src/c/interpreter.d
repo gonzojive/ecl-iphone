@@ -429,7 +429,7 @@ interpret_funcall(int narg, cl_object fun) {
 		x = APPLY_closure(narg, fun->cclosure.entry, fun->cclosure.env, args);
 		break;
 #ifdef CLOS
-	case t_gfun:
+	case t_instance:
 		fun = compute_method(narg, fun, args);
 		goto AGAIN;
 #endif

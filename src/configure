@@ -308,7 +308,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS ECL_VERSION build build_cpu build_vendor build_os host host_cpu host_vendor host_os builddir top_srcdir CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CXX CXXFLAGS ac_ct_CXX CPP RANLIB ac_ct_RANLIB INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA LN_S ECL_CC LSPCFLAGS CLIBS SHARED_LDFLAGS architecture software_type software_version ecl_setjmp ecl_longjmp SHORT_SITE_NAME LONG_SITE_NAME EXTRA_OBJS TARGETS TKLIBS SUBDIR LIBRARIES LSP_LIBRARIES BOEHM_HEADERS EGREP CP RM MV EXE_SUFFIX MACHINE_INSTANCE MACHINE_VERSION OS_TYPE OS_RELEASE DOWN_STACK CL_FIXNUM_TYPE CL_FIXNUM_BITS CL_FIXNUM_MAX CL_FIXNUM_MIN X_CFLAGS X_PRE_LIBS X_LIBS X_EXTRA_LIBS XINCLUDES XLIBS LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS ECL_VERSION build build_cpu build_vendor build_os host host_cpu host_vendor host_os builddir top_srcdir CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CXX CXXFLAGS ac_ct_CXX CPP RANLIB ac_ct_RANLIB INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA LN_S ECL_CC LSPCFLAGS CLIBS SHARED_LDFLAGS SHORT_SITE_NAME LONG_SITE_NAME EXTRA_OBJS TARGETS TKLIBS SUBDIR LIBRARIES LSP_LIBRARIES BOEHM_HEADERS EGREP CP RM MV EXE_SUFFIX ARCHITECTURE SOFTWARE_TYPE SOFTWARE_VERSION MACHINE_INSTANCE MACHINE_VERSION ECL_SETJMP ECL_LONGJMP CL_FIXNUM_TYPE CL_FIXNUM_BITS CL_FIXNUM_MAX CL_FIXNUM_MIN X_CFLAGS X_PRE_LIBS X_LIBS X_EXTRA_LIBS XINCLUDES XLIBS LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -867,6 +867,7 @@ Optional Packages:
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
 --with-tcp             Include socket interface.
 --with-gmp=args        Configure supplied GMP library with arguments.
+--with-config-file=f	Supply configuration for a cross compiler.
 --with-oldloop         Use the old MIT LOOP macro.
 --with-clos-streams    Allow user defined stream objects.
 --with-ffi		Run-time foreign data manipulation.
@@ -1301,7 +1302,7 @@ echo "***"
 exit 2;
 fi
 
-ECL_VERSION=0.9
+ECL_VERSION=0.9b
 
 
 ac_aux_dir=
@@ -1426,6 +1427,14 @@ if test "${with_gmp+set}" = set; then
 else
   gmp_flags=""
 fi;
+
+# Check whether --with-cros_config or --without-cros_config was given.
+if test "${with_cros_config+set}" = set; then
+  withval="$with_cros_config"
+  cross_config="${withval}"
+else
+  cross_config="`pwd`/cross_config"
+fi;
 # Check whether --enable-threads or --disable-threads was given.
 if test "${enable_threads+set}" = set; then
   enableval="$enable_threads"
@@ -1463,6 +1472,7 @@ if test "${enable_cxx+set}" = set; then
 else
   usecxx="no"
 fi;
+
 
 ### ----------------------------------------------------------------------
 ###           Checks for programs
@@ -3367,7 +3377,13 @@ done
 
 
 
-for ac_header in sys/resource.h sys/utsname.h float.h pw.h
+
+
+
+
+
+for ac_header in sys/resource.h sys/utsname.h float.h pw.h dlfcn.h link.h\
+ ulimit.h dirent.h sys/ioctl.h
 do
 as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`
 if eval "test \"\${$as_ac_Header+set}\" = set"; then
@@ -3517,7 +3533,8 @@ done
 
 
 
-for ac_func in nanosleep alarm times isnanf select setenv putenv lstat mkstemp
+for ac_func in nanosleep alarm times isnanf select setenv putenv\
+ lstat mkstemp
 do
 as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`
 echo "$as_me:$LINENO: checking for $ac_func" >&5
@@ -3708,6 +3725,74 @@ fi
 
 
 
+if test "x${cross_compiling}" = "xyes"; then
+  if test -n "${cross_config}" -a -f "${cross_config}"; then
+    . ${cross_config}
+  elif test -f ./cross_config; then
+    . ./cross_config
+  elif test -n "${srcdir}" -a -f ${srcdir}/cross_config; then
+    . ${srcdir}/cross_config
+  else
+    test -z ${cross_config} && cross_config=`pwd`/cross_config
+    cat > ${cross_config} <<EOF
+###
+### YOU ARE TRYING TO CROSS COMPILE ECL.
+### PLEASE FOLLOW THESE INSTRUCTIONS:
+###
+### 1) Vital information cannot be determined at configuration time
+### because we are not able to run test programs. A file called
+###		${cross_config}
+### has been created, that you will have to fill out. Please do
+### it before invoking "configure" again.
+
+### 1.1) Direction of growth of the stack
+ECL_STACK_DIR=up
+
+### 1.2) Choose an integer datatype which is large enough to host a pointer
+CL_FIXNUM_TYPE=int
+CL_FIXNUM_BITS=32
+CL_FIXNUM_MAX=536870911L
+CL_FIXNUM_MIN=-536870912L
+
+### 1.3) Order of bytes within a word
+ECL_BIGENDIAN=no
+
+### 1.4) What characters signal an end of line. May be LF (Linefeed or \\n)
+###      CR (Carriage return or \\r), and CRLF (CR followed by LF).
+ECL_NEWLINE=LF
+
+### 2) To cross-compile ECL so that it runs on the system
+###		${host}
+### you need to first compile ECL on the system in which you are building
+### the cross-compiled files, that is
+###		${build}
+### By default we assume that ECL can be accessed from some directory in
+### the path.
+ECL_TO_RUN=`which ecl`
+EOF
+    cat ${cross_config}
+    { { echo "$as_me:$LINENO: error: Configuration aborted" >&5
+echo "$as_me: error: Configuration aborted" >&2;}
+   { (exit 1); exit 1; }; }
+  fi
+  if test "${ECL_TO_RUN}" = "failed"; then
+    { { echo "$as_me:$LINENO: error: The program ECL is not installed in your system" >&5
+echo "$as_me: error: The program ECL is not installed in your system" >&2;}
+   { (exit 1); exit 1; }; }
+  fi
+  DPP_TO_RUN=`${ECL_TO_RUN} -eval '(progn (print (truename "sys:dpp")) (quit))' \
+	| grep '\#\P' | sed 's,#P"\(.*\)",\1,'`
+  if test -z "${DPP_TO_RUN}" -o "${DPP_TO_RUN}" = "failed"  ; then
+    { { echo "$as_me:$LINENO: error: The program DPP is not installed in your system" >&5
+echo "$as_me: error: The program DPP is not installed in your system" >&2;}
+   { (exit 1); exit 1; }; }
+  fi
+  (echo '#!/bin/sh'; echo ${ECL_TO_RUN} -eval "'"'(push :cross *features*)'"'" '$''*') > CROSS-COMPILER
+  (echo '#!/bin/sh'; echo ${DPP_TO_RUN} '$''*') > CROSS-DPP
+  chmod +x CROSS-COMPILER CROSS-DPP
+fi
+
+
 if uname -a | grep -i 'mingw32' > /dev/null; then
   PWDCMD="pwd -W";
 else
@@ -3729,113 +3814,56 @@ CP="cp"
 MV="mv"
 
 ### Guess the operating system
-
-
-
-
-MACHINE_INSTANCE=`uname -m`
-MACHINE_VERSION=`uname -r`
-OS_TYPE=`uname -s`
-OS_RELEASE=`uname -r`
-case $host_os in
+SOFTWARE_TYPE="${host_os}"
+SOFTWARE_VERSION="unknown"
+MACHINE_INSTANCE="${host_cpu}"
+MACHINE_VERSION="unknown"
+ARCHITECTURE=`echo "${host_cpu}" | tr a-z A-Z` # i386 -> I386
+case "${host_os}" in
 	linux*)
-		host="linux"
+		thehost="linux"
+		SHARED_LDFLAGS="-shared"
+		LDFLAGS="-Wl,--export-dynamic"
+		CLIBS="-ldl"
+		# Maybe CFLAGS="-D_ISOC99_SOURCE ${CFLAGS}" ???
 		;;
 	freebsd*)
-		host="freebsd"
+		thehost="freebsd"
+		CLIBS="-lcompat"
+		SHARED_LDFLAGS="-shared"
+		LDFLAGS="-Wl,--export-dynamic"
 		;;
 	netbsd*)
-		host="netbsd"
+		thehost="netbsd"
+		SHARED_LDFLAGS="-shared"
+		LDFLAGS="-Wl,--export-dynamic"
+		CLIBS="-lcompat"
 		;;
 	solaris*)
-		host="sun4sol2"
+		thehost="sun4sol2"
+		SHARED_LDFLAGS="-dy -G"
+		LDFLAGS="-Wl,--export-dynamic"
+		TCPLIBS="-lsocket -lnsl -lintl"
+		CLIBS="-ldl"
 		;;
 	cygwin*)
-		host="cygwin"
+		thehost="cygwin"
+		shared="no"
 		;;
 	darwin*)
-		host="darwin"
+		thehost="darwin"
+		shared="no"
 		;;
 	*)
-		host="$host_os"
+		thehost="$host_os"
+		shared="no"
 		;;
 esac
-CFLAGS="${CFLAGS} -D$host"
-
-
-echo "$as_me:$LINENO: checking parameters from the machine description file" >&5
-echo $ECHO_N "checking parameters from the machine description file... $ECHO_C" >&6
-cp ${srcdir}/h/machines.h .
-if test "$cross_compiling" = yes; then
-  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&5
-echo "$as_me: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&2;}
-   { (exit 1); exit 1; }; }
-else
-  cat >conftest.$ac_ext <<_ACEOF
-#line $LINENO "configure"
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-#include <stdio.h>
-#include "confdefs.h"
-#include "machines.h"
-
-int
-main() {
-FILE *f=fopen("conftestval", "w");
-if (f == NULL)
-  exit(1);
-
-#ifdef CFLAGS
-fprintf(f,"CFLAGS=\"$CFLAGS \"'%s';\n", CFLAGS);
-#endif
-
-#ifdef LSPCFLAGS
-fprintf(f,"LSPCFLAGS=\"$CFLAGS \"'%s';\n", LSPCFLAGS);
-#endif
-
-#ifdef CLIBS
-fprintf(f,"CLIBS='%s';\n", CLIBS);
-#endif
-
-#ifdef LDFLAGS
-fprintf(f,"LDFLAGS=\"$LDFLAGS \"'%s';\n", LDFLAGS);
-#endif
-
-#ifdef SHARED_LDFLAGS
-fprintf(f,"SHARED_LDFLAGS=\"$LDFLAGS \"'%s';\n", SHARED_LDFLAGS);
-#endif
-
-fprintf(f,"SETJMP='%s';\n", ecl_setjmp);
-fprintf(f,"ecl_setjmp='%s';\n", ecl_setjmp);
-fprintf(f,"ecl_longjmp='%s';\n", ecl_longjmp);
-fprintf(f,"architecture='\"%s\"';\n", ARCHITECTURE);
-fprintf(f,"software_type='\"%s\"';\n", SOFTWARE_TYPE);
-fprintf(f,"software_version='\"%s\"';\n", SOFTWARE_VERSION);
-exit(0);
-}
-
-_ACEOF
-rm -f conftest$ac_exeext
-if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
-  (eval $ac_link) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-  eval "`cat conftestval`"
-rm machines.h
+CFLAGS="${CFLAGS} -D${thehost}"
+echo ${CFLAGS}
 echo "$as_me:$LINENO: checking for ld flags when building shared libraries" >&5
 echo $ECHO_N "checking for ld flags when building shared libraries... $ECHO_C" >&6
-if test "${shared}" = "yes" -a "${SHARED_LDFLAGS}" ; then
+if test "${shared}" = "yes"; then
 echo "$as_me:$LINENO: result: ${SHARED_LDFLAGS}" >&5
 echo "${ECHO_T}${SHARED_LDFLAGS}" >&6
 else
@@ -3849,40 +3877,17 @@ echo "$as_me:$LINENO: result: ${CLIBS}" >&5
 echo "${ECHO_T}${CLIBS}" >&6
 echo "$as_me:$LINENO: checking for architecture" >&5
 echo $ECHO_N "checking for architecture... $ECHO_C" >&6
-echo "$as_me:$LINENO: result: ${architecture}" >&5
-echo "${ECHO_T}${architecture}" >&6
+echo "$as_me:$LINENO: result: ${ARCHITECTURE}" >&5
+echo "${ECHO_T}${ARCHITECTURE}" >&6
 echo "$as_me:$LINENO: checking for software type" >&5
 echo $ECHO_N "checking for software type... $ECHO_C" >&6
-echo "$as_me:$LINENO: result: ${software_type}" >&5
-echo "${ECHO_T}${software_type}" >&6
-echo "$as_me:$LINENO: checking for software version" >&5
-echo $ECHO_N "checking for software version... $ECHO_C" >&6
-echo "$as_me:$LINENO: result: ${software_version}" >&5
-echo "${ECHO_T}${software_version}" >&6
-echo "$as_me:$LINENO: checking use setjmp or _setjmp" >&5
-echo $ECHO_N "checking use setjmp or _setjmp... $ECHO_C" >&6
-echo "$as_me:$LINENO: result: ${ecl_setjmp}" >&5
-echo "${ECHO_T}${ecl_setjmp}" >&6
-echo "$as_me:$LINENO: checking use longjmp or _longjmp" >&5
-echo $ECHO_N "checking use longjmp or _longjmp... $ECHO_C" >&6
-echo "$as_me:$LINENO: result: ${ecl_longjmp}" >&5
-echo "${ECHO_T}${ecl_longjmp}" >&6
-else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-( exit $ac_status )
-{ { echo "$as_me:$LINENO: error: \"Unable to parse machines.h\"" >&5
-echo "$as_me: error: \"Unable to parse machines.h\"" >&2;}
-   { (exit 1); exit 1; }; }
-fi
-rm -f core core.* *.core gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
-fi
+echo "$as_me:$LINENO: result: ${SOFTWARE_TYPE}" >&5
+echo "${ECHO_T}${SOFTWARE_TYPE}" >&6
 
 
 echo "$as_me:$LINENO: checking character sequence for end of line" >&5
 echo $ECHO_N "checking character sequence for end of line... $ECHO_C" >&6
+if test -z "${ECL_NEWLINE}" ; then
 if test "$cross_compiling" = yes; then
   { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
 See \`config.log' for more details." >&5
@@ -3913,11 +3918,12 @@ int main() {
   f = fopen("conftestval","w");
   if (f == NULL) exit(1);
   if (c1 == '\r')
-    output="crlf";
-  else if (c2 == '\r')
-    output="lfcr";
+    if (c2 == EOF)
+      output="CR";
+    else
+      output="CRLF";
   else
-    output="unix";
+    output="LF";
   fclose(f);
   f = fopen("conftestval","w");
   if (f == NULL) exit(1);
@@ -3938,35 +3944,113 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  if test `cat conftestval` = "crlf"; then
-  cat >>confdefs.h <<\_ACEOF
-#define ECL_NEWLINE_IS_CRLF 1
-_ACEOF
-
-  echo "$as_me:$LINENO: result: CR + LF" >&5
-echo "${ECHO_T}CR + LF" >&6
-elif test `cat conftestval` = "lfcr"; then
-  cat >>confdefs.h <<\_ACEOF
-#define ECL_NEWLINE_IS_LFCR 1
-_ACEOF
-
-  echo "$as_me:$LINENO: result: LF + CR" >&5
-echo "${ECHO_T}LF + CR" >&6
-else
-  echo "$as_me:$LINENO: result: LF" >&5
-echo "${ECHO_T}LF" >&6
-fi
+  ECL_NEWLINE=`cat conftestval`
 else
   echo "$as_me: program exited with status $ac_status" >&5
 echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-( exit $ac_status )
-{ { echo "$as_me:$LINENO: error: unable to determine" >&5
-echo "$as_me: error: unable to determine" >&2;}
-   { (exit 1); exit 1; }; }
 fi
 rm -f core core.* *.core gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+fi
+case "${ECL_NEWLINE}" in
+  LF) echo "$as_me:$LINENO: result: lf" >&5
+echo "${ECHO_T}lf" >&6 ;;
+  CR) echo "$as_me:$LINENO: result: cr" >&5
+echo "${ECHO_T}cr" >&6; cat >>confdefs.h <<\_ACEOF
+#define ECL_NEWLINE_IS_CR 1
+_ACEOF
+ ;;
+  CRLF) echo "$as_me:$LINENO: result: cr+lf" >&5
+echo "${ECHO_T}cr+lf" >&6; cat >>confdefs.h <<\_ACEOF
+#define ECL_NEWLINE_IS_CRLF 1
+_ACEOF
+ ;;
+  *) { { echo "$as_me:$LINENO: error: Unable to determine linefeed mode" >&5
+echo "$as_me: error: Unable to determine linefeed mode" >&2;}
+   { (exit 1); exit 1; }; } ;;
+esac
+
+
+
+
+echo "$as_me:$LINENO: checking for _setjmp" >&5
+echo $ECHO_N "checking for _setjmp... $ECHO_C" >&6
+if test "${ac_cv_func__setjmp+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+#line $LINENO "configure"
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+/* System header to define __stub macros and hopefully few prototypes,
+    which can conflict with char _setjmp (); below.
+    Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
+    <limits.h> exists even on freestanding compilers.  */
+#ifdef __STDC__
+# include <limits.h>
+#else
+# include <assert.h>
+#endif
+/* Override any gcc2 internal prototype to avoid an error.  */
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+/* We use char because int might match the return type of a gcc2
+   builtin and then its argument prototype would still apply.  */
+char _setjmp ();
+/* The GNU C library defines this for functions which it implements
+    to always fail with ENOSYS.  Some functions are actually named
+    something starting with __ and the normal name is an alias.  */
+#if defined (__stub__setjmp) || defined (__stub____setjmp)
+choke me
+#else
+char (*f) () = _setjmp;
+#endif
+#ifdef __cplusplus
+}
+#endif
+
+int
+main ()
+{
+return f != _setjmp;
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+         { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_func__setjmp=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_cv_func__setjmp=no
+fi
+rm -f conftest.$ac_objext conftest$ac_exeext conftest.$ac_ext
+fi
+echo "$as_me:$LINENO: result: $ac_cv_func__setjmp" >&5
+echo "${ECHO_T}$ac_cv_func__setjmp" >&6
+if test $ac_cv_func__setjmp = yes; then
+  ECL_SETJMP="setjmp";ECL_LONGJMP="longjmp"
+else
+  ECL_SETJMP="_setjmp";ECL_LONGJMP="_longjmp"
 fi
 
 
@@ -4042,6 +4126,7 @@ if test "${tcp}" -o "${clx}"; then
 _ACEOF
 
   EXTRA_OBJS="${EXTRA_OBJS} tcp.o"
+  CLIBS="${CLIBS} ${TCPLIBS}"
 fi
 if test "${oldloop}"; then
   cat >>confdefs.h <<\_ACEOF
@@ -4096,7 +4181,7 @@ fi
 
   echo "$as_me:$LINENO: checking whether stack growns downwards" >&5
 echo $ECHO_N "checking whether stack growns downwards... $ECHO_C" >&6
-
+if test -z "${ECL_STACK_DIR}" ; then
   if test "$cross_compiling" = yes; then
   { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
 See \`config.log' for more details." >&5
@@ -4141,96 +4226,40 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  echo "$as_me:$LINENO: result: yes" >&5
-echo "${ECHO_T}yes" >&6
-cat >>confdefs.h <<\_ACEOF
+  ECL_STACK_DIR=down
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+ECL_STACK_DIR=up
+fi
+rm -f core core.* *.core gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+fi
+case "${ECL_STACK_DIR}" in
+  down|DOWN) echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; cat >>confdefs.h <<\_ACEOF
 #define DOWN_STACK 1
 _ACEOF
-
-else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-( exit $ac_status )
-echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6
-fi
-rm -f core core.* *.core gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
-fi
-
-  echo "$as_me:$LINENO: checking if arguments can be accessed through vector" >&5
-echo $ECHO_N "checking if arguments can be accessed through vector... $ECHO_C" >&6
-  if test "$cross_compiling" = yes; then
-  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&5
-echo "$as_me: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&2;}
+ ;;
+  up|UP) echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6 ;;
+  *) { { echo "$as_me:$LINENO: error: Unable to determine stack growth direction" >&5
+echo "$as_me: error: Unable to determine stack growth direction" >&2;}
    { (exit 1); exit 1; }; }
-else
-  cat >conftest.$ac_ext <<_ACEOF
-#line $LINENO "configure"
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
+esac
 
-#include <stdarg.h>
-#include <stdlib.h>
-int f(int narg, ...) {
-  va_list args;
-  int *vector;
-  va_start(args,narg);
-  vector = NULL;
-  while (narg--) {
-    if (vector == NULL) {
-      vector = &va_arg(args, int);
-    } else if (*(++vector) != va_arg(args,int)) {
-      return 1;
-    }
-  }
-  return 0;
-}
 
-int main() {
-  exit(f(10,1,2,3,4,5,6,7,8,9,10));
-}
 
-_ACEOF
-rm -f conftest$ac_exeext
-if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
-  (eval $ac_link) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-  echo "$as_me:$LINENO: result: yes" >&5
-echo "${ECHO_T}yes" >&6
-else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
 
-( exit $ac_status )
-echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6
-cat >>confdefs.h <<\_ACEOF
-#define NO_ARGS_ARRAY 1
-_ACEOF
-
-fi
-rm -f core core.* *.core gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
-fi
 
 
 echo "$as_me:$LINENO: checking appropiate type for fixnums" >&5
 echo $ECHO_N "checking appropiate type for fixnums... $ECHO_C" >&6
-if test "$cross_compiling" = yes; then
+if test -z "${CL_FIXNUM_TYPE}" ; then
+  if test "$cross_compiling" = yes; then
   { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
 See \`config.log' for more details." >&5
 echo "$as_me: error: cannot run test program while cross compiling
@@ -4285,25 +4314,22 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
   eval "`cat conftestval`"
-echo "$as_me:$LINENO: result: ${CL_FIXNUM_TYPE}" >&5
-echo "${ECHO_T}${CL_FIXNUM_TYPE}" >&6
-
-
-
-
 else
   echo "$as_me: program exited with status $ac_status" >&5
 echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-( exit $ac_status )
+fi
+rm -f core core.* *.core gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+fi
+if test -z "${CL_FIXNUM_TYPE}" ; then
 { { echo "$as_me:$LINENO: error: There is no appropiate integer type for the cl_fixnum type" >&5
 echo "$as_me: error: There is no appropiate integer type for the cl_fixnum type" >&2;}
    { (exit 1); exit 1; }; }
 fi
-rm -f core core.* *.core gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
-fi
-
+echo "$as_me:$LINENO: result: ${CL_FIXNUM_TYPE}" >&5
+echo "${ECHO_T}${CL_FIXNUM_TYPE}" >&6
 
 echo "$as_me:$LINENO: checking whether byte ordering is bigendian" >&5
 echo $ECHO_N "checking whether byte ordering is bigendian... $ECHO_C" >&6
@@ -4494,21 +4520,19 @@ echo "$as_me:$LINENO: result: $ac_cv_c_bigendian" >&5
 echo "${ECHO_T}$ac_cv_c_bigendian" >&6
 case $ac_cv_c_bigendian in
   yes)
-
-cat >>confdefs.h <<\_ACEOF
+    cat >>confdefs.h <<\_ACEOF
 #define WORDS_BIGENDIAN 1
 _ACEOF
  ;;
   no)
      ;;
   *)
-    { { echo "$as_me:$LINENO: error: unknown endianness
-presetting ac_cv_c_bigendian=no (or yes) will help" >&5
-echo "$as_me: error: unknown endianness
-presetting ac_cv_c_bigendian=no (or yes) will help" >&2;}
-   { (exit 1); exit 1; }; } ;;
+    cat >>confdefs.h <<\_ACEOF
+#define WORDS_BIGENDIAN /* EDIT!!! - Undefine if small endian */
+_ACEOF
+ ;;
 esac
-    	   # DEFS WORDS_BIGENDIAN
+
 
 echo "$as_me:$LINENO: checking for X" >&5
 echo $ECHO_N "checking for X... $ECHO_C" >&6
@@ -5738,7 +5762,7 @@ echo "${ECHO_T}configuring local copy" >&6
    (destdir=`${PWDCMD}`; cd gmp;
      $srcdir/gmp/configure --disable-shared --prefix=$bindir \
 	--infodir=${destdir}/doc --includedir=${destdir}/h \
-        --libdir=${destdir} $gmp_flags)
+        --libdir=${destdir} --build=${build} --host=${host} $gmp_flags)
   fi
 fi
 echo "$as_me:$LINENO: checking checking for Boehm-Weiser gc..." >&5
@@ -5753,7 +5777,8 @@ echo "${ECHO_T}configuring local copy" >&6
   if mkdir gc; then
    (destdir=`${PWDCMD}`; cd gc;
      $srcdir/gc/configure --disable-threads --disable-shared --prefix=$bindir \
-	--includedir=${destdir}/h --libdir=${destdir})
+	--includedir=${destdir}/h --libdir=${destdir} --build=${build} \
+	--host=${host})
   fi
 else
   echo "$as_me:$LINENO: result: already installed" >&5
@@ -6430,11 +6455,6 @@ s,@ECL_CC@,$ECL_CC,;t t
 s,@LSPCFLAGS@,$LSPCFLAGS,;t t
 s,@CLIBS@,$CLIBS,;t t
 s,@SHARED_LDFLAGS@,$SHARED_LDFLAGS,;t t
-s,@architecture@,$architecture,;t t
-s,@software_type@,$software_type,;t t
-s,@software_version@,$software_version,;t t
-s,@ecl_setjmp@,$ecl_setjmp,;t t
-s,@ecl_longjmp@,$ecl_longjmp,;t t
 s,@SHORT_SITE_NAME@,$SHORT_SITE_NAME,;t t
 s,@LONG_SITE_NAME@,$LONG_SITE_NAME,;t t
 s,@EXTRA_OBJS@,$EXTRA_OBJS,;t t
@@ -6449,11 +6469,13 @@ s,@CP@,$CP,;t t
 s,@RM@,$RM,;t t
 s,@MV@,$MV,;t t
 s,@EXE_SUFFIX@,$EXE_SUFFIX,;t t
+s,@ARCHITECTURE@,$ARCHITECTURE,;t t
+s,@SOFTWARE_TYPE@,$SOFTWARE_TYPE,;t t
+s,@SOFTWARE_VERSION@,$SOFTWARE_VERSION,;t t
 s,@MACHINE_INSTANCE@,$MACHINE_INSTANCE,;t t
 s,@MACHINE_VERSION@,$MACHINE_VERSION,;t t
-s,@OS_TYPE@,$OS_TYPE,;t t
-s,@OS_RELEASE@,$OS_RELEASE,;t t
-s,@DOWN_STACK@,$DOWN_STACK,;t t
+s,@ECL_SETJMP@,$ECL_SETJMP,;t t
+s,@ECL_LONGJMP@,$ECL_LONGJMP,;t t
 s,@CL_FIXNUM_TYPE@,$CL_FIXNUM_TYPE,;t t
 s,@CL_FIXNUM_BITS@,$CL_FIXNUM_BITS,;t t
 s,@CL_FIXNUM_MAX@,$CL_FIXNUM_MAX,;t t

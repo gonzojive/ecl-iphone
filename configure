@@ -4,7 +4,11 @@
 # This script identifies the machine, and creates a directory for
 # the installation, where it runs ${srcdir}/configure.
 
-srcdir=`pwd`/src
+if uname -a | grep -i 'mingw32' > /dev/null; then
+  srcdir=`pwd -W`/src;
+else
+  srcdir=`pwd`/src
+fi
 buildir=build
 
 if [ ! -d ${buildir} ] ; then

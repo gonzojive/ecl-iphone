@@ -174,7 +174,11 @@ cl_functionp(cl_object x)
 	cl_object output;
 
 	t = type_of(x);
-	if (t == t_bytecodes || t == t_cfun || t == t_cclosure || t == t_gfun)
+	if (t == t_bytecodes || t == t_cfun || t == t_cclosure
+#ifdef CLOS
+	    || (t == t_instance && x->instance.isgf)
+#endif
+	    )
 		output = Ct;
 	else
 		output = Cnil;
@@ -197,8 +201,7 @@ cl_commonp(cl_object x)
 		     || type_of(x) == t_cont
 #endif
 #ifdef CLOS
-		     || type_of(x) == t_instance
-		     || type_of(x) == t_gfun
+		     || (type_of(x) == t_instance && x->instance.isgf)
 #endif
 		     ) ? Cnil : Ct;
 	@(return output)
@@ -485,10 +488,4 @@ cl_object
 si_fixnump(cl_object x)
 {
 	@(return (FIXNUMP(x) ? Ct : Cnil))
-}
-
-cl_object
-si_dispatch_function_p(cl_object x)
-{
-	@(return ((type_of(x) == t_gfun)? Ct : Cnil))
 }

@@ -1052,18 +1052,6 @@ type_of(#0)==t_bitvector"))
 (si::SL-BOUNDP (t) T nil t
 	:inline-always ((t) :bool nil nil "(#0)!=OBJNULL"))
 (si::SL-MAKUNBOUND (t fixnum) T nil t)
-
-; file gfun.c
-(si::ALLOCATE-GFUN nil T)
-(si::GFUN-NAME  nil T)
-(si::GFUN-NAME-SET nil T)
-(si::GFUN-METHOD-HT nil T)
-(si::GFUN-METHOD-HT-SET nil T)
-(si::GFUN-SPEC-HOW-REF  nil T)
-(si::GFUN-SPEC-HOW-SET nil T)
-(si::GFUN-INSTANCE  nil T)
-(si::GFUN-INSTANCE-SET nil T)
-(si::GFUNP nil T)
 )) ; end of of #+clos
 
 (in-package "SI")
@@ -1096,5 +1084,25 @@ type_of(#0)==t_bitvector"))
 	    nil
 	    #+clos
 	    (clos::ensure-class clos::install-method
-	     clos::standard-instance-set)))
+	     clos::standard-instance-set
+	     clos::class-name
+	     clos::class-direct-superclasses
+	     clos::class-direct-subclasses
+	     clos::class-slots
+	     clos::class-precedence-list
+	     clos::slot-index-table
+	     clos::class-direct-slots
+	     clos::class-shared-slots
+	     clos::default-initargs-of
+	     clos::generic-function-lambda-list
+	     clos::generic-function-argument-precedence-order
+	     clos::generic-function-method-combination
+	     clos::generic-function-method-class
+	     clos::generic-function-methods
+	     clos::method-generic-function
+	     clos::method-lambda-list
+	     clos::method-specializers
+	     clos::method-qualifiers
+	     clos::method-function
+	     clos::method-plist)))
 

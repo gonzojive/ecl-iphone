@@ -284,7 +284,7 @@
 			       (equal special-binding (fifth form))
 			       (similar lambda-expr (third form)))
 		      (return (second form))))))
-    (if previous
+    (if (and previous (not (get-sysprop fname 'Lfun)))
 	(progn
 	  (cmpnote "Sharing code for function ~A" fname)
 	  (list 'DEFUN fname previous nil special-binding *funarg-vars*

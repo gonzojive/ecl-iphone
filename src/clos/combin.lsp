@@ -9,14 +9,6 @@
 
 (in-package "CLOS")
 
-(defun get-method-qualifiers (method) (nth 1 method))
-
-(defun get-method-function (method) (nth 4 method))
-
-;;; They will be redefined later:
-(declaim (notinline get-method-qualifiers get-method-function))
-
-
 ;;;
 ;;; Convert an effective method form to a compiled effective method function.
 ;;; The strategy is to have compiled functions around which are are templates
@@ -51,10 +43,10 @@
       ;; next methods to the method if it needs them.  If there are no
       ;; next methods we must communicate that fact to prevent the leaky
       ;; next methods bug.
-      (let ((method-function (get-method-function (second form))))
+      (let ((method-function (method-function (second form))))
 	(if (method-needs-next-methods-p (second form))
 	      (let ((next-method-functions
-		     (mapcar #'get-method-function (third form))))
+		     (mapcar #'method-function (third form))))
 		#'(lambda (&rest .combined-method-args.)
 		    (let ((*next-methods* next-method-functions))
 		      (apply method-function .combined-method-args.))))
@@ -213,7 +205,7 @@
 			 (listp f)
 			 (eq (first f) 'CALL-METHOD))
 		    (progn 
-		      (push (get-method-function (second f)) methods)
+		      (push (method-function (second f)) methods)
 		      (PUSH (THIRD F) methods)
 		      (throw f f))
 		    f)
@@ -233,7 +225,7 @@
 
 (defun convert-effective-method (effective-method)
   (cond ((method-p effective-method)
-	 (get-method-function effective-method))
+	 (method-function effective-method))
 	((and (listp effective-method)
 	      (eq (first effective-method) 'MAKE-METHOD))
 	 (make-effective-method-function
@@ -270,7 +262,7 @@
 	(after ())
 	(around ()))
     (dolist (m methods)
-      (let ((qualifiers (get-method-qualifiers m)))
+      (let ((qualifiers (method-qualifiers m)))
 	(cond ((null qualifiers) (push m primary))
 	      ((rest qualifiers) (error-qualifier m qualifiers))
 	      ((eq (setq qualifiers (first qualifiers)) :BEFORE)
@@ -336,12 +328,14 @@
 					 (operator name))
   (declare (si::c-local))
   `(define-method-combination
-     ,name (&key (order :MOST-SPECIFIC-FIRST))
+     ,name (&optional (order :MOST-SPECIFIC-FIRST))
      ((around (:AROUND))
       (principal (,name) :REQUIRED t))
      (let ((main-effective-method
 	    `(,',operator ,@(mapcar #'(lambda (x) `(CALL-METHOD ,x NIL))
-				    principal))))
+				    (if (eql order :MOST-SPECIFIC-LAST)
+					(reverse principal)
+					principal)))))
        (cond (around
 	      `(call-method ,(first around)
 		(,@(rest around) (make-method ,main-effective-method))))
@@ -405,7 +399,7 @@
 	  (lambda-block ,name (,generic-function .methods-list. ,@lambda-list)
 	    (let (,@group-names)
 	      (dolist (.method. .methods-list.)
-		(let ((.method-qualifiers. (get-method-qualifiers .method.)))
+		(let ((.method-qualifiers. (method-qualifiers .method.)))
 		  (cond ,@(nreverse group-checks)
 			(t (invalid-method-error .method.
 			     "Method qualifiers ~S are not allowed in the method~
@@ -418,3 +412,36 @@
   (if (and body (listp (first body)))
       (define-complex-method-combination (list* name body))
       (apply #'define-simple-method-combination name body)))
+
+;;; ----------------------------------------------------------------------
+;;; COMPUTE-EFFECTIVE-METHOD
+;;;
+
+(defun compute-effective-method (gf method-combination applicable-methods)
+  (declare (ignore method-combination-type method-combination-args))
+  (if (not applicable-methods)
+      (no-applicable-method gf)
+      (let* ((method-combination-name (car method-combination))
+	     (method-combination-args (cdr method-combination)))
+	(if (eq method-combination-name 'STANDARD)
+	    (standard-compute-effective-method gf applicable-methods)
+	    (apply (or (getf *method-combinations* method-combination-name)
+		       (error "~S is not a valid method combination object"
+			      method-combination))
+		   gf applicable-methods
+		   method-combination-args)))))
+
+;;
+;; These method combinations are bytecompiled, for simplicity.
+;;
+(eval '(progn
+	(define-method-combination progn :identity-with-one-argument t)
+	(define-method-combination and :identity-with-one-argument t)
+	(define-method-combination max :identity-with-one-argument t)
+	(define-method-combination + :identity-with-one-argument t)
+	(define-method-combination nconc :identity-with-one-argument t)
+	(define-method-combination append :identity-with-one-argument nil)
+	(define-method-combination list :identity-with-one-argument nil)
+	(define-method-combination min :identity-with-one-argument t)
+	(define-method-combination or :identity-with-one-argument t)))
+

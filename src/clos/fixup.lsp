@@ -12,45 +12,24 @@
 ;;; ----------------------------------------------------------------------
 ;;; Fixup
 
-(defun fix-early-methods ()
-  (declare (si::c-local))
-  (dolist (method-info *early-methods*)
-    (let* ((method-name (car method-info))
-	   (gfun (fdefinition method-name))
-	   (gf-object (si:gfun-instance gfun)))
-
-      (when (eq 'T (class-name (si:instance-class gf-object)))
-	;; complete the generic function object
-	(si:instance-class-set gf-object
-			       (find-class 'STANDARD-GENERIC-FUNCTION))
-	(si:instance-set gf-object 4
-			 (find-class 'STANDARD-METHOD))	; method-class
-	)
-
-      (dolist (method (cdr method-info))
-	;; we must use CxR here since method accessors have been redefined
-	(let* (;;(class-name (car method))
-	       (qualifiers (cadr method))
-	       (specializers (caddr method))
-	       (lambda-list (cadddr method))
-	       (function (nth 4 method))
-	       (plist (nth 5 method))
-	       (options (nth 6 method)))
-
-	  ;; create the method instance according
-	  ;; to the information previously saved
-	  (add-method gf-object
-		      (make-method qualifiers specializers lambda-list
-				   function plist options gf-object
-				   'STANDARD-METHOD))))))
-
-      #-ecl-min
-      (fmakunbound 'FIX-EARLY-METHODS)
-      (makunbound '*EARLY-METHODS*))
+(dolist (method-info *early-methods*)
+  (let* ((method-name (car method-info))
+	 (gfun (fdefinition method-name))
+	 (standard-method-class (find-class 'standard-method)))
+    (when (eq 'T (class-name (si:instance-class gfun)))
+      ;; complete the generic function object
+      (si:instance-class-set gfun (find-class 'STANDARD-GENERIC-FUNCTION))
+      (setf (generic-function-method-class gfun) standard-method-class))
+    (dolist (method (cdr method-info))
+      ;; complete the method object
+      (si::instance-class-set method (find-class 'standard-method)))
+    (makunbound '*EARLY-METHODS*)))
 
 
 ;;; ----------------------------------------------------------------------
 ;;;                                                              redefined
+
+(defun method-p (method) (typep method 'METHOD))
 
 (defun make-method (qualifiers specializers arglist
 			       function plist options gfun method-class)
@@ -64,157 +43,28 @@
 		 :plist plist
 		 :allow-other-keys t))
 
-(defun get-method-qualifiers (method)
-  (if (typep method 'STANDARD-METHOD)
-      (si:instance-ref method 3)
-    (error "~A is not a standard method" method)))
-
 (defun add-method (gf method)
   (declare (notinline method-qualifiers)) ; during boot it's a structure accessor
   (let* ((method-qualifiers (method-qualifiers method)) 
-	 (specializers (specializers method))
+	 (specializers (method-specializers method))
 	 found)
     (when (setq found (find-method gf method-qualifiers specializers nil))
 	  (remove-method gf found))
-  (push method (methods gf))
-  (clrhash (si:gfun-method-ht (generic-function-dispatcher gf)))
+  (push method (generic-function-methods gf))
+  (clrhash (generic-function-method-hash gf))
   method))
 
 (defun remove-method (gf method)
-  (setf (methods gf) (delete method (methods gf))))
+  (setf (generic-function-methods gf)
+	(delete method (generic-function-methods gf))))
 
 ;;; ----------------------------------------------------------------------
-;;;                                                           do the fixup
-
-(fix-early-methods)
-
-;;; ----------------------------------------------------------------------
-;;;                                                  continue redefinition
-
-(defun method-needs-next-methods-p (method)
-  (getf (si:instance-ref method 7) :needs-next-methods-p))
-
-(defun method-p (method) (typep method 'METHOD))
-
-(defun get-method-function (method)
-  (if (typep method 'STANDARD-METHOD)
-      (si:instance-ref method 4)
-    (error "~A is not a standard method" method)))
-
-(defun compute-applicable-methods (gf args)
-  (let* ((methods (methods gf))
-	 applicable-list
-	 args-specializers)
-    ;; first compute the applicable method list
-    (dolist (method methods)
-      ;; for each method in the list
-      (do* ((scan-args args (cdr scan-args))
-	    (scan-specializers (specializers method)
-			       (cdr scan-specializers))
-	    (arg)
-	    (spec))
-	  ;; check if the method is applicable verifying 
-	  ;; if each argument satisfies the corresponding
-	  ;; parameter specializers
-	  ((null scan-args) (push method applicable-list))
-	(setq arg (first scan-args)
-	      spec (first scan-specializers))
-	(unless (or (null spec)
-		    (and (consp spec) (eql arg (cadr spec)))
-		    (typep arg spec)
-		    (and (eq 'INVALID spec)
-			 (si:instancep arg)
-			 (eq 'INVALID (class-name (class-of arg)))))
-	  (return))))
-    (dolist (arg args) 
-      (push (type-of arg) args-specializers))
-    (setq args-specializers (nreverse args-specializers))
-    ;; then order the list
-    (do* ((scan applicable-list)
-	  (most-specific (first scan) (first scan))
-	  (ordered-list))
-	 ((null (cdr scan)) (when most-specific
-			      ;; at least one method
-			      (nreverse
-			       (push most-specific ordered-list))))
-      (dolist (meth (cdr scan))
-	(when (eq (compare-methods most-specific
-				   meth args-specializers) 2)
-	  (setq most-specific meth)))
-      (setq scan (delete most-specific scan))
-      (push most-specific ordered-list))))
-
-;;; ----------------------------------------------------------------------
-;;;                                                      method comparison
-
-(defun compare-methods (method-1 method-2 args-specializers)
-  (declare (si::c-local))
-  (let* ((specializers-list-1 (specializers method-1))
-	 (specializers-list-2 (specializers method-2)))
-    (compare-specializers-lists specializers-list-1 
-				specializers-list-2 args-specializers)))
-
-(defun compare-specializers-lists (spec-list-1 spec-list-2 args-specializers)
-  (declare (si::c-local))
-  (when (or spec-list-1 spec-list-2)
-    (ecase (compare-specializers (first spec-list-1)
-				 (first spec-list-2)
-				 (first args-specializers))
-      (1 '1)
-      (2 '2)
-      (= 
-       (compare-specializers-lists (cdr spec-list-1)
-				   (cdr spec-list-2)
-				   (cdr args-specializers)))
-      ((nil)
-       (error "The type specifiers ~S and ~S can not be disambiguated~
-                  with respect to the argument specializer: ~S"
-	      (or (car spec-list-1) t)
-	      (or (car spec-list-2) t)
-	      (car args-specializers)))))
-  )
-
-(defun compare-specializers (spec-1 spec-2 arg-spec)
-  (declare (si::c-local))
-  (let* ((arg-class (closest-class arg-spec))
-	 (cpl (cons arg-class (class-precedence-list arg-class)))
-	 (cpl-names))
-    (setq cpl-names (dolist (e cpl (nreverse cpl-names))
-		      (push (class-name e) cpl-names)))
-    (cond ((equal spec-1 spec-2) '=)
-	  ((null spec-1) '2)
-	  ((null spec-2) '1)
-	  ((subtypep spec-1 spec-2) '1)
-	  ((subtypep spec-2 spec-1) '2)
-	  ((and (listp spec-1) (eq (car spec-1) 'eql)) '1) ; is this engough?
-	  ((and (listp spec-2) (eq (car spec-2) 'eql)) '2) ; Beppe
-	  ((member spec-1 (member spec-2 cpl-names)) '2)
-	  ((member spec-2 (member spec-1 cpl-names)) '1)
-	  (t (compare-complex-specializers spec-1 spec-2 arg-spec)))))
-
-(defun compare-complex-specializers (spec-1 spec-2 arg-spec)
-  (declare (ignore spec-1 spec-2 arg-spec)
-	   (si::c-local))
-  (error "Complex type specifiers are not yet supported."))
-
-(defun compute-effective-method (gf method-combination applicable-methods)
-  (declare (ignore method-combination-type method-combination-args))
-  (if (not applicable-methods)
-      (no-applicable-method gf)
-      (let* ((method-combination-name (car method-combination))
-	     (method-combination-args (cdr method-combination)))
-	(if (eq method-combination-name 'STANDARD)
-	    (standard-compute-effective-method gf applicable-methods)
-	    (apply (or (getf *method-combinations* method-combination-name)
-		       (error "~S is not a valid method combination object"
-			      method-combination))
-		   gf applicable-methods
-		   method-combination-args)))))
+;;; Error messages
 
 (defmethod no-applicable-method (gf &rest args)
     (declare (ignore args))
   (error "No applicable method for ~S" 
-	 (si:gfun-name (generic-function-dispatcher gf))))
+	 (generic-function-name gf)))
 
 (defmethod no-next-method (gf method &rest args)
   (declare (ignore gf args))
@@ -222,61 +72,45 @@
 
 (defun no-primary-method (gf &rest args)
   (error "Generic function: ~A. No primary method given arguments: ~S"
-	 (si:gfun-name (generic-function-dispatcher gf)) args))
-
-;;
-;; These method combinations are bytecompiled, for simplicity.
-;;
-(eval '(progn
-	(defclass method-combination (t) ())
-	(define-method-combination progn :identity-with-one-argument t)
-	(define-method-combination and :identity-with-one-argument t)
-	(define-method-combination max :identity-with-one-argument t)
-	(define-method-combination + :identity-with-one-argument t)
-	(define-method-combination nconc :identity-with-one-argument t)
-	(define-method-combination append :identity-with-one-argument nil)
-	(define-method-combination list :identity-with-one-argument nil)
-	(define-method-combination min :identity-with-one-argument t)
-	(define-method-combination or :identity-with-one-argument t)))
+	 (generic-function-name gf) args))
 
 ;;; ----------------------------------------------------------------------
 ;;; Redefinition Protocol
 
-(defun redefine-class (class new-class superclasses-names inferiors)
+(defun redefine-class (class new-class)
   (unless (typep class 'STANDARD-CLASS)
     (error "Class ~A cannot be redefined: it is not a standard class" class))
 
   ;; remove previous defined accessor methods
   (remove-optional-slot-accessors class)
-  (let ((superclasses (mapcar #'find-class 
-			      (or superclasses-names
-				  (list 'STANDARD-OBJECT)))))
-    ;; update subclasses
-    (dolist (subclass (nreverse inferiors))
-      (let* ((subclass-superclasses
-	      (mapcar #'class-name (class-direct-superclasses subclass)))
-	     (subclass-name (class-name subclass))
-	     (slots (collect-slotds
-		     (compute-class-precedence-list
-		      subclass-name (mapcar #'find-class superclasses-names))
-		     (slot-value subclass 'DIRECT-SLOTS))))
-	(pushnew
-	 (ensure-class (class-name (si:instance-class subclass))
-		       subclass-name
-		       subclass-superclasses
-		       (slot-value subclass 'DIRECT-SLOTS)
-		       ; slots
-		       (default-initargs-of subclass)
-		       (documentation-of subclass))
-	 (class-direct-subclasses new-class))))
 
-    ;; invalidate the class
-    (setf (class-name class) 'INVALID)
-    (setf (slot-value class 'FORWARD) new-class))
+  (warn "Redefining class ~S" (class-name class))
 
+  ;; update subclasses
+  (dolist (subclass (reverse (class-direct-subclasses class)))
+    (ensure-class-using-class
+     subclass (class-name subclass)
+     :metaclass (class-name (class-of subclass))
+     :direct-superclasses
+     (subst new-class class (class-direct-superclasses subclass))
+     :direct-slots (class-direct-slots subclass)
+     :direct-default-initargs (class-direct-default-initargs subclass)
+     :documentation (and (slot-boundp subclass 'documentation)
+			 (slot-value subclass 'documentation))))
+
+  ;; remove the class from the inheritance tree
+  (dolist (superclass (class-direct-superclasses class))
+    (remove-direct-subclass superclass class))
+  (when (eql (find-class (class-name class) nil) class)
+    (setf (find-class (class-name new-class)) new-class))
+
+  ;; invalidate the class
+  (setf (class-name class) 'INVALID)
+  (setf (slot-value class 'FORWARD) new-class)
   new-class)
 
 ;;; Now we protect classes from redefinition:
+(eval-when (compile load)
 (defun setf-find-class (name new-value)
   (let ((old-class (find-class name nil)))
     (cond
@@ -289,5 +123,6 @@
        (setf (gethash name si:*class-name-hash-table*) new-value))
       ((null new-value) (remhash name si:*class-name-hash-table*))
       (t (error "~A is not a class." new-value)))))
+)
 
 ;;;----------------------------------------------------------------------

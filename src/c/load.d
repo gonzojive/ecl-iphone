@@ -14,8 +14,14 @@
 */
 
 #include "ecl.h"
-#include "machines.h"
 #include "ecl-inl.h"
+
+#ifdef HAVE_DLFCN_H
+#include <dlfcn.h>
+#endif
+#ifdef HAVE_LINK_H
+#include <link.h>
+#endif
 
 #ifdef __mips
 #include <sys/cachectl.h>

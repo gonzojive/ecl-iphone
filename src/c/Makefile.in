@@ -9,8 +9,7 @@ VPATH	= @srcdir@
 #
 TRUE_CC = @CC@
 CC	= @ECL_CC@
-DEFS	= -D@host@
-CFLAGS	= -c -I../h -I$(srcdir) -I$(HDIR) @BOEHM_HEADERS@ @CFLAGS@ $(DEFS)
+CFLAGS	= -c -I../h -I$(srcdir) -I$(HDIR) @BOEHM_HEADERS@ @CFLAGS@
 
 SHELL	= /bin/sh
 RM	= @RM@
@@ -27,7 +26,7 @@ libdir	= @libdir@
 
 HDIR	= $(top_srcdir)/h
 HFILES	= ../h/config.h $(HDIR)/ecl.h $(HDIR)/ecl-cmp.h\
-	$(HDIR)/machines.h $(HDIR)/object.h $(HDIR)/cs.h $(HDIR)/stacks.h\
+	$(HDIR)/object.h $(HDIR)/cs.h $(HDIR)/stacks.h\
 	$(HDIR)/external.h $(HDIR)/eval.h\
 	$(HDIR)/number.h $(HDIR)/page.h $(HDIR)/unify.h\
 	$(HDIR)/lwp.h
@@ -50,7 +49,7 @@ OBJS	= main.o symbol.o package.o list.o\
 %.o: %.c $(HFILES)
 	$(CC) $(CFLAGS) -o $@ $<
 %.c: %.d $(DPP) $(HFILES)
-	$(DPP) $< $@
+	if test -f ../CROSS-DPP ; then ../CROSS-DPP $< $@ ; else $(DPP) $< $@ ; fi
 
 all:	$(DPP) ../libecl.a cinit.o
 .PHONY:	all
@@ -70,7 +69,9 @@ clean:
 # Build rules
 
 $(DPP): $(srcdir)/dpp.c symbols_list2.h
-	$(TRUE_CC) @CFLAGS@ -I../h -I./ -I$(HDIR) $(DEFS) $(srcdir)/dpp.c  -o $@
+	if test -f ../CROSS-DPP; then touch dpp; else \
+	$(TRUE_CC) @CFLAGS@ -I../h -I./ -I$(HDIR) $(DEFS) $(srcdir)/dpp.c  -o $@ ; \
+	fi
 symbols_list2.h: $(srcdir)/symbols_list.h Makefile
 	cat $(srcdir)/symbols_list.h | \
 	sed -e 's%{\([A-Z ]*.*".*"\),.*,[ ]*NULL,.*}%{\1,NULL}%g' \

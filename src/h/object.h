@@ -422,24 +422,10 @@ struct thread {
 #define CLASS_CPL(x)		(x)->instance.slots[4]
 
 struct instance {		/*  instance header  */
-	HEADER;
+	HEADER1(isgf);
 	cl_index length;	/*  instance length  */
 	cl_object clas;		/*  instance class  */
 	cl_object *slots;	/*  instance slots  */
-};
-
-struct gfun {			/*  generic function header  */
-	HEADER1(arg_no);	/*  number of arguments */
-	cl_object name;		/*  generic function name  */
-	cl_object method_hash;	/*  hashtable for cashing methods */
-				/*  later on we might define a  */
-				/*  specialized version */
-	cl_object *specializers;/*  how methods specialize on each argument: */
-	                        /*  NIL  means no specialization, */
-				/*  T    means specialize on type, */
-				/*  list constains the list of objects used */
-				/* 	 in eql specializers */
-	cl_object instance;	/*  the generic function object */
 };
 #endif /* CLOS */
 
@@ -470,7 +456,6 @@ union lispunion {
 	struct dummy	d;	/*  dummy  */
 #ifdef CLOS
 	struct instance instance; /*  clos instance */
-	struct gfun	gfun;	/*  generic function */
 #else
 	struct structure str;	/*  structure  */
 #endif /* CLOS */
@@ -513,17 +498,16 @@ typedef enum {
 	t_cclosure,		/* 16 */
 #ifdef CLOS
 	t_instance,		/* 17 */
-	t_gfun,			/* 18 */
 #else
 	t_structure,		/* 17 */
 #endif /* CLOS */
 #ifdef THREADS
-	t_cont,			/* 19	18 */
-	t_thread,		/* 20	19 */
+	t_cont,			/* 19 */
+	t_thread,		/* 20 */
 #endif
-	t_codeblock,		/* 21   20 */
+	t_codeblock,		/* 21 */
 #ifdef ECL_FFI
-	t_foreign,		/* 22   21 */
+	t_foreign,		/* 22 */
 #endif
 	t_end,
 	t_other,

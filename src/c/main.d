@@ -18,7 +18,6 @@
 
 #include <stdlib.h>
 #include "ecl.h"
-#include "machines.h"
 #ifdef TK
 # include "tk.h"
 #endif
@@ -110,9 +109,7 @@ cl_boot(int argc, char **argv)
 #ifdef TK
 	init_tk();
 #endif
-#ifdef unix
 	init_unixtime();
-#endif
 	init_assignment();
 	init_error();
 	init_macros();
@@ -243,13 +240,12 @@ init_main(void)
 {
 	cl_object features;
 
-	features = cl_list(6,
+	features = cl_list(5,
 			   make_keyword("ECL"),
 			   make_keyword("COMMON"),
 			   make_keyword("ANSI-CL"),
 			   make_keyword("COMMON-LISP"),
-			   make_keyword(ARCHITECTURE),
-			   make_keyword(BRAND));
+			   make_keyword(ECL_ARCHITECTURE));
 
 #define ADD_FEATURE(name) features = CONS(make_keyword(name),features)
 
@@ -289,9 +285,8 @@ init_main(void)
 	 ADD_FEATURE("MS-DOS");
 #endif
 
-#ifdef IEEEFLOAT
+	 /* This is assumed in all systems */
 	 ADD_FEATURE("IEEE-FLOATING-POINT");
-#endif
 
 	 SYM_VAL(@'*features*') = features;
 }

@@ -391,3 +391,8 @@ SECOND-FORM."
 
 (defmacro load-time-value (form)
   `(quote ,(eval form)))
+
+(defun maybe-unquote (form)
+  (if (and (consp form) (eq (car form) 'quote))
+      (second form)
+      form))

@@ -51,7 +51,7 @@ mangle_name(cl_object output, char *source, int l)
 	return &output->string.self[output->string.fillp];
 }
 
-@(defun si::mangle-name (symbol &optional as_symbol)
+@(defun si::mangle-name (symbol &optional as_function)
 	cl_index l;
 	char c, *source, *dest;
 	cl_object output;
@@ -61,7 +61,7 @@ mangle_name(cl_object output, char *source, int l)
 	bool is_symbol;
 @
 	assert_type_symbol(symbol);
-	is_symbol = (as_symbol == Cnil);
+	is_symbol = Null(as_function);
 	if (is_symbol) {
 		cl_fixnum p;
 

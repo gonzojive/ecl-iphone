@@ -33,7 +33,7 @@
 
 (check-for-bug :conditions-legacy-31
   (defun check-superclasses (class expected)
-    (let ((expected (list* #-ecl class 't
+    (let ((expected (list* class 't
                            #+(or CLISP ALLEGRO ecl) 'standard-object
                            #+(or cmu sbcl) 'instance
                            'condition expected))

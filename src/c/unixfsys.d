@@ -24,8 +24,7 @@
 #include <stdlib.h>
 #include "ecl.h"
 #include "ecl-inl.h"
-#include "machines.h"
-#ifdef BSD
+#ifdef HAVE_DIRENT_H
 #include <dirent.h>
 #else
 #include <sys/dir.h>
@@ -398,7 +397,7 @@ list_current_directory(const char *mask, bool only_dir)
 	cl_object *out_cdr = &out;
 	char *text;
 
-#if defined(BSD)
+#if defined(HAVE_DIRENT_H)
 	DIR *dir;
 	struct dirent *entry;
 
@@ -409,7 +408,7 @@ list_current_directory(const char *mask, bool only_dir)
 	while ((entry = readdir(dir))) {
 		text = entry->d_name;
 
-#else /* SYSV */
+#else /* sys/dir.h as in SYSV */
 	FILE *fp;
 	char iobuffer[BUFSIZ];
 	DIRECTORY dir;
@@ -438,7 +437,7 @@ list_current_directory(const char *mask, bool only_dir)
 		*out_cdr = CONS(make_string_copy(text), Cnil);
 		out_cdr = &CDR(*out_cdr);
 	}
-#ifdef BSD
+#ifdef HAVE_DIRENT_H
 	closedir(dir);
 #else
 	fclose(fp);

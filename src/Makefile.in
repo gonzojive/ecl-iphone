@@ -51,10 +51,18 @@ eclx$(EXE): ecl_min$(EXE) compile_rest.lsp
 	./ecl_min < compile_rest.lsp
 
 ecl$(EXE): ecl_min$(EXE) compile.lsp sysfun.lsp
-	./ecl_min < compile.lsp
+	if [ -f CROSS-COMPILER ]; then \
+		./CROSS-COMPILER < compile.lsp; \
+	else \
+		./ecl_min < compile.lsp; \
+	fi
 
 ecl_min$(EXE): $(LIBRARIES) .gdbinit
-	$(CC) $(LDFLAGS) -o $@ c/cinit.o -L./ $(LIBRARIES) $(LIBS)
+	if [ -f CROSS-COMPILER ]; then \
+		touch $@; \
+	else \
+		$(CC) $(LDFLAGS) -o $@ c/cinit.o -L./ $(LIBRARIES) $(LIBS);\
+	fi
 
 .gdbinit: $(srcdir)/util/gdbinit
 	cp $(srcdir)/util/gdbinit $@
@@ -82,7 +90,7 @@ install: BUILD-STAMP
 	$(INSTALL_DATA) $(srcdir)/etc/ecl.1 $(PREFIX)$(mandir)
 	$(INSTALL_DATA) BUILD-STAMP $(LSP_LIBRARIES) $(LIBRARIES) $(PREFIX)$(libdir)
 	$(INSTALL_DATA) h/config.h $(PREFIX)$(libdir)/h
-	$(INSTALL_DATA) help.doc $(PREFIX)$(libdir)
+	$(INSTALL_DATA) c/dpp* help.doc $(PREFIX)$(libdir)
 	if (echo $(SUBDIR) | grep gc); then $(MAKE) installgc; fi
 	if (echo $(SUBDIR) | grep gmp); then $(MAKE) installgmp; fi
 	cd c; $(MAKE) PREFIX="$(PREFIX)" install

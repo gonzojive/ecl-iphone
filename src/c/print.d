@@ -1228,16 +1228,6 @@ _write_object(cl_object x, int level)
 			FEwrong_type_argument(@'instance', CLASS_OF(x));
 		call_print_object(x, level);
 		break;
-
-	case t_gfun:
-		if (PRINTreadably) FEprint_not_readable(x);
-		write_str("#<dispatch-function ");
-		if (x->gfun.name != Cnil)
-			_write_object(x->gfun.name, level);
-		else
-			write_addr(x);
-		write_ch('>');
-		break;
 #endif /* CLOS */
 #ifdef ECL_FFI
 	case t_foreign:

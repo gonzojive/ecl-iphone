@@ -358,10 +358,6 @@ cl_type_of(cl_object x)
 	case t_thread:
 		t = @'thread'; break;
 #endif
-#ifdef CLOS
-	case t_gfun:
-		t = @'dispatch-function'; break;
-#endif
 #ifdef ECL_FFI
 	case t_foreign:
 		t = @'si::foreign-data'; break;

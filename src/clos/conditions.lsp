@@ -608,8 +608,6 @@ returns with NIL."
 ;;;
 (define-condition simple-program-error (simple-condition program-error) ())
 
-(define-condition simple-control-error (simple-condition control-error) ())
-
 
 
 (defmacro handler-case (form &rest cases)

@@ -23,7 +23,6 @@
 
 #include <ecl.h>
 #include "ecl-inl.h"
-#include "machines.h"
 #include "internal.h"
 
 #ifdef HAVE_SELECT
@@ -34,7 +33,7 @@
 #elif defined(mingw32)
 #include <winsock.h>
 #define HAVE_SELECT
-#elif defined(BSD) && !defined(MSDOS)
+#elif defined(HAVE_SYS_IOCTL_H) && !defined(MSDOS)
 #include <sys/ioctl.h>
 #endif
 
@@ -556,10 +555,8 @@ BEGIN:
 		break;
 	}
 	case smm_two_way:
-#ifdef unix
-		if (strm == terminal_io)                                /**/
-			flush_stream(terminal_io->stream.object1);       /**/
-#endif
+		if (strm == terminal_io)
+			flush_stream(terminal_io->stream.object1);
 		strm->stream.int1 = 0;
 		strm = strm->stream.object0;
 		goto BEGIN;
@@ -1100,10 +1097,8 @@ BEGIN:
 		}
 
 	case smm_two_way:
-#ifdef unix
-		if (strm == terminal_io)                                /**/
-			flush_stream(terminal_io->stream.object1);       /**/
-#endif
+		if (strm == terminal_io)
+			flush_stream(terminal_io->stream.object1);
 		strm = strm->stream.object0;
 		goto BEGIN;
 

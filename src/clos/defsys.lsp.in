@@ -21,17 +21,17 @@
   '(
     (walk      ()           	 ()               	())
     (macros    (walk)     	 (walk)                 ())
-    (method    (macros)          (macros)               ())
-    (kernel    (method)          (method)       	(method))
+    (kernel    (macros)          (macros)               ())
+    (method    (kernel)          (kernel)       	(kernel))
     (slot      ()	         ()			())
-    (combin    (method)          (method)		(method))
+    (combin    (kernel)          (kernel)		(kernel))
     (precomp   t		 t			())
     (boot      (kernel slot combin)
 	       			 (kernel slot)   	(kernel slot))
     (print     (boot)		 (boot) 		(boot))
     (defclass  (kernel slot)     (kernel slot)          (boot))
     (standard  (boot defclass precomp)
-	      			 (boot defclass)	(method defclass))
+	      			 (boot defclass)	(kernel defclass))
     (change    (standard)	 (standard)		(standard))
     (builtin   (standard)        (standard)	   	(standard))
     (stdmethod (builtin)	 (builtin)	        (builtin))
@@ -40,6 +40,16 @@
     (inspect   (standard)        (standard)             (standard))
     (conditions ()		 ()			())
     ))
+
+(defparameter
+  *clos-modules*
+  ;; file       load              compile               files which force
+  ;;            environment       environment           recompilations of
+  ;;                                                    this file
+  '#.(mapcar #'(lambda (x) `(,x () () ()))
+       '(walk macros kernel method slot combin precomp boot print
+	 defclass standard change builtin stdmethod generic fixup
+	 inspect conditions)))
 
 (sbt:defsystem 
  clos

@@ -35,14 +35,6 @@
 
 ;;; ----------------------------------------------------------------------
 
-(defmethod class-instance-slot-count ((class class))
-    (let ((count 0))
-      (declare (fixnum count))
-      (dolist (slot (class-slots class))
-	(when (eq :INSTANCE (slotd-allocation slot))
-	  (incf count)))
-      count))
-
 (defun update-instance (instance)
   (let* ((old-class (class-of instance))
 	 (new-class (slot-value old-class 'FORWARD))
@@ -84,7 +76,7 @@
 	(incf new-i))
 
       (si:change-instance instance new-class
-			  (class-instance-slot-count new-class)
+			  (count-instance-slots new-class)
 			  (nreverse retained-correspondance)))
 
     ;; initialize newly added slots
@@ -97,11 +89,9 @@
     (dolist (slotd (class-slots class))
       
       (dolist (accessor (slotd-accessors slotd))
-	(let* ((gfun (symbol-function accessor))
-	       (gf-object (si:gfun-instance gfun))
+	(let* ((gf-object (symbol-function accessor))
 	       (setf-accessor (list 'setf accessor))
-	       (setf-gfun (fdefinition setf-accessor))
-	       (setf-gf-object (si:gfun-instance setf-gfun))
+	       (setf-gf-object (fdefinition setf-accessor))
 	       found)
 	  ;; primary reader method
 	  (when (setq found
@@ -115,7 +105,7 @@
 	  (when (setq found
 		      (find-method gf-object ':after (list class-name) nil))
 	    (remove-method gf-object found))
-	  (when (null (methods gf-object))
+	  (when (null (generic-function-methods gf-object))
 	    (fmakunbound accessor))
 	  ;; primary writer method
 	  (when (setq found
@@ -129,13 +119,12 @@
 	  (when (setq found
 		      (find-method setf-gf-object ':after (list nil class-name) nil))
 	    (remove-method setf-gf-object found))
-	  (when (null (methods gf-object))
+	  (when (null (generic-function-methods gf-object))
 	    (fmakunbound setf-accessor))))
       
       ;; remove previous defined reader methods
       (dolist (reader (slotd-readers slotd))
-	(let* ((gfun (symbol-function reader))
-	       (gf-object (si:gfun-instance gfun))
+	(let* ((gf-object (symbol-function reader))
 	       found)
 	  ;; primary method
 	  (when (setq found
@@ -149,13 +138,12 @@
 	  (when (setq found
 		      (find-method gf-object ':after (list class-name) nil))
 	    (remove-method gf-object found))
-	(when (null (methods gf-object))
+	(when (null (generic-function-methods gf-object))
 	  (fmakunbound reader))))
       
       ;; remove previous defined writer methods
       (dolist (writer (slotd-writers slotd))
-	(let* ((gfun (symbol-function writer))
-	       (gf-object (si:gfun-instance gfun))
+	(let* ((gf-object (symbol-function writer))
 	       found)
 	  ;; primary method
 	  (when (setq found
@@ -169,7 +157,7 @@
 	  (when (setq found
 		      (find-method gf-object ':after (list class-name) nil))
 	    (remove-method gf-object found))
-	(when (null (methods gf-object))
+	(when (null (generic-function-methods gf-object))
 	  (fmakunbound writer)))))))
 
 

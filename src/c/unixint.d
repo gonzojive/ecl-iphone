@@ -18,7 +18,6 @@
 #include "ecl.h"
 #include <signal.h>
 #include <unistd.h>
-#include "machines.h"
 
 /******************************* EXPORTS ******************************/
 
@@ -105,7 +104,6 @@ sigfpe(void)
 	FEerror("Floating-point exception.", 0);
 }
 
-#ifdef unix
 void
 signal_catcher(int sig, int code, int scp)
 {
@@ -167,7 +165,6 @@ si_uncatch_bad_signals()
 #endif
 	@(return Ct)
 }
-#endif /* unix */
 
 void
 enable_interrupt(void)

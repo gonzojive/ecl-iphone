@@ -313,7 +313,6 @@ cl_symbols[] = {
 {"DIRECTORY", CL_ORDINARY, cl_directory, -1},
 {"DIRECTORY-NAMESTRING", CL_ORDINARY, cl_directory_namestring, 1},
 {"DISASSEMBLE", CL_ORDINARY, NULL, -1},
-{"DISPATCH-FUNCTION", CL_ORDINARY, NULL, -1},
 {"DIVISION-BY-ZERO", CL_ORDINARY, NULL, -1},
 {"DO", FORM_ORDINARY, NULL, -1},
 {"DO*", FORM_ORDINARY, NULL, -1},
@@ -989,6 +988,17 @@ cl_symbols[] = {
 {"UPDATE-INSTANCE-FOR-REDEFINED-CLASS", CL_ORDINARY, NULL, -1},
 {"WITH-ACCESSORS", CL_ORDINARY, NULL, -1},
 {"WITH-SLOTS", CL_ORDINARY, NULL, -1},
+{KEY_ "ARGUMENT-PRECEDENCE-ORDER", KEYWORD, NULL, -1},
+{KEY_ "DECLARE", KEYWORD, NULL, -1},
+{KEY_ "DEFAULT-INITARGS", KEYWORD, NULL, -1},
+{KEY_ "DIRECT-DEFAULT-INITARGS", KEYWORD, NULL, -1},
+{KEY_ "DIRECT-SLOTS", KEYWORD, NULL, -1},
+{KEY_ "DIRECT-SUPERCLASSES", KEYWORD, NULL, -1},
+{KEY_ "DOCUMENTATION", KEYWORD, NULL, -1},
+{KEY_ "GENERIC-FUNCTION-CLASS", KEYWORD, NULL, -1},
+{KEY_ "LAMBDA-LIST", KEYWORD, NULL, -1},
+{KEY_ "METHOD-CLASS", KEYWORD, NULL, -1},
+{KEY_ "METHOD-COMBINATION", KEYWORD, NULL, -1},
 #endif
 
 /* SYSTEM PACKAGE */
@@ -1036,7 +1046,6 @@ cl_symbols[] = {
 {SYS_ "COMPILED-FUNCTION-NAME", SI_ORDINARY, si_compiled_function_name, 1},
 {SYS_ "COPY-STREAM", SI_ORDINARY, si_copy_stream, 1},
 {SYS_ "DAYLIGHT-SAVING-TIME-P", SI_ORDINARY, si_daylight_saving_time_p, -1},
-{SYS_ "DISPATCH-FUNCTION-P", SI_ORDINARY, si_dispatch_function_p, 1},
 {SYS_ "ELT-SET", SI_ORDINARY, si_elt_set, 3},
 {SYS_ "EVAL-WITH-ENV", SI_ORDINARY, si_eval_with_env, 2},
 {SYS_ "EXPAND-DEFMACRO", SI_ORDINARY, NULL, -1},
@@ -1142,26 +1151,17 @@ cl_symbols[] = {
 #ifndef CLOS
 {SYS_ "STRUCTURE-INCLUDE", SI_ORDINARY, NULL, -1},
 #else
-{SYS_ "ALLOCATE-GFUN", SI_ORDINARY, si_allocate_gfun, 3},
 {SYS_ "CHANGE-INSTANCE", SI_ORDINARY, si_change_instance, 4},
 {SYS_ "COMPUTE-EFFECTIVE-METHOD", SI_ORDINARY, NULL, -1},
-{SYS_ "GFUN-NAME", SI_ORDINARY, si_gfun_name, 1},
-{SYS_ "GFUN-NAME-SET", SI_ORDINARY, si_gfun_name_set, 2},
-{SYS_ "GFUN-METHOD-HT", SI_ORDINARY, si_gfun_method_ht, 1},
-{SYS_ "GFUN-METHOD-HT-SET", SI_ORDINARY, si_gfun_method_ht_set, 2},
-{SYS_ "GFUN-SPEC-HOW-REF", SI_ORDINARY, si_gfun_spec_how_ref, 2},
-{SYS_ "GFUN-SPEC-HOW-SET", SI_ORDINARY, si_gfun_spec_how_set, 3},
-{SYS_ "GFUN-INSTANCE", SI_ORDINARY, si_gfun_instance, 1},
-{SYS_ "GFUN-INSTANCE-SET", SI_ORDINARY, si_gfun_instance_set, 2},
-{SYS_ "GFUNP", SI_ORDINARY, si_gfunp, 1},
+{SYS_ "GENERIC-FUNCTION-P", SI_ORDINARY, si_generic_function_p, 1},
 {SYS_ "INSTANCE-REF-SAFE", SI_ORDINARY, si_instance_ref_safe, 2},
 {SYS_ "INSTANCE-REF", SI_ORDINARY, si_instance_ref, 2},
 {SYS_ "INSTANCE-SET", SI_ORDINARY, si_instance_set, 3},
 {SYS_ "INSTANCE-CLASS", SI_ORDINARY, si_instance_class, 1},
 {SYS_ "INSTANCE-CLASS-SET", SI_ORDINARY, si_instance_class_set, 2},
 {SYS_ "INSTANCEP", SI_ORDINARY, si_instancep, 1},
-{SYS_ "METHOD-HT-GET", SI_ORDINARY, si_method_ht_get, 2},
 {SYS_ "SET-COMPILED-FUNCTION-NAME", SI_ORDINARY, si_set_compiled_function_name, 2},
+{SYS_ "SET-FUNCALLABLE", SI_ORDINARY, si_set_funcallable, 2},
 {SYS_ "SL-BOUNDP", SI_ORDINARY, si_sl_boundp, 1},
 {SYS_ "SL-MAKUNBOUND", SI_ORDINARY, si_sl_makunbound, 2},
 {SYS_ "UNBOUND", SI_ORDINARY, si_unbound, 0},
@@ -1238,10 +1238,8 @@ cl_symbols[] = {
 {SYS_ "LOOKUP-HOST-ENTRY", SI_ORDINARY, si_lookup_host_entry, 1},
 #endif
 
-#ifdef unix
 {SYS_ "CATCH-BAD-SIGNALS", SI_ORDINARY, si_catch_bad_signals, 0},
 {SYS_ "UNCATCH-BAD-SIGNALS", SI_ORDINARY, si_uncatch_bad_signals, 0},
-#endif /* unix */
 
 /* KEYWORD PACKAGE */
 {KEY_ "ABORT", KEYWORD, NULL, -1},

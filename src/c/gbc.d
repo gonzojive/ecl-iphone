@@ -381,18 +381,6 @@ BEGIN:
 			mark_object(p[i]);
 		mark_contblock(p, j*sizeof(cl_object));
 		break;
-
-	case t_gfun:
-		mark_object(x->gfun.name);
-		mark_object(x->gfun.method_hash);
-		mark_object(x->gfun.instance);
-		p = x->gfun.specializers;
-		if (p == NULL)
-			break;
-		for (i = 0, j = x->gfun.arg_no;  i < j;  i++)
-			mark_object(p[i]);
-		mark_contblock(p, j*sizeof(cl_object));
-		break;
 #endif /* CLOS */
 	case t_codeblock:
 		mark_object(x->cblock.name);
@@ -869,9 +857,7 @@ ecl_gc(cl_type t)
     fflush(stdout);
   }
 
-#ifdef unix
   if (interrupt_flag) sigint();
-#endif
 
   end_critical_section();
 }

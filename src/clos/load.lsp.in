@@ -1,8 +1,8 @@
 
 (load "@srcdir@/walk")
 (load "@srcdir@/macros")
-(load "@srcdir@/method")
 (load "@srcdir@/kernel")
+(load "@srcdir@/method")
 (load "@srcdir@/slot")
 (load "@srcdir@/combin")
 (load "@srcdir@/precomp")

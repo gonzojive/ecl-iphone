@@ -38,16 +38,13 @@
 #include "page.h"
 
 #define USE_MMAP
-#ifdef USE_MMAP
+#if defined(USE_MMAP)
 #include <sys/types.h>
 #include <sys/mman.h>
-#endif
-
-#ifdef BSD
-#include <sys/resource.h>
-#endif
-#ifdef SYSV
+#elif defined(HAVE_ULIMIT_H)
 #include <ulimit.h>
+#else
+#include <sys/resource.h>
 #endif
 
 /******************************* EXPORTS ******************************/
@@ -230,7 +227,7 @@ cl_alloc_object(cl_type t)
 ONCE_MORE:
 	if (interrupt_flag) {
 		interrupt_flag = FALSE;
-#ifdef unix
+#ifdef HAVE_ALARM
 		alarm(0);
 #endif
 		terminal_interrupt(TRUE);
@@ -375,13 +372,8 @@ ONCE_MORE:
 #ifdef CLOS
 	case t_instance:
 	  CLASS_OF(obj) = OBJNULL;
+	  obj->instance.isgf = 0;
 	  obj->instance.slots = NULL;
-	  break;
-	case t_gfun:
-	  obj->gfun.name = OBJNULL;
-	  obj->gfun.method_hash = OBJNULL;
-	  obj->gfun.instance = OBJNULL;
-	  obj->gfun.specializers = NULL;
 	  break;
 #endif /* CLOS */
 	case t_codeblock:
@@ -446,7 +438,7 @@ make_cons(cl_object a, cl_object d)
 ONCE_MORE:
 	if (interrupt_flag) {
 		interrupt_flag = FALSE;
-#ifdef unix
+#ifdef HAVE_ALARM
 		alarm(0);
 #endif
 		terminal_interrupt(TRUE);
@@ -661,7 +653,7 @@ init_alloc(void)
 	real_maxpage = MAXPAGE;
 #elif defined(MSDOS) || defined(__CYGWIN__)
 	real_maxpage = MAXPAGE;
-#elif defined(BSD)
+#elif !defined(HAVE_ULIMIT_H)
 	{
 	  struct rlimit data_rlimit;
 # ifdef __MACH__
@@ -678,10 +670,10 @@ init_alloc(void)
 # endif
 	  if (real_maxpage > MAXPAGE) real_maxpage = MAXPAGE;
 	}
-#elif defined(SYSV)
+#else /* HAVE_ULIMIT */
 	real_maxpage= ulimit(UL_GMEMLIM)/LISP_PAGESIZE;
 	if (real_maxpage > MAXPAGE) real_maxpage = MAXPAGE;
-#endif /* USE_MMAP, MSDOS, BSD or SYSV */
+#endif /* USE_MMAP, MSDOS, or HAVE_ULIMIT */
 
 #ifdef USE_MMAP
 	heap_start = NULL;
@@ -724,7 +716,6 @@ init_alloc(void)
 	init_tm(t_structure, "SSTRUCTURE", sizeof(struct structure), 32);
 #else
 	init_tm(t_instance, "IINSTANCE", sizeof(struct instance), 32);
-	init_tm(t_gfun, "GGFUN", sizeof(struct gfun), 32);
 #endif /* CLOS */
 #ifdef ECL_FFI
 	init_tm(t_foreign, "LFOREIGN", sizeof(struct foreign), 1);

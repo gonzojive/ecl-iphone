@@ -453,11 +453,11 @@ q (or Q):             quits the inspection.~%~
 
 (defmethod documentation ((object class) doc-type)
   (when (member doc-type '(t type))
-    (clos::documentation-of object)))
+    (slot-value object 'documentation)))
 
 (defmethod (setf documentation) (new-value (object class) doc-type)
   (when (member doc-type '(t type))
-    (setf (clos::documentation-of object) new-value)))
+    (setf (slot-value object 'documentation) new-value)))
 
 (defmethod documentation ((object structure-class) doc-type)
   (when (member doc-type '(t type))

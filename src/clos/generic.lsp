@@ -13,7 +13,7 @@
   (declare (si::c-local))
   (cond ((not (fboundp name)))
 	; a generic function already exists
-	((si:gfunp (fdefinition name)))
+	((si::instancep (fdefinition name)))
 	((special-operator-p name)
 	 (error "~A is a special form" name))
 	((macro-function name)
@@ -34,7 +34,6 @@
 	       (if (fboundp function-specifier)
 		   ;; remove methods defined by previous defgeneric
 		   (setf (methods 
-			  (si:gfun-instance 
 			   (symbol-function function-specifier)) nil)))
 |#
 	(let ((output `(ensure-generic-function ',function-specifier
@@ -117,48 +116,32 @@
     (values `(:lambda-list ',lambda-list ,@arg-list)
 	    method-list)))
 
-(defun ensure-generic-function (function-specifier &rest args &key
+(defun ensure-generic-function (name &rest args &key
 				lambda-list
 				(generic-function-class 'STANDARD-GENERIC-FUNCTION)
 				(method-class 'STANDARD-METHOD)
 				&allow-other-keys)
-  (unless (LEGAL-GENERIC-FUNCTION-NAME-P function-specifier)
+  (unless (LEGAL-GENERIC-FUNCTION-NAME-P name)
     (error "Generic function ~A has incorrect function specifier
                   (a non-nil symbol, a list whose car is SETF)"
-	   function-specifier))
-  (when (LEGAL-GENERIC-FUNCTION-P function-specifier)
+	   name))
+  (when (LEGAL-GENERIC-FUNCTION-P name)
     (setf args (copy-list args))
     (remf args :generic-function-class)
     (remf args :declare)
     (remf args :environment)
     (unless (classp method-class)
-      (setf (getf args :method-class) (find-class method-class)))
-
-    (let (dispatcher gf-object)
-      (if (and (fboundp function-specifier)
-	       (si:gfunp (setq dispatcher (fdefinition function-specifier))))
-
+      (setf args (list* :method-class (find-class method-class) args)))
+    (let ((gfun (and (fboundp name) (fdefinition name))))
+      (if (typep gfun 'generic-function)
 	  ;; modify the existing object
-	  (progn
-	    (setf gf-object (si:gfun-instance dispatcher)
-		  gf-object (apply #'reinitialize-instance gf-object args))
-	    ;;(if (or
-	    ;;     (not (method-exist-p function-specifier))
-	    ;;     (congruent-lambda-list-p lambda-list 
-	    ;;		    (lambda-list gf-object)))
-	    ;;   (setf (lambda-list generic-function) lambda-list))
-	    ;;(when (and generic-function-class
-	    ;;           (compatible-p generic-function-class
-	    ;;                         (generic-function-class gf-object)))
-	    ;;     (change-class gf-object generic-function-class))
-	    )
+	  ;; FIXME! WE MUST IMPLEMENT REINITIALIZATION OF GENERIC FUNCTIONS
+	  (apply #'reinitialize-instance gfun :name name args)
 	  ;; else create a new generic function object
-	  (setf dispatcher (make-gfun function-specifier lambda-list)
-		gf-object (apply #'make-instance generic-function-class args)))
-      (setf (si:gfun-instance dispatcher) gf-object
-	    (gfun gf-object) dispatcher
-	    (fdefinition function-specifier) dispatcher)
-      gf-object))))
+	  (setf gfun (apply #'make-instance generic-function-class
+			    :name name args)
+		(fdefinition name) (si::set-funcallable gfun t)))
+      gfun)))
 
 ;;; ----------------------------------------------------------------------
 ;;;                                                             congruence

@@ -66,8 +66,8 @@
 )
 
 (compiler::build-program
- #+stage1 "ecl"
- #-stage1 "ecl2"
+ #+(or cross stage1) "ecl"
+ #-(or cross stage1) "ecl2"
  :lisp-files '(#+(and (not dlopen) WANTS-CMP) cmp))
 
 (quit)

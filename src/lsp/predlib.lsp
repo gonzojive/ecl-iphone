@@ -176,7 +176,6 @@ has no fill-pointer, and is not adjustable."
 	     (COMPILED-FUNCTION . COMPILED-FUNCTION-P)
 	     (COMPLEX . COMPLEXP)
 	     (CONS . CONSP)
-	     (DISPATCH-FUNCTION . DISPATCH-FUNCTION-P)
 	     (FLOAT . FLOATP)
 	     (FUNCTION . FUNCTIONP)
 	     (HASH-TABLE . HASH-TABLE-P)
@@ -641,7 +640,8 @@ if not possible."
 ;; CLOS classes and structures.
 ;;
 (defun register-class (class)
-  (declare (si::c-local))
+  (declare (si::c-local)
+	   (notinline class-name))
   (or (find-registered-tag class)
       ;; We do not need to register classes which belong to the core type
       ;; system of LISP (ARRAY, NUMBER, etc).
@@ -871,7 +871,7 @@ if not possible."
 ;;
 (defun canonical-type (type)
   (declare (notinline clos::classp)
-	   (si::cl-local))
+	   (si::c-local))
   (cond ((find-registered-tag type))
 	((eq type 'T) -1)
 	((eq type 'NIL) 0)
@@ -985,7 +985,6 @@ if not possible."
 	       (PACKAGE)
 	       (FUNCTION)
 	       (COMPILED-FUNCTION NIL FUNCTION)
-	       (DISPATCH-FUNCTION NIL FUNCTION)
 
 	       (INTEGER (INTEGER * *))
 	       (SHORT-FLOAT (SHORT-FLOAT * *))
@@ -1087,5 +1086,5 @@ if not possible."
     (setq *member-types* (acons 'NIL tag *member-types*))
     (push (cons 'NULL tag) *elementary-types*))
   ;(print-types-database *elementary-types*)
-  (format t "~%~70B" *highest-type-tag*)
+  ;(format t "~%~70B" *highest-type-tag*)
 ); ngorp

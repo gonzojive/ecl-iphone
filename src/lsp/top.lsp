@@ -760,7 +760,7 @@ file.  When the saved image is invoked, it will start the redefined top-level."
           ((compiled-function-p function)
            (or (compiled-function-name function) 'lambda))
 	  #+clos
-	  ((sys:gfunp function) (sys:gfun-name function))
+	  ((si:instancep function) (slot-value function 'name))
           (t :zombi))))
 
 (defun set-current-ihs ()

@@ -1539,6 +1539,10 @@ ECLS 0.9b
 
   - DEFGENERIC now accepts the :METHOD-COMBINATION and :METHOD options.
 
+  - The initialization and finalization protocol from the AMOP have
+    been almost fully implemented. Still missing are the class
+    redefinition and instance obsolence protocols.
+
 TODO:
 =====
 

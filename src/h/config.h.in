@@ -76,9 +76,9 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 /*	Numb. of args. which can be passed using the C stack		*/
 #define C_ARGUMENTS_LIMIT 64
 
-/* Which functions to use for setting jump points */
-#define ecl_setjmp	@ecl_setjmp@
-#define ecl_longjmp	@ecl_longjmp@
+/* A setjmp that does not save signals					*/
+#define ecl_setjmp	@ECL_SETJMP@
+#define ecl_longjmp	@ECL_LONGJMP@
 
 /*
  * Structure/Instance limits. The index to a slot must fit in the
@@ -106,9 +106,9 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 /* Define this if you want a runtime version only without compiler	*/
 #undef RUNTIME
 /* Profile tool								*/
-#undef PROFILE			
+#undef PROFILE
 /* Program Development Environment					*/
-#undef PDE			
+#undef PDE
 
 /* Tcl/Tk library							*/
 #undef TK
@@ -134,6 +134,7 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #undef WORDS_BIGENDIAN
 /* Has <sys/resource.h>							*/
 #undef HAVE_SYS_RESOURCE_H
+#undef HAVE_ULIMIT_H
 /* High precision timer							*/
 #undef HAVE_NANOSLEEP
 /* Float version if isnan()						*/
@@ -142,6 +143,7 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #undef HAVE_FLOAT_H
 /* select()								*/
 #undef HAVE_SELECT
+#undef HAVE_SYS_IOCTL_H
 /* putenv() or setenv()							*/
 #undef HAVE_SETENV
 #undef HAVE_PUTENV
@@ -155,6 +157,11 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #undef HAVE_MKSTEMP
 /* timer for userland threads						*/
 #undef HAVE_ALARM
+/* filesytem								*/
+#undef HAVE_DIRENT_H
+/* dynamic linking of libraries						*/
+#undef HAVE_DLFCN_H
+#undef HAVE_LINK_H
 
 /* what characters are used to mark beginning of new line		*/
 #undef ECL_NEWLINE_IS_CRLF
@@ -189,3 +196,31 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 /* We reserve these many bytes for computation with bignums registers	*/
 #define BIGNUM_REGISTER_SIZE 16
 
+/*
+ * Macros that depend on these system features.
+ */
+#if defined(sparc) || defined(i386) || defined(mips)
+#  define	stack_align(n)	(((n) + 0x7) & ~0x7)
+#else
+#  define	stack_align(n)	(((n) + 03) & ~03)
+#endif
+
+#ifdef __linux__
+#  define FILE_CNT(fp)	((fp)->_IO_read_end - (fp)->_IO_read_ptr)
+#elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(cygwin) || defined(darwin)
+#  define FILE_CNT(fp)	((fp)->_r)
+#else
+#  define FILE_CNT(fp)	(fp)->_cnt
+#endif
+
+#if defined(MSDOS) || defined(cygwin) || defined(mingw32)
+#  define IS_DIR_SEPARATOR(x) ((x=='/')||(x=='\\'))
+#  define DIR_SEPARATOR	'\\'
+#  define PATH_SEPARATOR	';'
+#else
+#  define IS_DIR_SEPARATOR(x) (x=='/')
+#  define DIR_SEPARATOR	'/'
+#  define PATH_SEPARATOR	':'
+#endif /* MSDOS */
+
+#define ECL_ARCHITECTURE "@ARCHITECTURE@"

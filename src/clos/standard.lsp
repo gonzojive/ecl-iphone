@@ -10,67 +10,317 @@
 (in-package "CLOS")
 
 ;;; ----------------------------------------------------------------------
+;;; INSTANCES INITIALIZATION AND REINITIALIZATION
+;;;
 
-(eval-when (compile load eval)
-  (defun create-standard-class
-      (name superclasses-names
-	    direct-slots		; both instance + shared in this class
-	    all-slots
-	    default-initargs
-	    documentation)
-    (let* ((metaclass (find-class 'STANDARD-CLASS))
-	   (existing (find-class name nil))
-	   (superclasses (mapcar #'find-class superclasses-names))
-	   (cpl (compute-class-precedence-list name superclasses)))
+(defmethod initialize-instance ((instance T) &rest initargs)
+  (check-initargs (class-of instance) initargs)
+  (apply #'shared-initialize instance 'T initargs))
 
-      (flet ((unchanged-class ()
-	       (declare (inline si:instance-class))
-	       (and existing
-		    (eq metaclass (si:instance-class existing))
-		    (equal (or superclasses-names '(STANDARD-OBJECT))
-					; i.e. class-default-direct-superclasses
-			   (mapcar #'class-name
-				   (class-direct-superclasses existing)))
-		    (equal direct-slots (slot-value existing 'DIRECT-SLOTS))
-		    (equal all-slots (slot-value existing 'SLOTS))
-		    (equal default-initargs (default-initargs-of existing))
-		    (prog2 (setf (slot-value existing 'DOCUMENTATION)
-				 documentation)
-			t))))
+(defmethod reinitialize-instance ((instance T) &rest initargs)
+  (check-initargs (class-of instance) initargs)
+  (apply #'shared-initialize instance '() initargs))
 
-	(if (unchanged-class)
-	    existing
-	    (let ((new-class
-		   (make-instance
-		    metaclass
-		    :name name
-		    :direct-superclasses superclasses
-		    :slots all-slots
+(defmethod shared-initialize ((instance T) slot-names &rest initargs)
+  ;;
+  ;; initialize the instance's slots is a two step process
+  ;;   1 A slot for which one of the initargs in initargs can set
+  ;;      the slot, should be set by that initarg.  If more than
+  ;;      one initarg in initargs can set the slot, the leftmost
+  ;;      one should set it.
+  ;;
+  ;;   2 Any slot not set by step 1, may be set from its initform
+  ;;      by step 2.  Only those slots specified by the slot-names
+  ;;      argument are set.  If slot-names is:
+  ;;       T
+  ;;            any slot not set in step 1 is set from its
+  ;;            initform
+  ;;       <list of slot names>
+  ;;            any slot in the list, and not set in step 1
+  ;;            is set from its initform
+  ;;
+  ;;       ()
+  ;;            no slots are set from initforms
+  ;;
+  (let* ((class (class-of instance)))
+    ;; initialize-instance slots
+    (dolist (slotd (class-slots class))
+      (let* ((slot-initargs (slotd-initargs slotd))
+	     (slot-name (slotd-name slotd)))
+	(or
+	 ;; Try to initialize the slot from one of the initargs.
+	 (doplist (initarg val)
+		  initargs
+		  (when (member initarg slot-initargs :test #'eq)
+		    (setf (slot-value instance slot-name) val)
+		    (return 'T)))
+	 ;; Try to initialize the slot from its initform.
+	 (when (and slot-names
+		    (or (eq slot-names 'T)
+			(member slot-name slot-names))
+		    (not (slot-boundp instance slot-name)))
+	   (let ((initform (slotd-initform slotd)))
+	     (unless (eq initform '+INITFORM-UNSUPPLIED+)
+	       (when (functionp initform)
+		 (setq initform (funcall initform)))
+	       (setf (slot-value instance slot-name) initform)))))
+	)))
+  instance)
 
-		    ;; The following slots are defined in standard-class.
-		    ;; initialize-instance takes care of them
-		    :direct-slots direct-slots
-		    :class-precedence-list cpl
-		    :default-initargs
-		    (collect-default-initargs cpl default-initargs)
-		    :documentation documentation)))
-	      (when existing
-		(redefine-class existing new-class superclasses-names
-				(class-direct-subclasses existing))) ; Beppe
-	      (generate-accessors new-class)
-	      new-class)))))
-  ;;; Bootstrap versions.
-  (defun redefine-class (class new-class superclasses-names inferiors)
-    (declare (ignore superclasses-names inferiors))
-    (format t "~%Redefinition of class ~A." (class-name class))
-    new-class))
+;;; ----------------------------------------------------------------------
+;;; CLASSES INITIALIZATION AND REINITIALIZATION
+;;;
+
+(defun count-instance-slots (class)
+  (count :instance (class-slots class) :key #'slotd-allocation))
+
+(defmethod allocate-instance ((class class) &key &allow-other-keys)
+  (si::allocate-raw-instance class (count-instance-slots class)))
+
+(defmethod make-instance ((class class) &rest initargs)
+  (let ((instance (allocate-instance class)))
+    (apply #'initialize-instance instance (add-default-initargs class initargs))
+    instance))
+
+(defun add-default-initargs (class initargs)
+  (declare (si::c-local))
+  ;; Here, for each slot which is not mentioned in the initialization
+  ;; arguments, but which has a value associated with :DEFAULT-INITARGS,
+  ;; we compute the value and add it to the list of initargs.
+  (dolist (scan (class-default-initargs class))
+    (let ((initarg (first scan))
+	  (value (third scan)))
+      (when (eql (si::search-keyword initargs initarg) 'si::failed)
+	(setf value (if (functionp value) (funcall value) value)
+	      initargs (append initargs (list initarg value))))))
+  #+nil
+  (dolist (slotd (class-slots class))
+    (let ((found nil)
+	  (defaults '())
+	  (slotd-initargs (slotd-initargs slotd)))
+      (dolist (key slotd-initargs)
+	(unless (eql (si::search-keyword initargs key) 'si::failed)
+	  (setq found t)))
+      (unless found
+	(dolist (scan (class-default-initargs class))
+	  (let ((initarg (first scan))
+		(value (third scan)))
+	    (when (member initarg slotd-initargs)
+	      (setf initargs
+		    (list* initarg (if (functionp value) (funcall value) value)
+			   initargs))
+	      (return)))))))
+  initargs)
+
+(defmethod initialize-instance ((class class) &rest initargs
+				&key direct-superclasses &allow-other-keys)
+
+  ;; this sets up all the slots of the class
+  (call-next-method)
+
+  ;; set up inheritance checking that it makes sense
+  (dolist (l (setf (class-direct-superclasses class)
+		   (check-direct-superclasses class direct-superclasses)))
+    (add-direct-subclass l class))
+
+  (finalize-inheritance class)
+)
+
+(defmethod add-direct-subclass ((parent class) child)
+  (pushnew child (class-direct-subclasses parent)))
+
+(defmethod remove-direct-subclass ((parent class) child)
+  (setf (class-direct-subclasses parent)
+	(remove child (class-direct-subclasses parent))))
+
+(defmethod check-direct-superclasses (class supplied-superclasses)
+  (unless supplied-superclasses
+    (setf supplied-superclasses
+	  (list (find-class (typecase class
+			      (STANDARD-CLASS 'STANDARD-OBJECT)
+			      (STRUCTURE-CLASS 'STRUCTURE-OBJECT)
+			      (otherwise (error "No :DIRECT-SUPERCLASS ~
+argument was supplied for metaclass ~S." (class-of class))))))))
+  ;; FIXME!!! Here should come the invocation of VALIDATE-SUPERCLASS!
+  ;; FIXME!!! We should check that structures and standard objects are
+  ;; not mixed, and that STANDARD-CLASS, or STANDARD-GENERIC-FUNCTION,
+  ;; etc, are the first classes.
+  supplied-superclasses)
+
+(defmethod reinitialize-instance ((class class) &rest initargs)
+  (error "Class reinitialization is not supported. If you wish to reinitialize ~
+a class metaobject, use REDEFINE-CLASS instead."))
+
+;;; ----------------------------------------------------------------------
+;;; FINALIZATION OF CLASS INHERITANCE
+;;;
+
+(defmethod finalize-inheritance ((class class))
+  (unless (class-finalized-p class)
+    (setf (class-precedence-list class) (compute-class-precedence-list class)
+	  (class-slots class) (compute-slots class)
+	  (class-default-initargs class) (compute-default-initargs class)
+	  (class-finalized-p class) t))
+)
+
+(defmethod finalize-inheritance ((class standard-class))
+  (call-next-method)
+  (std-class-allocate-slots class)
+  (std-class-generate-accessors class))
+
+(defmethod compute-class-precedence-list ((class class))
+  (cons class
+	(compute-clos-class-precedence-list (class-name class)
+					    (class-direct-superclasses class))))
+
+(defmethod compute-slots ((class class))
+  ;; INV: for some classes ECL expects that the order of the inherited slots is
+  ;; preserved. The following code ensures that, if C1 is after C2 in the
+  ;; class precedence list, and the slot S1 appears both in C1 and C2,
+  ;; the slot S1 will appear the new class before the slots of C2; and
+  ;; whenever possible, in the same position as in C1.
+  ;;
+  (do* ((all-slots (mapappend #'class-direct-slots (reverse (class-precedence-list class))))
+	(all-names (nreverse (mapcar #'slotd-name all-slots)))
+	(output '())
+	(scan all-names (cdr scan)))
+       ((endp scan) output)
+    (let ((name (first scan)))
+      (unless (find name (rest scan))
+	(push (compute-effective-slot-definition
+	       class name (delete name (reverse all-slots) :key #'slotd-name
+				  :test-not #'eq))
+	      output)))))
+
+(defmethod compute-effective-slot-definition ((class class) name direct-slots)
+  (flet ((combine-slotds (new-slotd old-slotd)
+	   (let* ((new-type (slotd-type new-slotd))
+		  (old-type (slotd-type old-slotd)))
+	     (setf (slotd-initargs new-slotd)
+		   (union (slotd-initargs new-slotd)
+			  (slotd-initargs old-slotd)))
+	     (when (eq (slotd-initform new-slotd) '+INITFORM-UNSUPPLIED+)
+	       (setf (slotd-initform new-slotd) (slotd-initform old-slotd)))
+	     (setf (slotd-type new-slotd)
+		   ;; FIXME! we should be more smart then this:
+		   (cond ((subtypep new-type old-type) new-type)
+			 ((subtypep old-type new-type) old-type)
+			 (T `(and ,new-type ,old-type))))
+	     new-slotd)))
+    (reduce #'combine-slotds (rest direct-slots)
+	    :initial-value (copy-list (first direct-slots)))))
+
+(defmethod compute-default-initargs ((class class))
+  (let ((all-initargs (mapappend #'class-direct-default-initargs
+				 (class-precedence-list class))))
+    ;; We have to use this trick because REMOVE-DUPLICATES on
+    ;; ((:foo x) (:faa y) (:foo z)) would produce ((:faa y) (:foo z))
+    ;; and we want ((:foo x) (:faa y))
+    (nreverse (remove-duplicates (reverse all-initargs) :key #'first))))
+
+;;; ======================================================================
+;;; STANDARD-CLASS specializations
+;;;
+;;; IMPORTANT:
+;;;
+;;; 1) The following implementation of ENSURE-CLASS-USING-CLASS is shared by
+;;; the metaclasses STANDARD-CLASS and STRUCTURE-CLASS.
+;;;
+;;; 2) The implementation does not follow the AMOP in that a call to
+;;; ENSURE-CLASS-... with a valid class does not reinitialize the class,
+;;; but replace it with a new one using the function REDEFINE-CLASS.
+;;;
+
+(defmethod ensure-class-using-class ((class class) name &rest rest
+				     &key direct-slots direct-default-initargs
+				     &allow-other-keys)
+  (multiple-value-bind (metaclass direct-superclasses options)
+      (apply #'help-ensure-class rest)
+    (let ((new-class (apply #'ensure-class-using-class nil name rest)))
+      (if (and (eq metaclass (si:instance-class class))
+	       (every #'eql (class-precedence-list new-class)
+		      (class-precedence-list class))
+	       (equal (class-slots new-class)
+		      (class-slots class))
+	       (equal (class-default-initargs new-class)
+		      (class-default-initargs class)))
+	  class
+	  (redefine-class class new-class))
+    )))
+
+(defmethod ensure-class-using-class ((class null) name &rest rest)
+  (multiple-value-bind (metaclass direct-superclasses options)
+      (apply #'help-ensure-class rest)
+    (apply #'make-instance metaclass :name name options)))
+
+(defun coerce-to-class (class-or-symbol)
+  (if (si::instancep class-or-symbol)
+      class-or-symbol
+      (find-class class-or-symbol t)))
+
+(defun help-ensure-class (&rest options
+			  &key (metaclass 'standard-class) direct-superclasses
+			  &allow-other-keys)
+  (declare (si::c-local))
+  (remf options :metaclass)
+  (remf options :direct-superclasses)
+  (setf metaclass (coerce-to-class metaclass)
+	direct-superclasses (mapcar #'coerce-to-class direct-superclasses))
+  (values metaclass direct-superclasses
+	  (list* :direct-superclasses direct-superclasses options)))
+
+;;; Bootstrap version
+(defun redefine-class (class new-class)
+  (declare (ignore superclasses-names inferiors))
+  (format t "~%Redefinition of class ~A." (class-name class))
+  new-class)
+
+;;; ----------------------------------------------------------------------
+;;; Slots hashing for standard classes
+;;;
+
+(defun std-class-allocate-slots (class)
+  (declare (si::c-local))
+  (let* ((slots (class-slots class))
+	 (direct-slots (class-direct-slots class))
+	 (slot-instance-count (count-instance-slots class))
+	 (table (make-hash-table :size (max 32 (* 2 slot-instance-count))))
+	 (local-index -1)
+	 (shared-index -1))
+    (declare (fixnum local-index shared-index))
+    (dolist (slot slots)
+      (let* ((name (slotd-name slot))
+	     (allocation (slotd-allocation slot))
+	     location)
+	(cond ((eq allocation :INSTANCE) ; local slot
+	       (setq location (incf local-index)))
+	      ((find name direct-slots :key #'slotd-name) ; new shared slot
+	       (setq location (cons class (incf shared-index))))
+	      (t			; inherited shared slot
+	       (dolist (c (class-precedence-list class))
+		 (when (and
+			(not (eql c class))
+			(typep c 'STANDARD-CLASS)
+			(setq location
+			      (gethash name (slot-value c 'SLOT-INDEX-TABLE))))
+		   (return)))))
+	(setf (gethash name table) location)))
+    (setf (class-shared-slots class)
+	  (make-array (1+ shared-index) :initial-element (unbound))
+	  (slot-index-table class) table)))
 
 ;;; ----------------------------------------------------------------------
 ;;; Optional accessors
 
-;;; This cant be a method because of bootstrap problem.
-
-(defun generate-accessors (standard-class)
+(defun std-class-generate-accessors (standard-class)
+  (declare (si::c-local))
+  ;;
+  ;; The accessors are closures, which are generated every time the
+  ;; slots of the class change. The accessors are safe: they check that
+  ;; the slot is bound after retreiving the value, and they may take
+  ;; the liberty of using SI:INSTANCE-REF because they know the class of
+  ;; the instance.
+  ;;
   (do* ((slots (class-slots standard-class) (cdr slots))
 	(i 0))
     ((endp slots))
@@ -84,7 +334,10 @@
       (declare (fixnum index))
       (if (eql (slotd-allocation slotd) :instance)
 	  (setf reader #'(lambda (self)
-			   (si:instance-ref self index))
+			   (let ((value (si:instance-ref self index)))
+			     (if (si:sl-boundp value)
+				 value
+				 (slot-unbound self slot-name))))
 		setter #'(lambda (value self)
 			   (si:instance-set self index value))
 		i (1+ i))
@@ -102,55 +355,11 @@
 	(install-method fname nil `(nil ,class-name) '(value self)
 			nil nil setter)))))
 
-(generate-accessors (find-class 'standard-class))
-
-;;; ----------------------------------------------------------------------
-;;; STANDARD-CLASS
-;;; ----------------------------------------------------------------------
-
-#+nil
-(defclass standard-class (class)
-  ;; class-precedence-list must be in the same position as in structure-class
-  ((precedence-list :initarg :class-precedence-list)
-   slot-index-table
-   ;; associates names to slot index.
-   ;; For shared slots it contains (class . index) pairs for indexing into
-   ;; the shared-slots of class
-   ;; Be careful when changing the position of this slot!
-   (direct-slots :initarg :direct-slots) ; instance + shared in this class
-   (shared-slots :initarg :shared-slots	; vector of shared slots
-		 :initform nil
-		 :accessor class-shared-slots)
-   (instance-slot-count :accessor class-instance-slot-count)
-   (default-initargs :initarg :default-initargs :reader default-initargs-of)
-   (documentation :initarg :documentation :accessor documentation-of)
-   (forward)				; forwarding pointer to redefined class
-   )
-  (:metaclass class))
-
-;;; ----------------------------------------------------------------------
-;;; Standard-object
-;;; ----------------------------------------------------------------------
-
+;;; ======================================================================
+;;; STANDARD-OBJECT
+;;;
 ;;; Standard-object has no slots and inherits only from t:
 ;;; (defclass standard-object (t) ())
-
-#+nil
-(eval-when
- (compile load eval)
- (make-instance (find-class 'STANDARD-CLASS)
-		:NAME 'STANDARD-OBJECT
-		:DIRECT-SUPERCLASSES (list (find-class 'T))
-		:SLOTS ()
-		:CLASS-PRECEDENCE-LIST (list (find-class 'T))
-		:DIRECT-SLOTS ()
-		:DEFAULT-INITARGS ()
-		:DOCUMENTATION "The root of inheritance for objects"))
-
-#+PDE
-(si:record-source-pathname 'STANDARD-OBJECT 'DEFCLASS)
-
-;;; new methods for slot-boundp and slot-value
 
 (defmethod slot-value ((instance standard-object) slot-name)
   (multiple-value-bind (val condition)
@@ -195,61 +404,6 @@
 		      'SLOT-MAKUNBOUND))
     class))
 
-(defmethod shared-initialize ((instance standard-object) 
-			      slot-names &rest initargs)
-  ;;
-  ;; initialize the instance's slots is a two step process
-  ;;   1 A slot for which one of the initargs in initargs can set
-  ;;      the slot, should be set by that initarg.  If more than
-  ;;      one initarg in initargs can set the slot, the leftmost
-  ;;      one should set it.
-  ;;
-  ;;   2 Any slot not set by step 1, may be set from its initform
-  ;;      by step 2.  Only those slots specified by the slot-names
-  ;;      argument are set.  If slot-names is:
-  ;;       T
-  ;;            any slot not set in step 1 is set from its
-  ;;            initform
-  ;;       <list of slot names>
-  ;;            any slot in the list, and not set in step 1
-  ;;            is set from its initform
-  ;;
-  ;;       ()
-  ;;            no slots are set from initforms
-  ;;
-  (let* ((class (si:instance-class instance)))
-    ;; initialize-instance slots
-    (dolist (slotd (class-slots class))
-      (let* ((slot-initargs (slotd-initargs slotd))
-	     (slot-name (slotd-name slotd)))
-
-	(or
-	 ;; Try to initialize the slot from one of the initargs.
-	 (doplist (initarg val)
-		  initargs
-		  (when (member initarg slot-initargs :test #'eq)
-		    (setf (slot-value instance slot-name) val)
-		    (return 'T)))
-	 ;; Try to initialize the slot from its initform.
-	 (when (and slot-names
-		    (or (eq slot-names 'T)
-			(member slot-name slot-names :test #'eq))
-		    (not (slot-boundp instance slot-name)))
-	   (let ((initform (slotd-initform slotd)))
-	     (unless (eq initform 'INITFORM-UNSUPPLIED)
-	       (when (functionp initform)
-		 (setq initform (funcall initform)))
-	       (setf (slot-value instance slot-name) initform))))))))
-  instance)
-
-(defmethod initialize-instance ((instance standard-object) &rest initargs)
-  (apply #'shared-initialize instance t initargs))
-
-(defmethod reinitialize-instance ((instance standard-object) &rest initargs)
-  (let* ((class (si:instance-class instance)))
-    (apply #'shared-initialize instance nil (check-initargs class initargs))
-    instance))
-
 (defmethod change-class ((instance standard-object) (new-class standard-class))
     (let* ((old-class (si:instance-class instance))
 	   (old-slotds (class-slots old-class))
@@ -271,7 +425,7 @@
 	    (push (cons new-i old-i) retained-correspondance))
 	  (incf new-i))
 	(si:change-instance instance new-class
-			    (class-instance-slot-count new-class)
+			    (count-instance-slots new-class)
 			    (nreverse retained-correspondance)))
 
       ;; Compute the newly added slots.  The spec defines
@@ -328,25 +482,6 @@
 		    (if (slot-boundp obj slotname)
 			(slot-value obj slotname) "Unbound")))))))
   obj)
-
-;;; ----------------------------------------------------------------------
-;;; default-initargs
-
-(defmethod default-initargs ((class t) initargs)
-  initargs)
-
-(defmethod default-initargs ((class standard-class) initargs)
-  (do ((scan (reverse (default-initargs-of class)) (cddr scan))
-       (defaults))
-      ((null scan) (nconc initargs (nreverse defaults)))
-    (let ((slot-initarg (second scan)))
-      (unless (do ((iscan initargs (cddr iscan)))
-		  ((null iscan) nil)
-		(when (eq (first iscan) slot-initarg) (return t)))
-	(let ((slot-value (first scan)))
-	  (when (functionp slot-value)
-	    (setq slot-value (funcall slot-value)))
-	  (setq defaults (nconc defaults (list slot-value slot-initarg))))))))
 
 ;;; ----------------------------------------------------------------------
 ;;; check-initargs
@@ -430,104 +565,6 @@
 ;;; ----------------------------------------------------------------------
 ;;; Methods
 
-(defmethod initialize-instance ((class standard-class)
-;;;				&rest initargs 
-				&key name direct-superclasses 
-				&allow-other-keys)
-
-  (call-next-method)			; from class T
-
-  (let* ((superclasses 
-	  (class-default-direct-superclasses class direct-superclasses))
-	 (cpl (if (and (cdr superclasses)
-		       (eq (class-name (car superclasses)) 'STANDARD-OBJECT))
-		  ;; it is a class inheriting from a structure
-		  ;; so standard-object must be the first in cpl
-		  (cons (car superclasses)
-			(remove (find-class 'STANDARD-OBJECT)
-				(compute-class-precedence-list 
-				 name
-				 (cdr superclasses))))
-		  ;; else
-		  (compute-class-precedence-list name superclasses)))
-	 (slots (class-slots class))
-	 (class-direct-slots (slot-value class 'DIRECT-SLOTS))
-	 (table (make-hash-table :size (max 32 (* 2 (length slots)))
-				 :test #'eq))
-	 (local-index -1)
-	 (shared-index -1))
-    (declare (fixnum local-index shared-index))
-
-    (setf (slot-value class 'DIRECT-SUPERCLASSES) superclasses)
-    (setf (slot-value class 'PRECEDENCE-LIST) cpl)
-    (setf (slot-index-table class) table)
-    (dolist (slot slots)
-      (let* ((name (slotd-name slot))
-	     (allocation (slotd-allocation slot))
-	     location)
-	(cond ((eq allocation :INSTANCE) ; local slot
-	       (setq location (incf local-index)))
-	      ((member slot class-direct-slots) ; new shared slot
-	       (setq location (cons class (incf shared-index))))
-	      (t			; inherited shared slot
-	       (dolist (c cpl)
-		 (when (and
-			(typep c 'STANDARD-CLASS)
-			(setq location
-			      (gethash name (slot-value c 'SLOT-INDEX-TABLE))))
-		   (return)))))
-	(setf (gethash name table) location)))
-    (setf (class-instance-slot-count class) (1+ local-index))
-    (when (plusp (incf shared-index))
-      (setf (class-shared-slots class)
-	    (make-array shared-index :initial-element (unbound)))))
-
-  class)
-
-;;; Bootstrap problem: early version of add-method does not do this,
-;;; but here initialize-instance has already been called, so we do it
-;;; explicitely
-(clrhash (si:gfun-method-ht (symbol-function 'initialize-instance)))
-
-(defmethod class-default-direct-superclasses ((class standard-class)
-					      supplied-superclasses)
-  (let ((default-superclasses supplied-superclasses))
-    (if supplied-superclasses
-	(progn
-	  ;; check if the class inherits from a structure. 
-	  ;; A structure can be the first one in the list of superclasses.
-	  (dolist (super (cdr supplied-superclasses))
-	    (when (typep super 'STRUCTURE-CLASS) ;; JJGR FIXME! IS THIS RIGHT?
-	      (error
-	       "The standard class ~A can have the structure class ~A only~
-		as first superclass in the list" class super)))
-	  
-	  ;; default inheritance for CLOS classes that are instances
-	  ;; of standard-class is standard-object.
-	  (if (eq (class-name (class-of (first supplied-superclasses)))
-		  'STRUCTURE-CLASS)
-	      (push (find-class 'STANDARD-OBJECT) default-superclasses)
-	  
-	      ;; else
-	      (unless (or (eq (class-name class) 'STANDARD-OBJECT)
-			  (eq (class-name class) 'STRUCTURE-OBJECT)
-			  (some #'(lambda (x) (subtypep (class-name x)
-							'STANDARD-OBJECT))
-				supplied-superclasses))
-		(setf default-superclasses
-		      (nreverse (cons (find-class 'STANDARD-OBJECT)
-				      (nreverse supplied-superclasses)))))))
-    ;; else
-      (setf default-superclasses (list (find-class 'STANDARD-OBJECT))))
-    default-superclasses))
-
-(defmethod make-instance ((class standard-class) &rest initargs)
-  (setq initargs (check-initargs class (default-initargs class initargs)))
-  (let ((instance
-	 (si:allocate-raw-instance class (class-instance-slot-count class))))
-    (apply #'initialize-instance instance initargs)
-    instance))
-
 (defmethod describe-object ((obj standard-class))
   (let ((slotds (class-slots (si:instance-class obj))))
     (format t "~%~A is an instance of class ~A"
@@ -548,52 +585,3 @@
 	     (princ ")"))
 	    (otherwise (prin1 (si:instance-ref obj i))))))
   obj)
-
-
-;;; ----------------------------------------------------------------------
-;;;                                                          documentation
-
-#|
-(defmethod documentation ((obj standard-class) &optional doc-type)
-  (declare (ignore doc-type))
-  (documentation-of obj))
-
-(defmethod (setf documentation)
-  ((s string) (obj standard-class) &optional doc-type)
-  (declare (ignore doc-type))
-  (setf (documentation-of obj) s))
-|#
-;;; ----------------------------------------------------------------------
-;;; Generic Function
-;;; ----------------------------------------------------------------------
-
-(defclass generic-function () ())
-
-
-;;; ----------------------------------------------------------------------
-;;; Standard Generic Function
-;;; ----------------------------------------------------------------------
-;;
-;; The order of the slots in the STANDARD-GENERIC-FUNCTION is extremely
-;; important, because the C core (gfun.d) and the bootstrap process
-;; (kernel.lsp, method.lsp) access them directly, and not via generic
-;; functions.
-;;
-
-(defclass standard-generic-function (generic-function)
-  ((lambda-list :initarg :lambda-list :accessor lambda-list)
-   (argument-precedence-order 
-    :initarg :argument-precedence-order
-    :initform :default
-    :accessor generic-function-argument-precedence-order)
-   (method-combination 
-    :initarg :method-combination :initform '(standard)
-    :accessor generic-function-method-combination)
-   (method-class
-    :initarg :method-class
-    :initform (find-class 'standard-method))
-   (documentation :initarg :documentation)
-   (gfun :initarg :gfun :accessor gfun :initform nil)
-   (methods :initform nil :accessor methods)))
-
-;;;----------------------------------------------------------------------

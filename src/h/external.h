@@ -433,17 +433,8 @@ extern void ecl_register_root(cl_object *p);
 /* gfun.c */
 
 #ifdef CLOS
-extern cl_object si_allocate_gfun(cl_object name, cl_object arg_no, cl_object ht);
-extern cl_object si_gfun_name(cl_object x);
-extern cl_object si_gfun_name_set(cl_object x, cl_object name);
-extern cl_object si_gfun_method_ht(cl_object x);
-extern cl_object si_gfun_method_ht_set(cl_object x, cl_object y);
-extern cl_object si_gfun_spec_how_ref(cl_object x, cl_object y);
-extern cl_object si_gfun_spec_how_set(cl_object x, cl_object y, cl_object spec);
-extern cl_object si_gfun_instance(cl_object x);
-extern cl_object si_gfun_instance_set(cl_object x, cl_object y);
-extern cl_object si_gfunp(cl_object x);
-extern cl_object si_method_ht_get(cl_object keylist, cl_object table);
+extern cl_object si_set_funcallable(cl_object instance, cl_object flag);
+extern cl_object si_generic_function_p(cl_object instance);
 extern cl_object si_set_compiled_function_name(cl_object keylist, cl_object table);
 
 extern cl_object compute_method(int narg, cl_object fun, cl_object *args);
@@ -965,7 +956,6 @@ extern cl_object cl_eql(cl_object x, cl_object y);
 extern cl_object cl_equal(cl_object x, cl_object y);
 extern cl_object cl_equalp(cl_object x, cl_object y);
 extern cl_object si_fixnump(cl_object x);
-extern cl_object si_dispatch_function_p(cl_object x);
 
 extern bool numberp(cl_object x);
 extern bool eql(cl_object x, cl_object y);

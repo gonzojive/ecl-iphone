@@ -12,225 +12,99 @@
 ;;; ----------------------------------------------------------------------
 ;;; DEFCLASS
 
-(defun quote-list (x)
-  (mapcar #'(lambda (x) (list 'quote x)) x))
+(defun make-function-initform (initform)
+  (if (constantp initform) initform `#'(lambda () ,initform)))
 
-(defun direct-slot-make-form (direct-slots)
+(defun parse-default-initargs (default-initargs)
   (declare (si::c-local))
-  (do* ((output nil)
-	(constants-list nil)
-	(scan (reverse direct-slots) (cdr scan))
-	(slotd (first scan) (first scan)))
-       ((endp scan)
-	(if (null output)
-	    (list 'quote constants-list)
-	    (cons 'list (append (quote-list constants-list) output))))
-    (let ((initform (slotd-initform slotd)))
-      (cond ((or (member initform '(NIL T INITFORM-UNSUPPLIED))
-		 (typep initform '(or number character string array keyword)))
-	     (push slotd constants-list))
-	    ((and (consp initform) (eq 'quote (first initform)))
-	     (setf (slotd-initform slotd) (second initform))
-	     (push slotd constants-list))
-	    (t
-	     (setq initiform `#'(lambda () ,initform))
-	     ;; Quote everything except the initalization form
-	     (setq slotd (quote-list slotd))
-	     (setf (slotd-initform slotd) `#'(lambda () ,initform))
-	     (when constants-list
-	       (setq output (append (quote-list constants-list) output))
-	       (setq constants-list nil))
-	     (push (cons 'list slotd) output))))))
-
-(defun default-initargs-make-form (default-initargs)
-  (declare (si::c-local))
-  (do* ((must-be-evaluated nil)
-	(output-list nil)
+  (do* ((output-list nil)
 	(scan default-initargs (cddr scan))
-	(already-supplied '())
-	slot-name initform)
-       ((endp scan)
-	(and output-list `(list ,@(nreverse output-list))))
-    (when (endp (cdr scan))
+	(already-supplied '()))
+       ((endp scan) `(list ,@(nreverse output-list)))
+    (when (endp (rest scan))
       (si::simple-program-error "Wrong number of elements in :DEFAULT-INITARGS option."))
-    (setq slot-name (first scan)
-	  initform (second scan))
-    (if (member slot-name already-supplied)
-      (si::simple-program-error "~S is duplicated in :DEFAULT-INITARGS form ~S"
-				slot-name default-initargs)
-      (push slot-name already-supplied))
-    (setq output-list
-	  (list*
-	   (if (or (typep initform '(or number character string array keyword))
-		   (and (consp initform) (eq 'quote (first initform))))
-	       initform
-	       `#'(lambda () ,initform))
-	   `',slot-name
-	   output-list))))
+    (let ((slot-name (first scan))
+	  (initform (second scan)))
+      (if (member slot-name already-supplied)
+	  (si::simple-program-error "~S is duplicated in :DEFAULT-INITARGS form ~S"
+				    slot-name default-initargs)
+	  (push slot-name already-supplied))
+      (push `(list ',slot-name ',initform ,(make-function-initform initform))
+	    output-list))))
 
-(defmacro DEFCLASS (&rest args)
-  (multiple-value-bind (name superclasses slots 
-			     metaclass-name default-initargs documentation)
-      (parse-defclass args)
-    (unless metaclass-name
-      (setq metaclass-name 'STANDARD-CLASS)) ; the default for CLOS
-
-    ;; process superclasses
-    (dolist (superclass superclasses)
-      (unless (legal-class-name-p superclass)
-	(error "~A is not a legal superclass name" superclass)))
-
-    ;; process slots
-    (let* ((direct-slots (parse-slots slots))
-	   (direct-slots-form (direct-slot-make-form direct-slots))
-	   (default-initargs-form (default-initargs-make-form default-initargs))
-	   (all-slots (collect-all-slots direct-slots name superclasses)))
-      ;; at compile time just create the definition
-      `(eval-when (compile load eval)
-	(progn
-	  #+PDE
-	  (si:record-source-pathname ',name 'DEFCLASS)
-	  (ensure-class
-	     ',metaclass-name
-	     ',name
-	     ',superclasses
-	     ,direct-slots-form
-	     ,default-initargs-form
-	     ',documentation))))))
-
-(defun collect-all-slots (slots name superclasses-names)
-  (declare (si::c-local))
-  (let* ((superclasses (mapcar #'find-class superclasses-names))
-	 (cpl (compute-class-precedence-list name superclasses)))
-    (collect-slotds cpl slots)))
-
-;;
-;; INV: ENSURE-CLASS should always output the class it creates.
-;;
-(defun ensure-class (metaclass name superclasses direct-slots
-			       default-initargs documentation)
-  ;; update slots with inherited information
-  (let ((all-slots (collect-all-slots direct-slots name superclasses)))
-    (do ((scan direct-slots (cdr scan))
-	 (slot))
-	((null scan))
-      (setq slot (find (slotd-name (first scan)) all-slots :key #'slotd-name))
-      (setf (first scan) slot))
-    (case metaclass
-      (STANDARD-CLASS
-       (create-standard-class name superclasses direct-slots all-slots
-			      default-initargs documentation))
-      (STRUCTURE-CLASS
-       (create-structure-class name superclasses direct-slots all-slots
-			       default-initargs documentation))
-      (T
-       (make-instance (find-class metaclass)
-		      :NAME name
-		      :DIRECT-SUPERCLASSES (mapcar #'find-class superclasses)
-		      :DIRECT-SLOTS direct-slots
-		      :SLOTS all-slots
-		      :DEFAULT-INITARGS default-initargs
-		      :DOCUMENTATION documentation)))))
-
-;;; ----------------------------------------------------------------------
-;;;                                                                parsing
-
-(defun parse-defclass (args)
+(defmacro defclass (&whole form &rest args)
   (declare (si::c-local))
   (let* (name superclasses slots options
-	 metaclass-name default-initargs documentation)
-    (unless args
+	 metaclass-name default-initargs documentation
+	 (processed-options '())
+	 options)
+    (unless (>= (length args) 3)
       (si::simple-program-error "Illegal defclass form: the class name, the superclasses and the slots should always be provided"))
-    (setq name (pop args))
-    (unless args
-      (si::simple-program-error "Illegal defclass form: the class name, the superclasses list and the slot specifier list should always be provided"))
-    (unless (listp (first args))
-      (si::simple-program-error "Illegal defclass form: the superclasses should be a list"))
-    (setq superclasses (pop args))
-    (unless args
-      (si::simple-program-error "Illegal defclass form: the class name, the superclasses list and the slot specifier list should always be provided"))
-    (unless (listp (first args))
-      (si::simple-program-error "Illegal defclass form: the slots should be a list"))
-    (setq slots (pop args))
-    (setq options args)
-    (unless (legal-class-name-p name)
-      (si::simple-program-error "Illegal defclass form: the class name should be a symbol"))
-    ;; process options
-    (dolist (option options)
-      (case (first option)
-	(:metaclass
-	 (if metaclass-name
-	     (si::simple-program-error
-	      "Option :metaclass specified more than once for class ~A" 
-	      name)
-	   ;; else
-	   (setq metaclass-name (second option))))
-	(:default-initargs
-	  (if default-initargs
-	      (si::simple-program-error
-	       "Option :default-initargs specified more than once for class ~A"
-	       name)
-	      (setq default-initargs (cdr option))))
-	(:documentation
-	  (if documentation
-	      (si::simple-program-error
-	       "Option :documentation specified more than once for class ~A"
-	       name)
-	      (setq documentation (second option))))  
-	(otherwise
-	 (si::simple-program-error "~S is not a legal class-option."
-				   (first option)))))
-    (values name superclasses slots 
-	    metaclass-name default-initargs documentation)))
-
+    (setq name (first args)
+	  superclasses (second args)
+	  slots (third args)
+	  args (cdddr args))
+    (unless (and (listp superclasses) (listp slots))
+      (si::simple-program-error "Illegal defclass form: superclasses and slots should be lists"))
+    (unless (and (symbolp name) (every #'symbolp superclasses))
+      (si::simple-program-error "Illegal defclass form: superclasses and class name are not valid"))
+    ;;
+    ;; Here we compose the final form. The slots list, and the default initargs
+    ;; may contain object that need to be evaluated. Hence, it cannot be always
+    ;; quoted.
+    ;;
+    (do ((l (setf slots (parse-slots slots)) (rest l)))
+	((endp l)
+	 (setf slots
+	       (if (every #'constantp slots)
+		   (list 'quote (mapcar #'second slots))
+		   `(list ,@slots))))
+      (let* ((slotd (first l))
+	     (initform (slotd-initform slotd)))
+	(if (constantp initform)
+	    (setf (slotd-initform slotd) (si::maybe-unquote initform)
+	          slotd (list 'quote slotd))
+	    (setf slotd (mapcar #'(lambda (x) `',x) slotd)
+		  (slotd-initform slotd) (make-function-initform initform)
+		  slotd (list* 'list slotd)))
+	(setf (first l) slotd)))
+    (dolist (option args)
+      (let ((option-name (first option)))
+	(if (member option-name processed-options)
+	    (si:simple-program-error
+	     "Option ~s for DEFCLASS specified more than once"
+	     option-name)
+	    (push option-name processed-options))
+	(setq option-value
+	      (case option-name
+		((:metaclass :documentation)
+		 (list 'quote (second option)))
+		(:default-initargs
+		 (setf option-name :direct-default-initargs)
+		 (parse-default-initargs (rest option)))
+		(otherwise
+		 (si:simple-program-error "~S is not a valid DEFCLASS option"
+					  option-name))))
+	(setf options (list* option-name option-value options))))
+    `(eval-when (compile load eval)
+      (ensure-class ',name :direct-superclasses ',superclasses
+       :direct-slots ,slots ,@options))))
 
 ;;; ----------------------------------------------------------------------
-;;; SLOTS
-
-(defun collect-slotds (classes slots)
-  (flet ((combine-slotds (new-slotd old-slotd)
-	   (let* ((new-type (slotd-type new-slotd))
-		  (old-type (slotd-type old-slotd)))
-	     (setf (slotd-initargs new-slotd)
-		   (union (slotd-initargs new-slotd)
-			  (slotd-initargs old-slotd)))
-	     (when (eq (slotd-initform new-slotd) 'INITFORM-UNSUPPLIED)
-	       (setf (slotd-initform new-slotd) (slotd-initform old-slotd)))
-	     (setf (slotd-type new-slotd)
-		   ;; FIXME! we should be more smart then this:
-		   (cond ((subtypep new-type old-type) new-type)
-			 ((subtypep old-type new-type) old-type)
-			 (T `(and ,new-type ,old-type)))))
-	   new-slotd))
-
-    (let* ((collected-slots)
-	   (new-slot))
-      (dolist (sc classes)
-	(dolist (slot (class-slots sc))
-	  (if (setq new-slot
-		    (find (slotd-name slot) collected-slots
-			  :key #'slotd-name))
-	      (combine-slotds new-slot slot) ; updates the slot
-	      (if (setq new-slot
-			(find (slotd-name slot) slots
-			      :key #'slotd-name))
-		  (progn
-		    (setq slots (delete new-slot slots))
-		    (combine-slotds new-slot slot) ; updates the slot
-		    (push new-slot collected-slots))
-		  (push (copy-slotd slot) collected-slots)))))
-      (nconc (nreverse collected-slots) slots))))
-
+;;; ENSURE-CLASS
+;;;
+(defun ensure-class (name &rest initargs)
+  (setf class (apply #'ensure-class-using-class (find-class name nil) name
+		     initargs))
+  (when name (setf (find-class name) class)))
+(eval-when (compile)
+  (defun ensure-class (name &rest initargs)
+    (warn "Ignoring definition for class ~S" name)))
 
 ;;; ----------------------------------------------------------------------
 ;;; support for standard-class
 
-(defun collect-default-initargs (classes initargs)
-  (dolist (sc classes)
-    (setq initargs (default-initargs sc initargs)))
-  initargs)
-
-(defun compute-class-precedence-list (class-name superclasses)
+(defun compute-clos-class-precedence-list (class-name superclasses)
   ;; We start by computing two values.
   ;;   CPL
   ;;     The depth-first left-to-right up to joins walk of the supers tree.

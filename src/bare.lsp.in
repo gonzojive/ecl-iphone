@@ -33,7 +33,8 @@
 ;;;
 ;;; * Load the compiler.
 ;;;
-(load #+ecl-min "@abs_builddir@/cmp/load.lsp" #-ecl-min "@abs_builddir@/cmp.so")
+(load #+(or cross ecl-min) "@abs_builddir@/cmp/load.lsp"
+      #-(or cross ecl-min) "@abs_builddir@/cmp.so")
 
 ;;;
 ;;; * Add include path to not yet installed headers

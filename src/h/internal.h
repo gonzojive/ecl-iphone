@@ -20,8 +20,6 @@ extern "C" {
  *	FUNCTIONS, VARIABLES AND TYPES NOT FOR GENERAL USE		*
  * -------------------------------------------------------------------- */
 
-#include "machines.h"
-
 /* all_symbols.d */
 
 extern cl_index cl_num_symbols_in_core;
@@ -48,6 +46,13 @@ extern const struct {
 #define OPEN_RW	"w+b"
 #define OPEN_A	"ab"
 #define OPEN_RA	"a+b"
+
+/* gfun.d, kernel.lsp */
+
+#define GFUN_NAME(x) ((x)->instance.slots[0])
+#define GFUN_HASH(x) ((x)->instance.slots[1])
+#define GFUN_SPEC(x) ((x)->instance.slots[2])
+#define GFUN_COMB(x) ((x)->instance.slots[3])
 
 /* print.d */
 

@@ -86,7 +86,7 @@ cl_apply_from_stack(cl_index narg, cl_object x)
 		return APPLY_closure(narg, fun->cclosure.entry,
 				     fun->cclosure.env, cl_stack_top - narg);
 #ifdef CLOS
-	case t_gfun:
+	case t_instance:
 		fun = compute_method(narg, fun, cl_stack_top - narg);
 		goto AGAIN;
 #endif
@@ -139,7 +139,7 @@ link_call(cl_object sym, cl_objectfn *pLK, int narg, cl_va_list args)
 		}
 		break;
 #ifdef CLOS
-	case t_gfun: {
+	case t_instance: {
 		fun = compute_method(narg, fun, cl_stack + sp);
 		pLK = NULL;
 		goto AGAIN;
@@ -203,7 +203,7 @@ si_unlink_symbol(cl_object s)
 				    fun->cclosure.env, cl_stack + sp);
 		break;
 #ifdef CLOS
-	case t_gfun:
+	case t_instance:
 		fun = compute_method(narg, fun, cl_stack + sp);
 		goto AGAIN;
 #endif

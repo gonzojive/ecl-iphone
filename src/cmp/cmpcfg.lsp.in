@@ -4,7 +4,7 @@
 ;;
 (in-package "COMPILER")
 (setq compiler::*cc* "@ECL_CC@")
-(setq compiler::*cc-flags* "@CFLAGS@ -D@host@ @LSPCFLAGS@")
+(setq compiler::*cc-flags* "@CFLAGS@ @LSPCFLAGS@")
 (setq compiler::*ld-flags* "-lgmp @LDFLAGS@ @CLIBS@")
 #+dlopen
 (setq compiler::*ld-shared-flags* "@SHARED_LDFLAGS@")

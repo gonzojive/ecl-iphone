@@ -1,4 +1,71 @@
 dnl --------------------------------------------------------------
+dnl Set up a configuration file for the case when we are cross-
+dnl compiling
+dnl
+AC_DEFUN(ECL_CROSS_CONFIG,[
+if test "x${cross_compiling}" = "xyes"; then
+  if test -n "${cross_config}" -a -f "${cross_config}"; then
+    . ${cross_config}
+  elif test -f ./cross_config; then
+    . ./cross_config
+  elif test -n "${srcdir}" -a -f ${srcdir}/cross_config; then
+    . ${srcdir}/cross_config
+  else
+    test -z ${cross_config} && cross_config=`pwd`/cross_config
+    cat > ${cross_config} <<EOF
+###
+### YOU ARE TRYING TO CROSS COMPILE ECL.
+### PLEASE FOLLOW THESE INSTRUCTIONS:
+###
+### 1) Vital information cannot be determined at configuration time
+### because we are not able to run test programs. A file called
+###		${cross_config}
+### has been created, that you will have to fill out. Please do
+### it before invoking "configure" again.
+
+### 1.1) Direction of growth of the stack
+ECL_STACK_DIR=up
+
+### 1.2) Choose an integer datatype which is large enough to host a pointer
+CL_FIXNUM_TYPE=int
+CL_FIXNUM_BITS=32
+CL_FIXNUM_MAX=536870911L
+CL_FIXNUM_MIN=-536870912L
+
+### 1.3) Order of bytes within a word
+ECL_BIGENDIAN=no
+
+### 1.4) What characters signal an end of line. May be LF (Linefeed or \\n)
+###      CR (Carriage return or \\r), and CRLF (CR followed by LF).
+ECL_NEWLINE=LF
+
+### 2) To cross-compile ECL so that it runs on the system
+###		${host}
+### you need to first compile ECL on the system in which you are building
+### the cross-compiled files, that is
+###		${build}
+### By default we assume that ECL can be accessed from some directory in
+### the path.
+ECL_TO_RUN=`which ecl`
+EOF
+    cat ${cross_config}
+    AC_MSG_ERROR(Configuration aborted)
+  fi
+  if test "${ECL_TO_RUN}" = "failed"; then
+    AC_MSG_ERROR(The program ECL is not installed in your system)
+  fi
+  DPP_TO_RUN=`${ECL_TO_RUN} -eval '(progn (print (truename "sys:dpp")) (quit))' \
+	| grep '\#\P' | sed 's,#P"\(.*\)",\1,'`
+  if test -z "${DPP_TO_RUN}" -o "${DPP_TO_RUN}" = "failed"  ; then
+    AC_MSG_ERROR(The program DPP is not installed in your system)
+  fi
+  (echo '#!/bin/sh'; echo ${ECL_TO_RUN} -eval "'"'(push :cross *features*)'"'" '$''*') > CROSS-COMPILER
+  (echo '#!/bin/sh'; echo ${DPP_TO_RUN} '$''*') > CROSS-DPP
+  chmod +x CROSS-COMPILER CROSS-DPP
+fi
+])
+
+dnl --------------------------------------------------------------
 dnl Make srcdir absolute, if it isn't already.  It's important to
 dnl avoid running the path through pwd unnecessarily, since pwd can
 dnl give you automounter prefixes, which can go away.
@@ -14,6 +81,7 @@ case "${srcdir}" in
   *  ) srcdir="`(cd ${srcdir}; ${PWDCMD})`";
 esac
 ])
+
 dnl
 dnl --------------------------------------------------------------
 dnl Define a name for this operating system and set some defaults
@@ -29,90 +97,59 @@ CP="cp"
 MV="mv"
 
 ### Guess the operating system
-AC_SUBST(MACHINE_INSTANCE)
-AC_SUBST(MACHINE_VERSION)
-AC_SUBST(OS_TYPE)
-AC_SUBST(OS_RELEASE)
-MACHINE_INSTANCE=`uname -m`
-MACHINE_VERSION=`uname -r`
-OS_TYPE=`uname -s`
-OS_RELEASE=`uname -r`
-case $host_os in
+AC_SUBST(ARCHITECTURE)dnl	Type of processor for which this is compiled
+AC_SUBST(SOFTWARE_TYPE)dnl	Type of operating system
+AC_SUBST(SOFTWARE_VERSION)dnl	Version number of operating system
+AC_SUBST(MACHINE_INSTANCE)dnl	Identifier of the machine
+AC_SUBST(MACHINE_VERSION)dnl	Version of the machine
+SOFTWARE_TYPE="${host_os}"
+SOFTWARE_VERSION="unknown"
+MACHINE_INSTANCE="${host_cpu}"
+MACHINE_VERSION="unknown"
+ARCHITECTURE=`echo "${host_cpu}" | tr a-z A-Z` # i386 -> I386
+case "${host_os}" in
 	linux*)
-		host="linux"
+		thehost="linux"
+		SHARED_LDFLAGS="-shared"
+		LDFLAGS="-Wl,--export-dynamic"
+		CLIBS="-ldl"
+		# Maybe CFLAGS="-D_ISOC99_SOURCE ${CFLAGS}" ???
 		;;
 	freebsd*)
-		host="freebsd"
+		thehost="freebsd"
+		CLIBS="-lcompat"
+		SHARED_LDFLAGS="-shared"
+		LDFLAGS="-Wl,--export-dynamic"
 		;;
 	netbsd*)
-		host="netbsd"
+		thehost="netbsd"
+		SHARED_LDFLAGS="-shared"
+		LDFLAGS="-Wl,--export-dynamic"
+		CLIBS="-lcompat"
 		;;
 	solaris*)
-		host="sun4sol2"
+		thehost="sun4sol2"
+		SHARED_LDFLAGS="-dy -G"
+		LDFLAGS="-Wl,--export-dynamic"
+		TCPLIBS="-lsocket -lnsl -lintl"
+		CLIBS="-ldl"
 		;;
 	cygwin*)
-		host="cygwin"
+		thehost="cygwin"
+		shared="no"
 		;;
 	darwin*)
-		host="darwin"
+		thehost="darwin"
+		shared="no"
 		;;
 	*)
-		host="$host_os"
+		thehost="$host_os"
+		shared="no"
 		;;
 esac
-CFLAGS="${CFLAGS} -D$host"
-])
-dnl
-dnl --------------------------------------------------------------
-dnl Extract some information from the machine description file.
-dnl WARNING: file confdefs.h may depend on version of Autoconf
-dnl
-AC_DEFUN(ECL_PROCESS_MACHINES_H,[
-AC_MSG_CHECKING(parameters from the machine description file)
-cp ${srcdir}/h/machines.h .
-AC_TRY_RUN([#include <stdio.h>
-#include "confdefs.h"
-#include "machines.h"
-
-int
-main() {
-FILE *f=fopen("conftestval", "w");
-if (f == NULL)
-  exit(1);
-
-#ifdef CFLAGS
-fprintf(f,"CFLAGS=\"$CFLAGS \"'%s';\n", CFLAGS);
-#endif
-
-#ifdef LSPCFLAGS
-fprintf(f,"LSPCFLAGS=\"$CFLAGS \"'%s';\n", LSPCFLAGS);
-#endif
-
-#ifdef CLIBS
-fprintf(f,"CLIBS='%s';\n", CLIBS);
-#endif
-
-#ifdef LDFLAGS
-fprintf(f,"LDFLAGS=\"$LDFLAGS \"'%s';\n", LDFLAGS);
-#endif
-
-#ifdef SHARED_LDFLAGS
-fprintf(f,"SHARED_LDFLAGS=\"$LDFLAGS \"'%s';\n", SHARED_LDFLAGS);
-#endif
-
-fprintf(f,"SETJMP='%s';\n", ecl_setjmp);
-fprintf(f,"ecl_setjmp='%s';\n", ecl_setjmp);
-fprintf(f,"ecl_longjmp='%s';\n", ecl_longjmp);
-fprintf(f,"architecture='\"%s\"';\n", ARCHITECTURE);
-fprintf(f,"software_type='\"%s\"';\n", SOFTWARE_TYPE);
-fprintf(f,"software_version='\"%s\"';\n", SOFTWARE_VERSION);
-exit(0);
-}
-],
-eval "`cat conftestval`"
-rm machines.h
+CFLAGS="${CFLAGS} -D${thehost}"
 AC_MSG_CHECKING(for ld flags when building shared libraries)
-if test "${shared}" = "yes" -a "${SHARED_LDFLAGS}" ; then
+if test "${shared}" = "yes"; then
 AC_MSG_RESULT([${SHARED_LDFLAGS}])
 else
 shared="no";
@@ -121,17 +158,11 @@ fi
 AC_MSG_CHECKING(for required libraries)
 AC_MSG_RESULT([${CLIBS}])
 AC_MSG_CHECKING(for architecture)
-AC_MSG_RESULT([${architecture}])
+AC_MSG_RESULT([${ARCHITECTURE}])
 AC_MSG_CHECKING(for software type)
-AC_MSG_RESULT([${software_type}])
-AC_MSG_CHECKING(for software version)
-AC_MSG_RESULT([${software_version}])
-AC_MSG_CHECKING(use setjmp or _setjmp)
-AC_MSG_RESULT([${ecl_setjmp}])
-AC_MSG_CHECKING(use longjmp or _longjmp)
-AC_MSG_RESULT([${ecl_longjmp}]),
-AC_MSG_ERROR("Unable to parse machines.h"))
+AC_MSG_RESULT([${SOFTWARE_TYPE}])
 ])
+
 dnl
 dnl --------------------------------------------------------------
 dnl Check the direction to which the stack grows (for garbage
@@ -139,7 +170,7 @@ dnl collection).
 dnl
 AC_DEFUN(ECL_STACK_DIRECTION,[
   AC_MSG_CHECKING(whether stack growns downwards)
-  AC_SUBST(DOWN_STACK)
+if test -z "${ECL_STACK_DIR}" ; then
   AC_TRY_RUN([
 char *f2() {
   char c;
@@ -158,49 +189,38 @@ int main() {
     return 0;
 }
 ],
-AC_MSG_RESULT(yes)
-AC_DEFINE(DOWN_STACK),
-AC_MSG_RESULT(no))])
+ECL_STACK_DIR=down,
+ECL_STACK_DIR=up,[])
+fi
+case "${ECL_STACK_DIR}" in
+  down|DOWN) AC_MSG_RESULT(yes); AC_DEFINE(DOWN_STACK) ;;
+  up|UP) AC_MSG_RESULT(no) ;;
+  *) AC_MSG_ERROR(Unable to determine stack growth direction)
+esac])
 dnl
-dnl --------------------------------------------------------------
-dnl Check whether we can access the values in va_list() as an
-dnl ordinary C vector.
-dnl
-AC_DEFUN(ECL_ARGS_ARRAY,[
-  AC_MSG_CHECKING(if arguments can be accessed through vector)
-  AC_TRY_RUN([
-#include <stdarg.h>
-#include <stdlib.h>
-int f(int narg, ...) {
-  va_list args;
-  int *vector;
-  va_start(args,narg);
-  vector = NULL;
-  while (narg--) {
-    if (vector == NULL) {
-      vector = &va_arg(args, int);
-    } else if (*(++vector) != va_arg(args,int)) {
-      return 1;
-    }
-  }
-  return 0;
-}
+dnl ------------------------------------------------------------
+dnl Find out a setjmp() that does not save signals. It is called
+dnl in several architectures.
+AC_DEFUN(ECL_FIND_SETJMP,[
+AC_SUBST(ECL_SETJMP)
+AC_SUBST(ECL_LONGJMP)
+AC_CHECK_FUNC(_setjmp,
+ECL_SETJMP="setjmp";ECL_LONGJMP="longjmp",
+ECL_SETJMP="_setjmp";ECL_LONGJMP="_longjmp")])
 
-int main() {
-  exit(f(10,1,2,3,4,5,6,7,8,9,10));
-}
-],
-AC_MSG_RESULT(yes),
-AC_MSG_RESULT(no)
-AC_DEFINE(NO_ARGS_ARRAY))])
 dnl
 dnl --------------------------------------------------------------
 dnl Guess the right type and size for cl_fixnum. It must be large
 dnl enough that convertion back and forth to pointer implies no
 dnl loss of information.
 AC_DEFUN(ECL_FIXNUM_TYPE,[
+AC_SUBST(CL_FIXNUM_TYPE)
+AC_SUBST(CL_FIXNUM_BITS)
+AC_SUBST(CL_FIXNUM_MAX)
+AC_SUBST(CL_FIXNUM_MIN)
 AC_MSG_CHECKING(appropiate type for fixnums)
-AC_TRY_RUN([#include <stdio.h>
+if test -z "${CL_FIXNUM_TYPE}" ; then
+  AC_TRY_RUN([#include <stdio.h>
 int main() {
   const char *int_type;
   int bits;
@@ -228,14 +248,12 @@ int main() {
   fprintf(f,"CL_FIXNUM_BITS='%d'",bits);
   exit(0);
 }],
-eval "`cat conftestval`"
-AC_MSG_RESULT([${CL_FIXNUM_TYPE}])
-AC_SUBST(CL_FIXNUM_TYPE)
-AC_SUBST(CL_FIXNUM_BITS)
-AC_SUBST(CL_FIXNUM_MAX)
-AC_SUBST(CL_FIXNUM_MIN),
-AC_MSG_ERROR(There is no appropiate integer type for the cl_fixnum type))
-])
+eval "`cat conftestval`",[])
+fi
+if test -z "${CL_FIXNUM_TYPE}" ; then
+AC_MSG_ERROR(There is no appropiate integer type for the cl_fixnum type)
+fi
+AC_MSG_RESULT([${CL_FIXNUM_TYPE}])])
 
 dnl
 dnl ------------------------------------------------------------
@@ -244,6 +262,7 @@ dnl opening a text file.
 dnl
 AC_DEFUN(ECL_LINEFEED_MODE,[
 AC_MSG_CHECKING(character sequence for end of line)
+if test -z "${ECL_NEWLINE}" ; then
 AC_TRY_RUN([#include <stdio.h>
 int main() {
   FILE *f = fopen("conftestval","w");
@@ -260,11 +279,12 @@ int main() {
   f = fopen("conftestval","w");
   if (f == NULL) exit(1);
   if (c1 == '\r')
-    output="crlf";
-  else if (c2 == '\r')
-    output="lfcr";
+    if (c2 == EOF)
+      output="CR";
+    else
+      output="CRLF";
   else
-    output="unix";
+    output="LF";
   fclose(f);
   f = fopen("conftestval","w");
   if (f == NULL) exit(1);
@@ -273,15 +293,13 @@ int main() {
   exit(0);
 }
 ],
-if test `cat conftestval` = "crlf"; then
-  AC_DEFINE(ECL_NEWLINE_IS_CRLF)
-  AC_MSG_RESULT(CR + LF)
-elif test `cat conftestval` = "lfcr"; then
-  AC_DEFINE(ECL_NEWLINE_IS_LFCR)
-  AC_MSG_RESULT(LF + CR)
-else
-  AC_MSG_RESULT(LF)
-fi,
-AC_MSG_ERROR(unable to determine))
+ECL_NEWLINE=`cat conftestval`,[],[])
+fi
+case "${ECL_NEWLINE}" in
+  LF) AC_MSG_RESULT(lf) ;;
+  CR) AC_MSG_RESULT(cr); AC_DEFINE(ECL_NEWLINE_IS_CR) ;;
+  CRLF) AC_MSG_RESULT(cr+lf); AC_DEFINE(ECL_NEWLINE_IS_CRLF) ;;
+  *) AC_MSG_ERROR(Unable to determine linefeed mode) ;;
+esac
 ])
 

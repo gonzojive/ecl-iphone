@@ -554,48 +554,51 @@
 ;;; ----------------------------------------------------------------------
 ;;;                                                             operations
 
-;;; early version used during bootstrap
-(defstruct (method (:type list)
-		   (:constructor make-method
-				 (qualifiers specializers lambda-list
-					     function plist options
-					     &rest ignore)))
-  (class-name 'STANDARD-METHOD)
-  qualifiers specializers lambda-list function plist options)
+(defun make-method (qualifiers specializers lambda-list
+		    fun plist options gf method-class)
+  (let ((method (si:allocate-raw-instance (find-class 'standard-method nil)
+		   #.(length +standard-method-slots+))))
+    (setf (method-generic-function method) gf
+	  (method-lambda-list method) lambda-list
+	  (method-function method) fun
+	  (method-specializers method) specializers
+	  (method-qualifiers method) qualifiers
+	  (method-plist method) plist)
+    method))
 
 ;;; early version used during bootstrap
-(defun method-p (x) (and (listp x) (eq 'STANDARD-METHOD (first x))))
+(defun method-p (x)
+  (si::instancep x))
 
-;;; early version used during bootstrap
 (defun method-needs-next-methods-p (method)
-  (getf (nth 5 method) :needs-next-methods-p))
-
-(defun generic-function-dispatcher (gf) (si:instance-ref gf 5))
+  (getf (method-plist method) :needs-next-methods-p))
 
 ;;; early version used during bootstrap
 (defun add-method (gf method)
-  (let* ((name (si:gfun-name (generic-function-dispatcher gf)))
+  (let* ((name (generic-function-name gf))
 	 (method-entry (assoc name *early-methods*)))
     (unless method-entry
       (setq method-entry (list name))
       (push method-entry *early-methods*))
     (push method (cdr method-entry))
+    (push method (generic-function-methods gf))
     method))
 
 (defun find-method (gf qualifiers specializers &optional (errorp t))
   (declare (notinline method-qualifiers))
-  (let* ((method-list (methods gf))
-	 (required-args (subseq (lambda-list gf) 0 (length specializers)))
+  (let* ((method-list (generic-function-methods gf))
+	 (required-args (subseq (generic-function-lambda-list gf) 0
+				(length specializers)))
 	 found)
     (dolist (method method-list)
       (when (and (equal qualifiers (method-qualifiers method))
-		 (equal specializers (specializers method)))
+		 (equal specializers (method-specializers method)))
 	(setq found method)
 	(return)))
     (if (and (not found) errorp)
 	(error "There is no method on the generic function ~S that agrees on 
                qualifiers ~S and specializers ~S"
-	       (si:gfun-name (generic-function-dispatcher gf))
+	       (generic-function-name gf)
 	       qualifiers specializers)
 	found)))
 
@@ -629,45 +632,6 @@
 		       (push `(,(caar scan) (,(cadar scan) ,temp)) res))))
     `(let ((,temp ,instance-form))
        (symbol-macrolet ,accessors ,@body))))
-
-
-;;; ----------------------------------------------------------------------
-;;;                                                              bootstrap
-
-(defun compute-applicable-methods (gf args)
-  (let* ((gfun (generic-function-dispatcher gf))
-	 (name (si:gfun-name gfun))
-	 (setfp (and (listp name) (eq 'SETF (first name))))
-	 (early-methods (cdr (assoc name *early-methods*)))
-	 methods)
-    (labels ((search-early-methods (class)
-	       (let* ((class-name (class-name class))
-		      (method (find (if setfp
-					(list 'T class-name)
-					(list class-name))
-				    early-methods
-				    :key #'method-specializers
-				    :test #'(lambda (x y)
-					      (if setfp
-						  (eq (second x) (second y))
-						  (eq (first x) (first y)))))))
-		 (when method (push method methods))
-		 ;; search in the superclasses
-		 (dolist (c (class-direct-superclasses class))
-		   (search-early-methods c)))))
-      (search-early-methods
-	   (find-class (type-of (if setfp (second args) (first args)))))
-      (nreverse methods))))
-
-
-(defun compute-effective-method (gf method-combination applicable-methods)
-  (declare (ignore method-combination))
-  ; the simplest case
-  (if applicable-methods
-      (make-effective-method-function
-       `(call-method ,(first applicable-methods) ,(cdr applicable-methods)))
-    (no-applicable-method gf)))
-
 
 
 ;;; ----------------------------------------------------------------------

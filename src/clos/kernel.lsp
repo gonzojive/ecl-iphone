@@ -11,6 +11,120 @@
 
 (defconstant *default-method-cache-size* 64 "Size of hash tables for methods")
 
+;;;----------------------------------------------------------------------
+;;; BOOTSTRAP FUNCTIONS TO ACCESS SLOTS
+;;;
+;;; ECL has some restictions regarding the basic classes CLASS,
+;;; STANDARD-CLASS and STANDARD-GENERIC-FUNCTION. These are that, certain
+;;; slots must have pre-defined positions which cannot change. That means
+;;; that a user can extend these classes, but they must be the first ones
+;;; in the class hierarchy, and the position of their slots must not change.
+
+(eval-when (compile eval)
+(defun create-accessors (slotds type)
+  (let ((i 0)
+	(output '())
+	name)	
+    (dolist (s slotds `(progn ,@output))
+      (when (setf name (getf (cdr s) :accessor))
+	(remf (cdr s) :accessor)
+	(setf output
+	      (append output
+		      `((defun ,name (obj)
+			  (si:instance-ref obj ,i))
+			(defsetf ,name (obj) (x)
+			  `(si:instance-set ,obj ,,i ,x))
+			#+nil
+			(define-compiler-macro ,name (obj)
+			  `(si:instance-ref ,obj ,,i))
+			))))
+      (incf i))))
+)
+
+;;; ----------------------------------------------------------------------
+;;; Class CLASS
+
+(eval-when (compile eval)
+  (defparameter +class-slots+
+    '((name :initarg :name :initform nil :accessor class-name)
+      (direct-superclasses :initarg :direct-superclasses
+       :accessor class-direct-superclasses)
+      (direct-subclasses :initform nil :accessor class-direct-subclasses)
+      (slots :accessor class-slots)
+      (precedence-list :accessor class-precedence-list)
+      (direct-slots :initarg :direct-slots :accessor class-direct-slots)
+      (direct-default-initargs :initarg :direct-default-initargs
+       :initform nil :accessor class-direct-default-initargs)
+      (default-initargs :accessor class-default-initargs)
+      (finalized :initform nil :accessor class-finalized-p))))
+
+#.(create-accessors +class-slots+ 'class)
+
+;;; ----------------------------------------------------------------------
+;;; STANDARD-CLASS
+
+(eval-when (compile eval)
+  (defparameter +standard-class-slots+
+    (append +class-slots+
+	    '((slot-index-table :accessor slot-index-table)
+	      (shared-slots :initform nil :accessor class-shared-slots)
+	      (documentation :initarg :documentation :initform nil)
+	      (forward)))))
+
+#.(create-accessors +standard-class-slots+ 'standard-class)
+
+;;; ----------------------------------------------------------------------
+;;; STANDARD-GENERIC-FUNCTION
+
+(eval-when (compile eval)
+  (defparameter +standard-generic-function-slots+
+    '((name :initarg :name :initform nil
+       :accessor generic-function-name)
+      (method-hash :accessor generic-function-method-hash
+       :initform (make-hash-table
+		  :test #'eql
+		  ;; use fixnums as limits for efficiency:
+		  :size *default-method-cache-size*
+		  :rehash-size #.(/ *default-method-cache-size* 2)
+		  :rehash-threshold #.(/ *default-method-cache-size* 2)))
+      (spec-list :initform nil :accessor generic-function-spec-list)
+      (method-combination 
+       :initarg :method-combination :initform '(standard)
+       :accessor generic-function-method-combination)
+      (lambda-list :initarg :lambda-list
+       :accessor generic-function-lambda-list)
+      (argument-precedence-order 
+       :initarg :argument-precedence-order
+       :initform :default
+       :accessor generic-function-argument-precedence-order)
+      (method-class
+       :initarg :method-class
+       :initform (find-class 'standard-method)
+       :accessor generic-function-method-class)
+      (documentation :initarg :documentation)
+      (methods :initform nil :accessor generic-function-methods))))
+
+#.(create-accessors +standard-generic-function-slots+
+		    'standard-generic-function)
+
+;;; ----------------------------------------------------------------------
+;;; STANDARD-METHOD
+
+(eval-when (compile eval)
+  (defparameter +standard-method-slots+
+    '((generic-function :initarg :generic-function
+       :accessor method-generic-function)
+      (lambda-list :initarg :lambda-list
+       :accessor method-lambda-list)
+      (specializers :initarg :specializers :accessor method-specializers)
+      (qualifiers :initform nil :initarg :qualifiers :accessor method-qualifiers)
+      (method-function :initarg :method-function :accessor method-function)
+      (documentation :initform nil :initarg documentation)
+      (declarations :initform nil)
+      (plist :initform nil :initarg :plist :accessor method-plist))))
+
+#.(create-accessors +standard-method-slots+ 'standard-method)
+
 ;;; ----------------------------------------------------------------------
 
 (defun class-of (object)
@@ -28,48 +142,13 @@
 	(SIMPLE-VECTOR (find-class 'vector))
 	(SIMPLE-BIT-VECTOR (find-class 'bit-vector))
 	(SIMPLE-STRING (find-class 'string))
-	((CONT THREAD DISPATCH-FUNCTION) (find-class 't)))))
-
-
-;;; ----------------------------------------------------------------------
-;;; Each instance has a pointer to the class of which it is an instance.
-;;; Its is used to search for methods and class variables.
-
-;;; Bootstrapping for class Class.
-
-
-(defun search-make-instance (obj)
-  (declare (si::c-local))
-  (let* ((gfun (symbol-function (if (si::tracing-body 'make-instance)
-				    (get-sysprop 'make-instance 'si::traced)
-				    'make-instance)))
-	 (table (si:gfun-method-ht gfun))
-	 (key (list (class-name (si:instance-class obj))))
-	 (method (si:method-ht-get key table)))
-    (unless method
-      (setq method (compute-applicable-methods
-		    (si:gfun-instance gfun)
-		    (list obj))))
-    method))
+	((CONT THREAD) (find-class 't))
+	(otherwise (find-class 't)))))
 
 (defun classp (obj)
   (and (si:instancep obj)
        (subclassp (si::instance-class obj) (find-class 'CLASS))
        t))
-
-#+nil
-(defun metaclassp (obj)
-  (declare (si::c-local))
-  (and (si:instancep obj)
-       (search-make-instance (si:instance-class obj))
-       (search-make-instance obj)
-       t))
-
-;;; ----------------------------------------------------------------------
-;;; Object initializations
-
-(defun allocate-instance (class &key &allow-other-keys)
-  (si:allocate-raw-instance class (length (class-slots class))))
 
 ;;; ----------------------------------------------------------------------
 ;;; Methods
@@ -77,85 +156,165 @@
 (defun install-method (name qualifiers specializers lambda-list doc plist
 			    fun &rest options)
   (declare (ignore doc)
-	   (notinline cos ensure-generic-function method-class))
+	   (notinline ensure-generic-function))
 ;  (record-definition 'method `(method ,name ,@qualifiers ,specializers))
   (let* ((gf (ensure-generic-function name :lambda-list lambda-list))
 	 (method (make-method qualifiers specializers lambda-list
-			      fun plist options gf (method-class gf)))
-	 (dispatcher (generic-function-dispatcher gf)))
+			      fun plist options gf
+			      (generic-function-method-class gf))))
 
     ;; update the spec-how of the gfun 
     ;; computing the or of the previous value and the new one
-    (do ((i 0 (1+ i))
-	 (l specializers (cdr l))
-	 (spec-how)
-	 (spec-how-old))
-	((null l))
-	(declare (fixnum i))
-	(setq spec-how (first l)
-	      spec-how-old (si:gfun-spec-how-ref dispatcher i))
-	(if (consp spec-how)		; an eql list
-	    (if (consp spec-how-old)
-		(push (second spec-how) (si:gfun-spec-how-ref dispatcher i))
-	      (setf (si:gfun-spec-how-ref dispatcher i) (cdr spec-how)))
-	  (unless (consp spec-how-old)	; either T or NIL
-	    (setf (si:gfun-spec-how-ref dispatcher i)
-		  (or spec-how spec-how-old)))))
+    (do* ((spec-how-list (or (generic-function-spec-list gf)
+			     (make-list (length specializers))))
+	  (l specializers (cdr l))
+	  (l2 spec-how-list (cdr l2))
+	  (spec-how)
+	  (spec-how-old))
+	 ((null l)
+	  (setf (generic-function-spec-list gf) spec-how-list))
+      (setq spec-how (first l) spec-how-old (first l2))
+      (setf (first l2)
+	    (if (consp spec-how)		; an eql list
+		(if (consp spec-how-old)
+		    (list* (second spec-how) spec-how-old)
+		    (cdr spec-how))
+		(if (consp spec-how-old)
+		    spec-how-old
+		    (or spec-how spec-how-old)))))
     (add-method gf method)))
 
 ;;; ----------------------------------------------------------------------
 ;;;                                                         early versions
 
-(defun method-class (gfun) 'standard-method)
-
-(defun methods (gf) (si:instance-ref gf 6))
-
-;(defun generic-function-dispatcher (gf) (si:instance-ref gf 5)) anticipata
-
-(defun make-gfun (name lambda-list)
-  (let* ((nargs
-	  (or (position-if
-	       #'(lambda (x)
-		   (member x '(&OPTIONAL &REST &KEY &ALLOW-OTHER-KEYS &AUX)
-			   :test #'eq))
-	       lambda-list)
-	      (length lambda-list)))
-	 (gfun
-	  (si:allocate-gfun
-	   name
-	   nargs
-	   (make-hash-table
-	    :test #'equal
-	    ;; use fixnums as limits for efficiency:
-	    :size *default-method-cache-size*
-	    :rehash-size #.(/ *default-method-cache-size* 2)
-	    :rehash-threshold #.(/ *default-method-cache-size* 2)))))
-    (declare (fixnum nargs))
-    (dotimes (i nargs)
-      (declare (fixnum i))
-      (setf (si:gfun-spec-how-ref gfun i) nil))
-    gfun))
-
 ;;; early version used during bootstrap
 (defun ensure-generic-function (name &key lambda-list)
-  (let (gfun)
-    (unless (and (fboundp name)
-		 (si:gfunp (setq gfun (fdefinition name))))
-
+  (if (and (fboundp name) (si::instancep (fdefinition name)))
+      (fdefinition name)
       ;; create a fake standard-generic-function object:
-      (let ((gf-object (si:allocate-raw-instance (find-class 't) 8)))
-	(declare (type standard-object gf-object))
+      (let ((gfun (si:allocate-raw-instance (find-class 't)
+		     #.(length +standard-generic-function-slots+)))
+	    (hash (make-hash-table
+		   :test #'eql
+		   ;; use fixnums as limits for efficiency:
+		   :size *default-method-cache-size*
+		   :rehash-size #.(/ *default-method-cache-size* 2)
+		   :rehash-threshold #.(/ *default-method-cache-size* 2))))
+	(declare (type standard-object gfun))
 	;; create a new gfun
-	(setq gfun (make-gfun name lambda-list))
+	(setf (generic-function-name gfun) name
+	      (generic-function-lambda-list gfun) lambda-list
+	      (generic-function-argument-precedence-order gfun) 'default
+	      (generic-function-method-combination gfun) '(standard)
+	      (generic-function-methods gfun) nil
+	      (generic-function-spec-list gfun) nil
+	      (generic-function-method-hash gfun) hash)
+	(si::set-funcallable gfun t)
+	(setf (fdefinition name) gfun)
+	gfun)))
 
-	(si:instance-set gf-object 0 lambda-list) ; lambda-list
-	(si:instance-set gf-object 1 'default) ; argument-precedence-order
-	(si:instance-set gf-object 2 '(standard)) ; method-combination
-	(si:instance-set gf-object 4 nil) ; documentation
-	(si:instance-set gf-object 5 gfun) ; gfun
-	(si:instance-set gf-object 6 nil) ; methods
-	(si:gfun-instance-set gfun gf-object)
-	(setf (fdefinition name) gfun)))
+
+;;; ----------------------------------------------------------------------
+;;; COMPUTE-APPLICABLE-METHODS
+;;;
 
-    (si:gfun-instance gfun)))
+(defun compute-applicable-methods (gf args)
+  (let* ((methods (generic-function-methods gf))
+	 applicable-list
+	 args-specializers)
+    ;(print (generic-function-name gf))
+    ;(print (mapcar #'method-specializers methods))
+    ;; first compute the applicable method list
+    (dolist (method methods)
+      ;; for each method in the list
+      (do* ((scan-args args (cdr scan-args))
+	    (scan-specializers (method-specializers method)
+			       (cdr scan-specializers))
+	    (arg)
+	    (spec))
+	  ;; check if the method is applicable verifying 
+	  ;; if each argument satisfies the corresponding
+	  ;; parameter specializers
+	  ((null scan-args) (push method applicable-list))
+	(setq arg (first scan-args)
+	      spec (first scan-specializers))
+	(unless (or (null spec)
+		    (and (consp spec) (eql arg (cadr spec)))
+		    (typep arg spec)
+		    (and (eq 'INVALID spec)
+			 (si:instancep arg)
+			 (eq 'INVALID (class-name (class-of arg)))))
+	  (return))))
+    (dolist (arg args) 
+      (push (type-of arg) args-specializers))
+    (setq args-specializers (nreverse args-specializers))
+    ;; then order the list
+    (do* ((scan applicable-list)
+	  (most-specific (first scan) (first scan))
+	  (ordered-list))
+	 ((null (cdr scan)) (when most-specific
+			      ;; at least one method
+			      ;(print (mapcar #'method-specializers
+			      ;		     (reverse (cons most-specific ordered-list))))
+			      (nreverse
+			       (push most-specific ordered-list))))
+      (dolist (meth (cdr scan))
+	(when (eq (compare-methods most-specific
+				   meth args-specializers) 2)
+	  (setq most-specific meth)))
+      (setq scan (delete most-specific scan))
+      (push most-specific ordered-list))))
+
+;;; ----------------------------------------------------------------------
+;;;                                                      method comparison
+
+(defun compare-methods (method-1 method-2 args-specializers)
+  (declare (si::c-local))
+  (let* ((specializers-list-1 (method-specializers method-1))
+	 (specializers-list-2 (method-specializers method-2)))
+    (compare-specializers-lists specializers-list-1 
+				specializers-list-2 args-specializers)))
+
+(defun compare-specializers-lists (spec-list-1 spec-list-2 args-specializers)
+  (declare (si::c-local))
+  (when (or spec-list-1 spec-list-2)
+    (ecase (compare-specializers (first spec-list-1)
+				 (first spec-list-2)
+				 (first args-specializers))
+      (1 '1)
+      (2 '2)
+      (= 
+       (compare-specializers-lists (cdr spec-list-1)
+				   (cdr spec-list-2)
+				   (cdr args-specializers)))
+      ((nil)
+       (error "The type specifiers ~S and ~S can not be disambiguated~
+                  with respect to the argument specializer: ~S"
+	      (or (car spec-list-1) t)
+	      (or (car spec-list-2) t)
+	      (car args-specializers)))))
+  )
+
+(defun compare-specializers (spec-1 spec-2 arg-spec)
+  (declare (si::c-local))
+  (let* ((arg-class (closest-class arg-spec))
+	 (cpl (cons arg-class (class-precedence-list arg-class)))
+	 (cpl-names))
+    (setq cpl-names (dolist (e cpl (nreverse cpl-names))
+		      (push (class-name e) cpl-names)))
+    (cond ((equal spec-1 spec-2) '=)
+	  ((null spec-1) '2)
+	  ((null spec-2) '1)
+	  ((subtypep spec-1 spec-2) '1)
+	  ((subtypep spec-2 spec-1) '2)
+	  ((and (listp spec-1) (eq (car spec-1) 'eql)) '1) ; is this engough?
+	  ((and (listp spec-2) (eq (car spec-2) 'eql)) '2) ; Beppe
+	  ((member spec-1 (member spec-2 cpl-names)) '2)
+	  ((member spec-2 (member spec-1 cpl-names)) '1)
+	  (t (compare-complex-specializers spec-1 spec-2 arg-spec)))))
+
+(defun compare-complex-specializers (spec-1 spec-2 arg-spec)
+  (declare (ignore spec-1 spec-2 arg-spec)
+	   (si::c-local))
+  (error "Complex type specifiers are not yet supported."))
 

@@ -16,7 +16,6 @@
 
 #include <stdlib.h>
 #include "ecl.h"
-#include "machines.h"
 #include "internal.h"
 
 cl_object

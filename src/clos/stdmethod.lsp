@@ -9,29 +9,27 @@
 
 (in-package "CLOS")
 
+
+;;; ----------------------------------------------------------------------
+;;; Generic Functions
+;;; ----------------------------------------------------------------------
+
+(defclass generic-function (standard-object function) ())
+
+(defclass standard-generic-function (generic-function)
+  #.+standard-generic-function-slots+)
+
 ;;;----------------------------------------------------------------------
 ;;; Method
 ;;; ----------------------------------------------------------------------
 
 (defclass method () ())
 
-;;; ----------------------------------------------------------------------
-;;; Standard Method
-;;; ----------------------------------------------------------------------
-
-
 (defclass standard-method (method)
-  ((generic-function :initarg :generic-function)
-   (lambda-list :initarg :lambda-list)
-   (specializers :initarg :specializers :accessor specializers)
-   (qualifiers :initform nil :initarg :qualifiers :reader method-qualifiers)
-   (method-function :initarg :method-function)
-   (documentation :initform nil :initarg documentation)
-   (declarations :initform nil)
-   (plist :initform nil :initarg :plist :accessor method-plist)))
+  #.+standard-method-slots+)
 
 
-(defmethod function-keywords ((method standard-method))
+(defun function-keywords (method)
   (let* ((lambda-list (slot-value method 'lambda-list))
 	 arg
 	 key-list

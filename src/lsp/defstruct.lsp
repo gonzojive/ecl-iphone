@@ -468,7 +468,7 @@ as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
 
       `(eval-when (compile load eval)
 
-	(defclass ,name (,(or include 'STRUCTURE-OBJECT))
+	(defclass ,name ,(and include (list include))
 	  ,(mapcar
 	    #'(lambda (sd)
 		(if sd
