@@ -16,6 +16,7 @@
 
 #include "ecl.h"
 
+#if 0
 #if !defined(__stdlib_h) && !defined(_STDLIB_H_) && !defined(__STDLIB_H__) &&  !defined(_STDLIB_H)
 #include <signal.h>
 int
@@ -48,7 +49,7 @@ We use execv and supply the arg list, so execl doesn't have to realloc. CvdL */
 #include <paths.h>
 
 int
-system(char *command)
+system(const char *command)
 {
 	union wait pstat;
 	pid_t pid;
@@ -80,6 +81,7 @@ system(char *command)
 	(void)signal(SIGQUIT, quitsave);
 	return(pid == -1 ? -1 : pstat.w_status);
 }
+#endif
 #endif
 
 @(defun si::system (cmd)
