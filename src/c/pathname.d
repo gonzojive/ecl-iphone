@@ -1006,7 +1006,7 @@ coerce_to_from_pathname(cl_object x, cl_object host)
 
 @(defun si::pathname_translations (host &optional (set OBJNULL))
 	cl_index parsed_length, length;
-	cl_object host, pair, l;
+	cl_object pair, l;
 @
 	/* Check that host is a valid host name */
 	assert_type_string(host);
