@@ -29,7 +29,7 @@ extern struct typemanager {
 } tm_table[(int)t_end];
 
 #define	tm_of(t)	(&tm_table[(int)(t)])
-#endif GBC_BOEHM
+#endif
 
 
 /****************************************
@@ -42,7 +42,7 @@ extern struct typemanager {
 #define	HOLEPAGE	32
 #else
 #define	HOLEPAGE	128
-#endif SYSV
+#endif
 #define	INIT_HOLEPAGE	150
 #define	CBMINSIZE	64	/*  contiguous block minimal size  */
 

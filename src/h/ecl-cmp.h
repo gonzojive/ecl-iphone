@@ -27,14 +27,14 @@
 #ifdef THREADS
 #include "lwp.h"
 #include "critical.h"
-#endif THREADS
+#endif
 #include "external.h"
 #include "lisp_external.h"
 #include "eval.h"
 #include "number.h"
 #ifdef LOCATIVE
 #include "unify.h"
-#endif LOCATIVE
+#endif
 
 #undef cs_check
 #define	cs_check \
@@ -52,7 +52,7 @@
 #define TRAMPOLINK(narg, vv, lk) \
 	va_list args; va_start(args, narg); \
 	return(link_call(vv, (cl_objectfn *)lk, narg, args))
-#endif CLOS
+#endif
 
 #define	cclosure_call	funcall
 

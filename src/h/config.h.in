@@ -65,7 +65,7 @@
 #else
 #define	CSSIZE	20000		/* Size of C Stack			*/
 #define	CSGETA	4000
-#endif THREADS
+#endif
 #define VSSIZE	128		/* Size of return values stack		*/
 #define CALL_ARGUMENTS_LIMIT 64	/* Maximum number of function arguments */
 

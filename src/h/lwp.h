@@ -157,7 +157,7 @@ typedef struct pd {
   int	 pd_env[16];		/* Stack Environment */ 
 #else
   sigjmp_buf  pd_env;		/* Stack Environment */ 
-#endif VAX
+#endif
   int	 pd_slice;              /* time out			 */
   FILE	 *pd_fp;		/* File pointer waiting input on */
   lpd	 *pd_lpd;               /* lisp process descriptor */

@@ -1,1 +1,0 @@
-struct rlimit { int i; } ;

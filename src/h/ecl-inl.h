@@ -104,7 +104,7 @@ fast_alloc_object(enum type t)
 #else
   case t_structure:
     x = GC_malloc(sizeof(struct structure)); break;
-#endif CLOS
+#endif
 #ifdef THREADS
   case t_cont:
     x = GC_malloc(sizeof(struct cont)); break;
