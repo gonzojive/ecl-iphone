@@ -198,7 +198,7 @@
 #define	BRAND "IBM-PC"
 #define	CLIBS -lcompat
 #define	LDFLAGS
-#endif	__NetBSD__
+#endif	/*__NetBSD__*/
 
 #ifdef	sun
 #define	IEEEFLOAT
