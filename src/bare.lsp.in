@@ -33,6 +33,9 @@
 ;;;
 ;;; * Load the compiler.
 ;;;
+#-threads
+(defmacro c::with-lock ((lock) &body body)
+  (print `(progn ,@body)) )
 (load #+(or cross ecl-min) "@abs_builddir@/cmp/load.lsp"
       #-(or cross ecl-min) "@abs_builddir@/cmp.so")
 

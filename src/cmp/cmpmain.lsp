@@ -350,7 +350,7 @@ Cannot compile ~a."
 	 (shared-data-pathname (get-output-pathname o-pathname shared-data-file
 						    :sdata)))
 
-    (mp:with-lock (mp::+load-compile-lock+)
+    (with-lock (+load-compile-lock+)
       (init-env)
 
       (when (probe-file "./cmpinit.lsp")
@@ -432,7 +432,7 @@ Cannot compile ~a."
           (setq *error-p* t)
 	  (values nil t t))
         ))
-  ) ; mp:with-lock
+  ) ; with-lock
 )
 
 #-dlopen
@@ -494,7 +494,7 @@ Cannot compile ~a."
 	(o-pathname (compile-file-pathname data-pathname :type :object))
 	(so-pathname (compile-file-pathname data-pathname)))
 
-    (mp:with-lock (mp::+load-compile-lock+)
+    (with-lock (+load-compile-lock+)
       (init-env)
       (data-init)
       (t1expr form)
@@ -571,7 +571,7 @@ Cannot compile ~a."
          (*error-count* 0)
          (t3local-fun (symbol-function 'T3LOCAL-FUN))
 	 (t3fun (get-sysprop 'DEFUN 'T3)))
-    (mp:with-lock (mp::+load-compile-lock+)
+    (with-lock (+load-compile-lock+)
       (unwind-protect
 	   (progn
 	     (put-sysprop 'DEFUN 'T3
