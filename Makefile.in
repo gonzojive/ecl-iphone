@@ -155,11 +155,11 @@ ecls-tests.tgz:
 binary-dist: all
 	su -c "rm -rf tmp"
 	mkdir tmp
-	for i in $(bindir) $(infodir) $(mandir) $(libdir); do \
-	(echo $$i; IFS="/"; for k in tmp/$$i; do echo $$k; (test -d $$k || mkdir $$k); chmod 755 $$k; cd $$k; done); \
+	for i in tmp$(bindir) tmp$(infodir) tmp$(mandir) tmp$(libdir); do \
+	(echo $$i; IFS="/"; for k in $$i; do echo $$k; (test -d $$k || mkdir $$k); chmod 755 $$k; cd $$k; done); \
 	done
 	PREFIX=`pwd`/tmp; cd build; make install PREFIX="$${PREFIX}"
-	su -c "chown -R root.root tmp && cd tmp; tar czf ../ecls-$(VERSION)-$(MACHINE).tgz * && cd .. && rm -rf tmp"
+	su -c "chown -R root.root tmp; cd tmp; tar czf ../ecls-$(VERSION)-@host@.tgz * && cd .. && rm -rf tmp"
 
 dist:
 	cd dist; make-dist
