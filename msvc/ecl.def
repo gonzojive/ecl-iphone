@@ -1299,6 +1299,10 @@ EXPORTS
 	cl_notevery
 	cl_map_into
 	si_closest_vector_type
+	si_make_seq_iterator
+	si_seq_iterator_ref
+	si_seq_iterator_set
+	si_seq_iterator_next
 
 	; seqlib.lsp
 
