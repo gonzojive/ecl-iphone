@@ -252,6 +252,7 @@
 "c/interpreter.d"
 "c/compiler.d"
 "c/disassembler.d"
+"c/multival.d"
 "lsp/ansi.lsp"
 "lsp/arraylib.lsp"
 "lsp/assert.lsp"
