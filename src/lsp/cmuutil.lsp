@@ -120,12 +120,4 @@
 		  macros))))
     `(macrolet ,macros (let* ,(nreverse binds) ,@body))))
 
-;;
-;; Check whether an object has already been traversed by the printer.
-;; If it returns true, we can print #n#, because the object will be
-;; defined using #n= somewhere else.
-;;
-(defmacro check-for-circularity (var)
-  `(and *circle-counter* (gethash ,var *circle-stack* nil)))
-
 ); eval-when

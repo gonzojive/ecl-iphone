@@ -23,6 +23,12 @@
 #include "ecl.h"
 #include "internal.h"
 
+#if defined(ECL_CMU_FORMAT)
+# define si_write_object_recursive(x,y) si_write_object(x,y)
+#else
+static cl_object si_write_object_recursive(cl_object, cl_object);
+#endif
+
 /**********************************************************************/
 /*		 SUPPORT FOR OLD KCL PRETTY PRINTER		      */
 /**********************************************************************/
@@ -249,7 +255,7 @@ call_structure_print_function(cl_object f, cl_object x, cl_object stream)
 	 islower((c)&0377) || (c) == ':')
 
 static bool object_will_print_as_hash(cl_object x);
-extern cl_fixnum search_print_circle(cl_object x);
+static cl_fixnum search_print_circle(cl_object x);
 static bool potential_number_p(cl_object s, int base);
 
 static void FEprint_not_readable(cl_object x) /*__attribute__((noreturn))*/;
@@ -724,58 +730,12 @@ si_write_ugly_object(cl_object x, cl_object stream)
 	cl_object r, y;
 	cl_fixnum i, j;
 	cl_index ndx, k;
-	bool circle = ecl_print_circle();
 
- BEGIN:
 	if (x == OBJNULL) {
 		if (ecl_print_readably()) FEprint_not_readable(x);
 		write_str("#<OBJNULL>", stream);
 		return x;
 	}
-	if (circle) {
-		cl_object circle_counter;
-		cl_fixnum code;
-		bool print;
-		if (IMMEDIATE(x) ||
-		    (type_of(x) == t_symbol && !Null(x->symbol.hpack)))
-			goto DOPRINT;
-		circle_counter = symbol_value(@'si::*circle-counter*');
-		if (circle_counter == Cnil) {
-			cl_object hash =
-				cl__make_hash_table(@'eq',
-						    MAKE_FIXNUM(1024),
-						    make_shortfloat(1.5f),	
-						    make_shortfloat(0.75f), Cnil);
-			bds_bind(@'si::*circle-counter*', Ct);
-			bds_bind(@'si::*circle-stack*', hash);
-			si_write_ugly_object(x, cl_core.null_stream);
-			ECL_SETQ(@'si::*circle-counter*', MAKE_FIXNUM(0));
-			si_write_ugly_object(x, stream);
-			cl_clrhash(hash);
-			bds_unwind_n(2);
-			return x;
-		}
-		code = search_print_circle(x);
-		if (!FIXNUMP(circle_counter)) {
-			/* We are only inspecting the object to be printed. */
-			/* Only run X if it was not referenced before */
-			if (code != 0) return x;
-		} else if (code == 0) {
-			/* Object is not referenced twice */
-		} else if (code < 0) {
-			/* Object is referenced twice. We print its definition */
-			write_ch('#', stream);
-			write_decimal(-code, stream);
-			write_ch('=', stream);
-		} else {
-			/* Second reference to the object */
-			write_ch('#', stream);
-			write_decimal(code, stream);
-			write_ch('#', stream);
-			return x;
-		}
-	}
- DOPRINT:
 	switch (type_of(x)) {
 
 	case FREE:
@@ -922,7 +882,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 			}
 			/* FIXME: This conses! */
 			if (print_level >= 0)
-				si_write_ugly_object(aref(x, m), stream);
+				si_write_object_recursive(aref(x, m), stream);
 			else
 				write_ch('#', stream);
 			j = n-1;
@@ -978,14 +938,14 @@ si_write_ugly_object(cl_object x, cl_object stream)
 				return x;
 			}
 			bds_bind(@'*print-level*', MAKE_FIXNUM(print_level-1));
-			si_write_ugly_object(aref(x, 0), stream);
+			si_write_object_recursive(aref(x, 0), stream);
 			for (ndx = 1;  ndx < x->vector.fillp;  ndx++) {
 				write_ch(INDENT, stream);
 				if (ndx >= print_length) {
 					write_str("...", stream);
 					break;
 				}
-				si_write_ugly_object(aref(x, ndx), stream);
+				si_write_object_recursive(aref(x, ndx), stream);
 			}
 			bds_unwind1();
 		}
@@ -1025,23 +985,25 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		break;
 
 	case t_cons: {
+		bool circle;
 		cl_fixnum print_level, print_length;
 		if (CAR(x) == @'si::#!') {
 			write_str("#!", stream);
 			x = CDR(x);
-			goto BEGIN;
+			return si_write_object_recursive(x, stream);
 		}
 		if (CAR(x) == @'quote' && CONSP(CDR(x)) && Null(CDDR(x))) {
 			write_ch('\'', stream);
 			x = CADR(x);
-			goto BEGIN;
+			return si_write_object_recursive(x, stream);
 		}
 		if (CAR(x) == @'function' && CONSP(CDR(x)) && Null(CDDR(x))) {
 			write_ch('#', stream);
 			write_ch('\'', stream);
 			x = CADR(x);
-			goto BEGIN;
+			return si_write_object_recursive(x, stream);
 		}
+		circle = ecl_print_circle();
 		if (ecl_print_readably()) {
 			print_level = MOST_POSITIVE_FIXNUM;
 			print_length = MOST_POSITIVE_FIXNUM;
@@ -1070,7 +1032,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 			}
 			y = CAR(x);
 			x = CDR(x);
-			si_write_ugly_object(y, stream);
+			si_write_object_recursive(y, stream);
 			/* FIXME! */
 			if (x == OBJNULL || ATOM(x) ||
 			    (circle && object_will_print_as_hash(x)))
@@ -1078,7 +1040,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 				if (x != Cnil) {
 					write_ch(INDENT, stream);
 					write_str(". ", stream);
-					si_write_ugly_object(x, stream);
+					si_write_object_recursive(x, stream);
 				}
 				break;
 			}
@@ -1105,14 +1067,14 @@ si_write_ugly_object(cl_object x, cl_object stream)
 			if (i <= j && Null(y))
 				write_str("()", stream);
 			else
-				si_write_ugly_object(y, stream);
+				si_write_object_recursive(y, stream);
 			/* FIXME! */
 			if (x == OBJNULL || ATOM(x) ||
 			    (circle && object_will_print_as_hash(x))) {
 				if (x != Cnil) {
 					write_ch(INDENT, stream);
 					write_str(". ", stream);
-					si_write_ugly_object(x, stream);
+					si_write_object_recursive(x, stream);
 				}
 				break;
 			}
@@ -1245,7 +1207,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
  * print shouldn't allocate memory - Beppe
  */
 			x = structure_to_list(x);
-			si_write_ugly_object(x, stream);
+			si_write_object_recursive(x, stream);
 		} else {
 			call_structure_print_function(print_function, x, stream);
 		}
@@ -1344,9 +1306,58 @@ si_write_ugly_object(cl_object x, cl_object stream)
 	@(return)
 }
 
+#if defined(ECL_CMU_FORMAT)
+#undef si_write_object_recursive
 cl_object
 si_write_object(cl_object x, cl_object stream)
+#else
+static cl_object
+si_write_object_recursive(cl_object x, cl_object stream)
+#endif
 {
+	bool circle = ecl_print_circle();
+	if (circle && !IMMEDIATE(x) &&
+	    ((type_of(x) != t_symbol) || (Null(x->symbol.hpack))))
+	{
+		cl_object circle_counter;
+		cl_fixnum code;
+		bool print;
+		circle_counter = symbol_value(@'si::*circle-counter*');
+		if (circle_counter == Cnil) {
+			cl_object hash =
+				cl__make_hash_table(@'eq',
+						    MAKE_FIXNUM(1024),
+						    make_shortfloat(1.5f),	
+						    make_shortfloat(0.75f), Cnil);
+			bds_bind(@'si::*circle-counter*', Ct);
+			bds_bind(@'si::*circle-stack*', hash);
+			si_write_object(x, cl_core.null_stream);
+			ECL_SETQ(@'si::*circle-counter*', MAKE_FIXNUM(0));
+			si_write_object(x, stream);
+			cl_clrhash(hash);
+			bds_unwind_n(2);
+			return x;
+		}
+		code = search_print_circle(x);
+		if (!FIXNUMP(circle_counter)) {
+			/* We are only inspecting the object to be printed. */
+			/* Only run X if it was not referenced before */
+			if (code != 0) return x;
+		} else if (code == 0) {
+			/* Object is not referenced twice */
+		} else if (code < 0) {
+			/* Object is referenced twice. We print its definition */
+			write_ch('#', stream);
+			write_decimal(-code, stream);
+			write_ch('=', stream);
+		} else {
+			/* Second reference to the object */
+			write_ch('#', stream);
+			write_decimal(code, stream);
+			write_ch('#', stream);
+			return x;
+		}
+	}
 #if defined(ECL_CMU_FORMAT)
 	if (symbol_value(@'*print-pretty*') != Cnil) {
 		cl_object f = funcall(2, @'pprint-dispatch', x);
@@ -1357,6 +1368,13 @@ si_write_object(cl_object x, cl_object stream)
 	}
 	return si_write_ugly_object(x, stream);
 #else /* !ECL_CMU_FORMAT */
+	return si_write_ugly_object(x, stream);
+#endif /* !ECL_CMU_FORMAT */
+}
+ 
+#if !defined(ECL_CMU_FORMAT)
+cl_object
+si_write_object(cl_object x, cl_object stream) {
 	if (symbol_value(@'*print-pretty*') == Cnil) {
 		cl_env.print_pretty = 0;
 	} else {
@@ -1365,11 +1383,11 @@ si_write_object(cl_object x, cl_object stream)
 		cl_env.isp = cl_env.iisp = 0;
 		cl_env.indent_stack[0] = 0;
 	}
-	si_write_ugly_object(x, stream);
+	si_write_object_recursive(x, stream);
 	if (cl_env.print_pretty)
 		flush_queue(TRUE, stream);
-#endif /* !ECL_CMU_FORMAT */
 }
+#endif /* !ECL_CMU_FORMAT */
 
 static bool
 object_will_print_as_hash(cl_object x)
@@ -1433,6 +1451,22 @@ search_print_circle(cl_object x)
 			return fix(code);
 		}
 	}
+}
+
+cl_object
+si_check_for_circularity(cl_object x)
+{
+	cl_object output;
+	if (IMMEDIATE(x)
+	    || ((type_of(x) == t_symbol) && (Null(x->symbol.hpack)))
+	    || !ecl_print_circle()) {
+		output = Cnil;
+	} else if (symbol_value(@'si::*circle-counter*') == Cnil) {
+		output = Ct;
+	} else {
+		output = search_print_circle(x)? Ct : Cnil;
+	}
+	@(return output)
 }
 
 static bool

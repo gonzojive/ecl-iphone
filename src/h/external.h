@@ -1091,6 +1091,7 @@ extern cl_object cl_force_output _ARGS((cl_narg narg, ...));
 extern cl_object cl_clear_output _ARGS((cl_narg narg, ...));
 extern cl_object si_write_object(cl_object object, cl_object stream);
 extern cl_object si_write_ugly_object(cl_object object, cl_object stream);
+extern cl_object si_check_for_circularity(cl_object object);
 
 extern cl_object princ(cl_object obj, cl_object strm);
 extern cl_object prin1(cl_object obj, cl_object strm);
