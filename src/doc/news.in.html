@@ -1,73 +1,6 @@
 <h2>News in this release (ECL-@VERSION@)</h2>
 <pre>
-* Supported platforms:
-
-  - ECL now compiles and runs in static mode under MacOSX.
-
-* Errors fixed:
-
-  - Code for handling :IMPORT-FROM in DEFPACKAGE was bogus
-
-  - The arguments of GENSYM should not be remembered by ECLS. The
-    current behaviour was wrong:
-		> (gensym)
-		#:G36
-		> (gensym "F")
-		#:F37
-		> (gensym)
-		#:F38
-
-* System design:
-
-  - Function SI:NANI has been removed. Its purpose was to provide an
-    object which could not be printed or readed so that it could be
-    used to mark unbound slots in classes. Now the function SI:UNBOUND
-    performs the same task.
-
-  - Mathematical functions which deal with matisas, exponents, etc,
-    now make use of the ISO-C99 facilities which are almost
-    everywhere.
-
-  - Global function pointer output_ch_fun and read_ch_fun
-    disappear. Now the differences between ordinary streams and CLOS
-    streams are handled in file.d. Optimizations for synonym streams
-    also disappear from read.d and print.d.
-
-  - All information used by FORMAT is kept in stack-allocated
-    structures. Now FORMAT is reentrant and can be safely called from
-    within PRINT-OBJECT.
-
-  - Most symbols belonging to the LISP package and to the C core, are
-    kept in a single array, "cl_symbols". The translator "dpp" and the
-    routine SI::MANGLE-NAME, output the right name for any symbol
-    which is in this array.
-
-  - ECL relies fully on the Boehm-Weiser garbage collector
-    (v. 6.1). The old garbage collector is known to reclaim too much
-    data, resulting in heap corruption. Help is welcome on this field.
-
-  - The headers of the Boehm-Weiser garbage collector are installed
-    together with ECL.
-
-* Visible changes and ANSI compatibility:
-
-  - New configuration flag --with-clos-streams, enables the user to
-    define CLOS objects which behave as lisp streams. Such object must
-    have the following methods defined: STREAM-INPUT-P,
-    STREAM-OUTPUT-P, STREAM-READ-CHAR, STREAM-UNREAD-CHAR,
-    STREAM-LISTEN, STREAM-CLEAR-INPUT, STREAM-WRITE-CHAR,
-    STREAM-CLEAR-OUTPUT, STREAM-FORCE-OUTPUT, STREAM-CLOSE.
-
-  - LOAD accepts now a stream as input parameter. However, in this
-    case it only tolerates lisp source files, not compiled files or
-    libraries. For example, (LOAD (OPEN "foo.lsp")) is equivalent
-    to (LOAD "foo.lsp").
-
-  - ECL now uses a hashtable to store objects when *PRINT-CIRCLE* is
-    on. This hashtable is not cleared when calling PRINT-OBJECT, so
-    that circularities are also detected inside these methods.
-
-  - *PRINT-CIRCLE* defaults to NIL.
+-------
 </pre>
 
 <h2>Known bugs</h2>
@@ -81,8 +14,8 @@ The most important exceptions are
 <li>CLOS
 <li>#'format
 <li>#'unread-char is too lax
-<li>The CL package is too polluted
 <li>Support for logical pathnames is incomplete
+<li>No support for (SETF (VALUES ...) ...)
 </ul>
 
 If you find something that should be fixed or that the behavior of a
@@ -91,10 +24,8 @@ to tell me so.
 
 Some other bugs which need to be fixed are:
 <ul>
-<li>Sockets haven't been tested yet.
 <li>Threads were broken with latest improvements.
 <li>#'format doesn't pass the Cltl-1 tests.
-<li>Needs better support for wildcards in pathnames.
 <li>Support for CLOS needs yet more optimization.
 <li>ECL has its own pretty-printer, which does not conform ANSI.
 </ul>

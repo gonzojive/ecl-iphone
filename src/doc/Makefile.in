@@ -56,7 +56,11 @@ index.html: $(srcdir)/index.in.html
 install.html: $(srcdir)/install.in.html
 	cat $(srcdir)/head $? $(srcdir)/end | $(FILTER) > $@
 news.html: $(srcdir)/news.in.html
-	cat $(srcdir)/head $? $(srcdir)/end | $(FILTER) > $@
+	(cat $(srcdir)/head; \
+	 sed -e '/^----.*$$/,$$d' $(srcdir)/news.in.html; \
+	 sed -e '1,/^ECL [0-9\.]*$$/d;/^===*$$/d' $(srcdir)/../../ANNOUNCEMENT| sed -e '1d'; \
+	 sed -e '1,/^----*$$/d' $(srcdir)/news.in.html; \
+	 cat $(srcdir)/end) | $(FILTER) > $@
 benchmark.html: $(srcdir)/benchmark.in.html ../gabriel/BENCHMARK
 	(cat $(srcdir)/head; \
 	 cat $(srcdir)/benchmark.in.html; \
