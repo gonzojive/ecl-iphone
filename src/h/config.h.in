@@ -67,7 +67,7 @@
 #undef CL_FIXNUM_TYPE		/* Integer type for fixnums		*/
 #define MOST_POSITIVE_FIX 1	/* Positive limit for fixnums           */
 #undef DOWN_STACK		/* Stack grows downwards		*/
-#undef NO_ARG_ARRAY		/* arguments can be accessed as array	*/
+#undef NO_ARGS_ARRAY		/* arguments can be accessed as array	*/
 #undef WORDS_BIGENDIAN		/* most significant byte first		*/
 
 #undef HAVE_SYS_RESOURCE_H	/* has <sys/resource.h>			*/
