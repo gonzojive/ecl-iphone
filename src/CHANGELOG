@@ -1422,6 +1422,266 @@ ECLS 0.9
     etc. That sequence type is used, rather than the general one
     (VECTOR T). (:TYPE option from slots is not used, though).
 
+ECL 0.9
+=======
+
+* Errors fixed:
+
+  - The PCL relied on the compiler to optimize certain method
+    combinations. However, the native compiler is not always present,
+    and therefore it is safer to use interpreted functions instead.
+
+  - The compiler had wrong type information about CHAR-NAME &
+    NAME-CHAR.
+
+  - DOTIMES fails with negative bignums and floats.
+
+  - LOAD-TIME-VALUE should be a special operator.
+
+  - COPY-SYMBOL fails with uninterned symbols.
+
+  - GENSYM and GENTEMP failed if the suffix becomes a bignum.
+
+  - COMPILE has to generate libraries with different names for each
+    function. Otherwise, when compiling a second function, the
+    dlopen() loader will not load the library because it thinks it has
+    it already in memory.
+
+  - When a compound form consists only of a string, this string should
+    not be interpreted as a documentation string, but as a form.
+
+  - SYMBOL-MACROLET definitions were ignored by GET-SETF-EXPANSION.
+
+  - DESTRUCTURING-BIND fails to interpret &WHOLE arguments.
+
+  - The compiler might get into an infinite loop when dealing with
+    compiler-macros.
+
+  - When the functions/macros in a DLL are no longer used, and the
+    garbage collector notices this, the library is properly deallocated.
+
+  - BIT-* fails when the input is made of arrays with rank <> 1.
+
+  - A few leaks from ECL's original garbage collector have been
+    fixed. Thus, the option "--disable-boehm" at configuration time is
+    again active.
+
+  - When returning from a function, the values are stored in the
+    VALUES() array. This process has to be "atomic", in the sense that
+    no lisp function (cl_*, si_*, bytecodes) may be called, because
+    they also try to overwrite these values. This requirement was not
+    accomplished by the previous inliner.
+
+  - CCASE forms would output no value.
+
+  - Tags in TAGBODY should be compared with EQL so that a bignums may
+    tags (Two bignums which are EQL may be not EQ!).
+
+  - Various errors in STRING-TRIM* and *CAPITALIZE.
+
+  - Wrong type information about NAME-CHAR, CHAR-NAME and DIGIT-CHAR
+    lead to compilation errors.
+
+  - DEFPACKAGE would ignore the value of :INTERN and, would replace
+    empty :USE statements with (:USE "CL").
+
+  - :CONC-NAME alone is not interpreted as a lack of prefix in
+    structures. Furthermore, when no prefix is given, the package of
+    the slot name is not honored.
+
+  - MAP-INTO did not recognize strings and bit-vectors as vectors.
+
+  - In WITH-PACKAGE-ITERATOR, only symbols which are accessible in the
+    current package should be output, and the accesibility type returned
+    should correspond to that of FIND-SYMBOL.
+
+  - The expansion of DO/DO* would not enclose the body in a TAGBODY.
+
+  - SLOT-EXISTS-P outputted OBJNULL when the slot did not exist.
+
+* Errors of the interpreter:
+
+  - CASE should use EQL to compare objects, not EQ.
+
+  - Empty PROGN and implicit PROGNs (LAMBDA, etc) should output NIL
+    instead of (VALUES). Similarly, a CASE with no matching clause
+    should also output NIL.
+
+  - A NIL in the keys position of a CASE clause can never match
+    anything: (CASE () (NIL 'A) (T 'B)) => B
+
+  - SETQ can only output one value
+
+  - User could not have a keyword variable with name ALLOW-OTHER-KEYS,
+    as in (LAMBDA (&KEY ALLOW-OTHER-KEYS) (PRINT ALLOW-OTHER-KEYS)).
+
+  - Excesive arguments to NOT or NULL were not detected.
+
+  - Under some circumstances, FUNCALL would not signal an error when
+    a symbol naming a macro is passed as a first argument.
+
+  - When &ALLOW-OTHER-KEYS was present in the lambda list, any
+    occurrence of :ALLOW-OTHER-KEYS is ignored.
+
+* Visible changes:
+
+  - No "Bye" message in QUIT.
+
+  - Function definitions from the interpreter are now remembered by
+    default. This means you can now type
+	     (DEFUN MY-FUNCTION (X) (COS X))
+    and later on
+	     (COMPILE 'MY-FUNCTION)
+    If you want to save memory, use this to forget these definitions
+	     (SETQ SI::*KEEP-DEFINITIONS* NIL)
+
+  - New function SI:MKSTEMP creates an totally new empty file by
+    appending a 6-characters prefix to a template supplied by the
+    user.
+
+  - COMPILE now creates all temporary files in the directory pointed
+    to by the environment variable TMPDIR (Or /tmp if none). It also
+    uses MKSTEMP to produce unique file names, and solve the problem
+    that dlopen() cannot reload two libraries with the same name.
+
+  - The interpreter now detects syntax errors in function calls: such
+    as in (setq a ("foo")).
+
+  - Functions remf(), remprop() and putprop() removed. Use si_rem_f,
+    cl_remprop and cl_putprop instead.
+
+  - A small optimization allows the compiler to produce smaller code
+    when two functions share the same keywords (Like FIND, POSITION,
+    etc).
+
+* ANSI compatibility:
+
+  - WITH-HASH-TABLE-ITERATOR implemented.
+
+  - In DEFGENERIC, only SPACE and SPEED declarations were allowed.
+
+  - The bytecodes compiler did not contemplate the possibility of
+    a lambda list with &key and no keyword variables.
+
+  - In MAKE-PATHNAME, values which are supplied (even if NIL), are not
+    overwritten by the :DEFAULTS. For instance, (MAKE-PATHNAME :TYPE
+    NIL :DEFAULTS "FOO.LISP") => #P"FOO"
+
+  - INVOKE-DEBUGGER now uses the value of *DEBUGGER-HOOK*.
+
+  - Implemented LEAST-*-NORMALIZED-*-FLOAT.
+
+  - WITH-PACKAGE-ITERATOR implemented. LOOP clauses which iterate over
+    the symbols of a package now work. Furthermore, LOOP... FOR
+    PRESENT-SYMBOL... now iterates both over internal and external
+    symbols, just to be conformant with other implementations.
+
+  - COMPILE should output three values: the function itself, plus two
+    flags indicating the existence of errors.
+
+  - CONSTANTP takes two arguments, the second being an environment.
+
+  - Implemented FUNCTION-LAMBDA-EXPRESSION (Replaces non-standard
+    SI::COMPILED-FUNCTION-SOURCE).
+
+  - Right evaluation order enforced in PUSH, PUSHNEW, PSETQ.
+
+  - In FUNCALL, the interpreter evaluated the function form *after*
+    the arguments.
+
+  - (SETF #:GXXX), where #:GXXX is any uninterned symbol, should be a
+    valid function name.
+
+  - Symbol GC moved from the COMMON-LISP package, to SI and CL-USER.
+
+  - DELETE-PACKAGE turns a package into an illegal object. Thus, if a
+    reference to the package is around, this may cause problems.
+
+  - *CASE and *TYPECASE now use condition & restarts for signaling errors.
+
+  - Restarts may be associated to conditions. WITH-CONDITION-RESTART
+    implemented.
+
+  - *COMPILE-FILE-{PATHNAME,TRUENAME}* defined and used.
+
+  - All package function now signal errors of type
+    PACKAGE-ERROR. Also, when trying to operate on a locked package
+    (See SI::PACKAGE-LOCK), a correctable error is signaled.
+
+  - Errors in LOOP macro are signaled as PROGRAM-ERROR.
+
+  - When a LOOP has a NAMED sentence, no enclosing NIL block is
+    produced. Furthermore, the blocks always surround the whole of the
+    code, so that (LOOP FOR A IN (RETURN :GOOD)) works.
+
+  - Character names ("Return", "Tab", etc) now have the right case.
+
+  - CHAR/= and CHAR-NOT-EQUAL require at least one character.
+
+  - Implemented *PRINT-READABLY*, and the condition PRINT-NOT-READABLY.
+
+  - Implemented type EXTENDED-CHAR.
+
+  - Property lists are no longer used to store vital
+    information. Things like SETF expansions, DEFTYPEs, etc, are now
+    stored and retrieved using SI::{GET,PUT,REM}-SYSPROP. The current
+    implementation is based on a hash table, which means that some
+    symbols may not be garbage collected.
+
+  - New condition types PARSE-ERROR, SIMPLE-READER-ERROR and READER-ERROR. The
+    errors from the reader correspond to this later type.
+
+  - LOOP macro now accepts LOOP-FOR-BY forms, and it better supports
+    destructuring (Thanks to the CMUCL team for maintaining a reasonably
+    portable LOOP!).
+
+  - SLOT-UNBOUND now effectively signals an UNBOUND-SLOT condition.
+
+  - In structure constructors, lambda variables should not have the
+    name of slot names. This avoids problems with slots that whose
+    name is also a special variable or a constant.
+
+  - MAKE-SEQUENCE, CONCATENATE, etc (All sequence functions), now
+    recognize more sequence types and also signal errors when the type
+    denotes a length and the sequence does not match it.
+
+  - COERCE recognizes more types, and also signals an error in most
+    cases in which the output does not match the required type (For
+    instance, (COERCE 1 '(INTEGER 2 3)).
+
+  - Implemented ARRAY-DISPLACEMENT.
+
+  - BOA-constructors for structures should now work as expected (Among
+    other things, they now support &KEY arguments).
+
+  - DELETE and REMOVE now accept negative values of :COUNT.
+
+  - SHADOW should work with strings/lists of strings, instead of only
+    with symbols.
+
+  - STRUCTURE-OBJECT is now a STRUCTURE-CLASS.
+
+  - DELETE-PACKAGE and MAKE-PACKAGE now signal the right type of errors.
+
+  - When a handler refuses to process a condition, the remaining
+    handlers are processed.
+
+  - Both the compiler and the interpreter now properly handle function
+    names of the form (SETF fname). Instead of creating an uninterened
+    a symbol with the name "SETF fname", the function definition is
+    stored directly as a property list.
+
+  - In destructuring lambda lists, &WHOLE may be accompanied by a
+    destructuring form.
+
+  - In DEF{CLASS,CONDITION}, arguments to the :INITFORM option, or to
+    the :DEFAULT-INITARGS option, are now properly evaluated in the
+    lexical environment corresponding to the DEF{CLASS,CONDITION} form.
+
+  - Structures may now have :TYPE (VECTOR BIT), (VECTOR CHARACTER),
+    etc. That sequence type is used, rather than the general one
+    (VECTOR T). (:TYPE option from slots is not used, though).
+
 ECLS 0.9b
 =========
 
@@ -1579,6 +1839,9 @@ ECLS 0.9b
 
   - FORMATTER has been implemented, and ERROR/CERROR now accept as
     "datum" the functions produced by FORMATTER.
+
+  - FORMAT has been ported from CMUCL, to have a second implementation
+    which is more easy to maintain, and less error-prone.
 
 TODO:
 =====
