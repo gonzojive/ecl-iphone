@@ -1755,7 +1755,7 @@ then
   cl_fixnum_limit=`cat conftestval`
 echo "$ac_t""${cl_fixnum_limit}" 1>&6
 cat >> confdefs.h <<EOF
-#define MOST_POSITIVE_FIX ${cl_fixnum_limit}
+#define MOST_POSITIVE_FIXNUM ${cl_fixnum_limit}
 EOF
 
 else
