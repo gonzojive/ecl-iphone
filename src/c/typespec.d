@@ -261,6 +261,8 @@ cl_type_of(cl_object x)
 	case t_symbol:
 		if (x == Cnil)
 			t = @'null';
+		else if (x == Ct)
+			t = @'boolean';
 		else if (x->symbol.hpack == cl_core.keyword_package)
 			t = @'keyword';
 		else
