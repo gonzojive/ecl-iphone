@@ -188,7 +188,7 @@ SI::ARGS."
 
 (defun tracing-body (fname &aux (fun (symbol-function fname)))
   (when (functionp fun)
-    (let ((bytecodes (si::bytecodes-split fun)))
+    (let ((bytecodes (si::bc-split fun)))
       (when bytecodes
 	(dotimes (i (length bytecodes))
 	  (when (eq (aref bytecodes i) +tracing-block+)
