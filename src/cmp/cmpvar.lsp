@@ -63,9 +63,9 @@
     (when x
       (dolist (tlf *top-level-forms*)
         (when (or (and (eq (car tlf) 'DEFVAR)
-		       (= (var-loc (second tlf)) (second x)))
+		       (equalp (var-loc (second tlf)) (second x)))
 		  (and (eq (car tlf) 'DECLARE)
-		       (= (second tlf) (second x))))
+		       (equalp (second tlf) (second x))))
           (return tlf))))))
 
 ;;;
@@ -220,11 +220,11 @@
     (LEXICAL (cond ;(ccb (wt-env var-loc))
                    ((var-ref-ccb var) (wt-env var-loc))
                    (t (wt-lex var-loc))))
-    (SPECIAL (wt "(VV[" var-loc "]->symbol.dbind)"))
+    (SPECIAL (wt "(" var-loc "->symbol.dbind)"))
     (REPLACED (wt var-loc))
     (GLOBAL (if *safe-compile*
-              (wt "symbol_value(VV[" var-loc "])")
-              (wt "(VV[" var-loc "]->symbol.dbind)")))
+              (wt "symbol_value(" var-loc ")")
+              (wt "(" var-loc "->symbol.dbind)")))
     (t (case (var-kind var)
          (FIXNUM    (wt "MAKE_FIXNUM"))
          (CHARACTER (wt "code_char"))
@@ -247,11 +247,11 @@
 		   (wt-env var-loc)
 		   (wt-lex var-loc))
                (wt "= " loc ";"))
-      (SPECIAL (wt-nl "(VV[" var-loc "]->symbol.dbind)= " loc ";"))
+      (SPECIAL (wt-nl "(" var-loc "->symbol.dbind)= " loc ";"))
       (GLOBAL
        (if *safe-compile*
-         (wt-nl "set(VV[" var-loc "]," loc ");")
-         (wt-nl "(VV[" var-loc "]->symbol.dbind)= " loc ";")))
+         (wt-nl "set(" var-loc "," loc ");")
+         (wt-nl "(" var-loc "->symbol.dbind)= " loc ";")))
       (t
        (wt-nl) (wt-lcl var-loc) (wt "= ")
        (case (var-kind var)

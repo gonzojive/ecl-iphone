@@ -596,7 +596,7 @@ nconc(cl_object l, cl_object y)
 	return l;
 }
 
-@(defun reconc (l y)
+@(defun nreconc (l y)
 	cl_object x, z;
 @
 	/* INV: when a circular list is "reconc'ed", the pointer ends

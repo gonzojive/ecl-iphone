@@ -85,7 +85,7 @@
       (push 'BDS-BIND *unwind-exit*))))
 
 (defun bds-bind (loc var)
-  (wt-nl "bds_bind(VV[" (var-loc var) "]," loc ");")
+  (wt-nl "bds_bind(" (var-loc var) "," loc ");")
   ;; push BDS-BIND only once:
   ;; bds-bind may be called several times on the same variable, e.g.
   ;; an optional has two alternative bindings.

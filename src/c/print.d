@@ -2063,7 +2063,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 	@(return integer)
 @)
 
-@(defun write_bytes (stream string start end)
+@(defun si::write_bytes (stream string start end)
         cl_index is, ie; FILE *fp;
 	int written, sofarwritten, towrite;
 @

@@ -95,7 +95,7 @@ UTC_time_to_universal_time(int i)
  *
  * Based on Lott's get_timezone() function from CMU Common Lisp.
  */
-@(defun get_local_time_zone ()
+@(defun si::get_local_time_zone ()
   struct tm ltm, gtm;
   int mw;
   time_t when = 0L;
@@ -118,7 +118,7 @@ UTC_time_to_universal_time(int i)
  * defaults to current time.
  *
  */
-@(defun daylight_saving_timep (&rest args)
+@(defun si::daylight-saving-time-p (&rest args)
   struct tm *ltm;
   time_t when;
 @

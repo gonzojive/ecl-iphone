@@ -18,7 +18,7 @@
 
 /********************* EXPORTS *********************/
 
-cl_object @'si::lambda-block';
+cl_object @'lambda-block';
 cl_object @'declare';
 cl_object @'defun';
 cl_object @'compile', @'load', @'eval', @'progn', @'warn', @'typep', @'otherwise';
@@ -906,7 +906,7 @@ c_function(cl_object args) {
 	} else if (CONSP(function) && CAR(function) == @'lambda') {
 		asm_op(OP_CLOSE);
 		asm1(make_lambda(Cnil, CDR(function)));
-	} else if (CONSP(function) && CAR(function) == @'si::lambda-block') {
+	} else if (CONSP(function) && CAR(function) == @'lambda-block') {
 		cl_object name = CADR(function);
 		cl_object body = CDDR(function);
 		asm_op(OP_CLOSE);

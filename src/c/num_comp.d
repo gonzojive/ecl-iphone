@@ -23,7 +23,7 @@
 */
 
 
-@(defun all_the_same (num &rest nums)
+@(defun = (num &rest nums)
 	int i;
 	cl_object numi;
 @
@@ -259,7 +259,7 @@ number_compare(cl_object x, cl_object y)
 	}
 }
 
-@(defun all_different (&rest nums)
+@(defun /= (&rest nums)
 	int i, j;
 	va_list numb;
 @
@@ -281,14 +281,10 @@ number_compare(cl_object x, cl_object y)
 { va_list nums; va_start(nums, narg); \
   return monotonic(i, j, narg, (cl_object *)nums); }
 
-cl_object
-@monotonically-nondecreasing	MONOTONIC( 1, 0)
-cl_object
-@monotonically-nonincreasing	MONOTONIC(-1, 0)
-cl_object
-@monotonically-increasing	MONOTONIC( 1, 1)
-cl_object
-@monotonically-decreasing	MONOTONIC(-1, 1)
+cl_object @<= MONOTONIC( 1, 0)
+cl_object @>= MONOTONIC(-1, 0)
+cl_object @<  MONOTONIC( 1, 1)
+cl_object @>  MONOTONIC(-1, 1)
 
 cl_object
 monotonic(int s, int t, int narg, cl_object *nums)

@@ -127,7 +127,10 @@
 
 (defun wt-lcl (lcl) (wt "V" lcl))
 
-(defun wt-vv (vv) (wt "VV[" vv "]"))
+(defun wt-vv (vv)
+  (if (numberp vv)
+    (wt "VV[" vv "]")
+    (wt vv)))
 
 (defun wt-lcl-loc (lcl)
   (wt-lcl lcl))
@@ -138,7 +141,7 @@
 (defun wt-number (value &optional vv)
   (typecase value
     (fixnum (wt "MAKE_FIXNUM(" value ")"))
-    (t (wt "VV[" vv "]"))))
+    (t (wt vv))))
 
 (defun wt-character (value &optional vv)
   (wt (format nil "code_char('\\~O')" value)))

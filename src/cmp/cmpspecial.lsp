@@ -164,8 +164,8 @@
 
 (defun wt-symbol-function (vv)
   (if *safe-compile*
-      (wt "symbol_function(VV[" vv "])")
-      (wt "(VV[" vv "]->symbol.gfdef)")))
+      (wt "symbol_function(" vv ")")
+      (wt "(" vv "->symbol.gfdef)")))
 
 (defun wt-make-closure (fun &aux (cfun (fun-cfun fun)))
   (declare (type fun fun))

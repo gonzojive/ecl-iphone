@@ -140,7 +140,7 @@
   (dolist (x *linking-calls*)
     (let ((i (second x)))
       (wt-nl1 "static cl_object LKF" i
-	      "(int narg, ...) {TRAMPOLINK(VV[" (third x) "],&LK" i ");}")))
+	      "(int narg, ...) {TRAMPOLINK(" (third x) ",&LK" i ");}")))
 
   (wt-h "#define compiler_data_text_size " *wt-string-size*)
   (wt-nl1 "static const char *compiler_data_text = ")
@@ -279,8 +279,8 @@
 (defun wt-if-proclaimed (fname cfun vv lambda-expr)
   (when (fast-link-proclaimed-type-p fname)
     (if (assoc fname *inline-functions*)
-      (wt-nl "(void)putprop(VV[" vv "],make_fixnum((int)LI"
-             cfun "),VV[" (add-object 'SYS::CDEFN)"]);")
+      (wt-nl "(void)putprop(" vv ",make_fixnum((int)LI"
+             cfun ")," (add-object 'SYS::CDEFN) ");")
       (let ((arg-c (length (car (third lambda-expr))))
             (arg-p (length (get fname 'PROCLAIMED-ARG-TYPES))))
         (if (= arg-c arg-p)
@@ -306,15 +306,12 @@
 		      (nkey (length (fifth (third lambda-expr)))))
   (declare (ignore sp funarg-vars))
   (when (get fname 'NO-GLOBAL-ENTRY) (return-from t2defun nil))
-  (wt-nl "MF(VV[" vv "],L" cfun ",Cblock);")
+  (wt-nl "MF(" vv ",L" cfun ",Cblock);")
   (when (< *space* 3)
     (when doc
-      (wt-nl "(void)putprop(VV[" vv "],VV[" doc "],VV["
-	     (add-symbol 'si::function-documentation) "]);")
-      (wt-nl))
-    (setf (get fname 'DEBUG-PROP) t)
-    (wt-nl "(void)putprop(VV[" vv "],VV[Vdeb" vv "],VV["
-	   (add-object 'ARGLIST) "]);"))
+      (wt-nl "(void)putprop(" vv "," doc ","
+	     (add-symbol 'si::function-documentation) ");")
+      (wt-nl)))
   (when (get fname 'PROCLAIMED-FUNCTION)
 	(wt-if-proclaimed fname cfun vv lambda-expr))
 )
@@ -417,9 +414,7 @@
 	  (wt-function-prolog sp)
 	  (c2lambda-expr lambda-list (third (cddr lambda-expr)) cfun fname)
 	  (wt-nl1 "}")
-	  (wt-function-epilogue))))
-  (add-debug-info fname lambda-expr)	; needed also when code is shared
-  )
+	  (wt-function-epilogue)))))
 
 (defun wt-function-prolog (&optional sp local-entry)
   (wt " VT" *reservation-cmacro*
@@ -458,24 +453,6 @@
       (unless (= (1+ i) *max-env*) (wt-h1 ",")))
     (wt-h1 ";"))
   )
-
-;;; Modified for debugging compiled functions. Beppe
-(defun add-debug-info (fname lambda-expr)
-  (cond
-    ((>= *space* 3))
-    ((null (get fname 'DEBUG-PROP))
-     (warn "~a has a duplicate definition in this file" fname))
-    (t
-     (remprop fname 'DEBUG-PROP)
-     (let* ((args (third lambda-expr))
-	    (requireds (mapcar #'var-name (first args)))
-	    (optionals (mapcar #'(lambda (x) (var-name (car x)))
-			       (second args)))
-	    ;; (rest (var-name (third args)))
-	    (keywords (mapcar #'(lambda (x) (var-name (second x))) (fifth args)))
-	    )
-       (wt-h "#define Vdeb" (add-symbol fname) " "
-	     (add-object (nconc requireds optionals keywords)))))))
 
 ;;; Checks the register slots of variables, and finds which
 ;;; variables should be in registers, reducing the var-ref value
@@ -582,15 +559,14 @@
   (declare (ignore macro-lambda sp))
   (when (< *space* 3)
     (when doc
-      (wt-nl "(void)putprop(VV[" vv "],VV[" doc "],VV["
-	     (add-symbol 'si::function-documentation) "]);")
+      (wt-nl "(void)putprop(" vv "," doc ","
+	     (add-symbol 'si::function-documentation) ");")
       (wt-nl))
     (when ppn
-      (wt-nl "(void)putprop(VV[" vv "],VV[" ppn "],siSpretty_print_format);")
+      (wt-nl "(void)putprop(" vv "," ppn ",siSpretty_print_format);")
       (wt-nl)))
   (wt-h "static cl_object L" cfun "();")
-  (wt-nl "MM(VV[" vv "],L" cfun ",Cblock);")
-  )
+  (wt-nl "MM(" vv ",L" cfun ",Cblock);"))
 
 (defun t3defmacro (fname cfun macro-lambda doc ppn sp
                          &aux (*lcl* 0) (*temp* 0) (*max-temp* 0)
@@ -640,7 +616,7 @@
   (wt-nl "VV[" vv "]=string_to_object(VV[" vv "]);"))
 
 (defun t2declare (vv)
-  (wt-nl "VV[" vv "]->symbol.stype=(short)stp_special;"))
+  (wt-nl vv "->symbol.stype=(short)stp_special;"))
 
 (defun t1defvar (args &aux form (doc nil) (name (car args)))
   (when *compile-time-too* (cmp-eval `(defvar ,@args)))
@@ -659,15 +635,15 @@
   )
 
 (defun t2defvar (var form doc &aux (vv (var-loc var)))
-  (wt-nl "VV[" vv "]->symbol.stype=(short)stp_special;")
+  (wt-nl vv "->symbol.stype=(short)stp_special;")
   (let* ((*exit* (next-label)) (*unwind-exit* (list *exit*))
          (*destination* (list 'VAR var)))
-        (wt-nl "if(VV[" vv "]->symbol.dbind == OBJNULL){")
+        (wt-nl "if(" vv "->symbol.dbind == OBJNULL){")
         (c2expr form)
         (wt "}")
         (wt-label *exit*))
   (when (and doc (< *space* 3))
-    (wt-nl "(void)putprop(VV[" vv "],VV[" doc "],VV[" (add-symbol 'si::variable-documentation) "]);")
+    (wt-nl "(void)putprop(" vv "," doc "," (add-symbol 'si::variable-documentation) ");")
     (wt-nl))
   )
 
@@ -822,19 +798,19 @@
           ((eq (caar s) 'QUOTE)
            (wt-nl1 (cadadr s))
            (if (eq (caadr s) 'OBJECT)
-	       (wt "=VV[" (cadar s) "];")
+	       (wt "=" (cadar s) ";")
 	       (wt "=object_to_" (string-downcase (symbol-name (caadr s)))
-		   "(VV[" (cadar s) "]);")))
+		   "(" (cadar s) ");")))
           (t
            (setq narg (length cdar s))
            (cond ((setq fd (assoc (caar s) *global-funs*))
                   (cond (*compiler-push-events*
-                         (wt-nl1 "ihs_push(VV[" (add-symbol (caar s)) "],&narg);")
+                         (wt-nl1 "ihs_push(" (add-symbol (caar s)) ",&narg);")
                          (wt-nl1 "L" (cdr fd) "();")
                          (wt-nl1 "ihs_pop();"))
                         (t (wt-nl1 "L" (cdr fd) "(" narg))))
-                 (t (wt-nl1 "funcall(" (1+ narg) ",VV[" (add-symbol (caar s))
-                            "]->symbol.gfdef"))
+                 (t (wt-nl1 "funcall(" (1+ narg) "," (add-symbol (caar s))
+                            "->symbol.gfdef"))
                  )
            (dolist (arg (cdar s))
              (wt ",")
@@ -900,7 +876,7 @@
                          &aux (vv (add-symbol fname)))
   (declare (ignore arg-types type cname))
   (wt-h "static L" cfun "();")
-  (wt-nl "MF(VV[" vv "],L" cfun ",Cblock);")
+  (wt-nl "MF(" vv ",L" cfun ",Cblock);")
   )
 
 (defun t3defentry (fname cfun arg-types type cname)
@@ -980,7 +956,7 @@
                          &aux (vv (add-symbol fname)))
   (declare (ignore arg-types type body))
   (wt-h "static cl_object L" cfun "();")
-  (wt-nl "MF(VV[" vv "],L" cfun ",Cblock);")
+  (wt-nl "MF(" vv ",L" cfun ",Cblock);")
   )
 
 #|
@@ -1115,7 +1091,7 @@
 		       &aux (vv (add-symbol fname)))
   (declare (ignore lambda-list body))
   (wt-h "static L" cfun "();")
-  (wt-nl "MF(VV[" vv "],L" cfun ",Cblock);")
+  (wt-nl "MF(" vv ",L" cfun ",Cblock);")
   )
 
 (defun t3defunC (fname cfun lambda-list body)
@@ -1175,7 +1151,7 @@
 	(wt-nl "parse_key(vs_base+" (+ nreq nopt) ",FALSE,"
 	       (if allow-other-keys "TRUE," "FALSE,") (length keywords))
 	(dolist (k keywords)
-	  (wt-nl ",VV[" (add-object (car k)) "]"))
+	  (wt-nl "," (add-object (car k))))
 	(wt ");")
 	(do ((ks keywords (cdr ks))
 	     (i (+ nreq nopt) (1+ i)))

@@ -3,17 +3,11 @@
 #include "ecls.h"
 #include "page.h"
 
-struct function_info {
-  const char *name;
-  cl_object (*f)(int, ...);
-  short type;
-};
-
 #define form 2
 #define cl 0
 #define si 1
 
-static const struct function_info all_functions[] = {
+const struct function_info all_functions[] = {
 
 	/* alloc.c */
 
@@ -34,6 +28,10 @@ static const struct function_info all_functions[] = {
 #ifdef GBC_BOEHM
 	{"GC", clLgc, cl},
 #endif
+
+	/* all_symbols.c */
+
+	{"MANGLE-NAME", siLmangle_name, si},
 
 	/* array.c */
 
@@ -332,7 +330,7 @@ static const struct function_info all_functions[] = {
 	{"COPY-TREE", clLcopy_tree, cl},
 	{"REVAPPEND", clLrevappend, cl},
 	{"NCONC", clLnconc, cl},
-	{"NRECONC", clLreconc, cl},
+	{"NRECONC", clLnreconc, cl},
 
 	{"BUTLAST", clLbutlast, cl},
 	{"NBUTLAST", clLnbutlast, cl},
@@ -410,7 +408,7 @@ static const struct function_info all_functions[] = {
 	{"ARGC", siLargc, si},
 	{"ARGV", siLargv, si},
 	{"GETENV", siLgetenv, si},
-	{"POINTER", siLaddress, si},
+	{"POINTER", siLpointer, si},
 #if !defined(MSDOS) && !defined(__NeXT)
 	{"MACHINE-INSTANCE", clLmachine_instance, cl},
 	{"MACHINE-VERSION", clLmachine_version, cl},
@@ -439,12 +437,12 @@ static const struct function_info all_functions[] = {
 
 	/* num-arith.c */
 
-	{"+", clLplus, cl},
-	{"-", clLminus, cl},
-	{"*", clLtimes, cl},
-	{"/", clLdivide, cl},
-	{"1+", clLone_plus, cl},
-	{"1-", clLone_minus, cl},
+	{"+", clLP, cl},
+	{"-", clLM, cl},
+	{"*", clLX, cl},
+	{"/", clLN, cl},
+	{"1+", clL1P, cl},
+	{"1-", clL1M, cl},
 	{"CONJUGATE", clLconjugate, cl},
 	{"GCD", clLgcd, cl},
 	{"LCM", clLlcm, cl},
@@ -474,12 +472,12 @@ static const struct function_info all_functions[] = {
 
 	/* num_comp.c */
 
-	{"=", clLall_the_same, cl},
-	{"/=", clLall_different, cl},
-	{"<", clLmonotonically_increasing, cl},
-	{">", clLmonotonically_decreasing, cl},
-	{"<=", clLmonotonically_nondecreasing, cl},
-	{">=", clLmonotonically_nonincreasing, cl},
+	{"=", clLE, cl},
+	{"/=", clLNE, cl},
+	{"<", clLL, cl},
+	{">", clLG, cl},
+	{"<=", clLLE, cl},
+	{">=", clLGE, cl},
 	{"MAX", clLmax, cl},
 	{"MIN", clLmin, cl},
 
@@ -627,7 +625,7 @@ static const struct function_info all_functions[] = {
 	{"WRITE-STRING", clLwrite_string, cl},
 	{"WRITE-LINE", clLwrite_line, cl},
 	{"WRITE-BYTE", clLwrite_byte, cl},
-	{"WRITE-BYTES", clLwrite_bytes, si},
+	{"WRITE-BYTES", siLwrite_bytes, si},
 	{"TERPRI", clLterpri, cl},
 	{"FRESH-LINE", clLfresh_line, cl},
 	{"FINISH-OUTPUT", clLforce_output, cl},
@@ -668,7 +666,7 @@ static const struct function_info all_functions[] = {
 	{"PARSE-INTEGER", clLparse_integer, cl},
 
 	{"READ-BYTE", clLread_byte, cl},
-	{"READ-BYTES", clLread_bytes, si},
+	{"READ-BYTES", siLread_bytes, si},
 
 	{"COPY-READTABLE", clLcopy_readtable, cl},
 	{"READTABLEP", clLreadtablep, cl},
@@ -797,8 +795,8 @@ static const struct function_info all_functions[] = {
 	{"SLEEP", clLsleep, cl},
 	{"GET-INTERNAL-RUN-TIME", clLget_internal_run_time, cl},
 	{"GET-INTERNAL-REAL-TIME", clLget_internal_real_time, cl},
-	{"GET-LOCAL-TIME-ZONE", clLget_local_time_zone, si},
-	{"DAYLIGHT-SAVING-TIME-P", clLdaylight_saving_timep, si},
+	{"GET-LOCAL-TIME-ZONE", siLget_local_time_zone, si},
+	{"DAYLIGHT-SAVING-TIME-P", siLdaylight_saving_time_p, si},
 
 	/* toplevel.c */
 

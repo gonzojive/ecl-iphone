@@ -286,6 +286,8 @@ read_name(int is_symbol)
 		poolp--;
 	if (l > 2 && oneC && poolp[-1] == 'P')
 		poolp--;
+	if (poolp[-1] == '_')
+		poolp[-1] = 'M';
 	if (colon == NULL) {
 		char buf[256];
 		poolp[0] = buf[0] = '\0';

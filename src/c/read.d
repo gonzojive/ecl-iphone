@@ -1947,7 +1947,7 @@ CANNOT_PARSE:
 	@(return MAKE_FIXNUM(c))
 @)
 
-@(defun read_bytes (stream string start end)
+@(defun si::read_bytes (stream string start end)
 	int is, ie, c; FILE *fp;
 @
 	assert_type_stream(stream);

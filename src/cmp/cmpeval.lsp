@@ -282,7 +282,7 @@
 
 (defun wt-structure-ref (loc name-vv index)
   (if *safe-compile*
-      (wt "structure_ref(" loc ",VV[" name-vv "]," index ")")
+      (wt "structure_ref(" loc "," name-vv "," index ")")
       #+clos
       (wt "(" loc ")->instance.slots[" index "]")
       #-clos
@@ -329,7 +329,7 @@
   (setq x (second (first locs)))
   (setq y (second (second locs)))
   (if *safe-compile*
-      (wt-nl "structure_set(" x ",VV[" name-vv "]," index "," y ");")
+      (wt-nl "structure_set(" x "," name-vv "," index "," y ");")
       #+clos
       (wt-nl "(" x ")->instance.slots[" index "]= " y ";")
       #-clos

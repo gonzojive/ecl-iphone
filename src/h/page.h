@@ -142,3 +142,10 @@ struct keyword_info {
 
 extern const struct keyword_info all_keywords[];
 
+struct function_info {
+  const char *name;
+  cl_object (*f)(int, ...);
+  short type;
+};
+
+extern const struct function_info all_functions[];

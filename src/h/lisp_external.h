@@ -28,6 +28,10 @@ extern cl_object clLgc _ARGS((int narg, cl_object area));
 extern cl_object siLroom_report _ARGS((int narg));
 #endif /* GBC_BOEHM */
 
+/* all_symbols.c */
+
+extern cl_object siLmangle_name _ARGS((int narg, cl_object symbol, ...));
+
 /* array.c */
 
 extern cl_object clLaref _ARGS((int narg, cl_object x, ...));
@@ -135,7 +139,7 @@ extern cl_object siLspecialp _ARGS((int narg, cl_object sym));
 
 /* compiler.c */
 
-extern cl_object siSlambda_block;
+extern cl_object clSlambda_block;
 extern cl_object clSdeclare;
 extern cl_object clScompile;
 extern cl_object clSload;
@@ -391,7 +395,7 @@ extern cl_object clLcopy_alist _ARGS((int narg, cl_object x));
 extern cl_object clLcopy_tree _ARGS((int narg, cl_object x));
 extern cl_object clLrevappend _ARGS((int narg, cl_object x, cl_object y));
 extern cl_object clLnconc _ARGS((int narg, ...));
-extern cl_object clLreconc _ARGS((int narg, cl_object x, cl_object y));
+extern cl_object clLnreconc _ARGS((int narg, cl_object x, cl_object y));
 extern cl_object clLbutlast _ARGS((int narg, cl_object lis, ...));
 extern cl_object clLnbutlast _ARGS((int narg, cl_object lis, ...));
 extern cl_object clLldiff _ARGS((int narg, cl_object x, cl_object y));
@@ -481,7 +485,7 @@ extern cl_object clLquit _ARGS((int narg, ...));
 extern cl_object siLargc _ARGS((int narg));
 extern cl_object siLargv _ARGS((int narg, cl_object index));
 extern cl_object siLgetenv _ARGS((int narg, cl_object var));
-extern cl_object siLaddress _ARGS((int narg, cl_object x));
+extern cl_object siLpointer _ARGS((int narg, cl_object x));
 extern cl_object siLnani _ARGS((int narg, cl_object x));
 extern cl_object clLidentity _ARGS((int narg, cl_object x));
 extern cl_object clLmachine_instance _ARGS((int narg));
@@ -505,14 +509,14 @@ extern cl_object clLvalues_list _ARGS((int narg, cl_object list));
 
 /* num_arith.c */
 
-extern cl_object clLtimes _ARGS((int narg, ...));
-extern cl_object clLplus _ARGS((int narg, ...));
-extern cl_object clLminus _ARGS((int narg, cl_object num, ...));
+extern cl_object clLX _ARGS((int narg, ...));
+extern cl_object clLP _ARGS((int narg, ...));
+extern cl_object clLM _ARGS((int narg, cl_object num, ...));
 extern cl_object clLconjugate _ARGS((int narg, cl_object c));
-extern cl_object clLdivide _ARGS((int narg, cl_object num, ...));
+extern cl_object clLN _ARGS((int narg, cl_object num, ...));
 extern cl_object clLgcd _ARGS((int narg, ...));
-extern cl_object clLone_plus _ARGS((int narg, cl_object x));
-extern cl_object clLone_minus _ARGS((int narg, cl_object x));
+extern cl_object clL1P _ARGS((int narg, cl_object x));
+extern cl_object clL1M _ARGS((int narg, cl_object x));
 extern cl_object clLlcm _ARGS((int narg, cl_object lcm, ...));
 
 /* num_co.c */
@@ -539,12 +543,12 @@ extern cl_object clLimagpart _ARGS((int narg, cl_object x));
 
 /* num_comp.c */
 
-extern cl_object clLall_the_same _ARGS((int narg, cl_object num, ...));
-extern cl_object clLall_different _ARGS((int narg, ...));
-extern cl_object clLmonotonically_nondecreasing _ARGS((int narg, ...));
-extern cl_object clLmonotonically_nonincreasing _ARGS((int narg, ...));
-extern cl_object clLmonotonically_increasing _ARGS((int narg, ...));
-extern cl_object clLmonotonically_decreasing _ARGS((int narg, ...));
+extern cl_object clLE _ARGS((int narg, cl_object num, ...));
+extern cl_object clLNE _ARGS((int narg, ...));
+extern cl_object clLL _ARGS((int narg, ...));
+extern cl_object clLG _ARGS((int narg, ...));
+extern cl_object clLGE _ARGS((int narg, ...));
+extern cl_object clLLE _ARGS((int narg, ...));
 extern cl_object clLmax _ARGS((int narg, cl_object max, ...));
 extern cl_object clLmin _ARGS((int narg, cl_object min, ...));
 
@@ -742,9 +746,10 @@ extern cl_object clLwrite_line _ARGS((int narg, cl_object strng, ...));
 extern cl_object clLterpri _ARGS((int narg, ...));
 extern cl_object clLfresh_line _ARGS((int narg, ...));
 extern cl_object clLforce_output _ARGS((int narg, ...));
+#define clLfinish_output clLforce_output
 extern cl_object clLclear_output _ARGS((int narg, ...));
 extern cl_object clLwrite_byte _ARGS((int narg, cl_object integer, cl_object binary_output_stream));
-extern cl_object clLwrite_bytes _ARGS((int narg, cl_object stream, cl_object string, cl_object start, cl_object end));
+extern cl_object siLwrite_bytes _ARGS((int narg, cl_object stream, cl_object string, cl_object start, cl_object end));
 
 /* profile.c */
 
@@ -779,7 +784,7 @@ extern cl_object clLread_char_no_hang _ARGS((int narg, ...));
 extern cl_object clLclear_input _ARGS((int narg, ...));
 extern cl_object clLparse_integer _ARGS((int narg, cl_object strng, ...));
 extern cl_object clLread_byte _ARGS((int narg, cl_object binary_input_stream, ...));
-extern cl_object clLread_bytes _ARGS((int narg, cl_object stream, cl_object string, cl_object start, cl_object end));
+extern cl_object siLread_bytes _ARGS((int narg, cl_object stream, cl_object string, cl_object start, cl_object end));
 extern cl_object clLcopy_readtable _ARGS((int narg, ...));
 extern cl_object clLreadtablep _ARGS((int narg, cl_object readtable));
 extern cl_object clLset_syntax_from_char _ARGS((int narg, cl_object tochr, cl_object fromchr, ...));
@@ -922,8 +927,8 @@ extern cl_object clLget_universal_time _ARGS((int narg));
 extern cl_object clLsleep _ARGS((int narg, cl_object z));
 extern cl_object clLget_internal_run_time _ARGS((int narg));
 extern cl_object clLget_internal_real_time _ARGS((int narg));
-extern cl_object clLget_local_time_zone _ARGS((int narg));
-extern cl_object clLdaylight_saving_timep _ARGS((int narg, ...));
+extern cl_object siLget_local_time_zone _ARGS((int narg));
+extern cl_object siLdaylight_saving_time_p _ARGS((int narg, ...));
 
 /* typespec.c */
 

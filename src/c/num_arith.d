@@ -18,7 +18,7 @@
 
 /*  (*		)  */
 
-@(defun times (&rest nums)
+@(defun * (&rest nums)
 	int i;
 	cl_object numi, prod = MAKE_FIXNUM(1);
 @
@@ -208,7 +208,7 @@ number_times(cl_object x, cl_object y)
 }
 
 /* (+          )   */
-@(defun plus (&rest nums)
+@(defun + (&rest nums)
         int i;
 	cl_object numi, sum = MAKE_FIXNUM(0);
 @
@@ -363,7 +363,7 @@ number_plus(cl_object x, cl_object y)
 }
 
 /*  (-		)  */
-@(defun minus (num &rest nums)
+@(defun - (num &rest nums)
 	int i;
 	cl_object diff;
 @
@@ -586,7 +586,7 @@ number_negate(cl_object x)
 }
 
 /*  (/		)  */
-@(defun divide (num &rest nums)
+@(defun / (num &rest nums)
 	int i;
 @
 	/* INV: type check is in number_divide() */
@@ -802,7 +802,7 @@ get_gcd(cl_object x, cl_object y)
 }
 
 /*  (1+ x)  */
-@(defun one_plus (x)
+@(defun 1+ (x)
 @	/* INV: type check is in one_plus() */
 	@(return one_plus(x))
 @)
@@ -848,7 +848,7 @@ one_plus(cl_object x)
 }
 
 /*  (1-	x)  */
-@(defun one_minus (x)
+@(defun 1- (x)
 @	/* INV: type check is in one_minus() */
 	@(return one_minus(x))
 @)

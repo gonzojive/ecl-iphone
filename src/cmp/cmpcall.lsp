@@ -279,8 +279,8 @@
                       (assoc (third funob) *global-funs*)))
        (let ((temp (list 'TEMP (next-temp))))
          (if *safe-compile*
-           (wt-nl temp "=symbol_function(VV[" (add-symbol (third funob)) "]);")
-           (wt-nl temp "=VV[" (add-symbol (third funob)) "]->symbol.gfdef;"))
+           (wt-nl temp "=symbol_function(" (add-symbol (third funob)) ");")
+           (wt-nl temp "=" (add-symbol (third funob)) "->symbol.gfdef;"))
          temp)))
     (ORDINARY (let* ((temp (list 'TEMP (next-temp)))
                      (*destination* temp))
@@ -318,10 +318,10 @@
   (unless loc
     (setq loc
 	  (if *compiler-push-events*
-	      `(VV ,(add-symbol fname))
-	      (format nil (if *safe-compile* 
-				  "symbol_function(VV[~d])"
-				  "VV[~d]->symbol.gfdef") (add-symbol fname)))))
+	      (add-symbol fname)
+	      (format nil
+		      (if *safe-compile* "symbol_function(~A)" "~A->symbol.gfdef")
+		      (add-symbol fname)))))
   (unwind-exit
    (if (eq args 'ARGS-PUSHED)
        (list 'CALL "apply" narg (list loc "&VALUES(0)") fname)

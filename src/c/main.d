@@ -153,7 +153,7 @@ main(int argc, char **argv)
 	@(return ((value == NULL)? Cnil : make_string_copy(value)))
 @)
 
-@(defun si::address (x)
+@(defun si::pointer (x)
 @
 	@(return MAKE_FIXNUM((int)x))
 @)

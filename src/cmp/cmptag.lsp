@@ -147,7 +147,7 @@
 	  (when (and (tag-p tag) (plusp (tag-ref tag)))
 	    (setf (tag-label tag) (next-label))
 	    (setf (tag-unwind-exit tag) label)
-	    (wt-nl "if (eql(nlj_tag,VV[" (add-symbol (tag-name tag)) "])) ")
+	    (wt-nl "if (eql(nlj_tag," (add-symbol (tag-name tag)) ")) ")
 	    (wt-go (tag-label tag))))
 	(when (var-ref-ccb tag-loc)
 	  (wt-nl "FEerror(\"The GO tag ~s is not established.\",1,nlj_tag);"))
@@ -214,7 +214,7 @@
 
 (defun c2go (tag nonlocal &aux (var (tag-var tag)))
   (if nonlocal
-      (wt-nl "go(" var ",VV[" (add-symbol (tag-name tag)) "]);")
+      (wt-nl "go(" var "," (add-symbol (tag-name tag)) ");")
       ;; local go
       (progn
 	(unwind-no-exit (tag-unwind-exit tag))

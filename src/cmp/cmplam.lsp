@@ -595,7 +595,7 @@
     (wt-nl "   CAR(p)=") (wt-va_arg call-lambda) (wt ";i++;}")
     (bind rest-loc rest))
 
-  (wt-h "#define L" cfun "keys (&VV[" (add-keyword (caar keywords)) "])")
+  (wt-h "#define L" cfun "keys (&" (add-keyword (caar keywords)) ")")
   (dolist (kwd (rest keywords))
     (add-keyword (first kwd)))
 
@@ -892,7 +892,7 @@
 	       (declare (object reqs))
 	       (when (or *safe-compile* *compiler-check-args*)
 		 (wt-nl "if(endp(") (wt-lcl lcl)
-		 (wt "))FEinvalid_macro_call(VV[" (add-symbol name) "]);"))
+		 (wt "))FEinvalid_macro_call(" (add-symbol name) ");"))
 	       (dm-bind-loc (car reqs) `(CAR ,lcl))
 	       (when (or (cdr reqs) optionals rest key-flag
 			 *safe-compile* *compiler-check-args*)
@@ -922,7 +922,7 @@
 		 (wt-nl "{cl_object " loc1 ";")
 		 (dolist (kwd keywords)
 		   (wt-nl loc1 "=getf(") (wt-lcl lcl)
-		   (wt ",VV[" (add-symbol (car kwd)) "],OBJNULL);")
+		   (wt "," (add-symbol (car kwd)) ",OBJNULL);")
 		   (wt-nl "if(" loc1 "==OBJNULL){")
 		   (let ((*env* *env*)
 			 (*unwind-exit* *unwind-exit*))
@@ -937,13 +937,13 @@
 			(null rest)
 			(null key-flag))
 	       (wt-nl "if(!endp(") (wt-lcl lcl)
-	       (wt "))FEinvalid_macro_call(VV[" (add-symbol name) "]);"))
+	       (wt "))FEinvalid_macro_call(" (add-symbol name) ");"))
 	     (when (and (or *safe-compile* *compiler-check-args*)
 			key-flag
 			(not allow-other-keys))
 	       (wt-nl "check_other_key(") (wt-lcl lcl) (wt "," (length keywords))
 	       (dolist (kwd keywords)
-		 (wt ",VV[" (add-symbol (car kwd)) "]"))
+		 (wt "," (add-symbol (car kwd))))
 	       (wt ");"))
 	     (dolist (aux auxs)
 	       (dm-bind-init aux)))

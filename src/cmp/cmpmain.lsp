@@ -235,7 +235,6 @@ Cannot compile ~a."
 		   (format t "~&;;; Calling the C compiler... "))
                  (compiler-cc c-pathname o-pathname)
                  (cond ((probe-file o-pathname)
-                        ;(cat-data-file o-pathname data-pathname)
                         (when load (load o-pathname))
                         (when *compile-verbose*
 			  (print-compiler-info)
@@ -247,7 +246,6 @@ Cannot compile ~a."
 						  (pathname-name o-pathname))))
 			(si:system (format nil "mv ~A ~A" (namestring ob-name)
 					    (namestring o-pathname)))
-                        ;(cat-data-file o-pathname data-pathname)
                         (when load (load o-pathname))
                         (when *compile-verbose*
 			  (print-compiler-info)
@@ -368,7 +366,6 @@ Cannot compile ~a."
           (delete-file c-pathname)
           (delete-file h-pathname)
           (cond ((probe-file o-pathname)
-                 ;(cat-data-file o-pathname data-pathname)
                  (load o-pathname :verbose nil)
                  (when *compile-verbose* (print-compiler-info))
                  (delete-file o-pathname)
@@ -483,18 +480,6 @@ Cannot compile ~a."
 ;	   (namestring o-pathname)
 ;	   (namestring s-pathname))
    ))
-
-(defun cat-data-file (o-pathname data-pathname)
-  (with-open-file (o-file (namestring o-pathname)
-			  :direction :output
-			  :if-exists :append)
-    ;; cat data-file >> o-file
-    (with-open-file (data-file (namestring data-pathname))
-      (do ((buffer (make-string 256))
-	   (n 0))
-	  ((zerop (setq n (sys::read-bytes data-file buffer 0 256))))
-	(declare (fixnum n))
-	(sys::write-bytes o-file buffer 0 n)))))
 
 (defun print-compiler-info ()
   (format t "~&;;; OPTIMIZE levels: Safety=~d~:[ (No runtime error checking)~;~], Space=~d, Speed=~d~%"

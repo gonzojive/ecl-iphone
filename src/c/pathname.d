@@ -983,7 +983,7 @@ coerce_to_from_pathname(cl_object x, cl_object host)
 		  FEerror("~S is not a valid to-pathname translation", 1, from);
 		set = CONS(CONS(from, CONS(to, Cnil)), set);
 	}
-	CADR(pair) = @reconc(2, set, Cnil);
+	CADR(pair) = @nreconc(2, set, Cnil);
 	@(return set)
 @)
 
@@ -1101,7 +1101,7 @@ translate_pathname(cl_object source, cl_object from, cl_object to)
 		a = CDR(a);
 		b = CDR(b);
 	}
-	@reconc(2, wilds, Cnil);
+	@nreconc(2, wilds, Cnil);
 	if (a != Cnil || b != Cnil)
 		goto error;
 	for (c = Cnil, pc = &c, b = to->pathname.directory; !endp(b); b = CDR(b)) {
