@@ -80,6 +80,7 @@
 	  compile
 	  compile-file
 	  compile-file-pathname
+	  compiler-macro-function
 	  complement
 	  common-lisp
 	  common-lisp-user
@@ -99,6 +100,7 @@
 	  declaration
 	  decode-universal-time
 	  defconstant
+	  define-compiler-macro
 	  define-modify-macro
 	  define-setf-expander
 	  define-symbol-macro

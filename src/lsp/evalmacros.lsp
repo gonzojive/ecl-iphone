@@ -99,6 +99,34 @@ as a VARIABLE doc and can be retrieved by (documentation 'NAME 'variable)."
     #+PDE (SYS:RECORD-SOURCE-PATHNAME ',var 'defconstant)
     ',var))
 
+;;;
+;;; This is a no-op unless the compiler is installed
+;;;
+(defun compiler-macro-function-wrapper (function)
+  #'(lambda (form &optional env)
+      (when (and (listp form) (eq (car form) 'funcall))
+	(pop form))
+      (funcall function form env)))
+
+(defmacro define-compiler-macro (name vl &rest body)
+  (multiple-value-bind (expr pprint doc-string)
+      (sys::expand-defmacro name vl body)
+    (let* ((function `#'(lambda-block ,name ,@(cdr expr))))
+      (when *dump-defun-definitions*
+	(print function)
+	(setq function `(si::bc-disassemble ,function)))
+      `(progn
+	 (setf (get ',name 'sys::compiler-macro)
+	       (compiler-macro-function-wrapper ,function))
+	 ,@(si::expand-set-documentation name 'function doc-string)
+	 ',name))))
+
+(defun compiler-macro-function (name &optional env)
+  (get name 'sys::compiler-macro))
+
+(defun sys::undef-compiler-macro (name)
+  (remprop name 'sys::compiler-macro))
+
 
 ;;; Each of the following macros is also defined as a special form,
 ;;; as required by CLtL. Some of them are used by the compiler (e.g.

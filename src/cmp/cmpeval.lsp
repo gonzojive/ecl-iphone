@@ -86,9 +86,8 @@
 	      (funcall fd args)))
 	((setq fd (macro-function fname))
 	 (c1expr (cmp-expand-macro fd fname args)))
-	((setq fd (get fname 'COMPILER-MACRO))
-	 (error "Compiler macros not yet supported")
-	 (c1expr (cmp-eval `(funcall ',fd ',(cons fname args) nil))))
+	((setq fd (compiler-macro-function fname))
+	 (c1expr (funcall fd (cons fname args) nil)))
 	((and (setq fd (get fname 'SYS::STRUCTURE-ACCESS))
 	      (inline-possible fname)
 	      ;;; Structure hack.
@@ -375,14 +374,6 @@
 	  (list 'VV (add-object val))))
    (t nil)))
 
-(defmacro sys::define-compiler-macro (name vl &rest body)
-  `(progn (setf (get ',name 'COMPILER-MACRO)
-		(sys::expand-defmacro ',name ',vl ',body))
-	  ',name))  
-
-(defun sys::undef-compiler-macro (name)
-  (remprop name 'COMPILER-MACRO))
-
 (defvar *compiler-temps*
 	'(tmp0 tmp1 tmp2 tmp3 tmp4 tmp5 tmp6 tmp7 tmp8 tmp9))
 
@@ -402,8 +393,7 @@
 				vars temps))))
       `(progn
 	 (defun ,name ,vars ,@body)
-	 (sys::define-compiler-macro ,name ,temps
-				    (list* 'LET ,binding ',body))))))
+	 (define-compiler-macro ,name ,temps (list* 'LET ,binding ',body))))))
 
 ;;; ----------------------------------------------------------------------
 
