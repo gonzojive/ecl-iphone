@@ -42,9 +42,9 @@ struct typemanager {
 #define	INIT_HOLEPAGE	150
 #define	CBMINSIZE	64	/*  contiguous block minimal size  */
 
-#define page(p)		(((intptr_t)(char *)(p) / LISP_PAGESIZE) - (DATA_START/LISP_PAGESIZE))
+#define page(p)		(((cl_index)(char *)(p) / LISP_PAGESIZE) - (DATA_START/LISP_PAGESIZE))
 #define	pagetochar(x)	((char *)(((x) * LISP_PAGESIZE) + DATA_START))
-#define round_to_page(x) (((intptr_t)(x) + LISP_PAGESIZE - 1) / LISP_PAGESIZE)
+#define round_to_page(x) (((cl_index)(x) + LISP_PAGESIZE - 1) / LISP_PAGESIZE)
 #define	round_up(n)	(((n) + 03) & ~03)
 #define	available_pages() ((size_t)(real_maxpage-page(heap_end)-new_holepage-real_maxpage/32))
 
