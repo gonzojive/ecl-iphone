@@ -400,8 +400,8 @@ a class metaobject, use REDEFINE-CLASS instead."))
 	    (setf (svref (class-shared-slots (car index)) (cdr index))
 		  (unbound)))
 	(slot-missing (si:instance-class instance) instance slot-name
-		      'SLOT-MAKUNBOUND))
-    class))
+		      'SLOT-MAKUNBOUND)))
+  instance)
 
 (defmethod change-class ((instance standard-object) (new-class standard-class))
     (let* ((old-class (si:instance-class instance))

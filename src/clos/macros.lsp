@@ -46,15 +46,16 @@
 
 ;;; This is only used during boot. The real one is in built-in.
 (eval-when (compile)
-  (defun setf-find-class (class new-value)
+  (defun setf-find-class (new-value class &optional errorp env)
     (warn "Ignoring class definition for ~S" class)))
 
-(defun setf-find-class (name new-value)
+(defun setf-find-class (new-value name &optional errorp env)
   (if (si:instancep new-value)
-      (setf (gethash name si:*class-name-hash-table*) new-value)
+      (progn
+	(setf (gethash name si:*class-name-hash-table*) new-value))
     (error "~A is not a class." new-value)))
 
-(defsetf find-class setf-find-class)
+(defsetf find-class (&rest x) (v) `(setf-find-class ,v ,@x))
 
 ;;; ----------------------------------------------------------------------
 

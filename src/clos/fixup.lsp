@@ -114,7 +114,7 @@
 
 ;;; Now we protect classes from redefinition:
 (eval-when (compile load)
-(defun setf-find-class (name new-value)
+(defun setf-find-class (new-value name &optional errorp env)
   (let ((old-class (find-class name nil)))
     (cond
       ((typep old-class 'built-in-class)
@@ -125,7 +125,8 @@
       ((classp new-value)
        (setf (gethash name si:*class-name-hash-table*) new-value))
       ((null new-value) (remhash name si:*class-name-hash-table*))
-      (t (error "~A is not a class." new-value)))))
+      (t (error "~A is not a class." new-value))))
+  new-value)
 )
 
 ;;;----------------------------------------------------------------------
