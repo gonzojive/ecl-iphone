@@ -2046,9 +2046,11 @@ DIRECTIVE:
 
 @(defun format (strm string &rest args)
 	cl_object output = Cnil;
+	int null_strm = 0;
 @
 	if (Null(strm)) {
 		strm = cl_alloc_adjustable_string(64);
+		null_strm = 1;
 	} else if (strm == Ct) {
 		strm = symbol_value(@'*standard-output*');
 	}
@@ -2064,6 +2066,8 @@ DIRECTIVE:
 			}
 		strm = make_string_output_stream(0);
 		strm->stream.object0 = output;
+		if (null_strm == 0)
+			output = Cnil;
 	}
 	if (!Null(cl_functionp(string))) {
 		cl_apply(3, string, strm, cl_grab_rest_args(args));
