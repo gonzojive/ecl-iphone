@@ -48,8 +48,8 @@
   (let* ((class (class-of instance)))
     ;; initialize-instance slots
     (dolist (slotd (class-slots class))
-      (let* ((slot-initargs (slotd-initargs slotd))
-	     (slot-name (slotd-name slotd)))
+      (let* ((slot-initargs (slot-definition-initargs slotd))
+	     (slot-name (slot-definition-name slotd)))
 	(or
 	 ;; Try to initialize the slot from one of the initargs.
 	 (do ((l initargs) initarg val)
@@ -69,7 +69,7 @@
 		    (or (eq slot-names 'T)
 			(member slot-name slot-names))
 		    (not (slot-boundp instance slot-name)))
-	   (let ((initform (slotd-initform slotd)))
+	   (let ((initform (slot-definition-initform slotd)))
 	     (unless (eq initform '+INITFORM-UNSUPPLIED+)
 	       (when (functionp initform)
 		 (setq initform (funcall initform)))
@@ -82,7 +82,7 @@
 ;;;
 
 (defun count-instance-slots (class)
-  (count :instance (class-slots class) :key #'slotd-allocation))
+  (count :instance (class-slots class) :key #'slot-definition-allocation))
 
 (defmethod allocate-instance ((class class) &key)
   ;; FIXME! Inefficient! We should keep a list of dependent classes.
@@ -123,26 +123,36 @@
   (dolist (slotd (class-slots class))
     (let ((found nil)
 	  (defaults '())
-	  (slotd-initargs (slotd-initargs slotd)))
-      (dolist (key slotd-initargs)
+	  (slot-definition-initargs (slot-definition-initargs slotd)))
+      (dolist (key slot-definition-initargs)
 	(unless (eql (si::search-keyword initargs key) 'si::failed)
 	  (setq found t)))
       (unless found
 	(dolist (scan (class-default-initargs class))
 	  (let ((initarg (first scan))
 		(value (third scan)))
-	    (when (member initarg slotd-initargs)
+	    (when (member initarg slot-definition-initargs)
 	      (setf initargs
 		    (list* initarg (if (functionp value) (funcall value) value)
 			   initargs))
 	      (return)))))))
   initargs)
 
+(defmethod direct-slot-definition-class ((class T) &rest canonicalized-slot)
+  (find-class 'standard-direct-slot-definition nil))
+
+(defmethod effective-slot-definition-class ((class T) &rest canonicalized-slot)
+  (find-class 'standard-effective-slot-definition nil))
+
 (defmethod initialize-instance ((class class) &rest initargs
-				&key direct-superclasses)
+				&key direct-superclasses direct-slots)
 
   ;; this sets up all the slots of the class
   (call-next-method)
+
+  ;; the list of direct slots is converted to direct-slot-definitions
+  (setf (class-direct-slots class)
+	(mapcar #'canonical-slot-to-direct-slot direct-slots))
 
   ;; set up inheritance checking that it makes sense
   (dolist (l (setf (class-direct-superclasses class)
@@ -242,34 +252,52 @@ because it contains a reference to the undefined class~%  ~A"
   ;; whenever possible, in the same position as in C1.
   ;;
   (do* ((all-slots (mapappend #'class-direct-slots (reverse (class-precedence-list class))))
-	(all-names (nreverse (mapcar #'slotd-name all-slots)))
+	(all-names (nreverse (mapcar #'slot-definition-name all-slots)))
 	(output '())
 	(scan all-names (cdr scan)))
        ((endp scan) output)
     (let ((name (first scan)))
       (unless (find name (rest scan))
 	(push (compute-effective-slot-definition
-	       class name (delete name (reverse all-slots) :key #'slotd-name
+	       class name (delete name (reverse all-slots) :key #'slot-definition-name
 				  :test-not #'eq))
 	      output)))))
 
+(defun slot-definition-to-list (slotd)
+  (list :name (slot-definition-name slotd)
+	:initform (slot-definition-initform slotd)
+	:initfunction (slot-definition-initfunction slotd)
+	:type (slot-definition-type slotd)
+	:allocation (slot-definition-allocation slotd)
+	:initargs (slot-definition-initargs slotd)
+	:readers (slot-definition-readers slotd)
+	:writers (slot-definition-writers slotd)
+	:documentation (slot-definition-documentation slotd)))
+
 (defmethod compute-effective-slot-definition ((class class) name direct-slots)
-  (flet ((combine-slotds (new-slotd old-slotd)
-	   (let* ((new-type (slotd-type new-slotd))
-		  (old-type (slotd-type old-slotd)))
-	     (setf (slotd-initargs new-slotd)
-		   (union (slotd-initargs new-slotd)
-			  (slotd-initargs old-slotd)))
-	     (when (eq (slotd-initform new-slotd) '+INITFORM-UNSUPPLIED+)
-	       (setf (slotd-initform new-slotd) (slotd-initform old-slotd)))
-	     (setf (slotd-type new-slotd)
+  (flet ((direct-to-effective (old-slot)
+	   (if (consp old-slot)
+	       (copy-list old-slot)
+	       (let ((initargs (slot-definition-to-list old-slot)))
+		 (apply #'make-instance
+			(apply #'effective-slot-definition-class class initargs)
+			initargs))))
+	 (combine-slotds (new-slotd old-slotd)
+	   (let* ((new-type (slot-definition-type new-slotd))
+		  (old-type (slot-definition-type old-slotd)))
+	     (setf (slot-definition-initargs new-slotd)
+		   (union (slot-definition-initargs new-slotd)
+			    (slot-definition-initargs old-slotd)))
+	     (when (eq (slot-definition-initform new-slotd) '+INITFORM-UNSUPPLIED+)
+	       (setf (slot-definition-initform new-slotd) (slot-definition-initform old-slotd)))
+	     (setf (slot-definition-type new-slotd)
 		   ;; FIXME! we should be more smart then this:
 		   (cond ((subtypep new-type old-type) new-type)
 			 ((subtypep old-type new-type) old-type)
 			 (T `(and ,new-type ,old-type))))
 	     new-slotd)))
     (reduce #'combine-slotds (rest direct-slots)
-	    :initial-value (copy-list (first direct-slots)))))
+	    :initial-value (direct-to-effective (first direct-slots)))))
 
 (defmethod compute-default-initargs ((class class))
   (let ((all-initargs (mapappend #'class-direct-default-initargs
@@ -331,12 +359,12 @@ because it contains a reference to the undefined class~%  ~A"
 	 (shared-index -1))
     (declare (fixnum local-index shared-index))
     (dolist (slot slots)
-      (let* ((name (slotd-name slot))
-	     (allocation (slotd-allocation slot))
+      (let* ((name (slot-definition-name slot))
+	     (allocation (slot-definition-allocation slot))
 	     location)
 	(cond ((eq allocation :INSTANCE) ; local slot
 	       (setq location (incf local-index)))
-	      ((find name direct-slots :key #'slotd-name) ; new shared slot
+	      ((find name direct-slots :key #'slot-definition-name) ; new shared slot
 	       (setq location (cons class (incf shared-index))))
 	      (t			; inherited shared slot
 	       (dolist (c (class-precedence-list class))
@@ -368,12 +396,11 @@ because it contains a reference to the undefined class~%  ~A"
     ((endp slots))
     (declare (fixnum i))
     (let* ((slotd (first slots))
-	   (accessor (slotd-accessors slotd))
-	   (slot-name (slotd-name slotd))
+	   (slot-name (slot-definition-name slotd))
 	   (index i)
 	   reader setter)
       (declare (fixnum index))
-      (if (eql (slotd-allocation slotd) :instance)
+      (if (eql (slot-definition-allocation slotd) :instance)
 	  (setf reader #'(lambda (self)
 			   (let ((value (si:instance-ref self index)))
 			     (if (si:sl-boundp value)
@@ -386,13 +413,10 @@ because it contains a reference to the undefined class~%  ~A"
 			   (slot-value self slot-name))
 		setter #'(lambda (value self)
 			   (setf (slot-value self slot-name) value))))
-      (dolist (fname (append (slotd-accessors slotd) (slotd-readers slotd)))
+      (dolist (fname (slot-definition-readers slotd))
 	(install-method fname nil `(,standard-class) '(self) nil nil
 			reader))
-      (dolist (fname (slotd-accessors slotd))
-	(install-method `(setf ,fname) nil `(nil ,standard-class) '(value self)
-			nil nil setter))
-      (dolist (fname (slotd-writers slotd))
+      (dolist (fname (slot-definition-writers slotd))
 	(install-method fname nil `(nil ,standard-class) '(value self)
 			nil nil setter)))))
 
@@ -454,8 +478,8 @@ because it contains a reference to the undefined class~%  ~A"
       ;; print instance slots
       (format stream "~%it has the following instance slots")
       (dolist (slot slotds)
-	(setq slotname (slotd-name slot))
-	(case (slotd-allocation slot)
+	(setq slotname (slot-definition-name slot))
+	(case (slot-definition-allocation slot)
 	  (:INSTANCE
 	   (format stream "~%~A:~24,8T~A"
 		   slotname
@@ -467,8 +491,8 @@ because it contains a reference to the undefined class~%  ~A"
 	;; print class slots
 	(format stream "~%it has the following class slots")
 	(dolist (slot slotds)
-	  (setq slotname (slotd-name slot))
-	  (unless (eq (slotd-allocation slot) :INSTANCE)
+	  (setq slotname (slot-definition-name slot))
+	  (unless (eq (slot-definition-allocation slot) :INSTANCE)
 	    (format stream "~%~A:~24,8T~A"
 		    slotname
 		    (if (slot-boundp obj slotname)
@@ -528,7 +552,7 @@ because it contains a reference to the undefined class~%  ~A"
 	      ;; The initialization argument has been declared in some method
 	      ((member name method-initargs))
 	      ;; Check if the arguments is associated with a slot
-	      ((find name slots :test #'member :key #'slotd-initargs))
+	      ((find name slots :test #'member :key #'slot-definition-initargs))
 	      (t
 	       (setf unknown-key name)))))))
 
@@ -592,8 +616,8 @@ because it contains a reference to the undefined class~%  ~A"
 	 (i 0 (1+ i)))
 	((null scan))
       (declare (fixnum i))
-      (print (slotd-name (car scan))) (princ ":	")
-      (case (slotd-name (car scan))
+      (print (slot-definition-name (car scan))) (princ ":	")
+      (case (slot-definition-name (car scan))
 	    ((SUPERIORS INFERIORS PRECEDENCE-LIST)
 	     (princ "(")
 	     (do* ((scan (si:instance-ref obj i) (cdr scan))

@@ -869,12 +869,8 @@ by every function, which attempts to generate RENDER requests."
 
 
 ;; $Log$
-;; Revision 1.10  2005-02-14 10:26:38  jjgarcia
-;; + Fixes in the code for backquoted vectors `#(,a ,b ...)
-;; + Fixes in the compiler code for CATCH and VALUES
-;; + Slight improvement in the readability of compiled CATCH
-;; + Implemented lisp hooks for cleaning on exit.
-;; + Improvements in the help messages from "configure"
+;; Revision 1.11  2005-02-25 16:17:39  jjgarcia
+;; Implemented SLOT-DEFINITION objects together with the associated protocols (Field position still missing).
 ;;
 ;; Revision 1.1  2004/06/10 07:59:31  jlr
 ;; Portable CLX library imported

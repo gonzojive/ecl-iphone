@@ -8,6 +8,7 @@
 #define EXT_PACKAGE SI_PACKAGE
 #define KEYWORD_PACKAGE 8
 #define MP_PACKAGE 12
+#define CLOS_PACKAGE 16
 #define ORDINARY_SYMBOL 0
 #define CONSTANT_SYMBOL 1
 #define SPECIAL_SYMBOL 2
@@ -27,6 +28,7 @@
 #define MP_ORDINARY	MP_PACKAGE | ORDINARY_SYMBOL
 #define MP_SPECIAL	MP_PACKAGE | SPECIAL_SYMBOL
 #define MP_CONSTANT	MP_PACKAGE | CONSTANT_SYMBOL
+#define CLOS_ORDINARY	CLOS_PACKAGE | ORDINARY_SYMBOL
 #define KEYWORD		KEYWORD_PACKAGE | CONSTANT_SYMBOL
 
 #include "symbols_list.h"
@@ -172,12 +174,15 @@ make_this_symbol(int i, cl_object s, int code, const char *name,
 	case CONSTANT_SYMBOL: stp = stp_constant; break;
 	case FORM_SYMBOL: form = 1; stp = stp_ordinary;
 	}
-	switch (code & 12) {
+	switch (code & 28) {
 	case CL_PACKAGE: package = cl_core.lisp_package; break;
 	case SI_PACKAGE: package = cl_core.system_package; break;
 	case KEYWORD_PACKAGE: package = cl_core.keyword_package; break;
 #ifdef ECL_THREADS
 	case MP_PACKAGE: package = cl_core.mp_package; break;
+#endif
+#ifdef CLOS
+	case CLOS_PACKAGE: package = cl_core.clos_package; break;
 #endif
 	}
 	s->symbol.t = t_symbol;

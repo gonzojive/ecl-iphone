@@ -24,14 +24,14 @@
 	      (incf si::*inspect-level*)
 	      (dolist (slotd local-slotds)
 		(si::inspect-indent-1)
-		(format t "name : ~S" (clos::slotd-name slotd))
-		(if (slot-boundp instance (clos::slotd-name slotd))
+		(format t "name : ~S" (clos::slot-definition-name slotd))
+		(if (slot-boundp instance (clos::slot-definition-name slotd))
 		    (si::inspect-recursively "value:"
-		       (slot-value instance (clos::slotd-name slotd))
-		       (slot-value instance (clos::slotd-name slotd)))
+		       (slot-value instance (clos::slot-definition-name slotd))
+		       (slot-value instance (clos::slot-definition-name slotd)))
 		    (si::inspect-print "value: Unbound"
 		       nil
-		       (slot-value instance (clos::slotd-name slotd)))))
+		       (slot-value instance (clos::slot-definition-name slotd)))))
 	      (decf si::*inspect-level*))
 	    (progn
 	      (si::inspect-indent)
@@ -43,14 +43,14 @@
 	      (incf si::*inspect-level*)
 	      (dolist (slotd class-slotds)
 		(si::inspect-indent-1)
-		(format t "name : ~S" (clos::slotd-name slotd))
-		(if (slot-boundp instance (clos::slotd-name slotd))
+		(format t "name : ~S" (clos::slot-definition-name slotd))
+		(if (slot-boundp instance (clos::slot-definition-name slotd))
 		    (si::inspect-recursively "value:"
-		       (slot-value instance (clos::slotd-name slotd))
-		       (slot-value instance (clos::slotd-name slotd)))
+		       (slot-value instance (clos::slot-definition-name slotd))
+		       (slot-value instance (clos::slot-definition-name slotd)))
 		    (si::inspect-print "value: Unbound"
 		       nil
-		       (slot-value instance (clos::slotd-name slotd)))))
+		       (slot-value instance (clos::slot-definition-name slotd)))))
 	      (decf si::*inspect-level*))
 	    (progn
 	      (si::inspect-indent)
@@ -66,15 +66,15 @@
 	      (incf si::*inspect-level*)
 	      (dolist (slotd local-slotds)
 		(si::inspect-indent-1)
-		(format t "name : ~S" (clos::slotd-name slotd))
-		(if (slot-boundp instance (clos::slotd-name slotd))
+		(format t "name : ~S" (clos::slot-definition-name slotd))
+		(if (slot-boundp instance (clos::slot-definition-name slotd))
 		    (si::inspect-recursively "value:"
-		       (slot-value instance (clos::slotd-name slotd))
-;		       (slot-value instance (clos::slotd-name slotd))
+		       (slot-value instance (clos::slot-definition-name slotd))
+;		       (slot-value instance (clos::slot-definition-name slotd))
 		       )
 		    (si::inspect-print "value: Unbound"
 		       nil
-;		       (slot-value instance (clos::slotd-name slotd))
+;		       (slot-value instance (clos::slot-definition-name slotd))
 		       )))
 	      (decf si::*inspect-level*))
 	    (progn
@@ -91,15 +91,15 @@
 	      (incf si::*inspect-level*)
 	      (dolist (slotd local-slotds)
 		(si::inspect-indent-1)
-		(format t "name : ~S" (clos::slotd-name slotd))
-		(if (slot-boundp instance (clos::slotd-name slotd))
+		(format t "name : ~S" (clos::slot-definition-name slotd))
+		(if (slot-boundp instance (clos::slot-definition-name slotd))
 		    (si::inspect-recursively "value:"
-		       (slot-value instance (clos::slotd-name slotd))
-;		       (slot-value instance (clos::slotd-name slotd))
+		       (slot-value instance (clos::slot-definition-name slotd))
+;		       (slot-value instance (clos::slot-definition-name slotd))
 		       )
 		    (si::inspect-print "value: Unbound"
 		       nil
-;		       (slot-value instance (clos::slotd-name slotd))
+;		       (slot-value instance (clos::slot-definition-name slotd))
 		       )))
 	      (decf si::*inspect-level*))
 	    (progn
@@ -115,7 +115,7 @@
 	    (progn
 	      (format t "The names of the local slots are:~%")
 	      (dolist (slotd local-slotds)
-		(format t "  ~S~%" (clos::slotd-name slotd))))
+		(format t "  ~S~%" (clos::slot-definition-name slotd))))
 	    (progn
 	      (format t "It has no local slots.~%")))
 	(terpri)
@@ -123,7 +123,7 @@
 	    (progn
 	      (format t "The names of the class slots are:~%")
 	      (dolist (slotd class-slotds)
-		(format t "  ~S~%" (clos::slotd-name slotd))))
+		(format t "  ~S~%" (clos::slot-definition-name slotd))))
 	    (progn
 	      (format t "It has no class slots.~%")))
 	(terpri)))
@@ -136,7 +136,7 @@
 	    (progn
 	      (format t "The names of the (local) slots are:~%")
 	      (dolist (slotd local-slotds)
-		      (format t "  ~S~%" (clos::slotd-name slotd))))
+		      (format t "  ~S~%" (clos::slot-definition-name slotd))))
 	    (progn
 	      (format t "It has no (local) slots.~%")))
 	(terpri)))
@@ -149,7 +149,7 @@
 	    (progn
 	      (format t "The names of the (local) slots are:~%")
 	      (dolist (slotd local-slotds)
-		      (format t "  ~S~%" (clos::slotd-name slotd))))
+		      (format t "  ~S~%" (clos::slot-definition-name slotd))))
 	    (progn
 	      (format t "It has no (local) slots.~%")))
 	(terpri)))
@@ -162,24 +162,24 @@
 			       (read-preserving-whitespace *query-io*)
 			       (si::inspect-read-line))
 			     (append local-slotds class-slotds)
-			     :key #'clos::slotd-name
+			     :key #'clos::slot-definition-name
 			     :test #'eq))))
         (if slotd
 	    (progn
 	      (incf si::*inspect-level*)
 	      (si::inspect-indent-1)
-	      (format t "name : ~S" (clos::slotd-name slotd))
-	      (if (slot-boundp instance (clos::slotd-name slotd))
+	      (format t "name : ~S" (clos::slot-definition-name slotd))
+	      (if (slot-boundp instance (clos::slot-definition-name slotd))
 		  (si::inspect-recursively "value:"
-		     (slot-value instance (clos::slotd-name slotd))
-		     (slot-value instance (clos::slotd-name slotd)))
+		     (slot-value instance (clos::slot-definition-name slotd))
+		     (slot-value instance (clos::slot-definition-name slotd)))
 		  (si::inspect-print "value: Unbound"
 		     nil
-		     (slot-value instance (clos::slotd-name slotd))))
+		     (slot-value instance (clos::slot-definition-name slotd))))
 	      (decf si::*inspect-level*))
 	    (progn
 	      (terpri)
-	      (format t "~S is not a slot of the instance." (slotd-name slotd))
+	      (format t "~S is not a slot of the instance." (slot-definition-name slotd))
 	      (terpri)
 	      (terpri)))))
 
@@ -190,26 +190,26 @@
 			       (read-preserving-whitespace *query-io*)
 			       (si::inspect-read-line))
 			     local-slotds
-			     :key #'clos::slotd-name
+			     :key #'clos::slot-definition-name
 			     :test #'eq))))
         (if slotd
 	    (progn
 	      (incf si::*inspect-level*)
 	      (si::inspect-indent-1)
-	      (format t "name : ~S" (clos::slotd-name slotd))
-	      (if (slot-boundp instance (clos::slotd-name slotd))
+	      (format t "name : ~S" (clos::slot-definition-name slotd))
+	      (if (slot-boundp instance (clos::slot-definition-name slotd))
 		  (si::inspect-recursively "value:"
-		     (slot-value instance (clos::slotd-name slotd))
-;		     (slot-value instance (clos::slotd-name slotd))
+		     (slot-value instance (clos::slot-definition-name slotd))
+;		     (slot-value instance (clos::slot-definition-name slotd))
 		     )
 		  (si::inspect-print "value: Unbound"
 		     nil
-;		     (slot-value instance (clos::slotd-name slotd))
+;		     (slot-value instance (clos::slot-definition-name slotd))
 		     ))
 	      (decf si::*inspect-level*))
 	    (progn
 	      (terpri)
-	      (format t "~S is not a slot of the instance." (slotd-name slotd))
+	      (format t "~S is not a slot of the instance." (slot-definition-name slotd))
 	      (terpri)
 	      (terpri)))))
 
@@ -220,26 +220,26 @@
 			       (read-preserving-whitespace *query-io*)
 			       (si::inspect-read-line))
 			     local-slotds
-			     :key #'clos::slotd-name
+			     :key #'clos::slot-definition-name
 			     :test #'eq))))
         (if slotd
 	    (progn
 	      (incf si::*inspect-level*)
 	      (si::inspect-indent-1)
-	      (format t "name : ~S" (clos::slotd-name slotd))
-	      (if (slot-boundp instance (clos::slotd-name slotd))
+	      (format t "name : ~S" (clos::slot-definition-name slotd))
+	      (if (slot-boundp instance (clos::slot-definition-name slotd))
 		  (si::inspect-recursively "value:"
-		     (slot-value instance (clos::slotd-name slotd))
-;		     (slot-value instance (clos::slotd-name slotd))
+		     (slot-value instance (clos::slot-definition-name slotd))
+;		     (slot-value instance (clos::slot-definition-name slotd))
 		     )
 		  (si::inspect-print "value: Unbound"
 		     nil
-;		     (slot-value instance (clos::slotd-name slotd))
+;		     (slot-value instance (clos::slot-definition-name slotd))
 		     ))
 	      (decf si::*inspect-level*))
 	    (progn
 	      (terpri)
-	      (format t "~S is not a slot of the instance." (slotd-name slotd))
+	      (format t "~S is not a slot of the instance." (slot-definition-name slotd))
 	      (terpri)
 	      (terpri)))))
 

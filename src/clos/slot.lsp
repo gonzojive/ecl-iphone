@@ -17,23 +17,53 @@
 
 (defvar *slot-initform-lambdas* nil)
 
-(defstruct (slotd (:type list))
-  name initargs initform accessors readers writers allocation type
-  documentation)
+(defconstant +slot-definition-slots+
+  '((name :initarg :name :initform nil :accessor slot-definition-name)
+    (initform :initarg :initform :initform nil :accessor slot-definition-initform)
+    (initfunction :initarg :initfunction :initform nil :accessor slot-definition-initfunction)
+    (type :initarg :type :initform t :accessor slot-definition-type)
+    (allocation :initarg :allocation :initform :instance :accessor slot-definition-allocation)
+    (initargs :initarg :initargs :initform nil :accessor slot-definition-initargs)
+    (readers :initarg :readers :initform nil :accessor slot-definition-readers)
+    (writers :initarg :writers :initform nil :accessor slot-definition-writers)
+    (documentation :initarg :documentation :initform nil :accessor slot-definition-documentation)
+    ))
+
+#|
+(defstruct (slot-definition (:type list))
+  name initform initfunction type allocation initargs readers writers documentation)
+|#
+
+(defun make-simple-slotd (&key name initform initfunction type allocation initargs readers writers documentation)
+  (list name initform initfunction type allocation initargs readers writers documentation))
+
+(defun canonical-slot-to-direct-slot (slotd)
+  (if (find-class 'slot-definition nil)
+      (apply #'make-instance
+	     (apply #'direct-slot-definition-class 'standard-direct-slot-definition slotd)
+	     slotd)
+      (apply #'make-simple-slotd slotd)))
+
+(let ((accessors (mapcar #'first (mapcar #'last +slot-definition-slots+))))
+  (dotimes (i (length accessors))
+    (let ((name (first (nth i +slot-definition-slots+)))
+	  (position i)
+	  (f (nth i accessors)))
+      (setf (fdefinition f)
+	    #'(lambda (x) (if (consp x) (nth position x) (slot-value x name))))
+      (setf (fdefinition `(setf ,f))
+	    #'(lambda (v x) (if (consp x) (setf (nth position x) v) (setf (slot-value x name) v)))))))
 
 (defun PARSE-SLOT (slot)
   (declare (si::c-local))
   (let*((name nil)
         (initargs nil)
         (initform '+INITFORM-UNSUPPLIED+)	; default
-        (accessors ())
         (readers ())
         (writers ())
         (allocation ':INSTANCE)
         (type 'T)				; default
-	(documentation nil)
-	(slotd (make-slotd)))
-
+	(documentation nil))
     (cond ((symbolp slot)     (setq name slot))
           ((null (cdr slot))  (setq name (car slot)))
           (t
@@ -60,32 +90,23 @@
                    (case option
                      (:initarg    (push value initargs))
                      (:initform   (setq initform value))
-                     (:accessor   (push value accessors))
+                     (:accessor   (push value readers) (push `(setf ,value) writers))
                      (:reader     (push value readers))
                      (:writer     (push value writers))
                      (:allocation (setq allocation value))
                      (:type       (setq type value))
                      (:documentation     (push value documentation)))))))
-
-    (setf (slotd-name slotd)       name
-	  (slotd-initargs slotd)   initargs
-	  (slotd-initform slotd)   initform
-	  (slotd-accessors slotd)  accessors
-	  (slotd-readers slotd)    readers
-	  (slotd-writers slotd)    writers
-	  (slotd-allocation slotd) allocation
-	  (slotd-type slotd)       type
-	  (slotd-documentation slotd)    documentation)
-
-    slotd))
+    (list :name name :initform initform :initfunction nil :initargs initargs
+	  :readers readers :writers writers :allocation allocation
+	  :documentation documentation)))
 
 (defun PARSE-SLOTS (slots)
   (do ((scan slots (cdr scan))
        (collect))
       ((null scan) (nreverse collect))
     (let* ((slotd (parse-slot (first scan)))
-	   (name (slotd-name slotd)))
-      (when (find name collect :key #'slotd-name)
+	   (name (second slotd)))
+      (when (find name collect :key #'second)
 	(si::simple-program-error
 	 "A definition for the slot ~S appeared twice in a DEFCLASS form"
 	 name))

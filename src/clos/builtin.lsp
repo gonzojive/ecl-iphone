@@ -132,7 +132,7 @@
 (defmethod finalize-inheritance ((class structure-class))
   (call-next-method)
   (dolist (slot (class-slots class))
-    (unless (eq :INSTANCE (slotd-allocation slot))
+    (unless (eq :INSTANCE (slot-definition-allocation slot))
       (error "The structure class ~S can't have shared slots" (class-name class)))))
 
 ;;; ----------------------------------------------------------------------
@@ -171,7 +171,7 @@
 	(return))
       (setq sv (si:instance-ref obj i))
       (write-string " :" stream)
-      (prin1 (slotd-name (car scan)) stream)
+      (prin1 (slot-definition-name (car scan)) stream)
       (write-string " " stream)
       (prin1 sv stream))
     (write-string ")" stream)

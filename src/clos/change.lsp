@@ -42,10 +42,10 @@
     ((old-data standard-object) (new-data standard-object) &rest initargs)
   (let ((old-local-slotds (si::instance-sig old-data))
 	(new-local-slotds (remove :instance (si::instance-sig new-data)
-				  :test-not #'eq :key #'slotd-allocation))
+				  :test-not #'eq :key #'slot-definition-allocation))
 	added-slots)
-    (setf added-slots (set-difference (mapcar #'slotd-name new-local-slotds)
-				      (mapcar #'slotd-name old-local-slotds)))
+    (setf added-slots (set-difference (mapcar #'slot-definition-name new-local-slotds)
+				      (mapcar #'slot-definition-name old-local-slotds)))
     (check-initargs (class-of new-data) initargs
 		    (append (compute-applicable-methods
 			     #'update-instance-for-different-class
@@ -69,8 +69,8 @@
 	   (new-local-slotds (class-slots (class-of instance))))
       (dolist (new-slot new-local-slotds)
 	;; CHANGE-CLASS can only operate on the value of local slots.
-	(when (eq (slotd-allocation new-slot) :INSTANCE)
-	  (let ((name (slotd-name new-slot)))
+	(when (eq (slot-definition-allocation new-slot) :INSTANCE)
+	  (let ((name (slot-definition-name new-slot)))
 	    (if (and (slot-exists-p old-instance name)
 		     (slot-boundp old-instance name))
 		(setf (slot-value instance name) (slot-value old-instance name))
@@ -141,20 +141,20 @@
       (si::instance-sig-set instance)
       (let* ((new-i 0)
 	     (old-local-slotds (remove :instance old-slotds :test-not #'eq
-				       :key #'slotd-allocation))
+				       :key #'slot-definition-allocation))
 	     (new-local-slotds (remove :instance new-slotds :test-not #'eq
-				       :key #'slotd-allocation)))
+				       :key #'slot-definition-allocation)))
 	(declare (fixnum new-i))
 	(setq discarded-slots
-	      (set-difference (mapcar #'slotd-name old-local-slotds)
-			      (mapcar #'slotd-name new-local-slotds)))
+	      (set-difference (mapcar #'slot-definition-name old-local-slotds)
+			      (mapcar #'slot-definition-name new-local-slotds)))
 	(dolist (slot-name discarded-slots)
-	  (let* ((ndx (position slot-name old-local-slotds :key #'slotd-name)))
+	  (let* ((ndx (position slot-name old-local-slotds :key #'slot-definition-name)))
 	    (push (cons slot-name (si::instance-ref old-instance ndx))
 		  property-list)))
 	(dolist (new-slot new-local-slotds)
-	  (let* ((name (slotd-name new-slot))
-		 (old-i (position name old-local-slotds :key #'slotd-name)))
+	  (let* ((name (slot-definition-name new-slot))
+		 (old-i (position name old-local-slotds :key #'slot-definition-name)))
 	    (if old-i
 		(si::instance-set instance new-i
 				  (si::instance-ref old-instance old-i))
@@ -170,11 +170,11 @@
 			 :lambda-list '(class &rest initargs))
 
 (defmethod reinitialize-instance ((class class) &rest initargs
-				  &key direct-superclasses)
+				  &key direct-superclasses (direct-slots nil direct-slots-p))
   (let ((name (class-name class)))
     (if (member name '(CLASS BUILT-IN-CLASS) :test #'eq)
 	(error "The kernel CLOS class ~S cannot be changed." name)
-	#+nil(warn "Redefining class ~S" name)))
+	(warn "Redefining class ~S" name)))
 
   ;; remove previous defined accessor methods
   (when (class-finalized-p class)
@@ -182,15 +182,21 @@
 
   (call-next-method)
 
+  ;; the list of direct slots is converted to direct-slot-definitions
+  (when direct-slots-p
+    (setf (class-direct-slots class)
+	  (mapcar #'canonical-slot-to-direct-slot direct-slots)))
+
   ;; set up inheritance checking that it makes sense
   (dolist (l (setf (class-direct-superclasses class)
 		   (check-direct-superclasses class direct-superclasses)))
     (add-direct-subclass l class))
 
+  ;; if there are no forward references, we can just finalize the class here
   (setf (class-finalized-p class) nil)
-  (unless (find-if #'forward-referenced-class-p
-		   (class-direct-superclasses class))
+  (unless (find-if #'forward-referenced-class-p (class-direct-superclasses class))
     (finalize-inheritance class))
+
   class)
 
 (defmethod make-instances-obsolete ((class class))
@@ -200,43 +206,9 @@
 (defun remove-optional-slot-accessors (class)
   (let ((class-name (class-name class)))
     (dolist (slotd (class-slots class))
-      (dolist (accessor (slotd-accessors slotd))
-	(let* ((gf-object (symbol-function accessor))
-	       (setf-accessor (list 'setf accessor))
-	       (setf-gf-object (fdefinition setf-accessor))
-	       found)
-	  ;; primary reader method
-	  (when (setq found
-		      (find-method gf-object nil (list class-name) nil))
-	    (remove-method gf-object found))
-	  ;; before reader method
-	  (when (setq found
-		      (find-method gf-object ':before (list class-name) nil))
-	    (remove-method gf-object found))
-	  ;; after reader method
-	  (when (setq found
-		      (find-method gf-object ':after (list class-name) nil))
-	    (remove-method gf-object found))
-	  (when (null (generic-function-methods gf-object))
-	    (fmakunbound accessor))
-	  ;; primary writer method
-	  (when (setq found
-		      (find-method setf-gf-object nil (list nil class-name) nil))
-	    (remove-method setf-gf-object found))
-	  ;; before writer method
-	  (when (setq found
-		      (find-method setf-gf-object ':before (list nil class-name) nil))
-	    (remove-method setf-gf-object found))
-	  ;; after writer method
-	  (when (setq found
-		      (find-method setf-gf-object ':after (list nil class-name) nil))
-	    (remove-method setf-gf-object found))
-	  (when (null (generic-function-methods gf-object))
-	    (fmakunbound setf-accessor))))
-
       ;; remove previous defined reader methods
-      (dolist (reader (slotd-readers slotd))
-	(let* ((gf-object (symbol-function reader))
+      (dolist (reader (slot-definition-readers slotd))
+	(let* ((gf-object (fdefinition reader))
 	       found)
 	  ;; primary method
 	  (when (setq found
@@ -254,20 +226,20 @@
 	  (fmakunbound reader))))
 
       ;; remove previous defined writer methods
-      (dolist (writer (slotd-writers slotd))
-	(let* ((gf-object (symbol-function writer))
+      (dolist (writer (slot-definition-writers slotd))
+	(let* ((gf-object (fdefinition writer))
 	       found)
 	  ;; primary method
 	  (when (setq found
-		      (find-method gf-object nil (list class-name) nil))
+		      (find-method gf-object nil (list 'T class-name) nil))
 	    (remove-method gf-object found))
 	  ;; before method
 	  (when (setq found
-		      (find-method gf-object ':before (list class-name) nil))
+		      (find-method gf-object ':before (list 'T class-name) nil))
 	    (remove-method gf-object found))
 	  ;; after method
 	  (when (setq found
-		      (find-method gf-object ':after (list class-name) nil))
+		      (find-method gf-object ':after (list 'T class-name) nil))
 	    (remove-method gf-object found))
 	(when (null (generic-function-methods gf-object))
 	  (fmakunbound writer)))))))

@@ -652,8 +652,8 @@
     (unless entry
       (error "Can't optimize instance access.  Report this as a bug."))
     (setq slot (find slot-name (slot-value class 'SLOTS)
-		     :key #'slotd-name))
-    (if (and slot (eq :INSTANCE (slotd-allocation slot)))
+		     :key #'slot-definition-name))
+    (if (and slot (eq :INSTANCE (slot-definition-allocation slot)))
 	(let* (slot-entry slot-index)
 	  (unless (cdr entry)
 	    ;; there is just one index-table for each different class
@@ -670,15 +670,15 @@
 		    (cddr entry)))
 	  (if new
 	      `(si:instance-set ,instance ,slot-index ,new)
-	      `(the ,(slotd-type slot)
+	      `(the ,(slot-definition-type slot)
 		(si:instance-ref-safe ,instance ,slot-index))))
 	;; dont'optimize shared slots
 	(if new
 	    `(standard-instance-set ,new ,instance ',slot-name)
 	    `(standard-instance-get ,instance ',slot-name)))))
 
-;(defun get-slotd-type (class slot)
-;  (slotd-type (find slot (slot-value class 'SLOTS) :key #'slotd-name)))
+;(defun get-slot-definition-type (class slot)
+;  (slot-definition-type (find slot (slot-value class 'SLOTS) :key #'slot-definition-name)))
 
 (defun signal-slot-unbound (instance slot-name)
   (declare (si::c-local))

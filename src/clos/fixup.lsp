@@ -10,6 +10,55 @@
 (in-package "CLOS")
 
 ;;; ----------------------------------------------------------------------
+;;;                                                                  slots
+
+#|
+(defclass effective-slot-definition (slot-definition))
+
+(defclass direct-slot-definition (slot-definition))
+
+(defclass standard-slot-definition (slot-definition))
+
+(defclass standard-direct-slot-definition (standard-slot-definition direct-slot-definition))
+
+(defclass standard-effective-slot-definition (standard-slot-definition direct-slot-definition))
+|#
+
+(defun convert-one-class (class)
+  (dolist (l (class-slots class))
+    (let ((x (first l)))
+      (when (consp x)
+	(setf (first l)
+	      (apply #'make-instance 'standard-direct-slot-definition
+		     (slot-definition-to-list x))))))
+  (dolist (l (class-slots class))
+    (let ((x (first l)))
+      (when (consp x)
+	(setf (first l)
+	      (apply #'make-instance 'standard-effective-slot-definition
+		     (slot-definition-to-list x))))))
+  (mapc #'convert-one-class (class-direct-subclasses class)))
+
+(progn
+  (eval `(defclass slot-definition ()
+	  ,(mapcar #'(lambda (x) (butlast x 2)) +slot-definition-slots+)))
+  (defclass standard-slot-definition (slot-definition) ())
+  (defclass direct-slot-definition (slot-definition) ())
+  (defclass effective-slot-definition (slot-definition) ())
+  (defclass standard-direct-slot-definition (standard-slot-definition direct-slot-definition) ())
+  (defclass standard-effective-slot-definition (standard-slot-definition effective-slot-definition) ())
+  #|
+  (convert-one-class (find-class 'slot-definition))
+  (convert-one-class (find-class 'standard-class))
+  (convert-one-class (find-class 't))
+  |#
+  (make-instances-obsolete (find-class 't))
+  (convert-one-class (find-class 't))
+  #+nil
+  (eval (print `(defclass slot-definition ()
+		 ,(mapcar #'(lambda (x) (butlast x 2)) +slot-definition-slots+)))))
+
+;;; ----------------------------------------------------------------------
 ;;; Fixup
 
 (dolist (method-info *early-methods*)

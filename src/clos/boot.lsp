@@ -44,8 +44,9 @@
        (standard-object (make-empty-standard-class 'STANDARD-OBJECT standard-class))
        (the-class (make-empty-standard-class 'CLASS standard-class))
        (the-t (make-empty-standard-class 'T standard-class))
-       (class-slots '#.+class-slots+)
-       (standard-slots '#.+standard-class-slots+)
+       (class-slots (mapcar #'canonical-slot-to-direct-slot (parse-slots '#.+class-slots+)))
+       (standard-slots (mapcar #'canonical-slot-to-direct-slot
+				  (parse-slots '#.+standard-class-slots+)))
        (hash-table (make-hash-table :size 24)))
 
   ;; 2) STANDARD-CLASS and CLASS are the only classes with slots. Create a
@@ -56,12 +57,12 @@
 	(slots standard-slots (cdr slots)))
        ((endp slots))
     (setf (gethash (caar slots) hash-table) i))
-  (setf (class-slots               the-class) (parse-slots class-slots)
+  (setf (class-slots               the-class) class-slots
 	(slot-index-table          the-class) hash-table
-	(class-direct-slots        the-class) (class-slots the-class)
-	(class-slots               standard-class) (parse-slots standard-slots)
+	(class-direct-slots        the-class) class-slots
+	(class-slots               standard-class) standard-slots
 	(slot-index-table          standard-class) hash-table
-	(class-direct-slots        standard-class) (class-slots standard-class))
+	(class-direct-slots        standard-class) class-slots)
 
   ;; 3) Fix the class hierarchy
   (setf (class-direct-superclasses the-t) nil
@@ -120,7 +121,7 @@
 (defmethod slot-value-using-class ((class class) self slot-name)
   (ensure-up-to-date-instance self)
   (let* ((index (position slot-name (class-slots class)
-			  :key #'slotd-name :test #'eq)))
+			  :key #'slot-definition-name :test #'eq)))
     (values
      (if index
 	 (let ((val (si:instance-ref self (the fixnum index))))
@@ -133,7 +134,7 @@
 (defmethod slot-boundp-using-class ((class class) self slot-name)
   (ensure-up-to-date-instance self)
   (let* ((index (position slot-name (class-slots class)
-			  :key #'slotd-name :test #'eq)))
+			  :key #'slot-definition-name :test #'eq)))
     (values
      (if index
 	 (si:sl-boundp (si:instance-ref self (the fixnum index)))
@@ -143,7 +144,7 @@
 (defmethod (setf slot-value-using-class) (val (class class) self slot-name)
   (ensure-up-to-date-instance self)
   (let* ((index (position slot-name (class-slots class)
-			  :key #'slotd-name :test #'eq)))
+			  :key #'slot-definition-name :test #'eq)))
     (if index
 	(si:instance-set self (the fixnum index) val)
 	(slot-missing (si:instance-class self) self slot-name
@@ -152,7 +153,7 @@
 
 (defmethod slot-exists-p-using-class ((class class) self slot-name)
   (ensure-up-to-date-instance self)
-  (and (position slot-name (class-slots class) :key #'slotd-name :test #'eq)
+  (and (position slot-name (class-slots class) :key #'slot-definition-name :test #'eq)
        t))
 
 ;;;
