@@ -27,16 +27,9 @@
 
 bool ecl_booted = 0;
 #if !defined(ECL_THREADS)
-# if 0 /* defined(mingw32) */
-static struct cl_env_struct ___cl_env;
-static struct cl_core_struct ___cl_core;
-struct cl_env_struct * const __cl_env = &___cl_env;
-struct cl_core_struct * const __cl_core = &___cl_core;
-# else
 struct cl_env_struct cl_env;
-struct cl_core_struct cl_core;
-# endif
 #endif
+struct cl_core_struct cl_core;
 const char *ecl_self;
 
 /************************ GLOBAL INITIALIZATION ***********************/
