@@ -1156,6 +1156,8 @@ cl_symbols[] = {
 #ifdef TCP
 {"SI::OPEN-CLIENT-STREAM", SI_ORDINARY, NULL, siLopen_client_stream},
 {"SI::OPEN-SERVER-STREAM", SI_ORDINARY, NULL, siLopen_server_stream},
+{"SI::OPEN-UNIX-SOCKET-STREAM", SI_ORDINARY, NULL, siLopen_unix_socket_stream},
+{"SI::LOOKUP-HOST-ENTRY", SI_ORDINARY, NULL, siLlookup_host_entry},
 #endif
 
 #ifdef unix

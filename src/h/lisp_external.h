@@ -930,6 +930,8 @@ extern cl_object siLXmake_constant _ARGS((int narg, cl_object sym, cl_object val
 #ifdef TCP
 extern cl_object siLopen_client_stream _ARGS((int narg, cl_object host, cl_object port));
 extern cl_object siLopen_server_stream _ARGS((int narg, cl_object port));
+extern cl_object siLopen_unix_socket_stream _ARGS((int narg, cl_object path));
+extern cl_object siLlookup_host_entry _ARGS((int narg, cl_object host_or_address));
 #endif
 
 /* time.c */

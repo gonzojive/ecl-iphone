@@ -19,11 +19,15 @@
 #include <netinet/in.h>
 #include <netdb.h> 
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <string.h>
 
 #include <sys/ioctl.h>
 
 #include "ecl.h"
+
+/* Maximum length for a unix socket pathname */
+#define UNIX_MAX_PATH	107
 
 extern int errno;
 
@@ -276,4 +280,82 @@ make_stream(cl_object host, int fd, enum smmode smm)
      output = make_two_way_stream(streamIn, streamOut);
    }
    @(return output)
+@)
+
+/************************************************************
+ * Unix sockets						    *
+ ************************************************************/
+
+@(defun si::open-unix-socket-stream (path)
+	int fd;			/* file descriptor */
+	cl_object streamIn, streamOut;
+	struct sockaddr_un addr;
+@
+	if (type_of(path) != t_string)
+		FEwrong_type_argument(@'string', path);
+	if (path->string.fillp > UNIX_MAX_PATH-1)
+		FEerror("~S is a too long file name.", 1, path);
+
+	fd = socket(PF_UNIX, SOCK_STREAM, 0);
+	if (fd < 0) {
+		FEfilesystem_error("Unable to create unix socket", 0);
+		@(return Cnil)
+	}
+
+	memcpy(addr.sun_path, path->string.self, path->string.fillp);
+	addr.sun_path[path->string.fillp] = 0;
+	addr.sun_family = AF_UNIX;
+
+	if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+		close(fd);
+		FEfilesystem_error("Unable to connect to unix socket ~A", 1, path);
+		@(return Cnil)
+	}
+
+	streamIn = make_stream(path, fd, smm_input);
+	streamOut = make_stream(path, fd, smm_output);
+
+	@(return make_two_way_stream(streamIn, streamOut))
+@)
+
+/************************************************************
+ * Hostname resolution					    *
+ ************************************************************/
+@(defun si::lookup-host-entry (host_or_address)
+	struct hostent *he;
+	unsigned long l;
+	cl_object name, aliases, addresses;
+	int i;
+@
+	switch (type_of(host_or_address)) {
+	case t_string:
+		host_or_address->string.self[host_or_address->string.fillp] = 0;
+		he = gethostbyname(host_or_address->string.self);
+		break;
+	case t_fixnum:
+		l = fix(host_or_address);
+		he = gethostbyaddr(&l, 4, AF_INET);
+		break;
+	case t_bignum:
+		l = big_to_ulong(host_or_address);
+		he = gethostbyaddr(&l, 4, AF_INET);
+		break;
+	default:
+		FEerror("LOOKUP-HOST-ENTRY: Number or string expected, got ~S",
+			1, host_or_address);
+	}
+	if (he == NULL)
+		FEerror("LOOKUP-HOST-ENTRY: Failed to find entry for ~S",
+			1, host_or_address);
+	name = make_string_copy(he->h_name);
+	aliases = Cnil;
+	for (i = 0; he->h_aliases[i] != 0; i++)
+		aliases = CONS(make_string_copy(he->h_aliases[i]), aliases);
+	addresses = Cnil;
+	for (i = 0; he->h_addr_list[i]; i++) {
+		unsigned long *s = (unsigned long*)(he->h_addr_list[i]);
+		l = *s;
+		addresses = CONS(make_integer(l), addresses);
+	}
+	@(return name aliases addresses)
 @)
