@@ -172,29 +172,29 @@ Converts REAL into rational approximately and returns the result."
 			     (- (* i (expt (float-radix x) e))))))
     (RATIONAL x)))
 
-(defun ffloor (x &optional (y 1.0s0))
+(defun ffloor (x &optional (y 1))
   "Args: (number &optional (divisor 1))
 Same as FLOOR, but returns a float as the first value."
-       (multiple-value-bind (i r) (floor (float x) (float y))
-        (values (float i r) r)))
+  (multiple-value-bind (i r) (floor x y)
+    (values (if (floatp r) (float i r) (float i)) r)))
 
 (defun fceiling (x &optional (y 1.0s0))
   "Args: (number &optional (divisor 1))
 Same as CEILING, but returns a float as the first value."
-       (multiple-value-bind (i r) (ceiling (float x) (float y))
-        (values (float i r) r)))
+  (multiple-value-bind (i r) (ceiling x y)
+    (values (if (floatp r) (float i r) (float i)) r)))
 
 (defun ftruncate (x &optional (y 1.0s0))
   "Args: (number &optional (divisor 1))
 Same as TRUNCATE, but returns a float as the first value."
-       (multiple-value-bind (i r) (truncate (float x) (float y))
-        (values (float i r) r)))
+  (multiple-value-bind (i r) (truncate x y)
+    (values (if (floatp r) (float i r) (float i)) r)))
 
 (defun fround (x &optional (y 1.0s0))
   "Args: (number &optional (divisor 1))
 Same as ROUND, but returns a float as the first value."
-       (multiple-value-bind (i r) (round (float x) (float y))
-        (values (float i r) r)))
+  (multiple-value-bind (i r) (round x y)
+    (values (if (floatp r) (float i r) (float i)) r)))
 
 (defun logtest (x y)
   "Args: (integer1 integer2)
