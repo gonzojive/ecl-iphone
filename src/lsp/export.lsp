@@ -392,6 +392,7 @@
 	  defmethod
 	  ensure-generic-function
 	  find-class
+	  find-method
 	  generic-flet
 	  generic-function
 	  generic-labels
