@@ -196,7 +196,7 @@
     (declare (fixnum lcl))
     (labels ((wt-decl (var)
                (wt-nl)
-               (wt *volatile* (register var) (rep-type-name (var-rep-type var)) " ")
+               (wt *volatile* (rep-type-name (var-rep-type var)) " ")
                (wt-lcl (incf lcl)) (wt ";")
                `(LCL ,lcl))
              (do-decl (var)

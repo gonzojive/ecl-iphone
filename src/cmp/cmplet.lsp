@@ -145,8 +145,7 @@
 	     (wt-nl)
 	     (unless block-p
 	       (wt "{") (setq block-p t))
-	     (wt *volatile* (register var) (rep-type-name (var-rep-type var)) " "
-		 var ";")
+	     (wt *volatile* (rep-type-name (var-rep-type var)) " " var ";")
 	     (when (local var)
 	       (wt-comment (var-name var))))
 	   (do-init (var form fl)
@@ -188,9 +187,11 @@
 			    (and (member (var-kind var1) '(SPECIAL GLOBAL))
 				 (member (var-name var1) prev-ss)))
 			(do-init var form fl))
-		       ((and (can-be-replaced var body)
-			     (member (var-kind var1) '(LEXICAL REPLACED :OBJECT))
-			     (not (var-ref-ccb var1))
+		       ((and ;; Fixme! We should be able to replace variable
+			     ;; even if they are referenced across functions.
+			     ;; We just need to keep track of their uses.
+			     (member (var-kind var1) '(REPLACED :OBJECT))
+			     (can-be-replaced var body)
 			     (not (member var1 (c1form-changed-vars body))))
 			(setf (var-kind var) 'REPLACED
 			      (var-loc var) var1))
@@ -365,7 +366,7 @@
           var (car vl)
           kind (local var))
     (unless (unboxed var)
-      ;; LEXICAL, SPECIAL, GLOBAL or OBJECT
+      ;; LEXICAL, CLOSURE, SPECIAL, GLOBAL or OBJECT
       (case (c1form-name form)
         (LOCATION
          (when (can-be-replaced* var body (cdr fl))
@@ -374,9 +375,11 @@
         (VAR
          (let* ((var1 (c1form-arg 0 form)))
            (declare (type var var1))
-           (when (and (can-be-replaced* var body (cdr fl))
-		      (member (var-kind var1) '(LEXICAL REPLACED :OBJECT))
-		      (not (var-ref-ccb var1))
+           (when (and ;; Fixme! We should be able to replace variable
+		      ;; even if they are referenced across functions.
+		      ;; We just need to keep track of their uses.
+		      (member (var-kind var1) '(REPLACED :OBJECT))
+		      (can-be-replaced* var body (cdr fl))
 		      (not (var-changed-in-forms var1 (cdr fl)))
 		      (not (member var1 (c1form-changed-vars body))))
              (setf (var-kind var) 'REPLACED
@@ -386,7 +389,7 @@
     (when (and kind (not (eq (var-kind var) 'REPLACED)))
       (bind (next-lcl) var)
       (wt-nl) (unless block-p (wt "{") (setq block-p t))
-      (wt *volatile* (register var) (rep-type-name kind) " " var ";")
+      (wt *volatile* (rep-type-name kind) " " var ";")
       (wt-comment (var-name var)))
     )
 
@@ -405,7 +408,7 @@
 	  form (car fl))
     (case (var-kind var)
       (REPLACED)
-      ((LEXICAL SPECIAL GLOBAL)
+      ((LEXICAL CLOSURE SPECIAL GLOBAL)
        (case (c1form-name form)
 	 (LOCATION (bind (c1form-arg 0 form) var))
 	 (VAR (bind (c1form-arg 0 form) var))
@@ -438,7 +441,6 @@
 (defun can-be-replaced (var body)
   (declare (type var var))
   (and (eq (var-kind var) :OBJECT)
-       (< (var-ref var) *register-min*)
        (not (member var (c1form-changed-vars body)))))
 #|  (and (or (eq (var-kind var) 'LEXICAL)
 	   (and (eq (var-kind var) :OBJECT)

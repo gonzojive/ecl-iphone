@@ -38,6 +38,10 @@
   ref-ccb		;;; Cross closure reference.
 			;;; During Pass1, T or NIL.
 			;;; During Pass2, the index into the closure env
+  ref-clb		;;; Cross local function reference.
+			;;; During Pass1, T or NIL.
+			;;; During Pass2, the lex-address for the
+			;;; block id, or NIL.
 )
 
 (deftype OBJECT () `(not (or fixnum character short-float long-float)))
@@ -46,9 +50,9 @@
 ;  name		;;; Variable name.
 ;  (ref 0 :type fixnum)
 		;;; Number of references to the variable (-1 means IGNORE).
-		;;; During Pass 2: set below *register-min* for non register.
 ;  ref-ccb	;;; Cross closure reference: T or NIL.
-  kind		;;; One of LEXICAL, SPECIAL, GLOBAL, :OBJECT, :FIXNUM,
+;  ref-clb	;;; Cross local function reference: T or NIL.
+  kind		;;; One of LEXICAL, CLOSURE, SPECIAL, GLOBAL, :OBJECT, :FIXNUM,
   		;;; :CHAR, :DOUBLE, :FLOAT, or REPLACED (used for
 		;;; LET variables).
   (loc 'OBJECT)	;;; During Pass 1: indicates whether the variable can
@@ -63,12 +67,12 @@
   		;;; For REPLACED: the actual location of the variable.
   		;;; For :FIXNUM, :CHAR, :FLOAT, :DOUBLE, :OBJECT:
   		;;;   the cvar for the C variable that holds the value.
-  		;;; For LEXICAL: the frame-relative address for the variable.
+  		;;; For LEXICAL or CLOSURE: the frame-relative address for the variable.
 		;;; For SPECIAL and GLOBAL: the vv-index for variable name.
   (type t)	;;; Type of the variable.
   (index -1)    ;;; position in *vars*. Used by similar.
+  (bds-bound nil) ;;; BDS-BIND was already used on this variable.
   )
-;(deftype var () '(satisfies var-p))
 
 ;;; A function may be compiled into a CFUN, CCLOSURE or CCLOSURE+LISP_CLOSURE
 ;;; Here are examples of function FOO for the 3 cases:
@@ -104,8 +108,14 @@
 (defstruct (fun (:include ref))
 ;  name			;;; Function name.
 ;  (ref 0 :type fixnum)	;;; Number of references.
+			;;; During Pass1, T or NIL.
+			;;; During Pass2, the vs-address for the
+			;;; function closure, or NIL.
 ;  ref-ccb		;;; Cross closure reference.
  			;;; During Pass1, T or NIL.
+			;;; During Pass2, the vs-address for the function
+			;;; closure, or NIL.
+;  ref-clb		;;; Unused.
   cfun			;;; The cfun for the function.
   (level 0)		;;; Level of lexical nesting for a function.
   (env 0)     		;;; Size of env of closure.
@@ -113,7 +123,6 @@
   var			;;; the variable holding the funob
   description		;;; Text for the object, in case NAME == NIL.
   )
-;(deftype fun () '(satisfies fun-p))
 
 (defstruct (blk (:include ref))
 ;  name			;;; Block name.
@@ -122,7 +131,7 @@
 			;;; During Pass1, T or NIL.
 			;;; During Pass2, the ccb-lex for the
 			;;; block id, or NIL.
-  ref-clb		;;; Cross local function reference.
+;  ref-clb		;;; Cross local function reference.
 			;;; During Pass1, T or NIL.
 			;;; During Pass2, the lex-address for the
 			;;; block id, or NIL.
@@ -131,21 +140,19 @@
   var			;;; Variable containing the block ID.
   (type 'NIL)		;;; Estimated type.
   )
-;(deftype blk () '(satisfies blk-p))
 
 (defstruct (tag (:include ref))
 ;  name			;;; Tag name.
 ;  (ref 0 :type fixnum)	;;; Number of references.
 ;  ref-ccb		;;; Cross closure reference.
 			;;; During Pass1, T or NIL.
-  ref-clb		;;; Cross local function reference.
+;  ref-clb		;;; Cross local function reference.
 			;;; During Pass1, T or NIL.
   label			;;; Where to jump: a label.
   unwind-exit		;;; Where to unwind-no-exit.
   var			;;; Variable containing frame ID.
   index			;;; An integer denoting the label.
   )
-;(deftype tag () '(satisfies tag-p))
 
 (defstruct (info)
   (changed-vars nil)	;;; List of var-objects changed by the form.
@@ -163,7 +170,6 @@
 ;;;	add-info) so that we can determine exactly which frame is used
 ;;;	in the body of a function.
   )
-;(deftype info () '(satisfies info-p))
 
 ;;;
 ;;; VARIABLES
@@ -243,7 +249,7 @@ The default value is NIL.")
 
 ;;;
 ;;; Compiled code uses the following kinds of variables:
-;;; 1. Vi, declared explicitely, either unboxed or register (*lcl*, next-lcl)
+;;; 1. Vi, declared explicitely, either unboxed or not (*lcl*, next-lcl)
 ;;; 2. Ti, declared collectively, of type object, may be reused (*temp*, next-temp)
 ;;; 4. lexi[j], for lexical variables in local functions
 ;;; 5. CLVi, for lexical variables in closures
@@ -332,11 +338,6 @@ The default value is NIL.")
 ;;; --cmptop.lsp--
 ;;;
 (defvar *funarg-vars*)
-;;; Number of address registers available not counting the
-;;; frame pointer and the stack pointer
-;;; To do: If the regs hold data then there are really more available;
-(defvar *free-address-registers* 5)
-(defvar *free-data-registers* 6)
 (defvar *volatile*)
 (defvar *setjmps* 0)
 
@@ -389,6 +390,3 @@ The default value is NIL.")
 (defvar *vars* nil)
 (defvar *undefined-vars* nil)
 (defvar *special-binding* nil)
-
-(defvar *register-min* 3)		; criteria for putting in register.
-(proclaim '(fixnum *register-min*))

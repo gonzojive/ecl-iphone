@@ -9,7 +9,7 @@
 ;;;;    See file '../Copyright' for full details.
 ;;;;         defines SYS:DEFMACRO*, the defmacro preprocessor
 
-(si::select-package "SYSTEM")
+(in-package "SYSTEM")
 
 #-ecl-min
 (defvar *dl*)

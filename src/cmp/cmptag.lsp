@@ -13,22 +13,6 @@
 
 (in-package "COMPILER")
 
-#|
-;;; Use a structure of type vector to avoid creating
-;;; normal structures before booting CLOS:
-(defstruct (tag (:type vector) :named)
-   name			;;; Tag name.
-   (ref 0 :type fixnum)	;;; Number of references.
-   ref-ccb		;;; Cross closure reference.
-			;;; During Pass1, T or NIL.
-   ref-clb		;;; Cross local function reference.
-       			;;; During Pass1, T or NIL.
-   label		;;; Where to jump: a label.
-   unwind-exit		;;; Where to unwind-no-exit.
-   var			;;; Variable containing frame ID.
-   index		;;; Number of tag in the list.
-) |#
-
 ;;; During Pass 1, *tags* holds a list of tag objects and the symbols 'CB'
 ;;; (Closure Boundary), 'LB' (Level Boundary) or 'UNWIND-PROTECT'.
 ;;; 'CB' will be pushed on *tags* when the compiler begins to process
@@ -40,8 +24,7 @@
 ;;;  label in the body.
 ;;;  When a reference to a tag (go instruction) is found, the
 ;;;  var-kind is stepped from NIL to OBJECT (if appearing inside an
-;;;  unwind-protect) to LEXICAL (if appearing across a boundary: with
-;;;  var-ref-ccb set to T in case of closure boundary).
+;;;  unwind-protect) to LEXICAL or CLOSURE (if appearing across a boundary).
 ;;;  The tag-ref is also incremented.
 ;;;  Therefore var-ref represents whether some tag is used at all and var-kind
 ;;;  variable represents whether a tag identifier must be created and the
@@ -207,8 +190,9 @@
 	   (setq var (tag-var tag))
 	   (cond (ccb (setf (tag-ref-ccb tag) t
 			    (var-ref-ccb var) T
-			    (var-kind var) 'LEXICAL))
+			    (var-kind var) 'CLOSURE))
 		 (clb (setf (tag-ref-clb tag) t
+			    (var-ref-clb var) t
 			    (var-kind var) 'LEXICAL))
 		 (unw (unless (var-kind var)
 			(setf (var-kind var) :OBJECT))))

@@ -8,7 +8,7 @@
 ;;;;
 ;;;;    See file '../Copyright' for full details.
 
-(si::select-package "SYSTEM")
+(in-package "SYSTEM")
 
 (defmacro defun (name vl &body body &aux doc-string)
   "Syntax: (defun name lambda-list {decl | doc}* {form}*)
@@ -329,7 +329,7 @@ SECOND-FORM."
     `(eval-when (compile) (proclaim ',(car decl-specs)))))
 
 (defmacro in-package (name)
-  `(si::select-package ,(string name)))
+  `(eval-when (eval compile load) (si::select-package ,(string name))))
 
 ;; FIXME!
 (defmacro the (type value)

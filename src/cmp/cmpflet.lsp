@@ -12,26 +12,6 @@
 
 (in-package "COMPILER")
 
-#|
-;;; Use a structure of type vector to avoid creating
-;;; normal structures before booting CLOS:
-(defstruct (fun (:type vector) :named)
-  name			;;; Function name.
-  ref			;;; Referenced or not.
-  			;;; During Pass1, T or NIL.
-       			;;; During Pass2, the vs-address for the
-       			;;; function closure, or NIL.
-  ref-ccb		;;; Cross closure reference.
- 			;;; During Pass1, T or NIL.
-	 		;;; During Pass2, the vs-address for the
-       			;;; function closure, or NIL.
-  cfun			;;; The cfun for the function.
-  level			;;; Level of nesting for a function.
-  env     		;;; Size of env of closure.
-  closure		;;; During Pass1, T if the function is returned
-			;;; During Pass2, T if env is used inside the function
-  ) |#
-
 (defun c1flet (args &aux body ss ts is other-decl
                          (defs nil) (local-funs nil))
   (check-args-number 'FLET args 1)
@@ -103,7 +83,7 @@
   (dolist (def funs)
     (let* ((fun (car def)) (var (fun-var fun)))
       (when (plusp (var-ref var))	; the function is returned
-        (unless (eq 'LEXICAL (var-kind var))
+        (unless (member (var-kind var) '(LEXICAL CLOSURE))
           (setf (var-loc var) (next-lcl))
           (unless block-p
             (setq block-p t) (wt-nl "{ "))
@@ -267,9 +247,10 @@
 			  (setf (fun-var fun)
 				(make-var :name fname :kind :OBJECT)))))
 	     (cond (ccb (setf (var-ref-ccb var) t
-			      (var-kind var) 'LEXICAL)
+			      (var-kind var) 'CLOSURE)
 			(setf (fun-ref-ccb fun) t))
-		   (clb (setf (var-kind var) 'LEXICAL))))
+		   (clb (setf (var-ref-clb var) t
+			      (var-kind var) 'LEXICAL))))
 	   (return fun)))))
 
 (defun c1call-local (fname)

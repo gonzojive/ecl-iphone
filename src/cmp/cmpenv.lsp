@@ -339,13 +339,6 @@
                     "The object declaration ~s contains a non-symbol ~s."
                     decl var)
              (push (cons var 'OBJECT) ts)))
-	  (:REGISTER
-           (dolist (var (cdr decl))
-	      (cmpck (not (symbolp var))
-		     "The register declaration ~s contains a non-symbol ~s."
-		     decl var)
-	      (push (cons var 'REGISTER) ts)
-	      ))
 	  ;; read-only variable treatment. Beppe
 	  (:READ-ONLY
 #| obsolete

@@ -164,7 +164,8 @@
 	       (case num
 		 (1 ':EXPORT)
 		 (2 ':INTERN)))))
-      `(si::%defpackage
+      `(eval-when (eval compile load)
+        (si::dodefpackage
 	,name
 	',nicknames
 	,(car documentation)
@@ -174,10 +175,10 @@
 	',exported-symbol-names
 	',shadowing-imported-from-symbol-names-list
 	',imported-from-symbol-names-list
-	',exported-from-package-names))))
+	',exported-from-package-names)))))
 
 
-(defun %defpackage (name
+(defun dodefpackage (name
 		    nicknames
 		    documentation
 		    use

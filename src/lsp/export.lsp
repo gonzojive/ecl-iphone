@@ -9,7 +9,8 @@
 ;;;;    See file '../Copyright' for full details.
 ;;;;                    Exporting external symbols of LISP package
 
-(si::select-package "SI")
+(eval-when (eval compile load)
+  (si::select-package "SI"))
 
 ;;; ----------------------------------------------------------------------
 ;;;
@@ -31,7 +32,8 @@
 	  t)
  (si::fset 'in-package
  	  #'(lambda-block in-package (def env)
-	      `(si::select-package ,(string (second def))))
+	      `(eval-when (eval compile load)
+		(si::select-package ,(string (second def)))))
  	  t)
 )
 

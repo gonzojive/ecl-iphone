@@ -22,27 +22,27 @@
   ;; a constant, or (VAR var) from a let binding. ; ccb
   (declare (type var var))
   (case (var-kind var)
+    (CLOSURE
+     (let ((var-loc (var-loc var)))
+       (unless (sys:fixnump var-loc)
+	 ;; first binding: assign location
+	 (setq var-loc (next-env))
+	 (setf (var-loc var) var-loc))
+       (when (zerop var-loc) (wt-nl "env" *env-lvl* " = Cnil;"))
+       (wt-nl "CLV" var-loc "=&CAR(env" *env-lvl* "=CONS(")
+       (wt-coerce-loc :object loc)
+       (wt ",env" *env-lvl* "));")
+       (wt-comment (var-name var))))
     (LEXICAL
      (let ((var-loc (var-loc var)))
-       (if (var-ref-ccb var)
-	   (progn
-	     (unless (sys:fixnump var-loc)
-	       ;; first binding: assign location
-	       (setq var-loc (next-env))
-	       (setf (var-loc var) var-loc))
-	     (when (zerop var-loc) (wt-nl "env" *env-lvl* " = Cnil;"))
-	     (wt-nl "CLV" var-loc "=&CAR(env" *env-lvl* "=CONS(")
-	     (wt-coerce-loc :object loc)
-	     (wt ",env" *env-lvl* "));"))
-	   (progn
-	     (unless (consp var-loc)
-	       ;; first binding: assign location
-	       (setq var-loc (next-lex))
-	       (setf (var-loc var) var-loc))
-	     (wt-nl) (wt-lex var-loc) (wt "= ")
-	     (wt-coerce-loc :object loc)
-	     (wt ";")))
-       (wt-comment (var-name var))))
+       (unless (consp var-loc)
+	 ;; first binding: assign location
+	 (setq var-loc (next-lex))
+	 (setf (var-loc var) var-loc))
+       (wt-nl) (wt-lex var-loc) (wt "= ")
+       (wt-coerce-loc :object loc)
+       (wt ";"))
+       (wt-comment (var-name var)))
     (SPECIAL
      (bds-bind loc var))
     (t
@@ -67,15 +67,16 @@
     ;; otherwise the increment to *env* or *lex* is done during
     ;; unwind-exit and will be shadowed by functions (like c2let)
     ;; which rebind *env* or *lex*.
-    (when (eq (var-kind var) 'LEXICAL)
-      (if (var-ref-ccb var)
-	  (unless (si:fixnump (var-loc var))
-	    (setf (var-loc var) (next-env)))
-	  (unless (consp (var-loc var))
-	    (setf (var-loc var) (next-lex)))))
-    (when (eq (var-kind var) 'SPECIAL)
-      ;; prevent BIND from pushing BDS-BIND
-      (setf (var-ref-ccb var) t))
+    (case (var-kind var)
+      (CLOSURE
+       (unless (si:fixnump (var-loc var))
+	 (setf (var-loc var) (next-env))))
+      (LEXICAL
+       (unless (consp (var-loc var))
+	 (setf (var-loc var) (next-lex))))
+      (SPECIAL
+       ;; prevent BIND from pushing BDS-BIND
+       (setf (var-bds-bound var) t)))
     (c2expr* form)
     (when (eq (var-kind var) 'SPECIAL)
       ;; now the binding is in effect
@@ -94,10 +95,10 @@
   ;; push BDS-BIND only once:
   ;; bds-bind may be called several times on the same variable, e.g.
   ;; an optional has two alternative bindings.
-  ;; We use field var-ref-ccb to record this fact.
-  (unless (var-ref-ccb var)
+  ;; We use field var-bds-bound to record this fact.
+  (unless (var-bds-bound var)
     (push 'BDS-BIND *unwind-exit*)
-    (setf (var-ref-ccb var) t))
+    (setf (var-bds-bound var) t))
   (wt-comment (var-name var)))
 
 (put-sysprop 'BIND 'SET-LOC 'bind)

@@ -139,20 +139,3 @@
 
 (defun wt-data-end ()
   (princ #\; *compiler-output-data*))
-
-(defun wt-data-package-operation (form)
-  (ecase (car form)
-    (si::select-package
-     (let ((output (t1ordinary form)))
-       (cmp-eval form)
-       (let ((package-name (string (cadr form))))
-	 (setq *compiler-package* (si::select-package package-name))
-	 (setq package-name (package-name *compiler-package*))
-	 (wt-filtered-data (format nil "#!0 ~s" package-name)))
-       output))
-	 ;#+nil(wt-filtered-data (format nil "#!0 ~s" (string package-name)))))
-    (si::%defpackage
-     (let ((output (t1ordinary `(eval ',form))))
-       (wt-filtered-data (format nil "#!1 ~s" (second form)))
-       (cmp-eval form)
-       output))))

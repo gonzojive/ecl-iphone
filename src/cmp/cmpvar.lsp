@@ -12,36 +12,6 @@
 
 (in-package "COMPILER")
 
-#|
-;;; Use a structure of type vector to avoid creating
-;;; normal structures before booting CLOS:
-(defstruct (var (:type vector) :named)
-  name		;;; Variable name.
-  (ref 0 :type fixnum)
-		;;; Number of references to the variable (-1 means IGNORE).
-		;;; During Pass 2: set below *register-min* for non register.
-  ref-ccb	;;; Cross closure reference: T or NIL.
-  kind		;;; One of LEXICAL, SPECIAL, GLOBAL, OBJECT, FIXNUM,
-  		;;; CHARACTER, LONG-FLOAT, SHORT-FLOAT, or REPLACED (used for
-		;;; LET variables).
-  (loc 'OBJECT)	;;; During Pass 1: indicates whether the variable can
-		;;; be allocated on the c-stack: OBJECT means
-		;;; the variable is declared as OBJECT, and CLB means
-		;;; the variable is referenced across Level Boundary and thus
-		;;; cannot be allocated on the C stack.  Note that OBJECT is
-		;;; set during variable binding and CLB is set when the
-		;;; variable is used later, and therefore CLB may supersede
-		;;; OBJECT.
-		;;; During Pass 2:
-  		;;; For REPLACED: the actual location of the variable.
-  		;;; For FIXNUM, CHARACTER, LONG-FLOAT, SHORT-FLOAT, OBJECT:
-  		;;;   the cvar for the C variable that holds the value.
-  		;;; For LEXICAL: the frame-relative address for the variable.
-		;;; For SPECIAL and GLOBAL: the vv-index for variable name.
-  (type t)	;;; Type of the variable.
-  (index -1)    ;;; position in *vars*. Used by similar.
-  ) |#
-
 ;;; A special binding creates a var object with the kind field SPECIAL,
 ;;; whereas a special declaration without binding creates a var object with
 ;;; the kind field GLOBAL.  Thus a reference to GLOBAL may need to make sure
@@ -110,11 +80,13 @@
           (t
            (dolist (v types)
              (when (eq (car v) name)
-               (case (cdr v)
+	       (setf (var-type var) (cdr v))
+;               (case (cdr v)
 ;                 (OBJECT (setf (var-loc var) 'OBJECT))
-                 (REGISTER
-                  (incf (var-ref var) 100))
-                 (t (setf (var-type var) (cdr v))))))
+;                 (REGISTER
+;                  (incf (var-ref var) 100))
+;                 (t (setf (var-type var) (cdr v))))
+	       ))
 ;           (when (or (null (var-type var))
 ;                     (eq t (var-type var)))
 ;             (setf (var-loc var) 'OBJECT))
@@ -127,11 +99,10 @@
   )
 
 (defun check-vref (var)
-  (when (and (eq (var-kind var) 'LEXICAL)
-             (not (var-ref-ccb var)))
+  (when (eq (var-kind var) 'LEXICAL)
     (when (zerop (var-ref var)) ;;; This field may be -1 (IGNORE). Beppe
         (cmpwarn "The variable ~s is not used." (var-name var)))
-    (when (not (eq (var-loc var) 'CLB))
+    (when (not (var-ref-clb var))
       ;; if the variable can be stored locally, set it var-kind to its type
       (setf (var-kind var)
 	    (if (> (var-ref var) 1)
@@ -177,9 +148,12 @@
              (cmpwarn "The ignored variable ~s is used." name)
              (setf (var-ref var) 0))
 	   (when (eq (var-kind var) 'LEXICAL)
-	     (cond (ccb (setf (var-ref-ccb var) t
-			      (var-loc var) 'OBJECT)) ; replace a previous 'CLB
-		   (clb (setf (var-loc var) 'CLB))))
+	     (cond (ccb (setf (var-ref-clb var) nil ; replace a previous 'CLB
+			      (var-ref-ccb var) t
+			      (var-kind var) 'CLOSURE
+			      (var-loc var) 'OBJECT))
+		   (clb (setf (var-ref-clb var) t
+			      (var-loc var) 'OBJECT))))
            (incf (var-ref var))
            (return-from c1vref var)))) ; ccb
   (let ((var (sch-global name)))
@@ -207,7 +181,7 @@
   (not (eq (var-rep-type var) :object)))
 
 (defun local (var)
-  (and (not (member (var-kind var) '(LEXICAL SPECIAL GLOBAL REPLACED)))
+  (and (not (member (var-kind var) '(LEXICAL CLOSURE SPECIAL GLOBAL REPLACED)))
        (var-kind var)))
 
 (defun c2var (vref) (unwind-exit vref))
@@ -217,9 +191,8 @@
 (defun wt-var (var &aux (var-loc (var-loc var))) ; ccb
   (declare (type var var))
   (case (var-kind var)
-    (LEXICAL (cond ;(ccb (wt-env var-loc))
-                   ((var-ref-ccb var) (wt-env var-loc))
-                   (t (wt-lex var-loc))))
+    (CLOSURE (wt-env var-loc))
+    (LEXICAL (wt-lex var-loc))
     (SPECIAL (wt "(" var-loc "->symbol.dbind)"))
     (REPLACED (wt var-loc))
     (GLOBAL (if *safe-compile*
@@ -230,19 +203,19 @@
 
 (defun var-rep-type (var)
   (case (var-kind var)
-    ((LEXICAL SPECIAL GLOBAL) :object)
+    ((LEXICAL CLOSURE SPECIAL GLOBAL) :object)
     (REPLACED (loc-representation-type (var-loc var)))
     (t (var-kind var))))
 
 (defun set-var (loc var &aux (var-loc (var-loc var))) ;  ccb
   (if (var-p var)
     (case (var-kind var)
+      (CLOSURE
+       (wt-nl)(wt-env var-loc)(wt "= ")
+       (wt-coerce-loc (var-rep-type var) loc)
+       (wt #\;))
       (LEXICAL
-       (wt-nl)
-       (if (var-ref-ccb var)
-	   (wt-env var-loc)
-	   (wt-lex var-loc))
-       (wt "= ")
+       (wt-nl)(wt-lex var-loc)(wt "= ")
        (wt-coerce-loc (var-rep-type var) loc)
        (wt #\;))
       (SPECIAL

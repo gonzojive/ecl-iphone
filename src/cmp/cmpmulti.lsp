@@ -191,7 +191,7 @@
 	(if kind
 	  (progn
 	    (bind (next-lcl) var)
-	    (wt-nl *volatile* (register var) (rep-type-name kind) " " var ";")
+	    (wt-nl *volatile* (rep-type-name kind) " " var ";")
 	    (wt-comment (var-name var)))
 	  (unless env-grows (setq env-grows (var-ref-ccb var))))))
 

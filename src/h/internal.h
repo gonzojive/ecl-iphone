@@ -145,6 +145,9 @@ extern void cl_write_object(cl_object x);
  /* read.d */
 #define	RTABSIZE	CHAR_CODE_LIMIT	/*  read table size  */
 
+extern cl_object ecl_packages_to_be_created;
+extern cl_object ecl_package_list;
+
 #ifdef __cplusplus
 }
 #endif

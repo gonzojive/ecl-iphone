@@ -172,7 +172,6 @@
 (defun si::compiler-clear-compiler-properties (symbol)
   #-:CCL
   ;(sys::unlink-symbol symbol)
-  (rem-sysprop symbol 'package-operation)
   (rem-sysprop symbol 't1)
   (rem-sysprop symbol 't2)
   (rem-sysprop symbol 't3)

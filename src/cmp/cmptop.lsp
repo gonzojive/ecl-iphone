@@ -29,10 +29,7 @@
       (let ((fun (car form)) (args (cdr form)) fd setf-symbol) ; #+cltl2
 	(cond
             ((symbolp fun)
-             (cond ((get-sysprop fun 'PACKAGE-OPERATION)
-		    (cmp-eval form)
-                    (wt-data-package-operation form))
-                   ((setq fd (get-sysprop fun 'T1))
+             (cond ((setq fd (get-sysprop fun 'T1))
                     (when *compile-print* (print-current-form))
                     (funcall fd args))
                    ((get-sysprop fun 'C1) (t1ordinary form))
@@ -314,12 +311,6 @@
 	 "Number of proclaimed args for ~a was ~a. ~
           ~%;;; Its definition had ~a." fname arg-p arg-c)))))
 
-(defun register (var)
-  (if (and (equal *volatile* "")
-	   (> (var-ref var) (the fixnum *register-min*)))
-      "register "
-      ""))
-
 (defun t2defun (fname cfun lambda-expr sp funarg-vars no-entry)
   (declare (ignore sp funarg-vars))
   (if no-entry
@@ -344,7 +335,6 @@
   (when lambda-expr		; Not sharing code.
     (setq lambda-list (c1form-arg 0 lambda-expr)
           requireds (car lambda-list))
-    (analyze-regs (c1form-referred-vars lambda-expr))
 
     (if (setq inline-info (assoc fname *inline-functions* :test #'same-fname-p))
       
@@ -380,7 +370,7 @@
 		       ;; so that c2lambda-expr will know its proper type.
 		       (setf (var-kind var) rep-type))
 		     (unless (eq vl requireds) (wt ","))
-		     (wt *volatile* (register var) (rep-type-name rep-type) " ")
+		     (wt *volatile* (rep-type-name rep-type) " ")
 		     (wt-lcl lcl))
 		   (wt ")"))))
 	    (wt-h string ";")
@@ -461,39 +451,6 @@
       (unless (= (1+ i) *max-env*) (wt-h1 ",")))
     (wt-h1 ";"))
   )
-
-;;; Checks the register slots of variables, and finds which
-;;; variables should be in registers, reducing the var-ref value
-;;; in the remaining.  Data and address variables are done separately.
-(defun analyze-regs (vars)
-  (flet ((analyze-regs1 (vars want &aux (tem 0) (real-min 3) (this-min 100000)
-			      (have 0))
-           (declare (fixnum want tem real-min this-min have))
-	   (do ((vs vars) (v))
-	       ((null vs))
-	     (setq v (pop vs)
-		   tem (var-ref v))
-	     (when (>= tem real-min)
-	       (incf have)
-	       (setq this-min (min this-min tem))
-	       (when (> have want)
-		 (setq have 0
-		       real-min (1+ this-min)
-		       this-min 1000000
-		       vs vars))))
-	   (when (< have want) (decf real-min))
-	   (dolist (v vars)
-	     (when (< (var-ref v) real-min)
-	       ;; don't put 1, otherwise optimization may discard
-	       ;; variable
-	       (setf (var-ref v) (min (var-ref v) *register-min*))))))
-    (let (addr data)
-      (dolist (v vars)
-	(if (member-type (var-type v) '(FIXNUM CHARACTER SHORT-FLOAT LONG-FLOAT))
-	    (pushnew v data)
-	    (pushnew v addr)))
-      (analyze-regs1 addr *free-address-registers*)
-      (analyze-regs1 data *free-data-registers*))))
 
 (defun wt-global-entry (fname cfun arg-types return-type)
     (when (and (symbolp fname) (get-sysprop fname 'NO-GLOBAL-ENTRY))
@@ -762,7 +719,6 @@
   (wt-h1 ");")
   (wt ")")
 
-  (analyze-regs (c1form-referred-vars lambda-expr))
   (let* ((*lcl* 0) (*temp* 0) (*max-temp* 0)
 	 (*lex* 0) (*max-lex* 0)
 	 (*env* (fun-env fun))		; continue growing env
@@ -972,9 +928,3 @@
 ;(put-sysprop 'DEFENTRY 'T3 't3defentry)
 (put-sysprop 'DEFCBODY 'T3 't3defCbody)	; Beppe
 ;(put-sysprop 'DEFUNC 'T3 't3defunC)	; Beppe
-
-;;; Package operations.
-
-(put-sysprop 'si::select-package 'PACKAGE-OPERATION t)
-(put-sysprop 'si::%defpackage 'PACKAGE-OPERATION t)
-

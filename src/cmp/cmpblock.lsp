@@ -12,22 +12,6 @@
 
 (in-package "COMPILER")
 
-#|
-;;; Use a structure of type vector to avoid creating
-;;; normal structures before booting CLOS:
-(defstruct (blk (:type vector) :named)
-   name			;;; Block name.
-   (ref 0 :type fixnum)	;;; Number of references.
-   ref-ccb		;;; Cross closure reference.
-			;;; During Pass1, T or NIL.
-   ref-clb		;;; Cross local function reference.
-       			;;; During Pass1, T or NIL.
-       			;;; block id, or NIL.
-   exit			;;; Where to return.  A label.
-   destination		;;; Where the value of the block to go.
-   var			;;; variable containing the block ID.
-) |#
-
 ;;; During Pass 1, *blocks* holds a list of blk objects and the
 ;;; symbols 'CB' (Closure Boundary), 'LB' (Level Boundary) or
 ;;; 'UNWIND-PROTECT'.  'CB' will be pushed on *blocks* when the
@@ -109,6 +93,7 @@
 		  (var (blk-var blk)))
              (cond (ccb (setf (blk-ref-ccb blk) t
 			      type 'CCB
+			      (var-kind var) 'CLOSURE
 			      (var-ref-ccb var) T)
 			(incf (var-ref var)))
 		   (clb (setf (blk-ref-clb blk) t
