@@ -441,7 +441,7 @@ cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 	hsize = fix(size);
 	t = type_of(rehash_size);
 	if ((t != t_fixnum && t != t_shortfloat && t != t_longfloat) ||
-	    (number_compare(rehash_size, MAKE_FIXNUM(1)) < 0))
+	    (number_compare(rehash_size, MAKE_FIXNUM(1)) < 0)) {
 		FEerror("~S is an illegal hash-table rehash-size.",
 			1, rehash_size);
 	}
