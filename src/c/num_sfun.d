@@ -92,8 +92,8 @@ cl_expt(cl_object x, cl_object y)
 	cl_type ty;
 	cl_object z;
 
-	if (y == MAKE_FIXNUM(0))
-		switch (type_of(x)) {
+	if (number_zerop(y)) {
+		switch (type_of(y)) {
 		case t_fixnum:  case t_bignum:  case t_ratio:
 			return1(MAKE_FIXNUM(1));
 
@@ -111,6 +111,7 @@ cl_expt(cl_object x, cl_object y)
 		default:
 			FEtype_error_number(x);
 		}
+	}
 	ty = type_of(y);
 	if (number_zerop(x)) {
 		if (!number_plusp(ty==t_complex?y->complex.real:y))
