@@ -122,7 +122,7 @@ AC_ARG_WITH(system-boehm,
 AC_ARG_WITH(system-gmp,
 	AS_HELP_STRING([--with-system-gmp],
 		       [use already installed GMP library (default=NO)]),
-	[system_gmp="${enableval}"], [system_gmp="${system_gmp:-no}"])
+	[system_gmp="${withval}"], [system_gmp="${system_gmp:-no}"])
 
 ### ----------------------------------------------------------------------
 ###           Checks for programs

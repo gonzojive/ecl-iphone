@@ -1541,7 +1541,7 @@ fi;
 # Check whether --with-system-gmp or --without-system-gmp was given.
 if test "${with_system_gmp+set}" = set; then
   withval="$with_system_gmp"
-  system_gmp="${enableval}"
+  system_gmp="${withval}"
 else
   system_gmp="${system_gmp:-no}"
 fi;
@@ -4588,7 +4588,7 @@ else
 echo "${ECHO_T}no" >&6
 fi
 
-if which gzip; then
+if test -z `which gzip`; then
   INFOEXT=info.gz
 else
   INFOEXT=info
@@ -4631,7 +4631,6 @@ else
   LSP_LIBRARIES="${LIBPREFIX}ecl.${LIBEXT}"
   LDRPATH='~*'
 fi
-echo ${system_gmp}
 if test "${system_gmp}" = "yes" ; then
   CLIBS="-lgmp ${CLIBS}"
 else
