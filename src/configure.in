@@ -166,6 +166,8 @@ fi
 CLIBS="${CLIBS} -lm"
 test "${boehm}" && CLIBS="-lgc ${CLIBS}"
 test "${boehm}" && AC_DEFINE(GBC_BOEHM)
+AC_MSG_CHECKING(for clos)
+AC_MSG_RESULT([${clos}])
 test "${clos}" && AC_DEFINE(CLOS)
 test "${tk}" && AC_DEFINE(TK)
 test "${clx}" && AC_DEFINE(CLX)
@@ -238,7 +240,7 @@ AC_DEFINE(HAVE_LOCAL_GMP)
 echo "use local $enable_local_gmp"
 else
 echo "configuring gmp"
-$srcdir/gmp/configure $gmp_flags
+(test -d gmp && rm -rf gmp; mkdir gmp; cd gmp; $srcdir/gmp/configure $gmp_flags)
 fi
 CLIBS="-lgmp ${CLIBS}"
 

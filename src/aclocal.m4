@@ -87,7 +87,6 @@ CPP=`eval "echo $CPP"`
 eval `${CPP} -D${host} ${tempcname} \
        | grep 'configure___' \
        | sed -e 's/^configure___\([^=]*=\)[ ]*\(.*[^ ]\) */\1"\2"/'`
-cat foo
 rm ${tempcname}
 ]
 AC_MSG_CHECKING(for ld flags when building shared libraries)
@@ -107,6 +106,7 @@ dnl Check the direction to which the stack grows (for garbage
 dnl collection).
 dnl
 AC_DEFUN(ECLS_STACK_DIRECTION,[
+  AC_MSG_CHECKING(whether stack growns downwards)
   AC_SUBST(DOWN_STACK)
   AC_TRY_RUN([
 char *f2() {
@@ -126,7 +126,9 @@ int main() {
     return 0;
 }
 ],
-AC_DEFINE(DOWN_STACK))])
+AC_MSG_RESULT(yes)
+AC_DEFINE(DOWN_STACK),
+AC_MSG_RESULT(no))])
 dnl
 dnl --------------------------------------------------------------
 dnl Check whether we can access the values in va_list() as an
