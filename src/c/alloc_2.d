@@ -281,7 +281,7 @@ register_root(cl_object *p)
 
 @(defun gc (area)
 @
-	gc((enum cl_type)0);
+	gc((cl_type)0);
 	@(return)
 @)
 
