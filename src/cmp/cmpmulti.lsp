@@ -111,12 +111,16 @@
     (c1expr `(let* (,@temp-vars)
 	      (multiple-value-setq ,vars ,@(second args))
 	      ,@late-bindings))
-    (dolist (var vars
-	     (make-c1form 'MULTIPLE-VALUE-SETQ info (nreverse vrefs)
-			  (c1expr (second args))))
-      (setq var (c1vref var))
-      (push var vrefs)
-      (push var (info-changed-vars info)))))
+    (let ((value (c1expr (second args))))
+      (dolist (var vars
+	       (make-c1form 'MULTIPLE-VALUE-SETQ info (nreverse vrefs) value))
+	(setq var (c1vref var))
+	(push var vrefs)
+	(unless (type-and 'T (var-type var))
+	  (cmpwarn "Variable ~s appeared in a MULTIPLE-VALUE-SETQ and declared to have type ~S."
+		   (var-name var)
+		   (var-type var)))
+	(push var (info-changed-vars info))))))
 
 (defun multiple-value-check (vrefs form)
   (and (rest vrefs)
