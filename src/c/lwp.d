@@ -133,7 +133,6 @@ make_pd()
   npd->lwp_PRINTlength = -1;
   npd->lwp_PRINTarray = FALSE;
   
-  npd->lwp_READtable  = symbol_value(@'*readtable*');
   npd->lwp_delimiting_char = OBJNULL;
   npd->lwp_detect_eos_flag = FALSE;
   npd->lwp_in_list_flag = FALSE;

@@ -28,7 +28,6 @@
 cl_object standard_readtable;
 
 #ifndef THREADS
-cl_object READtable;
 bool preserving_whitespace_flag;
 bool escape_flag;
 cl_object delimiting_char;
@@ -49,32 +48,10 @@ extern int backq_level;
 
 static cl_object dispatch_reader;
 
-#define	cat(c)	(READtable->readtable.table[c].syntax_type)
+#define	cat(rtbl,c)	((rtbl)->readtable.table[c].syntax_type)
 #define read_suppress (SYM_VAL(@'*read-suppress*') != Cnil)
 
 static void extra_argument (int c, cl_object d);
-
-static void
-setup_READtable(void)
-{
-	READtable = current_readtable();
-}
-
-static void
-setup_READ(void)
-{
-	cl_object x;
-
-	READtable = current_readtable();
-}
-
-static void
-setup_standard_READ(void)
-{
-	READtable = standard_readtable;
-	sharp_eq_context = Cnil;
-	backq_level = 0;
-}
 
 cl_object
 read_char(cl_object stream)
@@ -97,10 +74,11 @@ cl_object
 peek_char(bool pt, cl_object in)
 {
 	int c;
+	cl_object rtbl = cl_current_readtable();
 
 	c = readc_stream(in);
 	if (pt)
-		while (cat(c) == cat_whitespace)
+		while (cat(rtbl, c) == cat_whitespace)
 			c = readc_stream(in);
 	unreadc_stream(c, in);
 	return CODE_CHAR(c);
@@ -112,18 +90,13 @@ read_object_recursive(cl_object in)
 	volatile cl_object x;
 	bool e;
 
-	cl_object old_READtable = READtable;
-
 	if (frs_push(FRS_PROTECT, Cnil))
 		e = TRUE;
 	else {
-		setup_READ();
 		x = read_object(in);
 		e = FALSE;
 	}
 	frs_pop();
-
-	READtable = old_READtable;
 
 	if (e) unwind(nlj_fr, nlj_tag);
 	return(x);
@@ -136,14 +109,11 @@ read_object_non_recursive(cl_object in)
 {
 	volatile cl_object x;
 	bool e;
-	cl_object old_READtable;
 	int old_backq_level;
 	cl_object old_sharp_eq_context;
 
-	old_READtable = READtable;
 	old_sharp_eq_context = sharp_eq_context;
 	old_backq_level = backq_level;
-	setup_READ();
 	sharp_eq_context = Cnil;
 	backq_level = 0;
 
@@ -157,7 +127,6 @@ read_object_non_recursive(cl_object in)
 	}
 	frs_pop();
 
-	READtable = old_READtable;
 	sharp_eq_context = old_sharp_eq_context;
 	backq_level = old_backq_level;
 	if (e) unwind(nlj_fr, nlj_tag);
@@ -178,6 +147,7 @@ read_object(cl_object in)
 	cl_index length, i, colon;
 	int colon_type, intern_flag;
 	bool df, ilf;
+	cl_object rtbl = cl_current_readtable();
 
 	cs_check(in);
 
@@ -200,13 +170,13 @@ BEGIN:
 		} else {
 			c = readc_stream(in);
 		}
-		a = cat(c);
+		a = cat(rtbl, c);
 	} while (a == cat_whitespace);
 	delimiting_char = OBJNULL;
 	if (old_delimiter != OBJNULL && old_delimiter == CODE_CHAR(c))
 		return(OBJNULL);
 	if (a == cat_terminating || a == cat_non_terminating) {
-		cl_object x = READtable->readtable.table[c].macro;
+		cl_object x = rtbl->readtable.table[c].macro;
 		cl_object o = funcall(3, x, in, CODE_CHAR(c));
 		if (NValues == 0) goto BEGIN;
 		if (NValues > 1) FEerror("The readmacro ~S returned ~D values.",
@@ -228,7 +198,7 @@ BEGIN:
 				if (stream_at_end(in))
 					FEend_of_file(in);
 				c = readc_stream(in);
-				a = cat(c);
+				a = cat(rtbl, c);
 				if (a == cat_single_escape) {
 					c = readc_stream(in);
 					a = cat_constituent;
@@ -252,7 +222,7 @@ BEGIN:
 		}
 		if (a == cat_whitespace || a == cat_terminating) {
 			if (preserving_whitespace_flag ||
-			    cat(c) != cat_whitespace)
+			    cat(rtbl, c) != cat_whitespace)
 				unreadc_stream(c, in);
 			break;
 		}
@@ -263,7 +233,7 @@ BEGIN:
 			break;
 		else
 			c = readc_stream(in);
-		a = cat(c);
+		a = cat(rtbl, c);
 	}
 
 	if (read_suppress)
@@ -585,6 +555,7 @@ static
   cl_object x, y;
   cl_object *p;
   int c;
+  cl_object rtbl = cl_current_readtable();
 @
   y = Cnil;
   for (p = &y ; ; p = &(CDR(*p))) {
@@ -601,7 +572,7 @@ static
       if (dot_flag)
 	FEerror("Two dots appeared consecutively.", 0);
       c = readc_stream(in);
-      while (cat(c) == cat_whitespace)
+      while (cat(rtbl, c) == cat_whitespace)
 	c = readc_stream(in);
       if (c != ')')
 	FEerror("A dot appeared before a right parenthesis.", 0);
@@ -621,13 +592,14 @@ static void
 read_string(int delim, cl_object in)
 {
 	int c;
+	cl_object rtbl = cl_current_readtable();
 
 	cl_token->string.fillp = 0;
 	for (;;) {
 		c = readc_stream(in);
 		if (c == delim)
 			break;
-		else if (cat(c) == cat_single_escape)
+		else if (cat(rtbl, c) == cat_single_escape)
 			c = readc_stream(in);
 		cl_string_push_extend(cl_token, c);
 	}
@@ -642,11 +614,12 @@ static void
 read_constituent(cl_object in)
 {
 	int c;
+	cl_object rtbl = cl_current_readtable();
 
 	cl_token->string.fillp = 0;
 	for (;;) {
 		c = readc_stream(in);
-		if (cat(c) != cat_constituent) {
+		if (cat(rtbl, c) != cat_constituent) {
 			unreadc_stream(c, in);
 			break;
 		}
@@ -665,8 +638,9 @@ static
 @(defun "dispatch_reader_fun" (in dc)
 	cl_object x, y;
 	int i, d, c;
+	cl_object rtbl = cl_current_readtable();
 @
-	if (READtable->readtable.table[char_code(dc)].dispatch_table == NULL)
+	if (rtbl->readtable.table[char_code(dc)].dispatch_table == NULL)
 		FEerror("~C is not a dispatching macro character", 1, dc);
 
 	c = readc_stream(in);
@@ -682,7 +656,7 @@ static
 	} else
 		y = Cnil;
 
-	x = READtable->readtable.table[char_code(dc)].dispatch_table[c];
+	x = rtbl->readtable.table[char_code(dc)].dispatch_table[c];
 	return funcall(4, x, in, CODE_CHAR(c), y);
 @)
 
@@ -907,13 +881,14 @@ static
 
 static
 @(defun "sharp_colon_reader" (in ch d)
+	cl_object rtbl = cl_current_readtable();
 	enum chattrib a;
 	int c;
 @
 	if (d != Cnil && !read_suppress)
 		extra_argument(':', d);
 	c = readc_stream(in);
-	a = cat(c);
+	a = cat(rtbl, c);
 	escape_flag = FALSE;
 	cl_token->string.fillp = 0;
 	goto L;
@@ -923,7 +898,7 @@ static
 		if (stream_at_end(in))
 			goto M;
 		c = readc_stream(in);
-		a = cat(c);
+		a = cat(rtbl, c);
 	L:
 		if (a == cat_single_escape) {
 			c = readc_stream(in);
@@ -935,7 +910,7 @@ static
 				if (stream_at_end(in))
 					FEend_of_file(in);
 				c = readc_stream(in);
-				a = cat(c);
+				a = cat(rtbl, c);
 				if (a == cat_single_escape) {
 					c = readc_stream(in);
 					a = cat_constituent;
@@ -949,7 +924,7 @@ static
 		if (a == cat_whitespace || a == cat_terminating)
 			break;
 	}
-	if (preserving_whitespace_flag || cat(c) != cat_whitespace)
+	if (preserving_whitespace_flag || cat(rtbl, c) != cat_whitespace)
 		unreadc_stream(c, in);
 
 M:
@@ -1307,15 +1282,16 @@ copy_readtable(cl_object from, cl_object to)
 }
 
 cl_object
-current_readtable(void)
+cl_current_readtable(void)
 {
 	cl_object r;
 
-	r = symbol_value(@'*readtable*');
+	/* INV: *readtable* always has a value */
+	r = SYM_VAL(@'*readtable*');
 	if (type_of(r) != t_readtable) {
-	  SYM_VAL(@'*readtable*') = copy_readtable(standard_readtable, Cnil);
-	  FEerror("The value of *READTABLE*, ~S, was not a readtable.",
-		  1, r);
+		SYM_VAL(@'*readtable*') = copy_readtable(standard_readtable, Cnil);
+		FEerror("The value of *READTABLE*, ~S, was not a readtable.",
+			1, r);
 	}
 	return(r);
 }
@@ -1383,8 +1359,8 @@ cl_current_read_default_float_format(void)
 	(&optional (strm Cnil)
 		   (eof_errorp Ct)
 		   eof_value
-		   recursivep
-	 &aux x)
+		   recursivep)
+	cl_object x, rtbl = cl_current_readtable();
 	int c;
 @
 	if (Null(strm))
@@ -1393,7 +1369,7 @@ cl_current_read_default_float_format(void)
 		strm = symbol_value(@'*terminal_io*');
 	while (!stream_at_end(strm)) {
 		c = readc_stream(strm);
-		if (cat(c) != cat_whitespace) {
+		if (cat(rtbl, c) != cat_whitespace) {
 			unreadc_stream(c, strm);
 			goto READ;
 		}
@@ -1429,7 +1405,6 @@ READ:
 	if (Null(recursivep)) {
 		old_sharp_eq_context = sharp_eq_context;
 		old_backq_level = backq_level;
-		setup_READ();
 		sharp_eq_context = Cnil;
 		backq_level = 0;
 		if (frs_push(FRS_PROTECT, Cnil)) {
@@ -1524,12 +1499,12 @@ READ:
 
 @(defun peek_char (&optional peek_type (strm Cnil) (eof_errorp Ct) eof_value recursivep)
 	int c;
+	cl_object rtbl = cl_current_readtable();
 @
 	if (Null(strm))
 		strm = symbol_value(@'*standard_input*');
 	else if (strm == Ct)
 		strm = symbol_value(@'*terminal_io*');
-	setup_READtable();
 	if (Null(peek_type)) {
 		if (stream_at_end(strm)) {
 			if (Null(eof_errorp) && Null(recursivep))
@@ -1544,7 +1519,7 @@ READ:
 	if (peek_type == Ct) {
 		while (!stream_at_end(strm)) {
 			c = readc_stream(strm);
-			if (cat(c) != cat_whitespace) {
+			if (cat(rtbl, c) != cat_whitespace) {
 				unreadc_stream(c, strm);
 				@(return CODE_CHAR(c))
 			}
@@ -1619,14 +1594,14 @@ READ:
 			    junk_allowed
 		       &aux x)
 	cl_index s, e, ep;
+	cl_object rtbl = cl_current_readtable();
 @
 	assert_type_string(strng);
 	get_string_start_end(strng, start, end, &s, &e);
 	if (!FIXNUMP(radix) ||
 	    fix(radix) < 2 || fix(radix) > 36)
 		FEerror("~S is an illegal radix.", 1, radix);
-	setup_READtable();
-	while (READtable->readtable.table[strng->string.self[s]].syntax_type
+	while (rtbl->readtable.table[strng->string.self[s]].syntax_type
 	       == cat_whitespace && s < e)
 		s++;
 	if (s >= e) {
@@ -1645,7 +1620,7 @@ READ:
 	if (junk_allowed != Cnil)
 		@(return x MAKE_FIXNUM(ep+s))
 	for (s += ep ;  s < e;  s++)
-		if (READtable->readtable.table[strng->string.self[s]].syntax_type
+		if (rtbl->readtable.table[strng->string.self[s]].syntax_type
 		    != cat_whitespace)
 			goto CANNOT_PARSE;
 	@(return x MAKE_FIXNUM(e))
@@ -1689,7 +1664,7 @@ CANNOT_PARSE:
 
 
 
-@(defun copy_readtable (&o (from current_readtable()) to)
+@(defun copy_readtable (&o (from cl_current_readtable()) to)
 @
 	if (Null(from)) {
 		from = standard_readtable;
@@ -1721,7 +1696,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 }
 
 @(defun set_syntax_from_char (tochr fromchr
-			      &o (tordtbl current_readtable())
+			      &o (tordtbl cl_current_readtable())
 				 fromrdtbl)
 	struct readtable_entry*torte, *fromrte;
 @
@@ -1743,7 +1718,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 
 @(defun set_macro_character (chr fnc
 			     &optional ntp
-				       (rdtbl current_readtable()))
+				       (rdtbl cl_current_readtable()))
 	struct readtable_entry*entry;
 @
 	/* INV: read_table_entry() checks our arguments */
@@ -1756,7 +1731,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 	@(return Ct)
 @)
 
-@(defun get_macro_character (chr &o (rdtbl current_readtable()))
+@(defun get_macro_character (chr &o (rdtbl cl_current_readtable()))
 	struct readtable_entry*entry;
 	cl_object m;
 @
@@ -1776,7 +1751,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 @)
 
 @(defun make_dispatch_macro_character (chr
-	&optional ntp (rdtbl current_readtable()))
+	&optional ntp (rdtbl cl_current_readtable()))
 	struct readtable_entry*entry;
 	cl_object *table;
 	int i;
@@ -1796,7 +1771,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 @)
 
 @(defun set_dispatch_macro_character (dspchr subchr fnc
-	&optional (rdtbl current_readtable()))
+	&optional (rdtbl cl_current_readtable()))
 	struct readtable_entry*entry;
 	cl_fixnum subcode;
 @
@@ -1811,7 +1786,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 @)
 
 @(defun get_dispatch_macro_character (dspchr subchr
-	&optional (rdtbl current_readtable()))
+	&optional (rdtbl cl_current_readtable()))
 	struct readtable_entry*entry;
 	cl_fixnum subcode;
 @
@@ -1978,9 +1953,6 @@ init_read(void)
 	SYM_VAL(@'*read_base*') = MAKE_FIXNUM(10);
 	SYM_VAL(@'*read_suppress*') = Cnil;
 
-	READtable = symbol_value(@'*readtable*');
-	register_root(&READtable);
-
 	sharp_eq_context = Cnil;
 
 	delimiting_char = OBJNULL;
@@ -2006,18 +1978,12 @@ void
 read_VV(cl_object block, void *entry)
 {
 	typedef void (*entry_point_ptr)(cl_object);
-	volatile cl_object x, v;
-	int i;
+	volatile cl_object x;
+	int i, len;
 	bool e;
 	cl_object in;
-	cl_object old_READtable;
-	int old_backq_level;
-	cl_object old_sharp_eq_context;
-	cl_object old_package;
-
 	entry_point_ptr entry_point = (entry_point_ptr)entry;
 	cl_object *VV;
-	int len;
 	bds_ptr old_bds_top = bds_top;
 
 	if (block == NULL)
@@ -2032,56 +1998,41 @@ read_VV(cl_object block, void *entry)
 	VV = block->cblock.data;
 #endif
 
-	old_READtable = READtable;
-	old_sharp_eq_context = sharp_eq_context;
-	old_backq_level = backq_level;
-
-	old_package = SYM_VAL(@'*package*');
-	bds_bind(@'*package*', lisp_package);
 	bds_bind(@'*read-base*', MAKE_FIXNUM(10));
 	bds_bind(@'*read-default-float-format*', @'single-float');
 	bds_bind(@'*read-suppress*', Cnil);
-
-	setup_standard_READ();
 
 	in = OBJNULL;
 	if (frs_push(FRS_PROTECT, Cnil))
 		e = TRUE;
 	else {
-	  if (len == 0) goto NO_DATA;
-	  in=make_string_input_stream(make_constant_string(block->cblock.data_text),
-				      0, block->cblock.data_text_size);
-	  read_VV_block = block;
-	  for (i = 0 ; i < len; i++) {
-	    sharp_eq_context = Cnil;
-	    backq_level = 0;
-	    preserving_whitespace_flag = FALSE;
-	    detect_eos_flag = FALSE;
-	    x = read_object(in);
-	    if (x == OBJNULL)
-	      break;
-	    if (!Null(sharp_eq_context))
-	      x = patch_sharp(x);
-	    VV[i] = x;
-	  }
-	  if (i < len)
-	    FEerror("Not enough data while loading binary file",0);
+		if (len == 0) goto NO_DATA;
+		in=make_string_input_stream(make_constant_string(block->cblock.data_text),
+					    0, block->cblock.data_text_size);
+		bds_bind(@'*package*', lisp_package);
+		bds_bind(@'*readtable*', standard_readtable);
+		read_VV_block = block;
+		for (i = 0 ; i < len; i++) {
+			x = @read(4, in, Cnil, OBJNULL, Cnil);
+			if (x == OBJNULL)
+				break;
+			VV[i] = x;
+		}
+		bds_unwind1;
+		bds_unwind1;
+		if (i < len)
+			FEerror("Not enough data while loading binary file",0);
 	NO_DATA:
-	  SYM_VAL(@'*package*') = old_package;
-	  (*entry_point)(MAKE_FIXNUM(0));
-	  e = FALSE;
+		(*entry_point)(MAKE_FIXNUM(0));
+		e = FALSE;
 	}
 
 	frs_pop();
 	if (in != OBJNULL)
-	  close_stream(in, 0);
-
+		close_stream(in, 0);
 	read_VV_block = OBJNULL;
 	bds_unwind(old_bds_top);
 
-	READtable = old_READtable;
-	sharp_eq_context = old_sharp_eq_context;
-	backq_level = old_backq_level;
 	if (e) unwind(nlj_fr, nlj_tag);
 }
 
