@@ -414,7 +414,7 @@ interpret_funcall(cl_narg narg, cl_object fun) {
 		if (fun->cfun.narg >= 0) {
 			if (narg != fun->cfun.narg)
 				FEwrong_num_arguments(fun);
-			x = APPLY_fixed(narg, fun->cfun.entry, args);
+			x = APPLY_fixed(narg, (cl_objectfn_fixed)fun->cfun.entry, args);
 		} else {
 			x = APPLY(narg, fun->cfun.entry, args);
 		}

@@ -79,7 +79,8 @@ cl_apply_from_stack(cl_index narg, cl_object x)
 		if (fun->cfun.narg >= 0) {
 			if (narg != (cl_index)fun->cfun.narg)
 				FEwrong_num_arguments(fun);
-			return APPLY_fixed(narg, fun->cfun.entry, cl_env.stack_top - narg);
+			return APPLY_fixed(narg, (cl_objectfn_fixed)fun->cfun.entry,
+					   cl_env.stack_top - narg);
 		}
 		return APPLY(narg, fun->cfun.entry, cl_env.stack_top - narg);
 	case t_cclosure:
@@ -126,7 +127,8 @@ link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_va_lis
 		if (fun->cfun.narg >= 0) {
 			if (narg != fun->cfun.narg)
 				FEwrong_num_arguments(fun);
-			out = APPLY_fixed(narg, fun->cfun.entry, cl_env.stack_top - narg);
+			out = APPLY_fixed(narg, (cl_objectfn_fixed)fun->cfun.entry,
+					  cl_env.stack_top - narg);
 		} else {
 			if (pLK) {
 				si_put_sysprop(sym, @'si::link-from',
@@ -199,7 +201,8 @@ si_unlink_symbol(cl_object s)
 		if (fun->cfun.narg >= 0) {
 			if (narg != fun->cfun.narg)
 				FEwrong_num_arguments(fun);
-			out = APPLY_fixed(narg, fun->cfun.entry, cl_env.stack_top - narg);
+			out = APPLY_fixed(narg, (cl_objectfn_fixed)fun->cfun.entry,
+					  cl_env.stack_top - narg);
 		} else {
 			out = APPLY(narg, fun->cfun.entry, cl_env.stack + sp);
 		}

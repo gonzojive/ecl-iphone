@@ -39,8 +39,11 @@ struct typemanager tm_table[(int)t_end];
 #endif
 
 static void
-finalize(cl_object o, cl_object data)
+finalize(GC_PTR _o, GC_PTR _data)
 {
+	cl_object o = (cl_object)_o;
+	cl_object data = (cl_object)_data;
+
 	CL_NEWENV_BEGIN {
 	switch (type_of(o)) {
 #ifdef ENABLE_DLOPEN

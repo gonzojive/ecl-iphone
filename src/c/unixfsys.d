@@ -252,7 +252,7 @@ backup_fopen(const char *filename, const char *option)
 #endif
 	if (rename(filename, backupfilename))
 		FElibc_error("Cannot rename the file ~S to ~S.", 2,
-			     make_simple_string(filename), make_simple_string(backupfilename));
+			     make_constant_string(filename), make_simple_string(backupfilename));
 	return fopen(filename, option);
 }
 

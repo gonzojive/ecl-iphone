@@ -39,6 +39,7 @@ typedef union cl_lispunion *cl_object;
 typedef cl_object cl_return;
 typedef cl_fixnum cl_narg;
 typedef cl_object (*cl_objectfn)(cl_narg narg, ...);
+typedef cl_object (*cl_objectfn_fixed)();
 
 /*
 	OBJect NULL value.
