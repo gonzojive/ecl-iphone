@@ -158,11 +158,11 @@ if test ${boehm} = "no" ; then
 else
   LIBRARIES="${LIBRARIES} libgc.a"
   if test ${local_boehm} = "no"; then
-    BOEHM_HEADERS=""
-  else
     LIBRARIES="${LIBRARIES} libgc.a"
     SUBDIR="${SUBDIR} gc"
     BOEHM_HEADERS="-I\$(top_srcdir)/gc/include"
+  else
+    BOEHM_HEADERS=""
   fi
   CLIBS="-lgc ${CLIBS}"
   EXTRA_OBJS="${EXTRA_OBJS} alloc_2.o"
