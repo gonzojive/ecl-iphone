@@ -104,7 +104,7 @@ AC_ARG_WITH(clos-streams,
 AC_ARG_WITH(clx,
 	AS_HELP_STRING([--with-clx],
 		       [include CLX library (default is NO)]),
-	[clx="${withval}"],[clx=yes])
+	[clx="${withval}"],[clx=no])
 AC_ARG_WITH(cxx,
 	AS_HELP_STRING([--with-cxx],
 		       [build ECL using C++ compiler (default is NO)]),

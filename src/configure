@@ -1507,7 +1507,7 @@ if test "${with_clx+set}" = set; then
   withval="$with_clx"
   clx="${withval}"
 else
-  clx=yes
+  clx=no
 fi;
 
 # Check whether --with-cxx or --without-cxx was given.
