@@ -389,8 +389,6 @@
 
 (setf (symbol-function 'shift<<) #'ash)
 (setf (symbol-function 'shift>>) #'ash)
-(setf (get 'SHIFT>> 'Lfun) "Lash")
-(setf (get 'SHIFT<< 'Lfun) "Lash")
 
 ;----------------------------------------------------------------------
 
