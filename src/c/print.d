@@ -1029,7 +1029,8 @@ _write_object(cl_object x, int level)
 			else
 				_write_object(y, level+1);
 			/* FIXME! */
-			if (x == OBJNULL || ATOM(x)) {
+			if (x == OBJNULL || ATOM(x) ||
+			    (PRINTcircle && search_print_circle(x))) {
 				if (x != Cnil) {
 					write_ch(INDENT);
 					write_str(". ");
@@ -1594,7 +1595,7 @@ init_print(void)
 {
 	SYM_VAL(@'*print-escape*') = Ct;
 	SYM_VAL(@'*print-pretty*') = Ct;
-	SYM_VAL(@'*print-circle*') = Ct;
+	SYM_VAL(@'*print-circle*') = Cnil;
 	SYM_VAL(@'*print-base*') = MAKE_FIXNUM(10);
 	SYM_VAL(@'*print-radix*') = Cnil;
 	SYM_VAL(@'*print-case*') = @':upcase';
