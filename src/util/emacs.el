@@ -187,6 +187,7 @@
 "h/object.h"
 "h/eval.h"
 "h/external.h"
+"h/stacks.h"
 "c/character.d"
 "c/gfun.d"
 "c/num_comp.d"
