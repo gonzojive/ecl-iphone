@@ -77,9 +77,6 @@ extern void init_assignment(void);
 
 /* backq.c */
 
-#ifndef THREADS
-extern int backq_level;
-#endif
 extern int backq_cdr(cl_object *px);
 extern int backq_car(cl_object *px);
 extern cl_object backq(cl_object x);
@@ -88,13 +85,9 @@ extern void init_backq(void);
 
 /* big.c */
 
-#ifdef THREADS
-#define bignum_register_limbs lwp->lwp_bignum_register_limbs
-#define bignum_register lwp->lwp_bignum_register
-#else
-extern cl_object bignum_register[3];
-extern mp_limb_t bignum_register_limbs[3][BIGNUM_REGISTER_SIZE];
-#endif /* THREADS */
+extern cl_object big_register0_get(void);
+extern cl_object big_register1_get(void);
+extern cl_object big_register2_get(void);
 extern cl_object big_register_copy(cl_object x);
 extern cl_object big_register_normalize(cl_object x);
 extern void big_register_free(cl_object x);
@@ -297,7 +290,6 @@ extern void init_format(void);
 #define GC_enable() GC_enable = TRUE;
 #define GC_disable() GC_enable = FALSE;
 extern bool GC_enable;
-extern int gc_time;
 extern cl_object (*GC_enter_hook)(void);
 extern cl_object (*GC_exit_hook)(void);
 extern void register_root(cl_object *p);
@@ -458,7 +450,6 @@ extern void init_macros(void);
 /* main.c */
 
 extern int cl_boot(int argc, char **argv);
-extern int data_start;
 extern const char *ecl_self;
 extern void init_main(void);
 

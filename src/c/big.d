@@ -18,6 +18,9 @@
 #ifndef THREADS
 cl_object bignum_register[3];
 mp_limb_t bignum_register_limbs[3][BIGNUM_REGISTER_SIZE];
+#else
+#define bignum_register_limbs lwp->lwp_bignum_register_limbs
+#define bignum_register lwp->lwp_bignum_register
 #endif
 
 /* 
@@ -37,6 +40,27 @@ mp_limb_t bignum_register_limbs[3][BIGNUM_REGISTER_SIZE];
  * typedef unsigned long int	mp_limb_t;
  *
  */
+
+cl_object
+big_register0_get(void)
+{
+	bignum_register[0]->big.big_size = 0;
+	return bignum_register[0];
+}
+
+cl_object
+big_register1_get(void)
+{
+	bignum_register[1]->big.big_size = 0;
+	return bignum_register[1];
+}
+
+cl_object
+big_register2_get(void)
+{
+	bignum_register[2]->big.big_size = 0;
+	return bignum_register[2];
+}
 
 void
 big_register_free(cl_object x)

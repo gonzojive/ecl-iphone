@@ -25,6 +25,3 @@
 #define big_to_double(x)	mpz_get_d(x->big.big_num)
 #define big_to_long(x)		mpz_get_si(x->big.big_num)
 #define big_to_ulong(x)		mpz_get_ui(x->big.big_num)
-#define big_register0_get()	(bignum_register[0]->big.big_size = 0, bignum_register[0])
-#define big_register1_get()	(bignum_register[1]->big.big_size = 0, bignum_register[1])
-#define big_register2_get()	(bignum_register[2]->big.big_size = 0, bignum_register[2])

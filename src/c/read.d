@@ -51,6 +51,12 @@ cl_object sharp_eq_context;
 
 /******************************* ------- ******************************/
 
+#ifndef THREADS
+extern int backq_level;
+#else
+#define backq_level lwp->lwp_backq_level
+#endif
+
 static cl_object dispatch_reader;
 
 #define	token_buffer	cl_token->string.self

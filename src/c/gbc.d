@@ -25,7 +25,6 @@ cl_object @'si::*gc-verbose*';
 cl_object @'si::*gc-message*';
 
 bool GC_enable;
-int gc_time;			/* Beppe */
 
 /******************************* ------- ******************************/
 
@@ -53,6 +52,8 @@ static cl_object	*gc_root[GC_ROOT_MAX];
 static int	gc_roots;
 
 static bool	collect_blocks;
+
+static int gc_time;			/* Beppe */
 
 /*
    We must register location, since value may be reassigned (e.g. malloc_list)
