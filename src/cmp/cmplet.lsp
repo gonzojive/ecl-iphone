@@ -95,6 +95,7 @@
 	;;  - e4 does not affect e2
 	(when (and (= 1 (var-ref var))
 		   (member-var var (c1form-referred-vars body))
+		   (not (form-causes-side-effect form))
 		   ;; it does not refer to special variables which
 		   ;; are changed in the LET form
 		   (dolist (v all-vars t)
@@ -313,6 +314,7 @@
 	;;  - e2 does not affect v1 nor e3, e3 does not affect e2
 	;;  - e4 does not affect e2
 	(when (and (= 1 (var-ref var))
+		   (not (form-causes-side-effect form))
 		   (member-var var (c1form-referred-vars body))
 		   ;; it does not refer to special variables which
 		   ;; are changed in later assignments
