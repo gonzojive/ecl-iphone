@@ -205,6 +205,8 @@ BEGIN:
 		return(h);
 #endif /* CLOS */
 #endif /* !ANSI */
+	case t_random:
+		return h ^ x->random.value;
         case t_package:		/* These two should actually */
 	case t_bitvector:	/* have visible changes under equal */
 	default:
