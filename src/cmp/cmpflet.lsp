@@ -13,8 +13,12 @@
 (in-package "COMPILER")
 
 (defun c1flet (args &aux body ss ts is other-decl
-                         (defs nil) (local-funs nil))
+	       (defs '()) (local-funs '()))
   (check-args-number 'FLET args 1)
+  ;; On a first round, we extract the definitions of the functions,
+  ;; and build empty function objects that record the references to
+  ;; this functions in the processed body. In the end
+  ;;	DEFS = ( { ( fun-object  function-body ) }* ).
   (let ((*funs* *funs*))
     (dolist (def (car args))
       (cmpck (or (endp def)
@@ -26,12 +30,16 @@
         (push (list fun (cdr def)) defs)))
 
     (multiple-value-setq (body ss ts is other-decl) (c1body (cdr args) t))
-    
+
     (let ((*vars* *vars*))
       (c1add-globals ss)
       (check-vdecl nil ts is)
       (setq body (c1decl-body other-decl body))))
 
+  ;; Now we can compile the function themselves. Notice that we have
+  ;; emptied *fun* so that the functions do not see each other (that is
+  ;; the difference with LABELS). In the end
+  ;;	LOCAL-FUNS = ( { ( fun-object  lambda-c1form ) }* ).
   (dolist (def (nreverse defs))
     (let ((fun (car def)) lam CB/LB)
       (when (plusp (fun-ref fun))
@@ -71,8 +79,6 @@
 		     #'(lambda (x) (unless (symbolp x) (tag-var x)))))
 	(return t)))))
 
-(defvar *within-labels* NIL)		;; used to optimize lex env
-
 (defun c2locals (funs body labels ;; labels is T when deriving from labels
 		      &aux block-p
 		      (level *level*)
@@ -109,23 +115,20 @@
     (let* ((fun (car def)) (var (fun-var fun)))
       (when (and var (plusp (var-ref var)))
 	(set-var (list 'MAKE-CCLOSURE fun) var))))
-  ;; we need to introduce a new lex when lexical variables
-  ;; are present in body and:
-  ;;   it is a LABELS (each recursive calls needs a new lex)
-  ;;   or it is the outermost FLET (nested FLETS can use a single lex)
-  (when (and (plusp *lex*)
-	     (or labels (not *within-labels*)))
+  ;; We need to introduce a new lex vector when lexical variables
+  ;; are present in body and it is the outermost FLET or LABELS
+  ;; (nested FLETS/LABELS can use a single lex).
+  (when (plusp *lex*)
     (incf level))
   ;; create the functions:
   (dolist (def funs)
     (let* ((fun (car def)) (var (fun-var fun)) previous)
       (when (setq previous (new-local level fun (second def)))
+	(format t "~%> ~A" previous)
 	(setf (fun-level fun) (fun-level previous)
 	      (fun-env fun) (fun-env previous)))))
 
-  (let (;(*level* level)
-	(*within-labels* labels))
-    (c2expr body))
+  (c2expr body)
   (when block-p (wt-nl "}")))
 
 (defun c1labels (args &aux body ss ts is other-decl defs fun local-funs
