@@ -47,6 +47,6 @@
 (sbt:defsystem 
  lsp
  :modules *lsp-modules*
- :source-directory '("@srcdir@/" "@builddir@/lsp/")
- :fasl-directory "@builddir@/lsp/"
- :library-directory "@builddir@/")
+ :source-directory '("@abs_srcdir@/" "@abs_builddir@/")
+ :fasl-directory "@abs_builddir@/"
+ :library-directory "@abs_top_builddir@/")

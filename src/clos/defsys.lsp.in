@@ -44,6 +44,6 @@
 (sbt:defsystem 
  clos
  :modules *clos-modules*
- :source-directory "@srcdir@/"
- :fasl-directory "@builddir@/clos/"
- :library-directory "@builddir@/")
+ :source-directory "@abs_srcdir@/"
+ :fasl-directory "@abs_builddir@/"
+ :library-directory "@abs_top_builddir@/")

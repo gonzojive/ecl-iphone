@@ -40,7 +40,7 @@
 (sbt:defsystem 
  cmp
  :modules *cmp-modules*
- :source-directory '("@srcdir@/" "@builddir@/cmp/")
- :fasl-directory "@builddir@/cmp/"
- :library-directory "@builddir@/")
+ :source-directory '("@abs_srcdir@/" "@abs_builddir@/")
+ :fasl-directory "@abs_builddir@/"
+ :library-directory "@abs_top_builddir@/")
 

@@ -2357,6 +2357,8 @@ init_compiler(void)
 {
 	compiler_record *l;
 
+	SYM_VAL(@'si::*keep-definitions*') = Cnil;
+
 	register_root(&c_env.variables);
 	register_root(&c_env.macros);
 #ifdef CL_COMP_OWN_STACK

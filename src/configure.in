@@ -47,9 +47,9 @@ AC_SUBST(top_srcdir)
 dnl AC_ARG_ENABLE(tk,
 dnl 	[--enable-tk            Include Tk.],
 dnl 	tk="$enable_tk")
-dnl AC_ARG_ENABLE(clx,
-dnl 	[--enable-clx           Include CLX.],
-dnl 	clx="$enableval")
+AC_ARG_ENABLE(clx,
+ 	[--enable-clx           Include CLX.],
+ 	clx="$enableval")
 AC_ARG_WITH(tcp,
 	[--with-tcp             Include socket interface.],
 	tcp="yes")
@@ -151,7 +151,6 @@ libdir="${exec_prefix}/lib/ecl"
 includedir="${exec_prefix}/lib/ecl/h"
 mandir="${prefix}/man/man1"
 infodir="${prefix}/info"
-builddir=`pwd`
 TARGETS="ecl${EXEEXT}"
 LIBRARIES="libecl.a"
 LSP_LIBRARIES="liblsp.a libclos.a"
