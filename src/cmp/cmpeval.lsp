@@ -99,7 +99,6 @@
 	      (sys::fixnump (cdr fd))
 	      (not (endp args))
 	      (endp (cdr args)))
-	 (print args *standard-output*)(terpri *standard-output*)
 	 (case (car fd)
 	   (VECTOR (c1expr `(svref ,(car args) ,(cdr fd)))) ; Beppe3
 	   (LIST (c1expr `(sys:list-nth ,(cdr fd) ,(car args))))
