@@ -320,11 +320,13 @@ EXPORTS
 	make_string_output_stream
 	make_string_output_stream_from_string
 	get_output_stream_string
-	ecl_getc_noeof
-	ecl_getc
-	ecl_ungetc
+	ecl_read_byte
+	ecl_write_byte
+	ecl_read_char_noeof
+	ecl_read_char
+	ecl_unread_char
 	ecl_peek_char
-	writec_stream
+	ecl_write_char
 	writestr_stream
 	flush_stream
 	clear_input_stream
@@ -881,8 +883,6 @@ EXPORTS
 	cl_set_dispatch_macro_character
 	cl_get_dispatch_macro_character
 
-	read_char
-	unread_char
 	read_object_non_recursive
 	read_object
 	parse_number

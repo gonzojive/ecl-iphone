@@ -1572,7 +1572,7 @@ CANNOT_PARSE:
 
 @(defun read_byte (binary_input_stream
 		   &optional eof_errorp eof_value)
-	int c;
+	cl_object c;
 @
 	c = ecl_read_byte(binary_input_stream);
 	if (c == Cnil) {
@@ -1581,7 +1581,7 @@ CANNOT_PARSE:
 		else
 			FEend_of_file(binary_input_stream);
 	}
-	@(return MAKE_FIXNUM(c))
+	@(return c)
 @)
 
 @(defun read_sequence (sequence stream &key (start MAKE_FIXNUM(0)) end)
