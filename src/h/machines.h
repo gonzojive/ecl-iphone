@@ -102,7 +102,7 @@
 #  define SOFTWARE_TYPE WIN32
 #else
 #  define SOFTWARE_TYPE	UNKNOWN
-#endif	MSDOS
+#endif
 
 #ifdef  aix
 #  define SOFTWARE_VERSION	AIX
@@ -163,7 +163,7 @@
 #ifndef unix
 #  define unix
 #endif
-#endif	__FreeBSD__
+#endif	/* __FreeBSD__ */
 
 #ifdef	__linux__
 #include <dlfcn.h>
@@ -180,7 +180,7 @@
 #ifndef unix
 #  define unix
 #endif
-#endif	linux
+#endif	/* linux */
 
 #ifdef	__NetBSD__
 #include <dlfcn.h>
