@@ -192,7 +192,6 @@
 "c/gfun.d"
 "c/num_comp.d"
 "c/string.d"
-"c/cinit.d"
 "c/hash.d"
 "c/num_log.d"
 "c/structure.d"
