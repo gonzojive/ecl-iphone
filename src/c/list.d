@@ -400,7 +400,7 @@ BEGIN:
 @)
 
 bool
-endp1(cl_object x)
+endp(cl_object x)
 {
 	if (CONSP(x))
 		return(FALSE);
