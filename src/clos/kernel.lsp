@@ -147,9 +147,18 @@
 					 ((si::instancep x) x)
 					 (t (find-class x))))
 			       specializers))
+	 (spec-how-list (generic-function-spec-list gf))
 	 (method (make-method qualifiers specializers lambda-list
 			      fun plist options gf
 			      (generic-function-method-class gf))))
+
+    ;; FIXME! This check should have happened before, shouldn't it???
+    (let ((l (length specializers)))
+      (if spec-how-list
+	  (unless (= (length spec-how-list) l)
+	    (error "The generic function ~A~%has ~D required arguments, but the new specialization provides ~D."
+		   gf (length spec-how-list) l))
+	  (setf spec-how-list (make-list l))))
 
     ;; update the spec-how of the gfun 
     ;; computing the or of the previous value and the new one
