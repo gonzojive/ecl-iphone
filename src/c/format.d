@@ -1857,37 +1857,27 @@ LOOP:
 			fmt->param[n].type = NONE;
 			break;
 
+		case '+':  case '-':
 		case '0':  case '1':  case '2':  case '3':  case '4':
 		case '5':  case '6':  case '7':  case '8':  case '9':
 		DIGIT:
-			x = MAKE_FIXNUM(0);
+			i = fmt->ctl_index - 1;
 			do {
-				x = number_plus(number_times(x, MAKE_FIXNUM(10)), MAKE_FIXNUM(c-'0'));
 				c = ctl_advance(fmt);
 			} while (isdigit(c));
+			x = parse_integer(fmt->ctl_str + i, fmt->ctl_index, &i, 10);
+		INTEGER:
 			/* FIXME! A hack to solve the problem of bignums in arguments */
+			if (x == OBJNULL || !numberp(x))
+				fmt_error(fmt, "integer expected");
 			fmt->param[n].type = INT;
-			fmt->param[n].value = FIXNUMP(x)? fix(x) : MOST_POSITIVE_FIXNUM;
-			break;
-
-		case '+':
-			c = ctl_advance(fmt);
-			if (!isdigit(c))
-				fmt_error(fmt, "digit expected");
-			goto DIGIT;
-
-		case '-':
-			c = ctl_advance(fmt);
-			if (!isdigit(c))
-				fmt_error(fmt, "digit expected");
-			x = MAKE_FIXNUM(0);
-			do {
-				x = number_plus(number_times(x, MAKE_FIXNUM(10)), MAKE_FIXNUM(c-'0'));
-				c = ctl_advance(fmt);
-			} while (isdigit(c));
-			/* FIXME! A hack to solve the problem of bignums in arguments */
-			fmt->param[n].type = INT;
-			fmt->param[n].value = FIXNUMP(x)? fix(x) : MOST_NEGATIVE_FIXNUM;
+			if (FIXNUMP(x)) {
+				fmt->param[n].value = fix(x);
+			} else if (number_plusp(x)) {
+				fmt->param[n].value = MOST_POSITIVE_FIXNUM;
+			} else {
+				fmt->param[n].value = MOST_NEGATIVE_FIXNUM;
+			}
 			break;
 
 		case '\'':
@@ -1898,15 +1888,13 @@ LOOP:
 
 		case 'v':  case 'V':
 			x = fmt_advance(fmt);
-			if (FIXNUMP(x)) {
-				fmt->param[n].type = INT;
-				fmt->param[n].value = fix(x);
-			} else if (type_of(x) == t_character) {
+			c = ctl_advance(fmt);
+			if (type_of(x) == t_character) {
 				fmt->param[n].type = CHAR;
 				fmt->param[n].value = CHAR_CODE(x);
-			} else
-				fmt_error(fmt, "illegal V parameter");
-			c = ctl_advance(fmt);
+			} else {
+				goto INTEGER;
+			}
 			break;
 
 		case '#':
