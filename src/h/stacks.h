@@ -211,23 +211,18 @@ extern cl_object Values[VSSIZE];
  * LEXICAL ENVIRONMENT STACK
  *****************************/
 /*
-		|---------------|
-lex_env ------> |    lex-var	|	: lex_env[0]
-		|---------------|
-		|    lex-fd	|       : lex_env[1]
-		|---------------|
-		|    lex-tag	|       : lex_env[2]
-		|---------------|
-	lex-var:        (symbol value)      	; for local binding
-	or		(symbol)                ; for special binding
 
-	lex-fd:         (fun-name 'FUNCTION'   function)
-	or		(macro-name 'MACRO' expansion-function)
+lex_env ------> ( tag0 value0 tag1 value1 ... )
 
-	lex-tag:  	(tag    'TAG'  	frame-id)
-	or		(block-name 'BLOCK' frame-id)
+	tag:		variable-name (symbol)
+	value:		variable-value (any lisp object)
 
-where 'FUN' is the LISP symbol with pname FUN, etc.
+	tag:		:function
+	value:		(function-name . function-object)
+
+	tag:		:block
+	value:		(block-name . frame-id)
+
 */
 
 #ifdef THREADS

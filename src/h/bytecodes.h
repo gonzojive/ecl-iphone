@@ -17,21 +17,21 @@
   OP_PUSHVS	var{symbol}
 	Pushes the value of the symbol VAR onto the stack.
 
-  OP_VAR	n{arg}, var{symbol}
-	Returns the value of the n-th local. VAR is given for readability
-	of diassembled code only.
+  OP_VAR	n{arg}
+	Returns the value of the n-th local.
 
   OP_VARS	var{symbol}
 	Returns the value of the symbol VAR.
 
   OP_PUSHQ	value{obj}
-	Pushes "value"
+	Pushes "value" onto the stack.
 
-  OP_PUSHV	var{symbol}
-	Pushes the value of the variable "var"
+  OP_PUSHV	n{arg}, var{symbol}
+	Pushes the value of the n-th local. The name of the variable is
+	kept for readability purposes.
 
   OP_PUSHVALUES
-	Pushes the values output by the last form
+	Pushes the values output by the last form.
 
   OP_MCALL
   ...
@@ -149,9 +149,10 @@ enum {
   OP_PBINDS,
   OP_PSETQ,
   OP_PSETQS,
+  OP_VBIND,
+  OP_VBINDS,
   OP_UNBIND,
   OP_UNBINDS,
-  OP_MBIND,
   OP_MSETQ,
   OP_PROGV,
   OP_VALUES,

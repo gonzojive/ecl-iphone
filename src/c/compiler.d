@@ -403,8 +403,9 @@ c_tag_ref(cl_object the_tag, cl_object the_type)
 				return Ct;
 			n++;
 		} else if (Null(name)) {
-			/* We are counting only locals */
 			n++;
+		} else {
+			/* We are counting only locals and ignore specials */
 		}
 	}
 	return Cnil;
@@ -525,9 +526,10 @@ compile_setq(int op, cl_object var)
 	if (!SYMBOLP(var))
 		FEillegal_variable_name(var);
 	ndx = c_var_ref(var);
-	if (ndx >= 0)
+	if (ndx >= 0) {
 		asm_op2(op, ndx); /* Lexical variable */
-	else if (var->symbol.stype == stp_constant)
+		return;
+	} else if (var->symbol.stype == stp_constant)
 		FEassignment_to_constant(var);
 	else if (op == OP_SETQ)
 		asm_op(OP_SETQS); /* Special variable */
@@ -1325,16 +1327,17 @@ c_multiple_value_bind(cl_object args)
 		c_env.variables = old_env;
 	} else {
 		cl_object old_variables = c_env.variables;
-		asm_op2(OP_MBIND, n);
 		for (vars=reverse(vars); n; n--){
 			cl_object var = pop(&vars);
 			if (!SYMBOLP(var))
 				FEillegal_variable_name(var);
 			if (c_declared_special(var, specials)) {
-				asm1(MAKE_FIXNUM(1));
 				c_register_var(var, TRUE);
-			} else
+				asm_op2(OP_VBINDS, n);
+			} else {
 				c_register_var(var, FALSE);
+				asm_op2(OP_VBIND, n);
+			}
 			asm1(var);
 		}
 		compile_body(body);
@@ -1428,11 +1431,10 @@ c_multiple_value_setq(cl_object args) {
 			FEillegal_variable_name(var);
 		ndx = c_var_ref(var);
 		if (ndx >= 0)
-			asm1(var); /* Lexical variable */
+			asm1(MAKE_FIXNUM(ndx)); /* Lexical variable */
 		else if (var->symbol.stype == stp_constant)
 			FEassignment_to_constant(var);
 		else {
-			asm1(MAKE_FIXNUM(1));
 			asm1(var);
 		}
 	}
@@ -1805,10 +1807,11 @@ compile_form(cl_object stmt, bool push) {
 			index = c_var_ref(stmt);
 			if (index >= 0) {
 				asm_op2(push? OP_PUSHV : OP_VAR, index);
+				asm1(stmt);
 			} else {
 				asm_op(push? OP_PUSHVS : OP_VARS);
+				asm1(stmt);
 			}
-			asm1(stmt);
 			goto OUTPUT;
 		}
 	QUOTED:

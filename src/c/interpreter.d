@@ -141,21 +141,19 @@ bind_special(register cl_object var, register cl_object val)
 static cl_object
 search_local(register cl_object name, register int s) {
 	cl_object x;
-	for (x = lex_env; s-- && !Null(x); x = CDDR(x));
+	for (x = lex_env; s-- > 0 && !Null(x); x = CDDR(x));
 	if (Null(x) || CAR(x) != name)
-	  FEerror("Internal error: local not found.", 0);
+		FEerror("Internal error: local not found.", 0);
 	return CADR(x);
 }
 
 static void
-setq_local(register cl_object s, register cl_object v) {
+setq_local(register int s, register cl_object v) {
 	cl_object x;
-	for (x = lex_env; CONSP(x); x = CDDR(x))
-		if (CAR(x) == s) {
-			CADR(x) = v;
-			return;
-		}
-	FEerror("Internal error: local ~S not found.", 1, s);
+	for (x = lex_env; s-- > 0 && !Null(x); x = CDDR(x));
+	if (Null(x))
+		FEerror("Internal error: local ~S not found.", 1, s);
+	CADR(x) = v;
 }
 
 static cl_object
@@ -491,6 +489,14 @@ interpret_funcall(int narg, cl_object fun) {
 
 /* -------------------- THE INTERPRETER -------------------- */
 
+/* OP_BLOCK	label{arg}, block-name{symbol}
+	...
+   OP_EXIT
+   label:
+
+	Executes the enclosed code in a named block.
+	LABEL points to the first instruction after OP_EXIT.
+*/
 static cl_object *
 interpret_block(cl_object *vector) {
 	cl_object * volatile exit, name;
@@ -511,6 +517,8 @@ interpret_block(cl_object *vector) {
 	return exit;
 }
 
+
+
 static cl_object *
 interpret_catch(cl_object *vector) {
 	cl_object * volatile exit;
@@ -521,6 +529,20 @@ interpret_catch(cl_object *vector) {
 	return exit;
 }
 
+/* OP_TAGBODY	n{arg}
+   tag1
+   label1
+   ...
+   tagn
+   labeln
+label1:
+   ...
+labeln:
+   ...
+   OP_EXIT
+
+	High level construct for the TAGBODY form.
+*/
 static cl_object *
 interpret_tagbody(cl_object *vector) {
 	cl_index i, ntags = get_oparg(vector[-1]);
@@ -551,6 +573,18 @@ interpret_tagbody(cl_object *vector) {
 	return vector;
 }
 
+/* OP_UNWIND	label
+   ...		; code to be protected and whose value is output
+   OP_EXIT
+label:
+   ...		; code executed at exit
+   OP_EXIT
+	High level construct for UNWIND-PROTECT. The first piece of code
+	is executed and its output value is saved. Then the second piece
+	of code is executed and the output values restored. The second
+	piece of code is always executed, even if a THROW, RETURN or GO
+	happen within the first piece of code.
+*/
 static cl_object *
 interpret_unwind_protect(cl_object *vector) {
 	volatile int nr;
@@ -574,6 +608,13 @@ interpret_unwind_protect(cl_object *vector) {
 	return exit;
 }
 
+/* OP_DO	label
+   ...		; code executed within a NIL block
+   OP_EXIT
+   label:
+
+	High level construct for the DO and BLOCK forms.
+*/
 static cl_object *
 interpret_do(cl_object *vector) {
 	cl_object *volatile exit;
@@ -596,6 +637,18 @@ interpret_do(cl_object *vector) {
 	return exit;
 }
 
+/* OP_DOLIST	label
+   ...		; code to bind the local variable
+   OP_EXIT
+   ...		; code executed on each iteration
+   OP_EXIT
+   ...		; code executed at the end
+   OP_EXIT
+   label:
+
+	High level construct for the DOLIST iterator. The list over which
+	we iterate is stored in VALUES(0).
+*/
 static cl_object *
 interpret_dolist(cl_object *vector) {
 	cl_object *output, *volatile exit;
@@ -635,6 +688,18 @@ interpret_dolist(cl_object *vector) {
 	return exit;
 }
 
+/* OP_TIMES	label
+   ...		; code to bind the local variable
+   OP_EXIT
+   ...		; code executed on each iteration
+   OP_EXIT
+   ...		; code executed at the end
+   OP_EXIT
+   label:
+
+	High level construct for the DOTIMES iterator. The number of times
+	we iterate is stored in VALUES(0).
+*/
 static cl_object *
 interpret_dotimes(cl_object *vector) {
 	cl_object *output, *volatile exit;
@@ -680,6 +745,16 @@ close_around(cl_object fun, cl_object lex) {
 	return v;
 }
 
+/* OP_FLET	nfun{arg}
+   fun1{object}
+   ...
+   funn{object}
+   ...
+   OP_EXIT
+
+	Executes the enclosed code in a lexical enviroment extended with
+	the functions "fun1" ... "funn".
+*/
 static cl_object *
 interpret_flet(cl_object *vector) {
 	cl_index nfun = get_oparg(vector[-1]);
@@ -697,6 +772,16 @@ interpret_flet(cl_object *vector) {
 	return vector;
 }
 
+/* OP_FLET	nfun{arg}
+   fun1{object}
+   ...
+   funn{object}
+   ...
+   OP_EXIT
+
+	Executes the enclosed code in a lexical enviroment extended with
+	the functions "fun1" ... "funn".
+*/
 static cl_object *
 interpret_labels(cl_object *vector) {
 	cl_index i, nfun = get_oparg(vector[-1]);
@@ -717,21 +802,13 @@ interpret_labels(cl_object *vector) {
 	return vector;
 }
 
-static cl_object *
-interpret_mbind(cl_object *vector)
-{
-	int i = get_oparg(vector[-1]);
-	while (i--) {
-		cl_object var = next_code(vector);
-		cl_object value = (i < NValues) ? VALUES(i) : Cnil;
-		if (var == MAKE_FIXNUM(1))
-			bind_special(next_code(vector), value);
-		else
-			bind_var(var, value);
-	}
-	return vector;
-}
+/* OP_MCALL
+   ...
+   OP_EXIT
 
+	Saves the stack pointer, executes the enclosed code and
+	funcalls VALUE(0) using the content of the stack.
+*/
 static cl_object *
 interpret_mcall(cl_object *vector) {
 	cl_index sp = cl_stack_index();
@@ -740,6 +817,13 @@ interpret_mcall(cl_object *vector) {
 	return vector;
 }
 
+/* OP_PROG1
+   ...
+   OP_EXIT
+
+	Save the values in VALUES(..), execute the code enclosed, and
+	restore the values.
+*/
 static cl_object *
 interpret_mprog1(cl_object *vector) {
 	cl_index i,n = NValues;
@@ -754,6 +838,16 @@ interpret_mprog1(cl_object *vector) {
 	return vector;
 }
 
+/* OP_MSETQ	n{arg}
+   {fixnumn}|{symboln}
+   ...
+   {fixnum1}|{symbol1}
+
+	Sets N variables to the N values in VALUES(), filling with
+	NIL when there are values missing. Local variables are denoted
+	with an integer which points a position in the lexical environment,
+	while special variables are denoted just with the name.
+*/
 static cl_object *
 interpret_msetq(cl_object *vector)
 {
@@ -762,10 +856,9 @@ interpret_msetq(cl_object *vector)
 	while (i--) {
 		var = next_code(vector);
 		value = (i < NValues) ? VALUES(i) : Cnil;
-		if (var != MAKE_FIXNUM(1))
-			setq_local(var, value);
+		if (FIXNUMP(var))
+			setq_local(fix(var), value);
 		else {
-			var = next_code(vector);
 			if (var->symbol.stype == stp_constant)
 				FEassignment_to_constant(var);
 			else
@@ -776,6 +869,12 @@ interpret_msetq(cl_object *vector)
 	return vector;
 }
 
+/* OP_PROGV	bindings{list}
+   ...
+   OP_EXIT
+	Execute the code enclosed with the special variables in BINDINGS
+	set to the values in the list which was passed in VALUES(0).
+*/
 static cl_object *
 interpret_progv(cl_object *vector) {
 	cl_object values = VALUES(0);
@@ -818,59 +917,110 @@ interpret(cl_object *vector) {
 		goto BEGIN;
 	}
 	switch (GET_OP(s)) {
-	case OP_PUSHQ:
-		cl_stack_push(next_code(vector));
-		break;
-	case OP_PUSH:
-		cl_stack_push(VALUES(0));
-		break;
-	case OP_PUSHV:
-		cl_stack_push(search_local(next_code(vector), get_oparg(s)));
-		break;
-	case OP_PUSHVS:
-		cl_stack_push(search_global(next_code(vector)));
-		break;
-	case OP_VAR:
-		VALUES(0) = search_local(next_code(vector), get_oparg(s));
-		NValues = 1;
-		break;
-	case OP_VARS:
-		VALUES(0) = search_global(next_code(vector));
-		NValues = 1;
-		break;
-	case OP_QUOTE:
-		VALUES(0) = next_code(vector);
-		NValues = 1;
-		break;
+	/* OP_NOP
+		Sets VALUES(0) = NIL and NValues = 1
+	*/   		
 	case OP_NOP:
 		VALUES(0) = Cnil;
 		NValues = 0;
 		break;
-	case OP_BLOCK:
-		vector = interpret_block(vector);
+
+	/* OP_QUOTE
+		Sets VALUES(0) to an immediate value.
+	*/
+	case OP_QUOTE:
+		VALUES(0) = next_code(vector);
+		NValues = 1;
 		break;
+
+	/* OP_VAR	n{arg}, var{symbol}
+		Sets NValues=1 and VALUES(0) to the value of the n-th local.
+		VAR is the name of the variable for readability purposes.
+	*/
+	case OP_VAR: {
+		int lex_env_index = get_oparg(s);
+		cl_object var_name = next_code(vector);
+		VALUES(0) = search_local(var_name, lex_env_index);
+		NValues = 1;
+		break;
+	}
+
+	/* OP_VARS	var{symbol}
+		Sets NValues=1 and VALUES(0) to the value of the symbol VAR.
+		VAR should be either a special variable or a constant.
+	*/
+	case OP_VARS: {
+		cl_object var_name = next_code(vector);
+		VALUES(0) = search_global(var_name);
+		NValues = 1;
+		break;
+	}
+
+	/* OP_PUSH
+		Pushes the object in VALUES(0).
+	*/
+	case OP_PUSH:
+		cl_stack_push(VALUES(0));
+		break;
+
+	/* OP_PUSHV	n{arg}, var{symbol}
+		Pushes the value of the n-th local onto the stack.
+		VAR is the name of the variable for readability purposes.
+	*/
+	case OP_PUSHV: {
+		int lex_env_index = get_oparg(s);
+		cl_object var_name = next_code(vector);
+		cl_stack_push(search_local(var_name, lex_env_index));
+		break;
+	}
+
+	/* OP_PUSHVS	var{symbol}
+		Pushes the value of the symbol VAR onto the stack.
+		VAR should be either a special variable or a constant.
+	*/
+	case OP_PUSHVS: {
+		cl_object var_name = next_code(vector);
+		cl_stack_push(search_global(var_name));
+		break;
+	}
+
+	/* OP_PUSHQ	value{object}
+		Pushes "value" onto the stack.
+	*/
+	case OP_PUSHQ:
+		cl_stack_push(next_code(vector));
+		break;
+
+	/* OP_PUSHVALUES
+		Pushes the values output by the last form.
+	*/
 	case OP_PUSHVALUES: {
 		int i;
 		for (i=0; i<NValues; i++)
 			cl_stack_push(VALUES(i));
 		break;
 	}
-	case OP_MCALL:
-		vector = interpret_mcall(vector);
+
+	case OP_BLOCK:
+		vector = interpret_block(vector);
 		break;
+
+	/* OP_CALL	n{arg}, function-name{symbol}
+		Calls the local or global function with N arguments
+		which have been deposited in the stack.
+	*/
 	case OP_CALL: {
 		cl_fixnum n = get_oparg(s);
 		cl_object name = next_code(vector);
 		VALUES(0) = interpret_call(n, name);
 		break;
 	}
-	case OP_PCALL: {
-		cl_fixnum n = get_oparg(s);
-		cl_object name = next_code(vector);
-		VALUES(0) = interpret_call(n, name);
-		cl_stack_push(VALUES(0));
-		break;
-	}
+
+	/* OP_CALLG	n{arg}, function-name{symbol}
+		Calls the global function with N arguments which have
+		been deposited in the stack. The output values are
+		left in VALUES(...)
+	*/
 	case OP_CALLG: {
 		cl_fixnum n = get_oparg(s);
 		cl_object fun = next_code(vector);
@@ -879,12 +1029,37 @@ interpret(cl_object *vector) {
 		VALUES(0) = interpret_funcall(n, fun->symbol.gfdef);
 		break;
 	}
+
+	/* OP_FCALL	n{arg}
+		Calls the function in VALUES(0) with N arguments which
+		have been deposited in the stack. The output values
+		are left in VALUES(...)
+	*/
 	case OP_FCALL: {
 		cl_fixnum n = get_oparg(s);
 		cl_object fun = VALUES(0);
 		VALUES(0) = interpret_funcall(n, fun);
 		break;
 	}
+
+	/* OP_PCALL	n{arg}, function-name{symbol}
+		Calls the local or global function with N arguments
+		which have been deposited in the stack. The first
+		output value is pushed onto the stack.
+	*/
+	case OP_PCALL: {
+		cl_fixnum n = get_oparg(s);
+		cl_object name = next_code(vector);
+		VALUES(0) = interpret_call(n, name);
+		cl_stack_push(VALUES(0));
+		break;
+	}
+
+	/* OP_PCALLG	n{arg}, function-name{symbol}
+		Calls the global function with N arguments which have
+		been deposited in the stack. The first output value is
+		left on the stack.
+	*/
 	case OP_PCALLG: {
 		cl_fixnum n = get_oparg(s);
 		cl_object fun = next_code(vector);
@@ -894,6 +1069,12 @@ interpret(cl_object *vector) {
 		cl_stack_push(VALUES(0));
 		break;
 	}
+
+	/* OP_PFCALL	n{arg}
+		Calls the function in VALUES(0) with N arguments which
+		have been deposited in the stack. The first output value
+		is pushed on the stack.
+	*/
 	case OP_PFCALL: {
 		cl_fixnum n = get_oparg(s);
 		cl_object fun = VALUES(0);
@@ -901,11 +1082,23 @@ interpret(cl_object *vector) {
 		cl_stack_push(VALUES(0));
 		break;
 	}
+
+	case OP_MCALL:
+		vector = interpret_mcall(vector);
+		break;
 	case OP_CATCH:
 		vector = interpret_catch(vector);
 		break;
+
+	/* OP_EXIT
+		Marks the end of a high level construct (BLOCK, CATCH...)
+	*/
 	case OP_EXIT:
 		return vector;
+
+	/* OP_HALT
+		Marks the end of a function.
+	*/
 	case OP_HALT:
 		return vector-1;
 	case OP_FLET:
@@ -914,33 +1107,71 @@ interpret(cl_object *vector) {
 	case OP_LABELS:
 		vector = interpret_labels(vector);
 		break;
-	case OP_FUNCTION:
-		VALUES(0) = search_symbol_function(next_code(vector));
+
+	/* OP_FUNCTION	name{symbol}
+		Extracts the function associated to a symbol. The function
+		may be defined in the global environment or in the local
+		environment. This last value takes precedence.
+	*/
+	case OP_FUNCTION: {
+		cl_object function_name = next_code(vector);
+		VALUES(0) = search_symbol_function(function_name);
 		NValues = 1;
 		break;
-	case OP_CLOSE:
-		VALUES(0) = close_around(next_code(vector), lex_env);
+	}
+	/* OP_CLOSE	name{symbol}
+		Extracts the function associated to a symbol. The function
+		may be defined in the global environment or in the local
+		environment. This last value takes precedence.
+	*/
+	case OP_CLOSE: {
+		cl_object function_object = next_code(vector);
+		VALUES(0) = close_around(function_object, lex_env);
 		NValues = 1;
 		break;
+	}
+	/* OP_GO	n{arg}, tag-name{symbol}
+		Jumps to the tag which is defined at the n-th position in
+		the lexical environment. TAG-NAME is kept for debugging
+		purposes.
+	*/
 	case OP_GO: {
-		cl_object tag = next_code(vector);
+		cl_object tag_name = next_code(vector);
 		cl_object id = search_local(@':tag',get_oparg(s));
 		VALUES(0) = Cnil;
 		NValues = 0;
-		cl_go(id, tag);
+		cl_go(id, tag_name);
 		break;
 	}
+	/* OP_RETURN	block-name{symbol}
+		Returns from the block whose name is BLOCK-NAME.
+	*/
 	case OP_RETURN: {
-		cl_object tag = next_code(vector);
-		cl_object id = search_tag(tag, @':block');
+		cl_object block_name = next_code(vector);
+		cl_object id = search_tag(block_name, @':block');
 		if (Null(id))
-			FEcontrol_error("RETURN-FROM: Unknown block ~S.", 1, tag);
-		cl_return_from(id, tag);
+			FEcontrol_error("RETURN-FROM: Unknown block ~S.", 1, block_name);
+		cl_return_from(id, block_name);
 		break;
 	}
-	case OP_THROW:
-		cl_throw(cl_stack_pop());
+	/* OP_THROW
+		Jumps to an enclosing CATCH form whose tag matches the one
+		of the THROW. The tag is taken from the stack, while the
+		output values are left in VALUES(...).
+	*/
+	case OP_THROW: {
+		cl_object tag_name = cl_stack_pop();
+		cl_throw(tag_name);
 		break;
+	}
+	/* OP_JMP	label{arg}
+	   OP_JNIL	label{arg}
+	   OP_JT	label{arg}
+	   OP_JEQ	label{arg}, value{object}
+	   OP_JNEQ	label{arg}, value{object}
+		Direct or conditional jumps. The conditional jumps are made
+		comparing with the value of VALUES(0).
+	*/
 	case OP_JMP:
 		vector = vector - 1 + get_oparg(s);
 		break;
@@ -960,24 +1191,81 @@ interpret(cl_object *vector) {
 		if (VALUES(0) != next_code(vector))
 			vector = vector + get_oparg(s) - 2;
 		break;
+	/* OP_UNBIND	n{arg}
+		Undo "n" local bindings.
+	*/
 	case OP_UNBIND: {
 		cl_index n = get_oparg(s);
 		while (n--)
 			lex_env = CDDR(lex_env);
 		break;
 	}
-	case OP_UNBINDS:
-		bds_unwind(bds_top - get_oparg(s));
+	/* OP_UNBINDS	n{arg}
+		Undo "n" bindings of special variables.
+	*/
+	case OP_UNBINDS: {
+		cl_index n = get_oparg(s);
+		bds_unwind_n(n);
 		break;
-	case OP_BIND:
-		bind_var(next_code(vector), VALUES(0));
+	}
+	/* OP_BIND	name{symbol}
+	   OP_PBIND	name{symbol}
+	   OP_BINDS	name{symbol}
+	   OP_PBINDS	name{symbol}
+		Binds a lexical or special variable to the either the
+		value of VALUES(0) or the first value of the stack.
+	*/
+	case OP_BIND: {
+		cl_object var_name = next_code(vector);
+		cl_object value = VALUES(0);
+		bind_var(var_name, value);
 		break;
-	case OP_BINDS:
-		bind_special(next_code(vector), VALUES(0));
+	}
+	case OP_PBIND: {
+		cl_object var_name = next_code(vector);
+		cl_object value = cl_stack_pop();
+		bind_var(var_name, value);
 		break;
-	case OP_SETQ:
-		setq_local(next_code(vector), VALUES(0));
+	}
+	case OP_VBIND: {
+		int n = get_oparg(s);
+		cl_object var_name = next_code(vector);
+		cl_object value = (--n < NValues) ? VALUES(n) : Cnil;
+		bind_var(var_name, value);
 		break;
+	}
+	case OP_BINDS: {
+		cl_object var_name = next_code(vector);
+		cl_object value = VALUES(0);
+		bind_special(var_name, value);
+		break;
+	}
+	case OP_PBINDS: {
+		cl_object var_name = next_code(vector);
+		cl_object value = cl_stack_pop();
+		bind_special(var_name, value);
+		break;
+	}
+	case OP_VBINDS: {
+		int n = get_oparg(s);
+		cl_object var_name = next_code(vector);
+		cl_object value = (--n < NValues) ? VALUES(n) : Cnil;
+		bind_special(var_name, value);
+		break;
+	}
+	/* OP_SETQ	n{arg}
+	   OP_PSETQ	n{arg}
+	   OP_SETQS	var-name{symbol}
+	   OP_PSETQS	var-name{symbol}
+		Sets either the n-th local or a special variable VAR-NAME,
+		to either the value in VALUES(0) (OP_SETQ[S]) or to the 
+		first value on the stack (OP_PSETQ[S]).
+	*/
+	case OP_SETQ: {
+		int lex_env_index = get_oparg(s);
+		setq_local(lex_env_index, VALUES(0));
+		break;
+	}
 	case OP_SETQS: {
 		cl_object var = next_code(vector);
 		if (var->symbol.stype == stp_constant)
@@ -986,17 +1274,13 @@ interpret(cl_object *vector) {
 			SYM_VAL(var) = VALUES(0);
 		break;
 	}
-	case OP_PBIND:
-		bind_var(next_code(vector), cl_stack_pop());
-		break;
-	case OP_PBINDS:
-		bind_special(next_code(vector), cl_stack_pop());
-		break;
-	case OP_PSETQ:
-		setq_local(next_code(vector), cl_stack_pop());
+	case OP_PSETQ: {
+		int lex_env_index = get_oparg(s);
+		setq_local(lex_env_index, cl_stack_pop());
 		Values[0] = Cnil;
 		NValues = 1;
 		break;
+	}
 	case OP_PSETQS: {
 		cl_object var = next_code(vector);
 		if (var->symbol.stype == stp_constant)
@@ -1010,15 +1294,16 @@ interpret(cl_object *vector) {
 	case OP_MSETQ:
 		vector = interpret_msetq(vector);
 		break;
-	case OP_MBIND:
-		vector = interpret_mbind(vector);
-		break;
 	case OP_MPROG1:
 		vector = interpret_mprog1(vector);
 		break;
 	case OP_PROGV:
 		vector = interpret_progv(vector);
 		break;
+
+	/* OP_VALUES	n{arg}
+		Pop N values from the stack and store them in VALUES(...)
+	*/
 	case OP_VALUES: {
 		cl_fixnum n = get_oparg(s);
 		NValues = n;
@@ -1026,6 +1311,10 @@ interpret(cl_object *vector) {
 			VALUES(--n) = cl_stack_pop();
 		break;
 	}
+	/* OP_NTHVAL
+		Set VALUES(0) to the N-th value of the VALUES(...) list.
+		The index N-th is extracted from the top of the stack.
+	*/
 	case OP_NTHVAL: {
 		cl_fixnum n = fix(cl_stack_pop());
 		if (n < 0 || n >= NValues)
