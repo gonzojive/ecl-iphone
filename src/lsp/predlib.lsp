@@ -1068,15 +1068,6 @@ if not possible."
 			   FILE-STREAM STRING-STREAM SYNONYM-STREAM TWO-WAY-STREAM))
 
 	       (READTABLE)
-#|
-	       .
-	       #-clos
-	       NIL
-	       #+clos
-	       ((STANDARD-OBJECT T)
-		(CLASS STANDARD-OBJECT)
-		(STANDARD-CLASS CLASS))
-|#
 	       ))
     (let* ((type (first i))
 	   (alias (second i))
