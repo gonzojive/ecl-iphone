@@ -226,9 +226,10 @@
 	   (return nil))
           ((and (fun-p fun) (same-fname-p (fun-name fun) fname))
 	   (incf (fun-ref fun))
-	   (if build-object
-	       (setf (fun-ref-ccb fun) t)
-	       (push fun (fun-referred-funs *current-function*)))
+	   (cond (build-object
+		  (setf (fun-ref-ccb fun) t))
+		 (*current-function*
+		  (push fun (fun-referred-funs *current-function*))))
 	   ;; we introduce a variable to hold the funob
 	   (let ((var (fun-var fun)))
 	     (cond (ccb (when build-object
