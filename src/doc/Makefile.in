@@ -7,10 +7,11 @@ infodir = @infodir@
 mandir=@mandir@
 manext=1
 
+SHELL = @SHELL@
 INSTALL	= @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
-mkinstalldirs = $(SHELL) -c $(top_srcdir)/gc/mkinstalldirs
+mkinstalldirs = $(SHELL) $(top_srcdir)/gc/mkinstalldirs
 
 VERSION=@ECL_VERSION@
 

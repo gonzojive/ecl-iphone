@@ -34,7 +34,7 @@
 ;;;   with an already installed copy of ECL.
 ;;;
 (setq c::*cc-flags*
-      "@CFLAGS@ @LSPCFLAGS@ -I@true_srcdir@/h -I@true_srcdir@/gmp -I@true_builddir@/h"
+      "@CFLAGS@ @ECL_CFLAGS@ -I@true_srcdir@/h -I@true_srcdir@/gmp -I@true_builddir@/h"
       c::*cc-format*
       "~A ~A ~:[~*~;~A~] -I@true_builddir@/h~* -w -c ~A -o ~A"
       c::*ld-format*

@@ -9,7 +9,7 @@ VPATH	= @srcdir@
 #
 TRUE_CC = @CC@
 CC	= @ECL_CC@
-CFLAGS	= -c -I../h -I$(srcdir) -I$(HDIR) @BOEHM_HEADERS@ @CFLAGS@
+CFLAGS	= -c -I../h -I$(srcdir) -I$(HDIR) @BOEHM_HEADERS@ @CFLAGS@ @ECL_CFLAGS@
 
 SHELL	= /bin/sh
 RM	= @RM@
@@ -82,7 +82,7 @@ clean:
 
 $(DPP): $(srcdir)/dpp.c symbols_list2.h
 	if test -f ../CROSS-DPP; then touch dpp; else \
-	$(TRUE_CC) @CFLAGS@ -I../h -I./ -I$(HDIR) $(DEFS) $(srcdir)/dpp.c  -o $@ ; \
+	$(TRUE_CC) @CFLAGS@ @ECL_CFLAGS@ -I../h -I./ -I$(HDIR) $(DEFS) $(srcdir)/dpp.c  -o $@ ; \
 	fi
 symbols_list2.h: $(srcdir)/symbols_list.h Makefile
 	cat $(srcdir)/symbols_list.h | \

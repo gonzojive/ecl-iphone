@@ -115,7 +115,7 @@ AC_PROG_LN_S          # sets variable LN_S
 AC_EXEEXT dnl			Guess whether .exe is needed for executables
 AC_SUBST(ECL_CC)dnl		Which compiler should we use for building ECL
 AC_SUBST(CFLAGS)dnl		Flags for the compiler
-AC_SUBST(LSPCFLAGS)dnl		Additional flags needed to compile translated code
+AC_SUBST(ECL_CFLAGS)dnl		Similar, but specific to ECL (see src/util/ecl-config)
 AC_SUBST(CLIBS)dnl		System libraries to be linked in
 AC_SUBST(LDFLAGS)dnl		Flags for program linker
 AC_SUBST(SHARED_LDFLAGS)dnl	Flags for shared libraries linker

@@ -9,7 +9,6 @@ srcdir	= @srcdir@
 
 CC	= @ECL_CC@
 LIBS	= @LIBS@ @TKLIBS@ @CLIBS@
-CFLAGS	= @CFLAGS@
 LDFLAGS	= @LDFLAGS@
 RM	= @RM@
 EXE	= @EXEEXT@
@@ -27,10 +26,11 @@ libdir=@libdir@
 
 # Programs used by "make install":
 #
+SHELL = @SHELL@
 INSTALL	= @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
-mkinstalldirs = $(SHELL) -c $(top_srcdir)/gc/mkinstalldirs
+mkinstalldirs = $(SHELL) $(top_srcdir)/gc/mkinstalldirs
 
 # Files
 

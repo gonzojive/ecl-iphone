@@ -309,7 +309,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS ECL_VERSION build build_cpu build_vendor build_os host host_cpu host_vendor host_os thehost builddir top_srcdir CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CXX CXXFLAGS ac_ct_CXX CPP RANLIB ac_ct_RANLIB INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA LN_S ECL_CC LSPCFLAGS CLIBS SHARED_LDFLAGS BUNDLE_LDFLAGS SHORT_SITE_NAME LONG_SITE_NAME EXTRA_OBJS TARGETS TKLIBS SUBDIR LIBRARIES LSP_LIBRARIES BOEHM_HEADERS EGREP true_srcdir true_builddir CP RM MV EXE_SUFFIX ARCHITECTURE SOFTWARE_TYPE SOFTWARE_VERSION MACHINE_INSTANCE MACHINE_VERSION LDRPATH LIBPREFIX LIBEXT SHAREDEXT SHAREDPREFIX LDINSTALLNAME ECL_SETJMP ECL_LONGJMP ECL_FILE_CNT CL_FIXNUM_TYPE CL_FIXNUM_BITS CL_FIXNUM_MAX CL_FIXNUM_MIN X_CFLAGS X_PRE_LIBS X_LIBS X_EXTRA_LIBS XINCLUDES XLIBS LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS ECL_VERSION build build_cpu build_vendor build_os host host_cpu host_vendor host_os thehost builddir top_srcdir CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CXX CXXFLAGS ac_ct_CXX CPP RANLIB ac_ct_RANLIB INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA LN_S ECL_CC ECL_CFLAGS CLIBS SHARED_LDFLAGS BUNDLE_LDFLAGS SHORT_SITE_NAME LONG_SITE_NAME EXTRA_OBJS TARGETS TKLIBS SUBDIR LIBRARIES LSP_LIBRARIES BOEHM_HEADERS EGREP true_srcdir true_builddir CP RM MV EXE_SUFFIX ARCHITECTURE SOFTWARE_TYPE SOFTWARE_VERSION MACHINE_INSTANCE MACHINE_VERSION LDRPATH LIBPREFIX LIBEXT SHAREDEXT SHAREDPREFIX LDINSTALLNAME ECL_SETJMP ECL_LONGJMP ECL_FILE_CNT CL_FIXNUM_TYPE CL_FIXNUM_BITS CL_FIXNUM_MAX CL_FIXNUM_MIN X_CFLAGS X_PRE_LIBS X_LIBS X_EXTRA_LIBS XINCLUDES XLIBS LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -3932,7 +3932,7 @@ case "${host_os}" in
 		shared="no"
 		;;
 esac
-CFLAGS="${CFLAGS} -D${thehost}"
+ECL_CFLAGS="-D${thehost}"
 echo "$as_me:$LINENO: checking for ld flags when building shared libraries" >&5
 echo $ECHO_N "checking for ld flags when building shared libraries... $ECHO_C" >&6
 if test "${shared}" = "yes"; then
@@ -6685,7 +6685,7 @@ s,@INSTALL_SCRIPT@,$INSTALL_SCRIPT,;t t
 s,@INSTALL_DATA@,$INSTALL_DATA,;t t
 s,@LN_S@,$LN_S,;t t
 s,@ECL_CC@,$ECL_CC,;t t
-s,@LSPCFLAGS@,$LSPCFLAGS,;t t
+s,@ECL_CFLAGS@,$ECL_CFLAGS,;t t
 s,@CLIBS@,$CLIBS,;t t
 s,@SHARED_LDFLAGS@,$SHARED_LDFLAGS,;t t
 s,@BUNDLE_LDFLAGS@,$BUNDLE_LDFLAGS,;t t

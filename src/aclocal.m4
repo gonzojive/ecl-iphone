@@ -204,7 +204,7 @@ case "${host_os}" in
 		shared="no"
 		;;
 esac
-CFLAGS="${CFLAGS} -D${thehost}"
+ECL_CFLAGS="-D${thehost}"
 AC_MSG_CHECKING(for ld flags when building shared libraries)
 if test "${shared}" = "yes"; then
 AC_MSG_RESULT([${SHARED_LDFLAGS}])

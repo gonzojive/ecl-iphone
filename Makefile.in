@@ -37,11 +37,6 @@ WWW=http://ecls.sourceforge.net/
 
 # ==================== Things `configure' Might Edit ====================
 
-CC=@CC@
-CPP=@CPP@
-LN_S=@LN_S@
-CFLAGS=@CFLAGS@
-
 #  Where to find the source code.
 #  This is set by the configure script's `--srcdir' option.
 srcdir=@srcdir@

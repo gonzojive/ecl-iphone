@@ -31,7 +31,7 @@ for i in $*; do
 done
 
 if test "$echo_cflags" = "yes"; then
-  echo "@CFLAGS@ -I@includedir\@"
+  echo "@ECL_CFLAGS@ -I@includedir\@"
 fi
 
 if test "$echo_ldflags" = "yes"; then

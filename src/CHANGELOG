@@ -1732,6 +1732,8 @@ ECL 0.9d
   - The configuration process now does respect the values of libdir,
     bindir, infodir,... supplied by the user.
 
+  - SLOT-EXISTS-P now works with all types of objects.
+
 * Documentation:
 
   - New manual page documents the scripting facilities of ECL
@@ -1758,6 +1760,10 @@ ECL 0.9d
   - If you want to install ECL to a different place, use "make prefix=..."
     instead of the old form "make PREFIX=...". ECL now follows the GNU
     coding standards in this particular point.
+
+  - The script "ecl-config" now returns only the essential flags to compile a
+    file that links against ECL. It does not include optimization flags, or
+    flags to create position independent object files.
 
 TODO:
 =====
