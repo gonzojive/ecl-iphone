@@ -606,7 +606,7 @@ returns with NIL."
 ;;;
 (define-condition simple-program-error (simple-condition program-error) ())
 
-(define-condition format-error (error)
+(define-condition format-error (simple-error)
   ((control-string :reader format-error-control-string
 		   :initarg :control-string
 		   #+cmu-format :initform
@@ -621,8 +621,8 @@ returns with NIL."
 			"~:[~;Error in format: ~]~
 			 ~?~@[~%  ~A~%  ~V@T^~]"
 			(format-error-print-banner condition)
-			(simple-error-format-control condition)
-			(simple-error-format-arguments condition)
+			(simple-condition-format-control condition)
+			(simple-condition-format-arguments condition)
 			(format-error-control-string condition)
 			(format-error-offset condition)))))
 
