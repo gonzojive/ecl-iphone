@@ -583,7 +583,7 @@
   (declare (ignore macro-lambda sp))
   (when (< *space* 3)
     (when ppn
-      (wt-nl "(void)putprop(" vv "," ppn "," (add-symbol 'si::pretty-print-format) ");")
+      (wt-nl "si_putprop(" vv "," ppn "," (add-symbol 'si::pretty-print-format) ");")
       (wt-nl)))
   (wt-h "static cl_object L" cfun "();")
   (wt-nl "cl_def_c_macro_va(" vv ",(cl_objectfn)L" cfun ");"))

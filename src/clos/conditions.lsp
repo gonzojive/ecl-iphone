@@ -352,72 +352,6 @@ strings."
 |#
 
 
-(defun assert-report (names stream)
-  (format stream "Retry assertion")
-  (if names
-      (format stream " with new value~P for ~{~S~^, ~}."
-	      (length names) names)
-      (format stream ".")))
-
-(defun assert-prompt (name value)
-  (cond ((y-or-n-p "The old value of ~S is ~S.~
-		  ~%Do you want to supply a new value? "
-		   name value)
-	 (format *query-io* "~&type a form to be evaluated:~%")
-	 (flet ((read-it () (eval (read *query-io*))))
-	   (if (symbolp name) ;Help user debug lexical variables
-	       (progv (list name) (list value) (read-it))
-	       (read-it))))
-	(t value)))
-
-(defun simple-assertion-failure (assertion)
-  (error 'SIMPLE-TYPE-ERROR
-	 :DATUM assertion
-	 :EXPECTED-TYPE nil		; This needs some work in next revision. -kmp
-	 :FORMAT-CONTROL "The assertion ~S failed."
-	 :FORMAT-ARGUMENTS (list assertion)))
-
-(defmacro assert (test-form &optional places datum &rest arguments)
-  (let ((tag (gensym)))
-    `(tagbody ,tag
-       (unless ,test-form
-	 (restart-case ,(if datum
-			    `(error ,datum ,@arguments)
-			    `(simple-assertion-failure ',test-form))
-	   (continue ()
-	       :REPORT (lambda (stream) (assert-report ',places stream))
-	     ,@(mapcar #'(lambda (place)
-			   `(setf ,place (assert-prompt ',place ,place)))
-		       places)
-             (go ,tag)))))))
-
-
-
-(defun read-evaluated-form ()
-  (format *query-io* "~&Type a form to be evaluated:~%")
-  (list (eval (read *query-io*))))
-
-(defmacro check-type (place type &optional type-string)
-  (let* ((tag1 (gensym))
-	 (tag2 (gensym)))
-    `(block ,tag1
-       (tagbody ,tag2
-	 (if (typep ,place ',type) (return-from ,tag1 nil))
-	 (restart-case ,(if type-string
-			    `(error "The value of ~S is ~S, ~
-				     which is not ~A."
-				    ',place ,place ,type-string)
-			    `(error "The value of ~S is ~S, ~
-				     which is not of type ~S."
-				    ',place ,place ',type))
-	   (store-value (value)
-	       :REPORT (lambda (stream)
-			 (format stream "Supply a new value of ~S."
-				 ',place))
-	       :INTERACTIVE read-evaluated-form
-	     (setf ,place value)
-	     (go ,tag2)))))))
-
 (defvar *handler-clusters* nil)
 
 (defmacro handler-bind (bindings &body forms)
@@ -604,9 +538,9 @@ returns with NIL."
 
 (define-condition print-not-readable (error)
   ((object :INITARG :OBJECT :READER print-not-readable-object))
-  (:REPORT (lambda (c s)
-		   (format s "Cannot print object ~A readably."
-			   (print-not-readable-object c)))))
+  (:REPORT (lambda (condition stream)
+	     (format stream "Cannot print object ~A readably."
+		     (print-not-readable-object condition)))))
 
 #+nil
 (defun simple-condition-class-p (type)

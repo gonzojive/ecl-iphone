@@ -1264,8 +1264,8 @@ ECLS 0.9
   - The interpreter now detects syntax errors in function calls: such
     as in (setq a ("foo")).
 
-  - Functions remf() and remprop() removed. Use si_rem_f and cl_remprop
-    instead.
+  - Functions remf(), remprop() and putprop() removed. Use si_rem_f,
+    cl_remprop and cl_putprop instead.
 
 * ANSI compatibility:
 

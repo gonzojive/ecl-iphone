@@ -10,54 +10,80 @@
 
 (in-package "SYSTEM")
 
-(defmacro check-type (place typespec &optional (string nil s))
+(defun read-evaluated-form ()
+  (format *query-io* "~&Type a form to be evaluated:~%")
+  (list (eval (read *query-io*))))
+
+(defmacro check-type (place type &optional type-string)
   "Args: (check-type place typespec [string-form])
 Signals a continuable error, if the value of PLACE is not of the specified
 type.  Before continuing, receives a new value of PLACE from the user and
 checks the type again.  Repeats this process until the value of PLACE becomes
 of the specified type.  STRING-FORM, if given, is evaluated only once and the
 value is used to indicate the expected type in the error message."
-  `(do ((*print-level* 4)
-        (*print-length* 4))
-       ((typep ,place ',typespec) nil)
-       (cerror ""
-               "The value of ~:@(~S~), ~:@(~S~), is not ~A."
-               ',place ,place
-               ,(if s string `',typespec))
-       (setf ,place (si::ask-for-form2 ',place))))
+  (let* ((tag1 (gensym))
+	 (tag2 (gensym)))
+    `(block ,tag1
+       (tagbody ,tag2
+	 (if (typep ,place ',type) (return-from ,tag1 nil))
+	 (restart-case ,(if type-string
+			    `(error "The value of ~S is ~S, ~
+				     which is not ~A."
+				    ',place ,place ,type-string)
+			    `(error "The value of ~S is ~S, ~
+				     which is not of type ~S."
+				    ',place ,place ',type))
+	   (store-value (value)
+	       :REPORT (lambda (stream)
+			 (format stream "Supply a new value of ~S."
+				 ',place))
+	       :INTERACTIVE read-evaluated-form
+	     (setf ,place value)
+	     (go ,tag2)))))))
 
+(defun assert-report (names stream)
+  (format stream "Retry assertion")
+  (if names
+      (format stream " with new value~P for ~{~S~^, ~}."
+	      (length names) names)
+      (format stream ".")))
 
-(defmacro assert (test-form &optional places string &rest args)
+(defun assert-prompt (name value)
+  (cond ((y-or-n-p "The old value of ~S is ~S.~
+		  ~%Do you want to supply a new value? "
+		   name value)
+	 (format *query-io* "~&type a form to be evaluated:~%")
+	 (flet ((read-it () (eval (read *query-io*))))
+	   (if (symbolp name) ;Help user debug lexical variables
+	       (progv (list name) (list value) (read-it))
+	       (read-it))))
+	(t value)))
+
+(defun simple-assertion-failure (assertion)
+  (error 'SIMPLE-TYPE-ERROR
+	 :DATUM assertion
+	 :EXPECTED-TYPE nil		; This needs some work in next revision. -kmp
+	 :FORMAT-CONTROL "The assertion ~S failed."
+	 :FORMAT-ARGUMENTS (list assertion)))
+
+(defmacro assert (test-form &optional places datum &rest arguments)
   "Args: (assert form [({place}*) [string {arg}*]])
 Evaluates FORM and signals a continuable error if the value is NIL.  Before
 continuing, receives new values of PLACEs from user.  Repeats this process
 until FORM returns a non-NIL value.  Returns NIL.  STRING is the format string
 for the error message and ARGs are arguments to the format string."
-  `(do ((*print-level* 4)
-        (*print-length* 4))
-       (,test-form nil)
-       ,(if string
-            `(cerror "" ,string ,@args)
-            `(cerror "" "The assertion ~:@(~S~) is failed." ',test-form))
-       ,@(mapcar #'ask-for-form places)
-       (format *error-output* "Now continuing ...~%")))
-
-
-(defun ask-for-form (place)
-  (declare (si::c-local))
-  `(progn (format  *error-output*
-                   "Please input the new value for the place ~:@(~S~): "
-                   ',place)
-          (finish-output *error-output*)
-          (setf ,place (read))))
-
-(defun ask-for-form2 (place)
-  (format  *error-output*
-	   "Please input the new value for the place ~:@(~S~): "
-	   place)
-  (finish-output *error-output*)
-  (prog1 (read)
-    (format *error-output* "Now continuing ...~%")))
+  (let ((tag (gensym)))
+    `(tagbody ,tag
+       (unless ,test-form
+	 (restart-case ,(if datum
+			    `(error ,datum ,@arguments)
+			    `(simple-assertion-failure ',test-form))
+	   (continue ()
+	       :REPORT (lambda (stream) (assert-report ',places stream))
+	     ,@(mapcar #'(lambda (place)
+			   `(setf ,place (assert-prompt ',place ,place)))
+		       places)
+             (go ,tag)))))))
 
 (defun accumulate-cases (macro-name cases list-is-atom-p)
   (do ((c cases (cdr c))

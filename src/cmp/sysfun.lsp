@@ -953,10 +953,8 @@ type_of(#0)==t_bitvector"))
 
 ; file symbol.d
 (GET (symbol t *) T nil nil
-	:inline-always ((t t t) t nil nil "get(#0,#1,#2)")
-	:inline-always ((t t) t nil nil "get(#0,#1,Cnil)")
-	:inline-unsafe ((t t t) t nil nil "getf((#0)->symbol.plist,#1,#2)")
-	:inline-unsafe ((t t) t nil nil "getf((#0)->symbol.plist,#1,Cnil)"))
+	:inline-always ((t t t) t nil nil "ecl_get(#0,#1,#2)")
+	:inline-always ((t t) t nil nil "ecl_get(#0,#1,Cnil)"))
 (REMPROP (symbol t) T nil nil)
 (SYMBOL-PLIST (symbol) T nil T
 	:inline-always ((t) t nil nil "((#0)->symbol.plist)"))
@@ -978,8 +976,7 @@ type_of(#0)==t_bitvector"))
 (SI::PUT-F NIL (T T))
 (SI::REM-F NIL (T T))
 (si::SET-SYMBOL-PLIST (symbol t) T)
-(SI::PUTPROP (T T T) T NIL NIL
-	:inline-always ((t t t) t t nil "putprop(#0,#1,#2)"))
+(SI::PUTPROP (T T T) T NIL NIL)
 
 ; file tcp.c
 (si::OPEN-TCP-STREAM (T T) T)

@@ -27,6 +27,8 @@ cl_object cl_token;
 static cl_object gensym_prefix;
 static cl_object gentemp_prefix;
 static cl_object gentemp_counter;
+static void FEtype_error_plist(cl_object x) __attribute__((noreturn,regparm(2)));
+
 
 cl_object
 cl_make_symbol(cl_object str)
@@ -98,23 +100,31 @@ symbol_value(cl_object s)
 	return(SYM_VAL(s));
 }
 
-cl_object
-getf(cl_object place, cl_object indicator, cl_object deflt)
+static void
+FEtype_error_plist(cl_object x)
 {
-	cl_object slow, l;
+	cl_error(9, @'simple-type-error', @':format-control',
+		 make_simple_string("Not a valid property list ~D"),
+		 @':format-arguments', cl_list(1, x),
+		 @':expected-type', @'list',
+		 @':datum', x);
+}
 
-	/* This loop guarantees finishing for circular lists */
-	slow = l = place;
-	while (CONSP(l)) {
+cl_object
+ecl_getf(cl_object place, cl_object indicator, cl_object deflt)
+{
+	cl_object l;
+
+#ifdef ECL_SAFE
+	assert_type_proper_list(place);
+#endif
+	for (l = place; CONSP(l); ) {
 		cl_object cdr_l = CDR(l);
 		if (!CONSP(cdr_l))
-			FEtype_error_plist(place);
+			break;
 		if (CAR(l) == indicator)
 			return CAR(cdr_l);
 		l = CDR(cdr_l);
-		slow = CDR(slow);
-		if (l == slow)
-			FEcircular_list(place);
 	}
 	if (l != Cnil)
 		FEtype_error_plist(place);
@@ -122,50 +132,41 @@ getf(cl_object place, cl_object indicator, cl_object deflt)
 }
 
 cl_object
-get(cl_object s, cl_object p, cl_object d)
+ecl_get(cl_object s, cl_object p, cl_object d)
 {
 	if (!SYMBOLP(s))
 		FEtype_error_symbol(s);
-	return(getf(s->symbol.plist, p, d));
+	return ecl_getf(s->symbol.plist, p, d);
 }
 
 /*
-	Putf(p, v, i) puts value v for property i to property list p
-	and returns the resulting property list.
+	(SI:PUT-F plist value indicator)
+	returns the new property list with value for property indicator.
+	It will be used in SETF for GETF.
 */
 cl_object
-putf(cl_object place, cl_object value, cl_object indicator)
+si_put_f(cl_object place, cl_object value, cl_object indicator)
 {
-	cl_object slow, l;
+	cl_object l;
 
+#ifdef ECL_SAFE
+	assert_type_proper_list(place);
+#endif
 	/* This loop guarantees finishing for circular lists */
-	slow = l = place;
-	while (CONSP(l)) {
+	for (l = place; CONSP(l); ) {
 		cl_object cdr_l = CDR(l);
 		if (!CONSP(cdr_l))
-			FEtype_error_plist(place);
+			break;
 		if (CAR(l) == indicator) {
 			CAR(cdr_l) = value;
-			return place;
+			@(return place);
 		}
 		l = CDR(cdr_l);
-		slow = CDR(slow);
-		if (l == slow)
-			FEcircular_list(place);
 	}
 	if (l != Cnil)
 		FEtype_error_plist(place);
 	place = CONS(value, place);
-	return CONS(indicator, place);
-}
-
-cl_object
-putprop(cl_object s, cl_object v, cl_object p)
-{
-	if (!SYMBOLP(s))
-		FEtype_error_symbol(s);
-	s->symbol.plist = putf(s->symbol.plist, v, p);
-	return(v);
+	@(return CONS(indicator, place));
 }
 
 /*
@@ -180,22 +181,20 @@ putprop(cl_object s, cl_object v, cl_object p)
 static bool
 remf(cl_object *place, cl_object indicator)
 {
-	cl_object *slow, *l;
+	cl_object *l;
 
-	/* This loop guarantees finishing for circular lists */
-	slow = l = place;
-	while (CONSP(*l)) {
+#ifdef ECL_SAFE
+	assert_type_proper_list(*place);
+#endif
+	for (l = place; CONSP(*l); ) {
 		cl_object cdr_l = CDR(*l);
 		if (!CONSP(cdr_l))
-			FEtype_error_plist(*place);
+			break;
 		if (CAR(*l) == indicator) {
 			*l = CDR(cdr_l);
 			return TRUE;
 		}
 		l = &CDR(cdr_l);
-		slow = &CDR(*slow);
-		if (l == slow)
-			FEcircular_list(*place);
 	}
 	if (*l != Cnil)
 		FEtype_error_plist(*place);
@@ -211,7 +210,7 @@ keywordp(cl_object s)
 @(defun get (sym indicator &optional deflt)
 @
 	assert_type_symbol(sym);
-	@(return getf(sym->symbol.plist, indicator, deflt))
+	@(return ecl_getf(sym->symbol.plist, indicator, deflt))
 @)
 
 cl_object
@@ -230,25 +229,24 @@ cl_symbol_plist(cl_object sym)
 
 @(defun getf (place indicator &optional deflt)
 @
-	@(return getf(place, indicator, deflt))
+	@(return ecl_getf(place, indicator, deflt))
 @)
 
 cl_object
 cl_get_properties(cl_object place, cl_object indicator_list)
 {
-	cl_object slow, cdr_l, l;
+	cl_object l;
 
-	/* This loop guarantees finishing for circular lists */
-	for (slow = l = place;  CONSP(l); ) {
-		cdr_l = CDR(l);
+#ifdef ECL_SAFE
+	assert_type_proper_list(place);
+#endif
+	for (l = place;  CONSP(l); ) {
+		cl_object cdr_l = CDR(l);
 		if (!CONSP(cdr_l))
-			FEtype_error_plist(place);
+			break;
 		if (member_eq(CAR(l), indicator_list))
 			@(return CAR(l) CADR(l) l)
 		l = CDR(cdr_l);
-		slow = CDR(slow);
-		if (l == slow)
-			FEcircular_list(place);
 	}
 	if (l != Cnil)
 		FEtype_error_plist(place);
@@ -340,17 +338,6 @@ cl_keywordp(cl_object sym)
 }
 
 /*
-	(SI:PUT-F plist value indicator)
-	returns the new property list with value for property indicator.
-	It will be used in SETF for GETF.
-*/
-cl_object
-si_put_f(cl_object plist, cl_object value, cl_object indicator)
-{
-	@(return putf(plist, value, indicator))
-}
-
-/*
 	(SI:REM-F plist indicator) returns two values:
 
 		* the new property list
@@ -380,18 +367,17 @@ cl_object
 si_putprop(cl_object sym, cl_object value, cl_object indicator)
 {
 	assert_type_symbol(sym);
-	sym->symbol.plist = putf(sym->symbol.plist, value, indicator);
+	sym->symbol.plist = si_put_f(sym->symbol.plist, value, indicator);
 	@(return value)
 }
 
 /* Added for defstruct. Beppe */
 @(defun si::put_properties (sym &rest ind_values)
-	cl_object prop;
 @
 	while (--narg >= 2) {
-	  prop = cl_va_arg(ind_values);
-	  putprop(sym, cl_va_arg(ind_values), prop);
-	  narg--;
+		cl_object prop = cl_va_arg(ind_values);
+		si_putprop(sym, cl_va_arg(ind_values), prop);
+		narg--;
 	}
 	@(return sym)
 @)

@@ -747,7 +747,7 @@
 		      (loc1 `(LCL ,lcl1)))
 		 (wt-nl "{cl_object " loc1 ";")
 		 (dolist (kwd keywords)
-		   (wt-nl loc1 "=getf(") (wt-lcl lcl)
+		   (wt-nl loc1 "=ecl_getf(") (wt-lcl lcl)
 		   (wt "," (add-symbol (car kwd)) ",OBJNULL);")
 		   (wt-nl "if(" loc1 "==OBJNULL){")
 		   (let ((*env* *env*)

@@ -41,7 +41,7 @@ structure_subtypep(cl_object x, cl_object y)
 			return(FALSE);
 		if (x == y)
 			return(TRUE);
-		x = get(x, @'si::structure-include', Cnil);
+		x = ecl_get(x, @'si::structure-include', Cnil);
 	} while (x != Cnil);
 	return(FALSE);
 }
@@ -62,8 +62,7 @@ structure_to_list(cl_object x)
 	cl_object *p, r, s;
 	int i, n;
 
-	s = getf(SNAME(x)->symbol.plist,
-	         @'si::structure-slot-descriptions', Cnil);
+	s = ecl_get(SNAME(x), @'si::structure-slot-descriptions', Cnil);
 	p = &CDR(r = CONS(SNAME(x), Cnil));
 	for (i=0, n=SLENGTH(x);  !endp(s) && i<n;  s=CDR(s), i++) {
 		p = &(CDR(*p = CONS(cl_car(CAR(s)), Cnil)));

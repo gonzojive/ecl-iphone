@@ -70,7 +70,7 @@ si_setf_namep(cl_object arg)
 		if (mflag)
 			FEerror("Cannot define a macro with name (SETF ~S).", 1, fun);
 		fun = CADR(fun);
-		putprop(fun, sym, @'si::setf-symbol');
+		si_putprop(fun, sym, @'si::setf-symbol');
 		cl_remprop(fun, @'si::setf-lambda');
 		cl_remprop(fun, @'si::setf-method');
 		cl_remprop(fun, @'si::setf-update');
@@ -94,8 +94,7 @@ si_setf_namep(cl_object arg)
 	}
 	fun->symbol.mflag = !Null(macro);
 	if (pprint != Cnil)
-		fun->symbol.plist
-		= putf(fun->symbol.plist, pprint, @'si::pretty-print-format');
+		si_putprop(fun, pprint, @'si::pretty-print-format');
 	@(return fun)
 @)
 

@@ -1188,12 +1188,9 @@ extern void cl_defparameter(cl_object s, cl_object v);
 extern cl_object make_symbol(cl_object st);
 extern cl_object make_keyword(const char *s);
 extern cl_object symbol_value(cl_object s);
-extern cl_object getf(cl_object place, cl_object indicator, cl_object deflt);
-extern cl_object get(cl_object s, cl_object p, cl_object d);
-extern cl_object putf(cl_object p, cl_object v, cl_object i);
-extern cl_object putprop(cl_object s, cl_object v, cl_object p);
+extern cl_object ecl_getf(cl_object place, cl_object indicator, cl_object deflt);
+extern cl_object ecl_get(cl_object s, cl_object p, cl_object d);
 extern bool keywordp(cl_object s);
-extern cl_object symbol_name(cl_object x);
 extern void init_symbol(void);
 
 
@@ -1301,7 +1298,6 @@ extern void FEtype_error_float(cl_object x) __attribute__((noreturn,regparm(2)))
 extern void FEtype_error_integer(cl_object x) __attribute__((noreturn,regparm(1)));
 extern void FEtype_error_list(cl_object x) __attribute__((noreturn,regparm(2)));
 extern void FEtype_error_proper_list(cl_object x) __attribute__((noreturn,regparm(2)));
-extern void FEtype_error_plist(cl_object x) __attribute__((noreturn,regparm(2)));
 extern void FEtype_error_alist(cl_object x) __attribute__((noreturn,regparm(2)));
 extern void FEtype_error_stream(cl_object x) __attribute__((noreturn,regparm(2)));
 extern void FEcircular_list(cl_object x) __attribute__((noreturn,regparm(2)));

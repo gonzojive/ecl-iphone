@@ -127,10 +127,10 @@ link_call(cl_object sym, cl_objectfn *pLK, int narg, cl_va_list args)
 			out = APPLY_fixed(narg, fun->cfun.entry, cl_stack_top - narg);
 		} else {
 			if (pLK) {
-				putprop(sym, CONS(CONS(make_unsigned_integer((cl_index)pLK),
-						       make_unsigned_integer((cl_index)*pLK)),
-						  getf(sym->symbol.plist, @'si::link-from', Cnil)),
-					@'si::link-from');
+				si_putprop(sym, CONS(CONS(make_unsigned_integer((cl_index)pLK),
+							  make_unsigned_integer((cl_index)*pLK)),
+						     ecl_get(sym, @'si::link-from', Cnil)),
+					   @'si::link-from');
 				*pLK = fun->cfun.entry;
 			}
 			out = APPLY(narg, fun->cfun.entry, cl_stack + sp);
@@ -165,7 +165,7 @@ si_unlink_symbol(cl_object s)
 
 	if (!SYMBOLP(s))
 		FEtype_error_symbol(s);
-	pl = getf(s->symbol.plist, @'si::link-from', Cnil);
+	pl = ecl_get(s, @'si::link-from', Cnil);
 	if (!endp(pl)) {
 		for (; !endp(pl); pl = CDR(pl))
 			*(void **)(fixnnint(CAAR(pl))) = (void *)fixnnint(CDAR(pl));
