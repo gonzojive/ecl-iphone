@@ -181,9 +181,7 @@ file_exists(cl_object file)
 {
 	struct stat filestatus;
 
-	/* INV: If input is a string, it assumes it is a valid file name */
-	if (type_of(file) != t_string)
-		file = coerce_to_filename(file);
+	file = coerce_to_filename(file);
 	if (stat(file->string.self, &filestatus) >= 0)
 		return(TRUE);
 	else
