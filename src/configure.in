@@ -367,7 +367,7 @@ AC_CONFIG_FILES(bare.lsp
  lsp/config.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp
  ../Makefile Makefile c/Makefile doc/Makefile doc/ecl.man
  tk/Makefile tests/Makefile ansi-tests/Makefile gabriel/Makefile)
-AC_CONFIG_FILES([ecl-config:util/ecl-config],[chmod +x ecl-config])
+AC_CONFIG_FILES([ecl-config.in:util/ecl-config])
 AC_CONFIG_FILES([h/configpre:h/config.h.in])
 AC_CONFIG_FILES([lsp/config.lsp.in:lsp/config.lsp.in])
 AC_CONFIG_FILES([compile.lsp.in:compile.lsp.in])

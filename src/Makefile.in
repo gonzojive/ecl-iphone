@@ -40,7 +40,7 @@ LIBRARIES = @LIBRARIES@
 LSP_LIBRARIES = @LSP_LIBRARIES@
 TARGETS = @TARGETS@
 
-all:	$(TARGETS) doc
+all:	$(TARGETS) ecl-config doc
 .PHONY:	all
 
 %Makefile: $(srcdir)/%Makefile.in config.status
@@ -67,6 +67,12 @@ lsp/config.lsp: lsp/config.lsp.in
 	sed -e 's,@ecldir@,$(libdir),g' < lsp/config.lsp.in > lsp/config.lsp
 compile.lsp: compile.lsp.in
 	sed -e 's,@ecldir@,$(libdir),g' < compile.lsp.in > compile.lsp
+ecl-config: ecl-config.in
+	sed -e 's,~A,$(libdir),;s,~\*,,' \
+	    -e 's,@libdir\\@,$(libdir),' \
+	    -e 's,@includedir\\@,$(libdir)/h,' ecl-config.in > ecl-config
+
+
 @LIBPREFIX@ecl.@LIBEXT@: @LIBPREFIX@gmp.@LIBEXT@ @LIBPREFIX@gc.@LIBEXT@ lsp/config.lsp
 	cd c; $(MAKE)
 @LIBPREFIX@gc.@LIBEXT@:
@@ -90,11 +96,8 @@ install-base:
 	$(mkinstalldirs) $(bindir) $(libdir)/h
 	for i in $(TARGETS); do \
 	  $(INSTALL) -s $$i $(bindir); \
-	done
-	$(INSTALL_PROGRAM) -s $(TARGETS) $(bindir)
-	sed 's,~A,$(libdir),;s,~\*,,;' ecl-config > foo; \
-	$(INSTALL_PROGRAM) foo $(bindir)/ecl-config; \
-	rm foo
+	done;
+	$(INSTALL_PROGRAM) ecl-config $(bindir)
 	for i in BUILD-STAMP $(LSP_LIBRARIES) $(LIBRARIES) c/dpp* help.doc ; do \
 	  $(INSTALL_DATA) $$i $(libdir); \
 	done

@@ -6018,7 +6018,7 @@ echo "${ECHO_T}already installed" >&6
 fi
                                                                                                                                                       ac_config_files="$ac_config_files bare.lsp lsp/config.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp ../Makefile Makefile c/Makefile doc/Makefile doc/ecl.man tk/Makefile tests/Makefile ansi-tests/Makefile gabriel/Makefile"
 
-          ac_config_files="$ac_config_files ecl-config:util/ecl-config"
+          ac_config_files="$ac_config_files ecl-config.pre:util/ecl-config"
 
           ac_config_files="$ac_config_files h/configpre:h/config.h.in"
 
@@ -6567,7 +6567,7 @@ do
   "tests/Makefile" ) CONFIG_FILES="$CONFIG_FILES tests/Makefile" ;;
   "ansi-tests/Makefile" ) CONFIG_FILES="$CONFIG_FILES ansi-tests/Makefile" ;;
   "gabriel/Makefile" ) CONFIG_FILES="$CONFIG_FILES gabriel/Makefile" ;;
-  "ecl-config" ) CONFIG_FILES="$CONFIG_FILES ecl-config:util/ecl-config" ;;
+  "ecl-config.pre" ) CONFIG_FILES="$CONFIG_FILES ecl-config.pre:util/ecl-config" ;;
   "h/configpre" ) CONFIG_FILES="$CONFIG_FILES h/configpre:h/config.h.in" ;;
   "lsp/config.lsp.in" ) CONFIG_FILES="$CONFIG_FILES lsp/config.lsp.in:lsp/config.lsp.in" ;;
   "compile.lsp.in" ) CONFIG_FILES="$CONFIG_FILES compile.lsp.in:compile.lsp.in" ;;
@@ -6935,10 +6935,6 @@ s,@INSTALL@,$ac_INSTALL,;t t
     rm -f $tmp/out
   fi
 
-  # Run the commands associated with the file.
-  case $ac_file in
-    ecl-config ) chmod +x ecl-config ;;
-  esac
 done
 _ACEOF
 cat >>$CONFIG_STATUS <<\_ACEOF
