@@ -1660,10 +1660,24 @@ ECL 0.9c
 ECL 0.9d
 ========
 
+* Supported platforms:
+
+  - It is possible now under OS/X to build ECL as a shared library and
+    to compile and load code on the fly.
+
+  - ECL now uses the configuration files of GMP to guess the best
+    compilation/linking flags for a given architecture. This is required
+    in platforms such as Solaris/Ultrasparc, where there are multiple
+    ABIs (i.e. applications may use 32-bit or 64-pointers, 32-bit or
+    64-registers, etc).
+
 * Errors fixed:
 
   - Bugs in the mechanism for automatically creating packages when
     loading binary files.
+
+  - The value of LDFLAGS supplied at configuration time, was not used
+    when building shared libraries or FASL files.
 
 * Documentation:
 

@@ -73,13 +73,13 @@ libgmp.a:
 	  cd gmp; $(MAKE) install; \
 	fi
 sysfun.lsp:
-	ln -sf $(srcdir)/cmp/sysfun.lsp .
+	ln -s -f $(srcdir)/cmp/sysfun.lsp ./
 
 BUILD-STAMP: config.status
 	(echo "#"; uname -a) > $@
 	head -8 config.status | tail -6 >> $@
 install: BUILD-STAMP
-	for i in $(PREFIX)$(bindir) $(PREFIX)$(libdir)/h; do\
+	-for i in $(PREFIX)$(bindir) $(PREFIX)$(libdir)/h; do\
 	  $(INSTALL) -d $$i; \
 	done
 	for i in $(TARGETS); do \
@@ -98,7 +98,7 @@ install: BUILD-STAMP
 	cd c; $(MAKE) PREFIX="$(PREFIX)" install
 	cd doc; $(MAKE) PREFIX="$(PREFIX)" install
 installgc:
-	$(INSTALL) -d $(PREFIX)$(libdir)/h/private
+	-$(INSTALL) -d $(PREFIX)$(libdir)/h/private
 	for i in $(srcdir)/gc/include/*.h; do \
 	  $(INSTALL_DATA) $$i $(PREFIX)$(libdir)/h/; \
 	done
