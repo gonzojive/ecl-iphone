@@ -1837,7 +1837,7 @@ BEGIN:
 	case smm_broadcast:
 		strm = strm->stream.object0;
 		if (endp(strm))
-			return MAKE_FIXNUM(0);
+			return Cnil;
 		strm = CAR(strm);
 		goto BEGIN;
 
