@@ -19,6 +19,8 @@
 #include <signal.h>
 #ifndef _MSC_VER
 #include <unistd.h>
+#else
+#include <windows.h>
 #endif
 #ifdef ECL_THREADS
 #include <pthread.h>
@@ -132,6 +134,36 @@ si_uncatch_bad_signals()
 	@(return Ct)
 }
 
+#ifdef _MSC_VER
+LONG WINAPI W32_exception_filter(struct _EXCEPTION_POINTERS* ep)
+{
+	LONG excpt_result;
+
+	excpt_result = EXCEPTION_CONTINUE_EXECUTION;
+	switch (ep->ExceptionRecord->ExceptionCode)
+	{
+		/* Catch all arithmetic exceptions */
+		case EXCEPTION_INT_DIVIDE_BY_ZERO:
+		case EXCEPTION_INT_OVERFLOW:
+		case EXCEPTION_FLT_DIVIDE_BY_ZERO:
+		case EXCEPTION_FLT_OVERFLOW:
+		case EXCEPTION_FLT_UNDERFLOW:
+		case EXCEPTION_FLT_INEXACT_RESULT:
+		case EXCEPTION_FLT_DENORMAL_OPERAND:
+		case EXCEPTION_FLT_INVALID_OPERATION:
+		case EXCEPTION_FLT_STACK_CHECK:
+			handle_signal(SIGFPE);
+			break;
+		/* Do not catch anything else */
+		default:
+			excpt_result = EXCEPTION_CONTINUE_SEARCH;
+			break;
+	}
+
+	return excpt_result;
+}
+#endif
+
 void
 init_unixint(void)
 {
@@ -139,6 +171,9 @@ init_unixint(void)
 	signal(SIGINT, signal_catcher);
 #ifdef ECL_THREADS
 	signal(SIGUSR1, signal_catcher);
+#endif
+#ifdef _MSC_VER
+	SetUnhandledExceptionFilter(W32_exception_filter);
 #endif
 	ECL_SET(@'si::*interrupt-enable*', Ct);
 	ecl_interrupt_enable = 1;
