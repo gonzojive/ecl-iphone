@@ -560,16 +560,18 @@
     (setq *top-level-forms* (nconc *load-time-values* *top-level-forms*))
     (setq *load-time-values* nil)))
 
-(defun c1load-time-value (form)
-  (cond ((listp *load-time-values*)
-	 (incf *next-vv*)
-	 (push (make-c1form* 'LOAD-TIME-VALUE :args *next-vv* (c1expr form))
-	       *load-time-values*)
-	 (wt-data 0)
-	 (make-c1form* 'LOCATION :type t
-		       :args `(VV ,(format nil "VV[~d]" *next-vv*))))
-	(t
-	 (add-object (cmp-eval form)))))
+(defun c1load-time-value (args)
+  (check-args-number 'LOAD-TIME-VALUE args 1 2)
+  (let ((form (first args)))
+    (cond ((listp form)
+	   (incf *next-vv*)
+	   (push (make-c1form* 'LOAD-TIME-VALUE :args *next-vv* (c1expr form))
+		 *load-time-values*)
+	   (wt-data 0)
+	   (make-c1form* 'LOCATION :type t
+			 :args `(VV ,(format nil "VV[~d]" *next-vv*))))
+	  (t
+	   (add-object (cmp-eval form))))))
 
 (defun t2load-time-value (ndx form)
   (let* ((*exit* (next-label)) (*unwind-exit* (list *exit*))
