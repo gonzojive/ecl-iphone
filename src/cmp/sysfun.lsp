@@ -645,7 +645,12 @@
 (LOGEQV (*) T NIL NIL)
 (BOOLE (T T T) T NIL NIL)
 (LOGBITP (T T) T NIL T
-	:inline-always ((fixnum fixnum) :bool nil nil "(#1 >> #0) & 1"))
+;	:inline-always ((fixnum fixnum) :bool nil nil "(#1 >> #0) & 1")
+	:inline-always (((integer #.(- (integer-length most-negative-fixnum))
+				 #.(integer-length most-positive-fixnum))
+			 fixnum)
+			:bool nil nil "(#1 >> #0) & 1")
+)
 (ASH (T T) T)
 (LOGCOUNT (T) T)
 (INTEGER-LENGTH (T) FIXNUM)
