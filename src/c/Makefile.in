@@ -9,7 +9,7 @@ VPATH	= @srcdir@
 #
 TRUE_CC = @CC@
 CC	= @ECL_CC@
-CFLAGS	= -c -I../h -I$(srcdir) -I$(HDIR) @BOEHM_HEADERS@ @CFLAGS@ @ECL_CFLAGS@
+CFLAGS	= -c -I$(srcdir) -I$(HDIR) -I../h @BOEHM_HEADERS@ @CFLAGS@ @ECL_CFLAGS@
 
 SHELL	= /bin/sh
 RM	= @RM@

@@ -584,13 +584,13 @@ number_divide(cl_object x, cl_object y)
 {
 	cl_object z, z1, z2;
 
+	if (number_zerop(y))
+		FEdivision_by_zero(x, y);
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
 		switch (type_of(y)) {
 		case t_fixnum:
-			if (y == MAKE_FIXNUM(0))
-				FEdivision_by_zero();
 		case t_bignum:
 			if (number_minusp(y) == TRUE) {
 				x = number_negate(x);
@@ -614,8 +614,6 @@ number_divide(cl_object x, cl_object y)
 	case t_ratio:
 		switch (type_of(y)) {
 		case t_fixnum:
-			if (y == MAKE_FIXNUM(0))
-				FEdivision_by_zero();
 		case t_bignum:
 			z = number_times(x->ratio.den, y);
 			z = make_ratio(x->ratio.num, z);
@@ -637,8 +635,6 @@ number_divide(cl_object x, cl_object y)
 	case t_shortfloat:
 		switch (type_of(y)) {
 		case t_fixnum:
-			if (y == MAKE_FIXNUM(0))
-				FEdivision_by_zero();
 			return make_shortfloat(sf(x) / fix(y));
 		case t_bignum:
 		case t_ratio:
@@ -655,8 +651,6 @@ number_divide(cl_object x, cl_object y)
 	case t_longfloat:
 		switch (type_of(y)) {
 		case t_fixnum:
-			if (y == MAKE_FIXNUM(0))
-				FEdivision_by_zero();
 			return make_longfloat(lf(x) / fix(y));
 		case t_bignum:
 		case t_ratio:
@@ -706,7 +700,7 @@ integer_divide(cl_object x, cl_object y)
 	if (tx == t_fixnum) {
  		if (ty == t_fixnum) {
 			if (y == MAKE_FIXNUM(0))
-				FEdivision_by_zero();
+				FEdivision_by_zero(x, y);
 			return MAKE_FIXNUM(fix(x) / fix(y));
 		}
 		if (ty == t_bignum) {

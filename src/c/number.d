@@ -88,7 +88,7 @@ make_ratio(cl_object num, cl_object den)
 
 	/* INV: the arguments NUM & DEN are integers */
 	if (den == MAKE_FIXNUM(0))
-		FEdivision_by_zero();
+		FEdivision_by_zero(num, den);
 	if (num == MAKE_FIXNUM(0) || den == MAKE_FIXNUM(1))
 		return(num);
 	if (number_minusp(den)) {
