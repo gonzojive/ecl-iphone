@@ -119,6 +119,7 @@ static void write_decimal1 (int i);
 static void travel_push_object (cl_object x);
 static cl_index searchPRINTcircle(cl_object x);
 static bool doPRINTcircle(cl_object x);
+static bool potential_number_p(cl_object s, int base);
 
 static cl_object
 stream_or_default_output(cl_object stream)
@@ -130,7 +131,7 @@ stream_or_default_output(cl_object stream)
 	return stream;
 }	
 
-void
+static void
 writec_PRINTstream(int c)
 {
 	if (c == INDENT || c == INDENT1)
@@ -286,14 +287,14 @@ write_ch(int c)
 		writec_stream(c, PRINTstream);
 }
 
-void
+static void
 write_str(char *s)
 {
 	while (*s != '\0')
 		write_ch(*s++);
 }
 
-void
+static void
 write_decimal(int i)
 {
 	if (i == 0) {
@@ -312,7 +313,7 @@ write_decimal1(int i)
 	write_ch(i%10 + '0');
 }
 
-void
+static void
 write_addr(cl_object x)
 {
 	cl_fixnum i, j;
@@ -407,7 +408,7 @@ edit_double(int n, double d, int *sp, char *s, int *ep)
 }
 
 
-void
+static void
 write_double(double d, int e, bool shortp)
 {
 	int sign;
@@ -590,7 +591,7 @@ call_structure_print_function(cl_object x, int level)
 	if (eflag) unwind(nlj_fr, nlj_tag);
 }
 
-void
+static void
 write_fixnum(cl_fixnum i)
 {
 	short digits[16];
@@ -602,7 +603,7 @@ write_fixnum(cl_fixnum i)
 	  write_ch(digits[j]);
 }
 
-void
+static void
 write_bignum(cl_object x)
 {
 	cl_fixnum str_size = mpz_sizeinbase(x->big.big_num, PRINTbase);
@@ -1478,7 +1479,7 @@ write_object_with_escape(cl_object x, bool escape)
 	PRINTescape = oldescape;
 }
 
-bool
+static bool
 potential_number_p(cl_object strng, int base)
 {
 	int i, l, c; bool dc;
