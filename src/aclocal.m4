@@ -1,3 +1,4 @@
+25210: Permission denied, please try again.
 dnl --------------------------------------------------------------
 dnl Make srcdir absolute, if it isn't already.  It's important to
 dnl avoid running the path through pwd unnecessarily, since pwd can
@@ -235,3 +236,46 @@ AC_SUBST(CL_FIXNUM_MAX)
 AC_SUBST(CL_FIXNUM_MIN),
 AC_MSG_ERROR(There is no appropiate integer type for the cl_fixnum type))
 ])
+
+dnl
+dnl ------------------------------------------------------------
+dnl Find out what is written for every '\n' character, when
+dnl opening a text file.
+dnl
+AC_DEFUN(ECL_LINEFEED_MODE,[
+AC_MSG_CHECKING(character sequence for end of line)
+AC_TRY_RUN([#include <stdio.h>
+int main() {
+  FILE *f = fopen("conftestval","w");
+  int c1, c2;
+  if (f == NULL) exit(1);
+  fprintf(f, "\n");
+  fclose(f);
+  f = fopen("conftestval","rb");
+  if (f == NULL) exit(1);
+  c1 = fgetc(f);
+  c2 = fgetc(f);
+  fclose(f);
+  f = fopen("conftestval","w");
+  if (f == NULL) exit(1);
+  if (c1 == '\r')
+    fprintf(f,"crlf");
+  else if (c2 == '\r')
+    fprintf(f,"lfcr");
+  else
+    fprintf(f,"unix");
+  fclose(f);
+}
+],
+if test `cat conftestval` = "crlf"; then
+  AC_DEFINE(ECL_NEWLINE_IS_CRLF)
+  AC_MSG_RESULT(CR + LF)
+elif test `cat conftestval` = "lfcr"; then
+  AC_DEFINE(ECL_NEWLINE_IS_LFCR)
+  AC_MSG_RESULT(LF + CR)
+else
+  AC_MSG_RESULT(LF)
+fi,
+AC_MSG_ERROR(unable to determine))
+])
+

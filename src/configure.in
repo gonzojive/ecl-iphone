@@ -142,6 +142,7 @@ dnl
 ECL_MAKE_ABSOLUTE_SRCDIR()
 ECL_GUESS_HOST_OS()
 ECL_PROCESS_MACHINES_H()
+ECL_LINEFEED_MODE()
 
 dnl ----------------------------------------------------------------------
 dnl		Set options

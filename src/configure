@@ -904,7 +904,7 @@ esac
 # Don't blindly perform a `cd "$ac_dir"/$ac_foo && pwd` since $ac_foo can be
 # absolute.
 ac_abs_builddir=`cd "$ac_dir" && cd $ac_builddir && pwd`
-ac_abs_top_builddir=`cd "$ac_dir" && cd $ac_top_builddir && pwd`
+ac_abs_top_builddir=`cd "$ac_dir" && cd ${ac_top_builddir}. && pwd`
 ac_abs_srcdir=`cd "$ac_dir" && cd $ac_srcdir && pwd`
 ac_abs_top_srcdir=`cd "$ac_dir" && cd $ac_top_srcdir && pwd`
 
@@ -1284,6 +1284,8 @@ build_cpu=`echo $ac_cv_build | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\1/'`
 build_vendor=`echo $ac_cv_build | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\2/'`
 build_os=`echo $ac_cv_build | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\3/'`
 
+test -z "$build_alias" &&
+  build_alias=$ac_cv_build
 
 echo "$as_me:$LINENO: checking host system type" >&5
 echo $ECHO_N "checking host system type... $ECHO_C" >&6
@@ -1306,6 +1308,8 @@ host_cpu=`echo $ac_cv_host | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\1/'`
 host_vendor=`echo $ac_cv_host | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\2/'`
 host_os=`echo $ac_cv_host | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\3/'`
 
+test -z "$host_alias" &&
+  host_alias=$ac_cv_host
 
 
 
@@ -3871,6 +3875,82 @@ rm -f core core.* *.core conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
 fi
 
 
+echo "$as_me:$LINENO: checking character sequence for end of line" >&5
+echo $ECHO_N "checking character sequence for end of line... $ECHO_C" >&6
+if test "$cross_compiling" = yes; then
+  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling" >&5
+echo "$as_me: error: cannot run test program while cross compiling" >&2;}
+   { (exit 1); exit 1; }; }
+else
+  cat >conftest.$ac_ext <<_ACEOF
+#line $LINENO "configure"
+#include "confdefs.h"
+#include <stdio.h>
+int main() {
+  FILE *f = fopen("conftestval","w");
+  int c1, c2;
+  if (f == NULL) exit(1);
+  fprintf(f, "\n");
+  fclose(f);
+  f = fopen("conftestval","rb");
+  if (f == NULL) exit(1);
+  c1 = fgetc(f);
+  c2 = fgetc(f);
+  fclose(f);
+  f = fopen("conftestval","w");
+  if (f == NULL) exit(1);
+  if (c1 == '\r')
+    fprintf(f,"crlf");
+  else if (c2 == '\r')
+    fprintf(f,"lfcr");
+  else
+    fprintf(f,"unix");
+  fclose(f);
+}
+
+_ACEOF
+rm -f conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  if test `cat conftestval` = "crlf"; then
+  cat >>confdefs.h <<\_ACEOF
+#define ECL_NEWLINE_IS_CRLF 1
+_ACEOF
+
+  echo "$as_me:$LINENO: result: CR + LF" >&5
+echo "${ECHO_T}CR + LF" >&6
+elif test `cat conftestval` = "lfcr"; then
+  cat >>confdefs.h <<\_ACEOF
+#define ECL_NEWLINE_IS_LFCR 1
+_ACEOF
+
+  echo "$as_me:$LINENO: result: LF + CR" >&5
+echo "${ECHO_T}LF + CR" >&6
+else
+  echo "$as_me:$LINENO: result: LF" >&5
+echo "${ECHO_T}LF" >&6
+fi
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+cat conftest.$ac_ext >&5
+( exit $ac_status )
+{ { echo "$as_me:$LINENO: error: unable to determine" >&5
+echo "$as_me: error: unable to determine" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+rm -f core core.* *.core conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+
+
 if test "x$prefix" = "xNONE"; then prefix=${ac_default_prefix}; fi
 if test "x$exec_prefix" = "xNONE"; then exec_prefix=${prefix}; fi
 bindir="${exec_prefix}/bin"
@@ -6369,7 +6449,7 @@ esac
 # Don't blindly perform a `cd "$ac_dir"/$ac_foo && pwd` since $ac_foo can be
 # absolute.
 ac_abs_builddir=`cd "$ac_dir" && cd $ac_builddir && pwd`
-ac_abs_top_builddir=`cd "$ac_dir" && cd $ac_top_builddir && pwd`
+ac_abs_top_builddir=`cd "$ac_dir" && cd ${ac_top_builddir}. && pwd`
 ac_abs_srcdir=`cd "$ac_dir" && cd $ac_srcdir && pwd`
 ac_abs_top_srcdir=`cd "$ac_dir" && cd $ac_top_srcdir && pwd`
 
