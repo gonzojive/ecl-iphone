@@ -47,9 +47,9 @@ OBJS	= main.o symbol.o package.o list.o\
 
 .SUFFIXES: .c .o .d
 
-.c.o: $(HFILES)
+%.o: %.c $(HFILES)
 	$(CC) $(CFLAGS) -o $@ $<
-.d.c: $(DPP) $(HFILES)
+%.c: %.d $(DPP) $(HFILES)
 	$(DPP) $< $@
 
 all:	$(DPP) ../libecl.a cinit.o
