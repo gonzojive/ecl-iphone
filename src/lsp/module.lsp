@@ -68,8 +68,9 @@
 (pushnew #'(lambda (module)
 	     (let* ((sysdir (translate-logical-pathname #P"SYS:"))
 		    (module (string module)))
-	       (let ((path (merge-pathnames (make-pathname :name module) sysdir)))
-		 (if (probe-file path) (load path)))
-	       (let ((path (merge-pathnames (make-pathname :name (string-downcase module)) sysdir)))
-		 (if (probe-file path) (load path)))))
+	       (or
+		(let ((path (merge-pathnames (make-pathname :name module) sysdir)))
+		  (if (probe-file path) (load path)))
+		(let ((path (merge-pathnames (make-pathname :name (string-downcase module)) sysdir)))
+		  (if (probe-file path) (load path))))))
 	 *module-provider-functions*)
