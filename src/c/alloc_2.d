@@ -53,6 +53,11 @@ finalize(cl_object o, cl_object data)
 		break;
 #endif
 	case t_stream:
+#if defined(ECL_WSOCK)
+		if (o->stream.mode == smm_input_wsock || o->stream.mode == smm_output_wsock) {
+			closesocket((int)o->stream.file);
+		} else
+#endif
 		if (o->stream.file != NULL)
 			fclose(o->stream.file);
 		o->stream.file = NULL;
