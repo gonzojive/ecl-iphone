@@ -159,7 +159,7 @@
   (let ((name (class-name class)))
     (if (member name '(CLASS BUILT-IN-CLASS) :test #'eq)
 	(error "The kernel CLOS class ~S cannot be changed." name)
-	(warn "Redefining class ~S" name)))
+	#+nil(warn "Redefining class ~S" name)))
 
   ;; remove previous defined accessor methods
   (when (class-finalized-p class)
