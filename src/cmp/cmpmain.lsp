@@ -104,7 +104,10 @@ init_~A(cl_object)
 	   options
 	   "")))
 
-(defun build-ecls (name &rest components)
+(defun build-ecls (name &key components (prologue-code "")
+		   (epilogue-code "
+	  funcall(1,_intern(\"TOP-LEVEL\",system_package));
+	  return;"))
   (let ((c-name (make-pathname :name name :type "c"))
 	(o-name (make-pathname :name name :type "o"))
 	(ld-flags (list "-lecls" #+CLOS "-lclos" "-llsp")))
@@ -117,8 +120,9 @@ extern cl_object lisp_package;
 int
 main(int argc, char **argv)
 {
+	~A
 	cl_boot(argc, argv);
-	siLpackage_lock(2, lisp_package, Ct);~%")
+	siLpackage_lock(2, lisp_package, Ct);~%" prologue-code)
       (dolist (item (reverse components))
 	(cond ((symbolp item)
 	       (format c-file "	init_~A();~%" (string-upcase item))
@@ -127,9 +131,7 @@ main(int argc, char **argv)
 	       (push item ld-flags))
 	      (t
 	       (error "compiler::build-ecls wrong argument ~A" item))))
-      (format c-file "
-	funcall(1,_intern(\"TOP-LEVEL\", system_package));
-	return;~%}~%" name))
+      (format c-file "~A;~%}~%" epilogue-code))
     (compiler-cc c-name o-name)
     (linker-cc name (cons (namestring o-name) ld-flags))
     (delete-file c-name)

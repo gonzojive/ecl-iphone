@@ -33,6 +33,6 @@
 (push :clx-ansi-common-lisp *features*)
 (load "defsys.lsp")
 (sbt::operate-on-system clx :library)
-(compiler::build-ecls "eclx" #+WANTS-CMP 'cmp 'clx)
+(compiler::build-ecls "eclx" :components '(#+WANTS-CMP cmp clx))
 )
 

@@ -799,6 +799,10 @@ ECLS 0.4
 ECLS 0.5
 ========
 
+* Errors fixed:
+
+  - libclos.a should be installed together with libecls.a and liblsp.a
+
 * System design and portability:
 
   - Remove function_entry_table.
@@ -823,6 +827,12 @@ ECLS 0.5
 	;;; Error ....
     These definitions are lost once the function is compiled, hence
     the second error message.
+
+  - C::BUILD-ECLS rewritten to accept three keyword parameters:
+    :COMPONENTS, the object files, libraries and flags to be passed to
+    the compiler; :PROLOGUE-CODE, a string with C code to be executed
+    before initialization; and :EPILOGUE-CODE, a string with C code to
+    be executed after initializing Lisp. 
 
 TODO:
 =====

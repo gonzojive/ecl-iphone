@@ -104,8 +104,10 @@
 @ecls{} is an implementation of @clisp{} designed for being @emph{embeddable}
 into C based applications.
 
-@noindent Copyright @copyright{} 2000, Juan Jose Garcia-Ripoll
-@noindent Copyright @copyright{} 1990, Giusseppe Attardi
+@noindent
+Copyright @copyright{} 2000, Juan Jose Garcia-Ripoll
+@noindent
+Copyright @copyright{} 1990, Giusseppe Attardi
 
 @end ifinfo
 
@@ -298,15 +300,20 @@ at the following address:
 @node Copyright, Installation, Credits, Introduction
 @section Copyright
 
-@noindent Copyright @copyright{} 2000 Juan Jose Garcia Ripoll
+@noindent
+Copyright @copyright{} 2000 Juan Jose Garcia Ripoll
 
-@noindent Copyright @copyright{} 1990, 1991, 1993 Giuseppe Attardi
+@noindent
+Copyright @copyright{} 1990, 1991, 1993 Giuseppe Attardi
 
-@noindent Copyright @copyright{} 1984 Taiichi Yuasa and Masami Hagiya
+@noindent
+Copyright @copyright{} 1984 Taiichi Yuasa and Masami Hagiya
 
-@noindent All Rights Reserved
+@noindent
+All Rights Reserved
 
-@noindent Summary:
+@noindent
+Summary:
 
 @quotation
 Permission is granted to use, copy, modify this program,
@@ -315,7 +322,8 @@ credit should be given to the authors where it is due.
 WE MAKE NO WARRANTY AND ACCEPT NO LIABILITY FOR THIS PROGRAM.
 @end quotation
 
-@noindent In detail:
+@noindent
+In detail:
 
 @enumerate
 @item
@@ -340,7 +348,8 @@ NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
 USE OR PERFORMANCE OF THIS SOFTWARE.
 @end enumerate
 
-@noindent Additionally:
+@noindent
+Additionally:
 
 @quotation
 @ecls{} is free software; you can redistribute it and/or modify it
@@ -358,7 +367,8 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 @end quotation
 
-@noindent Address for reporting bugs, comments, suggestions:
+@noindent
+Address for reporting bugs, comments, suggestions:
 @quotation
 @email{worm@@arrakis.es}
 @end quotation
@@ -660,7 +670,8 @@ integers are @code{bignums}. Thus 25 factorial (25!)
 15511210043330985984000000
 @end example
 
-@noindent is definetely a bignum in @ecls{}.
+@noindent
+is definetely a bignum in @ecls{}.
 
 @clisp{} constants related to integers have the following values
 in @ecls{}.
@@ -1184,7 +1195,8 @@ Interpreted functions are printed using the formats
 #<interpreted-function @var{name}>
 #<interpreted-function @code{address}>
 @end example
-@noindent Compiled functions (including compiled macro-expansion functions)
+@noindent
+Compiled functions (including compiled macro-expansion functions)
 are printed in the following formats.
 @example
 #<compiled-function @var{name}>
@@ -2553,7 +2565,8 @@ F
 3
 @end example
 
-@noindent The last statement always outputs @code{3} while in former
+@noindent
+The last statement always outputs @code{3} while in former
 implementations based on processing of lambda lists it would produce @code{-1}.
 
 
@@ -2747,7 +2760,8 @@ In the following nonsensical example borrowed from Chapter 9 of
         (declare (inline foo) (special x z))
      (foo x j z)))
 @end example
-@noindent the @code{inline} and the special declarations both remain in effect within the
+@noindent
+the @code{inline} and the special declarations both remain in effect within the
 surrounding @code{let} form.  In this case, we say that the @code{let} form is
 the @emph{surrounding construct} of these declarations.
 
@@ -2763,7 +2777,8 @@ the function @code{typep}.  For example,
 (the fixnum (foo))
 @end example
 
-@noindent is equivalent to
+@noindent
+is equivalent to
 
 @example
 (let ((values (multiple-value-list (foo))))
@@ -3120,7 +3135,8 @@ variable may never be garbage collected unexpectedly.  For example,
       (bar y)))
 @end example
 
-@noindent this @code{object} declaration is completely safe because the value of the
+@noindent
+this @code{object} declaration is completely safe because the value of the
 variable @var{y} is always a substructure of the value of @var{x}, which in
 turn is protected against garbage collection.  Incidentally, loop variables of
 @code{dolist} may always be declared as object variables, since the
@@ -3399,7 +3415,8 @@ The complete syntax of a defmacro lambda-list is:
 )
 @end example
 
-@noindent where @var{pseudo-var} is either a symbol or a list of the following
+@noindent
+where @var{pseudo-var} is either a symbol or a list of the following
 form:
 
 @example
@@ -3427,7 +3444,8 @@ and
 (defmacro foo (x y) ...)
 @end example
 
-@noindent both bind the variables @code{x} and @code{y} to the second and the
+@noindent
+both bind the variables @code{x} and @code{y} to the second and the
 third elements, respectively, of macro forms of @code{foo}.
 
 The defmacro lambda-list keyword @code{&environment} may appear only at the
@@ -3461,15 +3479,66 @@ arguments.
 
 @node C Language, CLOS, Macros, Top
 @chapter The C Language Interface
- 
+
 This chapter describes the facility of @ecls{} to interface the C language and
 @ecls{}.  With this facility, the user can arrange his or her C-language
 programs so that they can be invoked from @ecls{}. In addition, the user can
 write Lisp function definitions in the C language to increase runtime
 efficiency.
 
-The basic idea of interfacing the C language is this: As mentioned in Chapter
-6, the @ecls{} compiler, given a Lisp source file, creates an intermediate
+@menu
+* The simple way::              
+* Mixing languages::            
+* Examples::                    
+@end menu
+
+@node The simple way, Mixing languages, C Language, C Language
+@section Building a customized image
+
+@ecls{} can be used to control a C library, or it can be used as an embedded
+language to provide some flexibility to an already existing C program. In both
+cases @ecls{} should perform equally well, as far as you follow these rules:
+@enumerate
+@item Organize the C code as a library, let it be static or dynamic.
+
+@item Build a function, say @code{mymain()}, in which the initialization phase
+for your library is performed.
+
+@item Group the code that interfaces to Lisp in separate C files, all of which
+should include @code{#include <ecls.h>} at the beginning.
+
+@item Let @ecls{} build the final executable.
+@end enumerate
+
+The final step, that is building the executable should be performed within a
+working @ecls{} image. The function to build customized images is
+@var{c::build-ecls}. The description of this function is as follows.
+
+@defun {c::build-ecls} {@var{image-name} @keys{} :components :prologue-code :epilogue-code}
+
+This function builds a lisp image up from the core lisp library, plus all
+listed components.  Each component is either:
+@itemize
+@item A symbol: Names a compiled lisp library. Currenty only @code{'CMP} is
+supported, which corresponds to the lisp->C translator.
+
+@item A string: Denotes an object file, a library, or any flag which is passed
+to the compiler.
+@end itemize
+
+In order to build the lisp image, @var{c::build-ecls} first writes down a piece
+of C code which initializes the lisp environment. You can customize the
+initialization process by suppling code to be executed before
+(@var{prologue-code}) or after (@var{epilogue-code}) setting up the lisp
+environment. Typically @var{prologue-code} defaults to an empty string, while
+@var{epilogue-code} invokes the classical lisp @var{top-level}.
+@end defun
+
+@node Mixing languages, Examples, The simple way, C Language
+@section Writing lisp functions in C
+
+The basic idea of interfacing the C language is this: As mentioned before,
+the @ecls{} compiler, given a Lisp source file, creates an intermediate
 C-language program file, called @emph{c-file}, which is then compiled by the
 C-language compiler to obtain the final fasl-file.  Usually, the c-file
 consists of C-language function definitions.  The first C-language function in
@@ -3669,6 +3738,36 @@ C-type:
         @{ object | int | char | float | double @}
 @end example
 
+@node Examples,  , Mixing languages, C Language
+@section Examples of customization
+
+Let us see how this all works in practice. We will assume that @ecls{} is
+installed and that it works. The first example simply gives @ecls{} another
+boot message. You just have to type this at the @ecls{} prompt
+
+@example
+(c::build-ecls "myecls"
+	:prologue-code "printf(\"Lisp image to be initialized...\\n\");"
+        :epilogue-code "printf(\"...lisp image initialized!!!\\n\");
+	funcall(1,_intern(\"TPL\",system_package));")
+@end example
+
+@noindent
+With the following text you have a new image:
+
+@example
+% ./myecls
+Lisp image to be initialized...
+*+*+*+
+...lisp image initialized!!!
+ECLS (ECoLisp-Spain) 0.4
+Copyright (C) 1984 Taiichi Yuasa and Masami Hagiya
+Copyright (C) 1993 Giuseppe Attardi
+Copyright (C) 2000 Juan J. Garcia-Ripoll
+	ECLS is free software, and you are welcome to redistribute it
+under certain conditions; see file 'Copyright' for details.
+Type :h for Help.  Top level.
+@end example
 
 @node CLOS, Multithread, C Language, Top
 @chapter CLOS
@@ -3697,8 +3796,8 @@ C-type:
 @end deffn
 
 @defun {class-of} {object}
-The function @code{class-of} returns the class of which the given
-object is an instance.  The argument to class-of may be any @clisp{} object.
+The function @code{class-of} returns the class of which the given object is an
+instance.  The argument to class-of may be any @clisp{} object.
 @end defun
 
 @defun {compute-applicable-methods} {generic-function function-arguments}
@@ -4336,7 +4435,7 @@ that case @code{suspend} will return the values specified by @code{resume}.
 * @ecls{} and @clisp{}::        
 * @ecls{} is written in C and Lisp::  
 * Porting @ecls{}::             
-* Extending @ecls{}::             
+* Extending @ecls{}::           
 * The @ecls{} Compiler::        
 * The C language interface::    
 @end menu
@@ -4355,7 +4454,8 @@ noticed to the maintainers.
 @node @ecls{} is written in C and Lisp, Porting @ecls{}, @ecls{} and @clisp{}, Implementation details
 @section @ecls{} is written in C and Lisp
 
-@noindent The kernel of @ecls{} is written in C, including:
+@noindent
+The kernel of @ecls{} is written in C, including:
 @itemize
 @item memory management and garbage collection
 @item the bytecodes compiler and interpreter
@@ -4371,7 +4471,8 @@ the @clisp{} language, @ecls{} also needs lisp implementations of
 @item CLOS, and
 @item the translator to C.
 @end itemize
-@noindent These items are stored as lisp source, that can be either interpreter
+@noindent
+These items are stored as lisp source, that can be either interpreter
 (as during the bootstrap process) or translated to C and later compiled
 (to build the final program).
 
@@ -4409,8 +4510,8 @@ you should understand how the implementation works.
 * Objects Representation::      
 * @ecls{} stacks::              
 * Procedure Call Conventions::  
-* The lexical environment::
-* The interpreter stack::
+* The lexical environment::     
+* The interpreter stack::       
 @end menu
 
 

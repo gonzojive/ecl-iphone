@@ -2534,8 +2534,8 @@ mandir="${prefix}/man/man1"
 infodir="${prefix}/info"
 builddir=`pwd`
 TARGETS="ecls${EXEEXT}"
-LIBRARIES=libecls.a
-LSP_LIBRARIES=liblsp.a
+LIBRARIES="libecls.a"
+LSP_LIBRARIES="liblsp.a libclos.a"
 SUBDIR=c
 CLIBS="${CLIBS} -lgmp -lm"
 if test ${boehm} ; then
