@@ -320,6 +320,7 @@ make_stream(cl_object host, int fd, enum smmode smm)
 @(defun si::lookup-host-entry (host_or_address)
 	struct hostent *he;
 	unsigned long l;
+	unsigned char address[4];
 	cl_object name, aliases, addresses;
 	int i;
 @
@@ -330,11 +331,14 @@ make_stream(cl_object host, int fd, enum smmode smm)
 		break;
 	case t_fixnum:
 		l = fix(host_or_address);
-		he = gethostbyaddr(&l, 4, AF_INET);
-		break;
+		goto addr;
 	case t_bignum:
 		l = big_to_ulong(host_or_address);
-		he = gethostbyaddr(&l, 4, AF_INET);
+	addr:	address[0] = l & 0xFF;
+		address[1] = (l >> 8) & 0xFF;
+		address[2] = (l >> 16) & 0xFF;
+		address[3] = (l >> 24) & 0xFF;
+		he = gethostbyaddr(&address, 4, AF_INET);
 		break;
 	default:
 		FEerror("LOOKUP-HOST-ENTRY: Number or string expected, got ~S",
