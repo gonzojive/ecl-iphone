@@ -137,13 +137,28 @@ cl_boot(int argc, char **argv)
 	cl_index i;
 @
 	assert_type_string(var);
-	if (var->string.fillp >= 256)
-		FEerror("Too long name: ~S.", 1, var);
-	for (i = 0;  i < var->string.fillp;  i++)
-		name[i] = var->string.self[i];
-	name[i] = '\0';
-	value = getenv(name);
+	value = getenv(var->string.self);
 	@(return ((value == NULL)? Cnil : make_string_copy(value)))
+@)
+
+@(defun si::setenv (var value)
+	cl_fixnum ret_val;
+@
+	assert_type_string(var);
+	if (value == Cnil) {
+		/* Remove the variable when setting to nil, so that
+		 * (si:setenv "foo" nil), then (si:getenv "foo) returns
+		 * the right thing. */
+		unsetenv(var->string.self);
+		ret_val = 0;
+	} else {
+		assert_type_string(value);
+		ret_val = setenv(var->string.self, value->string.self, 1);
+	}
+	if (ret_val == -1)
+		CEerror("SI:SETENV failed: insufficient space in environment.",
+			1, "Continue anyway");
+	@(return (value))
 @)
 
 @(defun si::pointer (x)

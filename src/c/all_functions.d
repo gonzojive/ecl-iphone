@@ -402,6 +402,7 @@ const struct function_info all_functions[] = {
 	{"ARGC", siLargc, si},
 	{"ARGV", siLargv, si},
 	{"GETENV", siLgetenv, si},
+	{"SETENV", siLsetenv, si},
 	{"POINTER", siLpointer, si},
 
 	/* mapfun.c */

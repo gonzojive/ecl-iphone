@@ -486,6 +486,7 @@ extern cl_object clLquit _ARGS((int narg, ...));
 extern cl_object siLargc _ARGS((int narg));
 extern cl_object siLargv _ARGS((int narg, cl_object index));
 extern cl_object siLgetenv _ARGS((int narg, cl_object var));
+extern cl_object siLsetenv _ARGS((int narg, cl_object var, cl_object value));
 extern cl_object siLpointer _ARGS((int narg, cl_object x));
 extern cl_object siLnani _ARGS((int narg, cl_object x));
 extern cl_object clLidentity _ARGS((int narg, cl_object x));
