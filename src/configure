@@ -1224,7 +1224,7 @@ echo "***"
 exit 2;
 fi
 
-ECL_VERSION=0.6
+ECL_VERSION=0.7
 
 
 ac_aux_dir=
