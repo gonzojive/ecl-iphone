@@ -172,7 +172,7 @@ mp_exit_process(void)
 	if (pthread_equal(pthread_self(), main_thread)) {
 		/* This is the main thread. Quitting it means exiting the
 		   program. */
-		cl_quit(0);
+		si_quit(0);
 	} else {
 		/* We simply undo the whole of the frame stack. This brings up
 		   back to the thread entry point, going through all possible

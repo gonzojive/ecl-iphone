@@ -258,6 +258,13 @@ cl_boot(int argc, char **argv)
 	cl_core.gentemp_prefix = make_constant_string("T");
 	cl_core.gentemp_counter = MAKE_FIXNUM(0);
 
+	ECL_SET(@'ext::c-int-max', make_integer(INT_MAX));
+	ECL_SET(@'ext::c-int-min', make_integer(INT_MIN));
+	ECL_SET(@'ext::c-long-max', make_integer(LONG_MAX));
+	ECL_SET(@'ext::c-long-min', make_integer(LONG_MIN));
+	ECL_SET(@'ext::c-uint-max', make_integer(UINT_MAX));
+	ECL_SET(@'ext::c-ulong-max', make_integer(ULONG_MAX));
+
 	init_number();
 	init_unixtime();
 
