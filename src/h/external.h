@@ -447,7 +447,6 @@ extern void init_list(void);
 
 extern void init_load(void);
 extern void load_until_tag(cl_object stream, cl_object end_tag);
-extern void build_symbol_table();
 
 /* lwp.c */
 #ifdef THREADS
@@ -508,8 +507,10 @@ extern void init_num_arith(void);
 
 extern cl_object shortfloat_zero;
 extern cl_object longfloat_zero;
-extern int fixint(cl_object x);
-extern int fixnnint(cl_object x);
+extern cl_fixnum fixint(cl_object x);
+extern cl_index  fixnnint(cl_object x);
+extern cl_object make_integer(cl_fixnum i);
+extern cl_object make_unsigned_integer(cl_index i);
 extern cl_object make_ratio(cl_object num, cl_object den);
 extern cl_object make_shortfloat(float f);
 extern cl_object make_longfloat(double f);
@@ -730,7 +731,7 @@ extern cl_object current_readtable(void);
 extern cl_object string_to_object(cl_object x);
 extern void init_read(void);
 extern void init_read_function(void);
-extern void read_VV(cl_object, void *);
+extern void read_VV(cl_object block, void *entry);
 
 
 /* reference.c */
@@ -950,12 +951,10 @@ extern void init_unixfsys(void);
 
 extern int interrupt_enable;
 extern int interrupt_flag;
-extern void sigalrm(void);
-extern void sigint(void);
-extern void sigfpe(void);
 extern void signal_catcher(int sig, int code, int scp);
 extern void enable_interrupt(void);
 extern void init_interrupt(void);
+extern void sigint(void);
 
 
 /* unixsys.c */

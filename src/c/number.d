@@ -19,26 +19,55 @@
 cl_object shortfloat_zero;
 cl_object longfloat_zero;
 
-int
+cl_fixnum
 fixint(cl_object x)
 {
-	if (!FIXNUMP(x))
-		FEwrong_type_argument(@'fixnum', x);
-	return fix(x);
+	if (FIXNUMP(x))
+		return fix(x);
+	if (type_of(x) == t_bignum) {
+		if (x->big.big_size == 1 || x->big.big_size == -1)
+			return big_to_long(x);
+	}
+	FEwrong_type_argument(@'fixnum', x);
 }
 
-int
+cl_index
 fixnnint(cl_object x)
 {
 	if (FIXNUMP(x)) {
 		cl_fixnum i = fix(x);
 		if (i >= 0)
 			return i;
+	} else if (type_of(x) == t_bignum) {
+		if (x->big.big_size == 1)
+			return big_to_long(x);
 	}
 	FEcondition(9, @'simple-type-error', @':format-control',
 		    make_simple_string("Not a non-negative fixnum ~S"),
 		    @':format-arguments', list(1,x),
 		    @':expected-type', @'fixnum', @':datum', x);
+}
+
+cl_object
+make_integer(cl_fixnum l)
+{
+	if (l > MOST_POSITIVE_FIX || l < MOST_NEGATIVE_FIX) {
+		cl_object z = alloc_object(t_bignum);
+		mpz_init_set_si(z->big.big_num, l);
+		return z;
+	}
+	return MAKE_FIXNUM(l);
+}
+
+cl_object
+make_unsigned_integer(cl_index l)
+{
+	if (l > MOST_POSITIVE_FIX) {
+		cl_object z = alloc_object(t_bignum);
+		mpz_init_set_ui(z->big.big_num, l);
+		return z;
+	}
+	return MAKE_FIXNUM(l);
 }
 
 cl_object
