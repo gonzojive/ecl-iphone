@@ -386,7 +386,7 @@ value of this variable is non-NIL.")
 	(cond
 	  ((string= "-dir" option)
 	   (setf (logical-pathname-translations "SYS")
-		 `(("**;*.*" ,(concatenate 'string (pop-arg "-dir") "/**/*.*")))))
+		 `(("**;*.*" ,(merge-pathnames "**/*.*" (truename (pop-arg "-dir")))))))
 	  ((string= "-compile" option)
 	   (if (nth-value 3
 			  (compile-file
