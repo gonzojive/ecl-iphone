@@ -288,7 +288,7 @@ init_backq(void)
 {
 	cl_object r;
 
-	r = cl_standard_readtable;
+	r = standard_readtable;
 	r->readtable.table['`'].syntax_type = cat_terminating;
 	r->readtable.table['`'].macro = make_cf((cl_objectfn)backquote_reader);
 	r->readtable.table[','].syntax_type = cat_terminating;

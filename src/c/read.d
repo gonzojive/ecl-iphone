@@ -25,11 +25,11 @@
 
 /******************************* EXPORTS ******************************/
 
-cl_object cl_standard_readtable;
+cl_object standard_readtable;
 
 #ifndef THREADS
+cl_object READtable;
 int READdefault_float_format;
-int READbase;
 bool READsuppress;
 bool preserving_whitespace_flag;
 bool escape_flag;
@@ -51,15 +51,22 @@ extern int backq_level;
 
 static cl_object dispatch_reader;
 
-#define	cat(r,c)	((r)->readtable.table[c].syntax_type)
+#define	cat(c)	(READtable->readtable.table[c].syntax_type)
 
 static void extra_argument (int c, cl_object d);
+
+static void
+setup_READtable(void)
+{
+	READtable = current_readtable();
+}
 
 static void
 setup_READ(void)
 {
 	cl_object x;
 
+	READtable = current_readtable();
 	x = symbol_value(@'*read_default_float_format*');
 	if (x == @'single-float' || x == @'short-float')
 		READdefault_float_format = 'S';
@@ -70,20 +77,14 @@ setup_READ(void)
 	FEerror("The value of *READ-DEFAULT-FLOAT-FORMAT*, ~S, was illegal.",
 			1, x);
 	}
-	x = symbol_value(@'*read_base*');
-	if (!FIXNUMP(x) || fix(x) < 2 || fix(x) > 36) {
-		SYM_VAL(@'*read_base*') = MAKE_FIXNUM(10);
-		FEerror("The value of *READ-BASE*, ~S, was illegal.", 1, x);
-	}
-	READbase = fix(x);
 	READsuppress = symbol_value(@'*read_suppress*') != Cnil;
 }
 
 static void
 setup_standard_READ(void)
 {
+	READtable = standard_readtable;
 	READdefault_float_format = 'S';
-	READbase = 10;
 	READsuppress = FALSE;
 	sharp_eq_context = Cnil;
 	backq_level = 0;
@@ -113,7 +114,7 @@ peek_char(bool pt, cl_object in)
 
 	c = readc_stream(in);
 	if (pt)
-		while (cat(cl_current_readtable(),c) == cat_whitespace)
+		while (cat(c) == cat_whitespace)
 			c = readc_stream(in);
 	unreadc_stream(c, in);
 	return CODE_CHAR(c);
@@ -125,8 +126,8 @@ read_object_recursive(cl_object in)
 	volatile cl_object x;
 	bool e;
 
+	cl_object old_READtable = READtable;
 	int old_READdefault_float_format = READdefault_float_format;
-	int old_READbase = READbase;
 	bool old_READsuppress = READsuppress;
 
 	if (frs_push(FRS_PROTECT, Cnil))
@@ -138,8 +139,8 @@ read_object_recursive(cl_object in)
 	}
 	frs_pop();
 
+	READtable = old_READtable;
 	READdefault_float_format = old_READdefault_float_format;
-	READbase = old_READbase;
 	READsuppress = old_READsuppress;
 
 	if (e) unwind(nlj_fr, nlj_tag);
@@ -153,14 +154,14 @@ read_object_non_recursive(cl_object in)
 {
 	volatile cl_object x;
 	bool e;
+	cl_object old_READtable;
 	int old_READdefault_float_format;
-	int old_READbase;
 	int old_READsuppress;
 	int old_backq_level;
 	cl_object old_sharp_eq_context;
 
+	old_READtable = READtable;
 	old_READdefault_float_format = READdefault_float_format;
-	old_READbase = READbase;
 	old_READsuppress = READsuppress;
 	old_sharp_eq_context = sharp_eq_context;
 	old_backq_level = backq_level;
@@ -178,8 +179,8 @@ read_object_non_recursive(cl_object in)
 	}
 	frs_pop();
 
+	READtable = old_READtable;
 	READdefault_float_format = old_READdefault_float_format;
-	READbase = old_READbase;
 	READsuppress = old_READsuppress;
 	sharp_eq_context = old_sharp_eq_context;
 	backq_level = old_backq_level;
@@ -195,13 +196,12 @@ cl_object
 read_object(cl_object in)
 {
 	cl_object x;
-	int c;
+	int c, base;
 	enum chattrib a;
 	cl_object old_delimiter, p;
 	cl_index length, i, colon;
 	int colon_type, intern_flag;
 	bool df, ilf;
-	cl_object rtbl = cl_current_readtable();
 
 	cs_check(in);
 
@@ -224,13 +224,13 @@ BEGIN:
 		} else {
 			c = readc_stream(in);
 		}
-		a = cat(rtbl, c);
+		a = cat(c);
 	} while (a == cat_whitespace);
 	delimiting_char = OBJNULL;
 	if (old_delimiter != OBJNULL && old_delimiter == CODE_CHAR(c))
 		return(OBJNULL);
 	if (a == cat_terminating || a == cat_non_terminating) {
-		cl_object x = rtbl->readtable.table[c].macro;
+		cl_object x = READtable->readtable.table[c].macro;
 		cl_object o = funcall(3, x, in, CODE_CHAR(c));
 		if (NValues == 0) goto BEGIN;
 		if (NValues > 1) FEerror("The readmacro ~S returned ~D values.",
@@ -252,7 +252,7 @@ BEGIN:
 				if (stream_at_end(in))
 					FEend_of_file(in);
 				c = readc_stream(in);
-				a = cat(rtbl, c);
+				a = cat(c);
 				if (a == cat_single_escape) {
 					c = readc_stream(in);
 					a = cat_constituent;
@@ -276,7 +276,7 @@ BEGIN:
 		}
 		if (a == cat_whitespace || a == cat_terminating) {
 			if (preserving_whitespace_flag ||
-			    cat(rtbl, c) != cat_whitespace)
+			    cat(c) != cat_whitespace)
 				unreadc_stream(c, in);
 			break;
 		}
@@ -287,7 +287,7 @@ BEGIN:
 			break;
 		else
 			c = readc_stream(in);
-		a = cat(rtbl, c);
+		a = cat(c);
 	}
 
 	if (READsuppress)
@@ -304,9 +304,10 @@ BEGIN:
 	}
 
 N:
-	if (escape_flag || (READbase <= 10 && isalpha(cl_token->string.self[0])))
+	base = cl_current_read_base();
+	if (escape_flag || (base <= 10 && isalpha(cl_token->string.self[0])))
 		goto SYMBOL;
-	x = parse_number(cl_token->string.self, cl_token->string.fillp, &i, READbase);
+	x = parse_number(cl_token->string.self, cl_token->string.fillp, &i, base);
 	if (x != OBJNULL && length == i)
 		return(x);
 
@@ -605,7 +606,6 @@ parse_integer(const char *s, cl_index end, cl_index *ep, int radix)
 
 static
 @(defun "left_parenthesis_reader" (in character)
-  cl_object rtbl = cl_current_readtable();
   cl_object x, y;
   cl_object *p;
   int c;
@@ -625,7 +625,7 @@ static
       if (dot_flag)
 	FEerror("Two dots appeared consecutively.", 0);
       c = readc_stream(in);
-      while (cat(rtbl, c) == cat_whitespace)
+      while (cat(c) == cat_whitespace)
 	c = readc_stream(in);
       if (c != ')')
 	FEerror("A dot appeared before a right parenthesis.", 0);
@@ -645,14 +645,13 @@ static void
 read_string(int delim, cl_object in)
 {
 	int c;
-	cl_object rtbl = cl_current_readtable();
 
 	cl_token->string.fillp = 0;
 	for (;;) {
 		c = readc_stream(in);
 		if (c == delim)
 			break;
-		else if (cat(rtbl, c) == cat_single_escape)
+		else if (cat(c) == cat_single_escape)
 			c = readc_stream(in);
 		cl_string_push_extend(cl_token, c);
 	}
@@ -667,12 +666,11 @@ static void
 read_constituent(cl_object in)
 {
 	int c;
-	cl_object rtbl = cl_current_readtable();
 
 	cl_token->string.fillp = 0;
 	for (;;) {
 		c = readc_stream(in);
-		if (cat(rtbl, c) != cat_constituent) {
+		if (cat(c) != cat_constituent) {
 			unreadc_stream(c, in);
 			break;
 		}
@@ -691,9 +689,8 @@ static
 @(defun "dispatch_reader_fun" (in dc)
 	cl_object x, y;
 	int i, d, c;
-	cl_object rtbl = cl_current_readtable();
 @
-	if (rtbl->readtable.table[char_code(dc)].dispatch_table == NULL)
+	if (READtable->readtable.table[char_code(dc)].dispatch_table == NULL)
 		FEerror("~C is not a dispatching macro character", 1, dc);
 
 	c = readc_stream(in);
@@ -709,7 +706,7 @@ static
 	} else
 		y = Cnil;
 
-	x = rtbl->readtable.table[char_code(dc)].dispatch_table[c];
+	x = READtable->readtable.table[char_code(dc)].dispatch_table[c];
 	return funcall(4, x, in, CODE_CHAR(c), y);
 @)
 
@@ -934,14 +931,13 @@ static
 
 static
 @(defun "sharp_colon_reader" (in ch d)
-	cl_object rtbl = cl_current_readtable();
 	enum chattrib a;
 	int c;
 @
 	if (d != Cnil && !READsuppress)
 		extra_argument(':', d);
 	c = readc_stream(in);
-	a = cat(rtbl, c);
+	a = cat(c);
 	escape_flag = FALSE;
 	cl_token->string.fillp = 0;
 	goto L;
@@ -951,7 +947,7 @@ static
 		if (stream_at_end(in))
 			goto M;
 		c = readc_stream(in);
-		a = cat(rtbl, c);
+		a = cat(c);
 	L:
 		if (a == cat_single_escape) {
 			c = readc_stream(in);
@@ -963,7 +959,7 @@ static
 				if (stream_at_end(in))
 					FEend_of_file(in);
 				c = readc_stream(in);
-				a = cat(rtbl, c);
+				a = cat(c);
 				if (a == cat_single_escape) {
 					c = readc_stream(in);
 					a = cat_constituent;
@@ -977,7 +973,7 @@ static
 		if (a == cat_whitespace || a == cat_terminating)
 			break;
 	}
-	if (preserving_whitespace_flag || cat(rtbl, c) != cat_whitespace)
+	if (preserving_whitespace_flag || cat(c) != cat_whitespace)
 		unreadc_stream(c, in);
 
 M:
@@ -1335,18 +1331,33 @@ copy_readtable(cl_object from, cl_object to)
 }
 
 cl_object
-cl_current_readtable(void)
+current_readtable(void)
 {
 	cl_object r;
 
-	/* INV: *readtable* is always bound to something */
-	r = SYM_VAL(@'*readtable*');
+	r = symbol_value(@'*readtable*');
 	if (type_of(r) != t_readtable) {
-	  SYM_VAL(@'*readtable*') = copy_readtable(cl_standard_readtable, Cnil);
+	  SYM_VAL(@'*readtable*') = copy_readtable(standard_readtable, Cnil);
 	  FEerror("The value of *READTABLE*, ~S, was not a readtable.",
 		  1, r);
 	}
 	return(r);
+}
+
+int
+cl_current_read_base(void)
+{
+	cl_object x;
+
+	/* INV: *READ-BASE* always has a value */
+	x = SYM_VAL(@'*read_base*');
+	if (FIXNUMP(x)) {
+		cl_fixnum b = fix(x);
+		if (b >= 2 && b <= 36)
+			return b;
+	}
+	SYM_VAL(@'*read_base*') = MAKE_FIXNUM(10);
+	FEerror("The value of *READ-BASE*, ~S, was illegal.", 1, x);
 }
 
 
@@ -1379,8 +1390,8 @@ cl_current_readtable(void)
 	(&optional (strm Cnil)
 		   (eof_errorp Ct)
 		   eof_value
-		   recursivep)
-	cl_object x, rtbl = cl_current_readtable();
+		   recursivep
+	 &aux x)
 	int c;
 @
 	if (Null(strm))
@@ -1389,7 +1400,7 @@ cl_current_readtable(void)
 		strm = symbol_value(@'*terminal_io*');
 	while (!stream_at_end(strm)) {
 		c = readc_stream(strm);
-		if (cat(rtbl, c) != cat_whitespace) {
+		if (cat(c) != cat_whitespace) {
 			unreadc_stream(c, strm);
 			goto READ;
 		}
@@ -1519,13 +1530,13 @@ READ:
 @)
 
 @(defun peek_char (&optional peek_type (strm Cnil) (eof_errorp Ct) eof_value recursivep)
-	cl_object rtbl = cl_current_readtable();
 	int c;
 @
 	if (Null(strm))
 		strm = symbol_value(@'*standard_input*');
 	else if (strm == Ct)
 		strm = symbol_value(@'*terminal_io*');
+	setup_READtable();
 	if (Null(peek_type)) {
 		if (stream_at_end(strm)) {
 			if (Null(eof_errorp) && Null(recursivep))
@@ -1540,7 +1551,7 @@ READ:
 	if (peek_type == Ct) {
 		while (!stream_at_end(strm)) {
 			c = readc_stream(strm);
-			if (cat(rtbl, c) != cat_whitespace) {
+			if (cat(c) != cat_whitespace) {
 				unreadc_stream(c, strm);
 				@(return CODE_CHAR(c))
 			}
@@ -1615,14 +1626,14 @@ READ:
 			    junk_allowed
 		       &aux x)
 	cl_index s, e, ep;
-	cl_object rtbl = cl_current_readtable();
 @
 	assert_type_string(strng);
 	get_string_start_end(strng, start, end, &s, &e);
 	if (!FIXNUMP(radix) ||
 	    fix(radix) < 2 || fix(radix) > 36)
 		FEerror("~S is an illegal radix.", 1, radix);
-	while (rtbl->readtable.table[strng->string.self[s]].syntax_type
+	setup_READtable();
+	while (READtable->readtable.table[strng->string.self[s]].syntax_type
 	       == cat_whitespace && s < e)
 		s++;
 	if (s >= e) {
@@ -1641,7 +1652,7 @@ READ:
 	if (junk_allowed != Cnil)
 		@(return x MAKE_FIXNUM(ep+s))
 	for (s += ep ;  s < e;  s++)
-		if (rtbl->readtable.table[strng->string.self[s]].syntax_type
+		if (READtable->readtable.table[strng->string.self[s]].syntax_type
 		    != cat_whitespace)
 			goto CANNOT_PARSE;
 	@(return x MAKE_FIXNUM(e))
@@ -1685,10 +1696,10 @@ CANNOT_PARSE:
 
 
 
-@(defun copy_readtable (&o (from cl_current_readtable()) to)
+@(defun copy_readtable (&o (from current_readtable()) to)
 @
 	if (Null(from)) {
-		from = cl_standard_readtable;
+		from = standard_readtable;
 		if (to != Cnil)
 			assert_type_readtable(to);
 		to = copy_readtable(from, to);
@@ -1717,13 +1728,13 @@ read_table_entry(cl_object rdtbl, cl_object c)
 }
 
 @(defun set_syntax_from_char (tochr fromchr
-			      &o (tordtbl cl_current_readtable())
+			      &o (tordtbl current_readtable())
 				 fromrdtbl)
 	struct readtable_entry*torte, *fromrte;
 @
 	/* INV: read_table_entry() checks all values */
 	if (Null(fromrdtbl))
-		fromrdtbl = cl_standard_readtable;
+		fromrdtbl = standard_readtable;
 	/* INV: char_code() checks the types of `tochar',`fromchar' */
 	torte = read_table_entry(tordtbl, tochr);
 	fromrte = read_table_entry(fromrdtbl, fromchr);
@@ -1739,7 +1750,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 
 @(defun set_macro_character (chr fnc
 			     &optional ntp
-				       (rdtbl cl_current_readtable()))
+				       (rdtbl current_readtable()))
 	struct readtable_entry*entry;
 @
 	/* INV: read_table_entry() checks our arguments */
@@ -1752,14 +1763,14 @@ read_table_entry(cl_object rdtbl, cl_object c)
 	@(return Ct)
 @)
 
-@(defun get_macro_character (chr &o (rdtbl cl_current_readtable()))
+@(defun get_macro_character (chr &o (rdtbl current_readtable()))
 	struct readtable_entry*entry;
 	cl_object m;
 @
 
 	/* fix to allow NIL as readtable argument. Beppe */
 	if (Null(rdtbl))
-		rdtbl = cl_standard_readtable;
+		rdtbl = standard_readtable;
 	/* INV: read_table_entry() checks our arguments */
 	entry = read_table_entry(rdtbl, chr);
 	m = entry->macro;
@@ -1772,7 +1783,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 @)
 
 @(defun make_dispatch_macro_character (chr
-	&optional ntp (rdtbl cl_current_readtable()))
+	&optional ntp (rdtbl current_readtable()))
 	struct readtable_entry*entry;
 	cl_object *table;
 	int i;
@@ -1792,7 +1803,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 @)
 
 @(defun set_dispatch_macro_character (dspchr subchr fnc
-	&optional (rdtbl cl_current_readtable()))
+	&optional (rdtbl current_readtable()))
 	struct readtable_entry*entry;
 	cl_fixnum subcode;
 @
@@ -1807,12 +1818,12 @@ read_table_entry(cl_object rdtbl, cl_object c)
 @)
 
 @(defun get_dispatch_macro_character (dspchr subchr
-	&optional (rdtbl cl_current_readtable()))
+	&optional (rdtbl current_readtable()))
 	struct readtable_entry*entry;
 	cl_fixnum subcode;
 @
 	if (Null(rdtbl))
-		rdtbl = cl_standard_readtable;
+		rdtbl = standard_readtable;
 	entry = read_table_entry(rdtbl, dspchr);
 	if (entry->macro != dispatch_reader || entry->dispatch_table == NULL)
 		FEerror("~S is not a dispatch character.", 1, dspchr);
@@ -1848,7 +1859,7 @@ string_to_object(cl_object x)
 
 @(defun si::standard_readtable ()
 @
-	@(return cl_standard_readtable)
+	@(return standard_readtable)
 @)
 
 static void
@@ -1868,10 +1879,10 @@ init_read(void)
 	cl_object *dtab;
 	int i;
 
-	cl_standard_readtable = cl_alloc_object(t_readtable);
-	register_root(&cl_standard_readtable);
+	standard_readtable = cl_alloc_object(t_readtable);
+	register_root(&standard_readtable);
 
-	cl_standard_readtable->readtable.table
+	standard_readtable->readtable.table
 	= rtab
 	= (struct readtable_entry *)cl_alloc(RTABSIZE * sizeof(struct readtable_entry));
 	for (i = 0;  i < RTABSIZE;  i++) {
@@ -1966,7 +1977,7 @@ init_read(void)
 	init_backq();
 
 	SYM_VAL(@'*readtable*') =
-	  copy_readtable(cl_standard_readtable, Cnil);
+	  copy_readtable(standard_readtable, Cnil);
 	SYM_VAL(@'*readtable*')->readtable.table['#'].dispatch_table['!']
 	  = default_dispatch_macro; /*  We must forget #! macro.  */
 	SYM_VAL(@'*read_default_float_format*')
@@ -1974,8 +1985,9 @@ init_read(void)
 	SYM_VAL(@'*read_base*') = MAKE_FIXNUM(10);
 	SYM_VAL(@'*read_suppress*') = Cnil;
 
+	READtable = symbol_value(@'*readtable*');
+	register_root(&READtable);
 	READdefault_float_format = 'S';
-	READbase = 10;
 	READsuppress = FALSE;
 
 	sharp_eq_context = Cnil;
@@ -2007,8 +2019,8 @@ read_VV(cl_object block, void *entry)
 	int i;
 	bool e;
 	cl_object in;
+	cl_object old_READtable;
 	int old_READdefault_float_format;
-	int old_READbase;
 	int old_READsuppress;
 	int old_backq_level;
 	cl_object old_sharp_eq_context;
@@ -2031,15 +2043,17 @@ read_VV(cl_object block, void *entry)
 	VV = block->cblock.data;
 #endif
 
+	old_READtable = READtable;
 	old_READdefault_float_format = READdefault_float_format;
-	old_READbase = READbase;
 	old_READsuppress = READsuppress;
 	old_sharp_eq_context = sharp_eq_context;
 	old_backq_level = backq_level;
 
 	old_package = SYM_VAL(@'*package*');
 	bds_bind(@'*package*', lisp_package);
-	bds_bind(@'*readtable*', cl_standard_readtable);
+	bds_bind(@'*read-base*', MAKE_FIXNUM(10));
+
+	setup_standard_READ();
 
 	in = OBJNULL;
 	if (frs_push(FRS_PROTECT, Cnil))
@@ -2076,8 +2090,8 @@ read_VV(cl_object block, void *entry)
 	read_VV_block = OBJNULL;
 	bds_unwind(old_bds_top);
 
+	READtable = old_READtable;
 	READdefault_float_format = old_READdefault_float_format;
-	READbase = old_READbase;
 	READsuppress = old_READsuppress;
 	sharp_eq_context = old_sharp_eq_context;
 	backq_level = old_backq_level;

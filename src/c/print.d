@@ -43,7 +43,7 @@ cl_object PRINTstream;
 #define	LINE_LENGTH	72
 
 #define	to_be_escaped(c) \
-	(cl_standard_readtable->readtable.table[(c)&0377].syntax_type \
+	(standard_readtable->readtable.table[(c)&0377].syntax_type \
 	 != cat_constituent || \
 	 islower((c)&0377) || (c) == ':')
 

@@ -655,10 +655,10 @@ extern void init_prog(void);
 
 /* read.c */
 
-extern cl_object cl_standard_readtable;
+extern cl_object standard_readtable;
 #ifndef THREADS
+extern cl_object READtable;
 extern int READdefault_float_format;
-extern int READbase;
 extern bool READsuppress;
 extern bool preserving_whitespace_flag;
 extern bool escape_flag;
@@ -678,7 +678,8 @@ extern cl_object read_object(cl_object in);
 extern cl_object parse_number(const char *s, cl_index end, cl_index *ep, int radix);
 extern cl_object parse_integer(const char *s, cl_index end, cl_index *ep, int radix);
 extern cl_object copy_readtable(cl_object from, cl_object to);
-extern cl_object cl_current_readtable(void);
+extern cl_object current_readtable(void);
+extern int cl_current_read_base(void);
 extern cl_object string_to_object(cl_object x);
 extern cl_object c_string_to_object(const char *s);
 extern void init_read(void);
