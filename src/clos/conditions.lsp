@@ -34,7 +34,7 @@
 (defun break-level (continuable *break-message*)
   (unless *break-enable*
     (throw *quit-tag* nil))
-  (let ((*break-level* (1+ *break-level*))
+  (let*((*break-level* (1+ *break-level*))
 	(*break-env* nil)
 	(*standard-input* *debug-io*)
 	(*standard-output* *debug-io*)
@@ -158,7 +158,7 @@ strings."
 					 `#',report)
 				     keywords)))
 	     keywords)))
-    (let ((block-tag (gensym))
+    (let*((block-tag (gensym))
 	  (temp-var  (gensym))
 	  (data (mapcar #'(lambda (clause)
 			    (let (keywords (forms (cddr clause)))
@@ -182,7 +182,7 @@ strings."
 	   (tagbody
 	     (restart-bind
 	       ,(mapcar #'(lambda (datum)
-			    (let ((name (nth 0 datum))
+			    (let*((name (nth 0 datum))
 				  (tag  (nth 1 datum))
 				  (keys (nth 2 datum)))
 			      `(,name #'(lambda (&rest temp)
@@ -192,7 +192,7 @@ strings."
 			data)
 	       (return-from ,block-tag ,expression))
 	     ,@(mapcan #'(lambda (datum)
-			   (let ((tag  (nth 1 datum))
+			   (let*((tag  (nth 1 datum))
 				 (bvl  (nth 3 datum))
 				 (body (nth 4 datum)))
 			     (list tag
@@ -392,8 +392,8 @@ strings."
   (list (eval (read *query-io*))))
 
 (defmacro check-type (place type &optional type-string)
-  (let ((tag1 (gensym))
-	(tag2 (gensym)))
+  (let* ((tag1 (gensym))
+	 (tag2 (gensym)))
     `(block ,tag1
        (tagbody ,tag2
 	 (if (typep ,place ',type) (return-from ,tag1 nil))
@@ -426,9 +426,9 @@ strings."
 (defvar *break-on-signals* nil)
 
 (defun signal (datum &rest arguments)
-  (let ((condition
-	 (coerce-to-condition datum arguments 'SIMPLE-CONDITION 'SIGNAL))
-        (*handler-clusters* *handler-clusters*))
+  (let* ((condition
+	  (coerce-to-condition datum arguments 'SIMPLE-CONDITION 'SIGNAL))
+	 (*handler-clusters* *handler-clusters*))
     (if (typep condition *break-on-signals*)
 	(break "~A~%Break entered because of *BREAK-ON-SIGNALS*."
 	       condition))
@@ -610,18 +610,18 @@ returns with NIL."
 (defmacro handler-case (form &rest cases)
   (let ((no-error-clause (assoc ':NO-ERROR cases)))
     (if no-error-clause
-	(let ((normal-return (make-symbol "NORMAL-RETURN"))
-	      (error-return  (make-symbol "ERROR-RETURN")))
+	(let* ((normal-return (make-symbol "NORMAL-RETURN"))
+	       (error-return  (make-symbol "ERROR-RETURN")))
 	  `(block ,error-return
 	    (multiple-value-call #'(lambda ,@(cdr no-error-clause))
 	      (block ,normal-return
 		(return-from ,error-return
 		  (handler-case (return-from ,normal-return ,form)
 		     ,@(remove no-error-clause cases)))))))
-	(let ((tag (gensym))
-	      (var (gensym))
-	      (annotated-cases (mapcar #'(lambda (case) (cons (gensym) case))
-				       cases)))
+	(let* ((tag (gensym))
+	       (var (gensym))
+	       (annotated-cases (mapcar #'(lambda (case) (cons (gensym) case))
+					cases)))
 	  `(block ,tag
 	     (let ((,var nil))
 	       (declare (ignore ,var))

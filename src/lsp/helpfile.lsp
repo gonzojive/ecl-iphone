@@ -27,8 +27,8 @@
 	   (unless c (setq end t)))
 	)
       (unless end
-	(let ((key (read file))
-	      (value (read file)))
+	(let* ((key (read file))
+	       (value (read file)))
 	  (si::hash-set key h value))))))
 
 (defun dump-help-file (hash-table path &optional (merge nil))

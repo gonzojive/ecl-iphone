@@ -121,13 +121,13 @@
 	
 (defun parse-generic-options (options lambda-list)
   (declare (si::c-local))
-  (let (argument-precedence-order
-	declaration
-	documentation
-	method-combination
-	generic-function-class 
-	method-class
-	method-list)
+  (let* (argument-precedence-order
+	 declaration
+	 documentation
+	 method-combination
+	 generic-function-class 
+	 method-class
+	 method-list)
     (dolist (option options)
 	    (case (first option)
 		  (:argument-precedence-order
@@ -295,7 +295,7 @@ than once")
 
 (defun parse-parameter-names (parameter-list lambda-list)
   (declare (si::c-local))
-  (let (required-list count)
+  (let* (required-list count)
     (setf required-list
 	  (do ((l lambda-list (cdr l)))
 	      ((or (null l)

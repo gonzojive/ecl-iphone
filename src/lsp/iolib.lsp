@@ -228,7 +228,7 @@ is not given, ends the recording."
 The forms of the body are executed in a print environment that corresponds to
 the one defined in the ANSI standard. *print-base* is 10, *print-array* is t,
 *package* is \"CL-USER\", etc."
-  `(let ((*package* (find-package :cl-user))
+  `(let*((*package* (find-package :cl-user))
 	 (*print-array* t)
 	 (*print-base* 10)
 	 (*print-case* :upcase)

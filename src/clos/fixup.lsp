@@ -71,9 +71,9 @@
 
 (defun add-method (gf method)
   (declare (notinline method-qualifiers)) ; during boot it's a structure accessor
-  (let ((method-qualifiers (method-qualifiers method)) 
-	(specializers (specializers method))
-	found)
+  (let* ((method-qualifiers (method-qualifiers method)) 
+	 (specializers (specializers method))
+	 found)
     (when (setq found (find-method gf method-qualifiers specializers nil))
 	  (remove-method gf found))
   (push method (methods gf))
@@ -102,9 +102,9 @@
     (error "~A is not a standard method" method)))
 
 (defun si:compute-applicable-methods (gf args)
-  (let ((methods (methods gf))
-	applicable-list
-	args-specializers)
+  (let* ((methods (methods gf))
+	 applicable-list
+	 args-specializers)
     ;; first compute the applicable method list
     (dolist (method methods)
       ;; for each method in the list
@@ -149,8 +149,8 @@
 
 (defun compare-methods (method-1 method-2 args-specializers)
   (declare (si::c-local))
-  (let ((specializers-list-1 (specializers method-1))
-	(specializers-list-2 (specializers method-2)))
+  (let* ((specializers-list-1 (specializers method-1))
+	 (specializers-list-2 (specializers method-2)))
     (compare-specializers-lists specializers-list-1 
 				specializers-list-2 args-specializers)))
 
@@ -234,9 +234,9 @@
 				  (list 'STANDARD-OBJECT)))))
     ;; update subclasses
     (dolist (subclass (nreverse inferiors))
-      (let ((subclass-superclasses
-	     (mapcar #'(lambda (x) (class-name x)) (class-superiors subclass)))
-	    (subclass-name (class-name subclass)))
+      (let* ((subclass-superclasses
+	      (mapcar #'(lambda (x) (class-name x)) (class-superiors subclass)))
+	     (subclass-name (class-name subclass)))
 	(print subclass)
 	(pushnew
 	 (ensure-class (class-name (si:instance-class subclass))

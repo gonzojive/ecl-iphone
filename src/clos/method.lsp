@@ -303,8 +303,8 @@
 	 ;; 
 	 `(lambda ,lambda-list
 	    ,@walked-declarations
-	    (let ((.next-method. (car *next-methods*))
-		  (*next-methods* (cdr *next-methods*)))
+	    (let* ((.next-method. (car *next-methods*))
+		   (*next-methods* (cdr *next-methods*)))
 	      (flet (,@(and call-next-method-p
 ;;;
 ;;; WARNING: these &rest/apply combinations produce useless garbage. Beppe
@@ -347,8 +347,8 @@
 	 ;; is with no arguments.
 	 ;; 
 	 `(lambda ,original-args
-	    (let ((.next-method. (car *next-methods*))
-		  (*next-methods* (cdr *next-methods*)))
+	    (let* ((.next-method. (car *next-methods*))
+		   (*next-methods* (cdr *next-methods*)))
 	      (flet (,@(and call-next-method-p
                             `((call-next-method (&rest cnm-args)
 				;; (declare (static-extent cnm-args))
@@ -375,8 +375,8 @@
 	 ;; allow for call-next-method being called with no arguments.
 	 ;; 
 	 `(lambda ,original-args
-	    (let ((.next-method. (car *next-methods*))
-		  (*next-methods* (cdr *next-methods*)))
+	    (let* ((.next-method. (car *next-methods*))
+		   (*next-methods* (cdr *next-methods*)))
 	      (flet (,@(and call-next-method-p
 			    `((call-next-method (&rest cnm-args)
 				;; (declare (static-extent cnm-args))
@@ -426,7 +426,7 @@
 (defun parse-defmethod (args)
   (declare (si::c-local))
   ;; (values name qualifiers arglist body)
-  (let (name qualifiers)
+  (let* (name qualifiers)
     (unless args
       (error "Illegal defmethod form: missing method name"))
     (setq name (pop args))
@@ -450,7 +450,7 @@
   ;; correctness of the specialized-lambda-list. Furthermore it has became
   ;; an iterative function.
   ;; -- Daniele --
-  (let (parameters lambda-list specializers)
+  (let* (parameters lambda-list specializers)
     (do ((arg (first arglist) (first arglist)))
 	((or (null arglist)
 	     (member arg '(&OPTIONAL &REST &KEY &ALLOW-OTHER-KEYS &AUX))))
@@ -565,9 +565,9 @@
 
 (defun find-method (gf qualifiers specializers &optional (errorp t))
   (declare (notinline method-qualifiers))
-  (let ((method-list (methods gf))
-	(required-args (subseq (lambda-list gf) 0 (length specializers)))
-	found)
+  (let* ((method-list (methods gf))
+	 (required-args (subseq (lambda-list gf) 0 (length specializers)))
+	 found)
     (dolist (method method-list)
       (when (and (equal qualifiers (method-qualifiers method))
 		 (equal specializers (specializers method)))
@@ -591,7 +591,7 @@
 
 (defun update-method-key-hash-table (class lambda-list)
   (declare (si::c-local))
-  (let (post-key-list keywords-list)
+  (let* (post-key-list keywords-list)
     ;; search &key in lambda-list
     (setq post-key-list
 	  (do ((scan lambda-list (cdr scan)))
@@ -719,11 +719,11 @@
   ;;	(parameter [(class . class-index-table) {(slot-name . slot-index)}+])
   ;; parameters of the same class share the cdr of such list.
   ;;
-  (let ((instance (second form))
+  (let* ((instance (second form))
 	 (slot-name (reduce-constant (third form)))
 	 (new (fourth form))
 	 (entry (assoc parameter slots :test #'eq))
-	slot)
+	 slot)
     (unless entry
       (error "Can't optimize instance access.  Report this as a bug."))
     (setq slot (find slot-name (slot-value class 'SLOTS)
@@ -731,7 +731,7 @@
     (unless slot
       (error "Slot ~A not present in class ~A." slot-name class))
     (if (eq :INSTANCE (slotd-allocation slot))
-	(let (slot-entry slot-index)
+	(let* (slot-entry slot-index)
 	  (unless (cdr entry)
 	    ;; there is just one index-table for each different class
 	    (let ((class-slot-info (find class slots :key #'caadr :test #'eq)))
@@ -763,9 +763,9 @@
 
 (defun add-index-binding (method-body isl)
   (declare (si::c-local))
-  (let (class-index-bindings
-	slot-index-bindings
-	slot-index-declarations)
+  (let* (class-index-bindings
+	 slot-index-bindings
+	 slot-index-declarations)
 
     ;; don't forget setf! Chicca
     (setf class-index-bindings

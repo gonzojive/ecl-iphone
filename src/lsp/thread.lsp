@@ -48,10 +48,10 @@
   (declare (ignore error-name))
   (unwind-protect
       (if (or (plusp *break-level*) (not *scheduler-disabled-in-error*))
-	  (let ((*print-pretty* nil)
-		(*print-level* 4)
-		(*print-length* 4)
-		(*print-case* :upcase))
+	  (let* ((*print-pretty* nil)
+		 (*print-level* 4)
+		 (*print-length* 4)
+		 (*print-case* :upcase))
 	    (format *error-output* "~&~:[E~;Correctable e~]rror: " correctable)
 	    (let ((*indent-formatted-output* t))
 	      (format *error-output* "~?~%Signalled by ~A." error-format-string args
@@ -65,10 +65,10 @@
 	    (break-level correctable
 			 (format nil "~?" error-format-string args)))
 ;;;	(let ((break-exit nil))
-	  (let ((*print-pretty* nil)
-		(*print-level* 4)
-		(*print-length* 4)
-		(*print-case* :upcase))
+	  (let* ((*print-pretty* nil)
+		 (*print-level* 4)
+		 (*print-length* 4)
+		 (*print-case* :upcase))
 	    (thread-break-in)
 	    (format *error-output* "~&~:[E~;Correctable e~]rror: " correctable)
 	    (let ((*indent-formatted-output* t))
@@ -87,7 +87,7 @@
     (thread-break-resume)))
 
 (defun thread-top-level (fun &rest args)
-  (let ((*quit-tag* (cons nil nil))
+  (let*((*quit-tag* (cons nil nil))
 	*quit-tags*
 	(*break-level* 0)
 	(*tpl-level* 0)

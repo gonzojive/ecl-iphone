@@ -181,7 +181,7 @@
 			 (eq c ':eval))
 		    (if (or (eq (first f) '_CALL-METHOD_)
 			    (eq (first f) 'CALL-METHOD))
-			(let ((gensym1 (or (pop method-function-gensyms)
+			(let*((gensym1 (or (pop method-function-gensyms)
 					   (gensym)))
 			      (gensym2 (or (pop next-method-gensyms)
 					   (gensym))))
@@ -257,7 +257,7 @@
 
 (defun compute-combined-method (gf methods)
   (declare (ignore gf))
-  (let ((before ())
+  (let*((before ())
 	(primary ())
 	(after ())
 	(around ()))

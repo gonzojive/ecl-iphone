@@ -141,8 +141,8 @@
 	     ,@body))
 
 (defun with-augmented-environment-internal (env functions macros)
-  (let ((vars (car env))
-	(funs (cdr env)))
+  (let* ((vars (car env))
+	 (funs (cdr env)))
     (dolist (f functions)
       (push `(,(car f) function ,#'unbound-lexical-function) funs))
     (dolist (m macros)
@@ -169,8 +169,8 @@
 
 (defmacro with-new-definition-in-environment
 	  ((new-env old-env macrolet/flet/labels-form) &body body)
-  (let ((functions (make-symbol "Functions"))
-	(macros (make-symbol "Macros")))
+  (let* ((functions (make-symbol "Functions"))
+	 (macros (make-symbol "Macros")))
     `(let ((,functions ())
 	   (,macros ()))
        (ecase (car ,macrolet/flet/labels-form)
@@ -508,7 +508,7 @@
 		;; Basically, what we are doing here is providing
 		;; the same contract walk-form-internal normally
 		;; provides to the inner walk function.
-		(let ((inner-result nil)
+		(let*((inner-result nil)
 		      (inner-no-more-p nil)
 		      (outer-result nil)
 		      (outer-no-more-p nil))
@@ -742,7 +742,7 @@
         ((and (listp form) (eq (car form) 'DECLARE))
          ;; Got ourselves a real live declaration.  Record it, look for more.
          (dolist (declaration (cdr form))
-	   (let ((type (car declaration))
+	   (let*((type (car declaration))
 		 (name (second declaration))
 		 (args (cddr declaration)))
 	     (if (member type *variable-declarations*)
@@ -1038,8 +1038,8 @@
 #+NEW
 (defun walk-setq (form context env)
   (if (cdddr form)
-      (let* ((expanded (let ((rforms nil)
-			     (tail (cdr form)))
+      (let* ((expanded (let* ((rforms nil)
+			      (tail (cdr form)))
 			 (loop (when (null tail) (return (nreverse rforms)))
 			       (let ((var (pop tail)) (val (pop tail)))
 				 (push `(setq ,var ,val) rforms)))))
@@ -1089,8 +1089,8 @@
 
 (defun walk-compiler-let (form context old-env)
   (declare (ignore context))
-  (let ((vars ())
-	(vals ()))
+  (let* ((vars ())
+	 (vals ()))
     (dolist (binding (second form))
       (cond ((symbolp binding) (push binding vars) (push nil vals))
 	    (t
@@ -1160,7 +1160,7 @@
 					 new-env))))))
 
 (defun walk-if (form context env)
-  (let ((predicate (second form))
+  (let*((predicate (second form))
 	(arm1 (third form))
 	(arm2 
 	  (if (cddddr form)

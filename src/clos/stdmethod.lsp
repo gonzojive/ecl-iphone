@@ -32,11 +32,11 @@
 
 
 (defmethod function-keywords ((method standard-method))
-  (let ((lambda-list (slot-value method 'lambda-list))
-	arg
-	key-list
-	keyp
-	allowed)
+  (let* ((lambda-list (slot-value method 'lambda-list))
+	 arg
+	 key-list
+	 keyp
+	 allowed)
     (dolist (arg lambda-list (setq key-list (nreverse key-list)))
       (cond 
        ((eq arg '&key)

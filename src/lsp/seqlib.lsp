@@ -40,8 +40,8 @@
 
 (eval-when (compile eval)
   (defmacro with-start-end (start end seq &body body)
-    `(let ((,start (if ,start (the-start ,start) 0))
-	   (,end (the-end ,end ,seq))) 
+    `(let* ((,start (if ,start (the-start ,start) 0))
+	    (,end (the-end ,end ,seq))) 
 	(declare (fixnum ,start ,end))
 	(unless (<= ,start ,end) (bad-seq-limit ,start ,end))
 	,@ body))
@@ -162,15 +162,15 @@
 		(within-count '(< k count))
 		(kount-0 '(k 0))
 		(kount-up '(setq k (1+  k))))
-	   (let ((iterate-i '(i start (1+ i)))
-		 (endp-i '(>= i end))
-		 (iterate-i-everywhere '(i 0 (1+ i)))
-		 (endp-i-everywhere '(>= i l)))
+	   (let* ((iterate-i '(i start (1+ i)))
+		  (endp-i '(>= i end))
+		  (iterate-i-everywhere '(i 0 (1+ i)))
+		  (endp-i-everywhere '(>= i l)))
 	     (setq normal-form ,normal-form))
-	   (let ((iterate-i '(i (1- end) (1- i)))
-		 (endp-i '(< i start))
-		 (iterate-i-everywhere '(i (1- l) (1- i)))
-		 (endp-i-everywhere '(< i 0)))
+	   (let* ((iterate-i '(i (1- end) (1- i)))
+		  (endp-i '(< i start))
+		  (iterate-i-everywhere '(i (1- l) (1- i)))
+		  (endp-i-everywhere '(< i 0)))
 	     (setq from-end-form ,(or from-end-form normal-form)))
            `(defun ,f (,@args item sequence
                        &key from-end test test-not
@@ -224,7 +224,7 @@
 (defseq remove () t nil t
       ;; Ordinary run
       `(if (listp sequence)
-           (let ((l sequence) (l1 nil))
+           (let* ((l sequence) (l1 nil))
              (do ((i 0 (1+ i)))
                  ((>= i start))
                (declare (fixnum i))

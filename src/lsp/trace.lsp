@@ -57,8 +57,8 @@ SI::ARGS."
 
 (defun trace-one (spec)
   (declare (si::c-local))
-  (let (break exitbreak (entrycond t) (exitcond t) entry exit
-	      step (barfp t) fname oldf)
+  (let* (break exitbreak (entrycond t) (exitcond t) entry exit
+	       step (barfp t) fname oldf)
     (cond ((atom spec)
 	   (setq fname spec))
 	  ((eq 'SETF (car spec))
@@ -107,8 +107,7 @@ SI::ARGS."
     (eval
      `(defun ,fname (&rest args)
 	(block ,+tracing-block+		; used to recognize traced functions
-	  (let (values
-		(*trace-level* (1+ *trace-level*)))
+	  (let* (values (*trace-level* (1+ *trace-level*)))
 	    (if *inside-trace*
 		(setq values (multiple-value-list (apply ',oldf args)))
 		(let ((*inside-trace* t))
@@ -265,9 +264,9 @@ for Stepper mode commands."
   `(step* ',form))
 
 (defun step* (form)
-  (let ((*step-quit* nil)
-	(*step-function* nil)
-	(*step-level* 0))
+  (let* ((*step-quit* nil)
+	 (*step-function* nil)
+	 (*step-level* 0))
     (stepper form nil)))
 
 (defun stepper (form &optional env)
@@ -293,10 +292,10 @@ for Stepper mode commands."
       (let ((*step-function* nil))
 	(return-from stepper (stepper form env)))
       (return-from stepper (evalhook form #'stepper nil env))))
-  (let ((*step-level* (1+ *step-level*))
-	(*step-form* form)
-	(*step-env* env)
-	values indent prompt)
+  (let* ((*step-level* (1+ *step-level*))
+	 (*step-form* form)
+	 (*step-env* env)
+	 values indent prompt)
     (setq indent (min (* *tpl-level* 2) 20))
     (setq prompt
 	  #'(lambda ()

@@ -66,7 +66,7 @@
 	      property-list)))
 
     ;; compute retained local slots and update instance:
-    (let ((new-i 0)
+    (let*((new-i 0)
 	  (old-i 0)
 	  (index-table (slot-index-table old-class))
 	  name

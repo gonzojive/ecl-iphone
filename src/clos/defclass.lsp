@@ -85,8 +85,8 @@
 
 (defun parse-defclass (args)
   (declare (si::c-local))
-  (let (name superclasses slots options
-	     metaclass-name default-initargs documentation)
+  (let* (name superclasses slots options
+	 metaclass-name default-initargs documentation)
     (unless args
       (error "Illegal defclass form: the class name, the superclasses and the slots should always be provided"))
     (setq name (pop args))
@@ -137,7 +137,7 @@
   (keyword-bind (metaclass-name superiors inferiors slots methods)
 		init-options 
     (declare (ignore superiors inferiors methods))
-    (let (instance-slots shared-slots)
+    (let* (instance-slots shared-slots)
       (dolist (slot slots)
 	(case (slotd-allocation slot)
 	  (:INSTANCE (push slot instance-slots))
@@ -358,8 +358,8 @@
 
 (defun collect-slotds (classes slots)
   (flet ((combine-slotds (new-slotd old-slotd)
-	   (let ((new-type (slotd-type new-slotd))
-		 (old-type (slotd-type old-slotd)))
+	   (let* ((new-type (slotd-type new-slotd))
+		  (old-type (slotd-type old-slotd)))
 	     (setf (slotd-initargs new-slotd)
 		   (union (slotd-initargs new-slotd)
 			  (slotd-initargs old-slotd)))
@@ -380,8 +380,8 @@
 			 (T `(and ,new-type ,old-type)))))
 	   new-slotd))
 
-    (let ((collected-slots)
-	  (new-slot))
+    (let* ((collected-slots)
+	   (new-slot))
       (dolist (sc classes)
 	(dolist (slot (class-slots sc))
 	  (if (setq new-slot
@@ -442,7 +442,7 @@
      move)
     (transitive-closure
      (class precedence-alist)
-     (let ((closure ()))
+     (let* ((closure ()))
        (labels ((walk (element path)
 		      (when (member element path :test #'eq)
 			    (class-ordering-error
@@ -459,9 +459,9 @@
    (multiple-value-bind
     (cpl precedence-alist)
     (walk-supers superclasses nil nil)
-    (let ((tail cpl)
-	  (element nil)
-	  (move nil))
+    (let* ((tail cpl)
+	   (element nil)
+	   (move nil))
       ;; For each class in the cpl, make sure that there are no classes after
       ;; it which should be before it.  We do this by cdring down the list,
       ;; making sure that for each element of the list, none of its
@@ -505,8 +505,8 @@
     (let ((explanations ()))
       (do ((tail path (cdr tail)))
 	  ((null (cdr tail)))
-	(let ((after (cadr tail))
-	      (before (car tail)))
+	(let* ((after (cadr tail))
+	       (before (car tail)))
 	  (if (member after (class-superiors before) :test #'eq)
 	      (push (format nil
 			    "~% ~A must precede ~A -- ~

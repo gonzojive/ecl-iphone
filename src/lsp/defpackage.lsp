@@ -124,8 +124,8 @@
 	     output)
 	   (option-values (option options &aux output)
 	     (dolist (o options)
-	       (let ((o-option (first o))
-		     (o-symbols (mapcar #'to-string (cdr o))))
+	       (let* ((o-option (first o))
+		      (o-symbols (mapcar #'to-string (cdr o))))
 		 (when (string= o-option option)
 		   (setq output (union o-symbols output :test #'equal)))))
 	     output))
@@ -134,16 +134,16 @@
 	(warn "DEFPACKAGE option ~s specified more than once.  The first value \"~a\" will be used."
 	      option (first (option-values option options)))))
     (setq name (string name))
-    (let ((nicknames (option-values ':nicknames options))
-	  (documentation (option-values ':documentation options))
-	  (shadowed-symbol-names (option-values ':shadow options))
-	  (interned-symbol-names (option-values ':intern options))
-	  (exported-symbol-names (option-values ':export options))
-	  (shadowing-imported-from-symbol-names-list
-	   (option-values-list ':shadowing-import-from options))
-	  (imported-from-symbol-names-list
-	   (option-values-list ':import-from options))
-	  (exported-from-package-names (option-values ':export-from options)))
+    (let* ((nicknames (option-values ':nicknames options))
+	   (documentation (option-values ':documentation options))
+	   (shadowed-symbol-names (option-values ':shadow options))
+	   (interned-symbol-names (option-values ':intern options))
+	   (exported-symbol-names (option-values ':export options))
+	   (shadowing-imported-from-symbol-names-list
+	    (option-values-list ':shadowing-import-from options))
+	   (imported-from-symbol-names-list
+	    (option-values-list ':import-from options))
+	   (exported-from-package-names (option-values ':export-from options)))
       (dolist (duplicate (find-duplicates shadowed-symbol-names
 					  interned-symbol-names
 					  (loop for list in shadowing-imported-from-symbol-names-list append (rest list))

@@ -25,7 +25,7 @@
   (intern (symbol-name symbol) *keyword-package*))
 
 (defmacro doplist ((key val) plist &body body)
-  `(let ((.plist-tail. ,plist) ,key ,val)
+  `(let* ((.plist-tail. ,plist) ,key ,val)
      (loop (when (null .plist-tail.) (return nil))
 	   (setq ,key (pop .plist-tail.))
 	   (when (null .plist-tail.)

@@ -13,8 +13,8 @@
 ;;; BOOT
 
 (defun boot ()
-  (let ((class (find-class 'class))
-	(built-in-class (find-class 'built-in-class)))
+  (let* ((class (find-class 'class))
+	 (built-in-class (find-class 'built-in-class)))
 
     ;; class CLASS	--------
     (setf (class-slots class)

@@ -222,9 +222,9 @@
       ;; unbound."
       ;; "The values of slots specified as shared in the class Cfrom and
       ;; as local in the class Cto are retained."
-      (let ((new-i 0)
-	    (old-i 0)
-	    retained-correspondance)
+      (let* ((new-i 0)
+	     (old-i 0)
+	     retained-correspondance)
 	(declare (fixnum new-i))
 	(dolist (new-slot new-slotds)
 	  (setq old-i (position (slotd-name new-slot) old-slotds
@@ -398,15 +398,15 @@
 ;;;                                                             optimizers
 
 (defmethod OPTIMIZE-SLOT-VALUE ((class standard-class) form)
-  (let ((instance (second form))
-	(slot-name (third form)))
+  (let* ((instance (second form))
+	 (slot-name (third form)))
     `(standard-instance-access ,instance
 			       ',(reduce-constant slot-name) . ,(cdddr form))))
 
 (defmethod OPTIMIZE-SET-SLOT-VALUE ((class standard-class) form)
-  (let ((instance (cadadr form))
-	(slot-name (caddr (second form)))
-	(new-value (third form)))
+  (let* ((instance (cadadr form))
+	 (slot-name (caddr (second form)))
+	 (new-value (third form)))
     `(standard-instance-access ,instance
 			       ',(reduce-constant slot-name) ,new-value)))
 

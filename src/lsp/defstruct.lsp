@@ -53,9 +53,9 @@
 (defun make-constructor (name constructor type named slot-descriptions)
   (declare (ignore named)
 	   (si::c-local))
-  (let ((slot-names
-         ;; Collect the slot-names.
-         (mapcar #'(lambda (x)
+  (let*((slot-names
+	  ;; Collect the slot-names.
+	  (mapcar #'(lambda (x)
                      (cond ((null x)
                             ;; If the slot-description is NIL,
                             ;;  it is in the padding of initial-offset.
@@ -268,7 +268,7 @@
 
 (defun parse-slot-description (slot-description offset)
   (declare (si::c-local))
-  (let (slot-name default-init slot-type read-only)
+  (let* (slot-name default-init slot-type read-only)
     (cond ((atom slot-description)
            (setq slot-name slot-description))
           ((endp (cdr slot-description))
@@ -366,7 +366,7 @@
          )
 Defines a structure named by NAME.  The doc-string DOC, if supplied, is saved
 as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
-  (let ((slot-descriptions slots)
+  (let*((slot-descriptions slots)
 	;;#+clos
 	local-slot-descriptions
         options

@@ -418,7 +418,7 @@ The top-level loop of ECL.
 When ECL is invoked, it evaluates (FUNCALL 'SI::TOP-LEVEL).  To change the top-
 level of ECL, redefine SI::TOP-LEVEL and save the core image into a program
 file.  When the saved image is invoked, it will start the redefined top-level."
-  (let (+ ++ +++ - * ** *** / // ///)
+  (let* (+ ++ +++ - * ** *** / // ///)
 
     (unless *lisp-initialized*
       (catch *quit-tag*
@@ -626,7 +626,7 @@ file.  When the saved image is invoked, it will start the redefined top-level."
   (values))
 
 (defun tpl-variables-command (&optional no-values)
-  (let ((*print-level* 2)
+  (let*((*print-level* 2)
 	(*print-length* 4)
 	(*print-pretty* t)
         (fun (ihs-fun *ihs-current*))
@@ -686,7 +686,7 @@ file.  When the saved image is invoked, it will start the redefined top-level."
       (do ((i *ihs-top* (si::ihs-prev i))
 	   (k (if (integerp n) n Cnil) (and k (1- k))))
 	  ((= k 0) (values))
-	(let ((j (or (sch-frs-base *frs-base* i) (1+ *frs-top*)))
+	(let*((j (or (sch-frs-base *frs-base* i) (1+ *frs-top*)))
 	      (*print-level* 2)
 	      (*print-length* 4)
 	      (*print-pretty* t))

@@ -536,7 +536,7 @@ second value is T."
 
 
 (defun sub-interval-p (i1 i2)
-  (let (low1 high1 low2 high2)
+  (let* (low1 high1 low2 high2)
     (if (endp i1)
         (setq low1 '* high1 '*)
         (if (endp (cdr i1))
@@ -581,7 +581,7 @@ second value is T."
 
 (defun in-interval-p (x interval)
   (declare (si::c-local))
-  (let (low high)
+  (let* (low high)
     (if (endp interval)
         (setq low '* high '*)
         (if (endp (cdr interval))

@@ -26,8 +26,8 @@
        (setq symbol (get (second symbol) 'setf-symbol)))
     (if (symbolp type)
 	(putprop symbol *source-pathname* type)
-	(let ((alist (get symbol (car type)))
-	      (spec (cdr type)))
+	(let* ((alist (get symbol (car type)))
+	       (spec (cdr type)))
 	  (if alist
 	      (let ((entry (assoc spec alist :test #'equal)))
 		(if entry
@@ -153,7 +153,7 @@ Displays information about storage allocation in the following format.
 	* number of pages ECL can use.
 The number of times the garbage collector has been called is not shown, if the
 number is zero.  The optional X is simply ignored."
-  (let (npage info-list link-alist)
+  (let* (npage info-list link-alist)
     (multiple-value-bind
 	  (maxpage leftpage ncbpage maxcbpage ncb cbgbccount
 		   holepage l)
@@ -163,12 +163,12 @@ number is zero.  The optional X is simply ignored."
 	   (tl *type-list* (cdr tl))
 	   (i 0 (+ i (if (nth 2 l) (nth 2 l) 0))))
 	  ((null l) (setq npage i))
-	(let ((typename (car tl))
-	      (nused (nth 0 l))
-	      (nfree (nth 1 l))
-	      (npage (nth 2 l))
-	      (maxpage (nth 3 l))
-	      (gbccount (nth 4 l)))
+	(let* ((typename (car tl))
+	       (nused (nth 0 l))
+	       (nfree (nth 1 l))
+	       (npage (nth 2 l))
+	       (maxpage (nth 3 l))
+	       (gbccount (nth 4 l)))
 	  (if nused
 	      (push (list typename npage maxpage
 			  (if (zerop (+ nused nfree))

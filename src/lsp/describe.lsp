@@ -26,7 +26,7 @@
 
 (defun select-P (object)
   (declare (si::c-local))
-  (let ((*print-pretty* t) (*print-level* nil) (*print-length* nil))
+  (let* ((*print-pretty* t) (*print-level* nil) (*print-length* nil))
        (prin1 object)
        (terpri)))
 
@@ -145,7 +145,7 @@
 
 (defun inspect-symbol (symbol)
   (declare (si::c-local))
-  (let ((p (symbol-package symbol)))
+  (let* ((p (symbol-package symbol)))
     (cond ((null p)
            (format t "~:@(~S~) - uninterned symbol" symbol))
           ((eq p (find-package "KEYWORD"))

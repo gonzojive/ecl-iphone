@@ -35,12 +35,12 @@ is used."
 Executes STATEMENTs once for each symbol in PACKAGE (which defaults to the
 current package), with VAR bound to the symbol.  Then evaluates RESULT (which
 defaults to NIL) and returns all values."
-  (let ((p (gensym)) (i (gensym))
-        (x (gensym)) (y (gensym))
-	declaration)
+  (let* ((p (gensym)) (i (gensym))
+	 (x (gensym)) (y (gensym))
+	 declaration)
     (multiple-value-setq (declaration body doc)
       (find-declarations body nil))
-    `(let ((,p (coerce-to-package ,package)) ,var)
+    `(let* ((,p (coerce-to-package ,package)) ,var)
        ,@declaration
        (multiple-value-bind (,y ,x)
 	    (package-size ,p)
@@ -62,13 +62,12 @@ Establishes a NIL block and executes STATEMENTs once for each external symbol
 in PACKAGE (which defaults to the current package), with VAR bound to the
 variable.  Then evaluates RESULT (which defaults to NIL) and returns all
 values."
-  (let ((p (gensym))
-	(i (gensym))
-        declaration)
+  (let* ((p (gensym))
+	 (i (gensym))
+	 declaration)
     (multiple-value-setq (declaration body)
       (find-declarations body nil))
-    `(let ((,p (coerce-to-package ,package)) ,var)
-       
+    `(let* ((,p (coerce-to-package ,package)) ,var)
        ,@declaration
        (dotimes (,i (the fixnum (package-size ,p))
 		 (progn (setq ,var nil) ,result-form))

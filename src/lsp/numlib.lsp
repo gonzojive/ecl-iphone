@@ -94,8 +94,8 @@ Returns the arc cosine of NUMBER."
   (if (complexp z)
       ;; For complex Z, compute the real and imaginary parts
       ;; separately to get better precision.
-      (let ((x (realpart z))
-	    (y (imagpart z)))
+      (let* ((x (realpart z))
+	     (y (imagpart z)))
 	(complex (* (sinh x) (cos y))
 		 (* (cosh x) (sin y))))
       (let ((limit #.(expt (* double-float-epsilon 45/2) 1/5)))
@@ -122,8 +122,8 @@ Returns the arc cosine of NUMBER."
   (if (complexp z)
       ;; For complex Z, compute the real and imaginary parts
       ;; separately to get better precision.
-      (let ((x (realpart z))
-	    (y (imagpart z)))
+      (let* ((x (realpart z))
+	     (y (imagpart z)))
 	(complex (* (cosh x) (cos y))
 		 (* (sinh x) (sin y))))
       ;; For real Z, there's no chance of round-off error, so

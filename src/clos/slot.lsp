@@ -19,7 +19,7 @@
 
 (defun PARSE-SLOT (slot)
   (declare (si::c-local))
-  (let ((name nil)
+  (let*((name nil)
         (initargs nil)
         (initform 'INITFORM-UNSUPPLIED)	; default
         (accessors ())
@@ -34,7 +34,7 @@
           ((null (cdr slot))  (setq name (car slot)))
           (t
            (setq name (car slot))
-           (let ((options (cdr slot))
+           (let*((options (cdr slot))
 		 (option nil)
 		 (value nil))
              (loop (when (null options) (return t))

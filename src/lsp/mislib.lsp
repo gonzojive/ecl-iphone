@@ -17,14 +17,14 @@
   "Syntax: (time form)
 Evaluates FORM, outputs the realtime and runtime used for the evaluation to
 *TRACE-OUTPUT*, and then returns all values of FORM."
-  (let ((real-start (gentemp))
+  (let*((real-start (gentemp))
 	(real-end (gentemp))
 	(run-start (gentemp))
 	(run-end (gentemp))
 	(gc-start (gentemp))
 	(gc-end (gentemp))
 	(x (gentemp)))
-    `(let ((,real-start (get-internal-real-time))
+    `(let*((,real-start (get-internal-real-time))
 	   (,run-start (get-internal-run-time))
 	   #-boehm-gc(,gc-start (sys:gc-time))
 	   ,real-end ,run-end ,gc-end ,x)
@@ -67,7 +67,7 @@ Evaluates FORM, outputs the realtime and runtime used for the evaluation to
   "Args: (integer &optional (timezone (si::get-local-time-zone)))
 Returns as nine values the day-and-time represented by INTEGER.  See GET-
 DECODED-TIME."
-  (let (sec min hour day month year dow days dstp)
+  (let* (sec min hour day month year dow days dstp)
     (unless tz
       (setq tz (get-local-time-zone)
 	    dstp (daylight-saving-time-p ut)))
