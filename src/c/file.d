@@ -766,6 +766,27 @@ ecl_read_byte8(cl_object strm)
 	return c;
 }
 
+static void
+flush_output_stream_binary(cl_object strm)
+{
+	if (strm->stream.buffer_state == -1) {
+		/* buffer is prepared for writing: flush it */
+		unsigned char b = strm->stream.bit_buffer;
+		cl_index nb = strm->stream.bits_left;
+		if (strm->stream.mode == smm_io) {
+			/* I/O stream, try to merge with existing byte */
+			int c;
+			fseek(strm->stream.file, 0, SEEK_CUR); /* I/O synchronization, required by ANSI */
+			c = ecl_read_byte8(strm);
+			if (c != EOF)
+				b |= (unsigned char)(c0 & ~MAKE_BIT_MASK(nb));
+			fseek(strm->stream.file, -1, SEEK_CUR);
+		}
+		ecl_write_byte8(b, strm);
+		fseek(strm->stream.file, 0, SEEK_CUR); /* I/O synchronization */
+	}
+}
+
 cl_object
 ecl_read_byte(cl_object strm)
 {
@@ -851,14 +872,7 @@ BEGIN:
 		nb = strm->stream.bits_left;
 		if (strm->stream.buffer_state == -1) {
 			/* buffer is prepared for writing: flush it */
-			int c0;
-			fseek(strm->stream.file, 0, SEEK_CUR); /* I/O synchronization, required by ANSI */
-			c0 = ecl_read_byte8(strm);
-			if (c0 == EOF)
-				return Cnil;
-			b |= (unsigned char)(c0 & ~MAKE_BIT_MASK(nb));
-			fseek(strm->stream.file, -1, SEEK_CUR);
-			ecl_write_byte8(b, strm);
+			flush_output_stream_binary(strm);
 			b >>= nb;
 			nb = (8-nb);
 		}
@@ -1498,6 +1512,9 @@ BEGIN:
 		FILE *fp = strm->stream.file;
 		if (fp == NULL)
 			wrong_file_handler(strm);
+		if ((strm->stream.byte_size & 7) && strm->stream.buffer_state == -1) {
+			flush_output_stream_binary(strm);
+		}
 		if (fflush(fp) == EOF)
 			io_error(strm);
 		break;
