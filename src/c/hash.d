@@ -425,19 +425,19 @@ cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
   	if (!FIXNUMP(size) || FIXNUM_MINUSP(size))
 		FEerror("~S is an illegal hash-table size.", 1, size);
 	hsize = fix(size);
-	if ((FIXNUMP(rehash_size) && 0 < fix(rehash_size)) ||
-	    (type_of(rehash_size) == t_shortfloat && 1.0 < sf(rehash_size)) ||
-	    (type_of(rehash_size) == t_longfloat && 1.0 < lf(rehash_size)))
+	if ((FIXNUMP(rehash_size) && 0 <= fix(rehash_size)) ||
+	    (type_of(rehash_size) == t_shortfloat && 1.0 <= sf(rehash_size)) ||
+	    (type_of(rehash_size) == t_longfloat && 1.0 <= lf(rehash_size)))
 		;
 	else
 		FEerror("~S is an illegal hash-table rehash-size.",
 			1, rehash_size);
 	if ((FIXNUMP(rehash_threshold) &&
-	     0 < fix(rehash_threshold) && fix(rehash_threshold) < fix(size)) ||
+	     0 < fix(rehash_threshold) && fix(rehash_threshold) <= fix(size)) ||
 	    (type_of(rehash_threshold) == t_shortfloat &&
-	     0.0 < sf(rehash_threshold) && sf(rehash_threshold) < 1.0) ||
+	     0.0 < sf(rehash_threshold) && sf(rehash_threshold) <= 1.0) ||
 	    (type_of(rehash_threshold) == t_longfloat &&
-	     0.0 < lf(rehash_threshold) && lf(rehash_threshold) < 1.0))
+	     0.0 < lf(rehash_threshold) && lf(rehash_threshold) <= 1.0))
 		;
 	else
 		FEerror("~S is an illegal hash-table rehash-threshold.",

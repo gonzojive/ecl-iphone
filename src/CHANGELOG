@@ -1450,6 +1450,9 @@ ECLS 0.9b
   - EQL specializers were compared to the arguments using EQ instead
     of EQL.
 
+  - Method hash tables could grow indefinitely. Now they are limited
+    to 512 elements.
+
 * System design:
 
   - The bytecodes compiler now works with character arrays. Bytecodes
