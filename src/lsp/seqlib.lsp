@@ -13,7 +13,7 @@
 
 (in-package "SYSTEM")
 
-(declaim (ftype seqtype (t) t))
+(declaim (ftype (function (t) t) seqtype))
 (defun seqtype (sequence)
   (declare (si::c-local))
   (cond ((listp sequence) 'list)
@@ -22,14 +22,14 @@
         ((vectorp sequence) (list 'array (array-element-type sequence)))
         (t (error "~S is not a sequence." sequence))))
 
-(declaim (ftype call-test (t t t t) t))
+(declaim (ftype (function (t t t t) t) call-test))
 (defun call-test (test test-not item keyx)
   (declare (si::c-local))
   (cond (test (funcall test item keyx))
         (test-not (not (funcall test-not item keyx)))
         (t (eql item keyx))))
 
-(declaim (ftype test-error() t))
+(declaim (ftype (function () t) test-error))
 (defun test-error()
   (declare (si::c-local))
   (error "both test and test are supplied"))
@@ -618,7 +618,7 @@ evaluates to NIL.  See STABLE-SORT."
    (sort l)))
 
 
-(declaim (ftype quick-sort (t fixnum fixnum t t) t))
+(declaim (ftype (function (t fixnum fixnum t t) t) quick-sort))
 
 (defun quick-sort (seq start end pred key)
        (declare (fixnum start end))
