@@ -1,19 +1,21 @@
+(defconstant +clos-module-files+
+'("@srcdir@/walk.lsp"
+  "@srcdir@/macros.lsp"
+  "@srcdir@/kernel.lsp"
+  "@srcdir@/method.lsp"
+  "@srcdir@/slot.lsp"
+  "@srcdir@/combin.lsp"
+  "@srcdir@/precomp.lsp"
+  "@srcdir@/boot.lsp"
+  "@srcdir@/defclass.lsp"
+  "@srcdir@/standard.lsp"
+  "@srcdir@/print.lsp"
+  "@srcdir@/change.lsp"
+  "@srcdir@/builtin.lsp"
+  "@srcdir@/stdmethod.lsp"
+  "@srcdir@/generic.lsp"
+  "@srcdir@/fixup.lsp"
+  "@srcdir@/inspect.lsp"
+  "@srcdir@/conditions.lsp"))
 
-(load "@srcdir@/walk")
-(load "@srcdir@/macros")
-(load "@srcdir@/kernel")
-(load "@srcdir@/method")
-(load "@srcdir@/slot")
-(load "@srcdir@/combin")
-(load "@srcdir@/precomp")
-(load "@srcdir@/boot")
-(load "@srcdir@/defclass")
-(load "@srcdir@/standard")
-(load "@srcdir@/print")
-(load "@srcdir@/change")
-(load "@srcdir@/builtin")
-(load "@srcdir@/stdmethod")
-(load "@srcdir@/generic")
-(load "@srcdir@/fixup")
-(load "@srcdir@/inspect")
-(load "@srcdir@/conditions")
+(mapc #'(lambda (x) (load x :verbose nil)) +clos-module-files+)

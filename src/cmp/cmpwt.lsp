@@ -60,11 +60,12 @@
 
 (defun wt-h1 (form)
   (if (consp form)
-    (let ((fun (get-sysprop (car form) 'wt)))
-      (if fun
-        (apply fun (cdr form))
-        (cmperr "The location ~s is undefined." form)))
-    (princ form *compiler-output2*))
+      (let ((fun (get-sysprop (car form) 'wt-loc)))
+	(if fun
+	    (let ((*compiler-output1* *compiler-output2*))
+	      (apply fun (cdr form)))
+	    (cmperr "The location ~s is undefined." form)))
+      (princ form *compiler-output2*))
   nil)
 
 ;;; This routine converts lisp data into C-strings. We have to take
@@ -72,15 +73,15 @@
 ;;; to split long lines using  the fact that multiple strings are joined
 ;;; together by the compiler.
 ;;;
-(defun wt-filtered-data (string)
+(defun wt-filtered-data (string stream)
   (let ((N (length string))
 	(wt-data-column 80))
-    (incf *wt-string-size* (1+ N)) ; 1+ accounts for space
-    (format *compiler-output-data* "~%\"")
+    (incf *wt-string-size* (1+ N)) ; 1+ accounts for a blank space
+    (format stream "~%\"")
     (dotimes (i N)
       (decf wt-data-column)
       (when (< wt-data-column 0)
-	(format *compiler-output-data* "\"~% \"")
+	(format stream "\"~% \"")
 	(setq wt-data-column 79))
       (let ((x (aref string i)))
 	(cond
@@ -89,53 +90,130 @@
 	   (case x
 	     ; We avoid a trailing backslash+newline because some preprocessors
 	     ; remove them.
-	     (#\Newline (princ "\\n" *compiler-output-data*))
-	     (#\Tab (princ "\\t" *compiler-output-data*))
-	     (t (format *compiler-output-data* "\\~3,'0o" (char-code x)))))
+	     (#\Newline (princ "\\n" stream))
+	     (#\Tab (princ "\\t" stream))
+	     (t (format stream "\\~3,'0o" (char-code x)))))
 	  ((char= x #\\)
-	   (princ "\\\\" *compiler-output-data*))
+	   (princ "\\\\" stream))
 	  ((char= x #\")
-	   (princ "\\\"" *compiler-output-data*))
-	  (t (princ x *compiler-output-data*)))))
-    (princ " \"" *compiler-output-data*)
+	   (princ "\\\"" stream))
+	  (t (princ x stream)))))
+    (princ " \"" stream)
     string))
 
-;;; This routine outputs some data into the C file data section. The objects
-;;; which are output include all symbols and all constants. To avoid
-;;; superfluous package names when printing symbols, we bind *package* to the
-;;; package of the last in-package form before printing anything.
-(defvar *compiler-package* (find-package "CL"))
+;;; ======================================================================
+;;;
+;;; DATA FILES
+;;;
 
-(defun wt-data (expr)
+(defun data-init (&optional filename)
+  (if (and filename (probe-file filename))
+    (with-open-file (s filename :direction :input)
+      (setf *objects* (read s)
+	    *next-vv* (read s)))
+    (setf *objects* '()
+	  *next-vv* -1)))
+
+(defun data-size ()
+  (1+ *next-vv*))
+
+(defun data-dump (stream &optional as-lisp-file &aux must-close)
+  (etypecase stream
+    (null (return-from data-dump))
+    ((or pathname string)
+     (setf stream (open stream :direction :output
+			:if-does-not-exist :create
+			:if-exists :overwrite)))
+    (stream))
   (let ((*print-radix* nil)
-        (*print-base* 10)
-        (*print-circle* t)
-        (*print-pretty* nil)
-        (*print-level* nil)
-        (*print-length* nil)
-        (*print-case* :downcase)
-        (*print-gensym* t)
-        (*print-array* t)
+	(*print-base* 10)
+	(*print-circle* t)
+	(*print-pretty* nil)
+	(*print-level* nil)
+	(*print-length* nil)
+	(*print-case* :downcase)
+	(*print-gensym* t)
+	(*print-array* t)
 	(*read-default-float-format* 'single-float)
-	;(*package* *compiler-package*)
-	;(sys::*print-package* (symbol-package nil))
-	(sys::*print-package* *compiler-package*)
-        (sys::*print-structure* t))
-    (wt-filtered-data
-     (typecase expr
-       (FUNCTION
-	(prin1-to-string (sys:compiled-function-name expr)))
-       (PACKAGE
-	(format nil "~%#.(find-package ~S)" (package-name expr)))
-       (t (prin1-to-string expr))))
-    nil))
+	(sys::*print-package* (find-package "CL"))
+	(sys::*print-structure* t))
+    (if as-lisp-file
+	(progn
+	  (print *objects* stream)
+	  (print *next-vv* stream))
+	(unless (zerop (data-size))
+	  (wt-data-begin stream)
+	  (wt-filtered-data
+	   (subseq (prin1-to-string (nreverse (mapcar #'car *objects*))) 1)
+	   stream)
+	  (wt-data-end stream))))
+  (when must-close
+    (close stream))
+  (setf *objects* nil
+	*next-vv* -1))
 
-(defun wt-data-begin ()
+(defun wt-data (expr stream)
+  (wt-filtered-data
+   (typecase expr
+     (FUNCTION
+      (prin1-to-string (sys:compiled-function-name expr)))
+     (PACKAGE
+      (format nil "~%#.(find-package ~S)" (package-name expr)))
+     (t (prin1-to-string expr)))
+   stream))
+
+(defun wt-data-begin (stream)
   (setq *wt-string-size* 0)
   (setq *wt-data-column* 80)
-  (princ "static const char compiler_data_text[] = " *compiler-output-data*)
-  (wt-filtered-data (format nil "#!0 ~s" "CL"))
+  (princ "static const char compiler_data_text[] = " stream)
   nil)
 
-(defun wt-data-end ()
-  (princ #\; *compiler-output-data*))
+(defun wt-data-end (stream)
+  (princ #\; stream)
+  (format stream "~%#define compiler_data_text_size ~D~%" *wt-string-size*)
+  (setf *wt-string-size* 0))
+
+(defun data-empty-loc ()
+  (let ((x `(VV ,(incf *next-vv*))))
+    (push (list 0 x *next-vv*) *objects*)
+    x))
+
+(defun add-object (object &optional (duplicate nil))
+  (when (typep object '(or function package))
+    (error "Object ~S cannot be externalized" object))
+  (let ((x (assoc object *objects* :test 'equal))
+	(found nil))
+    (cond ((and x duplicate)
+	   (setq found `(VV ,(incf *next-vv*)))
+	   (push (list object found *next-vv* (- (1+ (third x)))) *objects*)
+	   found)
+	  (x
+	   (second x))
+	  ((and (not duplicate)
+		(symbolp object)
+		(multiple-value-setq (found x) (si::mangle-name object)))
+	   x)
+	  (t (setq x `(VV ,(incf *next-vv*)))
+	     (push (list object x *next-vv*) *objects*)
+	     x))))
+
+(defun add-symbol (symbol)
+  (add-object symbol))
+
+(defun add-keywords (keywords)
+  ;; We have to build, in the vector VV[], a sequence with all
+  ;; the keywords that this function uses. It does not matter
+  ;; whether each keyword has appeared separately before, because
+  ;; cl_parse_key() needs the whole list. However, we can reuse
+  ;; keywords lists from other functions when they coincide with ours.
+  ;; We search for keyword lists that are similar. However, the list
+  ;; *OBJECTS* contains elements in decreasing order!!!
+  (let ((x (search (reverse keywords) *objects*
+		   :test #'(lambda (k rec) (eq k (first rec))))))
+    (if x
+	(progn
+	  (cmpnote "Reusing keywords lists for ~S" keywords)
+	  (second (elt *objects* (+ x (length keywords) -1))))
+	(let ((x (add-object (first keywords) t)))
+	  (dolist (k (rest keywords) x)
+	    (add-object k t))))))

@@ -222,7 +222,6 @@ The default value is NIL.")
 (defvar *compiler-input*)
 (defvar *compiler-output1*)
 (defvar *compiler-output2*)
-(defvar *compiler-output-data*)
 
 ;;; --cmpblock.lsp--
 ;;;

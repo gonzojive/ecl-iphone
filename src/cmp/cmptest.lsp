@@ -143,7 +143,6 @@
   (terpri)
   (setq *compiler-output1* *standard-output*)
   (setq *compiler-output2* *standard-output*)
-  (setq *compiler-output-data* *standard-output*)
   (t1expr *previous-form*)
   (catch *cmperr-tag* (ctop-write "test"))
   t)

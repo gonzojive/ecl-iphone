@@ -648,9 +648,19 @@ sharp_C_reader(cl_object in, cl_object c, cl_object d)
 	if (x != OBJNULL)
 		FEreader_error("A right parenthesis is expected.", in, 0);
 	if (read_suppress)
-		@(return Cnil)
-	/* INV: make_complex() checks its types */
-	x = make_complex(real, imag);
+		@(return Cnil);
+	/* INV: make_complex() checks its types. When reading circular
+	   structures, we cannot check the types of the elements, and we
+	   must build the complex number by hand. */
+	if ((CONSP(real) || CONSP(imag)) &&
+	    !Null(SYM_VAL(@'si::*sharp-eq-context*')))
+	{
+		x = cl_alloc_object(t_complex);
+		x->complex.real = real;
+		x->complex.imag = imag;
+	} else {
+		x = make_complex(real, imag);
+	}
 	@(return x)
 }
 
@@ -883,44 +893,6 @@ sharp_dot_reader(cl_object in, cl_object c, cl_object d)
 	@(return in)
 }
 
-/*
-	For fasload.
-*/
-static cl_object
-sharp_exclamation_reader(cl_object in, cl_object c, cl_object d)
-{
-	cl_fixnum code;
-
-	if(d != Cnil && !read_suppress)
-		extra_argument('!', in, d);
-	if (read_suppress)
-		@(return Cnil)
-	code = fixint(read_object(in));
-	switch (code) {
-	case 0: {
-		cl_object name = read_object(in);
-		cl_object package = find_package(name);
-		if (Null(package)) {
-			package = make_package(name, Cnil, Cnil);
-			ecl_package_list = CDR(ecl_package_list);
-			ecl_packages_to_be_created =
-			  cl_acons(name, package, ecl_packages_to_be_created);
-		}
-		si_select_package(package);
-		break;
-	}
-	default: {
-		cl_object read_VV_block = SYM_VAL(@'si::*cblock*');
-		code = -code - 1;
-		if (code < 0 || code >= read_VV_block->cblock.data_size)
-			FEreader_error("Bogus binary file. #!~S unknown.", in, 1,
-				       MAKE_FIXNUM(code));
-		@(return read_VV_block->cblock.data[code])
-	}
-	}
-	@(return)
-}
-
 static cl_object
 sharp_B_reader(cl_object in, cl_object c, cl_object d)
 {
@@ -1084,6 +1056,14 @@ do_patch_sharp(cl_object x)
 		for (i = 0;  i < j;  i++)
 			x->array.self.t[i] = do_patch_sharp(x->array.self.t[i]);
 		break;
+	}
+	case t_complex: {
+		cl_object r = do_patch_sharp(x->complex.real);
+		cl_object i = do_patch_sharp(x->complex.imag);
+		if (r != x->complex.real || i != x->complex.imag) {
+			cl_object c = make_complex(r, i);
+			x->complex = c->complex;
+		}
 	}
 	default:
 	}
@@ -1778,7 +1758,6 @@ init_read(void)
 	dtab['*'] = make_cf3(sharp_asterisk_reader);
 	dtab[':'] = make_cf3(sharp_colon_reader);
 	dtab['.'] = make_cf3(sharp_dot_reader);
-	dtab['!'] = make_cf3(sharp_exclamation_reader);
 	/*  Used for fasload only. */
 	dtab['B'] = dtab['b'] = make_cf3(sharp_B_reader);
 	dtab['O'] = dtab['o'] = make_cf3(sharp_O_reader);
@@ -1875,13 +1854,19 @@ read_VV(cl_object block, void *entry)
 		bds_bind(@'*read-suppress*', Cnil);
 		bds_bind(@'*readtable*', standard_readtable);
 		bds_bind(@'*package*', lisp_package);
+		bds_bind(@'si::*sharp-eq-context*', Cnil);
 		for (i = 0 ; i < len; i++) {
-			x = @read(4, in, Cnil, OBJNULL, Cnil);
+			x = read_object(in);
 			if (x == OBJNULL)
 				break;
 			VV[i] = x;
 		}
-		bds_unwind_n(5);
+		if (!Null(SYM_VAL(@'si::*sharp-eq-context*'))) {
+			while (i--) {
+				VV[i] = patch_sharp(VV[i]);
+			}
+		}
+		bds_unwind_n(6);
 		if (i < len)
 			FEreader_error("Not enough data while loading binary file", in, 0);
 	NO_DATA:

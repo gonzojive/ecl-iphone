@@ -47,20 +47,16 @@
 (setq si::*keep-documentation* nil)
 
 ;;;
-;;; * Beppe's defsystem utility
+;;; * Timed compilation facility.
 ;;;
-(load "@srcdir@/util/system.lsp")
-
-;;;
-;;; * We redefine this to force generation of source files
-;;; in the object directory -- source files help debugging
-;;; with GDB.
-;;;
-(defun sbt::sbt-compile-file (&rest s)
-  (apply #'compiler::compile-file
-	   (car s)
-	   :c-file t :h-file t :data-file t :system-p t
-	   (cdr s)))
+(defun compile-if-old (destdir sources &rest options)
+  (mapcar #'(lambda (source)
+	      (let ((object (merge-pathnames destdir (compile-file-pathname source :type :object))))
+		(unless (and (probe-file object)
+			     (>= (file-write-date object) (file-write-date source)))
+		  (apply #'compile-file source :output-file object options))
+		object))
+	  sources))
 
 ;;;
 ;;; * Go back to build directory to start compiling

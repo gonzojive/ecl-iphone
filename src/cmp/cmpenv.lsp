@@ -55,48 +55,6 @@
 		     (incf *env*)
 		     (setq *max-env* (max *env* *max-env*))))
 
-(defun add-symbol (symbol)
-  (add-object symbol))
-
-(defun add-keywords (keywords)
-  ;; We have to build, in the vector VV[], a sequence with all
-  ;; the keywords that this function uses. It does not matter
-  ;; whether each keyword has appeared separately before, because
-  ;; cl_parse_key() needs the whole list. However, we can reuse
-  ;; keywords lists from other functions when they coincide with ours.
-  (flet ((add-keyword (keyword &aux x)
-	   (incf *next-vv*)
-	   (setq x (format nil "VV[~d]" *next-vv*))
-	   (let ((y (assoc keyword *objects*)))
-	     (if y
-		 (wt-filtered-data (format nil "#!~d" (- (1+ (third y)))))
-	         (wt-data keyword)))
-	   (push (list keyword x *next-vv*) *objects*)
-	   x))
-    ;; We search for keyword lists that are similar. However, the list
-    ;; *OBJECTS* contains elements in decreasing order!!!
-    (let ((x (search (reverse keywords) *objects*
-		     :test #'(lambda (k rec) (eq k (first rec))))))
-      (if x
-	  (progn
-	    (cmpnote "Reusing keywords lists for ~S" keywords)
-	    (second (elt *objects* (+ x (length keywords) -1))))
-	  (let ((x (add-keyword (first keywords))))
-	    (dolist (k (rest keywords) x)
-	      (add-keyword k))))))))
-
-(defun add-object (object &aux x found)
-  (cond ((setq x (assoc object *objects* :test 'equal))
-         (second x))
-	((and (symbolp object)
-	      (multiple-value-setq (found x) (si::mangle-name object)))
-	 x)
-        (t (incf *next-vv*)
-	   (setq x (format nil "VV[~d]" *next-vv*))
-	   (push (list object x *next-vv*) *objects*)
-           (wt-data object)
-           x)))
-
 (defun function-arg-types (arg-types &aux (types nil))
   (do ((al arg-types (cdr al)))
       ((or (endp al)

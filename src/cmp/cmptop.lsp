@@ -79,9 +79,8 @@
     (setq *funarg-vars* nil)))
 
 (defun ctop-write (name h-namestring data-namestring
-		        &optional system-p
-			&aux (vv-reservation (next-cmacro)) def
-		   	top-output-string
+		        &key system-p shared-data
+			&aux def top-output-string
 			(*volatile* " volatile "))
 
   ;(let ((*print-level* 3)) (pprint *top-level-forms*))
@@ -99,25 +98,29 @@
 	 (*emitted-local-funs* nil)
 	 (*compiler-declared-globals* (make-hash-table))
 	 #+PDE (optimize-space (>= *space* 3)))
-    (wt-nl1 "#include \"" data-namestring "\"")
+    (unless shared-data
+      (wt-nl1 "#include \"" data-namestring "\""))
     (wt-nl1 "#ifdef __cplusplus")
     (wt-nl1 "extern \"C\"")
     (wt-nl1 "#endif")
     (wt-nl1 "void init_" (init-function-name name) "(cl_object flag)")
     (wt-nl1 "{ VT" *reservation-cmacro* " CLSR" *reservation-cmacro*)
     (wt-nl "cl_object value0;")
-    (wt-nl "if (!FIXNUMP(flag)){")
-    (wt-nl "Cblock=flag;")
-    (wt-nl "#ifndef ECL_DYNAMIC_VV")
-    (wt-nl "flag->cblock.data = VV;")
-    (wt-nl "#endif")
-    (wt-nl "flag->cblock.data_size = VM;")
-    (wt-nl "flag->cblock.data_text = compiler_data_text;")
-    (wt-nl "flag->cblock.data_text_size = compiler_data_text_size;")
-    (wt-nl "return;}")
-    (wt-nl "#ifdef ECL_DYNAMIC_VV")
-    (wt-nl "VV = Cblock->cblock.data;")
-    (wt-nl "#endif")
+    (when shared-data
+      (wt-nl "Cblock=flag;"))
+    (unless shared-data
+      (wt-nl "if (!FIXNUMP(flag)){")
+      (wt-nl "Cblock=flag;")
+      (wt-nl "#ifndef ECL_DYNAMIC_VV")
+      (wt-nl "flag->cblock.data = VV;")
+      (wt-nl "#endif")
+      (wt-nl "flag->cblock.data_size = VM;")
+      (wt-nl "flag->cblock.data_text = compiler_data_text;")
+      (wt-nl "flag->cblock.data_text_size = compiler_data_text_size;")
+      (wt-nl "return;}")
+      (wt-nl "#ifdef ECL_DYNAMIC_VV")
+      (wt-nl "VV = Cblock->cblock.data;")
+      (wt-nl "#endif"))
     ;; useless in initialization.
     (dolist (form *top-level-forms*)
       (let ((*compile-to-linking-call* nil)
@@ -131,18 +134,28 @@
 
   ;; Declarations in h-file.
   (wt-h "static cl_object Cblock;")
-  (dolist (x *reservations*)
-    (wt-h "#define VM" (car x) " " (cdr x)))
-  (incf *next-vv*)
-  (wt-h "#define VM" vv-reservation " " *next-vv*)
-  (wt-h "#define VM " *next-vv*)
-  (wt-h "#ifdef ECL_DYNAMIC_VV")
-  (wt-h "static cl_object *VV;")
-  (wt-h "#else")
-  (if (zerop *next-vv*)
-    (wt-h "static cl_object VV[1];")
-    (wt-h "static cl_object VV[VM];"))
-  (wt-h "#endif")
+  (if shared-data
+      (progn
+	(wt-h "#ifdef ECL_DYNAMIC_VV")
+	(wt-h "extern cl_object *VV;")
+	(wt-h "#else")
+	(wt-h "extern cl_object VV[];")
+	(wt-h "#endif"))
+      (progn
+	(dolist (x *reservations*)
+	  (wt-h "#define VM" (car x) " " (cdr x)))
+	(let ((num-objects (data-size)))
+	  (if (zerop num-objects)
+	      (progn
+		(wt-h "#define VM " num_objects 0)
+		(wt-h "#define VV NULL"))
+	      (progn
+		(wt-h "#define VM " num-objects)
+		(wt-h "#ifdef ECL_DYNAMIC_VV")
+		(wt-h "static cl_object *VV;")
+		(wt-h "#else")
+		(wt-h "static cl_object VV[VM];")
+		(wt-h "#endif"))))))
   (when *linking-calls*
     (dotimes (i (length *linking-calls*))
       (declare (fixnum i))
@@ -158,8 +171,6 @@
     (let ((i (second x)))
       (wt-nl1 "static cl_object LKF" i
 	      "(int narg, ...) {TRAMPOLINK(narg," (third x) ",&LK" i ",Cblock);}")))
-
-  (wt-h "#define compiler_data_text_size " *wt-string-size*)
 
   (wt-h "#ifdef __cplusplus")
   (wt-h "}")
@@ -567,7 +578,7 @@
 	   (incf *next-vv*)
 	   (push (make-c1form* 'LOAD-TIME-VALUE :args *next-vv* (c1expr form))
 		 *load-time-values*)
-	   (wt-data 0)
+	   (add-object 0 t)
 	   (make-c1form* 'LOCATION :type t
 			 :args `(VV ,(format nil "VV[~d]" *next-vv*))))
 	  (t
@@ -878,7 +889,7 @@
   (let ((previous (new-local *level* fun funob)))
     (if (and previous (fun-var previous))
 	(setf (fun-var fun) (fun-var previous))
-	(let ((loc (progn (wt-data 0) `(VV ,(incf *next-vv*)))))
+	(let ((loc (data-empty-loc)))
 	  (wt-nl loc " = ") (wt-make-closure fun) (wt ";")
 	  (setf (fun-var fun) loc))))
 )

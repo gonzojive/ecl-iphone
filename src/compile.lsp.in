@@ -31,27 +31,27 @@
 ;;; * Compile, load and link Common-Lisp base library
 ;;;
 (setq si::*keep-documentation* nil)
-(in-package "COMMON-LISP-USER")
-(load "lsp/defsys.lsp")
 (proclaim '(optimize (safety 2) (space 3)))
-(sbt::operate-on-system lsp :library)
+(let ((objects (compile-if-old "@abs_builddir@/lsp/" +lisp-module-files+
+			       :system-p t :c-file t :data-file t :h-file t)))
+  (c::build-static-library "lsp" :lisp-files objects))
+
 (si::pathname-translations "SYS" '(("**;*.*" "@abs_builddir@/**/*.*")))
 (setq compiler::*cc-flags* (concatenate 'string compiler::*cc-flags* " -I@srcdir@/h -I@srcdir@/gmp -I@builddir@/h"))
 
 ;;;
 ;;; * Compile, load and link PCL based Common-Lisp Object System
 ;;;
-#+CLOS
-(progn
-(load "clos/defsys.lsp")
 (proclaim '(optimize (safety 2) (space 3)))
-(let ((c::*compile-to-linking-call* nil))
-  (sbt::operate-on-system clos :library))
-)
+#+CLOS
+(let* ((c::*compile-to-linking-call* nil)
+       (objects (compile-if-old "@abs_builddir@/clos/" +clos-module-files+
+				:system-p t :c-file t :data-file t :h-file t)))
+  (c::build-static-library "clos" :lisp-files objects))
 
 (si::system (format nil "
-mkdir tmp; ~
-cd tmp; ~
+(test -d tmp || mkdir tmp); ~
+cd tmp; rm -f *; ~
 ar -x ../@LIBPREFIX@lsp.@LIBEXT@; for i in *.@OBJEXT@; do mv $i lsp_$i; done; ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@; rm *.@OBJEXT@; ~
 ar -x ../@LIBPREFIX@clos.@LIBEXT@; for i in *.@OBJEXT@; do mv $i lsp_$i; done; ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@; rm *.@OBJEXT@; ~
 @RANLIB@ ../@LIBPREFIX@ecl.@LIBEXT@; ~
@@ -76,18 +76,18 @@ cd ..; rm -rf tmp/* @LIBPREFIX@{lsp,clos} "))
 		"c/main.@OBJEXT@"
 		(compile-file-pathname "ecl" :type :lib)
 		#+boehm-gc "-lgc"
-		"-lgmp"))
+		"-lgmp" "--no-undefined"))
 
 ;;;
 ;;; * Compile, load and link Common-Lisp to C compiler
 ;;;
-#+(or (not stage1) WANTS-CMP)
-(progn
-(load "cmp/defsys.lsp")
 (proclaim '(optimize (safety 2) (space 3)))
-(sbt::operate-on-system cmp #-dlopen :library #+dlopen :fasl)
-;(sbt::operate-on-system cmp :load)
-)
+#+(or (not stage1) WANTS-CMP)
+(let ((objects (compile-if-old "@abs_builddir@/cmp/" +cmp-module-files+
+				:system-p t :c-file t :data-file t :h-file t)))
+  (c::build-static-library "cmp" :lisp-files objects)
+  #+dlopen
+  (c::build-fasl "cmp" :lisp-files objects))
 
 (si::pathname-translations "SYS" '(("**;*.*" "@libdir@/**/*.*")))
 
@@ -96,5 +96,15 @@ cd ..; rm -rf tmp/* @LIBPREFIX@{lsp,clos} "))
  #-(or cross stage1) "ecl2"
  :lisp-files '(#+(and (not dlopen) WANTS-CMP) cmp)
  :ld-flags '("-L./"))
+
+#+WANTS-CLX
+(progn
+  (proclaim '(optimize (safety 2) (space 3)))
+  (load "clx/load.lsp")
+  (push :clx-ansi-common-lisp *features*)
+  (let* ((objects (compile-if-old "@abs_builddir@/clx/" +clx-module-files+
+				  :system-p t :c-file t :data-file t :h-file t)))
+    (c::build-program "eclx" :lisp-files `(#+(and (not dlopen) wants-cmp) cmp
+					   ,@objects))))
 
 (quit)

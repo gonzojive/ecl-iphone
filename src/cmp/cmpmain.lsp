@@ -57,6 +57,7 @@ coprocessor).")
       ((:shared-library :dll) (setf format #.+shared-library-format+))
       ((:static-library :library :lib) (setf format #.+static-library-format+))
       (:data (setf extension "data"))
+      (:sdata (setf extension "sdat"))
       (:c (setf extension "c"))
       (:h (setf extension "h"))
       (:object (setf extension #.+object-file-extension+))
@@ -90,26 +91,7 @@ coprocessor).")
 	   options
 	   *ld-flags* (namestring (translate-logical-pathname "SYS:")))))
 
-(defconstant +lisp-program-main+ "
-#include <ecl.h>
-
-#ifdef __cplusplus
-#define ECL_CPP_TAG \"C\"
-#else
-#define ECL_CPP_TAG
-#endif
-
-int
-main(int argc, char **argv)
-{
-~{	extern ECL_CPP_TAG void init_~A(cl_object);~%~}
-	~A
-	cl_boot(argc, argv);
-~{	read_VV(OBJNULL,init_~A);~%~}
-	~A
-}")
-
-(defconstant +lisp-library-main+ "
+(defconstant +lisp-program-header+ "
 #include <ecl.h>
 
 #ifdef __cplusplus
@@ -120,20 +102,43 @@ main(int argc, char **argv)
 
 ~{	extern ECL_CPP_TAG void init_~A();~%~}
 
+")
+
+(defconstant +lisp-program-init+ "
 #ifdef __cplusplus
 extern \"C\"
 #endif
 int init_~A(cl_object cblock)
 {
+	static cl_object Cblock;
 	cl_object subblock;
-        if (FIXNUMP(cblock))
+        if (!FIXNUMP(cblock)) {
+		Cblock = cblock;
+		cblock->cblock.data_text = compiler_data_text;
+		cblock->cblock.data_text_size = compiler_data_text_size;
+#ifndef ECL_DYNAMIC_VV
+		cblock->cblock.data = VV;
+#endif
+		cblock->cblock.data_size = VM;
 		return;
-	cblock->cblock.data = NULL;
-	cblock->cblock.data_size = 0;
-	cblock->cblock.data_text = \"\";
-	cblock->cblock.data_text_size = 0;
+	}
+#if defined(ECL_DYNAMIC_VV) && defined(ECL_SHARED_DATA)
+	VV = Cblock->cblock.data;
+#endif
 	~A
-~{	subblock = read_VV(OBJNULL,init_~A); subblock->cblock.next = cblock; ~%~}
+~:[~{	subblock = read_VV(OBJNULL,init_~A); subblock->cblock.next = Cblock;~%~}
+~;~{	init_~A(Cblock);~%~}~]
+
+	~A
+}")
+
+(defconstant +lisp-program-main+ "
+int
+main(int argc, char **argv)
+{
+	~A
+	cl_boot(argc, argv);
+	read_VV(OBJNULL, init_~A);
 	~A
 }")
 
@@ -156,72 +161,92 @@ int init_~A(cl_object cblock)
 	(concatenate 'string si::*init-function-prefix* "_" s)
 	s)))
 
-(defun builder (target output-name &key lisp-files ld-flags (prologue-code "")
+(defun builder (target output-name &key lisp-files ld-flags shared-data-file
+		(prologue-code "")
 		(epilogue-code (if (eq target :program) "
 	funcall(1,_intern(\"TOP-LEVEL\",system_package));
 	return 0;" "")))
-  (let* (init-name c-name o-name)
+  (let* ((c-name (namestring (compile-file-pathname output-name :type :c)))
+	 (o-name (namestring (compile-file-pathname output-name :type :object)))
+	 (init-name (string-upcase (pathname-name c-name)))
+	 submodules
+	 c-file)
     (dolist (item (reverse lisp-files))
       (cond ((symbolp item)
 	     (push (format nil "-l~A" (string-downcase item)) ld-flags)
-	     (push (init-function-name item) init-name))
+	     (push (init-function-name item) submodules))
 	    (t
 	     (push (namestring (compile-file-pathname item :type :object)) ld-flags)
 	     (setq item (pathname-name item))
-	     (push (init-function-name item) init-name))))
-    (setq c-name (namestring (compile-file-pathname output-name :type :c))
-	  o-name (namestring (compile-file-pathname output-name :type :object)))
+	     (push (init-function-name item) submodules))))
+    (setq c-file (open c-name :direction :output))
+    (format c-file +lisp-program-header+ submodules)
+    (cond (shared-data-file
+	   (data-init shared-data-file)
+	   (format c-file "
+#define VM ~A
+#ifdef ECL_DYNAMIC_VV
+cl_object *VV;
+#else
+cl_object VV[VM];
+#endif
+cl_object Cblock;
+#define ECL_SHARED_DATA_FILE 1
+" (data-size))
+	   (data-dump c-file))
+	  (t
+	   (format c-file "
+#define compiler_data_text NULL
+#define compiler_data_text_size 0
+#define VV NULL
+#define VM 0" c-file)))
     (ecase target
       (:program
-       (setq output-name (namestring output-name))
-       (format t +lisp-program-main+ init-name prologue-code init-name
-	       epilogue-code)
-       (with-open-file (c-file c-name :direction :output)
-	 (format c-file +lisp-program-main+ init-name prologue-code init-name
-		 epilogue-code))
+       (when (or (symbolp output-name) (stringp output-name))
+	 (setf output-name (compile-file-pathname output-name :type :program)))
+       (format c-file +lisp-program-init+ init-name "" shared-data-file
+	       submodules "")
+       (format c-file +lisp-program-main+ prologue-code init-name epilogue-code)
+       (close c-file)
+       (si:system (format nil "cat ~A" (namestring c-name)))
        (compiler-cc c-name o-name)
        (apply #'linker-cc output-name (namestring o-name) ld-flags))
       ((:library :static-library :lib)
-       (print "***")
-       (print output-name)
-       (when (or (symbolp output-name) (stringp output-name))
-	 (print (compile-file-pathname output-name :type :lib))
-	 (setq output-name (compile-file-pathname output-name :type :lib)))
-       (let ((library-name (string-upcase (pathname-name output-name))))
-	 (print library-name)
-	 (print output-name)
-	 (with-open-file (c-file c-name :direction :output)
-	   (format c-file +lisp-library-main+ init-name
-		   ;; Remove the leading "lib"
-		   (subseq library-name #.(length +static-library-prefix+))
-		   prologue-code init-name epilogue-code)))
+       (if (or (symbolp output-name) (stringp output-name))
+	   (setf output-name (compile-file-pathname output-name :type :lib))
+	   ;; Remove the leading "lib"
+	   (setf init-name (subseq init-name #.(length +static-library-prefix+))))
+       (format c-file +lisp-program-init+ init-name prologue-code
+	       shared-data-file submodules epilogue-code)
+       (close c-file)
+       (si:system (format nil "cat ~A" (namestring c-name)))
        (compiler-cc c-name o-name)
        (safe-system (format nil "ar cr ~A ~A ~{~A ~}"
 			    output-name o-name ld-flags))
        (safe-system (format nil "ranlib ~A" output-name)))
       #+dlopen
       ((:shared-library :dll)
-       (when (or (symbolp output-name) (stringp output-name))
-	 (setq output-name (compile-file-pathname output-name :type :dll)))
-       (let ((library-name (string-upcase (pathname-name output-name))))
-	 (with-open-file (c-file c-name :direction :output)
-	   (format c-file +lisp-library-main+
-		   init-name 
-		   ;; Remove the leading lib
-		   (subseq library-name #.(length +shared-library-prefix+))
-		   prologue-code init-name epilogue-code)))
+       (if (or (symbolp output-name) (stringp output-name))
+	   (setf output-name (compile-file-pathname output-name :type :dll))
+	   ;; Remove the leading "lib"
+	   (setf init-name (subseq init-name #.(length +static-library-prefix+))))
+       (format c-file +lisp-program-init+ init-name prologue-code
+	       shared-data-file submodules epilogue-code)
+       (close c-file)
+       (si:system (format nil "cat ~A" (namestring c-name)))
        (compiler-cc c-name o-name)
        (apply #'shared-cc output-name o-name ld-flags))
       (:fasl
        (when (or (symbolp output-name) (stringp output-name))
-	 (setq output-name (compile-file-pathname output-name :type :fasl)))
-       (with-open-file (c-file c-name :direction :output)
-	 (format c-file +lisp-library-main+
-		 init-name "CODE" prologue-code init-name epilogue-code))
+	 (setf output-name (compile-file-pathname output-name :type :fasl)))
+       (format c-file +lisp-program-init+ "CODE" prologue-code
+	       shared-data-file submodules epilogue-code)
+       (close c-file)
+       (si:system (format nil "cat ~A" (namestring c-name)))
        (compiler-cc c-name o-name)
        (apply #'shared-cc output-name o-name ld-flags)))
-    (delete-file c-name)
-    (delete-file o-name)
+    ;(delete-file c-name)
+    ;(delete-file o-name)
     output-name))
 
 (defun build-fasl (&rest args)
@@ -252,6 +277,7 @@ int init_~A(cl_object cblock)
 		      (c-file nil)
 		      (h-file nil)
 		      (data-file nil)
+		      (shared-data-file nil)
 		      (system-p nil)
 		      (load nil)
                       &aux (*standard-output* *standard-output*)
@@ -308,32 +334,39 @@ Cannot compile ~a."
          (so-pathname (unless system-p (compile-file-pathname o-pathname)))
          (c-pathname (get-output-pathname o-pathname c-file :c))
          (h-pathname (get-output-pathname o-pathname h-file :h))
-         (data-pathname (get-output-pathname o-pathname data-file :data)))
+         (data-pathname (get-output-pathname o-pathname data-file :data))
+	 (shared-data-pathname (get-output-pathname o-pathname shared-data-file
+						    :sdata)))
 
     (init-env)
 
     (when (probe-file "./cmpinit.lsp")
       (load "./cmpinit.lsp" :verbose *compile-verbose*))
 
-    (with-open-file (*compiler-output-data* data-pathname :direction :output)
-      (wt-data-begin)
+    (if shared-data-file
+	(if system-p
+	    (data-init shared-data-pathname)
+	    (error "Shared data files are only allowed when compiling ~&
+		    with the flag :SYSTEM-P set to T."))
+	(data-init))
 
-      (with-open-file (*compiler-input* *compile-file-pathname*)
-	(do ((form (read *compiler-input* nil eof)
-		   (read *compiler-input* nil eof)))
-	    ((eq form eof))
-	  (t1expr form)))
+    (with-open-file (*compiler-input* *compile-file-pathname*)
+      (do ((form (read *compiler-input* nil eof)
+		 (read *compiler-input* nil eof)))
+	  ((eq form eof))
+	(t1expr form)))
 
-      (when (zerop *error-count*)
-        (when *compile-verbose* (format t "~&;;; End of Pass 1.  "))
-        (compiler-pass2 c-pathname h-pathname data-pathname system-p
-                        (if system-p
-                            (pathname-name input-pathname)
-                            "code")))
+    (when (zerop *error-count*)
+      (when *compile-verbose* (format t "~&;;; End of Pass 1.  "))
+      (compiler-pass2 c-pathname h-pathname data-pathname system-p
+		      (if system-p
+			  (pathname-name input-pathname)
+			  "code")
+		      shared-data-file))
 
-      (wt-data-end)
-
-      ) ;;; *compiler-output-data* closed.
+    (if shared-data-file
+	(data-dump shared-data-pathname t)
+	(data-dump data-pathname))
 
     (init-env)
 
@@ -363,11 +396,12 @@ Cannot compile ~a."
 		 (print-compiler-info)
 		 (format t "~&;;; Finished compiling ~a."
 			 (namestring input-pathname))))
-          (unless c-file (delete-file c-pathname))
-          (unless h-file (delete-file h-pathname))
-          (unless data-file (delete-file data-pathname))
+          ;(unless c-file (delete-file c-pathname))
+          ;(unless h-file (delete-file h-pathname))
+          ;(unless (or data-file shared-data-file)
+	  ;  (delete-file data-pathname))
 	  #+dlopen
-	  (unless system-p (delete-file o-pathname))
+	  ;(unless system-p (delete-file o-pathname))
 	  #+dlopen
 	  (if system-p o-pathname so-pathname)
 	  #-dlopen
@@ -377,6 +411,7 @@ Cannot compile ~a."
           (when (probe-file c-pathname) (delete-file c-pathname))
           (when (probe-file h-pathname) (delete-file h-pathname))
           (when (probe-file data-pathname) (delete-file data-pathname))
+          (when (probe-file shared-data-pathname) (delete-file shared-data-pathname))
 	  (when (probe-file o-pathname) (delete-file o-pathname))
           (format t "~&;;; Due to errors in the compilation process, no FASL was generated.
 ;;; Search above for the \"Error:\" tag to find the error messages.~%")
@@ -446,18 +481,15 @@ Cannot compile ~a."
 
     (init-env)
 
-    (with-open-file (*compiler-output-data* data-pathname
-					    :direction :output)
-      (wt-data-begin)
+    (data-init)
 
-      (t1expr form)
+    (t1expr form)
 
-      (when (zerop *error-count*)
-        (when *compile-verbose* (format t "~&;;; End of Pass 1.  "))
-        (compiler-pass2 c-pathname h-pathname data-pathname nil "code"))
+    (when (zerop *error-count*)
+      (when *compile-verbose* (format t "~&;;; End of Pass 1.  "))
+      (compiler-pass2 c-pathname h-pathname data-pathname nil "code" nil))
 
-      (wt-data-end)
-      ) ;;; *compiler-output-data* closed.
+    (data-dump data-pathname)
 
     (init-env)
 
@@ -475,7 +507,7 @@ Cannot compile ~a."
                  (load so-pathname :verbose nil)
                  (when *compile-verbose* (print-compiler-info))
                  (delete-file so-pathname)
-                 (delete-file data-pathname)
+		 (delete-file data-pathname)
 		 (setf name (or name (symbol-value 'GAZONK)))
 		 ;; By unsetting GAZONK we avoid spurious references to the
 		 ;; loaded code.
@@ -524,9 +556,6 @@ Cannot compile ~a."
          (*compiler-output2* (if h-file
 				 (open h-file :direction :output)
 				 null-stream))
-         (*compiler-output-data* (if data-file
-				     (open data-file :direction :output)
-				     null-stream))
          (*error-count* 0)
          (t3local-fun (symbol-function 'T3LOCAL-FUN))
 	 (t3fun (get-sysprop 'DEFUN 'T3)))
@@ -541,33 +570,33 @@ Cannot compile ~a."
                  (let ((*compiler-output1* *standard-output*))
                    (apply t3local-fun args))))
         (init-env)
-        (when data-file (wt-data-begin))
+	(data-init)
         (t1expr disassembled-form)
         (if (zerop *error-count*)
           (catch *cmperr-tag* (ctop-write "code"
 					  (if h-file (namestring h-file) "")
-					  (if data-file (namestring data-file) "")))
+					  (if data-file (namestring data-file) "")
+					  :system-p nil))
           (setq *error-p* t))
-	(when data-file (wt-data-end))
+	(data-dump data-file)
         )
       (put-sysprop 'DEFUN 'T3 t3fun)
       (setf (symbol-function 'T3LOCAL-FUN) t3local-fun)
-      (when h-file (close *compiler-output2*))
-      (when data-file (close *compiler-output-data*))))
+      (when h-file (close *compiler-output2*))))
   (values)
   )
 
-(defun compiler-pass2 (c-pathname h-pathname data-pathname system-p init-name)
+(defun compiler-pass2 (c-pathname h-pathname data-pathname system-p init-name
+		       shared-data)
   (with-open-file (*compiler-output1* c-pathname :direction :output)
     (with-open-file (*compiler-output2* h-pathname :direction :output)
       (wt-nl1 "#include " *cmpinclude*)
       (catch *cmperr-tag* (ctop-write (string-upcase init-name)
 				      (namestring h-pathname)
 				      (namestring data-pathname)
-				      system-p))
+				      :system-p system-p
+				      :shared-data shared-data))
       (terpri *compiler-output1*)
-      ;; write ctl-z at end to make sure preprocessor stops!
-;      #+ms-dos (write-char (code-char 26) *compiler-output1*)
       (terpri *compiler-output2*))))
 
 (defun compiler-cc (c-pathname o-pathname)

@@ -356,7 +356,7 @@ dnl
 dnl Notice that we build ${builddir}/h/configpre.h fron ${srcdir}/h/config.h.in,
 dnl and then use all AC_DEF* to build h/config.h from h/configpre.h
 dnl
-AC_CONFIG_FILES(compile.lsp compile_rest.lsp bare.lsp
+AC_CONFIG_FILES(compile.lsp bare.lsp
  lsp/config.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp
  ../Makefile Makefile c/Makefile doc/Makefile
  tk/Makefile clx/defsys.lsp tests/Makefile ansi-tests/Makefile gabriel/Makefile

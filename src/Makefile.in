@@ -47,10 +47,7 @@ all:	$(TARGETS) doc
 %Makefile: $(srcdir)/%Makefile.in config.status
 	./config.status
 
-eclx$(EXE): ecl_min$(EXE) compile_rest.lsp
-	./ecl_min < compile_rest.lsp
-
-ecl$(EXE): ecl_min$(EXE) compile.lsp sysfun.lsp
+ecl$(EXE) eclx$(EXE): ecl_min$(EXE) compile.lsp sysfun.lsp
 	if [ -f CROSS-COMPILER ]; then \
 		./CROSS-COMPILER < compile.lsp; \
 	else \
@@ -129,7 +126,7 @@ clean: clean_lisp
 	$(RM) config.version config.log config.cache
 	$(RM) *.c *.o *.a *.h *.data
 clean_lisp:
-	for i in lsp cmp clos clx tk; do $(RM) lib$$i.a $$i/?*.o $$i/?*.c $$i/?*.data $$i/?*.h; done
+	for i in lsp cmp clos clx tk; do $(RM) lib$$i.a $$i/?*.{o,dat,c,sdat,h,fas}; done
 	$(RM) help.doc
 distclean: clean
 realclean: distclean

@@ -1,29 +1,33 @@
-(load "@abs_srcdir@/cmpdefs" :verbose nil)
-(load "@abs_srcdir@/cmpmac" :verbose nil)
-(load "@abs_srcdir@/cmpinline" :verbose nil)
-(load "@abs_srcdir@/cmputil" :verbose nil)
-(load "@abs_srcdir@/cmptype" :verbose nil)
-(load "@abs_srcdir@/cmpbind" :verbose nil)
-(load "@abs_srcdir@/cmpblock" :verbose nil)
-(load "@abs_srcdir@/cmpcall" :verbose nil)
-(load "@abs_srcdir@/cmpcatch" :verbose nil)
-(load "@abs_srcdir@/cmpenv" :verbose nil)
-(load "@abs_srcdir@/cmpeval" :verbose nil)
-(load "@abs_srcdir@/cmpexit" :verbose nil)
-(load "@abs_srcdir@/cmpflet" :verbose nil)
-(load "@abs_srcdir@/cmpfun" :verbose nil)
-(load "@abs_srcdir@/cmpif" :verbose nil)
-(load "@abs_srcdir@/cmplam" :verbose nil)
-(load "@abs_srcdir@/cmplet" :verbose nil)
-(load "@abs_srcdir@/cmploc" :verbose nil)
-(load "@abs_srcdir@/cmpmap" :verbose nil)
-(load "@abs_srcdir@/cmpmulti" :verbose nil)
-(load "@abs_srcdir@/cmpspecial" :verbose nil)
-(load "@abs_srcdir@/cmptag" :verbose nil)
-(load "@abs_srcdir@/cmptop" :verbose nil)
-(load "@abs_srcdir@/cmpvar" :verbose nil)
-(load "@abs_srcdir@/cmpwt" :verbose nil)
-(load "@abs_srcdir@/cmpffi" :verbose nil)
-(load "@abs_builddir@/cmpcfg.lsp" :verbose nil)
-(load "@abs_srcdir@/cmpmain" :verbose nil)
+(defconstant +cmp-module-files+
+'("@abs_srcdir@/cmpdefs.lsp"
+  "@abs_srcdir@/cmpmac.lsp"
+  "@abs_srcdir@/cmpinline.lsp"
+  "@abs_srcdir@/cmputil.lsp"
+  "@abs_srcdir@/cmptype.lsp"
+  "@abs_srcdir@/cmpbind.lsp"
+  "@abs_srcdir@/cmpblock.lsp"
+  "@abs_srcdir@/cmpcall.lsp"
+  "@abs_srcdir@/cmpcatch.lsp"
+  "@abs_srcdir@/cmpenv.lsp"
+  "@abs_srcdir@/cmpeval.lsp"
+  "@abs_srcdir@/cmpexit.lsp"
+  "@abs_srcdir@/cmpflet.lsp"
+  "@abs_srcdir@/cmpfun.lsp"
+  "@abs_srcdir@/cmpif.lsp"
+  "@abs_srcdir@/cmplam.lsp"
+  "@abs_srcdir@/cmplet.lsp"
+  "@abs_srcdir@/cmploc.lsp"
+  "@abs_srcdir@/cmpmap.lsp"
+  "@abs_srcdir@/cmpmulti.lsp"
+  "@abs_srcdir@/cmpspecial.lsp"
+  "@abs_srcdir@/cmptag.lsp"
+  "@abs_srcdir@/cmptop.lsp"
+  "@abs_srcdir@/cmpvar.lsp"
+  "@abs_srcdir@/cmpwt.lsp"
+  "@abs_srcdir@/cmpffi.lsp"
+  "@abs_builddir@/cmpcfg.lsp"
+  "@abs_srcdir@/cmpmain.lsp"))
+
+(mapc #'(lambda (x) (load x :verbose nil)) +cmp-module-files+)
+
 (load "@abs_srcdir@/sysfun" :verbose nil)
