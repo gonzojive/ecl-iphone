@@ -12,13 +12,19 @@
 
 (in-package "COMPILER")
 
-(defun c1multiple-value-call (args)
+(defun c1multiple-value-call (args &aux forms)
   (check-args-number 'MULTIPLE-VALUE-CALL args 1)
-  (cond ((endp (rest args)) (c1funcall args))
-	;; FIXME! We should optimize
-	;; (multiple-value-call ... (values a b c ...))
-        (t (let ((funob (c1expr (first args))))
-	     (make-c1form 'MULTIPLE-VALUE-CALL funob funob (c1args* (rest args)))))))
+  (cond
+   ;; (M-V-C #'FUNCTION) => (FUNCALL #'FUNCTION)
+   ((endp (rest args)) (c1funcall args))
+   ;; (M-V-C #'FUNCTION (VALUES A ... Z)) => (FUNCALL #'FUNCTION A ... Z)
+   ((and (= (length args) 2)
+	 (consp (setq forms (second args)))
+	 (eq 'VALUES (first forms)))
+    (c1funcall (list* (first args) (rest forms))))
+   ;; More complicated case.
+   (t (let ((funob (c1expr (first args))))
+	(make-c1form 'MULTIPLE-VALUE-CALL funob funob (c1args* (rest args)))))))
 
 (defun c2multiple-value-call (funob forms)
   (let* ((tot (make-lcl-var :rep-type :cl-index))
@@ -60,10 +66,7 @@
 ;;; if this occurred in a proclaimed fun.
 
 (defun c1values (args)
-  (if (and args (null (rest args)))
-    ;; unnecessary code is produced for expression (values nil)
-    (c1expr (first args))
-    (make-c1form* 'VALUES :args (c1args* args))))
+  (make-c1form* 'VALUES :args (c1args* args)))
 
 (defun c2values (forms)
   (when (and (eq *destination* 'RETURN-OBJECT)
@@ -74,24 +77,45 @@
               ~%;But ~a was proclaimed to have single value.~
               ~%;Only first one will be assured."
              (second *current-form*)))
-  (let ((nv (length forms)))
-    (declare (fixnum nv))
-    (case nv
-      (0 (wt-nl "value0=Cnil;NVALUES=0;")
-	 (unwind-exit 'RETURN))
-      (1 (c2expr (first forms)))
-      (t (let* ((*inline-blocks* 0)
-		(forms (nreverse (coerce-locs (inline-args forms)))))
-	   ;; 1) By inlining arguments we make sure that VL has no call to funct.
-	   ;; 2) Reverse args to avoid clobbering VALUES(0)
-	   (wt-nl "NVALUES=" nv ";")
-	   (do ((vl forms (rest vl))
-		(i (1- (length forms)) (1- i)))
-	       ((null vl))
-	     (declare (fixnum i))
-	     (wt-nl "VALUES(" i ")=" (first vl) ";"))
-	   (unwind-exit 'VALUES)
-	   (close-inline-blocks))))))
+  (cond
+   ;; When the values are not going to be used, then just
+   ;; process each form separately.
+   ((eq *destination* 'TRASH)
+    (mapc #'c2expr forms))
+   ;; For (VALUES) we can replace the output with either NIL (if the value
+   ;; is actually used) and set only NVALUES when the value is the output
+   ;; of a function.
+   ((endp forms)
+    (cond ((eq *destination* 'RETURN)
+	   (wt-nl "value0=Cnil; NVALUES=0;")
+	   (unwind-exit 'RETURN))
+	  ((eq *destination* 'VALUES)
+	   (wt-nl "VALUES(0)=Cnil; NVALUES=0;")
+	   (unwind-exit 'VALUES))
+	  (t
+	   (unwind-exit 'NIL))))
+   ;; For a single form, we must simply ensure that we only take a single
+   ;; value of those that the function may output.
+   ((endp (rest forms))
+    (let ((*destination* 'VALUE0))
+      (c2expr* (first forms)))
+    (unwind-exit 'VALUE0))
+   ;; In all other cases, we store the values in the VALUES vector,
+   ;; and force the compiler to retrieve anything out of it.
+   (t
+    (let* ((nv (length forms))
+	   (*inline-blocks* 0)
+	   (forms (nreverse (coerce-locs (inline-args forms)))))
+      ;; By inlining arguments we make sure that VL has no call to funct.
+      ;; Reverse args to avoid clobbering VALUES(0)
+      (wt-nl "NVALUES=" nv ";")
+      (do ((vl forms (rest vl))
+	   (i (1- (length forms)) (1- i)))
+	  ((null vl))
+	(declare (fixnum i))
+	(wt-nl "VALUES(" i ")=" (first vl) ";"))
+      (unwind-exit 'VALUES)
+      (close-inline-blocks)))))
 
 (defun c1multiple-value-setq (args &aux (info (make-info)) (vrefs nil)
 			      (vars nil) (temp-vars nil) (late-bindings nil))

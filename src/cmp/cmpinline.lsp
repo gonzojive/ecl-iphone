@@ -353,15 +353,3 @@
 
 (defun args-cause-side-effect (forms)
   (some #'form-causes-side-effect forms))
-
-;;; ----------------------------------------------------------------------
-
-(put-sysprop 'FIXNUM 'WT-LOC 'wt-fixnum-loc)
-(put-sysprop 'CHARACTER 'WT-LOC 'wt-character-loc)
-(put-sysprop 'LONG-FLOAT 'WT-LOC 'wt-long-float-loc)
-(put-sysprop 'SHORT-FLOAT 'WT-LOC 'wt-short-float-loc)
-(put-sysprop 'BOOLEAN 'WT-LOC 'wt-loc)
-(put-sysprop 'T 'WT-LOC 'wt-loc)
-;;; Since they are possible locations, we must add:
-(put-sysprop 'STRING 'WT-LOC 'wt-loc)
-(put-sysprop 'BIT-VECTOR 'WT-LOC 'wt-loc)

@@ -16,43 +16,45 @@
 ;;;	NIL
 ;;;	T
 ;;;	fixnum
-;;;	'VALUES'
+;;;	VALUE0
+;;;	VALUES
 ;;;	var-object
-;;;	( 'VALUE' i )			VALUES(i)
-;;;	( 'VV' vv-index )
-;;;	( 'LCL' lcl )			local variable, type unboxed
-;;;	( 'TEMP' temp )			local variable, type object
-;;;	( 'CALL' fun narg locs fname )	locs are locations containing the arguments
-;;;	( 'CALL-LOCAL' fun lex closure args narg fname )
-;;;	( 'C-INLINE' output-type fun/string locs side-effects output-var )
-;;;	( 'CAR' lcl )
-;;;	( 'CADR' lcl )
-;;;	( 'FDEFINITION' vv-index )
-;;;	( 'MAKE-CCLOSURE' cfun )
-;;;	( 'FIXNUM-VALUE' fixnum-value )
-;;;	( 'CHARACTER-VALUE' character-code )
-;;;	( 'LONG-FLOAT-VALUE' long-float-value vv )
-;;;	( 'SHORT-FLOAT-VALUE' short-float-value vv )
-;;;	'VA-ARG'
-;;;	'CL-VA-ARG'
+;;;	( VALUE i )			VALUES(i)
+;;;	( VV vv-index )
+;;;	( LCL lcl )			local variable, type unboxed
+;;;	( TEMP temp )			local variable, type object
+;;;	( CALL fun narg locs fname )	locs are locations containing the arguments
+;;;	( CALL-FIX fun locs fname)	similar as CALL, but number of arguments is fixed
+;;;	( CALL-LOCAL fun lex closure args narg fname )
+;;;	( C-INLINE output-type fun/string locs side-effects output-var )
+;;;	( COERCE-LOC representation-type location)
+;;;	( CAR lcl )
+;;;	( CDR lcl )
+;;;	( CADR lcl )
+;;;	( FDEFINITION vv-index )
+;;;	( MAKE-CCLOSURE cfun )
+;;;	( FIXNUM-VALUE fixnum-value )
+;;;	( CHARACTER-VALUE character-code )
+;;;	( LONG-FLOAT-VALUE long-float-value vv )
+;;;	( SHORT-FLOAT-VALUE short-float-value vv )
+;;;	( STACK-POINTER index )	retrieve a value from the stack
+;;;	( SYS:STRUCTURE-REF loc slot-name-vv slot-index )
+;;;	( KEYVARS n )
+;;;	VA-ARG
+;;;	CL-VA-ARG
 
 ;;; Valid *DESTINATION* locations are:
 ;;;
-;;;	'RETURN'	The value is returned from the current function.
-;;;	'RETURN-FIXNUM'
-;;;	'RETURN-CHARACTER'
-;;;	'RETURN-LONG-FLOAT'
-;;;	'RETURN-SHORT-FLOAT'
-;;;	'RETURN-OBJECT
-;;;	'TRASH'			The value may be thrown away.
-;;;	'VALUES'
+;;;	VALUE0
+;;;	RETURN				Object returned from current function.
+;;;	TRASH				Value may be thrown away.
+;;;	VALUES				Values vector.
 ;;;	var-object
-;;;	( 'LCL' lcl )
-;;;	( 'LEX' lex-address )
-;;;	( 'BIND' var alternative )	; alternative is optional
-;;;	( 'JUMP-TRUE' label )
-;;;	( 'JUMP-FALSE' label )
-;;;	( 'PUSH-CATCH-FRAME' )
+;;;	( LCL lcl )
+;;;	( LEX lex-address )
+;;;	( BIND var alternative )	Alternative is optional
+;;;	( JUMP-TRUE label )
+;;;	( JUMP-FALSE label )
 
 (defun set-loc (loc &aux fd
 		    (is-call (and (consp loc)
@@ -65,9 +67,12 @@
 	   ((eq loc 'VALUES) (return-from set-loc))
 	   (t
 	    (wt-nl "VALUES(0)=") (wt-coerce-loc :object loc) (wt "; NVALUES=1;"))))
+    (VALUE0
+     (wt-nl "value0=") (wt-coerce-loc :object loc) (wt ";"))
     (RETURN
      (cond ((or is-call (eq loc 'VALUES))
 	    (wt-nl "value0=") (wt-coerce-loc :object loc) (wt ";"))
+	   ((eq loc 'VALUE0) (wt-nl "NVALUES=1;"))
 	   ((eq loc 'RETURN) (return-from set-loc))
 	   (t
 	    (wt-nl "value0=") (wt-coerce-loc :object loc) (wt "; NVALUES=1;"))))
@@ -103,6 +108,8 @@
 	 (wt "va_arg(args,cl_object)"))
 	((eq loc 'CL-VA-ARG)
 	 (wt "cl_va_arg(args)"))
+	((eq loc 'VALUE0)
+	 (wt "value0"))
 	((var-p loc)
 	 (wt-var loc))
         ((or (not (consp loc))
