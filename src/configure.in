@@ -261,12 +261,13 @@ if test "${locative}" ; then
 fi
 AC_MSG_CHECKING(for threads support)
 if test "${threads}" ; then
-  if test -z "${THREAD_LDFLAGS}"; then
+  if test -z "${THREAD_OBJ}"; then
     gc_flags="${gc_flags} --disable-threads"
     threads='';
     AC_MSG_RESULT(no)
   else
-    EXTRA_OBJS="${EXTRA_OBJS} threads.${OBJEXT}"
+    gc_flags="${gc_flags} ${THREAD_GC_FLAGS}"
+    EXTRA_OBJS="${EXTRA_OBJS} ${THREAD_OBJ}.${OBJEXT}"
     CLIBS="${THREAD_LDFLAGS} ${CLIBS}"
     CFLAGS="${CFLAGS} ${THREAD_CFLAGS}"
     AC_DEFINE(ECL_THREADS)
@@ -274,6 +275,7 @@ if test "${threads}" ; then
   fi
 else
   AC_MSG_RESULT(disabled)
+  gc_flags="${gc_flags} --disable-threads"
 fi
 if test ${usecxx} = "no" ; then
   ECL_CC="${CC}"
@@ -373,7 +375,7 @@ elif test "${local_boehm}" = "no" ; then
   test -d gc && rm -rf gc
   if mkdir gc; then
      (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
-        $srcdir/gc/configure --disable-threads --disable-shared --prefix=${destdir} \
+        $srcdir/gc/configure --disable-shared --prefix=${destdir} \
 	--includedir=${destdir}/h --libdir=${destdir} --build=${build_alias} \
 	--host=${host_alias} ${gc_flags})
   fi

@@ -140,7 +140,9 @@ PICFLAG='-fPIC'
 LDINSTALLNAME=''
 THREAD_CFLAGS=''
 THREAD_LDFLAGS=''
+THREAD_GC_FLAGS='--enable-threads=posix'
 INSTALL_TARGET='install'
+THREAD_OBJ='threads'
 case "${host_os}" in
 	# libdir may have a dollar expression inside
 	linux*)
@@ -185,6 +187,7 @@ case "${host_os}" in
 	cygwin*)
 		thehost='cygwin'
 		shared='no'
+		THREAD_OBJ=''
 		SHARED_LDFLAGS=''
 		BUNDLE_LDFLAGS=''
 		SHAREDPREFIX=''
@@ -192,14 +195,19 @@ case "${host_os}" in
 		;;
 	mingw*)
 		thehost='mingw32'
-		CLIBS='-lwsock32'
+		CLIBS=''
 		shared='yes'
+		THREAD_OBJ='threads_win32'
+		THREAD_CFLAGS='-D_THREAD_SAFE'
+		THREAD_LDFLAGS=''
+		THREAD_GC_FLAGS='--enable-threads=win32'
 		SHARED_LDFLAGS=''
 		BUNDLE_LDFLAGS=''
 		SHAREDPREFIX=''
 		SHAREDEXT='dll'
 		PICFLAG=''
 		INSTALL_TARGET='flatinstall'
+		TCPLIBS='-lws2_32'
 		;;
 	darwin*)
 		thehost='darwin'

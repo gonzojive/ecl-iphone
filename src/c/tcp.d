@@ -16,7 +16,7 @@
 #include <sys/types.h>
 #include <errno.h>
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(mingw32)
 #include <winsock2.h>
 #else
 #include <netinet/in.h>
@@ -26,7 +26,7 @@
 #endif
 #include <string.h>
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(mingw32)
 #include <io.h>
 #else
 #include <sys/ioctl.h>
@@ -39,7 +39,7 @@
 
 extern int errno;
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(mingw32)
 WSADATA wsadata;
 int wsock_initialized = 0;
 #define INIT_TCP								\
@@ -57,7 +57,7 @@ int wsock_initialized = 0;
 void
 ecl_tcp_close_all(void)
 {
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(mingw32)
 	if ( wsock_initialized )
 	{
 		WSACleanup();
@@ -99,7 +99,7 @@ int connect_to_server(char *host, int port)
     /* Check the address type for an internet host. */
     if (host_ptr->h_addrtype != AF_INET) {
       /* Not an Internet host! */
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(mingw32)
       errno = WSAEPROTOTYPE;
 #else
       errno = EPROTOTYPE;
@@ -126,7 +126,7 @@ int connect_to_server(char *host, int port)
 
 #ifdef TCP_NODELAY
   /* make sure to turn off TCP coalescence */
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(mingw32)
   { char mi;
     setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, &mi, sizeof (char));
   }
@@ -177,7 +177,7 @@ create_server_port(int port)
 
 #ifdef SO_REUSEADDR
     /* Necesary to restart the server without a reboot */
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(mingw32)
     {
 	char one = 1;
 	setsockopt(request, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(char));
@@ -191,7 +191,7 @@ create_server_port(int port)
 #endif /* SO_REUSEADDR */
 #ifdef TCP_NODELAY
   /* make sure to turn off TCP coalescence */
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(mingw32)
   { char mi;
     setsockopt(request, IPPROTO_TCP, TCP_NODELAY, &mi, sizeof (char));
   }
@@ -205,7 +205,7 @@ create_server_port(int port)
   /* Set up the socket data. */
   memset((char *)&inaddr, 0, sizeof(inaddr));
   inaddr.sin_family = AF_INET;
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(mingw32)
   inaddr.sin_port = htons((unsigned short)port);
 #else
   inaddr.sin_port = htons(port);
@@ -284,7 +284,7 @@ si_open_client_stream(cl_object host, cl_object port)
    if (fd == 0)
      @(return Cnil)
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(mingw32)
    streamIn = ecl_make_stream_from_fd(host, fd, smm_input_wsock);
    streamOut = ecl_make_stream_from_fd(host, fd, smm_output_wsock);
 #else
@@ -323,7 +323,7 @@ si_open_server_stream(cl_object port)
 cl_object
 si_open_unix_socket_stream(cl_object path)
 {
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(mingw32)
 	FEerror("UNIX socket not supported under Win32 platform", 0);
 #else
 	int fd;			/* file descriptor */

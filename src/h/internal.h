@@ -129,33 +129,27 @@ extern void cl_write_object(cl_object x, cl_object stream);
 /* global locks */
 
 #ifdef ECL_THREADS
-#if 0
-#define HASH_TABLE_LOCK(h) if ((h)->hash.lockable) pthread_mutex_lock(&(h)->hash.lock)
-#define HASH_TABLE_UNLOCK(h) if ((h)->hash.lockable) pthread_mutex_unlock(&(h)->hash.lock)
-#define PACKAGE_LOCK(p) pthread_mutex_lock(&(p)->pack.lock)
-#define PACKAGE_UNLOCK(p) pthread_mutex_unlock(&(p)->pack.lock)
-#define PACKAGE_OP_LOCK() pthread_mutex_lock(&cl_core.global_lock)
-#define PACKAGE_OP_UNLOCK() pthread_mutex_unlock(&cl_core.global_lock)
-#define THREAD_OP_LOCK() pthread_mutex_lock(&cl_core.global_lock)
-#define THREAD_OP_UNLOCK() pthread_mutex_unlock(&cl_core.global_lock)
+# if defined(_MSC_VER) || defined(mingw32)
+#  define pthread_mutex_lock(x) \
+	 (WaitForSingleObject(*(HANDLE*)(x), INFINITE) != WAIT_OBJECT_0)
+#  define pthread_mutex_unlock(x) (ReleaseMutex(*(HANDLE*)(x)) == 0)
+# endif
+# define HASH_TABLE_LOCK(h) if ((h)->hash.lockable) if (pthread_mutex_lock(&(h)->hash.lock)) internal_error("")
+# define PACKAGE_LOCK(p) if (pthread_mutex_lock(&(p)->pack.lock)) internal_error("")
+# define PACKAGE_OP_LOCK() if (pthread_mutex_lock(&cl_core.global_lock)) internal_error("")
+# define THREAD_OP_LOCK() if (pthread_mutex_lock(&cl_core.global_lock)) internal_error("")
+# define HASH_TABLE_UNLOCK(h) if ((h)->hash.lockable) if (pthread_mutex_unlock(&(h)->hash.lock)) internal_error("")
+# define PACKAGE_UNLOCK(p) if (pthread_mutex_unlock(&(p)->pack.lock)) internal_error("")
+# define PACKAGE_OP_UNLOCK() if (pthread_mutex_unlock(&cl_core.global_lock)) internal_error("")
+# define THREAD_OP_UNLOCK() if (pthread_mutex_unlock(&cl_core.global_lock)) internal_error("")
 #else
-#define HASH_TABLE_LOCK(h) if ((h)->hash.lockable) if (pthread_mutex_lock(&(h)->hash.lock)) internal_error("")
-#define PACKAGE_LOCK(p) if (pthread_mutex_lock(&(p)->pack.lock)) internal_error("")
-#define PACKAGE_OP_LOCK() if (pthread_mutex_lock(&cl_core.global_lock)) internal_error("")
-#define THREAD_OP_LOCK() if (pthread_mutex_lock(&cl_core.global_lock)) internal_error("")
-#define HASH_TABLE_UNLOCK(h) if ((h)->hash.lockable) if (pthread_mutex_unlock(&(h)->hash.lock)) internal_error("")
-#define PACKAGE_UNLOCK(p) if (pthread_mutex_unlock(&(p)->pack.lock)) internal_error("")
-#define PACKAGE_OP_UNLOCK() if (pthread_mutex_unlock(&cl_core.global_lock)) internal_error("")
-#define THREAD_OP_UNLOCK() if (pthread_mutex_unlock(&cl_core.global_lock)) internal_error("")
-#endif
-#else
-#define HASH_TABLE_LOCK(h)
-#define HASH_TABLE_UNLOCK(h)
-#define PACKAGE_LOCK(p)
-#define PACKAGE_UNLOCK(p)
-#define PACKAGE_OP_LOCK()
-#define PACKAGE_OP_UNLOCK()
-#endif
+# define HASH_TABLE_LOCK(h)
+# define HASH_TABLE_UNLOCK(h)
+# define PACKAGE_LOCK(p)
+# define PACKAGE_UNLOCK(p)
+# define PACKAGE_OP_LOCK()
+# define PACKAGE_OP_UNLOCK()
+#endif /* ECL_THREADS */
 
 
 /* read.d */

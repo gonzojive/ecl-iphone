@@ -12,7 +12,7 @@
     See file '../Copyright' for full details.
 */
 
-#ifdef ECL_THREADS
+#if defined(ECL_THREADS) && !defined(_MSC_VER)
 #include <pthread.h>
 #endif
 #include "ecl.h"
@@ -59,7 +59,11 @@ finalize(cl_object o, cl_object data)
 		break;
 #ifdef ECL_THREADS
 	case t_lock:
+#if defined(_MSC_VER) || defined(mingw32)
+		CloseHandle(o->lock.mutex);
+#else
 		pthread_mutex_destroy(&o->lock.mutex);
+#endif
 		break;
 #endif
 	default:;
@@ -165,6 +169,7 @@ init_alloc(void)
 	alloc_initialized = TRUE;
 
 	GC_no_dls = 1;
+	GC_init();
 #if 0
 	GC_init_explicit_typing();
 #endif

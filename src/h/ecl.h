@@ -23,7 +23,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <setjmp.h>
-#include "config.h"
 #if !defined(cygwin) && !defined(_MSC_VER)
 #include <inttypes.h>
 #endif
@@ -33,17 +32,28 @@ typedef short int16_t;
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 #endif
-#include <gmp.h>
-#include <object.h>
-#include <stacks.h>
+
+#include <config.h>
+
 #ifdef ECL_THREADS
-# include <pthread.h>
+# if defined(_MSC_VER) || defined(mingw32)
+#  include <windows.h>
+   typedef HANDLE pthread_t;
+   typedef HANDLE pthread_mutex_t;
+#  undef ERROR
+# else
+#  include <pthread.h>
+# endif
 # define start_critical_section()
 # define end_critical_section()
 #else
 # define start_critical_section()
 # define end_critical_section()
 #endif
+
+#include <gmp.h>
+#include <object.h>
+#include <stacks.h>
 #ifndef _ARGS
 # define _ARGS(x) x
 #endif

@@ -17,13 +17,11 @@
 #include "ecl.h"
 #include "internal.h"
 #include <signal.h>
-#ifndef _MSC_VER
-#include <unistd.h>
-#else
-#include <windows.h>
+#if defined(mingw32) || defined(_MSC_VER)
+# include <windows.h>
 #endif
-#ifdef ECL_THREADS
-#include <pthread.h>
+#if !defined(_MSC_VER)
+# include <unistd.h>
 #endif
 
 /******************************* ------- ******************************/
@@ -34,7 +32,7 @@ static void
 handle_signal(int sig)
 {
 	switch (sig) {
-#ifdef ECL_THREADS
+#if defined(ECL_THREADS) && !defined(_MSC_VER) && !defined(mingw32)
 	case SIGUSR1:
 		funcall(1, cl_env.own_process->process.interrupt);
 		break;
@@ -189,7 +187,7 @@ init_unixint(void)
 {
 	signal(SIGFPE, signal_catcher);
 	signal(SIGINT, signal_catcher);
-#ifdef ECL_THREADS
+#if defined(ECL_THREADS) && !defined(_MSC_VER) && !defined(mingw32)
 	signal(SIGUSR1, signal_catcher);
 #endif
 #ifdef _MSC_VER

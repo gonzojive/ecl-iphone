@@ -65,7 +65,7 @@ BEGIN:
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_io:
 	case smm_input:
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_input_wsock:
 #endif
 	case smm_concatenated:
@@ -75,7 +75,7 @@ BEGIN:
 		return(TRUE);
 
 	case smm_output:
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_output_wsock:
 #endif
 	case smm_string_output:
@@ -111,7 +111,7 @@ BEGIN:
 		FEtype_error_stream(strm);
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_input:
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_input_wsock:
 #endif
 	case smm_concatenated:
@@ -119,7 +119,7 @@ BEGIN:
 		return(FALSE);
 
 	case smm_output:
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_output_wsock:
 #endif
 	case smm_io:
@@ -163,7 +163,7 @@ BEGIN:
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_input:
 	case smm_output:
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_input_wsock:
 	case smm_output_wsock:
 #endif
@@ -274,7 +274,7 @@ wrong_file_handler(cl_object strm)
 	FEerror("Internal error: stream ~S has no valid C file handler.", 1, strm);
 }
 
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 static void
 wsock_error( const char *err_msg, cl_object strm )
 {
@@ -524,7 +524,7 @@ close_stream(cl_object strm, bool abort_flag)        /*  Not used now!  */
 		strm->stream.file = NULL;
 #endif
 		break;
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_input_wsock:
 	case smm_output_wsock:
 		if ( closesocket( ( int )strm->stream.file ) != 0 )
@@ -653,7 +653,7 @@ ecl_write_byte8(int c, cl_object strm)
 			io_error(strm);
 		break;
 	}
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_output_wsock: {
 		int fp = (int)strm->stream.file;
 		if ( fp == INVALID_SOCKET )
@@ -698,7 +698,7 @@ BEGIN:
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_output:
 	case smm_io:
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_output_wsock:
 #endif
 	case smm_string_output:
@@ -720,7 +720,7 @@ BEGIN:
 		strm = strm->stream.object1;
 		goto BEGIN;
 	case smm_input:
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_input_wsock:
 #endif
 	case smm_concatenated:
@@ -791,7 +791,7 @@ ecl_read_byte8(cl_object strm)
 			io_error(strm);
 		break;
 	}
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_input_wsock: {
 		int fp = (int)strm->stream.file;
 		if ( fp == INVALID_SOCKET )
@@ -903,7 +903,7 @@ BEGIN:
 	case smm_input:
 	case smm_io:
 	case smm_string_input:
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_input_wsock:
 #endif
 		break;
@@ -937,7 +937,7 @@ BEGIN:
 		}
 		return c;
 	case smm_output:
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_output_wsock:
 #endif
 	case smm_broadcast:
@@ -1049,7 +1049,7 @@ BEGIN:
 			io_error(strm);
 		break;
 	}
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_input_wsock: {
 		int fp = strm->stream.file;
 		if (!strm->stream.char_stream_p)
@@ -1106,7 +1106,7 @@ BEGIN:
 		break;
 
 	case smm_output:
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_output_wsock:
 #endif
 	case smm_broadcast:
@@ -1164,7 +1164,7 @@ BEGIN:
 		ungetc(c, fp);
 		break;
 
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_input_wsock:
 		wsock_error( "Cannot peek char on Windows Socket ~S.~%~A", strm );
 		break;
@@ -1204,7 +1204,7 @@ BEGIN:
 		break;
 
 	case smm_output:
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_output_wsock:
 #endif
 	case smm_broadcast:
@@ -1256,7 +1256,7 @@ BEGIN:
 /*		--strm->stream.int0; useless in smm_io, Beppe */
 		break;
 
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_input_wsock:
 		goto UNREAD_ERROR;
 #endif
@@ -1287,7 +1287,7 @@ BEGIN:
 		break;
 
 	case smm_output:
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_output_wsock:
 #endif
 	case smm_broadcast:
@@ -1338,7 +1338,7 @@ BEGIN:
 			io_error(strm);
 		break;
 
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_output_wsock:
 		if (!strm->stream.char_stream_p)
 			not_a_character_stream(strm);
@@ -1395,7 +1395,7 @@ BEGIN:
 		break;
 
 	case smm_input:
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_input_wsock:
 #endif
 	case smm_concatenated:
@@ -1601,7 +1601,7 @@ BEGIN:
 			io_error(strm);
 		break;
 	}
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_output_wsock:
 		/* do not do anything (yet) */
 		break;
@@ -1627,7 +1627,7 @@ BEGIN:
 		break;
 	      }
 	case smm_input:
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_input_wsock:
 #endif
 	case smm_concatenated:
@@ -1674,7 +1674,7 @@ BEGIN:
 		}
 		break;
 
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_input_wsock:
 		/* do not do anything (yet) */
 		printf( "Trying to clear input on windows socket stream!\n" );
@@ -1698,7 +1698,7 @@ BEGIN:
 	case smm_string_output:
 	case smm_io:
 	case smm_output:
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_output_wsock:
 #endif
 	case smm_concatenated:
@@ -1738,7 +1738,7 @@ BEGIN:
 #endif
 		break;
 
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_output_wsock:
 		/* do not do anything (yet) */
 		printf( "Trying to clear output windows socket stream\n!" );
@@ -1762,7 +1762,7 @@ BEGIN:
 	case smm_string_output:
 	case smm_io:
 	case smm_input:
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_input_wsock:
 #endif
 	case smm_concatenated:
@@ -1845,7 +1845,7 @@ flisten(FILE *fp)
 			break;
 		case FILE_TYPE_PIPE: {
 			DWORD dw;
-			if (PeekNamedPipe(hnd, NULL, 0, NULL, &dw, NULL) != 0)
+			if (PeekNamedPipe(hnd, NULL, 0, NULL, &dw, NULL) == 0)
 				return (dw > 0 ? ECL_LISTEN_AVAILABLE : ECL_LISTEN_NO_CHAR);
 			else if (GetLastError() == ERROR_BROKEN_PIPE)
 				return ECL_LISTEN_EOF;
@@ -1897,7 +1897,7 @@ BEGIN:
 			wrong_file_handler(strm);
 		return flisten(fp);
 
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_input_wsock:
 		fp = strm->stream.file;
 		if ( ( int )fp == INVALID_SOCKET )
@@ -1946,7 +1946,7 @@ BEGIN:
 			return ECL_LISTEN_EOF;
 
 	case smm_output:
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_output_wsock:
 #endif
 	case smm_broadcast:
@@ -2006,7 +2006,7 @@ BEGIN:
 		strm = CAR(strm);
 		goto BEGIN;
 
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_input_wsock:
 	case smm_output_wsock:
 #endif
@@ -2126,7 +2126,7 @@ BEGIN:
 		strm = CAR(strm);
 		goto BEGIN;
 
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_input_wsock:
 	case smm_output_wsock:
 #endif
@@ -2196,7 +2196,7 @@ BEGIN:
 		goto BEGIN;
 
 	/* FIXME! Should signal an error of type-error */
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_input_wsock:
 	case smm_output_wsock:
 #endif
@@ -2233,7 +2233,7 @@ BEGIN:
 		FEclosed_stream(strm);
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_output:
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_output_wsock:
 #endif
 	case smm_io:
@@ -2250,7 +2250,7 @@ BEGIN:
 		goto BEGIN;
 
 	case smm_input:
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	case smm_input_wsock:
 #endif
 	case smm_string_input:
@@ -2719,7 +2719,7 @@ ecl_make_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm)
     case smm_output:
       mode = "w";
       break;
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
     case smm_input_wsock:
     case smm_output_wsock:
       break;
@@ -2727,7 +2727,7 @@ ecl_make_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm)
     default:
       FEerror("make_stream: wrong mode", 0);
    }
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
    if ( smm == smm_input_wsock || smm == smm_output_wsock )
      fp = ( FILE* )fd;
    else

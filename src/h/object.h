@@ -295,7 +295,7 @@ enum ecl_smmode {		/*  stream mode  */
 	smm_string_input,	/*  string input  */
 	smm_string_output,	/*  string output  */
 	smm_probe		/*  probe (only used in open_stream())  */
-#ifdef _MSC_VER
+#if defined(ECL_WSOCK)
 	,
 	smm_input_wsock,	/* input socket (Win32) */
 	smm_output_wsock	/* output socket (Win32) */

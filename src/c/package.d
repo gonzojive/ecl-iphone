@@ -142,8 +142,8 @@ make_package(cl_object name, cl_object nicknames, cl_object use_list)
 	x->pack.external = make_package_hashtable();
 	x->pack.name = name;
 #ifdef ECL_THREADS
-#if 0
-	pthread_mutex_init(&x->pack.lock);
+#if defined(_MSC_VER) || defined(mingw32)
+	x->pack.lock = CreateMutex(NULL, FALSE, NULL);
 #else
 	{
 	pthread_mutexattr_t attr;
@@ -152,7 +152,7 @@ make_package(cl_object name, cl_object nicknames, cl_object use_list)
 	pthread_mutex_init(&x->pack.lock, &attr);
 	pthread_mutexattr_destroy(&attr);
 	}
-#endif
+#endif /* _MSC_VER */
 #endif
  INTERN:
 	x->pack.nicknames = Cnil;
@@ -291,7 +291,7 @@ intern(cl_object name, cl_object p, int *intern_flag)
 
 	assert_type_string(name);
 	p = si_coerce_to_package(p);
- TRY_AGAIN:
+ TRY_AGAIN_LABEL:
 	PACKAGE_LOCK(p);
 	s = gethash_safe(name, p->pack.external, OBJNULL);
 	if (s != OBJNULL) {
@@ -317,7 +317,7 @@ intern(cl_object name, cl_object p, int *intern_flag)
 		PACKAGE_UNLOCK(p);
 		CEpackage_error("Cannot intern symbol ~S in locked package ~S.",
 				"Ignore lock and proceed", p, 2, name, p);
-		goto TRY_AGAIN;
+		goto TRY_AGAIN_LABEL;
 	}
 	s = make_symbol(name);
 	s->symbol.hpack = p;
@@ -390,7 +390,7 @@ unintern(cl_object s, cl_object p)
 	assert_type_symbol(s);
 	p = si_coerce_to_package(p);
 
- TRY_AGAIN:
+ TRY_AGAIN_LABEL:
 	PACKAGE_LOCK(p);
 	hash = p->pack.internal;
 	x = gethash_safe(s->symbol.name, hash, OBJNULL);
@@ -405,7 +405,7 @@ unintern(cl_object s, cl_object p)
 		PACKAGE_UNLOCK(p);
 		CEpackage_error("Cannot unintern symbol ~S from locked package ~S.",
 				"Ignore lock and proceed", p, 2, s, p);
-		goto TRY_AGAIN;
+		goto TRY_AGAIN_LABEL;
 	}
 	if (!member_eq(s, p->pack.shadowings))
 		goto NOT_SHADOW;

@@ -233,6 +233,7 @@ GO_ON:
 	output = Cnil;
 OUTPUT:
 #ifdef ECL_THREADS
+	(void)0; /* MSVC complains about missing ';' before '}' */
 	} CL_UNWIND_PROTECT_EXIT {
 	mp_giveup_lock(symbol_value(@'mp::+load-compile-lock+'));
 	} CL_UNWIND_PROTECT_END;

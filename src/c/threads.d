@@ -11,6 +11,9 @@
 
     See file '../Copyright' for full details.
 */
+/*
+ * IMPORTANT!!!! IF YOU EDIT THIS FILE, CHANGE ALSO threads_win32.d
+ */
 
 #include <pthread.h>
 #include <signal.h>

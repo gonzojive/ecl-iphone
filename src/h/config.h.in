@@ -30,6 +30,9 @@
 
 /* Network streams							*/
 #undef TCP
+#if defined(TCP) && (defined(_MSC_VER) || defined(mingw32))
+# define ECL_WSOCK
+#endif
 
 /* Foreign functions interface						*/
 #undef ECL_FFI

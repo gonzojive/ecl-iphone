@@ -415,7 +415,11 @@ cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 	h->hash.lockable = !Null(lockable);
 #ifdef ECL_THREADS
 	if (h->hash.lockable)
+#if defined(_MSC_VER) || defined(mingw32)
+		h->hash.lock = CreateMutex(NULL, FALSE, NULL);
+#else
 		pthread_mutex_init(&h->hash.lock, NULL);
+#endif
 #endif
 	return cl_clrhash(h);
 }
