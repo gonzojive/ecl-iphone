@@ -54,7 +54,7 @@ Returns the absolute value of NUMBER."
 Returns the angle part (in radians) of the polar representation of NUMBER.
 Returns zero for non-complex numbers."
   (if (zerop x)
-    (float 0 (realpart x))
+    (if (eq x 0) 0.0 (float 0 (realpart x)))
     (atan (imagpart x) (realpart x))))
 
 (defun signum (x)
