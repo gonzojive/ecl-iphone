@@ -355,10 +355,16 @@ parse_number(const char *s, cl_index end, cl_index *ep, int radix)
 			} else {
 				is_float = 1;
 			}
-		} else if ((digitp(c, radix) < 0) && is_exponent_marker(c)) {
-			exp_marker_loc = i;
-			is_float = 1;
-			break;
+		} else if (digitp(c, radix) < 0) {
+			if (is_exponent_marker(c)) {
+				exp_marker_loc = i;
+				is_float = 1;
+				break;
+			}
+			if ((c < '0' || c > '9') && c != '+' && c != '-') {
+				/* A non valid character found */
+				return OBJNULL;
+			}
 		}
 	}
 	if (!is_float) {
