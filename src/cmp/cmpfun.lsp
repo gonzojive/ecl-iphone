@@ -71,92 +71,25 @@
 	    stream)
       (list 'CALL-GLOBAL info 'TERPRI (list stream))))
 
-(defun c1apply (args &aux info)
+(defun c1apply (args)
   (when (or (endp args) (endp (cdr args)))
-	(too-few-args 'APPLY 2 (length args)))
+    (too-few-args 'APPLY 2 (length args)))
   (let* ((fun (first args))
-	 (funob (c1funob fun))
-	lambda-expr lambda-list)
-    (setq info (second funob)
-	  args (c1args (cdr args) info))
-    (if (and (eq (first funob) 'LAMBDA)
-	     (null (second (setq lambda-list ; No optional
-				 (third (setq lambda-expr (third funob))))))
-	     (null (fourth lambda-list))) ; No keyword
-	(c1apply-optimize info
-			  (first lambda-list)
-			  (third lambda-list)
-			  (fifth lambda-expr)
-			  args)
-	(case (first funob)
-	  (ORDINARY
-	   (list 'CALL-GLOBAL info 'APPLY (cons (third funob) args)))
-	  (GLOBAL
-	   (list 'CALL-GLOBAL info 'APPLY (cons (c1function (cdr fun)) args)))
-	  ((LAMBDA LOCAL)
-	   (list 'APPLY-LAMBDA/LOCAL info funob args))))))
-
-(defun c2apply-lambda/local (funob args)
-  (let* ((loc (save-funob funob))
-	 (*temp* *temp*)
-	 (temp-args '())
-	 (narg (make-lcl-var :rep-type :cl-index))
-	 (is-lambda (eq 'LAMBDA (first funob))))
-    ;; We must prepare in the lisp stack the following:
-    ;; lex0, ..., lexk, env, arg1, ..., argn
-    (wt-nl "{ cl_index " narg ";")
-    (dolist (expr args)
-      (let ((*destination* (make-temp-var)))
-	(push *destination* temp-args)
-	(c2expr* expr)))
-    (setf temp-args (nreverse temp-args))
-    (unless is-lambda
-      (let* ((fun (third funob))
-	     (lex-lvl (fun-level fun))
-	     (closure-lvl (when (fun-closure fun) (- *env* (fun-env fun)))))
-	(dotimes (n lex-lvl)
-	  (wt-nl "cl_stack_push((cl_object)lex" n ");"))
-	(when closure-lvl
-	  ;; env of local fun is ALWAYS contained in current env (?)
-	  (wt-nl "cl_stack_push((cl_object)env" *env-lvl* ");"))))
-    (dotimes (i (1- (length args)))
-      (wt-nl "cl_stack_push(" (pop temp-args) ");"))
-    (wt-nl narg "=" (1- (length args))
-	   "+cl_stack_push_list(" (pop temp-args) ");")
-    (let ((*unwind-exit* `((STACK ,narg) ,@*unwind-exit*)))
-      (if is-lambda
-	  (c2funcall funob 'ARGS-PUSHED loc narg)
-	  (c2call-local (third funob) 'ARGS-PUSHED narg)))
-    (wt-nl "}")))
-
-(defun c1apply-optimize (info requireds rest body args
-			      &aux (vl nil) (fl nil))
-  (do ()
-      ((or (endp (cdr args)) (endp requireds)))
-    (push (pop requireds) vl)
-    (push (pop args) fl))
-
-  (cond ((cdr args)
-	 (cmpck (null rest)
-		"APPLY passes too many arguments to LAMBDA expression.")
-	 (push rest vl)
-	 (push (list 'CALL-GLOBAL info 'LIST* args) fl)
-	 (list 'LET info (nreverse vl) (nreverse fl) body))
-	(t
-	 (let ((*vars* *vars*)
-	       (temp (or rest (make-var :name (gensym) :kind :OBJECT
-					:ref (length args)))))
-	   (push-vars temp)
-	   (push temp vl)
-	   (push (car args) fl)
-	   (list 'LET info (nreverse vl) (nreverse fl)
-		 (list 'LET*
-		       (second body)
-		       requireds
-		       (make-list (length requireds)
-				  :initial-element
-				  (c1expr `(pop ,(var-name temp))))
-		       body))))))
+	 (arguments (rest args)))
+    (cond ((and (consp fun)
+		(eq (first fun) 'LAMBDA))
+	   (c1expr (optimize-funcall/apply-lambda (cdr fun) arguments t)))
+	  ((and (consp fun)
+		(eq (first fun) 'LAMBDA-BLOCK))
+	   (setf fun (macropexpand-1 fun))
+	   (c1expr (optimize-funcall/apply-lambda (cdr fun) arguments t)))
+	  ((and (consp fun)
+		(eq (first fun) 'FUNCTION)
+		(consp (second fun))
+		(member (caadr fun) '(LAMBDA LAMBDA-BLOCK)))
+	   (c1apply (list* (second fun) arguments)))
+	  (t
+	   (c1funcall (list* '#'APPLY args))))))
 
 (defun c1rplaca (args &aux (info (make-info)))
   (when (or (endp args) (endp (cdr args)))
@@ -504,7 +437,6 @@
 (put-sysprop 'terpri 'C1 'c1terpri)
 
 (put-sysprop 'apply 'C1 'c1apply)
-(put-sysprop 'apply-lambda/local 'C2 'c2apply-lambda/local)
 
 (put-sysprop 'rplaca 'C1 'c1rplaca)
 (put-sysprop 'rplaca 'C2 'c2rplaca)

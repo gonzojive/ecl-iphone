@@ -68,11 +68,27 @@
 	     (list 'LAMBDA (second lambda-expr) lambda-expr (next-cfun)))))
 	(t (cmperr "Malformed function: ~A" fun))))
 
-(defun c1funcall (args &aux funob (info (make-info)))
+(defun c1funcall (args)
   (when (endp args) (too-few-args 'FUNCALL 1 0))
-  (setq funob (c1funob (car args)))
-  (add-info info (second funob))
-  (list 'FUNCALL info funob (c1args (cdr args) info)))
+  (let ((funob (first args))
+	(arguments (rest args)))
+    (cond ((and (consp funob)
+		(eq (first funob) 'LAMBDA))
+	   (c1expr (optimize-funcall/apply-lambda (cdr funob) arguments nil)))
+	  ((and (consp funob)
+		(eq (first funob) 'LAMBDA-BLOCK))
+	   (setf funob (macropexpand-1 funob))
+	   (c1expr (optimize-funcall/apply-lambda (cdr funob) arguments nil)))
+	  ((and (consp funob)
+		(eq (first funob) 'FUNCTION)
+		(consp (second funob))
+		(member (caadr funob) '(LAMBDA LAMBDA-BLOCK)))
+	   (c1funcall (list* (second funob) arguments)))
+	  (t
+	   (let ((info (make-info)))
+	     (setq funob (c1funob funob))
+	     (add-info info (second funob))
+	     (list 'FUNCALL info funob (c1args arguments info)))))))
 
 (defun c2funcall (funob args &optional loc narg
 			&aux (form (third funob)))
@@ -84,7 +100,6 @@
   (case (first funob)
     (GLOBAL (c2call-global form args loc t narg))
     (LOCAL (c2call-local form args narg))
-    (LAMBDA (c2call-lambda form args (fourth funob) narg))
     (ORDINARY		;;; An ordinary expression.  In this case, if
               		;;; arguments are already on VALUES, then
               		;;; LOC cannot be NIL.  Callers of C2FUNCALL must be
@@ -107,64 +122,7 @@
     (otherwise (baboon))
     ))
 
-(defun c2call-lambda (lambda-expr args cfun &optional narg)
-  ;; ARGS is either the list of arguments or 'ARGS-PUSHED
-  ;; NARG is a location containing the number of ARGS-PUSHED
-  (let ((lambda-list (third lambda-expr))
-	(args-pushed (eq 'ARGS-PUSHED args)))
-    (if (or (second lambda-list)		;;; Has optional?
-	    (third lambda-list)			;;; Has rest?
-	    (fourth lambda-list)		;;; Has key?
-	    args-pushed				;;; Args already pushed?
-	    )
-	(let* ((requireds (first lambda-list))
-	       (nreq (length requireds))
-	       (nopt (if args-pushed narg (- (length args) nreq)))
-	       (*unwind-exit* *unwind-exit*))
-	  (wt-nl "{ ")
-	  (unless args-pushed
-	    (setq narg (make-lcl-var :type :cl-index))
-	    (wt-nl "cl_index " narg "=0;"))
-	  (when requireds
-	    (wt-nl "cl_object ")
-	    (do ((l requireds (cdr l)))
-		((endp l))
-	      (setf (var-loc (first l)) (next-lcl))
-	      (unless (eq l requireds)
-		(wt ", "))
-	      (wt (first l)))
-	    (wt ";"))
-	  (wt-nl "int narg;")
-	  (wt-nl "cl_va_list args;")
-	  (cond (args-pushed
-		 (wt-nl "args[0].sp=cl_stack_index()-" narg ";")
-		 (wt-nl "args[0].narg=" narg ";")
-		 (dolist (l requireds)
-		   (wt-nl l "=cl_va_arg(args);")))
-		(t
-		 (dolist (l requireds)
-		   (let ((*destination* l))
-		     (c2expr* (pop args))))
-		 (push (list STACK narg) *unwind-exit*)
-		 (wt-nl "args[0].sp=cl_stack_index();")
-		 (wt-nl "args[0].narg=" nopt ";")
-		 (do* ((*inline-blocks* 0)
-		       (vals (coerce-locs (inline-args args)) (cdr vals))
-		       (i 0 (1+ i)))
-		     ((null vals) (close-inline-blocks))
-		   (declare (fixnum i))
-		   (wt-nl "cl_stack_push(" (first vals) ");")
-		   (wt-nl narg "++;"))
-		 (wt-nl "args[0].narg=" narg ";")))
-	  (wt "narg=" narg ";")
-	  (c2lambda-expr lambda-list (third (cddr lambda-expr)) cfun
-			 nil nil 'CALL-LAMBDA)
-	  (unless args-pushed
-	    (wt-nl "cl_stack_pop_n(" narg ");"))
-	  (wt-nl "}"))
-	(c2let (first lambda-list) args (third (cddr lambda-expr))))))
-
-(defun maybe-push-args (args)
+(defun maybe-push-args (args &optional fun)
   (when (or (eq args 'ARGS-PUSHED)
 	    (< (length args) SI::C-ARGUMENTS-LIMIT))
     (return-from maybe-push-args (values nil nil nil)))
@@ -172,10 +130,21 @@
     (wt-nl "{cl_index " narg "=0;")
     (let* ((*temp* *temp*)
 	   (temp (make-temp-var))
-	   (*destination* temp))
+	   (*destination* temp)
+	   (total-args 0))
+      (when (typep fun 'FUN)
+	(dotimes (n (fun-level fun))
+	  (incf total-args)
+	  (wt-nl "cl_stack_push((cl_object)lex" n ");"))
+	(when (fun-closure fun)
+	  ;; env of local fun is ALWAYS contained in current env (?)
+	  (incf total-args)
+	  (wt-nl "cl_stack_push((cl_object)env" *env-lvl* ");")))
       (dolist (expr args)
 	(c2expr* expr)
-	(wt-nl "cl_stack_push(" temp "); " narg "++;")))
+	(incf total-args)
+	(wt-nl "cl_stack_push(" temp "); "))
+      (wt-nl narg "=" total-args ";"))
     (values `((STACK ,narg) ,@*unwind-exit*) 'ARGS-PUSHED narg)))
 
 ;;;
@@ -398,7 +367,6 @@
 
 (put-sysprop 'funcall 'C1 #'c1funcall)
 (put-sysprop 'funcall 'c2 #'c2funcall)
-(put-sysprop 'call-lambda 'c2 #'c2call-lambda)
 (put-sysprop 'call-global 'c2 #'c2call-global)
 
 (put-sysprop 'CALL 'WT-LOC #'wt-call)
