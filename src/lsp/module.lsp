@@ -70,7 +70,7 @@
 		    (module (string module)))
 	       (or
 		(let ((path (merge-pathnames (make-pathname :name module) sysdir)))
-		  (if (probe-file path) (load path)))
+		  (load path :if-does-not-exist nil))
 		(let ((path (merge-pathnames (make-pathname :name (string-downcase module)) sysdir)))
-		  (if (probe-file path) (load path))))))
+		  (load path :if-does-not-exist nil)))))
 	 *module-provider-functions*)
