@@ -86,7 +86,7 @@
 	      (add-keyword k))))))))
 
 (defun add-object (object &aux x found)
-  (cond ((setq x (assoc object *objects* :test 'equalp))
+  (cond ((setq x (assoc object *objects* :test 'equal))
          (second x))
 	((and (symbolp object)
 	      (multiple-value-setq (found x) (si::mangle-name object)))
