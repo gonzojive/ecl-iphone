@@ -14,6 +14,7 @@
 */
 
 #include "ecl.h"
+#include "machines.h"
 #include "ecl-inl.h"
 
 #ifdef __mips

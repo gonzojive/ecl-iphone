@@ -14,14 +14,12 @@
     See file '../Copyright' for full details.
 */
 
+#include <limits.h>
 #include <math.h>
 #include <ctype.h>
 #include "ecl.h"
+#include "internal.h"
 #include "ecl-inl.h"
-
-#ifndef CHAR_BIT
-#define CHAR_BIT (sizeof(char)*8)
-#endif
 
 /******************************* EXPORTS ******************************/
 

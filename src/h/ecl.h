@@ -15,21 +15,22 @@
 
 #include <sys/param.h>		/* includes <sys/signal.h> and <sys/types.h> */
 #include <sys/types.h>		/* for EMX */
-#include "config.h"
-#include "machines.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <setjmp.h>
+#include "config.h"
 #include "gmp.h"
 #include "object.h"
 #include "stacks.h"
-#include "critical.h"
 #ifdef THREADS
 # include "lwp.h"
+#else
+# define start_critical_section()
+# define end_critical_section()
 #endif
 #ifndef _ARGS
-#define _ARGS(x) x
+# define _ARGS(x) x
 #endif
 #include "external.h"
 /*#include "ecl-inl.h"*/

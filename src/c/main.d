@@ -35,6 +35,7 @@ int data_start = (int)&data_start;
 
 #include <stdlib.h>
 #include "ecl.h"
+#include "machines.h"
 #ifdef TK
 # include "tk.h"
 #endif

@@ -19,12 +19,14 @@
 #  define	stack_align(n)	(((n) + 03) & ~03)
 #endif
 
+#ifndef ecl_setjmp
 #if defined(linux)
 #  define ecl_setjmp	setjmp
 #  define ecl_longjmp	longjmp
 #else
 #  define ecl_setjmp	_setjmp
 #  define ecl_longjmp	_longjmp
+#endif
 #endif
 
 #ifdef __linux__

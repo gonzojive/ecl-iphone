@@ -37,7 +37,6 @@ AC_SUBST(ECL_VERSION)
 dnl Guess operating system of host. We do not allow cross-compiling.
 AC_CANONICAL_HOST
 
-AC_CONFIG_HEADER(h/config.h)
 AC_SUBST(host)
 AC_SUBST(bindir)
 AC_SUBST(mandir)
@@ -109,6 +108,8 @@ AC_SUBST(SHARED_LDFLAGS)dnl	Flags for shared libraries linker
 AC_SUBST(architecture)dnl	Type of processor for which this is compiled
 AC_SUBST(software_type)dnl	Type of operating system
 AC_SUBST(software_version)dnl	Version number of operating system
+AC_SUBST(ecl_setjmp)dnl		Function to use for setjmp
+AC_SUBST(ecl_longjmp)dnl	Function to use for longjmp
 AC_SUBST(SHORT_SITE_NAME)dnl	Short name for the machine we built this on
 AC_SUBST(LONG_SITE_NAME)dnl	Long name for the machine we built this on
 AC_SUBST(EXTRA_OBJS)dnl		Extra *.o files to be compiled into libecl.a
@@ -321,10 +322,15 @@ fi
 dnl ---------------------------------------------------------------------
 dnl		Final pass over configuration files
 dnl
+dnl Notice that we build ${builddir}/h/configpre.h fron ${srcdir}/h/config.h.in,
+dnl and then use all AC_DEF* to build h/config.h from h/configpre.h
+dnl
 AC_CONFIG_FILES(compile.lsp compile_rest.lsp bare.lsp
  lsp/config.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp
  ../Makefile Makefile c/Makefile doc/Makefile
  tk/Makefile clx/defsys.lsp tests/Makefile ansi-tests/Makefile gabriel/Makefile
  lsp/defsys.lsp cmp/defsys.lsp clos/defsys.lsp)
 AC_CONFIG_FILES([ecl-config:util/ecl-config],[chmod +x ecl-config])
+AC_CONFIG_FILES([h/configpre:h/config.h.in])
+AC_CONFIG_HEADER([h/config.h:h/configpre])
 AC_OUTPUT

@@ -13,20 +13,22 @@
     See file '../Copyright' for full details.
 */
 
-#include "config.h"
-#include "machines.h"
+#include <sys/param.h>
+#include <sys/types.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <setjmp.h>
 #include <math.h>
-#include <sys/types.h>
+#include "config.h"
 #include "gmp.h"
 #include "object.h"
 #include "stacks.h"
 #ifdef THREADS
-#include "lwp.h"
-#include "critical.h"
+# include "lwp.h"
+#else
+# define start_critical_section()
+# define end_critical_section()
 #endif
 #include "external.h"
 #include "eval.h"
@@ -40,12 +42,6 @@
 	if ((int *)(&narg) < cs_limit) \
 		cs_overflow()
 
-#define LINK_ARGS	&narg
 #define TRAMPOLINK(narg, vv, lk) \
 	cl_va_list args; cl_va_start(args, narg, narg, 0); \
 	return(link_call(vv, (cl_objectfn *)lk, narg, args))
-
-#define	cclosure_call	funcall
-
-#define Creturn(v)	return((VALUES(0)=(v),1))
-#define Cexit		return(0)

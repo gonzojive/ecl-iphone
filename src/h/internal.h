@@ -16,6 +16,12 @@
 extern "C" {
 #endif
 
+/* -------------------------------------------------------------------- *
+ *	FUNCTIONS, VARIABLES AND TYPES NOT FOR GENERAL USE		*
+ * -------------------------------------------------------------------- */
+
+#include "machines.h"
+
 /* all_symbols.d */
 
 extern cl_index cl_num_symbols_in_core;
@@ -53,6 +59,9 @@ extern cl_object PRINTstream;
 extern void edit_double(int n, double d, int *sp, char *s, int *ep);
 extern void cl_setup_printer(cl_object strm);
 extern void cl_write_object(cl_object x);
+
+ /* read.d */
+#define	RTABSIZE	CHAR_CODE_LIMIT	/*  read table size  */
 
 #ifdef __cplusplus
 }

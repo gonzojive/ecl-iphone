@@ -30,7 +30,7 @@ HFILES	= ../h/config.h $(HDIR)/ecl.h $(HDIR)/ecl-cmp.h\
 	$(HDIR)/machines.h $(HDIR)/object.h $(HDIR)/cs.h $(HDIR)/stacks.h\
 	$(HDIR)/external.h $(HDIR)/eval.h\
 	$(HDIR)/number.h $(HDIR)/page.h $(HDIR)/unify.h\
-	$(HDIR)/lwp.h $(HDIR)/critical.h
+	$(HDIR)/lwp.h
 OBJS	= main.o symbol.o package.o list.o\
 	apply.o eval.o interpreter.o compiler.o disassembler.o \
 	clos.o instance.o gfun.o reference.o character.o\
@@ -57,6 +57,8 @@ all:	$(DPP) ../libecl.a cinit.o
 
 install: $(HFILES)
 	$(INSTALL_DATA) $(HFILES) $(PREFIX)$(libdir)/h/
+	sed ',-CUT-,$$d' ../h/config.h > ../h/config-install.h
+	$(INSTALL_DATA) ../h/config-install.h $(PREFIX)$(libdir)/h/config.h
 
 ../libecl.a: $(OBJS)
 	ar cr $@ $(OBJS)

@@ -1016,8 +1016,8 @@ ECL 0.7
     RECURSIVE-P is NIL. Furthermore, EOF is detected when EOF-ERROR-P
     is true, regardless of the value of RECURSIVE-P.
 
-ECL 0.7b
-========
+ECL 0.8
+=======
 
 * Errors fixed:
 
@@ -1112,6 +1112,19 @@ ECL 0.7b
 
   - cl_special_form_p() renamed to cl_special_operator_p().
 
+  - If a wrong number of arguments is passed to a function, the name of
+    the function is mentioned in the error message, whenever possible.
+
+  - The tests for the type and size of cl_fixnum have been
+    grouped. FIXNUM_BITS and CHAR_BIT do not rely now on "char" being
+    8-bit large.
+
+  - All configuration settings are now grouped in config.h. This file
+    has two parts, and the second one, containing flags which are only
+    needed during the build process, is deleted when installing ECL.
+
+  - File critical.h merged into lwp.h.
+
 * ANSI compatibility:
 
   - DEFINE-SYMBOL-MACRO finally implemented.
@@ -1119,6 +1132,13 @@ ECL 0.7b
   - Added a WITH-COMPILATION-UNIT which does nothing.
 
   - Added function ENSURE-DIRECTORIES-EXIST.
+
+  - CODE-CHAR would reject negative numbers.
+
+  - Remove si::*inhibit-macro-special*. When a special operator is
+    redefined as a macro, preserve the special nature of the
+    operator. Complain when user tries to redefine a special operator
+    as a function.
 
 TODO:
 =====

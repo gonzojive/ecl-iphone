@@ -3,6 +3,7 @@
 */
 /*
     Copyright (c) 1990, Giuseppe Attardi.
+    Copyright (c) 2001, Juan Jose Garcia Ripoll.
 
     ECoLisp is free software; you can redistribute it and/or
     modify it under the terms of the GNU Library General Public
@@ -12,17 +13,77 @@
     See file '../Copyright' for full details.
 */
 
+/*
+ * FEATURES LINKED IN
+ */
+/* Always use CLOS							*/
+#define CLOS
 
-/* -------------------------------------------------------------------- *
- *	OPTIONS								*
- * -------------------------------------------------------------------- */
+/* Use Boehm's garbage collector					*/
+#undef GBC_BOEHM
 
-#define CLOS			/* Always use CLOS			*/
+/* Userland threads?							*/
 #undef THREADS
-#undef TK
 
 /* Network streams							*/
 #undef TCP
+
+/*
+ * C TYPES AND SYSTEM LIMITS
+ */
+/*
+ * The integer type
+ *
+ * cl_fixnum must be an integer type, large enough to hold a pointer.
+ * Ideally, according to the ISOC99 standard, we should use intptr_t,
+ * but the required headers are not present in all systems. Hence we
+ * use autoconf to guess the following values.
+ */
+#define FIXNUM_BITS		@CL_FIXNUM_BITS@
+#define MOST_POSITIVE_FIXNUM	((cl_fixnum)@CL_FIXNUM_MAX@)
+#define MOST_NEGATIVE_FIXNUM	((cl_fixnum)@CL_FIXNUM_MIN@)
+
+typedef @CL_FIXNUM_TYPE@ cl_fixnum;
+typedef unsigned @CL_FIXNUM_TYPE@ cl_index;
+typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
+
+/*
+ * The character type
+ */
+#define	CHAR_CODE_LIMIT		256
+
+/*
+ * Array limits
+ */
+#define	ARANKLIM	64		/*  array rank limit  		*/
+#define	ADIMLIM		16*1024*1024	/*  array dimension limit	*/
+#define	ATOTLIM		16*1024*1024	/*  array total limit		*/
+
+/*
+ * Function limits
+ */
+/*	Maximum number of function arguments 				*/
+#define CALL_ARGUMENTS_LIMIT @CL_FIXNUM_MAX@
+
+/*	Maximum number of required arguments				*/
+#define LAMBDA_PARAMETERS_LIMIT 64
+
+/*	Numb. of args. which can be passed using the C stack		*/
+#define C_ARGUMENTS_LIMIT 64
+
+/* Which functions to use for setting jump points */
+#define ecl_setjmp	@ecl_setjmp@
+#define ecl_longjmp	@ecl_longjmp@
+
+
+/* -CUT-: Everything below this mark will not be installed		*/
+/* -------------------------------------------------------------------- *
+ *	BUILD OPTIONS WHICH NEED NOT BE EXPORTED			*
+ * -------------------------------------------------------------------- */
+/*
+ * FEATURES LINKED IN:
+ */
+
 /* CLX									*/
 #undef CLX
 /* Locatives								*/
@@ -37,51 +98,21 @@
 /* Program Development Environment					*/
 #undef PDE			
 
-/* Use Boehm's garbage collector					*/
-#undef GBC_BOEHM
+/* Tcl/Tk library							*/
+#undef TK
 
 /* Allow loading dynamically linked code				*/
 #undef ENABLE_DLOPEN
 
-/* Undefine this if you do not want ECL to check for circular lists    */
+/* Undefine this if you do not want ECL to check for circular lists	*/
 #define ECL_SAFE
 
 /* Allow STREAM operations to work on arbitrary objects			*/
 #undef ECL_CLOS_STREAMS
 
-/* -------------------------------------------------------------------- *
- *	PARAMETERS							*
- * -------------------------------------------------------------------- */
-
-#define	LISP_PAGESIZE	2048	/* Page size in bytes			*/
-#define MAXPAGE	16384		/* Maximum Memory Size			*/
-#define BDSSIZE	2048		/* Size of Binding Stack		*/
-#define	BDSGETA	16		/* Safety zone of BDS			*/
-#define FRSSIZE	1024		/* Size of Frame Stack			*/
-#define	FRSGETA	16		/* Safety zone of FRS			*/
-#ifdef THREADS
-#define	CSSIZE	7500		/* Size of C Stack of each thread	*/
-#define	CSGETA	500
-#else
-#define	CSSIZE	20000		/* Size of C Stack			*/
-#define	CSGETA	4000
-#endif
-#define VSSIZE	128		/* Size of return values stack		*/
-				/* Maximum number of function arguments */
-#define CALL_ARGUMENTS_LIMIT MOST_POSITIVE_FIXNUM
-				/* Maximum number of required arguments */
-#define LAMBDA_PARAMETERS_LIMIT 64
-		/* Numb. of args. which can be passed using the C stack	*/
-#define C_ARGUMENTS_LIMIT 64
-
-#define BIGNUM_REGISTER_SIZE 16	/* Size in words of each register	*/
-
-/* -------------------------------------------------------------------- *
- *	SYSTEM FEATURES							*
- * -------------------------------------------------------------------- */
-
-#define CL_FIXNUM_TYPE 1	/* Integer type for fixnums		*/
-#define MOST_POSITIVE_FIXNUM 1	/* Positive limit for fixnums           */
+/*
+ * SYSTEM FEATURES:
+ */
 
 /* Stack grows downwards						*/
 #undef DOWN_STACK
@@ -97,3 +128,33 @@
 #undef HAVE_ISNANF
 /* float.h for epsilons, maximum real numbers, etc			*/
 #undef HAVE_FLOAT_H
+
+/*
+ * PARAMETERS:
+ */
+
+/*
+ * Memory limits for the old garbage collector.
+ */
+#define	LISP_PAGESIZE	2048	/* Page size in bytes			*/
+#define MAXPAGE	16384		/* Maximum Memory Size			*/
+
+/*
+ * The lisp environment has several stacks. These are their limits:
+ */
+#define BDSSIZE	2048		/* Size of Binding Stack		*/
+#define	BDSGETA	16		/* Safety zone of BDS			*/
+#define FRSSIZE	1024		/* Size of Frame Stack			*/
+#define	FRSGETA	16		/* Safety zone of FRS			*/
+#ifdef THREADS
+#define	CSSIZE	7500		/* Size of C Stack of each thread	*/
+#define	CSGETA	500
+#else
+#define	CSSIZE	20000		/* Size of C Stack			*/
+#define	CSGETA	4000
+#endif
+#define VSSIZE	128		/* Size of return values stack		*/
+
+/* We reserve these many bytes for computation with bignums registers	*/
+#define BIGNUM_REGISTER_SIZE 16
+

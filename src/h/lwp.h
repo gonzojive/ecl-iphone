@@ -225,3 +225,23 @@ typedef struct pd {
 #define REALQUANTUM 100000	/*      ""      */
 
 #define STACK_SIZE (CSSIZE+CSGETA)	/* Words */
+
+/*
+ * SCHEDULER STOPPING
+ */
+#define BUSY 1
+#define CRITICAL 5
+#define ACTIVE 1
+#define INACTIVE 0
+#define SCHEDULER_INT 1
+#define ERROR_INT 2
+
+extern bool scheduler_interrupted;
+extern int critical_level;
+
+#define start_critical_section() {critical_level++;}
+
+#define end_critical_section() {  critical_level--; \
+				  if (scheduler_interrupted) \
+				    if (critical_level == 0) \
+				      interruption_handler(); }

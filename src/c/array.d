@@ -14,11 +14,8 @@
     See file '../Copyright' for full details.
 */
 
+#include <limits.h>
 #include "ecl.h"
-
-#ifndef CHAR_BIT
-#define CHAR_BIT (sizeof(char)*8)
-#endif
 
 static void displace (cl_object from, cl_object to, cl_object offset);
 static void check_displaced (cl_object dlist, cl_object orig, cl_index newdim);

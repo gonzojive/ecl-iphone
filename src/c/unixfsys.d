@@ -20,8 +20,9 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <sys/stat.h>
-#include "ecl.h"
 #include <stdlib.h>
+#include "ecl.h"
+#include "machines.h"
 #ifdef BSD
 #include <dirent.h>
 #else

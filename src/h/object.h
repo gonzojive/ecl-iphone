@@ -19,15 +19,7 @@ extern "C" {
 #endif
 
 /*
-	Some system constants.
-*/
-
-/*
-  INV: CHAR_CODE_LIMIT is a power of two and <= MOST_POSITIVE_FIXNUM/2
-  INV: PHTABSIZE is a power of two
-  INV: ARANKLIM is of type "index"
-  INV: fixnum, cl_index are large enough to hold a pointer
-  INV: symbol and cons share cons.car = symbol.dbind, cons.cdr = symbol.sfun.
+	Integer and boolean types (see config.h)
 */
 
 #define	TRUE		1	/*  boolean true value  */
@@ -35,20 +27,9 @@ extern "C" {
 
 #define	CHAR_CODE_LIMIT	256	/*  ASCII character code limit  */
 
-#define	PHTABSIZE	512	/*  number of entries in the package hash table  */
-
-#define	ARANKLIM	64		/*  array rank limit  */
-#define	ADIMLIM		16*1024*1024	/*  array dimension limit  */
-#define	ATOTLIM		16*1024*1024	/*  array total limit  */
-
-#define	RTABSIZE	CHAR_CODE_LIMIT	/*  read table size  */
-
 #ifndef __cplusplus
 typedef int bool;
 #endif
-typedef CL_FIXNUM_TYPE cl_fixnum;
-typedef unsigned CL_FIXNUM_TYPE cl_index;
-typedef unsigned CL_FIXNUM_TYPE cl_hashkey;
 typedef unsigned char byte;
 
 /*
@@ -73,8 +54,6 @@ typedef cl_object (*cl_objectfn)(int narg, ...);
 
 /* Immediate fixnums:		*/
 #define FIXNUM_TAG		1
-#define FIXNUM_BITS		((sizeof)(cl_fixnum)/sizeof(byte)*8 - 2)
-#define MOST_NEGATIVE_FIXNUM	(-MOST_POSITIVE_FIXNUM-1)
 #define MAKE_FIXNUM(n)		((cl_object)(((cl_fixnum)(n) << 2) | FIXNUM_TAG))
 #define FIXNUM_MINUSP(n)	((cl_fixnum)(n) < 0)
 #define FIXNUM_PLUSP(n)		((cl_fixnum)(n) >= (cl_fixnum)MAKE_FIXNUM(0))

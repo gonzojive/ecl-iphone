@@ -14,12 +14,9 @@
     See file '../Copyright' for full details.
 */
 
+#include <limits.h>
 #include "ecl.h"
 #include "ecl-inl.h"
-
-#ifndef CHAR_BIT
-#define CHAR_BIT (sizeof(char)*8)
-#endif
 
 #undef endp
 

@@ -201,7 +201,7 @@ extern size_t cssize;
 extern cl_object *Values;
 #else
 extern int NValues;
-extern cl_object Values[VSSIZE];
+extern cl_object Values[];
 #endif
 
 /*****************************

@@ -14,76 +14,9 @@
     See file '../Copyright' for full details.
 */
 
+#include <stdlib.h>
 #include "ecl.h"
-#include <stdlib.h>
-
-#if 0
-#if !defined(__stdlib_h) && !defined(_STDLIB_H_) && !defined(__STDLIB_H__) &&  !defined(_STDLIB_H)
-#include <signal.h>
-int
-system(const char *command)
-{
-	char buf[4];
-	extern sigint();
-
-	signal(SIGINT, SIG_IGN);
-	write(4, command, strlen(command)+1);
-	read(5, buf, 1);
-	signal(SIGINT, sigint);
-	return(buf[0]<<8);
-}
-#endif /* __STDLIB_H__ */
-
-#if defined(__FreeBSD__) || defined(__NetBSD__)
-
-/* due to the calls to realloc in system.c/exec.c (memory which hasn't been
-malloc'ed can't be realloced in ecl) we have to patch this a bit.
-We use execv and supply the arg list, so execl doesn't have to realloc. CvdL */
-
-#include <sys/types.h>
-#include <sys/signal.h>
-#include <sys/wait.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <stddef.h>
-#include <unistd.h>
-#include <paths.h>
-
-int
-system(const char *command)
-{
-	union wait pstat;
-	pid_t pid;
-	int omask;
-	sig_t intsave, quitsave;
-
-	if (!command)		/* just checking... */
-		return(1);
-
-	omask = sigblock(sigmask(SIGCHLD));
-	switch(pid = vfork()) {
-	case -1:			/* error */
-		(void)sigsetmask(omask);
-		pstat.w_status = 0;
-		pstat.w_retcode = 127;
-		return(pstat.w_status);
-	case 0:	{			/* child */
-		char *args[] = { "sh", "-c", command, (char *)NULL };
-		(void)sigsetmask(omask);
-	        execv(_PATH_BSHELL, args);
-		_exit(127);
-	}
-	}
-	intsave = signal(SIGINT, SIG_IGN);
-	quitsave = signal(SIGQUIT, SIG_IGN);
-	pid = waitpid(pid, (int *)&pstat, 0);
-	(void)sigsetmask(omask);
-	(void)signal(SIGINT, intsave);
-	(void)signal(SIGQUIT, quitsave);
-	return(pid == -1 ? -1 : pstat.w_status);
-}
-#endif
-#endif
+#include "machines.h"
 
 cl_object
 si_system(cl_object cmd)

@@ -99,6 +99,9 @@ configure___LDFLAGS=LDFLAGS
 configure___SHARED_LDFLAGS=SHARED_LDFLAGS
 #endif
 
+configure___ecl_setjmp=ecl_setjmp
+configure___ecl_longjmp=ecl_longjmp
+
 configure___architecture=ARCHITECTURE
 configure___software_type=SOFTWARE_TYPE
 configure___software_version=SOFTWARE_VERSION
@@ -127,6 +130,10 @@ AC_MSG_CHECKING(for software type)
 AC_MSG_RESULT([${software_type}])
 AC_MSG_CHECKING(for software version)
 AC_MSG_RESULT([${software_version}])
+AC_MSG_CHECKING(use setjmp or _setjmp)
+AC_MSG_RESULT([${ecl_setjmp}])
+AC_MSG_CHECKING(use longjmp or _longjmp)
+AC_MSG_RESULT([${ecl_longjmp}])
 ])
 dnl
 dnl --------------------------------------------------------------
@@ -196,46 +203,37 @@ dnl enough that convertion back and forth to pointer implies no
 dnl loss of information.
 AC_DEFUN(ECL_FIXNUM_TYPE,[
 AC_MSG_CHECKING(appropiate type for fixnums)
-dnl
-dnl 1.- Guess the type of a fixnum
-dnl
 AC_TRY_RUN([#include <stdio.h>
 int main() {
+  const char *int_type;
+  int bits;
   FILE *f=fopen("conftestval", "w");
   if (!f) exit(1);
   if (sizeof(int) >= sizeof(void*)) {
-    fprintf(f, "int\n");
+    unsigned int t = 1, l;
+    int_type="int";
+    for (bits=0; ((t << 1) >> 1) == t; bits++, t <<= 1);
+    l = (~0) << (bits - 2);
+    fprintf(f,"CL_FIXNUM_MIN='%d';",l);
+    fprintf(f,"CL_FIXNUM_MAX='%d';",-(l+1));
   } else if (sizeof(long) >= sizeof(void*)) {
-    fprintf(f, "long\n");
+    unsigned long int t = 1, l;
+    int_type="long int";
+    for (bits=0; ((t << 1) >> 1) == t; bits++, t <<= 1);
+    l = (~0) << (bits - 2);
+    fprintf(f,"CL_FIXNUM_MIN='%ld';",l);
+    fprintf(f,"CL_FIXNUM_MAX='%ld';",-(l+1));
   } else
     exit(1);
+  fprintf(f,"CL_FIXNUM_TYPE='%s';",int_type);
+  fprintf(f,"CL_FIXNUM_BITS='%d'",bits);
   exit(0);
 }],
-cl_fixnum=`cat conftestval`
-AC_MSG_RESULT([${cl_fixnum}])
-AC_DEFINE_UNQUOTED(CL_FIXNUM_TYPE,${cl_fixnum}),
-AC_MSG_ERROR(There is no appropiate integer type for the cl_fixnum type))
-dnl
-dnl 2.- Guess the size of a fixnum
-dnl
-AC_MSG_CHECKING(most positive fixnum)
-AC_TRY_RUN([#include <stdio.h>
-int main() {
-  ${cl_fixnum} i=0,j,k;
-  FILE *f=fopen("conftestval", "w");
-  if (!f) exit(1);
-  do {
-    k = i * 2 + 1;
-    if (k == i) exit(1);
-    i = k;
-    j = (i << 2) >> 2;
-    fprintf(stderr,"%d\n",i);
-  } while (i == j);
-  fprintf(f, "0x%xL\n", (long)i >> 1);
-  exit(0);
-}],
-cl_fixnum_limit=`cat conftestval`
-AC_MSG_RESULT([${cl_fixnum_limit}])
-AC_DEFINE_UNQUOTED(MOST_POSITIVE_FIXNUM, ${cl_fixnum_limit}),
+eval "`cat conftestval`"
+AC_MSG_RESULT([${CL_FIXNUM_TYPE}])
+AC_SUBST(CL_FIXNUM_TYPE)
+AC_SUBST(CL_FIXNUM_BITS)
+AC_SUBST(CL_FIXNUM_MAX)
+AC_SUBST(CL_FIXNUM_MIN),
 AC_MSG_ERROR(There is no appropiate integer type for the cl_fixnum type))
 ])
