@@ -4638,13 +4638,6 @@ else
     LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}cmp.${LIBEXT} sysfun.lsp"
   fi
 fi
-if test ${tk} ; then
-  TKLIBS="-ltk -ltcl -lXpm @XLIBS@"
-  cat >>confdefs.h <<\_ACEOF
-#define TK 1
-_ACEOF
-
-fi
 
 if test ${clx} ; then
   if test ${shared} = "yes" ; then
@@ -5171,7 +5164,7 @@ else
   echo "$as_me:$LINENO: result: already installed" >&5
 echo "${ECHO_T}already installed" >&6
 fi
-                                                                                                                                            ac_config_files="$ac_config_files bare.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp ../Makefile Makefile c/Makefile doc/Makefile doc/ecl.man tk/Makefile tests/Makefile ansi-tests/Makefile gabriel/Makefile"
+                                                                                                                                  ac_config_files="$ac_config_files bare.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp ../Makefile Makefile c/Makefile doc/Makefile doc/ecl.man tests/Makefile ansi-tests/Makefile gabriel/Makefile"
 
           ac_config_files="$ac_config_files ecl-config.pre:util/ecl-config"
 
@@ -5718,7 +5711,6 @@ do
   "c/Makefile" ) CONFIG_FILES="$CONFIG_FILES c/Makefile" ;;
   "doc/Makefile" ) CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;
   "doc/ecl.man" ) CONFIG_FILES="$CONFIG_FILES doc/ecl.man" ;;
-  "tk/Makefile" ) CONFIG_FILES="$CONFIG_FILES tk/Makefile" ;;
   "tests/Makefile" ) CONFIG_FILES="$CONFIG_FILES tests/Makefile" ;;
   "ansi-tests/Makefile" ) CONFIG_FILES="$CONFIG_FILES ansi-tests/Makefile" ;;
   "gabriel/Makefile" ) CONFIG_FILES="$CONFIG_FILES gabriel/Makefile" ;;
