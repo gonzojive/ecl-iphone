@@ -39,8 +39,6 @@ cl_object tk_package;
 static cl_object package_list = Cnil;
 static cl_object uninterned_list = Cnil;
 
-static void FEpackage_already(cl_object n) __attribute__((noreturn));
-
 static void
 FEpackage_error(char *message, cl_object package, int narg, ...)
 {
@@ -66,17 +64,6 @@ CEpackage_error(char *message, cl_object package, int narg, ...)
 		  @':format-arguments',
 		  narg? cl_grab_rest_args(args) : cl_list(1,package),
 		  @':package', package);
-}
-
-static void
-FEpackage_already(cl_object n)
-{
-	cl_error(7,
-		 @'si::simple-package-error',
-		 @':format-control',
-		 make_simple_string("A package with the name ~A already exists."),
-		 @':format-arguments', cl_list(1,n),
-		 @':package', find_package(n));
 }
 
 static bool
@@ -116,14 +103,22 @@ make_package_hashtable()
 cl_object
 make_package(cl_object name, cl_object nicknames, cl_object use_list)
 {
-	cl_object x, y;
+	cl_object x, y, other;
 
 	name = cl_string(name);
 	assert_type_proper_list(nicknames);
 	assert_type_proper_list(use_list);
 
-	if (find_package(name) != Cnil)
-		FEpackage_already(name);
+	if ((other = find_package(name)) != Cnil) {
+	ERROR:	cl_cerror(8,
+			  make_simple_string("Return existing package"),
+			  @'si::simple-package-error',
+			  @':format-control',
+			  make_simple_string("A package with the name ~A already exists."),
+			  @':format-arguments', cl_list(1,name),
+			  @':package', other);
+		return other;
+	}
 	x = cl_alloc_object(t_package);
 	x->pack.name = name;
 	x->pack.nicknames = Cnil;
@@ -133,8 +128,10 @@ make_package(cl_object name, cl_object nicknames, cl_object use_list)
 	x->pack.locked = FALSE;
 	for (;  !endp(nicknames);  nicknames = CDR(nicknames)) {
 		cl_object nick = cl_string(CAR(nicknames));
-		if (find_package(nick) != Cnil)
-			FEpackage_already(nick);
+		if ((other = find_package(nick)) != Cnil) {
+			name = nick;
+			goto ERROR;
+		}
 		x->pack.nicknames = CONS(nick, x->pack.nicknames);
 	}
 	for (;  !endp(use_list);  use_list = CDR(use_list)) {
@@ -162,11 +159,13 @@ rename_package(cl_object x, cl_object name, cl_object nicknames)
 	 */
 	x = si_coerce_to_package(x);
 	if (x->pack.locked)
-		CEpackage_error("Cannot rename package ~S.", x, 0);
+		CEpackage_error("Cannot rename locked package ~S.", x, 0);
 	name = cl_string(name);
 	y = find_package(name);
-	if ((y != Cnil) && (y != x))
-		FEpackage_already(name);
+	if ((y != Cnil) && (y != x)) {
+	ERROR:	FEpackage_error("A package with name ~S already exists.", x,
+				1, name);
+	}
 
 	x->pack.name = name;
 	x->pack.nicknames = Cnil;
@@ -176,8 +175,10 @@ rename_package(cl_object x, cl_object name, cl_object nicknames)
 		y = find_package(nick);
 		if (x == y)
 			continue;
-		if (y != Cnil)
-			FEpackage_already(nick);
+		if (y != Cnil) {
+			name = nick;
+			goto ERROR;
+		}
 		x->pack.nicknames = CONS(cl_string(nick), x->pack.nicknames);
 	}
 	return(x);
@@ -422,7 +423,11 @@ cl_delete_package(cl_object p)
 	cl_object hash, list;
 	cl_index i;
 
-	p = si_coerce_to_package(p);
+	p = find_package(p);
+	if (Null(p)) {
+		CEpackage_error("Package ~S not found. Cannot delete it.", p, 0);
+		@(return Cnil);
+	}
 	if (p->pack.locked)
 		CEpackage_error("Cannot delete locked package ~S.", p, 0);
 	if (Null(p->pack.name))
