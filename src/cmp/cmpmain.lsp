@@ -35,11 +35,11 @@ coprocessor).")
 (defvar *cc-format* "~A ~A ~:[~*~;~A~] -I~A/h -w -c ~A -o ~A"))
 ;(defvar *cc-format* "~A ~A ~:[~*~;~A~] -I~A/h -c ~A -o ~A"))
 (defvar *ld-flags* "")
-(defvar *ld-format* "~A ~A -w -o ~A -L~A ~{~A ~} ~@?")
+(defvar *ld-format* "~A -o ~A -L~A ~{~A ~} ~@?")
 #+dlopen
 (defvar *ld-shared-flags* "")
 #+dlopen
-(defvar *ld-shared-format* "~A ~A -o ~A -L~A ~{~A ~} ~@?")
+(defvar *ld-bundle-flags* "")
 
 (defun safe-system (string)
   (print string)
@@ -73,7 +73,6 @@ coprocessor).")
    (format nil
 	   *ld-format*
 	   *cc*
-	   ""
 	   (namestring o-pathname)
 	   (namestring (translate-logical-pathname "SYS:"))
 	   options
@@ -83,13 +82,25 @@ coprocessor).")
 (defun shared-cc (o-pathname &rest options)
   (safe-system
    (format nil
-	   *ld-shared-format*
+	   *ld-format*
 	   *cc*
-	   *ld-shared-flags*
 	   (namestring o-pathname)
 	   (namestring (translate-logical-pathname "SYS:"))
 	   options
-	   *ld-flags* (namestring (translate-logical-pathname "SYS:")))))
+	   *ld-shared-flags*
+	   (namestring (translate-logical-pathname "SYS:")))))
+
+#+dlopen
+(defun bundle-cc (o-pathname &rest options)
+  (safe-system
+   (format nil
+	   *ld-format*
+	   *cc*
+	   (namestring o-pathname)
+	   (namestring (translate-logical-pathname "SYS:"))
+	   options
+	   *ld-bundle-flags*
+	   (namestring (translate-logical-pathname "SYS:")))))
 
 (defconstant +lisp-program-header+ "
 #include <ecl.h>
@@ -236,6 +247,7 @@ cl_object Cblock;
        (si:system (format nil "cat ~A" (namestring c-name)))
        (compiler-cc c-name o-name)
        (apply #'shared-cc output-name o-name ld-flags))
+      #+dlopen
       (:fasl
        (when (or (symbolp output-name) (stringp output-name))
 	 (setf output-name (compile-file-pathname output-name :type :fasl)))
@@ -244,7 +256,7 @@ cl_object Cblock;
        (close c-file)
        (si:system (format nil "cat ~A" (namestring c-name)))
        (compiler-cc c-name o-name)
-       (apply #'shared-cc output-name o-name ld-flags)))
+       (apply #'bundle-cc output-name o-name ld-flags)))
     (delete-file c-name)
     (delete-file o-name)
     output-name))
@@ -377,7 +389,7 @@ Cannot compile ~a."
 		   (format t "~&;;; Calling the C compiler... "))
                  (compiler-cc c-pathname o-pathname)
 		 #+dlopen
-		 (unless system-p (shared-cc so-pathname o-pathname))
+		 (unless system-p (bundle-cc so-pathname o-pathname))
                  (cond #+dlopen
 		       ((and (not system-p) (probe-file so-pathname))
                         (when load (load so-pathname))
@@ -499,7 +511,7 @@ Cannot compile ~a."
 	    (format t "~&;;; Calling the C compiler... "))
 	  ;;(si::system (format nil "cat ~A" (namestring c-pathname)))
           (compiler-cc c-pathname o-pathname)
-	  (shared-cc so-pathname o-pathname)
+	  (bundle-cc so-pathname o-pathname)
           (delete-file c-pathname)
           (delete-file h-pathname)
 	  (delete-file o-pathname)
@@ -628,7 +640,7 @@ Cannot compile ~a."
 #+dlopen
 (defun load-o-file (file verbose print)
   (let ((tmp (compile-file-pathname file)))
-    (shared-cc tmp file)
+    (bundle-cc tmp file)
     (when (probe-file tmp)
       (load tmp :verbose nil :print nil)
       (delete-file tmp)

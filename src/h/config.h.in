@@ -172,6 +172,7 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 /* dynamic linking of libraries						*/
 #undef HAVE_DLFCN_H
 #undef HAVE_LINK_H
+#undef HAVE_MACH_O_DYLD_H
 
 /* what characters are used to mark beginning of new line		*/
 #undef ECL_NEWLINE_IS_CRLF

@@ -116,6 +116,14 @@ extern cl_object ecl_alloc_bytecodes(cl_index data_size, cl_index code_size);
 #define GFUN_SPEC(x) ((x)->instance.slots[2])
 #define GFUN_COMB(x) ((x)->instance.slots[3])
 
+/* load.d */
+#ifdef ENABLE_DLOPEN
+cl_object ecl_library_open(cl_object filename);
+void *ecl_library_symbol(cl_object block, const char *symbol);
+cl_object ecl_library_error(cl_object block);
+void ecl_library_close(cl_object block);
+#endif
+
 /* print.d */
 
 #define ECL_PPRINT_QUEUE_SIZE			128

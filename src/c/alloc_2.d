@@ -40,7 +40,7 @@ finalize(cl_object o, cl_object data)
 		if (o->cblock.handle != NULL) {
 			printf("\n;;; Freeing library %s\n", o->cblock.name?
 			       o->cblock.name->string.self : "<anonymous>");
-			dlclose(o->cblock.handle);
+			ecl_library_close(o);
 		}
 #ifdef ECL_DYNAMIC_VV
 		/* GC_free(o->cblock.data); */

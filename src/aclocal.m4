@@ -124,12 +124,15 @@ AC_SUBST(SHAREDEXT)dnl	Name components of a dynamically linked library
 AC_SUBST(SHAREDPREFIX)
 AC_SUBST(OBJEXT)dnl	These are set by autoconf
 AC_SUBST(EXEEXT)
+AC_SUBST(LDINSTALLNAME)dnl Link-flag that tells where the library will reside.
 LDRPATH='~*'
 SHAREDEXT='so'
 SHAREDPREFIX='lib'
 LIBPREFIX='lib'
 LIBEXT='a'
 PICFLAG='-fPIC'
+BUNDLE_LDFLAGS=''
+LDINSTALLNAME=''
 case "${host_os}" in
 	# libdir may have a dollar expression inside
 	linux*)
@@ -165,7 +168,13 @@ case "${host_os}" in
 		;;
 	darwin*)
 		thehost="darwin"
-		shared="no"
+		shared="yes"
+		SHAREDEXT='dylib'
+		PICFLAG='-fPIC -fno-common'
+		SHARED_LDFLAGS='-dynamiclib -flat_namespace -undefined suppress'
+		BUNDLE_LDFLAGS='-bundle'
+		LDRPATH=''
+		LDINSTALLNAME="-Wl,-install_name,${libdir}/${SHAREDPREFIX}ecl.${SHAREDEXT}"
 		;;
 	*)
 		thehost="$host_os"

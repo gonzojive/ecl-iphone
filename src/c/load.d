@@ -16,11 +16,16 @@
 #include "ecl.h"
 #include "ecl-inl.h"
 
+#ifdef ENABLE_DLOPEN
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
 #ifdef HAVE_LINK_H
 #include <link.h>
+#endif
+#ifdef HAVE_MACH_O_DYLD_H
+#include <mach-o/dyld.h>
+#endif
 #endif
 
 #ifdef __mips
@@ -28,6 +33,72 @@
 #endif
 
 #ifdef ENABLE_DLOPEN
+cl_object 
+ecl_library_open(cl_object filename) {
+	cl_object block;
+	block = cl_alloc_object(t_codeblock);
+	block->cblock.data = NULL;
+	block->cblock.data_size = 0;
+	block->cblock.name = filename;
+#ifdef HAVE_DLFCN_H
+	block->cblock.handle = dlopen(filename->string.self,
+				      RTLD_NOW|RTLD_GLOBAL);
+#else /* HAVE_MACH_O_DYLD */
+	{
+	NSObjectFileImage file;
+        static NSObjectFileImageReturnCode code;
+	code = NSCreateObjectFileImageFromFile(filename->string.self, &file);
+	if (code != NSObjectFileImageSuccess) {
+		block->cblock.handle = NULL; 
+	} else {
+		NSModule out = NSLinkModule(file, filename->string.self,
+					    NSLINKMODULE_OPTION_PRIVATE|
+					    NSLINKMODULE_OPTION_BINDNOW|
+					    NSLINKMODULE_OPTION_RETURN_ON_ERROR);
+		block->cblock.handle = out;
+	}}
+#endif
+	return block;
+}
+
+void *
+ecl_library_symbol(cl_object block, const char *symbol) {
+#ifdef HAVE_DLFCN_H
+	return dlsym(block->cblock.handle, symbol);
+#else /* HAVE_MACH_O_DYLD */
+	NSSymbol sym;
+	sym = NSLookupSymbolInModule((NSModule)(block->cblock.handle),
+				     symbol);
+	if (sym == 0) return 0;
+	return (void*)NSAddressOfSymbol(sym);
+#endif
+}
+
+cl_object
+ecl_library_error(cl_object block) {
+	const char *message;
+#ifdef HAVE_DLFCN_H
+	message = dlerror();
+#else /* HAVE_MACH_O_DYLD */
+	NSLinkEditErrors c;
+	int number;
+	const char *filename;
+	NSLinkEditError(&c, &number, &filename, &message);
+#endif
+	return make_string_copy(message);
+}
+
+void
+ecl_library_close(cl_object block) {
+#ifdef HAVE_DLFCN_H
+#define INIT_PREFIX "init_"
+	dlclose(block->cblock.handle);
+#else /* HAVE_MACH_O_DYLD */
+#define INIT_PREFIX "_init_"
+	NSUnLinkModule(block->cblock.handle, NSUNLINKMODULE_OPTION_NONE);
+#endif
+}
+
 cl_object
 si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 {
@@ -43,36 +114,33 @@ si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 	filename = coerce_to_filename(cl_truename(filename));
 
 	/* Try to load shared object file */
-	block = cl_alloc_object(t_codeblock);
-	block->cblock.data = NULL;
-	block->cblock.data_size = 0;
-	block->cblock.name = filename;
-	block->cblock.handle = dlopen(filename->string.self, RTLD_NOW|RTLD_GLOBAL);
+	block = ecl_library_open(filename);
 	if (block->cblock.handle == NULL)
-		@(return make_string_copy(dlerror()))
+		@(return ecl_library_error(block))
 
 	/* Fist try to call "init_CODE()" */
-	block->cblock.entry = dlsym(block->cblock.handle, "init_CODE");
+	block->cblock.entry = ecl_library_symbol(block, INIT_PREFIX "CODE");
 	if (block->cblock.entry != NULL)
 		goto GO_ON;
 
 	/* Next try to call "init_FILE()" where FILE is the file name */
 	prefix = symbol_value(@'si::*init-function-prefix*');
 	if (Null(prefix))
-		prefix = make_simple_string("init_");
+		prefix = make_simple_string(INIT_PREFIX);
 	else
 		prefix = @si::string-concatenate(3,
-						 make_simple_string("init_"),
+						 make_simple_string(INIT_PREFIX),
 						 prefix,
 						 make_simple_string("_"));
 	basename = cl_pathname(filename);
 	basename = cl_pathname_name(basename);
 	basename = @si::string-concatenate(2, prefix, @string-upcase(1,basename));
-	block->cblock.entry = dlsym(block->cblock.handle, basename->string.self);
+	block->cblock.entry = ecl_library_symbol(block, basename->string.self);
 
 	if (block->cblock.entry == NULL) {
-		dlclose(block->cblock.handle);
-		@(return make_string_copy(dlerror()))
+		cl_object output = ecl_library_error(block);
+		ecl_library_close(block);
+		@(return output)
 	}
 
 	/* Finally, perform initialization */
@@ -222,8 +290,10 @@ init_load(void)
 				CONS(make_simple_string("lisp"), @'si::load-source'),
 				CONS(Cnil, @'si::load-source'));
 
+#if 0
 #ifdef ENABLE_DLOPEN
   if (dlopen(NULL, RTLD_NOW|RTLD_GLOBAL) == NULL)
     printf(";;; Error dlopening self file\n;;; Error: %s\n", dlerror());
+#endif
 #endif
 }

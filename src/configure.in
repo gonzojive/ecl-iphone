@@ -117,6 +117,7 @@ AC_SUBST(LSPCFLAGS)dnl		Additional flags needed to compile translated code
 AC_SUBST(CLIBS)dnl		System libraries to be linked in
 AC_SUBST(LDFLAGS)dnl		Flags for program linker
 AC_SUBST(SHARED_LDFLAGS)dnl	Flags for shared libraries linker
+AC_SUBST(BUNDLE_LDFLAGS)dnl	Flags for FASL files linker
 AC_SUBST(SHORT_SITE_NAME)dnl	Short name for the machine we built this on
 AC_SUBST(LONG_SITE_NAME)dnl	Long name for the machine we built this on
 AC_SUBST(EXTRA_OBJS)dnl		Extra *.o files to be compiled into libecl.a
@@ -137,10 +138,21 @@ dnl           checks for header files
 dnl
 dnl AC_CHECK_HEADERS(unistd.h stdlib.h stdarg.h string.h)
 AC_CHECK_HEADERS(sys/resource.h sys/utsname.h float.h pwd.h dlfcn.h link.h\
- ulimit.h dirent.h sys/ioctl.h)
+ mach-o/dyld.h ulimit.h dirent.h sys/ioctl.h)
 AC_CHECK_FUNCS(nanosleep alarm times isnanf select setenv putenv\
  lstat mkstemp)
 AC_ISC_POSIX
+
+dnl ----------------------------------------------------------------------
+dnl		Installation directories
+dnl
+if test "x$prefix" = "xNONE"; then prefix=${ac_default_prefix}; fi
+if test "x$exec_prefix" = "xNONE"; then exec_prefix=${prefix}; fi
+bindir="${exec_prefix}/bin"
+libdir="${exec_prefix}/lib/ecl"
+includedir="${exec_prefix}/lib/ecl/h"
+mandir="${prefix}/man"
+infodir="${prefix}/info"
 
 dnl ----------------------------------------------------------------------
 dnl		Checks which do not come with autoconf
@@ -155,13 +167,6 @@ ECL_FILE_STRUCTURE()
 dnl ----------------------------------------------------------------------
 dnl		Set options
 dnl
-if test "x$prefix" = "xNONE"; then prefix=${ac_default_prefix}; fi
-if test "x$exec_prefix" = "xNONE"; then exec_prefix=${prefix}; fi
-bindir="${exec_prefix}/bin"
-libdir="${exec_prefix}/lib/ecl"
-includedir="${exec_prefix}/lib/ecl/h"
-mandir="${prefix}/man"
-infodir="${prefix}/info"
 TARGETS="ecl${EXEEXT}"
 LIBRARIES=""
 LSP_LIBRARIES="${LIBPREFIX}ecl.${LIBEXT}"
@@ -186,7 +191,7 @@ else
 fi
 if test ${shared} = "yes"; then
   AC_DEFINE(ENABLE_DLOPEN)
-  LSP_LIBRARIES="${LSP_LIBRARIES} libecl.so"
+  LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}ecl.${SHAREDEXT}"
 else
   LDRPATH='~*'
 fi
@@ -255,6 +260,7 @@ fi
 if test ! ${opcode8} = "no" ; then
   AC_DEFINE(ECL_SMALL_BYTECODES)
 fi
+eval BUNDLE_CLIBS="${BUNDLE_CLIBS}"
 
 dnl ---------------------------------------------------------------------
 dnl		This flag is an optimization for GNU
