@@ -546,7 +546,7 @@ Cannot compile ~a."
       (t1expr form)
       (when (zerop *error-count*)
 	(when *compile-verbose* (format t "~&;;; End of Pass 1.  "))
-	(let (#+mingw32(*self-destructing-fasl* t))
+	(let (#+(or mingw32 msvc)(*self-destructing-fasl* t))
 	  (compiler-pass2 c-pathname h-pathname data-pathname nil "code" nil)))
       (data-dump data-pathname)
       (init-env)
@@ -566,7 +566,7 @@ Cannot compile ~a."
 	  (delete-file data-pathname)
           (cond ((probe-file so-pathname)
                  (load so-pathname :verbose nil)
-		 #-mingw32 (delete-file so-pathname)
+		 #-(or mingw32 msvc)(delete-file so-pathname)
                  (when *compile-verbose* (print-compiler-info))
 		 (setf name (or name (symbol-value 'GAZONK)))
 		 ;; By unsetting GAZONK we avoid spurious references to the
