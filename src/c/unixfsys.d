@@ -398,9 +398,9 @@ homedir_pathname(cl_object user)
 		FEerror("Unknown user ~S.", 1, p);
 	}
 	i = namestring->string.fillp;
-	if (namestring->string.self[i-1] != '/')
+	if (!IS_DIR_SEPARATOR(namestring->string.self[i-1]))
 		namestring = si_string_concatenate(2, namestring,
-						   make_constant_string("/"));
+						   CODE_CHAR(DIR_SEPARATOR));
 	return cl_parse_namestring(3, namestring, Cnil, Cnil);
 }
 
@@ -703,6 +703,19 @@ si_getcwd(void)
 {
 	return cl_parse_namestring(3, current_dir(), Cnil, Cnil);
 }
+
+#ifdef _MSC_VER
+cl_object
+si_get_library_pathname(void)
+{
+	char buffer[MAXPATHLEN];
+	HMODULE hnd = GetModuleHandle( "ecl.dll" );
+	cl_index len, ep;
+	if ((len = GetModuleFileName(hnd, buffer, MAXPATHLEN-1)) == 0)
+		FEerror("GetModuleFileName failed (last error = ~S)", 1, MAKE_FIXNUM(GetLastError()));
+	return parse_namestring(buffer, 0, len, &ep, Cnil);
+}
+#endif
 
 @(defun si::chdir (directory &optional change_d_p_d)
 	cl_object previous = si_getcwd();

@@ -43,7 +43,7 @@
       #+msvc "~A ~A ~:[~*~;~A~] -I\"@true_builddir@\"/h~* -Zi -W3 -c ~S -Fo~S"
       c::*ld-format*
       #-msvc "~A -o ~S -L\"@true_builddir@\"~* ~{~S ~} ~@?"
-      #+msvc "~A -Zi -Fe~S ~{~S ~} ~@?")
+      #+msvc "~A -Zi -Fe~S~* ~{~S ~} ~@?")
 #-dlopen 
 (setf c::*ld-flags*
       "@LDFLAGS@ @LDRPATH@ @LIBPREFIX@ecl.@LIBEXT@ @STATICLIBS@ @CLIBS@")

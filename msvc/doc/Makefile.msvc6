@@ -57,24 +57,15 @@ install: all
 	IF NOT EXIST $(docdir)\clx $(MKDIR) $(docdir)\clx
 	for %i in (clx\*) do $(CP) %i $(docdir)\clx
 flatinstall: all
-	$(mkinstalldirs) $(docdir)
-	for k in $(INFO_FILES); do $(INSTALL_DATA) $$k $(docdir); done
-	if [ -f user.html ]; then \
-	  $(INSTALL_DATA) $$i $(docdir)/; \
-	else \
-	  $(mkinstalldirs) $(docdir)/ecl; \
-	  for i in ecl/*; do $(INSTALL_DATA) $$i $(docdir)/ecl/; done; \
-	fi
-	if [ -f devel.html ]; then \
-	  $(INSTALL_DATA) devel.html $(docdir)/; \
-	else \
-	  $(mkinstalldirs) $(docdir)/ecldev; \
-	  for i in ecldev/*; do $(INSTALL_DATA) $$i $(docdir)/ecldev/; done; \
-	fi
-	for i in Copyright LGPL; do \
-	  $(INSTALL_DATA) $(top_srcdir)/../$$i $(docdir); \
-	done
-	for i in *.html; do $(INSTALL_DATA) $$i $(docdir)/; done
+	IF NOT EXIST $(docdir) $(MKDIR) $(docdir)
+	for %i in (Copyright LGPL) do $(CP) $(top_srcdir)\..\%i $(docdir)
+	for %i in ($(HTML_FILES)) do $(CP) %i $(docdir)
+	IF NOT EXIST $(docdir)\ecldev $(MKDIR) $(docdir)\ecldev
+	for %i in (ecldev\*) do $(CP) %i $(docdir)\ecldev
+	IF NOT EXIST $(docdir)\ecl $(MKDIR) $(docdir)\ecl
+	for %i in (ecl\*) do $(CP) %i $(docdir)\ecl
+	IF NOT EXIST $(docdir)\clx $(MKDIR) $(docdir)\clx
+	for %i in (clx\*) do $(CP) %i $(docdir)\clx
 
 uninstall:
 	for k in $(INFO_FILES); do \

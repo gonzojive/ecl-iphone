@@ -869,8 +869,8 @@ by every function, which attempts to generate RENDER requests."
 
 
 ;; $Log$
-;; Revision 1.5  2004-10-25 16:34:21  jjgarcia
-;; Port to Microsoft VC++ by Goffioul Michael <goffioul@imec.be>
+;; Revision 1.6  2004-10-29 13:50:27  jjgarcia
+;; Make the MSVC++ port relocatable, i.e. the installation path is not hardcoded in ECL. Also, suport for NSI under MSVC++.
 ;;
 ;; Revision 1.1  2004/06/10 07:59:31  jlr
 ;; Portable CLX library imported

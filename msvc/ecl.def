@@ -1115,6 +1115,7 @@ EXPORTS
 	cl_file_author
 	si_file_kind
 	si_getcwd
+	si_get_library_pathname
 	si_chdir
 	si_mkdir
 	cl_directory

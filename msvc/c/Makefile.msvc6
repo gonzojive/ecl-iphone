@@ -77,12 +77,12 @@ install: $(HFILES)
 	$(RM) $(libdir)\h\config.h
 	$(MV) $(libdir)\h\config-install.h $(libdir)\h\config.h
 
-flatinstal: $(HFILES)
-	for i in $(HFILES); do $(INSTALL_DATA) $$i $(prefix)/h/; done
-	sed '/-CUT-/,$$d' ../h/config.h > ../h/config-install.h
-	$(INSTALL_DATA) ../h/*.h $(prefix)/h/
-	rm $(prefix)/h/config.h
-	mv $(prefix)/h/config-install.h $(prefix)/h/config.h
+flatinstall: $(HFILES)
+	for %i in ($(HFILES)) do $(CP) %i $(prefix)\h\ 
+	sed -e "/-CUT-/,$$d" ..\h\config.h > $(prefix)\h\config-install.h
+	for %h in (..\h\*.h) do $(CP) %h $(prefix)\h\ 
+	$(RM) $(prefix)\h\config.h
+	$(MV) $(prefix)\h\config-install.h $(prefix)\h\config.h
 
 ..\eclmin.lib: $(OBJS:.obj=.c) $(OBJS)
 	-$(RM) $@

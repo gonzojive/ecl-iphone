@@ -73,7 +73,7 @@ coprocessor).")
 	   *ld-format*
 	   *cc*
 	   (si::coerce-to-filename o-pathname)
-	   #-msvc (namestring (translate-logical-pathname "SYS:"))
+	   (namestring (translate-logical-pathname "SYS:"))
 	   options
 	   *ld-flags* (namestring (translate-logical-pathname "SYS:")))))
 
@@ -85,7 +85,7 @@ coprocessor).")
 	   *ld-format*
 	   *cc*
 	   (si::coerce-to-filename o-pathname)
-	   #-msvc (namestring (translate-logical-pathname "SYS:"))
+	   (namestring (translate-logical-pathname "SYS:"))
 	   options
 	   *ld-shared-flags*
 	   (namestring (translate-logical-pathname "SYS:"))))
@@ -108,7 +108,7 @@ coprocessor).")
 	   *ld-format*
 	   *cc*
 	   (si::coerce-to-filename o-pathname)
-	   #-msvc (namestring (translate-logical-pathname "SYS:"))
+	   (namestring (translate-logical-pathname "SYS:"))
 	   options
 	   #-msvc *ld-bundle-flags*
 	   #+msvc (concatenate 'string *ld-bundle-flags* " /EXPORT:init_CODE")

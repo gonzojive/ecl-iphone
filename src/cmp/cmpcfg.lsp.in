@@ -8,7 +8,7 @@
 (setq *cc-optimize* #-msvc "-O"
                     #+msvc "-O2")
 (setq *ld-format* #-msvc "~A -o ~S -L~S ~{~S ~} ~@?"
-                  #+msvc "~A -Zi -Fe~S ~{~S ~} ~@?")
+                  #+msvc "~A -Zi -Fe~S~* ~{~S ~} ~@?")
 (setq *cc-format* #-msvc "~A ~A ~:[~*~;~A~] \"-I~A/h\" -w -c \"~A\" -o \"~A\""
                   #+msvc "~A ~A ~:[~*~;~A~] -I\"~A/h\" -Zi -W3 -c \"~A\" -Fo\"~A\"")
 #-dlopen
