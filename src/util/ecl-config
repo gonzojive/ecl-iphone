@@ -12,7 +12,7 @@ Libs:
 EOF
 }
 
-LDFLAGS="-lecl -lclos"
+LDFLAGS="-lecl"
 for i in $*; do
   case $i in
     --cflags|-c)
