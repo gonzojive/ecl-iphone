@@ -643,7 +643,7 @@
   (add-info dm-info (second body))
   (unless (eql setjmps *setjmps*)
     (setf (info-volatile dm-info) t)
-    (setf (get macro-name 'CONTAINS-SETJMP) t))
+    (put-sysprop macro-name 'CONTAINS-SETJMP t))
   (dolist (v dm-vars) (check-vref v))
 
   (list doc ppn whole env vl body)

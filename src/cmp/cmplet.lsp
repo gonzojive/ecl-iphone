@@ -426,7 +426,7 @@
 
 ;;; ----------------------------------------------------------------------
 
-(setf (get 'LET 'C1SPECIAL) #'c1let)
-(setf (get 'LET 'C2) 'c2let)
-(setf (get 'LET* 'C1SPECIAL) #'c1let*)
-(setf (get 'LET* 'C2) 'c2let*)
+(put-sysprop 'LET 'C1SPECIAL #'c1let)
+(put-sysprop 'LET 'C2 'c2let)
+(put-sysprop 'LET* 'C1SPECIAL #'c1let*)
+(put-sysprop 'LET* 'C2 'c2let*)

@@ -144,13 +144,13 @@
   (cond ((and (symbolp fname)
 	      (listp decl) (listp (cdr decl)))
 	 (cond ((or (null decl)(eq (car decl) '*)) (setq arg-types '*)
-		(remprop fname 'PROCLAIMED-ARG-TYPES))
+		(rem-sysprop fname 'PROCLAIMED-ARG-TYPES))
 	       (t (setq arg-types (function-arg-types (car decl)))
-		  (setf (get fname 'PROCLAIMED-ARG-TYPES) arg-types)))
+		  (put-sysprop fname 'PROCLAIMED-ARG-TYPES arg-types)))
 	 (cond ((or (null (cdr decl))(eq (second decl) '*))
 		(setq return-types '*))
 	       (t (setq return-types (function-return-type (cdr decl)))))
-         (setf (get fname 'PROCLAIMED-RETURN-TYPE) return-types)
+         (put-sysprop fname 'PROCLAIMED-RETURN-TYPE return-types)
 	 (cond((eql return-types '*))
 	      (t(setq return-types (cdr decl))))
 	 ;;; A non-local function may have local entry only if it returns
@@ -161,8 +161,8 @@
                             (eq (caar return-types) 'VALUES)
                             (or (endp (cdar return-types))
                                 (not (endp (cddar return-types)))))))
-             (setf (get fname 'PROCLAIMED-FUNCTION) t)
-	   (remprop fname 'PROCLAIMED-FUNCTION)))
+             (put-sysprop fname 'PROCLAIMED-FUNCTION t)
+	   (rem-sysprop fname 'PROCLAIMED-FUNCTION)))
         (t (warn "The function procl ~s ~s is not valid." fname decl))))
 
 (defun add-function-declaration (fname arg-types return-types)
@@ -176,13 +176,13 @@
 (defun get-arg-types (fname &aux x)
   (if (setq x (assoc fname *function-declarations*))
       (second x)
-      (get fname 'PROCLAIMED-ARG-TYPES)))
+      (get-sysprop fname 'PROCLAIMED-ARG-TYPES)))
 
 (defun get-return-type (fname)
   (let* ((x (assoc fname *function-declarations*))
-         (type1 (if x (caddr x) (get fname 'PROCLAIMED-RETURN-TYPE))))
+         (type1 (if x (caddr x) (get-sysprop fname 'PROCLAIMED-RETURN-TYPE))))
         (cond (type1
-               (let ((type (get fname 'RETURN-TYPE)))
+               (let ((type (get-sysprop fname 'RETURN-TYPE)))
                     (cond (type
                            (cond ((setq type (type-and type type1)) type)
                                  (t
@@ -190,7 +190,7 @@
                                    "The return type of ~s was badly declared."
                                    fname))))
                           (t type1))))
-              (t (get fname 'RETURN-TYPE)))
+              (t (get-sysprop fname 'RETURN-TYPE)))
         ))
 
 (defun get-local-arg-types (fun &aux x)
@@ -208,7 +208,7 @@
 (defun inline-possible (fname)
        (not (or ; *compiler-push-events*
                 (member fname *notinline*)
-                (get fname 'CMP-NOTINLINE))))
+                (get-sysprop fname 'CMP-NOTINLINE))))
 
 #-:CCL
 (defun proclaim (decl)
@@ -252,12 +252,12 @@
     (INLINE
      (dolist (fun (cdr decl))
                (if (symbolp fun)
-                   (remprop fun 'CMP-NOTINLINE)
+                   (rem-sysprop fun 'CMP-NOTINLINE)
                    (warn "The function name ~s is not a symbol." fun))))
     (NOTINLINE
      (dolist (fun (cdr decl))
                (if (symbolp fun)
-                   (setf (get fun 'CMP-NOTINLINE) t)
+                   (put-sysprop fun 'CMP-NOTINLINE t)
                    (warn "The function name ~s is not a symbol." fun))))
     ((OBJECT IGNORE)
      (dolist (var (cdr decl))
@@ -275,7 +275,7 @@
 	     (si::mangle-name x t)
 	   (if found
 	     (warn "The function ~s is already in the runtime." x)
-	     (setf (get x 'Lfun) fname)))
+	     (put-sysprop x 'Lfun fname)))
 	 (warn "The function name ~ is not a symbol." x))))
     ((ARRAY ATOM BASE-CHAR BIGNUM BIT BIT-VECTOR CHARACTER COMMON COMPILED-FUNCTION
       COMPLEX CONS DOUBLE-FLOAT EXTENDED-CHAR FIXNUM FLOAT HASH-TABLE INTEGER KEYWORD LIST
@@ -287,9 +287,9 @@
     (otherwise
      (unless (member (car decl) *alien-declarations*)
              (warn "The declaration specifier ~s is unknown." (car decl)))
-     (and (functionp (get (car decl) :proclaim))
+     (and (functionp (get-sysprop (car decl) :proclaim))
 	  (dolist (v (cdr decl))
-		    (funcall (get (car decl) :proclaim) v))))
+		    (funcall (get-sysprop (car decl) :proclaim) v))))
     )
   nil
   )
@@ -298,7 +298,7 @@
   (setq type (type-filter type))
   (dolist (var vl)
     (if (symbolp var)
-	(let ((type1 (get var 'CMP-TYPE))
+	(let ((type1 (get-sysprop var 'CMP-TYPE))
 	      (v (sch-global var)))
 	  (setq type1 (if type1 (type-and type1 type) type))
 	  (when v (setq type1 (type-and type1 (var-type v))))
@@ -307,7 +307,7 @@
 	     "Inconsistent type declaration was found for the variable ~s."
 	     var)
 	    (setq type1 T))
-	  (setf (get var 'CMP-TYPE) type1)
+	  (put-sysprop var 'CMP-TYPE type1)
 	  (when v (setf (var-type v) type1)))
 	(warn "The variable name ~s is not a symbol." var))))
 
@@ -464,7 +464,7 @@
 	(setq body (c1progn body))
 	(list 'DECL-BODY (second body) dl body))))
 
-(setf (get 'decl-body 'c2) 'c2decl-body)
+(put-sysprop 'decl-body 'c2 'c2decl-body)
 
 (defun c2decl-body (decls body)
   (let ((*compiler-check-args* *compiler-check-args*)

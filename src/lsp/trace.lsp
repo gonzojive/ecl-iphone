@@ -61,7 +61,7 @@ SI::ARGS."
     (cond ((atom spec)
 	   (setq fname spec))
 	  ((eq 'SETF (car spec))
-	   (setq fname (get (cadr spec) 'SETF-SYMBOL)))
+	   (setq fname (get-sysprop (cadr spec) 'SETF-SYMBOL)))
 	  ((atom (car spec))
 	   (setq fname (car spec))
 	   (do ((specs (cdr spec) (cdr specs)))
@@ -80,7 +80,7 @@ SI::ARGS."
 	     (unless barfp (error "Parameter missing"))))
 	  ((eq 'SETF (caar spec))
 	   (return-from trace-one
-	     (trace-one `(,(get (cadar spec) 'SETF-SYMBOL) . ,(cdr spec)))))
+	     (trace-one `(,(get-sysprop (cadar spec) 'SETF-SYMBOL) . ,(cdr spec)))))
 	  (t
 	   (let (results)
 	       (dolist (fname (car spec))
@@ -95,14 +95,14 @@ SI::ARGS."
     (when (macro-function fname)
       (format *trace-output* "~S is a macro.~%" fname)
       (return-from trace-one nil))
-    (when (get fname 'TRACED)
+    (when (get-sysprop fname 'TRACED)
       (cond ((tracing-body fname)
 	     (format *trace-output*
 		     "The function ~S is already traced.~%" fname)
 	     (return-from trace-one nil))
 	    (t (untrace-one fname))))
     (sys:fset (setq oldf (gensym)) (symbol-function fname))
-    (sys:putprop fname oldf 'TRACED)
+    (put-sysprop fname 'TRACED oldf)
     (eval
      `(defun ,fname (&rest args)
 	(block ,+tracing-block+		; used to recognize traced functions
@@ -172,13 +172,13 @@ SI::ARGS."
 	      extras))))
 
 (defun untrace-one (fname)
-  (cond ((get fname 'TRACED)
+  (cond ((get-sysprop fname 'TRACED)
          (if (tracing-body fname)
-	   (sys:fset fname (symbol-function (get fname 'TRACED)))
+	   (sys:fset fname (symbol-function (get-sysprop fname 'TRACED)))
 	   (format *trace-output*
 		   "The function ~S was traced, but redefined.~%"
 		   fname))
-         (remprop fname 'TRACED)
+         (rem-sysprop fname 'TRACED)
          (setq *trace-list* (delete fname *trace-list* :test #'eq))
          (list fname))
         (t
@@ -272,7 +272,7 @@ for Stepper mode commands."
   ;; skip the encapsulation of traced functions:
   (when (and (consp form)
 	     (symbolp (car form))
-	     (get (car form) 'TRACED)
+	     (get-sysprop (car form) 'TRACED)
 	     (tracing-body (car form)))
     (do ((args (cdr form) (cdr args))
 	 (values))

@@ -928,7 +928,7 @@ The offending clause"
 	     z)
 	  ((symbolp (car x))
 	     (let ((fn (car x)) (tem nil))
-	       (cond ((setq tem (get fn 'loop-simplep))
+	       (cond ((setq tem (get-sysprop fn 'loop-simplep))
 		        (if (typep tem 'fixnum) (setq z tem)
 			    (setq z (funcall tem x) x nil)))
 		     ((member fn '(null not eq go return progn)))

@@ -130,7 +130,7 @@
 		(arg-locs (inline-args args))
 		loc)
 	   (if (and (inline-possible fname)
-		    (not (get fname 'C2)) ; no special treatment
+		    (not (get-sysprop fname 'C2)) ; no special treatment
 		    (setq loc (inline-function fname arg-locs return-type)))
 	     (let* ((arg-type (first loc))
 		    (and-type (type-and arg-type return-type))
@@ -358,12 +358,12 @@
     (when (and (eq (car x) fname)
 	       (setq ii (inline-type-matches (cdr x) types return-type)))
       (return-from get-inline-info ii)))
-  (dolist (x (get fname (if *safe-compile*
+  (dolist (x (get-sysprop fname (if *safe-compile*
 			    ':INLINE-SAFE
 			    ':INLINE-UNSAFE)))
     (when (setq ii (inline-type-matches x types return-type))
       (return)))
-  (dolist (x (get fname ':INLINE-ALWAYS))
+  (dolist (x (get-sysprop fname ':INLINE-ALWAYS))
     (when (setq iia (inline-type-matches x types return-type))
       (return)))
   (if (and ii iia)
@@ -528,22 +528,22 @@
 
 ;;; ----------------------------------------------------------------------
 
-(setf (get 'INLINE 'WT-LOC) 'wt-inline)
-(setf (get 'INLINE-COND 'WT-LOC) 'wt-inline-cond)
-(setf (get 'INLINE-FIXNUM 'WT-LOC) 'wt-inline-fixnum)
-(setf (get 'INLINE-CHARACTER 'WT-LOC) 'wt-inline-character)
-(setf (get 'INLINE-LONG-FLOAT 'WT-LOC) 'wt-inline-long-float)
-(setf (get 'INLINE-SHORT-FLOAT 'WT-LOC) 'wt-inline-short-float)
+(put-sysprop 'INLINE 'WT-LOC 'wt-inline)
+(put-sysprop 'INLINE-COND 'WT-LOC 'wt-inline-cond)
+(put-sysprop 'INLINE-FIXNUM 'WT-LOC 'wt-inline-fixnum)
+(put-sysprop 'INLINE-CHARACTER 'WT-LOC 'wt-inline-character)
+(put-sysprop 'INLINE-LONG-FLOAT 'WT-LOC 'wt-inline-long-float)
+(put-sysprop 'INLINE-SHORT-FLOAT 'WT-LOC 'wt-inline-short-float)
 
-(setf (get 'FIXNUM 'WT-LOC) 'wt-fixnum-loc)
-(setf (get 'CHARACTER 'WT-LOC) 'wt-character-loc)
-(setf (get 'LONG-FLOAT 'WT-LOC) 'wt-long-float-loc)
-(setf (get 'SHORT-FLOAT 'WT-LOC) 'wt-short-float-loc)
-(setf (get 'BOOLEAN 'WT-LOC) 'wt-loc)
-(setf (get 'T 'WT-LOC) 'wt-loc)
+(put-sysprop 'FIXNUM 'WT-LOC 'wt-fixnum-loc)
+(put-sysprop 'CHARACTER 'WT-LOC 'wt-character-loc)
+(put-sysprop 'LONG-FLOAT 'WT-LOC 'wt-long-float-loc)
+(put-sysprop 'SHORT-FLOAT 'WT-LOC 'wt-short-float-loc)
+(put-sysprop 'BOOLEAN 'WT-LOC 'wt-loc)
+(put-sysprop 'T 'WT-LOC 'wt-loc)
 ;;; Since they are possible locations, we must add:
-(setf (get 'STRING 'WT-LOC) 'wt-loc)
-(setf (get 'BIT-VECTOR 'WT-LOC) 'wt-loc)
+(put-sysprop 'STRING 'WT-LOC 'wt-loc)
+(put-sysprop 'BIT-VECTOR 'WT-LOC 'wt-loc)
 
 (defun wt-fixnum->object (loc)
   (wt "MAKE_FIXNUM(" loc ")"))
@@ -554,7 +554,7 @@
 (defun wt-long-float->object (loc)
   (wt "make_longfloat(" loc ")"))
 
-(setf (get 'FIXNUM->OBJECT 'WT-LOC) 'wt-fixnum->object)
-(setf (get 'CHARACTER->OBJECT 'WT-LOC) 'wt-character->object)
-(setf (get 'LONG-FLOAT->OBJECT 'WT-LOC) 'wt-long-float->object)
-(setf (get 'SHORT-FLOAT->OBJECT 'WT-LOC) 'wt-short-float->object)
+(put-sysprop 'FIXNUM->OBJECT 'WT-LOC 'wt-fixnum->object)
+(put-sysprop 'CHARACTER->OBJECT 'WT-LOC 'wt-character->object)
+(put-sysprop 'LONG-FLOAT->OBJECT 'WT-LOC 'wt-long-float->object)
+(put-sysprop 'SHORT-FLOAT->OBJECT 'WT-LOC 'wt-short-float->object)

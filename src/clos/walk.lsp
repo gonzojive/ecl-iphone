@@ -68,7 +68,8 @@
 	   *variable-declarations*
 	   variable-declaration
 	   macroexpand-all
-	   ))
+	   )
+  (:import-from "SI" "GET-SYSPROP" "PUT-SYSPROP"))
 
 (in-package "WALKER")
 (declaim (notinline note-lexical-binding walk-bindings-1 walk-let/let*
@@ -355,15 +356,14 @@
 (eval-when (compile load eval)
 
 (defmacro get-walker-template-internal (x) ;Has to be inside eval-when because
-  `(get ,x 'WALKER-TEMPLATE))		   ;Golden Common Lisp doesn't hack
+  `(get-sysprop ,x 'WALKER-TEMPLATE))	   ;Golden Common Lisp doesn't hack
 					   ;compile time definition of macros
 					   ;right for setf.
 
 (defmacro define-walker-template
 	  (name &optional (template '(NIL REPEAT (EVAL))))
   `(eval-when (load eval)
-     (setf (get-walker-template-internal ',name) ',template)))
-)
+     (put-sysprop ',name 'WALKER-TEMPLATE ',template)))
 
 (defun get-walker-template (x)
   (cond ((symbolp x)

@@ -225,8 +225,8 @@
 
 ;;; ------------------------------------------------------------
 
-(setf (get 'tagbody 'c1special) 'c1tagbody)
-(setf (get 'tagbody 'c2) 'c2tagbody)
+(put-sysprop 'tagbody 'c1special 'c1tagbody)
+(put-sysprop 'tagbody 'c2 'c2tagbody)
 
-(setf (get 'go 'c1special) 'c1go)
-(setf (get 'go 'c2) 'c2go)
+(put-sysprop 'go 'c1special 'c1go)
+(put-sysprop 'go 'c2 'c2go)

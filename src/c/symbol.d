@@ -271,6 +271,7 @@ cl_symbol_name(cl_object x)
 	x->symbol.mflag = sym->symbol.mflag;
 	SYM_FUN(x) = SYM_FUN(sym);
 	x->symbol.plist = cl_copy_list(sym->symbol.plist);
+	/* FIXME!!! We should also copy the system property list */
 	@(return x)
 @)
 

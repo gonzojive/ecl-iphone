@@ -100,9 +100,9 @@
 
 ;;; ----------------------------------------------------------------------
 
-(setf (get 'CATCH 'C1SPECIAL) 'c1catch)
-(setf (get 'CATCH 'C2) 'c2catch)
-(setf (get 'UNWIND-PROTECT 'C1SPECIAL) 'c1unwind-protect)
-(setf (get 'UNWIND-PROTECT 'C2) 'c2unwind-protect)
-(setf (get 'THROW 'C1SPECIAL) 'c1throw)
-(setf (get 'THROW 'C2) 'c2throw)
+(put-sysprop 'CATCH 'C1SPECIAL 'c1catch)
+(put-sysprop 'CATCH 'C2 'c2catch)
+(put-sysprop 'UNWIND-PROTECT 'C1SPECIAL 'c1unwind-protect)
+(put-sysprop 'UNWIND-PROTECT 'C2 'c2unwind-protect)
+(put-sysprop 'THROW 'C1SPECIAL 'c1throw)
+(put-sysprop 'THROW 'C2 'c2throw)

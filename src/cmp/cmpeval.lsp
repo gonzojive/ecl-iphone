@@ -53,7 +53,7 @@
 (defun c1t () *c1t*)
 
 (defun c1call-symbol (fname args &aux fd)
-  (cond ((setq fd (get fname 'c1special)) (funcall fd args))
+  (cond ((setq fd (get-sysprop fname 'c1special)) (funcall fd args))
 	((setq fd (c1call-local fname))
 	 (let* ((info (make-info :sp-change t
 				 :referred-vars
@@ -78,10 +78,10 @@
 	   (list 'CALL-LOCAL info (third fd) forms)))
 	((setq fd (sch-local-macro fname))
 	 (c1expr (cmp-expand-macro fd fname args)))
-	((and (setq fd (get fname 'C1))
+	((and (setq fd (get-sysprop fname 'C1))
 	      (inline-possible fname))
 	 (funcall fd args))
-	((and (setq fd (get fname 'C1CONDITIONAL))
+	((and (setq fd (get-sysprop fname 'C1CONDITIONAL))
 	      (inline-possible fname)
 	      (funcall fd args)))
 	((setq fd (macro-function fname))
@@ -92,7 +92,7 @@
 		  (cmp-expand-compiler-macro fd fname args))
 		success))
 	 (c1expr fd))
-	((and (setq fd (get fname 'SYS::STRUCTURE-ACCESS))
+	((and (setq fd (get-sysprop fname 'SYS::STRUCTURE-ACCESS))
 	      (inline-possible fname)
 	      ;;; Structure hack.
 	      (consp fd)
@@ -106,7 +106,7 @@
 	   )
 	 )
 	(t (let* ((info (make-info
-			 :sp-change (null (get fname 'NO-SP-CHANGE))))
+			 :sp-change (null (get-sysprop fname 'NO-SP-CHANGE))))
 		  (forms (c1args args info)))
 	     (let ((return-type (get-return-type fname)))
 	       (when return-type (setf (info-type info) return-type)))
@@ -123,7 +123,7 @@
 						 :safe "In a call to ~a" fname)
 				  fl1)
 			    (pop arg-types))))))
-	     (let ((arg-types (get fname 'ARG-TYPES)))
+	     (let ((arg-types (get-sysprop fname 'ARG-TYPES)))
 	       ;; Check argument types.
 	       (when arg-types
 		 (do ((fl forms (cdr fl))
@@ -190,15 +190,15 @@
 			  (last-call-p)
 			  (symbolp fname) ; locally defined function are
 					; represented as variables
-			  (get fname 'PROCLAIMED-FUNCTION))
-			 (get fname 'PROCLAIMED-RETURN-TYPE)
+			  (get-sysprop fname 'PROCLAIMED-FUNCTION))
+			 (get-sysprop fname 'PROCLAIMED-RETURN-TYPE)
 			 (info-type (second form)))))
     (if (or (eq (car form) 'LET)
 	    (eq (car form) 'LET*))
       (let ((*volatile* (volatile (second form))))
 	(declare (special *volatile*))
-	(apply (get (car form) 'C2) (cddr form)))
-      (apply (get (car form) 'C2) (cddr form)))))
+	(apply (get-sysprop (car form) 'C2) (cddr form)))
+      (apply (get-sysprop (car form) 'C2) (cddr form)))))
 
 (defun c2expr* (form)
   (let* ((*exit* (next-label))
@@ -263,7 +263,7 @@
 (defun get-slot-type (name index)
   ;; default is t
   (type-filter
-   (or (third (nth index (get name 'SYS::STRUCTURE-SLOT-DESCRIPTIONS))) 'T)))
+   (or (third (nth index (get-sysprop name 'SYS::STRUCTURE-SLOT-DESCRIPTIONS))) 'T)))
 
 (defun c2structure-ref (form name-vv index
 			     &aux (*inline-blocks* 0))
@@ -401,18 +401,18 @@
 
 ;;; ----------------------------------------------------------------------
 
-(setf (get 'PROGN 'C1SPECIAL) 'c1progn)
-(setf (get 'PROGN 'C2) 'c2progn)
+(put-sysprop 'PROGN 'C1SPECIAL 'c1progn)
+(put-sysprop 'PROGN 'C2 'c2progn)
 
-(setf (get 'SYS:STRUCTURE-REF 'C1) 'c1structure-ref)
-(setf (get 'SYS:STRUCTURE-REF 'C2) 'c2structure-ref)
-(setf (get 'SYS:STRUCTURE-REF 'WT-LOC) 'wt-structure-ref)
-(setf (get 'SYS:STRUCTURE-SET 'C1) 'c1structure-set)
-(setf (get 'SYS:STRUCTURE-SET 'C2) 'c2structure-set)
+(put-sysprop 'SYS:STRUCTURE-REF 'C1 'c1structure-ref)
+(put-sysprop 'SYS:STRUCTURE-REF 'C2 'c2structure-ref)
+(put-sysprop 'SYS:STRUCTURE-REF 'WT-LOC 'wt-structure-ref)
+(put-sysprop 'SYS:STRUCTURE-SET 'C1 'c1structure-set)
+(put-sysprop 'SYS:STRUCTURE-SET 'C2 'c2structure-set)
 
 #+clos
-(setf (get 'SYS:INSTANCE-REF 'C1) 'c1instance-ref)
+(put-sysprop 'SYS:INSTANCE-REF 'C1 'c1instance-ref)
 #+clos
-(setf (get 'SYS:INSTANCE-REF 'C2) 'c2instance-ref)
+(put-sysprop 'SYS:INSTANCE-REF 'C2 'c2instance-ref)
 #+clos
-(setf (get 'SYS:INSTANCE-REF 'WT-LOC) 'wt-instance-ref)
+(put-sysprop 'SYS:INSTANCE-REF 'WT-LOC 'wt-instance-ref)

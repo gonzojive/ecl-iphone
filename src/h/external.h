@@ -122,6 +122,9 @@ extern cl_object si_setf_namep(cl_object arg);
 extern cl_object cl_makunbound(cl_object sym);
 extern cl_object cl_fmakunbound(cl_object sym);
 extern cl_object si_fset _ARGS((int narg, cl_object fun, cl_object def, ...));
+extern cl_object si_get_sysprop(cl_object sym, cl_object prop);
+extern cl_object si_put_sysprop(cl_object sym, cl_object prop, cl_object value);
+extern cl_object si_rem_sysprop(cl_object sym, cl_object prop);
 
 extern cl_object setf_namep(cl_object fun_spec);
 extern void clear_compiler_properties(cl_object sym);

@@ -515,9 +515,9 @@
 	 (subtypep (result-type (second args)) 'FIXNUM)
 	 (c1expr `(the fixnum (ldb1 ,size ,pos ,(second args))))))
 
-(push '((fixnum fixnum fixnum) fixnum nil nil
-	"((((~(-1 << (#0))) << (#1)) & (#2)) >> (#1))")
-      (get 'ldb1 ':INLINE-ALWAYS))
+(put-sysprop 'ldb1 :INLINE-ALWAYS
+	     '((fixnum fixnum fixnum) fixnum nil nil
+	       "((((~(-1 << (#0))) << (#1)) & (#2)) >> (#1))"))
 
 ;----------------------------------------------------------------------
 
@@ -545,36 +545,36 @@
 
 ;;; ----------------------------------------------------------------------
 
-(setf (get 'princ 'C1) 'c1princ)
-(setf (get 'princ 'C2) 'c2princ)
-(setf (get 'terpri 'C1) 'c1terpri)
+(put-sysprop 'princ 'C1 'c1princ)
+(put-sysprop 'princ 'C2 'c2princ)
+(put-sysprop 'terpri 'C1 'c1terpri)
 
-(setf (get 'apply 'C1) 'c1apply)
-(setf (get 'apply-lambda/local 'C2) 'c2apply-lambda/local)
+(put-sysprop 'apply 'C1 'c1apply)
+(put-sysprop 'apply-lambda/local 'C2 'c2apply-lambda/local)
 
-(setf (get 'rplaca 'C1) 'c1rplaca)
-(setf (get 'rplaca 'C2) 'c2rplaca)
-(setf (get 'rplacd 'C1) 'c1rplacd)
-(setf (get 'rplacd 'C2) 'c2rplacd)
+(put-sysprop 'rplaca 'C1 'c1rplaca)
+(put-sysprop 'rplaca 'C2 'c2rplaca)
+(put-sysprop 'rplacd 'C1 'c1rplacd)
+(put-sysprop 'rplacd 'C2 'c2rplacd)
 
-(setf (get 'member 'C1) 'c1member)
-(setf (get 'member!2 'C2) 'c2member!2)
-(setf (get 'assoc 'C1) 'c1assoc)
-(setf (get 'assoc!2 'C2) 'c2assoc!2)
+(put-sysprop 'member 'C1 'c1member)
+(put-sysprop 'member!2 'C2 'c2member!2)
+(put-sysprop 'assoc 'C1 'c1assoc)
+(put-sysprop 'assoc!2 'C2 'c2assoc!2)
 
-(setf (get 'nth 'C1CONDITIONAL) 'co1nth)
-(setf (get 'nthcdr 'C1CONDITIONAL) 'co1nthcdr)
-(setf (get 'sys:rplaca-nthcdr 'C1) 'c1rplaca-nthcdr)
-(setf (get 'rplaca-nthcdr-immediate 'C2) 'c2rplaca-nthcdr-immediate)
-(setf (get 'sys:list-nth 'C1) 'c1list-nth)
-(setf (get 'list-nth-immediate 'C2) 'c2list-nth-immediate)
+(put-sysprop 'nth 'C1CONDITIONAL 'co1nth)
+(put-sysprop 'nthcdr 'C1CONDITIONAL 'co1nthcdr)
+(put-sysprop 'sys:rplaca-nthcdr 'C1 'c1rplaca-nthcdr)
+(put-sysprop 'rplaca-nthcdr-immediate 'C2 'c2rplaca-nthcdr-immediate)
+(put-sysprop 'sys:list-nth 'C1 'c1list-nth)
+(put-sysprop 'list-nth-immediate 'C2 'c2list-nth-immediate)
 
-(setf (get 'ash 'C1CONDITIONAL) 'co1ash)
-(setf (get 'boole 'C2) 'c2boole)
-(setf (get 'boole 'C1CONDITIONAL) 'co1boole)
-(setf (get 'coerce 'C1CONDITIONAL) 'co1coerce)
-(setf (get 'cons 'C1CONDITIONAL) 'co1cons)
-(setf (get 'eql 'C1CONDITIONAL) 'co1eql)		    
-(setf (get 'ldb 'C1CONDITIONAL) 'co1ldb)
-(setf (get 'vector-push 'C1CONDITIONAL) 'co1vector-push)
-(setf (get 'vector-push-extend 'C1CONDITIONAL) 'co1vector-push-extend)
+(put-sysprop 'ash 'C1CONDITIONAL 'co1ash)
+(put-sysprop 'boole 'C2 'c2boole)
+(put-sysprop 'boole 'C1CONDITIONAL 'co1boole)
+(put-sysprop 'coerce 'C1CONDITIONAL 'co1coerce)
+(put-sysprop 'cons 'C1CONDITIONAL 'co1cons)
+(put-sysprop 'eql 'C1CONDITIONAL 'co1eql)		    
+(put-sysprop 'ldb 'C1CONDITIONAL 'co1ldb)
+(put-sysprop 'vector-push 'C1CONDITIONAL 'co1vector-push)
+(put-sysprop 'vector-push-extend 'C1CONDITIONAL 'co1vector-push-extend)

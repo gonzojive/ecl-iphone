@@ -131,7 +131,7 @@
        (eq (first form) 'CALL-GLOBAL)
        (let ((fname (third form)))
          (when (and (symbolp fname)
-                    (get fname 'PROCLAIMED-RETURN-TYPE))
+                    (get-sysprop fname 'PROCLAIMED-RETURN-TYPE))
            (cmpwarn "~A was proclaimed to have only one return value. ~
                      ~%;;; But you appear to want multiple values." fname)))))
 
@@ -251,13 +251,13 @@
 
 ;;; ----------------------------------------------------------------------
 
-(setf (get 'multiple-value-call 'c1special) #'c1multiple-value-call)
-(setf (get 'multiple-value-call 'c2) #'c2multiple-value-call)
-(setf (get 'multiple-value-prog1 'c1special) #'c1multiple-value-prog1)
-(setf (get 'multiple-value-prog1 'c2) #'c2multiple-value-prog1)
-(setf (get 'values 'c1) #'c1values)
-(setf (get 'values 'c2) #'c2values)
-(setf (get 'multiple-value-setq 'c1) #'c1multiple-value-setq)
-(setf (get 'multiple-value-setq 'c2) #'c2multiple-value-setq)
-(setf (get 'multiple-value-bind 'c1) #'c1multiple-value-bind)
-(setf (get 'multiple-value-bind 'c2) #'c2multiple-value-bind)
+(put-sysprop 'multiple-value-call 'c1special #'c1multiple-value-call)
+(put-sysprop 'multiple-value-call 'c2 #'c2multiple-value-call)
+(put-sysprop 'multiple-value-prog1 'c1special #'c1multiple-value-prog1)
+(put-sysprop 'multiple-value-prog1 'c2 #'c2multiple-value-prog1)
+(put-sysprop 'values 'c1 #'c1values)
+(put-sysprop 'values 'c2 #'c2values)
+(put-sysprop 'multiple-value-setq 'c1 #'c1multiple-value-setq)
+(put-sysprop 'multiple-value-setq 'c2 #'c2multiple-value-setq)
+(put-sysprop 'multiple-value-bind 'c1 #'c1multiple-value-bind)
+(put-sysprop 'multiple-value-bind 'c2 #'c2multiple-value-bind)

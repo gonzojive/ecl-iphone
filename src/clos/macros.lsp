@@ -9,7 +9,7 @@
 
 (defpackage "CLOS"
   (:use "WALKER" "CL")
-  (:import-from "SI" "UNBOUND"))
+  (:import-from "SI" "UNBOUND" "GET-SYSPROP" "PUT-SYSPROP" "REM-SYSPROP"))
 
 (in-package "CLOS")
 

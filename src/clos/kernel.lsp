@@ -41,7 +41,7 @@
 (defun search-make-instance (obj)
   (declare (si::c-local))
   (let* ((gfun (symbol-function (if (si::tracing-body 'make-instance)
-				    (get 'make-instance 'si::traced)
+				    (get-sysprop 'make-instance 'si::traced)
 				    'make-instance)))
 	 (table (si:gfun-method-ht gfun))
 	 (key (list (class-name (si:instance-class obj))))

@@ -518,10 +518,10 @@ Cannot compile ~a."
 				     null-stream))
          (*error-count* 0)
          (t3local-fun (symbol-function 'T3LOCAL-FUN))
-	 (t3fun (get 'DEFUN 'T3)))
+	 (t3fun (get-sysprop 'DEFUN 'T3)))
     (unwind-protect
       (progn
-        (setf (get 'DEFUN 'T3)
+        (put-sysprop 'DEFUN 'T3
               #'(lambda (&rest args)
                  (let ((*compiler-output1* *standard-output*))
                    (apply t3fun args))))
@@ -539,7 +539,7 @@ Cannot compile ~a."
           (setq *error-p* t))
 	(when data-file (wt-data-end))
         )
-      (setf (get 'DEFUN 'T3) t3fun)
+      (put-sysprop 'DEFUN 'T3 t3fun)
       (setf (symbol-function 'T3LOCAL-FUN) t3local-fun)
       (when h-file (close *compiler-output2*))
       (when data-file (close *compiler-output-data*))))

@@ -39,15 +39,15 @@
           (t (error "~S is an illegal structure type." type)))
     (if read-only
 	(progn
-	  (remprop access-function 'SETF-UPDATE-FN)
-	  (remprop access-function 'SETF-LAMBDA)
-	  (remprop access-function 'SETF-SYMBOL)
-	  (sys::set-documentation access-function 'SETF nil))
+	  (rem-sysprop access-function 'SETF-UPDATE-FN)
+	  (rem-sysprop access-function 'SETF-LAMBDA)
+	  (rem-sysprop access-function 'SETF-SYMBOL)
+	  (set-documentation access-function 'SETF nil))
 	(progn
 	  ;; The following is used by the compiler to expand inline
 	  ;; the accessor
-	  (sys:putprop access-function (cons (or type name) offset)
-		      'STRUCTURE-ACCESS))))
+	  (put-sysprop access-function 'STRUCTURE-ACCESS (cons (or type name) offset)))
+	))
   )
 
 (defun make-constructor (name constructor type named slot-descriptions)
@@ -322,16 +322,15 @@
 (defun define-structure (name conc-name type named slots slot-descriptions
 			      copier include print-function constructors
 			      offset documentation)
-  (sys:put-properties name
-		      'DEFSTRUCT-FORM `(defstruct ,name ,@slots)
-		      'IS-A-STRUCTURE t
-		      'STRUCTURE-SLOT-DESCRIPTIONS slot-descriptions
-		      'STRUCTURE-INCLUDE include
-		      'STRUCTURE-PRINT-FUNCTION print-function
-		      'STRUCTURE-TYPE type
-		      'STRUCTURE-NAMED named
-		      'STRUCTURE-OFFSET offset
-		      'STRUCTURE-CONSTRUCTORS constructors)
+  (put-sysprop name 'DEFSTRUCT-FORM `(defstruct ,name ,@slots))
+  (put-sysprop name 'IS-A-STRUCTURE t)
+  (put-sysprop name 'STRUCTURE-SLOT-DESCRIPTIONS slot-descriptions)
+  (put-sysprop name 'STRUCTURE-INCLUDE include)
+  (put-sysprop name 'STRUCTURE-PRINT-FUNCTION print-function)
+  (put-sysprop name 'STRUCTURE-TYPE type)
+  (put-sysprop name 'STRUCTURE-NAMED named)
+  (put-sysprop name 'STRUCTURE-OFFSET offset)
+  (put-sysprop name 'STRUCTURE-CONSTRUCTORS constructors)
   (when *keep-documentation*
     (sys:set-documentation name 'STRUCTURE documentation))
   (and (consp type) (eq (car type) 'VECTOR)
@@ -419,7 +418,7 @@ as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
                 (setq predicate-specified t))
                (:INCLUDE
                 (setq include (cdar os))
-                (unless (get v 'IS-A-STRUCTURE)
+                (unless (get-sysprop v 'IS-A-STRUCTURE)
                         (error "~S is an illegal included structure." v)))
                (:PRINT-FUNCTION (setq print-function v))
                (:TYPE (setq type v))
@@ -447,13 +446,13 @@ as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
     
     ;; Check the include option.
     (when include
-          (unless (equal type (get (car include) 'STRUCTURE-TYPE))
+          (unless (equal type (get-sysprop (car include) 'STRUCTURE-TYPE))
                   (error "~S is an illegal structure include."
                          (car include))))
 
     ;; Set OFFSET.
     (setq offset (if include
-		     (get (car include) 'STRUCTURE-OFFSET)
+		     (get-sysprop (car include) 'STRUCTURE-OFFSET)
 		     0))
 
     ;; Increment OFFSET.
@@ -490,7 +489,7 @@ as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
     (cond ((null include))
           ((endp (cdr include))
            (setq slot-descriptions
-                 (append (get (car include) 'STRUCTURE-SLOT-DESCRIPTIONS)
+                 (append (get-sysprop (car include) 'STRUCTURE-SLOT-DESCRIPTIONS)
                          slot-descriptions)))
           (t
            (setq slot-descriptions
@@ -498,8 +497,7 @@ as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
                           (mapcar #'(lambda (sd)
                                       (parse-slot-description sd 0))
                                   (cdr include))
-                          (get (car include)
-                               'STRUCTURE-SLOT-DESCRIPTIONS))
+                          (get-sysprop (car include) 'STRUCTURE-SLOT-DESCRIPTIONS))
                          slot-descriptions))))
 
     (cond (no-constructor

@@ -213,15 +213,15 @@
 
 ;;; ----------------------------------------------------------------------
 
-(setf (get 'mapcar 'c1) 'c1mapcar)
-(setf (get 'maplist 'c1) 'c1maplist)
-(setf (get 'mapcar 'c2) 'c2mapcar)
-(setf (get 'mapc 'c1) 'c1mapc)
-(setf (get 'mapl 'c1) 'c1mapl)
-(setf (get 'mapc 'c2) 'c2mapc)
-(setf (get 'mapcan 'c1) 'c1mapcan)
-(setf (get 'mapcon 'c1) 'c1mapcon)
-(setf (get 'mapcan 'c2) 'c2mapcan)
+(put-sysprop 'mapcar 'c1 'c1mapcar)
+(put-sysprop 'maplist 'c1 'c1maplist)
+(put-sysprop 'mapcar 'c2 'c2mapcar)
+(put-sysprop 'mapc 'c1 'c1mapc)
+(put-sysprop 'mapl 'c1 'c1mapl)
+(put-sysprop 'mapc 'c2 'c2mapc)
+(put-sysprop 'mapcan 'c1 'c1mapcan)
+(put-sysprop 'mapcon 'c1 'c1mapcon)
+(put-sysprop 'mapcan 'c2 'c2mapcan)
 
 (defun c1mapcar (args) (c1map-functions 'mapcar t args))
 (defun c1maplist (args) (c1map-functions 'mapcar nil args))

@@ -45,22 +45,22 @@
   ;; The value NIL for each parameter except for fname means "not known".
   ;; optimizers is a list of alternating {safety inline-info}* as above.
   (when arg-types
-    (setf (get fname 'arg-types)
-	  (mapcar #'(lambda (x) (if (eql x '*) '* (type-filter x)))
-		  arg-types)))
+    (put-sysprop fname 'arg-types
+		 (mapcar #'(lambda (x) (if (eql x '*) '* (type-filter x)))
+			 arg-types)))
   (when (and return-type (not (eq 'T return-type)))
-    (setf (get fname 'return-type) (type-filter return-type)))
-  (when never-change-special-var-p (setf (get fname 'no-sp-change) t))
-  (when predicate (setf (get fname 'predicate) t))
-  (remprop fname ':inline-always)
-  (remprop fname ':inline-safe)
-  (remprop fname ':inline-unsafe)
+    (put-sysprop fname 'return-type (type-filter return-type)))
+  (when never-change-special-var-p (put-sysprop fname 'no-sp-change t))
+  (when predicate (put-sysprop fname 'predicate t))
+  (rem-sysprop fname ':inline-always)
+  (rem-sysprop fname ':inline-safe)
+  (rem-sysprop fname ':inline-unsafe)
   (do ((scan optimizers (cddr scan))
        (safety) (inline-info))
       ((null scan))
       (setq safety (first scan)
 	    inline-info (second scan))
-      (push inline-info (get fname safety)))
+      (put-sysprop fname safety (cons inline-info (get-sysprop fname safety))))
   )
 
 ; file alloc.c
@@ -977,6 +977,9 @@ type_of(#0)==t_bitvector"))
 (SI::REM-F NIL (T T))
 (si::SET-SYMBOL-PLIST (symbol t) T)
 (SI::PUTPROP (T T T) T NIL NIL)
+(SI::PUT-SYSPROP (T T T) T NIL NIL)
+(SI::GET-SYSPROP (T T T) T NIL NIL)
+(SI::REM-SYSPROP (T T) T NIL NIL)
 
 ; file tcp.c
 (si::OPEN-TCP-STREAM (T T) T)

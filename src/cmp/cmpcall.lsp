@@ -17,13 +17,13 @@
   (and *compile-to-linking-call*
        (symbolp fname)
        (and (< (the fixnum (length args)) 10)
-            (or (and (get fname 'FIXED-ARGS)
+            (or (and (get-sysprop fname 'FIXED-ARGS)
                      (listp args))
                 (and
-                 (get fname 'PROCLAIMED-FUNCTION)
-                 (eq (get fname 'PROCLAIMED-RETURN-TYPE) t)
+                 (get-sysprop fname 'PROCLAIMED-FUNCTION)
+                 (eq (get-sysprop fname 'PROCLAIMED-RETURN-TYPE) t)
                  (every #'(lambda (v) (eq v t))
-                        (get fname 'PROCLAIMED-ARG-TYPES)))))))
+                        (get-sysprop fname 'PROCLAIMED-ARG-TYPES)))))))
 
 ;;; Like macro-function except it searches the lexical environment,
 ;;; to determine if the macro is shadowed by a function or a macro.
@@ -49,7 +49,7 @@
 	 (or (c1call-local function)
 	     (list 'GLOBAL
 		   (make-info :sp-change
-			      (not (get function 'NO-SP-CHANGE)))
+			      (not (get-sysprop function 'NO-SP-CHANGE)))
 		   function)))
 	((and (consp function)
 	      (eq (first function) 'LAMBDA)
@@ -297,7 +297,7 @@
      ;; Call to a function whose C language function name is known,
      ;; either because it has been proclaimed so, or because it belongs
      ;; to the runtime.
-     ((or (setq maxarg -1 fd (get fname 'Lfun))
+     ((or (setq maxarg -1 fd (get-sysprop fname 'Lfun))
 	  (multiple-value-setq (found fd maxarg) (si::mangle-name fname t)))
       (multiple-value-bind (val found)
 	  (gethash fd *compiler-declared-globals*)
@@ -325,7 +325,7 @@
     ((LAMBDA LOCAL))
     (GLOBAL
      (unless (and (inline-possible (third funob))
-                  (or (get (third funob) 'Lfun)
+                  (or (get-sysprop (third funob) 'Lfun)
                       (assoc (third funob) *global-funs*)))
        (let ((temp (list 'TEMP (next-temp))))
          (if *safe-compile*
@@ -403,11 +403,11 @@
 
 ;;; ----------------------------------------------------------------------
 
-(setf (get 'funcall 'C1) #'c1funcall)
-(setf (get 'funcall 'c2) #'c2funcall)
-(setf (get 'call-lambda 'c2) #'c2call-lambda)
-(setf (get 'call-global 'c2) #'c2call-global)
+(put-sysprop 'funcall 'C1 #'c1funcall)
+(put-sysprop 'funcall 'c2 #'c2funcall)
+(put-sysprop 'call-lambda 'c2 #'c2call-lambda)
+(put-sysprop 'call-global 'c2 #'c2call-global)
 
-(setf (get 'CALL 'WT-LOC) #'wt-call)
-(setf (get 'CALL-FIX 'WT-LOC) #'wt-call-fix)
-(setf (get 'STACK-POINTER 'WT-LOC) #'wt-stack-pointer)
+(put-sysprop 'CALL 'WT-LOC #'wt-call)
+(put-sysprop 'CALL-FIX 'WT-LOC #'wt-call-fix)
+(put-sysprop 'STACK-POINTER 'WT-LOC #'wt-stack-pointer)

@@ -138,8 +138,8 @@
 
 ;;; ----------------------------------------------------------------------
 
-(setf (get 'BLOCK 'C1SPECIAL) 'c1block)
-(setf (get 'BLOCK 'C2) 'c2block)
+(put-sysprop 'BLOCK 'C1SPECIAL 'c1block)
+(put-sysprop 'BLOCK 'C2 'c2block)
 
-(setf (get 'RETURN-FROM 'C1SPECIAL) 'c1return-from)
-(setf (get 'RETURN-FROM 'C2) 'c2return-from)
+(put-sysprop 'RETURN-FROM 'C1SPECIAL 'c1return-from)
+(put-sysprop 'RETURN-FROM 'C2 'c2return-from)

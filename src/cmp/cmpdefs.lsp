@@ -26,7 +26,8 @@
 	   shared-library-pathname
 	   static-library-pathname
 	   *suppress-compiler-warnings*
-	   *suppress-compiler-notes*))
+	   *suppress-compiler-notes*)
+  (:import-from "SI" "GET-SYSPROP" "PUT-SYSPROP" "REM-SYSPROP"))
 
 (in-package "COMPILER")
 

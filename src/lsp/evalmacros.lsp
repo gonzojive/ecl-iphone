@@ -113,17 +113,17 @@ as a VARIABLE doc and can be retrieved by (documentation 'NAME 'variable)."
 	(print function)
 	(setq function `(si::bc-disassemble ,function)))
       `(progn
-	 (setf (get ',name 'sys::compiler-macro)
-	       (compiler-macro-function-wrapper ,function))
+	 (put-sysprop ',name 'sys::compiler-macro
+	 	      (compiler-macro-function-wrapper ,function))
 	 ,@(si::expand-set-documentation name 'function doc-string)
 	 ',name))))
 
 (defun compiler-macro-function (name &optional env)
   (declare (ignore env))
-  (get name 'sys::compiler-macro))
+  (get-sysprop name 'sys::compiler-macro))
 
 (defun sys::undef-compiler-macro (name)
-  (remprop name 'sys::compiler-macro))
+  (rem-sysprop name 'sys::compiler-macro))
 
 
 ;;; Each of the following macros is also defined as a special form,
@@ -402,8 +402,7 @@ SECOND-FORM."
 		symbol))
 	(t
 	 `(progn
-	   (setf (get ',symbol 'si::symbol-macro)
-	         (lambda (form env) ',expansion))
+	   (put-sysprop ',symbol 'si::symbol-macro (lambda (form env) ',expansion))
 	   ',symbol))))
 
 (defmacro nth-value (n expr)

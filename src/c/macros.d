@@ -32,7 +32,7 @@ search_symbol_macro(cl_object name, cl_object env)
 {
 	cl_object record = assq(name, CAR(env));
 	if (Null(record))
-		return ecl_get(name, @'si::symbol-macro', Cnil);
+		return si_get_sysprop(name, @'si::symbol-macro');
 	else if (CADR(record) == @'si::symbol-macro')
 		return CADDR(record);
 	else

@@ -103,7 +103,7 @@
 		    t))
 		 ((and (eq type-name 'SATISFIES) ; Beppe
 		       (symbolp (car type-args))
-		       (get (car type-args) 'TYPE-FILTER)))
+		       (get-sysprop (car type-args) 'TYPE-FILTER)))
 		 (t t))))))
 
 ;;; The algebra of types should be more complete. Beppe

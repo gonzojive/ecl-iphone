@@ -69,7 +69,7 @@
       ((not (symbolp form)) form)
     (dolist (v *vars*
 	     ;; At the end, loof for a DEFINE-SYMBOL-MACRO definition
-	     (let ((expansion (get form 'si::symbol-macro)))
+	     (let ((expansion (get-sysprop form 'si::symbol-macro)))
 	       (if expansion
 		 (setq form expansion)
 		 (return-from chk-symbol-macrolet form))))
@@ -104,7 +104,7 @@
            (setf (var-loc var) (add-symbol name))
            (cond ((setq x (assoc name types))
                   (setf (var-type var) (cdr x)))
-                 ((setq x (get name 'CMP-TYPE))
+                 ((setq x (get-sysprop name 'CMP-TYPE))
                   (setf (var-type var) x)))
            (setq *special-binding* t))
           (t
@@ -181,7 +181,7 @@
       (setq var (make-var :name name
                           :kind 'GLOBAL
                           :loc (add-symbol name)
-                          :type (or (get name 'CMP-TYPE) t)))
+                          :type (or (get-sysprop name 'CMP-TYPE) t)))
       (push var *undefined-vars*))
     (list var))				; ccb
   )
@@ -277,7 +277,7 @@
     (push (make-var :name name
                     :kind 'GLOBAL
                     :loc (add-symbol name)
-                    :type (let ((x (get name 'CMP-TYPE))) (if x x t))
+                    :type (let ((x (get-sysprop name 'CMP-TYPE))) (if x x t))
                     )
           *vars*))
   )
@@ -447,17 +447,17 @@
 
 ;;; ----------------------------------------------------------------------
 
-(setf (get 'VAR 'C2) 'c2var)
-(setf (get 'LOCATION 'C2) 'c2location)
-(setf (get 'SETQ 'c1special) 'c1setq)
-(setf (get 'SETQ 'C2) 'c2setq)
-(setf (get 'PROGV 'c1special) 'c1progv)
-(setf (get 'PROGV 'C2) 'c2progv)
-(setf (get 'PSETQ 'c1) 'c1psetq)
-(setf (get 'PSETQ 'C2) 'c2psetq)
+(put-sysprop 'VAR 'C2 'c2var)
+(put-sysprop 'LOCATION 'C2 'c2location)
+(put-sysprop 'SETQ 'c1special 'c1setq)
+(put-sysprop 'SETQ 'C2 'c2setq)
+(put-sysprop 'PROGV 'c1special 'c1progv)
+(put-sysprop 'PROGV 'C2 'c2progv)
+(put-sysprop 'PSETQ 'c1 'c1psetq)
+(put-sysprop 'PSETQ 'C2 'c2psetq)
 
-(setf (get 'VAR 'SET-LOC) 'set-var)
-(setf (get 'VAR 'WT-LOC) 'wt-var)
+(put-sysprop 'VAR 'SET-LOC 'set-var)
+(put-sysprop 'VAR 'WT-LOC 'wt-var)
 
-(setf (get 'LEX 'SET-LOC) 'set-lex)
-(setf (get 'LEX 'WT-LOC) 'wt-lex)
+(put-sysprop 'LEX 'SET-LOC 'set-lex)
+(put-sysprop 'LEX 'WT-LOC 'wt-lex)

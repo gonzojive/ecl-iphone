@@ -29,13 +29,13 @@
       (let ((fun (car form)) (args (cdr form)) fd setf-symbol) ; #+cltl2
 	(cond
             ((symbolp fun)
-             (cond ((get fun 'PACKAGE-OPERATION)
+             (cond ((get-sysprop fun 'PACKAGE-OPERATION)
 		    (cmp-eval form)
                     (wt-data-package-operation form))
-                   ((setq fd (get fun 'T1))
+                   ((setq fd (get-sysprop fun 'T1))
                     (when *compile-print* (print-current-form))
                     (funcall fd args))
-                   ((get fun 'C1) (t1ordinary form))
+                   ((get-sysprop fun 'C1) (t1ordinary form))
                    ((setq fd (macro-function fun))
                     (t1expr* (cmp-expand-macro fd fun (cdr form))))
 		   ((and (setq fd (assoc fun *funs*))
@@ -53,7 +53,7 @@
 (defun t2expr (form)
   ;(pprint (cons 'T2 form))
   (when form
-    (let ((def (get (car form) 'T2)))
+    (let ((def (get-sysprop (car form) 'T2)))
       (when def (apply def (cdr form))))))
 
 (defvar *emitted-local-funs* nil)
@@ -78,7 +78,7 @@
   (when form
     (emit-local-funs)
     (setq *funarg-vars* nil)
-    (let ((def (get (car form) 'T3)))
+    (let ((def (get-sysprop (car form) 'T3)))
       (when def
 	;; new local functions get pushed into *local-funs*
 	(when (and *compile-print*
@@ -221,7 +221,7 @@
   (mapcar #'t3expr args))
 
 (defun exported-fname (name)
-  (or (get name 'Lfun)
+  (or (get-sysprop name 'Lfun)
       (next-cfun)))
 
 (defun t1defun (args &aux (setjmps *setjmps*))
@@ -250,7 +250,7 @@
     (setq output (new-defun fname cfun lambda-expr *special-binding* no-entry))
     (when
       (and
-       (get fname 'PROCLAIMED-FUNCTION)
+       (get-sysprop fname 'PROCLAIMED-FUNCTION)
        (let ((lambda-list (third lambda-expr)))
          (declare (list lambda-list))
          (and (null (second lambda-list))	; no optional
@@ -271,8 +271,8 @@
 		     (declare (fixnum n))
 		     (format o "#~d," n))
 		   o))))
-	(let ((pat (get fname 'PROCLAIMED-ARG-TYPES))
-	      (prt (get fname 'PROCLAIMED-RETURN-TYPE)))
+	(let ((pat (get-sysprop fname 'PROCLAIMED-ARG-TYPES))
+	      (prt (get-sysprop fname 'PROCLAIMED-RETURN-TYPE)))
 	  (push (list fname pat prt t
 		      (not (member prt
 				   '(FIXNUM CHARACTER LONG-FLOAT SHORT-FLOAT)
@@ -314,7 +314,7 @@
 (defun wt-if-proclaimed (fname cfun vv lambda-expr)
   (when (fast-link-proclaimed-type-p fname)
     (let ((arg-c (length (car (third lambda-expr))))
-	  (arg-p (length (get fname 'PROCLAIMED-ARG-TYPES))))
+	  (arg-p (length (get-sysprop fname 'PROCLAIMED-ARG-TYPES))))
       (if (= arg-c arg-p)
 	(cmpwarn
 	 " ~a is proclaimed but not in *inline-functions* ~
@@ -340,7 +340,7 @@
       (if (numberp cfun)
 	(wt-nl "cl_def_c_function_va(" vv ",(cl_objectfn)L" cfun ");")
 	(wt-nl "cl_def_c_function_va(" vv ",(cl_objectfn)" cfun ");"))
-      (when (get fname 'PROCLAIMED-FUNCTION)
+      (when (get-sysprop fname 'PROCLAIMED-FUNCTION)
 	(wt-if-proclaimed fname cfun vv lambda-expr))))
 
 (defun t3defun (fname cfun lambda-expr sp funarg-vars no-entry
@@ -518,7 +518,7 @@
       (analyze-regs1 data *free-data-registers*))))
 
 (defun wt-global-entry (fname cfun arg-types return-type)
-    (when (get fname 'NO-GLOBAL-ENTRY) (return-from wt-global-entry nil))
+    (when (get-sysprop fname 'NO-GLOBAL-ENTRY) (return-from wt-global-entry nil))
     (wt-comment "global entry for the function " fname)
     (wt-nl1 "static cl_object L" cfun "(int narg")
     (wt-h "static cl_object L" cfun "(int")
@@ -583,7 +583,7 @@
   (declare (ignore macro-lambda sp))
   (when (< *space* 3)
     (when ppn
-      (wt-nl "si_putprop(" vv "," ppn "," (add-symbol 'si::pretty-print-format) ");")
+      (wt-nl "si_put_sysprop(" vv "," (add-symbol 'si::pretty-print-format) "," ppn ");")
       (wt-nl)))
   (wt-h "static cl_object L" cfun "();")
   (wt-nl "cl_def_c_macro_va(" vv ",(cl_objectfn)L" cfun ");"))
@@ -594,7 +594,7 @@
 			 (*next-unboxed* 0) *unboxed*
                          (*env* *env*) (*max-env* 0) (*level* *level*)
 			 (*volatile*
-			  (if (get fname 'CONTAINS-SETJMP) " volatile " ""))
+			  (if (get-sysprop fname 'CONTAINS-SETJMP) " volatile " ""))
                          (*exit* 'RETURN) (*unwind-exit* '(RETURN))
                          (*destination* 'RETURN)
                          (*reservation-cmacro* (next-cmacro)))
@@ -955,52 +955,52 @@
 
 ;;; Pass 1 top-levels.
 
-(setf (get 'COMPILER-LET 'T1) #'t1compiler-let)
-(setf (get 'EVAL-WHEN 'T1) #'t1eval-when)
-(setf (get 'PROGN 'T1) #'t1progn)
-(setf (get 'DEFUN 'T1) #'t1defun)
-(setf (get 'DEFMACRO 'T1) #'t1defmacro)
-(setf (get 'DEFVAR 'T1) #'t1defvar)
-(setf (get 'MACROLET 'T1) #'t1macrolet)
-(setf (get 'LOCALLY 'T1) #'t1locally)
-(setf (get 'SYMBOL-MACROLET 'T1) #'t1symbol-macrolet)
-(setf (get 'CLINES 'T1) 't1clines)
-(setf (get 'DEFCFUN 'T1) 't1defcfun)
-;(setf (get 'DEFENTRY 'T1) 't1defentry)
-(setf (get 'DEFLA 'T1) 't1defla)
-(setf (get 'DEFCBODY 'T1) 't1defCbody)	; Beppe
-;(setf (get 'DEFUNC 'T1) 't1defunC)	; Beppe
-(setf (get 'LOAD-TIME-VALUE 'C1) 'c1load-time-value)
+(put-sysprop 'COMPILER-LET 'T1 #'t1compiler-let)
+(put-sysprop 'EVAL-WHEN 'T1 #'t1eval-when)
+(put-sysprop 'PROGN 'T1 #'t1progn)
+(put-sysprop 'DEFUN 'T1 #'t1defun)
+(put-sysprop 'DEFMACRO 'T1 #'t1defmacro)
+(put-sysprop 'DEFVAR 'T1 #'t1defvar)
+(put-sysprop 'MACROLET 'T1 #'t1macrolet)
+(put-sysprop 'LOCALLY 'T1 #'t1locally)
+(put-sysprop 'SYMBOL-MACROLET 'T1 #'t1symbol-macrolet)
+(put-sysprop 'CLINES 'T1 't1clines)
+(put-sysprop 'DEFCFUN 'T1 't1defcfun)
+;(put-sysprop 'DEFENTRY 'T1 't1defentry)
+(put-sysprop 'DEFLA 'T1 't1defla)
+(put-sysprop 'DEFCBODY 'T1 't1defCbody)	; Beppe
+;(put-sysprop 'DEFUNC 'T1 't1defunC)	; Beppe
+(put-sysprop 'LOAD-TIME-VALUE 'C1 'c1load-time-value)
 
 ;;; Pass 2 initializers.
 
-(setf (get 'DECL-BODY 't2) #'t2decl-body)
-(setf (get 'PROGN 'T2) #'t2progn)
-(setf (get 'DEFUN 'T2) #'t2defun)
-(setf (get 'DEFMACRO 'T2) #'t2defmacro)
-(setf (get 'ORDINARY 'T2) #'t2ordinary)
-(setf (get 'DECLARE 'T2) #'t2declare)
-(setf (get 'DEFVAR 'T2) #'t2defvar)
-;(setf (get 'DEFENTRY 'T2) 't2defentry)
-(setf (get 'DEFCBODY 'T2) 't2defCbody)	; Beppe
-;(setf (get 'DEFUNC 'T2)	't2defunC); Beppe
-(setf (get 'FUNCTION-CONSTANT 'T2) 't2function-constant); Beppe
-(setf (get 'LOAD-TIME-VALUE 'T2) 't2load-time-value)
+(put-sysprop 'DECL-BODY 't2 #'t2decl-body)
+(put-sysprop 'PROGN 'T2 #'t2progn)
+(put-sysprop 'DEFUN 'T2 #'t2defun)
+(put-sysprop 'DEFMACRO 'T2 #'t2defmacro)
+(put-sysprop 'ORDINARY 'T2 #'t2ordinary)
+(put-sysprop 'DECLARE 'T2 #'t2declare)
+(put-sysprop 'DEFVAR 'T2 #'t2defvar)
+;(put-sysprop 'DEFENTRY 'T2 't2defentry)
+(put-sysprop 'DEFCBODY 'T2 't2defCbody)	; Beppe
+;(put-sysprop 'DEFUNC 'T2	't2defunC); Beppe
+(put-sysprop 'FUNCTION-CONSTANT 'T2 't2function-constant); Beppe
+(put-sysprop 'LOAD-TIME-VALUE 'T2 't2load-time-value)
 
 ;;; Pass 2 C function generators.
 
-(setf (get 'DECL-BODY 't3) #'t3decl-body)
-(setf (get 'PROGN 'T3) #'t3progn)
-(setf (get 'DEFUN 'T3) #'t3defun)
-(setf (get 'DEFMACRO 'T3) #'t3defmacro)
-(setf (get 'CLINES 'T3) 't3clines)
-(setf (get 'DEFCFUN 'T3) 't3defcfun)
-;(setf (get 'DEFENTRY 'T3) 't3defentry)
-(setf (get 'DEFCBODY 'T3) 't3defCbody)	; Beppe
-;(setf (get 'DEFUNC 'T3) 't3defunC)	; Beppe
+(put-sysprop 'DECL-BODY 't3 #'t3decl-body)
+(put-sysprop 'PROGN 'T3 #'t3progn)
+(put-sysprop 'DEFUN 'T3 #'t3defun)
+(put-sysprop 'DEFMACRO 'T3 #'t3defmacro)
+(put-sysprop 'CLINES 'T3 't3clines)
+(put-sysprop 'DEFCFUN 'T3 't3defcfun)
+;(put-sysprop 'DEFENTRY 'T3 't3defentry)
+(put-sysprop 'DEFCBODY 'T3 't3defCbody)	; Beppe
+;(put-sysprop 'DEFUNC 'T3 't3defunC)	; Beppe
 
 ;;; Package operations.
 
-(setf (get 'si::select-package 'PACKAGE-OPERATION) t)
-(setf (get 'si::%defpackage 'PACKAGE-OPERATION) t)
+(put-sysprop 'si::select-package 'PACKAGE-OPERATION t)
+(put-sysprop 'si::%defpackage 'PACKAGE-OPERATION t)
 

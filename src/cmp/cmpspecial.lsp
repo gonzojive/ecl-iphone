@@ -85,7 +85,7 @@
 					 :local-referred vars)
 			 vars))
 		 `(FUNCTION ,(make-info :sp-change
-					(not (get fun 'NO-SP-CHANGE)))
+					(not (get-sysprop fun 'NO-SP-CHANGE)))
 		   GLOBAL nil ,fun))))
           ((and (consp fun) (eq (car fun) 'LAMBDA))
            (cmpck (endp (cdr fun))
@@ -176,14 +176,14 @@
 
 ;;; ----------------------------------------------------------------------
 
-(setf (get 'quote 'c1special) 'c1quote)
-(setf (get 'function 'c1special) 'c1function)
-(setf (get 'function 'c2) 'c2function)
-(setf (get 'the 'c1special) 'c1the)
-(setf (get 'eval-when 'c1special) 'c1eval-when)
-(setf (get 'declare 'c1special) 'c1declare)
-(setf (get 'compiler-let 'c1special) 'c1compiler-let)
-(setf (get 'compiler-let 'c2) 'c2compiler-let)
+(put-sysprop 'quote 'c1special 'c1quote)
+(put-sysprop 'function 'c1special 'c1function)
+(put-sysprop 'function 'c2 'c2function)
+(put-sysprop 'the 'c1special 'c1the)
+(put-sysprop 'eval-when 'c1special 'c1eval-when)
+(put-sysprop 'declare 'c1special 'c1declare)
+(put-sysprop 'compiler-let 'c1special 'c1compiler-let)
+(put-sysprop 'compiler-let 'c2 'c2compiler-let)
 
-(setf (get 'symbol-function 'wt-loc) 'wt-symbol-function)
-(setf (get 'make-cclosure 'wt-loc) 'wt-make-closure)
+(put-sysprop 'symbol-function 'wt-loc 'wt-symbol-function)
+(put-sysprop 'make-cclosure 'wt-loc 'wt-make-closure)

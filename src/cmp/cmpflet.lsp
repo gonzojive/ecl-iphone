@@ -362,15 +362,15 @@
 
 ;;; ----------------------------------------------------------------------
 
-(setf (get 'FLET 'C1SPECIAL) 'c1flet)
-(setf (get 'LABELS 'C1SPECIAL) 'c1labels)
-(setf (get 'LOCALLY 'C1SPECIAL) 'c1locally)
-(setf (get 'MACROLET 'C1SPECIAL) 'c1macrolet)
-(setf (get 'SYMBOL-MACROLET 'C1SPECIAL) 'c1symbol-macrolet)
+(put-sysprop 'FLET 'C1SPECIAL 'c1flet)
+(put-sysprop 'LABELS 'C1SPECIAL 'c1labels)
+(put-sysprop 'LOCALLY 'C1SPECIAL 'c1locally)
+(put-sysprop 'MACROLET 'C1SPECIAL 'c1macrolet)
+(put-sysprop 'SYMBOL-MACROLET 'C1SPECIAL 'c1symbol-macrolet)
 
-(setf (get 'LOCALS 'c2) 'c2locals)	; replaces both c2flet and c2lables
+(put-sysprop 'LOCALS 'c2 'c2locals)	; replaces both c2flet and c2lables
 ;;; c2macrolet is not defined, because MACROLET is replaced by PROGN
 ;;; during Pass 1.
-(setf (get 'CALL-LOCAL 'C2) 'c2call-local)
+(put-sysprop 'CALL-LOCAL 'C2 'c2call-local)
 
-(setf (get 'CALL-LOCAL 'WT-LOC) #'wt-call-local)
+(put-sysprop 'CALL-LOCAL 'WT-LOC #'wt-call-local)

@@ -1335,6 +1335,12 @@ ECLS 0.9
 
   - Implemented type EXTENDED-CHAR.
 
+  - Property lists are no longer used to store vital
+    information. Things like SETF expansions, DEFTYPEs, etc, are now
+    stored and retrieved using SI::{GET,PUT,REM}-SYSPROP. The current
+    implementation is based on a hash table, which means that some
+    symbols may not be garbage collected.
+
 TODO:
 =====
 

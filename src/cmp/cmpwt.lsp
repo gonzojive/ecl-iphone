@@ -58,7 +58,7 @@
 
 (defun wt-h1 (form)
   (if (consp form)
-    (let ((fun (get (car form) 'wt)))
+    (let ((fun (get-sysprop (car form) 'wt)))
       (if fun
         (apply fun (cdr form))
         (cmperr "The location ~s is undefined." form)))

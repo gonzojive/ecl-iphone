@@ -166,13 +166,13 @@ printed.  If FORMAT-STRING is NIL, however, no prompt will appear."
   (let ((l (read stream)))
     (when *read-suppress*
       (return-from sharp-s-reader nil))
-    (unless (get (car l) 'is-a-structure)
+    (unless (get-sysprop (car l) 'is-a-structure)
             (error "~S is not a structure." (car l)))
     ;; Intern keywords in the keyword package.
     (do ((ll (cdr l) (cddr ll)))
         ((endp ll)
          ;; Find an appropriate construtor.
-         (do ((cs (get (car l) 'structure-constructors) (cdr cs)))
+         (do ((cs (get-sysprop (car l) 'structure-constructors) (cdr cs)))
              ((endp cs)
               (error "The structure ~S has no structure constructor."
                      (car l)))

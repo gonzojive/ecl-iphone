@@ -23,10 +23,10 @@
   (when (and *record-source-pathname-p*
 	     *source-pathname*)
     (when (sys::setf-namep symbol)
-       (setq symbol (get (second symbol) 'setf-symbol)))
+       (setq symbol (get-sysprop (second symbol) 'setf-symbol)))
     (if (symbolp type)
-	(putprop symbol *source-pathname* type)
-	(let* ((alist (get symbol (car type)))
+	(put-sysprop symbol *source-pathname* type)
+	(let* ((alist (get-sysprop symbol (car type)))
 	       (spec (cdr type)))
 	  (if alist
 	      (let ((entry (assoc spec alist :test #'equal)))
@@ -34,7 +34,7 @@
 		    (setf (cdr entry) *source-pathname*)
 		    (push (cons spec *source-pathname*) alist)))
 	      (setq alist (list (cons spec *source-pathname*))))
-	  (putprop symbol alist (car type))))))
+	  (put-sysprop symbol alist (car type))))))
 )
 
 ;;; Go into LISP.
@@ -265,7 +265,7 @@ NIL, then all packages are searched."
 
 (in-package "SYSTEM")
 
-(mapc #'(lambda (x) (sys::putprop (first x) (second x) 'sys::pretty-print-format))
+(mapc #'(lambda (x) (put-sysprop (first x) 'sys::pretty-print-format (second x)))
       '((block 1)
 	(case 1)
 	(catch 1)

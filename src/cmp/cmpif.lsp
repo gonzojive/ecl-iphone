@@ -228,7 +228,7 @@
 	   (wt "!=Cnil){")
 	   (unwind-exit (cons 'VAR (third form)) 'JUMP) (wt "}"))
 	  ((and (eq (car form) 'CALL-GLOBAL)
-		(get (third form) 'PREDICATE))
+		(get-sysprop (third form) 'PREDICATE))
 	   (let* ((label (next-label))
 		  (*unwind-exit* (cons label *unwind-exit*)))
 	     (let ((*destination* (list 'JUMP-FALSE label)))
@@ -347,16 +347,16 @@
 
 ;;; ----------------------------------------------------------------------
 
-(setf (get 'if 'c1special) #'c1if)
-(setf (get 'if 'c2) #'c2if)
-(setf (get 'and 'c1) #'c1and)
-(setf (get 'and 'c2) #'c2and)
-(setf (get 'or 'c1) #'c1or)
-(setf (get 'or 'c2) #'c2or)
+(put-sysprop 'if 'c1special #'c1if)
+(put-sysprop 'if 'c2 #'c2if)
+(put-sysprop 'and 'c1 #'c1and)
+(put-sysprop 'and 'c2 #'c2and)
+(put-sysprop 'or 'c1 #'c1or)
+(put-sysprop 'or 'c2 #'c2or)
 
-(setf (get 'jump-true 'set-loc) #'set-jump-true)
-(setf (get 'jump-false 'set-loc) #'set-jump-false)
+(put-sysprop 'jump-true 'set-loc #'set-jump-true)
+(put-sysprop 'jump-false 'set-loc #'set-jump-false)
 
-(setf (get 'case 'c1) #'c1case)
-(setf (get 'ecase 'c1) #'c1ecase)
-(setf (get 'case 'c2) #'c2case)
+(put-sysprop 'case 'c1 #'c1case)
+(put-sysprop 'ecase 'c1 #'c1ecase)
+(put-sysprop 'case 'c2 #'c2case)

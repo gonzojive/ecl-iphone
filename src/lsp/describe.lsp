@@ -489,30 +489,30 @@ inspect commands, or type '?' to the inspector."
 
     (cond ((setq x (si::get-documentation symbol 'TYPE))
            (doc1 x "[Type]"))
-          ((setq x (get symbol 'DEFTYPE-FORM))
+          ((setq x (get-sysprop symbol 'DEFTYPE-FORM))
            (let ((*package* (good-package)))
              (doc1 (format nil "~%Defined as: ~S~%See the doc of DEFTYPE." x)
                    "[Type]"))))
 
     (cond ((setq x (si::get-documentation symbol 'STRUCTURE))
            (doc1 x "[Structure]"))
-          ((setq x (get symbol 'DEFSTRUCT-FORM))
+          ((setq x (get-sysprop symbol 'DEFSTRUCT-FORM))
            (doc1 (format nil "~%Defined as: ~S~%See the doc of DEFSTRUCT." x)
                  "[Structure]")))
 
     (cond ((setq x (si::get-documentation symbol 'SETF))
            (doc1 x "[Setf]"))
-          ((setq x (get symbol 'SETF-UPDATE-FN))
+          ((setq x (get-sysprop symbol 'SETF-UPDATE-FN))
            (let ((*package* (good-package)))
              (doc1 (format nil "~%Defined as: ~S~%See the doc of DEFSETF."
-                           `(defsetf ,symbol ,(get symbol 'SETF-UPDATE-FN)))
+                           `(defsetf ,symbol ,(get-sysprop symbol 'SETF-UPDATE-FN)))
                    "[Setf]")))
-          ((setq x (get symbol 'SETF-LAMBDA))
+          ((setq x (get-sysprop symbol 'SETF-LAMBDA))
            (let ((*package* (good-package)))
              (doc1 (format nil "~%Defined as: ~S~%See the doc of DEFSETF."
-                           `(defsetf ,symbol ,@(get symbol 'SETF-LAMBDA)))
+                           `(defsetf ,symbol ,@(get-sysprop symbol 'SETF-LAMBDA)))
                    "[Setf]")))
-          ((setq x (get symbol 'SETF-METHOD))
+          ((setq x (get-sysprop symbol 'SETF-METHOD))
            (let ((*package* (good-package)))
              (doc1
               (format nil

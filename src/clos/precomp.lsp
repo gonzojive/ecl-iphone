@@ -18,7 +18,7 @@
 
 (defmacro pre-make-templated-function-constructor (name
 						   &rest template-parameters)
-  (let* ((params (get name 'TEMPLATED-FN-PARAMS))
+  (let* ((params (get-sysprop name 'TEMPLATED-FN-PARAMS))
 	 (template-params (first params))
 	 (instance-params (second params))
 	 (body (cddr params))
@@ -27,12 +27,12 @@
 		 template-parameters
 	    `(LET ((ENTRY
 		    (OR (ASSOC ',template-parameters 
-			       (GET ',name 'TEMPLATED-FN-CONSTRUCTORS)
+			       (GET-SYSPROP ',name 'TEMPLATED-FN-CONSTRUCTORS)
 			       :test #'equal)
 			(LET ((NEW-ENTRY
 			       (LIST ',template-parameters () () ())))
 			  (PUSH NEW-ENTRY
-				(GET ',name 'TEMPLATED-FN-CONSTRUCTORS))
+				(GET-SYSPROP ',name 'TEMPLATED-FN-CONSTRUCTORS))
 			  NEW-ENTRY))))
 	      (SETF (THIRD ENTRY) 'COMPILED)
 	      (SETF (SECOND ENTRY)

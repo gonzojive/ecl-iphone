@@ -33,10 +33,8 @@ by (documentation 'NAME 'type)."
   (multiple-value-bind (body doc)
       (remove-documentation body)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
-          (setf (get ',name 'DEFTYPE-FORM)
-	   '(DEFTYPE ,name ,lambda-list ,@body))
-          (setf (get ',name 'DEFTYPE-DEFINITION)
-	   #'(LAMBDA ,lambda-list ,@body))
+          (put-sysprop ',name 'DEFTYPE-FORM '(DEFTYPE ,name ,lambda-list ,@body))
+          (put-sysprop ',name 'DEFTYPE-DEFINITION #'(LAMBDA ,lambda-list ,@body))
 	  ,@(si::expand-set-documentation name 'type doc)
           ',name)))
 
@@ -174,7 +172,7 @@ has no fill-pointer, and is not adjustable."
 	     (COMMON . COMMONP)
 	     (REAL . REALP)
 	     ))
-  (setf (get (car l) 'TYPE-PREDICATE) (cdr l)))
+  (put-sysprop (car l) 'TYPE-PREDICATE (cdr l)))
 
 
 (defun type-for-array (element-type)
@@ -192,7 +190,7 @@ has no fill-pointer, and is not adjustable."
   "Args: (object type)
 Returns T if X belongs to TYPE; NIL otherwise."
   (cond ((symbolp type)
-	 (let ((f (get type 'TYPE-PREDICATE)))
+	 (let ((f (get-sysprop type 'TYPE-PREDICATE)))
 	   (cond (f (return-from typep (funcall f object)))
 		 ((eq (type-of object) type) (return-from typep t))
 		 (t (setq tp type i nil)))))
@@ -273,21 +271,20 @@ Returns T if X belongs to TYPE; NIL otherwise."
               (match-dimensions (array-dimensions object) (second i)))))
     (t
      (cond
-           ((get tp 'DEFTYPE-DEFINITION)
-            (typep object
-                   (apply (get tp 'DEFTYPE-DEFINITION) i)))
+           ((get-sysprop tp 'DEFTYPE-DEFINITION)
+            (typep object (apply (get-sysprop tp 'DEFTYPE-DEFINITION) i)))
            #+clos
 	   ((setq c (find-class type nil))
 	    ;; Follow the inheritance chain
 	    (subclassp (class-of object) c))
 	   #-clos
-	   ((get tp 'IS-A-STRUCTURE)
+	   ((get-sysprop tp 'IS-A-STRUCTURE)
             (when (sys:structurep object)
 	      ;; Follow the chain of structure-include.
 	      (do ((stp (sys:structure-name object)
-			(get stp 'STRUCTURE-INCLUDE)))
+			(get-sysprop stp 'STRUCTURE-INCLUDE)))
 		  ((eq tp stp) t)
-		(when (null (get stp 'STRUCTURE-INCLUDE))
+		(when (null (get-sysprop stp 'STRUCTURE-INCLUDE))
 		  (return nil)))))
 	   (t (error "typep: not a valid type specifier ~A for ~A" type object))))))
 
@@ -308,7 +305,7 @@ Returns T if X belongs to TYPE; NIL otherwise."
 (defun normalize-type (type &aux tp i fd)
   ;; Loops until the car of type has no DEFTYPE definition.
   (cond ((symbolp type)
-	 (if (setq fd (get type 'DEFTYPE-DEFINITION))
+	 (if (setq fd (get-sysprop type 'DEFTYPE-DEFINITION))
 	   (normalize-type (funcall fd))
 	   (values type nil)))
 	#+clos
@@ -317,7 +314,7 @@ Returns T if X belongs to TYPE; NIL otherwise."
 	 (error "normalize-type: bogus type specifier ~A" type))
 	((progn
 	   (setq tp (car type) i (cdr type))
-	   (setq fd (get tp 'DEFTYPE-DEFINITION)))
+	   (setq fd (get-sysprop tp 'DEFTYPE-DEFINITION)))
 	 (normalize-type (apply fd i)))
 	((and (eq tp 'INTEGER) (consp (cadr i)))
 	 (values tp (list (car i) (1- (caadr i)))))
@@ -341,7 +338,7 @@ Returns T if X belongs to TYPE; NIL otherwise."
 	     #+clos
 	     (find-class type nil)
 	     #-clos
-	     (get type 'IS-A-STRUCTURE))
+	     (get-sysprop type 'IS-A-STRUCTURE))
 	 t)
 	(t nil)))
 
@@ -420,20 +417,20 @@ second value is T."
 	    #-clos
 	    ((eq t2 'STRUCTURE)
 	     (if (or (eq t1 'STRUCTURE)
-		     (get t1 'IS-A-STRUCTURE))
+		     (get-sysprop t1 'IS-A-STRUCTURE))
 		 (values t t)
 		 (values nil ntp1)))
 	    #-clos
 	    ((eq t1 'STRUCTURE) (values nil ntp2))
 	    #-clos
-	    ((get t1 'IS-A-STRUCTURE)
-	     (if (get t2 'IS-A-STRUCTURE)
-		 (do ((tp1 t1 (get tp1 'STRUCTURE-INCLUDE)) (tp2 t2))
+	    ((get-sysprop t1 'IS-A-STRUCTURE)
+	     (if (get-sysprop t2 'IS-A-STRUCTURE)
+		 (do ((tp1 t1 (get-sysprop tp1 'STRUCTURE-INCLUDE)) (tp2 t2))
 		     ((null tp1) (values nil t))
 		   (when (eq tp1 tp2) (return (values t t))))
 		 (values nil ntp2)))
 	    #-clos
-	    ((get t2 'IS-A-STRUCTURE) (values nil ntp1))
+	    ((get-sysprop t2 'IS-A-STRUCTURE) (values nil ntp1))
 	    #+clos
 	    ((setq c1 (find-the-class t1))
 	     (if (setq c2 (find-the-class t2))

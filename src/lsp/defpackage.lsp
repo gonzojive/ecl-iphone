@@ -195,9 +195,8 @@
 	(unuse-package (package-use-list (find-package name)) name)))
     (make-package name :use nil :nicknames nicknames))
   #+nil
-  (when documentation ((setf (get (intern name :keyword)
-				  :package-documentation)
-			     documentation)))
+  (when documentation ((put-sysprop (intern name :keyword) :package-documentation
+				    documentation)))
   (let ((*package* (find-package name)))
     (when shadowed-symbol-names
       (shadow (mapcar #'intern shadowed-symbol-names)))

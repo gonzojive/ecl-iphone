@@ -527,10 +527,10 @@ call_structure_print_function(cl_object x, int level)
 #ifdef CLOS
 		funcall(3, @'print-object', x, PRINTstream);
 #else
-		funcall(4, ecl_get(x->str.name, @'si::structure-print-function', Cnil),
+		funcall(4, si_get_sysprop(x->str.name, @'si::structure-print-function'),
 			x, PRINTstream, MAKE_FIXNUM(level));
 #endif
-		bds_unwind_n(10);
+		bds_unwind_n(11);
 	} CL_UNWIND_PROTECT_EXIT {
 		memcpy(indent_stack, ois, oisp * sizeof(*ois));
 		iisp = oiisp;
@@ -978,7 +978,7 @@ _write_object(cl_object x, int level)
 		write_ch(SET_INDENT);
 		if (PRINTpretty && CAR(x) != OBJNULL &&
 		    type_of(CAR(x)) == t_symbol &&
-		    (r = ecl_get(CAR(x), @'si::pretty-print-format', Cnil)) != Cnil)
+		    (r = si_get_sysprop(CAR(x), @'si::pretty-print-format')) != Cnil)
 			goto PRETTY_PRINT_FORMAT;
 		for (i = 0;  ;  i++) {
 			if (!PRINTreadably && PRINTlength >= 0 && i >= PRINTlength) {
@@ -1144,7 +1144,7 @@ _write_object(cl_object x, int level)
 		if (type_of(x->str.name) != t_symbol)
 			FEwrong_type_argument(@'symbol', x->str.name);
 		if (PRINTstructure ||
-		    Null(ecl_get(x->str.name, @'si::structure-print-function', Cnil)))
+		    Null(si_get_sysprop(x->str.name, @'si::structure-print-function')))
 		{
 			write_str("#S");
 /* structure_to_list conses slot names and values into a list to be printed.

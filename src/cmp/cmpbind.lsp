@@ -102,4 +102,4 @@
     (setf (var-ref-ccb var) t))
   (wt-comment (var-name var)))
 
-(setf (get 'BIND 'SET-LOC) 'bind)
+(put-sysprop 'BIND 'SET-LOC 'bind)
