@@ -27,6 +27,7 @@
 #define	NCONC	6
 
 extern int _cl_backq_car(cl_object *px);
+static cl_object backq(cl_object x);
 
 static cl_object
 kwote(cl_object x)
@@ -52,8 +53,8 @@ kwote(cl_object x)
 static int
 _cl_backq_cdr(cl_object *px)
 {
-	cl_object x = *px;
-	int a, d;
+	cl_object x = *px, ax, dx;
+	int a, d, out;
 
 	if (ATOM(x))
 		return(QUOTE);
@@ -63,109 +64,115 @@ _cl_backq_cdr(cl_object *px)
 	}
 	if (CAR(x) == @'si::unquote-splice' || CAR(x) == @'si::unquote-nsplice')
 		FEerror(",@@ or ,. has appeared in an illegal position.", 0);
-	{ cl_object ax, dx;
-	  a = _cl_backq_car(&CAR(x));
-	  d = _cl_backq_cdr(&CDR(x));
-	  ax = CAR(x); dx = CDR(x);
-	  if (d == QUOTE)
+
+	ax = CAR(x); dx = CDR(x);
+	a = _cl_backq_car(&ax);
+	d = _cl_backq_cdr(&dx);
+	if (d == QUOTE) {
 		switch (a) {
 		case QUOTE:
 			return(QUOTE);
 
 		case EVAL:
-			if (Null(dx))
-				return(LIST);
-			if (CONSP(dx) && Null(CDR(dx))) {
-				CDR(x) = CONS(kwote(CAR(dx)), Cnil);
-				return(LIST);
+			if (Null(dx)) {
+				out = LIST;
+			} else if (CONSP(dx) && Null(CDR(dx))) {
+				dx = CONS(kwote(CAR(dx)), Cnil);
+				out = LIST;
+			} else {
+				dx = CONS(kwote(dx), Cnil);
+				out = LISTX;
 			}
-			CDR(x) = CONS(kwote(dx), Cnil);
-			return(LISTX);
-
+			break;
 		case APPEND:
 		case NCONC:
 			if (Null(dx)) {
 				*px = ax;
-				return(EVAL);
-			      }
-			CDR(x) = CONS(kwote(dx), Cnil);
-			return(a);
-
+				return EVAL;
+			} else {
+				dx = CONS(kwote(dx), Cnil);
+				out = a;
+			}
+			break;
 		default:
 			error("backquote botch");
 		}
-	  if (d == EVAL)
+	} else if (d == EVAL) {
 		switch (a) {
 		case QUOTE:
-			CAR(x) = kwote(ax);
-			CDR(x) = CONS(dx, Cnil);
-			return(LISTX);
-
+			ax = kwote(ax);
+			dx = CONS(dx, Cnil);
+			out = LISTX;
+			break;
 		case EVAL:
-			CDR(x) = CONS(dx, Cnil);
-			return(LISTX);
-
+			dx = CONS(dx, Cnil);
+			out = LISTX;
+			break;
 		case APPEND:
 		case NCONC:
-			CDR(x) = CONS(dx, Cnil);
-			return(a);
-
+			dx = CONS(dx, Cnil);
+			out = a;
+			break;
 		default:
 			error("backquote botch");
 		}
-	  if (d == a)
-		return(d);
-	  switch (d) {
-	  case LIST:
-		if (a == QUOTE) {
-			CAR(x) = kwote(ax);
-			return(LIST);
+	} else if (d == a) {
+		out = d;
+	} else {
+		switch (d) {
+		case LIST:
+			if (a == QUOTE) {
+				ax = kwote(ax);
+				out = LIST;
+				goto OUT;
+			} else if (a == EVAL) {
+				out = LIST;
+				goto OUT;
+			}
+			dx = CONS(@'list', dx);
+			break;
+		case LISTX:
+			if (a == QUOTE) {
+				ax = kwote(ax);
+				out = LISTX;
+				goto OUT;
+			} else if (a == EVAL) {
+				out = LISTX;
+				goto OUT;
+			}
+			dx = CONS(@'list*', dx);
+			break;
+		case APPEND:
+			dx = CONS(@'append', dx);
+			break;
+		case NCONC:
+			dx = CONS(@'nconc', dx);
+			break;
+		default:
+			error("backquote botch");
 		}
-		if (a == EVAL)
-			return(LIST);
-		CDR(x) = CONS(@'list', CDR(x));
-		break;
-
-	  case LISTX:
-		if (a == QUOTE) {
-			CAR(x) = kwote(ax);
-			return(LISTX);
+		switch (a) {
+		case QUOTE:
+			ax = kwote(ax);
+			dx = CONS(dx, Cnil);
+			out = LISTX;
+			break;
+		case EVAL:
+			dx = CONS(dx, Cnil);
+			out = LISTX;
+			break;
+		case APPEND:
+		case NCONC:
+			dx = CONS(dx, Cnil);
+			out = a;
+			break;
+		default:
+			error("backquote botch");
 		}
-		if (a == EVAL)
-			return(LISTX);
-		CDR(x) = CONS(@'list*', CDR(x));
-		break;
-
-	  case APPEND:
-		CDR(x) = CONS(@'append', CDR(x));
-		break;
-
-	  case NCONC:
-		CDR(x) = CONS(@'nconc', CDR(x));
-		break;
-
-	  default:
-		error("backquote botch");
-	  }
-	  switch (a) {
-	  case QUOTE:
-		CAR(x) = kwote(ax);
-		CDR(x) = CONS(CDR(x), Cnil);
-		return(LISTX);
-
-	  case EVAL:
-		CDR(x) = CONS(CDR(x), Cnil);
-		return(LISTX);
-
-	  case APPEND:
-	  case NCONC:
-		CDR(x) = CONS(CDR(x), Cnil);
-		return(a);
-
-	  default:
-		error("backquote botch");
-	  }
 	}
+ OUT:
+	*px = CONS(ax, dx);
+	return out;
 }
 
 /*
@@ -183,20 +190,24 @@ _cl_backq_car(cl_object *px)
 {
 	cl_object x = *px;
 	int d;
-
+ AGAIN:
 	if (ATOM(x))
 		return(QUOTE);
+	if (CAR(x) == @'si::quasiquote') {
+		x = *px = backq(CADR(x));
+		goto AGAIN;
+	}
 	if (CAR(x) == @'si::unquote') {
 		*px = CADR(x);
-		return(EVAL);
+		return EVAL;
 	}
 	if (CAR(x) == @'si::unquote-splice') {
 		*px = CADR(x);
-		return(APPEND);
+		return APPEND;
 	}
 	if (CAR(x) == @'si::unquote-nsplice') {
 		*px = CADR(x);
-		return(NCONC);
+		return NCONC;
 	}
 	d = _cl_backq_cdr(px);
 	switch (d) {

@@ -498,7 +498,11 @@ cl_object backquote_reader(cl_object in, cl_object c)
 	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level+1));
 	in = read_object(in);
 	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level));
+#if 0
 	@(return cl_macroexpand_1(2, cl_list(2, @'si::quasiquote', in), Cnil));
+#else
+	@(return cl_list(2,@'si::quasiquote',in))
+#endif
 }
 
 
