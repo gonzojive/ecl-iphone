@@ -18,12 +18,12 @@
 #include <string.h>	/* for memmove() */
 
 cl_object
-cl_make_cfun(cl_object (*self)(), cl_object name, cl_object cblock, int narg)
+cl_make_cfun(void *c_function, cl_object name, cl_object cblock, int narg)
 {
 	cl_object cf;
 
 	cf = cl_alloc_object(t_cfun);
-	cf->cfun.entry = self;
+	cf->cfun.entry = c_function;
 	cf->cfun.name = name;
 	cf->cfun.block = cblock;
 	cf->cfun.narg = narg;
@@ -33,12 +33,12 @@ cl_make_cfun(cl_object (*self)(), cl_object name, cl_object cblock, int narg)
 }
 
 cl_object
-cl_make_cfun_va(cl_objectfn self, cl_object name, cl_object cblock)
+cl_make_cfun_va(void *c_function, cl_object name, cl_object cblock)
 {
 	cl_object cf;
 
 	cf = cl_alloc_object(t_cfun);
-	cf->cfun.entry = self;
+	cf->cfun.entry = c_function;
 	cf->cfun.name = name;
 	cf->cfun.block = cblock;
 	cf->cfun.narg = -1;
@@ -46,39 +46,39 @@ cl_make_cfun_va(cl_objectfn self, cl_object name, cl_object cblock)
 }
 
 cl_object
-cl_make_cclosure_va(cl_objectfn self, cl_object env, cl_object block)
+cl_make_cclosure_va(void *c_function, cl_object env, cl_object block)
 {
 	cl_object cc;
 
 	cc = cl_alloc_object(t_cclosure);
-	cc->cclosure.entry = self;
+	cc->cclosure.entry = c_function;
 	cc->cclosure.env = env;
 	cc->cclosure.block = block;
 	return(cc);
 }
 
 void
-cl_def_c_function(cl_object sym, cl_object (*self)(), int narg)
+cl_def_c_function(cl_object sym, void *c_function, int narg)
 {
 	si_fset(2, sym,
-		cl_make_cfun(self, sym, symbol_value(@'si::*cblock*'), narg));
+		cl_make_cfun(c_function, sym, symbol_value(@'si::*cblock*'), narg));
 }
 
 void
-cl_def_c_macro(cl_object sym, cl_object (*self)(), int narg)
+cl_def_c_macro(cl_object sym, void *c_function, int narg)
 {
 	si_fset(3, sym,
 		(narg >= 0)?
-		cl_make_cfun(self, sym, symbol_value(@'si::*cblock*'), 2):
-		cl_make_cfun_va(self, sym, symbol_value(@'si::*cblock*')),
+		cl_make_cfun(c_function, sym, symbol_value(@'si::*cblock*'), 2):
+		cl_make_cfun_va(c_function, sym, symbol_value(@'si::*cblock*')),
 		Ct);
 }
 
 void
-cl_def_c_function_va(cl_object sym, cl_objectfn self)
+cl_def_c_function_va(cl_object sym, void *c_function)
 {
 	si_fset(2, sym,
-		cl_make_cfun_va(self, sym, symbol_value(@'si::*cblock*')));
+		cl_make_cfun_va(c_function, sym, symbol_value(@'si::*cblock*')));
 }
 
 cl_object
