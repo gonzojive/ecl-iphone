@@ -348,11 +348,15 @@
 		    (setq object (second object)))
 		  (wt (add-object object))))))
 	(#\#
-	 (let* ((k (char-downcase (read-char s)))
+	 (let* ((k (read-char s))
+		(next-char (peek-char nil s nil nil))
 		(index (digit-char-p k 36)))
-	   (unless (and index (< index (length coerced-arguments)))
-	     (cmperr "C-INLINE: Variable code exceeds number of arguments"))
-	   (wt (nth index coerced-arguments))))
+	   (cond ((or (null index) (and next-char (alphanumericp next-char)))
+		  (wt #\# k))
+		 ((< index (length coerced-arguments))
+		  (wt (nth index coerced-arguments)))
+		 (t
+		  (cmperr "C-INLINE: Variable code exceeds number of arguments")))))
 	(otherwise
 	 (write-char c *compiler-output1*))))))
 
