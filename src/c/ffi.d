@@ -56,4 +56,14 @@ ecl_make_foreign_data(cl_object tag, cl_index size, void *data)
 	return output;
 }
 
+void *
+ecl_foreign_data_pointer_safe(cl_object f, cl_object tag)
+{
+	if (type_of(f) != t_foreign)
+		FEwrong_type_argument(@'si::foreign-data', f);
+	if (f->foreign.tag != tag)
+		FEwrong_type_argument(cl_list(2, @'si::foreign-data', tag), f);
+	return f->foreign.data;
+}
+
 #endif /* ECL_FFI */
