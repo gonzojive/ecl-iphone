@@ -239,7 +239,7 @@ strings."
 	(otherwise (cerror "Ignore this DEFINE-CONDITION option."
 			   "Invalid DEFINE-CONDITION option: ~S" option))))
     `(PROGN
-      (DEFCLASS ,name ,parent-list ,slot-specs)
+      (DEFCLASS ,name ,(or parent-list '(CONDITION)) ,slot-specs)
       ,@(when report-function
 	      `((defmethod print-object ((X ,name) stream)
 		    (if *print-escape*
@@ -420,7 +420,7 @@ strings."
 		      :FORMAT-ARGUMENTS format-arguments)))
   nil)
 
-(define-condition warning (condition) ())
+(define-condition warning () ())
 
 (defun warn (datum &rest arguments)
   "Args: (format-string &rest args)
@@ -442,7 +442,7 @@ returns with NIL."
 
 
 
-(define-condition serious-condition (condition) ())
+(define-condition serious-condition () ())
 
 (define-condition error (serious-condition) ())
 
@@ -450,7 +450,7 @@ returns with NIL."
   (format stream "~?" (simple-condition-format-control condition)
 	  (simple-condition-format-arguments condition)))
 
-(define-condition simple-condition (condition)
+(define-condition simple-condition ()
   ((format-control :INITARG :FORMAT-CONTROL :INITFORM ""
 		   :ACCESSOR simple-condition-format-control)
    (format-arguments :INITARG :FORMAT-ARGUMENTS :INITFORM NIL
