@@ -57,11 +57,15 @@ si_setf_namep(cl_object arg)
 
 @(defun si::fset (fun def &optional macro pprint)
 	cl_type t;
+	bool mflag;
 @
+	mflag = !Null(macro);
 	if (!SYMBOLP(fun)) {
 		cl_object sym = setf_namep(fun);
 		if (sym == OBJNULL)
 			FEtype_error_symbol(fun);
+		if (mflag)
+			FEerror("Cannot define a macro with name (SETF ~S).", 1, fun);
 		fun = CADR(fun);
 		putprop(fun, sym, @'si::setf-symbol');
 		remprop(fun, @'si::setf-lambda');
@@ -69,13 +73,9 @@ si_setf_namep(cl_object arg)
 		remprop(fun, @'si::setf-update');
 		fun = sym;
 	}
-	if (fun->symbol.isform) {
-		if (fun->symbol.mflag) {
-			if (symbol_value(@'si::*inhibit-macro-special*') != Cnil)
-				fun->symbol.isform = FALSE;
-		} else if (symbol_value(@'si::*inhibit-macro-special*') != Cnil)
-			FEerror("~S, a special form, cannot be redefined.", 1, fun);
-	}
+	if (fun->symbol.isform && !mflag)
+		FEerror("~S, a special form, cannot be redefined as a function.",
+			1, fun);
 	clear_compiler_properties(fun);
 	if (fun->symbol.hpack->pack.locked && SYM_FUN(fun) != OBJNULL)
 	  funcall(3, @'warn', make_simple_string("~S is being redefined."), fun);
@@ -121,13 +121,6 @@ cl_fmakunbound(cl_object sym)
 		cl_fmakunbound(sym1);
 		@(return sym)
 	}
-	if (sym->symbol.isform) {
-	  if (sym->symbol.mflag) {
-	    if (symbol_value(@'si::*inhibit-macro-special*') != Cnil)
-	      sym->symbol.isform = FALSE;
-	  } else if (symbol_value(@'si::*inhibit-macro-special*') != Cnil)
-	    FEerror("~S, a special form, cannot be redefined.", 1, sym);
-	}
 	clear_compiler_properties(sym);
 #ifdef PDE
 	remprop(sym, @'defun');
@@ -143,8 +136,7 @@ void
 clear_compiler_properties(cl_object sym)
 {
 	si_unlink_symbol(sym);
-	if (symbol_value(@'si::*inhibit-macro-special*') != Cnil)
-		(void)funcall(2, @'si::clear-compiler-properties', sym);
+	funcall(2, @'si::clear-compiler-properties', sym);
 }
 
 cl_object
@@ -165,7 +157,6 @@ record_source_pathname(cl_object sym, cl_object def)
 void
 init_assignment(void)
 {
-	SYM_VAL(@'si::*inhibit-macro-special*') = Cnil;
 #ifdef PDE
 	SYM_VAL(@'si::*record-source-pathname-p*') = Cnil;
 #endif

@@ -60,42 +60,22 @@ cl_make_cclosure_va(cl_objectfn self, cl_object env, cl_object block)
 void
 cl_def_c_function(cl_object sym, cl_object (*self)(), int narg)
 {
-	if (!SYMBOLP(sym))
-		FEtype_error_symbol(sym);
-	if (sym->symbol.isform && sym->symbol.mflag)
-		sym->symbol.isform = FALSE;
-	clear_compiler_properties(sym);
-	SYM_FUN(sym) = cl_make_cfun(self, sym, symbol_value(@'si::*cblock*'), narg);
-	sym->symbol.mflag = FALSE;
+	si_fset(2, sym,
+		cl_make_cfun(self, sym, symbol_value(@'si::*cblock*'), narg));
 }
 
 void
 cl_def_c_macro_va(cl_object sym, cl_objectfn self)
 {
-	cl_object cf;
-
-	if (!SYMBOLP(sym))
-		FEtype_error_symbol(sym);
-	if (sym->symbol.isform && sym->symbol.mflag)
-		sym->symbol.isform = FALSE;
-	clear_compiler_properties(sym);
-#ifdef PDE
-	record_source_pathname(sym, @'defmacro');
-#endif
-	SYM_FUN(sym) = cl_make_cfun_va(self, sym, symbol_value(@'si::*cblock*'));
-	sym->symbol.mflag = TRUE;
+	si_fset(3, sym,	cl_make_cfun_va(self, sym, symbol_value(@'si::*cblock*')),
+		Ct);
 }
 
 void
 cl_def_c_function_va(cl_object sym, cl_objectfn self)
 {
-	if (!SYMBOLP(sym))
-		FEtype_error_symbol(sym);
-	if (sym->symbol.isform && sym->symbol.mflag)
-		sym->symbol.isform = FALSE;
-	clear_compiler_properties(sym);
-	SYM_FUN(sym) = cl_make_cfun_va(self, sym, symbol_value(@'si::*cblock*'));
-	sym->symbol.mflag = FALSE;
+	si_fset(2, sym,
+		cl_make_cfun_va(self, sym, symbol_value(@'si::*cblock*')));
 }
 
 cl_object

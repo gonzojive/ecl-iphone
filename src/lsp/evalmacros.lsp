@@ -11,7 +11,6 @@
 (si::select-package "SYSTEM")
 
 (eval-when (eval compile) (defun sys:clear-compiler-properties (symbol)))
-(eval-when (eval compile) (setq sys:*inhibit-macro-special* nil))
 
 (defmacro defun (name vl &body body &aux doc-string)
   "Syntax: (defun name lambda-list {decl | doc}* {form}*)

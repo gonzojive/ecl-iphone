@@ -132,5 +132,4 @@ void
 init_macros(void)
 {
 	SYM_VAL(@'*macroexpand-hook*') = @'funcall';
-	SYM_VAL(@'si::*inhibit-macro-special*') = Cnil;
 }

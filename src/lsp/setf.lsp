@@ -13,7 +13,6 @@
 (in-package "SYSTEM")
 
 (eval-when (eval compile) (defun sys::clear-compiler-properties (symbol)))
-(eval-when (eval compile) (setq sys:*inhibit-macro-special* nil))
 
 ;;; DEFSETF macro.
 (defmacro defsetf (access-fn &rest rest &aux doc)

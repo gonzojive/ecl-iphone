@@ -852,7 +852,7 @@ type_of(#0)==t_bitvector"))
 (SI::STRING-TO-OBJECT (T) T)
 (si::STANDARD-READTABLE (T) T)
 (SYMBOL-FUNCTION (T) T NIL NIL
-	:inline-always ((t) t nil t "cl_symbol_function(#0)"))
+	:inline-always ((t) t nil t "symbol_function(#0)"))
 (FBOUNDP (symbol) T nil t)
 (SYMBOL-VALUE (symbol) T)
 (BOUNDP (symbol) T nil t
