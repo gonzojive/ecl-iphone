@@ -25,7 +25,6 @@
 (defun unwind-exit (loc &optional (jump-p nil)
                         &aux (bds-lcl nil) (bds-bind 0) (stack-pop nil))
   (declare (fixnum bds-bind))
-
   (when (consp *destination*)
     (case (car *destination*)
       (JUMP-TRUE
