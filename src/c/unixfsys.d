@@ -275,16 +275,20 @@ cl_object
 homedir_pathname(cl_object user)
 {
 	cl_index i;
-	char *p, filename[MAXPATHLEN];
-	struct passwd *pwent = NULL;
-#ifndef __STDC__
-	extern struct passwd *getpwuid(uid_t), *getpwnam();
-#endif
+	cl_object namestring;
 	
-	if (Null(user))
-		pwent = getpwuid(getuid());
-	else {
-		user = cl_string(user);
+	if (Null(user)) {
+		extern char *getenv();
+		char *h = getenv("HOME");
+		namestring = (h == NULL)? make_simple_string("/")
+			: make_string_copy(h);
+		return cl_pathname(namestring);
+	} else {
+		struct passwd *pwent = NULL;
+		char *p;
+		/* This ensures that our string has the right length
+		   and it is terminated with a '\0' */
+		user = coerce_to_simple_string(cl_string(user));
 		p = user->string.self;
 		i = user->string.fillp;
 		if (i > 0 && *p == '~') {
@@ -292,38 +296,23 @@ homedir_pathname(cl_object user)
 			i--;
 		}
 		if (i == 0)
-			pwent = getpwuid(getuid());
-		else {
-			strncpy(filename, p, i);
-			filename[i] = '\0';
-			pwent = getpwnam(filename);
-		}
+			return homedir_pathname(Cnil);
+		pwent = getpwnam(p);
+		if (pwent == NULL)
+			FEerror("Unknown user ~S.", 1, p);
+		namestring = make_string_copy(pwent->pw_dir);
 	}
-	if (pwent == NULL)
-		FEerror("Unknown user ~S.", 1, user);
-	strcpy(filename, pwent->pw_dir);
-	i = strlen(filename);
-	if (i == 0 || filename[i-1] != '/') {
-		filename[i++] = '/';
-		filename[i] = '\0';
-	}
-	return string_to_pathname(filename);
+	i = namestring->string.fillp;
+	if (namestring->string.self[i-1] != '/')
+		namestring = si_string_concatenate(2, namestring,
+						   make_simple_string("/"));
+	return cl_pathname(namestring);
 }
 
 @(defun user_homedir_pathname (&optional host)
-	cl_object pathname;
 @
 	/* Ignore optional host argument. */
-#ifdef MSDOS
-	{ extern char *getenv();
-	  char *h = getenv("HOME");
-	  pathname = (h == NULL)? make_simple_string("/")
-				: make_string_copy(h);
-	}
-#else
-	pathname = homedir_pathname(Cnil);
-#endif /* MSDOS */
-	@(return pathname)
+	@(return homedir_pathname(Cnil));
 @)
 
 /*
