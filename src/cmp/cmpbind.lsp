@@ -43,7 +43,7 @@
        (wt-coerce-loc :object loc)
        (wt ";"))
        (wt-comment (var-name var)))
-    (SPECIAL
+    ((SPECIAL GLOBAL)
      (bds-bind loc var))
     (t
      (cond ((not (eq (var-loc var) 'OBJECT))
@@ -61,8 +61,9 @@
 	 )))
 
 ;;; Used by let*, defmacro and lambda's &aux, &optional, &rest, &keyword
-(defun bind-init (var form)
-  (let ((*destination* `(BIND ,var)))
+(defun bind-init (form var)
+  (let ((*destination* `(BIND ,var))
+	(bds nil))
     ;; assigning location must be done before calling c2expr*,
     ;; otherwise the increment to *env* or *lex* is done during
     ;; unwind-exit and will be shadowed by functions (like c2let)
@@ -74,11 +75,10 @@
       (LEXICAL
        (unless (consp (var-loc var))
 	 (setf (var-loc var) (next-lex))))
-      (SPECIAL
-       ;; prevent BIND from pushing BDS-BIND
-       (setf (var-bds-bound var) t)))
+      ((SPECIAL GLOBAL)
+       (setf bds t)))
     (c2expr* form)
-    (when (eq (var-kind var) 'SPECIAL)
+    (when bds
       ;; now the binding is in effect
       (push 'BDS-BIND *unwind-exit*))))
 
@@ -92,13 +92,7 @@
 	 (wt-nl "bds_bind(" (var-loc var) ",")
 	 (wt-coerce-loc :object loc)
 	 (wt ");")))
-  ;; push BDS-BIND only once:
-  ;; bds-bind may be called several times on the same variable, e.g.
-  ;; an optional has two alternative bindings.
-  ;; We use field var-bds-bound to record this fact.
-  (unless (var-bds-bound var)
-    (push 'BDS-BIND *unwind-exit*)
-    (setf (var-bds-bound var) t))
+  (push 'BDS-BIND *unwind-exit*)
   (wt-comment (var-name var)))
 
 (put-sysprop 'BIND 'SET-LOC 'bind)

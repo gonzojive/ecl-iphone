@@ -255,7 +255,7 @@
 	   (c1form-arg 0 value))
 	  ((and (eq name 'VAR)
 		other-forms-flag
-		(not (var-changed-in-forms (c1form-arg 0 value) other-forms)))
+		(not (var-changed-in-form-list (c1form-arg 0 value) other-forms)))
 	   (c1form-arg 0 value))
 	  (t
 	   (let* ((temp (make-temp-var))
@@ -268,6 +268,10 @@
 
 (defvar *text-for-closure*
   '("env0" "env1" "env2" "env3" "env4" "env5" "env6" "env7" "env8" "env9"))
+
+(defun env-var-name (n)
+  (or (nth n *text-for-closure*)
+      (format nil "env~D" n)))
 
 (defun wt-stack-pointer (narg)
   (wt "cl_env.stack_top-" narg))
@@ -286,24 +290,21 @@
     (baboon "Function without a C name: ~A" (fun-name fun)))
   (let* ((minarg (fun-minarg fun))
 	 (maxarg (fun-maxarg fun))
-	 (lex-lvl (fun-level fun))
 	 (fun-c-name (fun-cfun fun))
 	 (fun-lisp-name (fun-name fun))
 	 (narg (length args)))
-    (when (eq (fun-closure fun) 'CLOSURE)
-      (let ((x (nth *env-lvl* *text-for-closure*)))
-	(unless x
-	  (setf x (format nil "env~d" n)
-		(nth n *text-for-closurel*) x))
-	(push x args)))
-    (when (plusp lex-lvl)
-      (dotimes (n lex-lvl)
-	(let* ((j (- lex-lvl n 1))
-	       (x (nth j *text-for-lexical-level*)))
-	  (unless x
-	    (setf x (format nil "lex~d" j)
-		  (nth n *text-for-lexical-level*) x))
-	  (push x args))))
+    (case (fun-closure fun)
+      (CLOSURE
+       (push (environment-accessor fun) args))
+      (LEXICAL
+       (let ((lex-lvl (fun-level fun)))
+	 (dotimes (n lex-lvl)
+	   (let* ((j (- lex-lvl n 1))
+		  (x (nth j *text-for-lexical-level*)))
+	     (unless x
+	       (setf x (format nil "lex~d" j)
+		     (nth n *text-for-lexical-level*) x))
+	     (push x args))))))
     (unless (<= minarg narg maxarg)
       (error "Wrong number of arguments for function ~S"
 	      (or fun-lisp-name 'ANONYMOUS)))

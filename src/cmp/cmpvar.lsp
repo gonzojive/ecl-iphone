@@ -12,6 +12,76 @@
 
 (in-package "COMPILER")
 
+(defun make-var (&rest args)
+  (let ((var (apply #'%make-var args)))
+    (unless (member (var-kind var) '(SPECIAL GLOBAL))
+      (when *current-function*
+	(push var (fun-local-vars *current-function*))))
+    var))
+
+(defun var-referenced-in-form-list (var form-list)
+  (dolist (f form-list nil)
+    (when (var-referenced-in-form var f)
+      (return t))))
+
+(defun var-changed-in-form-list (var form-list)
+  (dolist (f form-list nil)
+    (when (var-changed-in-form var f)
+      (return t))))
+
+;;; FIXME! VAR-REFERENCED-IN-FORM and VAR-CHANGED-IN-FORM are too
+;;; pessimistic. One should check whether the functions reading/setting the
+;;; variable are actually called from the given node.  The problem arises when
+;;; we create a closure of a function, as in
+;;;
+;;;	(let* ((a 1) (b #'(lambda () (incf a)))) ...)
+;;;
+;;; To know whether A is changed or read, we would have to track where B is
+;;; actually used.
+
+(defun var-referenced-in-form (var form)
+  (declare (type var var))
+  (if (eq (var-kind var) 'REPLACED)
+      (let ((loc (var-loc var)))
+	(when (var-p loc)
+	  (var-referenced-in-forms loc form)))
+      (or (find-node-in-list form (var-read-nodes var))
+	  (var-functions-reading var))))
+
+(defun var-changed-in-form (var form)
+  (declare (type var var))
+  (let ((kind (var-kind var)))
+    (if (eq (var-kind var) 'REPLACED)
+	(let ((loc (var-loc var)))
+	  (when (var-p loc)
+	    (var-changed-in-form loc form)))
+	(or (find-node-in-list form (var-set-nodes var))
+	    (if (or (eq kind 'SPECIAL) (eq kind 'GLOBAL))
+		(c1form-sp-change form)
+		(var-functions-setting var))))))
+
+(defun add-to-read-nodes (var form)
+  (push form (var-read-nodes var))
+  (when *current-function*
+    (unless (eq *current-function* (var-function var))
+      (pushnew *current-function* (var-functions-reading var))
+      (pushnew var (fun-referred-vars *current-function*))))
+  form)
+
+(defun add-to-set-nodes (var form)
+  (push form (var-set-nodes var))
+  ;;(push form (var-read-nodes var))
+  (when *current-function*
+    (unless (eq *current-function* (var-function var))
+      (pushnew *current-function* (var-functions-setting var))
+      (pushnew var (fun-referred-vars *current-function*))))
+  form)
+
+(defun add-to-set-nodes-of-var-list (var-list form)
+  (dolist (v var-list)
+    (add-to-set-nodes v form))
+  form)
+
 ;;; A special binding creates a var object with the kind field SPECIAL,
 ;;; whereas a special declaration without binding creates a var object with
 ;;; the kind field GLOBAL.  Thus a reference to GLOBAL may need to make sure
@@ -61,42 +131,24 @@
 ;;; not defined.  This list is used only to suppress duplicated warnings when
 ;;; undefined variables are detected.
 
-(defun c1make-var (name specials ignores types &aux x)
-  (let ((var (make-var :name name)))
-    (declare (type var var))		; Beppe
-    (cmpck (not (symbolp name)) "The variable ~s is not a symbol." name)
-    (cmpck (constantp name) "The constant ~s is being bound." name)
-
-    (cond ((or (member name specials) (sys:specialp name)
+(defun c1make-var (name specials ignores types)
+  (cmpck (not (symbolp name)) "The variable ~s is not a symbol." name)
+  (cmpck (constantp name) "The constant ~s is being bound." name)
+  (let (type)
+    (if (setq type (assoc name types))
+	(setq type (cdr type))
+	(setq type 'T))
+    (cond ((or (member name specials)
+	       (sys:specialp name)
                (check-global name))	;; added. Beppe 17 Aug 1987
-           
-           (setf (var-kind var) 'SPECIAL)
-           (setf (var-loc var) (add-symbol name))
-           (cond ((setq x (assoc name types))
-                  (setf (var-type var) (cdr x)))
-                 ((setq x (get-sysprop name 'CMP-TYPE))
-                  (setf (var-type var) x)))
-           (setq *special-binding* t))
+           (setq *special-binding* t)
+           (unless type
+	     (setf type (or (get-sysprop name 'CMP-TYPE) 'T)))
+	   (c1make-global-variable name :kind 'SPECIAL :type type))
           (t
-           (dolist (v types)
-             (when (eq (car v) name)
-	       (setf (var-type var) (cdr v))
-;               (case (cdr v)
-;                 (OBJECT (setf (var-loc var) 'OBJECT))
-;                 (REGISTER
-;                  (incf (var-ref var) 100))
-;                 (t (setf (var-type var) (cdr v))))
-	       ))
-;           (when (or (null (var-type var))
-;                     (eq t (var-type var)))
-;             (setf (var-loc var) 'OBJECT))
-           ;; :READ-ONLY variable treatment.
-;           (when (eq 'READ-ONLY (var-type var))
-;             (setf (var-type var) 't))
-           (setf (var-kind var) 'LEXICAL))) ; we rely on check-vref to fix it
-    (when (member name ignores) (setf (var-ref var) -1)) ; IGNORE.
-    var)
-  )
+	   (make-var :name name :type type :loc 'OBJECT
+		     :kind 'LEXICAL ; we rely on check-vref to fix it
+		     :ref (if (member name ignores) -1 0))))))
 
 (defun check-vref (var)
   (when (eq (var-kind var) 'LEXICAL)
@@ -115,11 +167,13 @@
     (unless (var-p vref)
       ;; This might be the case if there is a symbol macrolet
       (return-from c1var vref))
-    (make-c1form* 'VAR
-		  :referred-vars (list vref)
-		  :local-referred (list vref)
-		  :type (var-type vref)
-		  :args vref)))
+    (let ((output (make-c1form* 'VAR :type (var-type vref)
+				:args vref)))
+      (add-to-read-nodes vref output)
+      output)
+    #+nil
+    (add-to-read-nodes vref (make-c1form* 'VAR :type (var-type vref)
+					  :args vref))))
 
 (defun make-lcl-var (&key rep-type (type 'T))
   (unless rep-type
@@ -156,17 +210,8 @@
 			      (var-loc var) 'OBJECT))))
            (incf (var-ref var))
            (return-from c1vref var)))) ; ccb
-  (let ((var (sch-global name)))
-    (unless var
-      (unless (or (sys:specialp name) (check-global name))
-	(undefined-variable name))
-      (setq var (make-var :name name
-                          :kind 'GLOBAL
-                          :loc (add-symbol name)
-                          :type (or (get-sysprop name 'CMP-TYPE) t)))
-      (push var *undefined-vars*))
-    var)				; ccb
-  )
+  (c1make-global-variable name :warn t
+			  :type (or (get-sysprop name 'CMP-TYPE) t)))
 
 
 ;;; At each variable binding, the variable is added to *vars* which
@@ -193,11 +238,11 @@
   (case (var-kind var)
     (CLOSURE (wt-env var-loc))
     (LEXICAL (wt-lex var-loc))
-    (SPECIAL (wt "SYM_VAL(" var-loc ")"))
     (REPLACED (wt var-loc))
-    (GLOBAL (if (safe-compile)
-		(wt "symbol_value(" var-loc ")")
-		(wt "SYM_VAL(" var-loc ")")))
+    ((SPECIAL GLOBAL)
+     (if (safe-compile)
+	 (wt "symbol_value(" var-loc ")")
+	 (wt "SYM_VAL(" var-loc ")")))
     (t (wt var-loc))
     ))
 
@@ -218,16 +263,12 @@
        (wt-nl)(wt-lex var-loc)(wt "= ")
        (wt-coerce-loc (var-rep-type var) loc)
        (wt #\;))
-      (SPECIAL
-       (wt-nl "SYM_VAL(" var-loc ")= ")
-       (wt-coerce-loc (var-rep-type var) loc)
-       (wt #\;))
-      (GLOBAL
+      ((SPECIAL GLOBAL)
        (if (safe-compile)
 	   (wt-nl "cl_set(" var-loc ",")
-	   (wt-nl "SYM_VAL(" var-loc ")= "))
+	   (wt-nl "ECL_SET(" var-loc ","))
        (wt-coerce-loc (var-rep-type var) loc)
-       (wt (if (safe-compile) ");" ";")))
+       (wt ");"))
       (t
        (wt-nl var-loc "= ")
        (wt-coerce-loc (var-rep-type var) loc)
@@ -245,15 +286,22 @@
 
 ;;; ----------------------------------------------------------------------
 
+(defun c1make-global-variable (name &key (type t) (kind 'GLOBAL) (warn nil))
+  (let ((var (find name *global-var-objects* :key #'var-name)))
+    (unless var
+      (setf var (make-var :name name :kind kind :type type :loc (add-symbol name))))
+    (push var *global-var-objects*)
+    (when warn
+      (unless (or (sys:specialp name) (check-global name))
+	(undefined-variable name)
+	(push var *undefined-vars*)))
+    var))
+
 (defun c1add-globals (globals)
   (dolist (name globals)
-    (push (make-var :name name
-                    :kind 'GLOBAL
-                    :loc (add-symbol name)
-                    :type (let ((x (get-sysprop name 'CMP-TYPE))) (if x x t))
-                    )
-          *vars*))
-  )
+    (push (c1make-global-variable name :kind 'GLOBAL
+				  :type (or (get-sysprop name 'CMP-TYPE) 'T))
+	  *vars*)))
 
 (defun c1setq (args)
   (let ((l (length args)))
@@ -285,11 +333,7 @@
       (setq type T))
     ;; Is this justified????
     #+nil(setf (c1form-type form1) type)
-    (make-c1form* 'SETQ :type type
-		  :changed-vars (list name1)
-		  :referred-vars (list name1)
-		  :local-referred (list name1)
-		  :args name1 form1)))
+    (add-to-set-nodes name1 (make-c1form* 'SETQ :type type :args name1 form1))))
 
 (defun c2setq (vref form)
   (let ((*destination* vref)) (c2expr* form))
@@ -356,25 +400,19 @@
        (vrefs '())
        (forms '()))
       ((endp l)
-       (make-c1form* 'PSETQ :type '(MEMBER NIL) :changed-vars vrefs
-		     :args (reverse vrefs) (nreverse forms)))
-      (let* ((vref (c1vref (first l)))
-             (form (c1expr (second l)))
-             (type (type-and (var-type vref) (c1form-primary-type form))))
-	(unless type
-	  (cmpwarn "Type mismatch between ~s and ~s." name form)
-	  (setq type T))
+       (add-to-set-nodes-of-var-list
+	vrefs (make-c1form* 'PSETQ :type '(MEMBER NIL)
+			    :args (reverse vrefs) (nreverse forms))))
+    (let* ((vref (c1vref (first l)))
+	   (form (c1expr (second l)))
+	   (type (type-and (var-type vref) (c1form-primary-type form))))
+      (unless type
+	(cmpwarn "Type mismatch between ~s and ~s." name form)
+	(setq type T))
 	;; Is this justified????
 	#+nil(setf (c1form-type form) type)
 	(push vref vrefs)
 	(push form forms))))
-
-(defun var-referred-in-forms (var forms)
-  (let ((check-specials (member (var-kind var) '(SPECIAL GLOBAL))))
-    (dolist (form forms nil)
-      (when (or (member var (c1form-referred-vars form))
-		(and check-specials (c1form-sp-change form)))
-	(return-from var-referred-in-forms t)))))
 
 (defun c2psetq (vrefs forms &aux (*lcl* *lcl*) (saves nil) (blocks 0))
   ;; similar to inline-args
@@ -384,8 +422,8 @@
       ((null vrefs))
     (setq var (first vrefs)
 	  form (car forms))
-    (if (or (var-changed-in-forms var (cdr forms))
-            (var-referred-in-forms var (cdr forms)))
+    (if (or (var-changed-in-form-list var (rest forms))
+	    (var-referenced-in-form-list var (rest forms)))
         (case (c1form-name form)
           (LOCATION (push (cons var (c1form-arg 0 form)) saves))
           (otherwise

@@ -28,6 +28,19 @@ ECL 1.0
   - ECL now checks whether the lambda list of a DEFMETHOD is compatible in
     length with a previously specified one.
 
+* Internals:
+
+  - The compiler now uses a more detailed tree to represent the code, keeping
+    track of where variables are referenced and changed, and which are the
+    parent forms of a given one.
+
+  - The compiler structures now print unreadably to simplify inspection.
+
+  - New algorithm for computing whether a function has to have a lexical
+    environment, a full environment or none.
+
+  - Do not replace LET/LET* variables whose value has side effects.
+
 * ANSI compliance:
 
   - The value of *READTABLE* can now be modified by the user.
@@ -36,6 +49,19 @@ ECL 1.0
     reader and the printer.
 
   - Floats are properly read even when *read-base* is not 10.
+
+  - Support for binary streams of arbitrary byte size. By default, streams are
+    now of type CHARACTER which is equivalent to (UNSIGNED-BYTE 8). Streams of
+    other types, such as UNSIGNED-BYTE, (UNSIGNED-BYTE 100), (SIGNED-BYTE 2),
+    etc, are also supported, but the size of the byte is (as of now) rounded up
+    to a multiple of 8 and READ/WRITE-CHAR signal an error when applied on
+    these streams.
+
+  - Fixed the order of evaluation of arguments in INCF,DECF,etc (M.Goffioul).
+
+  - Default methods for CLOS streams signal now a type error, which is the
+    expected error when an object which is not of type stream is passed to the
+    functions dealing with streams.
 
 ;;; Local Variables: ***
 ;;; mode:text ***

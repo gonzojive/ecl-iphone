@@ -24,7 +24,9 @@
     (c1funcall (list* (first args) (rest forms))))
    ;; More complicated case.
    (t (let ((funob (c1expr (first args))))
-	(make-c1form 'MULTIPLE-VALUE-CALL funob funob (c1args* (rest args)))))))
+	;; FIXME! The type should be more precise
+	(make-c1form* 'MULTIPLE-VALUE-CALL :type T
+		      :args funob (c1args* (rest args)))))))
 
 (defun c2multiple-value-call (funob forms)
   (let* ((tot (make-lcl-var :rep-type :cl-index))
@@ -97,6 +99,9 @@
    ;; For a single form, we must simply ensure that we only take a single
    ;; value of those that the function may output.
    ((endp (rest forms))
+    ;; ... FIXME! This can be improved! It leads to code like
+    ;;		value0 = <computed value>;
+    ;;		T0 = value0;
     (let ((*destination* 'VALUE0))
       (c2expr* (first forms)))
     (unwind-exit 'VALUE0))
@@ -143,11 +148,8 @@
 	  (t
 	   (setq value (c1expr value)
 		 vars (mapcar #'c1vref vars))
-	   (make-c1form* 'MULTIPLE-VALUE-SETQ
-			 :changed-vars vars
-			 :referred-vars vars
-			 :local-referred vars
-			 :args vars value)))))
+	   (add-to-set-nodes-of-var-list
+	    vars (make-c1form* 'MULTIPLE-VALUE-SETQ :args vars value))))))
 
 (defun c1form-values-number (form)
   (let ((type (c1form-type form)))
@@ -205,7 +207,10 @@
       ;;
       ;; Loop for assigning values to variables
       ;;
-      (do ((vs vars (rest vs))
+      (do (;; We call BIND twice for each variable. Hence, we need to
+	   ;; remove spurious BDS-BIND from the list. See also C2LAMBDA.
+	   (*unwind-exit* *unwind-exit*)
+	   (vs vars (rest vs))
 	   (i min-values (1+ i)))
 	  ((or (endp vs) (= i max-values)))
 	(declare (fixnum i))

@@ -18,8 +18,7 @@
 
 (defun c1labels/flet (origin args)
   (check-args-number origin args 1)
-  (let ((*funs* *funs*)
-	(old-funs *funs*)
+  (let ((new-funs *funs*)
 	(defs '())
 	(local-funs '())
 	(fnames '())
@@ -36,27 +35,38 @@
       (cmpck (member (car def) fnames)
 	     "The function ~s was already defined." (car def))
       (push (car def) fnames)
-      (let ((fun (make-fun :name (car def))))
-	(push fun *funs*)
+      (let* ((name (car def))
+	     (var (make-var :name name :kind :object))
+	     (fun (make-fun :name name :var var)))
+	(push fun new-funs)
 	(push (cons fun (cdr def)) defs)))
 
-    ;; Now we can compile the body and the function themselves. Notice
-    ;; that, whe compiling FLET, we must empty *fun* so that the functions
-    ;; do not see each other.
+    ;; Now we compile the functions, either in an empty environment
+    ;; in which there are no new functions
+    (let ((*funs* (if (eq origin 'FLET) *funs* new-funs)))
+      (dolist (def (nreverse defs))
+	(let ((fun (first def)))
+	  ;; The closure type will be fixed later on by COMPUTE-...
+	  (push (c1compile-function (rest def) :fun fun :CB/LB 'LB)
+		local-funs))))
+
+    ;; When we are in a LABELs form, we have to propagate the external
+    ;; variables from one function to the other functions that use it.
+    (dolist (f1 local-funs)
+      (let ((vars (fun-referred-vars f1)))
+	(dolist (f2 local-funs)
+	  (when (and (not (eq f1 f2))
+		     (member f1 (fun-referred-funs f2)))
+	    (add-referred-variables-to-function f2 vars)))))
+
+    ;; Now we can compile the body itself.
     (multiple-value-bind (body ss ts is other-decl)
 	(c1body (rest args) t)
-      (let ((*vars* *vars*))
+      (let ((*vars* *vars*)
+	    (*funs* new-funs))
 	(c1add-globals ss)
 	(check-vdecl nil ts is)
 	(setq body-c1form (c1decl-body other-decl body))))
-
-    (when (eq origin 'FLET)
-      (setf *funs* old-funs))
-    (dolist (def (nreverse defs))
-      (let ((fun (first def)))
-	(push (c1compile-function (rest def) :fun fun
-				  :CB/LB (if (fun-ref-ccb fun) 'CB 'LB))
-	      local-funs)))
 
     ;; Keep only functions that have been referenced at least once.
     ;; It is not possible to look at FUN-REF before because functions
@@ -65,7 +75,6 @@
 
     (if local-funs
 	(make-c1form* 'LOCALS :type (c1form-type body-c1form)
-		      :local-vars (remove nil (mapcar #'fun-var local-funs))
 		      :args local-funs body-c1form (eq origin 'LABELS))
 	body-c1form)))
 
@@ -77,23 +86,28 @@
   (labels
       ((closure-type (fun &aux (lambda-form (fun-lambda fun)))
 	 (let ((vars (fun-referred-local-vars fun))
-	       (funs (remove fun (fun-referred-funs fun) :test #'child-p)))
+	       (funs (remove fun (fun-referred-funs fun) :test #'child-p))
+	       (closure nil))
 	   ;; it will have a full closure if it refers external non-global variables
-	   (unless (or vars funs)
-	     (return-from closure-type nil))
 	   (dolist (var vars)
 	     ;; ...across CB
-	     (when (ref-ref-ccb var)
-	       (return-from closure-type 'CLOSURE)))
-	   ;; ...or the function itself is referred across CB
-	   (when (fun-ref-ccb fun)
-	     (return-from closure-type 'CLOSURE))
-	   ;; or if it directly calls a function
-	   (dolist (f funs 'LEXICAL)
+	     (if (ref-ref-ccb var)
+		 (setf closure 'CLOSURE)
+		 (unless closure (setf closure 'LEXICAL))))
+	   ;; ...or if it directly calls a function
+	   (dolist (f funs)
 	     ;; .. which has a full closure
-	     (when (and (not (child-p f fun))
-			(eq (fun-closure fun) 'CLOSURE))
-	       (return 'CLOSURE)))))
+	     (when (not (child-p f fun))
+	       (case (fun-closure fun)
+		 (CLOSURE (setf closure 'CLOSURE))
+		 (LEXICAL (unless closure (setf closure 'LEXICAL))))))
+	   ;; ...or the function itself is referred across CB
+	   (when closure
+	     (when (or (fun-ref-ccb fun)
+		       (and (fun-var fun)
+			    (plusp (var-ref (fun-var fun)))))
+	       (setf closure 'CLOSURE)))
+	   closure))
        (child-p (presumed-parent fun)
 	 (let ((real-parent (fun-parent fun)))
 	   (when real-parent
@@ -103,6 +117,9 @@
     ;; do not change.
     (let ((new-type (closure-type fun))
 	  (old-type (fun-closure fun)))
+;;       (format t "~%CLOSURE-TYPE: ~A ~A -> ~A, ~A" (fun-name fun)
+;;       	      old-type new-type (fun-parent fun))
+;;       (print (fun-referred-vars fun))
       ;; Same type
       (when (eq new-type old-type)
 	(return-from compute-fun-closure-type nil))
@@ -118,23 +135,29 @@
 	  (setf (var-ref-clb var) nil
 		(var-ref-ccb var) t
 		(var-kind var) 'CLOSURE
-		(var-loc var) 'OBJECT)))
+		(var-loc var) 'OBJECT))
+	(dolist (f (fun-referred-funs fun))
+	  (setf (fun-ref-ccb f) t)))
       ;; If the status of some of the children changes, we have
       ;; to recompute the closure type.
-      (when (some #'compute-fun-closure-type (fun-child-funs fun))
-	(compute-fun-closure-type f))
+      (do ((finish nil t)
+	   (recompute nil))
+	(finish
+	 (when recompute (compute-fun-closure-type fun)))
+	(dolist (f (fun-child-funs fun))
+	  (when (compute-fun-closure-type f)
+	    (setf recompute t finish nil))))
       t)))
 
 (defun c2locals (funs body labels ;; labels is T when deriving from labels
 		      &aux block-p
-		      (level *level*)
 		      (*env* *env*)
 		      (*env-lvl* *env-lvl*) env-grows)
   ;; create location for each function which is returned,
   ;; either in lexical:
   (dolist (fun funs)
     (let* ((var (fun-var fun)))
-      (when (and var (plusp (var-ref var))) ; the function is returned
+      (when (plusp (var-ref var)) ; the function is returned
         (unless (member (var-kind var) '(LEXICAL CLOSURE))
           (setf (var-loc var) (next-lcl))
           (unless block-p
@@ -152,27 +175,15 @@
   ;; - first create binding (because of possible circularities)
   (dolist (fun funs)
     (let* ((var (fun-var fun)))
-      (when (and var (plusp (var-ref var)))
-	(when labels
-	  (incf (fun-env fun)))		; var is included in the closure env
+      (when (plusp (var-ref var))
 	(bind nil var))))
+  ;; create the functions:
+  (mapc #'new-local funs)
   ;; - then assign to it
   (dolist (fun funs)
     (let* ((var (fun-var fun)))
-      (when (and var (plusp (var-ref var)))
+      (when (plusp (var-ref var))
 	(set-var (list 'MAKE-CCLOSURE fun) var))))
-  ;; We need to introduce a new lex vector when lexical variables
-  ;; are present in body and it is the outermost FLET or LABELS
-  ;; (nested FLETS/LABELS can use a single lex).
-  (when (plusp *lex*)
-    (incf level))
-  ;; create the functions:
-  (dolist (fun funs)
-    (let* ((previous (new-local level fun)))
-      (when previous
-	(format t "~%> ~A" previous)
-	(setf (fun-level fun) (fun-level previous)
-	      (fun-env fun) (fun-env previous)))))
 
   (c2expr body)
   (when block-p (wt-nl "}")))
@@ -219,14 +230,14 @@
 	       (setf (fun-ref-ccb fun) t)
 	       (push fun (fun-referred-funs *current-function*)))
 	   ;; we introduce a variable to hold the funob
-	   (let ((var (or (fun-var fun)
-			  (setf (fun-var fun)
-				(make-var :name fname :kind :OBJECT)))))
-	     (cond (ccb (setf (var-ref-ccb var) t
-			      (var-kind var) 'CLOSURE)
+	   (let ((var (fun-var fun)))
+	     (cond (ccb (when build-object
+			  (setf (var-ref-ccb var) t
+				(var-kind var) 'CLOSURE))
 			(setf (fun-ref-ccb fun) t))
-		   (clb (setf (var-ref-clb var) t
-			      (var-kind var) 'LEXICAL))))
+		   (clb (when build-object 
+			  (setf (var-ref-clb var) t
+				(var-kind var) 'LEXICAL)))))
 	   (return fun)))))
 
 (defun sch-local-fun (fname)

@@ -59,6 +59,12 @@
   (or (eq (fun-closure fun) 'CLOSURE)
       (/= (fun-minarg fun) (fun-maxarg fun))))
 
+(defun add-referred-variables-to-function (fun var-list)
+  (setf (fun-referred-vars fun)
+	(set-difference (union (fun-referred-vars fun) var-list)
+			(fun-local-vars fun)))
+  fun)
+
 (defun c1compile-function (lambda-list-and-body &key (fun (make-fun))
 			   (name (fun-name fun)) global (CB/LB 'CB))
   (setf (fun-name fun) name
@@ -73,6 +79,7 @@
 	 (setjmps *setjmps*)
 	 (lambda-expr (c1lambda-expr lambda-list-and-body
 				     (si::function-block-name name)))
+	 (children (fun-child-funs fun))
 	 cfun exported minarg maxarg)
     (unless (eql setjmps *setjmps*)
       (setf (c1form-volatile lambda-expr) t))
@@ -96,27 +103,25 @@
 	  (fun-closure fun) nil
 	  (fun-minarg fun) minarg
 	  (fun-maxarg fun) maxarg
-	  (fun-description fun) name
-	  )
-    (loop
-     (unless (some #'compute-fun-closure-type (fun-child-funs fun))
-       (return)))
-    (unless (fun-parent fun)
-      (compute-fun-closure-type fun)
-      (when (and global (fun-closure fun))
-	(cmperr "Function ~A is global but is closed over some variables.~%~
-~{~A~}"
-		(fun-name fun) (mapcar #'var-name (c1form-referred-vars (fun-lambda fun))))))
-    )
+	  (fun-description fun) name)
+    (reduce #'add-referred-variables-to-function
+	    (mapcar #'fun-referred-vars children)
+	    :initial-value fun)
+    (reduce #'add-referred-variables-to-function
+	    (mapcar #'fun-referred-vars (fun-referred-funs fun))
+	    :initial-value fun)
+    (do ((finish nil))
+	(finish)
+      (setf finish t)
+      (dolist (f (fun-child-funs fun))
+	(when (compute-fun-closure-type f)
+	  (setf finish nil))))
+    (compute-fun-closure-type fun)
+    (when (and global (fun-closure fun))
+      (error "Function ~A is global but is closed over some variables.~%~
+~{~A ~}"
+	     (fun-name fun) (mapcar #'var-name (fun-referred-vars fun)))))
   fun)
-
-(defun fun-referred-vars (fun &key global)
-  (let ((lambda-form (fun-lambda fun)))
-    (when lambda-form
-      (let ((vars (c1form-referred-vars lambda-form)))
-	(if global
-	    vars
-	    (remove 'GLOBAL vars :key #'var-kind))))))
 
 (defun c1lambda-expr (lambda-expr
                       &optional (block-name nil block-it)
@@ -144,7 +149,7 @@
 	((endp specs))
       (let* ((var (first specs)))
 	(push-vars (setf (first specs) (c1make-var var ss is ts)))))
- 
+
     (do ((specs (setq optionals (cdr optionals)) (cdddr specs)))
 	((endp specs))
       (let* ((var (c1make-var (first specs) ss is ts))
@@ -334,9 +339,10 @@
   (when optionals
     ;; When binding optional values, we use two calls to BIND. This means
     ;; 'BDS-BIND is pushed twice on *unwind-exit*, which results in two calls
-    ;; to bds_unwind1(), which is wrong. A possible fix is to save *unwind-exit*
-    (let ((*unwind-exit* *unwind-exit*)
-	  (va-arg-loc (if simple-varargs 'VA-ARG 'CL-VA-ARG)))
+    ;; to bds_unwind1(), which is wrong. A simple fix is to save *unwind-exit*
+    ;; which is what we do here.
+    (let ((va-arg-loc (if simple-varargs 'VA-ARG 'CL-VA-ARG))
+	  (*unwind-exit* *unwind-exit*))
       (do ((opt optionals (cdddr opt)))
 	  ((endp opt))
 	(push (next-label) labels)
@@ -348,13 +354,13 @@
     (let ((label (next-label)))
       (wt-nl) (wt-go label)
       (setq labels (nreverse labels))
-      ;;; Bind unspecified optional parameters.
+      ;; Bind unspecified optional parameters.
       (do ((opt optionals (cdddr opt)))
 	  ((endp opt))
-        (wt-label (first labels))
-        (pop labels)
-	(bind-init (first opt) (second opt))
-        (when (third opt) (bind nil (third opt))))
+	(wt-label (first labels))
+	(pop labels)
+	(bind-init (second opt) (first opt))
+	(when (third opt) (bind nil (third opt))))
       (wt-label label))
     )
 
@@ -399,7 +405,8 @@
 	     ;; with initform
 	     (setf (second KEYVARS[i]) (+ nkey i))
 	     (wt-nl "if(") (wt-loc KEYVARS[i]) (wt "==Cnil){")
-	     (bind-init var init)
+	     (let ((*unwind-exit* *unwind-exit*))
+	       (bind-init init var))
 	     (wt-nl "}else{")
 	     (setf (second KEYVARS[i]) i)
 	     (bind KEYVARS[i] var)

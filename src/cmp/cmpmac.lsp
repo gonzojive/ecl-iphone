@@ -66,23 +66,20 @@
 ;;
 
 (defstruct (c1form (:include info)
+		   (:print-object print-c1form)
 		   (:constructor do-make-c1form))
   (name nil)
+  (parent nil)
   (args '()))
+
+(defun print-c1form (form stream)
+  (format stream "#<form ~A ~X>" (c1form-name form) (ext::pointer form)))
 
 (defun make-c1form (name subform &rest args)
   (let ((form (do-make-c1form :name name :args args
-			      :changed-vars (info-changed-vars subform)
-			      :referred-vars (info-referred-vars subform)
 			      :type (info-type subform)
 			      :sp-change (info-sp-change subform)
-			      :volatile (info-volatile subform)
-			      :local-referred (info-local-referred subform))))
-    (c1form-add-info form args)
-    form)
-  #+nil
-  (let ((form (do-make-c1form :name name :args args)))
-    (add-info form info)
+			      :volatile (info-volatile subform))))
     (c1form-add-info form args)
     form))
 
@@ -108,14 +105,11 @@
 (defun c1form-add-info (form dependents)
   (dolist (subform dependents form)
     (cond ((c1form-p subform)
-	   (add-info form subform (eql (c1form-name subform) 'FUNCTION)))
-	  ((and (fun-p subform) (fun-lambda subform))
-	   (add-info form (fun-lambda subform) t))
+	   (when (info-sp-change subform)
+	     (setf (info-sp-change form) t))
+	   (setf (c1form-parent subform) form))
 	  ((consp subform)
 	   (c1form-add-info form subform)))))
-
-(defun c1form-add-info1 (form subform)
-  (add-info form subform (eql (c1form-name subform) 'FUNCTION)))
 
 (defun copy-c1form (form)
   (copy-structure form))
@@ -142,4 +136,10 @@
 	(setf type subtype)))
     type))
 
-	
+(defun find-node-in-list (home-node list)
+  (flet ((parent-node-p (node presumed-child)
+	   (loop
+	    (cond ((null presumed-child) (return nil))
+		  ((eq node presumed-child) (return t))
+		  (t (setf presumed-child (c1form-parent presumed-child)))))))
+    (member home-node list :test #'parent-node-p)))

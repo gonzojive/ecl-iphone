@@ -26,6 +26,7 @@
   (setq *objects* nil)
   (setq *keywords* nil)
   (setq *local-funs* nil)
+  (setq *global-var-objects* nil)
   (setq *global-funs* nil)
   (setq *linking-calls* nil)
   (setq *global-entries* nil)

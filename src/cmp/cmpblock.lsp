@@ -105,12 +105,9 @@
 			(incf (var-ref var))))
 	     (incf (blk-ref blk))
 	     (setf (blk-type blk) (type-or (blk-type blk) (c1form-primary-type val)))
-             (return (make-c1form* 'RETURN-FROM
-				   :local-referred (list var)
-				   ;;:referred-tags (list blk)
-				   :referred-vars (list var)
-				   :type 'T
-				   :args blk type val))))))))
+             (return (add-to-read-nodes var (make-c1form* 'RETURN-FROM :type 'T
+							  :args blk type val))))
+	   )))))
 
 (defun c2return-from (blk type val)
   (case type

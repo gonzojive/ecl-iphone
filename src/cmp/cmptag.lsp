@@ -200,11 +200,9 @@
 			(setf (var-kind var) :OBJECT))))
 	   (incf (var-ref var))
 	   (incf (tag-ref tag))
-	   (return (make-c1form* 'GO
-				 :local-referred (list var)
-				 :referred-vars (list var)
-				 ;; :referred-tags tag
-				 :args tag (or ccb clb unw))))))))
+	   (return (add-to-read-nodes var (make-c1form* 'GO :args tag
+							(or ccb clb unw))))
+	   )))))
 
 (defun c2go (tag nonlocal)
   (if nonlocal

@@ -44,19 +44,28 @@
 			;;; During Pass1, T or NIL.
 			;;; During Pass2, the lex-address for the
 			;;; block id, or NIL.
+  read-nodes		;;; Nodes (c1forms) in which the reference occurs
 )
 
 (deftype OBJECT () `(not (or fixnum character short-float long-float)))
 
-(defstruct (var (:include ref))
+(defstruct (var (:include ref) (:constructor %make-var))
 ;  name		;;; Variable name.
 ;  (ref 0 :type fixnum)
 		;;; Number of references to the variable (-1 means IGNORE).
 ;  ref-ccb	;;; Cross closure reference: T or NIL.
 ;  ref-clb	;;; Cross local function reference: T or NIL.
+;  read-nodes	;;; Nodes (c1forms) in which the reference occurs
+  set-nodes	;;; Nodes in which the variable is modified
   kind		;;; One of LEXICAL, CLOSURE, SPECIAL, GLOBAL, :OBJECT, :FIXNUM,
   		;;; :CHAR, :DOUBLE, :FLOAT, or REPLACED (used for
 		;;; LET variables).
+  (function *current-function*)
+		;;; For local variables, in which function it was created.
+		;;; For global variables, it doesn't have a meaning.
+  (functions-setting nil)
+  (functions-reading nil)
+		;;; Functions in which the variable has been modified or read.
   (loc 'OBJECT)	;;; During Pass 1: indicates whether the variable can
 		;;; be allocated on the c-stack: OBJECT means
 		;;; the variable is declared as OBJECT, and CLB means
@@ -76,7 +85,6 @@
 		;;; For SPECIAL and GLOBAL: the vv-index for variable name.
   (type t)	;;; Type of the variable.
   (index -1)    ;;; position in *vars*. Used by similar.
-  (bds-bound nil) ;;; BDS-BIND was already used on this variable.
   )
 
 ;;; A function may be compiled into a CFUN, CCLOSURE or CCLOSURE+LISP_CLOSURE
@@ -122,6 +130,7 @@
 			;;; During Pass2, the vs-address for the function
 			;;; closure, or NIL.
 ;  ref-clb		;;; Unused.
+;  read-nodes		;;; Nodes (c1forms) in which the reference occurs
   cfun			;;; The cfun for the function.
   (level 0)		;;; Level of lexical nesting for a function.
   (env 0)     		;;; Size of env of closure.
@@ -136,7 +145,9 @@
 			;;; Max. number arguments that the function receives.
   (parent *current-function*)
 			;;; Parent function, NIL if global.
-  (referred-funs nil)	;;; List of local functions called in this one.
+  (local-vars nil)	;;; List of local variables created here.
+  (referred-vars nil)	;;; List of external variables referenced here.
+  (referred-funs nil)	;;; List of external functions called in this one.
 			;;; We only register direct calls, not calls via object.
   (child-funs nil)	;;; List of local functions defined here.
   )
@@ -152,6 +163,7 @@
 			;;; During Pass1, T or NIL.
 			;;; During Pass2, the lex-address for the
 			;;; block id, or NIL.
+;  read-nodes		;;; Nodes (c1forms) in which the reference occurs
   exit			;;; Where to return.  A label.
   destination		;;; Where the value of the block to go.
   var			;;; Variable containing the block ID.
@@ -165,6 +177,7 @@
 			;;; During Pass1, T or NIL.
 ;  ref-clb		;;; Cross local function reference.
 			;;; During Pass1, T or NIL.
+;  read-nodes		;;; Nodes (c1forms) in which the reference occurs
   label			;;; Where to jump: a label.
   unwind-exit		;;; Where to unwind-no-exit.
   var			;;; Variable containing frame ID.
@@ -173,20 +186,10 @@
 
 (defstruct (info)
   (local-vars nil)	;;; List of var-objects created directly in the form.
-  (changed-vars nil)	;;; List of external var-objects changed by the form.
-  (referred-vars nil)	;;; List of extenal var-objects referred in the form.
   (type t)		;;; Type of the form.
   (sp-change nil)	;;; Whether execution of the form may change
 			;;; the value of a special variable.
   (volatile nil)	;;; whether there is a possible setjmp. Beppe
-;  (referred-tags nil)   ;;; Tags or block names referenced in the body.
-  (local-referred nil)  ;;; directly referenced in the body:
-;;;	each reference operator (c1call-symbol, c1go, c1return-from, c1vref
-;;;	and c1setq1) adds the reference to the info-local-referred of the form
-;;;	they appear in.
-;;;	This information is not propagated to an enclosing function (see
-;;;	add-info) so that we can determine exactly which frame is used
-;;;	in the body of a function.
   )
 
 ;;;
@@ -369,7 +372,8 @@ The default value is NIL.")
 					; with fixed number of arguments.
 					; watch out for multiple values.
 
-(defvar *global-vars* nil)
+(defvar *global-var-objects* nil)	; var objects for global/special vars
+(defvar *global-vars* nil)		; variables declared special
 (defvar *global-funs* nil)		; holds	{ fun }*
 (defvar *linking-calls* nil)		; holds { ( global-fun-name fun symbol c-fun-name var-name ) }*
 (defvar *local-funs* nil)		; holds { fun }*

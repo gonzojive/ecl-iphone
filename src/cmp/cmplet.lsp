@@ -73,8 +73,11 @@
 				:unsafe "In LET body"))
 	   (form-type (c1form-primary-type form)))
       (declare (type var var))
-      ;; Automatic treatement for READ-ONLY variables:
-      (unless (var-changed-in-forms var (list body))
+      ;; Automatic treatement for READ-ONLY variables which are not
+      ;; closed over in other functions.
+      (unless (or (var-changed-in-form-list var (list body))
+		  (var-functions-reading var)
+		  (var-functions-setting var))
 	(setf (var-type var) form-type)
 	(update-var-type var form-type body)
 	;; * (let ((v2 e2)) e3 e4) => (let () e3 e4)
@@ -84,6 +87,7 @@
 	(when (and (= 0 (var-ref var))
 		   (not (member (var-kind var) '(special global)))
 		   (not (form-causes-side-effect form)))
+	  (cmpnote "Removing unused variable ~A" (var-name var))
 	  (go continue))
 	;;  (let ((v1 e1) (v2 e2) (v3 e3)) (expr e4 v2 e5))
 	;;  can become
@@ -94,17 +98,15 @@
 	;;  - e2 does not affect v1 nor e3, e3 does not affect e2
 	;;  - e4 does not affect e2
 	(when (and (= 1 (var-ref var))
-		   (member-var var (c1form-referred-vars body))
+		   (var-referenced-in-form var body)
 		   (not (form-causes-side-effect form))
 		   ;; it does not refer to special variables which
 		   ;; are changed in the LET form
-		   (dolist (v all-vars t)
-		     (when (member-var v (c1form-referred-vars form))
-		       (return nil)))
+		   (notany #'(lambda (v) (var-referenced-in-form v form)) all-vars)
 		   (catch var
 		     (replaceable var body)))
-	  (unless (nsubst-var var form body)
- 	    (baboon))
+	  (cmpnote "Replacing variable ~A by its value ~A" (var-name var) form)
+	  (nsubst-var var form)
 	  (go continue))
 	)
       #+nil
@@ -191,7 +193,7 @@
 		   (push (cons var (c1form-arg 0 form)) bindings)))
 	      (VAR
 	       (let* ((var1 (c1form-arg 0 form)))
-		 (cond ((or (var-changed-in-forms var1 (cdr fl))
+		 (cond ((or (var-changed-in-form-list var1 (cdr fl))
 			    (and (member (var-kind var1) '(SPECIAL GLOBAL))
 				 (member (var-name var1) prev-ss)))
 			(do-init var form fl))
@@ -200,7 +202,7 @@
 			     ;; We just need to keep track of their uses.
 			     (member (var-kind var1) '(REPLACED :OBJECT))
 			     (can-be-replaced var body)
-			     (not (member var1 (c1form-changed-vars body))))
+			     (not (var-changed-in-form var1 body)))
 			(setf (var-kind var) 'REPLACED
 			      (var-loc var) var1))
 		       (t (push (cons var var1) bindings)))))
@@ -294,7 +296,9 @@
 	   (form-type (c1form-primary-type form))
 	   (rest-forms (cons body (rest fs))))
       ;; Automatic treatement for READ-ONLY variables:
-      (unless (var-changed-in-forms var rest-forms)
+      (unless (or (var-changed-in-form-list var rest-forms)
+		  (var-functions-reading var)
+		  (var-functions-setting var))
 	(setf (var-type var) form-type)
 	(update-var-type var form-type rest-forms)
 	;; * (let* ((v2 e2)) e3 e4) => (let () e3 e4)
@@ -304,6 +308,7 @@
 	(when (and (= 0 (var-ref var))
 		   (not (member (var-kind var) '(SPECIAL GLOBAL)))
 		   (not (form-causes-side-effect form)))
+	  (cmpnote "Removing unused variable ~A" (var-name var))
 	  (go continue))
 	;;  (let* ((v1 e1) (v2 e2) (v3 e3)) (expr e4 v2 e5))
 	;;  can become
@@ -314,25 +319,25 @@
 	;;  - e2 does not affect v1 nor e3, e3 does not affect e2
 	;;  - e4 does not affect e2
 	(when (and (= 1 (var-ref var))
+		   (var-referenced-in-form var body)
 		   (not (form-causes-side-effect form))
-		   (member-var var (c1form-referred-vars body))
 		   ;; it does not refer to special variables which
 		   ;; are changed in later assignments
-		   (dolist (v (rest vs) t)
-		     (when (member-var v (c1form-referred-vars form))
-		       (return nil)))
+		   (notany #'(lambda (v)
+			       (var-referenced-in-form v form))
+			   (rest vs))
 		   (or (and (null (rest vs))	; last variable
 			    ;; its form does not affect previous variables
 			    (let ((tforms (list form)))
 			      (dolist (v vars)
 				(when (eq v var) (return t))
-				(when (var-changed-in-forms v tforms)
+				(when (var-changed-in-form-list v tforms)
 				  (return nil)))))
 		       (not (args-cause-side-effect fs)))
 		   (catch var
 		     (replaceable var body)))
-	  (unless (nsubst-var var form body)
- 	    (baboon))
+	  (cmpnote "Replacing variable ~A by its value ~a" (var-name var) form)
+	  (nsubst-var var form)
 	  (go continue))
 	)
       #+nil
@@ -381,6 +386,7 @@
       (case (c1form-name form)
         (LOCATION
          (when (can-be-replaced* var body (cdr fl))
+	   (cmpnote "Replacing variable ~a by its value" (var-name var))
            (setf (var-kind var) 'REPLACED
                  (var-loc var) (c1form-arg 0 form))))
         (VAR
@@ -391,8 +397,9 @@
 		      ;; We just need to keep track of their uses.
 		      (member (var-kind var1) '(REPLACED :OBJECT))
 		      (can-be-replaced* var body (cdr fl))
-		      (not (var-changed-in-forms var1 (cdr fl)))
-		      (not (member var1 (c1form-changed-vars body))))
+		      (not (var-changed-in-form-list var1 (rest fl)))
+		      (not (var-changed-in-form var1 body)))
+	     (cmpnote "Replacing variable ~a by its value" (var-name var))
              (setf (var-kind var) 'REPLACED
                    (var-loc var) var1)))))
       (unless env-grows
@@ -423,7 +430,7 @@
        (case (c1form-name form)
 	 (LOCATION (bind (c1form-arg 0 form) var))
 	 (VAR (bind (c1form-arg 0 form) var))
-	 (t (bind-init var form))))
+	 (t (bind-init form var))))
       (t ; local var
        (let ((*destination* var)) ; nil (ccb)
 	 (c2expr* form)))
@@ -452,53 +459,36 @@
 (defun can-be-replaced (var body)
   (declare (type var var))
   (and (eq (var-kind var) :OBJECT)
-       (not (member var (c1form-changed-vars body)))))
-#|  (and (or (eq (var-kind var) 'LEXICAL)
-	   (and (eq (var-kind var) :OBJECT)
-		(< (var-ref var) *register-min*)))
-       (not (var-ref-ccb var))
-       (not (member var (c1form-changed-vars body))))
-|#
+       (not (var-changed-in-form var body))))
 
 (defun can-be-replaced* (var body forms)
   (declare (type var var))
   (and (can-be-replaced var body)
-       (dolist (form forms t)
-         (when (member var (c1form-changed-vars form))
-               (return nil)))))
+       (not (var-changed-in-form-list var forms))))
 
-(defun nsubst-var (var form where)
-  (cond ((null where)
-	 nil)
-	((c1form-p where)
-	 (cond ((not (member var (c1form-referred-vars where)))
-		nil)
-	       ((and (eql (c1form-name where) 'VAR)
-		     (eql (c1form-arg 0 where) var))
-		(setf (c1form-changed-vars where) (c1form-changed-vars form)
-		      (c1form-referred-vars where) (c1form-referred-vars form)
-		      (c1form-type where) (c1form-type form)
-		      (c1form-sp-change where) (c1form-sp-change form)
-		      (c1form-volatile where) (c1form-volatile form)
-		      (c1form-local-referred where) (c1form-local-referred form)
-		      (c1form-name where) (c1form-name form)
-		      (c1form-args where) (c1form-args form))
-		t)
-	       ((nsubst-var var form (c1form-args where))
-		(c1form-add-info1 where form)
-		(setf (c1form-referred-vars where)
-		      (delete var (c1form-referred-vars where))
-		      (c1form-local-referred where)
-		      (delete var (c1form-local-referred where)))
-		t)))
-	((atom where)
-	 nil)
-	(t
-	 (let ((output NIL))
-	   (dolist (subform where)
-	     (when (nsubst-var var form subform)
-	       (setf output T)))
-	   output))))
+(defun nsubst-var (var form)
+  (when (var-set-nodes var)
+    (baboon "Cannot replace a variable that is to be changed"))
+  (when (var-functions-reading var)
+    (baboon "Cannot replace a variable that is closed over"))
+  (when (> (length (var-read-nodes var)) 1)
+    (baboon "Cannot replace a variable that is used more than once"))
+  ;; FIXME!!!!
+  ;; Only take the first value out of the form
+  #+nil
+  (setf form (make-c1form* 'VALUES :args (list form)))
+  (dolist (where (var-read-nodes var))
+    (cond ((and (eql (c1form-name where) 'VAR)
+		(eql (c1form-arg 0 where) var))
+	   (setf (c1form-type where) (c1form-type form)
+		 (c1form-sp-change where) (c1form-sp-change form)
+		 (c1form-volatile where) (c1form-volatile form)
+		 (c1form-name where) (c1form-name form)
+		 (c1form-args where) (c1form-args form))
+	   (c1form-add-info where (c1form-args where))
+	   )
+	  (t
+	   (baboon "VAR-SET-NODES are only C1FORMS of type VAR")))))
 
 (defun member-var (var list)
   (let ((kind (var-kind var)))

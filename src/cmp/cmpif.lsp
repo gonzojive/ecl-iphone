@@ -90,7 +90,7 @@
          (let* ((exit *exit*)
 		(*unwind-exit* (cons Tlabel *unwind-exit*))
 		(*exit* Tlabel))
-              (CJF fmla Tlabel exit))
+	   (CJF fmla Tlabel exit))
          (wt-label Tlabel)
          (c2expr form1))
         (t

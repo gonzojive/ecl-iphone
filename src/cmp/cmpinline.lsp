@@ -12,63 +12,6 @@
 
 (in-package "COMPILER")
 
-;;; Pass 1 generates the internal form
-;;;	( id  info-object . rest )
-;;; for each form encountered.
-
-#|
-;;; Use a structure of type vector to avoid creating
-;;; normal structures before booting CLOS:
-(defstruct (info (:type vector) :named)
-  (changed-vars nil)	;;; List of var-objects changed by the form.
-  (referred-vars nil)	;;; List of var-objects referred in the form.
-  (type t)		;;; Type of the form.
-  (sp-change nil)	;;; Whether execution of the form may change
-			;;; the value of a special variable.
-  (volatile nil)	;;; whether there is a possible setjmp. Beppe
-  (local-referred nil)  ;;; directly referenced in the body.
-  ) |#
-
-(defun add-info (to-info from-info &optional boundary)
-  (setf (info-changed-vars to-info)
-        (set-difference (union (info-changed-vars from-info)
-			       (info-changed-vars to-info))
-			(info-local-vars to-info)))
-  (setf (info-referred-vars to-info)
-        (set-difference (union (info-referred-vars from-info)
-			       (info-referred-vars to-info))
-			(info-local-vars to-info)))
-  (when (info-sp-change from-info)
-        (setf (info-sp-change to-info) t))
-;  (setf (info-referred-tags to-info)
-;	(union (info-referred-tags from-info)
-;	       (info-referred-tags to-info)))
-  (unless boundary
-    (setf (info-local-referred to-info)
-	  (union (info-local-referred from-info)
-		 (info-local-referred to-info))))
-  )
-
-(defun var-changed-in-forms (var forms)
-  (declare (type var var))
-  (let ((kind (var-kind var)))
-    (if (eq kind 'REPLACED)
-	(let ((loc (var-loc var)))
-	  (when (var-p loc)
-	    (var-changed-in-forms loc forms)))
-	(let ((check-specials (or (eq kind 'SPECIAL) (eq kind 'GLOBAL)))
-	      (check-lexical (or (eq kind 'LEXICAL) (eq kind 'CLOSURE))))
-	  (dolist (form forms)
-	    (when (or (member var (c1form-changed-vars form))
-		      (and check-specials (c1form-sp-change form))
-		      ;; They can be modified when a local function is called
-		      ;; FIXME! We need to add a flag to the functions telling
-		      ;; which variables they modify!
-		      (and check-lexical
-			   (member (c1form-name form)
-				   '(CALL-LOCAL MULTIPLE-VALUE-CALL))))
-	      (return t)))))))
-
 ;;; Valid property names for open coded functions are:
 ;;;  :INLINE-ALWAYS
 ;;;  :INLINE-SAFE	safe-compile only
@@ -112,7 +55,7 @@
 	 (push (list (c1form-primary-type form) (c1form-arg 0 form)) locs))
 	(VAR
 	 (let ((var (c1form-arg 0 form)))
-	   (if (var-changed-in-forms var (cdr forms))
+	   (if (var-changed-in-form-list var (cdr forms))
 	       (let* ((var-rep-type (var-rep-type var))
 		      (lcl (make-lcl-var :rep-type var-rep-type :type (var-type var))))
 		 (wt-nl "{" (rep-type-name var-rep-type) " " lcl "= " var ";")
@@ -320,7 +263,7 @@
       (case (c1form-name form)
 	(LOCATION)
 	(VAR
-	 (when (var-changed-in-forms (c1form-arg 0 form) (cdr forms))
+	 (when (var-changed-in-form-list (c1form-arg 0 form) (cdr forms))
 	   (setq res t)))
 	(CALL-GLOBAL
 	 (let ((fname (c1form-arg 0 form))

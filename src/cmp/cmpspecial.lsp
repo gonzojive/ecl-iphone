@@ -70,11 +70,9 @@
     (cond ((si::valid-function-name-p fun)
 	   (let ((funob (local-function-ref fun t)))
 	     (if funob
-		 (let* ((vars (list (fun-var funob))))
-		   (incf (var-ref (fun-var funob)))
-		   (make-c1form* 'VAR :referred-vars vars
-				 :local-referred vars
-				 :args (first vars)))
+		 (let* ((var (fun-var funob)))
+		   (incf (var-ref var))
+		   (add-to-read-nodes var (make-c1form* 'VAR :args var)))
 		 (make-c1form* 'FUNCTION
 			       :sp-change (not (and (symbolp fun)
 						    (get-sysprop fun 'NO-SP-CHANGE)))
@@ -94,18 +92,27 @@
     (GLOBAL
      (unwind-exit (list 'FDEFINITION fun)))
     (CLOSURE
-     (new-local 0 fun)	; 0 was *level*
+     (new-local fun)
      (unwind-exit `(MAKE-CCLOSURE ,fun)))))
 
 ;;; Mechanism for sharing code.
-(defun new-local (level fun)
+(defun new-local (fun)
   ;; returns the previous function or NIL.
   (declare (type fun fun))
+  (case (fun-closure fun)
+    (CLOSURE
+     (setf (fun-level fun) 0 (fun-env fun) *env*))
+    (LEXICAL
+     (let ((parent (fun-parent fun)))
+       ;; Only increase the lexical level if there have been some
+       ;; new variables created. This way, the same lexical environment
+       ;; can be propagated through nested FLET/LABELS.
+       (setf (fun-level fun) (if (plusp *lex*) (1+ *level*) *level*)
+	     (fun-env fun) 0)))
+    (otherwise
+     (setf (fun-env fun) 0 (fun-level fun) 0)))
   (let ((previous (dolist (old *local-funs*)
-		    (when (and (= *env* (fun-env old))
-			       ;; closures must be embedded in env of
-			       ;; same size
-			       (similar (fun-lambda fun) (fun-lambda old)))
+		    (when (similar fun old)
 		      (return old)))))
     (if previous
 	(progn
@@ -115,11 +122,7 @@
 	  (setf (fun-cfun fun) (fun-cfun previous)
 		(fun-lambda fun) nil)
 	  previous)
-        (progn
-          (setf (fun-level fun) (if (fun-ref-ccb fun) 0 level)
-                (fun-env fun) *env*
-		*local-funs* (cons fun *local-funs*))
-	  NIL))))
+	(push fun *local-funs*))))
 
 (defun wt-fdefinition (fun-name)
   (let ((vv (add-object fun-name)))
@@ -130,6 +133,13 @@
 	(wt "(" vv "->symbol.gfdef)")
 	(wt "ecl_fdefinition(" vv ")"))))
 
+(defun environment-accessor (fun)
+  (let* ((env-var (env-var-name *env-lvl*))
+	 (expected-env-size (fun-env fun)))
+    (if (< expected-env-size *env*)
+	(format nil "nthcdr(~D,~A)" (- *env* expected-env-size) env-var)
+	env-var)))
+
 (defun wt-make-closure (fun &aux (cfun (fun-cfun fun)))
   (declare (type fun fun))
   (let* ((closure (fun-closure fun))
@@ -137,7 +147,9 @@
 	 (maxarg (fun-maxarg fun))
 	 (narg (if (= minarg maxarg) maxarg nil)))
     (cond ((eq closure 'CLOSURE)
-	   (wt "cl_make_cclosure_va((void*)" cfun ",env" *env-lvl* ",Cblock)"))
+	   (wt "cl_make_cclosure_va((void*)" cfun ","
+	       (environment-accessor fun)
+	       ",Cblock)"))
 	  ((eq closure 'LEXICAL)
 	   (baboon))
 	  (narg ; empty environment fixed number of args
