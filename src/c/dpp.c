@@ -99,6 +99,8 @@ char pool[POOLSIZE];
 char *poolp;
 
 char *function;
+char *function_symbol;
+char *function_c_name;
 
 char *required[MAXREQ];
 int nreq;
@@ -235,6 +237,29 @@ search_keyword(const char *name)
 }
 
 char *
+search_symbol(char *name)
+{
+	int i;
+	for (i = 0; cl_symbols[i].name != NULL; i++) {
+		if (!strcasecmp(name, cl_symbols[i].name)) {
+			name = poolp;
+			pushstr("(cl_object)(cl_symbols+");
+			if (i >= 1000)
+				pushc((i / 1000) % 10 + '0');
+			if (i >= 100)
+				pushc((i / 100) % 10 + '0');
+			if (i >= 10)
+				pushc((i / 10) % 10 + '0');
+			pushc(i % 10 + '0');
+			pushstr(")");
+			pushc(0);
+			return name;
+		}
+	}
+	return NULL;
+}
+
+char *
 read_symbol()
 {
 	char c, *name = poolp;
@@ -248,24 +273,28 @@ read_symbol()
 	}
 	pushc(0);
 
+	name = search_symbol(poolp = name);
+	if (name == NULL) {
+		name = poolp;
+		printf("\nUnknown symbol: %s\n", name);
+		pushstr("unknown");
+	}
+	return name;
+}
+
+char *
+search_function(char *name)
+{
+	int i;
 	for (i = 0; cl_symbols[i].name != NULL; i++) {
-		if (!strcasecmp(name, cl_symbols[i].name)) {
-			poolp = name;
-			pushstr("(cl_object)(cl_symbols+");
-			if (i >= 1000)
-				pushc((i / 1000) % 10 + '0');
-			if (i >= 100)
-				pushc((i / 100) % 10 + '0');
-			if (i >= 10)
-				pushc((i / 10) % 10 + '0');
-			pushc(i % 10 + '0');
-			pushstr(")");
+		if (cl_symbols[i].translation != NULL &&
+		    !strcasecmp(name, cl_symbols[i].name)) {
+			name = poolp;
+			pushstr(cl_symbols[i].translation);
+			pushc(0);
 			return name;
 		}
 	}
-	printf("\nUnknown symbol: %s\n", name);
-	poolp = name;
-	pushstr("unknown");
 	return name;
 }
 
@@ -285,26 +314,25 @@ read_function()
 		pushc(0);
 		return name;
 	}
-	while (c != '(' && !isspace(c) && c != ')') {
+	while (c != '(' && !isspace(c) && c != ')' && c != ',') {
 		if (c == '_') c = '-';
 		pushc(c); 
 		c = readc();
 	}
 	unreadc(c);
 	pushc(0);
-
-	for (i = 0; cl_symbols[i].name != NULL; i++) {
-		if (cl_symbols[i].translation != NULL &&
-		    !strcasecmp(name, cl_symbols[i].name)) {
-			poolp = name;
-			pushstr(cl_symbols[i].translation);
-			return name;
-		}
-	}
-	printf("\nUnknown function: %s\n", name);
-	poolp = name;
-	pushstr("unknown");
 	return name;
+}
+
+char *
+translate_function(char *name)
+{
+	char *output = search_function(name);
+	if (output == NULL) {
+		printf("\nUnknown function: %s\n", name);
+		pushstr("unknown");
+		output = poolp;
+	}
 }
 
 char *
@@ -338,11 +366,14 @@ read_token(void)
 			c = readc();
 			if (c == '\'') {
 				(void)read_symbol();
+				poolp--;
 			} else if (c == '@') {
 				pushc(c);
 			} else {
+				char *name;
 				unreadc(c);
-				(void)read_function();
+				poolp = name = read_function();
+				(void)translate_function(poolp);
 			}
 		} else {
 			pushc(c);
@@ -360,6 +391,8 @@ reset(void)
 
 	poolp = pool;
 	function = NULL;
+	function_symbol = "";
+	function_c_name = "";
 	nreq = 0;
 	for (i = 0;  i < MAXREQ;  i++)
 		required[i] = NULL;
@@ -390,7 +423,13 @@ reset(void)
 get_function(void)
 {
 	function = read_function();
-	pushc('\0');
+	function_symbol = search_symbol(function);
+	if (function_symbol == NULL) {
+		function_symbol = poolp;
+		pushstr("Cnil");
+		pushc('\0');
+	}
+	function_c_name = translate_function(function);
 }
 
 get_lambda_list(void)
@@ -558,7 +597,7 @@ put_fhead(void)
 	int i;
 
 	put_lineno();
-	fprintf(out, "cl_object %s(int narg", function);
+	fprintf(out, "cl_object %s(int narg", function_c_name);
 	for (i = 0; i < nreq; i++)
 		fprintf(out, ", cl_object %s", required[i]);
 	if (nopt > 0 || rest_flag || key_flag)
@@ -600,7 +639,7 @@ put_declaration(void)
   }
   if (nopt == 0 && !rest_flag && !key_flag) {
     put_lineno();
-    fprintf(out, "\tcheck_arg(%d);\n", nreq);
+    fprintf(out, "\tif (narg!=%d) FEwrong_num_arguments(%s);\n", nreq, function_symbol);
   } else {
     if (key_flag) {
       put_lineno();
@@ -611,11 +650,11 @@ put_declaration(void)
 	    rest_var, rest_var, ((nreq > 0) ? required[nreq-1] : "narg"),
 	    nreq);
     put_lineno();
-    fprintf(out, "\tif (narg < %d) FEtoo_few_arguments(narg);\n", nreq);
+    fprintf(out, "\tif (narg < %d", nreq);
     if (nopt > 0 && !rest_flag && !key_flag) {
-      put_lineno();
-      fprintf(out, "\tif (narg > %d) FEtoo_many_arguments(narg);\n", nreq + nopt);
+      fprintf(out, "|| narg > %d", nreq + nopt);
     }
+    fprintf(out, ") FEwrong_num_arguments(%s);\n", function_symbol);
     for (i = 0;  i < nopt;  i++) {
       put_lineno();
       fprintf(out, "\tif (narg > %d) {\n", nreq+i, optional[i].o_var);
@@ -744,9 +783,8 @@ LOOP:
 		char *p;
 		unreadc(c);
 		poolp = pool;
-		p = read_function();
-		pushc('\0');
-		fprintf(out,"%s",p);
+		poolp = p = read_function();
+		fprintf(out,"%s",translate_function(poolp));
 		goto LOOP;
 	}
 	p = read_token();

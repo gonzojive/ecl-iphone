@@ -568,7 +568,7 @@ number_negate(cl_object x)
 @
 	/* INV: type check is in number_divide() */
 	if (narg == 0)
-		FEtoo_few_arguments(narg);
+		FEwrong_num_arguments(@'/');
 	if (narg == 1)
 		@(return number_divide(MAKE_FIXNUM(1), num))
 	while (--narg)

@@ -194,7 +194,7 @@ si_coerce_to_package(cl_object p)
 {
 	cl_object pp = find_package(p);
 	if (!Null(pp))
-		return (pp);
+		@(return pp);
 	FEwrong_type_argument(@'package', p);
 }
 

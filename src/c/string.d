@@ -290,7 +290,7 @@ string_cmp(int narg, int sign, int boundary, cl_va_list ARGS)
 #define start2p KEY_VARS[6]
 	cl_object KEY_VARS[8];
 
-	if (narg < 2) FEtoo_few_arguments(narg);
+	if (narg < 2) FEwrong_num_arguments_anonym();
 	KEYS[0]=@':start1';
 	KEYS[1]=@':end1';
 	KEYS[2]=@':start2';
@@ -375,7 +375,7 @@ string_compare(int narg, int sign, int boundary, cl_va_list ARGS)
 #define start2p KEY_VARS[6]
 	cl_object KEY_VARS[8];
 
-	if (narg < 2) FEtoo_few_arguments(narg);
+	if (narg < 2) FEwrong_num_arguments_anonym();
 	KEYS[0]=@':start1';
 	KEYS[1]=@':end1';
 	KEYS[2]=@':start2';
@@ -530,7 +530,7 @@ string_case(int narg, int (*casefun)(int c, bool *bp), cl_va_list ARGS)
 	cl_object conv;
 	cl_object KEY_VARS[4];
 
-	if (narg < 1) FEtoo_few_arguments(narg);
+	if (narg < 1) FEwrong_num_arguments_anonym();
 	KEYS[0]=@':start';
 	KEYS[1]=@':end';
 	cl_parse_key(ARGS, 2, KEYS, KEY_VARS, NULL, FALSE);
@@ -604,7 +604,7 @@ nstring_case(int narg, int (*casefun)(int, bool *), cl_va_list ARGS)
 #define startp KEY_VARS[2]
 	cl_object KEY_VARS[4];
 
-	if (narg < 1) FEtoo_few_arguments(narg);
+	if (narg < 1) FEwrong_num_arguments_anonym();
 	KEYS[0]=@':start';
 	KEYS[1]=@':end';
 	cl_parse_key(ARGS, 2, KEYS, KEY_VARS, NULL, FALSE);

@@ -409,6 +409,10 @@ L:
 	}
 }
 
+/*
+ * coerce_to_physical_pathname(P) converts P to a physical pathname,
+ * for a file which is accesible in our filesystem.
+ */
 cl_object
 coerce_to_file_pathname(cl_object pathname)
 {
@@ -423,6 +427,10 @@ coerce_to_file_pathname(cl_object pathname)
 	return pathname;
 }
 
+/*
+ * coerce_to_physical_pathname(P) converts P to a physical pathname,
+ * performing the appropiate transformation if P was a logical pathname.
+ */
 cl_object
 coerce_to_physical_pathname(cl_object x)
 {
@@ -432,13 +440,18 @@ coerce_to_physical_pathname(cl_object x)
 	return x;
 }
 
+/*
+ * coerce_to_filename(P) converts P to a physical pathname and then to
+ * a namestring. The output must always be a simple-string which can
+ * be used by the C library.
+ */
 cl_object
 coerce_to_filename(cl_object pathname)
 {
 	cl_object namestring;
 
 	pathname = coerce_to_file_pathname(pathname);
-	namestring = coerce_to_namestring(pathname);
+	namestring = coerce_to_simple_string(cl_namestring(pathname));
 	if (namestring->string.fillp >= MAXPATHLEN - 16)
 		FEerror("Too long filename: ~S.", 1, namestring);
 	return namestring;
@@ -533,10 +546,10 @@ push_string(cl_object buffer, cl_object string)
 }
 
 /*
-	namestring(x) converts a pathname to a namestring.
+	do_namestring(x) converts a pathname to a namestring.
 */
-cl_object
-namestring(cl_object x)
+static cl_object
+do_namestring(cl_object x)
 {
 	cl_object l, y;
 	bool logical;
@@ -612,25 +625,23 @@ M:
 	push_string(buffer, y);
 	/* INV: pathname.version is always @':unspecific' or Cnil */
 N:
-	/* INV: namestring() must return a simple string which can
-	 * be used by a C function */
-	return(copy_simple_string(cl_token));
+	return copy_simple_string(cl_token);
 }
 
 cl_object
-coerce_to_namestring(cl_object x)
+cl_namestring(cl_object x)
 {
 	cl_object y;
 L:
 	switch (type_of(x)) {
 	case t_string:
-		if (x->string.self[0] != '~')
-		  return(x);
-		/* added by E. Wang */
-		return(namestring(cl_pathname(x)));
+		if (x->string.self[0] == '~')
+			x = do_namestring(cl_pathname(x));
+		break;
 
 	case t_pathname:
-		return(namestring(x));
+		x = do_namestring(x);
+		break;
 
 	case t_stream:
 		switch ((enum smmode)x->stream.mode) {
@@ -650,13 +661,11 @@ L:
 			goto L;
 
 		default:
-			goto CANNOT_COERCE;
 		}
-
 	default:
-	CANNOT_COERCE:
 		FEerror("~S cannot be coerced to a namestring.", 1, x);
 	}
+	@(return x)
 }
 
 @(defun parse_namestring (thing
@@ -805,16 +814,10 @@ cl_pathname_version(cl_object pname)
 }
 
 cl_object
-cl_namestring(cl_object pname)
-{
-	@(return coerce_to_namestring(pname))
-}
-
-cl_object
 cl_file_namestring(cl_object pname)
 {
 	pname = cl_pathname(pname);
-	@(return namestring(make_pathname(Cnil, Cnil, Cnil,
+	@(return do_namestring(make_pathname(Cnil, Cnil, Cnil,
 					     pname->pathname.name,
 					     pname->pathname.type,
 					     pname->pathname.version)))
@@ -824,7 +827,7 @@ cl_object
 cl_directory_namestring(cl_object pname)
 {
 	pname = cl_pathname(pname);
-	@(return namestring(make_pathname(Cnil, Cnil,
+	@(return do_namestring(make_pathname(Cnil, Cnil,
 					     pname->pathname.directory,
 					     Cnil, Cnil, Cnil)))
 }
@@ -862,7 +865,7 @@ cl_host_namestring(cl_object pname)
 			       defaults->pathname.version) ?
 			Cnil : path->pathname.version);
 	newpath->pathname.logical = path->pathname.logical;
-	@(return namestring(newpath))
+	@(return do_namestring(newpath))
 @)
 
 /* --------------- PATHNAME MATCHING ------------------ */

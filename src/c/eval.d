@@ -31,7 +31,7 @@ void
 cl__va_start(cl_va_list args, int narg_before)
 {
 	if (args[0].narg < narg_before)
-		FEtoo_few_arguments(args[0].narg);
+		FEwrong_num_arguments_anonym();
 	if (args[0].narg > C_ARGUMENTS_LIMIT) {
 		args[0].narg -= narg_before;
 		args[0].sp = cl_stack_index() - args[0].narg;
@@ -75,7 +75,7 @@ cl_apply_from_stack(cl_index narg, cl_object fun)
 	case t_cfun:
 		if (fun->cfun.narg >= 0) {
 			if (narg != fun->cfun.narg)
-				check_arg_failed(narg, fun->cfun.narg);
+				FEwrong_num_arguments(fun);
 			return APPLY_fixed(narg, fun->cfun.entry, cl_stack_top - narg);
 		}
 		return APPLY(narg, fun->cfun.entry, cl_stack_top - narg);
@@ -121,7 +121,7 @@ link_call(cl_object sym, cl_objectfn *pLK, int narg, cl_va_list args)
 	case t_cfun:
 		if (fun->cfun.narg >= 0) {
 			if (narg != fun->cfun.narg)
-				check_arg_failed(narg, fun->cfun.narg);
+				FEwrong_num_arguments(fun);
 			out = APPLY_fixed(narg, fun->cfun.entry, cl_stack_top - narg);
 		} else {
 			if (pLK) {
@@ -186,7 +186,7 @@ si_unlink_symbol(cl_object s)
 	case t_cfun:
 		if (fun->cfun.narg >= 0) {
 			if (narg != fun->cfun.narg)
-				check_arg_failed(narg, fun->cfun.narg);
+				FEwrong_num_arguments(fun);
 			out = APPLY_fixed(narg, fun->cfun.entry, cl_stack_top - narg);
 		} else {
 			out = APPLY(narg, fun->cfun.entry, cl_stack + sp);

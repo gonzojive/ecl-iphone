@@ -355,7 +355,7 @@
 	     (error "Too many arguments to function ~S." fname))
 	 (list 'CALL-FIX fun (coerce-locs args nil) fname))
 	((stringp fun)
-	 (wt "if(" narg-loc "!=" maxarg ") check_arg_failed(" narg-loc "," maxarg ");")
+	 (wt "if(" narg-loc "!=" maxarg ") FEwrong_num_arguments_anonym();")
 	 (list 'CALL-FIX "APPLY_fixed" (list fun `(STACK-POINTER ,narg-loc)) fname narg-loc))
 	(t
 	 (baboon))))

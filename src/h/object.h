@@ -23,7 +23,7 @@ extern "C" {
 */
 
 /*
-  INV: CHAR_CODE_LIMIT is a power of two
+  INV: CHAR_CODE_LIMIT is a power of two and <= MOST_POSITIVE_FIXNUM/2
   INV: PHTABSIZE is a power of two
   INV: ARANKLIM is of type "index"
   INV: fixnum, cl_index are large enough to hold a pointer

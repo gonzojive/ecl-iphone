@@ -457,7 +457,7 @@ get_elttype(cl_object x)
 		return(aet_object);
 }
 
-void *
+static void *
 array_address(cl_object x, cl_index inc)
 {
 	switch(array_elttype(x)) {

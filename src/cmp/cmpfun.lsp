@@ -234,7 +234,7 @@
   (unwind-exit
    (list 'INLINE nil
 	 (case fun
-	   (EQ "memq(#0,#1)")
+	   (EQ "si_memq(#0,#1)")
 	   (EQL "memql(#0,#1)")
 	   (EQUAL "member(#0,#1)")) args))
   (close-inline-blocks))

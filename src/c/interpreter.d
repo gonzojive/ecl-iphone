@@ -251,7 +251,7 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 	/* 1) REQUIRED ARGUMENTS:  N var1 ... varN */
 	n = fix(next_code(data));
 	if (narg < n)
-	  check_arg_failed(narg, n);
+	  FEwrong_num_arguments(lambda_list->bytecodes.data[0]);
 	for (; n; n--, narg--)
 	  lambda_bind_var(next_code(data), cl_stack[sp++], specials);
 
@@ -421,7 +421,7 @@ interpret_funcall(int narg, cl_object fun) {
 		ihs_push(&ihs, fun->cfun.name);
 		if (fun->cfun.narg >= 0) {
 			if (narg != fun->cfun.narg)
-				check_arg_failed(narg, fun->cfun.narg);
+				FEwrong_num_arguments(fun);
 			x = APPLY_fixed(narg, fun->cfun.entry, args);
 		} else {
 			x = APPLY(narg, fun->cfun.entry, args);

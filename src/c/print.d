@@ -1157,7 +1157,7 @@ _write_object(cl_object x, int level)
 	case t_pathname:
 		if (PRINTescape)
 			write_str("#P");
-		_write_object(namestring(x), level);
+		_write_object(cl_namestring(x), level);
 		break;
 
 	case t_bytecodes: {

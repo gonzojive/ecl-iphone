@@ -106,7 +106,6 @@ extern cl_object aref1(cl_object v, cl_index index);
 extern cl_object aset(cl_object x, cl_index index, cl_object value);
 extern cl_object aset1(cl_object v, cl_index index, cl_object val);
 extern void array_allocself(cl_object x);
-extern void *array_address(cl_object x, cl_index inc);
 extern void adjust_displaced(cl_object x, ptrdiff_t diff);
 extern cl_elttype array_elttype(cl_object x);
 extern cl_elttype get_elttype(cl_object x);
@@ -219,7 +218,6 @@ extern bool char_equal(cl_object x, cl_object y);
 extern int char_compare(cl_object x, cl_object y);
 extern short digit_weight(int w, int r);
 extern void init_character(void);
-extern void init_character_function(void);
 
 /* clos.c */
 
@@ -281,7 +279,7 @@ extern void cl_stack_pop_values(int n);
 
 extern cl_object lex_env;
 extern cl_object lambda_apply(int narg, cl_object fun);
-extern cl_object *interpret(cl_object *memory);
+extern cl_object *interpret(cl_object *memory) __attribute__((regparm(1)));
 extern void init_interpreter(void);
 
 /* conditional.c */
@@ -309,8 +307,8 @@ extern void FEcontrol_error(const char *s, int narg, ...) __attribute__((noretur
 extern void FEerror(char *s, int narg, ...) __attribute__((noreturn));
 extern void FEcannot_open(cl_object fn) __attribute__((noreturn,regparm(2)));
 extern void FEwrong_type_argument(cl_object type, cl_object value) __attribute__((noreturn,regparm(2)));
-extern void FEtoo_few_arguments(int narg) __attribute__((noreturn,regparm(2)));
-extern void FEtoo_many_arguments(int narg) __attribute__((noreturn,regparm(2)));
+extern void FEwrong_num_argumens(cl_object fun) __attribute__((noreturn,regparm(2)));
+extern void FEwrong_num_argumens_anonym(void) __attribute__((noreturn));
 extern void FEunbound_variable(cl_object sym) __attribute__((noreturn,regparm(2)));
 extern void FEinvalid_macro_call(cl_object obj) __attribute__((noreturn,regparm(2)));
 extern void FEinvalid_variable(char *s, cl_object obj) __attribute__((noreturn,regparm(2)));
@@ -318,10 +316,8 @@ extern void FEassignment_to_constant(cl_object v) __attribute__((noreturn,regpar
 extern void FEundefined_function(cl_object fname) __attribute__((noreturn,regparm(2)));
 extern void FEinvalid_function(cl_object obj) __attribute__((noreturn,regparm(2)));
 extern cl_object CEerror(char *err_str, int narg, ...);
-extern void check_arg_failed(int narg, int req) __attribute__((noreturn,regparm(2)));
 extern void illegal_index(cl_object x, cl_object i);
 extern void FEtype_error_symbol(cl_object obj);
-extern void not_a_variable(cl_object obj);
 extern void init_error(void);
 
 extern void FEend_of_file(cl_object strm);
@@ -977,8 +973,6 @@ extern cl_object coerce_to_file_pathname(cl_object pathname);
 extern cl_object coerce_to_filename(cl_object pathname);
 extern cl_object default_device(cl_object host);
 extern cl_object merge_pathnames(cl_object path, cl_object defaults, cl_object default_version);
-extern cl_object namestring(cl_object x);
-extern cl_object coerce_to_namestring(cl_object x);
 extern bool pathname_match_p(cl_object path, cl_object mask);
 extern bool logical_hostname_p(cl_object host);
 extern cl_object translate_pathname(cl_object path, cl_object from, cl_object to);
@@ -1214,6 +1208,7 @@ extern cl_object make_simple_string(char *s);
 #define make_constant_string(s) (make_simple_string((char *)s))
 extern cl_object make_string_copy(const char *s);
 extern cl_object copy_simple_string(cl_object x);
+extern cl_object coerce_to_simple_string(cl_object x);
 extern bool string_eq(cl_object x, cl_object y);
 extern bool string_equal(cl_object x, cl_object y);
 extern bool member_char(int c, cl_object char_bag);

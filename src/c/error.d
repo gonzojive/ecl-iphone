@@ -162,19 +162,16 @@ FEundefined_function(cl_object fname)
  *************/
 
 void
-FEtoo_few_arguments(int narg)
+FEwrong_num_arguments(cl_object fun)
 {
-	cl_object fname = ihs_top_function_name();
-	FEprogram_error("Function ~S requires more than ~R argument~:p.",
-			2, fname, MAKE_FIXNUM(narg));
+	FEprogram_error("Wrong number of arguments passed to function ~S.",
+			1, fun);
 }
 
 void
-FEtoo_many_arguments(int narg)
+FEwrong_num_arguments_anonym(void)
 {
-	cl_object fname = ihs_top_function_name();
-	FEprogram_error("Function ~S requires less than ~R argument~:p.",
-			2, fname, MAKE_FIXNUM(narg));
+	FEprogram_error("Wrong number of arguments passed to an anonymous function", 0);
 }
 
 void
@@ -209,18 +206,6 @@ static
 @)
 
 void
-check_arg_failed(int narg, int req)
-{
-	cl_object fname = ihs_top_function_name();
-	FEprogram_error((narg < req)
-			? "Function ~S requires ~R argument~:p,~%\
-but only ~R ~:*~[were~;was~:;were~] supplied."
-			: "Function ~S requires only ~R argument~:p,~%\
-but ~R ~:*~[were~;was~:;were~] supplied.",
-			3, fname, MAKE_FIXNUM(req), MAKE_FIXNUM(narg));
-}
-
-void
 illegal_index(cl_object x, cl_object i)
 {
 	FEerror("~S is an illegal index to ~S.", 2, i, x);
@@ -230,12 +215,6 @@ void
 FEtype_error_symbol(cl_object obj)
 {
 	FEwrong_type_argument(@'symbol', obj);
-}
-
-void
-not_a_variable(cl_object obj)
-{
-	FEinvalid_variable("~S is not a variable.", obj);
 }
 
 /************************************

@@ -44,7 +44,7 @@ siLprofile(int narg, object scale, object start_address)
   int size;
   object ar = sSAprofile_arrayA->symbol.dbind;
   if ((narg > 2) || (narg == 0))
-    check_arg_failed(narg, 2);
+    FEwrong_num_arguments(@'si::profile');
   if (narg == 1)
     profile_start = (caddr_t)function_entry_table[0];
   else

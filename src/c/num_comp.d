@@ -253,7 +253,7 @@ number_compare(cl_object x, cl_object y)
 	int i, j;
 @
 	if (narg == 0)
-		FEtoo_few_arguments(narg);
+		FEwrong_num_arguments_anonym();
 	numi = cl_va_arg(nums);
 	for (i = 2; i<=narg; i++) {
 		cl_va_list numb;
@@ -272,7 +272,7 @@ monotonic(int s, int t, int narg, cl_va_list nums)
 	cl_object c, d;
 
 	if (narg == 0)
-		FEtoo_few_arguments(narg);
+		FEwrong_num_arguments_anonym();
 	/* INV: type check occurs in number_compare() */
 	for (c = cl_va_arg(nums); --narg; c = d) {
 		d = cl_va_arg(nums);

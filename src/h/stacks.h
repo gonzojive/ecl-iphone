@@ -180,9 +180,8 @@ extern size_t cssize;
 		cs_overflow()
 #endif
 
-#define	check_arg(n)  \
-			if (narg != (n))  \
-				check_arg_failed(narg, n)
+#define	check_arg(n) \
+	do { if (narg != (n)) FEwrong_num_arguments_anonym();} while(0)
 
 #define cs_reserve(x)	if(&narg-(x) < cs_limit)  \
 				cs_overflow();

@@ -15,10 +15,6 @@
 
 #define check_symbol(x) if (!SYMBOLP(x)) FEtype_error_symbol(x);
 
-#define	check_var(x) \
-	if (!SYMBOLP(x) || (enum stype)(x)->symbol.stype == stp_constant) \
-		not_a_variable(x)
-
 #define CONS(a,d)	make_cons((a),(d))
 #define ACONS(a,b,c)	make_cons(make_cons((a),(b)),(c))
 #define CAR(x)		(x)->cons.car

@@ -393,10 +393,10 @@
        (cond ((or (third lambda-list) ; rest=NIL if not used
 		  optionals)
 	      (when requireds
-		(wt-nl "if(narg<" nreq ") FEtoo_few_arguments(narg);"))
+		(wt-nl "if(narg<" nreq ") FEwrong_num_arguments_anonym();"))
 	      (unless (third lambda-list)
 		(wt-nl "if(narg>" (+ nreq (length optionals))
-		       ") FEtoo_many_arguments(narg);")))
+		       ") FEwrong_num_arguments_anonym();")))
 	     (t (wt-nl "check_arg(" nreq ");"))))
 
      ;; Bind required parameters.
@@ -519,7 +519,7 @@
 
     ;; check arguments
     (when (and (or *safe-compile* *compiler-check-args*) requireds)
-      (wt-nl "if(narg<" nreq ") FEtoo_few_arguments(narg);"))
+      (wt-nl "if(narg<" nreq ") FEwrong_num_arguments_anonym();"))
 
     ;; Bind required parameters.
     (do ((reqs requireds (cdr reqs))

@@ -51,7 +51,7 @@ log_op(int narg, bit_operator op, cl_va_list ARGS)
 	cl_object x, numi;
 	int i = 1, j;
 
-	if (narg < 2) FEtoo_few_arguments(narg);
+	if (narg < 2) FEwrong_num_arguments_anonym();
 	x = cl_va_arg(ARGS);
 	t = type_of(x);
 	if (t == t_bignum) {

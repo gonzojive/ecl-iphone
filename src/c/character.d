@@ -175,7 +175,7 @@ Lchar_cmp(int narg, int s, int t, cl_va_list args)
 	cl_object c, d;
 
 	if (narg == 0)
-		FEtoo_few_arguments(narg);
+		FEwrong_num_arguments_anonym();
 	c = cl_va_arg(args);
 	for (; --narg; c = d) {
 		d = cl_va_arg(args);
@@ -188,13 +188,10 @@ Lchar_cmp(int narg, int s, int t, cl_va_list args)
 int
 char_cmp(cl_object x, cl_object y)
 {
-	cl_fixnum cx = char_code(x);
-	cl_fixnum cy = char_code(y);
-	if (cx < cy)
-		return(-1);
-	if (cx > cy)
-		return(1);
-	return(0);
+	/* char_code(x) returns an integer which is well in the range
+	 * of positive fixnums. Therefore, this subtraction never
+	 * oveflows. */
+	return char_code(x) - char_code(y);
 }
 
 @(defun char< (&rest args)
@@ -267,7 +264,7 @@ Lchar_compare(int narg, int s, int t, cl_va_list args)
 
 	/* INV: char_compare() checks the types of its arguments */
 	if (narg == 0)
-		FEtoo_few_arguments(narg);
+		FEwrong_num_arguments_anonym();
 	c = cl_va_arg(args);
 	for (; --narg; c = d) {
 		d = cl_va_arg(args);
