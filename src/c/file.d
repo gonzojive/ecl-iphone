@@ -25,7 +25,9 @@
 #include "machines.h"
 #include "internal.h"
 
-#if defined(BSD) && !defined(MSDOS)
+#ifdef HAVE_SELECT
+#include <sys/select.h>
+#elif defined(BSD) && !defined(MSDOS)
 #include <sys/ioctl.h>
 #endif
 
