@@ -610,10 +610,10 @@
 (REALPART (T) T)
 (IMAGPART (T) T)
 (= (T *) T NIL T
-	:inline-always ((t t) boolean nil nil "number_compare(#0,#1)==0")
+	:inline-always ((t t) boolean nil nil "number_equalp(#0,#1)==0")
 	:inline-always ((fixnum-float fixnum-float) boolean nil nil "(#0)==(#1)"))
 (/= (T *) T nil t
-	:inline-always ((t t) boolean nil nil "number_compare(#0,#1)!=0")
+	:inline-always ((t t) boolean nil nil "number_equalp(#0,#1)!=0")
 	:inline-always ((fixnum-float fixnum-float) boolean nil nil "(#0)!=(#1)"))
 (< (T *) T nil t
 	:inline-always ((t t) boolean nil nil "number_compare(#0,#1)<0")
