@@ -10,7 +10,9 @@
 
 (in-package "SYSTEM")
 
-(eval-when (compile) (proclaim '(optimize (safety 2) (space 3))))
+(c-declaim (si::c-export-fname logical-pathname-translations
+			       decode-universal-time encode-universal-time
+			       get-decoded-time))
 
 (defun   logical-pathname-translations (p) (si:pathname-translations p))
 (defsetf logical-pathname-translations si:pathname-translations)
@@ -108,3 +110,6 @@
 	;; 12:01 UT (after the switch). We opt for the former.
 	(setq dst -1)))
     (+ sec (* 60 (+ min (* 60 (+ tz dst hours)))))))
+
+(defun get-decoded-time ()
+  (decode-universal-time (get-universal-time)))

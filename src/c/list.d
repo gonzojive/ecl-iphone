@@ -873,7 +873,7 @@ member(cl_object x, cl_object l)
 
 PREDICATE2(@member)
 
-@(defun member1 (item list &key test test_not key)
+@(defun si::member1 (item list &key test test_not key)
 	saveTEST;
 @
 	protectTEST;
@@ -905,7 +905,7 @@ cl_return
 
 	if (narg < 2)
 		FEtoo_few_arguments(&narg);
-	output = @member1(narg, item, list, k1, v1, k2, v2, k3, v3);
+	output = @si::member1(narg, item, list, k1, v1, k2, v2, k3, v3);
 	if (Null(output))
 		output = CONS(item, list);
 	else

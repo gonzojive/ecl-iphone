@@ -11,9 +11,6 @@
 
 (in-package "SYSTEM")
 
-(eval-when (compile) (proclaim '(optimize (safety 2) (space 3))))
-
-
 (defun make-access-function (name conc-name type named slot-descr)
   (declare (ignore named))
   (let* ((slot-name (nth 0 slot-descr))

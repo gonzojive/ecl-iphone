@@ -13,7 +13,16 @@
 
 (in-package "SYSTEM")
 
-(eval-when (compile) (proclaim '(optimize (safety 2) (space 3))))
+(c-declaim (si::c-export-fname reduce fill replace
+			       ;remove remove-if remove-if-not
+			       ;delete delete-if delete-if-not
+			       ;count count-if count-if-not
+			       ;substitute substitute-if substitute-if-not
+			       ;nsubstitute nsubstitute-if nsubstitute-if-not
+			       ;find find-if find-if-not
+			       ;position position-if position-if-not
+			       remove-duplicates delete-duplicates
+			       mismatch search sort stable-sort merge))
 
 (declaim (function seqtype (t) t))
 (defun seqtype (sequence)
@@ -649,20 +658,6 @@
 	  (t
 	   (setf (elt newseq j) (elt sequence2 i2))
 	   (incf i2)))))
-
-(defun map-into (result-sequence function &rest sequences)
-  (let ((nel (apply #'min (if (eq 'VECTOR (type-of result-sequence))
-			      (array-dimension result-sequence 0)
-			      (length result-sequence))
-		    (mapcar #'length sequences))))
-    ;; Set the fill pointer to the number of iterations
-    (when (and (eq 'VECTOR (type-of result-sequence))
-	       (array-has-fill-pointer-p result-sequence))
-      (setf (fill-pointer result-sequence) nel))
-    ;; Perform mapping
-    (dotimes (k nel result-sequence)
-      (setf (elt result-sequence k)
-	    (apply function (mapcar #'(lambda (v) (elt v k)) sequences))))))
 
 (defun complement (f)
   #'(lambda (&rest x) (not (apply f x))))

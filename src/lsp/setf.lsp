@@ -12,7 +12,6 @@
 
 (in-package "SYSTEM")
 
-(eval-when (compile) (proclaim '(optimize (safety 2) (space 3))))
 (eval-when (eval compile) (defun sys::clear-compiler-properties (symbol)))
 (eval-when (eval compile) (setq sys:*inhibit-macro-special* nil))
 

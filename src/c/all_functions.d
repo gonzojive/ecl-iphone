@@ -348,7 +348,7 @@ const struct function_info all_functions[] = {
 	{"MEMBER", clLmember, cl},
 	{"MEMBER-IF", clLmember_if, cl},
 	{"MEMBER-IF-NOT", clLmember_if_not, cl},
-	{"MEMBER1", clLmember1, si},
+	{"MEMBER1", siLmember1, si},
 	{"TAILP", clLtailp, cl},
 	{"ADJOIN", clLadjoin, cl},
 

@@ -746,9 +746,13 @@ link_symbols(unsigned int length, char *string_table,
      case STB_GLOBAL:
        if (sym->st_shndx == SHN_UNDEF || sym->st_shndx == SHN_COMMON)
 	 set_symbol_address(sym, string_table + sym->st_name);
-       else if (STT_FUNC == ELF32_ST_TYPE(sym->st_info))
-          sym->st_value += (int)(start_address + section_start[sym->st_shndx]);
-       else
+       else if (STT_FUNC == ELF32_ST_TYPE(sym->st_info)) {
+	 const char *name = string_table + sym->st_name;
+	 sym->st_value += (int)(start_address + section_start[sym->st_shndx]);
+	 /* JJGR -- Add symbol if not initialization code */
+	 if (strncmp(name, "init_"))
+	   add_symbol(strdup(name), sym->st_value);
+       } else
 	 printf("[unknown global sym %s]", string_table + sym->st_name);
        break;
      default:
@@ -813,6 +817,11 @@ link_symbols(unsigned int length, char *string_table,
 # else
 	 SYM_VALUE(*sym) = (int)start_address;
 # endif ECOFF
+	 /* JJGR -- Add symbol if not initialization code */
+	 if (strncmp(SYM_NAME(sym), "init_")) {
+	   printf("\nADD_SYMBOL %s", SYM_NAME(sym));
+	   add_symbol(strdup(SYM_NAME(sym)), (int)start_address);
+	 }
 	 /*  we should add the symbol name, so it would be accessible by
 	     future loads (init_code should be an exception though. Beppe)
 	 printf("\nEXT_UNDEF %s", SYM_NAME(sym)); fflush(stdout);

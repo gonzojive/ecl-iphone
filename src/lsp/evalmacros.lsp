@@ -10,7 +10,6 @@
 
 (si::select-package "SYSTEM")
 
-(eval-when (compile) (proclaim '(optimize (safety 2) (space 3))))
 (eval-when (eval compile) (defun sys:clear-compiler-properties (symbol)))
 (eval-when (eval compile) (setq sys:*inhibit-macro-special* nil))
 
@@ -250,6 +249,11 @@
   (if (cdr decl-specs)
     `(eval-when (compile load) (mapcar #'proclaim ',decl-specs))
     `(eval-when (compile load) (proclaim ',(car decl-specs)))))
+
+(defmacro c-declaim (&rest decl-specs)
+  (if (cdr decl-specs)
+    `(eval-when (compile) (mapcar #'proclaim ',decl-specs))
+    `(eval-when (compile) (proclaim ',(car decl-specs)))))
 
 (defmacro in-package (name)
   `(si::select-package ,(string name)))

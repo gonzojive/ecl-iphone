@@ -12,10 +12,15 @@
 
 (in-package "SYSTEM")
 
-(eval-when (compile) (proclaim '(optimize (safety 2) (space 3))))
+(c-declaim (si::c-export-fname isqrt abs phase signum cis asin acos
+			       asinh acosh atanh rational
+			       ffloor fceiling ftruncate fround
+			       lognand lognor logandc1 logandc2 logorc1 logorc2
+			       lognot logtest
+			       byte byte-size byte-position
+			       ldb ldb-test mask-field dpb deposit-field))
 
 (defconstant imag-one #C(0.0 1.0))
-
 
 (defun isqrt (i)
        (unless (and (integerp i) (>= i 0))
@@ -162,7 +167,7 @@
 (defun logorc1 (x y) (boole boole-orc1 x y))
 (defun logorc2 (x y) (boole boole-orc2 x y))
 
-(defun lognot (x) (logxor -1 x))
+;(defun lognot (x) (logxor -1 x))
 (defun logtest (x y) (not (zerop (logand x y))))
 
 

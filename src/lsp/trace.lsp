@@ -10,8 +10,6 @@
 
 (in-package "SYSTEM")
 
-(eval-when (compile) (proclaim '(optimize (safety 2) (space 3))))
-
 (defvar *trace-level* 0)
 (defvar *trace-list* nil)
 (defconstant +tracing-block+ (gensym))

@@ -21,8 +21,6 @@
 (export '(*break-readtable* *break-on-warnings* *break-enable*
 	  *lisp-init-file-list* *tpl-evalhook*))
 
-(eval-when (compile) (proclaim '(optimize (safety 2) (space 3))))
-
 (defvar + nil)
 (defvar ++ nil)
 (defvar +++ nil)

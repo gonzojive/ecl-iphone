@@ -231,12 +231,14 @@
 (defun call-global (fname locs loc return-type narg &aux fd)
   (flet ((emit-linking-call (fname locs narg &aux i)
 	   (cond ((null *linking-calls*)
+		  (cmpwarn "Emitting linking call for ~a" fname)
 		  (push (list fname 0 (add-symbol fname))
 			*linking-calls*)
 		  (setq i 0))
 		 ((setq i (assoc fname *linking-calls*))
 		  (setq i (second i)))
 		 (t (setq i (1+ (cadar *linking-calls*)))
+		    (cmpwarn "Emitting linking call for ~a" fname)
 		    (push (list fname i (add-symbol fname))
 			  *linking-calls*)))
 	   (unwind-exit
@@ -249,15 +251,23 @@
 		(setq loc (inline-function fname locs return-type)))
 	   (unwind-exit (fix-loc loc)))
 
-	  ;; Call to a function whose C language function name is known.
-	  ((setq fd (get fname 'Lfun))
-	   (wt-h "cl_object " fd "();")
-	   (unwind-exit (call-loc fname fd locs narg)))
-
 	  ;; Call to a function defined in the same file.
 	  ((setq fd (assoc fname *global-funs*))
-	   (unwind-exit (call-loc fname (format nil "L~d" (cdr fd))
-				  locs narg)))
+	   (let ((cfun (cdr fd)))
+	     (unwind-exit (call-loc fname
+				    (if (numberp cfun)
+				      (format nil "L~d" (cdr fd))
+				      cfun)
+				    locs narg))))
+
+	  ;; Call to a function whose C language function name is known,
+	  ;; either because it has been proclaimed so, or because it belongs
+	  ;; to the runtime.
+	  ((or (setq fd (get fname 'Lfun))
+	       (and (car (setq fd (multiple-value-list (si::mangle-name fname t))))
+		    (setq fd (cadr fd))))
+	   (wt-h "extern cl_object " fd "();")
+	   (unwind-exit (call-loc fname fd locs narg)))
 
 	  ;; Linking call
 	  (*compile-to-linking-call*	; disabled within init_code

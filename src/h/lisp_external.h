@@ -413,7 +413,7 @@ extern cl_object clLmember _ARGS((int narg, cl_object item, cl_object list, ...)
 extern cl_object siLmemq _ARGS((int narg, cl_object x, cl_object l));
 extern cl_object clLmember_if _ARGS((int narg, cl_object pred, cl_object arg, cl_object key, cl_object val));
 extern cl_object clLmember_if_not _ARGS((int narg, cl_object pred, cl_object arg, cl_object key, cl_object val));
-extern cl_object clLmember1 _ARGS((int narg, cl_object item, cl_object list, ...));
+extern cl_object siLmember1 _ARGS((int narg, cl_object item, cl_object list, ...));
 extern cl_object clLtailp _ARGS((int narg, cl_object y, cl_object x));
 extern cl_object clLadjoin _ARGS((int narg, cl_object item, cl_object list, cl_object k1, cl_object v1, cl_object k2, cl_object v2, cl_object k3, cl_object v3));
 extern cl_object clLacons _ARGS((int narg, cl_object x, cl_object y, cl_object z));

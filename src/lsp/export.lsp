@@ -198,6 +198,7 @@
 	  nsubstitute-if
 	  nsubstitute-if-not
 	  nunion
+	  open
 	  phase
 	  pop
 	  position

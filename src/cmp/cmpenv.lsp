@@ -260,6 +260,15 @@
        (if (symbolp x)
            (pushnew x *alien-declarations*)
            (warn "The declaration specifier ~s is not a symbol." x))))
+    (SI::C-EXPORT-FNAME
+     (dolist (x (cdr decl))
+       (if (symbolp x)
+	 (multiple-value-bind (found fname)
+	     (si::mangle-name x t)
+	   (if found
+	     (warn "The function ~s is already in the runtime." x)
+	     (setf (get x 'Lfun) fname)))
+	 (warn "The function name ~ is not a symbol." x))))
     ((ARRAY ATOM BASE-CHAR BIGNUM BIT BIT-VECTOR CHARACTER COMMON COMPILED-FUNCTION
       COMPLEX CONS DOUBLE-FLOAT EXTENDED-CHAR FIXNUM FLOAT HASH-TABLE INTEGER KEYWORD LIST
       LONG-FLOAT NIL NULL NUMBER PACKAGE PATHNAME RANDOM-STATE RATIO RATIONAL

@@ -36,8 +36,6 @@
 	  *scheduler-disabled-in-error*
 	  *break-level*))
 
-(eval-when (compile) (proclaim '(optimize (safety 2) (space 3))))
-
 ;;; ----------------------------------------------------------------------
 ;;; Top level
 

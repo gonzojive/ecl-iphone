@@ -12,8 +12,6 @@
 
 (in-package "SYSTEM")
 
-(eval-when (compile) (proclaim '(optimize (safety 2) (space 3))))
-
 (defmacro coerce-to-package (p)
   (if (eq p '*package*)
       p

@@ -187,6 +187,10 @@
 
 (defun t1progn (args) (dolist (form args) (t1expr form)))
 
+(defun exported-fname (name)
+  (or (get name 'Lfun)
+      (next-cfun)))
+
 (defun t1defun (args &aux (setjmps *setjmps*))
   (when (or (endp args) (endp (cdr args)))
         (too-few-args 'defun 2 (length args)))
@@ -194,10 +198,11 @@
          "The function name ~s is not a symbol." (car args))
   (when *compile-time-too* (cmp-eval (cons 'DEFUN args)))
   (setq *non-package-operation* t)
-  (let ((*vars* nil) (*funs* nil) (*blocks* nil) (*tags* nil) lambda-expr
-        (*sharp-commas* nil) (*special-binding* nil)
-        (cfun (next-cfun))
-        (doc nil) (fname (car args)))
+  (let* ((*vars* nil) (*funs* nil) (*blocks* nil) (*tags* nil) lambda-expr
+	 (*sharp-commas* nil) (*special-binding* nil)
+	 (fname (car args))
+	 (cfun (exported-fname fname))
+	 (doc nil))
     
     (setq lambda-expr (c1lambda-expr (cdr args) fname))
     (unless (eql setjmps *setjmps*)
@@ -218,10 +223,10 @@
       (flet
 	  ((make-inline-string (cfun args)
 	     (if (null args)
-		 (format nil "LI~d()" cfun)
+		 (format nil "LI~a()" cfun)
 		 (let ((o (make-array 100 :element-type 'BASE-CHAR
 				      :fill-pointer 0)))
-		   (format o "LI~d(" cfun)
+		   (format o "LI~a(" cfun)
 		   (do ((l args (cdr l))
 			(n 0 (1+ n)))
 		       ((endp (cdr l))
@@ -306,7 +311,9 @@
 		      (nkey (length (fifth (third lambda-expr)))))
   (declare (ignore sp funarg-vars))
   (when (get fname 'NO-GLOBAL-ENTRY) (return-from t2defun nil))
-  (wt-nl "MF(" vv ",L" cfun ",Cblock);")
+  (if (numberp cfun)
+    (wt-nl "MF(" vv ",L" cfun ",Cblock);")
+    (wt-nl "MF(" vv "," cfun ",Cblock);"))
   (when (< *space* 3)
     (when doc
       (wt-nl "(void)putprop(" vv "," doc ","
@@ -394,10 +401,10 @@
 	  (if (numberp cfun)
 	      (progn
 		(wt-nl1 "static cl_object L" cfun "(int narg")
-		(wt-h "static cl_object L" cfun "(int"))
+		(wt-h "static cl_object L" cfun "(int narg"))
 	      (progn
-		(wt-nl1 cfun "(int narg")
-		(wt-h cfun "(int")))
+		(wt-nl1 "cl_object " cfun "(int narg")
+		(wt-h "cl_object " cfun "(int narg")))
 	  (do ((vl requireds (cdr vl))
 	       (lcl (1+ *lcl*) (1+ lcl)))
 	      ((endp vl))

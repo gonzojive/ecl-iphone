@@ -11,7 +11,8 @@
 
 (in-package "SYSTEM")
 
-(eval-when (compile) (proclaim '(optimize (safety 2) (space 3))))
+(c-declaim (si::c-export-fname read-from-string write-to-string
+			       prin1-to-string princ-to-string))
 
 (defmacro with-open-stream ((var stream) &rest body)
   (multiple-value-bind (ds b)

@@ -11,8 +11,6 @@
 
 (si::select-package "SYSTEM")
 
-(eval-when (compile) (proclaim '(optimize (safety 2) (space 3))))
-
 #-ecls-min
 (defvar *dl*)
 #-ecls-min

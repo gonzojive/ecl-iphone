@@ -37,7 +37,7 @@
 ;;; Go into LISP.
 (in-package "LISP")
 
-(defun lisp-implementation-type () "ECoLisp")
+(defun lisp-implementation-type () "ECLS")
 
 ;;; Compiler functions.
 
@@ -60,9 +60,6 @@
   (load (merge-pathnames sys:*system-directory* "compiler"))
   (apply 'disassemble args))
 )
-
-(defun get-decoded-time ()
-  (decode-universal-time (get-universal-time)))
 
 ;;; Editor.
 

@@ -17,7 +17,7 @@
 
 (in-package "SYSTEM")
 
-(eval-when (compile) (proclaim '(optimize (safety 2) (space 3))))
+(c-declaim (si::c-export-fname typep subtypep coerce type-for-array))
 
 ;;; DEFTYPE macro.
 (defmacro deftype (name lambda-list &rest body)
@@ -103,6 +103,16 @@
 	     ))
   (setf (get (car l) 'TYPE-PREDICATE) (cdr l)))
 
+
+(defun type-for-array (element-type)
+  (case element-type
+        ((t nil) t)
+        ((base-char standard-char extended-char character) 'base-char)
+	(t (dolist (v '(BIT BASE-CHAR
+			(SIGNED-BYTE 32) (UNSIGNED-BYTE 32)
+			SHORT-FLOAT LONG-FLOAT) T)
+	     (when (subtypep element-type v)
+	       (return (if (symbolp v) v 'FIXNUM)))))))
 
 ;;; TYPEP predicate.
 (defun typep (object type &aux tp i c)

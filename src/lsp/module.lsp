@@ -12,11 +12,7 @@
 
 (in-package "SYSTEM")
 
-(eval-when (compile) (proclaim '(optimize (safety 2) (space 3))))
-
-
 (defvar *modules* nil)
-
 
 (defun provide (module-name)
   (setq *modules*

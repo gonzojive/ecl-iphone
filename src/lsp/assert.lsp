@@ -10,8 +10,7 @@
 
 (in-package "SYSTEM")
 
-(eval-when (compile) (proclaim '(optimize (safety 2) (space 3))))
-
+(c-declaim (si::c-export-fname ecase-error ccase-error typecase-error-string))
 
 (defmacro check-type (place typespec &optional (string nil s))
   `(do ((*print-level* 4)

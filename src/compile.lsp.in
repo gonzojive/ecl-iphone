@@ -8,14 +8,18 @@
 ;;;
 (in-package "COMMON-LISP-USER")
 (load "lsp/defsys.lsp")
+(proclaim '(optimize (safety 2) (space 3)))
 (sbt::operate-on-system lsp :library)
-;(sbt::operate-on-system lsp :load)
+(sbt::operate-on-system lsp :load)
+(setq si::*system-directory* (namestring (sys::chdir "./")))
+(setq compiler::*cc-flags* (concatenate 'string compiler::*cc-flags* " -I@srcdir@/h -I@srcdir@/gmp -I@builddir@/h"))
 
 #ifndef RUNTIME
 ;;;
 ;;; * Compile, load and link Common-Lisp to C compiler
 ;;;
 (load "cmp/defsys.lsp")
+(proclaim '(optimize (safety 2) (space 3)))
 (sbt::operate-on-system cmp :library)
 ;(sbt::operate-on-system cmp :load)
 #endif RUNTIME
@@ -25,6 +29,7 @@
 ;;; * Compile, load and link PCL based Common-Lisp Object System
 ;;;
 (load "clos/defsys.lsp")
+(proclaim '(optimize (safety 2) (space 3)))
 (sbt::operate-on-system clos :library)
 ;(sbt::operate-on-system clos :load)
 #endif CLOS

@@ -12,7 +12,8 @@
 
 (in-package "SYSTEM")
 
-(eval-when (compile) (proclaim '(optimize (safety 2) (space 3))))
+(c-declaim (si::c-export-fname make-sequence concatenate map some every
+			       notany notevery map-into))
 
 (defun make-sequence (type size	&key (initial-element nil iesp)
                                 &aux element-type sequence)

@@ -10,7 +10,10 @@
 
 (in-package "SYSTEM")
 
-(eval-when (compile) (proclaim '(optimize (safety 0) (space 3))))
+(c-declaim (optimize (safety 0) (space 3))
+	   (si::c-export-fname union nunion intersection nintersection
+			       set-difference nset-difference set-exclusive-or
+			       nset-exclusive-or subsetp))
 
 (defun union (list1 list2 &rest rest)
   (do ((x list1 (cdr x))
