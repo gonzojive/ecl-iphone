@@ -880,6 +880,47 @@ ECLS 0.5
 
   - New specialized arrays for (UNSIGNED-BYTE 8) and (SIGNED-BYTE 8).
 
+ECL 0.6
+=======
+
+* Errors fixed:
+
+  - Code for handling :IMPORT-FROM in DEFPACKAGE was bogus
+
+* System design:
+
+  - Function SI:NANI has been removed. Its purpose was to provide an
+    object which could not be printed or readed so that it could be
+    used to mark unbound slots in classes. Now the function SI:UNBOUND
+    performs the same task.
+
+  - Mathematical functions which deal with matisas, exponents, etc,
+    now make use of the ISO-C99 facilities which are almost
+    everywhere.
+
+  - Global function pointer output_ch_fun and read_ch_fun
+    disappear. Now the differences between ordinary streams and CLOS
+    streams are handled in file.d. Optimizations for synonym streams
+    also disappear from read.d and print.d.
+
+  - All information used by FORMAT is kept in stack-allocated
+    structures. Now FORMAT is reentrant and can be safely called from
+    within PRINT-OBJECT.
+
+* Visible changes and ANSI compatibility:
+
+  - New configuration flag --with-clos-streams, enable the user to
+    define CLOS objects which behave as lisp streams. Such object must
+    have the following methods defined: STREAM-INPUT-P,
+    STREAM-OUTPUT-P, STREAM-READ-CHAR, STREAM-UNREAD-CHAR,
+    STREAM-LISTEN, STREAM-CLEAR-INPUT, STREAM-WRITE-CHAR,
+    STREAM-CLEAR-OUTPUT, STREAM-FORCE-OUTPUT, STREAM-CLOSE.
+
+  - LOAD accepts now a stream as input parameter. However, in this
+    case it only tolerates lisp source files, not compiled files or
+    libraries. For example, (LOAD (OPEN "foo.lsp")) is equivalent
+    to (LOAD "foo.lsp").
+
 TODO:
 =====
 
