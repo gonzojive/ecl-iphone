@@ -306,23 +306,18 @@ valloc(size_t size)
  **********************************************************/
 
 void
-register_root(cl_object *p)
+ecl_register_root(cl_object *p)
 {
 	GC_add_roots((char*)p, (char*)(p+1));
 }
 
-@(defun gc (area)
-@
-	gc((cl_type)0);
-	@(return)
-@)
-
-void
-gc(cl_type new_name)
+cl_object
+cl_gc(cl_object area)
 {
 	start_critical_section();
 	GC_gcollect();
 	end_critical_section();
+	@(return)
 }
 
 #endif /* GBC_BOEHM */

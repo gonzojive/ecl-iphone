@@ -474,12 +474,12 @@ void
 init_num_sfun(void)
 {
 	imag_unit = make_complex(make_shortfloat(0.0), make_shortfloat(1.0));
-	register_root(&imag_unit);
+	ecl_register_static_root(&imag_unit);
 	minus_imag_unit = make_complex(make_shortfloat(0.0),
 				       make_shortfloat(-1.0));
-	register_root(&minus_imag_unit);
+	ecl_register_static_root(&minus_imag_unit);
 	imag_two = make_complex(make_shortfloat(0.0), make_shortfloat(2.0));
-	register_root(&imag_two);
+	ecl_register_static_root(&imag_two);
 
 	SYM_VAL(@'pi') = make_longfloat(M_PI);
 }

@@ -61,23 +61,24 @@ static void _mark_contblock (void *p, cl_index s);
 extern void sigint (void);
 
 void
-register_root(cl_object *p)
+ecl_register_root(cl_object *p)
 {
 	if (gc_roots >= GC_ROOT_MAX)
 		error("too many roots");
 	gc_root[gc_roots++] = p;
 }
 
-@(defun gc (area)
-@
+cl_object
+cl_gc(cl_object area)
+{
 	if (!GC_enabled())
 		error("GC is not enabled");
 	if (Null(area))
-		gc(t_cons);
+		ecl_gc(t_cons);
 	else
-		gc(t_contiguous);
+		ecl_gc(t_contiguous);
 	@(return)
-@)
+}
 
 /*----------------------------------------------------------------------
  * Mark phase
@@ -670,7 +671,7 @@ static bool stack_switched = FALSE;
 static cl_type garbage_parameter;
 
 void
-gc(cl_type new_name)
+ecl_gc(cl_type new_name)
 {
 	int tm;
 	int gc_start = runtime();
@@ -681,7 +682,7 @@ gc(cl_type new_name)
 #else
 
 void
-gc(cl_type t)
+ecl_gc(cl_type t)
 {
   int i, j;
   int tm;

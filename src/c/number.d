@@ -226,8 +226,8 @@ init_number(void)
 	sf(shortfloat_zero) = (float)0.0;
 	longfloat_zero = cl_alloc_object(t_longfloat);
 	lf(longfloat_zero) = (double)0.0;
-	register_root(&shortfloat_zero);
-	register_root(&longfloat_zero);
+	ecl_register_static_root(&shortfloat_zero);
+	ecl_register_static_root(&longfloat_zero);
 
   	SYM_VAL(@'most-positive-fixnum') = MAKE_FIXNUM(MOST_POSITIVE_FIXNUM);
 	SYM_VAL(@'most-negative-fixnum') = MAKE_FIXNUM(MOST_NEGATIVE_FIXNUM);

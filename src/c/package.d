@@ -881,39 +881,39 @@ cl_delete_package(cl_object p)
 void
 init_package(void)
 {
-	register_root(&package_list);
-	register_root(&uninterned_list);
+	ecl_register_static_root(&package_list);
+	ecl_register_static_root(&uninterned_list);
 
 	lisp_package    = make_package(make_simple_string("COMMON-LISP"),
 				       CONS(make_simple_string("CL"),
 					    CONS(make_simple_string("LISP"),Cnil)),
 				       Cnil);
-	register_root(&lisp_package);
+	ecl_register_static_root(&lisp_package);
 	user_package    = make_package(make_simple_string("COMMON-LISP-USER"),
 				       CONS(make_simple_string("CL-USER"),
 					    CONS(make_simple_string("USER"),Cnil)),
 				       CONS(lisp_package, Cnil));
-	register_root(&user_package);
+	ecl_register_static_root(&user_package);
 	keyword_package = make_package(make_simple_string("KEYWORD"),
 				       Cnil, Cnil);
-	register_root(&keyword_package);
+	ecl_register_static_root(&keyword_package);
 	system_package  = make_package(make_simple_string("SI"),
 				       CONS(make_simple_string("SYSTEM"),
 					    CONS(make_simple_string("SYS"),
 						 Cnil)),
 				       CONS(lisp_package, Cnil));
-	register_root(&system_package);
+	ecl_register_static_root(&system_package);
 #ifdef CLOS
 	clos_package    = make_package(make_simple_string("CLOS"),
 				       Cnil,
 				       CONS(lisp_package, Cnil));
-	register_root(&clos_package);
+	ecl_register_static_root(&clos_package);
 #endif
 #ifdef TK
 	tk_package      = make_package(make_simple_string("TK"),
 				       Cnil,
 				       CONS(lisp_package, Cnil));
-	register_root(&tk_package);
+	ecl_register_static_root(&tk_package);
 #endif
 
 	Cnil->symbol.hpack = lisp_package;

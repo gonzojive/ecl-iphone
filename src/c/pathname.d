@@ -1253,7 +1253,7 @@ cl_translate_logical_pathname(cl_object source)
 void
 init_pathname(void)
 {
-	register_root(&pathname_translations);
+	ecl_register_static_root(&pathname_translations);
 	SYM_VAL(@'*default-pathname-defaults*') =
 	  make_pathname(Cnil, Cnil, Cnil, Cnil, Cnil, Cnil);
 	@si::pathname-translations(2,make_simple_string("SYS"),

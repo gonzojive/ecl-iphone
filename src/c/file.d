@@ -1588,7 +1588,7 @@ init_file(void)
 
 	terminal_io = standard
 	= make_two_way_stream(standard_input, standard_output);
-	register_root(&terminal_io);
+	ecl_register_static_root(&terminal_io);
 
 	SYM_VAL(@'*terminal-io*') = standard;
 

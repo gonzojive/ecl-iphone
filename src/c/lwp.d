@@ -29,7 +29,7 @@ pd main_pd;
 extern scheduler_interruption; /* in unixint.c */
 extern int writec_PRINTstream();
 extern cl_object readc();
-extern gc();
+extern ecl_gc();
 extern cl_type garbage_parameter;
 
 /******************************* ------- ******************************/
@@ -326,7 +326,7 @@ scheduler(int sig, int code, struct sigcontext *scp)
     return;			/* coming back from longjmp in thread_next */
 
   if (val == 2)			/* coming back from longjmp in GC */
-    gc(garbage_parameter);	/* GC will return to the previous thread */
+    ecl_gc(garbage_parameter);	/* GC will return to the previous thread */
 
   ROTQUEUE();
   thread_next();
@@ -840,5 +840,5 @@ init_lwp()
   main_pd.pd_status = RUNNING;
   main_pd.pd_lpd = &main_lpd;
   main_lpd.lwp_thread = main_thread;
-  register_root(&main_thread);
+  ecl_register_static_root(&main_thread);
 }

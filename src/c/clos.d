@@ -73,7 +73,7 @@ clos_boot(void)
 	/* booting Class CLASS */
 	
   	class_class = cl_alloc_instance(4);
-	register_root(&class_class);
+	ecl_register_static_root(&class_class);
 	CLASS_OF(class_class) = class_class;
 	CLASS_NAME(class_class) = @'class';
 	CLASS_SUPERIORS(class_class) = Cnil;
@@ -85,7 +85,7 @@ clos_boot(void)
 	/* booting Class BUILT-IN-CLASS */
 	
   	class_built_in = cl_alloc_instance(4);
-	register_root(&class_built_in);
+	ecl_register_static_root(&class_built_in);
 	CLASS_OF(class_built_in) = class_class;
 	CLASS_NAME(class_built_in) = @'built-in-class';
 	CLASS_SUPERIORS(class_built_in) = CONS(class_class, Cnil);
@@ -97,7 +97,7 @@ clos_boot(void)
 	/* booting Class T (= OBJECT) */
 	
   	class_object = cl_alloc_instance(4);
-	register_root(&class_object);
+	ecl_register_static_root(&class_object);
 	CLASS_OF(class_object) = class_built_in;
 	CLASS_NAME(class_object) = Ct;
 	CLASS_SUPERIORS(class_object) = Cnil;

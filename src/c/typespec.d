@@ -384,7 +384,7 @@ init_typespec(void)
 {
 
 	TSnon_negative_integer = cl_list(3, @'integer', MAKE_FIXNUM(0), @'*');
-	register_root(&TSnon_negative_integer);
+	ecl_register_static_root(&TSnon_negative_integer);
 	TSpositive_number = cl_list(2, @'satisfies', @'plusp');
-	register_root(&TSpositive_number);
+	ecl_register_static_root(&TSpositive_number);
 }				

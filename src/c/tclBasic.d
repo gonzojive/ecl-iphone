@@ -559,7 +559,7 @@ init_tk()
   TkWidgetType = _intern("WIDGET", tk_package);
 #endif
   string_stream = make_string_output_stream(64);
-  register_root(&string_stream);
+  ecl_register_static_root(&string_stream);
   Tcl_InitHashTable(&VarTable, TCL_STRING_KEYS);
 }
 

@@ -2385,10 +2385,10 @@ init_compiler(void)
 
 	SYM_VAL(@'si::*keep-definitions*') = Cnil;
 
-	register_root(&c_env.variables);
-	register_root(&c_env.macros);
+	ecl_register_static_root(&c_env.variables);
+	ecl_register_static_root(&c_env.macros);
 #ifdef CL_COMP_OWN_STACK
-	register_root(&c_env.bytecodes);
+	ecl_register_static_root(&c_env.bytecodes);
 	c_env.bytecodes = alloc_bytecodes();
 #endif
 	for (l = database; l->name[0] != 0; l++)

@@ -2038,7 +2038,7 @@ void
 init_format(void)
 {
 	fmt_aux_stream = make_string_output_stream(64);
-	register_root(&fmt_aux_stream);
+	ecl_register_static_root(&fmt_aux_stream);
 
 	SYM_VAL(@'si::*indent-formatted-output*') = Cnil;
 }

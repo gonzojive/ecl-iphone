@@ -289,7 +289,7 @@ init_big(void)
 	int i;
 	for (i = 0; i < 3; i++) {
 	  bignum_register[i] = cl_alloc_object(t_bignum);
-	  register_root(&bignum_register[i]);
+	  ecl_register_static_root(&bignum_register[i]);
 	  big_register_free(bignum_register[i]);
 	}
 	mp_set_memory_functions(mp_alloc, mp_realloc, mp_free);

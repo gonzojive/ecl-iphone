@@ -106,7 +106,6 @@ void
 FEprogram_error(const char *s, int narg, ...)
 {
 	cl_va_list args;
-	gc(t_contiguous);
 	cl_va_start(args, narg, narg, 0);
 	funcall(4, @'si::universal-error-handler',
 		Cnil,                    /*  not correctable  */
@@ -242,5 +241,5 @@ init_error(void)
 {
 	cl_def_c_function_va(@'si::universal-error-handler', universal_error_handler);
 	null_string = make_constant_string("");
-	register_root(&null_string);
+	ecl_register_static_root(&null_string);
 }

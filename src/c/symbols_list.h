@@ -1139,7 +1139,7 @@ cl_symbols[] = {
 #endif
 
 #ifdef GBC_BOEHM
-{"GC", CL_ORDINARY, cl_gc, -1},
+{"GC", CL_ORDINARY, cl_gc, 1},
 #endif
 
 #if !defined(GBC_BOEHM)

@@ -163,5 +163,5 @@ init_unixtime(void)
 	Jan1st1970UT =
 	  number_times(MAKE_FIXNUM(24 * 60 * 60),
 		       MAKE_FIXNUM(17 + 365 * 70));
-	register_root(&Jan1st1970UT);
+	ecl_register_static_root(&Jan1st1970UT);
 }

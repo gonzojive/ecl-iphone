@@ -971,8 +971,8 @@ init_num_co(void)
 	SYM_VAL(@'LONG-FLOAT-NEGATIVE-EPSILON') = num;
 
 	plus_half = make_ratio(MAKE_FIXNUM(1), MAKE_FIXNUM(2));
-	register_root(&plus_half);
+	ecl_register_static_root(&plus_half);
 
 	minus_half = make_ratio(MAKE_FIXNUM(-1), MAKE_FIXNUM(2));
-	register_root(&minus_half);
+	ecl_register_static_root(&minus_half);
 }

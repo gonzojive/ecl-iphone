@@ -1601,14 +1601,14 @@ init_print(void)
 	SYM_VAL(@'si::*print-structure*') = Cnil;
 
 	PRINTstream = Cnil;
-	register_root(&PRINTstream);
+	ecl_register_static_root(&PRINTstream);
 	PRINTescape = TRUE;
 	PRINTpretty = FALSE;
 	PRINTcircle = FALSE;
 	PRINTbase = 10;
 	PRINTradix = FALSE;
 	PRINTcase = @':upcase';
-	register_root(&PRINTcase);
+	ecl_register_static_root(&PRINTcase);
 	PRINTgensym = TRUE;
 	PRINTlevel = -1;
 	PRINTlength = -1;
@@ -1616,10 +1616,10 @@ init_print(void)
 
 	CIRCLEstack = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024), make_shortfloat(1.5),	
 					  make_shortfloat(0.7));
-	register_root(&CIRCLEstack);
+	ecl_register_static_root(&CIRCLEstack);
 
 	no_stream = @make_broadcast_stream(0);
-	register_root(&no_stream);
+	ecl_register_static_root(&no_stream);
 }
 
 cl_object

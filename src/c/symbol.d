@@ -472,8 +472,8 @@ init_symbol(void)
 	gentemp_counter = 0;
 	cl_token = cl_alloc_adjustable_string(LISP_PAGESIZE);
 
-	register_root(&gensym_prefix);
-	register_root(&gentemp_prefix);
-	register_root(&cl_token);
+	ecl_register_static_root(&gensym_prefix);
+	ecl_register_static_root(&gentemp_prefix);
+	ecl_register_static_root(&cl_token);
 }
 

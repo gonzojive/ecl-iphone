@@ -1787,7 +1787,7 @@ init_read(void)
 	int i;
 
 	standard_readtable = cl_alloc_object(t_readtable);
-	register_root(&standard_readtable);
+	ecl_register_static_root(&standard_readtable);
 
 	standard_readtable->readtable.table
 	= rtab
@@ -1799,7 +1799,7 @@ init_read(void)
 	}
 
 	dispatch_reader = make_cf2(dispatch_reader_fun);
-	register_root(&dispatch_reader);
+	ecl_register_static_root(&dispatch_reader);
 
 	rtab['\t'].syntax_type = cat_whitespace;
 	rtab['\n'].syntax_type = cat_whitespace;
@@ -1833,7 +1833,7 @@ init_read(void)
 */
 
 	default_dispatch_macro = make_cf3(default_dispatch_macro_fun);
-	register_root(&default_dispatch_macro);
+	ecl_register_static_root(&default_dispatch_macro);
 
 	rtab['#'].dispatch_table
 	= dtab
@@ -1893,7 +1893,7 @@ init_read(void)
 	SYM_VAL(@'si::*sharp-eq-context*') = Cnil;
 
 	delimiting_char = OBJNULL;
-	register_root(&delimiting_char);
+	ecl_register_static_root(&delimiting_char);
 
 	detect_eos_flag = FALSE;
 

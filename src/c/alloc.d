@@ -166,7 +166,7 @@ alloc_page(cl_index n)
 {
 	cl_ptr e = heap_end;
 	if (n >= holepage) {
-	  gc(t_contiguous);
+	  ecl_gc(t_contiguous);
 	  cl_resize_hole(new_holepage+n);
 	}
 	holepage -= n;
@@ -383,7 +383,7 @@ ONCE_MORE:
 	end_critical_section();
 	return(obj);
 CALL_GC:
-	gc(tm->tm_type);
+	ecl_gc(tm->tm_type);
 	if (tm->tm_nfree != 0 &&
 		(float)tm->tm_nfree * 10.0 >= (float)tm->tm_nused)
 		goto ONCE_MORE;
@@ -450,7 +450,7 @@ ONCE_MORE:
 	return(obj);
 
 CALL_GC:
-	gc(t_cons);
+	ecl_gc(t_cons);
 	if ((tm->tm_nfree != 0) && (tm->tm_nfree * 10.0 >= tm->tm_nused))
 		goto ONCE_MORE;
 
@@ -518,7 +518,7 @@ ONCE_MORE:
 		if (available_pages() < m)
 			ignore_maximum_pages = FALSE;
 		if (!g) {
-			gc(t_contiguous);
+			ecl_gc(t_contiguous);
 			g = TRUE;
 			goto ONCE_MORE;
 		}
@@ -711,7 +711,7 @@ init_alloc(void)
 
 #ifdef NEED_MALLOC
 	malloc_list = Cnil;
-	register_root(&malloc_list);
+	ecl_register_static_root(&malloc_list);
 #endif
 }
 

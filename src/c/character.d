@@ -475,21 +475,21 @@ init_character(void)
 	SYM_VAL(@'char-code-limit') = MAKE_FIXNUM(CHAR_CODE_LIMIT);
 
 	STreturn = make_simple_string("RETURN");
-	register_root(&STreturn);
+	ecl_register_static_root(&STreturn);
 	STspace = make_simple_string("SPACE");
-	register_root(&STspace);
+	ecl_register_static_root(&STspace);
 	STrubout = make_simple_string("RUBOUT");
-	register_root(&STrubout);
+	ecl_register_static_root(&STrubout);
 	STpage = make_simple_string("PAGE");
-	register_root(&STpage);
+	ecl_register_static_root(&STpage);
 	STtab = make_simple_string("TAB");
-	register_root(&STtab);
+	ecl_register_static_root(&STtab);
 	STbackspace = make_simple_string("BACKSPACE");
-	register_root(&STbackspace);
+	ecl_register_static_root(&STbackspace);
 	STlinefeed = make_simple_string("LINEFEED");
-	register_root(&STlinefeed);
+	ecl_register_static_root(&STlinefeed);
 	STnull = make_simple_string("NULL");
-	register_root(&STnull);
+	ecl_register_static_root(&STnull);
 	STnewline = make_simple_string("NEWLINE");
-	register_root(&STnewline);
+	ecl_register_static_root(&STnewline);
 }

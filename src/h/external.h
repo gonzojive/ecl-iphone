@@ -28,10 +28,11 @@ extern void cl_dealloc(void *p, cl_index s);
 extern void *cl_alloc(cl_index n);
 extern void *cl_alloc_align(cl_index size, cl_index align);
 #ifdef GBC_BOEHM
-extern cl_object cl_gc _ARGS((int narg, cl_object area));
+extern cl_object cl_gc(cl_object area);
 extern void *cl_alloc_atomic(cl_index size);
 extern void *cl_alloc_atomic_align(cl_index size, cl_index align);
 extern void init_alloc_function(void);
+#define ecl_register_static_root(x)
 #else
 extern cl_object si_room_report _ARGS((int narg));
 extern cl_object si_allocate _ARGS((int narg, cl_object type, cl_object qty, ...));
@@ -46,6 +47,7 @@ extern cl_object si_set_hole_size _ARGS((int narg, cl_object size));
 extern cl_object si_ignore_maximum_pages _ARGS((int narg, ...));
 #define cl_alloc_atomic(x) cl_alloc(x)
 #define cl_alloc_atomic_align(x,s) cl_alloc_align(x,s)
+#define ecl_register_static_root(x) ecl_register_root(x);
 #endif /* GBC_BOEHM */
 extern void init_alloc(void);
 
@@ -404,32 +406,27 @@ extern void init_format(void);
 /* gbc.c */
 
 #if !defined(GBC_BOEHM)
-extern cl_object cl_gc _ARGS((int narg, cl_object area));
 extern cl_object si_room_report _ARGS((int narg));
 extern cl_object si_reset_gc_count _ARGS((int narg));
 extern cl_object si_gc_time _ARGS((int narg));
-
+extern cl_object cl_gc(cl_object area);
 #define GC_enabled() GC_enable
 #define GC_enable() GC_enable = TRUE;
 #define GC_disable() GC_enable = FALSE;
 extern bool GC_enable;
 extern cl_object (*GC_enter_hook)(void);
 extern cl_object (*GC_exit_hook)(void);
-extern void register_root(cl_object *p);
-extern void gc(cl_type t);
+extern void ecl_register_root(cl_object *p);
+extern void ecl_gc(cl_type t);
 extern void init_GC(void);
 #endif
-
-
-/* gbc_2.c */
 
 #ifdef GBC_BOEHM
 #define GC_enabled() (!GC_dont_gc)
 #define GC_enable() GC_dont_gc = FALSE;
 #define GC_disable() GC_dont_gc = TRUE;
 extern int GC_dont_gc;
-extern void register_root(cl_object *p);
-extern void gc(cl_type t);
+extern void ecl_register_root(cl_object *p);
 #endif /* GBC_BOEHM */
 
 
