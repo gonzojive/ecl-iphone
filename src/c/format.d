@@ -1860,13 +1860,14 @@ LOOP:
 		case '0':  case '1':  case '2':  case '3':  case '4':
 		case '5':  case '6':  case '7':  case '8':  case '9':
 		DIGIT:
-			i = 0;
+			x = MAKE_FIXNUM(0);
 			do {
-				i = i*10 + (c - '0');
+				x = number_plus(number_times(x, MAKE_FIXNUM(10)), MAKE_FIXNUM(c-'0'));
 				c = ctl_advance(fmt);
 			} while (isdigit(c));
+			/* FIXME! A hack to solve the problem of bignums in arguments */
 			fmt->param[n].type = INT;
-			fmt->param[n].value = i;
+			fmt->param[n].value = FIXNUMP(x)? fix(x) : MOST_POSITIVE_FIXNUM;
 			break;
 
 		case '+':
@@ -1879,13 +1880,14 @@ LOOP:
 			c = ctl_advance(fmt);
 			if (!isdigit(c))
 				fmt_error(fmt, "digit expected");
-			i = 0;
+			x = MAKE_FIXNUM(0);
 			do {
-				i = i*10 + (c - '0');
+				x = number_plus(number_times(x, MAKE_FIXNUM(10)), MAKE_FIXNUM(c-'0'));
 				c = ctl_advance(fmt);
 			} while (isdigit(c));
+			/* FIXME! A hack to solve the problem of bignums in arguments */
 			fmt->param[n].type = INT;
-			fmt->param[n].value = -i;
+			fmt->param[n].value = FIXNUMP(x)? fix(x) : MOST_NEGATIVE_FIXNUM;
 			break;
 
 		case '\'':
