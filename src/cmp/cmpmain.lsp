@@ -94,17 +94,8 @@ coprocessor).")
   (let ((lib-file (compile-file-pathname o-pathname :type :lib)))
     (safe-system
      (format nil
-	     "dllwrap --verbose --export-all-symbols -o ~A -L~A ~{~A ~} ~@?"
+	     "dllwrap --export-all-symbols -o ~A -L~A ~{~A ~} ~@?"
 	     (si::coerce-to-filename o-pathname)
-	     (namestring (translate-logical-pathname "SYS:"))
-	     options
-	     *ld-shared-flags*
-	     (namestring (translate-logical-pathname "SYS:")))
-     #+nil
-     (format nil
-	     "dllwrap --export-all-symbols -o ~A --output-lib ~A  -L~A ~{~A ~} ~@?"
-	     (si::coerce-to-filename o-pathname)
-	     (si::coerce-to-filename lib-file)
 	     (namestring (translate-logical-pathname "SYS:"))
 	     options
 	     *ld-shared-flags*
