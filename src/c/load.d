@@ -91,15 +91,26 @@ GO_ON:
 @)
 #endif /* ENABLE_DLOPEN */
 
-@(defun si::load_source (filename verbose print)
+@(defun si::load_source (source verbose print)
 	cl_object x, strm;
 @
-	strm = open_stream(filename, smm_input, Cnil, Cnil);
-	if (Null(strm))
-		@(return Cnil)
+	/* Source may be either a stream or a filename */
+	if (type_of(source) != t_pathname && type_of(source) != t_string) {
+		/* INV: if "source" is not a valid stream, file.d will complain */
+		strm = source;
+	} else {
+		strm = open_stream(source, smm_input, Cnil, Cnil);
+		if (Null(strm))
+			@(return Cnil)
+	}
 	if (frs_push(FRS_PROTECT, Cnil)) {
-		close_stream(strm, TRUE);
+		/* We do not want to come back here if close_stream fails,
+		   therefore, first we frs_pop() current jump point, then
+		   try to close the stream, and then jump to next catch
+		   point */
 		frs_pop();
+		if (strm != source)
+			close_stream(strm, TRUE);
 		unwind(nlj_fr, nlj_tag);
 	}
 	bds_bind(@'*standard-input*', strm);
@@ -119,19 +130,27 @@ GO_ON:
 			flush_stream(PRINTstream);
 		}
 	}
-	close_stream(strm, TRUE);
+	if (strm != source)
+		close_stream(strm, TRUE);
 	frs_pop();
 	@(return Cnil)
 @)	
 
-@(defun load (pathname
+@(defun load (source
 	      &key (verbose symbol_value(@'*load-verbose*'))
 		   (print symbol_value(@'*load-print*'))
 		   (if_does_not_exist @':error')
-	      &aux pntype hooks filename function defaults ok)
+	      &aux pathname pntype hooks filename function defaults ok)
 	bds_ptr old_bds_top;
 @
-	pathname = coerce_to_physical_pathname(pathname);
+	/* If source is a stream, read conventional lisp code from it */
+	if (type_of(source) != t_pathname &&  type_of(source) != t_string) {
+		/* INV: if "source" is not a valid stream, file.d will complain */
+		filename = source;
+		function = Cnil;
+		goto NOT_A_FILENAME;
+	}
+	pathname = coerce_to_physical_pathname(source);
 	defaults = symbol_value(@'*default-pathname-defaults*');
 	defaults = coerce_to_physical_pathname(defaults);
 	pathname = merge_pathnames(pathname, defaults, @':newest');
@@ -165,7 +184,7 @@ GO_ON:
 		else
 			FEcannot_open(pathname);
 	}
-
+NOT_A_FILENAME:
 	if (verbose != Cnil) {
 		setupPRINT(filename, symbol_value(@'*standard-output*'));
 		if (file_column(PRINTstream) != 0)
