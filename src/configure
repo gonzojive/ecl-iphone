@@ -1364,7 +1364,7 @@ echo "***"
 exit 2;
 fi
 
-ECL_VERSION=0.9d
+ECL_VERSION=0.9e
 
 
 # Make sure we can run config.sub.
