@@ -28,7 +28,7 @@
 	if (element_type != @'character'
 	    && element_type != @'base-char'
 	    && element_type != @'standard-char') {
-	  if (funcall(2, @'subtypep', element_type, @'character') == Cnil)
+	  if (funcall(3, @'subtypep', element_type, @'character') == Cnil)
 	    FEerror("The type ~S is not a valid string char type.",
 		    1, element_type);
 	}
