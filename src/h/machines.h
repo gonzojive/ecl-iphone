@@ -69,7 +69,7 @@
 #endif
 
 #if defined(unix) && !defined(__MACH__)
-/*#  define NEED_MALLOC*/
+#  define NEED_MALLOC
 #endif
 
 /***********************************************************************
@@ -89,7 +89,7 @@
 #  define ARCHITECTURE	"MC68030"
 #elif	defined(mc68040) || defined(__mc68040)
 #  define ARCHITECTURE	"MC68040"
-#elif	defined(sparc) || defined(__sparc)
+#elif	defined(sparc) || defined(__sparc) || defined(__sparc__)
 #  define ARCHITECTURE	"SPARC"
 #elif	defined(i386) || defined(__i386)
 #  define ARCHITECTURE	"I386"
