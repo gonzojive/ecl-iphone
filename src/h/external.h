@@ -380,9 +380,9 @@ extern float object_to_float(cl_object x);
 extern double object_to_double(cl_object x);
 extern int aref_bv(cl_object x, cl_index index);
 extern int aset_bv(cl_object x, cl_index index, int value);
-extern void cl_throw(cl_object tag) __attribute__((noreturn));
-extern void cl_return_from(cl_object block_id, cl_object block_name) __attribute__((noreturn));
-extern void cl_go(cl_object tag_id, cl_object label) __attribute__((noreturn));
+extern void cl_throw(cl_object tag) /*__attribute__((noreturn))*/;
+extern void cl_return_from(cl_object block_id, cl_object block_name) /*__attribute__((noreturn))*/;
+extern void cl_go(cl_object tag_id, cl_object label) /*__attribute__((noreturn))*/;
 extern void cl_parse_key(cl_va_list args, int nkey, cl_object *keys, cl_object *vars, cl_object *rest, bool allow_other_keys);
 extern cl_object cl_grab_rest_args(cl_va_list args);
 extern void check_other_key(cl_object l, int n, ...);
@@ -426,7 +426,7 @@ extern cl_object si_bc_split(cl_object v);
 
 /* error.c */
 
-extern cl_object cl_error _ARGS((cl_narg narg, cl_object eformat, ...)) __attribute__((noreturn));
+extern cl_object cl_error _ARGS((cl_narg narg, cl_object eformat, ...)) /*__attribute__((noreturn))*/;
 extern cl_object cl_cerror _ARGS((cl_narg narg, cl_object cformat, cl_object eformat, ...));
 
 extern void internal_error(const char *s) __attribute__((noreturn));
@@ -773,7 +773,7 @@ extern cl_object si_argv(cl_object index);
 extern cl_object si_getenv(cl_object var);
 extern cl_object si_setenv(cl_object var, cl_object value);
 extern cl_object si_pointer(cl_object x);
-extern cl_object si_quit _ARGS((cl_narg narg, ...)) __attribute__((noreturn));
+extern cl_object si_quit _ARGS((cl_narg narg, ...)) /*__attribute__((noreturn))*/;
 
 extern bool ecl_booted;
 extern const char *ecl_self;
@@ -1195,7 +1195,7 @@ extern cl_object si_reset_stack_limits(void);
 extern void bds_overflow(void) __attribute__((noreturn));
 extern void bds_unwind(bds_ptr new_bds_top);
 extern int frs_overflow(void) __attribute__((noreturn));
-extern void unwind(frame_ptr fr) __attribute__((noreturn));
+extern void unwind(frame_ptr fr) /*__attribute__((noreturn))*/;
 extern frame_ptr frs_sch(cl_object frame_id);
 extern frame_ptr frs_sch_catch(cl_object frame_id);
 extern cl_object new_frame_id(void);
