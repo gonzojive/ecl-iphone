@@ -814,8 +814,7 @@ type_of(#0)==t_bitvector"))
 (PRINT (T *) T NIL NIL
 	:inline-always ((t t) t t nil "print(#0,#1)")
 	:inline-always ((t) t t nil "print(#0,Cnil)"))
-(PROBE-FILE (T) T NIL T
-	:inline-always ((t) :bool nil nil "(si_file_kind(#0,Ct)!=Cnil)"))
+(PROBE-FILE (T) T NIL T)
 (UNREAD-CHAR (T *) T)
 (READ (*) T)
 (READ-CHAR (*) T)
