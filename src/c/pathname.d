@@ -567,7 +567,6 @@ L:
 
 	case t_stream:
 		switch ((enum ecl_smmode)x->stream.mode) {
-		case smm_closed:
 		case smm_input:
 		case smm_output:
 		case smm_probe:

@@ -28,11 +28,17 @@ The doc-string DOC, if supplied, is saved as a TYPE doc and can be retrieved
 by (documentation 'NAME 'type)."
   (multiple-value-bind (body doc)
       (remove-documentation body)
-  `(eval-when (:compile-toplevel :load-toplevel :execute)
-          (put-sysprop ',name 'DEFTYPE-FORM '(DEFTYPE ,name ,lambda-list ,@body))
-          (put-sysprop ',name 'DEFTYPE-DEFINITION #'(LAMBDA ,lambda-list ,@body))
-	  ,@(si::expand-set-documentation name 'type doc)
-          ',name)))
+    (setf lambda-list (copy-list lambda-list))
+    (do ((l (rest (member '&optional lambda-list)) (rest l)))
+	((null l))
+      (let ((variable (first l)))
+	(when (symbolp variable)
+	  (setf (first l) `(,variable '*)))))
+    `(eval-when (:compile-toplevel :load-toplevel :execute)
+      (put-sysprop ',name 'DEFTYPE-FORM '(DEFTYPE ,name ,lambda-list ,@body))
+      (put-sysprop ',name 'DEFTYPE-DEFINITION #'(LAMBDA ,lambda-list ,@body))
+      ,@(si::expand-set-documentation name 'type doc)
+      ',name)))
 
 
 ;;; Some DEFTYPE definitions.

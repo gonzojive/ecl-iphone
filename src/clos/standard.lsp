@@ -101,8 +101,6 @@
 		  (append (compute-applicable-methods
 			   #'allocate-instance (list class))
 			  (compute-applicable-methods
-			   #'make-instance (list (class-prototype class)))
-			  (compute-applicable-methods
 			   #'initialize-instance (list (class-prototype class)))
 			  (compute-applicable-methods
 			   #'shared-initialize (list (class-prototype class) t))))

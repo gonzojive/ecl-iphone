@@ -51,6 +51,9 @@ main(int argc, char **args)
 	/* This should be always the first call */
 	cl_boot(argc, args);
 
+#ifdef ECL_CMU_FORMAT
+	SYM_VAL(@'*load-verbose*') = Cnil;
+#endif
 	SYM_VAL(@'*package*') = cl_core.system_package;
 	SYM_VAL(@'*features*') = CONS(make_keyword("ECL-MIN"), SYM_VAL(@'*features*'));
 #ifdef CLOS

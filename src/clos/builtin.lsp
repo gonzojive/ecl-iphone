@@ -95,7 +95,8 @@
   (apply #'change-class instance (find-class new-class) initargs))
 
 (defmethod make-instances-obsolete ((class symbol))
-  (make-instances-obsolete (find-class class)))
+  (make-instances-obsolete (find-class class))
+  class)
 
 (defmethod make-instance ((class-name symbol) &rest initargs)
   (apply #'make-instance (find-class class-name) initargs))

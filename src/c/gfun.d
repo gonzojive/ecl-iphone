@@ -109,28 +109,28 @@ compute_method(cl_narg narg, cl_object gf, cl_object *args)
 	  FEerror("compute_method: Too many arguments, limited to ~A.", 1, MAKE_FIXNUM(ARGTYPE_MAX));
 #endif
 
-	for (i = 0, spec_no = 0; spec_how_list != Cnil; i++) {
+	for (spec_no = 0; spec_how_list != Cnil;) {
 		cl_object spec_how = CAR(spec_how_list);
-		if (spec_how != Cnil) {
-			if (i >= narg)
-				FEwrong_num_arguments(gf);
-			argtype[spec_no++] =
-				(ATOM(spec_how) ||
-				 Null(memql(args[i], spec_how))) ?
-				cl_class_of(args[i]) :
-				args[i];
-		}
+		cl_object spec_type = CAR(spec_how);
+		int spec_position = fix(CDR(spec_how));
+		if (spec_position >= narg)
+			FEwrong_num_arguments(gf);
+		argtype[spec_no++] =
+			(ATOM(spec_type) ||
+			 Null(memql(args[spec_position], spec_type))) ?
+			cl_class_of(args[spec_position]) :
+			args[spec_position];
 		spec_how_list = CDR(spec_how_list);
 	}
 
 	e = get_meth_hash(argtype, spec_no, table);
 
-	if (e->key == OBJNULL) { 
+	if (e->key == OBJNULL) {
 		/* method not cached */
-		cl_object methods, arglist = Cnil;
-		i = narg;
-		while (i-- > 0)
+		cl_object methods, arglist;
+		for (i = narg, arglist = Cnil; i-- > 0; ) {
 			arglist = CONS(args[i], arglist);
+		}
 		methods = funcall(3, @'compute-applicable-methods', gf,
 				  arglist);
 		func = funcall(4, @'si::compute-effective-method', gf,

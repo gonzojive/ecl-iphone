@@ -1217,71 +1217,67 @@ si_write_ugly_object(cl_object x, cl_object stream)
 
 	case t_stream:
 		if (ecl_print_readably()) FEprint_not_readable(x);
+		write_str(x->stream.closed? "#<closed " : "#<", stream);
 		switch ((enum ecl_smmode)x->stream.mode) {
-		case smm_closed:
-			write_str("#<closed stream ", stream);
-			si_write_ugly_object(x->stream.object1, stream);
-			break;
-
 		case smm_input:
-			write_str("#<input stream ", stream);
+			write_str("input stream ", stream);
 			si_write_ugly_object(x->stream.object1, stream);
 			break;
 
 		case smm_output:
-			write_str("#<output stream ", stream);
+			write_str("output stream ", stream);
 			si_write_ugly_object(x->stream.object1, stream);
 			break;
 
 #ifdef _MSC_VER
 		case smm_input_wsock:
-			write_str("#<input win32 socket stream ", stream);
+			write_str("input win32 socket stream ", stream);
 			si_write_ugly_object(x->stream.object1, stream);
 			break;
 
 		case smm_output_wsock:
-			write_str("#<output win32 socket stream ", stream);
+			write_str("output win32 socket stream ", stream);
 			si_write_ugly_object(x->stream.object1, stream);
 			break;
 #endif
 
 		case smm_io:
-			write_str("#<io stream ", stream);
+			write_str("io stream ", stream);
 			si_write_ugly_object(x->stream.object1, stream);
 			break;
 
 		case smm_probe:
-			write_str("#<probe stream ", stream);
+			write_str("probe stream ", stream);
 			si_write_ugly_object(x->stream.object1, stream);
 			break;
 
 		case smm_synonym:
-			write_str("#<synonym stream to ", stream);
+			write_str("synonym stream to ", stream);
 			si_write_ugly_object(x->stream.object0, stream);
 			break;
 
 		case smm_broadcast:
-			write_str("#<broadcast stream ", stream);
+			write_str("broadcast stream ", stream);
 			write_addr(x, stream);
 			break;
 
 		case smm_concatenated:
-			write_str("#<concatenated stream ", stream);
+			write_str("concatenated stream ", stream);
 			write_addr(x, stream);
 			break;
 
 		case smm_two_way:
-			write_str("#<two-way stream ", stream);
+			write_str("two-way stream ", stream);
 			write_addr(x, stream);
 			break;
 
 		case smm_echo:
-			write_str("#<echo stream ", stream);
+			write_str("echo stream ", stream);
 			write_addr(x, stream);
 			break;
 
 		case smm_string_input:
-			write_str("#<string-input stream from \"", stream);
+			write_str("string-input stream from \"", stream);
 			y = x->stream.object0;
 			k = y->string.fillp;
 			for (ndx = 0;  ndx < k && ndx < 16;  ndx++)
@@ -1292,7 +1288,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 			break;
 
 		case smm_string_output:
-			write_str("#<string-output stream ", stream);
+			write_str("string-output stream ", stream);
 			write_addr(x, stream);
 			break;
 

@@ -315,7 +315,7 @@ ONCE_MORE:
 	  break;
 #endif /* CLOS */
 	case t_stream:
-	  obj->stream.mode = (short)smm_closed;
+	  obj->stream.mode = (short)smm_broadcast;
 	  obj->stream.file = NULL;
 	  obj->stream.object0 = OBJNULL;
 	  obj->stream.object1 = OBJNULL;

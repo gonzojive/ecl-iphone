@@ -18,6 +18,16 @@ ECL 1.0
 
   - The routines in the pretty printer now check the type of the arguments.
 
+  - The parser for #* did not accept #0* and also did not signal errors when
+    invalid characters were found.
+
+  - The parser for #( did not accept empty vectors.
+
+  - The parser for #C did not accept whitespaces between #\C and the list.
+
+  - The reader macros for sharp-single-quote (#') and single-quote (')
+    did not pay attention to the end of file condition.
+
 * Visible changes:
 
   - SI:MKSTEMP now accepts and returns pathnames.
@@ -34,6 +44,13 @@ ECL 1.0
 
   - When parsing a physical pathname, version is NIL unless the pathname
     has a name or a type components, in which case version is :NEWEST.
+
+  - The stream mode smm_closed disappears. Instead we add a flag called
+    stream.closed. Besides this fulfills the fact that CLOSE cannot change
+    the class of the stream
+
+  - ENSURE-GENERIC-FUNCTION, DEFGENERIC and DEFMETHOD now can operate
+    on functions which are being traced.
 
 * Internals:
 
@@ -142,6 +159,27 @@ ECL 1.0
     MAKE-INSTANCE, UPDATE-INSTANCE-FOR-{DIFFERENT-CLASS,REDEFINED-CLASS}.
     Now the keyword arguments of the applicable methods are considered to
     be valid initargs (ANSI 7.1.2)
+
+  - It is now possible to change the class of a generic function using
+    DEFGENERIC or ENSURE-GENERIC-FUNCTION(-USING-CLASS).
+
+  - Implemented METHOD-COMBINATION-ERROR and INVALID-METHOD-ERROR.
+
+  - ECL now uses the character trait "invalid" (ANSI 2.1.4.2).
+
+  - (LOOP FOR NIL FROM ...) is a valid statement and the presence of NIL
+    only denotes that we ignore the value.
+
+  - In LOOP, the order of statements in the body is now preserved. Formerly
+    WHILE and RETURN clauses were not thought to be part of the loop body.
+    Furthermore, FOR-AS clauses cannot appear after a main clause, such as
+    WHILE, WHEN, IF, DO, COLLECT, etc...
+
+  - Option sorting of methods now takes into account the generic function
+    option :ARGUMENT-PRECEDENCE-ORDER.
+
+  - The default value of optional arguments in a DEFTYPE form "defaults" to '*
+    (ANSI 3.4.8).
 
 * MOP compliance:
 

@@ -1142,16 +1142,10 @@ collected result will be returned as the value of the LOOP."
   (declare (si::c-local))
   `(return-from ,(car *loop-names*) ,form))
 
-
-(defun loop-pseudo-body (form)
-  (declare (si::c-local))
-  (cond ((or *loop-emitted-body* *loop-inside-conditional*) (push form *loop-body*))
-	(t (push form *loop-before-loop*) (push form *loop-after-body*))))
-
 (defun loop-emit-body (form)
   (declare (si::c-local))
   (setq *loop-emitted-body* t)
-  (loop-pseudo-body form))
+  (push form *loop-body*))
 
 (defun loop-emit-final-value (&optional (form nil form-supplied-p))
   (declare (si::c-local))
@@ -1379,7 +1373,7 @@ collected result will be returned as the value of the LOOP."
 	(when (loop-tequal (car *loop-source-code*) :end)
 	  (loop-pop-source))
 	(when it-p (setq form `(setq ,it-p ,form)))
-	(loop-pseudo-body
+	(loop-emit-body
 	  `(if ,(if negatep `(not ,form) form)
 	       ,then
 	       ,@else))))))
@@ -1408,7 +1402,7 @@ collected result will be returned as the value of the LOOP."
     (setq *loop-names* (list name nil))))
 
 (defun loop-do-return ()
-  (loop-pseudo-body (loop-construct-return (loop-get-form))))
+  (loop-emit-body (loop-construct-return (loop-get-form))))
 
 
 ;;;; Value Accumulation: List
@@ -1556,7 +1550,7 @@ collected result will be returned as the value of the LOOP."
 
 (defun loop-do-while (negate kwd &aux (form (loop-get-form)))
   (loop-disallow-conditional kwd)
-  (loop-pseudo-body `(,(if negate 'when 'unless) ,form (go end-loop))))
+  (loop-emit-body `(,(if negate 'when 'unless) ,form (go end-loop))))
 
 
 (defun loop-do-with ()
@@ -2052,6 +2046,8 @@ collected result will be returned as the value of the LOOP."
 
 
 (defun loop-for-arithmetic (var val data-type kwd)
+  (unless var
+    (setf var (loop-gentemp)))
   (loop-sequencer
     var (loop-check-data-type data-type *loop-real-data-type*) t
     nil nil nil nil nil nil

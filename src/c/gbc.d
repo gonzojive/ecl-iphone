@@ -262,10 +262,6 @@ BEGIN:
 
 	case t_stream:
 		switch ((enum ecl_smmode)x->stream.mode) {
-		case smm_closed:
-			/* Rest of fields are NULL */
-			mark_next(x->stream.object1);
-			break;
 		case smm_input:
 		case smm_output:
 		case smm_io:

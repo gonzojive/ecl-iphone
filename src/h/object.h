@@ -284,7 +284,6 @@ struct ecl_structure {		/*  structure header  */
 #endif
 
 enum ecl_smmode {		/*  stream mode  */
-	smm_closed,		/*  closed  */
 	smm_input,		/*  input  */
 	smm_output,		/*  output  */
 	smm_io,			/*  input-output  */
@@ -304,7 +303,7 @@ enum ecl_smmode {		/*  stream mode  */
 };
 
 struct ecl_stream {
-	HEADER3(mode,char_stream_p,signed_bytes);
+	HEADER4(mode,closed,char_stream_p,signed_bytes);
 				/*  stream mode of enum smmode  */
 				/*  stream element type  */
 	FILE	*file;		/*  file pointer  */

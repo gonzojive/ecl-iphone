@@ -62,10 +62,6 @@ BEGIN:
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
 	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_closed:
-		FEclosed_stream(strm);
-		break;
-
 	case smm_io:
 	case smm_input:
 #ifdef _MSC_VER
@@ -113,10 +109,6 @@ BEGIN:
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
 	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_closed:
-		FEclosed_stream(strm);
-		return(FALSE);
-
 	case smm_input:
 #ifdef _MSC_VER
 	case smm_input_wsock:
@@ -163,11 +155,11 @@ BEGIN:
 	if (type_of(strm) == t_instance)
 		funcall(2, @'ext::stream-input-p', strm);
 #endif
-	if (type_of(strm) != t_stream) 
+	if (type_of(strm) != t_stream)
 		FEtype_error_stream(strm);
-	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_closed:
+	if (strm->stream.closed)
 		FEclosed_stream(strm);
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_input:
 	case smm_output:
 #ifdef _MSC_VER
@@ -278,7 +270,7 @@ io_error(cl_object strm)
 static void
 wrong_file_handler(cl_object strm)
 {
-	FEerror("Internal error: closed stream ~S without smm_mode flag.", 1, strm);
+	FEerror("Internal error: stream ~S has no valid C file handler.", 1, strm);
 }
 
 #ifdef _MSC_VER
@@ -433,6 +425,7 @@ open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	}
 	x = cl_alloc_object(t_stream);
 	x->stream.mode = (short)smm;
+	x->stream.closed = 0;
 	x->stream.file = fp;
 	x->stream.char_stream_p = char_stream_p;
 	/* Michael, touch this to reactivate support for odd bit sizes! */
@@ -493,13 +486,11 @@ close_stream(cl_object strm, bool abort_flag)        /*  Not used now!  */
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
+	/* It is permissible to close a closed file */
+	if (strm->stream.closed)
+		return;
 	fp = strm->stream.file;
 	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_closed:
-		/* It is permissible to close a closed stream, although the output
-		   is unspecified in those cases. */
-		break;
-
 	case smm_output:
 		if (fp == stdout)
 			FEerror("Cannot close the standard output.", 0);
@@ -560,9 +551,8 @@ close_stream(cl_object strm, bool abort_flag)        /*  Not used now!  */
 	default:
 		error("illegal stream mode");
 	}
-	strm->stream.mode = smm_closed;
+	strm->stream.closed = 1;
 	strm->stream.file = NULL;
-	strm->stream.object0 = OBJNULL;
 }
 
 cl_object
@@ -572,6 +562,7 @@ make_two_way_stream(cl_object istrm, cl_object ostrm)
 
 	strm = cl_alloc_object(t_stream);
 	strm->stream.mode = (short)smm_two_way;
+	strm->stream.closed = 0;
 	strm->stream.file = NULL;
 	strm->stream.object0 = istrm;
 	strm->stream.object1 = ostrm;
@@ -586,6 +577,7 @@ make_string_input_stream(cl_object strng, cl_index istart, cl_index iend)
 
 	strm = cl_alloc_object(t_stream);
 	strm->stream.mode = (short)smm_string_input;
+	strm->stream.closed = 0;
 	strm->stream.file = NULL;
 	strm->stream.object0 = strng;
 	strm->stream.object1 = OBJNULL;
@@ -613,6 +605,7 @@ make_string_output_stream_from_string(cl_object s)
 		FEerror("~S is not a string with a fill-pointer.", 1, s);
 	strm = cl_alloc_object(t_stream);
 	strm->stream.mode = (short)smm_string_output;
+	strm->stream.closed = 0;
 	strm->stream.file = NULL;
 	strm->stream.object0 = s;
 	strm->stream.object1 = OBJNULL;
@@ -699,10 +692,9 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream)
 		FEtype_error_stream(strm);
-	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_closed:
+	if (strm->stream.closed)
 		FEclosed_stream(strm);
-		break;
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_output:
 	case smm_io:
 #ifdef _MSC_VER
@@ -904,10 +896,9 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_closed:
+	if (strm->stream.closed)
 		FEclosed_stream(strm);
-		break;
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_input:
 	case smm_io:
 	case smm_string_input:
@@ -1042,11 +1033,9 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_closed:
+	if (strm->stream.closed)
 		FEclosed_stream(strm);
-		break;
-
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_input:
 	case smm_io: {
 		FILE *fp = strm->stream.file;
@@ -1158,12 +1147,10 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
+	if (strm->stream.closed)
+		FEclosed_stream(strm);
 	fp = strm->stream.file;
 	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_closed:
-		FEclosed_stream(strm);
-		break;
-
 	case smm_input:
 	case smm_io:
 		if (!strm->stream.char_stream_p)
@@ -1252,12 +1239,10 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
+	if (strm->stream.closed)
+		FEclosed_stream(strm);
 	fp = strm->stream.file;
 	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_closed:
-		FEclosed_stream(strm);
-		break;
-
 	case smm_input:
 	case smm_io:
 		if (!strm->stream.char_stream_p)
@@ -1332,12 +1317,10 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
+	if (strm->stream.closed)
+		FEclosed_stream(strm);
 	fp = strm->stream.file;
 	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_closed:
-		FEclosed_stream(strm);
-		break;
-
 	case smm_output:
 	case smm_io:
 		if (!strm->stream.char_stream_p)
@@ -1602,11 +1585,9 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream)
 		FEtype_error_stream(strm);
-	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_closed:
+	if (strm->stream.closed)
 		FEclosed_stream(strm);
-		break;
-
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_output:
 	case smm_io: {
 		FILE *fp = strm->stream.file;
@@ -1672,12 +1653,10 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
+	if (strm->stream.closed)
+		FEclosed_stream(strm);
 	fp = strm->stream.file;
 	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_closed:
-		FEclosed_stream(strm);
-		break;
-
 	case smm_input:
 		if (fp == NULL)
 			wrong_file_handler(strm);
@@ -1737,12 +1716,10 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
+	if (strm->stream.closed)
+		FEclosed_stream(strm);
 	fp = strm->stream.file;
 	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_closed:
-		FEclosed_stream(strm);
-		break;
-
 	case smm_output:
 #if 0
 		if (fp == NULL)
@@ -1835,11 +1812,9 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_closed:
+	if (strm->stream.closed)
 		FEclosed_stream(strm);
-		return ECL_LISTEN_EOF;
-
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_input:
 	case smm_io:
 		fp = strm->stream.file;
@@ -1919,11 +1894,9 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream)
 		FEtype_error_stream(strm);
-	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_closed:
+	if (strm->stream.closed)
 		FEclosed_stream(strm);
-		return Cnil;
-
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_output:
 	case smm_io:
 	case smm_input: {
@@ -2004,11 +1977,9 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_closed:
+	if (strm->stream.closed)
 		FEclosed_stream(strm);
-		return Cnil;
-
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_input:
 	case smm_output:
 	case smm_io: {
@@ -2110,11 +2081,9 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_closed:
+	if (strm->stream.closed)
 		FEclosed_stream(strm);
-		output = Cnil;
-		break;
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_input:
 	case smm_output:
 	case smm_io: {
@@ -2185,11 +2154,9 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream)
 		FEtype_error_stream(strm);
-	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_closed:
+	if (strm->stream.closed)
 		FEclosed_stream(strm);
-		return 0;
-
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_output:
 #ifdef _MSC_VER
 	case smm_output_wsock:
@@ -2234,6 +2201,7 @@ cl_make_synonym_stream(cl_object sym)
 	assert_type_symbol(sym);
 	x = cl_alloc_object(t_stream);
 	x->stream.mode = (short)smm_synonym;
+	x->stream.closed = 0;
 	x->stream.file = NULL;
 	x->stream.object0 = sym;
 	x->stream.object1 = OBJNULL;
@@ -2262,6 +2230,7 @@ cl_synonym_stream_symbol(cl_object strm)
 	}
 	x = cl_alloc_object(t_stream);
 	x->stream.mode = (short)smm_broadcast;
+	x->stream.closed = 0;
 	x->stream.file = NULL;
 	x->stream.object0 = cl_nreverse(streams);
 	x->stream.object1 = OBJNULL;
@@ -2290,6 +2259,7 @@ cl_broadcast_stream_streams(cl_object strm)
 	}
 	x = cl_alloc_object(t_stream);
 	x->stream.mode = (short)smm_concatenated;
+	x->stream.closed = 0;
 	x->stream.file = NULL;
 	x->stream.object0 = cl_nreverse(streams);
 	x->stream.object1 = OBJNULL;
@@ -2596,7 +2566,7 @@ cl_open_stream_p(cl_object strm)
 	   when #'close has been applied on it */
 	if (type_of(strm) != t_stream)
 		FEwrong_type_argument(@'stream', strm);
-	@(return (strm->stream.mode != smm_closed ? Ct : Cnil))
+	@(return (strm->stream.closed ? Cnil : Ct))
 }
 
 cl_object
@@ -2686,6 +2656,7 @@ ecl_make_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm)
 
    stream = cl_alloc_object(t_stream);
    stream->stream.mode = (short)smm;
+   stream->stream.closed = 0;
    stream->stream.file = fp;
    stream->stream.object0 = @'base-char';
    stream->stream.object1 = fname; /* not really used */
@@ -2711,6 +2682,7 @@ init_file(void)
 
 	standard_input = cl_alloc_object(t_stream);
 	standard_input->stream.mode = (short)smm_input;
+	standard_input->stream.closed = 0;
 	standard_input->stream.file = stdin;
 	standard_input->stream.object0 = @'base-char';
 	standard_input->stream.object1 = make_constant_string("stdin");
@@ -2722,6 +2694,7 @@ init_file(void)
 
 	standard_output = cl_alloc_object(t_stream);
 	standard_output->stream.mode = (short)smm_output;
+	standard_output->stream.closed = 0;
 	standard_output->stream.file = stdout;
 	standard_output->stream.object0 = @'base-char';
 	standard_output->stream.object1= make_constant_string("stdout");
@@ -2738,6 +2711,7 @@ init_file(void)
 
 	x = cl_alloc_object(t_stream);
 	x->stream.mode = (short)smm_synonym;
+	x->stream.closed = 0;
 	x->stream.file = NULL;
 	x->stream.object0 = @'*terminal-io*';
 	x->stream.object1 = OBJNULL;

@@ -173,6 +173,12 @@
 	  (lambda-list-required-arguments lambda-list)))
   gfun)
 
+(defmethod shared-initialize ((gfun standard-generic-function) slot-names
+			      &rest initargs)
+  (call-next-method)
+  (compute-g-f-spec-list gfun)
+  gfun)
+
 (defmethod ensure-generic-function-using-class
     ((gfun generic-function) name &rest args &key (method-class 'STANDARD-METHOD)
      (generic-function-class (class-of gfun))
@@ -183,19 +189,23 @@
   (remf args :declare)
   (remf args :environment)
   (remf args :delete-methods)
+  ;; FIXME! We should check that the class GENERIC-FUNCTION-CLASS is compatible
+  ;; with the old one. In what sense "compatible" is ment, I do not know!
+  ;; (See ANSI DEFGENERIC entry)
   (when (symbolp generic-function-class)
     (setf generic-function-class (find-class generic-function-class)))
-  (unless (eq (class-of gfun) generic-function-class)
-    (simple-program-error "Tried to change the class of the generic function ~A"
-			  gfun))
+  (unless (si::subclassp generic-function-class (find-class 'generic-function))
+    (error "~A is not a valid :GENERIC-FUNCTION-CLASS argument for ENSURE-GENERIC-FUNCTION."
+	   generic-function-class))
   (when delete-methods
     (dolist (m (copy-list (generic-function-methods gfun)))
       (when (method-from-defgeneric-p m)
 	(remove-method gfun m))))
   (unless (classp method-class)
     (setf args (list* :method-class (find-class method-class) args)))
-  ;; FIXME! WE MUST IMPLEMENT REINITIALIZATION OF GENERIC FUNCTIONS
-  (apply #'reinitialize-instance gfun :name name args))
+  (if (eq (class-of gfun) generic-function-class)
+      (apply #'reinitialize-instance gfun :name name args)
+      (apply #'change-class gfun generic-function-class :name name args)))
 
 (defmethod ensure-generic-function-using-class
     ((gfun null) name &rest args &key (method-class 'STANDARD-METHOD)
@@ -214,12 +224,15 @@
 		       t))
 
 (defun ensure-generic-function (name &rest args &key &allow-other-keys)
-  (let ((gfun nil))
+  (let ((gfun nil)
+	(traced nil))
+    (when (setf traced (get-sysprop name 'SI::TRACED))
+      (setf gfun (fdefinition traced)))
     (cond ((not (legal-generic-function-name-p name))
 	   (simple-program-error "~A is not a valid generic function name" name))
           ((not (fboundp name)))
 	  ;; a generic function already exists
-	  ((si::instancep (setf gfun (fdefinition name))))
+	  ((si::instancep (or gfun (setf gfun (fdefinition name)))))
 	  ((special-operator-p name)
 	   (simple-program-error "The special operator ~A is not a valid name for a generic function" name))
 	  ((macro-function name)
@@ -227,5 +240,5 @@
 	  (t
 	   (simple-program-error "The symbol ~A is bound to an ordinary function and is not a valid name for a generic function" name))
 	  )
-    (setf (fdefinition name)
+    (setf (fdefinition (or traced name))
 	  (apply #'ensure-generic-function-using-class gfun name args))))

@@ -188,7 +188,7 @@
     x))
 
 (defun add-object (object &optional (duplicate nil))
-  (when (typep object '(or function package))
+  (when (and (not *compiler-constants*) (typep object '(or function package)))
     (error "Object ~S cannot be externalized" object))
   (let* ((test (if *compiler-constants* 'eq 'equal))
 	 (x (assoc object *objects* :test test))

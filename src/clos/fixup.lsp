@@ -95,7 +95,7 @@ and cannot be added to ~A." method other-gf gf)))
 	    (error "Cannot add the method ~A to the generic function ~A because ~
 their lambda lists ~A and ~A are not congruent."
 		   method gf old-lambda-list new-lambda-list)))
-	(setf (generic-function-lambda-list gf) new-lambda-list)))
+	(reinitialize-instance gf :lambda-list new-lambda-list)))
   ;;
   ;; 3) Finally, it is inserted in the list of methods, and the method is
   ;;    marked as belonging to a generic function.
@@ -120,8 +120,7 @@ their lambda lists ~A and ~A are not congruent."
   ;;  iii) Computing a new discriminating function... Well, since the core
   ;;  ECL does not need the discriminating function because we always use
   ;;  the same one, we just update the spec-how list of the generic function.
-  (setf (generic-function-spec-list gf) (compute-g-f-spec-list gf))
-  (clrhash (generic-function-method-hash gf))
+  (compute-g-f-spec-list gf)
   gf))
 
 (setf (method-function

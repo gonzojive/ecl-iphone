@@ -891,15 +891,15 @@ type_of(#0)==t_bitvector"))
 
 ; file character.d
 (CHAR (string fixnum) character nil nil
-	:inline-always ((t t) t nil t "elt(#0,fixint(#1))")
-	:inline-always ((t fixnum) t nil t "elt(#0,#1)")
+	:inline-always ((t t) t nil t "cl_char(#0,#1)")
+	:inline-always ((t fixnum) t nil t "aref1(#0,#1)")
 	:inline-unsafe ((t t) t nil nil "CODE_CHAR((#0)->string.self[fix(#1)])")
 	:inline-unsafe ((t fixnum) fixnum nil nil "(#0)->string.self[#1]")
 	:inline-unsafe ((t fixnum) character nil nil "(#0)->string.self[#1]"))
 (si::CHAR-SET
 	(string fixnum character) character nil nil
-	:inline-always ((t t t) t t nil "elt_set(#0,fixint(#1),#2)")
-	:inline-always ((t fixnum t) t t nil "elt_set(#0,#1,#2)")
+	:inline-always ((t t t) t t nil "si_char_set(#0,#1,#2)")
+	:inline-always ((t fixnum t) t t nil "aset1(#0,#1,#2)")
 	:inline-unsafe ((t t t) t t nil
 		"@2;((#0)->string.self[fix(#1)]=char_code(#2),(#2))")
 	:inline-unsafe ((t fixnum character) character t nil
@@ -1111,10 +1111,16 @@ type_of(#0)==t_bitvector"))
     ;; pprint.lsp
     pprint-fill copy-pprint-dispatch pprint-dispatch
     pprint-linear pprint-newline pprint-tab pprint-tabular
-    set-pprint-dispatch pprint-indent
+    set-pprint-dispatch pprint-indent .
+    #-clos
+    nil
+    #+clos
+    (;; combin.lsp
+     method-combination-error
+     invalid-method-error)
 ))
 
-(proclaim 
+(proclaim
   `(si::c-export-fname #+ecl-min ,@c::*in-all-symbols-functions*
     si::ecase-error si::etypecase-error
     ccase-error typecase-error-string find-documentation find-declarations

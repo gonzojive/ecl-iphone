@@ -364,6 +364,7 @@
 	  (name &optional (template '(NIL REPEAT (EVAL))))
   `(eval-when (load eval)
      (put-sysprop ',name 'WALKER-TEMPLATE ',template)))
+)
 
 (defun get-walker-template (x)
   (cond ((symbolp x)

@@ -560,8 +560,10 @@
     (push method (generic-function-methods gf))
     (setf (method-generic-function method) gf)
     (unless (si::sl-boundp (generic-function-lambda-list gf))
-      (setf (generic-function-lambda-list gf) (method-lambda-list method)))
-    (setf (generic-function-spec-list gf) (compute-g-f-spec-list gf))
+      (setf (generic-function-lambda-list gf) (method-lambda-list method))
+      (setf (generic-function-argument-precedence-order gf)
+	    (rest (si::process-lambda-list (method-lambda-list method) t))))
+    (compute-g-f-spec-list gf)
     method))
 
 (defun find-method (gf qualifiers specializers &optional (errorp t))
@@ -578,7 +580,7 @@
     ;; specializers might have the wrong size and we must signal
     ;; an error.
     (cond ((/= (length specializers)
-	       (length (generic-function-spec-list gf)))
+	       (length (generic-function-argument-precedence-order gf)))
 	   (error
 	    "The specializers list~%~A~%does not match the number of required arguments in ~A"
 	    specializers (generic-function-name gf)))

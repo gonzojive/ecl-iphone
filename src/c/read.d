@@ -106,8 +106,10 @@ read_object_with_delimiter(cl_object in, int delimiter)
 BEGIN:
 	do {
 		c = ecl_read_char(in);
-		if (c == EOF || c == delimiter)
-			return(OBJNULL);
+		if (c == delimiter)
+			return OBJNULL;
+		if (c == EOF)
+			FEend_of_file(in);
 		a = cat(rtbl, c);
 	} while (a == cat_whitespace);
 	if (a == cat_terminating || a == cat_non_terminating) {
@@ -212,6 +214,9 @@ BEGIN:
 		if (a == cat_whitespace || a == cat_terminating) {
 			ecl_unread_char(c, in);
 			break;
+		}
+		if (ecl_invalid_character_p(c)) {
+			FEreader_error("Found invalid character ~:C", in, 1, CODE_CHAR(c));
 		}
 		if (read_case != ecl_case_preserve) {
 			if (isupper(c)) {
@@ -565,7 +570,10 @@ dispatch_reader_fun(cl_object in, cl_object dc)
 static cl_object
 single_quote_reader(cl_object in, cl_object c)
 {
-	@(return CONS(@'quote', CONS(read_object(in), Cnil)))
+	c = read_object(in);
+	if (c == OBJNULL)
+		FEend_of_file(in);
+	@(return cl_list(2, @'quote', c))
 }
 
 static cl_object
@@ -600,17 +608,14 @@ sharp_C_reader(cl_object in, cl_object c, cl_object d)
 
 	if (d != Cnil && !read_suppress)
 		extra_argument('C', in, d);
-	if (ecl_read_char_noeof(in) != '(')
-		FEreader_error("A left parenthesis is expected.", in, 0);
-	real = read_object_with_delimiter(in, ')');
-	if (real == OBJNULL)
-		FEreader_error("No real part.", in, 0);
-	imag = read_object_with_delimiter(in, ')');
-	if (imag == OBJNULL)
-		FEreader_error("No imaginary part.", in, 0);
-	x = read_object_with_delimiter(in, ')');
-	if (x != OBJNULL)
-		FEreader_error("A right parenthesis is expected.", in, 0);
+	x = read_object(in);
+	if (x == OBJNULL)
+		FEend_of_file(in);
+	if (type_of(x) != t_cons || length(x) != 2)
+		FEreader_error("Reader macro #C should be followed by a list",
+			       in, 0);
+	real = CAR(x);
+	imag = CADR(x);
 	if (read_suppress)
 		@(return Cnil);
 	/* INV: make_complex() checks its types. When reading circular
@@ -672,7 +677,10 @@ sharp_single_quote_reader(cl_object in, cl_object c, cl_object d)
 {
 	if(d != Cnil && !read_suppress)
 		extra_argument('#', in, d);
-	@(return CONS(@'function', CONS(read_object(in), Cnil)))
+	c = read_object(in);
+	if (c == OBJNULL)
+		FEend_of_file(in);
+	@(return cl_list(2, @'function', c))
 }
 
 #define	QUOTE	1
@@ -728,9 +736,9 @@ L:
 	if (fixed_size) {
 		if (dimcount > dim)
 			FEreader_error("Too many elements in #(...).", in, 0);
-		if (dimcount == 0)
+		if (dim && dimcount == 0)
 			FEreader_error("Cannot fill the vector #().", in, 0);
-		else last = cl_env.stack_top[-1];
+		last = cl_env.stack_top[-1];
 	} else
 		dim = dimcount;
 	x = cl_alloc_simple_vector(dim, aet_object);
@@ -745,9 +753,11 @@ static cl_object
 sharp_asterisk_reader(cl_object in, cl_object c, cl_object d)
 {
 	bool fixed_size;
+	cl_object last, elt, x;
 	cl_index dim, dimcount, i;
 	cl_index sp = cl_stack_index();
-	cl_object last, elt, x;
+	cl_object rtbl = ecl_current_readtable();
+	enum ecl_chattrib a;
 
 	if (read_suppress) {
 		read_constituent(in);
@@ -763,17 +773,23 @@ sharp_asterisk_reader(cl_object in, cl_object c, cl_object d)
 	 	int x = ecl_read_char(in);
 		if (x == EOF)
 			break;
-		if (x != '0' && x != '1') {
+		a = cat(rtbl, x);
+		if (a == cat_terminating || a == cat_whitespace) {
 			ecl_unread_char(x, in);
 			break;
-		} else {
-			cl_stack_push(MAKE_FIXNUM(x == '1'));
 		}
+		if (a == cat_single_escape || a == cat_multiple_escape ||
+		    (x != '0' && x != '1'))
+		{
+			FEreader_error("Character ~:C is not allowed after #*",
+				       in, 1, CODE_CHAR(x));
+		}
+		cl_stack_push(MAKE_FIXNUM(x == '1'));
 	}
 	if (fixed_size) {
 		if (dimcount > dim)
 			FEreader_error("Too many elements in #*....", in, 0);
-		if (dimcount == 0)
+		if (dim && (dimcount == 0))
 			FEreader_error("Cannot fill the bit-vector #*.", in, 0);
 		else last = cl_env.stack_top[-1];
 	} else {
@@ -848,13 +864,17 @@ M:
 static cl_object
 sharp_dot_reader(cl_object in, cl_object c, cl_object d)
 {
-	if(d != Cnil && !read_suppress)
+	if (d != Cnil && !read_suppress)
 		extra_argument('.', in, d);
-	in = read_object(in);
+	c = read_object(in);
+	if (c == OBJNULL)
+		FEend_of_file(in);
 	if (read_suppress)
-		@(return Cnil)
-	in = si_eval_with_env(1, in);
-	@(return in)
+		@(return Cnil);
+	if (symbol_value(@'*read-eval*') == Cnil)
+		FEreader_error("Cannot evaluate the form #.~A", 1, c);
+	c = si_eval_with_env(1, c);
+	@(return c)
 }
 
 static cl_object
@@ -1222,10 +1242,7 @@ stream_or_default_input(cl_object stream)
 	return stream;
 }
 
-@(defun read (&optional (strm Cnil)
-			(eof_errorp Ct)
-			eof_value
-			recursivep)
+@(defun read (&optional (strm Cnil) (eof_errorp Ct) eof_value recursivep)
 	cl_object x;
 @
 	strm = stream_or_default_input(strm);
@@ -1289,8 +1306,9 @@ do_read_delimited_list(int d, cl_object strm)
 
 @(defun read_delimited_list (d &optional (strm Cnil) recursivep)
 	cl_object l;
-	int delimiter = char_code(d);
+	int delimiter;
 @
+	delimiter = char_code(d);
 	strm = stream_or_default_input(strm);
 	if (Null(recursivep))
 		l = do_read_delimited_list(delimiter, strm);
@@ -1545,14 +1563,18 @@ cl_readtablep(cl_object readtable)
 	@(return ((type_of(readtable) == t_readtable)? Ct : Cnil))
 }
 
-/* FIXME! READTABLE-CASE is missing! */
-
 static struct ecl_readtable_entry*
 read_table_entry(cl_object rdtbl, cl_object c)
 {
 	/* INV: char_code() checks the type of `c' */
 	assert_type_readtable(rdtbl);
 	return &(rdtbl->readtable.table[char_code(c)]);
+}
+
+bool
+ecl_invalid_character_p(int c)
+{
+	return (c < 32) || (c == 127);
 }
 
 @(defun set_syntax_from_char (tochr fromchr

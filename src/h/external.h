@@ -1149,6 +1149,7 @@ extern cl_object read_object_non_recursive(cl_object in);
 extern cl_object read_object(cl_object in);
 extern cl_object parse_number(const char *s, cl_index end, cl_index *ep, int radix);
 extern cl_object parse_integer(const char *s, cl_index end, cl_index *ep, int radix);
+extern bool ecl_invalid_character_p(int c);
 extern cl_object copy_readtable(cl_object from, cl_object to);
 extern cl_object ecl_current_readtable(void);
 extern int ecl_current_read_base(void);
@@ -1643,6 +1644,10 @@ extern cl_object cl_set_pprint_dispatch _ARGS((cl_narg narg, cl_object V1, cl_ob
 #ifdef CLOS
 /* defclass.lsp */
 extern cl_object clos_ensure_class _ARGS((cl_narg narg, cl_object V1, ...));
+
+/* combin.lsp */
+extern cl_object cl_method_combination_error _ARGS((cl_narg narg, cl_object format, ...));
+extern cl_object cl_invalid_method_error _ARGS((cl_narg narg, cl_object method, cl_object format, ...));
 
 /* kernel.lsp */
 extern cl_object clos_class_id _ARGS((cl_narg narg, cl_object V1, ...));

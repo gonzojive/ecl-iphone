@@ -21,7 +21,7 @@
 ;;;
 ;;; *effective-method-templates* is a list of effective-method template
 ;;; entries.  Each entry is itself a list of the form:
-;;; 
+;;;
 ;;;   (<template> <match-function> <make-code-function> <when> <count>)
 ;;;
 ;;; The match function is simple-effective-method-match-p.
@@ -411,6 +411,16 @@
   (if (and body (listp (first body)))
       (define-complex-method-combination (list* name body))
       (apply #'define-simple-method-combination name body)))
+
+(defun method-combination-error (format-control &rest args)
+  ;; FIXME! We should emit a more detailed error!
+  (error "Method-combination error:~%~S"
+	 (apply #'format nil format-control args)))
+
+(defun invalid-method-error (method format-control &rest args)
+  (error "Invalid method error for ~A~%~S"
+	 method
+	 (apply #'format nil format-control args)))
 
 ;;; ----------------------------------------------------------------------
 ;;; COMPUTE-EFFECTIVE-METHOD

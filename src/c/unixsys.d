@@ -77,7 +77,7 @@ si_close_pipe(cl_object stream)
 #else
 	if (type_of(stream) == t_stream &&
 	    stream->stream.object1 == @'si::open-pipe') {
-		stream->stream.mode = smm_closed;
+		stream->stream.closed = 1;
 		pclose(stream->stream.file);
 		stream->stream.file = NULL;
 		stream->stream.object0 = OBJNULL;
