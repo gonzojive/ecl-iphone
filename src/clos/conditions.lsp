@@ -284,7 +284,7 @@ strings."
 			   `(,report-function x stream))))))
       ,@(when documentation
 	      `((EVAL-WHEN (COMPILE LOAD EVAL)
-		  (SETF (DOCUMENTATION ',name) ',documentation))))
+		  (SETF (DOCUMENTATION ',name 'TYPE) ',documentation))))
       ',NAME)))
 
 (defun make-condition (type &rest slot-initializations)
