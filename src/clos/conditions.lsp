@@ -129,7 +129,9 @@ strings."
 (defun find-restart-never-fail (restart &optional condition)
   (declare (si::c-local))
   (or (find-restart restart condition)
-      (error "Restart ~S is not active." restart)))
+      (error 'simple-control-error
+	     :format-control "Restart ~S is not active."
+	     :format-arguments (list restart))))
 
 (defun invoke-restart (restart &rest values)
   (let ((real-restart (find-restart-never-fail restart)))
@@ -527,6 +529,8 @@ returns with NIL."
 
 (define-condition control-error (error) ())
 
+(define-condition simple-control-error (simple-condition control-error) ())
+
 (define-condition stream-error (error)
   ((stream :INITARG :STREAM :READER stream-error-stream)))
 
@@ -658,16 +662,19 @@ returns with NIL."
   (error 'ABORT-FAILURE))
 
 (defun continue (&optional c)
-  (invoke-restart (find-restart-never-fail 'CONTINUE c)))
+  (let ((restart (find-restart 'CONTINUE c)))
+    (and restart (invoke-restart restart))))
 
 (defun muffle-warning (&optional c)
   (invoke-restart (find-restart-never-fail 'MUFFLE-WARNING c)))
 
 (defun store-value (value &optional c)
-  (invoke-restart (find-restart-never-fail 'STORE-VALUE c) value))
+  (let ((restart (find-restart 'STORE-VALUE c)))
+    (and restart (invoke-restart restart value))))
 
 (defun use-value (value &optional c)
-  (invoke-restart (find-restart-never-fail 'USE-VALUE c) value))
+  (let ((restart (find-restart 'USE-VALUE c)))
+    (and restart (invoke-restart restart value))))
 
 #-ecl-min
 (package-lock "COMMON-LISP" t)
