@@ -167,10 +167,15 @@
       (declare (type var var))
       (setq form (first fl)
             var (first vl))
-      (when (and (local var)
-		 (setq used (not (discarded var form body))))
-	(setf (var-loc var) (next-lcl))
-	(do-decl var))
+      (if (local var)
+	  (if (setq used (not (discarded var form body)))
+	    (progn
+	      (setf (var-loc var) (next-lcl))
+	      (do-decl var))
+	    ;; The variable is discared, we simply replace it with
+	    ;; a dummy value that will not get used.
+	    (setf (var-kind var) 'REPLACED
+		  (var-loc var) NIL)))
       (when used
 	(if (unboxed var)
 	    (push (cons var form) initials)	; nil (ccb)
