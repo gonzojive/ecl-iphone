@@ -231,6 +231,9 @@
 				 &key (side-effects t) one-liner
 				 &aux output-rep-type)
       args
+    (unless (= (length arguments) (length arg-types))
+      (cmperr "In a C-INLINE form the number of declare arguments and the number of supplied ones do not match:~%~S"
+	      `(C-INLINE ,@args)))
     (if (lisp-type-p output-type)
 	(setq output-rep-type (lisp-type->rep-type output-type))
 	(setq output-rep-type output-type
