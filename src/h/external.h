@@ -129,8 +129,6 @@ extern void init_assignment(void);
 
 /* backq.c */
 
-extern cl_object cl_comma_reader _ARGS((int narg, cl_object in, cl_object c));
-extern cl_object cl_backquote_reader _ARGS((int narg, cl_object in, cl_object c));
 extern void init_backq(void);
 
 
