@@ -140,9 +140,3 @@ number_evenp(cl_object x)
 @	/* INV: number_evenp() checks_type */
 	@(return (number_evenp(x) ? Ct : Cnil))
 @)
-
-/* FIXME: What the hen is this for? */
-@(defun si::nani (x)
-@
-	@(return (cl_object)fixint(x))
-@)

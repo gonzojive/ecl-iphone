@@ -239,6 +239,7 @@ const struct function_info all_functions[] = {
 	{"INSTANCE-CLASS", siLinstance_class, si},
 	{"INSTANCE-CLASS-SET", siLinstance_class_set, si},
 	{"INSTANCEP", siLinstancep, si},
+	{"UNBOUND", siLunbound, si},
 	{"SL-BOUNDP", siLsl_boundp, si},
 	{"SL-MAKUNBOUND", siLsl_makunbound, si},
 #endif /* CLOS */
@@ -500,7 +501,6 @@ const struct function_info all_functions[] = {
 	{"MINUSP", clLminusp, cl},
 	{"ODDP", clLoddp, cl},
 	{"EVENP", clLevenp, cl},
-	{"NANI", siLnani, si},
 
 	/* num_rand.c */
 

@@ -562,7 +562,6 @@
 #-sparc
 (si::INIT-SYSTEM nil T)
 (si::POINTER nil T)
-(si::NANI nil T)
 
 ; file mapfun.c
 (MAPCAR (T T *) T)
@@ -1098,6 +1097,8 @@ type_of(#0)==t_bitvector"))
 	:inline-always ((standard-object) t nil nil "CLASS_OF(#0)"))
 (si::INSTANCE-CLASS-SET (t t) T)
 (si::INSTANCEP (t) T nil t)
+(si::UNBOUND nil T nil t
+	:inline-always (nil T nil nil "OBJNULL"))
 (si::SL-BOUNDP (t) T nil t
 	:inline-always ((t) boolean nil nil "(#0)!=OBJNULL"))
 (si::SL-MAKUNBOUND (t fixnum) T nil t)

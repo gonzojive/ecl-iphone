@@ -8,7 +8,8 @@
 ;;;;    See file '../Copyright' for full details.
 
 (defpackage "CLOS"
-  (:use "WALKER" "CL"))
+  (:use "WALKER" "CL")
+  (:import-from "SI" "UNBOUND"))
 
 (in-package "CLOS")
 
@@ -69,8 +70,6 @@
 
 (declaim (function si:instance-ref (t fixnum) t))
 (declaim (function si:instance-set (t fixnum t) t))
-
-(defmacro unbound () '(sys:nani 0))
 
 ;;; ----------------------------------------------------------------------
 ;;; Class CLASS

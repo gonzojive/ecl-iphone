@@ -149,6 +149,13 @@ instance_set(cl_object x, int i, cl_object v)
 	@(return ((type_of(x) == t_instance) ? Ct : Cnil))
 @)
 
+@(defun si::unbound ()
+@
+	/* Returns an object that cannot be read or written and which
+	   is used to represent an unitialized slot */
+	@(return OBJNULL)
+@)
+
 @(defun si::sl_boundp (x)
 @
 	@(return ((x == OBJNULL) ? Cnil : Ct))

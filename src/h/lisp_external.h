@@ -325,6 +325,7 @@ extern cl_object siLinstance_ref _ARGS((int narg, cl_object x, cl_object index))
 extern cl_object siLinstance_ref_safe _ARGS((int narg, cl_object x, cl_object index));
 extern cl_object siLinstance_set _ARGS((int narg, cl_object x, cl_object index, cl_object value));
 extern cl_object siLinstancep _ARGS((int narg, cl_object x));
+extern cl_object siLunbound _ARGS((int narg));
 extern cl_object siLsl_boundp _ARGS((int narg, cl_object x));
 extern cl_object siLsl_makunbound _ARGS((int narg, cl_object x, cl_object index));
 #endif
@@ -492,7 +493,6 @@ extern cl_object siLargv _ARGS((int narg, cl_object index));
 extern cl_object siLgetenv _ARGS((int narg, cl_object var));
 extern cl_object siLsetenv _ARGS((int narg, cl_object var, cl_object value));
 extern cl_object siLpointer _ARGS((int narg, cl_object x));
-extern cl_object siLnani _ARGS((int narg, cl_object x));
 extern cl_object clLidentity _ARGS((int narg, cl_object x));
 
 /* mapfun.c */
