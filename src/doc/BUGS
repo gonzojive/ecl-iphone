@@ -13,17 +13,8 @@ REAL BUGS
 * Routines in bind.c do not check length of arguments and may cause buffer
   overflows.
 
-* The following routines may cause indefinite loops when passed circular
-  lists:
-
 GCC SPECIFICS
 =============
-
-* Stack allocatable arrays of variable size, i.e.,
-
-  int function(int size) {
-    object x[size];
-    ...
 
 * Functions with a variable number of arguments are called with the
   same protocol as ordinary functions, i.e., the following code is
@@ -38,18 +29,6 @@ GCC SPECIFICS
   #in "faa.c"
   int faa(int foo, object x) {
   ...
-  }
-
-* Arguments of any function can be acessed as elements of an array.
-
-  #in "foo.c"
-  int test(object *x) {
-  ...
-  }
-
-  #in "faa.c"
-  int faa(int foo, object x, ...) {
-  test(&x);
   }
 
 
@@ -67,11 +46,11 @@ ECLS CODE INVARIANTS
 * C structs are aligned at least at 4 bytes, so that Cnil is a valid
   object pointer.
 
-* "struct symbol" and "struct cons" share fields so that
+* "struct ecl_symbol" and "struct ecl_cons" share fields so that
   Cnil->c.c_car == Cnil->c.c_cdr == Cnil.
 
-* "struct array", "struct vector", "struct string, "struct bitvector"
-  share a number of fields, such as "*_dim", "*_self", etc.
+* "struct ecl_array", "struct ecl_vector", "struct ecl_string, "struct
+  ecl_bitvector" share a number of fields, such as "*_dim", "*_self", etc.
 
 * Boehm's garbage collector returns pointers with two lower bits set
   to zero, i.e.,
@@ -81,7 +60,6 @@ ECLS CODE INVARIANTS
 * Frame/binding/history stacks cannot be resized.
 
 * DATA_START % LISP_PAGESIZE == 0
-
 
 ;;; Local Variables: ***
 ;;; mode:text ***
