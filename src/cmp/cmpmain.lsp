@@ -32,10 +32,9 @@ coprocessor).")
 
 (defvar *cc-flags* "-g -I.")
 (defvar *cc-optimize* "-O")		; C compiler otimization flag
-(defvar *cc-format* "~A ~A ~:[~*~;~A~] -I~A/h -w -c ~A -o ~A"))
-;(defvar *cc-format* "~A ~A ~:[~*~;~A~] -I~A/h -c ~A -o ~A"))
+(defvar *cc-format* "\"~A\" ~A ~:[~*~;~A~] \"-I~A/h\" -w -c \"~A\" -o \"~A\""))
 (defvar *ld-flags* "")
-(defvar *ld-format* "~A -o ~A -L~A ~{~A ~} ~@?")
+(defvar *ld-format* "~S -o ~S -L~S ~{~S ~} ~@?")
 #+dlopen
 (defvar *ld-shared-flags* "")
 #+dlopen
@@ -282,6 +281,7 @@ cl_object Cblock;
 	       shared-data-file submodules epilogue-code)
        (close c-file)
        (si:system (format nil "cat ~A" (namestring c-name)))
+       (print o-name)
        (compiler-cc c-name o-name)
        (apply #'bundle-cc output-name o-name ld-flags)))
     (delete-file c-name)
@@ -418,7 +418,8 @@ Cannot compile ~a."
 		   (format t "~&;;; Calling the C compiler... "))
                  (compiler-cc c-pathname o-pathname)
 		 #+dlopen
-		 (unless system-p (bundle-cc so-pathname o-pathname))
+		 (unless system-p (bundle-cc (si::coerce-to-filename so-pathname)
+					     (si::coerce-to-filename o-pathname)))
                  (cond #+dlopen
 		       ((and (not system-p) (probe-file so-pathname))
                         (when load (load so-pathname))
@@ -539,7 +540,8 @@ Cannot compile ~a."
 	    (format t "~&;;; Calling the C compiler... "))
 	  ;;(si::system (format nil "cat ~A" (namestring c-pathname)))
           (compiler-cc c-pathname o-pathname)
-	  (bundle-cc so-pathname o-pathname)
+	  (bundle-cc (si::coerce-to-filename so-pathname)
+		     (si::coerce-to-filename o-pathname))
           (delete-file c-pathname)
           (delete-file h-pathname)
 	  (delete-file o-pathname)
