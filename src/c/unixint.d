@@ -18,6 +18,7 @@
 #include "ecl.h"
 #include <signal.h>
 #include <unistd.h>
+#include "machines.h"
 
 /******************************* EXPORTS ******************************/
 
