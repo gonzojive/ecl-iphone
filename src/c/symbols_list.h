@@ -1,7 +1,12 @@
-#ifdef ECL_FINAL
-#define _D(x) x
+#ifdef ECL_CMU_FORMAT
+# define _DPPRINT(x) _D(x)
 #else
-#define _D(x) NULL
+# define _DPPRINT(x) NULL
+#endif
+#ifdef ECL_FINAL
+# define _D(x) x
+#else
+# define _D(x) NULL
 #endif
 #ifdef DPP
 #define EXT_ "EXT::"
@@ -284,7 +289,7 @@ cl_symbols[] = {
 {"CONTROL-ERROR", CL_ORDINARY, NULL, -1, OBJNULL},
 {"COPY-ALIST", CL_ORDINARY, cl_copy_alist, 1, OBJNULL},
 {"COPY-LIST", CL_ORDINARY, cl_copy_list, 1, OBJNULL},
-{"COPY-PPRINT-DISPATCH", CL_ORDINARY, _D(cl_copy_pprint_dispatch), -1, OBJNULL},
+{"COPY-PPRINT-DISPATCH", CL_ORDINARY, _DPPRINT(cl_copy_pprint_dispatch), -1, OBJNULL},
 {"COPY-READTABLE", CL_ORDINARY, cl_copy_readtable, -1, OBJNULL},
 {"COPY-SEQ", CL_ORDINARY, cl_copy_seq, 1, OBJNULL},
 {"COPY-STRUCTURE", CL_ORDINARY, cl_copy_structure, 1, OBJNULL},
@@ -674,16 +679,16 @@ cl_symbols[] = {
 {"POSITION-IF", CL_ORDINARY, _D(cl_position_if), -1, OBJNULL},
 {"POSITION-IF-NOT", CL_ORDINARY, _D(cl_position_if_not), -1, OBJNULL},
 {"PPRINT", CL_ORDINARY, cl_pprint, -1, OBJNULL},
-{"PPRINT-DISPATCH", CL_ORDINARY, _D(cl_pprint_dispatch), -1, OBJNULL},
+{"PPRINT-DISPATCH", CL_ORDINARY, _DPPRINT(cl_pprint_dispatch), -1, OBJNULL},
 {"PPRINT-EXIT-IF-LIST-EXHAUSTED", CL_ORDINARY, NULL, -1, OBJNULL},
-{"PPRINT-FILL", CL_ORDINARY, _D(cl_pprint_fill), -1, OBJNULL},
-{"PPRINT-INDENT", CL_ORDINARY, _D(cl_pprint_indent), -1, OBJNULL},
-{"PPRINT-LINEAR", CL_ORDINARY, _D(cl_pprint_linear), -1, OBJNULL},
+{"PPRINT-FILL", CL_ORDINARY, _DPPRINT(cl_pprint_fill), -1, OBJNULL},
+{"PPRINT-INDENT", CL_ORDINARY, _DPPRINT(cl_pprint_indent), -1, OBJNULL},
+{"PPRINT-LINEAR", CL_ORDINARY, _DPPRINT(cl_pprint_linear), -1, OBJNULL},
 {"PPRINT-LOGICAL-BLOCK", CL_ORDINARY, NULL, -1, OBJNULL},
-{"PPRINT-NEWLINE", CL_ORDINARY, _D(cl_pprint_newline), -1, OBJNULL},
+{"PPRINT-NEWLINE", CL_ORDINARY, _DPPRINT(cl_pprint_newline), -1, OBJNULL},
 {"PPRINT-POP", CL_ORDINARY, NULL, -1, OBJNULL},
-{"PPRINT-TAB", CL_ORDINARY, _D(cl_pprint_tab), -1, OBJNULL},
-{"PPRINT-TABULAR", CL_ORDINARY, _D(cl_pprint_tabular), -1, OBJNULL},
+{"PPRINT-TAB", CL_ORDINARY, _DPPRINT(cl_pprint_tab), -1, OBJNULL},
+{"PPRINT-TABULAR", CL_ORDINARY, _DPPRINT(cl_pprint_tabular), -1, OBJNULL},
 {"PRIN1", CL_ORDINARY, cl_prin1, -1, OBJNULL},
 {"PRIN1-TO-STRING", CL_ORDINARY, _D(cl_prin1_to_string), -1, OBJNULL},
 {"PRINC", CL_ORDINARY, cl_princ, -1, OBJNULL},
@@ -774,7 +779,7 @@ cl_symbols[] = {
 {"SET-DISPATCH-MACRO-CHARACTER", CL_ORDINARY, cl_set_dispatch_macro_character, -1, OBJNULL},
 {"SET-EXCLUSIVE-OR", CL_ORDINARY, _D(cl_set_exclusive_or), -1, OBJNULL},
 {"SET-MACRO-CHARACTER", CL_ORDINARY, cl_set_macro_character, -1, OBJNULL},
-{"SET-PPRINT-DISPATCH", CL_ORDINARY, _D(cl_set_pprint_dispatch), -1, OBJNULL},
+{"SET-PPRINT-DISPATCH", CL_ORDINARY, _DPPRINT(cl_set_pprint_dispatch), -1, OBJNULL},
 {"SET-SYNTAX-FROM-CHAR", CL_ORDINARY, cl_set_syntax_from_char, -1, OBJNULL},
 {"SETF", CL_ORDINARY, NULL, -1, OBJNULL},
 {"SETQ", CL_FORM, NULL, -1, OBJNULL},
