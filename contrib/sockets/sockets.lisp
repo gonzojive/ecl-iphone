@@ -1249,3 +1249,6 @@ GET-NAME-SERVICE-ERRNO")
 (define-sockopt sockopt-reuse-port "SO_REUSEPORT" bool)
 
 ;; Add sockopts here as you need them...
+
+;; Finished loading
+(provide 'sockets)
