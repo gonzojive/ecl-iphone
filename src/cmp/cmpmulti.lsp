@@ -199,6 +199,7 @@
   (setq body (c1decl-body other-decls body))
   (dolist (var vars) (check-vref var))
   (make-c1form* 'MULTIPLE-VALUE-BIND :type (c1form-type body)
+		:local-vars vars
 		:args vars init-form body)
   )
 

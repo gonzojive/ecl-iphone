@@ -49,6 +49,10 @@ handle_signal(int sig)
 	}
 }
 
+/*
+ * TODO: Use POSIX signals, and in particular use sigaltstack to
+ * handle stack overflows gracefully.
+ */
 static void
 signal_catcher(int sig)
 {

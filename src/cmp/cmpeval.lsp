@@ -84,8 +84,10 @@
   (let ((fun (local-function-ref fname)))
     (when fun
       (let* ((forms (c1args* args))
-	     (referred-vars (list (fun-var fun)))
-	     (referred-local (list (fun-var fun)))
+	     (lambda-form (fun-lambda fun))
+	     (referred-vars (and lambda-form (c1form-referred-vars lambda-form)))
+	     (changed-vars (and lambda-form (c1form-changed-vars lambda-form)))
+	     (function-variable (list (fun-var fun)))
 	     (return-type (or (get-local-return-type fun) 'T))
 	     (arg-types (get-local-arg-types fun)))
 	  ;; Add type information to the arguments.
@@ -101,8 +103,9 @@
 	    (setq forms (nreverse fl))))
 	(make-c1form* 'CALL-LOCAL
 		      :sp-change t
-		      :referred-vars referred-local
-		      :local-referred referred-vars
+		      :referred-vars (append function-variable referred-vars)
+		      :changed-vars changed-vars
+		      :local-referred function-variable
 		      :type return-type
 		      :args fun forms)))))
 

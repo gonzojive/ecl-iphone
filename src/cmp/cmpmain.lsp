@@ -582,15 +582,10 @@ Cannot compile ~a."
 				 (open h-file :direction :output)
 				 null-stream))
          (*error-count* 0)
-         (t3local-fun (symbol-function 'T3LOCAL-FUN))
-	 (t3fun (get-sysprop 'DEFUN 'T3)))
+         (t3local-fun (symbol-function 'T3LOCAL-FUN)))
     (with-lock (+load-compile-lock+)
       (unwind-protect
 	   (progn
-	     (put-sysprop 'DEFUN 'T3
-			  #'(lambda (&rest args)
-			      (let ((*compiler-output1* *standard-output*))
-				(apply t3fun args))))
 	     (setf (symbol-function 'T3LOCAL-FUN)
 		   #'(lambda (&rest args)
 		       (let ((*compiler-output1* *standard-output*))
@@ -607,7 +602,6 @@ Cannot compile ~a."
 	     (data-dump data-file)
 	     (init-env)
 	     )
-	(put-sysprop 'DEFUN 'T3 t3fun)
 	(setf (symbol-function 'T3LOCAL-FUN) t3local-fun)
 	(when h-file (close *compiler-output2*)))))
   nil

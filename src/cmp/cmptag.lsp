@@ -70,6 +70,7 @@
 	  (when (jumps-to-p (car w) name)
 	    (setq end w)))))))
 
+;; FIXME! The variable name should not be a usable one!
 (defun c1tagbody (body &aux (*tags* *tags*)
                        (tag-var (make-var :name 'TAGBODY :kind NIL))
 		       (tag-index 0))
@@ -100,7 +101,8 @@
 	       (when (var-ref-ccb tag-var)
 		 (incf *setjmps*))
 	       (add-loop-registers body1)
-	       (make-c1form* 'TAGBODY :args tag-var body1))
+	       (make-c1form* 'TAGBODY :local-vars (list tag-var)
+			     :args tag-var body1))
 	(make-c1form* 'PROGN :args (nreverse (cons (c1nil) body1))))))
 
 (defun c2tagbody (tag-loc body)

@@ -142,28 +142,13 @@
 	     (setq etype T))
 	   (setf return-type etype)
 	   (setf (c1form-type (first args)) etype))))))
-  (if (and (inline-possible fname)
-	   (not (eq 'ARGS-PUSHED args))
-	   *tail-recursion-info*
-	   (same-fname-p (first *tail-recursion-info*) fname)
-	   (last-call-p)
-	   (tail-recursion-possible)
-	   (= (length args) (length (cdr *tail-recursion-info*))))
-      ;; Tail-recursive case.
-      (let* ((*destination* 'TRASH)
-	     (*exit* (next-label))
-	     (*unwind-exit* (cons *exit* *unwind-exit*)))
-	(c2psetq (cdr *tail-recursion-info*) args)
-	(wt-label *exit*)
-	(unwind-no-exit 'TAIL-RECURSION-MARK)
-	(wt-nl "goto TTL;")
-	(cmpnote "Tail-recursive call of ~s was replaced by iteration."
-		 fname))
-      ;; else
-      (let ((*inline-blocks* 0))
-	(call-global fname (if (eq args 'ARGS-PUSHED) args (inline-args args))
-		     loc return-type narg)
-	(close-inline-blocks))))
+  (let ((fun (find fname *global-funs* :key #'fun-name)))
+    (when (and fun (c2try-tail-recursive-call fun args))
+      (return-from c2call-global)))
+  (let ((*inline-blocks* 0))
+    (call-global fname (if (eq args 'ARGS-PUSHED) args (inline-args args))
+		 loc return-type narg)
+    (close-inline-blocks)))
 
 ;;;
 ;;; call-global:
@@ -201,8 +186,8 @@
       (unwind-exit loc))
 
      ;; Call to a function defined in the same file.
-     ((setq fd (assoc fname *global-funs* :test #'same-fname-p))
-      (let ((cfun (second fd)))
+     ((setq fd (find fname *global-funs* :test #'same-fname-p :key #'fun-name))
+      (let ((cfun (fun-cfun fd)))
 	(unwind-exit (call-loc fname
 			       (if (numberp cfun)
 				 (format nil "L~d" cfun)

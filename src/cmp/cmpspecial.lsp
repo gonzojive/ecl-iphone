@@ -126,31 +126,33 @@
      (setf (fun-closure fun) (> *env* 0))
      (new-local 0 fun funob)	; 0 was *level*
      (unwind-exit `(MAKE-CCLOSURE ,fun)))
+    ;; Notice that C1FSET relies on the meaning CONSTANT = (NOT CLOSURE)!
     (CONSTANT
      (unwind-exit (fun-var fun)))))
 
 ;;; Mechanism for sharing code.
-(defun new-local (level fun funob)
+(defun new-local (level fun &optional (funob (fun-lambda fun)))
   ;; returns the previous function or NIL.
   (declare (type fun fun))
   (let ((previous (dolist (local *local-funs*)
-		    (when (and (= *env* (fun-env (second local)))
+		    (when (and (= *env* (fun-env local))
 			       ;; closures must be embedded in env of
 			       ;; same size
-			       (similar funob (third local)))
-		      (return (second local)))))
-        (closure (when (fun-closure fun) 'CLOSURE)))
+			       (similar funob (fun-lambda local)))
+		      (return local)))))
     (if previous
 	(progn
-          (if closure
+          (if (fun-closure fun)
 	      (cmpnote "Sharing code for closure")
 	      (cmpnote "Sharing code for local function ~A" (fun-name fun)))
-	  (setf (fun-cfun fun) (fun-cfun previous))
+	  (setf (fun-cfun fun) (fun-cfun previous)
+		(fun-lambda fun) (fun-lambda previous))
 	  previous)
         (progn
           (setf (fun-level fun) (if (fun-ref-ccb fun) 0 level)
-                (fun-env fun) *env*)
-          (push (list closure fun funob) *local-funs*)
+		(fun-lambda fun) funob
+                (fun-env fun) *env*
+		*local-funs* (cons fun *local-funs*))
 	  NIL))))
 
 (defun wt-fdefinition (fun-name)

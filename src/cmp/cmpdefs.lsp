@@ -125,9 +125,11 @@
   cfun			;;; The cfun for the function.
   (level 0)		;;; Level of lexical nesting for a function.
   (env 0)     		;;; Size of env of closure.
+  (global nil)		;;; Global function: exported for outside this module.
   closure		;;; During Pass2, T if env is used inside the function
   var			;;; the variable holding the funob
   description		;;; Text for the object, in case NAME == NIL.
+  lambda		;;; Lambda c1-form for this function.
   )
 
 (defstruct (blk (:include ref))
@@ -161,8 +163,9 @@
   )
 
 (defstruct (info)
-  (changed-vars nil)	;;; List of var-objects changed by the form.
-  (referred-vars nil)	;;; List of var-objects referred in the form.
+  (local-vars nil)	;;; List of var-objects created directly in the form.
+  (changed-vars nil)	;;; List of external var-objects changed by the form.
+  (referred-vars nil)	;;; List of extenal var-objects referred in the form.
   (type t)		;;; Type of the form.
   (sp-change nil)	;;; Whether execution of the form may change
 			;;; the value of a special variable.
@@ -278,7 +281,7 @@ The default value is NIL.")
 ;;;
 ;;; *tail-recursion-info* holds NIL, if tail recursion is impossible.
 ;;; If possible, *tail-recursion-info* holds
-;;	( fname  required-arg .... required-arg ),
+;;	( c1-lambda-form  required-arg .... required-arg ),
 ;;; where each required-arg is a var-object.
 ;;;
 (defvar *tail-recursion-info* nil)
@@ -340,7 +343,6 @@ The default value is NIL.")
 
 ;;; --cmptop.lsp--
 ;;;
-(defvar *funarg-vars*)
 (defvar *volatile*)
 (defvar *setjmps* 0)
 
@@ -358,9 +360,9 @@ The default value is NIL.")
 					; watch out for multiple values.
 
 (defvar *global-vars* nil)
-(defvar *global-funs* nil)		; holds	{ ( global-fun-name cfun ... ) }*
+(defvar *global-funs* nil)		; holds	{ fun }*
 (defvar *linking-calls* nil)		; holds { ( global-fun-name vv ) }*
-(defvar *local-funs* nil)		; holds { ( closurep fun funob ) }*
+(defvar *local-funs* nil)		; holds { fun }*
 (defvar *top-level-forms* nil)		; holds { top-level-form }*
 ;;;
 ;;;     top-level-form:

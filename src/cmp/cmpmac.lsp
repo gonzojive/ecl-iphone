@@ -113,6 +113,8 @@
   (dolist (subform dependents form)
     (cond ((c1form-p subform)
 	   (add-info form subform (eql (c1form-name subform) 'FUNCTION)))
+	  ((and (fun-p subform) (fun-lambda subform))
+	   (add-info form (fun-lambda subform) t))
 	  ((consp subform)
 	   (c1form-add-info form subform)))))
 

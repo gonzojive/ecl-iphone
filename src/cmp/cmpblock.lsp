@@ -31,8 +31,8 @@
   (let ((block-name (first args)))
     (unless (symbolp block-name)
       (cmperr "The block name ~s is not a symbol." block-name))
-    (let* ((blk (make-blk :var (make-var :name block-name :kind 'LEXICAL)
-			  :name block-name))
+    (let* ((blk-var (make-var :name block-name :kind 'LEXICAL))
+	   (blk (make-blk :var blk-var :name block-name))
 	   (*blocks* (cons blk *blocks*))
 	   (body (c1progn (rest args))))
       (when (or (blk-ref-ccb blk) (blk-ref-clb blk))
@@ -40,7 +40,9 @@
       (if (plusp (blk-ref blk))
 	  ;; FIXME! By simplifying the type of a BLOCK form so much (it is
 	  ;; either NIL or T), we lose a lot of information.
-	  (make-c1form* 'BLOCK :type (type-or (blk-type blk) (c1form-type body))
+	  (make-c1form* 'BLOCK
+			:local-vars (list blk-var)
+			:type (type-or (blk-type blk) (c1form-type body))
 			:args blk body)
 	  body))))
 

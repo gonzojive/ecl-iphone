@@ -21,16 +21,15 @@
     (push (t1expr* form) *top-level-forms*)))
 
 (defun t1expr* (form &aux (*current-form* form) (*first-error* t)
-                    *funarg-vars*
 		    (*setjmps* 0))
   ;(let ((*print-level* 3)) (print form))
   (catch *cmperr-tag*
     (when (consp form)
-      (let ((fun (car form)) (args (cdr form)) fd setf-symbol) ; #+cltl2
+      (let ((fun (car form)) (args (cdr form)) fd)
+	(when *compile-print* (print-current-form))
 	(cond
             ((symbolp fun)
              (cond ((setq fd (get-sysprop fun 'T1))
-                    (when *compile-print* (print-current-form))
                     (funcall fd args))
                    ((get-sysprop fun 'C1) (t1ordinary form))
                    ((setq fd (macro-function fun))
@@ -60,23 +59,19 @@
     (do ((lfs *local-funs* (cdr lfs)))
 	((eq (cdr lfs) *emitted-local-funs*)
 	 (setq *emitted-local-funs* lfs)
-	 (when *compile-print*
-	   (print-emitting (fun-name (cadar lfs))))
 	 (locally (declare (notinline t3local-fun))
 	   ;; so disassemble can redefine it
-	   (apply 't3local-fun (car lfs)))))))
+	   (t3local-fun (first lfs)))))))
 
 (defun t3expr (form)
   ;(pprint (cons 'T3 form))
   (when form
     (emit-local-funs)
-    (setq *funarg-vars* nil)
     (let ((def (get-sysprop (c1form-name form) 'T3)))
       (when def
 	;; new local functions get pushed into *local-funs*
 	(apply def (c1form-args form))))
-    (emit-local-funs)
-    (setq *funarg-vars* nil)))
+    (emit-local-funs)))
 
 (defun ctop-write (name h-pathname data-pathname
 		        &key system-p shared-data
@@ -224,77 +219,39 @@
   (or (and (symbolp name) (get-sysprop name 'Lfun))
       (next-cfun)))
 
-(defun t1defun (args &aux (setjmps *setjmps*))
+(defun t1defun (args)
   (check-args-number 'DEFUN args 2)
   (when *compile-time-too* (cmp-eval (cons 'DEFUN args)))
-  (let* (lambda-expr
-	 (fname (car args))
-	 (cfun (exported-fname fname))
+  (let* ((fname (car args))
+	 (setjmps *setjmps*)
+	 (lambda-expr (c1lambda-expr (cdr args) (si::function-block-name fname)))
 	 (no-entry nil)
-	 (doc nil)
-	 output)
-
-    (setq lambda-expr (c1lambda-expr (cdr args) (si::function-block-name fname)))
+	 (doc nil))
     (unless (eql setjmps *setjmps*)
       (setf (c1form-volatile lambda-expr) t))
     (multiple-value-bind (decl body doc)
 	(si::process-declarations (cddr args) nil)
-      (cond ((and (assoc 'si::c-local decl) *allow-c-local-declaration*)
+      (cond ((and *allow-c-local-declaration* (assoc 'si::c-local decl))
 	     (setq no-entry t))
 	    ((setq doc (si::expand-set-documentation fname 'function doc))
 	     (t1expr `(progn ,@doc)))))
     (add-load-time-values)
-    (setq output (new-defun fname cfun lambda-expr *special-binding* no-entry))
-    (when
-      (and
-       (symbolp fname)
-       (get-sysprop fname 'PROCLAIMED-FUNCTION)
-       (let ((lambda-list (c1form-arg 0 lambda-expr)))
-         (declare (list lambda-list))
-         (and (null (second lambda-list))	; no optional
-              (null (third lambda-list))	; no rest
-              (null (fourth lambda-list))	; no keyword
-              (< (length (car lambda-list)) lambda-parameters-limit))))
-      (flet
-	  ((make-inline-string (cfun args)
-	     (if (null args)
-		 (format nil "LI~a()" cfun)
-		 (let ((o (make-array 100 :element-type 'BASE-CHAR
-				      :fill-pointer 0)))
-		   (format o "LI~a(" cfun)
-		   (do ((l args (cdr l))
-			(n 0 (1+ n)))
-		       ((endp (cdr l))
-			(format o "#~d)" n))
-		     (declare (fixnum n))
-		     (format o "#~d," n))
-		   o))))
-	(let ((pat (get-sysprop fname 'PROCLAIMED-ARG-TYPES))
-	      (prt (get-sysprop fname 'PROCLAIMED-RETURN-TYPE)))
-	  (push (list fname pat prt t
-		      (not (member-type prt
-					'(FIXNUM CHARACTER LONG-FLOAT SHORT-FLOAT)))
-		      (make-inline-string cfun pat))
-		*inline-functions*))))
+    (setq output (new-defun fname lambda-expr no-entry))
     output))
 
 ;;; Mechanism for sharing code:
 ;;; FIXME! Revise this 'DEFUN stuff.
-(defun new-defun (fname cfun lambda-expr special-binding &optional no-entry)
-  (let ((previous (dolist (form *global-funs*)
-		    (when (and #+nil(eq 'DEFUN (car form))
-			       (equal special-binding (fifth form))
-			       (similar lambda-expr (third form)))
-		      (return (second form))))))
-    (if (and previous (not (get-sysprop fname 'Lfun)))
-	(progn
-	  (cmpnote "Sharing code for function ~A" fname)
-	  (make-c1form* 'DEFUN :args fname previous nil special-binding
-			*funarg-vars* no-entry))
-	(let ((fun-desc (list fname cfun lambda-expr special-binding
-			      *funarg-vars* no-entry)))
-	  (push fun-desc *global-funs*)
-	  (apply #'make-c1form* 'DEFUN :args fun-desc)))))
+(defun new-defun (fname lambda-expr &optional no-entry)
+  (let ((cfun (exported-fname fname)))
+    (unless (stringp cfun)
+      (dolist (f *global-funs*)
+	(when (similar lambda-expr (fun-lambda f))
+	  (cmpnote "Sharing code among functions ~A and ~A" fname (fun-name f))
+	  (setf cfun (fun-cfun f) lambda-expr nil)
+	  (return))))
+    (let ((fun (make-fun :name fname :cfun cfun :global t :lambda lambda-expr)))
+      (push fun *global-funs*)
+      (make-c1form* 'DEFUN :args fun no-entry))))
 
 (defun similar (x y)
   (or (equal x y)
@@ -309,125 +266,18 @@
 	   (typep y 'VECTOR)
 	   (every #'similar x y))))
 
-(defun wt-if-proclaimed (fname cfun vv lambda-expr)
-  (when (fast-link-proclaimed-type-p fname)
-    (let ((arg-c (length (car (third lambda-expr))))
-	  (arg-p (length (get-sysprop fname 'PROCLAIMED-ARG-TYPES))))
-      (if (= arg-c arg-p)
-	(cmpwarn
-	 " ~a is proclaimed but not in *inline-functions* ~
-          ~%T1defun could not assure suitability of args for C call" fname)
-	(cmpwarn
-	 "Number of proclaimed args for ~a was ~a. ~
-          ~%;;; Its definition had ~a." fname arg-p arg-c)))))
-
-(defun t2defun (fname cfun lambda-expr sp funarg-vars no-entry)
+(defun t2defun (fun no-entry)
   (declare (ignore sp funarg-vars))
-  (if no-entry
-    (return-from t2defun nil))
-    (let ((vv (add-object fname)))
+  ;; If the function is not shared, emit it.
+  (when (fun-lambda fun)
+    (push fun *local-funs*))
+  (unless no-entry
+    (let* ((fname (fun-name fun))
+	   (vv (add-object fname))
+	   (cfun (fun-cfun fun)))
       (if (numberp cfun)
 	(wt-nl "cl_def_c_function_va(" vv ",(cl_objectfn)L" cfun ");")
-	(wt-nl "cl_def_c_function_va(" vv ",(cl_objectfn)" cfun ");"))
-      (when (and (symbolp fname) (get-sysprop fname 'PROCLAIMED-FUNCTION))
-	(wt-if-proclaimed fname cfun vv lambda-expr))))
-
-(defun t3defun (fname cfun lambda-expr sp funarg-vars no-entry
-                      &aux inline-info lambda-list requireds
-                      (*current-form* (list 'DEFUN fname))
-                      (*volatile* (when lambda-expr
-                                    (c1form-volatile* lambda-expr)))
-		      (*lcl* 0) (*temp* 0) (*max-temp* 0)
-		      (*lex* *lex*) (*max-lex* *max-lex*)
-		      (*env* *env*) (*max-env* 0) (*level* *level*))
-  (setq *funarg-vars* funarg-vars)
-  (when *compile-print* (print-emitting fname))
-  (when lambda-expr		; Not sharing code.
-    (setq lambda-list (c1form-arg 0 lambda-expr)
-          requireds (car lambda-list))
-
-    (if (setq inline-info (assoc fname *inline-functions* :test #'same-fname-p))
-      
-	;; Local entry
-	(let* ((*exit* (case (third inline-info)
-			 (FIXNUM 'RETURN-FIXNUM)
-			 (CHARACTER 'RETURN-CHARACTER)
-			 (LONG-FLOAT 'RETURN-LONG-FLOAT)
-			 (SHORT-FLOAT 'RETURN-SHORT-FLOAT)
-			 (otherwise 'RETURN-OBJECT)))
-	       (*unwind-exit* (list *exit*))
-	       (*destination* *exit*)
-	       (*reservation-cmacro* (next-cmacro)))
-
-	  ;; Add global entry information.
-	  (push (list fname cfun (second inline-info) (third inline-info))
-		*global-entries*)
-	  (wt-comment "local entry for function " fname)
-	  (let*((ret-type (rep-type-name (lisp-type->rep-type (third inline-info))))
-		(string
-		 (with-output-to-string (*compiler-output1*)
-		   (wt-nl1 "static " ret-type " LI" cfun "(")
-		   (do* ((vl requireds (cdr vl))
-			 (types (second inline-info) (cdr types))
-			 var rep-type
-			 (lcl (1+ *lcl*) (1+ lcl)))
-		       ((endp vl))
-		     (declare (fixnum lcl))
-		     (setq var (first vl)
-			   rep-type (lisp-type->rep-type (car types)))
-		     (when (member-type (car types)
-					'(FIXNUM CHARACTER LONG-FLOAT SHORT-FLOAT))
-		       ;; so that c2lambda-expr will know its proper type.
-		       (setf (var-kind var) rep-type))
-		     (unless (eq vl requireds) (wt ","))
-		     (wt *volatile* (rep-type-name rep-type) " ")
-		     (wt-lcl lcl))
-		   (wt ")"))))
-	    (wt-h string ";")
-	    (wt-nl1 string))
-
-	  ;; Now the body.
-	  (let ((*tail-recursion-info* (cons fname requireds))
-		(*unwind-exit* *unwind-exit*))
-	    (wt-nl1 "{")
-	    (wt-function-prolog nil 'LOCAL-ENTRY)
-	    (c2lambda-expr lambda-list (c1form-arg 2 lambda-expr) cfun fname
-			   nil 'LOCAL-ENTRY)
-	    (wt-nl1 "}")
-	    (wt-function-epilogue)))
-
-	;; normal (non proclaimed) function:
-	(let ((*exit* 'RETURN) (*unwind-exit* '(RETURN))
-	      (*destination* 'RETURN) (*reservation-cmacro* (next-cmacro))
-	      (va_args (or (second lambda-list)
-			   (third lambda-list)
-			   (fourth lambda-list))))
-
-	  (wt-comment "function definition for " fname)
-	  (if (numberp cfun)
-	      (progn
-		(wt-nl1 "static cl_object L" cfun "(cl_narg narg")
-		(wt-h "static cl_object L" cfun "(cl_narg narg"))
-	      (progn
-		(wt-nl1 "cl_object " cfun "(cl_narg narg")
-		(wt-h "cl_object " cfun "(cl_narg narg")))
-	  (do ((vl requireds (cdr vl))
-	       (lcl (1+ *lcl*) (1+ lcl)))
-	      ((endp vl))
-	    (declare (fixnum lcl))
-	    (wt ", cl_object ") (wt-lcl lcl)
-	    (wt-h1 ", cl_object"))
-	  (when va_args
-	    (wt ", ...")
-	    (wt-h1 ", ..."))
-	  (wt ")")
-	  (wt-h1 ");")
-      
-	  (wt-nl1 "{")
-	  (wt-function-prolog sp)
-	  (c2lambda-expr lambda-list (c1form-arg 2 lambda-expr) cfun fname)
-	  (wt-nl1 "}")
-	  (wt-function-epilogue)))))
+	(wt-nl "cl_def_c_function_va(" vv ",(cl_objectfn)" cfun ");")))))
 
 (defun wt-function-prolog (&optional sp local-entry)
   (wt " VT" *reservation-cmacro*
@@ -508,50 +358,6 @@
     (SHORT-FLOAT "float ")
     (LONG-FLOAT "double ")
     (otherwise "cl_object ")))
-
-(defun t1defmacro (args)
-  (check-args-number 'DEFMACRO args 2)
-  (cmpck (not (symbolp (car args)))
-         "The macro name ~s is not a symbol." (car args))
-  (cmp-eval (cons 'DEFMACRO args))
-  (let (macro-lambda (cfun (next-cfun)) (doc nil) (ppn nil))
-    (setq macro-lambda (c1dm (car args) (second args) (cddr args)))
-    (when (second macro-lambda) (setq ppn (add-object (second macro-lambda))))
-    (when (and (setq doc (car macro-lambda))
-	       (setq doc (si::expand-set-documentation (car args) 'function doc)))
-      (t1expr `(progn ,@doc)))
-    (add-load-time-values)
-    (make-c1form* 'DEFMACRO :args (car args) cfun (cddr macro-lambda) ppn
-		  *special-binding*)))
-
-(defun t2defmacro (fname cfun macro-lambda ppn sp &aux (vv (add-symbol fname)))
-  (declare (ignore macro-lambda sp))
-  (when (< *space* 3)
-    (when ppn
-      (wt-nl "si_put_sysprop(" vv "," (add-symbol 'si::pretty-print-format) "," ppn ");")
-      (wt-nl)))
-  (wt-h "static cl_object L" cfun "();")
-  (wt-nl "cl_def_c_macro(" vv ",L" cfun ");"))
-
-(defun t3defmacro (fname cfun macro-lambda ppn sp
-                         &aux (*lcl* 0) (*temp* 0) (*max-temp* 0)
-                         (*lex* *lex*) (*max-lex* *max-lex*)
-                         (*env* *env*) (*max-env* 0) (*level* *level*)
-			 (*volatile*
-			  (if (get-sysprop fname 'CONTAINS-SETJMP) " volatile " ""))
-                         (*exit* 'RETURN) (*unwind-exit* '(RETURN))
-                         (*destination* 'RETURN)
-                         (*reservation-cmacro* (next-cmacro)))
-  (when *compile-print* (print-emitting fname))
-  (wt-comment "macro definition for " fname)
-  (wt-nl1 "static cl_object L" cfun "(cl_object V1, cl_object V2)")
-  (wt-nl1 "{")
-  (wt-function-prolog sp)
-  (c2dm fname (car macro-lambda) (second macro-lambda) (third macro-lambda)
-        (fourth macro-lambda))
-  (wt-nl1 "}")
-  (wt-function-epilogue)
-  )
 
 (defun t1ordinary (form)
   (when *compile-time-too* (cmp-eval form))
@@ -694,21 +500,35 @@
           (t (cmperr "The C variable specification ~s is illegal." cvs))))
   )
 
-(defun t3local-fun (closure-p fun lambda-expr
-			      ;; if defined by labels can be tail-recursive
-                              &aux (level (fun-level fun))
+(defun t3local-fun (fun &optional
+                              &aux
+			      (closure-p (fun-closure fun))
+			      (lambda-expr (fun-lambda fun))
+			      (level (fun-level fun))
+			      (cfun (fun-cfun fun))
 			      (nenvs level)
 			      (*volatile* (c1form-volatile* lambda-expr))
+			      (*tail-recursion-info* fun)
                               (lambda-list (c1form-arg 0 lambda-expr))
                               (requireds (car lambda-list))
                               (va_args (or (second lambda-list)
                                            (third lambda-list)
                                            (fourth lambda-list))))
   (declare (fixnum level nenvs))
-  (wt-comment (if (fun-closure fun) "closure " "local function ")
+  (when *compile-print* (print-emitting fun))
+  (wt-comment (cond ((fun-global fun) "function definition for ")
+		    ((fun-closure fun) "closure ")
+		    (t "local function "))
 	      (or (fun-name fun) (fun-description fun) 'CLOSURE))
-  (wt-h "static cl_object LC" (fun-cfun fun) "(")
-  (wt-nl1 "static cl_object LC" (fun-cfun fun) "(")
+  (cond ((not (fun-global fun))
+	 (wt-h "static cl_object LC" cfun "(")
+	 (wt-nl1 "static cl_object LC" cfun "("))
+	((stringp cfun)
+	 (wt-h "cl_object " cfun "(")
+	 (wt-nl1 "cl_object " cfun "("))
+	(t
+	 (wt-h "static cl_object L" cfun "(")
+	 (wt-nl1 "static cl_object L" cfun "(")))
   (wt-h1 "cl_narg")
   (wt "cl_narg narg")
   (dotimes (n level)
@@ -773,114 +593,6 @@
     (wt-function-epilogue closure-p))	; we should declare in CLSR only those used
   )
 
-;;; ----------------------------------------------------------------------
-;;; Function definition with in-line body expansion.
-;;; This is similar to defentry, except that the C body is supplied
-;;; instead of a C function to call.
-;;; Besides, Lisp types are used instead of C types, for proper coersion.
-;;;
-;;; (defCbody logand (fixnum fixnum) fixnum "(#0) & (#1)")
-;;;
-;;; ----------------------------------------------------------------------
-
-(defun t1defCbody (args &aux fun (cfun (next-cfun)))
-  (check-args-number 'DEFCBODY args 4)
-  (setq fun (first args))
-  (cmpck (not (symbolp fun))
-         "The function name ~s is not a symbol." fun)
-  (push (list fun cfun) *global-funs*)
-  (make-c1form* 'DEFCBODY :args fun cfun (second args) (third args) (fourth args)))
-
-(defun t2defCbody (fname cfun arg-types type body
-                         &aux (vv (add-symbol fname)))
-  (declare (ignore arg-types type body))
-  (wt-h "static cl_object L" cfun "();")
-  (wt-nl "cl_def_c_function_va(" vv ",(cl_objectfn)L" cfun ");")
-  )
-
-(eval-when (compile eval)		; also in cmpinline.lsp
-  ;; by mds@sepgifbr.sep.de.edf.fr (M.Decugis)
-  (defmacro parse-index (fun i)
-    `(multiple-value-bind (a-read endpos)
-      (parse-integer ,fun :start (1+ ,i) :junk-allowed t)
-      (setq ,i (1- endpos))
-      a-read))
-  )
-
-(defun t3defCbody (fname cfun arg-types type body)
-  (when *compile-print* (print-emitting fname))
-  (wt-comment "function definition for " fname)
-  (wt-nl1 "static cl_object L" cfun "(cl_narg narg")
-  (do ((vl arg-types (cdr vl))
-       (lcl 1 (1+ lcl)))
-      ((endp vl))
-    (declare (fixnum lcl))
-    (wt ", cl_object ") (wt-lcl lcl)
-    )
-  (wt ")")
-  (wt-nl1 "{")
-  (flet ((lisp2c-type (type)
-		      (case type
-			    ((NIL) 'VOID)
-			    (CHARACTER 'CHAR)
-			    (FIXNUM 'CL_FIXNUM)
-			    (LONG-FLOAT 'DOUBLE)
-			    (SHORT-FLOAT 'FLOAT)
-			    (otherwise 'OBJECT)))
-	 (lisp2c-convert (type)
-			 (case type
-			    ((NIL) "(void)(V~d)")
-			    (CHARACTER "object_to_char(V~d)")
-			    (FIXNUM "object_to_fixnum(V~d)")
-			    (LONG-FLOAT "object_to_double(V~d)")
-			    (SHORT-FLOAT "object_to_float(V~d)")
-			    (otherwise "V~d")))
-	 (wt-inline-arg (fun locs &aux (i 0))
-            (declare (fixnum i))
-	    (cond ((stringp fun)
-		   (when (char= (char (the string fun) 0) #\@)
-			 (setq i 1)
-			 (do ()
-			     ((char= (char (the string fun) i) #\;) (incf i))
-			     (incf i)))
-		   (do ((size (length (the string fun))))
-		       ((>= i size))
-		       (declare (fixnum size))
-		       (let ((char (char (the string fun) i)))
-			 (declare (character char))
-			 (if (char= char #\#)
-			     (wt (nth (parse-index fun i) locs))
-			   (princ char *compiler-output1*))
-			 (incf i)))))))
-	(when type
-	  (let ((ctype (lisp2c-type type)))
-	    (if (eq ctype 'OBJECT)
-	      (wt-nl "cl_object x;")
-	      (wt-nl (string-downcase ctype) " x;"))))
-	(when (safe-compile) (wt-nl "check_arg(" (length arg-types) ");"))
-	(when type (wt-nl "x="))
-	(wt-inline-arg
-	 body
-	 (do ((types arg-types (cdr types))
-	      (i 1 (1+ i))
-	      (lst))
-	     ((null types) (nreverse lst))
-	     (declare (object types) (fixnum i))
-	     (push (format nil (lisp2c-convert (car types)) i) lst)))
-	(wt ";")
-	(wt-nl "NVALUES=1;")
-	(wt-nl "return ")
-	(case type
-	      ((NIL) (wt "Cnil"))
-	      (BOOLEAN (wt "(x?Ct:Cnil)"))
-	      (CHARACTER (wt "CODE_CHAR(x)"))
-	      (FIXNUM (wt "MAKE_FIXNUM(x)"))
-	      (SHORT-FLOAT (wt "make_shortfloat(x)"))
-	      (LONG-FLOAT (wt "make_longfloat(x)"))
-	      (otherwise (wt "x"))
-	      )
-	(wt ";}")
-	))
 (defun t2function-constant (funob fun)
   (let ((previous (new-local *level* fun funob)))
     (if (and previous (fun-var previous))
@@ -891,6 +603,44 @@
 )
 
 ;;; ----------------------------------------------------------------------
+;;; Optimizer for FSET. Should remove the need for a special handling of
+;;; DEFUN as a toplevel form.
+;;;
+(defun c1fset (args)
+  (destructuring-bind (fname def &optional (macro nil) (pprint nil))
+      args
+    (let* ((fun (c1expr def)))
+      (cond ((and (eq (c1form-name fun) 'FUNCTION)
+		  ;; When a function is 'CONSTANT, it is not a closure!
+	          (eq (c1form-arg 0 fun) 'CONSTANT)
+		  (typep macro 'boolean)
+		  (typep pprint '(or integer null)))
+	     ;; We need no function constant
+	     (pop *top-level-forms*)
+	     (make-c1form* 'SI:FSET :args
+			   (c1expr fname)
+			   (c1form-arg 1 fun) ;; Lambda form
+			   (c1form-arg 2 fun) ;; Function object
+			   macro
+			   pprint))
+	    (t
+	     (c1call-global 'SI:FSET (list fname def macro pprint)))))))
+
+(defun c2fset (fname funob fun macro pprint)
+  (let* ((*inline-blocks* 0)
+	 (fname (first (coerce-locs (inline-args (list fname)))))
+	 (cfun (fun-cfun fun)))
+    ;; FIXME! Look at c2function!
+    (new-local 0 fun funob)
+    (cond (macro
+	   (wt-nl "cl_def_c_macro(" fname ",LC" cfun ",-1);"))
+	  ((stringp cfun)
+	   (wt-nl "cl_def_c_function_va(" fname "," cfun ");"))
+	  (t
+	   (wt-nl "cl_def_c_function_va(" fname ",LC" cfun ");")))
+    (close-inline-blocks)))  
+
+;;; ----------------------------------------------------------------------
 
 ;;; Pass 1 top-levels.
 
@@ -898,7 +648,6 @@
 (put-sysprop 'EVAL-WHEN 'T1 #'t1eval-when)
 (put-sysprop 'PROGN 'T1 #'t1progn)
 (put-sysprop 'DEFUN 'T1 #'t1defun)
-(put-sysprop 'DEFMACRO 'T1 #'t1defmacro)
 (put-sysprop 'DEFVAR 'T1 #'t1defvar)
 (put-sysprop 'MACROLET 'T1 #'t1macrolet)
 (put-sysprop 'LOCALLY 'T1 #'t1locally)
@@ -910,13 +659,13 @@
 (put-sysprop 'DEFCBODY 'T1 't1defCbody)	; Beppe
 ;(put-sysprop 'DEFUNC 'T1 't1defunC)	; Beppe
 (put-sysprop 'LOAD-TIME-VALUE 'C1 'c1load-time-value)
+(put-sysprop 'SI:FSET 'C1 'c1fset)
 
 ;;; Pass 2 initializers.
 
 (put-sysprop 'DECL-BODY 't2 #'t2decl-body)
 (put-sysprop 'PROGN 'T2 #'t2progn)
 (put-sysprop 'DEFUN 'T2 #'t2defun)
-(put-sysprop 'DEFMACRO 'T2 #'t2defmacro)
 (put-sysprop 'ORDINARY 'T2 #'t2ordinary)
 (put-sysprop 'DECLARE 'T2 #'t2declare)
 (put-sysprop 'DEFVAR 'T2 #'t2defvar)
@@ -925,13 +674,12 @@
 ;(put-sysprop 'DEFUNC 'T2	't2defunC); Beppe
 (put-sysprop 'FUNCTION-CONSTANT 'T2 't2function-constant); Beppe
 (put-sysprop 'LOAD-TIME-VALUE 'T2 't2load-time-value)
+(put-sysprop 'SI:FSET 'C2 'c2fset)
 
 ;;; Pass 2 C function generators.
 
 (put-sysprop 'DECL-BODY 't3 #'t3decl-body)
 (put-sysprop 'PROGN 'T3 #'t3progn)
-(put-sysprop 'DEFUN 'T3 #'t3defun)
-(put-sysprop 'DEFMACRO 'T3 #'t3defmacro)
 (put-sysprop 'CLINES 'T3 't3clines)
 (put-sysprop 'DEFCFUN 'T3 't3defcfun)
 ;(put-sysprop 'DEFENTRY 'T3 't3defentry)

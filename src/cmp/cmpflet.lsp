@@ -12,7 +12,7 @@
 
 (in-package "COMPILER")
 
-(defun c1flet (args &aux body ss ts is other-decl
+(defun c1flet (args &aux body-c1form body ss ts is other-decl
 	       (defs '()) (local-funs '()))
   (check-args-number 'FLET args 1)
   ;; On a first round, we extract the definitions of the functions,
@@ -34,34 +34,38 @@
     (let ((*vars* *vars*))
       (c1add-globals ss)
       (check-vdecl nil ts is)
-      (setq body (c1decl-body other-decl body))))
+      (setq body-c1form (c1decl-body other-decl body))))
 
   ;; Now we can compile the function themselves. Notice that we have
   ;; emptied *fun* so that the functions do not see each other (that is
   ;; the difference with LABELS). In the end
-  ;;	LOCAL-FUNS = ( { ( fun-object  lambda-c1form ) }* ).
+  ;;	LOCAL-FUNS = ( { fun-object }* ).
   (dolist (def (nreverse defs))
-    (let ((fun (car def)) lam CB/LB)
+    (let ((fun (car def)) CB/LB)
       (when (plusp (fun-ref fun))
-	(setq CB/LB (if (fun-ref-ccb fun) 'CB 'LB))
-	(setq lam
+	(setf local-funs (cons fun local-funs)
+	      CB/LB (if (fun-ref-ccb fun) 'CB 'LB)
+	      (fun-lambda fun)
 	      (let ((*funs* (cons CB/LB *funs*))
 		    (*vars* (cons CB/LB *vars*))
 		    (*blocks* (cons CB/LB *blocks*))
 		    (*tags* (cons CB/LB *tags*)))
 		(c1lambda-expr (second def)
 			       (si::function-block-name (fun-name fun)))))
-	(push (list fun lam) local-funs)
 	(setf (fun-cfun fun) (next-cfun)))))
 
   ;; cant do in previous loop since closed var may be in later function
-  (dolist (fun-lam local-funs)
-    (setf (fun-closure (first fun-lam)) (closure-p (second fun-lam))))
+  (dolist (fun local-funs)
+    ;; FIXME! This should be in C2LOCALS
+    (setf (fun-closure fun) (closure-p (fun-lambda fun))))
 
   (if local-funs
-      (make-c1form* 'LOCALS :type (c1form-type body)
-		    :args (nreverse local-funs) body nil)
-      body))
+      (let ((*funs* (append local-funs *funs*))
+	    (*vars* *vars*))
+	;(setf body-c1form (c1decl-body other-decl body))
+	(make-c1form* 'LOCALS :type (c1form-type body-c1form)
+		      :args (nreverse local-funs) body-c1form nil))
+      body-c1form))
 
 (defun closure-p (funob)
   ;; It's a closure if inside its body there is a reference (var)
@@ -86,8 +90,8 @@
 		      (*env-lvl* *env-lvl*) env-grows)
   ;; create location for each function which is returned,
   ;; either in lexical:
-  (dolist (def funs)
-    (let* ((fun (car def)) (var (fun-var fun)))
+  (dolist (fun funs)
+    (let* ((var (fun-var fun)))
       (when (plusp (var-ref var))	; the function is returned
         (unless (member (var-kind var) '(LEXICAL CLOSURE))
           (setf (var-loc var) (next-lcl))
@@ -104,15 +108,16 @@
       (wt "volatile cl_object env" (incf *env-lvl*) " = env" env-lvl ";")))
   ;; bind such locations:
   ;; - first create binding (because of possible circularities)
-  (dolist (def funs)
-    (let* ((fun (car def)) (var (fun-var fun)))
+  (dolist (fun funs)
+    (let* ((var (fun-var fun)))
       (when (and var (plusp (var-ref var)))
 	(when labels
 	  (incf (fun-env fun)))		; var is included in the closure env
 	(bind nil var))))
   ;; - then assign to it
-  (dolist (def funs)
-    (let* ((fun (car def)) (var (fun-var fun)))
+  (dolist (fun funs)
+    ;(setf (fun-closure fun) (closure-p (fun-lambda fun)))
+    (let* ((var (fun-var fun)))
       (when (and var (plusp (var-ref var)))
 	(set-var (list 'MAKE-CCLOSURE fun) var))))
   ;; We need to introduce a new lex vector when lexical variables
@@ -121,9 +126,9 @@
   (when (plusp *lex*)
     (incf level))
   ;; create the functions:
-  (dolist (def funs)
-    (let* ((fun (car def)) (var (fun-var fun)) previous)
-      (when (setq previous (new-local level fun (second def)))
+  (dolist (fun funs)
+    (let* ((previous (new-local level fun)))
+      (when previous
 	(format t "~%> ~A" previous)
 	(setf (fun-level fun) (fun-level previous)
 	      (fun-env fun) (fun-env previous)))))
@@ -131,7 +136,7 @@
   (c2expr body)
   (when block-p (wt-nl "}")))
 
-(defun c1labels (args &aux body ss ts is other-decl defs fun local-funs
+(defun c1labels (args &aux body-c1form body ss ts is other-decl defs fun local-funs
                       fnames (*funs* *funs*))
   (check-args-number 'LABELS args 1)
 
@@ -156,7 +161,7 @@
   (let ((*vars* *vars*))
     (c1add-globals ss)
     (check-vdecl nil ts is)
-    (setq body (c1decl-body other-decl body)))
+    (setq body-c1form (c1decl-body other-decl body)))
 
   (do ((finished))
       (finished)
@@ -171,9 +176,10 @@
               (*funs* (cons 'LB *funs*))
               (*blocks* (cons 'LB *blocks*))
               (*tags* (cons 'LB *tags*)))
-          (let ((lam (c1lambda-expr (third def)
-				    (si::function-block-name (fun-name fun)))))
-            (push (list fun lam) local-funs)))
+	  (setf (fun-lambda fun)
+		(c1lambda-expr (third def)
+				    (si::function-block-name (fun-name fun))))
+	  (push fun local-funs))
 	(setf (second def) T)))
     )
 
@@ -188,26 +194,29 @@
 	(when (second def)
 	  ;; also processed as local, e.g.:
 	  ;; (defun foo (z) (labels ((g () z) (h (y) #'g)) (list (h z) (g))))
-	  (setq local-funs (delete fun local-funs :key #'car)))
+	  (setq local-funs (delete fun local-funs)))
 	(let ((*vars* (cons 'CB *vars*))
 	      (*funs* (cons 'CB *funs*))
 	      (*blocks* (cons 'CB *blocks*))
 	      (*tags* (cons 'CB *tags*)))
-	  (let ((lam (c1lambda-expr (third def)
-				    (si::function-block-name (fun-name fun)))))
-	    (push (list fun lam) local-funs)))
+	  (setf (fun-lambda fun)
+		(c1lambda-expr (third def)
+				    (si::function-block-name (fun-name fun))))
+	  (push fun local-funs))
 	(setf (car def) NIL)))		; def processed
     )
 
-  (dolist (fun-lam local-funs)
-    (setq fun (first fun-lam))
-    (setf (fun-closure fun) (closure-p (second fun-lam)))
+  (dolist (fun local-funs)
+    ;; FIXME! This should be in C2LOCALS
+    (setf (fun-closure fun) (closure-p (fun-lambda fun)))
     (setf (fun-cfun fun) (next-cfun)))
 
   (if local-funs
-      (make-c1form* 'LOCALS :type (c1form-type body)
-		    :args local-funs body T) ; T means labels
-      body))
+      (let* ((*vars* *vars*))
+	;(setq body-c1form (c1decl-body other-decl body))
+	(make-c1form* 'LOCALS :type (c1form-type body-c1form)
+		      :args local-funs body-c1form T)) ; T means labels
+      body-c1form))
 
 (defun c1locally (args)
   (multiple-value-bind (body ss ts is other-decl)
@@ -283,32 +292,17 @@
       (c2call-local fun args narg)
       (wt-nl "}")
       (return-from c2call-local)))
-  (cond
-   ((and (listp args)
-         *tail-recursion-info*
-         (same-fname-p (car *tail-recursion-info*) (fun-name fun))
-         (eq *exit* 'RETURN)
-         (tail-recursion-possible)
-         (= (length args) (length (cdr *tail-recursion-info*))))
-    (let* ((*destination* 'TRASH)
-           (*exit* (next-label))
-           (*unwind-exit* (cons *exit* *unwind-exit*)))
-          (c2psetq (cdr *tail-recursion-info*) args)
-          (wt-label *exit*))
-    (unwind-no-exit 'TAIL-RECURSION-MARK)
-    (wt-nl "goto TTL;")
-    (cmpnote "Tail-recursive call of ~s was replaced by iteration."
-             (fun-name fun)))
-   (t (let ((*inline-blocks* 0)
-	    (fun (format nil "LC~d" (fun-cfun fun)))
-	    (lex-level (fun-level fun))
-	    (closure-p (fun-closure fun))
-	    (fname (fun-name fun)))
-	(unwind-exit
-	 (list 'CALL-LOCAL fun lex-level closure-p
-	       (if (eq args 'ARGS-PUSHED) 'ARGS-PUSHED (coerce-locs (inline-args args)))
-	       narg fname))
-	(close-inline-blocks)))))
+  (unless (c2try-tail-recursive-call fun args)
+    (let ((*inline-blocks* 0)
+	  (fun (format nil "LC~d" (fun-cfun fun)))
+	  (lex-level (fun-level fun))
+	  (closure-p (fun-closure fun))
+	  (fname (fun-name fun)))
+      (unwind-exit
+       (list 'CALL-LOCAL fun lex-level closure-p
+	     (if (eq args 'ARGS-PUSHED) 'ARGS-PUSHED (coerce-locs (inline-args args)))
+	     narg fname))
+      (close-inline-blocks))))
 
 (defun wt-call-local (fun lex-lvl closure-p args narg fname)
   (declare (fixnum lex-lvl))

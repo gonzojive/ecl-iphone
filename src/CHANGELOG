@@ -1752,6 +1752,16 @@ ECL 0.9d
 
   - Assignments to structures were not properly compiled in unsafe mode.
 
+  - The optimizer for tail-recursive calls has been fixed. Formerly
+    the check for tail-recursion was based on names, and this produced
+    an infinite loop:
+	(labels ((f1 (x)
+		   (labels ((f1 (x) 2))
+		      (f1 x))))
+	  (f1 2))
+    Now the compiler recognizes that the first call to (f1 x) refers
+    the innermost function, and there is no tail recursion.
+
 * Documentation:
 
   - New manual page documents the scripting facilities of ECL

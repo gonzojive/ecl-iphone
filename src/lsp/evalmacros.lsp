@@ -59,7 +59,7 @@ macro useful for defining macros."
       (when *dump-defun-definitions*
 	(print function)
 	(setq function `(si::bc-disassemble ,function)))
-      `(progn
+      `(eval-when (:compile-toplevel :load-toplevel :execute)
 	(si::fset ',name ,function t ,pprint)
 	,@(si::expand-set-documentation name 'function doc-string)
 	',name))))

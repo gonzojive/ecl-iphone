@@ -308,7 +308,7 @@ extern cl_object cl_make_cfun(cl_object (*self)(), cl_object name, cl_object blo
 extern cl_object cl_make_cfun_va(cl_object (*self)(cl_narg narg,...), cl_object name, cl_object block);
 extern cl_object cl_make_cclosure_va(cl_object (*self)(cl_narg narg,...), cl_object env, cl_object block);
 extern void cl_def_c_function(cl_object sym, cl_object (*self)(), int narg);
-extern void cl_def_c_macro(cl_object sym, cl_object (*self)(cl_object, cl_object));
+extern void cl_def_c_macro(cl_object sym, cl_object (*self)(), int narg);
 extern void cl_def_c_function_va(cl_object sym, cl_object (*self)(cl_narg narg,...));
 
 

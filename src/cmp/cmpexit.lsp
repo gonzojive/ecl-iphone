@@ -172,3 +172,20 @@
            (return nil))
           ((or (consp ue) (eq ue 'JUMP)))
           (t (baboon)))))
+
+(defun c2try-tail-recursive-call (fun args)
+  (when (and (listp args) ;; ARGS can be also 'ARGS-PUSHED
+	     *tail-recursion-info*
+	     (eq fun (first *tail-recursion-info*))
+	     (last-call-p)
+	     (= (length args) (length (rest *tail-recursion-info*))))
+    (let* ((*destination* 'TRASH)
+	   (*exit* (next-label))
+	   (*unwind-exit* (cons *exit* *unwind-exit*)))
+      (c2psetq (cdr *tail-recursion-info*) args)
+      (wt-label *exit*))
+    (unwind-no-exit 'TAIL-RECURSION-MARK)
+    (wt-nl "goto TTL;")
+    (cmpnote "Tail-recursive call of ~s was replaced by iteration."
+	     (fun-name fun))
+    t))

@@ -71,8 +71,12 @@
 	  (format t "~&;;; Compiling ~s.~%" *current-form*)))
   nil)
 
-(defun print-emitting (name)
-  (format t "~&;;; Emitting code for ~s.~%" (or name "lambda")))
+(defun print-emitting (f)
+  (let* ((name (fun-name f)))
+    (unless name
+      (setf name (fun-description f)))
+    (when name
+      (format t "~&;;; Emitting code for ~s.~%" name))))
 
 (defun undefined-variable (sym &aux (*print-case* :upcase))
   (print-current-form)

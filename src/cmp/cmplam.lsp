@@ -119,12 +119,12 @@
     (let ((new-vars (ldiff *vars* old-vars)))
       (setq body (c1decl-body other-decls body))
       (dolist (var new-vars)
-	(check-vref var)))
-
-    (make-c1form* 'LAMBDA
-		  :args (list requireds optionals rest key-flag keywords
-			      allow-other-keys)
-		  doc body)))
+	(check-vref var))
+      (make-c1form* 'LAMBDA
+		    :local-vars new-vars
+		    :args (list requireds optionals rest key-flag keywords
+				allow-other-keys)
+		    doc body))))
 
 #| Steps:
  1. defun creates declarations for requireds + va_alist
@@ -152,22 +152,22 @@
 		 (labels nil)
 		 (varargs (or optionals rest keywords allow-other-keys))
 		 simple-varargs
-		 (*tail-recursion-info* nil)
 		 (*unwind-exit* *unwind-exit*)
 		 (*env* *env*)
 		 (block-p nil)
 		 (last-arg))
   (declare (fixnum nreq nkey))
 
-  (when (and fname ;; named function
-	     ;; no required appears in closure,
-	     (dolist (var (car lambda-list) t)
-	       (declare (type var var))
-	       (when (var-ref-ccb var) (return nil)))
-	     (null (second lambda-list))	;; no optionals,
-	     (null (third lambda-list))		;; no rest parameter, and
-	     (null (fourth lambda-list)))	;; no keywords.
-    (setf *tail-recursion-info* (cons fname (car lambda-list))))
+  (if (and fname ;; named function
+	   ;; no required appears in closure,
+	   (dolist (var (car lambda-list) t)
+	     (declare (type var var))
+	     (when (var-ref-ccb var) (return nil)))
+	   (null (second lambda-list))	;; no optionals,
+	   (null (third lambda-list))	;; no rest parameter, and
+	   (null (fourth lambda-list)))	;; no keywords.
+    (setf *tail-recursion-info* (cons *tail-recursion-info* (car lambda-list)))
+    (setf *tail-recursion-info* nil))
 
   ;; For local entry functions arguments are processed by t3defun.
   ;; They must have a fixed number of arguments, no optionals, rest, etc.
@@ -333,302 +333,6 @@
   (c2expr body)
 
   (when block-p (wt-nl "}"))
-  )
-
-;;; The DEFMACRO compiler.
-
-;;; valid lambda-list to DEFMACRO is:
-;;;
-;;;	( [ &whole sym ]
-;;;	  [ &environment sym ]
-;;;	  { v }*
-;;;	  [ &optional { sym | ( v [ init [ v ] ] ) }* ]
-;;;	  {  [ { &rest | &body } v ]
-;;;	     [ &key { sym | ( { sym | ( key v ) } [ init [ v ]] ) }*
-;;;		    [ &allow-other-keys ]]
-;;;	     [ &aux { sym | ( v [ init ] ) }* ]
-;;;	  |  . sym }
-;;;	 )
-;;;
-;;; where v is short for { defmacro-lambda-list | sym }.
-;;; Defmacro-lambda-list is defined as:
-;;;
-;;;	( { v }*
-;;;	  [ &optional { sym | ( v [ init [ v ] ] ) }* ]
-;;;	  {  [ { &rest | &body } v ]
-;;;	     [ &key { sym | ( { sym | ( key v ) } [ init [ v ]] ) }*
-;;;		    [ &allow-other-keys ]]
-;;;	     [ &aux { sym | ( v [ init ] ) }* ]
-;;;	  |  . sym }
-;;;	 )
-
-;(defvar *vnames*) -> vnames
-;(defvar *dm-info*)-> dm-info
-;(defvar *dm-vars*)-> dm-vars
-
-(defun c1dm (macro-name vl body
-                        &aux (whole nil) (env nil)
-                        (vnames nil) (dm-vars nil)
-			(setjmps *setjmps*) ; Beppe
-                        doc ss is ts other-decls ppn)
-
-  (multiple-value-setq (body ss ts is other-decls doc) (c1body body t))
-  (setq body (list (list* 'BLOCK macro-name body)))
-
-  (c1add-globals ss)
-
-  (when (and (listp vl) (eq (car vl) '&WHOLE))
-        (push (second vl) vnames)
-        (setq whole (c1make-var (second vl) ss is ts))
-        (push whole dm-vars)
-        (push-vars whole)
-        (setq vl (cddr vl))
-        )
-  (do ((x vl (cdr x)))
-      ((atom x))
-    (when (eq (car x) '&ENVIRONMENT)
-      (push (second x) vnames)
-      (setq env (c1make-var (second x) ss is ts))
-      (push env dm-vars)
-      (push-vars env)
-      (setq vl (nconc (ldiff vl x) (cddr x)))))
-
-  (labels ((c1dm-vl (vl ss is ts)
-	     (do ((optionalp nil) (restp nil) (keyp nil)
-		  (allow-other-keys-p nil) (auxp nil)
-		  (requireds nil) (optionals nil) (rest nil) (key-flag nil)
-		  (keywords nil) (auxs nil) (allow-other-keys nil)
-		  (n 0) (ppn nil))
-		 ((not (consp vl))
-		  (when vl
-		    (when restp (dm-bad-key '&REST))
-		    (setq rest (c1dm-v vl ss is ts)))
-		  (values (list (nreverse requireds) (nreverse optionals) rest key-flag
-				(nreverse keywords) allow-other-keys (nreverse auxs))
-			  ppn)
-		  )
-	       (let ((v (car vl)))
-		 (declare (object v))
-		 (cond
-		   ((eq v '&OPTIONAL)
-		    (when optionalp (dm-bad-key '&OPTIONAL))
-		    (setq optionalp t)
-		    (pop vl))
-		   ((or (eq v '&REST) (eq v '&BODY))
-		    (when restp (dm-bad-key v))
-		    (setq rest (c1dm-v (second vl) ss is ts))
-		    (setq restp t optionalp t)
-		    (setq vl (cddr vl))
-		    (when (eq v '&BODY) (setq ppn n)))
-		   ((eq v '&KEY)
-		    (when keyp (dm-bad-key '&KEY))
-		    (setq keyp t restp t optionalp t key-flag t)
-		    (pop vl))
-		   ((eq v '&ALLOW-OTHER-KEYS)
-		    (when (or (not keyp) allow-other-keys-p)
-		      (dm-bad-key '&ALLOW-OTHER-KEYS))
-		    (setq allow-other-keys-p t allow-other-keys t)
-		    (pop vl))
-		   ((eq v '&AUX)
-		    (when auxp (dm-bad-key '&AUX))
-		    (setq auxp t allow-other-keys-p t keyp t restp t optionalp t)
-		    (pop vl))
-		   (auxp
-		    (let (x init)
-		      (cond ((symbolp v) (setq x v init (c1nil)))
-			    (t (setq x (car v))
-			       (if (endp (cdr v))
-				   (setq init (c1nil))
-				   (setq init (c1expr (second v))))))
-		      (push (list (c1dm-v x ss is ts) init) auxs))
-		    (pop vl))
-		   (keyp
-		    (let (x k init (sv nil))
-		      (cond ((symbolp v)
-			     (setq x v
-				   k (intern (string v) 'KEYWORD)
-				   init (c1nil)))
-			    (t (if (symbolp (car v))
-				   (setq x (car v)
-					 k (intern (string (car v)) 'KEYWORD))
-				   (setq x (cadar v) k (caar v)))
-			       (cond ((endp (cdr v)) (setq init (c1nil)))
-				     (t (setq init (c1expr (second v)))
-					(unless (endp (cddr v))
-					  (setq sv (third v)))))))
-		      (push (list k (c1dm-v x ss is ts) init
-				  (if sv (c1dm-v sv ss is ts) nil))
-			    keywords)
-		      )
-		    (pop vl))
-		   (optionalp
-		    (let (x init (sv nil))
-		      (cond ((symbolp v) (setq x v init (c1nil)))
-			    (t (setq x (car v))
-			       (cond ((endp (cdr v))
-				      (setq init (c1nil)))
-				     (t (setq init (c1expr (second v)))
-					(unless (endp (cddr v))
-					  (setq sv (third v)))))))
-		      (push (list (c1dm-v x ss is ts) init
-				  (if sv (c1dm-v sv ss is ts) nil))
-			    optionals))
-		    (pop vl)
-		    (incf n)
-		    )
-		   (t (push (c1dm-v v ss is ts) requireds)
-		      (pop vl)
-		      (incf n))
-		   )))
-	     )
-
-	   (c1dm-v (v ss is ts)
-	     (cond ((symbolp v)
-		    (push v vnames)
-		    (setq v (c1make-var v ss is ts))
-		    (push-vars v)
-		    (push v dm-vars)
-		    v)
-		   (t (c1dm-vl v ss is ts))))
-	   )
-    (multiple-value-setq (vl ppn) (c1dm-vl vl ss is ts)))
-
-  (check-vdecl vnames ts is)
-  (setq body (c1decl-body other-decls body))
-  (unless (eql setjmps *setjmps*)
-    (put-sysprop macro-name 'CONTAINS-SETJMP t))
-  (dolist (v dm-vars) (check-vref v))
-
-  (list doc ppn whole env vl body)
-  )
-
-(defun c1dm-bad-key (key)
-       (cmperr "Defmacro-lambda-list contains illegal use of ~s." key))
-
-(defun c2dm (name whole env vl body)
-  (let ((lcl (next-lcl)))
-    (when whole
-      (check-vref whole)
-      (bind lcl whole)))
-  (let ((lcl (next-lcl)))
-    (when env
-      (check-vref env)
-      (bind lcl env)))
-  (labels ((reserve-v (v)
-	     (if (consp v)
-		 (reserve-vl v)
-		 (when (local v)
-		   (setf (var-kind v) :OBJECT
-			 (var-loc v) (next-lcl))
-		   (wt "," v))))
-
-	   (reserve-vl (vl)
-	     (dolist (var (car vl)) (reserve-v var))
-	     (dolist (opt (second vl))
-	       (reserve-v (car opt))
-	       (when (third opt) (reserve-v (third opt))))
-	     (when (third vl) (reserve-v (third vl)))
-	     (dolist (kwd (fifth vl))
-	       (reserve-v (second kwd))
-	       (when (fourth kwd) (reserve-v (fourth kwd))))
-	     (dolist (aux (seventh vl))
-	       (reserve-v (car aux))))
-
-	   (dm-bind-loc (v loc)
-	     (if (consp v)
-		 (let ((lcl (make-lcl-var)))
-		   (wt-nl "{cl_object " lcl "= " loc ";")
-		   (dm-bind-vl v lcl)
-		   (wt "}"))
-		 (bind loc v)))
-
-	   (dm-bind-init (para &aux (v (first para)) (init (second para)))
-	     (if (consp v)
-		 (let* ((*inline-blocks* 0) ; used by inline-args
-			(lcl (make-lcl-var))
-			(loc (first (coerce-locs (inline-args (list init))))))
-		   (wt-nl lcl "= " loc ";")
-		   (dm-bind-vl v lcl)
-		   (close-inline-blocks))
-		 (bind-init v init)))
-
-	   (dm-bind-vl (vl lcl &aux
-			   (requireds (car vl)) (optionals (second vl))
-			   (rest (third vl)) (key-flag (fourth vl))
-			   (keywords (fifth vl))
-			   (allow-other-keys (sixth vl))
-			   (auxs (seventh vl))
-			   )
-	     (declare (object requireds optionals rest key-flag keywords
-			      allow-other-keys auxs))
-	     (do ((reqs requireds (cdr reqs)))
-		 ((endp reqs))
-	       (declare (object reqs))
-	       (when (compiler-check-args)
-		 (wt-nl "if(endp(" lcl "))FEinvalid_macro_call("
-			(add-symbol name) ");"))
-	       (dm-bind-loc (car reqs) `(CAR ,lcl))
-	       (when (or (cdr reqs) optionals rest key-flag
-			 (compiler-check-args))
-		 (wt-nl lcl "=CDR(" lcl ");")))
-	     (do ((opts optionals (cdr opts))
-		  (opt))
-		 ((endp opts))
-	       (declare (object opts opt))
-	       (setq opt (car opts))
-	       (wt-nl "if(endp(" lcl ")){")
-	       (let ((*env* *env*)
-		     (*unwind-exit* *unwind-exit*))
-		 (dm-bind-init opt)
-		 (when (third opt) (dm-bind-loc (third opt) nil))
-		 )
-	       (wt-nl "} else {")
-	       (dm-bind-loc (car opt) `(CAR ,lcl))
-	       (when (third opt) (dm-bind-loc (third opt) t))
-	       (when (or (cdr opts) rest key-flag (compiler-check-args))
-		 (wt-nl lcl "=CDR(" lcl ");"))
-	       (wt "}"))
-	     (when rest (dm-bind-loc rest lcl))
-	     (when keywords
-	       (let* ((loc1 (make-lcl-var)))
-		 (wt-nl "{cl_object " loc1 ";")
-		 (dolist (kwd keywords)
-		   (wt-nl loc1 "=ecl_getf(" lcl "," (add-symbol (car kwd))
-			  ",OBJNULL);")
-		   (wt-nl "if(" loc1 "==OBJNULL){")
-		   (let ((*env* *env*)
-			 (*unwind-exit* *unwind-exit*))
-		     (dm-bind-init (cdr kwd))
-		     (when (fourth kwd) (dm-bind-loc (fourth kwd) nil))
-		     (wt-nl "} else {"))
-		   (dm-bind-loc (second kwd) loc1)
-		   (when (fourth kwd) (dm-bind-loc (fourth kwd) t))
-		   (wt "}"))
-		 (wt "}")))
-	     (when (and (compiler-check-args)
-			(null rest)
-			(null key-flag))
-	       (wt-nl "if(!endp(" lcl "))FEinvalid_macro_call("
-		      (add-symbol name) ");"))
-	     (when (and (compiler-check-args)
-			key-flag
-			(not allow-other-keys))
-	       (wt-nl "check_other_key(" lcl "," (length keywords))
-	       (dolist (kwd keywords)
-		 (wt "," (add-symbol (car kwd))))
-	       (wt ");"))
-	     (dolist (aux auxs)
-	       (dm-bind-init aux)))
-	   )
-
-    (let ((lcl (make-lcl-var)))
-      (wt-nl "{cl_object " lcl "=CDR(V1)")
-      (reserve-vl vl)			; declare variables for pattern
-      (wt ";")
-      (dm-bind-vl vl lcl))
-    )
-  (c2expr body)
-  (wt "}")
   )
 
 (defun optimize-funcall/apply-lambda (lambda-form arguments apply-p
