@@ -418,7 +418,7 @@ c_tag_ref(cl_object the_tag, cl_object the_type)
 }
 
 static cl_fixnum
-c_var_ref(cl_object var)
+c_var_ref(cl_object var, int allow_symbol_macro)
 {
 	cl_fixnum n = 0;
 	cl_object l;
@@ -432,8 +432,10 @@ c_var_ref(cl_object var)
 			/* Symbol not yet found. Only count locals. */
 			if (Null(special)) n++;
 		} else if (special == @'si::symbol-macro') {
-			/* We should never get here. The variable should have
-			   been macro expanded. */
+			/* We can only get here when we try to redefine a
+			   symbol macro */
+			if (allow_symbol_macro)
+				return -1;
 			FEerror("Internal error: symbol macro ~S used as variable",
 				1, var);
 		} else {
@@ -454,7 +456,7 @@ c_register_vars(cl_object specials)
 {
 	while (!Null(specials)) {
 		cl_object var = pop(&specials);
-		if (c_var_ref(var) >= 0)
+		if (c_var_ref(var,0) >= 0)
 			c_register_var(var, TRUE);
 	}
 }
@@ -529,7 +531,7 @@ compile_setq(int op, cl_object var)
 
 	if (!SYMBOLP(var))
 		FEillegal_variable_name(var);
-	ndx = c_var_ref(var);
+	ndx = c_var_ref(var,0);
 	if (ndx < 0) { /* Not a lexical variable */
 		if (var->symbol.stype == stp_constant)
 			FEassignment_to_constant(var);
@@ -1544,7 +1546,7 @@ c_multiple_value_setq(cl_object args, int flags) {
 		cl_fixnum ndx;
 		if (!SYMBOLP(var))
 			FEillegal_variable_name(var);
-		ndx = c_var_ref(var);
+		ndx = c_var_ref(var,0);
 		if (ndx < 0) { /* Global variable */
 			if (var->symbol.stype == stp_constant)
 				FEassignment_to_constant(var);
@@ -1786,7 +1788,7 @@ c_symbol_macrolet(cl_object args, int flags)
 		cl_object expansion = pop(&definition);
 		cl_object arglist = cl_list(2, @gensym(0), @gensym(0));
 		cl_object function;
-		if (name->symbol.stype == stp_special || c_var_ref(name) == -2)
+		if (name->symbol.stype == stp_special || c_var_ref(name,1) == -2)
 			FEprogram_error("SYMBOL-MACROLET: Symbol ~A cannot be \
 declared special and appear in a symbol-macrolet.", 1, name);
 		definition = cl_list(2, arglist, cl_list(2, @'quote', expansion));
@@ -1937,7 +1939,7 @@ compile_form(cl_object stmt, int flags) {
 				stmt = stmt1;
 				goto BEGIN;
 			}
-			index = c_var_ref(stmt);
+			index = c_var_ref(stmt,0);
 			if (index >= 0) {
 				asm_op2(push? OP_PUSHV : OP_VAR, index);
 			} else {

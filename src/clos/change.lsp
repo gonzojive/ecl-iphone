@@ -179,7 +179,8 @@
   class)
 
 (defmethod make-instances-obsolete ((class class))
-  (setf (class-slots class) (copy-list (class-slots class))))
+  (setf (class-slots class) (copy-list (class-slots class)))
+  class)
 
 (defun remove-optional-slot-accessors (class)
   (let ((class-name (class-name class)))

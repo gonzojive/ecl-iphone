@@ -558,7 +558,7 @@
 		    fun plist options gf method-class)
   (let ((method (si:allocate-raw-instance nil (find-class 'standard-method nil)
 		   #.(length +standard-method-slots+))))
-    (setf (method-generic-function method) gf
+    (setf (method-generic-function method) nil
 	  (method-lambda-list method) lambda-list
 	  (method-function method) fun
 	  (method-specializers method) specializers
@@ -582,6 +582,7 @@
       (push method-entry *early-methods*))
     (push method (cdr method-entry))
     (push method (generic-function-methods gf))
+    (setf (method-generic-function method) gf)
     method))
 
 (defun find-method (gf qualifiers specializers &optional (errorp t))

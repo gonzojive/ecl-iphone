@@ -656,7 +656,7 @@ nstring_case(int narg, int (*casefun)(int, bool *), cl_va_list ARGS)
 @)
 
 int
-cl_string_push_extend(cl_object s, int c)
+ecl_string_push_extend(cl_object s, int c)
 {
 	char *p;
 	cl_index new_length;

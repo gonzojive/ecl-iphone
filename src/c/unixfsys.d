@@ -44,10 +44,10 @@
  * string_to_pathanme, to be used when s is a real pathname
  */
 cl_object
-string_to_pathname(char *s)
+ecl_string_to_pathname(char *s)
 {
-  cl_index e;
-  return parse_namestring(s, 0, strlen(s), &e, Cnil);
+	cl_object string = make_simple_string(s);
+	return cl_parse_namestring(1, string);
 }
 
 /*
@@ -110,6 +110,9 @@ si_file_kind(cl_object filename, cl_object follow_links) {
 
 static cl_object
 si_follow_symlink(cl_object filename) {
+	/* This routine outputs a namestring in which all the symbolic links
+	 * have been resolved.
+	 */
 	cl_object output, kind;
 	int size = 128, written;
 
@@ -136,7 +139,7 @@ si_follow_symlink(cl_object filename) {
 	if (kind == @':directory' &&
 	    output->string.self[output->string.fillp-1] != '/')
 		FEerror("Filename ~S actually points to a directory", 1, filename);
-	@(return ((kind == Cnil)? Cnil : output))
+	return ((kind == Cnil)? Cnil : output);
 }
 
 
@@ -148,23 +151,51 @@ si_follow_symlink(cl_object filename) {
 cl_object
 cl_truename(cl_object pathname)
 {
-	cl_object directory, filename;
+	cl_object previous, dir, directory, filename;
 
 	/* First we ensure that PATHNAME itself does not point to a symlink. */
 	filename = si_follow_symlink(pathname);
-	if (filename == Cnil)
+	if (filename == Cnil) {
 		FEerror("truename: file ~S does not exist or cannot be accessed", 1,
 			pathname);
+	} else {
+		filename = cl_parse_namestring(3, filename, Cnil, Cnil);
+	}
 
 	/* Next we process the directory part of the filename, removing all
 	 * possible symlinks. To do so, we only have to change to the directory
-	 * which contains our file, and come back. SI::CHDIR calls getcwd() which
-	 * should return the canonical form of the directory.
+	 * which contains our file, and come back.
 	 */
-	directory = si_chdir(filename);
-	directory = si_chdir(directory);
+	previous = current_dir();
+	CL_UNWIND_PROTECT_BEGIN {
+		for (dir = filename->pathname.directory;
+		     !Null(dir);
+		     dir = CDR(dir))
+		{
+			cl_object part = CAR(dir);
+			if (type_of(part) == t_string) {
+				if (chdir(part->string.self) < 0) {
+ERROR:					FElibc_error("Can't change the current directory to ~S",
+						     1, filename);
+				}
+			} else if (part == @':absolute') {
+				if (chdir("/") < 0)
+					goto ERROR;
+			} else if (part == @':relative') {
+				/* Nothing to do */
+			} else if (part == @':up') {
+				if (chdir("..") < 0)
+					goto ERROR;
+			} else {
+				FEerror("~S is not allowed in TRUENAME", 1, part);
+			}
+		}
+		filename = merge_pathnames(si_getcwd(), filename, @':newest');
+	} CL_UNWIND_PROTECT_EXIT {
+		chdir(previous->string.self);
+	} CL_UNWIND_PROTECT_END;
 
-	@(return merge_pathnames(directory, filename, @':newest'))
+	@(return filename)
 }
 
 FILE *
@@ -194,8 +225,6 @@ cl_rename_file(cl_object oldn, cl_object newn)
 	cl_object filename, newfilename, old_truename, new_truename;
 
 	/* INV: coerce_to_file_pathname() checks types */
-	oldn = coerce_to_file_pathname(oldn);
-	newn = coerce_to_file_pathname(newn);
 	newn = merge_pathnames(newn, oldn, Cnil);
 	old_truename = cl_truename(oldn);
 	filename = si_coerce_to_filename(oldn);
@@ -324,7 +353,7 @@ homedir_pathname(cl_object user)
 	if (namestring->string.self[i-1] != '/')
 		namestring = si_string_concatenate(2, namestring,
 						   make_simple_string("/"));
-	return cl_pathname(namestring);
+	return cl_parse_namestring(3, namestring, Cnil, Cnil);
 }
 
 @(defun user_homedir_pathname (&optional host)
@@ -412,7 +441,6 @@ list_current_directory(const char *mask, bool only_dir)
 	char iobuffer[BUFSIZ];
 	DIRECTORY dir;
 
-	previous_dir = si_chdir(directory);
 	fp = fopen("./", OPEN_R);
 	if (fp == NULL)
 		return Cnil;
@@ -461,7 +489,8 @@ dir_files(cl_object basedir, cl_object pathname)
 	name = pathname->pathname.name;
 	type = pathname->pathname.type;
 	if (name != Cnil || type != Cnil) {
-		mask = make_pathname(Cnil, Cnil, Cnil, name, type, @':unspecific');
+		mask = make_pathname(Cnil, Cnil, Cnil, name, type,
+				     pathname->pathname.version);
 	} else {
 		mask = Cnil;
 	}
@@ -603,34 +632,28 @@ dir_recursive(cl_object pathname, cl_object directory)
 @)
 
 cl_object
-si_chdir(cl_object directory)
+si_getcwd(void)
 {
-	cl_object previous = current_dir();
-	cl_object dir;
-
-	directory = coerce_to_file_pathname(directory);
-	for (dir = directory->pathname.directory; !Null(dir); dir = CDR(dir)) {
-		cl_object part = CAR(dir);
-		if (type_of(part) == t_string) {
-			if (chdir(part->string.self) < 0)
-				goto ERROR;
-		} else if (part == @':absolute') {
-			if (chdir("/") < 0) {
-				chdir(previous->string.self);
-ERROR:				FElibc_error("Can't change the current directory to ~S",
-					     1, directory);
-			}
-		} else if (part == @':relative') {
-			/* Nothing to do */
-		} else if (part == @':up') {
-			if (chdir("..") < 0)
-				goto ERROR;
-		} else {
-			FEerror("~S is not allowed in SI::CHDIR", 1, part);
-		}
-	}
-	@(return previous)
+	return cl_parse_namestring(3, current_dir(), Cnil, Cnil);
 }
+
+@(defun si::chdir (directory &optional change_d_p_d)
+	cl_object previous = si_default_pathname_defaults();
+	cl_object namestring;
+@
+	/* This will fail if the new directory does not exist */
+	directory = cl_truename(directory);
+	if (directory->pathname.name != Cnil ||
+	    directory->pathname.type != Cnil)
+		FEerror(1, "~A is not a directory pathname.", directory);
+	namestring = si_coerce_to_filename(directory);
+	if (chdir(namestring->string.self) <0)
+		FElibc_error("Can't change the current directory to ~A",
+			     1, namestring);
+	if (change_d_p_d != Cnil)
+		ECL_SETQ(@'*default-pathname-defaults*', directory);
+	@(return previous)
+@)
 
 cl_object
 si_mkdir(cl_object directory, cl_object mode)
@@ -664,7 +687,7 @@ si_mkstemp(cl_object template)
 #ifdef HAVE_MKSTEMP
 	fd = mkstemp(output->string.self);
 #else
-	mktemp(output->string.self);
+	fd = mktemp(output->string.self);
 	fd = open(fd, O_CREAT|O_TRUNC);
 #endif
 	if (fd < 0)

@@ -85,9 +85,7 @@
 
   ;(let ((*print-level* 3)) (pprint *top-level-forms*))
   (setq *top-level-forms* (nreverse *top-level-forms*))
-  (wt-nl1 "#include \"" (si::coerce-to-filename (merge-pathnames h-pathname
-								 (si::chdir "./")))
-	  "\"")
+  (wt-nl1 "#include \"" (si::coerce-to-filename h-pathname) "\"")
   (wt-h "#ifdef __cplusplus")
   (wt-h "extern \"C\" {")
   (wt-h "#endif")
@@ -100,9 +98,7 @@
 	 (*compiler-declared-globals* (make-hash-table))
 	 #+PDE (optimize-space (>= *space* 3)))
     (unless shared-data
-      (wt-nl1 "#include \"" (si::coerce-to-filename (merge-pathnames data-pathname
-								     (si::chdir "./")))
-	      "\""))
+      (wt-nl1 "#include \"" (si::coerce-to-filename data-pathname) "\""))
     (wt-nl1 "#ifdef __cplusplus")
     (wt-nl1 "extern \"C\"")
     (wt-nl1 "#endif")

@@ -272,7 +272,7 @@ cl_type_of(cl_object x)
 
 	case t_array:
 		if (x->array.adjustable ||
-		    Null(CAR(x->array.displaced)))
+		    !Null(CAR(x->array.displaced)))
 			t = @'array';
 		else
 			t = @'simple-array';
@@ -281,7 +281,7 @@ cl_type_of(cl_object x)
 	case t_vector:
 		if (x->vector.adjustable ||
 		    x->vector.hasfillp ||
-		    Null(CAR(x->vector.displaced)) ||
+		    !Null(CAR(x->vector.displaced)) ||
 		    (cl_elttype)x->vector.elttype != aet_object)
 			t = @'vector';
 		else
@@ -291,7 +291,7 @@ cl_type_of(cl_object x)
 	case t_string:
 		if (x->string.adjustable ||
 		    x->string.hasfillp ||
-		    Null(CAR(x->string.displaced)))
+		    !Null(CAR(x->string.displaced)))
 			t = @'string';
 		else
 			t = @'simple-string';
@@ -300,7 +300,7 @@ cl_type_of(cl_object x)
 	case t_bitvector:
 		if (x->vector.adjustable ||
 		    x->vector.hasfillp ||
-		    Null(CAR(x->vector.displaced)))
+		    !Null(CAR(x->vector.displaced)))
 			t = @'bit-vector';
 		else
 			t = @'simple-bit-vector';

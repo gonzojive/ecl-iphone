@@ -222,7 +222,9 @@ compiled-function, function, t
   (type-of "abc")
   #+(or cmu sbcl clisp)
   (SIMPLE-BASE-STRING 3)
-  #-(or cmu sbcl clisp)
+  #+ecl
+  SIMPLE-STRING
+  #-(or cmu sbcl clisp ecl)
   STRING)
 					; OR=>  (STRING 3)
 
@@ -259,7 +261,9 @@ compiled-function, function, t
   (type-of *foo*)
   #+(or cmu sbcl clisp)
   (SIMPLE-VECTOR 5)
-  #-(or cmu sbcl clisp)
+  #+ecl
+  SIMPLE-VECTOR
+  #-(or cmu sbcl clisp ecl)
   VECTOR)
 					; OR=>  (VECTOR T 5)
 

@@ -334,11 +334,13 @@
 (PATHNAME (T) T)
 (USER-HOMEDIR-PATHNAME (*) T)
 (DIRECTORY (T) T)
-(si::CHDIR nil T)
+(SI::CHDIR (T *) PATHNAME)
+(SI::GETCWD () PATHNAME)
+(SI::MKDIR (T FIXNUM) STRING)
 
 ; file unixint.c
-(si::CATCH-BAD-SIGNALS nil T)
-(si::UNCATCH-BAD-SIGNALS nil T)
+(SI::CATCH-BAD-SIGNALS nil T)
+(SI::UNCATCH-BAD-SIGNALS nil T)
 
 ; file format.c
 (FORMAT (T string *) T)

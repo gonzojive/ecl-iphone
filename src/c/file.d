@@ -741,7 +741,7 @@ BEGIN:
 			strm->stream.int1 = (strm->stream.int1&~07) + 8;
 		else
 			strm->stream.int1++;
-		cl_string_push_extend(strm->stream.object0, c);
+		ecl_string_push_extend(strm->stream.object0, c);
 		break;
 
 	case smm_input:
@@ -1568,7 +1568,7 @@ for the string ~S.",
 cl_object
 cl_make_string_output_stream()
 {
-	@(return make_string_output_stream(64))
+	@(return make_string_output_stream(128))
 }
 
 cl_object

@@ -70,9 +70,6 @@ object's representation."
                 (sys::get-string-input-stream-index stream)))))
 
 (defun write-to-string (object &rest rest
-                        &key escape radix base
-                             circle pretty level length
-                             case gensym array
                         &aux (stream (make-string-output-stream)))
   "Args: (object &key (escape *print-escape*) (radix *print-radix*)
                    (base *print-base*) (circle *print-circle*)
@@ -81,9 +78,6 @@ object's representation."
                    (array *print-array*) (gensym *print-gensym*))
 Returns as a string the printed representation of OBJECT in the specified
 mode.  See the variable docs of *PRINT-...* for the mode."
-  (declare (ignore escape radix base
-                   circle pretty level length
-                   case gensym array))
   (apply #'write object :stream stream rest)
   (get-output-stream-string stream))
 

@@ -105,7 +105,7 @@ BEGIN:
 					a = cat_constituent;
 				} else if (a == cat_multiple_escape)
 					break;
-				cl_string_push_extend(cl_env.token, c);
+				ecl_string_push_extend(cl_env.token, c);
 				length++;
 			}
 			goto NEXT;
@@ -125,7 +125,7 @@ BEGIN:
 			ecl_ungetc(c, in);
 			break;
 		}
-		cl_string_push_extend(cl_env.token, c);
+		ecl_string_push_extend(cl_env.token, c);
 		length++;
 	NEXT:
 		c = ecl_getc(in);
@@ -524,7 +524,7 @@ read_string(int delim, cl_object in)
 			break;
 		else if (cat(rtbl, c) == cat_single_escape)
 			c = ecl_getc_noeof(in);
-		cl_string_push_extend(cl_env.token, c);
+		ecl_string_push_extend(cl_env.token, c);
 	}
 }
 
@@ -546,7 +546,7 @@ read_constituent(cl_object in)
 			ecl_ungetc(c, in);
 			break;
 		}
-		cl_string_push_extend(cl_env.token, c);
+		ecl_string_push_extend(cl_env.token, c);
 	}
 }
 
@@ -831,7 +831,7 @@ sharp_colon_reader(cl_object in, cl_object ch, cl_object d)
 	cl_env.token->string.fillp = 0;
 	goto L;
 	for (;;) {
-		cl_string_push_extend(cl_env.token, c);
+		ecl_string_push_extend(cl_env.token, c);
 	K:
 		c = ecl_getc(in);
 		if (c == EOF)
@@ -852,7 +852,7 @@ sharp_colon_reader(cl_object in, cl_object ch, cl_object d)
 					a = cat_constituent;
 				} else if (a == cat_multiple_escape)
 					break;
-				cl_string_push_extend(cl_env.token, c);
+				ecl_string_push_extend(cl_env.token, c);
 			}
 			goto K;
 		} else if (islower(c))
@@ -1124,7 +1124,7 @@ sharp_P_reader(cl_object in, cl_object c, cl_object d)
 {
 	if (d != Cnil && !read_suppress)
 		extra_argument('P', in, d);
-	@(return cl_pathname(read_object(in)))
+	@(return cl_parse_namestring(3, read_object(in), Cnil, Cnil))
 }
 
 /*
@@ -1335,7 +1335,7 @@ do_read_delimited_list(int d, cl_object strm)
 		c = ecl_getc(strm);
 		if (c == EOF || c == '\n')
 			break;
-		cl_string_push_extend(cl_env.token, c);
+		ecl_string_push_extend(cl_env.token, c);
 	}
 	if (c == EOF && cl_env.token->string.fillp == 0) {
 		if (!Null(eof_errorp) || !Null(recursivep))

@@ -39,7 +39,7 @@
 			       function plist options gfun method-class)
   (declare (ignore options))
   (make-instance method-class
-		 :generic-function gfun
+		 :generic-function nil
 		 :qualifiers qualifiers
 		 :lambda-list arglist
 		 :specializers specializers
@@ -47,8 +47,45 @@
 		 :plist plist
 		 :allow-other-keys t))
 
+(defun congruent-lambda-p (l1 l2)
+  (multiple-value-bind (r1 opts1 rest1 key-flag1 keywords1)
+      (si::process-lambda-list l1 'FUNCTION)
+    (setf keywords1 (plusp (first keywords1)))
+    (multiple-value-bind (r2 opts2 rest2 key-flag2 keywords2)
+	(si::process-lambda-list l2 'FUNCTION)
+      (setf keywords2 (plusp (first keywords2)))
+      (and (= (length r2) (length r1))
+	   (= (length opts1) (length opts2))
+	   (if keywords1 keywords2 (not keywords2))
+	   t))))
+
 (defun add-method (gf method)
   (declare (notinline method-qualifiers)) ; during boot it's a structure accessor
+  ;;
+  ;; 1) The method must not be already installed in another generic function.
+  ;;
+  (let ((other-gf (method-generic-function method)))
+    (unless (or (null other-gf) (eq other-gf gf))
+      (error "The method ~A belongs to the generic function ~A ~
+and cannot be added to ~A." method other-gf gf)))
+  (setf (method-generic-function method) gf)
+  ;;
+  ;; 2) The method and the generic function should have congruent lambda
+  ;;    lists. That is, it should accept the same number of required and
+  ;;    optional arguments, and only accept keyword arguments when the generic
+  ;;    function does.
+  ;;
+  (unless (congruent-lambda-p (generic-function-lambda-list gf)
+			      (method-lambda-list method))
+    (error "Cannot add the method ~A to the generic function ~A because ~
+their lambda lists ~A and ~A are not congruent."
+	   method gf
+	   (generic-function-lambda-list gf)
+	   (method-lambda-lits method)))
+  ;;
+  ;; 3) Finally, it is inserted in the list of methods, and the method is
+  ;;    marked as belonging to a generic function.
+  ;;
   (let* ((method-qualifiers (method-qualifiers method)) 
 	 (specializers (method-specializers method))
 	 found)
@@ -56,11 +93,14 @@
 	  (remove-method gf found))
   (push method (generic-function-methods gf))
   (clrhash (generic-function-method-hash gf))
-  method))
+  gf))
 
 (defun remove-method (gf method)
   (setf (generic-function-methods gf)
-	(delete method (generic-function-methods gf))))
+	(delete method (generic-function-methods gf))
+	(method-generic-function method) nil)
+  (clrhash (generic-function-method-hash gf))
+  gf)
 
 ;;; ----------------------------------------------------------------------
 ;;; Error messages

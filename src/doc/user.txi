@@ -875,19 +875,17 @@ The initial value of the @clisp{} variable
 @code{(pathname "")}).
 
 A pathname in the file system of @clisp{} consists of six elements:
-host, device, directory, name, type and version.  Among these elements,
-@ecl{} does not use @code{version}.  That is, when converting a
-namestring into a pathname, @ecl{} turns this element into @nil{}.
-Conversely, when converting a pathname into a namestring, @ecl{}
-ignores the version.
+host, device, directory, name, type and version.
 
 Let me briefly explain how @ecl{} converts a namestring into a
 pathname. First @ecl{} tries parsing the namestring using the logical
 pathnames syntax, which is as follows
 @example
-        [hostname:][;][directory-item;]*[name][.type]
+        [hostname:][;][directory-item;]*[name][.type[.version]]
         hostname = word
-        directory-item, name, type = wildcard-word
+        directory-item = wildcard-word
+	type, name = wildcard-word without dots
+	version = NEWEST, newest or a number
 @end example
 @noindent
 Here, @var{word} is a sequence of one or more characters excluding
@@ -901,11 +899,18 @@ If @var{hostname} is not found or it is not a logical hostname, then
 @example
         [device:][[//hostname]/][directory-item/]*[name][.type]
         device, hostname = word
-        directory-item, name, type = wildcard-word
+        directory-item, type = wildcard-word
+	name = a wildcard-word with maybe a single leading dot
 @end example
 @noindent
 If this syntax also fails, then the namestring is not a valid
 pathname string.
+
+It is important to remark that in @ecl{}, all physical namestrings result into
+pathnames with a version equal to @code{:NEWEST}. Pathnames which are not
+logical and have any other version (i. e. @code{NIL} or a number), cannot
+be printed readably, but can produce a valid namestring which results of
+ignoring the version.
 
 The following rules apply to both physical and logical namestrings.
 First, if a namestring contains one or more periods `.', the last period
@@ -984,7 +989,7 @@ keyword
 The part of a namestring after the last directory separator (`@code{/}'
 or `@code{;}') is always regarded as representing the file name and the
 filetype.  In order to represent a pathname with both the name and the
-filetype @nil{}, end the pathname with a slash.
+filetype @nil{}, end the pathname with a slash. 
 @example
      "/usr/common/" 
           directory:     (:absolute "usr" "common") 
@@ -993,8 +998,8 @@ filetype @nil{}, end the pathname with a slash.
 
      "/usr/common/.lsp" 
           directory:     (:absolute "usr" "common") 
-          name:          nil 
-          type:          "lsp" 
+          name:          ".lsp"
+          type:          nil
 @end example
 
 `@code{*}' in the place of file name or filetype becomes  @code{:wild}
@@ -4123,7 +4128,7 @@ of the slot.
 @end defun
 @defun {characterp} {x}
 @end defun
-@deffn {system} {chdir}  filespec
+@deffn {system} {chdir}  filespec &optional update-lisp
 @end deffn
 @defmac {check-type} {(check-type place typespec [string-form])}
 @end defmac
@@ -4462,6 +4467,8 @@ of the slot.
 @end defun
 @defun {get-dispatch-macro-character} {char subchar @optional{} (readtable *readtable*)}
 @end defun
+@deffn {system} {getcwd} {}
+@end deffn
 @deffn {system} {get-hole-size}  
 @end deffn
 @defun {get-internal-real-time} {}

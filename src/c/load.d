@@ -142,8 +142,7 @@ si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 						 make_simple_string(INIT_PREFIX),
 						 prefix,
 						 make_simple_string("_"));
-	basename = cl_pathname(filename);
-	basename = cl_pathname_name(1,basename);
+	basename = cl_pathname_name(1,filename);
 	basename = @si::string-concatenate(2, prefix, @string-upcase(1,basename));
 	block->cblock.entry = ecl_library_symbol(block, basename->string.self);
 
@@ -208,7 +207,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 		   (print symbol_value(@'*load-print*'))
 		   (if_does_not_exist @':error')
 	           (search_list symbol_value(@'si::*load-search-list*'))
-	      &aux pathname pntype hooks filename function defaults ok)
+	      &aux pathname pntype hooks filename function ok)
 @
 	/* If source is a stream, read conventional lisp code from it */
 	if (type_of(source) != t_pathname &&  type_of(source) != t_string) {
@@ -217,10 +216,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 		function = Cnil;
 		goto NOT_A_FILENAME;
 	}
-	pathname = coerce_to_physical_pathname(source);
-	defaults = symbol_value(@'*default-pathname-defaults*');
-	defaults = coerce_to_physical_pathname(defaults);
-	pathname = merge_pathnames(pathname, defaults, @':newest');
+	pathname = coerce_to_file_pathname(source);
 	pntype   = pathname->pathname.type;
 
 	filename = Cnil;
@@ -231,7 +227,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 	    !Null(search_list))
 	{
 		loop_for_in(search_list) {
-			cl_object d = cl_pathname(CAR(search_list));
+			cl_object d = CAR(search_list);
 			cl_object f = cl_merge_pathnames(2, pathname, d);
 			cl_object ok = cl_load(9, f, @':verbose', verbose,
 					       @':print', print,

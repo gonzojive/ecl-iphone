@@ -1099,12 +1099,18 @@ _write_object(cl_object x, int level)
 		write_ch('>');
 		break;
 
-	case t_pathname:
+	case t_pathname: {
+		cl_object namestring = ecl_namestring(x, 0);
+		if (namestring == Cnil) {
+			if (cl_env.print_readably)
+				FEprint_not_readable(x);
+			namestring = ecl_namestring(x, 1);
+		}
 		if (cl_env.print_escape || cl_env.print_readably)
 			write_str("#P");
-		_write_object(cl_namestring(x), level);
+		_write_object(namestring, level);
 		break;
-
+	}
 	case t_bytecodes: {
 		cl_object name = x->bytecodes.name;
 		if (cl_env.print_readably) FEprint_not_readable(x);

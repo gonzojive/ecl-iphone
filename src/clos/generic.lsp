@@ -146,7 +146,7 @@
 ;;; ----------------------------------------------------------------------
 ;;;                                                             congruence
 
-#+nil
+#+(or)
 (defun congruent-lambda-list-p (l1 l2)
   (let (post-keyword)
     (do ((scan1 l1 (cdr scan1))

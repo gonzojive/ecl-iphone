@@ -1010,11 +1010,13 @@ extern cl_object cl_merge_pathnames _ARGS((int narg, cl_object path, ...));
 extern cl_object cl_make_pathname _ARGS((int narg, ...));
 extern cl_object cl_enough_namestring _ARGS((int narg, cl_object path, ...));
 extern cl_object si_pathname_translations _ARGS((int narg, cl_object host, ...));
+extern cl_object si_default_pathname_defaults(void);
 
 extern cl_object make_pathname(cl_object host, cl_object device, cl_object directory, cl_object name, cl_object type, cl_object version);
 extern cl_object parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep, cl_object default_host);
 extern cl_object coerce_to_physical_pathname(cl_object x);
 extern cl_object coerce_to_file_pathname(cl_object pathname);
+extern cl_object ecl_namestring(cl_object pname, int truncate_if_impossible);
 extern cl_object si_coerce_to_filename(cl_object pathname);
 extern cl_object merge_pathnames(cl_object path, cl_object defaults, cl_object default_version);
 extern bool logical_hostname_p(cl_object host);
@@ -1230,7 +1232,7 @@ extern cl_object coerce_to_simple_string(cl_object x);
 extern bool string_eq(cl_object x, cl_object y);
 extern bool string_equal(cl_object x, cl_object y);
 extern bool member_char(int c, cl_object char_bag);
-extern int cl_string_push_extend(cl_object s, int c);
+extern int ecl_string_push_extend(cl_object s, int c);
 extern void get_string_start_end(cl_object s, cl_object start, cl_object end, cl_index *ps, cl_index *pe);
 
 
@@ -1417,14 +1419,15 @@ extern cl_object cl_probe_file(cl_object file);
 extern cl_object cl_file_write_date(cl_object file);
 extern cl_object cl_file_author(cl_object file);
 extern cl_object si_file_kind(cl_object pathname, cl_object follow_links);
-extern cl_object si_chdir(cl_object directory);
+extern cl_object si_getcwd(void);
+extern cl_object si_chdir _ARGS((int narg, cl_object directory, ...));
 extern cl_object si_mkdir(cl_object directory, cl_object mode);
 extern cl_object cl_directory _ARGS((int narg, cl_object directory, ...));
 extern cl_object cl_user_homedir_pathname _ARGS((int narg, ...));
 extern cl_object si_mkstemp(cl_object template);
 
 extern const char *expand_pathname(const char *name);
-extern cl_object string_to_pathname(char *s);
+extern cl_object ecl_string_to_pathname(char *s);
 extern FILE *backup_fopen(const char *filename, const char *option);
 extern int file_len(FILE *fp);
 extern cl_object homedir_pathname(cl_object user);

@@ -984,13 +984,15 @@
 
 (check-for-bug :section5-legacy-985
   (eq 3.0 3.0)
-  #+(or cmu sbcl clisp ecl) nil
+  #+(or cmu sbcl clisp) nil
+  #+ecl t
   #-(or cmu sbcl clisp ecl) fill-this-in)
 					;  true OR  false
 
 (check-for-bug :section5-legacy-991
   (eq #c(3 -4) #c(3 -4))
-  #+(or cmu sbcl clisp ecl) nil
+  #+(or cmu sbcl clisp) nil
+  #+ecl t
   #-(or cmu sbcl clisp ecl) fill-this-in)
 					; true OR  false
 

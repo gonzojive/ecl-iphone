@@ -559,7 +559,7 @@ Cannot compile ~a."
   (cond ((null thing))
 	((functionp thing)
 	 (unless (si::bc-disassemble thing)
-	   (warn "The function definition for ~S was lost." thing)
+	   (warn "Cannot disassemble the binary function ~S because I do not have its source code." thing)
 	   (return-from disassemble nil)))
 	((and (consp thing) (eq (car thing) 'LAMBDA))
 	 (setq disassembled-form `(defun gazonk ,@(cdr thing))))

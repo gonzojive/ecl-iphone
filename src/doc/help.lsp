@@ -856,11 +856,19 @@ Coerces X into a character if possible.  Signals an error if not possible.")
 (docfun characterp function (x) "
 Returns T if X is a character; NIL otherwise.")
 
-#+unix
-(docfun si::chdir function (filespec) "
-ECL/UNIX specific.
-Changes the current working directory to the one specified by FILESPEC.
-FILESPEC may be a symbol, a string, or a pathname.")
+(docfun si::getcwd function (&optional update-lisp) "
+ECL specific.
+
+Returns the current working directory of the C library. When UPDATE-LISP is
+true, *DEFAULT-PATHNAME-DEFAULTS* is set to this value.")
+
+(docfun si::chdir function (filespec &optional update-lisp) "
+ECL specific.
+
+Changes the current working directory of the C library to the one specified by
+FILESPEC.  FILESPEC may be a symbol, a string, or a pathname. UPDATE-LISP
+determines whether the value of *DEFAULT-PATHNAME-DEFAULTS* is also to be
+changed.")
 
 (docfun clear-input function (&optional (stream *standard-input*)) "
 Clears the input buffer of STREAM and returns NIL.  Contents of the buffer are

@@ -170,7 +170,8 @@
 		(if (consp spec-how-old)
 		    spec-how-old
 		    (or spec-how spec-how-old)))))
-    (add-method gf method)))
+    (add-method gf method)
+    method))
 
 ;;; ----------------------------------------------------------------------
 ;;;                                                         early versions

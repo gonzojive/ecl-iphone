@@ -1748,6 +1748,14 @@ ECL 0.9d
 
 * Visible changes:
 
+  - ECL now distinguishes between the current working directory of the
+    C library (obtained by SI::GETCWD and changed with SI::CHDIR) and
+    the directory for the lisp environment (the value of
+    *DEFAULT-PATHNAME-DEFAULTS*). The internal routine SI::CHDIR now
+    takes arguments: the new directory, and an optional boolean
+    that determines whether *DEFAULT-PATHNAME-DEFAULTS* is also to be
+    changed (defaults to true).
+
   - New command line options -shell and -norc, which are useful for
     scripting. New and more robust handling of command line options,
     permits combining (and repeating) the options -load, -eval, -shell

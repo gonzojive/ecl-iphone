@@ -122,7 +122,9 @@ make_pathname(cl_object host, cl_object device, cl_object directory,
 		goto ERROR;
 	if (type != Cnil && type != @':wild' && type_of(type) != t_string)
 		goto ERROR;
-	if (version != @':unspecific' && version != @':newest' && version != Cnil) {
+	if (version != @':unspecific' && version != @':newest' &&
+	    version != @':wild' && version != Cnil && !FIXNUMP(version))
+	{
 	ERROR:	cl_error(3, @'file-error', @':pathname',
 			 cl_list(13, @'make-pathname',
 				 @':host', host,
@@ -288,11 +290,8 @@ parse_word(const char *s, delim_fn delim, int flags, cl_index start,
 	bool wild_inferiors = FALSE;
 
 	i = j = start;
-	if ((flags & WORD_ALLOW_LEADING_DOT) &&
-	    (i < end) &&
-	    delim(s[i])) {
+	if ((flags & WORD_ALLOW_LEADING_DOT) && (i < end) && delim(s[i]))
 		i++;
-	}
 	for (; i < end && !delim(s[i]); i++) {
 		char c = s[i];
 		bool valid_char;
@@ -425,7 +424,7 @@ cl_object
 parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 		 cl_object default_host)
 {
-	cl_object host, device, path, name, type, version;
+	cl_object host, device, path, name, type, aux, version;
 	bool logical;
 
 	/* We first try parsing as logical-pathname. In case of
@@ -457,10 +456,34 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 		return Cnil;
 	name = parse_word(s, is_dot, WORD_LOGICAL | WORD_ALLOW_ASTERISK |
 			  WORD_EMPTY_IS_NIL, *ep, end, ep);
-	type = parse_word(s, is_null, WORD_LOGICAL | WORD_ALLOW_ASTERISK |
+	if (name == @':error')
+		return Cnil;
+	type = Cnil;
+	version = Cnil;
+	if (*ep == start || s[*ep-1] != '.')
+		goto make_it;
+	type = parse_word(s, is_dot, WORD_LOGICAL | WORD_ALLOW_ASTERISK |
 			  WORD_EMPTY_IS_NIL, *ep, end, ep);
 	if (type == @':error')
 		return Cnil;
+	if (*ep == start || s[*ep-1] != '.')
+		goto make_it;
+	aux = parse_word(s, is_null, WORD_LOGICAL | WORD_ALLOW_ASTERISK |
+			 WORD_EMPTY_IS_NIL, *ep, end, ep);
+	if (aux == @':error') {
+		return Cnil;
+	} else if (aux == Cnil) {
+		version = Cnil;
+	} else {
+		version = cl_parse_integer(3, aux, @':junk-allowed', Ct);
+		if (cl_integerp(version) != Cnil && number_plusp(version) &&
+		    fix(VALUES(1)) == aux->string.fillp)
+			;
+		else if (string_equal(aux, (@':newest')->symbol.name))
+			version = @':newest';
+		else
+			return Cnil;
+	}
 	goto make_it;
  physical:
 	/*
@@ -506,17 +529,39 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 	name = parse_word(s, is_dot, WORD_ALLOW_LEADING_DOT |
 			  WORD_ALLOW_ASTERISK | WORD_EMPTY_IS_NIL,
 			  *ep, end, ep);
-	type = parse_word(s, is_null, WORD_ALLOW_ASTERISK | WORD_EMPTY_IS_NIL,
-			  *ep, end, ep);
-	version = parse_word(s, is_null, WORD_ALLOW_ASTERISK|WORD_EMPTY_IS_NIL,
-			     *ep, end, ep);
-	if (version == @':error')
+	if (name == @':error')
 		return Cnil;
+	if (*ep == start || s[*ep-1] != '.') {
+		type = Cnil;
+	} else {
+		type = parse_word(s, is_null, WORD_ALLOW_ASTERISK, *ep, end, ep);
+		if (type == @':error')
+			return Cnil;
+	}
+	version = @':newest';
  make_it:
 	if (*ep >= end) *ep = end;
-	path = make_pathname(host, device, path, name, type, @':unspecific');
+	path = make_pathname(host, device, path, name, type, version);
 	path->pathname.logical = logical;
 	return path;
+}
+
+cl_object
+si_default_pathname_defaults(void)
+{
+	/* This routine outputs the value of *default-pathname-defaults*
+	 * coerced to type PATHNAME. Special care is taken so that we do
+	 * not enter an infinite loop when using PARSE-NAMESTRING, because
+	 * this routine might itself try to use the value of this variable. */
+	cl_object path = symbol_value(@'*default-pathname-defaults*');
+	if (type_of(path) == t_string) {
+		/* Avoids infinite loop by giving a third argument to
+		 * parse-namestring */
+		path = cl_parse_namestring(3, path, Cnil, Cnil);
+	} else {
+		path = cl_pathname(path);
+	}
+	@(return path)
 }
 
 cl_object
@@ -570,13 +615,14 @@ cl_logical_pathname(cl_object x)
 /* FIXME! WILD-PATHNAME-P is missing! */
 
 /*
- * coerce_to_physical_pathname(P) converts P to a physical pathname,
+ * coerce_to_file_pathname(P) converts P to a physical pathname,
  * for a file which is accesible in our filesystem.
  */
 cl_object
 coerce_to_file_pathname(cl_object pathname)
 {
 	pathname = coerce_to_physical_pathname(pathname);
+	pathname = cl_merge_pathnames(1, pathname);
 #if !defined(cygwin) && !defined(mingw32)
 	if (pathname->pathname.device != Cnil)
 		FEerror("Device ~S not yet supported.", 1,
@@ -651,7 +697,7 @@ merge_pathnames(cl_object path, cl_object defaults, cl_object default_version)
 	if (Null(type = path->pathname.type))
 		type = defaults->pathname.type;
 	if (Null(version = path->pathname.version))
-		version = defaults->pathname.type;
+		version = defaults->pathname.version;
 	/*
 		In this implementation, version is not considered
 	*/
@@ -662,23 +708,9 @@ merge_pathnames(cl_object path, cl_object defaults, cl_object default_version)
 static void
 push_c_string(cl_object buffer, const char *s, cl_index length)
 {
-	cl_index fillp = buffer->string.fillp;
-	cl_index dim = buffer->string.dim;
-	char *dest = buffer->string.self;
-
-	if (type_of(buffer) != t_string)
-		internal_error("push_c_string");
 	for (; length; length--, s++) {
-		dest[fillp++] = *s;
-		if (fillp >= dim) {
-			char *new_dest = (char *)cl_alloc_atomic((dim += 32)+1);
-			memcpy(new_dest, dest, fillp);
-			buffer->string.dim = dim;
-			buffer->string.self = new_dest;
-			dest = new_dest;
-		}
+		ecl_string_push_extend(buffer, *s);
 	}
-	buffer->string.fillp = fillp;
 }
 
 static void
@@ -689,131 +721,130 @@ push_string(cl_object buffer, cl_object string)
 }
 
 /*
-	do_namestring(x) converts a pathname to a namestring.
+	ecl_namestring(x, flag) converts a pathname to a namestring.
+	if flag is true, then the pathname may be coerced to the requirements
+	of the filesystem, removing fields that have no meaning (such as
+	version, or type, etc); otherwise, when it is not possible to
+	produce a readable representation of the pathname, NIL is returned.
 */
-static cl_object
-do_namestring(cl_object x)
+cl_object
+ecl_namestring(cl_object x, int truncate_if_unreadable)
 {
-	cl_object l, y;
 	bool logical;
+	cl_object l, y;
 	cl_object buffer, host;
 
-	buffer = cl_env.token;
-	buffer->string.fillp = 0;
+	x = cl_pathname(x);
+
+	/* INV: Pathnames can only be created by mergin, parsing namestrings
+	 * or using make_pathname(). In all of these cases ECL will complain
+	 * at creation time if the pathname has wrong components.
+	 */
+	buffer = make_string_output_stream(128);
 	logical = x->pathname.logical;
 	host = x->pathname.host;
 	if (logical) {
 		if (host != Cnil) {
-			push_string(buffer, host);
-			push_c_string(buffer, ":", 1);
+			si_do_write_sequence(host, buffer, MAKE_FIXNUM(0), Cnil);
+			writestr_stream(":", buffer);
 		}
 	} else {
 		if ((y = x->pathname.device) != Cnil) {
-			push_string(buffer, y);
-			push_c_string(buffer, ":", 1);
+			si_do_write_sequence(y, buffer, MAKE_FIXNUM(0), Cnil);
+			writestr_stream(":", buffer);
 		}
 		if (host != Cnil) {
-			if (y == Cnil)
-				push_c_string(buffer, "file:", 5);
-			push_c_string(buffer, "//", 2);
-			push_string(buffer, host);
+			if (y == Cnil) {
+				writestr_stream("file:", buffer);
+			}
+			writestr_stream("//", buffer);
+			si_do_write_sequence(host, buffer, MAKE_FIXNUM(0), Cnil);
 		}
 	}
 	l = x->pathname.directory;
 	if (endp(l))
-		goto L;
+		goto NO_DIRECTORY;
 	y = CAR(l);
 	if (y == @':relative') {
 		if (logical)
-			push_c_string(buffer, ":", 1);
-	} else if (y == @':absolute') {
+			writestr_stream(";", buffer);
+	} else {
 		if (!logical)
-			push_c_string(buffer, "/", 1);
-	} else
-		FEerror("namestring: ~A is not a valid directory list",1, l);
-	l = CDR(l);
-	for (;  !endp(l);  l = CDR(l)) {
+			writestr_stream("/", buffer);
+	}
+	for (l = CDR(l); !endp(l); l = CDR(l)) {
 		y = CAR(l);
 		if (y == @':up') {
-			push_c_string(buffer, "..", 2);
+			writestr_stream("..", buffer);
 		} else if (y == @':wild') {
-			push_c_string(buffer, "*", 1);
+			writestr_stream("*", buffer);
 		} else if (y == @':wild-inferiors') {
-			push_c_string(buffer, "**", 2);
+			writestr_stream("**", buffer);
 		} else if (y != @':back') {
-			push_string(buffer, y);
+			si_do_write_sequence(y, buffer, MAKE_FIXNUM(0), Cnil);
 		} else {
 			FEerror("Directory :back has no namestring representation",0);
 		}
-		push_c_string(buffer, logical? ";" : "/", 1);
+		writestr_stream(logical? ";" : "/", buffer);
 	}
-L:
-	if (Null(y = x->pathname.name))
-		goto M;
-	if (y == @':wild') {
-		push_c_string(buffer, "*", 1);
-		goto M;
+NO_DIRECTORY:
+	y = x->pathname.name;
+	if (y != Cnil) {
+		if (y == @':wild') {
+			writestr_stream("*", buffer);
+		} else {
+			si_do_write_sequence(y, buffer, MAKE_FIXNUM(0), Cnil);
+		}
 	}
-	if (type_of(y) != t_string)
-		FEerror("~S is an illegal pathname name.", 1, y);
-	push_string(buffer, y);
-M:
-	if (Null(y = x->pathname.type))
-		goto N;
-	if (y == @':wild') {
-		push_c_string(buffer, ".*", 2);
-		goto N;
+	y = x->pathname.type;
+	if (y != Cnil) {
+		if (y == @':wild') {
+			writestr_stream(".*", buffer);
+		} else {
+			writestr_stream(".", buffer);
+			si_do_write_sequence(y, buffer, MAKE_FIXNUM(0), Cnil);
+		}
 	}
-	if (type_of(y) != t_string)
-		FEerror("~S is an illegal pathname type.", 1, y);
-	push_c_string(buffer, ".", 1);
-	push_string(buffer, y);
-	/* INV: pathname.version is always @':unspecific' or Cnil */
-N:
-	return copy_simple_string(cl_env.token);
+	y = x->pathname.version;
+	if (logical) {
+		if (y != Cnil) {
+			writestr_stream(".", buffer);
+			if (y == @':wild') {
+				writestr_stream("*", buffer);
+			} else if (y == @':newest') {
+				si_do_write_sequence(y->symbol.name, buffer,
+						     MAKE_FIXNUM(0), Cnil);
+			} else {
+				/* Since the printer is not reentrant,
+				 * we cannot use cl_write and friends.
+				 */
+				int n = fix(y), i;
+				char b[FIXNUM_BITS/2];
+				for (i = 0; n; i++) {
+					b[i] = n%10 + '0';
+					n = n/10;
+				}
+				if (i == 0)
+					b[i++] = '0';
+				while (i--) {
+					writec_stream(b[i], buffer);
+				}
+			}
+		}
+	} else if (y != @':newest' && !truncate_if_unreadable) {
+		return Cnil;
+	}
+	return get_output_stream_string(buffer);
 }
 
 cl_object
 cl_namestring(cl_object x)
 {
-L:
-	switch (type_of(x)) {
-	case t_string:
-		if (x->string.self[0] == '~')
-			x = do_namestring(cl_pathname(x));
-		break;
-
-	case t_pathname:
-		x = do_namestring(x);
-		break;
-
-	case t_stream:
-		switch ((enum ecl_smmode)x->stream.mode) {
-		case smm_input:
-		case smm_output:
-		case smm_probe:
-		case smm_io:
-			x = x->stream.object1;
-			/*
-				The file was stored in stream.object1.
-				See open.
-			*/
-			goto L;
-
-		case smm_synonym:
-			x = symbol_value(x->stream.object0);
-			goto L;
-
-		default:
-		}
-	default:
-		FEerror("~S cannot be coerced to a namestring.", 1, x);
-	}
-	@(return x)
+	@(return ecl_namestring(x, 1))
 }
 
 @(defun parse_namestring (thing
-	&o host (defaults OBJNULL)
+	&o host (defaults si_default_pathname_defaults())
 	&k (start MAKE_FIXNUM(0)) end junk_allowed
 	&a output)
 	cl_index s, e, ee;
@@ -826,15 +857,7 @@ L:
 	} else {
 		cl_object default_host = host;
 		if (default_host == Cnil && defaults != Cnil) {
-			/* We must avoid getting in an infinite loop when
-			 * *default-pathname-defaults* is a namestring that
-			 * needs to be parsed. */
-			if (defaults == OBJNULL) {
-				defaults = symbol_value(@'*default-pathname-defaults*');
-				defaults = cl_parse_namestring(1, defaults, Cnil, Cnil);
-			} else {
-				defaults = cl_pathname(defaults);
-			}
+			defaults = cl_pathname(defaults);
 			default_host = defaults->pathname.host;
 		}
 		get_string_start_end(thing, start, end, &s, &e);
@@ -859,7 +882,7 @@ L:
 @)
 
 @(defun merge_pathnames (path
-	&o (defaults symbol_value(@'*default-pathname-defaults*'))
+	&o (defaults si_default_pathname_defaults())
  	   (default_version @':newest'))
 @
 	path = cl_pathname(path);
@@ -874,14 +897,12 @@ L:
 		       &aux x)
 @
 	if (Null(defaults)) {
-		defaults
-		= symbol_value(@'*default-pathname-defaults*');
+		defaults = si_default_pathname_defaults();
+		defaults = make_pathname(defaults->pathname.host,
+					 Cnil, Cnil, Cnil, Cnil, Cnil);
+	} else {
 		defaults = cl_pathname(defaults);
-		defaults
-		= make_pathname(defaults->pathname.host,
-			        Cnil, Cnil, Cnil, Cnil, Cnil);
-	} else
-		defaults = cl_pathname(defaults);
+	}
 	x = make_pathname(host != OBJNULL? translate_pathname_case(host,scase)
 			                 : defaults->pathname.host,
 			  device != OBJNULL? translate_pathname_case(device,scase)
@@ -950,19 +971,21 @@ cl_object
 cl_file_namestring(cl_object pname)
 {
 	pname = cl_pathname(pname);
-	@(return do_namestring(make_pathname(Cnil, Cnil, Cnil,
-					     pname->pathname.name,
-					     pname->pathname.type,
-					     pname->pathname.version)))
+	@(return ecl_namestring(make_pathname(Cnil, Cnil, Cnil,
+					      pname->pathname.name,
+					      pname->pathname.type,
+					      pname->pathname.version),
+				1))
 }
 
 cl_object
 cl_directory_namestring(cl_object pname)
 {
 	pname = cl_pathname(pname);
-	@(return do_namestring(make_pathname(Cnil, Cnil,
-					     pname->pathname.directory,
-					     Cnil, Cnil, Cnil)))
+	@(return ecl_namestring(make_pathname(Cnil, Cnil,
+					      pname->pathname.directory,
+					      Cnil, Cnil, Cnil),
+				1))
 }
 
 cl_object
@@ -976,7 +999,7 @@ cl_host_namestring(cl_object pname)
 }
 
 @(defun enough_namestring (path
-	&o (defaults symbol_value(@'*default-pathname-defaults*')))
+	&o (defaults si_default_pathname_defaults()))
 	cl_object newpath;
 @
 	defaults = cl_pathname(defaults);
@@ -998,7 +1021,7 @@ cl_host_namestring(cl_object pname)
 			       defaults->pathname.version) ?
 			Cnil : path->pathname.version);
 	newpath->pathname.logical = path->pathname.logical;
-	@(return do_namestring(newpath))
+	@(return ecl_namestring(newpath, 1))
 @)
 
 /* --------------- PATHNAME MATCHING ------------------ */
@@ -1340,16 +1363,14 @@ cl_translate_pathname(cl_object source, cl_object from, cl_object to)
 	out->pathname.type = d;
 
 	/* Match version */
-#if 0
-	wilds = find_wilds(Cnil, source->pathname.version, from->pathname.version);
-	if (wilds == @':error') goto error2;
-	d = copy_wildcards(&wilds, to->pathname.version);
-	if (d == @':error') goto error;
-	if (wilds != Cnil) goto error2;
-	out->pathname.version = d;
-#else
-	out->pathname.version = Cnil;
-#endif
+	if (to->pathname.version == @':wild') {
+		if (out->pathname.version == @':wild')
+			out->pathname.version = source->pathname.version;
+		else
+			goto error2;
+	} else {
+		out->pathname.version = to->pathname.version;
+	}
 	return out;
 
  error:

@@ -250,7 +250,7 @@ cl_boot(int argc, char **argv)
 	ECL_SET(@'*print-case*', @':upcase');
 
 	cl_core.pathname_translations = Cnil;
-	ECL_SET(@'*default-pathname-defaults*', make_pathname(Cnil, Cnil, Cnil, Cnil, Cnil, Cnil));
+	ECL_SET(@'*default-pathname-defaults*', si_getcwd());
 	@si::pathname-translations(2,make_simple_string("SYS"),
 				   cl_list(1,cl_list(2,make_simple_string("*.*"),
 						     make_simple_string("./*.*"))));
