@@ -81,7 +81,7 @@ static int isp;
 static int iisp;
 
 static cl_object CIRCLEstack;
-static cl_fixnum CIRCLEcounter;
+static cl_fixnum CIRCLEcounter = -2;
 #endif /* THREADS */
 
 static cl_object no_stream;
@@ -1285,7 +1285,8 @@ static bool
 do_print_circle(cl_fixnum code)
 {
 	if (CIRCLEcounter < 0) {
-		return (code != 0);
+		/* Only run through object when it was not referenced before */
+		return (code == 0);
 	} else if (code == 0) {
 		/* Object is not referenced twice */
 		return TRUE;
@@ -1593,7 +1594,7 @@ init_print(void)
 {
 	SYM_VAL(@'*print-escape*') = Ct;
 	SYM_VAL(@'*print-pretty*') = Ct;
-	SYM_VAL(@'*print-circle*') = Cnil;
+	SYM_VAL(@'*print-circle*') = Ct;
 	SYM_VAL(@'*print-base*') = MAKE_FIXNUM(10);
 	SYM_VAL(@'*print-radix*') = Cnil;
 	SYM_VAL(@'*print-case*') = @':upcase';
