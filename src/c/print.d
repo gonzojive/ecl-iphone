@@ -342,7 +342,7 @@ write_double(double d, int e, bool shortp)
 	int n = FPRC;		/* was FPRC+1 */
 
 	if (shortp)
-		n = 7;
+		n = 8;
 	edit_double(n, d, &sign, buff, &exp);
 	if (sign==2) {
 		write_str("#<");

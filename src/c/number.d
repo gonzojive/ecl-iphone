@@ -275,22 +275,6 @@ init_number(void)
 	ECL_SET(@'LEAST-NEGATIVE-NORMALIZED-DOUBLE-FLOAT', num);
 	ECL_SET(@'LEAST-NEGATIVE-NORMALIZED-LONG-FLOAT', num);
 
-	num = make_shortfloat(FLT_EPSILON);
-	ECL_SET(@'SHORT-FLOAT-EPSILON', num);
-	ECL_SET(@'SINGLE-FLOAT-EPSILON', num);
-
-	num = make_shortfloat(-FLT_EPSILON);
-	ECL_SET(@'SHORT-FLOAT-NEGATIVE-EPSILON', num);
-	ECL_SET(@'SINGLE-FLOAT-NEGATIVE-EPSILON', num);
-
-	num = make_longfloat(DBL_EPSILON);
-	ECL_SET(@'DOUBLE-FLOAT-EPSILON', num);
-	ECL_SET(@'LONG-FLOAT-EPSILON', num);
-
-	num = make_longfloat(-DBL_EPSILON);
-	ECL_SET(@'DOUBLE-FLOAT-NEGATIVE-EPSILON', num);
-	ECL_SET(@'LONG-FLOAT-NEGATIVE-EPSILON', num);
-
  	cl_core.shortfloat_zero = cl_alloc_object(t_shortfloat);
  	sf(cl_core.shortfloat_zero) = (float)0.0;
  	cl_core.longfloat_zero = cl_alloc_object(t_longfloat);

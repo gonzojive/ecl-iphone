@@ -15,6 +15,40 @@
 #-ecl-min
 (ffi:clines "#include <math.h>")
 
+#.
+(flet ((binary-search (f min max)
+	 (do ((new (/ (+ min max) 2) (/ (+ min max) 2)))
+	     ((>= min max)
+	      max)
+	   (if (funcall f new)
+	       (if (= new max)
+		   (return max)
+		   (setq max new))
+	       (if (= new min)
+		   (return max)
+		   (setq min new)))))
+       (epsilon+ (x)
+	 (/= (float 1 x) (+ (float 1 x) x)))
+       (epsilon- (x)
+	 (/= (float 1 x) (- (float 1 x) x))))
+  `(eval-when (compile load eval)
+    (defconstant short-float-epsilon
+      ,(binary-search #'epsilon+ (coerce 0 'short-float) (coerce 1 'short-float)))
+    (defconstant single-float-epsilon
+      ,(binary-search #'epsilon+ (coerce 0 'single-float) (coerce 1 'single-float)))
+    (defconstant long-float-epsilon
+      ,(binary-search #'epsilon+ (coerce 0 'double-float) (coerce 1 'double-float)))
+    (defconstant double-float-epsilon
+      ,(binary-search #'epsilon+ (coerce 0 'long-float) (coerce 1 'long-float)))
+    (defconstant short-float-negative-epsilon
+      ,(binary-search #'epsilon- (coerce 0 'short-float) (coerce 1 'short-float)))
+    (defconstant single-float-negative-epsilon
+      ,(binary-search #'epsilon- (coerce 0 'single-float) (coerce 1 'single-float)))
+    (defconstant long-float-negative-epsilon
+      ,(binary-search #'epsilon- (coerce 0 'double-float) (coerce 1 'double-float)))
+    (defconstant double-float-negative-epsilon
+      ,(binary-search #'epsilon- (coerce 0 'long-float) (coerce 1 'long-float)))))
+
 (defconstant imag-one #C(0.0 1.0))
 
 (defun isqrt (i)
