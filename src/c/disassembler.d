@@ -516,16 +516,6 @@ disassemble(cl_object *vector) {
 	case OP_BLOCK:		vector = disassemble_block(vector);
 				break;
 
-	/* OP_CALL	n{arg}, function-name{symbol}
-		Calls the local or global function with N arguments
-		which have been deposited in the stack. The output
-		value is kept in VALUES(...)
-	*/
-	case OP_CALL:		string = "CALL\t";
-				n = get_oparg(s);
-				s = next_code(vector);
-				goto OPARG_ARG;
-
 	/* OP_CALLG	n{arg}, function-name{symbol}
 		Calls the global function with N arguments which have
 		been deposited in the stack. The output values are
@@ -544,16 +534,6 @@ disassemble(cl_object *vector) {
 	case OP_FCALL:		string = "FCALL\t";
 				n = get_oparg(s);
 				goto OPARG;
-
-	/* OP_PCALL	n{arg}, function-name{symbol}
-		Calls the local or global function with N arguments
-		which have been deposited in the stack. The first
-		output value is pushed onto the stack.
-	*/
-	case OP_PCALL:		string = "PCALL\t";
-				n = get_oparg(s);
-				s = next_code(vector);
-				goto OPARG_ARG;
 
 	/* OP_PCALLG	n{arg}, function-name{symbol}
 		Calls the global function with N arguments which have
@@ -596,6 +576,15 @@ disassemble(cl_object *vector) {
 	case OP_LABELS:		vector = disassemble_labels(vector);
 				break;
 
+	/* OP_LFUNCTION	name{symbol}
+		Extracts the function associated to a symbol. The function
+		may be defined in the global environment or in the local
+		environment. This last value takes precedence.
+	*/
+	case OP_LFUNCTION:	string = "LOCFUNC\t";
+				n = get_oparg(s);
+				goto OPARG;
+
 	/* OP_FUNCTION	name{symbol}
 		Extracts the function associated to a symbol. The function
 		may be defined in the global environment or in the local
@@ -624,12 +613,13 @@ disassemble(cl_object *vector) {
 				s = next_code(vector);
 				goto OPARG_ARG;
 
-	/* OP_RETURN	block-name{symbol}
-		Returns from the block whose name is BLOCK-NAME.
+	/* OP_RETURN	n{arg}
+		Returns from the block whose record in the lexical environment
+		occuppies the n-th position.
 	*/
 	case OP_RETURN:		string = "RETFROM";
-				s = next_code(vector);
-				goto ARG;
+				n = get_oparg(s);
+				goto OPARG;
 
 	/* OP_THROW
 		Jumps to an enclosing CATCH form whose tag matches the one

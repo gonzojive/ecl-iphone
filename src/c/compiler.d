@@ -400,7 +400,7 @@ c_tag_ref(cl_object the_tag, cl_object the_type)
 			n++;
 		} else if (type == @':block' || type == @':function') {
 			if (type == the_type && name == the_tag)
-				return Ct;
+				return MAKE_FIXNUM(n);
 			n++;
 		} else if (Null(name)) {
 			n++;
@@ -620,13 +620,15 @@ c_call(cl_object args, bool push) {
 	}
 	if (ATOM(name)) {
 		cl_object ndx = c_tag_ref(name, @':function');
-		if (Null(ndx))
+		if (Null(ndx)) {
 			/* Globally defined function */
 			asm_op2(push? OP_PCALLG : OP_CALLG, nargs);
-		else
+			asm1(name);
+		} else {
 			/* Function from a FLET/LABELS form */
-			asm_op2(push? OP_PCALL : OP_CALL, nargs);
-		asm1(name);
+			asm_op2(OP_LFUNCTION, fix(ndx));
+			asm_op2(push? OP_PFCALL : OP_FCALL, nargs);
+		}
 	} else if (CAR(name) == @'lambda') {
 		asm_op(OP_CLOSE);
 		asm1(make_lambda(Cnil, CDR(name)));
@@ -1103,8 +1105,15 @@ c_function(cl_object args) {
 	if (!endp(args))
 		FEprogram_error("FUNCTION: Too many arguments.", 0);
 	if (SYMBOLP(function)) {
-		asm_op(OP_FUNCTION);
-		asm1(function);
+		cl_object ndx = c_tag_ref(function, @':function');
+		if (Null(ndx)) {
+			/* Globally defined function */
+			asm_op(OP_FUNCTION);
+			asm1(function);
+		} else {
+			/* Function from a FLET/LABELS form */
+			asm_op2(OP_LFUNCTION, fix(ndx));
+		}
 	} else if (CONSP(function) && CAR(function) == @'lambda') {
 		asm_op(OP_CLOSE);
 		asm1(make_lambda(Cnil, CDR(function)));
@@ -1591,8 +1600,7 @@ c_return_aux(cl_object name, cl_object stmt)
 	if (stmt != Cnil)
 		FEprogram_error("RETURN-FROM: Too many arguments.", 0);
 	compile_form(output, FALSE);
-	asm_op(OP_RETURN);
-	asm1(name);
+	asm_op2(OP_RETURN, fix(ndx));
 }
 
 static void

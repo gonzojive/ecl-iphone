@@ -172,16 +172,6 @@ search_tag(cl_object name, cl_object type)
 	return Cnil;
 }
 
-static cl_object
-search_symbol_function(register cl_object fun) {
-	cl_object output = search_tag(fun, @':function');
-	if (!Null(output))
-		return output;
-	output = SYM_FUN(fun);
-	if (output == OBJNULL || fun->symbol.mflag)
-		FEundefined_function(fun);
-	return output;
-}
 
 /* -------------------- LAMBDA FUNCTIONS -------------------- */
 
@@ -409,23 +399,6 @@ search_global(register cl_object s) {
 	return x;
 }
 		
-static cl_object
-interpret_call(int narg, cl_object fun) {
-	cl_object *args;
-	cl_object x;
-
-	fun = search_tag(fun, @':function');
-	args = cl_stack_top - narg;
-	if (type_of(fun) != t_bytecodes) {
-		if (Null(fun))
-			FEerror("Internal error: local ~S not found.", 1, fun);
-		FEerror("Internal error: local function not of type bytecodes.",0);
-	}
-	x = lambda_apply(narg, fun, args);
-	cl_stack_pop_n(narg);
-	return x;
-}
-
 /* Similar to funcall(), but registers calls in the IHS stack. */
 
 static cl_object
@@ -917,14 +890,6 @@ interpret(cl_object *vector) {
 		goto BEGIN;
 	}
 	switch (GET_OP(s)) {
-	/* OP_NOP
-		Sets VALUES(0) = NIL and NValues = 1
-	*/   		
-	case OP_NOP:
-		VALUES(0) = Cnil;
-		NValues = 0;
-		break;
-
 	/* OP_QUOTE
 		Sets VALUES(0) to an immediate value.
 	*/
@@ -988,31 +953,6 @@ interpret(cl_object *vector) {
 		cl_stack_push(next_code(vector));
 		break;
 
-	/* OP_PUSHVALUES
-		Pushes the values output by the last form.
-	*/
-	case OP_PUSHVALUES: {
-		int i;
-		for (i=0; i<NValues; i++)
-			cl_stack_push(VALUES(i));
-		break;
-	}
-
-	case OP_BLOCK:
-		vector = interpret_block(vector);
-		break;
-
-	/* OP_CALL	n{arg}, function-name{symbol}
-		Calls the local or global function with N arguments
-		which have been deposited in the stack.
-	*/
-	case OP_CALL: {
-		cl_fixnum n = get_oparg(s);
-		cl_object name = next_code(vector);
-		VALUES(0) = interpret_call(n, name);
-		break;
-	}
-
 	/* OP_CALLG	n{arg}, function-name{symbol}
 		Calls the global function with N arguments which have
 		been deposited in the stack. The output values are
@@ -1036,19 +976,6 @@ interpret(cl_object *vector) {
 		cl_fixnum n = get_oparg(s);
 		cl_object fun = VALUES(0);
 		VALUES(0) = interpret_funcall(n, fun);
-		break;
-	}
-
-	/* OP_PCALL	n{arg}, function-name{symbol}
-		Calls the local or global function with N arguments
-		which have been deposited in the stack. The first
-		output value is pushed onto the stack.
-	*/
-	case OP_PCALL: {
-		cl_fixnum n = get_oparg(s);
-		cl_object name = next_code(vector);
-		VALUES(0) = interpret_call(n, name);
-		cl_stack_push(VALUES(0));
 		break;
 	}
 
@@ -1080,18 +1007,19 @@ interpret(cl_object *vector) {
 		break;
 	}
 
-	case OP_MCALL:
-		vector = interpret_mcall(vector);
-		break;
-	case OP_CATCH:
-		vector = interpret_catch(vector);
-		break;
-
 	/* OP_EXIT
 		Marks the end of a high level construct (BLOCK, CATCH...)
 	*/
 	case OP_EXIT:
 		return vector;
+
+	/* OP_NOP
+		Sets VALUES(0) = NIL and NValues = 1
+	*/   		
+	case OP_NOP:
+		VALUES(0) = Cnil;
+		NValues = 0;
+		break;
 
 	/* OP_HALT
 		Marks the end of a function.
@@ -1105,14 +1033,30 @@ interpret(cl_object *vector) {
 		vector = interpret_labels(vector);
 		break;
 
+	/* OP_LFUNCTION	n{arg}, function-name{symbol}
+		Calls the local or global function with N arguments
+		which have been deposited in the stack.
+	*/
+	case OP_LFUNCTION: {
+		int lex_env_index = get_oparg(s);
+		cl_object fun_record = search_local(lex_env_index);
+		cl_object fun_object = CDR(fun_record);
+		VALUES(0) = fun_object;
+		NValues = 1;
+		break;
+	}
+
 	/* OP_FUNCTION	name{symbol}
 		Extracts the function associated to a symbol. The function
 		may be defined in the global environment or in the local
 		environment. This last value takes precedence.
 	*/
 	case OP_FUNCTION: {
-		cl_object function_name = next_code(vector);
-		VALUES(0) = search_symbol_function(function_name);
+		cl_object fun_name = next_code(vector);
+		cl_object fun_object = SYM_FUN(fun_name);
+		if (fun_object == OBJNULL || fun_name->symbol.mflag)
+			FEundefined_function(fun_name);
+		VALUES(0) = fun_object;
 		NValues = 1;
 		break;
 	}
@@ -1140,14 +1084,15 @@ interpret(cl_object *vector) {
 		cl_go(id, tag_name);
 		break;
 	}
-	/* OP_RETURN	block-name{symbol}
-		Returns from the block whose name is BLOCK-NAME.
+	/* OP_RETURN	n{arg}
+		Returns from the block whose record in the lexical environment
+		occuppies the n-th position.
 	*/
 	case OP_RETURN: {
-		cl_object block_name = next_code(vector);
-		cl_object id = search_tag(block_name, @':block');
-		if (Null(id))
-			FEcontrol_error("RETURN-FROM: Unknown block ~S.", 1, block_name);
+		int lex_env_index = get_oparg(s);
+		cl_object block_record = search_local(lex_env_index);
+		cl_object block_name = CAR(block_record);
+		cl_object id = CDR(block_record);
 		cl_return_from(id, block_name);
 		break;
 	}
@@ -1288,6 +1233,31 @@ interpret(cl_object *vector) {
 		NValues = 1;
 		break;
 	}
+
+	case OP_BLOCK:
+		vector = interpret_block(vector);
+		break;
+	case OP_DOLIST:
+		vector = interpret_dolist(vector);
+		break;
+	case OP_DOTIMES:
+		vector = interpret_dotimes(vector);
+		break;
+	case OP_DO:
+		vector = interpret_do(vector);
+		break;
+	case OP_TAGBODY:
+		vector = interpret_tagbody(vector);
+		break;
+	case OP_UNWIND:
+		vector = interpret_unwind_protect(vector);
+		break;
+	case OP_MCALL:
+		vector = interpret_mcall(vector);
+		break;
+	case OP_CATCH:
+		vector = interpret_catch(vector);
+		break;
 	case OP_MSETQ:
 		vector = interpret_msetq(vector);
 		break;
@@ -1297,6 +1267,15 @@ interpret(cl_object *vector) {
 	case OP_PROGV:
 		vector = interpret_progv(vector);
 		break;
+	/* OP_PUSHVALUES
+		Pushes the values output by the last form.
+	*/
+	case OP_PUSHVALUES: {
+		int i;
+		for (i=0; i<NValues; i++)
+			cl_stack_push(VALUES(i));
+		break;
+	}
 
 	/* OP_VALUES	n{arg}
 		Pop N values from the stack and store them in VALUES(...)
@@ -1321,21 +1300,6 @@ interpret(cl_object *vector) {
 		NValues = 1;
 		break;
 	}
-	case OP_DOLIST:
-		vector = interpret_dolist(vector);
-		break;
-	case OP_DOTIMES:
-		vector = interpret_dotimes(vector);
-		break;
-	case OP_DO:
-		vector = interpret_do(vector);
-		break;
-	case OP_TAGBODY:
-		vector = interpret_tagbody(vector);
-		break;
-	case OP_UNWIND:
-		vector = interpret_unwind_protect(vector);
-		break;
 	default:
 		FEerror("Internal error: Unknown code ~S",
 			1, MAKE_FIXNUM(*(vector-1)));
