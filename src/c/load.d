@@ -205,9 +205,12 @@ init_load(void)
   SYM_VAL(@'si::*source-pathname*') = Cnil;
 #endif
 
-  SYM_VAL(@'si::*load-hooks*') = cl_list(4,
+  SYM_VAL(@'si::*load-hooks*') = cl_list(
 #ifdef ENABLE_DLOPEN
-				CONS(make_simple_string("so"), @'si::load-binary'),
+				4,CONS(make_simple_string("so"), @'si::load-binary'),
+#else
+				3,
+
 #endif
 				CONS(make_simple_string("lsp"), @'si::load-source'),
 				CONS(make_simple_string("lisp"), @'si::load-source'),

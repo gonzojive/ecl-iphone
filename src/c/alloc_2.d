@@ -223,6 +223,7 @@ init_alloc(void)
 static void
 stacks_scanner(void)
 {
+#if 0
 	if (cl_stack) {
 		GC_push_conditional(cl_stack, cl_stack_top,1);
 		GC_set_mark_bit(cl_stack);
@@ -237,6 +238,7 @@ stacks_scanner(void)
 	}
 	if (NValues)
 		GC_push_all(Values, Values+NValues+1);
+#endif
 	if (old_GC_push_other_roots)
 		(*old_GC_push_other_roots)();
 }
