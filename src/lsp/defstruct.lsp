@@ -245,9 +245,32 @@
 
 (defun define-structure (name conc-name type named slots slot-descriptions
 			      copier include print-function constructors
-			      offset documentation)
+			      offset name-offset documentation predicate)
   ;; We are going to modify this list!!!
   (setf slot-descriptions (copy-tree slot-descriptions))
+  ;; FIXME! We could do the same with ENSURE-CLASS!
+  #+clos
+  (unless type
+    (eval `(defclass ,name ,(and include (list include))
+	     ,(mapcar
+	       #'(lambda (sd)
+		   (if sd
+		       (list* (first sd)
+			      :initform (second sd)
+			      :initarg 
+			      (intern (symbol-name (first sd))
+				      (find-package 'KEYWORD))
+			      (when (third sd) (list :type (third sd))))
+		       nil))		; for initial offset slots
+	       slot-descriptions)
+	     (:metaclass structure-class))))
+  ;; FIXME! We can do the same with INSTALL-METHOD!
+  #+clos
+  (when print-function
+    (eval `(defmethod print-object ((obj ,name) stream)
+	     (,print-function obj stream *print-level*))))
+  (when predicate
+    (fset predicate (make-predicate name type named name-offset)))
   (put-sysprop name 'DEFSTRUCT-FORM `(defstruct ,name ,@slots))
   (put-sysprop name 'IS-A-STRUCTURE t)
   (put-sysprop name 'STRUCTURE-SLOT-DESCRIPTIONS slot-descriptions)
@@ -271,7 +294,7 @@
 
 ;;; The DEFSTRUCT macro.
 
-(defmacro defstruct (name &rest slots)
+(defmacro defstruct (name&opts &rest slots)
   "Syntax: (defstruct
          {name | (name {:conc-name | (:conc-name prefix-string) |
                         :constructor | (:constructor symbol [lambda-list]) |
@@ -290,34 +313,23 @@ Defines a structure named by NAME.  The doc-string DOC, if supplied, is saved
 as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
   (let*((slot-descriptions slots)
 	;;#+clos
-	local-slot-descriptions
-        options
-        conc-name
-        constructors default-constructor no-constructor
-        copier
-        predicate predicate-specified
+	(name (if (consp name&opts) (first name&opts) name&opts))
+        (options (when (consp name&opts) (rest name&opts)))
+        (conc-name (string-concatenate name "-"))
+	(default-constructor (intern (string-concatenate "MAKE-" name)))
+	(copier (intern (string-concatenate "COPY-" name)))
+	(predicate (intern (string-concatenate name "-P")))
+        constructors no-constructor
+        predicate-specified
         include
         print-function type named initial-offset
         offset name-offset
         documentation)
 
     (when (consp name)
-          ;; The defstruct options are supplied.
-          (setq options (cdr name))
-          (setq name (car name)))
-
-    ;; The default conc-name.
-    (setq conc-name (string-concatenate name "-"))
-
-    ;; The default constructor.
-    (setq default-constructor
-          (intern (string-concatenate "MAKE-" name)))
-
-    ;; The default copier and predicate.
-    (setq copier
-          (intern (string-concatenate "COPY-" name))
-          predicate
-          (intern (string-concatenate name "-P")))
+      ;; The defstruct options are supplied.
+      (setq options (cdr name))
+      (setq name (car name)))
 
     ;; Parse the defstruct options.
     (do ((os options (cdr os)) (o) (v))
@@ -407,9 +419,6 @@ as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
           (setq slot-descriptions
                 (append (make-list initial-offset) slot-descriptions)))
 
-    ;;#+clos
-    (setq local-slot-descriptions slot-descriptions)
-
     ;; Append the slot-descriptions of the included structure.
     ;; The slot-descriptions in the include option are also counted.
     (cond ((null include))
@@ -438,116 +447,24 @@ as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
 
     ;; Check the named option and set the predicate.
     (when (and type (not named))
-          (when predicate-specified
-                (error "~S is an illegal structure predicate."
-                       predicate))
-          (setq predicate nil))
+      (when predicate-specified
+	(error "~S is an illegal structure predicate."
+	       predicate))
+      (setq predicate nil))
 
     (when include (setq include (car include)))
 
     ;; Check the print-function.
     (when (and print-function type)
-          (error "An print function is supplied to a typed structure."))
+      (error "An print function is supplied to a typed structure."))
 
-    (if (or type (not (member ':CLOS *features*)))
-	`(eval-when (compile load eval)
-
-	  (define-structure ',name ',conc-name ',type ',named ',slots
-			    ',slot-descriptions ',copier ',include
-			    ',print-function ',constructors ',offset
-			    ',documentation)
-	  ,@(mapcar #'(lambda (constructor)
-			(make-constructor name constructor type named
-					  slot-descriptions))
-	     constructors)
-	  ,@(when predicate
-	      (list `(fset ',predicate
-		      (make-predicate ',name ',type ',named ',name-offset))))
-	  ',name)
-
-      ;; else (and (not type) (member :CLOS *features*))
-
-      `(eval-when (compile load eval)
-
-	(defclass ,name ,(and include (list include))
-	  ,(mapcar
-	    #'(lambda (sd)
-		(if sd
-		    (list* (first sd)
-			   :initform (second sd)
-			   :initarg 
-			   (intern (symbol-name (first sd))
-				   (find-package 'KEYWORD))
-			   (when (third sd) (list :type (third sd))))
-		    nil))		; for initial offset slots
-	    local-slot-descriptions)
-	  (:metaclass structure-class))
-
-#|	   (with-slots (defstruct-form slot-descriptions initial-offset
-			 constructors documentation copier predicate
-			 print-function)
-		       (find-class ',name)
-              (setq defstruct-form '(defstruct ,name ,@slots))
-	      (setq slot-descriptions ',slot-descriptions)
-	      (setq initial-offset ',structure-offset)
-	      (setq constructors ',constructors)
-	      (setq documentation ,documentation)
-	      (setq copier ,copier)
-	      (setq predicate ,predicate)
-	      (setq print-function ,print-function))
-|#
-
-	,@(if print-function
-	      `((defmethod print-object
-		    ((obj ,name) stream)
-		  (,print-function obj stream *print-level*))))
-
-	(define-structure ',name ',conc-name ',type ',named ',slots
-			  ',slot-descriptions ',copier ',include
-			  ',print-function ',constructors ',offset
-			  ',documentation)
-	,@(mapcar #'(lambda (constructor)
-		      (make-constructor name constructor type named
-					slot-descriptions))
-	   constructors)
-	,@(when predicate
-	    (list `(fset ',predicate
-		    (make-predicate ',name ',type ',named ',name-offset))))
-	',name))))
-
-
-;; Examples from Common Lisp Reference Manual.
-
-#|
-(defstruct ship
-  x-position
-  y-position
-  x-velocity
-  y-velocity
-  mass)
-
-(defstruct person name age sex)
-
-(defstruct (astronaut (:include person (age 45))
-                      (:conc-name astro-))
-  helmet-size
-  (favorite-beverage 'tang))
-
-(defstruct (foo (:constructor create-foo (a
-                                          &optional b (c 'sea)
-                                          &rest d
-                                          &aux e (f 'eff))))
-  a (b 'bee) c d e f)
-
-(defstruct (binop (:type list) :named (:initial-offset 2))
-  (operator '?)
-  operand-1
-  operand-2)
-
-(defstruct (annotated-binop (:type list)
-                            (:initial-offset 3)
-                            (:include binop))
-  commutative
-  associative
-  identity)
-|#
+    `(eval-when (:compile-toplevel :load-toplevel :execute)
+       (define-structure ',name ',conc-name ',type ',named ',slots
+	 ',slot-descriptions ',copier ',include
+	 ',print-function ',constructors ',offset ',name-offset
+	 ',documentation ',predicate)
+       ,@(mapcar #'(lambda (constructor)
+		     (make-constructor name constructor type named
+				       slot-descriptions))
+		 constructors)
+       ',name)))
