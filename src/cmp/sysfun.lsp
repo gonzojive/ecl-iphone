@@ -852,7 +852,7 @@ type_of(#0)==t_bitvector"))
 (SI::STRING-TO-OBJECT (T) T)
 (si::STANDARD-READTABLE (T) T)
 (SYMBOL-FUNCTION (T) T NIL NIL
-	:inline-always ((t) t nil t "symbol_function(#0)"))
+	:inline-always ((t) t nil t "cl_symbol_function(#0)"))
 (FBOUNDP (symbol) T nil t)
 (SYMBOL-VALUE (symbol) T)
 (BOUNDP (symbol) T nil t
@@ -975,7 +975,7 @@ type_of(#0)==t_bitvector"))
 (GET-PROPERTIES (T T) *)
 (SYMBOL-NAME (symbol) string nil nil
 	:inline-always ((symbol) t nil t "((#0)->symbol.name)")
-	:inline-always ((t) t nil t "symbol_name(#0)"))
+	:inline-always ((t) t nil t "cl_symbol_name(#0)"))
 (MAKE-SYMBOL (string) symbol)
 (COPY-SYMBOL (symbol *) symbol)
 (GENSYM (*) symbol)

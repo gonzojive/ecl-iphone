@@ -504,7 +504,8 @@ Tcl_GetCommandInfo(Tcl_Interp *interp, /* Interpreter in which to look
 {
     cl_object v = _intern(cmdName, tk_package);
     
-    if (!structure_subtypep(cl_type_of(SYM_VAL(v)), TkWidgetType)) return 0;
+    if (!Null(si_structure_subtypep(cl_type_of(SYM_VAL(v)), TkWidgetType)))
+	return 0;
 
     infoPtr->proc       = (Tcl_CmdProc *)fix(SLOT(SYM_VAL(v), 0));
     infoPtr->clientData = (ClientData)fix(SLOT(SYM_VAL(v), 1));

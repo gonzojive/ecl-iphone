@@ -324,6 +324,7 @@ cl_character(cl_object x)
 	case t_string:
 		if (x->string.fillp == 1)
 			x = CODE_CHAR(x->string.self[0]);
+		break;
 	default:
 		FEtype_error_character(x);
 	}

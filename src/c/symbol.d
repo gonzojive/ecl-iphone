@@ -267,16 +267,10 @@ cl_get_properties(cl_object place, cl_object indicator_list)
 }
 
 cl_object
-symbol_name(cl_object x)
+cl_symbol_name(cl_object x)
 {
 	assert_type_symbol(x);
-	return x->symbol.name;
-}
-
-cl_object
-cl_symbol_name(cl_object sym)
-{
-	@(return symbol_name(sym))
+	@(return x->symbol.name)
 }
 
 @(defun copy_symbol (sym &optional cp &aux x)

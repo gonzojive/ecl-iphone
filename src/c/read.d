@@ -66,7 +66,7 @@ cl_object
 peek_char(bool pt, cl_object in)
 {
 	int c;
-	cl_object rtbl = cl_current_readtable();
+	cl_object rtbl = ecl_current_readtable();
 
 	c = readc_stream(in);
 	if (pt)
@@ -112,7 +112,7 @@ read_object(cl_object in)
 	cl_index length, i, colon;
 	int colon_type, intern_flag;
 	bool df;
-	cl_object rtbl = cl_current_readtable();
+	cl_object rtbl = ecl_current_readtable();
 
 	cs_check(in);
 
@@ -211,7 +211,7 @@ BEGIN:
 	}
 
 N:
-	base = cl_current_read_base();
+	base = ecl_current_read_base();
 	if (escape_flag || (base <= 10 && isalpha(cl_token->string.self[0])))
 		goto SYMBOL;
 	x = parse_number(cl_token->string.self, cl_token->string.fillp, &i, base);
@@ -454,7 +454,7 @@ MAKE_FLOAT:
 	switch (exponent_marker) {
 
 	case 'e':  case 'E':
-		exponent_marker = cl_current_read_default_float_format();
+		exponent_marker = ecl_current_read_default_float_format();
 		goto MAKE_FLOAT;
 
 	case 's':  case 'S':
@@ -517,7 +517,7 @@ left_parenthesis_reader(cl_object in, cl_object character)
 	cl_object x, y;
 	cl_object *p;
 	int c;
-	cl_object rtbl = cl_current_readtable();
+	cl_object rtbl = ecl_current_readtable();
 
 	y = Cnil;
 	for (p = &y ; ; p = &(CDR(*p))) {
@@ -552,7 +552,7 @@ static void
 read_string(int delim, cl_object in)
 {
 	int c;
-	cl_object rtbl = cl_current_readtable();
+	cl_object rtbl = ecl_current_readtable();
 
 	cl_token->string.fillp = 0;
 	for (;;) {
@@ -574,7 +574,7 @@ static void
 read_constituent(cl_object in)
 {
 	int c;
-	cl_object rtbl = cl_current_readtable();
+	cl_object rtbl = ecl_current_readtable();
 
 	cl_token->string.fillp = 0;
 	for (;;) {
@@ -599,7 +599,7 @@ dispatch_reader_fun(cl_object in, cl_object dc)
 {
 	cl_object x, y;
 	int i, d, c;
-	cl_object rtbl = cl_current_readtable();
+	cl_object rtbl = ecl_current_readtable();
 
 	if (rtbl->readtable.table[char_code(dc)].dispatch_table == NULL)
 		FEerror("~C is not a dispatching macro character", 1, dc);
@@ -848,7 +848,7 @@ sharp_asterisk_reader(cl_object in, cl_object c, cl_object d)
 static cl_object
 sharp_colon_reader(cl_object in, cl_object ch, cl_object d)
 {
-	cl_object rtbl = cl_current_readtable();
+	cl_object rtbl = ecl_current_readtable();
 	enum chattrib a;
 	int c;
 
@@ -1258,7 +1258,7 @@ copy_readtable(cl_object from, cl_object to)
 }
 
 cl_object
-cl_current_readtable(void)
+ecl_current_readtable(void)
 {
 	cl_object r;
 
@@ -1273,7 +1273,7 @@ cl_current_readtable(void)
 }
 
 int
-cl_current_read_base(void)
+ecl_current_read_base(void)
 {
 	cl_object x;
 
@@ -1289,7 +1289,7 @@ cl_current_read_base(void)
 }
 
 char
-cl_current_read_default_float_format(void)
+ecl_current_read_default_float_format(void)
 {
 	cl_object x;
 
@@ -1343,7 +1343,7 @@ stream_or_default_input(cl_object stream)
 		   (eof_errorp Ct)
 		   eof_value
 		   recursivep)
-	cl_object x, rtbl = cl_current_readtable();
+	cl_object x, rtbl = ecl_current_readtable();
 	int c;
 @
 	strm = stream_or_default_input(strm);
@@ -1458,7 +1458,7 @@ do_read_delimited_list(cl_object d, cl_object strm)
 
 @(defun peek_char (&optional peek_type (strm Cnil) (eof_errorp Ct) eof_value recursivep)
 	int c;
-	cl_object rtbl = cl_current_readtable();
+	cl_object rtbl = ecl_current_readtable();
 @
 	strm = stream_or_default_input(strm);
 	if (Null(peek_type)) {
@@ -1540,7 +1540,7 @@ do_read_delimited_list(cl_object d, cl_object strm)
 			    junk_allowed
 		       &aux x)
 	cl_index s, e, ep;
-	cl_object rtbl = cl_current_readtable();
+	cl_object rtbl = ecl_current_readtable();
 @
 	assert_type_string(strng);
 	get_string_start_end(strng, start, end, &s, &e);
@@ -1612,7 +1612,7 @@ si_read_bytes(cl_object stream, cl_object string, cl_object start, cl_object end
 
 
 
-@(defun copy_readtable (&o (from cl_current_readtable()) to)
+@(defun copy_readtable (&o (from ecl_current_readtable()) to)
 @
 	if (Null(from)) {
 		from = standard_readtable;
@@ -1645,7 +1645,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 }
 
 @(defun set_syntax_from_char (tochr fromchr
-			      &o (tordtbl cl_current_readtable())
+			      &o (tordtbl ecl_current_readtable())
 				 fromrdtbl)
 	struct readtable_entry*torte, *fromrte;
 @
@@ -1667,7 +1667,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 
 @(defun set_macro_character (chr fnc
 			     &optional ntp
-				       (rdtbl cl_current_readtable()))
+				       (rdtbl ecl_current_readtable()))
 	struct readtable_entry*entry;
 @
 	/* INV: read_table_entry() checks our arguments */
@@ -1680,7 +1680,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 	@(return Ct)
 @)
 
-@(defun get_macro_character (chr &o (rdtbl cl_current_readtable()))
+@(defun get_macro_character (chr &o (rdtbl ecl_current_readtable()))
 	struct readtable_entry*entry;
 	cl_object m;
 @
@@ -1700,7 +1700,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 @)
 
 @(defun make_dispatch_macro_character (chr
-	&optional ntp (rdtbl cl_current_readtable()))
+	&optional ntp (rdtbl ecl_current_readtable()))
 	struct readtable_entry*entry;
 	cl_object *table;
 	int i;
@@ -1720,7 +1720,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 @)
 
 @(defun set_dispatch_macro_character (dspchr subchr fnc
-	&optional (rdtbl cl_current_readtable()))
+	&optional (rdtbl ecl_current_readtable()))
 	struct readtable_entry*entry;
 	cl_fixnum subcode;
 @
@@ -1735,7 +1735,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 @)
 
 @(defun get_dispatch_macro_character (dspchr subchr
-	&optional (rdtbl cl_current_readtable()))
+	&optional (rdtbl ecl_current_readtable()))
 	struct readtable_entry*entry;
 	cl_fixnum subcode;
 @

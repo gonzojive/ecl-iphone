@@ -74,7 +74,7 @@ apply_key_function(cl_object x)
 	return funcall(2, key_function, x);
 }
 
-cl_object
+static cl_object
 identity(cl_object x)
 {
 	return(x);
@@ -98,7 +98,7 @@ setupTEST(cl_object item, cl_object test, cl_object test_not, cl_object key)
 		key_function = key;
 		kf = apply_key_function;
 	} else
-		kf = identity;
+		kf = cl_identity;
 }
 
 #define PREDICATE2(f,name)  \

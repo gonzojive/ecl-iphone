@@ -19,7 +19,6 @@
 
 /******************************* EXPORTS ******************************/
 
-bool lisp_package_locked = FALSE;
 cl_object lisp_package;
 cl_object user_package;
 cl_object keyword_package;

@@ -457,11 +457,7 @@ coerce_to_filename(cl_object pathname)
 	return namestring;
 }
 
-cl_object
-default_device(cl_object host)
-{
-	return Cnil;
-}
+#define default_device(host) Cnil
 
 cl_object
 merge_pathnames(cl_object path, cl_object defaults, cl_object default_version)
@@ -936,32 +932,27 @@ path_list_match(cl_object a, cl_object mask) {
 	return TRUE;
 }		
 
-bool
-pathname_match_p(cl_object path, cl_object mask)
+cl_object
+cl_pathname_match_p(cl_object path, cl_object mask)
 {
 	path = cl_pathname(path);
 	mask = cl_pathname(mask);
 	if (path->pathname.logical != mask->pathname.logical)
-		return FALSE;
+		return Cnil;
 #if 0
 	/* INV: This was checked in the calling routine */
 	if (!path_item_match(path->pathname.host, mask->pathname.host))
-		return FALSE;
+		return Cnil;
 #endif
 	if (!path_list_match(path->pathname.directory, mask->pathname.directory))
-		return FALSE;
+		return Cnil;
 	if (!path_item_match(path->pathname.name, mask->pathname.name))
-		return FALSE;
+		return Cnil;
 	if (!path_item_match(path->pathname.type, mask->pathname.type))
-		return FALSE;
+		return Cnil;
 	if (!path_item_match(path->pathname.version, mask->pathname.version))
-		return FALSE;
-	return TRUE;
-}
-
-cl_object cl_pathname_match_p(cl_object path, cl_object mask)
-{
-	@(return (pathname_match_p(path, mask)? Ct : Cnil))
+		return Cnil;
+	return Ct;
 }
 
 /* --------------- PATHNAME TRANSLATIONS ------------------ */
@@ -1248,7 +1239,7 @@ cl_translate_logical_pathname(cl_object source)
 	l = @si::pathname-translations(1, source->pathname.host, Cnil);
 	for(; !endp(l); l = CDR(l)) {
 		pair = CAR(l);
-		if (pathname_match_p(source, CAR(pair))) {
+		if (!Null(cl_pathname_match_p(source, CAR(pair)))) {
 			source = cl_translate_pathname(source, CAR(pair), CADR(pair));
 			if (source->pathname.logical)
 				goto begin;

@@ -20,7 +20,7 @@
 /******************************* ------- ******************************/
 
 #ifdef CLOS
-bool
+static bool
 structure_subtypep(cl_object x, cl_object y)
 { cl_object superiors;
   if (CLASS_NAME(x) == y)
@@ -33,7 +33,7 @@ structure_subtypep(cl_object x, cl_object y)
   return(FALSE);
 }
 #else
-bool
+static bool
 structure_subtypep(cl_object x, cl_object y)
 {
 	do {
@@ -70,11 +70,6 @@ structure_to_list(cl_object x)
 		p = &(CDR(*p = CONS(SLOT(x, i), Cnil)));
 	}
 	return(r);
-}
-#else
-cl_object
-structure_to_list(cl_object x)
-{ FEerror("Should never be called!",0);
 }
 #endif /* CLOS */
 

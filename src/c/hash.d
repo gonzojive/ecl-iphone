@@ -89,7 +89,7 @@ static const cl_hashkey crc_table[256] = {
 #define DO4(crc,buf) DO2(crc,buf); DO2(crc,buf);
 #define DO8(crc,buf) DO4(crc,buf); DO4(crc,buf);
 
-cl_hashkey
+static cl_hashkey
 update_crc32(cl_hashkey crc, const char *buf, cl_index len)
 {
     while (len >= 8) {

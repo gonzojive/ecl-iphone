@@ -279,7 +279,7 @@ extern void cl_stack_pop_values(int n);
 
 extern cl_object lex_env;
 extern cl_object lambda_apply(int narg, cl_object fun);
-extern cl_object *interpret(cl_object *memory) __attribute__((regparm(1)));
+extern cl_object *interpret(cl_object *memory);
 extern void init_interpreter(void);
 
 /* conditional.c */
@@ -470,7 +470,6 @@ extern cl_object cl_hash_table_rehash_threshold(cl_object ht);
 extern cl_object cl_make_hash_table _ARGS((int narg, ...));
 extern cl_object cl_gethash _ARGS((int narg, cl_object key, cl_object ht, ...));
 
-extern cl_hashkey update_crc32(cl_hashkey crc, const char *buffer, cl_index len);
 extern cl_hashkey hash_eq(cl_object x);
 extern cl_hashkey hash_eql(cl_object x);
 extern cl_hashkey hash_equal(cl_object x);
@@ -613,9 +612,6 @@ extern cl_object append(cl_object x, cl_object y);
 extern bool endp(cl_object x);
 extern cl_object nth(cl_fixnum n, cl_object x);
 extern cl_object nthcdr(cl_fixnum n, cl_object x);
-extern cl_object copy_list(cl_object x);
-extern cl_object copy_alist(cl_object x);
-extern cl_object copy_tree(cl_object x);
 extern cl_object nconc(cl_object x, cl_object y);
 extern cl_object subst(cl_object new_object, cl_object tree);
 extern void nsubst(cl_object new_object, cl_object *treep);
@@ -914,7 +910,6 @@ extern cl_object cl_shadow _ARGS((int narg, cl_object symbols, ...));
 extern cl_object cl_use_package _ARGS((int narg, cl_object pack, ...));
 extern cl_object cl_unuse_package _ARGS((int narg, cl_object pack, ...));
 
-extern bool lisp_package_locked;
 extern cl_object lisp_package;
 extern cl_object user_package;
 extern cl_object keyword_package;
@@ -971,11 +966,8 @@ extern cl_object parse_namestring(const char *s, cl_index start, cl_index end, c
 extern cl_object coerce_to_physical_pathname(cl_object x);
 extern cl_object coerce_to_file_pathname(cl_object pathname);
 extern cl_object coerce_to_filename(cl_object pathname);
-extern cl_object default_device(cl_object host);
 extern cl_object merge_pathnames(cl_object path, cl_object defaults, cl_object default_version);
-extern bool pathname_match_p(cl_object path, cl_object mask);
 extern bool logical_hostname_p(cl_object host);
-extern cl_object translate_pathname(cl_object path, cl_object from, cl_object to);
 extern void init_pathname(void);
 
 
@@ -1044,7 +1036,6 @@ extern void write_string(cl_object strng, cl_object strm);
 extern void princ_str(const char *s, cl_object sym);
 extern void princ_char(int c, cl_object sym);
 extern void init_print(void);
-extern void init_print_function(void);
 
 
 /* profile.c */
@@ -1096,7 +1087,6 @@ extern cl_object delimiting_char;
 extern bool detect_eos_flag;
 extern cl_object sharp_eq_context;
 #endif
-extern cl_object interactive_readc(cl_object stream);
 extern cl_object read_char(cl_object in);
 extern void unread_char(cl_object c, cl_object in);
 extern cl_object peek_char(bool pt, cl_object in);
@@ -1105,12 +1095,11 @@ extern cl_object read_object(cl_object in);
 extern cl_object parse_number(const char *s, cl_index end, cl_index *ep, int radix);
 extern cl_object parse_integer(const char *s, cl_index end, cl_index *ep, int radix);
 extern cl_object copy_readtable(cl_object from, cl_object to);
-extern cl_object cl_current_readtable(void);
-extern int cl_current_read_base(void);
-extern char cl_current_read_default_float_format(void);
+extern cl_object ecl_current_readtable(void);
+extern int ecl_current_read_base(void);
+extern char ecl_current_read_default_float_format(void);
 extern cl_object c_string_to_object(const char *s);
 extern void init_read(void);
-extern void init_read_function(void);
 extern void read_VV(cl_object block, void *entry);
 
 
@@ -1229,8 +1218,9 @@ extern cl_object si_rplaca_nthcdr(cl_object x, cl_object idx, cl_object v);
 extern cl_object si_list_nth(cl_object idx, cl_object x);
 extern cl_object si_make_structure _ARGS((int narg, cl_object type, ...));
 
-extern bool structure_subtypep(cl_object x, cl_object y);
+#ifndef CLOS
 extern cl_object structure_to_list(cl_object x);
+#endif
 extern cl_object structure_ref(cl_object x, cl_object name, int n);
 extern cl_object structure_set(cl_object x, cl_object name, int n, cl_object v);
 extern void init_structure(void);
@@ -1275,7 +1265,6 @@ extern cl_object remprop(cl_object s, cl_object p);
 extern bool keywordp(cl_object s);
 extern cl_object symbol_name(cl_object x);
 extern void init_symbol(void);
-extern void init_symbol_function(void);
 
 
 /* tclBasic.c */
@@ -1334,7 +1323,6 @@ extern cl_object cl_get_internal_real_time();
 extern cl_object si_get_local_time_zone();
 extern cl_object si_daylight_saving_time_p _ARGS((int narg, ...));
 
-extern int runtime(void);
 extern cl_object UTC_time_to_universal_time(int i);
 extern void init_unixtime(void);
 
@@ -1380,7 +1368,6 @@ extern void assert_type_list(cl_object p);
 extern void assert_type_proper_list(cl_object p);
 extern cl_object cl_type_of(cl_object x);
 extern void init_typespec(void);
-extern void init_typespec_function(void);
 
 extern void FEtype_error_character(cl_object x) __attribute__((noreturn,regparm(2)));
 extern void FEtype_error_cons(cl_object x) __attribute__((noreturn,regparm(2)));
@@ -1414,7 +1401,6 @@ extern cl_object si_file_exists (cl_object pathname);
 
 extern const char *expand_pathname(const char *name);
 extern cl_object string_to_pathname(char *s);
-extern cl_object truename(cl_object pathname);
 extern bool file_exists(cl_object file);
 extern FILE *backup_fopen(const char *filename, const char *option);
 extern int file_len(FILE *fp);
@@ -1439,10 +1425,6 @@ extern void init_interrupt(void);
 extern cl_object si_system(cl_object cmd);
 extern cl_object si_open_pipe(cl_object cmd);
 extern void init_unixsys(void);
-
-/* unexec.c */
-
-extern int unexec(char *new_name, char *a_name, unsigned, unsigned, unsigned);
 
 #ifdef __cplusplus
 }
