@@ -254,6 +254,7 @@ FEinvalid_function(cl_object obj)
 }
 
 /*      bootstrap version                */
+static
 @(defun si::universal_error_handler (c err args)
 @
 	printf("\nLisp initialization error.\n");

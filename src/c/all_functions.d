@@ -149,7 +149,6 @@ const struct function_info all_functions[] = {
 #endif
 	{"ERROR", clLerror, cl},
 	{"CERROR", clLcerror, cl},
-	{"UNIVERSAL-ERROR-HANDLER", siLuniversal_error_handler, si},
 
 	/* eval.c */
 

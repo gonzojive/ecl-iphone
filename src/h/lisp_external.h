@@ -183,7 +183,6 @@ extern cl_object Kformat_control, Kformat_arguments;
 
 extern cl_object siSuniversal_error_handler;
 extern cl_object siSterminal_interrupt;
-extern cl_object siLuniversal_error_handler _ARGS((int narg, cl_object c, cl_object d, cl_object args));
 #if defined(FRAME_CHAIN) && !defined(RUNTIME)
 extern cl_object siLbacktrace _ARGS((int narg));
 #endif
