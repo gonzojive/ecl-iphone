@@ -136,7 +136,6 @@ make_pd()
   npd->lwp_detect_eos_flag = FALSE;
   npd->lwp_in_list_flag = FALSE;
   npd->lwp_dot_flag = FALSE;
-  npd->lwp_sharp_eq_context_max = 0;
   
   /* for gc */
   npd->lwp_token = OBJNULL;

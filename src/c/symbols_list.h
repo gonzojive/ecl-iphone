@@ -929,6 +929,7 @@ cl_symbols[] = {
 {"SI::*MAKE-SPECIAL", SI_ORDINARY, si_Xmake_special, 1},
 {"SI::*PRINT-PACKAGE*", SI_SPECIAL, NULL, -1},
 {"SI::*PRINT-STRUCTURE*", SI_SPECIAL, NULL, -1},
+{"SI::*SHARP-EQ-CONTEXT*", SI_SPECIAL, NULL, -1},
 {"SI::.", SI_ORDINARY, NULL, -1},
 {"SI::,", SI_ORDINARY, NULL, -1},
 {"SI::,.", SI_ORDINARY, NULL, -1},

@@ -1085,7 +1085,6 @@ extern bool preserving_whitespace_flag;
 extern bool escape_flag;
 extern cl_object delimiting_char;
 extern bool detect_eos_flag;
-extern cl_object sharp_eq_context;
 #endif
 extern cl_object read_char(cl_object in);
 extern void unread_char(cl_object c, cl_object in);

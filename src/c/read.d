@@ -32,7 +32,6 @@ bool preserving_whitespace_flag;
 bool escape_flag;
 cl_object delimiting_char;
 bool detect_eos_flag;
-cl_object sharp_eq_context;
 #endif /* THREADS */
 
 /******************************* ------- ******************************/
@@ -81,20 +80,15 @@ static cl_object patch_sharp(cl_object x);
 cl_object
 read_object_non_recursive(cl_object in)
 {
-	volatile cl_object x;
-	cl_object old_sharp_eq_context;
+	cl_object x;
 
-	old_sharp_eq_context = sharp_eq_context;
-	CL_UNWIND_PROTECT_BEGIN {
-		bds_bind(@'si::*backq-level*', MAKE_FIXNUM(0));
-		sharp_eq_context = Cnil;
-		x = read_object(in);
-		if (!Null(sharp_eq_context))
-			x = patch_sharp(x);
-		bds_unwind1;
-	} CL_UNWIND_PROTECT_EXIT {
-		sharp_eq_context = old_sharp_eq_context;
-	} CL_UNWIND_PROTECT_END;
+	bds_bind(@'si::*sharp-eq-context*', Cnil);
+	bds_bind(@'si::*backq-level*', MAKE_FIXNUM(0));
+	x = read_object(in);
+	if (!Null(SYM_VAL(@'si::*sharp-eq-context*')))
+		x = patch_sharp(x);
+	bds_unwind1;
+	bds_unwind1;
 	return(x);
 }
 
@@ -1047,6 +1041,7 @@ static cl_object
 sharp_eq_reader(cl_object in, cl_object c, cl_object d)
 {
 	cl_object pair, value;
+	cl_object sharp_eq_context = SYM_VAL(@'si::*sharp-eq-context*');
 
 	if (read_suppress) @(return)
 	if (Null(d))
@@ -1054,7 +1049,7 @@ sharp_eq_reader(cl_object in, cl_object c, cl_object d)
 	if (assql(d, sharp_eq_context) != Cnil)
 		FEerror("Duplicate definitions for #~D=.", 1, d);
 	pair = CONS(d, Cnil);
-	sharp_eq_context = CONS(pair, sharp_eq_context);
+	SYM_VAL(@'si::*sharp-eq-context*') = CONS(pair, sharp_eq_context);
 	value = read_object(in);
 	if (value == pair)
 		FEerror("#~D# is defined by itself.", 1, d);
@@ -1069,7 +1064,7 @@ sharp_sharp_reader(cl_object in, cl_object c, cl_object d)
 	if (read_suppress) @(return)
 	if (Null(d))
 		FEerror("The ## readmacro requires an argument.", 0);
-	pair = assq(d, sharp_eq_context);
+	pair = assq(d, SYM_VAL(@'si::*sharp-eq-context*'));
 	if (pair != Cnil)
 		@(return pair)
 	FEerror("#~D# is undefined.", 1, d);
@@ -1119,7 +1114,9 @@ do_patch_sharp(cl_object x)
 static cl_object
 patch_sharp(cl_object x)
 {
-	cl_object pair = sharp_eq_context;
+	cl_object pair, sharp_eq_context = SYM_VAL(@'si::*sharp-eq-context*');
+
+	pair = sharp_eq_context;
 	loop_for_in(pair) { 
 		CAAR(pair) = OBJNULL;
 	} end_loop_for_in;
@@ -1389,17 +1386,13 @@ do_read_delimited_list(cl_object d, cl_object strm)
 	if (Null(recursivep))
 		l = do_read_delimited_list(d, strm);
 	else {
-		volatile cl_object old_sharp_eq_context = sharp_eq_context;
-		CL_UNWIND_PROTECT_BEGIN {
-			bds_bind(@'si::*backq-level*', MAKE_FIXNUM(0));
-			sharp_eq_context = Cnil;
-			l = do_read_delimited_list(d, strm);
-			if (!Null(sharp_eq_context))
-				l = patch_sharp(l);
-			bds_unwind1;
-		} CL_UNWIND_PROTECT_EXIT {
-			sharp_eq_context = old_sharp_eq_context;
-		} CL_UNWIND_PROTECT_END;
+		bds_bind(@'si::*sharp-eq-context*', Cnil);
+		bds_bind(@'si::*backq-level*', MAKE_FIXNUM(0));
+		l = do_read_delimited_list(d, strm);
+		if (!Null(SYM_VAL(@'si::*sharp-eq-context*')))
+			l = patch_sharp(l);
+		bds_unwind1;
+		bds_unwind1;
 	}
 	@(return l)
 @)
@@ -1897,7 +1890,7 @@ init_read(void)
 	SYM_VAL(@'*read_base*') = MAKE_FIXNUM(10);
 	SYM_VAL(@'*read_suppress*') = Cnil;
 
-	sharp_eq_context = Cnil;
+	SYM_VAL(@'si::*sharp-eq-context*') = Cnil;
 
 	delimiting_char = OBJNULL;
 	register_root(&delimiting_char);
