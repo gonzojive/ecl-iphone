@@ -169,6 +169,13 @@ extern cl_fixnum ecl_runtime(void);
 
 extern bool ecl_interrupt_enable;
 
+/* unixfsys.d */
+
+#if defined(_MSC_VER) || defined(mingw32)
+extern cl_object si_get_library_pathname(void);
+#endif
+
+
 #ifdef __cplusplus
 }
 #endif

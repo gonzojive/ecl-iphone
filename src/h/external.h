@@ -1432,9 +1432,6 @@ extern cl_object cl_file_write_date(cl_object file);
 extern cl_object cl_file_author(cl_object file);
 extern cl_object si_file_kind(cl_object pathname, cl_object follow_links);
 extern cl_object si_getcwd(void);
-#ifdef _MSC_VER
-extern cl_object si_get_library_pathname(void);
-#endif
 extern cl_object si_chdir _ARGS((cl_narg narg, cl_object directory, ...));
 extern cl_object si_mkdir(cl_object directory, cl_object mode);
 extern cl_object cl_directory _ARGS((cl_narg narg, cl_object directory, ...));
