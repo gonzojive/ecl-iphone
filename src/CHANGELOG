@@ -1744,6 +1744,9 @@ ECL 0.9d
   - In destructuring lambda lists, () or NIL is understood as an empty
     list.
 
+  - (VALUES (FOO)) was compiled as a simple call (FOO), without
+    truncating the number of values output by the latter.
+
 * Documentation:
 
   - New manual page documents the scripting facilities of ECL
