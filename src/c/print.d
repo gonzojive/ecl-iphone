@@ -469,111 +469,12 @@ write_double(double d, int e, bool shortp)
 }
 
 
-#ifndef CLOS
 static void
-call_structure_print_function(cl_object x, int level)
-{
-	int i;
-	bool eflag;
-	bds_ptr old_bds_top;
-
-	void (*wf)() = write_ch_fun;
-
-	bool e = PRINTescape;
-	bool r = PRINTradix;
-	int b = PRINTbase;
-	bool c = PRINTcircle;
-	bool p = PRINTpretty;
-	int lv = PRINTlevel;
-	int ln = PRINTlength;
-	bool g = PRINTgensym;
-	bool a = PRINTarray;
-	cl_object ps = PRINTstream;
-	cl_object pc = PRINTcase;
-	cl_fixnum cb = CIRCLEbase;
-
-	short ois[IS_SIZE];
-
-	int oqh;
-	int oqt;
-	int oqc;
-	int oisp;
-	int oiisp;
-
-	while (interrupt_flag) {
-		interrupt_flag = FALSE;
-#ifdef unix
-		alarm(0);
-#endif
-		terminal_interrupt(TRUE);
-	}
-
-	if (PRINTpretty)
-		flush_queue(TRUE);
-
-	oqh = qh;
-	oqt = qt;
-	oqc = qc;
-	oisp = isp;
-	oiisp = iisp;
-
-	for (i = 0;  i <= isp;  i++)
-		ois[i] = indent_stack[i];
-
-	old_bds_top = bds_top;
-	bds_bind(@'*print-escape*', PRINTescape?Ct:Cnil);
-	bds_bind(@'*print-radix*', PRINTradix?Ct:Cnil);
-	bds_bind(@'*print-base*', MAKE_FIXNUM(PRINTbase));
-	bds_bind(@'*print-circle*', PRINTcircle?Ct:Cnil);
-	bds_bind(@'*print-pretty*', PRINTpretty?Ct:Cnil);
-	bds_bind(@'*print-level*', PRINTlevel<0?Cnil:MAKE_FIXNUM(PRINTlevel));
-	bds_bind(@'*print-length*', PRINTlength<0?Cnil:MAKE_FIXNUM(PRINTlength));
-	bds_bind(@'*print-gensym*', PRINTgensym?Ct:Cnil);
-	bds_bind(@'*print-array*', PRINTarray?Ct:Cnil);
-	bds_bind(@'*print-case*', PRINTcase);
-	
-	if (frs_push(FRS_PROTECT, Cnil))
-		eflag = TRUE;
-	else {
-		funcall(4, getf(x->str.name->symbol.plist,
-		       @'si::structure-print-function', Cnil),
-			  x, PRINTstream, MAKE_FIXNUM(level));
-		eflag = FALSE;
-	}
-
-	frs_pop();
-	bds_unwind(old_bds_top);
-
-	for (i = 0;  i <= oisp;  i++)
-		indent_stack[i] = ois[i];
-
-	iisp = oiisp;
-	isp = oisp;
-	qc = oqc;
-	qt = oqt;
-	qh = oqh;
-
-	CIRCLEbase = cb;
-	PRINTcase = pc;
-	PRINTstream = ps;
-	PRINTarray = a;
-	PRINTgensym = g;
-	PRINTlength = ln;
-	PRINTlevel = lv;
-	PRINTpretty = p;
-	PRINTcircle = c;
-	PRINTbase = b;
-	PRINTradix = r;
-	PRINTescape = e;
-
-	write_ch_fun = wf;
-
-	if (eflag) unwind(nlj_fr, nlj_tag);
-}
-
-#else
-static void
+#ifdef CLOS
 call_print_object(cl_object x, int level)
+#else
+call_structure_print_function(cl_object x, int level)
+#endif
 {
 	int i;
 	bool eflag;
@@ -638,7 +539,13 @@ call_print_object(cl_object x, int level)
 	if (frs_push(FRS_PROTECT, Cnil))
 		eflag = TRUE;
 	else {
+#ifdef CLOS
 		funcall(3, @'print-object', x, PRINTstream);
+#else
+		funcall(4, getf(x->str.name->symbol.plist,
+		       @'si::structure-print-function', Cnil),
+			  x, PRINTstream, MAKE_FIXNUM(level));
+#endif
 		eflag = FALSE;
 	}
 
@@ -671,7 +578,6 @@ call_print_object(cl_object x, int level)
 
 	if (eflag) unwind(nlj_fr, nlj_tag);
 }
-#endif /* CLOS */
 
 void
 write_fixnum(cl_fixnum i)
