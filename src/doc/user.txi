@@ -83,11 +83,11 @@ for the history of the code you are up to use.
 
 @ecl{} (ECL for short) uses standard C calling conventions for Lisp compiled
 functions, which allows C programs to easily call Lisp functions and
-viceversa. No foreign function interface is required: data can be exchanged
+vice versa. No foreign function interface is required: data can be exchanged
 between C and Lisp with no need for conversion.
 
 @ecl{} is based on a Common Runtime Support (CRS) which provides basic
-facilities for memory managment, dynamic loading and dumping of binary images,
+facilities for memory management, dynamic loading and dumping of binary images,
 support for multiple threads of execution.  The CRS is built into a library
 that can be linked with the code of the application.  @ecl{} is modular: main
 modules are the program development tools (top level, debugger, trace,
@@ -131,14 +131,14 @@ at Kyoto University.
 
 I must thank Giuseppe Attardi, Yuasa and Hagiya for their wonderful work with
 preceding implementations and for putting them in the Public Domain under the
-GNU General Public Licence as published by the Free Software Foundation.
+GNU General Public License as published by the Free Software Foundation.
 Without them this product would have never been possible.
 
 This document is an update of the original ECL documentation, which was based
 in part on the material in @bibcite{Yuasa:85}
 
 The following people or organizations must be credited for support in the
-devlopement of Kyoto @clisp{}: Prof. Reiji Nakajima at RIMS, Kyoto University;
+development of Kyoto @clisp{}: Prof. Reiji Nakajima at RIMS, Kyoto University;
 Nippon Data General Corporation; Teruo Yabe; Toshiyasu Harada; Takashi Suzuki;
 Kibo Kurokawa; Data General Corporation; Richard Gabriel; Daniel Weinreb; Skef
 Wholey; Carl Hoffman; Naruhiko Kawamura; Takashi Sakuragawa; Akinori Yonezawa;
@@ -295,7 +295,7 @@ directory} is @file{/usr/local/ecl}.
 zcat ecl.tgz | tar xf -
 @end example
 
-@item An autoconfiguration mechanism allows you to perform a standard
+@item An auto configuration mechanism allows you to perform a standard
 installation with the following commands:
 @example
 ./configure
@@ -304,7 +304,7 @@ This example will prepare to install executable files, manual pages and
 info files in standard directories like @file{/usr/local/bin},
 @file{/usr/local/man/man1}, @file{/usr/local/info}.
 
-@item If you don't have access rights to these directories, you shoud
+@item If you don't have access rights to these directories, you should
 give to configure alternate places.  Try @code{./configure -help} for
 instructions on how to supply this information to configure, but
 a good starting point is
@@ -312,7 +312,7 @@ a good starting point is
 ./configure --prefix=$HOME
 @end example
 
-@item Make sure everything went ok with the configuration.
+@item Make sure everything went OK with the configuration.
 The configuration script figures out the machine where it is running and
 creates a directory @code{machine} where to perform the installation.  If the
 program fails to recognize the machine, you will have to check whether it is
@@ -544,7 +544,7 @@ integers are @code{bignums}. Thus 25 factorial (25!)
 @end example
 
 @noindent
-is definetely a bignum in @ecl{}.
+is definitely a bignum in @ecl{}.
 
 @clisp{} constants related to integers have the following values
 in @ecl{}.
@@ -667,7 +667,7 @@ There are no implementation-dependent features for complex numbers.
 
 
 @node Characters, Symbols, Numbers, Standards
-@section Characteres
+@section Characters
 
 @ecl{} is fully @ansi{} compliant in all aspects of the character
 data type, with the following peculiarities.
@@ -846,7 +846,7 @@ For instance, the @code{system} package has two nicknames @code{sys} and
 @code{si}; @code{system:symbol} may be written as @code{sys:symbol} or
 @code{si:symbol}.
 
-Depending on the configuation option by which @ecl{} has been built,
+Depending on the configuration option by which @ecl{} has been built,
 additional packages may be available:
 @example
 compiler clos xlib
@@ -1400,7 +1400,7 @@ returns it.
 @end deffn
 
 @c @deffn {Method} {stream-write-line}  (object clos-stream) string @optional{} start end
-@c Writes character objects from thestring @var{string} onto the CLOS stream
+@c Writes character objects from the string @var{string} onto the CLOS stream
 @c @var{object}. If given, the @var{start} and @var{end} arguments indicate a
 @c substring that is to be output.
 @c @end deffn
@@ -1603,7 +1603,7 @@ the C stack and a type accurate technique for areas containing Lisp objects.
 Scanning conservatively the C stack, looking for potential pointers to Lisp
 objects, ensures that no live Lisp objects get collected, even if they are
 passed to external procedures in C or some other language.  This approach
-greatly simplies integration of Lisp and C code, since it is not necessary to
+greatly simplifies integration of Lisp and C code, since it is not necessary to
 protect Lisp object form collection when a foreign function is invoked.
 
 The garbage collector of @ecl{} has three levels according to what it
@@ -1622,12 +1622,12 @@ free list is exhausted, a new page is allocated, or the garbage collector is
 invoked, depending on whether the maximum number of pages for that class have
 been allocated or not.
 
-The garbage collector does not compactify the heap.  That is, cells and
+The garbage collector does not compact the heap.  That is, cells and
 contiguous blocks are never moved to another place.  Moreover, once a page is
 allocated for a particular type class or for contiguous blocks, that page will
 never be freed for other classes, even if the entire page becomes garbage.
 
-On the other hand, the relocatable area is compactified during level 2 and
+On the other hand, the relocatable area is compacted during level 2 and
 level 3 of garbage collection.  A relocatable block is really relocatable.
 
 The garbage collector is automatically invoked in one of the following
@@ -1661,7 +1661,7 @@ end of each garbage collection.
 
 @defvar{*gc-verbose*}[system] This variable controls whether to print messages
 at the start and end of each garbage collection.  If @code{sys:*gc-verbose*} is
-@nil{}, @code{gc} foregoes printing any messages.  The default value is @code{T}.
+@nil{}, @code{gc} fore goes printing any messages.  The default value is @code{T}.
 @end defvar
 
 
@@ -2020,7 +2020,7 @@ was compiled while the @code{safety} optimize level is 3 or with a
 @end enumerate
 
 An event is pushed on the event stack when execution of its event function
-begins, and is poped away at the completion of the execution.  An event
+begins, and is popped away at the completion of the execution.  An event
 environment is the `environment' of the event function at the time the next
 event is pushed.  Actually, an event environment is a pointer to the main stack
 of @ecl{}.  For each interpreted event function (i.e., event function in
@@ -2372,7 +2372,7 @@ with the symbol.
 Prints the documentation associated with those symbols in the specified
 @var{package} whose print names contain @var{string} as substring.
 @var{string} may be a symbol, in which case the print name of that symbol is
-used. @var{package} is optional and defaults to the LISP psackage.
+used. @var{package} is optional and defaults to the LISP package.
 If @var{package} is @nil{}, then all packages are searched.
 @end defun
 
@@ -2497,7 +2497,7 @@ directory and the default name to be applied to the output files (i.e., the
 fasl file and the temporary files).  @kwd{output-file} itself defaults to
 @var{input-pathname}.  That is, if @kwd{output-file} is not supplied, then the
 directory and the name of the input file will be used as the default directory
-and the default name for the output files.  The filetypes of the output files
+and the default name for the output files.  The file types of the output files
 are fixed as follows.
 
 @multitable {@b{Output File}} {@b{Filetype}}
@@ -2950,7 +2950,7 @@ Arguments to functions, lexical and temporary variables are allocated on the C
 stack. Temporary values saved on the C stack may sometimes be represented as
 @var{raw data} instead of pointers to heap-allocated cells.  Accessing such raw
 data on the C stack results in faster compiled code, partly because no pointer
-deferencing operation is necessary, and partly because no cell is newly
+dereferencing operation is necessary, and partly because no cell is newly
 allocated on the heap when a new object is created. This is particularly
 helpful for numeric code which computes with floating point numbers.
 
@@ -3240,7 +3240,7 @@ or immediately after the variable that follows @code{&whole}, if @code{&whole}
 is supplied.  @code{&environment} is not allowed within @var{pseudo-var}.  Like
 @code{&whole}, use of @code{&environment} does not affect the processing of the
 rest of the defmacro lambda-list.  If an @code{&environment} parameter is
-supplied andif this parameter is not used at all, then the @ecl{} compiler
+supplied and if this parameter is not used at all, then the @ecl{} compiler
 will issue a warning.  To suppress the warning, just remove the parameter from
 the defmacro lambda-list, or add an @code{ignore} declaration.
  

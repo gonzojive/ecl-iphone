@@ -197,7 +197,7 @@ components listed in @var{lisp-files}.  Each component is either:
 @item A string: Denotes an object file built from lisp code.
 @end itemize
 @noindent
-@var{ld-flags} is a list of strings with aditional parameters to be passed
+@var{ld-flags} is a list of strings with additional parameters to be passed
 to the linker. You can include here your favorite C/C++ libraries.
 
 @var{prologue-code} and @var{epilogue-code} are used to customize the
@@ -261,7 +261,7 @@ Linkable object files.
 @item :lib, :static-library
 A normal library produced with @code{c:build-static-library}.
 @item :dll, :shared-library
-A dynamically linked librariy produced with @code{c:build-shared-library}.
+A dynamically linked library produced with @code{c:build-shared-library}.
 @item :program
 An executable produced with @code{c:build-program}.
 @end table
@@ -283,7 +283,7 @@ The output of this function is system specific. For example, under FreeBSD
 @section Compiler examples
 
 @subsection The @file{hello.lsp} file
-In the follwoing examples we will use the same lisp program. You have to
+In the following examples we will use the same lisp program. You have to
 create a file called @file{hello.lsp} which contains the following lines
 
 @example
@@ -333,7 +333,7 @@ Type :h for Help.  Top level.
 ;;; End of Pass 1.  
 ;;; Calling the C compiler... 
 "gcc -g -O2 -Dfreebsd  -O -I/home/worm/lib/ecl//h -w -c hello.c -o hello.o" 
-"ld -shared -o hello.so -L/home/worm/lib/ecl/ hello.o  " 
+"ld -shared -o hello.so -L/home/worm/lib/ecl/ hello.o"
 ;;; OPTIMIZE levels: Safety=0 (No runtime error checking), Space=0, Speed=3
 ;;; Finished compiling hello.lsp.
 #P"hello.so"
@@ -348,7 +348,7 @@ In this example we build a standalone program which prints the @code{"Hello
 world!"} message and does nothing else. First you must create the
 @file{hello.lsp} file shown above. Next you have to enter the @ecl{}
 environment and type @code{(compile-file "hello.lsp" :system-p t)}. This
-produces an object file that can be linked agains the @ecl{} core image.
+produces an object file that can be linked against the @ecl{} core image.
 
 @example
 Type :h for Help.  Top level.
@@ -373,7 +373,7 @@ instruction.
 "myecl"
 @end example
 @noindent
-Now you can execute this program from your favourite shell.
+Now you can execute this program from your favorite shell.
 
 @example
 worm@@arrakis.es% @b{./myecl}
@@ -479,7 +479,7 @@ in multiples of a word size, we make sure that the least significant bits of a
 pointer are zero, which distinguishes pointers from immediate data.
 
 In an immediate datatype, the tag bits determine the type of the object. In
-non-immediate datatyps, the first byte in the cell contains the secondary type
+non-immediate datatypes, the first byte in the cell contains the secondary type
 indicator, and distinguishes between different types of non immediate data. The
 use of the remaining bytes differs for each type of object.  For instance, a
 cons cell consists of three words:
@@ -612,7 +612,7 @@ required to create, manipulate and calculate with them.
 
 @deftp {C type} cl_fixnum
 This is a C signed integer type capable of holding a whole fixnum without any
-loss of precision. The oposite is not true, and you may create a
+loss of precision. The opposite is not true, and you may create a
 @code{cl_fixnum} which exceeds the limits of a fixnum and should be stored as a
 bignum.
 @end deftp
@@ -638,11 +638,11 @@ respectively.
 @deftypefunx cl_fixnum fix (cl_object @var{o})
 
 @code{MAKE_FIXNUM} and @code{fix} convert from an integer to a lisp object
-of fixnum type and viceversa. These functions no not check their arguments.
+of fixnum type and vice versa. These functions no not check their arguments.
 @end deftypefun
 
 @deftypefun cl_fixnum fixint (cl_object @var{o})
-Converts a lisp fixnum to a C integer of the appropiate size. Signals an error
+Converts a lisp fixnum to a C integer of the appropriate size. Signals an error
 if @var{o} is not of fixnum type.
 @end deftypefun
 
@@ -846,8 +846,8 @@ length of the string.
 @section Bytecodes
 
 A bytecodes object is a lisp object with a piece of code that can be
-interpreted. The objects of type @code{t_bytecode} are implicitely constructed
-by a call to @code{eval}, but can also be explicitely constructed with the
+interpreted. The objects of type @code{t_bytecode} are implicitly constructed
+by a call to @code{eval}, but can also be explicitly constructed with the
 @code{make_lambda} function.
 
 @deftypefun cl_object cl_safe_eval (cl_object @var{form}, cl_object @var{env}, cl_object @var{err_value}
@@ -931,7 +931,7 @@ temporary values, and function invocation.
  
 @ecl{} employs standard C calling conventions to achieve efficiency and
 interoperability with other languages.
-Each Lisp function is implemented as a C function whcih takes as many
+Each Lisp function is implemented as a C function which takes as many
 argument as the Lisp original plus one additional integer argument
 which holds the number of actual arguments.  The function sets @code{NValues}
 to the number of Lisp values produced, it returns the first one and the
@@ -969,7 +969,7 @@ this case) represents the number of values of the function.
 
 In general, if one is to play with the C kernel of @ecl{} there is no need to
 know about all these conventions. There is a preprocessor that takes care of
-the details, by using a lispy representation of the statements that output
+the details, by using a lisp representation of the statements that output
 values, and of the function definitions. For instance, the actual source code
 for @code{clLcons} in @file{src/c/lists.d}
 
@@ -1683,3 +1683,4 @@ parts are in the @file{unix*.d} files.
 
 @item Run the tests and compare to the results of other platforms.
 @end enumerate
+@bye
