@@ -381,15 +381,12 @@ SB-SYS:MAKE-FD-STREAM."))
   ;; reassigned to some other file, and closing it would be bad
 
   (let ((fd (socket-file-descriptor socket)))
-    (cond ((eql fd -1) ; already closed
-	   nil)
-	  ((slot-boundp socket 'stream)
-	   (close (slot-value socket 'stream)) ;; closes fd
-	   (setf (slot-value socket 'file-descriptor) -1)
-	   (slot-makunbound socket 'stream))
-	  (t
-	   (if (= (socket-close-low-level socket) -1)
-		   (socket-error "close"))))))
+    (unless (eql fd -1) ; already closed
+      (when (slot-boundp socket 'stream)
+	(close (slot-value socket 'stream)) ;; closes fd
+	(slot-makunbound socket 'stream))
+      (if (= (socket-close-low-level socket) -1)
+	  (socket-error "close")))))
 
 ;; FIXME: How bad is manipulating fillp directly?
 (defmethod socket-receive ((socket socket) buffer length
