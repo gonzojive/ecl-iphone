@@ -15,121 +15,6 @@
 
 (in-package "SYS")
 
-(eval-when (compile eval)
-
-#+ecl-min
-(defmacro handler-bind (bindings &body body)
-  `(progn ,@body))
-
-;;;; The Once-Only macro:
-
-;;; Once-Only  --  Interface
-;;;
-;;;    Once-Only is a utility useful in writing source transforms and macros.
-;;; It provides an easy way to wrap a let around some code to ensure that some
-;;; forms are only evaluated once.
-;;;
-(defmacro once-only (specs &body body)
-  "Once-Only ({(Var Value-Expression)}*) Form*
-  Create a Let* which evaluates each Value-Expression, binding a temporary
-  variable to the result, and wrapping the Let* around the result of the
-  evaluation of Body.  Within the body, each Var is bound to the corresponding
-  temporary variable."
-  (labels ((frob (specs body)
-	     (if (null specs)
-		 `(progn ,@body)
-		 (let ((spec (first specs)))
-		   (when (/= (length spec) 2)
-		     (error "Malformed Once-Only binding spec: ~S." spec))
-		   (let ((name (first spec))
-			 (exp-temp (gensym)))
-		     `(let ((,exp-temp ,(second spec))
-			    (,name (gensym "OO-")))
-		       `(let ((,,name ,,exp-temp))
-			 ,,(frob (rest specs) body))))))))
-    (frob specs body)))
-
-;;;; The Collect macro:
-
-;;; Collect-Normal-Expander  --  Internal
-;;;
-;;;    This function does the real work of macroexpansion for normal collection
-;;; macros.  N-Value is the name of the variable which holds the current
-;;; value.  Fun is the function which does collection.  Forms is the list of
-;;; forms whose values we are supposed to collect.
-;;;
-(defun collect-normal-expander (n-value fun forms)
-  `(progn
-    ,@(mapcar #'(lambda (form) `(setq ,n-value (,fun ,form ,n-value))) forms)
-    ,n-value))
-
-;;; Collect-List-Expander  --  Internal
-;;;
-;;;    This function deals with the list collection case.  N-Tail is the pointer
-;;; to the current tail of the list, which is NIL if the list is empty.
-;;;
-(defun collect-list-expander (n-value n-tail forms)
-  (let ((n-res (gensym)))
-    `(progn
-      ,@(mapcar #'(lambda (form)
-		    `(let ((,n-res (cons ,form nil)))
-		       (cond (,n-tail
-			      (setf (cdr ,n-tail) ,n-res)
-			      (setq ,n-tail ,n-res))
-			     (t
-			      (setq ,n-tail ,n-res  ,n-value ,n-res)))))
-		forms)
-      ,n-value)))
-
-
-;;; Collect  --  Public
-;;;
-;;;    The ultimate collection macro...
-;;;
-(defmacro collect (collections &body body)
-  "Collect ({(Name [Initial-Value] [Function])}*) {Form}*
-  Collect some values somehow.  Each of the collections specifies a bunch of
-  things which collected during the evaluation of the body of the form.  The
-  name of the collection is used to define a local macro, a la MACROLET.
-  Within the body, this macro will evaluate each of its arguments and collect
-  the result, returning the current value after the collection is done.  The
-  body is evaluated as a PROGN; to get the final values when you are done, just
-  call the collection macro with no arguments.
-
-  Initial-Value is the value that the collection starts out with, which
-  defaults to NIL.  Function is the function which does the collection.  It is
-  a function which will accept two arguments: the value to be collected and the
-  current collection.  The result of the function is made the new value for the
-  collection.  As a totally magical special-case, the Function may be Collect,
-  which tells us to build a list in forward order; this is the default.  If an
-  Initial-Value is supplied for Collect, the stuff will be rplacd'd onto the
-  end.  Note that Function may be anything that can appear in the functional
-  position, including macros and lambdas."
-
-  (let ((macros ())
-	(binds ()))
-    (dolist (spec collections)
-      (unless (<= 1 (length spec) 3)
-	(error "Malformed collection specifier: ~S." spec))
-      (let ((n-value (gensym))
-	    (name (first spec))
-	    (default (second spec))
-	    (kind (or (third spec) 'collect)))
-	(push `(,n-value ,default) binds)
-	(if (eq kind 'collect)
-	    (let ((n-tail (gensym)))
-	      (if default
-		  (push `(,n-tail (last ,n-value)) binds)
-		  (push n-tail binds))
-	      (push `(,name (&rest args)
-			    (collect-list-expander ',n-value ',n-tail args))
-		    macros))
-	    (push `(,name (&rest args)
-			  (collect-normal-expander ',n-value ',kind args))
-		  macros))))
-    `(macrolet ,macros (let* ,(nreverse binds) ,@body))))
-)
-
 ;;;; Float printing.
 
 ;;;
@@ -383,10 +268,10 @@
 	    #-ecl(:print-function %print-format-directive)
 	    #+ecl :named
 	    #+ecl(:type vector))
-  (string (required-argument) :type simple-string)
-  (start (required-argument) :type (and unsigned-byte fixnum))
-  (end (required-argument) :type (and unsigned-byte fixnum))
-  (character (required-argument) :type base-char)
+  (string t :type simple-string)
+  (start 0 :type (and unsigned-byte fixnum))
+  (end 0 :type (and unsigned-byte fixnum))
+  (character #\Space :type base-char)
   (colonp nil :type (member t nil))
   (atsignp nil :type (member t nil))
   (params nil :type list))
@@ -431,7 +316,8 @@
     (nreverse result)))
 
 (defun parse-directive (string start)
-  (declare (si::c-local))
+  (declare (simple-string string)
+	   (si::c-local))
   (let ((posn (1+ start)) (params nil) (colonp nil) (atsignp nil)
 	(end (length string)))
     (flet ((get-char ()
@@ -789,16 +675,10 @@
   #-formatter
   nil
   #+formatter
-  (let ((defun-name (intern #+ecl
-			    (si:string-concatenate char "-FORMAT-DIRECTIVE-EXPANDER")
-			    #-ecl
-			    (cl:format nil
-				       "~:@(~:C~)-FORMAT-DIRECTIVE-EXPANDER"
-				       char)))
-	(directive (gensym))
+  (let ((directive (gensym))
 	(directives (if lambda-list (car (last lambda-list)) (gensym))))
-    `(progn
-       (defun ,defun-name (,directive ,directives)
+    `(%set-format-directive-expander ,char
+       (lambda (,directive ,directives)
 	 ,@(if lambda-list
 	       `((let ,(mapcar #'(lambda (var)
 				   `(,var
@@ -811,8 +691,7 @@
 			       (butlast lambda-list))
 		   ,@body))
 	       `((declare (ignore ,directive ,directives))
-		 ,@body)))
-       (%set-format-directive-expander ,char #',defun-name))))
+		 ,@body))))))
 
 (defmacro def-format-directive (char lambda-list &body body)
   #-formatter
@@ -871,16 +750,10 @@
 	   ,@body))))
 
 (defmacro def-complex-format-interpreter (char lambda-list &body body)
-  (let ((defun-name
-	    (intern #+ecl
-		    (si:string-concatenate char "-FORMAT-DIRECTIVE-INTERPRETER")
-		    #-ecl
-		    (cl:format nil "~:@(~:C~)-FORMAT-DIRECTIVE-INTERPRETER"
-			       char)))
-	(directive (gensym))
+  (let ((directive (gensym))
 	(directives (if lambda-list (car (last lambda-list)) (gensym))))
-    `(progn
-       (defun ,defun-name (stream ,directive ,directives orig-args args)
+    `(%set-format-directive-interpreter ,char
+       (lambda (stream ,directive ,directives orig-args args)
 	 (declare (ignorable stream orig-args args))
 	 ,@(if lambda-list
 	       `((let ,(mapcar #'(lambda (var)
@@ -894,8 +767,7 @@
 			       (butlast lambda-list))
 		   (values (progn ,@body) args)))
 	       `((declare (ignore ,directive ,directives))
-		 ,@body)))
-       (%set-format-directive-interpreter ,char #',defun-name))))
+		 ,@body))))))
 
 (defmacro def-format-interpreter (char lambda-list &body body)
   (let ((directives (gensym)))
@@ -1087,15 +959,15 @@
 	       ,@(when atsignp
 		   '((*print-level* nil)
 		     (*print-length* nil))))
-	   (output-object ,(expand-next-arg) stream))
-	`(output-object ,(expand-next-arg) stream))))
+	   (write-object ,(expand-next-arg) stream))
+	`(write-object ,(expand-next-arg) stream))))
 
 (def-format-interpreter #\W (colonp atsignp params)
   (interpret-bind-defaults () params
     (let ((*print-pretty* (or colonp *print-pretty*))
 	  (*print-level* (and atsignp *print-level*))
 	  (*print-length* (and atsignp *print-length*)))
-      (output-object (next-arg) stream))))
+      (write-object (next-arg) stream))))
 
 
 ;;;; Integer outputting.
@@ -1867,7 +1739,7 @@
 (defun format-relative-tab (stream colrel colinc)
   #-formatter
   (declare (si::c-local))
-  (if #-ecl(pp:pretty-stream-p stream) #+ecl nil
+  (if (#-ecl pp:pretty-stream-p #+ecl sys::pretty-stream-p stream)
       (pprint-tab :line-relative colrel colinc stream)
       (let* ((cur (#-ecl sys::charpos #+ecl sys::file-column stream))
 	     (spaces (if (and cur (plusp colinc))
@@ -1878,7 +1750,7 @@
 (defun format-absolute-tab (stream colnum colinc)
   #-formatter
   (declare (si::c-local))
-  (if #-ecl(pp:pretty-stream-p stream) #+ecl nil
+  (if (#-ecl pp:pretty-stream-p #+ecl sys::pretty-stream-p stream)
       (pprint-tab :line colnum colinc stream)
       (let ((cur (#-ecl sys::charpos #+ecl sys:file-column stream)))
 	(cond ((null cur)
@@ -2187,8 +2059,8 @@
 		 `(case ,index ,@clauses)))))
      remaining)))
 
+#+formatter
 (defun expand-maybe-conditional (sublist)
-  #-formatter
   (declare (si::c-local))
   (flet ((hairy ()
 	   `(let ((prev-args args)
@@ -2211,8 +2083,8 @@
 		 (hairy))))
 	(hairy))))
 
+#+formatter
 (defun expand-true-false-conditional (true false)
-  #-formatter
   (declare (si::c-local))
   (let ((arg (expand-next-arg)))
     (flet ((hairy ()
@@ -2616,8 +2488,8 @@
 	    (setf first-semi close-or-semi))))
       (values (segments) first-semi close remaining))))
 
+#+formatter
 (defun expand-format-justification (segments colonp atsignp first-semi params)
-  #-formatter
   (declare (si::c-local))
   (let ((newline-segment-p
 	 (and first-semi
@@ -2919,6 +2791,7 @@
 
 ;;;; Compile-time checking of format arguments and control string
 
+#-ecl(progn
 ;;;
 ;;; Return the min/max numbers of arguments required for a call to
 ;;; FORMAT with control string FORMAT-STRING, null if we can't tell,
@@ -3013,5 +2886,4 @@
 	(values (if (zerop posn) 1 0) most-positive-fixnum remaining)
 	(let ((nreq (if (zerop posn) 2 1)))
 	  (values nreq nreq remaining)))))
-
-
+)

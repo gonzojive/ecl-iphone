@@ -80,25 +80,8 @@ struct cl_env_struct {
 	/* ... the formatter ... */
 	cl_object fmt_aux_stream;
 
-	/* ... the printer ... */
-	cl_object print_case;
-	cl_object print_package;
-	cl_object print_stream;
-	int print_base;
-	int print_level;
-	int print_length;
-	bool print_readably;
-	bool print_escape;
-	bool print_pretty;
-	bool print_circle;
-	bool print_radix;
-	bool print_gensym;
-	bool print_array;
-	bool print_structure;
-
 	/* ... the pretty printer ... */
-	cl_fixnum circle_counter;
-	cl_object circle_stack;
+	bool print_pretty;
 	short *queue;
 	short *indent_stack;
 	int qh, qt, qc, isp, iisp;
@@ -1076,6 +1059,8 @@ extern cl_object cl_fresh_line _ARGS((cl_narg narg, ...));
 extern cl_object cl_force_output _ARGS((cl_narg narg, ...));
 #define cl_finish_output cl_force_output
 extern cl_object cl_clear_output _ARGS((cl_narg narg, ...));
+extern cl_object si_write_object(cl_object object, cl_object stream);
+extern cl_object si_write_ugly_object(cl_object object, cl_object stream);
 
 extern cl_object princ(cl_object obj, cl_object strm);
 extern cl_object prin1(cl_object obj, cl_object strm);

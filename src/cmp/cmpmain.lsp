@@ -308,9 +308,6 @@ cl_object Cblock;
 			   #+PDE sys:*source-pathname*)
   (declare (notinline compiler-cc))
 
-  #-ecl-min
-  (require 'sysfun "sys:sysfun")
-
   #-dlopen
   (unless system-p
     (format t "~%;;;~
@@ -466,9 +463,6 @@ Cannot compile ~a."
 
   (unless (symbolp name) (error "~s is not a symbol." name))
 
-  #-ecl-min
-  (require 'sysfun "sys:sysfun")
-
   (when *compiler-in-use*
     (format t "~&;;; The compiler was called recursively.~
 		~%Cannot compile ~s." name)
@@ -566,8 +560,6 @@ Cannot compile ~a."
 	((and (consp thing) (eq (car thing) 'LAMBDA))
 	 (setq disassembled-form `(defun gazonk ,@(cdr thing))))
 	(t (setq disassembled-form thing)))
-  #-ecl-min
-  (require 'sysfun "sys:sysfun")
   (when *compiler-in-use*
     (format t "~&;;; The compiler was called recursively.~
                    ~%Cannot disassemble ~a." thing)
@@ -659,5 +651,6 @@ Cannot compile ~a."
 
 (si::package-lock "CL" nil)
 
-;;; ----------------------------------------------------------------------
-(provide "compiler")
+#-ecl-min
+(load "sys:sysfun")
+

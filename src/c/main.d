@@ -57,28 +57,12 @@ ecl_init_env(struct cl_env_struct *env)
 	env->stack_size = 0;
 	cl_stack_set_size(16*LISP_PAGESIZE);
 
-	env->print_stream = Cnil;
-	env->print_escape = TRUE;
+#if !defined(ECL_CMU_FORMAT)
 	env->print_pretty = FALSE;
-	env->print_circle = FALSE;
-	env->print_base = 10;
-	env->print_radix = FALSE;
-	env->print_case = @':upcase';
-	env->print_gensym = TRUE;
-	env->print_level = -1;
-	env->print_length = -1;
-	env->print_array = FALSE;
 	env->queue = cl_alloc_atomic(ECL_PPRINT_QUEUE_SIZE * sizeof(short));
 	env->indent_stack = cl_alloc_atomic(ECL_PPRINT_INDENTATION_STACK_SIZE * sizeof(short));
-
-	env->circle_counter = -2;
-	env->circle_stack = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024),
-						  make_shortfloat(1.5f),	
-						  make_shortfloat(0.75f), Cnil);
-#ifndef ECL_CMU_FORMAT
 	env->fmt_aux_stream = make_string_output_stream(64);
 #endif
-
 #if !defined(GBC_BOEHM)
 # if defined(THREADS)
 #  error "No means to mark the stack of a thread :-/"

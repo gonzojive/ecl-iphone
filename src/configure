@@ -4383,6 +4383,7 @@ _ACEOF
 
 fi
 if test "${cmuformat}"; then
+  closstreams="yes"
   cat >>confdefs.h <<\_ACEOF
 #define ECL_CMU_FORMAT 1
 _ACEOF

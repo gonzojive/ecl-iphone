@@ -233,6 +233,7 @@ if test "${oldloop}"; then
   AC_DEFINE(ECL_OLD_LOOP)
 fi
 if test "${cmuformat}"; then
+  closstreams="yes"
   AC_DEFINE(ECL_CMU_FORMAT)
 fi
 if test "${closstreams}"; then

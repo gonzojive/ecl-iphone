@@ -16,6 +16,8 @@
   "src:clos;generic.lsp"
   "src:clos;fixup.lsp"
   "src:clos;inspect.lsp"
+  #+cmu-format
+  "src:lsp;pprint.lsp"
   "src:clos;conditions.lsp"))
 
 #-cross

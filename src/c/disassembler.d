@@ -66,6 +66,8 @@ disassemble_lambda(cl_object bytecodes) {
 	cl_object *data;
 	cl_opcode *vector;
 
+	bds_bind(@'*print-pretty*', Cnil);
+
 	/* Name of LAMBDA */
 	print_arg("\nName:\t\t", bytecodes->bytecodes.name);
 
@@ -99,6 +101,8 @@ NO_KEYS:
 
 	base = vector = (cl_opcode *)bytecodes->bytecodes.code;
 	disassemble(bytecodes, vector);
+
+	bds_unwind1();
 }
 
 /* -------------------- DISASSEMBLER CORE -------------------- */

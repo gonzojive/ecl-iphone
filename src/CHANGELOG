@@ -1862,6 +1862,10 @@ ECL 0.9d
   - All non-graphic characters below (CODE-CHAR 128) have now
     character names.
 
+  - The pretty printer and the FORMAT routine from CMUCL have been
+    finally integrated and put together. By default, they are not
+    compiled in, unless configured with "--with-cmu-format".
+
 TODO:
 =====
 

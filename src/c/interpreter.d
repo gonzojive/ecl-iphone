@@ -341,7 +341,7 @@ lambda_apply(cl_narg narg, cl_object fun)
 	if (type_of(fun) != t_bytecodes)
 		FEinvalid_function(fun);
 
-	/* 1) Save the lexical environment and set up a new one */
+	/* Save the lexical environment and set up a new one */
 	ihs_push(&ihs, fun);
 	cl_env.lex_env = fun->bytecodes.lex;
 	old_bds_top = cl_env.bds_top;
@@ -379,13 +379,18 @@ search_global(register cl_object s) {
 	return x;
 }
 
-/* Similar to funcall(), but registers calls in the IHS stack. */
-
+/*
+ * INTERPRET-FUNCALL is one of the few ways to "exit" the interpreted
+ * environment and get into the C/lisp world. Since almost all data from the
+ * interpreter is kept in local variables, and frame stacks, binding stacks,
+ * etc, are already handled by the C core, only the lexical environment
+ * (cl_env.lex_env) needs to be saved.
+ */
 static cl_object
 interpret_funcall(cl_narg narg, cl_object fun) {
+	cl_object lex_env = cl_env.lex_env;
 	cl_object *args;
 	cl_object x;
-
 	args = cl_env.stack_top - narg;
 	if (fun == OBJNULL)
 		goto ERROR;
@@ -404,10 +409,13 @@ interpret_funcall(cl_narg narg, cl_object fun) {
 		ihs_pop();
 		break;
 	}
-	case t_cclosure:
-		/* FIXME! Shouldn't we register this call somehow? */
+	case t_cclosure:{
+		struct ihs_frame ihs;
+		ihs_push(&ihs, fun);
 		x = APPLY_closure(narg, fun->cclosure.entry, fun->cclosure.env, args);
+		ihs_pop();
 		break;
+	}
 #ifdef CLOS
 	case t_instance:
 		fun = compute_method(narg, fun, args);
@@ -426,6 +434,7 @@ interpret_funcall(cl_narg narg, cl_object fun) {
 	default: ERROR:
 		FEinvalid_function(fun);
 	}
+	cl_env.lex_env = lex_env;
 	cl_stack_pop_n(narg);
 	return x;
 }

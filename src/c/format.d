@@ -18,7 +18,7 @@
 #include <ctype.h>
 #include "internal.h"
 
-#ifndef ECL_CMU_FORMAT
+#if !defined(ECL_CMU_FORMAT)
 #define FMT_MAX_PARAM	8
 typedef struct format_stack_struct {
   cl_object	stream;
@@ -338,10 +338,10 @@ fmt_integer(format_stack fmt, cl_object x, bool colon, bool atsign,
 		fmt->aux_string->string.fillp = 0;
 		fmt->aux_stream->stream.int0 = file_column(fmt->stream);
 		fmt->aux_stream->stream.int1 = file_column(fmt->stream);
-		cl_setup_printer(fmt->aux_stream);
-		cl_env.print_escape = FALSE;
-		cl_env.print_base = radix;
-		cl_write_object(x);
+		bds_bind(@'*print-escape*', Cnil);
+		bds_bind(@'*print-base*', MAKE_FIXNUM(radix));
+		si_write_object(x, fmt->aux_stream);
+		bds_unwind_n(2);
 		l = fmt->aux_string->string.fillp;
 		mincol -= l;
 		while (mincol-- > 0)
@@ -353,10 +353,10 @@ fmt_integer(format_stack fmt, cl_object x, bool colon, bool atsign,
 	fmt->aux_string->string.fillp = 0;
 	fmt->aux_stream->stream.int0 = file_column(fmt->stream);
 	fmt->aux_stream->stream.int1 = file_column(fmt->stream);
-	cl_env.print_stream = fmt->aux_stream;
-	cl_env.print_radix = FALSE;
-	cl_env.print_base = radix;
-	cl_write_object(x);
+	bds_bind(@'*print-radix*', Cnil);
+	bds_bind(@'*print-base*', MAKE_FIXNUM(radix));
+	si_write_object(x, fmt->aux_stream);
+	bds_unwind_n(2);
 	l = l1 = fmt->aux_string->string.fillp;
 	s = 0;
 	if (tempstr(fmt, s) == '-')
@@ -576,10 +576,10 @@ fmt_radix(format_stack fmt, bool colon, bool atsign)
 		fmt->aux_string->string.fillp = 0;
 		fmt->aux_stream->stream.int0 = file_column(fmt->stream);
 		fmt->aux_stream->stream.int1 = file_column(fmt->stream);
-		cl_env.print_stream = fmt->aux_stream;
-		cl_env.print_radix = FALSE;
-		cl_env.print_base = 10;
-		cl_write_object(x);
+		bds_bind(@'*print-radix*', Cnil);
+		bds_bind(@'*print-base*', MAKE_FIXNUM(10));
+		si_write_object(x, fmt->aux_stream);
+		bds_unwind_n(2);
 		s = 0;
 		i = fmt->aux_string->string.fillp;
 		if (i == 1 && tempstr(fmt, s) == '0') {

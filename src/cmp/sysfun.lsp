@@ -1091,8 +1091,12 @@ type_of(#0)==t_bitvector"))
 	    nsubstitute nsubstitute-if nsubstitute-if-not find find-if find-if-not
 	    position position-if position-if-not remove-duplicates
 	    delete-duplicates mismatch search sort stable-sort merge
+	    pprint-fill copy-pprint-dispatch pprint-dispatch
+	    pprint-linear pprint-newline pprint-tab pprint-tabular
+	    set-pprint-dispatch pprint-indent
 	    si::simple-program-error
-	    si::closest-vector-type si::packages-iterator .
+	    si::closest-vector-type si::packages-iterator
+	    si::define-structure .
 	    #-clos
 	    nil
 	    #+clos

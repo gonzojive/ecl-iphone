@@ -220,7 +220,9 @@ ecl_mark_env(struct cl_env_struct *env)
 #if 0
 	GC_push_all(&(env->lex_env), &(env->lex_env)+1);
 	GC_push_all(&(env->token), &(env->print_base));
-	GC_push_all(&(env->circle_stack), &(env->qh));
+#if !defined(ECL_CMU_FORMAT)
+	GC_push_all(&(env->queue), &(env->qh));
+#endif
 	GC_push_all(env->big_register, env->big_register + 3);
 	if (env->nvalues)
 		GC_push_all(env->values, env->values + env->nvalues + 1);

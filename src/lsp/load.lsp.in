@@ -3,7 +3,8 @@
     (load "src:lsp;export.lsp" :verbose nil)
     (load "src:lsp;defmacro.lsp" :verbose nil)
     (load "src:lsp;helpfile.lsp" :verbose nil)
-    (load "src:lsp;evalmacros.lsp" :verbose nil)))
+    (load "src:lsp;evalmacros.lsp" :verbose nil)
+    (load "src:lsp;cmuutil.lsp" :verbose nil)))
 
 (sys:*make-constant '+lisp-module-files+
 '("src:lsp;export.lsp"

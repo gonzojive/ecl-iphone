@@ -469,20 +469,12 @@ mark_cl_env(struct cl_env_struct *env)
 
 	mark_object(env->fmt_aux_stream);
 
-	mark_object(env->print_case);
-	mark_object(env->print_package);
-	mark_object(env->print_stream);
-	mark_object(env->circle_stack);
 	mark_contblock(env->queue, sizeof(short) * ECL_PPRINT_QUEUE_SIZE);
 	mark_contblock(env->indent_stack, sizeof(short) * ECL_PPRINT_INDENTATION_STACK_SIZE);
 
 	mark_object(env->big_register[0]);
 	mark_object(env->big_register[1]);
 	mark_object(env->big_register[2]);
-
-	mark_object(env->print_case);
-	mark_object(env->print_package);
-	mark_object(env->print_stream);
 
 #ifdef THREADS
 /* We should mark the stacks of the threads somehow!!! */
