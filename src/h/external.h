@@ -25,13 +25,16 @@ extern cl_object cl_alloc_object(cl_type t);
 extern cl_object cl_alloc_instance(cl_index slots);
 extern cl_object make_cons(cl_object a, cl_object d);
 extern void cl_dealloc(void *p, cl_index s);
-extern void *cl_alloc(cl_index n);
-extern void *cl_alloc_align(cl_index size, cl_index align);
 #ifdef GBC_BOEHM
 extern cl_object cl_gc(cl_object area);
-extern void *cl_alloc_atomic(cl_index size);
-extern void *cl_alloc_atomic_align(cl_index size, cl_index align);
-extern void init_alloc_function(void);
+extern void *GC_malloc(cl_index size);
+extern void *GC_malloc_atomic_ignore_off_page(cl_index size);
+extern void GC_free(void *);
+#define cl_alloc GC_malloc
+#define cl_alloc_atomic GC_malloc_atomic_ignore_off_page
+#define cl_alloc_align(s,d) GC_malloc(s)
+#define cl_alloc_atomic_align(s,d) GC_malloc_atomic_ignore_off_page(s)
+#define cl_dealloc(p,s) GC_free(p)
 #define ecl_register_static_root(x)
 #else
 extern cl_object si_room_report _ARGS((int narg));
@@ -45,6 +48,8 @@ extern cl_object si_allocate_contiguous_pages _ARGS((int narg, cl_object qty, ..
 extern cl_object si_get_hole_size _ARGS((int narg));
 extern cl_object si_set_hole_size _ARGS((int narg, cl_object size));
 extern cl_object si_ignore_maximum_pages _ARGS((int narg, ...));
+extern void *cl_alloc(cl_index n);
+extern void *cl_alloc_align(cl_index size, cl_index align);
 #define cl_alloc_atomic(x) cl_alloc(x)
 #define cl_alloc_atomic_align(x,s) cl_alloc_align(x,s)
 #define ecl_register_static_root(x) ecl_register_root(x);

@@ -47,11 +47,9 @@ cl_alloc_object(cl_type t)
 	}
 	tm = tm_of(t);
 
-	start_critical_section();
 	obj = (cl_object)GC_malloc(tm->tm_size);
 	obj->d.t = t;
 	/* GC_malloc already resets objects */
-	end_critical_section();
 
 	return obj;
 }
@@ -65,14 +63,10 @@ make_cons(cl_object a, cl_object d)
 {
 	cl_object obj;
 
-	start_critical_section(); 
-
 	obj = (cl_object)GC_malloc(sizeof(struct cons));
 	obj->d.t = (short)t_cons;
 	CAR(obj) = a;
 	CDR(obj) = d;
-
-	end_critical_section();
 
 	return obj;
 }
@@ -82,71 +76,9 @@ cl_alloc_instance(cl_index slots)
 {
 	cl_object i;
 	i = cl_alloc_object(t_instance);
-	i->instance.slots = (cl_object *)cl_alloc_align(sizeof(cl_object) * slots, sizeof(cl_object));
+	i->instance.slots = (cl_object *)cl_alloc(sizeof(cl_object) * slots);
 	i->instance.length = slots;
 	return i;
-}
-
-void *
-cl_alloc(cl_index n)
-{
-	void *output;
-	start_critical_section(); 
-	output = GC_malloc(n);
-	end_critical_section();
-	return output;
-}
-
-void *
-cl_alloc_atomic(cl_index n)
-{
-	void *output;
-	start_critical_section(); 
-	output = GC_malloc_atomic_ignore_off_page(n);
-	end_critical_section();
-	return output;
-}
-
-/*
- * adds a contblock to the list of available ones, pointed by cb_pointer,
- * sorted by increasing size.
- */
-void
-cl_dealloc(void *p, cl_index s)
-{
-	/* GC_free(p); */
-}
-
-/*
- * align must be a power of 2 representing the alignment boundary
- * required for the block.
- */
-void *
-cl_alloc_align(cl_index size, cl_index align)
-{
-	char *output;
-	start_critical_section();
-	align--;
-	output = (char*)GC_malloc(size + align);
-	output = (char*)(((cl_fixnum)output + align) & ~align);
-	end_critical_section();
-	return output;
-}
-
-/*
- * align must be a power of 2 representing the alignment boundary
- * required for the block.
- */
-void *
-cl_alloc_atomic_align(cl_index size, cl_index align)
-{
-	char *output;
-	start_critical_section();
-	align--;
-	output = (char*)GC_malloc_atomic_ignore_off_page(size + align);
-	output = (char*)(((cl_fixnum)output + align) & ~align);
-	end_critical_section();
-	return output;
 }
 
 static void
@@ -246,7 +178,6 @@ stacks_scanner(void)
 #undef cfree
 #undef realloc
 
-/* FIXME! Shouldn't this be thread safe? */
 void *
 malloc(size_t size)
 {
@@ -314,9 +245,7 @@ ecl_register_root(cl_object *p)
 cl_object
 cl_gc(cl_object area)
 {
-	start_critical_section();
 	GC_gcollect();
-	end_critical_section();
 	@(return)
 }
 
