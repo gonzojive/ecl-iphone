@@ -26,19 +26,23 @@
  (defun my-cpl (class)
    (sb-pcl:class-precedence-list (find-class class))
    )
+ #+ecl
+ (defun my-cpl (class)
+   (slot-value (find-class class) 'clos::precedence-list))
  MY-CPL)
 
 (my-assert
  (defun check-superclasses (class expected)
    (let ((expected (list* class 't
 			  #+CLISP 'clos:standard-object
-			  #+ALLEGRO 'standard-object
+			  #+(or ALLEGRO ecl) 'standard-object
 			  #+(or cmu sbcl) 'instance
 			  'condition expected))
 	 (super (mapcar #' #+CLISP clos:class-name
-			   #+ALLEGRO class-name
+			   #+(or ALLEGRO ecl) class-name
 			   #+cmu pcl:class-name
 			   #+sbcl sb-pcl:class-name
+			   #+ecl class-name
 			   (my-cpl class))))
      (and (null (set-difference super expected))
 	  (null (set-difference expected super)))))
