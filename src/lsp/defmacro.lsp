@@ -27,7 +27,7 @@
 
 #+ecl-min
 (si::fset 'push
-	  #'(lambda-block push (args env)
+	  #'(ext::lambda-block push (args env)
 	      (let* ((what (second args))
 		     (where (caddr args)))
 		`(setq ,where (cons ,what ,where))))
@@ -35,7 +35,7 @@
 
 #+ecl-min
 (si::fset 'pop
-	  #'(lambda-block pop (args env)
+	  #'(ext::lambda-block pop (args env)
 	      (let ((where (cadr args)))
 		`(let* ((l ,where)
 			(v (car l)))
@@ -45,7 +45,7 @@
 
 #+ecl-min
 (si::fset 'incf
-	  #'(lambda-block incf (args env)
+	  #'(ext::lambda-block incf (args env)
 	      (let* ((where (second args))
 		     (what (caddr args)))
 		(if what
@@ -55,7 +55,7 @@
 
 #+ecl-min
 (si::fset 'decf
-	  #'(lambda-block decf (args env)
+	  #'(ext::lambda-block decf (args env)
 	      (let* ((where (second args))
 		     (what (caddr args)))
 		(if what
@@ -272,14 +272,14 @@
 	    doc)))
 
 (si::fset 'defmacro
-	  #'(lambda-block defmacro (def env)
+	  #'(ext::lambda-block defmacro (def env)
 	      (let* ((name (second def))
 		     (vl (third def))
 		     (body (cdddr def))
 		     (function))
 		(multiple-value-bind (expr pprint doc)
 		    (sys::expand-defmacro name vl body)
-		  (setq function `#'(lambda-block ,name ,@(cdr expr)))
+		  (setq function `#'(ext::lambda-block ,name ,@(cdr expr)))
 		  (when *dump-defmacro-definitions*
 		    (print function)
 		    (setq function `(si::bc-disassemble ,function)))

@@ -440,13 +440,13 @@ get_elttype(cl_object x)
 		return(aet_sf);
 	else if (x == @'long-float' || x == @'double-float')
 		return(aet_lf);
-	else if (x == @'byte8')
+	else if (x == @'ext::byte8')
 		return(aet_b8);
-	else if (x == @'integer8')
+	else if (x == @'ext::integer8')
 		return(aet_i8);
-/*	else if (x == @'signed-short')
+/*	else if (x == @'ext::signed-short')
 		return(aet_short);
-	else if (x == @'unsigned-short')
+	else if (x == @'ext::unsigned-short')
 		return(aet_ushort);
 */	else
 		return(aet_object);
@@ -487,8 +487,8 @@ cl_array_element_type(cl_object a)
 	case aet_fix:		output = @'fixnum'; break;
 	case aet_sf:		output = @'short-float'; break;
 	case aet_lf:		output = @'long-float'; break;
-	case aet_b8:		output = @'byte8'; break;
-	case aet_i8:		output = @'integer8'; break;
+	case aet_b8:		output = @'ext::byte8'; break;
+	case aet_i8:		output = @'ext::integer8'; break;
 	}
 	@(return output)
 }

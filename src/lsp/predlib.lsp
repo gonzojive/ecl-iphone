@@ -46,8 +46,8 @@ MOST-POSITIVE-FIXNUM (= 2^29 - 1 in ECL) inclusive.  Other integers are
 bignums."
   `(INTEGER #.most-negative-fixnum #.most-positive-fixnum))
 
-(deftype byte8 () `(INTEGER 0 255))
-(deftype integer8 () `(INTEGER -128 127))
+(deftype ext::byte8 () `(INTEGER 0 255))
+(deftype ext::integer8 () `(INTEGER -128 127))
 
 (deftype real (&rest foo) '(OR RATIONAL FLOAT))
 
@@ -168,7 +168,6 @@ has no fill-pointer, and is not adjustable."
 	     (EXTENDED-CHAR . CONSTANTLY-NIL)
 	     (BASE-CHAR . CHARACTERP)
 	     (CHARACTER . CHARACTERP)
-	     (COMMON . COMMONP)
 	     (COMPILED-FUNCTION . COMPILED-FUNCTION-P)
 	     (COMPLEX . COMPLEXP)
 	     (CONS . CONSP)
@@ -201,7 +200,7 @@ has no fill-pointer, and is not adjustable."
   (put-sysprop (car l) 'TYPE-PREDICATE (cdr l)))
 
 (defconstant +upgraded-array-element-types+
-  '(BASE-CHAR BIT BYTE8 INTEGER8 FIXNUM SHORT-FLOAT LONG-FLOAT T))
+  '(BASE-CHAR BIT EXT::BYTE8 EXT::INTEGER8 FIXNUM SHORT-FLOAT LONG-FLOAT T))
 
 (defun upgraded-array-element-type (element-type &optional env)
   (dolist (v +upgraded-array-element-types+ 'T)
@@ -264,7 +263,7 @@ Returns T if X belongs to TYPE; NIL otherwise."
 	 (setq tp (car type) i (cdr type)))
 	#+clos
 	((sys:instancep type)
-	 (return-from typep (subclassp (class-of object) type)))
+	 (return-from typep (si::subclassp (class-of object) type)))
 	(t
 	 (error-type-specifier type)))
   (case tp
@@ -345,7 +344,7 @@ Returns T if X belongs to TYPE; NIL otherwise."
            #+clos
 	   ((setq c (find-class type nil))
 	    ;; Follow the inheritance chain
-	    (subclassp (class-of object) c))
+	    (si::subclassp (class-of object) c))
 	   #-clos
 	   ((get-sysprop tp 'IS-A-STRUCTURE)
             (when (sys:structurep object)
@@ -359,13 +358,13 @@ Returns T if X belongs to TYPE; NIL otherwise."
 	    (error-type-specifier type))))))
 
 #+clos
-(defun subclassp (low high)
+(defun si::subclassp (low high)
   (or (eq low high)
       (member high (sys:instance-ref low 4))) ; (class-precedence-list low)
   #+(or)
   (or (eq low high)
       (dolist (class (sys:instance-ref low 1)) ; (class-superiors low)
-	(when (subclassp class high) (return t)))))
+	(when (si::subclassp class high) (return t)))))
 
 #+(and clos ecl-min)
 (defun clos::classp (foo)
@@ -651,7 +650,7 @@ if not possible."
 			   (setq c1 (find-class c1 nil)))
 			 (when (symbolp c2)
 			   (setq c2 (find-class c2 nil)))
-			 (and c1 c2 (subclassp c1 c2))))))
+			 (and c1 c2 (si::subclassp c1 c2))))))
 
 ;;----------------------------------------------------------------------
 ;; ARRAY types.
@@ -1009,8 +1008,8 @@ if not possible."
 	       (FIXNUM (INTEGER #.MOST-NEGATIVE-FIXNUM #.MOST-POSITIVE-FIXNUM))
 	       (BIGNUM (AND INTEGER (NOT FIXNUM)))
 	       (BIT (INTEGER 0 1))
-	       (BYTE8 (INTEGER 0 255))
-	       (INTEGER8 (INTEGER -128 127))
+	       (EXT::BYTE8 (INTEGER 0 255))
+	       (EXT::INTEGER8 (INTEGER -128 127))
 
 	       (CHARACTER)
 	       (BASE-CHAR CHARACTER)
@@ -1020,16 +1019,16 @@ if not possible."
 	       (NULL (MEMBER NIL))
 	       (LIST (OR CONS NULL))
 
-	       ((ARRAY BYTE8 *))
-	       ((ARRAY INTEGER8 *))
+	       ((ARRAY EXT::BYTE8 *))
+	       ((ARRAY EXT::INTEGER8 *))
 	       ((ARRAY FIXNUM *))
 	       ((ARRAY CHARACTER *))
 	       ((ARRAY SHORT-FLOAT *))
 	       ((ARRAY LONG-FLOAT *))
 	       ((ARRAY T *))
 	       (ARRAY (ARRAY * *))
-;; 	       ((SIMPLE-ARRAY BYTE8 *) NIL (ARRAY BYTE8 *))
-;; 	       ((SIMPLE-ARRAY INTEGER8 *) NIL (ARRAY INTEGER8 *))
+;; 	       ((SIMPLE-ARRAY EXT::BYTE8 *) NIL (ARRAY EXT::BYTE8 *))
+;; 	       ((SIMPLE-ARRAY EXT::INTEGER8 *) NIL (ARRAY EXT::INTEGER8 *))
 ;; 	       ((SIMPLE-ARRAY FIXNUM *) NIL (ARRAY FIXNUM *))
 ;; 	       ((SIMPLE-ARRAY CHARACTER *) NIL (ARRAY CHARACTER *))
 ;; 	       ((SIMPLE-ARRAY SHORT-FLOAT *) NIL (ARRAY SHORT-FLOAT *))
@@ -1041,8 +1040,8 @@ if not possible."
 	       (VECTOR (ARRAY * (*)))
 	       ((VECTOR BIT) (ARRAY BIT (*)))
 	       ((VECTOR BASE-CHAR) (ARRAY BASE-CHAR (*)))
-	       ((VECTOR BYTE8) (ARRAY BYTE8 (*)))
-	       ((VECTOR INTEGER8) (ARRAY INTEGER8 (*)))
+	       ((VECTOR EXT::BYTE8) (ARRAY EXT::BYTE8 (*)))
+	       ((VECTOR EXT::INTEGER8) (ARRAY EXT::INTEGER8 (*)))
 	       ((VECTOR FIXNUM) (ARRAY FIXNUM (*)))
 	       ((VECTOR SHORT-FLOAT) (ARRAY SHORT-FLOAT (*)))
 	       ((VECTOR LONG-FLOAT) (ARRAY LONG-FLOAT (*)))

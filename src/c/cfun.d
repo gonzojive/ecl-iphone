@@ -112,7 +112,7 @@ cl_function_lambda_expression(cl_object fun)
 		else if (name == Cnil)
 		    output = cl_cons(@'lambda', output);
 		else
-		    output = @list*(3, @'lambda-block', name, output);
+		    output = @list*(3, @'ext::lambda-block', name, output);
 		break;
 	case t_cfun:
 		name = fun->cfun.name;

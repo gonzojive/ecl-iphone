@@ -19,7 +19,7 @@ cl_object
 si_set_funcallable(cl_object instance, cl_object flag)
 {
 	if (type_of(instance) != t_instance)
-		FEwrong_type_argument(@'instance', instance);
+		FEwrong_type_argument(@'ext::instance', instance);
 	instance->instance.isgf = !Null(flag);
 	@(return instance)
 }

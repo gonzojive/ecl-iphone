@@ -410,15 +410,6 @@ cl_char_int(cl_object c)
 }
 
 cl_object
-cl_int_char(cl_object x)
-{
-	/* INV: fixnnint(x) checks the type of `c' */
-	if (type_of(x) == t_bignum)
-		return1(Cnil);
-	return1(CODE_CHAR(fixnnint(x)));
-}
-
-cl_object
 cl_char_name(cl_object c)
 {
 	/* INV: char_code() checks the type of `c' */

@@ -1143,7 +1143,7 @@ _write_object(cl_object x, int level)
 #ifdef CLOS
 	case t_instance:
 		if (type_of(CLASS_OF(x)) != t_instance)
-			FEwrong_type_argument(@'instance', CLASS_OF(x));
+			FEwrong_type_argument(@'ext::instance', CLASS_OF(x));
 		call_print_object(x, level);
 		break;
 #endif /* CLOS */

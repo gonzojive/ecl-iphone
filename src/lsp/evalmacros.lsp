@@ -23,7 +23,7 @@ The complete syntax of a lambda-list is:
 The doc-string DOC, if supplied, is saved as a FUNCTION doc and can be
 retrieved by (documentation 'NAME 'function)."
   (multiple-value-setq (body doc-string) (remove-documentation body))
-  (let* ((function `#'(lambda-block ,name ,vl ,@body)))
+  (let* ((function `#'(ext::lambda-block ,name ,vl ,@body)))
     (when *dump-defun-definitions*
       (print function)
       (setq function `(si::bc-disassemble ,function)))

@@ -147,7 +147,7 @@
 
 (defun classp (obj)
   (and (si:instancep obj)
-       (subclassp (si::instance-class obj) (find-class 'CLASS))
+       (si::subclassp (si::instance-class obj) (find-class 'CLASS))
        t))
 
 ;;; ----------------------------------------------------------------------

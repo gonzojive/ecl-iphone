@@ -432,9 +432,9 @@
 (define-walker-template PROG    walk-prog)
 (define-walker-template PROG*   walk-prog*)
 (define-walker-template COND    (NIL REPEAT ((TEST REPEAT (EVAL)))))
-(define-walker-template lambda-block walk-named-lambda)	;Not really right, but
-						        ;we don't hack block
-						        ;names anyways.
+(define-walker-template ext::lambda-block walk-named-lambda)	;Not really right, but
+							        ;we don't hack block
+						        	;names anyways.
 
 
 ;;; Controls whether macros are expanded by walk-form

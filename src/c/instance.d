@@ -42,10 +42,10 @@ si_change_instance(cl_object x, cl_object clas, cl_object size, cl_object corr)
 	cl_object * oldslots;
 
 	if (type_of(x) != t_instance)
-	  FEwrong_type_argument(@'instance', x);
+	  FEwrong_type_argument(@'ext::instance', x);
 
 	if (type_of(clas) != t_instance)
-	  FEwrong_type_argument(@'instance', clas);
+	  FEwrong_type_argument(@'ext::instance', clas);
 
 	nslot = fixnnint(size);
 	CLASS_OF(x) = clas;
@@ -67,7 +67,7 @@ cl_object
 si_instance_class(cl_object x)
 {
 	if (type_of(x) != t_instance)
-		FEwrong_type_argument(@'instance', x);
+		FEwrong_type_argument(@'ext::instance', x);
 	@(return CLASS_OF(x))
 }
 
@@ -75,9 +75,9 @@ cl_object
 si_instance_class_set(cl_object x, cl_object y)
 {
 	if (type_of(x) != t_instance)
-		FEwrong_type_argument(@'instance', x);
+		FEwrong_type_argument(@'ext::instance', x);
 	if (type_of(y) != t_instance)
-		FEwrong_type_argument(@'instance', y);
+		FEwrong_type_argument(@'ext::instance', y);
 	CLASS_OF(x) = y;
 	@(return x)
 }
@@ -86,7 +86,7 @@ cl_object
 instance_ref(cl_object x, int i)
 {
 	if (type_of(x) != t_instance)
-		FEwrong_type_argument(@'instance', x);
+		FEwrong_type_argument(@'ext::instance', x);
 	if (i >= x->instance.length || i < 0)
 	        FEerror("~S is an illegal slot index1.",1,i);
 	return(x->instance.slots[i]);
@@ -98,7 +98,7 @@ si_instance_ref(cl_object x, cl_object index)
 	cl_fixnum i;
 
 	if (type_of(x) != t_instance)
-		FEwrong_type_argument(@'instance', x);
+		FEwrong_type_argument(@'ext::instance', x);
 	if (!FIXNUMP(index) ||
 	    (i = fix(index)) < 0 || i >= x->instance.length)
 		FEerror("~S is an illegal slot index.", 1, index);
@@ -111,7 +111,7 @@ si_instance_ref_safe(cl_object x, cl_object index)
 	cl_fixnum i;
 
 	if (type_of(x) != t_instance)
-		FEwrong_type_argument(@'instance', x);
+		FEwrong_type_argument(@'ext::instance', x);
 	if (!FIXNUMP(index) ||
 	    (i = fix(index)) < 0 || i >= x->instance.length)
 		FEerror("~S is an illegal slot index.", 1, index);
@@ -125,7 +125,7 @@ cl_object
 instance_set(cl_object x, int i, cl_object v)
 {
         if (type_of(x) != t_instance)
-                FEwrong_type_argument(@'instance', x);
+                FEwrong_type_argument(@'ext::instance', x);
 	if (i >= x->instance.length || i < 0)
 	        FEerror("~S is an illegal slot index2.", 1, i);
 	x->instance.slots[i] = v;
@@ -138,7 +138,7 @@ si_instance_set(cl_object x, cl_object index, cl_object value)
 	cl_fixnum i;
 
 	if (type_of(x) != t_instance)
-		FEwrong_type_argument(@'instance', x);
+		FEwrong_type_argument(@'ext::instance', x);
 	if (!FIXNUMP(index) ||
 	    (i = fix(index)) >= x->instance.length || i < 0)
 		FEerror("~S is an illegal slot index.", 1, index);
@@ -172,7 +172,7 @@ si_sl_makunbound(cl_object x, cl_object index)
 	cl_fixnum i;
 
 	if (type_of(x) != t_instance)
-		FEwrong_type_argument(@'instance', x);
+		FEwrong_type_argument(@'ext::instance', x);
 	if (!FIXNUMP(index) ||
 	    (i = fix(index)) >= x->instance.length || i < 0)
 		FEerror("~S is an illegal slot index.", 1, index);
@@ -186,7 +186,7 @@ ecl_copy_instance(cl_object x)
 	cl_object y;
 
 	if (type_of(x) != t_instance)
-		FEwrong_type_argument(@'instance', x);
+		FEwrong_type_argument(@'ext::instance', x);
 	y = ecl_allocate_instance(x->instance.clas, x->instance.length);
 	memcpy(y->instance.slots, x->instance.slots,
 	       x->instance.length * sizeof(cl_object));

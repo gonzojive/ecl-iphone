@@ -193,17 +193,6 @@ cl_compiled_function_p(cl_object x)
 }
 
 cl_object
-cl_commonp(cl_object x)
-{
-	cl_object output = (FALSE /* type_of(x) == t_spice */
-#ifdef CLOS
-		     || (type_of(x) == t_instance && x->instance.isgf)
-#endif
-		     ) ? Cnil : Ct;
-	@(return output)
-}
-
-cl_object
 cl_eq(cl_object x, cl_object y)
 {
 	@(return ((x == y) ? Ct : Cnil))

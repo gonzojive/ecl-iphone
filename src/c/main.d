@@ -161,7 +161,8 @@ cl_boot(int argc, char **argv)
 	cl_core.system_package = make_package(make_simple_string("SI"),
 					      CONS(make_simple_string("SYSTEM"),
 						   CONS(make_simple_string("SYS"),
-							Cnil)),
+							CONS(make_simple_string("EXT"),
+							     Cnil))),
 					      CONS(cl_core.lisp_package, Cnil));
 #ifdef CLOS
 	cl_core.clos_package = make_package(make_simple_string("CLOS"),
@@ -365,7 +366,7 @@ cl_boot(int argc, char **argv)
 
 /************************* ENVIRONMENT ROUTINES ***********************/
 
-@(defun quit (&optional (code MAKE_FIXNUM(0)))
+@(defun ext::quit (&optional (code MAKE_FIXNUM(0)))
 	cl_fixnum i;
 @
 	if (!FIXNUMP(code))

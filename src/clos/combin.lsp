@@ -395,7 +395,7 @@
 	    (:most-specific-last)
 	    (otherwise (syntax-error)))))
       `(install-method-combination ',name
-	  (lambda-block ,name (,generic-function .methods-list. ,@lambda-list)
+	  (ext::lambda-block ,name (,generic-function .methods-list. ,@lambda-list)
 	    (let (,@group-names)
 	      (dolist (.method. .methods-list.)
 		(let ((.method-qualifiers. (method-qualifiers .method.)))

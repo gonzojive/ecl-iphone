@@ -104,9 +104,9 @@
 	      ;; second of the method lambda.  The class declarations
 	      ;; are inserted to communicate the class of the method's
 	      ;; arguments to the code walk.
-	      `(lambda-block ,(if (listp generic-function-name)
-				  (second generic-function-name)
-				  generic-function-name)
+	      `(ext::lambda-block ,(if (listp generic-function-name)
+				       (second generic-function-name)
+				       generic-function-name)
 		,lambda-list
 		,class-declarations
 		,@declarations
@@ -173,7 +173,7 @@
 			     (add-lexical-functions-to-method-lambda
 			      walked-declarations
 			      walked-lambda-body
-			      `(lambda-block ,(second walked-lambda)
+			      `(ext::lambda-block ,(second walked-lambda)
 				,lambda-list
 				,@walked-declarations
 				,.walked-lambda-body)
@@ -184,7 +184,7 @@
 			      aux-bindings
 			      call-next-method-p
 			      next-method-p-p)
-			     `(lambda-block ,(second walked-lambda)
+			     `(ext::lambda-block ,(second walked-lambda)
 			       ,lambda-list
 			       ,@walked-declarations
 			       ,.walked-lambda-body)))

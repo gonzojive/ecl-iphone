@@ -34,7 +34,7 @@
 (proclaim '(FTYPE (FUNCTION (T) T) FIND-DOCUMENTATION))
 (proclaim '(FTYPE (FUNCTION (T) T) SIMPLE-ARRAY-P))
 (proclaim '(FTYPE (FUNCTION (T T) T) TYPEP))
-(proclaim '(FTYPE (FUNCTION (T T) T) SUBCLASSP))
+(proclaim '(FTYPE (FUNCTION (T T) T) SI::SUBCLASSP))
 (proclaim '(FTYPE (FUNCTION (T) T) NORMALIZE-TYPE))
 (proclaim '(FTYPE (FUNCTION (T) T) KNOWN-TYPE-P))
 (proclaim '(FTYPE (FUNCTION (T T) T) SUBTYPEP))

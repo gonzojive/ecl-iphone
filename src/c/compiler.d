@@ -238,7 +238,7 @@ static compiler_record database[] = {
   {@'block', c_block, 1},
   {@'case', c_case, 1},
   {@'catch', c_catch, 1},
-  {@'compiler-let', c_compiler_let, 0},
+  {@'ext::compiler-let', c_compiler_let, 0},
   {@'cond', c_cond, 1},
   {@'do', c_do, 1},
   {@'do*', c_doa, 1},
@@ -1202,7 +1202,7 @@ asm_function(cl_object function, int flags) {
 		}
 	} else if (CONSP(function) && CAR(function) == @'lambda') {
 		asm_op2c(OP_CLOSE, make_lambda(Cnil, CDR(function)));
-	} else if (CONSP(function) && CAR(function) == @'lambda-block') {
+	} else if (CONSP(function) && CAR(function) == @'ext::lambda-block') {
 		cl_object name = CADR(function);
 		cl_object body = CDDR(function);
 		asm_op2c(OP_CLOSE, make_lambda(name, body));

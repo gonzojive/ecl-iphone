@@ -520,7 +520,7 @@ inspect commands, or type '?' to the inspector."
                 (if (consp x)
                     (case (car x)
                           (LAMBDA `(define-setf-expander ,@(cdr x)))
-                          (LAMBDA-BLOCK `(define-setf-expander ,@(cddr x)))
+                          (EXT::LAMBDA-BLOCK `(define-setf-expander ,@(cddr x)))
                           (t nil))
                     nil))
             "[Setf]"))))

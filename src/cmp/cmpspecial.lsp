@@ -96,7 +96,7 @@
 		   (push (make-c1form* 'FUNCTION-CONSTANT :args funob fun)
 			 *top-level-forms*)
 		   (make-c1form 'FUNCTION funob 'CONSTANT funob fun)))))
-	  ((and (consp fun) (eq (car fun) 'LAMBDA-BLOCK))
+	  ((and (consp fun) (eq (car fun) 'EXT::LAMBDA-BLOCK))
            (cmpck (endp (cdr fun))
                   "The lambda expression ~s is illegal." fun)
            (let* ((*vars* (cons 'CB *vars*))

@@ -22,16 +22,16 @@
 ;; This is needed only when bootstrapping ECL using ECL-MIN
 (eval-when (eval)
   (si::fset 'defun
-	  #'(lambda-block defun (def env)
+	  #'(ext::lambda-block defun (def env)
 	      (let* ((name (second def))
-		     (function `#'(lambda-block ,@(cdr def))))
+		     (function `#'(ext::lambda-block ,@(cdr def))))
 		(when *dump-defun-definitions*
 		  (print function)
 		  (setq function `(si::bc-disassemble ,function)))
 		`(si::fset ',name ,function)))
 	  t)
  (si::fset 'in-package
- 	  #'(lambda-block in-package (def env)
+ 	  #'(ext::lambda-block in-package (def env)
 	      `(eval-when (eval compile load)
 		(si::select-package ,(string (second def)))))
  	  t)

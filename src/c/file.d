@@ -189,7 +189,7 @@ BEGIN:
 	default:
 		error("illegal stream mode");
 	}
-	@(return @'byte8')
+	@(return @'ext::byte8')
 }
 
 /*----------------------------------------------------------------------
@@ -325,7 +325,7 @@ open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	x = cl_alloc_object(t_stream);
 	x->stream.mode = (short)smm;
 	x->stream.file = fp;
-	x->stream.object0 = @'byte8';
+	x->stream.object0 = @'ext::byte8';
 	x->stream.object1 = fn;
 	x->stream.int0 = x->stream.int1 = 0;
 #if !defined(GBC_BOEHM)

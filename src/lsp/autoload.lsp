@@ -235,7 +235,7 @@ NIL, then all packages are searched."
 	(flet 1)
 	(labels 1)
 	(lambda 1)
-	(lambda-block 2)
+	(ext::lambda-block 2)
 	(let 1)
 	(let* 1)
 	(locally 0)
