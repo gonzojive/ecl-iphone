@@ -9,19 +9,6 @@
 ;;;;    See file '../Copyright' for full details.
 ;;;;                    Exporting external symbols of LISP package
 
-(si::select-package "CL")
-
-(export '(
-	  COMMON
-	  KYOTO
-	  KCL
-	  ECL
-	  common-lisp
-	  common-lisp-user
-	  cl
-	  cl-user
-	  ))
-
 (si::select-package "SI")
 
 ;;; ----------------------------------------------------------------------
@@ -31,7 +18,9 @@
 (*make-special '*dump-defmacro-definitions*)
 (setq *dump-defmacro-definitions* *dump-defun-definitions*)
 
-(si::fset 'defun
+;; This is needed only when bootstrapping ECL using ECL-MIN
+(eval-when (eval)
+  (si::fset 'defun
 	  #'(lambda-block defun (def env)
 	      (let* ((name (second def))
 		     (function `#'(lambda-block ,@(cdr def))))
@@ -40,11 +29,11 @@
 		  (setq function `(si::bc-disassemble ,function)))
 		`(si::fset ',name ,function)))
 	  t)
-
-(si::fset 'in-package
-	  #'(lambda-block in-package (def env)
+ (si::fset 'in-package
+ 	  #'(lambda-block in-package (def env)
 	      `(si::select-package ,(string (second def))))
-	  t)
+ 	  t)
+)
 
 (defun eval-feature (x)
   (declare (si::c-local))
