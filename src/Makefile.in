@@ -41,7 +41,7 @@ LIBRARIES = @LIBRARIES@
 LSP_LIBRARIES = @LSP_LIBRARIES@
 TARGETS = @TARGETS@
 
-all:	(TARGETS) doc
+all:	$(TARGETS) doc
 .PHONY:	all
 
 %Makefile: $(srcdir)/%Makefile.in config.status
