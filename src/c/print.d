@@ -687,7 +687,7 @@ needs_to_be_escaped(cl_object s, cl_object readtable, cl_object print_case)
 	for (i = 0; i < s->string.fillp;  i++) {
 		int c = s->string.self[i] & 0377;
 		int syntax = readtable->readtable.table[c].syntax_type;
-		if (syntax != cat_constituent || (c) == ':')
+		if (syntax != cat_constituent || ecl_invalid_character_p(c) || (c) == ':')
 			return 1;
 		if ((action == ecl_case_downcase) && isupper(c))
 			return 1;
