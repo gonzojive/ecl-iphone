@@ -17,7 +17,6 @@
 #include "ecl.h"
 #include <stdlib.h>
 #include "internal.h"
-#include "mp.h"
 
 /*
  * BIT OPERATIONS FOR FIXNUMS
