@@ -202,7 +202,7 @@
 
       (setq transformations
         (ecase mode
-	  (:LIBRARY
+	  ((:LIBRARY :SHARED-LIBRARY)
 	    (operate-on-system system :COMPILE)
 	    (let* ((transforms (make-transformations system
 						     #'true
@@ -213,7 +213,8 @@
 		   (library (string-downcase (system-name system))))
 	      (print (cons library objects))
 	      (compiler::make-library library objects
-					      :output-dir (system-library-directory system)))
+				      :output-dir (system-library-directory system)
+				      :shared (eq mode :SHARED-LIBRARY)))
 	    nil)
           (:COMPILE
             (make-transformations system

@@ -12,6 +12,9 @@
 (si::select-package "SYSTEM")
 
 #-ecls-min
+(c-declaim (si::c-export-fname find-documentation remove-documentation))
+
+#-ecls-min
 (defvar *dl*)
 #-ecls-min
 (defvar *key-check*)
@@ -258,6 +261,12 @@
 (defun find-documentation (body)
   (nth-value 3 (process-declarations body t)))
 
+(defun remove-documentation (body)
+  (multiple-value-bind (decls body doc)
+      (process-declarations body t)
+    (when decls (push `(declare ,@decls) body))
+    (values body doc)))
+
 (defun find-declarations (body &optional (doc t))
   (multiple-value-bind (decls body doc)
       (process-declarations body doc)
@@ -286,9 +295,9 @@
       (push `(unless (<= (list-length ,(car ac)) ,(cdr ac))
 	      (dm-too-many-arguments)) body))
     (setq body (nconc decls body))
-    (when doc (push doc body))
     (values (list* 'LAMBDA (list* whole env '&aux *dl*) body)
-	    ppn)))
+	    ppn
+	    doc)))
 
 (si::fset 'defmacro
 	  #'(lambda-block defmacro (def env)
@@ -296,7 +305,7 @@
 		     (vl (third def))
 		     (body (cdddr def))
 		     (function))
-		(multiple-value-bind (expr pprint)
+		(multiple-value-bind (expr pprint doc)
 		    (sys::expand-defmacro name vl body)
 		  (setq function `#'(lambda-block ,name ,@(cdr expr)))
 		  (when *dump-defmacro-definitions*

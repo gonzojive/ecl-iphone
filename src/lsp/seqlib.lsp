@@ -366,6 +366,10 @@
                                test test-not
 			       start end
                                (key #'identity))
+  "Args: (sequence
+       &key (key '#'identity) (test '#'eql) test-not
+            (start 0) (end (length sequence)) (from-end nil))
+Returns a copy of SEQUENCE without duplicated elements."
   (and test test-not (test-error))
   (when (and (listp sequence) (not from-end) (null start) (null end))
         (when (endp sequence) (return-from remove-duplicates nil))
@@ -390,6 +394,10 @@
                                end 
                                (key #'identity)
                           &aux (l (length sequence)))
+  "Args: (sequence &key (key '#'identity)
+		     (test '#'eql) test-not
+                     (start 0) (end (length sequence)) (from-end nil))
+Destructive REMOVE-DUPLICATES.  SEQUENCE may be destroyed."
   (declare (fixnum l))
   (and test test-not (test-error))
   (when (and (listp sequence) (not from-end) (null start) (null end))
@@ -474,6 +482,15 @@
 		      (key #'identity)
 		      start1 start2
 		      end1 end2)
+  "Args: (sequence1 sequence2
+       &key (key '#'identity) (test '#'eql) test-not
+            (start1 0) (end1 (length sequence1))
+            (start2 0) (end2 (length sequence2))
+            (from-end nil))
+Compares element-wise the specified subsequences of SEQUENCE1 and SEQUENCE2.
+Returns NIL if they are of the same length and they have the same elements in
+the sense of TEST.  Otherwise, returns the index of SEQUENCE1 to the first
+element that does not match."
   (and test test-not (test-error))
   (with-start-end start1 end1 sequence1
    (with-start-end start2 end2 sequence2
@@ -503,6 +520,14 @@
                     (key #'identity)
 		    start1 start2
 		    end1 end2)
+  "Args: (sequence1 sequence2
+       &key (key '#'identity) (test '#'eql) test-not
+            (start1 0) (end1 (length sequence1))
+            (start2 0) (end2 (length sequence2))
+            (from-end nil))
+Searches SEQUENCE2 for a subsequence that element-wise matches SEQUENCE1.
+Returns the index to the first element of the subsequence if such a
+subsequence is found.  Returns NIL otherwise."
   (and test test-not (test-error))
   (with-start-end start1 end1 sequence1
    (with-start-end start2 end2 sequence2  
@@ -532,6 +557,13 @@
 
 
 (defun sort (sequence predicate &key (key #'identity))
+  "Args: (sequence test &key (key '#'identity))
+Destructively sorts SEQUENCE and returns the result.  TEST should return non-
+NIL if its first argument is to precede its second argument.  The order of two
+elements X and Y is arbitrary if both
+	(FUNCALL TEST X Y)
+	(FUNCALL TEST Y X)
+evaluates to NIL.  See STABLE-SORT."
   (if (listp sequence)
       (list-merge-sort sequence predicate key)
       (quick-sort sequence 0 (the fixnum (length sequence)) predicate key)))
@@ -618,6 +650,14 @@
 
 
 (defun stable-sort (sequence predicate &key (key #'identity))
+  "Args: (sequence test &key (key '#'identity))
+Destructively sorts SEQUENCE and returns the result.  TEST should return non-
+NIL if its first argument is to precede its second argument.  For two elements
+X and Y, if both
+	(FUNCALL TEST X Y)
+	(FUNCALL TEST Y X)
+evaluates to NIL, then the order of X and Y are the same as in the original
+SEQUENCE.  See SORT."
   (if (listp sequence)
       (list-merge-sort sequence predicate key)
       (if (or (stringp sequence) (bit-vector-p sequence))
@@ -631,6 +671,11 @@
 (defun merge (result-type sequence1 sequence2 predicate
 	      &key (key #'identity)
 	      &aux (l1 (length sequence1)) (l2 (length sequence2)))
+  "Args: (type sequence1 sequence2 test &key (key '#'identity))
+Merges two sequences in the way specified by TEST and returns the result as a
+sequence of TYPE.  Both SEQUENCEs may be destroyed.  If both SEQUENCE1 and
+SEQUENCE2 are sorted in the sense of TEST, then the result is also sorted in
+the sense of TEST."
   (declare (fixnum l1 l2))
   (do ((newseq (make-sequence result-type (the fixnum (+ l1 l2))))
        (j 0 (1+ j))
@@ -660,7 +705,12 @@
 	   (incf i2)))))
 
 (defun complement (f)
+  "Args: (f)
+Returns a new function which first applies F to its arguments and then negates
+the output"
   #'(lambda (&rest x) (not (apply f x))))
 
 (defun constantly (n)
+  "Args: (n)
+Builds a new function which accepts any number of arguments but always outputs N."
   #'(lambda (&rest x) n))

@@ -21,20 +21,21 @@
 (export '(*break-readtable* *break-on-warnings* *break-enable*
 	  *lisp-init-file-list* *tpl-evalhook*))
 
-(defvar + nil)
-(defvar ++ nil)
-(defvar +++ nil)
-(defvar - nil)
-(defvar * nil)
-(defvar ** nil)
-(defvar *** nil)
-(defvar / nil)
-(defvar // nil)
-(defvar /// nil)
+(defvar + nil "The last top-level form.")
+(defvar ++ nil "The last-but-one top-level form.")
+(defvar +++ nil "The last-but-two top-level form.")
+(defvar - nil "The top-level form ECL is currently evaluating.")
+(defvar * nil "The value of the last top-level form.")
+(defvar ** nil "The value of the last-but-one top-level form.")
+(defvar *** nil "The value of the last-but-two top-level form.")
+(defvar / nil "The list of all values of the last top-level form.")
+(defvar // nil "The list of all values of the last-but-one top-level form.")
+(defvar /// nil "The list of all values of the last-but-two top-level form.")
 
 ; Can't use ~ on Solaris 2:
 ;(defvar *lisp-init-file-list* '("./init" "~/.ecls"))
-(defvar *lisp-init-file-list* '("./init"))
+(defvar *lisp-init-file-list* '("./init")
+  "List of files automatically loaded when ECL is invoked.")
 
 (defvar *quit-tag* (cons nil nil))
 (defvar *quit-tags* nil)
@@ -54,9 +55,18 @@
 (defvar *ignore-errors* nil)		; flag about whether to ignore errors
 (defvar *last-error* nil)
 
-(defvar *break-enable* t)
+(defvar *break-enable* t
+  "ECL specific.
+When an error is signaled, control enters a break loop only if the value of
+this variable is non-NIL.  The initial value is T, but ECL automatically
+rebinds this variable to NIL when control enters a break loop.")
+
 (defvar *break-message* nil)
-(defvar *break-on-warnings* nil)
+
+(defvar *break-on-warnings* nil
+  "When the function WARN is called, control enters to a break loop only if the
+value of this variable is non-NIL.")
+
 (defvar *break-readtable* nil)
 (defvar *tpl-level* -1)			; nesting level of top-level loops
 (defvar *step-level* 0)			; repeated from trace.lsp
@@ -355,7 +365,7 @@
        (if (= i argc)
 	   (error "Missing directory")
 	   (setf (logical-pathname-translations "SYS")
-		 `(("SYS:*.*" ,(concatenate (argv i) "*.*"))))))
+		 `(("SYS:*.*" ,(concatenate 'string (argv i) "*.*"))))))
       ((string= "-compile" (argv i))
        (incf i)
        (if (= i argc)
@@ -402,6 +412,12 @@ Usage: ecls [-dir dir] [-load file] [-eval expr]
 (defvar *lisp-initialized* nil)
 
 (defun top-level ()
+  "Args: ()
+ECL specific.
+The top-level loop of ECL.
+When ECL is invoked, it evaluates (FUNCALL 'SI::TOP-LEVEL).  To change the top-
+level of ECL, redefine SI::TOP-LEVEL and save the core image into a program
+file.  When the saved image is invoked, it will start the redefined top-level."
   (let (+ ++ +++ - * ** *** / // ///)
 
     (unless *lisp-initialized*

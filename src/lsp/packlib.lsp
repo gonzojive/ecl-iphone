@@ -22,6 +22,10 @@
                (find-package (string ,g)))))))
 
 (defun find-all-symbols (string-or-symbol)
+  "Args: (string-designator)
+Returns a list of all symbols that have the specified print name.
+STRING-DESIGNATOR may be a symbol, in which case the print name of the symbol
+is used."
   (when (symbolp string-or-symbol)
         (setq string-or-symbol (symbol-name string-or-symbol)))
   (mapcan #'(lambda (p)
@@ -35,6 +39,11 @@
 
 (defmacro do-symbols ((var &optional (package '*package*) (result-form nil))
                       &rest body)
+  "Syntax: (do-symbols (var [package [result]])
+          {decl}* {tag | statement}*)
+Executes STATEMENTs once for each symbol in PACKAGE (which defaults to the
+current package), with VAR bound to the symbol.  Then evaluates RESULT (which
+defaults to NIL) and returns all values."
   (let ((p (gensym)) (i (gensym))
         (x (gensym)) (y (gensym))
 	declaration)
@@ -56,6 +65,12 @@
 
 (defmacro do-external-symbols
           ((var &optional (package '*package*) (result-form nil)) &rest body)
+  "Syntax: (do-external-symbols (var [package [result]])
+          {decl}* {tag | statement}*)
+Establishes a NIL block and executes STATEMENTs once for each external symbol
+in PACKAGE (which defaults to the current package), with VAR bound to the
+variable.  Then evaluates RESULT (which defaults to NIL) and returns all
+values."
   (let ((p (gensym))
 	(i (gensym))
         declaration)
@@ -71,6 +86,10 @@
 	   ,@body)))))
 
 (defmacro do-all-symbols ((var &optional (result-form nil)) &rest body)
+  "Syntax: (do-all-symbols (var [result]) {decl}* {tag | statement}*)
+Establishes a NIL block and executes STATEMENTs once for each symbol in each
+package, with VAR bound to the symbol.  Then evaluates RESULT (which defaults
+to NIL) and returns all values."
   `(dolist (.v (list-all-packages) ,result-form)
 	   (do-symbols (,var .v)
 		       ,@ body)))
@@ -103,6 +122,9 @@
 
 
 (defun apropos (string &optional package)
+  "Args: (string &optional (package nil))
+Prints those symbols whose print-names contain STRING as substring.  If
+PACKAGE is non-NIL, then only the specified PACKAGE is searched."
   (setq string (string string))
   (cond (package
          (do-symbols (symbol package)
@@ -121,6 +143,9 @@
 
 
 (defun apropos-list (string &optional package &aux list)
+  "Args: (string &optional (package nil))
+Returns a list of all symbols whose print-names contain STRING as substring.
+If PACKAGE is non-NIL, then only the specified PACKAGE is searched."
   (setq list nil)
   (setq string (string string))
   (cond (package

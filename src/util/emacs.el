@@ -260,6 +260,7 @@
 "lsp/describe.lsp"
 "lsp/evalmacros.lsp"
 "lsp/export.lsp"
+"lsp/helpfile.lsp"
 "lsp/iolib.lsp"
 "lsp/listlib.lsp"
 "lsp/loop.lsp"

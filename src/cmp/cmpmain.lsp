@@ -22,7 +22,14 @@
 ;;; The constant string *include-string* is the content of file "ecl.h".
 ;;; Here we use just a placeholder: it will be replaced with sed.
 
-(defvar *cc* "cc"))
+(defvar *cc* "cc"
+  "This variable controls how the C compiler is invoked by ECL.
+The default value is \"cc -I. -I/usr/local/include/\".
+The second -I option names the directory where the file ECL.h has been installed.
+One can set the variable appropriately adding for instance flags which the 
+C compiler may need to exploit special hardware features (e.g. a floating point
+coprocessor).")
+
 (defvar *cc-flags* "-g -I.")
 (defvar *cc-optimize* "-O")		; C compiler otimization flag
 (defvar *cc-format* "~A ~A ~:[~*~;~A~] -I~A/h -w -c ~A -o ~A"))
@@ -52,17 +59,20 @@
 	      string result))
     result))
 
-(defun library-pathname (name &optional (directory "./"))
-  (make-pathname :name (concatenate 'string "lib" name) :type "a" :defaults directory))
+(defun library-pathname (name shared &optional(directory "./"))
+  (if shared
+    (make-pathname :name name :type "so" :defaults directory)
+    (make-pathname :name (concatenate 'string "lib" name)
+		   :type "a" :defaults directory)))
 
 (defun compile-file-pathname (name &key output-file)
   (merge-pathnames (or output-file name) #+dlopen #P".so" #-dlopen #P".o"))
 
-(defun make-library (lib objects &key (output-dir "./"))
+(defun make-library (lib objects &key (output-dir "./") (shared nil))
   (let* ((lib (string-upcase lib))
 	 (init-name (mapcar #'(lambda (x) (string-upcase (pathname-name x)))
 			    objects))
-	 (liba (library-pathname (string-downcase lib) output-dir))
+	 (liba (library-pathname (string-downcase lib) shared output-dir))
 	 (libc (make-pathname :name lib :type "c" :defaults output-dir))
 	 (libo (make-pathname :name lib :type "o" :defaults output-dir)))
     (with-open-file (libc-file libc :direction :output)
@@ -77,24 +87,30 @@ init_~A(cl_object)
 "
 	      lib init-name init-name)
     (compiler-cc libc libo)
+    #-dlopen
     (safe-system (format nil "ar cr ~A ~A ~{~A ~}"
-			 (namestring liba) (namestring libo) objects))
+		     (namestring liba) (namestring libo) objects))
+    #+dlopen
+    (if shared
+      (apply #'shared-cc (namestring liba) (namestring libo) objects)
+      (safe-system (format nil "ar cr ~A ~A ~{~A ~}"
+			   (namestring liba) (namestring libo) objects)))
     (delete-file (namestring libc))
     (delete-file (namestring libo)))
     liba))
 
-(defun linker-cc (o-pathname options &optional (shared nil))
+(defun linker-cc (o-pathname &rest options)
   (safe-system
    (format nil
 	   *ld-format*
 	   *cc*
-	   (if shared "-shared" "")
+	   ""
 	   (namestring o-pathname)
 	   (namestring (translate-logical-pathname "SYS:"))
 	   options *ld-flags*)))
 
 #+dlopen
-(defun shared-cc (o-pathname options &optional (shared nil))
+(defun shared-cc (o-pathname &rest options)
   (safe-system
    (format nil
 	   *ld-shared-format*
@@ -133,7 +149,7 @@ main(int argc, char **argv)
 	       (error "compiler::build-ecls wrong argument ~A" item))))
       (format c-file "~A;~%}~%" epilogue-code))
     (compiler-cc c-name o-name)
-    (linker-cc name (cons (namestring o-name) ld-flags))
+    (apply #'linker-cc name (namestring o-name) ld-flags)
     (delete-file c-name)
     ))
 
@@ -241,7 +257,7 @@ Cannot compile ~a."
 		   (format t "~&;;; Calling the C compiler... "))
                  (compiler-cc c-pathname o-pathname)
 		 #+dlopen
-		 (unless system-p (shared-cc so-pathname (list o-pathname) t))
+		 (unless system-p (shared-cc so-pathname o-pathname))
                  (cond #+dlopen
 		       ((and (not system-p) (probe-file so-pathname))
                         (when load (load so-pathname))
@@ -362,7 +378,7 @@ Cannot compile ~a."
           (when *compile-verbose*
 	    (format t "~&;;; Calling the C compiler... "))
           (compiler-cc c-pathname o-pathname)
-	  (shared-cc so-pathname (list o-pathname) t)
+	  (shared-cc so-pathname o-pathname)
           (delete-file c-pathname)
           (delete-file h-pathname)
 	  (delete-file o-pathname)
@@ -497,7 +513,7 @@ Cannot compile ~a."
 #+dlopen
 (defun load-o-file (file verbose print)
   (let ((tmp (merge-pathnames ".so" file)))
-    (shared-cc tmp (list file))
+    (shared-cc tmp file)
     (when (probe-file tmp)
       (load tmp :verbose nil :print nil)
       ;(delete-file tmp)

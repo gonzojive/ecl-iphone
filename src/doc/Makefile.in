@@ -24,7 +24,7 @@ FILTER = sed 's,@VERSION@,$(VERSION),g'
 
 ECL = ../ecls
 
-all: help.doc ecls.info eclsdev.info $(HTML)
+all: ecls.info eclsdev.info $(HTML)
 
 ecls.dvi: $(srcdir)/user.txi $(srcdir)/macros.txi clisp.sty ecl.sty
 	tex $(srcdir)/user.txi
@@ -37,15 +37,11 @@ eclsdev.ps: eclsdev.dvi $(srcdir)/macros.txi
 	dvips -o $@ eclsdev.dvi
 
 install: all
-	$(INSTALL_DATA) help.doc $(PREFIX)$(libdir)
 	$(INSTALL_DATA) ecls.info $(PREFIX)$(infodir)
 	$(INSTALL_DATA) eclsdev.info $(PREFIX)$(infodir)
 
 uninstall:
 	rm -r $(infodir)/ecls.info $(infodir)/eclsdev.info
-
-help.doc: help.lsp
-	$(ECL) < $(srcdir)/help.lsp > /dev/null
 
 ecls.info: $(srcdir)/user.txi $(srcdir)/macros.txi
 	makeinfo -I $(srcdir) --no-split $(srcdir)/user.txi
@@ -80,4 +76,4 @@ ecls.html: $(srcdir)/user.txi $(srcdir)/macros.txi
 eclsdev.html: $(srcdir)/devel.txi $(srcdir)/macros.txi
 	makeinfo -I $(srcdir) --html $(srcdir)/devel.txi
 clean:
-	rm -f ecls.* help.doc *.html
+	rm -f ecls.* *.html

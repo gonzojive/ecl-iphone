@@ -40,7 +40,7 @@
 	(progn
 	  (remprop access-function 'SETF-UPDATE-FN)
 	  (remprop access-function 'SETF-LAMBDA)
-	  (remprop access-function 'SETF-DOCUMENTATION))
+	  (sys::set-documentation access-function 'SETF nil))
 	(progn
 	  ;; The following is used by the compiler to expand inline
 	  ;; the accessor
@@ -325,8 +325,9 @@
 		      'STRUCTURE-TYPE type
 		      'STRUCTURE-NAMED named
 		      'STRUCTURE-OFFSET offset
-		      'STRUCTURE-CONSTRUCTORS constructors
-		      'STRUCTURE-DOCUMENTATION documentation)
+		      'STRUCTURE-CONSTRUCTORS constructors)
+  (when *keep-documentation*
+    (sys:set-documentation name 'STRUCTURE documentation))
   (and (consp type) (eq (car type) 'VECTOR)
        (setq type 'VECTOR))
   (dolist (x slot-descriptions)
@@ -343,6 +344,22 @@
 ;;; The DEFSTRUCT macro.
 
 (defmacro defstruct (name &rest slots)
+  "Syntax: (defstruct
+         {name | (name {:conc-name | (:conc-name prefix-string) |
+                        :constructor | (:constructor symbol [lambda-list]) |
+                        :copier | (:copier symbol) |
+                        :predicate | (:predicate symbol) |
+                        (:include symbol) |
+                        (:print-function function) |
+                        (:type {vector | (vector type) | list}) |
+                        :named |
+                        (:initial-offset number)}*)}
+         [doc]
+         {slot-name |
+          (slot-name [default-value-form] {:type type | :read-only flag}*) }*
+         )
+Defines a structure named by NAME.  The doc-string DOC, if supplied, is saved
+as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
   (let ((slot-descriptions slots)
 	;;#+clos
 	local-slot-descriptions

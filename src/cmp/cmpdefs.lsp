@@ -205,10 +205,22 @@
 (defvar *error-p* nil)
 (defconstant *cmperr-tag* (cons nil nil))
 
-(defvar *compile-print* t)
-(defvar *compile-verbose* t)
-(defvar *suppress-compiler-warnings* nil)
-(defvar *suppress-compiler-notes* nil)
+(defvar *compile-print* t
+  "This variable controls whether the compiler displays messages about
+each form it processes. The default value is NIL.")
+
+(defvar *compile-verbose* t
+  "This variable controls whether the compiler should display messages about its
+progress. The default value is T.")
+
+(defvar *suppress-compiler-warnings* nil
+  "This variable controls whether the compiler should issue warnings.
+The default value is NIL.")
+
+(defvar *suppress-compiler-notes* nil
+  "This variable controls whether the compiler displays compilation notices.
+The default value is NIL.")
+
 (defvar *compiler-break-enable* nil)
 
 (defvar *compiler-in-use* nil)

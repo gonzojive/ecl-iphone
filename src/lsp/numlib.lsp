@@ -21,6 +21,8 @@
 (defconstant imag-one #C(0.0 1.0))
 
 (defun isqrt (i)
+  "Args: (integer)
+Returns the integer square root of INTEGER."
        (unless (and (integerp i) (>= i 0))
                (error "~S is not a non-negative integer." i))
        (if (zerop i)
@@ -35,6 +37,8 @@
                     (setq x (floor (+ x y) 2))))))
 
 (defun abs (z)
+  "Args: (number)
+Returns the absolute value of NUMBER."
   (if (complexp z)
       ;; Compute sqrt(x*x + y*y) carefully to prevent overflow.
       ;; Assume |x| >= |y|. Then sqrt(x*x + y*y) = |x|*sqrt(1 +(y/x)^2).
@@ -52,13 +56,26 @@
 	  z)))
 
 (defun phase (x)
+  "Args: (number)
+Returns the angle part (in radians) of the polar representation of NUMBER.
+Returns zero for non-complex numbers."
        (atan (imagpart x) (realpart x)))
 
-(defun signum (x) (if (zerop x) x (/ x (abs x))))
+(defun signum (x)
+  "Args: (number)
+Returns a number that represents the sign of NUMBER.  Returns NUMBER If it is
+zero.  Otherwise, returns the value of (/ NUMBER (ABS NUMBER))"
+  (if (zerop x) x (/ x (abs x))))
 
-(defun cis (x) (exp (* imag-one x)))
+(defun cis (x)
+  "Args: (radians)
+Returns a complex number whose realpart and imagpart are the values of (COS
+RADIANS) and (SIN RADIANS) respectively."
+  (exp (* imag-one x)))
 
 (defun asin (x)
+  "Args: (number)
+Returns the arc sine of NUMBER."
   ;; (* #C(0.0 -1.0) (log (+ (* imag-one x) (sqrt (- 1.0 (* x x))))))
   (let ((c (log (+ (* imag-one x)
 		   (sqrt (- 1.0 (* x x)))))))
@@ -67,6 +84,8 @@
 	(* #C(0.0 -1.0) c))))
 
 (defun acos (x)
+  "Args: (number)
+Returns the arc cosine of NUMBER."
   ;; (* #C(0.0 -1.0) (log (+ x (* imag-one (sqrt (- 1.0 (* x x)))))))
   (let ((c (log (+ x (* imag-one
 			(sqrt (- 1.0 (* x x))))))))
@@ -121,15 +140,25 @@
 #+nil
 (defun tanh (x) (/ (sinh x) (cosh x)))
 
-(defun asinh (x) (log (+ x (sqrt (+ 1.0 (* x x))))))
+(defun asinh (x)
+  "Args: (number)
+Returns the hyperbolic arc sine of NUMBER."
+  (log (+ x (sqrt (+ 1.0 (* x x))))))
+
 (defun acosh (x)
+  "Args: (number)
+Returns the hyperbolic arc cosine of NUMBER."
   ;; CLtL1: (log (+ x (* (1+ x) (sqrt (/ (1- x) (1+ x))))))
   (* 2 (log (+ (sqrt (/ (1+ x) 2)) (sqrt (/ (1- x) 2))))))
 
 (defun atanh (x)
+  "Args: (number)
+Returns the hyperbolic arc tangent of NUMBER."
   (/ (- (log (1+ x)) (log (- 1 x))) 2))	; CLtL2
 
 (defun rational (x)
+  "Args: (real)
+Converts REAL into rational accurately and returns the result."
   (etypecase x
     (FLOAT	  
       (multiple-value-bind (i e s) (integer-decode-float x)
@@ -138,48 +167,85 @@
 			     (- (* i (expt (float-radix x) e))))))
     (RATIONAL x)))
 
-
-(setf (symbol-function 'rationalize) (symbol-function 'rational))
+(defun rationalize (x)
+  "Args: (real)
+Converts REAL into rational approximately and returns the result."
+  (etypecase x
+    (FLOAT	  
+      (multiple-value-bind (i e s) (integer-decode-float x)
+			   (if (>= s 0)
+			       (* i (expt (float-radix x) e))
+			     (- (* i (expt (float-radix x) e))))))
+    (RATIONAL x)))
 
 (defun ffloor (x &optional (y 1.0s0))
+  "Args: (number &optional (divisor 1))
+Same as FLOOR, but returns a float as the first value."
        (multiple-value-bind (i r) (floor (float x) (float y))
         (values (float i r) r)))
 
 (defun fceiling (x &optional (y 1.0s0))
+  "Args: (number &optional (divisor 1))
+Same as CEILING, but returns a float as the first value."
        (multiple-value-bind (i r) (ceiling (float x) (float y))
         (values (float i r) r)))
 
 (defun ftruncate (x &optional (y 1.0s0))
+  "Args: (number &optional (divisor 1))
+Same as TRUNCATE, but returns a float as the first value."
        (multiple-value-bind (i r) (truncate (float x) (float y))
         (values (float i r) r)))
 
 (defun fround (x &optional (y 1.0s0))
+  "Args: (number &optional (divisor 1))
+Same as ROUND, but returns a float as the first value."
        (multiple-value-bind (i r) (round (float x) (float y))
         (values (float i r) r)))
 
-(defun logtest (x y) (not (zerop (logand x y))))
+(defun logtest (x y)
+  "Args: (integer1 integer2)
+Equivalent to (NOT (ZEROP (LOGAND INTEGER1 INTEGER2)))."
+  (not (zerop (logand x y))))
 
 
 (defun byte (size position)
+  "Args: (size position)
+Returns a byte specifier of integers.  The value specifies the SIZE-bits byte
+starting the least-significant-bit but POSITION bits of integers.  In ECL, a
+byte specifier is represented by a dotted pair (SIZE . POSITION)."
   (cons size position))
 
 (defun byte-size (bytespec)
+  "Args: (byte)
+Returns the size part (in ECL, the car part) of the byte specifier BYTE."
   (car bytespec))
 
 (defun byte-position (bytespec)
+  "Args: (byte)
+Returns the position part (in ECL, the cdr part) of the byte specifier BYTE."
   (cdr bytespec))
 
 (defun ldb (bytespec integer)
+  "Args: (bytespec integer)
+Extracts a byte from INTEGER at the specified byte position, right-justifies
+the byte, and returns the result as an integer."
   (logandc2 (ash integer (- (byte-position bytespec)))
             (- (ash 1 (byte-size bytespec)))))
 
 (defun ldb-test (bytespec integer)
+  "Args: (bytespec integer)
+Returns T if at least one bit of the specified byte is 1; NIL otherwise."
   (not (zerop (ldb bytespec integer))))
 
 (defun mask-field (bytespec integer)
+  "Args: (bytespec integer)
+Extracts the specified byte from INTEGER and returns the result as an integer."
   (ash (ldb bytespec integer) (byte-position bytespec)))
 
 (defun dpb (newbyte bytespec integer)
+  "Args: (newbyte bytespec integer)
+Replaces the specified byte of INTEGER with NEWBYTE (an integer) and returns
+the result."
   (logxor integer
           (mask-field bytespec integer)
           (ash (logandc2 newbyte
@@ -187,4 +253,7 @@
                (byte-position bytespec))))
 
 (defun deposit-field (newbyte bytespec integer)
+  "Args: (integer1 bytespec integer2)
+Returns an integer represented by the bit sequence obtained by replacing the
+specified bits of INTEGER2 with the specified bits of INTEGER1."
   (dpb (ash newbyte (- (byte-position bytespec))) bytespec integer))

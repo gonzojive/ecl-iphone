@@ -23,6 +23,9 @@
 ;;;
 (load "cmp/load.lsp")
 
+(load "@srcdir@/doc/help.lsp")
+(si::dump-documentation "help.doc")
+
 ;;;
 ;;; * By redefining "SYS:" ECLS will be able to
 ;;;   find headers and libraries in the build directory.
@@ -33,6 +36,11 @@
 ;;; * Add include path to not yet installed headers
 ;;;
 (setq compiler::*cc-flags* (concatenate 'string compiler::*cc-flags* " -I@srcdir@/h -I@srcdir@/gmp "))
+
+;;;
+;;; * Remove documentation from compiled files
+;;;
+(setq si::*keep-documentation* nil)
 
 ;;;
 ;;; * Beppe's defsystem utility

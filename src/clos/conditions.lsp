@@ -50,6 +50,18 @@
 	   :commands (adjoin break-commands *tpl-commands*)))))
 
 (defun sys::universal-error-handler (continue-string datum args)
+  "Args: (error-name continuable-p function-name
+       continue-format-string error-format-string
+       &rest args)
+ECL specific.
+Starts the error handler of ECL.
+When an error is detected, ECL calls this function with the specified
+arguments.  To change the error handler of ECL, redefine this function.
+ERROR-NAME is the name of the error.  CONTINUABLE-P is T for a continuable
+error and NIL for a fatal error.  FUNCTION-NAME is the name of the function
+that caused the error.  CONTINUE-FORMAT-STRING and ERROR-FORMAT-STRING are the
+format strings of the error message.  ARGS are the arguments to the format
+strings."
   (declare (inline apply) ;; So as not to get bogus frames in debugger
 	   (ignore error-name))
   (let ((condition (coerce-to-condition datum args 'simple-error 'error)))
@@ -473,6 +485,10 @@
 (define-condition warning (condition) ())
 
 (defun warn (datum &rest arguments)
+  "Args: (format-string &rest args)
+Formats FORMAT-STRING and ARGs to *ERROR-OUTPUT* as a warning message.  Enters
+a break level if the value of *BREAK-ON-WARNINGS* is non-NIL.  Otherwise,
+returns with NIL."
   (let ((condition
 	  (coerce-to-condition datum arguments 'SIMPLE-WARNING 'WARN)))
     (check-type condition warning "a warning condition")

@@ -42,6 +42,8 @@ cl_object @'si::*source-pathname*';
 
 	/* Try to load shared object file */
 	block = alloc_object(t_codeblock);
+	block->cblock.data = NULL;
+	block->cblock.data_size = 0;
 	block->cblock.name = filename;
 	block->cblock.handle = dlopen(filename->string.self, RTLD_NOW|RTLD_GLOBAL);
 	if (block->cblock.handle == NULL)

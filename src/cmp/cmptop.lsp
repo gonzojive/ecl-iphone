@@ -237,10 +237,11 @@
     (setq lambda-expr (c1lambda-expr (cdr args) fname))
     (unless (eql setjmps *setjmps*)
       (setf (info-volatile (second lambda-expr)) t))
-    (when (fourth lambda-expr)
-      (setq doc (add-object (fourth lambda-expr))))
+    (when (and (setq doc (fourth lambda-expr))
+	       (setq doc (si::expand-set-documentation fname 'function doc)))
+      (t1expr `(progn ,@doc)))
     (add-load-time-values)
-    (setq output (new-defun fname cfun lambda-expr doc *special-binding*))
+    (setq output (new-defun fname cfun lambda-expr *special-binding*))
     (when
       (and
        (get fname 'PROCLAIMED-FUNCTION)
@@ -275,7 +276,7 @@
     output))
 
 ;;; Mechanism for sharing code:
-(defun new-defun (fname cfun lambda-expr doc special-binding)
+(defun new-defun (fname cfun lambda-expr special-binding)
   (let ((previous (dolist (form *global-funs*)
 		    (when (and (eq 'DEFUN (car form))
 			       (equal special-binding (fifth form))
@@ -284,9 +285,8 @@
     (if previous
 	(progn
 	  (cmpnote "Sharing code for function ~A" fname)
-	  (list 'DEFUN fname previous nil doc special-binding
-                      *funarg-vars*))
-	(let ((fun-desc (list fname cfun lambda-expr doc special-binding
+	  (list 'DEFUN fname previous nil special-binding *funarg-vars*))
+	(let ((fun-desc (list fname cfun lambda-expr special-binding
 			      *funarg-vars*)))
 	  (push fun-desc *global-funs*)
 	  (cons 'DEFUN fun-desc)))))
@@ -329,7 +329,7 @@
       "register "
       ""))
 
-(defun t2defun (fname cfun lambda-expr doc sp funarg-vars
+(defun t2defun (fname cfun lambda-expr sp funarg-vars
                       &aux (vv (add-symbol fname))
 		      (nkey (length (fifth (third lambda-expr)))))
   (declare (ignore sp funarg-vars))
@@ -337,16 +337,11 @@
   (if (numberp cfun)
     (wt-nl "MF(" vv ",L" cfun ",Cblock);")
     (wt-nl "MF(" vv "," cfun ",Cblock);"))
-  (when (< *space* 3)
-    (when doc
-      (wt-nl "(void)putprop(" vv "," doc ","
-	     (add-symbol 'si::function-documentation) ");")
-      (wt-nl)))
   (when (get fname 'PROCLAIMED-FUNCTION)
 	(wt-if-proclaimed fname cfun vv lambda-expr))
 )
 
-(defun t3defun (fname cfun lambda-expr doc sp funarg-vars
+(defun t3defun (fname cfun lambda-expr sp funarg-vars
                       &aux inline-info lambda-list requireds
                       (*current-form* (list 'DEFUN fname))
                       (*volatile* (when lambda-expr
@@ -355,8 +350,6 @@
 		      (*next-unboxed* 0) (*unboxed* nil)
 		      (*lex* *lex*) (*max-lex* *max-lex*)
 		      (*env* *env*) (*max-env* 0) (*level* *level*))
-  (declare (ignore doc))
-  
   (setq *funarg-vars* funarg-vars)
   (when lambda-expr		; Not sharing code.
     (setq lambda-list (third lambda-expr)
@@ -577,27 +570,24 @@
   (setq *non-package-operation* t)
   (let (macro-lambda (cfun (next-cfun)) (doc nil) (ppn nil))
     (setq macro-lambda (c1dm (car args) (second args) (cddr args)))
-    (when (car macro-lambda) (setq doc (add-object (car macro-lambda))))
     (when (second macro-lambda) (setq ppn (add-object (second macro-lambda))))
+    (when (and (setq doc (car macro-lambda))
+	       (setq doc (si::expand-set-documentation (car args) 'function doc)))
+      (t1expr `(progn ,@doc)))
     (add-load-time-values)
-    (list 'DEFMACRO (car args) cfun (cddr macro-lambda) doc ppn
+    (list 'DEFMACRO (car args) cfun (cddr macro-lambda) ppn
 		*special-binding*)))
 
-(defun t2defmacro (fname cfun macro-lambda doc ppn sp
-                         &aux (vv (add-symbol fname)))
+(defun t2defmacro (fname cfun macro-lambda ppn sp &aux (vv (add-symbol fname)))
   (declare (ignore macro-lambda sp))
   (when (< *space* 3)
-    (when doc
-      (wt-nl "(void)putprop(" vv "," doc ","
-	     (add-symbol 'si::function-documentation) ");")
-      (wt-nl))
     (when ppn
       (wt-nl "(void)putprop(" vv "," ppn ",siSpretty_print_format);")
       (wt-nl)))
   (wt-h "static cl_object L" cfun "();")
   (wt-nl "MM(" vv ",L" cfun ",Cblock);"))
 
-(defun t3defmacro (fname cfun macro-lambda doc ppn sp
+(defun t3defmacro (fname cfun macro-lambda ppn sp
                          &aux (*lcl* 0) (*temp* 0) (*max-temp* 0)
                          (*lex* *lex*) (*max-lex* *max-lex*)
 			 (*next-unboxed* 0) *unboxed*
@@ -607,7 +597,6 @@
                          (*exit* 'RETURN) (*unwind-exit* '(RETURN))
                          (*destination* 'RETURN)
                          (*reservation-cmacro* (next-cmacro)))
-  (declare (ignore doc ppn))
   (wt-comment "macro definition for " fname)
   (wt-nl1 "static cl_object L" cfun "(int narg, cl_object V1, cl_object V2)")
   (wt-nl1 "{")
@@ -662,24 +651,22 @@
   (if (endp (cdr args))
       (list 'DECLARE (add-symbol name))
       (progn
-	(unless (endp (cddr args)) (setq doc (add-object (third args))))
+	(when (and (setq doc (third args))
+		   (setq doc (si::expand-set-documentation name 'variable doc)))
+	  (t1expr `(progn ,@doc)))
 	(setq form (c1expr (second args)))
 	(add-load-time-values)
 	(list 'DEFVAR (make-var :name name :kind 'SPECIAL
-				      :loc (add-symbol name)) form doc))))
+				      :loc (add-symbol name)) form))))
 
-(defun t2defvar (var form doc &aux (vv (var-loc var)))
+(defun t2defvar (var form &aux (vv (var-loc var)))
   (wt-nl vv "->symbol.stype=(short)stp_special;")
   (let* ((*exit* (next-label)) (*unwind-exit* (list *exit*))
          (*destination* (list 'VAR var)))
         (wt-nl "if(" vv "->symbol.dbind == OBJNULL){")
         (c2expr form)
         (wt "}")
-        (wt-label *exit*))
-  (when (and doc (< *space* 3))
-    (wt-nl "(void)putprop(" vv "," doc "," (add-symbol 'si::variable-documentation) ");")
-    (wt-nl))
-  )
+        (wt-label *exit*)))
 
 (defun t1decl-body (decls body)
   (if (null decls)

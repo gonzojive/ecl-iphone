@@ -15,6 +15,31 @@
 (defconstant +tracing-block+ (gensym))
 
 (defmacro trace (&rest r)
+"Syntax: (trace ({function-name | ({function-name}+)} {keyword [form]\}*)
+Begins tracing the specified functions.  With no FUNCTION-NAMEs, returns a
+list of functions currently being traced. The printed information consists of
+the name of function followed at entry by its arguments and on exit by its
+return values.
+The keywords allow to control when and how tracing is performed.
+The possible keywords are:
+
+ :BREAK		a breakpoint is entered after printing the entry trace
+		information, but before applying the traced function to its
+		arguments, if form evaluates to non-nil
+ :BREAK-AFTER 	like :BREAK but the breakpoint is entered after the function
+		has been executed and the exit trace information has been
+		printed and before control returns
+ :COND-BEFORE	information is printed upon entry if form evaluates to non-nil
+ :COND-AFTER	information is printed upon exit if form evaluates to non-nil
+ :COND		specifies a single condition for both entry and exit
+ :PRINT		prints the values of the forms in the list upon entry.
+		They are preceeded by a backslash (\\)
+ :PRINT-AFTER	prints the values of the forms in the list upon exit from the
+		function. They are preceeded by a backslash (\\)
+ :STEP		turns on the stepping facility
+
+Forms can refer to the list of arguments of the function through the variable
+SI::ARGS."
   `(trace* ',r))
 
 (defun trace* (r)
@@ -231,6 +256,9 @@
      ))
 
 (defmacro step (form)
+"Syntax: (step form)
+Evaluates FORM in the Stepper mode and returns all its values.  See ECL Report
+for Stepper mode commands."
   `(step* ',form))
 
 (defun step* (form)

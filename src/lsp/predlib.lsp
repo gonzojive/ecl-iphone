@@ -21,29 +21,57 @@
 
 ;;; DEFTYPE macro.
 (defmacro deftype (name lambda-list &rest body)
+  "Syntax: (deftype name lambda-list {decl | doc}* {form}*)
+Defines a new type-specifier abbreviation in terms of an 'expansion' function
+	(lambda lambda-list1 {DECL}* {FORM}*)
+where LAMBDA-LIST1 is identical to LAMBDA-LIST except that all optional
+parameters with no default value specified in LAMBDA-LIST defaults to the
+symbol '*', but not to NIL.  When the type system of ECL encounters a type
+specifier (NAME arg1 ... argn), it calls the expansion function with the
+arguments ARG1 ... ARGn, and uses the returned value instead of the original
+type specifier.  When the symbol NAME is used as a type specifier, the
+expansion function is called with no argument.
+The doc-string DOC, if supplied, is saved as a TYPE doc and can be retrieved
+by (documentation 'NAME 'type)."
+  (multiple-value-setq (body doc) (remove-documentation body))
   `(eval-when (:compile-toplevel :load-toplevel :execute)
           (setf (get ',name 'DEFTYPE-FORM)
 	   '(DEFTYPE ,name ,lambda-list ,@body))
           (setf (get ',name 'DEFTYPE-DEFINITION)
 	   #'(LAMBDA ,lambda-list ,@body))
-          (setf (get ',name 'TYPE-DOCUMENTATION)
-	   ,(find-documentation body))
+	  ,@(si::expand-set-documentation name 'type doc)
           ',name))
 
 
 ;;; Some DEFTYPE definitions.
-(deftype boolean () `(member nil t))
+(deftype boolean ()
+  "A BOOLEAN is an object which is either NIL or T."
+  `(member nil t))
+
 (deftype fixnum ()
+  "A FIXNUM is an integer between MOST-NEGATIVE-FIXNUM (= - 2^29 in ECL) and
+MOST-POSITIVE-FIXNUM (= 2^29 - 1 in ECL) inclusive.  Other integers are
+bignums."
   `(INTEGER ,most-negative-fixnum ,most-positive-fixnum))
+
 (deftype real (&rest foo) '(OR RATIONAL FLOAT))
-(deftype bit () '(INTEGER 0 1))
+(deftype bit ()
+  "A BIT is either integer 0 or 1."
+  '(INTEGER 0 1))
+
 (deftype mod (n)
   `(INTEGER 0 ,(1- n)))
+
 (deftype signed-byte (&optional s)
+  "As a type specifier, (SIGNED-BYTE n) specifies those integers that can be
+represented with N bits in 2's complement representation."
   (if (or (null s) (eq s '*))
       '(INTEGER * *)
       `(INTEGER ,(- (expt 2 (1- s))) ,(1- (expt 2 (1- s))))))
+
 (deftype unsigned-byte (&optional s)
+  "As a type specifier, (UNSIGNED-BYTE n) specifies non-negative integers that
+can be represented with N bits."
   (if (or (null s) (eq s '*))
       '(INTEGER 0 *)
       `(INTEGER 0 ,(1- (expt 2 s)))))
@@ -51,26 +79,63 @@
 #+clos
 (deftype structure () 'STRUCTURE-OBJECT)
 (deftype sequence () '(OR CONS NULL (ARRAY * (*))))
-(deftype list () '(OR CONS NULL))
-(deftype atom () '(NOT CONS))
+(deftype list ()
+  "As a type specifier, LIST is used to specify the type consisting of NIL and
+cons objects.  In our ordinary life with Lisp, however, a list is either NIL
+or a cons whose cdr is a list, and is notated by its elements surrounded with
+parentheses.
+The backquote macro is sometimes useful to construct a complicated list
+structure.  When evaluating `(...)
+	,form embeds the value of FORM,
+	,@form and ,.form embed all elements of the list value of FORM,
+	and other things embed itself
+into the structure at their position.  For example,
+	`(a b ,c d e) expands to (list* 'a 'b c '(d e))
+	`(a b ,@c d e) expands to (list* 'a 'b (append c '(d e)))
+	`(a b ,.c d e) expands to (list* 'a 'b (nconc c '(d e)))"
+  '(OR CONS NULL))
+
+(deftype atom ()
+  "An ATOM is an object that is not a CONS."
+  '(NOT CONS))
 ;(deftype null () '(MEMBER NIL))
 
 (deftype vector (&optional (element-type '*) (size '*))
+  "A vector is a one-dimensional array.  Strings and bit-vectors are kinds of
+vectors.  Other vectors are called general vectors and are notated as
+	#(elem ... elem)
+Some vectors may be displaced to another array, may have a fill-pointer, or
+may be adjustable.  Other vectors are called simple-vectors."
   `(array ,element-type (,size)))
+
 (deftype string (&optional size)
+  "A string is a vector of characters.  A string is notated by surrounding the
+characters with double quotes.  Some strings may be displaced to another
+string, may have a fill-pointer, or may be adjustable.  Other strings are
+called simple-strings."
   (if size `(array character ,size) '(array character (*))))
+
 (deftype base-string (&optional size)
   (if size `(array base-char ,size) '(array base-char (*))))
 (deftype bit-vector (&optional size)
   (if size `(array bit ,size) '(array bit (*))))
 
 (deftype simple-vector (&optional size)
+  "A simple-vector is a vector that is not displaced to another array, has no
+fill-pointer, and is not adjustable."
   (if size `(simple-array t (,size)) '(simple-array t (*))))
+
 (deftype simple-string (&optional size)
+  "A simple-string is a string that is not displaced to another array, has no
+fill-pointer, and is not adjustable."
   (if size `(simple-array character (,size)) '(simple-array character (*))))
+
 (deftype simple-base-string (&optional size)
   (if size `(simple-array base-char ,size) '(simple-array base-char (*))))
+
 (deftype simple-bit-vector (&optional size)
+  "A simple-bit-vector is a bit-vector that is not displaced to another array,
+has no fill-pointer, and is not adjustable."
   (if size `(simple-array bit (,size)) '(simple-array bit (*))))
 
 
@@ -118,6 +183,8 @@
 
 ;;; TYPEP predicate.
 (defun typep (object type &aux tp i c)
+  "Args: (object type)
+Returns T if X belongs to TYPE; NIL otherwise."
   (cond ((symbolp type)
 	 (let ((f (get type 'TYPE-PREDICATE)))
 	   (when f (return-from typep (funcall f object)))
@@ -274,6 +341,10 @@
 
 ;;; SUBTYPEP predicate.
 (defun subtypep (type1 type2 &aux t1 t2 i1 i2 ntp1 ntp2 c1 c2)
+  "Args: (type1 type2)
+Returns T if TYPE1 is a subtype of TYPE2; NIL otherwise.  If this is not
+determined, then returns NIL as the first and second values.  Otherwise, the
+second value is T."
     (multiple-value-setq (t1 i1) (normalize-type type1))
     (multiple-value-setq (t2 i2) (normalize-type type2))
     (when (and (equal t1 t2) (equal i1 i2))
@@ -534,6 +605,9 @@
 
 ;;; COERCE function.
 (defun coerce (object type &aux name args)
+  "Args: (x type)
+Coerces X to an object of the specified type, if possible.  Signals an error
+if not possible."
   (when (typep object type)
         ;; Just return as it is.
         (return-from coerce object))

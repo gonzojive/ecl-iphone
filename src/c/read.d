@@ -2294,6 +2294,9 @@ read_VV(cl_object block, void *entry)
 
 	(*entry_point)(block);
 	len = block->cblock.data_size;
+	if (len == 0)
+	  return;
+
 #ifdef GBC_BOEHM
 	VV = block->cblock.data = alloc(len * sizeof(cl_object));
 #else

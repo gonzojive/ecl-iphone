@@ -17,6 +17,10 @@
 
 (defun make-sequence (type size	&key (initial-element nil iesp)
                                 &aux element-type sequence)
+  "Args: (type length &key initial-element)
+Creates and returns a sequence of the given TYPE and LENGTH.  If INITIAL-
+ELEMENT is given, then it becomes the elements of the created sequence.  The
+default value of INITIAL-ELEMENT depends on TYPE."
   (setq element-type
         (cond ((eq type 'LIST)
                (return-from make-sequence
@@ -49,6 +53,9 @@
 
 
 (defun concatenate (result-type &rest sequences)
+  "Args: (type &rest sequences)
+Returns a new sequence of the specified type, consisting of all elements of
+SEQUENCEs."
   (do ((x (make-sequence result-type
 			 (apply #'+ (mapcar #'length sequences))))
        (s sequences (cdr s))
@@ -64,6 +71,10 @@
 
 
 (defun map (result-type function sequence &rest more-sequences)
+  "Args: (type function sequence &rest more-sequences)
+Creates and returns a sequence of TYPE with K elements, with the N-th element
+being the value of applying FUNCTION to the N-th elements of the given
+SEQUENCEs, where K is the minimum length of the given SEQUENCEs."
   (setq more-sequences (cons sequence more-sequences))
   (let ((l (apply #'min (mapcar #'length more-sequences))))
     (if (null result-type)
@@ -84,6 +95,9 @@
 
 
 (defun some (predicate sequence &rest more-sequences)
+  "Args: (predicate sequence &rest more-sequences)
+Returns T if at least one of the elements in SEQUENCEs satisfies PREDICATE;
+NIL otherwise."
   (setq more-sequences (cons sequence more-sequences))
   (do ((i 0 (1+ i))
        (l (apply #'min (mapcar #'length more-sequences))))
@@ -96,6 +110,8 @@
 
 
 (defun every (predicate sequence &rest more-sequences)
+  "Args: (predicate sequence &rest more-sequences)
+Returns T if every elements of SEQUENCEs satisfy PREDICATE; NIL otherwise."
   (setq more-sequences (cons sequence more-sequences))
   (do ((i 0 (1+ i))
        (l (apply #'min (mapcar #'length more-sequences))))
@@ -106,10 +122,16 @@
 
 
 (defun notany (predicate sequence &rest more-sequences)
+  "Args: (predicate sequence &rest more-sequences)
+Returns T if none of the elements in SEQUENCEs satisfies PREDICATE; NIL
+otherwise."
   (not (apply #'some predicate sequence more-sequences)))
 
 
 (defun notevery (predicate sequence &rest more-sequences)
+  "Args: (predicate sequence &rest more-sequences)
+Returns T if at least one of the elements in SEQUENCEs does not satisfy
+PREDICATE; NIL otherwise."
   (not (apply #'every predicate sequence more-sequences)))
 
 (defun map-into (result-sequence function &rest sequences)

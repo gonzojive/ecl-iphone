@@ -28,6 +28,27 @@
 			(initial-contents nil initial-contents-supplied-p)
 			adjustable fill-pointer
 			displaced-to (displaced-index-offset 0))
+  "Args: (dimensions &key (element-type t) initial-element (initial-contents nil)
+		    (adjustable nil) (fill-pointer nil) (displaced-to nil)
+		    (displaced-index-offset 0) (static nil))
+Creates an array of the specified DIMENSIONS.  DIMENSIONS is a list of
+non-negative integers each representing the length of the corresponding
+dimension.  It may be an integer for vectors, i.e., one-dimensional arrays.
+ELEMENT-TYPE specifies the type of array elements.  INITIAL-ELEMENT specifies
+the initial value for all elements.  Its default value depends on ELEMENT-
+TYPE.  INITIAL-CONTENTS specifies each element in terms of sequences.
+ADJUSTABLE specifies whether or not the array is adjustable (see ADJUST-
+ARRAY).  FILL-POINTER is meaningful only for vectors.  It specifies whether
+the vector has fill-pointer or not, and if it has, the initial value of the
+fill-pointer.  Possible values are NIL (no fill-pointer), T (the length of the
+vector), or an integer.  See VECTOR-PUSH and VECTOR-POP.  DISPLACED-TO, if
+non-NIL, must be an array and specifies that the new array is displaced to the
+given array.  DISPLACED-INDEX-OFFSET is meaningful only when DISPLACED-TO is
+non-NIL and specifies that the reference to the I-th element of the new array
+in raw-major indexing is actually the reference to the (I + DISPLACED-INDEX-
+OFFSET)th element of the given array.If the STATIC argument is supplied
+with a non-nil value, then the body of the array is allocated as a
+contiguous block."
   (setq element-type (type-for-array element-type))
 
   (if (or (integerp dimensions)
@@ -103,12 +124,17 @@
 
 
 (defun vector (&rest objects)
+  "Args: (&rest objects)
+Creates and returns a simple-vector, with the N-th OBJECT being the N-th
+element."
   (make-array (list (length objects))
 	      :element-type t
 	      :initial-contents objects))
 
 
 (defun array-dimensions (array)
+  "Args: (array)
+Returns a list whose N-th element is the length of the N-th dimension of ARRAY."
   (do ((i (array-rank array))
        (d nil))
       ((= i 0) d)
@@ -117,6 +143,9 @@
 
 
 (defun array-in-bounds-p (array &rest indices &aux (r (array-rank array)))
+  "Args: (array &rest indexes)
+Returns T if INDEXes are valid indexes of ARRAY; NIL otherwise.  The number of
+INDEXes must be equal to the rank of ARRAY."
   (when (/= r (length indices))
         (error "The rank of the array is ~R,~%~
                ~7@Tbut ~R ~:*~[indices are~;index is~:;indices are~] ~
@@ -131,6 +160,10 @@
 
 
 (defun array-row-major-index (array &rest indices)
+  "Args: (array &rest indexes)
+Returns the non-negative integer that represents the location of the element
+of ARRAY specified by INDEXes, assuming all elements of ARRAY are aligned in
+row-major order."
   (do ((i 0 (1+ i))
        (j 0 (+ (* j (array-dimension array i)) (car s)))
        (s indices (cdr s)))
@@ -138,58 +171,111 @@
 
 
 (defun bit (bit-array &rest indices)
+  "Args: (bit-array &rest indexes)
+Returns the bit of BIT-ARRAY specified by INDEXes."
   (apply #'aref bit-array indices))
 
 
 (defun sbit (bit-array &rest indices)
+  "Args: (simple-bit-array &rest subscripts)
+Returns the specified bit in SIMPLE-BIT-ARRAY."
   (apply #'aref bit-array indices))
 
 
 (defun bit-and (bit-array1 bit-array2 &optional result-bit-array)
+  "Args: (bit-array1 bit-array2 &optional (result nil))
+Returns the element-wise AND of BIT-ARRAY1 and BIT-ARRAY2.  Puts the results
+into a new bit-array if RESULT is NIL, into BIT-ARRAY1 if RESULT is T, or into
+RESULT if RESULT is a bit-array."
   (bit-array-op boole-and bit-array1 bit-array2 result-bit-array))
 
 
 (defun bit-ior (bit-array1 bit-array2 &optional result-bit-array)
+  "Args: (bit-array1 bit-array2 &optional (result nil))
+Returns the element-wise INCLUSIVE OR of BIT-ARRAY1 and BIT-ARRAY2.  Puts the
+results into a new bit-array if RESULT is NIL, into BIT-ARRAY1 if RESULT is T,
+or into RESULT if RESULT is a bit-array."
   (bit-array-op boole-ior bit-array1 bit-array2 result-bit-array))
 
 
 (defun bit-xor (bit-array1 bit-array2 &optional result-bit-array)
+  "Args: (bit-array1 bit-array2 &optional (result nil))
+Returns the element-wise EXCLUSIVE OR of BIT-ARRAY1 and BIT-ARRAY2.  Puts the
+results into a new bit-array if RESULT is NIL, into BIT-ARRAY1 if RESULT is T,
+or into RESULT if RESULT is a bit-array."
   (bit-array-op boole-xor bit-array1 bit-array2 result-bit-array))
 
 
 (defun bit-eqv (bit-array1 bit-array2 &optional result-bit-array)
+  "Args: (bit-array1 bit-array2 &optional (result nil))
+Returns the element-wise EQUIVALENCE of BIT-ARRAY1 and BIT-ARRAY2.  Puts the
+results into a new bit-array if RESULT is NIL, into BIT-ARRAY1 if RESULT is T,
+or into RESULT if RESULT is a bit-array."
   (bit-array-op boole-eqv bit-array1 bit-array2 result-bit-array))
 
     
 (defun bit-nand (bit-array1 bit-array2 &optional result-bit-array)
+  "Args: (bit-array1 bit-array2 &optional (result nil))
+Returns the element-wise NOT of {the element-wise AND of BIT-ARRAY1 and BIT-
+ARRAY2}.  Puts the results into a new bit-array if RESULT is NIL, into BIT-
+ARRAY1 if RESULT is T, or into RESULT if RESULT is a bit-array."
   (bit-array-op boole-nand bit-array1 bit-array2 result-bit-array))
 
     
 (defun bit-nor (bit-array1 bit-array2 &optional result-bit-array)
+  "Args: (bit-array1 bit-array2 &optional (result nil))
+Returns the element-wise NOT of {the element-wise INCLUSIVE OR of BIT-ARRAY1
+and BIT-ARRAY2}.  Puts the results into a new bit-array if RESULT is NIL, into
+BIT-ARRAY1 if RESULT is T, or into RESULT if RESULT is a bit-array."
   (bit-array-op boole-nor bit-array1 bit-array2 result-bit-array))
 
     
 (defun bit-andc1 (bit-array1 bit-array2 &optional result-bit-array)
+  "Args: (bit-array1 bit-array2 &optional (result nil))
+Returns the element-wise AND of {the element-wise NOT of BIT-ARRAY1} and BIT-
+ARRAY2.  Puts the results into a new bit-array if RESULT is NIL, into BIT-
+ARRAY1 if RESULT is T, or into RESULT if RESULT is a bit-array."
   (bit-array-op boole-andc1 bit-array1 bit-array2 result-bit-array))
 
     
 (defun bit-andc2 (bit-array1 bit-array2 &optional result-bit-array)
+  "Args: (bit-array1 bit-array2 &optional (result nil))
+Returns the element-wise AND of BIT-ARRAY1 and {the element-wise NOT of BIT-
+ARRAY2}.  Puts the results into a new bit-array if RESULT is NIL, into BIT-
+ARRAY1 if RESULT is T, or into RESULT if RESULT is a bit-array."
   (bit-array-op boole-andc2 bit-array1 bit-array2 result-bit-array))
 
     
 (defun bit-orc1 (bit-array1 bit-array2 &optional result-bit-array)
+  "Args: (bit-array1 bit-array2 &optional (result nil))
+Returns the element-wise INCLUSIVE OR of {the element-wise NOT of BIT-ARRAY1}
+and BIT-ARRAY2.  Puts the results into a new bit-array if RESULT is NIL, into
+BIT-ARRAY1 if RESULT is T, or into RESULT if RESULT is a bit-array."
   (bit-array-op boole-orc1 bit-array1 bit-array2 result-bit-array))
 
     
 (defun bit-orc2 (bit-array1 bit-array2 &optional result-bit-array)
+  "Args: (bit-array1 bit-array2 &optional (result nil))
+Returns the element-wise INCLUSIVE OR of BIT-ARRAY1 and {the element-wise NOT
+of BIT-ARRAY2}.  Puts the results into a new bit-array if RESULT is NIL, into
+BIT-ARRAY1 if RESULT is T, or into RESULT if RESULT is a bit-array."
   (bit-array-op boole-orc2 bit-array1 bit-array2 result-bit-array))
 
     
 (defun bit-not (bit-array &optional result-bit-array)
+  "Args: (bit-array &optional (result nil))
+Returns the element-wise NOT of BIT-ARRAY.  Puts the results into a new bit-
+array if RESULT is NIL, into BIT-ARRAY if RESULT is T, or into RESULT if
+RESULT is a bit-array."
   (bit-array-op boole-c1 bit-array bit-array result-bit-array))
 
 
 (defun vector-push (new-element vector)
+  "Args: (item vector)
+Replaces ITEM for the element of VECTOR that is pointed to by the fill-pointer
+of VECTOR and then increments the fill-pointer by one.  Returns NIL if the new
+value of the fill-pointer becomes too large.  Otherwise, returns the new fill-
+pointer as the value."
   (let ((fp (fill-pointer vector)))
     (declare (fixnum fp))
     (cond ((< fp (the fixnum (array-dimension vector 0)))
@@ -200,6 +286,11 @@
 
 
 (defun vector-push-extend (new-element vector &optional extension)
+  "Args: (item vector &optional (n (length vector)))
+Replaces ITEM for the element of VECTOR that is pointed to by the fill-pointer
+of VECTOR and then increments the fill-pointer by one.  If the new value of
+the fill-pointer becomes too large, extends VECTOR for N more elements.
+Returns the new value of the fill-pointer."
   (let ((fp (fill-pointer vector)))
     (declare (fixnum fp))
     (cond ((< fp (the fixnum (array-dimension vector 0)))
@@ -221,6 +312,10 @@
 
 
 (defun vector-pop (vector)
+  "Args: (vector)
+Decrements the fill-pointer of VECTOR by one and returns the element pointed
+to by the new fill-pointer.  Signals an error if the old value of the fill-
+pointer is 0 already."
   (let ((fp (fill-pointer vector)))
     (declare (fixnum fp))
     (when (= fp 0)
@@ -237,6 +332,12 @@
 			  fill-pointer
 			  displaced-to
 			  displaced-index-offset)
+  "Args: (array dimensions
+       &key (element-type (array-element-type array))
+            initial-element (initial-contents nil) (fill-pointer nil)
+            (displaced-to nil) (displaced-index-offset 0))
+Adjusts the dimensions of ARRAY to the given DIMENSIONS.  ARRAY must be an
+adjustable array."
   (declare (ignore element-type
                    initial-element
                    initial-contents

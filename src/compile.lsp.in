@@ -6,6 +6,7 @@
 ;;;
 ;;; * Compile, load and link Common-Lisp base library
 ;;;
+(setq si::*keep-documentation* nil)
 (in-package "COMMON-LISP-USER")
 (load "lsp/defsys.lsp")
 (proclaim '(optimize (safety 2) (space 3)))
@@ -22,7 +23,7 @@
 (progn
 (load "cmp/defsys.lsp")
 (proclaim '(optimize (safety 2) (space 3)))
-(sbt::operate-on-system cmp :library)
+(sbt::operate-on-system cmp #-dlopen :library #+dlopen :shared-library)
 ;(sbt::operate-on-system cmp :load)
 )
 
@@ -37,6 +38,6 @@
 ;(sbt::operate-on-system clos :load)
 )
 
-(compiler::build-ecls "ecls" :components '(#+WANTS-CMP cmp))
+(compiler::build-ecls "ecls" :components '(#+(and (not dlopen) WANTS-CMP) cmp))
 
 (quit)

@@ -803,6 +803,9 @@ ECLS 0.5
 
   - libclos.a should be installed together with libecls.a and liblsp.a
 
+  - PROBE-FILE would not translate logical pathnames before checking for
+    file existence.
+
 * System design and portability:
 
   - Remove function_entry_table.
@@ -836,6 +839,12 @@ ECLS 0.5
 
   - Reader macro '#,' has been dropped. LOAD-TIME-VALUE added to both
     the interpreter and the compiler.
+
+  - New, undocumented implementation of documentation strings which
+    uses hash tables instead of property lists. The gloal variable
+    si::*keep-documentation* determines whether documentation strings
+    are stored in memory. It is possible to dump documentation strings
+    to a help file.
 
 TODO:
 =====

@@ -412,7 +412,8 @@ q (or Q):             quits the inspection.~%~
                              (*inspect-history* nil)
                              (*print-level* nil)
                              (*print-length* nil))
-  "The lisp function DESCRIBE."
+  "Args: (object)
+Prints information about OBJECT to the standard output."
   (terpri)
   (catch 'QUIT-INSPECT (inspect-object object))
   (terpri)
@@ -425,7 +426,9 @@ q (or Q):             quits the inspection.~%~
                             (*old-print-length* *print-length*)
                             (*print-level* 3)
                             (*print-length* 3))
-  "The lisp function INSPECT."
+  "Args: (object)
+Shows the information about OBJECT interactively.  See the ECL Report for the
+inspect commands, or type '?' to the inspector."
   (read-line)
   (princ "Type ? and a newline for help.")
   (terpri)
@@ -446,15 +449,15 @@ q (or Q):             quits the inspection.~%~
                *package*)))
 
     (cond ((special-form-p symbol)
-           (doc1 (or (documentation symbol 'FUNCTION) "")
+           (doc1 (or (si::get-documentation symbol 'FUNCTION) "")
                  (if (macro-function symbol)
                      "[Special form and Macro]"
                      "[Special form]")))
           ((macro-function symbol)
-           (doc1 (or (documentation symbol 'FUNCTION) "") "[Macro]"))
+           (doc1 (or (si::get-documentation symbol 'FUNCTION) "") "[Macro]"))
           ((fboundp symbol)
            (doc1
-            (or (documentation symbol 'FUNCTION)
+            (or (si::get-documentation symbol 'FUNCTION)
                 (if (consp (setq x (symbol-function symbol)))
                     (case (car x)
                           (LAMBDA (format nil "~%Args: ~S" (cadr x)))
@@ -466,33 +469,33 @@ q (or Q):             quits the inspection.~%~
                           (t ""))
                     ""))
             "[Function]"))
-          ((setq x (documentation symbol 'FUNCTION))
+          ((setq x (si::get-documentation symbol 'FUNCTION))
            (doc1 x "[Macro or Function]")))
 
     (cond ((constantp symbol)
            (unless (and (eq (symbol-package symbol) (find-package "KEYWORD"))
-                        (null (documentation symbol 'VARIABLE)))
-             (doc1 (or (documentation symbol 'VARIABLE) "") "[Constant]")))
+                        (null (si::get-documentation symbol 'VARIABLE)))
+             (doc1 (or (si::get-documentation symbol 'VARIABLE) "") "[Constant]")))
           ((sys:specialp symbol)
-           (doc1 (or (documentation symbol 'VARIABLE) "")
+           (doc1 (or (si::get-documentation symbol 'VARIABLE) "")
                  "[Special variable]"))
-          ((or (setq x (documentation symbol 'VARIABLE)) (boundp symbol))
+          ((or (setq x (si::get-documentation symbol 'VARIABLE)) (boundp symbol))
            (doc1 (or x "") "[Variable]")))
 
-    (cond ((setq x (documentation symbol 'TYPE))
+    (cond ((setq x (si::get-documentation symbol 'TYPE))
            (doc1 x "[Type]"))
           ((setq x (get symbol 'DEFTYPE-FORM))
            (let ((*package* (good-package)))
              (doc1 (format nil "~%Defined as: ~S~%See the doc of DEFTYPE." x)
                    "[Type]"))))
 
-    (cond ((setq x (documentation symbol 'STRUCTURE))
+    (cond ((setq x (si::get-documentation symbol 'STRUCTURE))
            (doc1 x "[Structure]"))
           ((setq x (get symbol 'DEFSTRUCT-FORM))
            (doc1 (format nil "~%Defined as: ~S~%See the doc of DEFSTRUCT." x)
                  "[Structure]")))
 
-    (cond ((setq x (documentation symbol 'SETF))
+    (cond ((setq x (si::get-documentation symbol 'SETF))
            (doc1 x "[Setf]"))
           ((setq x (get symbol 'SETF-UPDATE-FN))
            (let ((*package* (good-package)))
@@ -520,55 +523,6 @@ q (or Q):             quits the inspection.~%~
                     nil))
             "[Setf]"))))
     )
-
-  ;; Format of entries in file help.doc:
-  ;; ^_[F | V | T]<name>
-  ;; description
-  ;; [@[F | V | T]<name>
-  ;; other description]
-  ;;
-  ;; where F means Function, V Variable and T Type.
-  ;;
-  (let* ((name (symbol-name symbol))
-	 (path "SYS:help.doc")
-	 (pos 0))
-
-    (labels ((bin-search (file start end &aux (delta 0) (middle 0) sym)
-	       (declare (fixnum start end delta middle))
-	       (when (< start end)
-		 (setq middle (round (+ start end) 2))
-		 (file-position file middle)
-		 (if (and (plusp (setq delta (scan-for #\^_ file)))
-			  (<= delta (- end middle)))
-		     (if (string-equal name
-				       (setq sym (symbol-name (read file))))
-			 (+ middle delta (length name) 1) ; skip EOL
-			 (if (string< name sym)
-			     (bin-search file start (1- middle))
-			     (bin-search file (+ middle delta) end)))
-		     (bin-search file start (1- middle)))))
-	     (scan-for (char file)
-	       (do ((v #\space (read-char file nil nil))
-		    (n 0 (1+ n)))
-		   ((or (eql v #\^_) (not v))
-		    (if (read-char file nil nil) n -1))	; skip V | F | T.
-		 (declare (fixnum n)))))
-
-      (if (probe-file path)
-	  (with-open-file (file path)
-	    (setq pos (bin-search file 0 (file-length file)))
-	    (when pos
-	      (setq f t)
-	      (file-position file pos)
-	      (do (v)
-		  ((eql (setq v (read-char file nil #\^_)) #\^_))
-		(if (eql v #\ )
-		    (progn
-		      (terpri)
-		      (read-char file nil nil))	; skip V | F | T.
-		    (princ v)))))
-	  (format t "~&Cannot find the help file \"help.doc\""))))
-
   (if called-from-apropos-doc-p
       f
       (progn (if f
@@ -591,16 +545,5 @@ q (or Q):             quits the inspection.~%~
               string package
               (and package (package-name (coerce-to-package package)))))
   (values))
-
-;;;----------------------------------------------------------------------
-          
-(defun documentation (symbol doc-type)
-  (case doc-type
-    (VARIABLE (get symbol 'VARIABLE-DOCUMENTATION))
-    (FUNCTION (get symbol 'FUNCTION-DOCUMENTATION))
-    (STRUCTURE (get symbol 'STRUCTURE-DOCUMENTATION))
-    (TYPE (get symbol 'TYPE-DOCUMENTATION))
-    (SETF (get symbol 'SETF-DOCUMENTATION))
-    (t (error "~S is an illegal documentation type." doc-type))))
 
 ;(provide 'describe)

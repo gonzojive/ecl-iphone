@@ -15,6 +15,9 @@
 			       prin1-to-string princ-to-string))
 
 (defmacro with-open-stream ((var stream) &rest body)
+  "Syntax: (with-open-stream (var stream-form) {decl}* {form}*)
+Evaluates FORMs with VAR bound to the value of STREAM-FORM.  The stream is
+automatically closed on exit."
   (multiple-value-bind (ds b)
       (find-declarations body)
     `(LET ((,var ,stream))
@@ -24,6 +27,11 @@
          (CLOSE ,var)))))
 
 (defmacro with-input-from-string ((var string &key index start end) &rest body)
+  "Syntax: (with-input-from-string (var string-form {keyword value}*)
+           {decl}* {form}*)
+Evaluates FORMs with VAR bound to a string input stream from the string that
+is the value of STRING-FORM.  The stream is automatically closed on exit.
+Possible keywords are :INDEX, :START, and :END."
   (if index
       (multiple-value-bind (ds b)
           (find-declarations body)
@@ -36,6 +44,10 @@
          ,@body)))
 
 (defmacro with-output-to-string ((var &optional string) &rest body)
+  "Syntax: (with-output-to-string (var [string-form]) {decl}* {form}*)
+Evaluates FORMs with VAR bound to a string output stream to the string that is
+the value of STRING-FORM.  If STRING-FORM is not given, a new string is used.
+The stream is automatically closed on exit and the string is returned."
   (if string
       `(LET ((,var (MAKE-STRING-OUTPUT-STREAM-FROM-STRING ,string)))
          ,@body)
@@ -47,6 +59,12 @@
                          &optional (eof-error-p t) eof-value
                          &key (start 0) (end (length string))
                               preserve-whitespace)
+  "Args: (string &optional (eof-error-p t) (eof-value nil)
+              &key (start 0) (end (length string)) (preserve-whitespace nil))
+Reads an object from STRING and returns the object.  As the second value,
+returns the index to the character next to the object's representation.
+PRESERVE-WHITESPACE specifies whether to leave the character next to the
+object's representation."
   (let ((stream (make-string-input-stream string start end)))
     (if preserve-whitespace
         (values (read-preserving-whitespace stream eof-error-p eof-value)
@@ -59,6 +77,13 @@
                              circle pretty level length
                              case gensym array
                         &aux (stream (make-string-output-stream)))
+  "Args: (object &key (escape *print-escape*) (radix *print-radix*)
+                   (base *print-base*) (circle *print-circle*)
+                   (pretty *print-pretty*) (level *print-level*)
+                   (length *print-length*) (case *print-case*)
+                   (array *print-array*) (gensym *print-gensym*))
+Returns as a string the printed representation of OBJECT in the specified
+mode.  See the variable docs of *PRINT-...* for the mode."
   (declare (ignore escape radix base
                    circle pretty level length
                    case gensym array))
@@ -67,15 +92,25 @@
 
 (defun prin1-to-string (object
                         &aux (stream (make-string-output-stream)))
+  "Args: (object)
+PRIN1s OBJECT to a new string and returns the result.  Equivalent to
+(WRITE-TO-STRING OBJECT :ESCAPE T)."
    (prin1 object stream)
    (get-output-stream-string stream))
 
 (defun princ-to-string (object
                         &aux (stream (make-string-output-stream)))
+  "Args: (object)
+PRINCs OBJECT to a new string and returns the result.  Equivalent to
+(WRITE-TO-STRING OBJECT :ESCAPE NIL)."
   (princ object stream)
   (get-output-stream-string stream))
 
 (defmacro with-open-file ((stream . filespec) &rest body)
+  "Syntax: (with-open-file (var filespec-form {options}*) {decl}* {form}*)
+Opens the specified file using OPTIONs, and evaluates FORMs with VAR bound to
+a stream to/from the file.  The file is automatically closed on exit.  See
+OPEN for the options."
   (multiple-value-bind (ds b)
       (find-declarations body)
     `(LET ((,stream (OPEN ,@filespec)))
@@ -85,6 +120,10 @@
          (WHEN ,stream (CLOSE ,stream :ABORT T))))))
 
 (defun y-or-n-p (&optional string &rest args)
+  "Args: (&optional format-string &rest args)
+Asks the user a Y-or-N question.  Does FRESH-LINE, prints a message as if
+FORMAT-STRING and ARGs were given to FORMAT, and then prints \"(Y or N)\" is
+printed.  If FORMAT-STRING is NIL, however, no prompt will appear."
   (do ((reply))
       (nil)
     (when string (format *query-io* "~&~?  (Y or N) " string args))
@@ -95,6 +134,10 @@
            (return-from y-or-n-p nil)))))
 
 (defun yes-or-no-p (&optional string &rest args)
+  "Args: (&optional format-string &rest args)
+Asks the user an YES-or-NO question.  Does FRESH-LINE, prints a message as if
+FORMAT-STRING and ARGs were given to FORMAT, and then prints \"(Y or N)\" is
+printed.  If FORMAT-STRING is NIL, however, no prompt will appear."
   (do ((reply))
       (nil)
     (when string (format *query-io* "~&~?  (Yes or No) " string args))
@@ -149,6 +192,10 @@
 (defvar *dribble-saved-terminal-io* nil)
 
 (defun dribble (&optional (pathname "DRIBBLE.LOG" psp) (f :supersede))
+  "Args: (&optional filespec)
+If FILESPEC is given, starts recording the interaction to the specified file.
+FILESPEC may be a symbol, a string, a pathname, or a file stream.  If FILESPEC
+is not given, ends the recording."
   (cond ((not psp)
          (when (null *dribble-stream*) (error "Not in dribble."))
          (if (eq *dribble-io* *terminal-io*)
@@ -180,6 +227,10 @@
 ;(provide 'iolib)
 
 (defmacro with-standard-io-syntax (&body body)
+  "Syntax: ({forms}*)
+The forms of the body are executed in a print environment that corresponds to
+the one defined in the ANSI standard. *print-base* is 10, *print-array* is t,
+*package* is \"CL-USER\", etc."
   `(let ((*package* (find-package :cl-user))
 	 (*print-array* t)
 	 (*print-base* 10)

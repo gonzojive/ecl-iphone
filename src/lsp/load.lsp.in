@@ -1,6 +1,7 @@
 
 (load "@srcdir@/export.lsp")
 (load "@srcdir@/defmacro.lsp")
+(load "@srcdir@/helpfile.lsp")
 (load "@srcdir@/evalmacros.lsp")
 (load "@srcdir@/module.lsp")
 (load "@srcdir@/autoload.lsp")

@@ -18,6 +18,9 @@
 (defsetf logical-pathname-translations si:pathname-translations)
 
 (defmacro time (form)
+  "Syntax: (time form)
+Evaluates FORM, outputs the realtime and runtime used for the evaluation to
+*TRACE-OUTPUT*, and then returns all values of FORM."
   (let ((real-start (gentemp))
 	(real-end (gentemp))
 	(run-start (gentemp))
@@ -63,6 +66,9 @@
 (defconstant month-startdays #(0 31 59 90 120 151 181 212 243 273 304 334 365))
 
 (defun decode-universal-time (ut &optional tz)
+  "Args: (integer &optional (timezone (si::get-local-time-zone)))
+Returns as nine values the day-and-time represented by INTEGER.  See GET-
+DECODED-TIME."
   (let (sec min hour day month year dow days dstp)
     (unless tz
       (setq tz (get-local-time-zone)
@@ -88,6 +94,10 @@
     (values sec min hour day month year dow dstp tz)))
 
 (defun encode-universal-time (sec min h d m y &optional tz)
+  "Args: (second minute hour date month year
+       &optional (timezone (si::get-local-time-zone)))
+Returns an integer that represents the given day-and-time.  See
+GET-DECODED-TIME."
   (when (<= 0 y 99)
     ;; adjust to year in the century within 50 years of this year
     (multiple-value-bind (sec min h d m this-year dow dstp tz)
@@ -112,4 +122,16 @@
     (+ sec (* 60 (+ min (* 60 (+ tz dst hours)))))))
 
 (defun get-decoded-time ()
+  "Args: ()
+Returns the current day-and-time as nine values:
+	second (0 - 59)
+	minute (0 - 59)
+	hour (0 - 23)
+	date (1 - 31)
+	month (1 - 12)
+	year (Christian, not Japanese long-live-Emperor)
+	day of week (0 for Mon, .. 6 for Sun)
+	summer time or not (T or NIL)
+	time zone (-9 in Japan)
+Sunday is the *last* day of the week!!"
   (decode-universal-time (get-universal-time)))

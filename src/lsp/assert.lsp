@@ -13,6 +13,12 @@
 (c-declaim (si::c-export-fname ecase-error ccase-error typecase-error-string))
 
 (defmacro check-type (place typespec &optional (string nil s))
+  "Args: (check-type place typespec [string-form])
+Signals a continuable error, if the value of PLACE is not of the specified
+type.  Before continuing, receives a new value of PLACE from the user and
+checks the type again.  Repeats this process until the value of PLACE becomes
+of the specified type.  STRING-FORM, if given, is evaluated only once and the
+value is used to indicate the expected type in the error message."
   `(do ((*print-level* 4)
         (*print-length* 4))
        ((typep ,place ',typespec) nil)
@@ -24,6 +30,11 @@
 
 
 (defmacro assert (test-form &optional places string &rest args)
+  "Args: (assert form [({place}*) [string {arg}*]])
+Evaluates FORM and signals a continuable error if the value is NIL.  Before
+continuing, receives new values of PLACEs from user.  Repeats this process
+until FORM returns a non-NIL value.  Returns NIL.  STRING is the format string
+for the error message and ARGs are arguments to the format string."
   `(do ((*print-level* 4)
         (*print-length* 4))
        (,test-form nil)
@@ -66,6 +77,11 @@
 	  clauses))
 
 (defmacro ecase (keyform &rest clauses)
+  "Syntax: (ecase keyform {({key | ({key}*)} {form}*)}*)
+Evaluates KEYFORM and tries to find the KEY that is EQL to the value of
+KEYFORM.  If found, then evaluates FORMs that follow the KEY (or the key list
+that contains the KEY) and returns all values of the last FORM.  If not,
+signals an error."
   (let* ((key (if (atom keyform) keyform '#:key))
 	 (let (if (atom keyform) nil (list (list key keyform)))))
     `(let ,let
@@ -86,6 +102,13 @@
     value))
 
 (defmacro ccase (keyform &rest clauses)
+  "Syntax: (ccase place {({key | ({key}*)} {form}*)}*)
+Searches a KEY that is EQL to the value of PLACE.  If found, then evaluates
+FORMs in order that follow the KEY (or the key list that contains the KEY) and
+returns all values of the last FORM.  If no such KEY is found, signals a
+continuable error.  Before continuing, receives a new value of PLACE from
+user and searches a KEY again.  Repeats this process until the value of PLACE
+becomes EQL to one of the KEYs."
   (let* ((key (if (atom keyform) keyform '#:key))
 	 (let (if (atom keyform) nil (list (list key keyform))))
 	 (repeat '#:repeat))
@@ -96,6 +119,11 @@
 		  (go ,repeat)))))))
 
 (defmacro typecase (keyform &rest clauses)
+  "Syntax: (typecase keyform {(type {form}*)}*)
+Evaluates KEYFORM and searches a TYPE to which the value of KEYFORM belongs.
+If found, then evaluates FORMs that follow the TYPE and returns all values of
+the last FORM.  If not, simply returns NIL.  The symbols T and OTHERWISE may
+be used as a TYPE to specify the default case."
   (do ((l (reverse clauses) (cdr l))
        (form nil) (key (gensym)))
       ((endp l) `(let ((,key ,keyform)) ,form))
@@ -108,6 +136,10 @@
   )
 
 (defmacro etypecase (keyform &rest clauses &aux (key (gensym)))
+  "Syntax: (etypecase keyform {(type {form}*)}*)
+Evaluates KEYFORM and searches a TYPE to which the value of KEYFORM belongs.
+If found, then evaluates FORMs that follow the TYPE and returns all values of
+the last FORM.  If not, signals an error."
    (do ((l (reverse clauses) (cdr l))	; Beppe
         (form `(error (typecase-error-string
                        ',keyform ,key
@@ -120,6 +152,12 @@
    )
 
 (defmacro ctypecase (keyplace &rest clauses &aux (key (gensym)))
+  "Syntax: (ctypecase place {(type {form}*)}*)
+Searches a TYPE to which the value of PLACE belongs.  If found, then evaluates
+FORMs that follow the TYPE and returns all values of the last FORM.  If no
+such TYPE is found, signals a continuable error.  Before continuing, receives
+a new value of PLACE from the user and searches an appropriate TYPE again.
+Repeats this process until the value of PLACE becomes of one of the TYPEs."
   `(loop (let ((,key ,keyplace))
               ,@(mapcar #'(lambda (l)
                                  `(when (typep ,key ',(car l))
