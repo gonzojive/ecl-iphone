@@ -9,7 +9,7 @@ VPATH	= @srcdir@
 #
 CC	= @CC@
 DEFS	= -D@host@
-CFLAGS	= -c -I../h -I$(HDIR) -I$(top_srcdir)/gc @CFLAGS@ $(DEFS)
+CFLAGS	= -c -I../h -I$(HDIR) -I$(top_srcdir)/gc/include @CFLAGS@ $(DEFS)
 
 SHELL	= /bin/sh
 RM	= @RM@
