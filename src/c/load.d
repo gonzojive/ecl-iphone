@@ -168,10 +168,9 @@ ecl_library_close(cl_object block) {
 void
 ecl_library_close_all(void)
 {
-	cl_object libraries = cl_core.libraries;
 	int i;
-	for (i = libraries->vector.fillp; i>=0; i--) {
-		ecl_library_close(libraries->vector.self.t[i]);
+	while ((i = cl_core.libraries->vector.fillp)) {
+		ecl_library_close(cl_core.libraries->vector.self.t[--i]);
 	}
 }
 
