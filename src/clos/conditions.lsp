@@ -231,15 +231,17 @@ strings."
 
 (defmacro define-condition (name parent-list slot-specs &rest options)
   (let* ((report-function nil)
-	 (documentation nil))
+	 (documentation nil)
+	 (default-initargs nil))
     (dolist (option options)
       (case (car option)
+	(:DEFAULT-INITARGS (push option default-initargs))
 	(:REPORT (setq report-function (cadr option)))
 	(:DOCUMENTATION (setq documentation (cadr option)))
 	(otherwise (cerror "Ignore this DEFINE-CONDITION option."
 			   "Invalid DEFINE-CONDITION option: ~S" option))))
     `(PROGN
-      (DEFCLASS ,name ,(or parent-list '(CONDITION)) ,slot-specs)
+      (DEFCLASS ,name ,(or parent-list '(CONDITION)) ,slot-specs ,@default-initargs)
       ,@(when report-function
 	      `((defmethod print-object ((X ,name) stream)
 		    (if *print-escape*
