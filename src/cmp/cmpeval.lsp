@@ -265,7 +265,7 @@
 
 (defun wt-structure-ref (loc name-vv index)
   (if *safe-compile*
-      (wt "structure_ref(" loc "," name-vv "," `(COERCE-LOC :object ,index) ")")
+      (wt "structure_ref(" loc "," name-vv "," `(COERCE-LOC :fixnum ,index) ")")
       #+clos
       (wt "(" loc ")->instance.slots[" `(COERCE-LOC :fixnum ,index) "]")
       #-clos
@@ -294,7 +294,7 @@
 	       (new-type (type-and slot-type (info-type (second y)))))
 	  (if new-type                  ; compatible
 	      (if (eq 'VAR (car y))     ; it's a variable
-		(setf (var-type (car (third y))) new-type)   ; propagate type
+		(setf (var-type (third y)) new-type)   ; propagate type
 		(setf (info-type (second y)) new-type))
 	      (cmpwarn "The type of the form ~s is not ~s."
 		       (fourth args) slot-type)))
@@ -308,7 +308,6 @@
 			  &aux locs (*inline-blocks* 0))
   ;; the third argument here *c1t* is just a hack to ensure that
   ;; a variable is introduced for y if it is an expression with side effects
-  (error)
   (setq locs (inline-args (list x y *c1t*)))
   (setq x (second (first locs)))
   (setq y (second (second locs)))
