@@ -299,7 +299,7 @@ enum ecl_smmode {		/*  stream mode  */
 	,
 	smm_input_wsock,	/* input socket (Win32) */
 	smm_output_wsock,	/* output socket (Win32) */
-	smm_output_wsock	/* input/output socket (Win32) */
+	smm_io_wsock		/* input/output socket (Win32) */
 #endif
 };
 

@@ -4,8 +4,9 @@
 top_srcdir= ..\src
 srcdir	= ..\src
 
+# =============================================================
 # ECL configuration
-#
+# <BEGIN>
 
 SHORT_SITE_NAME   =
 LONG_SITE_NAME    =
@@ -16,6 +17,24 @@ MACHINE           =
 SOFTWARE_TYPE     = NT
 SOFTWARE_VERSION  = 5.0
 THEHOST           = win32
+
+# Define here the processor type to compile GMP library
+# with maximum optimization. Possible values are:
+# 	gc -> generic implementation
+# 	p0 -> Pentium processor
+# 	p3 -> Pentium III processor
+# 	p4 -> Pentium IV processor
+GMP_TYPE      = gc
+
+# Set it to non-empty to include Win32 thread support
+ECL_THREADS   =
+
+# Add the extensions to include in the build process. Current
+# extensions are: sockets, asdf
+ECL_MODULES   = sockets asdf
+
+# <END> (ECL configuration)
+# =============================================================
 
 TAR_DIR = %%CD%%\ecl-$(ECL_VERSION)
 
@@ -56,22 +75,15 @@ INSTALL_DATA = @INSTALL_DATA@
 mkinstalldirs = $(SHELL) $(top_srcdir)/gc/mkinstalldirs
 
 # Files
-
+#
 SUBDIR        = c gc gmp
 LIBRARIES     =
-LSP_LIBRARIES = cmp.fas clx.fas sysfun.lsp sockets.fas
+LSP_LIBRARIES = cmp.fas clx.fas sysfun.lsp
 TARGETS       = ecl.exe
 DEF           = ecl.def
-# Define here the processor type to compile GMP library
-# with maximum optimization. Possible values are:
-# 	gc -> generic implementation
-# 	p0 -> Pentium processor
-# 	p3 -> Pentium III processor
-# 	p4 -> Pentium IV processor
-GMP_TYPE      = gc
-# Set it to non-empty to include Win32 thread support
-ECL_THREADS   =
 
+# Additional configuration for thread support
+#
 !if "$(ECL_THREADS)" == ""
 ENV_EXPORT = cl_env,DATA
 !else
@@ -80,6 +92,8 @@ CFLAGS     = $(CFLAGS) -DECL_THREADS
 DEF        = ecl-threads.def
 !endif
 
+# Build rules
+# 
 all:	$(TARGETS) doc ecl-config.bat
 .PHONY:	all
 
@@ -128,6 +142,7 @@ compile.lsp: bare.lsp $(srcdir)/compile.lsp.in Makefile.msvc6
 	    -e "s,@EXEEXT@,.exe,g" \
 	    -e "s,@LDINSTALLNAME@,,g" \
 	    -e "s,@DEF@,$(DEF),g" \
+	    -e "s,@ECL_MODULES@,$(ECL_MODULES),g" \
 	    < $(srcdir)\compile.lsp.in > compile.lsp
 bare.lsp: $(srcdir)/bare.lsp.in lsp/load.lsp clos/load.lsp cmp/load.lsp cmp/cmpcfg.lsp
 	sed -e "s,@true_srcdir@,$(srcdir:\=/),g" \
@@ -205,6 +220,7 @@ install-base:
 	for %i in ($(TARGETS) ecl.dll) do $(CP) %i $(bindir)\%i
 	$(CP) ecl-config.bat $(bindir)\ecl-config.bat
 	for %i in ($(LSP_LIBRARIES) $(LIBRARIES) c\dpp.exe help.doc ecl.lib) do $(CP) %i $(libdir)
+	for %i in ($(ECL_MODULES)) do $(CP) %i.fas $(libdir)
 	for %i in (ecl-s.lib ecl-full-s.lib) do IF EXIST %i $(CP) %i $(libdir)
 	$(CP) h\config.h $(libdir)\h
 flatinstall:
@@ -256,8 +272,8 @@ clean_ecl:
 	-$(MAKE) -f Makefile.msvc6 "ECL_THREADS = $(ECL_THREADS)" clean
 	cd ..
 clean_lisp:
-	-for %i in (lsp cmp clos clx tk) do for %k in (%i.lib %i.fas %i.ilk %i.c %i.obj %i.pdb) do $(RM) %k
-	-for %i in (lsp cmp clos clx tk) do $(RMDIR) %i
+	-for %i in (lsp cmp clos clx tk $(ECL_MODULES)) do for %k in (%i.lib %i.fas %i.ilk %i.c %i.obj %i.pdb) do $(RM) %k
+	-for %i in (lsp cmp clos clx tk ext) do $(RMDIR) %i
 	-$(RM) help.doc
 clean_doc:
 	cd doc
