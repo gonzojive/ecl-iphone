@@ -1141,12 +1141,11 @@ flisten(FILE *fp)
 #elif defined(FIONREAD)
 	{ long c = 0;
 	ioctl(fileno(fp), FIONREAD, &c);
-	if (c <= 0)
-		return(FALSE);
+	return (c > 0);
 	}
 #endif /* FIONREAD */
 #endif
-	return(TRUE);
+	return FALSE;
 }
 
 bool
