@@ -267,7 +267,8 @@ FOO
 #+XCL "  1.10D+3| 11.00$+02|+.001D+06|  1.10D+3"
 #+(or CLISP AKCL) "  1.10L+3| 11.00$+02|+.001L+06|  1.10L+3"
 #+ALLEGRO "  1.10d+3| 11.00$+02|+.001d+06|  1.10d+3"
-#-(or XCL CLISP AKCL ALLEGRO) UNKNOWN
+#+ECL "  1.10e+3| 11.00$+02|+.001e+06|  1.10e+3"
+#-(or XCL CLISP AKCL ALLEGRO ECL) UNKNOWN
 
 (foo 1.1E13)
 "*********| 11.00$+12|+.001E+16| 1.10E+13"
@@ -330,7 +331,8 @@ foo
 #+XCL "  3.14D+3|314.2$+01|0.314D+04|  3.14D+3"
 #+(or CLISP AKCL) "  3.14L+3|314.2$+01|0.314L+04|  3.14L+3"
 #+ALLEGRO "  3.14d+3|314.2$+01|0.314d+04|  3.14d+3"
-#-(or XCL CLISP AKCL ALLEGRO) UNKNOWN
+#+ECL "  3.14e+3|314.2$+01|0.314e+04|  3.14e+3"
+#-(or XCL CLISP AKCL ALLEGRO ECL) UNKNOWN
 
 (foo 3.14E12)
 "*********|314.0$+10|0.314E+13| 3.14E+12"
@@ -393,58 +395,58 @@ foo
 
 (FORMAT NIL "format-s:--~s--ende-*" (QUOTE AB\c))
 #+XCL "format-s:--AB\\c--ende-*"
-#+(or CLISP AKCL ALLEGRO) "format-s:--|ABc|--ende-*"
-#-(or XCL CLISP AKCL ALLEGRO) UNKNOWN
+#+(or CLISP AKCL ALLEGRO ECL) "format-s:--|ABc|--ende-*"
+#-(or XCL CLISP AKCL ALLEGRO ECL) UNKNOWN
 
 (FORMAT NIL "format-s:--~5s--ende-*" (QUOTE AB\c))
 #+XCL "format-s:--AB\\c --ende-*"
-#+(or CLISP AKCL ALLEGRO) "format-s:--|ABc|--ende-*"
-#-(or XCL CLISP AKCL ALLEGRO) UNKNOWN
+#+(or CLISP AKCL ALLEGRO ECL) "format-s:--|ABc|--ende-*"
+#-(or XCL CLISP AKCL ALLEGRO ECL) UNKNOWN
 
 (FORMAT NIL "format-s:--~5,2s--ende-*" (QUOTE AB\c))
 #+XCL "format-s:--AB\\c  --ende-*"
-#+(or CLISP AKCL ALLEGRO) "format-s:--|ABc|--ende-*"
-#-(or XCL CLISP AKCL ALLEGRO) UNKNOWN
+#+(or CLISP AKCL ALLEGRO ECL) "format-s:--|ABc|--ende-*"
+#-(or XCL CLISP AKCL ALLEGRO ECL) UNKNOWN
 
 (FORMAT NIL "format-s:--~5,2,3s--ende-*" (QUOTE AB\c))
 #+XCL "format-s:--AB\\c   --ende-*"
-#+(or CLISP AKCL ALLEGRO) "format-s:--|ABc|   --ende-*"
-#-(or XCL CLISP AKCL ALLEGRO) UNKNOWN
+#+(or CLISP AKCL ALLEGRO ECL) "format-s:--|ABc|   --ende-*"
+#-(or XCL CLISP AKCL ALLEGRO ECL) UNKNOWN
 
 (FORMAT NIL "format-s:--~5,2,3,'*s--ende-*" (QUOTE AB\c))
 #+XCL "format-s:--AB\\c***--ende-*"
-#+(or CLISP AKCL ALLEGRO) "format-s:--|ABc|***--ende-*"
-#-(or XCL CLISP AKCL ALLEGRO) UNKNOWN
+#+(or CLISP AKCL ALLEGRO ECL) "format-s:--|ABc|***--ende-*"
+#-(or XCL CLISP AKCL ALLEGRO ECL) UNKNOWN
 
 (FORMAT NIL "format-s:--~@s--ende-*" (QUOTE AB\c))
 #+XCL "format-s:--AB\\c--ende-*"
-#+(or CLISP AKCL ALLEGRO) "format-s:--|ABc|--ende-*"
-#-(or XCL CLISP AKCL ALLEGRO) UNKNOWN
+#+(or CLISP AKCL ALLEGRO ECL) "format-s:--|ABc|--ende-*"
+#-(or XCL CLISP AKCL ALLEGRO ECL) UNKNOWN
 
 (FORMAT NIL "format-s:--~5@s--ende-*" (QUOTE AB\c))
 #+XCL "format-s:-- AB\\c--ende-*"
-#+(or CLISP AKCL ALLEGRO) "format-s:--|ABc|--ende-*"
-#-(or XCL CLISP AKCL ALLEGRO) UNKNOWN
+#+(or CLISP AKCL ALLEGRO ECL) "format-s:--|ABc|--ende-*"
+#-(or XCL CLISP AKCL ALLEGRO ECL) UNKNOWN
 
 (FORMAT NIL "format-s:--~5,2@s--ende-*" (QUOTE AB\c))
 #+XCL "format-s:--  AB\\c--ende-*"
-#+(or CLISP AKCL ALLEGRO) "format-s:--|ABc|--ende-*"
-#-(or XCL CLISP AKCL ALLEGRO) UNKNOWN
+#+(or CLISP AKCL ALLEGRO ECL) "format-s:--|ABc|--ende-*"
+#-(or XCL CLISP AKCL ALLEGRO ECL) UNKNOWN
 
 (FORMAT NIL "format-s:--~5,2,3@s--ende-*" (QUOTE AB\c))
 #+XCL "format-s:--   AB\\c--ende-*"
-#+(or CLISP AKCL ALLEGRO) "format-s:--   |ABc|--ende-*"
-#-(or XCL CLISP AKCL ALLEGRO) UNKNOWN
+#+(or CLISP AKCL ALLEGRO ECL) "format-s:--   |ABc|--ende-*"
+#-(or XCL CLISP AKCL ALLEGRO ECL) UNKNOWN
 
 (FORMAT NIL "format-s:--~5,2,3,'*@s--ende-*" (QUOTE AB\c))
 #+XCL "format-s:--***AB\\c--ende-*"
-#+(or CLISP AKCL ALLEGRO) "format-s:--***|ABc|--ende-*"
-#-(or XCL CLISP AKCL ALLEGRO) UNKNOWN
+#+(or CLISP AKCL ALLEGRO ECL) "format-s:--***|ABc|--ende-*"
+#-(or XCL CLISP AKCL ALLEGRO ECL) UNKNOWN
 
 (FORMAT NIL "format-s:--~:s--ende-*" (QUOTE (AB\c NIL XYZ)))
 #+XCL "format-s:--(AB\\c NIL XYZ)--ende-*"
-#+(or CLISP AKCL ALLEGRO) "format-s:--(|ABc| NIL XYZ)--ende-*"
-#-(or XCL CLISP AKCL ALLEGRO) UNKNOWN
+#+(or CLISP AKCL ALLEGRO ECL) "format-s:--(|ABc| NIL XYZ)--ende-*"
+#-(or XCL CLISP AKCL ALLEGRO ECL) UNKNOWN
 
 (SETQ X 5)
 5

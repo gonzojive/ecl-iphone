@@ -257,7 +257,7 @@ hihi
 nil
 
 (aref a 2 2)
-#+XCL 0 #+(or CLISP AKCL ALLEGRO) NIL #-(or XCL CLISP AKCL ALLEGRO) UNKNOWN
+#+XCL 0 #+(or CLISP AKCL ALLEGRO ECL) NIL #-(or XCL CLISP AKCL ALLEGRO ECL) UNKNOWN
 
 (setf (apply #'aref a '(2 2)) 'xxxx)
 xxxx

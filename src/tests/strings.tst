@@ -1067,7 +1067,7 @@ error
 "34a 5bc"
 
 (STRING  (CHAR-CODE #\A))
-#+ECL "A" #-ECL error
+ERROR
 
 (STRING  (QUOTE A))
 "A"
@@ -1103,7 +1103,7 @@ error
 (NSTRING-DOWNCASE  "abCD efGh-ij" :START 6 :END 1)   ERROR
 
 (NSTRING-DOWNCASE  "abCD efGh-ij" :START NIL :END NIL)
-#+(or XCL ECL AKCL) "abcd efgh-ij" #-(or XCL ECL AKCL) ERROR
+#+(or XCL AKCL) "abcd efgh-ij" #-(or XCL AKCL) ERROR
 
 (NSTRING-UPCASE  "abDC efGh-oj")   "ABDC EFGH-OJ"
 
@@ -1120,7 +1120,7 @@ error
 (NSTRING-UPCASE  "abCD efGh-ef" :START 3 :END 1)   ERROR
 
 (NSTRING-UPCASE  "abCD efGh-ef" :START NIL :END NIL)
-#+(or XCL ECL AKCL) "ABCD EFGH-EF" #-(or XCL ECL AKCL) ERROR
+#+(or XCL AKCL) "ABCD EFGH-EF" #-(or XCL AKCL) ERROR
 
 (NSTRING-DOWNCASE  "saBG efGh-ef")   "sabg efgh-ef"
 
@@ -1129,7 +1129,7 @@ error
 (NSTRING-DOWNCASE  "fgCD efGf-ef" :START 1 :END 3)   "fgcD efGf-ef"
 
 (NSTRING-DOWNCASE  "dfCF edFg-fg" :START NIL :END NIL)
-#+(or XCL ECL AKCL) "dfcf edfg-fg" #-(or XCL ECL AKCL) ERROR
+#+(or XCL AKCL) "dfcf edfg-fg" #-(or XCL AKCL) ERROR
 
 (NSTRING-DOWNCASE  "fgHG edgf-fg" :START 5 :END 1)   ERROR
 
