@@ -172,7 +172,7 @@
 	    (< (length args) SI::C-ARGUMENTS-LIMIT))
     (return-from maybe-push-args (values nil nil nil)))
   (let* ((narg `(LCL ,(next-lcl))))
-    (wt-nl "{cl_index " narg ";")
+    (wt-nl "{cl_index " narg "=0;")
     (let* ((*temp* *temp*)
 	   (temp `(TEMP ,(next-temp)))
 	   (*destination* temp))
