@@ -920,7 +920,7 @@ ECL 0.6
     structures. Now FORMAT is reentrant and can be safely called from
     within PRINT-OBJECT.
 
-  - All symbols belonging to the LISP package and to the C core, are
+  - Most symbols belonging to the LISP package and to the C core, are
     kept in a single array, "cl_symbols". The translator "dpp" and the
     routine SI::MANGLE-NAME, output the right name for any symbol
     which is in this array.

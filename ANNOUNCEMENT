@@ -1,4 +1,4 @@
-Announcement of ECLS v0.5
+Announcement of ECLS v0.6
 =========================
 
 ECLS stands for Embeddable Common-Lisp "Spain", and I usually read it
@@ -9,99 +9,89 @@ ECLS is currently hosted at SourceForge. The home page of the project
 is http://ecls.sourceforge.net, and in it you will find source code
 releases, a CVS tree and an up to date documentation.
 
-Notes about ECLS 0.5
+Notes about ECLS 0.6
 ====================
 
-This release represents a major improvement over previous ones in
-the number of supported platforms:
+This release adds two new platforms
+
+	- Mac OSX (statically linked)
+	- RedHat 7.3 on Intel
+
+to the list of supported ones
 
 	- Debian Linux on Intel
 	- Debian Linux on PowerPC
 	- FreeBSD 4.x on Intel
 	- Cygwin on Microsoft Windows 2000
 
-Besides, the code has been revised and porting should now be easier.
+ECL 0.6
+=======
 
-ECLS 0.5
-=========
+* Supported platforms:
+
+  - ECL now compiles and runs in static mode under MacOSX.
 
 * Errors fixed:
 
-  - libclos.a should be installed together with libecls.a and liblsp.a
+  - Code for handling :IMPORT-FROM in DEFPACKAGE was bogus
 
-  - PROBE-FILE would not translate logical pathnames before checking for
-    file existence.
+  - The arguments of GENSYM should not be remembered by ECLS. The
+    current behaviour was wrong:
+		> (gensym)
+		#:G36
+		> (gensym "F")
+		#:F37
+		> (gensym)
+		#:F38
 
-  - In unsafe mode, inlining AREF lead to bogus code.
+* System design:
 
-  - The order of evaluation of arguments in a PSETQ was not respected.
+  - Function SI:NANI has been removed. Its purpose was to provide an
+    object which could not be printed or readed so that it could be
+    used to mark unbound slots in classes. Now the function SI:UNBOUND
+    performs the same task.
 
-  - The compiler would not restore the value of a special variable which
-    is used in MULTIPLE-VALUE-BIND.
+  - Mathematical functions which deal with matisas, exponents, etc,
+    now make use of the ISO-C99 facilities which are almost
+    everywhere.
 
-  - The compiler produced wrong code for CATCH forms in which the tag
-    is not constant.
+  - Global function pointer output_ch_fun and read_ch_fun
+    disappear. Now the differences between ordinary streams and CLOS
+    streams are handled in file.d. Optimizations for synonym streams
+    also disappear from read.d and print.d.
 
-  - The compiler produced wrong code for RETURN-FROM forms inside an
-    UNWIND-PROTECT.
+  - All information used by FORMAT is kept in stack-allocated
+    structures. Now FORMAT is reentrant and can be safely called from
+    within PRINT-OBJECT.
 
-  - Deftype BIT-VECTOR would not expand to a vector type.
+  - Most symbols belonging to the LISP package and to the C core, are
+    kept in a single array, "cl_symbols". The translator "dpp" and the
+    routine SI::MANGLE-NAME, output the right name for any symbol
+    which is in this array.
 
-* System design and portability:
+  - ECL relies fully on the Boehm-Weiser garbage collector
+    (v. 6.1). The old garbage collector is known to reclaim too much
+    data, resulting in heap corruption. Help is welcome on this field.
 
-  - Remove function_entry_table.
-
-  - Each compiled file has an entry point whose name is either
-    init_CODE() or another name based on the name of the source file.
-    The algorithm for computing these names has been slightly changed
-    so that the entry points of ECLS's own library do not conflict with
-    user defined entry points.
+  - The headers of the Boehm-Weiser garbage collector are installed
+    together with ECL.
 
 * Visible changes and ANSI compatibility:
 
-  - The value of *package* is correctly set and restored while loading
-    compiled code. This way, 'ecls -eval "(print *package*)"' produces
-    the expected result #<"COMMON-LISP-USER" package>
+  - New configuration flag --with-clos-streams, enables the user to
+    define CLOS objects which behave as lisp streams. Such object must
+    have the following methods defined: STREAM-INPUT-P,
+    STREAM-OUTPUT-P, STREAM-READ-CHAR, STREAM-UNREAD-CHAR,
+    STREAM-LISTEN, STREAM-CLEAR-INPUT, STREAM-WRITE-CHAR,
+    STREAM-CLEAR-OUTPUT, STREAM-FORCE-OUTPUT, STREAM-CLOSE.
 
-  - COMPILE-FILE now outputs three values.
+  - LOAD accepts now a stream as input parameter. However, in this
+    case it only tolerates lisp source files, not compiled files or
+    libraries. For example, (LOAD (OPEN "foo.lsp")) is equivalent
+    to (LOAD "foo.lsp").
 
-  - The value of si::*keep-definitions* determines whether the
-    interpreter keeps the source of defined functions, for later use
-    with COMPILE and DISASSEMBLE. For instance,
-	> (set si::*keep-definitions* t)
-	> (defun foo (x) (1+ x))
-	> (compile 'foo)
-	> (foo 2)
-	3
-	> (compile 'foo)
-	;;; Error ....
-    These definitions are lost once the function is compiled, hence
-    the second error message.
+  - ECL now uses a hashtable to store objects when *PRINT-CIRCLE* is
+    on. This hashtable is not cleared when calling PRINT-OBJECT, so
+    that circularities are also detected inside these methods.
 
-  - Reader macro '#,' has been dropped. LOAD-TIME-VALUE added to both
-    the interpreter and the compiler.
-
-  - New, undocumented implementation of documentation strings which
-    uses hash tables instead of property lists. The global variable
-    si::*keep-documentation* determines whether documentation strings
-    are stored in memory. It is possible to dump documentation strings
-    to a help file.
-
-  - New interface for building standalone programs and libraries, based
-    on the functions C:BUILD-ECLS, C:BUILD-STATIC-LIBRARY and
-    C:BUILD-SHARED-LIBRARY, all of which accept similar parameters,
-    :PROLOGUE-CODE, :EPILOGE-CODE, :LISP-FILES, and :LD-FLAGS. Exhaustive
-    documentation with examples included in the Developer's Guide.
-
-  - Symbolic's update of the MIT LOOP macro imported.
-
-  - A LET/LET* form in which the initializers for a variable have not
-    the expected type produce a warning, but the code is accepted. For
-    instance (LET (V) (DECLARE (TYPE FIXNUM V)) (SETQ V 1)) now
-    compiles.
-
-  - (SETF name), where name is a symbol, is now a valid function name in all
-    contexts. It is accepted by DEFUN, FUNCTION, FBOUNDP, FMAKUNBOUND, etc,
-    and it can be the on the function position in any form.
-
-  - New specialized arrays for (UNSIGNED-BYTE 8) and (SIGNED-BYTE 8).
+  - *PRINT-CIRCLE* defaults to NIL.
