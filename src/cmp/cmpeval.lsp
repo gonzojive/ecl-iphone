@@ -180,7 +180,7 @@
 ;;; Structures
 
 (defun c1structure-ref (args)
-  (if (and (not *safe-compile*)         ; Beppe
+  (if (and (not (safe-compile))         ; Beppe
 	   (not (endp args))
 	   (not (endp (cdr args)))
 	   (consp (second args))
@@ -212,7 +212,7 @@
   )
 
 (defun wt-structure-ref (loc name-vv index)
-  (if *safe-compile*
+  (if (safe-compile)
       (wt "structure_ref(" loc "," name-vv "," `(COERCE-LOC :fixnum ,index) ")")
       #+clos
       (wt "(" loc ")->instance.slots[" `(COERCE-LOC :fixnum ,index) "]")
@@ -220,7 +220,7 @@
       (wt "(" loc ")->str.self[" `(COERCE-LOC :fixnum ,index) "]")))
 
 (defun c1structure-set (args)
-  (if (and (not *safe-compile*)         ; Beppe
+  (if (and (not (safe-compile))         ; Beppe
 	   (not (endp args))
 	   (not (endp (cdr args)))
 	   (consp (second args))
@@ -256,8 +256,8 @@
   ;; a variable is introduced for y if it is an expression with side effects
   (setq locs (inline-args (list x y *c1t*)))
   (setq x (second (first locs)))
-  (setq y (second (second locs)))
-  (if *safe-compile*
+  (setq y `(coerce-loc :object ,(second (second locs))))
+  (if (safe-compile)
       (wt-nl "structure_set(" x "," name-vv "," index "," y ");")
       #+clos
       (wt-nl "(" x ")->instance.slots[" index "]= " y ";")
