@@ -1068,7 +1068,7 @@ type_of(#0)==t_bitvector"))
 	    make-array vector array-dimensions
 	    array-in-bounds-p array-row-major-index bit sbit bit-and bit-ior
 	    bit-xor bit-eqv bit-nand bit-nor bit-andc1 bit-andc2 bit-orc1 bit-not
-	    vector-push vector-push-extend vector-pop adjust-array ecase-error
+	    vector-push vector-push-extend vector-pop adjust-array si::ecase-error si::etypecase-error
 	    ccase-error typecase-error-string find-documentation find-declarations
 	    si::check-keyword si::check-arg-length si::dm-too-few-arguments si::dm-bad-key
 	    remove-documentation si::get-documentation
@@ -1087,7 +1087,7 @@ type_of(#0)==t_bitvector"))
 	    nsubstitute nsubstitute-if nsubstitute-if-not find find-if find-if-not
 	    position position-if position-if-not remove-duplicates
 	    delete-duplicates mismatch search sort stable-sort merge
-	    si::closest-vector-type .
+	    si::closest-vector-type si::packages-iterator .
 	    #-clos
 	    nil
 	    #+clos
