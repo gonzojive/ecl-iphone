@@ -16,9 +16,9 @@
 #include "ecl-inl.h"
 #include "bytecodes.h"
 
-static char *disassemble(cl_object bytecodes, char *vector);
+static cl_opcode *disassemble(cl_object bytecodes, cl_opcode *vector);
 
-static char *base = NULL;
+static cl_opcode *base = NULL;
 
 static void
 print_noarg(const char *s) {
@@ -64,7 +64,7 @@ disassemble_vars(const char *message, cl_object *data, cl_index step) {
 static void
 disassemble_lambda(cl_object bytecodes) {
 	cl_object *data;
-	char *vector;
+	cl_opcode *vector;
 
 	/* Name of LAMBDA */
 	print_arg("\nName:\t\t", bytecodes->bytecodes.name);
@@ -97,7 +97,7 @@ NO_KEYS:
 	print_arg("\nDocumentation:\t", *(data++));
 	print_arg("\nDeclarations:\t", *(data++));
 
-	base = vector = bytecodes->bytecodes.code;
+	base = vector = (cl_opcode *)bytecodes->bytecodes.code;
 	disassemble(bytecodes, vector);
 }
 
@@ -116,9 +116,9 @@ NO_KEYS:
 	High level construct for the DOLIST iterator. The list over which
 	we iterate is stored in VALUES(0).
 */
-static char *
-disassemble_dolist(cl_object bytecodes, char *vector) {
-	char *exit, *output;
+static cl_opcode *
+disassemble_dolist(cl_object bytecodes, cl_opcode *vector) {
+	cl_opcode *exit, *output;
 	cl_object lex_old = lex_env;
 
 	lex_copy();
@@ -149,9 +149,9 @@ disassemble_dolist(cl_object bytecodes, char *vector) {
 	High level construct for the DOTIMES iterator. The number of times
 	we iterate is stored in VALUES(0).
 */
-static char *
-disassemble_dotimes(cl_object bytecodes, char *vector) {
-	char *exit, *output;
+static cl_opcode *
+disassemble_dotimes(cl_object bytecodes, cl_opcode *vector) {
+	cl_opcode *exit, *output;
 	cl_object lex_old = lex_env;
 
 	lex_copy();
@@ -178,8 +178,8 @@ disassemble_dotimes(cl_object bytecodes, char *vector) {
 	Executes the enclosed code in a lexical enviroment extended with
 	the functions "fun1" ... "funn".
 */
-static char *
-disassemble_flet(cl_object bytecodes, char *vector) {
+static cl_opcode *
+disassemble_flet(cl_object bytecodes, cl_opcode *vector) {
 	cl_index nfun = GET_OPARG(vector);
 	print_noarg("FLET");
 	while (nfun--) {
@@ -198,8 +198,8 @@ disassemble_flet(cl_object bytecodes, char *vector) {
 	Executes the enclosed code in a lexical enviroment extended with
 	the functions "fun1" ... "funn".
 */
-static char *
-disassemble_labels(cl_object bytecodes, char *vector) {
+static cl_opcode *
+disassemble_labels(cl_object bytecodes, cl_opcode *vector) {
 	cl_index nfun = GET_OPARG(vector);
 	print_noarg("LABELS");
 	while (nfun--) {
@@ -220,8 +220,8 @@ disassemble_labels(cl_object bytecodes, char *vector) {
 	while special variables are denoted with a negative index X, which
 	denotes the value -1-X in the table of constants.
 */
-static char *
-disassemble_msetq(cl_object bytecodes, char *vector)
+static cl_opcode *
+disassemble_msetq(cl_object bytecodes, cl_opcode *vector)
 {
 	int i, n = GET_OPARG(vector);
 	bool newline = FALSE;
@@ -253,8 +253,8 @@ disassemble_msetq(cl_object bytecodes, char *vector)
 	Execute the code enclosed with the special variables in BINDINGS
 	set to the values in the list which was passed in VALUES(0).
 */
-static char *
-disassemble_progv(cl_object bytecodes, char *vector) {
+static cl_opcode *
+disassemble_progv(cl_object bytecodes, cl_opcode *vector) {
 	print_noarg("PROGV");
 	vector = disassemble(bytecodes, vector);
 	print_noarg("\t\t; progv");
@@ -273,11 +273,11 @@ labeln:
 
 	High level construct for the TAGBODY form.
 */
-static char *
-disassemble_tagbody(cl_object bytecodes, char *vector) {
+static cl_opcode *
+disassemble_tagbody(cl_object bytecodes, cl_opcode *vector) {
 	cl_index i, ntags = GET_OPARG(vector);
 	cl_object lex_old = lex_env;
-	char *destination;
+	cl_opcode *destination;
 	lex_copy();
 
 	print_noarg("TAGBODY");
@@ -294,8 +294,8 @@ disassemble_tagbody(cl_object bytecodes, char *vector) {
 	return vector;
 }
 
-static char *
-disassemble(cl_object bytecodes, char *vector) {
+static cl_opcode *
+disassemble(cl_object bytecodes, cl_opcode *vector) {
 	const char *string;
 	cl_object o;
 	cl_fixnum n;

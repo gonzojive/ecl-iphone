@@ -250,7 +250,7 @@ lambda_bind(int narg, cl_object lambda, cl_index sp)
 	  } else {
 	    cl_object defaults = data[1];
 	    if (FIXNUMP(defaults)) {
-	      interpret(lambda, lambda->bytecodes.code + fix(defaults));
+	      interpret(lambda, (cl_opcode*)lambda->bytecodes.code + fix(defaults));
 	      defaults = VALUES(0);
 	    }
 	    lambda_bind_var(data[0], defaults, specials);
@@ -324,7 +324,7 @@ lambda_bind(int narg, cl_object lambda, cl_index sp)
 	    else {
 	      cl_object defaults = data[2];
 	      if (FIXNUMP(defaults)) {
-		      interpret(lambda, lambda->bytecodes.code + fix(defaults));
+		      interpret(lambda, (cl_opcode*)lambda->bytecodes.code + fix(defaults));
 		      defaults = VALUES(0);
 	      }
 	      lambda_bind_var(data[1],defaults,specials);
@@ -469,10 +469,10 @@ interpret_funcall(int narg, cl_object fun) {
 	High level construct for the DOLIST iterator. The list over which
 	we iterate is stored in VALUES(0).
 */
-static char *
-interpret_dolist(cl_object bytecodes, char *vector) {
-	char *volatile exit;
-	char *output;
+static cl_opcode *
+interpret_dolist(cl_object bytecodes, cl_opcode *vector) {
+	cl_opcode *volatile exit;
+	cl_opcode *output;
 
 	GET_LABEL(exit, vector);
 	GET_LABEL(output, vector);
@@ -517,10 +517,10 @@ interpret_dolist(cl_object bytecodes, char *vector) {
 	High level construct for the DOTIMES iterator. The number of times
 	we iterate is stored in VALUES(0).
 */
-static char *
-interpret_dotimes(cl_object bytecodes, char *vector) {
-	char *volatile exit;
-	char *output;
+static cl_opcode *
+interpret_dotimes(cl_object bytecodes, cl_opcode *vector) {
+	cl_opcode *volatile exit;
+	cl_opcode *output;
 
 	GET_LABEL(exit, vector);
 	GET_LABEL(output, vector);
@@ -584,8 +584,8 @@ close_around(cl_object fun, cl_object lex) {
 	Executes the enclosed code in a lexical enviroment extended with
 	the functions "fun1" ... "funn".
 */
-static char *
-interpret_flet(cl_object bytecodes, char *vector) {
+static cl_opcode *
+interpret_flet(cl_object bytecodes, cl_opcode *vector) {
 	cl_index nfun = GET_OPARG(vector);
 
 	/* 1) Copy the environment so that functions get it without references
@@ -611,8 +611,8 @@ interpret_flet(cl_object bytecodes, char *vector) {
 	Executes the enclosed code in a lexical enviroment extended with
 	the functions "fun1" ... "funn".
 */
-static char *
-interpret_labels(cl_object bytecodes, char *vector) {
+static cl_opcode *
+interpret_labels(cl_object bytecodes, cl_opcode *vector) {
 	cl_index i, nfun = GET_OPARG(vector);
 	cl_object l;
 
@@ -642,8 +642,8 @@ interpret_labels(cl_object bytecodes, char *vector) {
 	while special variables are denoted with a negative index X, which
 	denotes the value -1-X in the table of constants.
 */
-static char *
-interpret_msetq(cl_object bytecodes, char *vector)
+static cl_opcode *
+interpret_msetq(cl_object bytecodes, cl_opcode *vector)
 {
 	cl_object var, value;
 	int i, n = GET_OPARG(vector);
@@ -670,8 +670,8 @@ interpret_msetq(cl_object bytecodes, char *vector)
 	Execute the code enclosed with the special variables in BINDINGS
 	set to the values in the list which was passed in VALUES(0).
 */
-static char *
-interpret_progv(cl_object bytecodes, char *vector) {
+static cl_opcode *
+interpret_progv(cl_object bytecodes, cl_opcode *vector) {
 	cl_object values = VALUES(0);
 	cl_object vars = cl_stack_pop();
 
@@ -697,9 +697,12 @@ interpret_progv(cl_object bytecodes, char *vector) {
 	return vector;
 }
 
-char *
-interpret(cl_object bytecodes, char *vector) {
+void *
+interpret(cl_object bytecodes, void *pc) {
+	cl_opcode *vector = pc;
 	cl_object reg0 = VALUES(0);
+	static int i = 0;
+	i++;
  BEGIN:
 	switch (GET_OPCODE(vector)) {
 	/* OP_QUOTE
@@ -849,7 +852,7 @@ interpret(cl_object bytecodes, char *vector) {
 		or a function.
 	*/
 	case OP_EXIT:
-		return vector;
+		return (char *)vector;
 
 	case OP_FLET:
 		vector = interpret_flet(bytecodes, vector);
@@ -1070,7 +1073,7 @@ interpret(cl_object bytecodes, char *vector) {
 	case OP_BLOCK: {
 		cl_object name;
 		cl_object id = new_frame_id();
-		char *exit;
+		cl_opcode *exit;
 		/* FIXME! */
 		name = GET_DATA(vector, bytecodes);
 		GET_LABEL(exit, vector);
@@ -1080,7 +1083,7 @@ interpret(cl_object bytecodes, char *vector) {
 		} else {
 			lex_env = frs_top->frs_lex;
 			frs_pop();
-			vector = (char *)cl_stack_pop();
+			vector = (cl_opcode *)cl_stack_pop();
 		}
 		break;
 	}
@@ -1094,7 +1097,7 @@ interpret(cl_object bytecodes, char *vector) {
 	case OP_DO: {
 		cl_object name = Cnil;
 		cl_object id = new_frame_id();
-		char *exit;
+		cl_opcode *exit;
 		/* FIXME! */
 		GET_LABEL(exit, vector);
 		cl_stack_push((cl_object)exit);
@@ -1103,7 +1106,7 @@ interpret(cl_object bytecodes, char *vector) {
 		} else {
 			lex_env = frs_top->frs_lex;
 			frs_pop();
-			vector = (char *)cl_stack_pop(); /* FIXME! */
+			vector = (cl_opcode *)cl_stack_pop(); /* FIXME! */
 		}
 		break;
 	}
@@ -1116,14 +1119,14 @@ interpret(cl_object bytecodes, char *vector) {
 	   first instruction after the end (OP_EXIT) of the block
 	*/
 	case OP_CATCH: {
-		char *exit;
+		cl_opcode *exit;
 		GET_LABEL(exit, vector);
 		cl_stack_push((cl_object)exit);
 		if (frs_push(FRS_CATCH, reg0) != 0) {
 			reg0 = VALUES(0);
 			lex_env = frs_top->frs_lex;
 			frs_pop();
-			vector = (char *)cl_stack_pop(); /* FIXME! */
+			vector = (cl_opcode *)cl_stack_pop(); /* FIXME! */
 		}
 		break;
 	}
@@ -1153,7 +1156,7 @@ interpret(cl_object bytecodes, char *vector) {
 			   to ntags-1, depending on the tag. These
 			   numbers are indices into the jump table and
 			   are computed at compile time. */
-			char *table = (char *)cl_stack_top[-1];
+			cl_opcode *table = (cl_opcode *)cl_stack_top[-1];
 			table = table + fix(VALUES(0)) * OPARG_SIZE;
 			vector = table + *(cl_oparg *)table;
 			lex_env = frs_top->frs_lex;
@@ -1280,13 +1283,13 @@ interpret(cl_object bytecodes, char *vector) {
 	  first piece of code.
 	*/
 	case OP_PROTECT: {
-		char *exit;
+		cl_opcode *exit;
 		GET_LABEL(exit, vector);
 		cl_stack_push((cl_object)exit);
 		if (frs_push(FRS_PROTECT,Cnil) != 0) {
 			lex_env = frs_top->frs_lex;
 			frs_pop();
-			vector = (char *)cl_stack_pop();
+			vector = (cl_opcode *)cl_stack_pop();
 			cl_stack_push(MAKE_FIXNUM(nlj_fr - frs_top));
 			goto PUSH_VALUES;
 		}

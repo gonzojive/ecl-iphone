@@ -860,7 +860,8 @@ Optional Features:
 --enable-local-gmp     Use already installed GMP library.
 --enable-threads	Include the multiple thread facility.
 --disable-shared       Disable building dynamically loadable extensions.
---enable-cxx           Build ECL using C++ compiler
+--enable-cxx           Build ECL using C++ compiler.
+--enable-opcode8       Interpreter uses 8-bit codes (only Intel!).
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1429,9 +1430,9 @@ else
   gmp_flags=""
 fi;
 
-# Check whether --with-cros_config or --without-cros_config was given.
-if test "${with_cros_config+set}" = set; then
-  withval="$with_cros_config"
+# Check whether --with-cross_config or --without-cross_config was given.
+if test "${with_cross_config+set}" = set; then
+  withval="$with_cross_config"
   cross_config="${withval}"
 else
   cross_config="`pwd`/cross_config"
@@ -1479,7 +1480,13 @@ if test "${enable_cxx+set}" = set; then
 else
   usecxx="no"
 fi;
-
+# Check whether --enable-opcode8 or --disable-opcode8 was given.
+if test "${enable_opcode8+set}" = set; then
+  enableval="$enable_opcode8"
+  opcode8=${enableval}
+else
+  opcode8="no"
+fi;
 
 ### ----------------------------------------------------------------------
 ###           Checks for programs
@@ -4202,6 +4209,12 @@ if test ${usecxx} = "no" ; then
   ECL_CC="${CC}"
 else
   ECL_CC="${CXX}"
+fi
+if test ! ${opcode8} = "no" ; then
+  cat >>confdefs.h <<\_ACEOF
+#define ECL_SMALL_BYTECODES 1
+_ACEOF
+
 fi
 
 if test "${GCC}" = "yes"; then

@@ -258,7 +258,7 @@ extern void cl_stack_pop_values(int n);
 
 extern cl_object lex_env;
 extern cl_object lambda_apply(int narg, cl_object fun);
-extern char *interpret(cl_object bytecodes, char *pc);
+extern void *interpret(cl_object bytecodes, void *pc);
 
 /* disassembler.c */
 

@@ -184,23 +184,20 @@ enum {
   OP_OPCODE_SHIFT = 7
 };
 
-/*
-   If we we working with character pointers,
-	typedef char cl_opcode;
-	...
-	#define OPCODE_SIZE sizeof(cl_opcode)
-	#define OPARG_SIZE sizeof(cl_oparg)
-   but since we are not...
- */
 #define MAX_OPARG 0x7FFF
-typedef char cl_opcode;
-typedef int16_t cl_oparg;
+#ifdef ECL_SMALL_BYTECODES
 #define OPCODE_SIZE 1
 #define OPARG_SIZE sizeof(cl_oparg)
+typedef char cl_opcode;
+#else
+#define OPCODE_SIZE 1
+#define OPARG_SIZE 1
+typedef int16_t cl_opcode;
+#endif
+typedef int16_t cl_oparg;
 #define READ_OPCODE(v)	(*(cl_opcode *)(v))
 #define READ_OPARG(v)	(*(cl_oparg *)(v))
 #define GET_OPCODE(v)	(*((cl_opcode *)(v))++)
 #define GET_OPARG(v)	(*((cl_oparg *)(v))++)
-#define GET_DATA(v,b)	(b->bytecodes.data[*((cl_oparg *)(v))++])
-#define GET_LABEL(pc,v)	{pc = (v) + *(cl_oparg *)v; v += OPARG_SIZE;}
-
+#define GET_DATA(v,b)	(b->bytecodes.data[GET_OPARG(v)])
+#define GET_LABEL(pc,v)	{pc = (v) + READ_OPARG(v); v += OPARG_SIZE;}

@@ -215,6 +215,7 @@ static cl_object
 asm_end(cl_index beginning) {
 	cl_object bytecodes;
 	cl_index code_size, data_size, i;
+	cl_opcode *code;
 
 	/* Save bytecodes from this session in a new vector */
 	code_size = current_pc() - beginning;
@@ -225,8 +226,8 @@ asm_end(cl_index beginning) {
 	bytecodes->bytecodes.code = cl_alloc(code_size * sizeof(cl_opcode));
 	bytecodes->bytecodes.data = cl_alloc(data_size * sizeof(cl_object));
 	bytecodes->bytecodes.lex = Cnil;
-	for (i = 0; i < code_size; i++) {
-		bytecodes->bytecodes.code[i] =
+	for (i = 0, code = (cl_opcode *)bytecodes->bytecodes.code; i < code_size; i++) {
+		code[i] =
 #ifdef CL_COMP_OWN_STACK
 			c_env.bytecodes->vector.self.fix[beginning+i];
 #else
@@ -241,6 +242,7 @@ asm_end(cl_index beginning) {
 	return bytecodes;
 }
 
+#if defined(ECL_SMALL_BYTECODES)
 static void
 asm_arg(int n) {
 #ifdef WORDS_BIGENDIAN
@@ -251,6 +253,9 @@ asm_arg(int n) {
 	asm_op((n >> 8));
 #endif
 }
+#else
+#define asm_arg(n) asm_op(n)
+#endif
 
 static void
 asm_op2(register int code, register int n) {
@@ -283,14 +288,22 @@ asm_complete(register int op, register cl_index pc) {
 	else if (delta < -MAX_OPARG || delta > MAX_OPARG)
 		FEprogram_error("Too large jump", 0);
 	else {
+#ifdef ECL_SMALL_BYTECODES
 		char low = delta & 0xFF;
 		char high = delta >> 8;
-#ifdef ECL_OWN_STACK
+#  ifdef ECL_OWN_STACK
 		c_env.bytecodes->vector.self.fix[pc] = low;
 		c_env.bytecodes->vector.self.fix[pc+1] = low;
-#else
+#  else
 		cl_stack[pc] = (cl_object)(cl_fixnum)low;
 		cl_stack[pc+1] = (cl_object)(cl_fixnum)high;
+#  endif
+#else
+#  ifdef ECL_OWN_STACK
+		c_env.bytecodes->vector.self.fix[pc] = delta;
+#  else
+		cl_stack[pc] = (cl_object)(cl_fixnum)delta;
+#  endif
 #endif
 	}
 }

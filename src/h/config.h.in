@@ -129,6 +129,9 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 /* Use CMU Common-Lisp's FORMAT routine					*/
 #undef ECL_CMU_FORMAT
 
+/* Bytecodes and arguments are 8 and 16 bits large, respectively	*/
+#undef ECL_SMALL_BYTECODES
+
 /*
  * SYSTEM FEATURES:
  */
