@@ -168,10 +168,12 @@
 #endif	__FreeBSD__
 
 #ifdef	__linux__
+#include <dlfcn.h>
 #define	BRAND "IBM-PC"
 #define	IEEEFLOAT
 #define	DOWN_STACK
 #define	BSD
+#define CLIBS -ldl
 #define LDFLAGS -Wl,--export-dynamic
 #ifdef __ELF__
 # define DATA_START 0x8000000
