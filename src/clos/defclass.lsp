@@ -12,6 +12,58 @@
 ;;; ----------------------------------------------------------------------
 ;;; DEFCLASS
 
+(defun quote-list (x)
+  (mapcar #'(lambda (x) (list 'quote x)) x))
+
+(defun direct-slot-make-form (direct-slots)
+  (declare (si::c-local))
+  (do* ((output nil)
+	(constants-list nil)
+	(scan (reverse direct-slots) (cdr scan))
+	(slotd (first scan) (first scan)))
+       ((endp scan)
+	(if (null output)
+	    (list 'quote constants-list)
+	    (cons 'list (append (quote-list constants-list) output))))
+    (let ((initform (slotd-initform slotd)))
+      (cond ((or (member initform '(NIL T INITFORM-UNSUPPLIED))
+		 (typep initform '(or number character string array keyword)))
+	     (push slotd constants-list))
+	    ((and (consp initform) (eq 'quote (first initform)))
+	     (setf (slotd-initform slotd) (second initform))
+	     (push slotd constants-list))
+	    (t
+	     (setq initiform `#'(lambda () ,initform))
+	     ;; Quote everything except the initalization form
+	     (setq slotd (quote-list slotd))
+	     (setf (slotd-initform slotd) `#'(lambda () ,initform))
+	     (when constants-list
+	       (setq output (append (quote-list constants-list) output))
+	       (setq constants-list nil))
+	     (push (cons 'list slotd) output))))))
+
+(defun default-initargs-make-form (default-initargs)
+  (declare (si::c-local))
+  (do* ((lambdas-list nil)
+	(constants-list nil)
+	(scan (reverse default-initargs) (cddr scan))
+	slot-name initform)
+       ((endp scan)
+	(if (null lambdas-list)
+	    `',constants-list
+	    `(list* ,@lambdas-list ',constants-list)))
+    (when (endp (cdr scan))
+      (error "Wrong number of elements in :DEFAULT-INITARGS option."))
+    (setq slot-name (second scan) initform (first scan))
+    (cond ((typep initform '(or number character string array keyword))
+	   (setq constants-list (list* slot-name initform constants-list)))
+	  ((and (consp initform) (eq 'quote (first initform)))
+	   (setq constants-list (list* slot-name (second initform) constants-list)))
+	  (t
+	   (setq lambdas-list (list* (list 'quote slot-name)
+				     `#'(lambda () ,initform)
+				     lambdas-list))))))
+
 (defmacro DEFCLASS (&rest args)
   (multiple-value-bind (name superclasses slots 
 			     metaclass-name default-initargs documentation)
@@ -26,32 +78,26 @@
 
     ;; process slots
     (let* ((direct-slots (parse-slots slots))
+	   (direct-slots-form (direct-slot-make-form direct-slots))
+	   (default-initargs-form (default-initargs-make-form default-initargs))
 	   (all-slots (collect-all-slots direct-slots name superclasses)))
-      ;; update slots with inherited information
-      (do ((scan direct-slots (cdr scan))
-	   (slot))
-	  ((null scan))
-	(setq slot
-	      (find (slotd-name (first scan)) all-slots :key #'slotd-name))
-	(setf (first scan) slot))
+      ;; at compile time just create the definition
       `(eval-when (compile load eval)
-	;; at compile time just create the definition
 	(prog1
-	(ensure-class
-	 ',metaclass-name
-	 ',name
-	 ',superclasses
-	 ',direct-slots
-	 ',all-slots
-	 ',default-initargs
-	 ',documentation)
-	#+PDE
-	(si:record-source-pathname ',name 'DEFCLASS)
-	,@ (generate-methods
-	    name
-	    :metaclass-name metaclass-name
-	    :superiors (mapcar #'find-class superclasses)
-	    :slots all-slots))))))
+	    (ensure-class
+	     ',metaclass-name
+	     ',name
+	     ',superclasses
+	     ,direct-slots-form
+	     ,default-initargs-form
+	     ',documentation)
+	  #+PDE
+	  (si:record-source-pathname ',name 'DEFCLASS)
+	  ,@ (generate-methods
+	      name
+	      :metaclass-name metaclass-name
+	      :superiors (mapcar #'find-class superclasses)
+	      :slots all-slots))))))
 
 (defun collect-all-slots (slots name superclasses-names)
   (declare (si::c-local))
@@ -62,23 +108,30 @@
 ;;
 ;; INV: ENSURE-CLASS should always output the class it creates.
 ;;
-(defun ensure-class (metaclass name superclasses direct-slots all-slots
+(defun ensure-class (metaclass name superclasses direct-slots
 			       default-initargs documentation)
-  (case metaclass
-    (STANDARD-CLASS
-     (create-standard-class name superclasses direct-slots all-slots
-			    default-initargs documentation))
-    (STRUCTURE-CLASS
-     (create-structure-class name superclasses direct-slots all-slots
-			    default-initargs documentation))
-    (T
-     (make-instance (find-class metaclass)
-		    :NAME name
-		    :DIRECT-SUPERCLASSES (mapcar #'find-class superclasses)
-		    :DIRECT-SLOTS direct-slots
-		    :SLOTS all-slots
-		    :DEFAULT-INITARGS default-initargs
-		    :DOCUMENTATION documentation))))
+  ;; update slots with inherited information
+  (let ((all-slots (collect-all-slots direct-slots name superclasses)))
+    (do ((scan direct-slots (cdr scan))
+	 (slot))
+	((null scan))
+      (setq slot (find (slotd-name (first scan)) all-slots :key #'slotd-name))
+      (setf (first scan) slot))
+    (case metaclass
+      (STANDARD-CLASS
+       (create-standard-class name superclasses direct-slots all-slots
+			      default-initargs documentation))
+      (STRUCTURE-CLASS
+       (create-structure-class name superclasses direct-slots all-slots
+			       default-initargs documentation))
+      (T
+       (make-instance (find-class metaclass)
+		      :NAME name
+		      :DIRECT-SUPERCLASSES (mapcar #'find-class superclasses)
+		      :DIRECT-SLOTS direct-slots
+		      :SLOTS all-slots
+		      :DEFAULT-INITARGS default-initargs
+		      :DOCUMENTATION documentation)))))
 
 ;;; ----------------------------------------------------------------------
 ;;;                                                                parsing
@@ -369,17 +422,9 @@
 	     (when (eq (slotd-initform new-slotd) 'INITFORM-UNSUPPLIED)
 	       (setf (slotd-initform new-slotd) (slotd-initform old-slotd)))
 	     (setf (slotd-type new-slotd)
-		   ;; since (subtypep '(and t1 t2) `(and t2 t1)) returns nil
-		   ;; we should be more smart then this:
+		   ;; FIXME! we should be more smart then this:
 		   (cond ((subtypep new-type old-type) new-type)
 			 ((subtypep old-type new-type) old-type)
-			 ((listp old-type)
-			  (if (listp new-type)
-			      `(and ,@(cdr new-type)
-				,@(cdr old-type)) ; take out the ands
-			      `(and ,new-type ,@(cdr old-type))))
-			 ((listp new-type)
-			     `(and ,@(cdr new-type) ,old-type))
 			 (T `(and ,new-type ,old-type)))))
 	   new-slotd))
 

@@ -138,7 +138,7 @@
 (defmethod slot-exists-p ((instance standard-object) slot-name)
   (let ((class (si:instance-class instance)))
     (declare (type standard-class class))
-    (gethash slot-name (slot-index-table class) nil)))
+    (values (gethash slot-name (slot-index-table class) nil))))
 
 (defmethod slot-makunbound ((instance standard-object) slot-name)
   (let* ((class (si:instance-class instance))
@@ -150,7 +150,8 @@
 	    (setf (svref (class-shared-slots (car index)) (cdr index))
 		  (unbound)))
 	(slot-missing (si:instance-class instance) instance slot-name
-		      'SLOT-MAKUNBOUND))))
+		      'SLOT-MAKUNBOUND))
+    class))
 
 (defmethod shared-initialize ((instance standard-object) 
 			      slot-names &rest initargs)
@@ -194,7 +195,9 @@
 		    (not (slot-boundp instance slot-name)))
 	   (let ((initform (slotd-initform slotd)))
 	     (unless (eq initform 'INITFORM-UNSUPPLIED)
-	       (setf (slot-value instance slot-name) (eval initform)))))))))
+	       (when (functionp initform)
+		 (setq initform (funcall initform)))
+	       (setf (slot-value instance slot-name) initform))))))))
   instance)
 
 (defmethod initialize-instance ((instance standard-object) &rest initargs)
@@ -309,10 +312,14 @@
   (do ((scan (reverse (default-initargs-of class)) (cddr scan))
        (defaults))
       ((null scan) (nconc initargs (nreverse defaults)))
-    (unless (do ((iscan initargs (cddr iscan)))
-		((null iscan) nil)
-	      (when (eq (first iscan) (second scan)) (return t)))
-      (setq defaults (nconc defaults (list (first scan) (second scan)))))))
+    (let ((slot-initarg (second scan)))
+      (unless (do ((iscan initargs (cddr iscan)))
+		  ((null iscan) nil)
+		(when (eq (first iscan) slot-initarg) (return t)))
+	(let ((slot-value (first scan)))
+	  (when (functionp slot-value)
+	    (setq slot-value (funcall slot-value)))
+	  (setq defaults (nconc defaults (list slot-value slot-initarg))))))))
 
 ;;; ----------------------------------------------------------------------
 ;;; check-initargs

@@ -102,12 +102,12 @@
 	  (do ((scan class-slots (cdr scan))
 	       (i 0 (1+ i)))
 	      ((null scan))
-	    (when (and (not (si:sl-boundp 
-			     (si:instance-ref instance i)))
-		       (not (eq (slotd-initform (first scan)) 
-				'INITFORM-UNSUPPLIED)))
-	      (si:instance-set instance i
-			       (eval (slotd-initform (first scan))))))
+	    (unless (si:sl-boundp (si:instance-ref instance i))
+	      (let ((initform (slotd-initform (first scan))))
+		(unless (eq initform 'INITFORM-UNSUPPLIED)
+		  (when (functionp initform)
+		    (setq initform (funcall initform)))
+		  (si:instance-set instance i initform)))))
 
 	  ;; initialize from initargs
 	  (do* ((name-loc initargs (cddr name-loc))

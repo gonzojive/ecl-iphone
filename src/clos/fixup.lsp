@@ -247,7 +247,7 @@
 		       subclass-name
 		       subclass-superclasses
 		       (slot-value subclass 'DIRECT-SLOTS)
-		       slots
+		       ; slots
 		       (default-initargs-of subclass)
 		       (documentation-of subclass))
 	 (class-inferiors new-class))

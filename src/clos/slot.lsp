@@ -13,6 +13,8 @@
 ;;; SLOT descriptors
 ;;;
 
+(defvar *slot-initform-lambdas* nil)
+
 (defstruct (slotd (:type list))
   name initargs initform accessors readers writers allocation type
   documentation)
@@ -67,7 +69,7 @@
 	  (slotd-writers slotd)    writers
 	  (slotd-allocation slotd) allocation
 	  (slotd-type slotd)       type)
-	  (slotd-documentation slotd)    documentation
+;	  (slotd-documentation slotd)    documentation
 
     slotd))
 
