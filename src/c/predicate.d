@@ -406,7 +406,7 @@ BEGIN:
 		}
 		else
 			return(FALSE);
-	default:
+	default:;
 	}
 	if (tx != ty)
 		return(FALSE);
