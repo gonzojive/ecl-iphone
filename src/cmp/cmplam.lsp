@@ -412,7 +412,11 @@
    )
   ;; Bind optional parameters as long as there remain arguments.
   (when optionals
-    (let ((va-arg-loc 'VA-ARG))
+    ;; When binding optional values, we use two calls to BIND. This means
+    ;; 'BDS-BIND is pushed twice on *unwind-exit*, which results in two calls
+    ;; to bds_unwind1, which is wrong. A possible fix is to save *unwind-exit*
+    (let ((*unwind-exit* *unwind-exit*)
+	  (va-arg-loc 'VA-ARG))
       (dolist (opt optionals)
 	(push (next-label) labels)
 	(wt-nl "if (i==narg) ") (wt-go (car labels))
@@ -530,7 +534,11 @@
     )
   ;; Bind optional parameters as long as there remain arguments.
   (when optionals
-    (let ((va-arg-loc 'VA-ARG))
+    ;; When binding optional values, we use two calls to BIND. This means
+    ;; 'BDS-BIND is pushed twice on *unwind-exit*, which results in two calls
+    ;; to bds_unwind1, which is wrong. A possible fix is to save *unwind-exit*
+    (let ((*unwind-exit* *unwind-exit*)
+	  (va-arg-loc 'VA-ARG))
       (dolist (opt optionals)
 	(push (next-label) labels)
 	(wt-nl "if (i==narg) ") (wt-go (car labels))
