@@ -73,12 +73,7 @@ apply(int narg, cl_object fun, cl_object *args)
  *----------------------------------------------------------------------*/
 
 cl_object
-#ifdef CLOS
-link_call(cl_object sym, cl_objectfn *pLK, cl_object *gfun,
-	  int narg, va_list args)
-#else
 link_call(cl_object sym, cl_objectfn *pLK, int narg, va_list args)
-#endif /* CLOS */
 {
 	cl_object fun = symbol_function(sym);
 
@@ -94,11 +89,6 @@ link_call(cl_object sym, cl_objectfn *pLK, int narg, va_list args)
 		return va_APPLY(narg, fun->cfun.entry, args);
 #ifdef CLOS
 	case t_gfun:
-		putprop(sym, CONS(CONS(make_unsigned_integer((cl_index)gfun),
-				       make_unsigned_integer((cl_index)OBJNULL)),
-				  getf(sym->symbol.plist, @'si::link-from', Cnil)),
-			@'si::link-from');
-		*gfun = fun;
 		return va_gcall(narg, fun, args);
 #endif /* CLOS */
 	case t_cclosure:

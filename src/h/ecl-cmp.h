@@ -42,17 +42,9 @@
 		cs_overflow()
 
 #define LINK_ARGS	&narg
-#ifdef CLOS
-#define TRAMPOLINK(narg, vv, lk) \
-	static cl_object gfun = OBJNULL; \
-	va_list args; va_start(args, narg); \
-	if (gfun) return(va_gcall(narg, gfun, args)); \
-	else return(link_call(vv, (cl_objectfn *)lk , &gfun, narg, args))
-#else
 #define TRAMPOLINK(narg, vv, lk) \
 	va_list args; va_start(args, narg); \
 	return(link_call(vv, (cl_objectfn *)lk, narg, args))
-#endif
 
 #define	cclosure_call	funcall
 

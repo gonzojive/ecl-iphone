@@ -231,8 +231,7 @@ extern void FEend_of_file(cl_object strm);
 #define funcall clLfuncall
 
 extern cl_object apply(int narg, cl_object fun, cl_object *args);
-extern cl_object link_call(cl_object sym, cl_objectfn *pLK, cl_object *gfun,
-			   int narg, va_list args);
+extern cl_object link_call(cl_object sym, cl_objectfn *pLK, int narg, va_list args);
 extern cl_object cl_safe_eval(cl_object form, cl_object *bytecodes, cl_object env, cl_object err_value);
 extern void init_eval(void);
 
