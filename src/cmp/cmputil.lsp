@@ -64,18 +64,17 @@
   nil)
 
 (defun print-current-form ()
-  (when *first-error*
-        (setq *first-error* nil)
-	(let ((*print-length* 2)
-	      (*print-level* 2))
-	  (format t "~&;;; Compiling ~s.~%" *current-form*)))
+  (unless *suppress-compiler-notes*
+    (let ((*print-length* 2)
+	  (*print-level* 2))
+      (format t "~&;;; Compiling ~s.~%" *current-form*)))
   nil)
 
 (defun print-emitting (f)
   (let* ((name (fun-name f)))
     (unless name
       (setf name (fun-description f)))
-    (when name
+    (when (and name (not *suppress-compiler-notes*))
       (format t "~&;;; Emitting code for ~s.~%" name))))
 
 (defun undefined-variable (sym &aux (*print-case* :upcase))

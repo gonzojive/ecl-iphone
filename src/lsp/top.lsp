@@ -373,7 +373,7 @@ value of this variable is non-NIL.")
 	   (princ "Usage: ecl [-? | --help]
            [-dir dir] [-load file] [-shell file] [-eval expr] [-norc]
            [-compile file [-o ofile] [-c [cfile]] [-h [hfile]]
-                          [-data [datafile]] [-s]]
+                          [-data [datafile]] [-s] [-q]]
 "
 		  stream))
 	 (pop-arg (option)
@@ -395,6 +395,7 @@ value of this variable is non-NIL.")
 			   :c-file  (get-argument i "-c" NIL)
 			   :h-file  (get-argument i "-h" NIL)
 			   :data-file (get-argument i "-data" NIL)
+			   :verbose (not (get-argument i "-q" NIL))
 			   :system-p  (get-argument i "-s" NIL)))
 	       (quit 1)
 	       (quit 0)))

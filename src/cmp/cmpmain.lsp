@@ -327,6 +327,8 @@ cl_object Cblock;
                            (*error-count* 0)
 			   (*compile-file-pathname* nil)
 			   (*compile-file-truename* nil)
+			   (*compile-verbose* verbose)
+			   (*suppress-compiler-notes* (not verbose))
 			   #+PDE sys:*source-pathname*)
   (declare (notinline compiler-cc))
 

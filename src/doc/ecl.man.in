@@ -16,7 +16,7 @@ ecl \- Embeddable Common LISP
 [\fB\-c\fP [\fIcfile\fP]]
 [\fB\-h\fP [\fIhfile\fP]]
 [\fB\-data\fP [\fIdatafile\fP]]
-[\fB\-s\fP]]
+[\fB\-s\fP] [\fB\-q\fP]]
 
 .SH DESCRIPTION
 .sp
@@ -116,6 +116,9 @@ with .data as extension.
 Produce a linkable object file. It cannot be loaded 
 with load, but it can be used to build libraries 
 or standalone executable programs. 
+.TP
+.B \-q
+Produce less notes when compiling.
 
 .PP
 The options
