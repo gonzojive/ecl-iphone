@@ -779,7 +779,7 @@ flush_output_stream_binary(cl_object strm)
 			fseek(strm->stream.file, 0, SEEK_CUR); /* I/O synchronization, required by ANSI */
 			c = ecl_read_byte8(strm);
 			if (c != EOF)
-				b |= (unsigned char)(c0 & ~MAKE_BIT_MASK(nb));
+				b |= (unsigned char)(c & ~MAKE_BIT_MASK(nb));
 			fseek(strm->stream.file, -1, SEEK_CUR);
 		}
 		ecl_write_byte8(b, strm);
