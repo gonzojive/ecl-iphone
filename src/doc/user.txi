@@ -3394,7 +3394,7 @@ instance.  The argument to class-of may be any @clisp{} object.
 @deffnx {Method} {(setf documentation)} {new-value (list list) @optional{} doc-type}
 @end deffn
 
-@defun {ensure-generic-function} {function-name @keys{} lambda-list @keys :argument-precedence-order :declare :documentation :generic-function-class|ekeys{:method-combination :method-class :environment}}
+@defun {ensure-generic-function} @{function-name @keys{} lambda-list @keys :argument-precedence-order :declare :documentation :generic-function-class|ekeys{:method-combination :method-class :environment}@}
 @example
 function-name ::= symbol | (setf symbol)
 @end example
@@ -3417,7 +3417,7 @@ The first argument to find-class is a symbol.
 
 The generic function function-keywords is used to return the keyword parameter specifiers for a given method.
 
-@defmac {generic-function} {lambda-list \mchoice{option | @{method-description@}*}}
+@defmac {generic-function} @{lambda-list \mchoice{option | @{method-description@}*}@}
 
 @example
 option ::= (:argument-precedence-order @{parameter-name@}+)

@@ -57,7 +57,8 @@ differs from standards.
 * Lisp objects::                Dealing with lisp object from C.
 * The interpreter::             Understanding the interpreter.
 * The compiler::                How the Lisp2C translator works.
-* Porting @ecl{}::             Porting @ecl{} to other architectures.
+* The Garbage Collector::       Get the GC to do the right thing
+* Porting @ecl{}::              Porting @ecl{} to other architectures.
 @end menu
 
 @c ---------------------------------------------------------------------
@@ -94,11 +95,11 @@ efficiency.
 In this chapter we describe how you can use @ecl{} to build programs and
 loadable extensions that you can later on distribute to other people. 
 @menu
-* What can @ecl{} do?::        
+* What can @ecl{} do?::         
 * Compiling files::             
 * Building standalone executables::  
 * Building libraries::          
-* File names::
+* File names::                  
 * Compiler examples::           
 @end menu
 
@@ -188,7 +189,7 @@ To build an executable you need a working @ecl{} image with the compiler. The
 function to build customized images is @var{c::build-program}. The description of
 this function is as follows.
 
-@defun {c:build-program} {@var{image-name} @keys{} @var{lisp-files} @var{ld-flags} @var{prologue-code} @var{epilogue-code}}
+@defun {c:build-program} @{@var{image-name} @keys{} @var{lisp-files} @var{ld-flags} @var{prologue-code} @var{epilogue-code}@}
 
 This function builds a lisp image up from the core lisp library, plus all
 components listed in @var{lisp-files}.  Each component is either:
@@ -219,8 +220,8 @@ To build a library you proceed more or less the same way as with standalone
 executables. There are two different functions depending on whether you need
 to build static or shared libraries.
 
-@defun {c:build-static-library} {@var{library-name} @keys{} @var{lisp-files} @var{prologue-code} @var{epilogue-code}}
-@defunx {c:build-shared-library} {@var{library-name} @keys{} @var{lisp-files} @var{prologue-code} @var{epilogue-code} @var{ld-flags}}
+@defun {c:build-static-library} @{@var{library-name} @keys{} @var{lisp-files} @var{prologue-code} @var{epilogue-code}@}
+@defunx {c:build-shared-library} @{@var{library-name} @keys{} @var{lisp-files} @var{prologue-code} @var{epilogue-code} @var{ld-flags}@}
 
 This function builds a library file up from the object files listed in
 @var{lisp-files}. Each of the arguments to @var{lisp-file} must name a single
@@ -242,7 +243,7 @@ their purpose is to link C/C++ extensions into the library.
 @node File names, Compiler examples, Building libraries, Building programs
 @section File names
 
-@defun {compile-file-pathname} {@var{filename-base} @keys{} @var{output-file} @var{type}}
+@defun {compile-file-pathname} @{@var{filename-base} @keys{} @var{output-file} @var{type}@}
 
 When compiling lisp files, creating libraries, etc, a number of files are
 produced which are of interest for the user or programmer. However, the name
@@ -279,12 +280,12 @@ The output of this function is system specific. For example, under FreeBSD
 
 @c ---------------------------------------------------------------------
 
-@node Compiler examples, , File names, Building programs
+@node Compiler examples,  , File names, Building programs
 @section Compiler examples
 
-@subsection The @file{hello.lsp} file
+@subsection The @file{hello.lisp} file
 In the following examples we will use the same lisp program. You have to
-create a file called @file{hello.lsp} which contains the following lines
+create a file called @file{hello.lisp} which contains the following lines
 
 @example
 (princ "Hello world!")
@@ -295,17 +296,16 @@ create a file called @file{hello.lsp} which contains the following lines
 If you start @ecl{} and load this file in the Common-Lisp environment you
 will see the @code{"Hello world!"} message and the interpreter will be closed.
 @example
-ECL (ECoLisp-Spain) 0.4
+ECL (Embeddable Common-Lisp) 0.9d
 Copyright (C) 1984 Taiichi Yuasa and Masami Hagiya
 Copyright (C) 1993 Giuseppe Attardi
 Copyright (C) 2000 Juan J. Garcia-Ripoll
         ECL is free software, and you are welcome to redistribute it
 under certain conditions; see file 'Copyright' for details.
 Type :h for Help.  Top level.
-> @b{(load "hello.lsp")}
-;;; Loading hello.lsp
-Hello world!
-Bye.
+> @b{(load "hello.lisp")}
+;;; Loading "hello.lisp"
+Hello World!
 @end example
 
 @subsection Example of loadable object file
@@ -321,46 +321,48 @@ Type :h for Help.  Top level.
 @end example
 
 In this example we build a loadable extension which prints the @code{"Hello
-world!"} message. First you need to create a the @file{hello.lsp} file. Next
+world!"} message. First you need to create a the @file{hello.lisp} file. Next
 you have to enter the @ecl{} environment and type @code{(compile-file
-"hello.lsp")}. This produces a loadable object file.
+"hello.lisp")}. This produces a loadable object file.
 
 @example
 Type :h for Help.  Top level.
-> @b{(compile-file "hello.lsp")}
-;;; Loading /home/worm/lib/ecl/cmp.so
-;;; Compiling hello.lsp.
+> @b{(compile-file "hello.lisp")}
+;;; Loading #P"/usr/lib/ecl/cmp.fas"
+;;; Loading #P"/usr/lib/ecl/sysfun.lsp"
+;;; Compiling hello.lisp.
 ;;; End of Pass 1.  
 ;;; Calling the C compiler... 
-"gcc -g -O2 -Dfreebsd  -O -I/home/worm/lib/ecl//h -w -c hello.c -o hello.o" 
-"ld -shared -o hello.so -L/home/worm/lib/ecl/ hello.o"
-;;; OPTIMIZE levels: Safety=0 (No runtime error checking), Space=0, Speed=3
-;;; Finished compiling hello.lsp.
-#P"hello.so"
+;;; Invoking external command: gcc -O2 -march=i686 -pipe -fomit-frame-pointer -fPIC -fstrict-aliasing -Dlinux -O "-I/usr/lib/ecl//h" -w -c "hello.c" -o "hello.o"
+;;; Invoking external command: gcc -o "hello.fas" -L"/usr/lib/ecl/" "hello.o"  -Wl,--rpath,/usr/lib/ecl/ -shared   -lecl -lgmp -lgc -ldl -lm 
+;;; OPTIMIZE levels: Safety=2, Space=0, Speed=3
+;;; Finished compiling hello.lisp.
+#P"hello.fas"
+Top level.
 > @b{(load "hello")}
-;;; Loading hello.so
-Hello world!
-Bye.
+;;; Loading #P"hello.fas"
+Hello World!
 @end example
 
 @subsection Example of standalone program
 In this example we build a standalone program which prints the @code{"Hello
 world!"} message and does nothing else. First you must create the
-@file{hello.lsp} file shown above. Next you have to enter the @ecl{}
-environment and type @code{(compile-file "hello.lsp" :system-p t)}. This
+@file{hello.lisp} file shown above. Next you have to enter the @ecl{}
+environment and type @code{(compile-file "hello.lisp" :system-p t)}. This
 produces an object file that can be linked against the @ecl{} core image.
 
 @example
 Type :h for Help.  Top level.
-> @b{(compile-file "hello.lsp" :system-p t)}
-;;; Loading /home/worm/lib/ecl/cmp.so
-;;; Compiling hello.lsp.
+> @b{(compile-file "hello.lisp" :system-p t)}
+;;; Loading #P"/usr/lib/ecl/cmp.fas"
+;;; Loading #P"/usr/lib/ecl/sysfun.lsp"
+;;; Compiling hello.lisp.
 ;;; End of Pass 1.  
 ;;; Calling the C compiler... 
-"gcc -g -O2 -Dfreebsd  -O -I/home/worm/lib/ecl//h -w -c hello.c -o hello.o" 
-;;; OPTIMIZE levels: Safety=0 (No runtime error checking), Space=0, Speed=3
-;;; Finished compiling hello.lsp.
-#P"hello.o
+;;; Invoking external command: gcc -O2 -march=i686 -pipe -fomit-frame-pointer -fPIC -fstrict-aliasing -Dlinux -O "-I/usr/lib/ecl//h" -w -c "hello.c" -o "hello.o"
+;;; OPTIMIZE levels: Safety=2, Space=0, Speed=3
+;;; Finished compiling hello.lisp.
+#P"hello.o"
 @end example
 
 @noindent
@@ -368,55 +370,57 @@ The final step is to build the executable using the @code{c:build-program}
 instruction.
 @example
 > @b{(c:build-program "myecl" :lisp-files '("hello.o"))}
-"gcc -g -O2 -Dfreebsd  -O -I/home/worm/lib/ecl//h -w -c myecl.c -o myecl.o" 
-"gcc  -w -o myecl -L/home/worm/lib/ecl/ myecl.o hello.o -lecl -lclos -llsp  -lgmp -Wl,--export-dynamic -lgc -lcompat -lgmp -lm" 
-"myecl"
+;;; Invoking external command: gcc -O2 -march=i686 -pipe -fomit-frame-pointer -fPIC -fstrict-aliasing -Dlinux -O "-I/usr/lib/ecl//h" -w -c "myecl.c" -o "myecl.o"
+;;; Invoking external command: gcc -o "myecl" -L"/usr/lib/ecl/" "myecl.o" "hello.o"  -Wl,--rpath,/usr/lib/ecl/  -lecl -lgmp -lgc -ldl -lm 
+#P"myecl"
+Top level.
 @end example
 @noindent
 Now you can execute this program from your favorite shell.
 
 @example
-worm@@arrakis.es% @b{./myecl}
+% @b{./myecl}
 Hello world!
-Bye.
 @end example
 
 @subsection Combining files into a larger FASL
 You can only perform the example in this section if your @ecl{} image supports
 dynamically loading of object files. In this example we build a loadable
 library which prints the @code{"Hello world!"} message and does nothing
-else. First you must create the @file{hello.lsp} file shown above. Next you
-have to enter the @ecl{} environment and type @code{(compile-file "hello.lsp"
+else. First you must create the @file{hello.lisp} file shown above. Next you
+have to enter the @ecl{} environment and type @code{(compile-file "hello.lisp"
 :system-p t)}. This produces an object file that can be linked to form a loadable
 library.
 
 @example
 Type :h for Help.  Top level.
-> @b{(compile-file "hello.lsp" :system-p t)}
-;;; Loading /home/worm/lib/ecl/cmp.so
-;;; Compiling hello.lsp.
+> (compile-file "hello.lisp" :system-p t)
+;;; Loading #P"/usr/lib/ecl/cmp.fas"
+;;; Loading #P"/usr/lib/ecl/sysfun.lsp"
+;;; Compiling hello.lisp.
 ;;; End of Pass 1.  
 ;;; Calling the C compiler... 
-"gcc -g -O2 -Dfreebsd  -O -I/home/worm/lib/ecl//h -w -c hello.c -o hello.o" 
-;;; OPTIMIZE levels: Safety=0 (No runtime error checking), Space=0, Speed=3
-;;; Finished compiling hello.lsp.
-#P"hello.o
+;;; Invoking external command: gcc -O2 -march=i686 -pipe -fomit-frame-pointer -fPIC -fstrict-aliasing -Dlinux -O "-I/usr/lib/ecl//h" -w -c "hello.c" -o "hello.o"
+;;; OPTIMIZE levels: Safety=2, Space=0, Speed=3
+;;; Finished compiling hello.lisp.
+#P"hello.o"
 @end example
 
 @noindent
 The final step is to build the library using the @code{c:build-shared-library}
 instruction.
 @example
-> @b{(c:build-fasl "myecl" :lisp-files '("hello.o"))}
-"gcc -g -O2 -Dfreebsd  -O -I/home/worm/lib/ecl//h -w -c myecl.c -o myecl.o" 
-"gcc  -w -o myecl.fas -L/home/worm/lib/ecl/ myecl.o hello.o -lecl -lclos -llsp  -lgmp -Wl,--export-dynamic -lgc -lcompat -lgmp -lm" 
-"myecl.fas"
+> (c:build-shared-library "myecl" :lisp-files '("hello.o"))
+;;; Invoking external command: gcc -O2 -march=i686 -pipe -fomit-frame-pointer -fPIC -fstrict-aliasing -Dlinux -O "-I/usr/lib/ecl//h" -w -c "myecl.c" -o "myecl.o"
+;;; Invoking external command: gcc -o "libmyecl.so" -L"/usr/lib/ecl/" "myecl.o" "hello.o"  -Wl,--rpath,/usr/lib/ecl/ -shared   -lecl -lgmp -lgc -ldl -lm 
+#P"libmyecl.so"
 @end example
 @noindent
 Now you can load this extension from any @ecl{} image, even those you produce
 with @code{c:build-program}.
 
 @example
+<<<<<<<< THIS EXAMPLE IS WRONG?! >>>>>>>>>
 > (load "myecl")
 ;;; Loading myecl.fas
 Hello world!
@@ -426,7 +430,7 @@ Bye.
 @c ---------------------------------------------------------------------
 
 @node Lisp objects, The interpreter, Building programs, Top
-@chapter Manipulating lisp objects
+@chapter Manipulating Lisp objects
 
 If you want to extend, fix or simply customize @ecl{} for your own needs,
 you should understand how the implementation works.
@@ -897,7 +901,7 @@ or @code{cl_eval} instead:
 @chapter The interpreter
 
 @menu
-* @ecl{} stacks::              
+* @ecl{} stacks::               
 * Procedure Call Conventions::  
 * The lexical environment::     
 * The interpreter stack::       
@@ -1095,7 +1099,7 @@ Block names: FACT.          ;;;  The block  FACT  is established.
 
 @c ---------------------------------------------------------------------
 
-@node The compiler, Porting @ecl{}, The interpreter, Top
+@node The compiler, The Garbage Collector, The interpreter, Top
 @chapter The compiler
  
 @menu
@@ -1353,7 +1357,8 @@ supposed to disassemble a compiled function and to display the
 assembler code.  According to @cltl{},
 
      @emph{This is primary useful for debugging the compiler}, ..\\
- 
+
+@c FIXME: Actually disassemble shows bytecode
 This is, however, @emph{useless} in our case, because we are
 not concerned with assembly language.  Rather, we are interested in
 the C code generated by the @ecl{} compiler.  Thus the disassemble
@@ -1447,7 +1452,7 @@ C-language expression.  A @emph{C-type} is one of the Lisp symbols
 Each corresponds to a data type in the C language; @code{:object} is
 the type of Lisp object and other C-types are primitive data types in C.
 
-@defmac {Clines} {@{string@}*}
+@defmac {Clines} @{@{string@}*@}
 When the @ecl{} compiler encounters a macro form @code{(Clines @var{string1
 ...  stringn})}, it simply outputs the @var{strings} into the c-file.  The
 arguments are not evaluated and each argument must be a string.  Each
@@ -1464,7 +1469,7 @@ When interpreted, a @code{Clines} macro form expands to @nil{}.
 
 @end defmac
 
-@defmac {c-inline} {@var{args-list} @var{arg-C-types} @var{output-C-type} @var{C-expr} @keys{} (@var{side-effects} @code{T}) (@var{one-liner} @code{T})}
+@defmac {c-inline} @{@var{args-list} @var{arg-C-types} @var{output-C-type} @var{C-expr} @keys{} (@var{side-effects} @code{T}) (@var{one-liner} @code{T})@}
 
 @code{c-inline} is a special form that can only be used in compiled code.
 For all purposes it behaves as a Lisp form, which takes the arguments
@@ -1508,7 +1513,7 @@ double foo (double x, double y) @{
 @end example
 @end defmac
 
-@defmac {defentry} {@var{function} @var{parameter-list} @var{C-function}}
+@defmac {defentry} @{@var{function} @var{parameter-list} @var{C-function}@}
 
 @code{defentry} defines a Lisp function whose body consists of the calling
 sequence to a C-language function. @var{function} is the name of the Lisp
@@ -1539,7 +1544,7 @@ A @code{defentry} form is treated in the above way only when it appears as a
 top-level form of a Lisp source file.  Otherwise, a @code{defentry} form
 expands to @nil{}.
 
-@defmac {defla} {name lambda-list @{declaration | doc-string@}*}
+@defmac {defla} @{name lambda-list @{declaration | doc-string@}*@}
 
 When interpreted, @code{defla} is exactly the same as @code{defun}.  That is,
 @code{(defla @var{name lambda-list .  body})} expands to @code{(defun @var{name
@@ -1601,7 +1606,7 @@ For example, the logical AND of two integers could be defined as:
 (defCbody logand (fixnum fixnum) fixnum "(#0) & (#1)")
 @end example
 
-@defun {definline} {name args-types result-type C-expr}
+@defun {definline} @{name args-types result-type C-expr@}
 @code{definline} behaves exactly as @code{defCbody}.  Moreover, after a
 @code{definline} definition has been supplied, the @ecl{} compiler will expand
 inline any call to function @var{name} into code corresponding to the C
@@ -1661,7 +1666,17 @@ C-type:
 
 @c ---------------------------------------------------------------------
 
-@node Porting @ecl{},  , The compiler, Top
+@node The Garbage Collector, Porting @ecl{}, The compiler, Top
+@chapter The Garbage Collector
+
+Using @ecl{} in existing application sometimes involves keeping Lisp
+objects where the garbage collector normally cannot see them.
+
+@c FIXME: Complete this...
+
+@c ---------------------------------------------------------------------
+
+@node Porting @ecl{},  , The Garbage Collector, Top
 @chapter Porting @ecl{}
 
 To port @ecl{} to a new architecture, the following steps are required:

@@ -22,7 +22,7 @@ static cl_object si_simple_toplevel ()
 	int i;
 
 	/* Simple minded top level loop */
-	printf(";*** Lisp core booted ****\nECLS (Embeddable Common Lisp)  %d pages\n", MAXPAGE);
+	printf(";*** Lisp core booted ****\nECL (Embeddable Common Lisp)  %d pages\n", MAXPAGE);
 	fflush(stdout);
 #ifdef TK
 	StdinResume();
