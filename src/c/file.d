@@ -2735,6 +2735,9 @@ ecl_make_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm)
     case smm_output:
       mode = "w";
       break;
+    case smm_io:
+      mode = "w+";
+      break;
 #if defined(ECL_WSOCK)
     case smm_input_wsock:
     case smm_output_wsock:
