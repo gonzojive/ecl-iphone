@@ -11,6 +11,20 @@ GOODIES:
 
 * Optimize out (multiple-value-call ... (values ...)).
 
+* Implement memory collection based on mmap()
+
+* Improve the garbage collector using kernel information about dirty
+  pages.
+
+* Improve fixnum_times.
+
+* expand parse_namestring() to accept scaped strings, spaces, etc.
+
+* Make the version with Boehm's GC and the version without it binary
+  compatible.
+
+* Complete the MOP.
+
 THREADS:
 ========
 
@@ -31,6 +45,14 @@ Unknown variables
 
 KNOWN BUGS:
 ===========
+
+* #'unread-char does not fail when the character differs from the
+  original one.
+
+* vector-push-extend may succeed even if the vector is not
+  adjustable. Should we be more strict?
+
+* should we relax ASSOC? (See lists156.tst)
 
 * When building :AROUND, :AFTER or :BEFORE methods for REINITIALIZE-INSTANCE,
   one may introduce new initialization options, that CHECK-INITARGS ignores.
