@@ -205,11 +205,6 @@ symbol, in which case the print-name of that symbol is used.  If PACKAGE is
 NIL, then all packages are searched."
   (sys::apropos-doc string package))
 
-;;; Import functions which are useful for user interaction
-
-(in-package "CL-USER")
-(import '(sys::help sys::help* #-boehm-gc sys::room sys::gc))
-
 ;;; Pretty-print-formats.
 ;;;
 ;;;	The number N as the property of a symbol SYMBOL indicates that,
@@ -218,8 +213,6 @@ NIL, then all packages are searched."
 ;;;	the ECL pretty-printer.
 
 ;;; (At boot we don't have setf yet)
-
-(in-package "SYSTEM")
 
 (mapc #'(lambda (x) (put-sysprop (first x) 'sys::pretty-print-format (second x)))
       '((block 1)
@@ -283,3 +276,8 @@ NIL, then all packages are searched."
 #+clos	(symbol-macrolet 2)
 #+clos	(with-accessors 2)
 #+clos	(with-slots 2)))
+
+;;; Import functions which are useful for user interaction
+
+(in-package "CL-USER")
+(import '(sys::help sys::help* #-boehm-gc sys::room sys::gc))

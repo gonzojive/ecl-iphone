@@ -1524,6 +1524,9 @@ ECLS 0.9b
     C and a port of the code in CMUCL. The last one is selected with
     the flag --with-cmuformat.
 
+  - ECL extension AUTOLOAD implemented. An example
+	(autoload "sys:cmp" 'compile 'compile-file 'disassemble)
+
 * ANSI compatibility:
 
   - DIRECTORY now understands :WILD, :UP, :WILD-INFERIORS, and, as an
