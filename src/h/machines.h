@@ -215,8 +215,8 @@
 #else
 #  define CLIBS -ldl
 #endif
-#endif sun4sol2
-#endif	sun
+#endif /* sun4sol2 */
+#endif /* sun */
 
 #ifdef	cygwin
 #define	IEEEFLOAT
@@ -230,6 +230,6 @@
 #ifndef unix
 #  define unix
 #endif
-#endif	cygwin
+#endif /* cygwin */
 
 /**********************************************************************/

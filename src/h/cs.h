@@ -80,7 +80,7 @@ typedef char *  caddr_t;
 #define ARGSTACK(size)	CSTACK(size)
 #endif
 
-#endif i386
+#endif
 
 /*---------------------------------------------------------------------- */
 
@@ -115,7 +115,7 @@ typedef char *  caddr_t;
   				cl_object _stack_bot[size+1]; \
   				_stack_top = _stack_bot /*  __GNUC__ */
 
-#endif __mips
+#endif
 
 /*---------------------------------------------------------------------- */
 
@@ -154,7 +154,7 @@ typedef char *  caddr_t;
 			     asm("call %0,0" : : "r" (fun) ); \
        			     asm("nop"); _res;})
 
-#endif sparc
+#endif
 
 /*---------------------------------------------------------------------- */
 
@@ -196,6 +196,6 @@ typedef char *  caddr_t;
 				 REG = (cl_object)(fun), \
 				 asm("	calls	r0,(r11)"), \
 				 asm("	movl	r0,r11"), (int)REG)
-#endif VAX
+#endif
 
 /*---------------------------------------------------------------------- */

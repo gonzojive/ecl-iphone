@@ -157,7 +157,7 @@ extern cl_object nlj_tag;	/* throw-tag, block-id, or */
 extern int *cs_org;
 extern int *cs_limit;
 extern size_t cssize;
-#endif THREADS
+#endif
 
 #ifdef DOWN_STACK
 #define	cs_check(something) \
@@ -167,7 +167,7 @@ extern size_t cssize;
 #define	cs_check(something) \
 	if ((int *)(&something) > cs_limit) \
 		cs_overflow()
-#endif DOWN_STACK
+#endif
 
 #define	check_arg(n)  \
 			if (narg != (n))  \

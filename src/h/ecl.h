@@ -28,7 +28,7 @@
 #include "critical.h"
 #ifdef THREADS
 # include "lwp.h"
-#endif THREADS
+#endif
 #include "external.h"
 #ifndef _ARGS
 #define _ARGS(x) x
@@ -39,4 +39,4 @@
 #include "number.h"
 #ifdef LOCATIVE
 #include "unify.h"
-#endif LOCATIVE
+#endif
