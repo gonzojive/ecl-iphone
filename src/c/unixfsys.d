@@ -108,6 +108,10 @@ si_file_kind(cl_object filename, cl_object follow_links) {
 	@(return file_kind(filename->string.self, !Null(follow_links)))
 }
 
+#if defined(mingw32)
+#define si_follow_symlink si_coerce_to_filename
+#else
+
 static cl_object
 si_follow_symlink(cl_object filename) {
 	/* This routine outputs a namestring in which all the symbolic links
@@ -141,6 +145,7 @@ si_follow_symlink(cl_object filename) {
 		FEerror("Filename ~S actually points to a directory", 1, filename);
 	return ((kind == Cnil)? Cnil : output);
 }
+#endif /* !mingw32 */
 
 
 /*
