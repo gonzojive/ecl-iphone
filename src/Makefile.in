@@ -8,7 +8,7 @@ VPATH	= @srcdir@
 # Programs used by "make":
 #
 
-CC	= @CC@
+CC	= @ECL_CC@
 DEFS	= -D@host@
 LIBS	= @LIBS@ @TKLIBS@ @CLIBS@
 CFLAGS	= @CFLAGS@
