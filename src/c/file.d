@@ -784,7 +784,7 @@ flush_output_stream_binary(cl_object strm)
 			fseek(strm->stream.file, -1, SEEK_CUR);
 		}
 		ecl_write_byte8(b, strm);
-		fseek(strm->stream.file, 0, SEEK_CUR); /* I/O synchronization */
+		fseek(strm->stream.file, -1, SEEK_CUR); /* I/O synchronization */
 	}
 }
 
@@ -874,7 +874,7 @@ BEGIN:
 		if (strm->stream.buffer_state == -1) {
 			/* buffer is prepared for writing: flush it */
 			flush_output_stream_binary(strm);
-			b >>= nb;
+			b = ((unsigned char)ecl_read_byte8(strm)) >> nb;
 			nb = (8-nb);
 		}
 		if (nb >= bs) {
