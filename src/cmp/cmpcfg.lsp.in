@@ -4,6 +4,6 @@
 ;;
 (in-package "COMPILER")
 (setq compiler::*cc* "@CC@")
-(setq compiler::*cc-flags* "@CFLAGS@ -D@MACHINE@ @LSPCFLAGS@")
+(setq compiler::*cc-flags* "@CFLAGS@ -D@host@ @LSPCFLAGS@")
 (setq compiler::*ld-flags* "-lecls -lgmp @LDFLAGS@ @CLIBS@")
 (setq compiler::*ld-shared-flags* "@SHARED_LDFLAGS@")

@@ -44,13 +44,9 @@ AC_SUBST(mandir)
 AC_SUBST(infodir)
 AC_SUBST(builddir)
 AC_SUBST(top_srcdir)
-AC_SUBST(TKLIBS)
 AC_ARG_ENABLE(boehm,
 	[  --enable-boehm	  Enable Boehm & Weiser's garbage collector.],
 	boehm="$enable_boehm")
-dnl AC_ARG_ENABLE(profile,
-dnl 	[  --enable-profile 	  Enable profiling tool.],
-dnl 	profile="$enable_profile")
 dnl AC_ARG_ENABLE(tk,
 dnl 	[  --enable-tk		  Include Tk.],
 dnl 	tk="$enable_tk")
@@ -111,14 +107,22 @@ AC_SUBST(CP)
 AC_SUBST(RM)
 AC_SUBST(MV)
 AC_SUBST(RUN)
-AC_SUBST(CFLAGS)
-AC_SUBST(LSPCFLAGS)
-AC_SUBST(CLIBS)
-AC_SUBST(LDFLAGS)
-AC_SUBST(SHARED_LDFLAGS)
-AC_SUBST(architecture)
-AC_SUBST(software_type)
-AC_SUBST(software_version)
+AC_SUBST(CFLAGS)dnl		Flags for the compiler
+AC_SUBST(LSPCFLAGS)dnl		Additional flags needed to compile translated code
+AC_SUBST(CLIBS)dnl		System libraries to be linked in
+AC_SUBST(LDFLAGS)dnl		Flags for program linker
+AC_SUBST(SHARED_LDFLAGS)dnl	Flags for shared libraries linker
+AC_SUBST(architecture)dnl	Type of processor for which this is compiled
+AC_SUBST(software_type)dnl	Type of operating system
+AC_SUBST(software_version)dnl	Version number of operating system
+AC_SUBST(SHORT_SITE_NAME)dnl	Short name for the machine we built this on
+AC_SUBST(LONG_SITE_NAME)dnl	Long name for the machine we built this on
+AC_SUBST(EXTRA_OBJS)dnl		Extra *.o files to be compiled into libecls.a
+AC_SUBST(TARGETS)dnl		Versions of ECLS to be built
+AC_SUBST(TKLIBS)dnl		Libraries with the Tcl/Tk components
+AC_SUBST(SUBDIR)dnl		Subdirectories that make should process
+AC_SUBST(LIBRARIES)dnl		GMP, Boehm's GC, etc
+AC_SUBST(LSP_LIBRARIES)dnl	Libraries produced by lisp translator
 
 dnl ----------------------------------------------------------------------
 dnl           checks for UNIX variants that set DEFS
@@ -145,7 +149,6 @@ ECLS_PROCESS_MACHINES_H()
 dnl ----------------------------------------------------------------------
 dnl		Set options
 dnl
-[
 if test "x$prefix" = "xNONE"; then prefix=${ac_default_prefix}; fi
 if test "x$exec_prefix" = "xNONE"; then exec_prefix=${prefix}; fi
 bindir="${exec_prefix}/bin"
@@ -153,28 +156,52 @@ libdir="${exec_prefix}/lib/ecls"
 mandir="${prefix}/man/man1"
 infodir="${prefix}/info"
 builddir=`pwd`
-
-if [ $profile ] ; then
- if [ ${host} = linux ] ; then
- LIBS="${LIBS} -lgmon"
- fi
+TARGETS=ecls
+LIBRARIES=libecls.a
+LSP_LIBRARIES=liblsp.a
+SUBDIR=c
+CLIBS="${CLIBS} -lgmp -lm"
+if test ${boehm} ; then
+  LIBRARIES="${LIBRARIES} libgc.a"
+  CLIBS="-lgc ${CLIBS}"
+  SUBDIR="${SUBDIR} gc"
+  EXTRA_OBJS="${EXTRA_OBJS} alloc_2.o"
+  AC_DEFINE(GBC_BOEHM)
+else
+  EXTRA_OBJS="${EXTRA_OBJS} alloc.o gbc.o"
 fi
-if [ $tk ] ; then
- TKLIBS="-ltk -ltcl -lXpm @XLIBS@"
+if test ${enable_local_gmp} ; then
+  AC_DEFINE(HAVE_LOCAL_GMP)
+else
+  LIBRARIES="${LIBRARIES} libgmp.a"
+  SUBDIR="${SUBDIR} gmp"
 fi
-]
-CLIBS="${CLIBS} -lm"
-test "${boehm}" && CLIBS="-lgc ${CLIBS}"
-test "${boehm}" && AC_DEFINE(GBC_BOEHM)
-AC_MSG_CHECKING(for clos)
-AC_MSG_RESULT([${clos}])
-test "${tk}" && AC_DEFINE(TK)
-test "${clx}" && AC_DEFINE(CLX)
-test "${tcp}" -o "${clx}" && AC_DEFINE(TCP)
-test "${locative}" && AC_DEFINE(LOCATIVE)
-test "${threads}" && AC_DEFINE(THREADS)
-test "${runtime}" && AC_DEFINE(RUNTIME)
-test "${profile}" && AC_DEFINE(PROFILE)
+if test ${runtime} ; then
+  AC_DEFINE(RUNTIME)
+else
+  LSP_LIBRARIES="${LSP_LIBRARIES} libcmp.a"
+fi
+if test ${tk} ; then
+  TKLIBS="-ltk -ltcl -lXpm @XLIBS@"
+  AC_DEFINE(TK)
+fi
+if test ${clx} ; then
+  TARGETS="${TARGETS} eclx"
+  LSP_LIBRARIES="${LSP_LIBRARIES} libclx.a"
+  AC_DEFINE(CLX)
+fi
+if test "${tcp}" -o "${clx}"; then
+  AC_DEFINE(TCP)
+  EXTRA_OBJS="${EXTRA_OBJS} tcp.o"
+fi
+if test "${locative}" ; then
+  EXTRA_OBJS="${EXTRA_OBJS} unify.o"
+  AC_DEFINE(LOCATIVE)
+fi
+if test "${threads}" ; then
+  EXTRA_OBJS="${EXTRA_OBJS} lwp.o"
+  AC_DEFINE(THREADS)
+fi
 
 dnl ----------------------------------------------------------------------
 dnl		Study the call conventions
@@ -235,50 +262,17 @@ dnl		GNU multiprecision library
 dnl
 echo -n "checking for gmp..."
 if test "$enable_local_gmp" = "yes"; then
-AC_DEFINE(HAVE_LOCAL_GMP)
 echo "use local $enable_local_gmp"
 else
 echo "configuring gmp"
 (test -d gmp && rm -rf gmp; mkdir gmp; cd gmp; $srcdir/gmp/configure $gmp_flags)
 fi
-CLIBS="-lgmp ${CLIBS}"
 
 dnl ---------------------------------------------------------------------
 dnl		Final pass over configuration files
 dnl
-AC_OUTPUT(h/config.h compile.lsp compile2.lsp compile_rest.lsp bare.lsp
+AC_OUTPUT(h/config.h compile.lsp compile_rest.lsp bare.lsp
  lsp/config.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp
  ../Makefile Makefile c/Makefile doc/Makefile
  tk/Makefile clx/defsys.lsp tests/Makefile ansi-tests/Makefile gabriel/Makefile
- lsp/defsys.lsp cmp/defsys.lsp clos/defsys.lsp gc/Makefile,
-
-# Fix machine dependencies in Makefiles
-CPP=`grep "^s%@CPP@%" config.status | sed -e "s/^s%@CPP@%//g" -e "s/%g$//g"`
-# Prefer cpp since it does not remove backslash newline
-test -x /lib/cpp && CPP=/lib/cpp
-# Get back the value for host:
-host=`grep "^s%@host@" config.status | sed -e "s/s%@host@%//" -e "s/%g//"`
-
-# Can't use @host@ directly in Makefile's or CPP will replace with 1
-SUBDIR_MAKEFILES=`grep SUBDIR_MAKEFILES= Makefile | sed -e "s/SUBDIR_MAKEFILES=//"`
-for mf in lsp/config.lsp compile.lsp compile2.lsp compile_rest.lsp bare.lsp\
-     lsp/load.lsp cmp/load.lsp clos/load.lsp cmp/cmpcfg.lsp \
-     Makefile ${SUBDIR_MAKEFILES}; do
-     echo updating $mf
-     # pull in configuration #defines, but omit #includes
-     cat h/config.h | \
-	grep -v '^# *include' > junk.c
-     sed -e '/^#  */d' $mf >> junk.c
-     ${CPP} -P -D${host} junk.c | \
-     sed -e "s/@MACHINE@/${host}/" \
-	 -e 's/^#.*//' -e 's/^[ 	][ 	]*$//' -e 's/^ /	/' | \
-     sed -n -e '/^..*$/p' > $mf
-     rm -f junk.c
-done
-echo updating ../Makefile
-# Fix srcdir and VPATH
-sed -e "s/@MACHINE@/${host}/" -e "s%src/\.\.$%src%" ../Makefile > foo
-mv foo ../Makefile
-# Fix for GNU make: does not help
-#touch Makefile
-)
+ lsp/defsys.lsp cmp/defsys.lsp clos/defsys.lsp gc/Makefile)

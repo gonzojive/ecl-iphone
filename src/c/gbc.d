@@ -17,6 +17,8 @@
 #include "ecls.h"
 #include "page.h"
 
+#ifndef GBC_BOEHM
+
 /******************************* EXPORTS ******************************/
 
 cl_object @'si::*gc-verbose*';
@@ -966,3 +968,5 @@ init_GC(void)
 	GC_enable();
 	gc_time = 0;
 }
+
+#endif

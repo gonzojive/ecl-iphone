@@ -25,19 +25,14 @@
 	   :c-file t :h-file t :data-file t :system-p t
 	   (cdr s)))
 
-#ifdef CLX
 ;;;
 ;;; * Compile and link MIT CLX extensions
 ;;;
+#+WANTS-CLX
+(progn
 (push :clx-ansi-common-lisp *features*)
 (load "defsys.lsp")
 (sbt::operate-on-system clx :library)
-
-(compiler::build-ecls "eclx"
-#ifndef RUNTIME
-	   'cmp
-#endif
-	   'clx
+(compiler::build-ecls "eclx" #+WANTS-CMP 'cmp 'clx)
 )
-#endif CLX
 

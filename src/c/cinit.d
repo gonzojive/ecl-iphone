@@ -46,5 +46,14 @@ init_lisp_libs(void)
 {
 	SYM_VAL(@'*package*') = system_package;
 	SYM_VAL(@'*features*') = CONS(make_keyword("ECLS-MIN"), SYM_VAL(@'*features*'));
+#ifdef CLOS
+	SYM_VAL(@'*features*') = CONS(make_keyword("WANTS-CLOS"), SYM_VAL(@'*features*'));
+#endif
+#ifndef RUNTIME
+	SYM_VAL(@'*features*') = CONS(make_keyword("WANTS-CMP"), SYM_VAL(@'*features*'));
+#endif
+#ifdef CLX
+	SYM_VAL(@'*features*') = CONS(make_kewyord("WANTS-CLX"), SYM_VAL(@'*features*'));
+#endif
 	make_si_function("TOP-LEVEL", @si::simple-toplevel);
 }

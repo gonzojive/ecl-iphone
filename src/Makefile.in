@@ -5,26 +5,14 @@ top_srcdir= @top_srcdir@
 srcdir	= @srcdir@
 VPATH	= @srcdir@
 
-MACHINE = @MACHINE@
-
 # Programs used by "make":
 #
 
 CC	= @CC@
-DEFS	= -D$(MACHINE)
+DEFS	= -D@host@
 LIBS	= @LIBS@ @TKLIBS@ @CLIBS@
 CFLAGS	= @CFLAGS@
 LDFLAGS	= @LDFLAGS@
-
-#ifdef __GO32__
-EXE	= go32
-#elif defined(__EMX__)
-EXE	= emx
-#else
-EXE	=
-#endif
-
-SHELL	= /bin/sh
 RM	= @RM@
 
 # ==================== Where To Install Things ====================
@@ -47,32 +35,10 @@ INSTALL_DATA = @INSTALL_DATA@
 
 # Files
 
-SUBDIR	= c
-LIBRARIES = libecls.a
-TARGETS = ecls
-#ifndef HAVE_LOCAL_GMP
-SUBDIR += gmp
-LIBRARIES += libgmp.a
-#endif
-#ifdef GBC_BOEHM
-SUBDIR += gc
-LIBRARIES += libgc.a
-#endif GBC_BOEHM
-LSP_LIBRARIES = liblsp.a
-#ifdef CLOS
-LSP_LIBRARIES += libclos.a
-#endif
-#ifndef RUNTIME
-LSP_LIBRARIES += libcmp.a
-#endif
-#ifdef CLX
-TARGETS += eclx
-LSP_LIBRARIES += libclx.a
-#endif
-
-# The makefiles of the directories in $SUBDIR.
-# Don't split this line: configure does grep on it
-SUBDIR_MAKEFILES= c/Makefile tk/Makefile doc/Makefile gc/Makefile
+SUBDIR = @SUBDIR@
+LIBRARIES = @LIBRARIES@
+LSP_LIBRARIES = @LSP_LIBRARIES@
+TARGETS = @TARGETS@
 
 all:	$(TARGETS) doc
 .PHONY:	all
@@ -93,11 +59,12 @@ ecls_min: $(LIBRARIES) .gdbinit
 	cp $(srcdir)/util/gdbinit $@
 
 libecls.a:
+	(echo $(SUBDIR) | grep gmp) && cp $(top_srcdir)/gmp/*.h h/
 	cd c; $(MAKE)
 libgc.a:
 	cd gc; $(MAKE)
 libgmp.a:
-	cd gmp; $(MAKE); cp .libs/libgmp.a ..
+	cd gmp; $(MAKE); mv .libs/libgmp.a ..
 
 BUILD-STAMP: config.status
 	(echo "#"; uname -a) > $@
@@ -109,18 +76,18 @@ install: BUILD-STAMP
 	test -d $(PREFIX)$(libdir)/h || (mkdir $(PREFIX)$(libdir)/h; chmod 755 $(PREFIX)$(libdir)/h)
 	$(INSTALL_DATA) BUILD-STAMP $(PREFIX)$(libdir)
 	$(INSTALL_DATA) h/config.h $(PREFIX)$(libdir)/h
-#ifndef HAVE_LOCAL_GMP
-	$(INSTALL_DATA) gmp/?*.h $(PREFIX)$(libdir)/h
-	$(INSTALL_DATA) $(srcdir)/gmp/?*.h $(PREFIX)$(libdir)/h
-#endif
+	if ( echo $(SUBDIR) | grep gmp ); then \
+	$(INSTALL_DATA) gmp/?*.h $(PREFIX)$(libdir)/h; \
+	$(INSTALL_DATA) $(srcdir)/gmp/?*.h $(PREFIX)$(libdir)/h; \
+	fi
 	for i in $(LSP_LIBRARIES) $(LIBRARIES); do \
 	$(INSTALL_DATA) $$i $(PREFIX)$(libdir); \
 	done
-#ifdef GBC_BOEHM
-	for i in $(srcdir)/gc/include/?*.h; do $(INSTALL_DATA) $$i $(PREFIX)$(libdir)/h/`basename $$i`; done
-	test -d $(PREFIX)$(libdir)/h/private  || (mkdir $(PREFIX)$(libdir)/h/private; chmod 755 $(PREFIX)$(libdir)/h/private)
-	for i in $(srcdir)/gc/include/private/?*.h; do $(INSTALL_DATA) $$i $(PREFIX)$(libdir)/h/private/`basename $$i`; done
-#endif GBC_BOEHM
+	if ( echo $(SUBDIR) | grep gmp ); then \
+	for i in $(srcdir)/gc/include/?*.h; do $(INSTALL_DATA) $$i $(PREFIX)$(libdir)/h/`basename $$i`; done; \
+	test -d $(PREFIX)$(libdir)/h/private  || (mkdir $(PREFIX)$(libdir)/h/private; chmod 755 $(PREFIX)$(libdir)/h/private); \
+	for i in $(srcdir)/gc/include/private/?*.h; do $(INSTALL_DATA) $$i $(PREFIX)$(libdir)/h/private/`basename $$i`; done; \
+	fi
 	cd c; $(MAKE) PREFIX="$(PREFIX)" install
 	cd doc; $(MAKE) PREFIX="$(PREFIX)" install
 

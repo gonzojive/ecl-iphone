@@ -14,30 +14,28 @@
 (si::pathname-translations "SYS" '(("*.*" "./*.*")))
 (setq compiler::*cc-flags* (concatenate 'string compiler::*cc-flags* " -I@srcdir@/h -I@srcdir@/gmp -I@builddir@/h"))
 
-#ifndef RUNTIME
 ;;;
 ;;; * Compile, load and link Common-Lisp to C compiler
 ;;;
+#+WANTS-CMP
+(progn
 (load "cmp/defsys.lsp")
 (proclaim '(optimize (safety 2) (space 3)))
 (sbt::operate-on-system cmp :library)
 ;(sbt::operate-on-system cmp :load)
-#endif RUNTIME
+)
 
-#ifdef CLOS
 ;;;
 ;;; * Compile, load and link PCL based Common-Lisp Object System
 ;;;
+#+WANTS-CLOS
+(progn
 (load "clos/defsys.lsp")
 (proclaim '(optimize (safety 2) (space 3)))
 (sbt::operate-on-system clos :library)
 ;(sbt::operate-on-system clos :load)
-#endif CLOS
-
-(compiler::build-ecls "ecls"
-#ifndef RUNTIME
-	   'cmp
-#endif
 )
+
+(compiler::build-ecls "ecls" #+WANTS-CMP 'cmp)
 
 (quit)

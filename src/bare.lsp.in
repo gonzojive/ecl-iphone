@@ -10,13 +10,13 @@
 ;;;
 (load "lsp/load.lsp")
 
-#ifdef CLOS
 ;;;
 ;;; * Load PCL-based Common-Lisp Object System
 ;;;
+#+WANTS-CLOS
+(progn
 (setf sys::*gc-verbose* nil)
-(load "clos/load.lsp")
-#endif
+(load "clos/load.lsp"))
 
 ;;;
 ;;; * Load the compiler.

@@ -30,39 +30,39 @@
 
 SHELL = /bin/sh
 MAKE = make  # BSD doesn't have it as a default.
-MACHINE = freebsd
+MACHINE = @MACHINE@
 
 # ========================= Last release ================================
 
-VERSION=0.2
+VERSION=0.3
 WWW=http://ecls.sourceforge.net/
 
 # ==================== Things `configure' Might Edit ====================
 
-CC=gcc
-CPP=gcc -E
+CC=/compat/linux/usr/bin/gcc
+CPP=/compat/linux/usr/bin/gcc -E
 LN_S=ln -s
-CFLAGS=-g -O2
+CFLAGS=-I/compat/linux/usr/i386-redhat-linux/include -I/compat/linux/usr/lib/gcc-lib/i386-redhat-linux/egcs-2.91.66/include  -I/compat/linux/usr/include
 
 #  Where to find the source code.
 #  This is set by the configure script's `--srcdir' option.
-srcdir=/home/worm/src/ecls/src
+srcdir=/home/jjgarcia/src/eklos/src/..
 
-bindir=/home/worm/bin
-infodir=/home/worm/info
-mandir=/home/worm/man/man1
-libdir=/home/worm/lib/ecls
+bindir=/home/jjgarcia/bin
+infodir=/home/jjgarcia/info
+mandir=/home/jjgarcia/man/man1
+libdir=/home/jjgarcia/lib/ecls
 
 #  What to release
-TAR_CONTENTS=Makefile.in Copy* README.1st README.orig doc \
-	configure site.lsp src/c src/cmp src/crs src/clos src/lsp src/doc \
+TAR_CONTENTS=Makefile.in README.1st LGPL ANNOUNCEMENT doc \
+	configure site.lsp src/c src/cmp src/clos src/lsp src/doc \
 	src/h src/etc src/gmp src/config* src/install.sh src/Makefile.in \
-	src/util contrib/ src/clx src/tk src/gc src/*.in src/gabriel
+	src/util contrib/ src/clx src/tk src/gc src/*.in src/*.m4 src/gabriel
 
 # ==================== Utility Programs for the Build ====================
 
 #  Allow the user to specify the install program.
-INSTALL = /usr/bin/install -c
+INSTALL = /compat/linux/usr/bin/install -c
 INSTALL_PROGRAM = ${INSTALL}
 INSTALL_DATA = ${INSTALL} -m 644
 

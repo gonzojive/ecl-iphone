@@ -15,6 +15,8 @@
 #include "ecls.h"
 #include "page.h"
 
+#ifdef GBC_BOEHM
+
 /**********************************************************
  *		OBJECT ALLOCATION			  *
  **********************************************************/
@@ -289,3 +291,5 @@ gc(enum type new_name)
 	GC_gcollect();
 	end_critical_section();
 }
+
+#endif /* GBC_BOEHM */

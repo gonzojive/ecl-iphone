@@ -5,25 +5,15 @@ top_srcdir= @top_srcdir@
 srcdir	= @srcdir@
 VPATH	= @srcdir@
 
-MACHINE = @MACHINE@
-
 # Programs used by "make":
 #
 CC	= @CC@
-DEFS	= -D$(MACHINE)
+DEFS	= -D@host@
 CFLAGS	= -c -I../h -I$(HDIR) -I$(top_srcdir)/gc @CFLAGS@ $(DEFS)
-#ifndef HAVE_LOCAL_GMP
-CFLAGS +=  -I$(top_srcdir)/gmp
-#endif
 
 SHELL	= /bin/sh
 RM	= @RM@
-
-#ifdef MSDOS
-DPP	= dpp.exe
-#else
 DPP	= ./dpp
-#endif
 
 # Data for installation
 #
@@ -39,14 +29,9 @@ HFILES	= ../h/config.h $(HDIR)/ecls.h $(HDIR)/ecls-cmp.h\
 	$(HDIR)/external.h $(HDIR)/lisp_external.h $(HDIR)/eval.h\
 	$(HDIR)/number.h $(HDIR)/page.h $(HDIR)/unify.h\
 	$(HDIR)/lwp.h $(HDIR)/critical.h
-#ifdef GBC_BOEHM
-ALLOC   = alloc_2.o
-#else
-ALLOC   = alloc.o gbc.o
-#endif
-OBJS	= main.o $(ALLOC) symbol.o package.o list.o\
+OBJS	= main.o symbol.o package.o list.o\
 	apply.o eval.o interpreter.o compiler.o disassembler.o \
-	lex.o reference.o character.o\
+	clos.o instance.o gfun.o lex.o reference.o character.o\
 	file.o read.o print.o error.o string.o cfun.o\
 	typespec.o assignment.o \
 	predicate.o big.o number.o\
@@ -56,28 +41,7 @@ OBJS	= main.o $(ALLOC) symbol.o package.o list.o\
 	time.o unixint.o\
 	mapfun.o multival.o hash.o format.o pathname.o\
 	structure.o load.o unixfsys.o unixsys.o \
-	all_keywords.o all_symbols.o all_functions.o init.o
-#ifdef THREADS
-OBJS	+= lwp.o
-#endif
-#ifdef LOCATIVE
-OBJS	+= unify.o
-#endif
-#if defined(TCP) || defined(CLX)
-OBJS	+= tcp.o
-#endif
-#ifdef CLOS
-OBJS	+= clos.o instance.o gfun.o
-#endif
-#ifdef TK
-OBJS	+= tclBasic.o tkMain.o
-#endif
-#ifdef PROFILE
-OBJS	+= profile.o
-#endif
-#ifdef MSDOS
-OBJS	+= dostimes.o dosdummy.o
-#endif
+	all_keywords.o all_symbols.o all_functions.o init.o @EXTRA_OBJS@
 
 .SUFFIXES: .c .o .d
 
@@ -115,17 +79,7 @@ dpp.exe	: $(srcdir)/dpp.c
 #apply.o: apply.c $(HFILES) $(HDIR)/cs.h
 # dangerous to optimize due to assembler hack
 #	$(CC) $(CFLAGS) -O0 -g apply.c -o $@
-#ifdef sgi
-# gcc optimization causes trouble
 assignment.o: assignment.c $(HFILES)
 	$(CC) $(CFLAGS) -g assignment.c -o $@
-#else
-#	$(CC) $(CFLAGS) assignment.c -o $@
-#endif
-#ifdef sgi
-# gcc optimization causes trouble
 gbc.o: gbc.c $(HFILES)
 	$(CC) $(CFLAGS) -g gbc.c -o $@
-#else
-#	$(CC) $(CFLAGS) gbc.c -o $@
-#endif

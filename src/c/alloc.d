@@ -34,6 +34,9 @@
 
 #include "ecls.h"
 #include "page.h"
+
+#ifndef GBC_BOEHM
+
 #ifdef BSD
 #include <sys/resource.h>
 #endif BSD
@@ -891,3 +894,5 @@ valloc(size_t size)
 { return memalign(getpagesize(), size);}
 # endif WANT_VALLOC
 #endif NEED_MALLOC
+
+#endif /* GBC_BOEHM */
