@@ -1158,11 +1158,11 @@ cl_symbols[] = {
 #endif
 
 #ifdef GBC_BOEHM
-{"GC", CL_ORDINARY, cl_gc, 1},
+{"SI::GC", SI_ORDINARY, si_gc, 1},
 #endif
 
 #if !defined(GBC_BOEHM)
-{"GC", CL_ORDINARY, cl_gc, -1},
+{"SI::GC", SI_ORDINARY, si_gc, -1},
 {"SI::ALLOCATE", SI_ORDINARY, si_allocate, -1},
 {"SI::ALLOCATED-PAGES", SI_ORDINARY, si_allocated_pages, -1},
 {"SI::MAXIMUM-ALLOCATABLE-PAGES", SI_ORDINARY, si_maximum_allocatable_pages, -1},

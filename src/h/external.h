@@ -26,7 +26,7 @@ extern cl_object cl_alloc_instance(cl_index slots);
 extern cl_object make_cons(cl_object a, cl_object d);
 extern void cl_dealloc(void *p, cl_index s);
 #ifdef GBC_BOEHM
-extern cl_object cl_gc(cl_object area);
+extern cl_object si_gc(cl_object area);
 extern void *GC_malloc(size_t size);
 extern void *GC_malloc_atomic_ignore_off_page(size_t size);
 extern void GC_free(void *);
@@ -394,7 +394,7 @@ extern void init_format(void);
 extern cl_object si_room_report _ARGS((int narg));
 extern cl_object si_reset_gc_count _ARGS((int narg));
 extern cl_object si_gc_time _ARGS((int narg));
-extern cl_object cl_gc(cl_object area);
+extern cl_object si_gc(cl_object area);
 #define GC_enabled() GC_enable
 #define GC_enable() GC_enable = TRUE;
 #define GC_disable() GC_enable = FALSE;

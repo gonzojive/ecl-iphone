@@ -281,7 +281,7 @@ ecl_register_root(cl_object *p)
 }
 
 cl_object
-cl_gc(cl_object area)
+si_gc(cl_object area)
 {
 	GC_gcollect();
 	@(return)

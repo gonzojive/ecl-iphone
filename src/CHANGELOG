@@ -1278,6 +1278,8 @@ ECLS 0.9
   - (SETF #:GXXX), where #:GXXX is any uninterned symbol, should be a
     valid function name.
 
+  - Symbol GC moved from the COMMON-LISP package, to SI and CL-USER.
+
 TODO:
 =====
 
