@@ -21,6 +21,7 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include "ecl.h"
+#include "ecl-inl.h"
 #include "machines.h"
 #ifdef BSD
 #include <dirent.h>
@@ -77,24 +78,54 @@ current_dir(void) {
  * Using a certain path, guess the type of the object it points to.
  */
 
-enum file_system_type {
-  FILE_DOES_NOT_EXIST = 0,
-  FILE_REGULAR = 1,
-  FILE_DIRECTORY = 2,
-  FILE_OTHER = 3
-};
+static cl_object
+file_kind(char *filename, bool follow_links) {
+	struct stat buf;
+	if ((follow_links? stat : lstat)(filename, &buf) < 0)
+		return Cnil;
+	if (S_ISLNK(buf.st_mode))
+		return @':link';
+	if (S_ISDIR(buf.st_mode))
+		return @':directory';
+	if (S_ISREG(buf.st_mode))
+		return @':file';
+	return @':special';
+}
 
-static int
-get_file_system_type(const char *namestring) {
-  struct stat buf;
+cl_object
+si_file_kind(cl_object filename, cl_object follow_links) {
+	filename = coerce_to_filename(filename);
 
-  if (stat(namestring, &buf) < 0)
-    return FILE_DOES_NOT_EXIST;
-  if (S_ISREG(buf.st_mode))
-    return FILE_REGULAR;
-  if (S_ISDIR(buf.st_mode))
-    return FILE_DIRECTORY;
-  return FILE_OTHER;
+	@(return file_kind(filename->string.self, !Null(follow_links)))
+}
+
+static cl_object
+si_follow_symlink(cl_object filename) {
+	cl_object output, kind;
+	int size = 128, written;
+
+	output = coerce_to_filename(filename);
+	kind = file_kind(output->string.self, FALSE);
+	while (kind == @':link') {
+		cl_object aux;
+		do {
+			aux = cl_alloc_adjustable_string(size);
+			written = readlink(output->string.self, aux->string.self, size);
+			size += 256;
+		} while(written == size);
+		aux->string.self[written] = '\0';
+		output = aux;
+		kind = file_kind(output->string.self, FALSE);
+		if (kind == @':directory') {
+			output->string.self[written++] = '/';
+			output->string.self[written] = '\0';
+		}
+		output->string.fillp = written;
+	}
+	if (kind == @':directory' &&
+	    output->string.self[output->string.fillp-1] != '/')
+		FEerror("Filename ~S actually points to a directory", 1, filename);
+	@(return ((kind == Cnil)? Cnil : output))
 }
 
 
@@ -103,94 +134,26 @@ get_file_system_type(const char *namestring) {
  * going through links if they exist. Default is
  * current directory
  */
-static cl_object
-error_no_dir(cl_object pathname) {
-	FElibc_error("truedirectory: ~S cannot be accessed", 1, pathname);
-	return Cnil;
-}
-
-static cl_object
-truedirectory(cl_object pathname)
-{
-	cl_object directory;
-
-	directory = current_dir();
-	if (pathname->pathname.directory != Cnil) {
-	  cl_object dir = pathname->pathname.directory;
-	  if (CAR(dir) == @':absolute')
-	    chdir("/");
-	  for (dir=CDR(dir); !Null(dir); dir=CDR(dir)) {
-	    cl_object name = CAR(dir);
-	    if (name == @':up') {
-	      if (chdir("..") < 0)
-		return error_no_dir(pathname);
-	    } else if (type_of(name) == t_string) {
-	      name = coerce_to_simple_string(name);
-	      if (chdir(name->string.self) < 0)
-		return error_no_dir(pathname);
-	    } else
-	      FEerror("truename: ~A not allowed in filename",1,name);
-	  }
-	  dir = current_dir();
-	  chdir(directory->string.self);
-	  directory = dir;
-	}
-	return directory;
-}
-
 cl_object
 cl_truename(cl_object pathname)
 {
-	cl_object directory;
-	cl_object truefilename;
+	cl_object directory, filename;
 
-	pathname = coerce_to_file_pathname(pathname);
+	/* First we ensure that PATHNAME itself does not point to a symlink. */
+	filename = si_follow_symlink(pathname);
+	if (filename == Cnil)
+		FEerror("truename: file ~S does not exist or cannot be accessed", 1,
+			pathname);
 
-	/* We are looking for a file! */
-	if (pathname->pathname.name == Cnil)
-	  FEerror("truename: no file name supplied",0);
+	/* Next we process the directory part of the filename, removing all
+	 * possible symlinks. To do so, we only have to change to the directory
+	 * which contains our file, and come back. SI::CHDIR calls getcwd() which
+	 * should return the canonical form of the directory.
+	 */
+	directory = si_chdir(filename);
+	directory = si_chdir(directory);
 
-	/* Wildcards are not allowed */
-	if (pathname->pathname.name == @':wild' ||
-	    pathname->pathname.type == @':wild')
-	  FEerror("truename: :wild not allowed in filename",0);
-
-	directory = truedirectory(pathname);
-
-	/* Compose a whole pathname by adding the
-	   file name and the file type */
-	if (Null(pathname->pathname.type)) 
-	  truefilename = @si::string-concatenate(2, directory, pathname->pathname.name);
-	else {
-	  truefilename = @si::string-concatenate(4, directory,
-				pathname->pathname.name,
-				make_simple_string("."),
-				pathname->pathname.type);
-	}
-
-	/* Finally check that the object exists and it is
-	   either a file or a device. (FIXME! Should we
-	   reject devices, pipes, etc?) */
-	switch (get_file_system_type(truefilename->string.self)) {
-	case FILE_DOES_NOT_EXIST:
-	  FEerror("truename: file does not exist or cannot be accessed",1,pathname);
-	case FILE_DIRECTORY:
-	  FEerror("truename: ~A is a directory", 1, truefilename);
-	default:
-	  return1(cl_pathname(truefilename));
-	}
-}
-
-bool
-file_exists(cl_object file)
-{
-	struct stat filestatus;
-
-	file = coerce_to_filename(file);
-	if (stat(file->string.self, &filestatus) >= 0)
-		return(TRUE);
-	else
-		return(FALSE);
+	@(return merge_pathnames(directory, filename, @':newest'))
 }
 
 FILE *
@@ -246,15 +209,7 @@ cl_delete_file(cl_object file)
 cl_object
 cl_probe_file(cl_object file)
 {
-	/* INV: file_exists() and truename() check types */
-	@(return (file_exists(file)? cl_truename(file) : Cnil))
-}
-
-cl_object
-si_file_exists(cl_object file)
-{
-	/* INV: file_exists() */
-	@(return (file_exists(file)? Ct : Cnil))
+	@(return (si_file_kind(file, Ct) != Cnil? cl_truename(file) : Cnil))
 }
 
 cl_object
@@ -421,157 +376,247 @@ string_match(const char *s, const char *p) {
 	return (*p == 0);
 }
 
-cl_object
-si_string_match(cl_object s1, cl_object s2)
-{
-	assert_type_string(s1);
-	assert_type_string(s2);
-	@(return (string_match(s1->string.self, s2->string.self) ? Ct : Cnil))
-}
-
-static cl_object
-actual_directory(cl_object namestring, cl_object mask, bool all)
-{
-	cl_object ret = Cnil;
-	cl_object saved_dir = current_dir();
-	cl_object *directory = &ret;
-	cl_object dir_path = coerce_to_file_pathname(namestring);
-	enum file_system_type t;
-#if defined(BSD)
 /*
- * version by Brian Spilsbury <brian@@bizo.biz.usyd.edu.au>, using opendir()
- * arranged by Juan Jose Garcia Ripoll to understand masks
+ * list_current_directory() lists the files and directories which are contained
+ * in the current working directory (as given by current_dir()). If ONLY_DIR is
+ * true, the list is made of only the directories -- a propert which is checked
+ * by following the symlinks.
  */
+static cl_object
+list_current_directory(const char *mask, bool only_dir)
+{
+	cl_object kind, out = Cnil;
+	cl_object *out_cdr = &out;
+	char *text;
+
+#if defined(BSD)
 	DIR *dir;
 	struct dirent *entry;
 
-	namestring = coerce_to_simple_string(namestring);
-	mask = coerce_to_simple_string(mask);
-	if (chdir(namestring->string.self) < 0) {
-		chdir(saved_dir->string.self);
-		FElibc_error("directory: cannot access ~A", 1, namestring);
-	}
-	dir = opendir(".");
-	if (dir == NULL) {
-		chdir(saved_dir->string.self);
-		FElibc_error("Can't open the directory ~S.", 1, dir);
-	}
+	dir = opendir("./");
+	if (dir == NULL)
+		return Cnil;
 
 	while ((entry = readdir(dir))) {
-	  t = (enum file_system_type)get_file_system_type(entry->d_name);
-	  if ((all || t == FILE_REGULAR) &&
-	      string_match(entry->d_name, mask->string.self))
-	    {
-	      cl_index e = strlen(entry->d_name);
-	      cl_object file = parse_namestring(entry->d_name, 0, e, &e, Cnil);
-	      file = merge_pathnames(dir_path, file,Cnil);
-	      *directory = CONS(file, Cnil);
-	      directory = &CDR(*directory);
-	    }
-	}
-	closedir(dir);
-#endif
-#if defined(SYSV)
+		text = entry->d_name;
+
+#else /* SYSV */
 	FILE *fp;
 	char iobuffer[BUFSIZ];
 	DIRECTORY dir;
 
-	namestring = coerce_to_simple_string(namestring);
-	mask = coerce_to_simple_string(mask);
-	if (chdir(namestring->string.self) < 0) {
-		chdir(saved_dir->string.self);
-		FElibc_error("directory: cannot access ~A",1,namestring);
-	}
-	fp = fopen(".", OPEN_R);
-	if (fp == NULL) {
-		chdir(saved_dir->string.self);
-		FElibc_error("Can't open the directory ~S.", 1, dir);
-	}
+	previous_dir = si_chdir(directory);
+	fp = fopen("./", OPEN_R);
+	if (fp == NULL)
+		return Cnil;
 
 	setbuf(fp, iobuffer);
-	/* FIXME! What are these three lines for? */
-	fread(&dir, sizeof(DIRECTORY), 1, fp);
-	fread(&dir, sizeof(DIRECTORY), 1, fp);
 	for (;;) {
-	  if (fread(&dir, sizeof(DIRECTORY), 1, fp) <= 0)
-	    break;
-	  if (dir.d_ino == 0)
-	    continue;
-	  t = get_file_system_type(dir.d_name);
-	  if ((all || t == FILE_REGULAR) &&
-	      string_match(dir.d_name, mask->string.self))
-	    {
-	      cl_index e = strlen(dir.d_name);
-	      cl_object file = parse_namestring(dir.d_name, 0, e, &e);
-	      file = merge_pathnames(dir_path, file,Cnil);
-	      *directory = CONS(file, Cnil);
-	      directory = &CDR(*directory);
-	    }
+		if (fread(&dir, sizeof(DIRECTORY), 1, fp) <= 0)
+			break;
+		if (dir.d_ino == 0)
+			continue;
+		text = dir.d_name;
+#endif
+		if (text[0] == '.' &&
+		    (text[1] == '\0' ||
+		     (text[1] == '.' && text[2] == '\0')))
+			continue;
+		if (only_dir && file_kind(text, TRUE) != @':directory')
+			continue;
+		if (mask && !string_match(text, mask))
+			continue;
+		*out_cdr = CONS(make_string_copy(text), Cnil);
+		out_cdr = &CDR(*out_cdr);
 	}
+#ifdef BSD
+	closedir(dir);
+#else
 	fclose(fp);
 #endif
-	chdir(saved_dir->string.self);
-	return ret;
+	return out;
 }
 
-@(defun directory (&optional (filemask OBJNULL)
-			     (kall OBJNULL))
-	cl_object directory;
-	cl_object name, type, mask;
-	bool all = FALSE;
+/*
+ * dir_files() lists all files which are contained in the current directory and
+ * which match the masks in PATHNAME. This routine is essentially a wrapper for
+ * list_current_directory(), which transforms the list of strings into a list
+ * of pathnames. BASEDIR is the truename of the current directory and it is
+ * used to build these pathnames.
+ */
+static cl_object
+dir_files(cl_object basedir, cl_object pathname)
+{
+	cl_object all_files, output = Cnil;
+	cl_object mask, name, type;
+	int everything;
+
+	name = pathname->pathname.name;
+	type = pathname->pathname.type;
+	if (name != Cnil || type != Cnil) {
+		mask = make_pathname(Cnil, Cnil, Cnil, name, type, @':unspecific');
+	} else {
+		mask = Cnil;
+	}
+	all_files = list_current_directory(NULL, FALSE);
+	loop_for_in(all_files) {
+		char *text = CAR(all_files)->string.self;
+		if (file_kind(text, TRUE) == @':directory') {
+			if (mask == Cnil) {
+				cl_object new = nconc(cl_copy_list(basedir->pathname.directory),
+						      CONS(CAR(all_files), Cnil));
+				new = make_pathname(basedir->pathname.host,
+						    basedir->pathname.device,
+						    new, Cnil, Cnil, Cnil);
+				output = CONS(new, output);
+			}
+		} else {
+			cl_object new = cl_pathname(CAR(all_files));
+			if (mask != Cnil && Null(cl_pathname_match_p(new, mask)))
+				continue;
+			if (file_kind(text, FALSE) == @':link')
+				new = cl_truename(CAR(all_files));
+			else {
+				new->pathname.host = basedir->pathname.host;
+				new->pathname.device = basedir->pathname.device;
+				new->pathname.directory = basedir->pathname.directory;
+			}
+			output = CONS(new, output);
+		}
+	} end_loop_for_in;
+	return output;
+}
+
+/*
+ * dir_recursive() performs the dirty job of DIRECTORY. The routine moves
+ * through the filesystem looking for files and directories which match
+ * the masks in the arguments PATHNAME and DIRECTORY, collecting them in a
+ * list.
+ */
+static cl_object
+dir_recursive(cl_object pathname, cl_object directory)
+{
+	cl_object item, next_dir, prev_dir = current_dir(), output = Cnil;
+
+	/* There are several possibilities here:
+	 *
+	 * 1) The list of subdirectories DIRECTORY is empty, and only PATHNAME
+	 * remains to be inspected. If there is no file name or type, then
+	 * we simply output the truename of the current directory. Otherwise
+	 * we have to find a file which corresponds to the description.
+	 */
+	if (directory == Cnil) {
+		prev_dir = cl_pathname(prev_dir);
+		return dir_files(prev_dir, pathname);
+	}
+	/*
+	 * 2) We have not yet exhausted the DIRECTORY component of the
+	 * pathname. We have to enter some subdirectory, determined by
+	 * CAR(DIRECTORY) and scan it.
+	 */
+	item = CAR(directory);
+
+	if (type_of(item) == t_string || item == @':wild') {
+		/*
+		 * 2.1) If CAR(DIRECTORY) is a string or :WILD, we have to
+		 * enter & scan all subdirectories in our curent directory.
+		 */
+		next_dir = list_current_directory((item == @':wild')? "*" :
+						  item->string.self, TRUE);
+		loop_for_in(next_dir) {
+			char *text = CAR(next_dir)->string.self;
+			/* We are unable to move into this directory! */
+			if (chdir(text) < 0)
+				continue;
+			item = dir_recursive(pathname, CDR(directory));
+			output = nconc(item, output);
+			chdir(prev_dir->string.self);
+		} end_loop_for_in;
+	} else if (item == @':absolute') {
+		/*
+		 * 2.2) If CAR(DIRECTORY) is :ABSOLUTE, we have to scan the
+		 * root directory.
+		 */
+		if (chdir("/") < 0)
+			return Cnil;
+		output = dir_recursive(pathname, CDR(directory));
+		chdir(prev_dir->string.self);
+	} else if (item == @':relative') {
+		/*
+		 * 2.3) If CAR(DIRECTORY) is :RELATIVE, we have to scan the
+		 * current directory.
+		 */
+		output = dir_recursive(pathname, CDR(directory));
+	} else if (item == @':up') {
+		/*
+		 * 2.4) If CAR(DIRECTORY) is :UP, we have to scan the directory
+		 * which contains this one.
+		 */
+		if (chdir("..") < 0)
+			return Cnil;
+		output = dir_recursive(pathname, CDR(directory));
+		chdir(prev_dir->string.self);
+	} else if (item == @':wild-inferiors') {
+		/*
+		 * 2.5) If CAR(DIRECTORY) is :WILD-INFERIORS, we have to do
+		 * scan all subdirectories from _all_ levels, looking for a
+		 * tree that matches the remaining part of DIRECTORY.
+		 */
+		next_dir = list_current_directory("*", TRUE);
+		loop_for_in(next_dir) {
+			char *text = CAR(next_dir)->string.self;
+			if (chdir(text) < 0)
+				continue;
+			item = dir_recursive(pathname, directory);
+			output = nconc(item, output);
+			chdir(prev_dir->string.self);
+		} end_loop_for_in;
+		output = nconc(output, dir_recursive(pathname, CDR(directory)));
+	}
+	return output;
+}
+
+@(defun directory (mask &key &allow_other_keys)
+	cl_object prev_dir = Cnil;
+	cl_object output;
 @
-	/* Without arguments, it justs lists all files in
-	   current directory */
-	if (filemask == OBJNULL) {
-	  directory = current_dir();
-	  mask = make_simple_string("*");
-	  goto DO_MATCH;
-	}
-
-	if (kall == @':list-all')
-	  all = TRUE;
-	else if (kall != OBJNULL)
-	  FEwrong_type_argument(@'keyword', kall);
-
-	/* INV: coerce_to_file_pathname() checks types */
-	filemask = coerce_to_file_pathname(filemask);
-	name = filemask->pathname.name;
-	type = filemask->pathname.type;
-
-	directory = truedirectory(filemask);
-
-	if (name == @':wild')
-	  name = make_simple_string("*");
-	else if (name == Cnil) {
-	  if (type == Cnil)
-	    name = make_simple_string("*");
-	  else
-	    name = null_string;
-	}
-
-	if (type == Cnil)
-	  mask = name;
-	else {
-	  cl_object dot = make_simple_string(".");
-	  if (type == @':wild')
-	    type = make_simple_string("*");
-	  mask = @si::string-concatenate(3, name, dot, type);
-	}
- DO_MATCH:
-	@(return actual_directory(directory, mask, all))
+	CL_UNWIND_PROTECT_BEGIN {
+		prev_dir = current_dir();
+		mask = coerce_to_file_pathname(mask);
+		output = dir_recursive(mask, mask->pathname.directory);
+	} CL_UNWIND_PROTECT_EXIT {
+		if (prev_dir != Cnil)
+			chdir(prev_dir->string.self);
+	} CL_UNWIND_PROTECT_END;
+	@(return output)
 @)
 
 cl_object
 si_chdir(cl_object directory)
 {
-	cl_object filename, previous;
+	cl_object previous = current_dir();
+	cl_object dir;
 
-	/* INV: coerce_to_filename() checks types */
-	filename = coerce_to_filename(directory);
-	previous = current_dir();
-	if (chdir(filename->string.self) < 0) {
-		FElibc_error("Can't change the current directory to ~S", 1,
-			     filename);
+	directory = coerce_to_file_pathname(directory);
+	for (dir = directory->pathname.directory; !Null(dir); dir = CDR(dir)) {
+		cl_object part = CAR(dir);
+		if (type_of(part) == t_string) {
+			if (chdir(part->string.self) < 0)
+				goto ERROR;
+		} else if (part == @':absolute') {
+			if (chdir("/") < 0) {
+				chdir(previous->string.self);
+ERROR:				FElibc_error("Can't change the current directory to ~S",
+					     1, directory);
+			}
+		} else if (part == @':relative') {
+			/* Nothing to do */
+		} else if (part == @':up') {
+			if (chdir("..") < 0)
+				goto ERROR;
+		} else {
+			FEerror("~S is not allowed in SI::CHDIR", 1, part);
+		}
 	}
 	@(return previous)
 }

@@ -82,7 +82,7 @@
 		   (incf (var-ref (fun-var funob)))
 		   (list 'VAR (make-info :referred-vars vars
 					 :local-referred vars)
-			 vars))
+			 (first vars)))
 		 `(FUNCTION ,(make-info :sp-change 
 					(not (and (symbolp fun)
 						  (get-sysprop fun 'NO-SP-CHANGE))))

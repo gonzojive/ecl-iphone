@@ -121,7 +121,7 @@ si_instance_ref_safe(cl_object x, cl_object index)
 	x = x->instance.slots[i];
 	if (x == OBJNULL)
 		FEerror("Slot index ~S unbound", 1, index);
-	@(return x->instance.slots[i])
+	@(return x)
 }
 
 cl_object

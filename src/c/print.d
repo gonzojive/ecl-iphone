@@ -1173,7 +1173,7 @@ _write_object(cl_object x, int level)
 	case t_bytecodes: {
 		cl_object name = x->bytecodes.name;
 		if (PRINTreadably) FEprint_not_readable(x);
-		write_str("#<interpreted-function ");
+		write_str("#<bytecompiled-function ");
 		if (name != Cnil)
 			_write_object(name, level);
 		else
@@ -1239,6 +1239,15 @@ _write_object(cl_object x, int level)
 		write_ch('>');
 		break;
 #endif /* CLOS */
+#ifdef ECL_FFI
+	case t_foreign:
+		if (PRINTreadably) FEprint_not_readable(x);
+		write_str("#<foreign ");
+		/*_write_object(x->foreign.tag, level);*/
+		write_addr(x->foreign.data);
+		write_ch('>');
+		break;
+#endif /* ECL_FFI */
 	default:
 		if (PRINTreadably) FEprint_not_readable(x);
 		write_str("#<illegal pointer ");

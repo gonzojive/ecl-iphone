@@ -26,6 +26,8 @@
 (load "@abs_srcdir@/loop2.lsp" :verbose t)
 (load "@abs_srcdir@/defpackage.lsp" :verbose t)
 (load "@abs_srcdir@/ffi.lsp" :verbose t)
+#+ffi
+(load "@abs_srcdir@/ffi-objects.lsp" :verbose t)
  #+threads
 (load "@abs_srcdir@/thread.lsp" :verbose t)
  #+tk

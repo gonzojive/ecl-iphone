@@ -39,17 +39,12 @@
   (setq *notinline* nil)
   )
 
-(defun next-lcl () (incf *lcl*))
+(defun next-lcl () (list 'LCL (incf *lcl*)))
 
 (defun next-temp ()
   (prog1 *temp*
          (incf *temp*)
          (setq *max-temp* (max *temp* *max-temp*))))
-
-(defun next-unboxed (type)
-  (let ((tem (incf *next-unboxed*)))
-    (push (list (rep-type type) tem) *unboxed*)
-    tem))
 
 (defun next-lex ()
   (prog1 (cons *level* *lex*)

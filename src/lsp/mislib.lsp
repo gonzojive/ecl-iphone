@@ -138,11 +138,9 @@ Sunday is the *last* day of the week!!"
   (let* (d)
     (dolist (item (pathname-directory a-pathname))
       (setf d (nconc d (list item)))
-      (let ((p (make-pathname :directory d :name nil :type nil :version nil
-			      :host (pathname-host a-pathname)
-			      :device (pathname-device a-pathname))))
-	(unless (si::file-exists p)
-	  (si::mkdir p #o777)))))))
+      (let ((p (make-pathname :directory d :default a-pathname)))
+	(unless (or (symbolp item) (si::file-kind p nil))
+	  (si::mkdir p #o777))))))
 
 (defmacro with-hash-table-iterator ((iterator package) &body body)
   `(let ((,iterator (hash-table-iterator ,package)))

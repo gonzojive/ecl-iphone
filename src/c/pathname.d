@@ -38,6 +38,54 @@ error_directory(cl_object d) {
 	FEerror("make-pathname: ~A is not a valid directory", 1, d);
 }
 
+static cl_object
+check_directory(cl_object directory, bool logical)
+{
+	cl_object ptr, item;
+	int i;
+
+	if (CAR(directory) != @':absolute'  && CAR(directory) != @':relative')
+		return Cnil;
+ BEGIN:
+	for (i=0, ptr=directory; !endp(ptr); ptr = CDR(ptr), i++) {
+		cl_object item = CAR(ptr);
+		if (item == @':back') {
+			if (i == 0)
+				return @':error';
+			if (i == 1)
+				return @':error';
+			item = nthcdr(i-1, directory);
+			if (item == @':absolute' || item == @':wild-inferiors')
+				return @':error';
+			if (i > 2)
+				CDR(nthcdr(i-2, directory)) = CDR(ptr);
+		} if (item == @':up') {
+			if (i == 0)
+				return @':error';
+			item = nthcdr(i-1, directory);
+			if (item == @':absolute' || item == @':wild-inferiors')
+				return @':error';
+		} else if (item == @':relative' || item == @':absolute') {
+			if (i > 0)
+				return @':error';
+		} else if (type_of(item) == t_string) {
+			if (logical)
+				continue;
+			if (strcmp(item->string.self,".")==0) {
+				if (i == 0)
+					return @':error';
+				CDR(nthcdr(i-1, directory)) = CDR(ptr);
+			} else if (strcmp(item->string.self,"..") == 0) {
+				CAR(directory) = @':back';
+				goto BEGIN;
+			}
+		} else if (item != @':wild' && item != @':wild-inferiors') {
+			return @':error';
+		}
+	}
+	return directory;
+}
+
 cl_object
 make_pathname(cl_object host, cl_object device, cl_object directory,
 	      cl_object name, cl_object type, cl_object version)
@@ -55,10 +103,13 @@ make_pathname(cl_object host, cl_object device, cl_object directory,
 			directory = cl_list(2, @':absolute', @':wild-inferiors');
 		error_directory(directory);
 		break;
-	case t_cons:
-		if (CAR(directory) == @':absolute' ||
-		    CAR(directory) == @':relative')
+	case t_cons: {
+		cl_object aux = check_directory(cl_copy_list(directory), 1);
+		if (aux != @':error') {
+			directory = aux;
 			break;
+		}
+	}
 	default:
 		error_directory(directory);
 
@@ -87,7 +138,6 @@ make_pathname(cl_object host, cl_object device, cl_object directory,
 	x->pathname.version = @':unspecific';
 	return(x);
 }
-
 
 static cl_object
 tilde_expand(cl_object directory)
@@ -216,19 +266,19 @@ parse_directories(const char *s, int flags, cl_index start, cl_index end,
 	flags |= WORD_INCLUDE_DELIM | WORD_ALLOW_ASTERISK;
 	*end_of_dir = start;
 	for (i = j = start; i < end; j = i) {
-		cl_object word = parse_word(s, delim, flags, j, end, &i);
-		if (word == @':error' || word == Cnil)
+		cl_object part = parse_word(s, delim, flags, j, end, &i);
+		if (part == @':error' || part == Cnil)
 			break;
-		if (word == null_string) {	/* just "/" or ";" */
+		if (part == null_string) {  /* "/", ";" */
 			if (j != start) {
 				if (flags & WORD_LOGICAL)
 					return @':error';
 				continue;
 			}
-			word = (flags & WORD_LOGICAL) ? @':relative' : @':absolute';
+			part = (flags & WORD_LOGICAL) ? @':relative' : @':absolute';
 		}
 		*end_of_dir = i;
-		plast = &CDR(*plast = CONS(word, Cnil));
+		plast = &CDR(*plast = CONS(part, Cnil));
 	}
 	return path;
 }
@@ -295,10 +345,13 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 	logical = TRUE;
 	device = Cnil;
 	path = parse_directories(s, WORD_LOGICAL, *ep, end, ep);
+	if (CONSP(path)) {
+		if (CAR(path) != @':relative' && CAR(path) != @':absolute')
+			path = CONS(@':absolute', path);
+		path = check_directory(path, TRUE);
+	}
 	if (path == @':error')
 		return Cnil;
-	if (!endp(path) && CAR(path) != @':relative')
-		path = CONS(@':absolute', path);
 	name = parse_word(s, '.', WORD_LOGICAL | WORD_ALLOW_ASTERISK |
 			  WORD_EMPTY_IS_NIL, *ep, end, ep);
 	type = parse_word(s, '\0', WORD_LOGICAL | WORD_ALLOW_ASTERISK |
@@ -338,22 +391,14 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 			return Cnil;
 	}
 	path = parse_directories(s, 0, *ep, end, ep);
+	if (CONSP(path)) {
+		if (CAR(path) != @':relative' && CAR(path) != @':absolute')
+			path = CONS(@':relative', path);
+		path = tilde_expand(path);
+		path = check_directory(path, FALSE);
+	}
 	if (path == @':error')
 		return Cnil;
-	if (!endp(path)) {
-		if (CAR(path) == @':absolute') {
-			/* According to ANSI CL, "/.." is erroneous */
-			if (cl_cadr(path) == @':up')
-				return Cnil;
-		} else  {
-			/* If path is relative and we got here, then it
-			   has no :RELATIVE/:ABSOLUTE in front of it and we add one.
-			   Pathnames with hostnames are always absolute.
-			*/
-			path = CONS(host == Cnil? @':relative' : @':absolute', path);
-			path = tilde_expand(path);
-		}
-	}
 	name = parse_word(s, '.', WORD_ALLOW_ASTERISK | WORD_EMPTY_IS_NIL, *ep,
 			  end, ep);
 	type = parse_word(s, '\0', WORD_ALLOW_ASTERISK | WORD_EMPTY_IS_NIL, *ep,
@@ -607,8 +652,10 @@ do_namestring(cl_object x)
 			push_c_string(buffer, "*", 1);
 		} else if (y == @':wild-inferiors') {
 			push_c_string(buffer, "**", 2);
-		} else {
+		} else if (y != @':back') {
 			push_string(buffer, y);
+		} else {
+			FEerror("Directory :back has no namestring representation",0);
 		}
 		push_c_string(buffer, logical? ";" : "/", 1);
 	}
@@ -910,9 +957,9 @@ do_path_item_match(const char *s, const char *p) {
 
 static bool
 path_item_match(cl_object a, cl_object mask) {
-	if (mask == @':wild' || mask == Cnil)
+	if (mask == @':wild')
 		return TRUE;
-	if (type_of(a) != t_string)
+	if (type_of(a) != t_string || mask == Cnil)
 		return (a == mask);
 	if (type_of(mask) != t_string)
 		FEerror("~S is not supported as mask for pathname-match-p", 1, mask);

@@ -57,8 +57,7 @@
 	     start end))
     (values x0 x1)))
 
-#+ecl-min
-(eval-when (compile eval)
+(eval-when (compile #+ecl-min eval)
   (defmacro with-start-end (start end seq &body body)
     `(multiple-value-bind (,start ,end)
         (sequence-limits ,start ,end ,seq) 

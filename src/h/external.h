@@ -74,7 +74,6 @@ extern cl_symbol_initializer cl_symbols[];
 extern cl_index cl_num_symbols_in_core;
 extern void init_all_symbols(void);
 
-
 /* apply.c */
 
 extern cl_object APPLY_fixed(int n, cl_object (*f)(), cl_object *x);
@@ -334,6 +333,15 @@ extern cl_object cl_apply_from_stack(cl_index narg, cl_object fun);
 extern cl_object link_call(cl_object sym, cl_objectfn *pLK, int narg, cl_va_list args);
 extern cl_object cl_safe_eval(cl_object form, cl_object *bytecodes, cl_object env, cl_object err_value);
 extern void init_eval(void);
+
+/* ffi.c */
+
+#ifdef ECL_FFI
+extern cl_object si_allocate_foreign_data(cl_object tag, cl_object size);
+extern cl_object si_free_foreign_data(cl_object x);
+extern cl_object si_foreign_data_tag(cl_object x);
+extern cl_object ecl_make_foreign_data(cl_object tag, cl_index size, void *data);
+#endif
 
 /* file.c */
 
@@ -1316,17 +1324,15 @@ extern cl_object cl_delete_file(cl_object file);
 extern cl_object cl_probe_file(cl_object file);
 extern cl_object cl_file_write_date(cl_object file);
 extern cl_object cl_file_author(cl_object file);
+extern cl_object si_file_kind(cl_object pathname, cl_object follow_links);
 extern cl_object si_chdir(cl_object directory);
 extern cl_object si_mkdir(cl_object directory, cl_object mode);
-extern cl_object si_string_match(cl_object string, cl_object pattern);
+extern cl_object cl_directory _ARGS((int narg, cl_object directory, ...));
 extern cl_object cl_user_homedir_pathname _ARGS((int narg, ...));
-extern cl_object cl_directory _ARGS((int narg, ...));
-extern cl_object si_file_exists (cl_object pathname);
 extern cl_object si_mkstemp(cl_object template);
 
 extern const char *expand_pathname(const char *name);
 extern cl_object string_to_pathname(char *s);
-extern bool file_exists(cl_object file);
 extern FILE *backup_fopen(const char *filename, const char *option);
 extern int file_len(FILE *fp);
 extern cl_object homedir_pathname(cl_object user);

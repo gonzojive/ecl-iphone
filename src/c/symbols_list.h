@@ -1038,7 +1038,7 @@ cl_symbols[] = {
 {SYS_ "ELT-SET", SI_ORDINARY, si_elt_set, 3},
 {SYS_ "EVAL-WITH-ENV", SI_ORDINARY, si_eval_with_env, 2},
 {SYS_ "EXPAND-DEFMACRO", SI_ORDINARY, NULL, -1},
-{SYS_ "FILE-EXISTS", SI_ORDINARY, si_file_exists, 1},
+{SYS_ "FILE-KIND", SI_ORDINARY, si_file_kind, 2},
 {SYS_ "FILL-POINTER-SET", SI_ORDINARY, si_fill_pointer_set, 2},
 {SYS_ "FIXNUMP", SI_ORDINARY, si_fixnump, 1},
 {SYS_ "FRS-BDS", SI_ORDINARY, si_frs_bds, 1},
@@ -1119,7 +1119,6 @@ cl_symbols[] = {
 {SYS_ "SPECIALP", SI_ORDINARY, si_specialp, 1},
 {SYS_ "STANDARD-READTABLE", SI_ORDINARY, si_standard_readtable, 0},
 {SYS_ "STRING-CONCATENATE", SI_ORDINARY, si_string_concatenate, -1},
-{SYS_ "STRING-MATCH", SI_ORDINARY, si_string_match, 2},
 {SYS_ "STRING-TO-OBJECT", SI_ORDINARY, si_string_to_object, 1},
 {SYS_ "STRUCTURE-NAME", SI_ORDINARY, si_structure_name, 1},
 {SYS_ "STRUCTURE-PRINT-FUNCTION", SI_ORDINARY, NULL, -1},
@@ -1247,6 +1246,7 @@ cl_symbols[] = {
 {KEY_ "ALLOW-OTHER-KEYS", KEYWORD, NULL, -1},
 {KEY_ "APPEND", KEYWORD, NULL, -1},
 {KEY_ "ARRAY", KEYWORD, NULL, -1},
+{KEY_ "BACK", KEYWORD, NULL, -1},
 {KEY_ "BASE", KEYWORD, NULL, -1},
 {KEY_ "BLOCK", KEYWORD, NULL, -1},
 {KEY_ "CAPITALIZE", KEYWORD, NULL, -1},
@@ -1352,6 +1352,17 @@ cl_symbols[] = {
 #endif /* !GBC_BOEHM */
 
 {SYS_ "VALID-FUNCTION-NAME-P", SI_ORDINARY, si_valid_function_name_p, 1},
+
+#ifdef ECL_FFI
+{SYS_ "ALLOCATE-FOREIGN-DATA", SI_ORDINARY, si_allocate_foreign_data, 2},
+{SYS_ "FOREIGN-DATA", SI_ORDINARY, NULL, -1},
+{SYS_ "FOREIGN-DATA-TAG", SI_ORDINARY, si_foreign_data_tag, 1},
+{SYS_ "FREE-FOREIGN-DATA", SI_ORDINARY, si_free_foreign_data, 1},
+#endif
+
+{KEY_ "FILE", KEYWORD, NULL, -1},
+{KEY_ "LINK", KEYWORD, NULL, -1},
+{KEY_ "SPECIAL", KEYWORD, NULL, -1},
 
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1}};

@@ -399,10 +399,14 @@ value of this variable is non-NIL.")
 	   (load (argv i))))
       ((string= "-shell" (argv i))
        (incf i)
-       (if (= i argc)
-	   (error "Missing file name")
-	   (let ((*load-verbose* nil))
-	     (load (argv i))))
+       #-ecl-min
+       (let ((*break-enable* nil))
+	 (handler-case
+	     (if (= i argc)
+		 (format t "Missing file name")
+		 (let ((*load-verbose* nil))
+		   (load (argv i))))
+	   (condition (c) (format t "~A" c))))
        (quit))
       ((string= "-eval" (argv i))
        (incf i)
@@ -486,7 +490,7 @@ file.  When the saved image is invoked, it will start the redefined top-level."
 		    (eval-with-env - *break-env*)))
 	     (setq /// // // / / values *** ** ** * * (car /))
 	     (tpl-print values)
-	     nil)
+	     nil))
 	   (break-where)))))
 
 (defun tpl-prompt ()
@@ -498,7 +502,7 @@ file.  When the saved image is invoked, it will start the redefined top-level."
 	  (- *tpl-level* *step-level* -1)
 	  ""))
 
-(defun tpl-read ()
+(defun tpl-read (&aux (*readtable* (sys::standard-readtable)))
   (finish-output)
   (loop
     (case (peek-char nil *standard-input* nil :EOF)
@@ -530,7 +534,7 @@ file.  When the saved image is invoked, it will start the redefined top-level."
       ;; error happens within the reader, and we perform a ":C" or
       ;; (CONTINUE), the reader will wait for an inexistent #\Newline.
       (t
-       (return (read-preserving-whitespace))))))
+       (return (read))))))
 
 (defun tpl-make-command (name line &aux (c nil))
   (dolist (commands *tpl-commands*)
@@ -630,6 +634,7 @@ file.  When the saved image is invoked, it will start the redefined top-level."
   (let*((*print-level* 2)
 	(*print-length* 4)
 	(*print-pretty* t)
+	(*print-readably* nil)
 	(functions) (blocks) (variables))
     (do* ((env *break-env* (cddr env))
 	  (type (first env) (first env))

@@ -31,37 +31,34 @@
 	       (setq var-loc (next-env))
 	       (setf (var-loc var) var-loc))
 	     (when (zerop var-loc) (wt-nl "env" *env-lvl* " = Cnil;"))
-	     (wt-nl "CLV" var-loc
-		    "=&CAR(env" *env-lvl* "=CONS(" loc ",env" *env-lvl* "));"))
+	     (wt-nl "CLV" var-loc "=&CAR(env" *env-lvl* "=CONS(")
+	     (wt-coerce-loc :object loc)
+	     (wt ",env" *env-lvl* "));"))
 	   (progn
 	     (unless (consp var-loc)
 	       ;; first binding: assign location
 	       (setq var-loc (next-lex))
 	       (setf (var-loc var) var-loc))
-	     (wt-nl) (wt-lex var-loc) (wt "=" loc ";")))
+	     (wt-nl) (wt-lex var-loc) (wt "= ")
+	     (wt-coerce-loc :object loc)
+	     (wt ";")))
        (wt-comment (var-name var))))
     (SPECIAL
      (bds-bind loc var))
-    (OBJECT
-     (if (eq (var-loc var) 'OBJECT)
-	 ;; set location for lambda list requireds
-	 (setf (var-loc var) (second loc))
-	 ;; already has location (e.g. optional in lambda list)
-	 (unless (and (consp loc)	; check they are not the same
-		      (eq 'LCL (car loc))
-		      (= (var-loc var) (second loc)))
-	   (wt-nl) (wt-lcl (var-loc var)) (wt "= " loc ";"))
-	 ))
     (t
-     (wt-nl) (wt-lcl (var-loc var)) (wt "= ")
-     (case (var-kind var)
-       (FIXNUM (wt-fixnum-loc loc))
-       (CHARACTER (wt-character-loc loc))
-       (LONG-FLOAT (wt-long-float-loc loc))
-       (SHORT-FLOAT (wt-short-float-loc loc))
-       (t (baboon)))
-     (wt ";")))
-  )
+     (cond ((not (eq (var-loc var) 'OBJECT))
+	    ;; already has location (e.g. optional in lambda list)
+	    ;; check they are not the same
+	    (unless (equal (var-loc var) loc)
+	      (wt-nl var "= ")
+	      (wt-coerce-loc (var-rep-type var) loc)
+	      (wt ";")))
+	   ((and (consp loc) (eql (car loc) 'LCL))
+	    ;; set location for lambda list requireds
+	    (setf (var-loc var) loc))
+	   (t
+	    (error)))
+	 )))
 
 ;;; Used by let*, defmacro and lambda's &aux, &optional, &rest, &keyword
 (defun bind-init (var form)
@@ -84,15 +81,16 @@
       ;; now the binding is in effect
       (push 'BDS-BIND *unwind-exit*))))
 
-(defun bds-bind (loc var &aux loc-var)
+(defun bds-bind (loc var)
   ;; Optimize the case (let ((*special-var* *special-var*)) ...)
-  (if (and (consp loc)
-	   (eq (car loc) 'var)
-	   (typep (setq loc-var (second loc)) 'var)
-	   (eq (var-kind loc-var) 'global)
-	   (eq (var-name loc-var) (var-name var)))
-    (wt-nl "bds_push(" (var-loc var) ");")
-    (wt-nl "bds_bind(" (var-loc var) "," loc ");"))
+  (cond ((and (var-p loc)
+	      (eq (var-kind loc) 'global)
+	      (eq (var-name loc) (var-name var)))
+	 (wt-nl "bds_push(" (var-loc var) ");"))
+	(t
+	 (wt-nl "bds_bind(" (var-loc var) ",")
+	 (wt-coerce-loc :object loc)
+	 (wt ");")))
   ;; push BDS-BIND only once:
   ;; bds-bind may be called several times on the same variable, e.g.
   ;; an optional has two alternative bindings.

@@ -109,7 +109,7 @@
           (setf (var-loc var) (next-lcl))
           (unless block-p
             (setq block-p t) (wt-nl "{ "))
-          (wt "cl_object ") (wt-lcl (var-loc var)) (wt ";"))
+          (wt "cl_object " var ";"))
 	(unless env-grows
 	  (setq env-grows (var-ref-ccb var))))))
   ;; or in closure environment:
@@ -270,7 +270,7 @@
 	   ;; we introduce a variable to hold the funob
 	   (let ((var (or (fun-var fun)
 			  (setf (fun-var fun)
-				(make-var :name fname :kind 'OBJECT)))))
+				(make-var :name fname :kind :OBJECT)))))
 	     (cond (ccb (setf (var-ref-ccb var) t
 			      (var-kind var) 'LEXICAL)
 			(setf (fun-ref-ccb fun) t))
@@ -318,10 +318,7 @@
     (let* ((*destination* 'TRASH)
            (*exit* (next-label))
            (*unwind-exit* (cons *exit* *unwind-exit*)))
-          (c2psetq
-	   (mapcar #'(lambda (v) (list v)) ; nil (ccb)
-		   (cdr *tail-recursion-info*))
-	   args)
+          (c2psetq (cdr *tail-recursion-info*) args)
           (wt-label *exit*))
     (unwind-no-exit 'TAIL-RECURSION-MARK)
     (wt-nl "goto TTL;")
@@ -337,7 +334,7 @@
 	     (list 'CALL-LOCAL "APPLY" lex-level closure-p
 		   (list fun `(STACK-POINTER ,narg)) narg fname)
 	     (list 'CALL-LOCAL fun lex-level closure-p
-		   (coerce-locs (inline-args args) nil) narg fname)))
+		   (coerce-locs (inline-args args)) narg fname)))
 	(close-inline-blocks)))))
 
 (defun wt-call-local (fun lex-lvl closure-p args narg fname)

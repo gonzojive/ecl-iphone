@@ -65,9 +65,9 @@
 	      (blk-destination blk) *destination*)
 	(wt "{")
 	(unless (or (blk-ref-ccb blk) (blk-ref-clb blk))
-	  (setf (var-loc blk-var) (next-lcl)
-		(var-kind blk-var) 'OBJECT)
-	  (wt " cl_object ") (wt-var blk-var) (wt ";"))
+	  (setf (var-kind blk-var) :object
+		(var-loc blk-var) (next-lcl))
+	  (wt " cl_object " blk-var ";"))
 	(when (env-grows (blk-ref-ccb blk))
 	  (let ((env-lvl *env-lvl*))
 	    (wt-nl "volatile cl_object env" (incf *env-lvl*)

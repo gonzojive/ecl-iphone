@@ -22,8 +22,7 @@
   )
 
 (defun c2multiple-value-call (funob forms)
-  (let ((tot (list 'LCL (next-lcl)))
-	(nr (list 'LCL (next-lcl)))
+  (let ((tot (make-lcl-var :rep-type :cl-index))
         (loc (save-funob funob)))
     (wt-nl "{ cl_index " tot "=0;")
     (let ((*unwind-exit* `((STACK ,tot) ,@*unwind-exit*)))
@@ -46,7 +45,7 @@
   (if (eq 'TRASH *destination*)
       ;; dont bother saving values
       (c2progn (cons form forms))
-      (let ((nr `(LCL ,(next-lcl))))
+      (let ((nr (make-lcl-var :type :cl-index)))
 	(let ((*destination* 'VALUES)) (c2expr* form))
 	(wt-nl "{ cl_index " nr "=cl_stack_push_values();")
 	(let ((*destination* 'TRASH)
@@ -86,7 +85,7 @@
 	 (unwind-exit 'RETURN))
       (1 (c2expr (first forms)))
       (t (let* ((*inline-blocks* 0)
-		(forms (nreverse (inline-args forms))))
+		(forms (nreverse (coerce-locs (inline-args forms)))))
 	   ;; 1) By inlining arguments we make sure that VL has no call to funct.
 	   ;; 2) Reverse args to avoid clobbering VALUES(0)
 	   (wt-nl "NValues=" nv ";")
@@ -94,7 +93,7 @@
 		(i (1- (length forms)) (1- i)))
 	       ((null vl))
 	     (declare (fixnum i))
-	     (wt-nl "VALUES(" i ")=" (second (first vl)) ";"))
+	     (wt-nl "VALUES(" i ")=" (first vl) ";"))
 	   (unwind-exit 'VALUES)
 	   (close-inline-blocks))))))
 
@@ -124,7 +123,7 @@
 		   (c1expr* (second args) info)))
       (setq var (c1vref var))
       (push var vrefs)
-      (push (first var) (info-changed-vars info)))))
+      (push var (info-changed-vars info)))))
 
 (defun multiple-value-check (vrefs form)
   (and (rest vrefs)
@@ -138,7 +137,7 @@
 (defun c2multiple-value-setq (vrefs form)
   (multiple-value-check vrefs form)
   (let* ((*lcl* *lcl*)
-         (nr (list 'LCL (next-lcl))))
+         (nr (make-lcl-var :type :int)))
     (let ((*destination* 'VALUES)) (c2expr* form))
     (wt-nl "{int " nr "=NValues;")
     (do ((vs vrefs (rest vs))
@@ -148,13 +147,13 @@
       (declare (fixnum i))
       (setq vref (first vs))
       (wt-nl "if (" nr ">0) {")
-      (set-var (list 'VALUE i) (first vref)) ; (second vref) ccb
+      (set-var (list 'VALUE i) vref) ; (second vref) ccb
       (unless (endp (rest vs)) (wt-nl nr "--;"))
-      (wt-nl "} else {") (set-var nil (first vref)) ; (second vref) ccb
+      (wt-nl "} else {") (set-var nil vref) ; (second vref) ccb
       (wt "}"))
     (unless (eq *exit* 'RETURN) (wt-nl))
     (wt-nl "if (NValues>1) NValues=1;}")
-    (unwind-exit (if vrefs (caar vrefs) '(VALUE 0)))))
+    (unwind-exit (if vrefs (first vrefs) '(VALUE 0)))))
 
 (defun c1multiple-value-bind (args &aux (info (make-info))
                                    (vars nil) (vnames nil) init-form
@@ -193,7 +192,7 @@
 	 (*lcl* *lcl*)
 	 (labels nil)
 	 (env-grows nil)
-	 (nr (list 'LCL (next-lcl))))
+	 (nr (make-lcl-var :type :int)))
     ;; 1) Retrieve the number of output values
     (wt-nl "{ int " nr "=NValues;")
 
@@ -203,10 +202,9 @@
       (declare (type var var))
       (let ((kind (local var)))
 	(if kind
-	  (let ((lcl (next-lcl)))
-	    (setf (var-loc var) lcl)
-	    (wt-nl *volatile* (register var) (rep-type kind)) (wt-lcl lcl)
-	    (wt ";")
+	  (progn
+	    (bind (next-lcl) var)
+	    (wt-nl *volatile* (register var) (rep-type-name kind) " " var ";")
 	    (wt-comment (var-name var)))
 	  (unless env-grows (setq env-grows (var-ref-ccb var))))))
 

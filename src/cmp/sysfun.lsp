@@ -216,33 +216,33 @@
 (STANDARD-CHAR-P (character) T nil t)
 (GRAPHIC-CHAR-P (character) T nil t)
 (ALPHA-CHAR-P (character) T nil t
-	:inline-always ((character) boolean nil nil "isalpha(#0)"))
+	:inline-always ((character) :bool nil nil "isalpha(#0)"))
 (UPPER-CASE-P (character) T nil t
-	:inline-always ((character) boolean nil nil "isupper(#0)"))
+	:inline-always ((character) :bool nil nil "isupper(#0)"))
 (LOWER-CASE-P (character) T nil t
-	:inline-always ((character) boolean nil nil "islower(#0)"))
+	:inline-always ((character) :bool nil nil "islower(#0)"))
 (BOTH-CASE-P (character) T nil t
-	:inline-always ((character) boolean nil nil "(islower(#0)||isupper(#0))"))
+	:inline-always ((character) :bool nil nil "(islower(#0)||isupper(#0))"))
 (DIGIT-CHAR-P (character *) T nil nil
 	:inline-always
-	((character) boolean nil nil "@0; ((#0) <= '9' && (#0) >= '0')"))
+	((character) :bool nil nil "@0; ((#0) <= '9' && (#0) >= '0')"))
 (ALPHANUMERICP (character) T nil t
-	:inline-always ((character) boolean nil nil "isalnum(#0)"))
+	:inline-always ((character) :bool nil nil "isalnum(#0)"))
 (CHARACTER (T) CHARACTER)
 (CHAR= (character *) T nil t
-	:inline-always ((character character) boolean nil nil "(#0)==(#1)")
-	:inline-always ((t t) boolean nil nil "char_code(#0)==char_code(#1)"))
+	:inline-always ((character character) :bool nil nil "(#0)==(#1)")
+	:inline-always ((t t) :bool nil nil "char_code(#0)==char_code(#1)"))
 (CHAR/= (character *) T nil t
-	:inline-always ((character character) boolean nil nil "(#0)!=(#1)")
-	:inline-always ((t t) boolean nil nil "char_code(#0)!=char_code(#1)"))
+	:inline-always ((character character) :bool nil nil "(#0)!=(#1)")
+	:inline-always ((t t) :bool nil nil "char_code(#0)!=char_code(#1)"))
 (CHAR< (character *) T nil t
-	:inline-always ((character character) boolean nil nil "(#0)<(#1)"))
+	:inline-always ((character character) :bool nil nil "(#0)<(#1)"))
 (CHAR> (character *) T nil t
-	:inline-always ((character character) boolean nil nil "(#0)>(#1)"))
+	:inline-always ((character character) :bool nil nil "(#0)>(#1)"))
 (CHAR<= (character *) T nil t
-	:inline-always ((character character) boolean nil nil "(#0)<=(#1)"))
+	:inline-always ((character character) :bool nil nil "(#0)<=(#1)"))
 (CHAR>= (character *) T nil t
-	:inline-always ((character character) boolean nil nil "(#0)>=(#1)"))
+	:inline-always ((character character) :bool nil nil "(#0)>=(#1)"))
 (CHAR-EQUAL (character *) T nil t)
 (CHAR-NOT-EQUAL (character *) T nil t)
 (CHAR-LESSP (character *) T nil t)
@@ -420,8 +420,8 @@
 	:inline-always ((t t) t nil t "CONS(#0,#1)"))
 (TREE-EQUAL (T T *) T NIL T)
 (ENDP (T) T NIL T
-	:inline-safe ((t) boolean nil nil "endp(#0)")
-	:inline-unsafe ((t) boolean nil nil "#0==Cnil"))
+	:inline-safe ((t) :bool nil nil "endp(#0)")
+	:inline-unsafe ((t) :bool nil nil "#0==Cnil"))
 (LIST-LENGTH (T) T NIL NIL)
 (NTH (T T) T NIL NIL
 	:inline-always ((t t) t nil nil "nth(fixint(#0),#1)")
@@ -610,23 +610,23 @@
 (REALPART (T) T)
 (IMAGPART (T) T)
 (= (T *) T NIL T
-	:inline-always ((t t) boolean nil nil "number_equalp(#0,#1)")
-	:inline-always ((fixnum-float fixnum-float) boolean nil nil "(#0)==(#1)"))
+	:inline-always ((t t) :bool nil nil "number_equalp(#0,#1)")
+	:inline-always ((fixnum-float fixnum-float) :bool nil nil "(#0)==(#1)"))
 (/= (T *) T nil t
-	:inline-always ((t t) boolean nil nil "!number_equalp(#0,#1)")
-	:inline-always ((fixnum-float fixnum-float) boolean nil nil "(#0)!=(#1)"))
+	:inline-always ((t t) :bool nil nil "!number_equalp(#0,#1)")
+	:inline-always ((fixnum-float fixnum-float) :bool nil nil "(#0)!=(#1)"))
 (< (T *) T nil t
-	:inline-always ((t t) boolean nil nil "number_compare(#0,#1)<0")
-	:inline-always ((fixnum-float fixnum-float) boolean nil nil "(#0)<(#1)"))
+	:inline-always ((t t) :bool nil nil "number_compare(#0,#1)<0")
+	:inline-always ((fixnum-float fixnum-float) :bool nil nil "(#0)<(#1)"))
 (> (T *) T nil t
-	:inline-always ((t t) boolean nil nil "number_compare(#0,#1)>0")
-	:inline-always ((fixnum-float fixnum-float) boolean nil nil "(#0)>(#1)"))
+	:inline-always ((t t) :bool nil nil "number_compare(#0,#1)>0")
+	:inline-always ((fixnum-float fixnum-float) :bool nil nil "(#0)>(#1)"))
 (<= (T *) T nil t
-	:inline-always ((t t) boolean nil nil "number_compare(#0,#1)<=0")
-	:inline-always ((fixnum-float fixnum-float) boolean nil nil "(#0)<=(#1)"))
+	:inline-always ((t t) :bool nil nil "number_compare(#0,#1)<=0")
+	:inline-always ((fixnum-float fixnum-float) :bool nil nil "(#0)<=(#1)"))
 (>= (T *) T nil t
-	:inline-always ((t t) boolean nil nil "number_compare(#0,#1)>=0")
-	:inline-always ((fixnum-float fixnum-float) boolean nil nil "(#0)>=(#1)"))
+	:inline-always ((t t) :bool nil nil "number_compare(#0,#1)>=0")
+	:inline-always ((fixnum-float fixnum-float) :bool nil nil "(#0)>=(#1)"))
 (MAX (T *) T NIL NIL
 	:inline-always ((t t) t nil nil "@01;(number_compare(#0,#1)>=0?#0:#1)")
 	:inline-always ((fixnum fixnum) fixnum nil nil "@01;(#0)>=(#1)?#0:#1"))
@@ -641,24 +641,24 @@
 (LOGEQV (*) T NIL NIL)
 (BOOLE (T T T) T NIL NIL)
 (LOGBITP (T T) T NIL T
-	:inline-always ((fixnum fixnum) boolean nil nil "(#1 >> #0) & 1"))
+	:inline-always ((fixnum fixnum) :bool nil nil "(#1 >> #0) & 1"))
 (ASH (T T) T)
 (LOGCOUNT (T) T)
 (INTEGER-LENGTH (T) FIXNUM)
 (si::BIT-ARRAY-OP nil T)
 (ZEROP (T) T NIL T
-	:inline-always ((t) boolean nil nil "number_compare(MAKE_FIXNUM(0),#0)==0")
-	:inline-always ((fixnum-float) boolean nil nil "(#0)==0"))
+	:inline-always ((t) :bool nil nil "number_compare(MAKE_FIXNUM(0),#0)==0")
+	:inline-always ((fixnum-float) :bool nil nil "(#0)==0"))
 (PLUSP (T) T NIL T
-	:inline-always ((t) boolean nil nil "number_compare(MAKE_FIXNUM(0),#0)<0")
-	:inline-always ((fixnum-float) boolean nil nil "(#0)>0"))
+	:inline-always ((t) :bool nil nil "number_compare(MAKE_FIXNUM(0),#0)<0")
+	:inline-always ((fixnum-float) :bool nil nil "(#0)>0"))
 (MINUSP (T) T NIL T
-	:inline-always ((t) boolean nil nil "number_compare(MAKE_FIXNUM(0),#0)>0")
-	:inline-always ((fixnum-float) boolean nil nil "(#0)<0"))
+	:inline-always ((t) :bool nil nil "number_compare(MAKE_FIXNUM(0),#0)>0")
+	:inline-always ((fixnum-float) :bool nil nil "(#0)<0"))
 (ODDP (T) T NIL T
-	:inline-always ((fixnum fixnum) boolean nil nil "(#0) & 1"))
+	:inline-always ((fixnum fixnum) :bool nil nil "(#0) & 1"))
 (EVENP (T) T NIL T
-	:inline-always ((fixnum fixnum) boolean nil nil "~(#0) & 1"))
+	:inline-always ((fixnum fixnum) :bool nil nil "~(#0) & 1"))
 (RANDOM (T *) T)
 (MAKE-RANDOM-STATE (*) T)
 (RANDOM-STATE-P (T) T NIL T)
@@ -735,33 +735,33 @@
 (HOST-NAMESTRING (T) STRING)
 (ENOUGH-NAMESTRING (T *) STRING)
 (NULL (T) T NIL T
-	:inline-always ((t) boolean nil nil "#0==Cnil"))
+	:inline-always ((t) :bool nil nil "#0==Cnil"))
 (SYMBOLP (T) T NIL T
-	:inline-always ((t) boolean nil nil "SYMBOLP(#0)"))
+	:inline-always ((t) :bool nil nil "SYMBOLP(#0)"))
 (ATOM (T) T NIL T
-	:inline-always ((t) boolean nil nil "ATOM(#0)"))
+	:inline-always ((t) :bool nil nil "ATOM(#0)"))
 (CONSP (T) T NIL T
-	:inline-always ((t) boolean nil nil "CONSP(#0)"))
+	:inline-always ((t) :bool nil nil "CONSP(#0)"))
 (LISTP (T) T NIL T
-	:inline-always ((t) boolean nil nil "@0;LISTP(#0)"))
+	:inline-always ((t) :bool nil nil "@0;LISTP(#0)"))
 (NUMBERP (T) T NIL T
-	:inline-always ((t) boolean nil nil "numberp(#0)"))
+	:inline-always ((t) :bool nil nil "numberp(#0)"))
 (INTEGERP (T) T NIL T
-	:inline-always ((t) boolean nil nil
+	:inline-always ((t) :bool nil nil
 		"@0;type_of(#0)==t_fixnum||type_of(#0)==t_bignum"))
 (RATIONALP (T) T nil t)
 (FLOATP (T) T NIL T
-	:inline-always ((t) boolean nil nil
+	:inline-always ((t) :bool nil nil
 		"@0;type_of(#0)==t_shortfloat||type_of(#0)==t_longfloat"))
 (COMPLEXP (T) T NIL T)
 (CHARACTERP (T) T NIL T
-	:inline-always ((t) boolean nil nil "CHARACTERP(#0)"))
+	:inline-always ((t) :bool nil nil "CHARACTERP(#0)"))
 (STRINGP (T) T NIL T
-	:inline-always ((t) boolean nil nil "type_of(#0)==t_string"))
+	:inline-always ((t) :bool nil nil "type_of(#0)==t_string"))
 (BIT-VECTOR-P (T) T NIL T
-	:inline-always ((t) boolean nil nil "(type_of(#0)==t_bitvector)"))
+	:inline-always ((t) :bool nil nil "(type_of(#0)==t_bitvector)"))
 (VECTORP (T) T NIL T
-	:inline-always ((t) boolean nil nil
+	:inline-always ((t) :bool nil nil
 		"@0;type_of(#0)==t_vector||
 type_of(#0)==t_string||
 type_of(#0)==t_bitvector"))
@@ -769,29 +769,33 @@ type_of(#0)==t_bitvector"))
 (SIMPLE-BIT-VECTOR-P (T) T NIL T)
 (SIMPLE-VECTOR-P (T) T NIL T)
 (ARRAYP (T) T NIL T
-	:inline-always ((t) boolean nil nil "@0;ARRAYP(#0)"))
+	:inline-always ((t) :bool nil nil "@0;ARRAYP(#0)"))
 (PACKAGEP (T) T NIL T)
 (FUNCTIONP (T) T NIL T)
 (COMPILED-FUNCTION-P (T) T NIL T)
 (EQ (T T) T NIL T
-	:inline-always ((t t) boolean nil nil "(#0)==(#1)")
-	:inline-always ((fixnum fixnum) boolean nil nil "(#0)==(#1)"))
+	:inline-always ((t t) :bool nil nil "(#0)==(#1)")
+	:inline-always ((fixnum fixnum) :bool nil nil "(#0)==(#1)"))
 (EQL (T T) T NIL T
-	:inline-always ((t t) boolean nil nil "eql(#0,#1)")
-	:inline-always ((character t) boolean nil nil	; Beppe
+	:inline-always ((t t) :bool nil nil "eql(#0,#1)")
+	:inline-always ((character t) :bool nil nil	; Beppe
 		"(CHARACTERP(#1) && (#0)==CHAR_CODE(#1))")
-	:inline-always ((t character) boolean nil nil	; Beppe
+	:inline-always ((t character) :bool nil nil	; Beppe
 		"(CHARACTERP(#0) && CHAR_CODE(#0)==(#1))")
-	:inline-always ((character character) boolean nil nil "(#0)==(#1)")
-	:inline-always ((fixnum fixnum) boolean nil nil "(#0)==(#1)"))
+	:inline-always ((character character) :bool nil nil "(#0)==(#1)")
+	:inline-always (((not (or complex bignum ratio float)) t) :bool nil nil
+			"(#0)==(#1)")
+	:inline-always ((t (not (or complex bignum ratio float))) :bool nil nil
+			"(#0)==(#1)")
+	:inline-always ((fixnum fixnum) :bool nil nil "(#0)==(#1)"))
 (EQUAL (T T) T nil t
-	:inline-always ((t t) boolean nil nil "equal(#0,#1)")
-	:inline-always ((fixnum fixnum) boolean nil nil "(#0)==(#1)"))
+	:inline-always ((t t) :bool nil nil "equal(#0,#1)")
+	:inline-always ((fixnum fixnum) :bool nil nil "(#0)==(#1)"))
 (EQUALP (T T) T NIL T
-	:inline-always ((t t) boolean nil nil "equalp(#0,#1)")
-	:inline-always ((fixnum fixnum) boolean nil nil "(#0)==(#1)"))
+	:inline-always ((t t) :bool nil nil "equalp(#0,#1)")
+	:inline-always ((fixnum fixnum) :bool nil nil "(#0)==(#1)"))
 (NOT (T) T NIL T
-	:inline-always ((t) boolean nil nil "(#0)==Cnil"))
+	:inline-always ((t) :bool nil nil "(#0)==Cnil"))
 
 ; file print.d
 (CLEAR-OUTPUT (*) T)
@@ -811,7 +815,7 @@ type_of(#0)==t_bitvector"))
 	:inline-always ((t t) t t nil "print(#0,#1)")
 	:inline-always ((t) t t nil "print(#0,Cnil)"))
 (PROBE-FILE (T) T NIL T
-	:inline-always ((t) boolean nil nil "(file_exists(#0))"))
+	:inline-always ((t) :bool nil nil "(si_file_kind(#0,Ct)!=Cnil)"))
 (UNREAD-CHAR (T *) T)
 (READ (*) T)
 (READ-CHAR (*) T)
@@ -846,7 +850,7 @@ type_of(#0)==t_bitvector"))
 (FBOUNDP (symbol) T nil t)
 (SYMBOL-VALUE (symbol) T)
 (BOUNDP (symbol) T nil t
-	:inline-unsafe ((t) boolean nil nil "(#0)->symbol.dbind!=OBJNULL"))
+	:inline-unsafe ((t) :bool nil nil "(#0)->symbol.dbind!=OBJNULL"))
 (MACRO-FUNCTION (symbol) T)
 (SPECIAL-OPERATOR-P (symbol) T nil t)
 
@@ -906,9 +910,9 @@ type_of(#0)==t_bitvector"))
 	:inline-unsafe ((t fixnum character) character t nil
 		"(#0)->string.self[#1]= #2"))
 (STRING= (string string *) T nil t
-	:inline-always ((string  string) boolean nil nil "string_eq(#0,#1)"))
+	:inline-always ((string  string) :bool nil nil "string_eq(#0,#1)"))
 (STRING-EQUAL (string string *) T nil t
-	:inline-always ((string  string) boolean nil nil "string_equal(#0,#1)"))
+	:inline-always ((string  string) :bool nil nil "string_equal(#0,#1)"))
 (STRING< (string string *) T nil t)
 (STRING> (string string *) T nil t)
 (STRING<= (string string *) T nil t)
@@ -942,7 +946,7 @@ type_of(#0)==t_bitvector"))
 (si::STRUCTURE-SET (t t fixnum t) T nil nil
 	:inline-always ((t t fixnum t) t T nil "structure_set(#0,#1,#2,#3)"))
 (SI::STRUCTUREP (T) T NIL T
-	:inline-always ((t) boolean nil nil "type_of(#0)==t_structure"))
+	:inline-always ((t) :bool nil nil "type_of(#0)==t_structure"))
 (SI::STRUCTURE-SUBTYPE-P (T T) T NIL T)
 (si::RPLACA-NTHCDR (T T T) nil T nil t)
 (si::LIST-NTH (T T) T nil t)
@@ -970,7 +974,7 @@ type_of(#0)==t_bitvector"))
 (GENTEMP (*) symbol)
 (SYMBOL-PACKAGE (symbol) T)
 (KEYWORDP (T) T NIL T
-;  :inline-always ((t) boolean nil nil
+;  :inline-always ((t) :bool nil nil
 ;        "@0;(type_of(#0)==t_symbol&&(#0)->symbol.hpack==keyword_package)")
  )
 (SI::PUT-F NIL (T T))
@@ -1018,12 +1022,12 @@ type_of(#0)==t_bitvector"))
 (shift<< nil nil nil NIL NIL
 	:inline-always ((fixnum fixnum) fixnum nil nil "((#0) << (#1))"))
 (short-float-p nil nil nil T T
-	:inline-always ((t) boolean nil nil "type_of(#0)==t_shortfloat"))
+	:inline-always ((t) :bool nil nil "type_of(#0)==t_shortfloat"))
 (long-float-p nil nil nil T T
-	:inline-always ((t) boolean nil nil "type_of(#0)==t_longfloat"))
+	:inline-always ((t) :bool nil nil "type_of(#0)==t_longfloat"))
 (si:fixnump nil nil nil T T
-	:inline-always ((t) boolean nil nil "FIXNUMP(#0)")
-	:inline-always ((fixnum) boolean nil nil "1"))
+	:inline-always ((t) :bool nil nil "FIXNUMP(#0)")
+	:inline-always ((fixnum) :bool nil nil "1"))
 (si::put-properties (*) nil T)
 )) ; end of inlines
 
@@ -1031,14 +1035,14 @@ type_of(#0)==t_bitvector"))
 (mapcar #'(lambda (x) (apply #'defsysfun x)) '(
 ; file instance.c
 (si::ALLOCATE-RAW-INSTANCE (t fixnum) T)
+(si::INSTANCE-REF-SAFE (t fixnum) T nil nil)
 (si::INSTANCE-REF (t fixnum) T nil nil
-	:inline-always ((standard-object fixnum) t nil nil
-		"(#0)->instance.slots[#1]"))
-(si::INSTANCE-REF-SAFE (t fixnum) T nil nil
+	:inline-always ((t fixnum) t nil nil "instance_ref((#0),(#1))")
 	:inline-unsafe ((standard-object fixnum) t nil nil
 		"(#0)->instance.slots[#1]"))
 (si::INSTANCE-SET (t fixnum t) T nil nil
-	:inline-always ((standard-object fixnum t) t t nil
+	:inline-unsafe ((t fixnum t) t t nil "instance_set((#0),(#1),(#2))")
+	:inline-unsafe ((standard-object fixnum t) t t nil
 		"(#0)->instance.slots[#1]=(#2)"))
 (si::INSTANCE-CLASS (t) T nil nil
 	:inline-always ((standard-object) t nil nil "CLASS_OF(#0)"))
@@ -1047,7 +1051,7 @@ type_of(#0)==t_bitvector"))
 (si::UNBOUND nil T nil t
 	:inline-always (nil T nil nil "OBJNULL"))
 (si::SL-BOUNDP (t) T nil t
-	:inline-always ((t) boolean nil nil "(#0)!=OBJNULL"))
+	:inline-always ((t) :bool nil nil "(#0)!=OBJNULL"))
 (si::SL-MAKUNBOUND (t fixnum) T nil t)
 
 ; file gfun.c

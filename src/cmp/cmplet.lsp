@@ -87,7 +87,7 @@
 (defun update-var-type (var type x)
   (when (listp x)
     (if (and (eq (car x) 'VAR)
-	     (eq var (first (third x))))
+	     (eq var (third x)))
 	(setf (info-type (second x))
 	      ;; some occurrences might be typed with 'the'
 	      (type-and (info-type (second x)) type))
@@ -111,24 +111,23 @@
 
   ;; Determine which variables are really necessary and create list of init's
   ;; and list of bindings. Bindings for specials must be done after all inits.
-  (labels ((do-decl (var lcl)
+  (labels ((do-decl (var)
 	     (declare (type var var))
-	     (setf (var-loc var) lcl)	; must be set or bind will clobber it
 	     (wt-nl)
 	     (unless block-p
 	       (wt "{") (setq block-p t))
-	     (wt *volatile* (register var) (rep-type (var-kind var)))
-	     (wt-lcl lcl) (wt ";")
+	     (wt *volatile* (register var) (rep-type-name (var-rep-type var)) " "
+		 var ";")
 	     (when (local var)
 	       (wt-comment (var-name var))))
 	   (do-init (var form fl)
 	     (if (and (local var)
 		      (not (args-cause-side-effect (cdr fl))))
 		 ;; avoid creating temporary for init
-		 (push (cons (list 'VAR var) form) initials)
-		 (let* ((lcl (next-lcl))
-			(loc (list 'LCL lcl)))
-		   (do-decl (make-var) lcl)
+		 (push (cons var form) initials)
+		 (let* ((loc (make-lcl-var :rep-type (var-rep-type var)
+					   :type (var-type var))))
+		   (do-decl loc)
 		   (push (cons loc form) initials)
 		   (push (cons var loc) bindings)))))
 
@@ -142,11 +141,12 @@
             var (first vl))
       (when (and (local var)
 		 (setq used (not (discarded var form body))))
-	(do-decl var (next-lcl)))
+	(setf (var-loc var) (next-lcl))
+	(do-decl var))
       (when used
 	(if (unboxed var)
-	    (push (cons (list 'VAR var) form) initials)	; nil (ccb)
-	    ;; LEXICAL, SPECIAL, GLOBAL or OBJECT
+	    (push (cons var form) initials)	; nil (ccb)
+	    ;; LEXICAL, SPECIAL, GLOBAL or :OBJECT
 	    (case (car form)
 	      (LOCATION
 	       (if (can-be-replaced var body)
@@ -154,22 +154,19 @@
 			 (var-loc var) (third form))
 		   (push (cons var (third form)) bindings)))
 	      (VAR
-	       (let* ((vref1 (third form))
-		      (var1 (car vref1)))
+	       (let* ((var1 (third form)))
 		 (cond ((or (var-changed-in-forms var1 (cdr fl))
-			    (and (member (var-kind var1) '(SPECIAL GLOBAL)
-					 :test #'eq)
-				 (member (var-name var1) prev-ss :test #'eq)))
+			    (and (member (var-kind var1) '(SPECIAL GLOBAL))
+				 (member (var-name var1) prev-ss)))
 			(do-init var form fl))
 		       ((and (can-be-replaced var body)
-			     (member (var-kind var1) '(LEXICAL REPLACED OBJECT)
-				     :test #'eq)
+			     (member (var-kind var1) '(LEXICAL REPLACED :OBJECT))
 			     (not (var-ref-ccb var1))
 			     (not (member var1
 					  (info-changed-vars (second body)))))
 			(setf (var-kind var) 'REPLACED
-			      (var-loc var) (cons 'VAR vref1)))
-		       (t (push (cons var (cons 'VAR vref1)) bindings)))))
+			      (var-loc var) var1))
+		       (t (push (cons var var1) bindings)))))
 	      (t (do-init var form fl))))
 	(unless env-grows
 	  (setq env-grows (var-ref-ccb var))))
@@ -289,7 +286,7 @@
 		  (nsubst-if form #'(lambda (x)
 				      (and (listp x)
 					   (eq (first x) 'VAR)
-					   (eq var (first (third x)))))
+					   (eq var (third x))))
 			     body)))
 	  (progn
 	    (push var used-vars)
@@ -307,7 +304,7 @@
 (defun replaceable (var form)
   (case (car form)
     (VAR
-     (if (eq var (first (third form)))
+     (if (eq var (third form))
 	 (throw var T)
 	 T))
     ((LOCATION SYS:STRUCTURE-REF) T)
@@ -341,24 +338,21 @@
            (setf (var-kind var) 'REPLACED
                  (var-loc var) (third form))))
         (VAR
-         (let* ((vref1 (third form))
-		(var1 (car vref1)))
+         (let* ((var1 (third form)))
            (declare (type var var1))
            (when (and (can-be-replaced* var body (cdr fl))
-		      (member (var-kind var1)
-			      '(LEXICAL REPLACED OBJECT) :test #'eq)
+		      (member (var-kind var1) '(LEXICAL REPLACED :OBJECT))
 		      (not (var-ref-ccb var1))
 		      (not (var-changed-in-forms var1 (cdr fl)))
 		      (not (member var1 (info-changed-vars (second body)))))
              (setf (var-kind var) 'REPLACED
-                   (var-loc var) (cons 'VAR vref1))))))
+                   (var-loc var) var1)))))
       (unless env-grows
 	(setq env-grows (var-ref-ccb var))))
     (when (and kind (not (eq (var-kind var) 'REPLACED)))
-      (setf (var-loc var) (next-lcl))
+      (bind (next-lcl) var)
       (wt-nl) (unless block-p (wt "{") (setq block-p t))
-      (wt *volatile* (register var) (rep-type kind))
-      (wt-lcl (var-loc var)) (wt ";")
+      (wt *volatile* (register var) (rep-type-name kind) " " var ";")
       (wt-comment (var-name var)))
     )
 
@@ -376,15 +370,17 @@
     (setq var (car vl)
 	  form (car fl))
     (case (var-kind var)
-      ((FIXNUM CHARACTER LONG-FLOAT SHORT-FLOAT OBJECT) ; (local var)
-       (let ((*destination* `(VAR ,var))) ; nil (ccb)
-	 (c2expr* form)))
       (REPLACED)
-      (t (case (car form)
-	   (LOCATION (bind (third form) var))
-	   (VAR (bind (cons 'VAR (third form)) var))
-	   (t (bind-init var form))))))
-
+      ((LEXICAL SPECIAL GLOBAL)
+       (case (car form)
+	 (LOCATION (bind (third form) var))
+	 (VAR (bind (third form) var))
+	 (t (bind-init var form))))
+      (t ; local var
+       (let ((*destination* var)) ; nil (ccb)
+	 (c2expr* form)))
+      )
+    )
   (c2expr body)
 
   (when block-p (wt-nl "}"))
@@ -397,7 +393,7 @@
 		 (last-form (car (last (third x)))))
 	       ((LET LET* FLET LABELS BLOCK CATCH)
 		(last-form (car (last x))))
-	       (VAR (car (third x)))
+	       (VAR (third x))
 	       (t x))))
     (and (not (args-cause-side-effect (list form)))
 	 (or (< (var-ref var) 1)
@@ -407,11 +403,11 @@
 
 (defun can-be-replaced (var body)
   (declare (type var var))
-  (and (eq (var-kind var) 'OBJECT)
+  (and (eq (var-kind var) :OBJECT)
        (< (var-ref var) *register-min*)
        (not (member var (info-changed-vars (second body))))))
 #|  (and (or (eq (var-kind var) 'LEXICAL)
-	   (and (eq (var-kind var) 'OBJECT)
+	   (and (eq (var-kind var) :OBJECT)
 		(< (var-ref var) *register-min*)))
        (not (var-ref-ccb var))
        (not (member var (info-changed-vars (second body)))))

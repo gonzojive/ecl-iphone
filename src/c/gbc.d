@@ -404,6 +404,13 @@ BEGIN:
 		}
 		mark_next(x->cblock.next);
 		break;
+#ifdef ECL_FFI
+	case t_foreign:
+		if (x->foreign.size)
+			mark_contblock(x->foreign.data, x->foreign.size);
+		mark_next(x->foreign.tag);
+		break;
+#endif ECL_FFI
 	default:
 		if (debug)
 			printf("\ttype = %d\n", type_of(x));

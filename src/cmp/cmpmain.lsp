@@ -219,7 +219,7 @@ int init_~A(cl_object cblock)
 		 init-name "CODE" prologue-code init-name epilogue-code))
        (compiler-cc c-name o-name)
        (apply #'shared-cc output-name o-name ld-flags)))
-    ;(delete-file c-name)
+    (delete-file c-name)
     (delete-file o-name)
     output-name))
 

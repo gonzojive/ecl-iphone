@@ -282,7 +282,6 @@ NIL, then all packages are searched."
 	(defstruct 1)
 	(deftype 2)
 	(defun 2)
-	(defunC 2) ; Beppe
 	(do 2)
 	(do* 2)
 	(do-symbols 1)

@@ -826,7 +826,10 @@ BEGIN:
 	case smm_input:
 		if (fp == NULL)
 			wrong_file_handler(strm);
-		fseek(fp, 0L, 2);
+		while (flisten(fp)) {
+			int c;
+			GETC(c, fp);
+		}
 		break;
 
 	case smm_synonym:
@@ -993,6 +996,23 @@ BEGIN:
 	}
 }
 
+static bool
+flisten(FILE *fp)
+{
+	if (feof(fp))
+		return(FALSE);
+	if (FILE_CNT(fp) > 0)
+		return(TRUE);
+#ifdef FIONREAD
+	{ long c = 0;
+	ioctl(fileno(fp), FIONREAD, &c);
+	if (c <= 0)
+		return(FALSE);
+	}
+#endif /* FIONREAD */
+	return(TRUE);
+}
+
 bool
 listen_stream(cl_object strm)
 {
@@ -1017,18 +1037,7 @@ BEGIN:
 		fp = strm->stream.file;
 		if (fp == NULL)
 			wrong_file_handler(strm);
-		if (feof(fp))
-			return(FALSE);
-		if (FILE_CNT(fp) > 0)
-			return(TRUE);
-#ifdef FIONREAD
-		{ long c = 0;
-		  ioctl(fileno(fp), FIONREAD, &c);
-		  if (c <= 0)
-		    return(FALSE);
-		}
-#endif /* FIONREAD */
-		return(TRUE);
+		return flisten(fp);
 
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);

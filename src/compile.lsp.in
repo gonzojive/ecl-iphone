@@ -1,17 +1,30 @@
 ;;;
-;;; Configuration file for the bootstrapping version of ECL
+;;; This is the "makefile" file for building ECL. The purpose of this file is
+;;;	- Compile the core of the Common-Lisp library (lsp, clos)
+;;;	- Compile the compiler (cmp)
+;;;	- Build an executable
+;;; This can be done in two ways:
+;;;	- Using interpreted code and the ECL_MIN minimal environment.
+;;;	- On a second stage, using the final ECL executable, to test it.
+;;;
+
+;;;
+;;; * Ensure that we have the whole of Common-Lisp to compile
 ;;;
 (load "bare.lsp")
 
 ;;;
-;;; Dump documentation
+;;; * Dump documentation
 ;;;
-(load "@srcdir@/doc/help.lsp")
-(si::dump-documentation "@abs_builddir@/help.doc")
+#+stage1
+(progn
+  (load "@srcdir@/doc/help.lsp")
+  (si::dump-documentation "@abs_builddir@/help.doc"))
 
 ;;;
-;;; Trick to make names shorter
+;;; * Trick to make names shorter in C files
 ;;;
+(si::package-lock "CL" nil)
 (rename-package "CL" "CL" '("COMMON-LISP" "LISP"))
 
 ;;;
@@ -22,7 +35,7 @@
 (load "lsp/defsys.lsp")
 (proclaim '(optimize (safety 2) (space 3)))
 (sbt::operate-on-system lsp :library)
-#+dlopen
+#+(and stage1 dlopen)
 (progn
   (sbt::operate-on-system lsp :shared-library)
   (load "lsp"))
@@ -32,7 +45,7 @@
 ;;;
 ;;; * Compile, load and link PCL based Common-Lisp Object System
 ;;;
-#+WANTS-CLOS
+#+CLOS
 (progn
 (load "clos/defsys.lsp")
 (proclaim '(optimize (safety 2) (space 3)))
@@ -44,7 +57,7 @@
 ;;;
 ;;; * Compile, load and link Common-Lisp to C compiler
 ;;;
-#+WANTS-CMP
+#+(or (not stage1) WANTS-CMP)
 (progn
 (load "cmp/defsys.lsp")
 (proclaim '(optimize (safety 2) (space 3)))
@@ -52,6 +65,9 @@
 ;(sbt::operate-on-system cmp :load)
 )
 
-(compiler::build-program "ecl" :lisp-files '(#+(and (not dlopen) WANTS-CMP) cmp))
+(compiler::build-program
+ #+stage1 "ecl"
+ #-stage1 "ecl2"
+ :lisp-files '(#+(and (not dlopen) WANTS-CMP) cmp))
 
 (quit)

@@ -87,10 +87,9 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 			@(return Cnil)
 	}
 	CL_UNWIND_PROTECT_BEGIN {
-		bds_bind(@'*standard-input*', strm);
 		for (;;) {
 			cl_object bytecodes = Cnil;
-			x = read_object_non_recursive(strm);
+			x = cl_read(3, strm, Cnil, OBJNULL);
 			if (x == OBJNULL)
 				break;
 			eval(x, &bytecodes, Cnil);
@@ -99,7 +98,6 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 				@terpri(0);
 			}
 		}
-		bds_unwind1;
 	} CL_UNWIND_PROTECT_EXIT {
 		/* We do not want to come back here if close_stream fails,
 		   therefore, first we frs_pop() current jump point, then
@@ -136,7 +134,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 		/* If filename already has an extension, make sure
 		   that the file exists */
 		filename = coerce_to_filename(pathname);
-		if (!file_exists(filename)) {
+		if (si_file_kind(filename, Ct) != @':file') {
 			filename = Cnil;
 		} else {
 			function = cl_cdr(assoc(pathname->pathname.type, hooks));
@@ -147,7 +145,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 		pathname->pathname.type = CAAR(hooks);
 		filename = coerce_to_filename(pathname);
 		function = CDAR(hooks);
-		if (file_exists(filename))
+		if (si_file_kind(filename, Ct) == @':file')
 			break;
 		else
 			filename = Cnil;

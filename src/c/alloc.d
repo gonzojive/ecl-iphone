@@ -393,6 +393,13 @@ ONCE_MORE:
 	  obj->cblock.data_text = NULL;
 	  obj->cblock.data_text_size = 0;
 	  break;
+#ifdef ECL_FFI
+	case t_foreign:
+	  obj->foreign.tag = Cnil;
+	  obj->foreign.size = 0;
+	  obj->foreign.data = NUL;;
+	  break;
+#endif ECL_FFI
 	default:
 	  printf("\ttype = %d\n", t);
 	  error("alloc botch.");
@@ -719,6 +726,9 @@ init_alloc(void)
 	init_tm(t_instance, "IINSTANCE", sizeof(struct instance), 32);
 	init_tm(t_gfun, "GGFUN", sizeof(struct gfun), 32);
 #endif /* CLOS */
+#ifdef ECL_FFI
+	init_tm(t_foreign, "LFOREIGN", sizeof(struct foreign), 1);
+#endif
 #ifdef THREADS
 	init_tm(t_cont, "?CONT", sizeof(struct cont), 2);
 	init_tm(t_thread, "tTHREAD", sizeof(struct thread), 2);

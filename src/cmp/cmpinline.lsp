@@ -49,19 +49,16 @@
 
 (defun var-changed-in-forms (var forms)
   (declare (type var var))
-  (case (var-kind var)
-    ((LEXICAL FIXNUM CHARACTER LONG-FLOAT SHORT-FLOAT OBJECT)
-     (dolist (form forms)
-       (when (member var (info-changed-vars (second form)))
-         (return t))))
-    (REPLACED (let ((loc (var-loc var)))
-		(when (and (consp loc) (eq 'VAR (first loc)))
-		  (var-changed-in-forms (second loc) forms))))
-    (t (dolist (form forms)
-         (when (or (member var (info-changed-vars (second form)))
-                   (info-sp-change (second form)))
-           (return t)))))
-  )
+  (let ((kind (var-kind var)))
+    (if (eq kind 'REPLACED)
+	(let ((loc (var-loc var)))
+	  (when (var-p loc)
+	    (var-changed-in-forms loc forms)))
+	(let ((check-specials (or (eq kind 'SPECIAL) (eq kind 'GLOBAL))))
+	  (dolist (form forms)
+	    (when (or (member var (info-changed-vars (second form)))
+		      (and check-specials (info-sp-change (second form))))
+	      (return t)))))))
 
 ;;; Valid property names for open coded functions are:
 ;;;  :INLINE-ALWAYS
@@ -89,7 +86,6 @@
 ;;; call close-inline-blocks
 ;;;
 (defun inline-args (forms &optional types)
-  ;; all uses of next-lcl may be eliminated??? Beppe
   (flet ((all-locations (args &aux (res t))
 	   (dolist (arg args res)
 	     (unless (member (car arg) '(LOCATION VAR SYS:STRUCTURE-REF
@@ -108,90 +104,72 @@
 	(LOCATION
 	 (push (list (form-type form) (third form)) locs))
 	(VAR
-	 (let ((var (caaddr form)))
+	 (let ((var (third form)))
 	   (if (var-changed-in-forms var (cdr forms))
-	       (let ((lcl-loc (list 'LCL (next-lcl)))
-		     (var-type (var-kind var)))
-		 (wt-nl "{" (rep-type var-type) lcl-loc "= ")
-		 (wt-var var) (wt ";")
-		 (push (list (form-type form)
-			     (if (unboxed var)
-				 lcl-loc
-				 (list 'T lcl-loc))) ; global proclaimed var.
-		       locs)
+	       (let* ((var-rep-type (var-rep-type var))
+		      (lcl (make-lcl-var :rep-type var-rep-type :type (var-type var))))
+		 (wt-nl "{" (rep-type-name var-rep-type) " " lcl "= " var ";")
+		 (push (list (form-type form) lcl) locs)
 		 (incf *inline-blocks*))
-	       (push (list (form-type form) (cons 'VAR (third form)))
-		     locs))))
+	       (push (list (form-type form) var) locs))))
 
 	(CALL-GLOBAL
 	 (let* ((fname (third form))
 		(args (fourth form))
 		(return-type (info-type (second form)))
 		(arg-locs (inline-args args))
-		loc)
-	   (if (and (inline-possible fname)
-		    (not (get-sysprop fname 'C2)) ; no special treatment
-		    (setq loc (inline-function fname arg-locs return-type)))
-	     (let* ((arg-type (first loc))
-		    (and-type (type-and arg-type return-type))
-		    (typed-loc (list and-type (fix-loc loc))))
-	       (cond
-		 ((and (member arg-type '(FIXNUM LONG-FLOAT
-					  SHORT-FLOAT BOOLEAN CHARACTER)
-			       :test #'eq)
-		       ;; fix to: (bar (+ (bar) y) (bar y))
-		       (all-locations (cdr forms)))
-		  (push typed-loc locs))
-		 ((or (need-to-protect (cdr forms))
-		      (and (second loc)	; side-effectp
-			   (cdr forms)))
-		  ;; if there are side-effects, order of execution matters
-		  (let* ((var (make-var :loc (next-lcl)
-					:kind (if (member arg-type
-							  '(T BOOLEAN)
-							  :test #'eq)
-						  'OBJECT arg-type)
-					:type and-type))
-			 (lcl-var (list 'VAR var)))
-		    ;; use a variable of type arg-type to save the value
-		    ;; if (return-type >= arg-type)
-		    ;; then
-		    ;;   coerce the value to arg-type
-		    ;; otherwise
-		    ;;   save the value without coercion and return the
-		    ;;   variable tagged with and-type,
-		    ;;   so that whoever uses it may coerce it to such type
-		    (wt-nl "{" (rep-type arg-type)) (wt-lcl (var-loc var))
-		    (wt "= " (if (type>= return-type arg-type)
-				  typed-loc loc) ";")
-		    (push (list and-type lcl-var) locs)
-		    (incf *inline-blocks*)))
-		 (t (push typed-loc locs))))
-
-	     (let* ((temp (list 'TEMP (next-temp)))
-		    ;; bindings like c1expr*
-		    (*exit* (next-label))
-		    (*unwind-exit* (cons *exit* *unwind-exit*))
-		    (*lcl* *lcl*)
-		    (*temp* *temp*)
-		    (*destination* temp))
-	       (call-global fname arg-locs nil return-type nil)
-	       (wt-label *exit*)
-	       (push (list (if (eq 'T return-type)
-			       (or (get-return-type fname) 'T)
-			       return-type)
-			   temp) locs)))))
+		(loc (inline-function fname arg-locs return-type)))
+	   (if loc
+	       (progn
+		 ;; If there are side effects, we may not move the C form
+		 ;; around and we have to save its value in a variable.
+		 ;; We use a variable of type out-type to save the value
+		 ;; if (return-type >= out-type)
+		 ;; then
+		 ;;   coerce the value to out-type
+		 ;; otherwise
+		 ;;   save the value without coercion and return the
+		 ;;   variable tagged with and-type,
+		 ;;   so that whoever uses it may coerce it to such type
+		 (when (and (consp loc)
+			    (eq (first loc) 'C-INLINE)
+			    (not (all-locations (rest forms)))
+			    (or (need-to-protect (rest forms))
+				(fifth loc))) ; side effects?
+		   (let* ((and-type (type-and return-type (loc-type loc)))
+			  (out-rep-type (loc-representation-type loc))
+			  (var (make-lcl-var :rep-type out-rep-type :type and-type)))
+		     (wt-nl "{" (rep-type-name out-rep-type) " " var "= " loc ";")
+		     (incf *inline-blocks*)
+		     (setq loc var)))
+		 (push (list (loc-type loc) loc) locs))
+	       ;; FIXME! Why is (make-temp-var) before rebinding of *temp*???
+	       (let* ((temp (make-temp-var))
+		      ;; bindings like c1expr*
+		      (*exit* (next-label))
+		      (*unwind-exit* (cons *exit* *unwind-exit*))
+		      (*lcl* *lcl*)
+		      (*temp* *temp*)
+		      (*destination* temp))
+		 (call-global fname arg-locs nil return-type nil)
+		 (wt-label *exit*)
+		 (push
+		  (list (if (subtypep 'T return-type)
+			    (or (get-return-type fname) 'T)
+			    return-type)
+			temp)
+		  locs)))))
 
 	(SYS:STRUCTURE-REF
 	 (let ((type (form-type form)))
 	   (if (args-cause-side-effect (cdr forms))
-	       (let* ((temp (list 'TEMP (next-temp)))
+	       (let* ((temp (make-temp-var))
 		      (*destination* temp))
 		 (c2expr* form)
 		 (push (list type temp) locs))
 	       (push (list type
 			   (list 'SYS:STRUCTURE-REF
-				 (second (first
+				 (first (coerce-locs
 					  (inline-args (list (third form)))))
 				 (fourth form)
 				 (fifth form)))
@@ -200,13 +178,13 @@
 	(SYS:INSTANCE-REF
 	 (let ((type (form-type form)))
 	   (if (args-cause-side-effect (cdr forms))
-	       (let* ((temp (list 'TEMP (next-temp)))
+	       (let* ((temp (make-temp-var))
 		      (*destination* temp))
 		 (c2expr* form)
 		 (push (list type temp) locs))
 	       (push (list type
 			   (list 'SYS:INSTANCE-REF
-				 (second (first
+				 (first (coerce-locs
 					  (inline-args (list (third form)))))
 				 (fourth form)
 				#+nil (fifth form))) ; JJGR
@@ -214,144 +192,42 @@
 	(SETQ
 	 (let ((vref (third form))
 	       (form1 (fourth form)))
-	   (let ((*destination* (cons 'VAR vref))) (c2expr* form1))
+	   (let ((*destination* vref)) (c2expr* form1))
 	   (if (eq (car form1) 'LOCATION)
 	       (push (list (form-type form1) (third form1)) locs)
 	       (setq forms (list* nil	; discarded at iteration
 				  (list 'VAR (second form) vref) (cdr forms))
 		     ))))
 
-	(t (let ((temp (list 'TEMP (next-temp))))
+	(t (let ((temp (make-temp-var)))
 	     (let ((*destination* temp)) (c2expr* form))
 	     (push (list (form-type form) temp) locs))))))
   )
 
-(defun coerce-locs (args types)
-  ;; each arg is pair (type location).
-  ;; if TYPES is NIL, all types are meant to be T.
-  ;; If type matches the corresponding required type, leave arg as is;
-  ;; otherwise, if type is simple, replace type with coercion to object;
-  ;; otherwise, remove type (WT-LOC will take care of producing an object,
-  ;; except for LCLs).
-  ;;
-  (do ((args args (cdr args))
-       (types (or types '(T)) (or (cdr types) '(T)))
-       (arg-type) (loc))
-      ((null args))
-    (setq arg-type (car (member (caar args)
-				'(FIXNUM CHARACTER LONG-FLOAT SHORT-FLOAT)
-				:test #'eq))
-	  loc (second (car args)))
-    (if arg-type
-	(if (eq arg-type (car types))
-	    (when (and (consp loc) (eq 'LCL (car loc)))
-	      (setf (car args) loc))
-	    (if (consp loc)
-		(case arg-type
-		  (FIXNUM (if (member (car loc)
-				      ;; TEMPs contain object
-				      '(VAR TEMP FIXNUM-VALUE INLINE-FIXNUM
-					INLINE SI:STRUCTURE-REF T))
-			      (setf (car args) loc)
-			      (setf (caar args) 'FIXNUM->OBJECT)))
-		  (CHARACTER (if (member (car loc)
-					 '(VAR TEMP CHARACTER-VALUE INLINE T
-					   INLINE-CHARACTER SI:STRUCTURE-REF))
-				 (setf (car args) loc)
-				 (setf (caar args) 'CHARACTER->OBJECT)))
-		  (LONG-FLOAT (if (member (car loc)
-					  '(VAR TEMP LONG-FLOAT-VALUE T
-					    INLINE-LONG-FLOAT INLINE
-					    SI:STRUCTURE-REF))
-				  (setf (car args) loc)
-				  (setf (caar args) 'LONG-FLOAT->OBJECT)))
-		  (SHORT-FLOAT (if (member (car loc)
-					   '(VAR TEMP SHORT-FLOAT-VALUE	T
-					     INLINE-SHORT-FLOAT INLINE
-					     SI:STRUCTURE-REF))
-				   (setf (car args) loc)
-				   (setf (caar args) 'SHORT-FLOAT->OBJECT))))
-		(setf (car args) loc)))
-	(setf (car args) loc)))
-  args)
-
-;;; this function may go away if we replace all uses of inline-? with
-;;; just the type name. Or else we could use a single tag INLINE
-;;; and put the type in second position, replacing side-effect-p which
-;;; is not used from now on.
-(defun fix-loc (loc)
-  (setf (car loc)
-	(case (car loc)
-	  (BOOLEAN 'INLINE-COND)
-	  (FIXNUM 'INLINE-FIXNUM)
-	  (CHARACTER 'INLINE-CHARACTER)
-	  (LONG-FLOAT 'INLINE-LONG-FLOAT)
-	  (SHORT-FLOAT 'INLINE-SHORT-FLOAT)
-	  (otherwise 'INLINE)))
-  loc)
-
 (defun destination-type ()
-  (if (and (consp *destination*)
-	   (member (car *destination*) '(VAR BIND) :test #'eq))
-      (var-type (second *destination*))
-      T))
+  (loc-type *destination*))
 
 ;;;
 ;;; inline-function:
 ;;;   locs are typed locs as produced by inline-args
 ;;;   returns NIL if inline expansion of the function is not possible
 ;;;
-(defun inline-function (fname locs return-type)
+(defun inline-function (fname inlined-locs return-type)
   ;; Those functions that use INLINE-FUNCTION must rebind
   ;; the variable *INLINE-BLOCKS*.
-
-  (setq return-type (type-and return-type (destination-type)))
-
-  (let* ((ii (get-inline-info fname (mapcar #'car locs) return-type))
-	 (fun))
-    (when ii
-      (setq fun (fifth ii))
-      ;; remove coercion where not necessary:
-      (coerce-locs locs (first ii))
-      (when (and (stringp fun) (char= (char (the string fun) 0) #\@))
-	(let ((saves nil))
-	  (do* ((i 1 (1+ i))
-		(char (char (the string fun) i) (char (the string fun) i)))
-	       ((char= char #\;))
-	    (declare (fixnum i) (character char))
-	    (push (the fixnum (- (char-code char) #.(char-code #\0))) saves))
-	  (do ((l locs (cdr l))
-	       (n 0 (1+ n))
-	       (locs1 nil))
-	      ((endp l) (setq locs (nreverse locs1)))
-	    (declare (fixnum n))
-	    (if (member n saves)
-		(let* ((loc1 (car l)) (loc loc1) (coersion nil))
-		  (when (and (consp loc1)
-			     (member (car loc1)
-				     '(FIXNUM CHARACTER
-				       LONG-FLOAT SHORT-FLOAT)
-				     :test #'eq))
-		    (setq coersion (car loc1))
-		    (setq loc (second loc1))) ; remove coersion
-		  (if
-		   (or (eq loc 'RETURN)
-		       (member (car loc) '(VAR FIXNUM-VALUE SHORT-FLOAT-VALUE
-					   LONG-FLOAT-VALUE CHARACTER-VALUE VV)
-			       :test #'eq))
-		   (push loc1 locs1)
-		   ;; else
-		   (let ((lcl (list 'LCL (next-lcl))))
-		     (push lcl locs1)
-		     (incf *inline-blocks*)
-		     (wt-nl "{" (rep-type coersion) lcl "= " loc1 ";"))))
-		;; else
-		(push (car l) locs1)))))
-      (list (second ii)
-	    (third ii)
-	    fun
-	    locs)))
-  )
+  (and (inline-possible fname)
+       (not (get-sysprop fname 'C2))
+       (let* ((ii (get-inline-info fname (mapcar #'first inlined-locs)
+				   (type-and return-type (destination-type)))))
+	 (when ii
+	   (let* ((arg-types (first ii))
+		  (out-rep-type (lisp-type->rep-type (second ii)))
+		  (out-type (rep-type->lisp-type (second ii)))
+		  (side-effects-p (third ii))
+		  (fun (fifth ii))
+		  (one-liner t))
+	     (produce-inline-loc inlined-locs arg-types out-rep-type
+				 fun side-effects-p one-liner))))))
 
 (defun get-inline-info (fname types return-type &aux ii iia)
   (dolist (x *inline-functions*)
@@ -378,21 +254,23 @@
                                         &aux (rts nil)
 					(number-max nil)
 					(inline-return-type
-					 (second inline-info)))
+					 (rep-type->lisp-type
+					  (second inline-info))))
   ;; In sysfun.lsp optimizers must be listed with most specific cases last.
   (flet ((float-type-max (t1 t2)
 	   (if t1
-	       (if (or (eq t1 'LONG-FLOAT)
-		       (eq t2 'LONG-FLOAT))
+	       (if (or (subtypep t1 'LONG-FLOAT)
+		       (subtypep t2 'LONG-FLOAT))
 		   'LONG-FLOAT
-		   (if (or (eq t1 'SHORT-FLOAT)
-			   (eq t2 'SHORT-FLOAT))
+		   (if (or (subtypep t1 'SHORT-FLOAT)
+			   (subtypep t2 'SHORT-FLOAT))
 		       'SHORT-FLOAT
 		       'FIXNUM))
 	       t2)))
     (if (and (do ((arg-types arg-types (cdr arg-types))
 		  (types (car inline-info) (cdr types))
-		  (arg-type) (type))
+		  (arg-type)
+		  (type))
 		 ((or (endp arg-types) (endp types))
 		  (and (endp arg-types) (endp types)))
 	       (setq arg-type (car arg-types)
@@ -408,10 +286,10 @@
 		      ;; compute max of FIXNUM-FLOAT arguments types
 		      (setq number-max
 			    (float-type-max number-max (first rts))))
-		     ((type>= type arg-type)
+		     ((type>= (rep-type->lisp-type type) arg-type)
 		      (push type rts))
 		     (t (return nil))))
-	     (or (eq inline-return-type 'BOOLEAN)
+	     (or (eq (second inline-info) :bool)
 		 (if number-max
 		     ;; for arithmetic operators we take the maximal type
 		     ;; as possible result type
@@ -432,7 +310,7 @@
       (case (car form)
 	(LOCATION)
 	(VAR
-	 (when (var-changed-in-forms (car (third form)) (cdr forms))
+	 (when (var-changed-in-forms (third form) (cdr forms))
 	   (setq res t)))
 	(CALL-GLOBAL
 	 (let ((fname (third form))
@@ -455,59 +333,7 @@
   )
 
 (defun close-inline-blocks ()
-  (dotimes (i *inline-blocks*) (declare (fixnum i)) (wt "}")))
-
-(eval-when (compile eval)		; also in cmptop.lsp
-  (defmacro parse-index (fun i)
-    `(multiple-value-bind (a-read endpos)
-      (parse-integer ,fun :start (1+ ,i) :junk-allowed t)
-      (setq ,i (1- endpos))
-      a-read))
-  )
-
-(defun wt-inline-loc (fun locs &aux (i 0))
-  (declare (fixnum i))
-  (cond ((stringp fun)
-         (when (char= (char (the string fun) 0) #\@)
-           (setq i 1)
-           (do ()
-               ((char= (char (the string fun) i) #\;) (incf i))
-               (incf i)))
-         (do ((size (length (the string fun)))
-              (char))
-             ((>= i size))
-           (declare (fixnum size) (character char))
-           (setq char (char (the string fun) i))
-           (if (char= char #\#)
-             (wt-loc (nth (parse-index fun i) locs))
-             (princ char *compiler-output1*))
-           (incf i))
-         )
-        (t (apply (coerce fun 'function) locs))))
-
-(defun wt-inline (side-effectp fun locs)
-  (declare (ignore side-effectp))
-  (wt-inline-loc fun locs))
-
-(defun wt-inline-cond (side-effectp fun locs)
-  (declare (ignore side-effectp))
-  (wt "(") (wt-inline-loc fun locs) (wt "?Ct:Cnil)"))
-
-(defun wt-inline-fixnum (side-effectp fun locs)
-  (declare (ignore side-effectp))
-  (wt "MAKE_FIXNUM(") (wt-inline-loc fun locs) (wt ")"))
-
-(defun wt-inline-character (side-effectp fun locs)
-  (declare (ignore side-effectp))
-  (wt "CODE_CHAR(") (wt-inline-loc fun locs) (wt ")"))
-
-(defun wt-inline-long-float (side-effectp fun locs)
-  (declare (ignore side-effectp))
-  (wt "make_longfloat(") (wt-inline-loc fun locs) (wt ")"))
-
-(defun wt-inline-short-float (side-effectp fun locs)
-  (declare (ignore side-effectp))
-  (wt "make_shortfloat(") (wt-inline-loc fun locs) (wt ")"))
+  (dotimes (i *inline-blocks*) (declare (fixnum i)) (wt #\})))
 
 (defun args-cause-side-effect (forms &aux ii)
   (dolist (form forms nil)
@@ -528,13 +354,6 @@
 
 ;;; ----------------------------------------------------------------------
 
-(put-sysprop 'INLINE 'WT-LOC 'wt-inline)
-(put-sysprop 'INLINE-COND 'WT-LOC 'wt-inline-cond)
-(put-sysprop 'INLINE-FIXNUM 'WT-LOC 'wt-inline-fixnum)
-(put-sysprop 'INLINE-CHARACTER 'WT-LOC 'wt-inline-character)
-(put-sysprop 'INLINE-LONG-FLOAT 'WT-LOC 'wt-inline-long-float)
-(put-sysprop 'INLINE-SHORT-FLOAT 'WT-LOC 'wt-inline-short-float)
-
 (put-sysprop 'FIXNUM 'WT-LOC 'wt-fixnum-loc)
 (put-sysprop 'CHARACTER 'WT-LOC 'wt-character-loc)
 (put-sysprop 'LONG-FLOAT 'WT-LOC 'wt-long-float-loc)
@@ -544,17 +363,3 @@
 ;;; Since they are possible locations, we must add:
 (put-sysprop 'STRING 'WT-LOC 'wt-loc)
 (put-sysprop 'BIT-VECTOR 'WT-LOC 'wt-loc)
-
-(defun wt-fixnum->object (loc)
-  (wt "MAKE_FIXNUM(" loc ")"))
-(defun wt-character->object (loc)
-  (wt "CODE_CHAR(" loc ")"))
-(defun wt-short-float->object (loc)
-  (wt "make_shortfloat(" loc ")"))
-(defun wt-long-float->object (loc)
-  (wt "make_longfloat(" loc ")"))
-
-(put-sysprop 'FIXNUM->OBJECT 'WT-LOC 'wt-fixnum->object)
-(put-sysprop 'CHARACTER->OBJECT 'WT-LOC 'wt-character->object)
-(put-sysprop 'LONG-FLOAT->OBJECT 'WT-LOC 'wt-long-float->object)
-(put-sysprop 'SHORT-FLOAT->OBJECT 'WT-LOC 'wt-short-float->object)

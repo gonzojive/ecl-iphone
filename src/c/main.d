@@ -259,6 +259,10 @@ init_main(void)
 	 ADD_FEATURE("PDE");
 #endif
 
+#ifdef ECL_FFI
+	 ADD_FEATURE("FFI");
+#endif
+
 #ifdef unix
 	 ADD_FEATURE("UNIX");
 #endif

@@ -331,7 +331,6 @@ Does not check if the third gang is a single-element list."
          (cons (setf-expand-1 (car l) (cadr l) env)
                (setf-expand (cddr l) env)))))
 
-
 ;;; SETF macro.
 (defmacro setf (&environment env &rest rest)
   "Syntax: (setf {place form}*)

@@ -1,5 +1,9 @@
 ;;;
-;;; Configuration file for the bootstrapping version of ECL
+;;; This file can be loaded either in ECL_MIN or in the final executable
+;;; ECL. In both cases, it ensures that we have a working Common-Lisp
+;;; environment (either interpreted, as in ECL_MIN, or compiled, as in ECL),
+;;; that the compiler is loaded, that we use the headers in this directory,
+;;; etc.
 ;;;
 ;;; * Set ourselves in the 'SYSTEM package
 ;;;
@@ -61,4 +65,4 @@
 ;;; * Go back to build directory to start compiling
 ;;;
 #+ecl-min
-(setq *features* (remove :ecl-min *features*))
+(setq *features* (cons :stage1 (remove :ecl-min *features*)))

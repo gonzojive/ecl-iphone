@@ -13,20 +13,20 @@
 (defpackage "C"
   (:nicknames "COMPILER")
   (:use "FFI" "CL")
-  (:export *compiler-break-enable*
-	   *compile-print*
-	   *compile-to-linking-call*
-	   *compile-verbose*
-	   *cc*
-	   *cc-optimize*
-	   build-ecl
-	   build-program
-	   build-static-library
-	   build-shared-library
-	   shared-library-pathname
-	   static-library-pathname
-	   *suppress-compiler-warnings*
-	   *suppress-compiler-notes*)
+  (:export "*COMPILER-BREAK-ENABLE*"
+	   "*COMPILE-PRINT*"
+	   "*COMPILE-TO-LINKING-CALL*"
+	   "*COMPILE-VERBOSE*"
+	   "*CC*"
+	   "*CC-OPTIMIZE*"
+	   "BUILD-ECL"
+	   "BUILD-PROGRAM"
+	   "BUILD-STATIC-LIBRARY"
+	   "BUILD-SHARED-LIBRARY"
+	   "SHARED-LIBRARY-PATHNAME"
+	   "STATIC-LIBRARY-PATHNAME"
+	   "*SUPPRESS-COMPILER-WARNINGS*"
+	   "*SUPPRESS-COMPILER-NOTES*")
   (:import-from "SI" "GET-SYSPROP" "PUT-SYSPROP" "REM-SYSPROP"))
 
 (in-package "COMPILER")
@@ -50,8 +50,8 @@
 		;;; Number of references to the variable (-1 means IGNORE).
 		;;; During Pass 2: set below *register-min* for non register.
 ;  ref-ccb	;;; Cross closure reference: T or NIL.
-  kind		;;; One of LEXICAL, SPECIAL, GLOBAL, OBJECT, FIXNUM,
-  		;;; CHARACTER, LONG-FLOAT, SHORT-FLOAT, or REPLACED (used for
+  kind		;;; One of LEXICAL, SPECIAL, GLOBAL, :OBJECT, :FIXNUM,
+  		;;; :CHAR, :DOUBLE, :FLOAT, or REPLACED (used for
 		;;; LET variables).
   (loc 'OBJECT)	;;; During Pass 1: indicates whether the variable can
 		;;; be allocated on the c-stack: OBJECT means
@@ -63,7 +63,7 @@
 		;;; OBJECT.
 		;;; During Pass 2:
   		;;; For REPLACED: the actual location of the variable.
-  		;;; For FIXNUM, CHARACTER, LONG-FLOAT, SHORT-FLOAT, OBJECT:
+  		;;; For :FIXNUM, :CHAR, :FLOAT, :DOUBLE, :OBJECT:
   		;;;   the cvar for the C variable that holds the value.
   		;;; For LEXICAL: the frame-relative address for the variable.
 		;;; For SPECIAL and GLOBAL: the vv-index for variable name.
@@ -246,7 +246,6 @@ The default value is NIL.")
 ;;; Compiled code uses the following kinds of variables:
 ;;; 1. Vi, declared explicitely, either unboxed or register (*lcl*, next-lcl)
 ;;; 2. Ti, declared collectively, of type object, may be reused (*temp*, next-temp)
-;;; 3. Ui, declared collectively, of type unboxed (*unboxed*, next-unboxed)
 ;;; 4. lexi[j], for lexical variables in local functions
 ;;; 5. CLVi, for lexical variables in closures
 
@@ -254,9 +253,6 @@ The default value is NIL.")
 
 (defvar *temp* 0)		; number of temporary variables
 (defvar *max-temp* 0)		; maximum *temp* reached
-
-(defvar *unboxed*)		; list of unboxed variables
-(defvar *next-unboxed* 0)	; number of *unboxed* used.
 
 (defvar *level* 0)		; nesting level for local functions
 
@@ -290,7 +286,7 @@ The default value is NIL.")
 ;;; though &optional, &rest, and &key return types are simply ignored.
 ;;;
 (defvar *function-declarations* nil)
-
+(defvar *allow-c-local-declaration* nil)
 (defvar *alien-declarations* nil)
 (defvar *notinline* nil)
 

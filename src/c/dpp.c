@@ -618,7 +618,7 @@ put_declaration(void)
       put_lineno();
       fprintf(out, "\tbool %s;\n", optional[i].o_svar);
     }
-  if (nkey > 0) {
+  if (key_flag) {
     put_lineno();
     fprintf(out, "\tstatic cl_object KEYS[%d] = {", nkey);
     for (i = 0; i < nkey; i++) {

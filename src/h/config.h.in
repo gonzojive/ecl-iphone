@@ -28,6 +28,9 @@
 /* Network streams							*/
 #undef TCP
 
+/* Foreign functions interface						*/
+#undef ECL_FFI
+
 /*
  * C TYPES AND SYSTEM LIMITS
  */

@@ -378,6 +378,16 @@ struct cclosure {		/*  compiled closure header  */
 	cl_objectfn entry;	/*  entry address  */
 	cl_object block;	/*  descriptor of C code block for GC  */
 };
+
+#ifdef ECL_FFI
+struct foreign {		/*  user defined datatype  */
+	HEADER;
+	cl_object tag;		/*  a tag identifying the type  */
+	cl_index size;		/*  the amount of memory allocated  */
+	char *data;		/*  the data itself  */
+};
+#endif
+
 /*
 	dummy type
 */
@@ -469,6 +479,9 @@ union lispunion {
 	struct thread   thread;	/*  thread  */
 #endif /* THREADS */
 	struct codeblock cblock; /*  codeblock  */
+#ifdef ECL_FFI
+	struct foreign	foreign; /* user defined data type */
+#endif
 };
 
 /*
@@ -509,6 +522,9 @@ typedef enum {
 	t_thread,		/* 20	19 */
 #endif
 	t_codeblock,		/* 21   20 */
+#ifdef ECL_FFI
+	t_foreign,		/* 22   21 */
+#endif
 	t_end,
 	t_other,
 	t_contiguous,		/*  contiguous block  */

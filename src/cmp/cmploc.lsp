@@ -16,19 +16,14 @@
 ;;;	NIL
 ;;;	T
 ;;;	'VALUES'
+;;;	var-object
 ;;;	( 'VALUE' i )			VALUES(i)
-;;;	( 'VAR' var-object ) ; ccb
 ;;;	( 'VV' vv-index )
 ;;;	( 'LCL' lcl )			local variable, type unboxed
 ;;;	( 'TEMP' temp )			local variable, type object
 ;;;	( 'CALL' fun narg locs fname )	locs are locations containing the arguments
 ;;;	( 'CALL-LOCAL' fun lex closure args narg fname )
-;;;	( 'INLINE' side-effect-p fun/string locs )	fun is applied to locs
-;;;	( 'INLINE-COND' side-effect-p fun/string locs )
-;;;	( 'INLINE-FIXNUM' side-effect-p fun/string locs )
-;;;	( 'INLINE-CHARACTER' side-effect-p fun/string locs )
-;;;	( 'INLINE-LONG-FLOAT' side-effect-p fun/string locs )
-;;;	( 'INLINE-SHORT-FLOAT' side-effect-p fun/string locs )
+;;;	( 'C-INLINE' output-type fun/string locs side-effects output-var )
 ;;;	( 'CAR' lcl )
 ;;;	( 'CADR' lcl )
 ;;;	( 'FDEFINITION' vv-index )
@@ -37,12 +32,6 @@
 ;;;	( 'CHARACTER-VALUE' character-code )
 ;;;	( 'LONG-FLOAT-VALUE' long-float-value vv )
 ;;;	( 'SHORT-FLOAT-VALUE' short-float-value vv )
-;;;;	These are never passed to unwind-exit:
-;;;	( 'FIXNUM->OBJECT' loc )
-;;;	( 'CHARACTER->OBJECT' loc )
-;;;	( 'LONG-FLOAT->OBJECT' loc )
-;;;	( 'SHORT-FLOAT->OBJECT' loc )
-
 
 ;;; Valid *DESTINATION* locations are:
 ;;;
@@ -54,7 +43,7 @@
 ;;;	'RETURN-OBJECT
 ;;;	'TRASH'			The value may be thrown away.
 ;;;	'VALUES'
-;;;	( 'VAR' var-object ) ; ccb
+;;;	var-object
 ;;;	( 'LCL' lcl )
 ;;;	( 'LEX' lex-address )
 ;;;	( 'BIND' var alternative )	; alternative is optional
@@ -68,34 +57,35 @@
 					  :test #'eq))))
   (case *destination*
     (VALUES
-     (cond (is-call (wt-nl "VALUES(0)=" loc ";"))
-	   ((eq loc 'VALUES))
-	   (t (wt-nl "VALUES(0)=" loc "; NValues=1;"))))
+     (cond (is-call
+	    (wt-nl "VALUES(0)=") (wt-coerce-loc :object loc) (wt ";"))
+	   ((eq loc 'VALUES) (return-from set-loc))
+	   (t
+	    (wt-nl "VALUES(0)=") (wt-coerce-loc :object loc) (wt "; NValues=1;"))))
     (RETURN
-     (cond ((or is-call (eq loc 'VALUES)) (wt-nl "value0=" loc ";"))
-	   ((eq loc 'RETURN))
-	   (t (wt-nl "value0=" loc "; NValues=1;"))))
+     (cond ((or is-call (eq loc 'VALUES))
+	    (wt-nl "value0=") (wt-coerce-loc :object loc) (wt ";"))
+	   ((eq loc 'RETURN) (return-from set-loc))
+	   (t
+	    (wt-nl "value0=") (wt-coerce-loc :object loc) (wt "; NValues=1;"))))
     (TRASH
      (cond (is-call (wt-nl "(void)" loc ";"))
 	   ((and (consp loc)
-		 (member (car loc)
-			 '(INLINE INLINE-COND INLINE-FIXNUM
-				  INLINE-CHARACTER INLINE-LONG-FLOAT
-				  INLINE-SHORT-FLOAT)
-			 :test #'eq)
-		 (second loc))
-;;;	Removed (void) specifier, for the Prolog inline code.
-;;;         (wt-nl "(void)(") (wt-inline t (third loc) (fourth loc))
-            (wt-nl) (wt-inline t (third loc) (fourth loc))
-            (wt ";"))))
+		 (eq (first loc) 'C-INLINE)
+		 (fifth loc)) ; side effects?
+            (wt-nl loc ";"))))
     (t (cond
+	((var-p *destination*)
+	 (set-var loc *destination*))
         ((or (not (consp *destination*))
              (not (symbolp (car *destination*))))
          (baboon))
         ((setq fd (get-sysprop (car *destination*) 'SET-LOC))
          (apply fd loc (cdr *destination*)))
         ((setq fd (get-sysprop (car *destination*) 'WT-LOC))
-         (wt-nl) (apply fd (cdr *destination*)) (wt "= " loc ";"))
+         (wt-nl) (apply fd (cdr *destination*)) (wt "= ")
+	 (wt-coerce-loc (loc-representation-type *destination*) loc)
+	 (wt ";"))
         (t (baboon)))))
   )
 
@@ -108,6 +98,8 @@
 	 (wt "VALUES(0)"))
 	((eq loc 'VA-ARG)
 	 (wt "cl_va_arg(args)"))
+	((var-p loc)
+	 (wt-var loc))
         ((or (not (consp loc))
              (not (symbolp (car loc))))
          (baboon))
@@ -121,13 +113,13 @@
           '(RETURN RETURN-FIXNUM RETURN-CHARACTER RETURN-SHORT-FLOAT
             RETURN-LONG-FLOAT RETURN-OBJECT)))
 
-(defun wt-car (lcl) (wt "CAR(") (wt-lcl lcl) (wt ")"))
+(defun wt-car (loc) (wt "CAR(" loc ")"))
 
-(defun wt-cdr (lcl) (wt "CDR(") (wt-lcl lcl) (wt ")"))
+(defun wt-cdr (loc) (wt "CDR(" loc ")"))
 
-(defun wt-cadr (lcl) (wt "CADR(") (wt-lcl lcl) (wt ")"))
+(defun wt-cadr (loc) (wt "CADR(" loc ")"))
 
-(defun wt-lcl (lcl) (wt "V" lcl))
+(defun wt-lcl (lcl) (unless (numberp lcl) (error)) (wt "V" lcl))
 
 (defun wt-vv (vv)
   (if (numberp vv)
@@ -141,76 +133,21 @@
   (wt "T" temp))
 
 (defun wt-number (value &optional vv)
-  (typecase value
-    (fixnum (wt "MAKE_FIXNUM(" value ")"))
-    (t (wt vv))))
+  (wt value))
 
 (defun wt-character (value &optional vv)
-  (wt (format nil "CODE_CHAR('\\~O')" value)))
-
-(defun wt-fixnum-loc (loc)
-  (if (consp loc)
-      (case (car loc)
-	(VAR
-	 (if (eq (var-kind (second loc)) 'FIXNUM)
-	     (wt-lcl (var-loc (second loc)))
-	     (wt "fix(" loc ")")))
-	(INLINE-FIXNUM
-	 (wt-inline-loc (third loc) (fourth loc)))
-	(FIXNUM-VALUE
-	 (wt (second loc)))
-	((INLINE-SHORT-FLOAT INLINE-LONG-FLOAT)
-	 (wt "((cl_fixnum)(")
-	 (wt-inline-loc (third loc) (fourth loc))
-	 (wt "))"))
-	(t (wt "fix(" loc ")")))
-      (wt "fix(" loc ")")))
-
-(defun wt-character-loc (loc)
-  (if (consp loc)
-      (case (car loc)
-	(VAR
-	 (if (eq (var-kind (second loc)) 'CHARACTER)
-	     (wt-lcl (var-loc (second loc)))
-	     (wt "char_code(" loc ")")))
-        (INLINE-CHARACTER
-         (wt-inline-loc (third loc) (fourth loc)))
-        (CHARACTER-VALUE
-         (wt (second loc)))
-        (t (wt "char_code(" loc ")")))
-      (wt "char_code(" loc ")")))
-
-(defun wt-long-float-loc (loc)
-  (if (consp loc)
-      (case (car loc)
-	(VAR
-	 (if (eq (var-kind (second loc)) 'LONG-FLOAT)
-	     (wt-lcl (var-loc (second loc)))
-	     (wt "lf(" loc ")")))
-	(INLINE-LONG-FLOAT
-	 (wt-inline-loc (third loc) (fourth loc)))
-	(LONG-FLOAT-VALUE
-	 (wt (second loc)))
-	(t (wt "lf(" loc ")")))
-      (wt "lf(" loc ")")))
-
-(defun wt-short-float-loc (loc)
-  (if (consp loc)
-      (case (car loc)
-	(VAR
-	 (if (eq (var-kind (second loc)) 'SHORT-FLOAT)
-	     (wt-lcl (var-loc (second loc)))
-	     (wt "sf(" loc ")")))
-	(INLINE-SHORT-FLOAT
-	 (wt-inline-loc (third loc) (fourth loc)))
-	(SHORT-FLOAT-VALUE
-	 (wt (second loc)))
-	(t (wt "sf(" loc ")")))
-      (wt "sf(" loc ")")))
+  (wt (format nil "'\\~O'" value)))
 
 (defun wt-value (i) (wt "VALUES(" i ")"))
 
 (defun wt-keyvars (i) (wt "keyvars[" i "]"))
+
+(defun loc-refers-to-special (loc)
+  (unless (atom loc)
+    (case (first loc)
+      (BIND t)
+      (C-INLINE t) ; We do not know, so guess yes
+      (otherwise nil))))
 
 ;;; -----------------------------------------------------------------
 
@@ -221,12 +158,8 @@
 (put-sysprop 'CDR 'WT-LOC #'wt-cdr)
 (put-sysprop 'CADR 'WT-LOC #'wt-cadr)
 (put-sysprop 'FIXNUM-VALUE 'WT-LOC #'wt-number)
-(put-sysprop 'FIXNUM-LOC 'WT-LOC #'wt-fixnum-loc) ; used in cmpfun.lsp
 (put-sysprop 'CHARACTER-VALUE 'WT-LOC #'wt-character)
-;(put-sysprop 'CHARACTER-LOC 'WT-LOC #'wt-character-loc)
 (put-sysprop 'LONG-FLOAT-VALUE 'WT-LOC #'wt-number)
-;(put-sysprop 'LONG-FLOAT-LOC 'WT-LOC #'wt-long-float-loc)
 (put-sysprop 'SHORT-FLOAT-VALUE 'WT-LOC #'wt-number)
-;(put-sysprop 'SHORT-FLOAT-LOC 'WT-LOC #'wt-short-float-loc)
 (put-sysprop 'VALUE 'WT-LOC #'wt-value)
 (put-sysprop 'KEYVARS 'WT-LOC #'wt-keyvars)

@@ -135,23 +135,31 @@
       ;; if the variable can be stored locally, set it var-kind to its type
       (setf (var-kind var)
 	    (if (> (var-ref var) 1)
-		(let ((type (var-type var)))
-		  (cond ((type>= 'FIXNUM type) 'FIXNUM)
-			((type>= 'CHARACTER type) 'CHARACTER)
-			((type>= 'LONG-FLOAT type) 'LONG-FLOAT)
-			((type>= 'SHORT-FLOAT type) 'SHORT-FLOAT)
-			(t 'OBJECT)))
-		'OBJECT))))
+		(lisp-type->rep-type (var-type var))
+		:OBJECT))))
   )
 
 (defun c1var (name)
   (let ((info (make-info))
         (vref (c1vref name)))
-    (push (car vref) (info-referred-vars info))
-    (push (car vref) (info-local-referred info))
-    (setf (info-type info) (var-type (car vref)))
+    (unless (var-p vref)
+      ;; This might be the case if there is a symbol macrolet
+      (return-from c1var vref))
+    (push vref (info-referred-vars info))
+    (push vref (info-local-referred info))
+    (setf (info-type info) (var-type vref))
     (list 'VAR info vref))
   )
+
+(defun make-lcl-var (&key rep-type (type 'T))
+  (unless rep-type
+    (setq rep-type (if type (lisp-type->rep-type type) :object)))
+  (unless type
+    (setq type 'T))
+  (make-var :kind rep-type :type type :loc `(LCL ,(incf *lcl*))))
+
+(defun make-temp-var (&optional (type 'T))
+  (make-var :kind :object :type type :loc `(TEMP ,(next-temp))))
 
 ;;; A variable reference (vref for short) is a list: pair
 ;;;	( var-object ) Beppe(ccb) ccb-reference )
@@ -163,6 +171,7 @@
           ((eq var 'LB) (setq clb t))	; level boundary
 	  ((consp var)
 	   (when (eq (first var) name) ; symbol macrolet
+	     (baboon)
 	     (return-from c1vref (c1expr (second var)))))
           ((eq (var-name var) name)
            (when (minusp (var-ref var)) ; IGNORE.
@@ -173,7 +182,7 @@
 			      (var-loc var) 'OBJECT)) ; replace a previous 'CLB
 		   (clb (setf (var-loc var) 'CLB))))
            (incf (var-ref var))
-           (return-from c1vref (list var))))) ; ccb
+           (return-from c1vref var)))) ; ccb
   (let ((var (sch-global name)))
     (unless var
       (unless (or (sys:specialp name) (check-global name))
@@ -183,8 +192,9 @@
                           :loc (add-symbol name)
                           :type (or (get-sysprop name 'CMP-TYPE) t)))
       (push var *undefined-vars*))
-    (list var))				; ccb
+    var)				; ccb
   )
+
 
 ;;; At each variable binding, the variable is added to *vars* which
 ;;; emulates the environment.
@@ -195,14 +205,13 @@
   (push v *vars*))
 
 (defun unboxed (var)
-  (member (var-kind var) '(FIXNUM CHARACTER LONG-FLOAT SHORT-FLOAT)
-          :test #'eq))
+  (not (eq (var-rep-type var) :object)))
 
 (defun local (var)
-  (car (member (var-kind var) '(FIXNUM CHARACTER LONG-FLOAT SHORT-FLOAT OBJECT)
-	       :test #'eq)))
+  (and (not (member (var-kind var) '(LEXICAL SPECIAL GLOBAL REPLACED)))
+       (var-kind var)))
 
-(defun c2var (vref) (unwind-exit (cons 'VAR vref)))
+(defun c2var (vref) (unwind-exit vref))
 
 (defun c2location (loc) (unwind-exit loc))
 
@@ -217,51 +226,43 @@
     (GLOBAL (if *safe-compile*
               (wt "symbol_value(" var-loc ")")
               (wt "(" var-loc "->symbol.dbind)")))
-    (t (case (var-kind var)
-         (FIXNUM    (wt "MAKE_FIXNUM"))
-         (CHARACTER (wt "CODE_CHAR"))
-         (LONG-FLOAT (wt "make_longfloat"))
-         (SHORT-FLOAT (wt "make_shortfloat"))
-         (OBJECT)
-         (t (baboon)))
-       (wt "(") (wt-lcl var-loc) (wt ")"))
+    (t (wt var-loc))
     ))
 
+(defun var-rep-type (var)
+  (case (var-kind var)
+    ((LEXICAL SPECIAL GLOBAL) :object)
+    (REPLACED (loc-representation-type (var-loc var)))
+    (t (var-kind var))))
+
 (defun set-var (loc var &aux (var-loc (var-loc var))) ;  ccb
-  (unless (and (consp loc)
-               (eq (car loc) 'VAR)
-               (eq (second loc) var)
-;               (eq (third loc) ccb)
-	       )
+  (if (var-p var)
     (case (var-kind var)
-      (LEXICAL (wt-nl)
-               (if (var-ref-ccb var)
-		   (wt-env var-loc)
-		   (wt-lex var-loc))
-               (wt "= " loc ";"))
-      (SPECIAL (wt-nl "(" var-loc "->symbol.dbind)= " loc ";"))
+      (LEXICAL
+       (wt-nl)
+       (if (var-ref-ccb var)
+	   (wt-env var-loc)
+	   (wt-lex var-loc))
+       (wt "= ")
+       (wt-coerce-loc (var-rep-type var) loc)
+       (wt #\;))
+      (SPECIAL
+       (wt-nl "(" var-loc "->symbol.dbind)= ")
+       (wt-coerce-loc (var-rep-type var) loc)
+       (wt #\;))
       (GLOBAL
        (if *safe-compile*
-         (wt-nl "cl_set(" var-loc "," loc ");")
-         (wt-nl "(" var-loc "->symbol.dbind)= " loc ";")))
+	   (wt-nl "cl_set(" var-loc ",")
+	   (wt-nl "(" var-loc "->symbol.dbind)= "))
+       (wt-coerce-loc (var-rep-type var) loc)
+       (wt ");"))
       (t
-       (wt-nl) (wt-lcl var-loc) (wt "= ")
-       (case (var-kind var)
-         (FIXNUM (wt-fixnum-loc loc))
-         (CHARACTER (wt-character-loc loc))
-         (LONG-FLOAT (wt-long-float-loc loc))
-         (SHORT-FLOAT (wt-short-float-loc loc))
-         (OBJECT (wt-loc loc))
-         (t (baboon)))
-       (wt ";"))
-      )))
+       (wt-nl var-loc "= ")
+       (wt-coerce-loc (var-rep-type var) loc)
+       (wt #\;))
+    )
+    (baboon)))
 
-(defun set-lex (loc lex)
-  (unless (and (consp loc)
-               (eq (car loc) 'LEX)
-               (equal (second loc) lex))
-    (wt-nl) (wt-lex lex) (wt "= " loc ";")))
-          
 (defun wt-lex (lex)
   (if (consp lex)
     (wt "lex" (car lex) "[" (cdr lex) "]")
@@ -304,12 +305,12 @@
   (unless (symbolp name)
     (return-from c1setq1 (c1expr `(setf ,name ,form))))
   (setq name1 (c1vref name))
-  (pushnew (car name1) (info-changed-vars info))
-  (pushnew (car name1) (info-referred-vars info))
-  (pushnew (car name1) (info-local-referred info))
+  (pushnew name1 (info-changed-vars info))
+  (pushnew name1 (info-referred-vars info))
+  (pushnew name1 (info-local-referred info))
   (setq form1 (c1expr form))
   (add-info info (second form1))
-  (setq type (type-and (var-type (car name1)) (info-type (second form1))))
+  (setq type (type-and (var-type name1) (info-type (second form1))))
   (unless type
     (cmpwarn "Type mismatch between ~s and ~s." name form)
     (setq type T))
@@ -321,11 +322,11 @@
   (list 'SETQ info name1 form1)
   )
 
-(defun c2setq (vref form &aux (dest (cons 'VAR vref)))
-  (let ((*destination* dest)) (c2expr* form))
+(defun c2setq (vref form)
+  (let ((*destination* vref)) (c2expr* form))
   (if (eq (car form) 'LOCATION)
     (c2location (third form))
-    (unwind-exit dest))
+    (unwind-exit vref))
   )
 
 (defun c1progv (args &aux symbols values (info (make-info)) forms)
@@ -342,10 +343,10 @@
                 &aux (*unwind-exit* *unwind-exit*))
   (let* ((*lcl* *lcl*)
          (lcl (next-lcl))
-         (sym-loc (list 'LCL (next-lcl)))
-         (val-loc (list 'LCL (next-lcl))))
+         (sym-loc (make-lcl-var))
+         (val-loc (make-lcl-var)))
     (wt-nl "{cl_object " sym-loc "," val-loc ";")
-    (wt-nl "bds_ptr ") (wt-lcl lcl) (wt "=bds_top;")
+    (wt-nl "bds_ptr " lcl "=bds_top;")
     (push lcl *unwind-exit*)
     
     (let ((*destination* sym-loc)) (c2expr* symbols))
@@ -389,7 +390,7 @@
       ((endp l))
       (let* ((vref (c1vref (car l)))
              (form (c1expr (second l)))
-             (type (type-and (var-type (car vref))
+             (type (type-and (var-type vref)
                              (info-type (second form)))))
             (unless (equal type (info-type (second form)))
               (let ((info1 (copy-info (second form))))
@@ -397,23 +398,18 @@
 		(setq form (list* (car form) info1 (cddr form)))))
             (push vref vrefs)
             (push form forms)
-            (push (car vref) (info-changed-vars info))
+            (push vref (info-changed-vars info))
             (add-info info (cadar forms)))
       )
   (list 'PSETQ info (nreverse vrefs) (nreverse forms))
   )
 
 (defun var-referred-in-forms (var forms)
-  (case (var-kind var)
-    ((LEXICAL REPLACED FIXNUM CHARACTER LONG-FLOAT SHORT-FLOAT OBJECT)
-     (dolist (form forms nil)
-       (when (member var (info-referred-vars (second form)))
-	 (return-from var-referred-in-forms t))))
-    (t (dolist (form forms nil)
-	 (when (or (member var (info-referred-vars (second form)))
-		   (info-sp-change (second form)))
-	   (return-from var-referred-in-forms t))))
-    ))
+  (let ((check-specials (member (var-kind var) '(SPECIAL GLOBAL))))
+    (dolist (form forms nil)
+      (when (or (member var (info-referred-vars (second form)))
+		(and check-specials (info-sp-change (second form))))
+	(return-from var-referred-in-forms t)))))
 
 (defun c2psetq (vrefs forms &aux (*lcl* *lcl*) (saves nil) (blocks 0))
   ;; similar to inline-args
@@ -421,7 +417,7 @@
        (forms forms (cdr forms))
        (var) (form))
       ((null vrefs))
-    (setq var (caar vrefs)
+    (setq var (first vrefs)
 	  form (car forms))
     (if (or (var-changed-in-forms var (cdr forms))
             (var-referred-in-forms var (cdr forms)))
@@ -429,17 +425,17 @@
           (LOCATION (push (cons var (third form)) saves))
           (otherwise
             (if (local var)
-                (let* ((kind (var-kind var))
-                       (lcl (next-lcl))
-		       (temp (list 'VAR (make-var :kind kind :loc lcl))))
-                  (wt-nl "{" *volatile* (rep-type kind)) (wt-lcl lcl) (wt ";")
+                (let* ((rep-type (var-rep-type var))
+		       (rep-type-name (rep-type-name rep-type))
+		       (temp (make-lcl-var :rep-type rep-type)))
+                  (wt-nl "{" *volatile* rep-type-name " " temp ";")
                   (incf blocks)
                   (let ((*destination* temp)) (c2expr* form))
                   (push (cons var temp) saves))
-                (let ((*destination* (list 'TEMP (next-temp))))
+                (let ((*destination* (make-temp-var)))
                   (c2expr* form)
                   (push (cons var *destination*) saves)))))
-        (let ((*destination* (cons 'VAR (car vrefs)))) (c2expr* form))))
+        (let ((*destination* var)) (c2expr* form))))
   (dolist (save saves) (set-var (cdr save) (car save)))
   (dotimes (i blocks) (wt "}"))
   (unwind-exit nil)
@@ -455,9 +451,3 @@
 (put-sysprop 'PROGV 'C2 'c2progv)
 (put-sysprop 'PSETQ 'c1 'c1psetq)
 (put-sysprop 'PSETQ 'C2 'c2psetq)
-
-(put-sysprop 'VAR 'SET-LOC 'set-var)
-(put-sysprop 'VAR 'WT-LOC 'wt-var)
-
-(put-sysprop 'LEX 'SET-LOC 'set-lex)
-(put-sysprop 'LEX 'WT-LOC 'wt-lex)

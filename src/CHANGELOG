@@ -1422,6 +1422,31 @@ ECLS 0.9
     etc. That sequence type is used, rather than the general one
     (VECTOR T). (:TYPE option from slots is not used, though).
 
+ECLS 1.0
+========
+
+* Errors fixed:
+
+  - DPP now properly handles &allow_other_keys.
+
+* Visible changes:
+
+  - New special form C-INLINE, allows inserting C/C++ code in any
+    place where a lisp form is allowed.
+
+  - New lisp object type, t_foreign, for user-allocated or "foreign"
+    data; plus routines to simulate the UFFI foreign functions
+    interface.
+
+  - New function SI::FILE-KIND (based on lstat() and stat()) returns
+    either :DIRECTORY, :FILE, :LINK, :SPECIAL, or NIL (= Non
+    existent), for a given file name.
+
+* ANSI compatibility:
+
+  - DIRECTORY now understands :WILD, :UP, :WILD-INFERIORS, and, as an
+    extension, other masks within the pathname ("/foo*/**/d*d.l?sp").
+    It also accepts and ignores all keyword arguments.
 
 TODO:
 =====

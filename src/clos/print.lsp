@@ -16,7 +16,7 @@
 (defmethod print-object ((instance t) stream)
   (print-unreadable-object (instance stream)
 	(format stream "a ~A"
-		(si:instance-ref (si:instance-class instance) 0)))
+		(class-name (si:instance-class instance))))
   instance)
 
 (defmethod print-object ((class class) stream)

@@ -26,27 +26,18 @@
 		    (<= (length (car args)) *princ-string-limit*))
 	       (characterp (car args)))
 	   (or (endp (cdr args))
-	       (and (eq (car stream) 'VAR)
-		    (member (var-kind (car (third stream)))
-			    '(GLOBAL SPECIAL) :test #'eq))))
-      (list 'PRINC info (car args)
-	    (if (endp (cdr args)) nil (var-loc (caaddr stream)))
+	       (eq (car stream) 'VAR)))
+      (list 'C2PRINC info (car args) (if (endp (cdr args)) nil (third stream))
 	    stream)
-      (list 'CALL-GLOBAL info 'PRINC
-	    (list (c1expr* (car args) info) stream))))
+      (list 'CALL-GLOBAL info 'PRINC (list (c1expr* (car args) info) stream))))
 
-(defun c2princ (string vv-index stream)
+(defun c2princ (string stream-var stream)
   (cond ((eq *destination* 'TRASH)
 	 (cond ((characterp string)
-		(wt-nl "princ_char(" (char-code string))
-		(if (null vv-index) (wt ",Cnil")
-		    (wt ",symbol_value(" vv-index ")"))
-		(wt ");"))
+		(wt-nl "princ_char(" (char-code string) "," stream-var ");"))
 	       ((= (length string) 1)
-		(wt-nl "princ_char(" (char-code (aref string 0)))
-		(if (null vv-index) (wt ",Cnil")
-		    (wt ",symbol_value(" vv-index ")"))
-		(wt ");"))
+		(wt-nl "princ_char(" (char-code (aref string 0)) ","
+		       stream-var ");"))
 	       (t
 		(wt-nl "princ_str(\"")
 		(dotimes (n (length string))
@@ -56,10 +47,7 @@
 			     ((char= char #\") (wt "\\\""))
 			     ((char= char #\Newline) (wt "\\n"))
 			     (t (wt char)))))
-		(wt "\",")
-		(if (null vv-index) (wt "Cnil")
-		    (wt "symbol_value(" vv-index ")"))
-		(wt ");")))
+		(wt "\"," stream-var ");")))
 	 (unwind-exit nil))
 	((eql string #\Newline) (c2call-global 'TERPRI (list stream) nil t))
 	(t (c2call-global
@@ -77,10 +65,9 @@
 		   (c1expr* (car args) info)))
   (if (or (endp args)
 	  (and (eq (car stream) 'VAR)
-	       (member (var-kind (car (third stream)))
-		       '(GLOBAL SPECIAL) :test #'eq)))
-      (list 'PRINC info #\Newline
-	    (if (endp args) nil (var-loc (caaddr stream)))
+	       (member (var-kind (third stream)) '(GLOBAL SPECIAL))))
+      (list 'C2PRINC info #\Newline
+	    (if (endp args) nil (third stream))
 	    stream)
       (list 'CALL-GLOBAL info 'TERPRI (list stream))))
 
@@ -111,18 +98,18 @@
 
 (defun c2apply-lambda/local (funob args)
   (let* ((loc (save-funob funob))
-	 (temp *temp*)
-	 (*temp* temp)			; allow reuse of TEMP variables
-	 (arg (list 'TEMP 0))
-	 (narg (list 'LCL (next-lcl)))
+	 (*temp* *temp*)
+	 (temp-args '())
+	 (narg (make-lcl-var :rep-type :cl-index))
 	 (is-lambda (eq 'LAMBDA (first funob))))
     ;; We must prepare in the lisp stack the following:
     ;; lex0, ..., lexk, env, arg1, ..., argn
     (wt-nl "{ cl_index " narg ";")
     (dolist (expr args)
-      (setf (second arg) (next-temp))
-      (let ((*destination* arg)) (c2expr* expr)))
-    (setf (second arg) temp)		; restart numbering
+      (let ((*destination* (make-temp-var)))
+	(push *destination* temp-args)
+	(c2expr* expr)))
+    (setf temp-args (nreverse temp-args))
     (unless is-lambda
       (let* ((fun (third funob))
 	     (lex-lvl (fun-level fun))
@@ -133,9 +120,9 @@
 	  ;; env of local fun is ALWAYS contained in current env (?)
 	  (wt-nl "cl_stack_push((cl_object)env" *env-lvl* ");"))))
     (dotimes (i (1- (length args)))
-      (wt-nl "cl_stack_push(" arg ");")
-      (incf (second arg)))
-    (wt-nl narg "=" (1- (length args)) "+cl_stack_push_list(" arg ");")
+      (wt-nl "cl_stack_push(" (pop temp-args) ");"))
+    (wt-nl narg "=" (1- (length args))
+	   "+cl_stack_push_list(" (pop temp-args) ");")
     (let ((*unwind-exit* `((STACK ,narg) ,@*unwind-exit*)))
       (if is-lambda
 	  (c2funcall funob 'ARGS-PUSHED loc narg)
@@ -157,7 +144,7 @@
 	 (list 'LET info (nreverse vl) (nreverse fl) body))
 	(t
 	 (let ((*vars* *vars*)
-	       (temp (or rest (make-var :name (gensym) :kind 'OBJECT
+	       (temp (or rest (make-var :name (gensym) :kind :OBJECT
 					:ref (length args)))))
 	   (push-vars temp)
 	   (push temp vl)
@@ -180,9 +167,9 @@
   (list 'RPLACA info args))
 
 (defun c2rplaca (args &aux (*inline-blocks* 0) x y)
-  (setq args (inline-args args)
-	x (second (first args))
-	y (second (second args)))
+  (setq args (coerce-locs (inline-args args))
+	x (first args)
+	y (second args))
   (safe-compile
    (wt-nl "if(ATOM(" x "))"
 	  "FEtype_error_cons(" x ");"))
@@ -199,9 +186,9 @@
   (list 'RPLACD info args))
 
 (defun c2rplacd (args &aux (*inline-blocks* 0) x y)
-  (setq args (inline-args args)
-	x (second (first args))
-	y (second (second args)))
+  (setq args (coerce-locs (inline-args args))
+	x (first args)
+	y (second args))
   (safe-compile
    (wt-nl "if(ATOM(" x "))"
 	  "FEtype_error_cons(" x ");"))
@@ -225,13 +212,14 @@
 
 (defun c2member!2 (fun args
 		       &aux (*inline-blocks* 0))
-  (setq args (coerce-locs (inline-args args) nil))
   (unwind-exit
-   (list 'INLINE nil
+   (produce-inline-loc (inline-args args) '(T T) :object
 	 (case fun
 	   (EQ "si_memq(#0,#1)")
 	   (EQL "memql(#0,#1)")
-	   (EQUAL "member(#0,#1)")) args))
+	   (EQUAL "member(#0,#1)"))
+	 nil ; side effects?
+	 t)) ; one liner?
   (close-inline-blocks))
 
 (defun c1assoc (args &aux (info (make-info)))
@@ -251,14 +239,16 @@
 
 (defun c2assoc!2 (fun args
 		      &aux (*inline-blocks* 0))
-  (setq args (coerce-locs (inline-args args) nil))
   (unwind-exit
-   (list 'INLINE nil
+   (produce-inline-loc (inline-args args) '(T T) :object
 	 (case fun
 	   (eq "assq(#0,#1)")
 	   (eql "assql(#0,#1)")
 	   (equal "assoc(#0,#1)")
-	   (equalp "assqlp(#0,#1)")) args)) ;Beppe
+	   (equalp "assqlp(#0,#1)"))
+	 nil ; side effects?
+	 t
+	 ))
   (close-inline-blocks))
 
 (defun co1nth (args)
@@ -308,7 +298,7 @@
 (defun c2rplaca-nthcdr-immediate (index args
 					&aux (*inline-blocks* 0))
   (declare (fixnum index))
-  (setq args (coerce-locs (inline-args args) nil))
+  (setq args (coerce-locs (inline-args args)))
   (if *safe-compile*
       (progn
        (wt-nl "{cl_object l= ")
@@ -338,19 +328,19 @@
 	    (c1args (list (second args)) info))
       (list 'CALL-GLOBAL info 'SYS:LIST-NTH (c1args args info))))
 
-(defun c2list-nth-immediate (index args &aux (l (next-lcl))
+(defun c2list-nth-immediate (index args &aux (l (make-lcl-var))
 					     (*inline-blocks* 0))
   (declare (fixnum index))
-  (setq args (coerce-locs (inline-args args) nil))
-  (wt-nl "{cl_object ") (wt-lcl l) (wt "= ")
+  (setq args (coerce-locs (inline-args args)))
+  (wt-nl "{cl_object " l "= ")
   (if *safe-compile*
       (progn
        (dotimes (i index) (declare (fixnum i)) (wt "cl_cdr("))
        (wt (car args))
        (dotimes (i index) (declare (fixnum i)) (wt ")"))
        (wt ";")
-       (wt-nl "if(ATOM(") (wt-lcl l) (wt "))")
-       (wt-nl " FEtype_error_cons(") (wt-lcl l) (wt ");")
+       (wt-nl "if(ATOM(" l "))")
+       (wt-nl " FEtype_error_cons(" l ");")
        )
       (progn
        (dotimes (i index) (declare (fixnum i)) (wt "CDR("))
@@ -392,43 +382,35 @@
 	(endp (cdddr args))
 	(let ((op-code (first args))
 	      (info (make-info))
-	      c1args)
+	      c1args string)
 	  (and (constantp op-code)
 	       (sys:fixnump (setq op-code (eval op-code)))
-	       (setq c1args (c1args (cons op-code (rest args)) info))
+	       (setq c1args (c1args (rest args) info))
 	       (eq 'FIXNUM (info-type (second (second c1args))))
 	       (eq 'FIXNUM (info-type (second (third c1args))))
-	       `(BOOLE ,info ,c1args)))))
+	       `(C-INLINE ,c1args (T T) FIXNUM
+		 ,(boole-inline-string op-code)
+		 :side-effects nil
+		 :one-liner t)))))
 
-(defun c2boole (args)
-  (flet ((coerce-to-fixnums (locs)
-	   (do ((l locs (cdr l)))
-	       ((null l) locs)
-	     (unless (eq 'FIXNUM (caar l))
-	       (setf (caar l) 'fixnum-loc)))))
-    (let* ((boole-op-arg (third (first args)))
-	   (string (ecase (second boole-op-arg)
-		     (#. boole-clr "(0)")
-		     (#. boole-set "(1)")
-		     (#. boole-1 "(#0)")
-		     (#. boole-2 "(#1)")
-		     (#. boole-c1 "(~(#0))")
-		     (#. boole-c2 "(~(#1))")
-		     (#. boole-and "((#0) & (#1))")
-		     (#. boole-ior "((#0) | (#1))")
-		     (#. boole-xor "((#0) ^ (#1))")
-		     (#. boole-eqv   "(~((#0) ^ (#1)))")
-		     (#. boole-nand "(~((#0) & (#1)))")
-		     (#. boole-nor   "(~((#0)|(#1)))")
-		     (#. boole-andc1 "((~(#0))&(#1))")
-		     (#. boole-andc2 "(((#0))&(~(#1)))")
-		     (#. boole-orc1  "(~(#0) | (#1))")
-		     (#. boole-orc2  "((#0) | (~(#1)))"))))
-      (let ((*inline-blocks* 0))
-	(unwind-exit
-	 (list 'INLINE-FIXNUM nil string
-	       (coerce-to-fixnums (inline-args (rest args)))))
-	(close-inline-blocks)))))
+(defun boole-inline-string (op-code)
+  (ecase op-code
+    (#. boole-clr "(0)")
+    (#. boole-set "(1)")
+    (#. boole-1 "(#0)")
+    (#. boole-2 "(#1)")
+    (#. boole-c1 "(~(#0))")
+    (#. boole-c2 "(~(#1))")
+    (#. boole-and "((#0) & (#1))")
+    (#. boole-ior "((#0) | (#1))")
+    (#. boole-xor "((#0) ^ (#1))")
+    (#. boole-eqv   "(~((#0) ^ (#1)))")
+    (#. boole-nand "(~((#0) & (#1)))")
+    (#. boole-nor   "(~((#0)|(#1)))")
+    (#. boole-andc1 "((~(#0))&(#1))")
+    (#. boole-andc2 "(((#0))&(~(#1)))")
+    (#. boole-orc1  "(~(#0) | (#1))")
+    (#. boole-orc2  "((#0) | (~(#1)))")))
 
 ;----------------------------------------------------------------------
 
@@ -474,29 +456,6 @@
 	 (type-filter (second x)))
 	(t t)))
 
-(defun co1eql (args)
-  (when (and (cdr args)
-	     (not *safe-compile*)
-	     (flet ((replace-constant (lis)
-		      (do ((v lis (cdr v))
-			   (found) (tem))
-			  ((null v) found)
-			(when (and (constantp (car v))
-				   (or (numberp (setq tem (eval (car v))))
-				       (characterp tem)))
-			  (setq found t) (setf (car v) tem)))))
-	       (replace-constant args)))
-    (when (characterp (second args))
-      (setq args (reverse args)))
-    (when (characterp (car args))
-      (let ((c (gensym)))
-	(c1expr
-	 `(let ((,c ,(second args)))
-	   (declare (type ,(result-type (second args)) ,c))
-	   (and (characterp ,c)
-	    (= (char-code ,(car args))
-	     (the fixnum (char-code (the character ,c)))))))))))
-
 ;----------------------------------------------------------------------
 
 (defun co1ldb (args &aux (arg1 (first args))
@@ -541,7 +500,7 @@
 ;;; ----------------------------------------------------------------------
 
 (put-sysprop 'princ 'C1 'c1princ)
-(put-sysprop 'princ 'C2 'c2princ)
+(put-sysprop 'c2princ 'C2 'c2princ)
 (put-sysprop 'terpri 'C1 'c1terpri)
 
 (put-sysprop 'apply 'C1 'c1apply)
@@ -569,7 +528,6 @@
 (put-sysprop 'boole 'C1CONDITIONAL 'co1boole)
 (put-sysprop 'coerce 'C1CONDITIONAL 'co1coerce)
 (put-sysprop 'cons 'C1CONDITIONAL 'co1cons)
-(put-sysprop 'eql 'C1CONDITIONAL 'co1eql)		    
 (put-sysprop 'ldb 'C1CONDITIONAL 'co1ldb)
 (put-sysprop 'vector-push 'C1CONDITIONAL 'co1vector-push)
 (put-sysprop 'vector-push-extend 'C1CONDITIONAL 'co1vector-push-extend)

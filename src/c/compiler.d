@@ -2378,10 +2378,13 @@ static void
 c_default(cl_index deflt_pc) {
 	cl_object deflt = asm_ref(deflt_pc);
 	cl_type t = type_of(deflt);
-	if ((t == t_symbol) && (deflt->symbol.stype == stp_constant))
+	if (((t == t_symbol) && (deflt->symbol.stype == stp_constant) &&
+	     !FIXNUMP(SYM_VAL(deflt)))) {
 		/* FIXME! Shouldn't this happen only in unsafe mode */
 		asm_at(deflt_pc, SYM_VAL(deflt));
-	else if ((t == t_symbol) || (t == t_cons) || (t == t_fixnum)) {
+	} else if (CONSP(deflt) && (CAR(deflt) == @'quote') && !FIXNUMP(CADR(deflt))) {
+		asm_at(deflt_pc, CADR(deflt));
+	} else if ((t == t_symbol) || (t == t_cons) || (t == t_fixnum)) {
 		cl_index pc = current_pc();
 		asm_at(deflt_pc, MAKE_FIXNUM(pc-deflt_pc));
 		compile_form(deflt, FLAG_VALUES);

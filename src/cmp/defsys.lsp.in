@@ -34,6 +34,7 @@
     (cmpvar	()		()			())
     (cmpwt	()		()			())
     (cmpmain	()		()			())
+    (cmpffi	()		()			())
     (cmpcfg	()		()			())))
 
 (sbt:defsystem 

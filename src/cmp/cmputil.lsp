@@ -77,6 +77,7 @@
 
 (defun baboon (&aux (*print-case* :upcase))
   (print-current-form)
+  (error "~&;;; A bug was found in the compiler.  Contact worm@arrakis.es.~%")
   (format
    t "~&;;; A bug was found in the compiler.  Contact worm@arrakis.es.~%")
   (incf *error-count*)

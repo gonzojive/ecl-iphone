@@ -23,7 +23,7 @@
 
 (defun c2catch (tag body)
   (let* ((*lcl* *lcl*)
-	 (tag-lcl (list 'LCL (next-lcl))))
+	 (tag-lcl (make-lcl-var)))
     (wt-nl "{ cl_object " tag-lcl ";")
     (let* ((*destination* tag-lcl))
       (c2expr* tag))
@@ -48,7 +48,7 @@
   (list 'UNWIND-PROTECT info form args)
   )
 
-(defun c2unwind-protect (form body &aux (nr (list 'LCL (next-lcl))))
+(defun c2unwind-protect (form body)
   (wt-nl "{ volatile bool unwinding = FALSE;")
   (wt-nl "frame_ptr next_fr; cl_object next_tag;")
   ;; Here we compile the form which is protected. When this form
@@ -63,7 +63,7 @@
   ;; Here we save the values of the form which might have been
   ;; aborted, and execute some cleanup code. This code may also
   ;; be aborted by some control structure, but is not protected.
-  (let* ((nr `(LCL ,(next-lcl)))
+  (let* ((nr (make-lcl-var :rep-type :cl-index))
 	 (*unwind-exit* `((STACK ,nr) ,@*unwind-exit*))
 	 (*destination* 'TRASH))
     (wt-nl "{cl_index " nr "=cl_stack_push_values();")
@@ -92,8 +92,8 @@
 (defun c2throw (tag val &aux loc)
   (case (car tag)
     (LOCATION (setq loc (third tag)))
-    (VAR (setq loc (cons 'VAR (third tag))))
-    (t (setq loc (list 'TEMP (next-temp)))
+    (VAR (setq loc (third tag)))
+    (t (setq loc (make-temp-var))
        (let ((*destination* loc)) (c2expr* tag))))
   (let ((*destination* 'VALUES)) (c2expr* val))
   (wt-nl "cl_throw(" loc ");"))

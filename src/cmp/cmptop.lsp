@@ -102,7 +102,6 @@
   (wt-h "#endif")
   ;;; Initialization function.
   (let* ((*lcl* 0) (*lex* 0) (*max-lex* 0) (*max-env* 0) (*max-temp* 0)
-	 (*unboxed* nil)
 	 (*reservation-cmacro* (next-cmacro))
 	 (c-output-file *compiler-output1*)
 	 (*compiler-output1* (make-string-output-stream))
@@ -171,7 +170,7 @@
   (wt-h "#ifdef __cplusplus")
   (wt-h "}")
   (wt-h "#endif")
-  (wt-h1 top-output-string))
+  (wt-nl top-output-string))
 
 (defun t1eval-when (args &aux (load-flag nil) (compile-flag nil))
   (when (endp args) (too-few-args 'eval-when 1 0))
@@ -237,7 +236,7 @@
       (setf (info-volatile (second lambda-expr)) t))
     (multiple-value-bind (decl body doc)
 	(si::process-declarations (cddr args) nil)
-      (cond ((assoc 'si::c-local decl)
+      (cond ((and (assoc 'si::c-local decl) *allow-c-local-declaration*)
 	     (setq no-entry t))
 	    ((setq doc (si::expand-set-documentation fname 'function doc))
 	     (t1expr `(progn ,@doc)))))
@@ -346,7 +345,6 @@
                       (*volatile* (when lambda-expr
                                     (volatile (second lambda-expr))))
 		      (*lcl* 0) (*temp* 0) (*max-temp* 0)
-		      (*next-unboxed* 0) (*unboxed* nil)
 		      (*lex* *lex*) (*max-lex* *max-lex*)
 		      (*env* *env*) (*max-env* 0) (*level* *level*))
   (setq *funarg-vars* funarg-vars)
@@ -372,25 +370,25 @@
 	  (push (list fname cfun (second inline-info) (third inline-info))
 		*global-entries*)
 	  (wt-comment "local entry for function " fname)
-	  (let ((string
+	  (let*((ret-type (rep-type-name (lisp-type->rep-type (third inline-info))))
+		(string
 		 (with-output-to-string (*compiler-output1*)
-		   (wt-nl1 "static " (rep-type (third inline-info)) "LI" cfun "(")
-		   (do ((vl requireds (cdr vl))
-			(types (second inline-info) (cdr types))
-			(prev-type nil) (var)
-			(lcl (1+ *lcl*) (1+ lcl)))
+		   (wt-nl1 "static " ret-type " LI" cfun "(")
+		   (do* ((vl requireds (cdr vl))
+			 (types (second inline-info) (cdr types))
+			 var rep-type
+			 (lcl (1+ *lcl*) (1+ lcl)))
 		       ((endp vl))
 		     (declare (fixnum lcl))
-		     (setq var (first vl))
+		     (setq var (first vl)
+			   rep-type (lisp-type->rep-type (car types)))
 		     (when (member (car types)
 				   '(FIXNUM CHARACTER LONG-FLOAT SHORT-FLOAT)
 				   :test #'eq)
 		       ;; so that c2lambda-expr will know its proper type.
-		       (setf (var-kind var) (car types)))
-		     (when prev-type (wt ","))
-		     (wt *volatile* (register var)
-			 (rep-type (car types)))
-		     (setq prev-type (car types))
+		       (setf (var-kind var) rep-type))
+		     (unless (eq vl requireds) (wt ","))
+		     (wt *volatile* (register var) (rep-type-name rep-type) " ")
 		     (wt-lcl lcl))
 		   (wt ")"))))
 	    (wt-h string ";")
@@ -449,8 +447,7 @@
   )
 
 (defun wt-function-epilogue (&optional closure-p)
-  (push (cons *reservation-cmacro* (+ *max-temp* (length *unboxed*)))
-        *reservations*)
+  (push (cons *reservation-cmacro* *max-temp*) *reservations*)
   (wt-h "#define VT" *reservation-cmacro*)
   (when (plusp *max-temp*)
     (wt-h1 " cl_object ")
@@ -459,8 +456,6 @@
       (unless (= (1+ i) *max-temp*) (wt-h1 ",")))
     (wt-h1 ";"))
 ;  (wt-h "#define VU" *reservation-cmacro*)
-;  (when *unboxed*
-;    (format *compiler-output2* " ~{~{~aU~a; ~}~}" *unboxed*))
   (wt-h "#define VLEX" *reservation-cmacro*)
   (when (plusp *max-lex*)
     (wt-h1 " cl_object lex") (wt-h1 *level*)
@@ -585,7 +580,6 @@
 (defun t3defmacro (fname cfun macro-lambda ppn sp
                          &aux (*lcl* 0) (*temp* 0) (*max-temp* 0)
                          (*lex* *lex*) (*max-lex* *max-lex*)
-			 (*next-unboxed* 0) *unboxed*
                          (*env* *env*) (*max-env* 0) (*level* *level*)
 			 (*volatile*
 			  (if (get-sysprop fname 'CONTAINS-SETJMP) " volatile " ""))
@@ -656,7 +650,7 @@
   (let* ((*exit* (next-label))
 	 (*unwind-exit* (list *exit*))
 	 (*temp* *temp*)
-	 (*destination* `(TEMP ,(next-temp))))
+	 (*destination* (make-temp-var)))
         (c2expr form)
         (wt-nl "cl_defvar(" vv "," *destination* ");")
 	(wt-label *exit*)))
@@ -728,8 +722,8 @@
 (defun parse-cvspecs (x &aux (cvspecs nil))
   (dolist (cvs x (nreverse cvspecs))
     (cond ((symbolp cvs)
-           (push (list 'OBJECT (string-downcase (symbol-name cvs))) cvspecs))
-          ((stringp cvs) (push (list 'OBJECT cvs) cvspecs))
+           (push (list :OBJECT (string-downcase (symbol-name cvs))) cvspecs))
+          ((stringp cvs) (push (list :OBJECT cvs) cvspecs))
           ((and (consp cvs)
                 (member (car cvs) '(OBJECT CHAR INT FLOAT DOUBLE)))
            (dolist (name (cdr cvs))
@@ -779,7 +773,7 @@
 
   (analyze-regs (info-referred-vars (second lambda-expr)))
   (let* ((*lcl* 0) (*temp* 0) (*max-temp* 0)
-	 (*lex* 0) (*max-lex* 0) (*next-unboxed* 0) *unboxed*
+	 (*lex* 0) (*max-lex* 0)
 	 (*env* (fun-env fun))		; continue growing env
 	 (*max-env* *env*) (*env-lvl* 0)
 	 (*level* level)

@@ -10,20 +10,18 @@
 ;;;; FFI	Symbols used in the foreign function interface
 
 (defpackage "FFI"
-  (:export clines
-	   defcfun
-	   defentry
-	   defla
-	   defcbody			; Beppe
-	   definline			; Beppe
-	   defunC			; Beppe
-	   void
-	   object
-	   char*			; Beppe
-	   ;;char
-	   int
-	   ;;float
-	   double
+  (:export "CLINES" "DEFCFUN" "DEFENTRY" "DEFLA" "DEFCBODY"
+	   "DEFINLINE" "DEFUNC" "C-INLINE"
+
+	   "VOID" "OBJECT" "CHAR*" "INT" "DOUBLE"
+
+	   "DEF-CONSTANT" "DEF-FOREIGN-TYPE" "DEF-ENUM" "DEF-STRUCT"
+	   "DEF-ARRAY-POINTER" "DEF-FUNCTION" "DEF-UNION" "DEF-ARRAY"
+	   "ALLOCATE-FOREIGN-OBJECT" "FREE-FOREIGN-OBJECT" "MAKE-NULL-POINTER"
+	   "GET-SLOT-VALUE" "GET-SLOT-POINTER" "DEREF-ARRAY" "DEREF-POINTER"
+	   "POINTER-ADDRESS" "SIZE-OF-FOREIGN-TYPE"
+	   "NULL-CHAR-P" "ENSURE-CHAR-CHARACTER" "ENSURE-CHAR-INTEGER"
+	   "NULL-POINTER-P" "+NULL-CSTRING-POINTER+"
 	   ))
 
 (in-package "FFI")

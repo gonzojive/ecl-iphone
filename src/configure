@@ -852,6 +852,7 @@ Optional Packages:
 --with-gmp=args        Configure supplied GMP library with arguments.
 --with-oldloop         Use the old MIT LOOP macro.
 --with-clos-streams    Allow user defined stream objects.
+--with-ffi		Run-time foreign data manipulation.
   --with-x                use the X Window System
 
 Some influential environment variables:
@@ -1373,6 +1374,12 @@ fi;
 if test "${with_clos_streams+set}" = set; then
   withval="$with_clos_streams"
   closstreams="yes"
+fi;
+
+# Check whether --with-ffi or --without-ffi was given.
+if test "${with_ffi+set}" = set; then
+  withval="$with_ffi"
+  ffi="yes"
 fi;
 # Check whether --enable-cxx or --disable-cxx was given.
 if test "${enable_cxx+set}" = set; then
@@ -4036,6 +4043,12 @@ fi
 if test "${closstreams}"; then
   cat >>confdefs.h <<\_ACEOF
 #define ECL_CLOS_STREAMS 1
+_ACEOF
+
+fi
+if test "${ffi}"; then
+  cat >>confdefs.h <<\_ACEOF
+#define ECL_FFI 1
 _ACEOF
 
 fi

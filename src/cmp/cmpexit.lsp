@@ -19,7 +19,7 @@
     (dolist (f (cdr stack-pop))
       (wt "+" f))
     (wt ");"))
-  (when bds-lcl (wt-nl "bds_unwind(") (wt-lcl bds-lcl) (wt ");"))
+  (when bds-lcl (wt-nl "bds_unwind(" bds-lcl ");"))
   (dotimes (n bds-bind) (declare (fixnum n)) (wt-nl "bds_unwind1;")))
 
 (defun unwind-exit (loc &optional (jump-p nil)
@@ -33,136 +33,87 @@
       (JUMP-FALSE
        (set-jump-false loc (second *destination*))
        (when (eq loc nil) (return-from unwind-exit)))))
-  (flet ((single-valued-call (loc)
-	   (member (car loc)
-		   '(INLINE INLINE-COND INLINE-FIXNUM
-		     INLINE-CHARACTER INLINE-LONG-FLOAT INLINE-SHORT-FLOAT)
-		   :test #'eq)))
-    (dolist (ue *unwind-exit* (baboon))
-      ;; perform all unwind-exit's which precede *exit*
-      (cond
-	((consp ue)			; ( label# . ref-flag )| (STACK n)
-	 (cond ((eq (car ue) 'STACK)
-		(push (second ue) stack-pop))
-	       ((eq ue *exit*)
-		;; all body forms except the last (returning) are dealt here
-		(cond ((and (consp *destination*)
-			    (or (eq (car *destination*) 'JUMP-TRUE)
-				(eq (car *destination*) 'JUMP-FALSE)))
-		       (unwind-bds bds-lcl bds-bind stack-pop))
-		      ((not (or bds-lcl (plusp bds-bind) stack-pop))
-		       (set-loc loc))
-		      ;; Save the value if LOC may possibly refer
-		      ;; to special binding.
-		      ((and (consp loc)
-			    (or (and (eq (car loc) 'VAR)
-				     (member (var-kind (second loc))
-					     '(SPECIAL GLOBAL)
-					     :test #'eq))
-				(single-valued-call loc))
-			    ;; no need for temporary if we can use
-			    ;; *destination* directly
-			    (consp *destination*)
-			    (member (car *destination*) '(VAR BIND) :test #'eq))
-		       (let* ((*temp* *temp*)
-			      (temp (list 'TEMP (next-temp))))
-			 (let ((*destination* temp))
-			   (set-loc loc)) ; temp <- loc
-			 (unwind-bds bds-lcl bds-bind stack-pop)
-			 (set-loc temp))) ; *destination* <- temp
-		      (t
-		       (set-loc loc)
-		       (unwind-bds bds-lcl bds-bind stack-pop)))
-		(when jump-p (wt-nl) (wt-go *exit*))
-		(return))
-	       (t (setq jump-p t))))
-	((numberp ue) (setq bds-lcl ue
-			    bds-bind 0))
-	(t (case ue
-	     (BDS-BIND (incf bds-bind))
-	     (RETURN
-	       (unless (eq *exit* 'RETURN) (baboon))
-	       ;; *destination* must be either RETURN or TRASH.
-	       (cond ((eq loc 'VALUES)
-		      ;; from multiple-value-prog1 or values
-		      (unwind-bds bds-lcl bds-bind stack-pop)
-		      (wt-nl "return VALUES(0);"))
-		     ((eq loc 'RETURN)
-		      ;; from multiple-value-prog1 or values
-		      (unwind-bds bds-lcl bds-bind stack-pop)
-		      (wt-nl "return value0;"))      
-		     (t
-		      (let* ((*destination* 'RETURN))
-			(set-loc loc))
-		      (unwind-bds bds-lcl bds-bind stack-pop)
-		      (wt-nl "return value0;")))
-	       (return))
-	     (RETURN-FIXNUM
-	      (when (eq *exit* ue)
-		;; *destination* must be RETURN-FIXNUM
-		(if (or bds-lcl (plusp bds-bind))
-		    (let ((lcl (next-lcl)))
-		      (wt-nl "{cl_fixnum ") (wt-lcl lcl) (wt "= ")
-		      (wt-fixnum-loc loc) (wt ";")
-		      (unwind-bds bds-lcl bds-bind stack-pop)
-		      (wt-nl "return(") (wt-lcl lcl) (wt ");}"))
-		    (progn
-		      (wt-nl "return(") (wt-fixnum-loc loc) (wt ");")))
-		(return)))
-	     (RETURN-CHARACTER
-	      (when (eq *exit* ue)
-		;; *destination* must be RETURN-CHARACTER
-		(if (or bds-lcl (plusp bds-bind))
-		    (let ((lcl (next-lcl)))
-		      (wt-nl "{unsigned char ") (wt-lcl lcl) (wt "= ")
-		      (wt-character-loc loc) (wt ";")
-		      (unwind-bds bds-lcl bds-bind stack-pop)
-		      (wt-nl "return(") (wt-lcl lcl) (wt ");}"))
-		    (progn
-		      (wt-nl "return(") (wt-character-loc loc) (wt ");")))
-		(return)))
-	     (RETURN-LONG-FLOAT
-	      (when (eq *exit* ue)
-		;; *destination* must be RETURN-LONG-FLOAT
-		(if (or bds-lcl (plusp bds-bind))
-		    (let ((lcl (next-lcl)))
-		      (wt-nl "{double ") (wt-lcl lcl) (wt "= ")
-		      (wt-long-float-loc loc) (wt ";")
-		      (unwind-bds bds-lcl bds-bind stack-pop)
-		      (wt-nl "return(") (wt-lcl lcl) (wt ");}"))
-		    (progn
-		      (wt-nl "return(") (wt-long-float-loc loc) (wt ");")))
-		(return)))
-	     (RETURN-SHORT-FLOAT
-	      (when (eq *exit* ue)
-		;; *destination* must be RETURN-SHORT-FLOAT
-		(if (or bds-lcl (plusp bds-bind))
-		    (let ((lcl (next-lcl)))
-		      (wt-nl "{float ") (wt-lcl lcl) (wt "= ")
-		      (wt-short-float-loc loc) (wt ";")
-		      (unwind-bds bds-lcl bds-bind stack-pop)
-		      (wt-nl "return(") (wt-lcl lcl) (wt ");}"))
-		    (progn
-		      (wt-nl "return(") (wt-short-float-loc loc) (wt ");")))
-		(return)))
-	     (RETURN-OBJECT
-	      (when (eq *exit* ue)
-		;; *destination* must be RETURN-OBJECT
-		(if (or bds-lcl (plusp bds-bind))
-		    (progn
-		      (wt-nl "{cl_object x =" loc ";")
-		      (unwind-bds bds-lcl bds-bind stack-pop)
-		      (wt-nl "return(x);}"))
-		    (wt-nl "return(" loc ");"))
-		(return)))
-	     (FRAME
-	      (let ((*destination* 'RETURN))
-		(set-loc loc)
-		(setq loc *destination*))
-	      (wt-nl "frs_pop();"))
-	     (TAIL-RECURSION-MARK)
-	     (JUMP (setq jump-p t))
-	     (t (baboon)))))))
+  (dolist (ue *unwind-exit* (baboon))
+    ;; perform all unwind-exit's which precede *exit*
+    (cond
+      ((consp ue)		    ; ( label# . ref-flag )| (STACK n) |(LCL n)
+       (cond ((eq (car ue) 'STACK)
+	      (push (second ue) stack-pop))
+	     ((eq (car ue) 'LCL)
+	      (setq bds-lcl ue bds-bind 0))
+	     ((eq ue *exit*)
+	      ;; all body forms except the last (returning) are dealt here
+	      (cond ((and (consp *destination*)
+			  (or (eq (car *destination*) 'JUMP-TRUE)
+			      (eq (car *destination*) 'JUMP-FALSE)))
+		     (unwind-bds bds-lcl bds-bind stack-pop))
+		    ((not (or bds-lcl (plusp bds-bind) stack-pop))
+		     (set-loc loc))
+		    ;; Save the value if LOC may possibly refer
+		    ;; to special binding.
+		    ((or (loc-refers-to-special loc)
+			 (loc-refers-to-special *destination*))
+		     (let* ((*temp* *temp*)
+			    (temp (make-temp-var)))
+		       (let ((*destination* temp))
+			 (set-loc loc)) ; temp <- loc
+		       (unwind-bds bds-lcl bds-bind stack-pop)
+		       (set-loc temp))) ; *destination* <- temp
+		    (t
+		     (set-loc loc)
+		     (unwind-bds bds-lcl bds-bind stack-pop)))
+	      (when jump-p (wt-nl) (wt-go *exit*))
+	      (return))
+	     (t (setq jump-p t))))
+      ((numberp ue) (error)
+       (setq bds-lcl ue bds-bind 0))
+      (t (case ue
+	   (BDS-BIND (incf bds-bind))
+	   (RETURN
+	     (unless (eq *exit* 'RETURN) (baboon))
+	     ;; *destination* must be either RETURN or TRASH.
+	     (cond ((eq loc 'VALUES)
+		    ;; from multiple-value-prog1 or values
+		    (unwind-bds bds-lcl bds-bind stack-pop)
+		    (wt-nl "return VALUES(0);"))
+		   ((eq loc 'RETURN)
+		    ;; from multiple-value-prog1 or values
+		    (unwind-bds bds-lcl bds-bind stack-pop)
+		    (wt-nl "return value0;"))      
+		   (t
+		    (let* ((*destination* 'RETURN))
+		      (set-loc loc))
+		    (unwind-bds bds-lcl bds-bind stack-pop)
+		    (wt-nl "return value0;")))
+	     (return))
+	   ((RETURN-FIXNUM RETURN-CHARACTER RETURN-LONG-FLOAT
+	     RETURN-SHORT-FLOAT RETURN-OBJECT)
+	    (when (eq *exit* ue)
+	      ;; *destination* must be RETURN-FIXNUM
+	      (setq loc (list 'COERCE-LOC
+			      (getf '(RETURN-FIXNUM :fixnum
+				      RETURN-CHARACTER :char
+				      RETURN-LONG-FLOAT :float
+				      RETURN-DOUBLE-FLOAT :double
+				      RETURN-OBJECT :object)
+				    ue)
+			      loc))
+	      (if (or bds-lcl (plusp bds-bind))
+		  (let ((lcl (make-lcl-var :type (second loc))))
+		    (wt-nl "{cl_fixnum " lcl "= " loc ";")
+		    (unwind-bds bds-lcl bds-bind stack-pop)
+		    (wt-nl "return(" lcl ");}"))
+		  (progn
+		    (wt-nl "return(" loc ");")))
+	      (return)))
+	   (FRAME
+	    (let ((*destination* 'RETURN))
+	      (set-loc loc)
+	      (setq loc *destination*))
+	    (wt-nl "frs_pop();"))
+	   (TAIL-RECURSION-MARK)
+	   (JUMP (setq jump-p t))
+	   (t (baboon))))))
   ;;; Never reached
   )
 

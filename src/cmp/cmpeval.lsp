@@ -264,18 +264,18 @@
 
 (defun c2structure-ref (form name-vv index
 			     &aux (*inline-blocks* 0))
-  (let ((loc (second (car (inline-args (list form))))))
+  (let ((loc (first (coerce-locs (inline-args (list form))))))
        (unwind-exit (list 'SYS:STRUCTURE-REF loc name-vv index)))
   (close-inline-blocks)
   )
 
 (defun wt-structure-ref (loc name-vv index)
   (if *safe-compile*
-      (wt "structure_ref(" loc "," name-vv "," index ")")
+      (wt "structure_ref(" loc "," name-vv "," `(COERCE-LOC :object ,index) ")")
       #+clos
-      (wt "(" loc ")->instance.slots[" index "]")
+      (wt "(" loc ")->instance.slots[" `(COERCE-LOC :fixnum ,index) "]")
       #-clos
-      (wt "(" loc ")->str.self[" index "]")))
+      (wt "(" loc ")->str.self[" `(COERCE-LOC :fixnum ,index) "]")))
 
 (defun c1structure-set (args &aux (info (make-info)))
   (if (and (not *safe-compile*)         ; Beppe
@@ -314,6 +314,7 @@
 			  &aux locs (*inline-blocks* 0))
   ;; the third argument here *c1t* is just a hack to ensure that
   ;; a variable is introduced for y if it is an expression with side effects
+  (error)
   (setq locs (inline-args (list x y *c1t*)))
   (setq x (second (first locs)))
   (setq y (second (second locs)))
@@ -326,31 +327,6 @@
   (unwind-exit y)
   (close-inline-blocks)
   )
-
-;;; ----------------------------------------------------------------------
-;;; Instances
-
-#+clos
-(defun c1instance-ref (args &aux (info (make-info)))
-  (let ((form (first args))
-	(index (second args)))
-    (if (sys::fixnump index)
-	(list 'SYS:INSTANCE-REF info (c1expr* form info) index)
-      (list 'CALL-GLOBAL info 'SYS:INSTANCE-REF (c1args args info)))))
-
-#+clos
-(defun c2instance-ref (form index
-			    &aux (*inline-blocks* 0))
-  (let ((loc (second (car (inline-args (list form))))))
-    (unwind-exit (list 'SYS:INSTANCE-REF loc index)))
-  (close-inline-blocks)
-  )
-
-#+clos
-(defun wt-instance-ref (loc index)
-  (if *safe-compile*
-      (wt "instance_ref(" loc "," index ")")
-      (wt "(" loc ")->instance.slots[" index "]")))
 
 ;;; ----------------------------------------------------------------------
 
@@ -406,10 +382,3 @@
 (put-sysprop 'SYS:STRUCTURE-REF 'WT-LOC 'wt-structure-ref)
 (put-sysprop 'SYS:STRUCTURE-SET 'C1 'c1structure-set)
 (put-sysprop 'SYS:STRUCTURE-SET 'C2 'c2structure-set)
-
-#+clos
-(put-sysprop 'SYS:INSTANCE-REF 'C1 'c1instance-ref)
-#+clos
-(put-sysprop 'SYS:INSTANCE-REF 'C2 'c2instance-ref)
-#+clos
-(put-sysprop 'SYS:INSTANCE-REF 'WT-LOC 'wt-instance-ref)

@@ -173,6 +173,9 @@ init_alloc(void)
 	init_tm(t_instance, "INSTANCE", sizeof(struct instance));
 	init_tm(t_gfun, "GFUN", sizeof(struct gfun));
 #endif /* CLOS */
+#ifdef ECL_FFI
+	init_tm(t_instance, "FOREIGN", sizeof(struct foreign));
+#endif
 #ifdef THREADS
 	init_tm(t_cont, "CONT", sizeof(struct cont));
 	init_tm(t_thread, "THREAD", sizeof(struct thread));

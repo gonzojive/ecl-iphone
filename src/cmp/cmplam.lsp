@@ -184,16 +184,8 @@
   (if (eq 'LOCAL-ENTRY kind)
 
    ;; for local entry functions arguments are processed by t3defun
-   (do ((reqs requireds (cdr reqs))
-	(reqi (1+ *lcl*) (1+ reqi))
-	(LCL_i (list 'LCL 0)))		; to allow concurrent compilations
-       ((endp reqs) (setq *lcl* reqi))
-     (declare (fixnum reqi) (type cons reqs))
-     (if (eq (var-kind (first reqs)) 'SPECIAL)
-	 (progn
-	   (setf (second LCL_i) reqi)
-	   (bind LCL_i (first reqs)))
-	 (setf (var-loc (first reqs)) reqi)))
+   (dolist (reqs requireds)
+     (bind (next-lcl) reqs))
 
    ;; For each variable, set its var-loc.
    ;; For optional parameters, and lexical variables which can be unboxed,
@@ -218,9 +210,9 @@
 		(wt-nl)
 		(unless block-p
 		  (wt "{") (setq block-p t))
-		(wt *volatile* (register var) (rep-type (var-kind var)))
+		(wt *volatile* (register var) (rep-type-name (var-rep-type var)) " ")
 		(wt-lcl (incf lcl)) (wt ";")
-		lcl)
+		`(LCL ,lcl))
 	      (do-decl (var)
 		(when (local var)	; no LCL needed for SPECIAL or LEX
 		  (setf (var-loc var) (wt-decl var)))))
@@ -242,7 +234,7 @@
 	   ((endp opt))
 	 (do-decl (first opt))
 	 (when (third opt) (do-decl (third opt))))
-       (when rest (setq rest-loc `(LCL ,(wt-decl rest)))))
+       (when rest (setq rest-loc (wt-decl rest))))
 
      (unless (eq 'CALL-LAMBDA kind)
        (when (or optionals rest)
@@ -256,12 +248,10 @@
 
      ;; Bind required parameters.
      (do ((reqs requireds (cdr reqs))
-	  (reqi (1+ req0) (1+ reqi))
-	  (LCL_i (list 'LCL 0)))	; to allow concurrent compilations
+	  (reqi (1+ req0) (1+ reqi)))
 	 ((endp reqs))
        (declare (fixnum reqi) (type cons reqs))
-       (setf (second LCL_i) reqi)
-       (bind LCL_i (first reqs)))
+       (bind `(LCL ,reqi) (first reqs)))
 
      (setq *lcl* lcl))
    )
@@ -337,9 +327,9 @@
                (wt-nl)
                (unless block-p
                  (wt "{") (setq block-p t))
-               (wt *volatile* (register var) (rep-type (var-kind var)))
+               (wt *volatile* (register var) (rep-type-name (var-rep-type var)) " ")
                (wt-lcl (incf lcl)) (wt ";")
-               lcl)
+               `(LCL ,lcl))
              (do-decl (var)
 	       (when (local var) ; no LCL needed for SPECIAL or LEX
 		 (setf (var-loc var) (wt-decl var)))))
@@ -361,7 +351,7 @@
 	  ((endp opt))
         (do-decl (first opt))
         (when (third opt) (do-decl (third opt))))
-      (when rest (setq rest-loc `(LCL ,(wt-decl rest))))
+      (when rest (setq rest-loc (wt-decl rest)))
       (do ((key keywords (cddddr key)))
 	  ((endp key))
         (do-decl (second key))
@@ -382,12 +372,10 @@
 
     ;; Bind required parameters.
     (do ((reqs requireds (cdr reqs))
-	 (reqi (1+ req0) (1+ reqi))
-	 (LCL_i (list 'LCL 0)))		; to allow concurrent compilations
+	 (reqi (1+ req0) (1+ reqi)))	; to allow concurrent compilations
 	((endp reqs))
       (declare (fixnum reqi) (type cons reqs))
-      (setf (second LCL_i) reqi)
-      (bind LCL_i (first reqs)))
+      (bind `(LCL ,reqi) (first reqs)))
 
     (setq *lcl* lcl)
     )
@@ -655,27 +643,24 @@
 (defun c1dm-bad-key (key)
        (cmperr "Defmacro-lambda-list contains illegal use of ~s." key))
 
-(defun c2dm (name whole env vl body &aux lcl)
+(defun c2dm (name whole env vl body)
   (when (or *safe-compile* *compiler-check-args*)
     (wt-nl "check_arg(2);"))
-  (setq lcl (next-lcl))
-  (when whole
-    (check-vref whole)
-;    (setf (var-loc whole) lcl)
-    (bind (list 'LCL lcl) whole))
-  (setq lcl (next-lcl))
-  (when env
-    (check-vref env)
-;    (setf (var-loc env) lcl)
-    (bind (list 'LCL lcl) env))
+  (let ((lcl (next-lcl)))
+    (when whole
+      (check-vref whole)
+      (bind lcl whole)))
+  (let ((lcl (next-lcl)))
+    (when env
+      (check-vref env)
+      (bind lcl env)))
   (labels ((reserve-v (v)
 	     (if (consp v)
 		 (reserve-vl v)
 		 (when (local v)
-		   (let ((lcl (next-lcl)))
-		     (setf (var-loc v) lcl)
-		     (setf (var-kind v) 'OBJECT)
-		     (wt ",") (wt-lcl lcl)))))
+		   (setf (var-kind v) :OBJECT
+			 (var-loc v) (next-lcl))
+		   (wt "," v))))
 
 	   (reserve-vl (vl)
 	     (dolist (var (car vl)) (reserve-v var))
@@ -691,8 +676,8 @@
 
 	   (dm-bind-loc (v loc)
 	     (if (consp v)
-		 (let ((lcl (next-lcl)))
-		   (wt-nl "{cl_object ") (wt-lcl lcl) (wt "= " loc ";")
+		 (let ((lcl (make-lcl-var)))
+		   (wt-nl "{cl_object " lcl "= " loc ";")
 		   (dm-bind-vl v lcl)
 		   (wt "}"))
 		 (bind loc v)))
@@ -700,9 +685,9 @@
 	   (dm-bind-init (para &aux (v (first para)) (init (second para)))
 	     (if (consp v)
 		 (let* ((*inline-blocks* 0) ; used by inline-args
-			(lcl (next-lcl))
-			(loc (second (first (inline-args (list init))))))
-		   (wt-nl) (wt-lcl lcl) (wt "= " loc ";")
+			(lcl (make-lcl-var))
+			(loc (first (coerce-locs (inline-args (list init))))))
+		   (wt-nl lcl "= " loc ";")
 		   (dm-bind-vl v lcl)
 		   (close-inline-blocks))
 		 (bind-init v init)))
@@ -720,18 +705,18 @@
 		 ((endp reqs))
 	       (declare (object reqs))
 	       (when (or *safe-compile* *compiler-check-args*)
-		 (wt-nl "if(endp(") (wt-lcl lcl)
-		 (wt "))FEinvalid_macro_call(" (add-symbol name) ");"))
+		 (wt-nl "if(endp(" lcl "))FEinvalid_macro_call("
+			(add-symbol name) ");"))
 	       (dm-bind-loc (car reqs) `(CAR ,lcl))
 	       (when (or (cdr reqs) optionals rest key-flag
 			 *safe-compile* *compiler-check-args*)
-		 (wt-nl) (wt-lcl lcl) (wt "=CDR(") (wt-lcl lcl) (wt ");")))
+		 (wt-nl lcl "=CDR(" lcl ");")))
 	     (do ((opts optionals (cdr opts))
 		  (opt))
 		 ((endp opts))
 	       (declare (object opts opt))
 	       (setq opt (car opts))
-	       (wt-nl "if(endp(") (wt-lcl lcl) (wt ")){")
+	       (wt-nl "if(endp(" lcl ")){")
 	       (let ((*env* *env*)
 		     (*unwind-exit* *unwind-exit*))
 		 (dm-bind-init opt)
@@ -742,16 +727,15 @@
 	       (when (third opt) (dm-bind-loc (third opt) t))
 	       (when (or (cdr opts) rest key-flag
 			 *safe-compile* *compiler-check-args*)
-		 (wt-nl) (wt-lcl lcl) (wt "=CDR(") (wt-lcl lcl) (wt ");"))
+		 (wt-nl lcl "=CDR(" lcl ");"))
 	       (wt "}"))
-	     (when rest (dm-bind-loc rest `(LCL ,lcl)))
+	     (when rest (dm-bind-loc rest lcl))
 	     (when keywords
-	       (let* ((lcl1 (next-lcl))
-		      (loc1 `(LCL ,lcl1)))
+	       (let* ((loc1 (make-lcl-var)))
 		 (wt-nl "{cl_object " loc1 ";")
 		 (dolist (kwd keywords)
-		   (wt-nl loc1 "=ecl_getf(") (wt-lcl lcl)
-		   (wt "," (add-symbol (car kwd)) ",OBJNULL);")
+		   (wt-nl loc1 "=ecl_getf(" lcl "," (add-symbol (car kwd))
+			  ",OBJNULL);")
 		   (wt-nl "if(" loc1 "==OBJNULL){")
 		   (let ((*env* *env*)
 			 (*unwind-exit* *unwind-exit*))
@@ -765,12 +749,12 @@
 	     (when (and (or *safe-compile* *compiler-check-args*)
 			(null rest)
 			(null key-flag))
-	       (wt-nl "if(!endp(") (wt-lcl lcl)
-	       (wt "))FEinvalid_macro_call(" (add-symbol name) ");"))
+	       (wt-nl "if(!endp(" lcl "))FEinvalid_macro_call("
+		      (add-symbol name) ");"))
 	     (when (and (or *safe-compile* *compiler-check-args*)
 			key-flag
 			(not allow-other-keys))
-	       (wt-nl "check_other_key(") (wt-lcl lcl) (wt "," (length keywords))
+	       (wt-nl "check_other_key(" lcl "," (length keywords))
 	       (dolist (kwd keywords)
 		 (wt "," (add-symbol (car kwd))))
 	       (wt ");"))
@@ -778,11 +762,11 @@
 	       (dm-bind-init aux)))
 	   )
 
-    (setq lcl (next-lcl))
-    (wt-nl "{cl_object ") (wt-lcl lcl) (wt "=CDR(V1)")
-    (reserve-vl vl)			; declare variables for pattern
-    (wt ";")
-    (dm-bind-vl vl lcl)
+    (let ((lcl (make-lcl-var)))
+      (wt-nl "{cl_object " lcl "=CDR(V1)")
+      (reserve-vl vl)			; declare variables for pattern
+      (wt ";")
+      (dm-bind-vl vl lcl))
     )
   (c2expr body)
   (wt "}")

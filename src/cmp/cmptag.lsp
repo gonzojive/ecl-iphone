@@ -139,12 +139,12 @@
 	  (let ((env-lvl *env-lvl*))
 	    (wt-nl "{ volatile cl_object env" (incf *env-lvl*)
 		   " = env" env-lvl ";")))
-	(when (eq 'OBJECT (var-kind tag-loc))
+	(when (eq :OBJECT (var-kind tag-loc))
 	  (setf (var-loc tag-loc) (next-lcl))
-	  (wt-nl "{ cl_object ") (wt-var tag-loc) (wt ";")
+	  (wt-nl "{ cl_object " tag-loc ";")
 	  (setq env-grows t))		; just to ensure closing the block
 	(bind "new_frame_id()" tag-loc)
-	(wt-nl "if (frs_push(FRS_CATCH,") (wt-var tag-loc) (wt ")) {")
+	(wt-nl "if (frs_push(FRS_CATCH," tag-loc ")) {")
 	;; Allocate labels.
 	(dolist (tag body)
 	  (when (and (tag-p tag) (plusp (tag-ref tag)))
@@ -207,7 +207,7 @@
 		 (clb (setf (tag-ref-clb tag) t
 			    (var-kind var) 'LEXICAL))
 		 (unw (unless (var-kind var)
-			(setf (var-kind var) 'OBJECT))))
+			(setf (var-kind var) :OBJECT))))
 	   (incf (var-ref var))
 	   (incf (tag-ref tag))
 	   (push var (info-local-referred info)) ; no pushnew
