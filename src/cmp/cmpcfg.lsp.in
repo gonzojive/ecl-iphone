@@ -1,0 +1,8 @@
+;;
+;; * Set compiler and compiler flags -- this includes pointing
+;;   to the directory with our header files.
+;;
+(in-package "COMPILER")
+(setq compiler::*cc* "@CC@")
+(setq compiler::*cc-flags* "@CFLAGS@ -D@MACHINE@ @LSPCFLAGS@")
+(setq compiler::*ld-flags* "-lecls -lcrs -lgmp @LDFLAGS@ @CLIBS@")

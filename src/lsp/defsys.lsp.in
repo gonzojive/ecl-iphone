@@ -1,0 +1,47 @@
+;;; ----------------------------------------------------------------------
+;;;	COMMON LISP LIBRARY
+;;; ----------------------------------------------------------------------
+
+(defparameter
+  *lsp-modules*
+  ;; file	load		compile			files which force
+  ;;		environment	environment		recompilations of
+  ;;							this file
+  '(
+    (export	()		()			())
+    (defmacro	()		()			())
+#-runtime
+    (evalmacros	()		()			())
+#-runtime
+    (top	()		()			())
+    (module	()		()			())
+    (autoload	()		()			())
+    (describe	()		()			())
+    (setf	()		()			())
+    (predlib	()		()			())
+    (arraylib	()		()			())
+    (assert	()		()			())
+    (defstruct	()		()			())
+    (iolib	()		()			())
+    (listlib	()		()			())
+    (mislib	()		()			())
+    (numlib	()		()			())
+    (packlib	()		()			())
+    (seq	()		()			())
+    (seqlib	()		()			())
+    (trace	()		()			())
+    (ansi	()		()			())
+    (loop	()		()			())
+    (defpackage ()		()			())
+    (config	()		()			())
+#+threads
+    (thread	()		()			())
+#+nil ; This is loaded as source file
+    (tk-init	()		()			())))
+
+(sbt:defsystem 
+ lsp
+ :modules *lsp-modules*
+ :source-directory '("@srcdir@/" "@builddir@/lsp/")
+ :fasl-directory "@builddir@/lsp/"
+ :library-directory "@builddir@/")

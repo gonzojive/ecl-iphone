@@ -1,0 +1,29 @@
+top_srcdir=@top_srcdir@
+srcdir=@srcdir@
+
+RM=rm -fr
+MV=mv -f
+MKDIR=mkdir -p
+
+.PHONY: clisp sbcl normal safe ecls ecls_min
+
+ecls:
+	ln -sf ../../src/h/*.h ../h/
+	(echo '(load "$(srcdir)/tests")'; \
+	 echo '(setq si::*system-directory* "../")'; \
+	 echo "(run-all-tests \"$(srcdir)/\")"; \
+	 echo "(quit)") | ../ecls
+	true
+
+ecls_min:
+	ln -sf ../../src/h/*.h ../h/
+	(echo '(load "bare.lsp")'; \
+	 echo '(setq si::*system-directory* "../")'; \
+	 echo '(sys::chdir "ansi-tests")'; \
+	 echo '(load "$(srcdir)/tests")'; \
+	 echo "(run-all-tests \"$(srcdir)/\")"; \
+	 echo "(quit)") | (cd ..; ./ecls_min)
+	true
+
+clean:
+	$(RM) *.erg *.o *.c *.h *.data

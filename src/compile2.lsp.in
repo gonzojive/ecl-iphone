@@ -1,0 +1,55 @@
+;;;
+;;; Configuration file for the bootstrapping version of ECLS
+;;;
+
+;;;
+;;; * Beppe's defsystem utility
+;;;
+(load "@srcdir@/util/system.lsp")
+
+;;;
+;;; * We redefine this to force generation of source files
+;;; in the object directory -- source files help debugging
+;;; with GDB.
+;;;
+(defun sbt::sbt-compile-file (&rest s)
+  (apply #'compiler::compile-file
+	   (car s)
+	   :c-file t :h-file t :data-file t :system-p t
+	   (cdr s)))
+
+(setq compiler::*cc-flags* (concatenate 'string compiler::*cc-flags* " -I@srcdir@/h -I@srcdir@/gmp -I@builddir@/h"))
+
+;;;
+;;; * Compile, load and link Common-Lisp base library
+;;;
+(in-package "USER")
+(load "lsp/defsys.lsp")
+(sbt::operate-on-system lsp :library)
+;(sbt::operate-on-system lsp :load)
+
+#ifndef RUNTIME
+;;;
+;;; * Compile, load and link Common-Lisp to C compiler
+;;;
+(load "cmp/defsys.lsp")
+(sbt::operate-on-system cmp :library)
+;(sbt::operate-on-system cmp :load)
+#endif RUNTIME
+
+#ifdef CLOS
+;;;
+;;; * Compile, load and link PCL based Common-Lisp Object System
+;;;
+(load "clos/defsys.lsp")
+(sbt::operate-on-system clos :library)
+;(sbt::operate-on-system clos :load)
+#endif CLOS
+
+(compiler::build-ecls "ecls"
+#ifndef RUNTIME
+	   'cmp
+#endif
+)
+
+(quit)

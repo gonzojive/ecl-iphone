@@ -1,0 +1,131 @@
+#
+#			Makefile for ECLS core library
+#
+top_srcdir= @top_srcdir@
+srcdir	= @srcdir@
+VPATH	= @srcdir@
+
+MACHINE = @MACHINE@
+
+# Programs used by "make":
+#
+CC	= @CC@
+DEFS	= -D$(MACHINE)
+CFLAGS	= -c -I../h -I$(HDIR) -I$(top_srcdir)/gc @CFLAGS@ $(DEFS)
+#ifndef HAVE_LOCAL_GMP
+CFLAGS +=  -I$(top_srcdir)/gmp
+#endif
+
+SHELL	= /bin/sh
+RM	= @RM@
+
+#ifdef MSDOS
+DPP	= dpp.exe
+#else
+DPP	= ./dpp
+#endif
+
+# Data for installation
+#
+INSTALL = @INSTALL@
+INSTALL_DATA = @INSTALL_DATA@
+libdir	= @libdir@
+
+# Files
+
+HDIR	= $(top_srcdir)/h
+HFILES	= ../h/config.h $(HDIR)/ecls.h $(HDIR)/ecls-cmp.h\
+	$(HDIR)/machines.h $(HDIR)/object.h $(HDIR)/cs.h $(HDIR)/stacks.h\
+	$(HDIR)/external.h $(HDIR)/lisp_external.h $(HDIR)/eval.h\
+	$(HDIR)/number.h $(HDIR)/page.h $(HDIR)/unify.h\
+	$(HDIR)/lwp.h $(HDIR)/critical.h
+#ifdef GBC_BOEHM
+ALLOC   = alloc_2.o
+#else
+ALLOC   = alloc.o gbc.o
+#endif
+OBJS	= main.o $(ALLOC) symbol.o package.o list.o\
+	apply.o eval.o interpreter.o compiler.o disassembler.o \
+	lex.o reference.o character.o\
+	file.o read.o print.o error.o string.o cfun.o\
+	typespec.o assignment.o \
+	predicate.o big.o number.o\
+	num_pred.o num_comp.o num_arith.o num_sfun.o num_co.o\
+	num_log.o num_rand.o array.o sequence.o cmpaux.o\
+	macros.o backq.o stacks.o \
+	time.o unixint.o\
+	mapfun.o multival.o hash.o format.o pathname.o\
+	structure.o load.o unixfsys.o unixsys.o \
+	all_keywords.o all_symbols.o all_functions.o init.o
+#ifdef THREADS
+OBJS	+= lwp.o
+#endif
+#ifdef LOCATIVE
+OBJS	+= unify.o
+#endif
+#if defined(TCP) || defined(CLX)
+OBJS	+= tcp.o
+#endif
+#ifdef CLOS
+OBJS	+= clos.o instance.o gfun.o
+#endif
+#ifdef TK
+OBJS	+= tclBasic.o tkMain.o
+#endif
+#ifdef PROFILE
+OBJS	+= profile.o
+#endif
+#ifdef MSDOS
+OBJS	+= dostimes.o dosdummy.o
+#endif
+
+.SUFFIXES: .c .o .d
+
+.c.o: $(HFILES)
+	$(CC) $(CFLAGS) -o $@ $<
+.d.c: $(DPP) $(HFILES)
+	$(DPP) $< $@
+
+all:	$(DPP) ../libecls.a cinit.o
+.PHONY:	all
+
+install: $(HFILES)
+	for i in $(HFILES); do $(INSTALL_DATA) $$i $(PREFIX)$(libdir)/h; done
+
+../libecls.a: $(OBJS)
+	ar cr $@ $(OBJS)
+	ranlib $@
+
+clean:
+	$(RM) *.c $(OBJS) ../libecls.a cinit.o core a.out
+
+# Build rules
+
+./dpp	: $(srcdir)/dpp.c
+	$(CC) @CFLAGS@ -I$(HDIR) $(srcdir)/dpp.c  -o $@
+
+dpp.exe	: $(srcdir)/dpp.c
+	make dpp
+	coff2exe dpp
+	$(RM) dpp
+
+#
+# Some files may break due to gcc optimizations
+#
+#apply.o: apply.c $(HFILES) $(HDIR)/cs.h
+# dangerous to optimize due to assembler hack
+#	$(CC) $(CFLAGS) -O0 -g apply.c -o $@
+#ifdef sgi
+# gcc optimization causes trouble
+assignment.o: assignment.c $(HFILES)
+	$(CC) $(CFLAGS) -g assignment.c -o $@
+#else
+#	$(CC) $(CFLAGS) assignment.c -o $@
+#endif
+#ifdef sgi
+# gcc optimization causes trouble
+gbc.o: gbc.c $(HFILES)
+	$(CC) $(CFLAGS) -g gbc.c -o $@
+#else
+#	$(CC) $(CFLAGS) gbc.c -o $@
+#endif

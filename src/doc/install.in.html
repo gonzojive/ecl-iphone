@@ -1,0 +1,42 @@
+<h2>Installation</h2>
+<ul>
+<li>Unpack the tar file
+<pre>
+	gunzip -c ecls.tgz | tar xf -
+</pre>
+
+<li>Run the configuration file.
+<pre>
+	cd ecls-@VERSION@
+	./configure
+</pre>
+The previous step creates a directory with the name <b>build</b>, and
+stores a bunch of makefiles in it.
+
+<li>Use GNU make to invoke the compilation
+<pre>
+	make
+</pre>
+
+<li>If you want to test the fresh new executable before installing. You you
+should invoke ECLS from withing the build directory using the "-dir ./"
+argument to advice him about the right place to find header files, libraries,
+etc.  For instance, under linux the build directory is "linux" and we would do
+<pre>
+	$ ./configure --prefix=$HOME
+	[...]
+	$ cd build
+	$ make
+	[...]
+	$ ./ecls -dir ./
+</pre>
+
+<li>Install it in the desired location
+<pre>
+	make install
+</pre>
+</ul>
+
+<p>As a side note, a --disable-clos is still in ./configure, but its use is
+discouraged and unsupported.
+

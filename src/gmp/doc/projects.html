@@ -1,0 +1,194 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+  <title>
+    GMP Development Projects
+  </title>
+</head>
+<body bgcolor=pink>
+
+<center>
+  <h1>
+    GMP Development Projects
+  </h1>
+</center>
+
+<comment>
+  An up-to-date version of this file is available at
+  <a href="http://www.swox.com/gmp/projects.html">http://www.swox.com/gmp/projects.html</a>.
+</comment>
+
+<p> This file lists projects suitable for volunteers.  Please see the
+    <a href="tasks.html">tasks file</a> for smaller tasks.
+
+<p> If you want to work on any of the projects below, please let tege@swox.com
+    know.  If you want to help with a project that already somebody else is
+    working on, please talk to that person too, tege@swox.com can put you in
+    touch.  (There are no email addresses of volunteers below, due to spamming
+    problems.)
+
+<ul>
+<li> <strong>C++ wrapper</strong>
+
+  <p> A C++ wrapper for GMP is highly desirable.  Several people have started
+  writing one, but nobody has so far finished it.  For a wrapper to be useful,
+  one needs to pay attention to efficiency.
+
+  <ol>
+    <li> Write arithmetic functions for direct applications of most
+         elementary C++ types.  This might be necessary to avoid
+         ambiguities, but it is also desirable from an efficiency
+         standpoint.
+    <li> Avoid running constructors/destructors when not necessary.
+         For example, implement <code>a&nbsp+=&nbsp;b</code> by directly applying mpz_add.
+  </ol>
+
+<p> <li> <strong>Faster multiplication</strong>
+
+  <p> The current multiplication code uses Karatsuba, 3-way Toom-Cook,
+      or Fermat FFT.  Several new developments are desirable:
+
+  <ol>
+    <li> Handle multiplication of operands with different digit count
+	 better than today.  We now split the operands in a very
+	 inefficient way, see mpn/generic/mul.c.
+
+    <li> Consider N-way Toom-Cook.  See Knuth's Seminumerical
+	 Algorithms for details on the method.  Code implementing it
+	 exists.  This is asymptotically inferior to FFTs, but is finer
+	 grained.  A toom-4 might fit in between toom-3 and the FFTs
+	 (or it might not).
+
+    <li> It's possible CPU dependent effects like cache locality will
+         have a greater impact on speed than algorithmic improvements.
+
+  </ol>
+
+
+<p> <li> <strong>Assembly routines</strong>
+
+  <p> Write new and tune existing assembly routines.  The programs in mpn/tests
+  and the tune/speed.c program are useful for testing and timing the routines
+  you write.  See the README files in those directories for more information.
+
+  <p> Please make sure your new routines are fast for these three situations:
+  <ol>
+    <li> Operands that fit into the cache.
+    <li> Small operands of less than, say, 10 limbs.
+    <li> Huge operands that does not fit into the cache.
+  </ol>
+
+  <p> The most important routines are mpn_addmul_1, mpn_mul_basecase and
+  mpn_sqr_basecase.  The latter two don't exist for all machines, while
+  mpn_addmul_1 exists for almost all machines.
+
+  <p> Standard techniques for these routines are unrolling, software
+  pipelining, and specialization for common operand values.  For machines with
+  poor integer multiplication, it is often possible to improve the performance
+  using floating-point operations, or SIMD operations such as MMX or Sun's VIS.
+
+  <p> Using floating-point operations is interesting but somewhat tricky.
+  Since IEEE double has 53 bit of mantissa, one has to split the operands in
+  small prices, so that no result is greater than 2^53.  For 32-bit computers,
+  splitting one operand into 16-bit pieces works.  For 64-bit machines, one
+  operand can be split into 21-bit pieces and the other into 32-bit pieces.  (A
+  64-bit operand can be split into just three 21-bit pieces if one allows the
+  split operands to be negative!)
+
+
+<p> <li> <strong>Faster extended GCD</strong>
+
+  <p> We currently have extended GCD based on Lehmer's method.
+  But the binary method can quite easily be improved for bignums
+  in a similar way Lehmer improved Euclid's algorithm.  The result should
+  beat Lehmer's method by about a factor of 2.  Furthermore, the multiprecision
+  step of Lehmer's method and the binary method will be identical, so the
+  current code can mostly be reused.  It should be possible to share code
+  between GCD and GCDEXT, and probably with Jacobi symbols too.
+
+<p> <li> <strong>Math functions for the mpf layer</strong>
+
+  <p> Implement the functions of math.h for the GMP mpf layer!  Check the book
+  "Pi and the AGM" by Borwein and Borwein for ideas how to do this.  These
+  functions are desirable: acos, acosh, asin, asinh, atan, atanh, atan2, cos,
+  cosh, exp, log, log10, pow, sin, sinh, tan, tanh.
+
+<p> <li> <strong>Faster sqrt</strong>
+
+  <p> The current code for computing square roots use a Newton iteration that
+  rely on division.  It is possible to avoid using division by computing
+  1/sqrt(A) using this formula:
+  <pre>
+                                    2
+                   x   = x  (3 - A x )/2.
+                    i+1   i         i  </pre>
+  The final result is then computed without division using,
+  <pre>
+                     sqrt(A) = A x .
+                                  n  </pre>
+  The resulting code should be substantially faster than the current code.
+
+<p> <li> <strong>Nth root</strong>
+
+  <p> Implement, at the mpn level, a routine for computing the nth root of a
+  number.  The routine should use Newton's method, preferably without using
+  division.
+
+  <p> If the routine becomes fast enough, perhaps square roots could be computed
+  using this function.
+
+<p> <li> <strong>More random number generators</strong>
+
+  <p> Implement some more pseudo random number generator algorithms.
+      Today there's only Linear Congruential.
+
+
+<p> <li> <strong>Test Suite</strong>
+
+  <p> Add a test suite for old bugs.  These tests wouldn't loop or use
+      random numbers, but just test for specific bugs found in the
+      past.
+
+  <p> More importantly, improve the random number controls for test
+      collections:
+
+      <ol>
+        <li> Use the new random number framework.
+        <li> Have every test accept a seed parameter.
+        <li> Allow `make check' to set the seed parameter.
+        <li> Add more tests for important, now untested functions.
+      </ol>
+
+  <p> With this in place, it should be possible to rid GMP of
+      practically all bugs by having some dedicated GMP test machines
+      running "make check" with ever increasing seeds (and
+      periodically updating to the latest GMP).
+
+  <p> If a few more ASSERTs were sprinkled through the code, running
+      some tests with --enable-assert might be useful, though not a
+      substitute for tests on the normal build.
+
+  <p> An important feature of any random tests will be to record the
+      seeds used, and perhaps to snapshot operands before performing
+      each test, so any problem exposed can be reproduced.
+
+</ul>
+
+<hr>
+
+<table width="100%">
+  <tr>
+    <td>
+      <font size=2>
+      Please send comments about this page to
+      <a href="mailto:tege@swox.com">tege@swox.com</a>.<br>
+      Copyright (C) 1999, 2000 Torbjörn Granlund.
+      </font>
+    </td>
+    <td align=right>
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>

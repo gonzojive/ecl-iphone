@@ -1,0 +1,84 @@
+.TH ECL 1 21/09/93
+.UC 4
+.SH NAME
+ecl \- Eco Common LISP
+.SH SYNOPSIS
+\fBecl\fP
+[ [\fB\-c\fP] [\fB\-C\fP] [\fB\-s\fP] [\fB-o\fP \fIofile\fP] \fIifile\fP ]
+.if n .ti +5
+.if t .ti +.5i
+[ \fB\-d\fP \fIdir\fP ]
+[ \fB\-l\fP \fIecl\fP ]
+.SH DESCRIPTION
+.sp
+Eco C\s-3OMMON\s0 L\s-3ISP\s0 (ECL for short) is a full
+implementation of the Common LISP language.
+.PP
+ECL provides the following additional facilities:
+.IP 1.
+MTCL: a multithread facility which allows several threads of execution within
+the same LISP world
+.IP 2.
+CLOS (the Common LISP Object System): an object oriented facility based on the
+notions of classes with multiple inheritance and generic functions
+.PP
+\fBecl\fP without any argument gives you the interactive lisp.
+\fBecl\fP
+.I ifile
+compiles
+.I ifile .
+Filenames ending in
+.B .lsp
+are taken to be
+.SM LISP
+source programs; they are compiled and the binary file is left in the file
+whose name is that of the source with
+.B .o
+substitued for
+.BR .lsp .
+Various flags control the output of the compiler.
+.SH OPTIONS
+.TP 1i
+.B \-c
+compiles the
+.I ifile
+producing only the intermediate C files and no binary file.
+.TP 1i
+.B \-C
+compiles the
+.I ifile
+and produce the intermediate C files as well.
+.TP
+.BI \-o " ofile"
+Name the output file
+.I ofile .
+.I ofile
+must have the suffix \fB.o\fP.
+.TP
+.BI \-l " ecl"
+Use
+.I ecl
+as the executable image.
+.TP
+.BI -d " dir"
+Use
+.I dir
+as system directory.
+.TP
+.B \-s
+Compile for system.
+.SH AUTHORS
+ECL was developed by Giuseppe Attardi starting from the Kyoto Common Lisp
+implementation by Taiichi Yuasa and Masami Hagiya.
+.SH FILES
+.ta 2.4i
+init.lsp	default initializations
+.SH SEE ALSO
+Guy L. Steele Jr.
+.br
+.I "Common LISP: The Language"
+.br
+Digital Press, 1984
+.sp
+.SH "BUGS"
+

@@ -1,0 +1,72 @@
+<h2>News in this release (ECLS-@VERSION@)</h2>
+
+<ul>
+<li>Due to human errors, the bytecompiler shipped with 0.1a was an
+  unfinished version. In 0.1b we shipped a more polished files. Some
+  of the errors which are fixed are
+  <ul>
+  <li>Produce the right code for TAGBODY inside closures</li>
+  <li>Activate compiler for SYMBOL-MACROLET</li>
+  <li>Allow non-keyword symbols as lambda-list-keywords</li>
+  <li>Allow more than one :ALLOW-OTHER-KEYS to be supplied, but discard other than the first one
+  <li> Process declarations in FLET/LABELS forms
+  </ul>
+
+<li> Fixed the C compiler routines for TAGBODY: it would produce wrong
+  code when jumping out of a closure.
+
+<li> Rewrite the error system using KMP's condition system, CLOS and a
+  rudimentary interface to the toplevel.
+
+<li> Enclosing the bytecompiler in an UNWIND-PROTECT ensures that the
+  status of the compiler and of the interpreter is always consistent.
+
+<li> Port and incorporate Peter Van Eynde's test suite for ANSI
+  compliance.
+
+<li> Replace features ECL/ECL-MIN with ECLS and ECLS-MIN. All references
+  to ECL (Eco-Common-Lisp) should have been dropped by now.
+
+<li> Add simple-program-error and simple-control-error to the hierarchy
+  of conditions, and try to ensure that all routines in libecls.a
+  signal the right type of condition.
+
+<li> Define COMPLEMENT and CONTINOUSLY.
+
+<li> Fix #'= between bignums.
+
+<li> NIL is no longer valid as the first of a pair of bounding index
+  designators, i.e. (nstring-upcase "aa" :start nil :end nil) causes
+  an error.
+</ul>
+
+<h2>Known bugs</h2>
+
+As I mentioned above, the problem I am finding here is the lack of test suites
+which I can use to detect failures in the behavior of any function. Currently I
+can assure that <a href="http://ecls.sourceforge.net">ECLS</a> passes most of
+the tests from the <a href="http://clocc.sourceforge.net">the CLOCC suite</a>.
+The most important exceptions are
+<ul>
+<li>CLOS
+<li>#'format
+<li>#'unread-char is too lax
+<li>The CL package is too polluted
+<li>LOOP lacks some of the standard keywords, including destructuring
+<li>Support for logical pathnames is incomplete
+</ul>
+
+If you find something that should be fixed or that the behavior of a
+function is particularly misleading with respect to the standards, feel free
+to tell me so.
+
+Some other bugs which need to be fixed are:
+<ul>
+<li>Threads and sockets haven't been tested yet.
+<li>#'format doesn't pass the Cltl-1 tests and fails when the number of
+arguments is large.
+<li>Needs better support for wildcards in pathnames.
+<li>Bugs in logical operations among bignums.
+<li>Support for CLOS needs yet more optimization.
+</ul>
+

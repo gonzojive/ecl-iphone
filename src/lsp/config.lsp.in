@@ -1,0 +1,37 @@
+;;
+;; Configuration file for ECLS
+;;
+(in-package "LISP")
+;;
+;; * Short and long site names
+;;
+#include "../../../site.lsp"
+;;
+;; * ECLS version, architecture, etc
+;;
+(defun lisp-implementation-version () "@ECLS_VERSION@")
+(defun machine-type () "@architecture@")
+#if !defined(unix) || defined(__NeXT)
+;; obtained from uname(2) where available
+(defun machine-instance () "@MACHINE_INSTANCE@")
+(defun machine-version () "@MACHINE@")
+(defun software-type () "@software_type@")
+(defun software-version () "@software_version@")
+#endif
+;;
+;; * Set up some room
+;;
+(unless (member :boehm-gc *features*)
+  (sys::allocate 'CONS 200)
+  (sys::allocate 'STRING 40))
+;;
+;; * Load symbols from this program
+;;
+#ifdef RSYM
+(sys:build-symbol-table)
+#endif
+;;
+;; * Set configuration pathnames. Notice the trailing slash!
+;;   Otherwise it would not be a directory.
+;;
+(setq sys:*system-directory* "@libdir@/")

@@ -1,0 +1,62 @@
+
+AKCL version  1.20
+LUCID version 2.1.1
+KCL is the Jun 87 version unmodified.
+
+Gabriel benchmarks run on a Sun 3-160 by Bill Schelter.
+Colu
+
+   Thu Apr  7 10:47:59 CDT 1988
+
+HARDWARE:    Sun280     Sun280   Sun3-160   Sun3-160   Sun3-160
+SOFTWARE:             AKCL       LUCID     AKCL     LUCID       KCL
+
+BOYER         6.667   6.533      9.200    12.200     15.160     15.950   
+BROWSE        12.900  13.433     18.500   24.183     29.560     41.283 
+CTAK          3.500   3.000      1.140    6.583      2.160      7.050  
+DDERIV        3.317   3.317      5.420    6.033      9.260      8.417  
+DERIV         2.633   2.700      5.240    4.850      8.200      6.450  
+DESTRU-MOD    1.000              1.090
+DESTRU        1.350   1.667      1.080    2.883      1.720      3.717  
+DIV2          3.117   3.100      4.380    5.433      6.660      5.667  
+FFT-MOD       5.350   5.317      38.360   7.700      51.880     29.467 
+FFT           32.150  32.317     34.760   58.450     51.840     (error)   
+FPRINT        0.667   1.033      0.800    1.817      1.460      2.417  
+FREAD         1.212   1.333      1.670    2.500      3.220      2.783
+FRPOLY        46.883  46.033     30.040   85.450     45.200     90.167 
+PUZZLE-MOD    4.383   4.350      4.380    7.117      6.960      10.183 
+PUZZLE        4.833   4.900      3.180    8.200      5.140      11.183 
+STAK          1.813   1.817      1.380    3.717      2.620      4.350  
+TAK-MOD       2.900   2.900      2.800    5.150      4.680      3.600
+TAK           3.833   3.750      2.760    6.467      4.900      5.767
+TAKL          1.350   1.583      1.680    2.600      2.640      3.017  
+TAKR          0.521   0.533      0.460    0.933      0.840      1.483  
+TPRINT        1.046   1.650      2.100    3.117      3.680      4.233  
+TRAVERSE      25.667  25.833     27.940   38.917     40.060     71.133 
+TRIANG-MOD    63.500  62.217     255.460  112.750    453.460    160.783
+TRIANG        78.017  77.450     76.760   147.567    141.62     220.917                      
+
+
+   Additional notes: All files were proclaimed using the proclaim-file
+facility in make-declare.lsp.  The XX-MOD tests, differ from the
+original XX tests only in the matter of additional proclamations and
+perhaps changing an array type.  This sometimes hurt lucid, mainly
+because the original declarations were optimal for lucid.  (Also in
+several places we changed an eq of integers or characters to an eql,
+to conform with correct Common Lisp, and ensure that the test would
+actually run as intended.)  In AKCL three of the four float types map
+to 64 bit floats, with only short-float being a 32 bit float.  On
+lucid all four appear to be 32 bit (judging from the fact that 1.0e38
+is the largest float in each case).  Thus KCL and AKCL are using 64
+bit floats in the fft examples, while lucid appears to be using 32 bit
+floats.  We did not know what switches to use to speed lucid floating
+arithmetic.
+
+
+   To run the tests in a lisp called foo (eg akcl, lucid,..)
+% cd gabriel
+% make -e "LISP=foo"  >> #errs &
+The times will be recorded in a file called times.  All files
+will be proclaimed, and compiled automatically.
+
+

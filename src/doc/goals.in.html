@@ -1,0 +1,101 @@
+<h2>Introduction</h2>
+
+<a href="http://ecls.sourceforge.net">ECLS</a> stands for <em>Embeddable
+Common-Lisp "Spain"</em>, and I usually read it as "e-klos". It is a an
+implementation of the <a href="http://www.lisp.org">Common-Lisp language</a>
+which aims to comply to the <a
+href="http://www.lisp.org/HyperSpec/FrontMatter/index.html">ANSI X3J13</a>
+definition of the language.
+
+<p><a href="http://ecls.sourceforge.net">ECLS</a> combines a bytecodes
+compiler/interpreter and a translator to C.  The first one is specially suited
+for prototyping and debugging. The second one produces fast code that can be
+dynamically loaded into the interpreter or statically linked to build
+standalone executables.
+
+<p><a href="http://ecls.sourceforge.net">ECLS</a> is distributed under the <a
+href="#copyright">GNU Library General Public License (GNU LGPL)</a>.
+
+<p><a href="http://ecls.sourceforge.net">ECLS</a> is not a brand new
+product. It has evolved from the EcoLisp implementation by Giusseppe Attardi
+which in turn was based on the Kyoto Common-Lisp implementation done by Taiichi
+Yuasa and Masami Hagiya, with contributions from several people. Nevertheless
+the program has been seriously modified and the current code base bears little
+resemblance to the previous implementations and the author of those
+implementations should not be blamed for the faults of thi <a
+href="http://ecls.sourceforge.net">ECLS</a>.
+
+<h2>Project goals</h2>
+
+<ul>
+<li><b>To produce a free implementation of Common-Lisp.</b>
+
+<p><a href="http://ecls.sourceforge.net">ECLS</a> is released under the LGPL or
+GNU Library General Public Licence (See <a
+href="license.html">Copyright</a>). This means that <a
+href="http://ecls.sourceforge.net">ECLS</a> can be used in commercial projects
+while keeping the implementation free.
+
+<li><b>Compliance to the latest ANSI spec.</b>
+
+<p><a href="http://ecls.sourceforge.net">ECLS</a> is already rather standards
+compliant. <a href="http://ecls.sourceforge.net">ECLS</a> was born as a fork
+from the ECL (Eco-Common-Lisp by Giussepe Attardi) which conformed to Cltl2
+("Common-Lisp the Language 2"), but which was shipped with some ANSI
+compatibility extensions. Currently the worst parts with respect to ANSI are
+the LOOP package and parts of CLOS.
+
+<li><b>Small code size.</b>
+
+<p><a href="http://ecls.sourceforge.net">ECLS</a> is made of a runtime library
+and an interpreter. The interpreter itself is small, at most three files of C
+code. Once the lisp environment is booted, it takes about 1Mb of code (although
+currently it is a bit more due to debuggin issues in the interpreter). If the
+whole of <a href="http://ecls.sourceforge.net">ECLS</a> is compiled from lisp
+to C, the resulting program is 1.5Mb. Nevertheless, there is room for
+improvement in this area.
+
+<li><b>Embedability.</b>
+
+<p>In a near future <a href="http://ecls.sourceforge.net">ECLS</a> will be
+shipped as a library that can be linked against arbitrary C
+programs. Currently, arbitrary C code can be linked against <a
+href="http://ecls.sourceforge.net">ECLS</a>, either statically or at runtime.
+
+<li><b>Portability to arbitrary environments.</b>
+
+<p><a href="http://ecls.sourceforge.net">ECLS</a> currently compiles and runs
+on Linux, FreeBSD 4.x and NetBSD 1.5. Most of the code is portable. The parts
+which change from operating system to operating system are about the
+filesystem, sockets, signals and the allocation of big chunks of memory, but in
+all it is well below 1000 lines. The worst part is related to word-size and
+endianness. Work is in progress to port <a
+href="http://ecls.sourceforge.net">ECLS</a> to 64-bit environments.
+
+<li><b>Compilation via an ANSI C compiler.</b>
+
+<p><a href="http://ecls.sourceforge.net">ECLS</a> can translate lisp code to C
+code that can be dynamically loaded or linked to the runtime to produce a
+standalone executable. Currently this process relies on GCC as a targed
+platform, but work is in progress to remove GCC dependencies.
+
+<li><b>Better garbage collection.</b>
+
+<p>As of this release the memory that <a
+href="http://ecls.sourceforge.net">ECLS</a> can allocate is restricted to
+16Mb. I have tried replacing the garbage collector with a conservative one
+(Boehm's GC v 4.11) and that did fix the problems, but increases the memory
+requirements of <a href="http://ecls.sourceforge.net">ECLS</a>. Since this is
+really undesirable, I have been also thinking about revamping the current
+garbage collector with an interface to mmap(). Time wil tell...
+
+<li><b>Improve the compiler: more agressive inlining, better operations among
+numbers and unboxed arrays of complex numbers.</b>
+
+<p><a href="http://ecls.sourceforge.net">ECLS</a> currently can inline all
+operations that involve fixnums, characters and floating point
+numbers. However, the type inferencer is not very powerful and therefore some
+operations are not inlined because the compiler cannot actually tell the types
+of the arguments and of the output.
+</ul>
+

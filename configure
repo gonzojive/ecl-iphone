@@ -1,0 +1,20 @@
+#!/bin/sh
+#
+# This is just a driver for configure, the real configure is in src.
+# This script identifies the machine, and creates a directory for
+# the installation, where it runs ${srcdir}/configure.
+
+srcdir=`pwd`/src
+buildir=build
+
+if [ ! -d ${buildir} ] ; then
+   echo Creating directory "\`${buildir}'"
+   mkdir ${buildir}
+fi
+
+# Now run the real configure script
+echo Switching to directory "\`${buildir}'" to continue configuration.
+cd ${buildir}
+${srcdir}/configure --srcdir=${srcdir} $*
+
+echo Configuration complete. To build ECL, issue 'make' in this directory.

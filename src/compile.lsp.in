@@ -1,0 +1,38 @@
+;;;
+;;; Configuration file for the bootstrapping version of ECLS
+;;;
+(load "bare.lsp")
+
+;;;
+;;; * Compile, load and link Common-Lisp base library
+;;;
+(in-package "COMMON-LISP-USER")
+(load "lsp/defsys.lsp")
+(sbt::operate-on-system lsp :library)
+;(sbt::operate-on-system lsp :load)
+
+#ifndef RUNTIME
+;;;
+;;; * Compile, load and link Common-Lisp to C compiler
+;;;
+(load "cmp/defsys.lsp")
+(sbt::operate-on-system cmp :library)
+;(sbt::operate-on-system cmp :load)
+#endif RUNTIME
+
+#ifdef CLOS
+;;;
+;;; * Compile, load and link PCL based Common-Lisp Object System
+;;;
+(load "clos/defsys.lsp")
+(sbt::operate-on-system clos :library)
+;(sbt::operate-on-system clos :load)
+#endif CLOS
+
+(compiler::build-ecls "ecls"
+#ifndef RUNTIME
+	   'cmp
+#endif
+)
+
+(quit)

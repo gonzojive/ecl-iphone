@@ -1,0 +1,72 @@
+# file crs/Makefile
+
+top_srcdir= @top_srcdir@
+srcdir	= @srcdir@
+#ifdef MSDOS
+VPATH	= .;@srcdir@
+#else
+VPATH	= @srcdir@
+#endif
+
+infodir = @infodir@
+libdir = @libdir@
+
+INSTALL	= @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA = @INSTALL_DATA@
+
+VERSION=@ECLS_VERSION@
+
+HTML = index.html license.html lgpl.html news.html ecls.html benchmark.html \
+	install.html
+
+FILTER = sed 's,@VERSION@,$(VERSION),g'
+
+ECL = ../ecls
+
+all: help.doc ecls.info $(HTML)
+
+ecls.dvi: $(srcdir)/user.txi clisp.sty ecl.sty
+	tex $(srcdir)/user.txi
+
+ecls.ps: ecls.dvi
+	dvips -o $@ ecls.dvi
+
+install: all
+	$(INSTALL_DATA) help.doc $(PREFIX)$(libdir)
+	$(INSTALL_DATA) ecls.info $(PREFIX)$(infodir)
+
+uninstall:
+	rm -r $(infodir)/ecls.info
+
+help.doc: help.lsp
+	$(ECL) < $(srcdir)/help.lsp > /dev/null
+
+ecls.info: $(srcdir)/user.txi
+	makeinfo --no-split $(srcdir)/user.txi
+
+index.html: $(srcdir)/index.in.html
+	cat $(srcdir)/head $? $(srcdir)/end | $(FILTER) > $@
+install.html: $(srcdir)/install.in.html
+	cat $(srcdir)/head $? $(srcdir)/end | $(FILTER) > $@
+news.html: $(srcdir)/news.in.html
+	cat $(srcdir)/head $? $(srcdir)/end | $(FILTER) > $@
+benchmark.html: $(srcdir)/benchmark.in.html ../gabriel/BENCHMARK
+	(cat $(srcdir)/head; \
+	 cat $(srcdir)/benchmark.in.html; \
+	 echo '<pre>'; cat ../gabriel/BENCHMARK; echo '</pre>'; \
+	 cat $(srcdir)/end) | $(FILTER) > $@
+../gabriel/BENCHMARK:
+	cd ../gabriel; make
+license.html: $(top_srcdir)/../Copyright
+	(cat $(srcdir)/head; \
+	 echo '<pre>'; cat $?; echo '</pre>'; \
+	 cat $(srcdir)/end) | $(FILTER) > $@
+lgpl.html: $(top_srcdir)/../LGPL
+	(cat $(srcdir)/head; \
+	 echo '<pre>'; cat $?; echo '</pre>'; \
+	 cat $(srcdir)/end) | $(FILTER) > $@
+ecls.html: $(srcdir)/user.txi
+	makeinfo --html $(srcdir)/user.txi
+clean:
+	rm -f ecls.* help.doc *.html

@@ -1,0 +1,56 @@
+;;;
+;;; Configuration file for the bootstrapping version of ECLS
+;;;
+;;; * Set ourselves in the 'SYSTEM package
+;;;
+(setq *package* (find-package "SYSTEM"))
+
+;;;
+;;; * Load Common-Lisp base library
+;;;
+(load "lsp/load.lsp")
+
+#ifdef CLOS
+;;;
+;;; * Load PCL-based Common-Lisp Object System
+;;;
+(setf sys::*gc-verbose* nil)
+(load "clos/load.lsp")
+#endif
+
+;;;
+;;; * Load the compiler.
+;;;
+(load "cmp/load.lsp")
+
+;;;
+;;; * By redefining *system-directory* ECLS will be able to
+;;;   find headers and libraries in the build directory.
+;;;
+(setq si::*system-directory* (namestring (sys::chdir "./")))
+
+;;;
+;;; * Add include path to not yet installed headers
+;;;
+(setq compiler::*cc-flags* (concatenate 'string compiler::*cc-flags* " -I@srcdir@/h -I@srcdir@/gmp "))
+
+;;;
+;;; * Beppe's defsystem utility
+;;;
+(load "@srcdir@/util/system.lsp")
+
+;;;
+;;; * We redefine this to force generation of source files
+;;; in the object directory -- source files help debugging
+;;; with GDB.
+;;;
+(defun sbt::sbt-compile-file (&rest s)
+  (apply #'compiler::compile-file
+	   (car s)
+	   :c-file t :h-file t :data-file t :system-p t
+	   (cdr s)))
+
+;;;
+;;; * Go back to build directory to start compiling
+;;;
+(setq *features* (remove :ecls-min *features*))

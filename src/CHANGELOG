@@ -1,0 +1,697 @@
+ECL-Spain v0.0
+==============
+
+* Removed all "break" from the configure script.
+
+* Added latexinfo.sty to help producing the manual.
+
+* src/configure.in: profile feature disable by default.
+
+* Conversion to ANSI prototypes of all files in the library (c/)
+  directory. Two headers, external.h and lisp_external.h, to keep the
+  prototypes of C and LISP functions.
+
+* Fixed lack of "extern" declaration for {short,long}float_zero and
+  lack of implementation.
+
+* Fixed lack of "extern" declaration of r frame_stack, frs_limit and
+  frs_top. Actual implementation added in main.c.
+
+* Fixed lack of "extern" declaration for Values in the THREADS case,
+  in vs.h
+
+* Removed OFLAG as the standard is using CFLAGS
+
+* Added test tree from CLISP
+
+* Removed 'break's from configure.
+
+* Grouped all keyword definitions in a single pool in the new file
+  all_keywords.c
+
+* Grouped all symbol definitions in a single pool in the new file
+  all_symbols.c
+
+* Removed all calls to register_root() for symbols from the
+  library. Instead the garbage collector uses the symbol/keyword
+  definition pools to mark these objects.
+
+* parse_number() failed when GC was triggered. The reason was that
+  GC did only reallocate num.size limbs when it should actually move
+  num.alloc limbs. This has been solved in three steps
+	+ The GC uses num.alloc (= big_dim)
+	+ The allocator clears the bignum
+	+ The bignum data is only relocated when the pointer is valid,
+	  that is, we assume that big_limbs may point to non
+	  collectable memory.
+
+* The allocator empties a region before returning it.
+
+* All big_*() functions now get lisp objects as input, in order to
+  make the interface more abstract.
+
+* Added #'nth-value
+
+* Now big_alloc(), alloc_contblock() and alloc_relblock() fail when
+  passed a negative argument.
+
+* Created a pool of three bignum registers. These registers may be
+  used to save consing, as the destination of mpz_* operations, as
+  follows
+	+ Perform a big_register?_get()
+	+ Perform elementary operations from the GMP library
+	+ Either discard the object, use big_register_copy() or use
+	  big_register_normalize().
+
+* Removed most preallocations of bignums, favoring the use of bignum
+  registers.
+
+* In integer_quotient_remainder, if both operands are bignums and the
+  divisor is larger, a bignum with negative size was allocated. The
+  use of bignum registers fixes this problem.
+
+* In parse_number() and parse_integer(), use the bignum registers to
+  store the intermediate result.
+
+* Implementation of a new stream mode, smm_closed.
+
+* Fresh streams from alloc_object() are smm_closed streams.
+
+* In file.d: 1) input_stream_p, output_stream_p, stream_element_type,
+  readc_stream, unreadc_stream, writec_stream, flush_stream,
+  clear_input_stream, clear_output_stream, stream_at_end,
+  listen_stream, file_position, file_position_set, file_length,
+  file_column fail on closed streams. 2) close_stream and
+  Lopen_stream_p work on closed streams.
+
+* In read.d, print.d: Lread_bytes and Lwrite_bytes which could have
+  tried to access a closed stream. Not a good fix, anyway.
+
+* array.tst, hashlong.tst, eval20.tst, iofkts.tst, lists152.tst: added #+ECL.
+
+* In pathname.d: coerce_to_pathname makes sense on closed streams.
+
+* In print.d: print() did not output a trailing space.
+
+* In read.d: #'read-char-no-hang now handles EOF and fails or returns
+  eof-value when appropiate.
+
+* In format.c: Lformat formerly output a string for non-nil first
+  argument.
+
+* In symbols.c, all_symbols.c, lisp_externals.h: implemented
+  *gensym-counter*
+
+* In symbols.tst: placed (setq *gensym-counter*...) right before
+  creating the symbol --otherwise a spurious gensym is produced by the
+  interpreter.
+
+* predlib.lsp: errata in subtypep caused failure for '(not ....) and
+  '(and ...) types.
+
+* predlib.lsp: #'normalized-type now turns (integer a (b)) into
+  `(integer a ,(1- b)), producing an output which is suitable for
+  sub-interval-p.
+
+* predlib.lsp: #'typep now rejects type specifiers that it doesn't
+  know about. For instance, '(symbol cons) is rejected.
+
+* predlib.lsp: #'typep on '(MEMBER ...) now only outputs T or NIL.
+
+* strings.tst: added #+ECL and now included in the test-suite.
+
+* string.d: member_char() hangs when the character bag has some
+  non-character objects.
+
+* string.d: nstring-{up,down}case now reject NIL as bound designator
+  when compiled in ANSI compatibility mode.
+
+* characters.tst: added #+ECL and included in the test-suite.
+
+* pack11.tst: the keyword :use from #'in-package needs a list, no
+  a single symbol. Added to the test.
+
+* package.d: packages must be case sensitive. This implies changes in
+  find_package()
+
+* package.d: #'package-name should also accept symbols and strings.
+
+* package.d: #'unexport should ignore internal symbols.
+
+* Makefile.in: makes tar file.
+
+* in system.lsp: new syntax for defsystem, takes care of multiple
+  source directories and separate path for library.
+
+* in {lsp,cmp,clos}/defsys.lsp.in: modified with new syntax.
+
+* in load.d: build_symbol_table is now a C function invoked from the
+  initialization code and not exported to lisp.
+
+* in cmpmain.lsp: new #'build-ecl function to build customized
+  executables. It generates the initialization code.
+
+
+ECL v0.0b
+=========
+
+* in lsp/predlib.lsp: extended #'typep to classes.
+
+* in cmp/cmpdefs.lsp: added types for all compiler structures.
+
+* in clos/standard.lsp: redefine-class should be evaluated at compile
+  time.
+
+* in clos/: fixed everything to allow generation of *.c files.
+
+* in lsp/predlib.lsp: subclassp now exported from LISP package.
+
+* in c/pathname.d:
+  + now pathnames are constructed according to ANSI. We support
+  :ABSOLUTE, :RELATIVE, :UP and :WILD, and we require their use when
+  constructing pathnames.
+  + All pathnames are considered relative except those which begin
+  with '/' or '~/'. The last case is expanded using the $HOME
+  environment variable.
+  + pathnames are merged according to ANSI CL. If 'pathname' is a
+  relative directory, it is merged with 'default's directory, no
+  matter whether this one is relative or not.
+  + tilde_expand() hidden as static -- it is far too low level.
+  + current_dir() and getcwd() substitutes all uses of getwd().
+  + fixed size buffers removed from most routines to avoid accidental
+  overflows. Use of current_dir() and siLstring_concatenate() prevents
+  this type of errors.
+
+* in c/unixfsys.c:
+  + truename() rewritten to detect only files and signal errors when
+  it finds directories.
+  + Ltruename() now returns the number of output values.
+  + Lrename_file() now outputs true names by checking the renamed file
+  after the operation.
+  + string_match() and siLstring_match() provide SH-like patterns.
+  + Ldirectory() only lists files and allows all wildcards that
+  siLstring_match() provides. The implementation dependent keyword,
+  :LIST-ALL, instructs Ldirectory() to list both files, directories
+  and special nodes such as devices, pipes, etc.
+
+* in c/read.d:
+  + Added Lsharp_P_reader() to read paths using #P.
+  + Ldefault_dispatch_macro() outputs clearer error message.
+
+* in lsp/defstruct.lsp,lsp/iolib.lsp: sharp-s-reader and
+  sharp-s-reader-si now ignore data when *read-suppress*.
+
+* in lsp/module.lsp: #"" replaced with #P"".
+
+* in c/lwp.d,c/big.c: per-thread allocation bignum registers.
+
+* in c/Makefile.in,gmp/Makefile.in: make use of './' to avoid the need
+  of exporting PATH with a '.' inside.
+
+* in c/print.d: Now paths are printed as #P.
+
+* in Makefile.in: BUILDIR mispelled caused failure of installation.
+
+ECLS v0.0c
+==========
+
+* in src/configure.in: make using CLOS the default.
+
+* in gmp/Makefile.in,gmp/mpz/Makefile.in: fixed recursive error in
+  cleaning.
+
+* in lsp/iolib.lsp,lsp/packlib.lsp: removed use of ". body" favoring
+  the use of "&rest body" because sys::expand-defmacro doesn't
+  understand it.
+
+* in c/gbc.c: added gc marking of objects in lexical envs.
+
+* in c/macros.c: define-macro now uses default values for last two
+  arguments when they are missing.
+
+* in c/clos.c,c/package.d,c/print.d,c/read.d: added register_root() to
+  some variables.
+
+* in lsp/builtin.lsp: removed make-instance on structure-metaclass,
+  since it does not exist.
+
+* in lsp/predlib.lsp:
+  + implemented sequence as a deftype
+  + removed sequence from subtypep
+  + built normalize-type to return multiple values
+  + recoded subtypep & coerce to use multiple values from normalize-type
+  + when using clos, deftype structure as STRUCTURE-OBJECT
+
+* in c/let.c: save values in Fmultiple_value_bind before performing
+  the actual let_bind. This prevents losing data within a GC.
+
+* Now a raw ecl_min file is built which uses no lisp compiled files,
+  to provide a tool for bootstraping ECL. This implies some changes
+  to avoid circular dependencies
+  + src/c/Makefile.in creates an init_min.o when bootstraping
+  + src/Makefile.in uses init_min.o,c/*.o and crs/*.o to create the
+    raw ECL which we will use to bootstrap.
+  + c/init.c now loads *.lsp files when bootstraping
+  + lsp/defmacro.lsp postpones definition of defmacro until
+    sys::expand-defmacro is defined
+  + lsp/defmacro.lsp does not use 'defvar because it is not defined.
+  + lsp/iolib.lsp,lsp/module.lsp,lsp/packlib.lsp now use &optional
+    instead of . in macros, as defmacro does not support '.'
+  + clos/method.lsp: when :ecl-min, replace *safe-compile* with t
+  + cmp/load.lsp: replace call to object-type with its result.
+  + new src/config_min.lsp which performs booting.
+
+* in cmp/cmpinline.lsp: inline-args adds a bogus arg when inlining
+  instance-ref. This problem only arised when *safe-compile*.
+
+* in lsp/defmacro.lsp:
+  + #'sys::destructure handles destructuring lambda lists
+  + #'defmacro reimplemented using #'sys::destructure, which now
+  handles '.' arguments properly.
+  + new #'destructuring-bind implemented using #'sys::destructure
+
+* in c/unixfsys.c: sys::chdir now outputs original directory.
+
+* in h/: lisp_external.h and unify.h were missing from CVS.
+  in c/: all_symbols.c and all_keywords.c were missing from CVS.
+  in contrib: ilisp removed, there are better versions around.
+
+* new src/compile.lsp.in, lsp/defsys.lsp.in, clos/defsys.lsp.in,
+  cmp/defsys.lsp.in, plus changes in src/config.lsp.in,
+  src/configure.in and src/Makefile.in: now the C files are
+  compiled on-the fly usin the bare feet ecl_min program.
+
+ECLS v0.0d
+==========
+
+* in clos/generic.lsp: implemented :method in #'defgeneric
+
+* in lsp/predlib.lsp: extended #'typep to classes and made #'subclassp
+  public.
+
+* New codeblock object which keeps all information about an object
+  file and its data. It replaces the old tagless structure and
+  introduces a new format for init_*() function when initializing an
+  object file.
+
+* Moved compiler data into object files as C string. This implies
+  changes in the loader (load.d), in the data stream reader
+  (read_VV) and in the compiler (cmpwt.lsp,cmpmain.lsp,cmptop.lsp)
+  which nows generates a different boot code for compiled lisp files.
+
+* in cmp/cmpmain.lsp: new #'make-library joins several object files
+  into an *.a file, adding a new object file which initializes them
+  all and exports an init_*() routine.
+
+* cmp/cmpmain.lsp: compiler-pass2 now upcases init_* names to avoid
+  name clashes with lisp code.
+
+* in src/util/system.lsp: new :LIBRARY target which uses
+  compiler::make-library to produce *.a libraries up from CLOS, LSP
+  and CMP subdirectories.
+
+* in src/c/Makefile.in: now a library libecls.a is built up from
+  all object files except cinit*.o
+
+* in src/Makefile.in, src/compile.lsp: ecl_min is built up only from
+  the core C library, while ecl is built with this core and all
+  required libraries liblsp.a, libcmp.a, libclos.a, etc, plus
+  config.o. To help in this compile.lsp is used to build all required
+  libraries.
+
+* load.d: siLbuild_symbol_table no longer removes ecl.sym
+
+* in c/main.c,c/cinit.c,c/load.d: removed system_directory C variable.
+  The lisp variable *system-directory* is used instead and points to
+  the system files (headers, libraries, initialization code). Default
+  value for this one is assigned during the configuration phase and
+  defaults to @libdir@
+
+* in cmp/cmpmain.lsp: <ecl.h> header is no longer copied onto the
+  compiled code, but #inlined from the system directory.
+
+* in c/package.d, c/assignment.c, c/macros.c, c/toplevel.c,
+  h/object.h: new function #'sys::package-lock locks a package and
+  subsequents redefefinitions of functions/macros produce a warning.
+
+* config.lsp moved to lsp/config.lsp and compiled into interpreter.
+
+* in Makefile.in, src/Makefile.in: primitive installation method,
+  which stores $(bindir)/ecl, $(mandir)/man.1, $(libdir)/ecl.sym,
+  $(libdir)/help.doc and $(libdir)/h/ecl.h
+
+ECLS v0.0e
+==========
+
+* Support for FreeBSD >= 4.0 using ELF.
+
+* Defined ANSI and #+ansi by default, except in number_atan(), which
+  needs fixing.
+
+* in package.d: lisp package renamed to common-lisp with nicknames
+  "lisp" and "cl", and user package renamed to common-lisp-user with
+  nicknames "cl-user" and "user".
+
+* in export.d: common-lisp-user, cl, cl-user, common-lisp added to
+  export list of common-lisp package.
+
+* in defsys.lsp: ansi.lsp, loop.lsp and defpackage.lsp incorporated.
+
+* in package.d: shadow did not shadow already interned objects.
+
+* in toplevel.c: added :execute, :compile-toplevel and :load-toplevel
+  to eval-when.
+
+* in list.d: fixed #'last adding optional argument
+
+* in src/util/system.lsp: new syntax which allows separate directory
+  for library.
+
+* src/config.lsp.in moved to src/lsp/config.lsp.in and incorporated
+  into liblsp.a
+
+* in cmp/cmpmain.lsp: new #'build-ecl to build customized executables.
+  {lsp,cmp,clos}/defsys.lsp.in updated accordingly.
+
+* in src/Makefile.in: new build process relying entirely on lisp and
+  defsystem to build executables.
+
+* in print.d: when *print-escape* is nil, pathnames are written as
+  addresses -- now the namestring is output.
+
+* in predicate.c: functionp = 't on symbols bound to functions.
+
+* in src/Makefile.in: strip executables.
+
+* in lsp/seq.lsp: #'make-sequence was broken due to new #'normalize-type.
+
+* in lsp/predlib.lsp: #'coerce was broken due to new #'normalize-type.
+  Plus a quick hack to handle 'LIST properly.
+
+* in cmp/cmpmain.lsp: #'build-ecl now also strips symbols using
+  "rsym", which gets installed into @libdir@
+
+* Simplified the set of headers. Now there is a ecls.h for base code
+  and ecls-cmp.h for lisp compiled code, both sharing the rest of
+  headers (stacks.h, object.h, etc), to simplify maintenance.
+
+ECLS v0.0g
+==========
+
+* Binding stack, invocation history stack and frame stack predate now
+  ordinary memory as a first step for future resizable stacks.
+
+* Built in C strings are better handled now: they can contain \000 and
+  make use of \n,\t,\\, and of special characters in octal notation.
+
+* Final problems with documentation solved. #'si::help no longer hangs
+  and the database is now properly generated (in v0.0e only a few
+  entries got in).
+
+* New online manual in texinfo format gets installed.
+
+* Support for character attributes removed, including #'char-bit,
+  #'char-font, #'make-character, #'string-char-p and 'string-char
+  type. Instead, the whole chapter of the ANSI spec is implemented
+  with types character = base-char > standard-char and extended-char
+  being an empty type.
+
+* Initialization of functions grouped in a single file all_functions.c.
+
+* Full ANSI compliance for CHARACTER and STRING sections of the spec.
+
+* (type-of nil) now returns 'NULL instead of 'SYMBOL.
+
+* Different hierarchy of tags in object.h saves some space & time.
+
+* Open-coded caar, cadr, etc, are faster & smaller.
+
+* In old garbage collector, flag *IGNORE-MAXIMUM-PAGES* turned into
+  function #'si:ignore-maximum-pages
+
+* Added support for Boehm-Weiser garbage collector with flag
+  --enable-boehm.
+
+* Removed support for relocatable blocks of memory from original
+  garbage collector. Unified allocation interface with alloc(),
+  alloc_align(), dealloc() and the alloc_atomic() and
+  alloc_atomic_align() variants.
+
+ECLS v0.0h
+==========
+
+* big_bitp() was broken due to the use of wrong limb sizes. Furthermore,
+  it did not consider the case of negative bignums.
+
+* gmp-3.1 takes the place of the original gmp-1.
+
+* Now it is possible to link ECLS with a local copy of the GMP library,
+  avoiding to compile and install the copy that comes with it.
+
+* New C functions floor1, floor2, ceiling1, ceiling2, truncate1,
+  truncate2, round1, round2 which correspond to #'floor, #'ceiling,
+  #'truncate and #'round with one or two arguments, but which are only
+  used internally. Lfloor, Lceiling and Ltruncate implemented using
+  them.
+
+* Rewritten many routines optimizing and removing or completing type
+  checks.  For instance, make_complex(),
+  number_{plus,minus,times,divide}(), integer_divide(), log_op(), etc.
+
+* At cost of some speed, the interpreter (i.e. not compiled code)
+  keeps track of all called functions for better error signaling.
+
+* Some failed type checks are now restartable in most cases in which
+  it is safe. This allows the user to dynamically supply a different
+  value
+	> (make-list 'a :initial-element 'b)
+	Correctable error: A is not of type (INTEGER 0 *).
+	                   Signalled by MAKE-LIST.
+	If continued: Enter new value.
+	;;; Warning: Clearing input from *debug-io*
+	Broken at MAKE-LIST.
+	>> :b
+	Backtrace: > MAKE-LIST
+	>> :continue
+	Enter new value> 10
+	(B B B B B B B B B B)
+	>
+  The jump to the debugger may be suppressed by binding *break-enable*
+  to nil.
+	> (setq *break-enable* nil)
+	NIL
+	> (make-list 'a :initial-element 'b)
+	Correctable error: A is not of type (INTEGER 0 *).
+	                   Signalled by MAKE-LIST.
+	Aborting:
+	>
+
+* Support for logical pathnames. The syntax for logical pathnames is
+	[hostname:][;][directory-item;][name][.type]
+  and the syntax for physical pathnames is extended to
+	[device:][[//hostname]/][directory-item/][name][.type]
+  where device defaults to "file". Pathname translation and matching
+  is also implemented, although wildcard expansion is not maximal
+  and works more like "sh" than like "regexp".
+
+* New set of C types which includes: cl_object for all lisp objects,
+  cl_fixnum for an integer large enough to hold a fixnum, cl_index for
+  an unsigned integer large enough to index an array, cl_hashkey for
+  hashing and cl_type for all type tags.
+
+* New macros LISTP(), ATOM(), CONSP(), SYMBOLP() optimize type checks
+  within the library code and within automatically generated C
+  compiled code.
+
+* Errors fixed:
+  + Removed non-standard keyword argument :staticp from #'make-array
+    and #'make-vector.
+  + A fixnum is no longer a valid string designator.
+  + #'butlast and #'nbutlast now work with dotted lists.
+  + Inlined #'tan now produces the right code.
+  + A fixnum cannot be coerced to a character.
+  + Character bags of type vector would produce erroneous results.
+  + #'equalp would fail to compare complex numbers
+  + #'char now only accepts strings
+  + in pathnames, namestrings, etc, symbols are not implicitely
+  coerced to strings.
+
+* The Common-Lisp reader has been reworked to allow an unlimited
+  number of #= and ## references in circular structures. Besides, this
+  also fixes the accidental deactivation of the #=/## readers in ECLS
+  v0.0g :(
+
+* Errors detected but not yet fixed throught all bit manipulating
+  functions: they fail to fake two's complement convention for
+  negative bignums.
+
+* Big change of names in structure members: ht.ht_size -> hash.size,
+  etc. Less redundant and more expressive.
+
+* Packages are now stored in a list. The link in the package object
+  has been removed. We make sure this list is garbage collected by
+  applying "register_root()" on it. Garbage collection of package
+  objects is now moved into the mark_object() routine.
+
+ECLS 0.0i
+=========
+
+* Replaced hashing function with a crc32.
+
+* Packages now use standard hashes for storing symbols. This seems
+  to reduce the amount of wasted memory at now speed cost. Besides,
+  future improvements to hashes will get in packages as well.
+
+* The interpreter is now capable of passing the whole suite of tests.
+  Just issue "make ecls_min_test" from within build/test directory.
+
+* Errors can be ignored by setting si:*ignore-errors* to true. If this
+  happens, a (throw si:*ignore-errors-tag* 'ERROR) is thrown. Hence
+  a useful construct for testing is
+  (defmacro with-ignored-errors (&rest forms)
+    `(catch si::*ignore-errors-tag*
+       (let ((si::*ignore-errors* t)) ,@forms)))
+
+* Improvements to the "dpp" preprocessor that generates code for the
+  core library:
+  + All C code is now run by the preprocessor.
+  + Simplified #line staments in the output make files more readable.
+  + It now exits with value != 0 when errors occurr, which means
+    makefiles now stop when the *.d file has errors.
+  + It accepts more flexible input as tokens. No need of [`] character,
+    use parenthesis instead; function names may contain packages
+    as in "si::unwind"
+  + It does not generate #define/#undefine pragma, but uses variables
+    instead.
+
+* Errors fixed:
+  + #'mapcan and #'mapcon failed to handle dotted lists.
+  + Inlined short-float/long-float values were truncated to ints.
+  + declaim's effects are now visible at compile time.
+  + proclaim causes no effect at compile time.
+  + declarations cannot arise as the result of a macro expansion.
+
+* CL package unpolluted:
+  + 'system, '*break-enable* and others now rest in the 'system package.
+  + function #'proclamation removed
+
+* New macro expanders help the compiler to produce the right code for
+	(do ((s "asbc") c (i 0 (1+ i)))
+	    ((= i 3) c)
+	  (declare (type character c))
+	  (setq c (char s i)))
+  Formerly, C would be initialized with "char_code(Cnil)" which is
+  probably not what the user wanted.
+
+* IN-PACKAGE is now a macro and DEFPACKAGE now expands to a shorter
+  expression with the help of an internal function SI:%DEFPACKAGE.
+
+* Evaluation of (LAMBDA (..) ...) expressions now conses less when in
+  an empty lexical environment.
+
+* The system now uses a different protocol for returning values.
+  + If a lisp function returns one single value, the C function
+    outputs that value directly and sets NValues=1.
+  + If N values are output, the function, sets NValues=N; it sets
+    VALUES(1..N-1) to the N-1 last values and outputs the first one.
+
+* The code walker in PCL now avoids macroexpanding DOTIMES, DOLIST,
+  WHEN and UNLESS. This gives smaller/faster code in the interpreter.
+
+ECLS 0.1a
+=========
+
+* Brand new interpreter based on a byte compiler. This implies major
+  changes to CLOS, the code walker and to the compiler.
+
+* Export COMPILE-FILE-PATHNAME.
+
+* Gabriel's benchmark incorporated to the source tree.
+
+* Ported to NetBSD.
+
+* Added support for SYMBOL-MACROLET in the interpreter.
+
+* New lisp object for loaded binary files. This helps in garbage
+  collection of FASL objects and serves as a base for DLL support.
+
+* Fixed documentation and doc/help.lsp.
+
+* Fixed benchmark, which now output results in right order.
+
+* SETF revised. Now it, and all accessors are implemented as macros
+  with no special support from the interpreter.
+
+ECLS 0.1b
+=========
+
+* Due to human errors, the bytecompiler shipped with 0.1a was not the
+  finished version. In 0.1b we shipped a more polished files. Some of
+  the errors which are fixed are
+    + Produce the right code for TAGBODY inside closures
+    + Activate compiler for SYMBOL-MACROLET    
+    + Allow non-keyword symbols as lambda-list-keywords
+    + Allow more than one :ALLOW-OTHER-KEYS to be supplied, but
+      discard other than the first one
+    + Process declarations in FLET/LABELS forms
+
+* Fixed the C compiler routines for TAGBODY: it would produce wrong
+  code when jumping out of a closure.
+
+* Rewrite the error system using KMP's condition system, CLOS and a
+  rudimentary interface to the toplevel.
+
+* Enclosing the bytecompiler in an UNWIND-PROTECT ensures that the
+  status of the compiler and of the interpreter is always consistent.
+
+* Port and incorporate Peter Van Eynde's test suite for ANSI
+  compliance.
+
+* Replace features ECL/ECL-MIN with ECLS and ECLS-MIN.
+
+* Add simple-program-error and simple-control-error to the hierarchy
+  of conditions, and try to ensure that all routines in libecls.a
+  signal the right type of condition.
+
+* Define COMPLEMENT and CONTINOUSLY.
+
+* Fix #'= between bignums.
+
+* NIL is no longer valid as the first of a pair of bounding index
+  designators, i.e. (nstring-upcase "aa" :start nil :end nil) causes
+  an error.
+
+
+TODO:
+=====
+
+* Selectively remove spices from read.d and object.h
+
+* Implement memory collection based on mmap()
+
+* Improve the garbage collector using kernel information about dirty
+  pages.
+
+* Improve fixnum_times.
+
+* #'unread-char does not fail when the character differs from the
+  original one.
+
+* vector-push-extend may succeed even if the vector is not
+  adjustable. Should we be more strict?
+
+* should we relax ASSOC? (See lists156.tst)
+
+* boost setf and generalized places -- the current implementation is
+  extremely faulty with respect to the standards.
+
+* expand parse_namestring() to accept scaped strings, spaces, etc.
+
+* fix FEerror* so that it accepts parameters.
+
+* Remove most property lists from standard symbols.
+
+;;; Local Variables: ***
+;;; mode:text ***
+;;; fill-column:70 ***
+;;; End: ***

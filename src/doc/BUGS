@@ -1,0 +1,92 @@
+THINGS IN THIS FILE
+===================
+
+This file documents assumptions which are made throughout the ECLS code. Most
+of them are critical and a lot of code relies on them, some others are very
+localized but in critical points (eval, apply, etc). In general great care
+must be taken so that changes in ECLS do not break these "invariants".
+
+
+REAL BUGS
+=========
+
+* Logical operations do not work well with bignums because of the two's
+  complement representation. Furthermore, #'logcount also fails for fixnums.
+
+* Routines in bind.c do not check length of arguments and may cause buffer
+  overflows.
+
+* The following routines may cause indefinite loops when passed circular
+  lists:
+
+GCC SPECIFICS
+=============
+
+* Stack allocatable arrays of variable size, i.e.,
+
+  int function(int size) {
+    object x[size];
+    ...
+
+* Functions with a variable number of arguments are called with the
+  same protocol as ordinary functions, i.e., the following code is
+  valid
+
+  #in "foo.c"
+  extern int fa(int foo, ...);
+  int test(object x) {
+    faa(1, x);
+  }
+
+  #in "faa.c"
+  int faa(int foo, object x) {
+  ...
+  }
+
+* Arguments of any function can be acessed as elements of an array.
+
+  #in "foo.c"
+  int test(object *x) {
+  ...
+  }
+
+  #in "faa.c"
+  int faa(int foo, object x, ...) {
+  test(&x);
+  }
+
+
+OPERATING SYSTEM
+================
+
+* Stack checks are required in compiled code to make sure recursion
+  does not get too deep. This makes sense in multithreaded code, but
+  do unix-like operating systems really provide no stack protection?
+
+
+ECLS CODE INVARIANTS
+====================
+
+* C structs are aligned at least at 4 bytes, so that Cnil is a valid
+  object pointer.
+
+* "struct symbol" and "struct cons" share fields so that
+  Cnil->c.c_car == Cnil->c.c_cdr == Cnil.
+
+* "struct array", "struct vector", "struct string, "struct bitvector"
+  share a number of fields, such as "*_dim", "*_self", etc.
+
+* Boehm's garbage collector returns pointers with two lower bits set
+  to zero, i.e.,
+
+	((int)GC_malloc(n)) & 3 == 0
+
+* Frame/binding/history stacks cannot be resized.
+
+* DATA_START % LISP_PAGESIZE == 0
+
+
+;;; Local Variables: ***
+;;; mode:text ***
+;;; fill-column:79 ***
+;;; End: ***

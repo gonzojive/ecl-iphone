@@ -1,0 +1,34 @@
+top_srcdir=@top_srcdir@
+srcdir=@srcdir@
+
+ECL = ../ecls
+TESTS = array backquot characters eval20 format hashlong iofkts lambda \
+	lists151 lists152 lists153 lists154 lists155 lists156 loop \
+	macro8 map number setf steele7 streams streamslong \
+	strings symbol10 symbols tprint tread type path \
+	ecl_chap14_cons ecl_chap14_plist ecl_chap12_spec \
+	ecl_chap11_pack alltest
+
+serious_test:
+	(echo '(load "$(srcdir)/tests")'; \
+	 echo "(run-all-tests \"$(srcdir)/\")"; \
+	 echo "(quit)") | $(ECL)
+	rm -f *.plc
+
+ecls_min_test:
+	(echo '(load "bare.lsp")'; \
+	 echo '(load "$(srcdir)/tests")'; \
+	 echo "(run-all-tests \"$(srcdir)/\" \"`pwd`/\")"; \
+	 echo "(quit)") | (cd ..; ./ecls_min)
+	rm -f *.plc
+
+$(TESTS):
+	(echo '(load "$(srcdir)/tests")'; \
+	 echo '(setf si::*gc-verbose* nil)'; \
+	 echo "(run-test \"$(srcdir)/$@.tst\" :logname \"$@.erg\" :logname2 \"$@.log\")"; \
+	 echo "(quit)") | $(ECL)
+	test -f $@.erg && cat $@.erg
+	rm -f *.plc
+
+clean:
+	rm -f *.plc *.out *.txt *.erg

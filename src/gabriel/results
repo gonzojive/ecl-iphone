@@ -1,0 +1,61 @@
+I added some more optimizers to fix things I noticed--wfs.
+
+
+browse.cl Errors in code: There was an eq char compare test which
+should have been eql for common lisp.  Corrected this.
+
+akcl run time  : 25.500 secs
+with
+(allocate-relocatable-pages 70)
+(allocate 'cons 1300 t)
+(allocate 'symbol 200 t)
+Lucid time 27 seconds (about 4 meg of space allocated).
+
+-----------------
+
+
+traverse init
+run time  : 4.200 secs
+traverse run
+run time  : 34.950 secs
+
+lucid:
+Total cpu time = 4460 milliseconds
+Total cpu time = 34920 milliseconds
+
+
+-------------------------
+
+
+deriv
+
+For lucid:
+(time (dotimes (i 5) (testderiv)))
+Total cpu time = 35480 milliseconds
+
+kcl:
+(allocate 'cons 2000 t)
+(time (dotimes (i 5) (testderiv)))
+run time  : 33.167 secs
+I did  at the start which seemed to be roughly
+what lucid was grabbing.   It gc'd several times in both implementations.
+
+ps:
+run time  : 49.300 secs instead of 33.2 secs. in the old akcl.
+
+
+------------------
+
+I changed the fixnum declarations for the three arrays a b c,
+and the function try.  These actually slowed lucid down,
+so we include the times for lucid using its own declarations.
+
+triang-mod.cl  
+
+kcl:  run time  : 137.850 secs
+on triang.cl
+lucid: Total cpu time = 136940 milliseconds
+On triang-mod.cl
+lucid: Total cpu time = 258900 milliseconds
+
+(kcl using the lucid declarations was around 234. seconds I think)

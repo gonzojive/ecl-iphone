@@ -1,0 +1,46 @@
+# file crs/Makefile
+
+top_srcdir= @top_srcdir@
+srcdir	= @srcdir@
+VPATH	= @srcdir@
+
+MACHINE = @MACHINE@
+
+# Programs used by "make":
+#
+CC	= @CC@
+DEFS	= -D$(MACHINE)
+CFLAGS	= -I../h -I$(top_srcdir)/h -I$(top_srcdir)/gmp @CFLAGS@ $(DEFS)
+
+SHELL	= /bin/sh
+RM	= @RM@
+
+# Files
+
+OBJS	= dld.o @SETJMPO@ socket.o
+HFILES	= ../h/config.h $(srcdir)/objff.h
+TARGETS = ../libcrs.a @RSYM@
+
+all:	$(TARGETS)
+
+../libcrs.a: $(OBJS)
+	ar r $@ $(OBJS)
+	@RANLIB@ $@
+
+dld.o:	$(srcdir)/@DLD@.c $(HFILES)
+	$(CC) -c $(CFLAGS) $(srcdir)/@DLD@.c -o $@
+
+socket.o:	$(srcdir)/socket.c
+	$(CC) -c $(CFLAGS) $(srcdir)/socket.c -o $@
+
+unexec.o:	$(srcdir)/@UNEXEC@.c $(HFILES)
+	$(CC) -c $(CFLAGS) $(srcdir)/@UNEXEC@.c -o $@
+
+setjmp.o: $(srcdir)/@SETJMP@
+	as $(srcdir)/@SETJMP@ -o $@
+
+rsym rsym.exe: $(srcdir)/rsym.c $(top_srcdir)/h/machines.h
+	${CC} ${CFLAGS} $(srcdir)/rsym.c -o $@
+
+clean:
+	$(RM) $(TARGETS) $(OBJS) core a.out

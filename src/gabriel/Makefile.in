@@ -1,0 +1,45 @@
+top_srcdir=@top_srcdir@
+srcdir=@srcdir@
+
+FILES =  CMUCLc ECLSc CLISPc CMUCLi ECLSi CLISPi
+LISP ?= ../ecls -eval '(setq si::*system-directory* "../")'
+NAME ?= ECLSc
+COMPILE ?= NIL
+
+BENCHMARK: $(FILES)
+	rm -f BENCHMARK
+	(echo "(load \"$(srcdir)/test-help.lsp\")"; \
+	 echo "(beautify-output \"BENCHMARK\")"; \
+	 cat $(FILES); \
+	 echo "NIL";)\
+	| ../ecls ; cat BENCHMARK
+
+CMUCLi:
+	make test LISP="lisp" NAME=CMUCLi COMPILE="NIL"
+CMUCLc:
+	make test LISP="lisp" NAME=CMUCLc COMPILE="T"
+CLISPi:
+	make test LISP="clisp -a" NAME=CLISPi COMPILE="NIL"
+CLISPc:
+	make test LISP="clisp -a" NAME=CLISPc COMPILE="T"
+ECLSi:
+	make test NAME=ECLSi COMPILE="NIL"
+ECLSc: ../h/ecls.h
+	make test NAME=ECLSc COMPILE="T"
+
+test:
+	(echo "(load \"$(srcdir)/make-declare.lsp\")"; \
+	 echo "(load \"$(srcdir)/test-help.lsp\")"; \
+	 echo "(do-all-tests \"$(NAME)\" \"$(srcdir)/\" \""`pwd`"/\" $(COMPILE))"; \
+	 echo "#+(or cmu ecl) (quit)") | $(LISP)
+
+../h/ecls.h:
+#ifndef HAVE_LOCAL_GMP
+	cp $(top_srcdir)/gmp/gmp.h ../h
+#endif
+	ln -sf $(top_srcdir)/h/*.h ../h
+
+clean:
+	rm -f $(FILES) BENCHMARK
+	rm -f core *.fas *.c *.h a.out *.o *.lbin *.bin *.*fasl *~ *.lib *#
+	rm -f *.x86f

@@ -1,0 +1,72 @@
+/*
+    config.h.in -- Template configuration file.
+*/
+/*
+    Copyright (c) 1990, Giuseppe Attardi.
+
+    ECoLisp is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Library General Public
+    License as published by the Free Software Foundation; either
+    version 2 of the License, or (at your option) any later version.
+
+    See file '../Copyright' for full details.
+*/
+
+
+/* -------------------------------------------------------------------- *
+ *	OPTIONS								*
+ * -------------------------------------------------------------------- */
+
+#undef CLOS
+#undef THREADS
+#undef TK
+
+#undef TCP			/* Network streams			*/
+#undef CLX			/* CLX					*/
+#undef LOCATIVE			/* Locatives				*/
+
+/* Define this if you want a runtime version only without compiler	*/
+#undef RUNTIME
+#undef PROFILE			/* Profile tool				*/
+#undef PDE			/* Program Development Environment	*/
+
+#undef GBC_BOEHM		/* Use Boehm's garbage collector	*/
+#undef HAVE_LOCAL_GMP		/* Use GMP >= 2.0 as provided by system */
+
+/* Undefine this if you do not want ECLS to check for circular lists    */
+#define ECLS_SAFE
+
+/* -------------------------------------------------------------------- *
+ *	PARAMETERS							*
+ * -------------------------------------------------------------------- */
+
+#define	LISP_PAGESIZE	2048	/* Page size in bytes			*/
+#define MAXPAGE	16384		/* Maximum Memory Size			*/
+#define BDSSIZE	2048		/* Size of Binding Stack		*/
+#define	BDSGETA	16		/* Safety zone of BDS			*/
+#define	IHSSIZE	1024		/* Size of Invocation History Stack	*/
+#define	IHSGETA	32		/* Safety zone of IHS			*/
+#define FRSSIZE	1024		/* Size of Frame Stack			*/
+#define	FRSGETA	16		/* Safety zone of FRS			*/
+#ifdef THREADS
+#define	CSSIZE	7500		/* Size of C Stack of each thread	*/
+#define	CSGETA	500
+#else
+#define	CSSIZE	20000		/* Size of C Stack			*/
+#define	CSGETA	4000
+#endif THREADS
+#define VSSIZE	128		/* Size of return values stack		*/
+
+#define BIGNUM_REGISTER_SIZE 16	/* Size in words of each register	*/
+
+/* -------------------------------------------------------------------- *
+ *	SYSTEM FEATURES							*
+ * -------------------------------------------------------------------- */
+
+#undef NO_ARG_ARRAY		/* arguments can be accessed as array	*/
+#undef WORDS_BIGENDIAN		/* most significant byte first		*/
+
+#undef HAVE_SYS_RESOURCE_H	/* has <sys/resource.h>			*/
+#undef HAVE_SYS_UTSNAME_H	/* has <sys/utsname.h> and uname()	*/
+
+#undef HAVE_NANOSLEEP		/* high precision timer			*/
