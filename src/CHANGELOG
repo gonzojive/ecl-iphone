@@ -33,6 +33,9 @@ ECL 0.9f
  - Now an error is signaled for unmatched parenthesis as in "(1 2 3))".
    The only exception is in the toplevel, where only a warning is issued.
 
+ - The stream argument for DESCRIBE-OBJECT is now a required one, instead of
+   an optional.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

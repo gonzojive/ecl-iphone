@@ -72,7 +72,7 @@
 ;;; Describe
 ;;; ----------------------------------------------------------------------
 
-(defmethod describe-object ((obj t) &optional (stream t))
+(defmethod describe-object ((obj t) (stream t))
   (let* ((class (class-of obj))
 	 (slotds (class-slots class)))
     (format stream "~%~A is an instance of class ~A"
@@ -89,7 +89,7 @@
 	  (prin1 "Unbound" stream))))
   obj)
 
-(defmethod describe-object ((obj class) &optional (stream t))
+(defmethod describe-object ((obj class) (stream t))
   (let* ((class  (si:instance-class obj))
 	 (slotds (class-slots class)))
     (format stream "~%~A is an instance of class ~A"

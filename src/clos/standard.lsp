@@ -444,7 +444,7 @@ because it contains a reference to the undefined class~%  ~A"
 		      'SLOT-MAKUNBOUND)))
   instance)
 
-(defmethod describe-object ((obj standard-object) &optional (stream t))
+(defmethod describe-object ((obj standard-object) (stream t))
   (let* ((class (si:instance-class obj))
 	 (slotds (class-slots class))
 	 slotname has-shared-slots)
@@ -584,7 +584,7 @@ because it contains a reference to the undefined class~%  ~A"
 ;;; ----------------------------------------------------------------------
 ;;; Methods
 
-(defmethod describe-object ((obj standard-class))
+(defmethod describe-object ((obj standard-class) (stream t))
   (let ((slotds (class-slots (si:instance-class obj))))
     (format t "~%~A is an instance of class ~A"
 	    obj (class-name (si:instance-class obj)))
