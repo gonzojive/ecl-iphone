@@ -1481,6 +1481,12 @@ ECLS 0.9b
   - On systems which support it, LISTEN-STREAM is now implemented
     using select(). This means it now works on sockets as well.
 
+  - LOAD now accepts a fourth keyword argument, :SEARCH-LIST, which
+    is a list of directories where LOAD should try to find the file.
+    The value of SEARCH-LIST defaults to SI::*LOAD-SEARCH-LIST*. If
+    the file is not found using SEARCH-LIST, then the current
+    directory is tried.
+
 * ANSI compatibility:
 
   - DIRECTORY now understands :WILD, :UP, :WILD-INFERIORS, and, as an

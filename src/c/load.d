@@ -113,6 +113,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 	      &key (verbose symbol_value(@'*load-verbose*'))
 		   (print symbol_value(@'*load-print*'))
 		   (if_does_not_exist @':error')
+	           (search_list symbol_value(@'si::*load-search-list*'))
 	      &aux pathname pntype hooks filename function defaults ok)
 @
 	/* If source is a stream, read conventional lisp code from it */
@@ -130,6 +131,23 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 
 	filename = Cnil;
 	hooks = symbol_value(@'si::*load-hooks*');
+	if (Null(pathname->pathname.directory) &&
+	    Null(pathname->pathname.host) &&
+	    Null(pathname->pathname.device) &&
+	    !Null(search_list))
+	{
+		loop_for_in(search_list) {
+			cl_object d = cl_pathname(CAR(search_list));
+			cl_object f = cl_merge_pathnames(2, pathname, d);
+			cl_object ok = cl_load(9, f, @':verbose', verbose,
+					       @':print', print,
+					       @':if-does-not-exist', Cnil,
+					       @':search-list', Cnil);
+			if (!Null(ok)) {
+				@(return ok);
+			}
+		} end_loop_for_in;
+	}
 	if (!Null(pntype) && (pntype != @':wild')) {
 		/* If filename already has an extension, make sure
 		   that the file exists */
@@ -200,6 +218,7 @@ init_load(void)
 				CONS(make_simple_string("lsp"), @'si::load-source'),
 				CONS(make_simple_string("lisp"), @'si::load-source'),
 				CONS(Cnil, @'si::load-source'));
+  SYM_VAL(@'si::*load-search-list*') = Cnil;
 
 #ifdef ENABLE_DLOPEN
   if (dlopen(NULL, RTLD_NOW|RTLD_GLOBAL) == NULL)
