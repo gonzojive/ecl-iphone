@@ -388,47 +388,13 @@ cl_char_int(cl_object c)
 cl_object
 cl_char_name(cl_object c)
 {
-	cl_object s;
-	/* INV: char_code() checks the type of `c' */
-	switch (char_code(c)) {
-	case '\000':	s = cl_core.string_null; break;
-	case '\b':	s = cl_core.string_backspace; break;
-	case '\t':	s = cl_core.string_tab; break;
-	case '\n':	s = cl_core.string_newline; break;
-	case '\f':	s = cl_core.string_page; break;
-	case '\r':	s = cl_core.string_return; break;
-	case ' ':	s = cl_core.string_space; break;
-	case '\177':	s = cl_core.string_rubout; break;
-	default:	s = Cnil;
-	}
-	@(return s)
+	assert_type_character(c);
+	return gethash_safe(c, cl_core.char_names, Cnil);
 }
 
 cl_object
 cl_name_char(cl_object s)
 {
-	cl_object c;
-
-	s = cl_string(s);
-	if (string_equal(s, cl_core.string_return)) {
-		c = CODE_CHAR('\r');
-	} else if (string_equal(s, cl_core.string_space)) {
-		c = CODE_CHAR(' ');
-	} else if (string_equal(s, cl_core.string_rubout)) {
-		c = CODE_CHAR('\177');
-	} else if (string_equal(s, cl_core.string_page)) {
-		c = CODE_CHAR('\f');
-	} else if (string_equal(s, cl_core.string_tab)) {
-		c = CODE_CHAR('\t');
-	} else if (string_equal(s, cl_core.string_backspace)) {
-		c = CODE_CHAR('\b');
-	} else if (string_equal(s, cl_core.string_linefeed) ||
-		   string_equal(s, cl_core.string_newline)) {
-		c = CODE_CHAR('\n');
-	} else if (string_equal(s, cl_core.string_null)) {
-		c = CODE_CHAR('\000');
-	} else {
-		c = Cnil;
-	}
-	@(return c)
+	return gethash_safe(cl_string(s), cl_core.char_names, Cnil);
 }
+

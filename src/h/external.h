@@ -148,15 +148,7 @@ struct cl_core_struct {
 	cl_object dispatch_reader;
 	cl_object default_dispatch_macro;
 
-	cl_object string_return;
-	cl_object string_space;
-	cl_object string_rubout;
-	cl_object string_page;
-	cl_object string_tab;
-	cl_object string_backspace;
-	cl_object string_linefeed;
-	cl_object string_newline;
-	cl_object string_null;
+	cl_object char_names;
 	cl_object null_string;
 
 	cl_object plus_half;

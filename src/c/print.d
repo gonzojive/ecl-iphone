@@ -611,33 +611,19 @@ write_character(register int i)
 {
 	if (!cl_env.print_escape && !cl_env.print_readably) {
 		write_ch(i);
-		return;
-	}
-	write_str("#\\");
-	switch (i) {
-	case '\r':	write_str("Return"); break;
-	case ' ':	write_str("Space"); break;
-	case '\177':	write_str("Rubout"); break;
-	case '\f':	write_str("Page"); break;
-	case '\t':	write_str("Tab"); break;
-	case '\b':	write_str("Backspace");	break;
-	case '\n':	write_str("Newline"); break;
-	case '\0':	write_str("Null"); break;
-	default:
-		if (i & 0200) {
+	} else {
+		write_str("#\\");
+		if (i <= 32 || i == 127) {
+			cl_object name = cl_char_name(CODE_CHAR(i));
+			write_str(name->string.self);
+		} else if (i >= 128) {
 			write_ch('\\');
 			write_ch(((i>>6)&7) + '0');
 			write_ch(((i>>3)&7) + '0');
 			write_ch(((i>>0)&7) + '0');
-		} else if (i < 040) {
-			write_ch('^');
-			i += 0100;
-			if (i == '\\')
-				write_ch('\\');
+		} else {
 			write_ch(i);
-		} else
-			write_ch(i);
-		break;
+		}
 	}
 }
 

@@ -17,6 +17,7 @@
 #include "ecl.h"
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "internal.h"
 
 /*******************
@@ -184,21 +185,6 @@ BEGIN:
 		h = _hash_equal(h, depth, x->pathname.type);
 		x = x->pathname.name;
 		goto BEGIN;
-#if 0 /* !ANSI */
-#ifdef CLOS
-	case t_instance:
-		h += _hash_equal(CLASS_NAME(x), depth);
-		for (i = 0;  i < x->instance.length;  i++)
-			h += _hash_equal(x->instance.slots[i], depth);
-		return(h);
-#else
-	case t_structure:
-		h += _hash_equal(x->str.name, depth);
-		for (i = 0;  i < x->str.length;  i++)
-			h += _hash_equal(x->str.self[i], depth);
-		return(h);
-#endif /* CLOS */
-#endif /* !ANSI */
 	case t_random:
 		return h ^ x->random.value;
 	case t_bitvector:
@@ -210,7 +196,6 @@ BEGIN:
 		len = x->vector.fillp / 8;
 		buffer = x->vector.self.ch;
 		break;
-        case t_package:		/* They should actually be same under equal */
 	default:
 		return h ^ hash_eql(x);
 	}
@@ -221,6 +206,57 @@ BEGIN:
 	while (len--)
 		DO1(h, buffer);
 	return h;
+}
+
+static cl_hashkey
+_hash_equalp(cl_hashkey h, int depth, cl_object x)
+{
+	cl_index i, len;
+BEGIN:
+	if (depth++ > 3) return h;
+	switch (type_of(x)) {
+	case t_character:
+		return h ^ toupper(CHAR_CODE(x));
+	case t_cons:
+		h = _hash_equalp(h, depth, CAR(x));
+		x = CDR(x);
+		goto BEGIN;
+	case t_string:
+	case t_vector:
+	case t_bitvector:
+		len = x->vector.fillp;
+		goto SCAN;
+	case t_array:
+		len = x->vector.dim;
+SCAN:		for (i = 0; i < len; i++) {
+			h = _hash_equalp(h, depth, aref(x, i));
+		}
+		break;
+	case t_fixnum:
+		return h ^ fix(x);
+	case t_shortfloat:
+		/* FIXME! We should be more precise here! */
+		return h ^ (cl_index)sf(x);
+	case t_longfloat:
+		/* FIXME! We should be more precise here! */
+		return h ^ (cl_index)lf(x);
+	case t_bignum:
+		/* FIXME! We should be more precise here! */
+	case t_ratio:
+		h = _hash_equalp(h, depth, x->ratio.num);
+		x = x->ratio.den;
+		goto BEGIN;
+	case t_complex:
+		h = _hash_equalp(h, depth, x->complex.real);
+		x = x->complex.imag;
+		goto BEGIN;
+	case t_instance:
+	case t_hashtable:
+		/* FIXME! We should be more precise here! */
+		return h ^ 42;
+	default:
+		return _hash_equal(h, depth, x);
+	}
 }
 
 cl_hashkey
@@ -245,8 +281,8 @@ ecl_search_hash(cl_object key, cl_object hashtable)
 	switch (htest) {
 	case htt_eq:	h = (cl_hashkey)key >> 2; break;
 	case htt_eql:	h = hash_eql(key); break;
-	case htt_equal:
-	case htt_equalp:
+	case htt_equal:	h = _hash_equal(~(cl_hashkey)0, 0, key); break;
+	case htt_equalp:h = _hash_equalp(~(cl_hashkey)0, 0, key); break;
 	case htt_pack:	h = _hash_equal(~(cl_hashkey)0, 0, key); break;
 	default:	corrupted_hash(hashtable);
 	}
@@ -325,8 +361,8 @@ add_new_to_hash(cl_object key, cl_object hashtable, cl_object value)
 	switch (htest) {
 	case htt_eq:	h = (cl_hashkey)key >> 2; break;
 	case htt_eql:	h = hash_eql(key); break;
-	case htt_equal:
-	case htt_equalp:
+	case htt_equal:	h = _hash_equal(~(cl_hashkey)0, 0, key); break;
+	case htt_equalp:h = _hash_equalp(~(cl_hashkey)0, 0, key); break;
 	case htt_pack:	h = _hash_equal(~(cl_hashkey)0, 0, key); break;
 	default:	corrupted_hash(hashtable);
 	}

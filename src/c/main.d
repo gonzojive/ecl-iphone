@@ -93,11 +93,53 @@ ecl_init_env(struct cl_env_struct *env)
 	init_stacks(&i);
 }
 
+static const struct {
+	char *name;
+	int code;
+} char_names[] = {
+	{"Null", 0},
+	{"Soh", 1},
+	{"Stx", 2},
+	{"Etx", 3},
+	{"Eot", 4},
+	{"Enq", 5},
+	{"Ack", 6},
+	{"Bell", 7},
+	{"Backspace", 8},
+	{"Tab", 9},
+	{"Newline", 10},
+	{"Vt", 11},
+	{"Page", 12},
+	{"Return", 13},
+	{"So", 14},
+	{"Si", 15},
+	{"Dle", 16},
+	{"Dc1", 17},
+	{"Dc2", 18},
+	{"Dc3", 19},
+	{"Dc4", 20},
+	{"Nak", 21},
+	{"Syn", 22},
+	{"Etb", 23},
+	{"Can", 24},
+	{"Em", 25},
+	{"Sub", 26},
+	{"Escape", 27},
+	{"Fs", 28},
+	{"Gs", 29},
+	{"Rs", 30},
+	{"Us", 31},
+	{"Space", 32},
+	{"Rubout", 127},
+	{NULL, -1}
+};
+
 int
 cl_boot(int argc, char **argv)
 {
 	cl_object aux;
 	cl_object features;
+	int i;
 
 #if !defined(GBC_BOEHM)
 	setbuf(stdin,  stdin_buf);
@@ -203,15 +245,21 @@ cl_boot(int argc, char **argv)
 	 * 2) Initialize constants (strings, numbers and time).
 	 */
 
-	cl_core.string_return = make_constant_string("Return");
-	cl_core.string_space = make_constant_string("Space");
-	cl_core.string_rubout = make_constant_string("Rubout");
-	cl_core.string_page = make_constant_string("Page");
-	cl_core.string_tab = make_constant_string("Tab");
-	cl_core.string_backspace = make_constant_string("Backspace");
-	cl_core.string_linefeed = make_constant_string("Linefeed");
-	cl_core.string_null = make_constant_string("Null");
-	cl_core.string_newline = make_constant_string("Newline");
+	/* FIXME! This is a hack! We use EQUALP hashes because we know that
+	 * the characters in this table will not be alphanumeric.
+	 */
+	cl_core.char_names = aux =
+	    cl__make_hash_table(@'equalp', MAKE_FIXNUM(128), /* size */
+				make_shortfloat(1.5f), /* rehash-size */
+				make_shortfloat(0.5f), /* rehash-threshold */
+				Cnil); /* thread-safe */
+	for (i = 0; char_names[i].code >= 0; i++) {
+		cl_object name = make_constant_string(char_names[i].name);
+		cl_object code = CODE_CHAR(char_names[i].code);
+		sethash(name, aux, code);
+		sethash(code, aux, name);
+	}
+
 	cl_core.null_string = make_constant_string("");
 
 	cl_core.null_stream = @make_broadcast_stream(0);
