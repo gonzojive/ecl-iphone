@@ -269,13 +269,13 @@ clean_ecl:
 	-for %i in (eclgc.lib eclgmp.lib lsp\config.lsp compile.lsp bare.lsp \
 	            lsp\load.lsp clos\load.lsp cmp\load.lsp cmp\cmpcfg.lsp \
 		    ecl.lib ecl.dll ecl_min$(EXE) eclmin.lib help.doc sysfun.lsp \
-		    ecl$(EXE) *.exp *.ilk *.pdb *.c *.obj ecl-config.bat) \
+		    ecl$(EXE) *.exp *.ilk *.pdb *.c *.obj ecl-config.bat ecl-static.lib) \
 	     do $(RM) %i
 	cd c
 	-$(MAKE) -f Makefile.msvc6 "ECL_THREADS = $(ECL_THREADS)" clean
 	cd ..
 clean_lisp:
-	-for %i in (lsp cmp clos clx tk $(ECL_MODULES)) do for %k in (%i.lib %i.fas %i.ilk %i.c %i.obj %i.pdb) do $(RM) %k
+	-for %i in (lsp cmp clos clx tk $(ECL_MODULES) sockets) do for %k in (%i.lib %i.fas %i.ilk %i.c %i.obj %i.pdb) do $(RM) %k
 	-for %i in (lsp cmp clos clx tk ext) do $(RMDIR) %i
 	-$(RM) help.doc
 clean_doc:
