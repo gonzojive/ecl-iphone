@@ -237,7 +237,8 @@ search_hash(cl_object key, cl_object hashtable)
 	switch (htest) {
 	case htt_eq:	h = (cl_hashkey)key >> 2; break;
 	case htt_eql:	h = hash_eql(key); break;
-	case htt_equal:	h = _hash_equal(~(cl_hashkey)0, 0, key); break;
+	case htt_equal:
+	case htt_equalp:
 	case htt_pack:	h = _hash_equal(~(cl_hashkey)0, 0, key); break;
 	default:	corrupted_hash(hashtable);
 	}
@@ -265,6 +266,7 @@ search_hash(cl_object key, cl_object hashtable)
 		case htt_eq:	b = key == hkey; break;
 		case htt_eql:	b = eql(key, hkey); break;
 		case htt_equal: b = equal(key, hkey); break;
+		case htt_equalp:b = equalp(key, hkey); break;
 		case htt_pack:	b = (h==fix(hkey)) && string_eq(key,e->value->symbol.name);
 				break;
 		default:	corrupted_hash(hashtable);
@@ -307,9 +309,10 @@ add_new_to_hash(cl_object key, cl_object hashtable, cl_object value)
 	htest = hashtable->hash.test;
 	hsize = hashtable->hash.size;
 	switch (htest) {
-	case htt_eq:	h = (cl_hashkey)key / 4; break;
+	case htt_eq:	h = (cl_hashkey)key >> 2; break;
 	case htt_eql:	h = hash_eql(key); break;
-	case htt_equal: h = _hash_equal(~(cl_hashkey)0, 0, key); break;
+	case htt_equal:
+	case htt_equalp:
 	case htt_pack:	h = _hash_equal(~(cl_hashkey)0, 0, key); break;
 	default:	corrupted_hash(hashtable);
 	}
@@ -419,6 +422,8 @@ cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 		htt = htt_eql;
 	else if (test == @'equal' || test == SYM_FUN(@'equal'))
 		htt = htt_equal;
+	else if (test == @'equalp' || test == SYM_FUN(@'equalp'))
+		htt = htt_equalp;
 	else
 		FEerror("~S is an illegal hash-table test function.",
 			1, test);

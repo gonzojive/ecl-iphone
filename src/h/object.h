@@ -168,6 +168,7 @@ enum httest {			/*  hash table key test function  */
 	htt_eq,			/*  eq  */
 	htt_eql,		/*  eql  */
 	htt_equal,		/*  equal  */
+	htt_equalp,		/*  equalp  */
 	htt_pack		/*  symbol hash  */
 };
 
