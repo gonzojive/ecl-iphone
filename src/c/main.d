@@ -154,7 +154,7 @@ main(int argc, char **argv)
 
 @(defun si::pointer (x)
 @
-	@(return MAKE_FIXNUM((int)x))
+	@(return make_unsigned_integer((cl_index)x))
 @)
 
 #ifdef HAVE_SYS_UTSNAME_H

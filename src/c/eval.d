@@ -158,16 +158,16 @@ link_call(cl_object sym, cl_object (**pLK)(), cl_object *args)
 
 	switch (type_of(fun)) {
 	case t_cfun:
-	  putprop(sym, CONS(CONS(MAKE_FIXNUM((int)pLK),
-				 MAKE_FIXNUM((int)*pLK)),
+	  putprop(sym, CONS(CONS(make_unsigned_integer((cl_index)pLK),
+				 make_unsigned_integer((cl_index)*pLK)),
 			    getf(sym->symbol.plist, @'si::link-from', Cnil)),
 		  @'si::link-from');
 	  *pLK = fun->cfun.entry;
 	  return APPLY(narg, fun->cfun.entry, &args[1]);
 #ifdef CLOS
 	case t_gfun:
-	  putprop(sym, CONS(CONS(MAKE_FIXNUM((int)gfun),
-				 MAKE_FIXNUM((int)OBJNULL)),
+	  putprop(sym, CONS(CONS(make_unsigned_integer((cl_index)gfun),
+				 make_unsigned_integer((cl_index)OBJNULL)),
 			    getf(sym->symbol.plist, @'si::link-from', Cnil)),
 		  @'si::link-from');
 	  *gfun = fun;
@@ -193,7 +193,7 @@ link_call(cl_object sym, cl_object (**pLK)(), cl_object *args)
 	pl = getf(s->symbol.plist, @'si::link-from', Cnil);
 	if (!endp(pl)) {
 		for (; !endp(pl); pl = CDR(pl))
-			*(int *)(fix(CAAR(pl))) = fix(CDAR(pl));
+			*(void **)(fixnnint(CAAR(pl))) = (void *)fixnnint(CDAR(pl));
 		remf(&s->symbol.plist, @'si::link-from');
 	}
 	@(return)
