@@ -782,6 +782,23 @@ flush_output_stream_binary(cl_object strm)
 			if (c != EOF)
 				b |= (unsigned char)(c & ~MAKE_BIT_MASK(nb));
 			fseek(strm->stream.file, -1, SEEK_CUR);
+		} else {
+			/* Tricky part -> check whether we are at the EOF */
+			long current_offset = ftell(strm->stream.file);
+			fseek(strm->stream.file, 0, SEEK_END);
+			if (ftell(strm->stream.file) - current_offset > 0) {
+				/* No, we weren't at the EOF, try merging.  *
+				 * As the file was opened only for writing, *
+				 * this mean re-opening the file...         */
+				 cl_object fn = si_coerce_to_filename(strm->stream.object1);
+				 fseek(freopen(fn->string.self, "rb", strm->stream.file),
+				       current_offset,
+				       SEEK_SET);
+				 b |= (unsigned char)(ecl_read_byte8(strm) & ~MAKE_BIT_MASK(nb));
+				 fseek(freopen(fn->string.self, "wb", strm->stream.file),
+				       current_offset,
+				       SEEK_SET);
+			}
 		}
 		ecl_write_byte8(b, strm);
 		fseek(strm->stream.file, -1, SEEK_CUR); /* I/O synchronization */
