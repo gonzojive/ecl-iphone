@@ -368,7 +368,8 @@ Returns T if X belongs to TYPE; NIL otherwise."
   (or (eq low high)
       (dolist (class (sys:instance-ref low 1)) ; (class-superiors low)
 	(when (subclassp class high) (return t)))))
-#+clos
+
+#+(and clos ecl-min)
 (defun clos::classp (foo)
   (declare (ignore foo))
   nil)
