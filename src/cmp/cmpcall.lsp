@@ -389,6 +389,7 @@
 ;;;
 (defun c2call-unknown-global (fname args loc inline-p narg)
   (unless loc
+    (cmpnote "Emiting FDEFINITION call for ~S" fname)
     (setq loc (list 'FDEFINITION fname)))
   (unwind-exit
    (if (eq args 'ARGS-PUSHED)
