@@ -502,6 +502,7 @@ init_symbol(void)
 	Cnil->symbol.stype = (short)stp_constant;
 	Cnil->symbol.mflag = FALSE;
 	Cnil->symbol.isform = FALSE;
+	cl_num_symbols_in_core=1;
 
 	Ct->symbol.t = (short)t_symbol;
 	Ct->symbol.dbind = Ct;
@@ -512,6 +513,7 @@ init_symbol(void)
 	Ct->symbol.stype = (short)stp_constant;
 	Ct->symbol.mflag = FALSE;
 	Ct->symbol.isform = FALSE;
+	cl_num_symbols_in_core=2;
 
 	gensym_prefix = make_simple_string("G");
 	gentemp_prefix = make_simple_string("T");
