@@ -111,7 +111,7 @@
        (cond ((null slot)
 	      ;; If slot-description is NIL, it is padding for initial-offset.
 	      nil)
-	     ((null (first slot))
+	     ((eql (first slot) 'TYPED-STRUCTURE-NAME)
 	      ;; If slot-name is NIL, it is the structure name of a typed
 	      ;; structure with name.
 	      (list 'QUOTE (second slot)))
@@ -256,7 +256,8 @@
   (and (consp type) (eq (car type) 'VECTOR)
        (setq type 'VECTOR))
   (dolist (x slot-descriptions)
-    (and x (car x)
+    (and x
+	 (not (eql (car x) 'TYPED-STRUCTURE-NAME))
 	 (funcall #'make-access-function name conc-name type named x)))
   (when copier
     (fset copier #'copy-structure)))
@@ -392,7 +393,7 @@ as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
     ;;  add the slot for the structure-name to the slot-descriptions.
     (when (and type named)
           (setq slot-descriptions
-                (cons (list nil name) slot-descriptions)))
+                (cons (list 'TYPED-STRUCTURE-NAME name) slot-descriptions)))
 
     ;; Pad the slot-descriptions with the initial-offset number of NILs.
     (when (and type initial-offset)
