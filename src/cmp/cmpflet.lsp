@@ -343,26 +343,17 @@
 (defun wt-call-local (fun lex-lvl closure-p args narg fname)
   (declare (fixnum lex-lvl))
   ;; if NARG is non-NIL it is location containing narg
-  (let ((nenv (if closure-p (1+ lex-lvl) lex-lvl)))
-    (declare (fixnum nenv))
-    (wt fun "(")
-    (if narg
-	(progn
-	  (wt-loc narg)
-	  (when (plusp nenv)
-	    (wt "+" nenv)))
-	(progn
-	  (wt (+ (length args) nenv))
-	  (when (plusp lex-lvl)
-	    (dotimes (n lex-lvl)
-	      (wt ",lex" n)))
-	  (when closure-p
-	    ;; env of local fun is ALWAYS contained in current env (?)
-	    (wt ", env" *env-lvl*))))
-    (dolist (arg args)
-      (wt "," arg))
-    (wt ")")
-    (when fname (wt-comment fname))))
+  (wt fun "(" (or narg (length args)))
+  (when (plusp lex-lvl)
+    (dotimes (n lex-lvl)
+      (wt ",lex" n)))
+  (when closure-p
+    ;; env of local fun is ALWAYS contained in current env (?)
+    (wt ", env" *env-lvl*))
+  (dolist (arg args)
+    (wt "," arg))
+  (wt ")")
+  (when fname (wt-comment fname)))
 
 
 ;;; ----------------------------------------------------------------------

@@ -444,8 +444,6 @@
       " VLEX" *reservation-cmacro*
       " CLSR" *reservation-cmacro*)
   (wt-nl "cl_object value0;")
-  (when (and (not local-entry) *safe-compile*)
-    (wt-nl "cs_check;"))
   (when sp (wt-nl "bds_check;"))
   ; (when *compiler-push-events* (wt-nl "ihs_check;"))
   )
@@ -767,8 +765,7 @@
     (wt ",cl_object *lex" n))
   (when closure-p
     (wt-h1 ", cl_object")
-    (wt ", cl_object env0")
-    (incf nenvs))
+    (wt ", cl_object env0"))
   (let ((lcl 0))
     (declare (fixnum lcl))
     (dolist (var requireds)
@@ -793,8 +790,6 @@
 	" VLEX" *reservation-cmacro*
 	" CLSR" *reservation-cmacro*)
     (wt-nl "cl_object value0;")
-    (when (plusp nenvs)
-      (wt-nl "narg-=" nenvs ";"))	; APPLY counts env as arg
     (when (fun-closure fun)
       (let ((clv-used (remove-if
 		       #'(lambda (x)
