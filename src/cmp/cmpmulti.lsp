@@ -179,9 +179,10 @@
 	 (labels '()))
     ;; We know that at least MIN-VALUES variables will get a value
     (dotimes (i min-values)
-      (let ((v (pop vars))
-	    (loc (values-loc i)))
-	(if use-bind (bind loc v) (set-var loc v))))
+      (when vars
+	(let ((v (pop vars))
+	      (loc (values-loc i)))
+	  (if use-bind (bind loc v) (set-var loc v)))))
     ;; If there are more variables, we have to check whether there
     ;; are enough values left in the stack.
     (when vars
