@@ -29,6 +29,10 @@ ECL 0.9f
 
 * Visible changes:
 
+ - Boehm-Weiser garbage collector v 6.4
+
+ - GNU MP library v 4.1.4
+
  - Multithreaded ECL now in Windows, either with Microsoft VC++
    or Mingw32 (M. Goffioul).
 
