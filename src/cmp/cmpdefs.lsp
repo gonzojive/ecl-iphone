@@ -365,7 +365,7 @@ The default value is NIL.")
 
 (defvar *global-vars* nil)
 (defvar *global-funs* nil)		; holds	{ fun }*
-(defvar *linking-calls* nil)		; holds { ( global-fun-name vv ) }*
+(defvar *linking-calls* nil)		; holds { ( global-fun-name fun symbol c-fun-name var-name ) }*
 (defvar *local-funs* nil)		; holds { fun }*
 (defvar *top-level-forms* nil)		; holds { top-level-form }*
 ;;;

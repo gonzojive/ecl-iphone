@@ -155,21 +155,23 @@
 		(wt-h "#else")
 		(wt-h "static cl_object VV[VM];")
 		(wt-h "#endif"))))))
-  (when *linking-calls*
-    (dotimes (i (length *linking-calls*))
-      (declare (fixnum i))
-      (wt-h "static cl_object LKF" i "(cl_narg, ...);")
-      (wt-h "static cl_object (*LK" i ")(cl_narg, ...)=LKF" i ";"))
-    )
+  (dolist (l *linking-calls*)
+    (let* ((c-name (fourth l))
+	   (var-name (fifth l)))
+      (wt-h "static cl_object " c-name "(cl_narg, ...);")
+      (wt-h "static cl_object (*" var-name ")(cl_narg, ...)=" c-name ";")))
+
   ;;; Global entries for directly called functions.
   (dolist (x *global-entries*)
     (apply 'wt-global-entry x))
-  
+
   ;;; Initial functions for linking calls.
-  (dolist (x *linking-calls*)
-    (let ((i (second x)))
-      (wt-nl1 "static cl_object LKF" i
-	      "(cl_narg narg, ...) {TRAMPOLINK(narg," (third x) ",&LK" i ",Cblock);}")))
+  (dolist (l *linking-calls*)
+    (let* ((var-name (fifth l))
+	   (c-name (fourth l))
+	   (lisp-name (third l)))
+      (wt-nl1 "static cl_object " c-name "(cl_narg narg, ...)"
+	      "{TRAMPOLINK(narg," lisp-name ",&" var-name ",Cblock);}")))
 
   (wt-h "#ifdef __cplusplus")
   (wt-h "}")

@@ -248,7 +248,7 @@
 		(when (eq 'VAR (c1form-name y))
 		  ;; it's a variable, propagate type
 		  (setf (var-type (c1form-arg 0 y)) new-type))
-		(setf (c1form-primary-type y) new-type))))
+		(setf (c1form-type y) new-type))))
 	(make-c1form* 'SYS:STRUCTURE-SET :type (c1form-primary-type y)
 		      :args x (add-symbol name) (third args) y))
       (c1call-global 'SYS:STRUCTURE-SET args)))
