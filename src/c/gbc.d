@@ -886,16 +886,17 @@ ecl_gc(cl_type t)
 static void
 _mark_contblock(void *x, cl_index s)
 {
-	register cl_ptr p = x, q;
-	register ptrdiff_t pg = page(p);
-
-	if (pg < 0 || (cl_type)type_map[pg] != t_contiguous)
-		return;
-	q = p + s;
-	p = int2ptr(ptr2int(p) & ~3);
-	q = int2ptr(ptr2int(q + 3) & ~3);
-	for (;  p < q;  p+= 4)
-	  set_mark_bit(p);
+	cl_ptr p = x, q;
+	if (p >= heap_start && p < data_end) {
+		ptrdiff_t pg = page(p);
+		if ((cl_type)type_map[pg] == t_contiguous) {
+			cl_ptr q = p + s;
+			p = int2ptr(ptr2int(p) & ~3);
+			q = int2ptr(ptr2int(q + 3) & ~3);
+			for (;  p < q;  p+= 4)
+				set_mark_bit(p);
+		}
+	}
 }
 
 /*----------------------------------------------------------------------
