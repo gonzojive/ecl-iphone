@@ -4670,6 +4670,7 @@ if test "${ffi}"; then
 #define ECL_FFI 1
 _ACEOF
 
+  EXTRA_OBJS="${EXTRA_OBJS} ffi.o"
 fi
 if test "${locative}" ; then
   EXTRA_OBJS="${EXTRA_OBJS} unify.o"

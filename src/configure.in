@@ -215,6 +215,7 @@ if test "${closstreams}"; then
 fi
 if test "${ffi}"; then
   AC_DEFINE(ECL_FFI)
+  EXTRA_OBJS="${EXTRA_OBJS} ffi.o"
 fi
 if test "${locative}" ; then
   EXTRA_OBJS="${EXTRA_OBJS} unify.o"
