@@ -293,8 +293,7 @@ directly instantiated."))
 			    proto-num))))
     (if (= fd -1) (socket-error "socket"))
     (setf (slot-value socket 'file-descriptor) fd
-	  (slot-value socket 'protocol) proto-num
-	  (slot-value socket 'type) type)
+	  (slot-value socket 'protocol) proto-num)
     #+ ignore
     (sb-ext:finalize socket (lambda () (sockint::close fd)))))
 
