@@ -50,7 +50,7 @@
 		      "In the slot description ~S,~%the option ~S is missing an argument"
 		      slot option)
 		     (setq value (pop options)))
-		   (when (and (member option '(:allocation initform :type :documentation))
+		   (when (and (member option '(:allocation :initform :type :documentation))
 			      (getf options option))
 		     (si::simple-program-error
 		      "In the slot descrition ~S,~%the option ~S is duplicated"
@@ -81,7 +81,13 @@
   (do ((scan slots (cdr scan))
        (collect))
       ((null scan) (nreverse collect))
-    (push (parse-slot (first scan)) collect)))
+    (let* ((slotd (parse-slot (first scan)))
+	   (name (slotd-name slotd)))
+      (when (find name collect :key #'slotd-name)
+	(si::simple-program-error
+	 "A definition for the slot ~S appeared twice in a DEFCLASS form"
+	 name))
+      (push slotd collect))))
 
 (defun LEGAL-SLOT-OPTION-P (option)
   (declare (si::c-local))

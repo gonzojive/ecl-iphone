@@ -10,51 +10,6 @@
 (in-package "CLOS")
 
 ;;; ----------------------------------------------------------------------
-;;; Built-in classes
-;;; ----------------------------------------------------------------------
-
-;;; ----------------------------------------------------------------------
-;;; Predefined Common Lisp Classes
-
-#|
-;(defclass t (object) () (:metaclass built-in))
-
-(defclass array (t) () (:metaclass built-in))
-(defclass sequence (t) () (:metaclass built-in))
-   (defclass list (sequence) () (:metaclass built-in))
-      (defclass cons (list) () (:metaclass built-in))
-   (defclass string (array sequence) () (:metaclass built-in))
-   (defclass vector (array sequence) () (:metaclass built-in))
-      (defclass bit-vector (vector) () (:metaclass built-in))
-
-(defclass stream (t) () (:metaclass built-in))
-  (defclass file-stream (stream) () (:metaclass built-in))
-  (defclass echo-stream (stream) () (:metaclass built-in))
-  (defclass string-stream (stream) () (:metaclass built-in))
-  (defclass two-way-stream (stream) () (:metaclass built-in))
-  (defclass synonym-stream (stream) () (:metaclass built-in))
-  (defclass broadcast-stream (stream) () (:metaclass built-in))
-  (defclass concatenated-stream (stream) () (:metaclass built-in))
-
-(defclass character (t) () (:metaclass built-in))
-
-(defclass number (t) () (:metaclass built-in))
-   (defclass complex (number) () (:metaclass built-in))
-   (defclass float (number) () (:metaclass built-in))
-   (defclass rational (number) () (:metaclass built-in))
-      (defclass integer (rational) () (:metaclass built-in))
-      (defclass ratio (rational) () (:metaclass built-in))
-
-(defclass symbol (t) () (:metaclass built-in))
-   (defclass null (symbol list) () (:metaclass built-in))
-
-(defclass function (t) () (:metaclass built-in))
-
-(defclass pathname (t) () (:metaclass built-in))
-   (defclass logical-pathname (pathname) () (:metaclass built-in))
-|#
-
-;;; ----------------------------------------------------------------------
 ;;; Methods
 
 (defmethod make-instance ((class-name symbol) &rest initargs)
@@ -100,22 +55,12 @@
 			 :slots all-slots
 			 :class-precedence-list cpl)))))
 
-;;; the method to make instances of structure-class
-#+nil
-(defmethod make-instance ((class structure-metaclass) &rest initargs)
-  (let ((instance (allocate-instance class)))
-    (apply #'initialize-instance instance initargs)
-    instance))
-
 ;;; -----------------------------------------------------------------------
 ;;; Structure-class
 
 (defclass structure-class (class)
-  ;; class-precedence-list must be in the same position as in standard-class
-  ((precedence-list :initarg :class-precedence-list)
-   slot-descriptions initial-offset defstruct-form constructors documentation
-		     copier predicate print-function)
-  (:metaclass class))
+  (slot-descriptions initial-offset defstruct-form constructors documentation
+		     copier predicate print-function))
 
 ;;; structure-classes cannot be instantiated
 (defmethod make-instance ((class structure-class) &rest initargs)
@@ -125,14 +70,14 @@
 ;;; the method to initialize the instances of structure-class
 (defmethod initialize-instance ((class structure-class)
 				&rest initargs &key &allow-other-keys)
-    (call-next-method)				; from class T
+  (call-next-method)				; from class T
     
-    ;; if the class has a name register it in hash table
-    (when (system:sl-boundp (class-name class))
-      (setf (find-class (class-name class)) class))
+  ;; if the class has a name register it in hash table
+  (when (system:sl-boundp (class-name class))
+    (setf (find-class (class-name class)) class))
 
   (dolist (s (class-superiors class))	; inheritance lattice
-	  (push class (class-inferiors s)))
+    (push class (class-inferiors s)))
   (push class (slot-value class 'PRECEDENCE-LIST)) ;; add itself in cpl
   class)
 
@@ -143,24 +88,8 @@
 ;;; Structure-object has no slots and inherits only from t:
 ;;; (defclass structure-object (t) ())
 
-(eval-when
- (compile load eval)
- (make-instance (find-class 'STRUCTURE-CLASS)
-		:name 'STRUCTURE-OBJECT
-		:direct-superclasses (list (find-class 't))
-		:slots ()
-		:class-precedence-list ()
-		:slot-index-table ()
-		:direct-slots ()
-		:default-initargs ()
-		:documentation "The root of inheritance for structures"
-		:slot-descriptions ()
-		:initial-offset 0
-		:defstruct-form ()
-		:constructors ()
-		:copier ()
-		:predicate ()
-		:print-function ()))
+(defclass structure-object (t) ()
+  (:metaclass structure-class))
 
 (defmethod print-object ((obj structure-object) stream)
   (let* ((class (si:instance-class obj))
@@ -182,10 +111,51 @@
     obj))
 
 ;;; ----------------------------------------------------------------------
+;;; Built-in classes
+;;; ----------------------------------------------------------------------
+;;;
+;;; IMPORTANT!
+;;; This class did not exist until now. This was no problem, because it is
+;;; not used anywhere in ECL. However, we have to define and we have to
+;;; ensure that "T" becomes an instance of BUILT-IN-CLASS.
+
+(defclass built-in-class (class)
+  ())
+
+(si:instance-class-set (find-class 't) (find-class 'built-in-class))
+
+(defun create-built-in-class (options)
+  (let* ((name (first options))
+	 (direct-superclasses (mapcar #'find-class (rest options))))
+    (make-instance (find-class 'built-in-class)
+		   :name name
+		   :direct-superclasses direct-superclasses
+		   :slots nil)))
+
+(defmethod make-instance ((class built-in-class) &rest initargs)
+  (declare (ignore initargs))
+  (error "The built-in class (~A) cannot be instantiated" class))
+
+(defmethod initialize-instance ((class built-in-class)
+				&key name direct-superclasses)
+  (let* ((cpl (compute-class-precedence-list name direct-superclasses)))
+    (setf (class-name class) name
+	  (class-superiors class) direct-superclasses
+	  (class-inferiors class) nil
+	  (class-precedence-list class) cpl
+	  (find-class name) class)
+    (dolist (s direct-superclasses)
+      (push class (class-inferiors s)))))
+
+(defmethod print-object ((class built-in-class) stream)
+  (print-unreadable-object
+      (class stream)
+    (format stream "The ~A ~A" (class-name (si:instance-class class))
+	    (class-name class)))
+  class)
 
 (eval-when (compile load eval)
-  (mapcar #'(lambda (args &aux (class (first args)) (super (cdr args)))
-	      (eval `(defclass ,class ,super () (:metaclass built-in-class))))
+  (mapcar #'create-built-in-class
 	  '(;(t object)
 	    (sequence t)
 	      (list sequence)
@@ -220,17 +190,3 @@
 	    (hash-table t)
 	    (random-state)
 	    (readtable))))
-
-;;; Now we protect classes from redefinition:
-(defun setf-find-class (name new-value)
-  (cond
-   ((typep (find-class name nil) 'built-in-class)
-    (error "The class associated to the CL specifier ~S cannot be changed."
-	   name))
-   ((member name '(CLASS BUILT-IN-CLASS) :test #'eq)
-    (error "The kernel CLOS class ~S cannot be changed." name))
-   ((classp new-value)
-    (setf (gethash name si:*class-name-hash-table*) new-value))
-   ((null new-value) (remhash name si:*class-name-hash-table*))
-   (t (error "~A is not a class." new-value))))
-

@@ -287,8 +287,9 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 	  cl_object *keys;
 	  cl_object spp[n];
 	  bool other_found = FALSE;
+	  void *unbound = spp; /* not a valid lisp object */
 	  for (i=0; i<n; i++)
-	    spp[i] = OBJNULL;
+	    spp[i] = unbound;
 	  for (; narg; narg-=2) {
 	    cl_object key = cl_stack[sp++];
 	    cl_object value = cl_stack[sp++];
@@ -303,7 +304,7 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 	    }
 	    for (i = 0; i < n; i++, keys += 4) {
 	      if (key == keys[0]) {
-		if (spp[i] == OBJNULL)
+		if (spp[i] == unbound)
 		  spp[i] = value;
 		goto FOUND;
 	      }
@@ -317,7 +318,7 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 	    FEprogram_error("LAMBDA: Unknown keys found in function ~S.",
 			    1, lambda_list->bytecodes.name);
 	  for (i=0; i<n; i++, data+=4) {
-	    if (spp[i] != OBJNULL)
+	    if (spp[i] != unbound)
 	      lambda_bind_var(data[1],spp[i],specials);
 	    else {
 	      cl_object defaults = data[2];
@@ -328,7 +329,7 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 	      lambda_bind_var(data[1],defaults,specials);
 	    }
 	    if (!Null(data[3]))
-	      lambda_bind_var(data[3],(spp[i] != OBJNULL)? Ct : Cnil,specials);
+	      lambda_bind_var(data[3],(spp[i] != unbound)? Ct : Cnil,specials);
 	  }
 	}
 	return data;

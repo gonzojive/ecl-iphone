@@ -10,22 +10,101 @@
 (in-package "CLOS")
 
 ;;; ----------------------------------------------------------------------
-;;; BOOT
+;;; Building the classes T, CLASS, STANDARD-OBJECT and STANDARD-CLASS.
+;;;
+;;; We cannot use the functions CREATE-STANDARD-CLASS and others because
+;;; SLOT-INDEX-TABLE, SLOTS, DIRECT-SLOTS, etc are empty and therefore
+;;; SLOT-VALUE does not work.
 
-(progn
-  (let* ((class (find-class 'class))
-	 (built-in-class (find-class 'built-in-class)))
+(defun make-empty-standard-class (name metaclass)
+  (let ((class (si:allocate-raw-instance metaclass 12)))
+    (unless metaclass
+      (si:instance-class-set class class))
+    (setf (si:instance-ref class 0) name ; name
+	  (si:instance-ref class 1) nil ; superiors
+	  (si:instance-ref class 2) nil ; inferiors
+	  (si:instance-ref class 3) nil ; slots
+	  (si:instance-ref class 4) nil ; precedencew-list
+	  (si:instance-ref class 5) (make-hash-table :size 2) ; slot-index-table
+	  (si:instance-ref class 6) nil ; direct-slots
+	  (si:instance-ref class 7) nil ; shared-slots
+	  (si:instance-ref class 8) 0 ; instance-slot-count
+	  (si:instance-ref class 9) nil ; default-initargs
+	  (si:instance-ref class 10) nil ; documentation
+	  (find-class name) class
+	  )))
 
-    ;; class CLASS	--------
-    (setf (class-slots class)
-	  (parse-slots '((NAME :INITARG :NAME :INITFORM NIL)
-			       (SUPERIORS :INITARG :DIRECT-SUPERCLASSES)
-			       (INFERIORS :INITFORM NIL)
-			       (SLOTS :INITARG :SLOTS))))
+;; 1) Create the classes
+;;
+;; Notice that, due to circularity in the definition, STANDARD-CLASS has
+;; no metaclass until we define it...
+;;
+(let* ((standard-class (make-empty-standard-class 'STANDARD-CLASS nil))
+       (standard-object (make-empty-standard-class 'STANDARD-OBJECT standard-class))
+       (the-class (make-empty-standard-class 'CLASS standard-class))
+       (the-t (make-empty-standard-class 'T standard-class))
+       (class-slots '((NAME :INITARG :NAME :INITFORM NIL)
+		      (SUPERIORS :INITARG :DIRECT-SUPERCLASSES)
+		      (INFERIORS :INITFORM NIL)
+		      (SLOTS :INITARG :SLOTS)
+		      (PRECEDENCE-LIST :INITARG :CLASS-PRECEDENCE-LIST)))
+       (standard-slots (append class-slots
+			 '((SLOT-INDEX-TABLE)
+			   (DIRECT-SLOTS :INITARG :DIRECT-SLOTS)
+			   (SHARED-SLOTS :INITARG :SHARED-SLOTS :INITFORM NIL
+			    :ACCESSOR CLASS-SHARED-SLOTS)
+			   (INSTANCE-SLOT-COUNT
+			    :ACCESSOR CLASS-INSTANCE-SLOT-COUNT)
+			   (DEFAULT-INITARGS :INITARG :DEFAULT-INITARGS
+			     :READER DEFAULT-INITARGS-OF)
+			   (DOCUMENTATION :INITARG :DOCUMENTATION
+			    :ACCESSOR DOCUMENTATION-OF)
+			   (FORWARD))))
+       (hash-table (make-hash-table :size 24)))
 
-    (defmethod OPTIMIZE-SLOT-VALUE ((class class) form) form)
+  ;; ... here!!!
+  ;;
+  (si::instance-class-set standard-class standard-class)
 
-    (defmethod OPTIMIZE-SET-SLOT-VALUE ((class class) form) form)
+  ;; 2) STANDARD-CLASS and CLASS are the only classes with slots. Create a
+  ;; hash table for them, so that SLOT-VALUE works. Notice that we
+  ;; make a intentional mistake: CLASS and STANDARD-CLASS share the same
+  ;; hashtable!!
+  (do* ((i 0 (1+ i))
+	(slots standard-slots (cdr slots)))
+       ((endp slots))
+    (setf (gethash (caar slots) hash-table) i))
+  (setf (si:instance-ref the-class 3) (parse-slots class-slots)
+	(si:instance-ref the-class 5) hash-table
+	(si:instance-ref the-class 6) (class-slots the-class)
+	(si:instance-ref the-class 8) (length class-slots)
+	(si:instance-ref standard-class 3) (parse-slots standard-slots)
+	(si:instance-ref standard-class 5) hash-table
+	(si:instance-ref standard-class 6) (class-slots standard-class)
+	(si:instance-ref standard-class 8) (length standard-slots))
+
+  ;; 3) Fix the class hierarchy
+  (setf (class-superiors the-t) nil
+	(class-inferiors the-t) (list standard-object)
+	(class-superiors standard-object) (list the-t)
+	(class-inferiors standard-object) (list the-class)
+	(class-superiors the-class) (list standard-object)
+	(class-inferiors the-class) (list standard-class)
+	(class-superiors standard-class) (list the-class))
+
+  ;; 4) Fix the class precedence list
+  (let ((cpl (list standard-class the-class standard-object the-t)))
+    (setf (class-precedence-list standard-class) cpl
+	  (class-precedence-list the-class) (cdr cpl)
+	  (class-precedence-list standard-object) (cddr cpl)
+	  (class-precedence-list the-t) nil))
+
+  ;; 5) Generate accessors (In standard.lsp)
+)
+
+    (defmethod OPTIMIZE-SLOT-VALUE ((class t) form) form)
+
+    (defmethod OPTIMIZE-SET-SLOT-VALUE ((class t) form) form)
 
     (defmethod make-instance ((class class) &rest initargs)
       (let ((instance (allocate-instance class)))
@@ -56,43 +135,38 @@
       (or supplied-superclasses
 	  (list (find-class 't))))
 
-    ;; class BUILT-IN-CLASS	--------
-    (setf (class-slots built-in-class)
-	  (parse-slots '((NAME :INITARG :NAME :INITFORM NIL)
-			       (SUPERIORS :INITARG :DIRECT-SUPERCLASSES)
-			       (INFERIORS :INITFORM NIL)
-			       (SLOTS :INITARG :SLOTS))))
+    (defmethod slot-value ((self class) slot-name)
+      (let* ((class (si:instance-class self))
+	     (index (position slot-name (class-slots class)
+			      :key #'slotd-name :test #'eq)))
+	(values
+	 (if index
+	     (let ((val (si:instance-ref self (the fixnum index))))
+	       (if (si:sl-boundp val)
+		   val
+		   (slot-unbound (si::instance-class class) class slot-name)))
+	     (slot-missing (si:instance-class class) class slot-name 
+			   'SLOT-VALUE)))))
 
-    (defmethod slot-value ((self built-in-class) slot)
-      (let ((position (position slot (class-slots (si:instance-class self))
-				:key #'slotd-name)))
-	(if position
-	    (si:instance-ref self position)
-	    (slot-missing (si:instance-class self) self slot 'slot-value))))
+    (defmethod slot-boundp ((self class) slot-name)
+      (let* ((class (si:instance-class self))
+	     (index (position slot-name (class-slots class)
+			      :key #'slotd-name :test #'eq)))
+	(values
+	 (if index
+	     (si:sl-boundp (si:instance-ref self (the fixnum index)))
+	     (slot-missing (si:instance-class class) class slot-name
+			   'SLOT-VALUE)))))
 
-    (defmethod make-instance ((class built-in-class) &rest initargs)
-      (declare (ignore initargs))
-      (error "The built-in class (~A) cannot be instantiated" class))
-
-    (defmethod initialize-instance ((class built-in-class)
-				    &rest initargs &key &allow-other-keys)
-
-	(call-next-method)		; from class T
-	
-	;; if the class has a name register it in hash table
-	(when (si:sl-boundp (class-name class))
-	  (setf (find-class (class-name class)) class)) 
-
-	(dolist (s (class-superiors class)) ; inheritance lattice
-	  (push class (class-inferiors s)))
-	class)
-
-    (defmethod print-object ((class built-in-class) stream)
-      (print-unreadable-object
-       (class stream)
-       (format stream "The ~A ~A" (class-name (si:instance-class class))
-	       (class-name class)))
-      class)
+    (defmethod (setf slot-value) (val (self class) slot-name)
+      (let* ((class (si:instance-class self))
+	     (index (position slot-name (class-slots class)
+			      :key #'slotd-name :test #'eq)))
+	(if index
+	    (si:instance-set self (the fixnum index) val)
+	    (slot-missing (si:instance-class self) self slot-name
+			  'SLOT-VALUE)))
+      val)
 
     ;; class T	--------
     (defmethod initialize-instance ((instance T)
@@ -128,6 +202,15 @@
 	      )))
       instance)
 
+    (defmethod slot-value ((object t) slot-name)
+      (slot-missing (class-of object) object slot-name 'SLOT-VALUE))
+
+    (defmethod slot-boundp ((object t) slot-name)
+      (slot-missing (class-of object) object slot-name 'SLOT-BOUNDP))
+
+    (defmethod (setf slot-value) (value (object t) slot-name)
+      (slot-missing (class-of object) object slot-name '(SETF SLOT-VALUE)))
+
     (defmethod slot-missing ((class t) object slot-name operation 
 			     &optional new-value)
       (declare (ignore operation new-value))
@@ -135,6 +218,5 @@
 
     (defmethod slot-unbound ((class t) object slot-name)
       (error 'slot-unbound :instance object :name slot-name))
-    ))
 
 ;;; ----------------------------------------------------------------------

@@ -33,7 +33,7 @@ HFILES	= ../h/config.h $(HDIR)/ecl.h $(HDIR)/ecl-cmp.h\
 	$(HDIR)/lwp.h
 OBJS	= main.o symbol.o package.o list.o\
 	apply.o eval.o interpreter.o compiler.o disassembler.o \
-	clos.o instance.o gfun.o reference.o character.o\
+	instance.o gfun.o reference.o character.o\
 	file.o read.o print.o error.o string.o cfun.o\
 	typespec.o assignment.o \
 	predicate.o big.o number.o\

@@ -29,9 +29,6 @@ ecl_allocate_instance(cl_object clas, int size)
 cl_object
 si_allocate_raw_instance(cl_object clas, cl_object size)
 {
-	if (type_of(clas) != t_instance)
-	  FEwrong_type_argument(@'instance', clas);
-
 	@(return ecl_allocate_instance(clas, fixnnint(size)))
 }
 
@@ -194,4 +191,24 @@ ecl_copy_instance(cl_object x)
 	memcpy(y->instance.slots, x->instance.slots,
 	       x->instance.length * sizeof(cl_object));
 	@(return y)
+}
+
+@(defun find-class (name &optional (errorp Ct) env)
+	cl_object class;
+@
+	class = gethash_safe(name, SYM_VAL(@'si::*class-name-hash-table*'), Cnil);
+	if (class == Cnil) {
+		if (!Null(errorp))
+			FEerror("No class named ~S.", 1, name);
+	}
+	@(return class)
+@)	
+
+void
+init_instance(void)
+{
+	SYM_VAL(@'si::*class-name-hash-table*') =
+	    cl__make_hash_table(@'eq', MAKE_FIXNUM(1024), /* size */
+				make_shortfloat(1.5), /* rehash-size */
+				make_shortfloat(0.7)); /* rehash-threshold */
 }

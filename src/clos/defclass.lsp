@@ -44,28 +44,29 @@
 
 (defun default-initargs-make-form (default-initargs)
   (declare (si::c-local))
-  (do* ((lambdas-list nil)
-	(constants-list nil)
-	(scan (reverse default-initargs) (cddr scan))
+  (do* ((must-be-evaluated nil)
+	(output-list nil)
+	(scan default-initargs (cddr scan))
+	(already-supplied '())
 	slot-name initform)
        ((endp scan)
-	(if (null lambdas-list)
-	    `',constants-list
-	    `(list* ,@lambdas-list ',constants-list)))
+	(and output-list `(list ,@(nreverse output-list))))
     (when (endp (cdr scan))
       (si::simple-program-error "Wrong number of elements in :DEFAULT-INITARGS option."))
-    (setq slot-name (second scan) initform (first scan))
-    (when (getf scan slot-name)
+    (setq slot-name (first scan)
+	  initform (second scan))
+    (if (member slot-name already-supplied)
       (si::simple-program-error "~S is duplicated in :DEFAULT-INITARGS form ~S"
-				slot-name default-initargs))
-    (cond ((typep initform '(or number character string array keyword))
-	   (setq constants-list (list* slot-name initform constants-list)))
-	  ((and (consp initform) (eq 'quote (first initform)))
-	   (setq constants-list (list* slot-name (second initform) constants-list)))
-	  (t
-	   (setq lambdas-list (list* (list 'quote slot-name)
-				     `#'(lambda () ,initform)
-				     lambdas-list))))))
+				slot-name default-initargs)
+      (push slot-name already-supplied))
+    (setq output-list
+	  (list*
+	   (if (or (typep initform '(or number character string array keyword))
+		   (and (consp initform) (eq 'quote (first initform))))
+	       initform
+	       `#'(lambda () ,initform))
+	   `',slot-name
+	   output-list))))
 
 (defmacro DEFCLASS (&rest args)
   (multiple-value-bind (name superclasses slots 
@@ -86,21 +87,16 @@
 	   (all-slots (collect-all-slots direct-slots name superclasses)))
       ;; at compile time just create the definition
       `(eval-when (compile load eval)
-	(prog1
-	    (ensure-class
+	(progn
+	  #+PDE
+	  (si:record-source-pathname ',name 'DEFCLASS)
+	  (ensure-class
 	     ',metaclass-name
 	     ',name
 	     ',superclasses
 	     ,direct-slots-form
 	     ,default-initargs-form
-	     ',documentation)
-	  #+PDE
-	  (si:record-source-pathname ',name 'DEFCLASS)
-	  ,@ (generate-methods
-	      name
-	      :metaclass-name metaclass-name
-	      :superiors (mapcar #'find-class superclasses)
-	      :slots all-slots))))))
+	     ',documentation))))))
 
 (defun collect-all-slots (slots name superclasses-names)
   (declare (si::c-local))
@@ -187,236 +183,6 @@
     (values name superclasses slots 
 	    metaclass-name default-initargs documentation)))
 
-
-;;; ----------------------------------------------------------------------
-;;;                                                               methods
-
-;;; Initialization is split into two parts, so that methods are
-;;; generated in a way that the compiler can see them.
-;;; This cant be a method because of bootstrap problem.
-
-(defun generate-methods (class-name &rest init-options)
-  (keyword-bind (metaclass-name superiors inferiors slots methods)
-		init-options 
-    (declare (ignore superiors inferiors methods))
-    (let* (instance-slots shared-slots)
-      (dolist (slot slots)
-	(case (slotd-allocation slot)
-	  (:INSTANCE (push slot instance-slots))
-	  (T (push slot shared-slots))))
-      (setq instance-slots (nreverse instance-slots)
-	    shared-slots (nreverse shared-slots))
-      (cond
-	;; This is for bootstrap reasons
-	((eq metaclass-name 'CLASS)
-	 `(,@ (generate-slot-accessors class-name instance-slots shared-slots)))
-	;; since slot-value is inherited from 'STANDARD-OBJECT
-	((subtypep metaclass-name 'STANDARD-CLASS)
-	 (generate-optional-slot-accessors
-	  class-name instance-slots shared-slots t))
-	;; don't generate accessor for structures:
-	((subtypep metaclass-name 'STRUCTURE-CLASS) nil)
-	(t
-	 `(,@ (generate-slot-accessors
-	       class-name
-	       instance-slots
-	       shared-slots)))))))
-
-(defun generate-slot-accessors (name slotds shared-slotds)
-  (declare (si::c-local))
-  (when (plusp (length slotds))
-    (append
-    (if  (< (+ (length slotds)
-	       (length shared-slotds)) 16) ; linear search is faster
-	`((install-method
-	    'SLOT-VALUE nil '(,name NIL) '(SELF SLOT) nil nil
-	    #'(lambda (self slot)
-		(declare (type ,name self))
-		(case slot
-		      ,@(do ((scan slotds (cdr scan))
-			     (index 0 (1+ index))
-			     (clauses))
-			    ((null scan)
-			     (nreverse
-			       (cons
-				 `(T (SLOT-MISSING (SI:INSTANCE-CLASS SELF)
-						   SELF SLOT 'SLOT-VALUE))
-				 clauses)))
-			    (push `(,(slotd-name (first scan))
-				    (let ((val (si:instance-ref self ,index)))
-				      ,@(let ((type (slotd-type (first scan))))
-					  (unless (eq 'T type)
-					    `((DECLARE (TYPE ,type val)))))
-				      (if (si:sl-boundp val)
-					  val
-					  'UNBOUND)))
-				  clauses)))))
-
-	  (install-method
-	    '(SETF SLOT-VALUE) nil '(NIL ,name NIL) '(VALUE SELF SLOT) nil nil
-	    #'(lambda (value self slot)
-		(declare (type ,name self))
-		(case slot
-		      ,@(do ((scan slotds (cdr scan))
-			     (index 0 (1+ index))
-			     (clauses))
-			    ((null scan)
-			     (nreverse
-			       (cons `(t (slot-missing (si:instance-class self)
-					  self slot value 'SETF))
-					     clauses)))
-			    (push `(,(slotd-name (first scan))
-				    (setf (si:instance-ref self ,index) value))
-				  clauses))))))
-
-      `((let* ((size (floor (length ',slotds) 1.5))
-	       (table (make-hash-table :size (if (zerop size) 1 size))))
-	  (do ((scan ',slotds (cdr scan))
-	       (index 0 (1+ index)))
-	      ((null scan))
-	    (setf (gethash (slotd-name (first scan)) table) index))
-
-	  (install-method 'SLOT-VALUE nil '(,name NIL) '(SELF SLOT) nil nil
-			  #'(lambda (self slot) 
-			      (declare (type ,name self))
-			      (let ((index
-				     (the fixnum
-					  (gethash slot table 
-						   most-positive-fixnum))))
-				(declare (fixnum index)) 
-				(if (not (= index most-positive-fixnum))
-				    (let ((val (si:instance-ref self index)))
-				      (if (si:sl-boundp val)
-					  val
-					  'UNBOUND))
-				    (slot-missing
-				     (si:instance-class self) self slot
-				     'SLOT-VALUE)))))
-
-	  (install-method '(SETF SLOT-VALUE) nil '(NIL ,name NIL)
-			  '(VALUE SELF SLOT) nil nil
-			  #'(lambda (value self slot)
-			      (declare (type ,name self))
-			      (let ((index
-				     (the fixnum
-					  (gethash slot table 
-						   most-positive-fixnum))))
-				(declare (fixnum index))
-				(if (not (= index most-positive-fixnum))
-				    (si:instance-set self index value)
-				    (slot-missing 
-				     (si:instance-class self) self slot value 'SETF)))))
-	  )))
-
-    (generate-optional-slot-accessors name slotds shared-slotds))))
-
-(defun generate-optional-slot-accessors (name slotds shared-slotds
-					      &optional optimized)
-  (declare (si::c-type))
-  (nconc
-   ;; instance slots accessor methods
-   (do ((scan slotds (cdr scan))
-	(i 0 (1+ i))
-	(slotd)
-	(methods))
-       ((null scan) methods)
-       (declare (fixnum i))
-       (setq slotd (first scan))
-       (dolist (accessor (slotd-accessors slotd))
-	 ;; accessors are implemented using slot-value
-	 (push
-	  `(install-method '(SETF ,accessor) nil '(NIL ,name) '(V SELF) nil nil
-	    ,(if optimized
-		 `#'(lambda (v self)
-		      (declare (type ,name self))
-		      (si:instance-set self ,i v))
-	       `#'(lambda (v self)
-		    (setf (slot-value self ',(slotd-name slotd)) v))))
-	  methods)
-	 (push
-	  `(install-method ',accessor nil '(,name) '(SELF) nil nil
-	    ,(if optimized
-		 `#'(lambda (self)
-		      (declare (type ,name self))
-		      (let ((val (si:instance-ref self ,i)))
-			,@(let ((type (slotd-type slotd)))
-			    (unless (eq 't type)
-			      `((DECLARE (TYPE ,type VAL)))))
-			    (if (si:sl-boundp val) val
-				;; else
-				(slot-unbound (si:instance-class self) self
-					      ',(slotd-name slotd)))))
-		 `#'(lambda (self)
-		      (declare (type ,name self))
-		      (slot-value self ',(slotd-name slotd)))))
-	  methods))
-       (dolist (reader (slotd-readers slotd))
-	 (push
-	  `(install-method ',reader nil '(,name) '(SELF) nil nil
-	    ,(if optimized
-		 `#'(lambda (self)
-		      (declare (type ,name self))
-		      (let ((val (si:instance-ref self ,i)))
-			,@(let ((type (slotd-type slotd)))
-			    (unless (eq 't type)
-			      `((DECLARE (TYPE ,type VAL)))))
-			(if (si:sl-boundp val) val
-			    ;; else
-			    (slot-unbound (si:instance-class self) self
-					  ',(slotd-name slotd)))))
-		 `#'(lambda (self)
-		      (declare (type ,name self))
-		      (slot-value self ',(slotd-name slotd)))))
-	  methods))
-       (dolist (writer (slotd-writers slotd))
-	 (push
-	  `(install-method ',writer nil '(NIL ,name) '(V SELF) nil nil
-	    ,(if optimized
-		 `#'(lambda (v self)
-		      (declare (type ,name self))
-		      (si:instance-set self ,i v))
-	       `#'(lambda (v self)
-		    (declare (type ,name self))
-		    (setf (slot-value self ',(slotd-name slotd)) v))))
-	  methods))
-       )
-
-   ;; class slots accessor methods
-   (do ((scan shared-slotds (cdr scan))
-	(slotd)
-	(methods))
-       ((null scan) methods)
-       (setq slotd (first scan))
-       (dolist (accessor (slotd-accessors slotd))
-	 ;; accessors are implemented using slot-value
-	 (push
-	  `(install-method '(SETF ,accessor) nil '(NIL ,name) 
-	    '(V SELF) nil nil
-	    #'(lambda (v self) 
-		(declare (type ,name self))
-		(setf (slot-value self ',(slotd-name slotd)) v)))
-	  methods)
-	 (push
-	  `(install-method ',accessor nil '(,name) '(SELF) nil nil
-	    #'(lambda (self)
-		(declare (type ,name self))
-		(slot-value self ',(slotd-name slotd))))
-	  methods))
-       (dolist (reader (slotd-readers slotd))
-	 ;; readers are implemented using slot-value
-	 (push
-	  `(install-method ',reader nil '(,name) '(SELF) nil nil
-	    #'(lambda (self)
-		(declare (type ,name self))
-		(slot-value self ',(slotd-name slotd))))
-	  methods))
-       (dolist (writer (slotd-writers slotd))
-	 (push
-	  `(install-method ',writer nil '(NIL ,name) '(V SELF) nil nil
-	    #'(lambda (v self)
-		(declare (type ,name self))
-		(setf (slot-value self ',(slotd-name slotd)) v)))
-	  methods)))))
 
 ;;; ----------------------------------------------------------------------
 ;;; SLOTS

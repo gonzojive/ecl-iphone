@@ -105,7 +105,7 @@ cl_boot(int argc, char **argv)
 	init_lwp();
 #endif
 #ifdef CLOS
-	init_clos();
+	init_instance();
 #endif
 #ifdef TK
 	init_tk();

@@ -48,7 +48,7 @@
 
 ;;; This is only used during boot. The real one is in built-in.
 (defun setf-find-class (name new-value)
-  (if (classp new-value)
+  (if (si:instancep new-value)
       (setf (gethash name si:*class-name-hash-table*) new-value)
     (error "~A is not a class." new-value)))
 
@@ -85,14 +85,17 @@
 (defun class-superiors		(class) (si:instance-ref class 1))
 (defun class-inferiors		(class) (si:instance-ref class 2))
 (defun class-slots		(class) (si:instance-ref class 3))
+(defun class-precedence-list	(class) (si:instance-ref class 4))
 (defsetf class-name		(class) (x) `(si::instance-set ,class 0 ,x))
 (defsetf class-superiors	(class) (x) `(si::instance-set ,class 1 ,x))
 (defsetf class-inferiors	(class) (x) `(si::instance-set ,class 2 ,x))
 (defsetf class-slots		(class) (x) `(si::instance-set ,class 3 ,x))
+(defsetf class-precedence-list	(class) (x) `(si::instance-set ,class 4 ,x))
 (define-compiler-macro class-name	(class) `(si:instance-ref ,class 0))
 (define-compiler-macro class-superiors	(class) `(si:instance-ref ,class 1))
 (define-compiler-macro class-inferiors	(class) `(si:instance-ref ,class 2))
 (define-compiler-macro class-slots	(class) `(si:instance-ref ,class 3))
+(define-compiler-macro class-precedence-list (class) `(si:instance-ref ,class 4))
 
 ;;; ----------------------------------------------------------------------
 ;;; STANDARD-CLASS

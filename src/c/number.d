@@ -80,10 +80,10 @@ make_ratio(cl_object num, cl_object den)
 {
 	cl_object g, r;
 
-	if (number_zerop(num))
-		return(MAKE_FIXNUM(0));
 	if (number_zerop(den))
 		FEerror("Zero denominator.", 0);
+	if (number_zerop(num))
+		return(MAKE_FIXNUM(0));
 	if (den == MAKE_FIXNUM(1))
 		return(num);
 	if (number_minusp(den)) {

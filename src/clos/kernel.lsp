@@ -68,7 +68,7 @@
 ;;; ----------------------------------------------------------------------
 ;;; Object initializations
 
-(defun allocate-instance (class)
+(defun allocate-instance (class &key &allow-other-keys)
   (si:allocate-raw-instance class (length (class-slots class))))
 
 ;;; ----------------------------------------------------------------------

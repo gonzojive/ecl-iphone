@@ -11,12 +11,6 @@
 
 ;;; ----------------------------------------------------------------------
 
-;;; bootstrap order:
-(defmethod (setf slot-value) (val (instance standard-object) slot-name)
-  (standard-instance-set val instance slot-name))
-
-;;; ----------------------------------------------------------------------
-
 (eval-when (compile load eval)
   (defun create-standard-class
       (name superclasses-names
@@ -63,6 +57,7 @@
 	      (when existing
 		(redefine-class existing new-class superclasses-names
 				(class-inferiors existing))) ; Beppe
+	      (generate-accessors new-class)
 	      new-class)))))
   ;;; Bootstrap versions.
   (defun redefine-class (class new-class superclasses-names inferiors)
@@ -71,9 +66,49 @@
     new-class))
 
 ;;; ----------------------------------------------------------------------
+;;; Optional accessors
+
+;;; This cant be a method because of bootstrap problem.
+
+(defun generate-accessors (standard-class)
+  (do* ((slots (class-slots standard-class) (cdr slots))
+	(i 0))
+    ((endp slots))
+    (declare (fixnum i))
+    (let* ((slotd (first slots))
+	   (accessor (slotd-accessors slotd))
+	   (class-name (class-name standard-class))
+	   (slot-name (slotd-name slotd))
+	   (index i)
+	   reader setter)
+      (declare (fixnum index))
+      (if (eql (slotd-allocation slotd) :instance)
+	  (setf reader #'(lambda (self)
+			   (si:instance-ref self index))
+		setter #'(lambda (value self)
+			   (si:instance-set self index value))
+		i (1+ i))
+	  (setf reader #'(lambda (self)
+			   (slot-value self slot-name))
+		setter #'(lambda (value self)
+			   (setf (slot-value self slot-name) value))))
+      (dolist (fname (append (slotd-accessors slotd) (slotd-readers slotd)))
+	(install-method fname nil `(,class-name) '(self) nil nil
+			reader))
+      (dolist (fname (slotd-accessors slotd))
+	(install-method `(setf ,fname) nil `(nil ,class-name) '(value self)
+			nil nil setter))
+      (dolist (fname (slotd-writers slotd))
+	(install-method fname nil `(nil ,class-name) '(value self)
+			nil nil setter)))))
+
+(generate-accessors (find-class 'standard-class))
+
+;;; ----------------------------------------------------------------------
 ;;; STANDARD-CLASS
 ;;; ----------------------------------------------------------------------
 
+#+nil
 (defclass standard-class (class)
   ;; class-precedence-list must be in the same position as in structure-class
   ((precedence-list :initarg :class-precedence-list)
@@ -100,6 +135,7 @@
 ;;; Standard-object has no slots and inherits only from t:
 ;;; (defclass standard-object (t) ())
 
+#+nil
 (eval-when
  (compile load eval)
  (make-instance (find-class 'STANDARD-CLASS)
@@ -114,27 +150,33 @@
 #+PDE
 (si:record-source-pathname 'STANDARD-OBJECT 'DEFCLASS)
 
-(defmethod slot-value ((object standard-object) slot-name)
+;;; new methods for slot-boundp and slot-value
+
+(defmethod slot-value ((instance standard-object) slot-name)
   (multiple-value-bind (val condition)
-    (standard-instance-get object slot-name)
-    (ecase condition
+      (standard-instance-get instance slot-name)
+    (case condition
       (:VALUE val)
-      (:UNBOUND	(slot-unbound (si:instance-class object) object slot-name))
-      (:MISSING (slot-missing (si:instance-class object) object slot-name
-			      'SLOT-VALUE))
+      (:UNBOUND (values (slot-unbound (si:instance-class instance) instance
+				      slot-name)))
+      (:MISSING (values (slot-missing (si:instance-class instance) instance
+				      slot-name 'SLOT-VALUE)))
       )))
 
 (defmethod slot-boundp ((instance standard-object) slot-name)
   (multiple-value-bind (val condition)
       (standard-instance-get instance slot-name)
     (declare (ignore val))
-    (ecase condition
+    (case condition
       (:VALUE t)
       (:UNBOUND nil)
-      (:MISSING (slot-missing (si:instance-class instance) instance slot-name
-			      'SLOT-BOUNDP))
+      (:MISSING (values (slot-missing (si:instance-class instance) instance
+				      slot-name 'SLOT-BOUNDP)))
       )))
-      
+
+(defmethod (setf slot-value) (val (instance standard-object) slot-name)
+  (standard-instance-set val instance slot-name))
+
 (defmethod slot-exists-p ((instance standard-object) slot-name)
   (let ((class (si:instance-class instance)))
     (declare (type standard-class class))
@@ -204,16 +246,9 @@
   (apply #'shared-initialize instance t initargs))
 
 (defmethod reinitialize-instance ((instance standard-object) &rest initargs)
-    (let* ((class (si:instance-class instance)))
-      (flet ((search-allow-other-keys (initargs-list)
-	       (do ((arg-list initargs-list (cddr arg-list)))
-		   ((null arg-list) nil)
-		 (when (eq (first arg-list) ':ALLOW-OTHER-KEYS)
-		   (return (second arg-list))))))
-	(unless (search-allow-other-keys initargs)
-	  (check-initargs class initargs)))
-      (apply #'shared-initialize instance nil initargs)
-      instance))
+  (let* ((class (si:instance-class instance)))
+    (apply #'shared-initialize instance nil (check-initargs class initargs))
+    instance))
 
 (defmethod change-class ((instance standard-object) (new-class standard-class))
     (let* ((old-class (si:instance-class instance))
@@ -247,7 +282,7 @@
 	  (if (and (not (member slotd old-slotds :key #'slotd-name :test #'eq))
 		   (eq (slotd-allocation slotd) ':INSTANCE))
 	      (push (slotd-name slotd) added-slots)))
-	(apply #'shared-initialize instance added-slots)))
+	(shared-initialize instance added-slots)))
 
   instance)
 
@@ -328,37 +363,30 @@
   (declare (si::c-local))
   ;; scan initarg list 
   (do* ((name-loc initargs (cddr name-loc))
-	(name (first name-loc) (first name-loc)))
-       ((null name-loc) class)
-    (if (null (cdr name-loc))
-	(error "No value supplied for the init-name ~S." name)
-	(unless
-	    (or 
-	     ;; check if the arguments is associated with a slot
+	(allow-other-keys nil)
+	(allow-other-keys-found nil)
+	(unknown-key nil))
+       ((null name-loc)
+	(when (and (not allow-other-keys) unknown-key)
+	  (error "Unknown initialization option ~A for class ~A"
+		 unknown-key class))
+	initargs)
+    (let ((name (first name-loc)))
+      (cond ((null (cdr name-loc))
+	     (error "No value supplied for the init-name ~S." name))
+	    ;; This check must be here, because :ALLOW-OTHER-KEYS is a valid
+	    ;; slot-initarg.
+	    ((and (eql name :ALLOW-OTHER-KEYS)
+		  (not allow-other-keys-found))
+	     (setf allow-other-keys (second name-loc)
+		   allow-other-keys-found t))
+	    (;; check if the arguments is associated with a slot
 	     (do ((scan-slot (class-slots class) (cdr scan-slot)))
 		 ((null scan-slot) ())
 	       (when (member name (slotd-initargs (first scan-slot)))
-		 (return t)))
-	     #| modify this
-		;; check if the argument is associated with a 
-		;; initialize-instance or allocate-instance method
-		;; inspecting all the keywords of the applicable methods
-		(let ((cpl (cons class (slot-value class
-                                        'PRECEDENCE-LIST)))
-		      cpl-names)
-		  ; convert cpl in the list of the names of the classes
-		  (do ((scan-cpl cpl (cdr scan-cpl)))
-		      ((null scan-cpl) (setq cpl-names (nreverse cpl-names)))
-		      (push (class-name (first scan-cpl)) cpl-names))
-		  (dolist (scan cpl-names)
-			  (when (member name
-					(gethash scan *method-key-hash-table*))
-				(return t))))
-|#
-	     )
-	  ;; signal error
-	  (error "Unknown initialization option ~A for class ~A"
-		 name class)))))
+		 (return t))))
+	    (t
+	     (setf unknown-key name))))))
 
 ;;; ----------------------------------------------------------------------
 ;;; Basic access to instances
@@ -388,18 +416,8 @@
 	    ;; else it is a shared slot
 	    (setf (svref (class-shared-slots (car index)) (cdr index)) val))
 	(slot-missing (si:instance-class instance) instance slot-name
-		      'SLOT-VALUE))))
-
-(defun general-instance-get (instance slot-name)
-  (let* ((class (si:instance-class instance))
-         (index (position slot-name (class-slots class)
-                          :key #'slotd-name :test #'eq)))
-    (if index
-	(let ((val (si:instance-ref instance (the fixnum index))))
-	  (if (si:sl-boundp val)
-	      (values val :VALUE)
-	      (values nil :UNBOUND)))
-	(values nil :MISSING))))
+		      'SLOT-VALUE))
+    val))
 
 ;;; ----------------------------------------------------------------------
 ;;;                                                             optimizers
@@ -512,14 +530,7 @@
     default-superclasses))
 
 (defmethod make-instance ((class standard-class) &rest initargs)
-  (setq initargs (default-initargs class initargs))
-  (flet ((search-allow-other-keys (initargs-list)
-	    (do ((arg-list initargs-list (cddr arg-list)))
-		((null arg-list))
-		(when (eq (first arg-list) ':ALLOW-OTHER-KEYS)
-		      (return (second arg-list))))))
-	(if (not (search-allow-other-keys initargs))
-	    (check-initargs class initargs)))
+  (setq initargs (check-initargs class (default-initargs class initargs)))
   (let ((instance
 	 (si:allocate-raw-instance class (class-instance-slot-count class))))
     (apply #'initialize-instance instance initargs)

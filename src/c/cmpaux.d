@@ -216,6 +216,8 @@ cl_parse_key(
   for (; args[0].narg > 1; ) {
     cl_object keyword = cl_va_arg(args);
     cl_object value = cl_va_arg(args);
+    if (!SYMBOLP(keyword))
+      FEprogram_error("LAMBDA: Keyword expected, got ~S.", 1, keyword);
     if (rest != NULL) {
       rest = &CDR(*rest = CONS(keyword, Cnil));
       rest = &CDR(*rest = CONS(value, Cnil));

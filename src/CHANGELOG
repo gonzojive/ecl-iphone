@@ -1429,6 +1429,12 @@ ECLS 1.0
 
   - DPP now properly handles &allow_other_keys.
 
+  - NIL could not be the name of a slot in a struct.
+
+  - (/ 0 0) should signal an error.
+
+  - FORMAT control ~C now works as expected.
+
 * Visible changes:
 
   - New special form C-INLINE, allows inserting C/C++ code in any
@@ -1442,11 +1448,52 @@ ECLS 1.0
     either :DIRECTORY, :FILE, :LINK, :SPECIAL, or NIL (= Non
     existent), for a given file name.
 
+  - Bytecode-compiled functions now print as
+    #<bytecompiled-function... just to remark that, according to ANSI,
+    these functions are not interpreted (i.e. there are no run-time
+    dependencies on macros left).
+
+  - Formerly, the process of inlining a call to a function would be
+    done only once the C code is written. For instance, if the
+    compiler found
+        (FUNCALL (LAMBDA (X) (COS X)) 1.0)
+    it would only decide to do the inlining during the second phase of
+    the compilation process. That meant extremely complicated and easy
+    to break code in the compiler. The new engine does the inlining of
+    these forms during the first phase, in which Lisp is translated to
+    an intermediate representation.  For instance, the previous form
+    is translated to
+        (LET ((X 1.0)) (COS X))
+    and here optimizations are much easier.
+
+  - The optimizers for the MAPCAR, MAPCAN, etc, were broken. They will
+    be replaced with compiler macro functions, which are easier to
+    maintain.
+
+  - CLEAR-INPUT now works with interactive streams (*STANDARD-INPUT, etc).
+
+  - On systems which support it, LISTEN-STREAM is now implemented
+    using select(). This means it now works on sockets as well.
+
 * ANSI compatibility:
 
   - DIRECTORY now understands :WILD, :UP, :WILD-INFERIORS, and, as an
     extension, other masks within the pathname ("/foo*/**/d*d.l?sp").
     It also accepts and ignores all keyword arguments.
+
+  - LOAD no longer binds *STANDARD-INPUT* to the file being read. That
+    was wrong, AFAIK.
+
+  - An important problem in DEFSTRUCT has been solved: when :CONC-NAME
+    is NIL, it may happen that a second definition of a function
+    overwrites the reader of a slot. For instance
+        (defstruct (foo (:conc-name nil)) slot-a)
+    followed by
+        (defstruct (faa (:include foo) (:conc-name nil)))
+    would produce an accessor SLOT-A which only works for structures
+    of type FAA:
+        (SLOT-A (MAKE-FAA)) => NIL
+        (SLOT-A (MAKE-FOO)) => Error
 
 TODO:
 =====

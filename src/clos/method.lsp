@@ -76,6 +76,15 @@
     (multiple-value-bind (parameters lambda-list specializers)
 	(parse-specialized-lambda-list specialized-lambda-list 't)
 
+      ;; FIXME!! This deactivates the checking of keyword arguments
+      ;; inside methods. The reason is that this checking must be
+      ;; supplemented the knowledge of the keyword arguments of all
+      ;; applicable methods (X3J13 7.6.5). Therefore, we should insert
+      ;; that check, either in the method itself so that it is done
+      ;; incrementally, or in COMPUTE-EFFECTIVE-METHOD.
+      (when (and (member '&key lambda-list)
+		 (not (member '&allow-other-keys lambda-list)))
+	(setf lambda-list (append lambda-list '(&allow-other-keys))))
       (let* ((required-parameters
 	      (mapcar #'(lambda (r s) (declare (ignore s)) r)
 		      parameters
@@ -582,41 +591,6 @@
 
 
 ;;; ----------------------------------------------------------------------
-;;;                                                              bootstrap
-
-(defvar *method-key-hash-table* (make-hash-table :test #'eq :size 32)
-  ; the hash table containing the keywords accepted by
-  ; allocate-instance and initialize-instance methods
-  )
-
-(defun update-method-key-hash-table (class lambda-list)
-  (declare (si::c-local))
-  (let* (post-key-list keywords-list)
-    ;; search &key in lambda-list
-    (setq post-key-list
-	  (do ((scan lambda-list (cdr scan)))
-	      ((null scan))
-	      (when (eq (first scan) '&KEY)
-		(return (cdr scan)))))
-    ;; extract keywords from post-key-list
-    (when post-key-list
-      (do* ((key-scan post-key-list (cdr key-scan))
-	    (first-key-scan (first key-scan) (first key-scan)))
-	   ((or (null key-scan)
-		(member first-key-scan '(&ALLOW-OTHER-KEYS &AUX)))
-	    (setq keywords-list (nreverse keywords-list)))
-	(push (if (listp first-key-scan) 
-		  (let ((key-par (first first-key-scan)))
-		    (if (listp key-par) (first key-par)
-			(make-keyword key-par)))
-		  (make-keyword first-key-scan))
-	      keywords-list))
-      ;; insert in the hash table a new entry whose keyword is the class name
-      ;; and whose value is the keyword list accepted by the method
-      (setf (gethash class *method-key-hash-table*) keywords-list))))
-
-
-;;; ----------------------------------------------------------------------
 ;;;                                                             with-slots
 
 (defmacro with-slots (slot-entries instance-form &body body)
@@ -724,9 +698,7 @@
       (error "Can't optimize instance access.  Report this as a bug."))
     (setq slot (find slot-name (slot-value class 'SLOTS)
 		     :key #'slotd-name))
-    (unless slot
-      (error "Slot ~A not present in class ~A." slot-name class))
-    (if (eq :INSTANCE (slotd-allocation slot))
+    (if (and slot (eq :INSTANCE (slotd-allocation slot)))
 	(let* (slot-entry slot-index)
 	  (unless (cdr entry)
 	    ;; there is just one index-table for each different class

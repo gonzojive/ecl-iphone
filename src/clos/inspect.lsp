@@ -9,48 +9,6 @@
 
 (in-package "CLOS")
 
-;;; new methods for slot-boundp and slot-value
-
-(defmethod slot-value ((class t) slot-name)
-  (multiple-value-bind (val condition)
-    (general-instance-get class slot-name)
-    (ecase condition
-      (:VALUE val)
-      (:UNBOUND (slot-unbound (si:instance-class class) class slot-name))
-      (:MISSING (slot-missing (si:instance-class class) class slot-name
-			      'SLOT-VALUE))
-      )))
-
-(defmethod slot-value ((class standard-class) slot-name)
-  (multiple-value-bind (val condition)
-    (general-instance-get class slot-name)
-    (ecase condition
-      (:VALUE val)
-      (:UNBOUND (slot-unbound (si:instance-class class) class slot-name))
-      (:MISSING (slot-missing (si:instance-class class) class slot-name
-			      'SLOT-VALUE))
-      )))
-
-(defmethod slot-boundp ((class standard-class) slot-name)
-  (multiple-value-bind (val condition)
-    (general-instance-get class slot-name)
-    (ecase condition
-      (:VALUE t)
-      (:UNBOUND nil)
-      (:MISSING (slot-missing (si:instance-class class) class slot-name
-			      'SLOT-BOUNDP))
-      )))
-
-(defmethod slot-boundp ((class t) slot-name)
-  (multiple-value-bind (val condition)
-    (general-instance-get class slot-name)
-    (ecase condition
-      (:VALUE t)
-      (:UNBOUND nil)
-      (:MISSING (slot-missing (si:instance-class class) class slot-name
-			      'SLOT-BOUNDP))
-      )))
-
 (defmethod select-clos-N ((instance standard-object))
   (let* ((class (si:instance-class instance))
 	 (local-slotds (slot-value class 'CLOS::SLOTS))

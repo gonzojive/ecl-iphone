@@ -366,6 +366,9 @@ Returns T if X belongs to TYPE; NIL otherwise."
 #+clos
 (defun subclassp (low high)
   (or (eq low high)
+      (member high (sys:instance-ref low 4))) ; (class-precedence-list low)
+  #+(or)
+  (or (eq low high)
       (dolist (class (sys:instance-ref low 1)) ; (class-superiors low)
 	(when (subclassp class high) (return t)))))
 
@@ -1065,6 +1068,15 @@ if not possible."
 			   FILE-STREAM STRING-STREAM SYNONYM-STREAM TWO-WAY-STREAM))
 
 	       (READTABLE)
+#|
+	       .
+	       #-clos
+	       NIL
+	       #+clos
+	       ((STANDARD-OBJECT T)
+		(CLASS STANDARD-OBJECT)
+		(STANDARD-CLASS CLASS))
+|#
 	       ))
     (let* ((type (first i))
 	   (alias (second i))

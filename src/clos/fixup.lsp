@@ -177,12 +177,7 @@
 (defun compare-specializers (spec-1 spec-2 arg-spec)
   (declare (si::c-local))
   (let* ((arg-class (closest-class arg-spec))
-	 (cpl (cons arg-class
-		    (if (typep arg-class 'STANDARD-CLASS)
-			(slot-value arg-class 'PRECEDENCE-LIST)
-			(compute-class-precedence-list
-			 arg-spec
-			 (class-superiors arg-class)))))
+	 (cpl (cons arg-class (class-precedence-list arg-class)))
 	 (cpl-names))
     (setq cpl-names (dolist (e cpl (nreverse cpl-names))
 		      (push (class-name e) cpl-names)))
@@ -241,7 +236,6 @@
 		     (compute-class-precedence-list
 		      subclass-name (mapcar #'find-class superclasses-names))
 		     (slot-value subclass 'DIRECT-SLOTS))))
-	(print subclass)
 	(pushnew
 	 (ensure-class (class-name (si:instance-class subclass))
 		       subclass-name
@@ -250,19 +244,26 @@
 		       ; slots
 		       (default-initargs-of subclass)
 		       (documentation-of subclass))
-	 (class-inferiors new-class))
-	(eval
-	 (cons 'PROGN
-	       (generate-methods
-		subclass-name
-		:metaclass-name (class-name (class-of subclass))
-		:superiors superclasses
-		:slots slots)))))
+	 (class-inferiors new-class))))
 
     ;; invalidate the class
     (setf (class-name class) 'INVALID)
     (setf (slot-value class 'FORWARD) new-class))
 
   new-class)
+
+;;; Now we protect classes from redefinition:
+(defun setf-find-class (name new-value)
+  (let ((old-class (find-class name nil)))
+    (cond
+      ((typep old-class 'built-in-class)
+       (error "The class associated to the CL specifier ~S cannot be changed."
+	      name))
+      ((member name '(CLASS BUILT-IN-CLASS) :test #'eq)
+       (error "The kernel CLOS class ~S cannot be changed." name))
+      ((classp new-value)
+       (setf (gethash name si:*class-name-hash-table*) new-value))
+      ((null new-value) (remhash name si:*class-name-hash-table*))
+      (t (error "~A is not a class." new-value)))))
 
 ;;;----------------------------------------------------------------------

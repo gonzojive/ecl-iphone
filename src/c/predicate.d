@@ -311,14 +311,25 @@ BEGIN:
 
 #ifdef CLOS
 	case t_instance: {
-		cl_index i;
+		cl_index i, l = x->instance.length;
 
 		if (CLASS_OF(x) != CLASS_OF(y))
 			return(FALSE);
-		for (i = 0;  i < x->instance.length;  i++)
-			if (!equal(x->instance.slots[i], y->instance.slots[i]))
-				return(FALSE);
-		return(TRUE);
+		if (l != y->instance.length)
+			return(FALSE);
+		for (i = 0;  i < l;  i++) {
+			cl_object vx = x->instance.slots[i];
+			cl_object vy = y->instance.slots[i];
+			if (vx == OBJNULL) {
+				if (vy != OBJNULL)
+					return FALSE;
+			} else if (vy == OBJNULL) {
+				return FALSE;
+			} else if (!equal(vx, vy)) {
+				return FALSE;
+			}
+		}
+		return TRUE;
 	}
 #else
 	case t_structure:
