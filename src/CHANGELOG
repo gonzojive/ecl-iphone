@@ -1495,6 +1495,16 @@ ECLS 1.0
         (SLOT-A (MAKE-FAA)) => NIL
         (SLOT-A (MAKE-FOO)) => Error
 
+  - The set of valid keyword arguments for a method depends on the
+    applicable methods for each specific call. Thus, the associated
+    LAMBDA forms need not check the consistency of arguments
+    themselves, and may be declared with &allow-other-keys. With the
+    new code, this is valid:
+	(defmethod foo (&key b) ...)
+	(defmethod foo :after (&key x) ...)
+    but an invalid call (FOO :C 2) is undetected.
+
+
 TODO:
 =====
 
