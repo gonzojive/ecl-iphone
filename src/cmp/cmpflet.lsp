@@ -85,7 +85,7 @@
 	(when (or
 	       (member var *vars* :test #'eq)
 	       (member var *funs* :test #'eq :key
-		       #'(lambda (x) (unless (symbolp x) (fun-var x))))
+		       #'(lambda (x) (unless (or (consp x) (symbolp x)) (fun-var x))))
 	       (member var *blocks* :test #'eq :key
 		       #'(lambda (x) (unless (symbolp x) (blk-var x))))
 	       (member var *tags* :test #'eq :key
