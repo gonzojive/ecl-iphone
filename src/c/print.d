@@ -393,8 +393,7 @@ edit_double(int n, double d, int *sp, char *s, int *ep)
 	char *p, buff[FPRC + 9];
 	int i;
 
-#ifdef IEEEFLOAT
-	if ((*((int *)&d +HIND) & 0x7ff00000) == 0x7ff00000)
+	if (isnan(d) || !finite(d))
 		FEerror("Can't print a non-number.", 0);
 	else
 		sprintf(buff, "%*.*e",FPRC+8,FPRC, d);
@@ -407,15 +406,6 @@ edit_double(int n, double d, int *sp, char *s, int *ep)
 	*sp = 1;
 	if (buff[0] == '-')
 		*sp *= -1;
-#else
-	sprintf(buff, "%*.*e",FPRC+7,FPRC, d);
-	/*  "-D.MMMMMMMMMMMMMMMe+EE"  */
-	/*   0123456789012345678901   */
-	*sp = 1;
-	if (buff[0] == '-')
-		*sp *= -1;
-	*ep = (buff[FPRC+5]-'0')*10 + (buff[FPRC+6]-'0');
-#endif /* IEEEFLOAT */
 
 	if (buff[FPRC+4] == '-')
 		*ep *= -1;
