@@ -611,7 +611,8 @@ returns with NIL."
 (define-condition simple-program-error (simple-condition program-error) ())
 
 (define-condition format-error (simple-error)
-  ((control-string :reader format-error-control-string
+  ((format-control :initarg :complaint)
+   (control-string :reader format-error-control-string
 		   :initarg :control-string
 		   #+cmu-format :initform
 		   #+cmu-format *default-format-error-control-string*) 
