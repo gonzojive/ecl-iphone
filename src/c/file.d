@@ -1861,7 +1861,7 @@ flisten(FILE *fp)
 			break;
 		case FILE_TYPE_PIPE: {
 			DWORD dw;
-			if (PeekNamedPipe(hnd, NULL, 0, NULL, &dw, NULL) == 0)
+			if (PeekNamedPipe(hnd, NULL, 0, NULL, &dw, NULL))
 				return (dw > 0 ? ECL_LISTEN_AVAILABLE : ECL_LISTEN_NO_CHAR);
 			else if (GetLastError() == ERROR_BROKEN_PIPE)
 				return ECL_LISTEN_EOF;
