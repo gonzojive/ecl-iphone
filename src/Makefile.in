@@ -30,6 +30,7 @@ infodir=@infodir@
 INSTALL	= @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
+mkinstalldirs = $(SHELL) $(top_srcdir)/gc/mkinstalldirs
 
 # Files
 
@@ -78,9 +79,7 @@ BUILD-STAMP: config.status
 	(echo "#"; uname -a) > $@
 	head -8 config.status | tail -6 >> $@
 install: BUILD-STAMP
-	-for i in $(PREFIX)$(bindir) $(PREFIX)$(libdir)/h; do\
-	  $(INSTALL) -d $$i; \
-	done
+	$(mkinstalldirs) $(PREFIX)$(bindir) $(PREFIX)$(libdir)/h
 	for i in $(TARGETS); do \
 	  $(INSTALL) -s $$i $(PREFIX)$(bindir); \
 	done
@@ -97,7 +96,7 @@ install: BUILD-STAMP
 	cd c; $(MAKE) PREFIX="$(PREFIX)" install
 	cd doc; $(MAKE) PREFIX="$(PREFIX)" install
 installgc:
-	-$(INSTALL) -d $(PREFIX)$(libdir)/h/private
+	$(mkinstalldirs) $(PREFIX)$(libdir)
 	for i in $(srcdir)/gc/include/*.h; do \
 	  $(INSTALL_DATA) $$i $(PREFIX)$(libdir)/h/; \
 	done

@@ -24,6 +24,7 @@ AC_PREREQ(2.1)		# You must have autoconf version 2.1 or later.
 ### Make sure we do not configure within source directory
 ###
 AC_CONFIG_SRCDIR(CHANGELOG)
+AC_CONFIG_AUX_DIR(${srcdir}/gmp)
 if test -f configure; then
 echo "***"
 echo "*** This program cannot be built within the source directory ***"
@@ -331,7 +332,7 @@ else
   test -d gmp && rm -rf gmp
   if mkdir gmp; then
    (destdir=`${PWDCMD}`; cd gmp; CC="${CC} ${PICFLAG}" \
-     $srcdir/gmp/configure --disable-shared --prefix=$bindir \
+     $srcdir/gmp/configure --disable-shared --prefix=${destdir} \
 	--infodir=${destdir}/doc --includedir=${destdir}/h \
         --libdir=${destdir} --build=${build} --host=${host} $gmp_flags)
   fi
@@ -348,12 +349,12 @@ elif test "${local_boehm}" = "no" ; then
   if mkdir gc; then
     if test "${threads}" ; then
       (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
-       $srcdir/gc/configure --disable-shared --prefix=$bindir \
+       $srcdir/gc/configure --disable-shared --prefix=${destdir} \
 	--includedir=${destdir}/h --libdir=${destdir} --build=${build} \
 	--host=${host})
     else
       (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
-       $srcdir/gc/configure --disable-threads --disable-shared --prefix=$bindir \
+       $srcdir/gc/configure --disable-threads --disable-shared --prefix=${destdir} \
 	--includedir=${destdir}/h --libdir=${destdir} --build=${build} \
 	--host=${host})
     fi

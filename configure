@@ -55,10 +55,10 @@ else
   # GMP knows more chiptset names than usual FSF configuration tools. We
   # therefore need to use its config* files when configuring either ECL
   # or the Boehm-Weiser garbage collector.
-  for i in config.sub configfsf.sub config.guess configfsf.guess; do
-      cp ${srcdir}/gmp/$i ${srcdir}/
-      cp ${srcdir}/gmp/$i ${srcdir}/gc/
-  done;
+  #for i in config.sub configfsf.sub config.guess configfsf.guess; do
+  #    cp ${srcdir}/gmp/$i ${srcdir}/
+  #    cp ${srcdir}/gmp/$i ${srcdir}/gc/
+  #done;
   LDFLAGS="${LDFLAGS}" CFLAGS="${CFLAGS}" \
   ${srcdir}/configure --srcdir=${srcdir} $* --host=${host}
 fi

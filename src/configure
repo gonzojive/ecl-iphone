@@ -1299,18 +1299,8 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 ### Make sure we do not configure within source directory
 ###
 
-if test -f configure; then
-echo "***"
-echo "*** This program cannot be built within the source directory ***"
-echo "***"
-exit 2;
-fi
-
-ECL_VERSION=0.9d
-
-
 ac_aux_dir=
-for ac_dir in $srcdir $srcdir/.. $srcdir/../..; do
+for ac_dir in ${srcdir}/gmp $srcdir/${srcdir}/gmp; do
   if test -f $ac_dir/install-sh; then
     ac_aux_dir=$ac_dir
     ac_install_sh="$ac_aux_dir/install-sh -c"
@@ -1326,13 +1316,23 @@ for ac_dir in $srcdir $srcdir/.. $srcdir/../..; do
   fi
 done
 if test -z "$ac_aux_dir"; then
-  { { echo "$as_me:$LINENO: error: cannot find install-sh or install.sh in $srcdir $srcdir/.. $srcdir/../.." >&5
-echo "$as_me: error: cannot find install-sh or install.sh in $srcdir $srcdir/.. $srcdir/../.." >&2;}
+  { { echo "$as_me:$LINENO: error: cannot find install-sh or install.sh in ${srcdir}/gmp $srcdir/${srcdir}/gmp" >&5
+echo "$as_me: error: cannot find install-sh or install.sh in ${srcdir}/gmp $srcdir/${srcdir}/gmp" >&2;}
    { (exit 1); exit 1; }; }
 fi
 ac_config_guess="$SHELL $ac_aux_dir/config.guess"
 ac_config_sub="$SHELL $ac_aux_dir/config.sub"
 ac_configure="$SHELL $ac_aux_dir/configure" # This should be Cygnus configure.
+
+if test -f configure; then
+echo "***"
+echo "*** This program cannot be built within the source directory ***"
+echo "***"
+exit 2;
+fi
+
+ECL_VERSION=0.9d
+
 
 # Make sure we can run config.sub.
 $ac_config_sub sun4 >/dev/null 2>&1 ||
@@ -4484,16 +4484,28 @@ int main() {
     int_type="int";
     for (bits=1; ((t << 1) >> 1) == t; bits++, t <<= 1);
     l = (~l) << (bits - 3);
+#if 1
     fprintf(f,"CL_FIXNUM_MIN='%d';",l);
     fprintf(f,"CL_FIXNUM_MAX='%d';",-(l+1));
+#else
+    l++;
+    fprintf(f,"CL_FIXNUM_MIN='%d';",l);
+    fprintf(f,"CL_FIXNUM_MAX='%d';",-l);
+#endif
   } else if (sizeof(long) >= sizeof(void*)) {
     unsigned long int t = 1;
     signed long int l = 0;
     int_type="long int";
     for (bits=1; ((t << 1) >> 1) == t; bits++, t <<= 1);
     l = (~l) << (bits - 3);
-    fprintf(f,"CL_FIXNUM_MIN='%ld';",l);
-    fprintf(f,"CL_FIXNUM_MAX='%ld';",-(l+1));
+#if 1
+    fprintf(f,"CL_FIXNUM_MIN='%d';",l);
+    fprintf(f,"CL_FIXNUM_MAX='%d';",-(l+1));
+#else
+    l++;
+    fprintf(f,"CL_FIXNUM_MIN='%d';",l);
+    fprintf(f,"CL_FIXNUM_MAX='%d';",-l);
+#endif
   } else
     exit(1);
   fprintf(f,"CL_FIXNUM_TYPE='%s';",int_type);
@@ -5976,12 +5988,12 @@ echo "${ECHO_T}configuring local copy" >&6
   if mkdir gc; then
     if test "${threads}" ; then
       (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
-       $srcdir/gc/configure --disable-shared --prefix=$bindir \
+       $srcdir/gc/configure --disable-shared --prefix=${destdir} \
 	--includedir=${destdir}/h --libdir=${destdir} --build=${build} \
 	--host=${host})
     else
       (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
-       $srcdir/gc/configure --disable-threads --disable-shared --prefix=$bindir \
+       $srcdir/gc/configure --disable-threads --disable-shared --prefix=${destdir} \
 	--includedir=${destdir}/h --libdir=${destdir} --build=${build} \
 	--host=${host})
     fi

@@ -16,6 +16,7 @@ manext=1
 INSTALL	= @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
+mkinstalldirs = $(SHELL) $(top_srcdir)/gc/mkinstalldirs
 
 VERSION=@ECL_VERSION@
 
@@ -39,10 +40,10 @@ ecldev.ps: ecldev.dvi $(srcdir)/macros.txi
 	dvips -o $@ ecldev.dvi
 
 install: all
-	$(INSTALL) -d $(PREFIX)$(infodir)
+	$(mkinstalldirs) $(PREFIX)$(infodir)
 	$(INSTALL_DATA) ecl.info $(PREFIX)$(infodir)
 	$(INSTALL_DATA) ecldev.info $(PREFIX)$(infodir)
-	$(INSTALL) -d $(PREFIX)$(mandir)/man$(manext)
+	$(mkinstalldirs) $(PREFIX)$(mandir)/man$(manext)
 	$(INSTALL_DATA) ecl.man $(PREFIX)$(mandir)/man$(manext)/ecl.$(manext)
 
 uninstall:
