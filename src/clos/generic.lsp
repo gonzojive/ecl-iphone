@@ -28,15 +28,8 @@
       (parse-lambda-list lambda-list)
       
       ;; process options
-      (multiple-value-bind (argument-precedence-order 
-			    declaration documentation method-combination
-			    generic-function-class method-class method-list) 
-	(parse-generic-options options lambda-list)
-	(unless generic-function-class
-	  (setq generic-function-class 'STANDARD-GENERIC-FUNCTION))
-	(unless method-class (setq method-class 'STANDARD-METHOD))
-	(unless argument-precedence-order
-	  (setq argument-precedence-order ':DEFAULT))
+      (multiple-value-bind (option-list method-list)
+	  (parse-generic-options options lambda-list)
 	#|
 	       (if (fboundp function-specifier)
 		   ;; remove methods defined by previous defgeneric
@@ -44,57 +37,20 @@
 			  (si:gfun-instance 
 			   (symbol-function function-specifier)) nil)))
 |#
-	`(progn
-	   (ensure-generic-function ',function-specifier
-				    :lambda-list ',lambda-list
-				    :argument-precedence-order 
-				    ',argument-precedence-order
-				    :declare ',declaration
-				    :documentation ',documentation
-				    :generic-function-class 
-				    ',generic-function-class
-				    :method-combination
-				    ',method-combination
-				    :method-class ',method-class)
-	   ;,(dolist (method method-list)
-	   ;; add methods specified by defgeneric
-	   ;)
-	   )))))
+	(let ((output `(ensure-generic-function ',function-specifier
+			,@option-list)))
+	  (if method-list
+	      (do* ((scan method-list (cdr scan)))
+		   ((endp scan)
+		    `(prog1 ,output ,@method-list))
+		(setf (first scan)
+		      `(defmethod ,function-specifier ,@(first scan))))
+	      output))
+	;;,(dolist (method method-list)
+	;; add methods specified by defgeneric
+	;;
+	))))
 
-#|
-(defmacro generic-function (&rest args)
-  (multiple-value-bind (lambda-list options)
-    (parse-generic-function args)
-    
-    (parse-lambda-list lambda-list)
-    ;; process options
-    (multiple-value-bind (argument-precedence-order 
-			  declaration documentation method-combination
-			  generic-function-class method-class method-list) 
-      (parse-generic-options options lambda-list)
-      (unless generic-function-class
-	(setq generic-function-class 'STANDARD-GENERIC-FUNCTION))
-    (unless method-class
-      (setq method-class 'STANDARD-METHOD))
-    (unless argument-precedence-order
-      (setq argument-precedence-order ':DEFAULT))
-    `(progn
-       (let* ((dispatcher (make-gfun nil ',lambda-list))
-	      (gf-object (make-instance 
-			  ',generic-function-class
-			  :lambda-list ',lambda-list
-			  :argument-precedence-order ',argument-precedence-order
-			  :method-combination ',method-combination
-			  :method-class ',method-class
-			  :documentation ',documentation
-			  :gfun dispatcher)))
-	 (setf (si:gfun-instance dispatcher) gf-object)
-	 ;,(dolist (method method-list)
-	 ;; add methods specified by defgeneric
-	 ;)
-	 gf-object)))))
-|#
-		
 ;;; ----------------------------------------------------------------------
 ;;;                                                                parsing
 
@@ -125,57 +81,40 @@
 	
 (defun parse-generic-options (options lambda-list)
   (declare (si::c-local))
-  (let* (argument-precedence-order
-	 declaration
-	 documentation
-	 method-combination
-	 generic-function-class 
-	 method-class
-	 method-list)
+  (let* ((processed-options '())
+	 (method-list '())
+	 arg-list)
     (dolist (option options)
-	    (case (first option)
-		  (:argument-precedence-order
-		   (if argument-precedence-order
-		       (error "Option :argument-precedence-order specified more than once")
-		     (setq argument-precedence-order
-			   (parse-parameter-names
-			    (second option) lambda-list))))
-		  (declare
-		   (if declaration
-		       (error "Option declare specified more than once")
-		     (setq declaration
-			   (parse-legal-declaration
-			    (second option)))))
-		  (:documentation
-		   (if documentation
-		       (error "Option :documentation specified more than once")
-		     (setq documentation
-			   (parse-legal-documentation (second option)))))
-		  (:method-combination
-		   (if method-combination
-		       (error "Option :method-combination specified more than \
-once")
-		       (setq method-combination (rest option))))
-		  (:generic-function-class
-		   (if generic-function-class
-		       (error "Option :generic-function-class specified more \
-than once")
-		     (setq generic-function-class
-			   (legal-generic-function-classp (second option)))))
-		  (:method-class
-		   (if method-class
-		       (error "Option :method-class specified more than once")
-		     (setq method-class
-			   (parse-legal-method-class (second option)))))
-		  (:method
-		   (push (parse-legal-method-list (second option))
-			  method-list))
-		  (otherwise 
-		   (error "~S is not a legal defgeneric option" 
-			  (first option)))))
-    (values argument-precedence-order declaration documentation 
-	    (or method-combination '(STANDARD))
-	    generic-function-class  method-class 
+      (let ((option-name (first option))
+	    option-value)
+	(cond ((eq option-name :method)
+	       ;; We do not need to check the validity of this
+	       ;; because DEFMETHOD will do it.
+	       (push (rest option) method-list))
+	      ((member option-name processed-options)
+	       (error "Option ~s specified more than once" option-name))
+	      (t
+	       (push option-name processed-options)
+	       (setq option-value
+		     (case option-name
+		       (:argument-precedence-order
+			(parse-parameter-names (second option) lambda-list))
+		       (declare
+			(setq option-name :declare)
+			(mapcar #'parse-legal-declaration (rest option)))
+		       (:documentation
+			(parse-legal-documentation (second option)))
+		       (:method-combination
+			(rest option))
+		       (:generic-function-class
+			(legal-generic-function-classp (second option)))
+		       (:method-class
+			(parse-legal-method-class (second option)))
+		       (otherwise
+			(error "~S is not a legal defgeneric option"
+			       option-name))))
+	       (setf arg-list `(,option-name ',option-value ,@arg-list))))))
+    (values `(:lambda-list ',lambda-list ,@arg-list)
 	    method-list)))
 
 (defun ensure-generic-function (function-specifier &rest args &key
@@ -294,15 +233,14 @@ than once")
 
 (defun parse-legal-declaration (decl)
   (declare (si::c-local))
-  (unless (eq (car decl) 'OPTIMIZE)
+  (unless (eq (first decl) 'OPTIMIZE)
 	  (error "The only declaration allowed is optimize"))
-  (do* ((d (cdr decl) (cdr d))
-	(first (car d) (car d)))
-       ((null d) decl)
+  (dolist (first (rest decl))
     (when (atom first)
       (setq first (cons first 3)))
     (unless (member (car first) '(SPEED SPACE COMPILATION-SPEED DEBUG SAFETY))
-      (error "The only qualities allowed are speed and space"))))
+      (error "The only qualities allowed are speed and space")))
+  decl)
 
 (defun parse-legal-documentation (doc)
   (declare (si::c-local))
@@ -323,8 +261,3 @@ than once")
   (declare (si::c-local))
   ; until we don't know when a class can be the class of a method
   (error "At the moment the class of a method can be only standard-method"))
-
-(defun parse-legal-method-list (methods-list)
-  (declare (si::c-local))
-  methods-list)
-

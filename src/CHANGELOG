@@ -1537,6 +1537,8 @@ ECLS 0.9b
 
   - Method combinations are now fully supported.
 
+  - DEFGENERIC now accepts the :METHOD-COMBINATION and :METHOD options.
+
 TODO:
 =====
 

@@ -584,11 +584,14 @@
   ((lambda-list :initarg :lambda-list :accessor lambda-list)
    (argument-precedence-order 
     :initarg :argument-precedence-order
+    :initform :default
     :accessor generic-function-argument-precedence-order)
    (method-combination 
-    :initarg :method-combination :initform '(STANDARD)
+    :initarg :method-combination :initform '(standard)
     :accessor generic-function-method-combination)
-   (method-class :initarg :method-class)
+   (method-class
+    :initarg :method-class
+    :initform (find-class 'standard-method))
    (documentation :initarg :documentation)
    (gfun :initarg :gfun :accessor gfun :initform nil)
    (methods :initform nil :accessor methods)))
