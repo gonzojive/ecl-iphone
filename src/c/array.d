@@ -16,6 +16,10 @@
 
 #include "ecls.h"
 
+#ifndef CHAR_BIT
+#define CHAR_BIT (sizeof(char)*8)
+#endif
+
 static void displace (cl_object from, cl_object to, cl_object offset);
 static void check_displaced (cl_object dlist, cl_object orig, cl_index newdim);
 extern enum aelttype get_aelttype (cl_object x);

@@ -17,6 +17,10 @@
 #include "ecls.h"
 #include "ecls-inl.h"
 
+#ifndef CHAR_BIT
+#define CHAR_BIT (sizeof(char)*8)
+#endif
+
 #undef endp
 
 #define	endp(obje)	(endp_temp = (obje), CONSP(endp_temp) ? \

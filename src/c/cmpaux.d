@@ -17,6 +17,10 @@
 #include "ecls.h"
 #include "ecls-inl.h"
 
+#ifndef CHAR_BIT
+#define CHAR_BIT (sizeof(char)*8)
+#endif
+
 cl_object @'&optional';
 cl_object @'&rest';
 cl_object @'&key';

@@ -19,6 +19,10 @@
 #include "ecls-inl.h"
 #include <ctype.h>
 
+#ifndef CHAR_BIT
+#define CHAR_BIT (sizeof(char)*8)
+#endif
+
 /******************************* EXPORTS ******************************/
 
 cl_object standard_readtable;
