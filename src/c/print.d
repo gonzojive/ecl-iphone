@@ -29,7 +29,10 @@
 #define WRITE_MARK(s)
 #define WRITE_UNMARK(s)
 #define WRITE_SET_INDENT(s)
-#define write_ch	write_ch
+#define INDENT		' '
+#define INDENT1		' '
+#define INDENT2		' '
+#define write_ch	writec_stream
 #define call_print_object(x,s)	funcall(3, @'print-object',(x),(s))
 #define call_structure_print_function(f,x,s) funcall(4,(f),(x),(s),MAKE_FIXNUM(0))
 #endif /* ECL_CMU_FORMAT */
@@ -1041,10 +1044,12 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		WRITE_MARK(stream);
 		write_ch('(', stream);
 		WRITE_SET_INDENT(stream);
+#ifndef ECL_CMU_FORMAT
 		if (cl_env.print_pretty && CAR(x) != OBJNULL &&
 		    type_of(CAR(x)) == t_symbol &&
 		    (r = si_get_sysprop(CAR(x), @'si::pretty-print-format')) != Cnil)
 			goto PRETTY_PRINT_FORMAT;
+#endif
 		for (i = 0;  ;  i++) {
 			if (i >= print_length) {
 				write_str("...", stream);
