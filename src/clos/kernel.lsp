@@ -46,7 +46,7 @@
 
 (eval-when (compile eval)
   (defparameter +class-slots+
-    '((name :initarg :name :initform nil :accessor class-name)
+    '((name :initarg :name :initform nil :accessor class-id)
       (direct-superclasses :initarg :direct-superclasses
        :accessor class-direct-superclasses)
       (direct-subclasses :initform nil :accessor class-direct-subclasses)

@@ -1091,7 +1091,7 @@ type_of(#0)==t_bitvector"))
 	    #+clos
 	    (clos::ensure-class clos::install-method
 	     clos::standard-instance-set
-	     clos::class-name
+	     clos::class-id
 	     clos::class-direct-superclasses
 	     clos::class-direct-subclasses
 	     clos::class-slots

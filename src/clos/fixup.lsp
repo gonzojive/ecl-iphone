@@ -16,7 +16,7 @@
   (let* ((method-name (car method-info))
 	 (gfun (fdefinition method-name))
 	 (standard-method-class (find-class 'standard-method)))
-    (when (eq 'T (class-name (si:instance-class gfun)))
+    (when (eq 'T (class-id (si:instance-class gfun)))
       ;; complete the generic function object
       (si:instance-class-set gfun (find-class 'STANDARD-GENERIC-FUNCTION))
       (si::instance-sig-set gfun)

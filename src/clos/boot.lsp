@@ -20,7 +20,7 @@
   (let ((class (si:allocate-raw-instance nil metaclass 12)))
     (unless metaclass
       (si:instance-class-set class class))
-    (setf (class-name                class) name
+    (setf (class-id                  class) name
 	  (class-direct-superclasses class) nil
 	  (class-direct-subclasses   class) nil
 	  (class-slots               class) nil
@@ -141,5 +141,11 @@
 
 (defmethod slot-exists-p ((instance t) slot-name)
   nil)
+
+(defmethod class-name ((class class))
+  (class-id class))
+
+(defmethod (setf class-name) (new-value (class class))
+  (setf (class-id class) new-value))
 
 ;;; ----------------------------------------------------------------------
