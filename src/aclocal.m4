@@ -146,7 +146,7 @@ case "${host_os}" in
 	solaris*)
 		thehost="sun4sol2"
 		SHARED_LDFLAGS="-dy -G"
-		LDRPATH="-Wl,--rpath,~A"
+		LDRPATH="-Wl,-R,~A"
 		TCPLIBS="-lsocket -lnsl -lintl"
 		CLIBS="-ldl"
 		;;
