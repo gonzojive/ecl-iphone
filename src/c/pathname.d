@@ -950,6 +950,7 @@ path_list_match(cl_object a, cl_object mask) {
 	}
 	if (!endp(a))
 		return FALSE;
+	return TRUE;
 }		
 
 bool
