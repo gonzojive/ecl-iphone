@@ -103,10 +103,9 @@ make_shortfloat(float f)
 {
 	cl_object x;
 
-	
 	if (f == (float)0.0)
 		return(shortfloat_zero);
-	if (isnanf(f) || isinf(f))
+	if (isnanf(f) || !finite(f))
 		FEerror("Not a number.",0);
 	x = alloc_object(t_shortfloat);
 	sf(x) = f;
@@ -120,7 +119,7 @@ make_longfloat(double f)
 
 	if (f == (double)0.0)
 		return(longfloat_zero);
-	if (isnan(f) || isinf(f))
+	if (isnan(f) || !finite(f))
 		FEerror("Not a number.",0);
 	x = alloc_object(t_longfloat);
 	lf(x) = f;
