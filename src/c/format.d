@@ -14,8 +14,9 @@
     See file '../Copyright' for full details.
 */
 
-#include "ecl.h"
 #include <ctype.h>
+#include <limits.h>
+#include "ecl.h"
 #include "internal.h"
 
 #if !defined(ECL_CMU_FORMAT)
@@ -35,6 +36,19 @@ typedef struct format_stack_struct {
   struct { int type, value; } param[FMT_MAX_PARAM];
   int		nparam;
 } *format_stack;
+
+#if MOST_POSITIVE_FIXNUM < INT_MAX
+# define FMT_VALUE_UPPER_LIMIT MOST_POSITIVE_FIXNUM
+#else
+# define FMT_VALUE_UPPER_LIMIT INT_MAX
+#endif
+
+#if MOST_NEGATIVE_FIXNUM > INT_MIN
+# define FMT_VALUE_UPPER_LIMIT MOST_NEGATIVE_FIXNUM
+#else
+# define FMT_VALUE_UPPER_LIMIT INT_MIN
+#endif
+
 
 /******************* COMMON ***************************/
 
@@ -1872,6 +1886,13 @@ LOOP:
 			if (x == OBJNULL || !numberp(x))
 				fmt_error(fmt, "integer expected");
 			fmt->param[n].type = INT;
+			if (number_compare(x, MAKE_FIXNUM(FMT_VALUE_UPPER_LIMIT)) > 0) {
+				fmt->param[n].value = FMT_VALUE_UPPER_LIMIT;
+			} else if (number_compare(x, MAKE_FIXNUM(FMT_VALUE_LOWER_LIMIT)) < 0) {
+				fmt->param[n].value = FMT_VALUE_LOWER_LIMIT;
+			} else {
+				fmt->param[n].value = fix(x);
+			}
 			if (FIXNUMP(x)) {
 				fmt->param[n].value = fix(x);
 			} else if (number_plusp(x)) {
