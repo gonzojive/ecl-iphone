@@ -360,9 +360,11 @@ struct bytecodes {
 	cl_object name;		/*  function name  */
 	cl_object lex;		/*  lexical environment  */
 	cl_object specials;	/*  list of special variables  */
-	cl_index size;		/*  number of bytecodes  */
-	cl_object *data;	/*  the intermediate language  */
 	cl_object definition;	/*  function definition in list form  */
+	cl_index code_size;	/*  number of bytecodes  */
+	cl_index data_size;	/*  number of constants  */
+	char *code;		/*  the intermediate language  */
+	cl_object *data;	/*  non-inmediate constants used in the code  */
 };
 
 struct cfun {			/*  compiled function header  */

@@ -127,8 +127,54 @@ macro_expand(cl_object form, cl_object env)
 	return new_form;
 }
 
+static cl_object
+or_macro(cl_object whole, cl_object env)
+{
+	cl_object output = Cnil;
+	whole = CDR(whole);
+	if (Null(whole))	/* (OR) => NIL */
+		@(return Cnil);
+	while (!Null(CDR(whole))) {
+		output = CONS(CONS(CAR(whole), Cnil), output);
+		whole = CDR(whole);
+	}
+	if (Null(output))	/* (OR form1) => form1 */
+		@(return CAR(whole));
+	/* (OR form1 ... formn forml) => (COND (form1) ... (formn) (t forml)) */
+	output = CONS(cl_list(2, Ct, CAR(whole)), output);
+	@(return CONS(@'cond', cl_nreverse(output)))
+}
+
+static cl_object
+expand_and(cl_object whole)
+{
+	if (Null(whole))
+		return Ct;
+	if (Null(CDR(whole)))
+		return CAR(whole);
+	return cl_list(3, @'if', CAR(whole), expand_and(CDR(whole)));
+}
+
+static cl_object
+and_macro(cl_object whole, cl_object env)
+{
+	@(return expand_and(CDR(whole)))
+}
+
+static cl_object
+when_macro(cl_object whole, cl_object env)
+{
+	cl_object args = CDR(whole);
+	if (endp(args))
+		FEprogram_error("Syntax error: ~S.", 1, whole);
+	return cl_list(3, @'if', CAR(args), CONS(@'progn', CDR(args)));
+}
+
 void
 init_macros(void)
 {
 	SYM_VAL(@'*macroexpand-hook*') = @'funcall';
+	cl_def_c_macro(@'or', or_macro);
+	cl_def_c_macro(@'and', and_macro);
+	cl_def_c_macro(@'when', when_macro);
 }

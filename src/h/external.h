@@ -152,7 +152,7 @@ extern cl_object cl_make_cfun(cl_object (*self)(), cl_object name, cl_object blo
 extern cl_object cl_make_cfun_va(cl_object (*self)(int narg,...), cl_object name, cl_object block);
 extern cl_object cl_make_cclosure_va(cl_object (*self)(int narg,...), cl_object env, cl_object block);
 extern void cl_def_c_function(cl_object sym, cl_object (*self)(), int narg);
-extern void cl_def_c_macro_va(cl_object sym, cl_object (*self)(int narg,...));
+extern void cl_def_c_macro(cl_object sym, cl_object (*self)(cl_object, cl_object));
 extern void cl_def_c_function_va(cl_object sym, cl_object (*self)(int narg,...));
 
 
@@ -237,7 +237,7 @@ extern cl_object si_valid_function_name_p(cl_object name);
 extern cl_object si_process_declarations _ARGS((int narg, cl_object body, ...));
 
 extern cl_object make_lambda(cl_object name, cl_object lambda);
-extern cl_object eval(cl_object form, cl_object *bytecodes, cl_object env);
+extern cl_object si_eval_with_env(cl_object form, cl_object env);
 
 /* interpreter.c */
 
@@ -257,7 +257,7 @@ extern void cl_stack_pop_values(int n);
 
 extern cl_object lex_env;
 extern cl_object lambda_apply(int narg, cl_object fun);
-extern cl_object *interpret(cl_object *memory);
+extern char *interpret(cl_object bytecodes, char *pc);
 
 /* disassembler.c */
 
@@ -308,13 +308,12 @@ extern cl_object cl_va_arg(cl_va_list args);
 
 extern cl_object si_unlink_symbol(cl_object s);
 extern cl_object cl_eval(cl_object form);
-extern cl_object si_eval_with_env(cl_object form, cl_object env);
 extern cl_object cl_constantp(int narg, cl_object arg, ...);
 
 #define funcall cl_funcall
 extern cl_object cl_apply_from_stack(cl_index narg, cl_object fun);
 extern cl_object link_call(cl_object sym, cl_objectfn *pLK, int narg, cl_va_list args);
-extern cl_object cl_safe_eval(cl_object form, cl_object *bytecodes, cl_object env, cl_object err_value);
+extern cl_object cl_safe_eval(cl_object form, cl_object env, cl_object err_value);
 
 /* ffi.c */
 

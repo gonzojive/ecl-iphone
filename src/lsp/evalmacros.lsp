@@ -120,38 +120,6 @@ as a VARIABLE doc and can be retrieved by (documentation 'NAME 'variable)."
 ;;; dolist), some not at all (e.g. defun).
 ;;; Thus their names need not be exported.
 
-(defmacro and (&rest forms)
-  "Syntax: (and {form}*)
-Evaluates FORMs in order.  If any FORM evaluates to NIL, returns
-immediately with the value NIL.  Otherwise, returns all values of the
-last FORM."
-  (if (endp forms)
-      T
-      (do* ((res '(NIL))
-	    (insert res (cddar (rplaca insert `(IF ,(car fs) NIL))))
-	    (fs forms (cdr fs)))
-	   ((endp (cdr fs))
-	    (rplaca insert (car fs))
-	    (car res))))
-  )
-
-(defmacro or (&rest forms)
-  "Syntax: (or {form}*)
-Evaluates FORMs in order from left to right.  If any FORM evaluates to non-
-NIL, quits and returns that (single) value.  If the last FORM is reached,
-returns whatever values it returns."
-  (if (endp forms)
-      nil
-      (let ((x (reverse forms)))
-           (do ((forms (cdr x) (cdr forms))
-                (form (car x)
-                      (let ((temp (gensym)))
-                           `(LET ((,temp ,(car forms)))
-;			     (DECLARE (:READ-ONLY ,temp)) ; Beppe
-                                 (IF ,temp ,temp ,form)))))
-               ((endp forms) form))))
-  )
-               
 (defmacro loop (&rest body &aux (tag (gensym)))
   "Syntax: (loop {form}*)
 Establishes a NIL block and executes FORMs repeatedly.  The loop is normally
@@ -207,12 +175,6 @@ TESTs evaluates to non-NIL."
 			   `(IF ,(car l) ,(cadr l) ,form)
 			   `(IF ,(car l) (PROGN ,@(cdr l)) ,form))))))
   )
-
-(defmacro when (pred &rest body)
-  "Syntax: (when test {form}*)
-If TEST evaluates to non-NIL, then evaluates FORMs and returns all values of
-the last FORM.  If not, simply returns NIL."
-  `(IF ,pred (PROGN ,@body)))
 
 (defmacro unless (pred &rest body)
   "Syntax: (unless test {form}*)

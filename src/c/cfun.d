@@ -65,9 +65,10 @@ cl_def_c_function(cl_object sym, cl_object (*self)(), int narg)
 }
 
 void
-cl_def_c_macro_va(cl_object sym, cl_objectfn self)
+cl_def_c_macro(cl_object sym, cl_object (*self)(cl_object, cl_object))
 {
-	si_fset(3, sym,	cl_make_cfun_va(self, sym, symbol_value(@'si::*cblock*')),
+	si_fset(3, sym,
+		cl_make_cfun(self, sym, symbol_value(@'si::*cblock*'), 2),
 		Ct);
 }
 

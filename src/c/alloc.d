@@ -221,8 +221,8 @@ cl_alloc_object(cl_type t)
 	  return CODE_CHAR('\0'); /* Immediate character */
 	default:
 	}
-	
-	start_critical_section(); 
+
+	start_critical_section();
 	tm = tm_of(t);
 ONCE_MORE:
 	if (interrupt_flag) {
@@ -346,7 +346,9 @@ ONCE_MORE:
 	  obj->bytecodes.name = Cnil;
 	  obj->bytecodes.definition = Cnil;
 	  obj->bytecodes.specials = Cnil;
-	  obj->bytecodes.size = 0;
+	  obj->bytecodes.code_size = 0;
+	  obj->bytecodes.code = NULL;
+	  obj->bytecodes.data_size = 0;
 	  obj->bytecodes.data = NULL;
 	  break;
 	case t_cfun:

@@ -335,6 +335,11 @@ Returns T if CHAR is alphabetic; NIL otherwise.")
 (docfun alphanumericp function (char) "
 Returns T if CHAR is either numeric or alphabetic; NIL otherwise.")
 
+(docfun and macro "(and {form}*)" "
+Evaluates FORMs in order.  If any FORM evaluates to NIL, returns
+immediately with the value NIL.  Otherwise, returns all values of the
+last FORM.")
+
 (docfun append function (&rest lists) "
 Constructs and returns a new list by concatenating the args.")
 
@@ -2314,6 +2319,11 @@ while PORT is an integer identifies the port number to which to connect.
 This function returns a two-way stream which can be used in any of the
 stream operations.")
 
+(docfun or macro "(or {form}*)" "
+Evaluates FORMs in order from left to right.  If any FORM evaluates to non-
+NIL, quits and returns that (single) value.  If the last FORM is reached,
+returns whatever values it returns.")
+
 (docfun output-stream-p function (stream) "
 Returns T if STREAM can handle output operations; NIL otherwise.")
 
@@ -3285,6 +3295,10 @@ being the N-th value.")
 
 (docfun vectorp function (x) "
 Returns T if X is a vector; NIL otherwise.")
+
+(docfun when macro "(when test {form}*)" "
+If TEST evaluates to non-NIL, then evaluates FORMs and returns all values of
+the last FORM.  If not, simply returns NIL.")
 
 (docfun write function (object &key (stream *standard-output*) (escape *print-escape*)
                    (radix *print-radix*) (base *print-base*)

@@ -94,11 +94,10 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 	}
 	CL_UNWIND_PROTECT_BEGIN {
 		for (;;) {
-			cl_object bytecodes = Cnil;
 			x = cl_read(3, strm, Cnil, OBJNULL);
 			if (x == OBJNULL)
 				break;
-			eval(x, &bytecodes, Cnil);
+			si_eval_with_env(x, Cnil);
 			if (print != Cnil) {
 				@write(1, x);
 				@terpri(0);

@@ -226,17 +226,11 @@ si_unlink_symbol(cl_object s)
 cl_object
 cl_eval(cl_object form)
 {
-	return eval(form, NULL, Cnil);
+	return si_eval_with_env(form, Cnil);
 }
 
 cl_object
-si_eval_with_env(cl_object form, cl_object env)
-{
-	return eval(form, NULL, env);
-}
-
-cl_object
-cl_safe_eval(cl_object form, cl_object *new_bytecodes, cl_object env, cl_object err_value)
+cl_safe_eval(cl_object form, cl_object env, cl_object err_value)
 {
 	cl_object output;
 
@@ -244,7 +238,7 @@ cl_safe_eval(cl_object form, cl_object *new_bytecodes, cl_object env, cl_object 
 		output = err_value;
 	} else {
 		bds_bind(@'si::*ignore-errors*', Ct);
-		output = eval(form, new_bytecodes, env);
+		output = si_eval_with_env(form, env);
 		bds_unwind1;
 	}
 	frs_pop();
@@ -253,7 +247,7 @@ cl_safe_eval(cl_object form, cl_object *new_bytecodes, cl_object env, cl_object 
 
 @(defun si::safe-eval (form &optional (err_value @'error') env)
 @
-	return cl_safe_eval(form, NULL, env, err_value);
+	return cl_safe_eval(form, env, err_value);
 @)
 
 @(defun constantp (arg &optional env)

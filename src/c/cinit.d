@@ -33,12 +33,11 @@ static cl_object si_simple_toplevel ()
 	  cl_load(1, arg);
 	}
 	while (1) {
-	  cl_object bytecodes = Cnil;
 	  printf("\n> ");
 	  sentence = @read(3, Cnil, Cnil, OBJNULL);
 	  if (sentence == OBJNULL)
 	    @(return);
-	  prin1(eval(sentence, &bytecodes, Cnil), Cnil);
+	  prin1(si_eval_with_env(sentence, Cnil), Cnil);
 #ifdef TK
 	  StdinResume();
 #endif

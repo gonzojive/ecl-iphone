@@ -861,7 +861,7 @@ sharp_dot_reader(cl_object in, cl_object c, cl_object d)
 	in = read_object(in);
 	if (read_suppress)
 		@(return Cnil)
-	in = eval(in, NULL, Cnil);
+	in = si_eval_with_env(in, Cnil);
 	@(return in)
 }
 
@@ -1855,7 +1855,7 @@ read_VV(cl_object block, void *entry)
 		 */
 		(*entry_point)(block);
 		len = block->cblock.data_size;
-#ifdef GBC_BOEHM
+#ifdef ECL_DYNAMIC_VV
 		VV = block->cblock.data = len? (cl_object *)cl_alloc(len * sizeof(cl_object)) : NULL;
 #else
 		VV = block->cblock.data;

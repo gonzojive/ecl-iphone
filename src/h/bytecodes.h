@@ -184,8 +184,23 @@ enum {
   OP_OPCODE_SHIFT = 7
 };
 
-#define OPARG_SHIFT 16
-#define MAX_OPARG (1 << (31 - OPARG_SHIFT) - 1)
-#define SET_OPARG(o,n) ((cl_object)((cl_fixnum)(o) | ((n) << OPARG_SHIFT)))
-#define GET_OPARG(o) ((cl_fixnum)(o) >> OPARG_SHIFT)
-#define GET_OP(o) (((cl_fixnum)(o) & 0xFF) >> 2)
+/*
+   If we we working with character pointers,
+	typedef char cl_opcode;
+	...
+	#define OPCODE_SIZE sizeof(cl_opcode)
+	#define OPARG_SIZE sizeof(cl_oparg)
+   but since we are not...
+ */
+#define MAX_OPARG 0x7FFF
+typedef char cl_opcode;
+typedef int16_t cl_oparg;
+#define OPCODE_SIZE 1
+#define OPARG_SIZE sizeof(cl_oparg)
+#define READ_OPCODE(v)	(*(cl_opcode *)(v))
+#define READ_OPARG(v)	(*(cl_oparg *)(v))
+#define GET_OPCODE(v)	(*((cl_opcode *)(v))++)
+#define GET_OPARG(v)	(*((cl_oparg *)(v))++)
+#define GET_DATA(v,b)	(b->bytecodes.data[*((cl_oparg *)(v))++])
+#define GET_LABEL(pc,v)	{pc = (v) + *(cl_oparg *)v; v += OPARG_SIZE;}
+

@@ -16,11 +16,9 @@
 #include "ecl-inl.h"
 #include "bytecodes.h"
 
-#define next_code(v) (*(v++))
+static char *disassemble(cl_object bytecodes, char *vector);
 
-static cl_object *disassemble(cl_object *vector);
-
-static cl_object *base = NULL;
+static char *base = NULL;
 
 static void
 print_noarg(const char *s) {
@@ -48,134 +46,124 @@ print_oparg_arg(const char *s, cl_fixnum n, cl_object x) {
 }
 
 static cl_object *
-disassemble_vars(const char *message, cl_object *vector, cl_index step) {
-	cl_index n = fix(next_code(vector));
+disassemble_vars(const char *message, cl_object *data, cl_index step) {
+	cl_object o = *(data++);
+	cl_index n = fix(o);
 
 	if (n) {
 	  terpri(Cnil);
 	  print_noarg(message);
-	  for (; n; n--, vector+=step) {
-	    prin1(vector[0], Cnil);
+	  for (; n; n--, data+=step) {
+	    prin1(data[0], Cnil);
 	    if (n > 1) print_noarg(", ");
 	  }
 	}
-	return vector;
+	return data;
 }
 
 static void
 disassemble_lambda(cl_object bytecodes) {
-	cl_object *vector = bytecodes->bytecodes.data;
+	cl_object *data;
+	char *vector;
 
 	/* Name of LAMBDA */
 	print_arg("\nName:\t\t", bytecodes->bytecodes.name);
 
 	/* Print required arguments */
-	vector = disassemble_vars("Required:\t", vector, 1);
+	data = bytecodes->bytecodes.data;
+	data = disassemble_vars("Required:\t", data, 1);
 
 	/* Print optional arguments */
-	vector = disassemble_vars("Optionals:\t", vector, 3);
+	data = disassemble_vars("Optionals:\t", data, 3);
 
 	/* Print rest argument */
-	if (vector[0] != Cnil) {
-		print_arg("\nRest:\t\t", vector[0]);
+	if (data[0] != Cnil) {
+		print_arg("\nRest:\t\t", data[0]);
 	}
-	vector++;
+	data++;
 
 	/* Print keyword arguments */
-	if (vector[0] == MAKE_FIXNUM(0)) {
-		vector++;
+	if (data[0] == MAKE_FIXNUM(0)) {
+		data++;
 		goto NO_KEYS;
 	}
-	if (vector[0] != Cnil) {
-		print_arg("\nOther keys:\t", vector[0]);
+	if (data[0] != Cnil) {
+		print_arg("\nOther keys:\t", data[0]);
 	}
-	vector++;
-	vector = disassemble_vars("Keywords:\t", vector, 4);
+	data++;
+	data = disassemble_vars("Keywords:\t", data, 4);
 NO_KEYS:
 	/* Print aux arguments */
-	print_arg("\nDocumentation:\t", next_code(vector));
-	print_arg("\nDeclarations:\t", next_code(vector));
+	print_arg("\nDocumentation:\t", *(data++));
+	print_arg("\nDeclarations:\t", *(data++));
 
-	base = vector;
-	while (vector[0] != MAKE_FIXNUM(OP_HALT))
-		vector = disassemble(vector);
-}
-
-/* -------------------- DISASSEMBLER AIDS -------------------- */
-
-static inline cl_fixnum
-get_oparg(cl_object o) {
-	return GET_OPARG(o);
-}
-
-static inline cl_fixnum
-packed_label(cl_object *v) {
-	return v + get_oparg(v[0]) - base;
-}
-
-static inline cl_fixnum
-simple_label(cl_object *v) {
-	return v + fix(v[0]) - base;
+	base = vector = bytecodes->bytecodes.code;
+	while (vector[0] != OP_HALT)
+		vector = disassemble(bytecodes, vector);
 }
 
 /* -------------------- DISASSEMBLER CORE -------------------- */
 
-/* OP_DOLIST	label
+/* OP_DOLIST	labelz, labelo
    ...		; code to bind the local variable
    OP_EXIT
    ...		; code executed on each iteration
    OP_EXIT
+   labelo:
    ...		; code executed at the end
    OP_EXIT
-   label:
+   labelz:
 
 	High level construct for the DOLIST iterator. The list over which
 	we iterate is stored in VALUES(0).
 */
-static cl_object *
-disassemble_dolist(cl_object *vector) {
-	cl_fixnum exit;
+static char *
+disassemble_dolist(cl_object bytecodes, char *vector) {
+	char *exit, *output;
 	cl_object lex_old = lex_env;
 
 	lex_copy();
-	exit = packed_label(vector-1);
-	print_oparg("DOLIST\t", exit);
-	vector = disassemble(vector);
+	GET_LABEL(exit, vector);
+	GET_LABEL(output, vector);
+	print_oparg("DOLIST\t", exit-base);
+	vector = disassemble(bytecodes, vector);
 	print_noarg("\t\t; dolist binding");
-	vector = disassemble(vector);
+	vector = disassemble(bytecodes, vector);
 	print_noarg("\t\t; dolist body");
-	vector = disassemble(vector);
+	vector = disassemble(bytecodes, vector);
 	print_noarg("\t\t; dolist");
 
 	lex_env = lex_old;
 	return vector;
 }
 
-/* OP_TIMES	label
+/* OP_TIMES	labelz, labelo
    ...		; code to bind the local variable
    OP_EXIT
    ...		; code executed on each iteration
    OP_EXIT
+   labelo:
    ...		; code executed at the end
    OP_EXIT
-   label:
+   labelz:
 
 	High level construct for the DOTIMES iterator. The number of times
 	we iterate is stored in VALUES(0).
 */
-static cl_object *
-disassemble_dotimes(cl_object *vector) {
-	cl_fixnum exit;
+static char *
+disassemble_dotimes(cl_object bytecodes, char *vector) {
+	char *exit, *output;
 	cl_object lex_old = lex_env;
 
 	lex_copy();
-	exit = packed_label(vector-1);
-	print_oparg("DOTIMES\t", exit);
-	vector = disassemble(vector);
+	GET_LABEL(exit, vector);
+	GET_LABEL(output, vector);
+	print_oparg("DOTIMES\t", exit-base);
+	vector = disassemble(bytecodes, vector);
 	print_noarg("\t\t; dotimes times");
-	vector = disassemble(vector);
+	vector = disassemble(bytecodes, vector);
 	print_noarg("\t\t; dotimes body");
-	vector = disassemble(vector);
+	vector = disassemble(bytecodes, vector);
 	print_noarg("\t\t; dotimes");
 
 	lex_env = lex_old;
@@ -191,19 +179,19 @@ disassemble_dotimes(cl_object *vector) {
 	Executes the enclosed code in a lexical enviroment extended with
 	the functions "fun1" ... "funn".
 */
-static cl_object *
-disassemble_flet(cl_object *vector) {
+static char *
+disassemble_flet(cl_object bytecodes, char *vector) {
 	cl_object lex_old = lex_env;
-	cl_index nfun = get_oparg(vector[-1]);
+	cl_index nfun = GET_OPARG(vector);
 
 	print_noarg("FLET");
 	lex_copy();
 	while (nfun--) {
-		cl_object fun = next_code(vector);
+		cl_object fun = GET_DATA(vector, bytecodes);
 		print_noarg("\n\tFLET\t");
 		@prin1(1, fun->bytecodes.name);
 	}
-	vector = disassemble(vector);
+	vector = disassemble(bytecodes, vector);
 	print_noarg("\t\t; flet");
 
 	lex_env = lex_old;
@@ -219,18 +207,18 @@ disassemble_flet(cl_object *vector) {
 	Executes the enclosed code in a lexical enviroment extended with
 	the functions "fun1" ... "funn".
 */
-static cl_object *
-disassemble_labels(cl_object *vector) {
+static char *
+disassemble_labels(cl_object bytecodes, char *vector) {
 	cl_object lex_old = lex_env;
-	cl_index nfun = get_oparg(vector[-1]);
+	cl_index nfun = GET_OPARG(vector);
 
 	print_noarg("LABELS");
 	lex_copy();
 	while (nfun--) {
-		cl_object fun = next_code(vector);
+		cl_object fun = GET_DATA(vector, bytecodes);
 		print_arg("\n\tLABELS\t", fun->bytecodes.name);
 	}
-	vector = disassemble(vector);
+	vector = disassemble(bytecodes, vector);
 	print_noarg("\t\t; labels");
 
 	lex_env = lex_old;
@@ -238,35 +226,37 @@ disassemble_labels(cl_object *vector) {
 }
 
 /* OP_MSETQ	n{arg}
-   {fixnumn}|{symboln}
+   {fixnumn}
    ...
-   {fixnum1}|{symbol1}
+   {fixnum1}
 
 	Sets N variables to the N values in VALUES(), filling with
 	NIL when there are values missing. Local variables are denoted
 	with an integer which points a position in the lexical environment,
-	while special variables are denoted just with the name.
+	while special variables are denoted with a negative index X, which
+	denotes the value -1-X in the table of constants.
 */
-static cl_object *
-disassemble_msetq(cl_object *vector)
+static char *
+disassemble_msetq(cl_object bytecodes, char *vector)
 {
-	int i, n = get_oparg(vector[-1]);
+	int i, n = GET_OPARG(vector);
 	bool newline = FALSE;
 
 	for (i=0; i<n; i++) {
-		cl_object var = next_code(vector);
+		cl_fixnum var = GET_OPARG(vector);
 		if (newline) {
 			print_noarg("\n\t");
 		} else
 			newline = TRUE;
-		if (FIXNUMP(var)) {
+		if (var >= 0) {
 			cl_format(4, Ct,
 				  make_constant_string("MSETQ\t~D,VALUES(~D)"),
-				  var, MAKE_FIXNUM(i));
+				  MAKE_FIXNUM(var), MAKE_FIXNUM(i));
 		} else {
+			cl_object name = bytecodes->bytecodes.data[-1-var];
 			cl_format(4, Ct,
 				  make_constant_string("MSETQS\t~A,VALUES(~D)"),
-				  var, MAKE_FIXNUM(i));
+				  name, MAKE_FIXNUM(i));
 		}
 	}
 	return vector;
@@ -279,19 +269,17 @@ disassemble_msetq(cl_object *vector)
 	Execute the code enclosed with the special variables in BINDINGS
 	set to the values in the list which was passed in VALUES(0).
 */
-static cl_object *
-disassemble_progv(cl_object *vector) {
+static char *
+disassemble_progv(cl_object bytecodes, char *vector) {
 	print_noarg("PROGV");
-	vector = disassemble(vector);
+	vector = disassemble(bytecodes, vector);
 	print_noarg("\t\t; progv");
 	return vector;
 }
 
 /* OP_TAGBODY	n{arg}
-   tag1
    label1
    ...
-   tagn
    labeln
 label1:
    ...
@@ -301,64 +289,55 @@ labeln:
 
 	High level construct for the TAGBODY form.
 */
-static cl_object *
-disassemble_tagbody(cl_object *vector) {
-	cl_index i, ntags = get_oparg(vector[-1]);
+static char *
+disassemble_tagbody(cl_object bytecodes, char *vector) {
+	cl_index i, ntags = GET_OPARG(vector);
 	cl_object lex_old = lex_env;
+	char *destination;
 	lex_copy();
 
 	print_noarg("TAGBODY");
-	for (i=0; i<ntags; i++, vector++) {
+	for (i=0; i<ntags; i++) {
+		GET_LABEL(destination, vector);
 		cl_format(4, Ct,
 			  make_constant_string("\n\tTAG\t~D @@ ~D"),
-			  MAKE_FIXNUM(i), MAKE_FIXNUM(simple_label(vector)));
+			  MAKE_FIXNUM(i), MAKE_FIXNUM(destination-base));
 	}
-	vector = disassemble(vector);
+	vector = disassemble(bytecodes, vector);
 	print_noarg("\t\t; tagbody");
 
 	lex_env = lex_old;
 	return vector;
 }
 
-static cl_object *
-disassemble(cl_object *vector) {
+static char *
+disassemble(cl_object bytecodes, char *vector) {
 	const char *string;
-	cl_type t;
-	cl_object s;
+	cl_object o;
 	cl_fixnum n;
 	cl_object line_format = make_constant_string("~%~4d\t");
 
  BEGIN:
 	cl_format(3, Ct, line_format, MAKE_FIXNUM(vector-base));
-	s = next_code(vector);
-	t = type_of(s);
-	if (t == t_symbol) {
-		string = "QUOTE\t";
-		goto ARG;
-	}
-	if (t != t_fixnum) {
-		@prin1(1, s);
-		goto BEGIN;
-	}
-	switch (GET_OP(s)) {
+	switch (GET_OPCODE(vector)) {
 
 	/* OP_NOP
 		Sets VALUES(0) = NIL and NValues = 1
-	*/   		
+	*/
 	case OP_NOP:		string = "NOP";	goto NOARG;
 
 	/* OP_QUOTE
 		Sets VALUES(0) to an immediate value.
 	*/
 	case OP_QUOTE:		string = "QUOTE\t";
-				s = next_code(vector);
+				o = GET_DATA(vector, bytecodes);
 				goto ARG;
 
 	/* OP_VAR	n{arg}
 		Sets NValues=1 and VALUES(0) to the value of the n-th local.
 	*/
 	case OP_VAR:		string = "VAR\t";
-				n = get_oparg(s);
+				n = GET_OPARG(vector);
 				goto OPARG;
 
 	/* OP_VARS	var{symbol}
@@ -366,7 +345,7 @@ disassemble(cl_object *vector) {
 		VAR should be either a special variable or a constant.
 	*/
 	case OP_VARS:		string = "VARS\t";
-				s = next_code(vector);
+				o = GET_DATA(vector, bytecodes);
 				goto ARG;
 
 	/* OP_PUSH
@@ -379,7 +358,7 @@ disassemble(cl_object *vector) {
 		Pushes the value of the n-th local onto the stack.
 	*/
 	case OP_PUSHV:		string = "PUSHV\t";
-				n = get_oparg(s);
+				n = GET_OPARG(vector);
 				goto OPARG;
 
 	/* OP_PUSHVS	var{symbol}
@@ -387,14 +366,14 @@ disassemble(cl_object *vector) {
 		VAR should be either a special variable or a constant.
 	*/
 	case OP_PUSHVS:		string = "PUSHVS\t";
-				s = next_code(vector);
+				o = GET_DATA(vector, bytecodes);
 				goto ARG;
 
 	/* OP_PUSHQ	value{object}
 		Pushes "value" onto the stack.
 	*/
 	case OP_PUSHQ:		string = "PUSH\t'";
-				s = next_code(vector);
+				o = GET_DATA(vector, bytecodes);
 				goto ARG;
 
 	/* OP_PUSHVALUES
@@ -428,19 +407,7 @@ disassemble(cl_object *vector) {
 	   to the first instruction after OP_EXIT.
 	*/
 	case OP_BLOCK:		string = "BLOCK\t";
-				n = packed_label(vector - 1);
-				s = next_code(vector);
-				goto OPARG_ARG;
-
-	/* OP_CALLG	n{arg}, function-name{symbol}
-		Calls the global function with N arguments which have
-		been deposited in the stack. The output values are
-		left in VALUES(...)
-	*/
-	case OP_CALLG:		string = "CALLG\t";
-				n = get_oparg(s);
-				s = next_code(vector);
-				goto OPARG_ARG;
+				goto JEQL;
 
 	/* OP_CALL	n{arg}
 		Calls the function in VALUES(0) with N arguments which
@@ -448,7 +415,7 @@ disassemble(cl_object *vector) {
 		are left in VALUES(...)
 	*/
 	case OP_CALL:		string = "CALL\t";
-				n = get_oparg(s);
+				n = GET_OPARG(vector);
 				goto OPARG;
 
 	/* OP_FCALL	n{arg}
@@ -457,18 +424,8 @@ disassemble(cl_object *vector) {
 		are left in VALUES(...)
 	*/
 	case OP_FCALL:		string = "FCALL\t";
-				n = get_oparg(s);
+				n = GET_OPARG(vector);
 				goto OPARG;
-
-	/* OP_PCALLG	n{arg}, function-name{symbol}
-		Calls the global function with N arguments which have
-		been deposited in the stack. The first output value is
-		left on the stack.
-	*/
-	case OP_PCALLG:		string = "PCALLG\t";
-				n = get_oparg(s);
-				s = next_code(vector);
-				goto OPARG_ARG;
 
 	/* OP_PCALL	n{arg}
 		Calls the function in VALUES(0) with N arguments which
@@ -476,7 +433,7 @@ disassemble(cl_object *vector) {
 		is pushed on the stack.
 	*/
 	case OP_PCALL:		string = "PCALL\t";
-				n = get_oparg(s);
+				n = GET_OPARG(vector);
 				goto OPARG;
 
 	/* OP_PFCALL	n{arg}
@@ -485,7 +442,7 @@ disassemble(cl_object *vector) {
 		is pushed on the stack.
 	*/
 	case OP_PFCALL:		string = "PFCALL\t";
-				n = get_oparg(s);
+				n = GET_OPARG(vector);
 				goto OPARG;
 
 	/* OP_MCALL
@@ -504,9 +461,7 @@ disassemble(cl_object *vector) {
 	   first instruction after the end (OP_EXIT) of the block
 	*/
 	case OP_CATCH:		string = "CATCH\t";
-				n = packed_label(vector - 1);
-				goto OPARG;
-
+				goto JMP;
 	/* OP_EXIT
 		Marks the end of a high level construct (DOLIST, DOTIMES...)
 	*/
@@ -529,9 +484,9 @@ disassemble(cl_object *vector) {
 	case OP_HALT:		print_noarg("HALT");
 				return vector-1;
 
-	case OP_FLET:		vector = disassemble_flet(vector);
+	case OP_FLET:		vector = disassemble_flet(bytecodes, vector);
 				break;
-	case OP_LABELS:		vector = disassemble_labels(vector);
+	case OP_LABELS:		vector = disassemble_labels(bytecodes, vector);
 				break;
 
 	/* OP_LFUNCTION	name{symbol}
@@ -540,7 +495,7 @@ disassemble(cl_object *vector) {
 		environment. This last value takes precedence.
 	*/
 	case OP_LFUNCTION:	string = "LOCFUNC\t";
-				n = get_oparg(s);
+				n = GET_OPARG(vector);
 				goto OPARG;
 
 	/* OP_FUNCTION	name{symbol}
@@ -549,26 +504,27 @@ disassemble(cl_object *vector) {
 		environment. This last value takes precedence.
 	*/
 	case OP_FUNCTION:	string = "SYMFUNC\t";
-				s = next_code(vector);
+				o = GET_DATA(vector, bytecodes);
 				goto ARG;
 
-	/* OP_CLOSE	name{symbol}
+	/* OP_CLOSE	name{arg}
 		Extracts the function associated to a symbol. The function
 		may be defined in the global environment or in the local
 		environment. This last value takes precedence.
 	*/
 	case OP_CLOSE:		string = "CLOSE\t";
-				s = next_code(vector);
+				o = GET_DATA(vector, bytecodes);
 				goto ARG;
 
-	/* OP_GO	n{arg}, tag-name{symbol}
+	/* OP_GO	n{arg}
+	   OP_QUOTE	tag-name{symbol}
 		Jumps to the tag which is defined at the n-th position in
 		the lexical environment. TAG-NAME is kept for debugging
 		purposes.
 	*/
 	case OP_GO:		string = "GO\t";
-				n = get_oparg(s);
-				s = next_code(vector);
+				n = GET_OPARG(vector);
+				o = GET_DATA(vector, bytecodes);
 				goto OPARG_ARG;
 
 	/* OP_RETURN	n{arg}
@@ -576,7 +532,7 @@ disassemble(cl_object *vector) {
 		occuppies the n-th position.
 	*/
 	case OP_RETURN:		string = "RETFROM";
-				n = get_oparg(s);
+				n = GET_OPARG(vector);
 				goto OPARG;
 
 	/* OP_THROW
@@ -596,22 +552,23 @@ disassemble(cl_object *vector) {
 		comparing with the value of VALUES(0).
 	*/
 	case OP_JMP:		string = "JMP\t";
-				n = packed_label(vector-1);
-				goto OPARG;
+				goto JMP;
 	case OP_JNIL:		string = "JNIL\t";
-				n = packed_label(vector-1);
-				goto OPARG;
+				goto JMP;
 	case OP_JT:		string = "JT\t";
-				n = packed_label(vector-1);
+	JMP: {			cl_oparg jmp = GET_OPARG(vector);
+				n = vector + jmp - OPARG_SIZE - base;
 				goto OPARG;
+	}
 	case OP_JEQL:		string = "JEQL\t";
-				s = next_code(vector);
-				n = packed_label(vector-2);
-				goto OPARG_ARG;
+				goto JEQL;
 	case OP_JNEQL:		string = "JNEQL\t";
-				s = next_code(vector);
-				n = packed_label(vector-2);
+	JEQL: {			cl_oparg jmp;
+				o = GET_DATA(vector, bytecodes);
+				jmp = GET_OPARG(vector);
+				n = vector + jmp - OPARG_SIZE - base;
 				goto OPARG_ARG;
+	}
 	case OP_NOT:		string = "NOT\t";
 				goto NOARG;
 
@@ -619,13 +576,13 @@ disassemble(cl_object *vector) {
 		Undo "n" bindings of lexical variables.
 	*/
 	case OP_UNBIND:		string = "UNBIND\t";
-				n = get_oparg(s);
+				n = GET_OPARG(vector);
 				goto OPARG;
 	/* OP_UNBINDS	n{arg}
 		Undo "n" bindings of special variables.
 	*/
 	case OP_UNBINDS:	string = "UNBINDS\t";
-				n = get_oparg(s);
+				n = GET_OPARG(vector);
 				goto OPARG;
 	/* OP_BIND	name{symbol}
 	   OP_PBIND	name{symbol}
@@ -636,24 +593,24 @@ disassemble(cl_object *vector) {
 		to the n-th value of VALUES(...).
 	*/
 	case OP_BIND:		string = "BIND\t";
-				s = next_code(vector);
+				o = GET_DATA(vector, bytecodes);
 				goto ARG;
 	case OP_PBIND:		string = "PBIND\t";
-				s = next_code(vector);
+				o = GET_DATA(vector, bytecodes);
 				goto ARG;
 	case OP_VBIND:		string = "VBIND\t";
-				n = get_oparg(s);
-				s = next_code(vector);
+				n = GET_OPARG(vector);
+				o = GET_DATA(vector, bytecodes);
 				goto OPARG_ARG;
 	case OP_BINDS:		string = "BINDS\t";
-				s = next_code(vector);
+				o = GET_DATA(vector, bytecodes);
 				goto ARG;
 	case OP_PBINDS:		string = "PBINDS\t";
-				s = next_code(vector);
+				o = GET_DATA(vector, bytecodes);
 				goto ARG;
 	case OP_VBINDS:		string = "VBINDS\t";
-				n = get_oparg(s);
-				s = next_code(vector);
+				n = GET_OPARG(vector);
+				o = GET_DATA(vector, bytecodes);
 				goto OPARG_ARG;
 	/* OP_SETQ	n{arg}
 	   OP_PSETQ	n{arg}
@@ -664,28 +621,28 @@ disassemble(cl_object *vector) {
 		first value on the stack (OP_PSETQ[S]).
 	*/
 	case OP_SETQ:		string = "SETQ\t";
-				n = get_oparg(s);
+				n = GET_OPARG(vector);
 				goto OPARG;
 	case OP_PSETQ:		string = "PSETQ\t";
-				n = get_oparg(s);
+				n = GET_OPARG(vector);
 				goto OPARG;
 	case OP_SETQS:		string = "SETQS";
-				s = next_code(vector);
+				o = GET_DATA(vector, bytecodes);
 				goto ARG;
 	case OP_PSETQS:		string = "PSETQS";
-				s = next_code(vector);
+				o = GET_DATA(vector, bytecodes);
 				goto ARG;
 
-	case OP_MSETQ:		vector = disassemble_msetq(vector);
+	case OP_MSETQ:		vector = disassemble_msetq(bytecodes, vector);
 				break;
-	case OP_PROGV:		vector = disassemble_progv(vector);
+	case OP_PROGV:		vector = disassemble_progv(bytecodes, vector);
 				break;
 
 	/* OP_VALUES	n{arg}
 		Pop N values from the stack and store them in VALUES(...)
 	*/
 	case OP_VALUES:		string = "VALUES\t";
-				n = get_oparg(s);
+				n = GET_OPARG(vector);
 				goto OPARG;
 	/* OP_NTHVAL
 		Set VALUES(0) to the N-th value of the VALUES(...) list.
@@ -693,9 +650,9 @@ disassemble(cl_object *vector) {
 	*/
 	case OP_NTHVAL:		string = "NTHVAL\t";
 				goto NOARG;
-	case OP_DOLIST:		vector = disassemble_dolist(vector);
+	case OP_DOLIST:		vector = disassemble_dolist(bytecodes, vector);
 				break;
-	case OP_DOTIMES:	vector = disassemble_dotimes(vector);
+	case OP_DOTIMES:	vector = disassemble_dotimes(bytecodes, vector);
 				break;
 	/* OP_DO	label
 	     ...	; code executed within a NIL block
@@ -705,9 +662,8 @@ disassemble(cl_object *vector) {
 	   High level construct for the DO and BLOCK forms.
 	*/
 	case OP_DO:		string = "DO\t";
-				n = packed_label(vector - 1);
-				goto OPARG;
-	case OP_TAGBODY:	vector = disassemble_tagbody(vector);
+				goto JMP;
+	case OP_TAGBODY:	vector = disassemble_tagbody(bytecodes, vector);
 				break;
 	/* OP_PROTECT	label
 	     ...	; code to be protected and whose value is output
@@ -723,8 +679,7 @@ disassemble(cl_object *vector) {
 	  first piece of code.
 	*/
 	case OP_PROTECT:	string = "PROTECT\t";
-				n = packed_label(vector - 1);
-				goto OPARG;
+				goto JMP;
 	case OP_PROTECT_NORMAL:	string = "PROTECT\tNORMAL";
 				goto NOARG;
 	case OP_PROTECT_EXIT:	string = "PROTECT\tEXIT";
@@ -739,11 +694,11 @@ disassemble(cl_object *vector) {
 	NOARG:			print_noarg(string);
 				break;
 	ARG:			print_noarg(string);
-				@prin1(1, s);
+				@prin1(1, o);
 				break;
 	OPARG:			print_oparg(string, n);
 				break;
-	OPARG_ARG:		print_oparg_arg(string, n, s);
+	OPARG_ARG:		print_oparg_arg(string, n, o);
 				break;
 	}
 	goto BEGIN;
@@ -766,7 +721,7 @@ si_bc_split(cl_object b)
 
 	if (type_of(b) != t_bytecodes)
 		@(return Cnil Cnil)
-	vector = cl_alloc_simple_vector(b->bytecodes.size, aet_object);
-	vector->vector.self.t = b->bytecodes.data;
+	vector = cl_alloc_simple_vector(b->bytecodes.code_size, aet_fix);
+	vector->vector.self.fix = b->bytecodes.code;
 	@(return b->bytecodes.lex vector)
 }

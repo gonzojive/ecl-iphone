@@ -17,7 +17,6 @@
 #include "ecl-inl.h"
 #include "bytecodes.h"
 
-#define next_code(v) *(v++)
 #undef frs_pop
 #define frs_pop() { cl_stack_top = cl_stack + frs_top->frs_sp; frs_top--; }
 
@@ -226,23 +225,23 @@ lambda_bind_var(cl_object var, cl_object val, cl_object specials)
 		bind_special(var, val);
 }
 
-static cl_object *
-lambda_bind(int narg, cl_object lambda_list, cl_index sp)
+static void
+lambda_bind(int narg, cl_object lambda, cl_index sp)
 {
-	cl_object *data = lambda_list->bytecodes.data;
-	cl_object specials = lambda_list->bytecodes.specials;
+	cl_object *data = lambda->bytecodes.data;
+	cl_object specials = lambda->bytecodes.specials;
 	int i, n;
 	bool check_remaining = TRUE;
 
 	/* 1) REQUIRED ARGUMENTS:  N var1 ... varN */
-	n = fix(next_code(data));
+	n = fix(*(data++));
 	if (narg < n)
-	  FEwrong_num_arguments(lambda_list->bytecodes.name);
+	  FEwrong_num_arguments(lambda->bytecodes.name);
 	for (; n; n--, narg--)
-	  lambda_bind_var(next_code(data), cl_stack[sp++], specials);
+	  lambda_bind_var(*(data++), cl_stack[sp++], specials);
 
 	/* 2) OPTIONAL ARGUMENTS:  N var1 value1 flag1 ... varN valueN flagN */
-	for (n = fix(next_code(data)); n; n--, data+=3) {
+	for (n = fix(*(data++)); n; n--, data+=3) {
 	  if (narg) {
 	    lambda_bind_var(data[0], cl_stack[sp], specials);
 	    sp++; narg--;
@@ -251,7 +250,7 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 	  } else {
 	    cl_object defaults = data[1];
 	    if (FIXNUMP(defaults)) {
-	      interpret(&data[1] + fix(defaults));
+	      interpret(lambda, lambda->bytecodes.code + fix(defaults));
 	      defaults = VALUES(0);
 	    }
 	    lambda_bind_var(data[0], defaults, specials);
@@ -275,19 +274,21 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 	  data++;
 	  if (narg && check_remaining)
 	    FEprogram_error("LAMBDA: Too many arguments to function ~S.", 1,
-			    lambda_list->bytecodes.name);
+			    lambda->bytecodes.name);
 	} else {
 	  /*
 	   * Only when ALLOW-OTHER-KEYS /= 0, we process this:
 	   * 5) KEYWORDS: N key1 var1 value1 flag1 ... keyN varN valueN flagN
 	   */
-	  bool allow_other_keys = !Null(next_code(data));
+	  bool allow_other_keys = !Null(*(data++));
 	  bool allow_other_keys_found = allow_other_keys;
-	  int n = fix(next_code(data));
+	  int n = fix(*(data++));
 	  cl_object *keys;
 	  cl_object spp[n];
 	  bool other_found = FALSE;
 	  void *unbound = spp; /* not a valid lisp object */
+	  if ((narg & 1) != 0)
+	    FEprogram_error("Function called with odd number of keyword arguments.", 0);
 	  for (i=0; i<n; i++)
 	    spp[i] = unbound;
 	  for (; narg; narg-=2) {
@@ -316,14 +317,14 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 	  }
 	  if (other_found && !allow_other_keys)
 	    FEprogram_error("LAMBDA: Unknown keys found in function ~S.",
-			    1, lambda_list->bytecodes.name);
+			    1, lambda->bytecodes.name);
 	  for (i=0; i<n; i++, data+=4) {
 	    if (spp[i] != unbound)
 	      lambda_bind_var(data[1],spp[i],specials);
 	    else {
 	      cl_object defaults = data[2];
 	      if (FIXNUMP(defaults)) {
-		      interpret(&data[2] + fix(defaults));
+		      interpret(lambda, lambda->bytecodes.code + fix(defaults));
 		      defaults = VALUES(0);
 	      }
 	      lambda_bind_var(data[1],defaults,specials);
@@ -332,14 +333,13 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 	      lambda_bind_var(data[3],(spp[i] != unbound)? Ct : Cnil,specials);
 	  }
 	}
-	return data;
 }
 
 cl_object
 lambda_apply(int narg, cl_object fun)
 {
 	cl_index args = cl_stack_index() - narg;
-	cl_object name, *body;
+	cl_object name;
 	bds_ptr old_bds_top;
 	struct ihs_frame ihs;
 
@@ -352,20 +352,20 @@ lambda_apply(int narg, cl_object fun)
 	old_bds_top = bds_top;
 
 	/* Establish bindings */
-	body = lambda_bind(narg, fun, args);
+	lambda_bind(narg, fun, args);
 
 	/* If it is a named lambda, set a block for RETURN-FROM */
 	VALUES(0) = Cnil;
 	NValues = 0;
 	name = fun->bytecodes.name;
 	if (Null(name))
-		interpret(body);
+		interpret(fun, fun->bytecodes.code);
 	else {
 		/* Accept (SETF name) */
 		if (CONSP(name)) name = CADR(name);
 		CL_BLOCK_BEGIN(id) {
 			bind_block(name, id);
-			interpret(body);
+			interpret(fun, fun->bytecodes.code);
 		} CL_BLOCK_END;
 	}
 	bds_unwind(old_bds_top);
@@ -376,21 +376,6 @@ lambda_apply(int narg, cl_object fun)
 
 /* -------------------- AIDS TO THE INTERPRETER -------------------- */
 
-static inline cl_fixnum
-get_oparg(cl_object o) {
-	return GET_OPARG(o);
-}
-
-static inline cl_object *
-packed_label(cl_object *v) {
-	return v + GET_OPARG(v[0]);
-}
-
-static inline cl_object *
-simple_label(cl_object *v) {
-	return v + fix(v[0]);
-}
-
 static cl_object
 search_global(register cl_object s) {
 	cl_object x = SYM_VAL(s);
@@ -398,7 +383,7 @@ search_global(register cl_object s) {
 		FEunbound_variable(s);
 	return x;
 }
-		
+
 /* Similar to funcall(), but registers calls in the IHS stack. */
 
 static cl_object
@@ -471,45 +456,46 @@ interpret_funcall(int narg, cl_object fun) {
 
 /* -------------------- THE INTERPRETER -------------------- */
 
-/* OP_DOLIST	label
+/* OP_DOLIST	labelz, labelo
    ...		; code to bind the local variable
    OP_EXIT
    ...		; code executed on each iteration
    OP_EXIT
+   labelo:
    ...		; code executed at the end
    OP_EXIT
-   label:
+   labelz:
 
 	High level construct for the DOLIST iterator. The list over which
 	we iterate is stored in VALUES(0).
 */
-static cl_object *
-interpret_dolist(cl_object *vector) {
-	cl_object *volatile exit = packed_label(vector - 1);
+static char *
+interpret_dolist(cl_object bytecodes, char *vector) {
+	char *volatile exit;
+	char *output;
+
+	GET_LABEL(exit, vector);
+	GET_LABEL(output, vector);
 
 	/* 1) Set NIL block */
 	CL_BLOCK_BEGIN(id) {
-		cl_object *output;
-		cl_object list;
+		cl_object list = VALUES(0);
 
 		bind_block(Cnil, id);
-		list = VALUES(0);
-		exit = packed_label(vector - 1);
 
 		/* 2) Build list & bind variable*/
-		vector = interpret(vector);
-		output = packed_label(vector-1);
+		vector = interpret(bytecodes, vector);
 
 		/* 3) Repeat until list is exahusted */
 		while (!endp(list)) {
 			NValues = 1;
 			VALUES(0) = CAR(list);
-			interpret(vector);
+			interpret(bytecodes, vector);
 			list = CDR(list);
 		}
 		VALUES(0) = Cnil;
 		NValues = 1;
-		interpret(output);
+		interpret(bytecodes, output);
 
 		/* 4) Restore environment */
 		lex_env = frs_top->frs_lex;
@@ -518,49 +504,53 @@ interpret_dolist(cl_object *vector) {
 	return exit;
 }
 
-/* OP_TIMES	label
+/* OP_TIMES	labelz, labelo
    ...		; code to bind the local variable
    OP_EXIT
    ...		; code executed on each iteration
    OP_EXIT
+   labelo:
    ...		; code executed at the end
    OP_EXIT
-   label:
+   labelz:
 
 	High level construct for the DOTIMES iterator. The number of times
 	we iterate is stored in VALUES(0).
 */
-static cl_object *
-interpret_dotimes(cl_object *vector) {
-	cl_object *volatile exit = packed_label(vector - 1);
+static char *
+interpret_dotimes(cl_object bytecodes, char *vector) {
+	char *volatile exit;
+	char *output;
+
+	GET_LABEL(exit, vector);
+	GET_LABEL(output, vector);
+
 	CL_BLOCK_BEGIN(id) {
-		cl_object *output, length = VALUES(0);
+		cl_object length = VALUES(0);
 
 		/* 1) Set up a nil block */
 		bind_block(Cnil, id);
 
 		/* 2) Retrieve number and bind variables */
-		exit = packed_label(vector - 1);
-		vector = interpret(vector);
-		output = packed_label(vector-1);
+		vector = interpret(bytecodes, vector);
 
 		if (FIXNUMP(length)) {
 		    cl_fixnum i, l = fix(length);
 		    /* 3) Loop while needed */
 		    for (i = 0; i < l;) {
-			interpret(vector);
+			interpret(bytecodes, vector);
 			NValues = 1;
 			VALUES(0) = MAKE_FIXNUM(++i);
 		    }
 		} else {
 		    cl_object i = MAKE_FIXNUM(0);
 		    while (number_compare(i, length) < 0) {
-			interpret(vector);
+			interpret(bytecodes, vector);
 			NValues = 1;
 			VALUES(0) = i = one_plus(i);
 		    }
 		}
-		interpret(output);
+		interpret(bytecodes, output);
 
 		/* 4) Restore environment */
 		lex_env = frs_top->frs_lex;
@@ -587,9 +577,9 @@ close_around(cl_object fun, cl_object lex) {
 	Executes the enclosed code in a lexical enviroment extended with
 	the functions "fun1" ... "funn".
 */
-static cl_object *
-interpret_flet(cl_object *vector) {
-	cl_index nfun = get_oparg(vector[-1]);
+static char *
+interpret_flet(cl_object bytecodes, char *vector) {
+	cl_index nfun = GET_OPARG(vector);
 
 	/* 1) Copy the environment so that functions get it without references
 	      to themselves. */
@@ -597,7 +587,7 @@ interpret_flet(cl_object *vector) {
 
 	/* 3) Add new closures to environment */
 	while (nfun--) {
-		cl_object fun = next_code(vector);
+		cl_object fun = GET_DATA(vector, bytecodes);
 		cl_object f = close_around(fun,lex);
 		bind_function(f->bytecodes.name, f);
 	}
@@ -614,14 +604,14 @@ interpret_flet(cl_object *vector) {
 	Executes the enclosed code in a lexical enviroment extended with
 	the functions "fun1" ... "funn".
 */
-static cl_object *
-interpret_labels(cl_object *vector) {
-	cl_index i, nfun = get_oparg(vector[-1]);
+static char *
+interpret_labels(cl_object bytecodes, char *vector) {
+	cl_index i, nfun = GET_OPARG(vector);
 	cl_object l;
 
 	/* 1) Build up a new environment with all functions */
 	for (i=0; i<nfun; i++) {
-		cl_object f = next_code(vector);
+		cl_object f = GET_DATA(vector, bytecodes);
 		bind_function(f->bytecodes.name, f);
 	}
 
@@ -635,30 +625,32 @@ interpret_labels(cl_object *vector) {
 }
 
 /* OP_MSETQ	n{arg}
-   {fixnumn}|{symboln}
+   {fixnumn}
    ...
-   {fixnum1}|{symbol1}
+   {fixnum1}
 
 	Sets N variables to the N values in VALUES(), filling with
 	NIL when there are values missing. Local variables are denoted
 	with an integer which points a position in the lexical environment,
-	while special variables are denoted just with the name.
+	while special variables are denoted with a negative index X, which
+	denotes the value -1-X in the table of constants.
 */
-static cl_object *
-interpret_msetq(cl_object *vector)
+static char *
+interpret_msetq(cl_object bytecodes, char *vector)
 {
 	cl_object var, value;
-	int i, n = get_oparg(vector[-1]);
+	int i, n = GET_OPARG(vector);
 	for (i=0; i<n; i++) {
-		var = next_code(vector);
+		cl_fixnum var = GET_OPARG(vector);
 		value = (i < NValues) ? VALUES(i) : Cnil;
-		if (FIXNUMP(var))
-			setq_local(fix(var), value);
+		if (var >= 0)
+			setq_local(var, value);
 		else {
-			if (var->symbol.stype == stp_constant)
-				FEassignment_to_constant(var);
+			cl_object name = bytecodes->bytecodes.data[-1-var];
+			if (name->symbol.stype == stp_constant)
+				FEassignment_to_constant(name);
 			else
-				SYM_VAL(var) = value;
+				SYM_VAL(name) = value;
 		}
 	}
 	if (NValues > 1) NValues = 1;
@@ -671,8 +663,8 @@ interpret_msetq(cl_object *vector)
 	Execute the code enclosed with the special variables in BINDINGS
 	set to the values in the list which was passed in VALUES(0).
 */
-static cl_object *
-interpret_progv(cl_object *vector) {
+static char *
+interpret_progv(cl_object bytecodes, char *vector) {
 	cl_object values = VALUES(0);
 	cl_object vars = cl_stack_pop();
 
@@ -690,7 +682,7 @@ interpret_progv(cl_object *vector) {
 		}
 		vars = CDR(vars);
 	}
-	vector = interpret(vector);
+	vector = interpret(bytecodes, vector);
 
 	/* 3) Restore environment */
 	lex_env = old_lex_env;
@@ -698,25 +690,16 @@ interpret_progv(cl_object *vector) {
 	return vector;
 }
 
-cl_object *
-interpret(cl_object *vector) {
-	cl_type t;
-	cl_object s;
+char *
+interpret(cl_object bytecodes, char *vector) {
 
  BEGIN:
-	s = next_code(vector);
-	t = type_of(s);
-	if (t != t_fixnum) {
-		VALUES(0) = s;
-		NValues = 1;
-		goto BEGIN;
-	}
-	switch (GET_OP(s)) {
+	switch (GET_OPCODE(vector)) {
 	/* OP_QUOTE
 		Sets VALUES(0) to an immediate value.
 	*/
 	case OP_QUOTE:
-		VALUES(0) = next_code(vector);
+		VALUES(0) = GET_DATA(vector, bytecodes);
 		NValues = 1;
 		break;
 
@@ -725,7 +708,7 @@ interpret(cl_object *vector) {
 		VAR is the name of the variable for readability purposes.
 	*/
 	case OP_VAR: {
-		int lex_env_index = get_oparg(s);
+		int lex_env_index = GET_OPARG(vector);
 		VALUES(0) = search_local(lex_env_index);
 		NValues = 1;
 		break;
@@ -736,7 +719,7 @@ interpret(cl_object *vector) {
 		VAR should be either a special variable or a constant.
 	*/
 	case OP_VARS: {
-		cl_object var_name = next_code(vector);
+		cl_object var_name = GET_DATA(vector, bytecodes);
 		VALUES(0) = search_global(var_name);
 		NValues = 1;
 		break;
@@ -753,7 +736,7 @@ interpret(cl_object *vector) {
 		Pushes the value of the n-th local onto the stack.
 	*/
 	case OP_PUSHV: {
-		int lex_env_index = get_oparg(s);
+		int lex_env_index = GET_OPARG(vector);
 		cl_stack_push(search_local(lex_env_index));
 		break;
 	}
@@ -763,7 +746,7 @@ interpret(cl_object *vector) {
 		VAR should be either a special variable or a constant.
 	*/
 	case OP_PUSHVS: {
-		cl_object var_name = next_code(vector);
+		cl_object var_name = GET_DATA(vector, bytecodes);
 		cl_stack_push(search_global(var_name));
 		break;
 	}
@@ -772,22 +755,8 @@ interpret(cl_object *vector) {
 		Pushes "value" onto the stack.
 	*/
 	case OP_PUSHQ:
-		cl_stack_push(next_code(vector));
+		cl_stack_push(GET_DATA(vector, bytecodes));
 		break;
-
-	/* OP_CALLG	n{arg}, function-name{symbol}
-		Calls the global function with N arguments which have
-		been deposited in the stack. The output values are
-		left in VALUES(...)
-	*/
-	case OP_CALLG: {
-		cl_fixnum n = get_oparg(s);
-		cl_object fun = next_code(vector);
-		if (fun->symbol.gfdef == OBJNULL || fun->symbol.mflag)
-			FEundefined_function(fun);
-		VALUES(0) = interpret_funcall(n, fun->symbol.gfdef);
-		break;
-	}
 
 	/* OP_CALL	n{arg}
 		Calls the function in VALUES(0) with N arguments which
@@ -795,7 +764,7 @@ interpret(cl_object *vector) {
 		are left in VALUES(...)
 	*/
 	case OP_CALL: {
-		cl_fixnum n = get_oparg(s);
+		cl_fixnum n = GET_OPARG(vector);
 		cl_object fun = VALUES(0);
 		VALUES(0) = interpret_funcall(n, fun);
 		break;
@@ -807,7 +776,7 @@ interpret(cl_object *vector) {
 		are left in VALUES(...)
 	*/
 	case OP_FCALL: {
-		cl_fixnum n = get_oparg(s);
+		cl_fixnum n = GET_OPARG(vector);
 		cl_object fun = cl_stack_top[-n-1];
 		VALUES(0) = interpret_funcall(n, fun);
 		cl_stack_pop();
@@ -826,28 +795,13 @@ interpret(cl_object *vector) {
 		break;
 	}
 
-	/* OP_PCALLG	n{arg}, function-name{symbol}
-		Calls the global function with N arguments which have
-		been deposited in the stack. The first output value is
-		left on the stack.
-	*/
-	case OP_PCALLG: {
-		cl_fixnum n = get_oparg(s);
-		cl_object fun = next_code(vector);
-		if (fun->symbol.gfdef == OBJNULL)
-			FEundefined_function(fun);
-		VALUES(0) = interpret_funcall(n, fun->symbol.gfdef);
-		cl_stack_push(VALUES(0));
-		break;
-	}
-
 	/* OP_PCALL	n{arg}
 		Calls the function in VALUES(0) with N arguments which
 		have been deposited in the stack. The first output value
 		is pushed on the stack.
 	*/
 	case OP_PCALL: {
-		cl_fixnum n = get_oparg(s);
+		cl_fixnum n = GET_OPARG(vector);
 		cl_object fun = VALUES(0);
 		VALUES(0) = interpret_funcall(n, fun);
 		cl_stack_push(VALUES(0));
@@ -860,7 +814,7 @@ interpret(cl_object *vector) {
 		is pushed on the stack.
 	*/
 	case OP_PFCALL: {
-		cl_fixnum n = get_oparg(s);
+		cl_fixnum n = GET_OPARG(vector);
 		cl_object fun = cl_stack_top[-n-1];
 		VALUES(0) = interpret_funcall(n, fun);
 		cl_stack_top[-1] = VALUES(0);
@@ -879,10 +833,10 @@ interpret(cl_object *vector) {
 	case OP_HALT:
 		return vector-1;
 	case OP_FLET:
-		vector = interpret_flet(vector);
+		vector = interpret_flet(bytecodes, vector);
 		break;
 	case OP_LABELS:
-		vector = interpret_labels(vector);
+		vector = interpret_labels(bytecodes, vector);
 		break;
 
 	/* OP_LFUNCTION	n{arg}, function-name{symbol}
@@ -890,7 +844,7 @@ interpret(cl_object *vector) {
 		which have been deposited in the stack.
 	*/
 	case OP_LFUNCTION: {
-		int lex_env_index = get_oparg(s);
+		int lex_env_index = GET_OPARG(vector);
 		cl_object fun_record = search_local(lex_env_index);
 		cl_object fun_object = CDR(fun_record);
 		VALUES(0) = fun_object;
@@ -904,7 +858,7 @@ interpret(cl_object *vector) {
 		environment. This last value takes precedence.
 	*/
 	case OP_FUNCTION:
-		VALUES(0) = ecl_fdefinition(next_code(vector));
+		VALUES(0) = ecl_fdefinition(GET_DATA(vector, bytecodes));
 		NValues = 1;
 		break;
 
@@ -914,19 +868,20 @@ interpret(cl_object *vector) {
 		environment. This last value takes precedence.
 	*/
 	case OP_CLOSE: {
-		cl_object function_object = next_code(vector);
+		cl_object function_object = GET_DATA(vector, bytecodes);
 		VALUES(0) = close_around(function_object, lex_env);
 		NValues = 1;
 		break;
 	}
-	/* OP_GO	n{arg}, tag-name{symbol}
+	/* OP_GO	n{arg}
+	   OP_QUOTE	tag-name{symbol}
 		Jumps to the tag which is defined at the n-th position in
 		the lexical environment. TAG-NAME is kept for debugging
 		purposes.
 	*/
 	case OP_GO: {
-		cl_object tag_name = next_code(vector);
-		cl_object id = search_local(get_oparg(s));
+		cl_object id = search_local(GET_OPARG(vector));
+		cl_object tag_name = GET_DATA(vector, bytecodes);
 		VALUES(0) = Cnil;
 		NValues = 0;
 		cl_go(id, tag_name);
@@ -937,7 +892,7 @@ interpret(cl_object *vector) {
 		occuppies the n-th position.
 	*/
 	case OP_RETURN: {
-		int lex_env_index = get_oparg(s);
+		int lex_env_index = GET_OPARG(vector);
 		cl_object block_record = search_local(lex_env_index);
 		cl_object block_name = CAR(block_record);
 		cl_object id = CDR(block_record);
@@ -957,30 +912,44 @@ interpret(cl_object *vector) {
 	/* OP_JMP	label{arg}
 	   OP_JNIL	label{arg}
 	   OP_JT	label{arg}
-	   OP_JEQ	label{arg}, value{object}
-	   OP_JNEQ	label{arg}, value{object}
+	   OP_JEQ	value{object}, label{arg}
+	   OP_JNEQ	value{object}, label{arg}
 		Direct or conditional jumps. The conditional jumps are made
 		comparing with the value of VALUES(0).
 	*/
-	case OP_JMP:
-		vector = vector - 1 + get_oparg(s);
+	case OP_JMP: {
+		cl_oparg jump = GET_OPARG(vector);
+		vector += jump - OPARG_SIZE;
 		break;
-	case OP_JNIL:
+	}
+	case OP_JNIL: {
+		cl_oparg jump = GET_OPARG(vector);
 		NValues = 1;
-		if (Null(VALUES(0))) vector = vector - 1 + get_oparg(s);
+		if (Null(VALUES(0)))
+			vector += jump - OPARG_SIZE;
 		break;
-	case OP_JT:
+	}
+	case OP_JT: {
+		cl_oparg jump = GET_OPARG(vector);
 		NValues = 1;
-		if (!Null(VALUES(0))) vector = vector - 1 + get_oparg(s);
+		if (!Null(VALUES(0)))
+			vector += jump - OPARG_SIZE;
 		break;
-	case OP_JEQL:
-		if (eql(VALUES(0), next_code(vector)))
-			vector = vector + get_oparg(s) - 2;
+	}
+	case OP_JEQL: {
+		cl_oparg value = GET_OPARG(vector);
+		cl_oparg jump = GET_OPARG(vector);
+		if (eql(VALUES(0), bytecodes->bytecodes.data[value]))
+			vector += jump - OPARG_SIZE;
 		break;
-	case OP_JNEQL:
-		if (!eql(VALUES(0), next_code(vector)))
-			vector = vector + get_oparg(s) - 2;
+	}
+	case OP_JNEQL: {
+		cl_oparg value = GET_OPARG(vector);
+		cl_oparg jump = GET_OPARG(vector);
+		if (!eql(VALUES(0), bytecodes->bytecodes.data[value]))
+			vector += jump - OPARG_SIZE;
 		break;
+	}
 	case OP_NOT:
 		VALUES(0) = (VALUES(0) == Cnil)? Ct : Cnil;
 		NValues = 1;
@@ -989,7 +958,7 @@ interpret(cl_object *vector) {
 		Undo "n" local bindings.
 	*/
 	case OP_UNBIND: {
-		cl_index n = get_oparg(s);
+		cl_index n = GET_OPARG(vector);
 		while (n--)
 			lex_env = CDDR(lex_env);
 		break;
@@ -998,7 +967,7 @@ interpret(cl_object *vector) {
 		Undo "n" bindings of special variables.
 	*/
 	case OP_UNBINDS: {
-		cl_index n = get_oparg(s);
+		cl_index n = GET_OPARG(vector);
 		bds_unwind_n(n);
 		break;
 	}
@@ -1010,39 +979,39 @@ interpret(cl_object *vector) {
 		value of VALUES(0) or the first value of the stack.
 	*/
 	case OP_BIND: {
-		cl_object var_name = next_code(vector);
+		cl_object var_name = GET_DATA(vector, bytecodes);
 		cl_object value = VALUES(0);
 		bind_var(var_name, value);
 		break;
 	}
 	case OP_PBIND: {
-		cl_object var_name = next_code(vector);
+		cl_object var_name = GET_DATA(vector, bytecodes);
 		cl_object value = cl_stack_pop();
 		bind_var(var_name, value);
 		break;
 	}
 	case OP_VBIND: {
-		int n = get_oparg(s);
-		cl_object var_name = next_code(vector);
+		int n = GET_OPARG(vector);
+		cl_object var_name = GET_DATA(vector, bytecodes);
 		cl_object value = (n < NValues) ? VALUES(n) : Cnil;
 		bind_var(var_name, value);
 		break;
 	}
 	case OP_BINDS: {
-		cl_object var_name = next_code(vector);
+		cl_object var_name = GET_DATA(vector, bytecodes);
 		cl_object value = VALUES(0);
 		bind_special(var_name, value);
 		break;
 	}
 	case OP_PBINDS: {
-		cl_object var_name = next_code(vector);
+		cl_object var_name = GET_DATA(vector, bytecodes);
 		cl_object value = cl_stack_pop();
 		bind_special(var_name, value);
 		break;
 	}
 	case OP_VBINDS: {
-		int n = get_oparg(s);
-		cl_object var_name = next_code(vector);
+		int n = GET_OPARG(vector);
+		cl_object var_name = GET_DATA(vector, bytecodes);
 		cl_object value = (n < NValues) ? VALUES(n) : Cnil;
 		bind_special(var_name, value);
 		break;
@@ -1056,13 +1025,13 @@ interpret(cl_object *vector) {
 		first value on the stack (OP_PSETQ[S]).
 	*/
 	case OP_SETQ: {
-		int lex_env_index = get_oparg(s);
+		int lex_env_index = GET_OPARG(vector);
 		setq_local(lex_env_index, VALUES(0));
 		NValues = 1;
 		break;
 	}
 	case OP_SETQS: {
-		cl_object var = next_code(vector);
+		cl_object var = GET_DATA(vector, bytecodes);
 		if (var->symbol.stype == stp_constant)
 			FEassignment_to_constant(var);
 		else
@@ -1071,14 +1040,14 @@ interpret(cl_object *vector) {
 		break;
 	}
 	case OP_PSETQ: {
-		int lex_env_index = get_oparg(s);
+		int lex_env_index = GET_OPARG(vector);
 		setq_local(lex_env_index, cl_stack_pop());
 		Values[0] = Cnil;
 		NValues = 1;
 		break;
 	}
 	case OP_PSETQS: {
-		cl_object var = next_code(vector);
+		cl_object var = GET_DATA(vector, bytecodes);
 		if (var->symbol.stype == stp_constant)
 			FEassignment_to_constant(var);
 		else
@@ -1088,7 +1057,7 @@ interpret(cl_object *vector) {
 		break;
 	}
 
-	/* OP_BLOCK	label{arg}, block-name{symbol}
+	/* OP_BLOCK	label{arg}
 	   ...
 	   OP_EXIT
 	 label:
@@ -1097,14 +1066,19 @@ interpret(cl_object *vector) {
 	   LABEL points to the first instruction after OP_EXIT.
 	*/
 	case OP_BLOCK: {
+		cl_object name;
 		cl_object id = new_frame_id();
-		cl_stack_push(packed_label(vector - 1));
+		char *exit;
+		/* FIXME! */
+		GET_LABEL(exit, vector);
+		cl_stack_push((cl_object)exit);
+		name = GET_DATA(vector, bytecodes);
 		if (frs_push(FRS_CATCH, id) == 0) {
-			bind_block(next_code(vector), id);
+			bind_block(name, id);
 		} else {
 			lex_env = frs_top->frs_lex;
 			frs_pop();
-			vector = cl_stack_pop();
+			vector = (char *)cl_stack_pop();
 		}
 		break;
 	}
@@ -1116,14 +1090,18 @@ interpret(cl_object *vector) {
 	   High level construct for the DO and BLOCK forms.
 	*/
 	case OP_DO: {
+		cl_object name = Cnil;
 		cl_object id = new_frame_id();
-		cl_stack_push(packed_label(vector - 1));
+		char *exit;
+		/* FIXME! */
+		GET_LABEL(exit, vector);
+		cl_stack_push((cl_object)exit);
 		if (frs_push(FRS_CATCH, id) == 0) {
-			bind_block(Cnil, id);
+			bind_block(name, id);
 		} else {
 			lex_env = frs_top->frs_lex;
 			frs_pop();
-			vector = cl_stack_pop();
+			vector = (char *)cl_stack_pop(); /* FIXME! */
 		}
 		break;
 	}
@@ -1135,14 +1113,17 @@ interpret(cl_object *vector) {
 	   Sets a catch point using the tag in VALUES(0). LABEL points to the
 	   first instruction after the end (OP_EXIT) of the block
 	*/
-	case OP_CATCH:
-		cl_stack_push(packed_label(vector - 1));
+	case OP_CATCH: {
+		char *exit;
+		GET_LABEL(exit, vector);
+		cl_stack_push((cl_object)exit);
 		if (frs_push(FRS_CATCH, VALUES(0)) != 0) {
 			lex_env = frs_top->frs_lex;
 			frs_pop();
-			vector = cl_stack_pop();
+			vector = (char *)cl_stack_pop(); /* FIXME! */
 		}
 		break;
+	}
 	/* OP_TAGBODY	n{arg}
 	     label1
 	     ...
@@ -1156,20 +1137,22 @@ interpret(cl_object *vector) {
 	   High level construct for the TAGBODY form.
 	*/
 	case OP_TAGBODY: {
+		int n = GET_OPARG(vector);
 		/* Here we save the location of the jump table */
-		cl_stack_push(vector);
+		cl_stack_push((cl_object)vector); /* FIXME! */
 		if (frs_push(FRS_CATCH, bind_tagbody()) == 0) {
 			/* The first time, we "name" the tagbody and
 			 * skip the jump table */
-			vector += get_oparg(s);
+			vector += n * OPARG_SIZE;
 		} else {
 			/* Wait here for gotos. Each goto sets
 			   VALUES(0) to an integer which ranges from 0
 			   to ntags-1, depending on the tag. These
 			   numbers are indices into the jump table and
 			   are computed at compile time. */
-			cl_object *table = (cl_object*)cl_stack_top[-1];
-			vector = simple_label(table + fix(VALUES(0)));
+			char *table = (char *)cl_stack_top[-1];
+			table = table + fix(VALUES(0)) * OPARG_SIZE;
+			vector = table + *(cl_oparg *)table;
 			lex_env = frs_top->frs_lex;
 		}
 		break;
@@ -1196,16 +1179,16 @@ interpret(cl_object *vector) {
 		cl_stack_pop();
 		break;
 	case OP_DOLIST:
-		vector = interpret_dolist(vector);
+		vector = interpret_dolist(bytecodes, vector);
 		break;
 	case OP_DOTIMES:
-		vector = interpret_dotimes(vector);
+		vector = interpret_dotimes(bytecodes, vector);
 		break;
 	case OP_MSETQ:
-		vector = interpret_msetq(vector);
+		vector = interpret_msetq(bytecodes, vector);
 		break;
 	case OP_PROGV:
-		vector = interpret_progv(vector);
+		vector = interpret_progv(bytecodes, vector);
 		break;
 	/* OP_PUSHVALUES
 		Pushes the values output by the last form, plus the number
@@ -1249,7 +1232,7 @@ interpret(cl_object *vector) {
 		Pop N values from the stack and store them in VALUES(...)
 	*/
 	case OP_VALUES: {
-		cl_fixnum n = get_oparg(s);
+		cl_fixnum n = GET_OPARG(vector);
 		NValues = n;
 		while (n)
 			VALUES(--n) = cl_stack_pop();
@@ -1281,16 +1264,19 @@ interpret(cl_object *vector) {
 	  is always executed, even if a THROW, RETURN or GO happen within the
 	  first piece of code.
 	*/
-	case OP_PROTECT:
-		cl_stack_push(packed_label(vector - 1));
+	case OP_PROTECT: {
+		char *exit;
+		GET_LABEL(exit, vector);
+		cl_stack_push((cl_object)exit);
 		if (frs_push(FRS_PROTECT,Cnil) != 0) {
 			lex_env = frs_top->frs_lex;
 			frs_pop();
-			vector = cl_stack_pop();
+			vector = (char *)cl_stack_pop();
 			cl_stack_push(MAKE_FIXNUM(nlj_fr - frs_top));
 			goto PUSH_VALUES;
 		}
 		break;
+	}
 	case OP_PROTECT_NORMAL:
 		bds_unwind(frs_top->frs_bds_top);
 		lex_env = frs_top->frs_lex;

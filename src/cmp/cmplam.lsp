@@ -644,8 +644,6 @@
        (cmperr "Defmacro-lambda-list contains illegal use of ~s." key))
 
 (defun c2dm (name whole env vl body)
-  (when (or *safe-compile* *compiler-check-args*)
-    (wt-nl "check_arg(2);"))
   (let ((lcl (next-lcl)))
     (when whole
       (check-vref whole)

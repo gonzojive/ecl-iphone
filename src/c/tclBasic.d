@@ -62,7 +62,7 @@ eval_from_string(char *s)
   cl_object x;
   STRING_INPUT_STREAM(s, strm);
   x = @read(3, (cl_object)&strm, Cnil, OBJNULL);
-  return (x != OBJNULL) ? eval(x, NULL, Cnil) : Cnil;
+  return (x != OBJNULL) ? si_eval_with_env(x, Cnil) : Cnil;
 }
 
 static cl_object string_stream;

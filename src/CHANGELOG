@@ -1450,6 +1450,22 @@ ECLS 0.9b
   - EQL specializers were compared to the arguments using EQ instead
     of EQL.
 
+* System design:
+
+  - The bytecodes compiler now works with character arrays. Bytecodes
+    are thus 8 bits large, while their arguments are 16 bits large.
+    Lisp objects referenced in the code are kept in a separate array
+    to simplify garbage collection. This strategy limits the size of
+    bytecode objects to about 32000 bytes and about 32000 constants,
+    but reduces the use of memory by about 25%.
+
+  - Macros are implemented in C as functions with two arguments.
+    Argument checking is thus left to funcall() and apply(), saving
+    space.
+
+  - AND, OR and WHEN are now just macros, without any special
+    treatment in the bytecodes compiler.
+
 * Visible changes:
 
   - New special form C-INLINE, allows inserting C/C++ code in any

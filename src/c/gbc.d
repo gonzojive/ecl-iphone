@@ -339,10 +339,12 @@ BEGIN:
 
 	case t_bytecodes: {
 		cl_index i, size;
-		size = x->bytecodes.size;
 		mark_object(x->bytecodes.name);
 		mark_object(x->bytecodes.lex);
 		mark_object(x->bytecodes.specials);
+		size = x->bytecodes.code_size;
+		mark_contblock(x->bytecodes.code, size);
+		size = x->bytecodes.data_size;
 		mark_contblock(x->bytecodes.data, size * sizeof(cl_object));
 		for (i=0; i<size; i++)
 			mark_object(x->bytecodes.data[i]);

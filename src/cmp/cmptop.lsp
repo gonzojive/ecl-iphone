@@ -117,14 +117,16 @@
     (wt-nl "cl_object value0;")
     (wt-nl "if (!FIXNUMP(flag)){")
     (wt-nl "Cblock=flag;")
-    #-boehm-gc
+    (wt-nl "#ifndef ECL_DYNAMIC_VV")
     (wt-nl "flag->cblock.data = VV;")
+    (wt-nl "#endif")
     (wt-nl "flag->cblock.data_size = VM;")
     (wt-nl "flag->cblock.data_text = compiler_data_text;")
     (wt-nl "flag->cblock.data_text_size = compiler_data_text_size;")
     (wt-nl "return;}")
-    #+boehm-gc
+    (wt-nl "#ifdef ECL_DYNAMIC_VV")
     (wt-nl "VV = Cblock->cblock.data;")
+    (wt-nl "#endif")
     ;; useless in initialization.
     (dolist (form *top-level-forms*)
       (let ((*compile-to-linking-call* nil)
@@ -143,12 +145,13 @@
   (incf *next-vv*)
   (wt-h "#define VM" vv-reservation " " *next-vv*)
   (wt-h "#define VM " *next-vv*)
-  #+boehm-gc
+  (wt-h "#ifdef ECL_DYNAMIC_VV")
   (wt-h "static cl_object *VV;")
-  #-boehm-gc
+  (wt-h "#else")
   (if (zerop *next-vv*)
     (wt-h "static cl_object VV[1];")
     (wt-h "static cl_object VV[VM];"))
+  (wt-h "#endif")
   (when *linking-calls*
     (dotimes (i (length *linking-calls*))
       (declare (fixnum i))
@@ -575,7 +578,7 @@
       (wt-nl "si_put_sysprop(" vv "," (add-symbol 'si::pretty-print-format) "," ppn ");")
       (wt-nl)))
   (wt-h "static cl_object L" cfun "();")
-  (wt-nl "cl_def_c_macro_va(" vv ",(cl_objectfn)L" cfun ");"))
+  (wt-nl "cl_def_c_macro(" vv ",L" cfun ");"))
 
 (defun t3defmacro (fname cfun macro-lambda ppn sp
                          &aux (*lcl* 0) (*temp* 0) (*max-temp* 0)
@@ -587,7 +590,7 @@
                          (*destination* 'RETURN)
                          (*reservation-cmacro* (next-cmacro)))
   (wt-comment "macro definition for " fname)
-  (wt-nl1 "static cl_object L" cfun "(int narg, cl_object V1, cl_object V2)")
+  (wt-nl1 "static cl_object L" cfun "(cl_object V1, cl_object V2)")
   (wt-nl1 "{")
   (wt-function-prolog sp)
   (c2dm fname (car macro-lambda) (second macro-lambda) (third macro-lambda)
