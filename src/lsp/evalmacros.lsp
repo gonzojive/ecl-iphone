@@ -150,7 +150,8 @@ terminated by a non-local exit."
   (multiple-value-bind (decl body doc)
       (si::process-declarations lambda-body)
     (when decl (setq decl (list (cons 'declare decl))))
-    `(lambda ,lambda-list ,@doc ,@decl (block ,name ,@body))))
+    `(lambda ,lambda-list ,@doc ,@decl
+      (block ,(si::function-block-name name) ,@body))))
 
 ; assignment
 

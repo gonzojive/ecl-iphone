@@ -364,7 +364,7 @@ nil
          tag0
          (setf a 1)
          )a)
-1
+#-ecls 1 #+ecls error
 
 
 

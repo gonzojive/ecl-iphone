@@ -1,38 +1,18 @@
 ;;;
 ;;; Configuration file for the remaining libraires of ECLS
 ;;;
-;;;
-;;; * Learn where we come from and where we go to
-;;;
-(in-package "SYSTEM")
-(si::pathname-translations "SYS" '(("*.*" "./*.*")))
-(setq compiler::*cc-flags* (concatenate 'string compiler::*cc-flags* " -I@srcdir@/h -I@srcdir@/gmp -I@builddir@/h"))
-
-;;;
-;;; * Load system builder tool
-;;;
-(in-package "CL-USER")
-(load "@srcdir@/util/system.lsp")
-
-;;;
-;;; * We redefine this to force generation of source files
-;;; in the object directory -- source files help debugging
-;;; with GDB.
-;;;
-(defun sbt::sbt-compile-file (&rest s)
-  (apply #'compiler::compile-file
-	   (car s)
-	   :c-file t :h-file t :data-file t :system-p t
-	   (cdr s)))
+(load "bare.lsp")
 
 ;;;
 ;;; * Compile and link MIT CLX extensions
 ;;;
+(setq si::*keep-documentation* nil)
+(in-package "COMMON-LISP-USER")
 #+WANTS-CLX
 (progn
 (push :clx-ansi-common-lisp *features*)
-(load "defsys.lsp")
+(load "clx/defsys.lsp")
 (sbt::operate-on-system clx :library)
-(compiler::build-ecls "eclx" :components '(#+WANTS-CMP cmp clx))
+(compiler::build-ecls "eclx" :lisp-files '(#+(and (not DLOPEN) WANTS-CMP) cmp clx))
 )
-
+(print "HOLA")

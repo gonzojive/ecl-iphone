@@ -17,17 +17,6 @@
 (setq compiler::*cc-flags* (concatenate 'string compiler::*cc-flags* " -I@srcdir@/h -I@srcdir@/gmp -I@builddir@/h"))
 
 ;;;
-;;; * Compile, load and link Common-Lisp to C compiler
-;;;
-#+WANTS-CMP
-(progn
-(load "cmp/defsys.lsp")
-(proclaim '(optimize (safety 2) (space 3)))
-(sbt::operate-on-system cmp #-dlopen :library #+dlopen :shared-library)
-;(sbt::operate-on-system cmp :load)
-)
-
-;;;
 ;;; * Compile, load and link PCL based Common-Lisp Object System
 ;;;
 #+WANTS-CLOS
@@ -36,6 +25,17 @@
 (proclaim '(optimize (safety 2) (space 3)))
 (sbt::operate-on-system clos :library)
 ;(sbt::operate-on-system clos :load)
+)
+
+;;;
+;;; * Compile, load and link Common-Lisp to C compiler
+;;;
+#+WANTS-CMP
+(progn
+(load "cmp/defsys.lsp")
+(proclaim '(optimize (safety 2) (space 3)))
+(sbt::operate-on-system cmp #-dlopen :library #+dlopen :shared-library)
+;(sbt::operate-on-system cmp :load)
 )
 
 (compiler::build-ecls "ecls" :lisp-files '(#+(and (not dlopen) WANTS-CMP) cmp))

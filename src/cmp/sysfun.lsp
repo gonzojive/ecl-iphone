@@ -871,7 +871,6 @@ type_of(#0)==t_bitvector"))
 	:inline-always (nil t t nil "terpri(Cnil)"))
 (WRITE (T *) T)
 (WRITE-BYTE (fixnum stream) T)
-(si::WRITE-BYTES (stream string fixnum fixnum) T)
 (WRITE-CHAR (T *) T NIL NIL
 	:inline-always ((t) t t nil "@0;(princ_char(char_code(#0),Cnil),(#0))"))
 (WRITE-LINE (T *) T)
@@ -880,7 +879,6 @@ type_of(#0)==t_bitvector"))
 (CLEAR-INPUT (*) T)
 (PARSE-INTEGER (T *))
 (READ-BYTE (T *) T)
-(si::READ-BYTES (stream string fixnum fixnum) T)
 (COPY-READTABLE (*) T NIL NIL
 	:inline-always ((null null) t nil nil "standard_readtable"))
 (READTABLEP (T) T NIL T)
@@ -1055,8 +1053,8 @@ type_of(#0)==t_bitvector"))
 	:inline-always ((t) t nil t "TYPE_OF(#0)"))
 
 ;;; Beppe's additions
-(READ-BYTES (stream string fixnum fixnum) T)
-(WRITE-BYTES (stream string fixnum fixnum) T)
+(READ-BYTES (stream vector fixnum fixnum) T)
+(WRITE-BYTES (stream vector fixnum fixnum) T)
 
 ;;; AKCL additions:
 (SI::COPY-STREAM (T T) T)

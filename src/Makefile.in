@@ -47,8 +47,8 @@ all:	$(TARGETS) doc
 %Makefile: $(srcdir)/%Makefile.in config.status
 	./config.status
 
-eclx$(EXE): ecls$(EXE) compile_rest.lsp
-	./ecls < compile_rest.lsp
+eclx$(EXE): ecls_min$(EXE) compile_rest.lsp
+	./ecls_min < compile_rest.lsp
 
 ecls$(EXE): ecls_min$(EXE) compile.lsp
 	./ecls_min < compile.lsp

@@ -10,23 +10,6 @@
 
 ;;;; CMPDEF	Definitions
 
-(defpackage "FFI"
-  (:export clines
-	   defcfun
-	   defentry
-	   defla
-	   defcbody			; Beppe
-	   definline			; Beppe
-	   defunC			; Beppe
-	   void
-	   object
-	   char*			; Beppe
-	   ;;char
-	   int
-	   ;;float
-	   double
-	   ))
-
 (defpackage "C"
   (:nicknames "COMPILER")
   (:use "FFI" "CL")
@@ -49,7 +32,7 @@
 ;;; Use structures of type vector to avoid creating
 ;;; normal structures before booting CLOS.
 
-(defstruct (ref (:type vector))
+(defstruct (ref)
   name			;;; Identifier of reference.
   (ref 0 :type fixnum)	;;; Number of references.
   ref-ccb		;;; Cross closure reference.
@@ -57,7 +40,7 @@
 			;;; During Pass2, the index into the closure env
 )
 
-(defstruct (var (:type vector) (:include ref) :named)
+(defstruct (var (:include ref))
 ;  name		;;; Variable name.
 ;  (ref 0 :type fixnum)
 		;;; Number of references to the variable (-1 means IGNORE).
@@ -118,7 +101,7 @@
 ;;;     (flet ((foo (z) (bar z))) #'(lambda () #'foo)))
 ;;; therefore we need field funob.
 
-(defstruct (fun (:type vector) (:include ref) :named)
+(defstruct (fun (:include ref))
 ;  name			;;; Function name.
 ;  (ref 0 :type fixnum)	;;; Number of references.
 ;  ref-ccb		;;; Cross closure reference.
@@ -131,7 +114,7 @@
   )
 (deftype fun () '(satisifes fun-p))
 
-(defstruct (blk (:type vector) (:include ref) :named)
+(defstruct (blk (:include ref))
 ;  name			;;; Block name.
 ;  (ref 0 :type fixnum)	;;; Number of references.
 ;  ref-ccb		;;; Cross closure reference.
@@ -148,7 +131,7 @@
   )
 (deftype blk () '(satisfies blk-p))
 
-(defstruct (tag (:type vector) (:include ref) :named)
+(defstruct (tag (:include ref))
 ;  name			;;; Tag name.
 ;  (ref 0 :type fixnum)	;;; Number of references.
 ;  ref-ccb		;;; Cross closure reference.
@@ -161,7 +144,7 @@
   )
 (deftype tag () '(satisfies tag-p))
 
-(defstruct (info (:type vector) :named)
+(defstruct (info)
   (changed-vars nil)	;;; List of var-objects changed by the form.
   (referred-vars nil)	;;; List of var-objects referred in the form.
   (type t)		;;; Type of the form.

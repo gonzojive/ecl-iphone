@@ -243,6 +243,7 @@ const struct function_info all_functions[] = {
 	/* interpreter.c */
 	{"INTERPRETER-STACK", siLinterpreter_stack, si},
 	{"MAKE-LAMBDA", siLmake_lambda, si},
+	{"FUNCTION-BLOCK-NAME", siLfunction_block_name, si},
 
 	/* iteration.c */
 
@@ -250,10 +251,6 @@ const struct function_info all_functions[] = {
 	{"DO*", NULL, form},
 	{"DOLIST", NULL, form},
 	{"DOTIMES", NULL, form},
-
-	/* lex.c */
-
-	{"LEX-ENV", siLlex_env, si},
 
 	/* let.c */
 
@@ -484,6 +481,7 @@ const struct function_info all_functions[] = {
 	{"LOGANDC2", clLlogandc1, cl},
 	{"LOGORC1", clLlogorc1, cl},
 	{"LOGORC2", clLlogorc2, cl},
+	{"LOGNOT", clLlognot, cl},
 	{"BOOLE", clLboole, cl},
 	{"LOGBITP", clLlogbitp, cl},
 	{"ASH", clLash, cl},

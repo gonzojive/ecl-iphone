@@ -52,7 +52,10 @@ by (documentation 'NAME 'type)."
   "A FIXNUM is an integer between MOST-NEGATIVE-FIXNUM (= - 2^29 in ECL) and
 MOST-POSITIVE-FIXNUM (= 2^29 - 1 in ECL) inclusive.  Other integers are
 bignums."
-  `(INTEGER ,most-negative-fixnum ,most-positive-fixnum))
+  `(INTEGER #.most-negative-fixnum #.most-positive-fixnum))
+
+(deftype byte8 () `(INTEGER 0 255))
+(deftype integer8 () `(INTEGER -128 127))
 
 (deftype real (&rest foo) '(OR RATIONAL FLOAT))
 (deftype bit ()
@@ -118,7 +121,7 @@ called simple-strings."
 (deftype base-string (&optional size)
   (if size `(array base-char ,size) '(array base-char (*))))
 (deftype bit-vector (&optional size)
-  (if size `(array bit ,size) '(array bit (*))))
+  (if size `(array bit (,size)) '(array bit (*))))
 
 (deftype simple-vector (&optional size)
   "A simple-vector is a vector that is not displaced to another array, has no
@@ -175,7 +178,7 @@ has no fill-pointer, and is not adjustable."
   (case element-type
         ((t nil) t)
         ((base-char standard-char extended-char character) 'base-char)
-	(t (dolist (v '(BIT BASE-CHAR
+	(t (dolist (v '(BIT BASE-CHAR BYTE8 INTEGER8
 			(SIGNED-BYTE 32) (UNSIGNED-BYTE 32)
 			SHORT-FLOAT LONG-FLOAT) T)
 	     (when (subtypep element-type v)
@@ -347,10 +350,9 @@ Returns T if X belongs to TYPE; NIL otherwise."
 Returns T if TYPE1 is a subtype of TYPE2; NIL otherwise.  If this is not
 determined, then returns NIL as the first and second values.  Otherwise, the
 second value is T."
-    (multiple-value-setq (t1 i1) (normalize-type type1))
-    (multiple-value-setq (t2 i2) (normalize-type type2))
-    (when (and (equal t1 t2) (equal i1 i2))
+    (when (equal type1 type2)
       (return-from subtypep (values t t)))
+    (multiple-value-setq (t1 i1) (normalize-type type1))
     (case t1
       (MEMBER (dolist (e i1)
 		(unless (typep e type2) (return-from subtypep (values nil t))))
@@ -365,6 +367,9 @@ second value is T."
 	   (return-from subtypep (values nil nil)))
       (NOT (multiple-value-bind (tv flag) (subtypep (car i1) type2)
 	     (return-from subtypep (values (and flag (not tv)) flag)))))
+    (multiple-value-setq (t2 i2) (normalize-type type2))
+    (when (and (equal t1 t2) (equal i1 i2))
+      (return-from subtypep (values t t)))
     (case t2
       (MEMBER (return-from subtypep (values nil nil)))
       (OR (dolist (tt i2)

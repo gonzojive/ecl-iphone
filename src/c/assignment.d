@@ -20,6 +20,9 @@
 cl_object @'setf';
 cl_object @'psetf';
 cl_object @'si::setf-symbol';
+cl_object @'si::setf-lambda';
+cl_object @'si::setf-method';
+cl_object @'si::setf-update';
 cl_object @'si::clear-compiler-properties';
 #ifdef PDE
 cl_object @'si::*record-source-pathname-p*';
@@ -46,23 +49,17 @@ setf_namep(cl_object fun_spec)
 {	cl_object cdr;
 	if (CONSP(fun_spec) && !endp(cdr = CDR(fun_spec)) &&
 	    endp(CDR(cdr)) && CAR(fun_spec) == @'setf') {
-	  cl_object fn_name, sym;
-	  fn_name = CAR(cdr);
-	  sym = getf(fn_name->symbol.plist, @'si::setf-symbol', Cnil);
-	  if (Null(sym) || !SYMBOLP(sym)) {
-	    cl_object fn_str = fn_name->symbol.name;
-	    int l = fn_str->string.fillp + 7;
-	    cl_object string = alloc_simple_string(l);
-	    char *str = alloc_atomic(l+1);
-	    string->string.self = str;
-	    strncpy(str, "(SETF ", 6);
-	    strncpy(str + 6, fn_str->string.self, fn_str->string.fillp);
-	    str[l-1] = ')';
-	    str[l] = '\0';
-	    sym = intern(string, fn_name->symbol.hpack);
-	    fn_name->symbol.plist =
-	      putf(fn_name->symbol.plist, sym, @'si::setf-symbol');
-	  }
+	  cl_object sym, fn_name = CAR(cdr);
+	  cl_object fn_str = fn_name->symbol.name;
+	  int l = fn_str->string.fillp + 7;
+	  cl_object string = alloc_simple_string(l);
+	  char *str = alloc_atomic(l+1);
+	  string->string.self = str;
+	  strncpy(str, "(SETF ", 6);
+	  strncpy(str + 6, fn_str->string.self, fn_str->string.fillp);
+	  str[l-1] = ')';
+	  str[l] = '\0';
+	  sym = intern(string, fn_name->symbol.hpack);
 	  return(sym);
 	} else return(OBJNULL);
 }
@@ -78,11 +75,15 @@ setf_namep(cl_object fun_spec)
 	cl_type t;
 @
 	if (!SYMBOLP(fun)) {
-		cl_object sym;
-		if ((sym=setf_namep(fun)) != OBJNULL)
-			fun = sym;
-		else
-			FEtype_error_symbol(fun); 
+		cl_object sym = setf_namep(fun);
+		if (sym == OBJNULL)
+			FEtype_error_symbol(fun);
+		fun = CADR(fun);
+		putprop(fun, sym, @'si::setf-symbol');
+		remprop(fun, @'si::setf-lambda');
+		remprop(fun, @'si::setf-method');
+		remprop(fun, @'si::setf-update');
+		fun = sym;
 	}
 	if (fun->symbol.isform) {
 		if (fun->symbol.mflag) {
@@ -124,11 +125,15 @@ setf_namep(cl_object fun_spec)
 @(defun fmakunbound (sym)
 @
 	if (!SYMBOLP(sym)) {
-		cl_object sym1;
-		if ((sym1=setf_namep(sym)) != OBJNULL)
-			sym = sym1;
-		else
+		cl_object sym1 = setf_namep(sym);
+		if (sym1 == OBJNULL)
 			FEtype_error_symbol(sym);
+		sym = CADR(sym);
+		remprop(sym, @'si::setf-lambda');
+		remprop(sym, @'si::setf-method');
+		remprop(sym, @'si::setf-update');
+		@fmakunbound(1, sym1);
+		@(return sym)
 	}
 	if (sym->symbol.isform) {
 	  if (sym->symbol.mflag) {

@@ -70,7 +70,7 @@
 		 (dolist (form forms)
 		   (cond ((endp arg-types) (push form fl))
 			 (t (push (and-form-type (car arg-types) form (car args)
-				      "In a call to ~a" fname)
+						 :safe "In a call to ~a" fname)
 				  fl)
 			    (pop arg-types)
 			    (pop args))))
@@ -117,7 +117,7 @@
 		      (setq forms (nreverse fl1)))
 		   (cond ((endp arg-types) (push (car fl) fl1))
 			 (t (push (and-form-type (car arg-types) (car fl) (car al)
-				     "In a call to ~a" fname)
+						 :safe "In a call to ~a" fname)
 				  fl1)
 			    (pop arg-types))))))
 	     (let ((arg-types (get fname 'ARG-TYPES)))
@@ -126,7 +126,7 @@
 		 (do ((fl forms (cdr fl))
 		      (al args (cdr al)))
 		     ((or (endp arg-types) (endp fl)))
-		   (and-form-type (car arg-types) (car fl) (car al)
+		   (and-form-type (car arg-types) (car fl) (car al) :safe
 				  "In a call to ~a" fname)
 		   (pop arg-types))))
 #|

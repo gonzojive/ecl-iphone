@@ -172,7 +172,9 @@
 (defun sbt-compile-file (&rest a)
   (apply #'compiler::compile-file a))
 
-(defun operate-on-system (system mode &optional arg print-only)
+(defun operate-on-system (system mode &optional arg print-only
+			  &aux (si::*init-function-prefix*
+				(string-upcase (system-name system))))
   (let (transformations)
     (flet ((load-module (m s)
              (let ((name (module-name m)))
@@ -206,7 +208,6 @@
       (setq transformations
         (ecase mode
 	  ((:LIBRARY :SHARED-LIBRARY)
-	    (operate-on-system system :COMPILE)
 	    (let* ((transforms (make-transformations system
 						     #'true
 						     #'make-load-transformation))
@@ -215,7 +216,7 @@
 						   transforms)))
 		   (shared (eq mode :shared-library))
 		   (library (make-library-pathname system shared)))
-	      (print (cons library objects))
+	      (operate-on-system system :COMPILE)
 	      (funcall (if shared #'c::build-shared-library
 			   #'c::build-static-library)
 		       library :lisp-files objects))

@@ -20,6 +20,9 @@
 #define CHAR_BIT (sizeof(char)*8)
 #endif
 
+cl_object @'byte8';
+cl_object @'integer8';
+
 static void displace (cl_object from, cl_object to, cl_object offset);
 static void check_displaced (cl_object dlist, cl_object orig, cl_index newdim);
 extern cl_elttype get_elttype (cl_object x);
@@ -117,6 +120,12 @@ aref(cl_object x, cl_index index)
 
   case aet_lf:
     return(make_longfloat(x->array.self.lf[index]));
+
+  case aet_b8:
+    return(MAKE_FIXNUM(x->array.self.b8[index]));
+
+  case aet_i8:
+    return(MAKE_FIXNUM(x->array.self.i8[index]));
 
   default:
     internal_error("aref");
@@ -219,6 +228,19 @@ aset(cl_object x, cl_index index, cl_object value)
   case aet_lf:
     x->array.self.lf[index] = object_to_double(value);
     break;
+
+  case aet_b8: {
+    cl_index i = fixnnint(value);
+    if (i > 0xFF) FEerror("~S is not a (INTEGER 0 255)",1,value);
+    x->array.self.b8[index] = i;
+    break;
+  }
+  case aet_i8: {
+    cl_fixnum i = fixint(value);
+    if (i > 127 || i < -128) FEerror("~S is not a (INTEGER -128 127)",1,value);
+    x->array.self.i8[index] = i;
+    break;
+  }
   }
   return(value);
 }
@@ -370,7 +392,7 @@ array_allocself(cl_object x)
 	      }
 	case aet_fix: {
 		cl_fixnum *elts;
-		elts = alloc_atomic_align(sizeof(cl_fixnum)*d, sizeof(cl_fixnum));
+		elts = alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
 		for (i = 0;  i < d;  i++)
 			elts[i] = 0;
 		x->array.self.fix = elts;
@@ -378,7 +400,7 @@ array_allocself(cl_object x)
 	      }
 	case aet_sf: {
 		float *elts;
-		elts = alloc_atomic_align(sizeof(float)*d, sizeof(float));
+		elts = alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
 		for (i = 0;  i < d;  i++)
 			elts[i] = 0.0;
 		x->array.self.sf = elts;
@@ -386,10 +408,26 @@ array_allocself(cl_object x)
 	      }
 	case aet_lf: {
 		double *elts;
-		elts = alloc_atomic_align(sizeof(double)*d, sizeof(double));
+		elts = alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
 		for (i = 0;  i < d;  i++)
 			elts[i] = 0.0;
 		x->array.self.lf = elts;
+		break;
+	      }
+	case aet_b8: {
+		u_int8_t *elts;
+		elts = alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
+		for (i = 0;  i < d;  i++)
+			elts[i] = 0;
+		x->array.self.b8 = elts;
+		break;
+	      }
+	case aet_i8: {
+		int8_t *elts;
+		elts = alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
+		for (i = 0;  i < d;  i++)
+			elts[i] = 0;
+		x->array.self.i8 = elts;
 		break;
 	      }
 	}
@@ -411,11 +449,11 @@ get_elttype(cl_object x)
 		return(aet_sf);
 	else if (x == @'long-float' || x == @'double-float')
 		return(aet_lf);
-/*	else if (x == @'signed-char')
-		return(aet_char);
-	else if (x == @'unsigned-char')
-		return(aet_uchar);
-	else if (x == @'signed-short')
+	else if (x == @'byte8')
+		return(aet_b8);
+	else if (x == @'integer8')
+		return(aet_i8);
+/*	else if (x == @'signed-short')
 		return(aet_short);
 	else if (x == @'unsigned-short')
 		return(aet_ushort);
@@ -437,7 +475,10 @@ array_address(cl_object x, cl_index inc)
 		return x->string.self + inc;
 	case aet_lf:
 		return x->array.self.lf + inc;
-
+	case aet_b8:
+		return x->array.self.b8 + inc;
+	case aet_i8:
+		return x->array.self.i8 + inc;
 	default:
 		FEerror("Bad array type", 0);
 	}
@@ -453,6 +494,8 @@ array_address(cl_object x, cl_index inc)
 	case aet_fix:		output = @'fixnum'; break;
 	case aet_sf:		output = @'short-float'; break;
 	case aet_lf:		output = @'long-float'; break;
+	case aet_b8:		output = @'byte8'; break;
+	case aet_i8:		output = @'integer8'; break;
 	}
 	@(return output)
 @)

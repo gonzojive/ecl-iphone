@@ -73,9 +73,8 @@
   (system::gc)
   #+ecls
   (system::gc t)
-  (let ((source-file (merge-pathnames (merge-pathnames file *source-dir*)
-				      "foo.cl"))
-	(fasl-file (compile-file-pathname (merge-pathnames file *output-dir*)))
+  (let ((source-file (merge-pathnames (merge-pathnames file *source-dir*) "foo.cl"))
+	(fasl-file (and compile (compile-file-pathname (merge-pathnames file *output-dir*))))
 	(*package* (make-package "TESTING")))
     (cond (compile
 	   (proclaim-file source-file)

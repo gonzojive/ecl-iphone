@@ -32,6 +32,15 @@ cl_object @'&key';
 cl_object @'&allow-other-keys';
 cl_object @'&aux';
 
+cl_object @'si::symbol-macro';
+cl_object @'tag';
+cl_object @'block';
+cl_object @'macro';
+cl_object @'function';
+cl_object @':block';
+cl_object @':tag';
+cl_object @':function';
+
 cl_object @':allow-other-keys';
 
 typedef struct {
@@ -352,20 +361,39 @@ c_new_env()
 	c_env.lexical_level = 0;
 }
 
+static void
+c_register_block(cl_object name)
+{
+	c_env.variables = CONS(list(2, @':block', name), c_env.variables);
+}
+
+static void
+c_register_tags(cl_object all_tags)
+{
+	c_env.variables = CONS(list(2, @':tag', all_tags), c_env.variables);
+}
+
+static void
+c_register_function(cl_object name)
+{
+	c_env.variables = CONS(list(2, @':function', name), c_env.variables);
+	c_env.macros = CONS(list(2, name, @'function'), c_env.macros);
+}
+
 static cl_object
 c_macro_expand1(cl_object stmt)
 {
 	return macro_expand1(stmt, CONS(c_env.variables, c_env.macros));
 }
 
-void
+static void
 c_register_symbol_macro(cl_object name, cl_object exp_fun)
 {
 	c_env.variables = CONS(list(3, name, @'si::symbol-macro', exp_fun),
 			       c_env.variables);
 }
 
-void
+static void
 c_register_macro(cl_object name, cl_object exp_fun)
 {
 	c_env.macros = CONS(list(3, name, @'macro', exp_fun), c_env.macros);
@@ -378,6 +406,32 @@ c_register_var(register cl_object var, bool special)
 			       c_env.variables);
 }
 
+static cl_object
+c_tag_ref(cl_object the_tag, cl_object the_type)
+{
+	cl_fixnum n = 0;
+	cl_object l;
+	for (l = c_env.variables; CONSP(l); l = CDR(l)) {
+		cl_object record = CAR(l);
+		cl_object type = CAR(record);
+		cl_object name = CADR(record);
+		if (type == @':tag') {
+			if (type == the_type && !Null(assq(the_tag, name)))
+				return CONS(MAKE_FIXNUM(n),
+					    CDR(assq(the_tag, name)));
+			n++;
+		} else if (type == @':block' || type == @':function') {
+			if (type == the_type && name == the_tag)
+				return Ct;
+			n++;
+		} else if (Null(name)) {
+			/* We are counting only locals */
+			n++;
+		}
+	}
+	return Cnil;
+}
+
 static cl_fixnum
 c_var_ref(cl_object var)
 {
@@ -387,9 +441,11 @@ c_var_ref(cl_object var)
 		cl_object record = CAR(l);
 		cl_object name = CAR(record);
 		cl_object special = CADR(record);
-		if (name != var) {
-			/* Symbol not yet found. Only count locals. */
+		if (name == @':block' || name == @':tag' || name == @':function')
 			n++;
+		else if (name != var) {
+			/* Symbol not yet found. Only count locals. */
+			if (Null(special)) n++;
 		} else if (special == @'si::symbol-macro') {
 			/* We should never get here. The variable should have
 			   been macro expanded. */
@@ -408,12 +464,13 @@ special_variablep(register cl_object var, register cl_object specials)
 	return ((var->symbol.stype == stp_special) || member_eq(var, specials));
 }
 
-static void
+static bool
 c_pbind(cl_object var, cl_object specials)
 {
+	bool special;
 	if (!SYMBOLP(var))
 		FEillegal_variable_name(var);
-	else if (special_variablep(var, specials)) {
+	else if (special = special_variablep(var, specials)) {
 		c_register_var(var, TRUE);
 		asm_op(OP_PBINDS);
 	} else {
@@ -421,14 +478,16 @@ c_pbind(cl_object var, cl_object specials)
 		asm_op(OP_PBIND);
 	}
 	asm1(var);
+	return special;
 }
 
-static void
+static bool
 c_bind(cl_object var, cl_object specials)
 {
+	bool special;
 	if (!SYMBOLP(var))
 		FEillegal_variable_name(var);
-	else if (special_variablep(var, specials)) {
+	else if (special = special_variablep(var, specials)) {
 		c_register_var(var, TRUE);
 		asm_op(OP_BINDS);
 	} else {
@@ -436,6 +495,30 @@ c_bind(cl_object var, cl_object specials)
 		asm_op(OP_BIND);
 	}
 	asm1(var);
+	return special;
+}
+
+static void
+c_undo_bindings(cl_object old_env)
+{
+	cl_object env;
+	cl_index num_lexical = 0;
+	cl_index num_special = 0;
+
+	for (env = c_env.variables; env != old_env && !Null(env); env = CDR(env)) {
+		cl_object record = CAR(env);
+		cl_object name = CAR(record);
+		cl_object special = CADR(record);
+		if (name == @':block' || name == @':tag')
+			FEerror("Internal error: cannot undo BLOCK/TAGBODY.",0);
+		else if (name == @':function' || Null(special))
+			num_lexical++;
+		else if (special != @'si::symbol-macro')
+			num_special++;
+	}
+	if (num_lexical) asm_op2(OP_UNBIND, num_lexical);
+	if (num_special) asm_op2(OP_UNBINDS, num_special);
+	c_env.variables = old_env;
 }
 
 static void
@@ -494,12 +577,17 @@ static void
 c_block(cl_object body) {
 	cl_object name = pop(&body);
 	cl_index labelz = asm_jmp(OP_BLOCK);
+	cl_object old_env = c_env.variables;
+
 	if (!SYMBOLP(name))
 		FEprogram_error("BLOCK: Not a valid block name, ~S", 1, name);
+
+	c_register_block(name);
 	asm1(name);
 	compile_body(body);
 	asm_op(OP_EXIT);
 	asm_complete(OP_BLOCK, labelz);
+	c_env.variables = old_env;
 }
 
 /*
@@ -533,7 +621,13 @@ c_call(cl_object args, bool push) {
 		compile_form(pop(&args),TRUE);
 	}
 	if (ATOM(name)) {
-		asm_op2(push? OP_PCALL : OP_CALL, nargs);
+		cl_object ndx = c_tag_ref(name, @':function');
+		if (Null(ndx))
+			/* Globally defined function */
+			asm_op2(push? OP_PCALLG : OP_CALLG, nargs);
+		else
+			/* Function from a FLET/LABELS form */
+			asm_op2(push? OP_PCALL : OP_CALL, nargs);
 		asm1(name);
 	} else if (CAR(name) == @'lambda') {
 		asm_op(OP_CLOSE);
@@ -544,8 +638,8 @@ c_call(cl_object args, bool push) {
 		if (aux == OBJNULL)
 			FEprogram_error("FUNCALL: Invalid function name ~S.",
 					1, name);
-		asm_op2(push? OP_PCALL : OP_CALL, nargs);
-		asm1(aux);
+		/* The outcome of (SETF ...) may be a macro name */
+		compile_form(CONS(aux, CDR(args)), push);
 	}
 }
 
@@ -743,6 +837,9 @@ c_do_doa(int op, cl_object args) {
 
 	labelz = asm_jmp(OP_DO);
 
+	/* Bind block */
+	c_register_block(Cnil);
+
 	/* Compile initial bindings */
 	if (length(bindings) == 1)
 		op = OP_BIND;
@@ -865,6 +962,9 @@ c_dolist_dotimes(int op, cl_object args) {
 	compile_form(list, FALSE);
 	labelz = asm_jmp(op);
 
+	/* Bind block */
+	c_register_block(Cnil);
+
 	/* Initialize the variable */
 	compile_form((op == OP_DOLIST)? Cnil : MAKE_FIXNUM(0), FALSE);
 	c_bind(var, specials);
@@ -927,26 +1027,58 @@ c_eval_when(cl_object args) {
 		OP_EXIT
 	labelz:
 */
+static cl_index
+c_register_functions(cl_object l)
+{
+	cl_index nfun;
+	for (nfun = 0; !endp(l); nfun++) {
+		cl_object definition = pop(&l);
+		cl_object name = pop(&definition);
+		c_register_function(name);
+	}
+	return nfun;
+}
+
 static void
 c_labels_flet(int op, cl_object args) {
-	cl_object def_list = pop(&args);
-	int nfun = length(def_list);
+	cl_object l, def_list = pop(&args);
+	cl_compiler_env old_c_env = c_env;
+	cl_index nfun;
 
 	/* Remove declarations */
 	@si::process-declarations(1, args);
 	args = VALUES(1);
-	if (nfun == 0) {
-		compile_body(args);
-		return;
-	}
+
+	/* If compiling a LABELS form, add the function names to the lexical
+	   environment before compiling the functions */
+	if (op == OP_FLET)
+		nfun = length(def_list);
+	else
+		nfun = c_register_functions(def_list);
+
+	/* Push the operator (OP_LABELS/OP_FLET) with the number of functions */
 	asm_op2(op, nfun);
-	do {
-		cl_object definition = pop(&def_list);
+
+	/* Compile the local functions now. */
+	for (l = def_list; !endp(l); ) {
+		cl_object definition = pop(&l);
 		cl_object name = pop(&definition);
 		asm1(make_lambda(name, definition));
-	} while (!endp(def_list));
+	}
+
+	/* If compiling a FLET form, add the function names to the lexical
+	   environment after compiling the functions */
+	if (op == OP_FLET)
+		c_register_functions(def_list);
+
+	/* Compile the body of the form with the local functions in the lexical
+	   environment. */
 	compile_body(args);
-	asm_op(OP_EXIT);
+
+	c_undo_bindings(old_c_env.variables);
+
+	/* Restore and return */
+	c_env = old_c_env;
 }
 
 
@@ -969,7 +1101,7 @@ c_flet(cl_object args) {
 */
 static void
 c_function(cl_object args) {
-	cl_object function = pop(&args);
+	cl_object setf_function, function = pop(&args);
 	if (!endp(args))
 		FEprogram_error("FUNCTION: Too many arguments.", 0);
 	if (SYMBOLP(function)) {
@@ -983,6 +1115,9 @@ c_function(cl_object args) {
 		cl_object body = CDDR(function);
 		asm_op(OP_CLOSE);
 		asm1(make_lambda(name, body));
+	} else if ((setf_function = setf_namep(function)) != OBJNULL) {
+		asm_op(OP_FUNCTION);
+		asm1(setf_function);
 	} else
 		FEprogram_error("FUNCTION: Not a valid argument ~S.", 1, function);
 }
@@ -990,10 +1125,14 @@ c_function(cl_object args) {
 
 static void
 c_go(cl_object args) {
-	asm_op(OP_GO);
-	asm1(pop(&args));
+	cl_object tag = pop(&args);
+	cl_object info = c_tag_ref(tag, @':tag');
+	if (Null(info))
+		FEprogram_error("GO: Unknown tag ~S.", 1, tag);
 	if (!Null(args))
 		FEprogram_error("GO: Too many arguments.",0);
+	asm_op2(OP_GO, fix(CAR(info)));
+	asm1(CDR(info));
 }
 
 
@@ -1089,7 +1228,6 @@ c_let_leta(int op, cl_object args) {
 	default:
 	}
 
-	asm_op(OP_PUSHENV);
 	for (vars=Cnil, l=bindings; !endp(l); ) {
 		cl_object aux = pop(&l);
 		cl_object var, value;
@@ -1115,9 +1253,8 @@ c_let_leta(int op, cl_object args) {
 	while (!endp(vars))
 		c_pbind(pop(&vars), specials);
 	compile_body(body);
-	asm_op(OP_EXIT);
 
-	c_env.variables = old_variables;
+	c_undo_bindings(old_variables);
 }
 
 static void
@@ -1174,7 +1311,6 @@ c_multiple_value_bind(cl_object args)
 {
 	cl_object vars, value, body, specials;
 	cl_index save_pc, n;
-	cl_object old_variables = c_env.variables;
 
 	vars = pop(&args);
 	value = pop(&args);
@@ -1187,7 +1323,7 @@ c_multiple_value_bind(cl_object args)
 	if (n == 0) {
 		compile_body(body);
 	} else {
-		asm_op(OP_PUSHENV);
+		cl_object old_variables = c_env.variables;
 		asm_op2(OP_MBIND, n);
 		for (vars=reverse(vars); n; n--){
 			cl_object var = pop(&vars);
@@ -1201,9 +1337,8 @@ c_multiple_value_bind(cl_object args)
 			asm1(var);
 		}
 		compile_body(body);
-		asm_op(OP_EXIT);
+		c_undo_bindings(old_variables);
 	}
-	c_env.variables = old_variables;
 }
 
 
@@ -1244,6 +1379,7 @@ c_multiple_value_setq(cl_object args) {
 	cl_object vars = Cnil;
 	cl_object temp_vars = Cnil;
 	cl_object late_assignment = Cnil;
+	cl_object old_variables;
 	cl_index nvars = 0;
 
 	/* Look for symbol macros, building the list of variables
@@ -1265,7 +1401,7 @@ c_multiple_value_setq(cl_object args) {
 	}
 
 	if (!Null(temp_vars)) {
-		asm_op(OP_PUSHENV);
+		old_variables = c_env.variables;
 		do {
 			compile_form(Cnil, FALSE);
 			c_bind(CAR(temp_vars), Cnil);
@@ -1303,7 +1439,7 @@ c_multiple_value_setq(cl_object args) {
 	/* Assign to symbol-macros */
 	if (!Null(late_assignment)) {
 		compile_body(late_assignment);
-		asm_op(OP_EXIT);
+		c_undo_bindings(old_variables);
 	}
 }
 
@@ -1442,29 +1578,30 @@ c_psetq(cl_object old_args) {
 		tag		; object which names the block
 */
 static void
-c_return(cl_object stmt) {
+c_return_aux(cl_object name, cl_object stmt)
+{
+	cl_object ndx = c_tag_ref(name, @':block');
 	cl_object output = pop_maybe_nil(&stmt);
 
+	if (!SYMBOLP(name) || Null(ndx))
+		FEprogram_error("RETURN-FROM: Unknown block name ~S.", 1, name);
+	if (stmt != Cnil)
+		FEprogram_error("RETURN-FROM: Too many arguments.", 0);
 	compile_form(output, FALSE);
 	asm_op(OP_RETURN);
-	asm1(Cnil);
-	if (stmt != Cnil)
-		FEprogram_error("RETURN: Too many arguments.", 0);
+	asm1(name);
+}
+
+static void
+c_return(cl_object stmt) {
+	c_return_aux(Cnil, stmt);
 }
 
 
 static void
 c_return_from(cl_object stmt) {
 	cl_object name = pop(&stmt);
-	cl_object output = pop_maybe_nil(&stmt);
-
-	compile_form(output, FALSE);
-	asm_op(OP_RETURN);
-	if (!SYMBOLP(name))
-		FEprogram_error("RETURN-FROM: Not a valid tag ~S.", 1, name);
-	asm1(name);
-	if (stmt != Cnil)
-		FEprogram_error("RETURN-FROM: Too many arguments.", 0);
+	c_return_aux(name, stmt);
 }
 
 
@@ -1519,8 +1656,9 @@ declared special and appear in a symbol-macrolet.", 1, name);
 static void
 c_tagbody(cl_object args)
 {
+	cl_object old_env = c_env.variables;
 	cl_fixnum tag_base;
-	cl_object label, body;
+	cl_object labels = Cnil, label, body;
 	cl_type item_type;
 	int nt, i;
 
@@ -1530,6 +1668,7 @@ c_tagbody(cl_object args)
 		item_type = type_of(CAR(body));
 		if (item_type == t_symbol || item_type == t_fixnum ||
 	            item_type == t_bignum) {
+			labels = CONS(CONS(label,MAKE_FIXNUM(nt)), labels);
 			nt += 1;
 		}
 	}
@@ -1538,9 +1677,10 @@ c_tagbody(cl_object args)
 		compile_form(Cnil, FALSE);
 		return;
 	}
+	c_register_tags(labels);
 	asm_op2(OP_TAGBODY, nt);
 	tag_base = current_pc();
-	for (i = 2*nt; i; i--)
+	for (i = nt; i; i--)
 		asm1(Cnil);
 
 	for (body = args; !endp(body); body = CDR(body)) {
@@ -1548,8 +1688,6 @@ c_tagbody(cl_object args)
 		item_type = type_of(label);
 		if (item_type == t_symbol || item_type == t_fixnum ||
 	            item_type == t_bignum) {
-			asm_at(tag_base, label);
-			tag_base++;
 			asm_at(tag_base, MAKE_FIXNUM(current_pc()-tag_base));
 			tag_base++;
 		} else {
@@ -1557,6 +1695,7 @@ c_tagbody(cl_object args)
 		}
 	}
 	asm_op(OP_EXIT);
+	c_env.variables = old_env;
 }
 
 
@@ -2069,6 +2208,10 @@ make_lambda(cl_object name, cl_object lambda) {
 
 	handle = asm_begin();
 
+	/* Transform (SETF fname) => fname */
+	if (CONSP(name) && setf_namep(name) == OBJNULL)
+		FEprogram_error("LAMBDA: Not a valid function name ~S",1,name);
+
 	asm1(name);			/* Name of the function */
 	specials_pc = current_pc();	/* Which variables are declared special */
 	asm1(specials);
@@ -2110,6 +2253,9 @@ make_lambda(cl_object name, cl_object lambda) {
 		keys_pc+=4;
 	}
 	
+	if (!Null(name))
+		c_register_block(name);
+
 	if ((current_pc() - label) == 1)
 		set_pc(label);
 	else
@@ -2122,6 +2268,7 @@ make_lambda(cl_object name, cl_object lambda) {
 		c_bind(var, specials);
 	}
 	asm_at(specials_pc, specials);
+
 	compile_body(body);
 	asm_op(OP_HALT);
 
@@ -2132,6 +2279,16 @@ make_lambda(cl_object name, cl_object lambda) {
 
 	return asm_end(handle, Cnil);
 }
+
+@(defun si::function-block-name (name)
+@
+	if (SYMBOLP(name))
+		@(return name)
+	if (CONSP(name) && CAR(name) == @'setf' && CONSP(CDR(name)) &&
+	    SYMBOLP(CADR(name)) && Null(CDDR(name)))
+		@(return CADR(name))
+	FEerror("Not a valid function name ~S",1,name);
+@)
 
 @(defun si::make_lambda (name rest)
 	cl_object lambda;

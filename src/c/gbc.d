@@ -228,6 +228,12 @@ BEGIN:
 		case aet_lf:
 			j = x->array.dim * sizeof(double);
 			break;
+		case aet_b8:
+			j = x->array.dim * sizeof(u_int8_t);
+			break;
+		case aet_i8:
+			j = x->array.dim * sizeof(int8_t);
+			break;
 		default:
 			error("Allocation botch: unknown array element type");
 		}

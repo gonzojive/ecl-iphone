@@ -2,10 +2,17 @@
 #include "page.h"
 
 const struct symbol_info all_symbols[] = {
+/* array.c */
+{&clSbyte8, "BYTE8", CL_ORDINARY},
+{&clSinteger8, "INTEGER8", CL_ORDINARY},
+
 /* assignment.c */
 {&clSsetf, "SETF", CL_ORDINARY},
 {&clSpsetf, "PSETF", CL_ORDINARY},
 {&siSsetf_symbol, "SETF-SYMBOL", SI_ORDINARY},
+{&siSsetf_lambda, "SETF-LAMBDA", SI_ORDINARY},
+{&siSsetf_method, "SETF-METHOD", SI_ORDINARY},
+{&siSsetf_update, "SETF-UPDATE", SI_ORDINARY},
 {&siSclear_compiler_properties, "CLEAR-COMPILER-PROPERTIES", SI_ORDINARY},
 #ifdef PDE
 {&siVrecord_source_pathname_p, "*RECORD-SOURCE-PATHNAME-P*", SI_SPECIAL},
@@ -127,6 +134,9 @@ const struct symbol_info all_symbols[] = {
 {&clVload_verbose, "*LOAD-VERBOSE*", CL_SPECIAL},
 {&clVload_print, "*LOAD-PRINT*", CL_SPECIAL},
 {&siVload_hooks, "*LOAD-HOOKS*", SI_SPECIAL},
+#ifdef ENABLE_DLOPEN
+{&siVinit_function_prefix, "*INIT-FUNCTION-PREFIX*", SI_SPECIAL},
+#endif
 #ifdef PDE
 {&siVsource_pathname, "*SOURCE-PATHNAME*", CL_SPECIAL},
 #endif

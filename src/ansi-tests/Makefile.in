@@ -22,7 +22,7 @@ ecls_min:
 	 echo '(setf (logical-pathname-translations "SYS")'; \
 	 echo "      '"'(("*.*" "../*.*")))'; \
 	 echo '(sys::chdir "ansi-tests")'; \
-	 echo '(in-package "CL-USER"); \
+	 echo '(in-package "CL-USER")'; \
 	 echo '(load "$(srcdir)/tests")'; \
 	 echo "(run-all-tests \"$(srcdir)/\")"; \
 	 echo "(quit)") | (cd ..; ./ecls_min)

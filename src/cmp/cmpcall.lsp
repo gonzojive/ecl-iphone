@@ -63,8 +63,13 @@
 	      (consp (rest function)))
 	 ;; Don't create closure boundary like in c1function
 	 ;; since funob is used in this same environment
-	 (let ((lambda-expr (c1lambda-expr (cddr function) (second function))))
-	   (list 'LAMBDA (second lambda-expr) lambda-expr (next-cfun))))
+	 (let ((name (second function)))
+	   (unless (symbolp name)
+	     (if (si::setf-namep name)
+	       (setq name (si::setf-namep name))
+	       (error "~S is not a valid function name" name)))
+	   (let ((lambda-expr (c1lambda-expr (cddr function) name)))
+	     (list 'LAMBDA (second lambda-expr) lambda-expr (next-cfun)))))
 	(t (cmperr "Malformed function: ~A" fun))))
 
 (defun c1funcall (args &aux funob (info (make-info)))
@@ -165,34 +170,31 @@
   (unless (eq 'ARGS-PUSHED args)
     (case fname
       (AREF
-       (let ((etype (info-type (cadar args))))
-	 (when (or (and (eq etype 'STRING)
-			(setq etype 'CHARACTER))
-		   (and (consp etype)
-			(or (eq (car etype) 'ARRAY)
-			    (eq (car etype) 'VECTOR))
-			(setq etype (second etype))))
-	   (setq etype (type-and return-type etype))
+       (let (etype (elttype (info-type (cadar args))))
+	 (when (or (and (eq elttype 'STRING)
+			(setq elttype 'CHARACTER))
+		   (and (consp elttype)
+			(or (eq (car elttype) 'ARRAY)
+			    (eq (car elttype) 'VECTOR))
+			(setq elttype (second elttype))))
+	   (setq etype (type-and return-type elttype))
 	   (unless etype
-	     (cmpwarn "Type mismatch was found in ~s."
-		      (cons fname args))
+	     (cmpwarn "Type mismatch found in AREF. Expected output type ~s, array element type ~s." return-type elttype)
 	     (setq etype T))		; assume no information
 	   (setf return-type etype))))
       (SYS:ASET				; (sys:aset value array i0 ... in)
-       (let ((etype (info-type (cadr (second args)))))
-	 (when (or (and (eq etype 'STRING)
-			(setq etype 'CHARACTER))
-		   (and (consp etype)
-			(or (eq (car etype) 'ARRAY)
-			    (eq (car etype) 'VECTOR))
-			(setq etype (second etype))))
-	   (setq etype
-		 (type-and return-type
-			   (type-and (info-type (cadr (first args)))
-				     etype)))
+       (let (etype
+	     (valtype (info-type (cadr (first args))))
+	     (elttype (info-type (cadr (second args)))))
+	 (when (or (and (eq elttype 'STRING)
+			(setq elttype 'CHARACTER))
+		   (and (consp elttype)
+			(or (eq (car elttype) 'ARRAY)
+			    (eq (car elttype) 'VECTOR))
+			(setq elttype (second elttype))))
+	   (setq etype (type-and return-type (type-and valtype elttype)))
 	   (unless etype
-	     (cmpwarn "Type mismatch was found in ~s."
-		      (cons fname args))
+	     (cmpwarn "Type mismatch found in (SETF AREF). Expected output type ~s, array element type ~s, value type ~s." return-type elttype valtype)
 	     (setq etype T))
 	   (setf return-type etype)
 	   (setf (info-type (cadr (first args))) etype))))))

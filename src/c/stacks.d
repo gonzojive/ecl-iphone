@@ -120,10 +120,10 @@ ihs_function_name(cl_object x)
 }
 
 void
-ihs_push(cl_object function, cl_object env)
+ihs_push(cl_object function)
 {
 	cl_stack_push(function);
-	cl_stack_push(env);
+	cl_stack_push(lex_env);
 	cl_stack_push(MAKE_FIXNUM(ihs_top));
 	ihs_top = cl_stack_index();
 }
@@ -133,6 +133,7 @@ ihs_pop()
 {
 	cl_stack_set_index(ihs_top);
 	ihs_top = fix(cl_stack_top[-1]);
+	lex_env = cl_stack_top[-2];
 	cl_stack_pop_n(3);
 }
 
@@ -152,6 +153,19 @@ ihs_prev(cl_index n)
 	cl_object *sp = get_ihs_ptr(n);
 	n = fixnnint(sp[-1]);
 	return n;
+}
+
+static cl_index
+ihs_next(cl_index n)
+{
+	cl_index h1 = ihs_top, h2 = ihs_top;
+	while (h2 > n) {
+		h1 = h2;
+		h2 = ihs_prev(h1);
+	}
+	if (h2 == n)
+		return h1;
+	FEerror("Internal error: ihs record ~S not found.", 1, MAKE_FIXNUM(n));
 }
 
 cl_object
@@ -194,16 +208,8 @@ ihs_top_function_name(void)
 @)
 
 @(defun si::ihs-next (x)
-	cl_index h1 = ihs_top, h2 = ihs_top;
-	cl_index n = fixnnint(x);
 @
-	while (h2 > n) {
-		h1 = h2;
-		h2 = ihs_prev(h1);
-	}
-	if (h2 == n)
-		@(return MAKE_FIXNUM(h1))
-	FEerror("Internal error: ihs record ~S not found.", 1, x);
+	@(return MAKE_FIXNUM(ihs_next(fixnnint(x))))
 @)
 
 @(defun si::ihs_fun (arg)
@@ -214,8 +220,8 @@ ihs_top_function_name(void)
 @(defun si::ihs_env (arg)
 	cl_object lex;
 @
-	lex = get_ihs_ptr(fixnnint(arg))[-2];
-	@(return CONS(car(lex),cdr(lex)))
+	lex = get_ihs_ptr(ihs_next(fixnnint(arg)))[-2];
+	@(return lex)
 @)
 
 /********************** FRAME STACK *************************/

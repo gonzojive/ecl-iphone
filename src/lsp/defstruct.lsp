@@ -40,6 +40,7 @@
 	(progn
 	  (remprop access-function 'SETF-UPDATE-FN)
 	  (remprop access-function 'SETF-LAMBDA)
+	  (remprop access-function 'SETF-SYMBOL)
 	  (sys::set-documentation access-function 'SETF nil))
 	(progn
 	  ;; The following is used by the compiler to expand inline

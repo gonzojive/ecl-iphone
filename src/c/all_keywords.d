@@ -53,6 +53,11 @@ const struct keyword_info all_keywords[] = {
 {&Krehash_size, "REHASH-SIZE"},
 {&Krehash_threshold, "REHASH-THRESHOLD"},
 
+/* lex.c */
+{&Kfunction, "FUNCTION"},
+{&Ktag, "TAG"},
+{&Kblock, "BLOCK"},
+
 /* list.c */
 {&Ktest, "TEST"},
 {&Ktest_not, "TEST-NOT"},

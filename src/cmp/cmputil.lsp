@@ -100,8 +100,7 @@
 (defun cmp-macroexpand (form &aux env (throw-flag t))
   ;; Obtain the local macro environment for expansion.
   (dolist (v *funs*)
-    (when (consp v)
-      (push v env)))
+    (when (consp v) (push v env)))
   (when env (setq env (cons nil (nreverse env))))
   (unwind-protect
       (prog1
@@ -115,28 +114,9 @@
                    ~%;;; You are recommended to compile again.~%"
 		form)))))
 
-
-(defun cmp-macroexpand-1 (form &aux env (throw-flag t))
-  (dolist (v *funs*)
-    (when (consp v)
-      (push (list (car v) 'MACRO (cadr v)) env))) 
-  (when env (setq env (cons nil (nreverse env))))
-  (unwind-protect
-      (prog1
-	  (cmp-toplevel-eval `(macroexpand-1 ',form ',env))
-	(setq throw-flag nil))
-    (when throw-flag
-      (let ((*print-case* :upcase))
-	(print-current-form)
-	(format t
-		"~&;;; The macro form ~s was not expanded successfully.~
-                   ~%;;; You are recommended to compile again.~%"
-		form)))))
-	  
-
 (defun cmp-expand-macro (fd fname args &aux env (throw-flag t))
   (dolist (v *funs*)
-	  (if (consp v) (push (list (car v) 'MACRO (cadr v)) env)))
+    (when (consp v) (push v env)))
   (when env (setq env (cons nil (nreverse env))))
   (unwind-protect
       (prog1

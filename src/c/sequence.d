@@ -335,10 +335,17 @@ reverse(cl_object seq)
 			for (j = k - 1, i = 0;  j >=0;  --j, i++)
 				y->vector.self.t[j] = x->vector.self.t[i];
 			break;
-
 		case aet_lf:
 			for (j = k - 1, i = 0;  j >=0;  --j, i++)
 				y->array.self.lf[j] = x->array.self.lf[i];
+			break;
+		case aet_b8:
+			for (j = k - 1, i = 0;  j >=0;  --j, i++)
+				y->array.self.b8[j] = x->array.self.b8[i];
+			break;
+		case aet_i8:
+			for (j = k - 1, i = 0;  j >=0;  --j, i++)
+				y->array.self.i8[j] = x->array.self.i8[i];
 			break;
 		default:
 			internal_error("reverse");
@@ -426,6 +433,20 @@ nreverse(cl_object seq)
 				double y = x->array.self.lf[i];
 				x->array.self.lf[i] = x->array.self.lf[j];
 				x->array.self.lf[j] = y;
+			}
+			return(seq);
+		case aet_b8:
+			for (i = 0, j = k - 1;  i < j;  i++, --j) {
+				u_int8_t y = x->array.self.b8[i];
+				x->array.self.b8[i] = x->array.self.b8[j];
+				x->array.self.b8[j] = y;
+			}
+			return(seq);
+		case aet_i8:
+			for (i = 0, j = k - 1;  i < j;  i++, --j) {
+				int8_t y = x->array.self.i8[i];
+				x->array.self.i8[i] = x->array.self.i8[j];
+				x->array.self.i8[j] = y;
 			}
 			return(seq);
 		default:

@@ -25,6 +25,7 @@
 #-old-loop
 (load "@srcdir@/loop2.lsp")
 (load "@srcdir@/defpackage.lsp")
+(load "@srcdir@/ffi.lsp")
  #+threads
 (load "@srcdir@/threads.lsp")
  #+tk

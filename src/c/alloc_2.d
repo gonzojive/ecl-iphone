@@ -164,6 +164,8 @@ init_alloc(void)
 	if (alloc_initialized) return;
 	alloc_initialized = TRUE;
 
+	GC_no_dls = 1;
+
 	init_tm(t_shortfloat, "SHORT-FLOAT", /* 8 */
 		sizeof(struct shortfloat_struct));
 	init_tm(t_cons, "CONS", sizeof(struct cons)); /* 12 */

@@ -630,23 +630,22 @@ file.  When the saved image is invoked, it will start the redefined top-level."
 	(*print-length* 4)
 	(*print-pretty* t)
         (fun (ihs-fun *ihs-current*))
+	(functions) (blocks) (variables)
         name args)
-    (format t
-	   "~:[~;Local functions: ~:*~{~s~^, ~}.~%~]"
-	   (mapcan #'(lambda (x) (and (eq (second x) 'FUNCTION) (list (car x))))
-		   (cdr *break-env*)))
-    (format t
-	   "~:[~;Block names: ~:*~{~s~^, ~}.~%~]"
-	   (mapcan #'(lambda (x) (and (eq (second x) 'BLOCK) (list (car x))))
-		   (cdr *break-env*)))
-    (format t
-	   "~:[~;Tags: ~:*~{~s~^, ~}.~%~]"
-	   (mapcan #'(lambda (x) (when (eq (second x) 'TAG) (list (car x))))
-		   (cdr *break-env*)))
-    (format t
-	    "Local variables:~:[ ~:[none~;~:*~{~s~1*~:@{, ~s~1*~}~}~]~;~
-				 ~:[ none~;~:*~{~%  ~s: ~s~}~]~]~%"
-	    (not no-values) (car *break-env*)))
+    (do* ((env *break-env* (cddr env))
+	  (type (first env) (first env))
+	  (data (second env) (second env)))
+	((endp env))
+      (case type
+	(:function (push (car data) functions))
+	(:block (push (car data) blocks))
+	(:tag)
+	(otherwise (setq variables (list* type data variables)))))
+    (format t "~:[~;Local functions: ~:*~{~s~^, ~}.~%~]" functions)
+    (format t "~:[~;Block names: ~:*~{~s~^, ~}.~%~]" blocks)
+    (format t "Local variables: ~:[~:[none~;~:*~{~s~1*~:@{, ~s~1*~}~}~]~;~
+				   ~:[none~;~:*~{~%  ~s: ~s~}~]~]~%"
+	    (not no-values) variables)
     (values)))
 
 (defun tpl-bds-command (&optional var)

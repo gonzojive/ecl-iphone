@@ -816,9 +816,20 @@ ECLS 0.5
   - The compiler produced wrong code for CATCH forms in which the tag
     is not constant.
 
+  - The compiler produced wrong code for RETURN-FROM forms inside an
+    UNWIND-PROTECT.
+
+  - Deftype BIT-VECTOR would not expand to a vector type.
+
 * System design and portability:
 
   - Remove function_entry_table.
+
+  - Each compiled file has an entry point whose name is either
+    init_CODE() or another name based on the name of the source file.
+    The algorithm for computing these names has been slightly changed
+    so that the entry points of ECLS's own library do not conflict with
+    user defined entry points.
 
 * Visible changes and ANSI compatibility:
 
@@ -845,7 +856,7 @@ ECLS 0.5
     the interpreter and the compiler.
 
   - New, undocumented implementation of documentation strings which
-    uses hash tables instead of property lists. The gloal variable
+    uses hash tables instead of property lists. The global variable
     si::*keep-documentation* determines whether documentation strings
     are stored in memory. It is possible to dump documentation strings
     to a help file.
@@ -857,6 +868,17 @@ ECLS 0.5
     documentation with examples included in the Developer's Guide.
 
   - Symbolic's update of the MIT LOOP macro imported.
+
+  - A LET/LET* form in which the initializers for a variable have not
+    the expected type produce a warning, but the code is accepted. For
+    instance (LET (V) (DECLARE (TYPE FIXNUM V)) (SETQ V 1)) now
+    compiles.
+
+  - (SETF name), where name is a symbol, is now a valid function name in all
+    contexts. It is accepted by DEFUN, FUNCTION, FBOUNDP, FMAKUNBOUND, etc,
+    and it can be the on the function position in any form.
+
+  - New specialized arrays for (UNSIGNED-BYTE 8) and (SIGNED-BYTE 8).
 
 TODO:
 =====

@@ -45,7 +45,10 @@ search_symbol_macro(cl_object name, cl_object env)
 cl_object
 search_macro(cl_object name, cl_object env)
 {
-	return lex_sch(CDR(env), name, @'macro');
+	cl_object record = assq(name, CDR(env));
+	if (CONSP(record) && CADR(record) == @'macro')
+		return CADDR(record);
+	return Cnil;
 }
 
 cl_object

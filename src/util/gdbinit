@@ -13,3 +13,4 @@ break FEinvalid_function
 break FEcondition
 break error
 set confirm off
+handle SIGBUS nostop

@@ -38,7 +38,8 @@
                             (and-form-type (var-type v)
                                            (c1expr* (second x) info)
                                            (second x)
-					   "In LET form"))))
+					   :unsafe
+					   "In LET bindings"))))
 	       ;; :read-only variable handling. Beppe
 ;	       (when (read-only-variable-p vname ts)
 ;		     (setf (var-type v) (info-type (second form))))
@@ -66,7 +67,7 @@
     (setq var (first vars)
 	  form (first forms))
     (setf (car forms)
-	  (and-form-type (var-type var) form (var-name var) "In LET form"))
+	  (and-form-type (var-type var) form (var-name var) :unsafe "In LET body"))
     (when (member (info-type (second (car forms)))
 		  '(FIXNUM CHARACTER LONG-FLOAT SHORT-FLOAT) :test #'eq)
       (incf (var-ref var)))		; force unboxing
@@ -228,7 +229,8 @@
 			      (and-form-type (var-type v)
 					     (c1expr* (second x) info)
 					     (second x)
-					     "In LET* form"))))
+					     :unsafe
+					     "In LET* bindings"))))
 	       ;; :read-only variable handling.
 ;	       (when (read-only-variable-p (car x) ts)
 ;		     (setf (var-type v) (info-type (second form))))
@@ -251,7 +253,7 @@
 	((null vs))
       (setq var (car vs)
 	    form (and-form-type (var-type var) (car fs) (cadar args)
-				"~&;;; In LET* form."))
+				:unsafe "~&;;; In LET* body"))
       ;; Automatic treatement for READ-ONLY variables:
       (let ((rest-forms (cons body (cdr fs))))
 	(unless (var-changed-in-forms var rest-forms)

@@ -254,7 +254,7 @@ b_c2_op(cl_fixnum i, cl_fixnum j)
 
 @(defun lognot (x)
 @
-	return @logxor(1,x,MAKE_FIXNUM(-1));
+	return @logxor(2,x,MAKE_FIXNUM(-1));
 @)
 
 static cl_fixnum

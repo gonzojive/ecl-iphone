@@ -33,6 +33,7 @@
 #-old-loop
     (loop2	()		()			())
     (defpackage ()		()			())
+    (ffi	()		()			())
 #-runtime
     (describe	()		()			())
     (top	()		()			())

@@ -211,7 +211,7 @@ coerce_to_package(cl_object p)
 	pp = find_package(p);
 	if (!Null(pp))
 		return (pp);
-	FEwrong_type_argument(@'*package*', p);
+	FEwrong_type_argument(@'package', p);
 }
 
 cl_object

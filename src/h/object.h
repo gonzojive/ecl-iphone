@@ -212,10 +212,10 @@ typedef enum {			/*  array element type  */
 	aet_bit,		/*  bit              */
 	aet_fix,		/*  fixnum           */
 	aet_sf,			/*  short-float      */
-	aet_lf			/*  long-float       */
+	aet_lf,			/*  long-float       */
+	aet_b8,			/*  byte8	     */
+	aet_i8,			/*  integer8	     */
 #if 0
-	,aet_char,		/*  signed char      */
-	aet_uchar,		/*  unsigned char    */
 	aet_short,		/*  signed short     */
 	aet_ushort		/*  unsigned short   */
 #endif
@@ -223,8 +223,9 @@ typedef enum {			/*  array element type  */
 
 union array_data {
 	cl_object *t;
-	unsigned char *ch;
-	signed char *sch;
+        char *ch;
+	u_int8_t *b8;
+	int8_t *i8;
 	float *sf;
 	double *lf;
 	cl_fixnum *fix;

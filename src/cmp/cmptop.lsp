@@ -113,7 +113,7 @@
 	 #+PDE (optimize-space (>= *space* 3)))
     (wt-nl1 "static const char *compiler_data_text;")
     (wt-nl1 "void")
-    (wt-nl1 "init_" name "(cl_object flag)")
+    (wt-nl1 "init_" (init-function-name name) "(cl_object flag)")
     (wt-nl1 "{ VT" *reservation-cmacro* " CLSR" *reservation-cmacro*)
     (wt-nl "cl_object value0;")
     (wt-nl "if (!FIXNUMP(flag)){")
@@ -224,8 +224,8 @@
 (defun t1defun (args &aux (setjmps *setjmps*))
   (when (or (endp args) (endp (cdr args)))
         (too-few-args 'defun 2 (length args)))
-  (cmpck (not (symbolp (car args)))
-         "The function name ~s is not a symbol." (car args))
+  (when (not (symbolp (car args)))
+    (return-from t1defun (t1expr* (macroexpand (cons 'defun args)))))
   (when *compile-time-too* (cmp-eval (cons 'DEFUN args)))
   (setq *non-package-operation* t)
   (let* (lambda-expr
@@ -883,7 +883,7 @@
            (setq narg (length cdar s))
            (cond ((setq fd (assoc (caar s) *global-funs*))
                   (cond (*compiler-push-events*
-                         (wt-nl1 "ihs_push(" (add-symbol (caar s)) ",&narg);")
+                         (wt-nl1 "ihs_push(" (add-symbol (caar s)) ");")
                          (wt-nl1 "L" (cdr fd) "();")
                          (wt-nl1 "ihs_pop();"))
                         (t (wt-nl1 "L" (cdr fd) "(" narg))))

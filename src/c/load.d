@@ -29,6 +29,9 @@ cl_object @'si::*load-hooks*';
 #ifdef PDE
 cl_object @'si::*source-pathname*';
 #endif PDE
+#ifdef ENABLE_DLOPEN
+cl_object @'si::*init-function-prefix*';
+#endif
 
 /******************************* ------- ******************************/
 
@@ -36,6 +39,7 @@ cl_object @'si::*source-pathname*';
 @(defun si::load_binary (filename verbose print)
 	cl_object block;
 	cl_object basename;
+	cl_object prefix;
 @
 	/* We need the full pathname */
 	filename = coerce_to_filename(truename(filename));
@@ -55,17 +59,25 @@ cl_object @'si::*source-pathname*';
 		goto GO_ON;
 
 	/* Next try to call "init_FILE()" where FILE is the file name */
+	prefix = symbol_value(@'si::*init-function-prefix*');
+	if (Null(prefix))
+		prefix = make_simple_string("init_");
+	else
+		prefix = @si::string-concatenate(3,
+						 make_simple_string("init_"),
+						 prefix,
+						 make_simple_string("_"));
 	basename = coerce_to_pathname(filename);
 	basename = @pathname-name(1,basename);
-	basename = @si::string-concatenate(2,
-					   make_simple_string("init_"),
-					   @string-upcase(1,basename));
+	basename = @si::string-concatenate(2, prefix, @string-upcase(1,basename));
 	block->cblock.entry = dlsym(block->cblock.handle, basename->string.self);
-	if (block->cblock.entry == "NULL") {
+
+	if (block->cblock.entry == NULL) {
 		dlclose(block->cblock.handle);
 		@(return make_string_copy(dlerror()))
 	}
-	if (1 || !Null(verbose)) {
+
+	if (!Null(verbose)) {
 		setupPRINT(filename, symbol_value(@'*standard-output*'));
 		write_str(";;; Address = ");
 		PRINTescape = FALSE;
@@ -229,5 +241,6 @@ init_load(void)
 #ifdef ENABLE_DLOPEN
   if (dlopen(NULL, RTLD_NOW|RTLD_GLOBAL) == NULL)
     printf(";;; Error dlopening self file\n;;; Error: %s\n", dlerror());
+  SYM_VAL(@'si::*init-function-prefix*') = Cnil;
 #endif
 }

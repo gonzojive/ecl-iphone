@@ -191,6 +191,7 @@ extern cl_object eval(cl_object form, cl_object *bytecodes, cl_object env);
 
 /* interpreter.c */
 
+extern cl_object lex_env;
 extern cl_object lambda_apply(int narg, cl_object fun, cl_object *args);
 extern cl_object *interpret(cl_object *memory);
 
@@ -370,16 +371,6 @@ extern void init_iteration(void);
 
 extern void let_bindings(cl_object var_list, struct let *let);
 extern void init_let(void);
-
-
-/* lex.c */
-
-extern void lex_fun_bind(cl_object name, cl_object fun);
-extern void lex_tag_bind(cl_object tag, cl_object id);
-extern void lex_block_bind(cl_object name, cl_object id);
-extern cl_object lex_sch(cl_object lex_list, cl_object name, cl_object type);
-extern cl_object lex_symbol_macro_sch(cl_object name);
-extern void init_lex(void);
 
 
 /* list.c */

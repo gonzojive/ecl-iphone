@@ -34,6 +34,7 @@ extern cl_object siLmangle_name _ARGS((int narg, cl_object symbol, ...));
 
 /* array.c */
 
+extern cl_object clSbyte8, clSinteger8;
 extern cl_object clLaref _ARGS((int narg, cl_object x, ...));
 extern cl_object siLaset _ARGS((int narg, cl_object v, cl_object x, ...));
 extern cl_object clLrow_major_aref _ARGS((int narg, cl_object x, cl_object i));
@@ -56,6 +57,7 @@ extern cl_object siLreplace_array _ARGS((int narg, cl_object old, cl_object new)
 /* assignment.c */
 
 extern cl_object clSsetf, clSpsetf, siSsetf_symbol;
+extern cl_object siSsetf_lambda, siSsetf_method, siSsetf_update;
 extern cl_object siSclear_compiler_properties;
 #ifdef PDE
 extern cl_object siVrecord_source_pathname_p;
@@ -158,6 +160,7 @@ extern cl_object siVkeep_definitions;
 extern cl_object siLprocess_declarations _ARGS((int narg, cl_object body, ...));
 extern cl_object siLprocess_lambda_list _ARGS((int narg, cl_object lambda));
 extern cl_object siLmake_lambda _ARGS((int narg, cl_object name, cl_object body));
+extern cl_object siLfunction_block_name _ARGS((int narg, cl_object name));
 
 /* disassembler.c */
 
@@ -328,6 +331,9 @@ extern cl_object siLinterpreter_stack _ARGS((int narg));
 
 /* lex.c */
 
+extern cl_object Kblock;
+extern cl_object Ktag;
+extern cl_object Kfunction;
 extern cl_object clSblock;
 extern cl_object clSmacro;
 extern cl_object siSsymbol_macro;
@@ -427,6 +433,7 @@ extern cl_object clLrassoc_if_not _ARGS((int narg, cl_object pred, cl_object arg
 extern cl_object Kverbose;
 extern cl_object clVload_verbose, clVload_print;
 extern cl_object siVload_hooks;
+extern cl_object siVinit_function_prefix;
 extern cl_object clLload _ARGS((int narg, cl_object pathname, ...));
 extern cl_object siLload_source _ARGS((int narg, cl_object file, cl_object verbose,
 				       cl_object print));
@@ -554,6 +561,7 @@ extern cl_object clLlogandc1 _ARGS((int narg, cl_object x, cl_object y));
 extern cl_object clLlogandc2 _ARGS((int narg, cl_object x, cl_object y));
 extern cl_object clLlogorc1 _ARGS((int narg, cl_object x, cl_object y));
 extern cl_object clLlogorc2 _ARGS((int narg, cl_object x, cl_object y));
+extern cl_object clLlognot _ARGS((int narg, cl_object x));
 extern cl_object clLboole _ARGS((int narg, cl_object o, cl_object x, cl_object y));
 extern cl_object clLlogbitp _ARGS((int narg, cl_object p, cl_object x));
 extern cl_object clLash _ARGS((int narg, cl_object x, cl_object y));

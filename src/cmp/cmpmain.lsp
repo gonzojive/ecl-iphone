@@ -125,6 +125,12 @@ init_~A(cl_object foo)
 	~A
 }")
 
+(defun init-function-name (s)
+  (setq s (string-upcase s))
+  (if si::*init-function-prefix*
+    (concatenate 'string si::*init-function-prefix* "_" s)
+    s))
+
 (defun builder (target output-name &key lisp-files ld-flags (prologue-code "")
 		(epilogue-code (if (eq target :program) "
 	funcall(1,_intern(\"TOP-LEVEL\",system_package));
@@ -135,11 +141,11 @@ init_~A(cl_object foo)
     (dolist (item (reverse lisp-files))
       (cond ((symbolp item)
 	     (push (format nil "-l~A" (string-downcase item)) ld-flags)
-	     (push (string-upcase item) init-name))
+	     (push (init-function-name item) init-name))
 	    (t
 	     (push (namestring (merge-pathnames ".o" item)) ld-flags)
 	     (setq item (pathname-name item))
-	     (push (string-upcase item) init-name))))
+	     (push (init-function-name item) init-name))))
     (setq c-name (namestring (merge-pathnames ".c" output-name))
 	  o-name (namestring (merge-pathnames ".o" output-name)))
     (ecase target

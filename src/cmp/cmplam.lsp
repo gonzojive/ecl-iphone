@@ -111,7 +111,7 @@
 		 (v (c1make-var (car spec) ss is ts)))
 	     (push (car spec) vnames)
 	     (setf (car specs)
-		   (list v (and-form-type (var-type v) init (second spec)
+		   (list v (and-form-type (var-type v) init (second spec) :safe
 					  "In (LAMBDA ~a...)" block-name)
 			 nil))
 	     (push-vars v)))
@@ -124,7 +124,7 @@
 	     (push (car spec) vnames)
 	     (push (third spec) vnames)
 	     (setf (car specs)
-		   (list v (and-form-type (var-type v) init (second spec)
+		   (list v (and-form-type (var-type v) init (second spec) :safe
 					  "In (LAMBDA ~a...)" block-name)
 			 sv))
 	     (push-vars v)
@@ -155,7 +155,7 @@
 	     (push (second spec) vnames)
 	     (setf (car specs)
 		   (list (car spec) v
-			 (and-form-type (var-type v) init (third spec)
+			 (and-form-type (var-type v) init (third spec) :safe
 					"In (LAMBDA ~a...)" block-name)
 			 (make-var :kind 'DUMMY)))
 	     (push-vars v)))
@@ -168,7 +168,7 @@
 	     (push (fourth spec) vnames)
 	     (setf (car specs)
 		   (list (car spec) v
-			 (and-form-type (var-type v) init (third spec)
+			 (and-form-type (var-type v) init (third spec) :safe
 					"In (LAMBDA ~a...)" block-name)
 			 sv))
 	     (push-vars v)

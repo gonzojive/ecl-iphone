@@ -34,6 +34,7 @@ by (documentation 'SYMBOL 'setf)."
 		 (sys:putprop ',access-fn ',(car rest) 'SETF-UPDATE-FN)
                  (remprop ',access-fn 'SETF-LAMBDA)
                  (remprop ',access-fn 'SETF-METHOD)
+		 (remprop ',access-fn 'SETF-SYMBOL)
 		 ,@(si::expand-set-documentation access-fn 'setf (cadr rest))
                  ',access-fn))
 	(t
@@ -44,6 +45,7 @@ by (documentation 'SYMBOL 'setf)."
 		 (sys:putprop ',access-fn #',rest 'SETF-LAMBDA)
                  (remprop ',access-fn 'SETF-UPDATE-FN)
                  (remprop ',access-fn 'SETF-METHOD)
+		 (remprop ',access-fn 'SETF-SYMBOL)
 		 ,@(si::expand-set-documentation access-fn 'setf
 						 (find-documentation (cddr rest)))
                  ',access-fn))))
@@ -83,6 +85,7 @@ by (DOCUMENTATION 'SYMBOL 'SETF)."
 	  (sys:putprop ',access-fn #'(lambda ,args ,@body) 'SETF-METHOD)
           (remprop ',access-fn 'SETF-LAMBDA)
           (remprop ',access-fn 'SETF-UPDATE-FN)
+	  (remprop ',access-fn 'SETF-SYMBOL)
 	  ,@(si::expand-set-documentation access-fn 'setf
 					  (find-documentation body))
           ',access-fn))
@@ -147,11 +150,7 @@ Does not check if the third gang is a single-element list."
 		   (cons (car form) vars))))
 	((macro-function (car form))
 	 (get-setf-method-multiple-value (macroexpand form)))
-	#+clos
-        ((special-form-p (car form))
-	 (error "Cannot expand the SETF form ~S." form))
-	#+clos
-	((get (car form) 'SETF-SYMBOL)
+	(t
 	 (let ((vars (mapcar #'(lambda (x)
 	                         (declare (ignore x))
 	                         (gensym))
@@ -159,10 +158,8 @@ Does not check if the third gang is a single-element list."
 	       (store (gensym)))
 	   (values vars (cdr form) (list store)
 		   ;; use the symbol here, otherwise the CLOS walker punts.
-	           `(funcall #',(get (car form) 'SETF-SYMBOL) ,store ,@vars)
-		   (cons (car form) vars))))
-	(t
-	 (error "Cannot expand the SETF form ~S." form))))
+	           `(,(si::setf-namep (list 'SETF (car form))) ,store ,@vars)
+		   (cons (car form) vars))))))
 
 
 ;;;; SETF definitions.
@@ -389,7 +386,6 @@ Each PLACE may be any one of the following:
         ((endp (cdr rest)) (error "~S is an illegal SETF form." rest))
         ((endp (cddr rest)) (setf-expand-1 (car rest) (cadr rest) env))
         (t (cons 'progn (setf-expand rest env)))))
-
 
 ;;; PSETF macro.
 

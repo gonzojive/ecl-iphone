@@ -291,19 +291,6 @@ disassemble_progv(cl_object *vector) {
 	return vector;
 }
 
-static cl_object *
-disassemble_pushenv(cl_object *vector) {
-	cl_object lex_old = lex_env;
-	lex_copy();
-
-	printf("PUSHENV");
-	vector = disassemble(vector);
-	printf("\t\t\t; pushenv");
-
-	lex_env = lex_old;
-	return vector;
-}
-
 /*	OP_TAGBODY n-tags
 	tag1 addr1
 	tag2 addr2
@@ -315,17 +302,15 @@ disassemble_pushenv(cl_object *vector) {
 
 static cl_object *
 disassemble_tagbody(cl_object *vector) {
-	cl_index ntags = get_oparg(vector[-1]);
+	cl_index i, ntags = get_oparg(vector[-1]);
 	cl_object lex_old = lex_env;
 	lex_copy();
 
 	printf("TAGBODY");
-	while (ntags--) {
+	for (i=0; i<ntags; i++, vector++) {
 		@terpri(0);
-		printf("\tTAG\t'");
-		@prin1(1, vector[0]);
-		printf(" @@ %d", simple_label(vector+1));
-		vector+=2;
+		printf("\tTAG\t%d",i);
+		printf(" @@ %d", simple_label(vector));
 	}
 	vector = disassemble(vector);
 	printf("\t\t\t; tagbody");
@@ -391,6 +376,12 @@ disassemble(cl_object *vector) {
 				n = get_oparg(s);
 				s = next_code(vector);
 				goto OPARG_ARG;
+	case OP_CALLG:		string = "FCALL";
+				n = get_oparg(s);
+				goto OPARG;
+	case OP_PCALLG:		string = "PFCALL";
+				n = get_oparg(s);
+				goto OPARG;
 	case OP_FCALL:		string = "FCALL";
 				n = get_oparg(s);
 				goto OPARG;
@@ -437,6 +428,8 @@ disassemble(cl_object *vector) {
 				s = next_code(vector);
 				n = packed_label(vector-2);
 				goto OPARG_ARG;
+	case OP_UNBIND:		string = "UNBIND"; n = get_oparg(s); goto OPARG;
+	case OP_UNBINDS:	string = "UNBINDS"; n = get_oparg(s); goto OPARG;
 	case OP_BIND:		string = "BIND"; goto QUOTE;
 	case OP_BINDS:		string = "BINDS"; goto QUOTE;
 	case OP_PBIND:		string = "PBIND"; goto QUOTE;
@@ -454,8 +447,6 @@ disassemble(cl_object *vector) {
 	case OP_MPROG1:		vector = disassemble_mprog1(vector);
 				break;
 	case OP_PROGV:		vector = disassemble_progv(vector);
-				break;
-	case OP_PUSHENV:	vector = disassemble_pushenv(vector);
 				break;
 	case OP_VALUES:		string = "VALUES";
 				n = get_oparg(s);

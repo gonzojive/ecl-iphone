@@ -82,7 +82,6 @@ init_lisp(void)
 	init_compiler();
 	init_interpreter();
 	init_eval();
-/*  	init_lex(); */
 /*  	init_reference(); */
 	init_assignment();
 /*  	init_stacks(); */
@@ -104,7 +103,8 @@ init_lisp(void)
 #ifdef RUNTIME
 	SYM_VAL(@'*features*') = CONS(make_keyword("RUNTIME"), SYM_VAL(@'*features*'));
 #endif
-	ihs_push(_intern("TOP-LEVEL", system_package), Cnil);
+	lex_env = Cnil;
+	ihs_push(_intern("TOP-LEVEL", system_package));
 	init_LSP();
 	init_CLOS();
 }

@@ -69,10 +69,9 @@ symbol_function(cl_object sym)
 @
 	if (!SYMBOLP(sym)) {
 		cl_object sym1 = setf_namep(sym);
-		if (sym1 != OBJNULL)
-			sym = sym1;
-		else
+		if (sym1 == OBJNULL)
 			FEtype_error_symbol(sym);
+		sym = sym1;
 	}
 	if (sym->symbol.isform)
 		output = @'special';
@@ -89,10 +88,7 @@ symbol_function(cl_object sym)
 	cl_type t = type_of(fun);
 @
 	if (t == t_symbol) {
-		cl_object fd = lex_fun_sch(fun);
-		if (!Null(fd))
-			return CADDR(fd);
-		else if (FBOUNDP(fun) || fun->symbol.mflag)
+		if (FBOUNDP(fun) || fun->symbol.mflag)
 			FEundefined_function(fun);
 		else
 			@(return SYM_FUN(fun))

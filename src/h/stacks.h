@@ -74,7 +74,7 @@ extern bds_ptr bds_top;	/*  bind stack top  */
 
 cl_index ihs_top;
 
-extern void ihs_push(cl_object fun, cl_object env);
+extern void ihs_push(cl_object fun);
 extern cl_object ihs_top_function_name();
 extern void ihs_pop();
 
@@ -229,8 +229,6 @@ where 'FUN' is the LISP symbol with pname FUN, etc.
 extern cl_object lex_env;
 #endif
 
-#define lex_copy()		lex_env = CONS(car(lex_env),cdr(lex_env))
-#define lex_new()		lex_env = CONS(Cnil,Cnil)
-#define lex_fun_sch(name)	lex_sch(CDR(lex_env),(name),clSfunction)
-#define lex_tag_sch(name)	lex_sch(CDR(lex_env),(name),clStag)
-#define lex_block_sch(name)	lex_sch(CDR(lex_env),(name),clSblock)
+#define lex_copy()		(void)0
+#define lex_new()		lex_env = Cnil
+

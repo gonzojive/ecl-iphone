@@ -64,7 +64,7 @@
         ((SIMPLE-BIT-VECTOR BIT-VECTOR) 'BIT-VECTOR)
 	((NIL T) t)
 	((SIMPLE-ARRAY ARRAY)
-	 (cond ((endp type-args) '(ARRAY T))		; Beppe
+	 (cond ((endp type-args) '(ARRAY *))		; Beppe
 	       ((eq '* (car type-args)) t)
 	       (t (let ((element-type
 			 (sys::type-for-array (car type-args))))
@@ -107,6 +107,7 @@
 		 (t t))))))
 
 ;;; The algebra of types should be more complete. Beppe
+#+nil
 (defun type-and (type1 type2)
   (cond ((equal type1 type2) type1)
         ((eq type1 t) type2)
@@ -195,15 +196,15 @@
                  ((LONG-FLOAT SHORT-FLOAT)
                   (if (member type2 '(FIXNUM-FLOAT FLOAT))
                       type1 nil))
-;;;		 ((SIGNED-CHAR UNSIGNED-CHAR SIGNED-SHORT)
-;;;		  (if (eq type2 'FIXNUM) type1 nil))
+		 ((BYTE8 INTEGER8 BIT)
+		  (if (eq type2 'FIXNUM) type1 nil))
 ;;;		 ((UNSIGNED-SHORT)
 ;;;		  (if (subtypep type1 type2) type1 nil))
                  (FIXNUM
 		  (case type2
 		    ((bit FIXNUM-FLOAT) 'FIXNUM)
-;;;		    ((SIGNED-CHAR UNSIGNED-CHAR SIGNED-SHORT BIT)
-;;;		     type2)
+		    ((BYTE8 INTEGER8 BIT)
+		     type2)
 ;;;		    ((UNSIGNED-SHORT)
 ;;;		     (if (subtypep type2 type1) type2 nil))
 		    ))
@@ -214,8 +215,44 @@
 		 (STRUCTURE-OBJECT
                   (if (subtypep type2 'STRUCTURE-OBJECT) type2 nil))))))
 
+;;; The algebra of types should be more complete. Beppe
+(defun type-and (type1 type2 &optional finish &aux out t2 args2)
+  (when (or (eq type1 type2) (eq type1 'OBJECT) (eq type1 '*))
+    (return-from type-and type2))
+  (when (or (eq type2 'OBJECT) (eq type2 '*))
+    (return-from type-and type1))
+  (when (subtypep type1 type2)
+    (return-from type-and type1))
+  (when (subtypep type2 type1)
+    (return-from type-and type2))
+  (multiple-value-setq (name2 args2) (sys::normalize-type type2))
+  (case name2
+    (VALUES (type-and type1 (car args2)))
+    (AND (loop for i in args2
+	       when (setq t2 (type-and type1 i))
+	       collect i into out
+	       finally (return (and out (cons 'AND out)))))
+    (OR (loop for i in args2
+	      when (setq t2 (type-and type1 i))
+	      collect i into out
+	      finally (return (and out (cons 'OR out)))))
+    (MEMBER (loop for i in args2
+		  when (setq t2 (typep i type1))
+		  collect i into out
+		  finally (return (and out (cons 'MEMBER out)))))
+    (NOT (setq t2 (type-and type1 (car args2)))
+	 (cond ((null t2) type1)
+	       ((eq t2 type1) nil)
+	       (t (list 'AND type1 type2))))
+    (otherwise
+     (if finish nil (type-and type2 type1 t)))))
+
+#+nil
 (defun type>= (type1 type2)
   (equal (type-and type1 type2) type2))
+
+(defun type>= (type1 type2)
+  (subtypep type2 type1))
 
 (defun reset-info-type (info)
   (if (info-type info)
@@ -229,14 +266,15 @@
 ;;;   returns a copy of form whose type is the type-and of type and the form's
 ;;;   type
 ;;;
-(defun and-form-type (type form original-form &optional
+(defun and-form-type (type form original-form &optional (mode :safe)
 		      (format-string "") &rest format-args)
   (let* ((type2 (info-type (cadr form)))
 	 (type1 (or (type-and type type2)
 		    (when (subtypep type2 type) type2)))) ; class types. Beppe
     (unless type1
-      (cmperr "~?, the type of the form ~s is ~s, not ~s." format-string
-	      format-args original-form type2 type))
+      (funcall (if (eq mode :safe) #'cmperr #'cmpwarn)
+	       "~?, the type of the form ~s is ~s, not ~s." format-string
+	       format-args original-form type2 type))
     (if (eq type1 type2)
       form
       (let ((info (copy-info (cadr form))))

@@ -103,12 +103,32 @@ cl_stack_pop_n(cl_index index) {
 	cl_stack_top = new_top;
 }
 
-/* -------------------- LAMBDA FUNCTIONS -------------------- */
+/* ------------------------------ LEXICAL ENV. ------------------------------ */
+
+cl_object lex_env;
 
 static void
 bind_var(register cl_object var, register cl_object val)
 {
-	CAR(lex_env) = CONS(var, CONS(val, CAR(lex_env)));
+	lex_env = CONS(var, CONS(val, lex_env));
+}
+
+static void
+bind_function(cl_object name, cl_object fun)
+{
+	lex_env = CONS(@':function', CONS(CONS(name, fun), lex_env));
+}
+
+static void
+bind_tagbody(cl_object id)
+{
+	lex_env = CONS(@':tag', CONS(id, lex_env));
+}
+
+static void
+bind_block(cl_object name, cl_object id)
+{
+	lex_env = CONS(@':block', CONS(CONS(name, id), lex_env));
 }
 
 static void
@@ -116,6 +136,55 @@ bind_special(register cl_object var, register cl_object val)
 {
 	bds_bind(var, val);
 }
+
+static cl_object
+search_local(register cl_object name, register int s) {
+	cl_object x;
+	for (x = lex_env; s-- && !Null(x); x = CDDR(x));
+	if (Null(x) || CAR(x) != name)
+	  FEerror("Internal error: local not found.", 0);
+	return CADR(x);
+}
+
+static cl_object
+setq_local(register cl_object s, register cl_object v) {
+	cl_object x;
+	for (x = lex_env; CONSP(x); x = CDDR(x))
+		if (CAR(x) == s) {
+			CADR(x) = v;
+			return;
+		}
+	FEerror("Internal error: local ~S not found.", 1, s);
+}
+
+static cl_object
+search_tag(cl_object name, cl_object type)
+{
+	cl_object x;
+
+	for (x = lex_env;  CONSP(x);  x = CDDR(x))
+		if (CAR(x) == type) {
+			cl_object record = CADR(x);
+			cl_object the_name = CAR(record);
+			cl_object the_value = CDR(record);
+			if (name == the_name)
+				return the_value;
+		}
+	return Cnil;
+}
+
+static cl_object
+search_symbol_function(register cl_object fun) {
+	cl_object output = search_tag(fun, @':function');
+	if (!Null(output))
+		return output;
+	output = SYM_FUN(fun);
+	if (output == OBJNULL || fun->symbol.mflag)
+		FEundefined_function(fun);
+	return output;
+}
+
+/* -------------------- LAMBDA FUNCTIONS -------------------- */
 
 static void
 lambda_bind_var(cl_object var, cl_object val, cl_object specials)
@@ -233,18 +302,14 @@ lambda_apply(int narg, cl_object fun, cl_object *args)
 {
 	cl_object output, name, *body;
 	bds_ptr old_bds_top;
-	volatile bool block, closure;
+	volatile bool block;
 
 	if (type_of(fun) != t_bytecodes)
 		FEinvalid_function(fun);
 
 	/* 1) Save the lexical environment and set up a new one */
-	cl_stack_push(lex_env);
-	if (Null(fun->bytecodes.lex))
-		lex_env = CONS(Cnil, Cnil);
-	else
-		lex_env = CONS(CAR(fun->bytecodes.lex),CDR(fun->bytecodes.lex));
-	ihs_push(fun, lex_env);
+	ihs_push(fun);
+	lex_env = fun->bytecodes.lex;
 	old_bds_top = bds_top;
 
 	/* Establish bindings */
@@ -257,8 +322,10 @@ lambda_apply(int narg, cl_object fun, cl_object *args)
 		block = FALSE;
 	else {
 		block = TRUE;
+		/* Accept (SETF name) */
+		if (CONSP(name)) name = CADR(name);
 		fun = new_frame_id();
-		lex_block_bind(name, fun);
+		bind_block(name, fun);
 		if (frs_push(FRS_CATCH, fun)) {
 			output = VALUES(0);
 			goto END;
@@ -273,7 +340,6 @@ lambda_apply(int narg, cl_object fun, cl_object *args)
 END:    if (block) frs_pop();
 	bds_unwind(old_bds_top);
 	ihs_pop();
-	lex_env = cl_stack_pop();
 	returnn(VALUES(0));
 }
 
@@ -324,39 +390,6 @@ simple_label(cl_object *v) {
 }
 
 static cl_object
-search_symbol_function(register cl_object fun) {
-	cl_object output = lex_fun_sch(fun);
-	if (!Null(output))
-		return output;
-	output = SYM_FUN(fun);
-	if (output == OBJNULL || fun->symbol.mflag)
-		FEundefined_function(fun);
-	return output;
-}
-
-static cl_object
-search_local(register cl_object s) {
-	cl_object x;
-
-	for (x = CAR(lex_env);  CONSP(x);  x = CDDR(x))
-		if (CAR(x) == s) {
-			return CADR(x);
-		}
-	FEerror("Internal error: local ~S not found.", 1, s);
-}
-
-static cl_object
-setq_local(register cl_object s, register cl_object v) {
-	cl_object x;
-	for (x = CAR(lex_env); CONSP(x); x = CDDR(x))
-		if (CAR(x) == s) {
-			CADR(x) = v;
-			return;
-		}
-	FEerror("Internal error: local ~S not found.", 1, s);
-}
-
-static cl_object
 search_global(register cl_object s) {
 	cl_object x = SYM_VAL(s);
 	if (x == OBJNULL)
@@ -369,40 +402,19 @@ interpret_call(int narg, cl_object fun) {
 	cl_object *args;
 	cl_object x;
 
+	fun = search_tag(fun, @':function');
 	args = cl_stack_top - narg;
- AGAIN:
-	switch (type_of(fun)) {
-	case t_cfun:
-		ihs_push(fun->cfun.name, Cnil);
-		x = APPLY(narg, fun->cfun.entry, args);
-		ihs_pop();
-		break;
-	case t_cclosure:
-		/* FIXME! Shouldn't we register this call somehow? */
-		x = APPLY_closure(narg, fun->cclosure.entry, fun->cclosure.env, args);
-		break;
-#ifdef CLOS
-	case t_gfun:
-		ihs_push(fun->gfun.name, Cnil);
-		x = gcall(narg, fun, args);
-		ihs_pop();
-		break;
-#endif
-	case t_bytecodes:
-		x = lambda_apply(narg, fun, args);
-		break;
-	case t_symbol:
-		fun = search_symbol_function(fun);
-		goto AGAIN;
-	default:
-		FEinvalid_function(fun);
+	if (type_of(fun) != t_bytecodes) {
+		if (Null(fun))
+			FEerror("Internal error: local ~S not found.", 1, fun);
+		FEerror("Internal error: local function not of type bytecodes.",0);
 	}
+	x = lambda_apply(narg, fun, args);
 	cl_stack_pop_n(narg);
 	return x;
 }
 
-/* Similar to interpret_call(), but looks for symbol functions in the
-   global environment. */
+/* Similar to funcall(), but registers calls in the IHS stack. */
 
 static cl_object
 interpret_funcall(int narg, cl_object fun) {
@@ -413,7 +425,8 @@ interpret_funcall(int narg, cl_object fun) {
  AGAIN:
 	switch (type_of(fun)) {
 	case t_cfun:
-		ihs_push(fun->cfun.name, Cnil);
+		ihs_push(fun->cfun.name);
+		lex_env = Cnil;
 		x = APPLY(narg, fun->cfun.entry, args);
 		ihs_pop();
 		break;
@@ -423,7 +436,8 @@ interpret_funcall(int narg, cl_object fun) {
 		break;
 #ifdef CLOS
 	case t_gfun:
-		ihs_push(fun->gfun.name, Cnil);
+		ihs_push(fun->gfun.name);
+		lex_env = Cnil;
 		x = gcall(narg, fun, args);
 		ihs_pop();
 		break;
@@ -453,17 +467,17 @@ interpret_block(cl_object *vector) {
 	cl_object id = new_frame_id();
 
 	/* 1) Save current environment */
-	cl_stack_push(CDR(lex_env));
+	cl_stack_push(lex_env);
 
 	/* 2) Set up a block with given name */
 	exit = packed_label(vector - 1);
-	lex_block_bind(next_code(vector), id);
+	bind_block(next_code(vector), id);
 	if (frs_push(FRS_CATCH,id) == 0)
 		vector = interpret(vector);
 	frs_pop();
 
 	/* 3) Restore environment */
-	CDR(lex_env) = cl_stack_pop();
+	lex_env = cl_stack_pop();
 	return exit;
 }
 
@@ -484,30 +498,24 @@ interpret_tagbody(cl_object *vector) {
 	cl_object *aux, *tag_list = vector;
 
 	/* 1) Save current environment */
-	cl_stack_push(CDR(lex_env));
+	cl_stack_push(lex_env);
 
 	/* 2) Bind tags */
-	aux = vector;
-	for (i=0; i<ntags; i++, aux+=2)
-		lex_tag_bind(*aux, id);
+	bind_tagbody(id);
 
-	/* 3) Wait here for gotos */
-	if (frs_push(FRS_CATCH, id) != 0) {
-		for (aux = vector, i=0; i<ntags; i++, aux+=2)
-			if (eql(aux[0], nlj_tag)) {
-				aux++;
-				break;
-			}
-		if (i >= ntags)
-			FEerror("Internal error: TAGBODY id used for RETURN-FROM.",0);
-		else
-			aux = simple_label(aux);
-	}
+	/* 3) Wait here for gotos. Each goto sets nlj_tag to a integer
+	      which ranges from 0 to ntags-1, depending on the tag. These
+	      numbers are indices into the jump table and are computed
+	      at compile time.
+	*/
+	aux = vector + ntags;
+	if (frs_push(FRS_CATCH, id) != 0)
+		aux = simple_label(vector + fix(nlj_tag));
 	vector = interpret(aux);
 	frs_pop();
 
 	/* 4) Restore environment */
-	CDR(lex_env) = cl_stack_pop();
+	lex_env = cl_stack_pop();
 	VALUES(0) = Cnil;
 	NValues = 0;
 	return vector;
@@ -515,9 +523,9 @@ interpret_tagbody(cl_object *vector) {
 
 static cl_object *
 interpret_unwind_protect(cl_object *vector) {
-	bool unwinding;
-	int nr;
+	volatile int nr;
 	cl_object * volatile exit;
+	bool unwinding;
 
 	exit = packed_label(vector-1);
 	if (frs_push(FRS_PROTECT, Cnil))
@@ -543,11 +551,10 @@ interpret_do(cl_object *vector) {
 
 	/* 1) Save all environment */
 	bds_ptr old_bds_top = bds_top;
-	cl_stack_push(CAR(lex_env));
-	cl_stack_push(CDR(lex_env));
+	cl_stack_push(lex_env);
 
 	/* 2) Set up new block name */
-	lex_block_bind(Cnil, id);
+	bind_block(Cnil, id);
 	exit = packed_label(vector-1);
 	if (frs_push(FRS_CATCH,id) == 0)
 		interpret(vector);
@@ -555,8 +562,7 @@ interpret_do(cl_object *vector) {
 
 	/* 3) Restore all environment */
 	bds_unwind(old_bds_top);
-	CDR(lex_env) = cl_stack_pop();
-	CAR(lex_env) = cl_stack_pop();
+	lex_env = cl_stack_pop();
 	return exit;
 }
 
@@ -568,11 +574,10 @@ interpret_dolist(cl_object *vector) {
 
 	/* 1) Save all environment */
 	bds_ptr old_bds_top = bds_top;
-	cl_stack_push(CAR(lex_env));
-	cl_stack_push(CDR(lex_env));
+	cl_stack_push(lex_env);
 
 	/* 2) Set up a nil block */
-	lex_block_bind(Cnil, id);
+	bind_block(Cnil, id);
 	if (frs_push(FRS_CATCH,id) == 0) {
 		list = VALUES(0);
 		exit = packed_label(vector - 1);
@@ -595,8 +600,7 @@ interpret_dolist(cl_object *vector) {
 	frs_pop();
 
 	/* 5) Restore environment */
-	CDR(lex_env) = cl_stack_pop();
-	CAR(lex_env) = cl_stack_pop();
+	lex_env = cl_stack_pop();
 	bds_unwind(old_bds_top);
 	return exit;
 }
@@ -610,11 +614,10 @@ interpret_dotimes(cl_object *vector) {
 
 	/* 1) Save all environment */
 	bds_ptr old_bds_top = bds_top;
-	cl_stack_push(CAR(lex_env));
-	cl_stack_push(CDR(lex_env));
+	cl_stack_push(lex_env);
 
 	/* 2) Set up a nil block */
-	lex_block_bind(Cnil, id);
+	bind_block(Cnil, id);
 	if (frs_push(FRS_CATCH,id) == 0) {
 		/* 3) Retrieve number and bind variables */
 		length = fix(VALUES(0));
@@ -633,8 +636,7 @@ interpret_dotimes(cl_object *vector) {
 	frs_pop();
 
 	/* 5) Restore environment */
-	CDR(lex_env) = cl_stack_pop();
-	CAR(lex_env) = cl_stack_pop();
+	lex_env = cl_stack_pop();
 	bds_unwind(old_bds_top);
 	return exit;
 }
@@ -644,10 +646,7 @@ close_around(cl_object fun, cl_object lex) {
 	cl_object v = alloc_object(t_bytecodes);
 	v->bytecodes.size = fun->bytecodes.size;
 	v->bytecodes.data = fun->bytecodes.data;
-	if (!Null(CAR(lex)) || !Null(CDR(lex)))
-		v->bytecodes.lex = CONS(CAR(lex),CDR(lex));
-	else
-		v->bytecodes.lex = Cnil;
+	v->bytecodes.lex = lex;
 	return v;
 }
 
@@ -655,50 +654,36 @@ static cl_object *
 interpret_flet(cl_object *vector) {
 	cl_index nfun = get_oparg(vector[-1]);
 
-	/* 1) Copy the environment so that functions get it */
-	cl_object lex = CONS(CAR(lex_env), CDR(lex_env));
-
-	/* 2) Save current environment */
-	cl_stack_push(CDR(lex_env));
+	/* 1) Copy the environment so that functions get it without references
+	      to themselves. */
+	cl_object lex = lex_env;
 
 	/* 3) Add new closures to environment */
 	while (nfun--) {
 		cl_object fun = next_code(vector);
 		cl_object f = close_around(fun,lex);
-		lex_fun_bind(f->bytecodes.data[0], f);
+		bind_function(f->bytecodes.data[0], f);
 	}
-	vector = interpret(vector);
-
-	/* 4) Restore environment */
-	CDR(lex_env) = cl_stack_pop();
 	return vector;
 }
 
 static cl_object *
 interpret_labels(cl_object *vector) {
 	cl_index i, nfun = get_oparg(vector[-1]);
-	cl_object l, lex;
+	cl_object l;
 
-	/* 1) Save current environment */
-	cl_stack_push(CDR(lex_env));
-
-	/* 2) Build up a new environment with all functions */
+	/* 1) Build up a new environment with all functions */
 	for (i=0; i<nfun; i++) {
 		cl_object f = next_code(vector);
-		lex_fun_bind(f->bytecodes.data[0], f);
+		bind_function(f->bytecodes.data[0], f);
 	}
-	lex = CONS(CAR(lex_env), CDR(lex_env));
 
-	/* 3) Update the closures so that all functions can call each other */
-	for (i=0, l=CDR(lex_env); i<nfun; i++) {
-		cl_object f = CADDAR(l);
-		CADDAR(l) = close_around(f, lex);
-		l = CDR(l);
+	/* 2) Update the closures so that all functions can call each other */
+	for (i=0, l=lex_env; i<nfun; i++) {
+		cl_object record = CADR(l);
+		CDR(record) = close_around(CDR(record), lex_env);
+		l = CDDR(l);
 	}
-	vector = interpret(vector);
-
-	/* 4) Restore environment */
-	CDR(lex_env) = cl_stack_pop();
 	return vector;
 }
 
@@ -721,7 +706,7 @@ static cl_object *
 interpret_mcall(cl_object *vector) {
 	cl_index sp = cl_stack_index();
 	vector = interpret(vector);
-	VALUES(0) = interpret_call(cl_stack_index()-sp, VALUES(0));
+	VALUES(0) = interpret_funcall(cl_stack_index()-sp, VALUES(0));
 	return vector;
 }
 
@@ -768,7 +753,7 @@ interpret_progv(cl_object *vector) {
 
 	/* 1) Save current environment */
 	bds_ptr old_bds_top = bds_top;
-	cl_stack_push(CAR(lex_env));
+	cl_stack_push(lex_env);
 
 	/* 2) Add new bindings */
 	while (!endp(vars)) {
@@ -783,22 +768,7 @@ interpret_progv(cl_object *vector) {
 	vector = interpret(vector);
 
 	/* 3) Restore environment */
-	CAR(lex_env) = cl_stack_pop();
-	bds_unwind(old_bds_top);
-	return vector;
-}
-
-static cl_object *
-interpret_pushenv(cl_object *vector) {
-	/* 1) Save environment */
-	bds_ptr old_bds_top = bds_top;
-	cl_stack_push(CAR(lex_env));
-
-	/* 2) Execute */
-	vector = interpret(vector);
-
-	/* 3) Restore environment */
-	CAR(lex_env) = cl_stack_pop();
+	lex_env = cl_stack_pop();
 	bds_unwind(old_bds_top);
 	return vector;
 }
@@ -825,13 +795,13 @@ interpret(cl_object *vector) {
 		cl_stack_push(VALUES(0));
 		break;
 	case OP_PUSHV:
-		cl_stack_push(search_local(next_code(vector)));
+		cl_stack_push(search_local(next_code(vector), get_oparg(s)));
 		break;
 	case OP_PUSHVS:
 		cl_stack_push(search_global(next_code(vector)));
 		break;
 	case OP_VAR:
-		VALUES(0) = search_local(next_code(vector));
+		VALUES(0) = search_local(next_code(vector), get_oparg(s));
 		NValues = 1;
 		break;
 	case OP_VARS:
@@ -871,10 +841,27 @@ interpret(cl_object *vector) {
 		cl_stack_push(VALUES(0));
 		break;
 	}
+	case OP_CALLG: {
+		cl_fixnum n = get_oparg(s);
+		cl_object fun = next_code(vector);
+		if (fun->symbol.gfdef == OBJNULL)
+			FEundefined_function(fun);
+		VALUES(0) = interpret_funcall(n, fun->symbol.gfdef);
+		break;
+	}
 	case OP_FCALL: {
 		cl_fixnum n = get_oparg(s);
 		cl_object fun = VALUES(0);
 		VALUES(0) = interpret_funcall(n, fun);
+		break;
+	}
+	case OP_PCALLG: {
+		cl_fixnum n = get_oparg(s);
+		cl_object fun = next_code(vector);
+		if (fun->symbol.gfdef == OBJNULL)
+			FEundefined_function(fun);
+		VALUES(0) = interpret_funcall(n, fun->symbol.gfdef);
+		cl_stack_push(VALUES(0));
 		break;
 	}
 	case OP_PFCALL: {
@@ -907,9 +894,7 @@ interpret(cl_object *vector) {
 		break;
 	case OP_GO: {
 		cl_object tag = next_code(vector);
-		cl_object id = lex_tag_sch(tag);
-		if (Null(id))
-			FEcontrol_error("GO: Undefined tag ~S.", 1, tag);
+		cl_object id = search_local(@':tag',get_oparg(s));
 		VALUES(0) = Cnil;
 		NValues = 0;
 		go(id, tag);
@@ -917,7 +902,7 @@ interpret(cl_object *vector) {
 	}
 	case OP_RETURN: {
 		cl_object tag = next_code(vector);
-		cl_object id = lex_block_sch(tag);
+		cl_object id = search_tag(tag, @':block');
 		if (Null(id))
 			FEcontrol_error("RETURN-FROM: Unknown block ~S.", 1, tag);
 		return_from(id, tag);
@@ -944,6 +929,15 @@ interpret(cl_object *vector) {
 	case OP_JNEQ:
 		if (VALUES(0) != next_code(vector))
 			vector = vector + get_oparg(s) - 2;
+		break;
+	case OP_UNBIND: {
+		cl_index n = get_oparg(s);
+		while (n--)
+			lex_env = CDDR(lex_env);
+		break;
+	}
+	case OP_UNBINDS:
+		bds_unwind(bds_top - get_oparg(s));
 		break;
 	case OP_BIND:
 		bind_var(next_code(vector), VALUES(0));
@@ -994,9 +988,6 @@ interpret(cl_object *vector) {
 		break;
 	case OP_PROGV:
 		vector = interpret_progv(vector);
-		break;
-	case OP_PUSHENV:
-		vector = interpret_pushenv(vector);
 		break;
 	case OP_VALUES: {
 		cl_fixnum n = get_oparg(s);

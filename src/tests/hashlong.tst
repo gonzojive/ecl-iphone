@@ -30,7 +30,7 @@
                  (PRINT (HASH-TABLE-COUNT HASH-TABLE))
                  (PRINT "hval:") (PRINT HVAL)
                  (PRINT "lval:") (PRINT LVAL)
-                 (return-from symbols 'error))
+                 (return-from symbole 'error))
                (REMHASH (CAR LISTE) HASH-TABLE)
                #+XCL (WHEN (< (ROOM) 30000.) (SYSTEM::%GARBAGE-COLLECTION))
                (SETF-GETHASH X HASH-TABLE (SETQ B (+ 1. B)))
