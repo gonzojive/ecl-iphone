@@ -389,10 +389,12 @@ static cl_object VV[VM];
   (unless (probe-file *compile-file-pathname*)
     (setq *compile-file-pathname* (make-pathname :type "lisp" :defaults input-pathname))
     (unless (probe-file *compile-file-pathname*)
-      (format t "~&;;; The source file ~a is not found.~%"
-	      (namestring input-pathname))
-      (setq *error-p* t)
-      (return-from compile-file (values nil t t))))
+      (setq *compile-file-pathname* (make-pathname :type NIL :defaults input-pathname))
+      (unless (probe-file *compile-file-pathname*)
+	(format t "~&;;; The source file ~a is not found.~%"
+		(namestring input-pathname))
+	(setq *error-p* t)
+	(return-from compile-file (values nil t t)))))
   (setq *compile-file-truename* (truename *compile-file-pathname*))
 
   #+PDE (setq sys:*source-pathname* *compile-file-truename*)
