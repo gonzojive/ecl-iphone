@@ -36,6 +36,29 @@
 # endif
 #endif
 
+#ifdef mingw32
+/*
+ * Mingw32 does not implement asinh, acosh and atanh.
+ */
+double
+asinh(double x)
+{
+	return log(x + sqrt(1.0 + x*x));
+}
+
+double
+acosh(double x)
+{
+	return log(x + sqrt((x-1)*(x+1)));
+}
+
+double
+atanh(double x)
+{
+	return (log(x+1) - log(x-1))/2;
+}
+#endif /* mingw32 */
+
 cl_fixnum
 fixnum_expt(cl_fixnum x, cl_fixnum y)
 {
