@@ -25,6 +25,7 @@
 (defun unwind-exit (loc &optional (jump-p nil)
                         &aux (bds-lcl nil) (bds-bind 0) (stack-pop nil))
   (declare (fixnum bds-bind))
+
   (when (consp *destination*)
     (case (car *destination*)
       (JUMP-TRUE
@@ -125,8 +126,8 @@
 	(cond ((eq ue exit)
 	       (unwind-bds bds-lcl bds-bind stack-pop)
 	       (return))
-	      ((eq (car ue) 'STACK)
-	       (push (cdr ue) stack-pop))))
+	      ((eq (first ue) 'STACK)
+	       (push (second ue) stack-pop))))
        ((numberp ue) (setq bds-lcl ue bds-bind 0))
        ((eq ue 'BDS-BIND) (incf bds-bind))
        ((member ue '(RETURN RETURN-OBJECT RETURN-FIXNUM RETURN-CHARACTER
