@@ -1603,7 +1603,11 @@ ECL 0.9c
 
   - Many internal types, such as those used to represent arrays,
     vectors, etc, and which do not need to be used directly, have
-    received the prefix "ecl" to avoid name clashes with C/C++ libraries.
+    received the prefix "ecl" to avoid name clashes with C/C++
+    libraries.
+
+  - New tools and makefile rules for building RPM files kindly
+    contributed by Robert Lehr.
 
 * Errors fixed:
 
