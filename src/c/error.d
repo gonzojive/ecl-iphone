@@ -20,6 +20,9 @@
 #include <errno.h>
 #include <signal.h>
 #include <stdlib.h>
+#ifdef _MSC_VER
+#include <windows.h>
+#endif
 
 void
 cs_overflow(void)
@@ -257,6 +260,30 @@ FElibc_error(const char *msg, int narg, ...)
 	FEerror("~?~%Explanation: ~A.", 3, make_constant_string(msg), rest,
 		make_constant_string(strerror(errno)));
 }
+
+#if defined(mingw32) || defined(_MSC_VER)
+void
+FEwin32_error(const char *msg, int narg, ...)
+{
+	cl_va_list args;
+	cl_object rest, win_msg_obj;
+	char *win_msg;
+
+	cl_va_start(args, narg, narg, 0);
+	rest = cl_grab_rest_args(args);
+
+	if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_ALLOCATE_BUFFER,
+	                  0, GetLastError(), 0, (void*)&win_msg, 0, NULL) == 0)
+		win_msg_obj = make_simple_string("[Unable to get error message]");
+	else {
+		win_msg_obj = make_string_copy(win_msg);
+		LocalFree(win_msg);
+	}
+
+	FEerror("~?~%Explanation: ~A.", 3, make_constant_string(msg), rest,
+		win_msg_obj);
+}
+#endif
 
 /************************************
  * Higher level interface to errors *

@@ -452,6 +452,9 @@ extern cl_object CEerror(const char *err_str, int narg, ...);
 extern void illegal_index(cl_object x, cl_object i);
 extern void FEtype_error_symbol(cl_object obj) /*__attribute__((noreturn))*/;
 extern void FElibc_error(const char *msg, int narg, ...) /*__attribute__((noreturn))*/;
+#if defined(mingw32) || defined(_MSC_VER)
+extern void FEwin32_error(const char *msg, int narg, ...) /*__attribute__((noreturn))*/;
+#endif
 
 /* eval.c */
 
