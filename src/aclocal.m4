@@ -165,6 +165,13 @@ case "${host_os}" in
 		LDRPATH="-Wl,--rpath,~A"
 		CLIBS=""
 		;;
+	openbsd*)
+		thehost='openbsd'
+		SHARED_LDFLAGS="-shared ${LDFLAGS}"
+		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
+		LDRPATH="-Wl,--rpath,~A"
+		CLIBS=""
+		;;
 	solaris*)
 		thehost='sun4sol2'
 		SHARED_LDFLAGS="-dy -G ${LDFLAGS}"
