@@ -294,6 +294,7 @@ extern void error(const char *s) __attribute__((noreturn,regparm(2)));
 extern void terminal_interrupt(bool correctable);
 extern void FEprogram_error(const char *s, int narg, ...) __attribute__((noreturn));
 extern void FEcontrol_error(const char *s, int narg, ...) __attribute__((noreturn));
+extern void FEreader_error(const char *s, cl_object stream, int narg, ...) __attribute__((noreturn));
 extern void FEerror(char *s, int narg, ...) __attribute__((noreturn));
 extern void FEcannot_open(cl_object fn) __attribute__((noreturn,regparm(2)));
 extern void FEend_of_file(cl_object strm) __attribute__((noreturn,regparm(2)));
@@ -369,6 +370,7 @@ extern cl_object make_string_input_stream(cl_object strng, cl_index istart, cl_i
 extern cl_object make_string_output_stream(cl_index line_length);
 extern cl_object make_string_output_stream_from_string(cl_object s);
 extern cl_object get_output_stream_string(cl_object strm);
+extern int ecl_getc_noeof(cl_object strm);
 extern int ecl_getc(cl_object strm);
 extern void ecl_ungetc(int c, cl_object strm);
 extern int writec_stream(int c, cl_object strm);

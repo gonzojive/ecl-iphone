@@ -117,6 +117,20 @@ FEcontrol_error(const char *s, int narg, ...)
 }
 
 void
+FEreader_error(const char *s, cl_object stream, int narg, ...)
+{
+	cl_va_list args;
+	cl_va_start(args, narg, narg, 0);
+	funcall(4, @'si::universal-error-handler',
+		Cnil,                    /*  not correctable  */
+		@'si::simple-reader-error', /*  condition name  */
+		cl_list(4, @':format-control', make_constant_string(s),
+			@':format-arguments', cl_grab_rest_args(args),
+			@':stream', stream));
+}
+
+
+void
 FEcannot_open(cl_object fn)
 {
 	cl_error(3, @'file-error', @':pathname', fn);

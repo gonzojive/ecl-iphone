@@ -86,8 +86,10 @@ si_setf_namep(cl_object arg)
 		FEerror("~S, a special form, cannot be redefined as a function.",
 			1, fun);
 	clear_compiler_properties(fun);
-	if (fun->symbol.hpack->pack.locked && SYM_FUN(fun) != OBJNULL)
-	  funcall(3, @'warn', make_simple_string("~S is being redefined."), fun);
+	if (fun->symbol.hpack &&
+	    fun->symbol.hpack->pack.locked &&
+	    SYM_FUN(fun) != OBJNULL)
+		funcall(3, @'warn', make_simple_string("~S is being redefined."), fun);
 	t = type_of(def);
 	if (t == t_bytecodes || t == t_cfun || t == t_cclosure) {
 	        SYM_FUN(fun) = def;
@@ -133,8 +135,11 @@ cl_fmakunbound(cl_object sym)
 #ifdef PDE
 	cl_remprop(sym, @'defun');
 #endif
-	if (sym->symbol.hpack->pack.locked && SYM_FUN(sym) != OBJNULL)
-	  funcall(3, @'warn', make_simple_string("~S is being redefined."), sym);
+	if (sym->symbol.hpack &&
+	    sym->symbol.hpack->pack.locked &&
+	    SYM_FUN(sym) != OBJNULL)
+		funcall(3, @'warn', make_simple_string("~S is being redefined."),
+			sym);
 	SYM_FUN(sym) = OBJNULL;
 	sym->symbol.mflag = FALSE;
 	@(return sym)

@@ -34,7 +34,7 @@ static cl_object default_dispatch_macro;
 #define	cat(rtbl,c)	((rtbl)->readtable.table[c].syntax_type)
 #define read_suppress (SYM_VAL(@'*read-suppress*') != Cnil)
 
-static void extra_argument (int c, cl_object d);
+static void extra_argument (int c, cl_object stream, cl_object d);
 
 cl_object
 read_char(cl_object stream)
@@ -152,7 +152,7 @@ BEGIN:
 		for (i = 0;  i < length;  i++)
 			if (cl_token->string.self[i] != '.')
 				goto N;
-		FEerror("Dots appeared illegally.", 0);
+		FEreader_error("Dots appeared illegally.", in, 0);
 	}
 
 N:
@@ -183,7 +183,7 @@ SYMBOL:
 			x = find_symbol(cl_token, p, &intern_flag);
 			if (intern_flag != EXTERNAL)
 			FEerror("Cannot find the external symbol ~A in ~S.",
-						2, copy_simple_string(cl_token), p);
+				2, copy_simple_string(cl_token), p);
 			return(x);
 		}
 	} else if (colon_type == 2 /* && colon > 0 && length > colon + 2 */) {
@@ -481,17 +481,17 @@ left_parenthesis_reader(cl_object in, cl_object character)
 			break;
 		if (x == @'si::.') {
 			if (p == &y)
-				FEerror("A dot appeared after a left parenthesis.", 0);
+				FEreader_error("A dot appeared after a left parenthesis.", in, 0);
 			*p = read_object(in);
 			if (*p == OBJNULL)
 				FEend_of_file(in);
 			if (*p == @'si::.')
-				FEerror("Two dots appeared consecutively.", 0);
+				FEreader_error("Two dots appeared consecutively.", in, 0);
 			c = ecl_getc_noeof(in);
 			while (cat(rtbl, c) == cat_whitespace)
 				c = ecl_getc_noeof(in);
 			if (c != ')')
-				FEerror("More than one object after '.' in a list", 0);
+				FEreader_error("More than one object after '.' in a list", in, 0);
 			break;
 		}
 		*p = CONS(x, Cnil);
@@ -559,7 +559,7 @@ dispatch_reader_fun(cl_object in, cl_object dc)
 	cl_object rtbl = ecl_current_readtable();
 
 	if (rtbl->readtable.table[char_code(dc)].dispatch_table == NULL)
-		FEerror("~C is not a dispatching macro character", 1, dc);
+		FEreader_error("~C is not a dispatching macro character", in, 1, dc);
 
 	c = ecl_getc_noeof(in);
 	d = digitp(c, 10);
@@ -615,18 +615,18 @@ sharp_C_reader(cl_object in, cl_object c, cl_object d)
 	cl_object x, real, imag;
 
 	if (d != Cnil && !read_suppress)
-		extra_argument('C', d);
+		extra_argument('C', in, d);
 	if (ecl_getc_noeof(in) != '(')
-		FEerror("A left parenthesis is expected.", 0);
+		FEreader_error("A left parenthesis is expected.", in, 0);
 	real = read_object_with_delimiter(in, ')');
 	if (real == OBJNULL)
-		FEerror("No real part.", 0);
+		FEreader_error("No real part.", in, 0);
 	imag = read_object_with_delimiter(in, ')');
 	if (imag == OBJNULL)
-		FEerror("No imaginary part.", 0);
+		FEreader_error("No imaginary part.", in, 0);
 	x = read_object_with_delimiter(in, ')');
 	if (x != OBJNULL)
-		FEerror("A right parenthesis is expected.", 0);
+		FEreader_error("A right parenthesis is expected.", in, 0);
 	if (read_suppress)
 		@(return Cnil)
 	/* INV: make_complex() checks its types */
@@ -640,7 +640,7 @@ sharp_backslash_reader(cl_object in, cl_object c, cl_object d)
 	if (d != Cnil && !read_suppress)
 		if (!FIXNUMP(d) ||
 		    fix(d) != 0)
-			FEerror("~S is an illegal CHAR-FONT.", 1, d);
+			FEreader_error("~S is an illegal CHAR-FONT.", in, 1, d);
 			/*  assuming that CHAR-FONT-LIMIT is 1  */
 	ecl_ungetc('\\', in);
 	if (read_suppress) {
@@ -661,13 +661,13 @@ sharp_backslash_reader(cl_object in, cl_object c, cl_object d)
 		for (n = 0, i = 1;  i < c->string.fillp;  i++)
 			if (c->string.self[i] < '0' ||
 			    '7' < c->string.self[i])
-				FEerror("Octal digit expected.", 0);
+				FEreader_error("Octal digit expected.", in, 0);
 			else
 				n = 8*n + c->string.self[i] - '0';
 		c = CODE_CHAR(n & 0377);
 	} else {
 		cl_object nc = cl_name_char(c);
-		if (Null(nc)) FEerror("~S is an illegal character name.", 1, c);
+		if (Null(nc)) FEreader_error("~S is an illegal character name.", in, 1, copy_simple_string(c));
 		c = nc;
 	}
 	@(return c)
@@ -677,7 +677,7 @@ static cl_object
 sharp_single_quote_reader(cl_object in, cl_object c, cl_object d)
 {
 	if(d != Cnil && !read_suppress)
-		extra_argument('#', d);
+		extra_argument('#', in, d);
 	@(return CONS(@'function', CONS(read_object(in), Cnil)))
 }
 
@@ -702,7 +702,7 @@ sharp_left_parenthesis_reader(cl_object in, cl_object c, cl_object d)
 	cl_index dim, dimcount, i, a;
 	cl_index sp = cl_stack_index();
 	cl_object x, last;
-	extern _cl_backq_car(cl_object *);
+	extern int _cl_backq_car(cl_object *);
 
 	if (Null(d) || read_suppress)
 		fixed_size = FALSE;
@@ -715,7 +715,7 @@ sharp_left_parenthesis_reader(cl_object in, cl_object c, cl_object d)
 		x = read_object(in);
 		a = _cl_backq_car(&x);
 		if (a == APPEND || a == NCONC)
-		  FEerror(",at or ,. has appeared in an illegal position.", 0);
+			FEreader_error(",at or ,. has appeared in an illegal position.", in, 0);
 		if (a == QUOTE) {
 		  for (dimcount = 0;  !endp(x);  x = CDR(x), dimcount++)
 		    cl_stack_push(CAR(x));
@@ -733,9 +733,9 @@ sharp_left_parenthesis_reader(cl_object in, cl_object c, cl_object d)
 L:
 	if (fixed_size) {
 		if (dimcount > dim)
-			FEerror("Too many elements in #(...).", 0);
+			FEreader_error("Too many elements in #(...).", in, 0);
 		if (dimcount == 0)
-			FEerror("Cannot fill the vector #().", 0);
+			FEreader_error("Cannot fill the vector #().", in, 0);
 		else last = cl_stack_top[-1];
 	} else
 		dim = dimcount;
@@ -778,9 +778,9 @@ sharp_asterisk_reader(cl_object in, cl_object c, cl_object d)
 	}
 	if (fixed_size) {
 		if (dimcount > dim)
-			FEerror("Too many elements in #*....", 0);
+			FEreader_error("Too many elements in #*....", in, 0);
 		if (dimcount == 0)
-			FEerror("Cannot fill the bit-vector #*.", 0);
+			FEreader_error("Cannot fill the bit-vector #*.", in, 0);
 		else last = cl_stack_top[-1];
 	} else {
 		dim = dimcount;
@@ -807,7 +807,7 @@ sharp_colon_reader(cl_object in, cl_object ch, cl_object d)
 	int c;
 
 	if (d != Cnil && !read_suppress)
-		extra_argument(':', d);
+		extra_argument(':', in, d);
 	c = ecl_getc_noeof(in);
 	a = cat(rtbl, c);
 	escape_flag = FALSE;
@@ -855,7 +855,7 @@ static cl_object
 sharp_dot_reader(cl_object in, cl_object c, cl_object d)
 {
 	if(d != Cnil && !read_suppress)
-		extra_argument('.', d);
+		extra_argument('.', in, d);
 	in = read_object(in);
 	if (read_suppress)
 		@(return Cnil)
@@ -872,7 +872,7 @@ sharp_exclamation_reader(cl_object in, cl_object c, cl_object d)
 	cl_fixnum code;
 
 	if(d != Cnil && !read_suppress)
-		extra_argument('!', d);
+		extra_argument('!', in, d);
 	if (read_suppress)
 		@(return Cnil)
 	code = fixint(read_object(in));
@@ -892,8 +892,8 @@ sharp_exclamation_reader(cl_object in, cl_object c, cl_object d)
 		cl_object read_VV_block = SYM_VAL(@'si::*cblock*');
 		code = -code - 1;
 		if (code < 0 || code >= read_VV_block->cblock.data_size)
-			FEerror("Bogus binary file. #!~S unknown.",1,
-				MAKE_FIXNUM(code));
+			FEreader_error("Bogus binary file. #!~S unknown.", in, 1,
+				       MAKE_FIXNUM(code));
 		@(return read_VV_block->cblock.data[code])
 	}
 	}
@@ -907,17 +907,17 @@ sharp_B_reader(cl_object in, cl_object c, cl_object d)
 	cl_object x;
 
 	if(d != Cnil && !read_suppress)
-		extra_argument('B', d);
+		extra_argument('B', in, d);
 	read_constituent(in);
 	if (read_suppress)
 		@(return Cnil)
 	x = parse_number(cl_token->string.self, cl_token->string.fillp, &i, 2);
 	if (x == OBJNULL || i != cl_token->string.fillp)
-		FEerror("Cannot parse the #B readmacro.", 0);
+		FEreader_error("Cannot parse the #B readmacro.", in, 0);
 	if (type_of(x) == t_shortfloat ||
 	    type_of(x) == t_longfloat)
-		FEerror("The float ~S appeared after the #B readmacro.",
-			1, x);
+		FEreader_error("The float ~S appeared after the #B readmacro.",
+			       in, 1, x);
 	@(return x)
 }
 
@@ -928,17 +928,17 @@ sharp_O_reader(cl_object in, cl_object c, cl_object d)
 	cl_object x;
 
 	if(d != Cnil && !read_suppress)
-		extra_argument('O', d);
+		extra_argument('O', in, d);
 	read_constituent(in);
 	if (read_suppress)
 		@(return Cnil)
 	x = parse_number(cl_token->string.self, cl_token->string.fillp, &i, 8);
 	if (x == OBJNULL || i != cl_token->string.fillp)
-		FEerror("Cannot parse the #O readmacro.", 0);
+		FEreader_error("Cannot parse the #O readmacro.", in, 0);
 	if (type_of(x) == t_shortfloat ||
 	    type_of(x) == t_longfloat)
-		FEerror("The float ~S appeared after the #O readmacro.",
-			1, x);
+		FEreader_error("The float ~S appeared after the #O readmacro.",
+			       in, 1, x);
 	@(return x)
 }
 
@@ -949,17 +949,17 @@ sharp_X_reader(cl_object in, cl_object c, cl_object d)
 	cl_object x;
 
 	if(d != Cnil && !read_suppress)
-		extra_argument('X', d);
+		extra_argument('X', in, d);
 	read_constituent(in);
 	if (read_suppress)
 		@(return Cnil)
 	x = parse_number(cl_token->string.self, cl_token->string.fillp, &i, 16);
 	if (x == OBJNULL || i != cl_token->string.fillp)
-		FEerror("Cannot parse the #X readmacro.", 0);
+		FEreader_error("Cannot parse the #X readmacro.", in, 0);
 	if (type_of(x) == t_shortfloat ||
 	    type_of(x) == t_longfloat)
-		FEerror("The float ~S appeared after the #X readmacro.",
-			1, x);
+		FEreader_error("The float ~S appeared after the #X readmacro.",
+			       in, 1, x);
 	@(return x)
 }
 
@@ -975,19 +975,19 @@ sharp_R_reader(cl_object in, cl_object c, cl_object d)
 	else if (FIXNUMP(d)) {
 		radix = fix(d);
 		if (radix > 36 || radix < 2)
-			FEerror("~S is an illegal radix.", 1, d);
+			FEreader_error("~S is an illegal radix.", in, 1, d);
 	} else
-		FEerror("No radix was supplied in the #R readmacro.", 0);
+		FEreader_error("No radix was supplied in the #R readmacro.", in, 0);
 	read_constituent(in);
 	if (read_suppress)
 		@(return Cnil)
 	x = parse_number(cl_token->string.self, cl_token->string.fillp, &i, radix);
 	if (x == OBJNULL || i != cl_token->string.fillp)
-		FEerror("Cannot parse the #R readmacro.", 0);
+		FEreader_error("Cannot parse the #R readmacro.", in, 0);
 	if (type_of(x) == t_shortfloat ||
 	    type_of(x) == t_longfloat)
-		FEerror("The float ~S appeared after the #R readmacro.",
-			1, x);
+		FEreader_error("The float ~S appeared after the #R readmacro.",
+			       in, 1, x);
 	@(return x)
 }
 
@@ -1002,14 +1002,14 @@ sharp_eq_reader(cl_object in, cl_object c, cl_object d)
 
 	if (read_suppress) @(return)
 	if (Null(d))
-		FEerror("The #= readmacro requires an argument.", 0);
+		FEreader_error("The #= readmacro requires an argument.", in, 0);
 	if (assql(d, sharp_eq_context) != Cnil)
-		FEerror("Duplicate definitions for #~D=.", 1, d);
+		FEreader_error("Duplicate definitions for #~D=.", in, 1, d);
 	pair = CONS(d, Cnil);
 	SYM_VAL(@'si::*sharp-eq-context*') = CONS(pair, sharp_eq_context);
 	value = read_object(in);
 	if (value == pair)
-		FEerror("#~D# is defined by itself.", 1, d);
+		FEreader_error("#~D# is defined by itself.", in, 1, d);
 	@(return (CDR(pair) = value))
 }
 
@@ -1020,11 +1020,11 @@ sharp_sharp_reader(cl_object in, cl_object c, cl_object d)
 
 	if (read_suppress) @(return)
 	if (Null(d))
-		FEerror("The ## readmacro requires an argument.", 0);
+		FEreader_error("The ## readmacro requires an argument.", in, 0);
 	pair = assq(d, SYM_VAL(@'si::*sharp-eq-context*'));
 	if (pair != Cnil)
 		@(return pair)
-	FEerror("#~D# is undefined.", 1, d);
+	FEreader_error("#~D# is undefined.", in, 1, d);
 }
 
 static cl_object
@@ -1101,7 +1101,7 @@ sharp_vertical_bar_reader(cl_object in, cl_object ch, cl_object d)
 	int level = 0;
 
 	if (d != Cnil && !read_suppress)
-		extra_argument('|', d);
+		extra_argument('|', in, d);
 	for (;;) {
 		c = ecl_getc_noeof(in);
 	L:
@@ -1127,7 +1127,7 @@ sharp_vertical_bar_reader(cl_object in, cl_object ch, cl_object d)
 static cl_object
 default_dispatch_macro_fun(cl_object in, cl_object c, cl_object d)
 {
-	FEerror("Undefined dispatch macro character.", 1, c);
+	FEreader_error("Undefined dispatch macro character.", in, 1, c);
 }
 
 /*
@@ -1146,7 +1146,7 @@ static cl_object
 sharp_double_quote_reader(cl_object in, cl_object c, cl_object d)
 {
 	if (d != Cnil && !read_suppress)
-		extra_argument('"', d);
+		extra_argument('"', in, d);
 	unread_char(c, in);
 	@(return cl_pathname(read_object(in)))
 }
@@ -1161,11 +1161,11 @@ sharp_dollar_reader(cl_object in, cl_object c, cl_object d)
 	cl_object output;
 
 	if (d != Cnil && !read_suppress)
-		extra_argument('$', d);
+		extra_argument('$', in, d);
 	c = read_object(in);
 	if (!FIXNUMP(c))
-		FEerror("Cannot make a random-state with the value ~S.",
-			1, c);
+		FEreader_error("Cannot make a random-state with the value ~S.",
+			       in, 1, c);
 	output = cl_alloc_object(t_random);
 	output->random.value = fix(c);
 	@(return output)
@@ -1710,10 +1710,10 @@ si_standard_readtable()
 }
 
 static void
-extra_argument(int c, cl_object d)
+extra_argument(int c, cl_object stream, cl_object d)
 {
-	FEerror("~S is an extra argument for the #~C readmacro.",
-		2, d, CODE_CHAR(c));
+	FEreader_error("~S is an extra argument for the #~C readmacro.",
+		       stream, 2, d, CODE_CHAR(c));
 }
 
 
@@ -1892,7 +1892,7 @@ read_VV(cl_object block, void *entry)
 		}
 		bds_unwind_n(5);
 		if (i < len)
-			FEerror("Not enough data while loading binary file",0);
+			FEreader_error("Not enough data while loading binary file", in, 0);
 	NO_DATA:
 		/* Execute top-level code */
 		(*entry_point)(MAKE_FIXNUM(0));

@@ -448,11 +448,14 @@ returns with NIL."
 (define-condition error (serious-condition) ())
 
 (defun simple-condition-printer (condition stream)
-  (format stream "~?" (format-control condition) (format-arguments condition)))
+  (format stream "~?" (simple-condition-format-control condition)
+	  (simple-condition-format-arguments condition)))
 
 (define-condition simple-condition (condition)
-  ((format-control :INITARG :FORMAT-CONTROL :INITFORM "" :ACCESSOR format-control)
-   (format-arguments :INITARG :FORMAT-ARGUMENTS :ACCESSOR format-arguments))
+  ((format-control :INITARG :FORMAT-CONTROL :INITFORM ""
+		   :ACCESSOR simple-condition-format-control)
+   (format-arguments :INITARG :FORMAT-ARGUMENTS :INITFORM NIL
+		     :ACCESSOR simple-condition-format-arguments))
   (:REPORT simple-condition-printer))
 
 (define-condition simple-warning (simple-condition warning)
@@ -644,8 +647,8 @@ returns with NIL."
 	 '(lambda 
   (sys::break-level *restart-clusters*
 		    (format nil "~?"
-			    (format-string condition)
-			    (format-arguments condition))))
+			    (simple-condition-format-control condition)
+			    (simple-condition-format-arguments condition))))
 
 (setq *restart-clusters*
       (list (list
