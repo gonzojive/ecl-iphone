@@ -17,7 +17,7 @@
 	   "SOCKET-PEERNAME" "SOCKET-NAME" "SOCKET-LISTEN"
 	   "SOCKET-RECEIVE" "SOCKET-CLOSE" "SOCKET-MAKE-STREAM"
 	   "GET-PROTOCOL-BY-NAME" "MAKE-INET-ADDRESS" "LOCAL-SOCKET"
-	   "SOCKET" "INET-SOCKET" "SOCKET-FILE-DESCRIPTOR"
+	   "SOCKET" "INET-SOCKET" "SOCKET-FILE-DESCRIPTOR" #+:win32 "NAMED-PIPE-SOCKET"
 	   "SOCKET-FAMILY" "SOCKET-PROTOCOL" "SOCKET-TYPE"
 	   "SOCKET-ERROR" "NAME-SERVICE-ERROR" "NON-BLOCKING-MODE"
 	   "HOST-ENT-NAME" "HOST-ENT-ALIASES" "HOST-ENT-ADDRESS-TYPE"
@@ -86,11 +86,14 @@
   +af-inet+ "AF_INET"
   +af-local+ "AF_LOCAL")
 
+#+:win32
+(defconstant +af-named-pipe+ -2)
+
 ;; Foreign functions
 
 (defentry ff-socket (:int :int :int) (:int "socket"))
 (defentry ff-listen (:int :int) (:int "listen"))
-(defentry ff-close (:int) (:int #-:win32 "close" #+:win32 "closesocket"))
+(defentry ff-close (:int) (:int "close"))
 #+:win32 (defentry ff-closesocket (:int) (:int "closesocket"))
 
 ;;; This courtesy of Pierre Mai in comp.lang.lisp 08 Jan 1999 00:51:44 +0100
@@ -281,7 +284,7 @@ directly instantiated."))
 	 (fd (or (and (slot-boundp socket 'file-descriptor)
 		      (socket-file-descriptor socket))
 		 #+:win32
-		 (and (eq (socket-family socket) +af-local+) 0)
+		 (and (member (socket-family socket) (list +af-named-pipe+ +af-local+)) 0)
 		 (ff-socket (socket-family socket)
 			    (ecase (or type
 				       (socket-type socket))
@@ -382,11 +385,12 @@ SB-SYS:MAKE-FD-STREAM."))
 
   (let ((fd (socket-file-descriptor socket)))
     (unless (eql fd -1) ; already closed
-      (when (slot-boundp socket 'stream)
-	(close (slot-value socket 'stream)) ;; closes fd
-	(slot-makunbound socket 'stream))
-      (if (= (socket-close-low-level socket) -1)
-	  (socket-error "close")))))
+      (cond ((slot-boundp socket 'stream)
+	     (close (slot-value socket 'stream)) ;; closes fd indirectly
+	     (slot-makunbound socket 'stream))
+	    ((= (socket-close-low-level socket) -1)
+	     (socket-error "close")))
+      (setf (socket-file-descriptor socket) -1))))
 
 ;; FIXME: How bad is manipulating fillp directly?
 (defmethod socket-receive ((socket socket) buffer length
@@ -703,7 +707,7 @@ static cl_object do_accept_un(cl_object cl_socket_fd)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
-;;; UNIX SOCKETS [SIMULATED FOR WINDOWS USING PIPES]
+;;; UNIX SOCKETS [WIN32, using the cygwin way]
 ;;;
 
 #+:win32
@@ -711,11 +715,87 @@ static cl_object do_accept_un(cl_object cl_socket_fd)
 
 (defclass local-socket (socket)
   ((family :initform +af-local+)
-   (pipe-name :initarg :pipe-name))
+   proxy-socket local-path)
   (:documentation "Class representing local domain (AF_LOCAL) sockets,
 also known as unix-domain sockets."))
 
+(defmethod initialize-instance :after ((socket local-socket) &rest args)
+  (declare (ignore args))
+  (with-slots (protocol type) socket
+    (setf (slot-value socket 'proxy-socket)
+          (make-instance 'inet-socket :protocol protocol :type type))))
+
 (defmethod socket-bind ((socket local-socket) &rest address)
+  (assert (= 1 (length address)) (address) "Socket-bind needs two parameters for local sockets.")
+  (with-slots (proxy-socket local-path) socket
+    (socket-bind proxy-socket #(127 0 0 1) 0)
+    (multiple-value-bind (ip port) (socket-peername proxy-socket)
+      (handler-case 
+        (with-open-file (fd (first address) :if-exists :error :if-does-not-exist :create :direction :output)
+	  (format fd "!<socket >~D 00000000-00000000-00000000-00000000" port))
+	(file-error ()
+	  (socket-close proxy-socket)
+	  (c-inline () () nil "WSASetLastError(WSAEADDRINUSE)" :one-liner t)
+	  (socket-error "socket-bind")))
+      (setf local-path (first address))
+      socket)))
+
+(defmethod socket-accept ((socket local-socket))
+  (multiple-value-bind (new-socket addr) (socket-accept (slot-value socket 'proxy-socket))
+    (values socket (slot-value socket 'local-path))))
+
+(defmethod socket-connect ((socket local-socket) &rest address)
+  (assert (= 1 (length address)) (address) "Socket-connect needs two parameters for local sockets.")
+  (with-slots (proxy-socket local-path) socket
+    (handler-case
+      (with-open-file (fd (first address) :if-does-not-exist :error :direction :input)
+        (let ((buf (make-string 128)) port)
+	  (read-sequence buf fd)
+	  (unless (and (string-equal "!<socket >" (subseq buf 0 10))
+	               (typep (setq port (read-from-string (subseq buf 10) nil 'eof)) '(integer 0 65535)))
+	    (c-inline () () nil "WSASetLastError(WSAEFAULT)" :one-liner t)
+	    (socket-error "connect"))
+	  (prog1
+	    (socket-connect proxy-socket #(127 0 0 1) port)
+	    (setf local-path (first address)))))
+      (file-error ()
+        (socket-error "connect")))))
+
+(defmethod socket-peername ((socket local-socket))
+  (unless (slot-boundp socket 'local-path)
+    (c-inline () () nil "WSASetLastError(WSAENOTCONN)" :one-liner t)
+    (socket-error "socket-peername"))
+  (slot-value socket 'local-path))
+
+(defmethod socket-close ((socket local-socket))
+  (socket-close (slot-value socket 'proxy-socket))
+  (slot-makunbound socket 'local-path))
+
+(defmethod socket-make-stream ((socket local-socket) &rest args)
+  (apply #'socket-make-stream (cons (slot-value socket 'proxy-socket) args)))
+
+(defmethod non-blocking-mode ((socket local-socket))
+  (non-blocking-mode (slot-value socket 'proxy-socket)))
+
+(defmethod (setf non-blocking-mode) (non-blocking-p (socket local-socket))
+  (setf (non-blocking-mode (slot-value socket 'proxy-socket)) non-blocking-p))
+
+) ;#+:win32
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; NAMED PIPE SOCKETS [WIN32]
+;;;
+
+#+:win32
+(progn
+
+(defclass named-pipe-socket (socket)
+  ((family :initform +af-named-pipe+)
+   (pipe-name :initarg :pipe-name))
+  (:documentation "Class representing Win32 named pipe, using a socket-like interface."))
+
+(defmethod socket-bind ((socket named-pipe-socket) &rest address)
   (assert (= 1 (length address)) (address) "Socket-bind needs two parameters for local sockets.")
   (let* ((pipe-name (concatenate 'string "\\\\.\\pipe\\" (first address)))
          (hnd (c-inline (pipe-name) (:cstring) :int
@@ -740,7 +820,7 @@ also known as unix-domain sockets."))
     (setf (slot-value socket 'pipe-name) pipe-name)
     (setf (slot-value socket 'file-descriptor) hnd)))
 
-(defmethod socket-accept ((socket local-socket))
+(defmethod socket-accept ((socket named-pipe-socket))
   (let* ((fd (socket-file-descriptor socket))
          (afd (c-inline (fd) (:int) :int
 	                "
@@ -766,7 +846,7 @@ also known as unix-domain sockets."))
 		       :pipe-name (slot-value socket 'pipe-name))
 	(slot-value socket 'pipe-name))))))
 
-(defmethod socket-connect ((socket local-socket) &rest address)
+(defmethod socket-connect ((socket named-pipe-socket) &rest address)
   (assert (= 1 (length address)) (address) "Socket-connect needs two parameters for local sockets.")
   (let* ((path (first address))
 	 (pipe-name (concatenate 'string "\\\\.\\pipe\\" path)))
@@ -791,10 +871,10 @@ also known as unix-domain sockets."))
 	(socket-error "connect")
 	(setf (slot-value socket 'pipe-name) pipe-name))))
 
-(defmethod socket-peername ((socket local-socket))
+(defmethod socket-peername ((socket named-pipe-socket))
   (slot-value socket 'pipe-name))
 
-(defmethod (setf non-blocking-mode) (non-blocking-p (socket local-socket))
+(defmethod (setf non-blocking-mode) (non-blocking-p (socket named-pipe-socket))
   (let ((fd (socket-file-descriptor socket)))
     (if (= 0
            (c-inline (fd non-blocking-p) (:int t) :int
@@ -807,7 +887,7 @@ also known as unix-domain sockets."))
       (socket-error "SetNamedPipeHandleState")
       (setf (slot-value socket 'non-blocking-p) non-blocking-p))))
 
-(defmethod socket-close ((socket local-socket))
+(defmethod socket-close ((socket named-pipe-socket))
   (let ((fd (socket-file-descriptor socket)))
     (unless (c-inline (fd) (:int) t
                   "
@@ -815,7 +895,7 @@ also known as unix-domain sockets."))
 	DWORD flags;
 	if (!GetNamedPipeInfo(_get_osfhandle(#0), &flags, NULL, NULL, NULL))
 		@(return) = Cnil;
-	if ((flags == PIPE_CLIENT_END || DisconnectNamedPipe(_get_osfhandle(#0))) && CloseHandle(_get_osfhandle(#0)))
+	if (flags == PIPE_CLIENT_END || DisconnectNamedPipe(_get_osfhandle(#0)))
 		@(return) = Ct;
 	else
 		@(return) = Cnil;
@@ -875,8 +955,16 @@ also known as unix-domain sockets."))
 (defun make-stream-from-fd (fd mode &optional (name "FD-STREAM"))
   (assert (stringp name) (name) "name must be a string.")
   (c-inline (name fd (ecase mode
-		       (:input (c-constant #-:win32 "smm_input" #+:win32 "smm_input_wsock"))
-		       (:output (c-constant #-:win32 "smm_output" #+:win32 "smm_output_wsock"))))
+		       (:input (c-constant "smm_input"))
+		       (:output (c-constant "smm_output"))
+		       (:input-output (c-constant "smm_io"))
+		       #+:win32
+		       (:input-wsock (c-constant "smm_input_wsock"))
+		       #+:win32
+		       (:output-wsock (c-constant "smm_output_wsock"))
+		       #+:win32
+		       (:input-output-wsock (c-constant "smm_io_wsock"))
+		       ))
 	    (t :int :int)
 	    t
 	    "ecl_make_stream_from_fd(#0,#1,#2)"
@@ -892,16 +980,14 @@ on SOCKET (which must be connected).  ARGS are ignored."))
 		     (slot-value socket 'stream))))
     (unless stream
       (setf stream (let ((fd (socket-file-descriptor socket)))
-		     (make-two-way-stream
-		      (make-stream-from-fd fd :input)
-		      (make-stream-from-fd fd :output))))
+		     (make-stream-from-fd fd #-:win32 :input-output #+:win32 :input-output-wsock)))
       (setf (slot-value socket 'stream) stream)
       #+ ignore
       (sb-ext:cancel-finalization socket))
     stream))
 
 #+:win32
-(defmethod socket-make-stream ((socket local-socket) &rest args)
+(defmethod socket-make-stream ((socket named-pipe-socket) &rest args)
   (declare (ignore args))
   (let ((stream (and (slot-boundp socket 'stream)
 		     (slot-value socket 'stream))))
