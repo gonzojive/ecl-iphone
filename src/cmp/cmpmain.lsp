@@ -299,7 +299,7 @@ static cl_object VV[VM];
        (unwind-protect
          (progn
            (with-open-file (f "static_lib.tmp" :direction :output :if-does-not-exist :create :if-exists :supersede)
-             (format f "/NODEFAULTLIB /OUT:~A ~A ~{\"~&~A\"~}"
+             (format f "/OUT:~A ~A ~{\"~&~A\"~}"
                      output-name o-name ld-flags))
            (safe-system "link -lib -debug @static_lib.tmp"))
          (when (probe-file "static_lib.tmp")
