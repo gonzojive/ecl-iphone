@@ -433,7 +433,7 @@ file.  When the saved image is invoked, it will start the redefined top-level."
 	(let ((*break-enable* nil))
 
 	  (dolist (file *lisp-init-file-list*)
-	    (when (notinline (load file :if-does-not-exist nil))
+	    (when (load file :if-does-not-exist nil :search-list nil)
 	      (return)))
 	  ;; process command arguments
 	  (notinline (process-command-args))))
