@@ -6,9 +6,9 @@
 @setchapternewpage odd
 @c %**end of header
 
-@dircategory lisp
+@dircategory Lisp Programming
 @direntry
-* CLX:       Common LISP X Interface
+* CLX: (clx).		Common LISP X Interface
 @end direntry
 
 @copying
