@@ -73,8 +73,10 @@ Makefile: Makefile.in build/config.status
 
 # ==================== Installation ====================
 
+INSTALL_TARGET = @INSTALL_TARGET@
+
 install: build/Makefile
-	cd build; $(MAKE) install
+	cd build; $(MAKE) $(INSTALL_TARGET)
 uninstall:
 	cd build; $(MAKE) uninstall
 
@@ -122,8 +124,8 @@ TAGS tags:
 	(cd ${srcdir}/src; \
 	 etags c/*.[cd] h/*.h)
 
-check:
-	@echo "We don't have any tests for ECL yet."
+check test:
+	cd build; $(MAKE) test
 
 TAR_DIR=ecl-$(VERSION)
 

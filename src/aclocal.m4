@@ -130,6 +130,7 @@ AC_SUBST(SHAREDPREFIX)
 AC_SUBST(OBJEXT)dnl	These are set by autoconf
 AC_SUBST(EXEEXT)
 AC_SUBST(LDINSTALLNAME)dnl Link-flag that tells where the library will reside.
+AC_SUBST(INSTALL_TARGET)dnl Which type of installation: flat directory or unix like.
 LDRPATH='~*'
 SHAREDEXT='so'
 SHAREDPREFIX='lib'
@@ -139,6 +140,7 @@ PICFLAG='-fPIC'
 LDINSTALLNAME=''
 THREAD_CFLAGS=''
 THREAD_LDFLAGS=''
+INSTALL_TARGET='install'
 case "${host_os}" in
 	# libdir may have a dollar expression inside
 	linux*)
@@ -197,6 +199,7 @@ case "${host_os}" in
 		SHAREDPREFIX=''
 		SHAREDEXT='dll'
 		PICFLAG=''
+		INSTALL_TARGET='flatinstall'
 		;;
 	darwin*)
 		thehost='darwin'
