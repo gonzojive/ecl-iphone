@@ -12,6 +12,7 @@
     See file '../Copyright' for full details.
 */
 
+#include <string.h>
 #include "ecl.h"
 #include "ecl-inl.h"
 #include "bytecodes.h"
