@@ -20,8 +20,7 @@
 
 ;;;
 ;;; This is used by combined methods to communicate the next methods to
-;;; the methods they call.  This variable is captured by a lexical variable
-;;; of the methods to give it the proper lexical scope.
+;;; the methods they call.
 ;;; 
 (defvar *next-methods* nil)
 
@@ -443,8 +442,11 @@
 
 (defun parse-defmethod (args)
   (declare (si::c-local))
-  ;; (values name qualifiers arglist body)
-  (let* (name qualifiers)
+  ;; This function has to extract the name of the method, a list of
+  ;; possible qualifiers (identified by not being lists), the lambda
+  ;; list of the method (which might be empty!) and the body of the
+  ;; function.
+  (let* (name)
     (unless args
       (error "Illegal defmethod form: missing method name"))
     (setq name (pop args))
@@ -453,14 +455,13 @@
              It must be either a non-nil symbol or ~%~
              a list whose car is setf and whose second is a non-nil symbol."
 	     name))
-    (unless args
-      (error "Illegal defmethod form: missing lambda-list"))
-    (loop (cond ((null (first args))
-		 (error "Illegal defmethod form: null lambda-list"))
-		((consp (first args))
-		 (return (setq qualifiers (nreverse qualifiers))))
-		(t (push (pop args) qualifiers))))
-    (values name qualifiers (first args) (rest args))))
+    (do ((qualifiers '()))
+	((progn
+	   (when (endp args)
+	     (error "Illegal defmethod form: missing lambda-list"))
+	   (listp (first args)))
+	 (values name (nreverse qualifiers) (first args) (rest args)))
+      (push (pop args) qualifiers))))
 
 (defun parse-specialized-lambda-list (arglist warningp)
   (declare (si::c-local))
