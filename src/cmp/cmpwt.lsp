@@ -121,7 +121,7 @@
         (sys::*print-structure* t))
     (wt-filtered-data
      (typecase expr
-       (COMPILED-FUNCTION
+       (FUNCTION
 	(prin1-to-string (sys:compiled-function-name expr)))
        (PACKAGE
 	(format nil "~%#.(find-package ~S)" (package-name expr)))
