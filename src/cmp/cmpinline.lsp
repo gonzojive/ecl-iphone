@@ -54,10 +54,17 @@
 	(let ((loc (var-loc var)))
 	  (when (var-p loc)
 	    (var-changed-in-forms loc forms)))
-	(let ((check-specials (or (eq kind 'SPECIAL) (eq kind 'GLOBAL))))
+	(let ((check-specials (or (eq kind 'SPECIAL) (eq kind 'GLOBAL)))
+	      (check-lexical (or (eq kind 'LEXICAL) (eq kind 'CLOSURE))))
 	  (dolist (form forms)
 	    (when (or (member var (c1form-changed-vars form))
-		      (and check-specials (c1form-sp-change form)))
+		      (and check-specials (c1form-sp-change form))
+		      ;; They can be modified when a local function is called
+		      ;; FIXME! We need to add a flag to the functions telling
+		      ;; which variables they modify!
+		      (and check-lexical
+			   (member (c1form-name form)
+				   '(CALL-LOCAL MULTIPLE-VALUE-CALL))))
 	      (return t)))))))
 
 ;;; Valid property names for open coded functions are:
@@ -344,6 +351,7 @@
 	    (args (second form-args))
 	    ii)
        (not (and (inline-possible fname)
+		 (notany #'form-causes-side-effect args)
 		 (setq ii (get-inline-info
 			   fname (mapcar #'c1form-type args)
 			   (c1form-type form)))
