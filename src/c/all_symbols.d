@@ -14,6 +14,43 @@
 
 cl_index cl_num_symbols_in_core = 0;
 
+static char *
+mangle_name(cl_object output, char *source, int l)
+{
+	char c;
+
+	while (l--) {
+		c = *(source++);
+		if (isalpha(c))
+			c = tolower(c);
+		else if (isdigit(c))
+			;
+		else if (c == '-' || c == '_') {
+			c = '_';
+		} else if (c == '&') {
+			c = 'A';
+		} else if (c == '*') {
+			c = 'X';
+		} else if (c == '+') {
+			c = 'P';
+		} else if (c == '<') {
+			c = 'L';
+		} else if (c == '>') {
+			c = 'G';
+		} else if (c == '=') {
+			c = 'E';
+		} else if (c == '/') {
+			c = 'N';
+		} else if (c == ':') {
+			c = 'X';
+		} else {
+			return NULL;
+		}
+		output->string.self[output->string.fillp++] = c;
+	}
+	return &output->string.self[output->string.fillp];
+}
+
 @(defun si::mangle-name (symbol &optional as_symbol)
 	cl_index l;
 	char c, *source, *dest;
@@ -57,11 +94,18 @@ cl_index cl_num_symbols_in_core = 0;
 		}
 	}
 	package= symbol->symbol.hpack;
+	if (package == lisp_package)
+		package = make_simple_string("cl");
+	else if (package == system_package)
+		package = make_simple_string("si");
+	else if (package == keyword_package)
+		package = Cnil;
+	else
+		package = package->pack.name;
 	symbol = symbol->symbol.name;
 	l      = symbol->string.fillp;
 	source = symbol->string.self;
-	output = cl_alloc_simple_string(l+1);
-	dest   = output->string.self;
+	output = cl_alloc_simple_string(length(package) + l + 1);
 	if (is_symbol && source[0] == '*') {
 		if (l > 2 && source[l-1] == '*') l--;
 		c = 'V';
@@ -78,51 +122,16 @@ cl_index cl_num_symbols_in_core = 0;
 	} else {
 		c = 'S';
 	}
-	if (package == lisp_package)
-		package = make_simple_string("cl");
-	else if (package == system_package)
-		package = make_simple_string("si");
-	else if (package == keyword_package)
-		package = Cnil;
-	else
-		package = lisp_package->pack.name;
-	*(dest++) = c;
-	output->string.fillp = 1;
-	while (l--) {
-		c = *(source++);
-		if (isalpha(c))
-			c = tolower(c);
-		else if (isdigit(c))
-			;
-		else if (c == '-' || c == '_') {
-			c = '_';
-		} else if (c == '&') {
-			c = 'A';
-		} else if (c == '*') {
-			c = 'X';
-		} else if (c == '+') {
-			c = 'P';
-		} else if (c == '<') {
-			c = 'L';
-		} else if (c == '>') {
-			c = 'G';
-		} else if (c == '=') {
-			c = 'E';
-		} else if (c == '/') {
-			c = 'N';
-		} else if (c == ':') {
-			c = 'X';
-		} else {
+	output->string.fillp = 0;
+	if (!Null(package))
+		if (!mangle_name(output, package->string.self, package->string.fillp))
 			@(return Cnil Cnil maxarg)
-		}
-		*(dest++) = c;
-		output->string.fillp++;
-	}
+	output->string.self[output->string.fillp++] = c;
+	if (!(dest = mangle_name(output, source, l)))
+		@(return Cnil Cnil maxarg)
 	if (dest[-1] == '_')
 		dest[-1] = 'M';
 	*(dest++) = '\0';
-	if (!Null(package))
-		output = @si::string-concatenate(2,package,output);
 	@(return found output maxarg)
 @)
 
