@@ -18,7 +18,11 @@ cl_symbols[] = {
 
 {"NIL", CL_ORDINARY, NULL, -1},
 {"T", CL_ORDINARY, NULL, -1},
+#ifdef CLOS
+{SYS_ "UNBOUND", SI_ORDINARY, si_unbound, 0, OBJNULL},
+#else
 {SYS_ "UNBOUND", SI_ORDINARY, NULL, -1, OBJNULL},
+#endif
 
 /* LISP PACKAGE */
 {"&ALLOW-OTHER-KEYS", CL_ORDINARY, NULL, -1, OBJNULL},
@@ -1173,7 +1177,7 @@ cl_symbols[] = {
 {SYS_ "SET-FUNCALLABLE", SI_ORDINARY, si_set_funcallable, 2, OBJNULL},
 {SYS_ "SL-BOUNDP", SI_ORDINARY, si_sl_boundp, 1, OBJNULL},
 {SYS_ "SL-MAKUNBOUND", SI_ORDINARY, si_sl_makunbound, 2, OBJNULL},
-{SYS_ "UNBOUND", SI_ORDINARY, si_unbound, 0, OBJNULL},
+/*{SYS_ "UNBOUND", SI_ORDINARY, si_unbound, 0, OBJNULL}, */
 #endif
 
 #ifdef PROFILE
