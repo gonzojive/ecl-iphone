@@ -1165,6 +1165,7 @@ copy_list_wildcards(cl_object *wilds, cl_object to)
 	}
 	if (CONSP(l))
 		l = @nreconc(2, l, Cnil);
+	return l;
 }
 
 cl_object
