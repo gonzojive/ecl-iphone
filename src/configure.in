@@ -31,7 +31,7 @@ exit 2;
 fi
 
 dnl Set the version number. This seems the best place to keep it.
-ECL_VERSION=0.8
+ECL_VERSION=0.9
 AC_SUBST(ECL_VERSION)
 
 dnl Guess operating system of host. We do not allow cross-compiling.
