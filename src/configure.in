@@ -46,6 +46,7 @@ AC_SUBST(mandir)
 AC_SUBST(infodir)
 AC_SUBST(builddir)
 AC_SUBST(libdir)
+AC_SUBST(docdir)
 AC_SUBST(top_srcdir)
 dnl AC_ARG_ENABLE(tk,
 dnl 	[--enable-tk            Include Tk.],
@@ -148,6 +149,7 @@ dnl		Installation directories
 dnl
 libdir="${libdir}/ecl"
 includedir="${libdir}/ecl/h"
+if [ -z "${docdir}" ]; then docdir="${shareddir}/doc/ecl"; fi
 
 dnl ----------------------------------------------------------------------
 dnl		Checks which do not come with autoconf

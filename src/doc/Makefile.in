@@ -5,6 +5,7 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 infodir = @infodir@
 mandir=@mandir@
+dodcdir=@docdir@
 manext=1
 
 INFOEXT = @INFOEXT@
@@ -48,24 +49,31 @@ install: all
 	    $(INSTALL_INFO) --info-dir=$(infodir) $$k; \
 	  fi; \
 	done
+	$(mkinstalldirs) $(docdir)
+	for i in Copyright LGPL; do \
+	  $(INSTALL_DATA) $(top_srcdir)/../../$i $(docdir); \
+	done
 	$(mkinstalldirs) $(mandir)/man$(manext)
 	$(INSTALL_DATA) ecl.man $(mandir)/man$(manext)/ecl.$(manext)
 flatinstall: all
-	$(mkinstalldirs) $(prefix)/doc
-	for k in $(INFO_FILES); do $(INSTALL_DATA) $$k $(prefix)/doc; done
+	$(mkinstalldirs) $(docdir)
+	for k in $(INFO_FILES); do $(INSTALL_DATA) $$k $(docdir); done
 	if [ -f user.html ]; then \
-	  $(INSTALL_DATA) $$i $(prefix)/doc/; \
+	  $(INSTALL_DATA) $$i $(docdir)/; \
 	else \
-	  $(mkinstalldirs) $(prefix)/doc/ecl; \
-	  for i in ecl/*; do $(INSTALL_DATA) $$i $(prefix)/doc/ecl/; done; \
+	  $(mkinstalldirs) $(docdir)/ecl; \
+	  for i in ecl/*; do $(INSTALL_DATA) $$i $(docdir)/ecl/; done; \
 	fi
 	if [ -f devel.html ]; then \
-	  $(INSTALL_DATA) devel.html $(prefix)/doc/; \
+	  $(INSTALL_DATA) devel.html $(docdir)/; \
 	else \
-	  $(mkinstalldirs) $(prefix)/doc/ecldev; \
-	  for i in ecldev/*; do $(INSTALL_DATA) $$i $(prefix)/doc/ecldev/; done; \
+	  $(mkinstalldirs) $(docdir)/ecldev; \
+	  for i in ecldev/*; do $(INSTALL_DATA) $$i $(docdir)/ecldev/; done; \
 	fi
-	for i in *.html; do $(INSTALL_DATA) $$i $(prefix)/doc/; done
+	for i in Copyright LGPL; do \
+	  $(INSTALL_DATA) $(top_srcdir)/../../$i $(docdir); \
+	done
+	for i in *.html; do $(INSTALL_DATA) $$i $(docdir)/; done
 
 uninstall:
 	for k in $(INFO_FILES); do \
