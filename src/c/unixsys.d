@@ -236,6 +236,7 @@ si_close_pipe(cl_object stream)
 #else
 {
 	int child_pid;
+	int child_stdin, child_stdout, child_stderr;
 	argv = CONS(command, nconc(argv, CONS(Cnil, Cnil)));
 	argv = cl_funcall(3, @'coerce', argv, @'vector');
 	if (input == @':stream') {
