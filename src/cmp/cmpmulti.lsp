@@ -81,7 +81,7 @@
    ;; When the values are not going to be used, then just
    ;; process each form separately.
    ((eq *destination* 'TRASH)
-    (mapc #'c2expr forms))
+    (mapc #'c2expr* forms))
    ;; For (VALUES) we can replace the output with either NIL (if the value
    ;; is actually used) and set only NVALUES when the value is the output
    ;; of a function.
@@ -311,13 +311,13 @@
 
 ;;; ----------------------------------------------------------------------
 
-(put-sysprop 'multiple-value-call 'c1special #'c1multiple-value-call)
-(put-sysprop 'multiple-value-call 'c2 #'c2multiple-value-call)
-(put-sysprop 'multiple-value-prog1 'c1special #'c1multiple-value-prog1)
-(put-sysprop 'multiple-value-prog1 'c2 #'c2multiple-value-prog1)
-(put-sysprop 'values 'c1 #'c1values)
-(put-sysprop 'values 'c2 #'c2values)
-(put-sysprop 'multiple-value-setq 'c1 #'c1multiple-value-setq)
-(put-sysprop 'multiple-value-setq 'c2 #'c2multiple-value-setq)
-(put-sysprop 'multiple-value-bind 'c1 #'c1multiple-value-bind)
-(put-sysprop 'multiple-value-bind 'c2 #'c2multiple-value-bind)
+(put-sysprop 'multiple-value-call 'c1special 'c1multiple-value-call)
+(put-sysprop 'multiple-value-call 'c2 'c2multiple-value-call)
+(put-sysprop 'multiple-value-prog1 'c1special 'c1multiple-value-prog1)
+(put-sysprop 'multiple-value-prog1 'c2 'c2multiple-value-prog1)
+(put-sysprop 'values 'c1 'c1values)
+(put-sysprop 'values 'c2 'c2values)
+(put-sysprop 'multiple-value-setq 'c1 'c1multiple-value-setq)
+(put-sysprop 'multiple-value-setq 'c2 'c2multiple-value-setq)
+(put-sysprop 'multiple-value-bind 'c1 'c1multiple-value-bind)
+(put-sysprop 'multiple-value-bind 'c2 'c2multiple-value-bind)
