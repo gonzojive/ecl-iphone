@@ -164,17 +164,13 @@ NOT_A_FILENAME:
 		@format(3, Ct, make_simple_string(";;; Loading ~s~%"), filename);
 	}
 	bds_bind(@'*package*', symbol_value(@'*package*'));
-#ifdef PDE
-	bds_bind(@'si::*source-pathname*', filename);
-#endif
+	bds_bind(@'*load-pathname*', pathname);
+	bds_bind(@'*load-truename*', cl_truename(pathname));
 	if (Null(function))
 		ok = si_load_source(filename, verbose, print);
 	else
 		ok = funcall(4, function, filename, verbose, print);
-#ifdef PDE
-	bds_unwind1;
-#endif
-	bds_unwind1;
+	bds_unwind_n(3);
 	if (!Null(ok))
 		FEerror("LOAD: Could not load file ~S (Error: ~S)",
 			2, filename, ok);
