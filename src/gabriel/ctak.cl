@@ -3,6 +3,8 @@
 
 ;;; CTAK -- A version of the TAKeuchi function that uses the CATCH/THROW facility. 
 
+(in-package "TESTING")
+
 (defun ctak (x y z)
   (catch 'ctak (ctak-aux x y z)))
 

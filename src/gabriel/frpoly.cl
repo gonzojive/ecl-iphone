@@ -18,6 +18,8 @@
 ;;		used to handle polynomial coefficients in a recursive
 ;;		way. Declaring them global is the wrong approach.
 
+(in-package "TESTING")
+
 (defvar ans)
 (defvar coef)
 (defvar f)

@@ -6,7 +6,8 @@
 ;;mod: add fixnum declaration for n in the following let:
 ;;    (let ((n (floor (the fixnum (length (car l1))) 2)))
 
-			
+(in-package "TESTING")
+
 (defun destructive (n m)
   (declare (type fixnum n m))
   (let ((l (do ((i 10. (the fixnum (1- i)))

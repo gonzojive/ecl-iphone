@@ -4,6 +4,8 @@
 ;;; STAK -- The TAKeuchi function with special variables instead of
 ;;; parameter passing.
 
+(in-package "TESTING")
+
 (defvar stak-x)
 (defvar stak-y)
 (defvar stak-z)

@@ -3,6 +3,8 @@
 
 ;;; TPRINT -- Benchmark to print and read to the terminal.
 
+(in-package "TESTING")
+
 (defvar test-atoms '(abc1 cde2 efg3 ghi4 ijk5 klm6 mno7 opq8 qrs9
 			  stu0 uvw1 wxy2 xyz3 123a 234b 345c 456d 
 			  567d 678e 789f 890g))

@@ -16,6 +16,8 @@
 ;;; property list of FOO under the indicator BAR, in this case. You may have
 ;;; to do something like:
 
+(in-package "TESTING")
+
 ;;; :property keyword is not Common Lisp.
 
 (defun dderiv-aux (a) 

@@ -4,6 +4,8 @@
 ;;; DERIV -- Symbolic derivative benchmark written by Vaughn Pratt.  
 ;;; It uses a simple subset of Lisp and does a lot of  CONSing. 
 
+(in-package "TESTING")
+
 (defun deriv-aux (a) (list '/ (deriv a) a))
 
 (defun deriv (a)

@@ -4,6 +4,8 @@
 ;; FFT -- This is an FFT benchmark written by Harry Barrow.
 ;; It tests a variety of floating point operations, including array references.
 
+(in-package "TESTING")
+
 (defvar **fft-re**
   (make-array 1025. :element-type
 	      #+excl 'single-float #+lucid 'float #+KCL 'single-float

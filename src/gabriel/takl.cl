@@ -3,6 +3,8 @@
 
 ;;; TAKL -- The TAKeuchi function using lists as counters.
 
+(in-package "TESTING")
+
 (defun listn (n)
   (declare (type fixnum n))
   (if (not (= 0 n))

@@ -3,6 +3,8 @@
 
 ;;; FPRINT -- Benchmark to print to a file.
 
+(in-package "TESTING")
+
 (defvar test-atoms '(abcdef12 cdefgh23 efghij34 ghijkl45 ijklmn56 klmnop67 
 			      mnopqr78 opqrst89 qrstuv90 stuvwx01 uvwxyz12 
 			      wxyzab23 xyzabc34 123456ab 234567bc 345678cd 

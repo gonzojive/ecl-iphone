@@ -3,6 +3,7 @@
 
 ;;; TRAVERSE --  Benchmark which creates and traverses a tree structure.
 
+(in-package "TESTING")
 
 (eval-when (eval compile load)
   (defstruct node

@@ -1,6 +1,8 @@
 ;; $Header$
 ;; $Locker$
 
+(in-package "TESTING")
+
 #+excl
 (eval-when (compile) (setq comp::register-use-threshold 6))
 

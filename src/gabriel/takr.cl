@@ -5,6 +5,8 @@
 ;;; memory effects.  Results should be the same as for TAK on stack machines.
 ;;; Distribution of calls is not completely flat.
 
+(in-package "TESTING")
+
 (defun tak0 (x y z) 
   (declare (type fixnum x y z))
   (cond ((not (< y x)) z)

@@ -3,6 +3,8 @@
 
 ;;; TRIANG -- Board game benchmark.
 
+(in-package "TESTING")
+
 (proclaim '(special board sequence a b c))
 
 (proclaim '(type (vector fixnum) a b c))

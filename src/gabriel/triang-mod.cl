@@ -3,6 +3,8 @@
 
 ;;; TRIANG -- Board game benchmark.
 
+(in-package "TESTING")
+
 (defvar a)
 (defvar b)
 (defvar c)
@@ -10,10 +12,10 @@
 (defvar final)
 
 (eval-when (eval compile)
-(proclaim '(special board sequence a b c))
-(proclaim '(special board sequence a b c))
+(proclaim '(special board seq a b c))
+(proclaim '(special board seq a b c))
 (proclaim '(type (vector fixnum ) board))
-(proclaim '(type (vector fixnum  ) sequence))
+(proclaim '(type (vector fixnum  ) seq))
 (proclaim '(type (vector fixnum ) a))
 (proclaim '(type (vector fixnum ) b))
 (proclaim '(type (vector fixnum ) c))
@@ -26,7 +28,7 @@
 
 (defun triang-setup ()
   (setq board (make-array 16 :element-type 'fixnum :initial-element 1))
-  (setq sequence (make-array 14 :element-type 'fixnum :initial-element 0))
+  (setq seq (make-array 14 :element-type 'fixnum :initial-element 0))
   (setq a
     (make-array
       37
@@ -61,8 +63,8 @@
 	 (let ((lp (last-position)))
 	   (unless (member lp final :test #'eq)
 	     (push lp final)))
-    ;;;     (format t "~&~s"  (cdr (simple-vector-to-list sequence)))
-	 (push (cdr (simple-vector-to-list sequence))
+    ;;;     (format t "~&~s"  (cdr (simple-vector-to-list seq)))
+	 (push (cdr (simple-vector-to-list seq))
 	       answer) t) 		; this is a hack to replace LISTARRAY
 	((and (eql 1 (aref board (aref a i)))
 	      (eql 1 (aref board (aref b i)))
@@ -70,7 +72,7 @@
 	 (setf (aref board (aref a i)) 0)
 	 (setf (aref board (aref b i)) 0)
 	 (setf (aref board (aref c i)) 1)
-	 (setf (aref sequence depth) i)
+	 (setf (aref seq depth) i)
 	 (do ((j 0 (the fixnum (+ j 1)))
 	      (depth (the fixnum (+ depth 1))))
 	     ((or (= j 36)
@@ -94,11 +96,5 @@
     (try i 1)))
 
 (defun testtriang ()
-  (declare (notinline cos aref))
-  (print (cos 1.0))
   (triang-setup)
-  (print board)
-  (print (aref a 22))
-  (print (aref b 22))
-  (print (aref c 22))
   (gogogo 22))

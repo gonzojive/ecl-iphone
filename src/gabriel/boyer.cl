@@ -4,6 +4,8 @@
 ;;; BOYER -- Logic programming benchmark, originally written by Bob Boyer.
 ;;; Fairly CONS intensive.
 
+(in-package "TESTING")
+
 (defvar **unify-subst**)
 (defvar **temp-temp**)
 

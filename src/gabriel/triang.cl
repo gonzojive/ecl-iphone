@@ -3,13 +3,15 @@
 
 ;;; TRIANG -- Board game benchmark.
 
-(declaim (special board sequence a b c))
+(in-package "TESTING")
+
+(declaim (special board seq a b c))
 (defvar answer)
 (defvar final)
 
 (defun triang-setup ()
   (setq board (make-array 16 :initial-element 1))
-  (setq sequence (make-array 14 :initial-element 0))
+  (setq seq (make-array 14 :initial-element 0))
   (setq a
     (make-array
       37
@@ -39,7 +41,7 @@
 	 (let ((lp (last-position)))
 	   (unless (member lp final :test #'eq)
 	     (push lp final)))
-	 (push (cdr (simple-vector-to-list sequence))
+	 (push (cdr (simple-vector-to-list seq))
 	       answer) t) 		; this is a hack to replace LISTARRAY
 	((and (eq 1 (svref board (svref a i)))
 	      (eq 1 (svref board (svref b i)))
@@ -47,7 +49,7 @@
 	 (setf (svref board (svref a i)) 0)
 	 (setf (svref board (svref b i)) 0)
 	 (setf (svref board (svref c i)) 1)
-	 (setf (svref sequence depth) i)
+	 (setf (svref seq depth) i)
 	 (do ((j 0 (the fixnum (+ j 1)))
 	      (depth (the fixnum (+ depth 1))))
 	     ((or (= j 36)

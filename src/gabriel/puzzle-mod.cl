@@ -1,6 +1,8 @@
 ;; $Header$
 ;; $Locker$
 
+(in-package "TESTING")
+
 (eval-when (compile load eval)
   (defconstant puzzle-size 511.)	
   (defconstant puzzle-classmax 3.)

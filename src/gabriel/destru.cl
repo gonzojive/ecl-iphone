@@ -3,6 +3,8 @@
 
 ;; DESTRU -- Destructive operation benchmark
 			
+(in-package "TESTING")
+
 (defun destructive (n m)
   (declare (type fixnum n m))
   (let ((l (do ((i 10. (the fixnum (1- i)))

@@ -4,6 +4,8 @@
 ;;; DIV2 -- Benchmark which divides by 2 using lists of n ()'s.
 ;;; This file contains a recursive as well as an iterative test.
 
+(in-package "TESTING")
+
 (defun create-n (n)
   (declare (type fixnum n))
   (do ((n n (the fixnum (1- n)))

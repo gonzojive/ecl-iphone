@@ -4,6 +4,8 @@
 ;;; BROWSE -- Benchmark to create and browse through an AI-like data base
 ;;; of units.
 
+(in-package "TESTING")
+
 ;;; n is # of symbols
 ;;; m is maximum amount of stuff on the plist
 ;;; npats is the number of basic patterns on the unit
