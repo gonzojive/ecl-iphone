@@ -1190,6 +1190,7 @@ EXPORTS
 
 	; defstruct.lsp
 
+	si_assert_slot_type
 	si_define_structure
 
 	; helpfile.lsp
@@ -1343,6 +1344,13 @@ EXPORTS
 	cl_copy_pprint_dispatch
 	cl_pprint_dispatch
 	cl_set_pprint_dispatch
+
+	; clos\boot.lsp
+
+	cl_slot_boundp
+	cl_slot_exists_p
+	cl_slot_makunbound
+	cl_slot_value
 
 	; clos\defclass.lsp
 
