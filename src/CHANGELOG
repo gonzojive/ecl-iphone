@@ -39,6 +39,8 @@ ECL 0.9f
  - The stream argument for DESCRIBE-OBJECT is now a required one, instead of
    an optional.
 
+ - When *PRINT-READABLY*=T, vectors just print as arrays.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
