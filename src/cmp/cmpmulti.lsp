@@ -12,17 +12,18 @@
 
 (in-package "COMPILER")
 
-(defun c1multiple-value-call (args &aux info funob)
+(defun c1multiple-value-call (args)
   (check-args-number 'MULTIPLE-VALUE-CALL args 1)
   (cond ((endp (rest args)) (c1funcall args))
 	;; FIXME! We should optimize
 	;; (multiple-value-call ... (values a b c ...))
-        (t (setq funob (c1funob (first args)))
-           (make-c1form 'MULTIPLE-VALUE-CALL funob funob (c1args* (rest args))))))
+        (t (let ((funob (c1expr (first args))))
+	     (make-c1form 'MULTIPLE-VALUE-CALL funob funob (c1args* (rest args)))))))
 
 (defun c2multiple-value-call (funob forms)
-  (let ((tot (make-lcl-var :rep-type :cl-index))
-        (loc (save-funob funob)))
+  (let* ((tot (make-lcl-var :rep-type :cl-index))
+	 (*temp* *temp*)
+	 (loc (maybe-save-value funob forms)))
     (wt-nl "{ cl_index " tot "=0;")
     (let ((*unwind-exit* `((STACK ,tot) ,@*unwind-exit*)))
       (let ((*destination* 'VALUES))
@@ -50,7 +51,7 @@
 	  (dolist (form forms)
 	    (c2expr* form)))
 	(wt-nl "cl_stack_pop_values(" nr ");}")
-	(unwind-exit 'VALUES)))))
+	(unwind-exit 'VALUES))))
 
 ;;; Beppe:
 ;;; this is the WRONG way to handle 1 value problem.

@@ -572,22 +572,21 @@
 
 (defun c1load-time-value (args)
   (check-args-number 'LOAD-TIME-VALUE args 1 2)
-  (let ((form (first args)))
+  (let ((form (first args))
+	loc)
     (cond ((listp form)
-	   (incf *next-vv*)
-	   (push (make-c1form* 'LOAD-TIME-VALUE :args *next-vv* (c1expr form))
-		 *load-time-values*)
-	   (add-object 0 t)
-	   (make-c1form* 'LOCATION :type t
-			 :args `(VV ,(format nil "VV[~d]" *next-vv*))))
+	   (setf loc (data-empty-loc))
+	   (push (make-c1form* 'LOAD-TIME-VALUE :args loc (c1expr form))
+		 *load-time-values*))
 	  (t
-	   (add-object (cmp-eval form))))))
+	   (setf loc (add-object (cmp-eval form)))))
+    (make-c1form* 'LOCATION :type t :args loc)))
 
-(defun t2load-time-value (ndx form)
+(defun t2load-time-value (vv-loc form)
   (let* ((*exit* (next-label)) (*unwind-exit* (list *exit*))
-         (*destination* (list 'VV ndx)))
-        (c2expr form)
-        (wt-label *exit*)))
+         (*destination* vv-loc))
+    (c2expr form)
+    (wt-label *exit*)))
 
 (defun t2declare (vv)
   (wt-nl vv "->symbol.stype=(short)stp_special;"))

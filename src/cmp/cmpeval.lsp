@@ -48,28 +48,7 @@
 
 (defun c1call-symbol (fname args &aux fd)
   (cond ((setq fd (get-sysprop fname 'c1special)) (funcall fd args))
-	((setq fd (c1call-local fname))
-	 (let* ((forms (c1args* args))
-		(fun (c1form-arg 0 fd))
-		(return-type (or (get-local-return-type fun) 'T)))
-	   (let ((arg-types (get-local-arg-types fun)))
-	     ;; Add type information to the arguments.
-	     (when arg-types
-	       (let ((fl nil))
-		 (dolist (form forms)
-		   (cond ((endp arg-types) (push form fl))
-			 (t (push (and-form-type (car arg-types) form (car args)
-						 :safe "In a call to ~a" fname)
-				  fl)
-			    (pop arg-types)
-			    (pop args))))
-		 (setq forms (nreverse fl)))))
-	   (make-c1form* 'CALL-LOCAL
-			 :sp-change t
-			 :referred-vars (c1form-referred-vars fd)
-			 :local-referred (c1form-local-referred fd)
-			 :type return-type
-			 :args fun forms)))
+	((c1call-local fname args))
 	((setq fd (sch-local-macro fname))
 	 (c1expr (cmp-expand-macro fd fname args)))
 	((and (setq fd (get-sysprop fname 'C1))
@@ -100,6 +79,32 @@
 	   )
 	 )
 	(t (c1call-global fname args))))
+
+(defun c1call-local (fname args)
+  (let ((fun (local-function-ref fname)))
+    (when fun
+      (let* ((forms (c1args* args))
+	     (referred-vars (list (fun-var fun)))
+	     (referred-local (list (fun-var fun)))
+	     (return-type (or (get-local-return-type fun) 'T))
+	     (arg-types (get-local-arg-types fun)))
+	  ;; Add type information to the arguments.
+	(when arg-types
+	  (let ((fl nil))
+	    (dolist (form forms)
+	      (cond ((endp arg-types) (push form fl))
+		    (t (push (and-form-type (car arg-types) form (car args)
+					    :safe "In a call to ~a" fname)
+			     fl)
+		       (pop arg-types)
+		       (pop args))))
+	    (setq forms (nreverse fl))))
+	(make-c1form* 'CALL-LOCAL
+		      :sp-change t
+		      :referred-vars referred-local
+		      :local-referred referred-vars
+		      :type return-type
+		      :args fun forms)))))
 
 (defun c1call-global (fname args)
   (let* ((forms (c1args* args))
@@ -133,24 +138,13 @@
 
 (defun c2expr (form &aux (name (c1form-name form)) (args (c1form-args form)))
   (if (eq name 'CALL-GLOBAL)
-;;; ----------------------------------------------------------------------
-;;; Added optimization for proclaimed functions: Beppe
-;;; ----------------------------------------------------------------------
-    (let ((fname (car *tail-recursion-info*)))
-      (c2call-global (first args) (second args) nil (destination-type)))
-#|		     (if (and
-			  (last-call-p)
-			  (symbolp fname) ; locally defined function are
-					; represented as variables
-			  (get-sysprop fname 'PROCLAIMED-FUNCTION))
-			 (get-sysprop fname 'PROCLAIMED-RETURN-TYPE)
-			 (c1form-type form)))))|#
-    (let ((dispatch (get-sysprop name 'C2)))
-      (if (or (eq name 'LET) (eq name 'LET*))
-	  (let ((*volatile* (c1form-volatile* form)))
-	    (declare (special *volatile*))
-	    (apply dispatch args))
-	  (apply dispatch args)))))
+      (c2call-global (first args) (second args) nil (destination-type))
+      (let ((dispatch (get-sysprop name 'C2)))
+	(if (or (eq name 'LET) (eq name 'LET*))
+	    (let ((*volatile* (c1form-volatile* form)))
+	      (declare (special *volatile*))
+	      (apply dispatch args))
+	    (apply dispatch args)))))
 
 (defun c2expr* (form)
   (let* ((*exit* (next-label))

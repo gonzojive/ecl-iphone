@@ -261,14 +261,6 @@
 			      (var-kind var) 'LEXICAL))))
 	   (return fun)))))
 
-(defun c1call-local (fname)
-  ;; used by c1funob and c1call-symbol
-  (let ((fun (local-function-ref fname)))
-    (when fun
-      (make-c1form* 'LOCAL :local-referred (list (fun-var fun))
-		    :referred-vars  (list (fun-var fun))
-		    :args fun))))
-
 (defun sch-local-fun (fname)
   ;; Returns fun-ob for the local function (not locat macro) named FNAME,
   ;; if any.  Otherwise, returns FNAME itself.

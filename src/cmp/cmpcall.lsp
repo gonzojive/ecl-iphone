@@ -31,90 +31,58 @@
   (or (sch-local-macro name)
       (macro-function name)))
 
-(defun c1funob (fun &aux fd function)
-  ;; fun is an expression appearing in functional position, in particular
-  ;; (FUNCTION (LAMBDA ..))
-  (when (and (consp fun)
-	     (symbolp (first fun))
-	     (cmp-macro-function (first fun)))
-    (setq fun (cmp-macroexpand fun)))
-  (cond ((not (and (consp fun)
-		   (eq (first fun) 'FUNCTION)
-		   (consp (cdr fun))
-		   (endp (cddr fun))))
-	 (make-c1form* 'ORDINARY :sp-change t :args (c1expr fun)))
-	((si::valid-function-name-p (setq function (second fun)))
-	 (or (c1call-local function)
-	     (make-c1form* 'GLOBAL
-			   :sp-change (not (get-sysprop function 'NO-SP-CHANGE))
-			   :args function)))
-	((and (consp function)
-	      (eq (first function) 'LAMBDA)
-	      (consp (rest function)))
-	 ;; Don't create closure boundary like in c1function
-	 ;; since funob is used in this same environment
-	 (let ((lambda-expr (c1lambda-expr (rest function))))
-	   (make-c1form 'LAMBDA lambda-expr lambda-expr (next-cfun))))
-	((and (consp function)
-	      (eq (first function) 'LAMBDA-BLOCK)
-	      (consp (rest function)))
-	 ;; Don't create closure boundary like in c1function
-	 ;; since funob is used in this same environment
-	 (let* ((block-name (second function)))
-	   (let ((lambda-expr (c1lambda-expr (cddr function) block-name)))
-	     (make-c1form 'LAMBDA lambda-expr lambda-expr (next-cfun)))))
-	(t (cmperr "Malformed function: ~A" fun))))
-
 (defun c1funcall (args)
   (check-args-number 'FUNCALL args 1)
   (let ((fun (first args))
 	(arguments (rest args)))
-    (cond ((and (consp fun)
+    (cond ;; (FUNCALL (LAMBDA ...) ...)
+          ((and (consp fun)
 		(eq (first fun) 'LAMBDA))
 	   (c1expr (optimize-funcall/apply-lambda (cdr fun) arguments nil)))
-	  ((and (consp fun)
+	  ;; (FUNCALL (LAMBDA-BLOCK ...) ...)
+          ((and (consp fun)
 		(eq (first fun) 'LAMBDA-BLOCK))
 	   (setf fun (macroexpand-1 fun))
 	   (c1expr (optimize-funcall/apply-lambda (cdr fun) arguments nil)))
-	  ((and (consp fun)
-		(eq (first fun) 'FUNCTION)
-		(consp (second fun))
-		(member (caadr fun) '(LAMBDA LAMBDA-BLOCK)))
-	   (c1funcall (list* (second fun) arguments)))
+	  ;; (FUNCALL lisp-expression ...)
+	  ((not (and (consp fun)
+		     (eq (first fun) 'FUNCTION)))
+	   (make-c1form* 'FUNCALL :args (c1expr fun) (c1args* arguments)))
+	  ;; (FUNCALL #'GENERALIZED-FUNCTION-NAME ...)
+	  ((si::valid-function-name-p (setq fun (second fun)))
+	   (or (c1call-local fun arguments)
+	       (c1call-global fun arguments)))
+	  ;; (FUNCALL #'(LAMBDA ...) ...)
+	  ((and (consp fun) (eq (first fun) 'LAMBDA))
+	   (c1expr (optimize-funcall/apply-lambda (rest fun) arguments nil)))
+	  ;; (FUNCALL #'(LAMBDA-BLOCK ...) ...)
+	  ((and (consp fun) (eq (first fun) 'LAMBDA-BLOCK))
+	   (setf fun (macroexpand-1 fun))
+	   (c1expr (optimize-funcall/apply-lambda (rest fun) arguments nil)))
 	  (t
-	   (make-c1form* 'FUNCALL :args (c1funob fun) (c1args* arguments))))))
+	   (cmperr "Malformed function name: ~A" fun)))))
 
-(defun c2funcall (funob args &optional loc narg
-			&aux (form (c1form-arg 0 funob)))
+(defun c2funcall (form args &optional loc narg)
   ;; Usually, ARGS holds a list of forms, which are arguments to the
   ;; function.  If, however, the arguments are on VALUES,
   ;; ARGS should be set to the symbol ARGS-PUSHED, and NARG to a location
   ;; containing the number of arguments.
   ;; LOC is the location of the function object (created by save-funob).
-  (case (c1form-name funob)
-    (GLOBAL (c2call-global form args loc t narg))
-    (LOCAL (c2call-local form args narg))
-    (ORDINARY		;;; An ordinary expression.  In this case, if
-              		;;; arguments are already on VALUES, then
-              		;;; LOC cannot be NIL.  Callers of C2FUNCALL must be
-              		;;; responsible for maintaining this condition.
-     (let ((fun (c1form-arg 0 form)))
+  (case (c1form-name form)
+    (GLOBAL (c2call-global (c1form-arg 0 form) args loc t narg))
+    (LOCAL (c2call-local (c1form-arg 0 form) args narg))
+    ;; An ordinary expression.  In this case, if arguments are already on
+    ;; VALUES, then LOC cannot be NIL.  Callers of C2FUNCALL must be
+    ;; responsible for maintaining this condition.
+    (otherwise
+     (let ((*inline-blocks* 0)
+	   (*temp* *temp*))
        (unless loc
-	 (cond ((eq (c1form-name form) 'LOCATION) (setq loc fun))
-	       ((and (eq (c1form-name form) 'VAR)
-		     (not (var-changed-in-forms fun args)))
-		(setq loc fun))
-	       (t
-		(setq loc (make-temp-var))
-		(let ((*destination* loc)) (c2expr* form)))))
-
-       (let ((*inline-blocks* 0))
-	 (c2call-unknown-global nil (if (eq args 'ARGS-PUSHED)
-					args
-					(inline-args args)) loc nil narg)
-	 (close-inline-blocks))))
-    (otherwise (baboon))
-    ))
+	 (setf loc (maybe-save-value form args)))
+       (c2call-unknown-global nil (if (eq args 'ARGS-PUSHED)
+				      args
+				      (inline-args args)) loc nil narg)
+       (close-inline-blocks)))))
 
 (defun maybe-push-args (args)
   (when (or (eq args 'ARGS-PUSHED)
@@ -268,25 +236,20 @@
     )
   )
 
-;;; Functions that use SAVE-FUNOB should rebind *temp*.
-(defun save-funob (funob)
-  (case (c1form-name funob)
-    ((LAMBDA LOCAL))
-    (GLOBAL
-     (let ((fun-name (c1form-arg 0 funob)))
-       (unless (and (inline-possible fun-name)
-		    (or (and (symbolp fun-name) (get-sysprop fun-name 'Lfun))
-			(assoc fun-name *global-funs* :test #'same-fname-p)))
-	 (let* ((temp (make-temp-var))
-		(fdef (list 'FDEFINITION fun-name)))
-	   (wt-nl temp "=" fdef ";")
-	   temp))))
-    (ORDINARY (let* ((temp (make-temp-var))
-                     (*destination* temp))
-                (c2expr* (c1form-arg 0 funob))
-                temp))
-    (otherwise (baboon))
-    ))
+;;; Functions that use MAYBE-SAVE-VALUE should rebind *temp*.
+(defun maybe-save-value (value &optional (other-forms nil other-forms-flag))
+  (let ((name (c1form-name value)))
+    (cond ((eq name 'LOCATION)
+	   (c1form-arg 0 value))
+	  ((and (eq name 'VAR)
+		other-forms-flag
+		(not (var-changed-in-forms (c1form-arg 0 value) other-forms)))
+	   (c1form-arg 0 value))
+	  (t
+	   (let* ((temp (make-temp-var))
+		  (*destination* temp))
+	     (c2expr* value)
+	     temp)))))
 
 ;;;
 ;;; call-loc:
