@@ -248,7 +248,7 @@ dnl   TKLIBS="-ltk -ltcl -lXpm @XLIBS@"
 dnl   AC_DEFINE(TK)
 dnl fi
 AC_SUBST(CLX_INFO)
-if test ${clx} ; then
+if test ${clx} = "yes"; then
   tcp = "yes"
   if test ${shared} = "yes" ; then
     LSP_LIBRARIES="${LSP_LIBRARIES} clx.fas"

@@ -4641,7 +4641,7 @@ else
   fi
 fi
 
-if test ${clx} ; then
+if test ${clx} = "yes"; then
   tcp = "yes"
   if test ${shared} = "yes" ; then
     LSP_LIBRARIES="${LSP_LIBRARIES} clx.fas"
