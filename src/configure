@@ -1505,6 +1505,8 @@ fi;
 # Check whether --with-clx or --without-clx was given.
 if test "${with_clx+set}" = set; then
   withval="$with_clx"
+  clx="${withval}"
+else
   clx=yes
 fi;
 
@@ -4640,6 +4642,7 @@ else
 fi
 
 if test ${clx} ; then
+  tcp = "yes"
   if test ${shared} = "yes" ; then
     LSP_LIBRARIES="${LSP_LIBRARIES} clx.fas"
   else
@@ -4653,7 +4656,7 @@ _ACEOF
 else
   CLX_INFO=""
 fi
-if test "${tcp}" -o "${clx}"; then
+if test "${tcp}" = "yes"; then
   cat >>confdefs.h <<\_ACEOF
 #define TCP 1
 _ACEOF
@@ -4679,7 +4682,7 @@ if test "${cmuformat}" = "yes"; then
 _ACEOF
 
 fi
-if test "${closstreams}"; then
+if test "${closstreams}" = "yes"; then
   cat >>confdefs.h <<\_ACEOF
 #define ECL_CLOS_STREAMS 1
 _ACEOF
@@ -4729,7 +4732,7 @@ if test ! ${opcode8} = "no" ; then
 _ACEOF
 
 fi
-if test "${asdf}"; then
+if test "${asdf}" = "yes"; then
   ECL_MODULES="${ECL_MODULES} asdf";
 fi
 if test "${GCC}" = "yes"; then

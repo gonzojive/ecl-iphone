@@ -104,7 +104,7 @@ AC_ARG_WITH(clos-streams,
 AC_ARG_WITH(clx,
 	AS_HELP_STRING([--with-clx],
 		       [include CLX library (default is NO)]),
-	[clx=yes])
+	[clx="${withval}"],[clx=yes])
 AC_ARG_WITH(cxx,
 	AS_HELP_STRING([--with-cxx],
 		       [build ECL using C++ compiler (default is NO)]),
@@ -249,6 +249,7 @@ dnl   AC_DEFINE(TK)
 dnl fi
 AC_SUBST(CLX_INFO)
 if test ${clx} ; then
+  tcp = "yes"
   if test ${shared} = "yes" ; then
     LSP_LIBRARIES="${LSP_LIBRARIES} clx.fas"
   else
@@ -259,7 +260,7 @@ if test ${clx} ; then
 else
   CLX_INFO=""
 fi
-if test "${tcp}" -o "${clx}"; then
+if test "${tcp}" = "yes"; then
   AC_DEFINE(TCP)
   EXTRA_OBJS="${EXTRA_OBJS} tcp.${OBJEXT}"
   if test ${shared} = "yes" ; then
@@ -276,7 +277,7 @@ if test "${cmuformat}" = "yes"; then
   closstreams="yes"
   AC_DEFINE(ECL_CMU_FORMAT)
 fi
-if test "${closstreams}"; then
+if test "${closstreams}" = "yes"; then
   AC_DEFINE(ECL_CLOS_STREAMS)
 fi
 if test "${locative}" ; then
@@ -310,7 +311,7 @@ fi
 if test ! ${opcode8} = "no" ; then
   AC_DEFINE(ECL_SMALL_BYTECODES)
 fi
-if test "${asdf}"; then
+if test "${asdf}" = "yes"; then
   ECL_MODULES="${ECL_MODULES} asdf";
 fi
 dnl ---------------------------------------------------------------------
