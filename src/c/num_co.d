@@ -215,7 +215,7 @@ floor2(cl_object x, cl_object y)
 		  cl_object r = big_register1_get();
 		  cl_object j = big_register2_get();
 		  mpz_set_si(j->big.big_num, fix(x));
-		  mpz_fdiv_qr(q->big.big_num, r->big.big_num, y->big.big_num, j->big.big_num);
+		  mpz_fdiv_qr(q->big.big_num, r->big.big_num, j->big.big_num, y->big.big_num);
 		  VALUES(0) = big_register_normalize(q);
 		  VALUES(1) = big_register_normalize(r);
 		  break;
@@ -394,7 +394,7 @@ ceiling2(cl_object x, cl_object y)
 		  cl_object r = big_register1_get();
 		  cl_object j = big_register2_get();
 		  mpz_set_si(j->big.big_num, fix(x));
-		  mpz_cdiv_qr(q->big.big_num, r->big.big_num, y->big.big_num, j->big.big_num);
+		  mpz_cdiv_qr(q->big.big_num, r->big.big_num, j->big.big_num, y->big.big_num);
 		  VALUES(0) = big_register_normalize(q);
 		  VALUES(1) = big_register_normalize(r);
 		  break;
