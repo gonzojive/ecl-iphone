@@ -1165,12 +1165,7 @@ sharp_dollar_reader(cl_object in, cl_object c, cl_object d)
 	if (d != Cnil && !read_suppress)
 		extra_argument('$', in, d);
 	c = read_object(in);
-	if (!FIXNUMP(c))
-		FEreader_error("Cannot make a random-state with the value ~S.",
-			       in, 1, c);
-	output = cl_alloc_object(t_random);
-	output->random.value = fix(c);
-	@(return output)
+	return cl_make_random_state(1, c);
 }
 
 /*
