@@ -22,7 +22,7 @@ ecl_allocate_instance(cl_object clas, int size)
 	int i;
 	CLASS_OF(x) = clas;
 	for (i = 0;  i < size;  i++)
-		x->instance.slots[i] = OBJNULL;
+		x->instance.slots[i] = ECL_UNBOUND;
 	return(x);
 }
 
@@ -58,7 +58,7 @@ si_change_instance(cl_object x, cl_object clas, cl_object size, cl_object corr)
 	    corr = CDR(corr);
 	  }
 	  else
-	    x->instance.slots[i] = OBJNULL;
+	    x->instance.slots[i] = ECL_UNBOUND;
 	}
 	@(return) /* FIXME! Is this what we need? */
 }
@@ -116,7 +116,7 @@ si_instance_ref_safe(cl_object x, cl_object index)
 	    (i = fix(index)) < 0 || i >= x->instance.length)
 		FEerror("~S is an illegal slot index.", 1, index);
 	x = x->instance.slots[i];
-	if (x == OBJNULL)
+	if (x == ECL_UNBOUND)
 		FEerror("Slot index ~S unbound", 1, index);
 	@(return x)
 }
@@ -157,13 +157,13 @@ si_unbound()
 {
 	/* Returns an object that cannot be read or written and which
 	   is used to represent an unitialized slot */
-	@(return OBJNULL)
+	@(return ECL_UNBOUND)
 }
 
 cl_object
 si_sl_boundp(cl_object x)
 {
-	@(return ((x == OBJNULL) ? Cnil : Ct))
+	@(return ((x == ECL_UNBOUND) ? Cnil : Ct))
 }
 
 cl_object
@@ -176,7 +176,7 @@ si_sl_makunbound(cl_object x, cl_object index)
 	if (!FIXNUMP(index) ||
 	    (i = fix(index)) >= x->instance.length || i < 0)
 		FEerror("~S is an illegal slot index.", 1, index);
-	x->instance.slots[i] = OBJNULL;
+	x->instance.slots[i] = ECL_UNBOUND;
 	@(return x)
 }
 

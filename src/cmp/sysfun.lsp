@@ -1049,9 +1049,9 @@ type_of(#0)==t_bitvector"))
 (si::INSTANCE-CLASS-SET (t t) T)
 (si::INSTANCEP (t) T nil t)
 (si::UNBOUND nil T nil t
-	:inline-always (nil T nil nil "OBJNULL"))
+	:inline-always (nil T nil nil "ECL_UNBOUND"))
 (si::SL-BOUNDP (t) T nil t
-	:inline-always ((t) :bool nil nil "(#0)!=OBJNULL"))
+	:inline-always ((t) :bool nil nil "(#0)!=ECL_UNBOUND"))
 (si::SL-MAKUNBOUND (t fixnum) T nil t)
 )) ; end of of #+clos
 
