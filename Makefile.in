@@ -28,7 +28,6 @@
 #      everything deleted by distclean.
 
 SHELL = /bin/sh
-MAKE = make  # BSD doesn't have it as a default.
 MACHINE = @MACHINE@
 
 # ========================= Last release ================================
@@ -78,9 +77,9 @@ Makefile: Makefile.in build/config.status
 # ==================== Installation ====================
 
 install: build/Makefile
-	(cd build; make install)
+	(cd build; $(MAKE) install)
 uninstall:
-	(cd build; make uninstall)
+	(cd build; $(MAKE) uninstall)
 
 # ==================== Documentation ====================
 
@@ -135,7 +134,7 @@ doc: build/doc/index.html
 	-mkdir doc
 	cp build/doc/*.html doc
 build/doc/index.html:
-	cd build/doc; make
+	cd build/doc; $(MAKE)
 
 source-dist: ecl.tgz ecl-tests.tgz
 
@@ -160,7 +159,7 @@ binary-dist: all
 	for i in tmp$(bindir) tmp$(infodir) tmp$(mandir) tmp$(libdir); do \
 	(echo $$i; IFS="/"; for k in $$i; do echo $$k; (test -d $$k || mkdir $$k); chmod 755 $$k; cd $$k; done); \
 	done
-	PREFIX=`pwd`/tmp; cd build; make install PREFIX="$${PREFIX}"
+	PREFIX=`pwd`/tmp; cd build; $(MAKE) install PREFIX="$${PREFIX}"
 	su -c "chown -R root.root tmp && cd tmp; tar czf ../ecl-$(VERSION)-$(MACHINE).tgz * && cd .. && rm -rf tmp"
 
 dist:
