@@ -20,7 +20,7 @@ pthread_mutex_t ecl_threads_mutex = PTHREAD_MUTEX_INITIALIZER;
 static struct cl_env_struct cl_envs_array[128];
 static pthread_key_t cl_env_key;
 
-extern void ecl_int_env(struct cl_env_struct *env);
+extern void ecl_intt_env(struct cl_env_struct *env);
 
 struct cl_env_struct *
 ecl_thread_env(void)
@@ -28,35 +28,43 @@ ecl_thread_env(void)
 	return pthread_getspecific(cl_env_key);
 }
 
+/*----------------------------------------------------------------------
+ * THREAD OBJECT
+ */
+
 static void
 thread_cleanup(void *env)
 {
-	cl_object *p, l;
+	cl_object *p, l, process;
 
 	pthread_mutex_lock(&ecl_threads_mutex);
-	p = &cl_core.threads;
+	p = &cl_core.processes;
 	for (l = *p; l != Cnil; ) {
-		cl_object thread = CAR(l);
-		if (thread->thread.env == env) {
+		process = CAR(l);
+		if (process->process.env == env) {
 			*p = CDR(l);
 			break;
 		}
 		p = &CDR(l);
 		l = *p;
 	}
+	cl_dealloc(process->process.thread, sizeof(pthread_t));
+	process->process.thread = NULL;
 	pthread_mutex_unlock(&ecl_threads_mutex);
 }
 
 static void *
-thread_entry_point(cl_object thread)
+thread_entry_point(cl_object process)
 {
 	/* 1) Setup the environment for the execution of the thread */
-	pthread_cleanup_push(thread_cleanup, (void *)thread->thread.env);
-	pthread_setspecific(cl_env_key, thread->thread.env);
-	ecl_init_env(thread->thread.env);
+	pthread_cleanup_push(thread_cleanup, (void *)process->process.env);
+	pthread_setspecific(cl_env_key, process->process.env);
+	ecl_init_env(process->process.env);
 
 	/* 2) Execute the code */
-	cl_apply(2, thread->thread.function, thread->thread.args);
+	bds_bind(@'si::*current-process*', process);
+	cl_apply(2, process->process.function, process->process.args);
+	bds_unwind1();
 
 	/* 3) Remove the thread. thread_cleanup is automatically invoked. */
 	pthread_cleanup_pop(1);
@@ -64,59 +72,137 @@ thread_entry_point(cl_object thread)
 }
 
 cl_object
-si_thread_launch(int narg, cl_object function, ...)
+si_make_process(int narg, cl_object name, cl_object function, ...)
 {
-	cl_object thread;
-	pthread_t *posix_thread;
-	int code;
+	cl_object process;
 	cl_va_list args;
-	cl_va_start(args, function, narg, 1);
+	cl_va_start(args, function, narg, 2);
 
-	posix_thread = cl_alloc_atomic(sizeof(*posix_thread));
-	thread = cl_alloc_object(t_thread);
-	thread->thread.function = function;
-	thread->thread.args = cl_grab_rest_args(args);
-	thread->thread.pthread = posix_thread;
-	thread->thread.env = cl_alloc(sizeof(*thread->thread.env));
-	pthread_mutex_lock(&ecl_threads_mutex);
-	code = pthread_create(posix_thread, NULL, thread_entry_point, thread);
-	if (!code) {
-		/* If everything went ok, add the thread to the list. */
-		cl_core.threads = CONS(thread, cl_core.threads);
-	}
-	pthread_mutex_unlock(&ecl_threads_mutex);
-	@(return (code? Cnil : thread))
+	process = cl_alloc_object(t_process);
+	process->process.name = name;
+	process->process.function = function;
+	process->process.args = cl_grab_rest_args(args);
+	process->process.thread = NULL;
+	process->process.env = cl_alloc(sizeof(*process->process.env));
+	process->process.env->bindings_hash =
+		si_copy_hash_table(cl_env.bindings_hash);
+	return si_restart_process(process);
 }
 
 cl_object
-si_thread_list(void)
-{
-	@(return cl_copy_list(cl_core.threads))
-}
-
-cl_object
-si_thread_kill(cl_object thread)
+si_kill_process(cl_object process)
 {
 	cl_object output = Cnil;
-	if (type_of(thread) != t_thread)
-		FEwrong_type_argument(@'si::thread', thread);
-	if (thread->thread.pthread) {
-		if (pthread_cancel(*((pthread_t*)thread->thread.pthread)) == 0)
+	if (type_of(process) != t_process)
+		FEwrong_type_argument(@'si::process', process);
+	if (process->process.thread) {
+		if (pthread_cancel(*((pthread_t*)process->process.thread)) == 0)
 			output = Ct;
 	}
 	@(return output)
 }
 
 cl_object
-si_thread_exit(void)
+si_exit_process(void)
 {
 	pthread_exit(NULL);
 }
 
+cl_object
+si_restart_process(cl_object process)
+{
+	pthread_t *posix_thread;
+	int code;
+
+	if (type_of(process) != t_process)
+		FEwrong_type_argument(@'si::process', process);
+	posix_thread = cl_alloc_atomic(sizeof(*posix_thread));
+	process->process.thread = posix_thread;
+	pthread_mutex_lock(&ecl_threads_mutex);
+	code = pthread_create(posix_thread, NULL, thread_entry_point, process);
+	if (!code) {
+		/* If everything went ok, add the thread to the list. */
+		cl_core.processes = CONS(process, cl_core.processes);
+	}
+	pthread_mutex_unlock(&ecl_threads_mutex);
+	@(return (code? Cnil : process))
+}
+
+cl_object
+si_all_processes(void)
+{
+	@(return cl_copy_list(cl_core.processes))
+}
+
+cl_object
+si_process_name(cl_object process)
+{
+	if (type_of(process) != t_process)
+		FEwrong_type_argument(@'si::process', process);
+	@(return process->process.name)
+}
+
+cl_object
+si_process_active_p(cl_object process)
+{
+	/* FIXME! */
+	if (type_of(process) != t_process)
+		FEwrong_type_argument(@'si::process', process);
+	@(return (process->process.thread != NULL? Ct : Cnil))
+}
+
+cl_object
+si_process_whostate(cl_object process)
+{
+	/* FIXME! */
+	if (type_of(process) != t_process)
+		FEwrong_type_argument(@'si::process', process);
+	@(return (cl_core.null_string))
+}
+
+
+/*----------------------------------------------------------------------
+ * LOCKS or MUTEX
+ */
+
+@(defun si::make-lock (&key name)
+@
+	cl_object output = cl_alloc_object(t_lock);
+	output->lock.name = name;
+	output->lock.mutex = cl_alloc(sizeof(pthread_mutex_t));
+	pthread_mutex_init(output->lock.mutex, NULL);
+	@(return output)
+@)
+
+cl_object
+si_giveup_lock(cl_object lock)
+{
+	if (type_of(lock) != t_lock)
+		FEwrong_type_argument(@'si::lock', lock);
+	pthread_mutex_unlock(lock->lock.mutex);
+	@(return Ct)
+}
+
+@(defun si::get-lock (lock &optional (wait Ct))
+	cl_object output;
+@
+	if (type_of(lock) != t_lock)
+		FEwrong_type_argument(@'si::lock', lock);
+	if (wait == Ct) {
+		pthread_mutex_lock(lock->lock.mutex);
+		output = Ct;
+	} else if (pthread_mutex_trylock(lock->lock.mutex) == 0) {
+		output = Ct;
+	} else {
+		output = Cnil;
+	}
+	@(return output)
+@)
+
 void
 init_threads()
 {
-	cl_core.threads = OBJNULL;
+	cl_core.processes = OBJNULL;
 	pthread_mutex_init(&ecl_threads_mutex, NULL);
 	pthread_key_create(&cl_env_key, NULL);
 	pthread_setspecific(cl_env_key, cl_alloc(sizeof(struct cl_env_struct)));

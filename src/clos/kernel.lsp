@@ -142,7 +142,7 @@
 	(SIMPLE-VECTOR (find-class 'vector))
 	(SIMPLE-BIT-VECTOR (find-class 'bit-vector))
 	(SIMPLE-STRING (find-class 'string))
-	((CONT THREAD) (find-class 't))
+	((SI::PROCESS SI::LOCK) (find-class type))
 	(otherwise (find-class 't)))))
 
 (defun classp (obj)

@@ -113,7 +113,7 @@ number is zero.  The optional X is simply ignored."
 			stream random-state readtable pathname
 			bytecodes cfun cclosure
 			#-clos structure #+clos instance #+clos generic-function
-			#+threads si::thread
+			#+threads si::process #+threads si::lock
 			#+ffi si::foreign))
 	   (tl type-list (cdr tl))
 	   (i 0 (+ i (if (nth 2 l) (nth 2 l) 0))))

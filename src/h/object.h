@@ -400,32 +400,21 @@ struct ecl_dummy {
 };
 
 #ifdef ECL_THREADS
-struct ecl_thread {
+struct ecl_process {
 	HEADER;
-	struct cl_env_struct *env;
+	cl_object name;
 	cl_object function;
 	cl_object args;
-	void *pthread;
+	void *thread;
+	struct cl_env_struct *env;
+};
+
+struct ecl_lock {
+	HEADER;
+	cl_object name;
+	void *mutex;
 };
 #endif
-
-#ifdef THREADS
-struct ecl_cont {
-				/* already resumed */
-				/* timed out */
-	HEADER(resumed, timed_out);
-	cl_object thread;	/* its thread */
-};
-
-struct ecl_thread {
-	HEADER;
-	struct pd *self;	/* the thread itself (really a *pd) */
-	cl_index size;		/* its size */
-	cl_object fun;		/* initial function */
-	cl_object cont;		/* its cont */
-};
-#endif /* THREADS */
-
 
 #ifdef CLOS
 #define CLASS_OF(x)		(x)->instance.clas
@@ -474,12 +463,9 @@ union cl_lispunion {
 	struct ecl_structure	str;	/*  structure  */
 #endif /* CLOS */
 #ifdef ECL_THREADS
-	struct ecl_thread	thread; /*  thread  */
+	struct ecl_process	process; /*  process  */
+	struct ecl_lock		lock; /*  lock  */
 #endif
-#ifdef THREADS
-	struct ecl_cont		cont;	/*  continuation  */
-	struct ecl_thread	thread;	/*  thread  */
-#endif /* THREADS */
 	struct ecl_codeblock	cblock; /*  codeblock  */
 #ifdef ECL_FFI
 	struct ecl_foreign	foreign; /* user defined data type */
@@ -519,11 +505,8 @@ typedef enum {
 	t_structure,		/* 17 */
 #endif /* CLOS */
 #ifdef ECL_THREADS
-	t_thread,
-#endif
-#ifdef THREADS
-	t_cont,			/* 19 */
-	t_thread,		/* 20 */
+	t_process,
+	t_lock,
 #endif
 	t_codeblock,		/* 21 */
 #ifdef ECL_FFI

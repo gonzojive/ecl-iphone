@@ -410,11 +410,6 @@ init_stacks(int *new_cs_org)
 	cl_env.bds_org = (bds_ptr)cl_alloc(size * sizeof(*cl_env.bds_org));
 	cl_env.bds_top = cl_env.bds_org-1;
 	cl_env.bds_limit = &cl_env.bds_org[size - 2*BDSGETA];
-#ifdef ECL_THREADS
-	cl_env.bindings_hash = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024),
-						   make_shortfloat(1.5),	
-						   make_shortfloat(0.7));
-#endif
 
 	cl_env.ihs_top = &ihs_org;
 	ihs_org.function = @'si::top-level';

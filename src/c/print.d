@@ -1155,23 +1155,6 @@ _write_object(cl_object x, int level)
 		write_addr(x);
 		write_ch('>');
 		break;
-#ifdef THREADS
-      	case t_cont:
-		if (cl_env.print_readably) FEprint_not_readable(x);
-		write_str("#<cont ");
-		_write_object(x->cn.cn_thread, level);
-		write_ch('>');
-		break;
-
-	case t_thread:
-		if (cl_env.print_readably) FEprint_not_readable(x);
-		write_str("#<thread ");
-		_write_object(x->thread.entry, level);
-		write_ch(' ');
-		write_addr(x);
-		write_ch('>');
-		break;
-#endif /* THREADS */
 #ifdef CLOS
 	case t_instance:
 		if (type_of(CLASS_OF(x)) != t_instance)
@@ -1189,11 +1172,16 @@ _write_object(cl_object x, int level)
 		break;
 #endif /* ECL_FFI */
 #ifdef ECL_THREADS
-	case t_thread:
+	case t_process:
 		if (cl_env.print_readably) FEprint_not_readable(x);
-		write_str("#<thread ");
-		/*_write_object(x->foreign.tag, level);*/
-		write_addr(x->thread.pthread);
+		write_str("#<process ");
+		write_addr(x);
+		write_ch('>');
+		break;
+	case t_lock:
+		if (cl_env.print_readably) FEprint_not_readable(x);
+		write_str("#<lock ");
+		write_addr(x);
 		write_ch('>');
 		break;
 #endif /* ECL_THREADS */

@@ -12,6 +12,9 @@
     See file '../Copyright' for full details.
 */
 
+#ifdef ECL_THREADS
+#include <pthread.h>
+#endif
 #include "ecl.h"
 #include "page.h"
 #include "gc/gc.h"
@@ -51,6 +54,12 @@ finalize(cl_object o, cl_object data)
 			fclose(o->stream.file);
 		o->stream.file = NULL;
 		break;
+#ifdef ECL_THREADS
+	case t_lock:
+		if (o->lock.mutex != NULL)
+			pthread_mutex_destroy(o->lock.mutex);
+		break;
+#endif
 	default:}
 	} CL_NEWENV_END;
 }
@@ -79,6 +88,9 @@ cl_alloc_object(cl_type t)
 	if (t == t_stream
 #ifdef ENABLE_DLOPEN
 	    || t == t_codeblock
+#endif
+#ifdef ENABLE_THREADS
+	    || t == t_lock
 #endif
 	) {
 		GC_finalization_proc ofn;
@@ -173,12 +185,9 @@ init_alloc(void)
 	init_tm(t_instance, "FOREIGN", sizeof(struct ecl_foreign));
 #endif
 #ifdef ECL_THREADS
-	init_tm(t_thread, "THREAD", sizeof(struct ecl_thread));
+	init_tm(t_process, "PROCESS", sizeof(struct ecl_process));
+	init_tm(t_lock, "LOCK", sizeof(struct ecl_lock));
 #endif
-#ifdef THREADS
-	init_tm(t_cont, "CONT", sizeof(struct ecl_cont));
-	init_tm(t_thread, "THREAD", sizeof(struct ecl_thread));
-#endif /* THREADS */
 
 	old_GC_push_other_roots = GC_push_other_roots;
 	GC_push_other_roots = stacks_scanner;
@@ -222,14 +231,14 @@ static void
 stacks_scanner(void)
 {
 #ifdef ECL_THREADS
-	cl_object l = cl_core.threads;
+	cl_object l = cl_core.processes;
 	struct cl_env_struct cl_env_ptr;
 	if (l == OBJNULL) {
 		ecl_mark_env(&cl_env);
 	} else {
-		for (l = cl_core.threads; l != Cnil; l = CDR(l)) {
-			cl_object thread = CAR(l);
-			struct cl_env_struct *env = thread->thread.env;
+		for (l = cl_core.processes; l != Cnil; l = CDR(l)) {
+			cl_object process = CAR(l);
+			struct cl_env_struct *env = process->process.env;
 			ecl_mark_env(env);
 		}
 	}

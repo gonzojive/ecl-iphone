@@ -520,8 +520,25 @@ cl_clrhash(cl_object ht)
 	@(return ht)
 }
 
-/* FIXME! HASH-TABLE-SIZE is missing! */
-/* FIXME! HASH-TABLE-TEST is missing! */
+cl_object
+cl_hash_table_test(cl_object ht)
+{
+	cl_object output;
+	switch(ht->hash.test) {
+	    case htt_eq: output = @'eq'; break;
+	    case htt_eql: output = @'eql'; break;
+	    case htt_equal: output = @'equal'; break;
+	    case htt_equalp: output = @'equalp'; break;
+	    default: output = Cnil;
+	}
+	@(return output)
+}
+
+cl_object
+cl_hash_table_size(cl_object ht)
+{
+	@(return MAKE_FIXNUM(ht->hash.size))
+}
 
 cl_object
 cl_hash_table_count(cl_object ht)
@@ -591,4 +608,18 @@ cl_maphash(cl_object fun, cl_object ht)
 				  ht->hash.data[i].value);
 	}
 	@(return Cnil)
+}
+
+cl_object
+si_copy_hash_table(cl_object orig)
+{
+	cl_object hash;
+	hash = cl__make_hash_table(cl_hash_table_test(orig),
+				   cl_hash_table_size(orig),
+				   cl_hash_table_rehash_size(orig),
+				   cl_hash_table_rehash_threshold(orig));
+	memcpy(hash->hash.data, orig->hash.data,
+	       orig->hash.size * sizeof(*orig->hash.data));
+	hash->hash.entries = orig->hash.entries;
+	@(return hash)
 }

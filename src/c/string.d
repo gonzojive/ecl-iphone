@@ -667,9 +667,7 @@ cl_string_push_extend(cl_object s, int c)
 		if (!s->string.adjustable)
 			FEerror("string-push-extend: the string ~S is not adjustable.",
 				1, s);
-#ifdef THREADS
 		start_critical_section(); /* avoid losing p */
-#endif
 		if (s->string.dim >= ADIMLIM/2)
 			FEerror("Can't extend the string.", 0);
 		new_length = s->string.dim * 2;
@@ -677,9 +675,7 @@ cl_string_push_extend(cl_object s, int c)
 		memcpy(p, s->string.self, s->string.dim * sizeof(char));
 		s->string.dim = new_length;
 		adjust_displaced(s, p - (char *)s->string.self);
-#ifdef THREADS
 		end_critical_section();
-#endif
 	}
 	s->string.self[s->string.fillp++] = c;
 	return c;

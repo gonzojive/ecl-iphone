@@ -1694,6 +1694,8 @@ ECL 0.9d
   - The value of LDFLAGS supplied at configuration time, was not used
     when building shared libraries or FASL files.
 
+  - HASH-TABLE-SIZE and HASH-TABLE-TEST have been finally implemented.
+
 * Documentation:
 
   - New manual page documents the scripting facilities of ECL

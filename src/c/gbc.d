@@ -14,6 +14,9 @@
     See file '../Copyright' for full details.
 */
 
+#ifdef ECL_THREADS
+#include <pthread.h>
+#endif
 #include "ecl.h"
 #include "page.h"
 #include "internal.h"
@@ -345,16 +348,18 @@ BEGIN:
 		mark_next(x->cclosure.env);
 		break;
 
-#ifdef THREADS
-	case t_cont:
-		mark_next(x->cn.cn_thread);
-		break;
-
-	case t_thread:
-/* Already marked by malloc
- 		mark_contblock(x->thread.data, x->thread.size);
+#ifdef ECL_THREADS
+	case t_process:
+/* Already marked by malloc: x->process.env
  */
-		mark_next(x->thread.entry);
+#error "The old garbage collector does not support threads"
+		mark_contblock(x->process.pthread, sizeof(*x->process.thread));
+		mark_object(x->process.function);
+		mark_next(x->process.args);
+		break;
+	case t_lock:
+		mark_contblock(x->lock.mutex, sizeof(*x->lock.mutex));
+		mark_next(x->lock.name);
 		break;
 #endif /* THREADS */
 #ifdef CLOS
@@ -606,6 +611,12 @@ sweep_phase(void)
 				if (o->stream.file != NULL)
 					fclose(o->stream.file);
 				o->stream.file = NULL;
+#ifdef ECL_THREADS
+			case t_lock:
+				if (o->lock.mutex != NULL)
+					pthread_mutex_destroy(o->lock.mutex);
+				break;
+#endif
 			}
 			((struct freelist *)x)->f_link = f;
 			x->d.m = FREE;

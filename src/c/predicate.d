@@ -196,10 +196,6 @@ cl_object
 cl_commonp(cl_object x)
 {
 	cl_object output = (FALSE /* type_of(x) == t_spice */
-#ifdef THREADS
-		     || type_of(x) == t_thread
-		     || type_of(x) == t_cont
-#endif
 #ifdef CLOS
 		     || (type_of(x) == t_instance && x->instance.isgf)
 #endif

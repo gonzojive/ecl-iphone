@@ -129,4 +129,6 @@
 	      (logical-pathname pathname)
 	    (hash-table)
 	    (random-state)
-	    (readtable)))
+	    (readtable)
+	    #+threads (si::process)
+	    #+threads (si::lock)))

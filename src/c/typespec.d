@@ -345,20 +345,15 @@ cl_type_of(cl_object x)
 	case t_cclosure:
 		t = @'function'; break;
 
-#ifdef THREADS
-	case t_cont:
-		t = @'cont'; break;
-
-	case t_thread:
-		t = @'thread'; break;
-#endif
 #ifdef ECL_FFI
 	case t_foreign:
 		t = @'si::foreign-data'; break;
 #endif
 #ifdef ECL_THREADS
-	case t_thread:
-		t = @'si::thread'; break;
+	case t_process:
+		t = @'si::process'; break;
+	case t_lock:
+		t = @'si::lock'; break;
 #endif
 	default:
 		error("not a lisp data object");

@@ -433,8 +433,8 @@ cl_symbols[] = {
 {"HASH-TABLE-P", CL_ORDINARY, cl_hash_table_p, 1, OBJNULL},
 {"HASH-TABLE-REHASH-SIZE", CL_ORDINARY, cl_hash_table_rehash_size, 1, OBJNULL},
 {"HASH-TABLE-REHASH-THRESHOLD", CL_ORDINARY, cl_hash_table_rehash_threshold, 1, OBJNULL},
-{"HASH-TABLE-SIZE", CL_ORDINARY, NULL, 1, OBJNULL},
-{"HASH-TABLE-TEST", CL_ORDINARY, NULL, 1, OBJNULL},
+{"HASH-TABLE-SIZE", CL_ORDINARY, cl_hash_table_size, 1, OBJNULL},
+{"HASH-TABLE-TEST", CL_ORDINARY, cl_hash_table_test, 1, OBJNULL},
 {"HOST-NAMESTRING", CL_ORDINARY, cl_host_namestring, 1, OBJNULL},
 {"IDENTITY", CL_ORDINARY, cl_identity, 1, OBJNULL},
 {"IGNORABLE", CL_ORDINARY, NULL, -1, OBJNULL},
@@ -1196,37 +1196,6 @@ cl_symbols[] = {
 {SYS_ "RECORD-SOURCE-PATHNAME", SI_ORDINARY, NULL, -1, OBJNULL},
 #endif
 
-#ifdef THREADS
-{"CONT", CL_ORDINARY, NULL, -1, OBJNULL},
-{"DEAD", CL_ORDINARY, NULL, -1, OBJNULL},
-{"RUNNING", CL_ORDINARY, NULL, -1, OBJNULL},
-{"STOPPED", CL_ORDINARY, NULL, -1, OBJNULL},
-{"SUSPENDED", CL_ORDINARY, NULL, -1, OBJNULL},
-{"THREAD", CL_ORDINARY, NULL, -1, OBJNULL},
-{"WAITING", CL_ORDINARY, NULL, -1, OBJNULL},
-{SYS_ "THREAD-BREAK-IN", SI_ORDINARY, si_thread_break_in, -1, OBJNULL},
-{SYS_ "THREAD-BREAK-QUIT", SI_ORDINARY, si_thread_break_quit, -1, OBJNULL},
-{SYS_ "THREAD-BREAK-RESUME", SI_ORDINARY, si_thread_break_resume, -1, OBJNULL},
-{SYS_ "THREAD-TOP-LEVEL", SI_ORDINARY, NULL, -1, OBJNULL},
-{"MAKE-THREAD", CL_ORDINARY, cl_make_thread, -1, OBJNULL},
-{"DEACTIVATE", CL_ORDINARY, cl_deactivate, -1, OBJNULL},
-{"REACTIVATE", CL_ORDINARY, cl_reactivate, -1, OBJNULL},
-{"KILL-THREAD", CL_ORDINARY, cl_kill_thread, -1, OBJNULL},
-{"CURRENT-THREAD", CL_ORDINARY, cl_current_thread, -1, OBJNULL},
-{"THREAD-STATUS", CL_ORDINARY, cl_thread_status, -1, OBJNULL},
-{"THREAD-LIST", CL_ORDINARY, cl_thread_list, -1, OBJNULL},
-{"MAKE-CONTINUATION", CL_ORDINARY, cl_make_continuation, -1, OBJNULL},
-{"THREAD-OF", CL_ORDINARY, cl_thread_of, -1, OBJNULL},
-{"CONTINUATION-OF", CL_ORDINARY, cl_continuation_of, -1, OBJNULL},
-{"RESUME", CL_ORDINARY, cl_resume, -1, OBJNULL},
-{"%DISABLE-SCHEDULER", CL_ORDINARY, cl_disable_scheduler, -1, OBJNULL},
-{"%ENABLE-SCHEDULER", CL_ORDINARY, cl_enable_scheduler, -1, OBJNULL},
-{"%SUSPEND", CL_ORDINARY, cl_suspend, -1, OBJNULL},
-{"%DELAY", CL_ORDINARY, cl_delay, -1, OBJNULL},
-{"%THREAD-WAIT", CL_ORDINARY, cl_thread_wait, -1, OBJNULL},
-{"%THREAD-WAIT-WITH-TIMEOUT", CL_ORDINARY, cl_thread_wait_with_timeout, -1, OBJNULL},
-#endif
-
 #ifdef PROFILE
 {SYS_ "PROFILE", SI_ORDINARY, si_profile, -1, OBJNULL},
 {SYS_ "CLEAR-PROFILE", SI_ORDINARY, si_clear_profile, -1, OBJNULL},
@@ -1378,11 +1347,19 @@ cl_symbols[] = {
 #endif
 
 #ifdef ECL_THREADS
-{SYS_ "THREAD", CL_ORDINARY, NULL, -1, OBJNULL},
-{SYS_ "THREAD-LAUNCH", SI_ORDINARY, si_thread_launch, -1, OBJNULL},
-{SYS_ "THREAD-LIST", SI_ORDINARY, si_thread_list, 0, OBJNULL},
-{SYS_ "THREAD-KILL", SI_ORDINARY, si_thread_kill, 1, OBJNULL},
-{SYS_ "THREAD-EXIT", SI_ORDINARY, si_thread_exit, 0, OBJNULL},
+{SYS_ "PROCESS", CL_ORDINARY, NULL, -1, OBJNULL},
+{SYS_ "MAKE-PROCESS", SI_ORDINARY, si_make_process, -1, OBJNULL},
+{SYS_ "DESTROY-PROCESS", SI_ORDINARY, si_kill_process, 1, OBJNULL},
+{SYS_ "EXIT-PROCESS", SI_ORDINARY, si_exit_process, 0, OBJNULL},
+{SYS_ "ALL-PROCESSES", SI_ORDINARY, si_all_processes, 0, OBJNULL},
+{SYS_ "PROCESS-NAME", SI_ORDINARY, si_process_name, 1, OBJNULL},
+{SYS_ "PROCESS-ACTIVE-P", SI_ORDINARY, si_process_active_p, 1, OBJNULL},
+{SYS_ "PROCESS-WHOSTATE", SI_ORDINARY, si_process_whostate, 1, OBJNULL},
+{SYS_ "LOCK", CL_ORDINARY, NULL, -1, OBJNULL},
+{SYS_ "MAKE-LOCK", CL_ORDINARY, si_make_lock, -1, OBJNULL},
+{SYS_ "GET-LOCK", CL_ORDINARY, si_get_lock, -1, OBJNULL},
+{SYS_ "GIVEUP-LOCK", CL_ORDINARY, si_giveup_lock, 1, OBJNULL},
+{SYS_ "*CURRENT-PROCESS*", CL_SPECIAL, NULL, -1, OBJNULL},
 #endif
 
 /* Tag for end of list */

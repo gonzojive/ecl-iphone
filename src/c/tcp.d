@@ -87,19 +87,16 @@ int connect_to_server(char *host, int port)
     setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, &mi, sizeof (int));
   }
 #endif
-#ifdef THREADS
   start_critical_section();
-#endif
   if (connect(fd, addr, addrlen) == -1) {
     (void) close (fd);
-#ifdef THREADS
     end_critical_section();
-#endif
     return(0);		/* errno set by system call. */
   }
   /*
    * Return the id if the connection succeeded.
    */
+  end_critical_section();
   return(fd);
 }
 

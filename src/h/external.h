@@ -168,7 +168,7 @@ struct cl_core_struct {
 	cl_object system_properties;
 
 #ifdef ECL_THREADS
-	cl_object threads;
+	cl_object processes;
 #endif
 };
 
@@ -585,9 +585,12 @@ extern cl_object cl_sxhash(cl_object key);
 extern cl_object cl_maphash(cl_object fun, cl_object ht);
 extern cl_object cl_hash_table_rehash_size(cl_object ht);
 extern cl_object cl_hash_table_rehash_threshold(cl_object ht);
+extern cl_object cl_hash_table_size(cl_object ht);
+extern cl_object cl_hash_table_test(cl_object ht);
 extern cl_object si_hash_table_iterator(cl_object ht);
 extern cl_object cl_make_hash_table _ARGS((int narg, ...));
 extern cl_object cl_gethash _ARGS((int narg, cl_object key, cl_object ht, ...));
+extern cl_object si_copy_hash_table(cl_object orig);
 
 extern cl_hashkey hash_eq(cl_object x);
 extern cl_hashkey hash_eql(cl_object x);
@@ -725,42 +728,6 @@ extern cl_object si_load_source(cl_object file, cl_object verbose, cl_object pri
 extern cl_object si_load_binary(cl_object file, cl_object verbose, cl_object print);
 extern cl_object cl_load _ARGS((int narg, cl_object pathname, ...));
 
-
-/* lwp.c */
-#ifdef THREADS
-extern cl_object si_thread_break_in _ARGS((int narg));
-extern cl_object si_thread_break_quit _ARGS((int narg));
-extern cl_object si_thread_break_resume _ARGS((int narg));
-extern cl_object cl_thread_list _ARGS((int narg));
-extern cl_object cl_make_thread _ARGS((int narg, cl_object fun));
-extern cl_object cl_deactivate _ARGS((int narg, cl_object thread));
-extern cl_object cl_reactivate _ARGS((int narg, cl_object thread));
-extern cl_object cl_kill_thread _ARGS((int narg, cl_object thread));
-extern cl_object cl_current_thread _ARGS((int narg));
-extern cl_object cl_thread_status _ARGS((int narg, cl_object thread));
-extern cl_object cl_make_continuation _ARGS((int narg, cl_object thread));
-extern cl_object cl_thread_of _ARGS((int narg, cl_object cont));
-extern cl_object cl_continuation_of _ARGS((int narg, cl_object thread));
-extern cl_object cl_resume _ARGS((int narg, cl_object cont, ...));
-extern cl_object cl_disable_scheduler _ARGS((int narg));
-extern cl_object cl_enable_scheduler _ARGS((int narg));
-extern cl_object cl_suspend _ARGS((int narg));
-extern cl_object cl_delay _ARGS((int narg, cl_object interval));
-extern cl_object cl_thread_wait _ARGS((int narg, cl_object fun, ...));
-extern cl_object cl_thread_wait_with_timeout _ARGS((int narg, cl_object timeout, cl_object fun, ...));
-
-extern int critical_level;
-extern int update_queue(void);
-extern int activate_thread(cl_object thread);
-extern int thread_next(void);
-extern int scheduler(int sig, int code, struct sigcontext *scp);
-extern int interruption_handler(void);
-extern int lwp_bds_wind(bds_ptr base, bds_ptr top);
-extern int lwp_bds_unwind(bds_ptr base, bds_ptr top);
-extern int enable_scheduler(void);
-extern int enable_lwp(void);
-extern int init_lwp(void);
-#endif
 
 /* macros.c */
 
@@ -1348,10 +1315,17 @@ extern cl_object make_stream(cl_object host, int fd, enum ecl_smmode smm);
 /* threads.c */
 
 #ifdef ECL_THREADS
-extern cl_object si_thread_launch _ARGS((int narg, cl_object function, ...));
-extern cl_object si_thread_list(void);
-extern cl_object si_thread_kill(cl_object thread);
-extern cl_object si_thread_exit(void) __attribute__((noreturn));
+extern cl_object si_make_process _ARGS((int narg, cl_object name, cl_object function, ...));
+extern cl_object si_kill_process(cl_object thread);
+extern cl_object si_exit_process(void) __attribute__((noreturn));
+extern cl_object si_restart_process(cl_object process);
+extern cl_object si_all_processes(void);
+extern cl_object si_process_name(cl_object process);
+extern cl_object si_process_active_p(cl_object process);
+extern cl_object si_process_whostate(cl_object process);
+extern cl_object si_make_lock _ARGS((int narg, ...));
+extern cl_object si_get_lock _ARGS((int narg, cl_object lock, ...));
+extern cl_object si_giveup_lock(cl_object lock);
 #endif
 
 

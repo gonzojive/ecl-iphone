@@ -226,12 +226,16 @@ cl_boot(int argc, char **argv)
 	 */
 	ecl_init_env(&cl_env);
 #ifdef ECL_THREADS
-	{ cl_object thread = cl_alloc_object(t_thread);
-	thread->thread.env = &cl_env;
-	thread->thread.pthread = NULL;
-	thread->thread.function = Cnil;
-	thread->thread.args = Cnil;
-	cl_core.threads = CONS(thread, Cnil);
+	cl_env.bindings_hash = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024),
+						   make_shortfloat(1.5),	
+						   make_shortfloat(0.7));
+	{ cl_object process = cl_alloc_object(t_process);
+	process->process.env = &cl_env;
+	process->process.thread = NULL;
+	process->process.function = Cnil;
+	process->process.args = Cnil;
+	ECL_SET(@'si::*current-process*', process);
+	cl_core.processes = CONS(process, Cnil);
 	}
 #endif
 

@@ -363,17 +363,13 @@ ONCE_MORE:
 	case t_spice:
 	  break;
 */
-#ifdef THREADS
-	case t_cont:
-	  obj->cn.cn_thread = OBJNULL;
-	  break;
-	case t_thread:
-	  obj->thread.entry = OBJNULL;
-	  break;
-#endif
 #ifdef ECL_THREADS
-	case t_thread:
-	  obj->thread.env = OBJNULL;
+	case t_process:
+	  obj->process.env = OBJNULL;
+	  obj->process.thread = OBJNULL;
+	  break;
+	case t_lock:
+	  obj->lock.mutex = OBJNULL;
 	  break;
 #endif
 #ifdef CLOS
@@ -404,9 +400,6 @@ ONCE_MORE:
 	  printf("\ttype = %d\n", t);
 	  error("alloc botch.");
 	}
-#ifdef THREADS
-	clwp->lwp_alloc_temporary = obj;
-#endif
 	end_critical_section();
 	return(obj);
 CALL_GC:
@@ -728,18 +721,14 @@ init_alloc(void)
 #ifdef ECL_FFI
 	init_tm(t_foreign, "LFOREIGN", sizeof(struct ecl_foreign), 1);
 #endif
-#ifdef THREADS
-	init_tm(t_cont, "?CONT", sizeof(struct ecl_cont), 2);
-	init_tm(t_thread, "tTHREAD", sizeof(struct ecl_thread), 2);
+#ifdef ECL_THREADS
+	init_tm(t_process, "tPROCESS", sizeof(struct ecl_process), 2);
+	init_tm(t_process, "tLOCK", sizeof(struct ecl_lock), 2);
 #endif /* THREADS */
 
 	ncb = 0;
 	ncbpage = 0;
-#ifdef THREADS
 	maxcbpage = 2048;
-#else
-	maxcbpage = 512;
-#endif /* THREADS */
 
 #ifdef NEED_MALLOC
 	malloc_list = Cnil;
