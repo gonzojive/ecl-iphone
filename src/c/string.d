@@ -193,7 +193,8 @@ coerce_to_string_designator(cl_object x)
 @
 	assert_type_string(str);
 	j = object_to_index(index);
-	if (j >= str->string.fillp)
+	/* CHAR bypasses fill pointers when accessing strings */
+	if (j >= str->string.dim-1)
 		illegal_index(str, index);
 	/* INV: char_code() checks type of `c' */
 	str->string.self[j] = char_code(c);
