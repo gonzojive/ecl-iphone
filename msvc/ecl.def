@@ -838,6 +838,7 @@ EXPORTS
 	cl_write_string
 	cl_write_line
 	cl_terpri
+	cl_finish_output
 	cl_fresh_line
 	cl_force_output
 	cl_clear_output
