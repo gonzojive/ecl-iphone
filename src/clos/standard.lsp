@@ -138,7 +138,7 @@
 (defmethod slot-exists-p ((instance standard-object) slot-name)
   (let ((class (si:instance-class instance)))
     (declare (type standard-class class))
-    (values (gethash slot-name (slot-index-table class) nil))))
+    (nth-value 0 (gethash slot-name (slot-index-table class) nil))))
 
 (defmethod slot-makunbound ((instance standard-object) slot-name)
   (let* ((class (si:instance-class instance))
