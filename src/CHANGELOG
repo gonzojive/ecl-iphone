@@ -1069,8 +1069,12 @@ ECL 0.8
     delimiting char is used instead.
 
   - Two separate functions SI::PROCESS-LAMBDA & SI::PROCESS-LAMBDA-LIST to
-    parse functions and general lambda lists. The code has been improved and
-    it is now smaller.
+    parse functions and general lambda lists. The code has been improved,
+    it is now smaller, and it is also used in DESTRUCTURING-BIND and
+    DEFMACRO (defmacro.lsp).
+
+  - DO and DO* have now different macroexpansions, with less gotos;
+    which leads to smaller C code.
 
 * Visible changes:
 

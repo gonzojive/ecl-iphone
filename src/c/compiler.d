@@ -1947,10 +1947,11 @@ compile_body(cl_object body) {
 
 #define push(v,l) l = CONS(v, l)
 #define push_var(v, list) \
-	check_symbol(v); \
-	if (v->symbol.stype == stp_constant) \
-		FEillegal_variable_name(v); \
-	push(v, list);
+	if (context == @'function') { \
+		assert_type_symbol(v); \
+		if (v->symbol.stype == stp_constant) \
+			FEillegal_variable_name(v); } \
+	push(v, list)
 
 /*
   Handles special declarations, removes declarations from body
@@ -1982,7 +1983,7 @@ compile_body(cl_object body) {
 	    if (CAR(sentence) == @'special')
 	      for (vars = CDR(sentence); !endp(vars); vars = CDR(vars)) {
 		v = CAR(vars);
-		check_symbol(v);
+		assert_type_symbol(v);
 		push(v,specials);
 	      }
 	  }
@@ -2030,14 +2031,19 @@ si_process_lambda_list(cl_object org_lambda_list, cl_object context)
 	int nreq = 0, nopt = 0, nkey = 0, naux = 0, stage = 0;
 	cl_object allow_other_keys = Cnil;
 
+	if (!CONSP(lambda_list) && lambda_list != Cnil)
+		goto ILLEGAL_LAMBDA;
 LOOP:
 	if (ATOM(lambda_list)) {
 		if (lambda_list == Cnil)
 			goto OUTPUT;
 		else if (context == @'function')
 			goto ILLEGAL_LAMBDA;
-		else
+		else {
+			v = lambda_list;
+			lambda_list = Cnil;
 			goto REST;
+		}
 	}
 	v = CAR(lambda_list);
 	lambda_list = CDR(lambda_list);
@@ -2048,9 +2054,14 @@ LOOP:
 		goto LOOP;
 	}
 	if (v == @'&rest' || (v == @'&body' && context != @'function')) {
+		if (ATOM(lambda_list))
+			goto ILLEGAL_LAMBDA;
+		v = CAR(lambda_list);
+		lambda_list = CDR(lambda_list);
 REST:		if (stage >= AT_REST)
 			goto ILLEGAL_LAMBDA;
 		stage = AT_REST;
+		push_var(v, rest);
 		goto LOOP;
 	}
 	if (v == @'&key') {
@@ -2102,12 +2113,9 @@ REST:		if (stage >= AT_REST)
 		}
 		break;
 	case AT_REST:
-		if (rest == Cnil) {
-			push_var(v, rest);
-		} else {
-			goto ILLEGAL_LAMBDA;
-		}
-		break;
+		/* If we get here, the user has declared more than one
+		 * &rest variable, as in (lambda (&rest x y) ...) */
+		goto ILLEGAL_LAMBDA;
 	case AT_KEYS:
 		init = Cnil;
 		spp = Cnil;
@@ -2128,11 +2136,11 @@ REST:		if (stage >= AT_REST)
 			if (endp(CDR(v)) || !endp(CDDR(v)))
 				goto ILLEGAL_LAMBDA;
 			v = CADR(v);
-			check_symbol(v);
-			check_symbol(key);
+			assert_type_symbol(v);
+			assert_type_symbol(key);
 		} else {
 			int intern_flag;
-			check_symbol(v);
+			assert_type_symbol(v);
 			key = intern(v->symbol.name, keyword_package, &intern_flag);
 		}
 		nkey++;
