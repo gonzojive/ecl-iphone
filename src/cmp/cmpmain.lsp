@@ -351,7 +351,8 @@ Cannot compile ~a."
           (when (probe-file h-pathname) (delete-file h-pathname))
           (when (probe-file data-pathname) (delete-file data-pathname))
 	  (when (probe-file o-pathname) (delete-file o-pathname))
-          (format t "~&;;; No FASL generated.~%")
+          (format t "~&;;; Due to errors in the compilation process, no FASL was generated.
+;;; Search above for the \"Error:\" tag to find the error messages.~%")
           (setq *error-p* t)
 	  (values nil t t))
         ))
