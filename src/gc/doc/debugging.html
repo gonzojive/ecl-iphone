@@ -209,6 +209,8 @@ down the problem:
 <OL>
 <LI> If you are using the incremental collector try turning it off for
 debugging.
+<LI> If you are using shared libraries, try linking statically.  If that works,
+ensure that DYNAMIC_LOADING is defined on your platform.
 <LI> Try to reproduce the problem with fully debuggable unoptimized code.
 This will eliminate the last possibility, as well as making debugging easier.
 <LI> Try replacing any suspect typed allocation and <TT>GC_malloc_atomic</tt>
@@ -246,8 +248,12 @@ The <TT>hb_last_reclaimed</tt> field will identify the collection number
 during which its block was last swept.
 <LI> Verify that the offending object still has its correct contents at
 this point.
-The call <TT>GC_is_marked(p)</tt> from the debugger to verify that the
-object has not been marked, and is about to be reclaimed.
+Then call <TT>GC_is_marked(p)</tt> from the debugger to verify that the
+object has not been marked, and is about to be reclaimed.  Note that
+<TT>GC_is_marked(p)</tt> expects the real address of an object (the
+address of the debug header if there is one), and thus it may
+be more appropriate to call <TT>GC_is_marked(GC_base(p))</tt>
+instead.
 <LI> Determine a path from a root, i.e. static variable, stack, or
 register variable,
 to the reclaimed object.  Call <TT>GC_is_marked(q)</tt> for each object

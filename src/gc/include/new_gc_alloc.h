@@ -50,7 +50,28 @@
 #ifndef GC_ALLOC_H
 
 #include "gc.h"
-#include <stack>  // A more portable way to get stl_alloc.h .
+
+#if (__GNUC__ < 3)
+# include <stack>  // A more portable way to get stl_alloc.h .
+#else
+# include <bits/stl_alloc.h>
+# ifndef __STL_BEGIN_NAMESPACE
+# define __STL_BEGIN_NAMESPACE namespace std {
+# define __STL_END_NAMESPACE };
+# endif
+#ifndef __STL_USE_STD_ALLOCATORS
+#define __STL_USE_STD_ALLOCATORS
+#endif
+#endif
+
+/* A hack to deal with gcc 3.1.  If you are using gcc3.1 and later,	*/
+/* you should probably really use gc_allocator.h instead.		*/
+#if defined (__GNUC__) && \
+    (__GNUC > 3 || (__GNUC__ == 3 && (__GNUC_MINOR__ >= 1)))
+# define simple_alloc __simple_alloc
+#endif
+
+
 
 #define GC_ALLOC_H
 
