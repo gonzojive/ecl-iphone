@@ -1,7 +1,7 @@
-/* Test mpz_cmp, mpz_cmp_ui, mpz_tdiv_qr, mpz_mul.
+/* Test mpz_cmp, mpz_mul.
 
-Copyright 1991, 1993, 1994, 1996, 1997, 2000, 2001, 2002 Free Software
-Foundation, Inc.
+Copyright 1991, 1993, 1994, 1996, 1997, 2000, 2001, 2002, 2003, 2004 Free
+Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -28,108 +28,105 @@ MA 02111-1307, USA. */
 #include "longlong.h"
 #include "tests.h"
 
-void debug_mp _PROTO ((mpz_t, int));
-static void base_mul _PROTO ((mp_ptr,mp_srcptr,mp_size_t,mp_srcptr,mp_size_t));
+void debug_mp _PROTO ((mpz_t));
+static void ref_mpn_mul _PROTO ((mp_ptr,mp_srcptr,mp_size_t,mp_srcptr,mp_size_t));
 static void ref_mpz_mul _PROTO ((mpz_t, const mpz_t, const mpz_t));
 void dump_abort _PROTO ((int, char *, mpz_t, mpz_t, mpz_t, mpz_t));
+
+#define FFT_MIN_BITSIZE 100000
+
+char *extra_fft;
+
+void
+one (int i, mpz_t multiplicand, mpz_t multiplier)
+{
+  mpz_t product, ref_product;
+  mpz_t quotient;
+
+  mpz_init (product);
+  mpz_init (ref_product);
+  mpz_init (quotient);
+
+  /* Test plain multiplication comparing results against reference code.  */
+  mpz_mul (product, multiplier, multiplicand);
+  ref_mpz_mul (ref_product, multiplier, multiplicand);
+  if (mpz_cmp (product, ref_product))
+    dump_abort (i, "incorrect plain product",
+		multiplier, multiplicand, product, ref_product);
+
+  /* Test squaring, comparing results against plain multiplication  */
+  mpz_mul (product, multiplier, multiplier);
+  mpz_set (multiplicand, multiplier);
+  mpz_mul (ref_product, multiplier, multiplicand);
+  if (mpz_cmp (product, ref_product))
+    dump_abort (i, "incorrect square product",
+		multiplier, multiplier, product, ref_product);
+
+  mpz_clear (product);
+  mpz_clear (ref_product);
+  mpz_clear (quotient);
+}
 
 int
 main (int argc, char **argv)
 {
-  mpz_t multiplier, multiplicand;
-  mpz_t product, ref_product;
-  mpz_t quotient, remainder;
-  mp_size_t multiplier_size, multiplicand_size;
+  mpz_t op1, op2;
   int i;
-  int reps = 100;
+
   gmp_randstate_ptr rands;
   mpz_t bs;
-  unsigned long bsi, size_range;
+  unsigned long bsi, size_range, fsize_range;
 
   tests_start ();
   rands = RANDS;
 
+  extra_fft = getenv ("GMP_CHECK_FFT");
+
   mpz_init (bs);
+  mpz_init (op1);
+  mpz_init (op2);
 
-  if (argc == 2)
-     reps = atoi (argv[1]);
-
-  mpz_init (multiplier);
-  mpz_init (multiplicand);
-  mpz_init (product);
-  mpz_init (ref_product);
-  mpz_init (quotient);
-  mpz_init (remainder);
-
-  for (i = 0; i < reps; i++)
+  fsize_range = 4 << 8;		/* a fraction 1/256 of size_range */
+  for (i = 0; fsize_range >> 8 < (extra_fft ? 27 : 22); i++)
     {
-      mpz_urandomb (bs, rands, 32);
-      size_range = mpz_get_ui (bs) % 18 + 2;
+      size_range = fsize_range >> 8;
+      fsize_range = fsize_range * 33 / 32;
 
       mpz_urandomb (bs, rands, size_range);
-      multiplier_size = mpz_get_ui (bs);
-      mpz_rrandomb (multiplier, rands, multiplier_size);
-
+      mpz_rrandomb (op1, rands, mpz_get_ui (bs));
       mpz_urandomb (bs, rands, size_range);
-      multiplicand_size = mpz_get_ui (bs);
-      mpz_rrandomb (multiplicand, rands, multiplicand_size);
+      mpz_rrandomb (op2, rands, mpz_get_ui (bs));
 
-      mpz_urandomb (bs, rands, 2);
+      mpz_urandomb (bs, rands, 4);
       bsi = mpz_get_ui (bs);
-      if ((bsi & 1) != 0)
-	mpz_neg (multiplier, multiplier);
-      if ((bsi & 2) != 0)
-	mpz_neg (multiplicand, multiplicand);
+      if ((bsi & 0x3) == 0)
+	mpz_neg (op1, op1);
+      if ((bsi & 0xC) == 0)
+	mpz_neg (op2, op2);
 
-      /* printf ("%ld %ld\n", SIZ (multiplier), SIZ (multiplicand)); */
-
-      mpz_mul (product, multiplier, multiplicand);
-
-      if (size_range <= 16)  /* avoid calling ref_mpz_mul for huge operands */
-	{
-	  ref_mpz_mul (ref_product, multiplier, multiplicand);
-	  if (mpz_cmp (product, ref_product))
-	    dump_abort (i, "incorrect plain product",
-			multiplier, multiplicand, product, ref_product);
-	}
-
-      if (mpz_cmp_ui (multiplicand, 0) != 0)
-	{
-	  mpz_tdiv_qr (quotient, remainder, product, multiplicand);
-	  if (mpz_cmp_ui (remainder, 0) || mpz_cmp (quotient, multiplier))
-	    {
-	      debug_mp (quotient, -16);
-	      debug_mp (remainder, -16);
-	      dump_abort (i, "incorrect quotient or remainder",
-			  multiplier, multiplicand, product, ref_product);
-	    }
-	}
-
-      /* Test squaring.  */
-      if (size_range <= 16)  /* avoid calling ref_mpz_mul for huge operands */
-	{
-	  mpz_mul (product, multiplier, multiplier);
-	  ref_mpz_mul (ref_product, multiplier, multiplier);
-	}
-      else
-	{
-	  mpz_mul (product, multiplier, multiplier);
-	  mpz_set (multiplicand, multiplier);
-	  mpz_mul (ref_product, multiplier, multiplicand);
-	}
-
-      if (mpz_cmp (product, ref_product))
-	dump_abort (i, "incorrect square product",
-		    multiplier, multiplier, product, ref_product);
+      /* printf ("%d %d\n", SIZ (op1), SIZ (op2)); */
+      one (i, op2, op1);
     }
 
+  if (extra_fft)
+    for (i = -50; i < 0; i++)
+      {
+	mpz_urandomb (bs, rands, 32);
+	size_range = mpz_get_ui (bs) % 27;
+
+	mpz_urandomb (bs, rands, size_range);
+	mpz_rrandomb (op1, rands, mpz_get_ui (bs) + FFT_MIN_BITSIZE);
+	mpz_urandomb (bs, rands, size_range);
+	mpz_rrandomb (op2, rands, mpz_get_ui (bs) + FFT_MIN_BITSIZE);
+
+	/* printf ("%d: %d %d\n", i, SIZ (op1), SIZ (op2)); */
+	fflush (stdout);
+	one (-1, op2, op1);
+      }
+
   mpz_clear (bs);
-  mpz_clear (multiplier);
-  mpz_clear (multiplicand);
-  mpz_clear (product);
-  mpz_clear (ref_product);
-  mpz_clear (quotient);
-  mpz_clear (remainder);
+  mpz_clear (op1);
+  mpz_clear (op2);
 
   tests_end ();
   exit (0);
@@ -144,82 +141,99 @@ ref_mpz_mul (mpz_t w, const mpz_t u, const mpz_t v)
   mp_size_t sign_product;
   mp_ptr up, vp;
   mp_ptr wp;
-  mp_ptr free_me = NULL;
-  size_t free_me_size;
-  TMP_DECL (marker);
+  mp_size_t talloc;
 
-  TMP_MARK (marker);
   sign_product = usize ^ vsize;
   usize = ABS (usize);
   vsize = ABS (vsize);
 
-  if (usize < vsize)
-    {
-      /* Swap U and V.  */
-      {const __mpz_struct *t = u; u = v; v = t;}
-      {mp_size_t t = usize; usize = vsize; vsize = t;}
-    }
-
-  if (vsize == 0)
+  if (usize == 0 || vsize == 0)
     {
       SIZ (w) = 0;
       return;
     }
 
+  talloc = usize + vsize;
+
   up = u->_mp_d;
   vp = v->_mp_d;
-  wp = w->_mp_d;
 
-  /* Ensure W has space enough to store the result.  */
+  wp = __GMP_ALLOCATE_FUNC_LIMBS (talloc);
+
+  if (usize > vsize)
+    ref_mpn_mul (wp, up, usize, vp, vsize);
+  else
+    ref_mpn_mul (wp, vp, vsize, up, usize);
   wsize = usize + vsize;
-  if (w->_mp_alloc < wsize)
-    {
-      if (wp == up || wp == vp)
-	{
-	  free_me = wp;
-	  free_me_size = w->_mp_alloc;
-	}
-      else
-	(*__gmp_free_func) (wp, w->_mp_alloc * BYTES_PER_MP_LIMB);
+  wsize -= wp[wsize - 1] == 0;
+  MPZ_REALLOC (w, wsize);
+  MPN_COPY (PTR(w), wp, wsize);
 
-      w->_mp_alloc = wsize;
-      wp = (mp_ptr) (*__gmp_allocate_func) (wsize * BYTES_PER_MP_LIMB);
-      w->_mp_d = wp;
+  SIZ(w) = sign_product < 0 ? -wsize : wsize;
+  __GMP_FREE_FUNC_LIMBS (wp, talloc);
+}
+
+static void mul_basecase __GMP_PROTO ((mp_ptr, mp_srcptr, mp_size_t, mp_srcptr, mp_size_t));
+
+#define TOOM3_THRESHOLD (MAX (MUL_TOOM3_THRESHOLD, SQR_TOOM3_THRESHOLD))
+#define FFT_THRESHOLD (MAX (MUL_FFT_THRESHOLD, SQR_FFT_THRESHOLD))
+
+static void
+ref_mpn_mul (mp_ptr wp, mp_srcptr up, mp_size_t un, mp_srcptr vp, mp_size_t vn)
+{
+  mp_ptr tp;
+  mp_size_t tn;
+  mp_limb_t cy;
+
+  if (vn < TOOM3_THRESHOLD)
+    {
+      /* In the mpn_mul_basecase and mpn_kara_mul_n range, use our own
+	 mul_basecase.  */
+      if (vn != 0)
+	mul_basecase (wp, up, un, vp, vn);
+      else
+	MPN_ZERO (wp, un);
+      return;
+    }
+
+  if (vn < FFT_THRESHOLD)
+    {
+      /* In the mpn_toom3_mul_n range, use mpn_kara_mul_n.  */
+      tn = 2 * vn + MPN_KARA_MUL_N_TSIZE (vn);
+      tp = __GMP_ALLOCATE_FUNC_LIMBS (tn);
+      mpn_kara_mul_n (tp, up, vp, vn, tp + 2 * vn);
     }
   else
     {
-      /* Make U and V not overlap with W.  */
-      if (wp == up)
-	{
-	  /* W and U are identical.  Allocate temporary space for U.  */
-	  up = (mp_ptr) TMP_ALLOC (usize * BYTES_PER_MP_LIMB);
-	  /* Is V identical too?  Keep it identical with U.  */
-	  if (wp == vp)
-	    vp = up;
-	  /* Copy to the temporary space.  */
-	  MPN_COPY (up, wp, usize);
-	}
-      else if (wp == vp)
-	{
-	  /* W and V are identical.  Allocate temporary space for V.  */
-	  vp = (mp_ptr) TMP_ALLOC (vsize * BYTES_PER_MP_LIMB);
-	  /* Copy to the temporary space.  */
-	  MPN_COPY (vp, wp, vsize);
-	}
+      /* Finally, for the largest operands, use mpn_toom3_mul_n.  */
+      /* The "- 63 + 255" tweaks the allocation to allow for huge operands.
+	 See the definition of this macro in gmp-impl.h to understand this.  */
+      tn = 2 * vn + MPN_TOOM3_MUL_N_TSIZE (vn) - 63 + 255;
+      tp = __GMP_ALLOCATE_FUNC_LIMBS (tn);
+      mpn_toom3_mul_n (tp, up, vp, vn, tp + 2 * vn);
     }
 
-  base_mul (wp, up, usize, vp, vsize);
-  wsize = usize + vsize;
-  wsize -= wp[wsize - 1] == 0;
-  w->_mp_size = sign_product < 0 ? -wsize : wsize;
-  if (free_me != NULL)
-    (*__gmp_free_func) (free_me, free_me_size * BYTES_PER_MP_LIMB);
+  if (un != vn)
+    {
+      if (un - vn < vn)
+	ref_mpn_mul (wp + vn, vp, vn, up + vn, un - vn);
+      else
+	ref_mpn_mul (wp + vn, up + vn, un - vn, vp, vn);
 
-  TMP_FREE (marker);
+      MPN_COPY (wp, tp, vn);
+      cy = mpn_add_n (wp + vn, wp + vn, tp + vn, vn);
+      mpn_incr_u (wp + 2 * vn, cy);
+    }
+  else
+    {
+      MPN_COPY (wp, tp, 2 * vn);
+    }
+
+  __GMP_FREE_FUNC_LIMBS (tp, tn);
 }
 
 static void
-base_mul (mp_ptr wp, mp_srcptr up, mp_size_t un, mp_srcptr vp, mp_size_t vn)
+mul_basecase (mp_ptr wp, mp_srcptr up, mp_size_t un, mp_srcptr vp, mp_size_t vn)
 {
   mp_size_t i, j;
   mp_limb_t prod_low, prod_high;
@@ -275,23 +289,34 @@ base_mul (mp_ptr wp, mp_srcptr up, mp_size_t un, mp_srcptr vp, mp_size_t vn)
 }
 
 void
-dump_abort (int i, char *s, 
-	    mpz_t multiplier, mpz_t multiplicand, mpz_t product, mpz_t ref_product)
+dump_abort (int i, char *s,
+            mpz_t op1, mpz_t op2, mpz_t product, mpz_t ref_product)
 {
-  mpz_t diff;
   fprintf (stderr, "ERROR: %s in test %d\n", s, i);
-  fprintf (stderr, "multiplier   = "); debug_mp (multiplier, -16);
-  fprintf (stderr, "multiplicand = "); debug_mp (multiplicand, -16);
-  fprintf (stderr, "    product  = "); debug_mp (product, -16);
-  fprintf (stderr, "ref_product  = "); debug_mp (ref_product, -16);
-  mpz_init (diff);
-  mpz_sub (diff, ref_product, product);
-  fprintf (stderr, "diff:         "); debug_mp (diff, -16);
+  fprintf (stderr, "op1          = "); debug_mp (op1);
+  fprintf (stderr, "op2          = "); debug_mp (op2);
+  fprintf (stderr, "    product  = "); debug_mp (product);
+  fprintf (stderr, "ref_product  = "); debug_mp (ref_product);
   abort();
 }
 
 void
-debug_mp (mpz_t x, int base)
+debug_mp (mpz_t x)
 {
-  mpz_out_str (stderr, base, x); fputc ('\n', stderr);
+  size_t siz = mpz_sizeinbase (x, 16);
+
+  if (siz > 65)
+    {
+      mpz_t q;
+      mpz_init (q);
+      mpz_tdiv_q_2exp (q, x, 4 * (mpz_sizeinbase (x, 16) - 25));
+      gmp_fprintf (stderr, "%ZX...", q);
+      mpz_tdiv_r_2exp (q, x, 4 * 25);
+      gmp_fprintf (stderr, "%025ZX [%d]\n", q, (int) siz);
+      mpz_clear (q);
+    }
+  else
+    {
+      gmp_fprintf (stderr, "%ZX\n", x);
+    }
 }

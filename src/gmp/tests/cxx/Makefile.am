@@ -1,6 +1,6 @@
 ## Process this file with automake to generate Makefile.in
 
-# Copyright 2001 Free Software Foundation, Inc.
+# Copyright 2001, 2003 Free Software Foundation, Inc.
 #
 # This file is part of the GNU MP Library.
 #
@@ -27,10 +27,11 @@ LDADD = $(top_builddir)/tests/libtests.la \
   $(top_builddir)/libgmpxx.la $(top_builddir)/libgmp.la
 
 if WANT_CXX
-check_PROGRAMS = t-headers t-ostream t-locale t-constr t-expr
+check_PROGRAMS = t-cast t-headers t-ostream t-locale t-constr t-expr
 TESTS = $(check_PROGRAMS)
 endif
 
+t_cast_SOURCES    = t-cast.cc
 t_headers_SOURCES = t-headers.cc
 t_constr_SOURCES  = t-constr.cc
 t_expr_SOURCES    = t-expr.cc

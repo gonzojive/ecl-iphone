@@ -1,6 +1,6 @@
 /* Test mpz_export.
 
-Copyright 2002 Free Software Foundation, Inc.
+Copyright 2002, 2004 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -21,6 +21,7 @@ MA 02111-1307, USA. */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "gmp.h"
 #include "gmp-impl.h"
 #include "tests.h"

@@ -3,7 +3,7 @@
    THIS IS A TEST PROGRAM USED ONLY FOR DEVELOPMENT.  IT'S ALMOST CERTAIN TO
    BE SUBJECT TO INCOMPATIBLE CHANGES IN FUTURE VERSIONS OF GMP.
 
-Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2002, 2003 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -147,6 +147,13 @@ extern int optind, opterr;
 #ifndef PROT_WRITE
 #define PROT_WRITE  0
 #endif
+
+/* _SC_PAGESIZE is standard, but hpux 9 and possibly other systems have
+   _SC_PAGE_SIZE instead. */
+#if defined (_SC_PAGE_SIZE) && ! defined (_SC_PAGESIZE)
+#define _SC_PAGESIZE  _SC_PAGE_SIZE
+#endif
+
 
 #ifdef EXTRA_PROTOS
 EXTRA_PROTOS
@@ -1111,13 +1118,17 @@ udiv_qrnnd_fun (mp_limb_t *remptr, mp_limb_t n1, mp_limb_t n0, mp_limb_t d)
   return q;
 }
 
-void
+mp_limb_t
 mpn_divexact_by3_fun (mp_ptr rp, mp_srcptr sp, mp_size_t size)
-{ mpn_divexact_by3 (rp, sp, size); }
+{
+  return mpn_divexact_by3 (rp, sp, size);
+}
 
-void
+mp_limb_t
 mpn_modexact_1_odd_fun (mp_srcptr ptr, mp_size_t size, mp_limb_t divisor)
-{ mpn_modexact_1_odd (ptr, size, divisor); }
+{
+  return mpn_modexact_1_odd (ptr, size, divisor);
+}
 
 void
 mpn_kara_mul_n_fun (mp_ptr dst, mp_srcptr src1, mp_srcptr src2, mp_size_t size)

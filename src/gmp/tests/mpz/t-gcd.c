@@ -1,7 +1,7 @@
 /* Test mpz_gcd, mpz_gcdext, mpz_mul, mpz_tdiv_r, mpz_add, mpz_cmp,
    mpz_cmp_ui, mpz_init_set, mpz_set, mpz_clear.
 
-Copyright 1991, 1993, 1994, 1996, 1997, 2000, 2001, 2002 Free Software
+Copyright 1991, 1993, 1994, 1996, 1997, 2000, 2001, 2002, 2004 Free Software
 Foundation, Inc.
 
 This file is part of the GNU MP Library.
@@ -31,6 +31,54 @@ MA 02111-1307, USA. */
 void dump_abort _PROTO ((int, mpz_t, mpz_t));
 void debug_mp _PROTO ((mpz_t, int));
 
+void
+check_data (void)
+{
+  static const struct {
+    const char *a;
+    const char *b;
+    const char *want;
+  } data[] = {
+    /* This tickled a bug in gmp 4.1.2 mpn/x86/k6/gcd_finda.asm. */
+    { "0x3FFC000007FFFFFFFFFF00000000003F83FFFFFFFFFFFFFFF80000000000000001",
+      "0x1FFE0007FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC000000000000000000000001",
+      "5" }
+  };
+
+  mpz_t  a, b, got, want;
+  int    i;
+
+  mpz_init (a);
+  mpz_init (b);
+  mpz_init (got);
+  mpz_init (want);
+
+  for (i = 0; i < numberof (data); i++)
+    {
+      mpz_set_str_or_abort (a, data[i].a, 0);
+      mpz_set_str_or_abort (b, data[i].b, 0);
+      mpz_set_str_or_abort (want, data[i].want, 0);
+      mpz_gcd (got, a, b);
+      MPZ_CHECK_FORMAT (got);
+      if (mpz_cmp (got, want) != 0)
+        {
+          printf    ("mpz_gcd wrong on data[%d]\n", i);
+          printf    (" a  %s\n", data[i].a);
+          printf    (" b  %s\n", data[i].b);
+          mpz_trace (" a", a);
+          mpz_trace (" b", b);
+          mpz_trace (" want", want);
+          mpz_trace (" got ", got);
+          abort ();
+        }
+    }
+
+  mpz_clear (a);
+  mpz_clear (b);
+  mpz_clear (got);
+  mpz_clear (want);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -46,6 +94,8 @@ main (int argc, char **argv)
 
   tests_start ();
   rands = RANDS;
+
+  check_data ();
 
   mpz_init (bs);
 

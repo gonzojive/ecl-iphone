@@ -13,7 +13,7 @@
 
 @SET_MAKE@
 
-# Copyright 2001 Free Software Foundation, Inc.
+# Copyright 2001, 2003 Free Software Foundation, Inc.
 #
 # This file is part of the GNU MP Library.
 #
@@ -142,9 +142,10 @@ LDADD = $(top_builddir)/tests/libtests.la \
   $(top_builddir)/libgmpxx.la $(top_builddir)/libgmp.la
 
 
-@WANT_CXX_TRUE@check_PROGRAMS = t-headers t-ostream t-locale t-constr t-expr
+@WANT_CXX_TRUE@check_PROGRAMS = t-cast t-headers t-ostream t-locale t-constr t-expr
 @WANT_CXX_TRUE@TESTS = $(check_PROGRAMS)
 
+t_cast_SOURCES = t-cast.cc
 t_headers_SOURCES = t-headers.cc
 t_constr_SOURCES = t-constr.cc
 t_expr_SOURCES = t-expr.cc
@@ -154,10 +155,16 @@ subdir = tests/cxx
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
-@WANT_CXX_TRUE@check_PROGRAMS = t-headers$(EXEEXT) t-ostream$(EXEEXT) \
-@WANT_CXX_TRUE@	t-locale$(EXEEXT) t-constr$(EXEEXT) \
-@WANT_CXX_TRUE@	t-expr$(EXEEXT)
+@WANT_CXX_TRUE@check_PROGRAMS = t-cast$(EXEEXT) t-headers$(EXEEXT) \
+@WANT_CXX_TRUE@	t-ostream$(EXEEXT) t-locale$(EXEEXT) \
+@WANT_CXX_TRUE@	t-constr$(EXEEXT) t-expr$(EXEEXT)
 @WANT_CXX_FALSE@check_PROGRAMS =
+am_t_cast_OBJECTS = t-cast.$(OBJEXT)
+t_cast_OBJECTS = $(am_t_cast_OBJECTS)
+t_cast_LDADD = $(LDADD)
+t_cast_DEPENDENCIES = $(top_builddir)/tests/libtests.la \
+	$(top_builddir)/libgmpxx.la $(top_builddir)/libgmp.la
+t_cast_LDFLAGS =
 am_t_constr_OBJECTS = t-constr.$(OBJEXT)
 t_constr_OBJECTS = $(am_t_constr_OBJECTS)
 t_constr_LDADD = $(LDADD)
@@ -204,10 +211,10 @@ CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 CXXFLAGS = @CXXFLAGS@
-DIST_SOURCES = $(t_constr_SOURCES) $(t_expr_SOURCES) \
+DIST_SOURCES = $(t_cast_SOURCES) $(t_constr_SOURCES) $(t_expr_SOURCES) \
 	$(t_headers_SOURCES) $(t_locale_SOURCES) $(t_ostream_SOURCES)
 DIST_COMMON = Makefile.am Makefile.in
-SOURCES = $(t_constr_SOURCES) $(t_expr_SOURCES) $(t_headers_SOURCES) $(t_locale_SOURCES) $(t_ostream_SOURCES)
+SOURCES = $(t_cast_SOURCES) $(t_constr_SOURCES) $(t_expr_SOURCES) $(t_headers_SOURCES) $(t_locale_SOURCES) $(t_ostream_SOURCES)
 
 all: all-am
 
@@ -232,6 +239,9 @@ Makefile: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.in  $(top_builddir)/config.s
 
 clean-checkPROGRAMS:
 	-test -z "$(check_PROGRAMS)" || rm -f $(check_PROGRAMS)
+t-cast$(EXEEXT): $(t_cast_OBJECTS) $(t_cast_DEPENDENCIES) 
+	@rm -f t-cast$(EXEEXT)
+	$(CXXLINK) $(t_cast_LDFLAGS) $(t_cast_OBJECTS) $(t_cast_LDADD) $(LIBS)
 t-constr$(EXEEXT): $(t_constr_OBJECTS) $(t_constr_DEPENDENCIES) 
 	@rm -f t-constr$(EXEEXT)
 	$(CXXLINK) $(t_constr_LDFLAGS) $(t_constr_OBJECTS) $(t_constr_LDADD) $(LIBS)

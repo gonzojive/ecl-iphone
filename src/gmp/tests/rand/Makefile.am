@@ -1,6 +1,6 @@
 ## Process this file with automake to generate Makefile.in
 
-# Copyright 2000, 2001 Free Software Foundation, Inc.
+# Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
 #
 # This file is part of the GNU MP Library.
 #
@@ -22,10 +22,10 @@
 
 AUTOMAKE_OPTIONS = gnu no-dependencies $(top_builddir)/ansi2knr
 
-INCLUDES = -I$(top_srcdir)
-LDADD = $(top_builddir)/libgmp.la
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/tests
+LDADD = $(top_builddir)/tests/libtests.la $(top_builddir)/libgmp.la
 
-check_PROGRAMS = t-rand
+check_PROGRAMS = t-lc2exp t-rand
 TESTS = $(check_PROGRAMS)
 
 EXTRA_PROGRAMS = findlc gen gen.static spect stat
@@ -42,6 +42,9 @@ libstat_la_LIBADD = $(top_builddir)/libgmp.la $(LIBM)
 CLEANFILES = $(EXTRA_PROGRAMS) $(EXTRA_LTLIBRARIES)
 
 allprogs: $(EXTRA_PROGRAMS)
+
+$(top_builddir)/tests/libtests.la:
+	cd $(top_builddir)/tests; $(MAKE) $(AM_MAKEFLAGS) libtests.la
 
 manual-test: gen$(EXEEXT) stat$(EXEEXT)
 	@(echo -n '16i: '; ./gen -f mpz_urandomb -z 16 1000 \
