@@ -155,13 +155,13 @@
       (let* ((var (c1make-var (first specs) ss is ts))
 	     (init (second specs))
 	     (flag (third specs)))
-	(push-vars var)
-	(when flag
-	  (push-vars (setq flag (c1make-var flag ss is ts))))
 	(setq init (if init
 		       (and-form-type (var-type var) (c1expr init) init
 				      :safe "In (LAMBDA ~a...)" block-name)
 		       (default-init var)))
+	(push-vars var)
+	(when flag
+	  (push-vars (setq flag (c1make-var flag ss is ts))))
 	(setf (first specs) var
 	      (second specs) init
 	      (third specs) flag)))
@@ -175,13 +175,13 @@
 	     (var (c1make-var (second specs) ss is ts))
 	     (init (third specs))
 	     (flag (fourth specs)))
-	(push-vars var)
-	(when flag
-	  (push-vars (setq flag (c1make-var flag ss is ts))))
 	(setq init (if init
 		       (and-form-type (var-type var) (c1expr init) init
 				      :safe "In (LAMBDA ~a...)" block-name)
 		       (default-init var)))
+	(push-vars var)
+	(when flag
+	  (push-vars (setq flag (c1make-var flag ss is ts))))
 	(setf (second specs) var
 	      (third specs) init
 	      (fourth specs) flag)))
@@ -341,9 +341,13 @@
     ;; When binding optional values, we use two calls to BIND. This means
     ;; 'BDS-BIND is pushed twice on *unwind-exit*, which results in two calls
     ;; to bds_unwind1(), which is wrong. A simple fix is to save *unwind-exit*
-    ;; which is what we do here.
+    ;; which is what we do here. Notice that we also have to save *LEX* and
+    ;; *ENV* because otherwise the init forms would think that some optionals
+    ;; have been added to the lexical closure when they have been not.
     (let ((va-arg-loc (if simple-varargs 'VA-ARG 'CL-VA-ARG))
-	  (*unwind-exit* *unwind-exit*))
+	  (*unwind-exit* *unwind-exit*)
+	  (*lex* *lex*)
+	  (*env* *env*))
       (do ((opt optionals (cdddr opt)))
 	  ((endp opt))
 	(push (next-label) labels)

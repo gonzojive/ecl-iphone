@@ -23,33 +23,31 @@
 (defun wt-label (label)
   (when (cdr label) (wt-nl1 "L" (car label) ":;")))
 
-(defun wt-comment (message &optional extra)
-  (if extra
-    ;; Message is a prefix string for EXTRA. All fits in a single line.
-    (progn
-      (terpri *compiler-output1*)
-      (princ "/*	" *compiler-output1*)
-      (princ message *compiler-output1*))
-    ;; Message is a symbol.
-    (if (or (not (symbolp message)) (symbol-package message))
-	(progn
-	  (format *compiler-output1* "~50T/*  ")
-	  (setq extra message))
-	;; useless to show gensym's
-	(return-from wt-comment)))
-  (let* ((s (if (symbolp extra) (symbol-name extra) (format nil "~A" extra)))
-         (l (1- (length s)))
-         c)
-    (declare (string s) (fixnum l) (character c))
+(defun wt-filtered-comment (text stream single-line)
+  (declare (string text))
+  (if single-line
+      (progn
+	(terpri stream)
+	(princ "/*	" stream))
+      (format stream "~50T/*  "))
+  (let* ((l (1- (length text))))
+    (declare (fixnum l))
     (dotimes (n l)
-      (setq c (schar s n))
-      (princ c *compiler-output1*)
-      (when (and (char= c #\*) (char= (schar s (1+ n)) #\/))
-        (princ #\\ *compiler-output1*)))
-    (princ (schar s l) *compiler-output1*))
-  (format *compiler-output1* "~70T*/")
-  nil
+      (let ((c (schar text n)))
+	(princ c stream)
+	(when (and (char= c #\*) (char= (schar text (1+ n)) #\/))
+	  (princ #\\ stream))))
+    (princ (schar text l) stream))
+  (format stream "~70T*/")
   )
+
+(defun wt-comment (message &optional extra (single-line extra))
+  (when (and (symbolp message) (not (symbol-package message)))
+    ;; useless to show gensym's
+    (return-from wt-comment))
+  (wt-filtered-comment (format nil "~A~A" message (or extra ""))
+		       *compiler-output1*
+		       single-line))
 
 (defun wt1 (form)
   (typecase form

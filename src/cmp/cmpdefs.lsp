@@ -32,8 +32,19 @@
 
 (in-package "COMPILER")
 
-;;; Use structures of type vector to avoid creating
-;;; normal structures before booting CLOS.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; COMPILER STRUCTURES
+;;;
+
+;;;
+;;; REF OBJECT
+;;;
+;;; Base object for functions, variables and statements. We use it to
+;;; keep track of references to objects, how many times the object is
+;;; referenced, by whom, and whether the references cross some closure
+;;; boundaries.
+;;;
 
 (defstruct (ref (:print-object print-ref))
   name			;;; Identifier of reference.
@@ -348,6 +359,13 @@ The default value is NIL.")
 ;;; of destinations.
 ;;;
 (defvar *destination*)
+
+;;; --cmpmain.lsp--
+;;;
+;;; Do we debug the compiler? Then we need files not to be deleted.
+
+(defvar *debug-compiler* nil)
+(defvar *files-to-be-deleted* '())
 
 ;;; --cmptag.lsp--
 ;;;

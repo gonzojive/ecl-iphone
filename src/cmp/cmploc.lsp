@@ -56,10 +56,19 @@
 ;;;	( JUMP-TRUE label )
 ;;;	( JUMP-FALSE label )
 
+(defun tmp-destination (loc)
+  (case loc
+    (VALUES 'VALUES)
+    (RETURN 'RETURN)
+    (TRASH 'TRASH)
+    (T 'VALUE0)))
+
 (defun set-loc (loc &aux fd
 		    (is-call (and (consp loc)
 				  (member (car loc) '(CALL CALL-NORMAL CALL-ARGS-PUSHED)
 					  :test #'eq))))
+  (when (eql *destination* loc)
+    (return-from set-loc))
   (case *destination*
     (VALUES
      (cond (is-call

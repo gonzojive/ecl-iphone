@@ -742,7 +742,14 @@ sharp_left_parenthesis_reader(cl_object in, cl_object c, cl_object d)
 		a = _cl_backq_car(&x);
 		if (a == APPEND || a == NCONC)
 			FEreader_error(",at or ,. has appeared in an illegal position.", in, 0);
-		v = cl_list(3, @'coerce', x, @'vector');
+		if (a == QUOTE) {
+			v = funcall(4, @'make-array', cl_list(1, cl_length(x)),
+				    @':initial-contents', x);
+		} else {
+			v = cl_list(2, @'si::unquote', 
+				    cl_list(3, @'apply',
+					    cl_list(2, @'quote', @'vector'), x));
+		}
 	} else if (fixed_size) {
 		v = cl_alloc_simple_vector(dim, aet_object);
 		v->vector.self.t = (cl_object *)cl_alloc_align(dim * sizeof(cl_object), sizeof(cl_object));

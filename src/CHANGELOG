@@ -12,6 +12,14 @@ ECL 0.9f
 	)
    produced an error.
 
+ - In compiled code, discarded (VALUES ...) forms did not trigger all the
+   required unwinding forms, so that (TAGBODY (CATCH 'FOO (VALUES 0))) produced
+   wrong code.
+
+ - In compiled code, the init-form for keyword and optional arguments could
+   reference the variable that it was going to initialize, as in
+	(LAMBDA (&OPTIONAL (FOO (1+ FOO))) ...)
+
 * Visible changes:
 
  - Multithreaded ECL now in Windows, either with Microsoft VC++
@@ -24,6 +32,13 @@ ECL 0.9f
 
  - Optimized some routines that iterate over sequences: SOME, EVERY,
    NOTANY, NOTEVERY (M. Goffioul)
+
+ - A new global variable SI::*EXIT-HOOKS* is used to store closures that
+   will be invoked when exiting ECL by cl_shutdown().
+
+ - Slight rewrite of configuration help.
+
+ - Configure option --with-clos-streams now defaults to true.
 
 * ANSI Compatibility:
 

@@ -236,7 +236,7 @@ FEtype_error_symbol(cl_object obj)
 void
 FEdivision_by_zero(cl_object x, cl_object y)
 {
-	cl_error(3, @'division-by-zero', @':operation', @'/',
+	cl_error(5, @'division-by-zero', @':operation', @'/',
 		 @':operands', cl_list(2, x, y));
 }
 

@@ -72,7 +72,17 @@ coprocessor).")
   (loop for i in '("lib" "exp" "ilk" "pdb")
         do (let ((the-pathname (merge-pathnames (make-pathname :type i) output-pathname)))
 	     (when (probe-file the-pathname)
-	       (delete-file the-pathname)))))
+	       (cmp-delete-file the-pathname)))))
+
+(defun cmp-delete-file (file)
+  (if *debug-compiler*
+      (progn
+	(format t "~%Postponing deletion of ~A" file)
+	(push file *files-to-be-deleted*))
+      (delete-file file)))
+
+(push #'(lambda () (mapc #'delete-file *files-to-be-deleted*))
+      si::*exit-hooks*)
 
 (defun linker-cc (o-pathname &rest options)
   (safe-system
@@ -293,7 +303,7 @@ static cl_object VV[VM];
                      output-name o-name ld-flags))
            (safe-system "link -lib -debug @static_lib.tmp"))
          (when (probe-file "static_lib.tmp")
-           (delete-file "static_lib.tmp")))
+           (cmp-delete-file "static_lib.tmp")))
        )
       #+dlopen
       ((:shared-library :dll)
@@ -320,8 +330,8 @@ static cl_object VV[VM];
        (close c-file)
        (compiler-cc c-name o-name)
        (apply #'bundle-cc output-name o-name ld-flags)))
-    (delete-file c-name)
-    (delete-file o-name)
+    (cmp-delete-file c-name)
+    (cmp-delete-file o-name)
     output-name))
 
 (defun build-fasl (&rest args)
@@ -476,23 +486,23 @@ Cannot compile ~a."
 		 (print-compiler-info)
 		 (format t "~&;;; Finished compiling ~a.~%"
 			 (namestring input-pathname))))
-          (unless c-file (delete-file c-pathname))
-          (unless h-file (delete-file h-pathname))
+          (unless c-file (cmp-delete-file c-pathname))
+          (unless h-file (cmp-delete-file h-pathname))
           (unless (or data-file shared-data-file)
-	    (delete-file data-pathname))
+	    (cmp-delete-file data-pathname))
 	  #+dlopen
-	  (unless system-p (delete-file o-pathname))
+	  (unless system-p (cmp-delete-file o-pathname))
 	  #+dlopen
 	  (if system-p o-pathname so-pathname)
 	  #-dlopen
 	  (values o-pathname nil nil))
 
         (progn
-          (when (probe-file c-pathname) (delete-file c-pathname))
-          (when (probe-file h-pathname) (delete-file h-pathname))
-          (when (probe-file data-pathname) (delete-file data-pathname))
-          (when (probe-file shared-data-pathname) (delete-file shared-data-pathname))
-	  (when (probe-file o-pathname) (delete-file o-pathname))
+          (when (probe-file c-pathname) (cmp-delete-file c-pathname))
+          (when (probe-file h-pathname) (cmp-delete-file h-pathname))
+          (when (probe-file data-pathname) (cmp-delete-file data-pathname))
+          (when (probe-file shared-data-pathname) (cmp-delete-file shared-data-pathname))
+	  (when (probe-file o-pathname) (cmp-delete-file o-pathname))
           (format t "~&;;; Due to errors in the compilation process, no FASL was generated.
 ;;; Search above for the \"Error:\" tag to find the error messages.~%")
           (setq *error-p* t)
@@ -582,13 +592,13 @@ Cannot compile ~a."
           (compiler-cc c-pathname o-pathname)
 	  (bundle-cc (si::coerce-to-filename so-pathname)
 		     (si::coerce-to-filename o-pathname))
-          (delete-file c-pathname)
-          (delete-file h-pathname)
-	  (delete-file o-pathname)
-	  (delete-file data-pathname)
+          (cmp-delete-file c-pathname)
+          (cmp-delete-file h-pathname)
+	  (cmp-delete-file o-pathname)
+	  (cmp-delete-file data-pathname)
           (cond ((probe-file so-pathname)
                  (load so-pathname :verbose nil)
-		 #-(or mingw32 msvc)(delete-file so-pathname)
+		 #-(or mingw32 msvc)(cmp-delete-file so-pathname)
 		 #+msvc (delete-msvc-generated-files so-pathname)
                  (when *compile-verbose* (print-compiler-info))
 		 (setf name (or name (symbol-value 'GAZONK)))
@@ -602,10 +612,10 @@ Cannot compile ~a."
                    (setq *error-p* t)
 		   (values name t t))))
         (progn
-          (when (probe-file c-pathname) (delete-file c-pathname))
-          (when (probe-file h-pathname) (delete-file h-pathname))
-          (when (probe-file so-pathname) (delete-file so-pathname))
-          (when (probe-file data-pathname) (delete-file data-pathname))
+          (when (probe-file c-pathname) (cmp-delete-file c-pathname))
+          (when (probe-file h-pathname) (cmp-delete-file h-pathname))
+          (when (probe-file so-pathname) (cmp-delete-file so-pathname))
+          (when (probe-file data-pathname) (cmp-delete-file data-pathname))
 	  #+msvc (delete-msvc-generated-files so-pathname)
           (format t "~&;;; Failed to compile ~s.~%" name)
           (setq *error-p* t)
@@ -706,7 +716,7 @@ Cannot compile ~a."
     (bundle-cc tmp file)
     (when (probe-file tmp)
       (load tmp :verbose nil :print nil)
-      (delete-file tmp)
+      (cmp-delete-file tmp)
       nil)))
 
 #+dlopen

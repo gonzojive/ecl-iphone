@@ -1480,6 +1480,7 @@ cl_symbols[] = {
 
 {SYS_ "WHILE", SI_ORDINARY, NULL, -1, OBJNULL},
 {SYS_ "QUASIQUOTE", SI_ORDINARY, NULL, -1, OBJNULL},
+{SYS_ "*EXIT-HOOKS*", SI_SPECIAL, NULL, -1, Cnil},
 
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1, OBJNULL}};

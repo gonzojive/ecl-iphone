@@ -107,7 +107,7 @@
 		    (wt-nl "return(" loc ");")))
 	      (return)))
 	   (FRAME
-	    (let ((*destination* 'RETURN))
+	    (let ((*destination* (tmp-destination loc)))
 	      (set-loc loc)
 	      (setq loc *destination*))
 	    (wt-nl "frs_pop();"))
