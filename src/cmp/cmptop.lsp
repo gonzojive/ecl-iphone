@@ -148,6 +148,9 @@
 	(let ((num-objects (data-size)))
 	  (if (zerop num-objects)
 	      (progn
+		(wt-h "#undef ECL_DYNAMIC_VV")
+		(wt-h "#define compiler_data_text \"\"")
+		(wt-h "#define compiler_data_text_size 0")
 		(wt-h "#define VM " num-objects 0)
 		(wt-h "#define VV NULL"))
 	      (progn
