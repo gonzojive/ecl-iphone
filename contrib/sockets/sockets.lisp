@@ -481,6 +481,8 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
 }
 ")
 
+
+
 (defmethod socket-bind ((socket inet-socket) &rest address)
   (assert (= 2 (length address)) (address) "Socket-bind needs three parameters for inet sockets.")
   (let ((ip (first address))
@@ -505,9 +507,8 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
       (c-inline ((socket-file-descriptor socket)) (:int) (values :int :object)
 "{
         struct sockaddr_in sockaddr;
-        int socket_fd = fixint(#0);
         int addr_len = sizeof(struct sockaddr_in);
-        int new_fd = accept(socket_fd, (struct sockaddr*)&sockaddr, &addr_len);
+        int new_fd = accept(#0, (struct sockaddr*)&sockaddr, &addr_len);
 
 	@(return 0) = new_fd;
 	@(return 1) = Cnil;
@@ -556,7 +557,7 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
   (let* ((vector (make-array 4))
 	 (fd (socket-file-descriptor socket))
 	 (port (c-inline (fd vector) (:int t) :int
-"{
+"@01;{
         struct sockaddr_in name;
         socklen_t len = sizeof(struct sockaddr_in);
         int ret = getpeername(#0,(struct sockaddr*)&name,&len);
@@ -578,6 +579,33 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
     (if (>= port 0)
 	(values vector port)
 	(socket-error "getpeername"))))
+
+(defmethod socket-name ((socket inet-socket))
+  (let* ((vector (make-array 4))
+	 (fd (socket-file-descriptor socket))
+	 (port (c-inline (fd vector) (:int t) :int
+"@01;{
+        struct sockaddr_in name;
+        socklen_t len = sizeof(struct sockaddr_in);
+        int ret = getsockname(#0,(struct sockaddr*)&name,&len);
+
+        if (ret == 0) {
+                uint32_t ip = ntohl(name.sin_addr.s_addr);
+                uint16_t port = ntohs(name.sin_port);
+
+                aset(#1,0, MAKE_FIXNUM( ip>>24 ));
+		aset(#1,1, MAKE_FIXNUM( (ip>>16) & 0xFF));
+		aset(#1,2, MAKE_FIXNUM( (ip>>8) & 0xFF));
+                aset(#1,3, MAKE_FIXNUM( ip & 0xFF ));
+
+                @(return) = port;
+         } else {
+                @(return) = -1;
+         }
+}")))
+    (if (>= port 0)
+	(values vector port)
+	(socket-error "getsockname"))))
 
 #+:win32
 (defmethod socket-close-low-level ((socket inet-socket))
@@ -625,9 +653,8 @@ also known as unix-domain sockets."))
       (c-inline ((socket-file-descriptor socket)) (:int) (values :int :object)
 "{
         struct sockaddr_un sockaddr;
-        int socket_fd = fixint(#0);
         int addr_len = sizeof(struct sockaddr_un);
-        int new_fd = accept(socket_fd, &sockaddr, &addr_len);
+        int new_fd = accept(#0, &sockaddr, &addr_len);
 	@(return 0) = new_fd;
 	@(return 1) = (new_fd == -1) ? Cnil : make_string_copy(&sockaddr.sun_path);
 }")
