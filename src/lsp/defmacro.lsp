@@ -154,9 +154,9 @@
 	       ppn))
 
 	   (dm-v (v init)
-	     (cond ((symbolp v)
+	     (cond ((and v (symbolp v))
 		    (push (if init (list v init) v) *dl*))
-		   ((atom v)
+		   ((and v (atom v))
 		    (error "destructure: ~A is not a list nor a symbol" v))
 		   ((eq (first v) '&whole)
 		    (let ((whole-var (second v)))

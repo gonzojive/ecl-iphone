@@ -157,12 +157,13 @@ cl_truename(cl_object pathname)
 	pathname = coerce_to_file_pathname(pathname);
 	if (pathname->pathname.directory == Cnil)
 		pathname = merge_pathnames(previous, pathname, @':newest');
+	if (cl_wild_pathname_p(1, pathname) != Cnil)
+		cl_error(3, @'file-error', @':pathname', pathname);
 
 	/* First we ensure that PATHNAME itself does not point to a symlink. */
 	filename = si_follow_symlink(pathname);
 	if (filename == Cnil) {
-		FEerror("truename: file ~S does not exist or cannot be accessed", 1,
-			pathname);
+		FEcannot_open(pathname);
 	} else {
 		filename = cl_parse_namestring(3, filename, Cnil, Cnil);
 	}
@@ -253,6 +254,8 @@ cl_delete_file(cl_object file)
 cl_object
 cl_probe_file(cl_object file)
 {
+	if (cl_wild_pathname_p(1, file) != Cnil)
+		cl_error(3, @'file-error', @':pathname', file);
 	@(return (si_file_kind(file, Ct) != Cnil? cl_truename(file) : Cnil))
 }
 

@@ -436,8 +436,8 @@ c_var_ref(cl_object var, int allow_symbol_macro)
 			   symbol macro */
 			if (allow_symbol_macro)
 				return -1;
-			FEerror("Internal error: symbol macro ~S used as variable",
-				1, var);
+			FEprogram_error("Internal error: symbol macro ~S used as variable",
+					1, var);
 		} else {
 			return Null(special)? n : -2;
 		}
@@ -1779,7 +1779,6 @@ c_symbol_macrolet(cl_object args, int flags)
 	def_list = pop(&args);
 	body = c_process_declarations(args);
 	specials = VALUES(3);
-	c_register_vars(specials);
 
 	/* Scan the list of definitions */
 	for (; !endp(def_list); ) {
@@ -1788,13 +1787,17 @@ c_symbol_macrolet(cl_object args, int flags)
 		cl_object expansion = pop(&definition);
 		cl_object arglist = cl_list(2, @gensym(0), @gensym(0));
 		cl_object function;
-		if (name->symbol.stype == stp_special || c_var_ref(name,1) == -2)
+		if (name->symbol.stype != stp_ordinary ||
+		    c_var_ref(name,1) == -2)
+		{
 			FEprogram_error("SYMBOL-MACROLET: Symbol ~A cannot be \
 declared special and appear in a symbol-macrolet.", 1, name);
+		}
 		definition = cl_list(2, arglist, cl_list(2, @'quote', expansion));
 		function = make_lambda(name, definition);
 		c_register_symbol_macro(name, function);
 	}
+	c_register_vars(specials);
 	flags = compile_body(body, flags);
 	ENV->variables = old_variables;
 	return flags;

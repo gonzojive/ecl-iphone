@@ -302,9 +302,8 @@ cl_symbol_name(cl_object x)
 @
 	assert_type_string(prefix);
 	assert_type_package(pack);
-	s = cl_alloc_adjustable_string(64);
 ONCE_MORE:
-	output = make_string_output_stream_from_string(s);
+	output = make_string_output_stream(64);
 	bds_bind(@'*print-base*', MAKE_FIXNUM(10));
 	bds_bind(@'*print-radix*', Cnil);
 	princ(prefix, output);

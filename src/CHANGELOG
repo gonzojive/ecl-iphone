@@ -1741,6 +1741,9 @@ ECL 0.9d
   - COMPILE-FILE now handles files with relative pathnames (like
     "foo/faa.lsp").
 
+  - In destructuring lambda lists, () or NIL is understood as an empty
+    list.
+
 * Documentation:
 
   - New manual page documents the scripting facilities of ECL
@@ -1827,7 +1830,8 @@ ECL 0.9d
     class A and this class is renamed as B, the method still
     specializes on the same class.
 
-  - Implemented WILD-PATHNAME-P, and LOAD-LOGICAL-PATHNAME-TRANSLATIONS.
+  - Implemented WILD-PATHNAME-P, and LOAD-LOGICAL-PATHNAME-TRANSLATIONS
+    (which similar to CMUCL looks for the translations at sys:host.translation).
 
 TODO:
 =====

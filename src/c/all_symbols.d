@@ -165,7 +165,7 @@ make_this_symbol(int i, cl_object s, int code, const char *name,
 	case ORDINARY_SYMBOL: stp = stp_ordinary; break;
 	case SPECIAL_SYMBOL: stp = stp_special; break;
 	case CONSTANT_SYMBOL: stp = stp_constant; break;
-	case FORM_SYMBOL: form = 1;
+	case FORM_SYMBOL: form = 1; stp = stp_ordinary;
 	}
 	switch (code & 12) {
 	case CL_PACKAGE: package = cl_core.lisp_package; break;

@@ -22,7 +22,7 @@
            (values (member t nil)))
   (let ((*autoload-translations* nil))
     (unless (or (string-equal host "sys")
-                (find-logical-host host nil))
+                (si::pathname-translations host))
       (with-open-file (in-str (make-pathname :defaults "sys:"
                                              :name (string-downcase host)
                                              :type "translations"))
@@ -38,13 +38,13 @@
   "Syntax: (time form)
 Evaluates FORM, outputs the realtime and runtime used for the evaluation to
 *TRACE-OUTPUT*, and then returns all values of FORM."
-  (let*((real-start (gentemp))
-	(real-end (gentemp))
-	(run-start (gentemp))
-	(run-end (gentemp))
-	#-boehm-gc(gc-start (gentemp))
-	(gc-end (gentemp))
-	(x (gentemp)))
+  (let*((real-start (gensym))
+	(real-end (gensym))
+	(run-start (gensym))
+	(run-end (gensym))
+	#-boehm-gc(gc-start (gensym))
+	(gc-end (gensym))
+	(x (gensym)))
     `(let*((,real-start (get-internal-real-time))
 	   (,run-start (get-internal-run-time))
 	   #-boehm-gc(,gc-start (sys:gc-time))
@@ -155,13 +155,23 @@ Returns the current day-and-time as nine values:
 Sunday is the *last* day of the week!!"
   (decode-universal-time (get-universal-time)))
 
-(defun ensure-directories-exist (a-pathname)
-  (let* (d)
+(defun ensure-directories-exist (a-pathname &key verbose)
+  (let* ((created nil)
+	 d)
+    (when (or (wild-pathname-p a-pathname :directory)
+	      (wild-pathname-p a-pathname :host)
+	      (wild-pathname-p a-pathname :device))
+      (error 'file-error :pathname a-pathname))
     (dolist (item (pathname-directory a-pathname))
       (setf d (nconc d (list item)))
-      (let ((p (make-pathname :directory d :defaults a-pathname)))
+      (let ((p (make-pathname :name nil :type nil :directory d
+			      :defaults a-pathname)))
 	(unless (or (symbolp item) (si::file-kind p nil))
-	  (si::mkdir p #o777))))))
+	  (setf created t)
+	  (when verbose
+	    (format t "~%;;; Making directory ~A" p))
+	  (si::mkdir p #o777))))
+    (values a-pathname created)))
 
 (defmacro with-hash-table-iterator ((iterator package) &body body)
   `(let ((,iterator (hash-table-iterator ,package)))

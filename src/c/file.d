@@ -24,6 +24,7 @@
 #include <ecl.h>
 #include "ecl-inl.h"
 #include "internal.h"
+#include <string.h>
 
 #ifdef HAVE_SELECT
 #include <sys/select.h>
@@ -1725,6 +1726,8 @@ cl_open_stream_p(cl_object strm)
 	/* ANSI and Cltl2 specify that open-stream-p should work
 	   on closed streams, and that a stream is only closed
 	   when #'close has been applied on it */
+	if (type_of(strm) != t_stream)
+		FEwrong_type_argument(@'stream', strm);
 	@(return (strm->stream.mode != smm_closed ? Ct : Cnil))
 }
 

@@ -607,8 +607,13 @@ cl_object
 cl_logical_pathname(cl_object x)
 {
 	x = cl_pathname(x);
-	if (!x->pathname.logical)
-		FEerror("~S cannot be coerced to a logical pathname.", 1, x);
+	if (!x->pathname.logical) {
+		cl_error(9, @'simple-type-error', @':format-control',
+			 make_simple_string("~S cannot be coerced to a logical pathname."),
+			 @':format-arguments', cl_list(1, x),
+			 @':expected-type', @'logical-pathname',
+			 @':datum', x);
+	}
 	@(return x);
 }
 
@@ -674,8 +679,6 @@ cl_object
 coerce_to_file_pathname(cl_object pathname)
 {
 	pathname = coerce_to_physical_pathname(pathname);
-	if (!Null(cl_wild_pathname_p(1, pathname)))
-		cl_error(3, @'file-error', @':pathname', pathname);
 	pathname = cl_merge_pathnames(1, pathname);
 #if !defined(cygwin) && !defined(mingw32)
 	if (pathname->pathname.device != Cnil)
@@ -696,7 +699,7 @@ coerce_to_physical_pathname(cl_object x)
 {
 	x = cl_pathname(x);
 	if (x->pathname.logical)
-	  return cl_translate_logical_pathname(x);
+		return cl_translate_logical_pathname(1, x);
 	return x;
 }
 
@@ -1372,11 +1375,9 @@ copy_list_wildcards(cl_object *wilds, cl_object to)
 	return l;
 }
 
-cl_object
-cl_translate_pathname(cl_object source, cl_object from, cl_object to)
-{
+@(defun translate-pathname (source from to &key)
 	cl_object wilds, out, d;
-
+@
 	source = cl_pathname(source);
 	from = cl_pathname(from);
 	to = cl_pathname(to);
@@ -1434,26 +1435,25 @@ cl_translate_pathname(cl_object source, cl_object from, cl_object to)
 	FEerror("~S is not a specialization of path ~S", 2, source, from);
  error2:
 	FEerror("Number of wildcards in ~S do not match  ~S", 2, from, to);
-}
+@)
 
-cl_object
-cl_translate_logical_pathname(cl_object source)
-{
+@(defun translate-logical-pathname (source &key)
 	cl_object l, pair;
-	source = cl_pathname(source);
-	if (!source->pathname.logical)
-		goto error;
+	cl_object pathname;
+@
+	pathname = cl_pathname(source);
  begin:
-	l = @si::pathname-translations(1, source->pathname.host);
+	if (!pathname->pathname.logical) {
+		@(return pathname)
+	}
+	l = @si::pathname-translations(1, pathname->pathname.host);
 	for(; !endp(l); l = CDR(l)) {
 		pair = CAR(l);
-		if (!Null(cl_pathname_match_p(source, CAR(pair)))) {
-			source = cl_translate_pathname(source, CAR(pair), CADR(pair));
-			if (source->pathname.logical)
-				goto begin;
-			return source;
+		if (!Null(cl_pathname_match_p(pathname, CAR(pair)))) {
+			pathname = cl_translate_pathname(3, pathname, CAR(pair),
+							 CADR(pair));
+			goto begin;
 		}
 	}
- error:
-	FEerror("~S admits no logical pathname translations", 1, source);
-}
+	FEerror("~S admits no logical pathname translations", 1, pathname);
+@)

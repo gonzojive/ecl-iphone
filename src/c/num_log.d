@@ -17,6 +17,7 @@
 #include "ecl.h"
 #include <stdlib.h>
 #include "internal.h"
+#include "mp.h"
 
 /*
  * BIT OPERATIONS FOR FIXNUMS
@@ -408,7 +409,7 @@ count_bits(cl_object x)
 		cl_fixnum i = fix(x);
 		cl_fixnum j = (i < 0) ? ~i : i;
 		for (count=0 ; j ; j >>= 1)
-		  if (j & 1) count++;
+			if (j & 1) count++;
 		break;
 	}
 	case t_bignum:
@@ -417,7 +418,7 @@ count_bits(cl_object x)
 		else {
 			cl_object z = big_register0_get();
 			mpz_com(z->big.big_num, x->big.big_num);
-			count = mpz_popcount(x->big.big_num);
+			count = mpz_popcount(z->big.big_num);
 			big_register_free(z);
 		}
 		break;
@@ -470,12 +471,12 @@ ecl_ash(cl_object x, cl_fixnum w)
 static int
 int_bit_length(cl_fixnum i)
 {
-	register int count, j;
-
-	count = 0;
-	for (j = 0; j < (sizeof(cl_index)/sizeof(uint8_t))*8-1; j++)
-		if (((i >> j) & 1) == 1) count = j + 1;
-	return(count);
+	int count;
+	if (i < 0)
+		i = ~i;
+	for (count = 0; i && (count < FIXNUM_BITS); i >>= 1, count++)
+		;
+	return count;
 }
 
 @(defun logior (&rest nums)
@@ -644,15 +645,13 @@ cl_integer_length(cl_object x)
 	switch (type_of(x)) {
 	case t_fixnum:
 		i = fix(x);
-		count = int_bit_length((i < 0) ? ~i : i);
+		count = int_bit_length(i);
 		break;
-	case t_bignum: {
-		/* FIXME! We should not be using internals of GMP here */
-	  	int last = abs(x->big.big_size) - 1;
-		i = x->big.big_limbs[last];
-		count = last * (sizeof(mp_limb_t) * 8) + int_bit_length(i);
+	case t_bignum:
+		if (mpz_sgn(x->big.big_num) < 0)
+			x = cl_lognot(x);
+		count = mpz_sizeinbase(x->big.big_num, 2);
 		break;
-	}
 	default:
 		FEtype_error_integer(x);
 	}

@@ -621,7 +621,7 @@ cl_object
 cl_sxhash(cl_object key)
 {
 	cl_index output = _hash_equal(~(cl_hashkey)0, 0, key);
-	const cl_index mask = (1 << (FIXNUM_BITS - 3)) - 1;
+	const cl_index mask = ((cl_index)1 << (FIXNUM_BITS - 3)) - 1;
 	@(return MAKE_FIXNUM(output & mask))
 }
 
