@@ -28,6 +28,14 @@ ECL 1.0
   - The reader macros for sharp-single-quote (#') and single-quote (')
     did not pay attention to the end of file condition.
 
+  - LISTEN did not work on files and consoles under windows (M. Goffioul).
+
+  - Special declarations in LET/LET*/DO/DO*/LAMDBA now take place even if the
+    declared variable is not bound in the associated form.
+
+  - In the compiled code, special declarations affected the expressions in
+    the binding forms as well.
+
 * Visible changes:
 
   - SI:MKSTEMP now accepts and returns pathnames.
@@ -51,6 +59,11 @@ ECL 1.0
 
   - ENSURE-GENERIC-FUNCTION, DEFGENERIC and DEFMETHOD now can operate
     on functions which are being traced.
+
+  - INTERACTIVE-STREAM-P now outputs T for ttys (terminals, consoles, etc).
+
+  - DO/DO* are no longer primitives, but rather macros that build on top
+    of the SI::WHILE iteration primitive.
 
 * Internals:
 

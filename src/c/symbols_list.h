@@ -1472,6 +1472,8 @@ cl_symbols[] = {
 {MP_ "WITHOUT-INTERRUPTS", MP_CONSTANT, NULL, -1, OBJNULL},
 #endif
 
+{SYS_ "WHILE", SI_ORDINARY, NULL, -1, OBJNULL},
+
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1, OBJNULL}};
 

@@ -37,6 +37,47 @@
  	  t)
 )
 
+;;
+;; This is also needed for booting ECL. In particular it is required in
+;; defmacro.lsp.
+;;
+(let ((f #'(ext::lambda-block do/do*-expand (whole env)
+           (let (do/do* control test result vl step let psetq body)
+	     (setq do/do* (first whole) body (rest whole))
+	     (if (eq do/do* 'do)
+		 (setq let 'LET psetq 'PSETQ)
+		 (setq let 'LET* psetq 'SETQ))
+	     (when (endp body)
+	       (simple-program-error "Syntax error in DO/DO* body:~%~A" whole))
+	     (setq control (first body) body (rest body))
+	     (when (endp body)
+	       (simple-program-error "Syntax error in DO/DO* body:~%~A" whole))
+	     (setq test (first body) body (rest body))
+	     (when (endp test)
+	       (simple-program-error "Syntax error in DO/DO* body:~%~A" whole))
+	     (setq result (rest test) test (first test))
+	     (dolist (c control)
+	       (when (symbolp c) (setq c (list c)))
+	       (case (length c)
+		 ((1 2)
+		  (setq vl (cons c vl)))
+		 ((3)
+		  (setq vl (cons (butlast c) vl)
+			step (list* (third c) (first c) step)))
+		 (t
+		  (simple-program-error "Syntax error in DO/DO* body:~%~A" whole))))
+	     (multiple-value-bind (declarations real-body doc)
+		 (process-declarations body nil)
+	       `(BLOCK NIL
+		 (,let ,(nreverse vl)
+		   (declare ,@declarations)
+		   (sys::while ,test
+			       ,@real-body
+			       ,@(when step (list (cons psetq (nreverse step)))))
+		   ,@(or result '(nil)))))))))
+  (si::fset 'do f t)
+  (si::fset 'do* f t))
+
 (defun eval-feature (x)
   (declare (si::c-local))
   (cond ((symbolp x)

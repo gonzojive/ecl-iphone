@@ -73,13 +73,13 @@ static cl_object asm_end(cl_index handle);
 static cl_index asm_jmp(register int op);
 static void asm_complete(register int op, register cl_index original);
 
+static cl_fixnum c_var_ref(cl_object var, int allow_symbol_macro);
+
 static int c_block(cl_object args, int flags);
 static int c_case(cl_object args, int flags);
 static int c_catch(cl_object args, int flags);
 static int c_compiler_let(cl_object args, int flags);
 static int c_cond(cl_object args, int flags);
-static int c_do(cl_object args, int flags);
-static int c_doa(cl_object args, int flags);
 static int c_dolist(cl_object args, int flags);
 static int c_dotimes(cl_object args, int flags);
 static int c_eval_when(cl_object args, int flags);
@@ -110,6 +110,7 @@ static int c_symbol_macrolet(cl_object args, int flags);
 static int c_tagbody(cl_object args, int flags);
 static int c_throw(cl_object args, int flags);
 static int c_unwind_protect(cl_object args, int flags);
+static int c_while(cl_object args, int flags);
 static int compile_body(cl_object args, int flags);
 static int compile_form(cl_object args, int push);
 
@@ -240,8 +241,6 @@ static compiler_record database[] = {
   {@'catch', c_catch, 1},
   {@'ext::compiler-let', c_compiler_let, 0},
   {@'cond', c_cond, 1},
-  {@'do', c_do, 1},
-  {@'do*', c_doa, 1},
   {@'dolist', c_dolist, 1},
   {@'dotimes', c_dotimes, 1},
   {@'eval-when', c_eval_when, 0},
@@ -274,6 +273,7 @@ static compiler_record database[] = {
   {@'throw', c_throw, 1},
   {@'unwind-protect', c_unwind_protect, 1},
   {@'values', c_values, 1},
+  {@'si::while', c_while, 0},
   {NULL, NULL, 1}
 };
 
@@ -354,10 +354,16 @@ c_register_macro(cl_object name, cl_object exp_fun)
 }
 
 static void
-c_register_var(register cl_object var, bool special)
+c_register_var(register cl_object var, bool special, bool bound)
 {
-	ENV->variables = CONS(cl_list(2, var, special? @'special' : Cnil),
-			       ENV->variables);
+	/* If this is just a declaration, ensure that the variable was not
+	 * declared before as special, to save memory. */
+	if (bound || (c_var_ref(var, 0) >= 0)) {
+		ENV->variables = CONS(cl_list(3, var,
+					      special? @'special' : Cnil,
+					      bound? Ct : Cnil),
+				      ENV->variables);
+	}
 }
 
 static void
@@ -385,7 +391,7 @@ c_new_env(struct cl_compiler_env *new_c_env, cl_object env)
 		else if (tag == @':function')
 			c_register_function(CAR(what));
 		else
-			c_register_var(tag, FALSE);
+			c_register_var(tag, FALSE, TRUE);
 	}
 }
 
@@ -452,12 +458,12 @@ c_declared_special(register cl_object var, register cl_object specials)
 }
 
 static void
-c_register_vars(cl_object specials)
+c_declare_specials(cl_object specials)
 {
 	while (!Null(specials)) {
 		cl_object var = pop(&specials);
 		if (c_var_ref(var,0) >= 0)
-			c_register_var(var, TRUE);
+			c_register_var(var, TRUE, FALSE);
 	}
 }
 
@@ -476,10 +482,10 @@ c_pbind(cl_object var, cl_object specials)
 	if (!SYMBOLP(var))
 		FEillegal_variable_name(var);
 	else if ((special = c_declared_special(var, specials))) {
-		c_register_var(var, TRUE);
+		c_register_var(var, TRUE, TRUE);
 		asm_op2c(OP_PBINDS, var);
 	} else {
-		c_register_var(var, FALSE);
+		c_register_var(var, FALSE, TRUE);
 		asm_op2c(OP_PBIND, var);
 	}
 	return special;
@@ -492,10 +498,10 @@ c_bind(cl_object var, cl_object specials)
 	if (!SYMBOLP(var))
 		FEillegal_variable_name(var);
 	else if ((special = c_declared_special(var, specials))) {
-		c_register_var(var, TRUE);
+		c_register_var(var, TRUE, TRUE);
 		asm_op2c(OP_BINDS, var);
 	} else {
-		c_register_var(var, FALSE);
+		c_register_var(var, FALSE, TRUE);
 		asm_op2c(OP_BIND, var);
 	}
 	return special;
@@ -508,16 +514,22 @@ c_undo_bindings(cl_object old_env)
 	cl_index num_lexical = 0;
 	cl_index num_special = 0;
 
-	for (env = ENV->variables; env != old_env && !Null(env); env = CDR(env)) {
+	for (env = ENV->variables; env != old_env && !Null(env); env = CDR(env))
+	{
 		cl_object record = CAR(env);
 		cl_object name = CAR(record);
 		cl_object special = CADR(record);
-		if (name == @':block' || name == @':tag')
+		if (name == @':block' || name == @':tag') {
 			FEerror("Internal error: cannot undo BLOCK/TAGBODY.",0);
-		else if (name == @':function' || Null(special))
+		} else if (name == @':function' || Null(special)) {
 			num_lexical++;
-		else if (special != @'si::symbol-macro')
-			num_special++;
+		} else if (special != @'si::symbol-macro') {
+			/* If (third special) = NIL, the variable was declared
+			   special, but there is no binding! */
+			if (!Null(CADDR(record))) {
+				num_special++;
+			}
+		}
 	}
 	if (num_lexical) asm_op2(OP_UNBIND, num_lexical);
 	if (num_special) asm_op2(OP_UNBINDS, num_special);
@@ -912,105 +924,26 @@ c_cond(cl_object args, int flags) {
 
 */
 static int
-c_do_doa(int op, cl_object args, int flags) {
-	cl_object bindings, test, specials, body, l;
-	cl_object stepping = Cnil, vars = Cnil;
-	cl_index labelb, labelt, labelz;
-	cl_object old_variables = ENV->variables;
+c_while(cl_object body, int flags) {
+	cl_object test = pop(&body);
+	cl_index labelt, labelb;
 
-	bindings = pop(&args);
-	test = pop(&args);
-
-	body = c_process_declarations(args);
-	specials = VALUES(3);
-
-	labelz = asm_jmp(OP_DO);
-
-	/* Bind block */
-	c_register_block(Cnil);
-
-	/* Compile initial bindings */
-	if (length(bindings) == 1)
-		op = OP_BIND;
-	for (l=bindings; !endp(l); ) {
-		cl_object aux = pop(&l);
-		cl_object var, value;
-		if (ATOM(aux)) {
-			var = aux;
-			value = Cnil;
-		} else {
-			var = pop(&aux);
-			value = pop_maybe_nil(&aux);
-			if (!endp(aux))
-				stepping = CONS(CONS(var,pop(&aux)),stepping);
-			if (!Null(aux))
-				FEprogram_error("LET: Ill formed declaration.", 0);
-		}
-		if (!SYMBOLP(var))
-			FEillegal_variable_name(var);
-		if (op == OP_PBIND) {
-			compile_form(value, FLAG_PUSH);
-			vars = CONS(var, vars);
-		} else {
-			compile_form(value, FLAG_REG0);
-			c_bind(var, specials);
-		}
-	}
-	while (!endp(vars))
-		c_pbind(pop(&vars), specials);
+	flags = maybe_reg0(flags);
 
 	/* Jump to test */
 	labelt = asm_jmp(OP_JMP);
 
 	/* Compile body */
 	labelb = current_pc();
-	c_tagbody(body, 0);
-
-	/* Compile stepping clauses */
-	if (length(stepping) == 1)
-		op = OP_BIND;
-	for (vars = Cnil, stepping=cl_nreverse(stepping); !endp(stepping); ) {
-		cl_object pair = pop(&stepping);
-		cl_object var = CAR(pair);
-		cl_object value = CDR(pair);
-		if (op == OP_PBIND) {
-			compile_form(value, FLAG_PUSH);
-			vars = CONS(var, vars);
-		} else {
-			compile_form(value, FLAG_REG0);
-			compile_setq(OP_SETQ, var);
-		}
-	}
-	while (!endp(vars))
-		compile_setq(OP_PSETQ, pop(&vars));
+	c_tagbody(body, flags);
 
 	/* Compile test */
 	asm_complete(OP_JMP, labelt);
-	compile_form(pop(&test), FLAG_VALUES);
+	compile_form(test, FLAG_VALUES);
 	asm_op(OP_JNIL);
 	asm_arg(labelb - current_pc());
 
-	/* Compile output clauses */
-	flags = maybe_values_or_reg0(flags);
-	compile_body(test, flags);
-	asm_op(OP_EXIT_FRAME);
-
-	/* Compile return point of block */
-	asm_complete(OP_DO, labelz);
-
-	ENV->variables = old_variables;
 	return flags;
-}
-
-
-static int
-c_doa(cl_object args, int flags) {
-	return c_do_doa(OP_BIND, args, flags);
-}
-
-static int
-c_do(cl_object args, int flags) {
-	return c_do_doa(OP_PBIND, args, flags);
 }
 
 /*
@@ -1063,7 +996,7 @@ c_dolist_dotimes(int op, cl_object args, int flags) {
 	asm_op(OP_EXIT);
 
 	/* From here on, declarations apply */
-	c_register_vars(specials);
+	c_declare_specials(specials);
 
 	/* Variable assignment and iterated body */
 	compile_setq(OP_SETQ, var);
@@ -1341,7 +1274,7 @@ c_let_leta(int op, cl_object args, int flags) {
 
 	/* Optimize some common cases */
 	switch(length(bindings)) {
-	case 0:		return compile_body(body, flags);
+	case 0:		return c_locally(CDR(args), flags);
 	case 1:		op = OP_BIND; break;
 	}
 
@@ -1369,6 +1302,12 @@ c_let_leta(int op, cl_object args, int flags) {
 	}
 	while (!endp(vars))
 		c_pbind(pop(&vars), specials);
+
+	/* We have to register all specials, because in the list
+	 * there might be some variable that is not bound by this LET form
+	 */
+	c_declare_specials(specials);
+
 	flags = compile_body(body, flags);
 
 	c_undo_bindings(old_variables);
@@ -1391,7 +1330,7 @@ c_locally(cl_object args, int flags) {
 
 	/* First use declarations by declaring special variables... */
 	args = c_process_declarations(args);
-	c_register_vars(VALUES(3));
+	c_declare_specials(VALUES(3));
 
 	/* ...and then process body */
 	flags = compile_body(args, flags);
@@ -1449,7 +1388,7 @@ c_multiple_value_bind(cl_object args, int flags)
 	compile_form(value, FLAG_VALUES);
 	n = length(vars);
 	if (n == 0) {
-		c_register_vars(specials);
+		c_declare_specials(specials);
 		flags = compile_body(body, flags);
 		ENV->variables = old_env;
 	} else {
@@ -1459,14 +1398,15 @@ c_multiple_value_bind(cl_object args, int flags)
 			if (!SYMBOLP(var))
 				FEillegal_variable_name(var);
 			if (c_declared_special(var, specials)) {
-				c_register_var(var, FLAG_PUSH);
+				c_register_var(var, FLAG_PUSH, TRUE);
 				asm_op2(OP_VBINDS, n);
 			} else {
-				c_register_var(var, FALSE);
+				c_register_var(var, FALSE, TRUE);
 				asm_op2(OP_VBIND, n);
 			}
 			asm_c(var);
 		}
+		c_declare_specials(specials);
 		flags = compile_body(body, flags);
 		c_undo_bindings(old_variables);
 	}
@@ -1794,7 +1734,7 @@ declared special and appear in a symbol-macrolet.", 1, name);
 		function = make_lambda(name, definition);
 		c_register_symbol_macro(name, function);
 	}
-	c_register_vars(specials);
+	c_declare_specials(specials);
 	flags = compile_body(body, flags);
 	ENV->variables = old_variables;
 	return flags;
@@ -2388,17 +2328,20 @@ c_default(cl_index base_pc, cl_object deflt) {
 static void
 c_register_var2(register cl_object var, register cl_object *specials)
 {
+	/* This is similar to c_register_var() but we enlarge the list
+	 * of special variables that will be finally stored in the
+	 * prologue of the interpreted function. */
 	if (Null(var))
 		return;
 	if (member_eq(var, *specials))
-		c_register_var(var, TRUE);
+		c_register_var(var, TRUE, TRUE);
 	else if (var->symbol.stype == stp_special) {
 		*specials = CONS(var, *specials);
-		c_register_var(var, TRUE);
+		c_register_var(var, TRUE, TRUE);
 	} else if (var->symbol.stype == stp_constant)
 		FEassignment_to_constant(var);
 	else
-		c_register_var(var, FALSE);
+		c_register_var(var, FALSE, TRUE);
 }
 
 cl_object
@@ -2492,6 +2435,7 @@ make_lambda(cl_object name, cl_object lambda) {
 		c_bind(var, specials);
 	}
 
+	c_declare_specials(specials);
 	compile_body(body, FLAG_VALUES);
 	asm_op(OP_EXIT);
 

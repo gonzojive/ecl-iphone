@@ -241,40 +241,15 @@ SECOND-FORM."
 (defmacro multiple-value-bind (vars form &rest body)
   `(multiple-value-call #'(lambda (&optional ,@(mapcar #'list vars)) ,@body) ,form))
 
-(defun do/do*-expand (control test result body let psetq
-			      &aux (decl nil) (label (gensym)) (exit (gensym))
-			      (vl nil) (step nil))
-  (declare (si::c-local))
-  (multiple-value-setq (decl body)
-    (find-declarations body))
-  (dolist (c control)
-    (when (symbolp  c) (setq c (list c))) ; convenient extension to CL. Beppe
-    (case (length c)
-      ((1 2)
-       (push c vl))
-      ((3)
-       (push (butlast c) vl)
-       (push (first c) step)
-       (push (third c) step))
-      (t
-       (error "Too many arguments in init form of do/do*"))))
-  `(BLOCK NIL
-          (,let ,(nreverse vl)
-               ,@decl
-               (TAGBODY
-		  (GO ,exit)
-		,label
-		  ,@body
-		  ,@(when step (list (cons psetq (nreverse step))))
-		,exit
-		  (UNLESS ,test (GO ,label)))
-	       ,@result)))
-
-(defmacro do (control (test . result) &rest body)
-  (do/do*-expand control test result body 'LET 'PSETQ))
-
-(defmacro do* (control (test . result) &rest body)
-  (do/do*-expand control test result body 'LET* 'SETQ))
+(defmacro sys::while (test &body body)
+  (let ((label (gensym))
+	(exit (gensym)))
+    `(TAGBODY
+        (GO ,exit)
+      ,label
+        ,@body
+      ,exit
+	(UNLESS ,test (GO ,label)))))
 
 (defmacro case (keyform &rest clauses &aux (form nil) (key (gensym)))
   (dolist (clause (reverse clauses)

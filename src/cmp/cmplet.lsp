@@ -20,8 +20,6 @@
 
   (multiple-value-setq (body ss ts is other-decls) (c1body (cdr args) nil))
 
-  (c1add-globals ss)
-
   (dolist (x (car args))
     (cond ((symbolp x)
            (let ((v (c1make-var x ss is ts)))
@@ -52,6 +50,7 @@
 
   (check-vdecl vnames ts is)
 
+  (c1add-globals ss)
   (setq body (c1decl-body other-decls body))
 
   ;; since the body may produce type constraints on variables:
@@ -248,7 +247,6 @@
   (check-args-number 'LET* args 1)
 
   (multiple-value-setq (body ss ts is other-decls) (c1body (cdr args) nil))
-  (c1add-globals ss)
 
   (dolist (x (car args))
     (cond ((symbolp x)
@@ -275,6 +273,7 @@
 	       (push v vars)
 	       (push-vars v)))))
 
+  (c1add-globals ss)
   (check-vdecl vnames ts is)
   (setq body (c1decl-body other-decls body))
 
