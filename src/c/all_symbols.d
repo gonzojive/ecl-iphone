@@ -376,7 +376,7 @@ const struct symbol_info all_symbols[] = {
 		c = *(source++);
 		if (isalpha(c))
 			c = tolower(c);
-		else if (isnumber(c))
+		else if (isdigit(c))
 			;
 		else if (c == '-' || c == '_') {
 			c = '_';
