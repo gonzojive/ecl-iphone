@@ -1057,6 +1057,7 @@ if test "${with_tcp+set}" = set; then
   withval="$with_tcp"
   tcp="yes"
 fi;
+boehm="yes"
 # Check whether --enable-local-boehm or --disable-local-boehm was given.
 if test "${enable_local_boehm+set}" = set; then
   enableval="$enable_local_boehm"
