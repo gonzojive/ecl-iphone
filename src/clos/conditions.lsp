@@ -76,11 +76,11 @@ strings."
   (let* ((assoc-restart ())
 	 (other ())
 	 (output ()))
-    (unless condition
+    (when condition
       (dolist (i *condition-restarts*)
-	(if (eq (car i) condition)
-	    (setq assoc-restart (append i assoc-restart))
-	    (setq other (append i other)))))
+	(if (eq (first i) condition)
+	    (setq assoc-restart (append (rest i) assoc-restart))
+	    (setq other (append (rest i) other)))))
     (dolist (restart-cluster *restart-clusters*)
       (dolist (restart restart-cluster)
 	(when (and (or (not condition)
@@ -88,7 +88,7 @@ strings."
 		       (not (member restart other)))
 		   (funcall (restart-test-function restart) condition))
 	  (push restart output))))
-    output))
+    (nreverse output)))
 
 (defun restart-print (restart stream depth)
   (declare (ignore depth))
@@ -145,9 +145,11 @@ strings."
 		 '())))))
 
 
-(defmacro restart-case (expression &body clauses)
-  (flet ((transform-keywords (&key report interactive)
+(defmacro restart-case (expression &body clauses &environment env)
+  (flet ((transform-keywords (&key report interactive test)
 	   (let ((keywords '()))
+	     (when test
+	       (setq keywords (list :TEST-FUNCTION `#',test)))				    
 	     (when interactive
 	       (setq keywords (list :INTERACTIVE-FUNCTION
 				    `#',interactive)))
@@ -178,6 +180,35 @@ strings."
 				    (cadr clause)		;BVL=3
 				    forms))) 			;Body=4
 			clauses)))
+      (let ((expression2 (macroexpand expression env)))
+	(when (consp expression2)
+	  (let* ((condition-form nil)
+		 (condition-var (gensym))
+		 (name (first expression2)))
+	    (case name
+	      (SIGNAL
+	       (setq condition-form (second expression2)))
+	      (ERROR
+	       (setq condition-form `(coerce-to-condition ,(second expression2)
+				      (list ,@(cddr expression2))
+				      'SIMPLE-ERROR 'ERROR)))
+	      (CERROR
+	       (setq condition-form `(coerce-to-condition ,(third expression2)
+				      (list ,@(cdddr expression2))
+				      'SIMPLE-ERROR 'CERROR)))
+	      (WARN
+	       (setq condition-form `(coerce-to-condition ,(second expression2)
+				      (list ,@(cddr expression2))
+				      'SIMPLE-WARNING 'WARN))))
+	    (when condition-form
+	      (setq expression
+		    `(let ((,condition-var ,condition-form))
+		      (with-condition-restarts ,condition-var
+			(first *restart-clusters*)
+			,(if (eq name 'CERROR)
+			     `(cerror ,(second expression2) condition-var)
+			     (list name condition-var)))))
+	      ))))
       `(block ,block-tag
 	 (let ((,temp-var nil))
 	   (tagbody
@@ -390,7 +421,6 @@ strings."
 ;;;  by all the other routines.
 
 (defun coerce-to-condition (datum arguments default-type function-name)
-  (declare (si::c-local))
   (cond ((typep datum 'CONDITION)
 	 (when arguments
 	   (cerror "Ignore the additional arguments."
