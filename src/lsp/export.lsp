@@ -66,6 +66,7 @@
 	  bit-orc1
 	  bit-orc2
 	  bit-xor
+	  boolean
 	  break
 	  byte
 	  byte-position
@@ -227,6 +228,7 @@
 	  replace
 	  require
 	  rotatef
+	  row-major-aref
 	  room
 	  sbit
 	  search

@@ -37,6 +37,20 @@ object_to_index(cl_object n)
 	}
 }
 
+@(defun row-major-aref (x indx)
+  cl_index j;
+@
+  j = fixnnint(indx);
+  @(return aref(x, j))
+@)
+
+@(defun si::row-major-aset (x indx val)
+  cl_index j;
+@
+  j = fixnnint(indx);
+  @(return aset(x, j, val))
+@)
+
 @(defun aref (x &rest indx)
   cl_index r, s, i, j;
   cl_object index;

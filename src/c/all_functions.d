@@ -45,6 +45,8 @@ const struct function_info all_functions[] = {
 	{"ARRAY-TOTAL-SIZE", clLarray_total_size, cl},
 	{"ADJUSTABLE-ARRAY-P", clLadjustable_array_p, cl},
 	{"DISPLACED-ARRAY-P", siLdisplaced_array_p, si},
+	{"ROW-MAJOR-AREF", clLrow_major_aref, cl},
+	{"ROW-MAJOR-ASET", siLrow_major_aset, si},
 
 	{"SVREF", clLsvref, cl},
 	{"SVSET", siLsvset, si},

@@ -166,6 +166,10 @@
 		"(#1)->array.self.fix[#2]= #0")
 	:inline-unsafe ((fixnum (array bit) fixnum) fixnum t nil
 		"aset_bv(#1,#2,#0)"))
+(ROW-MAJOR-AREF (array fixnum) t
+	:inline-always ((array fixnum) t nil t "aref(#0,#1)"))
+(SI::ROW-MAJOR-ASET (array fixnum t) t
+	:inline-always ((array fixnum t) t nil t "aset(#0,#1,#2)"))
 (ARRAY-ELEMENT-TYPE (array) T)
 (ARRAY-RANK (array) fixnum)
 (ARRAY-DIMENSION (array fixnum) fixnum)

@@ -36,6 +36,8 @@ extern cl_object siLmangle_name _ARGS((int narg, cl_object symbol, ...));
 
 extern cl_object clLaref _ARGS((int narg, cl_object x, ...));
 extern cl_object siLaset _ARGS((int narg, cl_object v, cl_object x, ...));
+extern cl_object clLrow_major_aref _ARGS((int narg, cl_object x, cl_object i));
+extern cl_object siLrow_major_aset _ARGS((int narg, cl_object x, cl_object i, cl_object v));
 extern cl_object siLmake_pure_array _ARGS((int narg, cl_object etype, cl_object adj, cl_object displ, cl_object disploff, ...));
 extern cl_object siLmake_vector _ARGS((int narg, cl_object etype, cl_object dim, cl_object adj, cl_object fillp, cl_object displ, cl_object disploff));
 extern cl_object clLarray_element_type _ARGS((int narg, cl_object a));

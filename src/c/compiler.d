@@ -57,6 +57,7 @@ static void c_and(cl_object args);
 static void c_block(cl_object args);
 static void c_case(cl_object args);
 static void c_catch(cl_object args);
+static void c_compiler_let(cl_object args);
 static void c_cond(cl_object args);
 static void c_do(cl_object args);
 static void c_doa(cl_object args);
@@ -299,6 +300,7 @@ static compiler_record database[] = {
   {OBJNULL, "BLOCK", c_block, 1},
   {OBJNULL, "CASE", c_case, 1},
   {OBJNULL, "CATCH", c_catch, 1},
+  {OBJNULL, "COMPILER-LET", c_compiler_let, 0},
   {OBJNULL, "COND", c_cond, 1},
   {OBJNULL, "DO", c_do, 1},
   {OBJNULL, "DO*", c_doa, 1},
@@ -574,6 +576,21 @@ c_catch(cl_object args) {
 	compile_body(args);
 	asm_op(OP_EXIT);
 	asm_complete(OP_CATCH, labelz);
+}
+
+static void
+c_compiler_let(cl_object args) {
+	cl_object bindings;
+	bds_ptr old_bds_top = bds_top;
+
+	for (bindings = pop(&args); !endp(bindings); ) {
+		cl_object form = pop(&bindings);
+		cl_object var = pop(&form);
+		cl_object value = pop_maybe_nil(&form);
+		bds_bind(var, value);
+	}
+	compile_body(args);
+	bds_unwind(old_bds_top);
 }
 
 /*

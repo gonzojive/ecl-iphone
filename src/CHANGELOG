@@ -699,7 +699,7 @@ ECLS 0.3
     mangle named (clLunion in this case), that can be directly called
     from other translated files and from user written code.
 
-* Changes to user interface:
+* Visible changes and ANSI compatibility:
 
   - Remove variable si::*system-directory* and use logical hostname
     "SYS:" instead.
@@ -713,6 +713,8 @@ ECLS 0.3
   - The library function eval() now accepts an environment as a third
     parameter. On top of this function, SI:EVAL-WITH-ENV, evaluates
     a form on a given environment.
+
+  - New accessor ROW-MAJOR-AREF.
 
 * System design and portability:
 
