@@ -18,6 +18,9 @@
 
 /********************* EXPORTS *********************/
 
+#define REGISTER_SPECIALS	1
+#define IGNORE_DECLARATIONS	0
+
 cl_object @'lambda-block';
 cl_object @'declare';
 cl_object @'defun';
@@ -452,16 +455,34 @@ c_var_ref(cl_object var)
 			FEerror("Internal error: symbol macro ~S used as variable",
 				1, var);
 		} else {
-			return Null(special)? n : -1;
+			return Null(special)? n : -2;
 		}
 	}
 	return -1;
 }
 
 static bool
-special_variablep(register cl_object var, register cl_object specials)
+c_declared_special(register cl_object var, register cl_object specials)
 {
 	return ((var->symbol.stype == stp_special) || member_eq(var, specials));
+}
+
+static void
+c_register_vars(cl_object specials)
+{
+	while (!Null(specials)) {
+		cl_object var = pop(&specials);
+		if (c_var_ref(var) >= 0)
+			c_register_var(var, TRUE);
+	}
+}
+
+static cl_object
+c_process_declarations(cl_object body)
+{
+	@si::process-declarations(1, body);
+	body = VALUES(1);
+	return body;
 }
 
 static bool
@@ -470,7 +491,7 @@ c_pbind(cl_object var, cl_object specials)
 	bool special;
 	if (!SYMBOLP(var))
 		FEillegal_variable_name(var);
-	else if (special = special_variablep(var, specials)) {
+	else if (special = c_declared_special(var, specials)) {
 		c_register_var(var, TRUE);
 		asm_op(OP_PBINDS);
 	} else {
@@ -487,7 +508,7 @@ c_bind(cl_object var, cl_object specials)
 	bool special;
 	if (!SYMBOLP(var))
 		FEillegal_variable_name(var);
-	else if (special = special_variablep(var, specials)) {
+	else if (special = c_declared_special(var, specials)) {
 		c_register_var(var, TRUE);
 		asm_op(OP_BINDS);
 	} else {
@@ -831,8 +852,7 @@ c_do_doa(int op, cl_object args) {
 	bindings = pop(&args);
 	test = pop(&args);
 
-	@si::process-declarations(1, args);
-	body = VALUES(1);
+	body = c_process_declarations(args);
 	specials = VALUES(3);
 
 	labelz = asm_jmp(OP_DO);
@@ -951,8 +971,7 @@ c_dolist_dotimes(int op, cl_object args) {
 	cl_index labelz, labelo;
 	cl_object old_variables = c_env.variables;
 
-	@si::process-declarations(1, args);
-	body = VALUES(1);
+	body = c_process_declarations(args);
 	specials = VALUES(3);
 
 	if (!SYMBOLP(var))
@@ -969,6 +988,9 @@ c_dolist_dotimes(int op, cl_object args) {
 	compile_form((op == OP_DOLIST)? Cnil : MAKE_FIXNUM(0), FALSE);
 	c_bind(var, specials);
 	labelo = asm_jmp(OP_EXIT);
+
+	/* From here on, declarations apply */
+	c_register_vars(specials);
 
 	/* Variable assignment and iterated body */
 	compile_setq(OP_SETQ, var);
@@ -1046,8 +1068,7 @@ c_labels_flet(int op, cl_object args) {
 	cl_index nfun;
 
 	/* Remove declarations */
-	@si::process-declarations(1, args);
-	args = VALUES(1);
+	args = c_process_declarations(args);
 
 	/* If compiling a LABELS form, add the function names to the lexical
 	   environment before compiling the functions */
@@ -1217,8 +1238,7 @@ c_let_leta(int op, cl_object args) {
 	cl_object old_variables = c_env.variables;
 
 	bindings = car(args);
-	@si::process-declarations(1, CDR(args));
-	body = VALUES(1);
+	body = c_process_declarations(CDR(args));
 	specials = VALUES(3);
 
 	/* Optimize some common cases */
@@ -1268,11 +1288,16 @@ c_leta(cl_object args) {
 
 static void
 c_locally(cl_object args) {
-	/* Forget about declarations... */
-	@si::process-declarations(1, args);
+	cl_object old_env = c_env.variables;
 
-	/* ...and only process body */
-	compile_body(VALUES(1));
+	/* First use declarations by declaring special variables... */
+	args = c_process_declarations(args);
+	c_register_vars(VALUES(3));
+
+	/* ...and then process body */
+	compile_body(args);
+
+	c_env.variables = old_env;
 }
 
 /*
@@ -1308,19 +1333,21 @@ c_macrolet(cl_object args)
 static void
 c_multiple_value_bind(cl_object args)
 {
+	cl_object old_env = c_env.variables;
 	cl_object vars, value, body, specials;
 	cl_index save_pc, n;
 
 	vars = pop(&args);
 	value = pop(&args);
-	@si::process-declarations(1,args);
-	body = VALUES(1);
+	body = c_process_declarations(args);
 	specials = VALUES(3);
 
 	compile_form(value, FALSE);
 	n = length(vars);
 	if (n == 0) {
+		c_register_vars(specials);
 		compile_body(body);
+		c_env.variables = old_env;
 	} else {
 		cl_object old_variables = c_env.variables;
 		asm_op2(OP_MBIND, n);
@@ -1328,7 +1355,7 @@ c_multiple_value_bind(cl_object args)
 			cl_object var = pop(&vars);
 			if (!SYMBOLP(var))
 				FEillegal_variable_name(var);
-			if (special_variablep(var, specials)) {
+			if (c_declared_special(var, specials)) {
 				asm1(MAKE_FIXNUM(1));
 				c_register_var(var, TRUE);
 			} else
@@ -1630,9 +1657,9 @@ c_symbol_macrolet(cl_object args)
 	int nfun = 0;
 
 	def_list = pop(&args);
-	@si::process-declarations(1,args);
-	body = VALUES(1);
+	body = c_process_declarations(args);
 	specials = VALUES(3);
+	c_register_vars(specials);
 
 	/* Scan the list of definitions */
 	for (; !endp(def_list); ) {
@@ -1641,7 +1668,7 @@ c_symbol_macrolet(cl_object args)
 		cl_object expansion = pop(&definition);
 		cl_object arglist = list(2, @gensym(0), @gensym(0));
 		cl_object function;
-		if (special_variablep(name, specials))
+		if (name->symbol.stype == stp_special || c_var_ref(name) == -2)
 			FEprogram_error("SYMBOL-MACROLET: Symbol ~A cannot be \
 declared special and appear in a symbol-macrolet.", 1, name);
 		definition = list(2, arglist, list(2, @'quote', expansion));
