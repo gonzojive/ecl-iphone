@@ -78,15 +78,14 @@
     (emit-local-funs)
     (setq *funarg-vars* nil)))
 
-(defun ctop-write (name h-namestring data-namestring
+(defun ctop-write (name h-pathname data-pathname
 		        &key system-p shared-data
 			&aux def top-output-string
 			(*volatile* " volatile "))
 
   ;(let ((*print-level* 3)) (pprint *top-level-forms*))
   (setq *top-level-forms* (nreverse *top-level-forms*))
-
-  (wt-nl1 "#include \"" h-namestring "\"")
+  (wt-nl1 "#include \"" (si::coerce-to-filename h-pathname) "\"")
   (wt-h "#ifdef __cplusplus")
   (wt-h "extern \"C\" {")
   (wt-h "#endif")
@@ -99,7 +98,7 @@
 	 (*compiler-declared-globals* (make-hash-table))
 	 #+PDE (optimize-space (>= *space* 3)))
     (unless shared-data
-      (wt-nl1 "#include \"" data-namestring "\""))
+      (wt-nl1 "#include \"" (si::coerce-to-filename data-pathname) "\""))
     (wt-nl1 "#ifdef __cplusplus")
     (wt-nl1 "extern \"C\"")
     (wt-nl1 "#endif")

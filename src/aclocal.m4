@@ -79,11 +79,20 @@ dnl avoid running the path through pwd unnecessarily, since pwd can
 dnl give you automounter prefixes, which can go away.
 dnl
 AC_DEFUN(ECL_MAKE_ABSOLUTE_SRCDIR,[
+AC_SUBST(true_srcdir)
+AC_SUBST(true_builddir)
 PWDCMD="pwd";
 case "${srcdir}" in
   /* | ?:/* ) ;;
   *  ) srcdir="`(cd ${srcdir}; ${PWDCMD})`";
 esac
+if uname -a | grep -i 'mingw32' > /dev/null; then
+  true_srcdir=`(cd ${srcdir}; pwd -W)`
+  true_builddir=`pwd -W`
+else
+  true_srcdir=`(cd ${srcdir}; pwd)`
+  true_builddir=`pwd`
+fi
 ])
 
 dnl
@@ -170,6 +179,15 @@ case "${host_os}" in
 		SHARED_LDFLAGS=''
 		BUNDLE_LDFLAGS=''
 		SHAREDEXT='dll'
+		;;
+	mingw*)
+		thehost='mingw32'
+		CLIBS='-lwsock32'
+		shared='no'
+		SHARED_LDFLAGS=''
+		BUNDLE_LDFLAGS=''
+		SHAREDEXT='dll'
+		PICFLAG=''
 		;;
 	darwin*)
 		thehost='darwin'

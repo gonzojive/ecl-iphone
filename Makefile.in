@@ -77,9 +77,9 @@ Makefile: Makefile.in build/config.status
 # ==================== Installation ====================
 
 install: build/Makefile
-	(cd build; $(MAKE) install)
+	cd build; $(MAKE) install
 uninstall:
-	(cd build; $(MAKE) uninstall)
+	cd build; $(MAKE) uninstall
 
 # ==================== Documentation ====================
 
@@ -96,7 +96,7 @@ dvi:
 #        record the configuration.  Also preserve files that could be made
 #        by building, but normally aren't because the distribution comes
 #        with them.
-#   
+#
 clean:
 	cd build; $(MAKE) clean
 
@@ -173,6 +173,12 @@ binary-dist: all
 	done
 	PREFIX=`pwd`/tmp; cd build; $(MAKE) install PREFIX="$${PREFIX}"
 	su -c "chown -R root.root tmp && cd tmp; tar czf ../ecl-$(VERSION)-$(MACHINE).tgz * && cd .. && rm -rf tmp"
+
+# This creates a ZIP file with a flattened directory structure
+windows-dist: all
+	cd build; rm -rf $(TAR_DIR); mkdir $(TAR_DIR); \
+	$(MAKE) flatinstall PREFIX=`pwd`/$(TAR_DIR); \
+	zip -r $(TAR_DIR).zip $(TAR_DIR)
 
 dist:
 	cd dist; make-dist

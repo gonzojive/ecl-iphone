@@ -104,8 +104,7 @@ file_kind(char *filename, bool follow_links) {
 
 cl_object
 si_file_kind(cl_object filename, cl_object follow_links) {
-	filename = coerce_to_filename(filename);
-
+	filename = si_coerce_to_filename(filename);
 	@(return file_kind(filename->string.self, !Null(follow_links)))
 }
 
@@ -114,7 +113,7 @@ si_follow_symlink(cl_object filename) {
 	cl_object output, kind;
 	int size = 128, written;
 
-	output = coerce_to_filename(filename);
+	output = si_coerce_to_filename(filename);
 	kind = file_kind(output->string.self, FALSE);
 #ifdef HAVE_LSTAT
 	while (kind == @':link') {
@@ -199,8 +198,8 @@ cl_rename_file(cl_object oldn, cl_object newn)
 	newn = coerce_to_file_pathname(newn);
 	newn = merge_pathnames(newn, oldn, Cnil);
 	old_truename = cl_truename(oldn);
-	filename = coerce_to_filename(oldn);
-	newfilename = coerce_to_filename(newn);
+	filename = si_coerce_to_filename(oldn);
+	newfilename = si_coerce_to_filename(newn);
 	if (rename(filename->string.self, newfilename->string.self) < 0)
 		FElibc_error("Cannot rename the file ~S to ~S.", 2, oldn, newn);
 	new_truename = cl_truename(newn);
@@ -212,7 +211,7 @@ cl_delete_file(cl_object file)
 {
 	cl_object filename;
 
-	filename = coerce_to_filename(file);
+	filename = si_coerce_to_filename(file);
 	if (unlink(filename->string.self) < 0)
 		FElibc_error("Cannot delete the file ~S.", 1, file);
 	@(return Ct)
@@ -230,7 +229,7 @@ cl_file_write_date(cl_object file)
 	cl_object filename, time;
 	struct stat filestatus;
 
-	filename = coerce_to_filename(file);
+	filename = si_coerce_to_filename(file);
 	if (stat(filename->string.self, &filestatus) < 0)
 	  time = Cnil;
 	else
@@ -241,7 +240,7 @@ cl_file_write_date(cl_object file)
 cl_object
 cl_file_author(cl_object file)
 {
-	cl_object filename = coerce_to_filename(file);
+	cl_object filename = si_coerce_to_filename(file);
 #ifdef HAVE_PWD_H
 	struct stat filestatus;
 	struct passwd *pwent;
@@ -639,8 +638,7 @@ si_mkdir(cl_object directory, cl_object mode)
 	cl_object filename;
 	cl_index modeint;
 
-	/* INV: coerce_to_filename() checks types */
-	filename = coerce_to_filename(directory);
+	filename = si_coerce_to_filename(directory);
 	modeint = fixnnint(mode);
 #ifdef mingw32
 	if (mkdir(filename->string.self) < 0)

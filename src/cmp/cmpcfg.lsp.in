@@ -19,4 +19,3 @@
 	+static-library-format+ "@LIBPREFIX@~a.@LIBEXT@"
 	+object-file-extension+ "@OBJEXT@"
 	+executable-file-format+ "~a@EXEEXT@"))
-(load "sys:sysfun.lsp" :verbose nil :print nil)

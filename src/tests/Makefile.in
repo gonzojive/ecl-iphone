@@ -1,5 +1,5 @@
-top_srcdir=@top_srcdir@
-srcdir=@srcdir@
+top_srcdir=@true_srcdir@
+srcdir=$(top_srcdir)/tests
 
 ECL = ../ecl
 TESTS = array backquot characters eval20 format hashlong iofkts lambda \

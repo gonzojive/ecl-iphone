@@ -55,6 +55,7 @@ signal_catcher(int sig)
 		return;
 	}
 	signal(sig, signal_catcher);
+#ifdef HAVE_SIGPROCMASK
 	CL_UNWIND_PROTECT_BEGIN {
 		handle_signal(sig);
 	} CL_UNWIND_PROTECT_EXIT {
@@ -67,6 +68,9 @@ signal_catcher(int sig)
 		sigprocmask(SIG_UNBLOCK, &block_mask, NULL);
 #endif
 	} CL_UNWIND_PROTECT_END;
+#else
+	handle_signal(sig);
+#endif
 }
 
 cl_object

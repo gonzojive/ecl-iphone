@@ -5,6 +5,14 @@
 ;;; that the compiler is loaded, that we use the headers in this directory,
 ;;; etc.
 ;;;
+;;; * By redefining "SYS:" ECL will be able to
+;;;   find headers and libraries in the build directory.
+;;;
+(si::pathname-translations "SRC" `(("**;*.*" "@true_srcdir@/**/*.*")))
+(si::pathname-translations "BUILD" `(("**;*.*" "@true_builddir@/**/*.*")))
+(si::pathname-translations "SYS" '(("**;*.*" "@true_builddir@/**/*.*")))
+
+;;;
 ;;; * Set ourselves in the 'SYSTEM package
 ;;;
 (setq *package* (find-package "SYSTEM"))
@@ -14,7 +22,7 @@
 ;;; * Load Common-Lisp base library
 ;;;
 (if (member "ECL-MIN" *features* :test #'string-equal)
-  (load "@abs_builddir@/lsp/load.lsp" :verbose nil))
+  (load "lsp/load.lsp" :verbose nil))
 (defun si::process-command-args () )
 
 ;;;
@@ -22,13 +30,7 @@
 ;;;
 (setf sys::*gc-verbose* nil)
 #+(and wants-clos ecl-min)
-(load "@abs_builddir@/clos/load.lsp")
-
-;;;
-;;; * By redefining "SYS:" ECL will be able to
-;;;   find headers and libraries in the build directory.
-;;;
-(si::pathname-translations "SYS" '(("*.*" "@abs_builddir@/*.*")))
+(load "clos/load.lsp")
 
 ;;;
 ;;; * Load the compiler.
@@ -36,13 +38,8 @@
 #-threads
 (defmacro c::with-lock ((lock) &body body)
   `(progn ,@body))
-(load #+(or cross ecl-min) "@abs_builddir@/cmp/load.lsp"
-      #-(or cross ecl-min) "@abs_builddir@/cmp.so")
-
-;;;
-;;; * Add include path to not yet installed headers
-;;;
-(setq compiler::*cc-flags* (concatenate 'string compiler::*cc-flags* " -I@srcdir@/h -I@srcdir@/gmp "))
+(load #+(or cross ecl-min) "cmp/load.lsp"
+      #-(or cross ecl-min) "cmp.so")
 
 ;;;
 ;;; * Remove documentation from compiled files

@@ -1376,6 +1376,7 @@ cl_symbols[] = {
 {SYS_ "*STEP-LEVEL*", SI_SPECIAL, OBJNULL, -1, MAKE_FIXNUM(0)},
 {SYS_ "*STEP-ACTION*", SI_SPECIAL, OBJNULL, -1, Cnil},
 {SYS_ "STEPPER", SI_ORDINARY, OBJNULL, -1, OBJNULL},
+{SYS_ "COERCE-TO-FILENAME", SI_ORDINARY, si_coerce_to_filename, 1, OBJNULL},
 
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1, OBJNULL}};

@@ -58,6 +58,11 @@ install: $(HFILES)
 	for i in $(HFILES); do $(INSTALL_DATA) $$i $(PREFIX)$(libdir)/h/; done
 	sed '/-CUT-/,$$d' ../h/config.h > ../h/config-install.h
 	$(INSTALL_DATA) ../h/config-install.h $(PREFIX)$(libdir)/h/config.h
+flatinstall: $(HFILES)
+	for i in $(HFILES); do $(INSTALL_DATA) $$i $(PREFIX)/h/; done
+	sed '/-CUT-/,$$d' ../h/config.h > ../h/config-install.h
+	$(INSTALL_DATA) ../h/config-install.h $(PREFIX)/h/config.h
+
 
 ../libecl.a: $(OBJS)
 	$(RM) $@

@@ -1,5 +1,5 @@
-top_srcdir=@top_srcdir@
-srcdir=@srcdir@
+top_srcdir=@true_srcdir@
+srcdir=$(top_srcdir)/ansi-tests
 
 RM=rm -fr
 MV=mv -f
@@ -8,7 +8,7 @@ MKDIR=mkdir -p
 .PHONY: clisp sbcl normal safe ecl ecl_min
 
 ecl:
-	ln -sf ../../src/h/*.h ../h/
+	cp $(top_srcdir)/h/*.h ../h/
 	(echo '(setf (logical-pathname-translations "SYS")'; \
 	 echo "      '"'(("*.*" "../*.*")))'; \
 	 echo '(setf (logical-pathname-translations "SRC")'; \
@@ -18,7 +18,7 @@ ecl:
 	true
 
 ecl_min:
-	ln -sf ../../src/h/*.h ../h/
+	cp $(top_srcdir)/src/h/*.h ../h/
 	(echo '(load "bare.lsp")'; \
 	 echo '(setf (logical-pathname-translations "SYS")'; \
 	 echo "      '"'(("*.*" "../*.*")))'; \

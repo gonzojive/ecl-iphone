@@ -18,8 +18,8 @@
 ;;;
 #+stage1
 (progn
-  (load "@srcdir@/doc/help.lsp")
-  (si::dump-documentation "@abs_builddir@/help.doc"))
+  (load "@true_srcdir@/doc/help.lsp")
+  (si::dump-documentation "@true_builddir@/help.doc"))
 
 ;;;
 ;;; * Trick to make names shorter in C files
@@ -28,16 +28,20 @@
 (rename-package "CL" "CL" '("COMMON-LISP" "LISP"))
 
 ;;;
+;;; * Add include path to not yet installed headers
+;;;
+(setq compiler::*cc-flags*
+      (concatenate 'string compiler::*cc-flags*
+	" -I@true_srcdir@/h -I@true_srcdir@/gmp -I@true_builddir@/h"))
+
+;;;
 ;;; * Compile, load and link Common-Lisp base library
 ;;;
 (setq si::*keep-documentation* nil)
 (proclaim '(optimize (safety 2) (space 3)))
-(let ((objects (compile-if-old "@abs_builddir@/lsp/" +lisp-module-files+
+(let ((objects (compile-if-old "build:lsp;" +lisp-module-files+
 			       :system-p t :c-file t :data-file t :h-file t)))
   (c::build-static-library "lsp" :lisp-files objects))
-
-(si::pathname-translations "SYS" '(("**;*.*" "@abs_builddir@/**/*.*")))
-(setq compiler::*cc-flags* (concatenate 'string compiler::*cc-flags* " -I@srcdir@/h -I@srcdir@/gmp -I@builddir@/h"))
 
 ;;;
 ;;; * Compile, load and link PCL based Common-Lisp Object System
@@ -45,17 +49,16 @@
 (proclaim '(optimize (safety 2) (space 3)))
 #+CLOS
 (let* ((c::*compile-to-linking-call* nil)
-       (objects (compile-if-old "@abs_builddir@/clos/" +clos-module-files+
+       (objects (compile-if-old "build:clos;" +clos-module-files+
 				:system-p t :c-file t :data-file t :h-file t)))
   (c::build-static-library "clos" :lisp-files objects))
 
-(si::system (format nil "
-(test -d tmp || mkdir tmp); ~
+(si::system (print (format nil "sh -c 'mkdir tmp; ~
 cd tmp; rm -f *; ~
-ar -x ../@LIBPREFIX@lsp.@LIBEXT@; for i in *.@OBJEXT@; do mv $i lsp_$i; done; ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@; rm *.@OBJEXT@; ~
-ar -x ../@LIBPREFIX@clos.@LIBEXT@; for i in *.@OBJEXT@; do mv $i lsp_$i; done; ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@; rm *.@OBJEXT@; ~
-@RANLIB@ ../@LIBPREFIX@ecl.@LIBEXT@; ~
-cd ..; rm -rf tmp/* @LIBPREFIX@{lsp,clos} "))
+ar -x ../liblsp.a; for i in *.o; do mv $i lsp_$i; done; ar -r ../libecl.a *.o; rm *.o; ~
+ar -x ../libclos.a; for i in *.o; do mv $i lsp_$i; done; ar -r ../libecl.a *.o; rm *.o; ~
+ranlib ../libecl.a; ~
+cd ..; rm -rf tmp/*'")))
 
 ;;
 ;; Notice that we must explicitely mention libecl.so/ecl.dll instead
@@ -64,7 +67,7 @@ cd ..; rm -rf tmp/* @LIBPREFIX@{lsp,clos} "))
 ;;
 (setf c::*ld-flags*
 #+dlopen "@LDFLAGS@ @LDRPATH@ @SHAREDPREFIX@ecl.@SHAREDEXT@ @CLIBS@"
-#-dlopen "@LDFLAGS@ @LDRPATH@ @LIBPREFIX@ecl.@LIBEXT@ @CLIBS@"
+#-dlopen "@LDFLAGS@ @LDRPATH@ @LIBPREFIX@ecl.@LIBEXT@ -lgmp -lgc @CLIBS@"
 )
 
 #+dlopen
@@ -85,13 +88,13 @@ cd ..; rm -rf tmp/* @LIBPREFIX@{lsp,clos} "))
 ;;;
 (proclaim '(optimize (safety 2) (space 3)))
 #+(or (not stage1) WANTS-CMP)
-(let ((objects (compile-if-old "@abs_builddir@/cmp/" +cmp-module-files+
+(let ((objects (compile-if-old "build:cmp;" +cmp-module-files+
 				:system-p t :c-file t :data-file t :h-file t)))
   (c::build-static-library "cmp" :lisp-files objects)
   #+dlopen
   (c::build-fasl "cmp" :lisp-files objects))
 
-(si::pathname-translations "SYS" '(("**;*.*" "@libdir@/**/*.*")))
+;(si::pathname-translations "SYS" '(("**;*.*" "@libdir@/**/*.*")))
 
 (compiler::build-program
  #+(or cross stage1) "ecl"
@@ -104,7 +107,7 @@ cd ..; rm -rf tmp/* @LIBPREFIX@{lsp,clos} "))
   (proclaim '(optimize (safety 2) (space 3)))
   (load "clx/load.lsp")
   (push :clx-ansi-common-lisp *features*)
-  (let* ((objects (compile-if-old "@abs_builddir@/clx/" +clx-module-files+
+  (let* ((objects (compile-if-old "build:clx;" +clx-module-files+
 				  :system-p t :c-file t :data-file t :h-file t)))
     (c::build-program "eclx" :lisp-files `(#+(and (not dlopen) wants-cmp) cmp
 					   ,@objects))))

@@ -1,46 +1,46 @@
-(load "@abs_srcdir@/export.lsp" :verbose nil)
-(load "@abs_srcdir@/defmacro.lsp" :verbose nil)
-(load "@abs_srcdir@/helpfile.lsp" :verbose nil)
-(load "@abs_srcdir@/evalmacros.lsp" :verbose nil)
+(load "src:lsp;export.lsp" :verbose nil)
+(load "src:lsp;defmacro.lsp" :verbose nil)
+(load "src:lsp;helpfile.lsp" :verbose nil)
+(load "src:lsp;evalmacros.lsp" :verbose nil)
 
 (defconstant +lisp-module-files+
-'("@abs_srcdir@/export.lsp"
-  "@abs_srcdir@/defmacro.lsp"
-  "@abs_srcdir@/helpfile.lsp"
-  "@abs_srcdir@/evalmacros.lsp"
-  "@abs_srcdir@/module.lsp"
-  "@abs_srcdir@/autoload.lsp"
-  "@abs_srcdir@/describe.lsp"
-  "@abs_srcdir@/setf.lsp"
-  "@abs_srcdir@/predlib.lsp"
-  "@abs_srcdir@/arraylib.lsp"
-  "@abs_srcdir@/assert.lsp"
-  "@abs_srcdir@/defstruct.lsp"
-  "@abs_srcdir@/iolib.lsp"
-  "@abs_srcdir@/listlib.lsp"
-  "@abs_srcdir@/mislib.lsp"
-  "@abs_srcdir@/numlib.lsp"
-  "@abs_srcdir@/packlib.lsp"
-  "@abs_srcdir@/seq.lsp"
-  "@abs_srcdir@/seqlib.lsp"
-  "@abs_srcdir@/trace.lsp"
-  "@abs_srcdir@/ansi.lsp"
+'("src:lsp;export.lsp"
+  "src:lsp;defmacro.lsp"
+  "src:lsp;helpfile.lsp"
+  "src:lsp;evalmacros.lsp"
+  "src:lsp;module.lsp"
+  "src:lsp;autoload.lsp"
+  "src:lsp;describe.lsp"
+  "src:lsp;setf.lsp"
+  "src:lsp;predlib.lsp"
+  "src:lsp;arraylib.lsp"
+  "src:lsp;assert.lsp"
+  "src:lsp;defstruct.lsp"
+  "src:lsp;iolib.lsp"
+  "src:lsp;listlib.lsp"
+  "src:lsp;mislib.lsp"
+  "src:lsp;numlib.lsp"
+  "src:lsp;packlib.lsp"
+  "src:lsp;seq.lsp"
+  "src:lsp;seqlib.lsp"
+  "src:lsp;trace.lsp"
+  "src:lsp;ansi.lsp"
 #+old-loop
-  "@abs_srcdir@/loop.lsp"
+  "src:lsp;loop.lsp"
 #-old-loop
-  "@abs_srcdir@/loop2.lsp"
+  "src:lsp;loop2.lsp"
 #+cmu-format
-  "@abs_srcdir@/format.lsp"
-  "@abs_srcdir@/defpackage.lsp"
-  "@abs_srcdir@/ffi.lsp"
+  "src:lsp;format.lsp"
+  "src:lsp;defpackage.lsp"
+  "src:lsp;ffi.lsp"
 #+ffi
-  "@abs_srcdir@/ffi-objects.lsp"
+  "src:lsp;ffi-objects.lsp"
 #+tk
-  "@abs_srcdir@/tk-init.lsp"
-  "@abs_builddir@/config.lsp"
-  "@abs_srcdir@/top.lsp"
+  "src:lsp;tk-init.lsp"
+  "build:lsp;config.lsp"
+  "src:lsp;top.lsp"
 #+threads
-  "@abs_srcdir@/mp.lsp"
+  "src:lsp;mp.lsp"
 ))
 
 (mapc #'(lambda (x) (load x :verbose nil)) (cddddr +lisp-module-files+))

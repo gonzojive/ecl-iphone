@@ -4,11 +4,12 @@
 # This script identifies the machine, and creates a directory for
 # the installation, where it runs ${srcdir}/configure.
 
-if uname -a | grep -i 'mingw32' > /dev/null; then
-  srcdir=`pwd -W`/src;
-else
-  srcdir=`pwd`/src
-fi
+#if uname -a | grep -i 'mingw32' > /dev/null; then
+#  srcdir=`pwd -W`/src;
+#else
+#  srcdir=`pwd`/src
+#fi
+srcdir=`pwd`/src
 buildir=build
 
 if [ ! -d ${buildir} ] ; then
@@ -22,7 +23,8 @@ echo Switching to directory "\`${buildir}'" to continue configuration.
 # There are two ways to configure ECL. If we use our own version of GMP,
 # we let it configure itself and later on retrieve the appropiate flags
 #
-if ( echo $* | grep enable-local-gmp ); then
+if ( echo $* | grep enable-local-gmp ) ||\
+   ( echo $* | grep enable-simple-conf ); then
   cd ${buildir}
   ${srcdir}/configure --srcdir=${srcdir} $*
 else

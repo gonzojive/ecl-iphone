@@ -1004,7 +1004,7 @@ extern cl_object make_pathname(cl_object host, cl_object device, cl_object direc
 extern cl_object parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep, cl_object default_host);
 extern cl_object coerce_to_physical_pathname(cl_object x);
 extern cl_object coerce_to_file_pathname(cl_object pathname);
-extern cl_object coerce_to_filename(cl_object pathname);
+extern cl_object si_coerce_to_filename(cl_object pathname);
 extern cl_object merge_pathnames(cl_object path, cl_object defaults, cl_object default_version);
 extern bool logical_hostname_p(cl_object host);
 

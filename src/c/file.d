@@ -245,7 +245,7 @@ open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 {
 	cl_object x;
 	FILE *fp;
-	cl_object filename = coerce_to_filename(fn);
+	cl_object filename = si_coerce_to_filename(fn);
 	char *fname = filename->string.self;
 
 	if (smm == smm_input || smm == smm_probe) {
@@ -1129,6 +1129,7 @@ flisten(FILE *fp)
 	if (FILE_CNT(fp) > 0)
 		return(TRUE);
 #endif
+#if !defined(mingw32)
 #if defined(HAVE_SELECT)
 	fd = fileno(fp);
 	FD_ZERO(&fds);
@@ -1144,6 +1145,7 @@ flisten(FILE *fp)
 		return(FALSE);
 	}
 #endif /* FIONREAD */
+#endif
 	return(TRUE);
 }
 

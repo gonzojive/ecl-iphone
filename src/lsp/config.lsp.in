@@ -43,6 +43,8 @@ Returns, as a string, the version of the machine on which ECL runs. Obtained fro
 uname(2) where available."
   "@MACHINE@")
 
+(push :@thehost@ *features*)
+
 (defun software-type ()
   "Args: ()
 Returns, as a string, the type of the software under which ECL runs."
@@ -65,5 +67,9 @@ Returns, as a string, the version of the software under which ECL runs."
 ;; * Set configuration pathnames. Notice the trailing slash!
 ;;   Otherwise it would not be a directory.
 ;;
+#-mingw32
 (si::pathname-translations "SYS" '(("**;*.*" "@libdir@/**/*.*")))
+#+mingw32
+(si::pathname-translations "SYS"
+  `(("**;*.*" ,(merge-pathnames "**/*.*" (si::argv 0)))))
 (si::pathname-translations "HOME" '(("**;*.*" "~/**/*.*")))

@@ -78,25 +78,26 @@ sysfun.lsp:
 BUILD-STAMP: config.status
 	(echo "#"; uname -a) > $@
 	head -8 config.status | tail -6 >> $@
-install: BUILD-STAMP
+install: BUILD-STAMP install-base
+	cd c; $(MAKE) PREFIX="$(PREFIX)" install
+	cd doc; $(MAKE) PREFIX="$(PREFIX)" install
+install-base:
 	$(mkinstalldirs) $(PREFIX)$(bindir) $(PREFIX)$(libdir)/h
 	for i in $(TARGETS); do \
 	  $(INSTALL) -s $$i $(PREFIX)$(bindir); \
 	done
 	$(INSTALL_PROGRAM) -s $(TARGETS) $(PREFIX)$(bindir)
-	sed 's,~A,$(libdir),;s,~\*,,;' ecl-config > aux; \
-	$(INSTALL_PROGRAM) aux $(PREFIX)$(bindir)/ecl-config; \
-	rm aux
+	sed 's,~A,$(libdir),;s,~\*,,;' ecl-config > foo; \
+	$(INSTALL_PROGRAM) foo $(PREFIX)$(bindir)/ecl-config; \
+	rm foo
 	for i in BUILD-STAMP $(LSP_LIBRARIES) $(LIBRARIES) c/dpp* help.doc ; do \
 	  $(INSTALL_DATA) $$i $(PREFIX)$(libdir); \
 	done
 	$(INSTALL_DATA) h/config.h $(PREFIX)$(libdir)/h
 	if (echo $(SUBDIR) | grep gc); then $(MAKE) installgc; fi
 	if (echo $(SUBDIR) | grep gmp); then $(MAKE) installgmp; fi
-	cd c; $(MAKE) PREFIX="$(PREFIX)" install
-	cd doc; $(MAKE) PREFIX="$(PREFIX)" install
 installgc:
-	$(mkinstalldirs) $(PREFIX)$(libdir)
+	$(mkinstalldirs) $(PREFIX)$(libdir)/h/private
 	for i in $(srcdir)/gc/include/*.h; do \
 	  $(INSTALL_DATA) $$i $(PREFIX)$(libdir)/h/; \
 	done
@@ -105,6 +106,11 @@ installgc:
 	done
 installgmp:
 	$(INSTALL_DATA) h/gmp.h $(PREFIX)$(libdir)/h/
+
+flatinstall: BUILD-STAMP
+	$(MAKE) install PREFIX= bindir=$(PREFIX) libdir=$(PREFIX) install-base
+	cd c; $(MAKE) PREFIX=$(PREFIX) flatinstall
+	cd doc; $(MAKE) PREFIX=$(PREFIX) flatinstall
 
 uninstall:
 	for i in $(TARGETS) ecl-config; do rm -rf $(bindir)/$$i; done

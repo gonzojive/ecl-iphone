@@ -22,6 +22,14 @@
 #define isnanf(x) isnan(x)
 #endif
 
+#ifndef M_PI
+# ifdef PI
+#  define M_PI PI
+# else
+#   define M_PI 3.14159265358979323846
+# endif
+#endif
+
 cl_fixnum
 fixint(cl_object x)
 {

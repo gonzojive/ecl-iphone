@@ -31,6 +31,8 @@
 # endif
 #endif
 
+typedef int (*delim_fn)(int);
+
 static void
 error_directory(cl_object d) {
 	FEerror("make-pathname: ~A is not a valid directory", 1, d);
@@ -170,6 +172,12 @@ make_one(const char *s, cl_index end)
 	return(x);
 }
 
+static int is_colon(int c) { return c == ':'; }
+static int is_slash(int c) { return IS_DIR_SEPARATOR(c); }
+static int is_semicolon(int c) { return c == ';'; }
+static int is_dot(int c) { return c == '.'; }
+static int is_null(int c) { return c == '\0'; }
+
 /*
  * Parses a word from string `S' until either:
  *	1) character `DELIM' is found
@@ -182,8 +190,8 @@ make_one(const char *s, cl_index end)
  *	5) A non empty string
  */
 static cl_object
-parse_word(const char *s, char delim, int flags, cl_index start, cl_index end,
-	   cl_index *end_of_word)
+parse_word(const char *s, delim_fn delim, int flags, cl_index start,
+	   cl_index end, cl_index *end_of_word)
 {
 	cl_index i, j;
 	bool wild_inferiors = FALSE;
@@ -191,10 +199,10 @@ parse_word(const char *s, char delim, int flags, cl_index start, cl_index end,
 	i = j = start;
 	if ((flags & WORD_ALLOW_LEADING_DOT) &&
 	    (i < end) &&
-	    (s[i] == delim)) {
+	    delim(s[i])) {
 		i++;
 	}
-	for (; i < end && s[i] != delim; i++) {
+	for (; i < end && !delim(s[i]); i++) {
 		char c = s[i];
 		bool valid_char;
 		if (c == '*') {
@@ -266,7 +274,7 @@ parse_directories(const char *s, int flags, cl_index start, cl_index end,
 	cl_index i, j;
 	cl_object path = Cnil;
 	cl_object *plast = &path;
-	char delim = (flags & WORD_LOGICAL) ? ';' : '/';
+	delim_fn delim = (flags & WORD_LOGICAL) ? is_semicolon : is_slash;
 
 	flags |= WORD_INCLUDE_DELIM | WORD_ALLOW_ASTERISK;
 	*end_of_dir = start;
@@ -334,7 +342,8 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 	 * there is no supplied *logical* host name. All other failures
 	 * result in Cnil as output.
 	 */
-	host = parse_word(s, ':', WORD_LOGICAL | WORD_INCLUDE_DELIM, start, end, ep);
+	host = parse_word(s, is_colon, WORD_LOGICAL | WORD_INCLUDE_DELIM,
+			  start, end, ep);
 	if (default_host != Cnil) {
 		if (host == Cnil || host == @':error')
 			host = default_host;
@@ -357,9 +366,9 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 	}
 	if (path == @':error')
 		return Cnil;
-	name = parse_word(s, '.', WORD_LOGICAL | WORD_ALLOW_ASTERISK |
+	name = parse_word(s, is_dot, WORD_LOGICAL | WORD_ALLOW_ASTERISK |
 			  WORD_EMPTY_IS_NIL, *ep, end, ep);
-	type = parse_word(s, '\0', WORD_LOGICAL | WORD_ALLOW_ASTERISK |
+	type = parse_word(s, is_null, WORD_LOGICAL | WORD_ALLOW_ASTERISK |
 			  WORD_EMPTY_IS_NIL, *ep, end, ep);
 	if (type == @':error')
 		return Cnil;
@@ -370,7 +379,7 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 	 *	[device:][[//hostname]/][directory-component/]*[pathname-name][.pathname-type]
 	 */
 	logical = FALSE;
-	device = parse_word(s, ':', WORD_INCLUDE_DELIM | WORD_EMPTY_IS_NIL,
+	device = parse_word(s, is_colon, WORD_INCLUDE_DELIM|WORD_EMPTY_IS_NIL,
 			    start, end, ep);
 	if (device == @':error')
 		device = Cnil;
@@ -381,11 +390,12 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 			device = Cnil;
 	}
 	start = *ep;
-	if (start <= end - 2 && s[start] == '/' && s[start+1] == '/') {
-		host = parse_word(s, '/', WORD_EMPTY_IS_NIL, start+2, end, ep);
+	if (start <= end - 2 && is_slash(s[start]) && is_slash(s[start+1])) {
+		host = parse_word(s, is_slash, WORD_EMPTY_IS_NIL,
+				  start+2, end, ep);
 		if (host != Cnil) {
 			start = *ep;
-			if (s[--start] == '/') *ep = start;
+			if (is_slash(s[--start])) *ep = start;
 		}
 	} else
 		host = Cnil;
@@ -404,13 +414,13 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 	}
 	if (path == @':error')
 		return Cnil;
-	name = parse_word(s, '.', WORD_ALLOW_LEADING_DOT |
+	name = parse_word(s, is_dot, WORD_ALLOW_LEADING_DOT |
 			  WORD_ALLOW_ASTERISK | WORD_EMPTY_IS_NIL,
 			  *ep, end, ep);
-	type = parse_word(s, '\0', WORD_ALLOW_ASTERISK | WORD_EMPTY_IS_NIL, *ep,
-			  end, ep);
-	version = parse_word(s, '\0', WORD_ALLOW_ASTERISK | WORD_EMPTY_IS_NIL, *ep,
-			     end, ep);
+	type = parse_word(s, is_null, WORD_ALLOW_ASTERISK | WORD_EMPTY_IS_NIL,
+			  *ep, end, ep);
+	version = parse_word(s, is_null, WORD_ALLOW_ASTERISK|WORD_EMPTY_IS_NIL,
+			     *ep, end, ep);
 	if (version == @':error')
 		return Cnil;
  make_it:
@@ -506,12 +516,12 @@ coerce_to_physical_pathname(cl_object x)
 }
 
 /*
- * coerce_to_filename(P) converts P to a physical pathname and then to
+ * si_coerce_to_filename(P) converts P to a physical pathname and then to
  * a namestring. The output must always be a simple-string which can
  * be used by the C library.
  */
 cl_object
-coerce_to_filename(cl_object pathname)
+si_coerce_to_filename(cl_object pathname)
 {
 	cl_object namestring;
 
@@ -1056,7 +1066,8 @@ coerce_to_from_pathname(cl_object x, cl_object host)
 	/* Check that host is a valid host name */
 	assert_type_string(host);
 	length = host->string.fillp;
-	parse_word(host->string.self, '\0', WORD_LOGICAL, 0, length, &parsed_length);
+	parse_word(host->string.self, is_null, WORD_LOGICAL, 0, length,
+		   &parsed_length);
 	if (parsed_length < host->string.fillp)
 		FEerror("Wrong host syntax ~S", 1, host);
 

@@ -112,7 +112,7 @@ si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 	si_gc(Ct);
 
 	/* We need the full pathname */
-	filename = coerce_to_filename(cl_truename(filename));
+	filename = si_coerce_to_filename(cl_truename(filename));
 
 #ifdef ECL_THREADS
 	/* Loading binary code is not thread safe. When another thread tries
@@ -245,7 +245,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 	if (!Null(pntype) && (pntype != @':wild')) {
 		/* If filename already has an extension, make sure
 		   that the file exists */
-		filename = coerce_to_filename(pathname);
+		filename = si_coerce_to_filename(pathname);
 		if (si_file_kind(filename, Ct) != @':file') {
 			filename = Cnil;
 		} else {
@@ -255,7 +255,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 		/* Otherwise try with known extensions until a matching
 		   file is found */
 		pathname->pathname.type = CAAR(hooks);
-		filename = coerce_to_filename(pathname);
+		filename = si_coerce_to_filename(pathname);
 		function = CDAR(hooks);
 		if (si_file_kind(filename, Ct) == @':file')
 			break;

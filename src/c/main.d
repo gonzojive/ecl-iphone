@@ -261,15 +261,16 @@ cl_boot(int argc, char **argv)
 	ECL_SET(@'mp::+load-compile-lock+',
 		mp_make_lock(2, @':name', @'mp::+load-compile-lock+'));
 #endif
-	ECL_SET(@'si::*load-hooks*', cl_list(
-#ifdef ENABLE_DLOPEN
+	aux = cl_list(
+#ifdef ECL_DLOPEN
 		4,CONS(make_simple_string("fas"), @'si::load-binary'),
 #else
 		3,
 #endif
 		CONS(make_simple_string("lsp"), @'si::load-source'),
 		CONS(make_simple_string("lisp"), @'si::load-source'),
-		CONS(Cnil, @'si::load-source')));
+		CONS(Cnil, @'si::load-source'));
+	ECL_SET(@'si::*load-hooks*', aux);
 #ifdef PDE
 	ECL_SET(@'si::*record-source-pathname-p*', Cnil);
 #endif

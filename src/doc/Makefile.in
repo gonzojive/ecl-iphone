@@ -45,6 +45,15 @@ install: all
 	$(INSTALL_DATA) ecldev.info $(PREFIX)$(infodir)
 	$(mkinstalldirs) $(PREFIX)$(mandir)/man$(manext)
 	$(INSTALL_DATA) ecl.man $(PREFIX)$(mandir)/man$(manext)/ecl.$(manext)
+flatinstall: all
+	$(mkinstalldirs) $(PREFIX)/doc
+	$(INSTALL_DATA) ecl.info $(PREFIX)/doc
+	$(INSTALL_DATA) ecldev.info $(PREFIX)/doc
+	$(mkinstalldirs) $(PREFIX)/doc/ecl
+	for i in ecl/*; do $(INSTALL_DATA) $$i $(PREFIX)/doc/ecl/; done
+	$(mkinstalldirs) $(PREFIX)/doc/ecldev
+	for i in ecldev/*; do $(INSTALL_DATA) $$i $(PREFIX)/doc/ecldev/; done
+	for i in *.html; do $(INSTALL_DATA) $$i $(PREFIX)/doc/; done
 
 uninstall:
 	rm -r $(infodir)/ecl.info $(infodir)/ecldev.info

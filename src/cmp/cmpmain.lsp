@@ -73,7 +73,7 @@ coprocessor).")
    (format nil
 	   *ld-format*
 	   *cc*
-	   (namestring o-pathname)
+	   (si::coerce-to-filename o-pathname)
 	   (namestring (translate-logical-pathname "SYS:"))
 	   options
 	   *ld-flags* (namestring (translate-logical-pathname "SYS:")))))
@@ -84,7 +84,7 @@ coprocessor).")
    (format nil
 	   *ld-format*
 	   *cc*
-	   (namestring o-pathname)
+	   (si::coerce-to-filename o-pathname)
 	   (namestring (translate-logical-pathname "SYS:"))
 	   options
 	   *ld-shared-flags*
@@ -96,7 +96,7 @@ coprocessor).")
    (format nil
 	   *ld-format*
 	   *cc*
-	   (namestring o-pathname)
+	   (si::coerce-to-filename o-pathname)
 	   (namestring (translate-logical-pathname "SYS:"))
 	   options
 	   *ld-bundle-flags*
@@ -177,8 +177,10 @@ main(int argc, char **argv)
 		(epilogue-code (if (eq target :program) "
 	funcall(1,_intern(\"TOP-LEVEL\",cl_core.system_package));
 	return 0;" "")))
-  (let* ((c-name (namestring (compile-file-pathname output-name :type :c)))
-	 (o-name (namestring (compile-file-pathname output-name :type :object)))
+  (let* ((c-name (si::coerce-to-filename
+		  (compile-file-pathname output-name :type :c)))
+	 (o-name (si::coerce-to-filename
+		  (compile-file-pathname output-name :type :object)))
 	 (init-name (string-upcase (pathname-name c-name)))
 	 submodules
 	 c-file)
@@ -187,7 +189,8 @@ main(int argc, char **argv)
 	     (push (format nil "-l~A" (string-downcase item)) ld-flags)
 	     (push (init-function-name item) submodules))
 	    (t
-	     (push (namestring (compile-file-pathname item :type :object)) ld-flags)
+	     (push (si::coerce-to-filename
+		    (compile-file-pathname item :type :object)) ld-flags)
 	     (setq item (pathname-name item))
 	     (push (init-function-name item) submodules))))
     (setq c-file (open c-name :direction :output))
@@ -302,6 +305,9 @@ cl_object Cblock;
 			   (*compile-file-truename* nil)
 			   #+PDE sys:*source-pathname*)
   (declare (notinline compiler-cc))
+
+  #-ecl-min
+  (require 'sysfun "sys:sysfun")
 
   #-dlopen
   (unless system-p
@@ -458,6 +464,9 @@ Cannot compile ~a."
 
   (unless (symbolp name) (error "~s is not a symbol." name))
 
+  #-ecl-min
+  (require 'sysfun "sys:sysfun")
+
   (when *compiler-in-use*
     (format t "~&;;; The compiler was called recursively.~
 		~%Cannot compile ~s." name)
@@ -554,7 +563,8 @@ Cannot compile ~a."
 	((and (consp thing) (eq (car thing) 'LAMBDA))
 	 (setq disassembled-form `(defun gazonk ,@(cdr thing))))
 	(t (setq disassembled-form thing)))
-
+  #-ecl-min
+  (require 'sysfun "sys:sysfun")
   (when *compiler-in-use*
     (format t "~&;;; The compiler was called recursively.~
                    ~%Cannot disassemble ~a." thing)
@@ -587,8 +597,8 @@ Cannot compile ~a."
 	     (t1expr disassembled-form)
 	     (if (zerop *error-count*)
 		 (catch *cmperr-tag* (ctop-write "code"
-						 (if h-file (namestring h-file) "")
-						 (if data-file (namestring data-file) "")
+						 (if h-file h-file "")
+						 (if data-file data-file "")
 						 :system-p nil))
 		 (setq *error-p* t))
 	     (data-dump data-file)
@@ -606,8 +616,8 @@ Cannot compile ~a."
     (with-open-file (*compiler-output2* h-pathname :direction :output)
       (wt-nl1 "#include " *cmpinclude*)
       (catch *cmperr-tag* (ctop-write (string-upcase init-name)
-				      (namestring h-pathname)
-				      (namestring data-pathname)
+				      h-pathname
+				      data-pathname
 				      :system-p system-p
 				      :shared-data shared-data))
       (terpri *compiler-output1*)
@@ -619,8 +629,8 @@ Cannot compile ~a."
 	   *cc-format*
 	   *cc* *cc-flags* (>= *speed* 2) *cc-optimize*
 	   (namestring (translate-logical-pathname "SYS:"))
-	   (namestring c-pathname)
-	   (namestring o-pathname))
+	   (si::coerce-to-filename c-pathname)
+	   (si::coerce-to-filename o-pathname))
 ; Since the SUN4 assembler loops with big files, you might want to use this:
 ;   (format nil
 ;	   "~A ~@[~*-O1~] -S -I. -I~A -w ~A ; as -o ~A ~A"
