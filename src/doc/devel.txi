@@ -5,6 +5,12 @@
 @setchapternewpage odd
 @c %**end of header
 
+@c Entries for @command{install-info} to use
+@dircategory Lisp Programming
+@direntry
+* ecldev: (ecldev).     Embeddable Common Lisp (ECL) Developer's Manual
+@end direntry
+
 @include macros.txi
 
 @ifinfo
