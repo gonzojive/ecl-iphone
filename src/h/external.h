@@ -204,6 +204,8 @@ extern cl_object si_set_hole_size _ARGS((cl_narg narg, cl_object size));
 extern cl_object si_ignore_maximum_pages _ARGS((cl_narg narg, ...));
 extern void *cl_alloc(cl_index n);
 extern void *cl_alloc_align(cl_index size, cl_index align);
+extern void *ecl_alloc_uncollectable(size_t size);
+extern void ecl_free_uncollectable(void *);
 #define cl_alloc_atomic(x) cl_alloc(x)
 #define cl_alloc_atomic_align(x,s) cl_alloc_align(x,s)
 #define ecl_register_static_root(x) ecl_register_root(x);

@@ -131,6 +131,18 @@ cl_alloc_instance(cl_index slots)
 	return i;
 }
 
+void *
+ecl_alloc_uncollectable(size_t size)
+{
+	return GC_MALLOC_UNCOLLECTABLE(size);
+}
+
+void
+ecl_free_uncollectable(void *pointer)
+{
+	return GC_FREE(pointer);
+}
+
 static void
 init_tm(cl_type t, const char *name, cl_index elsize)
 {
