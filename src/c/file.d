@@ -828,8 +828,7 @@ BEGIN:
 	case smm_input:
 		if (fp == NULL)
 			wrong_file_handler(strm);
-		if (fseek(fp, 0L, 2) != 0)
-			io_error(strm);
+		fseek(fp, 0L, 2);
 		break;
 
 	case smm_synonym:
