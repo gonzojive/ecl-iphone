@@ -29,6 +29,7 @@ libdir=@libdir@
 SHELL = @SHELL@
 INSTALL	= @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_DATA = @INSTALL_DATA@
 mkinstalldirs = $(SHELL) $(top_srcdir)/gc/mkinstalldirs
 
@@ -96,7 +97,7 @@ install-base:
 	for i in $(TARGETS); do \
 	  $(INSTALL) -s $$i $(bindir); \
 	done;
-	$(INSTALL_PROGRAM) ecl-config $(bindir)
+	$(INSTALL_SCRIPT) ecl-config $(bindir)
 	for i in BUILD-STAMP $(LSP_LIBRARIES) $(LIBRARIES) c/dpp* help.doc ; do \
 	  $(INSTALL_DATA) $$i $(libdir); \
 	done
