@@ -132,7 +132,7 @@
 (defun c2member!2 (fun args
 		       &aux (*inline-blocks* 0))
   (unwind-exit
-   (produce-inline-loc (inline-args args) '(T T) :object
+   (produce-inline-loc (inline-args args) '(T T) '(:object)
 	 (case fun
 	   (EQ "si_memq(#0,#1)")
 	   (EQL "memql(#0,#1)")
@@ -158,7 +158,7 @@
 (defun c2assoc!2 (fun args
 		      &aux (*inline-blocks* 0))
   (unwind-exit
-   (produce-inline-loc (inline-args args) '(T T) :object
+   (produce-inline-loc (inline-args args) '(T T) '(:object)
 	 (case fun
 	   (eq "assq(#0,#1)")
 	   (eql "assql(#0,#1)")
@@ -299,7 +299,7 @@
 	       (eq 'FIXNUM (c1form-primary-type (first c1args)))
 	       (eq 'FIXNUM (c1form-primary-type (second c1args)))
 	       (make-c1form* 'C-INLINE :type 'fixnum :args
-			     c1args '(fixnum fixnum) 'fixnum
+			     c1args '(fixnum fixnum) '(fixnum)
 			     (boole-inline-string op-code)
 			     nil
 			     t)))))

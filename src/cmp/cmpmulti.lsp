@@ -183,7 +183,7 @@
   (dolist (v vars)
     (if use-bind
 	(bind (c1form-arg 0 (default-init v)) v)
-	(set-var '(C-INLINE :object "Cnil" () t nil) v)))
+	(set-var '(C-INLINE (:object) "Cnil" () t nil) v)))
   output)
 
 (defun do-m-v-setq-any (min-values max-values vars use-bind)
@@ -234,8 +234,8 @@
 	(dolist (v vars)
 	  (when labels (wt-label (pop labels)))
 	  (if use-bind
-	      (bind '(C-INLINE :object "Cnil" () t nil) v)
-	      (set-var '(C-INLINE :object "Cnil" () t nil) v)))
+	      (bind '(C-INLINE (:object) "Cnil" () t nil) v)
+	      (set-var '(C-INLINE (:object) "Cnil" () t nil) v)))
 	(when labels (wt-label label))))
     output))
 

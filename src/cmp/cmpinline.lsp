@@ -179,7 +179,7 @@
 		  (side-effects-p (third ii))
 		  (fun (fifth ii))
 		  (one-liner t))
-	     (produce-inline-loc inlined-locs arg-types out-rep-type
+	     (produce-inline-loc inlined-locs arg-types (list out-rep-type)
 				 fun side-effects-p one-liner))))))
 
 (defun get-inline-info (fname types return-type &aux ii iia)

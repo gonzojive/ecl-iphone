@@ -20,12 +20,26 @@ ECL 0.9f
    reference the variable that it was going to initialize, as in
 	(LAMBDA (&OPTIONAL (FOO (1+ FOO))) ...)
 
- - ext:c-uint-max and ext:c-ulong-max did not have the right bignum value.
-
  - All strings in a pathname must be valid C strings, with a null terminating
    character and no fill pointer.
 
  - "+nan" is no longer parsed as a number.
+
+* Foreign function interface (FFI):
+
+ - ext:c-uint-max and ext:c-ulong-max did not have the right bignum value.
+
+ - C-INLINE forms now can output multiple values. For instance
+	> (compile nil '(lambda (x)
+			  (ffi::c-inline (x) (:int) (values :int :int)
+				 "@;@(return 0)=#0+2; @(return 1)=#0+3;")))
+	[...]
+	#<compiled-function 0815b318>
+	NIL
+	NIL
+	> (funcall * 2)
+	4
+	5
 
 * Visible changes:
 

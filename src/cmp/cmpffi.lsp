@@ -95,7 +95,7 @@
 	   (CHARACTER-VALUE 'CHARACTER)
 	   (LONG-FLOAT-VALUE 'LONG-FLOAT)
 	   (SHORT-FLOAT-VALUE 'SHORT-FLOAT)
-	   (C-INLINE (rep-type->lisp-type (second loc)))
+	   (C-INLINE (rep-type->lisp-type (first (second loc))))
 	   (BIND (var-type (second loc)))
 	   (otherwise T)))))
 
@@ -110,7 +110,7 @@
 	   (CHARACTER-VALUE :char)
 	   (LONG-FLOAT-VALUE :double)
 	   (SHORT-FLOAT-VALUE :float)
-	   (C-INLINE (second loc))
+	   (C-INLINE (first (second loc)))
 	   (BIND (var-rep-type (second loc)))
 	   (otherwise :object)))))
 
@@ -234,10 +234,26 @@
     (unless (= (length arguments) (length arg-types))
       (cmperr "In a C-INLINE form the number of declare arguments and the number of supplied ones do not match:~%~S"
 	      `(C-INLINE ,@args)))
-    (if (lisp-type-p output-type)
-	(setq output-rep-type (lisp-type->rep-type output-type))
-	(setq output-rep-type output-type
-	      output-type (rep-type->lisp-type output-type)))
+    ;; Find out the output types of the inline form. The syntax is rather relax
+    ;; 	output-type = lisp-type | c-type | (values {lisp-type | c-type}*)
+    (flet ((produce-type-pair (type)
+	     (if (lisp-type-p type)
+		 (cons type (lisp-type->rep-type type))
+		 (cons (rep-type->lisp-type type) type))))
+      (cond ((eq output-type ':void)
+	     (setf output-rep-type '()
+		   output-type 'NIL))
+	    ((and (consp output-type) (eql (first output-type) 'VALUES))
+	     (when one-liner
+	       (cmpwarn "A FFI:C-INLINE form cannot be :ONE-LINER and output more than one value: ~A"
+			args)
+	       (setf one-liner nil))
+	     (setf output-rep-type (mapcar #'cdr (mapcar #'produce-type-pair (rest output-type)))
+		   output-type 'T))
+	    (t
+	     (let ((x (produce-type-pair output-type)))
+	       (setf output-type (car x)
+		     output-rep-type (list (cdr x)))))))
     (let* ((processed-arguments '()))
       (unless (and (listp arguments)
 		   (listp arg-types)
@@ -268,26 +284,43 @@
 	       (eq (char c-expression ndx) #\;)))
 	(push (- (char-code (char c-expression ndx)) (char-code #\0))
 	      args-to-be-saved)))
-   
+
     (setf coerced-arguments (coerce-locs inlined-arguments arg-types args-to-be-saved))
-    (setf output-rep-type (lisp-type->rep-type output-rep-type))
+    ;;(setf output-rep-type (lisp-type->rep-type output-rep-type))
+
     ;; If the form does not output any data, and there are no side
     ;; effects, try to omit it.
-    (cond ((eq output-rep-type :void)
-	   (if side-effects
-	     (progn
-	       (wt-c-inline-loc output-rep-type c-expression coerced-arguments t nil)
-	       (wt ";"))
-	     (cmpwarn "Ignoring form ~S" c-expression))
-	   NIL)
-	  (one-liner
-	   `(C-INLINE ,output-rep-type ,c-expression ,coerced-arguments ,side-effects NIL))
-	  (t
-	   (let ((output-var (make-lcl-var :rep-type output-rep-type)))
-	     (incf *inline-blocks*)
-	     (wt-nl "{" (rep-type-name output-rep-type) " " output-var ";")
-	     (wt-c-inline-loc output-rep-type c-expression coerced-arguments side-effects output-var)
-	     output-var)))))
+    (when (null output-rep-type)
+      (if side-effects
+	  (progn
+	    (wt-c-inline-loc output-rep-type c-expression coerced-arguments t nil)
+	    (wt ";"))
+	  (cmpwarn "Ignoring form ~S" c-expression))
+      (return-from produce-inline-loc NIL))
+
+    ;; If the form is a one-liner, we can simply propagate this expression until the
+    ;; place where the value is used.
+    (when one-liner
+      (return-from produce-inline-loc
+	`(C-INLINE ,output-rep-type ,c-expression ,coerced-arguments ,side-effects NIL)))
+
+    ;; Otherwise we have to set up variables for holding the output.
+    (flet ((make-output-var (type)
+	     (let ((var (make-lcl-var :rep-type type)))
+	       (wt-nl (rep-type-name type) " " var ";")
+	       var)))
+      (incf *inline-blocks*)
+      (wt-nl "{")
+      (let ((output-vars (mapcar #'make-output-var output-rep-type)))
+	(wt-c-inline-loc output-rep-type c-expression coerced-arguments side-effects output-vars)
+	(cond ((= (length output-vars) 1)
+	       (first output-vars))
+	      (t
+	       (loop for v in output-vars
+		     for i from 0
+		     do (let ((*destination* `(VALUE ,i))) (set-loc v)))
+	       (wt "NVALUES=" (length output-vars) ";")
+	       'VALUES))))))
 
 (defun c2c-inline (arguments &rest rest)
   (let ((*inline-blocks* 0))
@@ -324,14 +357,14 @@
       (setf (first l) loc)
       )))
 
-(defun wt-c-inline-loc (output-rep-type c-expression coerced-arguments side-effects output-var)
+(defun wt-c-inline-loc (output-rep-type c-expression coerced-arguments side-effects output-vars)
   (with-input-from-string (s c-expression
 			     :start
 			     (if (eq (char c-expression 0) #\@)
 				 (1+ (or (position #\; c-expression)
 					 -1))
 				 0))
-    (when output-var
+    (when output-vars
       (wt-nl))
     (do ((c (read-char s nil nil)
 	    (read-char s nil nil)))
@@ -339,10 +372,13 @@
       (case c
 	(#\@
 	 (let ((object (read s)))
-	   (cond ((equal object '(RETURN))
-		  (if output-var
-		      (wt output-var)
-		      (cmperr "Tried to use @RETURN within a one-line C-INLINE form")))
+	   (cond ((and (consp object) (equal (first object) 'RETURN))
+		  (let ((ndx (or (second object) 0))
+			(l (length output-vars)))
+		    (if (< ndx l)
+			(wt (nth ndx output-vars))
+			(cmperr "Used @(RETURN ~D) in a C-INLINE form with ~D output values"
+				ndx l))))
 		 (t
 		  (when (and (consp object) (eq (first object) 'QUOTE))
 		    (setq object (second object)))
