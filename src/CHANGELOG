@@ -975,6 +975,12 @@ ECL 0.6 (bugfix release)
     LEFT-PARENTHESIS-READER. This avoids using global variables
     "in_list_flag" and "dot_flag".
 
+* Visible changes:
+
+  - New functions SI:SAFE-EVAL and cl_safe_eval() allow the user to
+    evaluate code with errors without jumping into the
+    debugger. Useful when embedding ECL in other programs.
+
 * ANSI compatibility:
 
   - READ and READ-PRESERVING-WHITESPACE behave the same when

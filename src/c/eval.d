@@ -18,11 +18,6 @@
 #include "ecl.h"
 #include "ecl-inl.h"
 
-static struct nil3 { cl_object nil3_self[3]; } three_nils;
-
-#define SYMBOL_FUNCTION(sym)    (SYM_FUN(sym) == OBJNULL ? \
-				 (FEundefined_function(sym),Cnil) : SYM_FUN(sym))
-
 /* Calling conventions:
    Compiled C code calls lisp function supplying #args, and args.
    Linking function performs check_args, gets jmp_buf with _setjmp, then
@@ -189,6 +184,28 @@ link_call(cl_object sym, cl_objectfn *pLK, int narg, va_list args)
 	returnn(output);
 @)
 
+cl_object
+cl_safe_eval(cl_object form, cl_object *new_bytecodes, cl_object env, cl_object err_value)
+{
+	cl_object output;
+
+	if (frs_push(FRS_CATCHALL, Cnil)) {
+		output = err_value;
+	} else {
+		bds_bind(@'si::*ignore-errors*', Ct);
+		output = eval(form, new_bytecodes, env);
+		bds_unwind1;
+	}
+	frs_pop();
+	return output;
+}
+
+@(defun si::safe-eval (form &optional (err_value @'error') env)
+	cl_object output;
+@
+	returnn(cl_safe_eval(form, NULL, env, err_value));
+@)
+
 @(defun constantp (arg)
 	cl_object flag;
 @
@@ -208,9 +225,6 @@ link_call(cl_object sym, cl_objectfn *pLK, int narg, va_list args)
 void
 init_eval(void)
 {
+	SYM_VAL(@'si::*ignore-errors*') = Cnil;
 	SYM_VAL(@'call-arguments-limit') = MAKE_FIXNUM(64);
-
-	three_nils.nil3_self[0] = Cnil;
-	three_nils.nil3_self[1] = Cnil;
-	three_nils.nil3_self[2] = Cnil;
 }

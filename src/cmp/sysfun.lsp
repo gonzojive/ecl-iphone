@@ -281,7 +281,6 @@
 (si::VS-TOP)
 (si::VS)
 (si::SCH-FRS-BASE)
-(si::UNIVERSAL-ERROR-HANDLER)
 
 ; file eval.c
 (APPLY (T T *) T)

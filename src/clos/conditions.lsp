@@ -29,10 +29,6 @@
 (defun invoke-debugger (&optional (datum "Debug") &rest arguments)
   (let ((condition
 	 (coerce-to-condition datum arguments 'simple-condition 'debug)))
-    (when *ignore-errors*
-      (setq *ignore-errors* nil)
-      (setq *last-error* condition)
-      (throw *ignore-errors-tag* 'ERROR))
     (break-level t (format t "~&~A~%" condition))))
 
 (defun break-level (continuable *break-message*)

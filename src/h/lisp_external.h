@@ -203,6 +203,7 @@ extern cl_object clLfuncall _ARGS((int narg, cl_object fun, ...));
 extern cl_object clLapply _ARGS((int narg, cl_object fun, cl_object arg, ...));
 extern cl_object clLeval _ARGS((int narg, cl_object form));
 extern cl_object siLeval_with_env _ARGS((int n, cl_object form, cl_object env));
+extern cl_object siLsafe_eval _ARGS((int n, cl_object form, ...));
 extern cl_object clLconstantp _ARGS((int narg, cl_object arg));
 
 /* file.c */
