@@ -19,91 +19,26 @@
 
 cl_object @'si::*indent-formatted-output*';
 
-/******************* WITH THREADS *********************/
-#ifdef THREADS
-#define fmt_stream	clwp->lwp_fmt_stream
-#define ctl_origin	clwp->lwp_ctl_origin
-#define ctl_index	clwp->lwp_ctl_index
-#define ctl_end		clwp->lwp_ctl_end
-#define fmt_base	clwp->lwp_fmt_base
-#define fmt_index	clwp->lwp_fmt_index
-#define fmt_end		clwp->lwp_fmt_end
-#define fmt_jmp_buf	clwp->lwp_fmt_jmp_buf
-#define fmt_indents	clwp->lwp_fmt_indents
-#define fmt_string	clwp->lwp_fmt_string
-#define fmt_temporary_stream clwp->lwp_fmt_temporary_stream
-#define fmt_temporary_string clwp->lwp_fmt_temporary_string
-#define fmt_nparam	clwp->lwp_fmt_nparam
-#define fmt_param	clwp->lwp_fmt_param
-#define fmt_spare_spaces clwp->lwp_fmt_spare_spaces
-#define fmt_line_length clwp->lwp_fmt_line_length
-#endif
-
-/******************* WITHOUT THREADS ******************/
-#ifndef THREADS
 #define FMT_MAX_PARAM	8
-static cl_object fmt_stream;
-static int ctl_origin;
-static int ctl_index;
-static int ctl_end;
-static cl_index fmt_base;
-static int fmt_index;
-static int fmt_end;
-static jmp_buf *fmt_jmp_buf;
-static int fmt_indents;
-static cl_object fmt_string;
-static cl_object fmt_temporary_stream;
-static cl_object fmt_temporary_string;
-static int fmt_nparam;
-struct {
-	int fmt_param_type;
-	int fmt_param_value;
-} fmt_param[FMT_MAX_PARAM];
-static int fmt_spare_spaces;
-static int fmt_line_length;
-#endif /* !THREADS */
+typedef struct format_stack_struct {
+  cl_object	stream;
+  cl_object	string;
+  cl_object	aux_stream;
+  cl_object	aux_string;
+  cl_index	ctl_index, ctl_end;
+  const char	*ctl_str;
+  cl_index	base, index, end;
+  jmp_buf	*jmp_buf;
+  cl_index	indents;
+  cl_index	spare_spaces;
+  cl_index	line_length;
+  struct { int type, value; } param[FMT_MAX_PARAM];
+  int		nparam;
+} *format_stack;
+
+static cl_object fmt_aux_stream;
 
 /******************* COMMON ***************************/
-
-#define	ctl_string	(fmt_string->string.self + ctl_origin)
-
-#define	fmt_old		volatile cl_object old_fmt_stream; \
-			volatile int old_ctl_origin; \
-			volatile int old_ctl_index; \
-			volatile int old_ctl_end; \
-			volatile cl_index old_fmt_base; \
-			volatile int old_fmt_index; \
-			volatile int old_fmt_end; \
-			jmp_buf * volatile old_fmt_jmp_buf; \
-			volatile int old_fmt_indents; \
-			volatile cl_object old_fmt_string
-#define	fmt_save	old_fmt_stream = fmt_stream; \
-			old_ctl_origin = ctl_origin; \
-			old_ctl_index = ctl_index; \
-			old_ctl_end = ctl_end; \
-			old_fmt_base = fmt_base; \
-			old_fmt_index = fmt_index; \
-			old_fmt_end = fmt_end; \
-			old_fmt_jmp_buf = fmt_jmp_buf; \
-			old_fmt_indents = fmt_indents; \
-			old_fmt_string = fmt_string
-#define	fmt_restore	fmt_stream = old_fmt_stream; \
-			ctl_origin = old_ctl_origin; \
-			ctl_index = old_ctl_index; \
-			ctl_end = old_ctl_end; \
-			fmt_base = old_fmt_base; \
-			fmt_index = old_fmt_index; \
-			fmt_end = old_fmt_end; \
-			fmt_jmp_buf = old_fmt_jmp_buf; \
-			fmt_indents = old_fmt_indents; \
-			fmt_string = old_fmt_string
-#define	fmt_restore1	fmt_stream = old_fmt_stream; \
-			ctl_origin = old_ctl_origin; \
-			ctl_index = old_ctl_index; \
-			ctl_end = old_ctl_end; \
-			fmt_jmp_buf = old_fmt_jmp_buf; \
-			fmt_indents = old_fmt_indents; \
-			fmt_string = old_fmt_string
 
 #define NONE	0
 #define	INT	1
@@ -139,58 +74,74 @@ static const char *fmt_ordinal[] = {
 	"fiftieth", "sixtieth", "seventieth", "eightieth", "ninetieth"
 };
 
-static void format(cl_object, int, int);
+static void format(format_stack, const char *s, cl_index);
+
+static cl_object
+get_aux_stream(void)
+{
+	cl_object stream;
+
+	start_critical_section();
+	if (fmt_aux_stream == Cnil)
+		stream = make_string_output_stream(64);
+	else {
+		stream = fmt_aux_stream;
+		fmt_aux_stream = Cnil;
+	}
+	end_critical_section();
+	return stream;
+}	
 
 static void
-fmt_error(const char *s)
+fmt_error(format_stack fmt, const char *s)
 {
 	FEerror("Format error: ~A.~%~V@@TV~%\"~A\"~%",
 		3, make_constant_string(s),
-		MAKE_FIXNUM(&ctl_string[ctl_index] - fmt_string->string.self),
-		fmt_string);
+		MAKE_FIXNUM(&fmt->ctl_str[fmt->ctl_index] - fmt->string->string.self),
+		fmt->string);
 }
 
 static int
-fmt_tempstr(int s)
+tempstr(format_stack fmt, int s)
 {
-	return(fmt_temporary_string->string.self[s]);
+	return(fmt->aux_string->string.self[s]);
 }
 
 static int
-ctl_advance(void)
+ctl_advance(format_stack fmt)
 {
-	if (ctl_index >= ctl_end)
-		fmt_error("unexpected end of control string");
-	return(ctl_string[ctl_index++]);
+	if (fmt->ctl_index >= fmt->ctl_end)
+		fmt_error(fmt, "unexpected end of control string");
+	return(fmt->ctl_str[fmt->ctl_index++]);
 }
 
 static cl_object
-fmt_advance(void)
+fmt_advance(format_stack fmt)
 {
-	if (fmt_index >= fmt_end)
-		fmt_error("arguments exhausted");
-	return(cl_stack[fmt_index++]);
+	if (fmt->index >= fmt->end)
+		fmt_error(fmt, "arguments exhausted");
+	return(cl_stack[fmt->index++]);
 }
 
 static cl_object
-fmt_push_list(cl_object l)
+fmt_push_list(format_stack fmt, cl_object l)
 {
 	for (;  !endp(l);  l = CDR(l))
 		cl_stack_push(CAR(l));
 }
 
 static int
-fmt_skip(void)
+fmt_skip(format_stack fmt)
 {
 	int c, level = 0;
 	
 LOOP:
-	if (ctl_advance() != '~')
+	if (ctl_advance(fmt) != '~')
 		goto LOOP;
 	for (;;)
-		switch (c = ctl_advance()) {
+		switch (c = ctl_advance(fmt)) {
 		case '\'':
-			ctl_advance();
+			ctl_advance(fmt);
 
 		case ',':
 		case '0':  case '1':  case '2':  case '3':  case '4':
@@ -214,345 +165,365 @@ DIRECTIVE:
 
 	case ')':  case ']':  case '>':  case '}':
 		if (level == 0)
-			return(ctl_index);
+			return(fmt->ctl_index);
 		else
 			--level;
 		break;
 
 	case ';':
 		if (level == 0)
-			return(ctl_index);
+			return(fmt->ctl_index);
 		break;
 	}
 	goto LOOP;
 }
 
 static void
-fmt_max_param(int n)
+ensure_param(format_stack fmt, int n)
 {
-	if (fmt_nparam > n)
-		fmt_error("too many parameters");
+	if (fmt->nparam > n)
+		fmt_error(fmt, "too many parameters");
+	while (n-- > fmt->nparam)
+		fmt->param[n].type = NONE;
 }
 
 static void
-fmt_not_colon(bool colon)
+fmt_not_colon(format_stack fmt, bool colon)
 {
 	if (colon)
-		fmt_error("illegal :");
+		fmt_error(fmt, "illegal :");
 }
 
 static void
-fmt_not_atsign(bool atsign)
+fmt_not_atsign(format_stack fmt, bool atsign)
 {
 	if (atsign)
-		fmt_error("illegal @@");
+		fmt_error(fmt, "illegal @@");
 }
 
 static void
-fmt_not_colon_atsign(bool colon, bool atsign)
+fmt_not_colon_atsign(format_stack fmt, bool colon, bool atsign)
 {
 	if (colon && atsign)
-		fmt_error("illegal :@@");
+		fmt_error(fmt, "illegal :@@");
 }
 
 static int
-fmt_set_param(int i, int t, int v)
+set_param(format_stack fmt, int i, int t, int v)
 {
-	if (i >= fmt_nparam || fmt_param[i].fmt_param_type == 0)
+	if (i >= fmt->nparam || fmt->param[i].type == NONE)
 		return v;
-	else if (fmt_param[i].fmt_param_type != t)
-		fmt_error("illegal parameter type");
-	return fmt_param[i].fmt_param_value;
+	else if (fmt->param[i].type != t)
+		fmt_error(fmt, "illegal parameter type");
+	return fmt->param[i].value;
 }	
 
 static int
-fmt_set_param_positive(int i, const char *message)
+set_param_positive(format_stack fmt, int i, const char *message)
 {
-	if (i >= fmt_nparam || fmt_param[i].fmt_param_type == 0)
+	if (i >= fmt->nparam || fmt->param[i].type == NONE)
 		return -1;
-	else if (fmt_param[i].fmt_param_type != INT)
-		fmt_error("illegal parameter type");
+	else if (fmt->param[i].type != INT)
+		fmt_error(fmt, "illegal parameter type");
 	else {
-		int p = fmt_param[i].fmt_param_value;
-		if (p < 0) fmt_error(message);
+		int p = fmt->param[i].value;
+		if (p < 0) fmt_error(fmt, message);
 		return p;
 	}
 }	
 
 static void
-fmt_ascii(bool colon, bool atsign)
+fmt_copy(format_stack fmt_copy, format_stack fmt)
+{
+	*fmt_copy = *fmt;
+}
+
+static void
+fmt_copy1(format_stack fmt_copy, format_stack fmt)
+{
+	fmt_copy->stream = fmt->stream;
+	fmt_copy->ctl_str = fmt->ctl_str;
+	fmt_copy->ctl_index = fmt->ctl_index;
+	fmt_copy->ctl_end = fmt->ctl_end;
+	fmt_copy->jmp_buf = fmt->jmp_buf;
+	fmt_copy->indents = fmt->indents;
+	fmt_copy->string = fmt->string;
+}
+
+static void
+fmt_ascii(format_stack fmt, bool colon, bool atsign)
 {
 	int mincol, colinc, minpad, padchar;
 	cl_object x;
 	int l, i;
 
-	fmt_max_param(4);
-	mincol = fmt_set_param(0, INT, 0);
-	colinc = fmt_set_param(1, INT, 1);
-	minpad = fmt_set_param(2, INT, 0);
-	padchar = fmt_set_param(3, CHAR, ' ');
+	ensure_param(fmt, 4);
+	mincol = set_param(fmt, 0, INT, 0);
+	colinc = set_param(fmt, 1, INT, 1);
+	minpad = set_param(fmt, 2, INT, 0);
+	padchar = set_param(fmt, 3, CHAR, ' ');
 
-	fmt_temporary_string->string.fillp = 0;
-	fmt_temporary_stream->stream.int0 = file_column(fmt_stream);
-	fmt_temporary_stream->stream.int1 = file_column(fmt_stream);
-	x = fmt_advance();
+	fmt->aux_string->string.fillp = 0;
+	fmt->aux_stream->stream.int0 = file_column(fmt->stream);
+	fmt->aux_stream->stream.int1 = file_column(fmt->stream);
+	x = fmt_advance(fmt);
 	if (colon && Null(x))
-		writestr_stream("()", fmt_temporary_stream);
+		writestr_stream("()", fmt->aux_stream);
 	else if (mincol == 0 && minpad == 0) {
-		princ(x, fmt_stream);
+		princ(x, fmt->stream);
 		return;
 	} else
-		princ(x, fmt_temporary_stream);
-	l = fmt_temporary_string->string.fillp;
+		princ(x, fmt->aux_stream);
+	l = fmt->aux_string->string.fillp;
 	for (i = minpad;  l + i < mincol;  i += colinc)
 		;
 	if (!atsign) {
-		write_string(fmt_temporary_string, fmt_stream);
+		write_string(fmt->aux_string, fmt->stream);
 		while (i-- > 0)
-			writec_stream(padchar, fmt_stream);
+			writec_stream(padchar, fmt->stream);
 	} else {
 		while (i-- > 0)
-			writec_stream(padchar, fmt_stream);
-		write_string(fmt_temporary_string, fmt_stream);
+			writec_stream(padchar, fmt->stream);
+		write_string(fmt->aux_string, fmt->stream);
 	}
 }
 
 static void
-fmt_S_expression(bool colon, bool atsign)
+fmt_S_expression(format_stack fmt, bool colon, bool atsign)
 {
 	int mincol, colinc, minpad, padchar;
 	cl_object x;
 	int l, i;
 
-	fmt_max_param(4);
-	mincol = fmt_set_param(0, INT, 0);
-	colinc = fmt_set_param(1, INT, 1);
-	minpad = fmt_set_param(2, INT, 0);
-	padchar = fmt_set_param(3, CHAR, ' ');
+	ensure_param(fmt, 4);
+	mincol = set_param(fmt, 0, INT, 0);
+	colinc = set_param(fmt, 1, INT, 1);
+	minpad = set_param(fmt, 2, INT, 0);
+	padchar = set_param(fmt, 3, CHAR, ' ');
 
-	fmt_temporary_string->string.fillp = 0;
-	fmt_temporary_stream->stream.int0 = file_column(fmt_stream);
-	fmt_temporary_stream->stream.int1 = file_column(fmt_stream);
-	x = fmt_advance();
+	fmt->aux_string->string.fillp = 0;
+	fmt->aux_stream->stream.int0 = file_column(fmt->stream);
+	fmt->aux_stream->stream.int1 = file_column(fmt->stream);
+	x = fmt_advance(fmt);
 	if (colon && Null(x))
-		writestr_stream("()", fmt_temporary_stream);
+		writestr_stream("()", fmt->aux_stream);
 	else if (mincol == 0 && minpad == 0) {
-		prin1(x, fmt_stream);
+		prin1(x, fmt->stream);
 		return;
 	} else
-		prin1(x, fmt_temporary_stream);
-	l = fmt_temporary_string->string.fillp;
+		prin1(x, fmt->aux_stream);
+	l = fmt->aux_string->string.fillp;
 	for (i = minpad;  l + i < mincol;  i += colinc)
 		;
 	if (!atsign) {
-		write_string(fmt_temporary_string, fmt_stream);
+		write_string(fmt->aux_string, fmt->stream);
 		while (i-- > 0)
-			writec_stream(padchar, fmt_stream);
+			writec_stream(padchar, fmt->stream);
 	} else {
 		while (i-- > 0)
-			writec_stream(padchar, fmt_stream);
-		write_string(fmt_temporary_string, fmt_stream);
+			writec_stream(padchar, fmt->stream);
+		write_string(fmt->aux_string, fmt->stream);
 	}
 }
 
 
 static void
-fmt_integer(cl_object x, bool colon, bool atsign,
+fmt_integer(format_stack fmt, cl_object x, bool colon, bool atsign,
 	    int radix, int mincol, int padchar, int commachar)
 {
 	int l, l1;
 	int s;
 
 	if (!FIXNUMP(x) && type_of(x) != t_bignum) {
-		fmt_temporary_string->string.fillp = 0;
-		fmt_temporary_stream->stream.int0 = file_column(fmt_stream);
-		fmt_temporary_stream->stream.int1 = file_column(fmt_stream);
-		setupPRINT(fmt_temporary_stream);
+		fmt->aux_string->string.fillp = 0;
+		fmt->aux_stream->stream.int0 = file_column(fmt->stream);
+		fmt->aux_stream->stream.int1 = file_column(fmt->stream);
+		setupPRINT(fmt->aux_stream);
 		PRINTescape = FALSE;
 		PRINTbase = radix;
 		write_object(x);
-		l = fmt_temporary_string->string.fillp;
+		l = fmt->aux_string->string.fillp;
 		mincol -= l;
 		while (mincol-- > 0)
-			writec_stream(padchar, fmt_stream);
+			writec_stream(padchar, fmt->stream);
 		for (s = 0;  l > 0;  --l, s++)
-			writec_stream(fmt_tempstr(s), fmt_stream);
+			writec_stream(tempstr(fmt, s), fmt->stream);
 		return;
 	}
-	fmt_temporary_string->string.fillp = 0;
-	fmt_temporary_stream->stream.int0 = file_column(fmt_stream);
-	fmt_temporary_stream->stream.int1 = file_column(fmt_stream);
-	PRINTstream = fmt_temporary_stream;
+	fmt->aux_string->string.fillp = 0;
+	fmt->aux_stream->stream.int0 = file_column(fmt->stream);
+	fmt->aux_stream->stream.int1 = file_column(fmt->stream);
+	PRINTstream = fmt->aux_stream;
 	PRINTradix = FALSE;
 	PRINTbase = radix;
 	write_object(x);
-	l = l1 = fmt_temporary_string->string.fillp;
+	l = l1 = fmt->aux_string->string.fillp;
 	s = 0;
-	if (fmt_tempstr(s) == '-')
+	if (tempstr(fmt, s) == '-')
 		--l1;
 	mincol -= l;
 	if (colon)
 		mincol -= (l1 - 1)/3;
-	if (atsign && fmt_tempstr(s) != '-')
+	if (atsign && tempstr(fmt, s) != '-')
 		--mincol;
 	while (mincol-- > 0)
-		writec_stream(padchar, fmt_stream);
-	if (fmt_tempstr(s) == '-') {
+		writec_stream(padchar, fmt->stream);
+	if (tempstr(fmt, s) == '-') {
 		s++;
-		writec_stream('-', fmt_stream);
+		writec_stream('-', fmt->stream);
 	} else if (atsign)
-		writec_stream('+', fmt_stream);
+		writec_stream('+', fmt->stream);
 	while (l1-- > 0) {
-		writec_stream(fmt_tempstr(s++), fmt_stream);
+		writec_stream(tempstr(fmt, s++), fmt->stream);
 		if (colon && l1 > 0 && l1%3 == 0)
-			writec_stream(commachar, fmt_stream);
+			writec_stream(commachar, fmt->stream);
 	}
 }
 
 static void
-fmt_decimal(bool colon, bool atsign)
+fmt_decimal(format_stack fmt, bool colon, bool atsign)
 {
 	int mincol, padchar, commachar;
 
-	fmt_max_param(3);
-	mincol = fmt_set_param(0, INT, 0);
-	padchar = fmt_set_param(1, CHAR, ' ');
-	commachar = fmt_set_param(2, CHAR, ',');
-	fmt_integer(fmt_advance(), colon, atsign,
+	ensure_param(fmt, 3);
+	mincol = set_param(fmt, 0, INT, 0);
+	padchar = set_param(fmt, 1, CHAR, ' ');
+	commachar = set_param(fmt, 2, CHAR, ',');
+	fmt_integer(fmt, fmt_advance(fmt), colon, atsign,
 		    10, mincol, padchar, commachar);
 }
 
 static void
-fmt_binary(bool colon, bool atsign)
+fmt_binary(format_stack fmt, bool colon, bool atsign)
 {
 	int mincol, padchar, commachar;
 
-	fmt_max_param(3);
-	mincol = fmt_set_param(0, INT, 0);
-	padchar = fmt_set_param(1, CHAR, ' ');
-	commachar = fmt_set_param(2, CHAR, ',');
-	fmt_integer(fmt_advance(), colon, atsign,
+	ensure_param(fmt, 3);
+	mincol = set_param(fmt, 0, INT, 0);
+	padchar = set_param(fmt, 1, CHAR, ' ');
+	commachar = set_param(fmt, 2, CHAR, ',');
+	fmt_integer(fmt, fmt_advance(fmt), colon, atsign,
 		    2, mincol, padchar, commachar);
 }
 
 static void
-fmt_octal(bool colon, bool atsign)
+fmt_octal(format_stack fmt, bool colon, bool atsign)
 {
 	int mincol, padchar, commachar;
 
-	fmt_max_param(3);
-	mincol = fmt_set_param(0, INT, 0);
-	padchar = fmt_set_param(1, CHAR, ' ');
-	commachar = fmt_set_param(2, CHAR, ',');
-	fmt_integer(fmt_advance(), colon, atsign,
+	ensure_param(fmt, 3);
+	mincol = set_param(fmt, 0, INT, 0);
+	padchar = set_param(fmt, 1, CHAR, ' ');
+	commachar = set_param(fmt, 2, CHAR, ',');
+	fmt_integer(fmt, fmt_advance(fmt), colon, atsign,
 		    8, mincol, padchar, commachar);
 }
 
 static void
-fmt_hexadecimal(bool colon, bool atsign)
+fmt_hexadecimal(format_stack fmt, bool colon, bool atsign)
 {
 	int mincol, padchar, commachar;
 
-	fmt_max_param(3);
-	mincol = fmt_set_param(0, INT, 0);
-	padchar = fmt_set_param(1, CHAR, ' ');
-	commachar = fmt_set_param(2, CHAR, ',');
-	fmt_integer(fmt_advance(), colon, atsign,
+	ensure_param(fmt, 3);
+	mincol = set_param(fmt, 0, INT, 0);
+	padchar = set_param(fmt, 1, CHAR, ' ');
+	commachar = set_param(fmt, 2, CHAR, ',');
+	fmt_integer(fmt, fmt_advance(fmt), colon, atsign,
 		    16, mincol, padchar, commachar);
 }
 
 static void
-fmt_write_numeral(int s, int i)
+fmt_write_numeral(format_stack fmt, int s, int i)
 {
-	writestr_stream(fmt_numeral[fmt_tempstr(s) - '0' + i], fmt_stream);
+	writestr_stream(fmt_numeral[tempstr(fmt, s) - '0' + i], fmt->stream);
 }
 
 static void
-fmt_write_ordinal(int s, int i)
+fmt_write_ordinal(format_stack fmt, int s, int i)
 {
-	writestr_stream(fmt_ordinal[fmt_tempstr(s) - '0' + i], fmt_stream);
+	writestr_stream(fmt_ordinal[tempstr(fmt, s) - '0' + i], fmt->stream);
 }
 
 static bool
-fmt_thousand(int s, int i, bool b, bool o, int t)
+fmt_thousand(format_stack fmt, int s, int i, bool b, bool o, int t)
 {
-	if (i == 3 && fmt_tempstr(s) > '0') {
+	if (i == 3 && tempstr(fmt, s) > '0') {
 		if (b)
-			writec_stream(' ', fmt_stream);
-		fmt_write_numeral(s, 0);
-		writestr_stream(" hundred", fmt_stream);
+			writec_stream(' ', fmt->stream);
+		fmt_write_numeral(fmt, s, 0);
+		writestr_stream(" hundred", fmt->stream);
 		--i;
 		s++;
 		b = TRUE;
 		if (o && (s > t))
-			writestr_stream("th", fmt_stream);
+			writestr_stream("th", fmt->stream);
 	}
 	if (i == 3) {
 		--i;
 		s++;
 	}
-	if (i == 2 && fmt_tempstr(s) > '0') {
+	if (i == 2 && tempstr(fmt, s) > '0') {
 		if (b)
-			writec_stream(' ', fmt_stream);
-		if (fmt_tempstr(s) == '1') {
+			writec_stream(' ', fmt->stream);
+		if (tempstr(fmt, s) == '1') {
 			if (o && (s + 2 > t))
-				fmt_write_ordinal(++s, 10);
+				fmt_write_ordinal(fmt, ++s, 10);
 			else
-				fmt_write_numeral(++s, 10);
+				fmt_write_numeral(fmt, ++s, 10);
 			return(TRUE);
 		} else {
 			if (o && (s + 1 > t))
-				fmt_write_ordinal(s, 20);
+				fmt_write_ordinal(fmt, s, 20);
 			else
-				fmt_write_numeral(s, 20);
+				fmt_write_numeral(fmt, s, 20);
 			s++;
-			if (fmt_tempstr(s) > '0') {
-				writec_stream('-', fmt_stream);
+			if (tempstr(fmt, s) > '0') {
+				writec_stream('-', fmt->stream);
 				if (o && s + 1 > t)
-					fmt_write_ordinal(s, 0);
+					fmt_write_ordinal(fmt, s, 0);
 				else
-					fmt_write_numeral(s, 0);
+					fmt_write_numeral(fmt, s, 0);
 			}
 			return(TRUE);
 		}
 	}
 	if (i == 2)
 		s++;
-	if (fmt_tempstr(s) > '0') {
+	if (tempstr(fmt, s) > '0') {
 		if (b)
-			writec_stream(' ', fmt_stream);
+			writec_stream(' ', fmt->stream);
 		if (o && s + 1 > t)
-			fmt_write_ordinal(s, 0);
+			fmt_write_ordinal(fmt, s, 0);
 		else
-			fmt_write_numeral(s, 0);
+			fmt_write_numeral(fmt, s, 0);
 		return(TRUE);
 	}
 	return(b);
 }
 
 static bool
-fmt_nonillion(int s, int i, bool b, bool o, int t)
+fmt_nonillion(format_stack fmt, int s, int i, bool b, bool o, int t)
 {
 	int j;
 
 	for (;  i > 3;  i -= j) {
-		b = fmt_thousand(s, j = (i+2)%3+1, b, FALSE, t);
-		if (j != 3 || fmt_tempstr(s) != '0' ||
-		    fmt_tempstr(s+1) != '0' || fmt_tempstr(s+2) != '0') {
-			writec_stream(' ', fmt_stream);
+		b = fmt_thousand(fmt, s, j = (i+2)%3+1, b, FALSE, t);
+		if (j != 3 || tempstr(fmt, s) != '0' ||
+		    tempstr(fmt, s+1) != '0' || tempstr(fmt, s+2) != '0') {
+			writec_stream(' ', fmt->stream);
 			writestr_stream(fmt_big_numeral[(i - 1)/3 - 1],
-					fmt_stream);
+					fmt->stream);
 			s += j;
 			if (o && s > t)
-				writestr_stream("th", fmt_stream);
+				writestr_stream("th", fmt->stream);
 		} else
 			s += j;
 	}
-	return(fmt_thousand(s, i, b, o, t));
+	return(fmt_thousand(fmt, s, i, b, o, t));
 }		
 
 static void
-fmt_roman(int i, int one, int five, int ten, bool colon)
+fmt_roman(format_stack fmt, int i, int one, int five, int ten, bool colon)
 {
 	int j;
 
@@ -560,22 +531,22 @@ fmt_roman(int i, int one, int five, int ten, bool colon)
 		return;
 	if ((!colon && i < 4) || (colon && i < 5))
 		for (j = 0;  j < i;  j++)
-			writec_stream(one, fmt_stream);
+			writec_stream(one, fmt->stream);
 	else if (!colon && i == 4) {
-		writec_stream(one, fmt_stream);
-		writec_stream(five, fmt_stream);
+		writec_stream(one, fmt->stream);
+		writec_stream(five, fmt->stream);
 	} else if ((!colon && i < 9) || colon) {
-		writec_stream(five, fmt_stream);
+		writec_stream(five, fmt->stream);
 		for (j = 5;  j < i;  j++)
-			writec_stream(one, fmt_stream);
+			writec_stream(one, fmt->stream);
 	} else if (!colon && i == 9) {
-		writec_stream(one, fmt_stream);
-		writec_stream(ten, fmt_stream);
+		writec_stream(one, fmt->stream);
+		writec_stream(ten, fmt->stream);
 	}
 }
 
 static void
-fmt_radix(bool colon, bool atsign)
+fmt_radix(format_stack fmt, bool colon, bool atsign)
 {
 	int radix, mincol, padchar, commachar;
 	cl_object x;
@@ -583,8 +554,8 @@ fmt_radix(bool colon, bool atsign)
 	int s, t;
 	bool b;
 
-	if (fmt_nparam == 0) {
-		x = fmt_advance();
+	if (fmt->nparam == 0) {
+		x = fmt_advance(fmt);
 		assert_type_integer(x);
 		if (atsign) {
 			if (FIXNUMP(x))
@@ -593,105 +564,105 @@ fmt_radix(bool colon, bool atsign)
 				i = -1;
 			if ((!colon && (i <= 0 || i >= 4000)) ||
 			    (colon && (i <= 0 || i >= 5000))) {
-				fmt_integer(x, FALSE, FALSE, 10, 0, ' ', ',');
+				fmt_integer(fmt, x, FALSE, FALSE, 10, 0, ' ', ',');
 				return;
 			}
-			fmt_roman(i/1000, 'M', '*', '*', colon);
-			fmt_roman(i%1000/100, 'C', 'D', 'M', colon);
-			fmt_roman(i%100/10, 'X', 'L', 'C', colon);
-			fmt_roman(i%10, 'I', 'V', 'X', colon);
+			fmt_roman(fmt, i/1000, 'M', '*', '*', colon);
+			fmt_roman(fmt, i%1000/100, 'C', 'D', 'M', colon);
+			fmt_roman(fmt, i%100/10, 'X', 'L', 'C', colon);
+			fmt_roman(fmt, i%10, 'I', 'V', 'X', colon);
 			return;
 		}
-		fmt_temporary_string->string.fillp = 0;
-		fmt_temporary_stream->stream.int0 = file_column(fmt_stream);
-		fmt_temporary_stream->stream.int1 = file_column(fmt_stream);
-		PRINTstream = fmt_temporary_stream;
+		fmt->aux_string->string.fillp = 0;
+		fmt->aux_stream->stream.int0 = file_column(fmt->stream);
+		fmt->aux_stream->stream.int1 = file_column(fmt->stream);
+		PRINTstream = fmt->aux_stream;
 		PRINTradix = FALSE;
 		PRINTbase = 10;
 		write_object(x);
 		s = 0;
-		i = fmt_temporary_string->string.fillp;
-		if (i == 1 && fmt_tempstr(s) == '0') {
-			writestr_stream("zero", fmt_stream);
+		i = fmt->aux_string->string.fillp;
+		if (i == 1 && tempstr(fmt, s) == '0') {
+			writestr_stream("zero", fmt->stream);
 			if (colon)
-				writestr_stream("th", fmt_stream);
+				writestr_stream("th", fmt->stream);
 			return;
-		} else if (fmt_tempstr(s) == '-') {
-			writestr_stream("minus ", fmt_stream);
+		} else if (tempstr(fmt, s) == '-') {
+			writestr_stream("minus ", fmt->stream);
 			--i;
 			s++;
 		}
-		t = fmt_temporary_string->string.fillp;
-		for (; fmt_tempstr(--t) == '0' ;) ;
+		t = fmt->aux_string->string.fillp;
+		for (; tempstr(fmt, --t) == '0' ;) ;
 		for (b = FALSE;  i > 0;  i -= j) {
-			b = fmt_nonillion(s, j = (i+29)%30+1, b,
+			b = fmt_nonillion(fmt, s, j = (i+29)%30+1, b,
 					  i<=30&&colon, t);
 			s += j;
 			if (b && i > 30) {
 				for (k = (i - 1)/30;  k > 0;  --k)
 					writestr_stream(" nonillion",
-							fmt_stream);
+							fmt->stream);
 				if (colon && s > t)
-					writestr_stream("th", fmt_stream);
+					writestr_stream("th", fmt->stream);
 			}
 		}
 		return;
 	}
-	fmt_max_param(4);
-	radix = fmt_set_param(0, INT, 10);
-	mincol = fmt_set_param(1, INT, 0);
-	padchar = fmt_set_param(2, CHAR, ' ');
-	commachar = fmt_set_param(3, CHAR, ',');
-	x = fmt_advance();
+	ensure_param(fmt, 4);
+	radix = set_param(fmt, 0, INT, 10);
+	mincol = set_param(fmt, 1, INT, 0);
+	padchar = set_param(fmt, 2, CHAR, ' ');
+	commachar = set_param(fmt, 3, CHAR, ',');
+	x = fmt_advance(fmt);
 	assert_type_integer(x);
 	if (radix < 0 || radix > 36)
 		FEerror("~D is illegal as a radix.", 1, MAKE_FIXNUM(radix));
-	fmt_integer(x, colon, atsign, radix, mincol, padchar, commachar);
+	fmt_integer(fmt, x, colon, atsign, radix, mincol, padchar, commachar);
 }	
 
 static void
-fmt_plural(bool colon, bool atsign)
+fmt_plural(format_stack fmt, bool colon, bool atsign)
 {
-	fmt_max_param(0);
+	ensure_param(fmt, 0);
 	if (colon) {
-		if (fmt_index == fmt_base)
-			fmt_error("can't back up");
-		--fmt_index;
+		if (fmt->index == fmt->base)
+			fmt_error(fmt, "can't back up");
+		--fmt->index;
 	}
-	if (eql(fmt_advance(), MAKE_FIXNUM(1))) {
+	if (eql(fmt_advance(fmt), MAKE_FIXNUM(1))) {
 		if (atsign)
-			writec_stream('y', fmt_stream);
+			writec_stream('y', fmt->stream);
 	      }
 	else
 		if (atsign)
-			writestr_stream("ies", fmt_stream);
+			writestr_stream("ies", fmt->stream);
 		else
-			writec_stream('s', fmt_stream);
+			writec_stream('s', fmt->stream);
 }
 
 static void
-fmt_character(bool colon, bool atsign)
+fmt_character(format_stack fmt, bool colon, bool atsign)
 {
 	cl_object x;
 	cl_index i;
 
-	fmt_max_param(0);
-	fmt_temporary_string->string.fillp = 0;
-	fmt_temporary_stream->stream.int0 = 0;
-	fmt_temporary_stream->stream.int1 = 0;
-	x = fmt_advance();
+	ensure_param(fmt, 0);
+	fmt->aux_string->string.fillp = 0;
+	fmt->aux_stream->stream.int0 = 0;
+	fmt->aux_stream->stream.int1 = 0;
+	x = fmt_advance(fmt);
 	assert_type_character(x);
-	prin1(x, fmt_temporary_stream);
+	prin1(x, fmt->aux_stream);
 	if (!colon && atsign)
 		i = 0;
 	else
 		i = 2;
-	for (;  i < fmt_temporary_string->string.fillp;  i++)
-		writec_stream(fmt_tempstr(i), fmt_stream);
+	for (;  i < fmt->aux_string->string.fillp;  i++)
+		writec_stream(tempstr(fmt, i), fmt->stream);
 }
 
 static void
-fmt_fix_float(bool colon, bool atsign)
+fmt_fix_float(format_stack fmt, bool colon, bool atsign)
 {
 	int w, d, k, overflowchar, padchar;
 	double f;
@@ -704,23 +675,23 @@ fmt_fix_float(bool colon, bool atsign)
 
 	b = buff1 + 1;
 
-	fmt_not_colon(colon);
-	fmt_max_param(5);
-	w = fmt_set_param_positive(0, "illegal width");
-	d = fmt_set_param_positive(1, "illegal number of digits");
-	k = fmt_set_param(2, INT, 0);
-	overflowchar = fmt_set_param(3, CHAR, -1);
-	padchar = fmt_set_param(4, CHAR, ' ');
+	fmt_not_colon(fmt, colon);
+	ensure_param(fmt, 5);
+	w = set_param_positive(fmt, 0, "illegal width");
+	d = set_param_positive(fmt, 1, "illegal number of digits");
+	k = set_param(fmt, 2, INT, 0);
+	overflowchar = set_param(fmt, 3, CHAR, -1);
+	padchar = set_param(fmt, 4, CHAR, ' ');
 
-	x = fmt_advance();
+	x = fmt_advance(fmt);
 	if (FIXNUMP(x) ||
 	    type_of(x) == t_bignum ||
 	    type_of(x) == t_ratio)
 		x = make_shortfloat(object_to_float(x));
 	if (!REAL_TYPE(type_of(x))) {
-		if (fmt_nparam > 1) fmt_nparam = 1;
-		--fmt_index;
-		fmt_decimal(colon, atsign);
+		if (fmt->nparam > 1) fmt->nparam = 1;
+		--fmt->index;
+		fmt_decimal(fmt, colon, atsign);
 		return;
 	}
 	if (type_of(x) == t_longfloat)
@@ -730,7 +701,7 @@ fmt_fix_float(bool colon, bool atsign)
 	f = number_to_double(x);
 	edit_double(n, f, &sign, buff, &exp);
 	if (exp + k > 100 || exp + k < -100 || d > 100) {
-		prin1(x, fmt_stream);
+		prin1(x, fmt->stream);
 		return;
 	}
 	if (d >= 0)
@@ -793,9 +764,9 @@ fmt_fix_float(bool colon, bool atsign)
 		if (sign < 0 || atsign)
 			--w;
 		if (j > w && overflowchar >= 0) {
-			w = fmt_set_param(0, INT, 0);
+			w = set_param(fmt, 0, INT, 0);
 			for (i = 0;  i < w;  i++)
-				writec_stream(overflowchar, fmt_stream);
+				writec_stream(overflowchar, fmt->stream);
 			return;
 		}
 		if (j < w && d < 0 && b[j-1] == '.') {
@@ -807,7 +778,7 @@ fmt_fix_float(bool colon, bool atsign)
 			j++;
 		}
 		for (i = j;  i < w;  i++)
-			writec_stream(padchar, fmt_stream);
+			writec_stream(padchar, fmt->stream);
 	} else {
 		if (b[0] == '.') {
 			*--b = '0';
@@ -819,10 +790,10 @@ fmt_fix_float(bool colon, bool atsign)
 		}
 	}
 	if (sign < 0)
-		writec_stream('-', fmt_stream);
+		writec_stream('-', fmt->stream);
 	else if (atsign)
-		writec_stream('+', fmt_stream);
-	writestr_stream(b, fmt_stream);
+		writec_stream('+', fmt->stream);
+	writestr_stream(b, fmt->stream);
 }
 
 static int
@@ -840,28 +811,28 @@ fmt_exponent_length(int e)
 }
 
 static void
-fmt_exponent1(int e)
+fmt_exponent1(cl_object stream, int e)
 {
 	if (e == 0)
 		return;
-	fmt_exponent1(e/10);
-	writec_stream('0' + e%10, fmt_stream);
+	fmt_exponent1(stream, e/10);
+	writec_stream('0' + e%10, stream);
 }
 
 static void
-fmt_exponent(int e)
+fmt_exponent(format_stack fmt, int e)
 {
 	if (e == 0) {
-		writec_stream('0', fmt_stream);
+		writec_stream('0', fmt->stream);
 		return;
 	}
 	if (e < 0)
 		e = -e;
-	fmt_exponent1(e);
+	fmt_exponent1(fmt->stream, e);
 }
 
 static void
-fmt_exponential_float(bool colon, bool atsign)
+fmt_exponential_float(format_stack fmt, bool colon, bool atsign)
 {
 	int w, d, e, k, overflowchar, padchar, exponentchar;
 	double f;
@@ -875,25 +846,25 @@ fmt_exponential_float(bool colon, bool atsign)
 
 	b = buff1 + 1;
 
-	fmt_not_colon(colon);
-	fmt_max_param(7);
-	w = fmt_set_param_positive(0, "illegal width");
-	d = fmt_set_param_positive(1, "illegal number of digits");
-	e = fmt_set_param_positive(2, "illegal number of digits in exponent");
-	k = fmt_set_param(3, INT, 1);
-	overflowchar = fmt_set_param(4, CHAR, -1);
-	padchar = fmt_set_param(5, CHAR, ' ');
-	exponentchar = fmt_set_param(6, CHAR, -1);
+	fmt_not_colon(fmt, colon);
+	ensure_param(fmt, 7);
+	w = set_param_positive(fmt, 0, "illegal width");
+	d = set_param_positive(fmt, 1, "illegal number of digits");
+	e = set_param_positive(fmt, 2, "illegal number of digits in exponent");
+	k = set_param(fmt, 3, INT, 1);
+	overflowchar = set_param(fmt, 4, CHAR, -1);
+	padchar = set_param(fmt, 5, CHAR, ' ');
+	exponentchar = set_param(fmt, 6, CHAR, -1);
 
-	x = fmt_advance();
+	x = fmt_advance(fmt);
 	if (FIXNUMP(x) ||
 	    type_of(x) == t_bignum ||
 	    type_of(x) == t_ratio)
 		x = make_shortfloat(object_to_float(x));
 	if (!REAL_TYPE(type_of(x))) {
-		if (fmt_nparam > 1) fmt_nparam = 1;
-		--fmt_index;
-		fmt_decimal(colon, atsign);
+		if (fmt->nparam > 1) fmt->nparam = 1;
+		--fmt->index;
+		fmt_decimal(fmt, colon, atsign);
 		return;
 	}
 	if (type_of(x) == t_longfloat)
@@ -905,11 +876,11 @@ fmt_exponential_float(bool colon, bool atsign)
 	if (d >= 0) {
 		if (k > 0) {
 			if (!(k < d + 2))
-				fmt_error("illegal scale factor");
+				fmt_error(fmt, "illegal scale factor");
 			m = d + 1;
 		} else {
 			if (!(k > -d))
-				fmt_error("illegal scale factor");
+				fmt_error(fmt, "illegal scale factor");
 			m = d + k;
 		}
 	} else if (w >= 0) {
@@ -989,7 +960,7 @@ fmt_exponential_float(bool colon, bool atsign)
 			j++;
 		}
 		for (i = j;  i < w;  i++)
-			writec_stream(padchar, fmt_stream);
+			writec_stream(padchar, fmt->stream);
 	} else {
 		if (b[j-1] == '.') {
 			b[j++] = '0';
@@ -1001,10 +972,10 @@ fmt_exponential_float(bool colon, bool atsign)
 		}
 	}
 	if (sign < 0)
-		writec_stream('-', fmt_stream);
+		writec_stream('-', fmt->stream);
 	else if (atsign)
-		writec_stream('+', fmt_stream);
-	writestr_stream(b, fmt_stream);
+		writec_stream('+', fmt->stream);
+	writestr_stream(b, fmt->stream);
 	y = symbol_value(@'*read-default-float-format*');
 	if (exponentchar < 0) {
 		if (y == @'long-float' || y == @'double-float')
@@ -1018,26 +989,26 @@ fmt_exponential_float(bool colon, bool atsign)
 		else
 			exponentchar = 'L';
 	}
-	writec_stream(exponentchar, fmt_stream);
+	writec_stream(exponentchar, fmt->stream);
 	if (exp < 0)
-		writec_stream('-', fmt_stream);
+		writec_stream('-', fmt->stream);
 	else
-		writec_stream('+', fmt_stream);
+		writec_stream('+', fmt->stream);
 	if (e >= 0)
 		for (i = e - fmt_exponent_length(exp);  i > 0;  --i)
-			writec_stream('0', fmt_stream);
-	fmt_exponent(exp);
+			writec_stream('0', fmt->stream);
+	fmt_exponent(fmt, exp);
 	return;
 
 OVER:
-	w = fmt_set_param(0, INT, -1);
+	w = set_param(fmt, 0, INT, -1);
 	for (i = 0;  i < w;  i++)
-		writec_stream(overflowchar, fmt_stream);
+		writec_stream(overflowchar, fmt->stream);
 	return;
 }
 
 static void
-fmt_general_float(bool colon, bool atsign)
+fmt_general_float(format_stack fmt, bool colon, bool atsign)
 {
 	int w, d, e, k, overflowchar, padchar, exponentchar;
 	int sign, exp;
@@ -1045,21 +1016,21 @@ fmt_general_float(bool colon, bool atsign)
 	cl_object x;
 	int n, ee, ww, q, dd;
 
-	fmt_not_colon(colon);
-	fmt_max_param(7);
-	w = fmt_set_param_positive(0, "illegal width");
-	d = fmt_set_param_positive(1, "illegal number of digits");
-	e = fmt_set_param_positive(2, "illegal number of digits in exponent");
-	k = fmt_set_param(3, INT, 1);
-	overflowchar = fmt_set_param(4, CHAR, -1);
-	padchar = fmt_set_param(5, CHAR, ' ');
-	exponentchar = fmt_set_param(6, CHAR, -1);
+	fmt_not_colon(fmt, colon);
+	ensure_param(fmt, 7);
+	w = set_param_positive(fmt, 0, "illegal width");
+	d = set_param_positive(fmt, 1, "illegal number of digits");
+	e = set_param_positive(fmt, 2, "illegal number of digits in exponent");
+	k = set_param(fmt, 3, INT, 1);
+	overflowchar = set_param(fmt, 4, CHAR, -1);
+	padchar = set_param(fmt, 5, CHAR, ' ');
+	exponentchar = set_param(fmt, 6, CHAR, -1);
 
-	x = fmt_advance();
+	x = fmt_advance(fmt);
 	if (!REAL_TYPE(type_of(x))) {
-		if (fmt_nparam > 1) fmt_nparam = 1;
-		--fmt_index;
-		fmt_decimal(colon, atsign);
+		if (fmt->nparam > 1) fmt->nparam = 1;
+		--fmt->index;
+		fmt_decimal(fmt, colon, atsign);
 		return;
 	}
 	if (type_of(x) == t_longfloat)
@@ -1084,28 +1055,28 @@ fmt_general_float(bool colon, bool atsign)
 	}
 	dd = d - n;
 	if (0 <= dd && dd <= d) {
-		fmt_nparam = 5;
-		fmt_param[0].fmt_param_value = ww;
-		fmt_param[1].fmt_param_value = dd;
-		fmt_param[1].fmt_param_type = INT;
-		fmt_param[2].fmt_param_type = NONE;
-		fmt_param[3] = fmt_param[4];
-		fmt_param[4] = fmt_param[5];
-		--fmt_index;
-		fmt_fix_float(colon, atsign);
+		fmt->nparam = 5;
+		fmt->param[0].value = ww;
+		fmt->param[1].value = dd;
+		fmt->param[1].type = INT;
+		fmt->param[2].type = NONE;
+		fmt->param[3] = fmt->param[4];
+		fmt->param[4] = fmt->param[5];
+		--fmt->index;
+		fmt_fix_float(fmt, colon, atsign);
 		if (w >= 0)
 			while (ww++ < w)
-				writec_stream(padchar, fmt_stream);
+				writec_stream(padchar, fmt->stream);
 		return;
 	}
-	fmt_param[1].fmt_param_value = d;
-	fmt_param[1].fmt_param_type = INT;
-	--fmt_index;
-	fmt_exponential_float(colon, atsign);
+	fmt->param[1].value = d;
+	fmt->param[1].type = INT;
+	--fmt->index;
+	fmt_exponential_float(fmt, colon, atsign);
 }
 
 static void
-fmt_dollars_float(bool colon, bool atsign)
+fmt_dollars_float(format_stack fmt, bool colon, bool atsign)
 {
 	int d, n, w, padchar;
 	double f;
@@ -1115,27 +1086,24 @@ fmt_dollars_float(bool colon, bool atsign)
 	int q, i;
 	cl_object x;
 
-	fmt_max_param(4);
-	d = fmt_set_param(0, INT, 2);
-	if (d < 0)
-		fmt_error("illegal number of digits");
-	n = fmt_set_param(1, INT, 1);
-	if (n < 0)
-		fmt_error("illegal number of digits");
-	w = fmt_set_param(2, INT, 0);
-	if (w < 0)
-		fmt_error("illegal width");
-	padchar = fmt_set_param(3, CHAR, ' ');
-	x = fmt_advance();
+	ensure_param(fmt, 4);
+	d = set_param_positive(fmt, 0, "illegal number of digits");
+	if (d < 0) d = 2;
+	n = set_param_positive(fmt, 1, "illegal number of digits");
+	if (n < 0) n = 1;
+	w = set_param_positive(fmt, 2, "illegal width");
+	if (w < 0) w = 0;
+	padchar = set_param(fmt, 3, CHAR, ' ');
+	x = fmt_advance(fmt);
 	if (!REAL_TYPE(type_of(x))) {
-		if (fmt_nparam < 3)
-			fmt_nparam = 0;
+		if (fmt->nparam < 3)
+			fmt->nparam = 0;
 		else {
-			fmt_nparam = 1;
-			fmt_param[0] = fmt_param[2];
+			fmt->nparam = 1;
+			fmt->param[0] = fmt->param[2];
 		}
-		--fmt_index;
-		fmt_decimal(colon, atsign);
+		--fmt->index;
+		fmt_decimal(fmt, colon, atsign);
 		return;
 	}
 	q = 7;
@@ -1147,16 +1115,16 @@ fmt_dollars_float(bool colon, bool atsign)
 		edit_double(q, f, &sign, buff, &exp);
 	exp++;
 	if (w > 100 || exp > 100 || exp < -100) {
-		fmt_nparam = 6;
-		fmt_param[0] = fmt_param[2];
-		fmt_param[1].fmt_param_value = d + n - 1;
-		fmt_param[1].fmt_param_type = INT;
-		fmt_param[2].fmt_param_type =
-		fmt_param[3].fmt_param_type =
-		fmt_param[4].fmt_param_type = NONE;
-		fmt_param[5] = fmt_param[3];
-		--fmt_index;
-		fmt_exponential_float(colon, atsign);
+		fmt->nparam = 6;
+		fmt->param[0] = fmt->param[2];
+		fmt->param[1].value = d + n - 1;
+		fmt->param[1].type = INT;
+		fmt->param[2].type =
+		fmt->param[3].type =
+		fmt->param[4].type = NONE;
+		fmt->param[5] = fmt->param[3];
+		--fmt->index;
+		fmt_exponential_float(fmt, colon, atsign);
 	}
 	if (exp > n)
 		n = exp;
@@ -1164,117 +1132,117 @@ fmt_dollars_float(bool colon, bool atsign)
 		--w;
 	if (colon) {
 		if (sign < 0)
-			writec_stream('-', fmt_stream);
+			writec_stream('-', fmt->stream);
 		else if (atsign)
-			writec_stream('+', fmt_stream);
+			writec_stream('+', fmt->stream);
 		while (--w > n + d)
-			writec_stream(padchar, fmt_stream);
+			writec_stream(padchar, fmt->stream);
 	} else {
 		while (--w > n + d)
-			writec_stream(padchar, fmt_stream);
+			writec_stream(padchar, fmt->stream);
 		if (sign < 0)
-			writec_stream('-', fmt_stream);
+			writec_stream('-', fmt->stream);
 		else if (atsign)
-			writec_stream('+', fmt_stream);
+			writec_stream('+', fmt->stream);
 	}
 	for (i = n - exp;  i > 0;  --i)
-		writec_stream('0', fmt_stream);
+		writec_stream('0', fmt->stream);
 	for (i = 0;  i < exp;  i++)
-		writec_stream((i < q ? buff[i] : '0'), fmt_stream);
-	writec_stream('.', fmt_stream);
+		writec_stream((i < q ? buff[i] : '0'), fmt->stream);
+	writec_stream('.', fmt->stream);
 	for (d += i;  i < d;  i++)
-		writec_stream((i < q ? buff[i] : '0'), fmt_stream);
+		writec_stream((i < q ? buff[i] : '0'), fmt->stream);
 }
 
 static void
-fmt_percent(bool colon, bool atsign)
+fmt_percent(format_stack fmt, bool colon, bool atsign)
 {
 	int n, i;
 
-	fmt_max_param(1);
-	n = fmt_set_param(0, INT, 1);
-	fmt_not_colon(colon);
-	fmt_not_atsign(atsign);
+	ensure_param(fmt, 1);
+	n = set_param(fmt, 0, INT, 1);
+	fmt_not_colon(fmt, colon);
+	fmt_not_atsign(fmt, atsign);
 	while (n-- > 0) {
-		writec_stream('\n', fmt_stream);
+		writec_stream('\n', fmt->stream);
 		if (n == 0)
-			for (i = fmt_indents;  i > 0;  --i)
-				writec_stream(' ', fmt_stream);
+			for (i = fmt->indents;  i > 0;  --i)
+				writec_stream(' ', fmt->stream);
 	}
 }
 
 static void
-fmt_ampersand(bool colon, bool atsign)
+fmt_ampersand(format_stack fmt, bool colon, bool atsign)
 {
 	int n;
 
-	fmt_max_param(1);
-	n = fmt_set_param(0, INT, 1);
-	fmt_not_colon(colon);
-	fmt_not_atsign(atsign);
+	ensure_param(fmt, 1);
+	n = set_param(fmt, 0, INT, 1);
+	fmt_not_colon(fmt, colon);
+	fmt_not_atsign(fmt, atsign);
 	if (n == 0)
 		return;
-	if (file_column(fmt_stream) != 0)
-		writec_stream('\n', fmt_stream);
+	if (file_column(fmt->stream) != 0)
+		writec_stream('\n', fmt->stream);
 	while (--n > 0)
-		writec_stream('\n', fmt_stream);
-	fmt_indents = 0;
+		writec_stream('\n', fmt->stream);
+	fmt->indents = 0;
 }
 
 static void
-fmt_bar(bool colon, bool atsign)
+fmt_bar(format_stack fmt, bool colon, bool atsign)
 {
 	int n;
 
-	fmt_max_param(1);
-	n = fmt_set_param(0, INT, 1);
-	fmt_not_colon(colon);
-	fmt_not_atsign(atsign);
+	ensure_param(fmt, 1);
+	n = set_param(fmt, 0, INT, 1);
+	fmt_not_colon(fmt, colon);
+	fmt_not_atsign(fmt, atsign);
 	while (n-- > 0)
-		writec_stream('\f', fmt_stream);
+		writec_stream('\f', fmt->stream);
 }
 
 static void
-fmt_tilde(bool colon, bool atsign)
+fmt_tilde(format_stack fmt, bool colon, bool atsign)
 {
 	int n;
 
-	fmt_max_param(1);
-	n = fmt_set_param(0, INT, 1);
-	fmt_not_colon(colon);
-	fmt_not_atsign(atsign);
+	ensure_param(fmt, 1);
+	n = set_param(fmt, 0, INT, 1);
+	fmt_not_colon(fmt, colon);
+	fmt_not_atsign(fmt, atsign);
 	while (n-- > 0)
-		writec_stream('~', fmt_stream);
+		writec_stream('~', fmt->stream);
 }
 
 static void
-fmt_newline(bool colon, bool atsign)
+fmt_newline(format_stack fmt, bool colon, bool atsign)
 {
-	fmt_max_param(0);
-	fmt_not_colon_atsign(colon, atsign);
+	ensure_param(fmt, 0);
+	fmt_not_colon_atsign(fmt, colon, atsign);
 	if (atsign)
-		writec_stream('\n', fmt_stream);
-	while (ctl_index < ctl_end && isspace(ctl_string[ctl_index])) {
+		writec_stream('\n', fmt->stream);
+	while (fmt->ctl_index < fmt->ctl_end && isspace(fmt->ctl_str[fmt->ctl_index])) {
 		if (colon)
-			writec_stream(ctl_string[ctl_index], fmt_stream);
-		ctl_index++;
+			writec_stream(fmt->ctl_str[fmt->ctl_index], fmt->stream);
+		fmt->ctl_index++;
 	}
 }
 
 static void
-fmt_tabulate(bool colon, bool atsign)
+fmt_tabulate(format_stack fmt, bool colon, bool atsign)
 {
 	int colnum, colinc;
 	int c, i;
 	
-	fmt_max_param(2);
-	fmt_not_colon(colon);
-	colnum = fmt_set_param(0, INT, 1);
-	colinc = fmt_set_param(1, INT, 1);
+	ensure_param(fmt, 2);
+	fmt_not_colon(fmt, colon);
+	colnum = set_param(fmt, 0, INT, 1);
+	colinc = set_param(fmt, 1, INT, 1);
 	if (!atsign) {
-		c = file_column(fmt_stream);
+		c = file_column(fmt->stream);
 		if (c < 0) {
-			writestr_stream("  ", fmt_stream);
+			writestr_stream("  ", fmt->stream);
 			return;
 		}
 		if (c > colnum && colinc <= 0)
@@ -1282,117 +1250,118 @@ fmt_tabulate(bool colon, bool atsign)
 		while (c > colnum)
 			colnum += colinc;
 		for (i = colnum - c;  i > 0;  --i)
-			writec_stream(' ', fmt_stream);
+			writec_stream(' ', fmt->stream);
 	} else {
 		for (i = colnum;  i > 0;  --i)
-			writec_stream(' ', fmt_stream);
-		c = file_column(fmt_stream);
+			writec_stream(' ', fmt->stream);
+		c = file_column(fmt->stream);
 		if (c < 0 || colinc <= 0)
 			return;
 		colnum = 0;
 		while (c > colnum)
 			colnum += colinc;
 		for (i = colnum - c;  i > 0;  --i)
-			writec_stream(' ', fmt_stream);
+			writec_stream(' ', fmt->stream);
 	}
 }
 
 static void
-fmt_asterisk(bool colon, bool atsign)
+fmt_asterisk(format_stack fmt, bool colon, bool atsign)
 {
 	int n;
 
-	fmt_max_param(1);
-	fmt_not_colon_atsign(colon, atsign);
+	ensure_param(fmt, 1);
+	fmt_not_colon_atsign(fmt, colon, atsign);
 	if (atsign) {
-		n = fmt_set_param(0, INT, 0);
-		n += fmt_base;
-		if (n < fmt_base || n >= fmt_end)
-			fmt_error("can't goto");
-		fmt_index = n;
+		n = set_param(fmt, 0, INT, 0);
+		n += fmt->base;
+		if (n < fmt->base || n >= fmt->end)
+			fmt_error(fmt, "can't goto");
+		fmt->index = n;
 	} else if (colon) {
-		n = fmt_set_param(0, INT, 1);
-		if (n > fmt_index)
-			fmt_error("can't back up");
-		fmt_index -= n;
+		n = set_param(fmt, 0, INT, 1);
+		if (n > fmt->index)
+			fmt_error(fmt, "can't back up");
+		fmt->index -= n;
 	} else {
-		n = fmt_set_param(0, INT, 1);
+		n = set_param(fmt, 0, INT, 1);
 		while (n-- > 0)
-			fmt_advance();
+			fmt_advance(fmt);
 	}
 }	
 
 static void
-fmt_indirection(bool colon, bool atsign)
+fmt_indirection(format_stack fmt, bool colon, bool atsign)
 {
 	cl_object s, l;
-	fmt_old;
+	struct format_stack_struct fmt_old;
 	jmp_buf fmt_jmp_buf0;
 	int up_colon;
 
-	fmt_max_param(0);
-	fmt_not_colon(colon);
-	s = fmt_advance();
+	ensure_param(fmt, 0);
+	fmt_not_colon(fmt, colon);
+	s = fmt_advance(fmt);
 	if (type_of(s) != t_string)
-		fmt_error("control string expected");
+		fmt_error(fmt, "control string expected");
 	if (atsign) {
-		fmt_save;
-		fmt_jmp_buf = &fmt_jmp_buf0;
-		fmt_string = s;
-		if ((up_colon = ecl_setjmp(*fmt_jmp_buf))) {
+		fmt_copy(&fmt_old, fmt);
+		fmt->jmp_buf = &fmt_jmp_buf0;
+		fmt->string = s;
+		if ((up_colon = ecl_setjmp(*fmt->jmp_buf))) {
 			if (--up_colon)
-				fmt_error("illegal ~:^");
+				fmt_error(fmt, "illegal ~:^");
 		} else
-			format(fmt_stream, 0, s->string.fillp);
-		fmt_restore1;
+			format(fmt, s->string.self, s->string.fillp);
+		fmt_copy1(fmt, &fmt_old);
 	} else {
-		l = fmt_advance();
-		fmt_save;
-		fmt_base = cl_stack_index();
-		fmt_push_list(l);
-		fmt_index = fmt_base;
-		fmt_end = cl_stack_index();
-		fmt_jmp_buf = &fmt_jmp_buf0;
-		fmt_string = s;
-		if ((up_colon = ecl_setjmp(*fmt_jmp_buf))) {
+		l = fmt_advance(fmt);
+		fmt_copy(&fmt_old, fmt);
+		fmt->base = cl_stack_index();
+		fmt_push_list(fmt, l);
+		fmt->index = fmt->base;
+		fmt->end = cl_stack_index();
+		fmt->jmp_buf = &fmt_jmp_buf0;
+		fmt->string = s;
+		if ((up_colon = ecl_setjmp(*fmt->jmp_buf))) {
 			if (--up_colon)
-				fmt_error("illegal ~:^");
+				fmt_error(fmt, "illegal ~:^");
 		} else
-			format(fmt_stream, 0, s->string.fillp);
-		cl_stack_set_index(fmt_base);
-		fmt_restore;
+			format(fmt, s->string.self, s->string.fillp);
+		cl_stack_set_index(fmt->base);
+		fmt_copy(fmt, &fmt_old);
 	}
 }
 
 static void
-fmt_case(bool colon, bool atsign)
+fmt_case(format_stack fmt, bool colon, bool atsign)
 {
 	cl_object x;
 	cl_index i;
 	int j;
-	fmt_old;
+	struct format_stack_struct fmt_old;
 	jmp_buf fmt_jmp_buf0;
 	int up_colon;
 	bool b;
 
 	x = make_string_output_stream(64);
-	i = ctl_index;
-	j = fmt_skip();
-	if (ctl_string[--j] != ')' || ctl_string[--j] != '~')
-		fmt_error("~) expected");
-	fmt_save;
-	fmt_jmp_buf = &fmt_jmp_buf0;
-	if ((up_colon = ecl_setjmp(*fmt_jmp_buf)))
+	i = fmt->ctl_index;
+	j = fmt_skip(fmt);
+	if (fmt->ctl_str[--j] != ')' || fmt->ctl_str[--j] != '~')
+		fmt_error(fmt, "~) expected");
+	fmt_copy(&fmt_old, fmt);
+	fmt->stream = x;
+	fmt->jmp_buf = &fmt_jmp_buf0;
+	if ((up_colon = ecl_setjmp(*fmt->jmp_buf)))
 		;
 	else
-		format(x, ctl_origin + i, j - i);
-	fmt_restore1;
+		format(fmt, fmt->ctl_str + i, j - i);
+	fmt_copy1(fmt, &fmt_old);
 	x = x->stream.object0;
 	if (!colon && !atsign)
 		for (i = 0;  i < x->string.fillp;  i++) {
 			if (isupper(j = x->string.self[i]))
 				j = tolower(j);
-			writec_stream(j, fmt_stream);
+			writec_stream(j, fmt->stream);
 		}
 	else if (colon && !atsign)
 		for (b = TRUE, i = 0;  i < x->string.fillp;  i++) {
@@ -1406,7 +1375,7 @@ fmt_case(bool colon, bool atsign)
 				b = FALSE;
 			} else if (!isdigit(j))
 				b = TRUE;
-			writec_stream(j, fmt_stream);
+			writec_stream(j, fmt->stream);
 		}
 	else if (!colon && atsign)
 		for (b = TRUE, i = 0;  i < x->string.fillp;  i++) {
@@ -1419,163 +1388,164 @@ fmt_case(bool colon, bool atsign)
 					j = tolower(j);
 				b = FALSE;
 			}
-			writec_stream(j, fmt_stream);
+			writec_stream(j, fmt->stream);
 		}
 	else
 		for (i = 0;  i < x->string.fillp;  i++) {
 			if (islower(j = x->string.self[i]))
 				j = toupper(j);
-			writec_stream(j, fmt_stream);
+			writec_stream(j, fmt->stream);
 		}
 	if (up_colon)
-		ecl_longjmp(*fmt_jmp_buf, up_colon);
+		ecl_longjmp(*fmt->jmp_buf, up_colon);
 }
 
 static void
-fmt_conditional(bool colon, bool atsign)
+fmt_conditional(format_stack fmt, bool colon, bool atsign)
 {
 	int i, j, k;
 	cl_object x;
 	int n;
 	bool done;
-	fmt_old;
+	struct format_stack_struct fmt_old;
 
-	fmt_not_colon_atsign(colon, atsign);
+	fmt_not_colon_atsign(fmt, colon, atsign);
 	if (colon) {
-		fmt_max_param(0);
-		i = ctl_index;
-		j = fmt_skip();
-		if (ctl_string[--j] != ';' || ctl_string[--j] != '~')
-			fmt_error("~; expected");
-		k = fmt_skip();
-		if (ctl_string[--k] != ']' || ctl_string[--k] != '~')
-			fmt_error("~] expected");
-		if (Null(fmt_advance())) {
-			fmt_save;
-			format(fmt_stream, ctl_origin + i, j - i);
-			fmt_restore1;
+		ensure_param(fmt, 0);
+		i = fmt->ctl_index;
+		j = fmt_skip(fmt);
+		if (fmt->ctl_str[--j] != ';' || fmt->ctl_str[--j] != '~')
+			fmt_error(fmt, "~; expected");
+		k = fmt_skip(fmt);
+		if (fmt->ctl_str[--k] != ']' || fmt->ctl_str[--k] != '~')
+			fmt_error(fmt, "~] expected");
+		if (Null(fmt_advance(fmt))) {
+			fmt_copy(&fmt_old, fmt);
+			format(fmt, fmt->ctl_str + i, j - i);
+			fmt_copy1(fmt, &fmt_old);
 		} else {
-			fmt_save;
-			format(fmt_stream, ctl_origin + j + 2, k - (j + 2));
-			fmt_restore1;
+			fmt_copy(&fmt_old, fmt);
+			format(fmt, fmt->ctl_str + j + 2, k - (j + 2));
+			fmt_copy1(fmt, &fmt_old);
 		}
 	} else if (atsign) {
-		i = ctl_index;
-		j = fmt_skip();
-		if (ctl_string[--j] != ']' || ctl_string[--j] != '~')
-			fmt_error("~] expected");
-		if (Null(fmt_advance()))
+		i = fmt->ctl_index;
+		j = fmt_skip(fmt);
+		if (fmt->ctl_str[--j] != ']' || fmt->ctl_str[--j] != '~')
+			fmt_error(fmt, "~] expected");
+		if (Null(fmt_advance(fmt)))
 			;
 		else {
-			--fmt_index;
-			fmt_save;
-			format(fmt_stream, ctl_origin + i, j - i);
-			fmt_restore1;
+			--fmt->index;
+			fmt_copy(&fmt_old, fmt);
+			format(fmt, fmt->ctl_str + i, j - i);
+			fmt_copy1(fmt, &fmt_old);
 		}
 	} else {
-		fmt_max_param(1);
-		if (fmt_nparam == 0) {
-			x = fmt_advance();
+		ensure_param(fmt, 1);
+		if (fmt->nparam == 0) {
+			x = fmt_advance(fmt);
 			if (!FIXNUMP(x))
-				fmt_error("illegal argument for conditional");
+				fmt_error(fmt, "illegal argument for conditional");
 			n = fix(x);
 		} else
-			n = fmt_set_param(0, INT, 0);
-		i = ctl_index;
+			n = set_param(fmt, 0, INT, 0);
+		i = fmt->ctl_index;
 		for (done = FALSE;;  --n) {
-			j = fmt_skip();
-			for (k = j;  ctl_string[--k] != '~';)
+			j = fmt_skip(fmt);
+			for (k = j;  fmt->ctl_str[--k] != '~';)
 				;
 			if (n == 0) {
-				fmt_save;
-				format(fmt_stream, ctl_origin + i, k - i);
-				fmt_restore1;
+				fmt_copy(&fmt_old, fmt);
+				format(fmt, fmt->ctl_str + i, k - i);
+				fmt_copy1(fmt, &fmt_old);
 				done = TRUE;
 			}
 			i = j;
-			if (ctl_string[--j] == ']') {
-				if (ctl_string[--j] != '~')
-					fmt_error("~] expected");
+			if (fmt->ctl_str[--j] == ']') {
+				if (fmt->ctl_str[--j] != '~')
+					fmt_error(fmt, "~] expected");
 				return;
 			}
-			if (ctl_string[j] == ';') {
-				if (ctl_string[--j] == '~')
+			if (fmt->ctl_str[j] == ';') {
+				if (fmt->ctl_str[--j] == '~')
 					continue;
-				if (ctl_string[j] == ':')
+				if (fmt->ctl_str[j] == ':')
 					goto ELSE;
 			}
-			fmt_error("~; or ~] expected");
+			fmt_error(fmt, "~; or ~] expected");
 		}
 	ELSE:
-		if (ctl_string[--j] != '~')
-			fmt_error("~:; expected");
-		j = fmt_skip();
-		if (ctl_string[--j] != ']' || ctl_string[--j] != '~')
-			fmt_error("~] expected");
+		if (fmt->ctl_str[--j] != '~')
+			fmt_error(fmt, "~:; expected");
+		j = fmt_skip(fmt);
+		if (fmt->ctl_str[--j] != ']' || fmt->ctl_str[--j] != '~')
+			fmt_error(fmt, "~] expected");
 		if (!done) {
-			fmt_save;
-			format(fmt_stream, ctl_origin + i, j - i);
-			fmt_restore1;
+			fmt_copy(&fmt_old, fmt);
+			format(fmt, fmt->ctl_str + i, j - i);
+			fmt_copy1(fmt, &fmt_old);
 		}
 	}
 }
 
 static void
-fmt_iteration(bool colon, bool atsign)
+fmt_iteration(format_stack fmt, bool colon, bool atsign)
 {
-	int n, i, o;
+	int n, i;
+	const char *o;
 	volatile int j;
 	bool colon_close = FALSE;
 	cl_object l;
-	fmt_old;
+	struct format_stack_struct fmt_old;
 	jmp_buf fmt_jmp_buf0;
 	int up_colon;
 
-	fmt_max_param(1);
-	n = fmt_set_param(0, INT, 1000000);
-	i = ctl_index;
-	j = fmt_skip();
-	if (ctl_string[--j] != '}')
-		fmt_error("~} expected");
-	if (ctl_string[--j] == ':') {
+	ensure_param(fmt, 1);
+	n = set_param(fmt, 0, INT, 1000000);
+	i = fmt->ctl_index;
+	j = fmt_skip(fmt);
+	if (fmt->ctl_str[--j] != '}')
+		fmt_error(fmt, "~} expected");
+	if (fmt->ctl_str[--j] == ':') {
 		colon_close = TRUE;
 		--j;
 	}
-	if (ctl_string[j] != '~')
-		fmt_error("syntax error");
-	o = ctl_origin;
+	if (fmt->ctl_str[j] != '~')
+		fmt_error(fmt, "syntax error");
+	o = fmt->ctl_str;
 	if (!colon && !atsign) {
-		l = fmt_advance();
-		fmt_save;
-		fmt_base = cl_stack_index();
-		fmt_push_list(l);
-		fmt_index = fmt_base;
-		fmt_end = cl_stack_index();
-		fmt_jmp_buf = &fmt_jmp_buf0;
+		l = fmt_advance(fmt);
+		fmt_copy(&fmt_old, fmt);
+		fmt->base = cl_stack_index();
+		fmt_push_list(fmt, l);
+		fmt->index = fmt->base;
+		fmt->end = cl_stack_index();
+		fmt->jmp_buf = &fmt_jmp_buf0;
 		if (colon_close)
 			goto L1;
-		while (fmt_index < fmt_end) {
+		while (fmt->index < fmt->end) {
 		L1:
 			if (n-- <= 0)
 				break;
-			if ((up_colon = ecl_setjmp(*fmt_jmp_buf))) {
+			if ((up_colon = ecl_setjmp(*fmt->jmp_buf))) {
 				if (--up_colon)
-					fmt_error("illegal ~:^");
+					fmt_error(fmt, "illegal ~:^");
 				break;
 			}
-			format(fmt_stream, o + i, j - i);
+			format(fmt, o + i, j - i);
 		}
-		cl_stack_set_index(fmt_base);
-		fmt_restore;
+		cl_stack_set_index(fmt->base);
+		fmt_copy(fmt, &fmt_old);
 	} else if (colon && !atsign) {
 	  	int fl = 0;
 		volatile cl_object l0;
-		l0 = fmt_advance();
-		fmt_save;
+		l0 = fmt_advance(fmt);
+		fmt_copy(&fmt_old, fmt);
 		for (l = l0; !endp(l); l = CDR(l))
 		  fl += length(CAR(l));
-		fmt_base = cl_stack_index();
-		fmt_jmp_buf = &fmt_jmp_buf0;
+		fmt->base = cl_stack_index();
+		fmt->jmp_buf = &fmt_jmp_buf0;
 		if (colon_close)
 			goto L2;
 		while (!endp(l0)) {
@@ -1584,124 +1554,127 @@ fmt_iteration(bool colon, bool atsign)
 				break;
 			l = CAR(l0);
 			l0 = CDR(l0);
-			fmt_push_list(l);
-			fmt_index = fmt_base;
-			fmt_end = cl_stack_index();
-			if ((up_colon = ecl_setjmp(*fmt_jmp_buf))) {
+			fmt_push_list(fmt, l);
+			fmt->index = fmt->base;
+			fmt->end = cl_stack_index();
+			if ((up_colon = ecl_setjmp(*fmt->jmp_buf))) {
 				if (--up_colon)
 					break;
 				else
 					continue;
 			}
-			format(fmt_stream, o + i, j - i);
-			cl_stack_set_index(fmt_base);
+			format(fmt, o + i, j - i);
+			cl_stack_set_index(fmt->base);
 		}
-		fmt_restore;
+		fmt_copy(fmt, &fmt_old);
 	} else if (!colon && atsign) {
-		fmt_save;
-		fmt_jmp_buf = &fmt_jmp_buf0;
+		fmt_copy(&fmt_old, fmt);
+		fmt->jmp_buf = &fmt_jmp_buf0;
 		if (colon_close)
 			goto L3;
-		while (fmt_index < fmt_end) {
+		while (fmt->index < fmt->end) {
 		L3:
 			if (n-- <= 0)
 				break;
-			if ((up_colon = ecl_setjmp(*fmt_jmp_buf))) {
+			if ((up_colon = ecl_setjmp(*fmt->jmp_buf))) {
 				if (--up_colon)
-					fmt_error("illegal ~:^");
+					fmt_error(fmt, "illegal ~:^");
 				break;
 			}
-			format(fmt_stream, o + i, j - i);
+			format(fmt, o + i, j - i);
 		}
-		fmt_restore1;
+		fmt_copy1(fmt, &fmt_old);
 	} else if (colon && atsign) {
 		if (colon_close)
 			goto L4;
-		while (fmt_index < fmt_end) {
+		while (fmt->index < fmt->end) {
 		L4:
 			if (n-- <= 0)
 				break;
-			l = fmt_advance();
-			fmt_save;
-			fmt_base = cl_stack_index();
-			fmt_push_list(l);
-			fmt_index = fmt_base;
-			fmt_end = cl_stack_index();
-			fmt_jmp_buf = &fmt_jmp_buf0;
-			if ((up_colon = ecl_setjmp(*fmt_jmp_buf))) {
-				fmt_restore;
+			l = fmt_advance(fmt);
+			fmt_copy(&fmt_old, fmt);
+			fmt->base = cl_stack_index();
+			fmt_push_list(fmt, l);
+			fmt->index = fmt->base;
+			fmt->end = cl_stack_index();
+			fmt->jmp_buf = &fmt_jmp_buf0;
+			if ((up_colon = ecl_setjmp(*fmt->jmp_buf))) {
+				fmt_copy(fmt, &fmt_old);
 				if (--up_colon)
 					break;
 				else
 					continue;
 			}
-			format(fmt_stream, o + i, j - i);
-			cl_stack_set_index(fmt_base);
-			fmt_restore;
+			format(fmt, o + i, j - i);
+			cl_stack_set_index(fmt->base);
+			fmt_copy(fmt, &fmt_old);
 		}
 	}
 }
 
 static void
-fmt_justification(volatile bool colon, bool atsign)
+fmt_justification(format_stack fmt, volatile bool colon, bool atsign)
 {
 	int mincol, colinc, minpad, padchar;
 	volatile cl_index fields_start;
 	cl_index fields_end;
-	fmt_old;
+	struct format_stack_struct fmt_old;
 	jmp_buf fmt_jmp_buf0;
 	volatile int i, j, k, l, m, j0, l0;
 	int up_colon;
 	volatile cl_object special = Cnil;
 	volatile int spare_spaces, line_length;
 
-	fmt_max_param(4);
-	mincol = fmt_set_param(0, INT, 0);
-	colinc = fmt_set_param(1, INT, 1);
-	minpad = fmt_set_param(2, INT, 0);
-	padchar = fmt_set_param(3, CHAR, ' ');
+	ensure_param(fmt, 4);
+	mincol = set_param(fmt, 0, INT, 0);
+	colinc = set_param(fmt, 1, INT, 1);
+	minpad = set_param(fmt, 2, INT, 0);
+	padchar = set_param(fmt, 3, CHAR, ' ');
 
 	fields_start = cl_stack_index();
 	for (;;) {
 		cl_object this_field = make_string_output_stream(64);
-		i = ctl_index;
-		j0 = j = fmt_skip();
-		while (ctl_string[--j] != '~')
+		i = fmt->ctl_index;
+		j0 = j = fmt_skip(fmt);
+		while (fmt->ctl_str[--j] != '~')
 			;
-		fmt_save;
-		fmt_jmp_buf = &fmt_jmp_buf0;
-		if ((up_colon = ecl_setjmp(*fmt_jmp_buf))) {
+
+		fmt_copy(&fmt_old, fmt);
+		fmt->jmp_buf = &fmt_jmp_buf0;
+		if ((up_colon = ecl_setjmp(*fmt->jmp_buf))) {
 			if (--up_colon)
-				fmt_error("illegal ~:^");
-			fmt_restore1;
-			while (ctl_string[--j0] != '>')
-				j0 = fmt_skip();
-			if (ctl_string[--j0] != '~')
-				fmt_error("~> expected");
+				fmt_error(fmt, "illegal ~:^");
+			fmt_copy1(fmt, &fmt_old);
+			while (fmt->ctl_str[--j0] != '>')
+				j0 = fmt_skip(fmt);
+			if (fmt->ctl_str[--j0] != '~')
+				fmt_error(fmt, "~> expected");
 			break;
 		}
-		format(this_field, ctl_origin + i, j - i);
+		fmt->stream = this_field;
+		format(fmt, fmt->ctl_str + i, j - i);
 		cl_stack_push(this_field->stream.object0);
-		fmt_restore1;
-		if (ctl_string[--j0] == '>') {
-			if (ctl_string[--j0] != '~')
-				fmt_error("~> expected");
+		fmt_copy1(fmt, &fmt_old);
+
+		if (fmt->ctl_str[--j0] == '>') {
+			if (fmt->ctl_str[--j0] != '~')
+				fmt_error(fmt, "~> expected");
 			break;
-		} else if (ctl_string[j0] != ';')
-			fmt_error("~; expected");
-		else if (ctl_string[--j0] == ':') {
+		} else if (fmt->ctl_str[j0] != ';')
+			fmt_error(fmt, "~; expected");
+		else if (fmt->ctl_str[--j0] == ':') {
 			if (cl_stack_index() - fields_start != 1 || !Null(special))
-				fmt_error("illegal ~:;");
+				fmt_error(fmt, "illegal ~:;");
 			special = cl_stack_pop();
-			for (j = j0;  ctl_string[j] != '~';  --j)
+			for (j = j0;  fmt->ctl_str[j] != '~';  --j)
 				;
-			fmt_save;
-			format(fmt_stream, ctl_origin + j, j0 - j + 2);
-			fmt_restore1;
-			spare_spaces = fmt_spare_spaces;
-			line_length = fmt_line_length;
-		} else if (ctl_string[j0] != '~')
-			fmt_error("~; expected");
+			fmt_copy(&fmt_old, fmt);
+			format(fmt, fmt->ctl_str + j, j0 - j + 2);
+			fmt_copy1(fmt, &fmt_old);
+			spare_spaces = fmt->spare_spaces;
+			line_length = fmt->line_length;
+		} else if (fmt->ctl_str[j0] != '~')
+			fmt_error(fmt, "~; expected");
 	}
 	/*
 	 * Compute the length of items to be output. If the clause ~:; was
@@ -1736,8 +1709,8 @@ fmt_justification(volatile bool colon, bool atsign)
 		;
 	l = mincol + k * colinc;
 	if (special != Cnil &&
-	    file_column(fmt_stream) + l + spare_spaces > line_length)
-		princ(special, fmt_stream);
+	    file_column(fmt->stream) + l + spare_spaces > line_length)
+		princ(special, fmt->stream);
 	/*
 	 * Output the text with the padding segments. The total number of
 	 * padchars is kept in "l", and it is shared equally among all segments.
@@ -1746,59 +1719,59 @@ fmt_justification(volatile bool colon, bool atsign)
 	for (i = fields_start;  i < fields_end;  i++) {
 		if (i > fields_start || colon)
 			for (j = l / m, l -= j, --m;  j > 0;  --j)
-				writec_stream(padchar, fmt_stream);
-		princ(cl_stack[i], fmt_stream);
+				writec_stream(padchar, fmt->stream);
+		princ(cl_stack[i], fmt->stream);
 	}
 	if (atsign)
 		for (j = l;  j > 0;  --j)
-			writec_stream(padchar, fmt_stream);
+			writec_stream(padchar, fmt->stream);
 	cl_stack_set_index(fields_start);
 }
 
 static void
-fmt_up_and_out(bool colon, bool atsign)
+fmt_up_and_out(format_stack fmt, bool colon, bool atsign)
 {
 	int i, j, k;
 
-	fmt_max_param(3);
-	fmt_not_atsign(atsign);
-	if (fmt_nparam == 0) {
-		if (fmt_index >= fmt_end)
-			ecl_longjmp(*fmt_jmp_buf, ++colon);
-	} else if (fmt_nparam == 1) {
-		i = fmt_set_param(0, INT, 0);
+	ensure_param(fmt, 3);
+	fmt_not_atsign(fmt, atsign);
+	if (fmt->nparam == 0) {
+		if (fmt->index >= fmt->end)
+			ecl_longjmp(*fmt->jmp_buf, ++colon);
+	} else if (fmt->nparam == 1) {
+		i = set_param(fmt, 0, INT, 0);
 		if (i == 0)
-			ecl_longjmp(*fmt_jmp_buf, ++colon);
-	} else if (fmt_nparam == 2) {
-		i = fmt_set_param(0, INT, 0);
-		j = fmt_set_param(1, INT, 0);
+			ecl_longjmp(*fmt->jmp_buf, ++colon);
+	} else if (fmt->nparam == 2) {
+		i = set_param(fmt, 0, INT, 0);
+		j = set_param(fmt, 1, INT, 0);
 		if (i == j)
-			ecl_longjmp(*fmt_jmp_buf, ++colon);
+			ecl_longjmp(*fmt->jmp_buf, ++colon);
 	} else {
-		i = fmt_set_param(0, INT, 0);
-		j = fmt_set_param(1, INT, 0);
-		k = fmt_set_param(2, INT, 0);
+		i = set_param(fmt, 0, INT, 0);
+		j = set_param(fmt, 1, INT, 0);
+		k = set_param(fmt, 2, INT, 0);
 		if (i <= j && j <= k)
-			ecl_longjmp(*fmt_jmp_buf, ++colon);
+			ecl_longjmp(*fmt->jmp_buf, ++colon);
 	}
 }
 
 static void
-fmt_semicolon(bool colon, bool atsign)
+fmt_semicolon(format_stack fmt, bool colon, bool atsign)
 {
-	fmt_not_atsign(atsign);
+	fmt_not_atsign(fmt, atsign);
 	if (!colon)
-		fmt_error("~:; expected");
-	fmt_max_param(2);
-	fmt_spare_spaces = fmt_set_param(0, INT, 0);
-	fmt_line_length = fmt_set_param(1, INT, 72);
+		fmt_error(fmt, "~:; expected");
+	ensure_param(fmt, 2);
+	fmt->spare_spaces = set_param(fmt, 0, INT, 0);
+	fmt->line_length = set_param(fmt, 1, INT, 72);
 }
 
 @(defun format (strm string &rest args)
 	cl_object x = OBJNULL;
+	struct format_stack_struct fmt;
 	jmp_buf fmt_jmp_buf0;
 	int colon;
-	fmt_old;
 @
 	if (Null(strm)) {
 		strm = make_string_output_stream(64);
@@ -1813,61 +1786,57 @@ fmt_semicolon(bool colon, bool atsign)
 		strm->stream.object0 = x;
 		x = OBJNULL;
 	}
-	fmt_save;
 	assert_type_string(string);
-	if (frs_push(FRS_PROTECT, Cnil)) {
-		frs_pop();
-		fmt_restore;
-		unwind(nlj_fr, nlj_tag);
-	}
-	fmt_base = cl_stack_index();
+	fmt.stream = strm;
+	fmt.base = cl_stack_index();
 	for (narg -= 2; narg; narg--)
 		cl_stack_push(cl_nextarg(args));
-	fmt_index = fmt_base;
-	fmt_end = cl_stack_index();
-	fmt_jmp_buf = &fmt_jmp_buf0;
+	fmt.index = fmt.base;
+	fmt.end = cl_stack_index();
+	fmt.jmp_buf = &fmt_jmp_buf0;
 	if (symbol_value(@'si::*indent-formatted-output*') != Cnil)
-		fmt_indents = file_column(strm);
+		fmt.indents = file_column(strm);
 	else
-		fmt_indents = 0;
-	fmt_string = string;
-	if ((colon = ecl_setjmp(*fmt_jmp_buf))) {
+		fmt.indents = 0;
+	fmt.string = string;
+	fmt.aux_stream = get_aux_stream();
+	fmt.aux_string = fmt.aux_stream->stream.object0;
+	if ((colon = ecl_setjmp(*fmt.jmp_buf))) {
 		if (--colon)
-			fmt_error("illegal ~:^");
+			fmt_error(&fmt, "illegal ~:^");
 	} else {
-		format(strm, 0, string->string.fillp);
+		format(&fmt, string->string.self, string->string.fillp);
 		flush_stream(strm);
 	}
-	cl_stack_set_index(fmt_base);
-	frs_pop();
-	fmt_restore;
+	cl_stack_set_index(fmt.base);
+	fmt_aux_stream = fmt.aux_stream;
 	@(return (x == OBJNULL? Cnil : x))
 @)
 
 static void
-format(cl_object fmt_stream0, int ctl_origin0, int ctl_end0)
+format(format_stack fmt, const char *str, cl_index end)
 {
-	int c, i, n;
+	int c;
+	cl_index i, n;
 	bool colon, atsign;
 	cl_object x;
 
-	fmt_stream = fmt_stream0;
-	ctl_origin = ctl_origin0;
-	ctl_index = 0;
-	ctl_end = ctl_end0;
+	fmt->ctl_str = str;
+	fmt->ctl_index = 0;
+	fmt->ctl_end = end;
 
 LOOP:
-	if (ctl_index >= ctl_end)
+	if (fmt->ctl_index >= fmt->ctl_end)
 		return;
-	if ((c = ctl_advance()) != '~') {
-		writec_stream(c, fmt_stream);
+	if ((c = ctl_advance(fmt)) != '~') {
+		writec_stream(c, fmt->stream);
 		goto LOOP;
 	}
 	n = 0;
 	for (;;) {
-		switch (c = ctl_advance()) {
+		switch (c = ctl_advance(fmt)) {
 		case ',':
-			fmt_param[n].fmt_param_type = NONE;
+			fmt->param[n].type = NONE;
 			break;
 
 		case '0':  case '1':  case '2':  case '3':  case '4':
@@ -1876,65 +1845,65 @@ LOOP:
 			i = 0;
 			do {
 				i = i*10 + (c - '0');
-				c = ctl_advance();
+				c = ctl_advance(fmt);
 			} while (isdigit(c));
-			fmt_param[n].fmt_param_type = INT;
-			fmt_param[n].fmt_param_value = i;
+			fmt->param[n].type = INT;
+			fmt->param[n].value = i;
 			break;
 
 		case '+':
-			c = ctl_advance();
+			c = ctl_advance(fmt);
 			if (!isdigit(c))
-				fmt_error("digit expected");
+				fmt_error(fmt, "digit expected");
 			goto DIGIT;
 
 		case '-':
-			c = ctl_advance();
+			c = ctl_advance(fmt);
 			if (!isdigit(c))
-				fmt_error("digit expected");
+				fmt_error(fmt, "digit expected");
 			i = 0;
 			do {
 				i = i*10 + (c - '0');
-				c = ctl_advance();
+				c = ctl_advance(fmt);
 			} while (isdigit(c));
-			fmt_param[n].fmt_param_type = INT;
-			fmt_param[n].fmt_param_value = -i;
+			fmt->param[n].type = INT;
+			fmt->param[n].value = -i;
 			break;
 
 		case '\'':
-			fmt_param[n].fmt_param_type = CHAR;
-			fmt_param[n].fmt_param_value = ctl_advance();
-			c = ctl_advance();
+			fmt->param[n].type = CHAR;
+			fmt->param[n].value = ctl_advance(fmt);
+			c = ctl_advance(fmt);
 			break;
 
 		case 'v':  case 'V':
-			x = fmt_advance();
+			x = fmt_advance(fmt);
 			if (FIXNUMP(x)) {
-				fmt_param[n].fmt_param_type = INT;
-				fmt_param[n].fmt_param_value = fix(x);
+				fmt->param[n].type = INT;
+				fmt->param[n].value = fix(x);
 			} else if (type_of(x) == t_character) {
-				fmt_param[n].fmt_param_type = CHAR;
-				fmt_param[n].fmt_param_value = CHAR_CODE(x);
+				fmt->param[n].type = CHAR;
+				fmt->param[n].value = CHAR_CODE(x);
 			} else
-				fmt_error("illegal V parameter");
-			c = ctl_advance();
+				fmt_error(fmt, "illegal V parameter");
+			c = ctl_advance(fmt);
 			break;
 
 		case '#':
-			fmt_param[n].fmt_param_type = INT;
-			fmt_param[n].fmt_param_value = fmt_end - fmt_index;
-			c = ctl_advance();
+			fmt->param[n].type = INT;
+			fmt->param[n].value = fmt->end - fmt->index;
+			c = ctl_advance(fmt);
 			break;
 
 		default:
 			if (n > 0)
-				fmt_error("illegal ,");
+				fmt_error(fmt, "illegal ,");
 			else
 				goto DIRECTIVE;
 		}
 		n++;
 		if (n == FMT_MAX_PARAM)
-			fmt_error("too many parameters");
+			fmt_error(fmt, "too many parameters");
 		if (c != ',')
 			break;
 	}
@@ -1943,125 +1912,125 @@ DIRECTIVE:
 	colon = atsign = FALSE;
 	if (c == ':') {
 		colon = TRUE;
-		c = ctl_advance();
+		c = ctl_advance(fmt);
 	}
 	if (c == '@@') {
 		atsign = TRUE;
-		c = ctl_advance();
+		c = ctl_advance(fmt);
 	}
-	fmt_nparam = n;
+	fmt->nparam = n;
 	switch (c) {
 	case 'a':  case 'A':
-		fmt_ascii(colon, atsign);
+		fmt_ascii(fmt, colon, atsign);
 		break;
 
 	case 's':  case 'S':
-		fmt_S_expression(colon, atsign);
+		fmt_S_expression(fmt, colon, atsign);
 		break;
 
 	case 'd':  case 'D':
-		fmt_decimal(colon, atsign);
+		fmt_decimal(fmt, colon, atsign);
 		break;
 
 	case 'b':  case 'B':
-		fmt_binary(colon, atsign);
+		fmt_binary(fmt, colon, atsign);
 		break;
 
 	case 'o':  case 'O':
-		fmt_octal(colon, atsign);
+		fmt_octal(fmt, colon, atsign);
 		break;
 
 	case 'x':  case 'X':
-		fmt_hexadecimal(colon, atsign);
+		fmt_hexadecimal(fmt, colon, atsign);
 		break;
 
 	case 'r':  case 'R':
-		fmt_radix(colon, atsign);
+		fmt_radix(fmt, colon, atsign);
 		break;
 
 	case 'p':  case 'P':
-		fmt_plural(colon, atsign);
+		fmt_plural(fmt, colon, atsign);
 		break;
 
 	case 'c':  case 'C':
-		fmt_character(colon, atsign);
+		fmt_character(fmt, colon, atsign);
 		break;
 
 	case 'f':  case 'F':
-		fmt_fix_float(colon, atsign);
+		fmt_fix_float(fmt, colon, atsign);
 		break;
 
 	case 'e':  case 'E':
-		fmt_exponential_float(colon, atsign);
+		fmt_exponential_float(fmt, colon, atsign);
 		break;
 
 	case 'g':  case 'G':
-		fmt_general_float(colon, atsign);
+		fmt_general_float(fmt, colon, atsign);
 		break;
 
 	case '$':
-		fmt_dollars_float(colon, atsign);
+		fmt_dollars_float(fmt, colon, atsign);
 		break;
 
 	case '%':
-		fmt_percent(colon, atsign);
+		fmt_percent(fmt, colon, atsign);
 		break;
 
 	case '&':
-		fmt_ampersand(colon, atsign);
+		fmt_ampersand(fmt, colon, atsign);
 		break;
 
 	case '|':
-		fmt_bar(colon, atsign);
+		fmt_bar(fmt, colon, atsign);
 		break;
 
 	case '~':
-		fmt_tilde(colon, atsign);
+		fmt_tilde(fmt, colon, atsign);
 		break;
 
 	case '\n':
 	case '\r':
-		fmt_newline(colon, atsign);
+		fmt_newline(fmt, colon, atsign);
 		break;
 
 	case 't':  case 'T':
-		fmt_tabulate(colon, atsign);
+		fmt_tabulate(fmt, colon, atsign);
 		break;
 
 	case '*':
-		fmt_asterisk(colon, atsign);
+		fmt_asterisk(fmt, colon, atsign);
 		break;
 
 	case '?':
-		fmt_indirection(colon, atsign);
+		fmt_indirection(fmt, colon, atsign);
 		break;
 
 	case '(':
-		fmt_case(colon, atsign);
+		fmt_case(fmt, colon, atsign);
 		break;
 
 	case '[':
-		fmt_conditional(colon, atsign);
+		fmt_conditional(fmt, colon, atsign);
 		break;
 
 	case '{':
-		fmt_iteration(colon, atsign);
+		fmt_iteration(fmt, colon, atsign);
 		break;
 
 	case '<':
-		fmt_justification(colon, atsign);
+		fmt_justification(fmt, colon, atsign);
 		break;
 
 	case '^':
-		fmt_up_and_out(colon, atsign);
+		fmt_up_and_out(fmt, colon, atsign);
 		break;
 
 	case ';':
-		fmt_semicolon(colon, atsign);
+		fmt_semicolon(fmt, colon, atsign);
 		break;
 
 	default:
-		fmt_error("illegal directive");
+		fmt_error(fmt, "illegal directive");
 	}
 	goto LOOP;
 }
@@ -2069,9 +2038,8 @@ DIRECTIVE:
 void
 init_format(void)
 {
-	fmt_temporary_stream = make_string_output_stream(64);
-	register_root(&fmt_temporary_stream);
-	fmt_temporary_string = fmt_temporary_stream->stream.object0;
+	fmt_aux_stream = make_string_output_stream(64);
+	register_root(&fmt_aux_stream);
 
 	SYM_VAL(@'si::*indent-formatted-output*') = Cnil;
 }
