@@ -21,9 +21,9 @@
 	that know the representation of floating-point numbers.
 */
 
-#include "ecl.h"
 #include <float.h>
 #include <math.h>
+#include "ecl.h"
 #ifndef HAVE_ISOC99
 # define floorf floor
 # define ceilf ceil

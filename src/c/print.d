@@ -15,14 +15,12 @@
 */
 
 #include <string.h>
-#include "ecl.h"
-#ifndef _MSC_VER
 #include <math.h>
-#endif
 #include <ctype.h>
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
+#include "ecl.h"
 #include "internal.h"
 
 /**********************************************************************/

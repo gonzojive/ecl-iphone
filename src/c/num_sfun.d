@@ -14,8 +14,8 @@
     See file '../Copyright' for full details.
 */
 
-#include "ecl.h"
 #include <math.h>
+#include "ecl.h"
 #ifndef HAVE_ISOC99
 # define expf exp
 # define logf log
