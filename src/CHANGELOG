@@ -1427,7 +1427,9 @@ ECLS 0.9b
 
 * Supported platforms:
 
-  - Solaris 32-bits.
+  - Solaris 32 bits.
+
+  - Linux/Alpha 64 bits.
 
 * Errors fixed:
 
