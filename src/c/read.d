@@ -47,17 +47,7 @@ bool in_list_flag;
 bool dot_flag;
 cl_object default_dispatch_macro;
 cl_object sharp_eq_context;
-cl_object (*read_ch_fun)(cl_object) = readc;
 #endif /* THREADS */
-
-#ifdef CLOS
-cl_object @'stream_read_line',
-  @'stream_read_char',
-  @'stream_unread_char',
-  @'stream_peek_char',
-  @'stream_listen',
-  @'stream_clear_input';
-#endif
 
 /******************************* ------- ******************************/
 
@@ -113,31 +103,17 @@ setup_standard_READ(void)
 	backq_level = 0;
 }
 
-#ifdef CLOS
 cl_object
-interactive_readc(cl_object stream)
+read_char(cl_object stream)
 {
-	return funcall(2, @'stream_read_char', stream);
-}
-#endif /* CLOS */
-
-cl_object
-readc(cl_object in)
-{
-	return(CODE_CHAR(readc_stream(in)));
+	return CODE_CHAR(readc_stream(stream));
 }
 
-#define	read_char(in)	(*read_ch_fun)(in)
-
-void unread_char(cl_object c, cl_object in)
+void
+unread_char(cl_object c, cl_object in)
 {
 	/* INV: char_code() checks the type of `c' */
-#ifdef CLOS
-	if (type_of(in) == t_instance)
-	  funcall(3, @'stream_unread_char', in, c);
-	else
-#endif
-	  unreadc_stream(char_code(c), in);
+	unreadc_stream(char_code(c), in);
 }
 
 /*
@@ -240,24 +216,6 @@ extern bool no_input;
 #define GETC(c, fp)	c = getc(fp)
 #endif /* TK */
 
-/* Beppe: faster code for inner loop from file stream */
-#if !defined(CLOS)
-#define READ_CHAR_TO(res, in, eof_code) \
-  {FILE *fp = in->stream.file; \
-     if (fp) { int ch; \
-	       GETC(ch, fp); \
-	       if (ch == EOF) \
-		 {eof_code;} \
-	       else res = CODE_CHAR(ch);} \
-      else \
-	if (stream_at_end(in)) \
-	   {eof_code;} \
-	else res = read_char(in);}
-#else
-#define READ_CHAR_TO(res, in, eof_code) \
-  {if (stream_at_end(in)) {eof_code;} else res = read_char(in);}
-#endif /* unix */
-
 /*
 	Read_object(in) reads an object from stream in.
 	This routine corresponds to COMMON Lisp function READ.
@@ -285,9 +243,14 @@ read_object(cl_object in)
 BEGIN:
 	/* Beppe: */
 	do {
-		READ_CHAR_TO(c, in, if (df) return(OBJNULL);
-					else
-					    FEend_of_file(in));
+		if (stream_at_end(in)) {
+			if (df)
+				return(OBJNULL);
+			else
+				FEend_of_file(in);
+		} else {
+			c = read_char(in);
+		}
 		a = cat(c);
 	} while (a == cat_whitespace);
 	delimiting_char = OBJNULL;
@@ -348,7 +311,10 @@ BEGIN:
 			too_long_token();
 		token_buffer[length++] = char_code(c);
 	NEXT:
-		READ_CHAR_TO(c, in, break);
+		if (stream_at_end(in))
+			break;
+		else
+			c = read_char(in);
 		a = cat(c);
 	}
 
@@ -1437,20 +1403,6 @@ current_readtable(void)
 		strm = symbol_value(@'*standard_input*');
 	else if (strm == Ct)
 		strm = symbol_value(@'*terminal_io*');
-RETRY:	if (type_of(strm) == t_stream) {
-          if (strm->stream.mode == (short)smm_synonym) {
-	    strm = symbol_value(strm->stream.object0);
-	    goto RETRY;
-	  }
-	  else
-	    read_ch_fun = readc;
-	} else
-#ifdef CLOS
-	  if (type_of(strm) == t_instance)
-	    read_ch_fun = interactive_readc;
-	  else
-#endif /* CLOS */
-	    FEwrong_type_argument(@'stream', strm);
 	if (Null(recursivep))
 		preserving_whitespace_flag = FALSE;
 	detect_eos_flag = TRUE;
@@ -1478,20 +1430,6 @@ RETRY:	if (type_of(strm) == t_stream) {
 		strm = symbol_value(@'*standard_input*');
 	else if (strm == Ct)
 		strm = symbol_value(@'*terminal_io*');
-RETRY:	if (type_of(strm) == t_stream) {
-          if (strm->stream.mode == (short)smm_synonym) {
-	    strm = symbol_value(strm->stream.object0);
-	    goto RETRY;
-	  }
-	  else
-	    read_ch_fun = readc;
-	} else
-#ifdef CLOS
-	  if (type_of(strm) == t_instance)
-	    read_ch_fun = interactive_readc;
-	  else
-#endif /* CLOS */
-	    FEwrong_type_argument(@'stream', strm);
 	while (!stream_at_end(strm)) {
 		c = read_char(strm);
 		if (cat(c) != cat_whitespace) {
@@ -1578,46 +1516,32 @@ READ:
 		strm = symbol_value(@'*standard_input*');
 	else if (strm == Ct)
 		strm = symbol_value(@'*terminal_io*');
-RETRY:	if (type_of(strm) == t_stream) {
-          if (strm->stream.mode == (short)smm_synonym) {
-	    strm = symbol_value(strm->stream.object0);
-	    goto RETRY;
-	  }
-	  else {
-	    if (stream_at_end(strm)) {
-	      if (Null(eof_errorp) && Null(recursivep))
-		@(return eof_value Ct)
-	      else
-		FEend_of_file(strm);
-	    }
-	    i = 0;
-	    for (;;) {
-	      c = read_char(strm);
-	      if (char_code(c) == '\n') {
-		c = Cnil;
-		break;
-	      }
-	      if (i >= cl_token->string.dim)
-		too_long_string();
-	      cl_token->string.self[i++] = char_code(c);
-	      if (stream_at_end(strm)) {
-		c = Ct;
-		break;
-	      }
-	    }
+	if (stream_at_end(strm)) {
+		if (Null(eof_errorp) && Null(recursivep))
+			@(return eof_value Ct)
+		else
+			FEend_of_file(strm);
+	}
+	i = 0;
+	for (;;) {
+		c = read_char(strm);
+		if (char_code(c) == '\n') {
+			c = Cnil;
+			break;
+		}
+		if (i >= cl_token->string.dim)
+			too_long_string();
+		cl_token->string.self[i++] = char_code(c);
+		if (stream_at_end(strm)) {
+			c = Ct;
+			break;
+		}
+	}
 #ifdef CRLF
-	    if (i > 0 && cl_token->string.self[i-1] == '\r') i--;
+	if (i > 0 && cl_token->string.self[i-1] == '\r') i--;
 #endif
-	    cl_token->string.fillp = i;
-	    @(return copy_simple_string(cl_token) c)
-	    }
-	} else
-#ifdef CLOS
-	if (type_of(strm) == t_instance)
-	     return funcall(2, @'stream_read_line', strm);
-        else
-#endif
-	  FEerror("~S is not a stream.", 1, strm);
+	cl_token->string.fillp = i;
+	@(return copy_simple_string(cl_token) c)
 @)
 
 @(defun read_char (&optional (strm symbol_value(@'*standard_input*'))
@@ -1629,27 +1553,13 @@ RETRY:	if (type_of(strm) == t_stream) {
 	    strm = symbol_value(@'*standard_input*');
 	else if (strm == Ct)
 	    strm = symbol_value(@'*terminal_io*');
-RETRY:	if (type_of(strm) == t_stream) {
-          if (strm->stream.mode == (short)smm_synonym) {
-	    strm = symbol_value(strm->stream.object0);
-	    goto RETRY;
-	  }
-	  else {
-	    if (stream_at_end(strm)) {
-	      if (Null(eof_errorp) && Null(recursivep))
-		@(return eof_value)
-		  else
-		    FEend_of_file(strm);
-	    }
-	    @(return read_char(strm))
-	    }
-	} else
-#ifdef CLOS
-	if (type_of(strm) == t_instance)
-	     return funcall(2, @'stream_read_char', strm);
-	else
-#endif
-	  FEerror("~S is not a stream.", 1, strm);
+	if (stream_at_end(strm)) {
+		if (Null(eof_errorp) && Null(recursivep))
+			@(return eof_value)
+		else
+			FEend_of_file(strm);
+	}
+	@(return read_char(strm))
 @)
 
 @(defun unread_char (c &optional (strm symbol_value(@'*standard_input*')))
@@ -1659,22 +1569,8 @@ RETRY:	if (type_of(strm) == t_stream) {
 		strm = symbol_value(@'*standard_input*');
 	else if (strm == Ct)
 		strm = symbol_value(@'*terminal_io*');
-RETRY:	if (type_of(strm) == t_stream) {
-          if (strm->stream.mode == (short)smm_synonym) {
-	    strm = symbol_value(strm->stream.object0);
-	    goto RETRY;
-	  }
-	  else {
-	    unread_char(c, strm);
-	    @(return Cnil)
-	    }
-	} else
-#ifdef CLOS
-	if (type_of(strm) == t_instance)
-	     return funcall(3, @'stream_unread_char', strm, c);
-	else
-#endif
-	  FEerror("~S is not a stream.", 1, strm);
+	unread_char(c, strm);
+	@(return Cnil)
 @)
 
 @(defun peek_char (&optional peek_type
@@ -1688,57 +1584,43 @@ RETRY:	if (type_of(strm) == t_stream) {
 		strm = symbol_value(@'*standard_input*');
 	else if (strm == Ct)
 		strm = symbol_value(@'*terminal_io*');
-RETRY:	if (type_of(strm) == t_stream) {
-          if (strm->stream.mode == (short)smm_synonym) {
-	    strm = symbol_value(strm->stream.object0);
-	    goto RETRY;
-	  }
-	  else {
-	    setup_READtable();
-	    if (Null(peek_type)) {
-	      if (stream_at_end(strm)) {
-		if (Null(eof_errorp) && Null(recursivep))
-		  @(return eof_value)
-		    else
-		      FEend_of_file(strm);
-	      }
-	      c = read_char(strm);
-	      unread_char(c, strm);
-	      @(return c)
-	      }
-	    if (peek_type == Ct) {
-	      while (!stream_at_end(strm)) {
+	setup_READtable();
+	if (Null(peek_type)) {
+		if (stream_at_end(strm)) {
+			if (Null(eof_errorp) && Null(recursivep))
+				@(return eof_value)
+			else
+				FEend_of_file(strm);
+		}
 		c = read_char(strm);
-		if (cat(c) != cat_whitespace) {
-		  unread_char(c, strm);
-		  @(return c)
-		  }
-	      }
-	      if (Null(eof_errorp))
-		@(return eof_value)
-		  else
-		    FEend_of_file(strm);
-	    }
-	    /* INV: char_eq() checks the type of `peek_type' */
-	    while (!stream_at_end(strm)) {
-	      c = read_char(strm);
-	      if (char_eq(c, peek_type)) {
 		unread_char(c, strm);
 		@(return c)
+	}
+	if (peek_type == Ct) {
+		while (!stream_at_end(strm)) {
+			c = read_char(strm);
+			if (cat(c) != cat_whitespace) {
+				unread_char(c, strm);
+				@(return c)
+			}
 		}
-	    }
-	    if (Null(eof_errorp))
-	      @(return eof_value)
+		if (Null(eof_errorp))
+			@(return eof_value)
 		else
-		  FEend_of_file(strm);
-	  }
-	} else
-#ifdef CLOS
-	if (type_of(strm) == t_instance)
-	     return funcall(3, @'stream_peek_char', strm, peek_type);
+			FEend_of_file(strm);
+	}
+	/* INV: char_eq() checks the type of `peek_type' */
+	while (!stream_at_end(strm)) {
+		c = read_char(strm);
+		if (char_eq(c, peek_type)) {
+			unread_char(c, strm);
+			@(return c)
+		}
+	}
+	if (Null(eof_errorp))
+		@(return eof_value)
 	else
-#endif
-	  FEerror("~S is not a stream.", 1, strm);
+		FEend_of_file(strm);
 @)
 
 @(defun listen (&optional (strm symbol_value(@'*standard_input*')))
@@ -1747,25 +1629,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 		strm = symbol_value(@'*standard_input*');
 	else if (strm == Ct)
 		strm = symbol_value(@'*terminal_io*');
-RETRY:	if (type_of(strm) == t_stream) {
-          if (strm->stream.mode == (short)smm_synonym) {
-	    strm = symbol_value(strm->stream.object0);
-	    goto RETRY;
-	  }
-	  else {
-	    if (listen_stream(strm))
-	      @(return Ct)
-	    else
-	      @(return Cnil)
-	      }
-	}
-	else
-#ifdef CLOS
-	if (type_of(strm) == t_instance)
-	     return funcall(2, @'stream_listen', strm);
-	else
-#endif
-	  FEerror("~S is not a stream.", 1, strm);
+	@(return (listen_stream(strm)? Ct : Cnil))
 @)
 
 @(defun read_char_no_hang (&optional (strm symbol_value(@'*standard_input*'))
@@ -1784,36 +1648,15 @@ RETRY:	if (type_of(strm) == t_stream) {
 		@(return Cnil)
 	@(return read_char(strm))
 #else
-	/*
-	  This implementation fails for EOF and handles
-	  CLOS streams.
-	*/
-RETRY:	if (type_of(strm) == t_stream) {
-	  if (strm->stream.mode == (short)smm_synonym) {
-	    strm = symbol_value(strm->stream.object0);
-	    goto RETRY;
-	  } else {
-	    if (listen_stream(strm))
-	      @(return read_char(strm))
-	    else if (!stream_at_end(strm))
-	      @(return Cnil)
-	    else if (Null(eof_errorp) && Null(recursivep))
-	      @(return eof_value)
-	    else
-	      FEend_of_file(strm);
-	  }
-	}
+	/* This implementation fails for EOF. */
+	if (listen_stream(strm))
+		@(return read_char(strm))
+	else if (!stream_at_end(strm))
+		@(return Cnil)
+	else if (Null(eof_errorp) && Null(recursivep))
+		@(return eof_value)
 	else
-#ifdef CLOS
-	/* FIXME! Is this all right? */
-	if (type_of(strm) == t_instance) {
-	  if (funcall(2, @'stream_listen', strm) == Cnil)
-	    @(return Cnil)
-	  else
-	    return funcall(2, @'stream_read_char', strm);
-	} else
-#endif
-	  FEerror("~S is not a stream.", 1, strm);
+		FEend_of_file(strm);
 #endif
 @)
 
@@ -1823,22 +1666,8 @@ RETRY:	if (type_of(strm) == t_stream) {
 		strm = symbol_value(@'*standard_input*');
 	else if (strm == Ct)
 		strm = symbol_value(@'*terminal_io*');
-RETRY:	if (type_of(strm) == t_stream) {
-          if (strm->stream.mode == (short)smm_synonym) {
-	    strm = symbol_value(strm->stream.object0);
-	    goto RETRY;
-	  }
-	  else {
-	    clear_input_stream(strm);
-	    @(return Cnil)
-	     }
-	    } else
-#ifdef CLOS
-	if (type_of(strm) == t_instance)
-	     return funcall(2, @'stream_clear_input', strm);
-  	else
-#endif
-	  FEerror("~S is not a stream.", 1, strm);
+	clear_input_stream(strm);
+	@(return Cnil)
 @)
 
 @(defun parse_integer (strng
@@ -2243,8 +2072,6 @@ init_read(void)
 	detect_eos_flag = FALSE;
 	in_list_flag = FALSE;
 	dot_flag = FALSE;
-
-	read_ch_fun = readc;
 }
 
 /*

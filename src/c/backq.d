@@ -22,8 +22,6 @@ int backq_level;
 #endif
 /******************************* ------- ******************************/
 
-#define	read_char(in)	(*read_ch_fun)(in)
-
 /* #define attach(x)	(*px = CONS(x, *px)) */
 #define attach(s)	CDR(x) = CONS(s, CDR(x));
 

@@ -57,6 +57,20 @@ cl_object @':print';
 cl_object @':if_does_not_exist';
 cl_object @':set_default_pathname';
 
+#ifdef ECL_CLOS_STREAMS
+/*cl_object @'stream-read-line';*/
+cl_object @'stream-read-char';
+cl_object @'stream-unread-char';
+/*cl_object @'stream-peek-char';*/
+cl_object @'stream-listen';
+cl_object @'stream-clear-input';
+cl_object @'stream-write-char';
+/*cl_object @'stream-write-string';*/
+cl_object @'stream-clear-output';
+cl_object @'stream-force-output';
+cl_object @'stream-close';
+#endif /* ECL_CLOS_STREAMS */
+
 /******************************* ------- ******************************/
 
 static cl_object terminal_io;
@@ -95,6 +109,12 @@ feof1(FILE *fp)
 bool
 input_stream_p(cl_object strm)
 {
+#ifdef ECL_CLOS_STREAMS
+	if (type_of(strm) == t_instance)
+		return (TRUE);
+#endif
+	if (type_of(strm) != t_stream) 
+		FEtype_error_stream(strm);
 BEGIN:
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
@@ -137,6 +157,12 @@ BEGIN:
 bool
 output_stream_p(cl_object strm)
 {
+#ifdef ECL_CLOS_STREAMS
+	if (type_of(strm) == t_instance)
+		return (TRUE);
+#endif
+	if (type_of(strm) != t_stream) 
+		FEtype_error_stream(strm);
 BEGIN:
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
@@ -173,6 +199,12 @@ stream_element_type(cl_object strm)
 {
 	cl_object x;
 
+#ifdef ECL_CLOS_STREAMS
+	if (type_of(strm) == t_instance)
+		return(@'base-char');
+#endif
+	if (type_of(strm) != t_stream) 
+		FEtype_error_stream(strm);
 BEGIN:
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
@@ -368,6 +400,14 @@ close_stream(cl_object strm, bool abort_flag)        /*  Not used now!  */
 {
 	FILE *fp;
 
+#ifdef ECL_CLOS_STREAMS
+	if (type_of(strm) == t_instance) {
+		funcall(2, @'stream-close', strm);
+		return;
+	}
+#endif
+	if (type_of(strm) != t_stream) 
+		FEtype_error_stream(strm);
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
@@ -561,6 +601,12 @@ readc_stream(cl_object strm)
 	int c;
 	FILE *fp;
 
+#ifdef ECL_CLOS_STREAMS
+	if (type_of(strm) == t_instance)
+		return CHAR_CODE(funcall(2, @'stream-read-char', strm));
+#endif
+	if (type_of(strm) != t_stream) 
+		FEtype_error_stream(strm);
 BEGIN:
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
@@ -633,6 +679,14 @@ unreadc_stream(int c, cl_object strm)
 {
 	FILE *fp;
 
+#ifdef ECL_CLOS_STREAMS
+	if (type_of(strm) == t_instance) {
+		funcall(3, @'stream-unread-char', strm, c);
+		return;
+	}
+#endif
+	if (type_of(strm) != t_stream) 
+		FEtype_error_stream(strm);
 BEGIN:
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
@@ -698,6 +752,14 @@ writec_stream(int c, cl_object strm)
 	cl_index i;
 	FILE *fp;
 
+#ifdef ECL_CLOS_STREAMS
+	if (type_of(strm) == t_instance) {
+		funcall(3, @'stream-write-char', strm, CODE_CHAR(c));
+		return c;
+	}
+#endif
+	if (type_of(strm) != t_stream) 
+		FEtype_error_stream(strm);
 BEGIN:
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
@@ -802,6 +864,14 @@ flush_stream(cl_object strm)
 	cl_object x;
 	FILE *fp;
 
+#ifdef ECL_CLOS_STREAMS
+	if (type_of(strm) == t_instance) {
+		funcall(2, @'stream-force-output', strm);
+		return;
+	}
+#endif
+	if (type_of(strm) != t_stream) 
+		FEtype_error_stream(strm);
 BEGIN:
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
@@ -854,6 +924,14 @@ clear_input_stream(cl_object strm)
 	cl_object x;
 	FILE *fp;
 
+#ifdef ECL_CLOS_STREAMS
+	if (type_of(strm) == t_instance) {
+		funcall(2, @'stream-clear-input', strm);
+		return;
+	}
+#endif
+	if (type_of(strm) != t_stream) 
+		FEtype_error_stream(strm);
 BEGIN:
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
@@ -905,6 +983,14 @@ clear_output_stream(cl_object strm)
 	cl_object x;
 	FILE *fp;
 
+#ifdef ECL_CLOS_STREAMS
+	if (type_of(strm) == t_instance) {
+		funcall(2, @'stream-clear-output',strm);
+		return;
+	}
+#endif
+	if (type_of(strm) != t_stream) 
+		FEtype_error_stream(strm);
 BEGIN:
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
@@ -956,11 +1042,12 @@ stream_at_end(cl_object strm)
 	int c;
 	FILE *fp;
 
-#ifdef CLOS
+#ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
-	  return(FALSE);
+		return(FALSE);
 #endif
-
+	if (type_of(strm) != t_stream) 
+		FEtype_error_stream(strm);
 BEGIN:
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
@@ -1030,6 +1117,14 @@ listen_stream(cl_object strm)
 {
 	FILE *fp;
 
+#ifdef ECL_CLOS_STREAMS
+	if (type_of(strm) == t_instance) {
+		cl_object flag = funcall(2, @'stream-listen', strm);
+		return !(strm == Cnil);
+	}
+#endif
+	if (type_of(strm) != t_stream) 
+		FEtype_error_stream(strm);
 BEGIN:
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
@@ -1090,6 +1185,12 @@ file_position(cl_object strm)
 {
 	FILE *fp;
 
+#ifdef ECL_CLOS_STREAMS
+	if (type_of(strm) == t_instance)
+		FEerror("file-position not implemented for CLOS streams", 0);
+#endif
+	if (type_of(strm) != t_stream) 
+		FEtype_error_stream(strm);
 BEGIN:
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
@@ -1132,6 +1233,12 @@ file_position_set(cl_object strm, long disp)
 {
 	FILE *fp;
 
+#ifdef ECL_CLOS_STREAMS
+	if (type_of(strm) == t_instance)
+		FEerror("file-position not implemented for CLOS streams", 0);
+#endif
+	if (type_of(strm) != t_stream) 
+		FEtype_error_stream(strm);
 BEGIN:
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
@@ -1184,6 +1291,12 @@ file_length(cl_object strm)
 {
 	FILE *fp;
 
+#ifdef ECL_CLOS_STREAMS
+	if (type_of(strm) == t_instance)
+		FEerror("file-length not implemented for CLOS streams", 0);
+#endif
+	if (type_of(strm) != t_stream) 
+		FEtype_error_stream(strm);
 BEGIN:
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
@@ -1223,6 +1336,12 @@ int
 file_column(cl_object strm)
 {
 
+#ifdef ECL_CLOS_STREAMS
+	if (type_of(strm) == t_instance)
+		return -1;
+#endif
+	if (type_of(strm) != t_stream)
+		FEtype_error_stream(strm);
 BEGIN:
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
@@ -1406,25 +1525,21 @@ for the string ~S.",
 
 @(defun input_stream_p (strm)
 @
-	assert_type_stream(strm);
 	@(return (input_stream_p(strm) ? Ct : Cnil))
 @)
 
 @(defun output_stream_p (strm)
 @
-	assert_type_stream(strm);
 	@(return (output_stream_p(strm) ? Ct : Cnil))
 @)
 
 @(defun stream_element_type (strm)
 @
-	assert_type_stream(strm);
 	@(return stream_element_type(strm))
 @)
 
 @(defun close (strm &key abort)
 @
-	assert_type_stream(strm);
 	close_stream(strm, abort != Cnil);
 	@(return Ct)
 @)
@@ -1478,7 +1593,6 @@ for the string ~S.",
 @(defun file_position (file_stream &o position)
 	int i;
 @
-	assert_type_stream(file_stream);
 	if (Null(position)) {
 		i = file_position(file_stream);
 		if (i < 0)
@@ -1503,14 +1617,12 @@ for the file-stream ~S.",
 @(defun file_length (strm)
 	int i;
 @
-	assert_type_stream(strm);
 	i = file_length(strm);
 	@(return ((i < 0) ? Cnil : MAKE_FIXNUM(i)))
 @)
 
 @(defun open_stream_p (strm)
 @
-	assert_type_stream(strm);
 	/* ANSI and Cltl2 specify that open-stream-p should work
 	   on closed streams, and that a stream is only closed
 	   when #'close has been applied on it */
@@ -1519,7 +1631,6 @@ for the file-stream ~S.",
 
 @(defun si::get_string_input_stream_index (strm)
 @
-	assert_type_stream(strm);
 	if ((enum smmode)strm->stream.mode != smm_string_input)
 		FEerror("~S is not a string-input stream.", 1, strm);
 	@(return MAKE_FIXNUM(strm->stream.int0))
@@ -1542,8 +1653,6 @@ for the file-stream ~S.",
 
 @(defun si::copy_stream (in out)
 @
-	assert_type_stream(in);
-	assert_type_stream(out);
 	while (!stream_at_end(in))
 		writec_stream(readc_stream(in), out);
 	flush_stream(out);

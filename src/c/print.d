@@ -62,7 +62,6 @@ int PRINTlevel;
 int PRINTlength;
 bool PRINTarray;
 void (*write_ch_fun)(int);	/* virtual output (for pretty-print) */
-void (*output_ch_fun)(int);	/* physical output */
 #endif /* THREADS */
 
 /******************************* ------- ******************************/
@@ -78,16 +77,7 @@ void (*output_ch_fun)(int);	/* physical output */
 cl_object PRINTpackage;
 bool PRINTstructure;
 
-#ifdef CLOS
-cl_object @'stream-write-char',
-  @'stream-write-string',
-  @'stream-fresh-line',
-  @'stream-clear-output',
-  @'stream-force-output';
-#endif /* CLOS */
-
 #define	write_ch	(*write_ch_fun)
-#define	output_ch	(*output_ch_fun)
 
 cl_object @'si::pretty-print-format';
 cl_object @'si::sharp-exclamation';
@@ -128,37 +118,12 @@ cl_object PRINTstream;
 
 #endif /* THREADS */
 
-#ifdef CLOS
-
 static void flush_queue (bool force);
 static void write_decimal1 (int i);
 static void travel_push_object (cl_object x);
 static cl_index searchPRINTcircle(cl_object x);
 static bool doPRINTcircle(cl_object x);
 
-
-int
-interactive_writec_stream(int c, cl_object stream)
-{
-	funcall(3, @'stream-write-char', stream, CODE_CHAR(c));
-	return c;
-}
-
-void
-flush_interactive_stream(cl_object stream)
-{
-	funcall(2, @'stream-force-output', stream);
-}
-
-#define FLUSH_STREAM(strm) \
-  if (type_of(strm) == t_stream) flush_stream(strm); \
-  else flush_interactive_stream(strm)
-#define FILE_COLUMN(strm) \
-  ((type_of(strm) == t_instance) ? -1 : file_column(strm))
-#else
-#define FLUSH_STREAM(strm)	flush_stream(strm)
-#define FILE_COLUMN(strm) 	file_column(strm)
-#endif /* CLOS */
 
 static void
 writec_queue(int c)
@@ -185,15 +150,15 @@ BEGIN:
 		else if (c == UNMARK)
 			isp -= 2;
 		else if (c == SET_INDENT)
-			indent_stack[isp] = FILE_COLUMN(PRINTstream);
+			indent_stack[isp] = file_column(PRINTstream);
 		else if (c == INDENT) {
 			goto DO_INDENT;
 		} else if (c == INDENT1) {
-			i = FILE_COLUMN(PRINTstream)-indent_stack[isp];
+			i = file_column(PRINTstream)-indent_stack[isp];
 			if (i < 8 && indent_stack[isp] < LINE_LENGTH/2) {
-				output_ch(' ');
+				writec_PRINTstream(' ');
 				indent_stack[isp]
-				= FILE_COLUMN(PRINTstream);
+				= file_column(PRINTstream);
 			} else {
 				if (indent_stack[isp] < LINE_LENGTH/2) {
 					indent_stack[isp]
@@ -205,14 +170,14 @@ BEGIN:
 			indent_stack[isp] = indent_stack[isp-1] + 2;
 			goto PUT_INDENT;
 		} else if (c < 0400)
-			output_ch(c);
+			writec_PRINTstream(c);
 		qh = mod(qh+1);
 		--qc;
 	}
 	return;
 
 DO_MARK:
-	k = LINE_LENGTH - 1 - FILE_COLUMN(PRINTstream);
+	k = LINE_LENGTH - 1 - file_column(PRINTstream);
 	for (i = 1, j = 0, l = 1;  l > 0 && i < qc && j < k;  i++) {
 		c = queue[mod(qh + i)];
 		if (c == MARK)
@@ -232,14 +197,14 @@ DO_MARK:
 	--qc;
 	if (++isp >= IS_SIZE-1)
 		FEerror("Can't pretty-print.", 0);
-	indent_stack[isp++] = FILE_COLUMN(PRINTstream);
+	indent_stack[isp++] = file_column(PRINTstream);
 	indent_stack[isp] = indent_stack[isp-1];
 	goto BEGIN;
 
 DO_INDENT:
 	if (iisp > isp)
 		goto PUT_INDENT;
-	k = LINE_LENGTH - 1 - FILE_COLUMN(PRINTstream);
+	k = LINE_LENGTH - 1 - file_column(PRINTstream);
 	for (i0 = 0, i = 1, j = 0, l = 1;  i < qc && j < k;  i++) {
 		c = queue[mod(qh + i)];
 		if (c == MARK)
@@ -277,9 +242,9 @@ DO_INDENT:
 PUT_INDENT:
 	qh = mod(qh+1);
 	--qc;
-	output_ch('\n');
+	writec_PRINTstream('\n');
 	for (i = indent_stack[isp];  i > 0;  --i)
-		output_ch(' ');
+		writec_PRINTstream(' ');
 	iisp = isp;
 	goto BEGIN;
 
@@ -287,9 +252,9 @@ FLUSH:
 	for (j = 0;  j < i;  j++) {
 		c = queue[qh];
 		if (c == INDENT || c == INDENT1 || c == INDENT2)
-			output_ch(' ');
+			writec_PRINTstream(' ');
 		else if (c < 0400)
-			output_ch(c);
+			writec_PRINTstream(c);
 		qh = mod(qh+1);
 		--qc;
 	}
@@ -304,17 +269,6 @@ writec_PRINTstream(int c)
 	else if (c < 0400)
 		writec_stream(c, PRINTstream);
 }
-
-#ifdef CLOS
-static void
-interactive_writec_PRINTstream(int c)
-{
-	if (c == INDENT || c == INDENT1)
-		interactive_writec_stream(' ', PRINTstream);
-	else if (c < 0400)
-		interactive_writec_stream(c, PRINTstream);
-}
-#endif /* CLOS */
 
 void
 write_str(char *s)
@@ -1537,22 +1491,6 @@ void setupPRINT(cl_object x, cl_object strm)
 	cl_object y;
 
 	PRINTstream = strm;
-RETRY:	if (type_of(PRINTstream) == t_stream) {
-	  if (PRINTstream->stream.mode == (short)smm_synonym) {
- 		PRINTstream = symbol_value(PRINTstream->stream.object0);
-		goto RETRY;
-	      }
-	  else
-	  output_ch_fun = writec_PRINTstream;
-	} else
-#ifdef CLOS
-	  if (type_of(PRINTstream) == t_instance)
-	    output_ch_fun = interactive_writec_PRINTstream;
-	  else
-#endif /* CLOS */
-	    { SYM_VAL(@'*standard-output*') = symbol_value(@'*terminal-io*');
-	      FEwrong_type_argument(@'stream', PRINTstream);
-	    }
 	PRINTescape = symbol_value(@'*print-escape*') != Cnil;
 	PRINTpretty = symbol_value(@'*print-pretty*') != Cnil;
 	PRINTcircle = symbol_value(@'*print-circle*') != Cnil;
@@ -1595,7 +1533,7 @@ RETRY:	if (type_of(PRINTstream) == t_stream) {
 		indent_stack[0] = 0;
 		write_ch_fun = writec_queue;
 	} else
-		write_ch_fun = output_ch_fun;
+		write_ch_fun = writec_PRINTstream;
 	PRINTpackage = symbol_value(@'si::*print-package*');
 	if (PRINTpackage == Cnil) PRINTpackage = OBJNULL;
 	PRINTstructure = symbol_value(@'si::*print-structure*') != Cnil;
@@ -1661,20 +1599,6 @@ potential_number_p(cl_object strng, int base)
 		strm = symbol_value(@'*standard-output*');
 	else if (strm == Ct)
 		strm = symbol_value(@'*terminal-io*');
-RETRY:	if (type_of(strm) == t_stream) {
-	  if (strm->stream.mode == (short)smm_synonym) {
- 		strm = symbol_value(strm->stream.object0);
-		goto RETRY;
-	      }
-	  else
-	    output_ch_fun = writec_PRINTstream;
-	} else
-#ifdef CLOS
-          if (type_of(strm) == t_instance)
-	    output_ch_fun = interactive_writec_PRINTstream;
-          else
-#endif /* CLOS */
-            FEtype_error_stream(strm);
 	PRINTstream = strm;
 	PRINTescape = escape != Cnil;
 	PRINTpretty = pretty != Cnil;
@@ -1708,14 +1632,14 @@ RETRY:	if (type_of(strm) == t_stream) {
 		indent_stack[0] = 0;
 		write_ch_fun = writec_queue;
 	} else
-		write_ch_fun = output_ch_fun;
+		write_ch_fun = writec_PRINTstream;
 	PRINTpackage = symbol_value(@'si::*print-package*');
 	if (PRINTpackage == Cnil) PRINTpackage = OBJNULL;
 	PRINTstructure = symbol_value(@'si::*print-structure*') != Cnil;
   	setupPRINTcircle(x);
 	write_object(x, 0);
 	cleanupPRINT();
-	FLUSH_STREAM(PRINTstream);
+	flush_stream(PRINTstream);
 	@(return x)
 @)
 
@@ -1737,20 +1661,6 @@ RETRY:	if (type_of(strm) == t_stream) {
 		strm = symbol_value(@'*standard-output*');
 	else if (strm == Ct)
 		strm = symbol_value(@'*terminal-io*');
-RETRY:	if (type_of(strm) == t_stream) {
-	  if (strm->stream.mode == (short)smm_synonym) {
- 		strm = symbol_value(strm->stream.object0);
-		goto RETRY;
-	      }
-	  else
-	    output_ch_fun = writec_PRINTstream;
-	} else
-#ifdef CLOS
-          if (type_of(strm) == t_instance)
-	    output_ch_fun = interactive_writec_PRINTstream;
-          else
-#endif /* CLOS */
-            FEtype_error_stream(strm);
 	setupPRINT(obj, strm);
 	PRINTescape = TRUE;
 	PRINTpretty = TRUE;
@@ -1758,11 +1668,11 @@ RETRY:	if (type_of(strm) == t_stream) {
 	isp = iisp = 0;
 	indent_stack[0] = 0;
 	write_ch_fun = writec_queue;
-	output_ch('\n');
+	writec_PRINTstream('\n');
   	setupPRINTcircle(obj);
 	write_object(obj, 0);
 	cleanupPRINT();
-	FLUSH_STREAM(PRINTstream);
+	flush_stream(PRINTstream);
 	@(return)
 @)
 
@@ -1779,27 +1689,8 @@ RETRY:	if (type_of(strm) == t_stream) {
 		strm = symbol_value(@'*standard-output*');
 	else if (strm == Ct)
 		strm = symbol_value(@'*terminal-io*');
-RETRY:	if (type_of(strm) == t_stream) {
-	  if (strm->stream.mode == (short)smm_synonym) {
- 		strm = symbol_value(strm->stream.object0);
-		goto RETRY;
-	      }
-	  else {
-	    writec_stream(char_code(c), strm);
-/*
-	    FLUSH_STREAM(strm);
-*/
-	    @(return c)
-	  }
-	} else
-#ifdef CLOS
-	if (type_of(strm) == t_instance) {
-	  interactive_writec_stream(char_code(c), strm);
-	  @(return c)
-	  }
-        else
-#endif
-          FEtype_error_stream(strm);
+	writec_stream(char_code(c), strm);
+	@(return c)
 @)
 
 @(defun write_string (strng &o strm &k (start MAKE_FIXNUM(0)) end)
@@ -1812,24 +1703,9 @@ RETRY:	if (type_of(strm) == t_stream) {
 	else if (strm == Ct)
 		strm = symbol_value(@'*terminal-io*');
 
-RETRY:	if (type_of(strm) == t_stream) {
-	  if (strm->stream.mode == (short)smm_synonym) {
- 		strm = symbol_value(strm->stream.object0);
-		goto RETRY;
-	      }
-	  else {
-	    for (i = s;  i < e;  i++)
-	      writec_stream(strng->string.self[i], strm);
-	    flush_stream(strm);
-	  }
-	} else
-#ifdef CLOS
-	if (type_of(strm) == t_instance)
-	  funcall(4, @'stream-write-string', strm, strng,
-		  MAKE_FIXNUM(s), MAKE_FIXNUM(e));
-	else
-#endif
-          FEtype_error_stream(strm);
+	for (i = s;  i < e;  i++)
+		writec_stream(strng->string.self[i], strm);
+	flush_stream(strm);
 	@(return strng)
 @)
 
@@ -1843,27 +1719,10 @@ RETRY:	if (type_of(strm) == t_stream) {
 		strm = symbol_value(@'*terminal-io*');
 	assert_type_string(strng);
 
-RETRY:	if (type_of(strm) == t_stream) {
-	  if (strm->stream.mode == (short)smm_synonym) {
- 		strm = symbol_value(strm->stream.object0);
-		goto RETRY;
-	      }
-	  else {
-	    for (i = s;  i < e;  i++)
-	      writec_stream(strng->string.self[i], strm);
-	    writec_stream('\n', strm);
-	    flush_stream(strm);
-	  }
-	} else
-#ifdef CLOS
-	if (type_of(strm) == t_instance) {
-	  for (i = s;  i < e;  i++)
-	     interactive_writec_stream(strng->string.self[i], strm);
-	  interactive_writec_stream('\n', strm);
-	  flush_interactive_stream(strm);
-	} else
-#endif /* CLOS */
-	    FEtype_error_stream(strm);
+	for (i = s;  i < e;  i++)
+		writec_stream(strng->string.self[i], strm);
+	writec_stream('\n', strm);
+	flush_stream(strm);
 	@(return strng)
 @)
 
@@ -1879,25 +1738,11 @@ RETRY:	if (type_of(strm) == t_stream) {
 		strm = symbol_value(@'*standard-output*');
 	else if (strm == Ct)
 		strm = symbol_value(@'*terminal-io*');
-RETRY:	if (type_of(strm) == t_stream) {
-	  if (strm->stream.mode == (short)smm_synonym) {
- 		strm = symbol_value(strm->stream.object0);
-		goto RETRY;
-	      }
-	  else {
-	    if (FILE_COLUMN(strm) == 0)
-	      @(return Cnil)
-		writec_stream('\n', strm);
-	    flush_stream(strm);
-	    @(return Ct)
-	    }
-	} else
-#ifdef CLOS
-	if (type_of(strm) == t_instance)
-  	    return funcall(2, @'stream-fresh-line',strm);
-	else
-#endif
-	 FEtype_error_stream(strm);
+	if (file_column(strm) == 0)
+		@(return Cnil)
+	writec_stream('\n', strm);
+	flush_stream(strm);
+	@(return Ct)
 @)
 
 @(defun force_output (&o strm)
@@ -1906,20 +1751,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 		strm = symbol_value(@'*standard-output*');
 	else if (strm == Ct)
 		strm = symbol_value(@'*terminal-io*');
-RETRY:	if (type_of(strm) == t_stream) {
-	  if (strm->stream.mode == (short)smm_synonym) {
- 		strm = symbol_value(strm->stream.object0);
-		goto RETRY;
-	      }
-	  else
-	    flush_stream(strm);
-	} else
-#ifdef CLOS
-	if (type_of(strm) == t_instance)
-	  flush_interactive_stream(strm);
-	else
-#endif /* CLOS */
-	   FEtype_error_stream(strm);
+	flush_stream(strm);
 	@(return Cnil)
 @)
 
@@ -1929,20 +1761,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 		strm = symbol_value(@'*standard-output*');
 	else if (strm == Ct)
 		strm = symbol_value(@'*terminal-io*');
-RETRY:	if (type_of(strm) == t_stream) {
-	  if (strm->stream.mode == (short)smm_synonym) {
- 		strm = symbol_value(strm->stream.object0);
-		goto RETRY;
-	      }
-	  else
-	   clear_output_stream(strm);
-	} else
-#ifdef CLOS
-	if (type_of(strm) == t_instance)
-	  funcall(2, @'stream-clear-output', strm);
-	else
-#endif
-	  FEtype_error_stream(strm);
+	clear_output_stream(strm);
 	@(return Cnil)
 @)
 
@@ -2013,7 +1832,6 @@ init_print(void)
 	PRINTarray = FALSE;
 
 	write_ch_fun = writec_PRINTstream;
-	output_ch_fun = writec_PRINTstream;
 }
 
 cl_object
@@ -2036,20 +1854,7 @@ princ(cl_object obj, cl_object strm)
 	case t_character:
 		PRINTstream = strm;
 		PRINTescape = FALSE;
-RETRY:		if (type_of(PRINTstream) == t_stream) {
-		  if (PRINTstream->stream.mode == (short)smm_synonym) {
-			PRINTstream = symbol_value(PRINTstream->stream.object0);
-			goto RETRY;
-		      }
-		  else
-		    write_ch_fun = writec_PRINTstream;
-		} else
-#ifdef CLOS
-		  if (type_of(PRINTstream) == t_instance)
-		    write_ch_fun = interactive_writec_PRINTstream;
-		  else
-#endif /* CLOS */
-		    FEtype_error_stream(strm);
+		write_ch_fun = writec_PRINTstream;
 		write_object(obj, 0);
 		break;
 
@@ -2077,20 +1882,7 @@ prin1(cl_object obj, cl_object strm)
 	case t_character:
 		PRINTstream = strm;
 		PRINTescape = TRUE;
-RETRY:		if (type_of(PRINTstream) == t_stream) {
-		  if (PRINTstream->stream.mode == (short)smm_synonym) {
-			PRINTstream = symbol_value(PRINTstream->stream.object0);
-			goto RETRY;
-		      }
-		  else
-		    write_ch_fun = writec_PRINTstream;
-		} else
-#ifdef CLOS
-		  if (type_of(PRINTstream) == t_instance)
-		    write_ch_fun = interactive_writec_PRINTstream;
-		  else
-#endif /* CLOS */
-		    FEtype_error_stream(strm);
+		write_ch_fun = writec_PRINTstream;
 		write_object(obj, 0);
 		break;
 
@@ -2101,7 +1893,7 @@ RETRY:		if (type_of(PRINTstream) == t_stream) {
 		write_object(obj, 0);
 		cleanupPRINT();
 	}
-	FLUSH_STREAM(PRINTstream);
+	flush_stream(PRINTstream);
 	return(obj);
 }
 
@@ -2117,27 +1909,12 @@ print(cl_object obj, cl_object strm)
 cl_object
 terpri(cl_object strm)
 {
-	int (*write_fun)(int, cl_object);
 	if (Null(strm))
 		strm = symbol_value(@'*standard-output*');
 	else if (strm == Ct)
 		strm = symbol_value(@'*terminal-io*');
-RETRY:	if (type_of(strm) == t_stream) {
-          if (strm->stream.mode == (short)smm_synonym) {
-	    strm = symbol_value(strm->stream.object0);
-	    goto RETRY;
-	  }
-	  else
-	    write_fun = writec_stream;
-	} else
-#ifdef CLOS
-	  if (type_of(strm) == t_instance)
-	    write_fun = interactive_writec_stream;
-	  else
-#endif /* CLOS */
-	    FEtype_error_stream(strm);
-	write_fun('\n', strm);
-	FLUSH_STREAM(strm);
+	writec_stream('\n', strm);
+	flush_stream(strm);
 	return(Cnil);
 }
 
@@ -2151,25 +1928,9 @@ write_string(cl_object strng, cl_object strm)
 	else if (strm == Ct)
 		strm = symbol_value(@'*terminal-io*');
 	assert_type_string(strng);
-RETRY:	if (type_of(strm) == t_stream) {
-          if (strm->stream.mode == (short)smm_synonym) {
-	    strm = symbol_value(strm->stream.object0);
-	    goto RETRY;
-	  }
-	  else {
-	    for (i = 0;  i < strng->string.fillp;  i++)
-	      writec_stream(strng->string.self[i], strm);
-	    flush_stream(strm);
-	  }
-	} else
-#ifdef CLOS
-	if (type_of(strm) == t_instance) {
-	  for (i = 0;  i < strng->string.fillp;  i++)
-		interactive_writec_stream(strng->string.self[i], strm);
-	  flush_interactive_stream(strm);
-	} else
-#endif /* CLOS */
-	  FEtype_error_stream(strm);
+	for (i = 0;  i < strng->string.fillp;  i++)
+		writec_stream(strng->string.self[i], strm);
+	flush_stream(strm);
 }
 
 /*
@@ -2183,21 +1944,7 @@ princ_str(const char *s, cl_object sym)
 		sym = symbol_value(@'*standard-output*');
 	else if (sym == Ct)
 		sym = symbol_value(@'*terminal-io*');
-RETRY:	if (type_of(sym) == t_stream) {
-          if (sym->stream.mode == (short)smm_synonym) {
-	    sym = symbol_value(sym->stream.object0);
-	    goto RETRY;
-	  }
-	  else
-	    writestr_stream(s, sym);
-	} else
-#ifdef CLOS
-	if (type_of(sym) == t_instance)
-	  while (*s != '\0')
-		interactive_writec_stream(*s++, sym);
-	else
-#endif /* CLOS */
-	  FEerror("~S is not a stream.", 1, sym);
+	writestr_stream(s, sym);
 }
 
 void
@@ -2208,23 +1955,7 @@ princ_char(int c, cl_object sym)
 		sym = symbol_value(@'*standard-output*');
 	else if (sym == Ct)
 		sym = symbol_value(@'*terminal-io*');
-RETRY:	if (type_of(sym) == t_stream) {
-          if (sym->stream.mode == (short)smm_synonym) {
-	    sym = symbol_value(sym->stream.object0);
-	    goto RETRY;
-	  }
-	  else {
-	    writec_stream(c, sym);
-	    if (c == '\n')
-	      flush_stream(sym);
-	  }
-	} else
-#ifdef CLOS
-	if (type_of(sym) == t_instance) {
-	  interactive_writec_stream(c, sym);
-	  if (c == '\n')
-		flush_interactive_stream(sym);
-	} else
-#endif /* CLOS */
-	  FEerror("~S is not a stream.", 1, sym);
+	writec_stream(c, sym);
+	if (c == '\n')
+		flush_stream(sym);
 }

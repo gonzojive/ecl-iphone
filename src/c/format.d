@@ -19,35 +19,8 @@
 
 cl_object @'si::*indent-formatted-output*';
 
-/******************* WITH CLOS ************************/
-#ifdef CLOS
-#define	WRITEC_STREAM(c, strm)		(*fmt_writec)(c, strm)
-#define WRITESTR_STREAM(s, strm) \
-  { if (type_of(strm) == t_stream) \
-       writestr_stream(s, strm);\
-    else {\
-       const char* t=s; \
-       while (*t != '\0') interactive_writec_stream(*t++, strm); \
-  }}
-#define FLUSH_STREAM(strm) {\
-  if (type_of(strm) == t_stream) flush_stream(strm); \
-     else flush_interactive_stream(strm);\
-  }
-#define FILE_COLUMN(strm) \
-  ((type_of(strm) == t_instance) ? -1 : file_column(strm))
-#endif /* CLOS */
-
-/******************* WITHOUT CLOS *********************/
-#ifndef CLOS
-#define	WRITEC_STREAM(c, strm)		writec_stream(c, strm)
-#define WRITESTR_STREAM(s, strm)	writestr_stream(s, strm);
-#define FLUSH_STREAM(strm)		flush_stream(strm)
-#define FILE_COLUMN(strm) 		file_column(strm)
-#endif /* !CLOS */
-
 /******************* WITH THREADS *********************/
 #ifdef THREADS
-#define fmt_writec	clwp->lwp_fmt_ch_fun
 #define fmt_stream	clwp->lwp_fmt_stream
 #define ctl_origin	clwp->lwp_ctl_origin
 #define ctl_index	clwp->lwp_ctl_index
@@ -68,7 +41,6 @@ cl_object @'si::*indent-formatted-output*';
 
 /******************* WITHOUT THREADS ******************/
 #ifndef THREADS
-static int (*fmt_writec)(int, cl_object);
 static cl_object fmt_stream;
 static int ctl_origin;
 static int ctl_index;
@@ -320,8 +292,8 @@ fmt_ascii(bool colon, bool atsign)
 	fmt_set_param(3, &padchar, CHAR, ' ');
 
 	fmt_temporary_string->string.fillp = 0;
-	fmt_temporary_stream->stream.int0 = FILE_COLUMN(fmt_stream);
-	fmt_temporary_stream->stream.int1 = FILE_COLUMN(fmt_stream);
+	fmt_temporary_stream->stream.int0 = file_column(fmt_stream);
+	fmt_temporary_stream->stream.int1 = file_column(fmt_stream);
 	x = fmt_advance();
 	if (colon && Null(x))
 		writestr_stream("()", fmt_temporary_stream);
@@ -336,10 +308,10 @@ fmt_ascii(bool colon, bool atsign)
 	if (!atsign) {
 		write_string(fmt_temporary_string, fmt_stream);
 		while (i-- > 0)
-			WRITEC_STREAM(padchar, fmt_stream);
+			writec_stream(padchar, fmt_stream);
 	} else {
 		while (i-- > 0)
-			WRITEC_STREAM(padchar, fmt_stream);
+			writec_stream(padchar, fmt_stream);
 		write_string(fmt_temporary_string, fmt_stream);
 	}
 }
@@ -358,8 +330,8 @@ fmt_S_expression(bool colon, bool atsign)
 	fmt_set_param(3, &padchar, CHAR, ' ');
 
 	fmt_temporary_string->string.fillp = 0;
-	fmt_temporary_stream->stream.int0 = FILE_COLUMN(fmt_stream);
-	fmt_temporary_stream->stream.int1 = FILE_COLUMN(fmt_stream);
+	fmt_temporary_stream->stream.int0 = file_column(fmt_stream);
+	fmt_temporary_stream->stream.int1 = file_column(fmt_stream);
 	x = fmt_advance();
 	if (colon && Null(x))
 		writestr_stream("()", fmt_temporary_stream);
@@ -374,10 +346,10 @@ fmt_S_expression(bool colon, bool atsign)
 	if (!atsign) {
 		write_string(fmt_temporary_string, fmt_stream);
 		while (i-- > 0)
-			WRITEC_STREAM(padchar, fmt_stream);
+			writec_stream(padchar, fmt_stream);
 	} else {
 		while (i-- > 0)
-			WRITEC_STREAM(padchar, fmt_stream);
+			writec_stream(padchar, fmt_stream);
 		write_string(fmt_temporary_string, fmt_stream);
 	}
 }
@@ -392,8 +364,8 @@ fmt_integer(cl_object x, bool colon, bool atsign,
 
 	if (!FIXNUMP(x) && type_of(x) != t_bignum) {
 		fmt_temporary_string->string.fillp = 0;
-		fmt_temporary_stream->stream.int0 = FILE_COLUMN(fmt_stream);
-		fmt_temporary_stream->stream.int1 = FILE_COLUMN(fmt_stream);
+		fmt_temporary_stream->stream.int0 = file_column(fmt_stream);
+		fmt_temporary_stream->stream.int1 = file_column(fmt_stream);
 		setupPRINT(x, fmt_temporary_stream);
 		PRINTescape = FALSE;
 		PRINTbase = radix;
@@ -402,14 +374,14 @@ fmt_integer(cl_object x, bool colon, bool atsign,
 		l = fmt_temporary_string->string.fillp;
 		mincol -= l;
 		while (mincol-- > 0)
-			WRITEC_STREAM(padchar, fmt_stream);
+			writec_stream(padchar, fmt_stream);
 		for (s = 0;  l > 0;  --l, s++)
-			WRITEC_STREAM(fmt_tempstr(s), fmt_stream);
+			writec_stream(fmt_tempstr(s), fmt_stream);
 		return;
 	}
 	fmt_temporary_string->string.fillp = 0;
-	fmt_temporary_stream->stream.int0 = FILE_COLUMN(fmt_stream);
-	fmt_temporary_stream->stream.int1 = FILE_COLUMN(fmt_stream);
+	fmt_temporary_stream->stream.int0 = file_column(fmt_stream);
+	fmt_temporary_stream->stream.int1 = file_column(fmt_stream);
 	PRINTstream = fmt_temporary_stream;
 	PRINTradix = FALSE;
 	PRINTbase = radix;
@@ -425,16 +397,16 @@ fmt_integer(cl_object x, bool colon, bool atsign,
 	if (atsign && fmt_tempstr(s) != '-')
 		--mincol;
 	while (mincol-- > 0)
-		WRITEC_STREAM(padchar, fmt_stream);
+		writec_stream(padchar, fmt_stream);
 	if (fmt_tempstr(s) == '-') {
 		s++;
-		WRITEC_STREAM('-', fmt_stream);
+		writec_stream('-', fmt_stream);
 	} else if (atsign)
-		WRITEC_STREAM('+', fmt_stream);
+		writec_stream('+', fmt_stream);
 	while (l1-- > 0) {
-		WRITEC_STREAM(fmt_tempstr(s++), fmt_stream);
+		writec_stream(fmt_tempstr(s++), fmt_stream);
 		if (colon && l1 > 0 && l1%3 == 0)
-			WRITEC_STREAM(commachar, fmt_stream);
+			writec_stream(commachar, fmt_stream);
 	}
 }
 
@@ -493,13 +465,13 @@ fmt_hexadecimal(bool colon, bool atsign)
 static void
 fmt_write_numeral(int s, int i)
 {
-	WRITESTR_STREAM(fmt_numeral[fmt_tempstr(s) - '0' + i], fmt_stream)
+	writestr_stream(fmt_numeral[fmt_tempstr(s) - '0' + i], fmt_stream);
 }
 
 static void
 fmt_write_ordinal(int s, int i)
 {
-	WRITESTR_STREAM(fmt_ordinal[fmt_tempstr(s) - '0' + i], fmt_stream)
+	writestr_stream(fmt_ordinal[fmt_tempstr(s) - '0' + i], fmt_stream);
 }
 
 static bool
@@ -507,14 +479,14 @@ fmt_thousand(int s, int i, bool b, bool o, int t)
 {
 	if (i == 3 && fmt_tempstr(s) > '0') {
 		if (b)
-			WRITEC_STREAM(' ', fmt_stream);
+			writec_stream(' ', fmt_stream);
 		fmt_write_numeral(s, 0);
-		WRITESTR_STREAM(" hundred", fmt_stream)
+		writestr_stream(" hundred", fmt_stream);
 		--i;
 		s++;
 		b = TRUE;
 		if (o && (s > t))
-			WRITESTR_STREAM("th", fmt_stream)
+			writestr_stream("th", fmt_stream);
 	}
 	if (i == 3) {
 		--i;
@@ -522,7 +494,7 @@ fmt_thousand(int s, int i, bool b, bool o, int t)
 	}
 	if (i == 2 && fmt_tempstr(s) > '0') {
 		if (b)
-			WRITEC_STREAM(' ', fmt_stream);
+			writec_stream(' ', fmt_stream);
 		if (fmt_tempstr(s) == '1') {
 			if (o && (s + 2 > t))
 				fmt_write_ordinal(++s, 10);
@@ -536,7 +508,7 @@ fmt_thousand(int s, int i, bool b, bool o, int t)
 				fmt_write_numeral(s, 20);
 			s++;
 			if (fmt_tempstr(s) > '0') {
-				WRITEC_STREAM('-', fmt_stream);
+				writec_stream('-', fmt_stream);
 				if (o && s + 1 > t)
 					fmt_write_ordinal(s, 0);
 				else
@@ -549,7 +521,7 @@ fmt_thousand(int s, int i, bool b, bool o, int t)
 		s++;
 	if (fmt_tempstr(s) > '0') {
 		if (b)
-			WRITEC_STREAM(' ', fmt_stream);
+			writec_stream(' ', fmt_stream);
 		if (o && s + 1 > t)
 			fmt_write_ordinal(s, 0);
 		else
@@ -568,12 +540,12 @@ fmt_nonillion(int s, int i, bool b, bool o, int t)
 		b = fmt_thousand(s, j = (i+2)%3+1, b, FALSE, t);
 		if (j != 3 || fmt_tempstr(s) != '0' ||
 		    fmt_tempstr(s+1) != '0' || fmt_tempstr(s+2) != '0') {
-			WRITEC_STREAM(' ', fmt_stream);
-			WRITESTR_STREAM(fmt_big_numeral[(i - 1)/3 - 1],
-					fmt_stream)
+			writec_stream(' ', fmt_stream);
+			writestr_stream(fmt_big_numeral[(i - 1)/3 - 1],
+					fmt_stream);
 			s += j;
 			if (o && s > t)
-				WRITESTR_STREAM("th", fmt_stream)
+				writestr_stream("th", fmt_stream);
 		} else
 			s += j;
 	}
@@ -589,17 +561,17 @@ fmt_roman(int i, int one, int five, int ten, bool colon)
 		return;
 	if ((!colon && i < 4) || (colon && i < 5))
 		for (j = 0;  j < i;  j++)
-			WRITEC_STREAM(one, fmt_stream);
+			writec_stream(one, fmt_stream);
 	else if (!colon && i == 4) {
-		WRITEC_STREAM(one, fmt_stream);
-		WRITEC_STREAM(five, fmt_stream);
+		writec_stream(one, fmt_stream);
+		writec_stream(five, fmt_stream);
 	} else if ((!colon && i < 9) || colon) {
-		WRITEC_STREAM(five, fmt_stream);
+		writec_stream(five, fmt_stream);
 		for (j = 5;  j < i;  j++)
-			WRITEC_STREAM(one, fmt_stream);
+			writec_stream(one, fmt_stream);
 	} else if (!colon && i == 9) {
-		WRITEC_STREAM(one, fmt_stream);
-		WRITEC_STREAM(ten, fmt_stream);
+		writec_stream(one, fmt_stream);
+		writec_stream(ten, fmt_stream);
 	}
 }
 
@@ -632,8 +604,8 @@ fmt_radix(bool colon, bool atsign)
 			return;
 		}
 		fmt_temporary_string->string.fillp = 0;
-		fmt_temporary_stream->stream.int0 = FILE_COLUMN(fmt_stream);
-		fmt_temporary_stream->stream.int1 = FILE_COLUMN(fmt_stream);
+		fmt_temporary_stream->stream.int0 = file_column(fmt_stream);
+		fmt_temporary_stream->stream.int1 = file_column(fmt_stream);
 		PRINTstream = fmt_temporary_stream;
 		PRINTradix = FALSE;
 		PRINTbase = 10;
@@ -642,12 +614,12 @@ fmt_radix(bool colon, bool atsign)
 		s = 0;
 		i = fmt_temporary_string->string.fillp;
 		if (i == 1 && fmt_tempstr(s) == '0') {
-			WRITESTR_STREAM("zero", fmt_stream)
+			writestr_stream("zero", fmt_stream);
 			if (colon)
-				WRITESTR_STREAM("th", fmt_stream)
+				writestr_stream("th", fmt_stream);
 			return;
 		} else if (fmt_tempstr(s) == '-') {
-			WRITESTR_STREAM("minus ", fmt_stream)
+			writestr_stream("minus ", fmt_stream);
 			--i;
 			s++;
 		}
@@ -659,10 +631,10 @@ fmt_radix(bool colon, bool atsign)
 			s += j;
 			if (b && i > 30) {
 				for (k = (i - 1)/30;  k > 0;  --k)
-					WRITESTR_STREAM(" nonillion",
-							fmt_stream)
+					writestr_stream(" nonillion",
+							fmt_stream);
 				if (colon && s > t)
-					WRITESTR_STREAM("th", fmt_stream)
+					writestr_stream("th", fmt_stream);
 			}
 		}
 		return;
@@ -690,13 +662,13 @@ fmt_plural(bool colon, bool atsign)
 	}
 	if (eql(fmt_advance(), MAKE_FIXNUM(1))) {
 		if (atsign)
-			WRITEC_STREAM('y', fmt_stream);
+			writec_stream('y', fmt_stream);
 	      }
 	else
 		if (atsign)
-			WRITESTR_STREAM("ies", fmt_stream)
+			writestr_stream("ies", fmt_stream);
 		else
-			WRITEC_STREAM('s', fmt_stream);
+			writec_stream('s', fmt_stream);
 }
 
 static void
@@ -717,7 +689,7 @@ fmt_character(bool colon, bool atsign)
 	else
 		i = 2;
 	for (;  i < fmt_temporary_string->string.fillp;  i++)
-		WRITEC_STREAM(fmt_tempstr(i), fmt_stream);
+		writec_stream(fmt_tempstr(i), fmt_stream);
 }
 
 static void
@@ -825,7 +797,7 @@ fmt_fix_float(bool colon, bool atsign)
 		if (j > w && overflowchar >= 0) {
 			fmt_set_param(0, &w, INT, 0);
 			for (i = 0;  i < w;  i++)
-				WRITEC_STREAM(overflowchar, fmt_stream);
+				writec_stream(overflowchar, fmt_stream);
 			return;
 		}
 		if (j < w && d < 0 && b[j-1] == '.') {
@@ -837,7 +809,7 @@ fmt_fix_float(bool colon, bool atsign)
 			j++;
 		}
 		for (i = j;  i < w;  i++)
-			WRITEC_STREAM(padchar, fmt_stream);
+			writec_stream(padchar, fmt_stream);
 	} else {
 		if (b[0] == '.') {
 			*--b = '0';
@@ -849,10 +821,10 @@ fmt_fix_float(bool colon, bool atsign)
 		}
 	}
 	if (sign < 0)
-		WRITEC_STREAM('-', fmt_stream);
+		writec_stream('-', fmt_stream);
 	else if (atsign)
-		WRITEC_STREAM('+', fmt_stream);
-	WRITESTR_STREAM(b, fmt_stream)
+		writec_stream('+', fmt_stream);
+	writestr_stream(b, fmt_stream);
 }
 
 static int
@@ -875,14 +847,14 @@ fmt_exponent1(int e)
 	if (e == 0)
 		return;
 	fmt_exponent1(e/10);
-	WRITEC_STREAM('0' + e%10, fmt_stream);
+	writec_stream('0' + e%10, fmt_stream);
 }
 
 static void
 fmt_exponent(int e)
 {
 	if (e == 0) {
-		WRITEC_STREAM('0', fmt_stream);
+		writec_stream('0', fmt_stream);
 		return;
 	}
 	if (e < 0)
@@ -1019,7 +991,7 @@ fmt_exponential_float(bool colon, bool atsign)
 			j++;
 		}
 		for (i = j;  i < w;  i++)
-			WRITEC_STREAM(padchar, fmt_stream);
+			writec_stream(padchar, fmt_stream);
 	} else {
 		if (b[j-1] == '.') {
 			b[j++] = '0';
@@ -1031,10 +1003,10 @@ fmt_exponential_float(bool colon, bool atsign)
 		}
 	}
 	if (sign < 0)
-		WRITEC_STREAM('-', fmt_stream);
+		writec_stream('-', fmt_stream);
 	else if (atsign)
-		WRITEC_STREAM('+', fmt_stream);
-	WRITESTR_STREAM(b, fmt_stream)
+		writec_stream('+', fmt_stream);
+	writestr_stream(b, fmt_stream);
 	y = symbol_value(@'*read-default-float-format*');
 	if (exponentchar < 0) {
 		if (y == @'long-float' || y == @'double-float')
@@ -1048,21 +1020,21 @@ fmt_exponential_float(bool colon, bool atsign)
 		else
 			exponentchar = 'L';
 	}
-	WRITEC_STREAM(exponentchar, fmt_stream);
+	writec_stream(exponentchar, fmt_stream);
 	if (exp < 0)
-		WRITEC_STREAM('-', fmt_stream);
+		writec_stream('-', fmt_stream);
 	else
-		WRITEC_STREAM('+', fmt_stream);
+		writec_stream('+', fmt_stream);
 	if (e >= 0)
 		for (i = e - fmt_exponent_length(exp);  i > 0;  --i)
-			WRITEC_STREAM('0', fmt_stream);
+			writec_stream('0', fmt_stream);
 	fmt_exponent(exp);
 	return;
 
 OVER:
 	fmt_set_param(0, &w, INT, -1);
 	for (i = 0;  i < w;  i++)
-		WRITEC_STREAM(overflowchar, fmt_stream);
+		writec_stream(overflowchar, fmt_stream);
 	return;
 }
 
@@ -1125,7 +1097,7 @@ fmt_general_float(bool colon, bool atsign)
 		fmt_fix_float(colon, atsign);
 		if (w >= 0)
 			while (ww++ < w)
-				WRITEC_STREAM(padchar, fmt_stream);
+				writec_stream(padchar, fmt_stream);
 		return;
 	}
 	fmt_param[1].fmt_param_value = d;
@@ -1194,26 +1166,26 @@ fmt_dollars_float(bool colon, bool atsign)
 		--w;
 	if (colon) {
 		if (sign < 0)
-			WRITEC_STREAM('-', fmt_stream);
+			writec_stream('-', fmt_stream);
 		else if (atsign)
-			WRITEC_STREAM('+', fmt_stream);
+			writec_stream('+', fmt_stream);
 		while (--w > n + d)
-			WRITEC_STREAM(padchar, fmt_stream);
+			writec_stream(padchar, fmt_stream);
 	} else {
 		while (--w > n + d)
-			WRITEC_STREAM(padchar, fmt_stream);
+			writec_stream(padchar, fmt_stream);
 		if (sign < 0)
-			WRITEC_STREAM('-', fmt_stream);
+			writec_stream('-', fmt_stream);
 		else if (atsign)
-			WRITEC_STREAM('+', fmt_stream);
+			writec_stream('+', fmt_stream);
 	}
 	for (i = n - exp;  i > 0;  --i)
-		WRITEC_STREAM('0', fmt_stream);
+		writec_stream('0', fmt_stream);
 	for (i = 0;  i < exp;  i++)
-		WRITEC_STREAM((i < q ? buff[i] : '0'), fmt_stream);
-	WRITEC_STREAM('.', fmt_stream);
+		writec_stream((i < q ? buff[i] : '0'), fmt_stream);
+	writec_stream('.', fmt_stream);
 	for (d += i;  i < d;  i++)
-		WRITEC_STREAM((i < q ? buff[i] : '0'), fmt_stream);
+		writec_stream((i < q ? buff[i] : '0'), fmt_stream);
 }
 
 static void
@@ -1226,10 +1198,10 @@ fmt_percent(bool colon, bool atsign)
 	fmt_not_colon(colon);
 	fmt_not_atsign(atsign);
 	while (n-- > 0) {
-		WRITEC_STREAM('\n', fmt_stream);
+		writec_stream('\n', fmt_stream);
 		if (n == 0)
 			for (i = fmt_indents;  i > 0;  --i)
-				WRITEC_STREAM(' ', fmt_stream);
+				writec_stream(' ', fmt_stream);
 	}
 }
 
@@ -1244,10 +1216,10 @@ fmt_ampersand(bool colon, bool atsign)
 	fmt_not_atsign(atsign);
 	if (n == 0)
 		return;
-	if (FILE_COLUMN(fmt_stream) != 0)
-		WRITEC_STREAM('\n', fmt_stream);
+	if (file_column(fmt_stream) != 0)
+		writec_stream('\n', fmt_stream);
 	while (--n > 0)
-		WRITEC_STREAM('\n', fmt_stream);
+		writec_stream('\n', fmt_stream);
 	fmt_indents = 0;
 }
 
@@ -1261,7 +1233,7 @@ fmt_bar(bool colon, bool atsign)
 	fmt_not_colon(colon);
 	fmt_not_atsign(atsign);
 	while (n-- > 0)
-		WRITEC_STREAM('\f', fmt_stream);
+		writec_stream('\f', fmt_stream);
 }
 
 static void
@@ -1274,7 +1246,7 @@ fmt_tilde(bool colon, bool atsign)
 	fmt_not_colon(colon);
 	fmt_not_atsign(atsign);
 	while (n-- > 0)
-		WRITEC_STREAM('~', fmt_stream);
+		writec_stream('~', fmt_stream);
 }
 
 static void
@@ -1283,10 +1255,10 @@ fmt_newline(bool colon, bool atsign)
 	fmt_max_param(0);
 	fmt_not_colon_atsign(colon, atsign);
 	if (atsign)
-		WRITEC_STREAM('\n', fmt_stream);
+		writec_stream('\n', fmt_stream);
 	while (ctl_index < ctl_end && isspace(ctl_string[ctl_index])) {
 		if (colon)
-			WRITEC_STREAM(ctl_string[ctl_index], fmt_stream);
+			writec_stream(ctl_string[ctl_index], fmt_stream);
 		ctl_index++;
 	}
 }
@@ -1302,9 +1274,9 @@ fmt_tabulate(bool colon, bool atsign)
 	fmt_set_param(0, &colnum, INT, 1);
 	fmt_set_param(1, &colinc, INT, 1);
 	if (!atsign) {
-		c = FILE_COLUMN(fmt_stream);
+		c = file_column(fmt_stream);
 		if (c < 0) {
-			WRITESTR_STREAM("  ", fmt_stream)
+			writestr_stream("  ", fmt_stream);
 			return;
 		}
 		if (c > colnum && colinc <= 0)
@@ -1312,18 +1284,18 @@ fmt_tabulate(bool colon, bool atsign)
 		while (c > colnum)
 			colnum += colinc;
 		for (i = colnum - c;  i > 0;  --i)
-			WRITEC_STREAM(' ', fmt_stream);
+			writec_stream(' ', fmt_stream);
 	} else {
 		for (i = colnum;  i > 0;  --i)
-			WRITEC_STREAM(' ', fmt_stream);
-		c = FILE_COLUMN(fmt_stream);
+			writec_stream(' ', fmt_stream);
+		c = file_column(fmt_stream);
 		if (c < 0 || colinc <= 0)
 			return;
 		colnum = 0;
 		while (c > colnum)
 			colnum += colinc;
 		for (i = colnum - c;  i > 0;  --i)
-			WRITEC_STREAM(' ', fmt_stream);
+			writec_stream(' ', fmt_stream);
 	}
 }
 
@@ -1422,7 +1394,7 @@ fmt_case(bool colon, bool atsign)
 		for (i = 0;  i < x->string.fillp;  i++) {
 			if (isupper(j = x->string.self[i]))
 				j = tolower(j);
-			WRITEC_STREAM(j, fmt_stream);
+			writec_stream(j, fmt_stream);
 		}
 	else if (colon && !atsign)
 		for (b = TRUE, i = 0;  i < x->string.fillp;  i++) {
@@ -1436,7 +1408,7 @@ fmt_case(bool colon, bool atsign)
 				b = FALSE;
 			} else if (!isdigit(j))
 				b = TRUE;
-			WRITEC_STREAM(j, fmt_stream);
+			writec_stream(j, fmt_stream);
 		}
 	else if (!colon && atsign)
 		for (b = TRUE, i = 0;  i < x->string.fillp;  i++) {
@@ -1449,13 +1421,13 @@ fmt_case(bool colon, bool atsign)
 					j = tolower(j);
 				b = FALSE;
 			}
-			WRITEC_STREAM(j, fmt_stream);
+			writec_stream(j, fmt_stream);
 		}
 	else
 		for (i = 0;  i < x->string.fillp;  i++) {
 			if (islower(j = x->string.self[i]))
 				j = toupper(j);
-			WRITEC_STREAM(j, fmt_stream);
+			writec_stream(j, fmt_stream);
 		}
 	if (up_colon)
 		ecl_longjmp(*fmt_jmp_buf, up_colon);
@@ -1766,7 +1738,7 @@ fmt_justification(volatile bool colon, bool atsign)
 		;
 	l = mincol + k * colinc;
 	if (special != Cnil &&
-	    FILE_COLUMN(fmt_stream) + l + spare_spaces > line_length)
+	    file_column(fmt_stream) + l + spare_spaces > line_length)
 		princ(special, fmt_stream);
 	/*
 	 * Output the text with the padding segments. The total number of
@@ -1776,12 +1748,12 @@ fmt_justification(volatile bool colon, bool atsign)
 	for (i = fields_start;  i < fields_end;  i++) {
 		if (i > fields_start || colon)
 			for (j = l / m, l -= j, --m;  j > 0;  --j)
-				WRITEC_STREAM(padchar, fmt_stream);
+				writec_stream(padchar, fmt_stream);
 		princ(cl_stack[i], fmt_stream);
 	}
 	if (atsign)
 		for (j = l;  j > 0;  --j)
-			WRITEC_STREAM(padchar, fmt_stream);
+			writec_stream(padchar, fmt_stream);
 	cl_stack_set_index(fields_start);
 }
 
@@ -1844,20 +1816,6 @@ fmt_semicolon(bool colon, bool atsign)
 		x = OBJNULL;
 	}
 	fmt_save;
-RETRY:	if (type_of(strm) == t_stream) {
-	  if (strm->stream.mode == (short)smm_synonym) {
- 		strm = symbol_value(strm->stream.object0);
-		goto RETRY;
-	      }
-	  else
-	    fmt_writec = writec_stream;
-	} else
-#ifdef CLOS
-	  if (type_of(strm) == t_instance)
-	    fmt_writec = interactive_writec_stream;
-	else
-#endif /* CLOS */
-	  FEerror("~S is not a stream.", 1, strm);
 	assert_type_string(string);
 	if (frs_push(FRS_PROTECT, Cnil)) {
 		frs_pop();
@@ -1871,7 +1829,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 	fmt_end = cl_stack_index();
 	fmt_jmp_buf = &fmt_jmp_buf0;
 	if (symbol_value(@'si::*indent-formatted-output*') != Cnil)
-		fmt_indents = FILE_COLUMN(strm);
+		fmt_indents = file_column(strm);
 	else
 		fmt_indents = 0;
 	fmt_string = string;
@@ -1880,7 +1838,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 			fmt_error("illegal ~:^");
 	} else {
 		format(strm, 0, string->string.fillp);
-		FLUSH_STREAM(strm);
+		flush_stream(strm);
 	}
 	cl_stack_set_index(fmt_base);
 	frs_pop();
@@ -1904,7 +1862,7 @@ LOOP:
 	if (ctl_index >= ctl_end)
 		return;
 	if ((c = ctl_advance()) != '~') {
-		WRITEC_STREAM(c, fmt_stream);
+		writec_stream(c, fmt_stream);
 		goto LOOP;
 	}
 	n = 0;

@@ -93,7 +93,6 @@ GO_ON:
 
 @(defun si::load_source (filename verbose print)
 	cl_object x, strm;
-	cl_object (*old_read_ch_fun)(cl_object) = read_ch_fun;
 @
 	strm = open_stream(filename, smm_input, Cnil, Cnil);
 	if (Null(strm))
@@ -108,9 +107,7 @@ GO_ON:
 		cl_object bytecodes = Cnil;
 		preserving_whitespace_flag = FALSE;
 		detect_eos_flag = TRUE;
-		read_ch_fun = readc; /* setup for read. Beppe */
 		x = read_object_non_recursive(strm);
-		read_ch_fun = old_read_ch_fun;
 		if (x == OBJNULL)
 			break;
 		eval(x, &bytecodes, Cnil);

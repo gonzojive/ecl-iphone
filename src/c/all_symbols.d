@@ -107,6 +107,19 @@ const struct symbol_info all_symbols[] = {
 {&clVterminal_io, "*TERMINAL-IO*", CL_SPECIAL},
 {&clVtrace_output, "*TRACE-OUTPUT*", CL_SPECIAL},
 {&siVignore_eof_on_terminal_io, "*IGNORE-EOF-ON-TERMINAL-IO*", SI_SPECIAL},
+#ifdef ECL_CLOS_STREAMS
+/*{&clSstream_read_line, "STREAM-READ-LINE", CL_ORDINARY},*/
+{&clSstream_read_char, "STREAM-READ-CHAR", CL_ORDINARY},
+{&clSstream_unread_char, "STREAM-UNREAD-CHAR", CL_ORDINARY},
+/*{&clSstream_peek_char, "STREAM-PEEK-CHAR", CL_ORDINARY},*/
+{&clSstream_listen, "STREAM-LISTEN", CL_ORDINARY},
+{&clSstream_clear_input, "STREAM-CLEAR-INPUT", CL_ORDINARY},
+{&clSstream_write_char, "STREAM-WRITE-CHAR", CL_ORDINARY},
+/*{&clSstream_write_string, "STREAM-WRITE-STRING", CL_ORDINARY},*/
+{&clSstream_clear_output, "STREAM-CLEAR-OUTPUT", CL_ORDINARY},
+{&clSstream_force_output, "STREAM-FORCE-OUTPUT", CL_ORDINARY},
+{&clSstream_close, "STREAM-CLOSE", CL_ORDINARY},
+#endif
 
 /* format.c */
 {&siVindent_formatted_output, "*INDENT-FORMATTED-OUTPUT*", SI_SPECIAL},
@@ -187,13 +200,6 @@ const struct symbol_info all_symbols[] = {
 {&siSsharp_exclamation, "#!", SI_ORDINARY},
 {&siVprint_package, "*PRINT-PACKAGE*", SI_SPECIAL},
 {&siVprint_structure, "*PRINT-STRUCTURE*", SI_SPECIAL},
-#ifdef CLOS
-{&clSstream_write_char, "STREAM-WRITE-CHAR", CL_ORDINARY},
-{&clSstream_write_string, "STREAM-WRITE-STRING", CL_ORDINARY},
-{&clSstream_fresh_line, "STREAM-FRESH-LINE", CL_ORDINARY},
-{&clSstream_clear_output, "STREAM-CLEAR-OUTPUT", CL_ORDINARY},
-{&clSstream_force_output, "STREAM-FORCE-OUTPUT", CL_ORDINARY},
-#endif
 
 /* profile.c */
 #ifdef PROFILE
@@ -205,14 +211,6 @@ const struct symbol_info all_symbols[] = {
 {&clVread_default_float_format, "*READ-DEFAULT-FLOAT-FORMAT*", CL_SPECIAL},
 {&clVread_base, "*READ-BASE*", CL_SPECIAL},
 {&clVread_suppress, "*READ-SUPPRESS*", CL_SPECIAL},
-#ifdef CLOS
-{&clSstream_read_line, "STREAM-READ-LINE", CL_ORDINARY},
-{&clSstream_read_char, "STREAM-READ-CHAR", CL_ORDINARY},
-{&clSstream_unread_char, "STREAM-UNREAD-CHAR", CL_ORDINARY},
-{&clSstream_peek_char, "STREAM-PEEK-CHAR", CL_ORDINARY},
-{&clSstream_listen, "STREAM-LISTEN", CL_ORDINARY},
-{&clSstream_clear_input, "STREAM-CLEAR-INPUT", CL_ORDINARY},
-#endif
 
 /* structure.c */
 {&siSstructure_print_function, "STRUCTURE-PRINT-FUNCTION", SI_ORDINARY},

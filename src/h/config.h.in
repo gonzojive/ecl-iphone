@@ -46,6 +46,9 @@
 /* Undefine this if you do not want ECL to check for circular lists    */
 #define ECL_SAFE
 
+/* Allow STREAM operations to work on arbitrary objects			*/
+#undef ECL_CLOS_STREAMS
+
 /* -------------------------------------------------------------------- *
  *	PARAMETERS							*
  * -------------------------------------------------------------------- */
