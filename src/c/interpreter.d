@@ -233,8 +233,6 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 	cl_object specials = lambda_list->bytecodes.specials;
 	int i, n;
 	bool check_remaining = TRUE;
-	bool allow_other_keys = FALSE;
-	bool allow_other_keys_found = FALSE;
 
 	/* 1) REQUIRED ARGUMENTS:  N var1 ... varN */
 	n = fix(next_code(data));
@@ -274,14 +272,18 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 
 	/* 4) ALLOW-OTHER-KEYS: { T | NIL | 0} */
 	if (data[0] == MAKE_FIXNUM(0)) {
-	  data++; allow_other_keys = 0;
-	  goto NO_KEYS;
-	}
-	allow_other_keys = allow_other_keys_found = !Null(next_code(data));
-
-	/* 5) KEYWORDS: N key1 var1 value1 flag1 ... keyN varN valueN flagN */
-	n = fix(next_code(data));
-	if (n != 0 || allow_other_keys) {
+	  data++;
+	  if (narg && check_remaining)
+	    FEprogram_error("LAMBDA: Too many arguments to function ~S.", 1,
+			    lambda_list->bytecodes.name);
+	} else {
+	  /*
+	   * Only when ALLOW-OTHER-KEYS /= 0, we process this:
+	   * 5) KEYWORDS: N key1 var1 value1 flag1 ... keyN varN valueN flagN
+	   */
+	  bool allow_other_keys = !Null(next_code(data));
+	  bool allow_other_keys_found = allow_other_keys;
+	  int n = fix(next_code(data));
 	  cl_object *keys;
 	  cl_object spp[n];
 	  bool other_found = FALSE;
@@ -329,11 +331,6 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 	      lambda_bind_var(data[3],(spp[i] != OBJNULL)? Ct : Cnil,specials);
 	  }
 	}
- NO_KEYS:
-	if (narg && !allow_other_keys && check_remaining)
-	  FEprogram_error("LAMBDA: Too many arguments to function ~S.", 1,
-			  lambda_list->bytecodes.name);
-	/* Skip documentation and declarations */
 	return data;
 }
 

@@ -113,6 +113,7 @@
   (env 0)     		;;; Size of env of closure.
   closure		;;; During Pass2, T if env is used inside the function
   var			;;; the variable holding the funob
+  description		;;; Text for the object, in case NAME == NIL.
   )
 ;(deftype fun () '(satisfies fun-p))
 

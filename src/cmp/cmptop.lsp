@@ -757,7 +757,7 @@
                                            (fourth lambda-list))))
   (declare (fixnum level nenvs))
   (wt-comment (if (fun-closure fun) "closure " "local function ")
-	      (or (fun-name fun) 'CLOSURE))
+	      (or (fun-name fun) (fun-description fun) 'CLOSURE))
   (wt-h "static cl_object LC" (fun-cfun fun) "(")
   (wt-nl1 "static cl_object LC" (fun-cfun fun) "(")
   (wt-h1 "int")

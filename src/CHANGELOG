@@ -1237,6 +1237,8 @@ ECLS 0.9
 
   - The expansion of DO/DO* would not enclose the body in a TAGBODY.
 
+  - SLOT-EXISTS-P outputted OBJNULL when the slot did not exist.
+
 * Errors of the interpreter:
 
   - CASE should use EQL to compare objects, not EQ.
@@ -1408,6 +1410,9 @@ ECLS 0.9
     names of the form (SETF fname). Instead of creating an uninterened
     a symbol with the name "SETF fname", the function definition is
     stored directly as a property list.
+
+  - In destructuring lambda lists, &WHOLE may be accompanied by a
+    destructuring form.
 
 TODO:
 =====

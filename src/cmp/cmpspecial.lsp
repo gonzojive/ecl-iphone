@@ -111,6 +111,7 @@
 		  (info (second funob))
 		  (closure (closure-p funob))
 		  (fun (make-fun :name NIL
+				 :description name
 				 :cfun (next-cfun)
 				 :closure closure)))
 	     (if closure
