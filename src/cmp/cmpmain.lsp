@@ -575,5 +575,8 @@ Cannot compile ~a."
 #+dlopen
 (push (cons "o" #'load-o-file) si::*load-hooks*)
 
+(defmacro with-compilation-unit (options &rest body)
+  `(progn ,@body))
+
 ;;; ----------------------------------------------------------------------
 (provide "compiler")

@@ -1420,6 +1420,7 @@ extern cl_object si_mkdir(cl_object directory, cl_object mode);
 extern cl_object si_string_match(cl_object string, cl_object pattern);
 extern cl_object cl_user_homedir_pathname _ARGS((int narg, ...));
 extern cl_object cl_directory _ARGS((int narg, ...));
+extern cl_object si_file_exists (cl_object pathname);
 
 extern const char *expand_pathname(const char *name);
 extern cl_object string_to_pathname(char *s);

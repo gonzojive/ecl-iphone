@@ -1031,6 +1031,10 @@ ECL 0.7b
     saved, because it may be overwritten by a BLOCK or TAGBODY inside
     the normal exit form.
 
+  - An empty directory now matches against a :wildcard-directory.
+
+  - FILENAME-NAMESTRING now works.
+
 * System design:
 
   - Setting a (DECLARE (SI::C-LOCAL)) inside a function, we advise the
@@ -1044,6 +1048,11 @@ ECL 0.7b
 
   - In compiled TAGBODY forms, tags are replaced with numbers, so that
     compiled code takes less space.
+
+  - Implement Invocation History Stack as a chain of stack-allocated
+    records.
+
+  - Added a new virtual host "HOME:".
 
 * Visible changes:
 
@@ -1106,6 +1115,10 @@ ECL 0.7b
 * ANSI compatibility:
 
   - DEFINE-SYMBOL-MACRO finally implemented.
+
+  - Added a WITH-COMPILATION-UNIT which does nothing.
+
+  - Added function ENSURE-DIRECTORIES-EXIST.
 
 TODO:
 =====

@@ -295,6 +295,13 @@ cl_probe_file(cl_object file)
 }
 
 cl_object
+si_file_exists(cl_object file)
+{
+	/* INV: file_exists() */
+	@(return (file_exists(file)? Ct : Cnil))
+}
+
+cl_object
 cl_file_write_date(cl_object file)
 {
 	cl_object filename, time;

@@ -502,7 +502,6 @@ merge_pathnames(cl_object path, cl_object defaults, cl_object default_version)
 		In this implementation, version is not considered
 	*/
 	defaults = make_pathname(host, device, directory, name, type, version);
-	defaults->pathname.logical = path->pathname.logical;
 	return defaults;
 }
 

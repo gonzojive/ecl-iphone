@@ -137,3 +137,13 @@ Returns the current day-and-time as nine values:
 	time zone (-9 in Japan)
 Sunday is the *last* day of the week!!"
   (decode-universal-time (get-universal-time)))
+
+(defun ensure-directories-exist (a-pathname)
+  (let* (d)
+    (dolist (item (pathname-directory a-pathname))
+      (setf d (nconc d (list item)))
+      (let ((p (make-pathname :directory d :name nil :type nil :version nil
+			      :host (pathname-host a-pathname)
+			      :device (pathname-device a-pathname))))
+	(unless (si::file-exists p)
+	  (si::mkdir p #o777)))))))

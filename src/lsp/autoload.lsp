@@ -103,6 +103,9 @@ from the C language code.  NIL means \"do not create the file\"."
     (apply 'disassemble f args)))
 )
 
+(defmacro with-compilation-unit (options &rest body)
+  `(progn ,@body))
+
 ;;; Editor.
 
 (defun ed (&optional filename)
