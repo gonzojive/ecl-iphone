@@ -1,69 +1,88 @@
 <h2>News in this release (ECLS-@VERSION@)</h2>
 <pre>
-ECLS 0.4
+ECLS 0.5
 =========
 
 * Errors fixed:
 
-  - Fixnum product would overflow: (* 65536 32768) => negative number.
+  - libclos.a should be installed together with libecls.a and liblsp.a
 
-  - Bit fiddling operations with negative fixnums now work (i.e.
-    LOGAND, LOGOR, LOGBITP, etc).
+  - PROBE-FILE would not translate logical pathnames before checking for
+    file existence.
 
-  - When a PRINT-OBJECT method prints a circular structure which is itself
-    in another circular structure, the stack that keeps temporary data
-    may get deleted.
+  - In unsafe mode, inlining AREF lead to bogus code.
 
-  - Format clause "~<" now accepts any number of text segments.
+  - The order of evaluation of arguments in a PSETQ was not respected.
 
-  - Format clause "~E" should not add spurious zeros past the decimal
-    dot. I.e. (format nil "~13,6,2,7E" 3.14159) should output "
-    3141590.E-06", not "3141590.0E-06". Similar problem happened to
-    "~F", which added a traling zero even when number of decimal
-    positions was specified as zero.
+  - The compiler would not restore the value of a special variable which
+    is used in MULTIPLE-VALUE-BIND.
+
+  - The compiler produced wrong code for CATCH forms in which the tag
+    is not constant.
+
+  - The compiler produced wrong code for RETURN-FROM forms inside an
+    UNWIND-PROTECT.
+
+  - Deftype BIT-VECTOR would not expand to a vector type.
 
 * System design and portability:
 
-  - Ported to Debian Linux PPC and Cygwin.
+  - Remove function_entry_table.
 
-  - Small changes allow a static build of the executable in platforms
-    where either dlopen() does not work, or ld does not allow
-    undefined symbols in libraries.
-
-  - Remove unportable code of the type "va_list d = cs".
-
-  - Simplify gathering of &rest and &key arguments in compiled code.
-
-  - Make the interpreter stack public, with variables and functions
-    prefixed with "cl_stack*".
-
-  - Remove the Invocation History Stack, and implement it as a "linked
-    list" of frame records on top of the interpreter stack. This
-    avoids previous size limitations.
-
-  - Compile code onto the interpreter stack instead of using a stack
-    of its own.
-
-  - Use the interpreter stack to simplify the implementations of the
-    printer and of the formater.
+  - Each compiled file has an entry point whose name is either
+    init_CODE() or another name based on the name of the source file.
+    The algorithm for computing these names has been slightly changed
+    so that the entry points of ECLS's own library do not conflict with
+    user defined entry points.
 
 * Visible changes and ANSI compatibility:
 
-  - MAKE-PATHNAME now accepts all combinations denoted by ANSI. Namely,
-    (MAKE-PATHNAME :directory :wild), etc.
+  - The value of *package* is correctly set and restored while loading
+    compiled code. This way, 'ecls -eval "(print *package*)"' produces
+    the expected result #<"COMMON-LISP-USER" package>
 
-  - :UNSPECIFIC is only allowed in pathname's version and in a logical
-    pathname's device.
+  - COMPILE-FILE now outputs three values.
 
-  - MSDOS style namestrings, such as "c:/my/path/to/this/file.txt" and
-    "//c/my/path/to/this/file.txt" finally work. Beware that these
-    paths are also allowed under Unix, even though they cause errors
-    when trying to access files. Besides (EQUALP #P"c:/foo/file.txt"
-    #P"//c/path/file.txt") => NIL
+  - The value of si::*keep-definitions* determines whether the
+    interpreter keeps the source of defined functions, for later use
+    with COMPILE and DISASSEMBLE. For instance,
+	> (set si::*keep-definitions* t)
+	> (defun foo (x) (1+ x))
+	> (compile 'foo)
+	> (foo 2)
+	3
+	> (compile 'foo)
+	;;; Error ....
+    These definitions are lost once the function is compiled, hence
+    the second error message.
 
-  - (DECLARE (OPTIMIZE DEBUG)) is ignored, but no warning is printed.
+  - Reader macro '#,' has been dropped. LOAD-TIME-VALUE added to both
+    the interpreter and the compiler.
 
-  - Implemented WITH-STANDARD-IO-SYNTAX.
+  - New, undocumented implementation of documentation strings which
+    uses hash tables instead of property lists. The global variable
+    si::*keep-documentation* determines whether documentation strings
+    are stored in memory. It is possible to dump documentation strings
+    to a help file.
+
+  - New interface for building standalone programs and libraries, based
+    on the functions C:BUILD-ECLS, C:BUILD-STATIC-LIBRARY and
+    C:BUILD-SHARED-LIBRARY, all of which accept similar parameters,
+    :PROLOGUE-CODE, :EPILOGE-CODE, :LISP-FILES, and :LD-FLAGS. Exhaustive
+    documentation with examples included in the Developer's Guide.
+
+  - Symbolic's update of the MIT LOOP macro imported.
+
+  - A LET/LET* form in which the initializers for a variable have not
+    the expected type produce a warning, but the code is accepted. For
+    instance (LET (V) (DECLARE (TYPE FIXNUM V)) (SETQ V 1)) now
+    compiles.
+
+  - (SETF name), where name is a symbol, is now a valid function name in all
+    contexts. It is accepted by DEFUN, FUNCTION, FBOUNDP, FMAKUNBOUND, etc,
+    and it can be the on the function position in any form.
+
+  - New specialized arrays for (UNSIGNED-BYTE 8) and (SIGNED-BYTE 8).
 </pre>
 
 <h2>Known bugs</h2>
@@ -78,7 +97,6 @@ The most important exceptions are
 <li>#'format
 <li>#'unread-char is too lax
 <li>The CL package is too polluted
-<li>LOOP lacks some of the standard keywords, including destructuring
 <li>Support for logical pathnames is incomplete
 </ul>
 
@@ -91,7 +109,6 @@ Some other bugs which need to be fixed are:
 <li>Threads and sockets haven't been tested yet.
 <li>#'format doesn't pass the Cltl-1 tests.
 <li>Needs better support for wildcards in pathnames.
-<li>Bugs in logical operations among bignums.
 <li>Support for CLOS needs yet more optimization.
 <li>ECLS has its own pretty-printer, which does not conform ANSI.
 </ul>
