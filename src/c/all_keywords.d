@@ -83,6 +83,7 @@ const struct keyword_info all_keywords[] = {
 {&Kabsolute, "ABSOLUTE"},
 {&Krelative, "RELATIVE"},
 {&Kup, "UP"},
+{&Kunspecific, "UNSPECIFIC"},
 
 /* print.c */
 {&Kupcase, "UPCASE"},

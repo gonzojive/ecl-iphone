@@ -37,6 +37,7 @@ cl_object @':name';
 cl_object @':type';
 cl_object @':version';
 cl_object @':defaults';
+cl_object @':unspecific';
 
 cl_object @':absolute';
 cl_object @':relative';
@@ -57,18 +58,47 @@ make_pathname(cl_object host, cl_object device, cl_object directory,
 {
 	cl_object x;
 
-	if (!endp(directory) &&
-	    CAR(directory) != @':absolute' &&
-	    CAR(directory) != @':relative')
+	switch (type_of(directory)) {
+	case t_string:
+		directory = list(2, @':absolute', directory);
+		break;
+	case t_symbol:
+		if (directory == Cnil)
+			break;
+		if (directory == @':wild')
+			directory = list(2, @':absolute', @':wild-inferiors');
 		error_directory(directory);
+		break;
+	case t_cons:
+		if (CAR(directory) == @':absolute' ||
+		    CAR(directory) == @':relative')
+			break;
+	default:
+		error_directory(directory);
+
+	}
 	x = alloc_object(t_pathname);
-	x->pathname.logical = FALSE;
+	if (type_of(host) == t_string)
+		x->pathname.logical = logical_hostname_p(host);
+	else if (host == Cnil)
+		x->pathname.logical = FALSE;
+	else
+		FEerror("make-pathname: ~A is not a valid hostname", 1, host);
+	if (device != Cnil && device != @':unspecific' &&
+	    !(!x->pathname.logical && type_of(device) == t_string))
+		FEerror("make-pathname: ~A is not a valid device name", 1, device);
+	if (name != Cnil && name != @':wild' && type_of(name) != t_string)
+		FEerror("make-pathname: ~A is not a valid file name", 1, name);
+	if (type != Cnil && type != @':wild' && type_of(type) != t_string)
+		FEerror("make-pathname: ~A is not a valid file type", 1, type);
+	if (version != @':unspecific' && version != Cnil)
+		FEerror("make-pathname: version numbers not allowed", 0);
 	x->pathname.host = host;
 	x->pathname.device = device;
 	x->pathname.directory = directory;
 	x->pathname.name = name;
 	x->pathname.type = type;
-	x->pathname.version = version;
+	x->pathname.version = @':unspecific';
 	return(x);
 }
 
@@ -77,18 +107,10 @@ static cl_object
 tilde_expand(cl_object directory)
 {
 	cl_object head, prefix;
-	
+
+	/* INV: pathname is relative */
 	if (endp(directory))
 		goto RET;
-	/* If path is absolute or null, we have nothing
-	   to expand */
-	head = CAR(directory);
-	if (head == @':absolute')
-		goto RET;
-	/* If path is relative and not empty, we search
-	   for heading tilde */
-	if (head != @':relative')
-		error_directory(directory);
 	head = CADR(directory);
 	if (type_of(head) != t_string)
 		goto RET;
@@ -130,17 +152,19 @@ static cl_object
 parse_word(const char *s, char delim, int flags, cl_index start, cl_index end,
 	   cl_index *end_of_word)
 {
-	volatile cl_index i, j;
+	cl_index i, j;
+	bool wild_inferiors = FALSE;
+
 	for (i = j = start; i < end && s[i] != delim; i++) {
 		char c = s[i];
 		bool valid_char;
 		if (c == '*') {
 			if (!(flags & WORD_ALLOW_ASTERISK))
 				valid_char = FALSE; /* Asterisks not allowed in this word */
-			else if (i > start && s[i-1] == '*' && end > start + 2)
-				valid_char = FALSE; /* "**" surrounded by other characters! */
-			else
+			else {
+				wild_inferiors = (i > start && s[i-1] == '*');
 				valid_char = TRUE; /* single "*" */
+			}
 		}			
 #if 0
 		else if (flags & WORD_LOGICAL)
@@ -157,6 +181,8 @@ parse_word(const char *s, char delim, int flags, cl_index start, cl_index end,
 		*end_of_word = i+1;
 	else {
 		*end_of_word = end;
+		/* We have reached the end of the string without finding
+		   the proper delimiter */
 		if (flags & WORD_INCLUDE_DELIM) {
 			*end_of_word = start;
 			return Cnil;
@@ -174,11 +200,13 @@ parse_word(const char *s, char delim, int flags, cl_index start, cl_index end,
 		break;
 	case 2:
 		if (s[0] == '*' && s[1] == '*')
-			/* :wild-inferiors not supported in pathnames */
-			return @':error';
+			return @':wild-inferiors';
 		if (!(flags & WORD_LOGICAL) && s[0] == '.' && s[1] == '.')
 			return @':up';
 		break;
+	default:
+		if (wild_inferiors)	/* '**' surrounded by other characters */
+			return @':error';
 	}
 	return make_one(s, i-j);
 }
@@ -309,14 +337,18 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 			device = Cnil;
 	}
 	start = *ep;
-	if (start <= end - 2 && s[start] == '/' && s[start+1] == '/')
-		host = parse_word(s, '/', WORD_EMPTY_IS_NIL, start, end, ep);
-	else
+	if (start <= end - 2 && s[start] == '/' && s[start+1] == '/') {
+		host = parse_word(s, '/', WORD_EMPTY_IS_NIL, start+2, end, ep);
+		if (host != Cnil) {
+			start = *ep;
+			if (s[--start] == '/') *ep = start;
+		}
+	} else
 		host = Cnil;
 	if (host == @':error')
 		host = Cnil;
 	else if (host != Cnil) {
-		if (type_of(host) != t_string || !equal(host, default_host))
+		if (type_of(host) != t_string)
 			return Cnil;
 	}
 	path = parse_directories(s, 0, *ep, end, ep);
@@ -344,7 +376,7 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 		return Cnil;
  make_it:
 	if (*ep >= end) *ep = end;
-	path = make_pathname(host, device, path, name, type, Cnil);
+	path = make_pathname(host, device, path, name, type, @':unspecific');
 	path->pathname.logical = logical;
 	return path;
 }
@@ -395,11 +427,13 @@ cl_object
 coerce_to_file_pathname(cl_object pathname)
 {
 	pathname = coerce_to_physical_pathname(pathname);
+#ifndef cygwin
 	if (pathname->pathname.device != Cnil)
 		FEerror("Device ~S not yet supported.", 1,
 			pathname->pathname.device);
 	if (pathname->pathname.host != Cnil)
 		FEerror("Access to remote files not yet supported.", 0);
+#endif
 	return pathname;
 }
 
@@ -593,6 +627,7 @@ M:
 		FEerror("~S is an illegal pathname type.", 1, y);
 	push_c_string(buffer, ".", 1);
 	push_string(buffer, y);
+	/* INV: pathname.version is always @':unspecific' or Cnil */
 N:
 	return(copy_simple_string(cl_token));
 }
@@ -888,10 +923,36 @@ path_item_match(cl_object a, cl_object mask) {
 	return do_path_item_match(a->string.self, mask->string.self);
 }
 
+static bool
+path_list_match(cl_object a, cl_object mask) {
+	cl_object item_mask;
+	while (!endp(mask)) {
+		item_mask = CAR(mask);
+		mask = CDR(mask);
+		if (item_mask == @':wild-inferiors') {
+			if (endp(mask))
+				return TRUE;
+			while (!endp(a)) {
+				if (path_list_match(a, mask))
+					return TRUE;
+				a = CDR(a);
+			}
+			return FALSE;
+		}
+		if (endp(a))
+			return FALSE;
+		if (!path_item_match(CAR(a), item_mask))
+			return FALSE;
+		a = CDR(a);
+		mask = CDR(mask);
+	}
+	if (!endp(a))
+		return FALSE;
+}		
+
 bool
 pathname_match_p(cl_object path, cl_object mask)
 {
-	cl_object a, b;
 	path = coerce_to_pathname(path);
 	mask = coerce_to_pathname(mask);
 	if (path->pathname.logical != mask->pathname.logical)
@@ -900,19 +961,8 @@ pathname_match_p(cl_object path, cl_object mask)
 	if (!path_item_match(path->pathname.host, mask->pathname.host))
 		return FALSE;
 #endif 
-	a = path->pathname.directory;
-	b = mask->pathname.directory;
-	while (!endp(a)) {
-		if (endp(b))
-			/* Directory tree lengths do not match */
-			return FALSE;
-		if (!path_item_match(CAR(a), CAR(b)))
-			return FALSE;
-		a = CDR(a);
-		b = CDR(b);
-	}
-	if (a != b)
-		/* Directory tree lengths do not match */
+	if (!path_list_match(path->pathname.directory,
+			     path->pathname.directory))
 		return FALSE;
 	if (!path_item_match(path->pathname.name, mask->pathname.name))
 		return FALSE;
@@ -993,10 +1043,8 @@ find_wilds(cl_object l, cl_object source_item, cl_object match)
 	const char *a, *b;
 	cl_index i, j, k, ia, ib;
 
-	if (match == @':wild' || match == Cnil)
+	if (match == @':wild')
 		return CONS(source_item, Cnil);
-	if (match == @':wild-inferiors')
-		FEerror(":wild-inferiors not yet supported", 0);
 	if (type_of(match) != t_string || type_of(source_item) != t_string) {
 		if (match != source_item)
 			return @':error';
@@ -1024,6 +1072,27 @@ find_wilds(cl_object l, cl_object source_item, cl_object match)
 }
 
 static cl_object
+find_list_wilds(cl_object a, cl_object b)
+{
+	cl_object l;
+
+	for (l = Cnil; !endp(b); a=CDR(a), b=CDR(b)) {
+		if (CAR(b) == @':wild-inferiors') {
+			cl_object l2 = Cnil;
+			b = CDR(b);
+			while (!path_list_match(a, b)) {
+				l2 = CONS(CAR(a),l2);
+				a = CDR(a);
+			}
+			l = CONS(l2, l);
+		} else {
+			l = find_wilds(l, CAR(a), CAR(b));
+		}
+	}
+	return @nreconc(2, l, Cnil);
+}		
+
+static cl_object
 copy_wildcards(cl_object *wilds_list, cl_object template)
 {
 	char *s;
@@ -1031,13 +1100,15 @@ copy_wildcards(cl_object *wilds_list, cl_object template)
 	bool new_string;
 	cl_object wilds = *wilds_list;
 
-	if (template == @':wild' || template == Cnil) {
+	if (template == @':wild') {
 		if (endp(wilds))
 			return @':error';
 		template = CAR(wilds);
 		*wilds_list = CDR(wilds);
 		return template;
 	}
+	if (template == @':wild-inferiors')
+		return @':error';
 	if (type_of(template) != t_string)
 		return template;
 
@@ -1067,10 +1138,35 @@ copy_wildcards(cl_object *wilds_list, cl_object template)
 	return template;
 }
 
+static cl_object
+copy_list_wildcards(cl_object *wilds, cl_object to)
+{
+	cl_object l = Cnil;
+
+	while (!endp(to)) {
+		cl_object d, mask = CAR(to);
+		if (mask == @':wild-inferiors') {
+			if (CONSP(CAR(*wilds)))
+				l = append(CAR(*wilds), l);
+			else
+				return @':error';
+			*wilds = CDR(*wilds);
+		} else {
+			d = copy_wildcards(wilds, CAR(to));
+			if (d == @':error')
+				return d;
+			l = CONS(d, l);
+		}
+		to = CDR(to);
+	}
+	if (CONSP(l))
+		l = @nreconc(2, l, Cnil);
+}
+
 cl_object
 translate_pathname(cl_object source, cl_object from, cl_object to)
 {
-	cl_object wilds, out, a, b, c, d, *pc;
+	cl_object wilds, out, d, *pc;
 
 	source = coerce_to_pathname(source);
 	from = coerce_to_pathname(from);
@@ -1092,40 +1188,28 @@ translate_pathname(cl_object source, cl_object from, cl_object to)
 	out->pathname.device = to->pathname.device;
 
 	/* Match directories */
-	wilds = Cnil;
-	a = source->pathname.directory;
-	b = from->pathname.directory;
-	while (!endp(a) && !endp(b)) {
-		wilds = find_wilds(wilds, CAR(a), CAR(b));
-		if (wilds == @':error') goto error;
-		a = CDR(a);
-		b = CDR(b);
-	}
-	@nreconc(2, wilds, Cnil);
-	if (a != Cnil || b != Cnil)
-		goto error;
-	for (c = Cnil, pc = &c, b = to->pathname.directory; !endp(b); b = CDR(b)) {
-		d = copy_wildcards(&wilds, CAR(b));
-		if (d == @':error') goto error2;
-		*pc = CONS(d, Cnil);
-		pc = &CDR(*pc);
-	}
-	if (wilds != Cnil)
-		goto error2;
-	out->pathname.directory = c;
+	wilds = find_list_wilds(source->pathname.directory,
+				from->pathname.directory);
+	if (wilds == @':error')	goto error;
+	d = copy_list_wildcards(&wilds, to->pathname.directory);
+	if (d == @':error') goto error;
+	if (wilds != Cnil) goto error2;
+	out->pathname.directory = d;
 
 	/* Match name */
 	wilds = find_wilds(Cnil, source->pathname.name, from->pathname.name);
 	if (wilds == @':error') goto error2;
 	d = copy_wildcards(&wilds, to->pathname.name);
-	if (d == @':error' || wilds != Cnil) goto error2;
+	if (d == @':error') goto error;
+	if (wilds != Cnil) goto error2;
 	out->pathname.name = d;
 
 	/* Match type */
 	wilds = find_wilds(Cnil, source->pathname.type, from->pathname.type);
 	if (wilds == @':error') goto error2;
 	d = copy_wildcards(&wilds, to->pathname.type);
-	if (d == @':error' || wilds != Cnil) goto error2;
+	if (d == @':error') goto error;
+	if (wilds != Cnil) goto error2;
 	out->pathname.type = d;
 
 	/* Match version */
@@ -1133,7 +1217,8 @@ translate_pathname(cl_object source, cl_object from, cl_object to)
 	wilds = find_wilds(Cnil, source->pathname.version, from->pathname.version);
 	if (wilds == @':error') goto error2;
 	d = copy_wildcards(&wilds, to->pathname.version);
-	if (d == @':error' || wilds != Cnil) goto error2;
+	if (d == @':error') goto error;
+	if (wilds != Cnil) goto error2;
 	out->pathname.version = d;
 #else
 	out->pathname.version = Cnil;

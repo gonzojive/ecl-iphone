@@ -642,6 +642,7 @@ extern cl_object Kabsolute;
 extern cl_object Krelative;
 extern cl_object Kup;
 extern cl_object Kper;
+extern cl_object Kunspecific;
 extern cl_object clLpathname _ARGS((int narg, cl_object name));
 extern cl_object clLparse_namestring _ARGS((int narg, cl_object thing, ...));
 extern cl_object clLparse_logical_namestring _ARGS((int narg, cl_object thing, ...));
