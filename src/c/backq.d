@@ -32,6 +32,8 @@ int backq_level;
 #define	APPEND	5
 #define	NCONC	6
 
+extern int _cl_backq_car(cl_object *px);
+
 static cl_object
 kwote(cl_object x)
 {
@@ -44,7 +46,7 @@ kwote(cl_object x)
 }
 
 /*
-	Backq_cdr(&x) puts result into x and returns one of
+	_cl_backq_cdr(&x) puts result into x and returns one of
 
 		QUOTE		the form should be quoted
 		EVAL		the form should be evaluated
@@ -53,8 +55,8 @@ kwote(cl_object x)
 		APPEND		the form should be applied to APPEND
 		NCONC		the form should be applied to NCONC
 */
-int
-backq_cdr(cl_object *px)
+static int
+_cl_backq_cdr(cl_object *px)
 {
 	cl_object x = *px;
 	int a, d;
@@ -70,8 +72,8 @@ backq_cdr(cl_object *px)
 	if (CAR(x) == @'si::,@' || CAR(x) == @'si::,.')
 		FEerror(",@@ or ,. has appeared in an illegal position.", 0);
 	{ cl_object ax, dx;
-	  a = backq_car(&CAR(x));
-	  d = backq_cdr(&CDR(x));
+	  a = _cl_backq_car(&CAR(x));
+	  d = _cl_backq_cdr(&CDR(x));
 	  ax = CAR(x); dx = CDR(x);
 	  if (d == QUOTE)
 		switch (a) {
@@ -175,7 +177,7 @@ backq_cdr(cl_object *px)
 }
 
 /*
-	Backq_car(&x) puts result into x and returns one of
+	_cl_backq_car(&x) puts result into x and returns one of
 
 		QUOTE		the form should be quoted
 		EVAL		the form should be evaluated
@@ -185,7 +187,7 @@ backq_cdr(cl_object *px)
 				into the outer form
 */
 int
-backq_car(cl_object *px)
+_cl_backq_car(cl_object *px)
 {
 	cl_object x = *px;
 	int d;
@@ -206,7 +208,7 @@ backq_car(cl_object *px)
 		*px = CDR(x);
 		return(NCONC);
 	}
-	d = backq_cdr(px);
+	d = _cl_backq_cdr(px);
 	switch (d) {
 	case QUOTE:
 	case EVAL:
@@ -238,12 +240,12 @@ backq_car(cl_object *px)
 	return(EVAL);
 }
 
-cl_object
+static cl_object
 backq(cl_object x)
 {
 	int a;
 
-	a = backq_car(&x);
+	a = _cl_backq_car(&x);
 	if (a == APPEND || a == NCONC)
 		FEerror(",@@ or ,. has appeared in an illegal position.", 0);
 	if (a == QUOTE)

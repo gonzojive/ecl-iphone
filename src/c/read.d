@@ -32,8 +32,6 @@ bool preserving_whitespace_flag;
 bool escape_flag;
 cl_object delimiting_char;
 bool detect_eos_flag;
-bool in_list_flag;
-bool dot_flag;
 cl_object sharp_eq_context;
 #endif /* THREADS */
 
@@ -84,24 +82,6 @@ peek_char(bool pt, cl_object in)
 	return CODE_CHAR(c);
 }
 
-static cl_object
-read_object_recursive(cl_object in)
-{
-	volatile cl_object x;
-	bool e;
-
-	if (frs_push(FRS_PROTECT, Cnil))
-		e = TRUE;
-	else {
-		x = read_object(in);
-		e = FALSE;
-	}
-	frs_pop();
-
-	if (e) unwind(nlj_fr, nlj_tag);
-	return(x);
-}
-
 static cl_object patch_sharp(cl_object x);
 
 cl_object
@@ -120,10 +100,10 @@ read_object_non_recursive(cl_object in)
 	if (frs_push(FRS_PROTECT, Cnil))
 		e = TRUE;
 	else {
-		e = FALSE;
 		x = read_object(in);
 		if (!Null(sharp_eq_context))
 			x = patch_sharp(x);
+		e = FALSE;
 	}
 	frs_pop();
 
@@ -146,7 +126,7 @@ read_object(cl_object in)
 	cl_object old_delimiter, p;
 	cl_index length, i, colon;
 	int colon_type, intern_flag;
-	bool df, ilf;
+	bool df;
 	cl_object rtbl = cl_current_readtable();
 
 	cs_check(in);
@@ -155,9 +135,6 @@ read_object(cl_object in)
 	delimiting_char = OBJNULL;
 	df = detect_eos_flag;
 	detect_eos_flag = FALSE;
-	ilf = in_list_flag;
-	in_list_flag = FALSE;
-	dot_flag = FALSE;
 
 BEGIN:
 	/* Beppe: */
@@ -239,9 +216,8 @@ BEGIN:
 	if (read_suppress)
 		return(Cnil);
 
-	if (ilf && !escape_flag && length == 1 && cl_token->string.self[0] == '.') {
-		dot_flag = TRUE;
-		return(Cnil);
+	if (!escape_flag && length == 1 && cl_token->string.self[0] == '.') {
+		return @'si::.';
 	} else if (!escape_flag && length > 0) {
 		for (i = 0;  i < length;  i++)
 			if (cl_token->string.self[i] != '.')
@@ -552,35 +528,33 @@ parse_integer(const char *s, cl_index end, cl_index *ep, int radix)
 
 static
 @(defun "left_parenthesis_reader" (in character)
-  cl_object x, y;
-  cl_object *p;
-  int c;
-  cl_object rtbl = cl_current_readtable();
+	cl_object x, y;
+	cl_object *p;
+	int c;
+	cl_object rtbl = cl_current_readtable();
 @
-  y = Cnil;
-  for (p = &y ; ; p = &(CDR(*p))) {
-    delimiting_char = CODE_CHAR(')');
-    in_list_flag = TRUE;
-    x = read_object(in);
-    if (x == OBJNULL)
-      break;
-    if (dot_flag) {
-      if (p == &y)
-	FEerror("A dot appeared after a left parenthesis.", 0);
-      in_list_flag = TRUE;
-      *p = read_object(in);
-      if (dot_flag)
-	FEerror("Two dots appeared consecutively.", 0);
-      c = readc_stream(in);
-      while (cat(rtbl, c) == cat_whitespace)
-	c = readc_stream(in);
-      if (c != ')')
-	FEerror("A dot appeared before a right parenthesis.", 0);
-      break;
-    }
-    *p = CONS(x, Cnil);
-  }
-  @(return y)
+	y = Cnil;
+	for (p = &y ; ; p = &(CDR(*p))) {
+		delimiting_char = CODE_CHAR(')');
+		x = read_object(in);
+		if (x == OBJNULL)
+			break;
+		if (x == @'si::.') {
+			if (p == &y)
+				FEerror("A dot appeared after a left parenthesis.", 0);
+			*p = read_object(in);
+			if (*p == @'si::.')
+				FEerror("Two dots appeared consecutively.", 0);
+			c = readc_stream(in);
+			while (cat(rtbl, c) == cat_whitespace)
+				c = readc_stream(in);
+			if (c != ')')
+				FEerror("A dot appeared before a right parenthesis.", 0);
+			break;
+		}
+		*p = CONS(x, Cnil);
+	}
+	@(return y)
 @)
 /*
 	read_string(delim, in) reads
@@ -783,6 +757,7 @@ static
 	cl_index dim, dimcount, i, a;
 	cl_index sp = cl_stack_index();
 	cl_object x, last;
+	extern _cl_backq_car(cl_object *);
 @
 	if (Null(d) || read_suppress)
 		fixed_size = FALSE;
@@ -793,7 +768,7 @@ static
 	if (backq_level > 0) {
 		unreadc_stream('(', in);
 		x = read_object(in);
-		a = backq_car(&x);
+		a = _cl_backq_car(&x);
 		if (a == APPEND || a == NCONC)
 		  FEerror(",at or ,. has appeared in an illegal position.", 0);
 		if (a == QUOTE) {
@@ -805,11 +780,11 @@ static
 			      CONS(@'quote', CONS(@'vector', Cnil)), x))
 	}
 	for (dimcount = 0 ;; dimcount++) {
-	  delimiting_char = CODE_CHAR(')');
-	  x = read_object(in);
-	  if (x == OBJNULL)
-	    break;
-	  cl_stack_push(x);
+		delimiting_char = CODE_CHAR(')');
+		x = read_object(in);
+		if (x == OBJNULL)
+			break;
+		cl_stack_push(x);
 	}
 L:
 	if (fixed_size) {
@@ -1330,25 +1305,32 @@ cl_current_read_default_float_format(void)
 	
 
 
+static cl_object
+stream_or_default_input(cl_object stream)
+{
+	if (Null(stream))
+		return SYM_VAL(@'*standard-input*');
+	if (stream == Ct)
+		return SYM_VAL(@'*terminal-io*');
+	return stream;
+}
+
 @(defun read (&optional (strm Cnil)
 			(eof_errorp Ct)
 			eof_value
 			recursivep
 	      &aux x)
 @
-	if (Null(strm))
-		strm = symbol_value(@'*standard_input*');
-	else if (strm == Ct)
-		strm = symbol_value(@'*terminal_io*');
-	if (Null(recursivep))
-		preserving_whitespace_flag = FALSE;
+	strm = stream_or_default_input(strm);
 	detect_eos_flag = TRUE;
-	if (Null(recursivep))
+	if (Null(recursivep)) {
+		preserving_whitespace_flag = FALSE;
 		x = read_object_non_recursive(strm);
-	else
-		x = read_object_recursive(strm);
+	} else {
+		x = read_object(strm);
+	}
 	if (x == OBJNULL) {
-		if (Null(eof_errorp) && Null(recursivep))
+		if (Null(eof_errorp))
 			@(return eof_value)
 		FEend_of_file(strm);
 	}
@@ -1363,28 +1345,19 @@ cl_current_read_default_float_format(void)
 	cl_object x, rtbl = cl_current_readtable();
 	int c;
 @
-	if (Null(strm))
-		strm = symbol_value(@'*standard_input*');
-	else if (strm == Ct)
-		strm = symbol_value(@'*terminal_io*');
-	while (!stream_at_end(strm)) {
-		c = readc_stream(strm);
-		if (cat(rtbl, c) != cat_whitespace) {
-			unreadc_stream(c, strm);
-			goto READ;
-		}
-	}
-	if (Null(eof_errorp) && Null(recursivep))
-		@(return eof_value)
-	FEend_of_file(strm);
-
-READ:
-	if (Null(recursivep))
+	strm = stream_or_default_input(strm);
+	detect_eos_flag = TRUE;
+	if (Null(recursivep)) {
 		preserving_whitespace_flag = TRUE;
-	if (Null(recursivep))
 		x = read_object_non_recursive(strm);
-	else
-		x = read_object_recursive(strm);
+	} else {
+		x = read_object(strm);
+	}
+	if (x == OBJNULL) {
+		if (Null(eof_errorp))
+			@(return eof_value)
+		FEend_of_file(strm);
+	}
 	@(return x)
 @)
 
@@ -1397,11 +1370,7 @@ READ:
 @
 	if (!CHARACTERP(d))
 		FEtype_error_character(d);
-	if (Null(strm))
-		strm = symbol_value(@'*standard_input*');
-	else if (strm == Ct)
-		strm = symbol_value(@'*terminal_io*');
-	assert_type_stream(strm);
+	strm = stream_or_default_input(strm);
 	if (Null(recursivep)) {
 		old_sharp_eq_context = sharp_eq_context;
 		old_backq_level = backq_level;
@@ -1417,7 +1386,7 @@ READ:
 	preserving_whitespace_flag = FALSE;	/*  necessary?  */
 	for (;;) {
 		delimiting_char = d;
-		x = read_object_recursive(strm);
+		x = read_object(strm);
 		if (x == OBJNULL)
 			break;
 		*p = CONS(x, Cnil);
@@ -1440,10 +1409,7 @@ READ:
 	int c;
 	cl_object eof;
 @
-	if (Null(strm))
-		strm = symbol_value(@'*standard_input*');
-	else if (strm == Ct)
-		strm = symbol_value(@'*terminal_io*');
+	strm = stream_or_default_input(strm);
 	if (stream_at_end(strm)) {
 		if (Null(eof_errorp) && Null(recursivep))
 			@(return eof_value Ct)
@@ -1473,10 +1439,7 @@ READ:
 
 @(defun read_char (&optional (strm Cnil) (eof_errorp Ct) eof_value recursivep)
 @
-        if (Null(strm))
-	    strm = symbol_value(@'*standard_input*');
-	else if (strm == Ct)
-	    strm = symbol_value(@'*terminal_io*');
+	strm = stream_or_default_input(strm);
 	if (stream_at_end(strm)) {
 		if (Null(eof_errorp) && Null(recursivep))
 			@(return eof_value)
@@ -1489,10 +1452,7 @@ READ:
 @(defun unread_char (c &optional (strm Cnil))
 @
 	/* INV: unread_char() checks the type `c' */
-	if (Null(strm))
-		strm = symbol_value(@'*standard_input*');
-	else if (strm == Ct)
-		strm = symbol_value(@'*terminal_io*');
+	strm = stream_or_default_input(strm);
 	unread_char(c, strm);
 	@(return Cnil)
 @)
@@ -1501,10 +1461,7 @@ READ:
 	int c;
 	cl_object rtbl = cl_current_readtable();
 @
-	if (Null(strm))
-		strm = symbol_value(@'*standard_input*');
-	else if (strm == Ct)
-		strm = symbol_value(@'*terminal_io*');
+	strm = stream_or_default_input(strm);
 	if (Null(peek_type)) {
 		if (stream_at_end(strm)) {
 			if (Null(eof_errorp) && Null(recursivep))
@@ -1545,20 +1502,13 @@ READ:
 
 @(defun listen (&optional (strm Cnil))
 @
-	if (Null(strm))
-		strm = symbol_value(@'*standard_input*');
-	else if (strm == Ct)
-		strm = symbol_value(@'*terminal_io*');
+	strm = stream_or_default_input(strm);
 	@(return (listen_stream(strm)? Ct : Cnil))
 @)
 
 @(defun read_char_no_hang (&optional (strm Cnil) (eof_errorp Ct) eof_value recursivep)
 @
-	if (Null(strm))
-		strm = symbol_value(@'*standard_input*');
-	else if (strm == Ct)
-		strm = symbol_value(@'*terminal_io*');
-	assert_type_stream(strm);
+	strm = stream_or_default_input(strm);
 #if 0
 	if (!listen_stream(strm))
 		/* Incomplete! */
@@ -1579,10 +1529,7 @@ READ:
 
 @(defun clear_input (&optional (strm Cnil))
 @
-	if (Null(strm))
-		strm = symbol_value(@'*standard_input*');
-	else if (strm == Ct)
-		strm = symbol_value(@'*terminal_io*');
+	strm = stream_or_default_input(strm);
 	clear_input_stream(strm);
 	@(return Cnil)
 @)
@@ -1957,8 +1904,6 @@ init_read(void)
 	register_root(&delimiting_char);
 
 	detect_eos_flag = FALSE;
-	in_list_flag = FALSE;
-	dot_flag = FALSE;
 }
 
 /*
@@ -1982,7 +1927,6 @@ read_VV(cl_object block, void *entry)
 	cl_object in;
 	entry_point_ptr entry_point = (entry_point_ptr)entry;
 	cl_object *VV;
-	bds_ptr old_bds_top = bds_top;
 
 	if (block == NULL)
 		block = cl_alloc_object(t_codeblock);
@@ -1996,10 +1940,6 @@ read_VV(cl_object block, void *entry)
 	VV = block->cblock.data;
 #endif
 
-	bds_bind(@'*read-base*', MAKE_FIXNUM(10));
-	bds_bind(@'*read-default-float-format*', @'single-float');
-	bds_bind(@'*read-suppress*', Cnil);
-
 	in = OBJNULL;
 	if (frs_push(FRS_PROTECT, Cnil))
 		e = TRUE;
@@ -2007,6 +1947,9 @@ read_VV(cl_object block, void *entry)
 		if (len == 0) goto NO_DATA;
 		in=make_string_input_stream(make_constant_string(block->cblock.data_text),
 					    0, block->cblock.data_text_size);
+		bds_bind(@'*read-base*', MAKE_FIXNUM(10));
+		bds_bind(@'*read-default-float-format*', @'single-float');
+		bds_bind(@'*read-suppress*', Cnil);
 		bds_bind(@'*package*', lisp_package);
 		bds_bind(@'*readtable*', standard_readtable);
 		bds_bind(@'si::*read-vv-block*', block);
@@ -2016,9 +1959,7 @@ read_VV(cl_object block, void *entry)
 				break;
 			VV[i] = x;
 		}
-		bds_unwind1;
-		bds_unwind1;
-		bds_unwind1;
+		bds_unwind_n(6);
 		if (i < len)
 			FEerror("Not enough data while loading binary file",0);
 	NO_DATA:
@@ -2029,7 +1970,6 @@ read_VV(cl_object block, void *entry)
 	frs_pop();
 	if (in != OBJNULL)
 		close_stream(in, 0);
-	bds_unwind(old_bds_top);
 
 	if (e) unwind(nlj_fr, nlj_tag);
 }

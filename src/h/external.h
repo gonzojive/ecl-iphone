@@ -84,9 +84,6 @@ extern void init_assignment(void);
 
 /* backq.c */
 
-extern int backq_cdr(cl_object *px);
-extern int backq_car(cl_object *px);
-extern cl_object backq(cl_object x);
 extern void init_backq(void);
 
 
@@ -661,8 +658,6 @@ extern bool preserving_whitespace_flag;
 extern bool escape_flag;
 extern cl_object delimiting_char;
 extern bool detect_eos_flag;
-extern bool in_list_flag;
-extern bool dot_flag;
 extern cl_object sharp_eq_context;
 #endif
 extern cl_object interactive_readc(cl_object stream);

@@ -952,6 +952,35 @@ ECL 0.6
 
   - *PRINT-CIRCLE* defaults to NIL.
 
+ECL 0.6 (bugfix release)
+========================
+
+* Errors fixed:
+
+  - When installing, ECL would not build all required directories.
+
+  - Symbol BUILD-PROGRAM should be exported from package C.
+
+* System design:
+
+  - Global variables READsuppress, READdefault_float_format,
+    READtable, and READbase have been removed. The corresponding
+    special variables are used instead.
+
+  - No need for function read_object_recursive(), since read_object()
+    is equivalent to it.
+
+  - Changed the algorithm of the list reader. A dot which is not
+    escaped is read as a symbol SI::. which is recognized by
+    LEFT-PARENTHESIS-READER. This avoids using global variables
+    "in_list_flag" and "dot_flag".
+
+* ANSI compatibility:
+
+  - READ and READ-PRESERVING-WHITESPACE behave the same when
+    RECURSIVE-P is NIL. Furthermore, EOF is detected when EOF-ERROR-P
+    is true, regardless of the value of RECURSIVE-P.
+
 TODO:
 =====
 
