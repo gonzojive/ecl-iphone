@@ -32,6 +32,7 @@
 
 
 ;;; Some DEFTYPE definitions.
+(deftype boolean () `(member nil t))
 (deftype fixnum ()
   `(INTEGER ,most-negative-fixnum ,most-positive-fixnum))
 (deftype real (&rest foo) '(OR RATIONAL FLOAT))
