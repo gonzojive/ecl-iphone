@@ -1872,14 +1872,16 @@ read_VV(cl_object block, void *entry)
 	NO_DATA:
 		/* Execute top-level code */
 		(*entry_point)(MAKE_FIXNUM(0));
-		if (ecl_packages_to_be_created != Cnil) {
-			CEerror("The following packages were referenced in a~"
-				"compiled file, but they have not been created: ~A",
-				1, ecl_packages_to_be_created);
-		}
+		x = ecl_packages_to_be_created;
+		loop_for_on(x) {
+			if (!member(x, old_eptbc)) {
+				CEerror("The following package was referenced in a~"
+				"compiled file, but has not been created: ~A",
+				2, block->cblock.name, CAR(x));
+			}
+		} end_loop_for_on;
 		bds_unwind1;
 	} CL_UNWIND_PROTECT_EXIT {
-		ecl_packages_to_be_created = old_eptbc;
 		if (in != OBJNULL)
 			close_stream(in, 0);
 	} CL_UNWIND_PROTECT_END;
