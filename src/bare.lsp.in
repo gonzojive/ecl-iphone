@@ -8,9 +8,9 @@
 ;;; * By redefining "SYS:" ECL will be able to
 ;;;   find headers and libraries in the build directory.
 ;;;
-(si::pathname-translations "SRC" `(("**;*.*" "@true_srcdir@/**/*.*")))
-(si::pathname-translations "BUILD" `(("**;*.*" "@true_builddir@/**/*.*")))
-(si::pathname-translations "SYS" '(("**;*.*" "@true_builddir@/**/*.*")))
+(si::pathname-translations "SRC" `(("**;*.*.*" "@true_srcdir@/**/*.*")))
+(si::pathname-translations "BUILD" `(("**;*.*.*" "@true_builddir@/**/*.*")))
+(si::pathname-translations "SYS" '(("**;*.*.*" "@true_builddir@/**/*.*")))
 
 ;;;
 ;;; * Set ourselves in the 'SYSTEM package

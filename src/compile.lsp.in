@@ -94,7 +94,7 @@ cd ..; rm -rf tmp/*'")))
 ;;;
 (proclaim '(optimize (safety 2) (space 3)))
 
-(si::pathname-translations "SYS" '(("**;*.*" "@ecldir@/**/*.*")))
+(si::pathname-translations "SYS" '(("**;*.*.*" "@ecldir@/**/*.*")))
 
 #+(or (not stage1) WANTS-CMP)
 (let ((objects (compile-if-old "build:cmp;" +cmp-module-files+

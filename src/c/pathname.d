@@ -472,8 +472,8 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 			 WORD_EMPTY_IS_NIL, *ep, end, ep);
 	if (aux == @':error') {
 		return Cnil;
-	} else if (aux == Cnil) {
-		version = Cnil;
+	} else if (SYMBOLP(aux)) {
+		version = aux;
 	} else {
 		version = cl_parse_integer(3, aux, @':junk-allowed', Ct);
 		if (cl_integerp(version) != Cnil && number_plusp(version) &&
@@ -748,8 +748,13 @@ merge_pathnames(cl_object path, cl_object defaults, cl_object default_version)
 		name = defaults->pathname.name;
 	if (Null(type = path->pathname.type))
 		type = defaults->pathname.type;
-	if (Null(version = path->pathname.version))
-		version = defaults->pathname.version;
+	version = path->pathname.version;
+	if (Null(path->pathname.name)) {
+		if (Null(version))
+			version = defaults->pathname.version;
+	}
+	if (Null(version))
+		version = default_version;
 	/*
 		In this implementation, version is not considered
 	*/

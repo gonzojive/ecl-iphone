@@ -1011,6 +1011,7 @@ extern cl_object cl_make_pathname _ARGS((int narg, ...));
 extern cl_object cl_enough_namestring _ARGS((int narg, cl_object path, ...));
 extern cl_object si_pathname_translations _ARGS((int narg, cl_object host, ...));
 extern cl_object si_default_pathname_defaults(void);
+extern cl_object cl_wild_pathname_p _ARGS((int narg, cl_object pathname, ...));
 
 extern cl_object make_pathname(cl_object host, cl_object device, cl_object directory, cl_object name, cl_object type, cl_object version);
 extern cl_object parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep, cl_object default_host);
