@@ -62,8 +62,13 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
  * Array limits
  */
 #define	ARANKLIM	64		/*  array rank limit  		*/
+#ifdef GBC_BOEHM
+#define	ADIMLIM		@CL_FIXNUM_MAX@	/*  array dimension limit	*/
+#define	ATOTLIM		@CL_FIXNUM_MAX@	/*  array total limit		*/
+#else
 #define	ADIMLIM		16*1024*1024	/*  array dimension limit	*/
 #define	ATOTLIM		16*1024*1024	/*  array total limit		*/
+#endif
 
 /*
  * Function limits.
