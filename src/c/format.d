@@ -174,6 +174,7 @@ fmt_advance(format_stack fmt)
 static void
 fmt_set_arg_list(format_stack fmt, cl_object l)
 {
+	assert_type_proper_list(l);
 	fmt->current = fmt->args = cl_copy_list(l);
 }
 
