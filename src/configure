@@ -4076,7 +4076,7 @@ TARGETS="ecl${EXEEXT}"
 LIBRARIES=""
 LSP_LIBRARIES="libecl.a"
 SUBDIR=c
-CLIBS="-lecl ${CLIBS} -lgmp -lm"
+CLIBS="${CLIBS} -lgmp -lm"
 if test ${boehm} = "no" ; then
   EXTRA_OBJS="${EXTRA_OBJS} alloc.o gbc.o"
 else
@@ -4087,7 +4087,6 @@ else
   else
     BOEHM_HEADERS=""
   fi
-  CLIBS="-lgc ${CLIBS}"
   EXTRA_OBJS="${EXTRA_OBJS} alloc_2.o"
   cat >>confdefs.h <<\_ACEOF
 #define GBC_BOEHM 1
@@ -4099,8 +4098,9 @@ if test ${shared} = "yes"; then
 #define ENABLE_DLOPEN 1
 _ACEOF
 
-  LSP_LIBRARIES="libecl.so"
-  LDFLAGS="${LDRPATH} ${LDFLAGS}"
+  LSP_LIBRARIES="${LSP_LIBRARIES} libecl.so"
+else
+  LDRPATH='~*'
 fi
 if test ${local_gmp} = "no" ; then
   LIBRARIES="${LIBRARIES} libgmp.a"

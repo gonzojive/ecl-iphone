@@ -180,6 +180,8 @@ fi
 if test ${shared} = "yes"; then
   AC_DEFINE(ENABLE_DLOPEN)
   LSP_LIBRARIES="${LSP_LIBRARIES} libecl.so"
+else
+  LDRPATH='~*'
 fi
 if test ${local_gmp} = "no" ; then
   LIBRARIES="${LIBRARIES} libgmp.a"
