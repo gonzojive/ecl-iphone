@@ -1798,7 +1798,9 @@ ECL 0.9d
     MAKE-INSTANCES-OBSOLETE.
 
   - There is support for the :CASE argument in all pathname functions
-    that require it (Contributed by Julian Stecklina).
+    that require it (Contributed by Julian Stecklina). The function
+    PARSE-NAMESTRING now handles the optional host and
+    default-pathname arguments properly.
 
 TODO:
 =====

@@ -434,8 +434,6 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 	if (default_host != Cnil) {
 		if (host == Cnil || host == @':error')
 			host = default_host;
-		else if (!equal(default_host, host))
-			return Cnil;
 	}
 	if (!logical_hostname_p(host))
 		goto physical;
@@ -520,20 +518,13 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 cl_object
 cl_pathname(cl_object x)
 {
-	cl_object y;
-	cl_index e;
-
 L:
 	switch (type_of(x)) {
 	case t_string:
-                /* !!!!! Bug Fix. NLG */
-		y = parse_namestring(x->string.self, 0, x->string.fillp, &e,Cnil);
-		if (y == Cnil || e != x->string.fillp)
-		  FEerror("~S is not a valid pathname string", 1, x);
-		return1(y);
+		x = cl_parse_namestring(1, x);
 
 	case t_pathname:
-		return1(x);
+		break;
 
 	case t_stream:
 		switch ((enum ecl_smmode)x->stream.mode) {
@@ -556,8 +547,11 @@ L:
 			/* Fall through to error message */
 		}
 	default:
-		FEerror("~S cannot be coerced to a pathname.", 1, x);
+		FEwrong_type_argument(cl_list(4, @'or', @'file-stream',
+					      @'string', @'pathname'),
+				      x);
 	}
+	@(return x)
 }
 
 cl_object
@@ -566,7 +560,7 @@ cl_logical_pathname(cl_object x)
 	x = cl_pathname(x);
 	if (!x->pathname.logical)
 		FEerror("~S cannot be coerced to a logical pathname.", 1, x);
-	return x;
+	@(return x);
 }
 
 /* FIXME! WILD-PATHNAME-P is missing! */
@@ -627,15 +621,7 @@ merge_pathnames(cl_object path, cl_object defaults, cl_object default_version)
 	cl_object host, device, directory, name, type, version;
 
 	defaults = cl_pathname(defaults);
-	if (type_of(path) == t_string) {
-		cl_index foo;
-		cl_object aux = parse_namestring(path->string.self, 0,
-						 path->string.fillp, &foo,
-						 default_version->pathname.host);
-		if (aux != Cnil) path = aux;
-	}
-	if (type_of(path) != t_pathname)
-		path = cl_pathname(path);
+	path = cl_parse_namestring(1, path, Cnil, defaults);
 	if (Null(path->pathname.host))
 		host = defaults->pathname.host;
 	else
@@ -831,63 +817,37 @@ L:
 	&o host
 	   (defaults symbol_value(@'*default-pathname-defaults*'))
 	&k (start MAKE_FIXNUM(0)) end junk_allowed
-	&a x y)
+	&a output)
 	cl_index s, e, ee;
 @
-	/* defaults is ignored */
-	x = thing;
-L:
-	switch (type_of(x)) {
-	case t_string:
-		get_string_start_end(x, start, end, &s, &e);
-		y = parse_namestring(x->string.self, s, e - s, &ee, host);
-		if (Null(junk_allowed)) {
-			if (y == Cnil || ee != e - s)
-				FEerror("Cannot parse the namestring ~S~%\nfrom ~S to ~S.",
-					3, x, start, end);
-		} else {
-			if (y == Cnil)
-				@(return Cnil MAKE_FIXNUM(s + ee))
-		}
-		if (logical_hostname_p(host) && y != Cnil && !y->pathname.logical) {
-			if (Null(junk_allowed))
-				FEerror("A logical pathname was expected instead of ~S", 1, thing);
-			else
-				@(return Cnil MAKE_FIXNUM(s + ee));
-		}
-		start = MAKE_FIXNUM(s + ee);
-		break;
-
-	case t_pathname:
-		y = x;
-		break;
-
-	case t_stream:
-		switch ((enum ecl_smmode)x->stream.mode) {
-		case smm_input:
-		case smm_output:
-		case smm_probe:
-		case smm_io:
-			x = x->stream.object1;
-			/*
-				The file was stored in stream.object1.
-				See open.
-			*/
-			goto L;
-
-		case smm_synonym:
-			x = symbol_value(x->stream.object0);
-			goto L;
-
-		default:
-			goto CANNOT_PARSE;
-		}
-
-	default:
-	CANNOT_PARSE:
-		FEerror("Object ~S does not contain a valid namestring.", 1, x);
+	if (type_of(defaults) != t_pathname) {
+		FEwrong_type_argument(@'pathname', defaults);
 	}
-	@(return y start)
+	if (host != Cnil) {
+		host = cl_string(host);
+	}
+	if (type_of(thing) != t_string) {
+		output = cl_pathname(thing);
+	} else {
+		get_string_start_end(thing, start, end, &s, &e);
+		output = parse_namestring(thing->string.self, s, e - s, &ee,
+					  host == Cnil? defaults->pathname.host : host);
+		start = MAKE_FIXNUM(s + ee);
+		if (output == Cnil || ee != e - s) {
+			if (Null(junk_allowed)) {
+				FEparse_error("Cannot parse the namestring ~S~%"
+					      "from ~S to ~S.", Cnil,
+					      3, thing, start, end);
+			}
+			goto OUTPUT;
+		}
+	}
+	if (host != Cnil && output->pathname.host != host) {
+		FEerror("The pathname ~S does not contain the required host ~S.",
+			1, thing, host);
+	}
+  OUTPUT:
+	@(return output start)
 @)
 
 @(defun merge_pathnames (path
@@ -1129,22 +1089,18 @@ cl_pathname_match_p(cl_object path, cl_object mask)
 static cl_object
 coerce_to_from_pathname(cl_object x, cl_object host)
 {
-	cl_object y;
-	cl_index e;
-
 	switch (type_of(x)) {
 	case t_string:
-                /* !!!!! Bug Fix. NLG */
-		y = parse_namestring(x->string.self, 0, x->string.fillp, &e, host);
-		if (y == Cnil || e != x->string.fillp)
-			FEerror("~S is not a valid pathname string", 1, x);
-		x = y;
+		x = cl_parse_namestring(2, x, host);
+		break;
 	case t_pathname:
 		if (x->pathname.logical)
 			return x;
 	default:
 		return Cnil;
 	}
+	if (type_of(x) != t_pathname || !x->pathname.logical)
+		FEerror("~S is not a valid from-pathname translation", 1, x);
 }
 
 @(defun si::pathname_translations (host &optional (set OBJNULL))
@@ -1174,10 +1130,6 @@ coerce_to_from_pathname(cl_object x, cl_object host)
 		cl_object item = CAR(l);
 		cl_object from = coerce_to_from_pathname(cl_car(item), host);
 		cl_object to = cl_pathname(cl_cadr(item));
-		if (type_of(from) != t_pathname || !from->pathname.logical)
-		  FEerror("~S is not a valid from-pathname translation", 1, from);
-		if (type_of(to) != t_pathname)
-		  FEerror("~S is not a valid to-pathname translation", 1, from);
 		set = CONS(CONS(from, CONS(to, Cnil)), set);
 	}
 	CADR(pair) = @nreverse(set);

@@ -438,6 +438,7 @@ extern void error(const char *s) __attribute__((noreturn));
 extern void FEprogram_error(const char *s, int narg, ...) __attribute__((noreturn));
 extern void FEcontrol_error(const char *s, int narg, ...) __attribute__((noreturn));
 extern void FEreader_error(const char *s, cl_object stream, int narg, ...) __attribute__((noreturn));
+#define FEparse_error FEreader_error
 extern void FEerror(char *s, int narg, ...) __attribute__((noreturn));
 extern void FEcannot_open(cl_object fn) __attribute__((noreturn));
 extern void FEend_of_file(cl_object strm) __attribute__((noreturn));
