@@ -579,7 +579,7 @@
     (dolist (p directories)
       (dolist (n names)
         (dolist (e types)
-	  (let ((full-path (truename (make-pathname
+	  (let ((full-path (probe-file (make-pathname
 					  :device d
 	                                  :directory (etypecase p
 					               (pathname (pathname-directory p))
@@ -587,7 +587,7 @@
 						       (list p))
 					  :name n
 					  :type e))))
-	    (when (probe-file full-path)
+	    (when full-path
 	      (return-from find-foreign-library full-path))
 	  )))))
   nil)
