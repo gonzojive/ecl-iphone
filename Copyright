@@ -1,11 +1,9 @@
-
-_______________________________________________________________________________
+---- BEGINNING OF COPYRIGHT FOR THE ECLS CORE ENVIRONMENT ------------
 
   Copyright (c) 2000, Juan Jose Garcia Ripoll
   Copyright (c) 1990, 1991, 1993 Giuseppe Attardi
   Copyright (c) 1984 Taiichi Yuasa and Masami Hagiya
 	      All Rights Reserved
-_______________________________________________________________________________
 
 Summary:
 
@@ -14,6 +12,13 @@ Summary:
   credit should be given to the authors where it is due.
   WE MAKE NO WARRANTY AND ACCEPT NO LIABILITY FOR THIS PROGRAM.
 
+  This license covers all of the ECLS program except for the files
+	contrib/*.*		; User contributed extensions
+	src/lsp/loop2.lsp	; Symbolic's LOOP macro
+	src/ansi-tests2/*.*	; Test suite grabbed from CLOCC
+	src/tests/*.*		; Test suite grabbed from GNU Clisp
+  Look the precise copyright of these extensions in the corresponding
+  files.
 
 In detail:
 
@@ -53,17 +58,9 @@ Additionally:
   along with this program; if not, write to the Free Software
   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-Address:
-
-  Juan Jose Garcia Ripoll
-  Univ. de Castilla-La Mancha
-  E.T.S.I. Industriales
-  Departamento de Matematicas
-  c/Camilo Jose Cela, 3
-  Ciudad Real, E-13071
-  Spain
-
-
 Address for reporting bugs, comments, suggestions:
 
+  Juan Jose Garcia Ripoll
   jjgarcia@ind-cr.uclm.es
+
+---- END OF COPYRIGHT FOR THE ECLS CORE ENVIRONMENT ------------------
