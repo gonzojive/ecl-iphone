@@ -186,7 +186,7 @@ extern int aset_bv(cl_object x, cl_index index, int value);
 extern void throw(cl_object tag) __attribute__((noreturn));
 extern void return_from(cl_object block_id, cl_object block_name) __attribute__((noreturn));
 extern void go(cl_object tag_id, cl_object label) __attribute__((noreturn));
-extern void parse_key(int narg, va_list args, int nkey, cl_object *keys, cl_object *vars, cl_object rest, bool allow_other_keys);
+extern void parse_key(int narg, cl_object *args, int nkey, cl_object *keys, cl_object *vars, cl_object rest, bool allow_other_keys);
 extern void check_other_key(cl_object l, int n, ...);
 
 
@@ -255,11 +255,13 @@ extern cl_object va_APPLY(int narg, cl_object (*fn)(), va_list args);
 extern cl_object va_APPLY_closure(int narg, cl_object (*fn)(), cl_object data, va_list args);
 extern cl_object va_gcall(int narg, cl_object fun, va_list args);
 extern cl_object va_lambda_apply(int narg, cl_object fun, va_list args);
+extern void va_parse_key(int narg, va_list args, int nkey, cl_object *keys, cl_object *vars, cl_object rest, bool allow_other_keys);
 #else
-#define va_APPLY(x,y,z) APPLY(x,y,&cl_nextarg(z))
-#define va_APPLY_closure(x,y,p,z) APPLY_closure(x,y,p,&cl_nextarg(z))
-#define va_gcall(x,y,z) gcall(x,y,&cl_nextarg(z))
-#define va_lambda_apply(x,y,z) lambda_apply(x,y,&cl_nextarg(z))
+#define va_APPLY(x,y,z) APPLY(x,y,&va_arg(z,cl_object))
+#define va_APPLY_closure(x,y,p,z) APPLY_closure(x,y,p,&va_arg(z,cl_object))
+#define va_gcall(x,y,z) gcall(x,y,&va_arg(z,cl_object))
+#define va_lambda_apply(x,y,z) lambda_apply(x,y,&va_arg(z,cl_object))
+#define va_parse_key(a,b,c,d,e,f,g) parse_key(a,&va_arg(b,cl_object),c,d,e,f,g)
 #endif
 
 /* file.c */

@@ -604,7 +604,8 @@
     (if call-lambda
 	(wt-nl "args -= narg;")
 	(wt-nl "va_start(args," last-arg ");")))
-  (wt-nl "parse_key(narg,args," (length keywords) ",L" cfun "keys,keyvars,")
+  (wt-nl (if call-lambda "parse_key(narg,args," "va_parse_key(narg,args,")
+	 (length keywords) ",L" cfun "keys,keyvars,")
   (if rest
       (wt rest-loc)
     (wt "OBJNULL"))
