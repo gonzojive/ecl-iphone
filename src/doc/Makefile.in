@@ -18,7 +18,7 @@ INSTALL_DATA = @INSTALL_DATA@
 VERSION=@ECL_VERSION@
 
 HTML = index.html license.html lgpl.html news.html user_manual benchmark.html \
-	install.html developers_manual
+	install.html developers_manual download.html
 
 FILTER = sed 's,@VERSION@,$(VERSION),g'
 
@@ -49,6 +49,8 @@ ecl.info: $(srcdir)/user.txi $(srcdir)/macros.txi
 ecldev.info: $(srcdir)/devel.txi $(srcdir)/macros.txi
 	makeinfo -I $(srcdir) --no-split $(srcdir)/devel.txi
 
+download.html: $(srcdir)/download.in.html
+	cat $(srcdir)/head $? $(srcdir)/end | $(FILTER) > $@
 index.html: $(srcdir)/index.in.html
 	cat $(srcdir)/head $? $(srcdir)/end | $(FILTER) > $@
 install.html: $(srcdir)/install.in.html
