@@ -15,6 +15,8 @@
 (defun c1multiple-value-call (args &aux info funob)
   (check-args-number 'MULTIPLE-VALUE-CALL args 1)
   (cond ((endp (rest args)) (c1funcall args))
+	;; FIXME! We should optimize
+	;; (multiple-value-call ... (values a b c ...))
         (t (setq funob (c1funob (first args)))
            (make-c1form 'MULTIPLE-VALUE-CALL funob funob (c1args* (rest args))))))
 

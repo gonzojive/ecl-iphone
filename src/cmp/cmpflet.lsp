@@ -306,26 +306,39 @@
 	    (closure-p (fun-closure fun))
 	    (fname (fun-name fun)))
 	(unwind-exit
-	 (if (eq 'ARGS-PUSHED args)
-	     (list 'CALL-LOCAL "APPLY" lex-level closure-p
-		   (list fun `(STACK-POINTER ,narg)) narg fname)
-	     (list 'CALL-LOCAL fun lex-level closure-p
-		   (coerce-locs (inline-args args)) narg fname)))
+	 (list 'CALL-LOCAL fun lex-level closure-p
+	       (if (eq args 'ARGS-PUSHED) 'ARGS-PUSHED (coerce-locs (inline-args args)))
+	       narg fname))
 	(close-inline-blocks)))))
 
 (defun wt-call-local (fun lex-lvl closure-p args narg fname)
   (declare (fixnum lex-lvl))
-  ;; if NARG is non-NIL it is location containing narg
-  (wt fun "(" (or narg (length args)))
-  (when (plusp lex-lvl)
-    (dotimes (n lex-lvl)
-      (wt ",lex" n)))
-  (when closure-p
-    ;; env of local fun is ALWAYS contained in current env (?)
-    (wt ", env" *env-lvl*))
-  (dolist (arg args)
-    (wt "," arg))
-  (wt ")")
+  (cond ((not (eq args 'ARGS-PUSHED))
+	 ;; if NARG is non-NIL it is location containing narg
+	 (wt fun "(" (or narg (length args)))
+	 (when (plusp lex-lvl)
+	   (dotimes (n lex-lvl)
+	     (wt ",lex" n)))
+	 (when closure-p
+	   ;; env of local fun is ALWAYS contained in current env (?)
+	   (wt ", env" *env-lvl*))
+	 (dolist (arg args)
+	   (wt "," arg))
+	 (wt ")"))
+	((not narg)
+	 ;; When getting arguments from lisp stack, a location with the number
+	 ;; of arguments must have been supplied
+	 (baboon))
+	((not (or (plusp lex-lvl) closure-p))
+	 (wt "APPLY(" narg "," fun "," `(STACK-POINTER ,narg) ")"))
+	(t
+	 (wt "(")
+	 (when (plusp lex-lvl)
+	   (dotimes (n lex-lvl)
+	     (wt "cl_stack_push(lex" n ")," narg "++,")))
+	 (when closure-p
+	   (wt "cl_stack_push(env" *env-lvl* ")," narg "++,"))
+	 (wt-nl "  APPLY(" narg "," fun "," `(STACK-POINTER ,narg) "))")))
   (when fname (wt-comment fname)))
 
 
