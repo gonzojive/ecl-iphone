@@ -208,17 +208,19 @@ int main() {
   FILE *f=fopen("conftestval", "w");
   if (!f) exit(1);
   if (sizeof(int) >= sizeof(void*)) {
-    unsigned int t = 1, l;
+    unsigned int t = 1;
+    signed int l = 0;
     int_type="int";
-    for (bits=0; ((t << 1) >> 1) == t; bits++, t <<= 1);
-    l = (~0) << (bits - 2);
+    for (bits=1; ((t << 1) >> 1) == t; bits++, t <<= 1);
+    l = (~l) << (bits - 3);
     fprintf(f,"CL_FIXNUM_MIN='%d';",l);
     fprintf(f,"CL_FIXNUM_MAX='%d';",-(l+1));
   } else if (sizeof(long) >= sizeof(void*)) {
-    unsigned long int t = 1, l;
+    unsigned long int t = 1;
+    signed long int l = 0;
     int_type="long int";
-    for (bits=0; ((t << 1) >> 1) == t; bits++, t <<= 1);
-    l = (~0) << (bits - 2);
+    for (bits=1; ((t << 1) >> 1) == t; bits++, t <<= 1);
+    l = (~l) << (bits - 3);
     fprintf(f,"CL_FIXNUM_MIN='%ld';",l);
     fprintf(f,"CL_FIXNUM_MAX='%ld';",-(l+1));
   } else
