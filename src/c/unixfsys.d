@@ -17,6 +17,10 @@
 #include <string.h>
 #ifndef _MSC_VER
 # include <unistd.h>
+#else
+# include <io.h>
+# define access _access
+# define F_OK 0
 #endif
 #include <sys/types.h>
 #ifdef HAVE_PWD_H
@@ -241,9 +245,14 @@ backup_fopen(const char *filename, const char *option)
 	char backupfilename[MAXPATHLEN];
 
 	strcat(strcpy(backupfilename, filename), ".BAK");
+#ifdef _MSC_VER
+	/* MSVC rename doesn't remove an existing file */
+	if (access(backupfilename, F_OK) == 0 && unlink(backupfilename))
+		FElibc_error("Cannot remove the file ~S", 1, make_simple_string(backupfilename));
+#endif
 	if (rename(filename, backupfilename))
 		FElibc_error("Cannot rename the file ~S to ~S.", 2,
-			     filename, backupfilename);
+			     make_simple_string(filename), make_simple_string(backupfilename));
 	return fopen(filename, option);
 }
 
