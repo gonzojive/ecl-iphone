@@ -136,6 +136,7 @@ EXPORTS
 	cl_standard_char_p
 	cl_upper_case_p
 
+	ecl_string_case
 	char_code
 	digitp
 	char_eq
@@ -656,6 +657,7 @@ EXPORTS
 	cl_logeqv
 
 	ecl_ash
+	ecl_fixnum_bit_length
 
 
 	; num_pred.c
@@ -870,6 +872,8 @@ EXPORTS
 	cl_parse_integer
 	cl_read_byte
 	cl_copy_readtable
+	cl_readtable_case
+	si_readtable_case_set
 	cl_set_syntax_from_char
 	cl_set_macro_character
 	cl_get_macro_character

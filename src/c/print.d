@@ -408,7 +408,7 @@ write_positive_fixnum(cl_index i, int base, cl_index len, cl_object stream)
 static void
 write_decimal(cl_fixnum i, cl_object stream)
 {
-	return write_positive_fixnum(i, 10, 0, stream);
+	write_positive_fixnum(i, 10, 0, stream);
 }
 
 static void
@@ -620,7 +620,7 @@ write_bignum(cl_object x, cl_object stream)
 #ifdef __GNUC__
 	struct powers powers[num_powers];
 #else
-	struct powers *powers = malloc(sizeof(struct powers)*num_powers);
+	struct powers *powers = (struct powers*)malloc(sizeof(struct powers)*num_powers);
 	CL_UNWIND_PROTECT_BEGIN {
 #endif
 		cl_object p;
@@ -640,7 +640,7 @@ write_bignum(cl_object x, cl_object stream)
 		do_write_integer(x, &powers[num_powers-1], 0, stream);
 #ifndef __GNUC__
 	} CL_UNWIND_PROTECT_EXIT {
-		free(str);
+		free(powers);
 	} CL_UNWIND_PROTECT_END;
 #endif
 }

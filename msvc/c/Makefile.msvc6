@@ -8,7 +8,7 @@ srcdir	= ..\..\src\c
 #
 TRUE_CC = cl
 CC	= cl
-CFLAGS	= -c -Zi -I./ -I$(srcdir) -I$(HDIR) -I../h -I$(top_srcdir)/gc/include -DECL_CMU_FORMAT \
+CFLAGS	= -c -Zi -I./ -I$(srcdir) -I$(HDIR) -I../h -I$(top_srcdir)/gc/include
 #	  -Wall -W -Wfloat-equal -Wundef -Wendif-labels -Wpointer-arith -Wcast-align \
 #	  -Wwrite-strings -Wconversion -Wsign-compare -Wmissing-prototypes -Wredundant-decls \
 #	  -Wunreachable-code -Winline

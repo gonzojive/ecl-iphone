@@ -61,7 +61,13 @@ SUBDIR        = c gc gmp
 LIBRARIES     =
 LSP_LIBRARIES = cmp.fas clx.fas sysfun.lsp
 TARGETS       = ecl.exe
-GMP_TYPE      = p4
+# Define here the processor type to compile GMP library
+# with maximum optimization. Possible values are:
+# 	gc -> generic implementation
+# 	p0 -> Pentium processor
+# 	p3 -> Pentium III processor
+# 	p4 -> Pentium IV processor
+GMP_TYPE      = gc
 
 all:	$(TARGETS) h/external-lsp.h doc ecl-config.bat
 .PHONY:	all
