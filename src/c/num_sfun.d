@@ -25,6 +25,7 @@
 # define tanf tan
 # define sinhf sinh
 # define coshf cosh
+# define tanhf tanh
 #endif
 
 #ifndef M_PI
