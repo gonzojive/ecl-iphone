@@ -291,6 +291,14 @@ open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	cl_object filename = si_coerce_to_filename(fn);
 	char *fname = filename->string.self;
 
+	if (elttype == aet_bit) {
+		elttype = aet_b8;
+	} else if (elttype != aet_b8 &&
+		   elttype != aet_i8 &&
+		   elttype != aet_ch) {
+		FEerror("~S is not a valid stream element type",
+			1, ecl_elttype_to_symbol(elttype));
+	}
 	if (smm == smm_input || smm == smm_probe) {
 		fp = fopen(fname, OPEN_R);
 		if (fp == NULL) {
@@ -365,14 +373,6 @@ open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 		}
 	} else {
 		FEerror("Illegal stream mode ~S", 1, MAKE_FIXNUM(smm));
-	}
-	if (elttype == aet_bit) {
-		elttype = aet_b8;
-	} else if (elttype != aet_b8 &&
-		   elttype != aet_i8 &&
-		   elttype != aet_ch) {
-		FEerror("~S is not a valid stream element type",
-			1, ecl_elttype_to_symbol(elttype));
 	}
 	x = cl_alloc_object(t_stream);
 	x->stream.mode = (short)smm;
@@ -1899,7 +1899,7 @@ cl_output_stream_p(cl_object strm)
 		elttype = ecl_symbol_to_elttype(element_type);
 		if (elttype == aet_object) {
 			FEerror("~S is not a valid stream element type",
-				1, elttype);
+				1, element_type);
 		}
 	}
 	strm = open_stream(filename, smm, if_exists, if_does_not_exist, elttype);
