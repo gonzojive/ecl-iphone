@@ -385,7 +385,7 @@ ONCE_MORE:
 	case t_foreign:
 	  obj->foreign.tag = Cnil;
 	  obj->foreign.size = 0;
-	  obj->foreign.data = NUL;;
+	  obj->foreign.data = NULL;
 	  break;
 	default:
 	  printf("\ttype = %d\n", t);
