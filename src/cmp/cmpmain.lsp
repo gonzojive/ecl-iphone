@@ -161,6 +161,9 @@ int init_~A(cl_object cblock)
 	funcall(1,_intern(\"TOP-LEVEL\",system_package));
 	return 0;" "")))
   (let* (init-name c-name o-name)
+    #-dlopen
+    (when (eq target :program)
+      (push "-lgmp" ld-flags))
     (dolist (item (reverse lisp-files))
       (cond ((symbolp item)
 	     (push (format nil "-l~A" (string-downcase item)) ld-flags)
