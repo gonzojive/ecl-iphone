@@ -132,19 +132,12 @@ extern void init_catch(void);
 
 /* cfun.c */
 
-#ifndef RUNTIME
-#define FUN_TABLE_SIZE 256
-extern void **function_entry_table;
-extern int function_entries_max;
-extern int function_entries;
-#endif
 extern cl_object make_cfun(cl_object (*self)(), cl_object name, cl_object block);
 extern cl_object make_cclosure(cl_object (*self)(), cl_object env, cl_object block);
 extern void MF(cl_object sym, cl_object (*self)(), cl_object block);
 extern void MM(cl_object sym, cl_object (*self)(), cl_object block);
 extern cl_object make_function(char *s, cl_object (*f)());
 extern cl_object make_si_function(char *s, cl_object (*f)());
-extern cl_object get_function_entry(void *);
 extern void init_cfun(void);
 
 

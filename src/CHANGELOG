@@ -796,6 +796,34 @@ ECLS 0.4
 
   - Implemented WITH-STANDARD-IO-SYNTAX.
 
+ECLS 0.5
+========
+
+* System design and portability:
+
+  - Remove function_entry_table.
+
+* Visible changes and ANSI compatibility:
+
+  - The value of *package* is correctly set and restored while loading
+    compiled code. This way, 'ecls -eval "(print *package*)"' produces
+    the expected result #<"COMMON-LISP-USER" package>
+
+  - COMPILE-FILE now outputs three values.
+
+  - The value of si::*keep-definitions* determines whether the
+    interpreter keeps the source of defined functions, for later use
+    with COMPILE and DISASSEMBLE. For instance,
+	> (set si::*keep-definitions* t)
+	> (defun foo (x) (1+ x))
+	> (compile 'foo)
+	> (foo 2)
+	3
+	> (compile 'foo)
+	;;; Error ....
+    These definitions are lost once the function is compiled, hence
+    the second error message.
+
 TODO:
 =====
 

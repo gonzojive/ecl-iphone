@@ -23,9 +23,6 @@ extern void init_CLOS();
 void
 init_lisp(void)
 {
-#ifndef RUNTIME
-	function_entry_table = (void *)malloc(2 * function_entries_max * sizeof(void *));
-#endif
 	init_symbol();
 	init_package();
 

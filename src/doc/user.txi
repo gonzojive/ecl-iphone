@@ -136,13 +136,8 @@ Copyright @copyright{} 2000, Juan Jose Garcia Ripoll
 
 @ecls{} is an implementation of @clisp{} originally designed for being
 @emph{embeddable} into C based applications.
-
 This document describes the @ecls{} implementation and how it differs from
-@bibcite{ANSI} and @bibcite{Steele:84}. In general, as work in @ecls{} is
-completed section by section, we will drop compatibility with
-@bibcite{Steele:84} and the corresponding chapter will be updated to document
-@emph{only} the differences with @bibcite{ANSI}.
-
+@bibcite{ANSI} and @bibcite{Steele:84}.
 This manual also documents some implementation facilities, such as the
 multithread facility of @ecls{} or the foreign function interface.
 And finally this manual is the main source of information to understand
@@ -1182,56 +1177,31 @@ There are no implementation-dependent features for structures.
 @node Functions, Unreadable data objects, Structures, Standards
 @section Functions
 
-@table @code
-@item (lambda @var{lambda-list} . body)
-A lambda-expression with null lexical environment and with no implicit block
-around it.  This type of function typically appears when @code{`(lambda
-@var{lambda-list} .  body)} is evaluated.
-
-@item (lambda-block @var{block-name   lambda-list}  .  body)
-A lambda-expression with null lexical environment but with an implicit block
-around it.  This type of function typically appears when @code{(defun
-@var{function-name lambda-list} .  body)} is evaluated.  In this case,
-@var{block-name} is identical to @var{function-name} .
-
-@item (lambda-closure @var{env1   env2   env3   lambda-list} .  body)
-
-A lambda-expression with lexical environments but with no implicit block around
-it.  This type of function typically appears when @code{#`(lambda
-@var{lambda-list} .  body)} (or, equivalently, @code{(function (lambda
-@var{lambda-list} .  body))}) is evaluated. @var{env1}, @var{env2}, and
-@var{env3} represent the variable bindings, the local function/macro
-definitions, and the tag/block-name establishments, respectively, at the time
-the closure was created.
-
-@item (lambda-block-closure @var{env1 env2 env3 block-name lambda-list}  .  body)
-
-A lambda-expression with lexical environments and with an implicit block around
-it.  Local functions and local macros are represented in this
-format. @var{env1}, @var{env2}, and @var{env3} represent the variable bindings,
-the local function/macro bindings, and the tag/block-name establishments,
-respectively, at the time the local function/macro was created by @code{flet},
-@code{labels}, or @code{macrolet}.  The @var{block-name} is identical to the
-local function/macro name.
-@end table
-
-Compiled functions (including compiled macro-expansion functions) are printed
-in the following formats.
-
+All functions in @ecls{} are either compiled into bytecodes to be interpreted,
+or they are translated into C and then compiled using a native C compiler.
+Interpreted functions are printed using the formats
+@example
+#<interpreted-function @var{name}>
+#<interpreted-function @code{address}>
+@end example
+@noindent Compiled functions (including compiled macro-expansion functions)
+are printed in the following formats.
 @example
 #<compiled-function @var{name}>
-@end example
-or
-@example
 #<compiled-closure nil>
 @end example
 
-Incidentally, the value of @code{(symbol-function @var{special-form-name})} is
-a list,
-@example
-(special . @var{address})
-@end example
-@noindent if @var{special-form-name} names a special form.
+The output of @code{(symbol-function @var{fun})} is a list, is either a
+function object if @code{'fun} is has a function definition,
+@code{(macro . function-object)} if @code{'fun} is a macro, and @code{'special}
+if @code{'fun} is a special form.
+
+@ecls{} usually drops the source code of a function unless the global
+variable @var{si:*keep-definitions*} was true when the function was
+translated into bytecodes. Therefore, if you wish to use
+@code{#'compile} and @code{#'disassemble} on defined functions, you
+should issue @code{(setq si:*keep-definitions* t)} at the beginning of
+your session.
 
 @clisp{} constants related to functions have the following values in @ecls{}.
 
@@ -2539,17 +2509,52 @@ If @var{package} is @nil{}, then all packages are searched.
 @node The interpreter, The compiler, Program development, Top
 @chapter The Interpreter
 
+Former versions of @ecls{}, as well as many other lisps, used linked lists to
+represent code. As of version 0.3 a bytecodes compiler and a bytecodes
+interpreter were developed to circumvent the limitations of linked lists.
+
 When you enter code at the lisp prompt, or when you load a source file,
 @ecls{} begins a process known as minimal compilation. Barely this
 process consists on parsing each form, macroexpanding it and translating
 it into an intermediate language made of @emph{bytecodes}.
 
-@menu
-* The bytecodes::               
-@end menu
+The bytecodes compiler is implemented in @file{src/c/compiler.d}. The main
+entry point is the lisp function @code{SI::MAKE-LAMBDA}, which takes a
+name for the function and the body of the lambda lists, and produces a
+lisp object that can be invoked. For instance,
 
-@node The bytecodes,  , The interpreter, The interpreter
-@section The intermediate language
+@example
+> (defvar fun (si::make-lambda 'f '((x) (1+ x))))
+*FUN*
+> (funcall fun 2)
+3
+@end example
+
+@ecls{} can only execute bytecodes. When a list is passed to @code{EVAL} it
+must be first compiled to bytecodes and, if the process succeeds, then the
+resulting bytecodes are passed to the interpreter. Similarly, every time a
+function object is created, such as in @code{DEFUN} or @code{DEFMACRO}, the
+bytecodes compiler processes the lambda form to produce a suitable bytecodes
+object.
+
+The fact that @ecls{} performs this eager compilation means that changes on
+a macro are not immediately seen in code which was already compiled. This has
+subtle implications. Take the following code:
+@example
+> (defmacro f (a b) `(+ ,a ,b))
+F
+> (defun g (x y) (f x y))
+G
+> (g 1 2)
+3
+> (defmacro f (a b) `(- ,a ,b))
+F
+> (g 1 2)
+3
+@end example
+
+@noindent The last statement always outputs @code{3} while in former
+implementations based on processing of lambda lists it would produce @code{-1}.
 
 
 @node The compiler, Declarations, The interpreter, Top
@@ -4331,106 +4336,85 @@ that case @code{suspend} will return the values specified by @code{resume}.
 * @ecls{} and @clisp{}::        
 * @ecls{} is written in C and Lisp::  
 * Porting @ecls{}::             
+* Extending @ecls{}::             
 * The @ecls{} Compiler::        
 * The C language interface::    
-* @ecls{} size::                
-* Gabriel benchmark::           
 @end menu
 
 @node @ecls{} and @clisp{}, @ecls{} is written in C and Lisp, Implementation details, Implementation details
 @section @ecls{} is a full @clisp{} system.
 
-@ecls{} is a full implementation of the @clisp{} language described in the book
-
-@display
-@cltl{}.
-by Guy L. Steele Jr. et al.
-Digital Press, 1984
-@end display
-
-@noindent @ecls{} supports all @clisp{} functions, macros, and special forms defined in
-it, and all @clisp{} variables and constants are defined in @ecls{} exactly as
-described in the @cltl{}.
+@ecls{} is an implementation of the @clisp{} which aims to comply with
+the @ansi{} language described in the X3J13 specification. @ecls{}
+supports most @clisp{} functions, macros, and special forms defined in
+that reference, and all @clisp{} variables and constants should be in
+@ecls{} exactly as described in the @ansi{}. Any deviation should be
+noticed to the maintainers.
 
 
 @node @ecls{} is written in C and Lisp, Porting @ecls{}, @ecls{} and @clisp{}, Implementation details
 @section @ecls{} is written in C and Lisp
 
-The kernel of @ecls{} is written in C, including:
-
+@noindent The kernel of @ecls{} is written in C, including:
 @itemize
 @item memory management and garbage collection
-@item the evaluator (or interpreter)
-@item @clisp{} special forms
+@item the bytecodes compiler and interpreter
 @end itemize
 
-The @ecls{} compiler is entirely written in @clisp{}.
-
-Each @clisp{} function or macro is written either in C or in Lisp.
-
-@example
-        in C:
-                418 @clisp{} functions
-                11 @clisp{} macros
-
-        in Lisp:
-                133 @clisp{} functions
-                59 @clisp{} macros
-@end example
-
-The size of the source code is:
-
-@example
-        C code         705 Kbytes
-        @clisp{} functions and macros written in Lisp
-                       173 Kbytes
-        The compiler   264 Kbytes
-        --------------------------- 
-        total         1142 Kbytes
-@end example
-
-Three routines in the kernel are partly written in assembly language:
-
+The kernel understands all special forms from @clisp{}, and it supplies
+enough functions to create and manipulate all lisp objects. @ecls{} can
+start up using just the C core, as it contains enough functions to
+manipulate all lisp objects. However, in order to support the most of
+the @clisp{} language, @ecls{} also needs lisp implementations of
 @itemize
-@item bignum multiplication
-@item bignum division
-@item function call
+@item macros,
+@item CLOS, and
+@item the translator to C.
 @end itemize
+@noindent These items are stored as lisp source, that can be either interpreter
+(as during the bootstrap process) or translated to C and later compiled
+(to build the final program).
 
-@noindent The total size of assembly code is 20 to 30 lines, depending on the
-version of @ecls{}. C version of these routines are however also available.
 
-
-@node Porting @ecls{}, The @ecls{} Compiler, @ecls{} is written in C and Lisp, Implementation details
+@node Porting @ecls{}, Extending @ecls{}, @ecls{} is written in C and Lisp, Implementation details
 @section Porting @ecls{}
 
 To port @ecls{} to a new architecture, the following steps are required:
 
 @enumerate
-@item Compile all source C code with a GCC compiler.
+@item Ensure that the GNU Multiprecision library supports this machine.
 
-@item Compile the Lisp libraries and the Lisp compiler,
-supplied already translated into C, except for one file in the compiler
-which contains machine dependencies.
+@item Ensure that the Boehm-Weiser garbage collector is supported by that
+architecture. Alternatively, port ECLS's own garbage collector
+@file{src/c/alloc.d} and @file{src/c/gbc.d} to that platform.
 
-@item Link the binaries and create an executable.
+@item Fix @file{src/configure.in} and @file{src/h/machines.h} so that they
+both supply flags for the new host machine.
 
-@item Use the executable to compile the machine dependent compiler file
+@item Fix the machine dependent code in @file{src/c/}. The most critical
+parts are in the @file{unix*.d} files.
 
-@item Build the full image
+@item Compile as in any other platform.
+
+@item Run the tests and compare to the results of other platforms.
 @end enumerate
+
+@node Extending @ecls{}, The @ecls{} Compiler, Porting @ecls{}, Implementation details
+@section Extending @ecls{}
+
+If you want to extend, fix or simply customize @ecls{} for your own needs,
+you should understand how the implementation works.
 
 @menu
 * Objects Representation::      
-* The heap::                    
 * @ecls{} stacks::              
 * Procedure Call Conventions::  
-* The interpreter guts::             
-* The Invocation History Stack::  
+* The lexical environment::
+* The interpreter stack::
 @end menu
 
 
-@node Objects Representation, The heap, Porting @ecls{}, Porting @ecls{}
+@node Objects Representation, @ecls{} stacks, Extending @ecls{}, Extending @ecls{}
 @subsection Objects Representation
 
 @ecls{} supports immediate data for representing fixnum's and
@@ -4448,11 +4432,6 @@ Fixnum and characters are represented as follows:
 |  Ctrl bits | char |10|
 |------------|------|--| 
 @end example
-
-A third kind of immediate data is the @code{locative}, which constains
-an indirect pointer to another object. @code{locative} are useful for
-the efficient representation of logical variables when implementing
-unifcation or Prolog.
 
 Other @ecls{} objects are represented as (a pointer to) a cell that is
 allocated on the heap.  Each cell consists of several words (1 word =
@@ -4482,76 +4461,7 @@ may be represented by its fixnum value, and a character object may be
 represented by its character code.
 
 
-@node The heap, @ecls{} stacks, Objects Representation, Porting @ecls{}
-@subsection The heap
-
-The whole heap of @ecls{} is divided into pages (1 page = 2048
-bytes).  Each page falls in one of the following classes:
-
-@itemize
-@item pages that contain @emph{cells} consisting of the same number of words
-@item pages that contain @emph{blocks} of variable size
-@item pages that contain @emph{relocatable blocks}: i.e. blocks of variable size
-which can be moved in memory, such as array elements.
-@end itemize
-
-Free cells (i.e., those cells that are not used any more) consisting
-of the same number of words are linked together to form a free list.
-When a new cell is requested, the first cell in the free list (if it
-is not empty) is used and is removed from the list.  If the free list
-is empty, then the garbage collector is invoked to collect unused
-cells.  If the new free list is too short after the garbage
-collection, then new pages are allocated dynamically.  Free blocks are
-also linked together in the order of the size so that, when a block is
-being allocated on the heap, the smallest free area that is large
-enough to hold the block datum will be used.  Cell pages are never
-compactified.  Once a page is allocated for cells with @emph{n} words,
-the page is used for cells with @emph{n} words only, even after all the
-cells in the page become garbage.  The same rule holds for block
-pages.  In contrast, relocatable pages are sometimes compactified.
-That is, each relocatable datum may be moved to another place.
-
-The actual configuration of the @ecls{} heap is:
-
-@example
-lower address                                       higher address
- +-----------------------------+----------+---------------------+
- | cell pages and block pages  |   hole   |  relocatable pages  |
- +-----------------------------+----------+---------------------+
-@end example
-
-There is a ``hole'' between the area for cell/block pages
-and the area for relocatable pages.  New pages are allocated in the
-hole for cell/block pages, whereas new relocatable pages are
-allocated by expanding the heap to the higher address, i.e., to the
-right in this figure.  When the hole becomes empty, the area for
-relocatable pages are shifted to the right to reserve a certain number
-of pages as the hole.  During this process, the relocatable data in
-the relocatable pages are compactified.  No free list is maintained
-for relocatable data.
-
-Symbol print names and string bodies are usually allocated
-in relocatable pages.  However, when the @ecls{} system is created, i.e.,
-when the object module of @ecls{} is created, such relocatable data are
-moved towards the area for cell/block pages and then the pages for
-relocatable data are marked ``static''.  The garbage collector never
-tries to sweep static pages.  Thus, within the object module of @ecls{},
-the heap looks like:
-
-@example
-lower address               higher address
- +--------------------------------------+
- |  cell/block pages and static pages   |
- +--------------------------------------+
-@end example
-
-Notice that the hole is not included in the object module;
-it is allocated only when the @ecls{} system is started.  This saves
-secondary storage a little bit.  The maximum size of the hole is about
-100 pages (= 200 Kbytes).
-
-
-@node @ecls{} stacks, Procedure Call Conventions, The heap, Porting @ecls{}
+@node @ecls{} stacks, Procedure Call Conventions, Objects Representation, Extending @ecls{}
 @subsection @ecls{} stacks
 
 @ecls{} uses the following stacks:
@@ -4563,110 +4473,111 @@ consisting of catch, block, tagbody frames
 @item Bind Stack
 for shallow binding of dynamic variables
 
-@item Invocation History Stack
-maintaining information for debugging
+@item Interpreter Stack
+acts as a Forth data stack, keeping intermediate arguments to
+interpreted functions, plus a history of called functions.
 
 @item C Control Stack
-used for:
-@itemize
-@item arguments/values passing
-@item typed lexical variables
-@item temporary values
-@item function invocation
-@end itemize
+used for arguments/values passing, typed lexical variables,
+temporary values, and function invocation.
 @end table
 
 
-@node Procedure Call Conventions, The interpreter guts, @ecls{} stacks, Porting @ecls{}
+@node Procedure Call Conventions, The lexical environment, @ecls{} stacks, Extending @ecls{}
 @subsection Procedure Call Conventions
  
 @ecls{} employs standard C calling conventions to achieve efficiency and
 interoperability with other languages.
 Each Lisp function is implemented as a C function whcih takes as many
 argument as the Lisp original plus one additional integer argument
-which holds the number of actual arguments.  The function returns an
-integer which is the number of multiple Lisp values produced. The actual vales
-themselves are placed in a global (per thread) array (@code{VALUES}).
+which holds the number of actual arguments.  The function sets @code{NValues}
+to the number of Lisp values produced, it returns the first one and the
+remaining ones are kept in  a global (per thread) array (@code{VALUES}).
 
 To show the argument/value passing mechanism, here we list the actual
 code for the @clisp{} function @code{cons}.
 
 @example
-Lcons(int narg, object car, object cdr)
+clLcons(int narg, object car, object cdr)
 @{       object x;
         check_arg(2);
         x = alloc_object(t_cons);
         CAR(x) = car;
         CDR(x) = cdr;
-        VALUES(0) = x;
-        RETURN(1);
+        NValues = 1;
+        return x;
 @}
 @end example
 
-@ecls{} adopts the convention that the name of a function that
-implements a @clisp{} function begins with @code{L}, followed by the
-name of the @clisp{} function.  (Strictly speaking, `@code{-}' and
-`@code{*}' in the @clisp{} function name are replaced by `@code{_}' and
-`@code{A}', respectively, to obey the syntax of C.)
+@ecls{} adopts the convention that the name of a function that implements a
+@clisp{} function begins with a short package name (@code{cl} for COMMON-LISP,
+@code{si} for SYSTEM, etc), followed by @code{L}, and followed by the name of
+the @clisp{} function.  (Strictly speaking, `@code{-}' and `@code{*}' in the
+@clisp{} function name are replaced by `@code{_}' and `@code{A}', respectively,
+to obey the syntax of C.)
 
-@code{check_arg(2)} in the code of @code{Lcons} checks that exactly two
+@code{check_arg(2)} in the code of @code{clLcons} checks that exactly two
 arguments are supplied to @code{cons}.  That is, it checks that @code{narg} is
 2, and otherwise, it causes an error.  @code{allocate_object(t_cons)} allocates
 a cons cell in the heap and returns the pointer to the cell.  After the
 @code{CAR} and the @code{CDR} fields of the cell are set, the cell pointer is
-put in the @code{VALUES} array. The integer returned by the function (1 in this
-case) represents the number of values of the function.
+returned directly. The number assigned to NValues set by the function (1 in
+this case) represents the number of values of the function.
 
+In general, if one is to play with the C kernel of @ecls{} there is no need to
+know about all these conventions. There is a preprocessor that takes care of
+the details, by using a lispy representation of the statements that output
+values, and of the function definitions. For instance, the actual source code
+for @code{clLcons} in @file{src/c/lists.d}
 
-@node The interpreter guts, The Invocation History Stack, Procedure Call Conventions, Porting @ecls{}
-@subsection The interpreter
+@example
+@@(defun cons (car cdr)
+@@
+        @@(return CONS(car, cdr))
+@@)
+@end example
 
-The @ecls{} interpreter uses three A-lists (Association lists) to
+@node The lexical environment, The interpreter stack, Procedure Call Conventions, Extending @ecls{}
+@subsection The lexical environment
+
+The @ecls{} interpreter uses two A-lists (Association lists) to
 represent lexical environments.
 
 @itemize
 @item One for variable bindings
-@item One for local function/macro definitions
-@item One for tag/block bindings
+@item One for local function/macro/tag/block bindings
 @end itemize
 
-When a function closure is created, the current three A-lists are
+When a function closure is created, the current two A-lists are
 saved in the closure along with the lambda expression.  Later, when the
 closure is invoked, the saved A-lists are
 used to recover the lexical environment.
 
 
-@node The Invocation History Stack,  , The interpreter guts, Porting @ecls{}
-@subsection The Invocation History Stack
+@node The interpreter stack,  , The lexical environment, Extending @ecls{}
+@subsection The interpreter stack
  
-The invocation history stack consists of two kinds of elements.  Each element
-may be either a pair of a Lisp form and a pointer to lexical environment:
+The bytecodes interpreter uses a stack of its own to save and restore values
+from intermediate calculations. This Forth-like data stack is also used in
+other parts of the C kernel for various purposes, such as saving compiled code,
+keeping arguments to FORMAT, etc.
 
+However, one of the most important roles of the Interpreter Stack is to keep a
+log of the functions which are called during the execution of bytecodes. For
+each function invoked, the interpreter keeps three lisp objects on the stack:
 @example
-+----------+------------------------+
-|   form   |   environment-pointer  |
-+----------+------------------------+
++----------+------------------------------------------------+
+| function | lexical environment | index to previous record |
++----------+---------------------+--------------------------+
 @end example
 
-@noindent or a pair of a function name and a pointer to the value stack:
+The first item is the object which is funcalled. It can be a bytecodes object,
+a compiled function or a generic function. In the last two cases the lexical
+environment is just NIL. In the first case, the second item on the stack is
+the lexical environment on which the code is executed. Each of these records
+are popped out of the stack after function invocation.
 
-@example
-+-----------------+-----------------+
-|  function-name  |  stack-pointer  |
-+-----------------+-----------------+
-@end example
-
-The former is pushed on the invocation history stack when an
-interpreted code is evaluated.  The @emph{form} is the interpreted code
-itself and the @emph{environment-pointer} points to a three elements
-array which holds the three elements that represent the lexical
-environment.  The latter is pushed when a compiled function is
-invoked.  The @emph{function-name} is the name of the called function
-and the @emph{stack-pointer} points to the position of the first
-argument to the function.  For both kinds, the element on the
-invocation history stack is popped at the end of the evaluation.
-
-Let us see how the invocation history stack is used for debugging.
+Let us see how these invocation records are used for debugging.
 
 @example
 >(defun fact (x)                ;;;  Wrong definition of the 
@@ -4740,7 +4651,7 @@ Block names: FACT.          ;;;  The block  FACT  is established.
 @end example
 
 
-@node The @ecls{} Compiler, The C language interface, Porting @ecls{}, Implementation details
+@node The @ecls{} Compiler, The C language interface, Extending @ecls{}, Implementation details
 @section The @ecls{} Compiler
  
 The @ecls{} compiler is essentially a translator from @clisp{} to C.  Given
@@ -4826,8 +4737,8 @@ init_code(char *start,int size,object data)
 static L1(int narg, object V1)
 @{      
        check_arg(1);
-       VALUES(0)=one_plus(V1);
-       RETURN(1);
+       NValues=1;
+       return one_plus(V1);
 @}
 @end example
 
@@ -5003,7 +4914,7 @@ TTL:
 @end example
 
 
-@node The C language interface, @ecls{} size, The @ecls{} Compiler, Implementation details
+@node The C language interface,  , The @ecls{} Compiler, Implementation details
 @section The C language interface
 
 There are several mechanism to integrate C code within @ecls{}.
@@ -5029,63 +4940,6 @@ of the specified C function from @ecls{}.
 
 (defentry tak (int int int) (int "tak"))
 @end lisp
-
-@node @ecls{} size, Gabriel benchmark, The C language interface, Implementation details
-@section @ecls{} size
-
-The size of the object module of the whole @ecls{} system (including the
-Compiler) is
-@example
-     @ecls{}/SUN      2.04 Mbytes
-@end example
-
-Since all system initialization (such as loading the database of the @ecls{}
-compiler) has been done when the object module is created, the object module
-size roughly corresponds to the initial size of the @ecls{} process when a
-@ecls{} session is started, minus the initial size of the hole in the heap
-(about 200 Kbytes).
-
-
-@node Gabriel benchmark,  , @ecls{} size, Implementation details
-@section Gabriel benchmark
-
-The following table shows the results of Richard Gabriel's Lisp benchmark tests
-in @ecls{}.  The results with five other public domain @clisp{} implementation
-are also listed for comparison.  Each number represents the CPU time (in
-seconds) for the compiled program.  The code for the benchmark is taken from:
-
-@display
-@emph{Performance and Evaluation of Lisp Systems}
-by Richard P. Gabriel
-Computer Systems Ser. Research Reports
-MIT Press, 1985
-@end display
-
-For the details of the benchmark tests, refer to the book above.
-
-@multitable {Benchmark} {Sun ELC}
-@item Benchmark @tab   Sun ELC 
-@item   Test    @tab           
-@item   Boyer  @tab        2.067 
-@item   Browse  @tab       3.750 
-@item   Ctak  @tab         0.967 
-@item   Dderiv  @tab       1.717 
-@item   Deriv  @tab        1.200 
-@item   Destru  @tab       0.350 
-@item   Div2  @tab         2.467 
-@item   Fft  @tab          2.317 
-@item   Fprint  @tab       0.167 
-@item   Fread  @tab        0.133 
-@item   Puzzle  @tab       1.833 
-@item   Stak  @tab         0.000 
-@item   Tak  @tab          0.200 
-@item   Takl  @tab         0.267 
-@item   Takr  @tab         0.233 
-@item   Tprint  @tab       0.117 
-@item   Traverse  @tab     6.783 
-@item   Triang  @tab       10.067 
-@end multitable
-
 
 @node Everything, Bibliography, Implementation details, Top
 @chapter Everything

@@ -2318,9 +2318,7 @@ read_VV(cl_object block, void *entry)
 	entry_point_ptr entry_point = entry;
 	cl_object *VV;
 	int len;
-#ifdef PDE
 	bds_ptr old_bds_top = bds_top;
-#endif
 
 	if (block == NULL)
 		block = alloc_object(t_codeblock);
@@ -2341,7 +2339,7 @@ read_VV(cl_object block, void *entry)
 	old_backq_level = backq_level;
 
 	old_package = SYM_VAL(@'*package*');
-	SYM_VAL(@'*package*') = lisp_package;
+	bds_bind(@'*package*', lisp_package);
 
 	setup_standard_READ();
 
@@ -2377,9 +2375,7 @@ read_VV(cl_object block, void *entry)
 	close_stream(in, 0);
 
 	read_VV_block = OBJNULL;
-#ifdef PDE
 	bds_unwind(old_bds_top);
-#endif
 
 	READtable = old_READtable;
 	READdefault_float_format = old_READdefault_float_format;

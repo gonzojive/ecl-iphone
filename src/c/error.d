@@ -327,51 +327,6 @@ not_a_variable(cl_object obj)
 		       rest));
 @)
 
-#if defined(FRAME_CHAIN) && !defined(RUNTIME)
-static char *
-get_current_frame(void)
-{
-  char *frame;
-  GET_CURRENT_FRAME(frame);
-  return frame;
-}
-
-@(defun si::backtrace ()
-  char *this_frame, *next_frame, *next_pc;
-  bool first = TRUE;
-  cl_object sym;
-  jmp_buf buf;
-@
-  /* ensure flushing of register caches */
-  if (ecls_setjmp(buf) == 0) ecls_longjmp(buf, 1);
-
-  this_frame = get_current_frame();
-  while (TRUE) {
-      next_frame = FRAME_CHAIN(this_frame);
-      next_pc = FRAME_SAVED_PC(this_frame);
-#ifdef DOWN_STACK
-      if (next_frame == 0 || next_frame > (char *)cs_org) break;
-#else
-      if (next_frame < (char *)cs_org) break;
-#endif
-      sym = (cl_object)get_function_entry(next_pc);
-      if (sym) {
-	if (!first)
-	  printf(" < ");
-	else
-	  first = FALSE;
-	princ(sym, Cnil);
-      }
-/*
-      else
-	printf("FP: 0x%x, PC: 0x%x\n", next_frame, next_pc);
-*/
-      this_frame = next_frame;
-  }
-  @(return)
-@)
-#endif
-
 void
 init_error(void)
 {

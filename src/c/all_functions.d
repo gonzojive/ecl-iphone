@@ -92,6 +92,7 @@ const struct function_info all_functions[] = {
 
 	{"COMPILED-FUNCTION-NAME", siLcompiled_function_name, si},
 	{"COMPILED-FUNCTION-BLOCK", siLcompiled_function_block, si},
+	{"COMPILED-FUNCTION-SOURCE", siLcompiled_function_source, si},
 
 	/* character.d */
 
@@ -144,9 +145,6 @@ const struct function_info all_functions[] = {
 
 	/* error.c */
 
-#if defined(FRAME_CHAIN) && !defined(RUNTIME)
-	{"BT", siLbacktrace, si},
-#endif
 	{"ERROR", clLerror, cl},
 	{"CERROR", clLcerror, cl},
 

@@ -87,6 +87,7 @@ extern cl_object siSdefmacro;
 #endif
 extern cl_object siLcompiled_function_name _ARGS((int narg, cl_object fun));
 extern cl_object siLcompiled_function_block _ARGS((int narg, cl_object fun));
+extern cl_object siLcompiled_function_source _ARGS((int narg, cl_object fun));
 
 /* character.c */
 
@@ -153,6 +154,7 @@ extern cl_object Kexecute;
 extern cl_object Kcompile_toplevel;
 extern cl_object Kload_toplevel;
 extern cl_object clSotherwise;
+extern cl_object siVkeep_definitions;
 extern cl_object siLprocess_declarations _ARGS((int narg, cl_object body, ...));
 extern cl_object siLprocess_lambda_list _ARGS((int narg, cl_object lambda));
 extern cl_object siLmake_lambda _ARGS((int narg, cl_object name, cl_object body));
@@ -183,9 +185,6 @@ extern cl_object Kformat_control, Kformat_arguments;
 
 extern cl_object siSuniversal_error_handler;
 extern cl_object siSterminal_interrupt;
-#if defined(FRAME_CHAIN) && !defined(RUNTIME)
-extern cl_object siLbacktrace _ARGS((int narg));
-#endif
 extern cl_object clLerror _ARGS((int narg, cl_object eformat, ...));
 extern cl_object clLcerror _ARGS((int narg, cl_object cformat, cl_object eformat, ...));
 

@@ -172,7 +172,7 @@ main(int argc, char **argv)
 Cannot compile ~a."
 	    (namestring input-pathname))
     (setq *error-p* t)
-    (return-from compile-file (values)))
+    (return-from compile-file (values nil t t)))
 
   (setq *error-p* nil
 	*compiler-in-use* t)
@@ -181,7 +181,7 @@ Cannot compile ~a."
     (format t "~&;;; The source file ~a is not found.~%"
             (namestring input-pathname))
     (setq *error-p* t)
-    (return-from compile-file (values)))
+    (return-from compile-file (values nil t t)))
 
   (when *compile-verbose*
     (format t "~&;;; Compiling ~a."
@@ -277,7 +277,7 @@ Cannot compile ~a."
 	  #+dlopen
 	  (if system-p o-pathname so-pathname)
 	  #-dlopen
-	  o-pathname)
+	  (values o-pathname nil nil))
 
         (progn
           (when (probe-file c-pathname) (delete-file c-pathname))
@@ -286,7 +286,7 @@ Cannot compile ~a."
 	  (when (probe-file o-pathname) (delete-file o-pathname))
           (format t "~&;;; No FASL generated.~%")
           (setq *error-p* t)
-	  (values))
+	  (values nil t t))
         ))
   )
 
@@ -327,29 +327,9 @@ Cannot compile ~a."
                         `(defun ,name ,@(cdr def))
                         `(set 'GAZONK #',def))))
         ((and (fboundp name)
-              (consp (setq def (symbol-function name))))
-         (cond ((and (eq (car def) 'LAMBDA-BLOCK)
-                     (consp (cdr def)) (consp (cddr def)))
-                (if (eq (cadr def) name)
-                    (setq form `(defun ,name ,@(cddr def)))
-                    (setq form `(defun ,name ,(caddr def)
-                                  (block ,(cadr def) ,@(cdddr def))))))
-               ((eq (car def) 'LAMBDA)
-                (setq form `(defun ,name ,@(cdr def))))
-               ((and (eq (car def) 'LAMBDA-CLOSURE)
-                     (consp (cdr def)) (null (cadr def))
-                     (consp (cddr def)) (null (caddr def))
-                     (consp (cdddr def)) (null (cadddr def)))
-                (setq form `(defun ,name ,@(cddddr def))))
-               ((and (eq (car def) 'LAMBDA-BLOCK-CLOSURE)
-                     (consp (cdr def)) (null (cadr def))
-                     (consp (cddr def)) (null (caddr def))
-                     (consp (cdddr def)) (null (cadddr def))
-                     (consp (cddddr def)))
-                (setq form `(defun ,name
-                              (block ,(car (cddddr def))
-                                ,@(cdr (cddddr def))))))
-               (t (error "I cannot compile such ~Ss, sorry." (car def)))))
+	      (setq def (symbol-function name))
+	      (setq form (si::compiled-function-source def)))
+	 (setq form `(defun ,name ,@form)))
         (t (error "No lambda expression is assigned to the symbol ~s." name)))
 
   (dotimes (n 1000
@@ -420,27 +400,30 @@ Cannot compile ~a."
 			      &aux def disassembled-form
 			      (*compiler-in-use* *compiler-in-use*)
 			      (*print-pretty* nil))
- (when *compiler-in-use*
-   (format t "~&;;; The compiler was called recursively.~
-                   ~%Cannot disassemble ~a." thing)
-   (setq *error-p* t)
-   (return-from disassemble))
- (setq *error-p* nil
-       *compiler-in-use* t)
-
- (cond ((null thing))
-       ((symbolp thing)
-	(setq def (symbol-function thing))
-	(when (macro-function thing)
-	  (setq def (cdr def)))
-	(if (and (consp def)
-		 (eq (car def) 'LAMBDA-BLOCK)
-		 (consp (cdr def)))
-	    (setq disassembled-form `(defun ,thing ,@(cddr def)))
-	    (error "The function object ~s cannot be disassembled." def)))
-       ((and (consp thing) (eq (car thing) 'LAMBDA))
-	(setq disassembled-form `(defun gazonk ,@(cdr thing))))
+  (cond ((null thing))
+	((symbolp thing)
+	 (setq def (symbol-function thing))
+	 (when (macro-function thing)
+	   (setq def (cdr def)))
+	 (return-from disassemble (disassemble def)))
+	((functionp thing)
+	 (if (setq def (si::compiled-function-source thing))
+	   (setq disassembled-form
+		`(defun ,(or (si::compiled-function-name thing)
+			     GAZONK)
+		  ,@def))
+	   (error "The function definition for ~S was lost." thing)))
+	((and (consp thing) (eq (car thing) 'LAMBDA))
+	 (setq disassembled-form `(defun gazonk ,@(cdr thing))))
        (t (setq disassembled-form thing)))
+
+  (when *compiler-in-use*
+    (format t "~&;;; The compiler was called recursively.~
+                   ~%Cannot disassemble ~a." thing)
+    (setq *error-p* t)
+    (return-from disassemble))
+  (setq *error-p* nil
+	*compiler-in-use* t)
 
   (let* ((null-stream (make-broadcast-stream))
          (*compiler-output1* null-stream)

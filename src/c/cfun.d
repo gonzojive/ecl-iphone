@@ -21,8 +21,6 @@
 cl_object @'defun', @'defmacro';
 #endif PDE
 
-static void record_fun_entry (cl_object sym, void *addr);
-
 cl_object
 make_cfun(cl_object (*self)(), cl_object name, cl_object cblock)
 {
@@ -57,9 +55,6 @@ MF(cl_object sym, cl_object (*self)(), cl_object block)
 	if (sym->symbol.isform && sym->symbol.mflag)
 		sym->symbol.isform = FALSE;
 	clear_compiler_properties(sym);
-#ifndef RUNTIME
-	record_fun_entry(sym, self);
-#endif
 #ifdef PDE
 	record_source_pathname(sym, @'defun');
 #endif PDE
@@ -81,9 +76,6 @@ MM(cl_object sym, cl_object (*self)(), cl_object block)
 	if (sym->symbol.isform && sym->symbol.mflag)
 		sym->symbol.isform = FALSE;
 	clear_compiler_properties(sym);
-#ifndef RUNTIME
-	record_fun_entry(sym, self);
-#endif
 #ifdef PDE
 	record_source_pathname(sym, @'defmacro');
 #endif PDE
@@ -103,9 +95,6 @@ make_function(char *s, cl_object (*f)())
 	x = make_ordinary(s);
 	SYM_FUN(x) = make_cfun(f, x, NULL);
 	x->symbol.mflag = FALSE;
-#ifndef RUNTIME
-	record_fun_entry(x, f);
-#endif
 	return(x);
 }
 
@@ -117,9 +106,6 @@ make_si_function(char *s, cl_object (*f)())
 	x = make_si_ordinary(s);
 	SYM_FUN(x) = make_cfun(f, x, NULL);
 	x->symbol.mflag = FALSE;
-#ifndef RUNTIME
-	record_fun_entry(x, f);
-#endif
 	return(x);
 }
 
@@ -131,6 +117,27 @@ make_si_function(char *s, cl_object (*f)())
 		output = fun->bytecodes.data[0]; break;
 	case t_cfun:
 		output = fun->cfun.name; break;
+	case t_cclosure:
+		output = Cnil; break;
+	default:
+		FEerror("~S is not a compiled-function.", 1, fun);
+	}
+	@(return output)
+@)
+
+@(defun si::compiled_function_source (fun)
+	cl_object output;
+@
+	switch(type_of(fun)) {
+	case t_bytecodes:
+		if (!Null(fun->bytecodes.lex))
+			output = Cnil;
+		else {
+			output = fun->bytecodes.data[fun->bytecodes.size-1];
+			if (!CONSP(output)) output = Cnil;
+		}
+		break;
+	case t_cfun:
 	case t_cclosure:
 		output = Cnil; break;
 	default:
@@ -152,107 +159,3 @@ make_si_function(char *s, cl_object (*f)())
 	}
 	@(return output)
 @)
-
-
-#ifndef RUNTIME
-
-#define FUN_TABLE_INC 256
-void **function_entry_table;
-int function_entries_max;
-int function_entries;
-
-/*----------------------------------------------------------------------
- * fun_entry_search --
- *	function_entry_table is an array containing alternated addr, sym values
- *	sorted in increasing addr value.
- * Result:
- *	  the index of the largest addr which is smaller than key
- *	  -2 if no such addr is present
- *----------------------------------------------------------------------
- */
-static int
-fun_entry_search(char *key)
-{
-  void **table = function_entry_table;
-  int len = function_entries;
-  int low = 0;
-  int high = len;
-  int mid, probe;
-  char *entry;
-  if (len == 0)
-    return(-2);
-  while (TRUE) {
-    mid = (low + high) / 2;
-    probe = mid * 2;
-    entry = (char *)table[probe];
-    if (entry == key)
-      return(probe);
-    if (entry < key) {
-      if (mid + 1 == len || (char*)table[probe+2] > key)
-	return(probe);
-      else
-	low = mid;
-    } else {
-      if (probe == 0)
-	return(-2);
-      else
-	high = mid;
-    }
-  }
-}
-
-/*
- *----------------------------------------------------------------------
- * record_fun_entry --
- *	records the code start of function bound to symbol, so that
- *	one can determine which function is executing
- *
- *----------------------------------------------------------------------
- */
-static void
-record_fun_entry(cl_object sym, void *addr)
-{
-  cl_object def;
-  register int i, end;
-
-  end = 2*function_entries;
-  def = SYM_FUN(sym);
-  if (def != OBJNULL && type_of(def) == t_cfun) {
-    /* clear previous definition */
-    void *prevaddr = (void *)def->cfun.entry;
-    i = fun_entry_search(prevaddr);
-    if (i >= 0 && function_entry_table[i] == prevaddr) {
-      function_entries--;
-      end -= 2;
-      memmove(&function_entry_table[i], &function_entry_table[i+2],
-	      sizeof(void *) * (end - i));
-    }
-  }
-  i = fun_entry_search(addr);
-  if (i < 0 || function_entry_table[i] != (char*)addr) {
-    if (2*function_entries_max == end) {
-      function_entries_max += FUN_TABLE_INC;
-      function_entry_table = realloc(function_entry_table,
-				     2 * function_entries_max * sizeof(void *));
-    }
-    i += 2;
-    memmove(&function_entry_table[i+2], &function_entry_table[i],
-	   sizeof(void *) * (end - i));
-    function_entries++;
-  }
-  function_entry_table[i++] = (char *)addr;
-  function_entry_table[i++] = (char *)sym;
-}
-
-cl_object
-get_function_entry(void *addr)
-{
-  int i;
-  i = fun_entry_search(addr);
-  if (i >= 0)
-    return((cl_object)function_entry_table[i+1]);
-  else
-    return(OBJNULL);
-}
-
-#endif RUNTIME

@@ -24,6 +24,7 @@ cl_object @'defun';
 cl_object @'compile', @'load', @'eval', @'progn', @'warn', @'typep', @'otherwise';
 cl_object @':execute', @':compile-toplevel', @':load-toplevel';
 cl_object @'si::*inhibit-macro-special*';
+cl_object @'si::*keep-definitions*';
 
 cl_object @'&optional';
 cl_object @'&rest';
@@ -2123,6 +2124,9 @@ make_lambda(cl_object name, cl_object lambda) {
 	asm_at(specials_pc, specials);
 	compile_body(body);
 	asm_op(OP_HALT);
+
+	if (!Null(SYM_VAL(@'si::*keep-definitions*')))
+		asm1(lambda);
 
 	c_env = old_c_env;
 

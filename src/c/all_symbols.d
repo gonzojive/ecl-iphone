@@ -39,6 +39,7 @@ const struct symbol_info all_symbols[] = {
 
 /* compiler.c */
 {&clSlambda_block, "LAMBDA-BLOCK", CL_ORDINARY},
+{&siVkeep_definitions, "*KEEP-DEFINITIONS*", SI_SPECIAL},
 
 /* conditional.c */
 {&clSotherwise, "OTHERWISE", CL_ORDINARY},
