@@ -32,7 +32,7 @@
 (defvar // nil "The list of all values of the last-but-one top-level form.")
 (defvar /// nil "The list of all values of the last-but-two top-level form.")
 
-(defvar *lisp-init-file-list* '("./init" "home:.ecl")
+(defvar *lisp-init-file-list* '("~/.ecl" "~/.eclrc")
   "List of files automatically loaded when ECL is invoked.")
 
 (defvar *quit-tag* (cons nil nil))

@@ -1,5 +1,5 @@
 (defvar std-compile (symbol-function 'compile-file))
-(defun compile-file (file &key (output-file (merge-pathnames file ".o")))
+(defun compile-file (file &key (output-file (make-pathname :type "o" :defaults file)))
   (funcall std-compile
 	   file
 	   :c-file t :h-file t :data-file t :system-p t

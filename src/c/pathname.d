@@ -162,6 +162,7 @@ tilde_expand(cl_object directory)
 #define WORD_ALLOW_ASTERISK  2
 #define WORD_EMPTY_IS_NIL 4
 #define WORD_LOGICAL 8
+#define WORD_ALLOW_LEADING_DOT 16
 
 static cl_object
 make_one(const char *s, cl_index end)
@@ -189,7 +190,13 @@ parse_word(const char *s, char delim, int flags, cl_index start, cl_index end,
 	cl_index i, j;
 	bool wild_inferiors = FALSE;
 
-	for (i = j = start; i < end && s[i] != delim; i++) {
+	i = j = start;
+	if ((flags & WORD_ALLOW_LEADING_DOT) &&
+	    (i < end) &&
+	    (s[i] == delim)) {
+		i++;
+	}
+	for (; i < end && s[i] != delim; i++) {
 		char c = s[i];
 		bool valid_char;
 		if (c == '*') {
@@ -399,8 +406,9 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 	}
 	if (path == @':error')
 		return Cnil;
-	name = parse_word(s, '.', WORD_ALLOW_ASTERISK | WORD_EMPTY_IS_NIL, *ep,
-			  end, ep);
+	name = parse_word(s, '.', WORD_ALLOW_LEADING_DOT |
+			  WORD_ALLOW_ASTERISK | WORD_EMPTY_IS_NIL,
+			  *ep, end, ep);
 	type = parse_word(s, '\0', WORD_ALLOW_ASTERISK | WORD_EMPTY_IS_NIL, *ep,
 			  end, ep);
 	version = parse_word(s, '\0', WORD_ALLOW_ASTERISK | WORD_EMPTY_IS_NIL, *ep,

@@ -52,11 +52,11 @@
      ) )
 ) )
 
-#-ALLEGRO
+#-(OR ALLEGRO ECL)
 (defun merge-extension (type filename)
   (merge-pathnames type filename)
 )
-#+ALLEGRO
+#+(OR ALLEGRO ECL)
 (defun merge-extension (type filename)
   (merge-pathnames (make-pathname :type (subseq (string type) 1)) filename)
 )

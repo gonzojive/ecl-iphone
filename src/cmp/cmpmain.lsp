@@ -71,13 +71,13 @@ coprocessor).")
     (merge-pathnames real-name output-file)))
 
 (defun compile-file-pathname (name &key output-file system-p)
-  (let ((extension ".o"))
+  (let ((extension "o"))
     (unless system-p
       #+dlopen
-      (setq extension ".so")
+      (setq extension "so")
       #-dlopen
       (error "This platform only supports compiling files with :SYSTEM-P T"))
-    (merge-pathnames extension (or output-file name))))
+    (make-pathname :type extension :defaults (or output-file name))))
 
 (defun linker-cc (o-pathname &rest options)
   (safe-system
@@ -179,11 +179,11 @@ int init_~A(cl_object cblock)
 	     (push (format nil "-l~A" (string-downcase item)) ld-flags)
 	     (push (init-function-name item) init-name))
 	    (t
-	     (push (namestring (merge-pathnames ".o" item)) ld-flags)
+	     (push (namestring (make-pathname :type "o" :defaults item)) ld-flags)
 	     (setq item (pathname-name item))
 	     (push (init-function-name item) init-name))))
-    (setq c-name (namestring (merge-pathnames ".c" output-name))
-	  o-name (namestring (merge-pathnames ".o" output-name)))
+    (setq c-name (namestring (make-pathname :type "c" :defaults output-name))
+	  o-name (namestring (make-pathname :type "o" :defaults output-name)))
     (ecase target
       (:program
        (setq output-name (namestring output-name))
@@ -262,9 +262,9 @@ int init_~A(cl_object cblock)
 ~%;;; Therefore, COMPILE-FILE without :SYSTEM-P T is unsupported.~
 ~%;;;"))
 
-  (setq *compile-file-pathname* (merge-pathnames input-pathname #P".lsp"))
+  (setq *compile-file-pathname* (make-pathname :type "lsp" :defaults input-pathname))
   (unless (probe-file *compile-file-pathname*)
-    (setq *compile-file-pathname* (merge-pathnames input-pathname #P".lisp"))
+    (setq *compile-file-pathname* (make-pathname :type "lisp" :defaults input-pathname))
     (unless (probe-file *compile-file-pathname*)
       (format t "~&;;; The source file ~a is not found.~%"
 	      (namestring input-pathname))
@@ -589,7 +589,7 @@ Cannot compile ~a."
 
 #+dlopen
 (defun load-o-file (file verbose print)
-  (let ((tmp (merge-pathnames ".so" file)))
+  (let ((tmp (make-pathname :type "so" :defaults file)))
     (shared-cc tmp file)
     (when (probe-file tmp)
       (load tmp :verbose nil :print nil)
