@@ -95,31 +95,6 @@ object_to_fixnum(cl_object x)
 	}
 }
 
-char *
-object_to_string(cl_object x)
-{
-  switch (type_of(x)) {
-  case t_string:
-  case t_symbol:
-    return(x->string.self);
-  case t_fixnum: {
-    char *num = (char *)malloc(12);
-    sprintf(num, "%ld", (long)fix(x));
-    return(num);
-  }
-  case t_character: {
-    char *c = (char *)malloc(2);
-    c[0] = CHAR_CODE(x);
-    c[1] = '\0';
-    return c;
-  }
-  case t_pathname:
-    return namestring(x)->string.self;
-  default:
-    FEerror("~S cannot be coerced to a C string.", 1, x);
-  }
-}
-
 float
 object_to_float(cl_object x)
 {

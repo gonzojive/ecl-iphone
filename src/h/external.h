@@ -153,12 +153,10 @@ extern void init_clos(void);
 
 /* cmpaux.c */
 
-extern cl_object make_list(int i);
 extern int ifloor(int x, int y);
 extern int imod(int x, int y);
 extern char object_to_char(cl_object x);
 extern cl_fixnum object_to_fixnum(cl_object x);
-extern char *object_to_string(cl_object x);
 extern float object_to_float(cl_object x);
 extern double object_to_double(cl_object x);
 extern int aref_bv(cl_object x, cl_index index);
