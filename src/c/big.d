@@ -281,7 +281,10 @@ mp_realloc(void *ptr, size_t osize, size_t nsize)
 static void
 mp_free(void *ptr, size_t size)
 {
-	cl_dealloc(ptr,size);
+	char *x = ptr;
+	if (x < (char *)(bignum_register_limbs) ||
+	    x > (char *)(bignum_register_limbs+2))
+		cl_dealloc(x,size);
 }
 
 void
