@@ -805,7 +805,7 @@ BEGIN:
 		break;
 
 	case smm_string_input:
-		if (strm->stream.int0 <= 0)
+		if (strm->stream.int0 <= 0 || (int)strm->stream.object0->string.self[strm->stream.int0-1] != c)
 			goto UNREAD_ERROR;
 		--strm->stream.int0;
 		break;
