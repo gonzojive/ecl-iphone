@@ -778,6 +778,21 @@ ECLS 0.4
   - Use the interpreter stack to simplify the implementations of the
     printer and of the formater.
 
+* Visible changes and ANSI compatibility:
+
+  - MAKE-PATHNAME now accepts all combinations denoted by ANSI. Namely,
+    (MAKE-PATHNAME :directory :wild), etc.
+
+  - :UNSPECIFIC is only allowed in pathname's version and in a logical
+    pathname's device.
+
+  - MSDOS style namestrings, such as "c:/my/path/to/this/file.txt" and
+    "//c/my/path/to/this/file.txt" finally work.
+
+  - (DECLARE (OPTIMIZE DEBUG)) is ignored, but no warning is printed.
+
+  - Implemented WITH-STANDARD-IO-SYNTAX.
+
 TODO:
 =====
 
