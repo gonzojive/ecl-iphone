@@ -445,7 +445,7 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 	 *	[logical-hostname:][;][logical-directory-component;][pathname-name][.pathname-type]
 	 */
 	logical = TRUE;
-	device = Cnil;
+	device = @':unspecific';
 	path = parse_directories(s, WORD_LOGICAL, *ep, end, ep);
 	if (CONSP(path)) {
 		if (CAR(path) != @':relative' && CAR(path) != @':absolute')
@@ -613,6 +613,58 @@ cl_logical_pathname(cl_object x)
 }
 
 /* FIXME! WILD-PATHNAME-P is missing! */
+@(defun wild-pathname-p (pathname &optional component)
+	bool checked = 0;
+@
+	pathname = cl_pathname(pathname);
+	if (component == Cnil || component == @':host') {
+		if (pathname->pathname.host == @':wild')
+			@(return Ct);
+		checked = 1;
+	}
+	if (component == Cnil || component == @':device') {
+		if (pathname->pathname.device == @':wild')
+			@(return Ct);
+		checked = 1;
+	}
+	if (component == Cnil || component == @':version') {
+		if (pathname->pathname.version == @':wild')
+			@(return Ct);
+		checked = 1;
+	}
+	if (component == Cnil || component == @':name') {
+		cl_object name = pathname->pathname.name;
+		if (name != Cnil &&
+		    (name == @':wild' || (!SYMBOLP(name) && member_char('*', name))))
+			@(return Ct);
+		checked = 1;
+	}
+	if (component == Cnil || component == @':type') {
+		cl_object name = pathname->pathname.type;
+		if (name != Cnil &&
+		    (name == @':wild' || (!SYMBOLP(name) && member_char('*', name))))
+			@(return Ct);
+		checked = 1;
+	}
+	if (component == Cnil || component == @':directory') {
+		cl_object list = pathname->pathname.directory;
+		checked = 1;
+		while (list != Cnil) {
+			cl_object name = CAR(list);
+			if (name != Cnil &&
+			    (name == @':wild' || name == @':wild-inferiors' ||
+			     (!SYMBOLP(name) && member_char('*', name))))
+			{
+				@(return Ct)
+			}
+			list = CDR(list);
+		}
+	}
+	if (checked == 0) {
+		FEerror("~A is not a valid pathname component", 1, component);
+	}
+	@(return Cnil)
+@)
 
 /*
  * coerce_to_file_pathname(P) converts P to a physical pathname,
@@ -744,6 +796,9 @@ ecl_namestring(cl_object x, int truncate_if_unreadable)
 	logical = x->pathname.logical;
 	host = x->pathname.host;
 	if (logical) {
+		if ((y = x->pathname.device) != @':unspecific' &&
+		    truncate_if_unreadable)
+			return Cnil;
 		if (host != Cnil) {
 			si_do_write_sequence(host, buffer, MAKE_FIXNUM(0), Cnil);
 			writestr_stream(":", buffer);
@@ -1090,7 +1145,7 @@ path_list_match(cl_object a, cl_object mask) {
 	if (!endp(a))
 		return FALSE;
 	return TRUE;
-}		
+}
 
 cl_object
 cl_pathname_match_p(cl_object path, cl_object mask)
@@ -1230,7 +1285,7 @@ find_list_wilds(cl_object a, cl_object mask)
 		}
 	}
 	return @nreverse(l);
-}		
+}
 
 static cl_object
 copy_wildcards(cl_object *wilds_list, cl_object pattern)
@@ -1329,9 +1384,7 @@ cl_translate_pathname(cl_object source, cl_object from, cl_object to)
 		goto error;
 	out->pathname.host = to->pathname.host;
 
-	/* Match devices */
-	if (!equal(source->pathname.device, from->pathname.device))
-		goto error;
+	/* Logical pathnames do not have devices. We just overwrite it. */
 	out->pathname.device = to->pathname.device;
 
 	/* Match directories */
