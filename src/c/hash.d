@@ -399,11 +399,30 @@ extend_hashtable(cl_object hashtable)
 @(defun make_hash_table (&key (test @'eql')
 			      (size MAKE_FIXNUM(1024))
 			      (rehash_size make_shortfloat(1.5))
-			      (rehash_threshold make_shortfloat(0.7))
-			 &aux h)
+			      (rehash_threshold make_shortfloat(0.7)))
+@
+	@(return cl_make_hash_table(test, size, rehash_size, rehash_threshold))
+@)
+
+cl_object
+cl_clear_hash_table(cl_object hashtable)
+{
+	struct hashtable_entry *e = hashtable->hash.data;
+	cl_index i;
+
+	hashtable->hash.entries = 0;
+	for (i=hashtable->hash.size; i--; e++)
+		e->key = e->value = OBJNULL;
+}
+
+cl_object
+cl_make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
+		   cl_object rehash_threshold)
+{
 	enum httest htt;
 	cl_index i, hsize;
-@
+	cl_object h;
+
 	if (test == @'eq' || test == SYM_FUN(@'eq'))
 		htt = htt_eq;
 	else if (test == @'eql' || test == SYM_FUN(@'eql'))
@@ -446,8 +465,8 @@ extend_hashtable(cl_object hashtable)
 		h->hash.data[i].key = OBJNULL;
 		h->hash.data[i].value = OBJNULL;
 	}
-	@(return h)
-@)
+	return h;
+}
 
 @(defun hash_table_p (ht)
 @

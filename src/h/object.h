@@ -43,9 +43,6 @@ extern "C" {
 
 #define	RTABSIZE	CHAR_CODE_LIMIT	/*  read table size  */
 
-#define Q_SIZE    	128	/*  output character queue size (for print) */
-#define IS_SIZE   	256	/*  indentation stack size (for print)	*/
-
 #ifndef __cplusplus
 typedef int bool;
 #endif

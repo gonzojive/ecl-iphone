@@ -930,6 +930,10 @@ ECL 0.6
 		> (gensym)
 		#:F38
 
+  - ECL now uses a hashtable to store objects when *PRINT-CIRCLE* is
+    on. This hashtable is not cleared when calling PRINT-OBJECT, so
+    that circularities are also detected inside these methods.
+
 TODO:
 =====
 

@@ -11,9 +11,6 @@
 
 (si::select-package "CL")
 
-; Safety measure
-(setq *print-circle* t)
-
 (export '(
 	  &whole
 	  &environment

@@ -18,6 +18,7 @@
 #include <math.h>
 #include <ctype.h>
 #include <unistd.h>
+#include "internal.h"
 
 /******************************* EXPORTS ******************************/
 
@@ -87,7 +88,7 @@ cl_object @'si::sharp-exclamation';
 #define	INDENT1		0404
 #define	INDENT2		0405
 
-#define	mod(x)		((x)%Q_SIZE)
+#define	mod(x)		((x)%ECL_PPRINT_QUEUE_SIZE)
 
 #ifdef THREADS
 
@@ -99,11 +100,12 @@ cl_object @'si::sharp-exclamation';
 #define isp        clwp->lwp_isp
 #define iisp       clwp->lwp_iisp
 
-#define CIRCLEbase clwp->lwp_CIRCLEbase
+#define CIRCLEstack clwp->lwp_CIRCLEstack
+#define CIRCLEcounter clwp->lwp_CIRCLEcounter
 
 #else
-static short queue[Q_SIZE];
-static short indent_stack[IS_SIZE];
+static short queue[ECL_PPRINT_QUEUE_SIZE];
+static short indent_stack[ECL_PPRINT_INDENTATION_STACK_SIZE];
 
 static int qh;
 static int qt;
@@ -111,14 +113,17 @@ static int qc;
 static int isp;
 static int iisp;
 
-static cl_fixnum CIRCLEbase;
+static cl_object CIRCLEstack;
+static cl_fixnum CIRCLEcounter;
 #endif /* THREADS */
+
+static cl_object no_stream;
 
 static void flush_queue (bool force);
 static void write_decimal1 (int i);
 static void travel_push_object (cl_object x);
-static cl_index searchPRINTcircle(cl_object x);
-static bool doPRINTcircle(cl_object x);
+static cl_fixnum search_print_circle(cl_object x);
+static bool do_print_circle(cl_fixnum mark);
 static bool potential_number_p(cl_object s, int base);
 
 static cl_object
@@ -143,9 +148,9 @@ writec_PRINTstream(int c)
 static void
 writec_queue(int c)
 {
-	if (qc >= Q_SIZE)
+	if (qc >= ECL_PPRINT_QUEUE_SIZE)
 		flush_queue(FALSE);
-	if (qc >= Q_SIZE)
+	if (qc >= ECL_PPRINT_QUEUE_SIZE)
 		FEerror("Can't pretty-print.", 0);
 	queue[qt] = c;
 	qt = mod(qt+1);
@@ -210,7 +215,7 @@ DO_MARK:
 		return;
 	qh = mod(qh+1);
 	--qc;
-	if (++isp >= IS_SIZE-1)
+	if (++isp >= ECL_PPRINT_INDENTATION_STACK_SIZE-1)
 		FEerror("Can't pretty-print.", 0);
 	indent_stack[isp++] = file_column(PRINTstream);
 	indent_stack[isp] = indent_stack[isp-1];
@@ -507,9 +512,8 @@ call_structure_print_function(cl_object x, int level)
 	bool a = PRINTarray;
 	cl_object ps = PRINTstream;
 	cl_object pc = PRINTcase;
-	cl_index cb = CIRCLEbase;
 
-	short ois[IS_SIZE];
+	short ois[ECL_PPRINT_INDENTATION_STACK_SIZE];
 
 	int oqh;
 	int oqt;
@@ -575,7 +579,6 @@ call_structure_print_function(cl_object x, int level)
 	qt = oqt;
 	qh = oqh;
 
-	CIRCLEbase = cb;
 	PRINTcase = pc;
 	PRINTstream = ps;
 	PRINTarray = a;
@@ -634,8 +637,6 @@ write_symbol(register cl_object x)
 		return;
 	}
 	if (Null(x->symbol.hpack)) {
-		if (PRINTcircle && doPRINTcircle(x))
-			return;
 		if (PRINTgensym)
 			write_str("#:");
 	} else if (x->symbol.hpack == keyword_package)
@@ -759,6 +760,17 @@ _write_object(cl_object x, int level)
 		return;
 	}
 
+	if (PRINTcircle &&
+	    !IMMEDIATE(x) &&
+	    !(type_of(x) == t_symbol && !Null(x->symbol.hpack)))
+	{
+		cl_fixnum code = search_print_circle(x);
+		if (code) {
+			if (!do_print_circle(code))
+				return;
+		}
+	}
+
 	switch (type_of(x)) {
 
 	case FREE:
@@ -846,8 +858,6 @@ _write_object(cl_object x, int level)
 			write_ch('>');
 			return;
 		}
-		if (PRINTcircle && doPRINTcircle(x))
-			return;
 		if (PRINTlevel >= 0 && level >= PRINTlevel) {
 			write_ch('#');
 			return;
@@ -921,8 +931,6 @@ _write_object(cl_object x, int level)
 			write_ch('>');
 			return;
 		}
-		if (PRINTcircle && doPRINTcircle(x))
-			return;
 		if (PRINTlevel >= 0 && level >= PRINTlevel) {
 			write_ch('#');
 			return;
@@ -988,8 +996,6 @@ _write_object(cl_object x, int level)
 			x = CDR(x);
 			goto BEGIN;
 		}
-		if (PRINTcircle && doPRINTcircle(x))
-			return;
 		if (CAR(x) == @'quote' && CONSP(CDR(x)) && Null(CDDR(x))) {
 			write_ch('\'');
 			x = CADR(x);
@@ -1022,29 +1028,14 @@ _write_object(cl_object x, int level)
 			x = CDR(x);
 			_write_object(y, level+1);
 			/* FIXME! */
-			if (x == OBJNULL || ATOM(x)) {
+			if (x == OBJNULL || ATOM(x) ||
+			    (PRINTcircle && search_print_circle(x))) {
 				if (x != Cnil) {
 					write_ch(INDENT);
 					write_str(". ");
 					_write_object(x, level);
 				}
 				break;
-			}
-			if (PRINTcircle) {
-				cl_index vp = searchPRINTcircle(x);
-				if (vp != 0) {
-					if (cl_stack[vp] != Cnil) {
-						write_str(" . #");
-						write_decimal((vp-CIRCLEbase)/2+1);
-						write_ch('#');
-						goto RIGHT_PAREN;
-					} else {
-						write_ch(INDENT);
-						write_str(". ");
-						_write_object(x, level);
-						goto RIGHT_PAREN;
-					}
-				}
 			}
 			if (i == 0 && y != OBJNULL && type_of(y) == t_symbol)
 				write_ch(INDENT1);
@@ -1181,8 +1172,6 @@ _write_object(cl_object x, int level)
 
 #ifndef CLOS
 	case t_structure:
-		if (PRINTcircle && doPRINTcircle(x))
-			return;
 		if (PRINTlevel >= 0 && level >= PRINTlevel) {
 			write_ch('#');
 			break;
@@ -1290,123 +1279,66 @@ _write_object(cl_object x, int level)
    to the element.
  */
 
-static void
-setupPRINTcircle(cl_object x)
+static cl_fixnum
+search_print_circle(cl_object x)
 {
-	cl_object *vp, *vq, *CIRCLEtop;
+	cl_object code;
 
-	if (CIRCLEbase >= 0)
-		FEerror("Internal error: tried to overwrite CIRCLEbase.",0);
-	if (!PRINTcircle) {
-		CIRCLEbase = -1;
-		return;
-	}
-	CIRCLEbase = cl_stack_index();
-	travel_push_object(x);
-	CIRCLEtop = cl_stack_top;
-	/* compact shared elements towards CIRCLEbase */
-	for (vp = vq = &cl_stack[CIRCLEbase];  vp < CIRCLEtop;  vp += 2)
-		if (vp[1] != Cnil) {
-			vq[0] = vp[0]; vq[1] = Cnil; vq += 2;
+	if (CIRCLEcounter < 0) {
+		code = gethash_safe(x, CIRCLEstack, OBJNULL);
+		if (code == OBJNULL) {
+			/* Was not found before */
+			sethash(x, CIRCLEstack, Cnil);
+			return 0;
+		} else if (code == Cnil) {
+			/* This object is referenced twice */
+			sethash(x, CIRCLEstack, Ct);
+			return 1;
+		} else {
+			return 2;
 		}
-	cl_stack_set_index(vq - cl_stack);
-}
-
-static cl_index
-searchPRINTcircle(cl_object x)
-{
-	cl_object *vp, *CIRCLEtop;
-
-	if (CIRCLEbase < 0)
-		return 0;
-	CIRCLEtop = cl_stack_top;
-	for (vp = &cl_stack[CIRCLEbase]; vp < CIRCLEtop; vp += 2)
-		if (vp[0] == x)
-			return vp-cl_stack+1;
-	return 0;
+	} else {
+		code = gethash_safe(x, CIRCLEstack, OBJNULL);
+		if (code == OBJNULL || code == Cnil) {
+			/* Is not referenced or was not found before */
+			sethash(x, CIRCLEstack, Cnil);
+			return 0;
+		} else if (code == Ct) {
+			/* This object is referenced twice, but has no code yet */
+			cl_fixnum new_code = ++CIRCLEcounter;
+			sethash(x, CIRCLEstack, MAKE_FIXNUM(new_code));
+			return -new_code;
+		} else {
+			return fix(code);
+		}
+	}
 }
 
 static bool
-doPRINTcircle(cl_object x)
+do_print_circle(cl_fixnum code)
 {
-	cl_index vp = searchPRINTcircle(x);
-	if (vp != 0) {
+	if (CIRCLEcounter < 0) {
+		return (code != 0);
+	} else if (code == 0) {
+		/* Object is not referenced twice */
+		return TRUE;
+	} else if (code < 0) {
+		/* Object is referenced twice. We print its definition */
 		write_ch('#');
-		write_decimal((vp-CIRCLEbase)/2+1);
-		if (cl_stack[vp] != Cnil) {
-			write_ch('#');
-			return TRUE; /* All is done */
-		} else {
-			write_ch('=');
-			cl_stack[vp] = Ct;
-		}
-	}
-	return FALSE; /* Print the structure */
-}
-
-static void
-travel_push_object(cl_object x)
-{
-	cl_type t;
-	cl_index i;
-	cl_object *vp, *CIRCLEtop;
-
-	cs_check(x);
-
-BEGIN:
-	if (x == OBJNULL) return;
-	t = type_of(x);
-	if (t != t_array && t != t_vector && t != t_cons &&
-#ifdef CLOS
-	    t != t_instance &&
-#else
-	    t != t_structure &&
-#endif
-	    !(t == t_symbol && Null(x->symbol.hpack)))
-		return;
-	CIRCLEtop = cl_stack_top;
-	for (vp = &cl_stack[CIRCLEbase];  vp < CIRCLEtop;  vp += 2)
-		if (x == vp[0]) {
-			vp[1] = Ct;
-			return;
-		}
-	cl_stack_push(x);
-	cl_stack_push(Cnil);
-
-	switch (t) {
-	case t_array:
-	  if ((cl_elttype)x->array.elttype == aet_object)
-	    for (i = 0;  i < x->array.dim;  i++)
-	      travel_push_object(x->array.self.t[i]);
-	  break;
-
-	case t_vector:
-	  if ((cl_elttype)x->vector.elttype == aet_object)
-	    for (i = 0;  i < x->vector.fillp;  i++)
-	      travel_push_object(x->vector.self.t[i]);
-	  break;
-
-	case t_cons:
-	  travel_push_object(CAR(x));
-	  x = CDR(x);
-	  goto BEGIN;
-
-#ifdef CLOS
-	case t_instance:
-	  for (i = 0;  i < x->instance.length;  i++)
-	    travel_push_object(x->instance.slots[i]);
-	  break;
-#else
-	case t_structure:
-	  for (i = 0;  i < x->str.length;  i++)
-	    travel_push_object(x->str.self[i]);
-#endif /* CLOS */
-	/* INV: all types of 'x' have been handled */
+		write_decimal(-code);
+		write_ch('=');
+		return TRUE;
+	} else {
+		/* Second reference to the object */
+		write_ch('#');
+		write_decimal(code);
+		write_ch('#');
+		return FALSE;
 	}
 }
 
 void
-setupPRINT(cl_object strm)
+cl_setup_printer(cl_object strm)
 {
 	cl_object y;
 
@@ -1448,35 +1380,34 @@ setupPRINT(cl_object strm)
 	PRINTpackage = symbol_value(@'si::*print-package*');
 	if (PRINTpackage == Cnil) PRINTpackage = OBJNULL;
 	PRINTstructure = symbol_value(@'si::*print-structure*') != Cnil;
-	CIRCLEbase = -1;
 }
 
 void
-write_object(cl_object x)
+cl_write_object(cl_object x)
 {
+	if (PRINTcircle && CIRCLEcounter == -2) {
+		cl_object real_stream = PRINTstream;
+
+		CIRCLEcounter = -1;
+		PRINTstream = no_stream;
+		cl_write_object(x);
+
+		CIRCLEcounter = 0;
+		PRINTstream = real_stream;
+		cl_write_object(x);
+
+		cl_clear_hash_table(CIRCLEstack);
+		CIRCLEcounter = -2;
+		return;
+	}
 	if (PRINTpretty) {
 		qh = qt = qc = 0;
 		isp = iisp = 0;
 		indent_stack[0] = 0;
 	}
-	if (PRINTcircle)
-		setupPRINTcircle(x);
 	_write_object(x, 0);
-	if (CIRCLEbase >= 0) {
-		cl_stack_set_index(CIRCLEbase);
-		CIRCLEbase = -1;
-	}
 	if (PRINTpretty)
 		flush_queue(TRUE);
-}
-
-void
-write_object_with_escape(cl_object x, bool escape)
-{
-	bool oldescape = PRINTescape;
-	PRINTescape = escape;
-	write_object(x);
-	PRINTescape = oldescape;
 }
 
 static bool
@@ -1555,9 +1486,8 @@ potential_number_p(cl_object strng, int base)
 	PRINTpackage = symbol_value(@'si::*print-package*');
 	if (PRINTpackage == Cnil) PRINTpackage = OBJNULL;
 	PRINTstructure = symbol_value(@'si::*print-structure*') != Cnil;
-	CIRCLEbase = -1;
 
-	write_object(x);
+	cl_write_object(x);
 	flush_stream(PRINTstream);
 	@(return x)
 @)
@@ -1576,11 +1506,11 @@ potential_number_p(cl_object strng, int base)
 
 @(defun pprint (obj &optional strm)
 @
-	setupPRINT(strm);
+	cl_setup_printer(strm);
 	PRINTescape = TRUE;
 	PRINTpretty = TRUE;
 	writec_PRINTstream('\n');
-	write_object(obj);
+	cl_write_object(obj);
 	flush_stream(PRINTstream);
 	@(return)
 @)
@@ -1721,23 +1651,30 @@ init_print(void)
 	PRINTlevel = -1;
 	PRINTlength = -1;
 	PRINTarray = FALSE;
+
+	CIRCLEstack = cl_make_hash_table(@'eq', MAKE_FIXNUM(1024), make_shortfloat(1.5),	
+					 make_shortfloat(0.7));
+	register_root(&CIRCLEstack);
+
+	no_stream = @make_broadcast_stream(0);
+	register_root(&no_stream);
 }
 
 cl_object
 princ(cl_object obj, cl_object strm)
 {
-	setupPRINT(strm);
+	cl_setup_printer(strm);
 	PRINTescape = FALSE;
-	write_object(obj);
+	cl_write_object(obj);
 	return obj;
 }
 
 cl_object
 prin1(cl_object obj, cl_object strm)
 {
-	setupPRINT(strm);
+	cl_setup_printer(strm);
 	PRINTescape = TRUE;
-	write_object(obj);
+	cl_write_object(obj);
 	flush_stream(PRINTstream);
 	return obj;
 }

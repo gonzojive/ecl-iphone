@@ -1,5 +1,7 @@
 (in-package "CL-USER")
 
+(setq *print-circle* nil)
+
 #+clisp
 (defmacro with-ignored-errors (&rest forms)
   (let ((b (gensym)))

@@ -89,7 +89,8 @@ typedef struct lpd {
   cl_object (*lwp_kf)();
 
   /* print.d */
-  cl_fixnum lwp_CIRCLEbase;
+  cl_fixnum lwp_CIRCLEcounter;
+  cl_object lwp_CIRCLEstack;
   cl_object lwp_PRINTstream;
   bool lwp_PRINTescape;
   bool lwp_PRINTpretty;

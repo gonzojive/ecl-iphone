@@ -320,6 +320,7 @@ extern void init_gfun(void);
 
 /* hash.c */
 
+extern cl_object cl_make_hash_table(cl_object test, cl_object size, cl_object rehash_size, cl_object rehash_threshold);
 extern cl_hashkey update_crc32(cl_hashkey crc, const char *buffer, cl_index len);
 extern cl_hashkey hash_eq(cl_object x);
 extern cl_hashkey hash_eql(cl_object x);
@@ -330,6 +331,7 @@ extern void init_hash(void);
 extern cl_object gethash(cl_object key, cl_object hash);
 extern cl_object gethash_safe(cl_object key, cl_object hash, cl_object def);
 extern bool remhash(cl_object key, cl_object hash);
+extern void cl_clear_hashtable(cl_object hashtable);
 
 
 /* init.c */
@@ -621,28 +623,6 @@ extern void init_predicate(void);
 
 /* print.c */
 
-#ifndef THREADS
-extern bool PRINTescape;
-extern bool PRINTpretty;
-extern bool PRINTcircle;
-extern int PRINTbase;
-extern bool PRINTradix;
-extern cl_object PRINTcase;
-extern bool PRINTgensym;
-extern int PRINTlevel;
-extern int PRINTlength;
-extern bool PRINTarray;
-extern cl_object PRINTpackage;
-extern bool PRINTstructure;
-extern cl_object PRINTstream;
-#endif
-extern int interactive_writec_stream(int c, cl_object stream);
-extern void flush_interactive_stream(cl_object stream);
-extern void edit_double(int n, double d, int *sp, char *s, int *ep);
-extern void write_object(cl_object x);
-extern void write_object_with_escape(cl_object, bool escape);
-extern void setupPRINT(cl_object strm);
-extern void cleanupPRINT(void);
 extern cl_object princ(cl_object obj, cl_object strm);
 extern cl_object prin1(cl_object obj, cl_object strm);
 extern cl_object print(cl_object obj, cl_object strm);

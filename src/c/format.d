@@ -16,6 +16,7 @@
 
 #include "ecl.h"
 #include <ctype.h>
+#include "internal.h"
 
 cl_object @'si::*indent-formatted-output*';
 
@@ -338,10 +339,10 @@ fmt_integer(format_stack fmt, cl_object x, bool colon, bool atsign,
 		fmt->aux_string->string.fillp = 0;
 		fmt->aux_stream->stream.int0 = file_column(fmt->stream);
 		fmt->aux_stream->stream.int1 = file_column(fmt->stream);
-		setupPRINT(fmt->aux_stream);
+		cl_setup_printer(fmt->aux_stream);
 		PRINTescape = FALSE;
 		PRINTbase = radix;
-		write_object(x);
+		cl_write_object(x);
 		l = fmt->aux_string->string.fillp;
 		mincol -= l;
 		while (mincol-- > 0)
@@ -356,7 +357,7 @@ fmt_integer(format_stack fmt, cl_object x, bool colon, bool atsign,
 	PRINTstream = fmt->aux_stream;
 	PRINTradix = FALSE;
 	PRINTbase = radix;
-	write_object(x);
+	cl_write_object(x);
 	l = l1 = fmt->aux_string->string.fillp;
 	s = 0;
 	if (tempstr(fmt, s) == '-')
@@ -579,7 +580,7 @@ fmt_radix(format_stack fmt, bool colon, bool atsign)
 		PRINTstream = fmt->aux_stream;
 		PRINTradix = FALSE;
 		PRINTbase = 10;
-		write_object(x);
+		cl_write_object(x);
 		s = 0;
 		i = fmt->aux_string->string.fillp;
 		if (i == 1 && tempstr(fmt, s) == '0') {

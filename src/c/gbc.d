@@ -494,6 +494,7 @@ mark_phase(void)
 	    mark_object(clwp->lwp_READtable);
 	    mark_object(clwp->lwp_delimiting_char);
 	    mark_object(clwp->lwp_token);
+	    mark_object(clwp->lwp_CIRCLEstack);
 
 	    /* (current-thread) can return it at any time
 	     */
