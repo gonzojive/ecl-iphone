@@ -185,7 +185,7 @@ case "${host_os}" in
 		shared='no'
 		SHARED_LDFLAGS=''
 		BUNDLE_LDFLAGS=''
-		SHARED_PREFIX=''
+		SHAREDPREFIX=''
 		SHAREDEXT='dll'
 		;;
 	mingw*)
@@ -194,7 +194,7 @@ case "${host_os}" in
 		shared='yes'
 		SHARED_LDFLAGS=''
 		BUNDLE_LDFLAGS=''
-		SHARED_PREFIX=''
+		SHAREDPREFIX=''
 		SHAREDEXT='dll'
 		PICFLAG=''
 		;;
