@@ -153,7 +153,7 @@ main(int argc, char **argv)
 	~A
 }")
 
-(defun init-function-name (s)
+(defun init-function-name (s &optional (si::*init-function-prefix* si::*init-function-prefix*))
   (flet ((translate-char (c)
 	   (cond ((and (char>= c #\a) (char<= c #\z))
 		  (char-upcase c))
@@ -184,13 +184,12 @@ main(int argc, char **argv)
 	 (o-name (si::coerce-to-filename
 		  (compile-file-pathname output-name :type :object)))
 	 (init-name (string-upcase (pathname-name c-name)))
-	 (si::*init-function-prefix* (and (member target '(:library :static-library :lib :shared-library :dll)) si::*init-function-prefix*))
 	 submodules
 	 c-file)
     (dolist (item (reverse lisp-files))
       (cond ((symbolp item)
 	     (push (format nil "-l~A" (string-downcase item)) ld-flags)
-	     (push (init-function-name item) submodules))
+	     (push (init-function-name item nil) submodules))
 	    (t
 	     (push (si::coerce-to-filename
 		    (compile-file-pathname item :type :object)) ld-flags)
