@@ -667,11 +667,11 @@
     (new-local 0 fun funob)
     (if macro
 	(if narg
-	    (wt-nl "cl_def_c_macro(" fname "," cfun "," narg ");")
-	    (wt-nl "cl_def_c_macro(" fname "," cfun ",-1);"))
+	    (wt-nl "cl_def_c_macro(" fname ",(void*)" cfun "," narg ");")
+	    (wt-nl "cl_def_c_macro(" fname ",(void*)" cfun ",-1);"))
 	(if narg
-	    (wt-nl "cl_def_c_function(" fname "," cfun "," narg ");")
-	    (wt-nl "cl_def_c_function_va(" fname "," cfun ");")))
+	    (wt-nl "cl_def_c_function(" fname ",(void*)" cfun "," narg ");")
+	    (wt-nl "cl_def_c_function_va(" fname ",(void*)" cfun ");")))
     (close-inline-blocks)))
 
 ;;; ----------------------------------------------------------------------
