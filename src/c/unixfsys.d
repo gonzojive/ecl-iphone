@@ -168,6 +168,7 @@ truedirectory(cl_object pathname)
 	      if (chdir("..") < 0)
 		return error_no_dir(pathname);
 	    } else if (type_of(name) == t_string) {
+	      name = coerce_to_simple_string(name);
 	      if (chdir(name->string.self) < 0)
 		return error_no_dir(pathname);
 	    } else
@@ -280,7 +281,6 @@ cl_delete_file(cl_object file)
 {
 	cl_object filename;
 
-	/* INV: coerce_to_filename() checks types */
 	filename = coerce_to_filename(file);
 	if (unlink(filename->string.self) < 0)
 		FEfilesystem_error("Cannot delete the file ~S.", 1, file);
@@ -307,7 +307,6 @@ cl_file_write_date(cl_object file)
 	cl_object filename, time;
 	struct stat filestatus;
 
-	/* INV: coerce_to_filename() checks types */
 	filename = coerce_to_filename(file);
 	if (stat(filename->string.self, &filestatus) < 0)
 	  time = Cnil;
@@ -326,7 +325,6 @@ cl_file_author(cl_object file)
 	extern struct passwd *getpwuid(uid_t);
 #endif
 
-	/* INV: coerce_to_filename() checks types */
 	filename = coerce_to_filename(file);
 	if (stat(filename->string.self, &filestatus) < 0)
 		FEfilesystem_error("Cannot get the file status of ~S.", 1,
@@ -492,6 +490,8 @@ actual_directory(cl_object namestring, cl_object mask, bool all)
 	DIR *dir;
 	struct dirent *entry;
 
+	namestring = coerce_to_simple_string(namestring);
+	mask = coerce_to_simple_string(mask);
 	if (chdir(namestring->string.self) < 0) {
 	  chdir(saved_dir->string.self);
 	  FEfilesystem_error("directory: cannot access ~A", 1, namestring);
@@ -521,6 +521,8 @@ actual_directory(cl_object namestring, cl_object mask, bool all)
 	char iobuffer[BUFSIZ];
 	DIRECTORY dir;
 
+	namestring = coerce_to_simple_string(namestring);
+	mask = coerce_to_simple_string(mask);
 	if (chdir(namestring->string.self) < 0) {
 	  chdir(saved_dir->string.self);
 	  FEfilesystem_error("directory: cannot access ~A",1,namestring);

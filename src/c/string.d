@@ -117,6 +117,13 @@ copy_simple_string(cl_object x)
 }
 
 cl_object
+coerce_to_simple_string(cl_object x)
+{
+	assert_type_string(x);
+	return x->string.adjustable? copy_simple_string(x) : x;
+}
+
+cl_object
 cl_string(cl_object x)
 {
 	cl_object y;
@@ -220,7 +227,7 @@ string_eq(cl_object x, cl_object y)
 	cl_index i, j;
 	i = x->string.fillp;
 	j = y->string.fillp;
-	return (i == j && strncmp(x->string.self, y->string.self, i) == 0);
+	return (i == j && memcmp(x->string.self, y->string.self, i) == 0);
 }
 
 

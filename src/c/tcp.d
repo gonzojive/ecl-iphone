@@ -239,8 +239,11 @@ si_open_client_stream(cl_object host, cl_object port)
    int fd, p;			/* file descriptor */
    cl_object streamIn, streamOut;
 
-   assert_type_string(host);	/* Ensure "host" is a string */
-   p = fixnnint(port);		/* INV: fixnnint() checks type */
+   /* Ensure "host" is a string that we can pass to a C function */
+   host = coerce_to_simple_string(host);
+
+   /* The port number is not negative */
+   p = fixnnint(port);
 
    if (host->string.fillp > BUFSIZ - 1)
      FEerror("~S is a too long file name.", 1, host);
@@ -334,7 +337,7 @@ si_lookup_host_entry(cl_object host_or_address)
 
 	switch (type_of(host_or_address)) {
 	case t_string:
-		host_or_address->string.self[host_or_address->string.fillp] = 0;
+		host_or_address = coerce_to_simple_string(host_or_address);
 		he = gethostbyname(host_or_address->string.self);
 		break;
 	case t_fixnum:

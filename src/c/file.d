@@ -251,7 +251,8 @@ open_stream(cl_object fn, enum smmode smm, cl_object if_exists,
 {
 	cl_object x;
 	FILE *fp;
-	char *fname = coerce_to_filename(fn)->string.self;
+	cl_object filename = coerce_to_filename(fn);
+	char *fname = filename->string.self;
 
 	if (smm == smm_input || smm == smm_probe) {
 		fp = fopen(fname, OPEN_R);
