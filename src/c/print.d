@@ -768,7 +768,7 @@ write_character(int i, cl_object stream)
 		write_ch(i, stream);
 	} else {
 		write_str("#\\", stream);
-		if (i <= 32 || i == 127) {
+		if (i < 32 || i == 127) {
 			cl_object name = cl_char_name(CODE_CHAR(i));
 			write_str(name->string.self, stream);
 		} else if (i >= 128) {

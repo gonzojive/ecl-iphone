@@ -64,6 +64,8 @@ ECL 1.0
 
   - By default READ-BYTE signals an error when EOF is reached.
 
+  - The space should print as #\  instead of #\Space.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
