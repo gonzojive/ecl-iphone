@@ -287,7 +287,7 @@ cl_object
 parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 		 cl_object default_host)
 {
-	cl_object host, device, path, name, type;
+	cl_object host, device, path, name, type, version;
 	bool logical;
 
 	/* We first try parsing as logical-pathname. In case of
@@ -315,8 +315,10 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 		return Cnil;
 	if (!endp(path) && CAR(path) != @':relative')
 		path = CONS(@':absolute', path);
-	name = parse_word(s, '.', WORD_LOGICAL | WORD_ALLOW_ASTERISK | WORD_EMPTY_IS_NIL, *ep, end, ep);
-	type = parse_word(s, '\0', WORD_LOGICAL | WORD_ALLOW_ASTERISK | WORD_EMPTY_IS_NIL, *ep, end, ep);
+	name = parse_word(s, '.', WORD_LOGICAL | WORD_ALLOW_ASTERISK |
+			  WORD_EMPTY_IS_NIL, *ep, end, ep);
+	type = parse_word(s, '\0', WORD_LOGICAL | WORD_ALLOW_ASTERISK |
+			  WORD_EMPTY_IS_NIL, *ep, end, ep);
 	if (type == @':error')
 		return Cnil;
 	goto make_it;
@@ -372,7 +374,9 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 			  end, ep);
 	type = parse_word(s, '\0', WORD_ALLOW_ASTERISK | WORD_EMPTY_IS_NIL, *ep,
 			  end, ep);
-	if (type == @':error')
+	version = parse_word(s, '\0', WORD_ALLOW_ASTERISK | WORD_EMPTY_IS_NIL, *ep,
+			     end, ep);
+	if (version == @':error')
 		return Cnil;
  make_it:
 	if (*ep >= end) *ep = end;
@@ -927,7 +931,6 @@ path_list_match(cl_object a, cl_object mask) {
 	cl_object item_mask;
 	while (!endp(mask)) {
 		item_mask = CAR(mask);
-		mask = CDR(mask);
 		if (item_mask == @':wild-inferiors') {
 			if (endp(mask))
 				return TRUE;
@@ -957,6 +960,7 @@ pathname_match_p(cl_object path, cl_object mask)
 	if (path->pathname.logical != mask->pathname.logical)
 		return FALSE;
 #if 0
+	/* INV: This was checked in the calling routine */
 	if (!path_item_match(path->pathname.host, mask->pathname.host))
 		return FALSE;
 #endif
@@ -1001,14 +1005,14 @@ coerce_to_from_pathname(cl_object x, cl_object host)
 }
 
 @(defun si::pathname_translations (host &optional (set OBJNULL))
-	cl_index aux;
-	cl_object pair, l;
+	cl_index parsed_length, length;
+	cl_object host, pair, l;
 @
 	/* Check that host is a valid host name */
 	assert_type_string(host);
-	aux = host->string.fillp;
-	parse_word(host->string.self, '\0', WORD_LOGICAL, 0, aux, &aux);
-	if (aux != host->string.fillp)
+	parsed_length = host->string.fillp;
+	parse_word(host->string.self, '\0', WORD_LOGICAL, 0, length, &parsed_length);
+	if (parsed_length <= host->string.fillp)
 		FEerror("Wrong host syntax ~S", 1, host);
 
 	/* Find its translation list */
