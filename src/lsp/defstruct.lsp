@@ -113,6 +113,7 @@
       (push
        (cond ((null slot)
 	      ;; If slot-description is NIL, it is padding for initial-offset.
+	      ;; FIXME! NIL could, in principle, be valid slot name.
 	      nil)
 	     ((eql (first slot) 'TYPED-STRUCTURE-NAME)
 	      ;; If slot-name is NIL, it is the structure name of a typed
