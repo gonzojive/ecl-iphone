@@ -201,6 +201,9 @@ ECL 1.0
   - The default value of optional arguments in a DEFTYPE form "defaults" to '*
     (ANSI 3.4.8).
 
+  - The value of the INDEX variable in WITH-INPUT-FROM-STRING is only updated
+    when exiting normally from the WITH-... form.
+
 * MOP compliance:
 
   - ADD-METHOD is now a generic function and implements most of the protocol in
