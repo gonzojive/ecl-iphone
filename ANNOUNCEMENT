@@ -7,8 +7,9 @@ implementation of the Common-Lisp language which complies to the ANSI
 X3J13 definition of the language.
 
 ECL supports the operating systems Linux, FreeBSD, NetBSD, Solaris,
-Windows/Cygwin and OSX, running on top of the Intel, Sparc, Alpha and PowerPC
-processors. Porting to other architectures should be rather easy.
+Microsoft Windows and OSX, running on top of the Intel, Sparc, Alpha
+and PowerPC processors. Porting to other architectures should be
+rather easy.
 
 ECL is currently hosted at SourceForge. The home page of the project
 is http://ecls.sourceforge.net, and in it you will find source code
@@ -17,10 +18,228 @@ releases, a CVS tree and an up to date documentation.
 Notes for this release
 ======================
 
-This release add support for compiling lisp code as shared libraries under the
-OSX operating system, and makes ECL compile and run again under Solaris/Sparc,
-now using 64-bit pointers/fixnums when available.
+This release add support for compiling lisp code as shared libraries
+under the OSX and Microsoft Windows operating systems, and makes ECL
+compile and run again under Solaris/Sparc, now using 64-bit
+pointers/fixnums when available.
 
+Furthermore, ECL now is shipped with a working port of the CLX
+library, a pretty printer, and is capable of using ASDF (when
+configured with the flag --with-cmuformat).
 
 ECL 0.9d
 ========
+
+* Supported platforms:
+
+  - ECL now builds under Windows using MinGW-32.
+
+  - It is possible now both under OS/X and Microsoft Windows to build
+    ECL as a shared library and to compile and load code on the fly.
+
+  - ECL now uses the configuration files of GMP to guess the best
+    compilation/linking flags for a given architecture. This is required
+    in platforms such as Solaris/Ultrasparc, where there are multiple
+    ABIs (i.e. applications may use 32-bit or 64-pointers, 32-bit or
+    64-registers, etc). On other platforms this process is not required,
+    and you may get a faster configuration using --enable-simple-conf
+
+* System design: Multithreading
+
+  - Almost all data specific to ECL has migrated into two structures:
+    CL_ENV and CL_CORE. The first one contains stacks and other data
+    that is specific to a process. The second one contains data common
+    to the whole environment. CL_ENV is an actual variable in
+    single-threaded ECL, and a pointer to a thread-local structure in
+    a multi-threaded ECL.
+
+  - The implementation of thread-local dynamic bindings uses hash
+    tables to keep the value of the symbols.
+
+  - The actual implementation uses POSIX threads under Linux. Ports to
+    other operating systems are being worked out.
+
+* System design: Debugging
+
+  - The bytecodes interpreter now implements a barebones debugger, in
+    which the facilities TRACE, STEP are available, and the content of
+    local variables may be inspected and changed. To use the debugger,
+    you must have activated the memoization of function definitions,
+    by using (setf si::*keep-definitions* t). Sample session:
+	> (defun foo (x) (print x)) (step (foo 2))
+	FOO
+	Top level.
+	> (FOO 2) ->
+	(PRINT X) - :v
+	Block names: FOO.
+	Local variables:
+	  X: 2
+	Broken at FOO.
+	(PRINT X) - (setf x 3)
+	3
+	Broken at FOO.
+	(PRINT X) - :v
+	Block names: FOO.
+	Local variables:
+	  X: 3
+	Broken at FOO.
+	(PRINT X) -
+	3
+	3
+	Top level.
+
+* System design: Compiler
+
+  - The optimizer for tail-recursive calls has been fixed. Formerly
+    the check for tail-recursion was based on names, and this produced
+    an infinite loop:
+	(labels ((f1 (x)
+		   (labels ((f1 (x) 2))
+		      (f1 x))))
+	  (f1 2))
+    Now the compiler recognizes that the first call to (f1 x) refers
+    the innermost function, and there is no tail recursion.
+
+  - The compiler now produces C functions with a fixed number of
+    arguments when the lisp function is not a closure and has no
+    &optional, &rest, &key or &allow-other-keys.
+
+  - MULTIPLE-VALUE-{BIND,SETQ} produce now more economical forms.
+
+* Errors fixed:
+
+  - Bugs in the mechanism for automatically creating packages when
+    loading binary files.
+
+  - The value of LDFLAGS supplied at configuration time, was not used
+    when building shared libraries or FASL files.
+
+  - HASH-TABLE-SIZE and HASH-TABLE-TEST have been finally implemented.
+
+  - The configuration process now does respect the values of libdir,
+    bindir, infodir,... supplied by the user.
+
+  - SLOT-EXISTS-P now works with all types of objects.
+
+  - LCM now works when any of the arguments is 0.
+
+  - SIGNUM now accepts complex arguments.
+
+  - COMPILE-FILE now handles files with relative pathnames (like
+    "foo/faa.lsp").
+
+  - In destructuring lambda lists, () or NIL is understood as an empty
+    list.
+
+  - (VALUES (FOO)) was compiled as a simple call (FOO), without
+    truncating the number of values output by the latter.
+
+  - The printer of floating point numbers was inaccurate and could not
+    represent MOST-POSITIVE-LONG-FLOAT reliably.
+
+  - Assignments to structures were not properly compiled in unsafe mode.
+
+* Documentation:
+
+  - New manual page documents the scripting facilities of ECL
+    (contributed by Julian St.)
+
+* Visible changes:
+
+  - ECL now distinguishes between the current working directory of the
+    C library (obtained by SI::GETCWD and changed with SI::CHDIR) and
+    the directory for the lisp environment (the value of
+    *DEFAULT-PATHNAME-DEFAULTS*). The internal routine SI::CHDIR now
+    takes arguments: the new directory, and an optional boolean
+    that determines whether *DEFAULT-PATHNAME-DEFAULTS* is also to be
+    changed (defaults to true).
+
+  - New command line options -shell and -norc, which are useful for
+    scripting. New and more robust handling of command line options,
+    permits combining (and repeating) the options -load, -eval, -shell
+    in a number of ways.
+
+  - SI:FILE-COLUMN now always returns a number, which may be 0 for
+    streams that do not have that information.
+
+  - The compiler (COMPILE-FILE, COMPILE, etc), now understands
+    logical pathnames.
+
+  - Under windows, the system directory is defined to be the place
+    where ecl.exe resides. Windows user will want to use the
+    command "make windows-dist", which builds a ZIP file with a
+    ready to be installed ECL.
+
+  - If you want to install ECL to a different place, use "make prefix=..."
+    instead of the old form "make PREFIX=...". ECL now follows the GNU
+    coding standards in this particular point.
+
+  - The script "ecl-config" now returns only the essential flags to compile a
+    file that links against ECL. It does not include optimization flags, or
+    flags to create position independent object files.
+
+  - Fixed a long lasting bug: the TEST or TEST-NOT function to
+    [N]SET-EXCLUSIVE-OR can assume that the first argument belongs to
+    the first list and the second to the second one. However, ECL
+    would not respect this.
+
+  - TRUENAME now merges a pathname with the current working directory
+    when it has no directory of its own. Thus (TRUENAME #P"") is
+    equivalent to (SI:GETCWD).
+
+  - The old CLX library has been replaced with the portable CLX
+    library from the TELENT archive.
+
+* ANSI compatibility:
+
+  - No symbol is exported from the CL package other than those specificied in
+    the standard. ECL extensions, such as the types BYTE8, UNSIGNED-BYTE8,
+    are now in the package EXT (which is temporarily an alias of SYSTEM).
+
+  - The following functions have been implemented: BROADCAST-STREAM-STREAMS,
+    {ECHO,TWO-WAY}-STREAM-{INPUT,OUTPUT}-STREAM, FILE-STRING-LENGTH,
+    INTERACTIVE-STREAM-P (dummy), STREAM-EXTERNAL-FORMAT.
+
+  - The generic function for handling CLOS streams (STREAM-READ-CHAR,
+    STREAM-CLEAR-INPUT, etc), are now in the EXT package.
+
+  - HASH-TABLE-REHASH-THRESHOLD can now be any number in (REAL 0 1). Integers
+    above 1 are not allowed, and the threshold is always interpreted as the
+    relative filling of the hash table before growth (Before, the threshold
+    could be an integer number with a somewhat obscure interpretation).
+
+  - SXHASH now always returns positive fixnums and produces the same key for
+    two bitvectors which are EQUAL.
+
+  - Implemented the class redefinition protocol, which involves
+    CHANGE-CLASS, UPDATE-INSTANCE-FOR-{REDEFINED,NEW}-CLASS, and
+    MAKE-INSTANCES-OBSOLETE.
+
+  - There is support for the :CASE argument in all pathname functions
+    that require it (Contributed by Julian Stecklina). The function
+    PARSE-NAMESTRING now handles the optional host and
+    default-pathname arguments properly. MAKE-PATHNAME now signals
+    conditions of type FILE-ERROR when the components of the pathname
+    have errors (wrong types, '(:ABSOLUTE :BACK), etc).
+
+  - When creating methods, the parameter specializer names are
+    converted into canonical parameter specializers (i.e. either
+    classes or EQL specializers). Thus, if a method specializes on
+    class A and this class is renamed as B, the method still
+    specializes on the same class.
+
+  - Implemented WILD-PATHNAME-P, and LOAD-LOGICAL-PATHNAME-TRANSLATIONS
+    (which similar to CMUCL looks for the translations at sys:host.translation).
+
+  - Streams now can have element types CHARACTER, (SIGNED-BYTE 8) and
+    (UNSIGNED-BYTE 8).
+
+  - A VALUES form can now act as a place.
+
+  - All non-graphic characters below (CODE-CHAR 128) have now
+    character names.
+
+  - The pretty printer and the FORMAT routine from CMUCL have been
+    finally integrated and put together. By default, they are not
+    compiled in, unless configured with "--with-cmu-format".
+
