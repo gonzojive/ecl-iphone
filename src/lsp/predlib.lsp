@@ -126,8 +126,7 @@
 	 (setq tp (car type) i (cdr type)))
 	#+clos
 	((sys:instancep type)
-	 (locally (declare (notinline find-class))
-	   (return-from typep (subclassp (class-of object) type))))
+	 (return-from typep (subclassp (class-of object) type)))
 	(t
 	 (error "typep: not a valid type specifier ~A for ~A" type object)))
   (case tp
@@ -206,9 +205,8 @@
            #+clos
 	   ((setq c (find-class type nil))
 	    ;; Follow the inheritance chain
-	    (locally (declare (notinline find-class))
-	      (and (sys:instancep object)
-		   (subclassp (sys:instance-class object) c))))
+	    (and (sys:instancep object)
+		 (subclassp (sys:instance-class object) c)))
 	   #-clos
 	   ((get tp 'IS-A-STRUCTURE)
             (when (sys:structurep object)
@@ -263,19 +261,16 @@
                     #-clos STRUCTURE ARRAY SIMPLE-ARRAY FUNCTION COMPILED-FUNCTION
 		    REAL))
 	     #+clos
-	     (locally (declare (notinline find-class))
-	       (find-class type nil))
+	     (find-class type nil)
 	     #-clos
 	     (get type 'IS-A-STRUCTURE))
 	 t)
 	(t nil)))
 
 ;;; Dummy version before CLOS is loaded
-#+clos
+#+(and clos ecls-min)
 (unless (fboundp 'sys::fpp)
   (defun find-class (n &optional err env) (declare (ignore n err env)) nil))
-#+clos
-(declaim (NOTINLINE FIND-CLASS))
 
 ;;; SUBTYPEP predicate.
 (defun subtypep (type1 type2 &aux t1 t2 i1 i2 ntp1 ntp2 c1 c2)
