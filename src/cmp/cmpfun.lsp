@@ -370,7 +370,7 @@
 ;----------------------------------------------------------------------
 
 (defun co1ldb (args &aux (arg1 (first args))
-		    (len (* 8 (round (integer-length most-positive-fixnum) 8)))
+		    (len (integer-length most-positive-fixnum))
 		    size pos)
     (and (consp arg1)
 	 (eq 'BYTE (car arg1))
