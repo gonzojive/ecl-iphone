@@ -41,6 +41,10 @@
 
 (defun next-lcl () (list 'LCL (incf *lcl*)))
 
+(defun next-cfun (&optional (prefix "L~D"))
+  (let ((code (incf *next-cfun*)))
+    (format nil prefix code)))
+
 (defun next-temp ()
   (prog1 *temp*
          (incf *temp*)

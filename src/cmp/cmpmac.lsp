@@ -8,7 +8,6 @@
 
 ;;; from cmpenv.lsp
 (defmacro next-cmacro () '(incf *next-cmacro*))
-(defmacro next-cfun () '(incf *next-cfun*))
 
 ;;; from cmplabel.lsp
 (defmacro next-label () `(cons (incf *last-label*) nil))

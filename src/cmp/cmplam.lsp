@@ -284,7 +284,7 @@
 	  (t
 	   (cond (keywords
 		  (wt-nl "{ cl_object keyvars[" (* 2 nkey) "];")
-		  (wt-nl "cl_parse_key(args," nkey ",L" cfun "keys,keyvars"))
+		  (wt-nl "cl_parse_key(args," nkey "," cfun "keys,keyvars"))
 		 (t
 		  (wt-nl "cl_parse_key(args,0,NULL,NULL")))
 	   (if rest (wt ",&" rest-loc) (wt ",NULL"))
@@ -298,7 +298,7 @@
        (i 0 (1+ i)))
       ((endp kwd)
        (when all-kwd
-	 (wt-h "#define L" cfun "keys (&" (add-keywords (nreverse all-kwd)) ")")
+	 (wt-h "#define " cfun "keys (&" (add-keywords (nreverse all-kwd)) ")")
 	 (wt-nl "}")))
     (declare (fixnum i))
     (push (first kwd) all-kwd)

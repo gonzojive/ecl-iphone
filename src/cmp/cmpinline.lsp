@@ -156,7 +156,7 @@
 		      (*lcl* *lcl*)
 		      (*temp* *temp*)
 		      (*destination* temp))
-		 (call-global fname arg-locs nil return-type nil)
+		 (call-global fname nil nil arg-locs return-type)
 		 (wt-label *exit*)
 		 (push
 		  (list (if (subtypep 'T return-type)

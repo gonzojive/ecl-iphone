@@ -52,7 +52,7 @@
 		    (*tags* (cons CB/LB *tags*)))
 		(c1lambda-expr (second def)
 			       (si::function-block-name (fun-name fun)))))
-	(setf (fun-cfun fun) (next-cfun)))))
+	(setf (fun-cfun fun) (next-cfun "LC~D")))))
 
   ;; cant do in previous loop since closed var may be in later function
   (dolist (fun local-funs)
@@ -209,7 +209,7 @@
   (dolist (fun local-funs)
     ;; FIXME! This should be in C2LOCALS
     (setf (fun-closure fun) (closure-p (fun-lambda fun)))
-    (setf (fun-cfun fun) (next-cfun)))
+    (setf (fun-cfun fun) (next-cfun "LC~D")))
 
   (if local-funs
       (let* ((*vars* *vars*))
@@ -293,47 +293,12 @@
       (wt-nl "}")
       (return-from c2call-local)))
   (unless (c2try-tail-recursive-call fun args)
-    (let ((*inline-blocks* 0)
-	  (fun (format nil "LC~d" (fun-cfun fun)))
-	  (lex-level (fun-level fun))
-	  (closure-p (fun-closure fun))
-	  (fname (fun-name fun)))
+    (let ((*inline-blocks* 0))
       (unwind-exit
-       (list 'CALL-LOCAL fun lex-level closure-p
-	     (if (eq args 'ARGS-PUSHED) 'ARGS-PUSHED (coerce-locs (inline-args args)))
-	     narg fname))
+       (if (eq args 'ARGS-PUSHED)
+	   (list 'CALL-ARGS-PUSHED fun narg)
+	   (list 'CALL-NORMAL fun (coerce-locs (inline-args args)))))
       (close-inline-blocks))))
-
-(defun wt-call-local (fun lex-lvl closure-p args narg fname)
-  (declare (fixnum lex-lvl))
-  (cond ((not (eq args 'ARGS-PUSHED))
-	 ;; if NARG is non-NIL it is location containing narg
-	 (wt fun "(" (or narg (length args)))
-	 (when (plusp lex-lvl)
-	   (dotimes (n lex-lvl)
-	     (wt ",lex" n)))
-	 (when closure-p
-	   ;; env of local fun is ALWAYS contained in current env (?)
-	   (wt ", env" *env-lvl*))
-	 (dolist (arg args)
-	   (wt "," arg))
-	 (wt ")"))
-	((not narg)
-	 ;; When getting arguments from lisp stack, a location with the number
-	 ;; of arguments must have been supplied
-	 (baboon))
-	((not (or (plusp lex-lvl) closure-p))
-	 (wt "APPLY(" narg "," fun "," `(STACK-POINTER ,narg) ")"))
-	(t
-	 (wt "(")
-	 (when (plusp lex-lvl)
-	   (dotimes (n lex-lvl)
-	     (wt "cl_stack_push(lex" n ")," narg "++,")))
-	 (when closure-p
-	   (wt "cl_stack_push(env" *env-lvl* ")," narg "++,"))
-	 (wt-nl "  APPLY(" narg "," fun "," `(STACK-POINTER ,narg) "))")))
-  (when fname (wt-comment fname)))
-
 
 ;;; ----------------------------------------------------------------------
 
@@ -347,5 +312,3 @@
 ;;; c2macrolet is not defined, because MACROLET is replaced by PROGN
 ;;; during Pass 1.
 (put-sysprop 'CALL-LOCAL 'C2 'c2call-local)
-
-(put-sysprop 'CALL-LOCAL 'WT-LOC #'wt-call-local)

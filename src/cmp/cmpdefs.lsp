@@ -125,11 +125,15 @@
   cfun			;;; The cfun for the function.
   (level 0)		;;; Level of lexical nesting for a function.
   (env 0)     		;;; Size of env of closure.
-  (global nil)		;;; Global function: exported for outside this module.
+  (global nil)		;;; Global lisp function.
+  (exported nil)	;;; Its C name can be seen outside the module.
   closure		;;; During Pass2, T if env is used inside the function
   var			;;; the variable holding the funob
   description		;;; Text for the object, in case NAME == NIL.
   lambda		;;; Lambda c1-form for this function.
+  (minarg 0)		;;; Min. number arguments that the function receives.
+  (maxarg call-arguments-limit)
+			;;; Max. number arguments that the function receives.
   )
 
 (defstruct (blk (:include ref))

@@ -216,8 +216,9 @@
   (mapcar #'t3expr args))
 
 (defun exported-fname (name)
-  (or (and (symbolp name) (get-sysprop name 'Lfun))
-      (next-cfun)))
+  (if (and (symbolp name) (setf name (get-sysprop name 'Lfun)))
+      (values name t)
+      (values (next-cfun "L~D") nil)))
 
 (defun t1defun (args)
   (check-args-number 'DEFUN args 2)
@@ -242,14 +243,16 @@
 ;;; Mechanism for sharing code:
 ;;; FIXME! Revise this 'DEFUN stuff.
 (defun new-defun (fname lambda-expr &optional no-entry)
-  (let ((cfun (exported-fname fname)))
-    (unless (stringp cfun)
+  (multiple-value-bind (cfun exported)
+      (exported-fname fname)
+    (unless exported
       (dolist (f *global-funs*)
 	(when (similar lambda-expr (fun-lambda f))
 	  (cmpnote "Sharing code among functions ~A and ~A" fname (fun-name f))
 	  (setf cfun (fun-cfun f) lambda-expr nil)
 	  (return))))
-    (let ((fun (make-fun :name fname :cfun cfun :global t :lambda lambda-expr)))
+    (let ((fun (make-fun :name fname :cfun cfun :global t :exported exported
+			 :lambda lambda-expr)))
       (push fun *global-funs*)
       (make-c1form* 'DEFUN :args fun no-entry))))
 
@@ -520,15 +523,12 @@
 		    ((fun-closure fun) "closure ")
 		    (t "local function "))
 	      (or (fun-name fun) (fun-description fun) 'CLOSURE))
-  (cond ((not (fun-global fun))
-	 (wt-h "static cl_object LC" cfun "(")
-	 (wt-nl1 "static cl_object LC" cfun "("))
-	((stringp cfun)
+  (cond ((fun-exported fun)
 	 (wt-h "cl_object " cfun "(")
 	 (wt-nl1 "cl_object " cfun "("))
 	(t
-	 (wt-h "static cl_object L" cfun "(")
-	 (wt-nl1 "static cl_object L" cfun "(")))
+	 (wt-h "static cl_object " cfun "(")
+	 (wt-nl1 "static cl_object " cfun "(")))
   (wt-h1 "cl_narg")
   (wt "cl_narg narg")
   (dotimes (n level)
@@ -632,12 +632,9 @@
 	 (cfun (fun-cfun fun)))
     ;; FIXME! Look at c2function!
     (new-local 0 fun funob)
-    (cond (macro
-	   (wt-nl "cl_def_c_macro(" fname ",LC" cfun ",-1);"))
-	  ((stringp cfun)
-	   (wt-nl "cl_def_c_function_va(" fname "," cfun ");"))
-	  (t
-	   (wt-nl "cl_def_c_function_va(" fname ",LC" cfun ");")))
+    (if macro
+	(wt-nl "cl_def_c_macro(" fname "," cfun ",-1);")
+	(wt-nl "cl_def_c_function_va(" fname "," cfun ");"))
     (close-inline-blocks)))  
 
 ;;; ----------------------------------------------------------------------
