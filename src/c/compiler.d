@@ -552,9 +552,27 @@ compile_setq(int op, cl_object var)
  *	FLAG_IGNORE		-> FLAG_IGNORE
  */
 static int
-maybe_values(int flags) {
+maybe_values_or_reg0(int flags) {
 	if (flags & FLAG_PUSH)
 		return (flags | FLAG_VALUES) & ~FLAG_PUSH;
+	else
+		return flags;
+}
+
+/*
+ * This routine is used to change the compilation flags in optimizers
+ * that do not want to push values onto the stack, but also do not want
+ * to use REG0 (maybe because the call a nested interpret()). Ignorable
+ * forms are kept ignored:
+ *	FLAG_PUSH		-> FLAG_VALUES
+ *	FLAG_VALUES		-> FLAG_VALUES
+ *	FLAG_REG0		-> FLAG_VALUES
+ *	FLAG_IGNORE		-> FLAG_IGNORE
+ */
+static int
+maybe_values(int flags) {
+	if (flags & FLAG_USEFUL)
+		return (flags & ~(FLAG_PUSH | FLAG_REG0)) | FLAG_VALUES;
 	else
 		return flags;
 }
@@ -601,7 +619,7 @@ c_block(cl_object body, int flags) {
 	if (!SYMBOLP(name))
 		FEprogram_error("BLOCK: Not a valid block name, ~S", 1, name);
 
-	flags = maybe_values(flags);
+	flags = maybe_values_or_reg0(flags);
 	c_register_block(name);
 	if (Null(name))
 		labelz = asm_jmp(OP_DO);
@@ -759,7 +777,7 @@ perform_c_case(cl_object args, int flags) {
 static int
 c_case(cl_object clause, int flags) {
 	compile_form(pop(&clause), FLAG_REG0);
-	return perform_c_case(clause, maybe_values(flags));
+	return perform_c_case(clause, maybe_values_or_reg0(flags));
 }
 
 /*
@@ -839,7 +857,7 @@ c_cond(cl_object args, int flags) {
 	if (ATOM(clause))
 		FEprogram_error("COND: Illegal clause ~S.",1,clause);
 	test = pop(&clause);
-	flags = maybe_values(flags);
+	flags = maybe_values_or_reg0(flags);
 	if (Ct == test) {
 		/* Default sentence. If no forms, just output T. */
 		if (Null(clause))
@@ -973,7 +991,7 @@ c_do_doa(int op, cl_object args, int flags) {
 	asm_arg(labelb - current_pc());
 
 	/* Compile output clauses */
-	flags = maybe_values(flags);
+	flags = maybe_values_or_reg0(flags);
 	compile_body(test, flags);
 	asm_op(OP_EXIT_FRAME);
 
@@ -1057,9 +1075,9 @@ c_dolist_dotimes(int op, cl_object args, int flags) {
 	if (head != Cnil && CDR(head) != Cnil)
 		FEprogram_error("DOLIST: Too many output forms.", 0);
 	flags = maybe_values(flags);
-	if (Null(head))
+	if (Null(head)) {
 		compile_body(Cnil, flags);
-	else {
+	} else {
 		compile_setq(OP_SETQ, var);
 		compile_form(pop(&head), flags);
 	}
@@ -1248,7 +1266,7 @@ c_if(cl_object form, int flags) {
 	label_nil = asm_jmp(OP_JNIL);
 
 	/* Compile THEN ... */
-	flags = maybe_values(flags);
+	flags = maybe_values_or_reg0(flags);
 	compile_form(pop(&form), flags);
 
 	/* ... and then ELSE */
@@ -1626,7 +1644,7 @@ c_progv(cl_object args, int flags) {
 	   special, the compiler need not take care of them
 	*/
 	asm_op(OP_PROGV);
-	flags = compile_body(args, flags);
+	flags = compile_body(args, FLAG_VALUES);
 	asm_op(OP_EXIT);
 
 	return flags;
