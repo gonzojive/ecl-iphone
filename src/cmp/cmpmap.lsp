@@ -12,9 +12,8 @@
 
 (in-package "COMPILER")
 
-(defun my-pprint (o)
-  (pprint o)
-  o)
+#+nil
+(progn
 
 (defun map-apply-function (fname args)
   (mapcar #'(lambda (x) `(,fname ,x)) args))
@@ -84,3 +83,5 @@
 
 (define-compiler-macro mapcon (fname first-arg &rest args)
   (expand-mapcan fname (list* first-arg args) nil))
+
+)

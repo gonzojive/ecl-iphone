@@ -33,12 +33,13 @@
 		      (c1var form)))
 		 (t (c1var form))))
 	  ((consp form)
-	   (let ((fun (car form)))
+	   (let ((fun (car form))
+		 ;; #+cltl2
+		 setf-symbol)
 	     (cond ((symbolp fun)
 		    (c1call-symbol fun (cdr form)))
 		   ((and (consp fun) (eq (car fun) 'LAMBDA))
-		    (print *vars*)
-		    (print (c1funcall form)))
+		    (c1funcall form))
 		   (t (cmperr "~s is not a legal function name." fun)))))
 	  (t (c1constant-value form t)))))
   (if (eq form '*cmperr-tag*) (c1nil) form))
@@ -168,6 +169,12 @@
 		    ))))
 |#
 	     (list 'CALL-GLOBAL info fname forms)))))
+
+(defun c1call-lambda (lambda-expr args &aux (info (make-info :sp-change t)))
+  (setq args (c1args args info))
+  (setq lambda-expr (c1lambda-expr lambda-expr))
+  (add-info info (second lambda-expr))
+  (list 'CALL-LAMBDA info lambda-expr args (next-cfun)))
 
 (defun c2expr (form)
   (if (eq (car form) 'CALL-GLOBAL)

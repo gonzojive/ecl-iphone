@@ -130,98 +130,8 @@
 	  body)))
 
 
-(defun optimize-funcall/apply-lambda (lambda-form arguments apply-p
-				      &aux body apply-list apply-var
-				      let-vars extra-stmts all-keys)
-  (multiple-value-bind (requireds optionals rest key-flag keywords
-				  allow-other-keys aux-vars)
-      (si::process-lambda-list (car lambda-form) 'function)
-    (when apply-p
-      (setf apply-list (first (last arguments))
-	    apply-var (gensym)
-	    arguments (butlast arguments)))
-    (do ((scan arguments (cdr scan)))
-	((endp scan))
-      (let ((form (first scan)))
-	(unless (constantp form)
-	  (let ((aux-var (gensym)))
-	    (push `(,aux-var ,form) let-vars)
-	    (setf (car scan) aux-var)))))
-    (print apply-list)
-    (when apply-var
-      (push `(,apply-var ,apply-list) let-vars))
-    (dolist (i (cdr requireds))
-      (push (list i
-		  (cond (arguments
-			 (pop arguments))
-			(apply-p
-			 `(if ,apply-var
-			   (pop ,apply-var)
-			   (si::dm-too-few-arguments)))
-			(t
-			 (error 'SIMPLE-PROGRAM-ERROR
-				:format-control "Too few arguments for lambda form ~S"
-				:format-args (cons 'LAMBDA lambda-form)))))
-	    let-vars))
-    (do ((scan (cdr optionals) (cdddr optionals)))
-	((endp scan))
-      (let ((opt-var (first scan))
-	    (opt-flag (third scan))
-	    (opt-value (second scan)))
-	(cond (arguments
-	       (setf let-vars
-		     (list* `(,opt-var ,(pop arguments))
-			    `(,opt-flag t)
-			    let-vars)))
-	      (apply-p
-	       (setf let-vars
-		     (list* `(,opt-var (if ,opt-flag
-					   (pop ,apply-var)
-					   ,opt-value))
-			    `(,opt-flag ,apply-var)
-			    let-vars)))
-	      (t
-	       (setf let-vars
-		     (list* `(,opt-var ,opt-value)
-			    `(,opt-flag nil)
-			    let-vars))))))
-    (when (or key-flag allow-other-keys)
-      (unless rest
-	(setf rest (gensym))))
-    (when rest
-      (push `(,rest ,(if arguments
-			 (if apply-p
-			     `(list* ,@arguments ,apply-var)
-			     `(list ,@arguments))
-			 (if apply-p apply-var nil)))
-	    let-vars))
-    (do ((scan (cdr keywords) (cddddr scan)))
-	((endp scan))
-      (let ((keyword (first scan))
-	    (key-var (second scan))
-	    (key-value (third scan))
-	    (key-flag (or (fourth scan) (gensym))))
-	(push keyword all-keys)
-	(setf let-vars
-	      (list*
-	       `(,key-var (if (eq ,key-flag 'failed) ,key-value ,key-flag))
-	       `(,key-flag (si::search-keyword ,rest ,keyword))
-	       let-vars))
-	(when (fourth scan)
-	  (push `(setf ,key-flag (not (eq ,key-flag 'failed)))
-		extra-stmts))))
-    (when (and key-flag (not allow-other-keys))
-      (push `(si::check-keyword ,rest ',all-keys) extra-stmts))
-    (my-pprint `(let* ,(nreverse let-vars)
-      ,@(multiple-value-bind (decl body)
-	   (si::find-declarations (rest lambda-form))
-	 (append decl extra-stmts body))))))
-
-(defun my-pprint (o)
-  (pprint o)
-  o)
-
-(defun c2lambda-expr (lambda-list body cfun fname &optional closure-p kind)
+(defun c2lambda-expr (lambda-list body cfun fname
+				  &optional closure-p call-lambda)
   (let ((*tail-recursion-info*		;;; Tail recursion possible if
          (and fname			;;; named function
 				        ;;; no required appears in closure,
@@ -233,10 +143,8 @@
               (null (fourth lambda-list))	;;; no keywords.
               (cons fname (car lambda-list)))))
     (if (fourth lambda-list)
-      (if (eq kind 'LOCAL-ENTRY)
-	  (baboon)
-	  (c2lambda-expr-with-key lambda-list body closure-p cfun))
-      (c2lambda-expr-without-key lambda-list body closure-p kind)))
+      (c2lambda-expr-with-key lambda-list body closure-p call-lambda cfun)
+      (c2lambda-expr-without-key lambda-list body closure-p call-lambda)))
   )
 
 #| Steps:
@@ -269,8 +177,9 @@
   (declare (fixnum nreq nopt))
 
   ;; kind is either:
-  ;; 1. LOCAL-ENTRY, for the local entry of a proclaimed function
-  ;; 2. NIL, otherwise
+  ;; 1. CALL-LAMBDA, for a lambda expression
+  ;; 2. LOCAL-ENTRY, for the local entry of a proclaimed function
+  ;; 3. NIL, otherwise
 
   (if (eq 'LOCAL-ENTRY kind)
 
@@ -282,7 +191,7 @@
    ;; For optional parameters, and lexical variables which can be unboxed,
    ;; this will be a new LCL.
    ;; The bind step later will assign to such variable.
-   (let* ((req0 *lcl*)
+   (let* ((req0 (if (eq 'CALL-LAMBDA kind) (- *lcl* nreq) *lcl*))
 	  (lcl (+ req0 nreq)))
      (declare (fixnum lcl))
 
@@ -320,21 +229,22 @@
 	 (unless block-p
 	   (wt-nl "{") (setq block-p t))
 	 ;; count optionals
-	 (wt "int i=" nreq ";"))
+	 (wt "int i=" (if (eq 'CALL-LAMBDA kind) 0 nreq) ";"))
        (do ((opt optionals (cdddr opt)))
 	   ((endp opt))
 	 (do-decl (first opt))
 	 (when (third opt) (do-decl (third opt))))
        (when rest (setq rest-loc (wt-decl rest))))
 
-     (when (or optionals rest)
-       (unless block-p
-	 (wt-nl "{") (setq block-p t))
-       (wt-nl "cl_va_list args; cl_va_start(args,"
-	      (cond ((plusp nreq) (format nil "V~d" (+ req0 nreq)))
-		    (closure-p "env0")
-		    (t "narg"))
-	      (format nil ",narg,~d);" nreq)))
+     (unless (eq 'CALL-LAMBDA kind)
+       (when (or optionals rest)
+	 (unless block-p
+	   (wt-nl "{") (setq block-p t))
+	 (wt-nl "cl_va_list args; cl_va_start(args,"
+		(cond ((plusp nreq) (format nil "V~d" (+ req0 nreq)))
+		      (closure-p "env0")
+		      (t "narg"))
+		(format nil ",narg,~d);" nreq))))
 
      ;; Bind required parameters.
      (do ((reqs requireds (cdr reqs))
@@ -390,7 +300,7 @@
   )
 
 (defun c2lambda-expr-with-key
-    (lambda-list body closure-p cfun
+    (lambda-list body closure-p call-lambda cfun
 		 &aux (requireds (first lambda-list))
 		 (optionals (second lambda-list))
 		 (rest (third lambda-list)) rest-loc
@@ -410,7 +320,7 @@
   ;; For optional and keyword parameters, and lexical variables which
   ;; can be unboxed, this will be a new LCL.
   ;; The bind step later will assign to such variable.
-  (let* ((req0 *lcl*)
+  (let* ((req0 (if call-lambda (- *lcl* nreq) *lcl*))
 	 (lcl (+ req0 nreq)))
     (declare (fixnum lcl))
     (labels ((wt-decl (var)
@@ -436,7 +346,7 @@
         (unless block-p
           (wt-nl "{") (setq block-p t))
 	;; count optionals
-        (wt "int i=" nreq ";"))
+        (wt "int i=" (if call-lambda 0 nreq) ";"))
       (do ((opt optionals (cdddr opt)))
 	  ((endp opt))
         (do-decl (first opt))
@@ -447,13 +357,14 @@
         (do-decl (second key))
         (when (fourth key) (do-decl (fourth key)))))
 
-    (unless block-p
-      (wt-nl "{") (setq block-p t))
-    (wt-nl "cl_va_list args; cl_va_start(args, "
-	   (cond ((plusp nreq) (format nil "V~d" (+ req0 nreq)))
-		 (closure-p "env0")
-		 (t "narg"))
-	   (format nil ", narg, ~d);" nreq))
+    (unless call-lambda
+      (unless block-p
+	(wt-nl "{") (setq block-p t))
+      (wt-nl "cl_va_list args; cl_va_start(args, "
+	     (cond ((plusp nreq) (format nil "V~d" (+ req0 nreq)))
+		   (closure-p "env0")
+		   (t "narg"))
+	     (format nil ", narg, ~d);" nreq)))
 
     ;; check arguments
     (when (and (or *safe-compile* *compiler-check-args*) requireds)
@@ -860,3 +771,90 @@
   (c2expr body)
   (wt "}")
   )
+
+(defun optimize-funcall/apply-lambda (lambda-form arguments apply-p
+				      &aux body apply-list apply-var
+				      let-vars extra-stmts all-keys)
+  (multiple-value-bind (requireds optionals rest key-flag keywords
+				  allow-other-keys aux-vars)
+      (si::process-lambda-list (car lambda-form) 'function)
+    (when apply-p
+      (setf apply-list (first (last arguments))
+	    apply-var (gensym)
+	    arguments (butlast arguments)))
+    (setf arguments (copy-list arguments))
+    (do ((scan arguments (cdr scan)))
+	((endp scan))
+      (let ((form (first scan)))
+	(unless (constantp form)
+	  (let ((aux-var (gensym)))
+	    (push `(,aux-var ,form) let-vars)
+	    (setf (car scan) aux-var)))))
+    (when apply-var
+      (push `(,apply-var ,apply-list) let-vars))
+    (dolist (i (cdr requireds))
+      (push (list i
+		  (cond (arguments
+			 (pop arguments))
+			(apply-p
+			 `(if ,apply-var
+			   (pop ,apply-var)
+			   (si::dm-too-few-arguments)))
+			(t
+			 (error 'SIMPLE-PROGRAM-ERROR
+				:format-control "Too few arguments for lambda form ~S"
+				:format-args (cons 'LAMBDA lambda-form)))))
+	    let-vars))
+    (do ((scan (cdr optionals) (cdddr optionals)))
+	((endp scan))
+      (let ((opt-var (first scan))
+	    (opt-flag (third scan))
+	    (opt-value (second scan)))
+	(cond (arguments
+	       (setf let-vars
+		     (list* `(,opt-var ,(pop arguments))
+			    `(,opt-flag t)
+			    let-vars)))
+	      (apply-p
+	       (setf let-vars
+		     (list* `(,opt-var (if ,opt-flag
+					   (pop ,apply-var)
+					   ,opt-value))
+			    `(,opt-flag ,apply-var)
+			    let-vars)))
+	      (t
+	       (setf let-vars
+		     (list* `(,opt-var ,opt-value)
+			    `(,opt-flag nil)
+			    let-vars))))))
+    (when (or key-flag allow-other-keys)
+      (unless rest
+	(setf rest (gensym))))
+    (when rest
+      (push `(,rest ,(if arguments
+			 (if apply-p
+			     `(list* ,@arguments ,apply-var)
+			     `(list ,@arguments))
+			 (if apply-p apply-var nil)))
+	    let-vars))
+    (do ((scan (cdr keywords) (cddddr scan)))
+	((endp scan))
+      (let ((keyword (first scan))
+	    (key-var (second scan))
+	    (key-value (third scan))
+	    (key-flag (or (fourth scan) (gensym))))
+	(push keyword all-keys)
+	(setf let-vars
+	      (list*
+	       `(,key-var (if (eq ,key-flag 'si::failed) ,key-value ,key-flag))
+	       `(,key-flag (si::search-keyword ,rest ,keyword))
+	       let-vars))
+	(when (fourth scan)
+	  (push `(setf ,key-flag (not (eq ,key-flag 'si::failed)))
+		extra-stmts))))
+    (when (and key-flag (not allow-other-keys))
+      (push `(si::check-keyword ,rest ',all-keys) extra-stmts))
+    `(let* ,(nreverse let-vars)
+      ,@(multiple-value-bind (decl body)
+	   (si::find-declarations (rest lambda-form))
+	 (append decl extra-stmts body)))))

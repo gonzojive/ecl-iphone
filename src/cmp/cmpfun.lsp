@@ -81,7 +81,7 @@
 	   (c1expr (optimize-funcall/apply-lambda (cdr fun) arguments t)))
 	  ((and (consp fun)
 		(eq (first fun) 'LAMBDA-BLOCK))
-	   (setf fun (macropexpand-1 fun))
+	   (setf fun (macroexpand-1 fun))
 	   (c1expr (optimize-funcall/apply-lambda (cdr fun) arguments t)))
 	  ((and (consp fun)
 		(eq (first fun) 'FUNCTION)

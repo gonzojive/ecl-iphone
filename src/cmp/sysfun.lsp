@@ -1096,5 +1096,6 @@ type_of(#0)==t_bitvector"))
 	    #-clos
 	    nil
 	    #+clos
-	    (clos::ensure-class clos::install-method)))
+	    (clos::ensure-class clos::install-method
+	     clos::standard-instance-set)))
 
