@@ -67,6 +67,11 @@ ECL 1.0
   - DO/DO* are no longer primitives, but rather macros that build on top
     of the SI::WHILE iteration primitive.
 
+  - LISTEN and CLEAR-INPUT-STREAM now work with the Windows console and
+    pipes as expected.
+
+  - User break with Ctrl+C is now also capture under Windows.
+
 * Internals:
 
   - The compiler now uses a more detailed tree to represent the code, keeping

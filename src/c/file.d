@@ -1661,6 +1661,14 @@ BEGIN:
 	case smm_input:
 		if (fp == NULL)
 			wrong_file_handler(strm);
+#if defined(mingw32) || defined(_MSC_VER)
+		if (isatty(fileno(fp))) {
+			/* Flushes Win32 console */
+			if (!FlushConsoleInputBuffer((HANDLE)_get_osfhandle(fileno(fp))))
+				FEwin32_error("FlushConsoleInputBuffer() failed", 0);
+			/* Do not stop here: the FILE structure needs also to be flushed */
+		}
+#endif
 		while (flisten(fp) == ECL_LISTEN_AVAILABLE) {
 			getc(fp);
 		}
@@ -1774,6 +1782,9 @@ flisten(FILE *fp)
 	int retv, fd;
 	struct timeval tv = { 0, 0 };
 #endif
+#if defined(mingw32) || defined(_MSC_VER)
+	HANDLE hnd;
+#endif
 	if (feof(fp))
 		return ECL_LISTEN_EOF;
 #ifdef FILE_CNT
@@ -1795,29 +1806,56 @@ flisten(FILE *fp)
 	return (c > 0)? ECL_LISTEN_AVAILABLE : ECL_LISTEN_NO_CHAR;
 	}
 #endif /* FIONREAD */
-#endif
-#if 0
-	if (isatty(fileno(fp))) {
-		/* console input */
-		HANDLE hnd = _get_osfhandle(_fileno(fp));
-		DWORD n;
-		if (!GetNumberOfConsoleInputEvents(hnd, &n))
-			FElibc_error("GetNumberOfConsoleInputEvents() returned an error value", 0);
-		if (n > 0) {
-			PINPUT_RECORD buf = (PINPUT_RECORD)malloc(n*sizeof(INPUT_RECORD));
-			DWORD nr;
-			if (!PeekConsoleInput(hnd, buf, n, &nr)) {
-				free(buf);
-				FElibc_error("PeekConsoleInput() returned an error value", 0);
-			}
-			for (n=0; n<nr; n++)
-				if (buf[n].EventType == KEY_EVENT) {
-					free(buf);
-					return ECL_LISTEN_AVAILABLE;
+#else
+	hnd = (HANDLE)_get_osfhandle(fileno(fp));
+	switch (GetFileType(hnd)) {
+		case FILE_TYPE_CHAR: {
+			DWORD dw, dw_read, cm;
+			if (GetNumberOfConsoleInputEvents(hnd, &dw)) {
+				if (!GetConsoleMode(hnd, &cm))
+					FEwin32_error("GetConsoleMode() failed", 0);
+				if (dw > 0) {
+					PINPUT_RECORD recs = (PINPUT_RECORD)GC_malloc(sizeof(INPUT_RECORD)*dw);
+					int i;
+					if (!PeekConsoleInput(hnd, recs, dw, &dw_read))
+						FEwin32_error("PeekConsoleInput failed()", 0);
+					if (dw_read > 0) {
+						if (cm & ENABLE_LINE_INPUT) {
+							for (i=0; i<dw_read; i++)
+								if (recs[i].EventType == KEY_EVENT &&
+								    recs[i].Event.KeyEvent.bKeyDown &&
+								    recs[i].Event.KeyEvent.uChar.AsciiChar == 13)
+									return ECL_LISTEN_AVAILABLE;
+						} else {
+							for (i=0; i<dw_read; i++)
+								if (recs[i].EventType == KEY_EVENT &&
+								    recs[i].Event.KeyEvent.bKeyDown &&
+								    recs[i].Event.KeyEvent.uChar.AsciiChar != 0)
+									return ECL_LISTEN_AVAILABLE;
+						}
+					}
 				}
-			free(buf);
+				return ECL_LISTEN_NO_CHAR;
+			} else
+				FEwin32_error("GetNumberOfConsoleInputEvents() failed", 0);
+			break;
 		}
-		return ECL_LISTEN_NO_CHAR;
+		case FILE_TYPE_DISK:
+			/* use regular file code below */
+			break;
+		case FILE_TYPE_PIPE: {
+			DWORD dw;
+			if (PeekNamedPipe(hnd, NULL, 0, NULL, &dw, NULL) == 0)
+				return (dw > 0 ? ECL_LISTEN_AVAILABLE : ECL_LISTEN_NO_CHAR);
+			else if (GetLastError() == ERROR_BROKEN_PIPE)
+				return ECL_LISTEN_EOF;
+			else
+				FEwin32_error("PeekNamedPipe() failed", 0);
+			break;
+		}
+		default:
+			FEerror("Unsupported Windows file type: ~A", 1, MAKE_FIXNUM(GetFileType(hnd)));
+			break;
 	}
 #endif
 	/* This code is portable, and implements the expected behavior for regular files.
