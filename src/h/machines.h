@@ -35,7 +35,7 @@
 #  define FILE_CNT(fp)	(fp)->_cnt
 #endif
 
-#ifdef	MSDOS
+#if defined(MSDOS) || defined(cygwin)
 #  define IS_DIR_SEPARATOR(x) ((x=='/')||(x=='\\'))
 #  define DIR_SEPARATOR	'\\'
 #  define PATH_SEPARATOR	';'
@@ -44,6 +44,7 @@
 #  define OPEN_RW	"w+b"
 #  define OPEN_A	"ab"
 #  define OPEN_RA	"a+b"
+#  define CRLF
 #else
 #  define IS_DIR_SEPARATOR(x) (x=='/')
 #  define DIR_SEPARATOR	'/'
@@ -55,9 +56,6 @@
 #  define OPEN_RA	"a+"
 #endif	MSDOS
 
-#ifdef	MSDOS
-#  define CRLF
-#endif	MSDOS
 
 /***********************************************************************
 
