@@ -751,7 +751,7 @@ extern cl_object cl_alloc_simple_string(cl_index l);
 extern cl_object cl_alloc_adjustable_string(cl_index l);
 extern cl_object make_simple_string(char *s);
 #define make_constant_string(s) (make_simple_string((char *)s))
-extern cl_object make_string_copy(char *s);
+extern cl_object make_string_copy(const char *s);
 extern cl_object copy_simple_string(cl_object x);
 extern cl_object coerce_to_string(cl_object x);
 extern cl_object coerce_to_string_designator(cl_object x);

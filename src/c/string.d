@@ -96,7 +96,7 @@ make_simple_string(char *s)
 }
 
 cl_object
-make_string_copy(char *s)
+make_string_copy(const char *s)
 {
 	cl_object x;
 	cl_index l = strlen(s);

@@ -41,14 +41,14 @@ We use execv and supply the arg list, so execl doesn't have to realloc. CvdL */
 #include <sys/types.h>
 #include <sys/signal.h>
 #include <sys/wait.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <unistd.h>
 #include <paths.h>
 
 int
-system(command)
-	const char *command;
+system(char *command)
 {
 	union wait pstat;
 	pid_t pid;
@@ -66,7 +66,7 @@ system(command)
 		pstat.w_retcode = 127;
 		return(pstat.w_status);
 	case 0:	{			/* child */
-		const char *args[] = { "sh", "-c", command, (char *)NULL };
+		char *args[] = { "sh", "-c", command, (char *)NULL };
 		(void)sigsetmask(omask);
 	        execv(_PATH_BSHELL, args);
 		_exit(127);
