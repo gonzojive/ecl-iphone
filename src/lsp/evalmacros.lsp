@@ -311,6 +311,17 @@ SECOND-FORM."
        (push (third c) step))
       (t
        (error "Too many arguments in init form of do/do*"))))
+  ;; This macroexpansion produces tinier code.
+  `(BLOCK NIL
+          (,let ,(nreverse vl)
+               ,@decl
+               (TAGBODY
+                ,label (UNLESS ,test
+			 ,@body
+			 ,@(when step (list (cons psetq (nreverse step))))
+			 (GO ,label)))
+	       ,@result))
+  #+nil
   `(BLOCK NIL
           (,let ,(nreverse vl)
                ,@decl
