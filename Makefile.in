@@ -53,10 +53,10 @@ mandir=@mandir@
 libdir=@libdir@
 
 #  What to release
-TAR_CONTENTS=Makefile.in Copy* README.1st README.orig doc \
-	configure site.lsp src/c src/cmp src/crs src/clos src/lsp src/doc \
+TAR_CONTENTS=Makefile.in README.1st LGPL ANNOUNCEMENT doc \
+	configure site.lsp src/c src/cmp src/clos src/lsp src/doc \
 	src/h src/etc src/gmp src/config* src/install.sh src/Makefile.in \
-	src/util contrib/ src/clx src/tk src/gc src/*.in src/gabriel
+	src/util contrib/ src/clx src/tk src/gc src/*.in src/*.m4 src/gabriel
 
 # ==================== Utility Programs for the Build ====================
 
