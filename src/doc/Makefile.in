@@ -10,7 +10,7 @@ manext=1
 INSTALL	= @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
-mkinstalldirs = $(SHELL) $(top_srcdir)/gc/mkinstalldirs
+mkinstalldirs = $(SHELL) -c $(top_srcdir)/gc/mkinstalldirs
 
 VERSION=@ECL_VERSION@
 
