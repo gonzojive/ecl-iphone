@@ -339,12 +339,20 @@
 ;;;
 (defun c2call-unknown-global (fname args loc inline-p narg)
   (unless loc
-    (cmpnote "Emiting FDEFINITION call for ~S" fname)
-    (setq loc (list 'FDEFINITION fname)))
+    (setq loc
+	  (if (and (symbolp fname)
+		   (not (eql (symbol-package fname) (find-package "CL"))))
+	      (progn
+		(cmpnote "Emiting FUNCALL for ~S" fname)
+		(add-symbol fname))
+	      (progn
+		(cmpnote "Emiting FDEFINITION for ~S" fname)
+		(setq loc (list 'FDEFINITION fname))))))
   (unwind-exit
-   (if (eq args 'ARGS-PUSHED)
-       (list 'CALL "cl_apply_from_stack" narg (list loc) fname)
-       (call-loc fname "funcall" (cons (list T loc) args)))))
+   (cond ((eq args 'ARGS-PUSHED)
+	  (list 'CALL "cl_apply_from_stack" narg (list loc) fname))
+	 (t
+	  (call-loc fname "funcall" (cons (list T loc) args))))))
 
 ;;; ----------------------------------------------------------------------
 
