@@ -200,7 +200,7 @@ stacks_scanner(void)
 	}
 	if (bds_top && (bds_top >= bds_org)) {
 		GC_push_conditional(bds_org, bds_top+1,1);
-		GC_set_mark_bit(bds_top);
+		GC_set_mark_bit(bds_org);
 	}
 #endif
 	if (NValues)
