@@ -85,33 +85,30 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 		if (Null(strm))
 			@(return Cnil)
 	}
-	if (frs_push(FRS_PROTECT, Cnil)) {
+	CL_UNWIND_PROTECT_BEGIN {
+		bds_bind(@'*standard-input*', strm);
+		for (;;) {
+			cl_object bytecodes = Cnil;
+			preserving_whitespace_flag = FALSE;
+			detect_eos_flag = TRUE;
+			x = read_object_non_recursive(strm);
+			if (x == OBJNULL)
+				break;
+			eval(x, &bytecodes, Cnil);
+			if (print != Cnil) {
+				@write(1, x);
+				@terpri(0);
+			}
+		}
+		bds_unwind1;
+	} CL_UNWIND_PROTECT_EXIT {
 		/* We do not want to come back here if close_stream fails,
 		   therefore, first we frs_pop() current jump point, then
 		   try to close the stream, and then jump to next catch
 		   point */
-		frs_pop();
 		if (strm != source)
 			close_stream(strm, TRUE);
-		unwind(nlj_fr, nlj_tag);
-	}
-	bds_bind(@'*standard-input*', strm);
-	for (;;) {
-		cl_object bytecodes = Cnil;
-		preserving_whitespace_flag = FALSE;
-		detect_eos_flag = TRUE;
-		x = read_object_non_recursive(strm);
-		if (x == OBJNULL)
-			break;
-		eval(x, &bytecodes, Cnil);
-		if (print != Cnil) {
-			@write(1, x);
-			@terpri(0);
-		}
-	}
-	if (strm != source)
-		close_stream(strm, TRUE);
-	frs_pop();
+	} CL_UNWIND_PROTECT_END;
 	@(return Cnil)
 }
 
@@ -120,7 +117,6 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 		   (print symbol_value(@'*load-print*'))
 		   (if_does_not_exist @':error')
 	      &aux pathname pntype hooks filename function defaults ok)
-	bds_ptr old_bds_top;
 @
 	/* If source is a stream, read conventional lisp code from it */
 	if (type_of(source) != t_pathname &&  type_of(source) != t_string) {
@@ -168,25 +164,21 @@ NOT_A_FILENAME:
 		@fresh-line(0);
 		@format(3, Ct, make_simple_string(";;; Loading ~s~%"), filename);
 	}
-	old_bds_top = bds_top;
 	bds_bind(@'*package*', symbol_value(@'*package*'));
 #ifdef PDE
 	bds_bind(@'si::*source-pathname*', filename);
 #endif
-	if (frs_push(FRS_PROTECT, Cnil)) {
-		frs_pop();
-		bds_unwind(old_bds_top); /* Beppe says this is necessary */
-		unwind(nlj_fr, nlj_tag);
-	}
 	if (Null(function))
 		ok = si_load_source(filename, verbose, print);
 	else
 		ok = funcall(4, function, filename, verbose, print);
+#ifdef PDE
+	bds_unwind1;
+#endif
+	bds_unwind1;
 	if (!Null(ok))
 		FEerror("LOAD: Could not load file ~S (Error: ~S)",
 			2, filename, ok);
-	frs_pop();
-	bds_unwind(old_bds_top);
 	if (print != Cnil) {
 		@fresh-line(0);
 		@format(3, Ct, make_simple_string(";;; Loading ~s~%"), filename);

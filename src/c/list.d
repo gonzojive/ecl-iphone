@@ -41,21 +41,12 @@ static cl_object (*kf)(cl_object);
 	cl_object (*old_kf)(cl_object) = kf;  \
 	volatile bool eflag = FALSE
 
-#define protectTEST  \
-	if (frs_push(FRS_PROTECT, Cnil)) {  \
-		eflag = TRUE;  \
-		goto L;  \
-	}
-
 #define restoreTEST  \
-L:  \
-	frs_pop();  \
 	test_function = old_test_function;  \
 	item_compared = old_item_compared;  \
 	tf = old_tf;  \
 	key_function = old_key_function;  \
 	kf = old_kf;  \
-	if (eflag) unwind(nlj_fr, nlj_tag);
 
 static bool
 test_compare(cl_object x)
@@ -619,10 +610,12 @@ nconc(cl_object l, cl_object y)
 @(defun subst (new_obj old_obj tree &key test test_not key)
 	saveTEST;
 @
-	protectTEST;
-	setupTEST(old_obj, test, test_not, key);
-	tree = subst(new_obj, tree);
-	restoreTEST;
+	CL_UNWIND_PROTECT_BEGIN {
+		setupTEST(old_obj, test, test_not, key);
+		tree = subst(new_obj, tree);
+	} CL_UNWIND_PROTECT_EXIT {
+		restoreTEST;
+	} CL_UNWIND_PROTECT_END;
 	@(return tree)
 @)
 
@@ -649,10 +642,12 @@ PREDICATE3(@subst)
 @(defun nsubst (new_obj old_obj tree &key test test_not key)
 	saveTEST;
 @
-	protectTEST;
-	setupTEST(old_obj, test, test_not, key);
-	nsubst(new_obj, &tree);
-	restoreTEST;
+	CL_UNWIND_PROTECT_BEGIN {
+		setupTEST(old_obj, test, test_not, key);
+		nsubst(new_obj, &tree);
+	} CL_UNWIND_PROTECT_EXIT {
+		restoreTEST;
+	} CL_UNWIND_PROTECT_END;
 	@(return tree)
 @)
 
@@ -679,10 +674,12 @@ PREDICATE3(@nsubst)
 @(defun sublis (alist tree &key test test_not key)
 	saveTEST;
 @
-	protectTEST;
-	setupTEST(Cnil, test, test_not, key);
-	tree = sublis(alist, tree);
-	restoreTEST;
+	CL_UNWIND_PROTECT_BEGIN {
+		setupTEST(Cnil, test, test_not, key);
+		tree = sublis(alist, tree);
+	} CL_UNWIND_PROTECT_EXIT {
+		restoreTEST;
+	} CL_UNWIND_PROTECT_END;
 	@(return tree)
 @)
 
@@ -709,10 +706,12 @@ sublis(cl_object alist, cl_object tree)
 @(defun nsublis (alist tree &key test test_not key)
 	saveTEST;
 @
-	protectTEST;
-	setupTEST(Cnil, test, test_not, key);
-	nsublis(alist, &tree);
-	restoreTEST;
+	CL_UNWIND_PROTECT_BEGIN {
+		setupTEST(Cnil, test, test_not, key);
+		nsublis(alist, &tree);
+	} CL_UNWIND_PROTECT_EXIT {
+		restoreTEST;
+	} CL_UNWIND_PROTECT_END;
 	@(return tree)
 @)
 
@@ -743,13 +742,15 @@ nsublis(cl_object alist, cl_object *treep)
 @(defun member (item list &key test test_not key)
 	saveTEST;
 @
-	protectTEST;
-	setupTEST(item, test, test_not, key);
-	loop_for_in(list) {
-		if (TEST(CAR(list)))
-			goto L;
-	} end_loop_for_in;
-	restoreTEST;
+	CL_UNWIND_PROTECT_BEGIN {
+		setupTEST(item, test, test_not, key);
+		loop_for_in(list) {
+			if (TEST(CAR(list)))
+				break;
+		} end_loop_for_in;
+	} CL_UNWIND_PROTECT_EXIT {
+		restoreTEST;
+	} CL_UNWIND_PROTECT_END;
 	@(return list)
 @)
 
@@ -809,15 +810,17 @@ PREDICATE2(@member)
 @(defun si::member1 (item list &key test test_not key)
 	saveTEST;
 @
-	protectTEST;
-	if (key != Cnil)
-		item = funcall(2, key, item);
-	setupTEST(item, test, test_not, key);
-	loop_for_in(list) {
-		if (TEST(CAR(list)))
-			goto L;
-	} end_loop_for_in;
-	restoreTEST;
+	CL_UNWIND_PROTECT_BEGIN {
+		if (key != Cnil)
+			item = funcall(2, key, item);
+		setupTEST(item, test, test_not, key);
+		loop_for_in(list) {
+			if (TEST(CAR(list)))
+				break;
+		} end_loop_for_in;
+	} CL_UNWIND_PROTECT_EXIT {
+		restoreTEST;
+	} CL_UNWIND_PROTECT_END;
 	@(return list)
 @)
 
@@ -872,40 +875,44 @@ error:	    FEerror("The keys ~S and the data ~S are not of the same length",
 @(defun assoc (item a_list &key test test_not key)
 	saveTEST;
 @
-	protectTEST;
-	setupTEST(item, test, test_not, key);
-	loop_for_in(a_list) {
-	  cl_object pair = CAR(a_list);
-	  if (Null(pair))
-	    ;
-	  else if (ATOM(pair))
-	    FEtype_error_alist(pair);
-	  else if (TEST(CAAR(a_list))) {
-	    a_list = CAR(a_list);
-	    goto L;
-	  }
-	} end_loop_for_in;
-	restoreTEST;
+	CL_UNWIND_PROTECT_BEGIN {
+		setupTEST(item, test, test_not, key);
+		loop_for_in(a_list) {
+			cl_object pair = CAR(a_list);
+			if (Null(pair))
+				;
+			else if (ATOM(pair))
+				FEtype_error_alist(pair);
+			else if (TEST(CAAR(a_list))) {
+				a_list = CAR(a_list);
+				break;
+			}
+		} end_loop_for_in;
+	} CL_UNWIND_PROTECT_EXIT {
+		restoreTEST;
+	} CL_UNWIND_PROTECT_END;
 	@(return a_list)
 @)
 
 @(defun rassoc (item a_list &key test test_not key)
 	saveTEST;
 @
-	protectTEST;
-	setupTEST(item, test, test_not, key);
-	loop_for_in(a_list) {
-	  cl_object pair = CAR(a_list);
-	  if (Null(pair))
-	    ;
-	  else if (ATOM(pair))
-	    FEtype_error_alist(pair);
-	  else if (TEST(CDAR(a_list))) {
-	    a_list = CAR(a_list);
-	    goto L;
-	  }
-	} end_loop_for_in;
-	restoreTEST;
+	CL_UNWIND_PROTECT_BEGIN {
+		setupTEST(item, test, test_not, key);
+		loop_for_in(a_list) {
+			cl_object pair = CAR(a_list);
+			if (Null(pair))
+				;
+			else if (ATOM(pair))
+				FEtype_error_alist(pair);
+			else if (TEST(CDAR(a_list))) {
+				a_list = CAR(a_list);
+				break;
+			}
+		} end_loop_for_in;
+	} CL_UNWIND_PROTECT_EXIT {
+		restoreTEST;
+	} CL_UNWIND_PROTECT_END;
 	@(return a_list)
 @)
 

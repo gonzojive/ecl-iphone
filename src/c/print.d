@@ -465,8 +465,6 @@ call_structure_print_function(cl_object x, int level)
 #endif
 {
 	int i;
-	bool eflag;
-	bds_ptr old_bds_top;
 
 	bool e = PRINTescape;
 	bool r = PRINTradix;
@@ -508,22 +506,17 @@ call_structure_print_function(cl_object x, int level)
 	for (i = 0;  i <= isp;  i++)
 		ois[i] = indent_stack[i];
 
-	old_bds_top = bds_top;
-	bds_bind(@'*print-escape*', PRINTescape?Ct:Cnil);
-	bds_bind(@'*print-radix*', PRINTradix?Ct:Cnil);
-	bds_bind(@'*print-base*', MAKE_FIXNUM(PRINTbase));
-	bds_bind(@'*print-circle*', PRINTcircle?Ct:Cnil);
-	bds_bind(@'*print-pretty*', PRINTpretty?Ct:Cnil);
-	bds_bind(@'*print-level*', PRINTlevel<0?Cnil:MAKE_FIXNUM(PRINTlevel));
-	bds_bind(@'*print-length*', PRINTlength<0?Cnil:MAKE_FIXNUM(PRINTlength));
-	bds_bind(@'*print-gensym*', PRINTgensym?Ct:Cnil);
-	bds_bind(@'*print-array*', PRINTarray?Ct:Cnil);
-	bds_bind(@'*print-case*', PRINTcase);
-
-	
-	if (frs_push(FRS_PROTECT, Cnil))
-		eflag = TRUE;
-	else {
+	CL_UNWIND_PROTECT_BEGIN {
+		bds_bind(@'*print-escape*', PRINTescape?Ct:Cnil);
+		bds_bind(@'*print-radix*', PRINTradix?Ct:Cnil);
+		bds_bind(@'*print-base*', MAKE_FIXNUM(PRINTbase));
+		bds_bind(@'*print-circle*', PRINTcircle?Ct:Cnil);
+		bds_bind(@'*print-pretty*', PRINTpretty?Ct:Cnil);
+		bds_bind(@'*print-level*', PRINTlevel<0?Cnil:MAKE_FIXNUM(PRINTlevel));
+		bds_bind(@'*print-length*', PRINTlength<0?Cnil:MAKE_FIXNUM(PRINTlength));
+		bds_bind(@'*print-gensym*', PRINTgensym?Ct:Cnil);
+		bds_bind(@'*print-array*', PRINTarray?Ct:Cnil);
+		bds_bind(@'*print-case*', PRINTcase);
 #ifdef CLOS
 		funcall(3, @'print-object', x, PRINTstream);
 #else
@@ -531,34 +524,29 @@ call_structure_print_function(cl_object x, int level)
 		       @'si::structure-print-function', Cnil),
 			  x, PRINTstream, MAKE_FIXNUM(level));
 #endif
-		eflag = FALSE;
-	}
+		bds_unwind_n(10);
+	} CL_UNWIND_PROTECT_EXIT {
+		for (i = 0;  i <= oisp;  i++)
+			indent_stack[i] = ois[i];
 
-	frs_pop();
-	bds_unwind(old_bds_top);
+		iisp = oiisp;
+		isp = oisp;
+		qc = oqc;
+		qt = oqt;
+		qh = oqh;
 
-	for (i = 0;  i <= oisp;  i++)
-		indent_stack[i] = ois[i];
-
-	iisp = oiisp;
-	isp = oisp;
-	qc = oqc;
-	qt = oqt;
-	qh = oqh;
-
-	PRINTcase = pc;
-	PRINTstream = ps;
-	PRINTarray = a;
-	PRINTgensym = g;
-	PRINTlength = ln;
-	PRINTlevel = lv;
-	PRINTpretty = p;
-	PRINTcircle = c;
-	PRINTbase = b;
-	PRINTradix = r;
-	PRINTescape = e;
-
-	if (eflag) unwind(nlj_fr, nlj_tag);
+		PRINTcase = pc;
+		PRINTstream = ps;
+		PRINTarray = a;
+		PRINTgensym = g;
+		PRINTlength = ln;
+		PRINTlevel = lv;
+		PRINTpretty = p;
+		PRINTcircle = c;
+		PRINTbase = b;
+		PRINTradix = r;
+		PRINTescape = e;
+	} CL_UNWIND_PROTECT_END;
 }
 
 static void
@@ -1588,7 +1576,7 @@ si_write_bytes(cl_object stream, cl_object string, cl_object start, cl_object en
 	    towrite -= written;
 	    sofarwritten += written;
 	  }
-	  else @(return MAKE_FIXNUM(-1))
+	  else @(return Cnil)
 	}
 	@(return MAKE_FIXNUM(sofarwritten - is))
 }

@@ -70,11 +70,28 @@ extern bds_ptr bds_top;	/*  bind stack top  */
  * INVOCATION HISTORY STACK
  ****************************/
 
-extern cl_index ihs_top;
+typedef struct ihs_frame {
+	struct ihs_frame *next;
+	cl_object function;
+	cl_object lex_env;
+	cl_index index;
+} *ihs_ptr;
 
-extern void ihs_push(cl_object fun);
+extern ihs_ptr ihs_top;
+
+#define ihs_push(r,f) do {\
+	(r)->next=ihs_top; (r)->function=(f); (r)->lex_env= lex_env; \
+	(r)->index=ihs_top->index+1;\
+	ihs_top = (r); \
+} while(0)
+
+#define ihs_pop() do {\
+	lex_env=ihs_top->lex_env; \
+	if (ihs_top->next == NULL) internal_error("Underflow in IHS stack"); \
+	ihs_top=ihs_top->next; \
+} while(0)
+
 extern cl_object ihs_top_function_name(void);
-extern void ihs_pop(void);
 
 /***************
  * FRAME STACK
@@ -105,7 +122,7 @@ typedef struct frame {
 	bds_ptr		frs_bds_top;
 	enum fr_class	frs_class;
 	cl_object	frs_val;
-	cl_index	frs_ihs;
+	ihs_ptr		frs_ihs;
 	cl_index	frs_sp;
 } *frame_ptr;
 
@@ -188,16 +205,6 @@ extern int NValues;
 extern cl_object Values[VSSIZE];
 #endif
 
-#define MV_SAVE(nr) \
-   { int nr = NValues; cl_object mv_values[nr]; /* __GNUC__ */ \
-       memcpy(mv_values, &VALUES(0), nr * sizeof(cl_object))
-#define MV_RESTORE(nr) \
-       memcpy(&VALUES(0), mv_values, (NValues = nr) * sizeof(cl_object));}
-#define MV_SHIFT(nr, d) \
-   { int i; for (i = (nr)-1; i >= 0; i--) VALUES(i+d) = VALUES(i);}
-#define MV_VALUES(i) mv_values[i]
-
-
 /*****************************
  * LEXICAL ENVIRONMENT STACK
  *****************************/
@@ -224,6 +231,47 @@ extern cl_object lex_env;
 
 #define lex_copy()		(void)0
 #define lex_new()		lex_env = Cnil
+
+/*********************************
+ * HIGH LEVEL CONTROL STRUCTURES *
+ *********************************/
+
+#define CL_UNWIND_PROTECT_BEGIN {\
+	bool __unwinding; frame_ptr __next_fr; \
+	cl_index __nr; \
+	if (frs_push(FRS_PROTECT,Cnil)) { \
+		__unwinding=1; __next_fr=nlj_fr; \
+	} else {
+
+#define CL_UNWIND_PROTECT_EXIT \
+	__unwinding=0; } \
+	frs_pop(); \
+	__nr = cl_stack_push_values();
+
+#define CL_UNWIND_PROTECT_END \
+	cl_stack_pop_values(__nr); \
+	if (__unwinding) unwind(__next_fr); }
+
+#define CL_BLOCK_BEGIN(id) { \
+	cl_object id = new_frame_id(); \
+	if (frs_push(FRS_CATCH,id) == 0)
+
+#define CL_BLOCK_END } \
+	frs_pop()
+
+#define CL_CATCH_BEGIN(tag) \
+	if (frs_push(FRS_CATCH,tag) == 0) {
+
+#define CL_CATCH_END } \
+	frs_pop();
+
+#define CL_CATCH_ALL_BEGIN \
+	if (frs_push(FRS_CATCH,Cnil) == 0) {
+
+#define CL_CATCH_ALL_IF_CAUGHT } else {
+
+#define CL_CATCH_ALL_END } \
+	frs_pop()
 
 #ifdef __cplusplus
 }

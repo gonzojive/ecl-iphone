@@ -1027,6 +1027,10 @@ ECL 0.7b
     form, such as #'(lambda-block f (x) ...) This results in errors when
     defining some methods (Pointed out by Hannu Koivisto).
 
+  - Fix error in UNWIND-PROTECT forms: the destination frame nlj_fr has to be
+    saved, because it may be overwritten by a BLOCK or TAGBODY inside
+    the normal exit form.
+
 * System design:
 
   - Setting a (DECLARE (SI::C-LOCAL)) inside a function, we advise the
@@ -1037,6 +1041,9 @@ ECL 0.7b
 
   - Global variable si::*cblock* keeps a pointer to the descriptor of the
     library being loaded (on systems which support DLLs).
+
+  - In compiled TAGBODY forms, tags are replaced with numbers, so that
+    compiled code takes less space.
 
 * Visible changes:
 

@@ -50,10 +50,11 @@
 
 (defun c2unwind-protect (form body &aux (nr (list 'LCL (next-lcl))))
   (wt-nl "{ volatile bool unwinding = FALSE;")
+  (wt-nl "frame_ptr next_fr; cl_object next_tag;")
   ;; Here we compile the form which is protected. When this form
   ;; is aborted, it continues at the frs_pop() with unwinding=TRUE.
   (wt-nl "if (frs_push(FRS_PROTECT,Cnil)) {")
-  (wt-nl "unwinding = TRUE;} else {")
+  (wt-nl "unwinding = TRUE; next_fr=nlj_fr; } else {")
   (let ((*unwind-exit* (cons 'FRAME *unwind-exit*))
 	(*destination* 'VALUES))
     (c2expr* form))
@@ -70,7 +71,7 @@
     (wt-nl "cl_stack_pop_values(" nr ");}"))
   ;; Finally, if the protected form was aborted, jump to the
   ;; next catch point...
-  (wt-nl "if (unwinding) unwind(nlj_fr,nlj_tag);")
+  (wt-nl "if (unwinding) unwind(next_fr);")
   (wt-nl "else {")
   ;; ... or simply return the values of the protected form.
   (unwind-exit 'VALUES)

@@ -160,7 +160,7 @@ cl_throw(cl_object tag)
   frame_ptr fr = frs_sch_catch(tag);
   if (fr == NULL)
     FEcontrol_error("THROW: The catch ~S is undefined.", 1, tag);
-  unwind(fr, tag);
+  unwind(fr);
 }
 
 void
@@ -170,7 +170,7 @@ cl_return_from(cl_object block_id, cl_object block_name)
   if (fr == NULL)
     FEcontrol_error("RETURN-FROM: The block ~S with id ~S is missing.",
 		    2, block_name, block_id);
-  unwind(fr, block_name);
+  unwind(fr);
 }
 
 void
@@ -179,7 +179,8 @@ cl_go(cl_object tag_id, cl_object label)
   frame_ptr fr = frs_sch(tag_id);
   if (fr == NULL)
     FEcontrol_error("GO: The tagbody ~S is missing.", 1, tag_id);
-  unwind(fr, label);
+  VALUES(0)=label;
+  unwind(fr);
 }
 
 cl_object

@@ -1177,7 +1177,7 @@ extern cl_object si_reset_stack_limits();
 extern void bds_overflow(void) __attribute__((noreturn));
 extern void bds_unwind(bds_ptr new_bds_top);
 extern int frs_overflow(void) __attribute__((noreturn));
-extern void unwind(frame_ptr fr, cl_object tag) __attribute__((noreturn));
+extern void unwind(frame_ptr fr) __attribute__((noreturn));
 extern frame_ptr frs_sch(cl_object frame_id);
 extern frame_ptr frs_sch_catch(cl_object frame_id);
 extern cl_object new_frame_id(void);

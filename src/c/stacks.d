@@ -26,14 +26,14 @@ bds_ptr bds_org;
 bds_ptr bds_limit;
 bds_ptr bds_top;
 
-cl_index ihs_top;
+struct ihs_frame ihs_org = { NULL, Cnil, Cnil, 0 };
+ihs_ptr ihs_top;
 
 size_t frs_size;
 frame_ptr frs_org;
 frame_ptr frs_limit;
 frame_ptr frs_top;
 frame_ptr nlj_fr;
-cl_object nlj_tag;
 
 int *cs_org;
 int *cs_limit;
@@ -120,116 +120,51 @@ ihs_function_name(cl_object x)
 	}
 }
 
-void
-ihs_push(cl_object function)
-{
-	/* INV: ihs_push saves the lexical environment */
-	cl_stack_push(function);
-	cl_stack_push(lex_env);
-	cl_stack_push(MAKE_FIXNUM(ihs_top));
-	ihs_top = cl_stack_index();
-}
-
-void
-ihs_pop(void)
-{
-	/* INV: ihs_pop restores the lexical environment */
-	cl_stack_set_index(ihs_top);
-	ihs_top = fix(cl_stack_top[-1]);
-	lex_env = cl_stack_top[-2];
-	cl_stack_pop_n(3);
-}
-
-static cl_object *
+static ihs_ptr
 get_ihs_ptr(cl_index n)
 {
-	cl_object *sp = &cl_stack[n];
-
-	if (sp > cl_stack && sp <= cl_stack_top)
-		return sp;
-	FEerror("~S is an illegal ihs index.", 1, MAKE_FIXNUM(n));
-}
-
-static cl_index
-ihs_prev(cl_index n)
-{
-	cl_object *sp = get_ihs_ptr(n);
-	n = fixnnint(sp[-1]);
-	return n;
-}
-
-static cl_index
-ihs_next(cl_index n)
-{
-	cl_index h1 = ihs_top, h2 = ihs_top;
-	while (h2 > n) {
-		h1 = h2;
-		h2 = ihs_prev(h1);
-	}
-	if (h2 == n)
-		return h1;
-	FEerror("Internal error: ihs record ~S not found.", 1, MAKE_FIXNUM(n));
+	ihs_ptr p = ihs_top;
+	if (n > p->index)
+		FEerror("~D is an illegal IHS index.", 1, MAKE_FIXNUM(n));
+	while (n < p->index)
+		p = p->next;
+	return p;
 }
 
 cl_object
 ihs_top_function_name(void)
 {
-	cl_index h = ihs_top;
-
-	while (h > 0) {
-		cl_object *sp = get_ihs_ptr(h);
-		cl_object next_h = sp[-1];
-		cl_object lex_env = sp[-2];
-		cl_object name = ihs_function_name(sp[-3]);
-		if (name != Cnil)
-			return name;
-		h = fixnnint(next_h);
-	}
-	return(Cnil);
+	return ihs_function_name(ihs_top->function);
 }
 
 cl_object
 si_ihs_top(cl_object name)
 {
-	cl_index h = ihs_top;
-	cl_object *sp;
-
-	name = ihs_function_name(name);
-	while (h > 0) {
-		cl_object *sp = get_ihs_ptr(h);
-		cl_object fun = sp[-3];
-		if (ihs_function_name(fun) == name)
-			break;
-		h = fixnnint(sp[-1]);
-	}
-	if (h == 0)
-		h = ihs_top;
-	@(return MAKE_FIXNUM(h))
+	@(return MAKE_FIXNUM(ihs_top->index))
 }
 
 cl_object
 si_ihs_prev(cl_object x)
 {
-	@(return MAKE_FIXNUM(ihs_prev(fixnnint(x))))
+	@(return @1-(x))
 }
 
 cl_object
 si_ihs_next(cl_object x)
 {
-	@(return MAKE_FIXNUM(ihs_next(fixnnint(x))))
+	@(return @1+(x))
 }
 
 cl_object
 si_ihs_fun(cl_object arg)
 {
-	@(return get_ihs_ptr(fixnnint(arg))[-3])
+	@(return get_ihs_ptr(fixnnint(arg))->function)
 }
 
 cl_object
 si_ihs_env(cl_object arg)
 {
-	cl_object lex = get_ihs_ptr(ihs_next(fixnnint(arg)))[-2];
-	@(return lex)
+	@(return get_ihs_ptr(fixnnint(si_ihs_next(arg)))->lex_env)
 }
 
 /********************** FRAME STACK *************************/
@@ -266,10 +201,9 @@ _frs_push(register enum fr_class clas, register cl_object val)
 }
 
 void
-unwind(frame_ptr fr, cl_object tag)
+unwind(frame_ptr fr)
 {
 	nlj_fr = fr;
-	nlj_tag = tag;
 	while (frs_top != fr
 		&& frs_top->frs_class == FRS_CATCH)
 	  --frs_top;
@@ -352,7 +286,7 @@ si_frs_tag(cl_object arg)
 cl_object
 si_frs_ihs(cl_object arg)
 {
-	@(return MAKE_FIXNUM(get_frame_ptr(arg)->frs_ihs))
+	@(return MAKE_FIXNUM(get_frame_ptr(arg)->frs_ihs->index))
 }
 
 cl_object
@@ -362,7 +296,7 @@ si_sch_frs_base(cl_object fr, cl_object ihs)
 	cl_index y;
 
 	y = fixnnint(ihs);
-	for (x = get_frame_ptr(fr); x <= frs_top && x->frs_ihs < y; x++);
+	for (x = get_frame_ptr(fr); x <= frs_top && x->frs_ihs->index < y; x++);
 	@(return ((x > frs_top) ? Cnil : MAKE_FIXNUM(x - frs_org)))
 }
 
@@ -409,7 +343,10 @@ init_stacks(int *new_cs_org)
 	bds_top = bds_org-1;
 	bds_limit = &bds_org[bds_size - 2*BDSGETA];
 
-	ihs_top = 0;
+	ihs_top = &ihs_org;
+	ihs_org.function = @'si::top-level';
+	ihs_org.lex_env = Cnil;
+	ihs_org.index = 0;
 
 	cs_org = new_cs_org;
 #if defined(HAVE_SYS_RESOURCE_H) && defined(RLIMIT_STACK)

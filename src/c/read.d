@@ -88,28 +88,21 @@ cl_object
 read_object_non_recursive(cl_object in)
 {
 	volatile cl_object x;
-	bool e;
 	int old_backq_level;
 	cl_object old_sharp_eq_context;
 
 	old_sharp_eq_context = sharp_eq_context;
 	old_backq_level = backq_level;
-	sharp_eq_context = Cnil;
-	backq_level = 0;
-
-	if (frs_push(FRS_PROTECT, Cnil))
-		e = TRUE;
-	else {
+	CL_UNWIND_PROTECT_BEGIN {
+		sharp_eq_context = Cnil;
+		backq_level = 0;
 		x = read_object(in);
 		if (!Null(sharp_eq_context))
 			x = patch_sharp(x);
-		e = FALSE;
-	}
-	frs_pop();
-
-	sharp_eq_context = old_sharp_eq_context;
-	backq_level = old_backq_level;
-	if (e) unwind(nlj_fr, nlj_tag);
+	} CL_UNWIND_PROTECT_EXIT {
+		sharp_eq_context = old_sharp_eq_context;
+		backq_level = old_backq_level;
+	} CL_UNWIND_PROTECT_END;
 	return(x);
 }
 
@@ -1361,26 +1354,10 @@ stream_or_default_input(cl_object stream)
 	@(return x)
 @)
 
-@(defun read_delimited_list (d &optional (strm Cnil) recursivep &aux l x)
-	cl_object *p;
-	bool e;
-	volatile cl_object old_sharp_eq_context;
-	volatile int old_backq_level;
-
-@
-	if (!CHARACTERP(d))
-		FEtype_error_character(d);
-	strm = stream_or_default_input(strm);
-	if (Null(recursivep)) {
-		old_sharp_eq_context = sharp_eq_context;
-		old_backq_level = backq_level;
-		sharp_eq_context = Cnil;
-		backq_level = 0;
-		if (frs_push(FRS_PROTECT, Cnil)) {
-			e = TRUE;
-			goto L;
-		}
-	}
+static cl_object
+do_read_delimited_list(cl_object d, cl_object strm)
+{
+	cl_object l, x, *p;
 	l = Cnil;
 	p = &l;
 	preserving_whitespace_flag = FALSE;	/*  necessary?  */
@@ -1392,15 +1369,30 @@ stream_or_default_input(cl_object stream)
 		*p = CONS(x, Cnil);
 		p = &(CDR((*p)));
 	}
-	if (Null(recursivep)) {
-		if (!Null(sharp_eq_context))
-			l = patch_sharp(l);
-		e = FALSE;
-	L:
-		frs_pop();
-		sharp_eq_context = old_sharp_eq_context;
-		backq_level = old_backq_level;
-		if (e) unwind(nlj_fr, nlj_tag);
+	return l;
+}
+
+@(defun read_delimited_list (d &optional (strm Cnil) recursivep)
+	cl_object l;
+@
+	if (!CHARACTERP(d))
+		FEtype_error_character(d);
+	strm = stream_or_default_input(strm);
+	if (Null(recursivep))
+		l = do_read_delimited_list(d, strm);
+	else {
+		volatile cl_object old_sharp_eq_context = sharp_eq_context;
+		volatile int old_backq_level = backq_level;
+		CL_UNWIND_PROTECT_BEGIN {
+			sharp_eq_context = Cnil;
+			backq_level = 0;
+			l = do_read_delimited_list(d, strm);
+			if (!Null(sharp_eq_context))
+				l = patch_sharp(l);
+		} CL_UNWIND_PROTECT_EXIT {
+			sharp_eq_context = old_sharp_eq_context;
+			backq_level = old_backq_level;
+		} CL_UNWIND_PROTECT_END;
 	}
 	@(return l)
 @)
@@ -1608,7 +1600,7 @@ si_read_bytes(cl_object stream, cl_object string, cl_object start, cl_object end
 	c = fread (string->string.self + is, sizeof(unsigned char),
 		   ie - is,
 		   fp);
-	@(return MAKE_FIXNUM(c))
+	@(return ((c < (ie - is))? Cnil : MAKE_FIXNUM(c)))
 }
 
 
@@ -1924,7 +1916,6 @@ read_VV(cl_object block, void *entry)
 	typedef void (*entry_point_ptr)(cl_object);
 	volatile cl_object x;
 	int i, len;
-	bool e;
 	cl_object in;
 	entry_point_ptr entry_point = (entry_point_ptr)entry;
 	cl_object *VV;
@@ -1942,9 +1933,7 @@ read_VV(cl_object block, void *entry)
 #endif
 
 	in = OBJNULL;
-	if (frs_push(FRS_PROTECT, Cnil))
-		e = TRUE;
-	else {
+	CL_UNWIND_PROTECT_BEGIN {
 		bds_bind(@'si::*cblock*', block);
 		if (len == 0) goto NO_DATA;
 		in=make_string_input_stream(make_constant_string(block->cblock.data_text),
@@ -1966,13 +1955,9 @@ read_VV(cl_object block, void *entry)
 	NO_DATA:
 		(*entry_point)(MAKE_FIXNUM(0));
 		bds_unwind1;
-		e = FALSE;
-	}
-
-	frs_pop();
-	if (in != OBJNULL)
-		close_stream(in, 0);
-
-	if (e) unwind(nlj_fr, nlj_tag);
+	} CL_UNWIND_PROTECT_EXIT {
+		if (in != OBJNULL)
+			close_stream(in, 0);
+	} CL_UNWIND_PROTECT_END;
 }
 

@@ -348,13 +348,13 @@ lambda_apply(int narg, cl_object fun)
 	cl_index args = cl_stack_index() - narg;
 	cl_object output, name, *body;
 	bds_ptr old_bds_top;
-	volatile bool block;
+	struct ihs_frame ihs;
 
 	if (type_of(fun) != t_bytecodes)
 		FEinvalid_function(fun);
 
 	/* 1) Save the lexical environment and set up a new one */
-	ihs_push(fun);
+	ihs_push(&ihs, fun);
 	lex_env = fun->bytecodes.lex;
 	old_bds_top = bds_top;
 
@@ -362,27 +362,19 @@ lambda_apply(int narg, cl_object fun)
 	body = lambda_bind(narg, fun, args);
 
 	/* If it is a named lambda, set a block for RETURN-FROM */
-	block = FALSE;
-	name = fun->bytecodes.data[0];
-	if (Null(fun->bytecodes.data[0]))
-		block = FALSE;
-	else {
-		block = TRUE;
-		/* Accept (SETF name) */
-		if (CONSP(name)) name = CADR(name);
-		fun = new_frame_id();
-		bind_block(name, fun);
-		if (frs_push(FRS_CATCH, fun)) {
-			goto END;
-		}
-	}
-
-	/* Process statements */
 	VALUES(0) = Cnil;
 	NValues = 0;
-	interpret(body);
-
-END:    if (block) frs_pop();
+	name = fun->bytecodes.data[0];
+	if (Null(name))
+		interpret(body);
+	else {
+		/* Accept (SETF name) */
+		if (CONSP(name)) name = CADR(name);
+		CL_BLOCK_BEGIN(id) {
+			bind_block(name, id);
+			interpret(body);
+		} CL_BLOCK_END;
+	}
 	bds_unwind(old_bds_top);
 	ihs_pop();
 	returnn(VALUES(0));
@@ -424,9 +416,9 @@ interpret_funcall(int narg, cl_object fun) {
 	args = cl_stack_top - narg;
  AGAIN:
 	switch (type_of(fun)) {
-	case t_cfun:
-		ihs_push(fun->cfun.name);
-		lex_env = Cnil;
+	case t_cfun: {
+		struct ihs_frame ihs;
+		ihs_push(&ihs, fun->cfun.name);
 		if (fun->cfun.narg >= 0) {
 			if (narg != fun->cfun.narg)
 				check_arg_failed(narg, fun->cfun.narg);
@@ -436,6 +428,7 @@ interpret_funcall(int narg, cl_object fun) {
 		}
 		ihs_pop();
 		break;
+	}
 	case t_cclosure:
 		/* FIXME! Shouldn't we register this call somehow? */
 		x = APPLY_closure(narg, fun->cclosure.entry, fun->cclosure.env, args);
@@ -493,21 +486,12 @@ interpret_funcall(int narg, cl_object fun) {
 */
 static cl_object *
 interpret_block(cl_object *vector) {
-	cl_object * volatile exit, name;
-	cl_object id = new_frame_id();
-
-	/* 1) Save current environment */
-	cl_stack_push(lex_env);
-
-	/* 2) Set up a block with given name */
-	exit = packed_label(vector - 1);
-	bind_block(next_code(vector), id);
-	if (frs_push(FRS_CATCH,id) == 0)
+	cl_object * volatile exit = packed_label(vector - 1);
+	CL_BLOCK_BEGIN(id) {
+		bind_block(next_code(vector), id);
 		vector = interpret(vector);
-	frs_pop();
-
-	/* 3) Restore environment */
-	lex_env = cl_stack_pop();
+		lex_env = frs_top->frs_lex;
+	} CL_BLOCK_END;
 	return exit;
 }
 
@@ -544,24 +528,24 @@ interpret_tagbody(cl_object *vector) {
 	cl_object *aux, *tag_list = vector;
 
 	/* 1) Save current environment */
-	cl_stack_push(lex_env);
+	cl_object old_lex_env = lex_env;
 
 	/* 2) Bind tags */
 	bind_tagbody(id);
 
-	/* 3) Wait here for gotos. Each goto sets nlj_tag to a integer
+	/* 3) Wait here for gotos. Each goto sets VALUES(0) to a integer
 	      which ranges from 0 to ntags-1, depending on the tag. These
 	      numbers are indices into the jump table and are computed
 	      at compile time.
 	*/
 	aux = vector + ntags;
 	if (frs_push(FRS_CATCH, id) != 0)
-		aux = simple_label(vector + fix(nlj_tag));
+		aux = simple_label(vector + fix(VALUES(0)));
 	vector = interpret(aux);
 	frs_pop();
 
 	/* 4) Restore environment */
-	lex_env = cl_stack_pop();
+	lex_env = old_lex_env;
 	VALUES(0) = Cnil;
 	NValues = 0;
 	return vector;
@@ -581,23 +565,12 @@ label:
 */
 static cl_object *
 interpret_unwind_protect(cl_object *vector) {
-	volatile int nr;
-	cl_object * volatile exit;
-	bool unwinding;
-
-	exit = packed_label(vector-1);
-	if (frs_push(FRS_PROTECT, Cnil))
-		unwinding = TRUE;
-	else {
+	cl_object * volatile exit = packed_label(vector-1);
+	CL_UNWIND_PROTECT_BEGIN {
 		interpret(vector);
-		unwinding = FALSE;
-	}
-	frs_pop();
-	nr = cl_stack_push_values();
-	exit = interpret(exit);
-	cl_stack_pop_values(nr);
-	if (unwinding)
-		unwind(nlj_fr, nlj_tag);
+	} CL_UNWIND_PROTECT_EXIT {
+		exit = interpret(exit);
+	} CL_UNWIND_PROTECT_END;
 	return exit;
 }
 
@@ -610,23 +583,13 @@ interpret_unwind_protect(cl_object *vector) {
 */
 static cl_object *
 interpret_do(cl_object *vector) {
-	cl_object *volatile exit;
-	cl_object id = new_frame_id();
-
-	/* 1) Save all environment */
-	bds_ptr old_bds_top = bds_top;
-	cl_stack_push(lex_env);
-
-	/* 2) Set up new block name */
-	bind_block(Cnil, id);
-	exit = packed_label(vector-1);
-	if (frs_push(FRS_CATCH,id) == 0)
+	cl_object *volatile exit = packed_label(vector-1);
+	CL_BLOCK_BEGIN(id) {
+		bind_block(Cnil, id);
 		interpret(vector);
-	frs_pop();
-
-	/* 3) Restore all environment */
-	bds_unwind(old_bds_top);
-	lex_env = cl_stack_pop();
+		bds_unwind(frs_top->frs_bds_top);
+		lex_env = frs_top->frs_lex;
+	} CL_BLOCK_END;
 	return exit;
 }
 
@@ -644,25 +607,22 @@ interpret_do(cl_object *vector) {
 */
 static cl_object *
 interpret_dolist(cl_object *vector) {
-	cl_object *output, *volatile exit;
-	cl_object list, var;
-	cl_object id = new_frame_id();
+	cl_object *volatile exit = packed_label(vector - 1);
 
-	/* 1) Save all environment */
-	bds_ptr old_bds_top = bds_top;
-	cl_stack_push(lex_env);
+	/* 1) Set NIL block */
+	CL_BLOCK_BEGIN(id) {
+		cl_object *output;
+		cl_object list, var;
 
-	/* 2) Set up a nil block */
-	bind_block(Cnil, id);
-	if (frs_push(FRS_CATCH,id) == 0) {
+		bind_block(Cnil, id);
 		list = VALUES(0);
 		exit = packed_label(vector - 1);
 
-		/* 3) Build list & bind variable*/
+		/* 2) Build list & bind variable*/
 		vector = interpret(vector);
 		output = packed_label(vector-1);
 
-		/* 4) Repeat until list is exahusted */
+		/* 3) Repeat until list is exahusted */
 		while (!endp(list)) {
 			NValues = 1;
 			VALUES(0) = CAR(list);
@@ -672,12 +632,11 @@ interpret_dolist(cl_object *vector) {
 		VALUES(0) = Cnil;
 		NValues = 1;
 		interpret(output);
-	}
-	frs_pop();
 
-	/* 5) Restore environment */
-	lex_env = cl_stack_pop();
-	bds_unwind(old_bds_top);
+		/* 4) Restore environment */
+		lex_env = frs_top->frs_lex;
+		bds_unwind(frs_top->frs_bds_top);
+	} CL_BLOCK_END;
 	return exit;
 }
 
@@ -695,37 +654,33 @@ interpret_dolist(cl_object *vector) {
 */
 static cl_object *
 interpret_dotimes(cl_object *vector) {
-	cl_object *output, *volatile exit;
-	cl_fixnum length, i;
-	cl_object var;
-	cl_object id = new_frame_id();
+	cl_object *volatile exit = packed_label(vector - 1);
+	CL_BLOCK_BEGIN(id) {
+		cl_object *output;
+		cl_fixnum length, i;
+		cl_object var;
 
-	/* 1) Save all environment */
-	bds_ptr old_bds_top = bds_top;
-	cl_stack_push(lex_env);
+		/* 1) Set up a nil block */
+		bind_block(Cnil, id);
 
-	/* 2) Set up a nil block */
-	bind_block(Cnil, id);
-	if (frs_push(FRS_CATCH,id) == 0) {
-		/* 3) Retrieve number and bind variables */
+		/* 2) Retrieve number and bind variables */
 		length = fix(VALUES(0));
 		exit = packed_label(vector - 1);
 		vector = interpret(vector);
 		output = packed_label(vector-1);
 
-		/* 4) Loop while needed */
+		/* 3) Loop while needed */
 		for (i = 0; i < length;) {
 			interpret(vector);
 			NValues = 1;
 			VALUES(0) = MAKE_FIXNUM(++i);
 		}
 		interpret(output);
-	}
-	frs_pop();
 
-	/* 5) Restore environment */
-	lex_env = cl_stack_pop();
-	bds_unwind(old_bds_top);
+		/* 4) Restore environment */
+		lex_env = frs_top->frs_lex;
+		bds_unwind(frs_top->frs_bds_top);
+	} CL_BLOCK_END;
 	return exit;
 }
 
@@ -875,7 +830,7 @@ interpret_progv(cl_object *vector) {
 
 	/* 1) Save current environment */
 	bds_ptr old_bds_top = bds_top;
-	cl_stack_push(lex_env);
+	cl_object old_lex_env = lex_env;
 
 	/* 2) Add new bindings */
 	while (!endp(vars)) {
@@ -890,7 +845,7 @@ interpret_progv(cl_object *vector) {
 	vector = interpret(vector);
 
 	/* 3) Restore environment */
-	lex_env = cl_stack_pop();
+	lex_env = old_lex_env;
 	bds_unwind(old_bds_top);
 	return vector;
 }

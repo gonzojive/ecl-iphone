@@ -108,7 +108,6 @@ init_lisp(void)
 	SYM_VAL(@'*features*') = CONS(make_keyword("RUNTIME"), SYM_VAL(@'*features*'));
 #endif
 	lex_env = Cnil;
-	ihs_push(_intern("TOP-LEVEL", system_package));
 	init_LSP();
 	init_CLOS();
 }

@@ -23,9 +23,10 @@
 			;;; During Pass1, T or NIL.
    ref-clb		;;; Cross local function reference.
        			;;; During Pass1, T or NIL.
-   label		;;; Where to jump.  A label.
+   label		;;; Where to jump: a label.
    unwind-exit		;;; Where to unwind-no-exit.
    var			;;; Variable containing frame ID.
+   index		;;; Number of tag in the list.
 ) |#
 
 ;;; During Pass 1, *tags* holds a list of tag objects and the symbols 'CB'
@@ -83,14 +84,16 @@
 	    (setq end w)))))))
 
 (defun c1tagbody (body &aux (*tags* *tags*) (info (make-info))
-                       (tag-var (make-var :name 'TAGBODY :kind NIL)))
+                       (tag-var (make-var :name 'TAGBODY :kind NIL))
+		       (tag-index 0))
   ;;; Establish tags.
   (setq body
         (mapcar
          #'(lambda (x)
              (if (not (consp x))
-               (let ((tag (make-tag :name x :var tag-var)))
+               (let ((tag (make-tag :name x :var tag-var :index tag-index)))
                  (push tag *tags*)
+		 (incf tag-index)
                  tag)
                x))
          body))
@@ -147,10 +150,10 @@
 	  (when (and (tag-p tag) (plusp (tag-ref tag)))
 	    (setf (tag-label tag) (next-label))
 	    (setf (tag-unwind-exit tag) label)
-	    (wt-nl "if (eql(nlj_tag," (add-symbol (tag-name tag)) ")) ")
+	    (wt-nl "if (VALUES(0)==MAKE_FIXNUM(" (tag-index tag) "))")
 	    (wt-go (tag-label tag))))
 	(when (var-ref-ccb tag-loc)
-	  (wt-nl "FEerror(\"The GO tag ~s is not established.\",1,nlj_tag);"))
+	  (wt-nl "internal_error(\"GO found an inexistent tag\");"))
 	(wt-nl "}")
 	(let ((*unwind-exit* (cons label *unwind-exit*)))
 	  (c2tagbody-body body))
@@ -214,7 +217,7 @@
 
 (defun c2go (tag nonlocal &aux (var (tag-var tag)))
   (if nonlocal
-      (wt-nl "cl_go(" var "," (add-symbol (tag-name tag)) ");")
+      (wt-nl "cl_go(" var ",MAKE_FIXNUM(" (tag-index tag) "));")
       ;; local go
       (progn
 	(unwind-no-exit (tag-unwind-exit tag))

@@ -72,7 +72,6 @@ cl_boot(int argc, char **argv)
 	ecl_self = expand_pathname(ecl_self);
 #endif
 
-	/*ihs_push(Cnil, lex);*/
 	lex_new();
 
 	/* Initialize library */

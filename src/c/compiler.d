@@ -2335,51 +2335,46 @@ si_make_lambda(cl_object name, cl_object rest)
 	cl_compiler_env old_c_env = c_env;
 
 	c_new_env(Cnil);
-	if (frs_push(FRS_PROTECT, Cnil)) {
+	CL_UNWIND_PROTECT_BEGIN {
+		lambda = make_lambda(name,rest);
+	} CL_UNWIND_PROTECT_EXIT {
 		c_env = old_c_env;
-		frs_pop();
-		unwind(nlj_fr, nlj_tag);
-	}
-	lambda = make_lambda(name,rest);
-	frs_pop();
-	c_env = old_c_env;
+	} CL_UNWIND_PROTECT_END;
 	@(return lambda)
 }
 
 cl_object
 eval(cl_object form, cl_object *new_bytecodes, cl_object env)
 {
-	cl_compiler_env old_c_env = c_env;
+	volatile cl_compiler_env old_c_env = c_env;
+	volatile cl_index handle;
+	struct ihs_frame ihs;
 	cl_object bytecodes;
-	cl_index handle;
-	bool unwinding;
 
-	ihs_push(@'eval');
-	lex_env = env;
 	c_new_env(env);
 	handle = asm_begin();
-	if (frs_push(FRS_PROTECT, Cnil)) {
+	CL_UNWIND_PROTECT_BEGIN {
+		compile_form(form, FALSE);
+		asm_op(OP_EXIT);
+		asm_op(OP_HALT);
+		if (new_bytecodes == NULL)
+			bytecodes = asm_end(handle, Cnil);
+		else {
+			bytecodes = asm_end(handle, *new_bytecodes);
+			*new_bytecodes = bytecodes;
+		}
+	} CL_UNWIND_PROTECT_EXIT {
+#ifdef CL_COMP_OWN_STACK
 		asm_clear(handle);
+#endif
 		c_env = old_c_env;
-		ihs_pop();
-		frs_pop();
-		unwind(nlj_fr, nlj_tag);
-	}
-	compile_form(form, FALSE);
-	asm_op(OP_EXIT);
-	asm_op(OP_HALT);
+	} CL_UNWIND_PROTECT_END;
+	ihs_push(&ihs, @'eval');
+	lex_env = env;
 	VALUES(0) = Cnil;
 	NValues = 0;
-	if (new_bytecodes == NULL)
-		bytecodes = asm_end(handle, Cnil);
-	else {
-		bytecodes = asm_end(handle, *new_bytecodes);
-		*new_bytecodes = bytecodes;
-	}
 	interpret(bytecodes->bytecodes.data);
-	c_env = old_c_env;
 	ihs_pop();
-	frs_pop();
 	return VALUES(0);
 }
 

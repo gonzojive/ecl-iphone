@@ -139,9 +139,10 @@
 			;;; During Pass1, T or NIL.
   ref-clb		;;; Cross local function reference.
 			;;; During Pass1, T or NIL.
-  label			;;; Where to jump.  A label.
+  label			;;; Where to jump: a label.
   unwind-exit		;;; Where to unwind-no-exit.
   var			;;; Variable containing frame ID.
+  index			;;; An integer denoting the label.
   )
 (deftype tag () '(satisfies tag-p))
 
