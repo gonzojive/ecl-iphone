@@ -178,6 +178,12 @@ windows-dist: all
 	cd build; rm -rf $(TAR_DIR); mkdir $(TAR_DIR); \
 	$(MAKE) flatinstall prefix=`pwd`/$(TAR_DIR); \
 	zip -r $(TAR_DIR).zip $(TAR_DIR)
+windows-nsi: all
+	cd build; rm -rf $(TAR_DIR); mkdir $(TAR_DIR); \
+	$(MAKE) flatinstall prefix=`pwd`/$(TAR_DIR)
+	`pwd`/src/util/ecl_nsi.sh `pwd`/src/util/ecl.nsi build/$(TAR_DIR)
+	makensis.exe build/$(TAR_DIR)/ecl.nsi
+	mv build/$(TAR_DIR)/Setup.exe ecl-$(VERSION).exe
 
 dist:
 	cd dist; make-dist
