@@ -646,18 +646,22 @@ fmt_character(format_stack fmt, bool colon, bool atsign)
 	cl_index i;
 
 	ensure_param(fmt, 0);
-	fmt->aux_string->string.fillp = 0;
-	fmt->aux_stream->stream.int0 = 0;
-	fmt->aux_stream->stream.int1 = 0;
 	x = fmt_advance(fmt);
 	assert_type_character(x);
-	prin1(x, fmt->aux_stream);
-	if (!colon && atsign)
-		i = 0;
-	else
-		i = 2;
-	for (;  i < fmt->aux_string->string.fillp;  i++)
-		writec_stream(tempstr(fmt, i), fmt->stream);
+	if (!colon && !atsign) {
+		writec_stream(CHAR_CODE(x), fmt->stream);
+	} else {
+		fmt->aux_string->string.fillp = 0;
+		fmt->aux_stream->stream.int0 = 0;
+		fmt->aux_stream->stream.int1 = 0;
+		prin1(x, fmt->aux_stream);
+		if (!colon && atsign)
+			i = 0;
+		else
+			i = 2;
+		for (;  i < fmt->aux_string->string.fillp;  i++)
+			writec_stream(tempstr(fmt, i), fmt->stream);
+	}
 }
 
 static void

@@ -1010,7 +1010,7 @@ freshline:
   (FORMAT NIL "char normal:~c, as ~%# would read:~%~@c, human read:~:c-*"
           #\SPACE
           #\SPACE #\SPACE)
-  #+(or XCL cmu sbcl CLISP) "char normal: , as 
+  #+(or XCL cmu sbcl CLISP ECL) "char normal: , as 
 # would read:
 #\\Space, human read:Space-*"
   #+(or AKCL LUCID)    "char normal:Space, as 
@@ -1019,7 +1019,7 @@ freshline:
   #+ALLEGRO            "char normal: , as 
 # would read:
 #\\space, human read:space-*"
-  #-(or XCL cmu sbcl CLISP AKCL LUCID ALLEGRO) UNKNOWN)
+  #-(or XCL cmu sbcl CLISP AKCL LUCID ALLEGRO ECL) UNKNOWN)
 
 (check-for-bug :format-legacy-1018
   (FORMAT NIL
@@ -1257,9 +1257,9 @@ but it was called with an argument of type SHORT-FLOAT.-*")
 
 (check-for-bug :format-legacy-1252
   (FORMAT NIL "**~c**" #\SPACE)
-  #+(or XCL cmu sbcl CLISP ALLEGRO) "** **"
+  #+(or XCL cmu sbcl CLISP ALLEGRO ECL) "** **"
   #+(or AKCL LUCID)            "**Space**"
-  #-(or XCL cmu sbcl CLISP AKCL LUCID ALLEGRO) UNKNOWN)
+  #-(or XCL cmu sbcl CLISP AKCL LUCID ALLEGRO ECL) UNKNOWN)
 
 (check-for-bug :format-legacy-1258
   (FORMAT NIL "**~:c**" #\SPACE)

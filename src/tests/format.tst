@@ -753,10 +753,10 @@ freshline:
 (FORMAT NIL "char normal:~c, as # would read:~@c, human read:~:c-*"
 #\SPACE
 #\SPACE #\SPACE)
-#+(or XCL CMU CLISP) "char normal: , as # would read:#\\Space, human read:Space-*"
+#+(or XCL CMU CLISP ECL) "char normal: , as # would read:#\\Space, human read:Space-*"
 #+(or AKCL LUCID)    "char normal:Space, as # would read:#\\Space, human read:Space-*"
 #+ALLEGRO            "char normal: , as # would read:#\\space, human read:space-*"
-#-(or XCL CMU CLISP AKCL LUCID ALLEGRO) UNKNOWN
+#-(or XCL CMU CLISP AKCL LUCID ALLEGRO ECL) UNKNOWN
 
 (FORMAT NIL
 "cardinal:~r, roman new:~@r, roman-old:~:@r~
@@ -940,9 +940,9 @@ NIL
 "Twenty-three losers."
 
 (FORMAT NIL "**~c**" #\SPACE)
-#+(or XCL CMU CLISP ALLEGRO) "** **"
+#+(or XCL CMU CLISP ALLEGRO ECL) "** **"
 #+(or AKCL LUCID)            "**Space**"
-#-(or XCL CMU CLISP AKCL LUCID ALLEGRO) UNKNOWN
+#-(or XCL CMU CLISP AKCL LUCID ALLEGRO ECL) UNKNOWN
 
 (FORMAT NIL "**~:c**" #\SPACE)
 "**Space**"
