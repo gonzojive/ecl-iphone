@@ -238,7 +238,11 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 
 #if defined(MSDOS) || defined(cygwin) || defined(mingw32)
 #  define IS_DIR_SEPARATOR(x) ((x=='/')||(x=='\\'))
-#  define DIR_SEPARATOR	'\\'
+#  ifdef MSDOS
+#    define DIR_SEPARATOR	'\\'
+#  else
+#    define DIR_SEPARATOR	'/'
+#  endif
 #  define PATH_SEPARATOR	';'
 #else
 #  define IS_DIR_SEPARATOR(x) (x=='/')
