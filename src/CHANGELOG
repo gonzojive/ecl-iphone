@@ -1023,6 +1023,10 @@ ECL 0.7b
 
   - SI::BC-DISASSEMBLE would not use Lisp streams for output.
 
+  - The compiler forgets to define a block when compiling a LAMBDA-BLOCK
+    form, such as #'(lambda-block f (x) ...) This results in errors when
+    defining some methods (Pointed out by Hannu Koivisto).
+
 * System design:
 
   - Setting a (DECLARE (SI::C-LOCAL)) inside a function, we advise the
