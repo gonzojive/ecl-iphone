@@ -243,12 +243,17 @@ fi
 if test "${tcp}" -o "${clx}"; then
   AC_DEFINE(TCP)
   EXTRA_OBJS="${EXTRA_OBJS} tcp.${OBJEXT}"
+  if test ${shared} = "yes" ; then
+    LSP_LIBRARIES="${LSP_LIBRARIES} sockets.fas"
+  else
+    LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}sockets.${LIBEXT}"
+  fi
   CLIBS="${CLIBS} ${TCPLIBS}"
 fi
 if test "${oldloop}"; then
   AC_DEFINE(ECL_OLD_LOOP)
 fi
-if test "${cmuformat}"; then
+if test "${cmuformat}" = "yes"; then
   closstreams="yes"
   AC_DEFINE(ECL_CMU_FORMAT)
 fi

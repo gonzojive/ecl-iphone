@@ -9,6 +9,7 @@
 ;;;   find headers and libraries in the build directory.
 ;;;
 (si::pathname-translations "SRC" `(("**;*.*.*" "@true_srcdir@/**/*.*")))
+(si::pathname-translations "EXT" `(("**;*.*.*" "@true_srcdir@/../contrib/**/*.*")))
 (si::pathname-translations "BUILD" `(("**;*.*.*" "@true_builddir@/**/*.*")))
 (si::pathname-translations "SYS" '(("**;*.*.*" "@true_builddir@/**/*.*")))
 
@@ -55,6 +56,8 @@
 ;;; * Timed compilation facility.
 ;;;
 (defun compile-if-old (destdir sources &rest options)
+  (unless (probe-file destdir)
+    (si::mkdir destdir #o0777))
   (mapcar #'(lambda (source)
 	      (let ((object (merge-pathnames destdir (compile-file-pathname source :type :object))))
 		(unless (and (probe-file object)

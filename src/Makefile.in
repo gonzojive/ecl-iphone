@@ -89,6 +89,9 @@ ecl-config: ecl-config.pre
 sysfun.lsp:
 	ln -s -f $(srcdir)/cmp/sysfun.lsp ./
 
+rt.lisp:
+	cp $(srcdir)/../contrib/rt/rt.lisp ./
+
 BUILD-STAMP: config.status
 	(echo "#"; uname -a) > $@
 	head -8 config.status | tail -6 >> $@

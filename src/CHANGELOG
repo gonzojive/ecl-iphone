@@ -41,6 +41,13 @@ ECL 0.9f
 
  - When *PRINT-READABLY*=T, vectors just print as arrays.
 
+* Contributed modules:
+
+ - MIT test unit rt.lisp is now available as #p"sys:rt"
+
+ - SBCL sockets have been ported to unix (J. Stecklina) and to windows
+   (M. Goffioul) and are built when using the configuration option --with-tcp.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

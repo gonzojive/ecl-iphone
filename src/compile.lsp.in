@@ -125,6 +125,24 @@ ranlib ../@LIBPREFIX@ecl.@LIBEXT@'")
    ))
 
 ;;;
+;;; * Sockets library.
+;;;
+
+(defconstant +sockets-module-files+
+'("ext:sockets;sockets.lisp"))
+
+(setq si::*init-function-prefix* "EXT")
+
+#+WANTS-SOCKETS
+(progn
+  (proclaim '(optimize (safety 2) (speed 1)))
+  (let* ((objects (compile-if-old "build:ext;" +sockets-module-files+
+				  :system-p t :c-file t :data-file t :h-file t)))
+    (c::build-static-library "sockets" :lisp-files objects)
+    #+dlopen
+    (c::build-fasl "sockets" :lisp-files objects)))
+
+;;;
 ;;; * Compile the portable CLX library.
 ;;;
 
@@ -156,8 +174,6 @@ ranlib ../@LIBPREFIX@ecl.@LIBEXT@'")
 (progn
   (proclaim '(optimize (safety 2) (speed 1)))
   (push :clx-ansi-common-lisp *features*)
-  (unless (probe-file "build:clx;")
-    (si::mkdir "build:clx;" #o0777))
   (mapcar #'load +clx-module-files+)
   (let* ((objects (compile-if-old "build:clx;" +clx-module-files+
 				  :system-p t :c-file t :data-file t :h-file t)))
@@ -171,5 +187,6 @@ ranlib ../@LIBPREFIX@ecl.@LIBEXT@'")
  #+(or cross stage1) "ecl"
  #-(or cross stage1) "ecl2"
  :lisp-files '(#+(and (not dlopen) WANTS-CMP) cmp
+	       #+(and (not dlopen) WANTS-SOCKETS) sockets
 	       #+(and (not dlopen) WANTS-CLX) clx)
  :ld-flags '(#-msvc "-L./"))
