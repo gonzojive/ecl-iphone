@@ -37,7 +37,7 @@ BuildRoot:      %{_buildtmp}/%{_nv}-buildroot
 
 ECL stands for Embeddable Common-Lisp.
 
-The ECL project is an effort to modernize Giusseppe Attardi's ECL
+The ECL project is an effort to modernize Giuseppe Attardi's ECL
 environment to produce an implementation of the Common-Lisp language
 which complies to the ANSI X3J13 definition of the language.
 

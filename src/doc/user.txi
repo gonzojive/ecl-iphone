@@ -20,18 +20,18 @@ into C based applications.
 @noindent
 Copyright @copyright{} 2000, Juan Jose Garcia-Ripoll
 @noindent
-Copyright @copyright{} 1990, Giusseppe Attardi
+Copyright @copyright{} 1990, Giuseppe Attardi
 
 @end ifinfo
 
 @titlepage
 @title ECL User's Guide
-@author Giusseppe Attardi
+@author Giuseppe Attardi
 @author Juan Jose Garcia Ripoll (revised version)
 
 @page
 @vskip 0pt plus 1filll
-Copyright @copyright{} 1990, Giusseppe Attardi
+Copyright @copyright{} 1990, Giuseppe Attardi
 
 Copyright @copyright{} 2000, Juan Jose Garcia Ripoll
 @end titlepage
@@ -78,7 +78,7 @@ interface with other languages.
 @chapter Introduction
 
 @ecl{} is an implementation of the @clisp{} language that was developed
-by Giusseppe Attardi's up from the Kyoto Common-Lisp. See @ref{Credits}
+by Giuseppe Attardi's up from the Kyoto Common-Lisp. See @ref{Credits}
 for the history of the code you are up to use.
 
 @ecl{} (ECL for short) uses standard C calling conventions for Lisp compiled
@@ -121,7 +121,7 @@ document @emph{only} the differences with @bibcite{ANSI}.
 
 The @ecl{} project is an implementation of the @clisp{} language that aims to
 comply with the @ansi{} standard. The first ECL implementations were developed
-by Giusseppe Attardi's who produced an interpreter and compiler fully conformat
+by Giuseppe Attardi's who produced an interpreter and compiler fully conformat
 with the Common-Lisp as reported in @cite{Steele:84}. ECL derives itself mostly
 from Kyoto @clisp{}, an implementation developed at the Research Institute for
 Mathematical Sciences (RIMS), Kyoto University, with the cooperation of Nippon
@@ -129,7 +129,7 @@ Data General Corporation.  The main developers of Kyoto @clisp{} were Taiichi
 Yuasa and Masami Hagiya, of the Research Institute for Mathematical Sciences,
 at Kyoto University.
 
-I must thank Giusseppe Attardi, Yuasa and Hagiya for their wonderful work with
+I must thank Giuseppe Attardi, Yuasa and Hagiya for their wonderful work with
 preceding implementations and for putting them in the Public Domain under the
 GNU General Public Licence as published by the Free Software Foundation.
 Without them this product would have never been possible.

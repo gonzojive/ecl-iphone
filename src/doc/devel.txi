@@ -73,7 +73,7 @@ such as macro definitions, LOOPs, an implementation of CLOS, and a translator
 from Lisp to C.
 
 As a result of this design, which dates back to the Kyoto CL and was later
-improved in Giusseppe Attardi's ECoLisp, @ecl{} can be used as
+improved in Giuseppe Attardi's ECoLisp, @ecl{} can be used as
 @itemize
 @item As a standalone implementation of the @clisp{} language
 @item As an embedded interpreter subject to the control of a larger C program.
