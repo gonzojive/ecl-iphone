@@ -472,6 +472,7 @@ extern int init_lwp(void);
 
 /* macros.c */
 
+extern cl_object search_macro(cl_object name, cl_object env);
 extern cl_object macro_expand1(cl_object form, cl_object env);
 extern cl_object macro_expand(cl_object form, cl_object env);
 extern void init_macros(void);
