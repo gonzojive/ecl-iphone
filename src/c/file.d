@@ -111,13 +111,13 @@ feof1(FILE *fp)
 bool
 input_stream_p(cl_object strm)
 {
+BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
 		return !Null(funcall(2, @'stream-input-p'));
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-BEGIN:
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
 		closed_stream(strm);
@@ -139,8 +139,6 @@ BEGIN:
 
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
-		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	default:
@@ -159,13 +157,13 @@ BEGIN:
 bool
 output_stream_p(cl_object strm)
 {
+BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
 		return !Null(funcall(2, @'stream-output-p'));
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-BEGIN:
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
 		closed_stream(strm);
@@ -187,8 +185,6 @@ BEGIN:
 
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
-		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	default:
@@ -201,13 +197,13 @@ stream_element_type(cl_object strm)
 {
 	cl_object x;
 
+BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
 		return(@'base-char');
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-BEGIN:
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
 		closed_stream(strm);
@@ -221,8 +217,6 @@ BEGIN:
 
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
-		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_broadcast:
@@ -402,6 +396,7 @@ close_stream(cl_object strm, bool abort_flag)        /*  Not used now!  */
 {
 	FILE *fp;
 
+BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
 		funcall(2, @'stream-close', strm);
@@ -448,8 +443,6 @@ close_stream(cl_object strm, bool abort_flag)        /*  Not used now!  */
 #if 0
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
-		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_broadcast:
@@ -603,13 +596,13 @@ readc_stream(cl_object strm)
 	int c;
 	FILE *fp;
 
+BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
 		return CHAR_CODE(funcall(2, @'stream-read-char', strm));
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-BEGIN:
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
@@ -629,8 +622,6 @@ BEGIN:
 
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
-		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_concatenated:
@@ -681,6 +672,7 @@ unreadc_stream(int c, cl_object strm)
 {
 	FILE *fp;
 
+BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
 		funcall(3, @'stream-unread-char', strm, c);
@@ -689,7 +681,6 @@ unreadc_stream(int c, cl_object strm)
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-BEGIN:
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
@@ -706,8 +697,6 @@ BEGIN:
 
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
-		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_concatenated:
@@ -754,6 +743,7 @@ writec_stream(int c, cl_object strm)
 	cl_index i;
 	FILE *fp;
 
+BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
 		funcall(3, @'stream-write-char', strm, CODE_CHAR(c));
@@ -762,7 +752,6 @@ writec_stream(int c, cl_object strm)
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-BEGIN:
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
@@ -785,8 +774,6 @@ BEGIN:
 
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
-		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_broadcast:
@@ -866,6 +853,7 @@ flush_stream(cl_object strm)
 	cl_object x;
 	FILE *fp;
 
+BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
 		funcall(2, @'stream-force-output', strm);
@@ -874,7 +862,6 @@ flush_stream(cl_object strm)
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-BEGIN:
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
@@ -890,8 +877,6 @@ BEGIN:
 
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
-		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_broadcast:
@@ -926,6 +911,7 @@ clear_input_stream(cl_object strm)
 	cl_object x;
 	FILE *fp;
 
+BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
 		funcall(2, @'stream-clear-input', strm);
@@ -934,7 +920,6 @@ clear_input_stream(cl_object strm)
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-BEGIN:
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
@@ -949,8 +934,6 @@ BEGIN:
 
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
-		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_broadcast:
@@ -985,6 +968,7 @@ clear_output_stream(cl_object strm)
 	cl_object x;
 	FILE *fp;
 
+BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
 		funcall(2, @'stream-clear-output',strm);
@@ -993,7 +977,6 @@ clear_output_stream(cl_object strm)
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-BEGIN:
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
@@ -1008,8 +991,6 @@ BEGIN:
 
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
-		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_broadcast:
@@ -1044,13 +1025,13 @@ stream_at_end(cl_object strm)
 	int c;
 	FILE *fp;
 
+BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
 		return(FALSE);
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-BEGIN:
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
@@ -1077,8 +1058,6 @@ BEGIN:
 
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
-		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_concatenated:
@@ -1119,6 +1098,7 @@ listen_stream(cl_object strm)
 {
 	FILE *fp;
 
+BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
 		cl_object flag = funcall(2, @'stream-listen', strm);
@@ -1127,7 +1107,6 @@ listen_stream(cl_object strm)
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-BEGIN:
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
 		closed_stream(strm);
@@ -1153,8 +1132,6 @@ BEGIN:
 
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
-		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_concatenated:
@@ -1187,13 +1164,13 @@ file_position(cl_object strm)
 {
 	FILE *fp;
 
+BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
 		FEerror("file-position not implemented for CLOS streams", 0);
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-BEGIN:
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
 		closed_stream(strm);
@@ -1213,8 +1190,6 @@ BEGIN:
 
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
-		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_probe:
@@ -1235,13 +1210,13 @@ file_position_set(cl_object strm, long disp)
 {
 	FILE *fp;
 
+BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
 		FEerror("file-position not implemented for CLOS streams", 0);
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-BEGIN:
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
 		closed_stream(strm);
@@ -1271,8 +1246,6 @@ BEGIN:
 
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
-		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_probe:
@@ -1293,13 +1266,13 @@ file_length(cl_object strm)
 {
 	FILE *fp;
 
+BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
 		FEerror("file-length not implemented for CLOS streams", 0);
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-BEGIN:
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
 		closed_stream(strm);
@@ -1315,8 +1288,6 @@ BEGIN:
 
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
-		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	/* FIXME! Should signal an error of type-error */
@@ -1338,13 +1309,13 @@ int
 file_column(cl_object strm)
 {
 
+BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
 		return -1;
 #endif
 	if (type_of(strm) != t_stream)
 		FEtype_error_stream(strm);
-BEGIN:
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
 		closed_stream(strm);
@@ -1358,8 +1329,6 @@ BEGIN:
 
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
-		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_echo:
