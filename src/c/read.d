@@ -201,16 +201,6 @@ read_object_non_recursive(cl_object in)
 	return(x);
 }
 
-#if TK
-extern bool no_input;
-#define GETC(c, fp)	{ if (fp == stdin) \
-			   while (no_input) Tk_DoOneEvent(0); \
-			  c = getc(fp); \
-			  no_input = !FILE_CNT(fp); }
-#else
-#define GETC(c, fp)	c = getc(fp)
-#endif /* TK */
-
 /*
 	Read_object(in) reads an object from stream in.
 	This routine corresponds to COMMON Lisp function READ.
