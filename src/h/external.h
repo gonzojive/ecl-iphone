@@ -556,9 +556,8 @@ extern void flush_stream(cl_object strm);
 extern void clear_input_stream(cl_object strm);
 extern void clear_output_stream(cl_object strm);
 extern bool ecl_listen_stream(cl_object strm);
-extern long file_position(cl_object strm);
-extern long file_position_set(cl_object strm, long disp);
-extern long file_length(cl_object strm);
+extern cl_object ecl_file_position(cl_object strm);
+extern cl_object ecl_file_position_set(cl_object strm, cl_object disp);
 extern int file_column(cl_object strm);
 extern cl_object ecl_make_stream_from_fd(cl_object host, int fd, enum ecl_smmode smm);
 
@@ -1452,7 +1451,7 @@ extern cl_object si_mkstemp(cl_object templ);
 extern const char *expand_pathname(const char *name);
 extern cl_object ecl_string_to_pathname(char *s);
 extern FILE *backup_fopen(const char *filename, const char *option);
-extern int file_len(FILE *fp);
+extern cl_object ecl_file_len(FILE *fp);
 extern cl_object homedir_pathname(cl_object user);
 
 

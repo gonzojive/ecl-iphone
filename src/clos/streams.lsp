@@ -35,6 +35,12 @@
 (defmethod ext::stream-write-char ((stream t) char)
   (not-a-clos-stream stream 'ext:stream-write-char))
 
+(defmethod ext::stream-read-byte ((stream t))
+  (not-a-clos-stream stream 'ext:stream-read-byte))
+
+(defmethod ext::stream-write-byte ((stream t) byte)
+  (not-a-clos-stream stream 'ext:stream-write-byte))
+
 (defmethod ext::stream-force-output ((stream t))
   (not-a-clos-stream stream 'ext:stream-force-output))
 

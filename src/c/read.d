@@ -1570,8 +1570,7 @@ CANNOT_PARSE:
 	FEparse_error("Cannot parse an integer in the string ~S.", Cnil, 1, strng);
 @)
 
-@(defun read_byte (binary_input_stream
-		   &optional eof_errorp eof_value)
+@(defun read_byte (binary_input_stream &optional (eof_errorp Ct) eof_value)
 	cl_object c;
 @
 	c = ecl_read_byte(binary_input_stream);

@@ -53,15 +53,16 @@ ECL 1.0
   - Support for binary streams of arbitrary byte size. By default, streams are
     now of type CHARACTER which is equivalent to (UNSIGNED-BYTE 8). Streams of
     other types, such as UNSIGNED-BYTE, (UNSIGNED-BYTE 100), (SIGNED-BYTE 2),
-    etc, are also supported, but the size of the byte is (as of now) rounded up
-    to a multiple of 8 and READ/WRITE-CHAR signal an error when applied on
-    these streams.
+    etc, are also supported, except for the function FILE-POSITION, which
+    will reject to work if the byte size is not a multiple of 8.
 
   - Fixed the order of evaluation of arguments in INCF,DECF,etc (M.Goffioul).
 
   - Default methods for CLOS streams signal now a type error, which is the
     expected error when an object which is not of type stream is passed to the
     functions dealing with streams.
+
+  - By default READ-BYTE signals an error when EOF is reached.
 
 ;;; Local Variables: ***
 ;;; mode:text ***

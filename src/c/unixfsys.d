@@ -256,13 +256,13 @@ backup_fopen(const char *filename, const char *option)
 	return fopen(filename, option);
 }
 
-int
-file_len(FILE *fp)
+cl_object
+ecl_file_len(FILE *fp)
 {
 	struct stat filestatus;
 
 	fstat(fileno(fp), &filestatus);
-	return(filestatus.st_size);
+	return make_integer(filestatus.st_size);
 }
 
 cl_object

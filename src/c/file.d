@@ -21,10 +21,11 @@
 	by accessing the FILE structure of C.
 */
 
+#include <fcntl.h>
+#include <string.h>
 #include <ecl.h>
 #include "ecl-inl.h"
 #include "internal.h"
-#include <string.h>
 
 #ifdef HAVE_SELECT
 #include <sys/select.h>
@@ -37,6 +38,8 @@
 #elif defined(HAVE_SYS_IOCTL_H) && !defined(MSDOS) && !defined(cygwin)
 #include <sys/ioctl.h>
 #endif
+
+#define MAKE_BIT_MASK(n) ((1<<(n))-1)
 
 static int flisten(FILE *fp);
 
@@ -352,13 +355,23 @@ open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 					FEcannot_open(fn);
 			} else if (if_exists == @':rename_and_delete' ||
 				   if_exists == @':new_version' ||
-				   if_exists == @':supersede' ||
-				   if_exists == @':overwrite') {
+				   if_exists == @':supersede') {
 				fp = fopen(fname, (smm == smm_output)
 					   ? OPEN_W
 					   : OPEN_RW);
 				if (fp == NULL)
 					FEcannot_open(fn);
+			} else if (if_exists == @':overwrite') {
+				/* We cannot use "w+b" because it truncates.
+				   We cannot use "a+b" because writes jump to the end. */
+				int f = open(filename->string.self, O_RDWR|O_CREAT);
+				if (f < 0)
+					FEcannot_open(fn);
+				fp = fdopen(f, "r+b");
+				if (fp < 0) {
+					close(f);
+					FEcannot_open(fn);
+				}
 			} else if (if_exists == @':append') {
 				fp = fopen(fname, (smm == smm_output)
 					   ? OPEN_A
@@ -395,6 +408,8 @@ open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	x->stream.mode = (short)smm;
 	x->stream.file = fp;
 	x->stream.char_stream_p = char_stream_p;
+	/* Michael, touch this to reactivate support for odd bit sizes! */
+	byte_size = (byte_size + 7) & ~7;
 	x->stream.byte_size = byte_size;
 	x->stream.signed_bytes = signed_bytes;
 	x->stream.object1 = fn;
@@ -402,11 +417,15 @@ open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 #if !defined(GBC_BOEHM)
 	setbuf(fp, x->stream.buffer = cl_alloc(BUFSIZ));
 #endif
+
 	if (smm == smm_probe)
 		close_stream(x, 0);
 	return(x);
 }
 
+/* Forward definitions */
+static void ecl_write_byte8(int c, cl_object strm);
+static int ecl_read_byte8(cl_object strm);
 
 /*----------------------------------------------------------------------
  *	Close_stream(strm, abort_flag) closes stream strm.
@@ -445,6 +464,8 @@ close_stream(cl_object strm, bool abort_flag)        /*  Not used now!  */
 	case smm_probe:
 		if (fp == NULL)
 			wrong_file_handler(strm);
+		if ((strm->stream.byte_size & 7) && strm->stream.buffer_state == -1)
+			ecl_write_byte8(strm->stream.bit_buffer, strm);
 		if (fclose(fp) != 0)
 			FElibc_error("Cannot close stream ~S.", 1, strm);
 #if !defined(GBC_BOEHM)
@@ -664,13 +685,38 @@ BEGIN:
 		cl_fixnum n = fixint(c);
 		ecl_write_byte8(n & 0xFF, strm);
 	} else if (bs & 7) {
-		/* Michael: remove this when you implement
-		 * bitwise reading and writing */
-		FEerror("Unsupported stream byte size", 0);
+		unsigned char b = strm->stream.bit_buffer;
+		int bs_ = bs;
+		cl_object c0 = c;
+		nb = strm->stream.bits_left;
+		if (strm->stream.buffer_state == 1) {
+			/* buffer is prepared for reading: re-read (8-nb) bits and throw the rest */
+			int c0;
+			fseek(strm->stream.file, -1, SEEK_CUR);
+			c0 = ecl_read_byte8(strm);
+			if (c0 == EOF)
+				/* this should not happen !!! */
+				io_error(strm);
+			fseek(strm->stream.file, -1, SEEK_CUR);
+			b = (unsigned char)(c0 & MAKE_BIT_MASK(8-nb));
+			nb = (8-nb);
+		}
+		do {
+			b |= (unsigned char)(fixnnint(cl_logand(2, c0, MAKE_FIXNUM(MAKE_BIT_MASK(8-nb)))) << nb);
+			bs_ -= (8-nb);
+			c0 = cl_ash(c0, MAKE_FIXNUM(nb-8));
+			if (bs_ >= 0) {
+				ecl_write_byte8(b, strm);
+				b = nb = 0;
+			}
+		} while (bs_ > 0);
+		strm->stream.bits_left = (bs_ < 0 ? (8+bs_) : 0);
+		strm->stream.bit_buffer = (bs_ < 0 ? (b & MAKE_BIT_MASK(8+bs_)) : 0);
+		strm->stream.buffer_state = (bs_ < 0 ? -1 : 0);
 	} else do {
 		cl_object b = cl_logand(2, c, MAKE_FIXNUM(0xFF));
 		ecl_write_byte8(fix(b), strm);
-		c = cl_ash(c, MAKE_FIXNUM(8));
+		c = cl_ash(c, MAKE_FIXNUM(-8));
 		bs -= 8;
 	} while (bs);
 }
@@ -800,18 +846,55 @@ BEGIN:
 			return MAKE_FIXNUM((signed char)c);
 		}
 		return MAKE_FIXNUM(i);
+	} else if (bs & 7) {
+		unsigned char b = strm->stream.bit_buffer;
+		nb = strm->stream.bits_left;
+		if (strm->stream.buffer_state == -1) {
+			/* buffer is prepared for writing: flush it */
+			int c0;
+			fseek(strm->stream.file, 0, SEEK_CUR); /* I/O synchronization, required by ANSI */
+			c0 = ecl_read_byte8(strm);
+			if (c0 == EOF)
+				return Cnil;
+			b |= (unsigned char)(c0 & ~MAKE_BIT_MASK(nb));
+			fseek(strm->stream.file, -1, SEEK_CUR);
+			ecl_write_byte8(b, strm);
+			b >>= nb;
+			nb = (8-nb);
+		}
+		if (nb >= bs) {
+			c = MAKE_FIXNUM(b & (unsigned char)MAKE_BIT_MASK(bs));
+			strm->stream.bits_left = (nb-bs);
+			strm->stream.bit_buffer = (strm->stream.bits_left > 0 ? (b >> bs): 0);
+		} else {
+			cl_index i;
+			c = MAKE_FIXNUM(b);
+			while (nb < bs) {
+				int c0 = ecl_read_byte8(strm);
+				if (c0 == EOF)
+					return Cnil;
+				b = (unsigned char)(c0 & 0xFF);
+				for (i=8; i>0 && nb<bs; i--, nb++, b>>=1) {
+					c = cl_logior(2, c, cl_ash(MAKE_FIXNUM(b&0x01), MAKE_FIXNUM(nb)));
+				}
+			}
+			strm->stream.bits_left = i;
+			strm->stream.bit_buffer = b;
+		}
+		strm->stream.buffer_state = (strm->stream.bits_left > 0 ? 1 : 0);
+	} else {
+		cl_index bs_ = bs;
+		c = MAKE_FIXNUM(0);
+		for (nb = 0; bs_ >= 8; bs_ -= 8, nb += 8) {
+			cl_fixnum i = ecl_read_byte8(strm);
+			if (i == EOF)
+				return Cnil;
+			c = cl_logior(2, c, cl_ash(MAKE_FIXNUM(i), MAKE_FIXNUM(nb)));
+		}
 	}
-	if (bs & 7) {
-		/* Michael: remove this when you implement
-		 * bitwise reading and writing */
-		FEerror("Unsupported stream byte size", 0);
-	}
-	c = MAKE_FIXNUM(0);
-	for (nb = 0; bs >= 8; bs -= 8, nb += 8) {
-		cl_fixnum i = ecl_read_byte8(strm);
-		if (i == EOF)
-			return Cnil;
-		c = cl_logior(2, c, cl_ash(MAKE_FIXNUM(i), MAKE_FIXNUM(nb)));
+	if (strm->stream.signed_bytes && cl_logbitp(MAKE_FIXNUM(bs-1), c) != Cnil) {
+		c = cl_logandc1(cl_ash(MAKE_FIXNUM(1), MAKE_FIXNUM(bs-1)), c);
+		c = number_minus(c, cl_ash(MAKE_FIXNUM(1), MAKE_FIXNUM(bs-1)));
 	}
 	return c;
 }
@@ -1395,7 +1478,6 @@ void
 flush_stream(cl_object strm)
 {
 	cl_object x;
-	FILE *fp;
 
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
@@ -1404,22 +1486,22 @@ BEGIN:
 		return;
 	}
 #endif
-	if (type_of(strm) != t_stream) 
+	if (type_of(strm) != t_stream)
 		FEtype_error_stream(strm);
-	fp = strm->stream.file;
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
 		break;
 
 	case smm_output:
-	case smm_io:
+	case smm_io: {
+		FILE *fp = strm->stream.file;
 		if (fp == NULL)
 			wrong_file_handler(strm);
 		if (fflush(fp) == EOF)
 			io_error(strm);
 		break;
-
+	}
 #ifdef _MSC_VER
 	case smm_output_wsock:
 		/* do not do anything (yet) */
@@ -1709,33 +1791,44 @@ BEGIN:
 	}
 }
 
-long
-file_position(cl_object strm)
+cl_object
+ecl_file_position(cl_object strm)
 {
-	FILE *fp;
-
+	cl_object output;
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
 		FEerror("file-position not implemented for CLOS streams", 0);
 #endif
-	if (type_of(strm) != t_stream) 
+	if (type_of(strm) != t_stream)
 		FEtype_error_stream(strm);
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
-		return(-1);
+		return Cnil;
 
-	case smm_input:
 	case smm_output:
 	case smm_io:
-		fp = strm->stream.file;
+	case smm_input: {
+		/* FIXME! This does not handle large file sizes */
+		cl_fixnum small_offset;
+		FILE *fp = strm->stream.file;
 		if (fp == NULL)
 			wrong_file_handler(strm);
-		return(ftell(fp));
-
+		small_offset = ftell(fp);
+		if (small_offset < 0)
+			io_error(strm);
+		output = make_integer(small_offset);
+		break;
+	}
 	case smm_string_output:
-		return(strm->stream.object0->string.fillp);
+		/* INV: The size of a string never exceeds a fixnum. */
+		output = MAKE_FIXNUM(strm->stream.object0->string.fillp);
+		break;
+	case smm_string_input:
+		/* INV: The size of a string never exceeds a fixnum. */
+		output = MAKE_FIXNUM(strm->stream.int0);
+		break;
 
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
@@ -1755,19 +1848,28 @@ BEGIN:
 	case smm_concatenated:
 	case smm_two_way:
 	case smm_echo:
-	case smm_string_input:
-		return(-1);
+		return Cnil;
 
 	default:
 		error("illegal stream mode");
 	}
+	if (strm->stream.byte_size != 8) {
+		output = floor2(number_times(output, MAKE_FIXNUM(8)),
+				MAKE_FIXNUM(strm->stream.byte_size));
+		if (VALUES(1) != MAKE_FIXNUM(0)) {
+			internal_error("File position is not on byte boundary");
+		}
+		if (strm->stream.byte_size & 7) {
+			FEerror("Unsupported stream byte size",0);
+		}
+	}
+	return output;
 }
 
-long
-file_position_set(cl_object strm, long disp)
+cl_object
+ecl_file_position_set(cl_object strm, cl_object large_disp)
 {
-	FILE *fp;
-
+	cl_index disp, extra = 0;
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
@@ -1778,19 +1880,27 @@ BEGIN:
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
-		return(-1);
+		return Cnil;
 
 	case smm_input:
 	case smm_output:
-	case smm_io:
-		fp = strm->stream.file;
+	case smm_io: {
+		FILE *fp = strm->stream.file;
+		if (strm->stream.byte_size != 8) {
+			large_disp = floor2(number_times(large_disp, MAKE_FIXNUM(strm->stream.byte_size)),
+					    MAKE_FIXNUM(8));
+			extra = fix(VALUES(1));
+		}
+		disp = fixnnint(large_disp);
 		if (fp == NULL)
 			wrong_file_handler(strm);
 		if (fseek(fp, disp, 0) != 0)
-			return(-1);
-		return(0);
-
-	case smm_string_output:
+			return Cnil;
+		break;
+	}
+	case smm_string_output: {
+		/* INV: byte_size == 8 */
+		disp = fixnnint(large_disp);
 		if (disp < strm->stream.object0->string.fillp) {
 			strm->stream.object0->string.fillp = disp;
 			strm->stream.int0 = disp;
@@ -1799,8 +1909,18 @@ BEGIN:
 			while (disp-- > 0)
 				ecl_write_char(' ', strm);
 		}
-		return(0);
-
+		return Ct;
+	}
+	case smm_string_input: {
+		/* INV: byte_size == 8 */
+		disp = fixnnint(large_disp);
+		if (disp >= strm->stream.int1) {
+			strm->stream.int0 = strm->stream.int1;
+		} else {
+			strm->stream.int0 = disp;
+		}
+		return Ct;
+	}
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		goto BEGIN;
@@ -1808,7 +1928,7 @@ BEGIN:
 	case smm_broadcast:
 		strm = strm->stream.object0;
 		if (endp(strm))
-			return 0;
+			return Cnil;
 		strm = CAR(strm);
 		goto BEGIN;
 
@@ -1819,19 +1939,21 @@ BEGIN:
 	case smm_concatenated:
 	case smm_two_way:
 	case smm_echo:
-	case smm_string_input:
-		return(-1);
+		return Cnil;
 
 	default:
 		error("illegal stream mode");
 	}
+	if (extra) {
+		FEerror("Unsupported stream byte size", 0);
+	}
+	return Ct;
 }
 
-long
-file_length(cl_object strm)
+cl_object
+cl_file_length(cl_object strm)
 {
-	FILE *fp;
-
+	cl_object output;
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
@@ -1843,16 +1965,28 @@ BEGIN:
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
-		return(-1);
-
+		output = Cnil;
+		break;
 	case smm_input:
 	case smm_output:
-	case smm_io:
-		fp = strm->stream.file;
+	case smm_io: {
+		FILE *fp = strm->stream.file;
+		cl_index bs;
 		if (fp == NULL)
 			wrong_file_handler(strm);
-		return(file_len(fp));
-
+		output = ecl_file_len(fp);
+		if ((bs = strm->stream.byte_size) != 8) {
+			if (bs & 7) {
+				FEerror("Unsupported byte size", 0);
+			}
+			output = floor2(number_times(output, MAKE_FIXNUM(8)),
+					MAKE_FIXNUM(bs));
+			if (VALUES(1) != MAKE_FIXNUM(0)) {
+				FEerror("File length is not on byte boundary", 0);
+			}
+		}
+		break;
+	}
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		goto BEGIN;
@@ -1860,7 +1994,8 @@ BEGIN:
 	case smm_broadcast:
 		strm = strm->stream.object0;
 		if (endp(strm)) {
-			return 0;
+			output = Cnil;
+			break;
 		}
 		strm = CAR(strm);
 		goto BEGIN;
@@ -1875,12 +2010,12 @@ BEGIN:
 	case smm_echo:
 	case smm_string_input:
 	case smm_string_output:
-		FEwrong_type_argument(c_string_to_object("(OR BROADCAST-STREAM SYNONYM-STREAM FILE-STREAM)"),
-				      strm);
+		FEwrong_type_argument(@'file-stream', strm);
 
 	default:
 		error("illegal stream mode");
 	}
+	@(return output)
 }
 
 cl_object si_file_column(cl_object strm)
@@ -2246,11 +2381,6 @@ normalize_stream_element_type(cl_object element_type)
 	} else {
 		char_stream_p = 0;
 		byte_size = normalize_stream_element_type(element_type);
-		if (byte_size & 7) {
-			/* Michael: remove this when you implement
-			 * bitwise reading and writing */
-			byte_size = (byte_size & ~7) + 8;
-		}
 	}
 	strm = open_stream(filename, smm, if_exists, if_does_not_exist,
 			   byte_size, char_stream_p);
@@ -2258,24 +2388,23 @@ normalize_stream_element_type(cl_object element_type)
 @)
 
 @(defun file-position (file_stream &o position)
-	long i;
 	cl_object output;
 @
 	if (Null(position)) {
-		i = file_position(file_stream);
-		output = (i < 0)? Cnil : MAKE_FIXNUM(i);
+		output = ecl_file_position(file_stream);
 	} else {
 		if (position == @':start') {
-			i = 0;
+			position = MAKE_FIXNUM(0);
 		} else if (position == @':end') {
-			i = file_length(file_stream);
-		} else if (!FIXNUMP(position) || (i = fix((position))) < 0) {
-			FEerror("~S is an illegal file position~%\
-for the file-stream ~S.",
-				2, position, file_stream);
+			position = cl_file_length(file_stream);
+			if (position == Cnil) {
+				output = Cnil;
+				goto OUTPUT;
+			}
 		}
-		output = (file_position_set(file_stream, i) < 0)? Cnil : Ct;
+		output = ecl_file_position_set(file_stream, position);
 	}
+  OUTPUT:
 	@(return output)
 @)
 
@@ -2306,13 +2435,6 @@ cl_file_string_length(cl_object stream, cl_object string)
 	@(return MAKE_FIXNUM(l))
 }
 
-
-cl_object
-cl_file_length(cl_object strm)
-{
-	cl_fixnum i = file_length(strm);
-	@(return ((i < 0) ? Cnil : MAKE_FIXNUM(i)))
-}
 
 cl_object
 cl_open_stream_p(cl_object strm)

@@ -316,6 +316,9 @@ struct ecl_stream {
 	char	*buffer;	/*  file buffer  */
 #endif
 	cl_index byte_size;	/*  size of byte in binary streams  */
+	unsigned char bit_buffer;
+	uint8_t bits_left;
+	int8_t buffer_state;	/* 0: unknown, 1: reading, -1: writing */
 };
 
 struct ecl_random {
