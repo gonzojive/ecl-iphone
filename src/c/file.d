@@ -23,6 +23,7 @@
 
 #include <fcntl.h>
 #include <string.h>
+#include <stdio.h>
 #include <ecl.h>
 #include "ecl-inl.h"
 #include "internal.h"
@@ -1794,7 +1795,42 @@ flisten(FILE *fp)
 	return (c > 0)? ECL_LISTEN_AVAILABLE : ECL_LISTEN_NO_CHAR;
 	}
 #endif /* FIONREAD */
+#else
+	if (isatty(fileno(fp))) {
+		/* console input */
+		HANDLE hnd = _get_osfhandle(_fileno(fp));
+		DWORD n;
+		if (!GetNumberOfConsoleInputEvents(hnd, &n))
+			FElibc_error("GetNumberOfConsoleInputEvents() returned an error value", 0);
+		if (n > 0) {
+			PINPUT_RECORD buf = (PINPUT_RECORD)malloc(n*sizeof(INPUT_RECORD));
+			DWORD nr;
+			if (!PeekConsoleInput(hnd, buf, n, &nr)) {
+				free(buf);
+				FElibc_error("PeekConsoleInput() returned an error value", 0);
+			}
+			for (n=0; n<nr; n++)
+				if (buf[n].EventType == KEY_EVENT) {
+					free(buf);
+					return ECL_LISTEN_AVAILABLE;
+				}
+			free(buf);
+		}
+		return ECL_LISTEN_NO_CHAR;
+	}
 #endif
+	/* This code is portable, and implements the expected behavior for regular files.
+	   It will fail on noninteractive streams. */
+	{
+		/* regular file */
+		long old_pos = ftell(fp), end_pos;
+		if (fseek(fp, 0, SEEK_END) != 0)
+			FElibc_error("fseek() returned an error value", 0);
+		end_pos = ftell(fp);
+		if (fseek(fp, old_pos, SEEK_SET) != 0)
+			FElibc_error("fseek() returned an error value", 0);
+		return (end_pos > old_pos ? ECL_LISTEN_AVAILABLE : ECL_LISTEN_EOF);
+	}
 	return !ECL_LISTEN_AVAILABLE;
 }
 
@@ -2607,15 +2643,18 @@ cl_interactive_stream_p(cl_object strm)
 #endif
 	if (t != t_stream)
 		FEtype_error_stream(strm);
+	if (strm->stream.closed)
+		FEclosed_stream(strm);
 	switch(strm->stream.mode) {
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		goto BEGIN;
 	case smm_input:
+	case smm_io:
 #ifdef HAVE_ISATTY
 		/* Here we should check for the type of file descriptor,
 		 * and whether it is connected to a tty. */
-		output = Cnil;
+		output = isatty(fileno(strm->stream.file))? Ct : Cnil;
 #endif
 		break;
 	default:;
