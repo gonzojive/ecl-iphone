@@ -838,10 +838,10 @@ ecl_namestring(cl_object x, int truncate_if_unreadable)
 	y = CAR(l);
 	if (y == @':relative') {
 		if (logical)
-			writestr_stream(";", buffer);
+			writec_stream(';', buffer);
 	} else {
 		if (!logical)
-			writestr_stream("/", buffer);
+			writec_stream(DIR_SEPARATOR, buffer);
 	}
 	for (l = CDR(l); !endp(l); l = CDR(l)) {
 		y = CAR(l);
@@ -856,7 +856,7 @@ ecl_namestring(cl_object x, int truncate_if_unreadable)
 		} else {
 			FEerror("Directory :back has no namestring representation",0);
 		}
-		writestr_stream(logical? ";" : "/", buffer);
+		writec_stream(logical? ';' : DIR_SEPARATOR, buffer);
 	}
 NO_DIRECTORY:
 	y = x->pathname.name;
