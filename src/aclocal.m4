@@ -121,6 +121,7 @@ SHAREDEXT='so'
 SHAREDPREFIX='lib'
 LIBPREFIX='lib'
 LIBEXT='a'
+PICFLAG='-fPIC'
 case "${host_os}" in
 	# libdir may have a dollar expression inside
 	linux*)
@@ -167,6 +168,7 @@ CFLAGS="${CFLAGS} -D${thehost}"
 AC_MSG_CHECKING(for ld flags when building shared libraries)
 if test "${shared}" = "yes"; then
 AC_MSG_RESULT([${SHARED_LDFLAGS}])
+CFLAGS="${CFLAGS} ${PICFLAG}"
 else
 shared="no";
 AC_MSG_RESULT(cannot build)

@@ -314,7 +314,7 @@ else
   AC_MSG_RESULT(configuring local copy)
   test -d gmp && rm -rf gmp
   if mkdir gmp; then
-   (destdir=`${PWDCMD}`; cd gmp;
+   (destdir=`${PWDCMD}`; cd gmp; CC="${CC} ${PICFLAG}" \
      $srcdir/gmp/configure --disable-shared --prefix=$bindir \
 	--infodir=${destdir}/doc --includedir=${destdir}/h \
         --libdir=${destdir} --build=${build} --host=${host} $gmp_flags)
@@ -330,7 +330,7 @@ elif test "${local_boehm}" = "no" ; then
   AC_MSG_RESULT(configuring local copy)
   test -d gc && rm -rf gc
   if mkdir gc; then
-   (destdir=`${PWDCMD}`; cd gc;
+   (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
      $srcdir/gc/configure --disable-threads --disable-shared --prefix=$bindir \
 	--includedir=${destdir}/h --libdir=${destdir} --build=${build} \
 	--host=${host})

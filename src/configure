@@ -3836,6 +3836,7 @@ SHAREDEXT='so'
 SHAREDPREFIX='lib'
 LIBPREFIX='lib'
 LIBEXT='a'
+PICFLAG='-fPIC'
 case "${host_os}" in
 	# libdir may have a dollar expression inside
 	linux*)
@@ -3884,6 +3885,7 @@ echo $ECHO_N "checking for ld flags when building shared libraries... $ECHO_C" >
 if test "${shared}" = "yes"; then
 echo "$as_me:$LINENO: result: ${SHARED_LDFLAGS}" >&5
 echo "${ECHO_T}${SHARED_LDFLAGS}" >&6
+CFLAGS="${CFLAGS} ${PICFLAG}"
 else
 shared="no";
 echo "$as_me:$LINENO: result: cannot build" >&5
@@ -5787,7 +5789,7 @@ else
 echo "${ECHO_T}configuring local copy" >&6
   test -d gmp && rm -rf gmp
   if mkdir gmp; then
-   (destdir=`${PWDCMD}`; cd gmp;
+   (destdir=`${PWDCMD}`; cd gmp; CC="${CC} ${PICFLAG}" \
      $srcdir/gmp/configure --disable-shared --prefix=$bindir \
 	--infodir=${destdir}/doc --includedir=${destdir}/h \
         --libdir=${destdir} --build=${build} --host=${host} $gmp_flags)
@@ -5803,7 +5805,7 @@ elif test "${local_boehm}" = "no" ; then
 echo "${ECHO_T}configuring local copy" >&6
   test -d gc && rm -rf gc
   if mkdir gc; then
-   (destdir=`${PWDCMD}`; cd gc;
+   (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
      $srcdir/gc/configure --disable-threads --disable-shared --prefix=$bindir \
 	--includedir=${destdir}/h --libdir=${destdir} --build=${build} \
 	--host=${host})
