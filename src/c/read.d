@@ -1860,26 +1860,30 @@ read_VV(cl_object block, void *entry)
 	if (block == NULL)
 		block = cl_alloc_object(t_codeblock);
 
-	(*entry_point)(block);
-	len = block->cblock.data_size;
-
-#ifdef GBC_BOEHM
-	VV = block->cblock.data = len? (cl_object *)cl_alloc(len * sizeof(cl_object)) : NULL;
-#else
-	VV = block->cblock.data;
-#endif
-
 	in = OBJNULL;
 	CL_UNWIND_PROTECT_BEGIN {
 		bds_bind(@'si::*cblock*', block);
+
+		/* Communicate the library which Cblock we are using, and get
+		 * back the amount of data to be processed.
+		 */
+		(*entry_point)(block);
+		len = block->cblock.data_size;
+#ifdef GBC_BOEHM
+		VV = block->cblock.data = len? (cl_object *)cl_alloc(len * sizeof(cl_object)) : NULL;
+#else
+		VV = block->cblock.data;
+#endif
 		if (len == 0) goto NO_DATA;
+
+		/* Read all data for the library */
 		in=make_string_input_stream(make_constant_string(block->cblock.data_text),
 					    0, block->cblock.data_text_size);
 		bds_bind(@'*read-base*', MAKE_FIXNUM(10));
 		bds_bind(@'*read-default-float-format*', @'single-float');
 		bds_bind(@'*read-suppress*', Cnil);
-		bds_bind(@'*package*', lisp_package);
 		bds_bind(@'*readtable*', standard_readtable);
+		bds_bind(@'*package*', lisp_package);
 		for (i = 0 ; i < len; i++) {
 			x = @read(4, in, Cnil, OBJNULL, Cnil);
 			if (x == OBJNULL)
@@ -1890,6 +1894,7 @@ read_VV(cl_object block, void *entry)
 		if (i < len)
 			FEerror("Not enough data while loading binary file",0);
 	NO_DATA:
+		/* Execute top-level code */
 		(*entry_point)(MAKE_FIXNUM(0));
 		bds_unwind1;
 	} CL_UNWIND_PROTECT_EXIT {
