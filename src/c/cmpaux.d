@@ -24,15 +24,6 @@
 #define CHAR_BIT (sizeof(char)*8)
 #endif
 
-cl_object
-make_list(int i)
-{
-  cl_object x = Cnil;
-  while (i-- > 0)
-    x = CONS(Cnil, x);
-  return x;
-}
-
 @(defun si::specialp (sym)
 @
 	@(return ((SYMBOLP(sym) && sym->symbol.stype == stp_special) ?
