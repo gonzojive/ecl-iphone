@@ -1344,9 +1344,9 @@ ECLS 0.9
   - New condition types PARSE-ERROR, SIMPLE-READER-ERROR and READER-ERROR. The
     errors from the reader correspond to this later type.
 
-  - New implementation for SUBTYPEP.
-
-  - TYPEP now works with (CONS ...) types.
+  - LOOP macro now accepts LOOP-FOR-BY forms, and it better supports
+    destructuring (Thanks to the CMUCL team for maintaining a reasonably
+    portable LOOP!).
 
 TODO:
 =====
