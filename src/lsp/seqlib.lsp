@@ -368,9 +368,7 @@ Returns a copy of SEQUENCE without duplicated elements."
         (do ((l sequence (cdr l)) (l1 nil))
             ((endp (cdr l))
              (return-from remove-duplicates (nreconc l1 l)))
-          (unless (member1 (car l) (cdr l)
-                           :test test :test-not test-not
-                           :key key)
+          (unless (member1 (car l) (cdr l) test test-not key)
                   (setq l1 (cons (car l) l1)))))
   (delete-duplicates sequence
                      :from-end from-end
@@ -393,9 +391,7 @@ Destructive REMOVE-DUPLICATES.  SEQUENCE may be destroyed."
         (do ((l sequence))
             ((endp (cdr l))
              (return-from delete-duplicates sequence))
-            (cond ((member1 (car l) (cdr l)
-                            :test test :test-not test-not
-                            :key key)
+            (cond ((member1 (car l) (cdr l) test test-not key)
                    (rplaca l (cadr l))
                    (rplacd l (cddr l)))
                   (t (setq l (cdr l))))))

@@ -742,9 +742,11 @@ member(cl_object x, cl_object l)
 }
 /* End of addition. Beppe */
 
-@(defun si::member1 (item list &key test test_not key)
+cl_object
+si_member1(cl_object item, cl_object list, cl_object test, cl_object test_not, cl_object key)
+{
 	saveTEST;
-@
+
 	CL_UNWIND_PROTECT_BEGIN {
 		if (key != Cnil)
 			item = funcall(2, key, item);
@@ -757,7 +759,7 @@ member(cl_object x, cl_object l)
 		restoreTEST;
 	} CL_UNWIND_PROTECT_END;
 	@(return list)
-@)
+}
 
 cl_object
 cl_tailp(cl_object y, cl_object x)
@@ -769,21 +771,18 @@ cl_tailp(cl_object y, cl_object x)
 	return cl_eql(x, y);
 }
 
-cl_return
-@adjoin(int narg, cl_object item, cl_object list, cl_object k1, cl_object v1,
-	 cl_object k2, cl_object v2, cl_object k3, cl_object v3)
-{
+@(defun adjoin (item list &key test test_not key)
 	cl_object output;
-
+@
 	if (narg < 2)
 		FEwrong_num_arguments(@'adjoin');
-	output = @si::member1(narg, item, list, k1, v1, k2, v2, k3, v3);
+	output = @si::member1(item, list, test, test_not, key);
 	if (Null(output))
 		output = CONS(item, list);
 	else
 		output = list;
-	return1(output);
-}
+	@(return output)
+@)
 
 cl_object
 cl_cons(cl_object x, cl_object y)

@@ -562,8 +562,8 @@ extern cl_object cl_nsubst _ARGS((int narg, cl_object new_obj, cl_object old_obj
 extern cl_object cl_sublis _ARGS((int narg, cl_object alist, cl_object tree, ...));
 extern cl_object cl_nsublis _ARGS((int narg, cl_object alist, cl_object tree, ...));
 extern cl_object cl_member _ARGS((int narg, cl_object item, cl_object list, ...));
-extern cl_object si_member1 _ARGS((int narg, cl_object item, cl_object list, ...));
-extern cl_object cl_adjoin _ARGS((int narg, cl_object item, cl_object list, cl_object k1, cl_object v1, cl_object k2, cl_object v2, cl_object k3, cl_object v3));
+extern cl_object si_member1 _ARGS((cl_object item, cl_object list, cl_object test, cl_object test_not, cl_object key));
+extern cl_object cl_adjoin _ARGS((int narg, cl_object item, cl_object list, ...));
 extern cl_object cl_pairlis _ARGS((int narg, cl_object keys, cl_object data, ...));
 extern cl_object cl_rassoc _ARGS((int narg, cl_object item, cl_object alist, ...));
 extern cl_object cl_assoc _ARGS((int narg, cl_object item, cl_object alist, ...));

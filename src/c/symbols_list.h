@@ -1074,7 +1074,7 @@ cl_symbols[] = {
 {SYS_ "MAKE-STRUCTURE", SI_ORDINARY, si_make_structure, -1},
 {SYS_ "MAKE-VECTOR", SI_ORDINARY, si_make_vector, 6},
 {SYS_ "MANGLE-NAME", SI_ORDINARY, si_mangle_name, -1},
-{SYS_ "MEMBER1", SI_ORDINARY, si_member1, -1},
+{SYS_ "MEMBER1", SI_ORDINARY, si_member1, 5},
 {SYS_ "MEMQ", SI_ORDINARY, si_memq, 2},
 {SYS_ "MKDIR", SI_ORDINARY, si_mkdir, 2},
 {SYS_ "MKSTEMP", SI_ORDINARY, si_mkstemp, 1},
