@@ -206,6 +206,9 @@ ECL 1.0
   - The value of the INDEX variable in WITH-INPUT-FROM-STRING is only updated
     when exiting normally from the WITH-... form.
 
+  - In a standard method combination, the method with qualifier :AFTER are
+    invoked using the least-specific-first order (ANSI 7.6.6.2)
+
 * MOP compliance:
 
   - ADD-METHOD is now a generic function and implements most of the protocol in

@@ -276,8 +276,8 @@
       (return-from standard-compute-effective-method
 	#'(lambda (&rest args)
 	    (apply 'no-primary-method gf args))))
-    (setq before (nreverse before)
-	  after (nreverse after)
+    (setq before (nreverse before) ;; most-specific-first order (ANSI 7.6.6.2)
+	  after after		   ;; least-specific-first order (ANSI 7.6.6.2)
 	  primary (nreverse primary)
 	  around (nreverse around))
     (make-effective-method-function
