@@ -171,20 +171,14 @@
   (when (or (eq args 'ARGS-PUSHED)
 	    (< (length args) SI::C-ARGUMENTS-LIMIT))
     (return-from maybe-push-args (values nil nil nil)))
-  (let* ((temp *temp*)	; allow reuse of TEMP variables
-	 (*temp* temp)
-	 (arg (list 'TEMP 0))
-	 (narg `(LCL ,(next-lcl))))
+  (let* ((narg `(LCL ,(next-lcl))))
     (wt-nl "{cl_index " narg ";")
-    (let ((*destination* arg))
+    (let* ((*temp* *temp*)
+	   (temp `(TEMP ,(next-temp)))
+	   (*destination* temp))
       (dolist (expr args)
-	(setf (second arg) (next-temp))
-	(c2expr* expr)))
-    (setf (second arg) temp)	; restart numbering
-    (dotimes (i (length args))
-      (wt-nl "cl_stack_push(" arg ");")
-      (incf (second arg)))
-    (wt-nl narg "=" (length args) ";")
+	(c2expr* expr)
+	(wt-nl "cl_stack_push(" temp "); " narg "++;")
     (values `((STACK ,narg) ,@*unwind-exit*) 'ARGS-PUSHED narg)))
 
 ;;;
