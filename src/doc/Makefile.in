@@ -24,7 +24,7 @@ FILTER = sed 's,@VERSION@,$(VERSION),g'
 
 ECL = ../ecl
 
-all: $(INFO_FILES) $(HTML_FILES)
+all: $(INFO_FILES) $(HTML_FILES) developers_manual user_manual
 
 ecl.dvi: $(srcdir)/user.txi $(srcdir)/macros.txi clisp.sty ecl.sty
 	tex $(srcdir)/user.txi
