@@ -201,7 +201,7 @@ init_alloc(void)
  *		MALLOC SUBSTITUTION			  *
  **********************************************************/
 
-#ifdef NEED_MALLOC
+#if 0 && defined(NEED_MALLOC)
 #undef malloc
 #undef calloc
 #undef free

@@ -121,11 +121,14 @@
     (wt-nl "cl_object value0;")
     (wt-nl "if (!FIXNUMP(flag)){")
     (wt-nl "Cblock=flag;")
+    #-boehm-gc
     (wt-nl "flag->cblock.data = VV;")
     (wt-nl "flag->cblock.data_size = VM;")
     (wt-nl "flag->cblock.data_text = compiler_data_text;")
     (wt-nl "flag->cblock.data_text_size = compiler_data_text_size;")
     (wt-nl "return;}")
+    #+boehm-gc
+    (wt-nl "VV = Cblock->cblock.data;")
     ;; useless in initialization.
     (dolist (form *top-level-forms*)
       (let ((*compile-to-linking-call* nil)
@@ -143,12 +146,13 @@
     (wt-h "#define VM" (car x) " " (cdr x)))
   (incf *next-vv*)
   (wt-h "#define VM" vv-reservation " " *next-vv*)
-  (cond ((zerop *next-vv*)
-	 (wt-h "static cl_object VV[1];")
-	 (wt-h "#define VM 0"))
-	(t
-	 (wt-h "#define VM " *next-vv*)
-	 (wt-h "static cl_object VV[VM];")))
+  (wt-h "#define VM " *next-vv*)
+  #+boehm-gc
+  (wt-h "static cl_object *VV;")
+  #-boehm-gc
+  (if (zerop *next-vv*)
+    (wt-h "static cl_object VV[1];")
+    (wt-h "static cl_object VV[VM];"))
   (when *linking-calls*
     (dotimes (i (length *linking-calls*))
       (declare (fixnum i))

@@ -2327,8 +2327,12 @@ read_VV(cl_object block, void *entry)
 		block = alloc_object(t_codeblock);
 
 	(*entry_point)(block);
-	VV = block->cblock.data;
 	len = block->cblock.data_size;
+#ifdef GBC_BOEHM
+	VV = block->cblock.data = alloc(len * sizeof(cl_object));
+#else
+	VV = block->cblock.data;
+#endif
 
 	old_READtable = READtable;
 	old_READdefault_float_format = READdefault_float_format;
