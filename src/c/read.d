@@ -137,10 +137,11 @@ BEGIN:
 
 	if (read_suppress)
 		return(Cnil);
-
-	if (!escape_flag && length == 1 && cl_env.token->string.self[0] == '.') {
+	if (escape_flag || length == 0)
+		goto SYMBOL;
+	if (length == 1 && cl_env.token->string.self[0] == '.') {
 		return @'si::.';
-	} else if (!escape_flag && length > 0) {
+	} else {
 		for (i = 0;  i < length;  i++)
 			if (cl_env.token->string.self[i] != '.')
 				goto N;
@@ -235,7 +236,7 @@ read_object(cl_object in)
 	parse_number(s, end, ep, radix) parses C string s
 	up to (but not including) s[end]
 	using radix as the radix for the rational number.
-	(For floating numbers, radix should be 10.)
+	(For floating numbers, the radix is ignored and replaced with 10)
 	When parsing succeeds,
 	the index of the next character is assigned to *ep,
 	and the number is returned as a lisp data object.
@@ -256,11 +257,18 @@ parse_number(const char *s, cl_index end, cl_index *ep, int radix)
 	int exponent, d;
 	cl_index i, j, k;
 
-	if (s[end-1] == '.')
-		radix = 10;
-		/*
-			DIRTY CODE!!
-		*/
+	if (radix != 10) {
+		/* Floating point numbers are read always in base 10 */
+		for (i=0; i < end; i++) {
+			if (s[i] == '.') {
+				radix = 10;
+				break;
+			}
+		}
+	}
+	/*
+	  DIRTY CODE!!
+	*/
 BEGIN:
 	exponent_marker = 'E';
 	i = 0;
@@ -275,10 +283,6 @@ BEGIN:
 	if (i >= end)
 		goto NO_NUMBER;
 	if (s[i] == '.') {
-		if (radix != 10) {
-			radix = 10;
-			goto BEGIN;
-		}
 		i++;
 		goto FRACTION;
 	}
