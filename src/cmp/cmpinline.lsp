@@ -251,22 +251,22 @@
 		  (FIXNUM (if (member (car loc)
 				      ;; TEMPs contain object
 				      '(VAR TEMP FIXNUM-VALUE INLINE-FIXNUM
-					INLINE SI:STRUCTURE-REF)) ; T
+					INLINE SI:STRUCTURE-REF T))
 			      (setf (car args) loc)
 			      (setf (caar args) 'FIXNUM->OBJECT)))
 		  (CHARACTER (if (member (car loc)
-					 '(VAR TEMP CHARACTER-VALUE INLINE ; T
+					 '(VAR TEMP CHARACTER-VALUE INLINE T
 					   INLINE-CHARACTER SI:STRUCTURE-REF))
 				 (setf (car args) loc)
 				 (setf (caar args) 'CHARACTER->OBJECT)))
 		  (LONG-FLOAT (if (member (car loc)
-					  '(VAR TEMP LONG-FLOAT-VALUE ; T
+					  '(VAR TEMP LONG-FLOAT-VALUE T
 					    INLINE-LONG-FLOAT INLINE
 					    SI:STRUCTURE-REF))
 				  (setf (car args) loc)
 				  (setf (caar args) 'LONG-FLOAT->OBJECT)))
 		  (SHORT-FLOAT (if (member (car loc)
-					   '(VAR TEMP SHORT-FLOAT-VALUE	; T
+					   '(VAR TEMP SHORT-FLOAT-VALUE	T
 					     INLINE-SHORT-FLOAT INLINE
 					     SI:STRUCTURE-REF))
 				   (setf (car args) loc)

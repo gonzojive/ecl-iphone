@@ -142,10 +142,23 @@ int init_~A(cl_object foo)
 }")
 
 (defun init-function-name (s)
-  (setq s (string-upcase s))
-  (if si::*init-function-prefix*
-    (concatenate 'string si::*init-function-prefix* "_" s)
-    s))
+  (flet ((translate-char (c)
+	   (cond ((and (char>= c #\a) (char<= c #\z))
+		  (char-upcase c))
+		 ((and (char>= c #\A) (char<= c #\Z))
+		  c)
+		 ((or (eq c #\-) (eq c #\_))
+		  #\_)
+		 ((eq c #\*)
+		  #\x)
+		 ((eq c #\?)
+		  #\a)
+		 (t
+		  #\p))))
+    (setq s (map 'string #'translate-char (string s)))
+    (if si::*init-function-prefix*
+	(concatenate 'string si::*init-function-prefix* "_" s)
+	s)))
 
 (defun builder (target output-name &key lisp-files ld-flags (prologue-code "")
 		(epilogue-code (if (eq target :program) "
