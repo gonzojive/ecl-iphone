@@ -116,7 +116,9 @@ cl_boot(int argc, char **argv)
 	init_multival();
   	init_cmpaux();
 	init_main();
+#ifndef ECL_CMU_FORMAT
 	init_format();
+#endif
 	init_interrupt();
 #ifdef RUNTIME
 	SYM_VAL(@'*features*') = CONS(make_keyword("RUNTIME"), SYM_VAL(@'*features*'));
@@ -217,8 +219,8 @@ si_setenv(cl_object var, cl_object value)
 		ret_val = setenv(var->string.self, value->string.self, 1);
 #else
 		cl_object temp =
-		  cl_format(4, Cnil, make_simple_string("~A=~A"),
-			    var, value);
+		  cl_format(4, Cnil, make_simple_string("~A=~A"), var,
+			    value);
 		putenv(temp->string.self);
 #endif
 	}
@@ -267,11 +269,9 @@ init_main(void)
 #ifdef PDE
 	 ADD_FEATURE("PDE");
 #endif
-
 #ifdef ECL_FFI
 	 ADD_FEATURE("FFI");
 #endif
-
 #ifdef unix
 	 ADD_FEATURE("UNIX");
 #endif
@@ -283,6 +283,9 @@ init_main(void)
 #endif
 #ifdef MSDOS
 	 ADD_FEATURE("MS-DOS");
+#endif
+#ifdef ECL_CMU_FORMAT
+	 ADD_FEATURE("CMU-FORMAT");
 #endif
 
 	 /* This is assumed in all systems */

@@ -182,8 +182,8 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 	}
 NOT_A_FILENAME:
 	if (verbose != Cnil) {
-		@fresh-line(0);
-		@format(3, Ct, make_simple_string(";;; Loading ~s~%"), filename);
+		cl_format(3, Ct, make_simple_string("~&;;; Loading ~s~%"),
+			  filename);
 	}
 	bds_bind(@'*package*', symbol_value(@'*package*'));
 	bds_bind(@'*load-pathname*', pathname);
@@ -197,8 +197,8 @@ NOT_A_FILENAME:
 		FEerror("LOAD: Could not load file ~S (Error: ~S)",
 			2, filename, ok);
 	if (print != Cnil) {
-		@fresh-line(0);
-		@format(3, Ct, make_simple_string(";;; Loading ~s~%"), filename);
+		cl_format(3, Ct, make_simple_string("~&;;; Loading ~s~%"),
+			  filename);
 	}
 	@(return pathname)
 @)

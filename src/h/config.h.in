@@ -122,6 +122,9 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 /* Allow STREAM operations to work on arbitrary objects			*/
 #undef ECL_CLOS_STREAMS
 
+/* Use CMU Common-Lisp's FORMAT routine					*/
+#undef ECL_CMU_FORMAT
+
 /*
  * SYSTEM FEATURES:
  */

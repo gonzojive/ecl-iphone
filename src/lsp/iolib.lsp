@@ -249,3 +249,8 @@ the one defined in the ANSI standard. *print-base* is 10, *print-array* is t,
 	 (*read-suppress* nil)
 	 (*readtable* (copy-readtable (si::standard-readtable))))
     ,@body))
+
+#-formatter
+(defmacro formatter (control-string)
+  `#'(lambda (*standard-output* &rest args)
+       (si::formatter-aux *standard-output* ,control-string args)))

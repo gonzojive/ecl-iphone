@@ -25,8 +25,8 @@ si_system(cl_object cmd)
 	volatile int code;
 
 	assert_type_string(cmd);
-	s = cmd->string.self;
-	code = system((const char *)s);
+	cmd = copy_simple_string(cmd);
+	code = system((const char *)(cmd->string.self));
 	/* FIXME! Are there any limits for system()? */
 	/* if (cmd->string.fillp >= 1024)
 		FEerror("Too long command line: ~S.", 1, cmd);*/

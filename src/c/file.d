@@ -1346,6 +1346,12 @@ BEGIN:
 	}
 }
 
+cl_object si_file_column(cl_object strm)
+{
+	int c = file_column(strm);
+	@(return (c < 0? Cnil : MAKE_FIXNUM(c)))
+}
+
 int
 file_column(cl_object strm)
 {

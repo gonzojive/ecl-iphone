@@ -1496,6 +1496,10 @@ ECLS 0.9b
     the file is not found using SEARCH-LIST, then the current
     directory is tried.
 
+  - Two implementations of FORMAT are supplied: the old one written in
+    C and a port of the code in CMUCL. The last one is selected with
+    the flag --with-cmuformat.
+
 * ANSI compatibility:
 
   - DIRECTORY now understands :WILD, :UP, :WILD-INFERIORS, and, as an
@@ -1542,6 +1546,9 @@ ECLS 0.9b
   - The initialization and finalization protocol from the AMOP have
     been almost fully implemented. Still missing are the class
     redefinition and instance obsolence protocols.
+
+  - FORMATTER has been implemented, and ERROR/CERROR now accept as
+    "datum" the functions produced by FORMATTER.
 
 TODO:
 =====

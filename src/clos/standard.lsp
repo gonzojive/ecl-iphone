@@ -261,7 +261,6 @@ a class metaobject, use REDEFINE-CLASS instead."))
 (defun help-ensure-class (&rest options
 			  &key (metaclass 'standard-class) direct-superclasses
 			  &allow-other-keys)
-  (declare (si::c-local))
   (remf options :metaclass)
   (remf options :direct-superclasses)
   (setf metaclass (coerce-to-class metaclass)

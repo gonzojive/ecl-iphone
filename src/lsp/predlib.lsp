@@ -608,7 +608,7 @@ if not possible."
 ;; and tag all types to which it belongs.
 ;;
 (defun register-member-type (object)
-  (declare (si::c-local))
+  ;(declare (si::c-local))
   (let ((pos (assoc object *member-types*)))
     (or (and pos (cdr pos))
 	;; We convert number into intervals, so that (AND INTEGER (NOT
@@ -870,8 +870,7 @@ if not possible."
 ;; *ELEMENTARY-TYPES* and *MEMBER-TYPES*.
 ;;
 (defun canonical-type (type)
-  (declare (notinline clos::classp)
-	   (si::c-local))
+  (declare (notinline clos::classp))
   (cond ((find-registered-tag type))
 	((eq type 'T) -1)
 	((eq type 'NIL) 0)

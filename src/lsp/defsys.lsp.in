@@ -32,6 +32,8 @@
     (loop	()		()			())
 #-old-loop
     (loop2	()		()			())
+#+cmu-format
+    (format	()		()			())
     (defpackage ()		()			())
     (ffi	()		()			())
 #-runtime

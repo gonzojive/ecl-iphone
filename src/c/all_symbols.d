@@ -72,9 +72,9 @@ mangle_name(cl_object output, char *source, int l)
 		p  = (cl_symbol_initializer*)symbol - cl_symbols;
 		if (p >= 0 && p <= cl_num_symbols_in_core) {
 			found = Ct;
-			output = @format(3, Cnil,
-					 make_constant_string("((cl_object)(cl_symbols+~A))"),
-					 MAKE_FIXNUM(p));
+			output = cl_format(3, Cnil,
+					  make_constant_string("((cl_object)(cl_symbols+~A))"),
+					  MAKE_FIXNUM(p));
 			@(return found output maxarg)
 		}
 	} else {

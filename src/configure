@@ -869,6 +869,7 @@ Optional Packages:
 --with-gmp=args        Configure supplied GMP library with arguments.
 --with-config-file=f	Supply configuration for a cross compiler.
 --with-oldloop         Use the old MIT LOOP macro.
+--with-cmuformat       Use the FORMAT routine from CMUCL.
 --with-clos-streams    Allow user defined stream objects.
 --with-ffi		Run-time foreign data manipulation.
   --with-x                use the X Window System
@@ -1452,6 +1453,12 @@ fi;
 if test "${with_oldloop+set}" = set; then
   withval="$with_oldloop"
   oldloop="yes"
+fi;
+
+# Check whether --with-cmuformat or --without-cmuformat was given.
+if test "${with_cmuformat+set}" = set; then
+  withval="$with_cmuformat"
+  cmuformat="yes"
 fi;
 
 # Check whether --with-clos-streams or --without-clos-streams was given.
@@ -3860,7 +3867,6 @@ case "${host_os}" in
 		;;
 esac
 CFLAGS="${CFLAGS} -D${thehost}"
-echo ${CFLAGS}
 echo "$as_me:$LINENO: checking for ld flags when building shared libraries" >&5
 echo $ECHO_N "checking for ld flags when building shared libraries... $ECHO_C" >&6
 if test "${shared}" = "yes"; then
@@ -4131,6 +4137,12 @@ fi
 if test "${oldloop}"; then
   cat >>confdefs.h <<\_ACEOF
 #define ECL_OLD_LOOP 1
+_ACEOF
+
+fi
+if test "${cmuformat}"; then
+  cat >>confdefs.h <<\_ACEOF
+#define ECL_CMU_FORMAT 1
 _ACEOF
 
 fi

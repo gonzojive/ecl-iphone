@@ -85,6 +85,9 @@ AC_ARG_ENABLE(shared,
 AC_ARG_WITH(oldloop,
 	[--with-oldloop         Use the old MIT LOOP macro.],
 	oldloop="yes")
+AC_ARG_WITH(cmuformat,
+	[--with-cmuformat       Use the FORMAT routine from CMUCL.],
+	cmuformat="yes")
 AC_ARG_WITH(clos-streams,
 	[--with-clos-streams    Allow user defined stream objects.],
 	closstreams="yes")
@@ -207,6 +210,9 @@ if test "${tcp}" -o "${clx}"; then
 fi
 if test "${oldloop}"; then
   AC_DEFINE(ECL_OLD_LOOP)
+fi
+if test "${cmuformat}"; then
+  AC_DEFINE(ECL_CMU_FORMAT)
 fi
 if test "${closstreams}"; then
   AC_DEFINE(ECL_CLOS_STREAMS)

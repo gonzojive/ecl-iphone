@@ -260,11 +260,13 @@ disassemble_msetq(cl_object *vector)
 		} else
 			newline = TRUE;
 		if (FIXNUMP(var)) {
-			@format(4, Ct, make_constant_string("MSETQ\t~D,VALUES(~D)"),
-				var, MAKE_FIXNUM(i));
+			cl_format(4, Ct,
+				  make_constant_string("MSETQ\t~D,VALUES(~D)"),
+				  var, MAKE_FIXNUM(i));
 		} else {
-			@format(4, Ct, make_constant_string("MSETQS\t~A,VALUES(~D)"),
-				var, MAKE_FIXNUM(i));
+			cl_format(4, Ct,
+				  make_constant_string("MSETQS\t~A,VALUES(~D)"),
+				  var, MAKE_FIXNUM(i));
 		}
 	}
 	return vector;
@@ -307,8 +309,9 @@ disassemble_tagbody(cl_object *vector) {
 
 	print_noarg("TAGBODY");
 	for (i=0; i<ntags; i++, vector++) {
-		@format(4, Ct, make_constant_string("\n\tTAG\t~D @@ ~D"),
-			MAKE_FIXNUM(i), MAKE_FIXNUM(simple_label(vector)));
+		cl_format(4, Ct,
+			  make_constant_string("\n\tTAG\t~D @@ ~D"),
+			  MAKE_FIXNUM(i), MAKE_FIXNUM(simple_label(vector)));
 	}
 	vector = disassemble(vector);
 	print_noarg("\t\t; tagbody");
@@ -326,7 +329,7 @@ disassemble(cl_object *vector) {
 	cl_object line_format = make_constant_string("~%~4d\t");
 
  BEGIN:
-	@format(3, Ct, line_format, MAKE_FIXNUM(vector-base));
+	cl_format(3, Ct, line_format, MAKE_FIXNUM(vector-base));
 	s = next_code(vector);
 	t = type_of(s);
 	if (t == t_symbol) {

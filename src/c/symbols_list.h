@@ -5,6 +5,9 @@ struct {
 	const char *name, *translation;
 }
 #else
+#ifndef ECL_CMU_FORMAT
+extern cl_object si_formatter_aux _ARGS((int narg, cl_object strm, cl_object string, ...));
+#endif
 #define SYS_
 #define KEY_
 cl_symbol_initializer
@@ -395,6 +398,7 @@ cl_symbols[] = {
 {"FMAKUNBOUND", CL_ORDINARY, cl_fmakunbound, 1},
 {"FORCE-OUTPUT", CL_ORDINARY, cl_force_output, -1},
 {"FORMAT", CL_ORDINARY, cl_format, -1},
+{"FORMATTER", CL_ORDINARY, NULL, -1},
 {"FOURTH", CL_ORDINARY, cl_cadddr, 1},
 {"FRESH-LINE", CL_ORDINARY, cl_fresh_line, -1},
 {"FROUND", CL_ORDINARY, NULL, -1},
@@ -1052,6 +1056,8 @@ cl_symbols[] = {
 {SYS_ "FILE-KIND", SI_ORDINARY, si_file_kind, 2},
 {SYS_ "FILL-POINTER-SET", SI_ORDINARY, si_fill_pointer_set, 2},
 {SYS_ "FIXNUMP", SI_ORDINARY, si_fixnump, 1},
+{SYS_ "FORMAT-ERROR", SI_ORDINARY, NULL, -1},
+{SYS_ "FORMATTER-AUX", SI_ORDINARY, si_formatter_aux, -1},
 {SYS_ "FRS-BDS", SI_ORDINARY, si_frs_bds, 1},
 {SYS_ "FRS-CLASS", SI_ORDINARY, si_frs_class, 1},
 {SYS_ "FRS-IHS", SI_ORDINARY, si_frs_ihs, 1},
@@ -1256,6 +1262,7 @@ cl_symbols[] = {
 {KEY_ "CATCHALL", KEYWORD, NULL, -1},
 {KEY_ "CIRCLE", KEYWORD, NULL, -1},
 {KEY_ "COMPILE-TOPLEVEL", KEYWORD, NULL, -1},
+{KEY_ "CONTROL-STRING", CL_ORDINARY, NULL, -1},
 {KEY_ "CREATE", KEYWORD, NULL, -1},
 {KEY_ "DATUM", KEYWORD, NULL, -1},
 {KEY_ "DEFAULT", KEYWORD, NULL, -1},
@@ -1297,6 +1304,7 @@ cl_symbols[] = {
 {KEY_ "NEWEST", KEYWORD, NULL, -1},
 {KEY_ "NICKNAMES", KEYWORD, NULL, -1},
 {KEY_ "OBJECT", KEYWORD, NULL, -1},
+{KEY_ "OFFSET", KEYWORD, NULL, -1},
 {KEY_ "OUTPUT", KEYWORD, NULL, -1},
 {KEY_ "OVERWRITE", KEYWORD, NULL, -1},
 {KEY_ "PACKAGE", KEYWORD, NULL, -1},
@@ -1366,6 +1374,8 @@ cl_symbols[] = {
 {KEY_ "FILE", KEYWORD, NULL, -1},
 {KEY_ "LINK", KEYWORD, NULL, -1},
 {KEY_ "SPECIAL", KEYWORD, NULL, -1},
+
+{SYS_ "FILE-COLUMN", SI_ORDINARY, si_file_column, 1},
 
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1}};

@@ -14,7 +14,7 @@
 ;;; * Load Common-Lisp base library
 ;;;
 (if (member "ECL-MIN" *features* :test #'string-equal)
-  (load "@abs_builddir@/lsp/load.lsp"))
+  (load "@abs_builddir@/lsp/load.lsp" :verbose nil))
 (defun si::process-command-args () )
 
 ;;;

@@ -326,7 +326,6 @@
 (defun define-simple-method-combination (name &key documentation
 					 identity-with-one-argument
 					 (operator name))
-  (declare (si::c-local))
   `(define-method-combination
      ,name (&optional (order :MOST-SPECIFIC-FIRST))
      ((around (:AROUND))
@@ -349,7 +348,7 @@
   (declare (si::c-local))
   (flet ((syntax-error ()
 	   (error "~S is not a valid DEFINE-METHOD-COMBINATION form"
-		  whole)))
+		  form)))
     (destructuring-bind (name lambda-list method-groups &rest body &aux
 			 (group-names '())
 			 (group-checks '())

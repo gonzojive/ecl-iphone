@@ -11,7 +11,7 @@
 ;;;
 ;;; * Ensure that we have the whole of Common-Lisp to compile
 ;;;
-(load "bare.lsp")
+(load "bare.lsp" :verbose nil)
 
 ;;;
 ;;; * Dump documentation

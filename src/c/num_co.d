@@ -722,7 +722,7 @@ cl_decode_float(cl_object x)
 			s = 0;
 		}
 		d = frexp(d, &e);
-		x = make_shortfloat(d);
+		x = make_longfloat(d);
 		break;
 	}
 	default:
@@ -760,7 +760,7 @@ cl_float_radix(cl_object x)
 
 	if (t != t_shortfloat && t != t_longfloat)
 		FEtype_error_float(x);
-	@(return MAKE_FIXNUM(2))
+	@(return MAKE_FIXNUM(FLT_RADIX))
 }
 
 @(defun float_sign (x &optional (y x))
@@ -793,10 +793,10 @@ cl_float_digits(cl_object x)
 {
 	switch (type_of(x)) {
 	case t_shortfloat:
-		x = MAKE_FIXNUM(6);
+		x = MAKE_FIXNUM(FLT_MANT_DIG);
 		break;
 	case t_longfloat:
-		x = MAKE_FIXNUM(14);
+		x = MAKE_FIXNUM(DBL_MANT_DIG);
 		break;
 	default:
 		FEtype_error_float(x);
@@ -810,8 +810,10 @@ cl_float_precision(cl_object x)
 	switch (type_of(x)) {
 	case t_shortfloat:
 		x = (sf(x) == 0.0) ? MAKE_FIXNUM(0) : MAKE_FIXNUM(24);
+		break;
 	case t_longfloat:
 		x = (lf(x) == 0.0) ? MAKE_FIXNUM(0) : MAKE_FIXNUM(53);
+		break;
 	default:
 		FEtype_error_float(x);
 	}

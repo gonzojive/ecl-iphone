@@ -18,6 +18,7 @@
 #include <ctype.h>
 #include "internal.h"
 
+#ifndef ECL_CMU_FORMAT
 #define FMT_MAX_PARAM	8
 typedef struct format_stack_struct {
   cl_object	stream;
@@ -89,15 +90,16 @@ get_aux_stream(void)
 	}
 	end_critical_section();
 	return stream;
-}	
+}
 
 static void
 fmt_error(format_stack fmt, const char *s)
 {
-	FEerror("Format error: ~A.~%~V@@TV~%\"~A\"~%",
-		3, make_constant_string(s),
-		MAKE_FIXNUM(&fmt->ctl_str[fmt->ctl_index] - (char *)fmt->string->string.self),
-		fmt->string);
+	cl_error(7, @'si::format-error',
+		 @':format-control', make_constant_string(s),
+		 @':control-string', fmt->string,
+		 @':offset', MAKE_FIXNUM(&fmt->ctl_str[fmt->ctl_index] -
+					 (char *)fmt->string->string.self));
 }
 
 static int
@@ -1770,25 +1772,18 @@ fmt_semicolon(format_stack fmt, bool colon, bool atsign)
 	fmt->line_length = set_param(fmt, 1, INT, 72);
 }
 
-@(defun format (strm string &rest args)
-	cl_object x = OBJNULL;
+@(defun si::formatter-aux (strm string &rest args)
+@
+	@(return doformat(narg, strm, string, args, TRUE))
+@)
+
+
+static cl_object
+doformat(int narg, cl_object strm, cl_object string, cl_va_list args, bool in_formatter)
+{
 	struct format_stack_struct fmt;
 	jmp_buf fmt_jmp_buf0;
 	int colon;
-@
-	if (Null(strm)) {
-		strm = make_string_output_stream(64);
-		x = strm->stream.object0;
-	} else if (strm == Ct)
-		strm = symbol_value(@'*standard-output*');
-	else if (type_of(strm) == t_string) {
-		x = strm;
-		if (!x->string.hasfillp)
-		  FEerror("The string ~S doesn't have a fill-pointer.", 1, x);
-		strm = make_string_output_stream(0);
-		strm->stream.object0 = x;
-		x = OBJNULL;
-	}
 	assert_type_string(string);
 	fmt.stream = strm;
 	fmt.base = cl_stack_index();
@@ -1813,8 +1808,15 @@ fmt_semicolon(format_stack fmt, bool colon, bool atsign)
 	}
 	cl_stack_set_index(fmt.base);
 	fmt_aux_stream = fmt.aux_stream;
-	@(return (x == OBJNULL? Cnil : x))
-@)
+	args = Cnil;
+	if (in_formatter) {
+		while (fmt.index < fmt.end) {
+			args = CONS(cl_stack[fmt.index++], args);
+		}
+		args = cl_nreverse(args);
+	}
+	return args;
+}
 
 static void
 format(format_stack fmt, const char *str, cl_index end)
@@ -2046,3 +2048,38 @@ init_format(void)
 
 	SYM_VAL(@'si::*indent-formatted-output*') = Cnil;
 }
+#endif /* !ECL_CMU_FORMAT */
+
+@(defun format (strm string &rest args)
+	cl_object output = Cnil;
+@
+	if (Null(strm)) {
+		strm = cl_alloc_adjustable_string(64);
+	} else if (strm == Ct) {
+		strm = symbol_value(@'*standard-output*');
+	}
+	if (type_of(strm) == t_string) {
+		output = strm;
+		if (!output->string.hasfillp) {
+			cl_error(7, @'si::format-error',
+				 @':format-control',
+				 make_constant_string(
+"Cannot output to a non adjustable string."),
+				 @':control-string', string,
+				 @':offset', MAKE_FIXNUM(0));
+			}
+		strm = make_string_output_stream(0);
+		strm->stream.object0 = output;
+	}
+	if (!Null(cl_functionp(string))) {
+		cl_apply(3, string, strm, cl_grab_rest_args(args));
+	} else {
+#ifdef ECL_CMU_FORMAT
+		cl_funcall(4, @'si::formatter-aux', strm, string,
+			   cl_grab_rest_args(args));
+#else
+		doformat(narg, strm, string, args, FALSE);
+#endif
+	}
+	@(return output)
+@)

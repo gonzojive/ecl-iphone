@@ -286,7 +286,7 @@ The default value is NIL.")
 ;;; though &optional, &rest, and &key return types are simply ignored.
 ;;;
 (defvar *function-declarations* nil)
-(defvar *allow-c-local-declaration* nil)
+(defvar *allow-c-local-declaration* t)
 (defvar *alien-declarations* nil)
 (defvar *notinline* nil)
 

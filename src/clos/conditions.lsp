@@ -435,7 +435,7 @@ strings."
 	 datum)
         ((symbolp datum)                  ;roughly, (subtypep datum 'CONDITION)
          (apply #'make-condition datum arguments))
-        ((stringp datum)
+        ((or (stringp datum) (functionp datum))
 	 (make-condition default-type
                          :FORMAT-CONTROL datum
                          :FORMAT-ARGUMENTS arguments))
@@ -608,6 +608,25 @@ returns with NIL."
 ;;;
 (define-condition simple-program-error (simple-condition program-error) ())
 
+(define-condition format-error (error)
+  ((control-string :reader format-error-control-string
+		   :initarg :control-string
+		   #+cmu-format :initform
+		   #+cmu-format *default-format-error-control-string*) 
+   (offset :reader format-error-offset :initarg :offset
+	   #+cmu-format :initform
+	   #+cmu-format *default-format-error-offset*)
+   (print-banner :reader format-error-print-banner :initarg :print-banner
+		 :initform t))
+  (:report (lambda (condition stream)
+	     (cl:format stream
+			"~:[~;Error in format: ~]~
+			 ~?~@[~%  ~A~%  ~V@T^~]"
+			(format-error-print-banner condition)
+			(simple-error-format-control condition)
+			(simple-error-format-arguments condition)
+			(format-error-control-string condition)
+			(format-error-offset condition)))))
 
 
 (defmacro handler-case (form &rest cases)

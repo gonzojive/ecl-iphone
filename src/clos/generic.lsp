@@ -215,7 +215,7 @@
                                 option" l)))))
 
 (defun parse-legal-declaration (decl)
-  (declare (si::c-local))
+  ;(declare (si::c-local))
   (unless (eq (first decl) 'OPTIMIZE)
 	  (error "The only declaration allowed is optimize"))
   (dolist (first (rest decl))

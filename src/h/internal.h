@@ -20,6 +20,50 @@ extern "C" {
  *	FUNCTIONS, VARIABLES AND TYPES NOT FOR GENERAL USE		*
  * -------------------------------------------------------------------- */
 
+/* booting */
+extern void init_all_symbols(void);
+extern void init_alloc(void);
+extern void init_array(void);
+extern void init_assignment(void);
+extern void init_backq(void);
+extern void init_big(void);
+extern void init_character(void);
+#ifdef CLOS
+extern void init_clos(void);
+#endif
+extern void init_cmpaux(void);
+extern void init_compiler(void);
+extern void init_error(void);
+extern void init_eval(void);
+extern void init_file(void);
+#ifndef ECL_CMU_FORMAT
+extern void init_format(void);
+#endif
+#ifndef GBC_BOEHM
+extern void init_GC(void);
+#endif
+extern void init_hash(void);
+extern void init_interpreter(void);
+extern void init_load(void);
+extern void init_macros(void);
+extern void init_multival(void);
+extern void init_number(void);
+extern void init_num_co(void);
+extern void init_num_comp(void);
+extern void init_num_log(void);
+extern void init_num_rand(void);
+extern void init_num_sfun(void);
+extern void init_package(void);
+extern void init_pathname(void);
+extern void init_print(void);
+extern void init_read(void);
+extern void init_stacks(int *);
+extern void init_symbol(void);
+extern void init_unixtime(void);
+extern void init_typespec(void);
+extern void init_interrupt(void);
+
+
 /* all_symbols.d */
 
 extern cl_index cl_num_symbols_in_core;

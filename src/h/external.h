@@ -55,7 +55,6 @@ extern void *cl_alloc_align(cl_index size, cl_index align);
 #define cl_alloc_atomic_align(x,s) cl_alloc_align(x,s)
 #define ecl_register_static_root(x) ecl_register_root(x);
 #endif /* GBC_BOEHM */
-extern void init_alloc(void);
 
 /* all_symbols */
 
@@ -72,7 +71,6 @@ typedef union {
 } cl_symbol_initializer;
 extern cl_symbol_initializer cl_symbols[];
 extern cl_index cl_num_symbols_in_core;
-extern void init_all_symbols(void);
 
 /* apply.c */
 
@@ -111,7 +109,6 @@ extern void array_allocself(cl_object x);
 extern void adjust_displaced(cl_object x, ptrdiff_t diff);
 extern cl_elttype array_elttype(cl_object x);
 extern cl_elttype get_elttype(cl_object x);
-extern void init_array(void);
 
 
 /* assignment.c */
@@ -125,13 +122,6 @@ extern cl_object si_put_sysprop(cl_object sym, cl_object prop, cl_object value);
 extern cl_object si_rem_sysprop(cl_object sym, cl_object prop);
 
 extern void clear_compiler_properties(cl_object sym);
-extern void init_assignment(void);
-
-
-/* backq.c */
-
-extern void init_backq(void);
-
 
 /* big.c */
 
@@ -150,7 +140,6 @@ extern cl_object big_plus(cl_object x, cl_object y);
 extern cl_object big_normalize(cl_object x);
 extern double big_to_double(cl_object x);
 extern long big_to_long(cl_object x);
-extern void init_big(void);
 
 
 /* cfun.c */
@@ -208,7 +197,6 @@ extern int char_cmp(cl_object x, cl_object y);
 extern bool char_equal(cl_object x, cl_object y);
 extern int char_compare(cl_object x, cl_object y);
 extern short digit_weight(int w, int r);
-extern void init_character(void);
 
 /* clos.c */
 
@@ -218,7 +206,6 @@ extern cl_object cl_find_class _ARGS((int narg, cl_object name, ...));
 extern cl_object class_class;
 extern cl_object class_object;
 extern cl_object class_built_in;
-extern void init_clos(void);
 #endif
 
 /* cmpaux.c */
@@ -239,7 +226,6 @@ extern void cl_go(cl_object tag_id, cl_object label) __attribute__((noreturn,reg
 extern void cl_parse_key(cl_va_list args, int nkey, cl_object *keys, cl_object *vars, cl_object *rest, bool allow_other_keys);
 extern cl_object cl_grab_rest_args(cl_va_list args);
 extern void check_other_key(cl_object l, int n, ...);
-extern void init_cmpaux(void);
 
 /* compiler.c */
 
@@ -252,7 +238,6 @@ extern cl_object si_process_declarations _ARGS((int narg, cl_object body, ...));
 
 extern cl_object make_lambda(cl_object name, cl_object lambda);
 extern cl_object eval(cl_object form, cl_object *bytecodes, cl_object env);
-extern void init_compiler(void);
 
 /* interpreter.c */
 
@@ -273,7 +258,6 @@ extern void cl_stack_pop_values(int n);
 extern cl_object lex_env;
 extern cl_object lambda_apply(int narg, cl_object fun);
 extern cl_object *interpret(cl_object *memory);
-extern void init_interpreter(void);
 
 /* disassembler.c */
 
@@ -311,7 +295,6 @@ extern cl_object CEerror(char *err_str, int narg, ...);
 extern void illegal_index(cl_object x, cl_object i);
 extern void FEtype_error_symbol(cl_object obj) __attribute__((noreturn,regparm(2)));
 extern void FElibc_error(const char *msg, int narg, ...) __attribute__((noreturn));
-extern void init_error(void);
 
 /* eval.c */
 
@@ -332,7 +315,6 @@ extern cl_object cl_constantp(int narg, cl_object arg, ...);
 extern cl_object cl_apply_from_stack(cl_index narg, cl_object fun);
 extern cl_object link_call(cl_object sym, cl_objectfn *pLK, int narg, cl_va_list args);
 extern cl_object cl_safe_eval(cl_object form, cl_object *bytecodes, cl_object env, cl_object err_value);
-extern void init_eval(void);
 
 /* ffi.c */
 
@@ -368,6 +350,7 @@ extern cl_object cl_open _ARGS((int narg, cl_object filename, ...));
 extern cl_object cl_file_position _ARGS((int narg, cl_object file_stream, ...));
 extern cl_object si_do_write_sequence(cl_object string, cl_object stream, cl_object start, cl_object end);
 extern cl_object si_do_read_sequence(cl_object string, cl_object stream, cl_object start, cl_object end);
+extern cl_object si_file_column(cl_object strm);
 
 extern bool input_stream_p(cl_object strm);
 extern bool output_stream_p(cl_object strm);
@@ -394,14 +377,11 @@ extern long file_position(cl_object strm);
 extern long file_position_set(cl_object strm, long disp);
 extern long file_length(cl_object strm);
 extern int file_column(cl_object strm);
-extern void init_file(void);
 
 
 /* format.c */
 
-extern cl_object cl_format _ARGS((int narg, volatile cl_object strm, cl_object string, ...));
-extern void init_format(void);
-
+extern cl_object cl_format _ARGS((int narg, cl_object stream, cl_object string, ...));
 
 /* gbc.c */
 
@@ -418,7 +398,6 @@ extern cl_object (*GC_enter_hook)(void);
 extern cl_object (*GC_exit_hook)(void);
 extern void ecl_register_root(cl_object *p);
 extern void ecl_gc(cl_type t);
-extern void init_GC(void);
 #endif
 
 #ifdef GBC_BOEHM
@@ -462,7 +441,6 @@ extern cl_hashkey hash_eql(cl_object x);
 extern cl_hashkey hash_equal(cl_object x);
 extern void sethash(cl_object key, cl_object hashtable, cl_object value);
 extern void extend_hashtable(cl_object hashtable);
-extern void init_hash(void);
 extern cl_object gethash(cl_object key, cl_object hash);
 extern cl_object gethash_safe(cl_object key, cl_object hash, cl_object def);
 extern bool remhash(cl_object key, cl_object hash);
@@ -594,8 +572,6 @@ extern cl_object si_load_source(cl_object file, cl_object verbose, cl_object pri
 extern cl_object si_load_binary(cl_object file, cl_object verbose, cl_object print);
 extern cl_object cl_load _ARGS((int narg, cl_object pathname, ...));
 
-extern void init_load(void);
-
 
 /* lwp.c */
 #ifdef THREADS
@@ -641,7 +617,6 @@ extern cl_object cl_macroexpand_1 _ARGS((int narg, cl_object form, ...));
 extern cl_object search_macro(cl_object name, cl_object env);
 extern cl_object macro_expand1(cl_object form, cl_object env);
 extern cl_object macro_expand(cl_object form, cl_object env);
-extern void init_macros(void);
 
 
 /* main.c */
@@ -672,7 +647,6 @@ extern cl_object cl_mapcon _ARGS((int narg, cl_object fun, ...));
 
 extern cl_object cl_values_list(cl_object list);
 extern cl_object cl_values _ARGS((int narg, ...));
-extern void init_multival(void);
 
 
 /* num_arith.c */
@@ -713,8 +687,6 @@ extern cl_object make_shortfloat(float f);
 extern cl_object make_longfloat(double f);
 extern cl_object make_complex(cl_object r, cl_object i);
 extern double number_to_double(cl_object x);
-extern void init_number(void);
-
 
 /* num_co.c */
 
@@ -748,7 +720,6 @@ extern cl_object floor2(cl_object x, cl_object y);
 extern cl_object ceiling2(cl_object x, cl_object y);
 extern cl_object truncate2(cl_object x, cl_object y);
 extern cl_object round2(cl_object x, cl_object y);
-extern void init_num_co(void);
 
 
 /* num_comp.c */
@@ -764,7 +735,6 @@ extern cl_object cl_min _ARGS((int narg, cl_object min, ...));
 
 extern int number_equalp(cl_object x, cl_object y);
 extern int number_compare(cl_object x, cl_object y);
-extern void init_num_comp(void);
 
 
 /* num_log.c */
@@ -788,7 +758,6 @@ extern cl_object cl_logand _ARGS((int narg, ...));
 extern cl_object cl_logeqv _ARGS((int narg, ...));
 
 extern cl_object ecl_ash(cl_object x, cl_fixnum w);
-extern void init_num_log(void);
 
 
 /* num_pred.c */
@@ -812,7 +781,6 @@ extern cl_object cl_random_state_p(cl_object x);
 extern cl_object cl_random _ARGS((int narg, cl_object x, ...));
 extern cl_object cl_make_random_state _ARGS((int narg, ...));
 extern cl_object make_random_state(cl_object rs);
-extern void init_num_rand(void);
 
 
 /* num_sfun.c */
@@ -836,7 +804,6 @@ extern cl_object cl_cosh(cl_object x);
 extern cl_object cl_tanh(cl_object x);
 extern cl_object cl_atan _ARGS((int narg, cl_object x, ...));
 extern cl_object cl_log _ARGS((int narg, cl_object x, ...));
-extern void init_num_sfun(void);
 
 
 /* package.c */
@@ -886,7 +853,6 @@ extern void shadowing_import(cl_object s, cl_object p);
 extern void shadow(cl_object s, cl_object p);
 extern void use_package(cl_object x0, cl_object p);
 extern void unuse_package(cl_object x0, cl_object p);
-extern void init_package(void);
 
 
 /* pathname.c */
@@ -922,7 +888,6 @@ extern cl_object coerce_to_file_pathname(cl_object pathname);
 extern cl_object coerce_to_filename(cl_object pathname);
 extern cl_object merge_pathnames(cl_object path, cl_object defaults, cl_object default_version);
 extern bool logical_hostname_p(cl_object host);
-extern void init_pathname(void);
 
 
 /* predicate.c */
@@ -988,7 +953,6 @@ extern cl_object terpri(cl_object strm);
 extern void write_string(cl_object strng, cl_object strm);
 extern void princ_str(const char *s, cl_object sym);
 extern void princ_char(int c, cl_object sym);
-extern void init_print(void);
 
 
 /* profile.c */
@@ -1039,7 +1003,6 @@ extern cl_object ecl_current_readtable(void);
 extern int ecl_current_read_base(void);
 extern char ecl_current_read_default_float_format(void);
 extern cl_object c_string_to_object(const char *s);
-extern void init_read(void);
 extern cl_object read_VV(cl_object block, void *entry);
 
 
@@ -1098,7 +1061,6 @@ extern void unwind(frame_ptr fr) __attribute__((noreturn,regparm(2)));
 extern frame_ptr frs_sch(cl_object frame_id);
 extern frame_ptr frs_sch_catch(cl_object frame_id);
 extern cl_object new_frame_id(void);
-extern void init_stacks(int *);
 
 /* string.c */
 
@@ -1195,7 +1157,6 @@ extern cl_object symbol_value(cl_object s);
 extern cl_object ecl_getf(cl_object place, cl_object indicator, cl_object deflt);
 extern cl_object ecl_get(cl_object s, cl_object p, cl_object d);
 extern bool keywordp(cl_object s);
-extern void init_symbol(void);
 
 
 /* tclBasic.c */
@@ -1254,7 +1215,6 @@ extern cl_object si_get_local_time_zone();
 extern cl_object si_daylight_saving_time_p _ARGS((int narg, ...));
 
 extern cl_object UTC_time_to_universal_time(cl_fixnum i);
-extern void init_unixtime(void);
 
 
 /* tkMain.c */
@@ -1292,7 +1252,6 @@ extern void assert_type_vector(cl_object p);
 extern void assert_type_list(cl_object p);
 extern void assert_type_proper_list(cl_object p);
 extern cl_object cl_type_of(cl_object x);
-extern void init_typespec(void);
 
 extern void FEtype_error_character(cl_object x) __attribute__((noreturn,regparm(2)));
 extern void FEtype_error_cons(cl_object x) __attribute__((noreturn,regparm(2)));
@@ -1338,7 +1297,6 @@ extern int interrupt_enable;
 extern int interrupt_flag;
 extern void signal_catcher(int sig, int code, int scp);
 extern void enable_interrupt(void);
-extern void init_interrupt(void);
 
 
 /* unixsys.c */
