@@ -180,7 +180,7 @@ E:
 			sequence = CDR(sequence);
 		}
 		if (e < 0)
-			@(return copy_list(sequence))
+			return cl_copy_list(sequence);
 		{ cl_object *z = &x;
 		  for (i = 0;  i < e;  i++) {
 		    if (ATOM(sequence))

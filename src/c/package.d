@@ -627,7 +627,7 @@ si_package_lock(cl_object p, cl_object t)
 cl_object
 cl_list_all_packages()
 {
-	@(return copy_list(package_list))
+	return cl_copy_list(package_list);
 }
 
 @(defun intern (strng &optional (p current_package()) &aux sym)

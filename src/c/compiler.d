@@ -386,7 +386,7 @@ c_new_env(cl_object env)
 		return;
 	}
 	c_env.lexical_level = 1;
-	for (env = @revappend(2, env, Cnil); !Null(env); env = CDDR(env))
+	for (env = @revappend(env, Cnil); !Null(env); env = CDDR(env))
 	{
 		cl_object tag = CADR(env);
 		cl_object what = CAR(env);

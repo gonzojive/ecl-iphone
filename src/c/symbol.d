@@ -289,7 +289,7 @@ cl_symbol_name(cl_object sym)
 	SYM_VAL(x) = SYM_VAL(sym);
 	x->symbol.mflag = sym->symbol.mflag;
 	SYM_FUN(x) = SYM_FUN(sym);
-	x->symbol.plist = copy_list(sym->symbol.plist);
+	x->symbol.plist = cl_copy_list(sym->symbol.plist);
 	@(return x)
 @)
 

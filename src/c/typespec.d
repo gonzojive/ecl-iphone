@@ -193,7 +193,7 @@ assert_type_proper_list(cl_object p)
 {
 	if (ATOM(p) && p != Cnil)
 		FEtype_error_list(p);
-	if (list_length(p) == Cnil)
+	if (cl_list_length(p) == Cnil)
 		FEcircular_list(p);
 }
 

@@ -310,14 +310,15 @@ BEGIN:
 		@(return Cnil)
 @)
 
-@(defun endp (x)
-@
+cl_object
+cl_endp(cl_object x)
+{
 	if (Null(x))
 		@(return Ct)
 	if (CONSP(x))
 		@(return Cnil)
 	FEtype_error_list(x);
-@)
+}
 
 bool
 endp(cl_object x)
@@ -330,7 +331,7 @@ endp(cl_object x)
 }
 
 cl_object
-list_length(cl_object x)
+cl_list_length(cl_object x)
 {
 	cl_fixnum n;
 	cl_object fast, slow;
@@ -346,18 +347,14 @@ list_length(cl_object x)
 	}
 	if (fast != Cnil)
 		FEtype_error_proper_list(x);
-	return MAKE_FIXNUM(n);
+	@(return MAKE_FIXNUM(n));
 }
 
-@(defun list_length (x)
-@
-	@(return list_length(x))
-@)
-
-@(defun nth (n x)
-@
+cl_object
+cl_nth(cl_object n, cl_object x)
+{
 	@(return nth(fixint(n), x))
-@)
+}
 
 cl_object
 nth(cl_fixnum n, cl_object x)
@@ -375,10 +372,11 @@ nth(cl_fixnum n, cl_object x)
 	FEtype_error_list(x);
 }
 
-@(defun nthcdr (n x)
-@
+cl_object
+cl_nthcdr(cl_object n, cl_object x)
+{
 	@(return nthcdr(fixint(n), x))
-@)
+}
 
 cl_object
 nthcdr(cl_fixnum n, cl_object x)
@@ -413,16 +411,8 @@ nthcdr(cl_fixnum n, cl_object x)
 	@(return x)
 @)
 
-@(defun copy_list (x)
-@
-	@(return copy_list(x))
-@)
-
-/*
-	Copy_list(x) copies list x.
-*/
 cl_object
-copy_list(cl_object x)
+cl_copy_list(cl_object x)
 {
 	cl_object copy;
 	cl_object *y = &copy;
@@ -431,19 +421,11 @@ copy_list(cl_object x)
 		y = &CDR(*y = CONS(CAR(x), Cnil));
 	} end_loop_for_on;
 	*y = x;
-	return copy;
+	@(return copy);
 }
 
-@(defun copy_alist (x)
-@
-	@(return copy_alist(x))
-@)
-
-/*
-	Copy_alist(x) copies alist x.
-*/
 cl_object
-copy_alist(cl_object x)
+cl_copy_alist(cl_object x)
 {
 	cl_object copy;
 	cl_object *y = &copy;
@@ -456,33 +438,32 @@ copy_alist(cl_object x)
 		y = &CDR(*y);
 	} end_loop_for_on;
 	*y = x;
-	return copy;
+	@(return copy);
 }
 
-@(defun copy_tree (x)
-@
-	@(return copy_tree(x))
-@)
-
-/*
-	Copy_tree(x) returns a copy of tree x.
-*/
-cl_object
-copy_tree(cl_object x)
+static cl_object
+do_copy_tree(cl_object x)
 {
 	cs_check(x);
 	if (ATOM(x))
 		return x;
-	return CONS(copy_tree(CAR(x)), copy_tree(CDR(x)));
+	return CONS(do_copy_tree(CAR(x)), do_copy_tree(CDR(x)));
 }
 
-@(defun revappend (x y)
-@
+cl_object
+cl_copy_tree(cl_object x)
+{
+	@(return do_copy_tree(x))
+}
+
+cl_object
+cl_revappend(cl_object x, cl_object y)
+{
 	loop_for_in(x) {
 		y = CONS(CAR(x),y);
 	} end_loop_for_in;
 	@(return y)
-@)
+}
 
 @(defun nconc (&rest lists)
 	cl_object x, l,*lastcdr;
@@ -577,9 +558,11 @@ cl_nreconc(cl_object l, cl_object y)
 	@(return lis)
 @)
 
-@(defun ldiff (x y)
+cl_object
+cl_ldiff(cl_object x, cl_object y)
+{
 	cl_object res = Cnil, *fill = &res;
-@
+
 	loop_for_on(x) {
 		if (x == y)
 			break;
@@ -587,21 +570,23 @@ cl_nreconc(cl_object l, cl_object y)
 			fill = &CDR(*fill = CONS(CAR(x), Cnil));
 	} end_loop_for_on;
 	@(return res)
-@)
+}
 
-@(defun rplaca (x v)
-@
+cl_object
+cl_rplaca(cl_object x, cl_object v)
+{
 	assert_type_cons(x);
 	CAR(x) = v;
 	@(return x)
-@)
+}
 
-@(defun rplacd (x v)
-@
+cl_object
+cl_rplacd(cl_object x, cl_object v)
+{
 	assert_type_cons(x);
 	CDR(x) = v;
 	@(return x)
-@)
+}
 
 @(defun subst (new_obj old_obj tree &key test test_not key)
 	saveTEST;
@@ -760,26 +745,17 @@ member_eq(cl_object x, cl_object l)
 	return(FALSE);
 }
 
-@(defun si::memq (x l)
-@
+cl_object
+si_memq(cl_object x, cl_object l)
+{
 	loop_for_in(l) {
 		if (x == CAR(l))
 			@(return l)
 	} end_loop_for_in;
 	@(return Cnil)
-@)
-
-/* Added for use by the compiler, instead of open coding them. Beppe */
-cl_object
-memq(cl_object x, cl_object l)
-{
-	loop_for_in(l) {
-		if (x == CAR(l))
-			return(l);
-	} end_loop_for_in;
-	return(Cnil);
 }
 
+/* Added for use by the compiler, instead of open coding them. Beppe */
 cl_object
 memql(cl_object x, cl_object l)
 {
@@ -820,14 +796,15 @@ PREDICATE2(@member)
 	@(return list)
 @)
 
-@(defun tailp (y x)
-@
+cl_object
+cl_tailp(cl_object y, cl_object x)
+{
 	loop_for_on(x) {
 		if (x == y)
 			@(return Ct)
 	} end_loop_for_on;
 	@(return ((x == y)? Ct : Cnil))
-@)
+}
 
 cl_return
 @adjoin(int narg, cl_object item, cl_object list, cl_object k1, cl_object v1,
