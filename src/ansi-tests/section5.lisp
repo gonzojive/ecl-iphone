@@ -137,8 +137,8 @@
 
 (my-assert
  (fboundp 'nth-value)
- #+(or cmu sbcl clisp) t
- #-(or cmu sbcl clisp) nil)
+ #+(or cmu sbcl clisp ecl) t
+ #-(or cmu sbcl clisp ecl) nil)
 
 (my-assert
  (fboundp 'with-open-file)
