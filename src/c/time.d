@@ -23,6 +23,9 @@
 #ifndef HZ			/* usually from <sys/param.h> */
 #define HZ 60
 #endif
+#ifdef darwin
+#undef HAVE_NANOSLEEP
+#endif
 
 static time_t beginning;
 
@@ -54,7 +57,9 @@ UTC_time_to_universal_time(int i)
 
 @(defun sleep (z)
 	double r;
+#ifdef HAVE_NANOSLEEP
 	struct timespec tm;
+#endif
 @
 	/* INV: number_minusp() makes sure `z' is real */
 	if (number_minusp(z))
