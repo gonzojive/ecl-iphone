@@ -4,14 +4,23 @@
 top_srcdir = ..\..\src
 srcdir	= ..\..\src\c
 
+!if "$(ECL_THREADS)" != ""
+THREADS_OBJ= threads_win32.obj
+THREADS_FLAGS= -DECL_THREADS -DGC_WIN32_THREADS
+!else
+THREADS_OBJ=
+THREADS_FLAGS=
+!endif
+
 # Programs used by "make":
 #
 TRUE_CC = cl
 CC	= cl
-CFLAGS	= -c -Zi -I./ -I$(srcdir) -I$(HDIR) -I../h -I$(top_srcdir)/gc/include -DHAVE_ISATTY
+CFLAGS	= -c -Zi -I./ -I$(srcdir) -I$(HDIR) -I../h -I$(top_srcdir)/gc/include -DHAVE_ISATTY $(THREADS_FLAGS)
 #	  -Wall -W -Wfloat-equal -Wundef -Wendif-labels -Wpointer-arith -Wcast-align \
 #	  -Wwrite-strings -Wconversion -Wsign-compare -Wmissing-prototypes -Wredundant-decls \
 #	  -Wunreachable-code -Winline
+DEFS    = $(THREADS_FLAGS)
 
 SHELL	= /bin/sh
 RM	= del
@@ -49,7 +58,7 @@ OBJS	= main.obj symbol.obj package.obj list.obj\
 	time.obj unixint.obj\
 	mapfun.obj multival.obj hash.obj format.obj pathname.obj\
 	structure.obj load.obj unixfsys.obj unixsys.obj \
-	ffi.obj alloc_2.obj tcp.obj
+	ffi.obj alloc_2.obj tcp.obj $(THREADS_OBJ)
 
 all:	$(DPP) external.h ..\eclmin.lib ..\cinit.obj
 
@@ -57,6 +66,8 @@ all:	$(DPP) external.h ..\eclmin.lib ..\cinit.obj
 
 {$(srcdir:\=/)}.d{}.c:
 	$(DPP) $< $@
+#.d.c:
+#	$(DPP) $< $@
 .c.obj:
 	$(CC) $(CFLAGS) -o $@ $<
 

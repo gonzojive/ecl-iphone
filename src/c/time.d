@@ -27,7 +27,7 @@
 
 #if defined(mignw32) || defined(_MSC_VER)
 /* The function sleep() in MinGW is bogus: it counts millisecons! */
-#include <winbase.h>
+#include <windows.h>
 #define sleep(x) Sleep(x*1000)
 #endif
 

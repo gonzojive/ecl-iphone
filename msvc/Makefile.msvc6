@@ -61,6 +61,7 @@ SUBDIR        = c gc gmp
 LIBRARIES     =
 LSP_LIBRARIES = cmp.fas clx.fas sysfun.lsp
 TARGETS       = ecl.exe
+DEF           = ecl.def
 # Define here the processor type to compile GMP library
 # with maximum optimization. Possible values are:
 # 	gc -> generic implementation
@@ -68,6 +69,16 @@ TARGETS       = ecl.exe
 # 	p3 -> Pentium III processor
 # 	p4 -> Pentium IV processor
 GMP_TYPE      = gc
+# Set it to non-empty to include Win32 thread support
+ECL_THREADS   =
+
+!if "$(ECL_THREADS)" == ""
+ENV_EXPORT = cl_env,DATA
+!else
+ENV_EXPORT = ecl_process_env
+CFLAGS     = $(CFLAGS) -DECL_THREADS
+DEF        = ecl-threads.def
+!endif
 
 all:	$(TARGETS) doc ecl-config.bat
 .PHONY:	all
@@ -116,6 +127,7 @@ compile.lsp: bare.lsp $(srcdir)/compile.lsp.in Makefile.msvc6
 	    -e "s,@LIBEXT@,lib,g" \
 	    -e "s,@EXEEXT@,.exe,g" \
 	    -e "s,@LDINSTALLNAME@,,g" \
+	    -e "s,@DEF@,$(DEF),g" \
 	    < $(srcdir)\compile.lsp.in > compile.lsp
 bare.lsp: $(srcdir)/bare.lsp.in lsp/load.lsp clos/load.lsp cmp/load.lsp cmp/cmpcfg.lsp
 	sed -e "s,@true_srcdir@,$(srcdir:\=/),g" \
@@ -156,11 +168,11 @@ ecl-config.bat: util\ecl-config.bat Makefile.msvc6
 
 eclmin.lib: eclgmp.lib eclgc.lib lsp/config.lsp
 	cd c
-	$(MAKE) -f Makefile.msvc6
+	$(MAKE) -f Makefile.msvc6 "ECL_THREADS = $(ECL_THREADS)"
 	cd ..
 eclgc.lib:
 	cd gc
-	$(MAKE) -f Makefile.msvc6 gc.lib
+	$(MAKE) -f Makefile.msvc6 "ECL_THREADS = $(ECL_THREADS)" gc.lib
 	$(CP) gc.lib ..\eclgc.lib
 	cd ..
 	for %h in (gc.h gc_local_alloc.h gc_pthread_redirects.h \
@@ -190,6 +202,7 @@ install-base:
 	for %i in ($(TARGETS) ecl.dll) do $(CP) %i $(bindir)\%i
 	$(CP) ecl-config.bat $(bindir)\ecl-config.bat
 	for %i in ($(LSP_LIBRARIES) $(LIBRARIES) c\dpp.exe help.doc ecl.lib) do $(CP) %i $(libdir)
+	for %i in (ecl-s.lib ecl-full-s.lib) do IF EXIST %i $(CP) %i $(libdir)
 	$(CP) h\config.h $(libdir)\h
 flatinstall:
 	$(MAKE) -f Makefile.msvc6 bindir=$(prefix) libdir=$(prefix) install-base
