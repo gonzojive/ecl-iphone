@@ -23,7 +23,7 @@ prepare_map(cl_va_list lists, cl_index *cdrs_sp)
 
 	*cdrs_sp = cl_stack_index();
 	if (nlist == 0)
-		FEerror("MAP*: Too few arguments.", 0);
+		FEprogram_error("MAP*: Too few arguments.", 0);
 	cl_stack_push_va_list(lists);
 	for (i = 0; i<nlist; i++)
 		cl_stack_push(Cnil);
