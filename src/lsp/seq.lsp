@@ -18,27 +18,23 @@
 Creates and returns a sequence of the given TYPE and LENGTH.  If INITIAL-
 ELEMENT is given, then it becomes the elements of the created sequence.  The
 default value of INITIAL-ELEMENT depends on TYPE."
+  (when (subtypep type 'LIST)
+    (return-from make-sequence
+      (if iesp
+	  (make-list size :initial-element initial-element)
+	  (make-list size))))
   (setq element-type
-        (cond ((eq type 'LIST)
-               (return-from make-sequence
-                (if iesp
-                    (make-list size :initial-element initial-element)
-                    (make-list size))))
-              ((or (eq type 'SIMPLE-STRING) (eq type 'STRING)) 'BASE-CHAR)
-              ((or (eq type 'SIMPLE-BIT-VECTOR) (eq type 'BIT-VECTOR)) 'BIT)
-              ((or (eq type 'SIMPLE-VECTOR) (eq type 'VECTOR)) t)
-              (t
-	       (multiple-value-bind (name args)
-		   (normalize-type type)
-		 (when (eq name 'LIST)
-		   (return-from make-sequence
-                      (if iesp
-                          (make-list size :initial-element initial-element)
-                          (make-list size))))
-		 (unless (or (eq name 'ARRAY)
-			     (eq name 'SIMPLE-ARRAY))
-                       (error "~S is not a sequence type." type))
-		 (or (car args) t)))))
+	(dolist (i '((SIMPLE-STRING . BASE-CHAR)
+		     (STRING . BASE-CHAR)
+		     (BIT-VECTOR . BIT)
+		     ((VECTOR BYTE8) . BYTE8)
+		     ((VECTOR INTEGER8) . INTEGER8)
+		     ((VECTOR SHORT-FLOAT) . SHORT-FLOAT)
+		     ((VECTOR LONG-FLOAT) . LONG-FLOAT)
+		     (VECTOR . T))
+		 (error "Not a valid sequence type ~S." type))
+	  (when (subtypep type (car i))
+	    (return (cdr i)))))
   (setq sequence (sys:make-vector element-type size nil nil nil nil))
   (when iesp
         (do ((i 0 (1+ i))

@@ -49,7 +49,8 @@
 		 (mapcar #'(lambda (x) (if (eql x '*) '* (type-filter x)))
 			 arg-types)))
   (when (and return-type (not (eq 'T return-type)))
-    (put-sysprop fname 'return-type (type-filter return-type)))
+    (put-sysprop fname 'return-type
+		 (if (eql return-type '*) '* (type-filter return-type))))
   (when never-change-special-var-p (put-sysprop fname 'no-sp-change t))
   (when predicate (put-sysprop fname 'predicate t))
   (rem-sysprop fname ':inline-always)
@@ -1082,7 +1083,7 @@ type_of(#0)==t_bitvector"))
 	    encode-universal-time get-decoded-time isqrt abs phase signum cis asin
 	    acos asinh acosh atanh rational ffloor fceiling ftruncate fround
 	    logtest byte byte-size byte-position ldb ldb-test mask-field dpb
-	    deposit-field typep subtypep coerce type-for-array make-sequence
+	    deposit-field upgraded-array-element-type typep subtypep coerce make-sequence
 	    concatenate map some every notany notevery map-into reduce fill
 	    replace remove remove-if remove-if-not delete delete-if delete-if-not
 	    count count-if count-if-not substitute substitute-if substitute-if-not

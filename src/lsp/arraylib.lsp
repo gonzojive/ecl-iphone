@@ -41,7 +41,7 @@ in raw-major indexing is actually the reference to the (I + DISPLACED-INDEX-
 OFFSET)th element of the given array.If the STATIC argument is supplied
 with a non-nil value, then the body of the array is allocated as a
 contiguous block."
-  (setq element-type (type-for-array element-type))
+  (setq element-type (upgraded-array-element-type element-type))
 
   (if (or (integerp dimensions)
 	  (when (= (length dimensions) 1)

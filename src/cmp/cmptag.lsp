@@ -118,7 +118,7 @@
 	(list 'PROGN info (nreverse (cons (c1nil) body1))))))
 
 (defun c2tagbody (tag-loc body)
-  (declare (type variable tag-loc))
+  (declare (type var tag-loc))
   (if (null (var-kind tag-loc))
       ;; only local goto's
       (let ((label (next-label)))

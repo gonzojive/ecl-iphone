@@ -66,8 +66,7 @@
 	((SIMPLE-ARRAY ARRAY)
 	 (cond ((endp type-args) '(ARRAY *))		; Beppe
 	       ((eq '* (car type-args)) t)
-	       (t (let ((element-type
-			 (sys::type-for-array (car type-args))))
+	       (t (let ((element-type (upgraded-array-element-type (car type-args))))
 		    (if (and (cdr type-args)
 			     (not (eq (second type-args) '*))
 			     (= (length (second type-args)) 1))
@@ -76,16 +75,15 @@
 			(BIT 'BIT-VECTOR)
 			(t (list 'VECTOR element-type)))
 		      (list 'ARRAY element-type))))))
-	(INTEGER
-	 (if (sys::sub-interval-p type-args
-				  '#.(list most-negative-fixnum
-					   most-positive-fixnum))
-	   'FIXNUM
-	   t))
+	(INTEGER (if (subtypep type 'FIXNUM) 'FIXNUM t))
 	((SHORT-FLOAT SINGLE-FLOAT) 'SHORT-FLOAT)
 	((LONG-FLOAT DOUBLE-FLOAT) 'LONG-FLOAT)
 	((STREAM) 'STREAM)	; Beppe
-	(t (cond #+clos
+	(t (cond ((eq type-name 'VALUES)
+		  (if (null (cdr type-args))
+		    (list 'VALUES (type-filter (car type-args)))
+		    t))
+		 #+clos
 		 ((subtypep type 'STANDARD-OBJECT) type)
 		 #+clos
 		 ((subtypep type 'STRUCTURE-OBJECT) type) 
@@ -97,10 +95,6 @@
 			       (ARRAY SHORT-FLOAT) (ARRAY LONG-FLOAT)
 			       (ARRAY T))) ; Beppe
 		    (when (subtypep type v) (return v))))
-		 ((eq type-name 'VALUES)
-		  (if (null (cdr type-args))
-		    (list 'VALUES (type-filter (car type-args)))
-		    t))
 		 ((and (eq type-name 'SATISFIES) ; Beppe
 		       (symbolp (car type-args))
 		       (get-sysprop (car type-args) 'TYPE-FILTER)))

@@ -42,6 +42,8 @@
 			;;; During Pass2, the index into the closure env
 )
 
+(deftype OBJECT () `(not (or fixnum character short-float long-float)))
+
 (defstruct (var (:include ref))
 ;  name		;;; Variable name.
 ;  (ref 0 :type fixnum)
@@ -68,7 +70,7 @@
   (type t)	;;; Type of the variable.
   (index -1)    ;;; position in *vars*. Used by similar.
   )
-(deftype var () '(satisfies var-p))
+;(deftype var () '(satisfies var-p))
 
 ;;; A function may be compiled into a CFUN, CCLOSURE or CCLOSURE+LISP_CLOSURE
 ;;; Here are examples of function FOO for the 3 cases:
@@ -112,7 +114,7 @@
   closure		;;; During Pass2, T if env is used inside the function
   var			;;; the variable holding the funob
   )
-(deftype fun () '(satisifes fun-p))
+;(deftype fun () '(satisfies fun-p))
 
 (defstruct (blk (:include ref))
 ;  name			;;; Block name.
@@ -129,7 +131,7 @@
   destination		;;; Where the value of the block to go.
   var			;;; Variable containing the block ID.
   )
-(deftype blk () '(satisfies blk-p))
+;(deftype blk () '(satisfies blk-p))
 
 (defstruct (tag (:include ref))
 ;  name			;;; Tag name.
@@ -143,7 +145,7 @@
   var			;;; Variable containing frame ID.
   index			;;; An integer denoting the label.
   )
-(deftype tag () '(satisfies tag-p))
+;(deftype tag () '(satisfies tag-p))
 
 (defstruct (info)
   (changed-vars nil)	;;; List of var-objects changed by the form.
@@ -161,7 +163,7 @@
 ;;;	add-info) so that we can determine exactly which frame is used
 ;;;	in the body of a function.
   )
-(deftype info () '(satisfies info-p))
+;(deftype info () '(satisfies info-p))
 
 ;;;
 ;;; VARIABLES

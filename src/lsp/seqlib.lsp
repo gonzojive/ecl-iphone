@@ -19,7 +19,7 @@
   (cond ((listp sequence) 'list)
         ((stringp sequence) 'string)
         ((bit-vector-p sequence) 'bit-vector)
-        ((vectorp sequence) (list 'array (array-element-type sequence)))
+        ((vectorp sequence) (list 'vector (array-element-type sequence)))
         (t (error "~S is not a sequence." sequence))))
 
 (declaim (ftype (function (t t t t) t) call-test))

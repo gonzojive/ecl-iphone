@@ -145,6 +145,9 @@
       (setq instance-slots (nreverse instance-slots)
 	    shared-slots (nreverse shared-slots))
       (cond
+	;; This is for bootstrap reasons
+	((eq metaclass-name 'CLASS)
+	 `(,@ (generate-slot-accessors class-name instance-slots shared-slots)))
 	;; since slot-value is inherited from 'STANDARD-OBJECT
 	((subtypep metaclass-name 'STANDARD-CLASS)
 	 (generate-optional-slot-accessors

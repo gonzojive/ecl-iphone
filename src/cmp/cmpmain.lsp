@@ -187,6 +187,8 @@ int init_~A(cl_object cblock)
     (ecase target
       (:program
        (setq output-name (namestring output-name))
+       (format t +lisp-program-main+ init-name prologue-code init-name
+	       epilogue-code)
        (with-open-file (c-file c-name :direction :output)
 	 (format c-file +lisp-program-main+ init-name prologue-code init-name
 		 epilogue-code))

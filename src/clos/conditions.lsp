@@ -542,6 +542,12 @@ returns with NIL."
 	     (format stream "Cannot print object ~A readably."
 		     (print-not-readable-object condition)))))
 
+(define-condition parse-error (error) ())
+
+(define-condition reader-error (parse-error stream-error) ())
+
+(define-condition simple-reader-error (simple-condition reader-error) ())
+
 #+nil
 (defun simple-condition-class-p (type)
   (typep type 'SIMPLE-CONDITION-CLASS))

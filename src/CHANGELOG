@@ -1240,8 +1240,6 @@ ECLS 0.9
 
   - Excesive arguments to NOT or NULL were not detected.
 
-  - (COND) is a valid expression which returns NIL.
-
 * Visible changes:
 
   - No "Bye" message in QUIT.
@@ -1342,6 +1340,13 @@ ECLS 0.9
     stored and retrieved using SI::{GET,PUT,REM}-SYSPROP. The current
     implementation is based on a hash table, which means that some
     symbols may not be garbage collected.
+
+  - New condition types PARSE-ERROR, SIMPLE-READER-ERROR and READER-ERROR. The
+    errors from the reader correspond to this later type.
+
+  - New implementation for SUBTYPEP.
+
+  - TYPEP now works with (CONS ...) types.
 
 TODO:
 =====
