@@ -1368,7 +1368,8 @@ file_length(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
-		goto ERROR;
+		FEwrong_type_argument(c_string_to_object("(OR BROADCAST-STREAM SYNONYM-STREAM FILE-STREAM)"),
+				      strm);
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
@@ -1403,7 +1404,6 @@ BEGIN:
 	case smm_echo:
 	case smm_string_input:
 	case smm_string_output:
-	ERROR:
 		FEwrong_type_argument(c_string_to_object("(OR BROADCAST-STREAM SYNONYM-STREAM FILE-STREAM)"),
 				      strm);
 
