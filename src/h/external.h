@@ -366,6 +366,8 @@ extern cl_object cl_make_string_input_stream _ARGS((int narg, cl_object strng, .
 extern cl_object cl_close _ARGS((int narg, cl_object strm, ...));
 extern cl_object cl_open _ARGS((int narg, cl_object filename, ...));
 extern cl_object cl_file_position _ARGS((int narg, cl_object file_stream, ...));
+extern cl_object si_do_write_sequence(cl_object string, cl_object stream, cl_object start, cl_object end);
+extern cl_object si_do_read_sequence(cl_object string, cl_object stream, cl_object start, cl_object end);
 
 extern bool input_stream_p(cl_object strm);
 extern bool output_stream_p(cl_object strm);
@@ -974,7 +976,7 @@ extern bool equalp(cl_object x, cl_object y);
 /* print.c */
 
 extern cl_object cl_write_byte(cl_object integer, cl_object binary_output_stream);
-extern cl_object si_write_bytes(cl_object stream, cl_object string, cl_object start, cl_object end);
+extern cl_object cl_write_sequence _ARGS((int narg, cl_object seq, cl_object stream, ...));
 extern cl_object cl_write _ARGS((int narg, cl_object x, ...));
 extern cl_object cl_prin1 _ARGS((int narg, cl_object obj, ...));
 extern cl_object cl_print _ARGS((int narg, cl_object obj, ...));
@@ -1011,7 +1013,7 @@ extern int init_profile(void);
 
 /* read.c */
 
-extern cl_object si_read_bytes(cl_object stream, cl_object string, cl_object start, cl_object end);
+extern cl_object cl_read_sequence _ARGS((int narg, cl_object seq, cl_object stream, ...));
 extern cl_object cl_readtablep(cl_object readtable);
 extern cl_object si_string_to_object(cl_object str);
 extern cl_object si_standard_readtable();
@@ -1313,7 +1315,7 @@ extern void FEtype_error_proper_list(cl_object x) __attribute__((noreturn,regpar
 extern void FEtype_error_alist(cl_object x) __attribute__((noreturn,regparm(2)));
 extern void FEtype_error_stream(cl_object x) __attribute__((noreturn,regparm(2)));
 extern void FEcircular_list(cl_object x) __attribute__((noreturn,regparm(2)));
-extern void FEtype_error_index(cl_object x) __attribute__((noreturn,regparm(2)));
+extern void FEtype_error_index(cl_object seq, cl_object ndx) __attribute__((noreturn,regparm(2)));
 extern void FEtype_error_string(cl_object x) __attribute__((noreturn,regparm(2)));
 
 /* unixfsys.c */

@@ -90,13 +90,13 @@ FEcircular_list(cl_object x)
 }
 
 void
-FEtype_error_index(cl_object x)
+FEtype_error_index(cl_object seq, cl_object ndx)
 {
 	cl_error(9, @'simple-type-error', @':format-control',
-		    make_simple_string("Index out of bounds ~D"),
-		    @':format-arguments', cl_list(1, x),
+		    make_simple_string("~S is not a valid index within the sequence ~S"),
+		    @':format-arguments', cl_list(2, seq, ndx),
 		    @':expected-type', @'fixnum',
-		    @':datum', x);
+		    @':datum', ndx);
 }
 
 void

@@ -1510,6 +1510,12 @@ ECLS 0.9b
 	(defmethod foo :after (&key x) ...)
     but an invalid call (FOO :C 2) is undetected.
 
+  - All streams have from now on element type (UNSIGNED-BYTE 8).
+    READ-CHAR and WRITE-CHAR work on any stream, though, as do
+    READ-BYTE and WRITE-BYTE.
+
+  - READ/WRITE-SEQUENCE implemented.
+
 
 TODO:
 =====

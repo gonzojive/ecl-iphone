@@ -209,7 +209,7 @@ si_rplaca_nthcdr(cl_object x, cl_object idx, cl_object v)
 	assert_type_cons(x);
 	for (i = fixnnint(idx), l = x;  i > 0; --i) {
 		l = CDR(l);
-		if (endp(l)) FEtype_error_index(idx);
+		if (endp(l)) FEtype_error_index(x, idx);
 	}
 	CAR(l) = v;
 	@(return v)
@@ -229,7 +229,7 @@ si_list_nth(cl_object idx, cl_object x)
 	assert_type_cons(x);
 	for (i = fixnnint(idx), l = x;  i > 0; --i) {
 		l = CDR(l);
-		if (endp(l)) FEtype_error_index(idx);
+		if (endp(l)) FEtype_error_index(x, idx);
 	}
 	@(return CAR(l))
 }

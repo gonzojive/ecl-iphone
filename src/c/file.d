@@ -22,6 +22,7 @@
 */
 
 #include <ecl.h>
+#include "ecl-inl.h"
 #include "machines.h"
 #include "internal.h"
 
@@ -133,6 +134,12 @@ BEGIN:
 	}
 }
 
+/*
+ * In ECL, all streams have element type (UNSIGNED-BYTE 8). Nevertheless,
+ * READ-CHAR and WRITE-CHAR are allowed in them, and they perform as if
+ *	(READ-CHAR) = (CODE-CHAR (READ-BYTE))
+ *	(WRITE-CHAR c) = (WRITE-BYTE (CHAR-CODE c))
+ */
 cl_object
 cl_stream_element_type(cl_object strm)
 {
@@ -153,7 +160,6 @@ BEGIN:
 	case smm_output:
 	case smm_io:
 	case smm_probe:
-		x = strm->stream.object0;
 		break;
 
 	case smm_synonym:
@@ -163,14 +169,14 @@ BEGIN:
 	case smm_broadcast:
 		x = strm->stream.object0;
 		if (endp(x))
-			return(Ct);
+			break;
 		strm = CAR(x);
 		goto BEGIN;
 
 	case smm_concatenated:
 		x = strm->stream.object0;
 		if (endp(x))
-			return(Ct);
+			break;
 		strm = CAR(x);
 		goto BEGIN;
 
@@ -181,12 +187,12 @@ BEGIN:
 
 	case smm_string_input:
 	case smm_string_output:
-		x = @'base-char';
+		break;
 
 	default:
 		error("illegal stream mode");
 	}
-	@(return x)
+	@(return @'byte8')
 }
 
 /*----------------------------------------------------------------------
@@ -322,7 +328,7 @@ open_stream(cl_object fn, enum smmode smm, cl_object if_exists,
 	x = cl_alloc_object(t_stream);
 	x->stream.mode = (short)smm;
 	x->stream.file = fp;
-	x->stream.object0 = @'base-char';
+	x->stream.object0 = @'byte8';
 	x->stream.object1 = fn;
 	x->stream.int0 = x->stream.int1 = 0;
 #if !defined(GBC_BOEHM)
@@ -751,6 +757,114 @@ writestr_stream(const char *s, cl_object strm)
 {
 	while (*s != '\0')
 		writec_stream(*s++, strm);
+}
+
+cl_object
+si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
+{
+	cl_fixnum start = fixnnint(s);
+	cl_fixnum limit = length(seq);
+	cl_fixnum end = (e == Cnil)? limit : fixnnint(e);
+	cl_type t = type_of(seq);
+
+	/* Since we have called length(), we know that SEQ is a valid
+	   sequence. Therefore, we only need to check the type of the
+	   object, and seq == Cnil i.f.f. t = t_symbol */
+	if (start > limit) {
+		FEtype_error_index(seq, MAKE_FIXNUM(start));
+	} else if (end > limit) {
+		FEtype_error_index(seq, MAKE_FIXNUM(end));
+	} else if (end < start) {
+		;
+	} else if (t == t_cons || t == t_symbol) {
+		seq = nthcdr(start, seq);
+		loop_for_in(seq) {
+			if (start <= end) {
+				cl_write_byte(CAR(seq), stream);
+			} else {
+				goto OUTPUT;
+			}
+		} end_loop_for_in;
+	} else if ((t == t_bitvector) ||
+		   (t != t_string &&  seq->vector.elttype != aet_b8))
+	{
+		FEerror("~S is not of a valid sequence type for WRITE-BYTES",
+			1, seq);
+	} else if (type_of(stream) == t_stream &&
+		   (stream->stream.mode == smm_io ||
+		    stream->stream.mode == smm_output))
+	{
+		int towrite = end - start + 1;
+		if (fwrite(seq->vector.self.ch + start, sizeof(char),
+			   towrite, stream->stream.file) < towrite) {
+			io_error(stream);
+		}
+	} else {
+		unsigned char *p;
+		for (p= seq->vector.self.ch; start <= end; start++, p++) {
+			writec_stream(*p, stream);
+		}
+	}
+ OUTPUT:
+	@(return seq);
+}
+
+cl_object
+si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
+{
+	cl_fixnum start = fixnnint(s);
+	cl_fixnum limit = length(seq);
+	cl_fixnum end = (e == Cnil)? limit : fixnnint(e);
+	cl_type t = type_of(seq);
+
+	/* Since we have called length(), we know that SEQ is a valid
+	   sequence. Therefore, we only need to check the type of the
+	   object, and seq == Cnil i.f.f. t = t_symbol */
+	if (start > limit) {
+		FEtype_error_index(seq, MAKE_FIXNUM(start));
+	} else if (end > limit) {
+		FEtype_error_index(seq, MAKE_FIXNUM(end));
+	} else if (end < start) {
+		;
+	} else if (t == t_cons || t == t_symbol) {
+		seq = nthcdr(start, seq);
+		loop_for_in(seq) {
+			if (start > end) {
+				goto OUTPUT;
+			} else {
+				char c = ecl_getc(stream);
+				if (c == EOF)
+					goto OUTPUT;
+				CAR(seq) = CODE_CHAR(c);
+				start++;
+			}
+		} end_loop_for_in;
+	} else if (t == t_bitvector ||
+		   (t != t_string && seq->vector.elttype != aet_b8))
+	{
+		FEerror("~S is not of a valid sequence type for READ-BYTES",
+			1, seq);
+	} else  if (type_of(stream) == t_stream &&
+		    (stream->stream.mode == smm_io ||
+		     stream->stream.mode == smm_output))
+	{
+		int toread = end - start + 1;
+		int n = fread(seq->vector.self.ch + start, sizeof(char),
+			      toread, stream->stream.file);
+		if (n < toread && ferror(stream->stream.file))
+			io_error(stream);
+		start += n;
+	} else {
+		unsigned char *p;
+		for (p = seq->vector.self.ch; start <= end; start++, p++) {
+			int c = ecl_getc(stream);
+			if (c == EOF)
+				break;
+			*p = c;
+		}
+	}
+ OUTPUT:
+	@(return MAKE_FIXNUM(start))
 }
 
 void

@@ -699,7 +699,7 @@ cl_symbols[] = {
 {"READ-FROM-STRING", CL_ORDINARY, NULL, -1},
 {"READ-LINE", CL_ORDINARY, cl_read_line, -1},
 {"READ-PRESERVING-WHITESPACE", CL_ORDINARY, cl_read_preserving_whitespace, -1},
-{"READ-SEQUENCE", CL_ORDINARY, NULL, -1},
+{"READ-SEQUENCE", CL_ORDINARY, cl_read_sequence, -1},
 {"READER-ERROR", CL_ORDINARY, NULL, -1},
 {"READTABLE", CL_ORDINARY, NULL, -1},
 {"READTABLE-CASE", CL_ORDINARY, NULL, -1},
@@ -925,7 +925,7 @@ cl_symbols[] = {
 {"WRITE-BYTE", CL_ORDINARY, cl_write_byte, 2},
 {"WRITE-CHAR", CL_ORDINARY, cl_write_char, -1},
 {"WRITE-LINE", CL_ORDINARY, cl_write_line, -1},
-{"WRITE-SEQUENCE", CL_ORDINARY, NULL, -1},
+{"WRITE-SEQUENCE", CL_ORDINARY, cl_write_sequence, -1},
 {"WRITE-STRING", CL_ORDINARY, cl_write_string, -1},
 {"WRITE-TO-STRING", CL_ORDINARY, NULL, -1},
 {"Y-OR-N-P", CL_ORDINARY, NULL, -1},
@@ -1093,7 +1093,7 @@ cl_symbols[] = {
 {SYS_ "PUT-PROPERTIES", SI_ORDINARY, si_put_properties, -1},
 {SYS_ "PUT-SYSPROP", SI_ORDINARY, si_put_sysprop, 3},
 {SYS_ "PUTPROP", SI_ORDINARY, si_putprop, 3},
-{SYS_ "READ-BYTES", SI_ORDINARY, si_read_bytes, 4},
+{SYS_ "DO-READ-SEQUENCE", SI_ORDINARY, si_do_read_sequence, 4},
 {SYS_ "REM-F", SI_ORDINARY, si_rem_f, 2},
 {SYS_ "REM-SYSPROP", SI_ORDINARY, si_rem_sysprop, 2},
 {SYS_ "REPLACE-ARRAY", SI_ORDINARY, si_replace_array, 2},
@@ -1138,7 +1138,7 @@ cl_symbols[] = {
 /*{SYS_ "VALID-FUNCTION-NAME-P", SI_ORDINARY, si_valid_function_name_p, 1},*/
 {SYS_ "UNIVERSAL-ERROR-HANDLER", SI_ORDINARY, NULL, -1},
 {SYS_ "UNLINK-SYMBOL", SI_ORDINARY, si_unlink_symbol, 1},
-{SYS_ "WRITE-BYTES", SI_ORDINARY, si_write_bytes, 4},
+{SYS_ "DO-WRITE-SEQUENCE", SI_ORDINARY, si_do_write_sequence, 4},
 
 #ifndef CLOS
 {SYS_ "STRUCTURE-INCLUDE", SI_ORDINARY, NULL, -1},

@@ -101,7 +101,7 @@ elt(cl_object seq, cl_fixnum index)
 		FEwrong_type_argument(@'sequence', seq);
 	}
 E:
-	FEtype_error_index(MAKE_FIXNUM(index));
+	FEtype_error_index(seq, MAKE_FIXNUM(index));
 }
 
 cl_object
@@ -147,7 +147,7 @@ elt_set(cl_object seq, cl_fixnum index, cl_object val)
 		FEwrong_type_argument(@'sequence', seq);
 	}
 E:
-	FEtype_error_index(MAKE_FIXNUM(index));
+	FEtype_error_index(seq, MAKE_FIXNUM(index));
 }
 
 @(defun subseq (sequence start &optional end &aux x)

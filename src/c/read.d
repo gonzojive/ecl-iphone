@@ -1528,28 +1528,10 @@ CANNOT_PARSE:
 	@(return MAKE_FIXNUM(c))
 @)
 
-cl_object
-si_read_bytes(cl_object stream, cl_object string, cl_object start, cl_object end)
-{
-	cl_fixnum is, ie, c;
-	FILE *fp;
-
-	assert_type_stream(stream);
-	if (stream->stream.mode == smm_closed)
-	  FEclosed_stream(stream);
-
-	/* FIXME! this may fail! We have to check the signs of is, ie, etc.*/
-        is = fix(start);
-	ie = fix(end);
-	fp = stream->stream.file;
-	if (fp == NULL) fp = stream->stream.object0->stream.file;
-	c = fread (string->string.self + is, sizeof(unsigned char),
-		   ie - is,
-		   fp);
-	@(return ((c < (ie - is))? Cnil : MAKE_FIXNUM(c)))
-}
-
-/* FIXME! READ-SEQUENCE is missing! */
+@(defun read_sequence (sequence stream &key (start MAKE_FIXNUM(0)) end)
+@
+	return si_do_read_sequence(sequence, stream, start, end);
+@)
 
 
 @(defun copy_readtable (&o (from ecl_current_readtable()) to)

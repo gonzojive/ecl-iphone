@@ -1580,41 +1580,14 @@ cl_write_byte(cl_object integer, cl_object binary_output_stream)
 {
 	if (!FIXNUMP(integer))
 		FEerror("~S is not a byte.", 1, integer);
-	assert_type_stream(binary_output_stream);
 	writec_stream(fix(integer), binary_output_stream);
 	@(return integer)
 }
 
-cl_object
-si_write_bytes(cl_object stream, cl_object string, cl_object start, cl_object end)
-{
-	FILE *fp;
-        cl_index is, ie;
-	cl_fixnum written, sofarwritten, towrite;
-
-	assert_type_stream(stream);
-	if (stream->stream.mode == smm_closed)
-		FEclosed_stream(stream);
-
-        is = fix(start);	/* FIXME: Unsafe! */
-	ie = fix(end);
-        sofarwritten = is;
-	towrite = ie-is;
-        fp = stream->stream.file;
-	if (fp == NULL) fp = stream->stream.object1->stream.file;
-	while (towrite > 0) {
-	  written = write(fileno(fp),
-			  string->string.self+sofarwritten, towrite);
-	  if (written != -1) {
-	    towrite -= written;
-	    sofarwritten += written;
-	  }
-	  else @(return Cnil)
-	}
-	@(return MAKE_FIXNUM(sofarwritten - is))
-}
-
-/* FIXME! WRITE-SEQUENCE is missing! */
+@(defun write-sequence (sequence stream &key (start MAKE_FIXNUM(0)) end)
+@
+	si_do_write_sequence(sequence, stream, start, end);
+@)
 
 void
 init_print(void)
