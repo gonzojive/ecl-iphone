@@ -441,7 +441,7 @@ L:
 		return1(x);
 
 	case t_stream:
-		switch ((enum smmode)x->stream.mode) {
+		switch ((enum ecl_smmode)x->stream.mode) {
 		case smm_closed:
 		case smm_input:
 		case smm_output:
@@ -708,7 +708,7 @@ L:
 		break;
 
 	case t_stream:
-		switch ((enum smmode)x->stream.mode) {
+		switch ((enum ecl_smmode)x->stream.mode) {
 		case smm_input:
 		case smm_output:
 		case smm_probe:
@@ -768,7 +768,7 @@ L:
 		break;
 		
 	case t_stream:
-		switch ((enum smmode)x->stream.mode) {
+		switch ((enum ecl_smmode)x->stream.mode) {
 		case smm_input:
 		case smm_output:
 		case smm_probe:

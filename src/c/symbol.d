@@ -387,7 +387,7 @@ cl_object
 @si::*make_special(cl_object sym)
 {
 	assert_type_symbol(sym);
-	if ((enum stype)sym->symbol.stype == stp_constant)
+	if ((enum ecl_stype)sym->symbol.stype == stp_constant)
 		FEerror("~S is a constant.", 1, sym);
 	sym->symbol.stype = (short)stp_special;
 	cl_remprop(sym, @'si::symbol-macro');
@@ -398,7 +398,7 @@ cl_object
 @si::*make_constant(cl_object sym, cl_object val)
 {
 	assert_type_symbol(sym);
-	if ((enum stype)sym->symbol.stype == stp_special)
+	if ((enum ecl_stype)sym->symbol.stype == stp_special)
 		FEerror(
 		 "The argument ~S to DEFCONSTANT is a special variable.",
 		 1, sym);

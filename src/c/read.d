@@ -25,6 +25,7 @@
 /******************************* EXPORTS ******************************/
 
 cl_object standard_readtable;
+cl_object ecl_packages_to_be_created;
 
 /******************************* ------- ******************************/
 
@@ -72,7 +73,7 @@ read_object_with_delimiter(cl_object in, int delimiter)
 {
 	cl_object x;
 	int c, base;
-	enum chattrib a;
+	enum ecl_chattrib a;
 	cl_object p;
 	cl_index length, i, colon;
 	int colon_type, intern_flag;
@@ -172,9 +173,10 @@ SYMBOL:
 		else {
 			cl_token->string.fillp = colon;
 			p = find_package(cl_token);
-			if (Null(p))
-			    FEerror("There is no package with the name ~A.",
-				    1, copy_simple_string(cl_token));
+			if (Null(p)) {
+				FEerror("There is no package with the name ~A.",
+						1, copy_simple_string(cl_token));
+			}
 		}
 		cl_token->string.fillp = length - (colon + 1);
 		memmove(cl_token->string.self,
@@ -191,9 +193,25 @@ SYMBOL:
 	} else if (colon_type == 2 /* && colon > 0 && length > colon + 2 */) {
 		cl_token->string.fillp = colon;
 		p = find_package(cl_token);
-		if (Null(p))
-			FEerror("There is no package with the name ~A.",
-				1, copy_simple_string(cl_token));
+		if (Null(p)) {
+			/* When loading binary files, we sometimes must create
+			   symbols whose package has not yet been maked. We
+			   allow it, but later on in read_VV we make sure that
+			   all referenced packages have been properly built.
+			*/
+			cl_object name = copy_simple_string(cl_token);
+			if (ecl_packages_to_be_created == OBJNULL) {
+				FEerror("There is no package with the name ~A.",
+					1, name);
+			} else if (!Null(p = assoc(name, ecl_packages_to_be_created))) {
+				p = CDR(p);
+			} else {
+				p = make_package(name,Cnil,Cnil);
+				ecl_package_list = CDR(ecl_package_list);
+				ecl_packages_to_be_created =
+					cl_acons(name, p, ecl_packages_to_be_created);
+			}
+		}
 		cl_token->string.fillp = length - (colon + 2);
 		memmove(cl_token->string.self,
 			cl_token->string.self + colon + 2,
@@ -804,7 +822,7 @@ static cl_object
 sharp_colon_reader(cl_object in, cl_object ch, cl_object d)
 {
 	cl_object rtbl = ecl_current_readtable();
-	enum chattrib a;
+	enum ecl_chattrib a;
 	bool escape_flag;
 	int c;
 
@@ -881,13 +899,14 @@ sharp_exclamation_reader(cl_object in, cl_object c, cl_object d)
 	switch (code) {
 	case 0: {
 		cl_object name = read_object(in);
-		si_select_package(name);
-		break;
-	}
-	case 1: {
-		cl_object name = read_object(in);
-		cl_object p = find_package(name);
-		if (Null(p)) make_package(name,Cnil,Cnil);
+		cl_object package = find_package(name);
+		if (Null(package)) {
+			package = make_package(name, Cnil, Cnil);
+			ecl_package_list = CDR(ecl_package_list);
+			ecl_packages_to_be_created =
+			  cl_acons(name, package, ecl_packages_to_be_created);
+		}
+		si_select_package(package);
 		break;
 	}
 	default: {
@@ -1165,7 +1184,7 @@ sharp_dollar_reader(cl_object in, cl_object c, cl_object d)
 cl_object
 copy_readtable(cl_object from, cl_object to)
 {
-	struct readtable_entry *rtab;
+	struct ecl_readtable_entry *rtab;
 	cl_index i;
 
 	if (Null(to)) {
@@ -1174,9 +1193,9 @@ copy_readtable(cl_object from, cl_object to)
 			/*  Saving for GC.  */
 		to->readtable.table
 		= rtab
- 		= (struct readtable_entry *)cl_alloc_align(RTABSIZE * sizeof(struct readtable_entry), sizeof(struct readtable_entry));
+ 		= (struct ecl_readtable_entry *)cl_alloc_align(RTABSIZE * sizeof(struct ecl_readtable_entry), sizeof(struct ecl_readtable_entry));
 		memcpy(rtab, from->readtable.table,
-			 RTABSIZE * sizeof(struct readtable_entry));
+			 RTABSIZE * sizeof(struct ecl_readtable_entry));
 /*
 		for (i = 0;  i < RTABSIZE;  i++)
 			rtab[i] = from->readtable.table[i];
@@ -1544,7 +1563,7 @@ cl_readtablep(cl_object readtable)
 
 /* FIXME! READTABLE-CASE is missing! */
 
-static struct readtable_entry*
+static struct ecl_readtable_entry*
 read_table_entry(cl_object rdtbl, cl_object c)
 {
 	/* INV: char_code() checks the type of `c' */
@@ -1555,7 +1574,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 @(defun set_syntax_from_char (tochr fromchr
 			      &o (tordtbl ecl_current_readtable())
 				 fromrdtbl)
-	struct readtable_entry*torte, *fromrte;
+	struct ecl_readtable_entry*torte, *fromrte;
 @
 	/* INV: read_table_entry() checks all values */
 	if (Null(fromrdtbl))
@@ -1576,7 +1595,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 @(defun set_macro_character (chr fnc
 			     &optional ntp
 				       (rdtbl ecl_current_readtable()))
-	struct readtable_entry*entry;
+	struct ecl_readtable_entry*entry;
 @
 	/* INV: read_table_entry() checks our arguments */
 	entry = read_table_entry(rdtbl, chr);
@@ -1589,7 +1608,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 @)
 
 @(defun get_macro_character (chr &o (rdtbl ecl_current_readtable()))
-	struct readtable_entry*entry;
+	struct ecl_readtable_entry*entry;
 	cl_object m;
 @
 
@@ -1606,7 +1625,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 
 @(defun make_dispatch_macro_character (chr
 	&optional ntp (rdtbl ecl_current_readtable()))
-	struct readtable_entry*entry;
+	struct ecl_readtable_entry*entry;
 	cl_object *table;
 	int i;
 @
@@ -1626,7 +1645,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 
 @(defun set_dispatch_macro_character (dspchr subchr fnc
 	&optional (rdtbl ecl_current_readtable()))
-	struct readtable_entry*entry;
+	struct ecl_readtable_entry*entry;
 	cl_fixnum subcode;
 @
 	entry = read_table_entry(rdtbl, dspchr);
@@ -1641,7 +1660,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 
 @(defun get_dispatch_macro_character (dspchr subchr
 	&optional (rdtbl ecl_current_readtable()))
-	struct readtable_entry*entry;
+	struct ecl_readtable_entry*entry;
 	cl_fixnum subcode;
 @
 	if (Null(rdtbl))
@@ -1694,7 +1713,7 @@ extra_argument(int c, cl_object stream, cl_object d)
 void
 init_read(void)
 {
-	struct readtable_entry *rtab;
+	struct ecl_readtable_entry *rtab;
 	cl_object *dtab;
 	int i;
 
@@ -1703,7 +1722,7 @@ init_read(void)
 
 	standard_readtable->readtable.table
 	= rtab
-	= (struct readtable_entry *)cl_alloc(RTABSIZE * sizeof(struct readtable_entry));
+	= (struct ecl_readtable_entry *)cl_alloc(RTABSIZE * sizeof(struct ecl_readtable_entry));
 	for (i = 0;  i < RTABSIZE;  i++) {
 		rtab[i].syntax_type = cat_constituent;
 		rtab[i].macro = OBJNULL;
@@ -1800,6 +1819,8 @@ init_read(void)
 	  = @'single-float';
 	SYM_VAL(@'*read_base*') = MAKE_FIXNUM(10);
 	SYM_VAL(@'*read_suppress*') = Cnil;
+
+	ecl_register_static_root(&ecl_packages_to_be_created);
 }
 
 /*
@@ -1816,6 +1837,7 @@ init_read(void)
 cl_object
 read_VV(cl_object block, void *entry)
 {
+	volatile cl_object old_eptbc = ecl_packages_to_be_created;
 	typedef void (*entry_point_ptr)(cl_object);
 	volatile cl_object x;
 	cl_index i, len;
@@ -1830,6 +1852,8 @@ read_VV(cl_object block, void *entry)
 	in = OBJNULL;
 	CL_UNWIND_PROTECT_BEGIN {
 		bds_bind(@'si::*cblock*', block);
+		if (ecl_packages_to_be_created == OBJNULL)
+			ecl_packages_to_be_created = Cnil;
 
 		/* Communicate the library which Cblock we are using, and get
 		 * back the amount of data to be processed.
@@ -1863,8 +1887,14 @@ read_VV(cl_object block, void *entry)
 	NO_DATA:
 		/* Execute top-level code */
 		(*entry_point)(MAKE_FIXNUM(0));
+		if (ecl_packages_to_be_created != Cnil) {
+			CEerror("The following packages were referenced in a~"
+				"compiled file, but they have not been created: ~A",
+				1, ecl_packages_to_be_created);
+		}
 		bds_unwind1;
 	} CL_UNWIND_PROTECT_EXIT {
+		ecl_packages_to_be_created = old_eptbc;
 		if (in != OBJNULL)
 			close_stream(in, 0);
 	} CL_UNWIND_PROTECT_END;

@@ -220,12 +220,12 @@ hash_equal(cl_object key)
 	return _hash_equal(~(cl_hashkey)0, 0, key);
 }
 
-static struct hashtable_entry *
+static struct ecl_hashtable_entry *
 search_hash(cl_object key, cl_object hashtable)
 {
 	cl_hashkey h;
 	cl_index hsize, i, j, k;
-	struct hashtable_entry *e;
+	struct ecl_hashtable_entry *e;
 	cl_object hkey;
 	int htest;
 	bool b;
@@ -287,7 +287,7 @@ gethash(cl_object key, cl_object hashtable)
 cl_object
 gethash_safe(cl_object key, cl_object hashtable, cl_object def)
 {
-	struct hashtable_entry *e;
+	struct ecl_hashtable_entry *e;
 
 	/* INV: search_hash() checks the type of hashtable */
 	e = search_hash(key, hashtable);
@@ -303,7 +303,7 @@ add_new_to_hash(cl_object key, cl_object hashtable, cl_object value)
 	int htest;
 	cl_hashkey h;
 	cl_index i, hsize;
-	struct hashtable_entry *e;
+	struct ecl_hashtable_entry *e;
 
 	/* INV: hashtable has the right type */
 	htest = hashtable->hash.test;
@@ -335,7 +335,7 @@ sethash(cl_object key, cl_object hashtable, cl_object value)
 {
 	cl_index i;
 	bool over;
-	struct hashtable_entry *e;
+	struct ecl_hashtable_entry *e;
 
 	/* INV: search_hash() checks the type of hashtable */
 	e = search_hash(key, hashtable);
@@ -385,8 +385,8 @@ extend_hashtable(cl_object hashtable)
 		hashtable->hash.threshold =
 		MAKE_FIXNUM(fix(hashtable->hash.threshold) +
 			    (new_size - old->hash.size));
-	hashtable->hash.data = (struct hashtable_entry *)
-	  cl_alloc(new_size * sizeof(struct hashtable_entry));
+	hashtable->hash.data = (struct ecl_hashtable_entry *)
+	  cl_alloc(new_size * sizeof(struct ecl_hashtable_entry));
 	for (i = 0;  i < new_size;  i++) {
 		hashtable->hash.data[i].key = OBJNULL;
 		hashtable->hash.data[i].value = OBJNULL;
@@ -412,7 +412,7 @@ cl_object
 cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 		    cl_object rehash_threshold)
 {
-	enum httest htt;
+	int htt;
 	cl_index hsize;
 	cl_object h;
 
@@ -454,8 +454,8 @@ cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 	h->hash.threshold = rehash_threshold;
         h->hash.entries = 0;
 	h->hash.data = NULL;	/* for GC sake */
-	h->hash.data = (struct hashtable_entry *)
-	cl_alloc(hsize * sizeof(struct hashtable_entry));
+	h->hash.data = (struct ecl_hashtable_entry *)
+	cl_alloc(hsize * sizeof(struct ecl_hashtable_entry));
 	return cl_clrhash(h);
 }
 
@@ -466,7 +466,7 @@ cl_hash_table_p(cl_object ht)
 }
 
 @(defun gethash (key ht &optional (no_value Cnil))
-	struct hashtable_entry *e;
+	struct ecl_hashtable_entry *e;
 @
 	/* INV: search_hash() checks the type of hashtable */
 	e = search_hash(key, ht);
@@ -487,7 +487,7 @@ si_hash_set(cl_object key, cl_object ht, cl_object val)
 bool
 remhash(cl_object key, cl_object hashtable)
 {
-	struct hashtable_entry *e;
+	struct ecl_hashtable_entry *e;
 
 	/* INV: search_hash() checks the type of hashtable */
 	e = search_hash(key, hashtable);

@@ -35,7 +35,7 @@ typedef unsigned char byte;
 /*
 	Definition of the type of LISP objects.
 */
-typedef union lispunion *cl_object;
+typedef union cl_lispunion *cl_object;
 typedef cl_object cl_return;
 typedef cl_object (*cl_objectfn)(int narg, ...);
 
@@ -77,19 +77,19 @@ typedef cl_object (*cl_objectfn)(int narg, ...);
 #define HEADER2(field1,field2)	int8_t t, m, field1, field2
 #define HEADER3(field1,flag2,flag3) int8_t t, m, field1; unsigned flag2:4, flag3:4
 
-struct shortfloat_struct {
+struct ecl_shortfloat {
 	HEADER;
 	float SFVAL;	/*  shortfloat value  */
 };
 #define	sf(obje)	(obje)->SF.SFVAL
 
-struct longfloat_struct {
+struct ecl_longfloat {
 	HEADER;
 	double LFVAL;	/*  longfloat value  */
 };
 #define	lf(obje)	(obje)->LF.LFVAL
 
-struct bignum {
+struct ecl_bignum {
 	HEADER;
 	mpz_t big_num;
 };
@@ -97,19 +97,19 @@ struct bignum {
 #define big_size	big_num->_mp_size
 #define big_limbs	big_num->_mp_d
 
-struct ratio {
+struct ecl_ratio {
 	HEADER;
 	cl_object den;		/*  denominator, must be an integer  */
 	cl_object num;		/*  numerator, must be an integer  */
 };
 
-struct complex {
+struct ecl_complex {
 	HEADER;
 	cl_object real;		/*  real part, must be a number  */
 	cl_object imag;		/*  imaginary part, must be a number  */
 };
 
-enum stype {			/*  symbol type  */
+enum ecl_stype {		/*  symbol type  */
 	stp_ordinary,		/*  ordinary  */
 	stp_constant,		/*  constant  */
         stp_special		/*  special  */
@@ -118,7 +118,7 @@ enum stype {			/*  symbol type  */
 #define	Cnil			((cl_object)cl_symbols)
 #define	Ct			((cl_object)(cl_symbols+1))
 
-struct symbol {
+struct ecl_symbol {
 	HEADER3(stype, mflag, isform);
 				/*  symbol type and whether it names a macro */
 	cl_object dbind;	/*  dynamic binding  */
@@ -135,7 +135,7 @@ struct symbol {
 #define SYM_VAL(sym)	((sym)->symbol.dbind)
 #define SYM_FUN(sym)	((sym)->symbol.gfdef)
 
-struct package {
+struct ecl_package {
 	HEADER1(locked);
 	cl_object name;		/*  package name, a string  */
 	cl_object nicknames;	/*  nicknames, list of strings  */
@@ -158,13 +158,13 @@ struct package {
 #define CONSP(x)	((IMMEDIATE(x) == 0) && ((x)->d.t == t_cons))
 #define ATOM(x)		((IMMEDIATE(x) != 0) || ((x)->d.t != t_cons))
 #define SYMBOLP(x)	((IMMEDIATE(x) == 0) && ((x)->d.t == t_symbol))
-struct cons {
+struct ecl_cons {
 	HEADER;
 	cl_object cdr;		/*  cdr  */
 	cl_object car;		/*  car  */
 };
 
-enum httest {			/*  hash table key test function  */
+enum ecl_httest {		/*  hash table key test function  */
 	htt_eq,			/*  eq  */
 	htt_eql,		/*  eql  */
 	htt_equal,		/*  equal  */
@@ -172,14 +172,14 @@ enum httest {			/*  hash table key test function  */
 	htt_pack		/*  symbol hash  */
 };
 
-struct hashtable_entry {	/*  hash table entry  */
+struct ecl_hashtable_entry {	/*  hash table entry  */
 	cl_object key;		/*  key  */
 	cl_object value;	/*  value  */
 };
 
-struct hashtable {		/*  hash table header  */
+struct ecl_hashtable {		/*  hash table header  */
 	HEADER1(test);
-	struct hashtable_entry *data; /*  pointer to the hash table  */
+	struct ecl_hashtable_entry *data; /*  pointer to the hash table  */
 	cl_object rehash_size;	/*  rehash size  */
 	cl_object threshold;	/*  rehash threshold  */
 	cl_index entries;	/*  number of entries  */
@@ -201,7 +201,7 @@ typedef enum {			/*  array element type  */
 #endif
 } cl_elttype;
 
-union array_data {
+union ecl_array_data {
 	cl_object *t;
         unsigned char *ch;
 	uint8_t *b8;
@@ -212,19 +212,19 @@ union array_data {
 	byte *bit;
 };
 
-struct array {			/*  array header  */
+struct ecl_array {			/*  array header  */
 				/*  adjustable flag  */
 				/*  has-fill-pointer flag  */
 	HEADER2(adjustable,rank);
 	cl_object displaced;	/*  displaced  */
 	cl_index dim;		/*  dimension  */
 	cl_index *dims;		/*  table of dimensions  */
-	union array_data self;	/*  pointer to the array  */
+	union ecl_array_data self;	/*  pointer to the array  */
 	byte	elttype;	/*  element type  */
 	byte	offset;		/*  bitvector offset  */
 };
 
-struct vector {			/*  vector header  */
+struct ecl_vector {			/*  vector header  */
 				/*  adjustable flag  */
 				/*  has-fill-pointer flag  */
 	HEADER2(adjustable,hasfillp);
@@ -233,12 +233,12 @@ struct vector {			/*  vector header  */
 	cl_index fillp;		/*  fill pointer  */
 				/*  For simple vectors,  */
 				/*  v_fillp is equal to v_dim.  */
-	union array_data self;	/*  pointer to the vector  */
+	union ecl_array_data self;	/*  pointer to the vector  */
 	byte	elttype;	/*  element type  */
 	byte	offset;
 };
 
-struct string {			/*  string header  */
+struct ecl_string {			/*  string header  */
 				/*  adjustable flag  */
 				/*  has-fill-pointer flag  */
 	HEADER2(adjustable,hasfillp);
@@ -259,7 +259,7 @@ struct string {			/*  string header  */
 #define SLOT(x,i)	(x)->instance.slots[i]
 #define SNAME(x)	CLASS_NAME(CLASS_OF(x))
 #else
-struct structure {		/*  structure header  */
+struct ecl_structure {		/*  structure header  */
 	HEADER;
 	cl_object name;		/*  structure name  */
 	cl_object *self;	/*  structure self  */
@@ -274,7 +274,7 @@ struct structure {		/*  structure header  */
 #define SNAME(x)	x->str.name
 #endif
 
-enum smmode {			/*  stream mode  */
+enum ecl_smmode {			/*  stream mode  */
 	smm_closed,		/*  closed  */
 	smm_input,		/*  input  */
 	smm_output,		/*  output  */
@@ -289,7 +289,7 @@ enum smmode {			/*  stream mode  */
 	smm_string_output	/*  string output  */
 };
 
-struct stream {
+struct ecl_stream {
 	HEADER1(mode);		/*  stream mode of enum smmode  */
 	FILE	*file;		/*  file pointer  */
 	cl_object object0;	/*  some object  */
@@ -301,12 +301,12 @@ struct stream {
 #endif
 };
 
-struct random {
+struct ecl_random {
 	HEADER;
 	unsigned value;	/*  random state value  */
 };
 
-enum chattrib {			/*  character attribute  */
+enum ecl_chattrib {		/*  character attribute  */
 	cat_whitespace,		/*  whitespace  */
 	cat_terminating,	/*  terminating macro  */
 	cat_non_terminating,	/*  non-terminating macro  */
@@ -315,8 +315,8 @@ enum chattrib {			/*  character attribute  */
 	cat_constituent		/*  constituent  */
 };
 
-struct readtable_entry {		/*  read table entry  */
-	enum chattrib syntax_type;	/*  character attribute  */
+struct ecl_readtable_entry {		/*  read table entry  */
+	enum ecl_chattrib syntax_type;	/*  character attribute  */
 	cl_object macro;		/*  macro function  */
 	cl_object *dispatch_table;	/*  pointer to the  */
 					/*  dispatch table  */
@@ -326,12 +326,12 @@ struct readtable_entry {		/*  read table entry  */
 					/*  non-macro character  */
 };
 
-struct readtable {			/*  read table  */
+struct ecl_readtable {			/*  read table  */
 	HEADER;
-	struct readtable_entry	*table;	/*  read table itself  */
+	struct ecl_readtable_entry *table; /*  read table itself  */
 };
 
-struct pathname {
+struct ecl_pathname {
 	HEADER1(logical);	/*  logical pathname?  */
 	cl_object host;		/*  host  */
 	cl_object device;	/*  device  */
@@ -341,7 +341,7 @@ struct pathname {
 	cl_object version;	/*  version  */
 };
 
-struct codeblock {
+struct ecl_codeblock {
 	HEADER;
 	void	*handle;		/*  handle returned by dlopen  */
 	void	*entry;			/*  entry point  */
@@ -357,7 +357,7 @@ struct codeblock {
 	cl_object links;		/*  list of symbols with linking calls  */
 };
 
-struct bytecodes {
+struct ecl_bytecodes {
 	HEADER;
 	cl_object name;		/*  function name  */
 	cl_object lex;		/*  lexical environment  */
@@ -369,14 +369,14 @@ struct bytecodes {
 	cl_object *data;	/*  non-inmediate constants used in the code  */
 };
 
-struct cfun {			/*  compiled function header  */
+struct ecl_cfun {		/*  compiled function header  */
 	HEADER1(narg);
 	cl_object name;		/*  compiled function name  */
 	cl_objectfn entry;	/*  entry address  */
 	cl_object block;	/*  descriptor of C code block for GC  */
 };
 
-struct cclosure {		/*  compiled closure header  */
+struct ecl_cclosure {		/*  compiled closure header  */
 	HEADER;
 	cl_object env;		/*  environment  */
 	cl_objectfn entry;	/*  entry address  */
@@ -384,7 +384,7 @@ struct cclosure {		/*  compiled closure header  */
 };
 
 #ifdef ECL_FFI
-struct foreign {		/*  user defined datatype  */
+struct ecl_foreign {		/*  user defined datatype  */
 	HEADER;
 	cl_object tag;		/*  a tag identifying the type  */
 	cl_index size;		/*  the amount of memory allocated  */
@@ -395,19 +395,19 @@ struct foreign {		/*  user defined datatype  */
 /*
 	dummy type
 */
-struct dummy {
+struct ecl_dummy {
 	HEADER;
 };
 
 #ifdef THREADS
-struct cont {
+struct ecl_cont {
 				/* already resumed */
 				/* timed out */
 	HEADER(resumed, timed_out);
 	cl_object thread;	/* its thread */
 };
 
-struct thread {
+struct ecl_thread {
 	HEADER;
 	struct pd *self;	/* the thread itself (really a *pd) */
 	cl_index size;		/* its size */
@@ -425,7 +425,7 @@ struct thread {
 #define CLASS_SLOTS(x)		(x)->instance.slots[3]
 #define CLASS_CPL(x)		(x)->instance.slots[4]
 
-struct instance {		/*  instance header  */
+struct ecl_instance {		/*  instance header  */
 	HEADER1(isgf);
 	cl_index length;	/*  instance length  */
 	cl_object clas;		/*  instance class  */
@@ -436,40 +436,40 @@ struct instance {		/*  instance header  */
 /*
 	Definition of lispunion.
 */
-union lispunion {
-	struct bignum	big;	/*  bignum  */
-	struct ratio	ratio;	/*  ratio  */
-	struct shortfloat_struct SF; /*  short floating-point number  */
-	struct longfloat_struct LF; /*  long floating-point number  */
-	struct complex	complex;/*  complex number  */
-	struct symbol	symbol;	/*  symbol  */
-	struct package	pack;	/*  package  */
-	struct cons	cons;	/*  cons  */
-	struct hashtable hash;	/*  hash table  */
-	struct array	array;	/*  array  */
-	struct vector	vector;	/*  vector  */
-	struct string	string;	/*  string  */
-	struct stream	stream;	/*  stream  */
-	struct random	random;	/*  random-states  */
-	struct readtable readtable; /*  read table  */
-	struct pathname	pathname; /*  path name  */
-	struct bytecodes bytecodes; /*  bytecompiled closure */
-	struct cfun	cfun;	/*  compiled function  */
-	struct cclosure	cclosure; /*  compiled closure  */
+union cl_lispunion {
+	struct ecl_bignum	big;	/*  bignum  */
+	struct ecl_ratio	ratio;	/*  ratio  */
+	struct ecl_shortfloat	SF; /*  short floating-point number  */
+	struct ecl_longfloat	LF; /*  long floating-point number  */
+	struct ecl_complex	complex;/*  complex number  */
+	struct ecl_symbol	symbol;	/*  symbol  */
+	struct ecl_package	pack;	/*  package  */
+	struct ecl_cons		cons;	/*  cons  */
+	struct ecl_hashtable	hash;	/*  hash table  */
+	struct ecl_array	array;	/*  array  */
+	struct ecl_vector	vector;	/*  vector  */
+	struct ecl_string	string;	/*  string  */
+	struct ecl_stream	stream;	/*  stream  */
+	struct ecl_random	random;	/*  random-states  */
+	struct ecl_readtable	readtable; /*  read table  */
+	struct ecl_pathname	pathname; /*  path name  */
+	struct ecl_bytecodes	bytecodes; /*  bytecompiled closure */
+	struct ecl_cfun		cfun;	/*  compiled function  */
+	struct ecl_cclosure	cclosure; /*  compiled closure  */
 
-	struct dummy	d;	/*  dummy  */
+	struct ecl_dummy	d;	/*  dummy  */
 #ifdef CLOS
-	struct instance instance; /*  clos instance */
+	struct ecl_instance	instance; /*  clos instance */
 #else
-	struct structure str;	/*  structure  */
+	struct ecl_structure	str;	/*  structure  */
 #endif /* CLOS */
 #ifdef THREADS
-	struct cont     cont;	/*  continuation  */
-	struct thread   thread;	/*  thread  */
+	struct ecl_cont		cont;	/*  continuation  */
+	struct ecl_thread	thread;	/*  thread  */
 #endif /* THREADS */
-	struct codeblock cblock; /*  codeblock  */
+	struct ecl_codeblock	cblock; /*  codeblock  */
 #ifdef ECL_FFI
-	struct foreign	foreign; /* user defined data type */
+	struct ecl_foreign	foreign; /* user defined data type */
 #endif
 };
 

@@ -1057,7 +1057,7 @@ _write_object(cl_object x, int level)
 
 	case t_stream:
 		if (PRINTreadably) FEprint_not_readable(x);
-		switch ((enum smmode)x->stream.mode) {
+		switch ((enum ecl_smmode)x->stream.mode) {
 		case smm_closed:
 			write_str("#<closed stream ");
 			_write_object(x->stream.object1, level);

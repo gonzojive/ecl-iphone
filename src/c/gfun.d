@@ -36,11 +36,11 @@ si_generic_function_p(cl_object instance)
  * It also assumes that entries are never removed except by clrhash.
  */
 
-static struct hashtable_entry *
+static struct ecl_hashtable_entry *
 get_meth_hash(cl_object *keys, int argno, cl_object hashtable)
 {
 	int hsize;
-	struct hashtable_entry *e, *htable;
+	struct ecl_hashtable_entry *e, *htable;
 	cl_object hkey, tlist;
 	register cl_index i = 0;
 	int k, n; /* k added by chou */
@@ -70,7 +70,7 @@ get_meth_hash(cl_object *keys, int argno, cl_object hashtable)
 static void
 set_meth_hash(cl_object *keys, int argno, cl_object hashtable, cl_object value)
 {
-	struct hashtable_entry *e;
+	struct ecl_hashtable_entry *e;
 	cl_object keylist, *p;
 	cl_index i;
 	bool over;
@@ -107,7 +107,7 @@ compute_method(int narg, cl_object gf, cl_object *args)
 {
 	cl_object func;
 	int i, spec_no;
-	struct hashtable_entry *e;
+	struct ecl_hashtable_entry *e;
 	cl_object spec_how_list = GFUN_SPEC(gf);
 	cl_object table = GFUN_HASH(gf);
 	cl_object argtype[narg]; /* __GNUC__ */

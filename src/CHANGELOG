@@ -1601,6 +1601,10 @@ ECL 0.9c
     provides information about the usual name conventions for
     executables, libraries, object files, C files, etc.
 
+  - Many internal types, such as those used to represent arrays,
+    vectors, etc, and which do not need to be used directly, have
+    received the prefix "ecl" to avoid name clashes with C/C++ libraries.
+
 * Errors fixed:
 
   - The compiler was too eager when replacing variables, so that
@@ -1623,6 +1627,18 @@ ECL 0.9c
 
   - READ/WRITE-SEQUENCE would read or write one element more than
     required.
+
+* ANSI compatibility:
+
+  - Hashtables can now have EQUALP as test function.
+
+  - The compiler no longer handles IN-PACKAGE and DEFPACKAGE specially.
+    When a symbol is loaded from a compiled file, and the home package
+    of this symbol does not exist, a new incomplete package is
+    created. If MAKE-PACKAGE is invoked subsequently in this binary
+    file, the incomplete package is finished and returned. If at the
+    end of the load process there are still incomplete packages, a
+    correctable error is signaled.
 
 TODO:
 =====

@@ -97,7 +97,7 @@ make_cons(cl_object a, cl_object d)
 {
 	cl_object obj;
 
-	obj = (cl_object)GC_MALLOC(sizeof(struct cons));
+	obj = (cl_object)GC_MALLOC(sizeof(struct ecl_cons));
 	obj->d.t = (short)t_cons;
 	CAR(obj) = a;
 	CDR(obj) = d;
@@ -141,39 +141,39 @@ init_alloc(void)
 #endif
 
 	init_tm(t_shortfloat, "SHORT-FLOAT", /* 8 */
-		sizeof(struct shortfloat_struct));
-	init_tm(t_cons, "CONS", sizeof(struct cons)); /* 12 */
+		sizeof(struct ecl_shortfloat));
+	init_tm(t_cons, "CONS", sizeof(struct ecl_cons)); /* 12 */
 	init_tm(t_longfloat, "LONG-FLOAT", /* 16 */
-		sizeof(struct longfloat_struct));
-	init_tm(t_bytecodes, "bBYTECODES", sizeof(struct bytecodes));
-	init_tm(t_string, "STRING", sizeof(struct string)); /* 20 */
-	init_tm(t_array, "ARRAY", sizeof(struct array)); /* 24 */
-	init_tm(t_pathname, "PATHNAME", sizeof(struct pathname)); /* 28 */
-	init_tm(t_symbol, "SYMBOL", sizeof(struct symbol)); /* 32 */
-	init_tm(t_package, "PACKAGE", sizeof(struct package)); /* 36 */
-	init_tm(t_codeblock, "CODEBLOCK", sizeof(struct codeblock));
-	init_tm(t_bignum, "BIGNUM", sizeof(struct bignum));
-	init_tm(t_ratio, "RATIO", sizeof(struct ratio));
-	init_tm(t_complex, "COMPLEX", sizeof(struct complex));
-	init_tm(t_hashtable, "HASH-TABLE", sizeof(struct hashtable));
-	init_tm(t_vector, "VECTOR", sizeof(struct vector));
-	init_tm(t_bitvector, "BIT-VECTOR", sizeof(struct vector));
-	init_tm(t_stream, "STREAM", sizeof(struct stream));
-	init_tm(t_random, "RANDOM-STATE", sizeof(struct random));
-	init_tm(t_readtable, "READTABLE", sizeof(struct readtable));
-	init_tm(t_cfun, "CFUN", sizeof(struct cfun));
-	init_tm(t_cclosure, "CCLOSURE", sizeof(struct cclosure));
+		sizeof(struct ecl_longfloat));
+	init_tm(t_bytecodes, "bBYTECODES", sizeof(struct ecl_bytecodes));
+	init_tm(t_string, "STRING", sizeof(struct ecl_string)); /* 20 */
+	init_tm(t_array, "ARRAY", sizeof(struct ecl_array)); /* 24 */
+	init_tm(t_pathname, "PATHNAME", sizeof(struct ecl_pathname)); /* 28 */
+	init_tm(t_symbol, "SYMBOL", sizeof(struct ecl_symbol)); /* 32 */
+	init_tm(t_package, "PACKAGE", sizeof(struct ecl_package)); /* 36 */
+	init_tm(t_codeblock, "CODEBLOCK", sizeof(struct ecl_codeblock));
+	init_tm(t_bignum, "BIGNUM", sizeof(struct ecl_bignum));
+	init_tm(t_ratio, "RATIO", sizeof(struct ecl_ratio));
+	init_tm(t_complex, "COMPLEX", sizeof(struct ecl_complex));
+	init_tm(t_hashtable, "HASH-TABLE", sizeof(struct ecl_hashtable));
+	init_tm(t_vector, "VECTOR", sizeof(struct ecl_vector));
+	init_tm(t_bitvector, "BIT-VECTOR", sizeof(struct ecl_vector));
+	init_tm(t_stream, "STREAM", sizeof(struct ecl_stream));
+	init_tm(t_random, "RANDOM-STATE", sizeof(struct ecl_random));
+	init_tm(t_readtable, "READTABLE", sizeof(struct ecl_readtable));
+	init_tm(t_cfun, "CFUN", sizeof(struct ecl_cfun));
+	init_tm(t_cclosure, "CCLOSURE", sizeof(struct ecl_cclosure));
 #ifndef CLOS
-	init_tm(t_structure, "STRUCTURE", sizeof(struct structure));
+	init_tm(t_structure, "STRUCTURE", sizeof(struct ecl_structure));
 #else
-	init_tm(t_instance, "INSTANCE", sizeof(struct instance));
+	init_tm(t_instance, "INSTANCE", sizeof(struct ecl_instance));
 #endif /* CLOS */
 #ifdef ECL_FFI
-	init_tm(t_instance, "FOREIGN", sizeof(struct foreign));
+	init_tm(t_instance, "FOREIGN", sizeof(struct ecl_foreign));
 #endif
 #ifdef THREADS
-	init_tm(t_cont, "CONT", sizeof(struct cont));
-	init_tm(t_thread, "THREAD", sizeof(struct thread));
+	init_tm(t_cont, "CONT", sizeof(struct ecl_cont));
+	init_tm(t_thread, "THREAD", sizeof(struct ecl_thread));
 #endif /* THREADS */
 
 	old_GC_push_other_roots = GC_push_other_roots;

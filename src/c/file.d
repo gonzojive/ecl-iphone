@@ -59,7 +59,7 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-	switch ((enum smmode)strm->stream.mode) {
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
 		break;
@@ -105,7 +105,7 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-	switch ((enum smmode)strm->stream.mode) {
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
 		return(FALSE);
@@ -151,7 +151,7 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-	switch ((enum smmode)strm->stream.mode) {
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
 
@@ -242,7 +242,7 @@ wrong_file_handler(cl_object strm)
  *----------------------------------------------------------------------
  */
 cl_object
-open_stream(cl_object fn, enum smmode smm, cl_object if_exists,
+open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	    cl_object if_does_not_exist)
 {
 	cl_object x;
@@ -356,7 +356,7 @@ close_stream(cl_object strm, bool abort_flag)        /*  Not used now!  */
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
 	fp = strm->stream.file;
-	switch ((enum smmode)strm->stream.mode) {
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		/* It is permissible to close a closed stream, although the output
 		   is unspecified in those cases. */
@@ -525,7 +525,7 @@ BEGIN:
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
 	fp = strm->stream.file;
-	switch ((enum smmode)strm->stream.mode) {
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
 		break;
@@ -614,7 +614,7 @@ BEGIN:
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
 	fp = strm->stream.file;
-	switch ((enum smmode)strm->stream.mode) {
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
 		break;
@@ -685,7 +685,7 @@ BEGIN:
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
 	fp = strm->stream.file;
-	switch ((enum smmode)strm->stream.mode) {
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
 		break;
@@ -882,7 +882,7 @@ BEGIN:
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
 	fp = strm->stream.file;
-	switch ((enum smmode)strm->stream.mode) {
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
 		break;
@@ -941,7 +941,7 @@ BEGIN:
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
 	fp = strm->stream.file;
-	switch ((enum smmode)strm->stream.mode) {
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
 		break;
@@ -1001,7 +1001,7 @@ BEGIN:
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
 	fp = strm->stream.file;
-	switch ((enum smmode)strm->stream.mode) {
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
 		break;
@@ -1057,7 +1057,7 @@ BEGIN:
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
 	fp = strm->stream.file;
-	switch ((enum smmode)strm->stream.mode) {
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
 		return(TRUE);
@@ -1161,7 +1161,7 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-	switch ((enum smmode)strm->stream.mode) {
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
 		return(FALSE);
@@ -1214,7 +1214,7 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-	switch ((enum smmode)strm->stream.mode) {
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
 		return(-1);
@@ -1259,7 +1259,7 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-	switch ((enum smmode)strm->stream.mode) {
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
 		return(-1);
@@ -1314,7 +1314,7 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-	switch ((enum smmode)strm->stream.mode) {
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
 		return(-1);
@@ -1363,7 +1363,7 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream)
 		FEtype_error_stream(strm);
-	switch ((enum smmode)strm->stream.mode) {
+	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
 		return(-1);
@@ -1533,7 +1533,7 @@ cl_object
 cl_get_output_stream_string(cl_object strm)
 {
 	if (type_of(strm) != t_stream ||
-	    (enum smmode)strm->stream.mode != smm_string_output)
+	    (enum ecl_smmode)strm->stream.mode != smm_string_output)
 		FEerror("~S is not a string-output stream.", 1, strm);
 	@(return get_output_stream_string(strm))
 }
@@ -1549,7 +1549,7 @@ cl_object
 si_output_stream_string(cl_object strm)
 {
 	if (type_of(strm) != t_stream ||
-	    (enum smmode)strm->stream.mode != smm_string_output)
+	    (enum ecl_smmode)strm->stream.mode != smm_string_output)
 		FEerror("~S is not a string-output stream.", 1, strm);
 	@(return strm->stream.object0)
 }
@@ -1585,7 +1585,7 @@ cl_output_stream_p(cl_object strm)
 		   (if_does_not_exist Cnil idnesp)
 	           (external_format @':default')
 	      &aux strm)
-	enum smmode smm;
+	enum ecl_smmode smm;
 @
 	if (external_format != @':default')
 		FEerror("~S is not a valid stream external format.", 1,
@@ -1671,7 +1671,7 @@ cl_open_stream_p(cl_object strm)
 cl_object
 si_get_string_input_stream_index(cl_object strm)
 {
-	if ((enum smmode)strm->stream.mode != smm_string_input)
+	if ((enum ecl_smmode)strm->stream.mode != smm_string_input)
 		FEerror("~S is not a string-input stream.", 1, strm);
 	@(return MAKE_FIXNUM(strm->stream.int0))
 }

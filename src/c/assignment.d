@@ -64,7 +64,7 @@ cl_makunbound(cl_object sym)
 {
 	if (!SYMBOLP(sym))
 		FEtype_error_symbol(sym);
-	if ((enum stype)sym->symbol.stype == stp_constant)
+	if ((enum ecl_stype)sym->symbol.stype == stp_constant)
 		FEinvalid_variable("Cannot unbind the constant ~S.", sym);
 	SYM_VAL(sym) = OBJNULL;
 	@(return sym)

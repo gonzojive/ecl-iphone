@@ -139,7 +139,7 @@ static void
 make_this_symbol(int i, cl_object s, int code, const char *name,
 		 cl_objectfn fun, int narg, cl_object value)
 {
-	enum stype stp;
+	enum ecl_stype stp;
 	cl_object package;
 
 	switch (code & 3) {

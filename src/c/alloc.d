@@ -693,39 +693,39 @@ init_alloc(void)
 
 /*	Initialization must be done in increasing size order:	*/
 	init_tm(t_shortfloat, "FSHORT-FLOAT", /* 8 */
-		sizeof(struct shortfloat_struct), 1);
+		sizeof(struct ecl_shortfloat), 1);
 	init_tm(t_cons, ".CONS", sizeof(struct cons), 384); /* 12 */
 	init_tm(t_longfloat, "LLONG-FLOAT", /* 16 */
-		sizeof(struct longfloat_struct), 1);
-	init_tm(t_bytecodes, "bBYTECODES", sizeof(struct bytecodes), 64);
-	init_tm(t_string, "\"STRING", sizeof(struct string), 64); /* 20 */
-	init_tm(t_array, "aARRAY", sizeof(struct array), 64); /* 24 */
-	init_tm(t_pathname, "pPATHNAME", sizeof(struct pathname), 1); /* 28 */
-	init_tm(t_symbol, "|SYMBOL", sizeof(struct symbol), 64); /* 32 */
-	init_tm(t_package, ":PACKAGE", sizeof(struct package), 1); /* 36 */
-	init_tm(t_codeblock, "#CODEBLOCK", sizeof(struct codeblock), 1);
-	init_tm(t_bignum, "BBIGNUM", sizeof(struct bignum), 16);
-	init_tm(t_ratio, "RRATIO", sizeof(struct ratio), 1);
-	init_tm(t_complex, "CCOMPLEX", sizeof(struct complex), 1);
-	init_tm(t_hashtable, "hHASH-TABLE", sizeof(struct hashtable), 1);
-	init_tm(t_vector, "vVECTOR", sizeof(struct vector), 2);
-	init_tm(t_bitvector, "bBIT-VECTOR", sizeof(struct vector), 1);
-	init_tm(t_stream, "sSTREAM", sizeof(struct stream), 1);
-	init_tm(t_random, "$RANDOM-STATE", sizeof(struct random), 1);
-	init_tm(t_readtable, "rREADTABLE", sizeof(struct readtable), 1);
-	init_tm(t_cfun, "fCFUN", sizeof(struct cfun), 32);
-	init_tm(t_cclosure, "cCCLOSURE", sizeof(struct cclosure), 1);
+		sizeof(struct ecl_longfloat), 1);
+	init_tm(t_bytecodes, "bBYTECODES", sizeof(struct ecl_bytecodes), 64);
+	init_tm(t_string, "\"STRING", sizeof(struct ecl_string), 64); /* 20 */
+	init_tm(t_array, "aARRAY", sizeof(struct ecl_array), 64); /* 24 */
+	init_tm(t_pathname, "pPATHNAME", sizeof(struct ecl_pathname), 1); /* 28 */
+	init_tm(t_symbol, "|SYMBOL", sizeof(struct ecl_symbol), 64); /* 32 */
+	init_tm(t_package, ":PACKAGE", sizeof(struct ecl_package), 1); /* 36 */
+	init_tm(t_codeblock, "#CODEBLOCK", sizeof(struct ecl_codeblock), 1);
+	init_tm(t_bignum, "BBIGNUM", sizeof(struct ecl_bignum), 16);
+	init_tm(t_ratio, "RRATIO", sizeof(struct ecl_ratio), 1);
+	init_tm(t_complex, "CCOMPLEX", sizeof(struct ecl_complex), 1);
+	init_tm(t_hashtable, "hHASH-TABLE", sizeof(struct ecl_hashtable), 1);
+	init_tm(t_vector, "vVECTOR", sizeof(struct ecl_vector), 2);
+	init_tm(t_bitvector, "bBIT-VECTOR", sizeof(struct ecl_vector), 1);
+	init_tm(t_stream, "sSTREAM", sizeof(struct ecl_stream), 1);
+	init_tm(t_random, "$RANDOM-STATE", sizeof(struct ecl_random), 1);
+	init_tm(t_readtable, "rREADTABLE", sizeof(struct ecl_readtable), 1);
+	init_tm(t_cfun, "fCFUN", sizeof(struct ecl_cfun), 32);
+	init_tm(t_cclosure, "cCCLOSURE", sizeof(struct ecl_cclosure), 1);
 #ifndef CLOS
-	init_tm(t_structure, "SSTRUCTURE", sizeof(struct structure), 32);
+	init_tm(t_structure, "SSTRUCTURE", sizeof(struct ecl_structure), 32);
 #else
-	init_tm(t_instance, "IINSTANCE", sizeof(struct instance), 32);
+	init_tm(t_instance, "IINSTANCE", sizeof(struct ecl_instance), 32);
 #endif /* CLOS */
 #ifdef ECL_FFI
-	init_tm(t_foreign, "LFOREIGN", sizeof(struct foreign), 1);
+	init_tm(t_foreign, "LFOREIGN", sizeof(struct ecl_foreign), 1);
 #endif
 #ifdef THREADS
-	init_tm(t_cont, "?CONT", sizeof(struct cont), 2);
-	init_tm(t_thread, "tTHREAD", sizeof(struct thread), 2);
+	init_tm(t_cont, "?CONT", sizeof(struct ecl_cont), 2);
+	init_tm(t_thread, "tTHREAD", sizeof(struct ecl_thread), 2);
 #endif /* THREADS */
 
 	ncb = 0;

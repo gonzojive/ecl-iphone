@@ -16,6 +16,7 @@
 
 
 #include "ecl.h"
+#include "internal.h"
 
 /******************************* EXPORTS ******************************/
 
@@ -36,8 +37,8 @@ cl_object tk_package;
 #define	EXTERNAL	2
 #define	INHERITED	3
 
-static cl_object package_list = Cnil;
-static cl_object uninterned_list = Cnil;
+cl_object ecl_package_list = Cnil;
+static uninterned_list = Cnil;
 
 static void
 FEpackage_error(char *message, cl_object package, int narg, ...)
@@ -96,7 +97,7 @@ make_package_hashtable()
 	h->hash.threshold = make_shortfloat(0.7);
 	h->hash.entries = 0;
 	h->hash.data = NULL; /* for GC sake */
-	h->hash.data = (struct hashtable_entry *)cl_alloc(hsize * sizeof(struct hashtable_entry));
+	h->hash.data = (struct ecl_hashtable_entry *)cl_alloc(hsize * sizeof(struct ecl_hashtable_entry));
 	return cl_clrhash(h);
 }
 
@@ -109,6 +110,18 @@ make_package(cl_object name, cl_object nicknames, cl_object use_list)
 	assert_type_proper_list(nicknames);
 	assert_type_proper_list(use_list);
 
+	if (ecl_packages_to_be_created != OBJNULL) {
+		cl_object *p = &ecl_packages_to_be_created;
+		for (x = *p; x != Cnil; ) {
+			if (equal(CAAR(x), name)) {
+				*p = CDR(x);
+				x = CDAR(x);
+				goto INTERN;
+			}
+			p = &CDR(x);
+			x = *p;
+		}
+	}
 	if ((other = find_package(name)) != Cnil) {
 	ERROR:	cl_cerror(8,
 			  make_simple_string("Return existing package"),
@@ -120,7 +133,10 @@ make_package(cl_object name, cl_object nicknames, cl_object use_list)
 		return other;
 	}
 	x = cl_alloc_object(t_package);
+	x->pack.internal = make_package_hashtable();
+	x->pack.external = make_package_hashtable();
 	x->pack.name = name;
+ INTERN:
 	x->pack.nicknames = Cnil;
 	x->pack.shadowings = Cnil;
 	x->pack.uses = Cnil;
@@ -139,9 +155,7 @@ make_package(cl_object name, cl_object nicknames, cl_object use_list)
 		x->pack.uses = CONS(y, x->pack.uses);
 		y->pack.usedby = CONS(x, y->pack.usedby);
 	}
-	x->pack.internal = make_package_hashtable();
-	x->pack.external = make_package_hashtable();
-	package_list = CONS(x, package_list);
+	ecl_package_list = CONS(x, ecl_package_list);
 	return(x);
 }
 
@@ -197,8 +211,8 @@ find_package(cl_object name)
 	if (type_of(name) == t_package)
 		return name;
 	name = cl_string(name);
-	/* INV: package_list is a proper list */
-	for (l = package_list; CONSP(l); l = CDR(l)) {
+	/* INV: ecl_package_list is a proper list */
+	for (l = ecl_package_list; CONSP(l); l = CDR(l)) {
 		p = CAR(l);
 		if (string_eq(name, p->pack.name))
 			return p;
@@ -214,9 +228,10 @@ si_coerce_to_package(cl_object p)
 	/* INV: find_package() signals an error if "p" is neither a package
 	   nor a string */
 	cl_object pp = find_package(p);
-	if (!Null(pp))
-		@(return pp);
-	FEpackage_error("There exists no package with name ~S", p, 0);
+	if (Null(pp)) {
+		FEpackage_error("There exists no package with name ~S", p, 0);
+	}
+	@(return pp);
 }
 
 cl_object
@@ -446,7 +461,7 @@ cl_delete_package(cl_object p)
 	for (hash = p->pack.external, i = 0; i < hash->hash.size; i++)
 		if (hash->hash.data[i].key != OBJNULL)
 			unintern(hash->hash.data[i].value, p);
-	delete_eq(p, &package_list);
+	delete_eq(p, &ecl_package_list);
 	p->pack.shadowings = Cnil;
 	p->pack.name = Cnil;
 	@(return Ct)
@@ -562,7 +577,7 @@ shadow(cl_object s, cl_object p)
 void
 use_package(cl_object x, cl_object p)
 {
-	struct hashtable_entry *hash_entries;
+	struct ecl_hashtable_entry *hash_entries;
 	cl_index i, hash_length;
 	int intern_flag;
 
@@ -684,7 +699,7 @@ si_package_lock(cl_object p, cl_object t)
 cl_object
 cl_list_all_packages()
 {
-	return cl_copy_list(package_list);
+	return cl_copy_list(ecl_package_list);
 }
 
 @(defun intern (strng &optional (p current_package()) &aux sym)
@@ -905,7 +920,7 @@ si_package_hash_tables(cl_object p)
 void
 init_package(void)
 {
-	ecl_register_static_root(&package_list);
+	ecl_register_static_root(&ecl_package_list);
 	ecl_register_static_root(&uninterned_list);
 
 	lisp_package    = make_package(make_simple_string("COMMON-LISP"),

@@ -68,7 +68,7 @@ typedef union {
 		short narg;
 		cl_object value;
 	} init;
-	struct symbol data;
+	struct ecl_symbol data;
 } cl_symbol_initializer;
 extern cl_symbol_initializer cl_symbols[];
 extern cl_index cl_num_symbols_in_core;
@@ -355,7 +355,7 @@ extern cl_object si_file_column(cl_object strm);
 extern bool input_stream_p(cl_object strm);
 extern bool output_stream_p(cl_object strm);
 extern cl_object stream_element_type(cl_object strm);
-extern cl_object open_stream(cl_object fn, enum smmode smm, cl_object if_exists, cl_object if_does_not_exist);
+extern cl_object open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists, cl_object if_does_not_exist);
 extern void close_stream(cl_object strm, bool abort_flag);
 extern cl_object make_two_way_stream(cl_object istrm, cl_object ostrm);
 extern cl_object make_echo_stream(cl_object istrm, cl_object ostrm);
@@ -1201,7 +1201,7 @@ extern cl_object si_open_client_stream(cl_object host, cl_object port);
 extern cl_object si_open_server_stream(cl_object port);
 extern cl_object si_open_unix_socket_stream(cl_object path);
 extern cl_object si_lookup_host_entry(cl_object host_or_address);
-extern cl_object make_stream(cl_object host, int fd, enum smmode smm);
+extern cl_object make_stream(cl_object host, int fd, enum ecl_smmode smm);
 #endif
 
 
