@@ -10,6 +10,10 @@ ECL 1.0
   - The routines for writing bignums had a size limit that has been
     removed. Besides the library does not rely on GMP for printing bignums.
 
+  - PEEK-CHAR works now for concatenated streams (M.Goffioul)
+
+  - Fixes in the documentation and error messages (J. Stecklina)
+
 * Visible changes:
 
   - SI:MKSTEMP now accepts and returns pathnames.
@@ -19,12 +23,19 @@ ECL 1.0
     TMP. In some systems this directory might need to have execution
     permissions.
 
+  - Automatic deletion of DLLs under the MSVC port.
+
+  - ECL now checks whether the lambda list of a DEFMETHOD is compatible in
+    length with a previously specified one.
+
 * ANSI compliance:
 
   - The value of *READTABLE* can now be modified by the user.
 
   - Implemented READTABLE-CASE, including the appropiate changes to the
     reader and the printer.
+
+  - Floats are properly read even when *read-base* is not 10.
 
 ;;; Local Variables: ***
 ;;; mode:text ***
