@@ -235,7 +235,6 @@
 "c/typespec.d"
 "c/assignment.d"
 "c/earith.d"
-"c/lwp.d"
 "c/print.d"
 ;"c/unify.d"
 "c/backq.d"
