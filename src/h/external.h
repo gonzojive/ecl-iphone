@@ -658,7 +658,6 @@ extern void init_prog(void);
 extern cl_object standard_readtable;
 #ifndef THREADS
 extern cl_object READtable;
-extern bool READsuppress;
 extern bool preserving_whitespace_flag;
 extern bool escape_flag;
 extern cl_object delimiting_char;

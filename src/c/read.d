@@ -29,7 +29,6 @@ cl_object standard_readtable;
 
 #ifndef THREADS
 cl_object READtable;
-bool READsuppress;
 bool preserving_whitespace_flag;
 bool escape_flag;
 cl_object delimiting_char;
@@ -51,6 +50,7 @@ extern int backq_level;
 static cl_object dispatch_reader;
 
 #define	cat(c)	(READtable->readtable.table[c].syntax_type)
+#define read_suppress (SYM_VAL(@'*read-suppress*') != Cnil)
 
 static void extra_argument (int c, cl_object d);
 
@@ -66,14 +66,12 @@ setup_READ(void)
 	cl_object x;
 
 	READtable = current_readtable();
-	READsuppress = symbol_value(@'*read_suppress*') != Cnil;
 }
 
 static void
 setup_standard_READ(void)
 {
 	READtable = standard_readtable;
-	READsuppress = FALSE;
 	sharp_eq_context = Cnil;
 	backq_level = 0;
 }
@@ -115,7 +113,6 @@ read_object_recursive(cl_object in)
 	bool e;
 
 	cl_object old_READtable = READtable;
-	bool old_READsuppress = READsuppress;
 
 	if (frs_push(FRS_PROTECT, Cnil))
 		e = TRUE;
@@ -127,7 +124,6 @@ read_object_recursive(cl_object in)
 	frs_pop();
 
 	READtable = old_READtable;
-	READsuppress = old_READsuppress;
 
 	if (e) unwind(nlj_fr, nlj_tag);
 	return(x);
@@ -141,12 +137,10 @@ read_object_non_recursive(cl_object in)
 	volatile cl_object x;
 	bool e;
 	cl_object old_READtable;
-	int old_READsuppress;
 	int old_backq_level;
 	cl_object old_sharp_eq_context;
 
 	old_READtable = READtable;
-	old_READsuppress = READsuppress;
 	old_sharp_eq_context = sharp_eq_context;
 	old_backq_level = backq_level;
 	setup_READ();
@@ -164,7 +158,6 @@ read_object_non_recursive(cl_object in)
 	frs_pop();
 
 	READtable = old_READtable;
-	READsuppress = old_READsuppress;
 	sharp_eq_context = old_sharp_eq_context;
 	backq_level = old_backq_level;
 	if (e) unwind(nlj_fr, nlj_tag);
@@ -273,7 +266,7 @@ BEGIN:
 		a = cat(c);
 	}
 
-	if (READsuppress)
+	if (read_suppress)
 		return(Cnil);
 
 	if (ilf && !escape_flag && length == 1 && cl_token->string.self[0] == '.') {
@@ -727,7 +720,7 @@ static
 @(defun "sharp_C_reader" (in c d)
 	cl_object x, real, imag;
 @
-	if (d != Cnil && !READsuppress)
+	if (d != Cnil && !read_suppress)
 		extra_argument('C', d);
 	if (readc_stream(in) != '(')
 		FEerror("A left parenthesis is expected.", 0);
@@ -743,7 +736,7 @@ static
 	x = read_object(in);
 	if (x != OBJNULL)
 		FEerror("A right parenthesis is expected.", 0);
-	if (READsuppress)
+	if (read_suppress)
 		@(return Cnil)
 	/* INV: make_complex() checks its types */
 	x = make_complex(real, imag);
@@ -753,19 +746,19 @@ static
 static
 @(defun "sharp_backslash_reader" (in c d)
 @
-	if (d != Cnil && !READsuppress)
+	if (d != Cnil && !read_suppress)
 		if (!FIXNUMP(d) ||
 		    fix(d) != 0)
 			FEerror("~S is an illegal CHAR-FONT.", 1, d);
 			/*  assuming that CHAR-FONT-LIMIT is 1  */
 	unreadc_stream('\\', in);
-	if (READsuppress) {
+	if (read_suppress) {
 		(void)read_object(in);
 		@(return Cnil)
 	}
-	READsuppress = TRUE;
+	SYM_VAL(@'*read-suppress*') = Ct;
 	(void)read_object(in);
-	READsuppress = FALSE;
+	SYM_VAL(@'*read-suppress*') = Cnil;
 	c = cl_token;
 	if (c->string.fillp == 1)
 		c = CODE_CHAR(c->string.self[0]);
@@ -791,7 +784,7 @@ static
 static
 @(defun "sharp_single_quote_reader" (in c d)
 @
-	if(d != Cnil && !READsuppress)
+	if(d != Cnil && !read_suppress)
 		extra_argument('#', d);
 	@(return CONS(@'function', CONS(read_object(in), Cnil)))
 @)
@@ -817,7 +810,7 @@ static
 	cl_index sp = cl_stack_index();
 	cl_object x, last;
 @
-	if (Null(d) || READsuppress)
+	if (Null(d) || read_suppress)
 		fixed_size = FALSE;
 	else {
 		fixed_size = TRUE;
@@ -868,7 +861,7 @@ static
 	cl_index sp = cl_stack_index();
 	cl_object last, elt, x;
 @
-	if (READsuppress) {
+	if (read_suppress) {
 		read_constituent(in);
 		@(return Cnil)
 	}
@@ -917,7 +910,7 @@ static
 	enum chattrib a;
 	int c;
 @
-	if (d != Cnil && !READsuppress)
+	if (d != Cnil && !read_suppress)
 		extra_argument(':', d);
 	c = readc_stream(in);
 	a = cat(c);
@@ -960,7 +953,7 @@ static
 		unreadc_stream(c, in);
 
 M:
-	if (READsuppress)
+	if (read_suppress)
 		@(return Cnil)
 	@(return make_symbol(copy_simple_string(cl_token)))
 @)
@@ -968,10 +961,10 @@ M:
 static
 @(defun "sharp_dot_reader" (in c d)
 @
-	if(d != Cnil && !READsuppress)
+	if(d != Cnil && !read_suppress)
 		extra_argument('.', d);
 	in = read_object(in);
-	if (READsuppress)
+	if (read_suppress)
 		@(return Cnil)
 	in = eval(in, NULL, Cnil);
 	@(return in)
@@ -986,9 +979,9 @@ static
 @(defun "sharp_exclamation_reader" (in c d)
 	cl_fixnum code;
 @
-	if(d != Cnil && !READsuppress)
+	if(d != Cnil && !read_suppress)
 		extra_argument('!', d);
-	if (READsuppress)
+	if (read_suppress)
 		@(return Cnil)
 	code = fixint(read_object(in));
 	switch (code) {
@@ -1018,10 +1011,10 @@ static
 	cl_index i;
 	cl_object x;
 @
-	if(d != Cnil && !READsuppress)
+	if(d != Cnil && !read_suppress)
 		extra_argument('B', d);
 	read_constituent(in);
-	if (READsuppress)
+	if (read_suppress)
 		@(return Cnil)
 	x = parse_number(cl_token->string.self, cl_token->string.fillp, &i, 2);
 	if (x == OBJNULL || i != cl_token->string.fillp)
@@ -1038,10 +1031,10 @@ static
 	cl_index i;
 	cl_object x;
 @
-	if(d != Cnil && !READsuppress)
+	if(d != Cnil && !read_suppress)
 		extra_argument('O', d);
 	read_constituent(in);
-	if (READsuppress)
+	if (read_suppress)
 		@(return Cnil)
 	x = parse_number(cl_token->string.self, cl_token->string.fillp, &i, 8);
 	if (x == OBJNULL || i != cl_token->string.fillp)
@@ -1058,10 +1051,10 @@ static
 	cl_index i;
 	cl_object x;
 @
-	if(d != Cnil && !READsuppress)
+	if(d != Cnil && !read_suppress)
 		extra_argument('X', d);
 	read_constituent(in);
-	if (READsuppress)
+	if (read_suppress)
 		@(return Cnil)
 	x = parse_number(cl_token->string.self, cl_token->string.fillp, &i, 16);
 	if (x == OBJNULL || i != cl_token->string.fillp)
@@ -1079,7 +1072,7 @@ static
 	cl_index i;
 	cl_object x;
 @
-	if (READsuppress)
+	if (read_suppress)
 		radix = 10;
 	else if (FIXNUMP(d)) {
 		radix = fix(d);
@@ -1088,7 +1081,7 @@ static
 	} else
 		FEerror("No radix was supplied in the #R readmacro.", 0);
 	read_constituent(in);
-	if (READsuppress)
+	if (read_suppress)
 		@(return Cnil)
 	x = parse_number(cl_token->string.self, cl_token->string.fillp, &i, radix);
 	if (x == OBJNULL || i != cl_token->string.fillp)
@@ -1107,7 +1100,7 @@ static
 @(defun "sharp_eq_reader" (in c d)
 	cl_object pair, value;
 @
-	if (READsuppress) @(return)
+	if (read_suppress) @(return)
 	if (Null(d))
 		FEerror("The #= readmacro requires an argument.", 0);
 	if (assql(d, sharp_eq_context) != Cnil)
@@ -1124,7 +1117,7 @@ static
 @(defun "sharp_sharp_reader" (in c d)
 	cl_object pair;
 @
-	if (READsuppress) @(return)
+	if (read_suppress) @(return)
 	if (Null(d))
 		FEerror("The ## readmacro requires an argument.", 0);
 	pair = assq(d, sharp_eq_context);
@@ -1202,7 +1195,7 @@ static
 	int c;
 	int level = 0;
 @
-	if (d != Cnil && !READsuppress)
+	if (d != Cnil && !read_suppress)
 		extra_argument('|', d);
 	for (;;) {
 		c = readc_stream(in);
@@ -1247,7 +1240,7 @@ static
 static
 @(defun "sharp_double_quote_reader" (in c d)
 @
-	if (d != Cnil && !READsuppress)
+	if (d != Cnil && !read_suppress)
 		extra_argument('"', d);
 	unread_char(c, in);
 	@(return coerce_to_pathname(read_object(in)))
@@ -1261,7 +1254,7 @@ static
 @(defun "sharp_dollar_reader" (in c d)
 	cl_object output;
 @
-	if (d != Cnil && !READsuppress)
+	if (d != Cnil && !read_suppress)
 		extra_argument('$', d);
 	c = read_object(in);
 	if (!FIXNUMP(c))
@@ -1987,7 +1980,6 @@ init_read(void)
 
 	READtable = symbol_value(@'*readtable*');
 	register_root(&READtable);
-	READsuppress = FALSE;
 
 	sharp_eq_context = Cnil;
 
@@ -2019,7 +2011,6 @@ read_VV(cl_object block, void *entry)
 	bool e;
 	cl_object in;
 	cl_object old_READtable;
-	int old_READsuppress;
 	int old_backq_level;
 	cl_object old_sharp_eq_context;
 	cl_object old_package;
@@ -2042,7 +2033,6 @@ read_VV(cl_object block, void *entry)
 #endif
 
 	old_READtable = READtable;
-	old_READsuppress = READsuppress;
 	old_sharp_eq_context = sharp_eq_context;
 	old_backq_level = backq_level;
 
@@ -2050,6 +2040,7 @@ read_VV(cl_object block, void *entry)
 	bds_bind(@'*package*', lisp_package);
 	bds_bind(@'*read-base*', MAKE_FIXNUM(10));
 	bds_bind(@'*read-default-float-format*', @'single-float');
+	bds_bind(@'*read-suppress*', Cnil);
 
 	setup_standard_READ();
 
@@ -2089,7 +2080,6 @@ read_VV(cl_object block, void *entry)
 	bds_unwind(old_bds_top);
 
 	READtable = old_READtable;
-	READsuppress = old_READsuppress;
 	sharp_eq_context = old_sharp_eq_context;
 	backq_level = old_backq_level;
 	if (e) unwind(nlj_fr, nlj_tag);

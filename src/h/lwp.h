@@ -118,7 +118,6 @@ typedef struct lpd {
 
   /* read.d */
   cl_object lwp_READtable;
-  bool lwp_READsuppress;
   bool lwp_preserving_whitespace_flag;
   bool lwp_escape_flag;
   cl_object lwp_delimiting_char;
