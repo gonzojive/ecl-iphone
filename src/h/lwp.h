@@ -106,7 +106,6 @@ typedef struct lpd {
   bool lwp_PRINTpackage;
   bool lwp_PRINTstructure;
 
-  int (*lwp_write_ch_fun)();
   int (*lwp_output_ch_fun)();
   short lwp_queue[Q_SIZE];
   short lwp_indent_stack[IS_SIZE];

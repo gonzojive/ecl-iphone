@@ -366,11 +366,10 @@ fmt_integer(cl_object x, bool colon, bool atsign,
 		fmt_temporary_string->string.fillp = 0;
 		fmt_temporary_stream->stream.int0 = file_column(fmt_stream);
 		fmt_temporary_stream->stream.int1 = file_column(fmt_stream);
-		setupPRINT(x, fmt_temporary_stream);
+		setupPRINT(fmt_temporary_stream);
 		PRINTescape = FALSE;
 		PRINTbase = radix;
-		write_object(x, 0);
-		cleanupPRINT();
+		write_object(x);
 		l = fmt_temporary_string->string.fillp;
 		mincol -= l;
 		while (mincol-- > 0)
@@ -385,8 +384,7 @@ fmt_integer(cl_object x, bool colon, bool atsign,
 	PRINTstream = fmt_temporary_stream;
 	PRINTradix = FALSE;
 	PRINTbase = radix;
-	write_ch_fun = writec_PRINTstream;
-	write_object(x, 0);
+	write_object(x);
 	l = l1 = fmt_temporary_string->string.fillp;
 	s = 0;
 	if (fmt_tempstr(s) == '-')
@@ -609,8 +607,7 @@ fmt_radix(bool colon, bool atsign)
 		PRINTstream = fmt_temporary_stream;
 		PRINTradix = FALSE;
 		PRINTbase = 10;
-		write_ch_fun = writec_PRINTstream;
-		write_object(x, 0);
+		write_object(x);
 		s = 0;
 		i = fmt_temporary_string->string.fillp;
 		if (i == 1 && fmt_tempstr(s) == '0') {

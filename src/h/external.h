@@ -630,6 +630,7 @@ extern void init_predicate(void);
 
 /* print.c */
 
+#ifndef THREADS
 extern bool PRINTescape;
 extern bool PRINTpretty;
 extern bool PRINTcircle;
@@ -640,14 +641,13 @@ extern bool PRINTgensym;
 extern int PRINTlevel;
 extern int PRINTlength;
 extern bool PRINTarray;
-extern void (*write_ch_fun)(int);
 extern cl_object PRINTpackage;
 extern bool PRINTstructure;
-extern cl_fixnum CIRCLEbase;
 extern cl_object PRINTstream;
+#endif
 extern int interactive_writec_stream(int c, cl_object stream);
 extern void flush_interactive_stream(cl_object stream);
-extern void writec_PRINTstream(int c);
+extern void write_ch(int c);
 extern void write_str(char *s);
 extern void write_decimal(int i);
 extern void write_addr(cl_object x);
@@ -655,8 +655,9 @@ extern void edit_double(int n, double d, int *sp, char *s, int *ep);
 extern void write_double(double d, int e, bool shortp);
 extern void write_fixnum(cl_fixnum i);
 extern void write_bignum(cl_object x);
-extern void write_object(cl_object x, int level);
-extern void setupPRINT(cl_object x, cl_object strm);
+extern void write_object(cl_object x);
+extern void write_object_with_escape(cl_object, bool escape);
+extern void setupPRINT(cl_object strm);
 extern void cleanupPRINT(void);
 extern bool potential_number_p(cl_object strng, int base);
 extern cl_object princ(cl_object obj, cl_object strm);

@@ -75,15 +75,6 @@ cl_object @'si::*init-function-prefix*';
 		@(return make_string_copy(dlerror()))
 	}
 
-	if (!Null(verbose)) {
-		setupPRINT(filename, symbol_value(@'*standard-output*'));
-		write_str(";;; Address = ");
-		PRINTescape = FALSE;
-		write_addr((cl_object)block->cblock.handle);
-		write_str("\n");
-		cleanupPRINT();
-		flush_stream(PRINTstream);
-	}
 	/* Finally, perform initialization */
 GO_ON:	
 	read_VV(block, block->cblock.entry);
@@ -123,11 +114,8 @@ GO_ON:
 			break;
 		eval(x, &bytecodes, Cnil);
 		if (print != Cnil) {
-			setupPRINT(x, symbol_value(@'*standard-output*'));
-			write_object(x, 0);
-			write_str("\n");
-			cleanupPRINT();
-			flush_stream(PRINTstream);
+			@write(1, x);
+			@terpri(0);
 		}
 	}
 	if (strm != source)
@@ -186,15 +174,8 @@ GO_ON:
 	}
 NOT_A_FILENAME:
 	if (verbose != Cnil) {
-		setupPRINT(filename, symbol_value(@'*standard-output*'));
-		if (file_column(PRINTstream) != 0)
-			write_str("\n");
-		write_str(";;; Loading ");
-		PRINTescape = FALSE;
-		write_object(filename, 0);
-		write_str("\n");
-		cleanupPRINT();
-		flush_stream(PRINTstream);
+		@fresh-line(0);
+		@format(3, Cnil, make_simple_string(";;; Loading ~s~%"), filename);
 	}
 	old_bds_top = bds_top;
 	bds_bind(@'*package*', symbol_value(@'*package*'));
@@ -216,15 +197,8 @@ NOT_A_FILENAME:
 	frs_pop();
 	bds_unwind(old_bds_top);
 	if (print != Cnil) {
-		setupPRINT(filename, symbol_value(@'*standard-output*'));
-		if (file_column(PRINTstream) != 0)
-			write_str("\n");
-		write_str(";;; Finished loading ");
-		PRINTescape = FALSE;
-		write_object(filename, 0);
-		write_str("\n");
-		cleanupPRINT();
-		flush_stream(PRINTstream);
+		@fresh-line(0);
+		@format(3, Cnil, make_simple_string(";;; Loading ~s~%"), filename);
 	}
 	@(return pathname)
 @)

@@ -139,7 +139,6 @@ make_pd()
   npd->lwp_PRINTlevel = -1;
   npd->lwp_PRINTlength = -1;
   npd->lwp_PRINTarray = FALSE;
-  npd->lwp_write_ch_fun = writec_PRINTstream;
   
   npd->lwp_READtable  = symbol_value(@'*readtable*');
   npd->lwp_READdefault_float_format = 'S';

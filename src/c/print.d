@@ -62,7 +62,9 @@ bool PRINTgensym;
 int PRINTlevel;
 int PRINTlength;
 bool PRINTarray;
-void (*write_ch_fun)(int);	/* virtual output (for pretty-print) */
+cl_object PRINTpackage;
+bool PRINTstructure;
+cl_object PRINTstream;
 #endif /* THREADS */
 
 /******************************* ------- ******************************/
@@ -74,11 +76,6 @@ void (*write_ch_fun)(int);	/* virtual output (for pretty-print) */
 	 != cat_constituent || \
 	 islower((c)&0377) || (c) == ':')
 
-
-cl_object PRINTpackage;
-bool PRINTstructure;
-
-#define	write_ch	(*write_ch_fun)
 
 cl_object @'si::pretty-print-format';
 cl_object @'si::sharp-exclamation';
@@ -114,9 +111,7 @@ static int qc;
 static int isp;
 static int iisp;
 
-cl_fixnum CIRCLEbase;
-cl_object PRINTstream;
-
+static cl_fixnum CIRCLEbase;
 #endif /* THREADS */
 
 static void flush_queue (bool force);
@@ -125,6 +120,24 @@ static void travel_push_object (cl_object x);
 static cl_index searchPRINTcircle(cl_object x);
 static bool doPRINTcircle(cl_object x);
 
+static cl_object
+stream_or_default_output(cl_object stream)
+{
+	if (Null(stream))
+		return symbol_value(@'*standard-output*');
+	else if (stream == Ct)
+		return symbol_value(@'*terminal-io*');
+	return stream;
+}	
+
+void
+writec_PRINTstream(int c)
+{
+	if (c == INDENT || c == INDENT1)
+		writec_stream(' ', PRINTstream);
+	else if (c < 0400)
+		writec_stream(c, PRINTstream);
+}
 
 static void
 writec_queue(int c)
@@ -262,10 +275,12 @@ FLUSH:
 	goto BEGIN;
 }
 
-void
-writec_PRINTstream(int c)
+static void
+write_ch(int c)
 {
-	if (c == INDENT || c == INDENT1)
+	if (PRINTpretty)
+		writec_queue(c);
+	else if (c == INDENT || c == INDENT1)
 		writec_stream(' ', PRINTstream);
 	else if (c < 0400)
 		writec_stream(c, PRINTstream);
@@ -480,8 +495,6 @@ call_structure_print_function(cl_object x, int level)
 	bool eflag;
 	bds_ptr old_bds_top;
 
-	void (*wf)(int) = write_ch_fun;
-
 	bool e = PRINTescape;
 	bool r = PRINTradix;
 	int b = PRINTbase;
@@ -573,8 +586,6 @@ call_structure_print_function(cl_object x, int level)
 	PRINTbase = b;
 	PRINTradix = r;
 	PRINTescape = e;
-
-	write_ch_fun = wf;
 
 	if (eflag) unwind(nlj_fr, nlj_tag);
 }
@@ -731,9 +742,8 @@ write_character(register int i)
 	}
 }
 
-
-void
-write_object(cl_object x, int level)
+static void
+_write_object(cl_object x, int level)
 {
 	cl_object r, y;
 	cl_fixnum i, j;
@@ -782,14 +792,14 @@ write_object(cl_object x, int level)
 		if (PRINTradix) {
 			write_base();
 			PRINTradix = FALSE;
-			write_object(x->ratio.num, level);
+			_write_object(x->ratio.num, level);
 			write_ch('/');
-			write_object(x->ratio.den, level);
+			_write_object(x->ratio.den, level);
 			PRINTradix = TRUE;
 		} else {
-			write_object(x->ratio.num, level);
+			_write_object(x->ratio.num, level);
 			write_ch('/');
-			write_object(x->ratio.den, level);
+			_write_object(x->ratio.den, level);
 		}
 		return;
 
@@ -811,9 +821,9 @@ write_object(cl_object x, int level)
 
 	case t_complex:
 		write_str("#C(");
-		write_object(x->complex.real, level);
+		_write_object(x->complex.real, level);
 		write_ch(' ');
-		write_object(x->complex.imag, level);
+		_write_object(x->complex.imag, level);
 		write_ch(')');
 		return;
 
@@ -879,7 +889,7 @@ write_object(cl_object x, int level)
 			}
 			/* FIXME: This conses! */
 			if (n == x->array.rank)
-				write_object(aref(x, m), level+n);
+				_write_object(aref(x, m), level+n);
 			else
 				write_ch('#');
 			j = n-1;
@@ -926,14 +936,14 @@ write_object(cl_object x, int level)
 				write_ch(UNMARK);
 				return;
 			}
-			write_object(aref(x, 0), level+1);
+			_write_object(aref(x, 0), level+1);
 			for (ndx = 1;  ndx < x->vector.fillp;  ndx++) {
 				write_ch(INDENT);
 				if (PRINTlength>=0 && ndx>=PRINTlength){
 					write_str("...");
 					break;
 				}
-				write_object(aref(x, ndx), level+1);
+				_write_object(aref(x, ndx), level+1);
 			}
 		}
 		write_ch(')');
@@ -1009,13 +1019,13 @@ write_object(cl_object x, int level)
 			}
 			y = CAR(x);
 			x = CDR(x);
-			write_object(y, level+1);
+			_write_object(y, level+1);
 			/* FIXME! */
 			if (x == OBJNULL || ATOM(x)) {
 				if (x != Cnil) {
 					write_ch(INDENT);
 					write_str(". ");
-					write_object(x, level);
+					_write_object(x, level);
 				}
 				break;
 			}
@@ -1030,7 +1040,7 @@ write_object(cl_object x, int level)
 					} else {
 						write_ch(INDENT);
 						write_str(". ");
-						write_object(x, level);
+						_write_object(x, level);
 						goto RIGHT_PAREN;
 					}
 				}
@@ -1058,13 +1068,13 @@ write_object(cl_object x, int level)
 			if (i <= j && Null(y))
 				write_str("()");
 			else
-				write_object(y, level+1);
+				_write_object(y, level+1);
 			/* FIXME! */
 			if (x == OBJNULL || ATOM(x)) {
 				if (x != Cnil) {
 					write_ch(INDENT);
 					write_str(". ");
-					write_object(x, level);
+					_write_object(x, level);
 				}
 				break;
 			}
@@ -1079,7 +1089,7 @@ write_object(cl_object x, int level)
 
 	case t_package:
 		write_str("#<");
-		write_object(x->pack.name, level);
+		_write_object(x->pack.name, level);
  		write_str(" package>");
 		break;
 
@@ -1093,32 +1103,32 @@ write_object(cl_object x, int level)
 		switch ((enum smmode)x->stream.mode) {
 		case smm_closed:
 			write_str("#<closed stream ");
-			write_object(x->stream.object1, level);
+			_write_object(x->stream.object1, level);
 			break;
 
 		case smm_input:
 			write_str("#<input stream ");
-			write_object(x->stream.object1, level);
+			_write_object(x->stream.object1, level);
 			break;
 
 		case smm_output:
 			write_str("#<output stream ");
-			write_object(x->stream.object1, level);
+			_write_object(x->stream.object1, level);
 			break;
 
 		case smm_io:
 			write_str("#<io stream ");
-			write_object(x->stream.object1, level);
+			_write_object(x->stream.object1, level);
 			break;
 
 		case smm_probe:
 			write_str("#<probe stream ");
-			write_object(x->stream.object1, level);
+			_write_object(x->stream.object1, level);
 			break;
 
 		case smm_synonym:
 			write_str("#<synonym stream to ");
-			write_object(x->stream.object0, level);
+			_write_object(x->stream.object0, level);
 			break;
 
 		case smm_broadcast:
@@ -1165,7 +1175,7 @@ write_object(cl_object x, int level)
 
 	case t_random:
 		write_str("#$");
-		write_object(MAKE_FIXNUM(x->random.value), level);
+		_write_object(MAKE_FIXNUM(x->random.value), level);
 		break;
 
 #ifndef CLOS
@@ -1186,7 +1196,7 @@ write_object(cl_object x, int level)
  * print shouldn't allocate memory - Beppe
  */
 			x = structure_to_list(x);
-			write_object(x, level);
+			_write_object(x, level);
 		} else
 			call_structure_print_function(x, level);
 		break;
@@ -1201,14 +1211,14 @@ write_object(cl_object x, int level)
 	case t_pathname:
 		if (PRINTescape)
 			write_str("#P");
-		write_object(namestring(x), level);
+		_write_object(namestring(x), level);
 		break;
 
 	case t_bytecodes: {
 		cl_object name = x->bytecodes.data[0];
 		write_str("#<interpreted-function ");
 		if (name != Cnil)
-			write_object(name, level);
+			_write_object(name, level);
 		else
 			write_addr(x);
 		write_ch('>');
@@ -1217,7 +1227,7 @@ write_object(cl_object x, int level)
 	case t_cfun:
 		write_str("#<compiled-function ");
 		if (x->cfun.name != Cnil)
-			write_object(x->cfun.name, level);
+			_write_object(x->cfun.name, level);
 		else
 			write_addr(x);
 		write_ch('>');
@@ -1225,7 +1235,7 @@ write_object(cl_object x, int level)
 	case t_codeblock:
 		write_str("#<codeblock ");
 		if (x->cblock.name != Cnil)
-			write_object(x->cblock.name, level);
+			_write_object(x->cblock.name, level);
 		else
 			write_addr(x);
 		write_ch('>');
@@ -1238,13 +1248,13 @@ write_object(cl_object x, int level)
 #ifdef THREADS
       	case t_cont:
 		write_str("#<cont ");
-		write_object(x->cn.cn_thread, level);
+		_write_object(x->cn.cn_thread, level);
 		write_ch('>');
 		break;
 
 	case t_thread:
 		write_str("#<thread ");
-		write_object(x->thread.entry, level);
+		_write_object(x->thread.entry, level);
 		write_ch(' ');
 		write_addr(x);
 		write_ch('>');
@@ -1260,7 +1270,7 @@ write_object(cl_object x, int level)
 	case t_gfun:
 		write_str("#<dispatch-function ");
 		if (x->gfun.name != Cnil)
-			write_object(x->gfun.name, level);
+			_write_object(x->gfun.name, level);
 		else
 			write_addr(x);
 		write_ch('>');
@@ -1394,11 +1404,12 @@ BEGIN:
 	}
 }
 
-void setupPRINT(cl_object x, cl_object strm)
+void
+setupPRINT(cl_object strm)
 {
 	cl_object y;
 
-	PRINTstream = strm;
+	PRINTstream = stream_or_default_output(strm);
 	PRINTescape = symbol_value(@'*print-escape*') != Cnil;
 	PRINTpretty = symbol_value(@'*print-pretty*') != Cnil;
 	PRINTcircle = symbol_value(@'*print-circle*') != Cnil;
@@ -1433,28 +1444,38 @@ void setupPRINT(cl_object x, cl_object strm)
 	} else
 		PRINTlength = fix(y);
 	PRINTarray = symbol_value(@'*print-array*') != Cnil;
-/*	setupPRINTcircle(x); */
+	PRINTpackage = symbol_value(@'si::*print-package*');
+	if (PRINTpackage == Cnil) PRINTpackage = OBJNULL;
+	PRINTstructure = symbol_value(@'si::*print-structure*') != Cnil;
 	CIRCLEbase = -1;
+}
+
+void
+write_object(cl_object x)
+{
 	if (PRINTpretty) {
 		qh = qt = qc = 0;
 		isp = iisp = 0;
 		indent_stack[0] = 0;
-		write_ch_fun = writec_queue;
-	} else
-		write_ch_fun = writec_PRINTstream;
-	PRINTpackage = symbol_value(@'si::*print-package*');
-	if (PRINTpackage == Cnil) PRINTpackage = OBJNULL;
-	PRINTstructure = symbol_value(@'si::*print-structure*') != Cnil;
-}
-
-void cleanupPRINT(void)
-{
+	}
+	if (PRINTcircle)
+		setupPRINTcircle(x);
+	_write_object(x, 0);
 	if (CIRCLEbase >= 0) {
 		cl_stack_set_index(CIRCLEbase);
 		CIRCLEbase = -1;
 	}
 	if (PRINTpretty)
 		flush_queue(TRUE);
+}
+
+void
+write_object_with_escape(cl_object x, bool escape)
+{
+	bool oldescape = PRINTescape;
+	PRINTescape = escape;
+	write_object(x);
+	PRINTescape = oldescape;
 }
 
 bool
@@ -1503,11 +1524,7 @@ potential_number_p(cl_object strng, int base)
 		    (gensym symbol_value(@'*print-gensym*'))
 		    (array symbol_value(@'*print-array*')))
 @
-	if (Null(strm))
-		strm = symbol_value(@'*standard-output*');
-	else if (strm == Ct)
-		strm = symbol_value(@'*terminal-io*');
-	PRINTstream = strm;
+	PRINTstream = stream_or_default_output(strm);
 	PRINTescape = escape != Cnil;
 	PRINTpretty = pretty != Cnil;
 	PRINTcircle = circle != Cnil;
@@ -1534,19 +1551,12 @@ potential_number_p(cl_object strng, int base)
 	else
 		PRINTlength = fix((length));
 	PRINTarray = array != Cnil;
-	if (PRINTpretty) {
-		qh = qt = qc = 0;
-		isp = iisp = 0;
-		indent_stack[0] = 0;
-		write_ch_fun = writec_queue;
-	} else
-		write_ch_fun = writec_PRINTstream;
 	PRINTpackage = symbol_value(@'si::*print-package*');
 	if (PRINTpackage == Cnil) PRINTpackage = OBJNULL;
 	PRINTstructure = symbol_value(@'si::*print-structure*') != Cnil;
-  	setupPRINTcircle(x);
-	write_object(x, 0);
-	cleanupPRINT();
+	CIRCLEbase = -1;
+
+	write_object(x);
 	flush_stream(PRINTstream);
 	@(return x)
 @)
@@ -1565,21 +1575,11 @@ potential_number_p(cl_object strng, int base)
 
 @(defun pprint (obj &optional strm)
 @
-	if (Null(strm))
-		strm = symbol_value(@'*standard-output*');
-	else if (strm == Ct)
-		strm = symbol_value(@'*terminal-io*');
-	setupPRINT(obj, strm);
+	setupPRINT(strm);
 	PRINTescape = TRUE;
 	PRINTpretty = TRUE;
-	qh = qt = qc = 0;
-	isp = iisp = 0;
-	indent_stack[0] = 0;
-	write_ch_fun = writec_queue;
 	writec_PRINTstream('\n');
-  	setupPRINTcircle(obj);
-	write_object(obj, 0);
-	cleanupPRINT();
+	write_object(obj);
 	flush_stream(PRINTstream);
 	@(return)
 @)
@@ -1593,10 +1593,7 @@ potential_number_p(cl_object strng, int base)
 @(defun write_char (c &optional strm)
 @
 	/* INV: char_code() checks the type of `c' */
-	if (Null(strm))
-		strm = symbol_value(@'*standard-output*');
-	else if (strm == Ct)
-		strm = symbol_value(@'*terminal-io*');
+ 	strm = stream_or_default_output(strm);
 	writec_stream(char_code(c), strm);
 	@(return c)
 @)
@@ -1605,11 +1602,8 @@ potential_number_p(cl_object strng, int base)
 	cl_index s, e, i;
 @
 	get_string_start_end(strng, start, end, &s, &e);
+ 	strm = stream_or_default_output(strm);
 	assert_type_string(strng);
-	if (Null(strm))
-		strm = symbol_value(@'*standard-output*');
-	else if (strm == Ct)
-		strm = symbol_value(@'*terminal-io*');
 
 	for (i = s;  i < e;  i++)
 		writec_stream(strng->string.self[i], strm);
@@ -1621,10 +1615,7 @@ potential_number_p(cl_object strng, int base)
 	cl_index s, e, i;
 @
 	get_string_start_end(strng, start, end, &s, &e);
-	if (Null(strm))
-		strm = symbol_value(@'*standard-output*');
-	else if (strm == Ct)
-		strm = symbol_value(@'*terminal-io*');
+ 	strm = stream_or_default_output(strm);
 	assert_type_string(strng);
 
 	for (i = s;  i < e;  i++)
@@ -1642,10 +1633,7 @@ potential_number_p(cl_object strng, int base)
 
 @(defun fresh_line (&optional strm)
 @
-	if (Null(strm))
-		strm = symbol_value(@'*standard-output*');
-	else if (strm == Ct)
-		strm = symbol_value(@'*terminal-io*');
+ 	strm = stream_or_default_output(strm);
 	if (file_column(strm) == 0)
 		@(return Cnil)
 	writec_stream('\n', strm);
@@ -1655,20 +1643,14 @@ potential_number_p(cl_object strng, int base)
 
 @(defun force_output (&o strm)
 @
-	if (Null(strm))
-		strm = symbol_value(@'*standard-output*');
-	else if (strm == Ct)
-		strm = symbol_value(@'*terminal-io*');
+ 	strm = stream_or_default_output(strm);
 	flush_stream(strm);
 	@(return Cnil)
 @)
 
 @(defun clear_output (&o strm)
 @
-	if (Null(strm))
-		strm = symbol_value(@'*standard-output*');
-	else if (strm == Ct)
-		strm = symbol_value(@'*terminal-io*');
+ 	strm = stream_or_default_output(strm);
 	clear_output_stream(strm);
 	@(return Cnil)
 @)
@@ -1738,71 +1720,25 @@ init_print(void)
 	PRINTlevel = -1;
 	PRINTlength = -1;
 	PRINTarray = FALSE;
-
-	write_ch_fun = writec_PRINTstream;
 }
 
 cl_object
 princ(cl_object obj, cl_object strm)
 {
-	if (Null(strm))
-		strm = symbol_value(@'*standard-output*');
-	else if (strm == Ct)
-		strm = symbol_value(@'*terminal-io*');
-	if (obj == OBJNULL)
-		goto SIMPLE_CASE;
-	switch (type_of(obj)) {
-	case t_symbol:
-		PRINTcase = symbol_value(@'*print-case*');
-		PRINTpackage = symbol_value(@'si::*print-package*');
-		if (PRINTpackage == Cnil) PRINTpackage = OBJNULL;
-
-	SIMPLE_CASE:
-	case t_string:
-	case t_character:
-		PRINTstream = strm;
-		PRINTescape = FALSE;
-		write_ch_fun = writec_PRINTstream;
-		write_object(obj, 0);
-		break;
-
-	default:
-		setupPRINT(obj, strm);
-		PRINTescape = FALSE;
-		write_object(obj, 0);
-		cleanupPRINT();
-	}
-	return(obj);
+	setupPRINT(strm);
+	PRINTescape = FALSE;
+	write_object(obj);
+	return obj;
 }
 
 cl_object
 prin1(cl_object obj, cl_object strm)
 {
-	if (Null(strm))
-		strm = symbol_value(@'*standard-output*');
-	else if (strm == Ct)
-		strm = symbol_value(@'*terminal-io*');
-	if (obj == OBJNULL)
-		goto SIMPLE_CASE;
-	switch (type_of(obj)) {
-	SIMPLE_CASE:
-	case t_string:
-	case t_character:
-		PRINTstream = strm;
-		PRINTescape = TRUE;
-		write_ch_fun = writec_PRINTstream;
-		write_object(obj, 0);
-		break;
-
-	default:
-		setupPRINT(obj, strm);
-		PRINTescape = TRUE;
-		setupPRINTcircle(obj);
-		write_object(obj, 0);
-		cleanupPRINT();
-	}
+	setupPRINT(strm);
+	PRINTescape = TRUE;
+	write_object(obj);
 	flush_stream(PRINTstream);
-	return(obj);
+	return obj;
 }
 
 cl_object
@@ -1817,10 +1753,7 @@ print(cl_object obj, cl_object strm)
 cl_object
 terpri(cl_object strm)
 {
-	if (Null(strm))
-		strm = symbol_value(@'*standard-output*');
-	else if (strm == Ct)
-		strm = symbol_value(@'*terminal-io*');
+	strm = stream_or_default_output(strm);
 	writec_stream('\n', strm);
 	flush_stream(strm);
 	return(Cnil);
@@ -1831,10 +1764,7 @@ write_string(cl_object strng, cl_object strm)
 {
 	cl_index i;
 
-	if (Null(strm))
-		strm = symbol_value(@'*standard-output*');
-	else if (strm == Ct)
-		strm = symbol_value(@'*terminal-io*');
+	strm = stream_or_default_output(strm);
 	assert_type_string(strng);
 	for (i = 0;  i < strng->string.fillp;  i++)
 		writec_stream(strng->string.self[i], strm);
@@ -1845,25 +1775,18 @@ write_string(cl_object strng, cl_object strm)
 	THE ULTRA-SPECIAL-DINNER-SERVICE OPTIMIZATION
 */
 void
-princ_str(const char *s, cl_object sym)
+princ_str(const char *s, cl_object strm)
 {
-/*	sym = symbol_value(sym);		Beppe */
-	if (Null(sym))
-		sym = symbol_value(@'*standard-output*');
-	else if (sym == Ct)
-		sym = symbol_value(@'*terminal-io*');
-	writestr_stream(s, sym);
+	strm = stream_or_default_output(strm);
+	writestr_stream(s, strm);
 }
 
 void
-princ_char(int c, cl_object sym)
+princ_char(int c, cl_object strm)
 {
-/*	sym = symbol_value(sym); 		Beppe */
-	if (Null(sym))
-		sym = symbol_value(@'*standard-output*');
-	else if (sym == Ct)
-		sym = symbol_value(@'*terminal-io*');
-	writec_stream(c, sym);
+	strm = stream_or_default_output(strm);
+	writec_stream(c, strm);
 	if (c == '\n')
-		flush_stream(sym);
+		flush_stream(strm);
 }
+
