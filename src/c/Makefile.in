@@ -55,7 +55,7 @@ all:	$(DPP) ../libecl.a cinit.o
 .PHONY:	all
 
 install: $(HFILES)
-	$(INSTALL_DATA) $(HFILES) $(PREFIX)$(libdir)/h/
+	for i in $(HFILES); do $(INSTALL_DATA) $$i $(PREFIX)$(libdir)/h/; done
 	sed '/-CUT-/,$$d' ../h/config.h > ../h/config-install.h
 	$(INSTALL_DATA) ../h/config-install.h $(PREFIX)$(libdir)/h/config.h
 
