@@ -238,7 +238,6 @@
 		 (nreq (length requireds))
 		 (nopt (/ (length optionals) 3))
 		 (nkey (/ (length keywords) 4))
-		 (labels nil)
 		 (varargs (or optionals rest keywords allow-other-keys))
 		 simple-varargs
 		 (*unwind-exit* *unwind-exit*)
@@ -341,39 +340,21 @@
     ;; When binding optional values, we use two calls to BIND. This means
     ;; 'BDS-BIND is pushed twice on *unwind-exit*, which results in two calls
     ;; to bds_unwind1(), which is wrong. A simple fix is to save *unwind-exit*
-    ;; which is what we do here. Notice that we also have to save *LEX* and
-    ;; *ENV* because otherwise the init forms would think that some optionals
-    ;; have been added to the lexical closure when they have been not.
-    (let ((va-arg-loc (if simple-varargs 'VA-ARG 'CL-VA-ARG))
-	  (*unwind-exit* *unwind-exit*)
-	  (*lex* *lex*)
-	  (*env* *env*))
+    ;; which is what we do here.
+    (let ((va-arg-loc (if simple-varargs 'VA-ARG 'CL-VA-ARG)))
       (do ((opt optionals (cdddr opt)))
 	  ((endp opt))
-	(push (next-label) labels)
-	(wt-nl "if (i==narg) ") (wt-go (car labels))
-	(bind va-arg-loc (first opt))
-	(when (third opt) (bind t (third opt)))
-	(wt-nl "i++;")
-	))
-    (let ((label (next-label)))
-      (wt-nl) (wt-go label)
-      (setq labels (nreverse labels))
-      ;; Bind unspecified optional parameters.
-      (do ((opt optionals (cdddr opt)))
-	  ((endp opt))
-	(wt-label (first labels))
-	(pop labels)
-	(bind-init (second opt) (first opt))
-	(when (third opt) (bind nil (third opt))))
-      (wt-label label))
-    )
+	(wt-nl "if (i >= narg) {")
+	  (bind-init (second opt) (first opt))
+	  (when (third opt) (bind nil (third opt)))
+	(wt-nl "} else {")
+	  (wt-nl "i++;")
+	  (let ((*unwind-exit* *unwind-exit*))
+	    (bind va-arg-loc (first opt)))
+	  (when (third opt) (bind t (third opt)))
+	(wt-nl "}"))))
 
   (when (or rest keywords allow-other-keys)
-    (cond (optionals
-	   (wt-nl "narg -= i;"))
-	  ((plusp nreq)
-	   (wt-nl "narg -=" nreq ";")))
     (cond ((not (or keywords allow-other-keys))
 	   (wt-nl rest-loc "=cl_grab_rest_args(args);"))
 	  (t
