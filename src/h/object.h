@@ -184,10 +184,11 @@ struct ecl_hashtable_entry {	/*  hash table entry  */
 struct ecl_hashtable {		/*  hash table header  */
 	HEADER2(test,lockable);
 	struct ecl_hashtable_entry *data; /*  pointer to the hash table  */
-	cl_object rehash_size;	/*  rehash size  */
-	cl_object threshold;	/*  rehash threshold  */
 	cl_index entries;	/*  number of entries  */
 	cl_index size;		/*  hash table size  */
+	cl_object rehash_size;	/*  rehash size  */
+	cl_object threshold;	/*  rehash threshold  */
+	double factor;		/*  cached value of threshold  */
 #ifdef ECL_THREADS
 	pthread_mutex_t lock;	/*  mutex to prevent race conditions  */
 #endif

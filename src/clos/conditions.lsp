@@ -569,7 +569,8 @@ returns with NIL."
 		     (cell-error-name condition)))))
 
 (define-condition arithmetic-error (error)
-  ((operation :INITARG :OPERATION :READER arithmetic-error-operation)))
+  ((operation :INITARG :OPERATION :READER arithmetic-error-operation)
+   (operands :INITARG :OPERANDS :INITFORM '() :READER arithmetic-error-operands)))
 
 (define-condition division-by-zero         (arithmetic-error) ())
 
@@ -658,14 +659,12 @@ returns with NIL."
 			       (list (car annotated-case)
 				     (let ((body (cdddr annotated-case)))
 				       `(return-from ,tag
-					  ,(cond ((caddr annotated-case)
-						  `(let ((,(caaddr annotated-case)
-							  ,var))
-						     ,@body))
-						 ((not (cdr body))
-						  (car body))
-						 (t
-						  `(progn ,@body)))))))
+					  ,(if (caddr annotated-case)
+					       `(let ((,(caaddr annotated-case)
+						       ,var))
+						 ,@body)
+					       ;; We must allow declarations!
+					       `(locally ,@body))))))
 			   annotated-cases))))))))
 
 (defmacro ignore-errors (&rest forms)

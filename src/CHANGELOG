@@ -1734,6 +1734,10 @@ ECL 0.9d
 
   - SLOT-EXISTS-P now works with all types of objects.
 
+  - LCM now works when any of the arguments is 0.
+
+  - SIGNUM now accepts complex arguments.
+
 * Documentation:
 
   - New manual page documents the scripting facilities of ECL
@@ -1770,6 +1774,21 @@ ECL 0.9d
   - No symbol is exported from the CL package other than those specificied in
     the standard. ECL extensions, such as the types BYTE8, UNSIGNED-BYTE8,
     are now in the package EXT (which is temporarily an alias of SYSTEM).
+
+  - The following functions have been implemented: BROADCAST-STREAM-STREAMS,
+    {ECHO,TWO-WAY}-STREAM-{INPUT,OUTPUT}-STREAM, FILE-STRING-LENGTH,
+    INTERACTIVE-STREAM-P (dummy), STREAM-EXTERNAL-FORMAT.
+
+  - The generic function for handling CLOS streams (STREAM-READ-CHAR,
+    STREAM-CLEAR-INPUT, etc), are now in the EXT package.
+
+  - HASH-TABLE-REHASH-THRESHOLD can now be any number in (REAL 0 1). Integers
+    above 1 are not allowed, and the threshold is always interpreted as the
+    relative filling of the hash table before growth (Before, the threshold
+    could be an integer number with a somewhat obscure interpretation).
+
+  - SXHASH now always returns positive fixnums and produces the same key for
+    two bitvectors which are EQUAL.
 
 TODO:
 =====

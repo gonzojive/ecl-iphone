@@ -1405,6 +1405,8 @@ c_macrolet(cl_object args, int flags)
 		function = make_lambda(name, CDR(macro));
 		c_register_macro(name, function);
 	}
+	/* Remove declarations */
+	args = c_process_declarations(args);
 	flags = compile_body(args, flags);
 	ENV->macros = old_macros;
 

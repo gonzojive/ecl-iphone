@@ -18,7 +18,7 @@
   "Args: (integer)
 Returns the integer square root of INTEGER."
        (unless (and (integerp i) (>= i 0))
-               (error "~S is not a non-negative integer." i))
+               (error 'type-error :datum i :expected-type 'unsigned-byte))
        (if (zerop i)
            0
            (let ((n (integer-length i)))

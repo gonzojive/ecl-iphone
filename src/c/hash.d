@@ -200,8 +200,16 @@ BEGIN:
 #endif /* !ANSI */
 	case t_random:
 		return h ^ x->random.value;
-        case t_package:		/* These two should actually */
-	case t_bitvector:	/* have visible changes under equal */
+	case t_bitvector:
+		/* Notice that we may round out some bits. We must do this
+		 * because the fill pointer may be set in the middle of a byte.
+		 * If so, the extra bits _must_ _not_ take part in the CRC,
+		 * because otherwise we two bit arrays which are EQUAL might
+		 * have different hash keys. */
+		len = x->vector.fillp / 8;
+		buffer = x->vector.self.ch;
+		break;
+        case t_package:		/* They should actually be same under equal */
 	default:
 		return h ^ hash_eql(x);
 	}
@@ -339,7 +347,6 @@ void
 sethash(cl_object key, cl_object hashtable, cl_object value)
 {
 	cl_index i;
-	bool over;
 	struct ecl_hashtable_entry *e;
 
 	assert_type_hash_table(hashtable);
@@ -350,20 +357,10 @@ sethash(cl_object key, cl_object hashtable, cl_object value)
 		goto OUTPUT;
 	}
 	i = hashtable->hash.entries + 1;
-	if (i >= hashtable->hash.size)
-		over = TRUE;
-	else if (FIXNUMP(hashtable->hash.threshold))
-		over = i >= (cl_index)fix(hashtable->hash.threshold);
-	else if (type_of(hashtable->hash.threshold) == t_shortfloat)
-		over = i >= hashtable->hash.size * sf(hashtable->hash.threshold);
-	else if (type_of(hashtable->hash.threshold) == t_longfloat)
-		over = i >= hashtable->hash.size * lf(hashtable->hash.threshold);
-	else {
-		HASH_TABLE_UNLOCK(hashtable);
-		corrupted_hash(hashtable);
-	}
-	if (over)
+	if (i >= hashtable->hash.size ||
+	    i >= (hashtable->hash.size * hashtable->hash.factor)) {
 		ecl_extend_hashtable(hashtable);
+	}
 	add_new_to_hash(key, hashtable, value);
  OUTPUT:
 	HASH_TABLE_UNLOCK(hashtable);
@@ -388,13 +385,10 @@ ecl_extend_hashtable(cl_object hashtable)
 	if (new_size <= old_size)
 		new_size = old_size + 1;
 	old = cl_alloc_object(t_hashtable);
-	old->hash = hashtable->hash;
+	*old = *hashtable;
 	hashtable->hash.data = NULL; /* for GC sake */
+	hashtable->hash.entries = 0;
 	hashtable->hash.size = new_size;
-	if (FIXNUMP(hashtable->hash.threshold))
-		hashtable->hash.threshold =
-		MAKE_FIXNUM(fix(hashtable->hash.threshold) +
-			    (new_size - old->hash.size));
 	hashtable->hash.data = (struct ecl_hashtable_entry *)
 	  cl_alloc(new_size * sizeof(struct ecl_hashtable_entry));
 	for (i = 0;  i < new_size;  i++) {
@@ -427,6 +421,9 @@ cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 	int htt;
 	cl_index hsize;
 	cl_object h;
+	double factor;
+	double delta;
+	cl_type t;
 
 	if (test == @'eq' || test == SYM_FUN(@'eq'))
 		htt = htt_eq;
@@ -442,28 +439,30 @@ cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
   	if (!FIXNUMP(size) || FIXNUM_MINUSP(size))
 		FEerror("~S is an illegal hash-table size.", 1, size);
 	hsize = fix(size);
-	if ((FIXNUMP(rehash_size) && 0 <= fix(rehash_size)) ||
-	    (type_of(rehash_size) == t_shortfloat && 1.0 <= sf(rehash_size)) ||
-	    (type_of(rehash_size) == t_longfloat && 1.0 <= lf(rehash_size)))
-		;
-	else
+	delta = 0;
+	t = type_of(rehash_size);
+	if (t == t_fixnum || t == t_shortfloat || t == t_longfloat) {
+		delta = number_to_double(rehash_size);
+	}
+	if (delta < 1 || delta > MOST_POSITIVE_FIXNUM) {
 		FEerror("~S is an illegal hash-table rehash-size.",
 			1, rehash_size);
-	if ((FIXNUMP(rehash_threshold) &&
-	     0 < fix(rehash_threshold) && fix(rehash_threshold) <= fix(size)) ||
-	    (type_of(rehash_threshold) == t_shortfloat &&
-	     0.0 < sf(rehash_threshold) && sf(rehash_threshold) <= 1.0) ||
-	    (type_of(rehash_threshold) == t_longfloat &&
-	     0.0 < lf(rehash_threshold) && lf(rehash_threshold) <= 1.0))
-		;
-	else
+	}
+	factor = -1.0;
+	t = type_of(rehash_threshold);
+	if (t == t_fixnum || t == t_ratio || t == t_shortfloat || t == t_longfloat) {
+		factor = number_to_double(rehash_threshold);
+	}
+	if (factor < 0.0 || factor > 1.0) {
 		FEerror("~S is an illegal hash-table rehash-threshold.",
 			1, rehash_threshold);
+	}
 	h = cl_alloc_object(t_hashtable);
 	h->hash.test = htt;
 	h->hash.size = hsize;
 	h->hash.rehash_size = rehash_size;
 	h->hash.threshold = rehash_threshold;
+	h->hash.factor = factor;
         h->hash.entries = 0;
 	h->hash.data = NULL;	/* for GC sake */
 	h->hash.data = (struct ecl_hashtable_entry *)
@@ -551,6 +550,7 @@ cl_object
 cl_hash_table_test(cl_object ht)
 {
 	cl_object output;
+	assert_type_hash_table(ht);
 	switch(ht->hash.test) {
 	    case htt_eq: output = @'eq'; break;
 	    case htt_eql: output = @'eql'; break;
@@ -565,6 +565,7 @@ cl_hash_table_test(cl_object ht)
 cl_object
 cl_hash_table_size(cl_object ht)
 {
+	assert_type_hash_table(ht);
 	@(return MAKE_FIXNUM(ht->hash.size))
 }
 
@@ -622,7 +623,9 @@ cl_hash_table_rehash_threshold(cl_object ht)
 cl_object
 cl_sxhash(cl_object key)
 {
-	@(return (MAKE_FIXNUM(_hash_equal(~(cl_hashkey)0, 0, key) & 0x7fffffff)))
+	cl_index output = _hash_equal(~(cl_hashkey)0, 0, key);
+	const cl_index mask = (1 << (FIXNUM_BITS - 3)) - 1;
+	@(return MAKE_FIXNUM(output & mask))
 }
 
 cl_object

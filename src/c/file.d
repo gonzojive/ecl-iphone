@@ -53,7 +53,7 @@ input_stream_p(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
-		return !Null(funcall(2, @'stream-input-p'));
+		return !Null(funcall(2, @'ext::stream-input-p', strm));
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
@@ -99,7 +99,7 @@ output_stream_p(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
-		return !Null(funcall(2, @'stream-output-p'));
+		return !Null(funcall(2, @'ext::stream-output-p', strm));
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
@@ -190,6 +190,23 @@ BEGIN:
 		error("illegal stream mode");
 	}
 	@(return @'ext::byte8')
+}
+
+cl_object
+cl_stream_external_format(cl_object strm)
+{
+	cl_object output;
+	cl_type t = type_of(strm);
+#ifdef ECL_CLOS_STREAMS
+	if (t == t_instance)
+		output = @':default';
+	else
+#endif
+	if (t == t_stream)
+		output = @':default';
+	else
+		FEwrong_type_argument(@'stream', strm);
+	@(return output)
 }
 
 /*----------------------------------------------------------------------
@@ -347,7 +364,7 @@ close_stream(cl_object strm, bool abort_flag)        /*  Not used now!  */
 
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		funcall(2, @'stream-close', strm);
+		funcall(2, @'ext::stream-close', strm);
 		return;
 	}
 #endif
@@ -412,16 +429,6 @@ make_two_way_stream(cl_object istrm, cl_object ostrm)
 	strm->stream.object0 = istrm;
 	strm->stream.object1 = ostrm;
 	strm->stream.int0 = strm->stream.int1 = 0;
-	return(strm);
-}
-
-cl_object
-make_echo_stream(cl_object istrm, cl_object ostrm)
-{
-	cl_object strm;
-
-	strm = make_two_way_stream(istrm, ostrm);
-	strm->stream.mode = (short)smm_echo;
 	return(strm);
 }
 
@@ -516,7 +523,7 @@ ecl_getc(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		cl_object c = funcall(2, @'stream-read-char', strm);
+		cl_object c = funcall(2, @'ext::stream-read-char', strm);
 		return CHARACTERP(c)? CHAR_CODE(c) : EOF;
 	}
 #endif
@@ -605,7 +612,7 @@ ecl_ungetc(int c, cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		funcall(3, @'stream-unread-char', strm, CODE_CHAR(c));
+		funcall(3, @'ext::stream-unread-char', strm, CODE_CHAR(c));
 		return;
 	}
 #endif
@@ -676,7 +683,7 @@ writec_stream(int c, cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		funcall(3, @'stream-write-char', strm, CODE_CHAR(c));
+		funcall(3, @'ext::stream-write-char', strm, CODE_CHAR(c));
 		return c;
 	}
 #endif
@@ -873,7 +880,7 @@ flush_stream(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		funcall(2, @'stream-force-output', strm);
+		funcall(2, @'ext::stream-force-output', strm);
 		return;
 	}
 #endif
@@ -932,7 +939,7 @@ clear_input_stream(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		funcall(2, @'stream-clear-input', strm);
+		funcall(2, @'ext::stream-clear-input', strm);
 		return;
 	}
 #endif
@@ -992,7 +999,7 @@ clear_output_stream(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		funcall(2, @'stream-clear-output',strm);
+		funcall(2, @'ext::stream-clear-output',strm);
 		return;
 	}
 #endif
@@ -1156,7 +1163,7 @@ listen_stream(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		cl_object flag = funcall(2, @'stream-listen', strm);
+		cl_object flag = funcall(2, @'ext::stream-listen', strm);
 		return !(strm == Cnil);
 	}
 #endif
@@ -1413,7 +1420,14 @@ cl_make_synonym_stream(cl_object sym)
 	@(return x)
 }
 
-
+cl_object
+cl_synonym_stream_symbol(cl_object strm)
+{
+	if (type_of(strm) != t_stream || strm->stream.mode != smm_synonym)
+		FEwrong_type_argument(@'synonym-stream', strm);
+	@(return strm->stream.object0)
+}
+
 @(defun make_broadcast_stream (&rest ap)
 	cl_object x, streams;
 	int i;
@@ -1421,7 +1435,7 @@ cl_make_synonym_stream(cl_object sym)
 	streams = Cnil;
 	for (i = 0; i < narg; i++) {
 		x = cl_va_arg(ap);
-		if (type_of(x) != t_stream || !output_stream_p(x))
+		if (!output_stream_p(x))
 			not_an_output_stream(x);
 		streams = CONS(x, streams);
 	}
@@ -1434,6 +1448,14 @@ cl_make_synonym_stream(cl_object sym)
 	@(return x)
 @)
 
+cl_object
+cl_broadcast_stream_streams(cl_object strm)
+{
+	if (type_of(strm) != t_stream || strm->stream.mode != smm_broadcast)
+		FEwrong_type_argument(@'broadcast-stream', strm);
+	return cl_copy_list(strm->stream.object0);
+}
+
 @(defun make_concatenated_stream (&rest ap)
 	cl_object x, streams;
 	int i;
@@ -1441,7 +1463,7 @@ cl_make_synonym_stream(cl_object sym)
 	streams = Cnil;
 	for (i = 0; i < narg; i++) {
 		x = cl_va_arg(ap);
-		if (type_of(x) != t_stream || !input_stream_p(x))
+		if (!input_stream_p(x))
 			not_an_input_stream(x);
 		streams = CONS(x, streams);
 	}
@@ -1454,35 +1476,67 @@ cl_make_synonym_stream(cl_object sym)
 	@(return x)
 @)
 
-/* FIXME! BROADCAST-STREAM-STREAMS is missing! */
-/* FIXME! CONCATENATED-STREAM-STREAMS is missing! */
-/* FIXME! ECHO-STREAM-INPUT-STREAM is missing! */
-/* FIXME! ECHO-STREAM-OUTPUT-STREAM is missing! */
-/* FIXME! TWO-WAY-STREAM-INPUT-STREAM is missing! */
-/* FIXME! TWO-WAY-STREAM-OUTPUT-STREAM is missing! */
-/* FIXME! FILE-STRING-LENGTH is missing! */
-/* FIXME! INTERACTIVE-STREAM-P is missing! */
-/* FIXME! STREAM-EXTERNAL-FORMAT is missing! */
-/* FIXME! SYNONYM-STREAM-SYMBOL is missing! */
+cl_object
+cl_concatenated_stream_streams(cl_object strm)
+{
+	if (type_of(strm) != t_stream || strm->stream.mode != smm_concatenated)
+		FEwrong_type_argument(@'concatenated-stream', strm);
+	return cl_copy_list(strm->stream.object0);
+}
 
 cl_object
 cl_make_two_way_stream(cl_object strm1, cl_object strm2)
 {
-	if (type_of(strm1) != t_stream || !input_stream_p(strm1))
+	if (!input_stream_p(strm1))
 		not_an_input_stream(strm1);
-	if (type_of(strm2) != t_stream || !output_stream_p(strm2))
+	if (!output_stream_p(strm2))
 		not_an_output_stream(strm2);
 	@(return make_two_way_stream(strm1, strm2))
 }
 
 cl_object
+cl_two_way_stream_input_stream(cl_object strm)
+{
+	if (type_of(strm) != t_stream || strm->stream.mode != smm_two_way)
+		FEwrong_type_argument(@'two-way-stream', strm);
+	@(return strm->stream.object0)
+}
+
+cl_object
+cl_two_way_stream_output_stream(cl_object strm)
+{
+	if (type_of(strm) != t_stream || strm->stream.mode != smm_two_way)
+		FEwrong_type_argument(@'two-way-stream', strm);
+	@(return strm->stream.object1)
+}
+
+cl_object
 cl_make_echo_stream(cl_object strm1, cl_object strm2)
 {
-	if (type_of(strm1) != t_stream || !input_stream_p(strm1))
+	cl_object output;
+	if (!input_stream_p(strm1))
 		not_an_input_stream(strm1);
-	if (type_of(strm2) != t_stream || !output_stream_p(strm2))
+	if (!output_stream_p(strm2))
 		not_an_output_stream(strm2);
-	@(return make_echo_stream(strm1, strm2))
+	output = make_two_way_stream(strm1, strm2);
+	output->stream.mode = smm_echo;
+	@(return output)
+}
+
+cl_object
+cl_echo_stream_input_stream(cl_object strm)
+{
+	if (type_of(strm) != t_stream || strm->stream.mode != smm_echo)
+		FEwrong_type_argument(@'echo-stream', strm);
+	@(return strm->stream.object0)
+}
+
+cl_object
+cl_echo_stream_output_stream(cl_object strm)
+{
+	if (type_of(strm) != t_stream || strm->stream.mode != smm_echo)
+		FEwrong_type_argument(@'echo-stream', strm);
+	@(return strm->stream.object1)
 }
 
 @(defun make_string_input_stream (strng &o istart iend)
@@ -1637,8 +1691,26 @@ for the file-stream ~S.",
 		if (file_position_set(file_stream, i) < 0)
 			@(return Cnil)
 		@(return Ct)
-	}       
+	}
 @)
+
+cl_object
+cl_file_string_length(cl_object string)
+{
+	cl_fixnum l;
+	switch (type_of(string)) {
+	case t_string:
+		l = string->string.fillp;
+		break;
+	case t_character:
+		l = 1;
+		break;
+	default:
+		FEwrong_type_argument(@'string', string);
+	}
+	@(return MAKE_FIXNUM(l))
+}
+
 
 cl_object
 cl_file_length(cl_object strm)
@@ -1679,6 +1751,35 @@ si_copy_stream(cl_object in, cl_object out)
 	}
 	flush_stream(out);
 	@(return Ct)
+}
+
+cl_object
+cl_interactive_stream_p(cl_object strm)
+{
+	cl_object output = Cnil;
+	cl_type t;
+ BEGIN:
+	t = type_of(strm);
+#ifdef ECL_CLOS_STREAMS
+	if (t == t_instance)
+		return funcall(2, @'ext::stream-interactive-p', strm);
+#endif
+	if (t != t_stream)
+		FEtype_error_stream(strm);
+	switch(strm->stream.mode) {
+	case smm_synonym:
+		strm = symbol_value(strm->stream.object0);
+		goto BEGIN;
+	case smm_input:
+#ifdef HAVE_ISATTY
+		/* Here we should check for the type of file descriptor,
+		 * and whether it is connected to a tty. */
+		output = Cnil;
+#endif
+		break;
+	default:
+	}
+	@(return output)
 }
 
 void

@@ -73,25 +73,15 @@ set_meth_hash(cl_object *keys, int argno, cl_object hashtable, cl_object value)
 	struct ecl_hashtable_entry *e;
 	cl_object keylist, *p;
 	cl_index i;
-	bool over;
 
 	i = hashtable->hash.entries + 1;
 	if (i > 512) {
 		/* It does not make sense to let these hashes grow large */
 		cl_clrhash(hashtable);
-		over = FALSE;
-	} else if (i >= hashtable->hash.size)
-		over = TRUE;
-	else if (FIXNUMP(hashtable->hash.threshold))
-		over = i >= (cl_index)fix(hashtable->hash.threshold);
-	else if (type_of(hashtable->hash.threshold) == t_shortfloat)
-		over = i >= hashtable->hash.size * sf(hashtable->hash.threshold);
-	else if (type_of(hashtable->hash.threshold) == t_longfloat)
-		over = i >= hashtable->hash.size * lf(hashtable->hash.threshold);
-	else
-		FEerror("internal error, corrupted hashtable ~S", 1, hashtable);
-	if (over)
+	} else if (i >= hashtable->hash.size ||
+		   i >= (hashtable->hash.size * hashtable->hash.factor)) {
 		ecl_extend_hashtable(hashtable);
+	}
 	keylist = Cnil;
 	for (p = keys + argno; p > keys; p--) keylist = CONS(p[-1], keylist);
 	e = get_meth_hash(keys, argno, hashtable);

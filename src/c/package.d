@@ -91,6 +91,7 @@ make_package_hashtable()
 	h->hash.size = hsize;
 	h->hash.rehash_size = make_shortfloat(1.5);
 	h->hash.threshold = make_shortfloat(0.7);
+	h->hash.factor = 0.7;
 	h->hash.entries = 0;
 	h->hash.data = NULL; /* for GC sake */
 	h->hash.data = (struct ecl_hashtable_entry *)cl_alloc(hsize * sizeof(struct ecl_hashtable_entry));

@@ -647,17 +647,19 @@
 (INTEGER-LENGTH (T) FIXNUM)
 (si::BIT-ARRAY-OP nil T)
 (ZEROP (T) T NIL T
-	:inline-always ((t) :bool nil nil "number_compare(MAKE_FIXNUM(0),#0)==0")
+	:inline-always ((t) :bool nil nil "number_zerop(#0)")
 	:inline-always ((fixnum-float) :bool nil nil "(#0)==0"))
 (PLUSP (T) T NIL T
-	:inline-always ((t) :bool nil nil "number_compare(MAKE_FIXNUM(0),#0)<0")
+	:inline-always ((t) :bool nil nil "number_plusp(#0)")
 	:inline-always ((fixnum-float) :bool nil nil "(#0)>0"))
 (MINUSP (T) T NIL T
-	:inline-always ((t) :bool nil nil "number_compare(MAKE_FIXNUM(0),#0)>0")
+	:inline-always ((t) :bool nil nil "number_minusp(#0)")
 	:inline-always ((fixnum-float) :bool nil nil "(#0)<0"))
 (ODDP (T) T NIL T
+	:inline-always ((t) :bool nil nil "number_oddp(#0)")
 	:inline-always ((fixnum fixnum) :bool nil nil "(#0) & 1"))
 (EVENP (T) T NIL T
+	:inline-always ((t) :bool nil nil "number_evenp(#0)")
 	:inline-always ((fixnum fixnum) :bool nil nil "~(#0) & 1"))
 (RANDOM (T *) T)
 (MAKE-RANDOM-STATE (*) T)

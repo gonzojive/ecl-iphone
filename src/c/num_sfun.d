@@ -106,7 +106,7 @@ cl_expt(cl_object x, cl_object y)
 		case t_longfloat:
 			return1(make_longfloat(1.0));
 		case t_complex:
-			z = cl_float(2, MAKE_FIXNUM(1), x->complex.real);
+			z = cl_expt(x->complex.real, y);
 			z = make_complex(z, MAKE_FIXNUM(0));
 			return1(z);
 		default:

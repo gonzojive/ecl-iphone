@@ -750,8 +750,10 @@ integer_divide(cl_object x, cl_object y)
 		@(return MAKE_FIXNUM(0))
 	/* INV: get_gcd() checks types */
 	gcd = cl_va_arg(nums);
-	if (narg == 1)
+	if (narg == 1) {
+		assert_type_integer(gcd);
 		@(return (number_minusp(gcd) ? number_negate(gcd) : gcd))
+	}
 	while (--narg)
 		gcd = get_gcd(gcd, cl_va_arg(nums));
 	@(return gcd)
@@ -907,7 +909,9 @@ one_minus(cl_object x)
 		cl_object numi = cl_va_arg(nums);
 		cl_object t = number_times(lcm, numi);
 		cl_object g = get_gcd(numi, lcm);
-		lcm = number_divide(t, g);
+		if (g != MAKE_FIXNUM(0))
+			lcm = number_divide(t, g);
 	}
+	assert_type_integer(lcm);
 	@(return (number_minusp(lcm) ? number_negate(lcm) : lcm))
 @)

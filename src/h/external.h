@@ -488,8 +488,13 @@ extern cl_object ecl_make_foreign_data(cl_object tag, cl_index size, void *data)
 /* file.c */
 
 extern cl_object cl_make_synonym_stream(cl_object sym);
+extern cl_object cl_synonym_stream_symbol(cl_object strm);
 extern cl_object cl_make_two_way_stream(cl_object strm1, cl_object strm2);
+extern cl_object cl_two_way_stream_input_stream(cl_object strm);
+extern cl_object cl_two_way_stream_output_stream(cl_object strm);
 extern cl_object cl_make_echo_stream(cl_object strm1, cl_object strm2);
+extern cl_object cl_echo_stream_input_stream(cl_object strm);
+extern cl_object cl_echo_stream_output_stream(cl_object strm);
 extern cl_object cl_make_string_output_stream();
 extern cl_object cl_get_output_stream_string(cl_object strm);
 extern cl_object si_output_stream_string(cl_object strm);
@@ -497,20 +502,25 @@ extern cl_object cl_streamp(cl_object strm);
 extern cl_object cl_input_stream_p(cl_object strm);
 extern cl_object cl_output_stream_p(cl_object strm);
 extern cl_object cl_stream_element_type(cl_object strm);
+extern cl_object cl_stream_external_format(cl_object strm);
 extern cl_object cl_file_length(cl_object strm);
 extern cl_object si_get_string_input_stream_index(cl_object strm);
 extern cl_object si_make_string_output_stream_from_string(cl_object strng);
 extern cl_object si_copy_stream(cl_object in, cl_object out);
 extern cl_object cl_open_stream_p(cl_object strm);
 extern cl_object cl_make_broadcast_stream _ARGS((int narg, ...));
+extern cl_object cl_broadcast_stream_streams(cl_object strm);
 extern cl_object cl_make_concatenated_stream _ARGS((int narg, ...));
+extern cl_object cl_concatenated_stream_streams(cl_object strm);
 extern cl_object cl_make_string_input_stream _ARGS((int narg, cl_object strng, ...));
 extern cl_object cl_close _ARGS((int narg, cl_object strm, ...));
 extern cl_object cl_open _ARGS((int narg, cl_object filename, ...));
 extern cl_object cl_file_position _ARGS((int narg, cl_object file_stream, ...));
+extern cl_object cl_file_string_length(cl_object string);
 extern cl_object si_do_write_sequence(cl_object string, cl_object stream, cl_object start, cl_object end);
 extern cl_object si_do_read_sequence(cl_object string, cl_object stream, cl_object start, cl_object end);
 extern cl_object si_file_column(cl_object strm);
+extern cl_object cl_interactive_stream_p(cl_object strm);
 
 extern bool input_stream_p(cl_object strm);
 extern bool output_stream_p(cl_object strm);
@@ -518,7 +528,6 @@ extern cl_object stream_element_type(cl_object strm);
 extern cl_object open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists, cl_object if_does_not_exist);
 extern void close_stream(cl_object strm, bool abort_flag);
 extern cl_object make_two_way_stream(cl_object istrm, cl_object ostrm);
-extern cl_object make_echo_stream(cl_object istrm, cl_object ostrm);
 extern cl_object make_string_input_stream(cl_object strng, cl_index istart, cl_index iend);
 extern cl_object make_string_output_stream(cl_index line_length);
 extern cl_object make_string_output_stream_from_string(cl_object s);

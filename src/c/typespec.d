@@ -182,13 +182,6 @@ assert_type_proper_list(cl_object p)
 }
 
 void
-assert_type_stream(cl_object p)
-{
-	if (type_of(p) != t_stream)
-		FEwrong_type_argument(@'stream', p);
-}
-
-void
 assert_type_readtable(cl_object p)
 {
 	if (type_of(p) != t_readtable)
