@@ -559,7 +559,8 @@ Cannot compile ~a."
   (cond ((null thing))
 	((functionp thing)
 	 (unless (si::bc-disassemble thing)
-	   (error "The function definition for ~S was lost." thing)))
+	   (warn "The function definition for ~S was lost." thing)
+	   (return-from disassemble nil)))
 	((and (consp thing) (eq (car thing) 'LAMBDA))
 	 (setq disassembled-form `(defun gazonk ,@(cdr thing))))
 	(t (setq disassembled-form thing)))
@@ -569,7 +570,7 @@ Cannot compile ~a."
     (format t "~&;;; The compiler was called recursively.~
                    ~%Cannot disassemble ~a." thing)
     (setq *error-p* t)
-    (return-from disassemble))
+    (return-from disassemble nil))
   (setq *error-p* nil
 	*compiler-in-use* t)
 
@@ -607,7 +608,7 @@ Cannot compile ~a."
 	(put-sysprop 'DEFUN 'T3 t3fun)
 	(setf (symbol-function 'T3LOCAL-FUN) t3local-fun)
 	(when h-file (close *compiler-output2*)))))
-  (values)
+  nil
   )
 
 (defun compiler-pass2 (c-pathname h-pathname data-pathname system-p init-name

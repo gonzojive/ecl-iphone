@@ -146,7 +146,7 @@
 	(let ((num-objects (data-size)))
 	  (if (zerop num-objects)
 	      (progn
-		(wt-h "#define VM " num_objects 0)
+		(wt-h "#define VM " num-objects 0)
 		(wt-h "#define VV NULL"))
 	      (progn
 		(wt-h "#define VM " num-objects)
