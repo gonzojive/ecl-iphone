@@ -6016,13 +6016,15 @@ else
   echo "$as_me:$LINENO: result: already installed" >&5
 echo "${ECHO_T}already installed" >&6
 fi
-                                                                                                                                                                ac_config_files="$ac_config_files compile.lsp bare.lsp lsp/config.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp ../Makefile Makefile c/Makefile doc/Makefile doc/ecl.man tk/Makefile tests/Makefile ansi-tests/Makefile gabriel/Makefile"
+                                                                                                                                                      ac_config_files="$ac_config_files bare.lsp lsp/config.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp ../Makefile Makefile c/Makefile doc/Makefile doc/ecl.man tk/Makefile tests/Makefile ansi-tests/Makefile gabriel/Makefile"
 
           ac_config_files="$ac_config_files ecl-config:util/ecl-config"
 
           ac_config_files="$ac_config_files h/configpre:h/config.h.in"
 
           ac_config_files="$ac_config_files lsp/config.lsp.in:lsp/config.lsp.in"
+
+          ac_config_files="$ac_config_files compile.lsp.in:compile.lsp.in"
 
           ac_config_headers="$ac_config_headers h/config.h:h/configpre"
 
@@ -6550,7 +6552,6 @@ for ac_config_target in $ac_config_targets
 do
   case "$ac_config_target" in
   # Handling of arguments.
-  "compile.lsp" ) CONFIG_FILES="$CONFIG_FILES compile.lsp" ;;
   "bare.lsp" ) CONFIG_FILES="$CONFIG_FILES bare.lsp" ;;
   "lsp/config.lsp" ) CONFIG_FILES="$CONFIG_FILES lsp/config.lsp" ;;
   "cmp/cmpcfg.lsp" ) CONFIG_FILES="$CONFIG_FILES cmp/cmpcfg.lsp" ;;
@@ -6569,6 +6570,7 @@ do
   "ecl-config" ) CONFIG_FILES="$CONFIG_FILES ecl-config:util/ecl-config" ;;
   "h/configpre" ) CONFIG_FILES="$CONFIG_FILES h/configpre:h/config.h.in" ;;
   "lsp/config.lsp.in" ) CONFIG_FILES="$CONFIG_FILES lsp/config.lsp.in:lsp/config.lsp.in" ;;
+  "compile.lsp.in" ) CONFIG_FILES="$CONFIG_FILES compile.lsp.in:compile.lsp.in" ;;
   "h/config.h" ) CONFIG_HEADERS="$CONFIG_HEADERS h/config.h:h/configpre" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}

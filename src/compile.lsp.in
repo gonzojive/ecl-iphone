@@ -74,7 +74,7 @@ cd ..; rm -rf tmp/*'")))
 ;;
 ;; We do not need the -rpath flag for the library, nor -lecl.
 ;;
-(let ((c::*ld-shared-flags* "@SHARED_LDFLAGS@ -lgmp -lgc @CLIBS@"))
+(let ((c::*ld-shared-flags* "-L./ @SHARED_LDFLAGS@ -lgmp -lgc @CLIBS@"))
   (c::shared-cc (compile-file-pathname "ecl" :type :dll)
 		"c/main.@OBJEXT@"
 		(compile-file-pathname "ecl" :type :lib)
@@ -94,7 +94,7 @@ cd ..; rm -rf tmp/*'")))
   #+dlopen
   (c::build-fasl "cmp" :lisp-files objects))
 
-;(si::pathname-translations "SYS" '(("**;*.*" "@libdir@/**/*.*")))
+(si::pathname-translations "SYS" '(("**;*.*" "@ecldir@/**/*.*")))
 
 (compiler::build-program
  #+(or cross stage1) "ecl"
