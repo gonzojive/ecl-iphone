@@ -364,10 +364,11 @@ open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 			} else if (if_exists == @':overwrite') {
 				/* We cannot use "w+b" because it truncates.
 				   We cannot use "a+b" because writes jump to the end. */
-				int f = open(filename->string.self, O_RDWR|O_CREAT);
+				int f = open(filename->string.self, (smm == smm_output)?
+					     (O_WRONLY|O_CREAT) : (O_RDWR|O_CREAT));
 				if (f < 0)
 					FEcannot_open(fn);
-				fp = fdopen(f, "r+b");
+				fp = fdopen(f, (smm == smm_output)? OPEN_W : OPEN_RW);
 				if (fp < 0) {
 					close(f);
 					FEcannot_open(fn);
