@@ -36,6 +36,7 @@
 	(setf (first scan) slot))
       `(eval-when (compile load eval)
 	;; at compile time just create the definition
+	(prog1
 	(ensure-class
 	 ',metaclass-name
 	 ',name
@@ -50,14 +51,16 @@
 	    name
 	    :metaclass-name metaclass-name
 	    :superiors (mapcar #'find-class superclasses)
-	    :slots all-slots)
-	(find-class ',name)))))
+	    :slots all-slots))))))
 
 (defun collect-all-slots (slots name superclasses-names)
   (let* ((superclasses (mapcar #'find-class superclasses-names))
 	 (cpl (compute-class-precedence-list name superclasses)))
     (collect-slotds cpl slots)))
 
+;;
+;; INV: ENSURE-CLASS should always output the class it creates.
+;;
 (defun ensure-class (metaclass name superclasses direct-slots all-slots
 			       default-initargs documentation)
   (case metaclass
