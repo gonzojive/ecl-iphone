@@ -130,5 +130,5 @@
 	    (hash-table)
 	    (random-state)
 	    (readtable)
-	    #+threads (si::process)
-	    #+threads (si::lock)))
+	    #+threads (mp::process)
+	    #+threads (mp::lock)))

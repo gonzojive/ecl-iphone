@@ -351,9 +351,9 @@ cl_type_of(cl_object x)
 #endif
 #ifdef ECL_THREADS
 	case t_process:
-		t = @'si::process'; break;
+		t = @'mp::process'; break;
 	case t_lock:
-		t = @'si::lock'; break;
+		t = @'mp::lock'; break;
 #endif
 	default:
 		error("not a lisp data object");

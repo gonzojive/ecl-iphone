@@ -20,7 +20,7 @@ pthread_mutex_t ecl_threads_mutex = PTHREAD_MUTEX_INITIALIZER;
 static struct cl_env_struct cl_envs_array[128];
 static pthread_key_t cl_env_key;
 
-extern void ecl_intt_env(struct cl_env_struct *env);
+extern void ecl_init_env(struct cl_env_struct *env);
 
 struct cl_env_struct *
 ecl_thread_env(void)
@@ -31,6 +31,13 @@ ecl_thread_env(void)
 /*----------------------------------------------------------------------
  * THREAD OBJECT
  */
+
+static void
+assert_type_process(cl_object o)
+{
+	if (type_of(o) != t_process)
+		FEwrong_type_argument(@'mp::process', o);
+}
 
 static void
 thread_cleanup(void *env)
@@ -62,7 +69,7 @@ thread_entry_point(cl_object process)
 	ecl_init_env(process->process.env);
 
 	/* 2) Execute the code */
-	bds_bind(@'si::*current-process*', process);
+	bds_bind(@'mp::*current-process*', process);
 	cl_apply(2, process->process.function, process->process.args);
 	bds_unwind1();
 
@@ -71,30 +78,39 @@ thread_entry_point(cl_object process)
 	return NULL;
 }
 
-cl_object
-si_make_process(int narg, cl_object name, cl_object function, ...)
-{
+@(defun mp::make-process (&key name ((:initial-bindings initial_bindings)))
+@
 	cl_object process;
-	cl_va_list args;
-	cl_va_start(args, function, narg, 2);
 
 	process = cl_alloc_object(t_process);
 	process->process.name = name;
-	process->process.function = function;
-	process->process.args = cl_grab_rest_args(args);
+	process->process.function = Cnil;
+	process->process.args = Cnil;
 	process->process.thread = NULL;
 	process->process.env = cl_alloc(sizeof(*process->process.env));
 	process->process.env->bindings_hash =
 		si_copy_hash_table(cl_env.bindings_hash);
-	return si_restart_process(process);
+	@(return process)
+@)
+
+cl_object
+mp_process_preset(int narg, cl_object process, cl_object function, ...)
+{
+	cl_va_list args;
+	cl_va_start(args, function, narg, 2);
+	if (narg < 2)
+		FEwrong_num_arguments(@'mp::process-preset');
+	assert_type_process(process);
+	process->process.function = function;
+	process->process.args = cl_grab_rest_args(args);
+	@(return process)
 }
 
 cl_object
-si_kill_process(cl_object process)
+mp_process_kill(cl_object process)
 {
 	cl_object output = Cnil;
-	if (type_of(process) != t_process)
-		FEwrong_type_argument(@'si::process', process);
+	assert_type_process(process);
 	if (process->process.thread) {
 		if (pthread_cancel(*((pthread_t*)process->process.thread)) == 0)
 			output = Ct;
@@ -103,19 +119,14 @@ si_kill_process(cl_object process)
 }
 
 cl_object
-si_exit_process(void)
-{
-	pthread_exit(NULL);
-}
-
-cl_object
-si_restart_process(cl_object process)
+mp_process_enable(cl_object process)
 {
 	pthread_t *posix_thread;
 	int code;
 
-	if (type_of(process) != t_process)
-		FEwrong_type_argument(@'si::process', process);
+	assert_type_process(process);
+	if (process->process.thread != NULL)
+		FEerror("Cannot enable the running process ~A.", 1, process);
 	posix_thread = cl_alloc_atomic(sizeof(*posix_thread));
 	process->process.thread = posix_thread;
 	pthread_mutex_lock(&ecl_threads_mutex);
@@ -129,35 +140,54 @@ si_restart_process(cl_object process)
 }
 
 cl_object
-si_all_processes(void)
+mp_exit_process(void)
+{
+	pthread_exit(NULL);
+}
+
+cl_object
+mp_all_processes(void)
 {
 	@(return cl_copy_list(cl_core.processes))
 }
 
 cl_object
-si_process_name(cl_object process)
+mp_process_name(cl_object process)
 {
-	if (type_of(process) != t_process)
-		FEwrong_type_argument(@'si::process', process);
+	assert_type_process(process);
 	@(return process->process.name)
 }
 
 cl_object
-si_process_active_p(cl_object process)
+mp_process_active_p(cl_object process)
 {
-	/* FIXME! */
-	if (type_of(process) != t_process)
-		FEwrong_type_argument(@'si::process', process);
-	@(return (process->process.thread != NULL? Ct : Cnil))
+	assert_type_process(process);
+	@(return ((process->process.thread == NULL)? Cnil : Ct))
 }
 
 cl_object
-si_process_whostate(cl_object process)
+mp_process_whostate(cl_object process)
 {
-	/* FIXME! */
-	if (type_of(process) != t_process)
-		FEwrong_type_argument(@'si::process', process);
+	assert_type_process(process);
 	@(return (cl_core.null_string))
+}
+
+cl_object
+mp_process_run_function(int narg, cl_object name, cl_object function, ...)
+{
+	cl_object process;
+	cl_va_list args;
+	cl_va_start(args, function, narg, 2);
+	if (narg < 2)
+		FEwrong_num_arguments(@'mp::process-run-function');
+	if (CONSP(name)) {
+		process = cl_apply(2, @'mp::make-process', name);
+	} else {
+		process = mp_make_process(2, @':name', name);
+	}
+	cl_apply(4, @'mp::process-preset', process, function,
+		 cl_grab_rest_args(args));
+	return mp_process_enable(process);
 }
 
 
@@ -165,7 +195,7 @@ si_process_whostate(cl_object process)
  * LOCKS or MUTEX
  */
 
-@(defun si::make-lock (&key name)
+@(defun mp::make-lock (&key name)
 @
 	cl_object output = cl_alloc_object(t_lock);
 	output->lock.name = name;
@@ -175,19 +205,19 @@ si_process_whostate(cl_object process)
 @)
 
 cl_object
-si_giveup_lock(cl_object lock)
+mp_giveup_lock(cl_object lock)
 {
 	if (type_of(lock) != t_lock)
-		FEwrong_type_argument(@'si::lock', lock);
+		FEwrong_type_argument(@'mp::lock', lock);
 	pthread_mutex_unlock(lock->lock.mutex);
 	@(return Ct)
 }
 
-@(defun si::get-lock (lock &optional (wait Ct))
+@(defun mp::get-lock (lock &optional (wait Ct))
 	cl_object output;
 @
 	if (type_of(lock) != t_lock)
-		FEwrong_type_argument(@'si::lock', lock);
+		FEwrong_type_argument(@'mp::lock', lock);
 	if (wait == Ct) {
 		pthread_mutex_lock(lock->lock.mutex);
 		output = Ct;

@@ -1,5 +1,6 @@
 #ifdef DPP
 #define SYS_ "SI::"
+#define MP_ "MP::"
 #define KEY_ ":"
 struct {
 	const char *name, *translation;
@@ -9,6 +10,7 @@ struct {
 extern cl_object si_formatter_aux _ARGS((int narg, cl_object strm, cl_object string, ...));
 #endif
 #define SYS_
+#define MP_
 #define KEY_
 cl_symbol_initializer
 #endif
@@ -1347,19 +1349,23 @@ cl_symbols[] = {
 #endif
 
 #ifdef ECL_THREADS
-{SYS_ "PROCESS", CL_ORDINARY, NULL, -1, OBJNULL},
-{SYS_ "MAKE-PROCESS", SI_ORDINARY, si_make_process, -1, OBJNULL},
-{SYS_ "DESTROY-PROCESS", SI_ORDINARY, si_kill_process, 1, OBJNULL},
-{SYS_ "EXIT-PROCESS", SI_ORDINARY, si_exit_process, 0, OBJNULL},
-{SYS_ "ALL-PROCESSES", SI_ORDINARY, si_all_processes, 0, OBJNULL},
-{SYS_ "PROCESS-NAME", SI_ORDINARY, si_process_name, 1, OBJNULL},
-{SYS_ "PROCESS-ACTIVE-P", SI_ORDINARY, si_process_active_p, 1, OBJNULL},
-{SYS_ "PROCESS-WHOSTATE", SI_ORDINARY, si_process_whostate, 1, OBJNULL},
-{SYS_ "LOCK", CL_ORDINARY, NULL, -1, OBJNULL},
-{SYS_ "MAKE-LOCK", CL_ORDINARY, si_make_lock, -1, OBJNULL},
-{SYS_ "GET-LOCK", CL_ORDINARY, si_get_lock, -1, OBJNULL},
-{SYS_ "GIVEUP-LOCK", CL_ORDINARY, si_giveup_lock, 1, OBJNULL},
-{SYS_ "*CURRENT-PROCESS*", CL_SPECIAL, NULL, -1, OBJNULL},
+{MP_ "PROCESS", CL_ORDINARY, NULL, -1, OBJNULL},
+{MP_ "LOCK", CL_ORDINARY, NULL, -1, OBJNULL},
+{MP_ "*CURRENT-PROCESS*", CL_SPECIAL, NULL, -1, OBJNULL},
+{MP_ "ALL-PROCESSES", MP_ORDINARY, mp_all_processes, 0, OBJNULL},
+{MP_ "EXIT-PROCESS", MP_ORDINARY, mp_exit_process, 0, OBJNULL},
+{MP_ "MAKE-PROCESS", MP_ORDINARY, mp_make_process, -1, OBJNULL},
+{MP_ "PROCESS-ACTIVE-P", MP_ORDINARY, mp_process_active_p, 1, OBJNULL},
+{MP_ "PROCESS-ENABLE", MP_ORDINARY, mp_process_enable, 1, OBJNULL},
+{MP_ "PROCESS-KILL", MP_ORDINARY, mp_process_kill, 1, OBJNULL},
+{MP_ "PROCESS-NAME", MP_ORDINARY, mp_process_name, 1, OBJNULL},
+{MP_ "PROCESS-PRESET", MP_ORDINARY, mp_process_preset, -1, OBJNULL},
+{MP_ "PROCESS-RUN-FUNCTION", MP_ORDINARY, mp_process_run_function, -1, OBJNULL},
+{MP_ "PROCESS-WHOSTATE", MP_ORDINARY, mp_process_whostate, 1, OBJNULL},
+{MP_ "MAKE-LOCK", CL_ORDINARY, mp_make_lock, -1, OBJNULL},
+{MP_ "GET-LOCK", CL_ORDINARY, mp_get_lock, -1, OBJNULL},
+{MP_ "GIVEUP-LOCK", CL_ORDINARY, mp_giveup_lock, 1, OBJNULL},
+{KEY_ "INITIAL-BINDINGS", KEYWORD, NULL, -1, OBJNULL},
 #endif
 
 /* Tag for end of list */

@@ -1068,8 +1068,8 @@ if not possible."
 			   FILE-STREAM STRING-STREAM SYNONYM-STREAM TWO-WAY-STREAM))
 
 	       (READTABLE)
-	       #+threads (SI::PROCESS)
-	       #+threads (SI::LOCK)
+	       #+threads (MP::PROCESS)
+	       #+threads (MP::LOCK)
 	       ))
     (let* ((type (first i))
 	   (alias (second i))

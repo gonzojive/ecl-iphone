@@ -130,6 +130,9 @@ struct cl_core_struct {
 #ifdef CLOS
 	cl_object clos_package;
 #endif
+#ifdef ECL_THREADS
+	cl_object mp_package;
+#endif
 	cl_object packages_to_be_created;
 
 	cl_object pathname_translations;
@@ -1315,17 +1318,19 @@ extern cl_object make_stream(cl_object host, int fd, enum ecl_smmode smm);
 /* threads.c */
 
 #ifdef ECL_THREADS
-extern cl_object si_make_process _ARGS((int narg, cl_object name, cl_object function, ...));
-extern cl_object si_kill_process(cl_object thread);
-extern cl_object si_exit_process(void) __attribute__((noreturn));
-extern cl_object si_restart_process(cl_object process);
-extern cl_object si_all_processes(void);
-extern cl_object si_process_name(cl_object process);
-extern cl_object si_process_active_p(cl_object process);
-extern cl_object si_process_whostate(cl_object process);
-extern cl_object si_make_lock _ARGS((int narg, ...));
-extern cl_object si_get_lock _ARGS((int narg, cl_object lock, ...));
-extern cl_object si_giveup_lock(cl_object lock);
+extern cl_object mp_all_processes(void);
+extern cl_object mp_exit_process(void) __attribute__((noreturn));
+extern cl_object mp_make_process _ARGS((int narg, ...));
+extern cl_object mp_process_active_p(cl_object process);
+extern cl_object mp_process_enable(cl_object process);
+extern cl_object mp_process_kill(cl_object process);
+extern cl_object mp_process_name(cl_object process);
+extern cl_object mp_process_preset _ARGS((int narg, cl_object process, cl_object function, ...));
+extern cl_object mp_process_run_function _ARGS((int narg, cl_object name, cl_object function, ...));
+extern cl_object mp_process_whostate(cl_object process);
+extern cl_object mp_make_lock _ARGS((int narg, ...));
+extern cl_object mp_get_lock _ARGS((int narg, cl_object lock, ...));
+extern cl_object mp_giveup_lock(cl_object lock);
 #endif
 
 

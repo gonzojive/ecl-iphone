@@ -9,6 +9,8 @@
 #define SI_SPECIAL 5
 #define KEYWORD 10
 #define FORM_ORDINARY 16
+#define MP_ORDINARY 12
+#define MP_SPECIAL 13
 
 #include "symbols_list.h"
 
@@ -151,6 +153,9 @@ make_this_symbol(int i, cl_object s, int code, const char *name,
 	case 0: package = cl_core.lisp_package; break;
 	case 4: package = cl_core.system_package; break;
 	case 8: package = cl_core.keyword_package; break;
+#ifdef ECL_THREADS
+	case 12: package = cl_core.mp_package; break;
+#endif
 	}
 	s->symbol.t = t_symbol;
 	s->symbol.dynamic = 0;

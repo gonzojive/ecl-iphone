@@ -170,6 +170,11 @@ cl_boot(int argc, char **argv)
 	cl_core.tk_package = make_package(make_simple_string("TK"),
 					  Cnil, CONS(cl_core.lisp_package, Cnil));
 #endif
+#ifdef ECL_THREADS
+	cl_core.mp_package = make_package(make_simple_string("MP"),
+					  CONS(make_simple_string("MULTIPROCESSING"), Cnil),
+					  CONS(cl_core.lisp_package, Cnil));
+#endif
 
 	Cnil->symbol.hpack = cl_core.lisp_package;
 	cl_import2(Cnil, cl_core.lisp_package);
@@ -234,7 +239,7 @@ cl_boot(int argc, char **argv)
 	process->process.thread = NULL;
 	process->process.function = Cnil;
 	process->process.args = Cnil;
-	ECL_SET(@'si::*current-process*', process);
+	ECL_SET(@'mp::*current-process*', process);
 	cl_core.processes = CONS(process, Cnil);
 	}
 #endif
