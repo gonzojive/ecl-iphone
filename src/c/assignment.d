@@ -81,15 +81,15 @@ cl_fmakunbound(cl_object fname)
 	if (SYMBOLP(fname)) {
 		clear_compiler_properties(sym);
 #ifdef PDE
-		cl_remprop(fname, @'defun');
+		si_rem_sysprop(fname, @'defun');
 #endif
 		SYM_FUN(sym) = OBJNULL;
 		sym->symbol.mflag = FALSE;
 	} else {
-		cl_remprop(sym, @'si::setf-symbol');
-		cl_remprop(sym, @'si::setf-lambda');
-		cl_remprop(sym, @'si::setf-method');
-		cl_remprop(sym, @'si::setf-update');
+		si_rem_sysprop(sym, @'si::setf-symbol');
+		si_rem_sysprop(sym, @'si::setf-lambda');
+		si_rem_sysprop(sym, @'si::setf-method');
+		si_rem_sysprop(sym, @'si::setf-update');
 	}
 	@(return fname)
 }
