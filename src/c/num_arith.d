@@ -796,7 +796,7 @@ one_plus(cl_object x)
 	case t_fixnum:
  		if (x == MAKE_FIXNUM(MOST_POSITIVE_FIXNUM))
 		  return(bignum1(MOST_POSITIVE_FIXNUM+1));
-		return (cl_object)((int)x + ((int)MAKE_FIXNUM(1) - FIXNUM_TAG));
+		return (cl_object)((cl_fixnum)x + ((cl_fixnum)MAKE_FIXNUM(1) - FIXNUM_TAG));
 	case t_bignum:
 		return(number_plus(x, MAKE_FIXNUM(1)));
 
@@ -842,7 +842,7 @@ one_minus(cl_object x)
 	case t_fixnum:
  		if (x == MAKE_FIXNUM(MOST_NEGATIVE_FIXNUM))
 		  return(bignum1(MOST_NEGATIVE_FIXNUM-1));
-		return (cl_object)((int)x - ((int)MAKE_FIXNUM(1) - FIXNUM_TAG));
+		return (cl_object)((cl_fixnum)x - ((cl_fixnum)MAKE_FIXNUM(1) - FIXNUM_TAG));
 
 	case t_bignum:
 		return(number_minus(x, MAKE_FIXNUM(1)));
