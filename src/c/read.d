@@ -1357,7 +1357,7 @@ current_readtable(void)
 }
 
 
-@(defun read (&optional (strm symbol_value(@'*standard_input*'))
+@(defun read (&optional (strm Cnil)
 			(eof_errorp Ct)
 			eof_value
 			recursivep
@@ -1383,7 +1383,7 @@ current_readtable(void)
 @)
 
 @(defun read_preserving_whitespace
-	(&optional (strm symbol_value(@'*standard_input*'))
+	(&optional (strm Cnil)
 		   (eof_errorp Ct)
 		   eof_value
 		   recursivep
@@ -1415,12 +1415,7 @@ READ:
 	@(return x)
 @)
 
-@(defun read_delimited_list
-	(d
-	 &optional (strm symbol_value(@'*standard_input*'))
-		   recursivep
-	 &aux l x)
-
+@(defun read_delimited_list (d &optional (strm Cnil) recursivep &aux l x)
 	cl_object *p;
 	bool e;
 	volatile cl_object old_sharp_eq_context;
@@ -1469,10 +1464,7 @@ READ:
 	@(return l)
 @)
 
-@(defun read_line (&optional (strm symbol_value(@'*standard_input*'))
-			     (eof_errorp Ct)
-			     eof_value
-			     recursivep)
+@(defun read_line (&optional (strm Cnil) (eof_errorp Ct) eof_value recursivep)
 	int c;
 	cl_object eof;
 @
@@ -1507,10 +1499,7 @@ READ:
 	@(return copy_simple_string(cl_token) eof)
 @)
 
-@(defun read_char (&optional (strm symbol_value(@'*standard_input*'))
-			     (eof_errorp Ct)
-			     eof_value
-			     recursivep)
+@(defun read_char (&optional (strm Cnil) (eof_errorp Ct) eof_value recursivep)
 @
         if (Null(strm))
 	    strm = symbol_value(@'*standard_input*');
@@ -1525,7 +1514,7 @@ READ:
 	@(return read_char(strm))
 @)
 
-@(defun unread_char (c &optional (strm symbol_value(@'*standard_input*')))
+@(defun unread_char (c &optional (strm Cnil))
 @
 	/* INV: unread_char() checks the type `c' */
 	if (Null(strm))
@@ -1536,11 +1525,7 @@ READ:
 	@(return Cnil)
 @)
 
-@(defun peek_char (&optional peek_type
-			     (strm symbol_value(@'*standard_input*'))
-			     (eof_errorp Ct)
-			     eof_value
-			     recursivep)
+@(defun peek_char (&optional peek_type (strm Cnil) (eof_errorp Ct) eof_value recursivep)
 	int c;
 @
 	if (Null(strm))
@@ -1586,7 +1571,7 @@ READ:
 		FEend_of_file(strm);
 @)
 
-@(defun listen (&optional (strm symbol_value(@'*standard_input*')))
+@(defun listen (&optional (strm Cnil))
 @
 	if (Null(strm))
 		strm = symbol_value(@'*standard_input*');
@@ -1595,10 +1580,7 @@ READ:
 	@(return (listen_stream(strm)? Ct : Cnil))
 @)
 
-@(defun read_char_no_hang (&optional (strm symbol_value(@'*standard_input*'))
-			             (eof_errorp Ct)
-			             eof_value
-			             recursivep)
+@(defun read_char_no_hang (&optional (strm Cnil) (eof_errorp Ct) eof_value recursivep)
 @
 	if (Null(strm))
 		strm = symbol_value(@'*standard_input*');
@@ -1623,7 +1605,7 @@ READ:
 #endif
 @)
 
-@(defun clear_input (&optional (strm symbol_value(@'*standard_input*')))
+@(defun clear_input (&optional (strm Cnil))
 @
 	if (Null(strm))
 		strm = symbol_value(@'*standard_input*');
