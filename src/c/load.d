@@ -146,9 +146,11 @@ GO_ON:
 		/* If filename already has an extension, make sure
 		   that the file exists */
 		filename = coerce_to_filename(pathname);
-		if (!file_exists(filename))
-			FEcannot_open(filename);
-		function = cdr(assoc(pathname->pathname.type, hooks));
+		if (!file_exists(filename)) {
+			filename = Cnil;
+		} else {
+			function = cdr(assoc(pathname->pathname.type, hooks));
+		}
 	} else loop_for_in(hooks) {
 		/* Otherwise try with known extensions until a matching
 		   file is found */
