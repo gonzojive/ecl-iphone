@@ -116,8 +116,8 @@
 (my-assert
  (set-difference '(a b c d e)
 		 '(d b e))
- #+(or xcl allegro gcl cmu sbcl ecl) (c a)
- #+(or clisp (and akcl (not gcl))) (a c)
+ #+(or xcl allegro gcl cmu sbcl) (c a)
+ #+(or clisp ecl (and akcl (not gcl))) (a c)
  #-(or xcl clisp akcl allegro cmu sbcl ecl) unknown)
 
 (my-assert
