@@ -178,7 +178,6 @@
   (remprop symbol 't1)
   (remprop symbol 't2)
   (remprop symbol 't3)
-  (remprop symbol 'top-level-macro)
   (remprop symbol 'c1)
   (remprop symbol 'c2)
   (remprop symbol 'c1conditional)

@@ -276,7 +276,6 @@
 "clos/cmpinit.lsp"
 "clos/combin.lsp"
 "clos/defclass.lsp"
-"clos/defsys.lsp"
 "clos/fixup.lsp"
 "clos/generic.lsp"
 "clos/init.lsp"

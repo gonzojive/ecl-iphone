@@ -21,7 +21,8 @@
 
 ;;; DEFTYPE macro.
 (defmacro deftype (name lambda-list &rest body)
-  `(progn (setf (get ',name 'DEFTYPE-FORM)
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+          (setf (get ',name 'DEFTYPE-FORM)
 	   '(DEFTYPE ,name ,lambda-list ,@body))
           (setf (get ',name 'DEFTYPE-DEFINITION)
 	   #'(LAMBDA ,lambda-list ,@body))

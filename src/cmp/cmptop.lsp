@@ -31,10 +31,6 @@
                    ((setq fd (get fun 'T1))
                     (when *compile-print* (print-current-form))
                     (funcall fd args))
-                   ((get fun 'TOP-LEVEL-MACRO)
-                    (when *compile-print* (print-current-form))
-		    (let ((*compile-time-too* t))
-		      (t1expr (cmp-macroexpand-1 form))))
                    ((get fun 'C1) (t1ordinary form))
                    ((setq fd (macro-function fun))
                     (t1expr (cmp-expand-macro fd fun (cdr form))))
@@ -1222,13 +1218,4 @@
 
 (setf (get 'si::select-package 'PACKAGE-OPERATION) t)
 (setf (get 'si::%defpackage 'PACKAGE-OPERATION) t)
-
-;;; Top-level macros.
-
-(setf (get 'defstruct 'TOP-LEVEL-MACRO) t)
-(setf (get 'deftype 'TOP-LEVEL-MACRO) t)
-(setf (get 'defsetf 'TOP-LEVEL-MACRO) t)
-; Handled through t1ordinary:
-;(setf (get 'defconstant 'TOP-LEVEL-MACRO) t)
-;(setf (get 'defparameter 'TOP-LEVEL-MACRO) t)
 
