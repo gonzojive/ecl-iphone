@@ -5,7 +5,7 @@
 (in-package "COMPILER")
 (setq *cc* "@ECL_CC@")
 (setq *cc-flags* "@CFLAGS@ @LSPCFLAGS@")
-(setq *ld-flags* "@LDRPATH@ @LDFLAGS@ -lecl @CLIBS@")
+(setq *ld-flags* "@LDRPATH@ @LDFLAGS@ -lecl -lgmp -lgc @CLIBS@")
 #+dlopen
 (setq *ld-shared-flags* "@LDRPATH@ @SHARED_LDFLAGS@ @LDFLAGS@ -lecl @CLIBS@")
 #+dlopen

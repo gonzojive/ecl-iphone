@@ -136,30 +136,30 @@ case "${host_os}" in
 	# libdir may have a dollar expression inside
 	linux*)
 		thehost='linux'
-		SHARED_LDFLAGS='-shared'
-		BUNDLE_LDFLAGS='-shared'
+		SHARED_LDFLAGS="-shared ${LDFLAGS}"
+		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
 		LDRPATH='-Wl,--rpath,~A'
 		CLIBS="-ldl"
 		# Maybe CFLAGS="-D_ISOC99_SOURCE ${CFLAGS}" ???
 		;;
 	freebsd*)
 		thehost='freebsd'
-		SHARED_LDFLAGS='-shared'
-		BUNDLE_LDFLAGS='-shared'
+		SHARED_LDFLAGS="-shared ${LDFLAGS}"
+		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
 		LDRPATH="-Wl,--rpath,~A"
 		CLIBS=""
 		;;
 	netbsd*)
 		thehost='netbsd'
-		SHARED_LDFLAGS='-shared'
-		BUNDLE_LDFLAGS='-shared'
+		SHARED_LDFLAGS="-shared ${LDFLAGS}"
+		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
 		LDRPATH="-Wl,--rpath,~A"
 		CLIBS=""
 		;;
 	solaris*)
 		thehost='sun4sol2'
-		SHARED_LDFLAGS='-dy -G'
-		BUNDLE_LDFLAGS='-dy -G'
+		SHARED_LDFLAGS="-dy -G ${LDFLAGS}"
+		BUNDLE_LDFLAGS="-dy -G ${LDFLAGS}"
 		LDRPATH='-Wl,-R,~A'
 		TCPLIBS='-lsocket -lnsl -lintl'
 		CLIBS='-ldl'
@@ -176,8 +176,8 @@ case "${host_os}" in
 		shared='yes'
 		SHAREDEXT='dylib'
 		PICFLAG='-fPIC -fno-common'
-		SHARED_LDFLAGS='-dynamiclib -flat_namespace -undefined suppress'
-		BUNDLE_LDFLAGS='-bundle'
+		SHARED_LDFLAGS="-dynamiclib -flat_namespace -undefined suppress ${LDFLAGS}"
+		BUNDLE_LDFLAGS="-bundle ${LDFLAGS}"
 		LDRPATH=''
 		LDINSTALLNAME="-Wl,-install_name,${libdir}/${SHAREDPREFIX}ecl.${SHAREDEXT}"
 		;;
