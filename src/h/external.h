@@ -921,7 +921,6 @@ extern int interrupt_flag;
 extern void signal_catcher(int sig, int code, int scp);
 extern void enable_interrupt(void);
 extern void init_interrupt(void);
-extern void sigint(void);
 
 
 /* unixsys.c */
