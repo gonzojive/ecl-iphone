@@ -487,14 +487,22 @@ list_current_directory(const char *mask, bool only_dir)
 #else
 # ifdef _MSC_VER
 	WIN32_FIND_DATA fd;
-	HANDLE hFind = FindFirstFile(".\\*", &fd);
+	HANDLE hFind = NULL;
 	BOOL found = FALSE;
 
-	if (hFind == INVALID_HANDLE_VALUE)
-		return Cnil;
-	found = TRUE;
+	for (;;) {
+		if (hFind == NULL)
+		{
+			hFind = FindFirstFile(".\\*", &fd);
+			if (hFind == INVALID_HANDLE_VALUE)
+				return Cnil;
+			found = TRUE;
+		}
+		else
+			found = FindNextFile(hFind, &fd);
 
-	while (found) {
+		if (!found)
+			break;
 		text = fd.cFileName;
 
 # else /* sys/dir.h as in SYSV */
@@ -525,9 +533,6 @@ list_current_directory(const char *mask, bool only_dir)
 			continue;
 		*out_cdr = CONS(make_string_copy(text), Cnil);
 		out_cdr = &CDR(*out_cdr);
-#ifdef _MSC_VER
-		found = FindNextFile(hFind, &fd);
-#endif
 	}
 #ifdef HAVE_DIRENT_H
 	closedir(dir);

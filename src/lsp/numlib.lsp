@@ -156,9 +156,9 @@ Returns the arc cosine of NUMBER."
 
 #+(and (not ecl-min) win32)
 (progn
-  (ffi:clines "double asinh(x) { return log(x+sqrt(1.0+x*x)); }")
-  (ffi:clines "double acosh(x) { return log(x+sqrt((x-1)*(x+1))); }")
-  (ffi:clines "double atanh(x) { return (log(x+1)-log(x-1))/2; }"))
+  (ffi:clines "double asinh(double x) { return log(x+sqrt(1.0+x*x)); }")
+  (ffi:clines "double acosh(double x) { return log(x+sqrt((x-1)*(x+1))); }")
+  (ffi:clines "double atanh(double x) { return log((1+x)/(1-x))/2; }"))
 
 ;; Ported from CMUCL
 (defun asinh (x)
