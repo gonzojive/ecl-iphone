@@ -172,7 +172,7 @@
 
 (defun compiler-clear-compiler-properties (symbol)
   #-:CCL
-  (sys::unlink-symbol symbol)
+  ;(sys::unlink-symbol symbol)
   (remprop symbol 'package-operation)
   (remprop symbol 't1)
   (remprop symbol 't2)

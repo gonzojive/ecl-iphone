@@ -2,12 +2,14 @@
 # Recommended settings for debuggin either ecls_min or ecls.
 #
 delete break
-break Lcos
-break Lerror
+break clLcos
+break clLerror
 break CEerror
 break FEerror
 break FEunbound_variable
 break FEundefined_function
 break FEwrong_type_argument
 break FEinvalid_function
+break FEcondition
+break error
 set confirm off

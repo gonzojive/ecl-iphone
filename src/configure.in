@@ -104,6 +104,9 @@ case $host_os in
 	netbsd*)
 		host="netbsd"
 		;;
+	solaris*)
+		host="sun4sol2"
+		;;
 	*)
 		host="$host_os"
 		;;
@@ -211,10 +214,6 @@ configure___DLD=DLD
 configure___DLD=dld
 #endif
 
-#ifdef RSYM
-configure___RSYM=RSYM
-#endif
-
 #ifdef SETJMP
 configure___SETJMP=SETJMP
 #endif
@@ -255,7 +254,6 @@ AC_SUBST(LDFLAGS)
 AC_SUBST(ILDFLAGS)
 AC_SUBST(UNEXEC)
 AC_SUBST(DLD)
-AC_SUBST(RSYM)
 AC_SUBST(SETJMP)
 AC_SUBST(SETJMPO)
 AC_SUBST(architecture)
@@ -329,8 +327,8 @@ CLIBS="-lgmp ${CLIBS}"
 ###
 AC_OUTPUT(h/config.h compile.lsp compile2.lsp compile_rest.lsp bare.lsp
  lsp/config.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp
- ../Makefile Makefile c/Makefile crs/Makefile doc/Makefile
- tk/Makefile clx/defsys.lsp tests/Makefile ansi-tests/Makefile gabriel/Makefile
+ ../Makefile Makefile c/Makefile doc/Makefile
+ tk/Makeile clx/defsys.lsp tests/Makefile ansi-tests/Makefile gabriel/Makefile
  lsp/defsys.lsp cmp/defsys.lsp clos/defsys.lsp gc/Makefile,
 
 # Fix machine dependencies in Makefiles

@@ -685,8 +685,18 @@ ECLS 0.3
 
 * Fix the compiler so that when it finds LOCALLY, MACROLET or
   SYMBOL-MACROLET at the top level, it processes their bodies as top
-  level forms as well.
+  level forms as well. For instance, this now works
+	(LOCALLY (EVAL-WHEN (:COMPILE-TOPLEVEL) (PRINT "HELLO")))
 
+* Implement loading of object files using the native "dlopen" function
+  which is present in most operating systems. Support for "dld" has
+  been dropped.
+
+* The dynamic linker in eval.d (link_call) truncated addresses larger
+  than MOST_POSITIVE_FIXNUM.
+
+* The routine that outputs addresses as hexadecimal numbers, and which
+  is used in print-unreadable, would only output the first digit.
 
 TODO:
 =====
@@ -712,8 +722,6 @@ TODO:
   extremely faulty with respect to the standards.
 
 * expand parse_namestring() to accept scaped strings, spaces, etc.
-
-* fix FEerror* so that it accepts parameters.
 
 * Remove most property lists from standard symbols.
 

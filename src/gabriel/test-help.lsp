@@ -81,9 +81,10 @@
 	   (proclaim-file source-file)
 	   (compile-file source-file :output-file fasl-file
 			 #+ecls :c-file #+ecls t #+ecls :h-file #+ecls t)
-	   (load fasl-file))
+	   (print fasl-file)
+	   (load fasl-file :verbose t))
 	  (t
-	   (load source-file)))
+	   (load source-file :verbose t)))
     (if (and (not given)
 	     (setq tem (assoc file +repeats+ :test 'equalp)))
       (setq repeat (second tem)))

@@ -28,7 +28,8 @@
 (defvar *cc-format* "~A ~A ~:[~*~;~A~] -I~A/h -w -c ~A -o ~A"))
 ;(defvar *cc-format* "~A ~A ~:[~*~;~A~] -I~A/h -c ~A -o ~A"))
 (defvar *ld-flags* "")
-(defvar *ld-format* "~A -w -o ~A -L~A ~{~A ~} -llsp ~A")
+(defvar *ld-format* "~A ~A -w -o ~A -L~A ~{~A ~} -llsp ~A")
+(defvar *ld-shared-format* "ld -shared -o ~A -L~A ~{~A ~} ~A")
 
 (eval-when (compile eval)
   (defmacro get-output-pathname (file ext)
@@ -52,7 +53,7 @@
   (make-pathname :name (concatenate 'string "lib" name) :type "a" :defaults directory))
 
 (defun compile-file-pathname (name &key output-file)
-  (merge-pathnames (or output-file name) #P".o"))
+  (merge-pathnames (or output-file name) #P".so"))
 
 (defun make-library (lib objects &key (output-dir "./"))
   (let* ((lib (string-upcase lib))
@@ -79,23 +80,24 @@ init_~A(cl_object)
     (delete-file (namestring libo)))
     liba))
 
-(defun linker-cc (o-pathname options)
+(defun linker-cc (o-pathname options &optional (shared nil))
   (safe-system
    (format nil
 	   *ld-format*
-	   *cc* (namestring o-pathname)
+	   *cc*
+	   (if shared "-shared" "")
+	   (namestring o-pathname)
 	   (namestring (translate-logical-pathname "SYS:"))
 	   options *ld-flags*)))
 
-(defun rsym (name)
-  (let ((output (make-pathname :name (pathname-name name) :type "sym"))
-	(rsym (translate-logical-pathname "SYS:rsym")))
-    (cond ((not (probe-file rsym))
-	   (error "rsym executable not found"))
-	  ((not (probe-file name))
-	   (error "executable to be scanned not found"))
-	  (t
-	   (safe-system (format nil "~A ~A ~A" rsym name output))))))
+(defun shared-cc (o-pathname options &optional (shared nil))
+  (safe-system
+   (format nil
+	   *ld-shared-format*
+	   (namestring o-pathname)
+	   (namestring (translate-logical-pathname "SYS:"))
+	   options
+	   "")))
 
 (defun build-ecls (name &rest components)
   (let ((c-name (make-pathname :name name :type "c"))
@@ -106,9 +108,7 @@ init_~A(cl_object)
 #include \"ecls.h\"
 
 extern cl_object lisp_package;
-#ifdef RSYM
-extern cl_object siVsymbol_table;
-#endif
+
 void
 init_lisp_libs(void)
 {
@@ -123,13 +123,9 @@ init_lisp_libs(void)
 	      (t
 	       (error "compiler::build-ecls wrong argument ~A" item))))
       (format c-file "
-#ifdef RSYM
-	SYM_VAL(siVsymbol_table) = make_simple_string(\"SYS:~A.sym\");
-#endif
 	return;~%}~%" name))
     (compiler-cc c-name o-name)
     (linker-cc name (cons (namestring o-name) ld-flags))
-    (rsym name)
     (delete-file c-name)
     ))
 
@@ -154,6 +150,9 @@ init_lisp_libs(void)
   (setq input-pathname (merge-pathnames input-pathname #".lsp"))
 
   #+PDE (setq sys:*source-pathname* (truename input-pathname))
+
+  (when (and system-p load)
+    (error "Cannot load system files."))
 
   (when *compiler-in-use*
     (format t "~&;;; The compiler was called recursively.~%~
@@ -182,7 +181,9 @@ Cannot compile ~a."
 			     output-file))
          (directory (pathname-directory output-default))
          (name (pathname-name output-default))
-         (o-pathname (get-output-pathname output-file "o"))
+	 (o-pathname (get-output-pathname output-file "o"))
+         (so-pathname (if system-p o-pathname
+			  (get-output-pathname output-file "so")))
          (c-pathname (get-output-pathname c-file "c"))
          (h-pathname (get-output-pathname h-file "h"))
          (data-pathname (get-output-pathname data-file "data")))
@@ -234,23 +235,13 @@ Cannot compile ~a."
 		 (when *compile-verbose*
 		   (format t "~&;;; Calling the C compiler... "))
                  (compiler-cc c-pathname o-pathname)
-                 (cond ((probe-file o-pathname)
-                        (when load (load o-pathname))
+		 (unless system-p (shared-cc so-pathname (list o-pathname) t))
+                 (cond ((probe-file so-pathname)
+                        (when load (load so-pathname))
                         (when *compile-verbose*
 			  (print-compiler-info)
 			  (format t "~&;;; Finished compiling ~a."
 				  (namestring input-pathname))))
-		       #+(or SYSTEM-V APOLLO) ;tito 
-		       ((probe-file (setq ob-name
-					  (format nil "~a.o"
-						  (pathname-name o-pathname))))
-			(si:system (format nil "mv ~A ~A" (namestring ob-name)
-					    (namestring o-pathname)))
-                        (when load (load o-pathname))
-                        (when *compile-verbose*
-			  (print-compiler-info)
-			  (format t "~&;;; Finished compiling ~a."
-				  (namestring input-pathname))))	       
                        (t (format t "~&;;; The C compiler failed to compile the intermediate file.~%")
                           (setq *error-p* t))))
 		(*compile-verbose*
@@ -260,12 +251,14 @@ Cannot compile ~a."
           (unless c-file (delete-file c-pathname))
           (unless h-file (delete-file h-pathname))
           (unless data-file (delete-file data-pathname))
-	  o-pathname)
+	  (unless system-p (delete-file o-pathname))
+	  so-pathname)
 
         (progn
           (when (probe-file c-pathname) (delete-file c-pathname))
           (when (probe-file h-pathname) (delete-file h-pathname))
           (when (probe-file data-pathname) (delete-file data-pathname))
+	  (when (probe-file o-pathname) (delete-file o-pathname))
           (format t "~&;;; No FASL generated.~%")
           (setq *error-p* t)
 	  (values))
@@ -339,7 +332,8 @@ Cannot compile ~a."
 
   (let ((c-pathname (make-pathname :name gazonk-name :type "c"))
         (h-pathname (make-pathname :name gazonk-name :type "h"))
-        (o-pathname (make-pathname :name gazonk-name :type "o")))
+        (o-pathname (make-pathname :name gazonk-name :type "o"))
+	(so-pathname (make-pathname :name gazonk-name :type "so")))
 
     (init-env)
 
@@ -363,12 +357,14 @@ Cannot compile ~a."
           (when *compile-verbose*
 	    (format t "~&;;; Calling the C compiler... "))
           (compiler-cc c-pathname o-pathname)
+	  (shared-cc so-pathname (list o-pathname) t)
           (delete-file c-pathname)
           (delete-file h-pathname)
-          (cond ((probe-file o-pathname)
-                 (load o-pathname :verbose nil)
+	  (delete-file o-pathname)
+          (cond ((probe-file so-pathname)
+                 (load so-pathname :verbose nil)
                  (when *compile-verbose* (print-compiler-info))
-                 (delete-file o-pathname)
+                 (delete-file so-pathname)
                  (delete-file data-pathname))
                 (t (delete-file data-pathname)
                    (format t "~&;;; The C compiler failed to compile~
@@ -380,6 +376,7 @@ Cannot compile ~a."
 	  (print c-pathname)
           (when (probe-file c-pathname) (delete-file c-pathname))
           (when (probe-file h-pathname) (delete-file h-pathname))
+          (when (probe-file so-pathname) (delete-file so-pathname))
           (when (probe-file data-pathname) (delete-file data-pathname))
           (format t "~&;;; Failed to compile ~s.~%" name)
           (setq *error-p* t)
@@ -488,6 +485,16 @@ Cannot compile ~a."
                 ((null *compiler-push-events*) 2)
                 (t 3))
           *safe-compile* *space* *speed*))
+
+(defun load-o-file (file verbose print)
+  (let ((tmp (merge-pathnames ".so" file)))
+    (shared-cc tmp (list file))
+    (when (probe-file tmp)
+      (load tmp :verbose nil :print nil)
+      (delete-file tmp)
+      nil)))
+
+(push (cons "o" #'load-o-file) si::*load-hooks*)
 
 ;;; ----------------------------------------------------------------------
 (provide "compiler")

@@ -12,9 +12,6 @@
 
 (in-package "CLOS")
 
-(eval-when (:compile-toplevel)
-  (print (si::compiled-function-block #'walker::walk-form)))
-
 ;;; ----------------------------------------------------------------------
 
 ;(proclaim '(DECLARATION VARIABLE-REBINDING))

@@ -47,10 +47,11 @@ INSTALL_DATA = @INSTALL_DATA@
 
 # Files
 
-SUBDIR	= c gmp crs
-LIBRARIES = libecls.a libcrs.a
+SUBDIR	= c
+LIBRARIES = libecls.a
 TARGETS = ecls
 #ifndef HAVE_LOCAL_GMP
+SUBDIR += gmp
 LIBRARIES += libgmp.a
 #endif
 #ifdef GBC_BOEHM
@@ -71,7 +72,7 @@ LSP_LIBRARIES += libclx.a
 
 # The makefiles of the directories in $SUBDIR.
 # Don't split this line: configure does grep on it
-SUBDIR_MAKEFILES= c/Makefile crs/Makefile tk/Makefile doc/Makefile gc/Makefile
+SUBDIR_MAKEFILES= c/Makefile tk/Makefile doc/Makefile gc/Makefile
 
 all:	$(TARGETS) doc
 .PHONY:	all
@@ -85,9 +86,8 @@ eclx: ecls compile_rest.lsp
 ecls: ecls_min compile.lsp
 	./ecls_min < compile.lsp
 
-ecls_min: $(LIBRARIES) @RSYM@ .gdbinit
+ecls_min: $(LIBRARIES) .gdbinit
 	$(CC) $(LDFLAGS) -o $@ c/cinit.o -L./ $(LIBRARIES) $(LIBS)
-	test "@RSYM@" = "" || ./rsym ecls_min ecls_min.sym
 
 .gdbinit: $(srcdir)/util/gdbinit
 	cp $(srcdir)/util/gdbinit $@
@@ -96,9 +96,6 @@ libecls.a:
 	cd c; $(MAKE)
 libgc.a:
 	cd gc; $(MAKE)
-libcrs.a @RSYM@:
-	cd crs; $(MAKE)
-	test "@RSYM@" = "" || cp crs/@RSYM@ .
 libgmp.a:
 	cd gmp; $(MAKE); cp .libs/libgmp.a ..
 
@@ -125,7 +122,6 @@ install: BUILD-STAMP
 	test -d $(PREFIX)$(libdir)/h/private  || (mkdir $(PREFIX)$(libdir)/h/private; chmod 755 $(PREFIX)$(libdir)/h/private)
 	for i in $(srcdir)/gc/include/private/?*.h; do $(INSTALL_DATA) $$i $(PREFIX)$(libdir)/h/private/`basename $$i`; done
 #endif GBC_BOEHM
-	test "@RSYM@" = "" || $(INSTALL_PROGRAM) @RSYM@ $(PREFIX)$(libdir)
 	cd c; $(MAKE) PREFIX="$(PREFIX)" install
 	cd doc; $(MAKE) PREFIX="$(PREFIX)" install
 
