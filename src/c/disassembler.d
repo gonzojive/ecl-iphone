@@ -464,14 +464,12 @@ disassemble(cl_object *vector) {
 				s = next_code(vector);
 				goto ARG;
 
-	/* OP_VAR	n{arg}, var{symbol}
+	/* OP_VAR	n{arg}
 		Sets NValues=1 and VALUES(0) to the value of the n-th local.
-		VAR is the name of the variable for readability purposes.
 	*/
 	case OP_VAR:		string = "VAR\t";
 				n = get_oparg(s);
-				s = next_code(vector);
-				goto OPARG_ARG;
+				goto OPARG;
 
 	/* OP_VARS	var{symbol}
 		Sets NValues=1 and VALUES(0) to the value of the symbol VAR.
@@ -487,14 +485,12 @@ disassemble(cl_object *vector) {
 	case OP_PUSH:		string = "PUSH\tVALUES(0)";
 				goto NOARG;
 
-	/* OP_PUSHV	n{arg}, var{symbol}
+	/* OP_PUSHV	n{arg}
 		Pushes the value of the n-th local onto the stack.
-		VAR is the name of the variable for readability purposes.
 	*/
 	case OP_PUSHV:		string = "PUSHV\t";
 				n = get_oparg(s);
-				s = next_code(vector);
-				goto OPARG_ARG;
+				goto OPARG;
 
 	/* OP_PUSHVS	var{symbol}
 		Pushes the value of the symbol VAR onto the stack.

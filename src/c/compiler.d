@@ -1807,7 +1807,6 @@ compile_form(cl_object stmt, bool push) {
 			index = c_var_ref(stmt);
 			if (index >= 0) {
 				asm_op2(push? OP_PUSHV : OP_VAR, index);
-				asm1(stmt);
 			} else {
 				asm_op(push? OP_PUSHVS : OP_VARS);
 				asm1(stmt);

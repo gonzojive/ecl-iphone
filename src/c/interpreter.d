@@ -139,10 +139,10 @@ bind_special(register cl_object var, register cl_object val)
 }
 
 static cl_object
-search_local(register cl_object name, register int s) {
+search_local(register int s) {
 	cl_object x;
 	for (x = lex_env; s-- > 0 && !Null(x); x = CDDR(x));
-	if (Null(x) || CAR(x) != name)
+	if (Null(x))
 		FEerror("Internal error: local not found.", 0);
 	return CADR(x);
 }
@@ -939,8 +939,7 @@ interpret(cl_object *vector) {
 	*/
 	case OP_VAR: {
 		int lex_env_index = get_oparg(s);
-		cl_object var_name = next_code(vector);
-		VALUES(0) = search_local(var_name, lex_env_index);
+		VALUES(0) = search_local(lex_env_index);
 		NValues = 1;
 		break;
 	}
@@ -963,14 +962,12 @@ interpret(cl_object *vector) {
 		cl_stack_push(VALUES(0));
 		break;
 
-	/* OP_PUSHV	n{arg}, var{symbol}
+	/* OP_PUSHV	n{arg}
 		Pushes the value of the n-th local onto the stack.
-		VAR is the name of the variable for readability purposes.
 	*/
 	case OP_PUSHV: {
 		int lex_env_index = get_oparg(s);
-		cl_object var_name = next_code(vector);
-		cl_stack_push(search_local(var_name, lex_env_index));
+		cl_stack_push(search_local(lex_env_index));
 		break;
 	}
 
@@ -1137,7 +1134,7 @@ interpret(cl_object *vector) {
 	*/
 	case OP_GO: {
 		cl_object tag_name = next_code(vector);
-		cl_object id = search_local(@':tag',get_oparg(s));
+		cl_object id = search_local(get_oparg(s));
 		VALUES(0) = Cnil;
 		NValues = 0;
 		cl_go(id, tag_name);
