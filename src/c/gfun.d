@@ -134,14 +134,14 @@ get_meth_hash(cl_object *keys, int argno, cl_object hashtable)
 	int hsize;
 	struct hashtable_entry *e, *htable;
 	cl_object hkey, tlist;
-	register int i = 0;
+	register cl_index i = 0;
 	int k, n; /* k added by chou */
 	bool b = 1;
 
 	hsize = hashtable->hash.size;
 	htable = hashtable->hash.data;
 	for (n = 0; n < argno; n++)
-	  i += (int)keys[n] / 4; /* instead of:
+	  i += (cl_index)keys[n] / 4; /* instead of:
 				   i += hash_eql(keys[n]);
 				   i += hash_eql(Cnil);
 				 */
