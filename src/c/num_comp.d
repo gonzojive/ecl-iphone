@@ -17,9 +17,9 @@
 #include "ecls.h"
 
 /*
-   For sake of profiler, put Lall_the_same before number_compare,
+   For sake of profiler, put @all-the-same before number_compare,
    so that all calls to number_compare are attributed to function =.
-   Similarly for Lmonotonically_decreasing.
+   Similarly for @monotonically-decreasing.
 */
 
 
@@ -282,13 +282,13 @@ number_compare(cl_object x, cl_object y)
   return monotonic(i, j, narg, (cl_object *)nums); }
 
 cl_object
-Lmonotonically_nondecreasing	MONOTONIC( 1, 0)
+@monotonically-nondecreasing	MONOTONIC( 1, 0)
 cl_object
-Lmonotonically_nonincreasing	MONOTONIC(-1, 0)
+@monotonically-nonincreasing	MONOTONIC(-1, 0)
 cl_object
-Lmonotonically_increasing	MONOTONIC( 1, 1)
+@monotonically-increasing	MONOTONIC( 1, 1)
 cl_object
-Lmonotonically_decreasing	MONOTONIC(-1, 1)
+@monotonically-decreasing	MONOTONIC(-1, 1)
 
 cl_object
 monotonic(int s, int t, int narg, cl_object *nums)

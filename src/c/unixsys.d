@@ -103,7 +103,7 @@ system(command)
   stream = alloc_object(t_stream);
   stream->stream.mode = smm_input;
   stream->stream.file = ptr;
-  stream->stream.object0 = Sbase_char;
+  stream->stream.object0 = @'base-char';
   stream->stream.object1 = cmd;
   stream->stream.int0 = stream->stream.int1 = 0;
 #if !defined(GBC_BOEHM)

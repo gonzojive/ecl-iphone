@@ -27,10 +27,10 @@ disassemble_vars(const char *message, cl_object *vector, cl_index step) {
 	cl_index n = fix(next_code(vector));
 
 	if (n) {
-	  Lterpri(0);
+	  @terpri(0);
 	  printf(message);
 	  for (; n; n--, vector+=step) {
-	    Lprin1(1,vector[0]);
+	    @prin1(1,vector[0]);
 	    if (n > 1) printf(", ");
 	  }
 	}
@@ -42,10 +42,10 @@ disassemble_lambda(cl_object *vector) {
 	cl_object specials;
 	cl_index n;
 
-	Lterpri(0);
+	@terpri(0);
 	/* Name of LAMBDA */
 	printf("Name:\t\t");
-	Lprin1(1, next_code(vector));
+	@prin1(1, next_code(vector));
 
 	/* Variables that have been declared special */
 	specials = next_code(vector);
@@ -58,27 +58,27 @@ disassemble_lambda(cl_object *vector) {
 
 	/* Print rest argument */
 	if (vector[0] != Cnil) {
-		Lterpri(0);
+		@terpri(0);
 		printf("Rest:\t\t%s");
-		Lprin1(1, vector[0]);
+		@prin1(1, vector[0]);
 	}
 	vector++;
 
 	/* Print keyword arguments */
 	if (vector[0] != Cnil) {
-		Lterpri(0);
+		@terpri(0);
 		printf("Other keys:\t");
-		Lprin1(1, vector[0]);
+		@prin1(1, vector[0]);
 	}
 	vector++;
 	vector = disassemble_vars("Keywords:\t", vector, 4);
 
 	/* Print aux arguments */
-	Lterpri(0);
+	@terpri(0);
 	printf("\nDocumentation:\t");
-	Lprin1(1, next_code(vector));
+	@prin1(1, next_code(vector));
 	printf("\nDeclarations:\t");
-	Lprin1(1, next_code(vector));
+	@prin1(1, next_code(vector));
 
 	base = vector;
 	while (vector[0] != MAKE_FIXNUM(OP_HALT))
@@ -115,7 +115,7 @@ disassemble_block(cl_object *vector) {
 	cl_fixnum exit = packed_label(vector-1);
 
 	printf("BLOCK\t");
-	Lprin1(1, next_code(vector));
+	@prin1(1, next_code(vector));
 	printf(",%d", exit);
 	vector = disassemble(vector);
 	printf("\t\t\t; block");
@@ -194,9 +194,9 @@ disassemble_flet(cl_object *vector) {
 	lex_copy();
 	while (nfun--) {
 		cl_object fun = next_code(vector);
-		Lterpri(0);
+		@terpri(0);
 		printf("\tFLET\t");
-		Lprin1(1, fun->bytecodes.data[0]);
+		@prin1(1, fun->bytecodes.data[0]);
 	}
 	vector = disassemble(vector);
 	printf("\t\t\t; flet");
@@ -214,9 +214,9 @@ disassemble_labels(cl_object *vector) {
 	lex_copy();
 	while (nfun--) {
 		cl_object fun = next_code(vector);
-		Lterpri(0);
+		@terpri(0);
 		printf("\tLABELS\t");
-		Lprin1(1, fun->bytecodes.data[0]);
+		@prin1(1, fun->bytecodes.data[0]);
 	}
 	vector = disassemble(vector);
 	printf("\t\t\t; labels");
@@ -233,7 +233,7 @@ disassemble_mbind(cl_object *vector)
 	while (i--) {
 		cl_object var = next_code(vector);
 		if (newline) {
-			Lterpri(0);
+			@terpri(0);
 			printf("\t");
 		} else
 			newline = TRUE;
@@ -243,7 +243,7 @@ disassemble_mbind(cl_object *vector)
 		} else {
 			printf("MBIND\t");
 		}
-		Lprin1(1, var);
+		@prin1(1, var);
 		printf(", VALUES(%d)", i);
 	}
 	return vector;
@@ -266,7 +266,7 @@ disassemble_msetq(cl_object *vector)
 	while (i--) {
 		cl_object var = next_code(vector);
 		if (newline) {
-			Lterpri(0);
+			@terpri(0);
 			printf("\t");
 		} else
 			newline = TRUE;
@@ -276,7 +276,7 @@ disassemble_msetq(cl_object *vector)
 		} else {
 			printf("MSETQ\t");
 		}
-		Lprin1(1, var);
+		@prin1(1, var);
 		printf(", VALUES(%d)", i);
 	}
 	return vector;
@@ -321,9 +321,9 @@ disassemble_tagbody(cl_object *vector) {
 
 	printf("TAGBODY");
 	while (ntags--) {
-		Lterpri(0);
+		@terpri(0);
 		printf("\tTAG\t'");
-		Lprin1(1, vector[0]);
+		@prin1(1, vector[0]);
 		printf(" @@ %d", simple_label(vector+1));
 		vector+=2;
 	}
@@ -354,21 +354,21 @@ disassemble(cl_object *vector) {
 	cl_fixnum n;
 
  BEGIN:
-	Lterpri(0);
+	@terpri(0);
 	printf("%4d\t", vector - base);
 	s = next_code(vector);
 	t = type_of(s);
 	if (t == t_symbol) {
-		Lprin1(1, search_symbol(s));
+		@prin1(1, search_symbol(s));
 		goto BEGIN;
 	}
 	if (t != t_fixnum) {
-		Lprin1(1, s);
+		@prin1(1, s);
 		goto BEGIN;
 	}
 	switch (GET_OP(s)) {
 	case OP_PUSHQ:		printf("PUSH\t'");
-				Lprin1(1, next_code(vector));
+				@prin1(1, next_code(vector));
 				break;
 	case OP_PUSH:		string = "PUSH\tVALUES(0)";
 				goto NOARG;
@@ -484,12 +484,12 @@ disassemble(cl_object *vector) {
 	NOARG:			printf(string);
 				break;
 	ARG:			printf("%s\t", string);
-				Lprin1(1, s);
+				@prin1(1, s);
 				break;
 	OPARG:			printf("%s\t%d", string, n);
 				break;
 	OPARG_ARG:		printf("%s\t%d,", string, n);
-				Lprin1(1, s);
+				@prin1(1, s);
 				break;
 	}
 	goto BEGIN;

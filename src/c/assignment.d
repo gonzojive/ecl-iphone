@@ -14,16 +14,16 @@
     See file '../Copyright' for full details.
 */
 
-
 #include "ecls.h"
 #include <string.h>
 
-cl_object Ssetf, Spsetf, siSsetf_symbol;
-cl_object siSclear_compiler_properties;
-
+cl_object @'setf';
+cl_object @'psetf';
+cl_object @'si::setf-symbol';
+cl_object @'si::clear-compiler-properties';
 #ifdef PDE
-cl_object siVrecord_source_pathname_p, siSrecord_source_pathname;
-extern cl_object Sdefun;
+cl_object @'si::*record-source-pathname-p*';
+cl_object @'si::record-source-pathname';
 #endif PDE
 
 cl_object
@@ -45,10 +45,10 @@ cl_object
 setf_namep(cl_object fun_spec)
 {	cl_object cdr;
 	if (CONSP(fun_spec) && !endp(cdr = CDR(fun_spec)) &&
-	    endp(CDR(cdr)) && CAR(fun_spec) == Ssetf) {
+	    endp(CDR(cdr)) && CAR(fun_spec) == @'setf') {
 	  cl_object fn_name, sym;
 	  fn_name = CAR(cdr);
-	  sym = getf(fn_name->symbol.plist, siSsetf_symbol, Cnil);
+	  sym = getf(fn_name->symbol.plist, @'si::setf-symbol', Cnil);
 	  if (Null(sym) || !SYMBOLP(sym)) {
 	    cl_object fn_str = fn_name->symbol.name;
 	    int l = fn_str->string.fillp + 7;
@@ -61,7 +61,7 @@ setf_namep(cl_object fun_spec)
 	    str[l] = '\0';
 	    sym = intern(string, fn_name->symbol.hpack);
 	    fn_name->symbol.plist =
-	      putf(fn_name->symbol.plist, sym, siSsetf_symbol);
+	      putf(fn_name->symbol.plist, sym, @'si::setf-symbol');
 	  }
 	  return(sym);
 	} else return(OBJNULL);
@@ -86,14 +86,14 @@ setf_namep(cl_object fun_spec)
 	}
 	if (fun->symbol.isform) {
 		if (fun->symbol.mflag) {
-			if (symbol_value(siVinhibit_macro_special) != Cnil)
+			if (symbol_value(@'si::*inhibit-macro-special*') != Cnil)
 				fun->symbol.isform = FALSE;
-		} else if (symbol_value(siVinhibit_macro_special) != Cnil)
+		} else if (symbol_value(@'si::*inhibit-macro-special*') != Cnil)
 			FEerror("~S, a special form, cannot be redefined.", 1, fun);
 	}
 	clear_compiler_properties(fun);
 	if (fun->symbol.hpack->pack.locked && SYM_FUN(fun) != OBJNULL)
-	  funcall(3, Swarn, make_simple_string("~S is being redefined."), fun);
+	  funcall(3, @'warn', make_simple_string("~S is being redefined."), fun);
 	t = type_of(def);
 	if (t == t_bytecodes || t == t_cfun || t == t_cclosure) {
 	        SYM_FUN(fun) = def;
@@ -107,7 +107,7 @@ setf_namep(cl_object fun_spec)
 	fun->symbol.mflag = !Null(macro);
 	if (pprint != Cnil)
 		fun->symbol.plist
-		= putf(fun->symbol.plist, pprint, siSpretty_print_format);
+		= putf(fun->symbol.plist, pprint, @'si::pretty-print-format');
 	@(return fun)
 @)
 
@@ -132,17 +132,17 @@ setf_namep(cl_object fun_spec)
 	}
 	if (sym->symbol.isform) {
 	  if (sym->symbol.mflag) {
-	    if (symbol_value(siVinhibit_macro_special) != Cnil)
+	    if (symbol_value(@'si::*inhibit-macro-special*') != Cnil)
 	      sym->symbol.isform = FALSE;
-	  } else if (symbol_value(siVinhibit_macro_special) != Cnil)
+	  } else if (symbol_value(@'si::*inhibit-macro-special*') != Cnil)
 	    FEerror("~S, a special form, cannot be redefined.", 1, sym);
 	}
 	clear_compiler_properties(sym);
 #ifdef PDE
-	remprop(sym, Sdefun);
+	remprop(sym, @'defun');
 #endif PDE
 	if (sym->symbol.hpack->pack.locked && SYM_FUN(sym) != OBJNULL)
-	  funcall(3, Swarn, make_simple_string("~S is being redefined."), sym);
+	  funcall(3, @'warn', make_simple_string("~S is being redefined."), sym);
 	SYM_FUN(sym) = OBJNULL;
 	sym->symbol.mflag = FALSE;
 	@(return sym)
@@ -151,9 +151,9 @@ setf_namep(cl_object fun_spec)
 void
 clear_compiler_properties(cl_object sym)
 {
-	siLunlink_symbol(1, sym);
-	if (symbol_value(siVinhibit_macro_special) != Cnil)
-		(void)funcall(2, siSclear_compiler_properties, sym);
+	@si::unlink-symbol(1, sym);
+	if (symbol_value(@'si::*inhibit-macro-special*') != Cnil)
+		(void)funcall(2, @'si::clear-compiler-properties', sym);
 }
 
 @(defun si::clear_compiler_properties (sym)
@@ -165,8 +165,8 @@ clear_compiler_properties(cl_object sym)
 void
 record_source_pathname(cl_object sym, cl_object def)
 {
-  if (symbol_value(siVrecord_source_pathname_p) != Cnil)
-    (void)funcall(3, siSrecord_source_pathname, sym, def);
+  if (symbol_value(@'si::*record-source-pathname-p*') != Cnil)
+    (void)funcall(3, @'si::record-source-pathname', sym, def);
 }
 #endif PDE
 
@@ -174,6 +174,6 @@ void
 init_assignment(void)
 {
 #ifdef PDE
-	SYM_VAL(siVrecord_source_pathname_p) = Cnil;
+	SYM_VAL(@'si::*record-source-pathname-p*') = Cnil;
 #endif PDE
 }

@@ -14,16 +14,15 @@
     See file '../Copyright' for full details.
 */
 
-
 #include "ecls.h"
 #include "ecls-inl.h"
 
 /******************************* EXPORTS ******************************/
 
-cl_object Ktest;
-cl_object Ktest_not;
-cl_object Kkey;
-cl_object Kinitial_element;
+cl_object @':test';
+cl_object @':test-not';
+cl_object @':key';
+cl_object @':initial-element';
 
 /******************************* ------- ******************************/
 
@@ -125,14 +124,14 @@ cl_return f ## _if(int narg, cl_object pred, cl_object arg, cl_object key, cl_ob
 {  \
 	if (narg < 2)  \
 		FEtoo_few_arguments(&narg);  \
-	return f(narg+2, pred, arg, Ktest, Sfuncall, key, val);  \
+	return f(narg+2, pred, arg, @':test', @'funcall', key, val);  \
 }  \
 \
 cl_return f ## _if_not(int narg, cl_object pred, cl_object arg, cl_object key, cl_object val) \
 {  \
 	if (narg < 2)  \
 		FEtoo_few_arguments(&narg);  \
-	return f(narg+2, pred, arg, Ktest_not, Sfuncall, key, val);  \
+	return f(narg+2, pred, arg, @':test-not', @'funcall', key, val);  \
 }
 
 #define PREDICATE3(f)  \
@@ -140,7 +139,7 @@ cl_return f ## _if(int narg, cl_object arg1, cl_object pred, cl_object arg3, cl_
 {  \
 	if (narg < 3)  \
 		FEtoo_few_arguments(&narg);  \
-	return f(narg+2, arg1, pred, arg3, Ktest, Sfuncall, key, val);  \
+	return f(narg+2, arg1, pred, arg3, @':test', @'funcall', key, val);  \
 }  \
 \
 cl_return f ## _if_not(int narg, cl_object arg1, cl_object pred, cl_object arg3, cl_object key, \
@@ -148,7 +147,7 @@ cl_return f ## _if_not(int narg, cl_object arg1, cl_object pred, cl_object arg3,
 {  \
 	if (narg < 3)  \
 		FEtoo_few_arguments(&narg);  \
-	return f(narg+2, arg1, pred, arg3, Ktest_not, Sfuncall, key, val);  \
+	return f(narg+2, arg1, pred, arg3, @':test-not', @'funcall', key, val);  \
 }
 
 @(defun car (x)
@@ -212,7 +211,7 @@ list(int narg, ...)
 	return(p);
 }
 
-@(defun listA (&rest args)
+@(defun listX (&rest args)
 	cl_object p = Cnil, *z=&p;
 @
 	if (narg == 0)
@@ -224,7 +223,7 @@ list(int narg, ...)
 @)
 
 cl_object
-listA(int narg, ...)
+listX(int narg, ...)
 {
 	cl_object p = Cnil, *z = &p;
 	va_list args;
@@ -297,14 +296,14 @@ cl_object name(cl_object foo) { \
 	cl_object arg = foo; \
 	code; return x; \
 E:	FEtype_error_list(arg);} \
-cl_return L##name(int narg, cl_object arg) { \
+cl_return clL##name(int narg, cl_object arg) { \
 	check_arg(1); \
 	return1(name(arg)); \
 }
 #else
 #define defcxr(name, arg, code) \
 cl_object name(cl_object arg) { return code; } \
-cl_return L##name(int narg, cl_object arg) { \
+cl_return clL##name(int narg, cl_object arg) { \
 	check_arg(1); \
 	return1(name(arg)); \
 }
@@ -345,12 +344,12 @@ defcxr(cddddr, x, cdr(cdr(cdr(cdr(x)))))
 	check_arg(1);\
 	return1(nth(n, x));\
 }
-cl_return Lfifth	LENTH(4)
-cl_return Lsixth	LENTH(5)
-cl_return Lseventh	LENTH(6)
-cl_return Leighth	LENTH(7)
-cl_return Lninth	LENTH(8)
-cl_return Ltenth	LENTH(9)
+cl_return @fifth	LENTH(4)
+cl_return @sixth	LENTH(5)
+cl_return @seventh	LENTH(6)
+cl_return @eighth	LENTH(7)
+cl_return @ninth	LENTH(8)
+cl_return @tenth	LENTH(9)
 #undef LENTH
 
 @(defun cons (car cdr)
@@ -712,7 +711,7 @@ subst(cl_object new, cl_object tree)
 		return(tree);
 }
 
-PREDICATE3(Lsubst)
+PREDICATE3(@subst)
 
 @(defun nsubst (new old tree &key test test_not key)
 	saveTEST;
@@ -742,7 +741,7 @@ nsubst(cl_object new, cl_object *treep)
 	}
 }
 
-PREDICATE3(Lnsubst)
+PREDICATE3(@nsubst)
 
 @(defun sublis (alist tree &key test test_not key)
 	saveTEST;
@@ -872,7 +871,7 @@ member(cl_object x, cl_object l)
 }
 /* End of addition. Beppe */
 
-PREDICATE2(Lmember)
+PREDICATE2(@member)
 
 @(defun member1 (item list &key test test_not key)
 	saveTEST;
@@ -899,14 +898,14 @@ PREDICATE2(Lmember)
 @)
 
 cl_return
-Ladjoin(int narg, cl_object item, cl_object list, cl_object k1, cl_object v1,
+@adjoin(int narg, cl_object item, cl_object list, cl_object k1, cl_object v1,
 	 cl_object k2, cl_object v2, cl_object k3, cl_object v3)
 {
 	cl_object output;
 
 	if (narg < 2)
 		FEtoo_few_arguments(&narg);
-	output = Lmember1(narg, item, list, k1, v1, k2, v2, k3, v3);
+	output = @member1(narg, item, list, k1, v1, k2, v2, k3, v3);
 	if (Null(output))
 		output = CONS(item, list);
 	else
@@ -937,8 +936,7 @@ error:	    FEerror("The keys ~S and the data ~S are not of the same length",
 @)
 
 
-@(defun assoc_or_rassoc(cl_object (*car_or_cdr)())
-		       (item a_list &key test test_not key)
+@(defun assoc (item a_list &key test test_not key)
 	saveTEST;
 @
 	protectTEST;
@@ -949,7 +947,7 @@ error:	    FEerror("The keys ~S and the data ~S are not of the same length",
 	    ;
 	  else if (ATOM(pair))
 	    FEtype_error_alist(pair);
-	  else if (TEST((*car_or_cdr)(CAR(a_list)))) {
+	  else if (TEST(CAAR(a_list))) {
 	    a_list = CAR(a_list);
 	    goto L;
 	  }
@@ -958,14 +956,25 @@ error:	    FEerror("The keys ~S and the data ~S are not of the same length",
 	@(return a_list)
 @)
 
-cl_return
-Lrassoc(int narg, cl_object item, cl_object alist, cl_object k1, cl_object v1,
-	 cl_object k2, cl_object v2)
-	{ return Lassoc_or_rassoc(narg, cdr, item, alist, k1, v1, k2, v2); }
-cl_return
-Lassoc(int narg, cl_object item, cl_object alist, cl_object k1, cl_object v1,
-	 cl_object k2, cl_object v2)
-	{ return Lassoc_or_rassoc(narg, car, item, alist, k1, v1, k2, v2); }
+@(defun rassoc (item a_list &key test test_not key)
+	saveTEST;
+@
+	protectTEST;
+	setupTEST(item, test, test_not, key);
+	loop_for_in(a_list) {
+	  cl_object pair = CAR(a_list);
+	  if (Null(pair))
+	    ;
+	  else if (ATOM(pair))
+	    FEtype_error_alist(pair);
+	  else if (TEST(CDAR(a_list))) {
+	    a_list = CAR(a_list);
+	    goto L;
+	  }
+	} end_loop_for_in;
+	restoreTEST;
+	@(return a_list)
+@)
 
 /* Added for use by the compiler, instead of open coding them. Beppe */
 cl_object
@@ -1009,5 +1018,5 @@ assqlp(cl_object x, cl_object l)
 }
 /* End of addition. Beppe */
 
-PREDICATE2(Lassoc)
-PREDICATE2(Lrassoc)
+PREDICATE2(@assoc)
+PREDICATE2(@rassoc)

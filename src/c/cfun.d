@@ -14,12 +14,11 @@
     See file '../Copyright' for full details.
 */
 
-
 #include "ecls.h"
 #include <string.h>	/* for memmove() */
 
 #ifdef PDE
-extern cl_object Sdefun, Sdefmacro;
+cl_object @'defun', @'defmacro';
 #endif PDE
 
 static void record_fun_entry (cl_object sym, void *addr);
@@ -62,7 +61,7 @@ MF(cl_object sym, cl_object (*self)(), cl_object block)
 	record_fun_entry(sym, self);
 #endif
 #ifdef PDE
-	record_source_pathname(sym, Sdefun);
+	record_source_pathname(sym, @'defun');
 #endif PDE
 	cf = alloc_object(t_cfun);
 	cf->cfun.entry = self;
@@ -86,7 +85,7 @@ MM(cl_object sym, cl_object (*self)(), cl_object block)
 	record_fun_entry(sym, self);
 #endif
 #ifdef PDE
-	record_source_pathname(sym, Sdefmacro);
+	record_source_pathname(sym, @'defmacro');
 #endif PDE
 	cf = alloc_object(t_cfun);
 	cf->cfun.entry = self;

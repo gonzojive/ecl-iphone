@@ -13,7 +13,6 @@
     See file '../Copyright' for full details.
 */
 
-
 #include "ecls.h"
 #include "ecls-inl.h"
 
@@ -21,18 +20,20 @@
 #include <sys/cachectl.h>
 #endif __mips
 
-/******************************* ------- ******************************/
+/******************************* EXPORTS ******************************/
 
-cl_object Kverbose;
-cl_object Vload_verbose;
-cl_object Vload_print;
-cl_object siVload_hooks;
+cl_object @':verbose';
+cl_object @'*load-verbose*';
+cl_object @'*load-print*';
+cl_object @'si::*load-hooks*';
 #ifdef PDE
-cl_object siVsource_pathname;
+cl_object @'si::*source-pathname*';
 #endif PDE
 #ifdef RSYM
-cl_object siVsymbol_table;
+cl_object @'si::*symbol-table*';
 #endif
+
+/******************************* ------- ******************************/
 
 @(defun si::load_binary (filename verbose print)
 	cl_object block;
@@ -70,7 +71,7 @@ cl_object siVsymbol_table;
 		frs_pop();
 		unwind(nlj_fr, nlj_tag);
 	}
-	bds_bind(Vstandard_input, strm);
+	bds_bind(@'*standard-input*', strm);
 	for (;;) {
 		preserving_whitespace_flag = FALSE;
 		detect_eos_flag = TRUE;
@@ -88,7 +89,7 @@ cl_object siVsymbol_table;
 			lex_env = lex_old;
 		}
 		if (print != Cnil) {
-			setupPRINT(x, symbol_value(Vstandard_output));
+			setupPRINT(x, symbol_value(@'*standard-output*'));
 			write_object(x, 0);
 			write_str("\n");
 			cleanupPRINT();
@@ -100,21 +101,21 @@ cl_object siVsymbol_table;
 @)	
 
 @(defun load (pathname
-	      &key (verbose symbol_value(Vload_verbose))
-		   (print symbol_value(Vload_print))
-		   (if_does_not_exist Kerror)
+	      &key (verbose symbol_value(@'*load-verbose*'))
+		   (print symbol_value(@'*load-print*'))
+		   (if_does_not_exist @':error')
 	      &aux pntype hooks filename function defaults)
 	bds_ptr old_bds_top;
 @
 	pathname = coerce_to_physical_pathname(pathname);
-	defaults = symbol_value(Vdefault_pathname_defaults);
+	defaults = symbol_value(@'*default-pathname-defaults*');
 	defaults = coerce_to_physical_pathname(defaults);
-	pathname = merge_pathnames(pathname, defaults, Knewest);
+	pathname = merge_pathnames(pathname, defaults, @':newest');
 	pntype   = pathname->pathname.type;
 
 	filename = Cnil;
-	hooks = symbol_value(siVload_hooks);
-	if (!Null(pntype) && (pntype != Kwild)) {
+	hooks = symbol_value(@'si::*load-hooks*');
+	if (!Null(pntype) && (pntype != @':wild')) {
 		/* If filename already has an extension, make sure
 		   that the file exists */
 		filename = coerce_to_filename(pathname);
@@ -140,7 +141,7 @@ cl_object siVsymbol_table;
 	}
 
 	if (verbose != Cnil) {
-		setupPRINT(filename, symbol_value(Vstandard_output));
+		setupPRINT(filename, symbol_value(@'*standard-output*'));
 		if (file_column(PRINTstream) != 0)
 			write_str("\n");
 		write_str(";;; Loading ");
@@ -151,9 +152,9 @@ cl_object siVsymbol_table;
 		flush_stream(PRINTstream);
 	}
 	old_bds_top = bds_top;
-	bds_bind(Vpackage, symbol_value(Vpackage));
+	bds_bind(@'*package*', symbol_value(@'*package*'));
 #ifdef PDE
-	bds_bind(siVsource_pathname, filename);
+	bds_bind(@'*source-pathname*', filename);
 #endif PDE
 	if (frs_push(FRS_PROTECT, Cnil)) {
 		frs_pop();
@@ -161,13 +162,13 @@ cl_object siVsymbol_table;
 		unwind(nlj_fr, nlj_tag);
 	}
 	if (Null(function))
-		siLload_source(3, filename, verbose, print);
+		@si::load-source(3, filename, verbose, print);
 	else
 		funcall(4, function, filename, verbose, print);
 	frs_pop();
 	bds_unwind(old_bds_top);
 	if (print != Cnil) {
-		setupPRINT(filename, symbol_value(Vstandard_output));
+		setupPRINT(filename, symbol_value(@'*standard-output*'));
 		if (file_column(PRINTstream) != 0)
 			write_str("\n");
 		write_str(";;; Finished loading ");
@@ -193,8 +194,8 @@ build_symbol_table()
 {
    cl_object file;
    const char *tmpfile;
-   file = namestring(Lmerge_pathnames(2, SYM_VAL(siVsymbol_table),
-				      SYM_VAL(siVsystem_directory)));
+   file = namestring(@merge-pathnames(2, SYM_VAL(@'si::*symbol-table*'),
+				      SYM_VAL(@'si::*system-directory*')));
    tmpfile = file->string.self;
    if (!symbol_table_built)
      if (read_special_symbols(tmpfile) < 0)
@@ -205,7 +206,7 @@ build_symbol_table()
 const char *
 system_directory()
 {
-  cl_object dir = SYM_VAL(siVsystem_directory);
+  cl_object dir = SYM_VAL(@'si::*system-directory*');
   while (type_of(dir) != t_string)
     FEerror("The value of sys::*system-directory* is not a string, ~A", 1, dir);
   return dir->string.self;
@@ -223,9 +224,9 @@ system_directory()
 	file = coerce_to_filename(file);
 	file->pathname.type = FASL_string;
 	file = namestring(file);
-	package = symbol_value(Vpackage);
+	package = symbol_value(@'*package*');
 	old_bds_top = bds_top;
-	bds_bind(Vpackage, package);
+	bds_bind(@'*package*', package);
 	faslink(file, lib);
 	bds_unwind(old_bds_top);
 	@(return Cnil)
@@ -237,21 +238,21 @@ init_load(void)
 {
   cl_object load_source, load_binary;
 
-  SYM_VAL(Vload_verbose) = Ct;
-  SYM_VAL(Vload_print) = Cnil;
+  SYM_VAL(@'*load-verbose*') = Ct;
+  SYM_VAL(@'*load-print*') = Cnil;
 #ifdef PDE
-  SYM_VAL(siVsource_pathname) = Cnil;
+  SYM_VAL(@'si::*source-pathname*') = Cnil;
 #endif PDE
 
   load_source = make_si_ordinary("LOAD-SOURCE");
   load_binary = make_si_ordinary("LOAD-BINARY");
-  SYM_VAL(siVload_hooks) = list(4,
+  SYM_VAL(@'si::*load-hooks*') = list(4,
 				CONS(make_simple_string("o"), load_binary),
 				CONS(make_simple_string("lsp"), load_source),
 				CONS(make_simple_string("lisp"), load_source),
 				CONS(Cnil, load_source));
 
 #ifdef RSYM
-  SYM_VAL(siVsymbol_table) = make_simple_string("ecl.sym");
+  SYM_VAL(@'si::*symbol-table*') = make_simple_string("ecl.sym");
 #endif
 }

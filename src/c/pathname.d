@@ -25,24 +25,24 @@
 
 /******************************* EXPORTS ******************************/
 
-cl_object Vdefault_pathname_defaults;
-cl_object Kwild;
-cl_object Kwild_inferiors;
-cl_object Knewest;
+cl_object @'*default-pathname-defaults*';
+cl_object @':wild';
+cl_object @':wild-inferiors';
+cl_object @':newest';
+
+cl_object @':host';
+cl_object @':device';
+cl_object @':directory';
+cl_object @':name';
+cl_object @':type';
+cl_object @':version';
+cl_object @':defaults';
+
+cl_object @':absolute';
+cl_object @':relative';
+cl_object @':up';
 
 /******************************* ------- ******************************/
-
-cl_object Khost;
-cl_object Kdevice;
-cl_object Kdirectory;
-cl_object Kname;
-cl_object Ktype;
-cl_object Kversion;
-cl_object Kdefaults;
-
-cl_object Kabsolute;
-cl_object Krelative;
-cl_object Kup;
 
 static cl_object pathname_translations = Cnil;
 
@@ -58,8 +58,8 @@ make_pathname(cl_object host, cl_object device, cl_object directory,
 	cl_object x;
 
 	if (!endp(directory) &&
-	    CAR(directory) != Kabsolute &&
-	    CAR(directory) != Krelative)
+	    CAR(directory) != @':absolute' &&
+	    CAR(directory) != @':relative')
 		error_directory(directory);
 	x = alloc_object(t_pathname);
 	x->pathname.logical = FALSE;
@@ -83,11 +83,11 @@ tilde_expand(cl_object directory)
 	/* If path is absolute or null, we have nothing
 	   to expand */
 	head = CAR(directory);
-	if (head == Kabsolute)
+	if (head == @':absolute')
 		goto RET;
 	/* If path is relative and not empty, we search
 	   for heading tilde */
-	if (head != Krelative)
+	if (head != @':relative')
 		error_directory(directory);
 	head = CADR(directory);
 	if (type_of(head) != t_string)
@@ -150,7 +150,7 @@ parse_word(const char *s, char delim, int flags, cl_index start, cl_index end,
 			valid_char = c != 0;
 		if (!valid_char) {
 			*end_of_word = start;
-			return Kerror;
+			return @':error';
 		}
 	}
 	if (i < end)
@@ -170,14 +170,14 @@ parse_word(const char *s, char delim, int flags, cl_index start, cl_index end,
 		return null_string;
 	case 1:
 		if (s[0] == '*')
-			return Kwild;
+			return @':wild';
 		break;
 	case 2:
 		if (s[0] == '*' && s[1] == '*')
 			/* :wild-inferiors not supported in pathnames */
-			return Kerror;
+			return @':error';
 		if (!(flags & WORD_LOGICAL) && s[0] == '.' && s[1] == '.')
-			return Kup;
+			return @':up';
 		break;
 	}
 	return make_one(s, i-j);
@@ -205,15 +205,15 @@ parse_directories(const char *s, int flags, cl_index start, cl_index end,
 	*end_of_dir = start;
 	for (i = j = start; i < end; j = i) {
 		cl_object word = parse_word(s, delim, flags, j, end, &i);
-		if (word == Kerror || word == Cnil)
+		if (word == @':error' || word == Cnil)
 			break;
 		if (word == null_string) {	/* just "/" or ";" */
 			if (j != start) {
 				if (flags & WORD_LOGICAL)
-					return Kerror;
+					return @':error';
 				continue;
 			}
-			word = (flags & WORD_LOGICAL) ? Krelative : Kabsolute;
+			word = (flags & WORD_LOGICAL) ? @':relative' : @':absolute';
 		}
 		*end_of_dir = i;
 		plast = &CDR(*plast = CONS(word, Cnil));
@@ -269,7 +269,7 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 	 */
 	host = parse_word(s, ':', WORD_LOGICAL | WORD_INCLUDE_DELIM, start, end, ep);
 	if (default_host != Cnil) {
-		if (host == Cnil || host == Kerror)
+		if (host == Cnil || host == @':error')
 			host = default_host;
 		else if (!equal(default_host, host))
 			return Cnil;
@@ -283,13 +283,13 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 	logical = TRUE;
 	device = Cnil;
 	path = parse_directories(s, WORD_LOGICAL, *ep, end, ep);
-	if (path == Kerror)
+	if (path == @':error')
 		return Cnil;
-	if (!endp(path) && CAR(path) != Krelative)
-		path = CONS(Kabsolute, path);
+	if (!endp(path) && CAR(path) != @':relative')
+		path = CONS(@':absolute', path);
 	name = parse_word(s, '.', WORD_LOGICAL | WORD_ALLOW_ASTERISK | WORD_EMPTY_IS_NIL, *ep, end, ep);
 	type = parse_word(s, '\0', WORD_LOGICAL | WORD_ALLOW_ASTERISK | WORD_EMPTY_IS_NIL, *ep, end, ep);
-	if (type == Kerror)
+	if (type == @':error')
 		return Cnil;
 	goto make_it;
  physical:
@@ -300,7 +300,7 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 	logical = FALSE;
 	device = parse_word(s, ':', WORD_INCLUDE_DELIM | WORD_EMPTY_IS_NIL,
 			    start, end, ep);
-	if (device == Kerror)
+	if (device == @':error')
 		device = Cnil;
 	else if (device != Cnil) {
 		if (type_of(device) != t_string)
@@ -313,26 +313,26 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 		host = parse_word(s, '/', WORD_EMPTY_IS_NIL, start, end, ep);
 	else
 		host = Cnil;
-	if (host == Kerror)
+	if (host == @':error')
 		host = Cnil;
 	else if (host != Cnil) {
 		if (type_of(host) != t_string || !equal(host, default_host))
 			return Cnil;
 	}
 	path = parse_directories(s, 0, *ep, end, ep);
-	if (path == Kerror)
+	if (path == @':error')
 		return Cnil;
 	if (!endp(path)) {
-		if (CAR(path) == Kabsolute) {
+		if (CAR(path) == @':absolute') {
 			/* According to ANSI CL, "/.." is erroneous */
-			if (cadr(path) == Kup)
+			if (cadr(path) == @':up')
 				return Cnil;
 		} else  {
 			/* If path is relative and we got here, then it
 			   has no :RELATIVE/:ABSOLUTE in front of it and we add one.
 			   Pathnames with hostnames are always absolute.
 			*/
-			path = CONS(host == Cnil? Krelative : Kabsolute, path);
+			path = CONS(host == Cnil? @':relative' : @':absolute', path);
 			path = tilde_expand(path);
 		}
 	}
@@ -340,7 +340,7 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 			  end, ep);
 	type = parse_word(s, '\0', WORD_ALLOW_ASTERISK | WORD_EMPTY_IS_NIL, *ep,
 			  end, ep);
-	if (type == Kerror)
+	if (type == @':error')
 		return Cnil;
  make_it:
 	if (*ep >= end) *ep = end;
@@ -462,7 +462,7 @@ merge_pathnames(cl_object path, cl_object defaults, cl_object default_version)
 		device = path->pathname.device;
 	if (Null(path->pathname.directory))
 		directory = defaults->pathname.directory;
-	else if (CAR(path->pathname.directory) == Kabsolute)
+	else if (CAR(path->pathname.directory) == @':absolute')
 		directory = path->pathname.directory;
 	else if (!Null(defaults->pathname.directory))
 		directory = append(defaults->pathname.directory,
@@ -550,10 +550,10 @@ namestring(cl_object x)
 	if (endp(l))
 		goto L;
 	y = CAR(l);
-	if (y == Krelative) {
+	if (y == @':relative') {
 		if (logical)
 			push_c_string(buffer, ":", 1);
-	} else if (y == Kabsolute) {
+	} else if (y == @':absolute') {
 		if (!logical)
 			push_c_string(buffer, "/", 1);
 	} else
@@ -561,11 +561,11 @@ namestring(cl_object x)
 	l = CDR(l);
 	for (;  !endp(l);  l = CDR(l)) {
 		y = CAR(l);
-		if (y == Kup) {
+		if (y == @':up') {
 			push_c_string(buffer, "..", 2);
-		} else if (y == Kwild) {
+		} else if (y == @':wild') {
 			push_c_string(buffer, "*", 1);
-		} else if (y == Kwild_inferiors) {
+		} else if (y == @':wild-inferiors') {
 			push_c_string(buffer, "**", 2);
 		} else {
 			push_string(buffer, y);
@@ -575,7 +575,7 @@ namestring(cl_object x)
 L:
 	if (Null(y = x->pathname.name))
 		goto M;
-	if (y == Kwild) {
+	if (y == @':wild') {
 		push_c_string(buffer, "*", 1);
 		goto M;
 	}
@@ -585,7 +585,7 @@ L:
 M:
 	if (Null(y = x->pathname.type))
 		goto N;
-	if (y == Kwild) {
+	if (y == @':wild') {
 		push_c_string(buffer, ".*", 2);
 		goto N;
 	}
@@ -646,7 +646,7 @@ L:
 
 @(defun parse_namestring (thing
 	&o host
-	   (defaults symbol_value(Vdefault_pathname_defaults))
+	   (defaults symbol_value(@'*default-pathname-defaults*'))
 	&k (start MAKE_FIXNUM(0)) end junk_allowed
 	&a x y)
 	cl_index s, e, ee;
@@ -665,13 +665,13 @@ L:
 					3, x, start, end);
 		} else {
 			if (y == Cnil)
-				@(return Cnil `MAKE_FIXNUM(s + ee)`)
+				@(return Cnil MAKE_FIXNUM(s + ee))
 		}
 		if (logical_hostname_p(host) && y != Cnil && !y->pathname.logical) {
 			if (Null(junk_allowed))
 				FEerror("A logical pathname was expected instead of ~S", 1, thing);
 			else
-				@(return Cnil `MAKE_FIXNUM(s + ee)`);
+				@(return Cnil MAKE_FIXNUM(s + ee));
 		}
 		start = MAKE_FIXNUM(s + ee);
 		break;
@@ -709,8 +709,8 @@ L:
 @)
 
 @(defun merge_pathnames (path
-	&o (defaults symbol_value(Vdefault_pathname_defaults))
- 	   (default_version Knewest))
+	&o (defaults symbol_value(@'*default-pathname-defaults*'))
+ 	   (default_version @':newest'))
 @
 	/* INV: coerce_to_pathname() checks types */
 	path = coerce_to_pathname(path);
@@ -724,7 +724,7 @@ L:
 @
 	if (Null(defaults)) {
 		defaults
-		= symbol_value(Vdefault_pathname_defaults);
+		= symbol_value(@'*default-pathname-defaults*');
 		defaults = coerce_to_pathname(defaults);
 		defaults
 		= make_pathname(defaults->pathname.host,
@@ -819,13 +819,13 @@ L:
 	/* INV: coerce_to_pathname() checks types */
 	pname = coerce_to_pathname(pname);
 	pname = pname->pathname.host;
-	if (Null(pname) || pname == Kwild)
+	if (Null(pname) || pname == @':wild')
 		pname = null_string;
 	@(return pname)
 @)
 
 @(defun enough_namestring (path
-	&o (defaults symbol_value(Vdefault_pathname_defaults)))
+	&o (defaults symbol_value(@'*default-pathname-defaults*')))
 	cl_object newpath;
 @
 	/* INV: coerce_to_pathname() checks types */
@@ -879,7 +879,7 @@ do_path_item_match(const char *s, const char *p) {
 
 static bool
 path_item_match(cl_object a, cl_object mask) {
-	if (mask == Kwild || mask == Cnil)
+	if (mask == @':wild' || mask == Cnil)
 		return TRUE;
 	if (type_of(a) != t_string)
 		return (a == mask);
@@ -983,7 +983,7 @@ coerce_to_from_pathname(cl_object x, cl_object host)
 		  FEerror("~S is not a valid to-pathname translation", 1, from);
 		set = CONS(CONS(from, CONS(to, Cnil)), set);
 	}
-	CADR(pair) = Lreconc(2, set, Cnil);
+	CADR(pair) = @reconc(2, set, Cnil);
 	@(return set)
 @)
 
@@ -993,13 +993,13 @@ find_wilds(cl_object l, cl_object source_item, cl_object match)
 	const char *a, *b;
 	cl_index i, j, k, ia, ib;
 
-	if (match == Kwild || match == Cnil)
+	if (match == @':wild' || match == Cnil)
 		return CONS(source_item, Cnil);
-	if (match == Kwild_inferiors)
+	if (match == @':wild-inferiors')
 		FEerror(":wild-inferiors not yet supported", 0);
 	if (type_of(match) != t_string || type_of(source_item) != t_string) {
 		if (match != source_item)
-			return Kerror;
+			return @':error';
 		return l;
 	}
 	a  = source_item->string.self;
@@ -1015,11 +1015,11 @@ find_wilds(cl_object l, cl_object source_item, cl_object match)
 			continue;
 		}
 		if (a[i] != b[j])
-			return Kerror;
+			return @':error';
 		i++, j++;
 	}
 	if (i < ia || j < ib)
-		return Kerror;
+		return @':error';
 	return l;
 }
 
@@ -1031,9 +1031,9 @@ copy_wildcards(cl_object *wilds_list, cl_object template)
 	bool new_string;
 	cl_object wilds = *wilds_list;
 
-	if (template == Kwild || template == Cnil) {
+	if (template == @':wild' || template == Cnil) {
 		if (endp(wilds))
-			return Kerror;
+			return @':error';
 		template = CAR(wilds);
 		*wilds_list = CDR(wilds);
 		return template;
@@ -1055,7 +1055,7 @@ copy_wildcards(cl_object *wilds_list, cl_object template)
 			push_c_string(cl_token, &s[j], i-j);
 		new_string = TRUE;
 		if (endp(wilds))
-			return Kerror;
+			return @':error';
 		push_string(cl_token, CAR(wilds));
 		wilds = CDR(wilds);
 		j = i++;
@@ -1097,16 +1097,16 @@ translate_pathname(cl_object source, cl_object from, cl_object to)
 	b = from->pathname.directory;
 	while (!endp(a) && !endp(b)) {
 		wilds = find_wilds(wilds, CAR(a), CAR(b));
-		if (wilds == Kerror) goto error;
+		if (wilds == @':error') goto error;
 		a = CDR(a);
 		b = CDR(b);
 	}
-	Lreconc(2, wilds, Cnil);
+	@reconc(2, wilds, Cnil);
 	if (a != Cnil || b != Cnil)
 		goto error;
 	for (c = Cnil, pc = &c, b = to->pathname.directory; !endp(b); b = CDR(b)) {
 		d = copy_wildcards(&wilds, CAR(b));
-		if (d == Kerror) goto error2;
+		if (d == @':error') goto error2;
 		*pc = CONS(d, Cnil);
 		pc = &CDR(*pc);
 	}
@@ -1116,24 +1116,24 @@ translate_pathname(cl_object source, cl_object from, cl_object to)
 
 	/* Match name */
 	wilds = find_wilds(Cnil, source->pathname.name, from->pathname.name);
-	if (wilds == Kerror) goto error2;
+	if (wilds == @':error') goto error2;
 	d = copy_wildcards(&wilds, to->pathname.name);
-	if (d == Kerror || wilds != Cnil) goto error2;
+	if (d == @':error' || wilds != Cnil) goto error2;
 	out->pathname.name = d;
 
 	/* Match type */
 	wilds = find_wilds(Cnil, source->pathname.type, from->pathname.type);
-	if (wilds == Kerror) goto error2;
+	if (wilds == @':error') goto error2;
 	d = copy_wildcards(&wilds, to->pathname.type);
-	if (d == Kerror || wilds != Cnil) goto error2;
+	if (d == @':error' || wilds != Cnil) goto error2;
 	out->pathname.type = d;
 
 	/* Match version */
 #if 0
 	wilds = find_wilds(Cnil, source->pathname.version, from->pathname.version);
-	if (wilds == Kerror) goto error2;
+	if (wilds == @':error') goto error2;
 	d = copy_wildcards(&wilds, to->pathname.version);
-	if (d == Kerror || wilds != Cnil) goto error2;
+	if (d == @':error' || wilds != Cnil) goto error2;
 	out->pathname.version = d;
 #else
 	out->pathname.version = Cnil;
@@ -1159,7 +1159,7 @@ translate_logical_pathname(cl_object source)
 	if (!source->pathname.logical)
 		goto error;
  begin:
-	l = siLpathname_translations(1, source->pathname.host, Cnil);
+	l = @si::pathname-translations(1, source->pathname.host, Cnil);
 	for(; !endp(l); l = CDR(l)) {
 		pair = CAR(l);
 		if (pathname_match_p(source, CAR(pair))) {
@@ -1181,6 +1181,6 @@ translate_logical_pathname(cl_object source)
 void
 init_pathname(void)
 {
-	SYM_VAL(Vdefault_pathname_defaults) =
+	SYM_VAL(@'*default-pathname-defaults*') =
 	  make_pathname(Cnil, Cnil, Cnil, Cnil, Cnil, Cnil);
 }

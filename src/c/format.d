@@ -14,11 +14,10 @@
     See file '../Copyright' for full details.
 */
 
-
 #include "ecls.h"
 #include <ctype.h>
 
-cl_object siVindent_formatted_output;
+cl_object @'si::*indent-formatted-output*';
 
 /******************* WITH CLOS ************************/
 #ifdef CLOS
@@ -1033,9 +1032,9 @@ fmt_exponential_float(bool colon, bool atsign)
 	else if (atsign)
 		WRITEC_STREAM('+', fmt_stream);
 	WRITESTR_STREAM(b, fmt_stream)
-	y = symbol_value(Vread_default_float_format);
+	y = symbol_value(@'*read-default-float-format*');
 	if (exponentchar < 0) {
-		if (y == Slong_float || y == Sdouble_float)
+		if (y == @'long-float' || y == @'double-float')
 			t = t_longfloat;
 		else
 			t = t_shortfloat;
@@ -1807,7 +1806,7 @@ fmt_semicolon(bool colon, bool atsign)
 		strm = make_string_output_stream(64);
 		x = strm->stream.object0;
 	} else if (strm == Ct)
-		strm = symbol_value(Vstandard_output);
+		strm = symbol_value(@'*standard-output*');
 	else if (type_of(strm) == t_string) {
 		x = strm;
 		if (!x->string.hasfillp)
@@ -1841,7 +1840,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 	fmt_index = 0;
 	fmt_end = narg - 2;
 	fmt_jmp_buf = (int *)fmt_jmp_buf0;
-	if (symbol_value(siVindent_formatted_output) != Cnil)
+	if (symbol_value(@'si::*indent-formatted-output*') != Cnil)
 		fmt_indents = FILE_COLUMN(strm);
 	else
 		fmt_indents = 0;
@@ -2085,5 +2084,5 @@ init_format(void)
 	register_root(&fmt_temporary_stream);
 	fmt_temporary_string = fmt_temporary_stream->stream.object0;
 
-	SYM_VAL(siVindent_formatted_output) = Cnil;
+	SYM_VAL(@'si::*indent-formatted-output*') = Cnil;
 }

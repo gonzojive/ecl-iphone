@@ -14,7 +14,6 @@
     See file '../Copyright' for full details.
 */
 
-
 #include "ecls.h"
 #ifdef HAVE_SYS_RESOURCE_H
 # include <sys/time.h>
@@ -47,7 +46,7 @@ int NValues;
 cl_object Values[VSSIZE];
 #endif
 
-cl_object Kcatch, Kcatchall, Kprotect;
+cl_object @':catch', @':catchall', @':protect';
 
 /********************* BINDING STACK ************************/
 
@@ -121,7 +120,7 @@ ihs_function_name(cl_object x)
 	case t_bytecodes:
 		y = x->bytecodes.data[0];
 		if (Null(y))
-			return(Slambda);
+			return(@'lambda');
 		else
 			return y;
 
@@ -282,9 +281,9 @@ get_frame_ptr(cl_object x)
 	cl_object output;
 @
 	c = get_frame_ptr(arg)->frs_class;
-	if (c == FRS_CATCH) output = Kcatch;
-	else if (c == FRS_PROTECT) output = Kprotect;
-	else if (c == FRS_CATCHALL) output = Kcatchall;
+	if (c == FRS_CATCH) output = @':catch';
+	else if (c == FRS_PROTECT) output = @':protect';
+	else if (c == FRS_CATCHALL) output = @':catchall';
 	else FEerror("Unknown frs class was detected.", 0);
 	@(return output)
 @)

@@ -46,7 +46,7 @@ CFLAGS=-g -O2
 
 #  Where to find the source code.
 #  This is set by the configure script's `--srcdir' option.
-srcdir=/home/jjgarcia/ecl/src
+srcdir=/home/jjgarcia/src/ecls/src
 
 bindir=/home/jjgarcia/bin
 infodir=/home/jjgarcia/info

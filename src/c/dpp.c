@@ -201,40 +201,159 @@ pushc(int c)
 }
 
 char *
+read_name(int is_symbol)
+{
+	int c, l;
+	int oneX = 0, oneC = 0;
+	char *colon = NULL;
+	char *p;
+
+	c = readc();
+	while (isspace(c)) {
+		pushc(c);
+		c = readc();
+	}
+	p = poolp;
+	do {
+		if (isalpha(c))
+			; /* c=tolower(c) */
+		else if (isnumber(c))
+			;
+		else if (c == '-' || c == '_')
+			c = '_';
+		else if (c == '&')
+			c = 'A';
+		else if (c == '*') {
+			if (is_symbol && !oneX && (poolp == colon || poolp == p))
+			{
+				if (poolp > p && poolp[-1] == 'S')
+					poolp--;
+				oneX = 1;
+				c = 'V';
+			} else {
+				c = 'X';
+			}
+		} else if (c == '+') {
+			if (is_symbol && !oneC && (poolp == colon || poolp == p))
+			{
+				if (poolp > p && poolp[-1] == 'S')
+					poolp--;
+				oneC = 1;
+				c = 'C';
+			} else {
+				c = 'P';
+			}
+		} else if (c == '<') {
+			c = 'L';
+		} else if (c == '>') {
+			c = 'G';
+		} else if (c == '=') {
+			c = 'E';
+		} else if (c == '/') {
+			c = 'N';
+		} else if (c == ':') {
+			if (colon == poolp) {
+				c = readc();
+				continue;
+			} else if (colon != NULL)
+				error("double colon ':' in symbol name");
+			else {
+				colon = poolp+1;
+				if (poolp == p)
+					c = 'K';	/* Keyword */
+				else if (!is_symbol)
+					c = 'L';	/* Function name */
+				else if (oneX == NULL)
+					c = 'S';	/* Symbol name */
+				else {
+					c = readc();
+					continue;
+				}
+			}
+		} else if (!is_symbol) {
+			unreadc(c);
+			break;
+		} else if (c == '\'') {
+			break;
+		} else {
+			error("Disallowed character in symbol name");
+		}
+		pushc(c);
+		c = readc();
+	} while (1);
+	l = poolp - p;
+	if (l > 2 && oneX && poolp[-1] == 'X')
+		poolp--;
+	if (l > 2 && oneC && poolp[-1] == 'P')
+		poolp--;
+	if (colon == NULL) {
+		char buf[256];
+		poolp[0] = buf[0] = '\0';
+		strcpy(buf, "cl");
+		if (!oneX && p[0] != 'K')
+		  strcat(buf, is_symbol? "S" : "L");
+		strcat(buf, p);
+		strcpy(p, buf);
+		poolp = p + strlen(buf);
+	}
+	return p;
+}
+
+char *
+read_symbol_name(void)
+{
+	return read_name(1);
+}
+
+char *
+read_func_name(void)
+{
+	return read_name(0);
+}
+
+char *
 read_token(void)
 {
 	int c;
-	int stop = 0;
 	int left_paren = 0;
 	char *p;
 
 	p = poolp;
-	if ((c = nextc()) == '`') {
-		while ((c = readc()) != '`')
+	c = readc();
+	while (isspace(c))
+		c = readc();
+	do {
+		if (c == '(') {
+			left_paren++;
 			pushc(c);
-	} else {
-		do
-			if (c == '(') {
-				left_paren++;
-				pushc(c);
-				c = readc();
-			} else if (c == ')') {
-				if (left_paren == 0)
-					stop = 1;
-				else {
-					left_paren--;
-					pushc(c);
-					c = readc();
-				}
-			} else if (isspace(c) && left_paren == 0) {
-				stop = 1;
+		} else if (c == ')') {
+			if (left_paren == 0) {
+				break;
 			} else {
+				left_paren--;
 				pushc(c);
-				c = readc();
 			}
-		while (!stop);
-		unreadc(c);
-	}
+		} else if (isspace(c) && left_paren == 0) {
+			do
+				c = readc();
+			while (isspace(c));
+			break;
+		} else if (c == '@') {
+			c = readc();
+			if (c == '\'') {
+				(void)read_symbol_name();
+			} else if (c == '@') {
+				pushc(c);
+			} else {
+				unreadc(c);
+				(void)read_func_name();
+			}
+		} else {
+			pushc(c);
+		}
+		c = readc();
+	} while (1);
+	unreadc(c);
 	pushc('\0');
 	return(p);
 }
@@ -274,7 +393,8 @@ reset(void)
 
 get_function(void)
 {
-	function = read_token();
+	function = read_func_name();
+	pushc('\0');
 }
 
 get_lambda_list(void)
@@ -439,48 +559,15 @@ get_return(void)
 
 put_fhead(void)
 {
-  bool b = FALSE; char *q, *p = function;
-  int i;
-  put_lineno();
-  fprintf(out, "cl_object\n");
-  for (p = function; *p != '\0' && *p != ':' && *p != '('; p++);
-  if (*p != ':')
-    p = function;
-  else {
-    for(q = function; q < p; q++)
-      fputc(*q, out);
-    while (*p == ':') p++;
-  }
-  fputc('L',out);
-  while (!b && *p != '\0') {
-    fputc(*p, out);
-    b = (*p++ == '(');
-  }
-  if (b) {
-	/*
-	@(defun `assoc_or_rassoc(cl_object (*car_or_cdr)())`
-	     (item a_list &key test test_not key)
-	must become:
-	Lassoc_or_rassoc(int narg, cl_object (*car_or_cdr)(),
-	      cl_object item, cl_object a_list, ...)
-	*/
-	fprintf(out, "int narg, ");
-	while (*p != ')' || p[1] != '\0')
-		fputc(*p++, out);
-	}
-  else
-    fprintf(out, "(int narg", function);
-	
-  for (i = 0; i < nreq; i++)
+	int i;
+
+	put_lineno();
+	fprintf(out, "cl_object %s(int narg", function);
+	for (i = 0; i < nreq; i++)
 		fprintf(out, ", cl_object %s", required[i]);
-  if (nopt > 0 || rest_flag || key_flag)
+	if (nopt > 0 || rest_flag || key_flag)
 		fprintf(out, ", ...");
-  fprintf(out, ")\n");
-  if (b) {
-	while (*p++ != ')') ;
-	fprintf(out, "%s", p);  /* declaration of extra first arg */
-	}
-  fprintf(out, "{\n");
+	fprintf(out, ")\n{\n");
 }
 
 put_declaration(void)
@@ -647,9 +734,22 @@ LOOP:
 		putc('}',out);
 		reset();
 		goto LOOP;
+	} else if (c == '\'') {
+		char *p;
+		poolp = pool;
+		p = read_symbol_name();
+		pushc('\0');
+		fprintf(out,"%s",p);
+		goto LOOP;
+	} else if (c != '(') {
+		char *p;
+		unreadc(c);
+		poolp = pool;
+		p = read_func_name();
+		pushc('\0');
+		fprintf(out,"%s",p);
+		goto LOOP;
 	}
-	if (c != '(')
-		error("@( expected");
 	p = read_token();
 	if (strcmp(p, "defun") == 0) {
 		if (in_defun)

@@ -14,7 +14,6 @@
     See file '../Copyright' for full details.
 */
 
-
 #include "ecls.h"
 
 static void displace (cl_object from, cl_object to, cl_object offset);
@@ -69,7 +68,7 @@ object_to_index(cl_object n)
     break;
 
   default:
-    FEwrong_type_argument(Sarray, x);
+    FEwrong_type_argument(@'array', x);
   }
   @(return aref(x, j))
 @)
@@ -160,7 +159,7 @@ aref1(cl_object v, cl_index index)
     break;
 
   default:
-    FEwrong_type_argument(Sarray, x);
+    FEwrong_type_argument(@'array', x);
   }
   @(return aset(x, j, v))
 @)
@@ -384,23 +383,23 @@ array_allocself(cl_object x)
 enum aelttype
 get_aelttype(cl_object x)
 {
-	if (x == Sbase_char)
+	if (x == @'base-char')
 		return(aet_ch);
-	else if (x == Sbit)
+	else if (x == @'bit')
 		return(aet_bit);
-	else if (x == Sfixnum)
+	else if (x == @'fixnum')
 		return(aet_fix);
-	else if (x == Ssingle_float || x == Sshort_float)
+	else if (x == @'single-float' || x == @'short-float')
 		return(aet_sf);
-	else if (x == Slong_float || x == Sdouble_float)
+	else if (x == @'long-float' || x == @'double-float')
 		return(aet_lf);
-/*	else if (x == Ssigned_char)
+/*	else if (x == @'signed-char')
 		return(aet_char);
-	else if (x == Sunsigned_char)
+	else if (x == @'unsigned-char')
 		return(aet_uchar);
-	else if (x == Ssigned_short)
+	else if (x == @'signed-short')
 		return(aet_short);
-	else if (x == Sunsigned_short)
+	else if (x == @'unsigned-short')
 		return(aet_ushort);
 */	else
 		return(aet_object);
@@ -431,11 +430,11 @@ array_address(cl_object x, cl_index inc)
 @
 	switch (array_elttype(a)) {
 	case aet_object:	output = Ct; break;
-	case aet_ch:		output = Sbase_char; break;
-	case aet_bit:		output = Sbit; break;
-	case aet_fix:		output = Sfixnum; break;
-	case aet_sf:		output = Sshort_float; break;
-	case aet_lf:		output = Slong_float; break;
+	case aet_ch:		output = @'base-char'; break;
+	case aet_bit:		output = @'bit'; break;
+	case aet_fix:		output = @'fixnum'; break;
+	case aet_sf:		output = @'short-float'; break;
+	case aet_lf:		output = @'long-float'; break;
 	}
 	@(return output)
 @)
@@ -515,7 +514,7 @@ check_displaced(cl_object dlist, cl_object orig, cl_index newdim)
 /*
 	Adjust_displaced(x, diff) adds the int value diff
 	to the a_self field of the array x and all the arrays displaced to x.
-	This function is used in siLreplace_array (ADJUST-ARRAY) and
+	This function is used in @si::replace-array (ADJUST-ARRAY) and
 	the garbage collector.
 */
 void adjust_displaced(cl_object x, ptrdiff_t diff)
@@ -541,7 +540,7 @@ array_elttype(cl_object x)
 		return(aet_bit);
 
 	default:
-		FEwrong_type_argument(Sarray, x);
+		FEwrong_type_argument(@'array', x);
 	}
 }
 
@@ -575,7 +574,7 @@ ILLEGAL:		FEerror("~S is an illegal axis-number to the array ~S.",
 		dim = a->vector.dim;
 		break;
 	default:
-		FEwrong_type_argument(Sarray, a);
+		FEwrong_type_argument(@'array', a);
 	}
 	@(return MAKE_FIXNUM(dim))
 @)
@@ -609,7 +608,7 @@ ILLEGAL:		FEerror("~S is an illegal axis-number to the array ~S.",
       x->vector.hasfillp ||
       CAR(x->vector.displaced) != Cnil ||
       (enum aelttype)x->vector.elttype != aet_object)
-    FEwrong_type_argument(Ssimple_vector, x);
+    FEwrong_type_argument(@'simple-vector', x);
   if ((i = fixnnint(index)) >= x->vector.dim)
     illegal_index(x, index);
   @(return x->vector.self.t[i])
@@ -623,7 +622,7 @@ ILLEGAL:		FEerror("~S is an illegal axis-number to the array ~S.",
       x->vector.hasfillp ||
       CAR(x->vector.displaced) != Cnil ||
       (enum aelttype)x->vector.elttype != aet_object)
-    FEwrong_type_argument(Ssimple_vector, x);
+    FEwrong_type_argument(@'simple-vector', x);
   if ((i = fixnnint(index)) >= x->vector.dim)
     illegal_index(x, index);
   @(return (x->vector.self.t[i] = v))
@@ -641,7 +640,7 @@ ILLEGAL:		FEerror("~S is an illegal axis-number to the array ~S.",
 		r = a->vector.hasfillp? Ct : Cnil;
 		break;
 	default:
-		FEwrong_type_argument(Sarray, a);
+		FEwrong_type_argument(@'array', a);
 	}
 	@(return r)
 @)

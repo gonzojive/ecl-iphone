@@ -17,7 +17,7 @@
 
 /******************************* EXPORTS ******************************/
 
-cl_object Sprint_object;
+cl_object @'print-object';
 
 /******************************* ------- ******************************/
 
@@ -35,7 +35,7 @@ allocate_instance(cl_object class, int size)
 @(defun si::allocate_instance (class size)
 @
 	if (type_of(class) != t_instance)
-	  FEwrong_type_argument(Sinstance, class);
+	  FEwrong_type_argument(@'instance', class);
 
 	@(return allocate_instance(class, fixnnint(size)))
 @)
@@ -48,10 +48,10 @@ allocate_instance(cl_object class, int size)
 	cl_object * oldslots;
 @
 	if (type_of(x) != t_instance)
-	  FEwrong_type_argument(Sinstance, x);
+	  FEwrong_type_argument(@'instance', x);
 
 	if (type_of(class) != t_instance)
-	  FEwrong_type_argument(Sinstance, class);
+	  FEwrong_type_argument(@'instance', class);
 
 	nslot = fixnnint(size);
 	x->instance.class = class;
@@ -72,16 +72,16 @@ allocate_instance(cl_object class, int size)
 @(defun si::instance_class (x)
 @
 	if (type_of(x) != t_instance)
-		FEwrong_type_argument(Sinstance, x);
+		FEwrong_type_argument(@'instance', x);
 	@(return x->instance.class)
 @)
 
 @(defun si::instance_class_set (x y)
 @
 	if (type_of(x) != t_instance)
-		FEwrong_type_argument(Sinstance, x);
+		FEwrong_type_argument(@'instance', x);
 	if (type_of(y) != t_instance)
-		FEwrong_type_argument(Sinstance, y);
+		FEwrong_type_argument(@'instance', y);
 	x->instance.class = y;
 	@(return x)
 @)
@@ -90,7 +90,7 @@ cl_object
 instance_ref(cl_object x, int i)
 {
 	if (type_of(x) != t_instance)
-		FEwrong_type_argument(Sinstance, x);
+		FEwrong_type_argument(@'instance', x);
 	if (i >= x->instance.length || i < 0)
 	        FEerror("~S is an illegal slot index1.",1,i);
 	return(x->instance.slots[i]);
@@ -100,7 +100,7 @@ instance_ref(cl_object x, int i)
 	cl_fixnum i;
 @
 	if (type_of(x) != t_instance)
-		FEwrong_type_argument(Sinstance, x);
+		FEwrong_type_argument(@'instance', x);
 	if (!FIXNUMP(index) ||
 	    (i = fix(index)) < 0 || i >= x->instance.length)
 		FEerror("~S is an illegal slot index.", 1, index);
@@ -111,7 +111,7 @@ instance_ref(cl_object x, int i)
 	cl_fixnum i;
 @
 	if (type_of(x) != t_instance)
-		FEwrong_type_argument(Sinstance, x);
+		FEwrong_type_argument(@'instance', x);
 	if (!FIXNUMP(index) ||
 	    (i = fix(index)) < 0 || i >= x->instance.length)
 		FEerror("~S is an illegal slot index.", 1, index);
@@ -125,7 +125,7 @@ cl_object
 instance_set(cl_object x, int i, cl_object v)
 {
         if (type_of(x) != t_instance)
-                FEwrong_type_argument(Sinstance, x);
+                FEwrong_type_argument(@'instance', x);
 	if (i >= x->instance.length || i < 0)
 	        FEerror("~S is an illegal slot index2.", 1, i);
 	x->instance.slots[i] = v;
@@ -136,7 +136,7 @@ instance_set(cl_object x, int i, cl_object v)
 	cl_fixnum i;
 @
 	if (type_of(x) != t_instance)
-		FEwrong_type_argument(Sinstance, x);
+		FEwrong_type_argument(@'instance', x);
 	if (!FIXNUMP(index) ||
 	    (i = fix(index)) >= x->instance.length || i < 0)
 		FEerror("~S is an illegal slot index.", 1, index);
@@ -158,7 +158,7 @@ instance_set(cl_object x, int i, cl_object v)
 	cl_fixnum i;
 @
 	if (type_of(x) != t_instance)
-		FEwrong_type_argument(Sinstance, x);
+		FEwrong_type_argument(@'instance', x);
 	if (!FIXNUMP(index) ||
 	    (i = fix(index)) >= x->instance.length || i < 0)
 		FEerror("~S is an illegal slot index.", 1, index);

@@ -30,7 +30,7 @@ static
 	while (1) {
 	  cl_object bytecodes = Cnil;
 	  printf("\n> ");
-	  sentence = Lread(3, Cnil, Cnil, OBJNULL);
+	  sentence = @read(3, Cnil, Cnil, OBJNULL);
 	  if (sentence == OBJNULL)
 	    @(return);
 	  prin1(eval(sentence, &bytecodes), Cnil);
@@ -44,10 +44,10 @@ static
 void
 init_lisp_libs(void)
 {
-	SYM_VAL(Vpackage) = system_package;
-	SYM_VAL(Vfeatures) = CONS(make_keyword("ECLS-MIN"), SYM_VAL(Vfeatures));
+	SYM_VAL(@'*package*') = system_package;
+	SYM_VAL(@'*features*') = CONS(make_keyword("ECLS-MIN"), SYM_VAL(@'*features*'));
 #ifdef RSYM
-	SYM_VAL(siVsymbol_table) = make_simple_string("ecls_min.sym");
+	SYM_VAL(@'si::*symbol_table*') = make_simple_string("ecls_min.sym");
 #endif
-	make_si_function("TOP-LEVEL", siLsimple_toplevel);
+	make_si_function("TOP-LEVEL", @si::simple-toplevel);
 }

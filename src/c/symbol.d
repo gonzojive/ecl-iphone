@@ -14,7 +14,6 @@
     See file '../Copyright' for full details.
 */
 
-
 #include "ecls.h"
 
 /******************************* EXPORTS ******************************/
@@ -26,11 +25,10 @@ cl_object cl_token;
 #endif THREADS
 
 struct symbol Cnil_body, Ct_body;
-cl_object Vgensym_counter;
+cl_object @'*gensym-counter*';
+cl_object @'si::pname';
 
 /******************************* ------- ******************************/
-
-cl_object siSpname;
 
 static cl_index gentemp_counter;
 
@@ -350,7 +348,7 @@ symbol_name(cl_object x)
 @
 	if (type_of(x) == t_string) {
 		gensym_prefix = x;
-		counter = SYM_VAL(Vgensym_counter);
+		counter = SYM_VAL(@'*gensym-counter*');
 	} else
 		counter = x;
 	if (!FIXNUMP(counter) || FIXNUM_MINUSP(counter)) {
@@ -373,12 +371,11 @@ symbol_name(cl_object x)
 	else
 		for (j=counter_value;  j > 0;  j /= 10)
 			str->string.self[--name_length] = j%10 + '0';
-	SYM_VAL(Vgensym_counter) = MAKE_FIXNUM(counter_value+1);
+	SYM_VAL(@'*gensym-counter*') = MAKE_FIXNUM(counter_value+1);
 	@(return make_symbol(str))
 @)
 
-@(defun gentemp (&optional (prefix gentemp_prefix)
-			   (pack `current_package()`)
+@(defun gentemp (&optional (prefix gentemp_prefix) (pack current_package())
 		 &aux str smbl)
 	size_t name_length, j;
 @
@@ -472,17 +469,17 @@ ONCE_MORE:
 	@(return sym)
 @)
 
-@(defun si::Amake_special (sym)
+@(defun si::*make_special (sym)
 @
 	assert_type_symbol(sym);
 	if ((enum stype)sym->symbol.stype == stp_constant)
 		FEerror("~S is a constant.", 1, sym);
 	sym->symbol.stype = (short)stp_special;
-	remf(&sym->symbol.plist, siSsymbol_macro);
+	remf(&sym->symbol.plist, @'si::symbol-macro');
 	@(return sym)
 @)
 
-@(defun si::Amake_constant (sym val)
+@(defun si::*make_constant (sym val)
 @
 	assert_type_symbol(sym);
 	if ((enum stype)sym->symbol.stype == stp_special)

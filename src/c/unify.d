@@ -71,17 +71,17 @@ bool set_slot(object x)		/* write mode */
 
 @(defun get_value (v x)
 @
-	@(return `get_value(v, x)?Ct:Cnil`)
+	@(return (get_value(v, x)?Ct:Cnil))
 @)
 
 @(defun get_constant (c x)
 @
-	@(return `get_constant(c, x)?Ct:Cnil`)
+	@(return (get_constant(c, x)?Ct:Cnil))
 @)
 
 @(defun get_nil (arg)
 @
-	@(return `get_nil(arg)?Ct:Cnil`)
+	@(return (get_nil(arg)?Ct:Cnil))
 @)
 
 bool
@@ -114,7 +114,7 @@ RETRY:	switch (type_of(x)) {
 
 @(defun get_cons (arg)
 @
-	@(return `get_cons(arg)?Ct:Cnil`)
+	@(return (get_cons(arg)?Ct:Cnil))
 @)
 
 bool
@@ -147,7 +147,7 @@ RETRY:	switch (type_of(x)) {
 
 @(defun get_instance (x class arity)
 @
-	@(return `get_instance(x, class, fix(arity))?Ct:Cnil`)
+	@(return (get_instance(x, class, fix(arity))?Ct:Cnil))
 @)
 
 
@@ -218,7 +218,7 @@ unify(object x, object y)
 
 @(defun unify_slot ()
 @
-	@(return `(object)unify_slot`)
+	@(return ((object)unify_slot))
 @)
 
 
@@ -226,38 +226,38 @@ unify(object x, object y)
   object x;
 @
 	x = (object)unify_value(loc);
-	@(return `(x == Cnil || x)?Ct:Cnil`)
+	@(return ((x == Cnil || x)?Ct:Cnil))
 @)
 
 @(defun unify_constant (c)
   object x;
 @
 	x = (object)unify_constant(c);
-	@(return `(x == Cnil || x)?Ct:Cnil`)
+	@(return ((x == Cnil || x)?Ct:Cnil))
 @)
 
 @(defun unify_nil ()
   object x;
 @
 	x = (object)unify_nil;
-	@(return `(x == Cnil || x)?Ct:Cnil`)
+	@(return ((x == Cnil || x)?Ct:Cnil))
 @)
 
 /* -------------------- Test Functions -------------------- */
 
 @(defun make_locative (&optional (n 0))
 @
-	@(return `MAKE_LOCATIVE(fix(n))`)
+	@(return (MAKE_LOCATIVE(fix(n))))
 @)
 
 @(defun locativep (obje)
 @
-        @(return `LOCATIVEP(obje)?Ct:Cnil`)
+	@(return (LOCATIVEP(obje)?Ct:Cnil))
 @)
 
 @(defun unboundp (loc)
 @
-        @(return `UNBOUNDP(loc)?Ct:Cnil`)
+	@(return (UNBOUNDP(loc)?Ct:Cnil))
 @)
 
 @(defun dereference (x)
@@ -265,12 +265,12 @@ unify(object x, object y)
 @
 	while (type_of(x) != t_locative)
 	  x = wrong_type_argument(Slocative, x);
-	@(return `DEREF(x)`)
+	@(return (DEREF(x)))
 @)
 
 @(defun make_variable (name)
 @
-	@(return `CONS(name, OBJNULL)`)
+	@(return (CONS(name, OBJNULL)))
 @)
 
 /* (defmacro unify-variable (v) `(progn (setq ,v (si:unify-slot)) t) */

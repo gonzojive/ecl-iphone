@@ -30,7 +30,7 @@ int backq_level;
 #define	QUOTE	1
 #define	EVAL	2
 #define	LIST	3
-#define	LISTA	4
+#define	LISTX	4
 #define	APPEND	5
 #define	NCONC	6
 
@@ -38,9 +38,9 @@ cl_object siScomma;
 cl_object siScomma_at;
 cl_object siScomma_dot;
 
-cl_object SlistX;
-cl_object Sappend;
-cl_object Snconc;
+cl_object @'list*';
+cl_object @'append';
+cl_object @'nconc';
 
 static cl_object
 kwote(cl_object x)
@@ -49,7 +49,7 @@ kwote(cl_object x)
 	if ((t == t_symbol &&
 	     ((enum stype)x->symbol.stype != stp_constant || SYM_VAL(x) != x))
 	    || t == t_cons || t == t_vector)
-	   return(CONS(Squote, CONS(x, Cnil)));
+	   return(CONS(@'quote', CONS(x, Cnil)));
 	else return(x);
 }
 
@@ -59,7 +59,7 @@ kwote(cl_object x)
 		QUOTE		the form should be quoted
 		EVAL		the form should be evaluated
 		LIST		the form should be applied to LIST
-		LISTA		the form should be applied to LIST*
+		LISTX		the form should be applied to LIST*
 		APPEND		the form should be applied to APPEND
 		NCONC		the form should be applied to NCONC
 */
@@ -96,7 +96,7 @@ backq_cdr(cl_object *px)
 				return(LIST);
 			}
 			CDR(x) = CONS(kwote(dx), Cnil);
-			return(LISTA);
+			return(LISTX);
 
 		case APPEND:
 		case NCONC:
@@ -115,11 +115,11 @@ backq_cdr(cl_object *px)
 		case QUOTE:
 			CAR(x) = kwote(ax);
 			CDR(x) = CONS(dx, Cnil);
-			return(LISTA);
+			return(LISTX);
 
 		case EVAL:
 			CDR(x) = CONS(dx, Cnil);
-			return(LISTA);
+			return(LISTX);
 
 		case APPEND:
 		case NCONC:
@@ -139,25 +139,25 @@ backq_cdr(cl_object *px)
 		}
 		if (a == EVAL)
 			return(LIST);
-		attach(Slist);
+		attach(@'list');
 		break;
 
-	  case LISTA:
+	  case LISTX:
 		if (a == QUOTE) {
 			CAR(x) = kwote(ax);
-			return(LISTA);
+			return(LISTX);
 		}
 		if (a == EVAL)
-			return(LISTA);
-		attach(SlistX);
+			return(LISTX);
+		attach(@'list*');
 		break;
 
 	  case APPEND:
-		attach(Sappend);
+		attach(@'append');
 		break;
 
 	  case NCONC:
-		attach(Snconc);
+		attach(@'nconc');
 		break;
 
 	  default:
@@ -167,11 +167,11 @@ backq_cdr(cl_object *px)
 	  case QUOTE:
 		CAR(x) = kwote(ax);
 		CDR(x) = CONS(CDR(x), Cnil);
-		return(LISTA);
+		return(LISTX);
 
 	  case EVAL:
 		CDR(x) = CONS(CDR(x), Cnil);
-		return(LISTA);
+		return(LISTX);
 
 	  case APPEND:
 	  case NCONC:
@@ -223,23 +223,23 @@ backq_car(cl_object *px)
 		return(d);
 
 	case LIST:
-/*		attach(Slist); */
-		*px = CONS(Slist, *px);
+/*		attach(@'list'); */
+		*px = CONS(@'list', *px);
 		break;
 
-	case LISTA:
-/*		attach(SlistX); */
-		*px = CONS(SlistX, *px);
+	case LISTX:
+/*		attach(@'list*'); */
+		*px = CONS(@'list*', *px);
 		break;
 
 	case APPEND:
-/*		attach(Sappend); */
-		*px = CONS(Sappend, *px);
+/*		attach(@'append'); */
+		*px = CONS(@'append', *px);
 		break;
 
 	case NCONC:
-/*		attach(Snconc); */
-		*px = CONS(Snconc, *px);
+/*		attach(@'nconc'); */
+		*px = CONS(@'nconc', *px);
 		break;
 
 	default:
@@ -298,9 +298,9 @@ init_backq(void)
 
 	r = standard_readtable;
 	r->readtable.table['`'].syntax_type = cat_terminating;
-	r->readtable.table['`'].macro = make_cf(Lbackquote_reader);
+	r->readtable.table['`'].macro = make_cf(@backquote-reader);
 	r->readtable.table[','].syntax_type = cat_terminating;
-	r->readtable.table[','].macro = make_cf(Lcomma_reader);
+	r->readtable.table[','].macro = make_cf(@comma-reader);
 
 	backq_level = 0;
 }

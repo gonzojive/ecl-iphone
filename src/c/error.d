@@ -19,22 +19,22 @@
 
 /******************************* EXPORTS ******************************/
 
-cl_object Sarithmetic_error, Scell_error, Scondition;
-cl_object Scontrol_error, Sdivision_by_zero, Send_of_file;
-cl_object Serror, Sfile_error, Sfloating_point_inexact;
-cl_object Sfloating_point_invalid_operation, Sfloating_point_overflow;
-cl_object Sfloating_point_underflow, Spackage_error, Sparse_error;
-cl_object Sprint_not_readable, Sprogram_error, Sreader_error;
-cl_object Sserious_condition, Ssimple_condition, Ssimple_error;
-cl_object Ssimple_type_error, Ssimple_warning, Sstorage_condition;
-cl_object Sstream_error, Sstyle_warning, Stype_error, Sunbound_slot;
-cl_object Sunbound_variable, Sundefined_function, Swarning;
+cl_object @'arithmetic-error', @'cell-error', @'condition';
+cl_object @'control-error', @'division-by-zero', @'end-of-file';
+cl_object @'error', @'file-error', @'floating-point-inexact';
+cl_object @'floating-point-invalid-operation', @'floating-point-overflow';
+cl_object @'floating-point-underflow', @'package-error', @'parse-error';
+cl_object @'print-not-readable', @'program-error', @'reader-error';
+cl_object @'serious-condition', @'simple-condition', @'simple-error';
+cl_object @'simple-type-error', @'simple-warning', @'storage-condition';
+cl_object @'stream-error', @'style-warning', @'type-error', @'unbound-slot';
+cl_object @'unbound-variable', @'undefined-function', @'warning';
 
-cl_object siSsimple_program_error, siSsimple_control_error;
+cl_object @'si::simple-program-error', @'si::simple-control-error';
 
-cl_object Kpathname;			/* file-error */
-cl_object Kdatum, Kexpected_type;	/* type-error */
-cl_object Kformat_control, Kformat_arguments;	/* simple-condition */
+cl_object @':pathname';					/* file-error */
+cl_object @':datum', @':expected-type';			/* type-error */
+cl_object @':format-control', @':format-arguments';	/* simple-condition */
 
 /******************************* ------- ******************************/
 
@@ -77,16 +77,16 @@ internal_error(const char *s)
 /*		Support for Lisp Error Handler				     */
 /*****************************************************************************/
 
-cl_object siSuniversal_error_handler;
+cl_object @'si::universal-error-handler';
 
 cl_object null_string;
 
-cl_object siSterminal_interrupt;
+cl_object @'si::terminal-interrupt';
 
 void
 terminal_interrupt(bool correctable)
 {
-	funcall(2, siSterminal_interrupt, correctable? Ct : Cnil);
+	funcall(2, @'si::terminal-interrupt', correctable? Ct : Cnil);
 }
 
 void
@@ -98,7 +98,7 @@ FEerror(char *s, int narg, ...)
 	va_start(args, narg);
 	while (narg--)
 	  r = &CDR(*r = CONS(va_arg(args, cl_object), Cnil));
-	funcall(4, siSuniversal_error_handler,
+	funcall(4, @'si::universal-error-handler',
 		Cnil,                    /*  not correctable  */
 		make_simple_string(s),	 /*  condition text  */
 		rest);
@@ -114,7 +114,7 @@ CEerror(char *err, int narg, ...)
 	va_start(args, narg);
 	while (i--)
 	  r = &CDR(*r = CONS(va_arg(args, cl_object), Cnil));
-	return funcall(4, siSuniversal_error_handler,
+	return funcall(4, @'si::universal-error-handler',
 		       Ct,			/*  correctable  */
 		       make_simple_string(err),	/*  continue-format-string  */
 		       rest);
@@ -135,7 +135,7 @@ FEcondition(int narg, cl_object name, ...)
 		*r = CONS(va_arg(args, cl_object), Cnil);
 		r = &CDR(*r);
 	}
-	funcall(4, siSuniversal_error_handler,
+	funcall(4, @'si::universal-error-handler',
 		Cnil,                    /*  not correctable  */
 		name,                    /*  condition name  */
 		rest);
@@ -154,11 +154,11 @@ FEprogram_error(const char *s, int narg, ...)
 		printf("%d\n",type_of(CAR(*r)));
 		r = &CDR(*r);
 	}
-	funcall(4, siSuniversal_error_handler,
+	funcall(4, @'si::universal-error-handler',
 		Cnil,                    /*  not correctable  */
-		siSsimple_program_error, /*  condition name  */
-		list(4, Kformat_control, make_simple_string(s),
-		     Kformat_arguments, rest));
+		@'si::simple-program-error', /*  condition name  */
+		list(4, @':format-control', make_simple_string(s),
+		     @':format-arguments', rest));
 }
 
 void
@@ -172,41 +172,41 @@ FEcontrol_error(const char *s, int narg, ...)
 		*r = CONS(va_arg(args, cl_object), Cnil);
 		r = &CDR(*r);
 	}
-	funcall(4, siSuniversal_error_handler,
+	funcall(4, @'si::universal-error-handler',
 		Cnil,                    /*  not correctable  */
-		siSsimple_control_error, /*  condition name  */
-		list(4, Kformat_control, make_simple_string(s),
-		     Kformat_arguments, rest));
+		@'si::simple-control-error', /*  condition name  */
+		list(4, @':format-control', make_simple_string(s),
+		     @':format-arguments', rest));
 }
 
 void
 FEcannot_open(cl_object fn)
 {
-	FEcondition(3, Sfile_error, Kpathname, fn);
+	FEcondition(3, @'file-error', @':pathname', fn);
 }
 
 void
 FEend_of_file(cl_object strm)
 {
-	FEcondition(3, Send_of_file, Kstream, strm);
+	FEcondition(3, @'end-of-file', @':stream', strm);
 }
 
 void
 FEwrong_type_argument(cl_object type, cl_object value)
 {
-	FEcondition(5, Stype_error, Kdatum, value, Kexpected_type, type);
+	FEcondition(5, @'type-error', @':datum', value, @':expected-type', type);
 }
 
 void
 FEunbound_variable(cl_object sym)
 {
-	FEcondition(3, Sunbound_variable, Kname, sym);
+	FEcondition(3, @'unbound-variable', @':name', sym);
 }
 
 void
 FEundefined_function(cl_object fname)
 {
-	FEcondition(3, Sundefined_function, Kname, fname);
+	FEcondition(3, @'undefined-function', @':name', fname);
 }
 
 /*************
@@ -250,15 +250,15 @@ FEassignment_to_constant(cl_object v)
 void
 FEinvalid_function(cl_object obj)
 {
-	FEwrong_type_argument(Sfunction, obj);
+	FEwrong_type_argument(@'function', obj);
 }
 
 /*      bootstrap version                */
 @(defun si::universal_error_handler (c err args)
 @
 	printf("\nLisp initialization error.\n");
-	Lprint(1, err);
-	Lprint(1, args);
+	@print(1, err);
+	@print(1, args);
 #ifndef ALFA
 	exit(0);
 #endif
@@ -285,7 +285,7 @@ illegal_index(cl_object x, cl_object i)
 void
 FEtype_error_symbol(cl_object obj)
 {
-	FEwrong_type_argument(Ssymbol, obj);
+	FEwrong_type_argument(@'symbol', obj);
 }
 
 void
@@ -306,7 +306,7 @@ not_a_variable(cl_object obj)
 	  *r = CONS(va_arg(args, cl_object), Cnil);
 	  r = &CDR(*r);
 	}
-	funcall(4, siSuniversal_error_handler,
+	funcall(4, @'si::universal-error-handler',
 		Cnil,
 		eformat,
 		rest);
@@ -320,7 +320,7 @@ not_a_variable(cl_object obj)
 	  *r = CONS(va_arg(args, cl_object), Cnil);
 	  r = &CDR(*r);
 	}
-	return(funcall(4, siSuniversal_error_handler,
+	return(funcall(4, @'si::universal-error-handler',
 		       cformat,
 		       eformat,
 		       rest));

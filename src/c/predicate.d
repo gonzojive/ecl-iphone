@@ -14,7 +14,6 @@
     See file '../Copyright' for full details.
 */
 
-
 #include "ecls.h"
 
 @(defun identity (x)
@@ -478,7 +477,7 @@ BEGIN:
 		return(FALSE);
 	}
 	if (tx == t_cons) {
-		if (CAR(x) == siSsharp_comma)
+		if (CAR(x) == @'si::sharp-comma')
 			return(TRUE);
 		if (contains_sharp_comma(CAR(x)))
 			return(TRUE);

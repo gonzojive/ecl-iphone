@@ -18,20 +18,20 @@
 
 /********************* EXPORTS *********************/
 
-cl_object siSlambda_block;
-cl_object Sdeclare;
-cl_object Sdefun;
-cl_object Scompile, Sload, Seval, Sprogn, Swarn, Stypep, Sotherwise;
-cl_object Kexecute, Kcompile_toplevel, Kload_toplevel;
-cl_object siVinhibit_macro_special;
+cl_object @'si::lambda-block';
+cl_object @'declare';
+cl_object @'defun';
+cl_object @'compile', @'load', @'eval', @'progn', @'warn', @'typep', @'otherwise';
+cl_object @':execute', @':compile-toplevel', @':load-toplevel';
+cl_object @'si::*inhibit-macro-special*';
 
-cl_object SAoptional;
-cl_object SArest;
-cl_object SAkey;
-cl_object SAallow_other_keys;
-cl_object SAaux;
+cl_object @'&optional';
+cl_object @'&rest';
+cl_object @'&key';
+cl_object @'&allow-other-keys';
+cl_object @'&aux';
 
-cl_object Kallow_other_keys;
+cl_object @':allow-other-keys';
 
 cl_object bytecodes;
 
@@ -349,7 +349,7 @@ FEill_formed_input()
 static void
 c_register_var(register cl_object var, bool special)
 {
-	CAR(lex_env) = CONS(CONS(var, special? Sspecial : Cnil), CAR(lex_env));
+	CAR(lex_env) = CONS(CONS(var, special? @'special' : Cnil), CAR(lex_env));
 }
 
 static bool
@@ -396,7 +396,7 @@ compile_setq(int op, cl_object var)
 	if (!SYMBOLP(var))
 		FEillegal_variable_name(var);
 	ndx = lex_var_sch(var);
-	if (!Null(ndx) && CDR(ndx) != Sspecial)
+	if (!Null(ndx) && CDR(ndx) != @'special')
 		asm_op(op); /* Lexical variable */
 	else if (var->symbol.stype == stp_constant)
 		FEassignment_to_constant(var);
@@ -485,7 +485,7 @@ c_call(cl_object args, bool push) {
 	if (ATOM(name)) {
 		asm_op2(push? OP_PCALL : OP_CALL, nargs);
 		asm1(name);
-	} else if (CAR(name) == Slambda) {
+	} else if (CAR(name) == @'lambda') {
 		asm_op(OP_CLOSE);
 		asm1(make_lambda(Cnil, CDR(name)));
 		asm_op2(push? OP_PFCALL : OP_FCALL, nargs);
@@ -513,7 +513,7 @@ perform_c_case(cl_object args) {
 	if (ATOM(clause))
 		FEprogram_error("CASE: Illegal clause ~S.",1,clause);
 	test = pop(&clause);
-	if (Sotherwise == test || test == Ct) {
+	if (@'otherwise' == test || test == Ct) {
 		compile_body(clause);
 	} else {
 		cl_index labeln, labelz;
@@ -660,7 +660,7 @@ c_do_doa(int op, cl_object args) {
 	bindings = pop(&args);
 	test = pop(&args);
 
-	siLprocess_declarations(1, args);
+	@si::process-declarations(1, args);
 	body = VALUES(1);
 	specials = VALUES(3);
 
@@ -778,7 +778,7 @@ c_dolist_dotimes(int op, cl_object args) {
 	cl_object lex_old = lex_env;
 	lex_copy();
 
-	siLprocess_declarations(1, args);
+	@si::process-declarations(1, args);
 	body = VALUES(1);
 	specials = VALUES(3);
 
@@ -832,7 +832,7 @@ static void
 c_eval_when(cl_object args) {
 	cl_object situation = pop(&args);
 
-	if (member_eq(Seval, situation) || member_eq(Kexecute, situation))
+	if (member_eq(@'eval', situation) || member_eq(@':execute', situation))
 		compile_body(args);
 	else
 		compile_body(Cnil);
@@ -859,7 +859,7 @@ c_labels_flet(int op, cl_object args) {
 	lex_copy();
 
 	/* Remove declarations */
-	siLprocess_declarations(1, args);
+	@si::process-declarations(1, args);
 	args = VALUES(1);
 	if (nfun == 0) {
 		compile_body(args);
@@ -903,10 +903,10 @@ c_function(cl_object args) {
 	if (SYMBOLP(function)) {
 		asm_op(OP_FUNCTION);
 		asm1(function);
-	} else if (CONSP(function) && CAR(function) == Slambda) {
+	} else if (CONSP(function) && CAR(function) == @'lambda') {
 		asm_op(OP_CLOSE);
 		asm1(make_lambda(Cnil, CDR(function)));
-	} else if (CONSP(function) && CAR(function) == siSlambda_block) {
+	} else if (CONSP(function) && CAR(function) == @'si::lambda-block') {
 		cl_object name = CADR(function);
 		cl_object body = CDDR(function);
 		asm_op(OP_CLOSE);
@@ -1007,7 +1007,7 @@ c_let_leta(int op, cl_object args) {
 	lex_copy();
 
 	bindings = car(args);
-	siLprocess_declarations(1, CDR(args));
+	@si::process-declarations(1, CDR(args));
 	body = VALUES(1);
 	specials = VALUES(3);
 
@@ -1080,7 +1080,7 @@ c_macrolet(cl_object args)
 		cl_object name = pop(&definition);
 		cl_object arglist = pop(&definition);
 		cl_object macro, function;
-		macro = funcall(4, siSexpand_defmacro, name, arglist,
+		macro = funcall(4, @'si::expand-defmacro', name, arglist,
 				definition);
 		function = make_lambda(name, CDR(macro));
 		lex_macro_bind(name, function);
@@ -1100,7 +1100,7 @@ c_multiple_value_bind(cl_object args)
 
 	vars = pop(&args);
 	value = pop(&args);
-	siLprocess_declarations(1,args);
+	@si::process-declarations(1,args);
 	body = VALUES(1);
 	specials = VALUES(3);
 
@@ -1177,9 +1177,9 @@ c_multiple_value_setq(cl_object args) {
 		v = macro_expand1(v, lex_env);
 		if (!SYMBOLP(v)) {
 			aux = v;
-			v = Lgensym(0);
+			v = @gensym(0);
 			temp_vars = CONS(v, temp_vars);
-			late_assignment = CONS(list(3, Ssetf, aux, v),
+			late_assignment = CONS(list(3, @'setf', aux, v),
 					       late_assignment);
 		}
 		vars = CONS(v, vars);
@@ -1211,7 +1211,7 @@ c_multiple_value_setq(cl_object args) {
 		if (!SYMBOLP(var))
 			FEillegal_variable_name(var);
 		ndx = lex_var_sch(var);
-		if (!Null(ndx) && CDR(ndx) != Sspecial)
+		if (!Null(ndx) && CDR(ndx) != @'special')
 			asm1(var); /* Lexical variable */
 		else if (var->symbol.stype == stp_constant)
 			FEassignment_to_constant(var);
@@ -1340,7 +1340,7 @@ c_psetq(cl_object old_args) {
 		nvars++;
 	}
 	if (use_psetf) {
-		compile_form(CONS(Spsetf, args), FALSE);
+		compile_form(CONS(@'psetf', args), FALSE);
 		return;
 	}
 	while (!endp(args)) {
@@ -1401,7 +1401,7 @@ c_setq(cl_object args) {
 			compile_form(value, FALSE);
 			compile_setq(OP_SETQ, var);
 		} else {
-			compile_form(list(3, Ssetf, var, value), FALSE);
+			compile_form(list(3, @'setf', var, value), FALSE);
 		}
 	}
 }
@@ -1419,7 +1419,7 @@ c_symbol_macrolet(cl_object args)
 	lex_copy();
 
 	def_list = pop(&args);
-	siLprocess_declarations(1,args);
+	@si::process-declarations(1,args);
 	body = VALUES(1);
 	specials = VALUES(3);
 
@@ -1428,12 +1428,12 @@ c_symbol_macrolet(cl_object args)
 		cl_object definition = pop(&def_list);
 		cl_object name = pop(&definition);
 		cl_object expansion = pop(&definition);
-		cl_object arglist = list(2, Lgensym(0), Lgensym(0));
+		cl_object arglist = list(2, @gensym(0), @gensym(0));
 		cl_object function;
 		if (special_variablep(name, specials))
 			FEprogram_error("SYMBOL-MACROLET: Symbol ~A cannot be \
 declared special and appear in a symbol-macrolet.", 1, name);
-		definition = list(2, arglist, list(2, Squote, expansion));
+		definition = list(2, arglist, list(2, @'quote', expansion));
 		function = make_lambda(name, definition);
 		lex_symbol_macro_bind(name, function);
 	}
@@ -1604,7 +1604,7 @@ compile_form(cl_object stmt, bool push) {
 	function = CAR(stmt);
 	if (!SYMBOLP(function))
 		goto ORDINARY_CALL;
-	if (function == Squote) {
+	if (function == @'quote') {
 		stmt = CDR(stmt);
 		if (CDR(stmt) != Cnil)
 			FEprogram_error("QUOTE: Too many arguments.",0);
@@ -1699,7 +1699,7 @@ compile_body(cl_object body) {
 	    continue;
 	  }
 
-	  if (ATOM(form) || (CAR(form) != Sdeclare))
+	  if (ATOM(form) || (CAR(form) != @'declare'))
 	    break;
 
 	  for (decls = CDR(form); !endp(decls); decls = CDR(decls)) {
@@ -1707,7 +1707,7 @@ compile_body(cl_object body) {
 	    if (ATOM(sentence))
 	      FEill_formed_input();
 	    push(sentence, declarations);
-	    if (CAR(sentence) == Sspecial)
+	    if (CAR(sentence) == @'special')
 	      for (vars = CDR(sentence); !endp(vars); vars = CDR(vars)) {
 		v = CAR(vars);
 		check_symbol(v);
@@ -1733,7 +1733,7 @@ compile_body(cl_object body) {
 		FEprogram_error("LAMBDA: No lambda list.", 0);
 	lambda_list = CAR(lambda);
 
-	declarations = siLprocess_declarations(2, CDR(lambda), Ct);
+	declarations = @si::process-declarations(2, CDR(lambda), Ct);
 	body = VALUES(1);
 	documentation = VALUES(2);
 	specials = VALUES(3);
@@ -1744,15 +1744,15 @@ REQUIRED:
 			goto OUTPUT;
 		v = CAR(lambda_list);
 		lambda_list = CDR(lambda_list);
-		if (v == SAallow_other_keys)
+		if (v == @'&allow-other-keys')
 			goto ILLEGAL_LAMBDA;
-		if (v == SAoptional)
+		if (v == @'&optional')
 			goto OPTIONAL;
-		if (v == SArest)
+		if (v == @'&rest')
 			goto REST;
-		if (v == SAkey)
+		if (v == @'&key')
 			goto KEYWORD;
-		if (v == SAaux)
+		if (v == @'&aux')
 			goto AUX;
 		nreq++;
 		push_var(v, reqs);
@@ -1766,13 +1766,13 @@ OPTIONAL:
 		spp = Cnil;
 		init = Cnil;
 		if (ATOM(x)) {
-			if (x == SAoptional || x == SAallow_other_keys)
+			if (x == @'&optional' || x == @'&allow-other-keys')
 				goto ILLEGAL_LAMBDA;
-			if (x == SArest)
+			if (x == @'&rest')
 				goto REST;
-			if (x == SAkey)
+			if (x == @'&key')
 				goto KEYWORD;
-			if (x == SAaux)
+			if (x == @'&aux')
 				goto AUX;
 			v = x;
 		} else {
@@ -1807,11 +1807,11 @@ REST:
 		goto OUTPUT;
 	v = CAR(lambda_list);
 	lambda_list = CDR(lambda_list);
-	if (v == SAoptional || v == SArest || v == SAallow_other_keys)
+	if (v == @'&optional' || v == @'&rest' || v == @'&allow-other-keys')
 		goto ILLEGAL_LAMBDA;
-	if (v == SAkey)
+	if (v == @'&key')
 		goto KEYWORD;
-	if (v == SAaux)
+	if (v == @'&aux')
 		goto AUX;
 	goto ILLEGAL_LAMBDA;
 
@@ -1824,7 +1824,7 @@ KEYWORD:
 		x = CAR(lambda_list);
 		lambda_list = CDR(lambda_list);
 		if (ATOM(x)) {
-			if (x == SAallow_other_keys) {
+			if (x == @'&allow-other-keys') {
 				if (!Null(allow_other_keys))
 					goto ILLEGAL_LAMBDA;
 				allow_other_keys = Ct;
@@ -1832,12 +1832,12 @@ KEYWORD:
 					goto OUTPUT;
 				x = CAR(lambda_list);
 				lambda_list = CDR(lambda_list);
-				if (key != SAaux)
+				if (key != @'&aux')
 					goto ILLEGAL_LAMBDA;
 				goto AUX;
-			} else if (x == SAoptional || x == SArest || x == SAkey)
+			} else if (x == @'&optional' || x == @'&rest' || x == @'&key')
 				goto ILLEGAL_LAMBDA;
-			else if (x == SAaux)
+			else if (x == @'&aux')
 				goto AUX;
 			v = x;
 		} else {
@@ -1880,9 +1880,9 @@ AUX:
 		x = CAR(lambda_list);
 		lambda_list = CDR(lambda_list);
 		if (ATOM(x)) {
-			if (x == SAoptional || x == SArest ||
-			    x == SAkey || x == SAallow_other_keys ||
-			    x == SAaux)
+			if (x == @'&optional' || x == @'&rest' ||
+			    x == @'&key' || x == @'&allow-other-keys' ||
+			    x == @'&aux')
 				goto ILLEGAL_LAMBDA;
 			v = x;
 			init = Cnil;
@@ -1954,7 +1954,7 @@ make_lambda(cl_object name, cl_object lambda) {
 
 	lex_copy();
 
-	reqs = siLprocess_lambda_list(1,lambda);
+	reqs = @si::process-lambda-list(1,lambda);
 	opts = VALUES(1);
 	rest = VALUES(2);
 	allow_other_keys = VALUES(3);
@@ -2078,7 +2078,7 @@ eval(cl_object form, cl_object *new_bytecodes)
 	compile_form(form, FALSE);
 	asm_op(OP_EXIT);
 	asm_op(OP_HALT);
-/*  	Lprint(1,bytecodes); */
+/*  	@print(1,bytecodes); */
 	VALUES(0) = Cnil;
 	NValues = 0;
 	interpret(&bytecodes->vector.self.t[handle]);

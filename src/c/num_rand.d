@@ -14,11 +14,10 @@
     See file '../Copyright' for full details.
 */
 
-
 #include "ecls.h"
 #include <time.h>
 
-cl_object Vrandom_state;
+cl_object @'*random-state*';
 
 static cl_object
 rando(cl_object x, cl_object rs)
@@ -58,14 +57,14 @@ make_random_state(cl_object rs)
 
 	if (Null(rs)) {
 		z = alloc_object(t_random);
-		z->random.value = symbol_value(Vrandom_state)->random.value;
+		z->random.value = symbol_value(@'*random-state*')->random.value;
 		return(z);
 	} else if (rs == Ct) {
 		z = alloc_object(t_random);
 		z->random.value = time(0);
 		return(z);
 	} else if (type_of(rs) != t_random)
-   		FEwrong_type_argument(Srandom_state, rs);
+   		FEwrong_type_argument(@'random-state', rs);
 	else {
 		z =alloc_object(t_random);
 		z->random.value = rs->random.value;
@@ -84,10 +83,10 @@ advance_random_state(cl_object rs)
 }
 
 
-@(defun random (x &optional (rs symbol_value(Vrandom_state)))
+@(defun random (x &optional (rs symbol_value(@'*random-state*')))
 @	
 	if (type_of(rs) != t_random)
-		FEwrong_type_argument(Srandom_state, rs);
+		FEwrong_type_argument(@'random-state', rs);
 	advance_random_state(rs);
 	@(return rando(x, rs));
 @)
@@ -105,5 +104,5 @@ advance_random_state(cl_object rs)
 void
 init_num_rand(void)
 {
-        SYM_VAL(Vrandom_state) = make_random_state(Ct);
+        SYM_VAL(@'*random-state*') = make_random_state(Ct);
 }

@@ -61,7 +61,7 @@ eval_from_string(char *s)
 {
   cl_object x;
   STRING_INPUT_STREAM(s, strm);
-  x = Lread(3, (cl_object)&strm, Cnil, OBJNULL);
+  x = @read(3, (cl_object)&strm, Cnil, OBJNULL);
   return (x != OBJNULL) ? eval(x, NULL) : Cnil;
 }
 
@@ -90,10 +90,10 @@ object2string(cl_object x)
     return char_string;
   }
   case t_cons: {
-    extern cl_object siVprint_package;
+    extern cl_object @'si::*print-package*';
     string_stream->stream.object0->string.fillp = 0;
     string_stream->stream.int0 = string_stream->stream.int1 = 0;
-    bds_bind(siVprint_package, Ct);
+    bds_bind(@'si::*print-package*', Ct);
     prin1(x, string_stream);
     bds_unwind1;
     return(string_stream->stream.object0->string.self);
@@ -304,14 +304,14 @@ Tcl_DeleteCommand(Tcl_Interp *interp, char *cmdName)
    In such case we could read with:
 
     STRING_INPUT_STREAM(s, strm);
-    Lread(3, (cl_object)&strm, Cnil, OBJNULL);
+    @read(3, (cl_object)&strm, Cnil, OBJNULL);
     result = VALUES(0);
-    Lread(3, (cl_object)&strm, Cnil, OBJNULL);
+    @read(3, (cl_object)&strm, Cnil, OBJNULL);
     if (VALUES(0) != OBJNULL) {
       result = CONS(result, Cnil);
       for (p = &CDR(result) ; ; p = &(CDR(*p))) {
 	*p = CONS(VALUES(0), Cnil);
-	Lread(3, (cl_object)&strm, Cnil, OBJNULL);
+	@read(3, (cl_object)&strm, Cnil, OBJNULL);
 	if (VALUES(0) == OBJNULL) break;
       }
     }
@@ -467,7 +467,7 @@ Tcl_CreateCommand(Tcl_Interp *interp, char *cmdName, Tcl_CmdProc *proc,
   upcase(cmdName, CMDNAME);
   SYM = _intern(CMDNAME, tk_package);
   SYM_VAL(SYM) = sym;		/* evaluating to lower case symbol */
-  siLmake_structure(4, TkWidgetType, MAKE_FIXNUM(proc),
+  @si::make-structure(4, TkWidgetType, MAKE_FIXNUM(proc),
 		    MAKE_FIXNUM(clientData), sym);
   W = VALUES(0);
 

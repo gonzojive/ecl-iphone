@@ -13,7 +13,6 @@
     See file '../Copyright' for full details.
 */
 
-
 #include "ecls.h"
 
 /******************************* EXPORTS ******************************/
@@ -24,6 +23,13 @@ int critical_level = 0;
 pd *running_head;		/* front of running pd's  */
 pd *running_tail;		/* back of running pd's   */
 pd main_pd;
+
+cl_object @'running';
+cl_object @'suspended';
+cl_object @'waiting';
+cl_object @'stopped';
+cl_object @'dead';
+cl_object @'si::thread-top-level';
 
 /******************************* IMPORTS ******************************/
 
@@ -44,13 +50,6 @@ static int scheduler_level = 0;            /* tito */
 static bool reset_timer = FALSE;
 static int running_processes = 1;
 static int absolute_time = 0;
-
-cl_object Srunning;
-cl_object Ssuspended;
-cl_object Swaiting;
-cl_object Sstopped;
-cl_object Sdead;
-cl_object siSthread_top_level;
 
 static cl_object main_thread;
 
@@ -138,7 +137,7 @@ make_pd()
   npd->lwp_PRINTcircle = FALSE;
   npd->lwp_PRINTbase = 10;
   npd->lwp_PRINTradix = FALSE;
-  npd->lwp_PRINTcase = Kdowncase;
+  npd->lwp_PRINTcase = @':downcase';
   npd->lwp_PRINTgensym = TRUE;
   npd->lwp_PRINTlevel = -1;
   npd->lwp_PRINTlength = -1;
@@ -147,7 +146,7 @@ make_pd()
   npd->lwp_output_ch_fun = writec_PRINTstream;
   npd->lwp_read_ch_fun = readc;
   
-  npd->lwp_READtable  = symbol_value(Vreadtable);
+  npd->lwp_READtable  = symbol_value(@'*readtable*');
   npd->lwp_READdefault_float_format = 'S';
   npd->lwp_READbase = 10;
   npd->lwp_READsuppress = FALSE;
@@ -284,7 +283,7 @@ activate_thread(cl_object thread)
     for (i = clwp->lwp_nValues; i > 0;)
       VALUES(i) = VALUES(--i);
     VALUES(0) = clwp->lwp_thread->thread.entry;
-    apply(clwp->lwp_nValues+1, siSthread_top_level, &VALUES(0));
+    apply(clwp->lwp_nValues+1, @'si::thread-top-level', &VALUES(0));
   }
   /* Termination */
   
@@ -527,7 +526,7 @@ resume(pd *rpd)
 @(defun deactivate (thread)
 @
   if (type_of(thread) != t_thread)
-    FEwrong_type_argument(Sthread, thread);
+    FEwrong_type_argument(@'thread', thread);
 
   if (thread->thread.data == NULL ||
       thread->thread.data->pd_status != RUNNING)
@@ -550,7 +549,7 @@ resume(pd *rpd)
   start_critical_section();
 
   if (type_of(thread) != t_thread) {
-    FEwrong_type_argument(Sthread, thread);
+    FEwrong_type_argument(@'thread', thread);
   }
 
   if (thread->thread.data == NULL ||
@@ -577,7 +576,7 @@ resume(pd *rpd)
      What about killing the current thread?
      */
   if (type_of(thread) != t_thread)
-    FEwrong_type_argument(Sthread, thread);
+    FEwrong_type_argument(@'thread', thread);
 
   if (thread->thread.data != NULL) {
     start_critical_section();
@@ -606,30 +605,30 @@ resume(pd *rpd)
   cl_object output;
 @
   if (type_of(thread) != t_thread)
-    FEwrong_type_argument(Sthread, thread);
+    FEwrong_type_argument(@'thread', thread);
 
   if (thread->thread.data != NULL)
     switch (thread->thread.data->pd_status) {
     case RUNNING:
-      output = Srunning;
+      output = @'running';
       break;
     case SUSPENDED:
-      output = Ssuspended;
+      output = @'suspended';
       break;
     case WAITING:
-      output = Swaiting;
+      output = @'waiting';
       break;
     case STOPPED:
-      output = Sstopped;
+      output = @'stopped';
       break;
     case DEAD:
-      output = Sdead;
+      output = @'dead';
       break;
     default:
       FEerror("Unexpected type for thread ~A", 1, thread);
     }
   else
-    output = Sdead;
+    output = @'dead';
   @(return output)
 @)
 
@@ -644,7 +643,7 @@ resume(pd *rpd)
   cl_object x;
 @
   if (type_of(thread) != t_thread)
-    FEwrong_type_argument(Sthread, thread);
+    FEwrong_type_argument(@'thread', thread);
 
   if (thread->thread.cont)
     FEerror("A continuation for thread ~A already exists.", 1, thread);
@@ -668,7 +667,7 @@ resume(pd *rpd)
 @(defun thread_of (cont)
 @
   if (type_of(cont) != t_cont)
-    FEwrong_type_argument(Scont, cont);
+    FEwrong_type_argument(@'cont', cont);
   @(return cont->cn.cn_thread)
 @)
 
@@ -676,7 +675,7 @@ resume(pd *rpd)
 @(defun continuation_of (thread)
 @
   if (type_of(thread) != t_thread)
-    FEwrong_type_argument(Sthread, thread);
+    FEwrong_type_argument(@'thread', thread);
   @(return (thread->thread.cont? thread->thread.cont : Cnil))
 @)
 
@@ -688,7 +687,7 @@ resume(pd *rpd)
     @(return Cnil)
 
   if (type_of(cont) != t_cont)
-    FEwrong_type_argument(Scont, cont);
+    FEwrong_type_argument(@'cont', cont);
 
   if (cont->cn.cn_resumed)
     FEerror("The continuation has already been resumed.", 0);

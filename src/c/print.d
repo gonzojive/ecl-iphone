@@ -22,35 +22,35 @@ extern void *alloca(size_t size);
 
 /******************************* EXPORTS ******************************/
 
-cl_object Kupcase;
-cl_object Kdowncase;
-cl_object Kcapitalize;
+cl_object @':upcase';
+cl_object @':downcase';
+cl_object @':capitalize';
 
-cl_object Kstream;
-cl_object Kescape;
-cl_object Kpretty;
-cl_object Kcircle;
-cl_object Kbase;
-cl_object Kradix;
-cl_object Kcase;
-cl_object Kgensym;
-cl_object Klevel;
-cl_object Klength;
-cl_object Karray;
+cl_object @':stream';
+cl_object @':escape';
+cl_object @':pretty';
+cl_object @':circle';
+cl_object @':base';
+cl_object @':radix';
+cl_object @':case';
+cl_object @':gensym';
+cl_object @':level';
+cl_object @':length';
+cl_object @':array';
 
-cl_object Vprint_escape;
-cl_object Vprint_pretty;
-cl_object Vprint_circle;
-cl_object Vprint_base;
-cl_object Vprint_radix;
-cl_object Vprint_case;
-cl_object Vprint_gensym;
-cl_object Vprint_level;
-cl_object Vprint_length;
-cl_object Vprint_array;
+cl_object @'*print-escape*';
+cl_object @'*print-pretty*';
+cl_object @'*print-circle*';
+cl_object @'*print-base*';
+cl_object @'*print-radix*';
+cl_object @'*print-case*';
+cl_object @'*print-gensym*';
+cl_object @'*print-level*';
+cl_object @'*print-length*';
+cl_object @'*print-array*';
 
-cl_object siVprint_package;
-cl_object siVprint_structure;
+cl_object @'si::*print-package*';
+cl_object @'si::*print-structure*';
 
 #ifndef THREADS
 bool PRINTescape;
@@ -81,18 +81,18 @@ cl_object PRINTpackage;
 bool PRINTstructure;
 
 #ifdef CLOS
-cl_object Sstream_write_char,
-  Sstream_write_string,
-  Sstream_fresh_line,
-  Sstream_clear_output,
-  Sstream_force_output;
+cl_object @'stream-write-char',
+  @'stream-write-string',
+  @'stream-fresh-line',
+  @'stream-clear-output',
+  @'stream-force-output';
 #endif CLOS
 
 #define	write_ch	(*write_ch_fun)
 #define	output_ch	(*output_ch_fun)
 
-cl_object siSpretty_print_format;
-cl_object siSsharp_exclamation;
+cl_object @'si::pretty-print-format';
+cl_object @'si::sharp-exclamation';
 
 #define	MARK		0400
 #define	UNMARK		0401
@@ -145,13 +145,13 @@ static void travel_push_object (cl_object x);
 void
 interactive_writec_stream(int c, cl_object stream)
 {
-	funcall(3, Sstream_write_char, stream, code_char(c));
+	funcall(3, @'stream-write-char', stream, code_char(c));
 }
 
 void
 flush_interactive_stream(cl_object stream)
 {
-	funcall(2, Sstream_force_output, stream);
+	funcall(2, @'stream-force-output', stream);
 }
 
 #define FLUSH_STREAM(strm) \
@@ -579,22 +579,22 @@ call_structure_print_function(cl_object x, int level)
 		ois[i] = indent_stack[i];
 
 	old_bds_top = bds_top;
-	bds_bind(Vprint_escape, PRINTescape?Ct:Cnil);
-	bds_bind(Vprint_radix, PRINTradix?Ct:Cnil);
-	bds_bind(Vprint_base, MAKE_FIXNUM(PRINTbase));
-	bds_bind(Vprint_circle, PRINTcircle?Ct:Cnil);
-	bds_bind(Vprint_pretty, PRINTpretty?Ct:Cnil);
-	bds_bind(Vprint_level, PRINTlevel<0?Cnil:MAKE_FIXNUM(PRINTlevel));
-	bds_bind(Vprint_length, PRINTlength<0?Cnil:MAKE_FIXNUM(PRINTlength));
-	bds_bind(Vprint_gensym, PRINTgensym?Ct:Cnil);
-	bds_bind(Vprint_array, PRINTarray?Ct:Cnil);
-	bds_bind(Vprint_case, PRINTcase);
+	bds_bind(@'*print-escape*', PRINTescape?Ct:Cnil);
+	bds_bind(@'*print-radix*', PRINTradix?Ct:Cnil);
+	bds_bind(@'*print-base*', MAKE_FIXNUM(PRINTbase));
+	bds_bind(@'*print-circle*', PRINTcircle?Ct:Cnil);
+	bds_bind(@'*print-pretty*', PRINTpretty?Ct:Cnil);
+	bds_bind(@'*print-level*', PRINTlevel<0?Cnil:MAKE_FIXNUM(PRINTlevel));
+	bds_bind(@'*print-length*', PRINTlength<0?Cnil:MAKE_FIXNUM(PRINTlength));
+	bds_bind(@'*print-gensym*', PRINTgensym?Ct:Cnil);
+	bds_bind(@'*print-array*', PRINTarray?Ct:Cnil);
+	bds_bind(@'*print-case*', PRINTcase);
 	
 	if (frs_push(FRS_PROTECT, Cnil))
 		eflag = TRUE;
 	else {
 		funcall(4, getf(x->str.name->symbol.plist,
-		       siSstructure_print_function, Cnil),
+		       @'si::structure-print-function', Cnil),
 			  x, PRINTstream, MAKE_FIXNUM(level));
 		eflag = FALSE;
 	}
@@ -679,22 +679,22 @@ call_print_object(cl_object x, int level)
 		ois[i] = indent_stack[i];
 
 	old_bds_top = bds_top;
-	bds_bind(Vprint_escape, PRINTescape?Ct:Cnil);
-	bds_bind(Vprint_radix, PRINTradix?Ct:Cnil);
-	bds_bind(Vprint_base, MAKE_FIXNUM(PRINTbase));
-	bds_bind(Vprint_circle, PRINTcircle?Ct:Cnil);
-	bds_bind(Vprint_pretty, PRINTpretty?Ct:Cnil);
-	bds_bind(Vprint_level, PRINTlevel<0?Cnil:MAKE_FIXNUM(PRINTlevel));
-	bds_bind(Vprint_length, PRINTlength<0?Cnil:MAKE_FIXNUM(PRINTlength));
-	bds_bind(Vprint_gensym, PRINTgensym?Ct:Cnil);
-	bds_bind(Vprint_array, PRINTarray?Ct:Cnil);
-	bds_bind(Vprint_case, PRINTcase);
+	bds_bind(@'*print-escape*', PRINTescape?Ct:Cnil);
+	bds_bind(@'*print-radix*', PRINTradix?Ct:Cnil);
+	bds_bind(@'*print-base*', MAKE_FIXNUM(PRINTbase));
+	bds_bind(@'*print-circle*', PRINTcircle?Ct:Cnil);
+	bds_bind(@'*print-pretty*', PRINTpretty?Ct:Cnil);
+	bds_bind(@'*print-level*', PRINTlevel<0?Cnil:MAKE_FIXNUM(PRINTlevel));
+	bds_bind(@'*print-length*', PRINTlength<0?Cnil:MAKE_FIXNUM(PRINTlength));
+	bds_bind(@'*print-gensym*', PRINTgensym?Ct:Cnil);
+	bds_bind(@'*print-array*', PRINTarray?Ct:Cnil);
+	bds_bind(@'*print-case*', PRINTcase);
 
 	
 	if (frs_push(FRS_PROTECT, Cnil))
 		eflag = TRUE;
 	else {
-		funcall(3, Sprint_object, x, PRINTstream);
+		funcall(3, @'print-object', x, PRINTstream);
 		eflag = FALSE;
 	}
 
@@ -762,8 +762,8 @@ write_symbol(register cl_object x)
 		for (i = 0;  i < s->string.fillp;  i++) {
 			int c = s->string.self[i];
 			if (isupper(c) &&
-			    (PRINTcase == Kdowncase ||
-			     (PRINTcase == Kcapitalize && i != 0)))
+			    (PRINTcase == @':downcase' ||
+			     (PRINTcase == @':capitalize' && i != 0)))
 				c = tolower(c);
 			write_ch(c);
 		}
@@ -809,8 +809,8 @@ write_symbol(register cl_object x)
 			if (c == '|' || c == '\\')
 				write_ch('\\');
 			if (escaped == 0 && isupper(c) &&
-			    (PRINTcase == Kdowncase ||
-			     (PRINTcase == Kcapitalize && i!=0)))
+			    (PRINTcase == @':downcase' ||
+			     (PRINTcase == @':capitalize' && i!=0)))
 				c = tolower(c);
 			write_ch(c);
 		}
@@ -848,8 +848,8 @@ write_symbol(register cl_object x)
 		if (c == '|' || c == '\\')
 			write_ch('\\');
 		if (escaped == 0 && isupper(c) &&
-		    (PRINTcase == Kdowncase ||
-		     (PRINTcase == Kcapitalize && i != 0)))
+		    (PRINTcase == @':downcase' ||
+		     (PRINTcase == @':capitalize' && i != 0)))
 			c = tolower(c);
 		write_ch(c);
 	}
@@ -955,16 +955,16 @@ write_object(cl_object x, int level)
 		return;
 
 	case t_shortfloat:
-		r = symbol_value(Vread_default_float_format);
-		if (r == Ssingle_float || r == Sshort_float)
+		r = symbol_value(@'*read-default-float-format*');
+		if (r == @'single-float' || r == @'short-float')
 			write_double((double)sf(x), 0, TRUE);
 		else
 			write_double((double)sf(x), 'f', TRUE);
 		return;
 
 	case t_longfloat:
-		r = symbol_value(Vread_default_float_format);
-		if (r == Slong_float || r == Sdouble_float)
+		r = symbol_value(@'*read-default-float-format*');
+		if (r == @'long-float' || r == @'double-float')
 			write_double(lf(x), 0, FALSE);
 		else
 			write_double(lf(x), 'd', FALSE);
@@ -1159,12 +1159,12 @@ write_object(cl_object x, int level)
 		break;
 
 	case t_cons:
-		if (CAR(x) == siSsharp_comma) {
+		if (CAR(x) == @'si::sharp-comma') {
 			write_str("#.");
 			x = CDR(x);
 			goto BEGIN;
 		}
-		if (CAR(x) == siSsharp_exclamation) {
+		if (CAR(x) == @'si::sharp-exclamation') {
 			write_str("#!");
 			x = CDR(x);
 			goto BEGIN;
@@ -1184,12 +1184,12 @@ write_object(cl_object x, int level)
 				}
 			    }
 		}
-		if (CAR(x) == Squote && CONSP(CDR(x)) && Null(CDDR(x))) {
+		if (CAR(x) == @'quote' && CONSP(CDR(x)) && Null(CDDR(x))) {
 			write_ch('\'');
 			x = CADR(x);
 			goto BEGIN;
 		}
-		if (CAR(x) == Sfunction && CONSP(CDR(x)) && Null(CDDR(x))) {
+		if (CAR(x) == @'function' && CONSP(CDR(x)) && Null(CDDR(x))) {
 			write_ch('#');
 			write_ch('\'');
 			x = CADR(x);
@@ -1205,7 +1205,7 @@ write_object(cl_object x, int level)
 		if (PRINTpretty && CAR(x) != OBJNULL &&
 		    type_of(CAR(x)) == t_symbol &&
 		    (r = getf(CAR(x)->symbol.plist,
-		              siSpretty_print_format, Cnil)) != Cnil)
+		              @'si::pretty-print-format', Cnil)) != Cnil)
 			goto PRETTY_PRINT_FORMAT;
 		for (i = 0;  ;  i++) {
 			if (PRINTlength >= 0 && i >= PRINTlength) {
@@ -1395,10 +1395,10 @@ write_object(cl_object x, int level)
 			break;
 		}
 		if (type_of(x->str.name) != t_symbol)
-			FEwrong_type_argument(Ssymbol, x->str.name);
+			FEwrong_type_argument(@'symbol', x->str.name);
 		if (PRINTstructure ||
 		    Null(getf(x->str.name->symbol.plist,
-			      siSstructure_print_function, Cnil))) {
+			      @'si::structure-print-function', Cnil))) {
 			write_str("#S");
 /* structure_to_list conses slot names and values into a list to be printed.
  * print shouldn't allocate memory - Beppe
@@ -1484,7 +1484,7 @@ write_object(cl_object x, int level)
 #ifdef CLOS
 	case t_instance:
 		if (type_of(x->instance.class) != t_instance)
-			FEwrong_type_argument(Sinstance, x->instance.class);
+			FEwrong_type_argument(@'instance', x->instance.class);
 		call_print_object(x, level);
 		break;
 
@@ -1663,43 +1663,43 @@ RETRY:	if (type_of(PRINTstream) == t_stream) {
 	    output_ch_fun = interactive_writec_PRINTstream;
 	  else
 #endif CLOS
-	    { SYM_VAL(Vstandard_output) = symbol_value(Vterminal_io);
-	      FEwrong_type_argument(Sstream, PRINTstream);
+	    { SYM_VAL(@'*standard-output*') = symbol_value(@'*terminal-io*');
+	      FEwrong_type_argument(@'stream', PRINTstream);
 	    }
-	PRINTescape = symbol_value(Vprint_escape) != Cnil;
-	PRINTpretty = symbol_value(Vprint_pretty) != Cnil;
-	PRINTcircle = symbol_value(Vprint_circle) != Cnil;
-	y = symbol_value(Vprint_base);
+	PRINTescape = symbol_value(@'*print-escape*') != Cnil;
+	PRINTpretty = symbol_value(@'*print-pretty*') != Cnil;
+	PRINTcircle = symbol_value(@'*print-circle*') != Cnil;
+	y = symbol_value(@'*print-base*');
 	if (!FIXNUMP(y) || fix(y) < 2 || fix(y) > 36) {
-		SYM_VAL(Vprint_base) = MAKE_FIXNUM(10);
+		SYM_VAL(@'*print-base*') = MAKE_FIXNUM(10);
 		FEerror("~S is an illegal PRINT-BASE.", 1, y);
 	} else
 		PRINTbase = fix(y);
-	PRINTradix = symbol_value(Vprint_radix) != Cnil;
-	PRINTcase = symbol_value(Vprint_case);
-	if (PRINTcase != Kupcase && PRINTcase != Kdowncase &&
-	    PRINTcase != Kcapitalize) {
-		SYM_VAL(Vprint_case) = Kdowncase;
+	PRINTradix = symbol_value(@'*print-radix*') != Cnil;
+	PRINTcase = symbol_value(@'*print-case*');
+	if (PRINTcase != @':upcase' && PRINTcase != @':downcase' &&
+	    PRINTcase != @':capitalize') {
+		SYM_VAL(@'*print-case*') = @':downcase';
 		FEerror("~S is an illegal PRINT-CASE.", 1, PRINTcase);
 	}
-	PRINTgensym = symbol_value(Vprint_gensym) != Cnil;
-	y = symbol_value(Vprint_level);
+	PRINTgensym = symbol_value(@'*print-gensym*') != Cnil;
+	y = symbol_value(@'*print-level*');
 	if (Null(y))
 		PRINTlevel = -1;
 	else if (!FIXNUMP(y) || fix(y) < 0) {
-		SYM_VAL(Vprint_level) = Cnil;
+		SYM_VAL(@'*print-level*') = Cnil;
 		FEerror("~S is an illegal PRINT-LEVEL.", 1, y);
 	} else
 		PRINTlevel = fix(y);
-	y = symbol_value(Vprint_length);
+	y = symbol_value(@'*print-length*');
 	if (Null(y))
 		PRINTlength = -1;
 	else if (!FIXNUMP(y) || fix(y) < 0) {
-		SYM_VAL(Vprint_length) = Cnil;
+		SYM_VAL(@'*print-length*') = Cnil;
 		FEerror("~S is an illegal PRINT-LENGTH.", 1, y);
 	} else
 		PRINTlength = fix(y);
-	PRINTarray = symbol_value(Vprint_array) != Cnil;
+	PRINTarray = symbol_value(@'*print-array*') != Cnil;
 /*	setupPRINTcircle(x); */
 	if (PRINTpretty) {
 		qh = qt = qc = 0;
@@ -1708,9 +1708,9 @@ RETRY:	if (type_of(PRINTstream) == t_stream) {
 		write_ch_fun = writec_queue;
 	} else
 		write_ch_fun = output_ch_fun;
-	PRINTpackage = symbol_value(siVprint_package);
+	PRINTpackage = symbol_value(@'si::*print-package*');
 	if (PRINTpackage == Cnil) PRINTpackage = OBJNULL;
-	PRINTstructure = symbol_value(siVprint_structure) != Cnil;
+	PRINTstructure = symbol_value(@'si::*print-structure*') != Cnil;
 }
 
 void cleanupPRINT(void)
@@ -1754,21 +1754,21 @@ potential_number_p(cl_object strng, int base)
 
 @(defun write (x
 	       &key ((:stream strm) Cnil)
-		    (escape symbol_value(Vprint_escape))
-		    (radix symbol_value(Vprint_radix))
-		    (base symbol_value(Vprint_base))
-		    (circle symbol_value(Vprint_circle))
-		    (pretty symbol_value(Vprint_pretty))
-		    (level symbol_value(Vprint_level))
-		    (length symbol_value(Vprint_length))
-		    ((:case cas) symbol_value(Vprint_case))
-		    (gensym symbol_value(Vprint_gensym))
-		    (array symbol_value(Vprint_array)))
+		    (escape symbol_value(@'*print-escape*'))
+		    (radix symbol_value(@'*print-radix*'))
+		    (base symbol_value(@'*print-base*'))
+		    (circle symbol_value(@'*print-circle*'))
+		    (pretty symbol_value(@'*print-pretty*'))
+		    (level symbol_value(@'*print-level*'))
+		    (length symbol_value(@'*print-length*'))
+		    ((:case cas) symbol_value(@'*print-case*'))
+		    (gensym symbol_value(@'*print-gensym*'))
+		    (array symbol_value(@'*print-array*')))
 @
 	if (Null(strm))
-		strm = symbol_value(Vstandard_output);
+		strm = symbol_value(@'*standard-output*');
 	else if (strm == Ct)
-		strm = symbol_value(Vterminal_io);
+		strm = symbol_value(@'*terminal-io*');
 RETRY:	if (type_of(strm) == t_stream) {
 	  if (strm->stream.mode == (short)smm_synonym) {
  		strm = symbol_value(strm->stream.object0);
@@ -1793,8 +1793,8 @@ RETRY:	if (type_of(strm) == t_stream) {
 		PRINTbase = fix((base));
 	PRINTradix = radix != Cnil;
 	PRINTcase = cas;
-	if (PRINTcase != Kupcase && PRINTcase != Kdowncase &&
-	    PRINTcase != Kcapitalize)
+	if (PRINTcase != @':upcase' && PRINTcase != @':downcase' &&
+	    PRINTcase != @':capitalize')
 		FEerror("~S is an illegal PRINT-CASE.", 1, cas);
 	PRINTgensym = gensym != Cnil;
 	if (Null(level))
@@ -1817,9 +1817,9 @@ RETRY:	if (type_of(strm) == t_stream) {
 		write_ch_fun = writec_queue;
 	} else
 		write_ch_fun = output_ch_fun;
-	PRINTpackage = symbol_value(siVprint_package);
+	PRINTpackage = symbol_value(@'si::*print-package*');
 	if (PRINTpackage == Cnil) PRINTpackage = OBJNULL;
-	PRINTstructure = symbol_value(siVprint_structure) != Cnil;
+	PRINTstructure = symbol_value(@'si::*print-structure*') != Cnil;
   	setupPRINTcircle(x);
 	write_object(x, 0);
 	cleanupPRINT();
@@ -1842,9 +1842,9 @@ RETRY:	if (type_of(strm) == t_stream) {
 @(defun pprint (obj &optional strm)
 @
 	if (Null(strm))
-		strm = symbol_value(Vstandard_output);
+		strm = symbol_value(@'*standard-output*');
 	else if (strm == Ct)
-		strm = symbol_value(Vterminal_io);
+		strm = symbol_value(@'*terminal-io*');
 RETRY:	if (type_of(strm) == t_stream) {
 	  if (strm->stream.mode == (short)smm_synonym) {
  		strm = symbol_value(strm->stream.object0);
@@ -1884,9 +1884,9 @@ RETRY:	if (type_of(strm) == t_stream) {
 @
 	/* INV: char_code() checks the type of `c' */
 	if (Null(strm))
-		strm = symbol_value(Vstandard_output);
+		strm = symbol_value(@'*standard-output*');
 	else if (strm == Ct)
-		strm = symbol_value(Vterminal_io);
+		strm = symbol_value(@'*terminal-io*');
 RETRY:	if (type_of(strm) == t_stream) {
 	  if (strm->stream.mode == (short)smm_synonym) {
  		strm = symbol_value(strm->stream.object0);
@@ -1916,9 +1916,9 @@ RETRY:	if (type_of(strm) == t_stream) {
 	get_string_start_end(strng, start, end, &s, &e);
 	assert_type_string(strng);
 	if (Null(strm))
-		strm = symbol_value(Vstandard_output);
+		strm = symbol_value(@'*standard-output*');
 	else if (strm == Ct)
-		strm = symbol_value(Vterminal_io);
+		strm = symbol_value(@'*terminal-io*');
 
 RETRY:	if (type_of(strm) == t_stream) {
 	  if (strm->stream.mode == (short)smm_synonym) {
@@ -1933,7 +1933,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 	} else
 #ifdef CLOS
 	if (type_of(strm) == t_instance)
-	  funcall(4, Sstream_write_string, strm, strng,
+	  funcall(4, @'stream-write-string', strm, strng,
 		  MAKE_FIXNUM(s), MAKE_FIXNUM(e));
 	else
 #endif
@@ -1946,9 +1946,9 @@ RETRY:	if (type_of(strm) == t_stream) {
 @
 	get_string_start_end(strng, start, end, &s, &e);
 	if (Null(strm))
-		strm = symbol_value(Vstandard_output);
+		strm = symbol_value(@'*standard-output*');
 	else if (strm == Ct)
-		strm = symbol_value(Vterminal_io);
+		strm = symbol_value(@'*terminal-io*');
 	assert_type_string(strng);
 
 RETRY:	if (type_of(strm) == t_stream) {
@@ -1984,9 +1984,9 @@ RETRY:	if (type_of(strm) == t_stream) {
 @(defun fresh_line (&optional strm)
 @
 	if (Null(strm))
-		strm = symbol_value(Vstandard_output);
+		strm = symbol_value(@'*standard-output*');
 	else if (strm == Ct)
-		strm = symbol_value(Vterminal_io);
+		strm = symbol_value(@'*terminal-io*');
 RETRY:	if (type_of(strm) == t_stream) {
 	  if (strm->stream.mode == (short)smm_synonym) {
  		strm = symbol_value(strm->stream.object0);
@@ -2002,7 +2002,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 	} else
 #ifdef CLOS
 	if (type_of(strm) == t_instance)
-  	    return funcall(2, Sstream_fresh_line,strm);
+  	    return funcall(2, @'stream-fresh-line',strm);
 	else
 #endif
 	 FEtype_error_stream(strm);
@@ -2011,9 +2011,9 @@ RETRY:	if (type_of(strm) == t_stream) {
 @(defun force_output (&o strm)
 @
 	if (Null(strm))
-		strm = symbol_value(Vstandard_output);
+		strm = symbol_value(@'*standard-output*');
 	else if (strm == Ct)
-		strm = symbol_value(Vterminal_io);
+		strm = symbol_value(@'*terminal-io*');
 RETRY:	if (type_of(strm) == t_stream) {
 	  if (strm->stream.mode == (short)smm_synonym) {
  		strm = symbol_value(strm->stream.object0);
@@ -2034,9 +2034,9 @@ RETRY:	if (type_of(strm) == t_stream) {
 @(defun clear_output (&o strm)
 @
 	if (Null(strm))
-		strm = symbol_value(Vstandard_output);
+		strm = symbol_value(@'*standard-output*');
 	else if (strm == Ct)
-		strm = symbol_value(Vterminal_io);
+		strm = symbol_value(@'*terminal-io*');
 RETRY:	if (type_of(strm) == t_stream) {
 	  if (strm->stream.mode == (short)smm_synonym) {
  		strm = symbol_value(strm->stream.object0);
@@ -2047,7 +2047,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 	} else
 #ifdef CLOS
 	if (type_of(strm) == t_instance)
-	  funcall(2, Sstream_clear_output, strm);
+	  funcall(2, @'stream-clear-output', strm);
 	else
 #endif
 	  FEtype_error_stream(strm);
@@ -2092,19 +2092,19 @@ RETRY:	if (type_of(strm) == t_stream) {
 void
 init_print(void)
 {
-	SYM_VAL(Vprint_escape) = Ct;
-	SYM_VAL(Vprint_pretty) = Ct;
-	SYM_VAL(Vprint_circle) = Cnil;
-	SYM_VAL(Vprint_base) = MAKE_FIXNUM(10);
-	SYM_VAL(Vprint_radix) = Cnil;
-	SYM_VAL(Vprint_case) = Kupcase;
-	SYM_VAL(Vprint_gensym) = Ct;
-	SYM_VAL(Vprint_level) = Cnil;
-	SYM_VAL(Vprint_length) = Cnil;
-	SYM_VAL(Vprint_array) = Ct;
+	SYM_VAL(@'*print-escape*') = Ct;
+	SYM_VAL(@'*print-pretty*') = Ct;
+	SYM_VAL(@'*print-circle*') = Cnil;
+	SYM_VAL(@'*print-base*') = MAKE_FIXNUM(10);
+	SYM_VAL(@'*print-radix*') = Cnil;
+	SYM_VAL(@'*print-case*') = @':upcase';
+	SYM_VAL(@'*print-gensym*') = Ct;
+	SYM_VAL(@'*print-level*') = Cnil;
+	SYM_VAL(@'*print-length*') = Cnil;
+	SYM_VAL(@'*print-array*') = Ct;
 
-	SYM_VAL(siVprint_package) = Cnil;
-	SYM_VAL(siVprint_structure) = Cnil;
+	SYM_VAL(@'si::*print-package*') = Cnil;
+	SYM_VAL(@'si::*print-structure*') = Cnil;
 
 	PRINTstream = Cnil;
 	register_root(&PRINTstream);
@@ -2113,7 +2113,7 @@ init_print(void)
 	PRINTcircle = FALSE;
 	PRINTbase = 10;
 	PRINTradix = FALSE;
-	PRINTcase = Kupcase;
+	PRINTcase = @':upcase';
 	register_root(&PRINTcase);
 	PRINTgensym = TRUE;
 	PRINTlevel = -1;
@@ -2128,15 +2128,15 @@ cl_object
 princ(cl_object obj, cl_object strm)
 {
 	if (Null(strm))
-		strm = symbol_value(Vstandard_output);
+		strm = symbol_value(@'*standard-output*');
 	else if (strm == Ct)
-		strm = symbol_value(Vterminal_io);
+		strm = symbol_value(@'*terminal-io*');
 	if (obj == OBJNULL)
 		goto SIMPLE_CASE;
 	switch (type_of(obj)) {
 	case t_symbol:
-		PRINTcase = symbol_value(Vprint_case);
-		PRINTpackage = symbol_value(siVprint_package);
+		PRINTcase = symbol_value(@'*print-case*');
+		PRINTpackage = symbol_value(@'si::*print-package*');
 		if (PRINTpackage == Cnil) PRINTpackage = OBJNULL;
 
 	SIMPLE_CASE:
@@ -2174,9 +2174,9 @@ cl_object
 prin1(cl_object obj, cl_object strm)
 {
 	if (Null(strm))
-		strm = symbol_value(Vstandard_output);
+		strm = symbol_value(@'*standard-output*');
 	else if (strm == Ct)
-		strm = symbol_value(Vterminal_io);
+		strm = symbol_value(@'*terminal-io*');
 	if (obj == OBJNULL)
 		goto SIMPLE_CASE;
 	switch (type_of(obj)) {
@@ -2226,9 +2226,9 @@ cl_object
 terpri(cl_object strm)
 {
 	if (Null(strm))
-		strm = symbol_value(Vstandard_output);
+		strm = symbol_value(@'*standard-output*');
 	else if (strm == Ct)
-		strm = symbol_value(Vterminal_io);
+		strm = symbol_value(@'*terminal-io*');
 RETRY:	if (type_of(strm) == t_stream) {
           if (strm->stream.mode == (short)smm_synonym) {
 	    strm = symbol_value(strm->stream.object0);
@@ -2254,9 +2254,9 @@ write_string(cl_object strng, cl_object strm)
 	cl_index i;
 
 	if (Null(strm))
-		strm = symbol_value(Vstandard_output);
+		strm = symbol_value(@'*standard-output*');
 	else if (strm == Ct)
-		strm = symbol_value(Vterminal_io);
+		strm = symbol_value(@'*terminal-io*');
 	assert_type_string(strng);
 RETRY:	if (type_of(strm) == t_stream) {
           if (strm->stream.mode == (short)smm_synonym) {
@@ -2287,9 +2287,9 @@ princ_str(const char *s, cl_object sym)
 {
 /*	sym = symbol_value(sym);		Beppe */
 	if (Null(sym))
-		sym = symbol_value(Vstandard_output);
+		sym = symbol_value(@'*standard-output*');
 	else if (sym == Ct)
-		sym = symbol_value(Vterminal_io);
+		sym = symbol_value(@'*terminal-io*');
 RETRY:	if (type_of(sym) == t_stream) {
           if (sym->stream.mode == (short)smm_synonym) {
 	    sym = symbol_value(sym->stream.object0);
@@ -2312,9 +2312,9 @@ princ_char(int c, cl_object sym)
 {
 /*	sym = symbol_value(sym); 		Beppe */
 	if (Null(sym))
-		sym = symbol_value(Vstandard_output);
+		sym = symbol_value(@'*standard-output*');
 	else if (sym == Ct)
-		sym = symbol_value(Vterminal_io);
+		sym = symbol_value(@'*terminal-io*');
 RETRY:	if (type_of(sym) == t_stream) {
           if (sym->stream.mode == (short)smm_synonym) {
 	    sym = symbol_value(sym->stream.object0);

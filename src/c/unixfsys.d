@@ -26,7 +26,7 @@
 #include "<sys/dir.h>"
 #endif
 
-cl_object Klist_all;
+cl_object @':list-all';
 
 /*
  * string_to_pathanme, to be used when s is a real pathname
@@ -111,11 +111,11 @@ truedirectory(cl_object pathname)
 	directory = current_dir();
 	if (pathname->pathname.directory != Cnil) {
 	  cl_object dir = pathname->pathname.directory;
-	  if (CAR(dir) == Kabsolute)
+	  if (CAR(dir) == @':absolute')
 	    chdir("/");
 	  for (dir=CDR(dir); !Null(dir); dir=CDR(dir)) {
 	    cl_object name = CAR(dir);
-	    if (name == Kup) {
+	    if (name == @':up') {
 	      if (chdir("..") < 0)
 		return error_no_dir(pathname);
 	    } else if (type_of(name) == t_string) {
@@ -144,8 +144,8 @@ truename(cl_object pathname)
 	  FEerror("truename: no file name supplied",0);
 
 	/* Wildcards are not allowed */
-	if (pathname->pathname.name == Kwild ||
-	    pathname->pathname.type == Kwild)
+	if (pathname->pathname.name == @':wild' ||
+	    pathname->pathname.type == @':wild')
 	  FEerror("truename: :wild not allowed in filename",0);
 
 	directory = truedirectory(pathname);
@@ -153,9 +153,9 @@ truename(cl_object pathname)
 	/* Compose a whole pathname by adding the
 	   file name and the file type */
 	if (Null(pathname->pathname.type)) 
-	  truefilename = siLstring_concatenate(2, directory, pathname->pathname.name);
+	  truefilename = @si::string-concatenate(2, directory, pathname->pathname.name);
 	else {
-	  truefilename = siLstring_concatenate(4, directory,
+	  truefilename = @si::string-concatenate(4, directory,
 				pathname->pathname.name,
 				make_simple_string("."),
 				pathname->pathname.type);
@@ -513,10 +513,10 @@ actual_directory(cl_object namestring, cl_object mask, bool all)
 	  goto DO_MATCH;
 	}
 
-	if (kall == Klist_all)
+	if (kall == @':list-all')
 	  all = TRUE;
 	else if (kall != OBJNULL)
-	  FEwrong_type_argument(Skeyword, kall);
+	  FEwrong_type_argument(@'keyword', kall);
 
 	/* INV: coerce_to_file_pathname() checks types */
 	filemask = coerce_to_file_pathname(filemask);
@@ -525,7 +525,7 @@ actual_directory(cl_object namestring, cl_object mask, bool all)
 
 	directory = truedirectory(filemask);
 
-	if (name == Kwild)
+	if (name == @':wild')
 	  name = make_simple_string("*");
 	else if (name == Cnil) {
 	  if (type == Cnil)
@@ -538,9 +538,9 @@ actual_directory(cl_object namestring, cl_object mask, bool all)
 	  mask = name;
 	else {
 	  cl_object dot = make_simple_string(".");
-	  if (type == Kwild)
+	  if (type == @':wild')
 	    type = make_simple_string("*");
-	  mask = siLstring_concatenate(3, name, dot, type);
+	  mask = @si::string-concatenate(3, name, dot, type);
 	}
  DO_MATCH:
 	@(return actual_directory(directory, mask, all))

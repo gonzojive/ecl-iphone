@@ -20,8 +20,8 @@
 
 /******************************* EXPORTS ******************************/
 
-cl_object Sapply;
-cl_object Sfuncall;
+cl_object @'apply';
+cl_object @'funcall';
 
 /******************************* ------- ******************************/
 
@@ -36,8 +36,8 @@ static struct nil3 { cl_object nil3_self[3]; } three_nils;
 static int eval1 = 0;          /*  = 1 during one-shot bypass of evalhook/applyhook  */
 #endif THREADS
 
-cl_object Vevalhook;
-cl_object Vapplyhook;
+cl_object @'*evalhook*';
+cl_object @'*applyhook*';
 
 /* Calling conventions:
    Compiled C code calls lisp function supplying #args, and args.
@@ -142,8 +142,8 @@ funcall(int narg, ...)
  *	Linking mechanism						*
  *----------------------------------------------------------------------*/
 
-static cl_object siSlink_to;
-static cl_object siSlink_from;
+static cl_object @'si::link-to';
+static cl_object @'si::link-from';
 
 cl_object
 #ifdef CLOS
@@ -160,16 +160,16 @@ link_call(cl_object sym, cl_object (**pLK)(), cl_object *args)
 	case t_cfun:
 	  putprop(sym, CONS(CONS(MAKE_FIXNUM((int)pLK),
 				 MAKE_FIXNUM((int)*pLK)),
-			    getf(sym->symbol.plist, siSlink_from, Cnil)),
-		  siSlink_from);
+			    getf(sym->symbol.plist, @'si::link-from', Cnil)),
+		  @'si::link-from');
 	  *pLK = fun->cfun.entry;
 	  return APPLY(narg, fun->cfun.entry, &args[1]);
 #ifdef CLOS
 	case t_gfun:
 	  putprop(sym, CONS(CONS(MAKE_FIXNUM((int)gfun),
 				 MAKE_FIXNUM((int)OBJNULL)),
-			    getf(sym->symbol.plist, siSlink_from, Cnil)),
-		  siSlink_from);
+			    getf(sym->symbol.plist, @'si::link-from', Cnil)),
+		  @'si::link-from');
 	  *gfun = fun;
 	  return gcall(narg, fun, &args[1]);
 #endif CLOS
@@ -190,11 +190,11 @@ link_call(cl_object sym, cl_object (**pLK)(), cl_object *args)
 @
 	if (!SYMBOLP(s))
 		FEtype_error_symbol(s);
-	pl = getf(s->symbol.plist, siSlink_from, Cnil);
+	pl = getf(s->symbol.plist, @'si::link-from', Cnil);
 	if (!endp(pl)) {
 		for (; !endp(pl); pl = CDR(pl))
 			*(int *)(fix(CAAR(pl))) = fix(CDAR(pl));
-		remf(&s->symbol.plist, siSlink_from);
+		remf(&s->symbol.plist, @'si::link-from');
 	}
 	@(return)
 @)
@@ -237,8 +237,8 @@ link_call(cl_object sym, cl_object (**pLK)(), cl_object *args)
 @
 	lex_env = env;
 	lex_copy();
-	bds_bind(Vevalhook, evalhookfn);
-	bds_bind(Vapplyhook, applyhookfn);
+	bds_bind(@'*evalhook*', evalhookfn);
+	bds_bind(@'*applyhook*', applyhookfn);
 	eval1 = 1;
 	output = eval(form, NULL);
 	bds_unwind(old_bds_top);
@@ -249,9 +249,9 @@ link_call(cl_object sym, cl_object (**pLK)(), cl_object *args)
 @(defun applyhook (fun args evalhookfn applyhookfn)
 	bds_ptr old_bds_top = bds_top;
 @
-	bds_bind(Vevalhook, evalhookfn);
-	bds_bind(Vapplyhook, applyhookfn);
-	VALUES(0) = Lapply(2, fun, args);
+	bds_bind(@'*evalhook*', evalhookfn);
+	bds_bind(@'*applyhook*', applyhookfn);
+	VALUES(0) = @apply(2, fun, args);
 	bds_unwind(old_bds_top);
 	returnn(VALUES(0));
 @)
@@ -261,7 +261,7 @@ link_call(cl_object sym, cl_object (**pLK)(), cl_object *args)
 @
 	switch (type_of(arg)) {
 	case t_cons:
-		flag = (CAR(arg) == Squote) ? Ct : Cnil;
+		flag = (CAR(arg) == @'quote') ? Ct : Cnil;
 		break;
 	case t_symbol:
 		flag = (arg->symbol.stype == stp_constant) ? Ct : Cnil;
@@ -277,8 +277,8 @@ init_eval(void)
 {
 	make_constant("CALL-ARGUMENTS-LIMIT", MAKE_FIXNUM(64));
 
-	SYM_VAL(Vevalhook) = Cnil;
-	SYM_VAL(Vapplyhook) = Cnil;
+	SYM_VAL(@'*evalhook*') = Cnil;
+	SYM_VAL(@'*applyhook*') = Cnil;
 
 	eval1 = 0;
 
@@ -286,8 +286,8 @@ init_eval(void)
 	three_nils.nil3_self[1] = Cnil;
 	three_nils.nil3_self[2] = Cnil;
 
-	siSlink_from = make_si_ordinary("LINK-FROM");
-	register_root(&siSlink_from);
-	siSlink_to = make_si_ordinary("LINK-TO");
-	register_root(&siSlink_to);
+	@'si::link-from' = make_si_ordinary("LINK-FROM");
+	register_root(&@'si::link-from');
+	@'si::link-to' = make_si_ordinary("LINK-TO");
+	register_root(&@'si::link-to');
 }

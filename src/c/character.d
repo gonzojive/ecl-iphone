@@ -17,17 +17,17 @@
 #include "ecls.h"
 #include <ctype.h>
 
-/******************************* EXPORTS ******************************/
+/******************************* LOCALS *******************************/
 
-cl_object STreturn;
-cl_object STspace;
-cl_object STrubout;
-cl_object STpage;
-cl_object STtab;
-cl_object STbackspace;
-cl_object STlinefeed;
-cl_object STnewline;
-cl_object STnull;
+static cl_object STreturn;
+static cl_object STspace;
+static cl_object STrubout;
+static cl_object STpage;
+static cl_object STtab;
+static cl_object STbackspace;
+static cl_object STlinefeed;
+static cl_object STnewline;
+static cl_object STnull;
 
 /******************************* ------- ******************************/
 
@@ -136,7 +136,7 @@ digitp(int i, int r)
 		@(return Cnil)
 @)
 
-@(defun char_eq (c &rest cs)
+@(defun char= (c &rest cs)
 	cl_fixnum i;
 @
 	/* INV: char_eq() checks types of `c' and `cs' */
@@ -153,7 +153,7 @@ char_eq(cl_object x, cl_object y)
 	return char_code(x) == char_code(y);
 }
 
-@(defun char_neq (&rest cs)
+@(defun char/= (&rest cs)
 	int i, j;
 @
 	/* INV: char_eq() checks types of its arguments */
@@ -192,22 +192,29 @@ char_cmp(cl_object x, cl_object y)
 	return(0);
 }
 
-cl_return
-Lchar_l(int narg, ...)
-{ va_list(args); va_start(args, narg);
-  return Lchar_cmp(narg, 1, 1, (cl_object *)args);}
-cl_return
-Lchar_g(int narg, ...)
-{ va_list(args); va_start(args, narg);
-  return Lchar_cmp(narg,-1, 1, (cl_object *)args);}
-cl_return
-Lchar_le(int narg, ...)
-{ va_list(args); va_start(args, narg);
-  Lchar_cmp(narg, 1, 0, (cl_object *)args);}
-cl_return
-Lchar_ge(int narg, ...)
-{ va_list(args); va_start(args, narg);
-  Lchar_cmp(narg,-1, 0, (cl_object *)args);}
+cl_return @char<(int narg, ...)
+{
+	va_list(args); va_start(args, narg);
+	return Lchar_cmp(narg, 1, 1, (cl_object *)args);
+}
+
+cl_return @char>(int narg, ...)
+{
+	va_list(args); va_start(args, narg);
+	return Lchar_cmp(narg,-1, 1, (cl_object *)args);
+}
+
+cl_return @char<=(int narg, ...)
+{
+	va_list(args); va_start(args, narg);
+	return Lchar_cmp(narg, 1, 0, (cl_object *)args);
+}
+
+cl_return @char>=(int narg, ...)
+{
+	va_list(args); va_start(args, narg);
+	return Lchar_cmp(narg,-1, 0, (cl_object *)args);
+}
 
 @(defun char_equal (c &rest cs)
 	int i;
@@ -277,22 +284,29 @@ char_compare(cl_object x, cl_object y)
 		return(1);
 }
 
-cl_return
-Lchar_lessp(int narg, ...)
-{ va_list(args); va_start(args, narg);
-  return Lchar_compare(narg, 1, 1, (cl_object *)args);}
-cl_return
-Lchar_greaterp(int narg, ...)
-{ va_list(args); va_start(args, narg);
-  return Lchar_compare(narg,-1, 1, (cl_object *)args);}
-cl_return
-Lchar_not_greaterp(int narg, ...)
-{ va_list(args); va_start(args, narg);
-  return Lchar_compare(narg, 1, 0, (cl_object *)args);}
-cl_return
-Lchar_not_lessp(int narg, ...)
-{ va_list(args); va_start(args, narg);
-  return Lchar_compare(narg,-1, 0, (cl_object *)args);}
+cl_return @char-lessp(int narg, ...)
+{
+	va_list(args); va_start(args, narg);
+	return Lchar_compare(narg, 1, 1, (cl_object *)args);
+}
+
+cl_return @char-greaterp(int narg, ...)
+{
+	va_list(args); va_start(args, narg);
+	return Lchar_compare(narg,-1, 1, (cl_object *)args);
+}
+
+cl_return @char-not-greaterp(int narg, ...)
+{
+	va_list(args); va_start(args, narg);
+	return Lchar_compare(narg, 1, 0, (cl_object *)args);
+}
+
+cl_return @char-not-lessp(int narg, ...)
+{
+	va_list(args); va_start(args, narg);
+	return Lchar_compare(narg,-1, 0, (cl_object *)args);
+}
 
 
 @(defun character (x)

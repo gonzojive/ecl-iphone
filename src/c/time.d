@@ -58,10 +58,10 @@ UTC_time_to_universal_time(int i)
 @
 	/* INV: number_minusp() makes sure `z' is real */
 	if (number_minusp(z))
-		FEcondition(9, Ssimple_type_error, Kformat_control,
+		FEcondition(9, @'simple-type-error', @':format-control',
 			    make_simple_string("Not a non-negative number ~S"),
-			    Kformat_arguments, list(1, z),
-			    Kexpected_type, Sreal, Kdatum, z);
+			    @':format-arguments', list(1, z),
+			    @':expected-type', @'real', @':datum', z);
 #ifdef HAVE_NANOSLEEP
 	r = object_to_double(z);
 	tm.tv_sec = (time_t)floor(r);

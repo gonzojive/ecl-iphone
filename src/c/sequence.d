@@ -14,7 +14,6 @@
     See file '../Copyright' for full details.
 */
 
-
 #include "ecls.h"
 #include "ecls-inl.h"
 
@@ -22,7 +21,7 @@
 
 #define	endp(obje)	(endp_temp = (obje), CONSP(endp_temp) ? \
 			 FALSE : endp_temp == Cnil ? TRUE : \
-			 (FEwrong_type_argument(Slist, endp_temp), FALSE))
+			 (FEwrong_type_argument(@'list', endp_temp), FALSE))
 
 /*
 	I know the following name is not good.
@@ -163,7 +162,7 @@ E:
 				goto ILLEGAL_START_END;
 			@(return Cnil)
 		}
-		FEwrong_type_argument(Ssequence, sequence);
+		FEwrong_type_argument(@'sequence', sequence);
 
 	case t_cons:
 		if (e >= 0)
@@ -175,7 +174,7 @@ E:
 			sequence = CDR(sequence);
 		}
 		if (e < 0)
-			@(return `copy_list(sequence)`)
+			@(return copy_list(sequence))
 		{ cl_object *z = &x;
 		  for (i = 0;  i < e;  i++) {
 		    if (ATOM(sequence))
@@ -248,7 +247,7 @@ E:
 		@(return x)
 
 	default:
-		FEwrong_type_argument(Ssequence, x);
+		FEwrong_type_argument(@'sequence', x);
 	}
 
 ILLEGAL_START_END:
@@ -259,7 +258,7 @@ for the sequence ~S.", 3, start, end, sequence);
 @(defun copy_seq (x)
 @
 	/* INV: #'subseq outputs only one value */
-	return Lsubseq(2, x, MAKE_FIXNUM(0));
+	return @subseq(2, x, MAKE_FIXNUM(0));
 @)
 
 @(defun length (x)
@@ -276,7 +275,7 @@ length(cl_object x)
 	case t_symbol:
 		if (Null(x))
 			return(0);
-		FEwrong_type_argument(Ssequence, x);
+		FEwrong_type_argument(@'sequence', x);
 
 	case t_cons:
 		/* INV: A list's length always fits in a fixnum */
@@ -292,7 +291,7 @@ length(cl_object x)
 		return(x->vector.fillp);
 
 	default:
-		FEwrong_type_argument(Ssequence, x);
+		FEwrong_type_argument(@'sequence', x);
 	}
 }
 
@@ -312,7 +311,7 @@ reverse(cl_object seq)
 	case t_symbol:
 		if (Null(seq))
 			return(Cnil);
-		FEwrong_type_argument(Ssequence, seq);
+		FEwrong_type_argument(@'sequence', seq);
 
 	case t_cons:
 		v = Cnil;
@@ -365,7 +364,7 @@ reverse(cl_object seq)
 		return(v);
 
 	default:
-		FEwrong_type_argument(Ssequence, seq);
+		FEwrong_type_argument(@'sequence', seq);
 	}
 }
 
@@ -385,7 +384,7 @@ nreverse(cl_object seq)
 	case t_symbol:
 		if (Null(seq))
 			return(Cnil);
-		FEwrong_type_argument(Ssequence, seq);
+		FEwrong_type_argument(@'sequence', seq);
 
 	case t_cons:
 		for (x = Cnil, y = seq;  !endp(CDR(y));) {
@@ -461,6 +460,6 @@ nreverse(cl_object seq)
 		return(seq);
 
 	default:
-		FEwrong_type_argument(Ssequence, seq);
+		FEwrong_type_argument(@'sequence', seq);
 	}
 }

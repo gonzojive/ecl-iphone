@@ -28,40 +28,40 @@
 #endif
 
 /******************************* EXPORTS ******************************/
-cl_object Vstandard_input;
-cl_object Vstandard_output;
-cl_object Verror_output;
-cl_object Vquery_io;
-cl_object Vdebug_io;
-cl_object Vterminal_io;
-cl_object Vtrace_output;
+cl_object @'*standard-input*';
+cl_object @'*standard-output*';
+cl_object @'*error-output*';
+cl_object @'*query-io*';
+cl_object @'*debug-io*';
+cl_object @'*terminal-io*';
+cl_object @'*trace-output*';
 
-cl_object Kabort;
-cl_object Kdirection;
-cl_object Kinput;
-cl_object Koutput;
-cl_object Kio;
-cl_object Kprobe;
-cl_object Kelement_type;
-cl_object Kdefault;
-cl_object Kif_exists;
-cl_object Kerror;
-cl_object Knew_version;
-cl_object Krename;
-cl_object Krename_and_delete;
-cl_object Koverwrite;
-cl_object Kappend;
-cl_object Ksupersede;
-cl_object Kcreate;
-cl_object Kprint;
-cl_object Kif_does_not_exist;
-cl_object Kset_default_pathname;
+cl_object @':abort';
+cl_object @':direction';
+cl_object @':input';
+cl_object @':output';
+cl_object @':io';
+cl_object @':probe';
+cl_object @':element_type';
+cl_object @':default';
+cl_object @':if_exists';
+cl_object @':error';
+cl_object @':new_version';
+cl_object @':rename';
+cl_object @':rename_and_delete';
+cl_object @':overwrite';
+cl_object @':append';
+cl_object @':supersede';
+cl_object @':create';
+cl_object @':print';
+cl_object @':if_does_not_exist';
+cl_object @':set_default_pathname';
 
 /******************************* ------- ******************************/
 
 static cl_object terminal_io;
 
-cl_object siVignore_eof_on_terminal_io;
+cl_object @'si::*ignore-eof-on-terminal-io*';
 
 static bool
 feof1(FILE *fp)
@@ -69,7 +69,7 @@ feof1(FILE *fp)
 	if (!feof(fp))
 		return(FALSE);
 	if (fp == terminal_io->stream.object0->stream.file) {
-		if (Null(symbol_value(siVignore_eof_on_terminal_io)))
+		if (Null(symbol_value(@'si::*ignore-eof-on-terminal-io*')))
 			return(TRUE);
 #ifdef unix
 		fp = freopen("/dev/tty", "r", fp);
@@ -118,7 +118,7 @@ BEGIN:
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(Sstream, strm);
+			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	default:
@@ -160,7 +160,7 @@ BEGIN:
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(Sstream, strm);
+			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	default:
@@ -188,7 +188,7 @@ BEGIN:
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(Sstream, strm);
+			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_broadcast:
@@ -209,7 +209,7 @@ BEGIN:
 
 	case smm_string_input:
 	case smm_string_output:
-		return(Sbase_char);
+		return(@'base-char');
 
 	default:
 		error("illegal stream mode");
@@ -274,9 +274,9 @@ open_stream(cl_object fn, enum smmode smm, cl_object if_exists,
 	if (smm == smm_input || smm == smm_probe) {
 		fp = fopen(fname, OPEN_R);
 		if (fp == NULL) {
-			if (if_does_not_exist == Kerror)
+			if (if_does_not_exist == @':error')
 				FEcannot_open(fn);
-			else if (if_does_not_exist == Kcreate) {
+			else if (if_does_not_exist == @':create') {
 				fp = fopen(fname, OPEN_W);
 				if (fp == NULL)
 					cannot_create(fn);
@@ -291,32 +291,32 @@ open_stream(cl_object fn, enum smmode smm, cl_object if_exists,
 				 1, if_does_not_exist);
 		}
 	} else if (smm == smm_output || smm == smm_io) {
-		if (if_exists == Knew_version && if_does_not_exist == Kcreate)
+		if (if_exists == @':new_version' && if_does_not_exist == @':create')
 			goto CREATE;
 		fp = fopen(fname, OPEN_R);
 		if (fp != NULL) {
 			fclose(fp);
-			if (if_exists == Kerror)
+			if (if_exists == @':error')
 				FEerror("The file ~A already exists.", 1, fn);
-			else if (if_exists == Krename) {
+			else if (if_exists == @':rename') {
 				fp = backup_fopen(fname, (smm == smm_output)
 						  ? OPEN_W
 						  : OPEN_RW);
 				if (fp == NULL)
 					cannot_create(fn);
-			} else if (if_exists == Krename_and_delete ||
-				   if_exists == Knew_version ||
-				   if_exists == Ksupersede) {
+			} else if (if_exists == @':rename_and_delete' ||
+				   if_exists == @':new_version' ||
+				   if_exists == @':supersede') {
 				fp = fopen(fname, (smm == smm_output)
 					   ? OPEN_W
 					   : OPEN_RW);
 				if (fp == NULL)
 					cannot_create(fn);
-			} else if (if_exists == Koverwrite) {
+			} else if (if_exists == @':overwrite') {
 				fp = fopen(fname, OPEN_RW);
 				if (fp == NULL)
 					FEcannot_open(fn);
-			} else if (if_exists == Kappend) {
+			} else if (if_exists == @':append') {
 				fp = fopen(fname, (smm == smm_output)
 					   ? OPEN_A
 					   : OPEN_RA);
@@ -328,9 +328,9 @@ open_stream(cl_object fn, enum smmode smm, cl_object if_exists,
 				FEerror("~S is an illegal IF-EXISTS option.",
 					1, if_exists);
 		} else {
-			if (if_does_not_exist == Kerror)
+			if (if_does_not_exist == @':error')
 				FEerror("The file ~A does not exist.", 1, fn);
-			else if (if_does_not_exist == Kcreate) {
+			else if (if_does_not_exist == @':create') {
 			CREATE:
 				fp = fopen(fname, (smm == smm_output)
 					   ? OPEN_W
@@ -348,7 +348,7 @@ open_stream(cl_object fn, enum smmode smm, cl_object if_exists,
 	x = alloc_object(t_stream);
 	x->stream.mode = (short)smm;
 	x->stream.file = fp;
-	x->stream.object0 = Sbase_char;
+	x->stream.object0 = @'base-char';
 	x->stream.object1 = fn;
 	x->stream.int0 = x->stream.int1 = 0;
 #if !defined(GBC_BOEHM)
@@ -408,7 +408,7 @@ close_stream(cl_object strm, bool abort_flag)        /*  Not used now!  */
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(Sstream, strm);
+			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_broadcast:
@@ -583,7 +583,7 @@ BEGIN:
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(Sstream, strm);
+			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_concatenated:
@@ -652,7 +652,7 @@ BEGIN:
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(Sstream, strm);
+			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_concatenated:
@@ -723,7 +723,7 @@ BEGIN:
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(Sstream, strm);
+			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_broadcast:
@@ -820,7 +820,7 @@ BEGIN:
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(Sstream, strm);
+			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_broadcast:
@@ -871,7 +871,7 @@ BEGIN:
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(Sstream, strm);
+			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_broadcast:
@@ -922,7 +922,7 @@ BEGIN:
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(Sstream, strm);
+			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_broadcast:
@@ -990,7 +990,7 @@ BEGIN:
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(Sstream, strm);
+			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_concatenated:
@@ -1058,7 +1058,7 @@ BEGIN:
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(Sstream, strm);
+			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_concatenated:
@@ -1112,7 +1112,7 @@ BEGIN:
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(Sstream, strm);
+			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_probe:
@@ -1164,7 +1164,7 @@ BEGIN:
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(Sstream, strm);
+			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_probe:
@@ -1202,7 +1202,7 @@ BEGIN:
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(Sstream, strm);
+			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	/* FIXME! Should signal an error of type-error */
@@ -1239,7 +1239,7 @@ BEGIN:
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		if (type_of(strm) != t_stream)
-			FEwrong_type_argument(Sstream, strm);
+			FEwrong_type_argument(@'stream', strm);
 		goto BEGIN;
 
 	case smm_echo:
@@ -1364,7 +1364,7 @@ BEGIN:
 		e = (cl_index)fix(iend);
 	if (e > strng->string.fillp || s > e)
 		goto E;
-	@(return `make_string_input_stream(strng, s, e)`)
+	@(return (make_string_input_stream(strng, s, e)))
 
 E:
 	FEerror("~S and ~S are illegal as :START and :END~%\
@@ -1431,41 +1431,41 @@ for the string ~S.",
 @)
 
 @(defun open (filename
-	      &key (direction Kinput)
-		   (element_type Sbase_char)
+	      &key (direction @':input')
+		   (element_type @'base-char')
 		   (if_exists Cnil iesp)
 		   (if_does_not_exist Cnil idnesp)
 	      &aux strm)
 	enum smmode smm;
 @
 	/* INV: open_stream() checks types */
-	if (direction == Kinput) {
+	if (direction == @':input') {
 		smm = smm_input;
 		if (!idnesp)
-			if_does_not_exist = Kerror;
-	} else if (direction == Koutput) {
+			if_does_not_exist = @':error';
+	} else if (direction == @':output') {
 		smm = smm_output;
 		if (!iesp)
-			if_exists = Knew_version;
+			if_exists = @':new_version';
 		if (!idnesp) {
-			if (if_exists == Koverwrite ||
-			    if_exists == Kappend)
-				if_does_not_exist = Kerror;
+			if (if_exists == @':overwrite' ||
+			    if_exists == @':append')
+				if_does_not_exist = @':error';
 			else
-				if_does_not_exist = Kcreate;
+				if_does_not_exist = @':create';
 		}
-	} else if (direction == Kio) {
+	} else if (direction == @':io') {
 		smm = smm_io;
 		if (!iesp)
-			if_exists = Knew_version;
+			if_exists = @':new_version';
 		if (!idnesp) {
-			if (if_exists == Koverwrite ||
-			    if_exists == Kappend)
-				if_does_not_exist = Kerror;
+			if (if_exists == @':overwrite' ||
+			    if_exists == @':append')
+				if_does_not_exist = @':error';
 			else
-				if_does_not_exist = Kcreate;
+				if_does_not_exist = @':create';
 		}
-	} else if (direction == Kprobe) {
+	} else if (direction == @':probe') {
 		smm = smm_probe;
 		if (!idnesp)
 			if_does_not_exist = Cnil;
@@ -1484,11 +1484,11 @@ for the string ~S.",
 		i = file_position(file_stream);
 		if (i < 0)
 			@(return Cnil)
-		@(return `MAKE_FIXNUM(i)`)
+		@(return MAKE_FIXNUM(i))
 	} else {
-		if (position == Kstart)
+		if (position == @':start')
 			i = 0;
-		else if (position == Kend)
+		else if (position == @':end')
 			i = file_length(file_stream);
 		else if (!FIXNUMP(position) ||
 		    (i = fix((position))) < 0)
@@ -1562,7 +1562,7 @@ init_file(void)
 	standard_input = alloc_object(t_stream);
 	standard_input->stream.mode = (short)smm_input;
 	standard_input->stream.file = stdin;
-	standard_input->stream.object0 = Sbase_char;
+	standard_input->stream.object0 = @'base-char';
 	standard_input->stream.object1 = make_simple_string("stdin");
 	standard_input->stream.int0 = 0;
 	standard_input->stream.int1 = 0;
@@ -1570,7 +1570,7 @@ init_file(void)
 	standard_output = alloc_object(t_stream);
 	standard_output->stream.mode = (short)smm_output;
 	standard_output->stream.file = stdout;
-	standard_output->stream.object0 = Sbase_char;
+	standard_output->stream.object0 = @'base-char';
 	standard_output->stream.object1= make_simple_string("stdout");
 	standard_output->stream.int0 = 0;
 	standard_output->stream.int1 = 0;
@@ -1579,23 +1579,23 @@ init_file(void)
 	= make_two_way_stream(standard_input, standard_output);
 	register_root(&terminal_io);
 
-	SYM_VAL(Vterminal_io) = standard;
+	SYM_VAL(@'*terminal-io*') = standard;
 
 	x = alloc_object(t_stream);
 	x->stream.mode = (short)smm_synonym;
 	x->stream.file = NULL;
-	x->stream.object0 = Vterminal_io;
+	x->stream.object0 = @'*terminal-io*';
 	x->stream.object1 = OBJNULL;
 	x->stream.int0 = x->stream.int1 = 0;
 	standard = x;
 
-	SYM_VAL(Vstandard_input)  = standard;
-	SYM_VAL(Vstandard_output) = standard;
-	SYM_VAL(Verror_output) = standard;
+	SYM_VAL(@'*standard-input*')  = standard;
+	SYM_VAL(@'*standard-output*') = standard;
+	SYM_VAL(@'*error-output*') = standard;
 
-	SYM_VAL(Vquery_io) = standard;
-	SYM_VAL(Vdebug_io) = standard;
-	SYM_VAL(Vtrace_output) = standard;
+	SYM_VAL(@'*query-io*') = standard;
+	SYM_VAL(@'*debug-io*') = standard;
+	SYM_VAL(@'*trace-output*') = standard;
 
-	SYM_VAL(siVignore_eof_on_terminal_io) = Cnil;
+	SYM_VAL(@'si::*ignore-eof-on-terminal-io*') = Cnil;
 }

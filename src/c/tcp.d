@@ -36,7 +36,7 @@ make_stream(cl_object host, int fd, enum smmode smm)
    stream = alloc_object(t_stream);
    stream->stream.mode = (short)smm;
    stream->stream.file = fp;
-   stream->stream.object0 = Sbase_char;
+   stream->stream.object0 = @'base-char';
    stream->stream.object1 = host; /* not really used */
    stream->stream.int0 = stream->stream.int1 = 0;
 #if !defined(GBC_BOEHM)
@@ -47,7 +47,7 @@ make_stream(cl_object host, int fd, enum smmode smm)
 }
 
 /* 
-   Lopen_client_stream --
+   @open-client-stream --
 
    To test this function, try:
    (setq s (si:open-client-stream "host" 13))
@@ -59,7 +59,7 @@ make_stream(cl_object host, int fd, enum smmode smm)
    cl_object streamIn, streamOut;
 @
    if (type_of(host) != t_string)
-     FEwrong_type_argument(Sstring, host);
+     FEwrong_type_argument(@'string', host);
 
    if (!FIXNUMP(port))
      FEwrong_type_argument(TSpositive_number, port);

@@ -290,7 +290,7 @@ number_remainder(cl_object x, cl_object y, cl_object q)
 		out = x;
 		break;
 	default:
-		FEwrong_type_argument(Srational, x);
+		FEwrong_type_argument(@'rational', x);
 	}
 	@(return out)
 @)
@@ -307,7 +307,7 @@ number_remainder(cl_object x, cl_object y, cl_object q)
 		out = MAKE_FIXNUM(1);
 		break;
 	default:
-		FEwrong_type_argument(Srational, x);
+		FEwrong_type_argument(@'rational', x);
 	}
 	@(return out)
 @)
@@ -826,14 +826,14 @@ round2(cl_object x, cl_object y)
 @(defun mod (x y)
 @
 	/* INV: #'floor always outputs two values */
-	Lfloor(2, x, y);
+	@floor(2, x, y);
 	@(return VALUES(1))
 @)
 
 
 @(defun rem (x y)
 @
-	Ltruncate(2, x, y);
+	@truncate(2, x, y);
 	@(return VALUES(1))
 @)
 

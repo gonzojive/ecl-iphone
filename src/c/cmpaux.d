@@ -14,16 +14,15 @@
     See file '../Copyright' for full details.
 */
 
-
 #include "ecls.h"
 #include "ecls-inl.h"
 
-cl_object SAoptional;
-cl_object SArest;
-cl_object SAkey;
-cl_object SAallow_other_keys;
-cl_object SAaux;
-cl_object Kallow_other_keys;
+cl_object @'&optional';
+cl_object @'&rest';
+cl_object @'&key';
+cl_object @'&allow-other-keys';
+cl_object @'&aux';
+cl_object @':allow-other-keys';
 
 cl_object
 make_list(int i)
@@ -269,7 +268,7 @@ parse_key(
      else {
        /* look for :allow-other-keys t */
        for ( i = narg-2, p = args; i >= 0; i -= 2, p -=2)
-	 if (*p == Kallow_other_keys) {
+	 if (*p == @':allow-other-keys') {
 	   allow_other_keys = (p[1] != Cnil); break;
 	 }
        if (allow_other_keys) narg = narg-2;
@@ -296,7 +295,7 @@ check_other_key(cl_object l, int n, ...)
 			FEprogram_error("~S is not a keyword.", 1, k);
 		if (endp(CDR(l)))
 			FEprogram_error("Odd number of arguments for keywords.",0);
-		if (k == Kallow_other_keys && CADR(l) != Cnil) {
+		if (k == @':allow-other-keys' && CADR(l) != Cnil) {
 			allow_other_keys = TRUE;
 		} else {
 #ifndef NO_ARG_ARRAY
@@ -321,7 +320,7 @@ void
 init_cmpaux(void)
 {
 	make_constant("LAMBDA-LIST-KEYWORDS",
-	list(8, SAoptional, SArest, SAkey, SAallow_other_keys, SAaux,
+	list(8, @'&optional', @'&rest', @'&key', @'&allow-other-keys', @'&aux',
 		make_ordinary("&WHOLE"), make_ordinary("&ENVIRONMENT"), make_ordinary("&BODY")));
 
 	make_constant("LAMBDA-PARAMETERS-LIMIT", MAKE_FIXNUM(64));

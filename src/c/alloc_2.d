@@ -267,8 +267,8 @@ valloc(size_t size)
  *		GARBAGE COLLECTION			  *
  **********************************************************/
 
-cl_object siVgc_verbose;
-cl_object siVgc_message;
+cl_object @'si::*gc-verbose*';
+cl_object @'si::*gc-message*';
 
 void
 register_root(cl_object *p)

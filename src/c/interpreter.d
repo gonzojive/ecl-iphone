@@ -113,7 +113,7 @@ lambda_bind(int narg, cl_object lambda_list, cl_object *args)
 		goto FOUND;
 	      }
 	    }
-	    if (args[0] != Kallow_other_keys)
+	    if (args[0] != @':allow-other-keys')
 	      other_found = TRUE;
 	    else if (!allow_other_keys_found) {
 	      allow_other_keys_found = TRUE;

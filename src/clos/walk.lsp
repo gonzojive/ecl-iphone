@@ -243,7 +243,6 @@
 (defun note-lexical-binding (thing env)
   (push #+NEW (list thing :LEXICAL-VAR) #-NEW thing (fourth (env-lock env))))
 
-
 (defun VARIABLE-LEXICAL-P (var env)
   #+NEW
   (let ((entry (member var (env-lexical-variables env) :key #'car)))

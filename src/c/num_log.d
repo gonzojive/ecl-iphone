@@ -261,7 +261,7 @@ big_bitp(cl_object	x, int p)
 
 @(defun lognot (x)
 @
-	return Llogxor(1,x,MAKE_FIXNUM(-1));
+	return @logxor(1,x,MAKE_FIXNUM(-1));
 @)
 
 static int
@@ -279,7 +279,7 @@ count_bits(cl_object x)
 	}
 	case t_bignum:
 		if (big_sign(x) < 0) {
-			Llognot(1,x);
+			@lognot(1,x);
 			VALUES(0) = x;
 		}
 		count = mpz_popcount(x->big.big_num);
@@ -553,7 +553,7 @@ init_num_log(void)
 		}
 	L1:
 		if (Null(r)) {
-			r = siLmake_vector(6, Sbit, MAKE_FIXNUM(d), Cnil, Cnil, Cnil, Cnil);
+			r = @si::make-vector(6, @'bit', MAKE_FIXNUM(d), Cnil, Cnil, Cnil, Cnil);
 		}
 	} else {
 		if (type_of(x) != t_array)
@@ -607,7 +607,7 @@ init_num_log(void)
 		  r->array.displaced = Cnil;
 		  r->array.rank = 1;
 		  r->array.dims = NULL;
-		  r->array.elttype = get_aelttype(Sbit);
+		  r->array.elttype = get_aelttype(@'bit');
 		  r->array.dims = alloc_atomic_align(sizeof(int), sizeof(int));
 		  r->array.dim = x->array.dim;
 		  r->array.adjustable = FALSE;

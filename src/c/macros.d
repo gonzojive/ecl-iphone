@@ -14,7 +14,6 @@
     See file '../Copyright' for full details.
 */
 
-
 #include "ecls.h"
 
 /******************************* REQUIRES ******************************/
@@ -23,9 +22,9 @@
 
 /******************************* EXPORTS ******************************/
 
-cl_object Vmacroexpand_hook;
-cl_object siSexpand_defmacro;
-cl_object siVinhibit_macro_special;
+cl_object @'*macroexpand-hook*';
+cl_object @'si::expand-defmacro';
+cl_object @'si::*inhibit-macro-special*';
 
 /******************************* ------- ******************************/
 
@@ -38,7 +37,7 @@ cl_object
 search_symbol_macro(cl_object name, cl_object env)
 {
 	cl_object record = assq(name, CAR(env));
-	if (CONSP(record) && CADR(record) == siSsymbol_macro)
+	if (CONSP(record) && CADR(record) == @'si::symbol-macro')
 	  return CADDR(record);
 	return Cnil;
 }
@@ -46,7 +45,7 @@ search_symbol_macro(cl_object name, cl_object env)
 cl_object
 search_macro(cl_object name, cl_object env)
 {
-	return lex_sch(CDR(env), name, Smacro);
+	return lex_sch(CDR(env), name, @'macro');
 }
 
 cl_object
@@ -107,8 +106,8 @@ macro_expand1(cl_object form, cl_object env)
 	exp_fun = macro_def(form, env);
 	if (Null(exp_fun))
 		return form;
-	hook = symbol_value(Vmacroexpand_hook);
-	if (hook == Sfuncall)
+	hook = symbol_value(@'*macroexpand-hook*');
+	if (hook == @'funcall')
 		return funcall(3, exp_fun, form, env);
 	else
 		return funcall(4, hook, exp_fun, form, env);
@@ -132,6 +131,6 @@ macro_expand(cl_object form, cl_object env)
 void
 init_macros(void)
 {
-	SYM_VAL(Vmacroexpand_hook) = Sfuncall;
-	SYM_VAL(siVinhibit_macro_special) = Cnil;
+	SYM_VAL(@'*macroexpand-hook*') = @'funcall';
+	SYM_VAL(@'si::*inhibit-macro-special*') = Cnil;
 }

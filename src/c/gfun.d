@@ -12,20 +12,22 @@
     See file '../Copyright' for full details.
 */
 
-
 #include "ecls.h"
 
-cl_object siScompute_applicable_methods;
-cl_object siScompute_effective_method;
-cl_object siSgeneric_function_method_combination;
-cl_object siSgeneric_function_method_combination_args;
+/*
+ * Functions defined in the PCL code.
+ */
+cl_object @'si::compute-applicable-methods';
+cl_object @'si::compute-effective-method';
+cl_object @'si::generic-function-method-combination';
+cl_object @'si::generic-function-method-combination-args';
 
 @(defun si::allocate_gfun (name arg_no ht)
 	cl_object x;
 	int n, i;
 @
 	if (type_of(ht) != t_hashtable)
-		FEwrong_type_argument(Shash_table, ht);
+		FEwrong_type_argument(@'hash-table', ht);
 
 	x = alloc_object(t_gfun);
 	x->gfun.specializers = NULL; /* for GC sake */
@@ -43,14 +45,14 @@ cl_object siSgeneric_function_method_combination_args;
 @(defun si::gfun_name (x)
 @
 	if (type_of(x) != t_gfun)
-		FEwrong_type_argument(Sdispatch_function, x);
+		FEwrong_type_argument(@'dispatch-function', x);
 	@(return x->gfun.name)
 @)
 
 @(defun si::gfun_name_set (x name)
 @
 	if (type_of(x) != t_gfun)
-		FEwrong_type_argument(Sdispatch_function, x);
+		FEwrong_type_argument(@'dispatch-function', x);
 	x->gfun.name = name;
 	@(return x)
 @)
@@ -58,16 +60,16 @@ cl_object siSgeneric_function_method_combination_args;
 @(defun si::gfun_method_ht (x)
 @
 	if (type_of(x) != t_gfun)
-		FEwrong_type_argument(Sdispatch_function, x);
+		FEwrong_type_argument(@'dispatch-function', x);
 	@(return x->gfun.method_hash)
 @)
 
 @(defun si::gfun_method_ht_set (x y)
 @
 	if (type_of(x) != t_gfun)
-		FEwrong_type_argument(Sdispatch_function, x);
+		FEwrong_type_argument(@'dispatch-function', x);
 	if (type_of(y) != t_hashtable)
-		FEwrong_type_argument(Shash_table, y);
+		FEwrong_type_argument(@'hash-table', y);
 	x->gfun.method_hash = y;
 	@(return x)
 @)
@@ -76,7 +78,7 @@ cl_object siSgeneric_function_method_combination_args;
 	int i;
 @
 	if (type_of(x) != t_gfun)
-		FEwrong_type_argument(Sdispatch_function, x);
+		FEwrong_type_argument(@'dispatch-function', x);
 	if (!FIXNUMP(y) ||
 	    (i = fix(y)) < 0 || i >= x->gfun.arg_no)
 		FEerror("~S is an illegal spec_how index.", 1, y);
@@ -87,7 +89,7 @@ cl_object siSgeneric_function_method_combination_args;
 	int i;
 @
 	if (type_of(x) != t_gfun)
-		FEwrong_type_argument(Sdispatch_function, x);
+		FEwrong_type_argument(@'dispatch-function', x);
 	if (!FIXNUMP(y) || (i = fix(y)) >= x->gfun.arg_no)
 		FEerror("~S is an illegal spec_how index.", 1, y);
 	x->gfun.specializers[i] = spec;
@@ -97,16 +99,16 @@ cl_object siSgeneric_function_method_combination_args;
 @(defun si::gfun_instance (x)
 @
 	if (type_of(x) != t_gfun)
-		FEwrong_type_argument(Sdispatch_function, x);
+		FEwrong_type_argument(@'dispatch-function', x);
 	@(return x->gfun.instance)
 @)
 
 @(defun si::gfun_instance_set (x y)
 @
 	if (type_of(x) != t_gfun)
-		FEwrong_type_argument(Sdispatch_function, x);
+		FEwrong_type_argument(@'dispatch-function', x);
 	if (type_of(y) != t_instance)
-		FEwrong_type_argument(Sinstance, y);
+		FEwrong_type_argument(@'instance', y);
 	x->gfun.instance = y;
 	@(return x)
 @)

@@ -13,19 +13,16 @@
     See file '../Copyright' for full details.
 */
 
-
-
 #include "ecls.h"
 
 /******************************* EXPORTS ******************************/
 
 cl_object class_class, class_object, class_built_in;
+cl_object @'si::*class-name-hash-table*';
+cl_object @'class';
+cl_object @'built-in';
 
 /******************************* ------- ******************************/
-
-cl_object siSXclass_name_hash_tableX;
-cl_object Sclass;
-cl_object Sbuilt_in;
 
 static cl_object
 make_our_hash_table(cl_object test, int size)
@@ -37,11 +34,11 @@ make_our_hash_table(cl_object test, int size)
 	rehash_size = make_shortfloat(1.5);
 	rehash_threshold = make_shortfloat(0.7);
 
-	if (test == Seq)
+	if (test == @'eq')
 		htt = htt_eq;
-	else if (test == Seql)
+	else if (test == @'eql')
 		htt = htt_eql;
-	else if (test == Sequal)
+	else if (test == @'equal')
 		htt = htt_equal;
 
 	h = alloc_object(t_hashtable);
@@ -63,43 +60,43 @@ static void
 clos_boot(void)
 {
 
-	SYM_VAL(siSXclass_name_hash_tableX) = make_our_hash_table(Seq, 1024);
+	SYM_VAL(siVclass_name_hash_table) = make_our_hash_table(@'eq', 1024);
 
 	/* booting Class CLASS */
 	
   	class_class = alloc_instance(4);
 	register_root(&class_class);
 	class_class->instance.class = class_class;
-	CLASS_NAME(class_class) = Sclass;
+	CLASS_NAME(class_class) = @'class';
 	CLASS_SUPERIORS(class_class) = Cnil;
 	CLASS_INFERIORS(class_class) = Cnil;
 	CLASS_SLOTS(class_class) = OBJNULL;	/* filled later */
 
-	sethash(Sclass, SYM_VAL(siSXclass_name_hash_tableX), class_class);
+	sethash(@'class', SYM_VAL(siVclass_name_hash_table), class_class);
 
 	/* booting Class BUILT-IN */
 	
   	class_built_in = alloc_instance(4);
 	register_root(&class_built_in);
 	class_built_in->instance.class = class_class;
-	CLASS_NAME(class_built_in) = Sbuilt_in;
+	CLASS_NAME(class_built_in) = @'built-in';
 	CLASS_SUPERIORS(class_built_in) = CONS(class_class, Cnil);
 	CLASS_INFERIORS(class_built_in) = Cnil;
 	CLASS_SLOTS(class_built_in) = OBJNULL;	/* filled later */
 
-	sethash(Sbuilt_in, SYM_VAL(siSXclass_name_hash_tableX), class_built_in);
+	sethash(@'built-in', SYM_VAL(siVclass_name_hash_table), class_built_in);
 
 	/* booting Class T (= OBJECT) */
 	
   	class_object = alloc_instance(4);
 	register_root(&class_object);
 	class_object->instance.class = class_built_in;
-	CLASS_NAME(class_object) = St;
+	CLASS_NAME(class_object) = Ct;
 	CLASS_SUPERIORS(class_object) = Cnil;
 	CLASS_INFERIORS(class_object) = CONS(class_class, Cnil);
 	CLASS_SLOTS(class_object) = Cnil;
 
-	sethash(St, SYM_VAL(siSXclass_name_hash_tableX), class_object);
+	sethash(Ct, SYM_VAL(siVclass_name_hash_table), class_object);
 
 	/* complete now Class CLASS */
 	CLASS_SUPERIORS(class_class) = CONS(class_object, Cnil);
@@ -109,7 +106,7 @@ clos_boot(void)
 void
 init_clos(void)
 {
-	SYM_VAL(siSXclass_name_hash_tableX) = OBJNULL;
+	SYM_VAL(siVclass_name_hash_table) = OBJNULL;
 
 	clos_boot();
 }

@@ -43,8 +43,8 @@ int data_start = (int)&data_start;
 
 /******************************* EXPORTS ******************************/
 
-cl_object Vfeatures;
-cl_object siVsystem_directory;
+cl_object clVfeatures;
+cl_object @'si::*system-directory*';
 const char *ecl_self;
 
 /******************************* ------- ******************************/
@@ -53,9 +53,9 @@ static int	ARGC;
 static char	**ARGV;
 
 #ifdef THREADS
-static cl_object siVthread_top;
+static cl_object @'si::*thread-top*';
 #endif THREADS
-static cl_object siStop_level;
+static cl_object @'si::top-level';
 
 #if !defined(GBC_BOEHM)
 static char stdin_buf[BUFSIZ];
@@ -88,9 +88,9 @@ main(int argc, char **argv)
 	init_lisp();
 
 	/* Jump to top level */
-	SYM_VAL(Vpackage) = user_package;
+	SYM_VAL(@'*package*') = user_package;
 	enable_interrupt();
-	siLcatch_bad_signals(0);
+	@si::catch-bad-signals(0);
 #ifdef THREADS
 	enable_lwp();
 #endif THREADS
@@ -104,7 +104,7 @@ main(int argc, char **argv)
 	}
 #endif
 	ihs_push(_intern("TOP-LEVEL", system_package), Cnil);
-	funcall(1, siStop_level);
+	funcall(1, @'si::top-level');
 	return(0);
 }
 
@@ -118,7 +118,7 @@ main(int argc, char **argv)
 	if (clwp != &main_lpd) {
 	  VALUES(0) = Cnil;
 	  NValues = 0;
-	  throw(siVthread_top);
+	  throw(@'si::*thread-top*');
 	  /* never reached */
 	}
 #endif THREADS
@@ -191,12 +191,12 @@ main(int argc, char **argv)
 void
 init_main(void)
 {
-	siStop_level=make_si_ordinary("TOP-LEVEL");
-	register_root(&siStop_level);
+	@'si::top_level' = make_si_ordinary("TOP-LEVEL");
+	register_root(&@'si::top-level');
 
 	make_ordinary("LISP-IMPLEMENTATION-VERSION");
 
-	SYM_VAL(siVsystem_directory) = make_simple_string("./");
+	SYM_VAL(@'si::*system-directory*') = make_simple_string("./");
 
 	{ cl_object features;
 	  features =
@@ -248,10 +248,10 @@ init_main(void)
 	 ADD_FEATURE("IEEE-FLOATING-POINT");
 #endif
 
-	 SYM_VAL(Vfeatures) = features;
+	 SYM_VAL(@'*features*') = features;
        }
 #ifdef THREADS
-	siVthread_top = make_si_ordinary("THREAD-TOP");
+	@'si::*thread-top*' = make_si_ordinary("THREAD-TOP");
 #endif THREADS
 
 	make_si_constant("+OBJNULL+", OBJNULL);

@@ -305,7 +305,7 @@ struct string {			/*  string header  */
 #define SLOT(x,i)	(x)->instance.slots[i]
 #define SNAME(x)	CLASS_NAME(CLASS_OF(x))
 #define STRUCTUREP(x)	(type_of(x) == t_instance && \
-			 structure_subtypep(CLASS_OF(x), Sstructure_object))
+			 structure_subtypep(CLASS_OF(x), clSstructure_object))
 #else
 struct structure {		/*  structure header  */
 	HEADER;

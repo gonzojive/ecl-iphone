@@ -38,8 +38,8 @@ init_lisp(void)
 	init_all_symbols();
 	init_all_functions();
 
-	SYM_VAL(Vpackage) = lisp_package;
-	SYM_VAL(Vgensym_counter) = MAKE_FIXNUM(0);
+	SYM_VAL(@'*package*') = lisp_package;
+	SYM_VAL(@'*gensym_counter*') = MAKE_FIXNUM(0);
 
 	init_typespec();
 	init_number();
@@ -107,7 +107,7 @@ init_lisp(void)
 	init_format();
 	init_interrupt();
 #ifdef RUNTIME
-	SYM_VAL(Vfeatures) = CONS(make_keyword("RUNTIME"), SYM_VAL(Vfeatures));
+	SYM_VAL(@'*features*') = CONS(make_keyword("RUNTIME"), SYM_VAL(@'*features*'));
 #endif
 	init_lisp_libs();
 }

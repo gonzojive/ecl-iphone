@@ -14,11 +14,13 @@
     See file '../Copyright' for full details.
 */
 
-
 #include "ecls.h"
 #include "page.h"
 
 /******************************* EXPORTS ******************************/
+
+cl_object @'si::*gc-verbose*';
+cl_object @'si::*gc-message*';
 
 bool GC_enable;
 int gc_time;			/* Beppe */
@@ -59,9 +61,6 @@ get_mark_bit(int *x) {
 #define	inheap(pp)	((unsigned long)(pp) < (unsigned long)heap_end)
 #define VALID_DATA_ADDRESS(pp) \
   !IMMEDIATE(pp) && (cl_index)DATA_START <= (cl_index)(pp) && (cl_index)(pp) < (cl_index)heap_end
-
-cl_object siVgc_verbose;
-cl_object siVgc_message;
 
 static bool	debug = FALSE;
 static int	maxpage;
@@ -714,7 +713,7 @@ gc(enum type t)
   if (!GC_enabled())
     return;
 
-  if (SYM_VAL(siVgc_verbose) != Cnil) {
+  if (SYM_VAL(@'si::*gc-verbose*') != Cnil) {
     printf("\n[GC ..");
     /* To use this should add entries in tm_table for reloc and contig.
        fprintf(stdout, "\n[GC for %d %s pages ..",
@@ -723,7 +722,7 @@ gc(enum type t)
     fflush(stdout);
   }
 
-  debug = symbol_value(siVgc_message) != Cnil;
+  debug = symbol_value(@'si::*gc-message*') != Cnil;
 
 #ifdef THREADS
   if (clwp != &main_lpd)  {
@@ -874,7 +873,7 @@ gc(enum type t)
 
   gc_time += (gc_start = runtime() - gc_start);
 
-  if (SYM_VAL(siVgc_verbose) != Cnil) {
+  if (SYM_VAL(@'si::*gc-verbose*') != Cnil) {
     /* Don't use fprintf since on Linux it calls malloc() */
     printf(". finished in %.2f\"]", gc_start/60.0);
     fflush(stdout);
@@ -1008,10 +1007,10 @@ _mark_contblock(void *x, size_t s)
 void
 init_GC(void)
 {
-	register_root(&siVgc_verbose);
-	register_root(&siVgc_message);
-	siVgc_verbose = make_si_special("*GC-VERBOSE*", Cnil);
-	siVgc_message = make_si_special("*GC-MESSAGE*", Cnil);
+	register_root(&@'si::*gc-verbose*');
+	register_root(&@'si::*gc-message*');
+	@'si::*gc-verbose*' = make_si_special("*GC-VERBOSE*", Cnil);
+	@'si::*gc-message*' = make_si_special("*GC-MESSAGE*", Cnil);
 	GC_enable();
 	gc_time = 0;
 }

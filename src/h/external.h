@@ -391,7 +391,7 @@ extern cl_object identity(cl_object x);
 extern cl_object car(cl_object x);
 extern cl_object cdr(cl_object x);
 extern cl_object list(int narg, ...);
-extern cl_object listA(int narg, ...);
+extern cl_object listX(int narg, ...);
 extern cl_object append(cl_object x, cl_object y);
 extern cl_object caar(cl_object x);
 extern cl_object cadr(cl_object x);

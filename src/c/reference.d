@@ -14,7 +14,6 @@
     See file '../Copyright' for full details.
 */
 
-
 #include "ecls.h"
 #include "ecls-inl.h"
 
@@ -76,11 +75,11 @@ symbol_function(cl_object sym)
 			FEtype_error_symbol(sym);
 	}
 	if (sym->symbol.isform)
-		output = Sspecial;
+		output = @'special';
 	else if (FBOUNDP(sym))
 		FEundefined_function(sym);
 	else if (sym->symbol.mflag)
-		output = CONS(Smacro, SYM_FUN(sym));
+		output = CONS(@'macro', SYM_FUN(sym));
 	else
 		output = SYM_FUN(sym);
 	@(return output)
@@ -97,8 +96,8 @@ symbol_function(cl_object sym)
 			FEundefined_function(fun);
 		else
 			@(return SYM_FUN(fun))
-	} else if (t == t_cons && CAR(fun) == Slambda) {
-		return siLmake_lambda(2, Cnil, CDR(fun));
+	} else if (t == t_cons && CAR(fun) == @'lambda') {
+		return @si::make-lambda(2, Cnil, CDR(fun));
 	} else {
 	  	cl_object setf_sym = setf_namep(fun);
 		if ((setf_sym != OBJNULL) && !FBOUNDP(setf_sym))

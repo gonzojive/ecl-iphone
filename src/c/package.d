@@ -30,17 +30,17 @@ cl_object clos_package;
 #ifdef TK
 cl_object tk_package;
 #endif
-cl_object Vpackage;		/*  *package*  */
+cl_object @'*package*';		/*  *package*  */
 
 #ifndef THREADS
 int intern_flag;
 #endif
 
-cl_object Kinternal;
-cl_object Kexternal;
-cl_object Kinherited;
-cl_object Knicknames;
-cl_object Kuse;
+cl_object @':internal';
+cl_object @':external';
+cl_object @':inherited';
+cl_object @':nicknames';
+cl_object @':use';
 
 /******************************* ------- ******************************/
 
@@ -211,7 +211,7 @@ coerce_to_package(cl_object p)
 	pp = find_package(p);
 	if (!Null(pp))
 		return (pp);
-	FEwrong_type_argument(Spackage, p);
+	FEwrong_type_argument(@'*package*', p);
 }
 
 cl_object
@@ -219,9 +219,9 @@ current_package(void)
 {
 	cl_object x;
 
-	x = symbol_value(Vpackage);
+	x = symbol_value(@'*package*');
 	if (type_of(x) != t_package) {
-		SYM_VAL(Vpackage) = user_package;
+		SYM_VAL(@'*package*') = user_package;
 		FEerror("The value of *PACKAGE*, ~S, was not a package.",
 			1, x);
 	}
@@ -555,9 +555,7 @@ unuse_package(cl_object x, cl_object p)
 	delete_eq(p, &x->pack.usedby);
 }
 
-@(defun make_package (pack_name
-		      &key nicknames
-			   (use `CONS(lisp_package, Cnil)`))
+@(defun make_package (pack_name &key nicknames (use CONS(lisp_package, Cnil)))
 @
 	/* INV: make_package() performs type checking */
 	@(return make_package(pack_name, nicknames, use))
@@ -570,7 +568,7 @@ unuse_package(cl_object x, cl_object p)
 	p = find_package(pack_name);
 	if (Null(p))
 		FEerror("Package ~s not found", 1, pack_name);
-	@(return (SYM_VAL(Vpackage) = p))
+	@(return (SYM_VAL(@'*package*') = p))
 @)
 
 @(defun find_package (p)
@@ -637,37 +635,37 @@ unuse_package(cl_object x, cl_object p)
 	@(return copy_list(package_list))
 @)
 
-@(defun intern (strng &optional (p `current_package()`) &aux sym)
+@(defun intern (strng &optional (p current_package()) &aux sym)
 @
 	sym = intern(strng, p);
 	if (intern_flag == INTERNAL)
-		@(return sym Kinternal)
+		@(return sym @':internal')
 	if (intern_flag == EXTERNAL)
-		@(return sym Kexternal)
+		@(return sym @':external')
 	if (intern_flag == INHERITED)
-		@(return sym Kinherited)
+		@(return sym @':inherited')
 	@(return sym Cnil)
 @)
 
-@(defun find_symbol (strng &optional (p `current_package()`))
+@(defun find_symbol (strng &optional (p current_package()))
 	cl_object x;
 @
 	x = find_symbol(strng, p);
 	if (intern_flag == INTERNAL)
-		@(return x Kinternal)
+		@(return x @':internal')
 	if (intern_flag == EXTERNAL)
-		@(return x Kexternal)
+		@(return x @':external')
 	if (intern_flag == INHERITED)
-		@(return x Kinherited)
+		@(return x @':inherited')
 	@(return Cnil Cnil)
 @)
 
-@(defun unintern (symbl &optional (p `current_package()`))
+@(defun unintern (symbl &optional (p current_package()))
 @
-	@(return `unintern(symbl, p) ? Ct : Cnil`)
+	@(return (unintern(symbl, p) ? Ct : Cnil))
 @)
 
-@(defun export (symbols &o (pack `current_package()`))
+@(defun export (symbols &o (pack current_package()))
 	cl_object l;
 @
 BEGIN:
@@ -691,7 +689,7 @@ BEGIN:
 	@(return Ct)
 @)
 
-@(defun unexport (symbols &o (pack `current_package()`))
+@(defun unexport (symbols &o (pack current_package()))
 	cl_object l;
 @
 BEGIN:
@@ -715,7 +713,7 @@ BEGIN:
 	@(return Ct)
 @)
 
-@(defun import (symbols &o (pack `current_package()`))
+@(defun import (symbols &o (pack current_package()))
 	cl_object l;
 @
 BEGIN:
@@ -739,7 +737,7 @@ BEGIN:
 	@(return Ct)
 @)
 
-@(defun shadowing_import (symbols &o (pack `current_package()`))
+@(defun shadowing_import (symbols &o (pack current_package()))
 	cl_object l;
 @
 BEGIN:
@@ -763,7 +761,7 @@ BEGIN:
 	@(return Ct)
 @)
 
-@(defun shadow (symbols &o (pack `current_package()`))
+@(defun shadow (symbols &o (pack current_package()))
 	cl_object l;
 @
 BEGIN:
@@ -787,7 +785,7 @@ BEGIN:
 	@(return Ct)
 @)
 
-@(defun use_package (pack &o (pa `current_package()`))
+@(defun use_package (pack &o (pa current_package()))
 	cl_object l;
 @
 BEGIN:
@@ -813,7 +811,7 @@ BEGIN:
 	@(return Ct)
 @)
 
-@(defun unuse_package (pack &o (pa `current_package()`))
+@(defun unuse_package (pack &o (pa current_package()))
 	cl_object l;
 @
 BEGIN:
@@ -926,5 +924,5 @@ init_package(void)
 
 	/*  There is no need to enter a package as a mark origin.  */
 
-	Vpackage = make_special("*PACKAGE*", lisp_package);
+	@'*package*' = make_special("*PACKAGE*", lisp_package);
 }

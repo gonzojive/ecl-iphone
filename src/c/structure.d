@@ -19,14 +19,17 @@
 
 /******************************* EXPORTS ******************************/
 
-cl_object siSstructure_print_function;
-cl_object siSstructure_slot_descriptions;
+cl_object @'si::structure-print-function';
+cl_object @'si::structure-slot-descriptions';
+#ifdef CLOS
+cl_object @'structure-object';
+#else
+cl_object siSstructure_include;
+#endif
 
 /******************************* ------- ******************************/
 
 #ifdef CLOS
-cl_object Sstructure_object;
-
 bool
 structure_subtypep(cl_object x, cl_object y)
 { cl_object superiors;
@@ -40,8 +43,6 @@ structure_subtypep(cl_object x, cl_object y)
   return(FALSE);
 }
 #else
-cl_object siSstructure_include;
-
 bool
 structure_subtypep(cl_object x, cl_object y)
 {
@@ -105,7 +106,7 @@ structure_to_list(cl_object x)
 	cl_object y;
 @
 	if (!STRUCTUREP(x))
-		FEwrong_type_argument(Sstructure, x);
+		FEwrong_type_argument(@'structure', x);
 	y = alloc_object(T_STRUCTURE);
 	STYPE(y) = STYPE(x);
 	SLENGTH(y) = j = SLENGTH(x);
@@ -120,7 +121,7 @@ structure_to_list(cl_object x)
 @(defun si::structure_name (s)
 @
 	if (!STRUCTUREP(s))
-		FEwrong_type_argument(Sstructure, s);
+		FEwrong_type_argument(@'structure', s);
 	@(return SNAME(s))
 @)
 

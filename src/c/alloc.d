@@ -777,15 +777,17 @@ since ~D pages are already allocated.",
 	@(return flag)
 @)
 
-static cl_object siVlisp_maxpages, siClisp_pagesize;
+static cl_object @'si::*lisp-maxpages*', @'si::+lisp_pagesize+';
 
 void
 init_alloc_function(void)
 {
 	ignore_maximum_pages = TRUE;
-	siVlisp_maxpages = make_si_special("*LISP-MAXPAGES*", MAKE_FIXNUM(real_maxpage));
-	siClisp_pagesize = make_si_constant("LISP-PAGESIZE", MAKE_FIXNUM(LISP_PAGESIZE));
-	SYM_VAL(siVlisp_maxpages) = MAKE_FIXNUM(real_maxpage);
+	@'si::*lisp-maxpages*' =
+		make_si_special("*LISP-MAXPAGES*", MAKE_FIXNUM(real_maxpage));
+	@'si::+lisp_pagesize+' =
+		make_si_constant("+LISP-PAGESIZE+", MAKE_FIXNUM(LISP_PAGESIZE));
+	SYM_VAL(@'si::*lisp-maxpages*') = MAKE_FIXNUM(real_maxpage);
 }
 
 #ifdef NEED_MALLOC

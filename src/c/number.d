@@ -23,7 +23,7 @@ int
 fixint(cl_object x)
 {
 	if (!FIXNUMP(x))
-		FEwrong_type_argument(Sfixnum, x);
+		FEwrong_type_argument(@'fixnum', x);
 	return fix(x);
 }
 
@@ -35,10 +35,10 @@ fixnnint(cl_object x)
 		if (i >= 0)
 			return i;
 	}
-	FEcondition(9, Ssimple_type_error, Kformat_control,
+	FEcondition(9, @'simple-type-error', @':format-control',
 		    make_simple_string("Not a non-negative fixnum ~S"),
-		    Kformat_arguments, list(1,x),
-		    Kexpected_type, Sfixnum, Kdatum, x);
+		    @':format-arguments', list(1,x),
+		    @':expected-type', @'fixnum', @':datum', x);
 }
 
 cl_object

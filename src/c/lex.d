@@ -23,41 +23,41 @@
 cl_object lex_env = OBJNULL;
 #endif
 
-cl_object siSsymbol_macro;
-cl_object Smacro;
-cl_object Sblock;
-cl_object Stag;
+cl_object @'si::symbol-macro';
+cl_object @'macro';
+cl_object @'block';
+cl_object @'tag';
 
 /******** ------- ********/
 
 void
 lex_fun_bind(cl_object name, cl_object fun)
 {
-	CDR(lex_env) = CONS(list(3, name, Sfunction, fun), CDR(lex_env));
+	CDR(lex_env) = CONS(list(3, name, @'function', fun), CDR(lex_env));
 }
 
 void
 lex_symbol_macro_bind(cl_object name, cl_object exp_fun)
 {
-	CAR(lex_env) = CONS(list(3, name, siSsymbol_macro, exp_fun), CAR(lex_env));
+	CAR(lex_env) = CONS(list(3, name, @'si::symbol-macro', exp_fun), CAR(lex_env));
 }
 
 void
 lex_macro_bind(cl_object name, cl_object exp_fun)
 {
-	CDR(lex_env) = CONS(list(3, name, Smacro, exp_fun), CDR(lex_env));
+	CDR(lex_env) = CONS(list(3, name, @'macro', exp_fun), CDR(lex_env));
 }
 
 void
 lex_tag_bind(cl_object tag, cl_object id)
 {
-	CDR(lex_env) = CONS(list(3, tag, Stag, id), CDR(lex_env));
+	CDR(lex_env) = CONS(list(3, tag, @'tag', id), CDR(lex_env));
 }
 
 void
 lex_block_bind(cl_object name, cl_object id)
 {
-	CDR(lex_env) = CONS(list(3, name, Sblock, id), CDR(lex_env));
+	CDR(lex_env) = CONS(list(3, name, @'block', id), CDR(lex_env));
 }
 
 cl_object

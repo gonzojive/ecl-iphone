@@ -16,13 +16,13 @@
 
 #include "ecls.h"
 
-cl_object Seq;
-cl_object Seql;
-cl_object Sequal;
+cl_object @'eq';
+cl_object @'eql';
+cl_object @'equal';
 
-cl_object Ksize;
-cl_object Krehash_size;
-cl_object Krehash_threshold;
+cl_object @':size';
+cl_object @':rehash-size';
+cl_object @':rehash-threshold';
 
 
 /*******************
@@ -394,7 +394,7 @@ extend_hashtable(cl_object hashtable)
 }
 
 
-@(defun make_hash_table (&key (test Seql)
+@(defun make_hash_table (&key (test @'eql')
 			      (size MAKE_FIXNUM(1024))
 			      (rehash_size make_shortfloat(1.5))
 			      (rehash_threshold make_shortfloat(0.7))
@@ -402,11 +402,11 @@ extend_hashtable(cl_object hashtable)
 	enum httest htt;
 	cl_index i, hsize;
 @
-	if (test == Seq || test == SYM_FUN(Seq))
+	if (test == @'eq' || test == SYM_FUN(@'eq'))
 		htt = htt_eq;
-	else if (test == Seql || test == SYM_FUN(Seql))
+	else if (test == @'eql' || test == SYM_FUN(@'eql'))
 		htt = htt_eql;
-	else if (test == Sequal || test == SYM_FUN(Sequal))
+	else if (test == @'equal' || test == SYM_FUN(@'equal'))
 		htt = htt_equal;
 	else
 		FEerror("~S is an illegal hash-table test function.",

@@ -23,12 +23,12 @@
 
 cl_object standard_readtable;
 
-cl_object Vreadtable;
-cl_object Vread_default_float_format;
-cl_object Vread_base;
-cl_object Vread_suppress;
+cl_object @'*readtable*';
+cl_object @'*read_default_float_format*';
+cl_object @'*read_base*';
+cl_object @'*read_suppress*';
 
-cl_object Kjunk_allowed;
+cl_object @':junk_allowed';
 
 cl_object siSsharp_comma;
 
@@ -49,12 +49,12 @@ cl_object (*read_ch_fun)() = readc;
 #endif THREADS
 
 #ifdef CLOS
-cl_object Sstream_read_line,
-  Sstream_read_char,
-  Sstream_unread_char,
-  Sstream_peek_char,
-  Sstream_listen,
-  Sstream_clear_input;
+cl_object @'stream_read_line',
+  @'stream_read_char',
+  @'stream_unread_char',
+  @'stream_peek_char',
+  @'stream_listen',
+  @'stream_clear_input';
 #endif
 
 /******************************* ------- ******************************/
@@ -81,23 +81,23 @@ setup_READ(void)
 	cl_object x;
 
 	READtable = current_readtable();
-	x = symbol_value(Vread_default_float_format);
-	if (x == Ssingle_float || x == Sshort_float)
+	x = symbol_value(@'*read_default_float_format*');
+	if (x == @'single-float' || x == @'short-float')
 		READdefault_float_format = 'S';
-	else if (x == Sdouble_float || x == Slong_float)
+	else if (x == @'double_float' || x == @'long_float')
 		READdefault_float_format = 'F';
 	else {
-		SYM_VAL(Vread_default_float_format) = Ssingle_float;
+		SYM_VAL(@'*read_default_float_format*') = @'single-float';
 	FEerror("The value of *READ-DEFAULT-FLOAT-FORMAT*, ~S, was illegal.",
 			1, x);
 	}
-	x = symbol_value(Vread_base);
+	x = symbol_value(@'*read_base*');
 	if (!FIXNUMP(x) || fix(x) < 2 || fix(x) > 36) {
-		SYM_VAL(Vread_base) = MAKE_FIXNUM(10);
+		SYM_VAL(@'*read_base*') = MAKE_FIXNUM(10);
 		FEerror("The value of *READ-BASE*, ~S, was illegal.", 1, x);
 	}
 	READbase = fix(x);
-	READsuppress = symbol_value(Vread_suppress) != Cnil;
+	READsuppress = symbol_value(@'*read_suppress*') != Cnil;
 }
 
 static void
@@ -115,7 +115,7 @@ setup_standard_READ(void)
 cl_object
 interactive_readc(cl_object stream)
 {
-	return _funcall(2, Sstream_read_char, stream);
+	return _funcall(2, @'stream_read_char', stream);
 }
 #endif CLOS
 
@@ -132,7 +132,7 @@ void unread_char(cl_object c, cl_object in)
 	/* INV: char_code() checks the type of `c' */
 #ifdef CLOS
 	if (type_of(in) == t_instance)
-	  funcall(3, Sstream_unread_char, in, c);
+	  funcall(3, @'stream_unread_char', in, c);
 	else
 #endif
 	  unreadc_stream(char_code(c), in);
@@ -675,7 +675,7 @@ parse_integer(char *s, cl_index end, cl_index *ep, int radix)
 }
 
 static
-@(defun left_parenthesis_reader (in c)
+@(defun si::left_parenthesis_reader (in c)
   cl_object x, y;
   cl_object *p;
 @
@@ -755,14 +755,14 @@ read_constituent(cl_object in)
 }
 
 static
-@(defun double_quote_reader (in c)
+@(defun si::double_quote_reader (in c)
 @
 	read_string('"', in);
 	@(return copy_simple_string(cl_token))
 @)
 
 static
-@(defun dispatch_reader (in dc)
+@(defun si::dispatch_reader (in dc)
 	cl_object c, x, y;
 	int i, d;
 @
@@ -787,27 +787,27 @@ static
 @)
 
 static
-@(defun single_quote_reader (in c)
+@(defun si::single_quote_reader (in c)
 @
-	@(return CONS(Squote, CONS(read_object(in), Cnil)))
+	@(return CONS(@'quote', CONS(read_object(in), Cnil)))
 @)
 
 static
-@(defun void_reader (in c)
+@(defun si::void_reader (in c)
 @
 	/*  no result  */
 	@(return)
 @)
 
-#define Lright_parenthesis_reader Lvoid_reader
+#define @si::right_parenthesis_reader @si::void_reader
 
 /*
 int
-Lcomma_reader(){} in backq.c
+@comma-reader(){} in backq.c
 */
 
 static
-@(defun semicolon_reader (in c)
+@(defun si::semicolon_reader (in c)
 @
 	do
 		c = read_char(in);
@@ -818,7 +818,7 @@ static
 
 /*
 int
-Lbackquote_reader(){}
+@backquote-reader(){}
 */
 
 /*
@@ -826,7 +826,7 @@ Lbackquote_reader(){}
 */
 
 static
-@(defun sharp_C_reader (in c d)
+@(defun si::sharp_C_reader (in c d)
 	cl_object x, real, imag;
 @
 	if (d != Cnil && !READsuppress)
@@ -861,7 +861,7 @@ static
 @)
 
 static
-@(defun sharp_backslash_reader (in c d)
+@(defun si::sharp_backslash_reader (in c d)
 @
 	if (d != Cnil && !READsuppress)
 		if (!FIXNUMP(d) ||
@@ -879,22 +879,6 @@ static
 	c = cl_token;
 	if (c->string.fillp == 1)
 		c = code_char(c->string.self[0]);
-	else if (string_equal(c, STreturn))
-		c = code_char('\r');
-	else if (string_equal(c, STspace))
-		c = code_char(' ');
-	else if (string_equal(c, STrubout))
-		c = code_char('\177');
-	else if (string_equal(c, STpage))
-		c = code_char('\f');
-	else if (string_equal(c, STtab))
-		c = code_char('\t');
-	else if (string_equal(c, STbackspace))
-		c = code_char('\b');
-	else if (string_equal(c, STlinefeed) || string_equal(c, STnewline))
-		c = code_char('\n');
-	else if (string_equal(c, STnull))
-		c = code_char('\000');
 	/*	#\^x	*/
 	else if (c->string.fillp == 2 && c->string.self[0] == '^')
 		c = code_char(c->string.self[1] & 037);
@@ -907,23 +891,25 @@ static
 			else
 				n = 8*n + c->string.self[i] - '0';
 		c = code_char(n & 0377);
-	} else
-		FEerror("~S is an illegal character name.", 1, c);
+	} else {
+		c = @name_char(1,c);
+		if (Null(c)) FEerror("~S is an illegal character name.", 1, c);
+	}
 	@(return c)
 @)
 
 static
-@(defun sharp_single_quote_reader (in c d)
+@(defun si::sharp_single_quote_reader (in c d)
 @
 	if(d != Cnil && !READsuppress)
 		extra_argument('#', d);
-	@(return CONS(Sfunction, CONS(read_object(in), Cnil)))
+	@(return CONS(@'function', CONS(read_object(in), Cnil)))
 @)
 
 #define	QUOTE	1
 #define	EVAL	2
 #define	LIST	3
-#define	LISTA	4
+#define	LISTX	4
 #define	APPEND	5
 #define	NCONC	6
 
@@ -949,7 +935,7 @@ static
 
 
 static
-@(defun sharp_left_parenthesis_reader (in c d)
+@(defun si::sharp_left_parenthesis_reader (in c d)
 	int dim, dimcount, i, a;
 	cl_object x, last;
 	ESTACK(vsp);
@@ -969,8 +955,8 @@ static
 		    EPUSH(vsp, CAR(x), dimcount);
 		  goto L;
 		}
-		@(return list(4, siScomma, Sapply,
-			      CONS(Squote, CONS(Svector, Cnil)), x))
+		@(return list(4, siScomma, @'apply',
+			      CONS(@'quote', CONS(@'vector', Cnil)), x))
 	}
 	for (dimcount = 0 ;; dimcount++) {
 	  delimiting_char = code_char(')');
@@ -996,7 +982,7 @@ L:
 @)
 
 static
-@(defun sharp_asterisk_reader (in c d)
+@(defun si::sharp_asterisk_reader (in c d)
 	int dim, dimcount, i;
 	cl_object x, last, elt;
 	ESTACK(vsp);
@@ -1042,7 +1028,7 @@ static
 @)
 
 static
-@(defun sharp_colon_reader (in c d)
+@(defun si::sharp_colon_reader (in c d)
 	cl_index length;
 	enum chattrib a;
 @
@@ -1100,7 +1086,7 @@ M:
 @)
 
 static
-@(defun sharp_dot_reader (in c d)
+@(defun si::sharp_dot_reader (in c d)
 	cl_object lex_old = lex_env;
 @
 	if(d != Cnil && !READsuppress)
@@ -1115,7 +1101,7 @@ static
 @)
 
 static
-@(defun sharp_comma_reader (in c d)
+@(defun si::sharp_comma_reader (in c d)
 	cl_object lex_old = lex_env;
 @
 	if(d != Cnil && !READsuppress)
@@ -1144,7 +1130,7 @@ static
 static cl_object read_VV_block = OBJNULL;
 
 static
-@(defun sharp_exclamation_reader (in c d)
+@(defun si::sharp_exclamation_reader (in c d)
 	cl_fixnum code;
 @
 	if(d != Cnil && !READsuppress)
@@ -1155,7 +1141,7 @@ static
 	switch (code) {
 	case 0: {
 		cl_object name = read_object(in);
-		siLselect_package(1,name);
+		@si::select-package(1,name);
 		break;
 	}
 	case 1: {
@@ -1175,7 +1161,7 @@ static
 @)
 
 static
-@(defun sharp_B_reader (in c d)
+@(defun si::sharp_B_reader (in c d)
 	cl_index i;
 	cl_object x;
 @
@@ -1195,7 +1181,7 @@ static
 @)
 
 static
-@(defun sharp_O_reader (in c d)
+@(defun si::sharp_O_reader (in c d)
 	cl_index i;
 	cl_object x;
 @
@@ -1215,7 +1201,7 @@ static
 @)
 
 static
-@(defun sharp_X_reader (in c d)
+@(defun si::sharp_X_reader (in c d)
 	cl_index i;
 	cl_object x;
 @
@@ -1235,7 +1221,7 @@ static
 @)
 
 static
-@(defun sharp_R_reader (in c d)
+@(defun si::sharp_R_reader (in c d)
 	int radix;
 	cl_index i;
 	cl_object x;
@@ -1261,11 +1247,11 @@ static
 	@(return x)
 @)
 
-#define sharp_A_reader Lvoid_reader
-#define sharp_S_reader Lvoid_reader
+#define sharp_A_reader @void-reader
+#define sharp_S_reader @void-reader
 
 static
-@(defun sharp_eq_reader (in c d)
+@(defun si::sharp_eq_reader (in c d)
 	cl_object pair, value;
 @
 	if (READsuppress) @(return)
@@ -1282,7 +1268,7 @@ static
 @)
 
 static
-@(defun sharp_sharp_reader (in c d)
+@(defun si::sharp_sharp_reader (in c d)
 	cl_object pair;
 @
 	if (READsuppress) @(return)
@@ -1353,14 +1339,14 @@ patch_sharp(cl_object x)
 	return x;
 }
 
-#define Lsharp_plus_reader Lvoid_reader
-#define Lsharp_minus_reader Lvoid_reader
-#define Lsharp_less_than_reader Lvoid_reader
-#define Lsharp_whitespace_reader Lvoid_reader
-#define Lsharp_right_parenthesis_reader Lvoid_reader
+#define @si::sharp_plus_reader @si::void_reader
+#define @si::sharp_minus_reader @si::void_reader
+#define @si::sharp_less_than_reader @si::void_reader
+#define @si::sharp_whitespace_reader @si::void_reader
+#define @si::sharp_right_parenthesis_reader @si::void_reader
 
 static
-@(defun sharp_vertical_bar_reader (in ch d)
+@(defun si::sharp_vertical_bar_reader (in ch d)
 	int c;
 	int level = 0;
 @
@@ -1389,7 +1375,7 @@ static
 @)
 
 static
-@(defun default_dispatch_macro (in c d)
+@(defun si::default_dispatch_macro (in c d)
 @
 	FEerror("Undefined dispatch macro character.", 1, c);
 @)
@@ -1398,7 +1384,7 @@ static
 	#P" ... " returns the pathname with namestring ... .
 */
 static
-@(defun sharp_P_reader (in c d)
+@(defun si::sharp_P_reader (in c d)
 @
 	@(return coerce_to_pathname(read_object(in)))
 @)
@@ -1407,7 +1393,7 @@ static
 	#" ... " returns the pathname with namestring ... .
 */
 static
-@(defun sharp_double_quote_reader (in c d)
+@(defun si::sharp_double_quote_reader (in c d)
 @
 	if (d != Cnil && !READsuppress)
 		extra_argument('"', d);
@@ -1420,7 +1406,7 @@ static
 	as its content.
 */
 static
-@(defun sharp_dollar_reader (in c d)
+@(defun si::sharp_dollar_reader (in c d)
 	cl_object output;
 @
 	if (d != Cnil && !READsuppress)
@@ -1480,9 +1466,9 @@ current_readtable(void)
 {
 	cl_object r;
 
-	r = symbol_value(Vreadtable);
+	r = symbol_value(@'*readtable*');
 	if (type_of(r) != t_readtable) {
-	  SYM_VAL(Vreadtable) = copy_readtable(standard_readtable, Cnil);
+	  SYM_VAL(@'*readtable*') = copy_readtable(standard_readtable, Cnil);
 	  FEerror("The value of *READTABLE*, ~S, was not a readtable.",
 		  1, r);
 	}
@@ -1490,16 +1476,16 @@ current_readtable(void)
 }
 
 
-@(defun read (&optional (strm symbol_value(Vstandard_input))
+@(defun read (&optional (strm symbol_value(@'*standard_input*'))
 			(eof_errorp Ct)
 			eof_value
 			recursivep
 	      &aux x)
 @
 	if (Null(strm))
-		strm = symbol_value(Vstandard_input);
+		strm = symbol_value(@'*standard_input*');
 	else if (strm == Ct)
-		strm = symbol_value(Vterminal_io);
+		strm = symbol_value(@'*terminal_io*');
 RETRY:	if (type_of(strm) == t_stream) {
           if (strm->stream.mode == (short)smm_synonym) {
 	    strm = symbol_value(strm->stream.object0);
@@ -1513,7 +1499,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 	    read_ch_fun = interactive_readc;
 	  else
 #endif CLOS
-	    FEwrong_type_argument(Sstream, strm);
+	    FEwrong_type_argument(@'stream', strm);
 	if (Null(recursivep))
 		preserving_whitespace_flag = FALSE;
 	detect_eos_flag = TRUE;
@@ -1530,7 +1516,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 @)
 
 @(defun read_preserving_whitespace
-	(&optional (strm symbol_value(Vstandard_input))
+	(&optional (strm symbol_value(@'*standard_input*'))
 		   (eof_errorp Ct)
 		   eof_value
 		   recursivep
@@ -1538,9 +1524,9 @@ RETRY:	if (type_of(strm) == t_stream) {
 	cl_object c;
 @
 	if (Null(strm))
-		strm = symbol_value(Vstandard_input);
+		strm = symbol_value(@'*standard_input*');
 	else if (strm == Ct)
-		strm = symbol_value(Vterminal_io);
+		strm = symbol_value(@'*terminal_io*');
 RETRY:	if (type_of(strm) == t_stream) {
           if (strm->stream.mode == (short)smm_synonym) {
 	    strm = symbol_value(strm->stream.object0);
@@ -1554,7 +1540,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 	    read_ch_fun = interactive_readc;
 	  else
 #endif CLOS
-	    FEwrong_type_argument(Sstream, strm);
+	    FEwrong_type_argument(@'stream', strm);
 	while (!stream_at_end(strm)) {
 		c = read_char(strm);
 		if (cat(c) != cat_whitespace) {
@@ -1578,7 +1564,7 @@ READ:
 
 @(defun read_delimited_list
 	(d
-	 &optional (strm symbol_value(Vstandard_input))
+	 &optional (strm symbol_value(@'*standard_input*'))
 		   recursivep
 	 &aux l x)
 
@@ -1591,9 +1577,9 @@ READ:
 	if (!CHARACTERP(d))
 		FEtype_error_character(d);
 	if (Null(strm))
-		strm = symbol_value(Vstandard_input);
+		strm = symbol_value(@'*standard_input*');
 	else if (strm == Ct)
-		strm = symbol_value(Vterminal_io);
+		strm = symbol_value(@'*terminal_io*');
 	assert_type_stream(strm);
 	if (Null(recursivep)) {
 		old_sharp_eq_context = sharp_eq_context;
@@ -1630,7 +1616,7 @@ READ:
 	@(return l)
 @)
 
-@(defun read_line (&optional (strm symbol_value(Vstandard_input))
+@(defun read_line (&optional (strm symbol_value(@'*standard_input*'))
 			     (eof_errorp Ct)
 			     eof_value
 			     recursivep
@@ -1638,9 +1624,9 @@ READ:
 	cl_index i;
 @
 	if (Null(strm))
-		strm = symbol_value(Vstandard_input);
+		strm = symbol_value(@'*standard_input*');
 	else if (strm == Ct)
-		strm = symbol_value(Vterminal_io);
+		strm = symbol_value(@'*terminal_io*');
 RETRY:	if (type_of(strm) == t_stream) {
           if (strm->stream.mode == (short)smm_synonym) {
 	    strm = symbol_value(strm->stream.object0);
@@ -1677,21 +1663,21 @@ RETRY:	if (type_of(strm) == t_stream) {
 	} else
 #ifdef CLOS
 	if (type_of(strm) == t_instance)
-	     return funcall(2, Sstream_read_line, strm);
+	     return funcall(2, @'stream_read_line', strm);
         else
 #endif
 	  FEerror("~S is not a stream.", 1, strm);
 @)
 
-@(defun read_char (&optional (strm symbol_value(Vstandard_input))
+@(defun read_char (&optional (strm symbol_value(@'*standard_input*'))
 			     (eof_errorp Ct)
 			     eof_value
 			     recursivep)
 @
         if (Null(strm))
-	    strm = symbol_value(Vstandard_input);
+	    strm = symbol_value(@'*standard_input*');
 	else if (strm == Ct)
-	    strm = symbol_value(Vterminal_io);
+	    strm = symbol_value(@'*terminal_io*');
 RETRY:	if (type_of(strm) == t_stream) {
           if (strm->stream.mode == (short)smm_synonym) {
 	    strm = symbol_value(strm->stream.object0);
@@ -1709,19 +1695,19 @@ RETRY:	if (type_of(strm) == t_stream) {
 	} else
 #ifdef CLOS
 	if (type_of(strm) == t_instance)
-	     return funcall(2, Sstream_read_char, strm);
+	     return funcall(2, @'stream_read_char', strm);
 	else
 #endif
 	  FEerror("~S is not a stream.", 1, strm);
 @)
 
-@(defun unread_char (c &optional (strm symbol_value(Vstandard_input)))
+@(defun unread_char (c &optional (strm symbol_value(@'*standard_input*')))
 @
 	/* INV: unread_char() checks the type `c' */
 	if (Null(strm))
-		strm = symbol_value(Vstandard_input);
+		strm = symbol_value(@'*standard_input*');
 	else if (strm == Ct)
-		strm = symbol_value(Vterminal_io);
+		strm = symbol_value(@'*terminal_io*');
 RETRY:	if (type_of(strm) == t_stream) {
           if (strm->stream.mode == (short)smm_synonym) {
 	    strm = symbol_value(strm->stream.object0);
@@ -1734,23 +1720,23 @@ RETRY:	if (type_of(strm) == t_stream) {
 	} else
 #ifdef CLOS
 	if (type_of(strm) == t_instance)
-	     return funcall(3, Sstream_unread_char, strm, c);
+	     return funcall(3, @'stream_unread_char', strm, c);
 	else
 #endif
 	  FEerror("~S is not a stream.", 1, strm);
 @)
 
 @(defun peek_char (&optional peek_type
-			     (strm symbol_value(Vstandard_input))
+			     (strm symbol_value(@'*standard_input*'))
 			     (eof_errorp Ct)
 			     eof_value
 			     recursivep)
 	cl_object c;
 @
 	if (Null(strm))
-		strm = symbol_value(Vstandard_input);
+		strm = symbol_value(@'*standard_input*');
 	else if (strm == Ct)
-		strm = symbol_value(Vterminal_io);
+		strm = symbol_value(@'*terminal_io*');
 RETRY:	if (type_of(strm) == t_stream) {
           if (strm->stream.mode == (short)smm_synonym) {
 	    strm = symbol_value(strm->stream.object0);
@@ -1798,18 +1784,18 @@ RETRY:	if (type_of(strm) == t_stream) {
 	} else
 #ifdef CLOS
 	if (type_of(strm) == t_instance)
-	     return funcall(3, Sstream_peek_char, strm, peek_type);
+	     return funcall(3, @'stream_peek_char', strm, peek_type);
 	else
 #endif
 	  FEerror("~S is not a stream.", 1, strm);
 @)
 
-@(defun listen (&optional (strm symbol_value(Vstandard_input)))
+@(defun listen (&optional (strm symbol_value(@'*standard_input*')))
 @
 	if (Null(strm))
-		strm = symbol_value(Vstandard_input);
+		strm = symbol_value(@'*standard_input*');
 	else if (strm == Ct)
-		strm = symbol_value(Vterminal_io);
+		strm = symbol_value(@'*terminal_io*');
 RETRY:	if (type_of(strm) == t_stream) {
           if (strm->stream.mode == (short)smm_synonym) {
 	    strm = symbol_value(strm->stream.object0);
@@ -1825,21 +1811,21 @@ RETRY:	if (type_of(strm) == t_stream) {
 	else
 #ifdef CLOS
 	if (type_of(strm) == t_instance)
-	     return funcall(2, Sstream_listen, strm);
+	     return funcall(2, @'stream_listen', strm);
 	else
 #endif
 	  FEerror("~S is not a stream.", 1, strm);
 @)
 
-@(defun read_char_no_hang (&optional (strm symbol_value(Vstandard_input))
+@(defun read_char_no_hang (&optional (strm symbol_value(@'*standard_input*'))
 			             (eof_errorp Ct)
 			             eof_value
 			             recursivep)
 @
 	if (Null(strm))
-		strm = symbol_value(Vstandard_input);
+		strm = symbol_value(@'*standard_input*');
 	else if (strm == Ct)
-		strm = symbol_value(Vterminal_io);
+		strm = symbol_value(@'*terminal_io*');
 	assert_type_stream(strm);
 #if 0
 	if (!listen_stream(strm))
@@ -1870,22 +1856,22 @@ RETRY:	if (type_of(strm) == t_stream) {
 #ifdef CLOS
 	/* FIXME! Is this all right? */
 	if (type_of(strm) == t_instance) {
-	  if (_funcall(2, Sstream_listen, strm) == Cnil)
+	  if (_funcall(2, @'stream_listen', strm) == Cnil)
 	    @(return Cnil)
 	  else
-	    return funcall(2, Sstream_read_char, strm);
+	    return funcall(2, @'stream_read_char', strm);
 	} else
 #endif
 	  FEerror("~S is not a stream.", 1, strm);
 #endif
 @)
 
-@(defun clear_input (&optional (strm symbol_value(Vstandard_input)))
+@(defun clear_input (&optional (strm symbol_value(@'*standard_input*')))
 @
 	if (Null(strm))
-		strm = symbol_value(Vstandard_input);
+		strm = symbol_value(@'*standard_input*');
 	else if (strm == Ct)
-		strm = symbol_value(Vterminal_io);
+		strm = symbol_value(@'*terminal_io*');
 RETRY:	if (type_of(strm) == t_stream) {
           if (strm->stream.mode == (short)smm_synonym) {
 	    strm = symbol_value(strm->stream.object0);
@@ -1898,7 +1884,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 	    } else
 #ifdef CLOS
 	if (type_of(strm) == t_instance)
-	     return funcall(2, Sstream_clear_input, strm);
+	     return funcall(2, @'stream_clear_input', strm);
   	else
 #endif
 	  FEerror("~S is not a stream.", 1, strm);
@@ -2192,7 +2178,7 @@ init_read(void)
 		rtab[i].dispatch_table = NULL;
 	}
 
-	dispatch_reader = make_cf(Ldispatch_reader);
+	dispatch_reader = make_cf(@si::dispatch_reader);
 	register_root(&dispatch_reader);
 
 	rtab['\t'].syntax_type = cat_whitespace;
@@ -2201,32 +2187,32 @@ init_read(void)
 	rtab['\r'].syntax_type = cat_whitespace;
 	rtab[' '].syntax_type = cat_whitespace;
 	rtab['"'].syntax_type = cat_terminating;
-	rtab['"'].macro = make_cf(Ldouble_quote_reader);
+	rtab['"'].macro = make_cf(@si::double_quote_reader);
 	rtab['#'].syntax_type = cat_non_terminating;
 	rtab['#'].macro = dispatch_reader;
 	rtab['\''].syntax_type = cat_terminating;
-	rtab['\''].macro = make_cf(Lsingle_quote_reader);
+	rtab['\''].macro = make_cf(@si::single_quote_reader);
 	rtab['('].syntax_type = cat_terminating;
-	rtab['('].macro = make_cf(Lleft_parenthesis_reader);
+	rtab['('].macro = make_cf(@si::left_parenthesis_reader);
 	rtab[')'].syntax_type = cat_terminating;
-	rtab[')'].macro = make_cf(Lright_parenthesis_reader);
+	rtab[')'].macro = make_cf(@si::right_parenthesis_reader);
 /*
 	rtab[','].syntax_type = cat_terminating;
-	rtab[','].macro = make_cf(Lcomma_reader);
+	rtab[','].macro = make_cf(@si::comma_reader);
 */
 	rtab[';'].syntax_type = cat_terminating;
-	rtab[';'].macro = make_cf(Lsemicolon_reader);
+	rtab[';'].macro = make_cf(@si::semicolon_reader);
 	rtab['\\'].syntax_type = cat_single_escape;
 /*
 	rtab['`'].syntax_type = cat_terminating;
-	rtab['`'].macro = make_cf(Lbackquote_reader);
+	rtab['`'].macro = make_cf(@si::backquote_reader);
 */
 	rtab['|'].syntax_type = cat_multiple_escape;
 /*
-	rtab['|'].macro = make_cf(Lvertical_bar_reader);
+	rtab['|'].macro = make_cf(@si::vertical_bar_reader);
 */
 
-	default_dispatch_macro = make_cf(Ldefault_dispatch_macro);
+	default_dispatch_macro = make_cf(@si::default_dispatch_macro);
 #ifndef THREADS
 	register_root(&default_dispatch_macro);
 #endif
@@ -2236,58 +2222,58 @@ init_read(void)
 	= alloc(RTABSIZE * sizeof(cl_object));
 	for (i = 0;  i < RTABSIZE;  i++)
 		dtab[i] = default_dispatch_macro;
-	dtab['C'] = dtab['c'] = make_cf(Lsharp_C_reader);
-	dtab['\\'] = make_cf(Lsharp_backslash_reader);
-	dtab['\''] = make_cf(Lsharp_single_quote_reader);
-	dtab['('] = make_cf(Lsharp_left_parenthesis_reader);
-	dtab['*'] = make_cf(Lsharp_asterisk_reader);
-	dtab[':'] = make_cf(Lsharp_colon_reader);
-	dtab['.'] = make_cf(Lsharp_dot_reader);
-	dtab['!'] = make_cf(Lsharp_exclamation_reader);
+	dtab['C'] = dtab['c'] = make_cf(@si::sharp_C_reader);
+	dtab['\\'] = make_cf(@si::sharp_backslash_reader);
+	dtab['\''] = make_cf(@si::sharp_single_quote_reader);
+	dtab['('] = make_cf(@si::sharp_left_parenthesis_reader);
+	dtab['*'] = make_cf(@si::sharp_asterisk_reader);
+	dtab[':'] = make_cf(@si::sharp_colon_reader);
+	dtab['.'] = make_cf(@si::sharp_dot_reader);
+	dtab['!'] = make_cf(@si::sharp_exclamation_reader);
 	/*  Used for fasload only. */
-	dtab[','] = make_cf(Lsharp_comma_reader);
-	dtab['B'] = dtab['b'] = make_cf(Lsharp_B_reader);
-	dtab['O'] = dtab['o'] = make_cf(Lsharp_O_reader);
-	dtab['X'] = dtab['x'] = make_cf(Lsharp_X_reader);
-	dtab['R'] = dtab['r'] = make_cf(Lsharp_R_reader);
+	dtab[','] = make_cf(@si::sharp_comma_reader);
+	dtab['B'] = dtab['b'] = make_cf(@si::sharp_B_reader);
+	dtab['O'] = dtab['o'] = make_cf(@si::sharp_O_reader);
+	dtab['X'] = dtab['x'] = make_cf(@si::sharp_X_reader);
+	dtab['R'] = dtab['r'] = make_cf(@si::sharp_R_reader);
 /*
-	dtab['A'] = dtab['a'] = make_cf(Lsharp_A_reader);
-	dtab['S'] = dtab['s'] = make_cf(Lsharp_S_reader);
+	dtab['A'] = dtab['a'] = make_cf(@si::sharp_A_reader);
+	dtab['S'] = dtab['s'] = make_cf(@si::sharp_S_reader);
 */
 	dtab['A'] = dtab['a'] = make_si_ordinary("SHARP-A-READER");
 	dtab['S'] = dtab['s'] = make_si_ordinary("SHARP-S-READER");
-	dtab['P'] = dtab['p'] = make_cf(Lsharp_P_reader);
+	dtab['P'] = dtab['p'] = make_cf(@si::sharp_P_reader);
 
-	dtab['='] = make_cf(Lsharp_eq_reader);
-	dtab['#'] = make_cf(Lsharp_sharp_reader);
-	dtab['+'] = make_cf(Lsharp_plus_reader);
-	dtab['-'] = make_cf(Lsharp_minus_reader);
+	dtab['='] = make_cf(@si::sharp_eq_reader);
+	dtab['#'] = make_cf(@si::sharp_sharp_reader);
+	dtab['+'] = make_cf(@si::sharp_plus_reader);
+	dtab['-'] = make_cf(@si::sharp_minus_reader);
 /*
-	dtab['<'] = make_cf(Lsharp_less_than_reader);
+	dtab['<'] = make_cf(@si::sharp_less_than_reader);
 */
-	dtab['|'] = make_cf(Lsharp_vertical_bar_reader);
-	dtab['"'] = make_cf(Lsharp_double_quote_reader);
+	dtab['|'] = make_cf(@si::sharp_vertical_bar_reader);
+	dtab['"'] = make_cf(@si::sharp_double_quote_reader);
 	/*  This is specific to this implementation  */
-	dtab['$'] = make_cf(Lsharp_dollar_reader);
+	dtab['$'] = make_cf(@si::sharp_dollar_reader);
 	/*  This is specific to this implimentation  */
 /*
 	dtab[' '] = dtab['\t'] = dtab['\n'] = dtab['\f']
-	= make_cf(Lsharp_whitespace_reader);
-	dtab[')'] = make_cf(Lsharp_right_parenthesis_reader);
+	= make_cf(@si::sharp_whitespace_reader);
+	dtab[')'] = make_cf(@si::sharp_right_parenthesis_reader);
 */
 
 	init_backq();
 
-	SYM_VAL(Vreadtable) =
+	SYM_VAL(@'*readtable*') =
 	  copy_readtable(standard_readtable, Cnil);
-	SYM_VAL(Vreadtable)->readtable.table['#'].dispatch_table['!']
+	SYM_VAL(@'*readtable*')->readtable.table['#'].dispatch_table['!']
 	  = default_dispatch_macro; /*  We must forget #! macro.  */
-	SYM_VAL(Vread_default_float_format)
-	  = Ssingle_float;
-	SYM_VAL(Vread_base) = MAKE_FIXNUM(10);
-	SYM_VAL(Vread_suppress) = Cnil;
+	SYM_VAL(@'*read_default_float_format*')
+	  = @'single-float';
+	SYM_VAL(@'*read_base*') = MAKE_FIXNUM(10);
+	SYM_VAL(@'*read_suppress*') = Cnil;
 
-	READtable = symbol_value(Vreadtable);
+	READtable = symbol_value(@'*readtable*');
 	register_root(&READtable);
 	READdefault_float_format = 'S';
 	READbase = 10;
@@ -2353,8 +2339,8 @@ read_VV(cl_object block, void *entry)
 	old_sharp_eq_context = sharp_eq_context;
 	old_backq_level = backq_level;
 
-	old_package = SYM_VAL(Vpackage);
-	SYM_VAL(Vpackage) = lisp_package;
+	old_package = SYM_VAL(@'*package*');
+	SYM_VAL(@'*package*') = lisp_package;
 
 	setup_standard_READ();
 
@@ -2378,9 +2364,9 @@ read_VV(cl_object block, void *entry)
 	  }
 	  if (i < len)
 	    FEerror("Not enough data while loading binary file",0);
-	  SYM_VAL(Vpackage) = old_package;
+	  SYM_VAL(@'*package*') = old_package;
 #ifdef PDE
-	  bds_bind(siVsource_pathname, VV[block->cblock.source_pathname]);
+	  bds_bind(@'si::*source-pathname*', VV[block->cblock.source_pathname]);
 #endif
 	  (*entry_point)(MAKE_FIXNUM(0));
 	  e = FALSE;

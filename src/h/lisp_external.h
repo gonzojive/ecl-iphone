@@ -24,42 +24,42 @@ extern cl_object siLignore_maximum_pages _ARGS((int narg, ...));
 #ifdef GBC_BOEHM
 extern cl_object siVgc_verbose;
 extern cl_object siVgc_message;
-extern cl_object Lgc _ARGS((int narg, cl_object area));
+extern cl_object clLgc _ARGS((int narg, cl_object area));
 extern cl_object siLroom_report _ARGS((int narg));
 #endif /* GBC_BOEHM */
 
 /* array.c */
 
-extern cl_object Laref _ARGS((int narg, cl_object x, ...));
+extern cl_object clLaref _ARGS((int narg, cl_object x, ...));
 extern cl_object siLaset _ARGS((int narg, cl_object v, cl_object x, ...));
 extern cl_object siLmake_pure_array _ARGS((int narg, cl_object etype, cl_object adj, cl_object displ, cl_object disploff, ...));
 extern cl_object siLmake_vector _ARGS((int narg, cl_object etype, cl_object dim, cl_object adj, cl_object fillp, cl_object displ, cl_object disploff));
-extern cl_object Larray_element_type _ARGS((int narg, cl_object a));
-extern cl_object Larray_rank _ARGS((int narg, cl_object a));
-extern cl_object Larray_dimension _ARGS((int narg, cl_object a, cl_object index));
-extern cl_object Larray_total_size _ARGS((int narg, cl_object a));
-extern cl_object Ladjustable_array_p _ARGS((int narg, cl_object a));
+extern cl_object clLarray_element_type _ARGS((int narg, cl_object a));
+extern cl_object clLarray_rank _ARGS((int narg, cl_object a));
+extern cl_object clLarray_dimension _ARGS((int narg, cl_object a, cl_object index));
+extern cl_object clLarray_total_size _ARGS((int narg, cl_object a));
+extern cl_object clLadjustable_array_p _ARGS((int narg, cl_object a));
 extern cl_object siLdisplaced_array_p _ARGS((int narg, cl_object a));
-extern cl_object Lsvref _ARGS((int narg, cl_object x, cl_object index));
+extern cl_object clLsvref _ARGS((int narg, cl_object x, cl_object index));
 extern cl_object siLsvset _ARGS((int narg, cl_object x, cl_object index, cl_object v));
-extern cl_object Larray_has_fill_pointer_p _ARGS((int narg, cl_object a));
-extern cl_object Lfill_pointer _ARGS((int narg, cl_object a));
+extern cl_object clLarray_has_fill_pointer_p _ARGS((int narg, cl_object a));
+extern cl_object clLfill_pointer _ARGS((int narg, cl_object a));
 extern cl_object siLfill_pointer_set _ARGS((int narg, cl_object a, cl_object fp));
 extern cl_object siLreplace_array _ARGS((int narg, cl_object old, cl_object new));
 
 /* assignment.c */
 
-extern cl_object Ssetf, Spsetf, siSsetf_symbol;
+extern cl_object clSsetf, clSpsetf, siSsetf_symbol;
 extern cl_object siSclear_compiler_properties;
 #ifdef PDE
 extern cl_object siVrecord_source_pathname_p;
 extern cl_object siSrecord_source_pathname;
 #endif
-extern cl_object Lset _ARGS((int narg, cl_object var, cl_object val));
+extern cl_object clLset _ARGS((int narg, cl_object var, cl_object val));
 extern cl_object siLsetf_namep _ARGS((int narg, cl_object arg));
 extern cl_object siLfset _ARGS((int narg, cl_object fun, cl_object def, ...));
-extern cl_object Lmakunbound _ARGS((int narg, cl_object sym));
-extern cl_object Lfmakunbound _ARGS((int narg, cl_object sym));
+extern cl_object clLmakunbound _ARGS((int narg, cl_object sym));
+extern cl_object clLfmakunbound _ARGS((int narg, cl_object sym));
 extern cl_object siLclear_compiler_properties _ARGS((int narg, cl_object sym));
 
 /* backq.c */
@@ -67,91 +67,86 @@ extern cl_object siLclear_compiler_properties _ARGS((int narg, cl_object sym));
 extern cl_object siScomma;
 extern cl_object siScomma_at;
 extern cl_object siScomma_dot;
-extern cl_object SlistX;
-extern cl_object Sappend;
-extern cl_object Snconc;
-extern cl_object Lcomma_reader _ARGS((int narg, cl_object in, cl_object c));
-extern cl_object Lbackquote_reader _ARGS((int narg, cl_object in, cl_object c));
+extern cl_object clSlistX;
+extern cl_object clSappend;
+extern cl_object clSnconc;
+extern cl_object clLcomma_reader _ARGS((int narg, cl_object in, cl_object c));
+extern cl_object clLbackquote_reader _ARGS((int narg, cl_object in, cl_object c));
 
 /* cfun.c */
 
+#ifdef PDE
+extern cl_object siSdefun;
+extern cl_object siSdefmacro;
+#endif
 extern cl_object siLcompiled_function_name _ARGS((int narg, cl_object fun));
 extern cl_object siLcompiled_function_block _ARGS((int narg, cl_object fun));
 
 /* character.c */
 
-extern cl_object STreturn;
-extern cl_object STspace;
-extern cl_object STrubout;
-extern cl_object STpage;
-extern cl_object STtab;
-extern cl_object STbackspace;
-extern cl_object STlinefeed;
-extern cl_object STnewline;
-extern cl_object STnull;
-extern cl_object Lstandard_char_p _ARGS((int narg, cl_object c));
-extern cl_object Lgraphic_char_p _ARGS((int narg, cl_object c));
-extern cl_object Lalpha_char_p _ARGS((int narg, cl_object c));
-extern cl_object Lupper_case_p _ARGS((int narg, cl_object c));
-extern cl_object Llower_case_p _ARGS((int narg, cl_object c));
-extern cl_object Lboth_case_p _ARGS((int narg, cl_object c));
-extern cl_object Ldigit_char_p _ARGS((int narg, cl_object c, ...));
-extern cl_object Lalphanumericp _ARGS((int narg, cl_object c));
-extern cl_object Lchar_eq _ARGS((int narg, cl_object c, ...));
-extern cl_object Lchar_neq _ARGS((int narg, ...));
-extern cl_object Lchar_l _ARGS((int narg, ...));
-extern cl_object Lchar_g _ARGS((int narg, ...));
-extern cl_object Lchar_le _ARGS((int narg, ...));
-extern cl_object Lchar_ge _ARGS((int narg, ...));
-extern cl_object Lchar_equal _ARGS((int narg, cl_object c, ...));
-extern cl_object Lchar_not_equal _ARGS((int narg, ...));
-extern cl_object Lchar_lessp _ARGS((int narg, ...));
-extern cl_object Lchar_greaterp _ARGS((int narg, ...));
-extern cl_object Lchar_not_greaterp _ARGS((int narg, ...));
-extern cl_object Lchar_not_lessp _ARGS((int narg, ...));
-extern cl_object Lcharacter _ARGS((int narg, cl_object x));
-extern cl_object Lchar_code _ARGS((int narg, cl_object c));
-extern cl_object Lcode_char _ARGS((int narg, cl_object c));
-extern cl_object Lchar_upcase _ARGS((int narg, cl_object c));
-extern cl_object Lchar_downcase _ARGS((int narg, cl_object c));
-extern cl_object Ldigit_char _ARGS((int narg, cl_object w, ...));
-extern cl_object Lchar_int _ARGS((int narg, cl_object c));
-extern cl_object Lint_char _ARGS((int narg, cl_object x));
-extern cl_object Lchar_name _ARGS((int narg, cl_object c));
-extern cl_object Lname_char _ARGS((int narg, cl_object s));
+extern cl_object clLstandard_char_p _ARGS((int narg, cl_object c));
+extern cl_object clLgraphic_char_p _ARGS((int narg, cl_object c));
+extern cl_object clLalpha_char_p _ARGS((int narg, cl_object c));
+extern cl_object clLupper_case_p _ARGS((int narg, cl_object c));
+extern cl_object clLlower_case_p _ARGS((int narg, cl_object c));
+extern cl_object clLboth_case_p _ARGS((int narg, cl_object c));
+extern cl_object clLdigit_char_p _ARGS((int narg, cl_object c, ...));
+extern cl_object clLalphanumericp _ARGS((int narg, cl_object c));
+extern cl_object clLcharE _ARGS((int narg, cl_object c, ...));
+extern cl_object clLcharNE _ARGS((int narg, ...));
+extern cl_object clLcharL _ARGS((int narg, ...));
+extern cl_object clLcharG _ARGS((int narg, ...));
+extern cl_object clLcharLE _ARGS((int narg, ...));
+extern cl_object clLcharGE _ARGS((int narg, ...));
+extern cl_object clLchar_equal _ARGS((int narg, cl_object c, ...));
+extern cl_object clLchar_not_equal _ARGS((int narg, ...));
+extern cl_object clLchar_lessp _ARGS((int narg, ...));
+extern cl_object clLchar_greaterp _ARGS((int narg, ...));
+extern cl_object clLchar_not_greaterp _ARGS((int narg, ...));
+extern cl_object clLchar_not_lessp _ARGS((int narg, ...));
+extern cl_object clLcharacter _ARGS((int narg, cl_object x));
+extern cl_object clLchar_code _ARGS((int narg, cl_object c));
+extern cl_object clLcode_char _ARGS((int narg, cl_object c));
+extern cl_object clLchar_upcase _ARGS((int narg, cl_object c));
+extern cl_object clLchar_downcase _ARGS((int narg, cl_object c));
+extern cl_object clLdigit_char _ARGS((int narg, cl_object w, ...));
+extern cl_object clLchar_int _ARGS((int narg, cl_object c));
+extern cl_object clLint_char _ARGS((int narg, cl_object x));
+extern cl_object clLchar_name _ARGS((int narg, cl_object c));
+extern cl_object clLname_char _ARGS((int narg, cl_object s));
 
 /* clos.c */
 
 #ifdef CLOS
-extern cl_object siSXclass_name_hash_tableX;
-extern cl_object Sclass;
-extern cl_object Sbuilt_in;
+extern cl_object siVclass_name_hash_table;
+extern cl_object clSclass;
+extern cl_object clSbuilt_in;
 #endif
 
 /* cmpaux.c */
 
-extern cl_object SAoptional;
-extern cl_object SArest;
-extern cl_object SAkey;
-extern cl_object SAallow_other_keys;
-extern cl_object SAaux;
+extern cl_object clSAoptional;
+extern cl_object clSArest;
+extern cl_object clSAkey;
+extern cl_object clSAallow_other_keys;
+extern cl_object clSAaux;
 extern cl_object Kallow_other_keys;
 extern cl_object siLspecialp _ARGS((int narg, cl_object sym));
 
 /* compiler.c */
 
 extern cl_object siSlambda_block;
-extern cl_object Sdeclare;
-extern cl_object Scompile;
-extern cl_object Sload;
-extern cl_object Seval;
-extern cl_object Sprogn;
-extern cl_object Swarn;
-extern cl_object Stypep;
+extern cl_object clSdeclare;
+extern cl_object clScompile;
+extern cl_object clSload;
+extern cl_object clSeval;
+extern cl_object clSprogn;
+extern cl_object clSwarn;
+extern cl_object clStypep;
 extern cl_object Kexecute;
 extern cl_object Kcompile_toplevel;
 extern cl_object Kload_toplevel;
-extern cl_object Sotherwise;
+extern cl_object clSotherwise;
 extern cl_object siLprocess_declarations _ARGS((int narg, cl_object body, ...));
 extern cl_object siLprocess_lambda_list _ARGS((int narg, cl_object lambda));
 extern cl_object siLmake_lambda _ARGS((int narg, cl_object name, cl_object body));
@@ -163,16 +158,16 @@ extern cl_object siLbc_split _ARGS((int narg, cl_object v));
 
 /* error.c */
 
-extern cl_object Sarithmetic_error, Scell_error, Scondition;
-extern cl_object Scontrol_error, Sdivision_by_zero, Send_of_file;
-extern cl_object Serror, Sfile_error, Sfloating_point_inexact;
-extern cl_object Sfloating_point_invalid_operation, Sfloating_point_overflow;
-extern cl_object Sfloating_point_underflow, Spackage_error, Sparse_error;
-extern cl_object Sprint_not_readable, Sprogram_error, Sreader_error;
-extern cl_object Sserious_condition, Ssimple_condition, Ssimple_error;
-extern cl_object Ssimple_type_error, Ssimple_warning, Sstorage_condition;
-extern cl_object Sstream_error, Sstyle_warning, Stype_error, Sunbound_slot;
-extern cl_object Sunbound_variable, Sundefined_function, Swarning;
+extern cl_object clSarithmetic_error, clScell_error, clScondition;
+extern cl_object clScontrol_error, clSdivision_by_zero, clSend_of_file;
+extern cl_object clSerror, clSfile_error, clSfloating_point_inexact;
+extern cl_object clSfloating_point_invalid_operation, clSfloating_point_overflow;
+extern cl_object clSfloating_point_underflow, clSpackage_error, clSparse_error;
+extern cl_object clSprint_not_readable, clSprogram_error, clSreader_error;
+extern cl_object clSserious_condition, clSsimple_condition, clSsimple_error;
+extern cl_object clSsimple_type_error, clSsimple_warning, clSstorage_condition;
+extern cl_object clSstream_error, clSstyle_warning, clStype_error, clSunbound_slot;
+extern cl_object clSunbound_variable, clSundefined_function, clSwarning;
 
 extern cl_object siSsimple_program_error, siSsimple_control_error;
 
@@ -186,33 +181,33 @@ extern cl_object siLuniversal_error_handler _ARGS((int narg, cl_object c, cl_obj
 #if defined(FRAME_CHAIN) && !defined(RUNTIME)
 extern cl_object siLbacktrace _ARGS((int narg));
 #endif
-extern cl_object Lerror _ARGS((int narg, cl_object eformat, ...));
-extern cl_object Lcerror _ARGS((int narg, cl_object cformat, cl_object eformat, ...));
+extern cl_object clLerror _ARGS((int narg, cl_object eformat, ...));
+extern cl_object clLcerror _ARGS((int narg, cl_object cformat, cl_object eformat, ...));
 
 /* eval.c */
 
-extern cl_object Sapply;
-extern cl_object Sfuncall;
-extern cl_object Vevalhook;
-extern cl_object Vapplyhook;
+extern cl_object clSapply;
+extern cl_object clSfuncall;
+extern cl_object clVevalhook;
+extern cl_object clVapplyhook;
 extern cl_object siLunlink_symbol _ARGS((int narg, cl_object s));
-extern cl_object Lfuncall _ARGS((int narg, cl_object fun, ...));
-extern cl_object Lapply _ARGS((int narg, cl_object fun, cl_object arg, ...));
-extern cl_object Leval _ARGS((int narg, cl_object form));
-extern cl_object Levalhook _ARGS((int n, cl_object form, cl_object evalhookfn, cl_object applyhookfn, ...));
-extern cl_object Lapplyhook _ARGS((int narg, cl_object fun, cl_object args, cl_object evalhookfn, cl_object applyhookfn));
-extern cl_object Lconstantp _ARGS((int narg, cl_object arg));
+extern cl_object clLfuncall _ARGS((int narg, cl_object fun, ...));
+extern cl_object clLapply _ARGS((int narg, cl_object fun, cl_object arg, ...));
+extern cl_object clLeval _ARGS((int narg, cl_object form));
+extern cl_object clLevalhook _ARGS((int n, cl_object form, cl_object evalhookfn, cl_object applyhookfn, ...));
+extern cl_object clLapplyhook _ARGS((int narg, cl_object fun, cl_object args, cl_object evalhookfn, cl_object applyhookfn));
+extern cl_object clLconstantp _ARGS((int narg, cl_object arg));
 
 /* file.c */
 
 extern cl_object Kerror;
-extern cl_object Vstandard_input;
-extern cl_object Vstandard_output;
-extern cl_object Verror_output;
-extern cl_object Vquery_io;
-extern cl_object Vdebug_io;
-extern cl_object Vterminal_io;
-extern cl_object Vtrace_output;
+extern cl_object clVstandard_input;
+extern cl_object clVstandard_output;
+extern cl_object clVerror_output;
+extern cl_object clVquery_io;
+extern cl_object clVdebug_io;
+extern cl_object clVterminal_io;
+extern cl_object clVtrace_output;
 extern cl_object Kabort;
 extern cl_object Kdirection;
 extern cl_object Kinput;
@@ -233,39 +228,39 @@ extern cl_object Kprint;
 extern cl_object Kif_does_not_exist;
 extern cl_object Kset_default_pathname;
 extern cl_object siVignore_eof_on_terminal_io;
-extern cl_object Lmake_synonym_stream _ARGS((int narg, cl_object sym));
-extern cl_object Lmake_broadcast_stream _ARGS((int narg, ...));
-extern cl_object Lmake_concatenated_stream _ARGS((int narg, ...));
-extern cl_object Lmake_two_way_stream _ARGS((int narg, cl_object strm1, cl_object strm2));
-extern cl_object Lmake_echo_stream _ARGS((int narg, cl_object strm1, cl_object strm2));
-extern cl_object Lmake_string_input_stream _ARGS((int narg, cl_object strng, ...));
-extern cl_object Lmake_string_output_stream _ARGS((int narg));
-extern cl_object Lget_output_stream_string _ARGS((int narg, cl_object strm));
+extern cl_object clLmake_synonym_stream _ARGS((int narg, cl_object sym));
+extern cl_object clLmake_broadcast_stream _ARGS((int narg, ...));
+extern cl_object clLmake_concatenated_stream _ARGS((int narg, ...));
+extern cl_object clLmake_two_way_stream _ARGS((int narg, cl_object strm1, cl_object strm2));
+extern cl_object clLmake_echo_stream _ARGS((int narg, cl_object strm1, cl_object strm2));
+extern cl_object clLmake_string_input_stream _ARGS((int narg, cl_object strng, ...));
+extern cl_object clLmake_string_output_stream _ARGS((int narg));
+extern cl_object clLget_output_stream_string _ARGS((int narg, cl_object strm));
 extern cl_object siLoutput_stream_string _ARGS((int narg, cl_object strm));
-extern cl_object Lstreamp _ARGS((int narg, cl_object strm));
-extern cl_object Linput_stream_p _ARGS((int narg, cl_object strm));
-extern cl_object Loutput_stream_p _ARGS((int narg, cl_object strm));
-extern cl_object Lstream_element_type _ARGS((int narg, cl_object strm));
-extern cl_object Lclose _ARGS((int narg, cl_object strm, ...));
-extern cl_object Lopen _ARGS((int narg, cl_object filename, ...));
-extern cl_object Lfile_position _ARGS((int narg, cl_object file_stream, ...));
-extern cl_object Lfile_length _ARGS((int narg, cl_object strm));
+extern cl_object clLstreamp _ARGS((int narg, cl_object strm));
+extern cl_object clLinput_stream_p _ARGS((int narg, cl_object strm));
+extern cl_object clLoutput_stream_p _ARGS((int narg, cl_object strm));
+extern cl_object clLstream_element_type _ARGS((int narg, cl_object strm));
+extern cl_object clLclose _ARGS((int narg, cl_object strm, ...));
+extern cl_object clLopen _ARGS((int narg, cl_object filename, ...));
+extern cl_object clLfile_position _ARGS((int narg, cl_object file_stream, ...));
+extern cl_object clLfile_length _ARGS((int narg, cl_object strm));
 extern cl_object siLget_string_input_stream_index _ARGS((int narg, cl_object strm));
 extern cl_object siLmake_string_output_stream_from_string _ARGS((int narg, cl_object strng));
 extern cl_object siLcopy_stream _ARGS((int narg, cl_object in, cl_object out));
-extern cl_object Lopen_stream_p _ARGS((int narg, cl_object strm));
+extern cl_object clLopen_stream_p _ARGS((int narg, cl_object strm));
 
 /* format.c */
 
 extern cl_object siVindent_formatted_output;
-extern cl_object Lformat _ARGS((int narg, volatile cl_object strm, cl_object string, ...));
+extern cl_object clLformat _ARGS((int narg, volatile cl_object strm, cl_object string, ...));
 
 /* gbc.c */
 
 #if !defined(GBC_BOEHM)
 extern cl_object siVgc_verbose;
 extern cl_object siVgc_message;
-extern cl_object Lgc _ARGS((int narg, cl_object area));
+extern cl_object clLgc _ARGS((int narg, cl_object area));
 extern cl_object siLroom_report _ARGS((int narg));
 extern cl_object siLreset_gc_count _ARGS((int narg));
 extern cl_object siLgc_time _ARGS((int narg));
@@ -292,28 +287,28 @@ extern cl_object siLset_compiled_function_name _ARGS((int narg, cl_object keylis
 
 /* hash.c */
 
-extern cl_object Seq;
-extern cl_object Seql;
-extern cl_object Sequal;
+extern cl_object clSeq;
+extern cl_object clSeql;
+extern cl_object clSequal;
 extern cl_object Ksize;
 extern cl_object Krehash_size;
 extern cl_object Krehash_threshold;
-extern cl_object Lmake_hash_table _ARGS((int narg, ...));
-extern cl_object Lhash_table_p _ARGS((int narg, cl_object ht));
-extern cl_object Lgethash _ARGS((int narg, cl_object key, cl_object ht, ...));
+extern cl_object clLmake_hash_table _ARGS((int narg, ...));
+extern cl_object clLhash_table_p _ARGS((int narg, cl_object ht));
+extern cl_object clLgethash _ARGS((int narg, cl_object key, cl_object ht, ...));
 extern cl_object siLhash_set _ARGS((int narg, cl_object key, cl_object ht, cl_object val));
-extern cl_object Lremhash _ARGS((int narg, cl_object key, cl_object ht));
-extern cl_object Lclrhash _ARGS((int narg, cl_object ht));
-extern cl_object Lhash_table_count _ARGS((int narg, cl_object ht));
-extern cl_object Lsxhash _ARGS((int narg, cl_object key));
-extern cl_object Lmaphash _ARGS((int narg, cl_object fun, cl_object ht));
-extern cl_object Lhash_table_rehash_size _ARGS((int narg, cl_object ht));
-extern cl_object Lhash_table_rehash_threshold _ARGS((int narg, cl_object ht));
+extern cl_object clLremhash _ARGS((int narg, cl_object key, cl_object ht));
+extern cl_object clLclrhash _ARGS((int narg, cl_object ht));
+extern cl_object clLhash_table_count _ARGS((int narg, cl_object ht));
+extern cl_object clLsxhash _ARGS((int narg, cl_object key));
+extern cl_object clLmaphash _ARGS((int narg, cl_object fun, cl_object ht));
+extern cl_object clLhash_table_rehash_size _ARGS((int narg, cl_object ht));
+extern cl_object clLhash_table_rehash_threshold _ARGS((int narg, cl_object ht));
 
 /* instance.c */
 
 #ifdef CLOS
-extern cl_object Sprint_object;
+extern cl_object clSprint_object;
 extern cl_object siLallocate_instance _ARGS((int narg, cl_object class, cl_object size));
 extern cl_object siLchange_instance _ARGS((int narg, cl_object x, cl_object class, cl_object size, cl_object corr));
 extern cl_object siLinstance_class _ARGS((int narg, cl_object x));
@@ -332,10 +327,10 @@ extern cl_object siLinterpreter_stack _ARGS((int narg));
 
 /* lex.c */
 
-extern cl_object Sblock;
-extern cl_object Smacro;
+extern cl_object clSblock;
+extern cl_object clSmacro;
 extern cl_object siSsymbol_macro;
-extern cl_object Stag;
+extern cl_object clStag;
 extern cl_object siLlex_env _ARGS((int narg));
 
 /* list.c */
@@ -344,96 +339,95 @@ extern cl_object Ktest;
 extern cl_object Ktest_not;
 extern cl_object Kkey;
 extern cl_object Kinitial_element;
-extern cl_object Lcar _ARGS((int narg, cl_object x));
-extern cl_object Lcdr _ARGS((int narg, cl_object x));
-extern cl_object Llist _ARGS((int narg, ...));
-extern cl_object LlistA _ARGS((int narg, ...));
-extern cl_object Lappend _ARGS((int narg, ...));
-extern cl_object Lcaar _ARGS((int narg, cl_object x));
-extern cl_object Lcadr _ARGS((int narg, cl_object x));
-extern cl_object Lcdar _ARGS((int narg, cl_object x));
-extern cl_object Lcddr _ARGS((int narg, cl_object x));
-extern cl_object Lcaaar _ARGS((int narg, cl_object x));
-extern cl_object Lcaadr _ARGS((int narg, cl_object x));
-extern cl_object Lcadar _ARGS((int narg, cl_object x));
-extern cl_object Lcaddr _ARGS((int narg, cl_object x));
-extern cl_object Lcdaar _ARGS((int narg, cl_object x));
-extern cl_object Lcdadr _ARGS((int narg, cl_object x));
-extern cl_object Lcddar _ARGS((int narg, cl_object x));
-extern cl_object Lcdddr _ARGS((int narg, cl_object x));
-extern cl_object Lcaaaar _ARGS((int narg, cl_object x));
-extern cl_object Lcaaadr _ARGS((int narg, cl_object x));
-extern cl_object Lcaadar _ARGS((int narg, cl_object x));
-extern cl_object Lcaaddr _ARGS((int narg, cl_object x));
-extern cl_object Lcadaar _ARGS((int narg, cl_object x));
-extern cl_object Lcadadr _ARGS((int narg, cl_object x));
-extern cl_object Lcaddar _ARGS((int narg, cl_object x));
-extern cl_object Lcadddr _ARGS((int narg, cl_object x));
-extern cl_object Lcdaaar _ARGS((int narg, cl_object x));
-extern cl_object Lcdaadr _ARGS((int narg, cl_object x));
-extern cl_object Lcdadar _ARGS((int narg, cl_object x));
-extern cl_object Lcdaddr _ARGS((int narg, cl_object x));
-extern cl_object Lcddaar _ARGS((int narg, cl_object x));
-extern cl_object Lcddadr _ARGS((int narg, cl_object x));
-extern cl_object Lcdddar _ARGS((int narg, cl_object x));
-extern cl_object Lcddddr _ARGS((int narg, cl_object x));
-extern cl_object Lfifth _ARGS((int narg, cl_object x));
-extern cl_object Lsixth _ARGS((int narg, cl_object x));
-extern cl_object Lseventh _ARGS((int narg, cl_object x));
-extern cl_object Leighth _ARGS((int narg, cl_object x));
-extern cl_object Lninth _ARGS((int narg, cl_object x));
-extern cl_object Ltenth _ARGS((int narg, cl_object x));
-extern cl_object Lcons _ARGS((int narg, cl_object car, cl_object cdr));
-extern cl_object Ltree_equal _ARGS((int narg, cl_object x, cl_object y, ...));
-extern cl_object Lendp _ARGS((int narg, cl_object x));
-extern cl_object Llist_length _ARGS((int narg, cl_object x));
-extern cl_object Lnth _ARGS((int narg, cl_object n, cl_object x));
-extern cl_object Lnthcdr _ARGS((int narg, cl_object n, cl_object x));
-extern cl_object Llast _ARGS((int narg, cl_object x, ...));
-extern cl_object Lmake_list _ARGS((int narg, cl_object size, ...));
-extern cl_object Lcopy_list _ARGS((int narg, cl_object x));
-extern cl_object Lcopy_alist _ARGS((int narg, cl_object x));
-extern cl_object Lcopy_tree _ARGS((int narg, cl_object x));
-extern cl_object Lrevappend _ARGS((int narg, cl_object x, cl_object y));
-extern cl_object Lnconc _ARGS((int narg, ...));
-extern cl_object Lreconc _ARGS((int narg, cl_object x, cl_object y));
-extern cl_object Lbutlast _ARGS((int narg, cl_object lis, ...));
-extern cl_object Lnbutlast _ARGS((int narg, cl_object lis, ...));
-extern cl_object Lldiff _ARGS((int narg, cl_object x, cl_object y));
-extern cl_object Lrplaca _ARGS((int narg, cl_object x, cl_object v));
-extern cl_object Lrplacd _ARGS((int narg, cl_object x, cl_object v));
-extern cl_object Lsubst _ARGS((int narg, cl_object new, cl_object old, cl_object tree, ...));
-extern cl_object Lsubst_if _ARGS((int narg, cl_object arg1, cl_object pred, cl_object arg3, cl_object key, cl_object val));
-extern cl_object Lsubst_if_not _ARGS((int narg, cl_object arg1, cl_object pred, cl_object arg3, cl_object key, cl_object val));
-extern cl_object Lnsubst _ARGS((int narg, cl_object new, cl_object old, cl_object tree, ...));
-extern cl_object Lnsubst_if _ARGS((int narg, cl_object arg1, cl_object pred, cl_object arg3, cl_object key, cl_object val));
-extern cl_object Lnsubst_if_not _ARGS((int narg, cl_object arg1, cl_object pred, cl_object arg3, cl_object key, cl_object val));
-extern cl_object Lsublis _ARGS((int narg, cl_object alist, cl_object tree, ...));
-extern cl_object Lnsublis _ARGS((int narg, cl_object alist, cl_object tree, ...));
-extern cl_object Lmember _ARGS((int narg, cl_object item, cl_object list, ...));
+extern cl_object clLcar _ARGS((int narg, cl_object x));
+extern cl_object clLcdr _ARGS((int narg, cl_object x));
+extern cl_object clLlist _ARGS((int narg, ...));
+extern cl_object clLlistX _ARGS((int narg, ...));
+extern cl_object clLappend _ARGS((int narg, ...));
+extern cl_object clLcaar _ARGS((int narg, cl_object x));
+extern cl_object clLcadr _ARGS((int narg, cl_object x));
+extern cl_object clLcdar _ARGS((int narg, cl_object x));
+extern cl_object clLcddr _ARGS((int narg, cl_object x));
+extern cl_object clLcaaar _ARGS((int narg, cl_object x));
+extern cl_object clLcaadr _ARGS((int narg, cl_object x));
+extern cl_object clLcadar _ARGS((int narg, cl_object x));
+extern cl_object clLcaddr _ARGS((int narg, cl_object x));
+extern cl_object clLcdaar _ARGS((int narg, cl_object x));
+extern cl_object clLcdadr _ARGS((int narg, cl_object x));
+extern cl_object clLcddar _ARGS((int narg, cl_object x));
+extern cl_object clLcdddr _ARGS((int narg, cl_object x));
+extern cl_object clLcaaaar _ARGS((int narg, cl_object x));
+extern cl_object clLcaaadr _ARGS((int narg, cl_object x));
+extern cl_object clLcaadar _ARGS((int narg, cl_object x));
+extern cl_object clLcaaddr _ARGS((int narg, cl_object x));
+extern cl_object clLcadaar _ARGS((int narg, cl_object x));
+extern cl_object clLcadadr _ARGS((int narg, cl_object x));
+extern cl_object clLcaddar _ARGS((int narg, cl_object x));
+extern cl_object clLcadddr _ARGS((int narg, cl_object x));
+extern cl_object clLcdaaar _ARGS((int narg, cl_object x));
+extern cl_object clLcdaadr _ARGS((int narg, cl_object x));
+extern cl_object clLcdadar _ARGS((int narg, cl_object x));
+extern cl_object clLcdaddr _ARGS((int narg, cl_object x));
+extern cl_object clLcddaar _ARGS((int narg, cl_object x));
+extern cl_object clLcddadr _ARGS((int narg, cl_object x));
+extern cl_object clLcdddar _ARGS((int narg, cl_object x));
+extern cl_object clLcddddr _ARGS((int narg, cl_object x));
+extern cl_object clLfifth _ARGS((int narg, cl_object x));
+extern cl_object clLsixth _ARGS((int narg, cl_object x));
+extern cl_object clLseventh _ARGS((int narg, cl_object x));
+extern cl_object clLeighth _ARGS((int narg, cl_object x));
+extern cl_object clLninth _ARGS((int narg, cl_object x));
+extern cl_object clLtenth _ARGS((int narg, cl_object x));
+extern cl_object clLcons _ARGS((int narg, cl_object car, cl_object cdr));
+extern cl_object clLtree_equal _ARGS((int narg, cl_object x, cl_object y, ...));
+extern cl_object clLendp _ARGS((int narg, cl_object x));
+extern cl_object clLlist_length _ARGS((int narg, cl_object x));
+extern cl_object clLnth _ARGS((int narg, cl_object n, cl_object x));
+extern cl_object clLnthcdr _ARGS((int narg, cl_object n, cl_object x));
+extern cl_object clLlast _ARGS((int narg, cl_object x, ...));
+extern cl_object clLmake_list _ARGS((int narg, cl_object size, ...));
+extern cl_object clLcopy_list _ARGS((int narg, cl_object x));
+extern cl_object clLcopy_alist _ARGS((int narg, cl_object x));
+extern cl_object clLcopy_tree _ARGS((int narg, cl_object x));
+extern cl_object clLrevappend _ARGS((int narg, cl_object x, cl_object y));
+extern cl_object clLnconc _ARGS((int narg, ...));
+extern cl_object clLreconc _ARGS((int narg, cl_object x, cl_object y));
+extern cl_object clLbutlast _ARGS((int narg, cl_object lis, ...));
+extern cl_object clLnbutlast _ARGS((int narg, cl_object lis, ...));
+extern cl_object clLldiff _ARGS((int narg, cl_object x, cl_object y));
+extern cl_object clLrplaca _ARGS((int narg, cl_object x, cl_object v));
+extern cl_object clLrplacd _ARGS((int narg, cl_object x, cl_object v));
+extern cl_object clLsubst _ARGS((int narg, cl_object new, cl_object old, cl_object tree, ...));
+extern cl_object clLsubst_if _ARGS((int narg, cl_object arg1, cl_object pred, cl_object arg3, cl_object key, cl_object val));
+extern cl_object clLsubst_if_not _ARGS((int narg, cl_object arg1, cl_object pred, cl_object arg3, cl_object key, cl_object val));
+extern cl_object clLnsubst _ARGS((int narg, cl_object new, cl_object old, cl_object tree, ...));
+extern cl_object clLnsubst_if _ARGS((int narg, cl_object arg1, cl_object pred, cl_object arg3, cl_object key, cl_object val));
+extern cl_object clLnsubst_if_not _ARGS((int narg, cl_object arg1, cl_object pred, cl_object arg3, cl_object key, cl_object val));
+extern cl_object clLsublis _ARGS((int narg, cl_object alist, cl_object tree, ...));
+extern cl_object clLnsublis _ARGS((int narg, cl_object alist, cl_object tree, ...));
+extern cl_object clLmember _ARGS((int narg, cl_object item, cl_object list, ...));
 extern cl_object siLmemq _ARGS((int narg, cl_object x, cl_object l));
-extern cl_object Lmember_if _ARGS((int narg, cl_object pred, cl_object arg, cl_object key, cl_object val));
-extern cl_object Lmember_if_not _ARGS((int narg, cl_object pred, cl_object arg, cl_object key, cl_object val));
-extern cl_object Lmember1 _ARGS((int narg, cl_object item, cl_object list, ...));
-extern cl_object Ltailp _ARGS((int narg, cl_object y, cl_object x));
-extern cl_object Ladjoin _ARGS((int narg, cl_object item, cl_object list, cl_object k1, cl_object v1, cl_object k2, cl_object v2, cl_object k3, cl_object v3));
-extern cl_object Lacons _ARGS((int narg, cl_object x, cl_object y, cl_object z));
-extern cl_object Lpairlis _ARGS((int narg, cl_object keys, cl_object data, ...));
-extern cl_object Lassoc_or_rassoc(int narg, cl_object (*car_or_cdr)(), cl_object item, cl_object a_list, ...);
-extern cl_object Lrassoc _ARGS((int narg, cl_object item, cl_object alist, cl_object k1, cl_object v1, cl_object k2, cl_object v2));
-extern cl_object Lassoc _ARGS((int narg, cl_object item, cl_object alist, cl_object k1, cl_object v1, cl_object k2, cl_object v2));
-extern cl_object Lassoc_if _ARGS((int narg, cl_object pred, cl_object arg, cl_object key, cl_object val));
-extern cl_object Lassoc_if_not _ARGS((int narg, cl_object pred, cl_object arg, cl_object key, cl_object val));
-extern cl_object Lrassoc_if _ARGS((int narg, cl_object pred, cl_object arg, cl_object key, cl_object val));
-extern cl_object Lrassoc_if_not _ARGS((int narg, cl_object pred, cl_object arg, cl_object key, cl_object val));
+extern cl_object clLmember_if _ARGS((int narg, cl_object pred, cl_object arg, cl_object key, cl_object val));
+extern cl_object clLmember_if_not _ARGS((int narg, cl_object pred, cl_object arg, cl_object key, cl_object val));
+extern cl_object clLmember1 _ARGS((int narg, cl_object item, cl_object list, ...));
+extern cl_object clLtailp _ARGS((int narg, cl_object y, cl_object x));
+extern cl_object clLadjoin _ARGS((int narg, cl_object item, cl_object list, cl_object k1, cl_object v1, cl_object k2, cl_object v2, cl_object k3, cl_object v3));
+extern cl_object clLacons _ARGS((int narg, cl_object x, cl_object y, cl_object z));
+extern cl_object clLpairlis _ARGS((int narg, cl_object keys, cl_object data, ...));
+extern cl_object clLrassoc _ARGS((int narg, cl_object item, cl_object alist, ...));
+extern cl_object clLassoc _ARGS((int narg, cl_object item, cl_object alist, ...));
+extern cl_object clLassoc_if _ARGS((int narg, cl_object pred, cl_object arg, cl_object key, cl_object val));
+extern cl_object clLassoc_if_not _ARGS((int narg, cl_object pred, cl_object arg, cl_object key, cl_object val));
+extern cl_object clLrassoc_if _ARGS((int narg, cl_object pred, cl_object arg, cl_object key, cl_object val));
+extern cl_object clLrassoc_if_not _ARGS((int narg, cl_object pred, cl_object arg, cl_object key, cl_object val));
 
 /* load.c */
 
 extern cl_object Kverbose;
-extern cl_object Vload_verbose, Vload_print;
+extern cl_object clVload_verbose, clVload_print;
 extern cl_object siVsymbol_table;
 extern cl_object siVload_hooks;
-extern cl_object Lload _ARGS((int narg, cl_object pathname, ...));
+extern cl_object clLload _ARGS((int narg, cl_object pathname, ...));
 extern cl_object siLload_source _ARGS((int narg, cl_object file, cl_object verbose,
 				       cl_object print));
 extern cl_object siLload_binary _ARGS((int narg, cl_object file, cl_object verbose,
@@ -443,196 +437,196 @@ extern cl_object siLfaslink _ARGS((int narg, cl_object file, cl_object lib));
 /* lwp.c */
 
 #ifdef THREADS
-extern cl_object Srunning;
-extern cl_object Ssuspended;
-extern cl_object Swaiting;
-extern cl_object Sstopped;
-extern cl_object Sdead;
+extern cl_object clSrunning;
+extern cl_object clSsuspended;
+extern cl_object clSwaiting;
+extern cl_object clSstopped;
+extern cl_object clSdead;
 extern cl_object siSthread_top_level;
 extern cl_object siLthread_break_in _ARGS((int narg));
 extern cl_object siLthread_break_quit _ARGS((int narg));
 extern cl_object siLthread_break_resume _ARGS((int narg));
-extern cl_object Lthread_list _ARGS((int narg));
-extern cl_object Lmake_thread _ARGS((int narg, cl_object fun));
-extern cl_object Ldeactivate _ARGS((int narg, cl_object thread));
-extern cl_object Lreactivate _ARGS((int narg, cl_object thread));
-extern cl_object Lkill_thread _ARGS((int narg, cl_object thread));
-extern cl_object Lcurrent_thread _ARGS((int narg));
-extern cl_object Lthread_status _ARGS((int narg, cl_object thread));
-extern cl_object Lmake_continuation _ARGS((int narg, cl_object thread));
-extern cl_object Lthread_of _ARGS((int narg, cl_object cont));
-extern cl_object Lcontinuation_of _ARGS((int narg, cl_object thread));
-extern cl_object Lresume _ARGS((int narg, cl_object cont, ...));
-extern cl_object Ldisable_scheduler _ARGS((int narg));
-extern cl_object Lenable_scheduler _ARGS((int narg));
-extern cl_object Lsuspend _ARGS((int narg));
-extern cl_object Ldelay _ARGS((int narg, cl_object interval));
-extern cl_object Lthread_wait _ARGS((int narg, cl_object fun, ...));
-extern cl_object Lthread_wait_with_timeout _ARGS((int narg, cl_object timeout, cl_object fun, ...));
+extern cl_object clLthread_list _ARGS((int narg));
+extern cl_object clLmake_thread _ARGS((int narg, cl_object fun));
+extern cl_object clLdeactivate _ARGS((int narg, cl_object thread));
+extern cl_object clLreactivate _ARGS((int narg, cl_object thread));
+extern cl_object clLkill_thread _ARGS((int narg, cl_object thread));
+extern cl_object clLcurrent_thread _ARGS((int narg));
+extern cl_object clLthread_status _ARGS((int narg, cl_object thread));
+extern cl_object clLmake_continuation _ARGS((int narg, cl_object thread));
+extern cl_object clLthread_of _ARGS((int narg, cl_object cont));
+extern cl_object clLcontinuation_of _ARGS((int narg, cl_object thread));
+extern cl_object clLresume _ARGS((int narg, cl_object cont, ...));
+extern cl_object clLdisable_scheduler _ARGS((int narg));
+extern cl_object clLenable_scheduler _ARGS((int narg));
+extern cl_object clLsuspend _ARGS((int narg));
+extern cl_object clLdelay _ARGS((int narg, cl_object interval));
+extern cl_object clLthread_wait _ARGS((int narg, cl_object fun, ...));
+extern cl_object clLthread_wait_with_timeout _ARGS((int narg, cl_object timeout, cl_object fun, ...));
 #endif
 
 /* macros.c */
 
-extern cl_object Vmacroexpand_hook;
+extern cl_object clVmacroexpand_hook;
 extern cl_object siSexpand_defmacro;
 extern cl_object siVinhibit_macro_special;
-extern cl_object Lmacroexpand _ARGS((int narg, cl_object form, ...));
-extern cl_object Lmacroexpand_1 _ARGS((int narg, cl_object form, ...));
+extern cl_object clLmacroexpand _ARGS((int narg, cl_object form, ...));
+extern cl_object clLmacroexpand_1 _ARGS((int narg, cl_object form, ...));
 
 /* main.c */
 
-extern cl_object Vfeatures;
+extern cl_object clVfeatures;
 extern cl_object siVsystem_directory;
-extern cl_object Lquit _ARGS((int narg, ...));
+extern cl_object clLquit _ARGS((int narg, ...));
 extern cl_object siLargc _ARGS((int narg));
 extern cl_object siLargv _ARGS((int narg, cl_object index));
 extern cl_object siLgetenv _ARGS((int narg, cl_object var));
 extern cl_object siLaddress _ARGS((int narg, cl_object x));
 extern cl_object siLnani _ARGS((int narg, cl_object x));
-extern cl_object Lidentity _ARGS((int narg, cl_object x));
-extern cl_object Lmachine_instance _ARGS((int narg));
-extern cl_object Lmachine_version _ARGS((int narg));
-extern cl_object Lsoftware_type _ARGS((int narg));
-extern cl_object Lsoftware_version _ARGS((int narg));
+extern cl_object clLidentity _ARGS((int narg, cl_object x));
+extern cl_object clLmachine_instance _ARGS((int narg));
+extern cl_object clLmachine_version _ARGS((int narg));
+extern cl_object clLsoftware_type _ARGS((int narg));
+extern cl_object clLsoftware_version _ARGS((int narg));
 
 /* mapfun.c */
 
-extern cl_object Lmapcar _ARGS((int narg, cl_object fun, cl_object onelist, ...));
-extern cl_object Lmaplist _ARGS((int narg, cl_object fun, cl_object onelist, ...));
-extern cl_object Lmapc _ARGS((int narg, cl_object fun, cl_object onelist, ...));
-extern cl_object Lmapl _ARGS((int narg, cl_object fun, cl_object onelist, ...));
-extern cl_object Lmapcan _ARGS((int narg, cl_object fun, cl_object onelist, ...));
-extern cl_object Lmapcon _ARGS((int narg, cl_object fun, cl_object onelist, ...));
+extern cl_object clLmapcar _ARGS((int narg, cl_object fun, cl_object onelist, ...));
+extern cl_object clLmaplist _ARGS((int narg, cl_object fun, cl_object onelist, ...));
+extern cl_object clLmapc _ARGS((int narg, cl_object fun, cl_object onelist, ...));
+extern cl_object clLmapl _ARGS((int narg, cl_object fun, cl_object onelist, ...));
+extern cl_object clLmapcan _ARGS((int narg, cl_object fun, cl_object onelist, ...));
+extern cl_object clLmapcon _ARGS((int narg, cl_object fun, cl_object onelist, ...));
 
 /* multival.c */
 
-extern cl_object Lvalues _ARGS((int narg, ...));
-extern cl_object Lvalues_list _ARGS((int narg, cl_object list));
+extern cl_object clLvalues _ARGS((int narg, ...));
+extern cl_object clLvalues_list _ARGS((int narg, cl_object list));
 
 /* num_arith.c */
 
-extern cl_object Ltimes _ARGS((int narg, ...));
-extern cl_object Lplus _ARGS((int narg, ...));
-extern cl_object Lminus _ARGS((int narg, cl_object num, ...));
-extern cl_object Lconjugate _ARGS((int narg, cl_object c));
-extern cl_object Ldivide _ARGS((int narg, cl_object num, ...));
-extern cl_object Lgcd _ARGS((int narg, ...));
-extern cl_object Lone_plus _ARGS((int narg, cl_object x));
-extern cl_object Lone_minus _ARGS((int narg, cl_object x));
-extern cl_object Llcm _ARGS((int narg, cl_object lcm, ...));
+extern cl_object clLtimes _ARGS((int narg, ...));
+extern cl_object clLplus _ARGS((int narg, ...));
+extern cl_object clLminus _ARGS((int narg, cl_object num, ...));
+extern cl_object clLconjugate _ARGS((int narg, cl_object c));
+extern cl_object clLdivide _ARGS((int narg, cl_object num, ...));
+extern cl_object clLgcd _ARGS((int narg, ...));
+extern cl_object clLone_plus _ARGS((int narg, cl_object x));
+extern cl_object clLone_minus _ARGS((int narg, cl_object x));
+extern cl_object clLlcm _ARGS((int narg, cl_object lcm, ...));
 
 /* num_co.c */
 
-extern cl_object Lfloat _ARGS((int narg, cl_object x, ...));
-extern cl_object Lnumerator _ARGS((int narg, cl_object x));
-extern cl_object Ldenominator _ARGS((int narg, cl_object x));
-extern cl_object Lfloor _ARGS((int narg, cl_object x, ...));
-extern cl_object Lceiling _ARGS((int narg, cl_object x, ...));
-extern cl_object Ltruncate _ARGS((int narg, cl_object x, ...));
-extern cl_object Lround _ARGS((int narg, cl_object x, ...));
-extern cl_object Lmod _ARGS((int narg, cl_object x, cl_object y));
-extern cl_object Lrem _ARGS((int narg, cl_object x, cl_object y));
-extern cl_object Ldecode_float _ARGS((int narg, cl_object x));
-extern cl_object Lscale_float _ARGS((int narg, cl_object x, cl_object y));
-extern cl_object Lfloat_radix _ARGS((int narg, cl_object x));
-extern cl_object Lfloat_sign _ARGS((int narg, cl_object x, ...));
-extern cl_object Lfloat_digits _ARGS((int narg, cl_object x));
-extern cl_object Lfloat_precision _ARGS((int narg, cl_object x));
-extern cl_object Linteger_decode_float _ARGS((int narg, cl_object x));
-extern cl_object Lcomplex _ARGS((int narg, cl_object r, ...));
-extern cl_object Lrealpart _ARGS((int narg, cl_object x));
-extern cl_object Limagpart _ARGS((int narg, cl_object x));
+extern cl_object clLfloat _ARGS((int narg, cl_object x, ...));
+extern cl_object clLnumerator _ARGS((int narg, cl_object x));
+extern cl_object clLdenominator _ARGS((int narg, cl_object x));
+extern cl_object clLfloor _ARGS((int narg, cl_object x, ...));
+extern cl_object clLceiling _ARGS((int narg, cl_object x, ...));
+extern cl_object clLtruncate _ARGS((int narg, cl_object x, ...));
+extern cl_object clLround _ARGS((int narg, cl_object x, ...));
+extern cl_object clLmod _ARGS((int narg, cl_object x, cl_object y));
+extern cl_object clLrem _ARGS((int narg, cl_object x, cl_object y));
+extern cl_object clLdecode_float _ARGS((int narg, cl_object x));
+extern cl_object clLscale_float _ARGS((int narg, cl_object x, cl_object y));
+extern cl_object clLfloat_radix _ARGS((int narg, cl_object x));
+extern cl_object clLfloat_sign _ARGS((int narg, cl_object x, ...));
+extern cl_object clLfloat_digits _ARGS((int narg, cl_object x));
+extern cl_object clLfloat_precision _ARGS((int narg, cl_object x));
+extern cl_object clLinteger_decode_float _ARGS((int narg, cl_object x));
+extern cl_object clLcomplex _ARGS((int narg, cl_object r, ...));
+extern cl_object clLrealpart _ARGS((int narg, cl_object x));
+extern cl_object clLimagpart _ARGS((int narg, cl_object x));
 
 /* num_comp.c */
 
-extern cl_object Lall_the_same _ARGS((int narg, cl_object num, ...));
-extern cl_object Lall_different _ARGS((int narg, ...));
-extern cl_object Lmonotonically_nondecreasing _ARGS((int narg, ...));
-extern cl_object Lmonotonically_nonincreasing _ARGS((int narg, ...));
-extern cl_object Lmonotonically_increasing _ARGS((int narg, ...));
-extern cl_object Lmonotonically_decreasing _ARGS((int narg, ...));
-extern cl_object Lmax _ARGS((int narg, cl_object max, ...));
-extern cl_object Lmin _ARGS((int narg, cl_object min, ...));
+extern cl_object clLall_the_same _ARGS((int narg, cl_object num, ...));
+extern cl_object clLall_different _ARGS((int narg, ...));
+extern cl_object clLmonotonically_nondecreasing _ARGS((int narg, ...));
+extern cl_object clLmonotonically_nonincreasing _ARGS((int narg, ...));
+extern cl_object clLmonotonically_increasing _ARGS((int narg, ...));
+extern cl_object clLmonotonically_decreasing _ARGS((int narg, ...));
+extern cl_object clLmax _ARGS((int narg, cl_object max, ...));
+extern cl_object clLmin _ARGS((int narg, cl_object min, ...));
 
 /* num_log.c */
 
-extern cl_object Llogior _ARGS((int narg, ...));
-extern cl_object Llogxor _ARGS((int narg, ...));
-extern cl_object Llogand _ARGS((int narg, ...));
-extern cl_object Llogeqv _ARGS((int narg, ...));
-extern cl_object Lboole _ARGS((int narg, cl_object o, ...));
-extern cl_object Llogbitp _ARGS((int narg, cl_object p, cl_object x));
-extern cl_object Lash _ARGS((int narg, cl_object x, cl_object y));
-extern cl_object Llogcount _ARGS((int narg, cl_object x));
-extern cl_object Linteger_length _ARGS((int narg, cl_object x));
+extern cl_object clLlogior _ARGS((int narg, ...));
+extern cl_object clLlogxor _ARGS((int narg, ...));
+extern cl_object clLlogand _ARGS((int narg, ...));
+extern cl_object clLlogeqv _ARGS((int narg, ...));
+extern cl_object clLboole _ARGS((int narg, cl_object o, ...));
+extern cl_object clLlogbitp _ARGS((int narg, cl_object p, cl_object x));
+extern cl_object clLash _ARGS((int narg, cl_object x, cl_object y));
+extern cl_object clLlogcount _ARGS((int narg, cl_object x));
+extern cl_object clLinteger_length _ARGS((int narg, cl_object x));
 extern cl_object siLbit_array_op _ARGS((int narg, cl_object o, cl_object x, cl_object y, cl_object r));
 
 /* num_pred.c */
 
-extern cl_object Lzerop _ARGS((int narg, cl_object x));
-extern cl_object Lplusp _ARGS((int narg, cl_object x));
-extern cl_object Lminusp _ARGS((int narg, cl_object x));
-extern cl_object Loddp _ARGS((int narg, cl_object x));
-extern cl_object Levenp _ARGS((int narg, cl_object x));
+extern cl_object clLzerop _ARGS((int narg, cl_object x));
+extern cl_object clLplusp _ARGS((int narg, cl_object x));
+extern cl_object clLminusp _ARGS((int narg, cl_object x));
+extern cl_object clLoddp _ARGS((int narg, cl_object x));
+extern cl_object clLevenp _ARGS((int narg, cl_object x));
 
 /* num_rand.c */
 
-extern cl_object Vrandom_state;
-extern cl_object Lrandom _ARGS((int narg, cl_object x, ...));
-extern cl_object Lmake_random_state _ARGS((int narg, ...));
-extern cl_object Lrandom_state_p _ARGS((int narg, cl_object x));
+extern cl_object clVrandom_state;
+extern cl_object clLrandom _ARGS((int narg, cl_object x, ...));
+extern cl_object clLmake_random_state _ARGS((int narg, ...));
+extern cl_object clLrandom_state_p _ARGS((int narg, cl_object x));
 
 /* num_sfun.c */
 
-extern cl_object Lexp _ARGS((int narg, cl_object x));
-extern cl_object Lexpt _ARGS((int narg, cl_object x, cl_object y));
-extern cl_object Llog _ARGS((int narg, cl_object x, ...));
-extern cl_object Lsqrt _ARGS((int narg, cl_object x));
-extern cl_object Lsin _ARGS((int narg, cl_object x));
-extern cl_object Lcos _ARGS((int narg, cl_object x));
-extern cl_object Ltan _ARGS((int narg, cl_object x));
-extern cl_object Latan _ARGS((int narg, cl_object x, ...));
-extern cl_object Lsinh _ARGS((int narg, cl_object x));
-extern cl_object Lcosh _ARGS((int narg, cl_object x));
-extern cl_object Ltanh _ARGS((int narg, cl_object x));
+extern cl_object clLexp _ARGS((int narg, cl_object x));
+extern cl_object clLexpt _ARGS((int narg, cl_object x, cl_object y));
+extern cl_object clLlog _ARGS((int narg, cl_object x, ...));
+extern cl_object clLsqrt _ARGS((int narg, cl_object x));
+extern cl_object clLsin _ARGS((int narg, cl_object x));
+extern cl_object clLcos _ARGS((int narg, cl_object x));
+extern cl_object clLtan _ARGS((int narg, cl_object x));
+extern cl_object clLatan _ARGS((int narg, cl_object x, ...));
+extern cl_object clLsinh _ARGS((int narg, cl_object x));
+extern cl_object clLcosh _ARGS((int narg, cl_object x));
+extern cl_object clLtanh _ARGS((int narg, cl_object x));
 
 /* package.c */
 
-extern cl_object Vpackage;
+extern cl_object clVpackage;
 extern cl_object Kinternal;
 extern cl_object Kexternal;
 extern cl_object Kinherited;
 extern cl_object Knicknames;
 extern cl_object Kuse;
-extern cl_object Lmake_package _ARGS((int narg, cl_object pack_name, ...));
+extern cl_object clLmake_package _ARGS((int narg, cl_object pack_name, ...));
 extern cl_object siLselect_package _ARGS((int narg, cl_object pack_name));
-extern cl_object Lfind_package _ARGS((int narg, cl_object p));
-extern cl_object Lpackage_name _ARGS((int narg, cl_object p));
-extern cl_object Lpackage_nicknames _ARGS((int narg, cl_object p));
-extern cl_object Lrename_package _ARGS((int narg, cl_object pack, cl_object new_name, ...));
-extern cl_object Lpackage_use_list _ARGS((int narg, cl_object p));
-extern cl_object Lpackage_used_by_list _ARGS((int narg, cl_object p));
-extern cl_object Lpackage_shadowing_symbols _ARGS((int narg, cl_object p));
-extern cl_object Llist_all_packages _ARGS((int narg));
-extern cl_object Lintern _ARGS((int narg, cl_object strng, ...));
-extern cl_object Lfind_symbol _ARGS((int narg, cl_object strng, ...));
-extern cl_object Lunintern _ARGS((int narg, cl_object symbl, ...));
-extern cl_object Lexport _ARGS((int narg, cl_object symbols, ...));
-extern cl_object Lunexport _ARGS((int narg, cl_object symbols, ...));
-extern cl_object Limport _ARGS((int narg, cl_object symbols, ...));
-extern cl_object Lshadowing_import _ARGS((int narg, cl_object symbols, ...));
-extern cl_object Lshadow _ARGS((int narg, cl_object symbols, ...));
-extern cl_object Luse_package _ARGS((int narg, cl_object pack, ...));
-extern cl_object Lunuse_package _ARGS((int narg, cl_object pack, ...));
+extern cl_object clLfind_package _ARGS((int narg, cl_object p));
+extern cl_object clLpackage_name _ARGS((int narg, cl_object p));
+extern cl_object clLpackage_nicknames _ARGS((int narg, cl_object p));
+extern cl_object clLrename_package _ARGS((int narg, cl_object pack, cl_object new_name, ...));
+extern cl_object clLpackage_use_list _ARGS((int narg, cl_object p));
+extern cl_object clLpackage_used_by_list _ARGS((int narg, cl_object p));
+extern cl_object clLpackage_shadowing_symbols _ARGS((int narg, cl_object p));
+extern cl_object clLlist_all_packages _ARGS((int narg));
+extern cl_object clLintern _ARGS((int narg, cl_object strng, ...));
+extern cl_object clLfind_symbol _ARGS((int narg, cl_object strng, ...));
+extern cl_object clLunintern _ARGS((int narg, cl_object symbl, ...));
+extern cl_object clLexport _ARGS((int narg, cl_object symbols, ...));
+extern cl_object clLunexport _ARGS((int narg, cl_object symbols, ...));
+extern cl_object clLimport _ARGS((int narg, cl_object symbols, ...));
+extern cl_object clLshadowing_import _ARGS((int narg, cl_object symbols, ...));
+extern cl_object clLshadow _ARGS((int narg, cl_object symbols, ...));
+extern cl_object clLuse_package _ARGS((int narg, cl_object pack, ...));
+extern cl_object clLunuse_package _ARGS((int narg, cl_object pack, ...));
 extern cl_object siLpackage_internal _ARGS((int narg, cl_object p, cl_object index));
 extern cl_object siLpackage_external _ARGS((int narg, cl_object p, cl_object index));
 extern cl_object siLpackage_size _ARGS((int narg, cl_object p));
 extern cl_object siLpackage_lock _ARGS((int narg, cl_object p, cl_object t));
-extern cl_object Ldelete_package _ARGS((int narg, cl_object p));
+extern cl_object clLdelete_package _ARGS((int narg, cl_object p));
 
 /* pathname.c */
 
-extern cl_object Vdefault_pathname_defaults;
+extern cl_object clVdefault_pathname_defaults;
 extern cl_object Kwild;
 extern cl_object Kwild_inferiors;
 extern cl_object Knewest;
@@ -647,58 +641,58 @@ extern cl_object Kabsolute;
 extern cl_object Krelative;
 extern cl_object Kup;
 extern cl_object Kper;
-extern cl_object Lpathname _ARGS((int narg, cl_object name));
-extern cl_object Lparse_namestring _ARGS((int narg, cl_object thing, ...));
-extern cl_object Lparse_logical_namestring _ARGS((int narg, cl_object thing, ...));
-extern cl_object Lmerge_pathnames _ARGS((int narg, cl_object path, ...));
-extern cl_object Lmake_pathname _ARGS((int narg, ...));
-extern cl_object Lpathnamep _ARGS((int narg, cl_object pname));
-extern cl_object Lpathname_host _ARGS((int narg, cl_object pname));
-extern cl_object Lpathname_device _ARGS((int narg, cl_object pname));
-extern cl_object Lpathname_directory _ARGS((int narg, cl_object pname));
-extern cl_object Lpathname_name _ARGS((int narg, cl_object pname));
-extern cl_object Lpathname_type _ARGS((int narg, cl_object pname));
-extern cl_object Lpathname_version _ARGS((int narg, cl_object pname));
-extern cl_object Lnamestring _ARGS((int narg, cl_object pname));
-extern cl_object Lfile_namestring _ARGS((int narg, cl_object pname));
-extern cl_object Ldirectory_namestring _ARGS((int narg, cl_object pname));
-extern cl_object Lhost_namestring _ARGS((int narg, cl_object pname));
-extern cl_object Lenough_namestring _ARGS((int narg, cl_object path, ...));
+extern cl_object clLpathname _ARGS((int narg, cl_object name));
+extern cl_object clLparse_namestring _ARGS((int narg, cl_object thing, ...));
+extern cl_object clLparse_logical_namestring _ARGS((int narg, cl_object thing, ...));
+extern cl_object clLmerge_pathnames _ARGS((int narg, cl_object path, ...));
+extern cl_object clLmake_pathname _ARGS((int narg, ...));
+extern cl_object clLpathnamep _ARGS((int narg, cl_object pname));
+extern cl_object clLpathname_host _ARGS((int narg, cl_object pname));
+extern cl_object clLpathname_device _ARGS((int narg, cl_object pname));
+extern cl_object clLpathname_directory _ARGS((int narg, cl_object pname));
+extern cl_object clLpathname_name _ARGS((int narg, cl_object pname));
+extern cl_object clLpathname_type _ARGS((int narg, cl_object pname));
+extern cl_object clLpathname_version _ARGS((int narg, cl_object pname));
+extern cl_object clLnamestring _ARGS((int narg, cl_object pname));
+extern cl_object clLfile_namestring _ARGS((int narg, cl_object pname));
+extern cl_object clLdirectory_namestring _ARGS((int narg, cl_object pname));
+extern cl_object clLhost_namestring _ARGS((int narg, cl_object pname));
+extern cl_object clLenough_namestring _ARGS((int narg, cl_object path, ...));
 extern cl_object siLlogical_pathname_p _ARGS((int narg, cl_object pname));
-extern cl_object Lpathname_match_p _ARGS((int narg, cl_object path, cl_object mask));
+extern cl_object clLpathname_match_p _ARGS((int narg, cl_object path, cl_object mask));
 extern cl_object siLpathname_translations _ARGS((int narg, cl_object host, ...));
-extern cl_object Ltranslate_pathname _ARGS((int narg, cl_object source, cl_object from, cl_object to));
-extern cl_object Ltranslate_logical_pathname _ARGS((int narg, cl_object source));
+extern cl_object clLtranslate_pathname _ARGS((int narg, cl_object source, cl_object from, cl_object to));
+extern cl_object clLtranslate_logical_pathname _ARGS((int narg, cl_object source));
 
 /* predicate.c */
 
-extern cl_object Lnull _ARGS((int narg, cl_object x));
-extern cl_object Lsymbolp _ARGS((int narg, cl_object x));
-extern cl_object Latom _ARGS((int narg, cl_object x));
-extern cl_object Lconsp _ARGS((int narg, cl_object x));
-extern cl_object Llistp _ARGS((int narg, cl_object x));
-extern cl_object Lnumberp _ARGS((int narg, cl_object x));
-extern cl_object Lintegerp _ARGS((int narg, cl_object x));
-extern cl_object Lrationalp _ARGS((int narg, cl_object x));
-extern cl_object Lfloatp _ARGS((int narg, cl_object x));
-extern cl_object Lrealp _ARGS((int narg, cl_object x));
-extern cl_object Lcomplexp _ARGS((int narg, cl_object x));
-extern cl_object Lcharacterp _ARGS((int narg, cl_object x));
-extern cl_object Lstringp _ARGS((int narg, cl_object x));
-extern cl_object Lbit_vector_p _ARGS((int narg, cl_object x));
-extern cl_object Lvectorp _ARGS((int narg, cl_object x));
-extern cl_object Lsimple_string_p _ARGS((int narg, cl_object x));
-extern cl_object Lsimple_bit_vector_p _ARGS((int narg, cl_object x));
-extern cl_object Lsimple_vector_p _ARGS((int narg, cl_object x));
-extern cl_object Larrayp _ARGS((int narg, cl_object x));
-extern cl_object Lpackagep _ARGS((int narg, cl_object x));
-extern cl_object Lfunctionp _ARGS((int narg, cl_object x));
-extern cl_object Lcompiled_function_p _ARGS((int narg, cl_object x));
-extern cl_object Lcommonp _ARGS((int narg, cl_object x));
-extern cl_object Leq _ARGS((int narg, cl_object x, cl_object y));
-extern cl_object Leql _ARGS((int narg, cl_object x, cl_object y));
-extern cl_object Lequal _ARGS((int narg, cl_object x, cl_object y));
-extern cl_object Lequalp _ARGS((int narg, cl_object x, cl_object y));
+extern cl_object clLnull _ARGS((int narg, cl_object x));
+extern cl_object clLsymbolp _ARGS((int narg, cl_object x));
+extern cl_object clLatom _ARGS((int narg, cl_object x));
+extern cl_object clLconsp _ARGS((int narg, cl_object x));
+extern cl_object clLlistp _ARGS((int narg, cl_object x));
+extern cl_object clLnumberp _ARGS((int narg, cl_object x));
+extern cl_object clLintegerp _ARGS((int narg, cl_object x));
+extern cl_object clLrationalp _ARGS((int narg, cl_object x));
+extern cl_object clLfloatp _ARGS((int narg, cl_object x));
+extern cl_object clLrealp _ARGS((int narg, cl_object x));
+extern cl_object clLcomplexp _ARGS((int narg, cl_object x));
+extern cl_object clLcharacterp _ARGS((int narg, cl_object x));
+extern cl_object clLstringp _ARGS((int narg, cl_object x));
+extern cl_object clLbit_vector_p _ARGS((int narg, cl_object x));
+extern cl_object clLvectorp _ARGS((int narg, cl_object x));
+extern cl_object clLsimple_string_p _ARGS((int narg, cl_object x));
+extern cl_object clLsimple_bit_vector_p _ARGS((int narg, cl_object x));
+extern cl_object clLsimple_vector_p _ARGS((int narg, cl_object x));
+extern cl_object clLarrayp _ARGS((int narg, cl_object x));
+extern cl_object clLpackagep _ARGS((int narg, cl_object x));
+extern cl_object clLfunctionp _ARGS((int narg, cl_object x));
+extern cl_object clLcompiled_function_p _ARGS((int narg, cl_object x));
+extern cl_object clLcommonp _ARGS((int narg, cl_object x));
+extern cl_object clLeq _ARGS((int narg, cl_object x, cl_object y));
+extern cl_object clLeql _ARGS((int narg, cl_object x, cl_object y));
+extern cl_object clLequal _ARGS((int narg, cl_object x, cl_object y));
+extern cl_object clLequalp _ARGS((int narg, cl_object x, cl_object y));
 extern cl_object siLcontains_sharp_comma _ARGS((int narg, cl_object x));
 extern cl_object siLfixnump _ARGS((int narg, cl_object x));
 
@@ -718,39 +712,39 @@ extern cl_object Kgensym;
 extern cl_object Klevel;
 extern cl_object Klength;
 extern cl_object Karray;
-extern cl_object Vprint_escape;
-extern cl_object Vprint_pretty;
-extern cl_object Vprint_circle;
-extern cl_object Vprint_base;
-extern cl_object Vprint_radix;
-extern cl_object Vprint_case;
-extern cl_object Vprint_gensym;
-extern cl_object Vprint_level;
-extern cl_object Vprint_length;
-extern cl_object Vprint_array;
-extern cl_object Sstream_write_char;
-extern cl_object Sstream_write_string;
-extern cl_object Sstream_fresh_line;
-extern cl_object Sstream_clear_output;
-extern cl_object Sstream_force_output;
+extern cl_object clVprint_escape;
+extern cl_object clVprint_pretty;
+extern cl_object clVprint_circle;
+extern cl_object clVprint_base;
+extern cl_object clVprint_radix;
+extern cl_object clVprint_case;
+extern cl_object clVprint_gensym;
+extern cl_object clVprint_level;
+extern cl_object clVprint_length;
+extern cl_object clVprint_array;
+extern cl_object clSstream_write_char;
+extern cl_object clSstream_write_string;
+extern cl_object clSstream_fresh_line;
+extern cl_object clSstream_clear_output;
+extern cl_object clSstream_force_output;
 extern cl_object siSpretty_print_format;
 extern cl_object siSsharp_exclamation;
 extern cl_object siVprint_package;
 extern cl_object siVprint_structure;
-extern cl_object Lwrite _ARGS((int narg, cl_object x, ...));
-extern cl_object Lprin1 _ARGS((int narg, cl_object obj, ...));
-extern cl_object Lprint _ARGS((int narg, cl_object obj, ...));
-extern cl_object Lpprint _ARGS((int narg, cl_object obj, ...));
-extern cl_object Lprinc _ARGS((int narg, cl_object obj, ...));
-extern cl_object Lwrite_char _ARGS((int narg, cl_object c, ...));
-extern cl_object Lwrite_string _ARGS((int narg, cl_object strng, ...));
-extern cl_object Lwrite_line _ARGS((int narg, cl_object strng, ...));
-extern cl_object Lterpri _ARGS((int narg, ...));
-extern cl_object Lfresh_line _ARGS((int narg, ...));
-extern cl_object Lforce_output _ARGS((int narg, ...));
-extern cl_object Lclear_output _ARGS((int narg, ...));
-extern cl_object Lwrite_byte _ARGS((int narg, cl_object integer, cl_object binary_output_stream));
-extern cl_object Lwrite_bytes _ARGS((int narg, cl_object stream, cl_object string, cl_object start, cl_object end));
+extern cl_object clLwrite _ARGS((int narg, cl_object x, ...));
+extern cl_object clLprin1 _ARGS((int narg, cl_object obj, ...));
+extern cl_object clLprint _ARGS((int narg, cl_object obj, ...));
+extern cl_object clLpprint _ARGS((int narg, cl_object obj, ...));
+extern cl_object clLprinc _ARGS((int narg, cl_object obj, ...));
+extern cl_object clLwrite_char _ARGS((int narg, cl_object c, ...));
+extern cl_object clLwrite_string _ARGS((int narg, cl_object strng, ...));
+extern cl_object clLwrite_line _ARGS((int narg, cl_object strng, ...));
+extern cl_object clLterpri _ARGS((int narg, ...));
+extern cl_object clLfresh_line _ARGS((int narg, ...));
+extern cl_object clLforce_output _ARGS((int narg, ...));
+extern cl_object clLclear_output _ARGS((int narg, ...));
+extern cl_object clLwrite_byte _ARGS((int narg, cl_object integer, cl_object binary_output_stream));
+extern cl_object clLwrite_bytes _ARGS((int narg, cl_object stream, cl_object string, cl_object start, cl_object end));
 
 /* profile.c */
 
@@ -760,62 +754,62 @@ extern cl_object siLdisplay_profile _ARGS((int narg));
 
 /* read.c */
 
-extern cl_object Vreadtable;
-extern cl_object Vread_default_float_format;
-extern cl_object Vread_base;
-extern cl_object Vread_suppress;
+extern cl_object clVreadtable;
+extern cl_object clVread_default_float_format;
+extern cl_object clVread_base;
+extern cl_object clVread_suppress;
 extern cl_object Kjunk_allowed;
 extern cl_object siSsharp_comma;
-extern cl_object Sstream_read_line;
-extern cl_object Sstream_read_char;
-extern cl_object Sstream_unread_char;
-extern cl_object Sstream_peek_char;
-extern cl_object Sstream_listen;
-extern cl_object Sstream_clear_input;
+extern cl_object clSstream_read_line;
+extern cl_object clSstream_read_char;
+extern cl_object clSstream_unread_char;
+extern cl_object clSstream_peek_char;
+extern cl_object clSstream_listen;
+extern cl_object clSstream_clear_input;
 extern cl_object siLsharp_comma_reader_for_compiler _ARGS((int, cl_object, cl_object, cl_object));
-extern cl_object Lread _ARGS((int narg, ...));
-extern cl_object Lread_preserving_whitespace _ARGS((int narg, ...));
-extern cl_object Lread_delimited_list _ARGS((int narg, cl_object d, ...));
-extern cl_object Lread_line _ARGS((int narg, ...));
-extern cl_object Lread_char _ARGS((int narg, ...));
-extern cl_object Lunread_char _ARGS((int narg, cl_object c, ...));
-extern cl_object Lpeek_char _ARGS((int narg, ...));
-extern cl_object Llisten _ARGS((int narg, ...));
-extern cl_object Lread_char_no_hang _ARGS((int narg, ...));
-extern cl_object Lclear_input _ARGS((int narg, ...));
-extern cl_object Lparse_integer _ARGS((int narg, cl_object strng, ...));
-extern cl_object Lread_byte _ARGS((int narg, cl_object binary_input_stream, ...));
-extern cl_object Lread_bytes _ARGS((int narg, cl_object stream, cl_object string, cl_object start, cl_object end));
-extern cl_object Lcopy_readtable _ARGS((int narg, ...));
-extern cl_object Lreadtablep _ARGS((int narg, cl_object readtable));
-extern cl_object Lset_syntax_from_char _ARGS((int narg, cl_object tochr, cl_object fromchr, ...));
-extern cl_object Lset_macro_character _ARGS((int narg, cl_object chr, cl_object fnc, ...));
-extern cl_object Lget_macro_character _ARGS((int narg, cl_object chr, ...));
-extern cl_object Lmake_dispatch_macro_character _ARGS((int narg, cl_object chr, ...));
-extern cl_object Lset_dispatch_macro_character _ARGS((int narg, cl_object dspchr, cl_object subchr, cl_object fnc, ...));
-extern cl_object Lget_dispatch_macro_character _ARGS((int narg, cl_object dspchr, cl_object subchr, ...));
+extern cl_object clLread _ARGS((int narg, ...));
+extern cl_object clLread_preserving_whitespace _ARGS((int narg, ...));
+extern cl_object clLread_delimited_list _ARGS((int narg, cl_object d, ...));
+extern cl_object clLread_line _ARGS((int narg, ...));
+extern cl_object clLread_char _ARGS((int narg, ...));
+extern cl_object clLunread_char _ARGS((int narg, cl_object c, ...));
+extern cl_object clLpeek_char _ARGS((int narg, ...));
+extern cl_object clLlisten _ARGS((int narg, ...));
+extern cl_object clLread_char_no_hang _ARGS((int narg, ...));
+extern cl_object clLclear_input _ARGS((int narg, ...));
+extern cl_object clLparse_integer _ARGS((int narg, cl_object strng, ...));
+extern cl_object clLread_byte _ARGS((int narg, cl_object binary_input_stream, ...));
+extern cl_object clLread_bytes _ARGS((int narg, cl_object stream, cl_object string, cl_object start, cl_object end));
+extern cl_object clLcopy_readtable _ARGS((int narg, ...));
+extern cl_object clLreadtablep _ARGS((int narg, cl_object readtable));
+extern cl_object clLset_syntax_from_char _ARGS((int narg, cl_object tochr, cl_object fromchr, ...));
+extern cl_object clLset_macro_character _ARGS((int narg, cl_object chr, cl_object fnc, ...));
+extern cl_object clLget_macro_character _ARGS((int narg, cl_object chr, ...));
+extern cl_object clLmake_dispatch_macro_character _ARGS((int narg, cl_object chr, ...));
+extern cl_object clLset_dispatch_macro_character _ARGS((int narg, cl_object dspchr, cl_object subchr, cl_object fnc, ...));
+extern cl_object clLget_dispatch_macro_character _ARGS((int narg, cl_object dspchr, cl_object subchr, ...));
 extern cl_object siLstring_to_object _ARGS((int narg, cl_object str));
 extern cl_object siLstandard_readtable _ARGS((int narg));
 
 /* reference.c */
 
-extern cl_object Lfboundp _ARGS((int narg, cl_object sym));
-extern cl_object Lsymbol_function _ARGS((int narg, cl_object sym));
+extern cl_object clLfboundp _ARGS((int narg, cl_object sym));
+extern cl_object clLsymbol_function _ARGS((int narg, cl_object sym));
 extern cl_object siLcoerce_to_function _ARGS((int narg, cl_object form));
-extern cl_object Lsymbol_value _ARGS((int narg, cl_object sym));
-extern cl_object Lboundp _ARGS((int narg, cl_object sym));
-extern cl_object Lmacro_function _ARGS((int narg, cl_object sym, ...));
-extern cl_object Lspecial_form_p _ARGS((int narg, cl_object form));
+extern cl_object clLsymbol_value _ARGS((int narg, cl_object sym));
+extern cl_object clLboundp _ARGS((int narg, cl_object sym));
+extern cl_object clLmacro_function _ARGS((int narg, cl_object sym, ...));
+extern cl_object clLspecial_form_p _ARGS((int narg, cl_object form));
 
 /* sequence.c */
 
-extern cl_object Lelt _ARGS((int narg, cl_object x, cl_object i));
+extern cl_object clLelt _ARGS((int narg, cl_object x, cl_object i));
 extern cl_object siLelt_set _ARGS((int narg, cl_object seq, cl_object index, cl_object val));
-extern cl_object Lsubseq _ARGS((int narg, cl_object sequence, cl_object start, ...));
-extern cl_object Lcopy_seq _ARGS((int narg, cl_object x));
-extern cl_object Llength _ARGS((int narg, cl_object x));
-extern cl_object Lreverse _ARGS((int narg, cl_object x));
-extern cl_object Lnreverse _ARGS((int narg, cl_object x));
+extern cl_object clLsubseq _ARGS((int narg, cl_object sequence, cl_object start, ...));
+extern cl_object clLcopy_seq _ARGS((int narg, cl_object x));
+extern cl_object clLlength _ARGS((int narg, cl_object x));
+extern cl_object clLreverse _ARGS((int narg, cl_object x));
+extern cl_object clLnreverse _ARGS((int narg, cl_object x));
 
 /* stacks.c */
 
@@ -843,43 +837,45 @@ extern cl_object Kstart2;
 extern cl_object Kend2;
 extern cl_object Kstart;
 extern cl_object Kend;
-extern cl_object Lmake_string _ARGS((int narg, cl_object size, ...));
-extern cl_object Lchar _ARGS((int narg, cl_object s, cl_object i));
+extern cl_object clLmake_string _ARGS((int narg, cl_object size, ...));
+extern cl_object clLchar _ARGS((int narg, cl_object s, cl_object i));
 extern cl_object siLchar_set _ARGS((int narg, cl_object str, cl_object index, cl_object c));
-extern cl_object Lstring_eq _ARGS((int narg, cl_object string1, cl_object string2, ...));
-extern cl_object Lstring_equal _ARGS((int narg, cl_object string1, cl_object string2, ...));
-extern cl_object Lstring_cmp _ARGS((int narg, int sign, int boundary, cl_object *ARGS));
-extern cl_object Lstring_l _ARGS((int narg, ...));
-extern cl_object Lstring_g _ARGS((int narg, ...));
-extern cl_object Lstring_le _ARGS((int narg, ...));
-extern cl_object Lstring_ge _ARGS((int narg, ...));
-extern cl_object Lstring_neq _ARGS((int narg, ...));
-extern cl_object Lstring_compare _ARGS((int narg, int sign, int boundary, cl_object *ARGS));
-extern cl_object Lstring_lessp _ARGS((int narg, ...));
-extern cl_object Lstring_greaterp _ARGS((int narg, ...));
-extern cl_object Lstring_not_greaterp _ARGS((int narg, ...));
-extern cl_object Lstring_not_lessp _ARGS((int narg, ...));
-extern cl_object Lstring_not_equal _ARGS((int narg, ...));
-extern cl_object Lstring_trim _ARGS((int narg, cl_object char_bag, cl_object strng));
-extern cl_object Lstring_left_trim _ARGS((int narg, cl_object char_bag, cl_object strng));
-extern cl_object Lstring_right_trim _ARGS((int narg, cl_object char_bag, cl_object strng));
-extern cl_object Lstring_trim0 _ARGS((int narg, bool left_trim, bool right_trim, cl_object char_bag, cl_object strng));
-extern cl_object Lstring_case(int narg, int (*casefun)(), cl_object *ARGS);
-extern cl_object Lstring_upcase _ARGS((int narg, ...));
-extern cl_object Lstring_downcase _ARGS((int narg, ...));
-extern cl_object Lstring_capitalize _ARGS((int narg, ...));
-extern cl_object Lnstring_case(int narg, int (*casefun)(), cl_object *ARGS);
-extern cl_object Lnstring_upcase _ARGS((int narg, ...));
-extern cl_object Lnstring_downcase _ARGS((int narg, ...));
-extern cl_object Lnstring_capitalize _ARGS((int narg, ...));
-extern cl_object Lstring _ARGS((int narg, cl_object x));
+extern cl_object clLstringE _ARGS((int narg, cl_object string1, cl_object string2, ...));
+extern cl_object clLstring_equal _ARGS((int narg, cl_object string1, cl_object string2, ...));
+extern cl_object clLstringL _ARGS((int narg, ...));
+extern cl_object clLstringG _ARGS((int narg, ...));
+extern cl_object clLstringLE _ARGS((int narg, ...));
+extern cl_object clLstringGE _ARGS((int narg, ...));
+extern cl_object clLstringNE _ARGS((int narg, ...));
+extern cl_object clLstring_lessp _ARGS((int narg, ...));
+extern cl_object clLstring_greaterp _ARGS((int narg, ...));
+extern cl_object clLstring_not_greaterp _ARGS((int narg, ...));
+extern cl_object clLstring_not_lessp _ARGS((int narg, ...));
+extern cl_object clLstring_not_equal _ARGS((int narg, ...));
+extern cl_object clLstring_trim _ARGS((int narg, cl_object char_bag, cl_object strng));
+extern cl_object clLstring_left_trim _ARGS((int narg, cl_object char_bag, cl_object strng));
+extern cl_object clLstring_right_trim _ARGS((int narg, cl_object char_bag, cl_object strng));
+extern cl_object clLstring_trim0 _ARGS((int narg, bool left_trim, bool right_trim, cl_object char_bag, cl_object strng));
+extern cl_object clLstring_case(int narg, int (*casefun)(), cl_object *ARGS);
+extern cl_object clLstring_upcase _ARGS((int narg, ...));
+extern cl_object clLstring_downcase _ARGS((int narg, ...));
+extern cl_object clLstring_capitalize _ARGS((int narg, ...));
+extern cl_object clLnstring_case(int narg, int (*casefun)(), cl_object *ARGS);
+extern cl_object clLnstring_upcase _ARGS((int narg, ...));
+extern cl_object clLnstring_downcase _ARGS((int narg, ...));
+extern cl_object clLnstring_capitalize _ARGS((int narg, ...));
+extern cl_object clLstring _ARGS((int narg, cl_object x));
 extern cl_object siLstring_concatenate _ARGS((int narg, ...));
 
 /* structure.c */
 
 extern cl_object siSstructure_print_function;
 extern cl_object siSstructure_slot_descriptions;
-extern cl_object Sstructure_object;
+#ifdef CLOS
+extern cl_object clSstructure_object;
+#else
+extern cl_object siSstructure_include;
+#endif
 extern cl_object siLstructure_subtype_p _ARGS((int narg, cl_object x, cl_object y));
 extern cl_object siLmake_structure _ARGS((int narg, cl_object type, ...));
 extern cl_object siLcopy_structure _ARGS((int narg, cl_object x));
@@ -892,111 +888,110 @@ extern cl_object siLlist_nth _ARGS((int narg, cl_object idx, cl_object x));
 
 /* symbol.c */
 
-extern cl_object siSpname;
-extern cl_object Vgensym_counter;
-extern cl_object Lmake_symbol _ARGS((int narg, cl_object str));
-extern cl_object Lget _ARGS((int narg, cl_object sym, cl_object indicator, ...));
-extern cl_object Lremprop _ARGS((int narg, cl_object sym, cl_object prop));
-extern cl_object Lsymbol_plist _ARGS((int narg, cl_object sym));
-extern cl_object Lgetf _ARGS((int narg, cl_object place, cl_object indicator, ...));
-extern cl_object Lget_properties _ARGS((int narg, cl_object place, cl_object indicator_list));
-extern cl_object Lsymbol_name _ARGS((int narg, cl_object sym));
-extern cl_object Lcopy_symbol _ARGS((int narg, cl_object sym, ...));
-extern cl_object Lgensym _ARGS((int narg, ...));
-extern cl_object Lgentemp _ARGS((int narg, ...));
-extern cl_object Lsymbol_package _ARGS((int narg, cl_object sym));
-extern cl_object Lkeywordp _ARGS((int narg, cl_object sym));
+extern cl_object clVgensym_counter;
+extern cl_object clLmake_symbol _ARGS((int narg, cl_object str));
+extern cl_object clLget _ARGS((int narg, cl_object sym, cl_object indicator, ...));
+extern cl_object clLremprop _ARGS((int narg, cl_object sym, cl_object prop));
+extern cl_object clLsymbol_plist _ARGS((int narg, cl_object sym));
+extern cl_object clLgetf _ARGS((int narg, cl_object place, cl_object indicator, ...));
+extern cl_object clLget_properties _ARGS((int narg, cl_object place, cl_object indicator_list));
+extern cl_object clLsymbol_name _ARGS((int narg, cl_object sym));
+extern cl_object clLcopy_symbol _ARGS((int narg, cl_object sym, ...));
+extern cl_object clLgensym _ARGS((int narg, ...));
+extern cl_object clLgentemp _ARGS((int narg, ...));
+extern cl_object clLsymbol_package _ARGS((int narg, cl_object sym));
+extern cl_object clLkeywordp _ARGS((int narg, cl_object sym));
 extern cl_object siLput_f _ARGS((int narg, cl_object plist, cl_object value, cl_object indicator));
 extern cl_object siLrem_f _ARGS((int narg, cl_object plist, cl_object indicator));
 extern cl_object siLset_symbol_plist _ARGS((int narg, cl_object sym, cl_object plist));
 extern cl_object siLputprop _ARGS((int narg, cl_object sym, cl_object value, cl_object indicator));
 extern cl_object siLput_properties _ARGS((int narg, cl_object sym, ...));
-extern cl_object siLAmake_special _ARGS((int narg, cl_object sym));
-extern cl_object siLAmake_constant _ARGS((int narg, cl_object sym, cl_object val));
+extern cl_object siLXmake_special _ARGS((int narg, cl_object sym));
+extern cl_object siLXmake_constant _ARGS((int narg, cl_object sym, cl_object val));
 
 /* tcp.c */
 
 #ifdef TCP
-extern cl_object Lopen_client_stream _ARGS((int narg, cl_object host, cl_object port));
-extern cl_object Lopen_server_stream _ARGS((int narg, cl_object port));
+extern cl_object clLopen_client_stream _ARGS((int narg, cl_object host, cl_object port));
+extern cl_object clLopen_server_stream _ARGS((int narg, cl_object port));
 #endif
 
 /* time.c */
 
-extern cl_object Lget_universal_time _ARGS((int narg));
-extern cl_object Lsleep _ARGS((int narg, cl_object z));
-extern cl_object Lget_internal_run_time _ARGS((int narg));
-extern cl_object Lget_internal_real_time _ARGS((int narg));
-extern cl_object Lget_local_time_zone _ARGS((int narg));
-extern cl_object Ldaylight_saving_timep _ARGS((int narg, ...));
+extern cl_object clLget_universal_time _ARGS((int narg));
+extern cl_object clLsleep _ARGS((int narg, cl_object z));
+extern cl_object clLget_internal_run_time _ARGS((int narg));
+extern cl_object clLget_internal_real_time _ARGS((int narg));
+extern cl_object clLget_local_time_zone _ARGS((int narg));
+extern cl_object clLdaylight_saving_timep _ARGS((int narg, ...));
 
 /* typespec.c */
 
-extern cl_object Squote;
-extern cl_object Slambda;
-extern cl_object Sspecial;
-extern cl_object St;
-extern cl_object Snil;
-extern cl_object Scommon;
-extern cl_object Ssequence;
-extern cl_object Snull;
-extern cl_object Scons;
-extern cl_object Slist;
-extern cl_object Ssymbol;
-extern cl_object Sarray;
-extern cl_object Svector;
-extern cl_object Sbit_vector;
-extern cl_object Sstring;
-extern cl_object Ssimple_array;
-extern cl_object Ssimple_vector;
-extern cl_object Ssimple_string;
-extern cl_object Ssimple_bit_vector;
-extern cl_object Sfunction;
-extern cl_object Spathname;
-extern cl_object Slogical_pathname;
-extern cl_object Scharacter;
-extern cl_object Sbase_char;
-extern cl_object Sextended_char;
-extern cl_object Scompiled_function;
-extern cl_object Snumber;
-extern cl_object Sreal;
-extern cl_object Srational;
-extern cl_object Sfloat;
-extern cl_object Sinteger;
-extern cl_object Sratio;
-extern cl_object Sshort_float;
-extern cl_object Sstandard_char;
-extern cl_object Sfixnum;
-extern cl_object Scomplex;
-extern cl_object Ssingle_float;
-extern cl_object Spackage;
-extern cl_object Sbignum;
-extern cl_object Srandom_state;
-extern cl_object Sdouble_float;
-extern cl_object Sstream;
-extern cl_object Sbit;
-extern cl_object Sreadtable;
-extern cl_object Slong_float;
-extern cl_object Shash_table;
-extern cl_object Ssigned_char;
-extern cl_object Sunsigned_char;
-extern cl_object Ssigned_short;
-extern cl_object Sunsigned_short;
-extern cl_object Sinstance;
-extern cl_object Sdispatch_function;
-extern cl_object Sstructure;
-extern cl_object Ssatisfies;
-extern cl_object Smember;
-extern cl_object Snot;
-extern cl_object Sor;
-extern cl_object Sand;
-extern cl_object Svalues;
-extern cl_object Smod;
-extern cl_object Ssigned_byte;
-extern cl_object Sunsigned_byte;
-extern cl_object SX;
-extern cl_object Splusp;
-extern cl_object Skeyword;
+extern cl_object clSquote;
+extern cl_object clSlambda;
+extern cl_object clSspecial;
+extern cl_object clSt;
+extern cl_object clSnil;
+extern cl_object clScommon;
+extern cl_object clSsequence;
+extern cl_object clSnull;
+extern cl_object clScons;
+extern cl_object clSlist;
+extern cl_object clSsymbol;
+extern cl_object clSarray;
+extern cl_object clSvector;
+extern cl_object clSbit_vector;
+extern cl_object clSstring;
+extern cl_object clSsimple_array;
+extern cl_object clSsimple_vector;
+extern cl_object clSsimple_string;
+extern cl_object clSsimple_bit_vector;
+extern cl_object clSfunction;
+extern cl_object clSpathname;
+extern cl_object clSlogical_pathname;
+extern cl_object clScharacter;
+extern cl_object clSbase_char;
+extern cl_object clSextended_char;
+extern cl_object clScompiled_function;
+extern cl_object clSnumber;
+extern cl_object clSreal;
+extern cl_object clSrational;
+extern cl_object clSfloat;
+extern cl_object clSinteger;
+extern cl_object clSratio;
+extern cl_object clSshort_float;
+extern cl_object clSstandard_char;
+extern cl_object clSfixnum;
+extern cl_object clScomplex;
+extern cl_object clSsingle_float;
+extern cl_object clSpackage;
+extern cl_object clSbignum;
+extern cl_object clSrandom_state;
+extern cl_object clSdouble_float;
+extern cl_object clSstream;
+extern cl_object clSbit;
+extern cl_object clSreadtable;
+extern cl_object clSlong_float;
+extern cl_object clShash_table;
+extern cl_object clSsigned_char;
+extern cl_object clSunsigned_char;
+extern cl_object clSsigned_short;
+extern cl_object clSunsigned_short;
+extern cl_object clSinstance;
+extern cl_object clSdispatch_function;
+extern cl_object clSstructure;
+extern cl_object clSsatisfies;
+extern cl_object clSmember;
+extern cl_object clSnot;
+extern cl_object clSor;
+extern cl_object clSand;
+extern cl_object clSvalues;
+extern cl_object clSmod;
+extern cl_object clSsigned_byte;
+extern cl_object clSunsigned_byte;
+extern cl_object clV;
+extern cl_object clSplusp;
+extern cl_object clSkeyword;
 extern cl_object TSor_string_symbol;
 extern cl_object TSor_symbol_string_package;
 extern cl_object TSnon_negative_integer;
@@ -1005,47 +1000,47 @@ extern cl_object TSor_integer_float;
 extern cl_object TSor_rational_float;
 extern cl_object TSor_pathname_string_symbol;
 extern cl_object TSor_pathname_string_symbol_stream;
-extern cl_object Ltype_of _ARGS((int narg, cl_object x));
-extern cl_object Ssubtypep;
+extern cl_object clSsubtypep;
+extern cl_object clLtype_of _ARGS((int narg, cl_object x));
 
 /* unify.c */
 
 #ifdef LOCATIVE
-extern cl_object Ltrail_mark _ARGS((int narg));
-extern cl_object Ltrail_restore _ARGS((int narg));
-extern cl_object Ltrail_unmark _ARGS((int narg));
-extern cl_object Lget_value _ARGS((int narg, cl_object v, cl_object x));
-extern cl_object Lget_constant _ARGS((int narg, cl_object c, cl_object x));
-extern cl_object Lget_nil _ARGS((int narg, cl_object arg));
-extern cl_object Lget_cons _ARGS((int narg, cl_object arg));
-extern cl_object Lget_instance _ARGS((int narg, cl_object x, cl_object class, cl_object arity));
-extern cl_object Lunify_slot _ARGS((int narg));
-extern cl_object Lunify_value _ARGS((int narg, cl_object loc));
-extern cl_object Lunify_constant _ARGS((int narg, cl_object c));
-extern cl_object Lunify_nil _ARGS((int narg));
-extern cl_object Lmake_locative _ARGS((int narg, ...));
-extern cl_object Llocativep _ARGS((int narg, cl_object obje));
-extern cl_object Lunboundp _ARGS((int narg, cl_object loc));
-extern cl_object Ldereference _ARGS((int narg, cl_object x));
-extern cl_object Lmake_variable _ARGS((int narg, cl_object name));
-extern cl_object Ssetq;
-extern cl_object Sunify_slot;
-extern cl_object Lunify_variable _ARGS((cl_object var));
+extern cl_object clLtrail_mark _ARGS((int narg));
+extern cl_object clLtrail_restore _ARGS((int narg));
+extern cl_object clLtrail_unmark _ARGS((int narg));
+extern cl_object clLget_value _ARGS((int narg, cl_object v, cl_object x));
+extern cl_object clLget_constant _ARGS((int narg, cl_object c, cl_object x));
+extern cl_object clLget_nil _ARGS((int narg, cl_object arg));
+extern cl_object clLget_cons _ARGS((int narg, cl_object arg));
+extern cl_object clLget_instance _ARGS((int narg, cl_object x, cl_object class, cl_object arity));
+extern cl_object clLunify_slot _ARGS((int narg));
+extern cl_object clLunify_value _ARGS((int narg, cl_object loc));
+extern cl_object clLunify_constant _ARGS((int narg, cl_object c));
+extern cl_object clLunify_nil _ARGS((int narg));
+extern cl_object clLmake_locative _ARGS((int narg, ...));
+extern cl_object clLlocativep _ARGS((int narg, cl_object obje));
+extern cl_object clLunboundp _ARGS((int narg, cl_object loc));
+extern cl_object clLdereference _ARGS((int narg, cl_object x));
+extern cl_object clLmake_variable _ARGS((int narg, cl_object name));
+extern cl_object clSsetq;
+extern cl_object clSunify_slot;
+extern cl_object clLunify_variable _ARGS((cl_object var));
 #endif
 
 /* unixfsys.c */
 
 extern cl_object Klist_all;
-extern cl_object Ltruename _ARGS((int narg, cl_object file));
-extern cl_object Lrename_file _ARGS((int narg, cl_object old, cl_object new));
-extern cl_object Ldelete_file _ARGS((int narg, cl_object file));
-extern cl_object Lprobe_file _ARGS((int narg, cl_object file));
-extern cl_object Lfile_write_date _ARGS((int narg, cl_object file));
-extern cl_object Lfile_author _ARGS((int narg, cl_object file));
-extern cl_object Luser_homedir_pathname _ARGS((int narg, ...));
+extern cl_object clLtruename _ARGS((int narg, cl_object file));
+extern cl_object clLrename_file _ARGS((int narg, cl_object old, cl_object new));
+extern cl_object clLdelete_file _ARGS((int narg, cl_object file));
+extern cl_object clLprobe_file _ARGS((int narg, cl_object file));
+extern cl_object clLfile_write_date _ARGS((int narg, cl_object file));
+extern cl_object clLfile_author _ARGS((int narg, cl_object file));
+extern cl_object clLuser_homedir_pathname _ARGS((int narg, ...));
 extern cl_object siLchdir _ARGS((int narg, cl_object directory));
 extern cl_object siLstring_match _ARGS((int narg, cl_object string, cl_object pattern));
-extern cl_object Ldirectory _ARGS((int narg, ...));
+extern cl_object clLdirectory _ARGS((int narg, ...));
 
 /* unixint.c */
 

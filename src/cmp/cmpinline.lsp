@@ -534,7 +534,7 @@
         (1 (wt (car x)))
         (2 (wt "make_cons(" (car x) "," (second x) ")"))
         (otherwise
-         (wt "listA(" (length x)) (dolist (loc x) (wt #\, loc)) (wt #\)))))
+         (wt "listX(" (length x)) (dolist (loc x) (wt #\, loc)) (wt #\)))))
 
 ;;; ----------------------------------------------------------------------
 
