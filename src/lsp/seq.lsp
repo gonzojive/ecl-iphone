@@ -128,15 +128,17 @@ PREDICATE; NIL otherwise."
   (not (apply #'every predicate sequence more-sequences)))
 
 (defun map-into (result-sequence function &rest sequences)
-  (let ((nel (apply #'min (if (eq 'vector (type-of result-sequence))
+  (let ((nel (apply #'min (if (vectorp result-sequence)
 			      (array-dimension result-sequence 0)
-			    (length result-sequence))
+			      (length result-sequence))
 		    (mapcar #'length sequences))))
+    (declare (fixnum nel))
     ;; Set the fill pointer to the number of iterations
-    (when (and (eq 'vector (type-of result-sequence))
-		(array-has-fill-pointer-p result-sequence))
+    (when (and (vectorp result-sequence)
+	       (array-has-fill-pointer-p result-sequence))
       (setf (fill-pointer result-sequence) nel))
     ;; Perform mapping
     (dotimes (k nel result-sequence)
+      (declare (fixnum nel))
       (setf (elt result-sequence k)
 	    (apply function (mapcar #'(lambda (v) (elt v k)) sequences))))))
