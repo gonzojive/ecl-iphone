@@ -115,7 +115,7 @@
 		  (funob (c1lambda-expr (cddr fun)))
 		  (info (second funob))
 		  (closure (closure-p funob))
-		  (body (cdddr fun))
+		  (body `(BLOCK ,name ,@(cdddr fun)))
 		  (fun (make-fun :name name
 				 :cfun (next-cfun)
 				 :closure closure)))
