@@ -458,7 +458,7 @@ cl_symbols[] = {
 {"LOGBITP", CL_ORDINARY, cl_logbitp, 2},
 {"LOGCOUNT", CL_ORDINARY, cl_logcount, 1},
 {"LOGEQV", CL_ORDINARY, cl_logeqv, -1},
-{"LOGICAL-PATHNAME", CL_ORDINARY, NULL, -1},
+{"LOGICAL-PATHNAME", CL_ORDINARY, cl_logical_pathname, 1},
 {"LOGICAL-PATHNAME-TRANSLATIONS", CL_ORDINARY, NULL, -1},
 {"LOGIOR", CL_ORDINARY, cl_logior, -1},
 {"LOGNAND", CL_ORDINARY, cl_lognand, 2},

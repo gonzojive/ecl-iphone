@@ -410,6 +410,15 @@ L:
 	}
 }
 
+cl_object
+cl_logical_pathname(cl_object x)
+{
+	x = cl_pathname(x);
+	if (!x->pathname.logical)
+		FEerror("~S cannot be coerced to a logical pathname.", 1, x);
+	return x;
+}
+
 /*
  * coerce_to_physical_pathname(P) converts P to a physical pathname,
  * for a file which is accesible in our filesystem.

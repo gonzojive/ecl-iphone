@@ -894,6 +894,7 @@ extern void init_package(void);
 /* pathname.c */
 
 extern cl_object cl_pathname(cl_object name);
+extern cl_object cl_logical_pathname(cl_object pname);
 extern cl_object cl_pathnamep(cl_object pname);
 extern cl_object cl_pathname_host(cl_object pname);
 extern cl_object cl_pathname_device(cl_object pname);
