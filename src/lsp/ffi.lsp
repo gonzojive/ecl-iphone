@@ -48,11 +48,16 @@
   (error "The FFI special form ~S cannot be used in the interpreter."
 	 (car all)))
 
-(defmacro definline (&whole all)
-  (error "The FFI special form ~S cannot be used in the interpreter."
-	 (car all)))
+(defmacro definline (fun arg-types type code)
+  `(eval-when (compile load eval)
+              ;; defCbody must go first, because it clears symbol-plist of fun
+              (defCbody ,fun ,arg-types ,type ,code)
+              (proclaim '(function ,fun ,arg-types ,type))
+              (setf (get ',fun ':inline-always)
+                    '((,arg-types ,type
+                       t                ; side-effect-p
+                       nil ,code)))))
 
 (defmacro defunC (&whole all)
   (error "The FFI special form ~S cannot be used in the interpreter."
 	 (car all)))
-
