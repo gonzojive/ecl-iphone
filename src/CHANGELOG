@@ -1348,6 +1348,8 @@ ECLS 0.9
     destructuring (Thanks to the CMUCL team for maintaining a reasonably
     portable LOOP!).
 
+  - SLOT-UNBOUND now effectively signals an UNBOUND-SLOT condition.
+
 TODO:
 =====
 

@@ -461,6 +461,8 @@ returns with NIL."
 (define-condition simple-warning (simple-condition warning)
   () (:REPORT simple-condition-printer))
 
+(define-condition style-warning (warning) ())
+
 (define-condition simple-error (simple-condition error) ())
 
 (define-condition storage-condition (serious-condition) ())
@@ -520,6 +522,13 @@ returns with NIL."
 	     (format stream "The variable ~S is unbound."
 		     (cell-error-name condition)))))
   
+(define-condition unbound-slot (cell-error)
+  ((instance :INITARG :INSTANCE :READER unbound-slot-instance))
+  (:REPORT (lambda (condition stream)
+	     (format stream "The slot ~S in the object ~S is unbound."
+		     (cell-error-name condition)
+		     (unbound-slot-instance condition)))))
+
 (define-condition undefined-function (cell-error)
   ()
   (:REPORT (lambda (condition stream)
@@ -534,6 +543,10 @@ returns with NIL."
 (define-condition floating-point-overflow  (arithmetic-error) ())
 
 (define-condition floating-point-underflow (arithmetic-error) ())
+
+(define-condition floating-point-inexact (arithmetic-error) ())
+
+(define-condition floating-point-invalid-operation (arithmetic-error) ())
 
 (define-condition abort-failure (control-error) ()
   (:REPORT (lambda (c s) (declare (ignore c))
