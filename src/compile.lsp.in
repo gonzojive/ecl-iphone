@@ -62,7 +62,6 @@ cd ..; rm -rf tmp/* @LIBPREFIX@{lsp,clos} "))
 ;; of using -lecl. This is to avoid interference with an already
 ;; installed copy of ECL.
 ;;
-#+dlopen
 (setf c::*ld-flags*
 #+dlopen "@LDRPATH@ @SHAREDPREFIX@ecl.@SHAREDEXT@ @CLIBS@"
 #-dlopen "@LDRPATH@ @LIBPREFIX@ecl.@LIBEXT@ @CLIBS@"
