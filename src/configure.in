@@ -156,7 +156,6 @@ CLIBS="${CLIBS} -lgmp -lm"
 if test ${boehm} = "no" ; then
   EXTRA_OBJS="${EXTRA_OBJS} alloc.o gbc.o"
 else
-  LIBRARIES="${LIBRARIES} libgc.a"
   if test ${local_boehm} = "no"; then
     LIBRARIES="${LIBRARIES} libgc.a"
     SUBDIR="${SUBDIR} gc"
