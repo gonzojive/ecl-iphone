@@ -19,8 +19,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <setjmp.h>
-#include <inttypes.h>
 #include "config.h"
+#ifndef cygwin
+#include <inttypes.h>
+#endif
 #include "gmp.h"
 #include "object.h"
 #include "stacks.h"
