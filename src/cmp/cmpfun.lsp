@@ -296,17 +296,18 @@
 	  (and (constantp op-code)
 	       (sys:fixnump (setq op-code (eval op-code)))
 	       (setq c1args (c1args* (rest args)))
+	       (eq 'FIXNUM (c1form-type (first c1args)))
 	       (eq 'FIXNUM (c1form-type (second c1args)))
-	       (eq 'FIXNUM (c1form-type (third c1args)))
-	       `(C-INLINE ,c1args (T T) FIXNUM
-		 ,(boole-inline-string op-code)
-		 :side-effects nil
-		 :one-liner t)))))
+	       (make-c1form* 'C-INLINE :type 'fixnum :args
+			     c1args '(fixnum fixnum) 'fixnum
+			     (boole-inline-string op-code)
+			     nil
+			     t)))))
 
 (defun boole-inline-string (op-code)
   (ecase op-code
     (#. boole-clr "(0)")
-    (#. boole-set "(1)")
+    (#. boole-set "(-1)")
     (#. boole-1 "(#0)")
     (#. boole-2 "(#1)")
     (#. boole-c1 "(~(#0))")
