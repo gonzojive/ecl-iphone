@@ -386,6 +386,9 @@ cl_boot(int argc, char **argv)
 #ifdef MSDOS
 	ADD_FEATURE("MS-DOS");
 #endif
+#ifdef mingw32
+	ADD_FEATURE("MINGW32");
+#endif
 #ifdef ECL_CMU_FORMAT
 	ADD_FEATURE("CMU-FORMAT");
 #endif

@@ -158,12 +158,12 @@ Returns the arc cosine of NUMBER."
 (defun asinh (x)
   "Args: (number)
 Returns the hyperbolic arc sine of NUMBER."
-  (if #+ecl-min t #-ecl-min (complexp x)
+  (if #+(or ecl-min mingw32) t #-(or ecl-min mingw32) (complexp x)
       (let* ((iz (complex (- (imagpart x)) (realpart x)))
 	     (result (complex-asin iz)))
 	(complex (imagpart result)
 		 (- (realpart result))))
-      #-ecl-min
+      #-(or ecl-min mingw32)
       (float (ffi:c-inline (x) (:double) :double "asinh(#0)" :one-liner t)
 	     (float x))))
 
@@ -171,9 +171,9 @@ Returns the hyperbolic arc sine of NUMBER."
 (defun acosh (x)
   "Args: (number)
 Returns the hyperbolic arc cosine of NUMBER."
-  (if #+ecl-min t #-ecl-min (complexp x)
+  (if #+(or ecl-min mingw32) t #-(or ecl-min mingw32) (complexp x)
       (complex-acos x)
-      #-ecl-min
+      #-(or ecl-min mingw32)
       (let* ((x (float x))
 	     (xr (float x 1d0)))
 	(declare (double-float xr))
@@ -193,9 +193,9 @@ Returns the hyperbolic arc cosine of NUMBER."
 (defun atanh (x)
   "Args: (number)
 Returns the hyperbolic arc tangent of NUMBER."
-  (if #+ecl-min t #-ecl-min (complexp x)
+  (if #+(or ecl-min mingw32) t #-(or ecl-min mingw32) (complexp x)
       (complex-atanh x)
-      #-ecl-min
+      #-(or ecl-min mingw32)
       (let* ((x (float x))
 	     (xr (float x 1d0)))
 	(declare (double-float xr))
