@@ -128,7 +128,7 @@
 ;;  AAAAAAA BBBBBB CCCCCCCCCCCC DDDDDDDDDDDDDD EEEE FFFFFFFFF GGGGGGGG HHHHH IIII JKK LLL MMMM NNNNNN OOOOOOOOOO PPPPPPPPPPPPPPP QQQQQQQ RRRRRRRRRRRR S TTTUUUUUUUUU VVVVVVV WWWWWWWWWW XXXXX
 ")
 
-#-sbcl
+#-(or sbcl ecl)
 (my-assert
  (defun format-blocksatz (stream parts prefix &optional line-length start-p end-p)
    (if (null stream)
@@ -142,6 +142,7 @@
 	 (loop
 	   ;;  Hier ist parts /= NIL
 	   (let ((pos (#+CLISP sys::line-position
+			       #+ECL file-position
 			       #+ALLEGRO excl::charpos
 			       #+(OR CMU SBCL) cl::charpos stream))
 		 (parts-now '()))
@@ -185,7 +186,7 @@
 	   ) ) ) )
  FORMAT-BLOCKSATZ)
 
-#-sbcl
+#-(or sbcl ecl)
 (my-assert
  (format-blocksatz nil
 		   (mapcar #'(lambda (x) (format nil " ~A" x))
@@ -212,7 +213,7 @@
  #-(or CLISP ALLEGRO cmu sbcl) UNKNOWN)
 ;; 123456789;123456789;123456789;123456789;123456789;123456789;123456789;12
 
-#-sbcl
+#-(or sbcl ecl)
 (my-assert
  (format-blocksatz nil
 		   (mapcar #'(lambda (x) (format nil " ~A" x))
