@@ -19,6 +19,13 @@ fi
 
 echo Switching to directory "\`${buildir}'" to continue configuration.
 
+cd ${buildir}
+${srcdir}/configure --srcdir=${srcdir} $*
+exit
+
+#########################################################################
+# THE FOLLOWING HAS BEEN DEACTIVATED. ENSURE YOU PASS THE RIGHT FLAGS
+# TO GCC!
 #
 # There are two ways to configure ECL. If we use our own version of GMP,
 # we let it configure itself and later on retrieve the appropiate flags
