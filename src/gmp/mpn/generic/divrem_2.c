@@ -7,8 +7,8 @@
    RELEASE.
 
 
-Copyright 1993, 1994, 1995, 1996, 1999, 2000, 2001 Free Software Foundation,
-Inc.
+Copyright 1993, 1994, 1995, 1996, 1999, 2000, 2001, 2002 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -34,23 +34,14 @@ MA 02111-1307, USA. */
 
 /* The size where udiv_qrnnd_preinv should be used rather than udiv_qrnnd,
    meaning the quotient size where that should happen, the quotient size
-   being how many udiv divisions will be done.  */
+   being how many udiv divisions will be done.
+
+   The default is to use preinv always, CPUs where this doesn't suit have
+   tuned thresholds.  Note in particular that preinv should certainly be
+   used if that's the only division available (USE_PREINV_ALWAYS).  */
 
 #ifndef DIVREM_2_THRESHOLD
-# if UDIV_PREINV_ALWAYS
-#  define DIVREM_2_THRESHOLD      0
-# else
-#  ifdef DIVREM_1_NORM_THRESHOLD
-#   define DIVREM_2_THRESHOLD     DIVREM_1_NORM_THRESHOLD
-#  else
-#   if UDIV_TIME <= UDIV_NORM_PREINV_TIME
-#    define DIVREM_2_THRESHOLD    MP_LIMB_T_MAX
-#   else
-#    define DIVREM_2_THRESHOLD \
-       (1 + UDIV_TIME / (UDIV_TIME - UDIV_NORM_PREINV_TIME))
-#   endif
-#  endif
-# endif
+#define DIVREM_2_THRESHOLD  0
 #endif
 
 
@@ -72,7 +63,7 @@ MA 02111-1307, USA. */
 
 mp_limb_t
 mpn_divrem_2 (mp_ptr qp, mp_size_t qxn,
-	      mp_ptr np, mp_size_t nsize,
+	      mp_ptr np, mp_size_t nn,
 	      mp_srcptr dp)
 {
   mp_limb_t most_significant_q_limb = 0;
@@ -82,12 +73,14 @@ mpn_divrem_2 (mp_ptr qp, mp_size_t qxn,
   mp_limb_t d1inv;
   int use_preinv;
 
-  ASSERT (nsize >= 2);
+  ASSERT (nn >= 2);
   ASSERT (qxn >= 0);
-  ASSERT (dp[1] & MP_LIMB_T_HIGHBIT);
-  ASSERT (! MPN_OVERLAP_P (qp, nsize-2+qxn, np, nsize) || qp+2 >= np);
+  ASSERT (dp[1] & GMP_NUMB_HIGHBIT);
+  ASSERT (! MPN_OVERLAP_P (qp, nn-2+qxn, np, nn) || qp+2 >= np);
+  ASSERT_MPN (np, nn);
+  ASSERT_MPN (dp, 2);
 
-  np += nsize - 2;
+  np += nn - 2;
   d1 = dp[1];
   d0 = dp[0];
   n1 = np[1];
@@ -95,15 +88,21 @@ mpn_divrem_2 (mp_ptr qp, mp_size_t qxn,
 
   if (n1 >= d1 && (n1 > d1 || n0 >= d0))
     {
+#if GMP_NAIL_BITS == 0
       sub_ddmmss (n1, n0, n1, n0, d1, d0);
+#else
+      n0 = n0 - d0;
+      n1 = n1 - d1 - (n0 >> GMP_LIMB_BITS - 1);
+      n0 &= GMP_NUMB_MASK;
+#endif
       most_significant_q_limb = 1;
     }
 
-  use_preinv = ABOVE_THRESHOLD (qxn + nsize - 2, DIVREM_2_THRESHOLD);
+  use_preinv = ABOVE_THRESHOLD (qxn + nn - 2, DIVREM_2_THRESHOLD);
   if (use_preinv)
     invert_limb (d1inv, d1);
 
-  for (i = qxn + nsize - 2 - 1; i >= 0; i--)
+  for (i = qxn + nn - 2 - 1; i >= 0; i--)
     {
       mp_limb_t q;
       mp_limb_t r;
@@ -115,27 +114,35 @@ mpn_divrem_2 (mp_ptr qp, mp_size_t qxn,
 
       if (n1 == d1)
 	{
-	  /* Q should be either 111..111 or 111..110.  Need special treatment
+	  /* Q should be either 111..111 or 111..110.  Need special handling
 	     of this rare case as normal division would give overflow.  */
-	  q = ~(mp_limb_t) 0;
+	  q = GMP_NUMB_MASK;
 
-	  r = n0 + d1;
+	  r = (n0 + d1) & GMP_NUMB_MASK;
 	  if (r < d1)	/* Carry in the addition? */
 	    {
+#if GMP_NAIL_BITS == 0
 	      add_ssaaaa (n1, n0, r - d0, np[0], 0, d0);
+#else
+	      n0 = np[0] + d0;
+	      n1 = (r - d0 + (n0 >> GMP_NUMB_BITS)) & GMP_NUMB_MASK;
+	      n0 &= GMP_NUMB_MASK;
+#endif
 	      qp[i] = q;
 	      continue;
 	    }
 	  n1 = d0 - (d0 != 0);
-	  n0 = -d0;
+	  n0 = -d0 & GMP_NUMB_MASK;
 	}
       else
 	{
 	  if (use_preinv)
 	    udiv_qrnnd_preinv (q, r, n1, n0, d1, d1inv);
 	  else
-	    udiv_qrnnd (q, r, n1, n0, d1);
-	  umul_ppmm (n1, n0, d0, q);
+	    udiv_qrnnd (q, r, n1, n0 << GMP_NAIL_BITS, d1 << GMP_NAIL_BITS);
+	  r >>= GMP_NAIL_BITS;
+	  umul_ppmm (n1, n0, d0, q << GMP_NAIL_BITS);
+	  n0 >>= GMP_NAIL_BITS;
 	}
 
       n2 = np[0];
@@ -146,14 +153,26 @@ mpn_divrem_2 (mp_ptr qp, mp_size_t qxn,
 	  /* The estimated Q was too large.  */
 	  q--;
 
+#if GMP_NAIL_BITS == 0
 	  sub_ddmmss (n1, n0, n1, n0, 0, d0);
+#else
+	  n0 = n0 - d0;
+	  n1 = n1 - (n0 >> GMP_LIMB_BITS - 1);
+	  n0 &= GMP_NUMB_MASK;
+#endif
 	  r += d1;
 	  if (r >= d1)	/* If not carry, test Q again.  */
 	    goto q_test;
 	}
 
       qp[i] = q;
+#if GMP_NAIL_BITS == 0
       sub_ddmmss (n1, n0, r, n2, n1, n0);
+#else
+      n0 = n2 - n0;
+      n1 = r - n1 - (n0 >> GMP_LIMB_BITS - 1);
+      n0 &= GMP_NUMB_MASK;
+#endif
     }
   np[1] = n1;
   np[0] = n0;

@@ -1,6 +1,6 @@
 ## Process this file with automake to generate Makefile.in
 
-# Copyright 2000, 2001 Free Software Foundation, Inc.
+# Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
 #
 # This file is part of the GNU MP Library.
 #
@@ -40,5 +40,5 @@ libtests_la_LIBADD = $(libtests_la_DEPENDENCIES) $(top_builddir)/libgmp.la
 # Create ansi2knr rules for sources conditionally used
 libdummy_la_SOURCES = x86check.c
 
-check_PROGRAMS = t-constants t-count_zeros t-gmpmax t-modlinv
+check_PROGRAMS = t-bswap t-constants t-count_zeros t-gmpmax t-modlinv
 TESTS = $(check_PROGRAMS)

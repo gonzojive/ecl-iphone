@@ -1,5 +1,6 @@
 /*
-Copyright 1996, 1997, 1998, 1999, 2000, 2001 Free Software Foundation, Inc.
+Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002 Free Software Foundation,
+Inc.
 
 This file is part of the GNU MP Library.
 
@@ -51,27 +52,7 @@ cputime ()
 #define M * 1000000
 
 #ifndef CLOCK
-#if defined (__m88k__)
-#define CLOCK 20 M
-#elif defined (__i386__)
-#define CLOCK (16666667)
-#elif defined (__m68k__)
-#define CLOCK (20 M)
-#elif defined (_IBMR2)
-#define CLOCK (25 M)
-#elif defined (__sparc__)
-#define CLOCK (20 M)
-#elif defined (__sun__)
-#define CLOCK (20 M)
-#elif defined (__mips)
-#define CLOCK (40 M)
-#elif defined (__hppa__)
-#define CLOCK (50 M)
-#elif defined (__alpha)
-#define CLOCK (133 M)
-#else
 #error "Don't know CLOCK of your machine"
-#endif
 #endif
 
 #ifndef OPS
@@ -89,16 +70,8 @@ cputime ()
 
 
 mp_limb_t
-#if __STDC__
 refmpn_sub_n (mp_ptr res_ptr,
-	       mp_srcptr s1_ptr, mp_srcptr s2_ptr, mp_size_t size)
-#else
-refmpn_sub_n (res_ptr, s1_ptr, s2_ptr, size)
-     register mp_ptr res_ptr;
-     register mp_srcptr s1_ptr;
-     register mp_srcptr s2_ptr;
-     mp_size_t size;
-#endif
+	      mp_srcptr s1_ptr, mp_srcptr s2_ptr, mp_size_t size)
 {
   register mp_limb_t x, y, cy;
   register mp_size_t j;
@@ -117,10 +90,10 @@ refmpn_sub_n (res_ptr, s1_ptr, s2_ptr, size)
     {
       y = s2_ptr[j];
       x = s1_ptr[j];
-      y += cy;			/* add previous carry to subtrahend */
-      cy = (y < cy);		/* get out carry from that addition */
-      y = x - y;		/* main subtract */
-      cy = (y > x) + cy;	/* get out carry from the subtract, combine */
+      y = (y + cy) & GMP_NUMB_MASK;	/* add previous carry to subtrahend */
+      cy = (y < cy);			/* get out carry from that addition */
+      y = (x - y) & GMP_NUMB_MASK;	/* main subtract */
+      cy = (y > x) + cy;		/* get out carry from the subtract, combine */
       res_ptr[j] = y;
     }
   while (++j != 0);
@@ -139,10 +112,15 @@ main (argc, argv)
   int cyx, cyy;
   int i;
   long t0, t;
-  int test;
+  unsigned int test;
   mp_size_t size;
+  unsigned int ntests;
 
-  for (test = 0; ; test++)
+  ntests = ~(unsigned) 0;
+  if (argc == 2)
+    ntests = strtol (argv[1], 0, 0);
+
+  for (test = 1; test <= ntests; test++)
     {
 #if TIMES == 1 && ! defined (PRINT)
       if (test % (SIZE > 10000 ? 1 : 10000 / SIZE) == 0)
@@ -213,7 +191,12 @@ main (argc, argv)
 	  printf ("%d ", cyx); mpn_print (dx+1, size);
 	  printf ("%d ", cyy); mpn_print (dy+1, size);
 #endif
-	  printf ("TEST NUMBER %d\n", test);
+	  printf ("\n");
+	  if (dy[0] != 0x87654321)
+	    printf ("clobbered at low end\n");
+	  if (dy[size+1] != 0x12345678)
+	    printf ("clobbered at high end\n");
+	  printf ("TEST NUMBER %u\n", test);
 	  abort();
 	}
 #endif

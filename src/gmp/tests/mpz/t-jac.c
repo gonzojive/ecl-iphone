@@ -1,7 +1,7 @@
 /* Exercise mpz_*_kronecker_*() and mpz_jacobi() functions. */
 
 /*
-Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
+Copyright 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -153,7 +153,7 @@ try_ui_zi (unsigned long a, mpz_srcptr b, int answer)
 
 
 void
-try_si_zi (int a, mpz_srcptr b, int answer)
+try_si_zi (long a, mpz_srcptr b, int answer)
 {
   int  got;
 

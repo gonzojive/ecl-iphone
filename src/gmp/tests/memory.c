@@ -1,6 +1,6 @@
 /* Memory allocation used during tests.
 
-Copyright 2001 Free Software Foundation, Inc.
+Copyright 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -56,6 +56,12 @@ tests_memory_find (void *ptr)
       return hp;
 
   return NULL;
+}
+
+int
+tests_memory_valid (void *ptr)
+{
+  return (tests_memory_find (ptr) != NULL);
 }
 
 void *

@@ -1,6 +1,6 @@
 /* Templates for defines setup by configure.
 
-Copyright 2000, 2001 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -29,6 +29,21 @@ MA 02111-1307, USA. */
 #undef HAVE_HOST_CPU_alphaev5
 #undef HAVE_HOST_CPU_alphaev6
 #undef HAVE_HOST_CPU_alphaev67
+
+#undef HAVE_HOST_CPU_m68k
+#undef HAVE_HOST_CPU_m68000
+#undef HAVE_HOST_CPU_m68010
+#undef HAVE_HOST_CPU_m68020
+#undef HAVE_HOST_CPU_m68030
+#undef HAVE_HOST_CPU_m68040
+#undef HAVE_HOST_CPU_m68060
+#undef HAVE_HOST_CPU_m68302
+#undef HAVE_HOST_CPU_m68360
+
+#undef HAVE_HOST_CPU_powerpc604
+#undef HAVE_HOST_CPU_powerpc604e
+#undef HAVE_HOST_CPU_powerpc750
+#undef HAVE_HOST_CPU_powerpc7400
 
 #undef HAVE_HOST_CPU_sparc
 #undef HAVE_HOST_CPU_sparcv8
@@ -79,6 +94,9 @@ MA 02111-1307, USA. */
 #undef HAVE_NATIVE_mpn_add_nc
 #undef HAVE_NATIVE_mpn_addmul_1
 #undef HAVE_NATIVE_mpn_addmul_1c
+#undef HAVE_NATIVE_mpn_addmul_2
+#undef HAVE_NATIVE_mpn_addmul_3
+#undef HAVE_NATIVE_mpn_addmul_4
 #undef HAVE_NATIVE_mpn_addsub_n
 #undef HAVE_NATIVE_mpn_addsub_nc
 #undef HAVE_NATIVE_mpn_and_n
@@ -115,6 +133,8 @@ MA 02111-1307, USA. */
 #undef HAVE_NATIVE_mpn_mul_1
 #undef HAVE_NATIVE_mpn_mul_1c
 #undef HAVE_NATIVE_mpn_mul_2
+#undef HAVE_NATIVE_mpn_mul_3
+#undef HAVE_NATIVE_mpn_mul_4
 #undef HAVE_NATIVE_mpn_mul_basecase
 #undef HAVE_NATIVE_mpn_mul_n
 #undef HAVE_NATIVE_mpn_nand_n

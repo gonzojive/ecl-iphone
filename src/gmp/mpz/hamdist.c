@@ -1,6 +1,6 @@
 /* mpz_hamdist -- calculate hamming distance.
 
-Copyright 1994, 1996, 2001 Free Software Foundation, Inc.
+Copyright 1994, 1996, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -97,7 +97,7 @@ mpz_hamdist (mpz_srcptr u, mpz_srcptr v)
          might be zero) */
       ulimb = -ulimb;
       vlimb = -vlimb;
-      popc_limb (count, ulimb ^ vlimb);
+      popc_limb (count, (ulimb ^ vlimb) & GMP_NUMB_MASK);
 
       if (vlimb == 0)
         {
@@ -115,7 +115,7 @@ mpz_hamdist (mpz_srcptr u, mpz_srcptr v)
 
           /* part of u corresponding to skipped v zeros */
           step = old_vsize - vsize - 1;
-          count += step * BITS_PER_MP_LIMB;
+          count += step * GMP_NUMB_BITS;
           step = MIN (step, usize);
           if (step != 0)
             {
@@ -135,7 +135,7 @@ mpz_hamdist (mpz_srcptr u, mpz_srcptr v)
           popc_limb (twoscount, vlimb);
           count += twoscount;
         }
-      
+
       /* Overlapping part of u and v, if any.  Ones complement both, so just
          plain hamdist. */
       step = MIN (usize, vsize);

@@ -70,14 +70,14 @@ mult (mpz_srcptr u, mpz_srcptr v, mpz_ptr w)
         cy_limb = mpn_mul_1 (wp, PTR(u), usize, PTR(v)[0]);
       else
         {
-          cy_limb = mpn_mul_2 (wp, PTR(u), usize, PTR(v)[0], PTR(v)[1]);
+          cy_limb = mpn_mul_2 (wp, PTR(u), usize, PTR(v));
           usize++;
         }
       wp[usize] = cy_limb;
       usize += (cy_limb != 0);
       SIZ(w) = (sign_product >= 0 ? usize : -usize);
       return;
-    }      
+    }
 #else
   if (vsize == 1)
     {
@@ -88,7 +88,7 @@ mult (mpz_srcptr u, mpz_srcptr v, mpz_ptr w)
       usize += (cy_limb != 0);
       SIZ(w) = (sign_product >= 0 ? usize : -usize);
       return;
-    }      
+    }
 #endif
 
   TMP_MARK (marker);

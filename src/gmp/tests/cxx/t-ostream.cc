@@ -1,6 +1,6 @@
 /* Test ostream formatted output.
 
-Copyright 2001 Free Software Foundation, Inc.
+Copyright 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -79,8 +79,8 @@ void
 check_mpz (void)
 {
   static const struct {
-    char           *z;
-    char           *want;
+    const char     *z;
+    const char     *want;
     ios::fmtflags  flags;
     int            width;
     int            precision;
@@ -179,8 +179,8 @@ void
 check_mpq (void)
 {
   static const struct {
-    char           *q;
-    char           *want;
+    const char     *q;
+    const char     *want;
     ios::fmtflags  flags;
     int            width;
     int            precision;
@@ -195,6 +195,19 @@ check_mpq (void)
 
     { "5/8", "5/8", ios::dec },
     { "5/8", "0X5/0X8", ios::hex | ios::showbase | ios::uppercase },
+
+    /* zero denominator with showbase */
+    { "0/0",   "       0/0", ios::oct | ios::showbase, 10 },
+    { "0/0",   "       0/0", ios::dec | ios::showbase, 10 },
+    { "0/0",   "   0x0/0x0", ios::hex | ios::showbase, 10 },
+    { "123/0", "    0173/0", ios::oct | ios::showbase, 10 },
+    { "123/0", "     123/0", ios::dec | ios::showbase, 10 },
+    { "123/0", "  0x7b/0x0", ios::hex | ios::showbase, 10 },
+    { "123/0", "  0X7B/0X0", ios::hex | ios::showbase | ios::uppercase, 10 },
+    { "0/123", "    0/0173", ios::oct | ios::showbase, 10 },
+    { "0/123", "     0/123", ios::dec | ios::showbase, 10 },
+    { "0/123", "  0x0/0x7b", ios::hex | ios::showbase, 10 },
+    { "0/123", "  0X0/0X7B", ios::hex | ios::showbase | ios::uppercase, 10 },
   };
 
   size_t  i;
@@ -207,6 +220,8 @@ check_mpq (void)
   for (i = 0; i < numberof (data); i++)
     {
       mpq_set_str_or_abort (q, data[i].q, 0);
+      MPZ_CHECK_FORMAT (mpq_numref (q));
+      MPZ_CHECK_FORMAT (mpq_denref (q));
 
       if (option_check_standard
           && mpz_fits_slong_p (mpq_numref(q))
@@ -226,7 +241,6 @@ check_mpq (void)
 
       {
         ostrstream  got;
-        MPQ_CHECK_FORMAT (q);
         CALL (operator<< (got, q) << '\0');
         if (strcmp (got.str(), data[i].want) != 0)
           {
@@ -246,8 +260,8 @@ void
 check_mpf (void)
 {
   static const struct {
-    char           *f;
-    char           *want;
+    const char     *f;
+    const char     *want;
     ios::fmtflags  flags;
     int            width;
     int            precision;
@@ -336,13 +350,13 @@ check_mpf (void)
     { "123",  "173", ios::oct },
     { "123", "0173", ios::oct | ios::showbase },
 
-    /* octal showbase suppressed for zero integer part */
+    /* octal showbase suppressed for 0 */
     { "0", "0", ios::oct | ios::showbase },
-    { ".125",    "0.1",  ios::oct | ios::showbase, 0, 1 },
-    { ".015625", "0.01", ios::oct | ios::showbase, 0, 2 },
-    { ".125",    "0.1",  ios::fixed | ios::oct | ios::showbase, 0, 1 },
-    { ".015625", "0.0",  ios::fixed | ios::oct | ios::showbase, 0, 1 },
-    { ".015625", "0.01", ios::fixed | ios::oct | ios::showbase, 0, 2 },
+    { ".125",    "00.1",  ios::oct | ios::showbase, 0, 1 },
+    { ".015625", "00.01", ios::oct | ios::showbase, 0, 2 },
+    { ".125",    "00.1",  ios::fixed | ios::oct | ios::showbase, 0, 1 },
+    { ".015625", "0.0",   ios::fixed | ios::oct | ios::showbase, 0, 1 },
+    { ".015625", "00.01", ios::fixed | ios::oct | ios::showbase, 0, 2 },
 
     {  "0.125",  "1.000000e-01", ios::oct | ios::scientific },
     {  "0.125", "+1.000000e-01", ios::oct | ios::scientific | ios::showpos },

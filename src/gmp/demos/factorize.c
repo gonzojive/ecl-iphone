@@ -1,21 +1,19 @@
 /* Factoring with Pollard's rho method.
 
-   Copyright 1995, 1997, 1998, 1999, 2000, 2001 Free Software Foundation, Inc.
+Copyright 1995, 1997, 1998, 1999, 2000, 2001, 2002 Free Software Foundation,
+Inc.
 
-   This program is free software; you can redistribute it and/or modify it
-   under the terms of the GNU General Public License as published by the
-   Free Software Foundation; either version 2, or (at your option) any
-   later version.
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2, or (at your option) any later version.
 
-   This program is distributed in the hope that it will be useful, but
-   WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   General Public License for more details.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License along
-   with this program; see the file COPYING.  If not, write to the Free
-   Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-   02111-1307, USA.  */
+You should have received a copy of the GNU General Public License along with
+this program; see the file COPYING.  If not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -26,22 +24,6 @@
 int flag_verbose = 0;
 
 static unsigned add[] = {4, 2, 4, 2, 4, 6, 2, 6};
-
-#if defined (__hpux) || defined (__alpha)  || defined (__svr4__) || defined (__SVR4)
-/* HPUX lacks random().  DEC OSF/1 1.2 random() returns a double.  */
-long mrand48 ();
-static long
-random ()
-{
-  return mrand48 ();
-}
-#else
-/* Glibc stdlib.h has "int32_t random();" which, on i386 at least, conflicts
-   with a redeclaration as "long". */
-#ifndef __GLIBC__
-long random ();
-#endif
-#endif
 
 void
 factor_using_division (mpz_t t, unsigned int limit)
@@ -240,7 +222,11 @@ S4:
       if (!mpz_probab_prime_p (g, 3))
 	{
 	  do
-	    a_int = random ();
+            {
+              mp_limb_t a_limb;
+              mpn_random (&a_limb, (mp_size_t) 1);
+              a_int = (int) a_limb;
+            }
 	  while (a_int == -2 || a_int == 0);
 
 	  if (flag_verbose)

@@ -3,8 +3,8 @@ divert(-1)
 dnl  m4 macros for alpha assembler (everywhere except unicos).
 
 
-dnl  Copyright 2000 Free Software Foundation, Inc.
-dnl 
+dnl  Copyright 2000, 2002 Free Software Foundation, Inc.
+dnl
 dnl  This file is part of the GNU MP Library.
 dnl
 dnl  The GNU MP Library is free software; you can redistribute it and/or
@@ -40,33 +40,28 @@ m4_assert_numargs(2)
 `	.align	3
 $1:	.t_floating $2')
 
-dnl  Usage: PROLOGUE(name)
-define(`PROLOGUE',
-m4_assert_numargs(1)
-`	.text
-	.align	3
-	.globl	GSYM_PREFIX`'$1
-	.ent	GSYM_PREFIX`'$1
-GSYM_PREFIX`'$1:
+
+dnl  Called: PROLOGUE_cpu(GSYM_PREFIX`'foo[,gp|noalign])
+dnl          EPILOGUE_cpu(GSYM_PREFIX`'foo)
+
+define(`PROLOGUE_cpu',
+m4_assert_numargs_range(1,2)
+`ifelse(`$2',gp,,
+`ifelse(`$2',noalign,,
+`ifelse(`$2',,,`m4_error(`Unrecognised PROLOGUE parameter
+')')')')dnl
+	.text
+ifelse(`$2',noalign,,`	ALIGN(8)')
+	.globl	$1
+	.ent	$1
+$1:
+ifelse(`$2',gp,`	ldgp	r29,0(r27)')
 	.frame r30,0,r26
-	.prologue 0')
+	.prologue ifelse(`$2',gp,1,0)')
 
-dnl  Usage: PROLOGUE_GP(name)
-define(`PROLOGUE_GP',
+define(`EPILOGUE_cpu',
 m4_assert_numargs(1)
-`	.text
-	.align	3
-	.globl	GSYM_PREFIX`'$1
-	.ent	GSYM_PREFIX`'$1
-GSYM_PREFIX`'$1:
-	ldgp	r29,0(r27)
-	.frame	r30,0,r26
-	.prologue 1')
-
-dnl  Usage: EPILOGUE(name)
-define(`EPILOGUE',
-m4_assert_numargs(1)
-`	.end	GSYM_PREFIX`'$1')
+`	.end	$1')
 
 
 dnl  Usage: EXTERN(variable_name)

@@ -6,8 +6,8 @@
    THAT THEY'LL CHANGE OR DISAPPEAR IN A FUTURE GNU MP RELEASE.
 
 
-Copyright 1991, 1993, 1994, 1996, 1997, 1998, 1999, 2000, 2001 Free Software
-Foundation, Inc.
+Copyright 1991, 1993, 1994, 1996, 1997, 1998, 1999, 2000, 2001, 2002 Free
+Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -30,6 +30,11 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 #include "longlong.h"
 
+
+#if GMP_NAIL_BITS != 0
+/* The open-coded interpolate3 stuff has not been generalized for nails.  */
+#define USE_MORE_MPN 1
+#endif
 
 #ifndef USE_MORE_MPN
 #if !defined (__alpha) && !defined (__mips)
@@ -91,7 +96,7 @@ mpn_kara_mul_n (mp_ptr p, mp_srcptr a, mp_srcptr b, mp_size_t n, mp_ptr ws)
 	    {
 	      --i;
 	      w0 = a[i];
-	      w1 = a[n3+i];
+	      w1 = a[n3 + i];
 	    }
 	  while (w0 == w1 && i != 0);
 	  if (w0 < w1)
@@ -115,11 +120,11 @@ mpn_kara_mul_n (mp_ptr p, mp_srcptr a, mp_srcptr b, mp_size_t n, mp_ptr ws)
       else
 	{
 	  i = n2;
-	  do 
+	  do
 	    {
 	      --i;
-	      w0 = b[i]; 
-	      w1 = b[n3+i];
+	      w0 = b[i];
+	      w1 = b[n3 + i];
 	    }
 	  while (w0 == w1 && i != 0);
 	  if (w0 < w1)
@@ -138,9 +143,9 @@ mpn_kara_mul_n (mp_ptr p, mp_srcptr a, mp_srcptr b, mp_size_t n, mp_ptr ws)
       p[n] = w;
 
       n1 = n + 1;
-      if (n2 < KARATSUBA_MUL_THRESHOLD)
+      if (n2 < MUL_KARATSUBA_THRESHOLD)
 	{
-	  if (n3 < KARATSUBA_MUL_THRESHOLD)
+	  if (n3 < MUL_KARATSUBA_THRESHOLD)
 	    {
 	      mpn_mul_basecase (ws, p, n3, p + n3, n3);
 	      mpn_mul_basecase (p, a, n3, b, n3);
@@ -167,20 +172,14 @@ mpn_kara_mul_n (mp_ptr p, mp_srcptr a, mp_srcptr b, mp_size_t n, mp_ptr ws)
       nm1 = n - 1;
       if (mpn_add_n (ws, p + n1, ws, nm1))
 	{
-	  mp_limb_t x = ws[nm1] + 1;
+	  mp_limb_t x = (ws[nm1] + 1) & GMP_NUMB_MASK;
 	  ws[nm1] = x;
 	  if (x == 0)
-	    ++ws[n];
+	    ws[n] = (ws[n] + 1) & GMP_NUMB_MASK;
 	}
       if (mpn_add_n (p + n3, p + n3, ws, n1))
 	{
-	  mp_limb_t x;
-	  i = n1 + n3;
-	  do {
-	    x = p[i] + 1;
-	    p[i] = x;
-	    ++i;
-	  } while (x == 0);
+	  mpn_incr_u (p + n1 + n3, 1);
 	}
     }
   else
@@ -191,7 +190,7 @@ mpn_kara_mul_n (mp_ptr p, mp_srcptr a, mp_srcptr b, mp_size_t n, mp_ptr ws)
 	{
 	  --i;
 	  w0 = a[i];
-	  w1 = a[n2+i];
+	  w1 = a[n2 + i];
 	}
       while (w0 == w1 && i != 0);
       sign = 0;
@@ -209,11 +208,11 @@ mpn_kara_mul_n (mp_ptr p, mp_srcptr a, mp_srcptr b, mp_size_t n, mp_ptr ws)
       mpn_sub_n (p, x, y, n2);
 
       i = n2;
-      do 
+      do
 	{
 	  --i;
 	  w0 = b[i];
-	  w1 = b[n2+i];
+	  w1 = b[n2 + i];
 	}
       while (w0 == w1 && i != 0);
       if (w0 < w1)
@@ -230,7 +229,7 @@ mpn_kara_mul_n (mp_ptr p, mp_srcptr a, mp_srcptr b, mp_size_t n, mp_ptr ws)
       mpn_sub_n (p + n2, x, y, n2);
 
       /* Pointwise products. */
-      if (n2 < KARATSUBA_MUL_THRESHOLD)
+      if (n2 < MUL_KARATSUBA_THRESHOLD)
 	{
 	  mpn_mul_basecase (ws, p, n2, p + n2, n2);
 	  mpn_mul_basecase (p, a, n2, b, n2);
@@ -250,7 +249,7 @@ mpn_kara_mul_n (mp_ptr p, mp_srcptr a, mp_srcptr b, mp_size_t n, mp_ptr ws)
 	w = -mpn_sub_n (ws, p, ws, n);
       w += mpn_add_n (ws, p + n, ws, n);
       w += mpn_add_n (p + n2, p + n2, ws, n);
-      MPN_INCR_U (p + n2 + n, 2*n - (n2 + n), w);
+      MPN_INCR_U (p + n2 + n, 2 * n - (n2 + n), w);
     }
 }
 
@@ -282,7 +281,7 @@ mpn_kara_sqr_n (mp_ptr p, mp_srcptr a, mp_size_t n, mp_ptr ws)
 	    {
 	      --i;
 	      w0 = a[i];
-	      w1 = a[n3+i];
+	      w1 = a[n3 + i];
 	    }
 	  while (w0 == w1 && i != 0);
 	  if (w0 < w1)
@@ -302,30 +301,29 @@ mpn_kara_sqr_n (mp_ptr p, mp_srcptr a, mp_size_t n, mp_ptr ws)
       n1 = n + 1;
 
       /* n2 is always either n3 or n3-1 so maybe the two sets of tests here
-         could be combined.  But that's not important, since the tests will
-         take a miniscule amount of time compared to the function calls.  */
-      if (BELOW_THRESHOLD (n3, BASECASE_SQR_THRESHOLD))
-        {
-          mpn_mul_basecase (ws, p, n3, p, n3);
-          mpn_mul_basecase (p,  a, n3, a, n3);
-        }
-      else if (BELOW_THRESHOLD (n3, KARATSUBA_SQR_THRESHOLD))
-        {
-          mpn_sqr_basecase (ws, p, n3);
-          mpn_sqr_basecase (p,  a, n3);
-        }
+	 could be combined.  But that's not important, since the tests will
+	 take a miniscule amount of time compared to the function calls.  */
+      if (BELOW_THRESHOLD (n3, SQR_BASECASE_THRESHOLD))
+	{
+	  mpn_mul_basecase (ws, p, n3, p, n3);
+	  mpn_mul_basecase (p,  a, n3, a, n3);
+	}
+      else if (BELOW_THRESHOLD (n3, SQR_KARATSUBA_THRESHOLD))
+	{
+	  mpn_sqr_basecase (ws, p, n3);
+	  mpn_sqr_basecase (p,  a, n3);
+	}
       else
-        {
-          mpn_kara_sqr_n   (ws, p, n3, ws + n1);	 /* (x-y)^2 */
-          mpn_kara_sqr_n   (p,  a, n3, ws + n1);	 /* x^2	    */
-        }
-      if (BELOW_THRESHOLD (n2, BASECASE_SQR_THRESHOLD))
-        mpn_mul_basecase (p + n1, a + n3, n2, a + n3, n2);
-      else if (BELOW_THRESHOLD (n2, KARATSUBA_SQR_THRESHOLD))
-        mpn_sqr_basecase (p + n1, a + n3, n2);
+	{
+	  mpn_kara_sqr_n   (ws, p, n3, ws + n1);	 /* (x-y)^2 */
+	  mpn_kara_sqr_n   (p,  a, n3, ws + n1);	 /* x^2	    */
+	}
+      if (BELOW_THRESHOLD (n2, SQR_BASECASE_THRESHOLD))
+	mpn_mul_basecase (p + n1, a + n3, n2, a + n3, n2);
+      else if (BELOW_THRESHOLD (n2, SQR_KARATSUBA_THRESHOLD))
+	mpn_sqr_basecase (p + n1, a + n3, n2);
       else
-        mpn_kara_sqr_n   (p + n1, a + n3, n2, ws + n1);	 /* y^2	    */
-
+	mpn_kara_sqr_n   (p + n1, a + n3, n2, ws + n1);	 /* y^2	    */
 
       /* Since x^2+y^2-(x-y)^2 = 2xy >= 0 there's no need to track the
 	 borrow from mpn_sub_n.	 If it occurs then it'll be cancelled by a
@@ -337,31 +335,25 @@ mpn_kara_sqr_n (mp_ptr p, mp_srcptr a, mp_size_t n, mp_ptr ws)
       nm1 = n - 1;
       if (mpn_add_n (ws, p + n1, ws, nm1))   /* x^2+y^2-(x-y)^2 = 2xy */
 	{
-	  mp_limb_t x = ws[nm1] + 1;
+	  mp_limb_t x = (ws[nm1] + 1) & GMP_NUMB_MASK;
 	  ws[nm1] = x;
 	  if (x == 0)
-	    ++ws[n];
+	    ws[n] = (ws[n] + 1) & GMP_NUMB_MASK;
 	}
       if (mpn_add_n (p + n3, p + n3, ws, n1))
 	{
-	  mp_limb_t x;
-	  i = n1 + n3;
-	  do {
-	    x = p[i] + 1;
-	    p[i] = x;
-	    ++i;
-	  } while (x == 0);
+	  mpn_incr_u (p + n1 + n3, 1);
 	}
     }
   else
     {
       /* Even length. */
       i = n2;
-      do 
+      do
 	{
 	  --i;
 	  w0 = a[i];
-	  w1 = a[n2+i];
+	  w1 = a[n2 + i];
 	}
       while (w0 == w1 && i != 0);
       if (w0 < w1)
@@ -377,13 +369,13 @@ mpn_kara_sqr_n (mp_ptr p, mp_srcptr a, mp_size_t n, mp_ptr ws)
       mpn_sub_n (p, x, y, n2);
 
       /* Pointwise products. */
-      if (BELOW_THRESHOLD (n2, BASECASE_SQR_THRESHOLD))
+      if (BELOW_THRESHOLD (n2, SQR_BASECASE_THRESHOLD))
 	{
 	  mpn_mul_basecase (ws,    p,      n2, p,      n2);
 	  mpn_mul_basecase (p,     a,      n2, a,      n2);
 	  mpn_mul_basecase (p + n, a + n2, n2, a + n2, n2);
 	}
-      else if (BELOW_THRESHOLD (n2, KARATSUBA_SQR_THRESHOLD))
+      else if (BELOW_THRESHOLD (n2, SQR_KARATSUBA_THRESHOLD))
 	{
 	  mpn_sqr_basecase (ws,    p,      n2);
 	  mpn_sqr_basecase (p,     a,      n2);
@@ -400,7 +392,7 @@ mpn_kara_sqr_n (mp_ptr p, mp_srcptr a, mp_size_t n, mp_ptr ws)
       w = -mpn_sub_n (ws, p, ws, n);
       w += mpn_add_n (ws, p + n, ws, n);
       w += mpn_add_n (p + n2, p + n2, ws, n);
-      MPN_INCR_U (p + n2 + n, 2*n - (n2 + n), w);
+      MPN_INCR_U (p + n2 + n, 2 * n - (n2 + n), w);
     }
 }
 
@@ -410,6 +402,7 @@ mpn_kara_sqr_n (mp_ptr p, mp_srcptr a, mp_size_t n, mp_ptr ws)
    Note that z and x might point to the same vectors.
    FIXME: gcc won't inline this because it uses alloca. */
 #if USE_MORE_MPN
+
 static inline mp_limb_t
 add2Times (mp_ptr z, mp_srcptr x, mp_srcptr y, mp_size_t n)
 {
@@ -423,6 +416,7 @@ add2Times (mp_ptr z, mp_srcptr x, mp_srcptr y, mp_size_t n)
   TMP_FREE (marker);
   return c;
 }
+
 #else
 
 static mp_limb_t
@@ -431,7 +425,8 @@ add2Times (mp_ptr z, mp_srcptr x, mp_srcptr y, mp_size_t n)
   mp_limb_t c, v, w;
 
   ASSERT (n > 0);
-  v = *x; w = *y;
+  v = *x;
+  w = *y;
   c = w >> (BITS_PER_MP_LIMB - 1);
   w <<= 1;
   v += w;
@@ -468,12 +463,13 @@ add2Times (mp_ptr z, mp_srcptr x, mp_srcptr y, mp_size_t n)
  * Returns top words (overflow) at pth, pt1 and pt2 respectively.
  */
 #if USE_MORE_MPN
+
 static void
 evaluate3 (mp_ptr ph, mp_ptr p1, mp_ptr p2, mp_ptr pth, mp_ptr pt1, mp_ptr pt2,
 	   mp_srcptr A, mp_srcptr B, mp_srcptr C, mp_size_t len,mp_size_t len2)
 {
   mp_limb_t c, d, e;
-  
+
   ASSERT (len - len2 <= 2);
 
   e = mpn_lshift (p1, B, len, 1);
@@ -481,18 +477,27 @@ evaluate3 (mp_ptr ph, mp_ptr p1, mp_ptr p2, mp_ptr pth, mp_ptr pt1, mp_ptr pt2,
   c = mpn_lshift (ph, A, len, 2);
   c += e + mpn_add_n (ph, ph, p1, len);
   d = mpn_add_n (ph, ph, C, len2);
-  if (len2 == len) c += d; else c += mpn_add_1 (ph + len2, ph + len2, len-len2, d);
+  if (len2 == len)
+    c += d;
+  else
+    c += mpn_add_1 (ph + len2, ph + len2, len-len2, d);
   ASSERT (c < 7);
   *pth = c;
 
   c = mpn_lshift (p2, C, len2, 2);
 #if 1
-  if (len2 != len) { p2[len-1] = 0; p2[len2] = c; c = 0; }
+  if (len2 != len)
+    {
+      p2[len-1] = 0;
+      p2[len2] = c;
+      c = 0;
+    }
   c += e + mpn_add_n (p2, p2, p1, len);
 #else
   d = mpn_add_n (p2, p2, p1, len2);
   c += d;
-  if (len2 != len) c = mpn_add_1 (p2+len2, p1+len2, len-len2, c);
+  if (len2 != len)
+    c = mpn_add_1 (p2+len2, p1+len2, len-len2, c);
   c += e;
 #endif
   c += mpn_add_n (p2, p2, A, len);
@@ -501,11 +506,12 @@ evaluate3 (mp_ptr ph, mp_ptr p1, mp_ptr p2, mp_ptr pth, mp_ptr pt1, mp_ptr pt2,
 
   c = mpn_add_n (p1, A, B, len);
   d = mpn_add_n (p1, p1, C, len2);
-  if (len2 == len) c += d;
-  else c += mpn_add_1 (p1+len2, p1+len2, len-len2, d);
+  if (len2 == len)
+    c += d;
+  else
+    c += mpn_add_1 (p1+len2, p1+len2, len-len2, d);
   ASSERT (c < 3);
   *pt1 = c;
-
 }
 
 #else
@@ -602,6 +608,7 @@ evaluate3 (mp_ptr ph, mp_ptr p1, mp_ptr p2, mp_ptr pth, mp_ptr pt1, mp_ptr pt2,
  */
 
 #if USE_MORE_MPN
+
 static void
 interpolate3 (mp_srcptr A, mp_ptr B, mp_ptr C, mp_ptr D, mp_srcptr E,
 	      mp_ptr ptb, mp_ptr ptc, mp_ptr ptd, mp_size_t len,mp_size_t len2)
@@ -632,25 +639,31 @@ interpolate3 (mp_srcptr A, mp_ptr B, mp_ptr C, mp_ptr D, mp_srcptr E,
   t = mpn_lshift (ws, A, len, 4);
   tb -= t + mpn_sub_n (B, B, ws, len);
   t = mpn_sub_n (B, B, E, len2);
-  if (len2 == len) tb -= t;
-  else tb -= mpn_sub_1 (B+len2, B+len2, len-len2, t);
+  if (len2 == len)
+    tb -= t;
+  else
+    tb -= mpn_sub_1 (B+len2, B+len2, len-len2, t);
 
   tc -= mpn_sub_n (C, C, A, len);
   t = mpn_sub_n (C, C, E, len2);
-  if (len2 == len) tc -= t;
-  else tc -= mpn_sub_1 (C+len2, C+len2, len-len2, t);
+  if (len2 == len)
+    tc -= t;
+  else
+    tc -= mpn_sub_1 (C+len2, C+len2, len-len2, t);
 
   t = mpn_lshift (ws, E, len2, 4);
   t += mpn_add_n (ws, ws, A, len2);
 #if 1
-  if (len2 != len) t = mpn_add_1 (ws+len2, A+len2, len-len2, t);
+  if (len2 != len)
+    t = mpn_add_1 (ws+len2, A+len2, len-len2, t);
   td -= t + mpn_sub_n (D, D, ws, len);
 #else
   t += mpn_sub_n (D, D, ws, len2);
-  if (len2 != len) {
-    t = mpn_sub_1 (D+len2, D+len2, len-len2, t);
-    t += mpn_sub_n (D+len2, D+len2, A+len2, len-len2);
-  } /* end if/else */
+  if (len2 != len)
+    {
+      t = mpn_sub_1 (D+len2, D+len2, len-len2, t);
+      t += mpn_sub_n (D+len2, D+len2, A+len2, len-len2);
+    }
   td -= t;
 #endif
 
@@ -660,12 +673,12 @@ interpolate3 (mp_srcptr A, mp_ptr B, mp_ptr C, mp_ptr D, mp_srcptr E,
 #ifdef HAVE_MPN_ADD_SUB_N
   /* #error TO DO ... */
 #else
-  t = tb + td + mpn_add_n (ws, B, D, len);  
-  td = tb - td - mpn_sub_n (D, B, D, len);
+  t = tb + td + mpn_add_n (ws, B, D, len);
+  td = (tb - td - mpn_sub_n (D, B, D, len)) & GMP_NUMB_MASK;
   tb = t;
   MPN_COPY (B, ws, len);
 #endif
-  
+
   /* b := b-8*c */
   t = 8 * tc + mpn_lshift (ws, C, len, 3);
   tb -= t + mpn_sub_n (B, B, ws, len);
@@ -675,14 +688,14 @@ interpolate3 (mp_srcptr A, mp_ptr B, mp_ptr C, mp_ptr D, mp_srcptr E,
   tc -= tb + mpn_sub_n (C, C, B, len);
 
   /* d := d/3 */
-  td = (td - mpn_divexact_by3 (D, D, len)) * MODLIMB_INVERSE_3;
+  td = ((td - mpn_divexact_by3 (D, D, len)) * MODLIMB_INVERSE_3) & GMP_NUMB_MASK;
 
   /* b, d := b + d, b - d */
 #ifdef HAVE_MPN_ADD_SUB_N
   /* #error TO DO ... */
 #else
-  t = tb + td + mpn_add_n (ws, B, D, len);  
-  td = tb - td - mpn_sub_n (D, B, D, len);
+  t = (tb + td + mpn_add_n (ws, B, D, len)) & GMP_NUMB_MASK;
+  td = (tb - td - mpn_sub_n (D, B, D, len)) & GMP_NUMB_MASK;
   tb = t;
   MPN_COPY (B, ws, len);
 #endif
@@ -695,19 +708,19 @@ interpolate3 (mp_srcptr A, mp_ptr B, mp_ptr C, mp_ptr D, mp_srcptr E,
 
   ASSERT(!(*B & 3));
   mpn_rshift (B, B, len, 2);
-  B[len-1] |= tb<<(BITS_PER_MP_LIMB-2);
+  B[len-1] |= (tb << (GMP_NUMB_BITS - 2)) & GMP_NUMB_MASK;
   ASSERT((mp_limb_signed_t)tb >= 0);
   tb >>= 2;
 
   ASSERT(!(*C & 1));
   mpn_rshift (C, C, len, 1);
-  C[len-1] |= tc<<(BITS_PER_MP_LIMB-1);
+  C[len-1] |= (tc << (GMP_NUMB_BITS - 1)) & GMP_NUMB_MASK;
   ASSERT((mp_limb_signed_t)tc >= 0);
   tc >>= 1;
 
   ASSERT(!(*D & 3));
   mpn_rshift (D, D, len, 2);
-  D[len-1] |= td<<(BITS_PER_MP_LIMB-2);
+  D[len-1] |= (td << (GMP_NUMB_BITS - 2)) & GMP_NUMB_MASK;
   ASSERT((mp_limb_signed_t)td >= 0);
   td >>= 2;
 
@@ -913,16 +926,16 @@ interpolate3 (mp_srcptr A, mp_ptr B, mp_ptr C, mp_ptr D, mp_srcptr E,
  * ws is workspace.
  */
 
-/* TO DO: If TOOM3_MUL_THRESHOLD is much bigger than KARATSUBA_MUL_THRESHOLD then the
+/* TO DO: If MUL_TOOM3_THRESHOLD is much bigger than MUL_KARATSUBA_THRESHOLD then the
  *	  recursion in mpn_toom3_mul_n() will always bottom out with mpn_kara_mul_n()
- *	  because the "n < KARATSUBA_MUL_THRESHOLD" test here will always be false.
+ *	  because the "n < MUL_KARATSUBA_THRESHOLD" test here will always be false.
  */
 
 #define TOOM3_MUL_REC(p, a, b, n, ws) \
   do {								\
-    if (n < KARATSUBA_MUL_THRESHOLD)				\
+    if (n < MUL_KARATSUBA_THRESHOLD)				\
       mpn_mul_basecase (p, a, n, b, n);				\
-    else if (n < TOOM3_MUL_THRESHOLD)				\
+    else if (n < MUL_TOOM3_THRESHOLD)				\
       mpn_kara_mul_n (p, a, b, n, ws);				\
     else							\
       mpn_toom3_mul_n (p, a, b, n, ws);				\
@@ -944,7 +957,7 @@ mpn_toom3_mul_n (mp_ptr p, mp_srcptr a, mp_srcptr b, mp_size_t n, mp_ptr ws)
     mp_limb_t m;
 
     /* this is probably unnecessarily strict */
-    ASSERT (n >= TOOM3_MUL_THRESHOLD);
+    ASSERT (n >= MUL_TOOM3_THRESHOLD);
 
     l = ls = n / 3;
     m = n - l * 3;
@@ -1011,24 +1024,24 @@ mpn_toom3_mul_n (mp_ptr p, mp_srcptr a, mp_srcptr b, mp_size_t n, mp_ptr ws)
   /** Final stage: add up the coefficients. **/
   tB += mpn_add_n (p + l, p + l, B, l2);
   tD += mpn_add_n (p + l3, p + l3, D, l2);
-  MPN_INCR_U (p + l3, 2*n - l3, tB);
-  MPN_INCR_U (p + l4, 2*n - l4, tC);
-  MPN_INCR_U (p + l5, 2*n - l5, tD);
+  MPN_INCR_U (p + l3, 2 * n - l3, tB);
+  MPN_INCR_U (p + l4, 2 * n - l4, tC);
+  MPN_INCR_U (p + l5, 2 * n - l5, tD);
 }
 
 /*-- mpn_toom3_sqr_n --------------------------------------------------------------*/
 
 /* Like previous function but for squaring */
 
-/* FIXME: If TOOM3_SQR_THRESHOLD is big enough it might never get into the
+/* FIXME: If SQR_TOOM3_THRESHOLD is big enough it might never get into the
    basecase range.  Try to arrange those conditonals go dead.  */
 #define TOOM3_SQR_REC(p, a, n, ws)                              \
   do {                                                          \
-    if (BELOW_THRESHOLD (n, BASECASE_SQR_THRESHOLD))            \
+    if (BELOW_THRESHOLD (n, SQR_BASECASE_THRESHOLD))            \
       mpn_mul_basecase (p, a, n, a, n);                         \
-    else if (BELOW_THRESHOLD (n, KARATSUBA_SQR_THRESHOLD))      \
+    else if (BELOW_THRESHOLD (n, SQR_KARATSUBA_THRESHOLD))      \
       mpn_sqr_basecase (p, a, n);                               \
-    else if (BELOW_THRESHOLD (n, TOOM3_SQR_THRESHOLD))          \
+    else if (BELOW_THRESHOLD (n, SQR_TOOM3_THRESHOLD))          \
       mpn_kara_sqr_n (p, a, n, ws);                             \
     else                                                        \
       mpn_toom3_sqr_n (p, a, n, ws);                            \
@@ -1050,7 +1063,7 @@ mpn_toom3_sqr_n (mp_ptr p, mp_srcptr a, mp_size_t n, mp_ptr ws)
     mp_limb_t m;
 
     /* this is probably unnecessarily strict */
-    ASSERT (n >= TOOM3_SQR_THRESHOLD);
+    ASSERT (n >= SQR_TOOM3_THRESHOLD);
 
     l = ls = n / 3;
     m = n - l * 3;
@@ -1109,38 +1122,38 @@ mpn_toom3_sqr_n (mp_ptr p, mp_srcptr a, mp_size_t n, mp_ptr ws)
   /** Final stage: add up the coefficients. **/
   tB += mpn_add_n (p + l, p + l, B, l2);
   tD += mpn_add_n (p + l3, p + l3, D, l2);
-  MPN_INCR_U (p + l3, 2*n - l3, tB);
-  MPN_INCR_U (p + l4, 2*n - l4, tC);
-  MPN_INCR_U (p + l5, 2*n - l5, tD);
+  MPN_INCR_U (p + l3, 2 * n - l3, tB);
+  MPN_INCR_U (p + l4, 2 * n - l4, tC);
+  MPN_INCR_U (p + l5, 2 * n - l5, tD);
 }
 
 void
 mpn_mul_n (mp_ptr p, mp_srcptr a, mp_srcptr b, mp_size_t n)
 {
   ASSERT (n >= 1);
-  ASSERT (! MPN_OVERLAP_P (p, 2*n, a, n));
-  ASSERT (! MPN_OVERLAP_P (p, 2*n, b, n));
+  ASSERT (! MPN_OVERLAP_P (p, 2 * n, a, n));
+  ASSERT (! MPN_OVERLAP_P (p, 2 * n, b, n));
 
-  if (n < KARATSUBA_MUL_THRESHOLD)
+  if (n < MUL_KARATSUBA_THRESHOLD)
     mpn_mul_basecase (p, a, n, b, n);
-  else if (n < TOOM3_MUL_THRESHOLD)
+  else if (n < MUL_TOOM3_THRESHOLD)
     {
       /* Allocate workspace of fixed size on stack: fast! */
 #if TUNE_PROGRAM_BUILD
-      mp_limb_t ws[MPN_KARA_MUL_N_TSIZE (TOOM3_MUL_THRESHOLD_LIMIT-1)];
+      mp_limb_t ws[MPN_KARA_MUL_N_TSIZE (MUL_TOOM3_THRESHOLD_LIMIT-1)];
 #else
-      mp_limb_t ws[MPN_KARA_MUL_N_TSIZE (TOOM3_MUL_THRESHOLD-1)];
+      mp_limb_t ws[MPN_KARA_MUL_N_TSIZE (MUL_TOOM3_THRESHOLD-1)];
 #endif
       mpn_kara_mul_n (p, a, b, n, ws);
     }
 #if WANT_FFT || TUNE_PROGRAM_BUILD
-  else if (n < FFT_MUL_THRESHOLD)
+  else if (n < MUL_FFT_THRESHOLD)
 #else
   else
 #endif
     {
       /* Use workspace of unknown size in heap, as stack space may
-       * be limited.  Since n is at least TOOM3_MUL_THRESHOLD, the
+       * be limited.  Since n is at least MUL_TOOM3_THRESHOLD, the
        * multiplication will take much longer than malloc()/free().  */
       mp_limb_t wsLen, *ws;
       wsLen = MPN_TOOM3_MUL_N_TSIZE (n);
@@ -1151,7 +1164,7 @@ mpn_mul_n (mp_ptr p, mp_srcptr a, mp_srcptr b, mp_size_t n)
 #if WANT_FFT || TUNE_PROGRAM_BUILD
   else
     {
-      mpn_mul_fft_full (p, a, n, b, n);	     
+      mpn_mul_fft_full (p, a, n, b, n);
     }
 #endif
 }

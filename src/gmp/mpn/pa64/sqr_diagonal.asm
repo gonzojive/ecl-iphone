@@ -1,6 +1,6 @@
 dnl  HP-PA 2.0 64-bit mpn_sqr_diagonal.
 
-dnl  Copyright 2001 Free Software Foundation, Inc.
+dnl  Copyright 2001, 2002 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 
@@ -19,10 +19,12 @@ dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
 dnl  the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
 dnl  MA 02111-1307, USA.
 
-include(`../config.m4')
 
-C This code runs at 7.5 cycles/limb on PA8x00.  The cache would saturate at 7.0
-C cycles/limb, so there isn't much point in trying to optimize this further.
+dnl  This code runs at 7.25 cycles/limb on PA8000 and 7.75 cycles/limb on
+dnl  PA8500.  The cache would saturate at 5 cycles/limb, so there is some room
+dnl  for optimization.
+
+include(`../config.m4')
 
 C INPUT PARAMETERS
 define(`rp',`%r26')
@@ -35,14 +37,17 @@ define(`p64',`%r31')
 define(`t0',`%r19')
 define(`t1',`%r20')
 
-	.level	2.0N
+ifdef(`HAVE_ABI_2_0w',
+`	.level	2.0W
+',`	.level	2.0N
+')
 PROLOGUE(mpn_sqr_diagonal)
 	.proc
 	.entry
 	ldo		128(%r30),%r30
 
 	fldds,ma	8(up),%fr8
-	addib,=		-1,n,L$end1
+	addib,=		-1,n,L(end1)
 	nop
 	fldds,ma	8(up),%fr4
 	xmpyu		%fr8l,%fr8r,%fr10
@@ -51,10 +56,10 @@ PROLOGUE(mpn_sqr_diagonal)
 	fstd		%fr9,0(rp)
 	xmpyu		%fr8l,%fr8l,%fr11
 	fstd		%fr11,8(rp)
-	addib,=		-1,n,L$end2
+	addib,=		-1,n,L(end2)
 	ldo		16(rp),rp
 
-L$loop	fldds,ma	8(up),%fr8		C load next up limb
+L(loop)	fldds,ma	8(up),%fr8		C load next up limb
 	xmpyu		%fr4l,%fr4r,%fr6
 	fstd		%fr6,-128(%r30)
 	xmpyu		%fr4r,%fr4r,%fr5	C multiply in fp regs
@@ -70,7 +75,7 @@ L$loop	fldds,ma	8(up),%fr8		C load next up limb
 	extrd,u		p32,32,33,t1
 	add,dc		t1,p64,p64
 	std		p64,-8(rp)
-	addib,=		-1,n,L$exit
+	addib,=		-1,n,L(exit)
 	ldo		16(rp),rp
 
 	fldds,ma	8(up),%fr4
@@ -89,11 +94,10 @@ L$loop	fldds,ma	8(up),%fr8		C load next up limb
 	extrd,u		p32,32,33,t1
 	add,dc		t1,p64,p64
 	std		p64,-8(rp)
-
-	addib,<>	-1,n,L$loop
+	addib,<>	-1,n,L(loop)
 	ldo		16(rp),rp
 
-L$end2	xmpyu		%fr4l,%fr4r,%fr6
+L(end2)	xmpyu		%fr4l,%fr4r,%fr6
 	fstd		%fr6,-128(%r30)
 	xmpyu		%fr4r,%fr4r,%fr5
 	fstd		%fr5,0(rp)
@@ -121,7 +125,7 @@ L$end2	xmpyu		%fr4l,%fr4r,%fr6
 	bve		(%r2)
 	ldo		-128(%r30),%r30
 
-L$exit	xmpyu		%fr8l,%fr8r,%fr10
+L(exit)	xmpyu		%fr8l,%fr8r,%fr10
 	fstd		%fr10,-120(%r30)
 	xmpyu		%fr8r,%fr8r,%fr9
 	fstd		%fr9,0(rp)
@@ -153,7 +157,7 @@ L$exit	xmpyu		%fr8l,%fr8r,%fr10
 	bve		(%r2)
 	ldo		-128(%r30),%r30
 
-L$end1	xmpyu		%fr8l,%fr8r,%fr10
+L(end1)	xmpyu		%fr8l,%fr8r,%fr10
 	fstd		%fr10,-128(%r30)
 	xmpyu		%fr8r,%fr8r,%fr9
 	fstd		%fr9,0(rp)

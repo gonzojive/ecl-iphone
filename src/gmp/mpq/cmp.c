@@ -1,7 +1,7 @@
 /* mpq_cmp(u,v) -- Compare U, V.  Return postive, zero, or negative
    based on if U > V, U == V, or U < V.
 
-Copyright 1991, 1994, 1996, 2001 Free Software Foundation, Inc.
+Copyright 1991, 1994, 1996, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -74,11 +74,11 @@ mpq_cmp (const MP_RAT *op1, const MP_RAT *op2)
 
     count_leading_zeros (cnt1, op1->_mp_num._mp_d[num1_size - 1]);
     count_leading_zeros (cnt2, op2->_mp_den._mp_d[den2_size - 1]);
-    bits1 = tmp1_size * BITS_PER_MP_LIMB - cnt1 - cnt2;
+    bits1 = tmp1_size * GMP_NUMB_BITS - cnt1 - cnt2 + 2 * GMP_NAIL_BITS;
 
     count_leading_zeros (cnt1, op2->_mp_num._mp_d[num2_size - 1]);
     count_leading_zeros (cnt2, op1->_mp_den._mp_d[den1_size - 1]);
-    bits2 = tmp2_size * BITS_PER_MP_LIMB - cnt1 - cnt2;
+    bits2 = tmp2_size * GMP_NUMB_BITS - cnt1 - cnt2 + 2 * GMP_NAIL_BITS;
 
     if (bits1 > bits2 + 1)
       return num1_sign;

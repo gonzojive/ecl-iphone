@@ -1,6 +1,6 @@
 /* operator>> -- C++-style input of mpq_t.
 
-Copyright 2001 Free Software Foundation, Inc.
+Copyright 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -47,10 +47,10 @@ operator>> (istream &i, mpq_ptr q)
       if (c == '-')
 	s = "-";
       i.get(c);
-    }
 
-  while (isspace(c) && i.get(c)) // skip whitespace
-    ;
+      while (isspace(c) && i.get(c)) // skip whitespace
+	;
+    }
 
   base = __gmp_istream_set_base(i, c, zero, showbase); // select the base
   __gmp_istream_set_digits(s, i, c, ok, base);         // read the numerator

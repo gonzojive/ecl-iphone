@@ -1,7 +1,6 @@
-/* mpz_ui_kronecker -- ulong+mpz Kronecker/Jacobi symbol. */
+/* mpz_ui_kronecker -- ulong+mpz Kronecker/Jacobi symbol.
 
-/*
-Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
+Copyright 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -18,8 +17,7 @@ License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
 the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA.
-*/
+MA 02111-1307, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -39,7 +37,7 @@ mpz_ui_kronecker (unsigned long a, mpz_srcptr b)
 {
   mp_srcptr  b_ptr = PTR(b);
   mp_limb_t  b_low = b_ptr[0];
-  int        b_abs_size = ABSIZ (b);
+  mp_size_t  b_abs_size = ABSIZ (b);
   mp_limb_t  b_rem;
   int        twos;
   int        result_bit1 = 0;
@@ -48,6 +46,16 @@ mpz_ui_kronecker (unsigned long a, mpz_srcptr b)
 
   if (b_abs_size == 0)
     return JACOBI_U0 (a);  /* (a/0) */
+
+  if (a > GMP_NUMB_MAX)
+    {
+      mp_limb_t  alimbs[2];
+      mpz_t      az;
+      ALLOC(az) = numberof (alimbs);
+      PTR(az) = alimbs;
+      mpz_set_ui (az, a);
+      return mpz_kronecker (az, b);
+    }
 
   if (! (b_low & 1))
     {
@@ -61,11 +69,11 @@ mpz_ui_kronecker (unsigned long a, mpz_srcptr b)
       MPN_STRIP_LOW_ZEROS_NOT_ZERO (b_ptr, b_abs_size, b_low);
       if (! (b_low & 1))
         {
-          if (b_low == MP_LIMB_T_HIGHBIT)
+          if (b_low == GMP_NUMB_HIGHBIT)
             {
               if (b_abs_size == 1)   /* (a/0x80000000) == (a/2)^(BPML-1) */
-                return JACOBI_TWOS_U (BITS_PER_MP_LIMB-1, a);
-      
+                return JACOBI_TWOS_U (GMP_NUMB_BITS-1, a);
+
               /* b_abs_size > 1 */
               b_low = b_ptr[1] << 1;
             }

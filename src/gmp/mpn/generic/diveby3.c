@@ -1,7 +1,7 @@
 /* mpn_divexact_by3 -- mpn division by 3, expecting no remainder. */
 
 /*
-Copyright 2000, 2001 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -61,11 +61,11 @@ mpn_divexact_by3c (mp_ptr dst, mp_srcptr src, mp_size_t size, mp_limb_t c)
       l = s - c;
       c = (l > s);
 
-      l *= MODLIMB_INVERSE_3;
+      l = (l * MODLIMB_INVERSE_3) & GMP_NUMB_MASK;
       dst[i] = l;
 
-      c += (l > MP_LIMB_T_MAX/3);
-      c += (l > (MP_LIMB_T_MAX/3)*2);
+      c += (l > GMP_NUMB_MAX/3);
+      c += (l > (GMP_NUMB_MAX/3)*2);
     }
   while (++i < size);
 

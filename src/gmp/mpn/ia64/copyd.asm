@@ -1,6 +1,6 @@
 dnl  IA-64 mpn_copyd -- copy limb vector, decrementing.
 
-dnl  Copyright (C) 2001 Free Software Foundation, Inc.
+dnl  Copyright 2001, 2002 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 
@@ -30,8 +30,14 @@ ASM_START()
 PROLOGUE(mpn_copyd)
 	.prologue
 	.save ar.lc, r2
-	.body
 		mov	r2 = ar.lc
+	.body
+ifdef(`HAVE_ABI_32',
+`		addp4	r32 = 0, r32
+		addp4	r33 = 0, r33
+		sxt4	r34 = r34
+		;;
+')
 		and	r14 = 3, r34
 		cmp.ge	p14, p15 = 3, r34
 		add	r34 = -1, r34
@@ -43,12 +49,12 @@ PROLOGUE(mpn_copyd)
 		cmp.eq	p10, p11 = 2, r14
 		cmp.eq	p12, p13 = 3, r14
 		;;
-	  (p8)	br	.Lb01
-	  (p10)	br	.Lb10
-	  (p12)	br	.Lb11
+	  (p8)	br.dptk	.Lb01
+	  (p10)	br.dptk	.Lb10
+	  (p12)	br.dptk	.Lb11
 
 .Lb00:	C  n = 4, 8, 12, ...
-	  (p14)	br	.Ls00
+	  (p14)	br.dptk	.Ls00
 		;;
 		ld8	r16 = [r33], -8
 		shr	r15 = r34, 2
@@ -61,13 +67,13 @@ PROLOGUE(mpn_copyd)
 		ld8	r19 = [r33], -8
 		br.cloop.dptk .Loop
 		;;
-		br	.Lend
+		br.sptk	.Lend
 		;;
 
 .Lb01:	C  n = 1, 5, 9, 13, ...
 		ld8	r19 = [r33], -8
 		shr	r15 = r34, 2
-	  (p14)	br	.Ls01
+	  (p14)	br.dptk	.Ls01
 		;;
 		ld8	r16 = [r33], -8
 		mov	ar.lc = r15
@@ -75,7 +81,7 @@ PROLOGUE(mpn_copyd)
 		ld8	r17 = [r33], -8
 		;;
 		ld8	r18 = [r33], -8
-		br	.Li01
+		br.sptk	.Li01
 		;;
 
 .Lb10:	C  n = 2,6, 10, 14, ...
@@ -84,12 +90,12 @@ PROLOGUE(mpn_copyd)
 		;;
 		ld8	r19 = [r33], -8
 		mov	ar.lc = r15
-	  (p14)	br	.Ls10
+	  (p14)	br.dptk	.Ls10
 		;;
 		ld8	r16 = [r33], -8
 		;;
 		ld8	r17 = [r33], -8
-		br	.Li10
+		br.sptk	.Li10
 		;;
 
 .Lb11:	C  n = 3, 7, 11, 15, ...
@@ -100,30 +106,30 @@ PROLOGUE(mpn_copyd)
 		mov	ar.lc = r15
 		;;
 		ld8	r19 = [r33], -8
-	  (p14)	br	.Ls11
+	  (p14)	br.dptk	.Ls11
 		;;
 		ld8	r16 = [r33], -8
-		br	.Li11
+		br.sptk	.Li11
 		;;
 
 .Loop:
 .Li00:
-  { .mmb	st8	[r32] = r16, -8
+  { .mmb;	st8	[r32] = r16, -8
 		ld8	r16 = [r33], -8
 		;;
 }
 .Li11:
-  { .mmb	st8	[r32] = r17, -8
+  { .mmb;	st8	[r32] = r17, -8
 		ld8	r17 = [r33], -8
 		;;
 }
 .Li10:
-  { .mmb	st8	[r32] = r18, -8
+  { .mmb;	st8	[r32] = r18, -8
 		ld8	r18 = [r33], -8
 		;;
 }
 .Li01:
-  { .mmb	st8	[r32] = r19, -8
+  { .mmb;	st8	[r32] = r19, -8
 		ld8	r19 = [r33], -8
 		br.cloop.dptk .Loop
 		;;

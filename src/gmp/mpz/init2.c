@@ -1,6 +1,6 @@
 /* mpz_init2 -- initialize mpz, with requested size in bits.
 
-Copyright 2001 Free Software Foundation, Inc.
+Copyright 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -26,9 +26,14 @@ void
 mpz_init2 (mpz_ptr x, unsigned long bits)
 {
   mp_size_t  limbs;
-  limbs = (bits + BITS_PER_MP_LIMB-1) / BITS_PER_MP_LIMB;
+  limbs = (bits + GMP_NUMB_BITS-1) / GMP_NUMB_BITS;
   limbs = MAX (limbs, 1);
   SIZ(x) = 0;
   ALLOC(x) = limbs;
   PTR(x) = __GMP_ALLOCATE_FUNC_LIMBS (limbs);
+
+#ifdef __CHECKER__
+  /* let the low limb look initialized, for the benefit of mpz_get_ui etc */
+  PTR(x)[0] = 0;
+#endif
 }

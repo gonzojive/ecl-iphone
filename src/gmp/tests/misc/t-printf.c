@@ -1,6 +1,6 @@
 /* Test gmp_printf and related functions.
 
-Copyright 2001 Free Software Foundation, Inc.
+Copyright 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -35,6 +35,7 @@ MA 02111-1307, USA. */
 #include <varargs.h>
 #endif
 
+#include <stddef.h>    /* for ptrdiff_t */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,6 +44,14 @@ MA 02111-1307, USA. */
 #define obstack_chunk_alloc tests_allocate
 #define obstack_chunk_free  tests_free_nosize
 #include <obstack.h>
+#endif
+
+#if HAVE_INTTYPES_H
+# include <inttypes.h> /* for intmax_t */
+#else
+# if HAVE_STDINT_H
+#  include <stdint.h>
+# endif
 #endif
 
 #if HAVE_UNISTD_H
@@ -408,10 +417,16 @@ check_z (void)
     { "%+#08Zx",  "123", "+0x0007b" },
     { "%+#08Zx", "-123", "-0x0007b" },
 
+    { "%.0Zd", "0", "" },
+    { "%.1Zd", "0", "0" },
+    { "%.2Zd", "0", "00" },
+    { "%.3Zd", "0", "000" },
   };
 
-  int    i;
-  mpz_t  z;
+  int        i, j, zeros;
+  mpz_t      z;
+  char       *nfmt;
+  mp_size_t  nsize;
 
   mpz_init (z);
   
@@ -428,6 +443,21 @@ check_z (void)
         }
           
       check_one (data[i].want, data[i].fmt, z);
+
+      /* Same again, with %N and possibly some high zero limbs */
+      nfmt = __gmp_allocate_strdup (data[i].fmt);
+      for (j = 0; nfmt[j] != '\0'; j++)
+        if (nfmt[j] == 'Z')
+          nfmt[j] = 'N';
+      for (zeros = 0; zeros <= 3; zeros++)
+        {
+          nsize = ABSIZ(z)+zeros;
+          MPZ_REALLOC (z, nsize);
+          nsize = (SIZ(z) >= 0 ? nsize : -nsize);
+          refmpn_zero (PTR(z)+ABSIZ(z), zeros);
+          check_one (data[i].want, nfmt, PTR(z), nsize);
+        }
+      __gmp_free_func (nfmt, strlen(nfmt)+1);
     }
       
   mpz_clear (z);
@@ -484,6 +514,19 @@ check_q (void)
     { "%#Qo",  "5/7",  "05/07" },
     { "%#Qo", "-5/7", "-05/07" },
 
+    /* zero denominator and showbase */
+    { "%#10Qo", "0/0",     "       0/0" },
+    { "%#10Qd", "0/0",     "       0/0" },
+    { "%#10Qx", "0/0",     "       0/0" },
+    { "%#10Qo", "123/0",   "    0173/0" },
+    { "%#10Qd", "123/0",   "     123/0" },
+    { "%#10Qx", "123/0",   "    0x7b/0" },
+    { "%#10QX", "123/0",   "    0X7B/0" },
+    { "%#10Qo", "-123/0",  "   -0173/0" },
+    { "%#10Qd", "-123/0",  "    -123/0" },
+    { "%#10Qx", "-123/0",  "   -0x7b/0" },
+    { "%#10QX", "-123/0",  "   -0X7B/0" },
+
     { "%10Qd",      "0", "         0" },
     { "%-10Qd",     "0", "0         " },
     { "%10Qd",    "123", "       123" },
@@ -511,7 +554,6 @@ check_q (void)
     { "%+#08Qx",    "0", "+0000000" },
     { "%+#08Qx",  "123", "+0x0007b" },
     { "%+#08Qx", "-123", "-0x0007b" },
-
   };
 
   int    i;
@@ -694,30 +736,114 @@ check_f (void)
 void
 check_n (void)
 {
-  int    n;
-  long   l;
-  short  h[2];
+  {
+    int  n = -1;
+    check_one ("blah", "%nblah", &n);
+    ASSERT_ALWAYS (n == 0);
+  }
 
-  check_one ("blah", "%nblah", &n);
-  ASSERT_ALWAYS (n == 0);
+  {
+    int  n = -1;
+    check_one ("hello ", "hello %n", &n);
+    ASSERT_ALWAYS (n == 6);
+  }
 
-  check_one ("hello ", "hello %n", &n);
-  ASSERT_ALWAYS (n == 6);
+  {
+    int  n = -1;
+    check_one ("hello  world", "hello %n world", &n);
+    ASSERT_ALWAYS (n == 6);
+  }
 
-  check_one ("hello  world", "hello %n world", &n);
-  ASSERT_ALWAYS (n == 6);
+#define CHECK_N(type, string)                           \
+  do {                                                  \
+    type  x[2];                                         \
+    char  fmt[128];                                     \
+                                                        \
+    x[0] = ~ (type) 0;                                  \
+    x[1] = ~ (type) 0;                                  \
+    sprintf (fmt, "%%d%%%sn%%d", string);               \
+    check_one ("123456", fmt, 123, &x[0], 456);         \
+                                                        \
+    /* should write whole of x[0] and none of x[1] */   \
+    ASSERT_ALWAYS (x[0] == 3);                          \
+    ASSERT_ALWAYS (x[1] == (type) ~ (type) 0);		\
+                                                        \
+  } while (0)
 
-  /* should write whole of l */
-  l = -1;
-  check_one ("", "%ln", &l);
-  ASSERT_ALWAYS (l == 0);
+  CHECK_N (char,      "hh");
+  CHECK_N (long,      "l");
+#if HAVE_LONG_LONG
+  CHECK_N (long long, "L");
+#endif
+#if HAVE_INTMAX_T
+  CHECK_N (intmax_t,  "j");
+#endif
+#if HAVE_PTRDIFF_T
+  CHECK_N (ptrdiff_t, "t");
+#endif
+  CHECK_N (short,     "h");
+  CHECK_N (size_t,    "z");
 
-  /* should write only h[0] */
-  h[0] = -123;
-  h[1] = -456;
-  check_one ("", "%hn", &h[0]);
-  ASSERT_ALWAYS (h[0] == 0);
-  ASSERT_ALWAYS (h[1] == -456);
+  {
+    mpz_t  x[2];
+    mpz_init_set_si (x[0], -987L);
+    mpz_init_set_si (x[1],  654L);
+    check_one ("123456", "%d%Zn%d", 123, x[0], 456);
+    MPZ_CHECK_FORMAT (x[0]);
+    MPZ_CHECK_FORMAT (x[1]);
+    ASSERT_ALWAYS (mpz_cmp_ui (x[0], 3L) == 0);
+    ASSERT_ALWAYS (mpz_cmp_ui (x[1], 654L) == 0);
+    mpz_clear (x[0]);
+    mpz_clear (x[1]);
+  }
+
+  {
+    mpq_t  x[2];
+    mpq_init (x[0]);
+    mpq_init (x[1]);
+    mpq_set_ui (x[0], -987L, 654L);
+    mpq_set_ui (x[1], 4115L, 226L);
+    check_one ("123456", "%d%Qn%d", 123, x[0], 456);
+    MPQ_CHECK_FORMAT (x[0]);
+    MPQ_CHECK_FORMAT (x[1]);
+    ASSERT_ALWAYS (mpq_cmp_ui (x[0], 3L, 1L) == 0);
+    ASSERT_ALWAYS (mpq_cmp_ui (x[1], 4115L, 226L) == 0);
+    mpq_clear (x[0]);
+    mpq_clear (x[1]);
+  }
+
+  {
+    mpf_t  x[2];
+    mpf_init (x[0]);
+    mpf_init (x[1]);
+    mpf_set_ui (x[0], -987L);
+    mpf_set_ui (x[1],  654L);
+    check_one ("123456", "%d%Fn%d", 123, x[0], 456);
+    MPF_CHECK_FORMAT (x[0]);
+    MPF_CHECK_FORMAT (x[1]);
+    ASSERT_ALWAYS (mpf_cmp_ui (x[0], 3L) == 0);
+    ASSERT_ALWAYS (mpf_cmp_ui (x[1], 654L) == 0);
+    mpf_clear (x[0]);
+    mpf_clear (x[1]);
+  }
+
+  {
+    mp_limb_t  a[5];
+    mp_limb_t  a_want[numberof(a)];
+    mp_size_t  i;
+
+    a[0] = 123;
+    check_one ("blah", "bl%Nnah", a, (mp_size_t) 0);
+    ASSERT_ALWAYS (a[0] == 123);
+
+    MPN_ZERO (a_want, numberof (a_want));
+    for (i = 1; i < numberof (a); i++)
+      {
+        check_one ("blah", "bl%Nnah", a, i);
+        a_want[0] = 2;
+        ASSERT_ALWAYS (mpn_cmp (a, a_want, i) == 0);
+      }
+  }
 }
 
 
@@ -731,7 +857,11 @@ check_misc (void)
   mpf_init2 (f, 128L);
 
   check_one ("!", "%c", '!');
+
   check_one ("hello world", "hello %s", "world");
+  check_one ("hello:", "%s:", "hello");
+  mpz_set_ui (z, 0L);
+  check_one ("hello0", "%s%Zd", "hello", z, z);
 
   {
     static char  xs[801];
@@ -776,6 +906,14 @@ check_misc (void)
              "|%5Zo|%5Zx|%5ZX|%#5Zo|%#5Zx|%#5ZX|%#10.8Zx|",
              /**/ z,   z,   z,    z,    z,    z,       z);
 
+  /* %zd for size_t won't be available on old systems, and running something
+     to see if it works might be bad, so only try it on glibc, and only on a
+     new enough version (glibc 2.0 doesn't have %zd) */
+#if __GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ > 0)
+  mpz_set_ui (z, 789L);
+  check_one ("456 789 blah", "%zd %Zd blah", (size_t) 456, z);
+#endif
+
   mpz_clear (z);
   mpf_clear (f);
 }
@@ -790,7 +928,7 @@ main (int argc, char *argv[])
   tests_start ();
   check_vfprintf_fp = fopen (CHECK_VFPRINTF_FILENAME, "w+");
   ASSERT_ALWAYS (check_vfprintf_fp != NULL);
-  
+
   check_z ();
   check_q ();
   check_f ();

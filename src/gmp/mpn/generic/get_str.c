@@ -1,8 +1,8 @@
 /* mpn_get_str -- Convert a MSIZE long limb vector pointed to by MPTR
    to a printable string in STR in base BASE.
 
-Copyright 1991, 1992, 1993, 1994, 1996, 2000, 2001 Free Software Foundation,
-Inc.
+Copyright 1991, 1992, 1993, 1994, 1996, 2000, 2001, 2002 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -25,79 +25,396 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 #include "longlong.h"
 
-/* Convert the limb vector pointed to by MPTR and MSIZE long to a
-   char array, using base BASE for the result array.  Store the
-   result in the character array STR.  STR must point to an array with
-   space for the largest possible number represented by a MSIZE long
-   limb vector + 1 extra character.
+/* Conversion of U {up,un} to a string in base b.  Internally, we convert to
+     base B = b^m, the largest power of b that fits a limb.  Basic algorithms:
 
-   The result is NOT in Ascii, to convert it to printable format, add
-   '0' or 'A' depending on the base and range.
+  A) Divide U repeatedly by B, generating a quotient and remainder, until the
+     quotient becomes zero.  The remainders hold the converted digits.  Digits
+     come out from right to left.  (Used in mpn_sb_get_str.)
 
-   Return the number of digits in the result string.
-   This may include some leading zeros.
+  B) Divide U by b^g, for g such that 1/b <= U/b^g < 1, generating a fraction.
+     Then develop digits by multiplying the fraction repeatedly by b.  Digits
+     come out from left to right.  (Currently not used herein, except for in
+     code for converting single limbs to individual digits.)
 
-   The limb vector pointed to by MPTR is clobbered.  */
+  C) Compute B^1, B^2, B^4, ..., B^(2^s), for s such that B^(2^s) > sqrt(U).
+     Then divide U by B^(2^k), generating an integer quotient and remainder.
+     Recursively convert the quotient, then the remainder, using the
+     precomputed powers.  Digits come out from left to right.  (Used in
+     mpn_dc_get_str.)
+
+  When using algorithm C, algorithm B might be suitable for basecase code,
+  since the required b^g power will be readily accessible.
+
+  Optimization ideas:
+  1. The recursive function of (C) could avoid TMP allocation:
+     a) Overwrite dividend with quotient and remainder, just as permitted by
+        mpn_sb_divrem_mn.
+     b) If TMP memory is anyway needed, pass it as a parameter, similarly to
+        how we do it in Karatsuba multiplication.
+  2. Store the powers of (C) in normalized form, with the normalization count.
+     Quotients will usually need to be left-shifted before each divide, and
+     remainders will either need to be left-shifted of right-shifted.
+  3. When b is even, the powers will end up with lots of low zero limbs.  Could
+     save significant time in the mpn_tdiv_qr call by stripping these zeros.
+  4. In the code for developing digits from a single limb, we could avoid using
+     a full umul_ppmm except for the first (or first few) digits, provided base
+     is even.  Subsequent digits can be developed using plain multiplication.
+     (This saves on register-starved machines (read x86) and on all machines
+     that generate the upper product half using a separate instruction (alpha,
+     powerpc, IA-64) or lacks such support altogether (sparc64, hppa64).
+  5. Separate mpn_dc_get_str basecase code from code for small conversions. The
+     former code will have the exact right power readily available in the
+     powtab parameter for dividing the current number into a fraction.  Convert
+     that using algorithm B.
+  6. Completely avoid division.  Compute the inverses of the powers now in
+     powtab instead of the actual powers.
+
+  Basic structure of (C):
+    mpn_get_str:
+      if POW2_P (n)
+	...
+      else
+	if (un < GET_STR_PRECOMPUTE_THRESHOLD)
+	  mpn_sb_get_str (str, base, up, un);
+	else
+	  precompute_power_tables
+	  mpn_dc_get_str
+
+    mpn_dc_get_str:
+	mpn_tdiv_qr
+	if (qn < GET_STR_DC_THRESHOLD)
+	  mpn_sb_get_str
+	else
+	  mpn_dc_get_str
+	if (rn < GET_STR_DC_THRESHOLD)
+	  mpn_sb_get_str
+	else
+	  mpn_dc_get_str
+
+
+  The reason for the two threshold values is the cost of
+  precompute_power_tables.  GET_STR_PRECOMPUTE_THRESHOLD will be considerably
+  larger than GET_STR_PRECOMPUTE_THRESHOLD.  Do you think I should change
+  mpn_dc_get_str to instead look like the following?  */
+
+
+/* The x86s and m68020 have a quotient and remainder "div" instruction and
+   gcc recognises an adjacent "/" and "%" can be combined using that.
+   Elsewhere "/" and "%" are either separate instructions, or separate
+   libgcc calls (which unfortunately gcc as of version 3.0 doesn't combine).
+   A multiply and subtract should be faster than a "%" in those cases.  */
+#if HAVE_HOST_CPU_FAMILY_x86            \
+  || HAVE_HOST_CPU_m68020               \
+  || HAVE_HOST_CPU_m68030               \
+  || HAVE_HOST_CPU_m68040               \
+  || HAVE_HOST_CPU_m68060               \
+  || HAVE_HOST_CPU_m68360 /* CPU32 */
+#define udiv_qrnd_unnorm(q,r,n,d)       \
+  do {                                  \
+    mp_limb_t  __q = (n) / (d);         \
+    mp_limb_t  __r = (n) % (d);         \
+    (q) = __q;                          \
+    (r) = __r;                          \
+  } while (0)
+#else
+#define udiv_qrnd_unnorm(q,r,n,d)       \
+  do {                                  \
+    mp_limb_t  __q = (n) / (d);         \
+    mp_limb_t  __r = (n) - __q*(d);     \
+    (q) = __q;                          \
+    (r) = __r;                          \
+  } while (0)
+#endif
+
+/* When to stop divide-and-conquer and call the basecase mpn_get_str.  */
+#ifndef GET_STR_DC_THRESHOLD
+#define GET_STR_DC_THRESHOLD 15
+#endif
+/* Whether to bother at all with precomputing powers of the base, or go
+   to the basecase mpn_get_str directly.  */
+#ifndef GET_STR_PRECOMPUTE_THRESHOLD
+#define GET_STR_PRECOMPUTE_THRESHOLD 30
+#endif
+
+struct powers
+{
+  size_t digits_in_base;
+  mp_ptr p;
+  mp_size_t n;		/* mpz_struct uses int for sizes, but not mpn! */
+  int base;
+};
+typedef struct powers powers_t;
+
+
+/* Convert {UP,UN} to a string with a base as represented in POWTAB, and put
+   the string in STR.  Generate LEN characters, possibly padding with zeros to
+   the left.  If LEN is zero, generate as many characters as required.
+   Return a pointer immediately after the last digit of the result string.
+   Complexity is O(UN^2); intended for small conversions.  */
+static unsigned char *
+mpn_sb_get_str (unsigned char *str, size_t len,
+		mp_ptr up, mp_size_t un,
+		const powers_t *powtab)
+{
+  mp_limb_t rl, ul;
+  unsigned char *s;
+  int base;
+  size_t l;
+  /* Allocate memory for largest possible string, given that we only get here
+     for operands with un < GET_STR_PRECOMPUTE_THRESHOLD and that the smallest
+     base is 3.  7/11 is an approximation to 1/log2(3).  */
+#if TUNE_PROGRAM_BUILD
+#define BUF_ALLOC (GET_STR_THRESHOLD_LIMIT * BITS_PER_MP_LIMB * 7 / 11)
+#else
+#define BUF_ALLOC (GET_STR_PRECOMPUTE_THRESHOLD * BITS_PER_MP_LIMB * 7 / 11)
+#endif
+  unsigned char buf[BUF_ALLOC];
+#if TUNE_PROGRAM_BUILD
+  mp_limb_t rp[GET_STR_THRESHOLD_LIMIT];
+#else
+  mp_limb_t rp[GET_STR_PRECOMPUTE_THRESHOLD];
+#endif
+
+  base = powtab->base;
+  if (base == 10)
+    {
+      /* Special case code for base==10 so that the compiler has a chance to
+	 optimize things.  */
+
+      MPN_COPY (rp + 1, up, un);
+
+      s = buf + BUF_ALLOC;
+      while (un > 1)
+	{
+	  int i;
+	  mp_limb_t frac, digit;
+	  MPN_DIVREM_OR_PREINV_DIVREM_1 (rp, (mp_size_t) 1, rp + 1, un,
+					 MP_BASES_BIG_BASE_10,
+					 MP_BASES_BIG_BASE_INVERTED_10,
+					 MP_BASES_NORMALIZATION_STEPS_10);
+	  un -= rp[un] == 0;
+	  frac = (rp[0] + 1) << GMP_NAIL_BITS;
+	  s -= MP_BASES_CHARS_PER_LIMB_10;
+#if HAVE_HOST_CPU_FAMILY_x86
+	  /* The code below turns out to be a bit slower for x86 using gcc.
+	     Use plain code.  */
+	  i = MP_BASES_CHARS_PER_LIMB_10;
+	  do
+	    {
+	      umul_ppmm (digit, frac, frac, 10);
+	      *s++ = digit;
+	    }
+	  while (--i);
+#else
+	  /* Use the fact that 10 in binary is 1010, with the lowest bit 0.
+	     After a few umul_ppmm, we will have accumulated enough low zeros
+	     to use a plain multiply.  */
+	  if (MP_BASES_NORMALIZATION_STEPS_10 == 0)
+	    {
+	      umul_ppmm (digit, frac, frac, 10);
+	      *s++ = digit;
+	    }
+	  if (MP_BASES_NORMALIZATION_STEPS_10 <= 1)
+	    {
+	      umul_ppmm (digit, frac, frac, 10);
+	      *s++ = digit;
+	    }
+	  if (MP_BASES_NORMALIZATION_STEPS_10 <= 2)
+	    {
+	      umul_ppmm (digit, frac, frac, 10);
+	      *s++ = digit;
+	    }
+	  if (MP_BASES_NORMALIZATION_STEPS_10 <= 3)
+	    {
+	      umul_ppmm (digit, frac, frac, 10);
+	      *s++ = digit;
+	    }
+	  i = MP_BASES_CHARS_PER_LIMB_10 - (4-MP_BASES_NORMALIZATION_STEPS_10);
+	  frac = (frac + 0xf) >> 4;
+	  do
+	    {
+	      frac *= 10;
+	      digit = frac >> (BITS_PER_MP_LIMB - 4);
+	      *s++ = digit;
+	      frac &= (~(mp_limb_t) 0) >> 4;
+	    }
+	  while (--i);
+#endif
+	  s -= MP_BASES_CHARS_PER_LIMB_10;
+	}
+
+      ul = rp[1];
+      while (ul != 0)
+	{
+	  udiv_qrnd_unnorm (ul, rl, ul, 10);
+	  *--s = rl;
+	}
+    }
+  else /* not base 10 */
+    {
+      unsigned chars_per_limb;
+      mp_limb_t big_base, big_base_inverted;
+      unsigned normalization_steps;
+
+      chars_per_limb = __mp_bases[base].chars_per_limb;
+      big_base = __mp_bases[base].big_base;
+      big_base_inverted = __mp_bases[base].big_base_inverted;
+      count_leading_zeros (normalization_steps, big_base);
+
+      MPN_COPY (rp + 1, up, un);
+
+      s = buf + BUF_ALLOC;
+      while (un > 1)
+	{
+	  int i;
+	  mp_limb_t frac;
+	  MPN_DIVREM_OR_PREINV_DIVREM_1 (rp, (mp_size_t) 1, rp + 1, un,
+					 big_base, big_base_inverted,
+					 normalization_steps);
+	  un -= rp[un] == 0;
+	  frac = (rp[0] + 1) << GMP_NAIL_BITS;
+	  s -= chars_per_limb;
+	  i = chars_per_limb;
+	  do
+	    {
+	      mp_limb_t digit;
+	      umul_ppmm (digit, frac, frac, base);
+	      *s++ = digit;
+	    }
+	  while (--i);
+	  s -= chars_per_limb;
+	}
+
+      ul = rp[1];
+      while (ul != 0)
+	{
+	  udiv_qrnd_unnorm (ul, rl, ul, base);
+	  *--s = rl;
+	}
+    }
+
+  l = buf + BUF_ALLOC - s;
+  while (l < len)
+    {
+      *str++ = 0;
+      len--;
+    }
+  while (l != 0)
+    {
+      *str++ = *s++;
+      l--;
+    }
+  return str;
+}
+
+
+/* Convert {UP,UN} to a string with a base as represented in POWTAB, and put
+   the string in STR.  Generate LEN characters, possibly padding with zeros to
+   the left.  If LEN is zero, generate as many characters as required.
+   Return a pointer immediately after the last digit of the result string.
+   This uses divide-and-conquer and is intended for large conversions.  */
+static unsigned char *
+mpn_dc_get_str (unsigned char *str, size_t len,
+		mp_ptr up, mp_size_t un,
+		const powers_t *powtab)
+{
+  if (un < GET_STR_DC_THRESHOLD)
+    {
+      if (un != 0)
+	str = mpn_sb_get_str (str, len, up, un, powtab);
+      else
+	{
+	  while (len != 0)
+	    {
+	      *str++ = 0;
+	      len--;
+	    }
+	}
+    }
+  else
+    {
+      mp_ptr pwp, qp, rp;
+      mp_size_t pwn, qn;
+
+      pwp = powtab->p;
+      pwn = powtab->n;
+
+      if (un < pwn || (un == pwn && mpn_cmp (up, pwp, un) < 0))
+	{
+	  str = mpn_dc_get_str (str, len, up, un, powtab - 1);
+	}
+      else
+	{
+	  TMP_DECL (marker);
+	  TMP_MARK (marker);
+	  qp = TMP_ALLOC_LIMBS (un - pwn + 1);
+	  rp = TMP_ALLOC_LIMBS (pwn);
+
+	  mpn_tdiv_qr (qp, rp, 0L, up, un, pwp, pwn);
+	  qn = un - pwn; qn += qp[qn] != 0;		/* quotient size */
+	  if (len != 0)
+	    len = len - powtab->digits_in_base;
+	  str = mpn_dc_get_str (str, len, qp, qn, powtab - 1);
+	  str = mpn_dc_get_str (str, powtab->digits_in_base, rp, pwn, powtab - 1);
+	  TMP_FREE (marker);
+	}
+    }
+  return str;
+}
+
+
+/* There are no leading zeros on the digits generated at str, but that's not
+   currently a documented feature.  */
 
 size_t
-mpn_get_str (unsigned char *str, int base, mp_ptr mptr, mp_size_t msize)
+mpn_get_str (unsigned char *str, int base, mp_ptr up, mp_size_t un)
 {
+  mp_ptr powtab_mem, powtab_mem_ptr;
   mp_limb_t big_base;
-#if UDIV_NEEDS_NORMALIZATION || UDIV_TIME > 2 * UMUL_TIME
-  int normalization_steps;
-#endif
-#if UDIV_TIME > 2 * UMUL_TIME
-  mp_limb_t big_base_inverted;
-#endif
-  unsigned int dig_per_u;
-  mp_size_t out_len;
-  register unsigned char *s;
-
-  ASSERT (msize >= 0);
-  ASSERT (base >= 2);
-  ASSERT (base < numberof (__mp_bases));
-  ASSERT (msize == 0 || mptr[msize-1] != 0);
-
-  big_base = __mp_bases[base].big_base;
-
-  s = str;
+  size_t digits_in_base;
+  powers_t powtab[30];
+  int pi;
+  mp_size_t n;
+  mp_ptr p, t;
+  size_t out_len;
 
   /* Special case zero, as the code below doesn't handle it.  */
-  if (msize == 0)
+  if (un == 0)
     {
-      s[0] = 0;
+      str[0] = 0;
       return 1;
     }
 
-  if ((base & (base - 1)) == 0)
+  if (POW2_P (base))
     {
-      /* The base is a power of 2.  Make conversion from most
-	 significant side.  */
+      /* The base is a power of 2.  Convert from most significant end.  */
       mp_limb_t n1, n0;
-      register int bits_per_digit = big_base;
-      register int x;
-      register int bit_pos;
-      register int i;
+      int bits_per_digit = __mp_bases[base].big_base;
+      int cnt;
+      int bit_pos;
+      mp_size_t i;
+      unsigned char *s = str;
 
-      n1 = mptr[msize - 1];
-      count_leading_zeros (x, n1);
+      n1 = up[un - 1];
+      count_leading_zeros (cnt, n1);
 
-	/* BIT_POS should be R when input ends in least sign. nibble,
-	   R + bits_per_digit * n when input ends in n:th least significant
-	   nibble. */
+      /* BIT_POS should be R when input ends in least significant nibble,
+	 R + bits_per_digit * n when input ends in nth least significant
+	 nibble. */
 
       {
-	int bits;
+	unsigned long bits;
 
-	bits = BITS_PER_MP_LIMB * msize - x;
-	x = bits % bits_per_digit;
-	if (x != 0)
-	  bits += bits_per_digit - x;
-	bit_pos = bits - (msize - 1) * BITS_PER_MP_LIMB;
+	bits = GMP_NUMB_BITS * un - cnt + GMP_NAIL_BITS;
+	cnt = bits % bits_per_digit;
+	if (cnt != 0)
+	  bits += bits_per_digit - cnt;
+	bit_pos = bits - (un - 1) * GMP_NUMB_BITS;
       }
 
       /* Fast loop for bit output.  */
-      i = msize - 1;
+      i = un - 1;
       for (;;)
 	{
 	  bit_pos -= bits_per_digit;
@@ -110,8 +427,8 @@ mpn_get_str (unsigned char *str, int base, mp_ptr mptr, mp_size_t msize)
 	  if (i < 0)
 	    break;
 	  n0 = (n1 << -bit_pos) & ((1 << bits_per_digit) - 1);
-	  n1 = mptr[i];
-	  bit_pos += BITS_PER_MP_LIMB;
+	  n1 = up[i];
+	  bit_pos += GMP_NUMB_BITS;
 	  *s++ = n0 | (n1 >> bit_pos);
 	}
 
@@ -119,95 +436,65 @@ mpn_get_str (unsigned char *str, int base, mp_ptr mptr, mp_size_t msize)
 
       return s - str;
     }
-  else
+
+  /* General case.  The base is not a power of 2.  */
+
+  if (un < GET_STR_PRECOMPUTE_THRESHOLD)
     {
-      /* General case.  The base is not a power of 2.  Make conversion
-	 from least significant end.  */
-
-      /* If udiv_qrnnd only handles divisors with the most significant bit
-	 set, prepare BIG_BASE for being a divisor by shifting it to the
-	 left exactly enough to set the most significant bit.  */
-#if UDIV_NEEDS_NORMALIZATION || UDIV_TIME > 2 * UMUL_TIME
-      count_leading_zeros (normalization_steps, big_base);
-      big_base <<= normalization_steps;
-#if UDIV_TIME > 2 * UMUL_TIME
-      /* Get the fixed-point approximation to 1/(BIG_BASE << NORMALIZATION_STEPS).  */
-      big_base_inverted = __mp_bases[base].big_base_inverted;
-#endif
-#endif
-
-      dig_per_u = __mp_bases[base].chars_per_limb;
-      out_len = ((size_t) msize * BITS_PER_MP_LIMB
-		 * __mp_bases[base].chars_per_bit_exactly) + 1;
-      s += out_len;
-
-      while (msize != 0)
-	{
-	  int i;
-	  mp_limb_t n0, n1;
-
-#if UDIV_NEEDS_NORMALIZATION || UDIV_TIME > 2 * UMUL_TIME
-	  /* If we shifted BIG_BASE above, shift the dividend too, to get
-	     the right quotient.  We need to do this every loop,
-	     since the intermediate quotients are OK, but the quotient from
-	     one turn in the loop is going to be the dividend in the
-	     next turn, and the dividend needs to be up-shifted.  */
-	  if (normalization_steps != 0)
-	    {
-	      n0 = mpn_lshift (mptr, mptr, msize, normalization_steps);
-
-	      /* If the shifting gave a carry out limb, store it and
-		 increase the length.  */
-	      if (n0 != 0)
-		{
-		  mptr[msize] = n0;
-		  msize++;
-		}
-	    }
-#endif
-
-	  /* Divide the number at TP with BIG_BASE to get a quotient and a
-	     remainder.  The remainder is our new digit in base BIG_BASE.  */
-	  i = msize - 1;
-	  n1 = mptr[i];
-
-	  if (n1 >= big_base)
-	    n1 = 0;
-	  else
-	    {
-	      msize--;
-	      i--;
-	    }
-
-	  for (; i >= 0; i--)
-	    {
-	      n0 = mptr[i];
-#if UDIV_TIME > 2 * UMUL_TIME
-	      udiv_qrnnd_preinv (mptr[i], n1, n1, n0, big_base, big_base_inverted);
-#else
-	      udiv_qrnnd (mptr[i], n1, n1, n0, big_base);
-#endif
-	    }
-
-#if UDIV_NEEDS_NORMALIZATION || UDIV_TIME > 2 * UMUL_TIME
-	  /* If we shifted above (at previous UDIV_NEEDS_NORMALIZATION tests)
-	     the remainder will be up-shifted here.  Compensate.  */
-	  n1 >>= normalization_steps;
-#endif
-
-	  /* Convert N1 from BIG_BASE to a string of digits in BASE
-	     using single precision operations.  */
-	  for (i = dig_per_u - 1; i >= 0; i--)
-	    {
-	      *--s = n1 % base;
-	      n1 /= base;
-	      if (n1 == 0 && msize == 0)
-		break;
-	    }
-	}
-
-      while (s != str)
-	*--s = 0;
-      return out_len;
+      struct powers ptab[1];
+      ptab[0].base = base;
+      return mpn_sb_get_str (str, (size_t) 0, up, un, ptab) - str;
     }
+
+  /* Allocate one large block for the powers of big_base.  With the current
+     scheme, we need to allocate twice as much as would be possible if a
+     minimal set of powers were generated.  */
+#define ALLOC_SIZE (2 * un + 30)
+  powtab_mem = __GMP_ALLOCATE_FUNC_LIMBS (ALLOC_SIZE);
+  powtab_mem_ptr = powtab_mem;
+
+  /* Compute a table of powers: big_base^1, big_base^2, big_base^4, ...,
+     big_base^(2^k), for k such that the biggest power is between U and
+     sqrt(U).  */
+
+  big_base = __mp_bases[base].big_base;
+  digits_in_base = __mp_bases[base].chars_per_limb;
+
+  powtab[0].base = base; /* FIXME: hack for getting base to mpn_sb_get_str */
+  powtab[1].p = &big_base;
+  powtab[1].n = 1;
+  powtab[1].digits_in_base = digits_in_base;
+  powtab[1].base = base;
+  powtab[2].p = &big_base;
+  powtab[2].n = 1;
+  powtab[2].digits_in_base = digits_in_base;
+  powtab[2].base = base;
+  n = 1;
+  pi = 2;
+  p = &big_base;
+  for (;;)
+    {
+      ++pi;
+      t = powtab_mem_ptr;
+      powtab_mem_ptr += 2 * n;
+      mpn_sqr_n (t, p, n);
+      n *= 2; n -= t[n - 1] == 0;
+      digits_in_base *= 2;
+      p = t;
+      powtab[pi].p = p;
+      powtab[pi].n = n;
+      powtab[pi].digits_in_base = digits_in_base;
+      powtab[pi].base = base;
+
+      if (2 * n > un)
+	break;
+    }
+  ASSERT_ALWAYS (ALLOC_SIZE > powtab_mem_ptr - powtab_mem);
+
+  /* Using our precomputed powers, now in powtab[], convert our number.  */
+  out_len = mpn_dc_get_str (str, 0, up, un, powtab + pi) - str;
+
+  __GMP_FREE_FUNC_LIMBS (powtab_mem, ALLOC_SIZE);
+
+  return out_len;
 }

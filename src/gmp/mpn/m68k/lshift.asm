@@ -4,7 +4,7 @@ dnl            cycles/limb
 dnl         shift==1  shift>1
 dnl  68040:   3.5       9.5
 
-dnl  Copyright 1996, 1999, 2000, 2001 Free Software Foundation, Inc.
+dnl  Copyright 1996, 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
 dnl
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -73,8 +73,8 @@ ifelse(scale_available_p,1,`
 ',`
 	movel	s_size, d0
 	asll	#2, d0
-	addl	s_size, s_ptr
-	addl	s_size, res_ptr
+	addl	d0, s_ptr
+	addl	d0, res_ptr
 ')
 	movel	M(-,s_ptr), d2
 	movel	d2, d0

@@ -1,7 +1,8 @@
 /* mpz_mul_ui/si (product, multiplier, small_multiplicand) -- Set PRODUCT to
    MULTIPLICATOR times SMALL_MULTIPLICAND.
 
-Copyright 1991, 1993, 1994, 1996, 2000, 2001 Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 1996, 2000, 2001, 2002 Free Software Foundation,
+Inc.
 
 This file is part of the GNU MP Library.
 
@@ -45,32 +46,53 @@ void
 FUNCTION (mpz_ptr prod, mpz_srcptr mult,
           MULTIPLICAND_UNSIGNED long int small_mult)
 {
-  mp_size_t size = mult->_mp_size;
+  mp_size_t size = SIZ(mult);
   mp_size_t sign_product = size;
+  mp_limb_t sml;
   mp_limb_t cy;
-  mp_size_t prod_size;
-  mp_ptr prod_ptr;
+  mp_ptr pp;
 
   if (size == 0 || small_mult == 0)
     {
-      prod->_mp_size = 0;
+      SIZ(prod) = 0;
       return;
     }
+
   size = ABS (size);
 
-  prod_size = size + 1;
-  if (prod->_mp_alloc < prod_size)
-    _mpz_realloc (prod, prod_size);
+  sml = MULTIPLICAND_ABS (small_mult);
 
-  prod_ptr = prod->_mp_d;
-
-  cy = mpn_mul_1 (prod_ptr, mult->_mp_d, size,
-                  (mp_limb_t) MULTIPLICAND_ABS (small_mult));
-  if (cy != 0)
+  if (small_mult <= GMP_NUMB_MAX)
     {
-      prod_ptr[size] = cy;
-      size++;
+      MPZ_REALLOC (prod, size + 1);
+      pp = PTR(prod);
+      cy = mpn_mul_1 (pp, PTR(mult), size, sml & GMP_NUMB_MASK);
+      pp[size] = cy;
+      size += cy != 0;
     }
+#if GMP_NAIL_BITS != 0
+  else
+    {
+      /* Operand too large for the current nails size.  Use temporary for
+	 intermediate products, to allow prod and mult being identical.  */
+      mp_ptr tp;
+      TMP_DECL (mark);
+      TMP_MARK (mark);
 
-  prod->_mp_size = ((sign_product < 0) ^ (small_mult < 0)) ? -size : size;
+      tp = TMP_ALLOC_LIMBS (size + 2);
+
+      cy = mpn_mul_1 (tp, PTR(mult), size, sml & GMP_NUMB_MASK);
+      tp[size] = cy;
+      cy = mpn_addmul_1 (tp + 1, PTR(mult), size, sml >> GMP_NUMB_BITS);
+      tp[size + 1] = cy;
+      size += 2;
+      MPN_NORMALIZE_NOT_ZERO (tp, size); /* too general, need to trim one or two limb */
+      MPZ_REALLOC (prod, size);
+      pp = PTR(prod);
+      MPN_COPY (pp, tp, size);
+      TMP_FREE (mark);
+    }
+#endif
+
+  SIZ(prod) = ((sign_product < 0) ^ (small_mult < 0)) ? -size : size;
 }

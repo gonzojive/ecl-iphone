@@ -1,6 +1,7 @@
-/* mpz_set_si(integer, val) -- Assign INTEGER with a small value VAL.
+/* mpz_set_si(dest,val) -- Assign DEST with a small value VAL.
 
-Copyright 1991, 1993, 1994, 1995, 2000, 2001 Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 1995, 2000, 2001, 2002 Free Software Foundation,
+Inc.
 
 This file is part of the GNU MP Library.
 
@@ -25,18 +26,22 @@ MA 02111-1307, USA. */
 void
 mpz_set_si (mpz_ptr dest, signed long int val)
 {
-  /* We don't check if the allocation is enough, since the rest of the
-     package ensures it's at least 1, which is what we need here.  */
-  if (val > 0)
+  mp_size_t size;
+  mp_limb_t vl;
+
+  vl = (mp_limb_t) (unsigned long int) (val >= 0 ? val : -val);
+
+  dest->_mp_d[0] = vl & GMP_NUMB_MASK;
+  size = vl != 0;
+
+#if GMP_NAIL_BITS != 0
+  if (vl > GMP_NUMB_MAX)
     {
-      dest->_mp_d[0] = val;
-      dest->_mp_size = 1;
+      MPZ_REALLOC (dest, 2);
+      dest->_mp_d[1] = vl >> GMP_NUMB_BITS;
+      size = 2;
     }
-  else if (val < 0)
-    {
-      dest->_mp_d[0] = (unsigned long) -val;
-      dest->_mp_size = -1;
-    }
-  else
-    dest->_mp_size = 0;
+#endif
+
+  dest->_mp_size = val >= 0 ? size : -size;
 }

@@ -1,6 +1,7 @@
 /* Test mpq_get_d and mpq_set_d
 
-Copyright 1991, 1993, 1994, 1996, 2000, 2001 Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 1996, 2000, 2001, 2002 Free Software Foundation,
+Inc.
 
 This file is part of the GNU MP Library.
 
@@ -95,8 +96,8 @@ main (int argc, char **argv)
 	  if (last_d > new_d)
 	    {
 	      fprintf (stderr, "ERROR (test %d/%d): bad mpq_get_d results\n", i, j);
-	      printf ("\nlast: %f\n      ", last_d);
-	      printf (" new: %f\n      ", new_d); dump (a);
+	      printf ("\nlast: %.16g\n      ", last_d);
+	      printf (" new: %.16g\n      ", new_d); dump (a);
 	      abort ();
 	    }
 	  mpq_set_d (qnew_d, new_d);
@@ -105,8 +106,8 @@ main (int argc, char **argv)
 	    {
 	      fprintf (stderr,
 		       "ERROR (test %d/%d): bad mpq_set_d results\n", i, j);
-	      printf ("\nlast: %f\n      ", last_d); dump (qlast_d);
-	      printf (" new: %f\n      ", new_d); dump (qnew_d);
+	      printf ("\nlast: %.16g\n      ", last_d); dump (qlast_d);
+	      printf (" new: %.16g\n      ", new_d); dump (qnew_d);
 	      abort ();
 	    }
 	  last_d = new_d;

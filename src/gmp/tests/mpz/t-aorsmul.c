@@ -1,6 +1,6 @@
 /* Test mpz_addmul, mpz_addmul_ui, mpz_submul, mpz_submul_ui.
 
-Copyright 2001 Free Software Foundation, Inc.
+Copyright 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -154,7 +154,7 @@ check_data (void)
 
   } data[] = {
 
-#define M MP_LIMB_T_MAX
+#define M GMP_NUMB_MAX
 
     /* reducing to zero */
     { { 1 }, { 1 }, { 1 } },

@@ -1,6 +1,7 @@
 /* Test conversion using mpz_get_str and mpz_set_str.
 
-Copyright 1993, 1994, 1996, 1999, 2000, 2001 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1996, 1999, 2000, 2001, 2002 Free Software Foundation,
+Inc.
 
 This file is part of the GNU MP Library.
 
@@ -36,7 +37,7 @@ main (int argc, char **argv)
   mp_size_t size;
   int i;
   int reps = 10000;
-  char *str;
+  char *str, *buf;
   int base;
   gmp_randstate_ptr rands;
   mpz_t bs;
@@ -55,9 +56,11 @@ main (int argc, char **argv)
 
   for (i = 0; i < reps; i++)
     {
+      /* 1. Generate random mpz_t and convert to a string and back to mpz_t
+	 again.  */
       mpz_urandomb (bs, rands, 32);
-      size_range = mpz_get_ui (bs) % 10 + 2;
-      mpz_urandomb (bs, rands, size_range);
+      size_range = mpz_get_ui (bs) % 12 + 2;	/* 2..13 */
+      mpz_urandomb (bs, rands, size_range);	/* 3..8191 bits */
       size = mpz_get_ui (bs);
       mpz_rrandomb (op1, rands, size);
 
@@ -74,17 +77,44 @@ main (int argc, char **argv)
 
       str = mpz_get_str ((char *) 0, base, op1);
       mpz_set_str_or_abort (op2, str, base);
-      (*__gmp_free_func) (str, strlen (str) + 1);
 
       if (mpz_cmp (op1, op2))
 	{
-	  fprintf (stderr, "ERROR, op1 and op2 different\n");
+	  fprintf (stderr, "ERROR, op1 and op2 different in test %d\n", i);
 	  fprintf (stderr, "str  = %s\n", str);
 	  fprintf (stderr, "base = %d\n", base);
 	  fprintf (stderr, "op1  = "); debug_mp (op1, -16);
 	  fprintf (stderr, "op2  = "); debug_mp (op2, -16);
 	  abort ();
 	}
+
+      (*__gmp_free_func) (str, strlen (str) + 1);
+
+#if 0
+      /* 2. Generate random string and convert to mpz_t and back to a string
+	 again.  */
+      mpz_urandomb (bs, rands, 32);
+      size_range = mpz_get_ui (bs) % 10 + 2;	/* 2..11 */
+      mpz_urandomb (bs, rands, size_range);	/* 3..2047 bits */
+      len = mpz_get_ui (bs);
+      buf = (*__gmp_allocate_func) (len + 1);
+      string_urandomb (buf, len, base);
+      mpz_set_str_or_abort (op1, buf, base);
+      str = mpz_get_str ((char *) 0, base, op1);
+
+      if (strcmp (str, buf) != 0)
+	{
+	  fprintf (stderr, "ERROR, str and buf different\n");
+	  fprintf (stderr, "str  = %s\n", str);
+	  fprintf (stderr, "buf  = %s\n", buf);
+	  fprintf (stderr, "base = %d\n", base);
+	  fprintf (stderr, "op1  = "); debug_mp (op1, -16);
+	  abort ();
+	}
+
+      (*__gmp_free_func) (buf, len + 1);
+      (*__gmp_free_func) (str, strlen (str) + 1);
+#endif
     }
 
   mpz_clear (bs);

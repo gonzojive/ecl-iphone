@@ -1,12 +1,6 @@
 dnl  AMD K6-2 mpn_com_n -- mpn bitwise one's complement.
-dnl   
-dnl     alignment dst/src, A=0mod8 N=4mod8
-dnl        A/A   A/N   N/A   N/N
-dnl  K6-2  1.0   1.18  1.18  1.18  cycles/limb
-dnl  K6    1.5   1.85  1.75  1.85
 
-
-dnl  Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
+dnl  Copyright 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -25,8 +19,15 @@ dnl  License along with the GNU MP Library; see the file COPYING.LIB.  If
 dnl  not, write to the Free Software Foundation, Inc., 59 Temple Place -
 dnl  Suite 330, Boston, MA 02111-1307, USA.
 
-
 include(`../config.m4')
+
+NAILS_SUPPORT(0-31)
+
+
+C    alignment dst/src, A=0mod8 N=4mod8
+C       A/A   A/N   N/A   N/N
+C K6-2  1.0   1.18  1.18  1.18  cycles/limb
+C K6    1.5   1.85  1.75  1.85
 
 
 C void mpn_com_n (mp_ptr dst, mp_srcptr src, mp_size_t size);
@@ -49,17 +50,19 @@ deflit(`FRAME',0)
 	jnz	L(two_or_more)
 
 	movl	(%eax), %eax
-	notl	%eax
+	notl_or_xorl_GMP_NUMB_MASK(	%eax)
 	movl	%eax, (%edx)
 	ret
 
 
 L(two_or_more):
-	pushl	%ebx
-FRAME_pushl()
-	movl	%ecx, %ebx
+	pushl	%ebx	FRAME_pushl()
+	pcmpeqd	%mm7, %mm7		C all ones
 
-	pcmpeqd	%mm7, %mm7	C all ones
+	movl	%ecx, %ebx
+ifelse(GMP_NAIL_BITS,0,,
+`	psrld	$GMP_NAIL_BITS, %mm7')	C clear nails
+
 
 
 	ALIGN(8)
@@ -68,9 +71,9 @@ L(top):
 	C ebx	floor(size/2)
 	C ecx	counter
 	C edx	dst
-	C esi
-	C edi
-	C ebp
+	C
+	C mm0	scratch
+	C mm7	mask
 
 	movq	-8(%eax,%ecx,8), %mm0
 	pxor	%mm7, %mm0
@@ -80,7 +83,7 @@ L(top):
 
 	jnc	L(no_extra)
 	movl	(%eax,%ebx,8), %eax
-	notl	%eax
+	notl_or_xorl_GMP_NUMB_MASK(	%eax)
 	movl	%eax, (%edx,%ebx,8)
 L(no_extra):
 

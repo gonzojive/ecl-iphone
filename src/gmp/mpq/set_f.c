@@ -1,6 +1,6 @@
 /* mpq_set_f -- set an mpq from an mpf.
 
-Copyright 2000, 2001 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -87,12 +87,12 @@ mpq_set_f (mpq_ptr q, mpf_srcptr f)
 
           den_size--;
           count_trailing_zeros (shift, flow);
- 
+
           mpn_rshift (num_ptr, fptr, abs_fsize, shift);
           abs_fsize -= (num_ptr[abs_fsize-1] == 0);
 
           MPN_ZERO (den_ptr, den_size);
-          den_ptr[den_size] = MP_LIMB_T_HIGHBIT >> (shift-1);
+          den_ptr[den_size] = GMP_LIMB_HIGHBIT >> (shift-1);
         }
 
       q->_mp_num._mp_size = fsize >= 0 ? abs_fsize : -abs_fsize;

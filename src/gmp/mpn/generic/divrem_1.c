@@ -1,7 +1,7 @@
 /* mpn_divrem_1 -- mpn by limb division.
 
-Copyright 1991, 1993, 1994, 1996, 1998, 1999, 2000 Free Software Foundation,
-Inc.
+Copyright 1991, 1993, 1994, 1996, 1998, 1999, 2000, 2002 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -25,35 +25,21 @@ MA 02111-1307, USA. */
 #include "longlong.h"
 
 
-/* udiv_qrnnd_preinv takes UDIV_NORM_PREINV_TIME (or UDIV_UNNORM_PREINV_TIME),
-   but requires roughly UDIV_TIME to calculate the inverse, so the default
-   threshold is wherever the saving would overcome that extra, if ever.  */
+/* The size where udiv_qrnnd_preinv should be used rather than udiv_qrnnd,
+   meaning the quotient size where that should happen, the quotient size
+   being how many udiv divisions will be done.
+
+   The default is to use preinv always, CPUs where this doesn't suit have
+   tuned thresholds.  Note in particular that preinv should certainly be
+   used if that's the only division available (USE_PREINV_ALWAYS).  */
 
 #ifndef DIVREM_1_NORM_THRESHOLD
-# if UDIV_PREINV_ALWAYS
-#  define DIVREM_1_NORM_THRESHOLD    0
-# else
-#  if UDIV_TIME <= UDIV_NORM_PREINV_TIME
-#  define DIVREM_1_NORM_THRESHOLD    MP_LIMB_T_MAX
-#  else
-#   define DIVREM_1_NORM_THRESHOLD \
-      (1 + UDIV_TIME / (UDIV_TIME - UDIV_NORM_PREINV_TIME))
-#  endif
-# endif
+#define DIVREM_1_NORM_THRESHOLD  0
+#endif
+#ifndef DIVREM_1_UNNORM_THRESHOLD
+#define DIVREM_1_UNNORM_THRESHOLD  0
 #endif
 
-#ifndef DIVREM_1_UNNORM_THRESHOLD
-# if UDIV_PREINV_ALWAYS
-#  define DIVREM_1_UNNORM_THRESHOLD    0
-# else
-#  if UDIV_TIME <= UDIV_UNNORM_PREINV_TIME
-#  define DIVREM_1_UNNORM_THRESHOLD    MP_LIMB_T_MAX
-#  else
-#   define DIVREM_1_UNNORM_THRESHOLD \
-      (1 + UDIV_TIME / (UDIV_TIME - UDIV_UNNORM_PREINV_TIME))
-#  endif
-# endif
-#endif
 
 
 /* If the cpu only has multiply-by-inverse division (eg. alpha), then NORM
@@ -92,154 +78,170 @@ MA 02111-1307, USA. */
    the dependent chain.  */
 
 mp_limb_t
-mpn_divrem_1 (mp_ptr qp, mp_size_t xsize,
-              mp_srcptr ap, mp_size_t size, mp_limb_t d)
+mpn_divrem_1 (mp_ptr qp, mp_size_t qxn,
+	      mp_srcptr up, mp_size_t un, mp_limb_t d)
 {
-  mp_size_t  total_size;
+  mp_size_t  n;
   mp_size_t  i;
   mp_limb_t  n1, n0;
   mp_limb_t  r = 0;
 
-  ASSERT (xsize >= 0);
-  ASSERT (size >= 0);
+  ASSERT (qxn >= 0);
+  ASSERT (un >= 0);
   ASSERT (d != 0);
-  /* FIXME: What's the correct overlap rule when xsize!=0? */
-  ASSERT (MPN_SAME_OR_SEPARATE_P (qp+xsize, ap, size));
+  /* FIXME: What's the correct overlap rule when qxn!=0? */
+  ASSERT (MPN_SAME_OR_SEPARATE_P (qp+qxn, up, un));
 
-  total_size = size + xsize;
-  if (total_size == 0)
+  n = un + qxn;
+  if (n == 0)
     return 0;
 
-  qp += (total_size - 1);   /* dest high limb */
+  d <<= GMP_NAIL_BITS;
 
-  if ((d & MP_LIMB_T_HIGHBIT) != 0)
+  qp += (n - 1);   /* Make qp point at most significant quotient limb */
+
+  if ((d & GMP_LIMB_HIGHBIT) != 0)
     {
-      if (size != 0)
-        {
-          /* High quotient limb is 0 or 1, and skip a divide step. */
-          mp_limb_t  q;
-          r = ap[size-1];
-          q = (r >= d);
-          *qp-- = q;
-          r -= (d & -q);
-          total_size--;
-          size--;
-        }
+      if (un != 0)
+	{
+	  /* High quotient limb is 0 or 1, skip a divide step. */
+	  mp_limb_t q;
+	  r = up[un - 1] << GMP_NAIL_BITS;
+	  q = (r >= d);
+	  *qp-- = q;
+	  r -= (d & -q);
+	  r >>= GMP_NAIL_BITS;
+	  n--;
+	  un--;
+	}
 
-      if (BELOW_THRESHOLD (total_size, DIVREM_1_NORM_THRESHOLD))
-        {
-        plain:
-          for (i = size-1; i >= 0; i--)
-            {
-              n0 = ap[i];
-              udiv_qrnnd (*qp, r, r, n0, d);
-              qp--;
-            }
-          for (i = 0; i < xsize; i++)
-            {
-              udiv_qrnnd (*qp, r, r, 0, d);
-              qp--;
-            }
-          return r;
-        }
+      if (BELOW_THRESHOLD (n, DIVREM_1_NORM_THRESHOLD))
+	{
+	plain:
+	  for (i = un - 1; i >= 0; i--)
+	    {
+	      n0 = up[i] << GMP_NAIL_BITS;
+	      udiv_qrnnd (*qp, r, r, n0, d);
+	      r >>= GMP_NAIL_BITS;
+	      qp--;
+	    }
+	  for (i = qxn - 1; i >= 0; i--)
+	    {
+	      udiv_qrnnd (*qp, r, r, 0, d);
+	      r >>= GMP_NAIL_BITS;
+	      qp--;
+	    }
+	  return r;
+	}
       else
-        {
-          /* Multiply-by-inverse, divisor already normalized. */
+	{
+	  /* Multiply-by-inverse, divisor already normalized. */
 	  mp_limb_t dinv;
 	  invert_limb (dinv, d);
 
-          for (i = size-1; i >= 0; i--)
-            {
-              n0 = ap[i];
-              udiv_qrnnd_preinv (*qp, r, r, n0, d, dinv);
-              qp--;
-            }
-          for (i = 0; i < xsize; i++)
-            {
-              udiv_qrnnd_preinv (*qp, r, r, 0, d, dinv);
-              qp--;
-            }
+	  for (i = un - 1; i >= 0; i--)
+	    {
+	      n0 = up[i] << GMP_NAIL_BITS;
+	      udiv_qrnnd_preinv (*qp, r, r, n0, d, dinv);
+	      r >>= GMP_NAIL_BITS;
+	      qp--;
+	    }
+	  for (i = qxn - 1; i >= 0; i--)
+	    {
+	      udiv_qrnnd_preinv (*qp, r, r, 0, d, dinv);
+	      r >>= GMP_NAIL_BITS;
+	      qp--;
+	    }
 	  return r;
-        }
+	}
     }
   else
     {
-      int  norm;
+      /* Most significant bit of divisor == 0.  */
+      int norm;
 
       /* Skip a division if high < divisor (high quotient 0).  Testing here
-         before before normalizing will still skip as often as possible.  */
-      if (size != 0)
-        {
-          n1 = ap[size-1];
-          if (n1 < d)
-            {
-              r = n1;
-              *qp-- = 0;
-              total_size--;
-              if (total_size == 0)
-                return r;
-              size--;
-            }
-        }
+	 before before normalizing will still skip as often as possible.  */
+      if (un != 0)
+	{
+	  n1 = up[un - 1] << GMP_NAIL_BITS;
+	  if (n1 < d)
+	    {
+	      r = n1 >> GMP_NAIL_BITS;
+	      *qp-- = 0;
+	      n--;
+	      if (n == 0)
+		return r;
+	      un--;
+	    }
+	}
 
       if (! UDIV_NEEDS_NORMALIZATION
-          && BELOW_THRESHOLD (total_size, DIVREM_1_UNNORM_THRESHOLD))
-        goto plain;
+	  && BELOW_THRESHOLD (n, DIVREM_1_UNNORM_THRESHOLD))
+	goto plain;
 
       count_leading_zeros (norm, d);
       d <<= norm;
       r <<= norm;
 
-#define EXTRACT   ((n1 << norm) | (n0 >> (BITS_PER_MP_LIMB - norm)))
-
       if (UDIV_NEEDS_NORMALIZATION
-          && BELOW_THRESHOLD (total_size, DIVREM_1_UNNORM_THRESHOLD))
-        {
-          if (size != 0)
-            {
-              n1 = ap[size-1];
-              r |= (n1 >> (BITS_PER_MP_LIMB - norm));
-              for (i = size-2; i >= 0; i--)
-                {
-                  n0 = ap[i];
-                  udiv_qrnnd (*qp, r, r, EXTRACT, d);
-                  qp--;
-                  n1 = n0;
-                }
-              udiv_qrnnd (*qp, r, r, n1 << norm, d);
-              qp--;
-            }
-          for (i = 0; i < xsize; i++)
-            {
-              udiv_qrnnd (*qp, r, r, 0, d);
-              qp--;
-            }
-          return r >> norm;
-        }
+	  && BELOW_THRESHOLD (n, DIVREM_1_UNNORM_THRESHOLD))
+	{
+	  if (un != 0)
+	    {
+	      n1 = up[un - 1] << GMP_NAIL_BITS;
+	      r |= (n1 >> (GMP_LIMB_BITS - norm));
+	      for (i = un - 2; i >= 0; i--)
+		{
+		  n0 = up[i] << GMP_NAIL_BITS;
+		  udiv_qrnnd (*qp, r, r,
+			      (n1 << norm) | (n0 >> (GMP_NUMB_BITS - norm)),
+			      d);
+		  r >>= GMP_NAIL_BITS;
+		  qp--;
+		  n1 = n0;
+		}
+	      udiv_qrnnd (*qp, r, r, n1 << norm, d);
+	      r >>= GMP_NAIL_BITS;
+	      qp--;
+	    }
+	  for (i = qxn - 1; i >= 0; i--)
+	    {
+	      udiv_qrnnd (*qp, r, r, 0, d);
+	      r >>= GMP_NAIL_BITS;
+	      qp--;
+	    }
+	  return r >> norm;
+	}
       else
-        {
+	{
 	  mp_limb_t  dinv;
 	  invert_limb (dinv, d);
-          if (size != 0)
-            {
-              n1 = ap[size-1];
-              r |= (n1 >> (BITS_PER_MP_LIMB - norm));
-              for (i = size-2; i >= 0; i--)
-                {
-                  n0 = ap[i];
-                  udiv_qrnnd_preinv (*qp, r, r, EXTRACT, d, dinv);
-                  qp--;
-                  n1 = n0;
-                }
-              udiv_qrnnd_preinv (*qp, r, r, n1 << norm, d, dinv);
-              qp--;
-            }
-          for (i = 0; i < xsize; i++)
-            {
-              udiv_qrnnd_preinv (*qp, r, r, 0, d, dinv);
-              qp--;
-            }
+	  if (un != 0)
+	    {
+	      n1 = up[un - 1] << GMP_NAIL_BITS;
+	      r |= (n1 >> (GMP_LIMB_BITS - norm));
+	      for (i = un - 2; i >= 0; i--)
+		{
+		  n0 = up[i] << GMP_NAIL_BITS;
+		  udiv_qrnnd_preinv (*qp, r, r, 
+				     ((n1 << norm) | (n0 >> (GMP_NUMB_BITS - norm))),
+				     d, dinv);
+		  r >>= GMP_NAIL_BITS;
+		  qp--;
+		  n1 = n0;
+		}
+	      udiv_qrnnd_preinv (*qp, r, r, n1 << norm, d, dinv);
+	      r >>= GMP_NAIL_BITS;
+	      qp--;
+	    }
+	  for (i = qxn - 1; i >= 0; i--)
+	    {
+	      udiv_qrnnd_preinv (*qp, r, r, 0, d, dinv);
+	      r >>= GMP_NAIL_BITS;
+	      qp--;
+	    }
 	  return r >> norm;
-        }
+	}
     }
 }

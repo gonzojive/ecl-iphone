@@ -1,6 +1,6 @@
 ## Process this file with automake to generate Makefile.in
 
-# Copyright 2001 Free Software Foundation, Inc.
+# Copyright 2001, 2002 Free Software Foundation, Inc.
 #
 # This file is part of the GNU MP Library.
 #
@@ -24,7 +24,8 @@ AUTOMAKE_OPTIONS = gnu no-dependencies $(top_builddir)/ansi2knr
 
 INCLUDES = -D__GMP_WITHIN_GMP -I$(top_srcdir)
 
-noinst_LTLIBRARIES = libdummy.la libprintf.la
+noinst_LTLIBRARIES = libprintf.la
+EXTRA_LTLIBRARIES = libdummy.la
 
 libprintf_la_SOURCES =							 \
   asprintf.c asprntffuns.c doprnt.c doprntf.c doprnti.c			 \

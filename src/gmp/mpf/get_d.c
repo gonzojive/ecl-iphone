@@ -1,6 +1,6 @@
 /* double mpf_get_d (mpf_t src) -- Return the double approximation to SRC.
 
-Copyright 1996, 2001 Free Software Foundation, Inc.
+Copyright 1996, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -43,7 +43,7 @@ mpf_get_d (mpf_srcptr src)
   for (i = 2; i <= n_limbs_to_use; i++)
     res = res * MP_BASE_AS_DOUBLE + qp[size - i];
 
-  res = __gmp_scale2 (res, (EXP(src) - n_limbs_to_use) * BITS_PER_MP_LIMB);
+  res = __gmp_scale2 (res, (EXP(src) - n_limbs_to_use) * GMP_NUMB_BITS);
 
   return negative ? -res : res;
 }

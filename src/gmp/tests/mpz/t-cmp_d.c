@@ -1,6 +1,6 @@
 /* Test mpz_cmp_d and mpz_cmpabs_d.
 
-Copyright 2001 Free Software Foundation, Inc.
+Copyright 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -33,7 +33,6 @@ MA 02111-1307, USA. */
 
 
 #define SGN(n)  ((n) > 0 ? 1 : (n) < 0 ? -1 : 0)
-double fudge _PROTO ((double x));
 
 
 void
@@ -205,44 +204,37 @@ check_low_z_one (void)
   mpz_clear (x);
 }
 
-/* Comparing 1 and 1+2^-n */
+/* Comparing 1 and 1+2^-n.  "y" is volatile to make gcc store and fetch it,
+   which forces it to a 64-bit double, whereas on x86 it would otherwise
+   remain on the float stack as an 80-bit long double.  */
 void
 check_one_2exp (void)
 {
-  mpz_t   x;
-  double  y;
-  double  e = 1.0;
-  int     i;
+  double           e;
+  mpz_t            x;
+  volatile double  y;
+  int              i;
 
   mpz_init (x);
 
+  e = 1.0;
   for (i = 0; i < 128; i++)
     {
       e /= 2.0;
-
-      y = fudge (1.0 + e);
+      y = 1.0 + e;
       if (y == 1.0)
         break;
 
       mpz_set_ui (x, 1L);
       check_one ("check_one_2exp", x,  y, -1, -1);
-      check_one ("check_oen_2exp", x, -y,  1, -1);
+      check_one ("check_one_2exp", x, -y,  1, -1);
 
       mpz_set_si (x, -1L);
       check_one ("check_one_2exp", x,  y, -1, -1);
-      check_one ("check_oen_2exp", x, -y,  1, -1);
+      check_one ("check_one_2exp", x, -y,  1, -1);
     }
 
   mpz_clear (x);
-}
-
-
-/* Stop the compiler getting too smart, in particular on x86 stop it keeping
-   a double in an 80-bit long double fp register.  */
-double
-fudge (double x)
-{
-  return x;
 }
 
 

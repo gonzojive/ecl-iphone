@@ -1,6 +1,6 @@
 /* Shared speed subroutines.
 
-Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
+Copyright 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -491,7 +491,7 @@ speed_mpn_mul_1_inplace (struct speed_params *s)
 double
 speed_mpn_mul_2 (struct speed_params *s)
 {
-  SPEED_ROUTINE_MPN_UNARY_2 (mpn_mul_2);
+  SPEED_ROUTINE_MPN_MUL_2 (mpn_mul_2);
 }
 #endif
 
@@ -563,6 +563,17 @@ double
 speed_mpn_mod_1_inv (struct speed_params *s)
 {
   SPEED_ROUTINE_MPN_MOD_1 (mpn_mod_1_inv);
+}
+
+double
+speed_mpn_preinv_divrem_1 (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_PREINV_DIVREM_1 (mpn_preinv_divrem_1);
+}
+double
+speed_mpn_preinv_divrem_1f (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_PREINV_DIVREM_1F (mpn_preinv_divrem_1);
 }
 
 double
@@ -707,16 +718,6 @@ double
 speed_mpn_sub_n (struct speed_params *s)
 {
 SPEED_ROUTINE_MPN_BINARY_N (mpn_sub_n);
-}
-double
-speed_mpn_add_n_self (struct speed_params *s)
-{
-  SPEED_ROUTINE_MPN_BINARY_N_SELF (mpn_add_n);
-}
-double
-speed_mpn_add_n_inplace (struct speed_params *s)
-{
-  SPEED_ROUTINE_MPN_BINARY_N_INPLACE (mpn_add_n);
 }
 
 
@@ -979,6 +980,21 @@ double
 speed_mpn_jacobi_base (struct speed_params *s)
 {
   SPEED_ROUTINE_MPN_JACBASE (mpn_jacobi_base);
+}
+double
+speed_mpn_jacobi_base_1 (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_JACBASE (mpn_jacobi_base_1);
+}
+double
+speed_mpn_jacobi_base_2 (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_JACBASE (mpn_jacobi_base_2);
+}
+double
+speed_mpn_jacobi_base_3 (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_JACBASE (mpn_jacobi_base_3);
 }
 
 
@@ -1694,7 +1710,7 @@ speed_routine_count_zeros_setup (struct speed_params *s,
       if (! zero)
         for (i = 0; i < SPEED_BLOCK_SIZE; i++)
           if (xp[i] == 0)
-            xp[i] = leading ? 1 : MP_LIMB_T_HIGHBIT;
+            xp[i] = leading ? 1 : GMP_LIMB_HIGHBIT;
     }
   else if (s->r == 1)
     {
@@ -1739,13 +1755,17 @@ speed_count_leading_zeros (struct speed_params *s)
 #else
 #define COUNT_LEADING_ZEROS_0_ALLOWED   0
 #endif
-  SPEED_ROUTINE_COUNT_LEADING_ZEROS_C (count_leading_zeros (c, n),
-                                       COUNT_LEADING_ZEROS_0_ALLOWED)
+
+  SPEED_ROUTINE_COUNT_ZEROS_A (1, COUNT_LEADING_ZEROS_0_ALLOWED);
+  count_leading_zeros (c, n);
+  SPEED_ROUTINE_COUNT_ZEROS_B ();
 }
 double
 speed_count_trailing_zeros (struct speed_params *s)
 {
-  SPEED_ROUTINE_COUNT_TRAILING_ZEROS_C (count_trailing_zeros (c, n), 0)
+  SPEED_ROUTINE_COUNT_ZEROS_A (0, 0);
+  count_trailing_zeros (c, n);
+  SPEED_ROUTINE_COUNT_ZEROS_B ();
 }
 
 
@@ -1760,6 +1780,16 @@ speed_mpn_set_str (struct speed_params *s)
 {
   SPEED_ROUTINE_MPN_SET_STR (mpn_set_str);
 }  
+double
+speed_mpn_set_str_basecase (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_SET_STR (mpn_set_str_basecase);
+}
+double
+speed_mpn_set_str_subquad (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_SET_STR (mpn_set_str_subquad);
+}
 
 
 double

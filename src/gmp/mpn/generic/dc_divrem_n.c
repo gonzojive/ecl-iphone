@@ -6,7 +6,7 @@
    FUTURE GNU MP RELEASE.
 
 
-Copyright 2000, 2001 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
 Contributed by Paul Zimmermann.
 
 This file is part of the GNU MP Library.
@@ -82,19 +82,19 @@ mpn_dc_divrem_n (mp_ptr qp, mp_ptr np, mp_srcptr dp, mp_size_t n)
       cc = mpn_sub_1 (np + n, np + n, 1, cc);
       if (qhl) cc += mpn_sub_1 (np + n, np + n, 1, dp[0]);
       while (cc)
-        {
-          qhl -= mpn_sub_1 (qp + 1, qp + 1, n - 1, (mp_limb_t) 1);
-          cc -= mpn_add_n (np + 1, np + 1, dp, n);
-        }
+	{
+	  qhl -= mpn_sub_1 (qp + 1, qp + 1, n - 1, (mp_limb_t) 1);
+	  cc -= mpn_add_n (np + 1, np + 1, dp, n);
+	}
       qhl += mpn_add_1 (qp + 1, qp + 1, n - 1,
-                        mpn_sb_divrem_mn (qp, np, n + 1, dp, n));
+			mpn_sb_divrem_mn (qp, np, n + 1, dp, n));
     }
   else
     {
       mp_size_t n2 = n/2;
       qhl = mpn_dc_div_3_halves_by_2 (qp + n2, np + n2, dp, n2);
       qhl += mpn_add_1 (qp + n2, qp + n2, n2,
-                        mpn_dc_div_3_halves_by_2 (qp, np, dp, n2));
+			mpn_dc_div_3_halves_by_2 (qp, np, dp, n2));
     }
   return qhl;
 }
@@ -106,13 +106,13 @@ mpn_dc_divrem_n (mp_ptr qp, mp_ptr np, mp_srcptr dp, mp_size_t n)
 static mp_limb_t
 mpn_dc_div_3_halves_by_2 (mp_ptr qp, mp_ptr np, mp_srcptr dp, mp_size_t n)
 {
-  mp_size_t twon = n + n; 
+  mp_size_t twon = n + n;
   mp_limb_t qhl, cc;
   mp_ptr tmp;
   TMP_DECL (marker);
 
   TMP_MARK (marker);
-  if (n < DC_THRESHOLD)
+  if (n < DIV_DC_THRESHOLD)
     qhl = mpn_sb_divrem_mn (qp, np + n, twon, dp + n, n);
   else
     qhl = mpn_dc_divrem_n (qp, np + n, dp + n, n);

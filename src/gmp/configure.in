@@ -1,31 +1,40 @@
 dnl  Process this file with autoconf to produce a configure script.
 
 
-# Copyright 1996, 1997, 1998, 1999, 2000, 2001 Free Software Foundation, Inc.
-#
-# This file is part of the GNU MP Library.
-#
-# The GNU MP Library is free software; you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published
-# by the Free Software Foundation; either version 2.1 of the License, or (at
-# your option) any later version.
-#
-# The GNU MP Library is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-# License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-# the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-# MA 02111-1307, USA.
+AC_COPYRIGHT([
+
+Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002 Free Software
+Foundation, Inc.
+
+This file is part of the GNU MP Library.
+
+The GNU MP Library is free software; you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published
+by the Free Software Foundation; either version 2.1 of the License, or (at
+your option) any later version.
+
+The GNU MP Library is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
+License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
+the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+MA 02111-1307, USA.
+])
 
 
 AC_REVISION($Revision$)
 AC_PREREQ(2.52)
 AC_INIT(gmp-impl.h)
 m4_pattern_forbid([^[ \t]*GMP_])
+m4_pattern_forbid([^[ \t]*MPFR_CONFIGS])
 m4_pattern_allow(GMP_LDFLAGS)
+m4_pattern_allow(GMP_LIMB_BITS)
+m4_pattern_allow(GMP_MPARAM_H_SUGGEST)
+m4_pattern_allow(GMP_NAIL_BITS)
+m4_pattern_allow(GMP_NUMB_BITS)
 
 # If --target is not used then $target_alias is empty, but if say
 # "./configure athlon-pc-freebsd3.5" is used, then all three of
@@ -52,7 +61,7 @@ AM_MAINTAINER_MODE
 
 
 AC_ARG_ENABLE(assert,
-AC_HELP_STRING([--enable-assert],[enable ASSERT checking [default=no]]),
+AC_HELP_STRING([--enable-assert],[enable ASSERT checking [[default=no]]]),
 [case $enableval in
 yes|no) ;;
 *) AC_MSG_ERROR([bad value $enableval for --enable-assert, need yes or no]) ;;
@@ -66,7 +75,7 @@ fi
 
 
 AC_ARG_ENABLE(alloca,
-AC_HELP_STRING([--enable-alloca],[how to get temp memory [default=reentrant]]),
+AC_HELP_STRING([--enable-alloca],[how to get temp memory [[default=reentrant]]]),
 [case $enableval in
 alloca|malloc-reentrant|malloc-notreentrant) ;;
 yes|no|reentrant|notreentrant) ;;
@@ -91,7 +100,7 @@ esac],
 # wanted.
 #
 AC_ARG_ENABLE(cxx,
-AC_HELP_STRING([--enable-cxx],[enable C++ support [default=detect]]),
+AC_HELP_STRING([--enable-cxx],[enable C++ support [[default=no]]]),
 [case $enableval in
 yes|no|detect) ;;
 *) AC_MSG_ERROR([bad value $enableval for --enable-cxx, need yes/no/detect]) ;;
@@ -100,7 +109,7 @@ esac],
 
 
 AC_ARG_ENABLE(fft,
-AC_HELP_STRING([--enable-fft],[enable FFTs for multiplication [default=yes]]),
+AC_HELP_STRING([--enable-fft],[enable FFTs for multiplication [[default=yes]]]),
 [case $enableval in
 yes|no) ;;
 *) AC_MSG_ERROR([bad value $enableval for --enable-fft, need yes or no]) ;;
@@ -115,7 +124,7 @@ fi
 
 AC_ARG_ENABLE(mpbsd,
 AC_HELP_STRING([--enable-mpbsd],
-               [build Berkley MP compatibility library [default=no]]),
+               [build Berkley MP compatibility library [[default=no]]]),
 [case $enableval in
 yes|no) ;;
 *) AC_MSG_ERROR([bad value $enableval for --enable-mpbsd, need yes or no]) ;;
@@ -125,7 +134,7 @@ AM_CONDITIONAL(WANT_MPBSD, test "$enable_mpbsd" = "yes")
 
 
 AC_ARG_ENABLE(mpfr,
-AC_HELP_STRING([--enable-mpfr],[build MPFR [default=no]]),
+AC_HELP_STRING([--enable-mpfr],[build MPFR [[default=no]]]),
 [case $enableval in
 yes|no) ;;
 *) AC_MSG_ERROR([bad value $enableval for --enable-mpfr, need yes or no]) ;;
@@ -134,9 +143,25 @@ esac],
 AM_CONDITIONAL(WANT_MPFR, test "$enable_mpfr" = "yes")
 
 
+AC_ARG_ENABLE(nails,
+AC_HELP_STRING([--enable-nails],[use nails on limbs [[default=no]]]),
+[case $enableval in
+[yes|no|[0-9]|[0-9][0-9]]) ;;
+*) AC_MSG_ERROR([bad value $enableval for --enable-nails, need yes/no/number]) ;;
+esac],
+[enable_nails=no])
+
+case $enable_nails in
+yes) GMP_NAIL_BITS=2 ;;
+no)  GMP_NAIL_BITS=0 ;;
+*)   GMP_NAIL_BITS=$enable_nails ;;
+esac
+AC_SUBST(GMP_NAIL_BITS)
+
+
 AC_ARG_ENABLE(profiling,
 AC_HELP_STRING([--enable-profiling],
-               [build with profiler support [default=no]]),
+               [build with profiler support [[default=no]]]),
 [case $enableval in
 no|prof|gprof) ;;
 *) AC_MSG_ERROR([bad value $enableval for --enable-profiling, need no/prof/gprof]) ;;
@@ -153,9 +178,19 @@ else
 fi
 
 
+AC_ARG_WITH(readline,
+AC_HELP_STRING([--with-readline],
+               [readline support in calc demo program [[default=detect]]]),
+[case $withval in
+yes|no|detect) ;;
+*) AC_MSG_ERROR([bad value $withval for --with-readline, need yes/no/detect]) ;;
+esac],
+[with_readline=detect])
 
-# Table of compilers, options, and mpn paths.  This code has a couple of
-# related purposes
+
+
+# Table of compilers, options, and mpn paths.  This code has various related
+# purposes
 #
 #   - better default CC/CFLAGS selections than autoconf otherwise gives
 #   - default CC/CFLAGS selections for extra CPU types specific to GMP
@@ -229,14 +264,33 @@ fi
 #
 # SPEED_CYCLECOUNTER, cyclecounter_size and CALLING_CONVENTIONS_OBJS are
 # also set here, with an ABI suffix.
+#
+#
+#
+# A table-driven approach like this to mapping cpu type to good compiler
+# options is a bit of a maintenance burden, but there's not much uniformity
+# between options specifications on different compilers.  Some sort of
+# separately updatable tool might be cute.
+#
+# The use of lots of variables like this, direct and indirect, tends to
+# obscure when and how various things are done, but unfortunately it's
+# pretty much the only way.  If shell subroutines were portable then actual
+# code like "if this .. do that" could be written, but attempting the same
+# with full copies of GMP_PROG_CC_WORKS etc expanded at every point would
+# hugely bloat the output.
 
 
-AC_ARG_VAR(ABI,[intended ABI (for processors supporting more than one ABI)])
+AC_ARG_VAR(ABI, [desired ABI (for processors supporting more than one ABI)])
 
 # abilist needs to be non-empty, "standard" is just a generic name here
 abilist="standard"
 
-# FIXME: Prefer c89 to cc.
+# FIXME: We'd like to prefer an ANSI compiler, perhaps by preferring
+# c89 over cc here.  But note that on HP-UX c89 provides a castrated
+# environment, and would want to be excluded somehow.  Maybe
+# AC_PROG_CC_STDC already does enough to stick cc into ANSI mode and
+# we don't need to worry.
+#
 cclist="gcc cc"
 
 gcc_cflags="-g -O2"
@@ -247,8 +301,8 @@ cc_64_cflags="-O"
 SPEED_CYCLECOUNTER_OBJ=
 cyclecounter_size=2
 
-AC_SUBST(__GMP_HAVE_HOST_CPU_FAMILY_power,  0)
-AC_SUBST(__GMP_HAVE_HOST_CPU_FAMILY_powerpc,0)
+AC_SUBST(HAVE_HOST_CPU_FAMILY_power,  0)
+AC_SUBST(HAVE_HOST_CPU_FAMILY_powerpc,0)
 
 case $host in
 
@@ -258,51 +312,103 @@ case $host in
 
 
   alpha*-*-*)
-    path="alpha"
+    case $host_cpu in
+      alphaev5* | alphapca5*) path="alpha/ev5 alpha" ;;
+      alphaev6*)             path="alpha/ev6 alpha/ev5 alpha" ;;
+      *)                     path="alpha" ;;
+    esac
     extra_functions="cntlz"
-    case $host in
-      alphaev5*-*-* | alphapca56*-*-*) path="alpha/ev5 alpha" ;;
-      alphaev6*-*-*)                   path="alpha/ev6 alpha/ev5 alpha" ;;
+    gcc_cflags_optlist="cpu asm"
+
+    # gcc 2.7.2.3 doesn't know any -mcpu= for alpha, apparently.
+    # gcc 2.95 and 3.0 know ev4, ev5, ev56, pca56, ev6.
+    # gcc 3.1 pre-releases add ev67.
+    #
+    case $host_cpu in
+      alpha)        gcc_cflags_cpu="-mcpu=ev4" ;;
+      alphaev5)     gcc_cflags_cpu="-mcpu=ev5" ;;
+      alphaev56)    gcc_cflags_cpu="-mcpu=ev56" ;;
+      alphapca56 | alphapca57)
+                    gcc_cflags_cpu="-mcpu=pca56" ;;
+      alphaev6)     gcc_cflags_cpu="-mcpu=ev6" ;;
+      alphaev67 | alphaev68)
+                    gcc_cflags_cpu="-mcpu=ev67 -mcpu=ev6" ;;
     esac
 
-    SPEED_CYCLECOUNTER_OBJ=alpha.lo
-    cyclecounter_size=1
-
-    flavour=`echo $host_cpu | sed 's/^alpha//g'`
-    case "$flavour" in
-      # compilers don't seem to understand `ev67' and such.
-      ev6? | ev7*)  flavour=ev6 ;;
-      ev* | pca*) ;;
-      *) flavour=ev4 ;;
+    # On old versions of gcc, which don't know -mcpu=, we believe an
+    # explicit -Wa,-mev5 etc will be necessary to put the assembler in
+    # the right mode for our .asm files and longlong.h asm blocks.
+    #
+    # On newer versions of gcc, when -mcpu= is known, we must give a
+    # -Wa which is at least as high as the code gcc will generate,
+    # since the options ordering seems to make our setting override
+    # that passed by gcc.
+    #
+    # gas prior to 2.14 doesn't accept -mev67, but -mev6 seems enough for
+    # ctlz and cttz (in 2.10.0 at least).
+    #
+    # OSF `as' accepts ev68 but stupidly treats it as ev4.  -arch only seems
+    # to affect insns like ldbu which are expanded as macros when necessary.
+    # Insns like ctlz which were never available as macros are always
+    # accepted and always generate their plain code.
+    #
+    case $host_cpu in
+      alpha)        gcc_cflags_asm="-Wa,-arch,ev4 -Wa,-mev4" ;;
+      alphaev5)     gcc_cflags_asm="-Wa,-arch,ev5 -Wa,-mev5" ;;
+      alphaev56)    gcc_cflags_asm="-Wa,-arch,ev56 -Wa,-mev56" ;;
+      alphapca56 | alphapca57)
+                    gcc_cflags_asm="-Wa,-arch,pca56 -Wa,-mpca56" ;;
+      alphaev6)     gcc_cflags_asm="-Wa,-arch,ev6 -Wa,-mev6" ;;
+      alphaev67 | alphaev68)
+                    gcc_cflags_asm="-Wa,-arch,ev67 -Wa,-mev67 -Wa,-arch,ev6 -Wa,-mev6" ;;
     esac
 
-    # FIXME: Maybe a feature test should find out whether -Wa,arch is
-    # necessary.
-    if test -n "$flavour"; then
-      gcc_cflags_optlist="cpu arch"
-      gcc_cflags_cpu="-mcpu=$flavour"
-      gcc_cflags_arch="-Wa,-arch,$flavour -Wa,-m$flavour"
-    fi
-
+    # It might be better to ask "cc" whether it's Cray C or DEC C,
+    # instead of relying on the OS part of $host.  But it's hard to
+    # imagine either of those compilers anywhere except their native
+    # systems.
+    #
     case $host in
       *-cray-unicos*)
-        # FIXME: Is GCC available for these systems? Hopefully it doesn't
-        # hurt to check for it anyway.
         cc_cflags="-O"		# no -g, it silently disables all optimizations
         GMP_INCLUDE_MPN(alpha/unicos.m4)
         # Don't perform any assembly syntax tests on this beast.
         gmp_asm_syntax_testing=no
-        # tune/alpha.asm assumes int==4bytes but unicos uses int=8bytes
-        SPEED_CYCLECOUNTER_OBJ=
         ;;
       *-*-osf*)
-        cc_cflags_optlist="cpu"
-        cc_cflags="-arch $flavour -tune $flavour"
         GMP_INCLUDE_MPN(alpha/default.m4)
+        cc_cflags=""
+        cc_cflags_optlist="opt cpu"
+
+        # not sure if -fast works on old versions, so make it optional
+	cc_cflags_opt="-fast -O2"
+
+    	# DEC C V5.9-005 knows ev4, ev5, ev56, pca56, ev6.
+    	# Compaq C V6.3-029 adds ev67.
+    	#
+    	case $host_cpu in
+    	  alpha)       cc_cflags_cpu="-arch~ev4~-tune~ev4" ;;
+    	  alphaev5)    cc_cflags_cpu="-arch~ev5~-tune~ev5" ;;
+    	  alphaev56)   cc_cflags_cpu="-arch~ev56~-tune~ev56" ;;
+    	  alphapca56 | alphapca57)
+    	               cc_cflags_cpu="-arch~pca56~-tune~pca56" ;;
+    	  alphaev6)    cc_cflags_cpu="-arch~ev6~-tune~ev6" ;;
+    	  alphaev67 | alphaev68)
+    	               cc_cflags_cpu="-arch~ev67~-tune~ev67 -arch~ev6~-tune~ev6" ;;
+    	esac
         ;;
       *)
         GMP_INCLUDE_MPN(alpha/default.m4)
         ;;
+    esac
+
+    case $host in
+      *-*-unicos*)
+        # tune/alpha.asm assumes int==4bytes but unicos uses int==8bytes
+        ;;
+      *)
+        SPEED_CYCLECOUNTER_OBJ=alpha.lo
+        cyclecounter_size=1 ;;
     esac
     ;;
 
@@ -313,7 +419,10 @@ case $host in
   *-cray-unicos*)
     gmp_asm_syntax_testing=no
     cclist="cc"
-    cc_cflags="-O3 -htask0 -Wa,-B"
+    # We used to have -hscalar0 here as a workaround for miscompilation of
+    # mpz/import.c, but let's hope Cray fixes their bugs instead, since
+    # -hscalar0 causes disastrously poor code to be generated.
+    cc_cflags="-O3 -hnofastmd -htask0 -Wa,-B"
     path="cray"
     ;;
 
@@ -350,7 +459,7 @@ case $host in
     gcc_cflags_optlist="arch"
     gcc_cflags_arch="-mpa-risc-1-1"
     cc_cflags="+DA1.1 +O2"
-    path="hppa/hppa1_1/pa7100 hppa/hppa1_1 hppa"
+    path="pa32/hppa1_1/pa7100 pa32/hppa1_1 pa32"
     extra_functions="udiv_qrnnd"
 
     SPEED_CYCLECOUNTER_OBJ=hppa.lo
@@ -361,10 +470,10 @@ case $host in
         # override back to plain 1.0
         gcc_cflags_optlist=
         cc_cflags="+O2"
-        path="hppa"
+        path="pa32"
         ;;
       hppa7000*-*-*)
-        path="hppa/hppa1_1 hppa"
+        path="pa32/hppa1_1 pa32"
         ;;
 
       hppa2.0*-*-*)
@@ -379,13 +488,13 @@ case $host in
         #
         # gmp_cflags_arch="-mpa-risc-2-0 -mpa-risc-1-1"
 
-        # FIXME: path should be "hppa/hppa2_0 hppa/hppa1_1 hppa"
-        path="hppa/hppa2_0 hppa/hppa1_1/pa7100 hppa/hppa1_1 hppa"
+        # FIXME: path should be "pa32/hppa2_0 pa32/hppa1_1 pa32"
+        path="pa32/hppa2_0 pa32/hppa1_1/pa7100 pa32/hppa1_1 pa32"
 
         # no gcc support for long long in 2.0n
 	cclist_20n="cc"
-        # +O2 to cc triggers bug in mpz/powm.c (cvs version 1.4)
-        cc_20n_cflags="+DA2.0 +e +O3"
+        # +O3 causes problems with fp rounding in mpfr/tests/tdiv.
+        cc_20n_cflags="+DA2.0 +e +O2"
         cc_20n_testlist="hpc-hppa-2-0"
         path_20n="pa64"
 	limb_20n=longlong
@@ -407,9 +516,9 @@ case $host in
 
           # gcc support for 2.0w is in progress
           cclist_20w="cc"
-          cc_20w_cflags="+DD64 +O3"
+          cc_20w_cflags="+DD64 +O2" # +O3 causes problems with fp rounding in mpfr/tests/tdiv.
           cc_20w_testlist="hpc-hppa-2-0"
-          path_20w="pa64w"
+          path_20w="pa64"
           extra_functions_20w="umul_ppmm udiv_qrnnd"
           SPEED_CYCLECOUNTER_OBJ_20w=hppa2w.lo
           cyclecounter_size_20w=2
@@ -483,43 +592,53 @@ case $host in
 
   # IRIX 5 and earlier can only run 32-bit o32.
   #
-  # IRIX 6 and up can run n32 or 64, and GMP uses a 64-bit limb on both.  It
-  # could run the mips2 code in n32 with a 32-bit limb, which we could
-  # perhaps call 32, but since that would just create a slower library, we
-  # don't give that option.
+  # IRIX 6 and up always has a 64-bit mips CPU can run n32 or 64.  n32 is
+  # preferred over 64, but only because that's been the default in past
+  # versions of GMP.  The two are equally efficient.
   #
   # Linux kernel 2.2.13 arch/mips/kernel/irixelf.c has a comment about not
   # supporting n32 or 64.
   #
-  # We here use ldflags for passing options with libtool to the compiler
-  # when generating the shared library.
-
-  [mips*-*-irix[6789]*])
-    abilist="n32 64"
-
-    # let the $found_compiler test below know that the cpu is recognised
-    path=dummy
-
-    cclist_n32="gcc cc"
-    gcc_n32_cflags="-g -O2 -mabi=n32"
-    gcc_n32_ldflags="-Wc,-mabi=n32"
-    cc_n32_cflags="-O2 -n32"		# no -g, it disables all optimizations
-    cc_n32_ldflags="-Wc,-n32"
-    limb_n32=longlong
-    path_n32="mips3"
-
-    cclist_64="gcc cc"
-    gcc_64_cflags="-g -O2 -mabi=64"
-    gcc_64_ldflags="-Wc,-mabi=64"
-    cc_64_cflags="-O2 -64"		# no -g, it disables all optimizations
-    cc_64_ldflags="-Wc,-64"
-    path_64="mips3"
-
-    GMP_INCLUDE_MPN(mips3/mips.m4)
-    ;;
-
+  # FIXME: It's necessary to pass -mabi or -n32 to the compiler when
+  # linking.  Libtool used to strip them, hence the ldflags here.  It
+  # looks like it has something equivalent itself now, so perhaps
+  # these can be removed.
+  #
   mips*-*-*)
-    path="mips2"
+    abilist="o32"
+    gcc_cflags_optlist="abi"
+    gcc_cflags_abi="-mabi=32"
+    gcc_testlist="gcc-mips-o32"
+    path="mips32"
+    cc_cflags="-O2 -o32"   # no -g, it disables all optimizations
+    extra_functions="umul"
+    # this suits both mips32 and mips64
+    GMP_INCLUDE_MPN(mips32/mips-defs.m4)
+
+    case $host in
+      mips64*-*-* | mips*-*-irix[6789]*)
+        abilist="n32 64 o32"
+
+        cclist_n32="gcc cc"
+        gcc_n32_cflags="-g -O2 -mabi=n32"
+        gcc_n32_ldflags="-Wc,-mabi=n32"
+	# Pass just -O1, MIPSpro 7.2.1 miscompiles mpn/generic/divrem_1.c
+	# cvs version 1.20, for -O2 and -O3
+        cc_n32_cflags="-O1 -n32"        # no -g, it disables all optimizations
+        cc_n32_ldflags="-Wc,-n32"
+        limb_n32=longlong
+        path_n32="mips64"
+        extra_functions_n32="umul"
+
+        cclist_64="gcc cc"
+        gcc_64_cflags="-g -O2 -mabi=64"
+        gcc_64_ldflags="-Wc,-mabi=64"
+        cc_64_cflags="-O2 -64"		# no -g, it disables all optimizations
+        cc_64_ldflags="-Wc,-64"
+        path_64="mips64"
+        extra_functions_64="umul"
+        ;;
+    esac
     ;;
 
 
@@ -538,39 +657,87 @@ case $host in
   #
   powerpc*-*-*)
     AC_DEFINE(HAVE_HOST_CPU_FAMILY_powerpc)
-    __GMP_HAVE_HOST_CPU_FAMILY_powerpc=1
+    HAVE_HOST_CPU_FAMILY_powerpc=1
     cclist="gcc cc"
     cc_cflags="-g -O2"
     gcc_cflags="-g -O2 -mpowerpc"
-    gcc_cflags_optlist="asm precomp"
+    gcc_cflags_optlist="asm precomp cpu"
     gcc_cflags_asm="-Wa,-mppc"
     gcc_cflags_precomp="-no-cpp-precomp"
-    path="powerpc32"
     extra_functions="umul"
-    case $host in
-      *-*-aix*) cclist="gcc xlc cc"
-                xlc_cflags="-g -O2 -qarch=ppc -qmaxmem=20000" ;;
+
+    case $host_cpu in
+      powerpc740 | powerpc750 | powerpc7400)
+        path="powerpc32/750 powerpc32" ;;
+      *)
+        path="powerpc32" ;;
+    esac
+
+    # gcc 2.7.2 knows -mcpu=403, 603, 604.
+    # gcc 2.95 adds 401, 505, 602, 603e, ec603e, 604e, 620, 740, 750,
+    #   801, 821, 823, 860.
+    # gcc 3.0 adds 630, rs64a.
+    # gcc 3.1 pre-releases add 405, 7400, 7450.
+    #
+    # FIXME: The way 603e falls back to 603 for gcc 2.7.2 should be
+    # done for all the others too.  But what would be the correct
+    # arrangements?
+    #
+    case $host_cpu in
+      powerpc401)   gcc_cflags_cpu="-mcpu=401" ;;
+      powerpc403)   gcc_cflags_cpu="-mcpu=403" ;;
+      powerpc405)   gcc_cflags_cpu="-mcpu=405" ;;
+      powerpc505)   gcc_cflags_cpu="-mcpu=505" ;;
+      powerpc602)   gcc_cflags_cpu="-mcpu=602" ;;
+      powerpc603)   gcc_cflags_cpu="-mcpu=603" ;;
+      powerpc603e)  gcc_cflags_cpu="-mcpu=603e -mcpu=603" ;;
+      powerpc604)   gcc_cflags_cpu="-mcpu=604" ;;
+      powerpc604e)  gcc_cflags_cpu="-mcpu=604e -mcpu=604" ;;
+      powerpc620)   gcc_cflags_cpu="-mcpu=620" ;;
+      powerpc630)   gcc_cflags_cpu="-mcpu=630" ;;
+      powerpc740)   gcc_cflags_cpu="-mcpu=740" ;;
+      powerpc7400)  gcc_cflags_cpu="-mcpu=7400" ;;
+      powerpc7450)  gcc_cflags_cpu="-mcpu=7450" ;;
+      powerpc750)   gcc_cflags_cpu="-mcpu=750" ;;
+      powerpc801)   gcc_cflags_cpu="-mcpu=801" ;;
+      powerpc821)   gcc_cflags_cpu="-mcpu=821" ;;
+      powerpc823)   gcc_cflags_cpu="-mcpu=823" ;;
+      powerpc860)   gcc_cflags_cpu="-mcpu=860" ;;
     esac
 
     case $host in
-      powerpc64*-*-*)
-        # CPU type powerpc64 forces to a 64-bit limb
-        case $host in
-          powerpc64-*-*) abilist="32L" ;;
-          *)             abilist="32L 32" ;;
-        esac
-        cclist_32L="gcc"
-        gcc_32L_cflags="-g -O2 -mpowerpc64"
-        limb_32L=longlong
-        path_32L="powerpc64"
+      *-*-aix*)
+        cclist="gcc xlc cc"
+        xlc_cflags="-g -O2 -qmaxmem=20000"
+        xlc_cflags_optlist="arch"
 
+        # xlc (what version?) knows -qarch=ppc, ppcgr, 601, 602, 603, 604,
+        # 403, rs64a
+        # -qarch=ppc is needed, so ensure everything falls back to that.
+        # FIXME: Perhaps newer versions know more flavours.
+        #
+    	case $host_cpu in
+	  powerpc403)   xlc_cflags_arch="-qarch=403 -qarch=ppc" ;;
+	  powerpc602)   xlc_cflags_arch="-qarch=602 -qarch=ppc" ;;
+	  powerpc603)   xlc_cflags_arch="-qarch=603 -qarch=ppc" ;;
+	  powerpc603e)  xlc_cflags_arch="-qarch=603 -qarch=ppc" ;;
+	  powerpc604)   xlc_cflags_arch="-qarch=604 -qarch=ppc" ;;
+	  powerpc604e)  xlc_cflags_arch="-qarch=604 -qarch=ppc" ;;
+	  *)            xlc_cflags_arch="-qarch=ppc" ;;
+        esac
+        ;;
+    esac
+
+    case $host in
+      POWERPC64_PATTERN)
         # On AIX a true 64-bit ABI is available.
         case $host in
           *-*-aix*)
             # Need -Wc to pass object type flags through to the linker.
-            abilist="aix64 $abilist"
+            abilist="aix64 32"
             cclist_aix64="gcc xlc"
             gcc_aix64_cflags="-g -O2 -maix64 -mpowerpc64"
+            gcc_aix64_cflags_optlist="cpu"
 	    gcc_aix64_ldflags="-Wc,-maix64"
             xlc_aix64_cflags="-g -O2 -q64 -qtune=pwr3 -qmaxmem=20000"
 	    xlc_aix64_ldflags="-Wc,-q64"
@@ -578,6 +745,7 @@ case $host in
 	    ar_aix64_flags="-X64"
 	    nm_aix64_flags="-X64"
             path_aix64="powerpc64"
+            extra_functions_aix64="umul"
             ;;
         esac
         ;;
@@ -588,7 +756,7 @@ case $host in
   # POWER
   [power-*-* | power[12]-*-* | power2sc-*-*])
     AC_DEFINE(HAVE_HOST_CPU_FAMILY_power)
-    __GMP_HAVE_HOST_CPU_FAMILY_power=1
+    HAVE_HOST_CPU_FAMILY_power=1
     cclist="gcc"
     extra_functions="udiv_w_sdiv"
     path="power"
@@ -641,6 +809,7 @@ case $host in
     gcc_cflags_cpu=
     acc_cflags="-O2"
     cc_cflags="-O2"
+    GMP_INCLUDE_MPN(sparc32/sparc-defs.m4)
 
     # FIXME: This should be selected according to the CPU
     if test x${floating_point} = xno
@@ -653,13 +822,13 @@ case $host in
         gcc_cflags_cpu="-mcpu=v8 -mv8"
         acc_cflags="-O2 -cg92"
         path="sparc32/v8 sparc32"
+        extra_functions="udiv"
 
         case $host in
           *-*-solaris2.*)  cc_cflags="-xtarget=native -xarch=v8 -xO4" ;;
         esac
         case $host in
-          supersparc*-*-*) path="sparc32/v8/supersparc sparc32/v8 sparc32"
-                           extra_functions="udiv" ;;
+          supersparc*-*-*) path="sparc32/v8/supersparc sparc32/v8 sparc32" ;;
         esac
         ;;
 
@@ -690,7 +859,21 @@ case $host in
             path_64="sparc64"
             cclist_64="gcc cc"
             gcc_64_cflags="-g -O2 -m64 -mptr64 -Wa,-xarch=v9 -mcpu=v9"
-            cc_64_cflags="-xtarget=native -xarch=v9 -xO4"
+            gcc_64_ldflags="-Wc,-m64"
+	    # -fast enables different optimizations depending compiler version
+	    # -fns=no and -fsimple=1 disables some transformations that
+	    # conflict with IEEE 754, which some compiler versions perform.
+            cc_64_cflags="-fast -fns=no -fsimple=1 -xarch=v9"
+            SPEED_CYCLECOUNTER_OBJ_64=sparcv9.lo
+            cyclecounter_size_64=2
+            ;;
+          *-*-*bsd*)
+            # NetBSD and OpenBSD sparc64
+            abilist="64"
+            extra_functions=
+            path="sparc64"
+            gcc_cflags="-g -O2"
+            cyclecounter_size=2
             ;;
         esac
       ;;
@@ -755,7 +938,7 @@ case $host in
         ;;
       [i686*-*-* | pentiumpro-*-* | pentium[23]-*-*])
         gcc_cflags_cpu="-mcpu=pentiumpro -mcpu=i486 -m486"
-        gcc_cflags_arch="-march=pentiumpro -march=i486"
+        gcc_cflags_arch="-march=pentiumpro -march=pentium -march=i486"
         ;;
       k6*-*-*)
         gcc_cflags_cpu="-mcpu=k6 -mcpu=i486 -m486"
@@ -766,14 +949,14 @@ case $host in
         # 4-6 cycle mul, 40 cycle div, pairable adc, etc) so if gcc doesn't
         # know athlon (eg. 2.95.2 doesn't) then fall back on pentiumpro.
         gcc_cflags_cpu="-mcpu=athlon -mcpu=pentiumpro -mcpu=i486 -m486"
-        gcc_cflags_arch="-march=athlon -march=pentiumpro -march=i486"
+        gcc_cflags_arch="-march=athlon -march=pentiumpro -march=pentium -march=i486"
         ;;
       pentium4-*-*)
         # pentium4 is known to gcc 3.1 and up, not sure what cpu choice
         # would best suit previous versions, pentiumpro will get us cmov
         # from gcc 2.95.4 up, otherwise let's just try i486.
         gcc_cflags_cpu="-mcpu=pentium4 -mcpu=pentiumpro -mcpu=i486 -m486"
-        gcc_cflags_arch="-march=pentium4 -march=pentiumpro -march=i486"
+        gcc_cflags_arch="-march=pentium4 -march=pentiumpro -march=pentium -march=i486"
         ;;
     esac
 
@@ -976,6 +1159,7 @@ for abi in $abilist; do
         case $tst in
         hpc-hppa-2-0)   GMP_HPC_HPPA_2_0($cc,,testlist_pass=no) ;;
         gcc-arm-umodsi) GMP_GCC_ARM_UMODSI($cc,,testlist_pass=no) ;;
+        gcc-mips-o32)   GMP_GCC_MIPS_O32($cc,,testlist_pass=no) ;;
         esac
         if test $testlist_pass = no; then break; fi
       done
@@ -1023,14 +1207,14 @@ if test $found_compiler = yes; then
     for opt in $optlist; do
                              eval optflags=\"\$${ccbase}${abi1}_cflags_${opt}\"
       test -n "$optflags" || eval optflags=\"\$${ccbase}${abi2}_cflags_${opt}\"
+      test -n "$optflags" || eval optflags=\"\$${ccbase}_cflags_${opt}\"
 
       for flag in $optflags; do
 
+	# ~ respresents a space in an option spec
+        flag=`echo "$flag" | tr '~' ' '`
+
         case $flag in
-          -march=pentiumpro)
-            # tickles stack slot bugs on some gcc, exclude as necessary
-            GMP_GCC_MARCH_PENTIUMPRO($cc,,continue)
-            ;;
           -O*)
             # ease back to just -O on m68k gcc 2.95.x
             GMP_GCC_M68K_OPTIMIZE($ccbase,$cc,flag)
@@ -1041,6 +1225,13 @@ if test $found_compiler = yes; then
                                    [cflags="$cflags $flag"
                                    break],
                                    [continue])
+            ;;
+          -Wa,-m*)
+            case $host in
+              alpha*-*-*)
+                GMP_GCC_WA_MCPU($cc $cflags, $flag, , [continue])
+              ;;
+            esac
             ;;
         esac
 
@@ -1188,6 +1379,36 @@ if test $want_cxx = yes; then
   AC_PROG_CXXCPP
 fi
 
+case $host_cpu in
+  c90 | t90)
+    AC_EGREP_CPP(yes,
+[#ifdef _CRAYIEEE
+yes
+#endif],
+    [add_path="cray/ieee"],
+    [add_path="cray/cfp"; extra_functions="mulwwc90"]) ;;
+  j90 | sv1)
+    extra_functions="mulwwj90"
+    add_path="cray/cfp" ;;
+esac
+
+if test -z "$MPN_PATH"; then
+  path="$add_path $path"
+fi
+
+# for a nail build, also look in "nails" subdirectories
+if test $GMP_NAIL_BITS != 0 && test -z "$MPN_PATH"; then
+  new_path=
+  for i in $path; do
+    case $i in
+    generic) new_path="$new_path $i" ;;
+    *)       new_path="$new_path $i/nails $i" ;;
+    esac
+  done
+  path=$new_path
+fi
+
+
 cat >&AC_FD_CC <<EOF
 configure:__line__: Decided:
 ABI=$ABI
@@ -1207,23 +1428,7 @@ if test $want_cxx = yes; then
   echo "      CXX=\"$CXX\""
   echo "      CXXFLAGS=\"$CXXFLAGS\""
 fi
-
-case $host_cpu in
-  c90 | t90)
-    AC_EGREP_CPP(yes,
-[#ifdef _CRAYIEEE
-yes
-#endif],
-    [add_path="cray/ieee"],
-    [add_path="cray/cfp"; extra_functions="mulwwc90"]) ;;
-  j90 | sv1)
-    extra_functions="mulwwj90"
-    add_path="cray/cfp" ;;
-esac
-
-if test -z "$MPN_PATH"; then
-  path="$add_path $path"
-fi
+echo "      MPN_PATH=\"$path\""
 
 
 # Automake ansi2knr support.
@@ -1246,23 +1451,6 @@ case $host in
   #
   [*-*-aix[34]*])
     if test -z "$enable_shared"; then enable_shared=no; fi ;;
-
-  # On Windows, build only static by default, and don't allow both static
-  # and DLL.  libtool -no-undefined is needed for a DLL, as per the
-  # AC_LIBTOOL_WIN32_DLL doco.
-  #
-  *-*-cygwin* | *-*-mingw* | *-*-pw32* | *-*-os2*)
-    if test -z "$enable_shared"; then
-      enable_shared=no
-    fi
-    if test "$enable_shared" != no && test "$enable_static" != no; then
-      AC_MSG_ERROR([cannot build both static and DLL, since gmp.h is different for each.
-Use "--disable-static --enable-shared" to build just a DLL.])
-    fi
-    if test "$enable_shared" = yes; then
-      GMP_LDFLAGS="$GMP_LDFLAGS -no-undefined"
-    fi
-    ;;
 
   # FIXME: Libtool recognises djgpp can't build shared libraries, but still
   # makes tests/.libs/libtests.al out of PIC objects, which then fail to
@@ -1293,17 +1481,71 @@ Use "--disable-static --enable-shared" to build just a DLL.])
     enable_shared=no ;;
 esac
 
-# Libtool runs an impgen.c program on the build system when making windows
-# DLLs.  If we're cross compiling then look for a suitable build system
-# compiler, since $CC can't be expected to work.
-# FIXME: Libtool ought to do this itself.
+# FIXME: AC_LIBTOOL_SYS_MAX_CMD_LEN has been reported to blow up in some
+# fashion on windows 9x (but not 2k), taking a very long time and
+# temporarily locking the whole PC.  Clearly this is a libtool problem, but
+# for now force a sensible value to avoid the test.
 #
-if test "$cross_compiling" != no && test "$enable_shared" != no; then
-  case $host in
-    *-*-cygwin* | *-*-mingw* | *-*-pw32*)
+case $build in
+  *-*-cygwin*)
+    if test -z "$lt_cv_sys_max_cmd_len"; then
+      lt_cv_sys_max_cmd_len=20000
+    fi
+    ;;
+esac
+
+
+# Configs for Windows DLLs.
+
+AC_LIBTOOL_WIN32_DLL
+
+AC_SUBST(LIBGMP_DLL,0)
+case $host in
+  *-*-cygwin* | *-*-mingw* | *-*-pw32* | *-*-os2*)
+    # By default, build only static.
+    if test -z "$enable_shared"; then
+      enable_shared=no
+    fi
+    # Don't allow both static and DLL.
+    if test "$enable_shared" != no && test "$enable_static" != no; then
+      AC_MSG_ERROR([cannot build both static and DLL, since gmp.h is different for each.
+Use "--disable-static --enable-shared" to build just a DLL.])
+    fi
+    if test "$enable_shared" = yes; then
+      # libtool requires "-no-undefined", see AC_LIBTOOL_WIN32_DLL doco.
+      GMP_LDFLAGS="$GMP_LDFLAGS -no-undefined"
+      LIBGMP_DLL=1
+    fi
+    ;;
+esac
+
+# When cross compiling a DLL, libtool requires $HOST_CC, to compile impgen.c
+# on the build system.  It's a well-known misfeature that libtool doesn't
+# hunt around for a useful HOST_CC on its own.
+# FIXME: Newer libtool looks like it'll need this only for "*-*-mingw* |
+# *-*-pw32*", not *-*-cygwin*.
+#
+case $host in
+  *-*-cygwin* | *-*-mingw* | *-*-pw32*)
+    if test "$cross_compiling" != no && test "$enable_shared" != no; then
       GMP_PROG_HOST_CC
-      ;;
-  esac
+    fi
+    ;;
+esac
+
+
+# Ensure that $CONFIG_SHELL is available for AC_LIBTOOL_SYS_MAX_CMD_LEN.
+# It's often set already by _LT_AC_PROG_ECHO_BACKSLASH or
+# _AS_LINENO_PREPARE, but not always.
+#
+# The symptom of CONFIG_SHELL unset is some "expr" errors during the test,
+# and an empty result.  This only happens when invoked as "sh configure",
+# ie. no path, and can be seen for instance on ia64-*-hpux*.
+#
+# FIXME: Newer libtool should have it's own fix for this.
+#
+if test -z "$CONFIG_SHELL"; then
+  CONFIG_SHELL=$SHELL
 fi
 
 # Enable CXX in libtool only if we want it, and never enable GCJ, nor RC on
@@ -1322,7 +1564,6 @@ if test "${with_tags+set}" != set; then
   fi
 fi
 
-AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
 
 # Generate an error here if attempting to build both shared and static when
@@ -1336,21 +1577,6 @@ if test "$enable_shared" = yes && test "$enable_static" = yes; then
       ;;
   esac
 fi
-
-# Encode in gmp.h whether a shared or static library is available.
-# Currently only used for the windows DLL stuff.
-#
-case $enable_shared in
-yes) __GMP_LIBGMP_SHARED=1 ;;
-no)  __GMP_LIBGMP_SHARED=0 ;;
-esac
-AC_SUBST(__GMP_LIBGMP_SHARED)
-
-case $enable_static in
-yes) __GMP_LIBGMP_STATIC=1 ;;
-no)  __GMP_LIBGMP_STATIC=0 ;;
-esac
-AC_SUBST(__GMP_LIBGMP_STATIC)
 
 
 # How to assemble, used with CFLAGS etc, see mpn/Makeasm.am.
@@ -1380,9 +1606,19 @@ esac
 AC_HEADER_STDC
 AC_HEADER_TIME
 
-# stdint.h, unistd.h and sys/types.h are already in the autoconf default
-# tests
-AC_CHECK_HEADERS(locale.h sys/mman.h sys/param.h sys/processor.h sys/resource.h sys/sysctl.h sys/systemcfg.h sys/time.h sys/times.h)
+# Reasons for testing:
+#   sys/param.h - not in mingw
+#   sys/processor.h - solaris specific, though also present in macos
+#   sys/resource.h - not in mingw
+#   sys/sysctl.h - not in mingw
+#   sys/syssgi.h - IRIX specific
+#   sys/systemcfg.h - AIX specific
+#   sys/times.h - not in mingw
+#
+# inttypes.h, stdint.h, unistd.h and sys/types.h are already in the autoconf
+# default tests
+#
+AC_CHECK_HEADERS(fcntl.h locale.h sys/mman.h sys/param.h sys/processor.h sys/resource.h sys/sysctl.h sys/syssgi.h sys/systemcfg.h sys/time.h sys/times.h)
 
 # optarg should be in unistd.h, which is already in the default includes
 AC_CHECK_DECLS([fgetc, fscanf, optarg, ungetc, vfprintf])
@@ -1393,13 +1629,14 @@ AC_TYPE_SIGNAL
 AC_CHECK_TYPES([intmax_t, long double, long long, ptrdiff_t, quad_t])
 
 AC_C_STRINGIZE
+AC_C_VOLATILE
 GMP_C_STDARG
 GMP_C_ATTRIBUTE_CONST
 GMP_C_ATTRIBUTE_MALLOC
 GMP_C_ATTRIBUTE_MODE
 GMP_C_ATTRIBUTE_NORETURN
 
-AC_C_INLINE
+GMP_C_INLINE
 GMP_H_EXTERN_INLINE
 
 # from libtool
@@ -1411,6 +1648,29 @@ GMP_OPTION_ALLOCA
 
 GMP_H_HAVE_FILE
 GMP_IMPL_H_IEEE_FLOATS
+
+# FIXME: Autoconf 2.52 AC_C_BIGENDIAN bombs when cross compiling, but in the
+# future the probes will be better and this override can be removed.
+if test "$cross_compiling" = yes; then
+  ac_cv_c_bigendian=unknown
+fi
+AC_C_BIGENDIAN
+# Enhancement: In the future AC_C_BIGENDIAN will accept these actions as
+# parameters.
+case $ac_cv_c_bigendian in
+  yes)     AC_DEFINE(HAVE_LIMB_BIG_ENDIAN, 1) ;;
+  no)      AC_DEFINE(HAVE_LIMB_LITTLE_ENDIAN, 1) ;;
+  unknown) ;;
+  *)       AC_MSG_ERROR([Oops, unrecognised ac_cv_c_bigendian]) ;;
+esac
+AH_VERBATIM([HAVE_LIMB],
+[/* Define one (just one) of the following for the endiannes of `mp_limb_t'.
+   If the endianness is not a simple big or little, or you don't know what
+   it is, then leave both of these undefined. */
+#undef HAVE_LIMB_BIG_ENDIAN
+#undef HAVE_LIMB_LITTLE_ENDIAN])
+
+GMP_C_DOUBLE_FORMAT
 
 
 # On m68k NetBSD 1.4.1 getrusage() is doubtful.  ru_utime looks microsecond
@@ -1425,7 +1685,27 @@ case $host in
   m68*-*-netbsd1.4*) ac_cv_func_getrusage=no ;;
 esac
 
-AC_CHECK_FUNCS(alarm getpagesize getrusage gettimeofday localeconv memset mmap mprotect obstack_vprintf popen processor_info read_real_time strchr strnlen strtoul sysconf sysctl sysctlbyname times)
+# Reasons for testing:
+#   alarm - not in mingw
+#   clock_gettime - not in glibc 2.2.4, only very recent systems
+#   cputime - not in glibc
+#   gettimeofday - not in mingw
+#   mmap - not in mingw, djgpp
+#   obstack_vprintf - glibc specific
+#   processor_info - solaris specific
+#   read_real_time - AIX specific
+#   sigaction - not in mingw
+#   sigaltstack - not in mingw, old AIX (reputedly)
+#   sigstack - not in mingw
+#   strnlen - glibc extension
+#   syssgi - IRIX specific
+#   times - not in mingw
+#
+# clock_gettime is in librt on *-*-osf5.1.  We could look for it
+# there, but that's not worth bothering with unless it has a decent
+# resolution (in a quick test clock_getres said only 1 millisecond).
+#
+AC_CHECK_FUNCS(alarm clock clock_gettime cputime getpagesize getrusage gettimeofday localeconv memset mmap mprotect obstack_vprintf popen processor_info read_real_time sigaction sigaltstack sigstack syssgi strchr strnlen strtoul sysconf sysctl sysctlbyname times)
 
 # FIXME: Would have done this with an AM_CONDITIONAL, but automake 1.5
 # doesn't like that under libgmp_la_DEPENDENCIES.
@@ -1459,18 +1739,20 @@ GMP_FUNC_SSCANF_WRITABLE_INPUT
 #           % (cd macos; perl configure)
 #
 # Note: $gmp_mpn_functions must have mod_1 before pre_mod_1 so the former
-#       can optionally provide the latter as an extra entrypoint.
+#       can optionally provide the latter as an extra entrypoint.  Likewise
+#       divrem_1 and pre_divrem_1.
 
-gmp_mpn_functions_optional="copyi copyd com_n		\
-  and_n andn_n nand_n ior_n iorn_n nior_n xor_n xnor_n	\
-  gcd_finda invert_limb sqr_diagonal"
+gmp_mpn_functions_optional="copyi copyd com_n 
+  and_n andn_n nand_n ior_n iorn_n nior_n xor_n xnor_n			\
+  gcd_finda invert_limb sqr_diagonal					\
+  mul_2 mul_3 mul_4 addmul_2 addmul_3 addmul_4"
 
 gmp_mpn_functions="$extra_functions					   \
   add add_1 add_n sub sub_1 sub_n mul_1 addmul_1			   \
   submul_1 lshift rshift dive_1 diveby3 divis divrem divrem_1 divrem_2     \
-  fib2_ui mod_1 mod_34lsub1 mode1o pre_mod_1 dump                          \
-  mul mul_fft mul_n mul_basecase sqr_basecase random                       \
-  random2 sqrtrem get_str set_str scan0 scan1 popcount hamdist cmp perfsqr \
+  fib2_ui mod_1 mod_34lsub1 mode1o pre_divrem_1 pre_mod_1 dump             \
+  mul mul_fft mul_n mul_basecase sqr_basecase random random2 pow_1	   \
+  rootrem sqrtrem get_str set_str scan0 scan1 popcount hamdist cmp perfsqr \
   bdivmod gcd_1 gcd gcdext tdiv_qr dc_divrem_n sb_divrem_mn jacbase        \
   $gmp_mpn_functions_optional"
 
@@ -1493,8 +1775,11 @@ for tmp_fn in $gmp_mpn_functions; do
     test "$no_create" = yes || rm -f mpn/$tmp_fn.$tmp_ext
   done
 
-  # Don't need pre_mod_1 if it's already been provided (by an asm mod_1).
+  # mpn_preinv_divrem_1 might have been provided by divrem_1.asm, likewise
+  # mpn_preinv_mod_1 by mod_1.asm.
   case $tmp_fn in
+  pre_divrem_1)
+    if test "$HAVE_NATIVE_mpn_preinv_divrem_1" = yes; then continue; fi ;;
   pre_mod_1)
     if test "$HAVE_NATIVE_mpn_preinv_mod_1" = yes; then continue; fi ;;
   esac
@@ -1516,6 +1801,54 @@ for tmp_fn in $gmp_mpn_functions; do
       for tmp_ext in MPN_SUFFIXES; do
         tmp_file=$srcdir/mpn/$tmp_dir/$tmp_base.$tmp_ext
         if test -f $tmp_file; then
+
+          # For a nails build, check if the file supports our nail bits.
+          # Generic code always supports all nails.
+          #
+          # FIXME: When a multi-function file is selected to provide one of
+          # the nails-neutral routines, like logops_n for and_n, the
+          # PROLOGUE grepping will create HAVE_NATIVE_mpn_<foo> defines for
+          # all functions in that file, even if they haven't all been
+          # nailified.  Not sure what to do about this, it's only really a
+          # problem for logops_n, and it's not too terrible to insist those
+          # get nailified alwasy.
+          #
+          if test $GMP_NAIL_BITS != 0 && test $tmp_dir != generic; then
+            case $tmp_fn in
+              and_n | ior_n | xor_n | \
+              copyi | copyd | \
+              popcount | hamdist | \
+              udiv | udiv_qrnnd | udiv_w_sdiv | udiv_fp | udiv_nfp | \
+              umul | umul_ppmm | \
+              cntlz | invert_limb)
+                # these operations are either unaffected by nails or defined
+                # to operate on full limbs
+                ;;
+              *)
+                nails=[`sed -n 's/^[ 	]*NAILS_SUPPORT(\(.*\))/\1/p' $tmp_file `]
+                for n in $nails; do
+                  case $n in
+                  *-*)
+                    n_start=`echo "$n" | sed -n 's/\(.*\)-.*/\1/p'`
+                    n_end=`echo "$n" | sed -n 's/.*-\(.*\)/\1/p'`
+                    ;;
+                  *)
+                    n_start=$n
+                    n_end=$n
+                    ;;
+                  esac
+                  if test $GMP_NAIL_BITS -ge $n_start && test $GMP_NAIL_BITS -le $n_end; then
+                    found=yes
+                    break
+                  fi
+                done
+                if test $found != yes; then
+                  continue
+                fi
+                ;;
+            esac
+          fi
+
           found=yes
           eval found_$tmp_ext=yes
 
@@ -1532,10 +1865,10 @@ for tmp_fn in $gmp_mpn_functions; do
 
           # Duplicate AC_DEFINEs are harmless, so it doesn't matter
           # that multi-function files get grepped here repeatedly.
-	  # The PROLOGUE pattern has ".*" so that alpha PROLOGUE_GP matches.
+          # The PROLOGUE pattern excludes the optional second parameter.
           gmp_ep=[`
             sed -n 's/^[ 	]*MULFUNC_PROLOGUE(\(.*\))/\1/p' $tmp_file ;
-            sed -n 's/^[ 	]*PROLOGUE.*(\(.*\))/\1/p' $tmp_file
+            sed -n 's/^[ 	]*PROLOGUE(\([^,]*\).*)/\1/p' $tmp_file
           `]
           for gmp_tmp in $gmp_ep; do
             AC_DEFINE_UNQUOTED(HAVE_NATIVE_$gmp_tmp)
@@ -1605,21 +1938,39 @@ if test "$gmp_asm_syntax_testing" != no; then
       GMP_ASM_M68K_ADDRESSING
       GMP_ASM_M68K_BRANCHES
       ;;
-    power*-*-*)
+    powerpc*-*-*)
       GMP_ASM_POWERPC_R_REGISTERS
       GMP_INCLUDE_MPN(powerpc32/powerpc-defs.m4)
       case $host in
-      powerpc64*-*-aix*) GMP_INCLUDE_MPN(powerpc64/aix.m4) ;;
-      *-*-aix*)          GMP_INCLUDE_MPN(powerpc32/aix.m4) ;;
+        powerpc*-*-aix*)
+	  case $ABI in
+	    64 | aix64) GMP_INCLUDE_MPN(powerpc64/aix.m4) ;;
+            *)          GMP_INCLUDE_MPN(powerpc32/aix.m4) ;;
+          esac
+          ;;
       esac
       ;;
-
+    power*-*-aix*)
+      GMP_INCLUDE_MPN(powerpc32/aix.m4)
+      ;;
+    sparcv9*-*-* | ultrasparc*-*-* | sparc64-*-*)
+      case $ABI in
+        64)
+          GMP_ASM_SPARC_REGISTER
+          ;;
+      esac
+      ;;
     X86_PATTERN)
       GMP_ASM_ALIGN_FILL_0x90
       GMP_ASM_X86_SHLDL_CL
       if test "$enable_profiling" != no; then
         GMP_ASM_X86_MCOUNT
       fi
+      case $host in
+        *-*-openbsd*)
+          GMP_DEFINE(_GLOBAL_OFFSET_TABLE_,__GLOBAL_OFFSET_TABLE_)
+          ;;
+      esac
       ;;
   esac
 fi
@@ -1627,11 +1978,11 @@ fi
 
 # Create link for gmp-mparam.h.
 gmp_mparam_source=
-for tmp_dir in $path; do
+for gmp_mparam_dir in $path; do
   test "$no_create" = yes || rm -f gmp-mparam.h
-  tmp_file=$srcdir/mpn/$tmp_dir/gmp-mparam.h
+  tmp_file=$srcdir/mpn/$gmp_mparam_dir/gmp-mparam.h
   if test -f $tmp_file; then
-    AC_CONFIG_LINKS(gmp-mparam.h:mpn/$tmp_dir/gmp-mparam.h)
+    AC_CONFIG_LINKS(gmp-mparam.h:mpn/$gmp_mparam_dir/gmp-mparam.h)
     gmp_srclinks="$gmp_srclinks gmp-mparam.h"
     gmp_mparam_source=$tmp_file
     break
@@ -1641,15 +1992,31 @@ if test -z "$gmp_mparam_source"; then
   AC_MSG_ERROR([no version of gmp-mparam.h found in path: $path])
 fi
 
-# Copy any KARATSUBA_SQR_THRESHOLD from gmp-mparam.h to config.m4.
+# For a helpful message from tune/tuneup.c
+gmp_mparam_suggest=$gmp_mparam_source
+if test "$gmp_mparam_dir" = generic; then
+  for i in $path; do break; done
+  if test "$i" != generic; then
+    gmp_mparam_suggest="new file $srcdir/mpn/$i/gmp-mparam.h"
+  fi
+fi
+AC_DEFINE_UNQUOTED(GMP_MPARAM_H_SUGGEST, "$gmp_mparam_source",
+                   [The gmp-mparam.h to update when tuning.])
+
+
+# Copy any SQR_KARATSUBA_THRESHOLD from gmp-mparam.h to config.m4.
 # Some versions of sqr_basecase.asm use this.
-tmp_gmp_karatsuba_sqr_threshold=`sed -n 's/^#define KARATSUBA_SQR_THRESHOLD[ 	]*\([0-9][0-9]*\).*$/\1/p' $gmp_mparam_source`
+tmp_gmp_karatsuba_sqr_threshold=`sed -n 's/^#define SQR_KARATSUBA_THRESHOLD[ 	]*\([0-9][0-9]*\).*$/\1/p' $gmp_mparam_source`
 if test -n "$tmp_gmp_karatsuba_sqr_threshold"; then
-  GMP_DEFINE_RAW(["define(<KARATSUBA_SQR_THRESHOLD>,<$tmp_gmp_karatsuba_sqr_threshold>)"])
+  GMP_DEFINE_RAW(["define(<SQR_KARATSUBA_THRESHOLD>,<$tmp_gmp_karatsuba_sqr_threshold>)"])
 fi
 
 # This must come after gmp-mparam.h has been chosen.
 GMP_C_SIZES
+
+GMP_DEFINE_RAW(["define(<GMP_LIMB_BITS>,$BITS_PER_MP_LIMB)"])
+GMP_DEFINE_RAW(["define(<GMP_NAIL_BITS>,$GMP_NAIL_BITS)"])
+GMP_DEFINE_RAW(["define(<GMP_NUMB_BITS>,eval(GMP_LIMB_BITS-GMP_NAIL_BITS))"])
 
 
 # Exclude the mpn random functions from mpbsd since that would drag in the
@@ -1671,16 +2038,32 @@ AC_SUBST(mpn_objs_in_libgmp)
 AC_SUBST(gmp_srclinks)
 
 
+# Configs for mpfr.
+#
+if test $enable_mpfr = yes; then
+  gmp_CFLAGS=$CFLAGS
+  gmp_LIBS=$LIBS
+  LIBS="$LIBS $LIBM"
+
+  MPFR_CONFIGS
+
+  AC_SUBST(MPFR_CFLAGS,$CFLAGS)
+  AC_SUBST(MPFR_LIBS,  $LIBS)
+  CFLAGS=$gmp_CFLAGS
+  LIBS=$gmp_LIBS
+fi
+
+
 # A recompiled sqr_basecase for use in the tune program, if necessary.
 TUNE_SQR_OBJ=
 test -d tune || mkdir tune
 case $sqr_basecase_source in
   *.asm)
-    sqr_max=[`sed -n 's/^def...(KARATSUBA_SQR_THRESHOLD_MAX, *\([0-9]*\))/\1/p' $sqr_basecase_source`]
+    sqr_max=[`sed -n 's/^def...(SQR_KARATSUBA_THRESHOLD_MAX, *\([0-9]*\))/\1/p' $sqr_basecase_source`]
     if test -n "$sqr_max"; then
       TUNE_SQR_OBJ=sqr_asm.o
-      AC_DEFINE_UNQUOTED(TUNE_KARATSUBA_SQR_MAX,$sqr_max,
-      [Maximum size the tune program can test for KARATSUBA_SQR_THRESHOLD])
+      AC_DEFINE_UNQUOTED(TUNE_SQR_KARATSUBA_MAX,$sqr_max,
+      [Maximum size the tune program can test for SQR_KARATSUBA_THRESHOLD])
     fi
     cat >tune/sqr_basecase.c <<EOF
 /* not sure that an empty file can compile, so put in a dummy */
@@ -1689,7 +2072,7 @@ EOF
     ;;
   *.c)
     TUNE_SQR_OBJ=
-    AC_DEFINE(TUNE_KARATSUBA_SQR_MAX,KARATSUBA_SQR_MAX_GENERIC)
+    AC_DEFINE(TUNE_SQR_KARATSUBA_MAX,SQR_KARATSUBA_MAX_GENERIC)
     cat >tune/sqr_basecase.c <<EOF
 #define TUNE_PROGRAM_BUILD 1
 #define TUNE_PROGRAM_BUILD_SQR 1
@@ -1700,13 +2083,47 @@ esac
 AC_SUBST(TUNE_SQR_OBJ)
 
 
-# Configs for demos/expr directory
-if test $enable_mpfr = yes; then
-  HAVE_MPFR=1
-else
-  HAVE_MPFR=0
+# Configs for demos/pexpr.c.
+#
+AC_CONFIG_FILES(demos/pexpr-config.h:demos/pexpr-config-h.in)
+GMP_SUBST_CHECK_FUNCS(clock, cputime, getrusage, gettimeofday, sigaction, sigaltstack, sigstack)
+GMP_SUBST_CHECK_HEADERS(sys/resource.h)
+AC_CHECK_TYPES([stack_t], HAVE_STACK_T_01=1, HAVE_STACK_T_01=0,
+               [#include <signal.h>])
+AC_SUBST(HAVE_STACK_T_01)
+
+# Configs for demos/calc directory
+#
+# AC_SUBST is used here since with AM_CONFIG_HEADER automake would put
+# demos/calc in the default $(DEFAULT_INCLUDES) for every directory,
+# which would look very strange.  Likewise demos/expr below.
+#
+AC_CONFIG_FILES(demos/calc/calc-config.h:demos/calc/calc-config-h.in)
+use_readline=$with_readline
+if test $with_readline = detect; then
+  AC_CHECK_LIB(readline, readline, use_readline=yes)
 fi
-AC_SUBST(HAVE_MPFR)
+if test $use_readline = yes; then
+  AC_SUBST(WITH_READLINE_01, 1)
+  AC_SUBST(LIBREADLINE, -lreadline)
+else
+  WITH_READLINE_01=0
+fi
+AC_PROG_YACC
+GMP_PROG_LEX
+
+# Configs for demos/expr directory
+AC_CONFIG_FILES(demos/expr/expr-config.h:demos/expr/expr-config-h.in)
+if test $enable_mpfr = yes; then
+  AC_SUBST(HAVE_MPFR_01, 1)
+else
+  HAVE_MPFR_01=0
+fi
+if test $ac_cv_have_decl_optarg = yes; then
+  AC_SUBST(HAVE_DECL_OPTARG, 1)
+else
+  HAVE_DECL_OPTARG=0
+fi
 
 
 # Create config.m4.
@@ -1717,16 +2134,13 @@ GMP_FINISH
 #        Right now automake isn't accepting the new AC_CONFIG_FILES scheme.
 
 AC_OUTPUT(Makefile							\
-  mpbsd/Makefile mpf/Makefile mpn/Makefile mpq/Makefile	\
+  mpbsd/Makefile mpf/Makefile mpn/Makefile mpq/Makefile			\
   mpz/Makefile printf/Makefile scanf/Makefile cxx/Makefile		\
   tests/Makefile tests/devel/Makefile tests/mpbsd/Makefile		\
   tests/mpf/Makefile tests/mpn/Makefile tests/mpq/Makefile		\
   tests/mpz/Makefile tests/rand/Makefile tests/misc/Makefile		\
   tests/cxx/Makefile							\
+  mpfr/Makefile mpfr/tests/Makefile					\
   tune/Makefile								\
   demos/Makefile demos/calc/Makefile demos/expr/Makefile		\
-  gmp.h:gmp-h.in mp.h:mp-h.in						\
-  demos/expr/expr-impl.h:demos/expr/expr-impl-h.in)
-
-dnl  mpfr temporarily removed from the distribution
-dnl  mpfr/Makefile mpfr/tests/Makefile
+  gmp.h:gmp-h.in mp.h:mp-h.in)

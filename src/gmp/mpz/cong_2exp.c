@@ -1,7 +1,6 @@
-/* mpz_congruent_2exp_p -- test congruence of mpz mod 2^n */
+/* mpz_congruent_2exp_p -- test congruence of mpz mod 2^n.
 
-/*
-Copyright 2001 Free Software Foundation, Inc.
+Copyright 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -18,8 +17,7 @@ License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
 the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA.
-*/
+MA 02111-1307, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -31,13 +29,13 @@ mpz_congruent_2exp_p (mpz_srcptr a, mpz_srcptr c, unsigned long d)
   unsigned long  i, dlimbs, dbits;
   mp_ptr         ap, cp;
   mp_limb_t      dmask, alimb, climb, sum;
-  int            asize_signed, csize_signed, asize, csize;
+  mp_size_t      asize_signed, csize_signed, asize, csize;
 
   if (ABSIZ(a) < ABSIZ(c))
     MPZ_SRCPTR_SWAP (a, c);
 
-  dlimbs = d / BITS_PER_MP_LIMB;
-  dbits = d % BITS_PER_MP_LIMB;
+  dlimbs = d / GMP_NUMB_BITS;
+  dbits = d % GMP_NUMB_BITS;
   dmask = (CNST_LIMB(1) << dbits) - 1;
 
   ap = PTR(a);
@@ -70,12 +68,12 @@ mpz_congruent_2exp_p (mpz_srcptr a, mpz_srcptr c, unsigned long d)
       /* if d covers all of a and c, then must be exactly equal */
       if (asize <= dlimbs)
         return asize == csize;
-      
+
       /* whole limbs zero */
       for (i = csize; i < dlimbs; i++)
         if (ap[i] != 0)
           return 0;
-      
+
       /* partial limb zero */
       return (ap[dlimbs] & dmask) == 0;
     }
@@ -91,7 +89,7 @@ mpz_congruent_2exp_p (mpz_srcptr a, mpz_srcptr c, unsigned long d)
           ASSERT (i < csize);  /* always have a non-zero limb on c */
           alimb = ap[i];
           climb = cp[i];
-          sum = alimb + climb;
+          sum = (alimb + climb) & GMP_NUMB_MASK;
 
           if (i >= dlimbs)
             return (sum & dmask) == 0;
@@ -113,7 +111,7 @@ mpz_congruent_2exp_p (mpz_srcptr a, mpz_srcptr c, unsigned long d)
 
           alimb = ap[i];
           climb = cp[i];
-          sum = alimb + climb + 1;
+          sum = (alimb + climb + 1) & GMP_NUMB_MASK;
 
           if (i >= dlimbs)
             return (sum & dmask) == 0;
@@ -131,7 +129,7 @@ mpz_congruent_2exp_p (mpz_srcptr a, mpz_srcptr c, unsigned long d)
 
       /* whole limbs */
       for ( ; i < dlimbs; i++)
-        if (ap[i] + 1 != 0)
+        if (ap[i] != GMP_NUMB_MAX)
           return 0;
 
       /* if only whole limbs, no further fetches from a */

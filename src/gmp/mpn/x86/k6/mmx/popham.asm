@@ -1,12 +1,7 @@
 dnl  AMD K6-2 mpn_popcount, mpn_hamdist -- mpn bit population count and
 dnl  hamming distance.
-dnl
-dnl         popcount  hamdist
-dnl  K6-2:    9.0       11.5   cycles/limb
-dnl  K6:      12.5      13.0
 
-
-dnl  Copyright 2000, 2001 Free Software Foundation, Inc.
+dnl  Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -25,8 +20,12 @@ dnl  License along with the GNU MP Library; see the file COPYING.LIB.  If
 dnl  not, write to the Free Software Foundation, Inc., 59 Temple Place -
 dnl  Suite 330, Boston, MA 02111-1307, USA.
 
-
 include(`../config.m4')
+
+
+C        popcount  hamdist
+C K6-2:    9.0       11.5   cycles/limb
+C K6:      12.5      13.0
 
 
 C unsigned long mpn_popcount (mp_srcptr src, mp_size_t size);
@@ -70,23 +69,19 @@ ifdef(`PIC',,`
 	RODATA
 	ALIGN(8)
 
-define(LS,
-m4_assert_numargs(1)
-`LF(M4_function,`$1')')
-
-LS(rodata_AAAAAAAAAAAAAAAA):
+L(rodata_AAAAAAAAAAAAAAAA):
 	.long	0xAAAAAAAA
 	.long	0xAAAAAAAA
 
-LS(rodata_3333333333333333):
+L(rodata_3333333333333333):
 	.long	0x33333333
 	.long	0x33333333
 
-LS(rodata_0F0F0F0F0F0F0F0F):
+L(rodata_0F0F0F0F0F0F0F0F):
 	.long	0x0F0F0F0F
 	.long	0x0F0F0F0F
 
-LS(rodata_000000FF000000FF):
+L(rodata_000000FF000000FF):
 	.long	0x000000FF
 	.long	0x000000FF
 ')
@@ -123,10 +118,10 @@ ifdef(`PIC',`
 	punpckldq %mm4, %mm4
 ',`
 
-	movq	LS(rodata_AAAAAAAAAAAAAAAA), %mm7
-	movq	LS(rodata_3333333333333333), %mm6
-	movq	LS(rodata_0F0F0F0F0F0F0F0F), %mm5
-	movq	LS(rodata_000000FF000000FF), %mm4
+	movq	L(rodata_AAAAAAAAAAAAAAAA), %mm7
+	movq	L(rodata_3333333333333333), %mm6
+	movq	L(rodata_0F0F0F0F0F0F0F0F), %mm5
+	movq	L(rodata_000000FF000000FF), %mm4
 ')
 
 define(REG_AAAAAAAAAAAAAAAA, %mm7)

@@ -1,6 +1,6 @@
 /* mpz_bin_uiui - compute n over k.
 
-Copyright 1998, 1999, 2000, 2001 Free Software Foundation, Inc.
+Copyright 1998, 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -48,7 +48,7 @@ mpz_bin_ui (mpz_ptr r, mpz_srcptr n, unsigned long int k)
   mpz_t      nacc;
   mp_limb_t  kacc;
   mp_size_t  negate;
-  
+
   if (mpz_sgn (n) < 0)
     {
       /* bin(n,k) = (-1)^k * bin(-n+k-1,k), and set ni = -n+k-1 - k = -n-1 */
@@ -110,7 +110,8 @@ mpz_bin_ui (mpz_ptr r, mpz_srcptr n, unsigned long int k)
 
       mpz_add_ui (ni, ni, 1);
       mpz_mul (nacc, nacc, ni);
-      umul_ppmm (k1, k0, kacc, i);
+      umul_ppmm (k1, k0, kacc, i << GMP_NAIL_BITS);
+      k0 >>= GMP_NAIL_BITS;
       if (k1 != 0)
 	{
 	  /* Accumulator overflow.  Perform bignum step.  */

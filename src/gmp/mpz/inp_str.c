@@ -5,8 +5,8 @@
    REST ARE INTERNALS AND ARE ALMOST CERTAIN TO BE SUBJECT TO INCOMPATIBLE
    CHANGES OR DISAPPEAR COMPLETELY IN FUTURE GNU MP RELEASES.
 
-Copyright 1991, 1993, 1994, 1996, 1998, 2000, 2001 Free Software Foundation,
-Inc.
+Copyright 1991, 1993, 1994, 1996, 1998, 2000, 2001, 2002 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -156,7 +156,7 @@ mpz_inp_str_nowhite (mpz_ptr x, FILE *stream, int base, int c, size_t nread)
     {
       xsize = (((mp_size_t)
                 (str_size / __mp_bases[base].chars_per_bit_exactly))
-               / BITS_PER_MP_LIMB + 2);
+               / GMP_NUMB_BITS + 2);
       if (x->_mp_alloc < xsize)
         _mpz_realloc (x, xsize);
 

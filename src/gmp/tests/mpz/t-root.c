@@ -1,6 +1,6 @@
 /* Test mpz_add, mpz_add_ui, mpz_cmp, mpz_cmp, mpz_mul, mpz_sqrtrem.
 
-Copyright 1991, 1993, 1994, 1996, 2000, 2001 Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 1996, 2000, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -36,7 +36,7 @@ main (int argc, char **argv)
   mpz_t temp, temp2;
   mp_size_t x2_size;
   int i;
-  int reps = 5000;
+  int reps = 1000;
   unsigned long nth;
   gmp_randstate_ptr rands;
   mpz_t bs;
@@ -64,23 +64,29 @@ main (int argc, char **argv)
       x2_size = mpz_get_ui (bs) + 10;
       mpz_rrandomb (x2, rands, x2_size);
 
-      mpz_urandomb (bs, rands, 5L);
-      nth = mpz_getlimbn (bs, 0) % mpz_sizeinbase (x2, 2) + 1;
+      mpz_urandomb (bs, rands, 15);
+      nth = mpz_getlimbn (bs, 0) % mpz_sizeinbase (x2, 2) + 2;
 
-      mpz_urandomb (bs, rands, 2);
+      mpz_root (x, x2, nth);
+
+      mpz_urandomb (bs, rands, 4);
       bsi = mpz_get_ui (bs);
       if ((bsi & 1) != 0)
 	{
-	  /* With 50% probability, set x2 just below a perfect power.  */
-	  mpz_root (x, x2, nth);
+	  /* With 50% probability, set x2 near a perfect power.  */
 	  mpz_pow_ui (x2, x, nth);
-	  if (mpz_sgn (x2) != 0)
-	    mpz_sub_ui (x2, x2, 1L);
+	  if ((bsi & 2) != 0)
+	    {
+	      mpz_sub_ui (x2, x2, bsi >> 2);
+	      mpz_abs (x2, x2);
+	    }
+	  else
+	    mpz_add_ui (x2, x2, bsi >> 2);
+	  mpz_root (x, x2, nth);
 	}
 
       /* printf ("%ld %lu\n", SIZ (x2), nth); */
 
-      mpz_root (x, x2, nth);
       mpz_pow_ui (temp, x, nth);
 
       /* Is power of result > argument?  */

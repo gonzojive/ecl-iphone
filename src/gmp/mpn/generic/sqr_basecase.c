@@ -5,7 +5,7 @@
    SAFE TO REACH THIS FUNCTION THROUGH DOCUMENTED INTERFACES.
 
 
-Copyright 1991, 1992, 1993, 1994, 1996, 1997, 2000, 2001 Free Software
+Copyright 1991, 1992, 1993, 1994, 1996, 1997, 2000, 2001, 2002 Free Software
 Foundation, Inc.
 
 This file is part of the GNU MP Library.
@@ -40,20 +40,26 @@ mpn_sqr_basecase (mp_ptr prodp, mp_srcptr up, mp_size_t n)
   {
     /* N.B.!  We need the superfluous indirection through argh to work around
        a reloader bug in GCC 2.7.*.  */
-    mp_limb_t x;
-    mp_limb_t argh;
-    x = up[0];
-    umul_ppmm (argh, prodp[0], x, x);
+#if GMP_NAIL_BITS == 0
+    mp_limb_t ul, argh;
+    ul = up[0];
+    umul_ppmm (argh, prodp[0], ul, ul);
     prodp[1] = argh;
+#else
+    mp_limb_t ul, lpl;
+    ul = up[0];
+    umul_ppmm (prodp[1], lpl, ul, ul << GMP_NAIL_BITS);
+    prodp[0] = lpl >> GMP_NAIL_BITS;
+#endif
   }
   if (n > 1)
     {
-      mp_limb_t tarr[2 * KARATSUBA_SQR_THRESHOLD];
+      mp_limb_t tarr[2 * SQR_KARATSUBA_THRESHOLD];
       mp_ptr tp = tarr;
       mp_limb_t cy;
 
       /* must fit 2*n limbs in tarr */
-      ASSERT (n <= KARATSUBA_SQR_THRESHOLD);
+      ASSERT (n <= SQR_KARATSUBA_THRESHOLD);
 
       cy = mpn_mul_1 (tp, up + 1, n - 1, up[0]);
       tp[n - 1] = cy;
@@ -68,9 +74,16 @@ mpn_sqr_basecase (mp_ptr prodp, mp_srcptr up, mp_size_t n)
 #else
       for (i = 1; i < n; i++)
 	{
-	  mp_limb_t x;
-	  x = up[i];
-	  umul_ppmm (prodp[2 * i + 1], prodp[2 * i], x, x);
+#if GMP_NAIL_BITS == 0
+	  mp_limb_t ul;
+	  ul = up[i];
+	  umul_ppmm (prodp[2 * i + 1], prodp[2 * i], ul, ul);
+#else
+	  mp_limb_t ul, lpl;
+	  ul = up[i];
+	  umul_ppmm (prodp[2 * i + 1], lpl, ul, ul << GMP_NAIL_BITS);
+	  prodp[2 * i] = lpl >> GMP_NAIL_BITS;
+#endif
 	}
 #endif
       {

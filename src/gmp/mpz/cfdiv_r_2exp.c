@@ -1,6 +1,6 @@
 /* mpz_cdiv_r_2exp, mpz_fdiv_r_2exp -- remainder from mpz divided by 2^n.
 
-Copyright 2001 Free Software Foundation, Inc.
+Copyright 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -47,8 +47,8 @@ cfdiv_r_2exp (mpz_ptr w, mpz_srcptr u, unsigned long cnt, int dir)
       return;
     }
 
-  limb_cnt = cnt / BITS_PER_MP_LIMB;
-  cnt %= BITS_PER_MP_LIMB;
+  limb_cnt = cnt / GMP_NUMB_BITS;
+  cnt %= GMP_NUMB_BITS;
   abs_usize = ABS (usize);
 
   /* MPZ_REALLOC(w) below is only when w!=u, so we can fetch PTR(u) here
@@ -113,7 +113,7 @@ cfdiv_r_2exp (mpz_ptr w, mpz_srcptr u, unsigned long cnt, int dir)
       i = MIN (abs_usize, limb_cnt+1);
       mpn_com_n (wp, up, i);
       for ( ; i <= limb_cnt; i++)
-        wp[i] = MP_LIMB_T_MAX;
+        wp[i] = GMP_NUMB_MAX;
 
       /* Twos complement.  Since u!=0 in the relevant part, the twos
          complement never gives 0 and a carry, so can use MPN_INCR_U. */

@@ -1,6 +1,6 @@
 /* mpf_fits_s*_p -- test whether an mpf fits a C signed type.
 
-Copyright 2001 Free Software Foundation, Inc.
+Copyright 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -28,25 +28,39 @@ MA 02111-1307, USA. */
 int
 FUNCTION (mpf_srcptr f)
 {
-  int        size, abs_size, i;
+  mp_size_t  fs, fn;
+  mp_srcptr  fp;
   mp_exp_t   exp;
-  mp_srcptr  ptr;
+  mp_limb_t  fl;
 
-  size = SIZ(f);
-  if (size == 0)
+  fs = SIZ(f);
+  if (fs == 0)
     return 1;  /* zero fits */
 
   exp = EXP(f);
-  if (exp != 1)  /* only 1 limb above the radix point */
+  if (exp < 1)
+    return 1;  /* -1 < f < 1 truncates to zero, so fits */
+
+  fp = PTR(f);
+  fn = ABS (fs);
+
+  if (exp == 1)
+    {
+      fl = fp[fn-1];
+    }
+#if GMP_NAIL_BITS != 0
+  else if (exp == 2 && MAXIMUM > GMP_NUMB_MAX)
+    {
+      fl = fp[fn-1];
+      if ((fl >> GMP_NAIL_BITS) != 0)
+	return 0;
+      fl = (fl << GMP_NUMB_BITS);
+      if (fn >= 2)
+        fl |= fp[fn-2];
+    }
+#endif
+  else
     return 0;
 
-  /* any fraction limbs must be zero */
-  abs_size = ABS(size);
-  ptr = PTR(f);
-  for (i = 0; i < abs_size-1; i++)
-    if (ptr[i] != 0)
-      return 0;
-
-  return ptr[abs_size-1]
-    <= (size > 0 ? (mp_limb_t) MAXIMUM : - (mp_limb_t) MINIMUM);
+  return fl <= (fs >= 0 ? (mp_limb_t) MAXIMUM : - (mp_limb_t) MINIMUM);
 }

@@ -1,0 +1,49 @@
+Documentation:
+
+- add a description of the algorithms used + proof of correctness
+
+Installation:
+
+- from Kevin Ryde <user42@zip.com.au>:
+   Determine the exp2/exp3 thresholds using tune/tuneup.c.
+
+- problems when mpfr uses a different compiler (gcc) than gmp (for example
+	cc under Solaris 2.7).
+
+New functions to implement:
+
+- those from LIA: missing secant, cosecant, cotangent (trigo/hyperbolic)
+- nextafter/nextforward : X + epsilon if X < Y, X - epsilon if X > Y
+- nextabove/nextbelow ?
+
+Rounding:
+
+Efficiency:
+
+Miscellaneous:
+
+- rename mpf2mpfr.h to gmp-mpf2mpfr.h?
+
+- add mpfr_get_ld for 'long double' [asked by J-C Fauge`re] ?
+  (exists since K&R, but has not necessarily a greater precision than double)
+  cf http://anubis.dkuug.dk/jtc1/sc22/wg14/www/docs/n869/
+
+- from Kevin Ryde <user42@zip.com.au>:
+   Also for pi.c, a pre-calculated compiled-in pi to a few thousand
+   digits would be good value I think.  After all, say 10000 bits using
+   1250 bytes would still be small compared to the code size!
+   Store pi in round to zero mode (to recover other modes).
+
+- problem when reading a float followed by a character, for example 1.5*x
+	[from Fabrice.Rouillier@loria.fr, Mon, 04 Dec 2000]
+
+- rewrite mpfr_get_str and mpfr_set_str to use mpn_get_str and mpn_set_str.
+	(Torbjorn Granlund <tege@swox.com>, 30 Jan 2002)
+
+- mpfr_pow isn't completely specified (concerning signed zeros).
+
+- rename mpfr_isinteger to mpfr_integer_p.
+	(Kevin Ryde, 05 Mar 2002)
+
+- some comparison functions aren't completely specified (concerning NaN).
+  Add new comparison functions (eq, ne, lt, gt, le, ge)?

@@ -1,6 +1,6 @@
 /* int mpz_fits_X_p (mpz_t z) -- test whether z fits signed type X.
 
-Copyright 1997, 2000, 2001 Free Software Foundation, Inc.
+Copyright 1997, 2000, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -26,10 +26,27 @@ MA 02111-1307, USA. */
 int
 FUNCTION (mpz_srcptr z)
 {
-  mp_size_t size = SIZ(z);
-  mp_limb_t data = PTR(z)[0];
+  mp_size_t n = SIZ(z);
+  mp_ptr p = PTR(z);
+  mp_limb_t limb = p[0];
 
-  return (size == 0
-          || (size == 1  && data <= MAXIMUM)
-          || (size == -1 && data <= - (mp_limb_t) MINIMUM));
+  if (n == 0)
+    return 1;
+  if (n == 1)
+    return limb <= MAXIMUM;
+  if (n == -1)
+    return limb <= - (mp_limb_t) MINIMUM;
+#if GMP_NAIL_BITS != 0
+  {
+    if ((p[1] >> GMP_NAIL_BITS) == 0)
+      {
+	limb += p[1] << GMP_NUMB_BITS;
+	if (n == 2)
+	  return limb <= MAXIMUM;
+	if (n == -2)
+	  return limb <= - (mp_limb_t) MINIMUM;
+      }
+  }
+#endif
+  return 0;
 }

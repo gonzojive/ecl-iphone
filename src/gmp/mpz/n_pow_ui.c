@@ -1,6 +1,6 @@
 /* mpz_n_pow_ui -- mpn raised to ulong.
 
-Copyright 2001 Free Software Foundation, Inc.
+Copyright 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -67,11 +67,11 @@ MA 02111-1307, USA. */
    than it's worth.  */
 
 
-/* floor(sqrt(MP_LIMB_T_MAX)), ie. the biggest value that can be squared in
+/* floor(sqrt(GMP_NUMB_MAX)), ie. the biggest value that can be squared in
    a limb without overflowing.
-   FIXME: This formula is an underestimate when BITS_PER_MP_LIMB is odd. */
+   FIXME: This formula is an underestimate when GMP_NUMB_BITS is odd. */
 
-#define MP_LIMB_T_HALFMAX  (MP_LIMB_T_MAX >> ((BITS_PER_MP_LIMB+1)/2))
+#define GMP_NUMB_HALFMAX  (((mp_limb_t) 1 << GMP_NUMB_BITS/2) - 1)
 
 
 /* The following are for convenience, they update the size and check the
@@ -93,11 +93,11 @@ MA 02111-1307, USA. */
     (size) += (size2) - (cy == 0);                      \
   } while (0)
 
-#define MPN_MUL_2(ptr, size, alloc, low, high)  \
+#define MPN_MUL_2(ptr, size, alloc, mult)       \
   do {                                          \
     mp_limb_t  cy;                              \
     ASSERT ((size)+2 <= (alloc));               \
-    cy = mpn_mul_2 (ptr, ptr, size, low, high); \
+    cy = mpn_mul_2 (ptr, ptr, size, mult);      \
     (size)++;                                   \
     (ptr)[(size)] = cy;                         \
     (size) += (cy != 0);                        \
@@ -133,12 +133,16 @@ MA 02111-1307, USA. */
   } while (0)
 
 
-/* We're only interested in ralloc and talloc for assertions and tracing.
-   gcc 2.95 recognises those variables are dead in a normal build and
-   eliminates them.  Something explicit could be done to avoid touching them
-   if other compilers don't manage this.  */
+/* ralloc and talloc are only wanted for ASSERTs, after the initial space
+   allocations.  Avoid writing values to them in a normal build, to ensure
+   the compiler lets them go dead.  gcc already figures this out itself
+   actually.  */
 
-#define SWAP_RP_TP   MPN_PTR_SWAP (rp,ralloc, tp,talloc)
+#define SWAP_RP_TP                                      \
+  do {                                                  \
+    MP_PTR_SWAP (rp, tp);                               \
+    ASSERT_CODE (MP_SIZE_T_SWAP (ralloc, talloc));      \
+  } while (0)
 
 
 void
@@ -198,8 +202,8 @@ mpz_n_pow_ui (mpz_ptr r, mp_srcptr bp, mp_size_t bsize, unsigned long int e)
   count_trailing_zeros (btwos, blimb);
   blimb >>= btwos;
   rtwos_bits = e * btwos;
-  rtwos_limbs += rtwos_bits / BITS_PER_MP_LIMB;
-  rtwos_bits %= BITS_PER_MP_LIMB;
+  rtwos_limbs += rtwos_bits / GMP_NUMB_BITS;
+  rtwos_bits %= GMP_NUMB_BITS;
   TRACE (printf ("trailing zero btwos=%d rtwos_limbs=%ld rtwos_bits=%lu\n",
                  btwos, rtwos_limbs, rtwos_bits));
 
@@ -217,7 +221,7 @@ mpz_n_pow_ui (mpz_ptr r, mp_srcptr bp, mp_size_t bsize, unsigned long int e)
          but if e is small then we might reach e==0 and the whole b^e in rl.
          Notice this code works when blimb==1 too, reaching e==0.  */
 
-      while (blimb <= MP_LIMB_T_HALFMAX)
+      while (blimb <= GMP_NUMB_HALFMAX)
         {
           TRACE (printf ("small e=0x%lX blimb=0x%lX rl=0x%lX\n",
                          e, blimb, rl));
@@ -238,9 +242,13 @@ mpz_n_pow_ui (mpz_ptr r, mp_srcptr bp, mp_size_t bsize, unsigned long int e)
       bsize = 2;
       ASSERT (e != 0);
       if ((e & 1) != 0)
-        umul_ppmm (rl_high, rl, rl, blimb);
+	{
+	  umul_ppmm (rl_high, rl, rl, blimb << GMP_NAIL_BITS);
+	  rl >>= GMP_NAIL_BITS;
+	}
       e >>= 1;
-      umul_ppmm (blimb, blimb_low, blimb, blimb);
+      umul_ppmm (blimb, blimb_low, blimb, blimb << GMP_NAIL_BITS);
+      blimb_low >>= GMP_NAIL_BITS;
 
     got_rl:
       TRACE (printf ("double power e=0x%lX blimb=0x%lX:0x%lX rl=0x%lX:%lX\n",
@@ -255,10 +263,10 @@ mpz_n_pow_ui (mpz_ptr r, mp_srcptr bp, mp_size_t bsize, unsigned long int e)
 
       if (rtwos_bits != 0
           && ! (rl_high == 0 && rl == 1)
-          && (rl_high >> (BITS_PER_MP_LIMB-rtwos_bits)) == 0)
+          && (rl_high >> (GMP_NUMB_BITS-rtwos_bits)) == 0)
         {
           mp_limb_t  new_rl_high = (rl_high << rtwos_bits)
-            | (rl >> (BITS_PER_MP_LIMB-rtwos_bits));
+            | (rl >> (GMP_NUMB_BITS-rtwos_bits));
           if (! (rl_high == 0 && new_rl_high != 0))
             {
               rl_high = new_rl_high;
@@ -280,7 +288,7 @@ mpz_n_pow_ui (mpz_ptr r, mp_srcptr bp, mp_size_t bsize, unsigned long int e)
 
       if (rtwos_bits != 0
           && rl != 1
-          && (rl >> (BITS_PER_MP_LIMB-rtwos_bits)) == 0)
+          && (rl >> (GMP_NUMB_BITS-rtwos_bits)) == 0)
         {
           rl <<= rtwos_bits;
           rtwos_bits = 0;
@@ -292,7 +300,7 @@ mpz_n_pow_ui (mpz_ptr r, mp_srcptr bp, mp_size_t bsize, unsigned long int e)
     {
       mp_limb_t  bsecond = bp[1];
       if (btwos != 0)
-        blimb |= (bsecond << (BITS_PER_MP_LIMB - btwos));
+        blimb |= (bsecond << (GMP_NUMB_BITS - btwos)) & GMP_NUMB_MASK;
       bsecond >>= btwos;
       if (bsecond == 0)
         {
@@ -348,7 +356,7 @@ mpz_n_pow_ui (mpz_ptr r, mp_srcptr bp, mp_size_t bsize, unsigned long int e)
 
   ASSERT (blimb != 0);
   count_leading_zeros (cnt, blimb);
-  ralloc = (bsize*BITS_PER_MP_LIMB - cnt) * e / BITS_PER_MP_LIMB + 5;
+  ralloc = (bsize*GMP_NUMB_BITS - cnt + GMP_NAIL_BITS) * e / GMP_NUMB_BITS + 5;
   TRACE (printf ("ralloc %ld, from bsize=%ld blimb=0x%lX cnt=%d\n",
                  ralloc, bsize, blimb, cnt));
   MPZ_REALLOC (r, ralloc + rtwos_limbs);
@@ -397,11 +405,13 @@ mpz_n_pow_ui (mpz_ptr r, mp_srcptr bp, mp_size_t bsize, unsigned long int e)
       /* Go from high to low over the bits of e, starting with i pointing at
          the bit below the highest 1 (which will mean i==-1 if e==1).  */
       count_leading_zeros (cnt, e);
-      i = BITS_PER_MP_LIMB - cnt - 2;
-      
+      i = GMP_LIMB_BITS - cnt - 2;
+
 #if HAVE_NATIVE_mpn_mul_2
       if (bsize <= 2)
         {
+          mp_limb_t  mult[2];
+
           /* Any bsize==1 will have been powered above to be two limbs. */
           ASSERT (bsize == 2);
           ASSERT (blimb != 0);
@@ -413,7 +423,10 @@ mpz_n_pow_ui (mpz_ptr r, mp_srcptr bp, mp_size_t bsize, unsigned long int e)
           rp[0] = blimb_low;
           rp[1] = blimb;
           rsize = 2;
-          
+
+          mult[0] = blimb_low;
+          mult[1] = blimb;
+
           for ( ; i >= 0; i--)
             {
               TRACE (printf ("mul_2 loop i=%d e=0x%lX, rsize=%ld ralloc=%ld talloc=%ld\n",
@@ -423,12 +436,16 @@ mpz_n_pow_ui (mpz_ptr r, mp_srcptr bp, mp_size_t bsize, unsigned long int e)
               MPN_SQR_N (tp, talloc, rp, rsize);
               SWAP_RP_TP;
               if ((e & (1L << i)) != 0)
-                MPN_MUL_2 (rp, rsize, ralloc, blimb_low, blimb);
+                MPN_MUL_2 (rp, rsize, ralloc, mult);
             }
 
           TRACE (mpn_trace ("mul_2 before rl, r", rp, rsize));
           if (rl_high != 0)
-            MPN_MUL_2 (rp, rsize, ralloc, rl, rl_high);
+            {
+              mult[0] = rl;
+              mult[1] = rl_high;
+              MPN_MUL_2 (rp, rsize, ralloc, mult);
+            }
           else if (rl != 1)
             MPN_MUL_1 (rp, rsize, ralloc, rl);
         }
@@ -453,7 +470,7 @@ mpz_n_pow_ui (mpz_ptr r, mp_srcptr bp, mp_size_t bsize, unsigned long int e)
               if ((e & (1L << i)) != 0)
                 MPN_MUL_1 (rp, rsize, ralloc, blimb);
             }
-          
+
           TRACE (mpn_trace ("mul_1 before rl, r", rp, rsize));
           if (rl != 1)
             MPN_MUL_1 (rp, rsize, ralloc, rl);
@@ -462,7 +479,7 @@ mpz_n_pow_ui (mpz_ptr r, mp_srcptr bp, mp_size_t bsize, unsigned long int e)
       else
         {
           int  parity;
-          
+
           /* Arrange the final result ends up in r, not in the temp space */
           ULONG_PARITY (parity, e);
           if (((parity ^ i) & 1) != 0)
@@ -470,7 +487,7 @@ mpz_n_pow_ui (mpz_ptr r, mp_srcptr bp, mp_size_t bsize, unsigned long int e)
 
           MPN_COPY (rp, bp, bsize);
           rsize = bsize;
-          
+
           for ( ; i >= 0; i--)
             {
               TRACE (printf ("mul loop i=%d e=0x%lX, rsize=%ld ralloc=%ld talloc=%ld\n",
@@ -485,14 +502,13 @@ mpz_n_pow_ui (mpz_ptr r, mp_srcptr bp, mp_size_t bsize, unsigned long int e)
                   SWAP_RP_TP;
                 }
             }
-          
-        }          
+        }
     }
 
   ASSERT (rp == PTR(r) + rtwos_limbs);
   TRACE (mpn_trace ("end loop r", rp, rsize));
   TMP_FREE (marker);
-      
+
   /* Apply any partial limb factors of 2. */
   if (rtwos_bits != 0)
     {

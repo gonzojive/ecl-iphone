@@ -1,4 +1,4 @@
-Copyright 2000, 2001 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -29,7 +29,7 @@ level as the directory containing this file.)
 
 The cfp subdirectory is for systems utilizing the traditional Cray
 floating-point format, and the ieee subdirectory is for the newer
-systems that use the IEEE floating-point format.  
+systems that use the IEEE floating-point format.
 
 There are several issues that reduces speed on Cray systems.  For
 systems with cfp floating point, the main obstacle is the forming of
@@ -38,7 +38,7 @@ computing carry is the main issue.  There are no vectorizing
 unsigned-less-than instructions, and the sequence that implement that
 opetration is very long.
 
-Shifting is the only operation that s simple to make fast.  All Cray
+Shifting is the only operation that is simple to make fast.  All Cray
 systems have a bitblt instructions (Vi Vj,Vj<Ak and Vi Vj,Vj>Ak) that
 should be really useful.
 
@@ -110,4 +110,3 @@ storing even fewer bits per limb, perhaps 56, it would be possible to
 write a mul_mul_basecase that would run at effectively 1 cycle/limb.
 (Use VM here to better handle the romb-shaped multiply area, perhaps
 rouding operand sizes up to the next power of 2.)
- 

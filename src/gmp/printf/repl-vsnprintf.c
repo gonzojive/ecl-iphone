@@ -5,7 +5,7 @@
    CERTAIN TO BE SUBJECT TO INCOMPATIBLE CHANGES OR DISAPPEAR COMPLETELY IN
    FUTURE GNU MP RELEASES.
 
-Copyright 2001 Free Software Foundation, Inc.
+Copyright 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -41,8 +41,12 @@ MA 02111-1307, USA. */
 #include <stdio.h>     /* for NULL */
 #include <stdlib.h>
 
-#if HAVE_STDINT_H
-#include <stdint.h>    /* for intmax_t */
+#if HAVE_INTTYPES_H
+# include <inttypes.h> /* for intmax_t */
+#else
+# if HAVE_STDINT_H
+#  include <stdint.h>
+# endif
 #endif
 
 #if HAVE_SYS_TYPES_H
@@ -53,6 +57,9 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 
 
+/* Autoconf notes that AIX 4.3 has a broken strnlen, but fortunately it
+   doesn't affect us since __gmp_replacement_vsnprintf is not required on
+   that system.  */
 #if ! HAVE_STRNLEN
 static size_t
 strnlen (const char *s, size_t n)
@@ -122,8 +129,10 @@ __gmp_replacement_vsnprintf (char *buf, size_t buf_size,
      bit exponents, so the default is a maximum 4932 decimal digits.  */
   long_double_digits = 4932;
   /* but if double == long double, then go with that size */
+#if HAVE_LONG_DOUBLE
   if (sizeof (double) == sizeof (long double))
     long_double_digits = double_digits;
+#endif
 #ifdef LDBL_MAX_10_EXP
   /* but in any case prefer a value the compiler says */
   long_double_digits = LDBL_MAX_10_EXP;
@@ -354,7 +363,7 @@ __gmp_replacement_vsnprintf (char *buf, size_t buf_size,
     {
       char  *s;
 
-      s = (*__gmp_allocate_func) (total_width);
+      s = __GMP_ALLOCATE_FUNC_TYPE (total_width, char);
       vsprintf (s, orig_fmt, orig_ap);
       len = strlen (s);
       if (buf_size != 0)

@@ -2,7 +2,7 @@
    long runs of consecutive ones and zeros in the binary representation.
    Intended for testing of other MP routines.
 
-Copyright 1995, 1996, 2001 Free Software Foundation, Inc.
+Copyright 1995, 1996, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -43,7 +43,7 @@ mpf_random2 (mpf_ptr x, mp_size_t size, mp_exp_t exp)
 
   if (exp != 0)
     {
-      _gmp_rand (&elimb, RANDS, BITS_PER_MP_LIMB);
+      _gmp_rand (&elimb, RANDS, GMP_NUMB_BITS);
       exp = elimb % (2 * exp) - exp;
     }
   x->_mp_exp = asize == 0 ? 0 : exp;

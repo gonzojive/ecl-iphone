@@ -13,7 +13,7 @@
 
 @SET_MAKE@
 
-# Copyright 2001 Free Software Foundation, Inc.
+# Copyright 2001, 2002 Free Software Foundation, Inc.
 #
 # This file is part of the GNU MP Library.
 #
@@ -80,6 +80,7 @@ AMTAR = @AMTAR@
 AR = @AR@
 AS = @AS@
 AWK = @AWK@
+BITS_PER_MP_LIMB = @BITS_PER_MP_LIMB@
 CALLING_CONVENTIONS_OBJS = @CALLING_CONVENTIONS_OBJS@
 CC = @CC@
 CCAS = @CCAS@
@@ -94,13 +95,23 @@ EXEEXT = @EXEEXT@
 GCJ = @GCJ@
 GCJFLAGS = @GCJFLAGS@
 GMP_LDFLAGS = @GMP_LDFLAGS@
-HAVE_MPFR = @HAVE_MPFR@
+GMP_NAIL_BITS = @GMP_NAIL_BITS@
+HAVE_DECL_OPTARG = @HAVE_DECL_OPTARG@
+HAVE_HOST_CPU_FAMILY_power = @HAVE_HOST_CPU_FAMILY_power@
+HAVE_HOST_CPU_FAMILY_powerpc = @HAVE_HOST_CPU_FAMILY_powerpc@
+HAVE_MPFR_01 = @HAVE_MPFR_01@
+HAVE_STACK_T_01 = @HAVE_STACK_T_01@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+LEX = @LEX@
+LIBGMP_DLL = @LIBGMP_DLL@
 LIBM = @LIBM@
+LIBREADLINE = @LIBREADLINE@
 LIBTOOL = @LIBTOOL@
 LN_S = @LN_S@
 M4 = @M4@
 MAINT = @MAINT@
+MPFR_CFLAGS = @MPFR_CFLAGS@
+MPFR_LIBS = @MPFR_LIBS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 PACKAGE = @PACKAGE@
@@ -114,11 +125,8 @@ TAL_OBJECT = @TAL_OBJECT@
 TUNE_SQR_OBJ = @TUNE_SQR_OBJ@
 U = @U@
 VERSION = @VERSION@
-__GMP_BITS_PER_MP_LIMB = @__GMP_BITS_PER_MP_LIMB@
-__GMP_HAVE_HOST_CPU_FAMILY_power = @__GMP_HAVE_HOST_CPU_FAMILY_power@
-__GMP_HAVE_HOST_CPU_FAMILY_powerpc = @__GMP_HAVE_HOST_CPU_FAMILY_powerpc@
-__GMP_LIBGMP_SHARED = @__GMP_LIBGMP_SHARED@
-__GMP_LIBGMP_STATIC = @__GMP_LIBGMP_STATIC@
+WITH_READLINE_01 = @WITH_READLINE_01@
+YACC = @YACC@
 am__include = @am__include@
 am__quote = @am__quote@
 gmp_srclinks = @gmp_srclinks@
@@ -134,22 +142,26 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/tests -I$(top_srcdir)/mpfr
 @WANT_MPFR_TRUE@MPFR_SOURCES_OPTION = exprfr.c exprfra.c
 @WANT_MPFR_TRUE@MPFR_LIBADD_OPTION = $(top_builddir)/mpfr/libmpfr.a
 
+# ensure these are always distributed
+EXTRA_DIST = exprfr.c exprfra.c
+
 EXTRA_LIBRARIES = libexpr.a
-libexpr_a_SOURCES = expr.h \
+libexpr_a_SOURCES = expr.h expr-impl.h \
   expr.c exprv.c exprz.c exprza.c exprq.c exprqa.c exprf.c exprfa.c \
   $(MPFR_SOURCES_OPTION)
 
-nodist_libexpr_a_SOURCES = expr-impl.h
 
+# On SunOS 4, HUGE_VAL used by mpfr infinity handling needs -lm.
+#
 EXTRA_PROGRAMS = run-expr t-expr
-LDADD = libexpr.a $(MPFR_LIBADD_OPTION) $(top_builddir)/libgmp.la
+LDADD = libexpr.a $(MPFR_LIBADD_OPTION) $(top_builddir)/libgmp.la $(LIBM)
 t_expr_LDADD = $(top_builddir)/tests/libtests.la $(LDADD)
 
 CLEANFILES = $(EXTRA_PROGRAMS) $(EXTRA_LIBRARIES)
 subdir = demos/expr
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/config.h
-CONFIG_CLEAN_FILES = expr-impl.h
+CONFIG_CLEAN_FILES = expr-config.h
 libexpr_a_AR = $(AR) cru
 libexpr_a_LIBADD =
 @WANT_MPFR_TRUE@am_libexpr_a_OBJECTS = expr$U.$(OBJEXT) \
@@ -163,8 +175,7 @@ libexpr_a_LIBADD =
 @WANT_MPFR_FALSE@	exprza$U.$(OBJEXT) exprq$U.$(OBJEXT) \
 @WANT_MPFR_FALSE@	exprqa$U.$(OBJEXT) exprf$U.$(OBJEXT) \
 @WANT_MPFR_FALSE@	exprfa$U.$(OBJEXT)
-nodist_libexpr_a_OBJECTS =
-libexpr_a_OBJECTS = $(am_libexpr_a_OBJECTS) $(nodist_libexpr_a_OBJECTS)
+libexpr_a_OBJECTS = $(am_libexpr_a_OBJECTS)
 EXTRA_PROGRAMS = run-expr$(EXEEXT) t-expr$(EXEEXT)
 run_expr_SOURCES = run-expr.c
 run_expr_OBJECTS = run-expr$U.$(OBJEXT)
@@ -199,8 +210,8 @@ LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 CFLAGS = @CFLAGS@
 DIST_SOURCES = $(libexpr_a_SOURCES) run-expr.c t-expr.c
-DIST_COMMON = README Makefile.am Makefile.in expr-impl-h.in
-SOURCES = $(libexpr_a_SOURCES) $(nodist_libexpr_a_SOURCES) run-expr.c t-expr.c
+DIST_COMMON = README Makefile.am Makefile.in expr-config-h.in
+SOURCES = $(libexpr_a_SOURCES) run-expr.c t-expr.c
 
 all: all-am
 
@@ -222,8 +233,8 @@ Makefile: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.in  $(top_builddir)/config.s
 	cd $(top_builddir) && \
 	  CONFIG_HEADERS= CONFIG_LINKS= \
 	  CONFIG_FILES=$(subdir)/$@ $(SHELL) ./config.status
-expr-impl.h: $(top_builddir)/config.status expr-impl-h.in
-	cd $(top_builddir) && CONFIG_FILES=$(subdir)/$@:demos/expr/expr-impl-h.in CONFIG_HEADERS= CONFIG_LINKS= $(SHELL) ./config.status
+expr-config.h: $(top_builddir)/config.status expr-config-h.in
+	cd $(top_builddir) && CONFIG_FILES=$(subdir)/$@:demos/expr/expr-config-h.in CONFIG_HEADERS= CONFIG_LINKS= $(SHELL) ./config.status
 libexpr.a: $(libexpr_a_OBJECTS) $(libexpr_a_DEPENDENCIES) 
 	-rm -f libexpr.a
 	$(libexpr_a_AR) libexpr.a $(libexpr_a_OBJECTS) $(libexpr_a_LIBADD)

@@ -1,9 +1,6 @@
 dnl  Intel Pentium mpn_add_n/mpn_sub_n -- mpn addition and subtraction.
-dnl
-dnl  P5: 2.375 cycles/limb
 
-
-dnl  Copyright 1992, 1994, 1995, 1996, 1999, 2000 Free Software
+dnl  Copyright 1992, 1994, 1995, 1996, 1999, 2000, 2002 Free Software
 dnl  Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
@@ -23,8 +20,10 @@ dnl  License along with the GNU MP Library; see the file COPYING.LIB.  If
 dnl  not, write to the Free Software Foundation, Inc., 59 Temple Place -
 dnl  Suite 330, Boston, MA 02111-1307, USA.
 
-
 include(`../config.m4')
+
+
+C P5: 2.375 cycles/limb
 
 
 ifdef(`OPERATION_add_n',`
@@ -82,13 +81,13 @@ deflit(`FRAME',16)
 FRAME_pushl()
 	movl	PARAM_CARRY,%eax
 	shrl	$1,%eax			C shift bit 0 into carry
-	jmp	LF(M4_function_n,oop)
+	jmp	L(oop)
 
 L(endgo):
 deflit(`FRAME',16)
 	movl	PARAM_CARRY,%eax
 	shrl	$1,%eax			C shift bit 0 into carry
-	jmp	LF(M4_function_n,end)
+	jmp	L(end)
 
 EPILOGUE()
 

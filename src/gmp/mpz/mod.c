@@ -1,6 +1,7 @@
 /* mpz_mod -- The mathematical mod function.
 
-Copyright 1991, 1993, 1994, 1995, 1996, 2001 Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 1995, 1996, 2001, 2002 Free Software Foundation,
+Inc.
 
 This file is part of the GNU MP Library.
 
@@ -46,10 +47,12 @@ mpz_mod (mpz_ptr rem, mpz_srcptr dividend, mpz_srcptr divisor)
   if (rem->_mp_size != 0)
     {
       if (dividend->_mp_size < 0)
-	if (divisor->_mp_size < 0)
-	  mpz_sub (rem, rem, divisor);
-	else
-	  mpz_add (rem, rem, divisor);
+	{
+	  if (divisor->_mp_size < 0)
+	    mpz_sub (rem, rem, divisor);
+	  else
+	    mpz_add (rem, rem, divisor);
+	}
     }
 
   TMP_FREE (marker);

@@ -1,0 +1,1427 @@
+This is mpfr.info, produced by makeinfo version 4.2 from mpfr.texi.
+
+START-INFO-DIR-ENTRY
+* mpfr: (mpfr.info).               Multiple Precision Floating-Point Reliable Library.
+END-INFO-DIR-ENTRY
+
+   This file documents MPFR, a library for reliable multiple precision
+floating-point arithmetic
+
+   Copyright (C) 1999-2002, Free Software Foundation.
+
+   Permission is granted to make and distribute verbatim copies of this
+manual provided the copyright notice and this permission notice are
+preserved on all copies.
+
+   Permission is granted to copy and distribute modified versions of
+this manual under the conditions for verbatim copying, provided that
+the entire resulting derived work is distributed under the terms of a
+permission notice identical to this one.
+
+   Permission is granted to copy and distribute translations of this
+manual into another language, under the above conditions for modified
+versions, except that this permission notice may be stated in a
+translation approved by the Foundation.
+
+
+File: mpfr.info,  Node: Top,  Next: Copying,  Prev: (dir),  Up: (dir)
+
+MPFR
+****
+
+   This manual documents how to install and use the Multiple Precision
+Floating-Point Reliable Library, version 2.0.1
+
+* Menu:
+
+* Copying::                   GMP Copying Conditions (LGPL).
+* Introduction to MPFR::      Brief introduction to MPFR.
+* Installing MPFR::           How to configure and compile the MPFR library.
+* MPFR Basics::               What every MPFR user should now.
+* Reporting Bugs::            How to usefully report bugs.
+* Floating-point Functions::  Functions for arithmetic on floats.
+
+* Contributors::
+* References::
+* Concept Index::
+* Function Index::
+
+
+File: mpfr.info,  Node: Copying,  Next: Introduction to MPFR,  Prev: Top,  Up: Top
+
+MPFR Copying Conditions
+***********************
+
+   This library is "free"; this means that everyone is free to use it
+and free to redistribute it on a free basis.  The library is not in the
+public domain; it is copyrighted and there are restrictions on its
+distribution, but these restrictions are designed to permit everything
+that a good cooperating citizen would want to do.  What is not allowed
+is to try to prevent others from further sharing any version of this
+library that they might get from you.
+
+   Specifically, we want to make sure that you have the right to give
+away copies of the library, that you receive source code or else can
+get it if you want it, that you can change this library or use pieces
+of it in new free programs, and that you know you can do these things.
+
+   To make sure that everyone has such rights, we have to forbid you to
+deprive anyone else of these rights.  For example, if you distribute
+copies of the MPFR library, you must give the recipients all the rights
+that you have.  You must make sure that they, too, receive or can get
+the source code.  And you must tell them their rights.
+
+   Also, for our own protection, we must make certain that everyone
+finds out that there is no warranty for the MPFR library.  If it is
+modified by someone else and passed on, we want their recipients to
+know that what they have is not what we distributed, so that any
+problems introduced by others will not reflect on our reputation.
+
+   The precise conditions of the license for the MPFR library are found
+in the Lesser General Public License that accompanies the source code.
+See the file COPYING.LIB.
+
+
+File: mpfr.info,  Node: Introduction to MPFR,  Next: Installing MPFR,  Prev: Copying,  Up: Top
+
+Introduction to MPFR
+********************
+
+   MPFR is a portable library written in C for arbitrary precision
+arithmetic on reliable floating-point numbers. It is based on the GNU
+MP library.  It aims to extend the class of floating-point numbers
+provided by the GNU MP library by "reliable" floating-point numbers. It
+may replace the GNU MP floating-point numbers in a future release. The
+main differences with the `mpf' class are:
+
+   * the `mpfr' code is portable, i.e. the result of any operation does
+     not depend (or should not) on the machine word size
+     `mp_bits_per_limb' (32 or 64 on most machines);
+
+   * the precision in bits can be set exactly to any valid value for
+     each variable (including very small precision);
+
+   * `mpfr' provides the four rounding modes from the IEEE 754 standard.
+
+   In particular, with a precision of 53 bits, `mpfr' should be able to
+exactly reproduce all computations with double-precision machine
+floating-point numbers (`double' type in C), except the default
+exponent range is much wider and subnormal numbers are not implemented.
+
+   This version of MPFR is released under the GNU Lesser General Public
+License.  It is permitted to link MPFR to non-free programs, as long as
+when distributing them the MPFR source code and a means to re-link with
+a modified MPFR is provided.
+
+How to use this Manual
+======================
+
+   Everyone should read *Note MPFR Basics::.  If you need to install
+the library yourself, you need to read *Note Installing MPFR::, too.
+
+   The rest of the manual can be used for later reference, although it
+is probably a good idea to glance through it.
+
+
+File: mpfr.info,  Node: Installing MPFR,  Next: Reporting Bugs,  Prev: Introduction to MPFR,  Up: Top
+
+Installing MPFR
+***************
+
+   To build MPFR, you first have to install GNU MP (version 4.0.1 or
+higher) on your computer.  You need a C compiler, preferably GCC, but
+any reasonable compiler should work.  And you need a standard Unix
+`make' program, plus some other standard Unix utility programs.
+
+   Here are the steps needed to install the library on Unix systems
+(more details are provided in the `INSTALL' file):
+
+  1. In most cases, `./configure --with-gmp=/usr/local/gmp' should work,
+     where the directory `/usr/local/gmp' is where you have installed
+     GNU MP.  When you install GNU MP, you have to copy the files
+     `config.h', `gmp-impl.h', `gmp-mparam.h' and `longlong.h' from the
+     GNU MP source directory to `/usr/local/gmp/include'; these
+     additional files are needed by MPFR.  If you get error messages,
+     you might check that you use the same compiler and compile options
+     as for GNU MP (see the `INSTALL' file).
+
+  2. `make'
+
+     This will compile MPFR, and create a library archive file
+     `libmpfr.a' in the working directory.
+
+  3. `make check'
+
+     This will make sure MPFR was built correctly.  If you get error
+     messages, please report this to `mpfr@loria.fr'.  (*Note Reporting
+     Bugs::, for information on what to include in useful bug reports.)
+
+  4. `make install'
+
+     This will copy the files `mpfr.h' and `mpf2mpfr.h', and
+     `libmpfr.a', to the directories `/usr/local/include' and
+     `/usr/local/lib' respectively (or if you passed the `--prefix'
+     option to `configure', to the directory given as argument to
+     `--prefix').  This will also install `mpfr.info' in
+     `/usr/local/info'.
+
+   There are some other useful make targets:
+
+   * `mpfr.dvi' or `dvi'
+
+     Create a DVI version of the manual, in `mpfr.dvi'.
+
+   * `mpfr.ps'
+
+     Create a Postscript version of the manual, in `mpfr.ps'.
+
+   * `clean'
+
+     Delete all object files and archive files, but not the
+     configuration files.
+
+   * `distclean'
+
+     Delete all files not included in the distribution.
+
+   * `uninstall' Delete all files copied by `make install'.
+
+Known Build Problems
+====================
+
+   MPFR suffers from all bugs from the GNU MP library, plus many many
+more.
+
+   Please report other problems to `mpfr@loria.fr'.  *Note Reporting
+Bugs::.  Some bug fixes are available on the MPFR web page
+`http://www.loria.fr/projets/mpfr/' or `http://www.mpfr.org/'.
+
+
+File: mpfr.info,  Node: Reporting Bugs,  Next: MPFR Basics,  Prev: Installing MPFR,  Up: Top
+
+Reporting Bugs
+**************
+
+   If you think you have found a bug in the MPFR library, first have a
+look on the MPFR web page `http://www.loria.fr/projets/mpfr/' or
+`http://www.mpfr.org/': perhaps this bug is already known, in which
+case you will find a workaround for it.  Otherwise, please investigate
+and report it. We have made this library available to you, and it is
+not to ask too much from you, to ask you to report the bugs that you
+find.
+
+   There are a few things you should think about when you put your bug
+report together.
+
+   You have to send us a test case that makes it possible for us to
+reproduce the bug.  Include instructions on how to run the test case.
+
+   You also have to explain what is wrong; if you get a crash, or if
+the results printed are incorrect and in that case, in what way.
+
+   Please include compiler version information in your bug report.
+This can be extracted using `cc -V' on some machines, or, if you're
+using gcc, `gcc -v'.  Also, include the output from `uname -a'.
+
+   If your bug report is good, we will do our best to help you to get a
+corrected version of the library; if the bug report is poor, we won't
+do anything about it (aside of chiding you to send better bug reports).
+
+   Send your bug report to: `mpfr@loria.fr'.
+
+   If you think something in this manual is unclear, or downright
+incorrect, or if the language needs to be improved, please send a note
+to the same address.
+
+
+File: mpfr.info,  Node: MPFR Basics,  Next: Floating-point Functions,  Prev: Reporting Bugs,  Up: Top
+
+MPFR Basics
+***********
+
+   All declarations needed to use MPFR are collected in the include file
+`mpfr.h'.  It is designed to work with both C and C++ compilers.  You
+should include that file in any program using the MPFR library:
+
+   `#include "mpfr.h"'
+
+Nomenclature and Types
+======================
+
+"Floating-point number" or "Float" for short, is an arbitrary precision
+mantissa with a limited precision exponent.  The C data type for such
+objects is `mpfr_t'.  A floating-point number can have three special
+values: Not-a-Number (NaN) or plus or minus Infinity. NaN represents a
+value which cannot be represented in the floating-point format, like 0
+divided by 0, or Infinity minus Infinity.
+
+The "Precision" is the number of bits used to represent the mantissa of
+a floating-point number; the corresponding C data type is `mp_prec_t'.
+The precision can be any integer between `MPFR_PREC_MIN' and
+`MPFR_PREC_MAX'. In the current implementation, `MPFR_PREC_MIN' is
+equal to 2 and `MPFR_PREC_MAX' is equal to `ULONG_MAX'.
+
+The "rounding mode" specifies the way to round the result of a
+floating-point operation, in case the exact result can not be
+represented exactly in the destination mantissa; the corresponding C
+data type is `mp_rnd_t'.
+
+A "limb" means the part of a multi-precision number that fits in a
+single word.  (We chose this word because a limb of the human body is
+analogous to a digit, only larger, and containing several digits.)
+Normally a limb contains 32 or 64 bits.  The C data type for a limb is
+`mp_limb_t'.
+
+Function Classes
+================
+
+   There is only one class of functions in the MPFR library:
+
+  1. Functions for floating-point arithmetic, with names beginning with
+     `mpfr_'.  The associated type is `mpfr_t'.
+
+MPFR Variable Conventions
+=========================
+
+   As a general rule, all MPFR functions expect output arguments before
+input arguments.  This notation is based on an analogy with the
+assignment operator.
+
+   MPFR allows you to use the same variable for both input and output
+in the same expression.  For example, the main function for
+floating-point multiplication, `mpfr_mul', can be used like this:
+`mpfr_mul (x, x, x, rnd_mode)'.  This computes the square of X with
+rounding mode `rnd_mode' and puts the result back in X.
+
+   Before you can assign to an MPFR variable, you need to initialize it
+by calling one of the special initialization functions.  When you're
+done with a variable, you need to clear it out, using one of the
+functions for that purpose.
+
+   A variable should only be initialized once, or at least cleared out
+between each initialization.  After a variable has been initialized, it
+may be assigned to any number of times.
+
+   For efficiency reasons, avoid to initialize and clear out a variable
+in loops.  Instead, initialize it before entering the loop, and clear
+it out after the loop has exited.
+
+   You don't need to be concerned about allocating additional space for
+MPFR variables, since any variable has a mantissa of fixed size.  Hence
+unless you change its precision, or clear and reinitialize it, a
+floating-point variable will have the same allocated space during all
+its life.
+
+Compatibility with MPF
+======================
+
+   A header file `mpf2mpfr.h' is included in the distribution of MPFR
+for compatibility with the GNU MP class MPF.  After inserting the
+following two lines after the `#include "gmp.h"' line,
+
+   `#include "mpfr.h"'
+
+   `#include "mpf2mpfr.h"'
+
+   any program written for MPF can be linked directly with MPFR without
+any changes.  All operations are then performed with the default MPFR
+rounding mode, which can be reset with `mpfr_set_default_rounding_mode'.
+
+ - Global Variable: mp_rnd_t __gmp_default_rounding_mode
+     The default rounding mode (to nearest initially).
+
+Getting the Latest Version of MPFR
+==================================
+
+   The latest version of MPFR is available from
+`http://www.loria.fr/projets/mpfr/' or `http://www.mpfr.org/'.
+
+
+File: mpfr.info,  Node: Floating-point Functions,  Next: Contributors,  Prev: MPFR Basics,  Up: Top
+
+Floating-point Functions
+************************
+
+   The floating-point functions expect arguments of type `mpfr_t'.
+
+   The MPFR floating-point functions have an interface that is similar
+to the GNU MP integer functions.  The function prefix for
+floating-point operations is `mpfr_'.
+
+   There is one significant characteristic of floating-point numbers
+that has motivated a difference between this function class and other
+MPFR function classes: the inherent inexactness of floating-point
+arithmetic.  The user has to specify the precision of each variable.  A
+computation that assigns a variable will take place with the precision
+of the assigned variable; the cost of that computation should not
+depend from the precision of variables used as input on average.
+
+   The precision of a calculation is defined as follows: Compute the
+requested operation exactly (with "infinite precision"), and round the
+result to the destination variable precision with the given rounding
+mode.  Even if the user has asked for a very high precision, MP will
+not calculate with superfluous digits.  For example, if two
+low-precision numbers of nearly equal magnitude are added, the
+precision of the result will be limited to what is required to
+represent the result accurately.
+
+   The MPFR floating-point functions are intended to be a smooth
+extension of the IEEE P754 arithmetic. The results obtained on one
+computer should not differ from the results obtained on a computer with
+a different word size.
+
+* Menu:
+
+* Rounding Modes::
+* Exceptions::
+* Initializing Floats::
+* Assigning Floats::
+* Simultaneous Float Init & Assign::
+* Converting Floats::
+* Float Arithmetic::
+* Float Comparison::
+* I/O of Floats::
+* Miscellaneous Float Functions::
+
+
+File: mpfr.info,  Node: Rounding Modes,  Next: Exceptions,  Prev: Floating-point Functions,  Up: Floating-point Functions
+
+Rounding Modes
+==============
+
+   The following four rounding modes are supported:
+   * `GMP_RNDN': round to nearest
+
+   * `GMP_RNDZ': round towards zero
+
+   * `GMP_RNDU': round towards plus infinity
+
+   * `GMP_RNDD': round towards minus infinity
+   The `round to nearest' mode works as in the IEEE P754 standard: in
+case the number to be rounded lies exactly in the middle of two
+representable numbers, it is rounded to the one with the least
+significant bit set to zero.  For example, the number 5, which is
+represented by (101) in binary, is rounded to (100)=4 with a precision
+of two bits, and not to (110)=6.  This rule avoids the "drift"
+phenomenon mentioned by Knuth in volume 2 of The Art of Computer
+Programming (section 4.2.2, pages 221-222).
+
+   Most MPFR functions take as first argument the destination variable,
+as second and following arguments the input variables, as last argument
+a rounding mode, and have a return value of type `int'. If this value
+is zero, it means that the value stored in the destination variable is
+the exact result of the corresponding mathematical function. If the
+returned value is positive (resp. negative), it means the value stored
+in the destination variable is greater (resp. lower) than the exact
+result.  For example with the `GMP_RNDU' rounding mode, the returned
+value is usually positive, except when the result is exact, in which
+case it is zero.  In the case of an infinite result, it is considered
+as inexact when it was obtained by overflow, and exact otherwise.  A
+NaN result (Not-a-Number) always corresponds to an inexact return value.
+
+ - Function: void mpfr_set_default_rounding_mode (mp_rnd_t RND)
+     Sets the default rounding mode to RND.  The default rounding mode
+     is to nearest initially.
+
+ - Function: int mpfr_round_prec (mpfr_t X, mp_rnd_t RND, mp_prec_t
+          PREC)
+     Rounds X according to RND with precision PREC, which may be
+     different from that of X.  If PREC is greater or equal to the
+     precision of X, then new space is allocated for the mantissa, and
+     it is filled with zeroes.  Otherwise, the mantissa is rounded to
+     precision PREC with the given direction. In both cases, the
+     precision of X is changed to PREC.  The returned value is zero
+     when the result is exact, positive when it is greater than the
+     original value of X, and negative when it is smaller.  The
+     precision PREC can be any integer between `MPFR_PREC_MIN' and
+     `MPFR_PREC_MAX'.
+
+ - Function: void mpfr_set_machine_rnd_mode (mp_rnd_t RND)
+     Set the machine rounding mode to RND.  This function is provided
+     only when the operating system supports the ISOC9X standard
+     interface for setting rounding modes (i.e. through the header file
+     <fenv.h>).
+
+ - Function: char * mpfr_print_rnd_mode (mp_rnd_t RND)
+     Returns the input string (GMP_RNDD, GMP_RNDU, GMP_RNDN, GMP_RNDZ)
+     corresponding to the rounding mode RND or a null pointer if RND is
+     an invalid rounding mode.
+
+
+File: mpfr.info,  Node: Exceptions,  Next: Initializing Floats,  Prev: Rounding Modes,  Up: Floating-point Functions
+
+Exceptions
+==========
+
+   Note: Overflow handling is still experimental and currently
+implemented very partially. If an overflow occurs internally at the
+wrong place, anything can happen (crash, wrong results, etc).
+
+ - Function: mp_exp_t mpfr_get_emin (void)
+ - Function: mp_exp_t mpfr_get_emax (void)
+     Return the (current) smallest and largest exponents allowed for a
+     floating-point variable.
+
+ - Function: int mpfr_set_emin (mp_exp_t EXP)
+ - Function: int mpfr_set_emax (mp_exp_t EXP)
+     Set the smallest and largest exponents allowed for a
+     floating-point variable.  Return a non-zero value when EXP is not
+     in the range accepted by the implementation (in that case the
+     smallest or largest exponent is not changed), and zero otherwise.
+     If the user changes the exponent range, it is her/his
+     responsibility to check that all current floating-point variables
+     are in the new allowed range (for example using `mpfr_check_range',
+     otherwise the subsequent behaviour will be undefined, in the sense
+     of the ISO C standard.
+
+ - Function: int mpfr_check_range (mpfr_t X, mp_rnd_t RND)
+     Return zero if the exponent of X is in the current allowed range
+     (see `mpfr_get_emin' and `mpfr_get_emax'), otherwise reset X
+     according to the current floating-point system and the rounding
+     mode RND, and return a positive value if the rounded result is
+     larger than the original one, a negative value otherwise (the
+     result cannot be exact in that case).
+
+ - Function: void mpfr_clear_underflow (void)
+ - Function: void mpfr_clear_overflow (void)
+ - Function: void mpfr_clear_nanflag (void)
+ - Function: void mpfr_clear_inexflag (void)
+     Clear the underflow, overflow, invalid, and inexact flags.
+
+ - Function: void mpfr_clear_flags (void)
+     Clear all global flags (underflow, overflow, inexact, invalid).
+
+ - Function: int mpfr_underflow_p (void)
+ - Function: int mpfr_overflow_p (void)
+ - Function: int mpfr_nanflag_p (void)
+ - Function: int mpfr_inexflag_p (void)
+     Return the corresponding (underflow, overflow, invalid, inexact)
+     flag, which is non-zero iff the flag is set.
+
+
+File: mpfr.info,  Node: Initializing Floats,  Next: Assigning Floats,  Prev: Exceptions,  Up: Floating-point Functions
+
+Initialization and Assignment Functions
+=======================================
+
+ - Function: void mpfr_set_default_prec (mp_prec_t PREC)
+     Set the default precision to be *exactly* PREC bits.  The
+     precision of a variable means the number of bits used to store its
+     mantissa.  All subsequent calls to `mpfr_init' will use this
+     precision, but previously initialized variables are unaffected.
+     This default precision is set to 53 bits initially.  The precision
+     can be any integer between `MPFR_PREC_MIN' and `MPFR_PREC_MAX'.
+
+ - Function: mp_prec_t mpfr_get_default_prec ()
+     Returns the default MPFR precision in bits.
+
+   An `mpfr_t' object must be initialized before storing the first
+value in it.  The functions `mpfr_init' and `mpfr_init2' are used for
+that purpose.
+
+ - Function: void mpfr_init (mpfr_t X)
+     Initialize X, and set its value to NaN.  Normally, a variable
+     should be initialized once only or at least be cleared, using
+     `mpfr_clear', between initializations.  The precision of X is the
+     default precision, which can be changed by a call to
+     `mpfr_set_default_prec'.
+
+ - Function: void mpfr_init2 (mpfr_t X, mp_prec_t PREC)
+     Initialize X, set its precision to be *exactly* PREC bits, and set
+     its value to NaN.  Normally, a variable should be initialized once
+     only or at least be cleared, using `mpfr_clear', between
+     initializations.  To change the precision of a variable which has
+     already been initialized, use `mpfr_set_prec' instead.  The
+     precision PREC can be any integer between `MPFR_PREC_MIN' and
+     `MPFR_PREC_MAX'.
+
+ - Function: void mpfr_clear (mpfr_t X)
+     Free the space occupied by X.  Make sure to call this function for
+     all `mpfr_t' variables when you are done with them.
+
+   Here is an example on how to initialize floating-point variables:
+     {
+       mpfr_t x, y;
+       mpfr_init (x);			/* use default precision */
+       mpfr_init2 (y, 256);		/* precision _exactly_ 256 bits */
+       ...
+       /* Unless the program is about to exit, do ... */
+       mpfr_clear (x);
+       mpfr_clear (y);
+     }
+
+   The following two functions are useful for changing the precision
+during a calculation.  A typical use would be for adjusting the
+precision gradually in iterative algorithms like Newton-Raphson, making
+the computation precision closely match the actual accurate part of the
+numbers.
+
+ - Function: int mpfr_set_prec (mpfr_t X, mp_prec_t PREC)
+     Reset the precision of X to be *exactly* PREC bits.  The previous
+     value stored in X is lost. It is equivalent to a call to
+     `mpfr_clear(x)' followed by a call to `mpfr_init2(x, prec)', but
+     more efficient as no allocation is done in case the current
+     allocated space for the mantissa of X is enough.  The precision
+     PREC can be any integer between `MPFR_PREC_MIN' and
+     `MPFR_PREC_MAX'.  It returns a non-zero value iff the memory
+     allocation failed.
+
+     In case you want to keep the previous value stored in X, use
+     `mpfr_round_prec' instead.
+
+ - Function: mp_prec_t mpfr_get_prec (mpfr_t X)
+     Return the precision actually used for assignments of X, i.e.  the
+     number of bits used to store its mantissa.
+
+ - Function: void mpfr_set_prec_raw (mpfr_t X, unsigned long int P)
+     Reset the precision of X to be *exactly* PREC bits.  The only
+     difference with `mpfr_set_prec' is that P is assumed to be small
+     enough so that the mantissa fits into the current allocated memory
+     space for X. Otherwise an error will occur.
+
+
+File: mpfr.info,  Node: Assigning Floats,  Next: Simultaneous Float Init & Assign,  Prev: Initializing Floats,  Up: Floating-point Functions
+
+Assignment Functions
+====================
+
+   These functions assign new values to already initialized floats
+(*note Initializing Floats::).
+
+ - Function: int mpfr_set (mpfr_t ROP, mpfr_t OP, mp_rnd_t RND)
+ - Function: int mpfr_set_ui (mpfr_t ROP, unsigned long int OP,
+          mp_rnd_t RND)
+ - Function: int mpfr_set_si (mpfr_t ROP, long int OP, mp_rnd_t RND
+ - Function: int mpfr_set_d (mpfr_t ROP, double OP, mp_rnd_t RND)
+ - Function: int mpfr_set_z (mpfr_t ROP, mpz_t OP, mp_rnd_t RND)
+ - Function: int mpfr_set_q (mpfr_t ROP, mpq_t OP, mp_rnd_t RND)
+     Set the value of ROP from OP, rounded to the precision of ROP
+     towards the given direction RND.  Please note that even a `long
+     int' may have to be rounded, if the destination precision is less
+     than the machine word width.  The return value is zero when
+     ROP=OP, positive when ROP>OP, and negative when ROP<OP.  For
+     `mpfr_set_d', be careful that the input number OP may not be
+     exactly representable as a double-precision number (this happens
+     for 0.1 for instance), in which case it is first rounded by the C
+     compiler to a double-precision number, and then only to a mpfr
+     floating-point number.
+
+ - Function: int mpfr_set_str (mpfr_t X, char *S, int BASE, mp_rnd_t
+          RND)
+     Set X to the value of the string S in base BASE (between 2 and
+     36), rounded in direction RND to the precision of X.  The exponent
+     is read in decimal.  This function returns -1 if an internal
+     overflow occurred (for instance, because the exponent is too
+     large). Otherwise it returns 0 if the base is valid and if the
+     entire string up to the final '\0' is a valid number in base BASE,
+     and 1 if the input is incorrect.
+
+ - Function: void mpfr_set_str_raw (mpfr_t X, char *S)
+     Set X to the value of the binary number in string S, which has to
+     be of the form +/-xxxx.xxxxxxEyy. The exponent is read in decimal,
+     but is interpreted as the power of two to be multiplied by the
+     mantissa.  The mantissa length of S has to be less or equal to the
+     precision of X, otherwise an error occurs.  If S starts with `N',
+     it is interpreted as NaN (Not-a-Number); if it starts with `I'
+     after the sign, it is interpreted as infinity, with the
+     corresponding sign.
+
+ - Function: int mpfr_set_f (mpfr_t X, mpf_t Y, mp_rnd_t RND)
+     Set X to the GNU MP floating-point number Y, rounded with the RND
+     mode and the precision of X.  The returned value is zero when X=Y,
+     positive when X>Y, and negative when X<Y.
+
+ - Function: void mpfr_set_inf (mpfr_t X, int SIGN)
+ - Function: void mpfr_set_nan (mpfr_t X)
+     Set the variable X to infinity or NaN (Not-a-Number) respectively.
+     In `mpfr_set_inf', X is set to plus infinity iff SIGN is positive.
+
+ - Function: void mpfr_swap (mpfr_t X, mpfr_t Y)
+     Swap the values X and Y efficiently. Warning: the precisions are
+     exchanged too; in case the precisions are different, `mpfr_swap'
+     is thus not equivalent to three `mpfr_set' calls using a third
+     auxiliary variable.
+
+
+File: mpfr.info,  Node: Simultaneous Float Init & Assign,  Next: Converting Floats,  Prev: Assigning Floats,  Up: Floating-point Functions
+
+Combined Initialization and Assignment Functions
+================================================
+
+ - Macro: int mpfr_init_set (mpfr_t ROP, mpfr_t OP, mp_rnd_t RND)
+ - Macro: int mpfr_init_set_ui (mpfr_t ROP, unsigned long int OP,
+          mp_rnd_t RND)
+ - Macro: int mpfr_init_set_si (mpfr_t ROP, signed long int OP,
+          mp_rnd_t RND)
+ - Macro: int mpfr_init_set_d (mpfr_t ROP, double OP, mp_rnd_t RND)
+ - Macro: int mpfr_init_set_f (mpfr_t ROP, mpf_t OP, mp_rnd_t RND)
+ - Macro: int mpfr_init_set_z (mpfr_t ROP, mpz_t OP, mp_rnd_t RND)
+ - Macro: int mpfr_init_set_q (mpfr_t ROP, mpq_t OP, mp_rnd_t RND)
+     Initialize ROP and set its value from OP, rounded to direction RND.
+     The precision of ROP will be taken from the active default
+     precision, as set by `mpfr_set_default_prec'.  The return value if
+     zero if ROP=OP, positive if ROP>OP, and negative when ROP<OP.
+
+ - Function: int mpfr_init_set_str (mpfr_t X, char *S, int BASE,
+          mp_rnd_t RND)
+     Initialize X and set its value from the string S in base BASE,
+     rounded to direction RND.  See `mpfr_set_str'.
+
+
+File: mpfr.info,  Node: Converting Floats,  Next: Float Arithmetic,  Prev: Simultaneous Float Init & Assign,  Up: Floating-point Functions
+
+Conversion Functions
+====================
+
+ - Function: double mpfr_get_d (mpfr_t OP, mp_rnd_t RND)
+     Convert OP to a double, using the rounding mode RND.
+
+ - Function: double mpfr_get_d1 (mpfr_t OP)
+     Convert OP to a double, using the default MPFR rounding mode (see
+     function `mpfr_set_default_rounding_mode').
+
+ - Function: mp_exp_t mpfr_get_z_exp (mpz_t Z, mpfr_t OP)
+     Puts the mantissa of OP into Z, and returns the exponent EXP such
+     that OP equals Z multiplied by two exponent EXP.
+
+ - Function: char * mpfr_get_str (char *STR, mp_exp_t *EXPPTR, int
+          BASE, size_t N_DIGITS, mpfr_t OP, mp_rnd_t RND)
+     Convert OP to a string of digits in base BASE, with rounding in
+     direction RND. The base may vary from 2 to 36.  Generate exactly
+     N_DIGITS significant digits.
+
+     If N_DIGITS is 0, it writes the maximum possible number of digits
+     giving an exact rounding in the given base BASE with the direction
+     RND. In other words, if OP was the exact rounding of a real number
+     in direction RND, then the written value is also an exact rounding
+     in base BASE of that real number with the same precision. An error
+     occurs when one is unable to determine the leading digit, which
+     can happen especially if the precision of OP is small.
+
+     If STR is a null pointer, space for the mantissa is allocated using
+     the default allocation function, and a pointer to the string is
+     returned.  In that case, the user should her/himself free the
+     corresponding memory with `(*_mp_free_func)(s, strlen(s) + 1)'.
+
+     If STR is not a null pointer, it should point to a block of storage
+     large enough for the mantissa, i.e., N_DIGITS + 2 or more. The
+     extra two bytes are for a possible minus sign, and for the
+     terminating null character.
+
+     If the input number is a real number, the exponent is written
+     through the pointer EXPPTR (the current minimal exponent for 0).
+
+     If N_DIGITS is 0, note that the space requirements for STR in this
+     case will be impossible for the user to predetermine. Therefore,
+     one needs to pass a null pointer for the string argument whenever
+     N_DIGITS is 0.
+
+     The generated string is a fraction, with an implicit radix point
+     immediately to the left of the first digit.  For example, the
+     number 3.1416 would be returned as "31416" in the string and 1
+     written at EXPPTR.
+
+     A pointer to the string is returned, unless there is an error, in
+     which case a null pointer is returned.
+
+
+File: mpfr.info,  Node: Float Arithmetic,  Next: Float Comparison,  Prev: Converting Floats,  Up: Floating-point Functions
+
+Basic Arithmetic Functions
+==========================
+
+ - Function: int mpfr_add (mpfr_t ROP, mpfr_t OP1, mpfr_t OP2, mp_rnd_t
+          RND)
+ - Function: int mpfr_add_ui (mpfr_t ROP, mpfr_t OP1, unsigned long int
+          OP2, mp_rnd_t RND)
+ - Function: int mpfr_add_z (mpfr_t ROP, mpfr_t OP1, mpz_t OP2,
+          mp_rnd_t RND)
+ - Function: int mpfr_add_q (mpfr_t ROP, mpfr_t OP1, mpq_t OP2,
+          mp_rnd_t RND)
+     Set ROP to OP1 + OP2 rounded in the direction RND.  The return
+     value is zero if ROP is exactly OP1 + OP2, positive if ROP is
+     larger than OP1 + OP2, and negative if ROP is smaller than OP1 +
+     OP2.
+
+ - Function: int mpfr_sub (mpfr_t ROP, mpfr_t OP1, mpfr_t OP2, mp_rnd_t
+          RND)
+ - Function: int mpfr_ui_sub (mpfr_t ROP, unsigned long int OP1, mpfr_t
+          OP2, mp_rnd_t RND)
+ - Function: int mpfr_sub_ui (mpfr_t ROP, mpfr_t OP1, unsigned long int
+          OP2, mp_rnd_t RND)
+ - Function: int mpfr_sub_z (mpfr_t ROP, mpfr_t OP1, mpz_t OP2,
+          mp_rnd_t RND)
+ - Function: int mpfr_sub_q (mpfr_t ROP, mpfr_t OP1, mpq_t OP2,
+          mp_rnd_t RND)
+     Set ROP to OP1 - OP2 rounded in the direction RND.  The return
+     value is zero if ROP is exactly OP1 - OP2, positive if ROP is
+     larger than OP1 - OP2, and negative if ROP is smaller than OP1 -
+     OP2.
+
+ - Function: int mpfr_mul (mpfr_t ROP, mpfr_t OP1, mpfr_t OP2, mp_rnd_t
+          RND)
+ - Function: int mpfr_mul_ui (mpfr_t ROP, mpfr_t OP1, unsigned long int
+          OP2, mp_rnd_t RND)
+ - Function: int mpfr_mul_z (mpfr_t ROP, mpfr_t OP1, mpz_t OP2,
+          mp_rnd_t RND)
+ - Function: int mpfr_mul_q (mpfr_t ROP, mpfr_t OP1, mpq_t OP2,
+          mp_rnd_t RND)
+     Set ROP to OP1 times OP2 rounded in the direction RND.  Return 0
+     if the result is exact, a positive value if ROP>OP1*OP2, a
+     negative value otherwise.
+
+ - Function: int mpfr_div (mpfr_t ROP, mpfr_t OP1, mpfr_t OP2, mp_rnd_t
+          RND)
+ - Function: int mpfr_ui_div (mpfr_t ROP, unsigned long int OP1, mpfr_t
+          OP2, mp_rnd_t RND)
+ - Function: int mpfr_div_ui (mpfr_t ROP, mpfr_t OP1, unsigned long int
+          OP2, mp_rnd_t RND)
+ - Function: int mpfr_div_z (mpfr_t ROP, mpfr_t OP1, mpz_t OP2,
+          mp_rnd_t RND)
+ - Function: int mpfr_div_q (mpfr_t ROP, mpfr_t OP1, mpq_t OP2,
+          mp_rnd_t RND)
+     Set ROP to OP1/OP2 rounded in the direction RND.  These functions
+     return 0 if the division is exact, a positive value when ROP is
+     larger than OP1 divided by OP2, and a negative value otherwise.
+
+ - Function: int mpfr_sqrt (mpfr_t ROP, mpfr_t OP, mp_rnd_t RND)
+ - Function: int mpfr_sqrt_ui (mpfr_t ROP, unsigned long int OP,
+          mp_rnd_t RND)
+     Set ROP to the square root of OP rounded in the direction RND.
+     Set ROP to NaN if OP is negative.  Return 0 if the operation is
+     exact, a non-zero value otherwise.
+
+ - Function: int mpfr_pow_ui (mpfr_t ROP, mpfr_t OP1, unsigned long int
+          OP2, mp_rnd_t RND)
+ - Function: int mpfr_ui_pow_ui (mpfr_t ROP, unsigned long int OP1,
+          unsigned long int OP2, mp_rnd_t RND)
+     Set ROP to OP1 raised to OP2. The computation is done by binary
+     exponentiation.  Return 0 if the result is exact, a non-zero value
+     otherwise (but the sign of the return value has no meaning).
+
+ - Function: int mpfr_ui_pow (mpfr_t ROP, unsigned long int OP1, mpfr_t
+          OP2, mp_rnd_t RND)
+     Set ROP to OP1 raised to OP2, rounded to the direction RND with
+     the precision of ROP.  Return zero iff the result is exact, a
+     positive value when the result is greater than OP1 to the power
+     OP2, and a negative value when it is smaller.
+
+ - Function: int mpfr_pow_si (mpfr_t ROP, mpfr_t OP1, long int OP2,
+          mp_rnd_t RND)
+     Set ROP to OP1 raised to the power OP2, rounded to the direction
+     RND with the precision of ROP.  Return zero iff the result is
+     exact.
+
+ - Function: int mpfr_pow (mpfr_t ROP, mpfr_t OP1, mpfr_t OP2, mp_rnd_t
+          RND)
+     Set ROP to OP1 raised to the power OP2, rounded to the direction
+     RND with the precision of ROP.  If OP1 is negative then ROP is set
+     to NaN, even if OP2 is an integer.  Return zero iff the result is
+     exact.
+
+ - Function: int mpfr_neg (mpfr_t ROP, mpfr_t OP, mp_rnd_t RND)
+     Set ROP to -OP rounded in the direction RND.  Just changes the sign
+     if ROP and OP are the same variable.
+
+ - Function: int mpfr_abs (mpfr_t ROP, mpfr_t OP, mp_rnd_t RND)
+     Set ROP to the absolute value of OP, rounded in the direction RND.
+     Return 0 if the result is exact, a positive value if ROP is larger
+     than the absolute value of OP, and a negative value otherwise.
+
+ - Function: int mpfr_mul_2exp (mpfr_t ROP, mpfr_t OP1, unsigned long
+          int OP2, mp_rnd_t RND)
+ - Function: int mpfr_mul_2ui (mpfr_t ROP, mpfr_t OP1, unsigned long
+          int OP2, mp_rnd_t RND)
+ - Function: int mpfr_mul_2si (mpfr_t ROP, mpfr_t OP1, long int OP2,
+          mp_rnd_t RND)
+     Set ROP to OP1 times 2 raised to OP2 rounded to the direction RND.
+     Just increases the exponent by OP2 when ROP and OP1 are identical.
+     Return zero when ROP=OP1, a positive value when ROP>OP1, and a
+     negative value when ROP<OP1.  Note: The `mpfr_mul_2exp' function
+     is defined for compatibility reasons; you should use
+     `mpfr_mul_2ui' (or `mpfr_mul_2si') instead.
+
+ - Function: int mpfr_div_2exp (mpfr_t ROP, mpfr_t OP1, unsigned long
+          int OP2, mp_rnd_t RND)
+ - Function: int mpfr_div_2ui (mpfr_t ROP, mpfr_t OP1, unsigned long
+          int OP2, mp_rnd_t RND)
+ - Function: int mpfr_div_2si (mpfr_t ROP, mpfr_t OP1, long int OP2,
+          mp_rnd_t RND)
+     Set ROP to OP1 divided by 2 raised to OP2 rounded to the direction
+     RND. Just decreases the exponent by OP2 when ROP and OP1 are
+     identical.  Return zero when ROP=OP1, a positive value when
+     ROP>OP1, and a negative value when ROP<OP1.  Note: The
+     `mpfr_div_2exp' function is defined for compatibility reasons; you
+     should use `mpfr_div_2ui' (or `mpfr_div_2si') instead.
+
+
+File: mpfr.info,  Node: Float Comparison,  Next: I/O of Floats,  Prev: Float Arithmetic,  Up: Floating-point Functions
+
+Comparison Functions
+====================
+
+ - Function: int mpfr_cmp (mpfr_t OP1, mpfr_t OP2)
+ - Function: int mpfr_cmp_ui (mpfr_t OP1, unsigned long int OP2)
+ - Function: int mpfr_cmp_si (mpfr_t OP1, signed long int OP2)
+     Compare OP1 and OP2.  Return a positive value if OP1 > OP2, zero
+     if OP1 = OP2, and a negative value if OP1 < OP2.  Both OP1 and OP2
+     are considered to their full own precision, which may differ. In
+     case OP1 and OP2 are of same sign but different, the absolute
+     value returned is one plus the absolute difference of their
+     exponents.  It is not allowed that one of the operands is NaN
+     (Not-a-Number).
+
+ - Function: int mpfr_cmp_ui_2exp (mpfr_t OP1, unsigned long int OP2,
+          int E)
+ - Function: int mpfr_cmp_si_2exp (mpfr_t OP1, long int OP2, int E)
+     Compare OP1 and OP2 multiplied by two to the power E.
+
+ - Function: int mpfr_eq (mpfr_t OP1, mpfr_t OP2, unsigned long int op3)
+     Return non-zero if the first OP3 bits of OP1 and OP2 are equal,
+     zero otherwise.  I.e., tests if OP1 and OP2 are approximately
+     equal.
+
+ - Function: int mpfr_nan_p (mpfr_t OP)
+     Return non-zero if OP is Not-a-Number (NaN), zero otherwise.
+
+ - Function: int mpfr_inf_p (mpfr_t OP)
+     Return non-zero if OP is plus or minus infinity, zero otherwise.
+
+ - Function: int mpfr_number_p (mpfr_t OP)
+     Return non-zero if OP is an ordinary number, i.e. neither
+     Not-a-Number nor plus or minus infinity.
+
+ - Function: void mpfr_reldiff (mpfr_t ROP, mpfr_t OP1, mpfr_t OP2,
+          mp_rnd_t RND)
+     Compute the relative difference between OP1 and OP2 and store the
+     result in ROP.  This function does not guarantee the exact
+     rounding on the relative difference; it just computes
+     abs(OP1-OP2)/OP1, using the rounding mode RND for all operations.
+
+ - Function: int mpfr_sgn (mpfr_t OP)
+     Return a positive value if OP > 0, zero if OP = 0, and a negative
+     value if OP < 0.  Its result is not specified when OP is NaN
+     (Not-a-Number).
+
+Special Functions
+=================
+
+ - Function: int mpfr_log (mpfr_t ROP, mpfr_t OP, mp_rnd_t RND)
+     Set ROP to the natural logarithm of OP, rounded to the direction
+     RND with the precision of ROP.  Return zero when the result is
+     exact (this occurs in fact only when OP is 0, 1, or +infinity) and
+     a non-zero value otherwise (except for rounding to nearest, the
+     sign of the return value is that of ROP-log(OP).
+
+ - Function: int mpfr_exp (mpfr_t ROP, mpfr_t OP, mp_rnd_t RND)
+     Set ROP to the exponential of OP, rounded to the direction RND
+     with the precision of ROP.  Return zero when the result is exact
+     (this occurs in fact only when OP is -infinity, 0, or +infinity),
+     a positive value when the result is greater than the exponential
+     of OP, and a negative value when it is smaller.
+
+ - Function: int mpfr_exp2 (mpfr_t ROP, mpfr_t OP, mp_rnd_t RND)
+     Set ROP to 2 power of OP, rounded to the direction RND with the
+     precision of ROP.  Return zero iff the result is exact (this
+     occurs in fact only when OP is -infinity, 0, or +infinity), a
+     positive value when the result is greater than the exponential of
+     OP, and a negative value when it is smaller.
+
+ - Function: int mpfr_cos (mpfr_t COP, mpfr_t OP, mp_rnd_t RND)
+ - Function: int mpfr_sin (mpfr_t SOP, mpfr_t OP, mp_rnd_t RND)
+ - Function: int mpfr_tan (mpfr_t TOP, mpfr_t OP, mp_rnd_t RND)
+     Set COP to the cosine of OP, SOP to the sine of OP, TOP to the
+     tangent of OP, rounded to the direction RND with the precision of
+     ROP. Return 0 iff the result is exact (this occurs in fact only
+     when OP is 0 i.e. the sine is 0, the cosine is 1, and the tangent
+     is 0).
+
+ - Function: int mpfr_sin_cos (mpfr_t SOP, mpfr_t COP, mpfr_t OP,
+          mp_rnd_t RND)
+     Set simultaneously SOP to the sine of OP and
+     COP to the cosine of OP, rounded to the direction RND with their
+     corresponding precisions.  Return 0 iff both results are exact.
+
+ - Function: int mpfr_acos (mpfr_t ROP, mpfr_t OP, mp_rnd_t RND)
+ - Function: int mpfr_asin (mpfr_t ROP, mpfr_t OP, mp_rnd_t RND)
+ - Function: int mpfr_atan (mpfr_t ROP, mpfr_t OP, mp_rnd_t RND)
+     Set ROP to the arc-cosine, arc-sine or arc-tangent of OP, rounded
+     to the direction RND with the precision of ROP.  Return 0 iff the
+     result is exact.
+
+ - Function: int mpfr_cosh (mpfr_t COP, mpfr_t OP, mp_rnd_t RND)
+ - Function: int mpfr_sinh (mpfr_t SOP, mpfr_t OP, mp_rnd_t RND)
+ - Function: int mpfr_tanh (mpfr_t TOP, mpfr_t OP, mp_rnd_t RND)
+     Set COP to the hyperbolic cosine of OP,     SOP to the hyperbolic
+     sine of OP,     TOP to the hyperbolic tangent of OP, rounded to
+     the direction RND with the precision of ROP.  Return 0 iff the
+     result is exact (this occurs in fact only when OP is 0 i.e. the
+     result is 1).
+
+ - Function: int mpfr_acosh (mpfr_t ROP, mpfr_t OP, mp_rnd_t RND)
+ - Function: int mpfr_asinh (mpfr_t ROP, mpfr_t OP, mp_rnd_t RND)
+ - Function: int mpfr_atanh (mpfr_t ROP, mpfr_t OP, mp_rnd_t RND)
+     Set ROP to the inverse hyperbolic cosine, sine or tangent of OP,
+     rounded to the direction RND with the precision of ROP.  Return 0
+     iff the result is exact.
+
+ - Function: int mpfr_fac_ui (mpfr_t ROP, unsigned long int OP,
+          mp_rnd_t RND)
+     Set ROP to the factorial of the unsigned long int OP, rounded to
+     the direction RND with the precision of ROP.  Return 0 iff the
+     result is exact.
+
+ - Function: int mpfr_log1p (mpfr_t ROP, mpfr_t OP, mp_rnd_t RND)
+     Set ROP to the logarithm of one plus OP, rounded to the direction
+     RND with the precision of ROP.  Return 0 iff the result is exact
+     (this occurs in fact only when OP is 0 i.e. the result is 0).
+
+ - Function: int mpfr_expm1 (mpfr_t ROP, mpfr_t OP, mp_rnd_t RND)
+     Set ROP to the exponential of OP minus one, rounded to the
+     direction RND with the precision of ROP.  Return 0 iff the result
+     is exact (this occurs in fact only when OP is 0 i.e. the result is
+     0).
+
+ - Function: int mpfr_log2 (mpfr_t ROP, mpfr_t OP, mp_rnd_t RND)
+ - Function: int mpfr_log10 (mpfr_t ROP, mpfr_t OP, mp_rnd_t RND)
+     Set ROP to the log[t] (t=2 or 10)(log x / log t) of OP, rounded to
+     the direction RND with the precision of ROP. Return 0 iff the
+     result is exact (this occurs in fact only when OP is 1 i.e. the
+     result is 0).
+
+ - Function: int mpfr_fma (mpfr_t ROP, mpfr_t OPX,mpfr_t OPY,mpfr_t
+          OPZ, mp_rnd_t RND)
+     Set ROP to OPX * OPY + OPZ, rounded to the direction RND with the
+     precision of ROP. Return 0 iff the result is exact, a positive
+     value if ROP is larger than OPX * OPY + OPZ, and a negative value
+     otherwise.
+
+ - Function: void mpfr_agm (mpfr_t ROP, mpfr_t OP1, mpfr_t OP2,
+          mp_rnd_t RND)
+     Set ROP to the arithmetic-geometric mean of OP1 and OP2, rounded
+     to the direction RND with the precision of ROP.
+
+ - Function: void mpfr_const_log2 (mpfr_t ROP, mp_rnd_t RND)
+     Set ROP to the logarithm of 2 rounded to the direction RND with
+     the precision of ROP. This function stores the computed value to
+     avoid another calculation if a lower or equal precision is
+     requested.
+
+ - Function: void mpfr_const_pi (mpfr_t ROP, mp_rnd_t RND)
+     Set ROP to the value of Pi rounded to the direction RND with the
+     precision of ROP. This function uses the Borwein, Borwein, Plouffe
+     formula which directly gives the expansion of Pi in base 16.
+
+ - Function: void mpfr_const_euler (mpfr_t ROP, mp_rnd_t RND)
+     Set ROP to the value of Euler's constant 0.577...  rounded to the
+     direction RND with the precision of ROP.
+
+
+File: mpfr.info,  Node: I/O of Floats,  Next: Miscellaneous Float Functions,  Prev: Float Comparison,  Up: Floating-point Functions
+
+Input and Output Functions
+==========================
+
+   Functions that perform input from a standard input/output stream,
+and functions that output to a standard input/output stream.  Passing a
+null pointer for a STREAM argument to any of these functions will make
+them read from `stdin' and write to `stdout', respectively.
+
+   When using any of these functions, it is a good idea to include
+`stdio.h' before `mpfr.h', since that will allow `mpfr.h' to define
+prototypes for these functions.
+
+ - Function: size_t mpfr_out_str (FILE *STREAM, int BASE, size_t
+          N_DIGITS, mpfr_t OP, mp_rnd_t RND)
+     Output OP on stdio stream STREAM, as a string of digits in base
+     BASE, rounded to direction RND.  The base may vary from 2 to 36.
+     Print at most N_DIGITS significant digits, or if N_DIGITS is 0,
+     the maximum number of digits accurately representable by OP.
+
+     In addition to the significant digits, a decimal point at the
+     right of the first digit and a trailing exponent, in the form
+     `eNNN', are printed.  If BASE is greater than 10, `@' will be used
+     instead of `e' as exponent delimiter.
+
+     Return the number of bytes written, or if an error occurred,
+     return 0.
+
+ - Function: size_t mpfr_inp_str (mpfr_t ROP, FILE *STREAM, int BASE,
+          mp_rnd_t RND)
+     Input a string in base BASE from stdio stream STREAM, rounded in
+     direction RND, and put the read float in ROP.  The string is of
+     the form `M@N' or, if the base is 10 or less, alternatively `MeN'
+     or `MEN'.  `M' is the mantissa and `N' is the exponent.  The
+     mantissa is always in the specified base.  The exponent is in
+     decimal.
+
+     The argument BASE may be in the range 2 to 36.
+
+     Unlike the corresponding `mpz' function, the base will not be
+     determined from the leading characters of the string if BASE is 0.
+     This is so that numbers like `0.23' are not interpreted as octal.
+
+     Return the number of bytes read, or if an error occurred, return 0.
+
+ - Function: void mpfr_print_binary (mpfr_t FLOAT)
+     Output FLOAT on stdout in raw binary format (the exponent is in
+     decimal, yet).  The last bits from the least significant limb
+     which do not belong to the mantissa are printed between square
+     brackets; they should always be zero.
+
+
+File: mpfr.info,  Node: Miscellaneous Float Functions,  Prev: I/O of Floats,  Up: Floating-point Functions
+
+Miscellaneous Functions
+=======================
+
+ - Function: int mpfr_rint (mpfr_t ROP, mpfr_t OP, mp_rnd_t RND)
+ - Function: int mpfr_ceil (mpfr_t ROP, mpfr_t OP)
+ - Function: int mpfr_floor (mpfr_t ROP, mpfr_t OP)
+ - Function: int mpfr_round (mpfr_t ROP, mpfr_t OP)
+ - Function: int mpfr_trunc (mpfr_t ROP, mpfr_t OP)
+     Set ROP to OP rounded to an integer. `mpfr_ceil' rounds to the
+     next higher representable integer, `mpfr_floor' to the next lower,
+     `mpfr_round' to the nearest representable integer, rounding
+     halfway cases away from zero, and `mpfr_trunc' to the
+     representable integer towards zero. `mpfr_rint' behaves like one
+     of these four functions, depending on the rounding mode.  The
+     returned value is zero when the result is exact, positive when it
+     is greater than the original value of OP, and negative when it is
+     smaller.  More precisely, the returned value is 0 when OP is an
+     integer representable in ROP, 1 or -1 when OP is an integer that
+     is not representable in ROP, 2 or -2 when OP is not an integer.
+
+ - Function: void mpfr_urandomb (mpfr_t ROP, gmp_randstate_t STATE)
+     Generate a uniformly distributed random float in the interval 0 <=
+     X < 1.
+
+ - Function: void mpfr_random (mpfr_t ROP)
+     Generate a uniformly distributed random float in the interval 0 <=
+     X < 1.
+
+ - Function: void mpfr_random2 (mpfr_t ROP, mp_size_t MAX_SIZE,
+          mp_exp_t MAX_EXP)
+     Generate a random float of at most MAX_SIZE limbs, with long
+     strings of zeros and ones in the binary representation. The
+     exponent of the number is in the interval -EXP to EXP.  This
+     function is useful for testing functions and algorithms, since
+     this kind of random numbers have proven to be more likely to
+     trigger corner-case bugs.  Negative random numbers are generated
+     when MAX_SIZE is negative.
+
+Internals
+=========
+
+   These types and functions were mainly designed for the
+implementation of `mpfr', but may be useful for users too.  However no
+upward compatibility is guaranteed.  You need to include `mpfr-impl.h'
+to use them.
+
+   The `mpfr_t' type consists of four fields.  The `_mpfr_prec' field
+is used to store the precision of the variable (in bits); this is not
+less than 2.
+
+   The `_mpfr_size' field is used to store the number of allocated
+limbs, with the high bits reserved to store the sign (bit 31), the NaN
+flag (bit 30), and the Infinity flag (bit 29); thus bits 0 to 28 remain
+for the number of allocated limbs, with a maximal value of 536870911.
+A NaN is indicated by the NaN flag set, and no other fields are
+relevant.  An Infinity is indicated by the NaN flag clear and the Inf
+flag set; the sign bit of an Infinity indicates the sign, the limb data
+and the exponent are not relevant.
+
+   The `_mpfr_exp' field stores the exponent.  An exponent of 0 means a
+radix point just above the most significant limb.  Non-zero values are
+a multiplier 2^n relative to that point.
+
+   Finally, the `_mpfr_d' is a pointer to the limbs, least significant
+limbs stored first.  The number zero is represented with its most
+significant limb set to zero, i.e. `_mpfr_d[n-1]' where
+n=ceil(`_mpfr_prec'/`BITS_PER_MP_LIMB').  The number of limbs in use is
+controlled by `_mpfr_prec', namely
+ceil(`_mpfr_prec'/`BITS_PER_MP_LIMB').  Zero is represented by the most
+significant limb being zero, other limb data and the exponent are not
+relevant ("not relevant" implies that the corresponding objects may
+contain invalid values, thus should not be evaluated even if they are
+not taken into account).  Non-zero values always have the most
+significant bit of the most significant limb set to 1.  When the
+precision is not a whole number of limbs, the excess bits at the low
+end of the data are zero.  When the precision has been lowered by
+`mpfr_set_prec', the space allocated at `_mpfr_d' remains as given by
+`_mpfr_size', but `_mpfr_prec' indicates how much of that space is
+actually used.
+
+ - Function: int mpfr_add_one_ulp (mpfr_t X, mp_rnd_t RND)
+     Add one unit in last place (ulp) to X if X is finite and positive,
+     subtract one ulp if X is finite and negative; otherwise, X is not
+     changed.  The return value is zero unless an overflow occurs, in
+     which case the `mpfr_add_one_ulp' function behaves like a
+     conventional addition.
+
+ - Function: int mpfr_sub_one_ulp (mpfr_t X, mp_rnd_t RND)
+     Subtract one ulp to X if X is finite and positive, add one ulp if
+     X is finite and negative; otherwise, X is not changed.  The return
+     value is zero unless an underflow occurs, in which case the
+     `mpfr_sub_one_ulp' function behaves like a conventional
+     subtraction.
+
+ - Function: int mpfr_can_round (mpfr_t B, mp_exp_t ERR, mp_rnd_t RND1,
+          mp_rnd_t RND2, mp_prec_t PREC)
+     Assuming B is an approximation of an unknown number X in direction
+     RND1 with error at most two to the power E(b)-ERR where E(b) is
+     the exponent of B, returns 1 if one is able to round exactly X to
+     precision PREC with direction RND2,    and 0 otherwise. This
+     function *does not modify* its arguments.
+
+
+File: mpfr.info,  Node: Contributors,  Next: References,  Prev: Floating-point Functions,  Up: Top
+
+Contributors
+************
+
+   The main developers consist of Guillaume Hanrot, Vincent Lefèvre and
+Paul Zimmermann.
+
+   We would like to thank Jean-Michel Muller and Joris van der Hoeven
+for very fruitful discussions at the beginning of that project,
+Torbjorn Granlund and Kevin Ryde for their help about design issues and
+their suggestions for an easy integration into GNU MP, and Nathalie
+Revol for her careful reading of this documentation.
+
+   Sylvie Boldo from ENS-Lyon, France, contributed the functions
+`mpfr_agm' and `mpfr_log'.  Emmanuel Jeandel, from ENS-Lyon too,
+contributed the generic hypergeometric code in `generic.c', as well as
+the `mpfr_exp3', a first implementation of the sine and cosine, and
+improved versions of `mpfr_const_log2' and `mpfr_const_pi'.  Mathieu
+Dutour contributed the functions `mpfr_atan' and `mpfr_asin', David
+Daney contributed the hyperbolic and inverse hyperbolic functions, the
+base-2 exponential, and the factorial function. Fabrice Rouillier
+contributed the original version of `mul_ui.c', the `gmp_op.c' file,
+and helped to the Windows porting.
+
+
+File: mpfr.info,  Node: References,  Next: Concept Index,  Prev: Contributors,  Up: Top
+
+References
+**********
+
+   * Torbjorn Granlund, "GNU MP: The GNU Multiple Precision Arithmetic
+     Library",   version 4.0.1, 2001.
+
+   * IEEE standard for binary floating-point arithmetic, Technical
+     Report ANSI-IEEE Standard 754-1985, New York, 1985.  Approved
+     March 21, 1985: IEEE Standards Board; approved July 26,   1985:
+     American National Standards Institute, 18 pages.
+
+   * Donald E. Knuth, "The Art of Computer Programming", vol 2,
+     "Seminumerical Algorithms", 2nd edition, Addison-Wesley, 1981.
+
+
+
+File: mpfr.info,  Node: Concept Index,  Next: Function Index,  Prev: References,  Up: Top
+
+Concept Index
+*************
+
+* Menu:
+
+* Arithmetic functions:                  Float Arithmetic.
+* Comparison functions:                  Float Comparison.
+* Conditions for copying MPFR:           Copying.
+* Conversion functions:                  Converting Floats.
+* Copying conditions:                    Copying.
+* Float arithmetic functions:            Float Arithmetic.
+* Float assignment functions:            Assigning Floats.
+* Float comparisons functions:           Float Comparison.
+* Float functions:                       Floating-point Functions.
+* Float input and output functions:      I/O of Floats.
+* Floating-point functions:              Floating-point Functions.
+* Floating-point number:                 MPFR Basics.
+* I/O functions:                         I/O of Floats.
+* Initialization and assignment functions: Simultaneous Float Init & Assign.
+* Input functions:                       I/O of Floats.
+* Installation:                          Installing MPFR.
+* Limb:                                  MPFR Basics.
+* Miscellaneous float functions:         Miscellaneous Float Functions.
+* mpfr.h:                                MPFR Basics.
+* Output functions:                      I/O of Floats.
+* Precision:                             MPFR Basics.
+* Reporting bugs:                        Reporting Bugs.
+* Rounding Mode:                         MPFR Basics.
+* Rounding modes:                        Rounding Modes.
+* Special functions:                     Float Comparison.
+* User-defined precision:                Floating-point Functions.
+
+
+File: mpfr.info,  Node: Function Index,  Prev: Concept Index,  Up: Top
+
+Function and Type Index
+***********************
+
+* Menu:
+
+* mp_prec_t:                             MPFR Basics.
+* mp_rnd_t:                              MPFR Basics.
+* mpfr_abs:                              Float Arithmetic.
+* mpfr_acos:                             Float Comparison.
+* mpfr_acosh:                            Float Comparison.
+* mpfr_add:                              Float Arithmetic.
+* mpfr_add_one_ulp:                      Miscellaneous Float Functions.
+* mpfr_add_q:                            Float Arithmetic.
+* mpfr_add_ui:                           Float Arithmetic.
+* mpfr_add_z:                            Float Arithmetic.
+* mpfr_agm:                              Float Comparison.
+* mpfr_asin:                             Float Comparison.
+* mpfr_asinh:                            Float Comparison.
+* mpfr_atan:                             Float Comparison.
+* mpfr_atanh:                            Float Comparison.
+* mpfr_can_round:                        Miscellaneous Float Functions.
+* mpfr_ceil:                             Miscellaneous Float Functions.
+* mpfr_check_range:                      Exceptions.
+* mpfr_clear:                            Initializing Floats.
+* mpfr_clear_flags:                      Exceptions.
+* mpfr_clear_inexflag:                   Exceptions.
+* mpfr_clear_nanflag:                    Exceptions.
+* mpfr_clear_overflow:                   Exceptions.
+* mpfr_clear_underflow:                  Exceptions.
+* mpfr_cmp:                              Float Comparison.
+* mpfr_cmp_si:                           Float Comparison.
+* mpfr_cmp_si_2exp:                      Float Comparison.
+* mpfr_cmp_ui:                           Float Comparison.
+* mpfr_cmp_ui_2exp:                      Float Comparison.
+* mpfr_const_euler:                      Float Comparison.
+* mpfr_const_log2:                       Float Comparison.
+* mpfr_const_pi:                         Float Comparison.
+* mpfr_cos:                              Float Comparison.
+* mpfr_cosh:                             Float Comparison.
+* mpfr_div:                              Float Arithmetic.
+* mpfr_div_2exp:                         Float Arithmetic.
+* mpfr_div_2si:                          Float Arithmetic.
+* mpfr_div_2ui:                          Float Arithmetic.
+* mpfr_div_q:                            Float Arithmetic.
+* mpfr_div_ui:                           Float Arithmetic.
+* mpfr_div_z:                            Float Arithmetic.
+* mpfr_eq:                               Float Comparison.
+* mpfr_exp:                              Float Comparison.
+* mpfr_exp2:                             Float Comparison.
+* mpfr_expm1:                            Float Comparison.
+* mpfr_fac_ui:                           Float Comparison.
+* mpfr_floor:                            Miscellaneous Float Functions.
+* mpfr_fma:                              Float Comparison.
+* mpfr_get_d:                            Converting Floats.
+* mpfr_get_d1:                           Converting Floats.
+* mpfr_get_default_prec:                 Initializing Floats.
+* mpfr_get_emax:                         Exceptions.
+* mpfr_get_emin:                         Exceptions.
+* mpfr_get_prec:                         Initializing Floats.
+* mpfr_get_str:                          Converting Floats.
+* mpfr_get_z_exp:                        Converting Floats.
+* mpfr_inexflag_p:                       Exceptions.
+* mpfr_inf_p:                            Float Comparison.
+* mpfr_init:                             Initializing Floats.
+* mpfr_init2:                            Initializing Floats.
+* mpfr_init_set:                         Simultaneous Float Init & Assign.
+* mpfr_init_set_d:                       Simultaneous Float Init & Assign.
+* mpfr_init_set_f:                       Simultaneous Float Init & Assign.
+* mpfr_init_set_q:                       Simultaneous Float Init & Assign.
+* mpfr_init_set_si:                      Simultaneous Float Init & Assign.
+* mpfr_init_set_str:                     Simultaneous Float Init & Assign.
+* mpfr_init_set_ui:                      Simultaneous Float Init & Assign.
+* mpfr_init_set_z:                       Simultaneous Float Init & Assign.
+* mpfr_inp_str:                          I/O of Floats.
+* mpfr_log:                              Float Comparison.
+* mpfr_log10:                            Float Comparison.
+* mpfr_log1p:                            Float Comparison.
+* mpfr_log2:                             Float Comparison.
+* mpfr_mul:                              Float Arithmetic.
+* mpfr_mul_2exp:                         Float Arithmetic.
+* mpfr_mul_2si:                          Float Arithmetic.
+* mpfr_mul_2ui:                          Float Arithmetic.
+* mpfr_mul_q:                            Float Arithmetic.
+* mpfr_mul_ui:                           Float Arithmetic.
+* mpfr_mul_z:                            Float Arithmetic.
+* mpfr_nan_p:                            Float Comparison.
+* mpfr_nanflag_p:                        Exceptions.
+* mpfr_neg:                              Float Arithmetic.
+* mpfr_number_p:                         Float Comparison.
+* mpfr_out_str:                          I/O of Floats.
+* mpfr_overflow_p:                       Exceptions.
+* mpfr_pow:                              Float Arithmetic.
+* mpfr_pow_si:                           Float Arithmetic.
+* mpfr_pow_ui:                           Float Arithmetic.
+* mpfr_print_binary:                     I/O of Floats.
+* mpfr_print_rnd_mode:                   Rounding Modes.
+* mpfr_random:                           Miscellaneous Float Functions.
+* mpfr_random2:                          Miscellaneous Float Functions.
+* mpfr_reldiff:                          Float Comparison.
+* mpfr_rint:                             Miscellaneous Float Functions.
+* mpfr_round:                            Miscellaneous Float Functions.
+* mpfr_round_prec:                       Rounding Modes.
+* mpfr_set:                              Assigning Floats.
+* mpfr_set_d:                            Assigning Floats.
+* mpfr_set_default_prec:                 Initializing Floats.
+* mpfr_set_default_rounding_mode:        Rounding Modes.
+* mpfr_set_emax:                         Exceptions.
+* mpfr_set_emin:                         Exceptions.
+* mpfr_set_f:                            Assigning Floats.
+* mpfr_set_inf:                          Assigning Floats.
+* mpfr_set_machine_rnd_mode:             Rounding Modes.
+* mpfr_set_nan:                          Assigning Floats.
+* mpfr_set_prec:                         Initializing Floats.
+* mpfr_set_prec_raw:                     Initializing Floats.
+* mpfr_set_q:                            Assigning Floats.
+* mpfr_set_si:                           Assigning Floats.
+* mpfr_set_str:                          Assigning Floats.
+* mpfr_set_str_raw:                      Assigning Floats.
+* mpfr_set_ui:                           Assigning Floats.
+* mpfr_set_z:                            Assigning Floats.
+* mpfr_sgn:                              Float Comparison.
+* mpfr_sin:                              Float Comparison.
+* mpfr_sin_cos:                          Float Comparison.
+* mpfr_sinh:                             Float Comparison.
+* mpfr_sqrt:                             Float Arithmetic.
+* mpfr_sqrt_ui:                          Float Arithmetic.
+* mpfr_sub:                              Float Arithmetic.
+* mpfr_sub_one_ulp:                      Miscellaneous Float Functions.
+* mpfr_sub_q:                            Float Arithmetic.
+* mpfr_sub_ui:                           Float Arithmetic.
+* mpfr_sub_z:                            Float Arithmetic.
+* mpfr_swap:                             Assigning Floats.
+* mpfr_t:                                MPFR Basics.
+* mpfr_tan:                              Float Comparison.
+* mpfr_tanh:                             Float Comparison.
+* mpfr_trunc:                            Miscellaneous Float Functions.
+* mpfr_ui_div:                           Float Arithmetic.
+* mpfr_ui_pow:                           Float Arithmetic.
+* mpfr_ui_pow_ui:                        Float Arithmetic.
+* mpfr_ui_sub:                           Float Arithmetic.
+* mpfr_underflow_p:                      Exceptions.
+* mpfr_urandomb:                         Miscellaneous Float Functions.
+
+
+
+Tag Table:
+Node: Top1010
+Node: Copying1677
+Node: Introduction to MPFR3397
+Node: Installing MPFR5133
+Node: Reporting Bugs7665
+Node: MPFR Basics9195
+Node: Floating-point Functions13276
+Node: Rounding Modes15114
+Node: Exceptions18227
+Node: Initializing Floats20496
+Node: Assigning Floats24168
+Node: Simultaneous Float Init & Assign27386
+Node: Converting Floats28627
+Node: Float Arithmetic31301
+Node: Float Comparison37456
+Node: I/O of Floats45234
+Node: Miscellaneous Float Functions47671
+Node: Contributors52903
+Node: References54098
+Node: Concept Index54714
+Node: Function Index56376
+
+End Tag Table

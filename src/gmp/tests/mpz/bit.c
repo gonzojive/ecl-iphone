@@ -1,6 +1,6 @@
 /* Test mpz_setbit, mpz_clrbit, mpz_tstbit.
 
-Copyright 1997, 2000, 2001 Free Software Foundation, Inc.
+Copyright 1997, 2000, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -68,7 +68,7 @@ check_tstbit (void)
           mpz_set_n (z, neg, numberof(neg));
           mpz_neg (z, z);
 
-          for (i = 0; i < numberof(pos)*BITS_PER_MP_LIMB; i++)
+          for (i = 0; i < numberof(pos)*GMP_NUMB_BITS; i++)
             {
               got = mpz_tstbit (z, i);
               want = refmpn_tstbit (pos, i);

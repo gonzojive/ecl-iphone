@@ -80,6 +80,7 @@ AMTAR = @AMTAR@
 AR = @AR@
 AS = @AS@
 AWK = @AWK@
+BITS_PER_MP_LIMB = @BITS_PER_MP_LIMB@
 CALLING_CONVENTIONS_OBJS = @CALLING_CONVENTIONS_OBJS@
 CC = @CC@
 CCAS = @CCAS@
@@ -94,13 +95,23 @@ EXEEXT = @EXEEXT@
 GCJ = @GCJ@
 GCJFLAGS = @GCJFLAGS@
 GMP_LDFLAGS = @GMP_LDFLAGS@
-HAVE_MPFR = @HAVE_MPFR@
+GMP_NAIL_BITS = @GMP_NAIL_BITS@
+HAVE_DECL_OPTARG = @HAVE_DECL_OPTARG@
+HAVE_HOST_CPU_FAMILY_power = @HAVE_HOST_CPU_FAMILY_power@
+HAVE_HOST_CPU_FAMILY_powerpc = @HAVE_HOST_CPU_FAMILY_powerpc@
+HAVE_MPFR_01 = @HAVE_MPFR_01@
+HAVE_STACK_T_01 = @HAVE_STACK_T_01@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+LEX = @LEX@
+LIBGMP_DLL = @LIBGMP_DLL@
 LIBM = @LIBM@
+LIBREADLINE = @LIBREADLINE@
 LIBTOOL = @LIBTOOL@
 LN_S = @LN_S@
 M4 = @M4@
 MAINT = @MAINT@
+MPFR_CFLAGS = @MPFR_CFLAGS@
+MPFR_LIBS = @MPFR_LIBS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 PACKAGE = @PACKAGE@
@@ -114,11 +125,8 @@ TAL_OBJECT = @TAL_OBJECT@
 TUNE_SQR_OBJ = @TUNE_SQR_OBJ@
 U = @U@
 VERSION = @VERSION@
-__GMP_BITS_PER_MP_LIMB = @__GMP_BITS_PER_MP_LIMB@
-__GMP_HAVE_HOST_CPU_FAMILY_power = @__GMP_HAVE_HOST_CPU_FAMILY_power@
-__GMP_HAVE_HOST_CPU_FAMILY_powerpc = @__GMP_HAVE_HOST_CPU_FAMILY_powerpc@
-__GMP_LIBGMP_SHARED = @__GMP_LIBGMP_SHARED@
-__GMP_LIBGMP_STATIC = @__GMP_LIBGMP_STATIC@
+WITH_READLINE_01 = @WITH_READLINE_01@
+YACC = @YACC@
 am__include = @am__include@
 am__quote = @am__quote@
 gmp_srclinks = @gmp_srclinks@
@@ -146,7 +154,7 @@ CLEANFILES = $(EXTRA_PROGRAMS)
 subdir = demos
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/config.h
-CONFIG_CLEAN_FILES =
+CONFIG_CLEAN_FILES = pexpr-config.h
 EXTRA_PROGRAMS = factorize$(EXEEXT) isprime$(EXEEXT) pexpr$(EXEEXT) \
 	primes$(EXEEXT) qcn$(EXEEXT)
 factorize_SOURCES = factorize.c
@@ -193,7 +201,7 @@ RECURSIVE_TARGETS = info-recursive dvi-recursive install-info-recursive \
 	uninstall-info-recursive all-recursive install-data-recursive \
 	install-exec-recursive installdirs-recursive install-recursive \
 	uninstall-recursive check-recursive installcheck-recursive
-DIST_COMMON = Makefile.am Makefile.in
+DIST_COMMON = Makefile.am Makefile.in pexpr-config-h.in
 DIST_SUBDIRS = $(SUBDIRS)
 SOURCES = factorize.c isprime.c pexpr.c primes.c qcn.c
 
@@ -217,6 +225,8 @@ Makefile: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.in  $(top_builddir)/config.s
 	cd $(top_builddir) && \
 	  CONFIG_HEADERS= CONFIG_LINKS= \
 	  CONFIG_FILES=$(subdir)/$@ $(SHELL) ./config.status
+pexpr-config.h: $(top_builddir)/config.status pexpr-config-h.in
+	cd $(top_builddir) && CONFIG_FILES=$(subdir)/$@:demos/pexpr-config-h.in CONFIG_HEADERS= CONFIG_LINKS= $(SHELL) ./config.status
 factorize$(EXEEXT): $(factorize_OBJECTS) $(factorize_DEPENDENCIES) 
 	@rm -f factorize$(EXEEXT)
 	$(LINK) $(factorize_LDFLAGS) $(factorize_OBJECTS) $(factorize_LDADD) $(LIBS)

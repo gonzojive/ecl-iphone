@@ -3,7 +3,7 @@
    THIS IS A TEST PROGRAM USED ONLY FOR DEVELOPMENT.  IT'S ALMOST CERTAIN TO
    BE SUBJECT TO INCOMPATIBLE CHANGES IN FUTURE VERSIONS OF GMP.
 
-Copyright 2000, 2001 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -29,7 +29,7 @@ MA 02111-1307, USA. */
 
    Combinations of alignments and overlaps are tested, with redzones above
    or below the destinations, and with the sources write-protected.
-  
+
    The number of tests performed becomes ridiculously large with all the
    combinations, and for that reason this can't be a part of a "make check",
    it's meant only for development.  The code isn't very pretty either.
@@ -289,9 +289,12 @@ struct try_t {
 #define SIZE_DIFF_PLUS_1 11
 #define SIZE_RETVAL      12
 #define SIZE_CEIL_HALF   13
+#define SIZE_GET_STR     14
   char  size;
   char  size2;
   char  dst_size[2];
+
+  char  dst_bytes[2];
 
   char  dst0_from_src1;
 
@@ -318,6 +321,7 @@ struct try_t {
 #define DATA_SRC1_ODD         3
 #define DATA_SRC1_HIGHBIT     4
 #define DATA_MULTIPLE_DIVISOR 5
+#define DATA_UDIV_QRNND       6
   char  data;
 
 /* Default is allow full overlap. */
@@ -325,6 +329,7 @@ struct try_t {
 #define OVERLAP_LOW_TO_HIGH  2
 #define OVERLAP_HIGH_TO_LOW  3
 #define OVERLAP_NOT_SRCS     4
+#define OVERLAP_NOT_SRC2     8
   char  overlap;
 
   tryfun_t    reference;
@@ -384,7 +389,7 @@ validate_divexact_1 (void)
         printf ("Remainder a%%d == 0x%lX, mpn_divexact_1 undefined\n", rem);
         error = 1;
       }
-    if (refmpn_cmp (tp, dst, size) != 0)
+    if (! refmpn_equal_anynail (tp, dst, size))
       {
         printf ("Quotient a/d wrong\n");
         mpn_trace ("fun ", dst, size);
@@ -544,15 +549,17 @@ validate_sqrtrem (void)
 #define TYPE_DIVMOD_1C        28
 #define TYPE_DIVREM_1         29
 #define TYPE_DIVREM_1C        30
-#define TYPE_PREINV_MOD_1     31
-#define TYPE_MOD_34LSUB1      32
+#define TYPE_PREINV_DIVREM_1  31
+#define TYPE_PREINV_MOD_1     32
+#define TYPE_MOD_34LSUB1      33
+#define TYPE_UDIV_QRNND       34
 
-#define TYPE_DIVEXACT_1       33
-#define TYPE_DIVEXACT_BY3     34
-#define TYPE_DIVEXACT_BY3C    35
+#define TYPE_DIVEXACT_1       35
+#define TYPE_DIVEXACT_BY3     36
+#define TYPE_DIVEXACT_BY3C    37
 
-#define TYPE_MODEXACT_1_ODD   36
-#define TYPE_MODEXACT_1C_ODD  37
+#define TYPE_MODEXACT_1_ODD   38
+#define TYPE_MODEXACT_1C_ODD  39
 
 #define TYPE_GCD              40
 #define TYPE_GCD_1            41
@@ -580,16 +587,18 @@ validate_sqrtrem (void)
 #define TYPE_MUL_N            61
 #define TYPE_SQR              62
 #define TYPE_UMUL_PPMM        63
+#define TYPE_UMUL_PPMM_R      64
 
 #define TYPE_SB_DIVREM_MN     70
 #define TYPE_TDIV_QR          71
 
 #define TYPE_SQRTREM          80
 #define TYPE_ZERO             81
+#define TYPE_GET_STR          82
 
 #define TYPE_EXTRA            90
 
-struct try_t  param[100];
+struct try_t  param[150];
 
 
 void
@@ -668,6 +677,7 @@ param_init (void)
   p->src[0] = 1;
   p->src[1] = 1;
   p->size2 = SIZE_2;
+  p->overlap = OVERLAP_NOT_SRC2;
   REFERENCE (refmpn_mul_2);
 
 
@@ -802,6 +812,11 @@ param_init (void)
   p->carry = CARRY_DIVISOR;
   REFERENCE (refmpn_divrem_1c);
 
+  p = &param[TYPE_PREINV_DIVREM_1];
+  COPY (TYPE_DIVREM_1);
+  p->size = SIZE_YES; /* ie. no size==0 */
+  REFERENCE (refmpn_preinv_divrem_1);
+
   p = &param[TYPE_PREINV_MOD_1];
   p->retval = 1;
   p->src[0] = 1;
@@ -813,7 +828,17 @@ param_init (void)
   p->src[0] = 1;
   VALIDATE (validate_mod_34lsub1);
 
-  
+  p = &param[TYPE_UDIV_QRNND];
+  p->retval = 1;
+  p->src[0] = 1;
+  p->dst[0] = 1;
+  p->dst_size[0] = SIZE_1;
+  p->divisor = DIVISOR_LIMB;
+  p->data = DATA_UDIV_QRNND;
+  p->overlap = OVERLAP_NONE;
+  REFERENCE (refmpn_udiv_qrnnd);
+
+
   p = &param[TYPE_DIVEXACT_1];
   p->dst[0] = 1;
   p->src[0] = 1;
@@ -933,6 +958,10 @@ param_init (void)
   p->overlap = OVERLAP_NONE;
   REFERENCE (refmpn_umul_ppmm);
 
+  p = &param[TYPE_UMUL_PPMM_R];
+  COPY (TYPE_UMUL_PPMM);
+  REFERENCE (refmpn_umul_ppmm_r);
+
 
   p = &param[TYPE_RSHIFT];
   p->retval = 1;
@@ -996,6 +1025,16 @@ param_init (void)
   p->dst[0] = 1;
   p->size = SIZE_ALLOW_ZERO;
   REFERENCE (refmpn_zero);
+
+  p = &param[TYPE_GET_STR];
+  p->src[0] = 1;
+  p->size = SIZE_ALLOW_ZERO;
+  p->dst[0] = 1;
+  p->dst[1] = 1;
+  p->dst_size[0] = SIZE_GET_STR;
+  p->dst_bytes[0] = 1;
+  p->overlap = OVERLAP_NONE;
+  REFERENCE (refmpn_get_str);
 
 #ifdef EXTRA_PARAM_INIT
   EXTRA_PARAM_INIT
@@ -1064,6 +1103,14 @@ void
 mpn_xnor_n_fun (mp_ptr rp, mp_srcptr s1, mp_srcptr s2, mp_size_t size)
 { mpn_xnor_n (rp, s1, s2, size); }
 
+mp_limb_t
+udiv_qrnnd_fun (mp_limb_t *remptr, mp_limb_t n1, mp_limb_t n0, mp_limb_t d)
+{
+  mp_limb_t  q;
+  udiv_qrnnd (q, *remptr, n1, n0, d);
+  return q;
+}
+
 void
 mpn_divexact_by3_fun (mp_ptr rp, mp_srcptr sp, mp_size_t size)
 { mpn_divexact_by3 (rp, sp, size); }
@@ -1120,7 +1167,6 @@ umul_ppmm_fun (mp_limb_t *lowptr, mp_limb_t m1, mp_limb_t m2)
 mp_limb_t
 mpn_umul_ppmm_fun (mp_limb_t *lowptr, mp_limb_t m1, mp_limb_t m2)
 {
-
   mp_limb_t  high;
   umul_ppmm (high, *lowptr, m1, m2);
   return high;
@@ -1190,6 +1236,9 @@ const struct choice_t choice_array[] = {
   { TRY_FUNFUN(mpn_xnor_n), TYPE_XNOR_N },
 
   { TRY(mpn_divrem_1),     TYPE_DIVREM_1 },
+#if USE_PREINV_DIVREM_1
+  { TRY(mpn_preinv_divrem_1), TYPE_PREINV_DIVREM_1 },
+#endif
   { TRY(mpn_mod_1),        TYPE_MOD_1 },
   { TRY(mpn_preinv_mod_1), TYPE_PREINV_MOD_1 },
 #if HAVE_NATIVE_mpn_divrem_1c
@@ -1199,6 +1248,8 @@ const struct choice_t choice_array[] = {
   { TRY(mpn_mod_1c),       TYPE_MOD_1C },
 #endif
   { TRY(mpn_mod_34lsub1),  TYPE_MOD_34LSUB1 },
+  { TRY_FUNFUN(udiv_qrnnd), TYPE_UDIV_QRNND, 2 },
+
   { TRY(mpn_divexact_1),          TYPE_DIVEXACT_1 },
   { TRY_FUNFUN(mpn_divexact_by3), TYPE_DIVEXACT_BY3 },
   { TRY(mpn_divexact_by3c),       TYPE_DIVEXACT_BY3C },
@@ -1254,6 +1305,8 @@ const struct choice_t choice_array[] = {
 
   { TRY_FUNFUN(MPN_ZERO), TYPE_ZERO },
 
+  { TRY(mpn_get_str),    TYPE_GET_STR },
+
 #ifdef EXTRA_ROUTINES
   EXTRA_ROUTINES
 #endif
@@ -1271,8 +1324,7 @@ mprotect_maybe (void *addr, size_t len, int prot)
 #if HAVE_MPROTECT
   if (mprotect (addr, len, prot) != 0)
     {
-      fprintf (stderr, "Cannot mprotect %p 0x%X 0x%X: %s\n",
-               addr, len, prot, strerror (errno));
+      fprintf (stderr, "Cannot mprotect %p 0x%X 0x%X\n", addr, len, prot);
       exit (1);
     }
 #else
@@ -1331,8 +1383,7 @@ malloc_region (struct region_t *r, mp_size_t n)
   p = mmap (NULL, nbytes, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
   if (p == (void *) -1)
     {
-      fprintf (stderr, "Cannot mmap %#x anon bytes: %s\n",
-               nbytes, strerror (errno));
+      fprintf (stderr, "Cannot mmap %#x anon bytes\n", nbytes);
       exit (1);
     }
 #else
@@ -1363,7 +1414,7 @@ mp_limb_t  carry_array[] = {
   4,
   CNST_LIMB(1) << 8,
   CNST_LIMB(1) << 16,
-  MP_LIMB_T_MAX
+  GMP_NUMB_MAX
 };
 int        carry_index;
 
@@ -1376,7 +1427,7 @@ int        carry_index;
    : 1)
 
 #define MPN_RANDOM_ALT(index,dst,size) \
-  (((index) & 1) ? mpn_random (dst, size) : mpn_random2 (dst, size))
+  (((index) & 1) ? refmpn_random (dst, size) : refmpn_random2 (dst, size))
 
 /* The dummy value after MPN_RANDOM_ALT ensures both sides of the ":" have
    the same type */
@@ -1394,9 +1445,9 @@ mp_limb_t  multiplier_array[] = {
   0, 1, 2, 3,
   CNST_LIMB(1) << 8,
   CNST_LIMB(1) << 16,
-  MP_LIMB_T_MAX - 2,
-  MP_LIMB_T_MAX - 1,
-  MP_LIMB_T_MAX
+  GMP_NUMB_MAX - 2,
+  GMP_NUMB_MAX - 1,
+  GMP_NUMB_MAX
 };
 int        multiplier_index;
 
@@ -1404,11 +1455,11 @@ mp_limb_t  divisor_array[] = {
   1, 2, 3,
   CNST_LIMB(1) << 8,
   CNST_LIMB(1) << 16,
-  MP_LIMB_T_HIGHBIT,
-  MP_LIMB_T_HIGHBIT + 1,
-  MP_LIMB_T_MAX - 2,
-  MP_LIMB_T_MAX - 1,
-  MP_LIMB_T_MAX
+  GMP_NUMB_HIGHBIT,
+  GMP_NUMB_HIGHBIT + 1,
+  GMP_NUMB_MAX - 2,
+  GMP_NUMB_MAX - 1,
+  GMP_NUMB_MAX
 };
 
 int        divisor_index;
@@ -1465,6 +1516,7 @@ struct overlap_t  *overlap, *overlap_limit;
 #define OVERLAP_COUNT                   \
   (tr->overlap & OVERLAP_NONE       ? 1 \
    : tr->overlap & OVERLAP_NOT_SRCS ? 3 \
+   : tr->overlap & OVERLAP_NOT_SRC2 ? 2 \
    : tr->dst[1]                     ? 9 \
    : tr->src[1]                     ? 4 \
    : tr->dst[0]                     ? 2 \
@@ -1476,6 +1528,8 @@ struct overlap_t  *overlap, *overlap_limit;
     overlap < overlap_limit;                            \
     overlap++)
 
+
+int  base = 10;
 
 #define T_RAND_COUNT  2
 int  t_rand;
@@ -1489,8 +1543,8 @@ t_random (mp_ptr ptr, mp_size_t n)
   switch (option_data) {
   case DATA_TRAND:
     switch (t_rand) {
-    case 0: mpn_random (ptr, n); break;
-    case 1: mpn_random2 (ptr, n); break;
+    case 0: refmpn_random (ptr, n); break;
+    case 1: refmpn_random2 (ptr, n); break;
     default: abort();
     }
     break;
@@ -1506,7 +1560,7 @@ t_random (mp_ptr ptr, mp_size_t n)
     refmpn_zero (ptr, n);
     break;
   case DATA_FFS:
-    refmpn_fill (ptr, n, (mp_limb_t) -1);
+    refmpn_fill (ptr, n, GMP_NUMB_MAX);
     break;
   case DATA_2FD:
     /* Special value 0x2FFF...FFFD, which divided by 3 gives 0xFFF...FFF,
@@ -1538,7 +1592,10 @@ print_each (const struct each_t *e)
     { 
       if (tr->dst[i])
         {
-          mpn_tracen ("   d[%d]", i, e->d[i].p, d[i].size);
+          if (tr->dst_bytes[i])
+            byte_tracen ("   d[%d]", i, e->d[i].p, d[i].size);
+          else
+            mpn_tracen ("   d[%d]", i, e->d[i].p, d[i].size);
           printf ("        located %p\n", e->d[i].p);
         }
     }
@@ -1637,14 +1694,28 @@ compare (void)
       if (! tr->dst[i])
         continue;
 
-      if (d[i].size != 0
-          && refmpn_cmp (ref.d[i].p, fun.d[i].p, d[i].size) != 0)
+      if (tr->dst_bytes[i])
         {
-          printf ("Different d[%d] data results, low diff at %ld, high diff at %ld\n",
-                  i,
-                  mpn_diff_lowest (ref.d[i].p, fun.d[i].p, d[i].size),
-                  mpn_diff_highest (ref.d[i].p, fun.d[i].p, d[i].size));
-          error = 1;
+          if (memcmp (ref.d[i].p, fun.d[i].p, d[i].size) != 0)
+            {
+              printf ("Different d[%d] data results, low diff at %ld, high diff at %ld\n",
+                      i,
+                      byte_diff_lowest (ref.d[i].p, fun.d[i].p, d[i].size),
+                      byte_diff_highest (ref.d[i].p, fun.d[i].p, d[i].size));
+              error = 1;
+            }
+        }
+      else
+        {
+          if (d[i].size != 0
+              && ! refmpn_equal_anynail (ref.d[i].p, fun.d[i].p, d[i].size))
+            {
+              printf ("Different d[%d] data results, low diff at %ld, high diff at %ld\n",
+                      i,
+                      mpn_diff_lowest (ref.d[i].p, fun.d[i].p, d[i].size),
+                      mpn_diff_highest (ref.d[i].p, fun.d[i].p, d[i].size));
+              error = 1;
+            }
         }
     }
 
@@ -1697,7 +1768,7 @@ call (struct each_t *e, tryfun_t function)
 
   case TYPE_MUL_2:
     e->retval = CALLING_CONVENTIONS (function)
-      (e->d[0].p, e->s[0].p, size, e->s[1].p[0], e->s[1].p[1]);
+      (e->d[0].p, e->s[0].p, size, e->s[1].p);
     break;
 
   case TYPE_AND_N:
@@ -1754,6 +1825,16 @@ call (struct each_t *e, tryfun_t function)
     e->retval = CALLING_CONVENTIONS (function)
       (e->d[0].p, size2, e->s[0].p, size, divisor, carry);
     break;
+  case TYPE_PREINV_DIVREM_1:
+    {
+      mp_limb_t  dinv;
+      unsigned   shift;
+      shift = refmpn_count_leading_zeros (divisor);
+      dinv = refmpn_invert_limb (divisor << shift);
+      e->retval = CALLING_CONVENTIONS (function)
+        (e->d[0].p, size2, e->s[0].p, size, divisor, dinv, shift);
+    }
+    break;
   case TYPE_MOD_1:
   case TYPE_MODEXACT_1_ODD:
     e->retval = CALLING_CONVENTIONS (function)
@@ -1770,6 +1851,10 @@ call (struct each_t *e, tryfun_t function)
     break;
   case TYPE_MOD_34LSUB1:
     e->retval = CALLING_CONVENTIONS (function) (e->s[0].p, size);
+    break;
+  case TYPE_UDIV_QRNND:
+    e->retval = CALLING_CONVENTIONS (function)
+      (e->d[0].p, e->s[0].p[1], e->s[0].p[0], divisor);
     break;
 
   case TYPE_SB_DIVREM_MN:
@@ -1880,6 +1965,10 @@ call (struct each_t *e, tryfun_t function)
     e->retval = CALLING_CONVENTIONS (function)
       (e->d[0].p, e->s[0].p[0], e->s[0].p[1]);
     break;
+  case TYPE_UMUL_PPMM_R:
+    e->retval = CALLING_CONVENTIONS (function)
+      (e->s[0].p[0], e->s[0].p[1], e->d[0].p);
+    break;
 
   case TYPE_LSHIFT:
   case TYPE_RSHIFT:
@@ -1903,6 +1992,38 @@ call (struct each_t *e, tryfun_t function)
 
   case TYPE_ZERO:
     CALLING_CONVENTIONS (function) (e->d[0].p, size);
+    break;
+
+  case TYPE_GET_STR:
+    {
+      size_t  sizeinbase, fill;
+      char    *dst;
+      MPN_SIZEINBASE (sizeinbase, e->s[0].p, size, base);
+      ASSERT_ALWAYS (sizeinbase <= d[0].size);
+      fill = d[0].size - sizeinbase;
+      if (d[0].high)
+        {
+          memset (e->d[0].p, 0xBA, fill);
+          dst = (char *) e->d[0].p + fill;
+        }
+      else
+        {
+          dst = (char *) e->d[0].p;
+          memset (dst + sizeinbase, 0xBA, fill);
+        }
+      if (POW2_P (base))
+        {
+          e->retval = CALLING_CONVENTIONS (function) (dst, base,
+                                                      e->s[0].p, size);
+        }
+      else
+        {
+          refmpn_copy (e->d[1].p, e->s[0].p, size);
+          e->retval = CALLING_CONVENTIONS (function) (dst, base,
+                                                      e->d[1].p, size);
+        }
+      refmpn_zero (e->d[1].p, size);  /* cloberred or unused */
+    }
     break;
 
 #ifdef EXTRA_CALL
@@ -1966,7 +2087,14 @@ pointer_setup (struct each_t *e)
       case SIZE_CEIL_HALF:
         d[i].size = (size+1)/2;
         break;
-        
+
+      case SIZE_GET_STR:
+        {
+          mp_limb_t ff = GMP_NUMB_MAX;
+          MPN_SIZEINBASE (d[i].size, &ff - (size-1), size, base);
+        }
+        break;
+
       default:
         printf ("Unrecognised dst_size type %d\n", tr->dst_size[i]);
         abort ();
@@ -1985,16 +2113,32 @@ pointer_setup (struct each_t *e)
 
       if (d[i].high)
         {
-          e->d[i].p = e->d[i].region.ptr + e->d[i].region.size
-            - d[i].size - d[i].align;
-          if (tr->overlap == OVERLAP_LOW_TO_HIGH)
-            e->d[i].p -= offset;
+          if (tr->dst_bytes[i])
+            {
+              e->d[i].p = (mp_ptr)
+                ((char *) (e->d[i].region.ptr + e->d[i].region.size)
+                 - d[i].size - d[i].align);
+            }
+          else
+            {
+              e->d[i].p = e->d[i].region.ptr + e->d[i].region.size
+                - d[i].size - d[i].align;
+              if (tr->overlap == OVERLAP_LOW_TO_HIGH)
+                e->d[i].p -= offset;
+            }
         }
       else
         {
-          e->d[i].p = e->d[i].region.ptr + d[i].align;
-          if (tr->overlap == OVERLAP_HIGH_TO_LOW)
-            e->d[i].p += offset;
+          if (tr->dst_bytes[i])
+            {
+              e->d[i].p = (mp_ptr) ((char *) e->d[i].region.ptr + d[i].align);
+            }
+          else
+            {
+              e->d[i].p = e->d[i].region.ptr + d[i].align;
+              if (tr->overlap == OVERLAP_HIGH_TO_LOW)
+                e->d[i].p += offset;
+            }
         }
     }
 
@@ -2054,7 +2198,7 @@ try_one (void)
   trap_location = TRAP_SETUPS;
 
   if (tr->divisor == DIVISOR_NORM)
-    divisor |= MP_LIMB_T_HIGHBIT;
+    divisor |= GMP_NUMB_HIGHBIT;
   if (tr->divisor == DIVISOR_ODD)
     divisor |= 1;
 
@@ -2079,6 +2223,11 @@ try_one (void)
           t_random (s[1].region.ptr, d[0].size);
           MPN_COPY (fun.d[0].p, s[1].region.ptr, d[0].size);
           MPN_COPY (ref.d[0].p, s[1].region.ptr, d[0].size);
+        }
+      else if (tr->dst_bytes[i])
+        {
+          memset (ref.d[i].p, 0xBA, d[i].size);
+          memset (fun.d[i].p, 0xBA, d[i].size);
         }
       else
         {
@@ -2132,10 +2281,14 @@ try_one (void)
         if (i == 1)
           {
             if (tr->size2)
-              s[i].p[size2-1] |= MP_LIMB_T_HIGHBIT;
+              s[i].p[size2-1] |= GMP_NUMB_HIGHBIT;
             else
-              s[i].p[size-1] |= MP_LIMB_T_HIGHBIT;
+              s[i].p[size-1] |= GMP_NUMB_HIGHBIT;
           }
+        break;
+
+      case DATA_UDIV_QRNND:
+        s[i].p[1] %= divisor;
         break;
       }
 
@@ -2217,8 +2370,8 @@ try_one (void)
 #define HIGH_ITERATION(w,n,cond) \
   for (w[n].high = 0; w[n].high <= HIGH_LIMIT(cond); w[n].high++)
 
-#define SHIFT_LIMIT                                             \
-  ((unsigned long) (tr->shift ? BITS_PER_MP_LIMB-1 : 1))
+#define SHIFT_LIMIT                                     \
+  ((unsigned long) (tr->shift ? GMP_NUMB_BITS -1 : 1))
 
 #define SHIFT_ITERATION                                 \
   for (shift = 1; shift <= SHIFT_LIMIT; shift++)
@@ -2450,7 +2603,7 @@ usage (const char *prog)
     -s s1-s2  range of sizes to test\n\
     -W        don't show the spinner (use this in gdb)\n\
     -z        disable mprotect() redzones\n\
-Default data is mpn_random() and mpn_random2().\n\
+Default data is refmpn_random() and refmpn_random2().\n\
 \n\
 Functions that can be tested:\n\
 ", prog, DEFAULT_REPETITIONS);
@@ -2480,7 +2633,7 @@ main (int argc, char *argv[])
   setbuf (stdout, NULL);
   setbuf (stderr, NULL);
 
-  /* always trace in hex, upper-case so can paste into bc */
+  /* default trace in hex, and in upper-case so can paste into bc */
   mp_trace_base = -16;
 
   param_init ();
@@ -2489,7 +2642,7 @@ main (int argc, char *argv[])
     unsigned  seed = 123;
     int   opt;
 
-    while ((opt = getopt(argc, argv, "19a:HpRr:S:s:Wz")) != EOF)
+    while ((opt = getopt(argc, argv, "19a:b:pRr:S:s:Wz")) != EOF)
       {
         switch (opt) {
         case '1':
@@ -2510,6 +2663,9 @@ main (int argc, char *argv[])
               fprintf (stderr, "unrecognised data option: %s\n", optarg);
               exit (1);
             }
+          break;
+        case 'b':
+          mp_trace_base = atoi (optarg);
           break;
         case 'p':
           option_print = 1;

@@ -1,6 +1,6 @@
 #! /usr/bin/perl -w
 
-# Copyright 2000, 2001 Free Software Foundation, Inc.
+# Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
 #
 # This file is part of the GNU MP Library.
 #
@@ -286,6 +286,7 @@ my @table =
        'ret'   => 'mp_limb_t',
        'args'  => 'mp_ptr wp, mp_srcptr xp, mp_srcptr yp, mp_size_t size',
        'speed' => 'SPEED_ROUTINE_MPN_BINARY_N',
+       'speed_flags'=> 'FLAG_R_OPTIONAL',
      },
      {
        'regexp'=> 'aors_n',
@@ -293,6 +294,7 @@ my @table =
        'ret'   => 'mp_limb_t',
        'args'  => 'mp_ptr wp, mp_srcptr xp, mp_srcptr yp, mp_size_t size',
        'speed' => 'SPEED_ROUTINE_MPN_BINARY_N',
+       'speed_flags'=> 'FLAG_R_OPTIONAL',
      },
      
      {
@@ -349,14 +351,25 @@ my @table =
        'carrys'=> [''],
        'speed' => 'SPEED_ROUTINE_MPN_COPY',
      },
-     
+
+     # mpn_preinv_divrem_1 is an optional extra entrypoint
      {
        'regexp'=> 'divrem_1',
+       'funs'  => ['divrem_1', 'preinv_divrem_1'],
        'ret'   => 'mp_limb_t',
-       'args'  => 'mp_ptr rp, mp_size_t xsize, mp_srcptr sp, mp_size_t size, mp_limb_t divisor',
-       'speed_flags' => 'FLAG_R',
+       'args_divrem_1' => 'mp_ptr rp, mp_size_t xsize, mp_srcptr sp, mp_size_t size, mp_limb_t divisor',
+       'args_preinv_divrem_1' => 'mp_ptr rp, mp_size_t xsize, mp_srcptr sp, mp_size_t size, mp_limb_t divisor, mp_limb_t inverse, unsigned shift',
+       'speed_flags'=> 'FLAG_R',
        'speed_suffixes' => ['f'],
      },
+     {
+       'regexp'=> 'pre_divrem_1',
+       'funs'  => ['preinv_divrem_1'],
+       'ret'   => 'mp_limb_t',
+       'args'  => 'mp_ptr qp, mp_size_t qxn, mp_srcptr ap, mp_size_t asize, mp_limb_t divisor, mp_limb_t inverse, int shift',
+       'speed_flags' => 'FLAG_R',
+     },
+
      {
        'regexp'=> 'divrem_2',
        'ret'   => 'mp_limb_t',
@@ -534,6 +547,16 @@ my @table =
      },
 
      {
+       # not for use with hppa reversed argument versions of mpn_umul_ppmm
+       'regexp'=> 'udiv',
+       'funs'  => ['udiv_qrnnd'],
+       'ret'   => 'mp_limb_t',
+       'args'  => 'mp_limb_t *remptr, mp_limb_t n1, mp_limb_t n0, mp_limb_t d',
+       'speed' => 'none',
+       'try-minsize' => 2,
+     },
+
+     {
        'regexp'=> 'mode1o',
        'funs'  => ['modexact_1_odd'],
        'ret'   => 'mp_limb_t',
@@ -561,8 +584,7 @@ my @table =
      {
        'regexp'=> 'mul_2',
        'ret'   => 'mp_limb_t',
-       'args'  => 'mp_ptr wp, mp_srcptr xp, mp_size_t size, mp_limb_t low, mp_limb_t high',
-       'speed' => 'SPEED_ROUTINE_MPN_UNARY_2',
+       'args'  => 'mp_ptr wp, mp_srcptr xp, mp_size_t size, mp_srcptr mult',
      },
      
      {
@@ -645,8 +667,9 @@ my @table =
 #else
 #define COUNT_LEADING_ZEROS_0_ALLOWED   0
 #endif
-  SPEED_ROUTINE_COUNT_LEADING_ZEROS_C ($fun (c, n),
-    COUNT_LEADING_ZEROS_0_ALLOWED)',
+  SPEED_ROUTINE_COUNT_ZEROS_A (1, COUNT_LEADING_ZEROS_0_ALLOWED);
+  $fun (c, n);
+  SPEED_ROUTINE_COUNT_ZEROS_B ()',
        'speed_flags'=> 'FLAG_R_OPTIONAL',
        'try'   => 'none',
      },
@@ -656,7 +679,10 @@ my @table =
        'ret'   => 'unsigned',
        'args'  => 'mp_limb_t',
        'attrib'=> 'ATTRIBUTE_CONST',
-       'macro-speed' => 'SPEED_ROUTINE_COUNT_TRAILING_ZEROS_C ($fun(c,n), 0)',
+       'macro-speed' => '
+  SPEED_ROUTINE_COUNT_ZEROS_A (0, 0);
+  $fun (c, n);
+  SPEED_ROUTINE_COUNT_ZEROS_B ()',
        'speed_flags' => 'FLAG_R_OPTIONAL',
        'try'   => 'none',
      },
@@ -685,10 +711,9 @@ my @table =
      # special for use during development
      {
        'regexp'=> 'back',
-       'funs'  => ['back_to'],
+       'funs'  => ['back_to_back'],
        'ret'   => 'void',
        'args'  => 'void',
-       'suffix'=> 'back',
        'pic'   => 'no',
        'try'   => 'none',
        'speed_flags'=> 'FLAG_NODATA',
@@ -909,8 +934,6 @@ foreach my $file_full (@files) {
     } elsif ($suffix =~ /([^_]*_)*([^_]+)$/) {
       $suffix = $2;
     }
-  } elsif (defined $t->{'suffix'}) {
-    $suffix = $t->{'suffix'};
   } else {
     die "Can't determine suffix for: $file_full (path $path)\n";
   }
@@ -950,8 +973,15 @@ foreach my $file_full (@files) {
       
       my $renaming;
       foreach my $fun (@{$funs}) {
+        if ($mpX eq 'mpn_' && $lang eq '.c') {
+          $renaming .= "\t\t-DHAVE_NATIVE_mpn_$fun=1 \\\n";
+        }
+
+        # The carry-in variant is with a "c" appended, unless there's a "_1"
+        # somewhere, eg. "modexact_1_odd", in which case that becomes "_1c".
 	my $fun_carry = $fun;
 	if (! ($fun_carry =~ s/_1/_1c/)) { $fun_carry = "${fun}c"; }
+
 	$renaming .=
 	    "\t\t-D__g$mpX$fun=$mpX${fun}_$suffix$pic->{'suffix'} \\\n" .
 	    "\t\t-D__g$mpX$fun_carry=$mpX${fun_carry}_$suffix$pic->{'suffix'} \\\n";
@@ -1078,7 +1108,7 @@ EOF
           print "fun_carry $fun_carry\n" if $opt{'t'};
 		    
 	  if ($lang =~ /\.(asm|S)/
-	      && ! grep(m"PROLOGUE.*$mpX$fun_carry",@file_contents)) {
+	      && ! grep(m"PROLOGUE\((.* )?$mpX$fun_carry[ )]",@file_contents)) {
 	    print "no PROLOGUE $mpX$fun_carry\n" if $opt{'t'};
 	    next;
 	  }

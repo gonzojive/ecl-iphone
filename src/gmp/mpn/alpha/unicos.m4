@@ -3,8 +3,8 @@ divert(-1)
 dnl  m4 macros for alpha assembler on unicos.
 
 
-dnl  Copyright 2000 Free Software Foundation, Inc.
-dnl 
+dnl  Copyright 2000, 2002 Free Software Foundation, Inc.
+dnl
 dnl  This file is part of the GNU MP Library.
 dnl
 dnl  The GNU MP Library is free software; you can redistribute it and/or
@@ -43,17 +43,20 @@ m4_assert_numargs(2)
 $1:	.t_floating $2
 	.endp')
 
-define(`PROLOGUE',
-m4_assert_numargs(1)
-`	.stack	192		; What does this mean?  Only Cray knows.
+dnl  Called: PROLOGUE_cpu(GSYM_PREFIX`'foo[,gp|noalign])
+dnl          EPILOGUE_cpu(GSYM_PREFIX`'foo)
+
+define(`PROLOGUE_cpu',
+m4_assert_numargs_range(1,2)
+`ifelse(`$2',gp,,
+`ifelse(`$2',noalign,,
+`ifelse(`$2',,,`m4_error(`Unrecognised PROLOGUE parameter
+')')')')dnl
+	.stack	192		; What does this mean?  Only Cray knows.
 	.psect	$1@code,code,cache
 $1::')
 
-define(`PROLOGUE_GP',
-m4_assert_numargs(1)
-`PROLOGUE($1)')
-
-define(`EPILOGUE',
+define(`EPILOGUE_cpu',
 m4_assert_numargs(1)
 `	.endp')
 

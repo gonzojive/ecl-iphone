@@ -1,6 +1,6 @@
 ## Process this file with automake to generate Makefile.in
 
-# Copyright 2000, 2001 Free Software Foundation, Inc.
+# Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
 #
 # This file is part of the GNU MP Library.
 #
@@ -28,14 +28,16 @@ EXTRA_DIST = alpha.asm pentium.asm sparcv9.asm hppa.asm hppa2.asm hppa2w.asm ia6
 noinst_HEADERS = speed.h
 
 
-EXTRA_LTLIBRARIES = libspeed.la libdummy.la
+EXTRA_LTLIBRARIES = libspeed.la
 
 libspeed_la_SOURCES =							\
   common.c divrem1div.c divrem1inv.c divrem2div.c divrem2inv.c		\
   freq.c gcd_bin.c gcd_finda_gen.c					\
   gcdext_single.c gcdext_double.c gcdextod.c gcdextos.c			\
+  jacbase1.c jacbase2.c jacbase3.c					\
   mod_1_div.c mod_1_inv.c modlinv.c mul_n_mpn.c mul_n_open.c		\
-  noop.c powm_mod.c powm_redc.c time.c					\
+  noop.c powm_mod.c powm_redc.c pre_divrem_1.c				\
+  set_strb.c set_strs.c time.c						\
   sb_div.c sb_inv.c
 
 libspeed_la_DEPENDENCIES = $(SPEED_CYCLECOUNTER_OBJ) \
@@ -45,9 +47,6 @@ libspeed_la_LDFLAGS = -static
 
 $(top_builddir)/tests/libtests.la:
 	cd $(top_builddir)/tests; $(MAKE) $(AM_MAKEFLAGS) libtests.la
-
-# create an ansi2knr rule for sqr_basecase.c in case it's recompiled
-nodist_libdummy_la_SOURCES = sqr_basecase.c
 
 
 # The library code is faster static than shared on some systems, so do
@@ -71,7 +70,7 @@ speed_LDFLAGS = -static
 
 speed_dynamic_SOURCES = speed.c
 
-speed_ext_SOURCES = speed.c
+speed_ext_SOURCES = speed-ext.c
 speed_ext_LDFLAGS = -static
 
 tuneup_SOURCES = tuneup.c
@@ -115,8 +114,8 @@ DISTCLEANFILES = sqr_basecase.c  $(MANY_DISTCLEAN)
 # recompiled object will be rebuilt if that file changes.
 
 TUNE_MPN_SRCS = $(TUNE_MPN_SRCS_BASIC) divrem_1.c mod_1.c
-TUNE_MPN_SRCS_BASIC = dc_divrem_n.c divrem_2.c gcd.c mul_n.c mul_fft.c mul.c \
-  sb_divrem_mn.c tdiv_qr.c
+TUNE_MPN_SRCS_BASIC = dc_divrem_n.c divrem_2.c gcd.c get_str.c \
+  mul_n.c mul_fft.c mul.c sb_divrem_mn.c tdiv_qr.c
 
 $(TUNE_MPN_SRCS_BASIC):
 	for i in $(TUNE_MPN_SRCS_BASIC); do \
@@ -135,7 +134,7 @@ mod_1.c:
 	echo "#include \"mpn/generic/mod_1.c\""     >>mod_1.c
 
 sqr_asm.asm: $(top_builddir)/mpn/sqr_basecase.asm
-	echo 'define(KARATSUBA_SQR_THRESHOLD_OVERRIDE,KARATSUBA_SQR_THRESHOLD_MAX)' >sqr_asm.asm
+	echo 'define(SQR_KARATSUBA_THRESHOLD_OVERRIDE,SQR_KARATSUBA_THRESHOLD_MAX)' >sqr_asm.asm
 	echo 'include(../mpn/sqr_basecase.asm)' >>sqr_asm.asm
 
 

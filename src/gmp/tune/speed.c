@@ -1,6 +1,6 @@
 /* Speed measuring program.
 
-Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
+Copyright 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -90,6 +90,15 @@ SPEED_EXTRA_PROTOS2
       (ptr)[__i] = (n);                 \
   } while (0)
 
+
+#if BITS_PER_MP_LIMB == 32
+#define GMP_NUMB_0xAA  (CNST_LIMB(0xAAAAAAAA) & GMP_NUMB_MASK)
+#endif
+#if BITS_PER_MP_LIMB == 64
+#define GMP_NUMB_0xAA  (CNST_LIMB(0xAAAAAAAAAAAAAAAA) & GMP_NUMB_MASK)
+#endif
+
+
 #define CMP_ABSOLUTE     1
 #define CMP_RATIO        2
 #define CMP_DIFFERENCE   3
@@ -104,8 +113,9 @@ int  option_unit = UNIT_SECONDS;
 #define DATA_RANDOM   1
 #define DATA_RANDOM2  2
 #define DATA_ZEROS    3
-#define DATA_FFS      4
-#define DATA_2FD      5
+#define DATA_AAS      4
+#define DATA_FFS      5
+#define DATA_2FD      6
 int  option_data = DATA_RANDOM;
 
 int        option_square = 0;
@@ -142,17 +152,15 @@ const struct routine_t {
   { "noop_wxs",          speed_noop_wxs             },
   { "noop_wxys",         speed_noop_wxys            },
 
-  { "mpn_add_n",         speed_mpn_add_n            },
-  { "mpn_sub_n",         speed_mpn_sub_n            },
-  { "mpn_add_n_self",    speed_mpn_add_n_self       },
-  { "mpn_add_n_inplace", speed_mpn_add_n_inplace    },
+  { "mpn_add_n",         speed_mpn_add_n,     FLAG_R_OPTIONAL },
+  { "mpn_sub_n",         speed_mpn_sub_n,     FLAG_R_OPTIONAL },
 
   { "mpn_addmul_1",      speed_mpn_addmul_1,  FLAG_R },
   { "mpn_submul_1",      speed_mpn_submul_1,  FLAG_R },
   { "mpn_mul_1",         speed_mpn_mul_1,     FLAG_R },
   { "mpn_mul_1_inplace", speed_mpn_mul_1_inplace, FLAG_R },
 #if HAVE_NATIVE_mpn_mul_2
-  { "mpn_mul_2",         speed_mpn_mul_2             },
+  { "mpn_mul_2",         speed_mpn_mul_2,     FLAG_R },
 #endif
 
   { "mpn_divrem_1",      speed_mpn_divrem_1,  FLAG_R },
@@ -165,6 +173,8 @@ const struct routine_t {
 #if HAVE_NATIVE_mpn_mod_1c
   { "mpn_mod_1c",        speed_mpn_mod_1c,    FLAG_R },
 #endif
+  { "mpn_preinv_divrem_1",  speed_mpn_preinv_divrem_1,  FLAG_R },
+  { "mpn_preinv_divrem_1f", speed_mpn_preinv_divrem_1f, FLAG_R },
   { "mpn_preinv_mod_1",  speed_mpn_preinv_mod_1, FLAG_R },
 
   { "mpn_divrem_1_div",  speed_mpn_divrem_1_div,  FLAG_R },
@@ -199,14 +209,14 @@ const struct routine_t {
   { "mpn_lshift",        speed_mpn_lshift, FLAG_R   },
   { "mpn_rshift",        speed_mpn_rshift, FLAG_R   },
 
-  { "mpn_and_n",         speed_mpn_and_n            },
-  { "mpn_andn_n",        speed_mpn_andn_n           },
-  { "mpn_nand_n",        speed_mpn_nand_n           },
-  { "mpn_ior_n",         speed_mpn_ior_n            },
-  { "mpn_iorn_n",        speed_mpn_iorn_n           },
-  { "mpn_nior_n",        speed_mpn_nior_n           },
-  { "mpn_xor_n",         speed_mpn_xor_n            },
-  { "mpn_xnor_n",        speed_mpn_xnor_n           },
+  { "mpn_and_n",         speed_mpn_and_n,  FLAG_R_OPTIONAL },
+  { "mpn_andn_n",        speed_mpn_andn_n, FLAG_R_OPTIONAL },
+  { "mpn_nand_n",        speed_mpn_nand_n, FLAG_R_OPTIONAL },
+  { "mpn_ior_n",         speed_mpn_ior_n,  FLAG_R_OPTIONAL },
+  { "mpn_iorn_n",        speed_mpn_iorn_n, FLAG_R_OPTIONAL },
+  { "mpn_nior_n",        speed_mpn_nior_n, FLAG_R_OPTIONAL },
+  { "mpn_xor_n",         speed_mpn_xor_n,  FLAG_R_OPTIONAL },
+  { "mpn_xnor_n",        speed_mpn_xnor_n, FLAG_R_OPTIONAL },
   { "mpn_com_n",         speed_mpn_com_n            },
 
   { "mpn_popcount",      speed_mpn_popcount         },
@@ -230,6 +240,9 @@ const struct routine_t {
 
   { "mpz_jacobi",        speed_mpz_jacobi           },
   { "mpn_jacobi_base",   speed_mpn_jacobi_base      },
+  { "mpn_jacobi_base_1", speed_mpn_jacobi_base_1    },
+  { "mpn_jacobi_base_2", speed_mpn_jacobi_base_2    },
+  { "mpn_jacobi_base_3", speed_mpn_jacobi_base_3    },
 
   { "mpn_mul_basecase",  speed_mpn_mul_basecase, FLAG_R_OPTIONAL },
   { "mpn_sqr_basecase",  speed_mpn_sqr_basecase     },
@@ -256,7 +269,10 @@ const struct routine_t {
   { "mpn_toom3_sqr_n_open",  speed_mpn_toom3_sqr_n_open  },
 
   { "mpn_get_str",       speed_mpn_get_str,  FLAG_R_OPTIONAL },
-  { "mpn_set_str",       speed_mpn_set_str,  FLAG_R_OPTIONAL },
+
+  { "mpn_set_str",          speed_mpn_set_str,          FLAG_R_OPTIONAL },
+  { "mpn_set_str_basecase", speed_mpn_set_str_basecase, FLAG_R_OPTIONAL },
+  { "mpn_set_str_subquad",  speed_mpn_set_str_subquad,  FLAG_R_OPTIONAL },
 
   { "mpn_sqrtrem",       speed_mpn_sqrtrem          },
 
@@ -336,7 +352,7 @@ const struct routine_t {
 
 struct choice_t {
   const struct routine_t  *p;
-  int                     r;
+  mp_limb_t               r;
   double                  scale;
   double                  time;
   int                     no_time;
@@ -360,11 +376,14 @@ data_fill (mp_ptr ptr, mp_size_t size)
   case DATA_ZEROS:
     MPN_ZERO (ptr, size);
     break;
+  case DATA_AAS:
+    MPN_FILL (ptr, size, GMP_NUMB_0xAA);
+    break;
   case DATA_FFS:
-    MPN_FILL (ptr, size, MP_LIMB_T_MAX);
+    MPN_FILL (ptr, size, GMP_NUMB_MAX);
     break;
   case DATA_2FD:
-    MPN_FILL (ptr, size, MP_LIMB_T_MAX);
+    MPN_FILL (ptr, size, GMP_NUMB_MAX);
     ptr[0] -= 2;
     break;
   default:
@@ -688,16 +707,21 @@ run_gnuplot (int argc, char *argv[])
 }
 
 
-/* Return a long with n many one bits (starting from the least significant) */
+/* Return a limb with n many one bits (starting from the least significant) */
 
 #define LIMB_ONES(n) \
-  ((n) == BITS_PER_MP_LIMB ? -1L : (n) == 0 ? 0L : (1L << (n)) - 1)
+  ((n) == BITS_PER_MP_LIMB ? MP_LIMB_T_MAX      \
+    : (n) == 0 ? CNST_LIMB(0)                   \
+    : (CNST_LIMB(1) << (n)) - 1)
 
 mp_limb_t
 r_string (const char *s)
 {
   const char  *s_orig = s;
   long        n;
+
+  if (strcmp (s, "aas") == 0)
+    return GMP_NUMB_0xAA;
 
   {
     mpz_t      z;
@@ -845,7 +869,7 @@ Times are in seconds, accuracy is shown.\n\
    -C         show times in cycles per limb\n\
    -u         print resource usage (memory) at end\n\
    -P name    output plot files \"name.gnuplot\" and \"name.data\"\n\
-   -a <type>  use given data: random(default), random2, zeros, ffs\n\
+   -a <type>  use given data: random(default), random2, zeros, aas, ffs, 2fd\n\
    -x, -y, -w, -W <align>  specify data alignments, sources and dests\n\
    -o addrs   print addresses of data blocks\n\
 \n\
@@ -877,8 +901,9 @@ The available routines are as follows.\n\
   printf ("\n\
 Routines with a \".r\" need an extra parameter, for example mpn_lshift.6\n\
 r should be in decimal, or use 0xN for hexadecimal.\n\
-Special forms for r are Nbits for a random N bit number, and Nones for N one\n\
-bits.\n\
+\n\
+Special forms for r are \"<N>bits\" for a random N bit number, \"<N>ones\" for\n\
+N one bits, or \"aas\" for 0xAA..AA.\n\
 \n\
 Times for sizes out of the range accepted by a routine are shown as 0.\n\
 The fastest routine at each size is marked with a # (free form output only).\n\
@@ -911,6 +936,7 @@ main (int argc, char *argv[])
         if (strcmp (optarg, "random") == 0)       option_data = DATA_RANDOM;
         else if (strcmp (optarg, "random2") == 0) option_data = DATA_RANDOM2;
         else if (strcmp (optarg, "zeros") == 0)   option_data = DATA_ZEROS;
+        else if (strcmp (optarg, "aas") == 0)     option_data = DATA_AAS;
         else if (strcmp (optarg, "ffs") == 0)     option_data = DATA_FFS;
         else if (strcmp (optarg, "2fd") == 0)     option_data = DATA_2FD;
         else
@@ -1092,7 +1118,7 @@ main (int argc, char *argv[])
       printf (", precision %d units of %.2e secs",
               speed_precision, speed_unittime);
       
-      if (speed_cycletime == 1.0)
+      if (speed_cycletime == 1.0 || speed_cycletime == 0.0)
         printf (", CPU freq unknown\n");
       else
         printf (", CPU freq %.2f MHz\n", 1e-6/speed_cycletime);

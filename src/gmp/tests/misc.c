@@ -1,6 +1,6 @@
 /* Miscellaneous test program support routines.
 
-Copyright 2000, 2001 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -215,6 +215,36 @@ mpn_diff_highest (mp_srcptr p1, mp_srcptr p2, mp_size_t size)
 }
 
 
+/* Find least significant byte position where p1,size and p2,size differ.  */
+mp_size_t
+byte_diff_lowest (const void *p1, const void *p2, mp_size_t size)
+{
+  mp_size_t  i;
+
+  for (i = 0; i < size; i++)
+    if (((const char *) p1)[i] != ((const char *) p2)[i])
+      return i;
+
+  /* no differences */
+  return -1;
+}
+
+
+/* Find most significant limb position where p1,size and p2,size differ.  */
+mp_size_t
+byte_diff_highest (const void *p1, const void *p2, mp_size_t size)
+{
+  mp_size_t  i;
+
+  for (i = size-1; i >= 0; i--)
+    if (((const char *) p1)[i] != ((const char *) p2)[i])
+      return i;
+
+  /* no differences */
+  return -1;
+}
+
+
 void
 mpz_set_str_or_abort (mpz_ptr z, const char *str, int base)
 {
@@ -251,9 +281,6 @@ mpf_set_str_or_abort (mpf_ptr f, const char *str, int base)
     }
 }
 
-
-/* requires n!=0 */
-#define POW2_P(n)  (((n)&-(n)) == (n))
 
 /* Whether the absolute value of z is a power of 2. */
 int
@@ -332,7 +359,13 @@ mpz_negrandom (mpz_ptr rop, gmp_randstate_t rstate)
 mp_limb_t
 urandom (void)
 {
+#if GMP_NAIL_BITS == 0
   mp_limb_t  n;
   _gmp_rand (&n, RANDS, BITS_PER_MP_LIMB);
   return n;
+#else
+  mp_limb_t n[2];
+  _gmp_rand (n, RANDS, BITS_PER_MP_LIMB);
+  return n[0] + (n[1] << GMP_NUMB_BITS);
+#endif
 }

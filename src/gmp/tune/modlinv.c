@@ -1,7 +1,7 @@
 /* Alternate implementations of modlimb_invert to compare speeds. */
 
 /*
-Copyright 2000 Free Software Foundation, Inc.
+Copyright 2000, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -98,7 +98,7 @@ MA 02111-1307, USA.
   do {                                          \
     mp_limb_t  __n = (n);                       \
     mp_limb_t  __rem = (1 - __n) >> 1;          \
-    mp_limb_t  __inv = MP_LIMB_T_HIGHBIT;       \
+    mp_limb_t  __inv = GMP_LIMB_HIGHBIT;       \
     int        __count;                         \
                                                 \
     ASSERT ((__n & 1) == 1);                    \
@@ -109,7 +109,7 @@ MA 02111-1307, USA.
         __inv >>= 1;                            \
         if (__rem & 1)                          \
           {                                     \
-            __inv |= MP_LIMB_T_HIGHBIT;         \
+            __inv |= GMP_LIMB_HIGHBIT;         \
             __rem -= __n;                       \
           }                                     \
         __rem >>= 1;                            \
@@ -128,7 +128,7 @@ MA 02111-1307, USA.
   do {                                                                  \
     mp_limb_t  __n = (n);                                               \
     mp_limb_t  __rem = (1 - __n) >> 1;                                  \
-    mp_limb_t  __inv = MP_LIMB_T_HIGHBIT;                               \
+    mp_limb_t  __inv = GMP_LIMB_HIGHBIT;                               \
     mp_limb_t  __lowbit;                                                \
     int        __count;                                                 \
                                                                         \

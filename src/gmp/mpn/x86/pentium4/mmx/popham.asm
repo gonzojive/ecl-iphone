@@ -1,10 +1,7 @@
 dnl  Intel Pentium 4 mpn_popcount, mpn_hamdist -- population count and
 dnl  hamming distance.
-dnl 
-dnl  P4: popcount 8.5 cycles/limb
-dnl      hamdist  9.5 cycles/limb
 
-dnl  Copyright 2000, 2001 Free Software Foundation, Inc.
+dnl  Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -24,6 +21,10 @@ dnl  not, write to the Free Software Foundation, Inc., 59 Temple Place -
 dnl  Suite 330, Boston, MA 02111-1307, USA.
 
 include(`../config.m4')
+
+
+C P4: popcount 8.5 cycles/limb
+C     hamdist  9.5 cycles/limb
 
 
 C unsigned long mpn_popcount (mp_srcptr src, mp_size_t size);
@@ -69,13 +70,13 @@ ifdef(`PIC',,`
 	dnl  non-PIC
 	RODATA
 	ALIGN(8)
-LF(M4_function,rodata_AAAAAAAAAAAAAAAA):
+L(rodata_AAAAAAAAAAAAAAAA):
 	.long	0xAAAAAAAA
 	.long	0xAAAAAAAA
-LF(M4_function,rodata_3333333333333333):
+L(rodata_3333333333333333):
 	.long	0x33333333
 	.long	0x33333333
-LF(M4_function,rodata_0F0F0F0F0F0F0F0F):
+L(rodata_0F0F0F0F0F0F0F0F):
 	.long	0x0F0F0F0F
 	.long	0x0F0F0F0F
 ')

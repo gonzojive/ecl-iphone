@@ -1,6 +1,10 @@
 /* mpn_mod_34lsub1 -- remainder modulo 2^(BITS_PER_MP_LIMB*3/4)-1.
 
-Copyright 2000, 2001 Free Software Foundation, Inc.
+   THE FUNCTIONS IN THIS FILE ARE FOR INTERNAL USE ONLY.  THEY'RE ALMOST
+   CERTAIN TO BE SUBJECT TO INCOMPATIBLE CHANGES OR DISAPPEAR COMPLETELY IN
+   FUTURE GNU MP RELEASES.
+
+Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -60,7 +64,7 @@ MA 02111-1307, USA. */
     a += l;             \
     c += (a < l);       \
   } while (0)
- 
+
 mp_limb_t
 mpn_mod_34lsub1 (mp_srcptr p, mp_size_t n)
 {
@@ -86,7 +90,7 @@ mpn_mod_34lsub1 (mp_srcptr p, mp_size_t n)
     {
       ADD (c0, a0, p[0]);
       if (n != -2)
-        ADD (c1, a1, p[1]);
+	ADD (c1, a1, p[1]);
     }
 
   return

@@ -1,7 +1,7 @@
 /* mpz_powm(res,base,exp,mod) -- Set RES to (base**exp) mod MOD.
 
-Copyright 1991, 1993, 1994, 1996, 1997, 2000, 2001 Free Software Foundation,
-Inc.  Contributed by Paul Zimmermann.
+Copyright 1991, 1993, 1994, 1996, 1997, 2000, 2001, 2002 Free Software
+Foundation, Inc.  Contributed by Paul Zimmermann.
 
 This file is part of the GNU MP Library.
 
@@ -134,14 +134,14 @@ phi (mp_limb_t t)
    using usual reduction it costs 3*K(n), where K(n) is the cost of a
    multiplication using Karatsuba, and a division is assumed to cost 2*K(n),
    for example using Burnikel-Ziegler's algorithm. This gives a theoretical
-   threshold of a*KARATSUBA_SQR_THRESHOLD, with a=(3/2)^(1/(2-ln(3)/ln(2))) ~
+   threshold of a*SQR_KARATSUBA_THRESHOLD, with a=(3/2)^(1/(2-ln(3)/ln(2))) ~
    2.66.  */
 /* For now, also disable REDC when MOD is even, as the inverse can't handle
    that.  At some point, we might want to make the code faster for that case,
    perhaps using CRR.  */
 
 #ifndef POWM_THRESHOLD
-#define POWM_THRESHOLD  ((8 * KARATSUBA_SQR_THRESHOLD) / 3)
+#define POWM_THRESHOLD  ((8 * SQR_KARATSUBA_THRESHOLD) / 3)
 #endif
 
 #define HANDLE_NEGATIVE_EXPONENT 1
@@ -205,7 +205,7 @@ pow (mpz_srcptr b, mpz_srcptr e, mpz_srcptr m, mpz_ptr r)
 
 #if REDUCE_EXPONENT
   /* Reduce exponent by dividing it by phi(m) when m small.  */
-  if (mn == 1 && mp[0] < 0x7fffffffL && en * BITS_PER_MP_LIMB > 150)
+  if (mn == 1 && mp[0] < 0x7fffffffL && en * GMP_NUMB_BITS > 150)
     {
       MPZ_TMP_INIT (new_e, 2);
       mpz_mod_ui (new_e, e, phi (mp[0]));
@@ -225,6 +225,7 @@ pow (mpz_srcptr b, mpz_srcptr e, mpz_srcptr m, mpz_ptr r)
       /* Normalize m (i.e. make its most significant bit set) as required by
 	 division functions below.  */
       count_leading_zeros (m_zero_cnt, mp[mn - 1]);
+      m_zero_cnt -= GMP_NAIL_BITS;
       if (m_zero_cnt != 0)
 	{
 	  mp_ptr new_mp;
@@ -237,7 +238,8 @@ pow (mpz_srcptr b, mpz_srcptr e, mpz_srcptr m, mpz_ptr r)
   /* Determine optimal value of k, the number of exponent bits we look at
      at a time.  */
   count_leading_zeros (e_zero_cnt, PTR(e)[en - 1]);
-  enb = en * BITS_PER_MP_LIMB - e_zero_cnt; /* number of bits of exponent */
+  e_zero_cnt -= GMP_NAIL_BITS;
+  enb = en * GMP_NUMB_BITS - e_zero_cnt; /* number of bits of exponent */
   k = 1;
   K = 2;
   while (2 * enb > K * (2 + k * (3 + k)))
@@ -314,7 +316,7 @@ pow (mpz_srcptr b, mpz_srcptr e, mpz_srcptr m, mpz_ptr r)
   ep = PTR (e);
   i = en - 1;				/* current index */
   c = ep[i];				/* current limb */
-  sh = BITS_PER_MP_LIMB - e_zero_cnt;	/* significant bits in ep[i] */
+  sh = GMP_NUMB_BITS - e_zero_cnt;	/* significant bits in ep[i] */
   sh -= k;				/* index of lower bit of ep[i] to take into account */
   if (sh < 0)
     {					/* k-sh extra bits are needed */
@@ -322,7 +324,7 @@ pow (mpz_srcptr b, mpz_srcptr e, mpz_srcptr m, mpz_ptr r)
 	{
 	  i--;
 	  c <<= (-sh);
-	  sh += BITS_PER_MP_LIMB;
+	  sh += GMP_NUMB_BITS;
 	  c |= ep[i] >> sh;
 	}
     }
@@ -353,7 +355,7 @@ pow (mpz_srcptr b, mpz_srcptr e, mpz_srcptr m, mpz_ptr r)
 	    {
 	      i--;
 	      c <<= (-sh);
-	      sh += BITS_PER_MP_LIMB;
+	      sh += GMP_NUMB_BITS;
 	      c |= ep[i] >> sh;
 	    }
 	  else
@@ -382,7 +384,7 @@ pow (mpz_srcptr b, mpz_srcptr e, mpz_srcptr m, mpz_ptr r)
 	  else
 	    {
 	      i--;
-	      sh = BITS_PER_MP_LIMB - 1;
+	      sh = GMP_NUMB_BITS - 1;
 	      c = (c << 1) + (ep[i] >> sh);
 	    }
 	}

@@ -1,6 +1,6 @@
 /* Test mpz_sizeinbase.
 
-Copyright 2001 Free Software Foundation, Inc.
+Copyright 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -35,8 +35,8 @@ mpz_fake_bits (mpz_ptr z, unsigned long totbits)
   unsigned long     zero_bits, zero_limbs;
 
   zero_bits = totbits - 1;
-  zero_limbs = zero_bits / BITS_PER_MP_LIMB;
-  zero_bits %= BITS_PER_MP_LIMB;
+  zero_limbs = zero_bits / GMP_NUMB_BITS;
+  zero_bits %= GMP_NUMB_BITS;
 
   SIZ(z) = zero_limbs + 1;
   PTR(z) = (&n) - (SIZ(z) - 1);
@@ -80,7 +80,10 @@ main (void)
 {
   tests_start ();
 
-  check_sample ();
+  /* Disabled due to the bogosity of trying to fake an _mp_d pointer to
+     below an object.  Has been seen to fail on a hppa system.  */
+
+  /* check_sample (); */
 
   tests_end ();
   exit (0);

@@ -1,6 +1,6 @@
-dnl  HP-PA 2.0N 64-bit mpn_udiv_qrnnd.
+dnl  HP-PA 2.0 64-bit mpn_udiv_qrnnd.
 
-dnl  Copyright 2001 Free Software Foundation, Inc.
+dnl  Copyright 2001, 2002 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 
@@ -21,13 +21,8 @@ dnl  MA 02111-1307, USA.
 
 include(`../config.m4')
 
-C This runs at about 290 cycles, meaning each bits takes 4.5 cycles to develop.
-C It would probably be possible to optimize it to run at close to 3 cycles.
-C The current code sufffers from its 4 instruction recurrence.  Try merging
-C     add n1,%r22,n1
-C into
-C     shrpd n1,n0,63,n1
-C to see if that helps.
+C This runs at about 280 cycles on both PA8000 and PA8500, corresponding to a
+C bit more than 4 cycles/bit.
 
 C INPUT PARAMETERS
 define(`n1',`%r26')
@@ -39,32 +34,36 @@ define(`q',`%r28')
 define(`dn',`%r29')
 
 define(`old_divstep',
-       `add,dc		$2,$2,$2
-	add,dc		$1,$1,$1
-	sub,*<<		$1,$3,%r22
-	copy		%r22,$1')
+       `add,dc		n0,n0,n0
+	add,dc		n1,n1,n1
+	sub,*<<		n1,d,%r22
+	copy		%r22,n1')
 
 define(`divstep',
-       `shrpd		n1,n0,63,n1
-	add,l		n0,n0,n0
-	cmpclr,*<<	n1,d,%r22
-	copy		dn,%r22
-	add		n1,%r22,n1
+       `add		n0,n0,n0
+	add,dc		n1,n1,n1
+	sub		n1,d,%r1
 	add,dc		q,q,q
+	cmpclr,*<<	n1,d,%r0
+	copy		%r1,n1
 ')
 
-	.level	2.0N
+ifdef(`HAVE_ABI_2_0w',
+`	.level	2.0W
+',`	.level	2.0N
+')
 PROLOGUE(mpn_udiv_qrnnd)
 	.proc
 	.entry
 	.callinfo	frame=0,no_calls,save_rp,entry_gr=7
 
-	depd		%r25,31,32,%r26
+ifdef(`HAVE_ABI_2_0n',
+`	depd		%r25,31,32,%r26
 	depd		%r23,31,32,%r24
 	copy		%r24,%r25
 	ldd		-56(%r30),%r24
 	ldw		-60(%r30),%r23
-
+')
 	ldi		0,q
 	cmpib,*>=	0,d,large_divisor
 	ldi		8,%r31		C setup loop counter
@@ -74,8 +73,10 @@ Loop	divstep divstep divstep divstep divstep divstep divstep divstep
 	addib,<>	-1,%r31,Loop
 	nop
 
-	copy		%r28,%r29
+ifdef(`HAVE_ABI_2_0n',
+`	copy		%r28,%r29
 	extrd,u		%r28,31,32,%r28
+')
 	bve		(%r2)
 	std		n1,0(remptr)	C store remainder
 
@@ -108,8 +109,10 @@ Loop2	divstep divstep divstep divstep divstep divstep divstep divstep
 	add,dc		%r0,q,q		C adjust quotient
 
 even_divisor
-	copy		%r28,%r29
+ifdef(`HAVE_ABI_2_0n',
+`	copy		%r28,%r29
 	extrd,u		%r28,31,32,%r28
+')
 	bve		(%r2)
 	std		n1,0(remptr)	C store remainder
 

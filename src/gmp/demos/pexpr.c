@@ -1,7 +1,7 @@
 /* Program for computing integer expressions using the GNU Multiple Precision
    Arithmetic Library.
 
-Copyright 1997, 1999, 2000, 2001 Free Software Foundation, Inc.
+Copyright 1997, 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
 
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -30,7 +30,7 @@ Place - Suite 330, Boston, MA 02111-1307, USA.  */
    -o        print output in octal
    -d        print output in decimal (the default)
    -x        print output in hexadecimal
-   -<NUM>    print output in base NUM
+   -b<NUM>   print output in base NUM
    -t        print timing information
    -html     output html
    -wml      output wml
@@ -41,9 +41,7 @@ Place - Suite 330, Boston, MA 02111-1307, USA.  */
    use up extensive resources (cpu, memory).  Useful for the GMP demo on the
    GMP web site, since we cannot load the server too much.  */
 
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/resource.h>
+#include "pexpr-config.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -52,7 +50,20 @@ Place - Suite 330, Boston, MA 02111-1307, USA.  */
 #include <signal.h>
 #include <ctype.h>
 
+#include <time.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#if HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
+
 #include "gmp.h"
+
+/* SunOS 4 and HPUX 9 don't define a canonical SIGSTKSZ, use a default. */
+#ifndef SIGSTKSZ
+#define SIGSTKSZ  4096
+#endif
+
 
 #define TIME(t,func)							\
   do { int __t0, __times, __t, __tmp;					\
@@ -92,7 +103,7 @@ jmp_buf errjmpbuf;
 
 enum op_t {NOP, LIT, NEG, NOT, PLUS, MINUS, MULT, DIV, MOD, REM, INVMOD, POW,
 	   AND, IOR, XOR, SLL, SRA, POPCNT, HAMDIST, GCD, LCM, SQRT, ROOT, FAC,
-	   LOG, LOG2, FERMAT, MERSENNE, FIBONACCI, RANDOM, NEXTPRIME};
+	   LOG, LOG2, FERMAT, MERSENNE, FIBONACCI, RANDOM, NEXTPRIME, BINOM};
 
 /* Type for the expression tree.  */
 struct expr
@@ -107,21 +118,21 @@ struct expr
 
 typedef struct expr *expr_t;
 
-void cleanup_and_exit _PROTO ((int));
+void cleanup_and_exit __GMP_PROTO ((int));
 
-char *skipspace _PROTO ((char *));
-void makeexp _PROTO ((expr_t *, enum op_t, expr_t, expr_t));
-void free_expr _PROTO ((expr_t));
-char *expr _PROTO ((char *, expr_t *));
-char *term _PROTO ((char *, expr_t *));
-char *power _PROTO ((char *, expr_t *));
-char *factor _PROTO ((char *, expr_t *));
-int match _PROTO ((char *, char *));
-int matchp _PROTO ((char *, char *));
-int cputime _PROTO ((void));
+char *skipspace __GMP_PROTO ((char *));
+void makeexp __GMP_PROTO ((expr_t *, enum op_t, expr_t, expr_t));
+void free_expr __GMP_PROTO ((expr_t));
+char *expr __GMP_PROTO ((char *, expr_t *));
+char *term __GMP_PROTO ((char *, expr_t *));
+char *power __GMP_PROTO ((char *, expr_t *));
+char *factor __GMP_PROTO ((char *, expr_t *));
+int match __GMP_PROTO ((char *, char *));
+int matchp __GMP_PROTO ((char *, char *));
+int cputime __GMP_PROTO ((void));
 
-void mpz_eval_expr _PROTO ((mpz_ptr, expr_t));
-void mpz_eval_mod_expr _PROTO ((mpz_ptr, expr_t, mpz_ptr));
+void mpz_eval_expr __GMP_PROTO ((mpz_ptr, expr_t));
+void mpz_eval_mod_expr __GMP_PROTO ((mpz_ptr, expr_t, mpz_ptr));
 
 char *error;
 int flag_print = 1;
@@ -132,47 +143,100 @@ int flag_splitup_output = 0;
 char *newline = "";
 gmp_randstate_t rstate;
 
-#ifdef _AIX
-#define sigaltstack sigstack
-#endif
 
-#define HAVE_sigaltstack
 
-#if (defined (__linux__) && !defined (SA_ONSTACK)) \
-    || defined (_UNICOS)	\
-    || defined (__hpux)
-/* Older Linux have limited signal handling */
-#undef HAVE_sigaltstack
-#endif
-
-#if !defined(_WIN32) && !defined(__DJGPP__)
-void
-setup_error_handler ()
+/* cputime() returns user CPU time measured in milliseconds.  */
+#if ! HAVE_CPUTIME
+#if HAVE_GETRUSAGE
+int
+cputime (void)
 {
-  struct sigaction act;
+  struct rusage rus;
 
-#ifdef HAVE_sigaltstack
-  struct sigaltstack sigstk;
+  getrusage (0, &rus);
+  return rus.ru_utime.tv_sec * 1000 + rus.ru_utime.tv_usec / 1000;
+}
+#else
+#if HAVE_CLOCK
+int
+cputime (void)
+{
+  if (CLOCKS_PER_SEC < 100000)
+    return clock () * 1000 / CLOCKS_PER_SEC;
+  return clock () / (CLOCKS_PER_SEC / 1000);
+}
+#else
+int
+cputime (void)
+{
+  return 0;
+}
+#endif
+#endif
+#endif
+
+
+int
+stack_downwards_helper (char *xp)
+{
+  char  y;
+  return &y < xp;
+}
+int
+stack_downwards_p (void)
+{
+  char  x;
+  return stack_downwards_helper (&x);
+}
+
+
+void
+setup_error_handler (void)
+{
+#if HAVE_SIGACTION
+  struct sigaction act;
+  act.sa_handler = cleanup_and_exit;
+  sigemptyset (&(act.sa_mask));
+#define SIGNAL(sig)  sigaction (sig, &act, NULL)
+#else
+  struct { int sa_flags } act;
+#define SIGNAL(sig)  signal (sig, cleanup_and_exit)
+#endif
+  act.sa_flags = 0;
+
   /* Set up a stack for signal handling.  A typical cause of error is stack
      overflow, and in such situation a signal can not be delivered on the
      overflown stack.  */
-  sigstk.ss_sp = malloc (SIGSTKSZ);
-#ifndef _AIX
-  sigstk.ss_size = SIGSTKSZ;
-  sigstk.ss_flags = 0;
-#endif /* ! _AIX */
-
-  if (sigaltstack (&sigstk, 0) < 0)
-    perror("sigaltstack");
-#endif
-
-  /* Initialize structure for sigaction (called below).  */
-  act.sa_handler = cleanup_and_exit;
-  sigemptyset (&(act.sa_mask));
-#ifdef HAVE_sigaltstack
-  act.sa_flags = SA_ONSTACK;
+#if HAVE_SIGALTSTACK
+  {
+    /* AIX uses stack_t, MacOS uses struct sigaltstack, various other
+       systems have both. */
+#if HAVE_STACK_T
+    stack_t s;
 #else
-  act.sa_flags = 0;
+    struct sigaltstack s;
+#endif
+    s.ss_sp = malloc (SIGSTKSZ);
+    s.ss_size = SIGSTKSZ;
+    s.ss_flags = 0;
+    if (sigaltstack (&s, NULL) != 0)
+      perror("sigaltstack");
+    act.sa_flags = SA_ONSTACK;
+  }
+#else
+#if HAVE_SIGSTACK
+  {
+    struct sigstack s;
+    s.ss_sp = malloc (SIGSTKSZ);
+    if (stack_downwards_p ())
+      s.ss_sp += SIGSTKSZ;
+    s.ss_onstack = 0;
+    if (sigstack (&s, NULL) != 0)
+      perror("sigstack");
+    act.sa_flags = SA_ONSTACK;
+  }
+#else
+#endif
 #endif
 
 #ifdef LIMIT_RESOURCE_USAGE
@@ -190,21 +254,23 @@ setup_error_handler ()
     setrlimit (RLIMIT_DATA, &limit);
 
     getrlimit (RLIMIT_STACK, &limit);
-    limit.rlim_cur = 1 * 1024 * 1024;
+    limit.rlim_cur = 4 * 1024 * 1024;
     setrlimit (RLIMIT_STACK, &limit);
 
-    sigaction (SIGXCPU, &act, 0);
+    SIGNAL (SIGXCPU);
   }
 #endif /* LIMIT_RESOURCE_USAGE */
 
-  sigaction (SIGILL, &act, 0);
-  sigaction (SIGSEGV, &act, 0);
-  sigaction (SIGBUS, &act, 0);
-  sigaction (SIGFPE, &act, 0);
-  sigaction (SIGABRT, &act, 0);
+  SIGNAL (SIGILL);
+  SIGNAL (SIGSEGV);
+#ifdef SIGBUS /* not in mingw */
+  SIGNAL (SIGBUS);
+#endif
+  SIGNAL (SIGFPE);
+  SIGNAL (SIGABRT);
 }
-#endif /* ! _WIN32 && ! __DJGPP__ */
 
+int
 main (int argc, char **argv)
 {
   struct expr *e;
@@ -214,15 +280,20 @@ main (int argc, char **argv)
   char *str;
   int base = 10;
 
-#if !defined(_WIN32) && !defined(__DJGPP__)
   setup_error_handler ();
-#endif
 
   gmp_randinit (rstate, GMP_RAND_ALG_LC, 128);
+
   {
+#if HAVE_GETTIMEOFDAY
     struct timeval tv;
     gettimeofday (&tv, NULL);
     gmp_randseed_ui (rstate, tv.tv_sec + tv.tv_usec);
+#else
+    time_t t;
+    time (&t);
+    gmp_randseed_ui (rstate, t);
+#endif
   }
 
   mpz_init (r);
@@ -249,6 +320,8 @@ main (int argc, char **argv)
 	base = 2;
       else if (arg[1] == 'x' && arg[2] == 0)
 	base = 16;
+      else if (arg[1] == 'X' && arg[2] == 0)
+	base = -16;
       else if (arg[1] == 'o' && arg[2] == 0)
 	base = 8;
       else if (arg[1] == 'd' && arg[2] == 0)
@@ -361,18 +434,18 @@ main (int argc, char **argv)
 	  size_t out_len;
 	  char *tmp, *s;
 
-	  out_len = mpz_sizeinbase (r, base) + 2;
+	  out_len = mpz_sizeinbase (r, base >= 0 ? base : -base) + 2;
 	  tmp = malloc (out_len);
 
 	  if (print_timing)
 	    {
 	      double t;
 	      printf ("output conversion ");
-	      TIME (t, mpz_get_str (tmp, -base, r));
+	      TIME (t, mpz_get_str (tmp, base, r));
 	      printf ("took %.2f ms%s\n", t, newline);
 	    }
 	  else
-	    mpz_get_str (tmp, -base, r);
+	    mpz_get_str (tmp, base, r);
 
 	  out_len = strlen (tmp);
 	  if (flag_splitup_output)
@@ -649,6 +722,8 @@ struct functions fns[] =
   {"Fib", FIBONACCI, 1},
   {"random", RANDOM, 1},
   {"nextprime", NEXTPRIME, 1},
+  {"binom", BINOM, 2},
+  {"binomial", BINOM, 2},
   {"", NOP, 0}
 };
 
@@ -889,6 +964,20 @@ mpz_eval_expr (mpz_ptr r, expr_t e)
     case POW:
       mpz_init (lhs); mpz_init (rhs);
       mpz_eval_expr (lhs, e->operands.ops.lhs);
+      if (mpz_cmpabs_ui (lhs, 1) <= 0)
+	{
+	  /* For 0^rhs and 1^rhs, we just need to verify that
+	     rhs is well-defined.  For (-1)^rhs we need to
+	     determine (rhs mod 2).  For simplicity, compute
+	     (rhs mod 2) for all three cases.  */
+	  expr_t two, et;
+	  two = malloc (sizeof (struct expr));
+	  two -> op = LIT;
+	  mpz_init_set_ui (two->operands.val, 2L);
+	  makeexp (&et, MOD, e->operands.ops.rhs, two);
+	  e->operands.ops.rhs = et;
+	}
+
       mpz_eval_expr (rhs, e->operands.ops.rhs);
       if (mpz_cmp_si (rhs, 0L) == 0)
 	/* x^0 is 1 */
@@ -1177,6 +1266,23 @@ mpz_eval_expr (mpz_ptr r, expr_t e)
 	mpz_nextprime (r, r);
       }
       return;
+    case BINOM:
+      mpz_init (lhs); mpz_init (rhs);
+      mpz_eval_expr (lhs, e->operands.ops.lhs);
+      mpz_eval_expr (rhs, e->operands.ops.rhs);
+      {
+	unsigned long int k;
+	if (mpz_cmp_ui (rhs, ~(unsigned long int) 0) > 0)
+	  {
+	    error = "k too large in (n over k) expression";
+	    mpz_clear (lhs); mpz_clear (rhs);
+	    longjmp (errjmpbuf, 1);
+	  }
+	k = mpz_get_ui (rhs);
+	mpz_bin_ui (r, lhs, k);
+      }
+      mpz_clear (lhs); mpz_clear (rhs);
+      return;
     default:
       abort ();
     }
@@ -1239,40 +1345,18 @@ mpz_eval_mod_expr (mpz_ptr r, expr_t e, mpz_ptr mod)
 void
 cleanup_and_exit (int sig)
 {
+  switch (sig) {
 #ifdef LIMIT_RESOURCE_USAGE
-  if (sig == SIGXCPU)
-    printf ("expression took too long time to evaluate%s\n", newline);
-  else if (sig == SIGFPE)
-    printf ("divide by zero%s\n", newline);
-  else
+  case SIGXCPU:
+    printf ("expression took too long to evaluate%s\n", newline);
+    break;
 #endif
+  case SIGFPE:
+    printf ("divide by zero%s\n", newline);
+    break;
+  default:
     printf ("expression required too much memory to evaluate%s\n", newline);
+    break;
+  }
   exit (-2);
 }
-
-/* Return user CPU time measured in milliseconds.  */
-
-#if defined (USG) || defined (__SVR4) || defined (_UNICOS) || defined (__hpux)
-#include <time.h>
-
-int
-cputime ()
-{
-  if (CLOCKS_PER_SEC < 100000)
-    return clock () * 1000 / CLOCKS_PER_SEC;
-  return clock () / (CLOCKS_PER_SEC / 1000);
-}
-#else
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-
-int
-cputime ()
-{
-  struct rusage rus;
-
-  getrusage (0, &rus);
-  return rus.ru_utime.tv_sec * 1000 + rus.ru_utime.tv_usec / 1000;
-}
-#endif

@@ -1,6 +1,6 @@
 /* Test mpz_inp_str.
 
-Copyright 2001 Free Software Foundation, Inc.
+Copyright 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -93,7 +93,8 @@ check_data (void)
 
               /* create the file new each time to ensure its length is what
                  we want */
-              ASSERT_ALWAYS ((fp = fopen (FILENAME, "w+")) != NULL);
+              fp = fopen (FILENAME, "w+");
+              ASSERT_ALWAYS (fp != NULL);
               for (j = 0; j < pre; j++)
                 putc (' ', fp);
               fputs (data[i].inp, fp);

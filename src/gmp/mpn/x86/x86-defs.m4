@@ -3,7 +3,7 @@ divert(-1)
 dnl  m4 macros for x86 assembler.
 
 
-dnl  Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
+dnl  Copyright 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -38,7 +38,7 @@ dnl
 dnl  	        define(foo, `mov $ 123, %eax')
 dnl
 dnl     This is only a problem in macro definitions, not in ordinary text,
-dnl     nor in macro parameters like text passed to forloop() or ifdef().
+dnl     and not in macro parameters like text passed to forloop() or ifdef().
 
 
 deflit(BYTES_PER_MP_LIMB, 4)
@@ -51,114 +51,25 @@ dnl  case and definitely don't want the ELF style _GLOBAL_OFFSET_TABLE_ etc.
 ifdef(`DLL_EXPORT',`undefine(`PIC')')
 
 
-dnl  --------------------------------------------------------------------------
-dnl  Replacement PROLOGUE/EPILOGUE with more error checking.  Nesting and
-dnl  overlapping not allowed.
+dnl  Called: PROLOGUE_cpu(GSYM_PREFIX`'foo)
 dnl
-
-
-dnl  Usage: PROLOGUE(functionname)
+dnl  In the x86 code we use explicit TEXT and ALIGN() calls in the code,
+dnl  since different alignments are wanted in various circumstances.  So for
+dnl  instance,
 dnl
-dnl  Generate a function prologue.  functionname gets GSYM_PREFIX added.
-dnl  Examples,
-dnl
-dnl         PROLOGUE(mpn_add_n)
-dnl         PROLOGUE(somefun)
+dnl                  TEXT
+dnl                  ALIGN(16)
+dnl          PROLOGUE(mpn_add_n)
+dnl          ...
+dnl          EPILOGUE()
 
-define(`PROLOGUE',
-m4_assert_numargs(1)
-m4_assert_defined(`PROLOGUE_cpu')
-`ifdef(`PROLOGUE_current_function',
-`m4_error(`PROLOGUE'(`PROLOGUE_current_function') needs an `EPILOGUE'() before `PROLOGUE'($1)
-)')dnl
-m4_file_seen()dnl
-define(`PROLOGUE_current_function',`$1')dnl
-PROLOGUE_cpu(GSYM_PREFIX`'$1)')
-
-
-dnl  Usage: EPILOGUE()
-dnl
-dnl  Notice the function name is passed to EPILOGUE_cpu(), letting it use $1
-dnl  instead of the long PROLOGUE_current_function symbol.
-
-define(`EPILOGUE',
-m4_assert_numargs(0)
-m4_assert_defined(`EPILOGUE_cpu')
-`ifdef(`PROLOGUE_current_function',,
-`m4_error(`EPILOGUE'() with no `PROLOGUE'()
-)')dnl
-EPILOGUE_cpu(GSYM_PREFIX`'PROLOGUE_current_function)`'dnl
-undefine(`PROLOGUE_current_function')')
-
-m4wrap_prepend(
-`ifdef(`PROLOGUE_current_function',
-`m4_error(`EPILOGUE() for PROLOGUE('PROLOGUE_current_function`) never seen
-')')')
-
-
-dnl  Usage: PROLOGUE_assert_inside()
-dnl
-dnl  Use this unquoted on a line on its own at the start of a macro
-dnl  definition to add some code to check the macro is only used inside a
-dnl  PROLOGUE/EPILOGUE pair, and that hence PROLOGUE_current_function is
-dnl  defined.
-
-define(PROLOGUE_assert_inside,
-m4_assert_numargs(0)
-``PROLOGUE_assert_inside_internal'(m4_doublequote($`'0))`dnl '')
-
-define(PROLOGUE_assert_inside_internal,
-m4_assert_numargs(1)
-`ifdef(`PROLOGUE_current_function',,
-`m4_error(`$1 used outside a PROLOGUE / EPILOGUE pair
-')')')
-
-
-dnl  Usage: L(labelname)
-dnl         LF(functionname,labelname)
-dnl
-dnl  Generate a local label in the current or given function.  For LF(),
-dnl  functionname gets GSYM_PREFIX added, the same as with PROLOGUE().
-dnl
-dnl  For example, in a function mpn_add_n (and with MPN_PREFIX __gmpn),
-dnl
-dnl         L(bar)          => L__gmpn_add_n__bar
-dnl         LF(somefun,bar) => Lsomefun__bar
-dnl
-dnl  The function name and label name get two underscores between them
-dnl  rather than one to guard against clashing with a separate external
-dnl  symbol that happened to be called functionname_labelname.  (Though this
-dnl  would only happen if the local label prefix is is empty.)  Underscores
-dnl  are used so the whole label will still be a valid C identifier and so
-dnl  can be easily used in gdb.
-
-dnl  LSYM_PREFIX can be L$, so defn() is used to prevent L expanding as the
-dnl  L macro and making an infinite recursion.
-define(LF,
-m4_assert_numargs(2)
-m4_assert_defined(`LSYM_PREFIX')
-`defn(`LSYM_PREFIX')GSYM_PREFIX`'$1`'__$2')
-
-define(`L',
-m4_assert_numargs(1)
-PROLOGUE_assert_inside()
-`LF(PROLOGUE_current_function,`$1')')
-
-
-dnl  Called: PROLOGUE_cpu(gsym)
-dnl          EPILOGUE_cpu(gsym)
-
-define(PROLOGUE_cpu,
+define(`PROLOGUE_cpu',
 m4_assert_numargs(1)
 	`GLOBL	$1
 	TYPE($1,`function')
 $1:
 ifelse(WANT_PROFILING,`no',,`call_mcount
-')')')
-
-define(EPILOGUE_cpu,
-m4_assert_numargs(1)
-`	SIZE($1,.-$1)')
+')')
 
 
 dnl  Usage: call_mcount
@@ -172,6 +83,7 @@ dnl  For `prof' style profiling gcc generates mcount calls without setting
 dnl  up %ebp, and the same is done here.
 
 define(`call_mcount',
+m4_assert_numargs(-1)
 m4_assert_defined(`WANT_PROFILING')
 m4_assert_defined(`MCOUNT_PIC_REG')
 m4_assert_defined(`MCOUNT_NONPIC_REG')
@@ -180,7 +92,7 @@ m4_assert_defined(`MCOUNT_NONPIC_CALL')
 `ifelse(ifdef(`PIC',`MCOUNT_PIC_REG',`MCOUNT_NONPIC_REG'),,,
 `	DATA
 	ALIGN(4)
-L(mcount_data):
+L(mcount_data_`'mcount_data_counter):
 	W32	0
 	TEXT
 ')dnl
@@ -192,18 +104,21 @@ ifdef(`PIC',
 `	pushl	%ebx
 	mcount_movl_GOT_ebx
 ifelse(MCOUNT_PIC_REG,,,
-`	leal	L(mcount_data)@GOTOFF(%ebx), MCOUNT_PIC_REG')
+`	leal	L(mcount_data_`'mcount_data_counter)@GOTOFF(%ebx), MCOUNT_PIC_REG')
 MCOUNT_PIC_CALL
 	popl	%ebx
 ',`dnl non-PIC
 ifelse(MCOUNT_NONPIC_REG,,,
-`	movl	`$'L(mcount_data), MCOUNT_NONPIC_REG
+`	movl	`$'L(mcount_data_`'mcount_data_counter), MCOUNT_NONPIC_REG
 ')dnl
 MCOUNT_NONPIC_CALL
 ')dnl
 ifelse(WANT_PROFILING,`gprof',
 `	popl	%ebp
-')')
+')
+define(`mcount_data_counter',eval(mcount_data_counter+1))')
+
+define(mcount_data_counter,1)
 
 dnl  Called: mcount_movl_GOT_ebx
 dnl  Label H is "here", the %eip obtained from the call.  C is the called
@@ -279,6 +194,7 @@ defframe_empty_if_zero(FRAME+($2))(%esp)')')
 
 dnl  Called: defframe_empty_if_zero(expression)
 define(defframe_empty_if_zero,
+m4_assert_numargs(1)
 `ifelse(defframe_empty_if_zero_disabled,1,
 `eval($1)',
 `m4_empty_if_zero($1)')')
@@ -338,6 +254,7 @@ dnl  Notice the defframe() is done with an unquoted -FRAME thus giving its
 dnl  current value without tracking future changes.
 
 define(defframe_pushl,
+m4_assert_numargs(1)
 `FRAME_pushl()defframe(`$1',-FRAME)')
 
 
@@ -425,6 +342,7 @@ dnl
 dnl  Expand to 1 if cmov is available, 0 if not.
 
 define(cmov_available_p,
+m4_assert_numargs(-1)
 `m4_ifdef_anyof_p(
 	`HAVE_HOST_CPU_pentiumpro',
 	`HAVE_HOST_CPU_pentium2',
@@ -444,6 +362,7 @@ dnl
 dnl  x86_lookup_p expands to 1 if `target' is found, or 0 if not.
 
 define(x86_lookup,
+m4_assert_numargs_range(1,999)
 `ifelse(eval($#<3),1,
 `m4_error(`unrecognised part of x86 instruction: $1
 ')',
@@ -451,6 +370,7 @@ define(x86_lookup,
 `x86_lookup(`$1',shift(shift(shift($@))))')')')
 
 define(x86_lookup_p,
+m4_assert_numargs_range(1,999)
 `ifelse(eval($#<3),1, `0',
 `ifelse(`$1',`$2',    `1',
 `x86_lookup_p(`$1',shift(shift(shift($@))))')')')
@@ -665,12 +585,14 @@ dnl  this loop_or_decljnz variation is enough to let the code be shared by
 dnl  all chips.
 
 define(loop_or_decljnz,
+m4_assert_numargs(-1)
 `ifelse(loop_is_better_p,1,
 	`loop',
 	`decl	%ecx
 	jnz')')
 
 define(loop_is_better_p,
+m4_assert_numargs(-1)
 `m4_ifdef_anyof_p(`HAVE_HOST_CPU_k6',
                   `HAVE_HOST_CPU_k62',
                   `HAVE_HOST_CPU_k63',
@@ -707,6 +629,7 @@ dnl  needed for any different operation or registers.  The table is split
 dnl  into separate macros to avoid overflowing BSD m4 macro expansion space.
 
 define(Zdisp,
+m4_assert_numargs(4)
 `define(`Zdisp_found',0)dnl
 Zdisp_1($@)dnl
 Zdisp_2($@)dnl
@@ -762,6 +685,7 @@ Zdisp_match( movd, %mm0, 0,(%edx,%ecx,4), `0x0f,0x7e,0x44,0x8a,0x00', $@)`'dnl
 ')
 
 define(Zdisp_match,
+m4_assert_numargs(9)
 `ifelse(eval(m4_stringequal_p(`$1',`$6')
 	&& m4_stringequal_p(`$2',0)
 	&& m4_stringequal_p(`$3',`$8')
@@ -810,6 +734,7 @@ dnl  just a plain "shldl ...", an error results.  This ensures the necessary
 dnl  variant treatment of %cl isn't accidentally bypassed.
 
 define(define_shd_instruction,
+m4_assert_numargs(1)
 `define($1,
 m4_instruction_wrapper()
 m4_assert_numargs(3)
@@ -887,6 +812,7 @@ dnl  won't suffer from the two forwards references bug in old gas (described
 dnl  in mpn/x86/README).
 
 define(movl_text_address,
+m4_assert_numargs(2)
 `ifdef(`PIC',
 	`call	L(movl_text_address_`'movl_text_address_counter)
 L(movl_text_address_`'movl_text_address_counter):
@@ -896,6 +822,18 @@ define(`movl_text_address_counter',incr(movl_text_address_counter))',
 	`movl	`$'$1, $2')')
 
 define(movl_text_address_counter,1)
+
+
+dnl  Usage: notl_or_xorl_GMP_NUMB_MASK(reg)
+dnl
+dnl  Expand to either "notl `reg'" or "xorl $GMP_NUMB_BITS,`reg'" as
+dnl  appropriate for nails in use or not.
+
+define(notl_or_xorl_GMP_NUMB_MASK,
+m4_assert_numargs(1)
+`ifelse(GMP_NAIL_BITS,0,
+`notl	`$1'',
+`xorl	$GMP_NUMB_MASK, `$1'')')
 
 
 divert`'dnl

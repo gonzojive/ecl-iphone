@@ -13,7 +13,7 @@
 
 @SET_MAKE@
 
-# Copyright 2001 Free Software Foundation, Inc.
+# Copyright 2001, 2002 Free Software Foundation, Inc.
 #
 # This file is part of the GNU MP Library.
 #
@@ -80,6 +80,7 @@ AMTAR = @AMTAR@
 AR = @AR@
 AS = @AS@
 AWK = @AWK@
+BITS_PER_MP_LIMB = @BITS_PER_MP_LIMB@
 CALLING_CONVENTIONS_OBJS = @CALLING_CONVENTIONS_OBJS@
 CC = @CC@
 CCAS = @CCAS@
@@ -94,13 +95,23 @@ EXEEXT = @EXEEXT@
 GCJ = @GCJ@
 GCJFLAGS = @GCJFLAGS@
 GMP_LDFLAGS = @GMP_LDFLAGS@
-HAVE_MPFR = @HAVE_MPFR@
+GMP_NAIL_BITS = @GMP_NAIL_BITS@
+HAVE_DECL_OPTARG = @HAVE_DECL_OPTARG@
+HAVE_HOST_CPU_FAMILY_power = @HAVE_HOST_CPU_FAMILY_power@
+HAVE_HOST_CPU_FAMILY_powerpc = @HAVE_HOST_CPU_FAMILY_powerpc@
+HAVE_MPFR_01 = @HAVE_MPFR_01@
+HAVE_STACK_T_01 = @HAVE_STACK_T_01@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+LEX = @LEX@
+LIBGMP_DLL = @LIBGMP_DLL@
 LIBM = @LIBM@
+LIBREADLINE = @LIBREADLINE@
 LIBTOOL = @LIBTOOL@
 LN_S = @LN_S@
 M4 = @M4@
 MAINT = @MAINT@
+MPFR_CFLAGS = @MPFR_CFLAGS@
+MPFR_LIBS = @MPFR_LIBS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 PACKAGE = @PACKAGE@
@@ -114,11 +125,8 @@ TAL_OBJECT = @TAL_OBJECT@
 TUNE_SQR_OBJ = @TUNE_SQR_OBJ@
 U = @U@
 VERSION = @VERSION@
-__GMP_BITS_PER_MP_LIMB = @__GMP_BITS_PER_MP_LIMB@
-__GMP_HAVE_HOST_CPU_FAMILY_power = @__GMP_HAVE_HOST_CPU_FAMILY_power@
-__GMP_HAVE_HOST_CPU_FAMILY_powerpc = @__GMP_HAVE_HOST_CPU_FAMILY_powerpc@
-__GMP_LIBGMP_SHARED = @__GMP_LIBGMP_SHARED@
-__GMP_LIBGMP_STATIC = @__GMP_LIBGMP_STATIC@
+WITH_READLINE_01 = @WITH_READLINE_01@
+YACC = @YACC@
 am__include = @am__include@
 am__quote = @am__quote@
 gmp_srclinks = @gmp_srclinks@
@@ -131,7 +139,8 @@ AUTOMAKE_OPTIONS = gnu no-dependencies $(top_builddir)/ansi2knr
 
 INCLUDES = -D__GMP_WITHIN_GMP -I$(top_srcdir)
 
-noinst_LTLIBRARIES = libdummy.la libprintf.la
+noinst_LTLIBRARIES = libprintf.la
+EXTRA_LTLIBRARIES = libdummy.la
 
 libprintf_la_SOURCES = \
   asprintf.c asprntffuns.c doprnt.c doprntf.c doprnti.c			 \

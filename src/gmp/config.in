@@ -1,7 +1,7 @@
 /* config.in.  Generated automatically from configure.in by autoheader.  */
 /* Templates for defines setup by configure.
 
-Copyright 2000, 2001 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -30,6 +30,21 @@ MA 02111-1307, USA. */
 #undef HAVE_HOST_CPU_alphaev5
 #undef HAVE_HOST_CPU_alphaev6
 #undef HAVE_HOST_CPU_alphaev67
+
+#undef HAVE_HOST_CPU_m68k
+#undef HAVE_HOST_CPU_m68000
+#undef HAVE_HOST_CPU_m68010
+#undef HAVE_HOST_CPU_m68020
+#undef HAVE_HOST_CPU_m68030
+#undef HAVE_HOST_CPU_m68040
+#undef HAVE_HOST_CPU_m68060
+#undef HAVE_HOST_CPU_m68302
+#undef HAVE_HOST_CPU_m68360
+
+#undef HAVE_HOST_CPU_powerpc604
+#undef HAVE_HOST_CPU_powerpc604e
+#undef HAVE_HOST_CPU_powerpc750
+#undef HAVE_HOST_CPU_powerpc7400
 
 #undef HAVE_HOST_CPU_sparc
 #undef HAVE_HOST_CPU_sparcv8
@@ -80,6 +95,9 @@ MA 02111-1307, USA. */
 #undef HAVE_NATIVE_mpn_add_nc
 #undef HAVE_NATIVE_mpn_addmul_1
 #undef HAVE_NATIVE_mpn_addmul_1c
+#undef HAVE_NATIVE_mpn_addmul_2
+#undef HAVE_NATIVE_mpn_addmul_3
+#undef HAVE_NATIVE_mpn_addmul_4
 #undef HAVE_NATIVE_mpn_addsub_n
 #undef HAVE_NATIVE_mpn_addsub_nc
 #undef HAVE_NATIVE_mpn_and_n
@@ -116,6 +134,8 @@ MA 02111-1307, USA. */
 #undef HAVE_NATIVE_mpn_mul_1
 #undef HAVE_NATIVE_mpn_mul_1c
 #undef HAVE_NATIVE_mpn_mul_2
+#undef HAVE_NATIVE_mpn_mul_3
+#undef HAVE_NATIVE_mpn_mul_4
 #undef HAVE_NATIVE_mpn_mul_basecase
 #undef HAVE_NATIVE_mpn_mul_n
 #undef HAVE_NATIVE_mpn_nand_n
@@ -154,6 +174,9 @@ MA 02111-1307, USA. */
 /* bytes per mp_limb_t, if not in gmp-mparam.h */
 #undef BYTES_PER_MP_LIMB
 
+/* The gmp-mparam.h to update when tuning. */
+#undef GMP_MPARAM_H_SUGGEST
+
 /* Define if you have the `alarm' function. */
 #undef HAVE_ALARM
 
@@ -178,6 +201,15 @@ MA 02111-1307, USA. */
 /* Define if tests/libtests has calling conventions checking for the CPU */
 #undef HAVE_CALLING_CONVENTIONS
 
+/* Define if you have the `clock' function. */
+#undef HAVE_CLOCK
+
+/* Define if you have the `clock_gettime' function. */
+#undef HAVE_CLOCK_GETTIME
+
+/* Define if you have the `cputime' function. */
+#undef HAVE_CPUTIME
+
 /* Define to 1 if you have the declaration of `fgetc', and to 0 if you don't.
    */
 #undef HAVE_DECL_FGETC
@@ -198,8 +230,29 @@ MA 02111-1307, USA. */
    don't. */
 #undef HAVE_DECL_VFPRINTF
 
+/* Define if denormalized floats work. */
+#undef HAVE_DENORMS
+
 /* Define if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
+
+/* Define one (and only one) of the following for the format of a `double'.
+   If your format is not among these choices, or you don't know what it is,
+   then leave all of them undefined.
+   "IEEE_LITTLE_SWAPPED" means little endian, but with the two 4-byte halves
+   swapped, as used by ARM CPUs in little endian mode.  */
+#undef HAVE_DOUBLE_IEEE_BIG_ENDIAN
+#undef HAVE_DOUBLE_IEEE_LITTLE_ENDIAN
+#undef HAVE_DOUBLE_IEEE_LITTLE_SWAPPED
+#undef HAVE_DOUBLE_VAX_D
+#undef HAVE_DOUBLE_VAX_G
+#undef HAVE_DOUBLE_CRAY_CFP
+
+/* Define if you have the <fcntl.h> header file. */
+#undef HAVE_FCNTL_H
+
+/* Define if you have the <fpu_control.h> header file. */
+#undef HAVE_FPU_CONTROL_H
 
 /* Define if you have the `getpagesize' function. */
 #undef HAVE_GETPAGESIZE
@@ -210,11 +263,20 @@ MA 02111-1307, USA. */
 /* Define if you have the `gettimeofday' function. */
 #undef HAVE_GETTIMEOFDAY
 
+/* Define if 0/0, 1/0, -1/0 and sqrt(-1) work to generate NaN/infinities. */
+#undef HAVE_INFS
+
 /* Define if the system has the type `intmax_t'. */
 #undef HAVE_INTMAX_T
 
 /* Define if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
+
+/* Define one (just one) of the following for the endiannes of `mp_limb_t'.
+   If the endianness is not a simple big or little, or you don't know what
+   it is, then leave both of these undefined. */
+#undef HAVE_LIMB_BIG_ENDIAN
+#undef HAVE_LIMB_LITTLE_ENDIAN
 
 /* Define if you have the `localeconv' function. */
 #undef HAVE_LOCALECONV
@@ -227,6 +289,9 @@ MA 02111-1307, USA. */
 
 /* Define if the system has the type `long long'. */
 #undef HAVE_LONG_LONG
+
+/* Define if you have the `lrand48' function. */
+#undef HAVE_LRAND48
 
 /* Define if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
@@ -258,8 +323,20 @@ MA 02111-1307, USA. */
 /* Define if you have the `read_real_time' function. */
 #undef HAVE_READ_REAL_TIME
 
+/* Define if you have the `sigaction' function. */
+#undef HAVE_SIGACTION
+
+/* Define if you have the `sigaltstack' function. */
+#undef HAVE_SIGALTSTACK
+
+/* Define if you have the `sigstack' function. */
+#undef HAVE_SIGSTACK
+
 /* Tune directory speed_cyclecounter, undef=none, 1=32bits, 2=64bits) */
 #undef HAVE_SPEED_CYCLECOUNTER
+
+/* Define if the system has the type `stack_t'. */
+#undef HAVE_STACK_T
 
 /* Define if <stdarg.h> exists and works */
 #undef HAVE_STDARG
@@ -269,6 +346,9 @@ MA 02111-1307, USA. */
 
 /* Define if you have the <stdlib.h> header file. */
 #undef HAVE_STDLIB_H
+
+/* Define if you have the `strcasecmp' function. */
+#undef HAVE_STRCASECMP
 
 /* Define if you have the `strchr' function. */
 #undef HAVE_STRCHR
@@ -297,6 +377,9 @@ MA 02111-1307, USA. */
 /* Define if you have the `sysctlbyname' function. */
 #undef HAVE_SYSCTLBYNAME
 
+/* Define if you have the `syssgi' function. */
+#undef HAVE_SYSSGI
+
 /* Define if you have the <sys/mman.h> header file. */
 #undef HAVE_SYS_MMAN_H
 
@@ -314,6 +397,9 @@ MA 02111-1307, USA. */
 
 /* Define if you have the <sys/sysctl.h> header file. */
 #undef HAVE_SYS_SYSCTL_H
+
+/* Define if you have the <sys/syssgi.h> header file. */
+#undef HAVE_SYS_SYSSGI_H
 
 /* Define if you have the <sys/systemcfg.h> header file. */
 #undef HAVE_SYS_SYSTEMCFG_H
@@ -339,6 +425,10 @@ MA 02111-1307, USA. */
 /* Assembler local label prefix */
 #undef LSYM_PREFIX
 
+/* Define if you have the `fesetround' function via the <fenv.h> header file.
+   */
+#undef MPFR_HAVE_FESETROUND
+
 /* Name of package */
 #undef PACKAGE
 
@@ -363,8 +453,8 @@ MA 02111-1307, USA. */
 /* Define if you can safely include both <sys/time.h> and <time.h>. */
 #undef TIME_WITH_SYS_TIME
 
-/* Maximum size the tune program can test for KARATSUBA_SQR_THRESHOLD */
-#undef TUNE_KARATSUBA_SQR_MAX
+/* Maximum size the tune program can test for SQR_KARATSUBA_THRESHOLD */
+#undef TUNE_SQR_KARATSUBA_MAX
 
 /* Version number of package */
 #undef VERSION
@@ -387,6 +477,18 @@ MA 02111-1307, USA. */
 /* --enable-alloca=malloc-reentrant */
 #undef WANT_TMP_REENTRANT
 
+/* Define if your processor stores words with the most significant byte first
+   (like Motorola and SPARC, unlike Intel and VAX). */
+#undef WORDS_BIGENDIAN
+
+/* Define if `lex' declares `yytext' as a `char *' by default, not a `char[]'.
+   */
+#undef YYTEXT_POINTER
+
 /* Define as `__inline' if that's what the C compiler calls it, or to nothing
    if it is not supported. */
 #undef inline
+
+/* Define to empty if the keyword `volatile' does not work. Warning: valid
+   code using `volatile' can become incorrect without. Disable with care. */
+#undef volatile

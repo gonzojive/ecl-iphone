@@ -1,6 +1,6 @@
 /* Check the values of some constants.
 
-Copyright 2000, 2001 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -215,7 +215,7 @@ main (int argc, char *argv[])
   CHECK_BITS (BITS_PER_MP_LIMB, mp_limb_t);
   CHECK_BITS (BITS_PER_ULONG, unsigned long);
 
-  CHECK_HIGHBIT (MP_LIMB_T_HIGHBIT, mp_limb_t,      LL("0x%lX","0x%lX"));
+  CHECK_HIGHBIT (GMP_LIMB_HIGHBIT, mp_limb_t,      LL("0x%lX","0x%lX"));
   CHECK_HIGHBIT (ULONG_HIGHBIT,     unsigned long,  "0x%lX");
   CHECK_HIGHBIT (UINT_HIGHBIT,      unsigned int,   "0x%X");
   CHECK_HIGHBIT (USHRT_HIGHBIT,     unsigned short, "0x%hX");
@@ -248,11 +248,13 @@ main (int argc, char *argv[])
   {
     mp_limb_t  modlimb_inverse_3_calc;
     modlimb_invert (modlimb_inverse_3_calc, CNST_LIMB(3));
-    CHECK_LIMB (MODLIMB_INVERSE_3, modlimb_inverse_3_calc);
+    CHECK_LIMB (MODLIMB_INVERSE_3 & GMP_NUMB_MASK,
+                modlimb_inverse_3_calc & GMP_NUMB_MASK);
   }
 
   {
-    mp_limb_t  MODLIMB_INVERSE_3_times_3 = MODLIMB_INVERSE_3 * CNST_LIMB(3);
+    mp_limb_t  MODLIMB_INVERSE_3_times_3
+      = (MODLIMB_INVERSE_3 * CNST_LIMB(3)) & GMP_NUMB_MASK;
     CHECK_LIMB (MODLIMB_INVERSE_3_times_3, CNST_LIMB(1));
   }
 

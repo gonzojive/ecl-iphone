@@ -3,8 +3,8 @@
    THE CONTENTS OF THIS FILE ARE FOR INTERNAL USE AND ARE ALMOST CERTAIN TO
    BE SUBJECT TO INCOMPATIBLE CHANGES IN FUTURE GNU MP RELEASES.
 
-Copyright 1991, 1993, 1994, 1995, 1996, 1997, 1999, 2000, 2001 Free Software
-Foundation, Inc.
+Copyright 1991, 1993, 1994, 1995, 1996, 1997, 1999, 2000, 2001, 2002 Free
+Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -43,6 +43,9 @@ MA 02111-1307, USA. */
 #include <string>
 #endif
 
+/* Might search and replace _PROTO to __GMP_PROTO internally one day, to
+   avoid two names for one thing, but no hurry for that.  */
+#define _PROTO(x)  __GMP_PROTO(x)
 
 /* The following tries to get a good version of alloca.  The tests are
    adapted from autoconf AC_FUNC_ALLOCA, with a couple of additions.
@@ -91,6 +94,14 @@ MA 02111-1307, USA. */
 #endif
 
 
+/* const and signed must match __gmp_const and __gmp_signed, so follow the
+   decision made for those in gmp.h.    */
+#if ! __GMP_HAVE_CONST
+#define const   /* empty */
+#define signed  /* empty */
+#endif
+
+
 /* "const" basically means a function does nothing but examine its arguments
    and give a return value, it doesn't read or write any memory (neither
    global nor pointed to by arguments), and has no other side-effects.  This
@@ -116,6 +127,13 @@ MA 02111-1307, USA. */
 #define ATTRIBUTE_MALLOC
 #endif
 
+#ifdef _CRAY
+#define CRAY_Pragma(str)  _Pragma (str)
+#else
+#define CRAY_Pragma(str)
+#endif
+
+
 #if ! HAVE_STRCHR
 #define strchr(s,c)  index(s,c)
 #endif
@@ -130,14 +148,15 @@ MA 02111-1307, USA. */
   } while (0)
 #endif
 
-/* va_copy is a standard part of C99, and we expect it'll be available on
-   earlier systems too if they need something other than a plain "=", though
-   possibly as __va_copy (for example gcc in strict C89 mode).  */
+/* va_copy is standard in C99, and gcc provides __va_copy when in strict C89
+   mode.  Falling back to a memcpy will give maximum portability, since it
+   works no matter whether va_list is a pointer, struct or array.  */
 #if ! defined (va_copy) && defined (__va_copy)
 #define va_copy(dst,src)  __va_copy(dst,src)
 #endif
 #if ! defined (va_copy)
-#define va_copy(dst,src)  do { (dst) = (src); } while (0)
+#define va_copy(dst,src) \
+  do { memcpy (&(dst), &(src), sizeof (va_list)); } while (0)
 #endif
 
 
@@ -287,9 +306,11 @@ void  __gmp_tmp_debug_free  _PROTO ((const char *, int, int,
 #define TMP_ALLOC_LIMBS(n)     TMP_ALLOC_TYPE(n,mp_limb_t)
 #define TMP_ALLOC_MP_PTRS(n)   TMP_ALLOC_TYPE(n,mp_ptr)
 
-/* It's more efficient to allocate one block than two, but when debugging
-   continue to do separate TMP_ALLOC's to let each get protected with its
-   own redzone.  */
+/* It's more efficient to allocate one block than two.  This is certainly
+   true of the malloc methods, but it can even be true of alloca if that
+   involves copying a chunk of stack (various RISCs), or a call to a stack
+   bounds check (mingw).  In any case, when debugging keep separate blocks
+   so a redzoning malloc debugger can protect each individually.  */
 #if WANT_TMP_DEBUG
 #define TMP_ALLOC_LIMBS_2(xp,xsize, yp,ysize)   \
   do {                                          \
@@ -322,6 +343,11 @@ void  __gmp_tmp_debug_free  _PROTO ((const char *, int, int,
 #define PREC(x) ((x)->_mp_prec)
 #define ALLOC(x) ((x)->_mp_alloc)
 
+/* n-1 inverts any low zeros and the lowest one bit.  If n&(n-1) leaves zero
+   then that lowest one bit must have been the only bit set.  n==0 will
+   return true though, so avoid that.  */
+#define POW2_P(n)  (((n) & ((n) - 1)) == 0)
+
 
 /* Might be already defined by gmp-mparam.h, otherwise use what's in gmp.h. */
 #ifndef BITS_PER_MP_LIMB
@@ -349,7 +375,7 @@ void  __gmp_tmp_debug_free  _PROTO ((const char *, int, int,
 #define ULONG_HIGHBIT      (ULONG_MAX ^ ((unsigned long) ULONG_MAX >> 1))
 #define UINT_HIGHBIT       (UINT_MAX ^ ((unsigned) UINT_MAX >> 1))
 #define USHRT_HIGHBIT      ((unsigned short) (USHRT_MAX ^ ((unsigned short) USHRT_MAX >> 1)))
-#define MP_LIMB_T_HIGHBIT  (MP_LIMB_T_MAX ^ (MP_LIMB_T_MAX >> 1))
+#define GMP_LIMB_HIGHBIT  (MP_LIMB_T_MAX ^ (MP_LIMB_T_MAX >> 1))
 
 #ifndef LONG_MIN
 #define LONG_MIN           ((long) ULONG_HIGHBIT)
@@ -384,6 +410,72 @@ void  __gmp_tmp_debug_free  _PROTO ((const char *, int, int,
 #define INT_HIGHBIT        INT_MIN
 #define SHRT_HIGHBIT       SHRT_MIN
 
+
+#define GMP_NUMB_HIGHBIT  (CNST_LIMB(1) << (GMP_NUMB_BITS-1))
+
+#if GMP_NAIL_BITS == 0
+#define GMP_NAIL_LOWBIT   CNST_LIMB(0)
+#else
+#define GMP_NAIL_LOWBIT   (CNST_LIMB(1) << GMP_NUMB_BITS)
+#endif
+
+#if GMP_NAIL_BITS != 0
+/* Set various *_THRESHOLD values to be used for nails.  Thus we avoid using
+   code that has not yet been qualified.  */
+
+#undef DIV_SB_PREINV_THRESHOLD
+#undef DIV_DC_THRESHOLD
+#undef POWM_THRESHOLD
+#define DIV_SB_PREINV_THRESHOLD           MP_SIZE_T_MAX
+#define DIV_DC_THRESHOLD                 50
+#define POWM_THRESHOLD                    0
+
+#undef GCD_ACCEL_THRESHOLD
+#undef GCDEXT_THRESHOLD
+#define GCD_ACCEL_THRESHOLD               3
+#define GCDEXT_THRESHOLD                 20
+
+#undef DIVREM_1_NORM_THRESHOLD
+#undef DIVREM_1_UNNORM_THRESHOLD
+#undef MOD_1_NORM_THRESHOLD
+#undef MOD_1_UNNORM_THRESHOLD
+#undef USE_PREINV_DIVREM_1
+#undef USE_PREINV_MOD_1
+#undef DIVREM_2_THRESHOLD
+#undef DIVEXACT_1_THRESHOLD
+#undef MODEXACT_1_ODD_THRESHOLD
+#define DIVREM_1_NORM_THRESHOLD           MP_SIZE_T_MAX  /* preinv always */
+#define DIVREM_1_UNNORM_THRESHOLD         MP_SIZE_T_MAX  /* always */
+#define MOD_1_NORM_THRESHOLD              MP_SIZE_T_MAX  /* always */
+#define MOD_1_UNNORM_THRESHOLD            MP_SIZE_T_MAX  /* always */
+#define USE_PREINV_DIVREM_1               0  /* preinv never */
+#define USE_PREINV_MOD_1                  0  /* preinv never */
+#define DIVREM_2_THRESHOLD                MP_SIZE_T_MAX  /* preinv never */
+#define DIVEXACT_1_THRESHOLD              MP_SIZE_T_MAX  /* always */
+#define MODEXACT_1_ODD_THRESHOLD          MP_SIZE_T_MAX  /* always */
+
+#undef GET_STR_DC_THRESHOLD
+#undef GET_STR_PRECOMPUTE_THRESHOLD
+#undef SET_STR_THRESHOLD
+#define GET_STR_DC_THRESHOLD             22
+#define GET_STR_PRECOMPUTE_THRESHOLD     42
+#define SET_STR_THRESHOLD              3259
+
+#undef MUL_FFT_TABLE
+#undef MUL_FFT_MODF_THRESHOLD
+#undef MUL_FFT_THRESHOLD
+#define MUL_FFT_TABLE  { 400, 928, 1856, 3840, 7168, 20480, 0 }
+#define MUL_FFT_MODF_THRESHOLD          416
+#define MUL_FFT_THRESHOLD                MP_SIZE_T_MAX
+
+#undef  SQR_FFT_TABLE
+#undef  SQR_FFT_MODF_THRESHOLD
+#undef  SQR_FFT_THRESHOLD
+#define SQR_FFT_TABLE  { 400, 992, 1984, 3840, 9216, 20480, 0 }
+#define SQR_FFT_MODF_THRESHOLD          416
+#define SQR_FFT_THRESHOLD                MP_SIZE_T_MAX
+
+#endif
 
 /* Swap macros. */
 
@@ -461,13 +553,12 @@ void __gmp_default_free _PROTO ((void *, size_t));
       (ptr) = (*__gmp_reallocate_func) (ptr, oldsize, newsize); \
   } while (0)
 
-
-/* const and signed must match __gmp_const and __gmp_signed, so follow the
-   decision made for those in gmp.h.    */
-#if ! __GMP_HAVE_CONST
-#define const   /* empty */
-#define signed  /* empty */
-#endif
+#define __GMP_REALLOCATE_FUNC_MAYBE_TYPE(ptr, oldsize, newsize, type)   \
+  do {                                                                  \
+    if ((oldsize) != (newsize))                                         \
+      (ptr) = (type *) (*__gmp_reallocate_func)                         \
+        (ptr, (oldsize) * sizeof (type), (newsize) * sizeof (type));    \
+  } while (0)
 
 
 /* Dummy for non-gcc, code involving it will go dead. */
@@ -478,9 +569,14 @@ void __gmp_default_free _PROTO ((void *, size_t));
 
 /* In gcc 2.96 and up on i386, tail calls are optimized to jumps if the
    stack usage is compatible.  __attribute__ ((regparm (N))) helps by
-   putting leading parameters in registers, avoiding extra stack.  */
+   putting leading parameters in registers, avoiding extra stack.
 
-#if HAVE_HOST_CPU_FAMILY_x86 && __GMP_GNUC_PREREQ (2,96)
+   regparm cannot be used with calls going through the PLT, because the
+   binding code there may clobber the registers (%eax, %edx, %ecx) used for
+   the regparm parameters.  Calls to local (ie. static) functions could
+   still use this, if we cared to differentiate locals and globals.  */
+
+#if HAVE_HOST_CPU_FAMILY_x86 && __GMP_GNUC_PREREQ (2,96) && ! defined (PIC)
 #define USE_LEADING_REGPARM 1
 #else
 #define USE_LEADING_REGPARM 0
@@ -528,8 +624,31 @@ void __gmp_default_free _PROTO ((void *, size_t));
 #endif
 #endif
 
+
 void __gmpz_aorsmul_1 _PROTO ((REGPARM_3_1 (mpz_ptr w, mpz_srcptr u, mp_limb_t v, mp_size_t sub))) REGPARM_ATTR(1);
 #define mpz_aorsmul_1(w,u,v,sub)  __gmpz_aorsmul_1 (REGPARM_3_1 (w, u, v, sub))
+
+#define mpz_n_pow_ui __gmpz_n_pow_ui
+void    mpz_n_pow_ui _PROTO ((mpz_ptr, mp_srcptr, mp_size_t, unsigned long));
+
+
+#define mpn_add_nc __MPN(add_nc)
+__GMP_DECLSPEC mp_limb_t mpn_add_nc __GMP_PROTO ((mp_ptr, mp_srcptr, mp_srcptr, mp_size_t, mp_limb_t));
+
+#define mpn_addmul_1c __MPN(addmul_1c)
+__GMP_DECLSPEC mp_limb_t mpn_addmul_1c __GMP_PROTO ((mp_ptr, mp_srcptr, mp_size_t, mp_limb_t, mp_limb_t));
+
+#define mpn_addsub_n __MPN(addsub_n)
+__GMP_DECLSPEC mp_limb_t mpn_addsub_n __GMP_PROTO ((mp_ptr, mp_ptr, mp_srcptr, mp_srcptr, mp_size_t));
+
+#define mpn_addsub_nc __MPN(addsub_nc)
+__GMP_DECLSPEC mp_limb_t mpn_addsub_nc __GMP_PROTO ((mp_ptr, mp_ptr, mp_srcptr, mp_srcptr, mp_size_t, mp_limb_t));
+
+#define mpn_divrem_1c __MPN(divrem_1c)
+__GMP_DECLSPEC mp_limb_t mpn_divrem_1c __GMP_PROTO ((mp_ptr, mp_size_t, mp_srcptr, mp_size_t, mp_limb_t, mp_limb_t));
+
+#define mpn_dump __MPN(dump)
+__GMP_DECLSPEC void mpn_dump __GMP_PROTO ((mp_srcptr, mp_size_t));
 
 #define mpn_fib2_ui __MPN(fib2_ui)
 mp_size_t mpn_fib2_ui _PROTO ((mp_ptr, mp_ptr, unsigned long));
@@ -537,7 +656,6 @@ mp_size_t mpn_fib2_ui _PROTO ((mp_ptr, mp_ptr, unsigned long));
 /* Remap names of internal mpn functions.  */
 #define __clz_tab               __MPN(clz_tab)
 #define mpn_udiv_w_sdiv		__MPN(udiv_w_sdiv)
-#define mpn_reciprocal		__MPN(reciprocal)
 
 #define mpn_gcd_finda	__MPN(gcd_finda)
 mp_limb_t mpn_gcd_finda _PROTO((const mp_limb_t cp[2])) __GMP_ATTRIBUTE_PURE;
@@ -545,14 +663,35 @@ mp_limb_t mpn_gcd_finda _PROTO((const mp_limb_t cp[2])) __GMP_ATTRIBUTE_PURE;
 #define mpn_jacobi_base __MPN(jacobi_base)
 int mpn_jacobi_base _PROTO ((mp_limb_t a, mp_limb_t b, int result_bit1)) ATTRIBUTE_CONST;
 
-#define mpz_n_pow_ui __gmpz_n_pow_ui
-void    mpz_n_pow_ui _PROTO ((mpz_ptr, mp_srcptr, mp_size_t, unsigned long));
+#define mpn_mod_1c __MPN(mod_1c)
+__GMP_DECLSPEC mp_limb_t mpn_mod_1c __GMP_PROTO ((mp_srcptr, mp_size_t, mp_limb_t, mp_limb_t)) __GMP_ATTRIBUTE_PURE;
+
+#define mpn_mul_1c __MPN(mul_1c)
+__GMP_DECLSPEC mp_limb_t mpn_mul_1c __GMP_PROTO ((mp_ptr, mp_srcptr, mp_size_t, mp_limb_t, mp_limb_t));
+
+#define mpn_mul_2 __MPN(mul_2)
+mp_limb_t mpn_mul_2 _PROTO ((mp_ptr, mp_srcptr, mp_size_t, mp_srcptr));
+
+#define mpn_mul_basecase __MPN(mul_basecase)
+__GMP_DECLSPEC void mpn_mul_basecase __GMP_PROTO ((mp_ptr, mp_srcptr, mp_size_t, mp_srcptr, mp_size_t));
+
+#define mpn_sqr_n __MPN(sqr_n)
+__GMP_DECLSPEC void mpn_sqr_n __GMP_PROTO ((mp_ptr, mp_srcptr, mp_size_t));
+
+#define mpn_sqr_basecase __MPN(sqr_basecase)
+__GMP_DECLSPEC void mpn_sqr_basecase __GMP_PROTO ((mp_ptr, mp_srcptr, mp_size_t));
+
+#define mpn_sub_nc __MPN(sub_nc)
+__GMP_DECLSPEC mp_limb_t mpn_sub_nc __GMP_PROTO ((mp_ptr, mp_srcptr, mp_srcptr, mp_size_t, mp_limb_t));
+
+#define mpn_submul_1c __MPN(submul_1c)
+__GMP_DECLSPEC mp_limb_t mpn_submul_1c __GMP_PROTO ((mp_ptr, mp_srcptr, mp_size_t, mp_limb_t, mp_limb_t));
 
 
 typedef __gmp_randstate_struct *gmp_randstate_ptr;
 
 #define _gmp_rand __gmp_rand
-void __GMP_DECLSPEC _gmp_rand _PROTO ((mp_ptr, gmp_randstate_t, unsigned long int));
+__GMP_DECLSPEC void _gmp_rand _PROTO ((mp_ptr, gmp_randstate_t, unsigned long int));
 
 
 /* __gmp_rands is the global state for the old-style random functions, and
@@ -567,8 +706,8 @@ void __GMP_DECLSPEC _gmp_rand _PROTO ((mp_ptr, gmp_randstate_t, unsigned long in
    functions are recommended to applications which care about randomness, so
    the old functions aren't too important.  */
 
-extern char             __GMP_DECLSPEC __gmp_rands_initialized;
-extern gmp_randstate_t  __GMP_DECLSPEC __gmp_rands;
+__GMP_DECLSPEC extern char             __gmp_rands_initialized;
+__GMP_DECLSPEC extern gmp_randstate_t  __gmp_rands;
 
 #define RANDS                                   \
   ((__gmp_rands_initialized ? 0                 \
@@ -661,6 +800,9 @@ size_t mpz_inp_str_nowhite _PROTO ((mpz_ptr x, FILE *stream, int base, int c, si
 int     mpn_divisible_p _PROTO ((mp_srcptr ap, mp_size_t asize,
                                  mp_srcptr dp, mp_size_t dsize)) __GMP_ATTRIBUTE_PURE;
 
+#define mpn_rootrem __gmpn_rootrem
+mp_size_t mpn_rootrem _PROTO ((mp_ptr, mp_ptr, mp_srcptr, mp_size_t, mp_limb_t));
+
 
 /* from gmp.h */
 #if HAVE_HOST_CPU_FAMILY_power || HAVE_HOST_CPU_FAMILY_powerpc
@@ -694,15 +836,30 @@ void mpn_copyi _PROTO ((mp_ptr, mp_srcptr, mp_size_t));
   } while (0)
 #endif
 
-/* Copy NLIMBS *limbs* from SRC to DST, NLIMBS==0 allowed.  */
-#ifndef MPN_COPY_INCR
-#define MPN_COPY_INCR(DST, SRC, NLIMBS)                 \
+/* Copy N limbs from SRC to DST incrementing, N==0 allowed.  */
+#if ! defined (MPN_COPY_INCR)
+#define MPN_COPY_INCR(dst, src, n)                      \
   do {                                                  \
-    mp_size_t __i;                                      \
-    ASSERT ((NLIMBS) >= 0);                             \
-    ASSERT (MPN_SAME_OR_INCR_P (DST, SRC, NLIMBS));     \
-    for (__i = 0; __i < (NLIMBS); __i++)                \
-      (DST)[__i] = (SRC)[__i];                          \
+    ASSERT ((n) >= 0);                                  \
+    ASSERT (MPN_SAME_OR_INCR_P (dst, src, n));          \
+    if ((n) != 0)                                       \
+      {                                                 \
+	mp_size_t __n = (n) - 1;                        \
+	mp_ptr __dst = (dst);                           \
+	mp_srcptr __src = (src);                        \
+	mp_limb_t __x;                                  \
+	__x = *__src++;                                 \
+	if (__n != 0)                                   \
+	  {                                             \
+	    do                                          \
+	      {                                         \
+		*__dst++ = __x;                         \
+		__x = *__src++;                         \
+	      }                                         \
+	    while (--__n);                              \
+	  }                                             \
+	*__dst++ = __x;                                 \
+      }                                                 \
   } while (0)
 #endif
 
@@ -747,15 +904,30 @@ void mpn_copyd _PROTO ((mp_ptr, mp_srcptr, mp_size_t));
   } while (0)
 #endif
 
-/* NLIMBS==0 allowed */
+/* Copy N limbs from SRC to DST decrementing, N==0 allowed.  */
 #if ! defined (MPN_COPY_DECR)
-#define MPN_COPY_DECR(DST, SRC, NLIMBS)                 \
+#define MPN_COPY_DECR(dst, src, n)                      \
   do {                                                  \
-    mp_size_t __i;                                      \
-    ASSERT ((NLIMBS) >= 0);                             \
-    ASSERT (MPN_SAME_OR_DECR_P (DST, SRC, NLIMBS));     \
-    for (__i = (NLIMBS) - 1; __i >= 0; __i--)           \
-      (DST)[__i] = (SRC)[__i];                          \
+    ASSERT ((n) >= 0);                                  \
+    ASSERT (MPN_SAME_OR_DECR_P (dst, src, n));          \
+    if ((n) != 0)                                       \
+      {                                                 \
+	mp_size_t __n = (n) - 1;                        \
+	mp_ptr __dst = (dst) + __n;                     \
+	mp_srcptr __src = (src) + __n;                  \
+	mp_limb_t __x;                                  \
+	__x = *__src--;                                 \
+	if (__n != 0)                                   \
+	  {                                             \
+	    do                                          \
+	      {                                         \
+		*__dst-- = __x;                         \
+		__x = *__src--;                         \
+	      }                                         \
+	    while (--__n);                              \
+	  }                                             \
+	*__dst-- = __x;                                 \
+      }                                                 \
   } while (0)
 #endif
 
@@ -769,7 +941,28 @@ void mpn_copyd _PROTO ((mp_ptr, mp_srcptr, mp_size_t));
 #endif
 
 
-/* For power and powerpc we want an inline stu/bdnz loop for zeroing.  On
+/* Set {dst,size} to the limbs of {src,size} in reverse order. */
+#define MPN_REVERSE(dst, src, size)                     \
+  do {                                                  \
+    mp_ptr     __dst = (dst);                           \
+    mp_size_t  __size = (size);                         \
+    mp_srcptr  __src = (src) + __size - 1;              \
+    mp_size_t  __i;                                     \
+    ASSERT ((size) >= 0);                               \
+    ASSERT (! MPN_OVERLAP_P (dst, size, src, size));    \
+    CRAY_Pragma ("_CRI ivdep");                         \
+    for (__i = 0; __i < __size; __i++)                  \
+      {                                                 \
+        *__dst = *__src;                                \
+        __dst++;                                        \
+        __src--;                                        \
+      }                                                 \
+  } while (0)
+
+
+/* Zero n limbs at dst.
+
+   For power and powerpc we want an inline stu/bdnz loop for zeroing.  On
    ppc630 for instance this is optimal since it can sustain only 1 store per
    cycle.
 
@@ -787,28 +980,32 @@ void mpn_copyd _PROTO ((mp_ptr, mp_srcptr, mp_size_t));
    would be good when on a GNU system.  */
 
 #if HAVE_HOST_CPU_FAMILY_power || HAVE_HOST_CPU_FAMILY_powerpc
-#define MPN_ZERO(dst, size)             \
-  do {                                  \
-    ASSERT ((size) >= 0);               \
-    if ((size) != 0)                    \
-      {                                 \
-        mp_ptr     __dst  = (dst) - 1;  \
-        mp_size_t  __size = (size);     \
-        do                              \
-          *++__dst = 0;                 \
-        while (--__size);               \
-      }                                 \
+#define MPN_ZERO(dst, n)			\
+  do {						\
+    ASSERT ((n) >= 0);				\
+    if ((n) != 0)				\
+      {						\
+	mp_ptr __dst = (dst) - 1;		\
+	mp_size_t __n = (n);			\
+	do					\
+	  *++__dst = 0;				\
+	while (--__n);				\
+      }						\
   } while (0)
 #endif
 
-/* Zero NLIMBS *limbs* AT DST.  */
 #ifndef MPN_ZERO
-#define MPN_ZERO(DST, NLIMBS)                   \
-  do {                                          \
-    mp_size_t __i;                              \
-    ASSERT ((NLIMBS) >= 0);                     \
-    for (__i = 0; __i < (NLIMBS); __i++)        \
-      (DST)[__i] = 0;                           \
+#define MPN_ZERO(dst, n)			\
+  do {						\
+    ASSERT ((n) >= 0);				\
+    if ((n) != 0)				\
+      {						\
+	mp_ptr __dst = (dst);			\
+	mp_size_t __n = (n);			\
+	do					\
+	  *__dst++ = 0;				\
+	while (--__n);				\
+      }						\
   } while (0)
 #endif
 
@@ -880,11 +1077,7 @@ void mpn_copyd _PROTO ((mp_ptr, mp_srcptr, mp_size_t));
   } while (0)
 
 /* Realloc for an mpz_t WHAT if it has less than NEEDED limbs.  */
-#define MPZ_REALLOC(what,needed) \
-  do {								\
-    if ((needed) > ALLOC (what))				\
-      _mpz_realloc (what, needed);				\
-  } while (0)
+#define MPZ_REALLOC(z,n) ((n) > ALLOC(z) ? _mpz_realloc(z,n) : PTR(z))
 
 #define MPZ_EQUAL_1_P(z)  (SIZ(z)==1 && PTR(z)[0] == 1)
 
@@ -904,10 +1097,13 @@ void mpn_copyd _PROTO ((mp_ptr, mp_srcptr, mp_size_t));
    Note that a division is done first, since on a 32-bit system it's at
    least conceivable to go right up to n==ULONG_MAX.  (F[2^32-1] would be
    about 380Mbytes, plus temporary workspace of about 1.2Gbytes here and
-   whatever a multiply of two 190Mbyte numbers takes.)  */
+   whatever a multiply of two 190Mbyte numbers takes.)
+
+   Enhancement: When GMP_NUMB_BITS is not a power of 2 the division could be
+   worked into the multiplier.  */
 
 #define MPN_FIB2_SIZE(n) \
-  ((mp_size_t) ((n) / 32 * 23 / BITS_PER_MP_LIMB) + 4)
+  ((mp_size_t) ((n) / 32 * 23 / GMP_NUMB_BITS) + 4)
 
 
 /* FIB_TABLE(n) returns the Fibonacci number F[n].  Must have n in the range
@@ -918,33 +1114,33 @@ void mpn_copyd _PROTO ((mp_ptr, mp_srcptr, mp_size_t));
 
    This data generated by code at the end of mpn/generic/fib2_ui.c.  */
 
+extern const mp_limb_t __gmp_fib_table[];
 #define FIB_TABLE(n)  (__gmp_fib_table[(n)+1])
 
-#if BITS_PER_MP_LIMB == 4
-extern const mp_limb_t __gmp_fib_table[];
-#define FIB_TABLE_LIMIT         7
-#define FIB_TABLE_LUCNUM_LIMIT  5
-#endif
-#if BITS_PER_MP_LIMB == 8
-extern const mp_limb_t __gmp_fib_table[];
-#define FIB_TABLE_LIMIT         13
-#define FIB_TABLE_LUCNUM_LIMIT  11
-#endif
-#if BITS_PER_MP_LIMB == 16
-extern const mp_limb_t __gmp_fib_table[];
-#define FIB_TABLE_LIMIT         24
-#define FIB_TABLE_LUCNUM_LIMIT  23
-#endif
-#if BITS_PER_MP_LIMB == 32
-extern const mp_limb_t __gmp_fib_table[];
-#define FIB_TABLE_LIMIT         47
-#define FIB_TABLE_LUCNUM_LIMIT  46
-#endif
-#if BITS_PER_MP_LIMB == 64
-extern const mp_limb_t __gmp_fib_table[];
+#if GMP_NUMB_BITS >= 64
 #define FIB_TABLE_LIMIT         93
 #define FIB_TABLE_LUCNUM_LIMIT  92
-#endif
+#else
+#if GMP_NUMB_BITS >= 32
+#define FIB_TABLE_LIMIT         47
+#define FIB_TABLE_LUCNUM_LIMIT  46
+#else
+#if GMP_NUMB_BITS >= 16
+#define FIB_TABLE_LIMIT         24
+#define FIB_TABLE_LUCNUM_LIMIT  23
+#else
+#if GMP_NUMB_BITS >= 8
+#define FIB_TABLE_LIMIT         13
+#define FIB_TABLE_LUCNUM_LIMIT  11
+#else
+#if GMP_NUMB_BITS >= 4
+#define FIB_TABLE_LIMIT         7
+#define FIB_TABLE_LUCNUM_LIMIT  5
+#endif /* 4 */
+#endif /* 8 */
+#endif /* 16 */
+#endif /* 32 */
+#endif /* 64 */
 
 
 /* For a threshold between algorithms A and B, size>=thresh is where B
@@ -960,16 +1156,16 @@ extern const mp_limb_t __gmp_fib_table[];
 #define BELOW_THRESHOLD(size,thresh)  (! ABOVE_THRESHOLD (size, thresh))
 
 
-/* If KARATSUBA_MUL_THRESHOLD is not already defined, define it to a
+/* If MUL_KARATSUBA_THRESHOLD is not already defined, define it to a
    value which is good on most machines.  */
-#ifndef KARATSUBA_MUL_THRESHOLD
-#define KARATSUBA_MUL_THRESHOLD 32
+#ifndef MUL_KARATSUBA_THRESHOLD
+#define MUL_KARATSUBA_THRESHOLD 32
 #endif
 
-/* If TOOM3_MUL_THRESHOLD is not already defined, define it to a
+/* If MUL_TOOM3_THRESHOLD is not already defined, define it to a
    value which is good on most machines.  */
-#ifndef TOOM3_MUL_THRESHOLD
-#define TOOM3_MUL_THRESHOLD 256
+#ifndef MUL_TOOM3_THRESHOLD
+#define MUL_TOOM3_THRESHOLD 256
 #endif
 
 /* This is the threshold at which mpn_sqr_basecase should take over from
@@ -977,21 +1173,21 @@ extern const mp_limb_t __gmp_fib_table[];
    always.
 
    If it turns out that mpn_kara_sqr_n becomes faster than mpn_mul_basecase
-   before mpn_sqr_basecase does, then BASECASE_SQR_THRESHOLD is the
-   karatsuba threshold and KARATSUBA_SQR_THRESHOLD is 0.  This oddity arises
-   more or less because KARATSUBA_SQR_THRESHOLD represents the size up to
+   before mpn_sqr_basecase does, then SQR_BASECASE_THRESHOLD is the
+   karatsuba threshold and SQR_KARATSUBA_THRESHOLD is 0.  This oddity arises
+   more or less because SQR_KARATSUBA_THRESHOLD represents the size up to
    which mpn_sqr_basecase should be used, and that may be never.  */
 
-#ifndef BASECASE_SQR_THRESHOLD
-#define BASECASE_SQR_THRESHOLD 0
+#ifndef SQR_BASECASE_THRESHOLD
+#define SQR_BASECASE_THRESHOLD 0
 #endif
 
-#ifndef KARATSUBA_SQR_THRESHOLD
-#define KARATSUBA_SQR_THRESHOLD (2*KARATSUBA_MUL_THRESHOLD)
+#ifndef SQR_KARATSUBA_THRESHOLD
+#define SQR_KARATSUBA_THRESHOLD (2*MUL_KARATSUBA_THRESHOLD)
 #endif
 
-#ifndef TOOM3_SQR_THRESHOLD
-#define TOOM3_SQR_THRESHOLD (2*TOOM3_MUL_THRESHOLD)
+#ifndef SQR_TOOM3_THRESHOLD
+#define SQR_TOOM3_THRESHOLD (2*MUL_TOOM3_THRESHOLD)
 #endif
 
 /* First k to use for an FFT modF multiply.  A modF FFT is an order
@@ -1000,11 +1196,11 @@ extern const mp_limb_t __gmp_fib_table[];
 #define FFT_FIRST_K  4
 
 /* Threshold at which FFT should be used to do a modF NxN -> N multiply. */
-#ifndef FFT_MODF_MUL_THRESHOLD
-#define FFT_MODF_MUL_THRESHOLD   (TOOM3_MUL_THRESHOLD * 3)
+#ifndef MUL_FFT_MODF_THRESHOLD
+#define MUL_FFT_MODF_THRESHOLD   (MUL_TOOM3_THRESHOLD * 3)
 #endif
-#ifndef FFT_MODF_SQR_THRESHOLD
-#define FFT_MODF_SQR_THRESHOLD   (TOOM3_SQR_THRESHOLD * 3)
+#ifndef SQR_FFT_MODF_THRESHOLD
+#define SQR_FFT_MODF_THRESHOLD   (SQR_TOOM3_THRESHOLD * 3)
 #endif
 
 /* Threshold at which FFT should be used to do an NxN -> 2N multiply.  This
@@ -1012,34 +1208,34 @@ extern const mp_limb_t __gmp_fib_table[];
    NxN->2N multiply and not recursing into itself is an order
    log(2^k)/log(2^(k-2)) algorithm, so it'll be at least k=7 at 1.39 which
    is the first better than toom3.  */
-#ifndef FFT_MUL_THRESHOLD
-#define FFT_MUL_THRESHOLD   (FFT_MODF_MUL_THRESHOLD * 10)
+#ifndef MUL_FFT_THRESHOLD
+#define MUL_FFT_THRESHOLD   (MUL_FFT_MODF_THRESHOLD * 10)
 #endif
-#ifndef FFT_SQR_THRESHOLD
-#define FFT_SQR_THRESHOLD   (FFT_MODF_SQR_THRESHOLD * 10)
+#ifndef SQR_FFT_THRESHOLD
+#define SQR_FFT_THRESHOLD   (SQR_FFT_MODF_THRESHOLD * 10)
 #endif
 
 /* Table of thresholds for successive modF FFT "k"s.  The first entry is
    where FFT_FIRST_K+1 should be used, the second FFT_FIRST_K+2,
    etc.  See mpn_fft_best_k(). */
-#ifndef FFT_MUL_TABLE
-#define FFT_MUL_TABLE                           \
-  { TOOM3_MUL_THRESHOLD * 4,   /* k=5 */        \
-    TOOM3_MUL_THRESHOLD * 8,   /* k=6 */        \
-    TOOM3_MUL_THRESHOLD * 16,  /* k=7 */        \
-    TOOM3_MUL_THRESHOLD * 32,  /* k=8 */        \
-    TOOM3_MUL_THRESHOLD * 96,  /* k=9 */        \
-    TOOM3_MUL_THRESHOLD * 288, /* k=10 */       \
+#ifndef MUL_FFT_TABLE
+#define MUL_FFT_TABLE                           \
+  { MUL_TOOM3_THRESHOLD * 4,   /* k=5 */        \
+    MUL_TOOM3_THRESHOLD * 8,   /* k=6 */        \
+    MUL_TOOM3_THRESHOLD * 16,  /* k=7 */        \
+    MUL_TOOM3_THRESHOLD * 32,  /* k=8 */        \
+    MUL_TOOM3_THRESHOLD * 96,  /* k=9 */        \
+    MUL_TOOM3_THRESHOLD * 288, /* k=10 */       \
     0 }
 #endif
-#ifndef FFT_SQR_TABLE
-#define FFT_SQR_TABLE                           \
-  { TOOM3_SQR_THRESHOLD * 4,   /* k=5 */        \
-    TOOM3_SQR_THRESHOLD * 8,   /* k=6 */        \
-    TOOM3_SQR_THRESHOLD * 16,  /* k=7 */        \
-    TOOM3_SQR_THRESHOLD * 32,  /* k=8 */        \
-    TOOM3_SQR_THRESHOLD * 96,  /* k=9 */        \
-    TOOM3_SQR_THRESHOLD * 288, /* k=10 */       \
+#ifndef SQR_FFT_TABLE
+#define SQR_FFT_TABLE                           \
+  { SQR_TOOM3_THRESHOLD * 4,   /* k=5 */        \
+    SQR_TOOM3_THRESHOLD * 8,   /* k=6 */        \
+    SQR_TOOM3_THRESHOLD * 16,  /* k=7 */        \
+    SQR_TOOM3_THRESHOLD * 32,  /* k=8 */        \
+    SQR_TOOM3_THRESHOLD * 96,  /* k=9 */        \
+    SQR_TOOM3_THRESHOLD * 288, /* k=10 */       \
     0 }
 #endif
 
@@ -1052,13 +1248,13 @@ extern const mp_limb_t __gmp_fib_table[];
 
 /* mpn_dc_divrem_n(n) calls 2*mul(n/2)+2*div(n/2), thus to be faster than
    div(n) = 4*div(n/2), we need mul(n/2) to be faster than the classic way,
-   i.e. n/2 >= KARATSUBA_MUL_THRESHOLD
+   i.e. n/2 >= MUL_KARATSUBA_THRESHOLD
 
-   Measured values are between 2 and 4 times KARATSUBA_MUL_THRESHOLD, so go
+   Measured values are between 2 and 4 times MUL_KARATSUBA_THRESHOLD, so go
    for 3 as an average.  */
 
-#ifndef DC_THRESHOLD
-#define DC_THRESHOLD    (3 * KARATSUBA_MUL_THRESHOLD)
+#ifndef DIV_DC_THRESHOLD
+#define DIV_DC_THRESHOLD    (3 * MUL_KARATSUBA_THRESHOLD)
 #endif
 
 
@@ -1094,7 +1290,11 @@ extern const mp_limb_t __gmp_fib_table[];
 /* ASSERT() is a private assertion checking scheme, similar to <assert.h>.
    ASSERT() does the check only if WANT_ASSERT is selected, ASSERT_ALWAYS()
    does it always.  Generally assertions are meant for development, but
-   might help when looking for a problem later too.  */
+   might help when looking for a problem later too.
+
+   Note that strings shouldn't be used within the ASSERT expression,
+   eg. ASSERT(strcmp(s,"notgood")!=0), since the quotes upset the "expr"
+   used in the !HAVE_STRINGIZE case (ie. K&R).  */
 
 #ifdef __LINE__
 #define ASSERT_LINE  __LINE__
@@ -1109,8 +1309,7 @@ extern const mp_limb_t __gmp_fib_table[];
 #endif
 
 void __gmp_assert_header _PROTO ((const char *filename, int linenum));
-void __gmp_assert_fail _PROTO ((const char *filename, int linenum,
-                               const char *expr)) ATTRIBUTE_NORETURN;
+__GMP_DECLSPEC void __gmp_assert_fail _PROTO ((const char *filename, int linenum, const char *expr)) ATTRIBUTE_NORETURN;
 
 #if HAVE_STRINGIZE
 #define ASSERT_FAIL(expr)  __gmp_assert_fail (ASSERT_FILE, ASSERT_LINE, #expr)
@@ -1146,6 +1345,15 @@ void __gmp_assert_fail _PROTO ((const char *filename, int linenum,
 #endif
 
 
+/* ASSERT_CODE includes code when assertion checking is wanted.  This is the
+   same as writing "#if WANT_ASSERT", but more compact.  */
+#if WANT_ASSERT
+#define ASSERT_CODE(expr)  expr
+#else
+#define ASSERT_CODE(expr)
+#endif
+
+
 /* Test that an mpq_t is in fully canonical form.  This can be used as
    protection on routines like mpq_equal which give wrong results on
    non-canonical inputs.  */
@@ -1170,6 +1378,30 @@ void __gmp_assert_fail _PROTO ((const char *filename, int linenum,
   } while (0)
 #else
 #define ASSERT_MPQ_CANONICAL(q)  do {} while (0)
+#endif
+
+/* Check that the nail parts are zero. */
+#define ASSERT_ALWAYS_LIMB(limb)                \
+  do {                                          \
+    mp_limb_t  __nail = (limb) & GMP_NAIL_MASK; \
+    ASSERT_ALWAYS (__nail == 0);                \
+  } while (0)
+#define ASSERT_ALWAYS_MPN(ptr, size)            \
+  do {                                          \
+    /* let whole loop go dead when no nails */  \
+    if (GMP_NAIL_BITS != 0)                     \
+      {                                         \
+        mp_size_t  __i;                         \
+        for (__i = 0; __i < (size); __i++)      \
+          ASSERT_ALWAYS_LIMB ((ptr)[__i]);      \
+      }                                         \
+  } while (0)
+#if WANT_ASSERT
+#define ASSERT_LIMB(limb)       ASSERT_ALWAYS_LIMB (limb)
+#define ASSERT_MPN(ptr, size)   ASSERT_ALWAYS_MPN (ptr, size)
+#else
+#define ASSERT_LIMB(limb)       do {} while (0)
+#define ASSERT_MPN(ptr, size)   do {} while (0)
 #endif
 
 
@@ -1214,7 +1446,7 @@ void mpn_com_n _PROTO ((mp_ptr, mp_srcptr, mp_size_t));
     ASSERT (__n >= 1);                                  \
     ASSERT (MPN_SAME_OR_SEPARATE_P (__d, __s, __n));    \
     do                                                  \
-      *__d++ = ~ *__s++;                                \
+      *__d++ = (~ *__s++) & GMP_NUMB_MASK;              \
     while (--__n);                                      \
   } while (0)
 #endif
@@ -1298,6 +1530,27 @@ void mpn_xnor_n _PROTO ((mp_ptr, mp_srcptr, mp_srcptr, mp_size_t));
 #endif
 
 
+/* SUBC_LIMB sets w=x-y and cout to 0 or 1 for a borrow from that
+   subtract.  */
+#if GMP_NAIL_BITS == 0
+#define SUBC_LIMB(cout, w, x, y)        \
+  do {                                  \
+    mp_limb_t  __x = (x);               \
+    mp_limb_t  __y = (y);               \
+    mp_limb_t  __w = __x - __y;         \
+    (w) = __w;                          \
+    (cout) = __w > __x;                 \
+  } while (0)
+#else
+#define SUBC_LIMB(cout, w, x, y)        \
+  do {                                  \
+    mp_limb_t  __w = (x) - (y);         \
+    (w) = __w & GMP_NUMB_MASK;          \
+    (cout) = __w >> (GMP_LIMB_BITS-1);  \
+  } while (0)
+#endif
+
+
 /* MPN_INCR_U does {ptr,size} += n, MPN_DECR_U does {ptr,size} -= n, both
    expecting no carry (or borrow) from that.
 
@@ -1317,49 +1570,49 @@ void mpn_xnor_n _PROTO ((mp_ptr, mp_srcptr, mp_srcptr, mp_size_t));
    declaring their operand sizes, then remove the former.  This is purely
    for the benefit of assertion checking.  */
 
-#if defined (__GNUC__) && HAVE_HOST_CPU_FAMILY_x86                      \
+#if defined (__GNUC__) && HAVE_HOST_CPU_FAMILY_x86 && GMP_NAIL_BITS == 0      \
   && BITS_PER_MP_LIMB == 32 && ! defined (NO_ASM) && ! WANT_ASSERT
 /* Better flags handling than the generic C gives on i386, saving a few
-   bytes of code and maybe a cycle or two.  aors is an add or sub, iord is
-   an inc or dec, and jiord is a jump for overflow of iord.  */
+   bytes of code and maybe a cycle or two.  */
 
-#define MPN_IORD_U(ptr, n, aors, iord, jiord)   \
-  do {                                          \
-    mp_ptr  __dummy;                            \
-    if (__builtin_constant_p (n) && (n) == 1)   \
-      {                                         \
-        __asm__ __volatile__                    \
-          (ASM_L(top) ":\n"                     \
-              iord  "   (%0)\n"                 \
-           "  leal      4(%0), %0\n"            \
-              jiord " " ASM_L(top) "\n"         \
-           : "=r" (__dummy)                     \
-           : "0"  (ptr)                         \
-           : "memory");                         \
-      }                                         \
-    else                                        \
-      {                                         \
-        __asm__ __volatile__                    \
-          (   aors  "   %2, (%0)\n"             \
-           "  jnc   "   ASM_L(done) "\n"        \
-           ASM_L(top) ":\n"                     \
-              iord  "   4(%0)\n"                \
-           "  leal      4(%0), %0\n"            \
-              jiord " " ASM_L(top) "\n"         \
-           ASM_L(done) ":\n"                    \
-           : "=r" (__dummy)                     \
-           : "0"  (ptr),                        \
-             "ri" (n)                           \
-           : "memory");                         \
-      }                                         \
+#define MPN_IORD_U(ptr, incr, aors)                     \
+  do {                                                  \
+    mp_ptr  __ptr_dummy;                                \
+    if (__builtin_constant_p (incr) && (incr) == 1)     \
+      {                                                 \
+        __asm__ __volatile__                            \
+          ("\n" ASM_L(top) ":\n"                        \
+           "\t" aors " $1, (%0)\n"                      \
+           "\tleal 4(%0),%0\n"                          \
+           "\tjc " ASM_L(top)                           \
+           : "=r" (__ptr_dummy)                         \
+           : "0"  (ptr)                                 \
+           : "memory");                                 \
+      }                                                 \
+    else                                                \
+      {                                                 \
+        __asm__ __volatile__                            \
+          (   aors  " %2,(%0)\n"                        \
+           "\tjnc " ASM_L(done) "\n"                    \
+           ASM_L(top) ":\n"                             \
+           "\t" aors " $1,4(%0)\n"                      \
+           "\tleal 4(%0),%0\n"                          \
+           "\tjc " ASM_L(top) "\n"                      \
+           ASM_L(done) ":\n"                            \
+           : "=r" (__ptr_dummy)                         \
+           : "0"  (ptr),                                \
+             "ri" (incr)                                \
+           : "memory");                                 \
+      }                                                 \
   } while (0)
 
-#define MPN_INCR_U(ptr, size, n)  MPN_IORD_U (ptr, n, "addl", "incl",     "jz")
-#define MPN_DECR_U(ptr, size, n)  MPN_IORD_U (ptr, n, "subl", "subl $1,", "jc")
-#define mpn_incr_u(ptr, n)  MPN_INCR_U (ptr, 0, n)
-#define mpn_decr_u(ptr, n)  MPN_DECR_U (ptr, 0, n)
+#define MPN_INCR_U(ptr, size, incr)  MPN_IORD_U (ptr, incr, "addl")
+#define MPN_DECR_U(ptr, size, incr)  MPN_IORD_U (ptr, incr, "subl")
+#define mpn_incr_u(ptr, incr)  MPN_INCR_U (ptr, 0, incr)
+#define mpn_decr_u(ptr, incr)  MPN_DECR_U (ptr, 0, incr)
 #endif
 
+#if GMP_NAIL_BITS == 0
 #ifndef mpn_incr_u
 #define mpn_incr_u(p,incr)                              \
   do {                                                  \
@@ -1380,7 +1633,6 @@ void mpn_xnor_n _PROTO ((mp_ptr, mp_srcptr, mp_srcptr, mp_size_t));
       }                                                 \
   } while (0)
 #endif
-
 #ifndef mpn_decr_u
 #define mpn_decr_u(p,incr)                              \
   do {                                                  \
@@ -1400,6 +1652,70 @@ void mpn_xnor_n _PROTO ((mp_ptr, mp_srcptr, mp_srcptr, mp_size_t));
             ;                                           \
       }                                                 \
   } while (0)
+#endif
+#endif
+
+#if GMP_NAIL_BITS >= 1
+#ifndef mpn_incr_u
+#define mpn_incr_u(p,incr)                              \
+  do {							\
+    mp_limb_t __x;					\
+    mp_ptr __p = (p);					\
+    if (__builtin_constant_p (incr) && (incr) == 1)	\
+      {							\
+	do						\
+	  {						\
+	    __x = (*__p + 1) & GMP_NUMB_MASK;		\
+	    *__p++ = __x;				\
+	  }						\
+	while (__x == 0);				\
+      }							\
+    else						\
+      {							\
+	__x = (*__p + (incr));				\
+	*__p++ = __x & GMP_NUMB_MASK;			\
+	if (__x >> GMP_NUMB_BITS != 0)			\
+	  {						\
+	    do						\
+	      {						\
+		__x = (*__p + 1) & GMP_NUMB_MASK;	\
+		*__p++ = __x;				\
+	      }						\
+	    while (__x == 0);				\
+	  }						\
+      }							\
+  } while (0)
+#endif
+#ifndef mpn_decr_u
+#define mpn_decr_u(p,incr)				\
+  do {							\
+    mp_limb_t __x;					\
+    mp_ptr __p = (p);					\
+    if (__builtin_constant_p (incr) && (incr) == 1)	\
+      {							\
+	do						\
+	  {						\
+	    __x = *__p;					\
+	    *__p++ = (__x - 1) & GMP_NUMB_MASK;		\
+	  }						\
+	while (__x == 0);				\
+      }							\
+    else						\
+      {							\
+	__x = *__p - (incr);				\
+	*__p++ = __x & GMP_NUMB_MASK;			\
+	if (__x >> GMP_NUMB_BITS != 0)			\
+	  {						\
+	    do						\
+	      {						\
+		__x = *__p;				\
+		*__p++ = (__x - 1) & GMP_NUMB_MASK;	\
+	      }						\
+	    while (__x == 0);				\
+	  }						\
+      }							\
+  } while (0)
+#endif
 #endif
 
 #ifndef MPN_INCR_U
@@ -1450,8 +1766,124 @@ struct bases
   mp_limb_t big_base_inverted;
 };
 
-#define __mp_bases __MPN(mp_bases)
-extern const struct bases __mp_bases[256];
+#define mp_bases __MPN(bases)
+#define __mp_bases __MPN(bases)
+__GMP_DECLSPEC extern const struct bases mp_bases[257];
+
+/* mp_bases[10] values, generated by mpn/mp_bases.c */
+#if GMP_NUMB_BITS == 4
+#define MP_BASES_CHARS_PER_LIMB_10      1
+#define MP_BASES_BIG_BASE_10            CNST_LIMB(0xa)
+#define MP_BASES_BIG_BASE_INVERTED_10   CNST_LIMB(0x9)
+#define MP_BASES_NORMALIZATION_STEPS_10 0
+#endif
+#if GMP_NUMB_BITS == 8
+#define MP_BASES_CHARS_PER_LIMB_10      2
+#define MP_BASES_BIG_BASE_10            CNST_LIMB(0x64)
+#define MP_BASES_BIG_BASE_INVERTED_10   CNST_LIMB(0x47)
+#define MP_BASES_NORMALIZATION_STEPS_10 1
+#endif
+#if GMP_NUMB_BITS == 16
+#define MP_BASES_CHARS_PER_LIMB_10      4
+#define MP_BASES_BIG_BASE_10            CNST_LIMB(0x2710)
+#define MP_BASES_BIG_BASE_INVERTED_10   CNST_LIMB(0xa36e)
+#define MP_BASES_NORMALIZATION_STEPS_10 2
+#endif
+#if GMP_NUMB_BITS == 28
+#define MP_BASES_CHARS_PER_LIMB_10      8
+#define MP_BASES_BIG_BASE_10            CNST_LIMB(0x5f5e100)
+#define MP_BASES_BIG_BASE_INVERTED_10   CNST_LIMB(0x5798ee23)
+#define MP_BASES_NORMALIZATION_STEPS_10 5
+#endif
+#if GMP_NUMB_BITS == 30
+#define MP_BASES_CHARS_PER_LIMB_10      9
+#define MP_BASES_BIG_BASE_10            CNST_LIMB(0x3b9aca00)
+#define MP_BASES_BIG_BASE_INVERTED_10   CNST_LIMB(0x12e0be82)
+#define MP_BASES_NORMALIZATION_STEPS_10 2
+#endif
+#if GMP_NUMB_BITS == 32
+#define MP_BASES_CHARS_PER_LIMB_10      9
+#define MP_BASES_BIG_BASE_10            CNST_LIMB(0x3b9aca00)
+#define MP_BASES_BIG_BASE_INVERTED_10   CNST_LIMB(0x12e0be82)
+#define MP_BASES_NORMALIZATION_STEPS_10 2
+#endif
+#if GMP_NUMB_BITS == 60
+#define MP_BASES_CHARS_PER_LIMB_10      18
+#define MP_BASES_BIG_BASE_10            CNST_LIMB(0xde0b6b3a7640000)
+#define MP_BASES_BIG_BASE_INVERTED_10   CNST_LIMB(0x2725dd1d243aba0e)
+#define MP_BASES_NORMALIZATION_STEPS_10 4
+#endif
+#if GMP_NUMB_BITS == 62
+#define MP_BASES_CHARS_PER_LIMB_10      18
+#define MP_BASES_BIG_BASE_10            CNST_LIMB(0xde0b6b3a7640000)
+#define MP_BASES_BIG_BASE_INVERTED_10   CNST_LIMB(0x2725dd1d243aba0e)
+#define MP_BASES_NORMALIZATION_STEPS_10 4
+#endif
+#if GMP_NUMB_BITS == 64
+#define MP_BASES_CHARS_PER_LIMB_10      19
+#define MP_BASES_BIG_BASE_10            CNST_LIMB(0x8ac7230489e80000)
+#define MP_BASES_BIG_BASE_INVERTED_10   CNST_LIMB(0xd83c94fb6d2ac34a)
+#define MP_BASES_NORMALIZATION_STEPS_10 0
+#endif
+
+
+/* For power of 2 bases this is exact.  For other bases the result is either
+   exact or one too big.
+
+   To be exact always it'd be necessary to examine all the limbs of the
+   operand, since numbers like 100..000 and 99...999 generally differ only
+   in the lowest limb.  It'd be possible to examine just a couple of high
+   limbs to increase the probability of being exact, but that doesn't seem
+   worth bothering with.  */
+
+#define MPN_SIZEINBASE(result, ptr, size, base)                         \
+  do {                                                                  \
+    int       __lb_base, __cnt;                                         \
+    mp_size_t __totbits;                                                \
+                                                                        \
+    ASSERT ((size) >= 0);                                               \
+    ASSERT ((base) >= 2);                                               \
+    ASSERT ((base) < numberof (mp_bases));                              \
+                                                                        \
+    /* Special case for X == 0.  */                                     \
+    if ((size) == 0)                                                    \
+      (result) = 1;                                                     \
+    else                                                                \
+      {                                                                 \
+        /* Calculate the total number of significant bits of X.  */     \
+        count_leading_zeros (__cnt, (ptr)[(size)-1]);                   \
+        __totbits = (size) * GMP_NUMB_BITS - (__cnt - GMP_NAIL_BITS);   \
+                                                                        \
+        if (POW2_P (base))                                              \
+          {                                                             \
+            __lb_base = mp_bases[base].big_base;                        \
+            (result) = (__totbits + __lb_base - 1) / __lb_base;         \
+          }                                                             \
+        else                                                            \
+          (result) = (size_t)                                           \
+            (__totbits * mp_bases[base].chars_per_bit_exactly) + 1;     \
+      }                                                                 \
+  } while (0)
+
+/* eliminate mp_bases lookups for base==16 */
+#define MPN_SIZEINBASE_16(result, ptr, size)                            \
+  do {                                                                  \
+    int       __cnt;                                                    \
+    mp_size_t __totbits;                                                \
+                                                                        \
+    ASSERT ((size) >= 0);                                               \
+                                                                        \
+    /* Special case for X == 0.  */                                     \
+    if ((size) == 0)                                                    \
+      (result) = 1;                                                     \
+    else                                                                \
+      {                                                                 \
+        /* Calculate the total number of significant bits of X.  */     \
+        count_leading_zeros (__cnt, (ptr)[(size)-1]);                   \
+        __totbits = (size) * GMP_NUMB_BITS - (__cnt - GMP_NAIL_BITS);   \
+        (result) = (__totbits + 4 - 1) / 4;                             \
+      }                                                                 \
+  } while (0)
 
 
 #if HAVE_HOST_CPU_FAMILY_x86
@@ -1499,7 +1931,7 @@ mp_limb_t mpn_invert_limb _PROTO ((mp_limb_t)) ATTRIBUTE_CONST;
 	_q += 1;                                                          \
 	if (_xh != 0)                                                     \
 	  {                                                               \
-	    sub_ddmmss (_xh, _r, _xh, _r, 0, (d));                        \
+	    _r -= (d);                                                    \
 	    _q += 1;                                                      \
 	  }                                                               \
       }                                                                   \
@@ -1550,31 +1982,28 @@ mp_limb_t mpn_invert_limb _PROTO ((mp_limb_t)) ATTRIBUTE_CONST;
     (q) = _xh - _q1;							\
   } while (0)
 
-/* Two dependent multiplies, plus about 6 cycles of other dependent
-   calculations. */
-#ifndef UDIV_NORM_PREINV_TIME
-#define UDIV_NORM_PREINV_TIME    (2*UMUL_TIME + 6)
+
+#define mpn_preinv_divrem_1  __MPN(preinv_divrem_1)
+mp_limb_t mpn_preinv_divrem_1 _PROTO ((mp_ptr, mp_size_t, mp_srcptr, mp_size_t, mp_limb_t, mp_limb_t, int));
+
+
+/* USE_PREINV_DIVREM_1 is whether to use mpn_preinv_divrem_1, as opposed to
+   the plain mpn_divrem_1.  Likewise USE_PREINV_MOD_1 chooses between
+   mpn_preinv_mod_1 and plain mpn_mod_1.  The default for both is yes, since
+   the few CISC chips where preinv is not good have defines saying so.  */
+#ifndef USE_PREINV_DIVREM_1
+#define USE_PREINV_DIVREM_1   1
 #endif
-
-/* When divisor was unnormalized there's going to be some shifting, so
-   assume a couple of extra cycles.  (The shifting isn't on the dependent
-   chain, but on some chips it seems to upset the code generation a bit.)  */
-#ifndef UDIV_UNNORM_PREINV_TIME
-#define UDIV_UNNORM_PREINV_TIME  (UDIV_NORM_PREINV_TIME + 2)
-#endif
-
-
-/* USE_PREINV_MOD_1 is whether to use mpn_preinv_mod_1, or to just use plain
-   mpn_mod_1.  If there's a native mpn_preinv_mod_1 then it's assumed to be
-   fast.  If preinv is the only division method, then mpn_preinv_mod_1 will
-   naturally want to be used.  Otherwise see which of udiv_qrnnd or
-   udiv_qrnnd_preinv is faster.  */
 #ifndef USE_PREINV_MOD_1
-#if HAVE_NATIVE_mpn_preinv_mod_1 || UDIV_PREINV_ALWAYS
 #define USE_PREINV_MOD_1   1
-#else
-#define USE_PREINV_MOD_1   (UDIV_TIME > UDIV_NORM_PREINV_TIME)
 #endif
+
+#if USE_PREINV_DIVREM_1
+#define MPN_DIVREM_OR_PREINV_DIVREM_1(qp,xsize,ap,size,d,dinv,shift)    \
+  mpn_preinv_divrem_1 (qp, xsize, ap, size, d, dinv, shift)
+#else
+#define MPN_DIVREM_OR_PREINV_DIVREM_1(qp,xsize,ap,size,d,dinv,shift)    \
+  mpn_divrem_1 (qp, xsize, ap, size, d)
 #endif
 
 #if USE_PREINV_MOD_1
@@ -1585,23 +2014,25 @@ mp_limb_t mpn_invert_limb _PROTO ((mp_limb_t)) ATTRIBUTE_CONST;
   mpn_mod_1 (src, size, divisor)
 #endif
 
+
 #define mpn_mod_34lsub1 __MPN(mod_34lsub1)
 mp_limb_t mpn_mod_34lsub1 _PROTO ((mp_srcptr, mp_size_t)) __GMP_ATTRIBUTE_PURE;
 
 
+/* DIVEXACT_1_THRESHOLD is at what size to use mpn_divexact_1, as opposed to
+   plain mpn_divrem_1.  Likewise MODEXACT_1_ODD_THRESHOLD for
+   mpn_modexact_1_odd against plain mpn_mod_1.  On most CPUs divexact and
+   modexact are faster at all sizes, so the defaults are 0.  Those CPUs
+   where this is not right have a tuned threshold.  */
+#ifndef DIVEXACT_1_THRESHOLD
+#define DIVEXACT_1_THRESHOLD  0
+#endif
+#ifndef MODEXACT_1_ODD_THRESHOLD
+#define MODEXACT_1_ODD_THRESHOLD  0
+#endif
+
 #define mpn_divexact_1 __MPN(divexact_1)
 void    mpn_divexact_1 _PROTO ((mp_ptr, mp_srcptr, mp_size_t, mp_limb_t));
-
-/* mpn_divexact_1 takes roughly 2 multiplies, so don't bother unless that's
-   faster than a division.  On most processors where mul is twice as fast as
-   division the threshold comes out as 0, so make that the default.  */
-#ifndef DIVEXACT_1_THRESHOLD
-#if 2*UMUL_TIME < UDIV_TIME
-#define DIVEXACT_1_THRESHOLD  0
-#else
-#define DIVEXACT_1_THRESHOLD  MP_SIZE_T_MAX
-#endif
-#endif
 
 #define MPN_DIVREM_OR_DIVEXACT_1(dst, src, size, divisor)                     \
   do {                                                                        \
@@ -1614,7 +2045,6 @@ void    mpn_divexact_1 _PROTO ((mp_ptr, mp_srcptr, mp_size_t, mp_limb_t));
       }                                                                       \
   } while (0)
 
-
 #define mpn_modexact_1c_odd  __MPN(modexact_1c_odd)
 mp_limb_t mpn_modexact_1c_odd _PROTO ((mp_srcptr src, mp_size_t size,
                                        mp_limb_t divisor, mp_limb_t c)) __GMP_ATTRIBUTE_PURE;
@@ -1626,18 +2056,6 @@ mp_limb_t mpn_modexact_1_odd _PROTO ((mp_srcptr src, mp_size_t size,
 #else
 #define mpn_modexact_1_odd(src,size,divisor) \
   mpn_modexact_1c_odd (src, size, divisor, CNST_LIMB(0))
-#endif
-
-/* mpn_modexact_1_odd takes roughly 2 multiplies, so don't bother unless
-   that's faster than a division.  When modexact is worth doing it has to
-   calculate a modular inverse, so it's probably only above a certain size
-   it'll be best, choose 5 as an guess for that.  */
-#ifndef MODEXACT_1_ODD_THRESHOLD
-#if 2*UMUL_TIME < UDIV_TIME
-#define MODEXACT_1_ODD_THRESHOLD  5
-#else
-#define MODEXACT_1_ODD_THRESHOLD  MP_SIZE_T_MAX
-#endif
 #endif
 
 #define MPN_MOD_OR_MODEXACT_1_ODD(src,size,divisor)     \
@@ -1663,10 +2081,11 @@ mp_limb_t mpn_modexact_1_odd _PROTO ((mp_srcptr src, mp_size_t size,
    Alternative: As noted in Granlund and Montgomery "Division by Invariant
    Integers using Multiplication" (reference in gmp.texi), n itself gives a
    3-bit inverse immediately, and could be used instead of a table lookup.
-   Some bit twiddling could very likely give a 4-bit inverse to start too.  */
+   A 4-bit inverse can be obtained effectively from xoring bits 1 and 2 into
+   bit 3, for instance with (((n + 2) & 4) << 1) ^ n.  */
 
 #define modlimb_invert_table  __gmp_modlimb_invert_table
-extern const unsigned char  __GMP_DECLSPEC modlimb_invert_table[128];
+__GMP_DECLSPEC extern const unsigned char  modlimb_invert_table[128];
 
 #if BITS_PER_MP_LIMB <= 8
 #define modlimb_invert(inv,n)                                   \
@@ -1674,9 +2093,9 @@ extern const unsigned char  __GMP_DECLSPEC modlimb_invert_table[128];
     mp_limb_t  __n = (n);                                       \
     mp_limb_t  __inv;                                           \
     ASSERT ((__n & 1) == 1);                                    \
-    __inv = modlimb_invert_table[(__n/2)&0x7F]; /*  8 */        \
-    ASSERT (__inv * __n == 1);                                  \
-    (inv) = __inv;                                              \
+    __inv = modlimb_invert_table[(__n/2) & 0x7F]; /*  8 */      \
+    ASSERT ((__inv * __n & GMP_NUMB_MASK) == 1);                \
+    (inv) = __inv & GMP_NUMB_MASK;                              \
   } while (0)
 #else
 #if BITS_PER_MP_LIMB <= 16
@@ -1685,10 +2104,10 @@ extern const unsigned char  __GMP_DECLSPEC modlimb_invert_table[128];
     mp_limb_t  __n = (n);                                       \
     mp_limb_t  __inv;                                           \
     ASSERT ((__n & 1) == 1);                                    \
-    __inv = modlimb_invert_table[(__n/2)&0x7F]; /*  8 */        \
-    __inv = 2 * __inv - __inv * __inv * __n;    /* 16 */        \
-    ASSERT (__inv * __n == 1);                                  \
-    (inv) = __inv;                                              \
+    __inv = modlimb_invert_table[(__n/2) & 0x7F]; /*  8 */      \
+    __inv = 2 * __inv - __inv * __inv * __n;      /* 16 */      \
+    ASSERT ((__inv * __n & GMP_NUMB_MASK) == 1);                \
+    (inv) = __inv & GMP_NUMB_MASK;                              \
   } while (0)
 #else
 #if BITS_PER_MP_LIMB <= 32
@@ -1697,11 +2116,11 @@ extern const unsigned char  __GMP_DECLSPEC modlimb_invert_table[128];
     mp_limb_t  __n = (n);                                       \
     mp_limb_t  __inv;                                           \
     ASSERT ((__n & 1) == 1);                                    \
-    __inv = modlimb_invert_table[(__n/2)&0x7F]; /*  8 */        \
-    __inv = 2 * __inv - __inv * __inv * __n;    /* 16 */        \
-    __inv = 2 * __inv - __inv * __inv * __n;    /* 32 */        \
-    ASSERT (__inv * __n == 1);                                  \
-    (inv) = __inv;                                              \
+    __inv = modlimb_invert_table[(__n/2) & 0x7F]; /*  8 */      \
+    __inv = 2 * __inv - __inv * __inv * __n;      /* 16 */      \
+    __inv = 2 * __inv - __inv * __inv * __n;      /* 32 */      \
+    ASSERT ((__inv * __n & GMP_NUMB_MASK) == 1);                \
+    (inv) = __inv & GMP_NUMB_MASK;                              \
   } while (0)
 #else
 #if BITS_PER_MP_LIMB <= 64
@@ -1710,12 +2129,12 @@ extern const unsigned char  __GMP_DECLSPEC modlimb_invert_table[128];
     mp_limb_t  __n = (n);                                       \
     mp_limb_t  __inv;                                           \
     ASSERT ((__n & 1) == 1);                                    \
-    __inv = modlimb_invert_table[(__n/2)&0x7F]; /*  8 */        \
-    __inv = 2 * __inv - __inv * __inv * __n;    /* 16 */        \
-    __inv = 2 * __inv - __inv * __inv * __n;    /* 32 */        \
-    __inv = 2 * __inv - __inv * __inv * __n;    /* 64 */        \
-    ASSERT (__inv * __n == 1);                                  \
-    (inv) = __inv;                                              \
+    __inv = modlimb_invert_table[(__n/2) & 0x7F]; /*  8 */      \
+    __inv = 2 * __inv - __inv * __inv * __n;      /* 16 */      \
+    __inv = 2 * __inv - __inv * __inv * __n;      /* 32 */      \
+    __inv = 2 * __inv - __inv * __inv * __n;      /* 64 */      \
+    ASSERT ((__inv * __n & GMP_NUMB_MASK) == 1);                \
+    (inv) = __inv & GMP_NUMB_MASK;                              \
   } while (0)
 #endif /* 64 */
 #endif /* 32 */
@@ -1725,7 +2144,7 @@ extern const unsigned char  __GMP_DECLSPEC modlimb_invert_table[128];
 
 /* Multiplicative inverse of 3, modulo 2^BITS_PER_MP_LIMB.
    0xAAAAAAAB for 32 bits, 0xAAAAAAAAAAAAAAAB for 64 bits. */
-#define MODLIMB_INVERSE_3   ((MP_LIMB_T_MAX / 3) * 2 + 1)
+#define MODLIMB_INVERSE_3   ((GMP_NUMB_MAX / 3) * 2 + 1)
 
 
 /* Set r to -a mod d.  a>=d is allowed.  Can give r>d.  All should be limbs.
@@ -1737,6 +2156,9 @@ extern const unsigned char  __GMP_DECLSPEC modlimb_invert_table[128];
 #define NEG_MOD(r, a, d)                                        \
   do {                                                          \
     ASSERT ((d) != 0);                                          \
+    ASSERT_LIMB (a);                                            \
+    ASSERT_LIMB (d);                                            \
+                                                                \
     if ((a) <= (d))                                             \
       {                                                         \
         /* small a is reasonably likely */                      \
@@ -1747,9 +2169,12 @@ extern const unsigned char  __GMP_DECLSPEC modlimb_invert_table[128];
         unsigned   __twos;                                      \
         mp_limb_t  __dnorm;                                     \
         count_leading_zeros (__twos, d);                        \
+        __twos -= GMP_NAIL_BITS;                                \
         __dnorm = (d) << __twos;                                \
         (r) = ((a) <= __dnorm ? __dnorm : 2*__dnorm) - (a);     \
       }                                                         \
+                                                                \
+    ASSERT_LIMB (r);                                            \
   } while (0)
 
 /* A bit mask of all the least significant zero bits of n, or -1 if n==0. */
@@ -1788,6 +2213,152 @@ extern const unsigned char  __GMP_DECLSPEC modlimb_invert_table[128];
 #endif
 
 
+/* bswap is available on i486 and up and is fast.  A combination rorw $8 /
+   roll $16 / rorw $8 is used in glibc for plain i386 (and in the linux
+   kernel with xchgb instead of rorw), but this is not done here, because
+   i386 means generic x86 and mixing word and dword operations will cause
+   partial register stalls on P6 chips.  */
+#if defined (__GNUC__) && ! defined (NO_ASM)            \
+  && HAVE_HOST_CPU_FAMILY_x86 && ! HAVE_HOST_CPU_i386   \
+  && BITS_PER_MP_LIMB == 32
+#define BSWAP_LIMB(dst, src)                    \
+  do {                                          \
+    asm ("bswap %0" : "=r" (dst) : "0" (src));  \
+  } while (0)
+#endif /* x86 */
+
+#if defined (__GNUC__) && ! defined (NO_ASM)    \
+  && defined (__ia64) && BITS_PER_MP_LIMB == 64
+#define BSWAP_LIMB(dst, src)                                    \
+  do {                                                          \
+    asm ("mux1 %0 = %1, @rev" : "=r" (dst) :  "r" (src));       \
+  } while (0)
+#endif
+
+#if ! defined (BSWAP_LIMB)
+#if BITS_PER_MP_LIMB == 8
+#define BSWAP_LIMB(dst, src)            \
+  do { (dst) = (src); } while (0)
+#endif
+#if BITS_PER_MP_LIMB == 16
+#define BSWAP_LIMB(dst, src)                    \
+  do {                                          \
+    (dst) = ((src) << 8) + ((src) >> 8);        \
+  } while (0)
+#endif
+#if BITS_PER_MP_LIMB == 32
+#define BSWAP_LIMB(dst, src)    \
+  do {                          \
+    (dst) =                     \
+      ((src) << 24)             \
+      + (((src) & 0xFF00) << 8) \
+      + (((src) >> 8) & 0xFF00) \
+      + ((src) >> 24);          \
+  } while (0)
+#endif
+#if BITS_PER_MP_LIMB == 64
+#define BSWAP_LIMB(dst, src)            \
+  do {                                  \
+    (dst) =                             \
+      ((src) << 56)                     \
+      + (((src) & 0xFF00) << 40)        \
+      + (((src) & 0xFF0000) << 24)      \
+      + (((src) & 0xFF000000) << 8)     \
+      + (((src) >> 8) & 0xFF000000)     \
+      + (((src) >> 24) & 0xFF0000)      \
+      + (((src) >> 40) & 0xFF00)        \
+      + ((src) >> 56);                  \
+  } while (0)
+#endif
+#endif
+
+
+/* Apparently lwbrx might be slow on some PowerPC chips, so restrict it to
+   those we know are fast.  */
+#if defined (__GNUC__) && ! defined (NO_ASM)                            \
+  && BITS_PER_MP_LIMB == 32 && HAVE_LIMB_BIG_ENDIAN                     \
+  && (HAVE_HOST_CPU_powerpc604                                          \
+      || HAVE_HOST_CPU_powerpc604e                                      \
+      || HAVE_HOST_CPU_powerpc750                                       \
+      || HAVE_HOST_CPU_powerpc7400)
+#define BSWAP_LIMB_FETCH(limb, src)     \
+  do {                                  \
+    mp_srcptr  __blf_src = (src);       \
+    mp_limb_t  __limb;                  \
+    __asm__ ("lwbrx %0, 0, %1"          \
+             : "=r" (__limb)            \
+             : "r" (__blf_src),         \
+               "m" (*__blf_src));       \
+    (limb) = __limb;                    \
+  } while (0)
+#endif
+
+#if ! defined (BSWAP_LIMB_FETCH)
+#define BSWAP_LIMB_FETCH(limb, src)  BSWAP_LIMB (limb, *(src))
+#endif
+
+
+/* On the same basis that lwbrx might be slow, restrict stwbrx to those we
+   know are fast.  FIXME: Is this necessary?  */
+#if defined (__GNUC__) && ! defined (NO_ASM)                            \
+  && BITS_PER_MP_LIMB == 32 && HAVE_LIMB_BIG_ENDIAN                     \
+  && (HAVE_HOST_CPU_powerpc604                                          \
+      || HAVE_HOST_CPU_powerpc604e                                      \
+      || HAVE_HOST_CPU_powerpc750                                       \
+      || HAVE_HOST_CPU_powerpc7400)
+#define BSWAP_LIMB_STORE(dst, limb)     \
+  do {                                  \
+    mp_ptr     __dst = (dst);           \
+    mp_limb_t  __limb = (limb);         \
+    __asm__ ("stwbrx %1, 0, %2"         \
+             : "=m" (*__dst)            \
+             : "r" (__limb),            \
+               "r" (__dst));            \
+  } while (0)
+#endif
+
+#if ! defined (BSWAP_LIMB_STORE)
+#define BSWAP_LIMB_STORE(dst, limb)  BSWAP_LIMB (*(dst), limb)
+#endif
+
+
+/* Byte swap limbs from {src,size} and store at {dst,size}. */
+#define MPN_BSWAP(dst, src, size)                       \
+  do {                                                  \
+    mp_ptr     __dst = (dst);                           \
+    mp_srcptr  __src = (src);                           \
+    mp_size_t  __size = (size);                         \
+    mp_size_t  __i;                                     \
+    ASSERT ((size) >= 0);                               \
+    ASSERT (MPN_SAME_OR_SEPARATE_P (dst, src, size));   \
+    CRAY_Pragma ("_CRI ivdep");                         \
+    for (__i = 0; __i < __size; __i++)                  \
+      {                                                 \
+        BSWAP_LIMB_FETCH (*__dst, __src);               \
+        __dst++;                                        \
+        __src++;                                        \
+      }                                                 \
+  } while (0)
+
+/* Byte swap limbs from {dst,size} and store in reverse order at {src,size}. */
+#define MPN_BSWAP_REVERSE(dst, src, size)               \
+  do {                                                  \
+    mp_ptr     __dst = (dst);                           \
+    mp_size_t  __size = (size);                         \
+    mp_srcptr  __src = (src) + __size - 1;              \
+    mp_size_t  __i;                                     \
+    ASSERT ((size) >= 0);                               \
+    ASSERT (! MPN_OVERLAP_P (dst, size, src, size));    \
+    CRAY_Pragma ("_CRI ivdep");                         \
+    for (__i = 0; __i < __size; __i++)                  \
+      {                                                 \
+        BSWAP_LIMB_FETCH (*__dst, __src);               \
+        __dst++;                                        \
+        __src--;                                        \
+      }                                                 \
+  } while (0)
+
+
 /* No processor claiming to be SPARC v9 compliant seems to
    implement the POPC instruction.  Disable pattern for now.  */
 #if 0
@@ -1801,7 +2372,7 @@ extern const unsigned char  __GMP_DECLSPEC modlimb_invert_table[128];
 #endif
 
 /* Cool population count of an mp_limb_t.
-   You have to figure out how this works, I won't tell you!
+   You have to figure out how this works, We won't tell you!
 
    The constants could also be expressed as:
      0xAA... = [2^(N+1) / 3] = [(2^N-1)/3*2]
@@ -1877,7 +2448,7 @@ typedef unsigned int UDItype	__attribute__ ((mode (DI)));
 typedef unsigned char UQItype;
 typedef		 long SItype;
 typedef unsigned long USItype;
-#if defined _LONGLONG || defined _LONG_LONG_LIMB
+#if HAVE_LONG_LONG
 typedef	long long int DItype;
 typedef unsigned long long int UDItype;
 #else /* Assume `long' gives us a wide enough type.  Needed for hppa2.0w.  */
@@ -1912,9 +2483,10 @@ union ieee_double_extract
  || defined (__clipper__)						\
  || defined (__cris)							\
  || defined (__i386__)							\
+ || defined (__x86_64__)						\
  || defined (__i860__)							\
  || defined (__i960__)							\
- || defined (__ia64)							\
+ || defined (__ia64) && ! defined (__hpux)				\
  || defined (MIPSEL) || defined (_MIPSEL)				\
  || defined (__ns32000__)						\
  || defined (__WINNT) || defined (_WIN32)
@@ -1960,7 +2532,8 @@ union ieee_double_extract
  || defined (__ibm032__)						\
  || defined (_IBMR2) || defined (_ARCH_PPC)				\
  || defined (__sh__)							\
- || defined (__sparc) || defined (sparc)				\
+ || defined (__sparc) || defined (sparc) || defined (__sparc__)		\
+ || defined (__sparc_v9) || defined (__sparc_v9__)			\
  || defined (__we32k__)
 #define _GMP_IEEE_FLOATS 1
 union ieee_double_extract
@@ -1981,10 +2554,10 @@ union ieee_double_extract
 
 /* Use (4.0 * ...) instead of (2.0 * ...) to work around buggy compilers
    that don't convert ulong->double correctly (eg. SunOS 4 native cc).  */
-#define MP_BASE_AS_DOUBLE (4.0 * ((mp_limb_t) 1 << (BITS_PER_MP_LIMB - 2)))
+#define MP_BASE_AS_DOUBLE (4.0 * ((mp_limb_t) 1 << (GMP_NUMB_BITS - 2)))
 /* Maximum number of limbs it will take to store any `double'.
    We assume doubles have 53 mantissam bits.  */
-#define LIMBS_PER_DOUBLE ((53 + BITS_PER_MP_LIMB - 1) / BITS_PER_MP_LIMB + 1)
+#define LIMBS_PER_DOUBLE ((53 + GMP_NUMB_BITS - 1) / GMP_NUMB_BITS + 1)
 
 double __gmp_scale2 _PROTO ((double, int)) ATTRIBUTE_CONST;
 int __gmp_extract_double _PROTO ((mp_ptr, double));
@@ -2000,41 +2573,41 @@ void __gmp_sqrt_of_negative _PROTO ((void)) ATTRIBUTE_NORETURN;
 
 #if defined _LONG_LONG_LIMB
 #if __GMP_HAVE_TOKEN_PASTE
-#define CNST_LIMB(C) C##LL
+#define CNST_LIMB(C) ((mp_limb_t) C##LL)
 #else
-#define CNST_LIMB(C) C/**/LL
+#define CNST_LIMB(C) ((mp_limb_t) C/**/LL)
 #endif
 #else /* not _LONG_LONG_LIMB */
 #if __GMP_HAVE_TOKEN_PASTE
-#define CNST_LIMB(C) C##L
+#define CNST_LIMB(C) ((mp_limb_t) C##L)
 #else
-#define CNST_LIMB(C) C/**/L
+#define CNST_LIMB(C) ((mp_limb_t) C/**/L)
 #endif
 #endif /* _LONG_LONG_LIMB */
 
 /* Stuff used by mpn/generic/perfsqr.c and mpz/prime_p.c */
-#if BITS_PER_MP_LIMB == 2
+#if GMP_NUMB_BITS == 2
 #define PP 0x3					/* 3 */
 #define PP_FIRST_OMITTED 5
 #endif
-#if BITS_PER_MP_LIMB == 4
+#if GMP_NUMB_BITS == 4
 #define PP 0xF					/* 3 x 5 */
 #define PP_FIRST_OMITTED 7
 #endif
-#if BITS_PER_MP_LIMB == 8
+#if GMP_NUMB_BITS == 8
 #define PP 0x69					/* 3 x 5 x 7 */
 #define PP_FIRST_OMITTED 11
 #endif
-#if BITS_PER_MP_LIMB == 16
+#if GMP_NUMB_BITS == 16
 #define PP 0x3AA7				/* 3 x 5 x 7 x 11 x 13 */
 #define PP_FIRST_OMITTED 17
 #endif
-#if BITS_PER_MP_LIMB == 32
+#if GMP_NUMB_BITS == 32
 #define PP 0xC0CFD797L				/* 3 x 5 x 7 x 11 x ... x 29 */
 #define PP_INVERTED 0x53E5645CL
 #define PP_FIRST_OMITTED 31
 #endif
-#if BITS_PER_MP_LIMB == 64
+#if GMP_NUMB_BITS == 64
 #define PP CNST_LIMB(0xE221F97C30E94E1D)	/* 3 x 5 x 7 x 11 x ... x 53 */
 #define PP_INVERTED CNST_LIMB(0x21CFE6CFC938B36B)
 #define PP_FIRST_OMITTED 59
@@ -2065,7 +2638,7 @@ void __gmp_sqrt_of_negative _PROTO ((void)) ATTRIBUTE_NORETURN;
 /* (a/0), with a given by low and size;
    is 1 if a=+/-1, 0 otherwise */
 #define JACOBI_LS0(alow,asize) \
-  (((alow) == 1) && ((asize) == 1 || (asize) == -1))
+  (((asize) == 1 || (asize) == -1) && (alow) == 1)
 
 /* (a/0), with a an mpz_t;
    fetch of low limb always valid, even if size is zero */
@@ -2079,7 +2652,7 @@ void __gmp_sqrt_of_negative _PROTO ((void)) ATTRIBUTE_NORETURN;
 
 /* (0/b), with b given by low and size; is 1 if b=+/-1, 0 otherwise */
 #define JACOBI_0LS(blow,bsize) \
-  ((blow == 1) && (bsize == 1 || bsize == -1))
+  (((bsize) == 1 || (bsize) == -1) && (blow) == 1)
 
 /* Convert a bit1 to +1 or -1. */
 #define JACOBI_BIT1_TO_PN(result_bit1) \
@@ -2136,7 +2709,16 @@ void __gmp_sqrt_of_negative _PROTO ((void)) ATTRIBUTE_NORETURN;
 /* Set a_rem to {a_ptr,a_size} reduced modulo b, either using mod_1 or
    modexact_1_odd, but in either case leaving a_rem<b.  b must be odd and
    unsigned.  modexact_1_odd effectively calculates -a mod b, and
-   result_bit1 is adjusted for the factor of -1.  */
+   result_bit1 is adjusted for the factor of -1.
+
+   The way mpn_modexact_1_odd sometimes bases its remainder on a_size and
+   sometimes on a_size-1 means if GMP_NUMB_BITS is odd we can't know what
+   factor to introduce into result_bit1, so for that case use mpn_mod_1
+   unconditionally.
+
+   FIXME: mpn_modexact_1_odd is more efficient, so some way to get it used
+   for odd GMP_NUMB_BITS would be good.  Perhaps it could mung its result,
+   or not skip a divide step, or something. */
 
 #define JACOBI_MOD_OR_MODEXACT_1_ODD(result_bit1, a_rem, a_ptr, a_size, b) \
   do {                                                                     \
@@ -2147,7 +2729,8 @@ void __gmp_sqrt_of_negative _PROTO ((void)) ATTRIBUTE_NORETURN;
     ASSERT (__a_size >= 1);                                                \
     ASSERT (__b & 1);                                                      \
                                                                            \
-    if (BELOW_THRESHOLD (__a_size, MODEXACT_1_ODD_THRESHOLD))              \
+    if ((GMP_NUMB_BITS % 2) != 0                                           \
+        || BELOW_THRESHOLD (__a_size, MODEXACT_1_ODD_THRESHOLD))           \
       {                                                                    \
         (a_rem) = mpn_mod_1 (__a_ptr, __a_size, __b);                      \
       }                                                                    \
@@ -2163,11 +2746,10 @@ void __gmp_sqrt_of_negative _PROTO ((void)) ATTRIBUTE_NORETURN;
    limb and adds an extra limb.  __GMPF_PREC_TO_BITS drops that extra limb,
    hence giving back the user's size in bits rounded up.  Notice that
    converting prec->bits->prec gives an unchanged value.  */
-#define __GMPF_BITS_TO_PREC(n)                                          \
-  ((mp_size_t) ((__GMP_MAX (53, n) + 2 * __GMP_BITS_PER_MP_LIMB - 1)    \
-                / __GMP_BITS_PER_MP_LIMB))
+#define __GMPF_BITS_TO_PREC(n)						\
+  ((mp_size_t) ((__GMP_MAX (53, n) + 2 * GMP_NUMB_BITS - 1) / GMP_NUMB_BITS))
 #define __GMPF_PREC_TO_BITS(n) \
-  ((unsigned long) (n) * __GMP_BITS_PER_MP_LIMB - __GMP_BITS_PER_MP_LIMB)
+  ((unsigned long) (n) * GMP_NUMB_BITS - GMP_NUMB_BITS)
 
 extern mp_size_t __gmp_default_fp_limb_precision;
 
@@ -2186,9 +2768,9 @@ extern mp_size_t __gmp_default_fp_limb_precision;
 
 #define MPF_SIGNIFICANT_DIGITS(n, base, prec)                           \
   do {                                                                  \
-    ASSERT (base >= 2 && base < numberof (__mp_bases));                 \
+    ASSERT (base >= 2 && base < numberof (mp_bases));                   \
     (n) = 2 + (size_t) ((((prec) - 1) * BITS_PER_MP_LIMB)               \
-                        * __mp_bases[(base)].chars_per_bit_exactly);    \
+                        * mp_bases[(base)].chars_per_bit_exactly);      \
   } while (0)
 
 
@@ -2272,13 +2854,14 @@ struct gmp_asprintf_t {
       {                                                                 \
         newalloc = 2*newsize;                                           \
         (d)->alloc = newalloc;                                          \
-        (d)->buf = (__gmp_reallocate_func) ((d)->buf, alloc, newalloc); \
+        (d)->buf = __GMP_REALLOCATE_FUNC_TYPE ((d)->buf,                \
+                                               alloc, newalloc, char);  \
       }                                                                 \
   } while (0)
 
-int __gmp_asprintf_memory _PROTO ((struct gmp_asprintf_t *d, const char *str, size_t len));
-int __gmp_asprintf_reps _PROTO ((struct gmp_asprintf_t *d, int c, int reps));
-int __gmp_asprintf_final _PROTO ((struct gmp_asprintf_t *d));
+__GMP_DECLSPEC int __gmp_asprintf_memory _PROTO ((struct gmp_asprintf_t *d, const char *str, size_t len));
+__GMP_DECLSPEC int __gmp_asprintf_reps _PROTO ((struct gmp_asprintf_t *d, int c, int reps));
+__GMP_DECLSPEC int __gmp_asprintf_final _PROTO ((struct gmp_asprintf_t *d));
 
 /* buf is where to write the next output, and size is how much space is left
    there.  If the application passed size==0 then that's what we'll have
@@ -2324,27 +2907,18 @@ struct gmp_snprintf_t {
       DOPRNT_MEMORY (ptr, len);         \
   } while (0)
 
-int __gmp_doprnt _PROTO ((const struct doprnt_funs_t *funs,
-                          void *data,
-                          const char *fmt,
-                          va_list ap));
-int __gmp_doprnt_integer _PROTO ((const struct doprnt_funs_t *funs,
-                                  void *data,
-                                  const struct doprnt_params_t *p,
-                                  const char *s));
-int __gmp_doprnt_mpf _PROTO ((const struct doprnt_funs_t *funs,
-                              void * data,
-                              const struct doprnt_params_t *p,
-                              mpf_srcptr f));
-int __gmp_replacement_vsnprintf _PROTO ((char *buf, size_t buf_size,
-                                         const char *fmt, va_list ap));
+__GMP_DECLSPEC int __gmp_doprnt _PROTO ((const struct doprnt_funs_t *, void *, const char *, va_list));
+__GMP_DECLSPEC int __gmp_doprnt_integer _PROTO ((const struct doprnt_funs_t *, void *, const struct doprnt_params_t *, const char *));
+__GMP_DECLSPEC int __gmp_doprnt_mpf _PROTO ((const struct doprnt_funs_t *, void *, const struct doprnt_params_t *, mpf_srcptr));
+/* why no __GMP_DECLSPEC here??? */
+int __gmp_replacement_vsnprintf _PROTO ((char *, size_t, const char *, va_list));
 #endif /* _GMP_H_HAVE_VA_LIST */
 
 
-typedef int (*gmp_doscan_scan_t)  _PROTO ((void *data, const char *fmt, ...));
-typedef void *(*gmp_doscan_step_t) _PROTO ((void *data, int new_chars));
-typedef int (*gmp_doscan_get_t)   _PROTO ((void *data));
-typedef int (*gmp_doscan_unget_t) _PROTO ((int c, void *data));
+typedef int (*gmp_doscan_scan_t)  _PROTO ((void *, const char *, ...));
+typedef void *(*gmp_doscan_step_t) _PROTO ((void *, int));
+typedef int (*gmp_doscan_get_t)   _PROTO ((void *));
+typedef int (*gmp_doscan_unget_t) _PROTO ((int, void *));
 
 struct gmp_doscan_funs_t {
   gmp_doscan_scan_t   scan;
@@ -2356,16 +2930,17 @@ extern const struct gmp_doscan_funs_t  __gmp_fscanf_funs;
 extern const struct gmp_doscan_funs_t  __gmp_sscanf_funs;
 
 #if _GMP_H_HAVE_VA_LIST
-int __gmp_doscan _PROTO ((const struct gmp_doscan_funs_t *funs, void *data,
-                          const char *orig_fmt, va_list orig_ap));
+int __gmp_doscan _PROTO ((const struct gmp_doscan_funs_t *, void *,
+                          const char *, va_list));
 #endif
 
 
 /* For testing and debugging.  */
 #define MPZ_CHECK_FORMAT(z)					\
-  do {								\
+  do {                                                          \
     ASSERT_ALWAYS (SIZ(z) == 0 || PTR(z)[ABSIZ(z) - 1] != 0);	\
     ASSERT_ALWAYS (ALLOC(z) >= ABSIZ(z));			\
+    ASSERT_ALWAYS_MPN (PTR(z), ABSIZ(z));                       \
   } while (0)
 
 #define MPQ_CHECK_FORMAT(q)                             \
@@ -2424,19 +2999,21 @@ extern mp_size_t  divrem_1_unnorm_threshold[];
 extern mp_size_t  divrem_2_threshold[];
 extern mp_size_t  mod_1_norm_threshold[];
 extern mp_size_t  mod_1_unnorm_threshold[];
+extern mp_size_t  get_str_basecase_threshold[];
+extern mp_size_t  get_str_precompute_threshold[];
 
-#undef KARATSUBA_MUL_THRESHOLD
-#undef TOOM3_MUL_THRESHOLD
-#undef FFT_MUL_TABLE
-#undef FFT_MUL_THRESHOLD
-#undef FFT_MODF_MUL_THRESHOLD
-#undef BASECASE_SQR_THRESHOLD
-#undef KARATSUBA_SQR_THRESHOLD
-#undef TOOM3_SQR_THRESHOLD
-#undef FFT_SQR_TABLE
-#undef FFT_SQR_THRESHOLD
-#undef FFT_MODF_SQR_THRESHOLD
-#undef DC_THRESHOLD
+#undef MUL_KARATSUBA_THRESHOLD
+#undef MUL_TOOM3_THRESHOLD
+#undef MUL_FFT_TABLE
+#undef MUL_FFT_THRESHOLD
+#undef MUL_FFT_MODF_THRESHOLD
+#undef SQR_BASECASE_THRESHOLD
+#undef SQR_KARATSUBA_THRESHOLD
+#undef SQR_TOOM3_THRESHOLD
+#undef SQR_FFT_TABLE
+#undef SQR_FFT_THRESHOLD
+#undef SQR_FFT_MODF_THRESHOLD
+#undef DIV_DC_THRESHOLD
 #undef POWM_THRESHOLD
 #undef GCD_ACCEL_THRESHOLD
 #undef GCDEXT_THRESHOLD
@@ -2444,19 +3021,21 @@ extern mp_size_t  mod_1_unnorm_threshold[];
 #undef DIVREM_1_UNNORM_THRESHOLD
 #undef MOD_1_NORM_THRESHOLD
 #undef MOD_1_UNNORM_THRESHOLD
+#undef GET_STR_DC_THRESHOLD
+#undef GET_STR_PRECOMPUTE_THRESHOLD
 
-#define KARATSUBA_MUL_THRESHOLD   mul_threshold[0]
-#define TOOM3_MUL_THRESHOLD       mul_threshold[1]
-#define FFT_MUL_TABLE             { 0 }
-#define FFT_MUL_THRESHOLD         mul_threshold[2]
-#define FFT_MODF_MUL_THRESHOLD    fft_modf_mul_threshold
-#define BASECASE_SQR_THRESHOLD    sqr_threshold[0]
-#define KARATSUBA_SQR_THRESHOLD   sqr_threshold[1]
-#define TOOM3_SQR_THRESHOLD       sqr_threshold[2]
-#define FFT_SQR_TABLE             { 0 }
-#define FFT_SQR_THRESHOLD         sqr_threshold[3]
-#define FFT_MODF_SQR_THRESHOLD    fft_modf_sqr_threshold
-#define DC_THRESHOLD              dc_threshold[0]
+#define MUL_KARATSUBA_THRESHOLD   mul_threshold[0]
+#define MUL_TOOM3_THRESHOLD       mul_threshold[1]
+#define MUL_FFT_TABLE             { 0 }
+#define MUL_FFT_THRESHOLD         mul_threshold[2]
+#define MUL_FFT_MODF_THRESHOLD    fft_modf_mul_threshold
+#define SQR_BASECASE_THRESHOLD    sqr_threshold[0]
+#define SQR_KARATSUBA_THRESHOLD   sqr_threshold[1]
+#define SQR_TOOM3_THRESHOLD       sqr_threshold[2]
+#define SQR_FFT_TABLE             { 0 }
+#define SQR_FFT_THRESHOLD         sqr_threshold[3]
+#define SQR_FFT_MODF_THRESHOLD    fft_modf_sqr_threshold
+#define DIV_DC_THRESHOLD              dc_threshold[0]
 #define POWM_THRESHOLD            powm_threshold[0]
 #define GCD_ACCEL_THRESHOLD       gcd_accel_threshold[0]
 #define GCDEXT_THRESHOLD          gcdext_threshold[0]
@@ -2464,25 +3043,28 @@ extern mp_size_t  mod_1_unnorm_threshold[];
 #define DIVREM_1_UNNORM_THRESHOLD divrem_1_unnorm_threshold[0]
 #define MOD_1_NORM_THRESHOLD      mod_1_norm_threshold[0]
 #define MOD_1_UNNORM_THRESHOLD    mod_1_unnorm_threshold[0]
+#define GET_STR_DC_THRESHOLD   get_str_basecase_threshold[0]
+#define GET_STR_PRECOMPUTE_THRESHOLD get_str_precompute_threshold[0]
 
 #if ! UDIV_PREINV_ALWAYS
-#undef SB_PREINV_THRESHOLD
+#undef DIV_SB_PREINV_THRESHOLD
 #undef DIVREM_2_THRESHOLD
-#define SB_PREINV_THRESHOLD       sb_preinv_threshold[0]
+#define DIV_SB_PREINV_THRESHOLD       sb_preinv_threshold[0]
 #define DIVREM_2_THRESHOLD        divrem_2_threshold[0]
 #endif
 
 /* Sizes the tune program tests up to, used in a couple of recompilations. */
-#define KARATSUBA_SQR_MAX_GENERIC  200
-#define TOOM3_MUL_THRESHOLD_LIMIT  700
+#define SQR_KARATSUBA_MAX_GENERIC  200
+#define MUL_TOOM3_THRESHOLD_LIMIT  700
+#define GET_STR_THRESHOLD_LIMIT    500
 
 #undef  FFT_TABLE_ATTRS
 #define FFT_TABLE_ATTRS
 extern mp_size_t mpn_fft_table[2][MPN_FFT_TABLE_SIZE];
 
 #if TUNE_PROGRAM_BUILD_SQR
-#undef KARATSUBA_SQR_THRESHOLD
-#define KARATSUBA_SQR_THRESHOLD  KARATSUBA_SQR_MAX_GENERIC
+#undef SQR_KARATSUBA_THRESHOLD
+#define SQR_KARATSUBA_THRESHOLD  SQR_KARATSUBA_MAX_GENERIC
 #endif
 
 #endif /* TUNE_PROGRAM_BUILD */

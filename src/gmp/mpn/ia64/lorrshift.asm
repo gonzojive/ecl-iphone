@@ -1,6 +1,6 @@
 dnl  IA-64 mpn_Xshift.
 
-dnl  Copyright (C) 2000, 2001 Free Software Foundation, Inc.
+dnl  Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 
@@ -55,9 +55,19 @@ ifdef(`OPERATION_rshift',`
 
 ASM_START()
 PROLOGUE(func)
+	.prologue
+ifdef(`HAVE_ABI_32',
+`	addp4	r32 = 0, r32
+	addp4	r33 = 0, r33
+	sxt4	r34 = r34
+	zxt4	r35 = r35
+	;;
+')
 	add	r34 = -1, r34
 	sub	r31 = 64, r35
+	.save	ar.lc, r2
 	mov	r2 = ar.lc;;
+	.body
 	cmp.leu	p6, p7 = 8,r34
 ifdef(`OPERATION_lshift',`
 	shladd	r33 = r34, 3, r33
@@ -81,9 +91,9 @@ C
 	ld8	r16 = [r33], UPD
 	FSH	r26 = r19, r35	;;
 	BSH	r27 = r16, r31	;;
-	{ .mib	nop.b 0;; }			C delay to save 6 cycles...
-	{ .mib	nop.b 0;; }			C delay to save 6 cycles...
-	{ .mib	nop.b 0;; }			C delay to save 6 cycles...
+	{ .mib;	nop.b 0;; }			C delay to save 6 cycles...
+	{ .mib;	nop.b 0;; }			C delay to save 6 cycles...
+	{ .mib;	nop.b 0;; }			C delay to save 6 cycles...
 	or	r27 = r27, r26
 	mov	r19 = r16	;;
 	st8	[r32] = r27, UPD
@@ -104,9 +114,9 @@ C
 	ld8	r16 = [r33], UPD
 	FSH	r26 = r19, r35	;;
 	BSH	r27 = r16, r31	;;
-	{ .mib	nop.b 0;; }			C delay to save 6 cycles...
-	{ .mib	nop.b 0;; }			C delay to save 6 cycles...
-	{ .mib	nop.b 0;; }			C delay to save 6 cycles...
+	{ .mib;	nop.b 0;; }			C delay to save 6 cycles...
+	{ .mib;	nop.b 0;; }			C delay to save 6 cycles...
+	{ .mib;	nop.b 0;; }			C delay to save 6 cycles...
 	or	r27 = r27, r26
 	mov	r19 = r16	;;
 	st8	[r32] = r27, UPD
@@ -145,7 +155,7 @@ C
 	FSH	r24 = r18, r35
 	br.cloop.dptk .Loop
 }
-	br	.Lend2
+	br.sptk	.Lend2
 .Loop:
   { .mmi
 	st8	[r32] = r27, UPD

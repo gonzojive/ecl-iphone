@@ -1,6 +1,6 @@
 /* operator>> -- C++-style input of mpf_t.
 
-Copyright 2001 Free Software Foundation, Inc.
+Copyright 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -59,10 +59,10 @@ operator>> (istream &i, mpf_ptr f)
       if (c == '-')
 	s = "-";
       i.get(c);
-    }
 
-  while (isspace(c) && i.get(c)) // skip whitespace
-    ;
+      while (isspace(c) && i.get(c)) // skip whitespace
+	;
+    }
 
   base = 10; // octal/hex floats currently unsupported
   __gmp_istream_set_digits(s, i, c, ok, base); // read the number
@@ -102,10 +102,10 @@ operator>> (istream &i, mpf_ptr f)
 	{
 	  s += c;
 	  i.get(c);
-	}
 
-      while (isspace(c) && i.get(c)) // skip whitespace
-	;
+	  while (isspace(c) && i.get(c)) // skip whitespace
+	    ;
+	}
 
       __gmp_istream_set_digits(s, i, c, ok, base); // read the exponent
     }

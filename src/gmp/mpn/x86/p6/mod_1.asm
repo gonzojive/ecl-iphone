@@ -1,9 +1,6 @@
 dnl  Intel P6 mpn_mod_1 -- mpn by limb remainder.
-dnl 
-dnl  P6: 21.5 cycles/limb
 
-
-dnl  Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+dnl  Copyright 1999, 2000, 2002 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -22,8 +19,10 @@ dnl  License along with the GNU MP Library; see the file COPYING.LIB.  If
 dnl  not, write to the Free Software Foundation, Inc., 59 Temple Place -
 dnl  Suite 330, Boston, MA 02111-1307, USA.
 
-
 include(`../config.m4')
+
+
+C P6: 21.5 cycles/limb
 
 
 C mp_limb_t mpn_mod_1 (mp_srcptr src, mp_size_t size, mp_limb_t divisor);
@@ -141,9 +140,9 @@ deflit(`FRAME',0)
 
 	cmovc(	%esi, %edi)		C restore if underflow
 	decl	%ebx
-	jnz	LF(mpn_mod_1,preinv_entry)
+	jnz	L(preinv_entry)
 
-	jmp	LF(mpn_mod_1,done_edi)
+	jmp	L(done_edi)
 
 EPILOGUE()
 
@@ -163,7 +162,7 @@ deflit(`FRAME',0)
 
 	movl	PARAM_SRC, %esi
 	orl	%ecx, %ecx
-	jz	LF(mpn_mod_1,done_edx)	C result==carry if size==0
+	jz	L(done_edx)		C result==carry if size==0
 
 	sarl	$31, %eax
 	movl	PARAM_DIVISOR, %ebp
@@ -173,7 +172,7 @@ deflit(`FRAME',0)
 	addl	$MUL_UNNORM_THRESHOLD, %eax
 
 	cmpl	%eax, %ecx
-	jb	LF(mpn_mod_1,divide_top)
+	jb	L(divide_top)
 
 
 	C The carry parameter pretends to be the src high limb.
@@ -182,7 +181,7 @@ deflit(`FRAME',0)
 	leal	1(%ecx), %ebx		C size+1
 
 	movl	%edx, %eax		C carry
-	jmp	LF(mpn_mod_1,mul_by_inverse_1c)
+	jmp	L(mul_by_inverse_1c)
 
 EPILOGUE()
 

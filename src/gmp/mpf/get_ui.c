@@ -1,7 +1,7 @@
 /* mpf_get_ui -- mpf to ulong conversion */
 
 /*
-Copyright 2001 Free Software Foundation, Inc.
+Copyright 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -37,8 +37,8 @@ MA 02111-1307, USA.
 unsigned long
 mpf_get_ui (mpf_srcptr f)
 {
-  int        size, abs_size;
-  mp_exp_t   exp;
+  mp_size_t size, abs_size;
+  mp_exp_t exp;
 
   size = SIZ (f);
   if (size == 0)

@@ -1,8 +1,6 @@
 dnl  AMD K6 mpn_modexact_1_odd -- exact division style remainder.
-dnl
-dnl  K6: 10.0 cycles/limb
 
-dnl  Copyright 2000, 2001 Free Software Foundation, Inc.
+dnl  Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
 dnl 
 dnl  This file is part of the GNU MP Library.
 dnl 
@@ -22,6 +20,9 @@ dnl  not, write to the Free Software Foundation, Inc., 59 Temple Place -
 dnl  Suite 330, Boston, MA 02111-1307, USA.
 
 include(`../config.m4')
+
+
+C K6: 10.0 cycles/limb
 
 
 C mp_limb_t mpn_modexact_1_odd (mp_srcptr src, mp_size_t size,
@@ -52,7 +53,7 @@ deflit(`FRAME',0)
 	pushl	%esi		FRAME_pushl()
 
 	movl	PARAM_CARRY, %edx
-	jmp	LF(mpn_modexact_1_odd,start_1c)
+	jmp	L(start_1c)
 
 ifdef(`PIC',`
 L(movl_eip_edi):
@@ -81,7 +82,7 @@ L(start_1c):
 	pushl	%ebp		FRAME_pushl()
 
 ifdef(`PIC',`
-	call	LF(mpn_modexact_1c_odd,movl_eip_edi)
+	call	L(movl_eip_edi)
 
 	addl	$_GLOBAL_OFFSET_TABLE_, %edi
 	C

@@ -1,6 +1,6 @@
 dnl PowerPC-32 mpn_rshift -- Shift a number right.
 
-dnl Copyright 1995, 2000 Free Software Foundation, Inc.
+dnl Copyright 1995, 2000, 2002 Free Software Foundation, Inc.
 
 dnl This file is part of the GNU MP Library.
 
@@ -19,14 +19,19 @@ dnl along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
 dnl the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
 dnl MA 02111-1307, USA.
 
+include(`../config.m4')
+
+
+C      cycles/limb
+C 604e:    5.0
+C 750:     4.0
+
 
 dnl INPUT PARAMETERS
 dnl res_ptr	r3
 dnl s1_ptr	r4
 dnl size	r5
 dnl cnt		r6
-
-include(`../config.m4')
 
 ASM_START()
 PROLOGUE(mpn_rshift)
@@ -35,26 +40,28 @@ PROLOGUE(mpn_rshift)
 	subfic	r8,r6,32
 	lwz	r11,0(r4)	C load first s1 limb
 	slw	r3,r11,r8	C compute function return value
-	bdz	.Lend1
+	bdz	L(end1)
 
-.Loop:	lwzu	r10,4(r4)
+L(oop):	lwzu	r10,4(r4)
 	srw	r9,r11,r6
 	slw	r12,r10,r8
 	or	r9,r9,r12
 	stwu	r9,4(r7)
-	bdz	.Lend2
+	bdz	L(end2)
 	lwzu	r11,4(r4)
 	srw	r9,r10,r6
 	slw	r12,r11,r8
 	or	r9,r9,r12
 	stwu	r9,4(r7)
-	bdnz	.Loop
+	bdnz	L(oop)
 
-.Lend1:	srw	r0,r11,r6
+L(end1):
+	srw	r0,r11,r6
 	stw	r0,4(r7)
 	blr
 
-.Lend2:	srw	r0,r10,r6
+L(end2):
+	srw	r0,r10,r6
 	stw	r0,4(r7)
 	blr
 EPILOGUE(mpn_rshift)
