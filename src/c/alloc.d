@@ -837,6 +837,8 @@ realloc(void *ptr, size_t size)
   cl_object x;
   size_t i, j;
 
+  if (ptr == NULL)
+    return malloc(size);
   for (x = malloc_list;  !endp(x);  x = CDR(x))
     if (CAR(x)->string.self == ptr) {
       x = CAR(x);
