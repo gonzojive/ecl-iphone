@@ -810,6 +810,9 @@ ECLS 0.5
 
   - The order of evaluation of arguments in a PSETQ was not respected.
 
+  - The compiler would not restore the value of a special variable which
+    is used in MULTIPLE-VALUE-BIND.
+
 * System design and portability:
 
   - Remove function_entry_table.

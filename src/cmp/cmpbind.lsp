@@ -84,8 +84,15 @@
       ;; now the binding is in effect
       (push 'BDS-BIND *unwind-exit*))))
 
-(defun bds-bind (loc var)
-  (wt-nl "bds_bind(" (var-loc var) "," loc ");")
+(defun bds-bind (loc var &aux loc-var)
+  ;; Optimize the case (let ((*special-var* *special-var*)) ...)
+  (if (and (consp loc)
+	   (eq (car loc) 'var)
+	   (typep (setq loc-var (second loc)) 'var)
+	   (eq (var-kind loc-var) 'global)
+	   (eq (var-name loc-var) (var-name var)))
+    (wt-nl "bds_push(" (var-loc var) ");")
+    (wt-nl "bds_bind(" (var-loc var) "," loc ");"))
   ;; push BDS-BIND only once:
   ;; bds-bind may be called several times on the same variable, e.g.
   ;; an optional has two alternative bindings.

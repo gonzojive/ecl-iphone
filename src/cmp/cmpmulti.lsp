@@ -187,61 +187,72 @@
   (list 'MULTIPLE-VALUE-BIND info vars init-form body)
   )
 
-(defun c2multiple-value-bind (vars init-form body
-                                   &aux (labels nil)
-                                   (*unwind-exit* *unwind-exit*)
-                                   (*env* *env*) env-grows
-                                   (*lcl* *lcl*)
-                                   (nr (list 'LCL (next-lcl))))
-
+(defun c2multiple-value-bind (vars init-form body)
   (multiple-value-check vars init-form)
-  (wt-nl "{ int " nr ";")
-  (dolist (var vars)
-    (declare (type var var))
-    (let ((kind (local var)))
-      (if kind
-        (let ((lcl (next-lcl)))
-          (setf (var-loc var) lcl)
-          (wt-nl *volatile* (register var) (rep-type kind)) (wt-lcl lcl)
-          (wt ";")
-	  (wt-comment (var-name var)))
-	(unless env-grows (setq env-grows (var-ref-ccb var))))))
 
+  ;; 0) Compile the form which is going to give us the values
   (let ((*destination* 'VALUES)) (c2expr* init-form))
-  (wt-nl nr "=NValues;")
-  (let ((*env-lvl* *env-lvl*))
+
+  (let* ((*unwind-exit* *unwind-exit*)
+	 (*env-lvl* *env-lvl*)
+	 (*env* *env*)
+	 (*lcl* *lcl*)
+	 (labels nil)
+	 (env-grows nil)
+	 (nr (list 'LCL (next-lcl))))
+    ;; 1) Retrieve the number of output values
+    (wt-nl "{ int " nr "=NValues;")
+
+    ;; 2) For all variables which are not special and do not belong to
+    ;;    a closure, make a local C variable.
+    (dolist (var vars)
+      (declare (type var var))
+      (let ((kind (local var)))
+	(if kind
+	  (let ((lcl (next-lcl)))
+	    (setf (var-loc var) lcl)
+	    (wt-nl *volatile* (register var) (rep-type kind)) (wt-lcl lcl)
+	    (wt ";")
+	    (wt-comment (var-name var)))
+	  (unless env-grows (setq env-grows (var-ref-ccb var))))))
+
+    ;; 3) If there are closure variables, set up an environment.
     (when (setq env-grows (env-grows env-grows))
       (let ((env-lvl *env-lvl*))
 	(wt-nl "{ volatile cl_object env" (incf *env-lvl*)
 	       " = env" env-lvl ";")))
-    (let ((*unwind-exit* *unwind-exit*))
-      (do ((vs vars (rest vs))
-	   (i 0 (1+ i))
-	   (value '(VALUE 0)))
-	  ((endp vs))
-	(declare (fixnum i))
-	(push (next-label) labels)
-	(wt-nl "if (" nr "--<=0) ") (wt-go (first labels))
-	(setf (second value) i)
-	(bind value (first vs))))
 
+    ;; 4) Loop for assigning values to variables 
+    (do ((vs vars (rest vs))
+	 (i 0 (1+ i))
+	 (value '(VALUE 0)))
+	((endp vs))
+      (declare (fixnum i))
+      (push (next-label) labels)
+      (wt-nl "if (" nr "--<=0) ") (wt-go (first labels))
+      (setf (second value) i)
+      (bind value (first vs)))
+
+    ;; 5) Loop for setting default values when there are less output
+    ;;    than variables.
     (let ((label (next-label)))
       (wt-nl) (wt-go label)
-
       (setq labels (nreverse labels))
-
       (let ((*suppress-compiler-warnings* t))
 	;; suppress the warning by default-init
 	(dolist (v vars)
 	  (wt-label (first labels))
 	  (pop labels)
 	  (bind (third (default-init (var-type v))) v)))
-
       (wt-label label))
 
+    ;; 6) Compile the body. If there are bindings of special variables,
+    ;;    these bindings are undone here.
     (c2expr body)
-    (when env-grows (wt "}")))
-  (wt "}")
+
+    ;; 7) Close the C expression.
+    (when env-grows (wt "}"))
+    (wt "}"))
   )
 
 ;;; ----------------------------------------------------------------------

@@ -175,35 +175,7 @@
 	     (push-vars sv)))))
 
   (when aux-vars
-    (setq aux-info (make-info))
-    (do ((specs aux-vars (cdr specs)))
-	((null specs))
-      (setq spec (car specs))
-      (if (consp spec)
-	  (cond ((symbolp (cdr spec))
-		 (ck-spec (null (cdr spec)))
-		 (let ((v (c1make-var (car spec) ss is ts)))
-		   (push (car spec) vnames)
-		   (push (default-init (var-type v)) aux-inits)
-		   (setf (car specs) v)
-		   (push-vars v)))
-		(t
-		 (ck-spec (null (cddr spec)))
-		 (let ((init (c1expr* (second spec) aux-info))
-		       (v (c1make-var (car spec) ss is ts)))
-		   (push (car spec) vnames)
-		   (push (and-form-type (var-type v) init (second spec)
-					"In (LAMBDA ~a...)" block-name)
-			 aux-inits)
-		   (setf (car specs) v)
-		   (push-vars v))))
-	  (let ((v (c1make-var spec ss is ts)))
-	    (push spec vnames)
-	    (push (default-init (var-type v)) aux-inits)
-	    (setf (car specs) v)
-	    (push-vars v))))
-    (setq aux-inits (nreverse aux-inits))
-    (add-info info aux-info))
+    (setq body `((let* ,aux-vars ,(list* 'declare other-decls) ,@body))))
 
   (check-vdecl vnames ts is)
 
@@ -219,11 +191,6 @@
   (dolist (kwd keywords)
             (check-vref (second kwd))
             (when (fourth kwd) (check-vref (fourth kwd))))
-  (dolist (var aux-vars) (check-vref var))
-
-  (when aux-vars
-        (add-info aux-info (second body))
-        (setq body (list 'LET* aux-info aux-vars aux-inits body)))
 
   (list 'LAMBDA
         info
