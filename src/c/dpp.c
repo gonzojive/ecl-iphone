@@ -607,19 +607,20 @@ put_declaration(void)
       fprintf(out, "\tcl_object KEY_VARS[%d];\n", 2*nkey);
     }
     put_lineno();
-    fprintf(out, "\tva_list %s;\n\tva_start(%s, %s);\n", rest_var, rest_var,
-	    ((nreq > 0) ? required[nreq-1] : "narg"));
+    fprintf(out, "\tcl_va_list %s;\n\tcl_va_start(%s, %s, narg, %d);\n",
+	    rest_var, rest_var, ((nreq > 0) ? required[nreq-1] : "narg"),
+	    nreq);
     put_lineno();
-    fprintf(out, "\tif (narg < %d) FEtoo_few_arguments(&narg);\n", nreq);
+    fprintf(out, "\tif (narg < %d) FEtoo_few_arguments(narg);\n", nreq);
     if (nopt > 0 && !rest_flag && !key_flag) {
       put_lineno();
-      fprintf(out, "\tif (narg > %d) FEtoo_many_arguments(&narg);\n", nreq + nopt);
+      fprintf(out, "\tif (narg > %d) FEtoo_many_arguments(narg);\n", nreq + nopt);
     }
     for (i = 0;  i < nopt;  i++) {
       put_lineno();
       fprintf(out, "\tif (narg > %d) {\n", nreq+i, optional[i].o_var);
       put_lineno();
-      fprintf(out, "\t\t%s = va_arg(%s, cl_object);\n",
+      fprintf(out, "\t\t%s = cl_va_arg(%s);\n",
 	      optional[i].o_var, rest_var);
       if (optional[i].o_svar) {
 	put_lineno();
@@ -640,8 +641,8 @@ put_declaration(void)
     }
     if (key_flag) {
       put_lineno();
-      fprintf(out, "\tva_parse_key(narg-%d, ARGS, %d, KEYS, KEY_VARS, NULL, %d);\n",
-	      nreq+nopt, nkey, allow_other_keys_flag);
+      fprintf(out, "\tcl_parse_key(ARGS, %d, KEYS, KEY_VARS, NULL, %d);\n",
+	      nkey, allow_other_keys_flag);
       for (i = 0;  i < nkey;  i++) {
 	put_lineno();
 	fprintf(out, "\tif (KEY_VARS[%d]==Cnil) {\n", nkey+i);

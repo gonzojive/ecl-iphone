@@ -328,7 +328,7 @@ APPLY(int n, cl_objectfn fn, cl_object *x)
 		      x[43],x[44],x[45],x[46],x[47],x[48],x[49],
 		      x[50],x[51],x[52],x[53],x[54],x[55],x[56],
 		      x[57],x[58],x[59],x[60],x[61],x[62]);
-  case 64: return (*fn)(n, x[0],x[1],x[2],x[3],x[4],x[5],x[6],x[7],
+  default: return (*fn)(n, x[0],x[1],x[2],x[3],x[4],x[5],x[6],x[7],
 		      x[8],x[9],x[10],x[11],x[12],x[13],x[14],
 		      x[15],x[16],x[17],x[18],x[19],x[20],x[21],
 		      x[22],x[23],x[24],x[25],x[26],x[27],x[28],
@@ -337,7 +337,7 @@ APPLY(int n, cl_objectfn fn, cl_object *x)
 		      x[43],x[44],x[45],x[46],x[47],x[48],x[49],
 		      x[50],x[51],x[52],x[53],x[54],x[55],x[56],
 		      x[57],x[58],x[59],x[60],x[61],x[62],x[63]);
-  default: FEprogram_error("Exceeded call-arguments-limit.", 0);
+  /* Arguments above 64 have been pushed on the stack */
   } 
 }
 
@@ -644,7 +644,7 @@ APPLY_closure(int n, cl_objectfn fn, cl_object cl, cl_object *x)
 		      x[43],x[44],x[45],x[46],x[47],x[48],x[49],
 		      x[50],x[51],x[52],x[53],x[54],x[55],x[56],
 		      x[57],x[58],x[59],x[60],x[61]);
-  case 64: return (*fn)(n, cl, x[0],x[1],x[2],x[3],x[4],x[5],x[6],x[7],
+  default: return (*fn)(n, cl, x[0],x[1],x[2],x[3],x[4],x[5],x[6],x[7],
 		      x[8],x[9],x[10],x[11],x[12],x[13],x[14],
 		      x[15],x[16],x[17],x[18],x[19],x[20],x[21],
 		      x[22],x[23],x[24],x[25],x[26],x[27],x[28],
@@ -653,31 +653,6 @@ APPLY_closure(int n, cl_objectfn fn, cl_object cl, cl_object *x)
 		      x[43],x[44],x[45],x[46],x[47],x[48],x[49],
 		      x[50],x[51],x[52],x[53],x[54],x[55],x[56],
 		      x[57],x[58],x[59],x[60],x[61],x[62]);
-  default: FEprogram_error("Exceeded call-arguments-limit.", 0);
+  /* Arguments above 64 have been pushed on the stack */
   } 
 }
-
-/*
- * Variants for systems where stack grows upwards.
- */
-
-#ifdef NO_ARGS_ARRAY
-cl_object
-va_APPLY(int n, cl_objectfn fn, va_list args)
-{
-  cl_object x[n];
-  int i;
-  for (i=0; i<n; i++) x[i] = cl_nextarg(args);
-  APPLY(n, fn, x);
-}
-
-cl_object
-va_APPLY_closure(int n, cl_objectfn fn, cl_object cl, va_list args)
-{
-  cl_object x[n+1];
-  int i;
-  x[0] = cl;
-  for(i=1; i<=n; i++) x[i] = cl_nextarg(args);
-  APPLY(n+1, fn, x);
-}
-#endif /* NO_ARGS_ARRAY */

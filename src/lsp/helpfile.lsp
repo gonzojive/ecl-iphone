@@ -137,6 +137,7 @@ the help file."
 	     (return-from get-documentation output)))))))
 
 (defun set-documentation (symbol doc-type string)
+  (tan 1.0)
   (unless (member doc-type '(variable function setf type structure))
     (error "~S is not a valid documentation type" doc-type))
   (unless (or (stringp string) (null string))

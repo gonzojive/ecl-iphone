@@ -114,14 +114,14 @@ setupTEST(cl_object item, cl_object test, cl_object test_not, cl_object key)
 cl_return f ## _if(int narg, cl_object pred, cl_object arg, cl_object key, cl_object val) \
 {  \
 	if (narg < 2)  \
-		FEtoo_few_arguments(&narg);  \
+		FEtoo_few_arguments(narg);  \
 	return f(narg+2, pred, arg, @':test', @'funcall', key, val);  \
 }  \
 \
 cl_return f ## _if_not(int narg, cl_object pred, cl_object arg, cl_object key, cl_object val) \
 {  \
 	if (narg < 2)  \
-		FEtoo_few_arguments(&narg);  \
+		FEtoo_few_arguments(narg);  \
 	return f(narg+2, pred, arg, @':test-not', @'funcall', key, val);  \
 }
 
@@ -129,7 +129,7 @@ cl_return f ## _if_not(int narg, cl_object pred, cl_object arg, cl_object key, c
 cl_return f ## _if(int narg, cl_object arg1, cl_object pred, cl_object arg3, cl_object key, cl_object val) \
 {  \
 	if (narg < 3)  \
-		FEtoo_few_arguments(&narg);  \
+		FEtoo_few_arguments(narg);  \
 	return f(narg+2, arg1, pred, arg3, @':test', @'funcall', key, val);  \
 }  \
 \
@@ -137,7 +137,7 @@ cl_return f ## _if_not(int narg, cl_object arg1, cl_object pred, cl_object arg3,
 	cl_object val)  \
 {  \
 	if (narg < 3)  \
-		FEtoo_few_arguments(&narg);  \
+		FEtoo_few_arguments(narg);  \
 	return f(narg+2, arg1, pred, arg3, @':test-not', @'funcall', key, val);  \
 }
 
@@ -183,9 +183,9 @@ cdr(cl_object x)
 	cl_object list = Cnil, z;
 @
 	if (narg-- != 0) {
-		list = z = CONS(va_arg(args, cl_object), Cnil);
+		list = z = CONS(cl_va_arg(args), Cnil);
 		while (narg-- > 0) 
-			z = CDR(z) = CONS(va_arg(args, cl_object), Cnil);
+			z = CDR(z) = CONS(cl_va_arg(args), Cnil);
 		}
 	@(return list)
 @)
@@ -206,10 +206,10 @@ list(int narg, ...)
 	cl_object p = Cnil, *z=&p;
 @
 	if (narg == 0)
-		FEtoo_few_arguments(&narg);
+		FEtoo_few_arguments(narg);
 	while (--narg > 0)
-		z = &CDR( *z = CONS(cl_nextarg(args), Cnil));
-	*z = va_arg(args, cl_object);
+		z = &CDR( *z = CONS(cl_va_arg(args), Cnil));
+	*z = cl_va_arg(args);
 	@(return p)
 @)
 
@@ -221,7 +221,7 @@ listX(int narg, ...)
 
 	va_start(args, narg);
 	while (--narg > 0)
-		z = &CDR( *z = CONS(cl_nextarg(args), Cnil));
+		z = &CDR( *z = CONS(va_arg(args,cl_object), Cnil));
 	*z = va_arg(args, cl_object);
 	return(p);
 }
@@ -246,8 +246,8 @@ copy_list_to(cl_object x, cl_object **z)
 	else {
 		lastcdr = &x;
 		while (narg-- > 1)
-			copy_list_to(cl_nextarg(rest), &lastcdr);
-		*lastcdr = cl_nextarg(rest);
+			copy_list_to(cl_va_arg(rest), &lastcdr);
+		*lastcdr = cl_va_arg(rest);
 	}
 	@(return x)
 @)
@@ -562,12 +562,12 @@ copy_tree(cl_object x)
 		@(return Cnil)
 	lastcdr = &x;
 	while (narg-- > 1) {
-		*lastcdr = l = va_arg(lists, cl_object);
+		*lastcdr = l = cl_va_arg(lists);
 		loop_for_on(l) {
 			lastcdr = &CDR(l);
 		} end_loop_for_on;
 	}
-	*lastcdr = va_arg(lists, cl_object);
+	*lastcdr = cl_va_arg(lists);
 	@(return x)
 @)
 
@@ -894,7 +894,7 @@ cl_return
 	cl_object output;
 
 	if (narg < 2)
-		FEtoo_few_arguments(&narg);
+		FEtoo_few_arguments(narg);
 	output = @si::member1(narg, item, list, k1, v1, k2, v2, k3, v3);
 	if (Null(output))
 		output = CONS(item, list);

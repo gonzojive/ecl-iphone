@@ -164,11 +164,10 @@ extern int aset_bv(cl_object x, cl_index index, int value);
 extern void cl_throw(cl_object tag) __attribute__((noreturn));
 extern void cl_return_from(cl_object block_id, cl_object block_name) __attribute__((noreturn));
 extern void cl_go(cl_object tag_id, cl_object label) __attribute__((noreturn));
-extern void parse_key(int narg, cl_object *args, int nkey, cl_object *keys, cl_object *vars, cl_object *rest, bool allow_other_keys);
-extern cl_object grab_rest_args(int narg, cl_object *args);
+extern void cl_parse_key(cl_va_list args, int nkey, cl_object *keys, cl_object *vars, cl_object *rest, bool allow_other_keys);
+extern cl_object cl_grab_rest_args(cl_va_list args);
 extern void check_other_key(cl_object l, int n, ...);
 extern void init_cmpaux(void);
-
 
 /* compiler.c */
 
@@ -178,8 +177,20 @@ extern void init_compiler(void);
 
 /* interpreter.c */
 
+extern void cl_stack_push(cl_object o);
+extern cl_object cl_stack_pop(void);
+extern cl_index cl_stack_index(void);
+extern void cl_stack_set_index(cl_index sp);
+extern void cl_stack_pop_n(cl_index n);
+extern void cl_stack_insert(cl_index where, cl_index n);
+extern cl_index cl_stack_push_list(cl_object list);
+extern cl_index cl_stack_push_va_list(cl_va_list args);
+extern void cl_stack_push_n(cl_index n, cl_object *args);
+extern int cl_stack_push_values(void);
+extern void cl_stack_pop_values(int n);
+
 extern cl_object lex_env;
-extern cl_object lambda_apply(int narg, cl_object fun, cl_object *args);
+extern cl_object lambda_apply(int narg, cl_object fun);
 extern cl_object *interpret(cl_object *memory);
 extern void init_interpreter(void);
 
@@ -201,8 +212,8 @@ extern void FEcontrol_error(const char *s, int narg, ...) __attribute__((noretur
 extern void FEerror(char *s, int narg, ...) __attribute__((noreturn));
 extern void FEcannot_open(cl_object fn) __attribute__((noreturn));
 extern void FEwrong_type_argument(cl_object type, cl_object value) __attribute__((noreturn));
-extern void FEtoo_few_arguments(int *nargp) __attribute__((noreturn));
-extern void FEtoo_many_arguments(int *nargp) __attribute__((noreturn));
+extern void FEtoo_few_arguments(int narg) __attribute__((noreturn));
+extern void FEtoo_many_arguments(int narg) __attribute__((noreturn));
 extern void FEunbound_variable(cl_object sym) __attribute__((noreturn));
 extern void FEinvalid_macro_call(cl_object obj) __attribute__((noreturn));
 extern void FEinvalid_variable(char *s, cl_object obj) __attribute__((noreturn));
@@ -222,26 +233,14 @@ extern void FEend_of_file(cl_object strm);
 
 #define funcall clLfuncall
 
-extern cl_object apply(int narg, cl_object fun, cl_object *args);
-extern cl_object link_call(cl_object sym, cl_objectfn *pLK, int narg, va_list args);
+#define cl_va_start(a,p,n,k) (va_start(a[0].args,p),a[0].narg=n,cl__va_start(a,k))
+extern void cl__va_start(cl_va_list args, int args_before);
+extern cl_object cl_va_arg(cl_va_list args);
+
+extern cl_object cl_apply_from_stack(cl_index narg, cl_object fun);
+extern cl_object link_call(cl_object sym, cl_objectfn *pLK, int narg, cl_va_list args);
 extern cl_object cl_safe_eval(cl_object form, cl_object *bytecodes, cl_object env, cl_object err_value);
 extern void init_eval(void);
-
-#ifdef NO_ARGS_ARRAY
-extern cl_object va_APPLY(int narg, cl_objectfn fn, va_list args);
-extern cl_object va_APPLY_closure(int narg, cl_objectfn fn, cl_object data, va_list args);
-extern cl_object va_compute_method(int narg, cl_object fn, cl_object data, va_list args);
-extern cl_object va_lambda_apply(int narg, cl_object fun, va_list args);
-extern void va_parse_key(int narg, va_list args, int nkey, cl_object *keys, cl_object *vars, cl_object *rest, bool allow_other_keys);
-extern cl_object va_grab_rest_args(int narg, va_list args);
-#else
-#define va_APPLY(x,y,z) APPLY(x,y,&va_arg(z,cl_object))
-#define va_APPLY_closure(x,y,p,z) APPLY_closure(x,y,p,&va_arg(z,cl_object))
-#define va_compute_method(x,y,z) compute_method(x,y,&va_arg(z,cl_object))
-#define va_lambda_apply(x,y,z) lambda_apply(x,y,&va_arg(z,cl_object))
-#define va_parse_key(a,b,c,d,e,f,g) parse_key(a,&va_arg(b,cl_object),c,d,e,f,g)
-#define va_grab_rest_args(a,b) grab_rest_args(a,&va_arg(b,cl_object))
-#endif
 
 /* file.c */
 

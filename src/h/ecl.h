@@ -24,7 +24,6 @@
 #include "gmp.h"
 #include "object.h"
 #include "stacks.h"
-#include "cs.h"
 #include "critical.h"
 #ifdef THREADS
 # include "lwp.h"

@@ -1789,7 +1789,7 @@ fmt_semicolon(format_stack fmt, bool colon, bool atsign)
 	fmt.stream = strm;
 	fmt.base = cl_stack_index();
 	for (narg -= 2; narg; narg--)
-		cl_stack_push(cl_nextarg(args));
+		cl_stack_push(cl_va_arg(args));
 	fmt.index = fmt.base;
 	fmt.end = cl_stack_index();
 	fmt.jmp_buf = &fmt_jmp_buf0;

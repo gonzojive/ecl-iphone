@@ -26,15 +26,6 @@ extern cl_object *cl_stack;
 extern cl_object *cl_stack_top;
 extern cl_object *cl_stack_limit;
 
-extern void cl_stack_push(cl_object o);
-extern cl_object cl_stack_pop(void);
-extern cl_index cl_stack_index(void);
-extern void cl_stack_set_index(cl_index sp);
-extern void cl_stack_pop_n(cl_index n);
-extern void cl_stack_insert(cl_index where, cl_index n);
-extern void cl_stack_push_varargs(cl_index n, va_list args);
-extern void cl_stack_push_n(cl_index n, cl_object *args);
-
 /**************
  * BIND STACK
  **************/

@@ -43,13 +43,12 @@
 void
 FEfilesystem_error(const char *msg, int narg, ...)
 {
-	va_list args;
+	cl_va_list args;
 	cl_object rest;
 	const char *extra_msg;
 
-	va_start(args, narg);
-	rest = va_grab_rest_args(narg, args);
-	va_end(args);
+	cl_va_start(args, narg, narg, 0);
+	rest = cl_grab_rest_args(args);
 
 	switch (errno) {
 	case EPERM:

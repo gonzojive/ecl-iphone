@@ -78,7 +78,7 @@
 (defun baboon (&aux (*print-case* :upcase))
   (print-current-form)
   (format
-   t "~&;;; A bug was found in the compiler.  Contact attardi@di.unipi.it.~%")
+   t "~&;;; A bug was found in the compiler.  Contact worm@arrakis.es.~%")
   (incf *error-count*)
   (break)
 ;  (throw *cmperr-tag* '*cmperr-tag*) DEBUG

@@ -63,7 +63,7 @@ install: $(HFILES)
 	ranlib $@
 
 clean:
-	$(RM) *.c $(OBJS) ../libecl.a cinit.o core a.out
+	$(RM) dpp *.c $(OBJS) ../libecl.a cinit.o core a.out
 
 # Build rules
 

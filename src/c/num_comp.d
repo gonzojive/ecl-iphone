@@ -22,7 +22,7 @@
 	/* ANSI: Need not signal error for 1 argument */
 	/* INV: For >= 2 arguments, number_equalp() performs checks */
 	for (i = 1; i < narg; i++)
-		if (!number_equalp(num, cl_nextarg(nums)))
+		if (!number_equalp(num, cl_va_arg(nums)))
 			@(return Cnil)
 	@(return Ct)
 @)
@@ -253,29 +253,29 @@ number_compare(cl_object x, cl_object y)
 	int i, j;
 @
 	if (narg == 0)
-		FEtoo_few_arguments(&narg);
-	numi = cl_nextarg(nums);
+		FEtoo_few_arguments(narg);
+	numi = cl_va_arg(nums);
 	for (i = 2; i<=narg; i++) {
-		va_list numb;
-		va_start(numb, narg);
-		numi = cl_nextarg(nums);
+		cl_va_list numb;
+		cl_va_start(numb, narg, narg, 0);
+		numi = cl_va_arg(nums);
 		for (j = 1; j<i; j++)
-			if (number_equalp(numi, cl_nextarg(numb)))
+			if (number_equalp(numi, cl_va_arg(numb)))
 				@(return Cnil)
 	}
 	@(return Ct)
 @)
 
 static cl_object
-monotonic(int s, int t, int narg, va_list nums)
+monotonic(int s, int t, int narg, cl_va_list nums)
 {
 	cl_object c, d;
 
 	if (narg == 0)
-		FEtoo_few_arguments(&narg);
+		FEtoo_few_arguments(narg);
 	/* INV: type check occurs in number_compare() */
-	for (c = cl_nextarg(nums); --narg; c = d) {
-		d = cl_nextarg(nums);
+	for (c = cl_va_arg(nums); --narg; c = d) {
+		d = cl_va_arg(nums);
 		if (s*number_compare(d, c) < t)
 			return1(Cnil);
 	}
@@ -283,7 +283,7 @@ monotonic(int s, int t, int narg, va_list nums)
 }
 
 #define MONOTONIC(i, j) (int narg, ...) \
-{ va_list nums; va_start(nums, narg); \
+{ cl_va_list nums; cl_va_start(nums, narg, narg, 0); \
   return monotonic(i, j, narg, nums); }
 
 cl_object @<= MONOTONIC( 1, 0)
@@ -295,7 +295,7 @@ cl_object @>  MONOTONIC(-1, 1)
 @
 	/* INV: type check occurs in number_compare() */
 	while (--narg) {
-		cl_object numi = cl_nextarg(nums);
+		cl_object numi = cl_va_arg(nums);
 		if (number_compare(max, numi) < 0)
 		    max = numi;
 	}
@@ -306,7 +306,7 @@ cl_object @>  MONOTONIC(-1, 1)
 @	
 	/* INV: type check occurs in number_compare() */
 	while (--narg) {
-		cl_object numi = va_arg(nums, cl_object);
+		cl_object numi = cl_va_arg(nums);
 		if (number_compare(min, numi) > 0)
 			min = numi;
 	}

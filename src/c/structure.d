@@ -87,7 +87,7 @@ structure_to_list(cl_object x)
 	SLENGTH(x) = --narg;
 	SLOTS(x) = (cl_object *)cl_alloc_align(sizeof(cl_object)*narg, sizeof(cl_object));
 	for (i = 0;  i < narg;  i++)
-		SLOT(x, i) = va_arg(args, cl_object);
+		SLOT(x, i) = cl_va_arg(args);
 	@(return x)
 @)
 

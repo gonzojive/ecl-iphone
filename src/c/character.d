@@ -140,7 +140,7 @@ digitp(int i, int r)
 @
 	/* INV: char_eq() checks types of `c' and `cs' */
 	while (--narg)
-		if (!char_eq(c, cl_nextarg(cs)))
+		if (!char_eq(c, cl_va_arg(cs)))
 			@(return Cnil)
 	@(return Ct)
 @)
@@ -158,28 +158,28 @@ char_eq(cl_object x, cl_object y)
 	/* INV: char_eq() checks types of its arguments */
 	if (narg == 0)
 		@(return Ct)
-	c = cl_nextarg(cs);
+	c = cl_va_arg(cs);
 	for (i = 2; i<=narg; i++) {
-		va_list ds;
-		va_start(ds, narg);
-		c = cl_nextarg(cs);
+		cl_va_list ds;
+		cl_va_start(ds, narg, narg, 0);
+		c = cl_va_arg(cs);
 		for (j = 1; j<i; j++)
-			if (char_eq(cl_nextarg(ds), c))
+			if (char_eq(cl_va_arg(ds), c))
 				@(return Cnil)
 	}
 	@(return Ct)
 @)
 
 static cl_return
-Lchar_cmp(int narg, int s, int t, va_list args)
+Lchar_cmp(int narg, int s, int t, cl_va_list args)
 {
 	cl_object c, d;
 
 	if (narg == 0)
-		FEtoo_few_arguments(&narg);
-	c = cl_nextarg(args);
+		FEtoo_few_arguments(narg);
+	c = cl_va_arg(args);
 	for (; --narg; c = d) {
-		d = cl_nextarg(args);
+		d = cl_va_arg(args);
 		if (s*char_cmp(d, c) < t)
 			return1(Cnil);
 	}
@@ -223,7 +223,7 @@ char_cmp(cl_object x, cl_object y)
 @
 	/* INV: char_equal() checks the type of its arguments */
 	for (narg--, i = 0;  i < narg;  i++) {
-		if (!char_equal(c, cl_nextarg(cs)))
+		if (!char_equal(c, cl_va_arg(cs)))
 			@(return Cnil)
 	}
 	@(return Ct)
@@ -249,29 +249,29 @@ char_equal(cl_object x, cl_object y)
 	if (narg == 0)
 		@(return Ct)
 	/* INV: char_equal() checks the type of its arguments */
-	c = cl_nextarg(cs);
+	c = cl_va_arg(cs);
 	for (i = 2;  i<=narg;  i++) {
-		va_list ds;
-		va_start(ds, narg);
-		c = cl_nextarg(cs);
+		cl_va_list ds;
+		cl_va_start(ds, narg, narg, 0);
+		c = cl_va_arg(cs);
 		for (j=1;  j<i;  j++)
-			if (char_equal(c, cl_nextarg(ds)))
+			if (char_equal(c, cl_va_arg(ds)))
 				@(return Cnil)
 	}
 	@(return Ct)
 @)
 
 static cl_return
-Lchar_compare(int narg, int s, int t, va_list args)
+Lchar_compare(int narg, int s, int t, cl_va_list args)
 {
 	cl_object c, d;
 
 	/* INV: char_compare() checks the types of its arguments */
 	if (narg == 0)
-		FEtoo_few_arguments(&narg);
-	c = cl_nextarg(args);
+		FEtoo_few_arguments(narg);
+	c = cl_va_arg(args);
 	for (; --narg; c = d) {
-		d = cl_nextarg(args);
+		d = cl_va_arg(args);
 		if (s*char_compare(d, c) < t)
 			return1(Cnil);
 	}

@@ -116,13 +116,12 @@
 	 (arg (list 'TEMP 0))
 	 (narg (list 'LCL (next-lcl)))
 	 (is-lambda (eq 'LAMBDA (first funob))))
-    ;; We must prepare in VALUES the following:
-    ;; n, lex0, ..., lexk, env, arg1, ..., argn
-    (wt-nl "{ int " narg ", i=0;")
+    ;; We must prepare in the lisp stack the following:
+    ;; lex0, ..., lexk, env, arg1, ..., argn
+    (wt-nl "{ cl_index " narg ";")
     (dolist (expr args)
       (setf (second arg) (next-temp))
       (let ((*destination* arg)) (c2expr* expr)))
-    (wt-nl narg "=length(" arg ")+" (1- (length args)) ";")
     (setf (second arg) temp)		; restart numbering
     (unless is-lambda
       (let* ((fun (third funob))
@@ -130,22 +129,22 @@
 	     (closure-lvl (when (fun-closure fun) (- *env* (fun-env fun)))))
 	(when (plusp lex-lvl)
 	  (dotimes (n lex-lvl)
-	    (wt-nl "VALUES(i++)=(cl_object)lex" n ";")))
+	    (wt-nl "cl_stack_push((cl_object)lex" n ");")))
 	(setq temp lex-lvl)		; count environment arguments
 	(when closure-lvl
 	  ;; env of local fun is ALWAYS contained in current env (?)
-	  (wt-nl "VALUES(i++)=(cl_object)env" *env-lvl* ";")
+	  (wt-nl "cl_stack_push((cl_object)env" *env-lvl* ");")
 	  (incf temp))))
     (dotimes (i (1- (length args)))
-      (wt-nl "VALUES(i++)=" arg ";")
+      (wt-nl "cl_stack_push(" arg ");")
       (incf (second arg)))
-    (unless is-lambda
-      (wt narg "+=" temp ";"))
-    (wt-nl "for (; i<" narg ";i++," arg "=CDR(" arg "))")
-    (wt-nl "	VALUES(i)=CAR(" arg ");")
-    (if is-lambda
-	(c2funcall funob 'ARGS-PUSHED loc narg)
-	(c2call-local (third funob) 'ARGS-PUSHED narg))
+    (wt-nl narg "=" (1- (length args)))
+    (unless is-lambda (wt "+" temp))
+    (wt "+cl_stack_push_list(" arg ");")
+    (let ((*unwind-exit* `((STACK ,narg) ,@*unwind-exit*)))
+      (if is-lambda
+	  (c2funcall funob 'ARGS-PUSHED loc narg)
+	  (c2call-local (third funob) 'ARGS-PUSHED narg)))
     (wt-nl "}")))
 
 (defun c1apply-optimize (info requireds rest body args

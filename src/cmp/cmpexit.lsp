@@ -12,13 +12,18 @@
 
 (in-package "COMPILER")
 
-(defun unwind-bds (bds-lcl bds-bind)
+(defun unwind-bds (bds-lcl bds-bind stack-pop)
   (declare (fixnum bds-bind))
+  (when stack-pop
+    (wt-nl "cl_stack_pop_n(" (car stack-pop))
+    (dolist (f (cdr stack-pop))
+      (wt "+" f))
+    (wt ");"))
   (when bds-lcl (wt-nl "bds_unwind(") (wt-lcl bds-lcl) (wt ");"))
   (dotimes (n bds-bind) (declare (fixnum n)) (wt-nl "bds_unwind1;")))
 
 (defun unwind-exit (loc &optional (jump-p nil)
-                        &aux (bds-lcl nil) (bds-bind 0))
+                        &aux (bds-lcl nil) (bds-bind 0) (stack-pop nil))
   (declare (fixnum bds-bind))
   (when (consp *destination*)
     (case (car *destination*)
@@ -36,14 +41,16 @@
     (dolist (ue *unwind-exit* (baboon))
       ;; perform all unwind-exit's which precede *exit*
       (cond
-	((consp ue)			; ( label# . ref-flag )
-	 (cond ((eq ue *exit*)
+	((consp ue)			; ( label# . ref-flag )| (STACK n)
+	 (cond ((eq (car ue) 'STACK)
+		(push (second ue) stack-pop))
+	       ((eq ue *exit*)
 		;; all body forms except the last (returning) are dealt here
 		(cond ((and (consp *destination*)
 			    (or (eq (car *destination*) 'JUMP-TRUE)
 				(eq (car *destination*) 'JUMP-FALSE)))
-		       (unwind-bds bds-lcl bds-bind))
-		      ((not (or bds-lcl (plusp bds-bind)))
+		       (unwind-bds bds-lcl bds-bind stack-pop))
+		      ((not (or bds-lcl (plusp bds-bind) stack-pop))
 		       (set-loc loc))
 		      ;; Save the value if LOC may possibly refer
 		      ;; to special binding.
@@ -61,11 +68,11 @@
 			      (temp (list 'TEMP (next-temp))))
 			 (let ((*destination* temp))
 			   (set-loc loc)) ; temp <- loc
-			 (unwind-bds bds-lcl bds-bind)
+			 (unwind-bds bds-lcl bds-bind stack-pop)
 			 (set-loc temp))) ; *destination* <- temp
 		      (t
 		       (set-loc loc)
-		       (unwind-bds bds-lcl bds-bind)))
+		       (unwind-bds bds-lcl bds-bind stack-pop)))
 		(when jump-p (wt-nl) (wt-go *exit*))
 		(return))
 	       (t (setq jump-p t))))
@@ -78,25 +85,16 @@
 	       ;; *destination* must be either RETURN or TRASH.
 	       (cond ((eq loc 'VALUES)
 		      ;; from multiple-value-prog1 or values
-		      (when (or bds-lcl (plusp bds-bind))
-			(unwind-bds bds-lcl bds-bind))
+		      (unwind-bds bds-lcl bds-bind stack-pop)
 		      (wt-nl "return VALUES(0);"))
 		     ((eq loc 'RETURN)
 		      ;; from multiple-value-prog1 or values
-		      (when (or bds-lcl (plusp bds-bind))
-			(unwind-bds bds-lcl bds-bind))
-		      (wt-nl "return value0;"))		      
-		     ((or bds-lcl (plusp bds-bind))
+		      (unwind-bds bds-lcl bds-bind stack-pop)
+		      (wt-nl "return value0;"))      
+		     (t
 		      (let* ((*destination* 'RETURN))
 			(set-loc loc))
-		      (unwind-bds bds-lcl bds-bind)
-		      (wt-nl "return value0;"))
-		     ((and (consp loc)
-			   (member (car loc) '(CALL CALL-LOCAL)
-				   :test #'eq))
-		      (wt-nl "return(" loc ");"))
-		     (t
-		      (set-loc loc)
+		      (unwind-bds bds-lcl bds-bind stack-pop)
 		      (wt-nl "return value0;")))
 	       (return))
 	     (RETURN-FIXNUM
@@ -106,7 +104,7 @@
 		    (let ((lcl (next-lcl)))
 		      (wt-nl "{int ") (wt-lcl lcl) (wt "= ")
 		      (wt-fixnum-loc loc) (wt ";")
-		      (unwind-bds bds-lcl bds-bind)
+		      (unwind-bds bds-lcl bds-bind stack-pop)
 		      (wt-nl "return(") (wt-lcl lcl) (wt ");}"))
 		    (progn
 		      (wt-nl "return(") (wt-fixnum-loc loc) (wt ");")))
@@ -118,7 +116,7 @@
 		    (let ((lcl (next-lcl)))
 		      (wt-nl "{unsigned char ") (wt-lcl lcl) (wt "= ")
 		      (wt-character-loc loc) (wt ";")
-		      (unwind-bds bds-lcl bds-bind)
+		      (unwind-bds bds-lcl bds-bind stack-pop)
 		      (wt-nl "return(") (wt-lcl lcl) (wt ");}"))
 		    (progn
 		      (wt-nl "return(") (wt-character-loc loc) (wt ");")))
@@ -130,7 +128,7 @@
 		    (let ((lcl (next-lcl)))
 		      (wt-nl "{double ") (wt-lcl lcl) (wt "= ")
 		      (wt-long-float-loc loc) (wt ";")
-		      (unwind-bds bds-lcl bds-bind)
+		      (unwind-bds bds-lcl bds-bind stack-pop)
 		      (wt-nl "return(") (wt-lcl lcl) (wt ");}"))
 		    (progn
 		      (wt-nl "return(") (wt-long-float-loc loc) (wt ");")))
@@ -142,7 +140,7 @@
 		    (let ((lcl (next-lcl)))
 		      (wt-nl "{float ") (wt-lcl lcl) (wt "= ")
 		      (wt-short-float-loc loc) (wt ";")
-		      (unwind-bds bds-lcl bds-bind)
+		      (unwind-bds bds-lcl bds-bind stack-pop)
 		      (wt-nl "return(") (wt-lcl lcl) (wt ");}"))
 		    (progn
 		      (wt-nl "return(") (wt-short-float-loc loc) (wt ");")))
@@ -153,7 +151,7 @@
 		(if (or bds-lcl (plusp bds-bind))
 		    (progn
 		      (wt-nl "{cl_object x =" loc ";")
-		      (unwind-bds bds-lcl bds-bind)
+		      (unwind-bds bds-lcl bds-bind stack-pop)
 		      (wt-nl "return(x);}"))
 		    (wt-nl "return(" loc ");"))
 		(return)))
@@ -168,20 +166,22 @@
   ;;; Never reached
   )
 
-(defun unwind-no-exit (exit &aux (bds-lcl nil) (bds-bind 0))
+(defun unwind-no-exit (exit &aux (bds-lcl nil) (bds-bind 0) (stack-pop nil))
   (declare (fixnum bds-bind))
   (dolist (ue *unwind-exit* (baboon))
     (cond
        ((consp ue)
-        (when (eq ue exit)
-              (unwind-bds bds-lcl bds-bind)
-              (return)))
+	(cond ((eq ue exit)
+	       (unwind-bds bds-lcl bds-bind stack-pop)
+	       (return))
+	      ((eq (car ue) 'STACK)
+	       (push (cdr ue) stack-pop))))
        ((numberp ue) (setq bds-lcl ue bds-bind 0))
        ((eq ue 'BDS-BIND) (incf bds-bind))
        ((member ue '(RETURN RETURN-OBJECT RETURN-FIXNUM RETURN-CHARACTER
                             RETURN-LONG-FLOAT RETURN-SHORT-FLOAT))
         (if (eq exit ue)
-          (progn (unwind-bds bds-lcl bds-bind)
+          (progn (unwind-bds bds-lcl bds-bind stack-pop)
                  (return))
           (baboon))
         ;;; Never reached
@@ -189,7 +189,7 @@
        ((eq ue 'FRAME) (wt-nl "frs_pop();"))
        ((eq ue 'TAIL-RECURSION-MARK)
         (if (eq exit 'TAIL-RECURSION-MARK)
-          (progn (unwind-bds bds-lcl bds-bind)
+          (progn (unwind-bds bds-lcl bds-bind stack-pop)
                  (return))
           (baboon))
         ;;; Never reached

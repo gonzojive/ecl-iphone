@@ -2151,6 +2151,9 @@ AUX:
 	}
 
 OUTPUT:
+	if ((nreq+nopt+(!Null(rest))+nkey) >= LAMBDA_PARAMETERS_LIMIT)
+		FEprogram_error("LAMBDA: Argument list ist too long, ~S.", 1,
+				CAR(lambda));
 	@(return CONS(MAKE_FIXNUM(nreq), nreverse(reqs))
 		 CONS(MAKE_FIXNUM(nopt), nreverse(opts))
 		 nreverse(rest)

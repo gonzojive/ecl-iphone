@@ -382,21 +382,21 @@
        (when (or optionals rest)	; (not (null requireds))
 	 (unless block-p
 	   (wt-nl "{") (setq block-p t))
-	 (wt-nl "va_list args; va_start(args, ")
-	 (if (plusp nreq)
-	     (wt-lcl (+ req0 nreq))
-	     (if closure-p (wt "env0") (wt "narg")))
-	 (wt ");")))
+	 (wt-nl "cl_va_list args; cl_va_start(args,"
+		(cond ((plusp nreq) (format nil "V~d" (+ req0 nreq)))
+		      (closure-p "env0")
+		      (t "narg"))
+		(format nil ",narg,~d);" nreq))))
 
      ;; check arguments
      (when (or *safe-compile* *compiler-check-args*)
        (cond ((or (third lambda-list) ; rest=NIL if not used
 		  optionals)
 	      (when requireds
-		(wt-nl "if(narg<" nreq ") FEtoo_few_arguments(&narg);"))
+		(wt-nl "if(narg<" nreq ") FEtoo_few_arguments(narg);"))
 	      (unless (third lambda-list)
 		(wt-nl "if(narg>" (+ nreq (length optionals))
-		       ") FEtoo_many_arguments(&narg);")))
+		       ") FEtoo_many_arguments(narg);")))
 	     (t (wt-nl "check_arg(" nreq ");"))))
 
      ;; Bind required parameters.
@@ -412,7 +412,7 @@
    )
   ;; Bind optional parameters as long as there remain arguments.
   (when optionals
-    (let ((va-arg-loc `(VA-ARG ,(eq kind 'CALL-LAMBDA))))
+    (let ((va-arg-loc 'VA-ARG))
       (dolist (opt optionals)
 	(push (next-label) labels)
 	(wt-nl "if (i==narg) ") (wt-go (car labels))
@@ -436,9 +436,7 @@
 	(wt-nl "narg -= i;")
 	(wt-nl "narg -=" nreq ";"))
     (wt-nl rest-loc)
-    (if (eq 'CALL-LAMBDA kind)
-      (wt "=grab_rest_args(narg,args);")
-      (wt "=va_grab_rest_args(narg,args);"))
+    (wt "=cl_grab_rest_args(args);")
     (bind rest-loc rest))
 
   (when *tail-recursion-info*
@@ -509,15 +507,15 @@
     (unless call-lambda
       (unless block-p
 	(wt-nl "{") (setq block-p t))
-      (wt-nl "va_list args; va_start(args, ")
-      (wt (setq last-arg (if (plusp nreq)
-			     (format nil "V~d" (+ req0 nreq))
-			     (if closure-p "env0" "narg"))))
-      (wt ");"))
+      (wt-nl "cl_va_list args; cl_va_start(args, "
+	     (cond ((plusp nreq) (format nil "V~d" (+ req0 nreq)))
+		   (closure-p "env0")
+		   (t "narg"))
+	     (format nil ", narg, ~d);" nreq)))
 
     ;; check arguments
     (when (and (or *safe-compile* *compiler-check-args*) requireds)
-      (wt-nl "if(narg<" nreq ") FEtoo_few_arguments(&narg);"))
+      (wt-nl "if(narg<" nreq ") FEtoo_few_arguments(narg);"))
 
     ;; Bind required parameters.
     (do ((reqs requireds (cdr reqs))
@@ -532,7 +530,7 @@
     )
   ;; Bind optional parameters as long as there remain arguments.
   (when optionals
-    (let ((va-arg-loc `(VA-ARG ,call-lambda)))
+    (let ((va-arg-loc 'VA-ARG))
       (dolist (opt optionals)
 	(push (next-label) labels)
 	(wt-nl "if (i==narg) ") (wt-go (car labels))
@@ -561,8 +559,7 @@
     (add-keyword (first kwd)))
 
   (wt-nl "{ cl_object keyvars[" (* 2 nkey) "];")
-  (wt-nl (if call-lambda "parse_key(narg,args," "va_parse_key(narg,args,")
-	 (length keywords) ",L" cfun "keys,keyvars")
+  (wt-nl "cl_parse_key(args," (length keywords) ",L" cfun "keys,keyvars")
   (if rest (wt ",&" rest-loc) (wt ",NULL"))
   (wt (if allow-other-keys ",TRUE);" ",FALSE);"))
   (when rest (bind rest-loc rest))

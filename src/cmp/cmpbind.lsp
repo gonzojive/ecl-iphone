@@ -18,7 +18,7 @@
 ;;; bind takes care of setting var-loc.
 
 (defun bind (loc var)
-  ;; loc can be either (LCL n), (VA-ARGS kind), (KEYVARS n), (CAR n),
+  ;; loc can be either (LCL n), 'VA-ARGS, (KEYVARS n), (CAR n),
   ;; a constant, or (VAR var) from a let binding. ; ccb
   (declare (type var var))
   (case (var-kind var)

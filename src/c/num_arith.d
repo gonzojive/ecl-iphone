@@ -23,7 +23,7 @@
 @
 	/* INV: type check in number_times() */
 	while (narg--)
-		prod = number_times(prod, cl_nextarg(nums));
+		prod = number_times(prod, cl_va_arg(nums));
 	@(return prod)
 @)
 
@@ -195,7 +195,7 @@ number_times(cl_object x, cl_object y)
 @
 	/* INV: type check is in number_plus() */
 	while (narg--)
-		sum = number_plus(sum, cl_nextarg(nums));
+		sum = number_plus(sum, cl_va_arg(nums));
 	@(return sum)
 @)
 
@@ -350,7 +350,7 @@ number_plus(cl_object x, cl_object y)
 	if (narg == 1)
 		@(return number_negate(num))
 	for (diff = num;  --narg; )
-		diff = number_minus(diff, cl_nextarg(nums));
+		diff = number_minus(diff, cl_va_arg(nums));
 	@(return diff)
 @)
 
@@ -567,11 +567,11 @@ number_negate(cl_object x)
 @
 	/* INV: type check is in number_divide() */
 	if (narg == 0)
-		FEtoo_few_arguments(&narg);
+		FEtoo_few_arguments(narg);
 	if (narg == 1)
 		@(return number_divide(MAKE_FIXNUM(1), num))
 	while (--narg)
-		num = number_divide(num, cl_nextarg(nums));
+		num = number_divide(num, cl_va_arg(nums));
 	@(return num)
 @)
 
@@ -721,11 +721,11 @@ integer_divide(cl_object x, cl_object y)
 	if (narg == 0)
 		@(return MAKE_FIXNUM(0))
 	/* INV: get_gcd() checks types */
-	gcd = cl_nextarg(nums);
+	gcd = cl_va_arg(nums);
 	if (narg == 1)
 		@(return (number_minusp(gcd) ? number_negate(gcd) : gcd))
 	while (--narg)
-		gcd = get_gcd(gcd, cl_nextarg(nums));
+		gcd = get_gcd(gcd, cl_va_arg(nums));
 	@(return gcd)
 @)
 
@@ -874,7 +874,7 @@ one_minus(cl_object x)
 	/* INV: get_gcd() checks types. By placing `numi' before `lcm' in
 	   this call, we make sure that errors point to `numi' */
 	while (narg-- > 1) {
-		cl_object numi = cl_nextarg(nums);
+		cl_object numi = cl_va_arg(nums);
 		cl_object t = number_times(lcm, numi);
 		cl_object g = get_gcd(numi, lcm);
 		lcm = number_divide(t, g);

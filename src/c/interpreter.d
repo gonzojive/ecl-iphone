@@ -95,13 +95,64 @@ cl_stack_insert(cl_index where, cl_index n) {
 		(cl_stack_top - cl_stack) * sizeof(*cl_stack));
 }
 
-
 void
 cl_stack_pop_n(cl_index index) {
 	cl_object *new_top = cl_stack_top - index;
 	if (new_top < cl_stack)
 		FEerror("Internal error: stack underflow.",0);
 	cl_stack_top = new_top;
+}
+
+int
+cl_stack_push_values(void) {
+	int i;
+	for (i=0; i<NValues; i++)
+		cl_stack_push(VALUES(i));
+	return i;
+}
+
+void
+cl_stack_pop_values(int n) {
+	NValues = n;
+	while (n > 0)
+		VALUES(--n) = cl_stack_pop();
+}
+
+cl_index
+cl_stack_push_va_list(cl_va_list args) {
+	cl_index sp;
+
+	sp = cl_stack_top - cl_stack;
+	while (cl_stack_top + args[0].narg > cl_stack_limit)
+		cl_stack_grow();
+	while (args[0].narg > 0) {
+		args[0].narg--;
+		*(cl_stack_top++) = va_arg(args[0].args,cl_object);
+	}
+	return sp;
+}
+
+cl_index
+cl_stack_push_list(cl_object list)
+{
+	cl_index n;
+	cl_object fast, slow;
+
+	/* INV: A list's length always fits in a fixnum */
+	fast = slow = list;
+	for (n = 0; CONSP(fast); n++, fast = CDR(fast)) {
+		*cl_stack_top = CAR(fast);
+		if (++cl_stack_top >= cl_stack_limit)
+			cl_stack_grow();
+		if (n & 1) {
+			/* Circular list? */
+			if (slow == fast) break;
+			slow = CDR(slow);
+		}
+	}
+	if (fast != Cnil)
+		FEtype_error_proper_list(list);
+	return n;
 }
 
 /* ------------------------------ LEXICAL ENV. ------------------------------ */
@@ -185,7 +236,7 @@ lambda_bind_var(cl_object var, cl_object val, cl_object specials)
 }
 
 static cl_object *
-lambda_bind(int narg, cl_object lambda_list, cl_object *args)
+lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 {
 	cl_object *data = &lambda_list->bytecodes.data[2];
 	cl_object specials = lambda_list->bytecodes.data[1];
@@ -200,13 +251,13 @@ lambda_bind(int narg, cl_object lambda_list, cl_object *args)
 	if (narg < n)
 	  check_arg_failed(narg, n);
 	for (; n; n--, narg--)
-	  lambda_bind_var(next_code(data), next_code(args), specials);
+	  lambda_bind_var(next_code(data), cl_stack[sp++], specials);
 
 	/* 2) OPTIONAL ARGUMENTS:  N var1 value1 flag1 ... varN valueN flagN */
 	for (n = fix(next_code(data)); n; n--, data+=3) {
 	  if (narg) {
-	    lambda_bind_var(data[0], args[0], specials);
-	    args++; narg--;
+	    lambda_bind_var(data[0], cl_stack[sp], specials);
+	    sp++; narg--;
 	    if (!Null(data[2]))
 	      lambda_bind_var(data[2], Ct, specials);
 	  } else {
@@ -226,7 +277,7 @@ lambda_bind(int narg, cl_object lambda_list, cl_object *args)
 	  cl_object rest = Cnil;
 	  check_remaining = FALSE;
 	  for (i=narg; i; )
-	    rest = CONS(args[--i], rest);
+	    rest = CONS(cl_stack[sp+(--i)], rest);
 	  lambda_bind_var(data[0], rest, specials);
 	}
 	data++;
@@ -242,22 +293,24 @@ lambda_bind(int narg, cl_object lambda_list, cl_object *args)
 	  bool other_found = FALSE;
 	  for (i=0; i<n; i++)
 	    spp[i] = OBJNULL;
-	  for (; narg; args+=2, narg-=2) {
-	    if (!SYMBOLP(args[0]))
-	      FEprogram_error("LAMBDA: Keyword expected, got ~S.", 1, args[0]);
+	  for (; narg; narg-=2) {
+	    cl_object key = cl_stack[sp++];
+	    cl_object value = cl_stack[sp++];
+	    if (!SYMBOLP(key))
+	      FEprogram_error("LAMBDA: Keyword expected, got ~S.", 1, key);
 	    keys = data;
 	    for (i = 0; i < n; i++, keys += 4) {
-	      if (args[0] == keys[0]) {
+	      if (key == keys[0]) {
 		if (spp[i] == OBJNULL)
-		  spp[i] = args[1];
+		  spp[i] = value;
 		goto FOUND;
 	      }
 	    }
-	    if (args[0] != @':allow-other-keys')
+	    if (key != @':allow-other-keys')
 	      other_found = TRUE;
 	    else if (!allow_other_keys_found) {
 	      allow_other_keys_found = TRUE;
-	      other_keys = !Null(args[1]);
+	      other_keys = !Null(value);
 	    }
 	  FOUND:
 	    (void)0;
@@ -288,8 +341,9 @@ lambda_bind(int narg, cl_object lambda_list, cl_object *args)
 }
 
 cl_object
-lambda_apply(int narg, cl_object fun, cl_object *args)
+lambda_apply(int narg, cl_object fun)
 {
+	cl_index args = cl_stack_index() - narg;
 	cl_object output, name, *body;
 	bds_ptr old_bds_top;
 	volatile bool block;
@@ -317,7 +371,6 @@ lambda_apply(int narg, cl_object fun, cl_object *args)
 		fun = new_frame_id();
 		bind_block(name, fun);
 		if (frs_push(FRS_CATCH, fun)) {
-			output = VALUES(0);
 			goto END;
 		}
 	}
@@ -333,46 +386,6 @@ END:    if (block) frs_pop();
 	returnn(VALUES(0));
 }
 
-
-#ifdef NO_ARGS_ARRAY
-cl_object
-va_lambda_apply(int narg, cl_object fun, va_list args)
-{
-	cl_object out;
-	int i;
-	for (i=narg; i; i--)
-		cl_stack_push(cl_nextarg(args));
-	out = lambda_apply(narg, fun, cl_stack_top-narg);
-	cl_stack_pop_n(narg);
-	return out;
-}
-
-#ifdef CLOS
-cl_object
-va_gcall(int narg, cl_object fun, va_list args)
-{
-	cl_object out;
-	int i;
-	for (i=narg; i; i--)
-		cl_stack_push(cl_nextarg(args));
-	out = gcall(narg, fun, cl_stack_top-narg);
-	cl_stack_pop_n(narg);
-	return out;
-}
-
-cl_object
-va_compute_method(int narg, cl_object fun, va_list args)
-{
-	cl_object out;
-	int i;
-	for (i=narg; i; i--)
-		cl_stack_push(cl_nextarg(args));
-	out = compute_method(narg, fun, cl_stack_top-narg);
-	cl_stack_pop_n(narg);
-	return out;
-}
-#endif
-#endif
 
 /* -------------------- AIDS TO THE INTERPRETER -------------------- */
 
@@ -425,7 +438,7 @@ interpret_funcall(int narg, cl_object fun) {
 		goto AGAIN;
 #endif
 	case t_bytecodes:
-		x = lambda_apply(narg, fun, args);
+		x = lambda_apply(narg, fun);
 		break;
 	case t_symbol: {
 		cl_object function = SYM_FUN(fun);
@@ -447,7 +460,7 @@ interpret_funcall(int narg, cl_object fun) {
 	narg -= 2;
 	for (i = 0; narg; i++,narg--) {
 		cl_stack_push(lastarg);
-		lastarg = va_arg(args, cl_object);
+		lastarg = cl_va_arg(args);
 	}
 	loop_for_in (lastarg) {
 		if (i >= CALL_ARGUMENTS_LIMIT) {
@@ -572,10 +585,9 @@ interpret_unwind_protect(cl_object *vector) {
 		unwinding = FALSE;
 	}
 	frs_pop();
-	nr = NValues;
-	MV_SAVE(nr);
+	nr = cl_stack_push_values();
 	exit = interpret(exit);
-	MV_RESTORE(nr);
+	cl_stack_pop_values(nr);
 	if (unwinding)
 		unwind(nlj_fr, nlj_tag);
 	return exit;

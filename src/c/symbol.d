@@ -461,8 +461,8 @@ ONCE_MORE:
 	cl_object prop;
 @
 	while (--narg >= 2) {
-	  prop = va_arg(ind_values, cl_object);
-	  putprop(sym, va_arg(ind_values, cl_object), prop);
+	  prop = cl_va_arg(ind_values);
+	  putprop(sym, cl_va_arg(ind_values), prop);
 	  narg--;
 	}
 	@(return sym)

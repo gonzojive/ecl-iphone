@@ -65,7 +65,7 @@ object_to_index(cl_object n)
     if (r != x->array.rank)
       FEerror("Wrong number of indices.", 0);
     for (i = j = 0;  i < r;  i++) {
-      index = cl_nextarg(indx);
+      index = cl_va_arg(indx);
       if ((s = fixnnint(index)) >= x->array.dims[i])
         FEerror("The ~:R index, ~S, to the array~%\
 ~S is too large.", 3, MAKE_FIXNUM(i+1), index, x);
@@ -78,7 +78,7 @@ object_to_index(cl_object n)
   case t_bitvector:
     if (r != 1)
       FEerror("Wrong number of indices.", 0);
-    index = cl_nextarg(indx);
+    index = cl_va_arg(indx);
     j = fixnnint(index);
     if (j >= x->vector.dim)
       FEerror("The first index, ~S, to the array ~S is too large.",
@@ -162,7 +162,7 @@ aref1(cl_object v, cl_index index)
     if (r != x->array.rank)
       FEerror("Wrong number of indices.", 0);
     for (i = j = 0;  i < r;  i++) {
-      index = cl_nextarg(dims);
+      index = cl_va_arg(dims);
       if ((s = fixnnint(index)) >= x->array.dims[i])
 	FEerror("The ~:R index, ~S, to the array ~S is too large.",
 		3, MAKE_FIXNUM(i+1), index, x);
@@ -175,7 +175,7 @@ aref1(cl_object v, cl_index index)
   case t_bitvector:
     if (r != 1)
       FEerror("Wrong number of indices.", 0);
-    index = cl_nextarg(dims);
+    index = cl_va_arg(dims);
     j = fixnnint(index);
     if (j >= x->vector.dim)
       FEerror("The first index, ~S, to the array ~S is too large.",
@@ -284,7 +284,7 @@ aset1(cl_object v, cl_index index, cl_object val)
   if (r >= ARANKLIM)
     FEerror("The array rank, ~R, is too large.", 1, MAKE_FIXNUM(r));
   for (i = 0, s = 1;  i < r;  i++) {
-    cl_object index = cl_nextarg(dims);
+    cl_object index = cl_va_arg(dims);
     if ((j = fixnnint(index)) > ADIMLIM)
       FEerror("The ~:R array dimension, ~D, is too large.",
 	      2, MAKE_FIXNUM(i+1), index);

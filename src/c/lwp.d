@@ -687,7 +687,7 @@ resume(pd *rpd)
   thread_Values = cont->cn.cn_thread->thread.data->pd_lpd->lwp_Values;
 
   for (i = 1; i < narg; i++)
-    *(thread_Values++) = cl_nextarg(args);
+    *(thread_Values++) = va_arg(args, cl_object);
   cont->cn.cn_thread->thread.data->pd_lpd->lwp_nValues = narg-1;
 
   cont->cn.cn_resumed = TRUE;
@@ -774,7 +774,7 @@ enable_scheduler()
   end_critical_section();
 
   for (;;) {
-    if (apply(narg-1, fun, &cl_nextarg(args)) != Cnil)
+    if (apply(narg-1, fun, &va_arg(args, cl_object)) != Cnil)
       break;
     else if (timer_active) {
       /* the time slice has not been used */
@@ -808,7 +808,7 @@ enable_scheduler()
       break;
     }
 
-    if (apply(narg-1, fun, cl_nextarg(&args)) != Cnil)
+    if (apply(narg-1, fun, va_arg(&args, cl_object)) != Cnil)
       break;
     else {
       /* the time slice has not been used */

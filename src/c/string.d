@@ -296,10 +296,10 @@ string_equal(cl_object x, cl_object y)
 }
 
 static cl_return
-string_cmp(int narg, int sign, int boundary, va_list ARGS)
+string_cmp(int narg, int sign, int boundary, cl_va_list ARGS)
 {
-	cl_object string1 = cl_nextarg(ARGS);
-	cl_object string2 = cl_nextarg(ARGS);
+	cl_object string1 = cl_va_arg(ARGS);
+	cl_object string2 = cl_va_arg(ARGS);
 	cl_index s1, e1, s2, e2;
 	int s, i1, i2;
 	cl_object KEYS[4];
@@ -311,12 +311,12 @@ string_cmp(int narg, int sign, int boundary, va_list ARGS)
 #define start2p KEY_VARS[6]
 	cl_object KEY_VARS[8];
 
-	if (narg < 2) FEtoo_few_arguments(&narg);
+	if (narg < 2) FEtoo_few_arguments(narg);
 	KEYS[0]=@':start1';
 	KEYS[1]=@':end1';
 	KEYS[2]=@':start2';
 	KEYS[3]=@':end2';
-	va_parse_key(narg-2, ARGS, 4, KEYS, KEY_VARS, NULL, FALSE);
+	cl_parse_key(ARGS, 4, KEYS, KEY_VARS, NULL, FALSE);
 
 	string1 = coerce_to_string_designator(string1);
 	string2 = coerce_to_string_designator(string2);
@@ -380,10 +380,10 @@ string_cmp(int narg, int sign, int boundary, va_list ARGS)
 @)
 
 static cl_return
-string_compare(int narg, int sign, int boundary, va_list ARGS)
+string_compare(int narg, int sign, int boundary, cl_va_list ARGS)
 {
-	cl_object string1 = cl_nextarg(ARGS);
-	cl_object string2 = cl_nextarg(ARGS);
+	cl_object string1 = cl_va_arg(ARGS);
+	cl_object string2 = cl_va_arg(ARGS);
 	cl_index s1, e1, s2, e2;
 	int i1, i2, s;
 
@@ -396,12 +396,12 @@ string_compare(int narg, int sign, int boundary, va_list ARGS)
 #define start2p KEY_VARS[6]
 	cl_object KEY_VARS[8];
 
-	if (narg < 2) FEtoo_few_arguments(&narg);
+	if (narg < 2) FEtoo_few_arguments(narg);
 	KEYS[0]=@':start1';
 	KEYS[1]=@':end1';
 	KEYS[2]=@':start2';
 	KEYS[3]=@':end2';
-	va_parse_key(narg-2, ARGS, 4, KEYS, KEY_VARS, NULL, FALSE);
+	cl_parse_key(ARGS, 4, KEYS, KEY_VARS, NULL, FALSE);
 
 	string1 = coerce_to_string_designator(string1);
 	string2 = coerce_to_string_designator(string2);
@@ -544,9 +544,9 @@ cl_return
 
 
 static cl_return
-string_case(int narg, int (*casefun)(int c, bool *bp), va_list ARGS)
+string_case(int narg, int (*casefun)(int c, bool *bp), cl_va_list ARGS)
 {
-	cl_object strng = cl_nextarg(ARGS);
+	cl_object strng = cl_va_arg(ARGS);
 	cl_index s, e, i;
 	bool b;
 	cl_object KEYS[2];
@@ -556,10 +556,10 @@ string_case(int narg, int (*casefun)(int c, bool *bp), va_list ARGS)
 	cl_object conv;
 	cl_object KEY_VARS[4];
 
-	if (narg < 1) FEtoo_few_arguments(&narg);
+	if (narg < 1) FEtoo_few_arguments(narg);
 	KEYS[0]=@':start';
 	KEYS[1]=@':end';
-	va_parse_key(narg-1, ARGS, 2, KEYS, KEY_VARS, NULL, FALSE);
+	cl_parse_key(ARGS, 2, KEYS, KEY_VARS, NULL, FALSE);
 
 	strng = coerce_to_string_designator(strng);
 	conv = copy_simple_string(strng);
@@ -619,9 +619,9 @@ char_capitalize(int c, bool *bp)
 
 
 static cl_return
-nstring_case(int narg, int (*casefun)(int, bool *), va_list ARGS)
+nstring_case(int narg, int (*casefun)(int, bool *), cl_va_list ARGS)
 {
-	cl_object strng = cl_nextarg(ARGS);
+	cl_object strng = cl_va_arg(ARGS);
 	cl_index s, e, i;
 	bool b;
 	cl_object KEYS[2];
@@ -630,10 +630,10 @@ nstring_case(int narg, int (*casefun)(int, bool *), va_list ARGS)
 #define startp KEY_VARS[2]
 	cl_object KEY_VARS[4];
 
-	if (narg < 1) FEtoo_few_arguments(&narg);
+	if (narg < 1) FEtoo_few_arguments(narg);
 	KEYS[0]=@':start';
 	KEYS[1]=@':end';
-	va_parse_key(narg-1, ARGS, 2, KEYS, KEY_VARS, NULL, FALSE);
+	cl_parse_key(ARGS, 2, KEYS, KEY_VARS, NULL, FALSE);
 
 	assert_type_string(strng);
 	if (startp == Cnil) start = MAKE_FIXNUM(0);
@@ -675,7 +675,7 @@ nstring_case(int narg, int (*casefun)(int, bool *), va_list ARGS)
 	char *vself;
 @
 	for (i = 0, l = 0;  i < narg;  i++) {
-		strings[i] = coerce_to_string_designator(cl_nextarg(args));
+		strings[i] = coerce_to_string_designator(cl_va_arg(args));
 		l += strings[i]->string.fillp;
 	}
 	v = cl_alloc_simple_string(l);

@@ -545,6 +545,15 @@ typedef enum {
 		 FALSE : x == Cnil ? TRUE : \
 		 (FEtype_error_list(x), FALSE))
 
+/*
+	This is used to retrieve optional arguments
+*/
+typedef struct {
+  va_list args;
+  cl_index sp;
+  int narg;
+} cl_va_list[1];
+
 #ifdef __cplusplus
 }
 #endif

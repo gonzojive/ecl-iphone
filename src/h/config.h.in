@@ -67,7 +67,12 @@
 #define	CSGETA	4000
 #endif
 #define VSSIZE	128		/* Size of return values stack		*/
-#define CALL_ARGUMENTS_LIMIT 64	/* Maximum number of function arguments */
+				/* Maximum number of function arguments */
+#define CALL_ARGUMENTS_LIMIT MOST_POSITIVE_FIXNUM
+				/* Maximum number of required arguments */
+#define LAMBDA_PARAMETERS_LIMIT 64
+		/* Numb. of args. which can be passed using the C stack	*/
+#define C_ARGUMENTS_LIMIT 64
 
 #define BIGNUM_REGISTER_SIZE 16	/* Size in words of each register	*/
 

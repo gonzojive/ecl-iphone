@@ -106,6 +106,8 @@
 	 (wt "value0"))	; added for last inline-arg
 	((eq loc 'VALUES)
 	 (wt "VALUES(0)"))
+	((eq loc 'VA-ARG)
+	 (wt "cl_va_arg(args);"))
         ((or (not (consp loc))
              (not (symbolp (car loc))))
          (baboon))
@@ -206,12 +208,6 @@
 	(t (wt "sf(" loc ")")))
       (wt "sf(" loc ")")))
 
-(defun wt-va_arg (call-lambda)
-  (if call-lambda
-      (wt "args[i]")
-      (wt "va_arg(args, cl_object)")))
-;(defun set-va_arg (loc) (wt-nl "va_arg(args, cl_object)=" loc ";"))
-
 (defun wt-value (i) (wt "VALUES(" i ")"))
 
 (defun wt-keyvars (i) (wt "keyvars[" i "]"))
@@ -232,7 +228,5 @@
 ;(setf (get 'LONG-FLOAT-LOC 'WT-LOC) #'wt-long-float-loc)
 (setf (get 'SHORT-FLOAT-VALUE 'WT-LOC) #'wt-number)
 ;(setf (get 'SHORT-FLOAT-LOC 'WT-LOC) #'wt-short-float-loc)
-(setf (get 'VA-ARG 'WT-LOC) #'wt-va_arg)
-;(setf (get 'VA-ARG 'SET-LOC) #'set-va_arg)
 (setf (get 'VALUE 'WT-LOC) #'wt-value)
 (setf (get 'KEYVARS 'WT-LOC) #'wt-keyvars)

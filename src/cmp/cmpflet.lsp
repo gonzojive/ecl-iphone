@@ -297,6 +297,12 @@
 
 (defun c2call-local (fun args &optional narg)
   (declare (type fun fun))
+  (multiple-value-bind (*unwind-exit* args narg)
+      (maybe-push-args args)
+    (when narg
+      (c2call-local fun args narg)
+      (wt-nl "}")
+      (return-from c2call-local)))
   (cond
    ((and (listp args)
          *tail-recursion-info*
@@ -324,7 +330,7 @@
 	(unwind-exit
 	 (if (eq 'ARGS-PUSHED args)
 	     (list 'CALL-LOCAL "APPLY" lex-level closure-p
-		   (list fun "&VALUES(0)") narg fname)
+		   (list fun `(STACK-POINTER ,narg)) narg fname)
 	     (list 'CALL-LOCAL fun lex-level closure-p
 		   (coerce-locs (inline-args args) nil) narg fname)))
 	(close-inline-blocks)))))

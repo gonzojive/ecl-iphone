@@ -16,129 +16,148 @@
 
 #include "ecl.h"
 
-@(defun mapcar (fun onelist &rest lists)
+static cl_index
+prepare_map(cl_va_list lists, cl_index *cdrs_sp)
+{
+	cl_index i, nlist = lists[0].narg;
+
+	*cdrs_sp = cl_stack_index();
+	if (nlist == 0)
+		FEerror("MAP*: Too few arguments.", 0);
+	cl_stack_push_va_list(lists);
+	for (i = 0; i<nlist; i++)
+		cl_stack_push(Cnil);
+	return nlist;
+}
+
+@(defun mapcar (fun &rest lists)
 	cl_object res, *val = &res;
-	cl_object cdrs[narg-1];
-	cl_object cars[narg-1];	/* __GNUC__ */
-	int i;
+	cl_index i, nlist, cdrs_sp;
 @
-	cdrs[0] = onelist;
-	for (--narg, i = 1; i < narg; i++)
-		cdrs[i] = cl_nextarg(lists);
+	nlist = prepare_map(lists, &cdrs_sp);
 	res = Cnil;
 	while (TRUE) {
-		for (i = 0;  i < narg;  i++) {
-			if (endp(cdrs[i]))
+		/* INV: The stack does not grow here. */
+		cl_object *cdrs = cl_stack + cdrs_sp;
+		cl_object *cars = cdrs + nlist;
+		for (i = 0;  i < nlist;  i++) {
+			if (endp(cdrs[i])) {
+			 	cl_stack_set_index(cdrs_sp);
 				@(return res)
+			}
 			cars[i] = CAR(cdrs[i]);
 			cdrs[i] = CDR(cdrs[i]);
 		}
-		*val = CONS(apply(narg, fun, cars), Cnil);
+		*val = CONS(cl_apply_from_stack(nlist, fun), Cnil);
 		val = &CDR(*val);
 	}
 @)
 
-@(defun maplist (fun onelist &rest lists)
+@(defun maplist (fun &rest lists)
 	cl_object res, *val = &res;
-	cl_object cdrs[narg-1];
-	cl_object cars[narg-1];	/* __GNUC__ */
-	int i;
+	cl_index i, nlist, cdrs_sp;
 @
-	cdrs[0] = onelist;
-	for (--narg, i = 1; i < narg; i++)
-		cdrs[i] = cl_nextarg(lists);
+	nlist = prepare_map(lists, &cdrs_sp);
 	res = Cnil;
 	while (TRUE) {
-		for (i = 0;  i < narg;  i++) {
-			if (endp(cdrs[i]))
+		cl_object *cdrs = cl_stack + cdrs_sp;
+		cl_object *cars = cdrs + nlist;
+		for (i = 0;  i < nlist;  i++) {
+			if (endp(cdrs[i])) {
+				cl_stack_set_index(cdrs_sp);
 				@(return res)
+			}
 			cars[i] = cdrs[i];
 			cdrs[i] = CDR(cdrs[i]);
 		}
-		*val = CONS(apply(narg, fun, cars), Cnil);
+		*val = CONS(cl_apply_from_stack(nlist, fun), Cnil);
 		val = &CDR(*val);
 	}
 @)
 
-@(defun mapc (fun onelist &rest lists)
-	cl_object cdrs[narg-1];
-	cl_object cars[narg-1];	/* __GNUC__ */
-	int i;
+@(defun mapc (fun &rest lists)
+	cl_object onelist;
+	cl_index i, nlist, cdrs_sp;
 @
-	cdrs[0] = onelist;
-	for (--narg, i = 1; i < narg; i++)
-		cdrs[i] = va_arg(lists, cl_object);
+	nlist = prepare_map(lists, &cdrs_sp);
+	onelist = cl_stack[cdrs_sp];
 	while (TRUE) {
-		for (i = 0;  i < narg;  i++) {
-			if (endp(cdrs[i]))
+		cl_object *cdrs = cl_stack + cdrs_sp;
+		cl_object *cars = cdrs + nlist;
+		for (i = 0;  i < nlist;  i++) {
+			if (endp(cdrs[i])) {
+				cl_stack_set_index(cdrs_sp);
 				@(return onelist)
+			}
 			cars[i] = CAR(cdrs[i]);
 			cdrs[i] = CDR(cdrs[i]);
 		}
-		apply(narg, fun, cars);
+		cl_apply_from_stack(nlist, fun);
 	}
 @)
 
-@(defun mapl (fun onelist &rest lists)
-	cl_object cdrs[narg-1];
-	cl_object cars[narg-1];	/* __GNUC__ */
-	int i;
+@(defun mapl (fun &rest lists)
+	cl_object onelist;
+	cl_index i, nlist, cdrs_sp;
 @
-	cdrs[0] = onelist;
-	for (--narg, i = 1; i < narg; i++)
-		cdrs[i] = cl_nextarg(lists);
+	nlist = prepare_map(lists, &cdrs_sp);
+	onelist = cl_stack[cdrs_sp];
 	while (TRUE) {
-		for (i = 0;  i < narg;  i++) {
-			if (endp(cdrs[i]))
+		cl_object *cdrs = cl_stack + cdrs_sp;
+		cl_object *cars = cdrs + nlist;
+		for (i = 0;  i < nlist;  i++) {
+			if (endp(cdrs[i])) {
+				cl_stack_set_index(cdrs_sp);
 				@(return onelist)
+			}
 			cars[i] = cdrs[i];
 			cdrs[i] = CDR(cdrs[i]);
 		}
-		apply(narg, fun, cars);
+		cl_apply_from_stack(nlist, fun);
 	}
 @)
 
-@(defun mapcan (fun onelist &rest lists)
+@(defun mapcan (fun &rest lists)
 	cl_object *x, res, *val = &res;
-	cl_object cdrs[narg-1];
-	cl_object cars[narg-1];	/* __GNUC__ */
-	int i;
+	cl_index i, nlist, cdrs_sp;
 @
-	cdrs[0] = onelist;
-	for (--narg, i = 1; i < narg; i++)
-		cdrs[i] = cl_nextarg(lists);
+	nlist = prepare_map(lists, &cdrs_sp);
 	res = Cnil;
 	while (TRUE) {
-		for (i = 0;  i < narg;  i++) {
-			if (endp(cdrs[i]))
+		cl_object *cdrs = cl_stack + cdrs_sp;
+		cl_object *cars = cdrs + nlist;
+		for (i = 0;  i < nlist;  i++) {
+			if (endp(cdrs[i])) {
+				cl_stack_set_index(cdrs_sp);
 				@(return res)
+			}
 			cars[i] = CAR(cdrs[i]);
 			cdrs[i] = CDR(cdrs[i]);
 		}
-		*val = apply(narg, fun, cars);
+		*val = cl_apply_from_stack(nlist, fun);
 		while (CONSP(*val))
 			val = &CDR(*val);
 	}
 @)
 
-@(defun mapcon (fun onelist &rest lists)
+@(defun mapcon (fun &rest lists)
 	cl_object res, *val = &res;
-	cl_object cdrs[narg-1];
-	cl_object cars[narg-1];	/* __GNUC__ */
-	int i;
+	cl_index i, nlist, cdrs_sp;
 @
-	cdrs[0] = onelist;
-	for (--narg, i = 1; i < narg; i++)
-		cdrs[i] = cl_nextarg(lists);
+	nlist = prepare_map(lists, &cdrs_sp);
 	res = Cnil;
 	while (TRUE) {
-		for (i = 0;  i < narg;  i++) {
-			if (endp(cdrs[i]))
+		cl_object *cdrs = cl_stack + cdrs_sp;
+		cl_object *cars = cdrs + nlist;
+		for (i = 0;  i < nlist;  i++) {
+			if (endp(cdrs[i])) {
+				cl_stack_set_index(cdrs_sp);
 				@(return res)
+			}
 			cars[i] = cdrs[i];
 			cdrs[i] = CDR(cdrs[i]);
 		}
-		*val = apply(narg, fun, cars);
+		*val = cl_apply_from_stack(nlist, fun);
 		while (CONSP(*val))
 			val = &CDR(*val);
 	}

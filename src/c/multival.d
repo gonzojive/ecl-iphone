@@ -24,7 +24,7 @@
 	if (narg == 0)
 		VALUES(0) = Cnil;
 	else for (i = 0; i < narg; i++)
-		VALUES(i) = va_arg(args, cl_object);
+		VALUES(i) = cl_va_arg(args);
 	returnn(VALUES(0));
 @)
 

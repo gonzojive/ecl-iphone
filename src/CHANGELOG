@@ -952,14 +952,17 @@ ECL 0.6
 
   - *PRINT-CIRCLE* defaults to NIL.
 
-ECL 0.6 (bugfix release)
-========================
+ECL 0.7
+=======
 
 * Errors fixed:
 
   - When installing, ECL would not build all required directories.
 
   - Symbol BUILD-PROGRAM should be exported from package C.
+
+  - In compiled code UNWIND-PROTECT would procted also the exit form,
+    resulting in an infinite loop when the exit form fails.
 
 * System design:
 
@@ -975,11 +978,37 @@ ECL 0.6 (bugfix release)
     LEFT-PARENTHESIS-READER. This avoids using global variables
     "in_list_flag" and "dot_flag".
 
+  - The calling conventions have been changed. SI::C-ARGUMENTS-LIMIT
+    and LAMBDA-PARAMETERS-LIMIT are both 64. Up to C-ARGUMENTS-LIMIT
+    may be passed to a function using C calling conventions. If the
+    function is to retrieve more arguments, (for instance through a
+    &rest variable), this can be done, but then the arguments have to
+    be pushed on the lisp stack. This method allows us to raise the
+    CALL-ARGUMENTS-LIMIT up to MOST-POSITIVE-FIXNUM. From a users
+    point of view, there is no visible change, excep the fact that a
+    function may receive more arguments.
+
+  - The function apply() has been replaced with cl_apply_from_stack().
+    The former took a pointer to the list of arguments. The latter
+    assumes that the last "narg" elements on the lisp stack are the
+    arguments of the function.
+
 * Visible changes:
 
   - New functions SI:SAFE-EVAL and cl_safe_eval() allow the user to
     evaluate code with errors without jumping into the
     debugger. Useful when embedding ECL in other programs.
+
+  - New function SI:OPEN-UNIX-SOCKET-STREAM creates a two-way stream
+    attached to a unix socked (Unix sockets are pipes which programs
+    from the same computer may use to communicate with each other, and
+    they are either anonymous (not supported by ECL) or associated to
+    a file of the filesystem).
+
+  - New function SI:LOOKUP-HOST-ENTRY encompasses the C calls
+    gethostbyname() and gethostbyaddress() and it is used to guess the
+    address, aliases and hostname of a machine in the Internet (Currently
+    we only support AF_INET protocol).
 
 * ANSI compatibility:
 

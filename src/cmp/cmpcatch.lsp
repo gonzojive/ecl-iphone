@@ -50,18 +50,31 @@
 
 (defun c2unwind-protect (form body &aux (nr (list 'LCL (next-lcl))))
   (wt-nl "{ volatile bool unwinding = FALSE;")
+  ;; Here we compile the form which is protected. When this form
+  ;; is aborted, it continues at the frs_pop() with unwinding=TRUE.
   (wt-nl "if (frs_push(FRS_PROTECT,Cnil)) {")
   (wt-nl "unwinding = TRUE;} else {")
-  (let ((*unwind-exit* (cons 'FRAME *unwind-exit*)))
-    (let ((*destination* 'VALUES)) (c2expr* form))
-    (wt-nl "}")
-    (wt-nl "MV_SAVE(" nr ");")
-    (let ((*destination* 'TRASH)) (c2expr* body))
-    (wt-nl "MV_RESTORE(" nr ");")
-    (wt-nl "if (unwinding) unwind(nlj_fr,nlj_tag);")
-    (wt-nl "else {")
-    (unwind-exit 'VALUES)
-    (wt "}}")))
+  (let ((*unwind-exit* (cons 'FRAME *unwind-exit*))
+	(*destination* 'VALUES))
+    (c2expr* form))
+  (wt-nl "}")
+  (wt-nl "frs_pop();")
+  ;; Here we save the values of the form which might have been
+  ;; aborted, and execute some cleanup code. This code may also
+  ;; be aborted by some control structure, but is not protected.
+  (let* ((nr `(LCL ,(next-lcl)))
+	 (*unwind-exit* `((STACK ,nr) ,@*unwind-exit*))
+	 (*destination* 'TRASH))
+    (wt-nl "{cl_index " nr "=cl_stack_push_values();")
+    (c2expr* body)
+    (wt-nl "cl_stack_pop_values(" nr ");}"))
+  ;; Finally, if the protected form was aborted, jump to the
+  ;; next catch point...
+  (wt-nl "if (unwinding) unwind(nlj_fr,nlj_tag);")
+  (wt-nl "else {")
+  ;; ... or simply return the values of the protected form.
+  (unwind-exit 'VALUES)
+  (wt "}}"))
 
 (defun c1throw (args &aux (info (make-info)) tag)
   (when (or (endp args) (endp (cdr args)))

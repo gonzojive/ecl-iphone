@@ -27,6 +27,31 @@
     otherwise, it emulates funcall.
  */
 
+void
+cl__va_start(cl_va_list args, int narg_before)
+{
+	if (args[0].narg > C_ARGUMENTS_LIMIT) {
+		args[0].sp = cl_stack_index() - args[0].narg;
+	} else {
+		args[0].sp = 0;
+	}
+	if (args[0].narg < narg_before)
+		FEtoo_few_arguments(args[0].narg);
+	args[0].narg -= narg_before;
+}
+
+cl_object
+cl_va_arg(cl_va_list args)
+{
+	if (args[0].narg <= 0)
+		FEerror("Too few arguments", 0);
+	args[0].narg--;
+	if (args[0].sp)
+		return cl_stack[args[0].sp++];
+	return va_arg(args[0].args, cl_object);
+}
+
+
 /*
  *----------------------------------------------------------------------
  *
@@ -42,18 +67,18 @@
  *----------------------------------------------------------------------
  */
 cl_object
-apply(int narg, cl_object fun, cl_object *args)
+cl_apply_from_stack(cl_index narg, cl_object fun)
 {
       AGAIN:
 	switch (type_of(fun)) {
 	case t_cfun:
-		return APPLY(narg, fun->cfun.entry, args);
+		return APPLY(narg, fun->cfun.entry, cl_stack_top - narg);
 	case t_cclosure:
-		return APPLY_closure(narg, fun->cclosure.entry, fun->cclosure.env,
-				     args);
+		return APPLY_closure(narg, fun->cclosure.entry,
+				     fun->cclosure.env, cl_stack_top - narg);
 #ifdef CLOS
 	case t_gfun:
-		fun = compute_method(narg, fun, args);
+		fun = compute_method(narg, fun, cl_stack_top - narg);
 		goto AGAIN;
 #endif
 	case t_symbol: {
@@ -64,7 +89,7 @@ apply(int narg, cl_object fun, cl_object *args)
 		goto AGAIN;
 	}
 	case t_bytecodes:
-		return lambda_apply(narg, fun, args);
+		return lambda_apply(narg, fun);
 	}
 	FEinvalid_function(fun);
 }
@@ -74,11 +99,17 @@ apply(int narg, cl_object fun, cl_object *args)
  *----------------------------------------------------------------------*/
 
 cl_object
-link_call(cl_object sym, cl_objectfn *pLK, int narg, va_list args)
+link_call(cl_object sym, cl_objectfn *pLK, int narg, cl_va_list args)
 {
-	cl_object fun = symbol_function(sym);
+	cl_index sp;
+	cl_object out, fun = symbol_function(sym);
 
-	if (fun == OBJNULL) FEerror("Undefined function.", 0);
+	if (fun == OBJNULL)
+		FEerror("Undefined function.", 0);
+	if (args[0].sp)
+		sp = args[0].sp;
+	else
+		sp = cl_stack_push_va_list(args);
  AGAIN:
 	switch (type_of(fun)) {
 	case t_cfun:
@@ -89,26 +120,28 @@ link_call(cl_object sym, cl_objectfn *pLK, int narg, va_list args)
 				@'si::link-from');
 			*pLK = fun->cfun.entry;
 		}
-		return va_APPLY(narg, fun->cfun.entry, args);
+		out = APPLY(narg, fun->cfun.entry, cl_stack + sp);
+		break;
 #ifdef CLOS
-#ifndef va_copy
-#define va_copy(x) (x)
-#endif
 	case t_gfun: {
-		va_list aux = va_copy(args);
-		fun = va_compute_method(narg, fun, aux);
+		fun = compute_method(narg, fun, cl_stack + sp);
 		pLK = NULL;
 		goto AGAIN;
 	}
 #endif /* CLOS */
 	case t_cclosure:
-		return va_APPLY_closure(narg, fun->cclosure.entry,
-					fun->cclosure.env, args);
+		out = APPLY_closure(narg, fun->cclosure.entry,
+				    fun->cclosure.env, cl_stack + sp);
+		break;
 	case t_bytecodes:
-		return va_lambda_apply(narg, fun, args);
+		out = lambda_apply(narg, fun);
+		break;
 	default:
 		FEinvalid_function(fun);
 	}
+	if (!args[0].sp)
+		cl_stack_set_index(sp);
+	return out;
 }
 
 @(defun si::unlink_symbol (s)
@@ -126,21 +159,27 @@ link_call(cl_object sym, cl_objectfn *pLK, int narg, va_list args)
 @)
 
 @(defun funcall (function &rest funargs)
-	cl_object fun = function, x;
+	cl_index sp;
+	cl_object fun = function, out;
 @
+	narg--;
+	if (funargs[0].sp)
+		sp = funargs[0].sp;
+	else
+		sp = cl_stack_push_va_list(funargs);
       AGAIN:
 	switch (type_of(fun)) {
 	case t_cfun:
-		return va_APPLY(narg-1, fun->cfun.entry, funargs);
+		out = APPLY(narg, fun->cfun.entry, cl_stack + sp);
+		break;
 	case t_cclosure:
-		return va_APPLY_closure(narg-1, fun->cclosure.entry,
-					fun->cclosure.env, funargs);
+		out = APPLY_closure(narg, fun->cclosure.entry,
+				    fun->cclosure.env, cl_stack + sp);
+		break;
 #ifdef CLOS
-	case t_gfun: {
-		va_list aux = va_copy(funargs);
-		fun = va_compute_method(narg-1, fun, aux);
+	case t_gfun:
+		fun = compute_method(narg, fun, cl_stack + sp);
 		goto AGAIN;
-	}
 #endif
 	case t_symbol:
 		fun = SYM_FUN(fun);
@@ -148,9 +187,14 @@ link_call(cl_object sym, cl_objectfn *pLK, int narg, va_list args)
 			FEundefined_function(function);
 		goto AGAIN;
 	case t_bytecodes:
-		return va_lambda_apply(narg-1, fun, funargs);
+		out = lambda_apply(narg, fun);
+		break;
+	default:
+		FEinvalid_function(fun);
 	}
-	FEinvalid_function(fun);
+	if (!funargs[0].sp)
+		cl_stack_set_index(sp);
+	return out;
 @)
 
 @(defun eval (form)
@@ -209,5 +253,5 @@ void
 init_eval(void)
 {
 	SYM_VAL(@'si::*ignore-errors*') = Cnil;
-	SYM_VAL(@'call-arguments-limit') = MAKE_FIXNUM(64);
+	SYM_VAL(@'call-arguments-limit') = MAKE_FIXNUM(CALL_ARGUMENTS_LIMIT);
 }

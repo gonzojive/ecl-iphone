@@ -14,9 +14,6 @@
     See file '../Copyright' for full details.
 */
 
-#ifndef darwin
-#include <malloc.h>
-#endif
 #include "ecl.h"
 #include "ecl-inl.h"
 
@@ -185,87 +182,20 @@ cl_go(cl_object tag_id, cl_object label)
 }
 
 cl_object
-grab_rest_args(int narg, cl_object *args)
+cl_grab_rest_args(cl_va_list args)
 {
 	cl_object rest = Cnil;
 	cl_object *r = &rest;
-	while (narg--) {
-		*r = CONS(*(args++), Cnil);
+	while (args[0].narg) {
+		*r = CONS(cl_va_arg(args), Cnil);
 		r = &CDR(*r);
 	}
 	return rest;
 }
 
 void
-parse_key(
-     int narg,			/* number of actual args */
-     cl_object *args,		/* actual args */
-     int nkey,			/* number of keywords */
-     cl_object *keys,		/* keywords for the function */
-     cl_object *vars,		/* where to put values (vars[0..nkey-1])
-				   and suppliedp (vars[nkey..2*nkey-1]) */
-     cl_object *rest,		/* if rest!=NULL, collect arguments in a list */
-     bool allow_other_keys)	/* whether other key are allowed */
-{
-  int i;
-  cl_object supplied_allow_other_keys = OBJNULL;
-  cl_object unknown_keyword = OBJNULL;
-
-  if (rest != NULL) *rest = Cnil;
-
-  for (i = 0; i < 2*nkey; i++)
-    vars[i] = Cnil;             /* default values: NIL, supplied: NIL */
-  if (narg <= 0) return;
-
-  for (; narg>=2; narg-= 2) {
-    cl_object keyword = *(args++);
-    cl_object value = *(args++);
-    if (rest != NULL) {
-      rest = &CDR(*rest = CONS(keyword, Cnil));
-      rest = &CDR(*rest = CONS(value, Cnil));
-    }
-    for (i = 0; i < nkey; i++) {
-      if (keys[i] == keyword) {
-	if (vars[nkey+i] == Cnil) {
-	  vars[i] = value;
-	  vars[nkey+i] = Ct;
-	}
-	goto go_on;
-      }
-    }
-    /* the key is a new one */
-    if (keyword == @':allow-other-keys') {
-      if (supplied_allow_other_keys == OBJNULL)
-	supplied_allow_other_keys = value;
-    } else if (unknown_keyword != OBJNULL)
-      unknown_keyword = keyword;
-  go_on:
-    (void)0;
-  }
-  if (narg != 0)
-    FEprogram_error("Odd number of keys", 0);
-  if (unknown_keyword != OBJNULL && !allow_other_keys &&
-      supplied_allow_other_keys != Cnil)
-    FEprogram_error("Unknown keyword ~S", 1, unknown_keyword);
-}
-
-#ifdef NO_ARGS_ARRAY
-cl_object
-va_grab_rest_args(int narg, va_list args)
-{
-	cl_object rest = Cnil;
-	cl_object *r = &rest;
-	while (narg--) {
-		*r = CONS(cl_nextarg(args), Cnil);
-		r = &CDR(*r);
-	}
-	return rest;
-}
-
-void
-va_parse_key(
-     int narg,			/* number of actual args */
-     va_list args,		/* actual args */
+cl_parse_key(
+     cl_va_list args,		/* actual args */
      int nkey,			/* number of keywords */
      cl_object *keys,		/* keywords for the function */
      cl_object *vars,		/* where to put values (vars[0..nkey-1])
@@ -281,11 +211,11 @@ va_parse_key(
 
   for (i = 0; i < 2*nkey; i++)
     vars[i] = Cnil;             /* default values: NIL, supplied: NIL */
-  if (narg <= 0) return;
+  if (args[0].narg <= 0) return;
 
-  for (; narg>=2; narg-= 2) {
-    cl_object keyword = cl_nextarg(args);
-    cl_object value = cl_nextarg(args);
+  for (; args[0].narg > 1; ) {
+    cl_object keyword = cl_va_arg(args);
+    cl_object value = cl_va_arg(args);
     if (rest != NULL) {
       rest = &CDR(*rest = CONS(keyword, Cnil));
       rest = &CDR(*rest = CONS(value, Cnil));
@@ -307,13 +237,12 @@ va_parse_key(
       unknown_keyword = keyword;
   go_on:
   }
-  if (narg != 0)
+  if (args[0].narg != 0)
     FEprogram_error("Odd number of keys", 0);
   if (unknown_keyword != OBJNULL && !allow_other_keys &&
       supplied_allow_other_keys != Cnil)
     FEprogram_error("Unknown keyword ~S", 1, unknown_keyword);
 }
-#endif /* NO_ARGS_ARRAY */
 
 /* Used in compiled macros */
 void
@@ -336,7 +265,7 @@ check_other_key(cl_object l, int n, ...)
 			va_list ktab;
 			va_start(ktab, n); /* extracting arguments */
 			for (i = 0;  i < n;  i++)
-				if (cl_nextarg(ktab) == k)
+				if (va_arg(ktab,cl_object) == k)
 					break;
 			va_end(ktab);
 			if (i >= n) other_key = k;
@@ -354,5 +283,6 @@ init_cmpaux(void)
 	list(8, @'&optional', @'&rest', @'&key', @'&allow-other-keys', @'&aux',
 		@'&whole', @'&environment', @'&body');
 
-	SYM_VAL(@'LAMBDA-PARAMETERS-LIMIT') = MAKE_FIXNUM(64);
+	SYM_VAL(@'LAMBDA-PARAMETERS-LIMIT') = MAKE_FIXNUM(LAMBDA_PARAMETERS_LIMIT);
+	SYM_VAL(@'SI::C-ARGUMENTS-LIMIT') = MAKE_FIXNUM(C_ARGUMENTS_LIMIT);
 }

@@ -68,25 +68,23 @@ terminal_interrupt(bool correctable)
 void
 FEerror(char *s, int narg, ...)
 {
-	va_list args;
-	va_start(args, narg);
+	cl_va_list args;
+	cl_va_start(args, narg, narg, 0);
 	funcall(4, @'si::universal-error-handler',
 		Cnil,                    /*  not correctable  */
 		make_constant_string(s),	 /*  condition text  */
-		va_grab_rest_args(narg, args));
-	va_end(args);
+		cl_grab_rest_args(args));
 }
 
 cl_object
 CEerror(char *err, int narg, ...)
 {
-	va_list args;
-	va_start(args, narg);
+	cl_va_list args;
+	cl_va_start(args, narg, narg, 0);
 	return funcall(4, @'si::universal-error-handler',
 		       Ct,			/*  correctable  */
 		       make_constant_string(err),	/*  continue-format-string  */
-		       va_grab_rest_args(narg, args));
-	va_end(args);
+		       cl_grab_rest_args(args));
 }
 
 /***********************
@@ -96,40 +94,37 @@ CEerror(char *err, int narg, ...)
 void
 FEcondition(int narg, cl_object name, ...)
 {
-	va_list args;
-	va_start(args, name);
+	cl_va_list args;
+	cl_va_start(args, name, narg, 1);
 	funcall(4, @'si::universal-error-handler',
 		Cnil,                    /*  not correctable  */
 		name,                    /*  condition name  */
-		va_grab_rest_args(--narg, args));
-	va_end(args);
+		cl_grab_rest_args(args));
 }
 
 void
 FEprogram_error(const char *s, int narg, ...)
 {
-	va_list args;
+	cl_va_list args;
 	gc(t_contiguous);
-	va_start(args, narg);
+	cl_va_start(args, narg, narg, 0);
 	funcall(4, @'si::universal-error-handler',
 		Cnil,                    /*  not correctable  */
 		@'si::simple-program-error', /*  condition name  */
 		list(4, @':format-control', make_constant_string(s),
-		     @':format-arguments', va_grab_rest_args(narg, args)));
-	va_end(args);
+		     @':format-arguments', cl_grab_rest_args(args)));
 }
 
 void
 FEcontrol_error(const char *s, int narg, ...)
 {
-	va_list args;
-	va_start(args, narg);
+	cl_va_list args;
+	cl_va_start(args, narg, narg, 0);
 	funcall(4, @'si::universal-error-handler',
 		Cnil,                    /*  not correctable  */
 		@'si::simple-control-error', /*  condition name  */
 		list(4, @':format-control', make_constant_string(s),
-		     @':format-arguments', va_grab_rest_args(narg, args)));
-	va_end(args);
+		     @':format-arguments', cl_grab_rest_args(args)));
 }
 
 void
@@ -167,19 +162,19 @@ FEundefined_function(cl_object fname)
  *************/
 
 void
-FEtoo_few_arguments(int *nargp)
+FEtoo_few_arguments(int narg)
 {
 	cl_object fname = ihs_top_function_name();
 	FEprogram_error("Function ~S requires more than ~R argument~:p.",
-			2, fname, MAKE_FIXNUM(*nargp));
+			2, fname, MAKE_FIXNUM(narg));
 }
 
 void
-FEtoo_many_arguments(int *nargp)
+FEtoo_many_arguments(int narg)
 {
 	cl_object fname = ihs_top_function_name();
 	FEprogram_error("Function ~S requires less than ~R argument~:p.",
-			2, fname, MAKE_FIXNUM(*nargp));
+			2, fname, MAKE_FIXNUM(narg));
 }
 
 void
@@ -252,7 +247,7 @@ not_a_variable(cl_object obj)
 	funcall(4, @'si::universal-error-handler',
 		Cnil,
 		eformat,
-		va_grab_rest_args(narg-1, args));
+		cl_grab_rest_args(args));
 @)
 
 @(defun cerror (cformat eformat &rest args)
@@ -260,7 +255,7 @@ not_a_variable(cl_object obj)
 	return(funcall(4, @'si::universal-error-handler',
 		       cformat,
 		       eformat,
-		       va_grab_rest_args(narg-2, args)));
+		       cl_grab_rest_args(args)));
 @)
 
 void

@@ -45,14 +45,14 @@ typedef cl_fixnum (*bit_operator)(cl_fixnum, cl_fixnum);
 static cl_object big_log_op(cl_object x, cl_object y, bit_operator op);
 
 static cl_object
-log_op(int narg, bit_operator op, va_list ARGS)
+log_op(int narg, bit_operator op, cl_va_list ARGS)
 {
 	cl_type t;
 	cl_object x, numi;
 	int i = 1, j;
 
-	if (narg < 2) FEtoo_few_arguments(&narg);
-	x = cl_nextarg(ARGS);
+	if (narg < 2) FEtoo_few_arguments(narg);
+	x = cl_va_arg(ARGS);
 	t = type_of(x);
 	if (t == t_bignum) {
 		x = big_copy(x);	/* since big_log_op clobbers it */
@@ -62,7 +62,7 @@ log_op(int narg, bit_operator op, va_list ARGS)
 	}
 	j = fix(x);
 	for (; i < narg; i++) {
-	  numi = cl_nextarg(ARGS);
+	  numi = cl_va_arg(ARGS);
 	  t = type_of(numi);
 	  if (t == t_bignum) {
 	    x = big_log_op(bignum1(j), numi, op);
@@ -77,7 +77,7 @@ log_op(int narg, bit_operator op, va_list ARGS)
 
 BIG_OP:
 	for (; i < narg; i++)	  
-	  x = big_log_op(x, cl_nextarg(ARGS), op);
+	  x = big_log_op(x, cl_va_arg(ARGS), op);
 	return(big_normalize(x));
 }
 

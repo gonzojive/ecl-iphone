@@ -122,13 +122,13 @@
 	    args-pushed				;;; Args already pushed?
 	    )
 	(let* ((requireds (first lambda-list))
-	       (nreq (length requireds)))
-	  (unless args-pushed (setq narg (length args)))
+	       (nreq (length requireds))
+	       (nopt (if args-pushed narg (- (length args) nreq)))
+	       (*unwind-exit* *unwind-exit*))
 	  (wt-nl "{ ")
-	  ;; In reverse order, since stack grows downward:
-	  (if args-pushed
-	      (wt-nl "cl_object *args = &VALUES(" nreq ");")
-	      (wt-nl "cl_object args[" (- narg nreq) "];"))
+	  (unless args-pushed
+	    (setq narg `(LCL ,(next-lcl)))
+	    (wt-nl "cl_index " narg "=0;"))
 	  (when requireds
 	    (wt-nl "cl_object ")
 	    (let ((lcl (+ *lcl* nreq)))
@@ -137,28 +137,55 @@
 		  ((null args))
 		(wt-lcl lcl) (when (cdr args) (wt ", ")) (decf lcl)))
 	    (wt ";"))
-	  (wt-nl "int narg = ")
-	  (wt (if args-pushed			;;; Args already pushed?
-		  narg
-		  (length args)) ";")
-	  (if args-pushed
-	      (dotimes (i nreq)
-		(wt-nl) (wt-lcl (next-lcl)) (wt "=VALUES(" i ");"))
-	      (progn
-		(dotimes (i nreq)
-		  (let ((*destination* `(LCL ,(next-lcl))))
-		    (c2expr* (pop args))))
-		(do* ((*inline-blocks* 0)
-		      (vals (inline-args args) (cdr vals))
-		      (i 0 (1+ i)))
+	  (wt-nl "int narg;")
+	  (wt-nl "cl_va_list args;")
+	  (cond (args-pushed
+		 (wt-nl "args[0].sp=cl_stack_index()-" narg ";")
+		 (wt-nl "args[0].narg=" narg ";")
+		 (dotimes (i nreq)
+		   (wt-nl) (wt-lcl (next-lcl)) (wt "=cl_va_arg(args);")))
+		(t
+		 (dotimes (i nreq)
+		   (let ((*destination* `(LCL ,(next-lcl))))
+		     (c2expr* (pop args))))
+		 (push (list STACK narg) *unwind-exit*)
+		 (wt-nl "args[0].sp=cl_stack_index();")
+		 (wt-nl "args[0].narg=" nopt ";")
+		 (do* ((*inline-blocks* 0)
+		       (vals (inline-args args) (cdr vals))
+		       (i 0 (1+ i)))
 		     ((null vals) (close-inline-blocks))
-		  (declare (fixnum i))
-		  (wt-nl "args[" i "]=" (second (first vals)) ";"))
-		(wt-nl "narg = " (- narg nreq) ";")))
+		   (declare (fixnum i))
+		   (wt-nl "cl_stack_push(" (second (first vals)) ");")
+		   (wt-nl narg "++;"))
+		 (wt-nl "args[0].narg=" narg ";")))
+	  (wt "narg=" narg ";")
 	  (c2lambda-expr lambda-list (third (cddr lambda-expr)) cfun
 			 nil nil 'CALL-LAMBDA)
+	  (unless args-pushed
+	    (wt-nl "cl_stack_pop_n(" narg ");"))
 	  (wt-nl "}"))
 	(c2let (first lambda-list) args (third (cddr lambda-expr))))))
+
+(defun maybe-push-args (args)
+  (when (or (eq args 'ARGS-PUSHED)
+	    (< (length args) SI::C-ARGUMENTS-LIMIT))
+    (return-from maybe-push-args (values nil nil nil)))
+  (let* ((temp *temp*)	; allow reuse of TEMP variables
+	 (*temp* temp)
+	 (arg (list 'TEMP 0))
+	 (narg `(LCL ,(next-lcl))))
+    (wt-nl "{cl_index " narg ";")
+    (let ((*destination* arg))
+      (dolist (expr args)
+	(setf (second arg) (next-temp))
+	(c2expr* expr)))
+    (setf (second arg) temp)	; restart numbering
+    (dotimes (i (length args))
+      (wt-nl "cl_stack_push(" arg ");")
+      (incf (second arg)))
+    (wt-nl narg "=" (length args) ";")
+    (values `((STACK ,narg) ,@*unwind-exit*) 'ARGS-PUSHED narg)))
 
 ;;;
 ;;; c2call-global:
@@ -167,6 +194,12 @@
 ;;;   LOC is either NIL or the location of the function object
 ;;;
 (defun c2call-global (fname args loc return-type &optional narg)
+  (multiple-value-bind (*unwind-exit* args narg)
+      (maybe-push-args args)
+    (when narg
+      (c2call-global fname args loc return-type narg)
+      (wt-nl "}")
+      (return-from c2call-global)))
   (unless (eq 'ARGS-PUSHED args)
     (case fname
       (AREF
@@ -312,12 +345,16 @@
 ;;;   args are typed locations as produced by inline-args
 ;;;
 (defun call-loc (fname fun args &optional narg-loc)
-  (if (eq 'ARGS-PUSHED args)
-      (list 'CALL (if (stringp fun)
-		      "APPLY"		; call to a C function
-		      "apply")		; call to a Lisp function
-	    narg-loc (list fun "&VALUES(0)") fname)
-      (list 'CALL fun (length args) (coerce-locs args nil) fname)))
+  (cond ((not (eq 'ARGS-PUSHED args))
+	 (list 'CALL fun (length args) (coerce-locs args nil) fname))
+	((stringp fun)
+	 (list 'CALL "APPLY" narg-loc (list fun `(STACK-POINTER ,narg-loc))
+	       fname))
+	(t
+	 (list 'CALL "cl_apply_from_stack" narg-loc (list fun) fname))))
+
+(defun wt-stack-pointer (narg)
+  (wt "cl_stack_top-" narg))
 
 (defun wt-call (fun narg args &optional fname)
   (wt fun "(" narg)
@@ -342,7 +379,7 @@
 		      (add-symbol fname)))))
   (unwind-exit
    (if (eq args 'ARGS-PUSHED)
-       (list 'CALL "apply" narg (list loc "&VALUES(0)") fname)
+       (list 'CALL "cl_apply_from_stack" narg (list loc) fname)
        (call-loc fname "funcall" (cons (list T loc) args)))))
 
 ;;; ----------------------------------------------------------------------
@@ -353,3 +390,4 @@
 (setf (get 'call-global 'c2) #'c2call-global)
 
 (setf (get 'CALL 'WT-LOC) #'wt-call)
+(setf (get 'STACK-POINTER 'WT-LOC) #'wt-stack-pointer)

@@ -123,17 +123,14 @@ UTC_time_to_universal_time(int i)
  * defaults to current time.
  *
  */
-@(defun si::daylight-saving-time-p (&rest args)
+@(defun si::daylight-saving-time-p (&optional UT)
   struct tm *ltm;
   time_t when;
 @
   if (narg == 0)
     when = time(0);
-  else if (narg == 1) {
-    cl_object UT, UTC;
-    va_start(args, narg);
-    UT = va_arg(args, cl_object);
-    UTC = number_minus(UT, Jan1st1970UT);
+  else { /* narg == 1 */
+    cl_object UTC = number_minus(UT, Jan1st1970UT);
     switch (type_of(UTC)) {
     case t_fixnum:
       when = fix(UTC);
@@ -145,8 +142,6 @@ UTC_time_to_universal_time(int i)
       FEerror("Universal Time out of range: ~A.", 1, UT);
     }
   }
-  else
-    FEtoo_many_arguments(&narg);
   ltm = localtime(&when);
   @(return (ltm->tm_isdst ? Ct : Cnil))
 @)

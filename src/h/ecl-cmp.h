@@ -43,7 +43,7 @@
 
 #define LINK_ARGS	&narg
 #define TRAMPOLINK(narg, vv, lk) \
-	va_list args; va_start(args, narg); \
+	cl_va_list args; cl_va_start(args, narg, narg, 0); \
 	return(link_call(vv, (cl_objectfn *)lk, narg, args))
 
 #define	cclosure_call	funcall

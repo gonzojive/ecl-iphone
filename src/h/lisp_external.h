@@ -512,12 +512,12 @@ extern cl_object clLidentity _ARGS((int narg, cl_object x));
 
 /* mapfun.c */
 
-extern cl_object clLmapcar _ARGS((int narg, cl_object fun, cl_object onelist, ...));
-extern cl_object clLmaplist _ARGS((int narg, cl_object fun, cl_object onelist, ...));
-extern cl_object clLmapc _ARGS((int narg, cl_object fun, cl_object onelist, ...));
-extern cl_object clLmapl _ARGS((int narg, cl_object fun, cl_object onelist, ...));
-extern cl_object clLmapcan _ARGS((int narg, cl_object fun, cl_object onelist, ...));
-extern cl_object clLmapcon _ARGS((int narg, cl_object fun, cl_object onelist, ...));
+extern cl_object clLmapcar _ARGS((int narg, cl_object fun, ...));
+extern cl_object clLmaplist _ARGS((int narg, cl_object fun, ...));
+extern cl_object clLmapc _ARGS((int narg, cl_object fun, ...));
+extern cl_object clLmapl _ARGS((int narg, cl_object fun, ...));
+extern cl_object clLmapcan _ARGS((int narg, cl_object fun, ...));
+extern cl_object clLmapcon _ARGS((int narg, cl_object fun, ...));
 
 /* multival.c */
 

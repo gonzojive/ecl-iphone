@@ -937,6 +937,7 @@ cl_symbols[] = {
 {"SI::BDS-VAL", SI_ORDINARY, NULL, siLbds_val},
 {"SI::BDS-VAR", SI_ORDINARY, NULL, siLbds_var},
 {"SI::BIT-ARRAY-OP", SI_ORDINARY, NULL, siLbit_array_op},
+{"SI::C-ARGUMENTS-LIMIT", SI_ORDINARY, NULL, NULL},
 {"SI::CHAR-SET", SI_ORDINARY, NULL, siLchar_set},
 {"SI::CHDIR", SI_ORDINARY, NULL, siLchdir},
 {"SI::CLEAR-COMPILER-PROPERTIES", SI_ORDINARY, &siSclear_compiler_properties, siLclear_compiler_properties},
