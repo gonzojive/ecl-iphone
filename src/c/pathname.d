@@ -707,7 +707,7 @@ coerce_to_physical_pathname(cl_object x)
 
 /*
  * si_coerce_to_filename(P) converts P to a physical pathname and then to
- * a namestring. The output must always be a simple-string which can
+ * a namestring. The output must always be a new simple-string which can
  * be used by the C library.
  * INV: No wildcards are allowed.
  */
@@ -716,6 +716,8 @@ si_coerce_to_filename(cl_object pathname)
 {
 	cl_object namestring;
 
+	/* We always go through the pathname representation and thus
+	 * cl_namestring() always outputs a fresh new string */
 	pathname = coerce_to_file_pathname(pathname);
 	assert_non_wild_pathname(pathname);
 	namestring = coerce_to_simple_string(cl_namestring(pathname));
