@@ -46,7 +46,7 @@ Evaluates FORMs with VAR bound to a string output stream to the string that is
 the value of STRING-FORM.  If STRING-FORM is not given, a new string is used.
 The stream is automatically closed on exit and the string is returned."
   (if string
-      `(LET ((,var (MAKE-STRING-OUTPUT-STREAM-FROM-STRING ,string ,@r)))
+      `(LET ((,var (MAKE-STRING-OUTPUT-STREAM-FROM-STRING ,string)))
          ,@body)
       `(LET ((,var (MAKE-STRING-OUTPUT-STREAM ,@r)))
          ,@body
