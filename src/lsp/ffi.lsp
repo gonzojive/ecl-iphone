@@ -28,7 +28,8 @@
 	   "WITH-FOREIGN-STRINGS" "ENSURE-CHAR-STORABLE" "DEF-TYPE"
 	   "WITH-CSTRING" "CONVERT-TO-CSTRING" "CONVERT-FROM-CSTRING" "FREE-CSTRING"
 	   "WITH-CAST-POINTER" "WITH-CSTRINGS"
-	   ))
+	   )
+  (:import-from "SYS" "NULL-POINTER-P"))
 
 (in-package "FFI")
 
@@ -352,6 +353,7 @@
 	    :side-effects t
 	    :one-liner t))
 
+#+(OR) ;; Already defined in core
 (defun null-pointer-p (object)
   (si::null-pointer-p object))
 
