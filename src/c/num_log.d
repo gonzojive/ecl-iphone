@@ -291,7 +291,7 @@ count_bits(cl_object x)
    Left shift if w > 0, right shift if w < 0.
  */
 cl_object
-integer_shift(cl_object x, cl_fixnum w)
+ecl_ash(cl_object x, cl_fixnum w)
 {
 	cl_object y;
 
@@ -312,13 +312,13 @@ integer_shift(cl_object x, cl_fixnum w)
 	return(big_register_normalize(y));
 }
 
-int
+static int
 int_bit_length(int i)
 {
-	register int	count, j;
+	register int count, j;
 
 	count = 0;
-	for (j = 0; j < 31 ; j++)
+	for (j = 0; j < (sizeof(cl_index)/sizeof(u_int8_t))*8-1; j++)
 		if (((i >> j) & 1) == 1) count = j + 1;
 	return(count);
 }
@@ -455,7 +455,7 @@ cl_ash(cl_object x, cl_object y)
         assert_type_integer(x);
 	assert_type_integer(y);
 	if (FIXNUMP(y))
-	  r = integer_shift(x, fix(y));
+	  r = ecl_ash(x, fix(y));
 	else {
 	  /*
 	    bit position represented by bignum is probably

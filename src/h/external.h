@@ -152,16 +152,6 @@ extern long big_to_long(cl_object x);
 extern void init_big(void);
 
 
-/* block.c */
-
-extern void init_block(void);
-
-
-/* catch.c */
-
-extern void init_catch(void);
-
-
 /* cfun.c */
 
 extern cl_object si_compiled_function_name(cl_object fun);
@@ -174,7 +164,6 @@ extern cl_object cl_make_cclosure_va(cl_object (*self)(int narg,...), cl_object 
 extern void cl_def_c_function(cl_object sym, cl_object (*self)(), int narg);
 extern void cl_def_c_macro_va(cl_object sym, cl_object (*self)(int narg,...));
 extern void cl_def_c_function_va(cl_object sym, cl_object (*self)(int narg,...));
-extern void init_cfun(void);
 
 
 /* character.c */
@@ -283,10 +272,6 @@ extern cl_object lambda_apply(int narg, cl_object fun);
 extern cl_object *interpret(cl_object *memory);
 extern void init_interpreter(void);
 
-/* conditional.c */
-
-extern void init_conditional(void);
-
 /* disassembler.c */
 
 extern cl_object si_bc_disassemble(cl_object v);
@@ -394,7 +379,6 @@ extern long file_position_set(cl_object strm, long disp);
 extern long file_length(cl_object strm);
 extern int file_column(cl_object strm);
 extern void init_file(void);
-extern void init_file_function(void);
 
 
 /* format.c */
@@ -447,7 +431,6 @@ extern cl_object si_method_ht_get(cl_object keylist, cl_object table);
 extern cl_object si_set_compiled_function_name(cl_object keylist, cl_object table);
 
 extern cl_object compute_method(int narg, cl_object fun, cl_object *args);
-extern void init_gfun(void);
 #endif /* CLOS */
 
 
@@ -478,13 +461,6 @@ extern bool remhash(cl_object key, cl_object hash);
 extern void cl_clear_hashtable(cl_object hashtable);
 
 
-/* init.c */
-
-extern bool ecl_booted;
-extern void init_lisp(void);
-extern void init_libs(void);
-
-
 /* instance.c */
 
 #ifdef CLOS
@@ -505,18 +481,6 @@ extern cl_object instance_ref(cl_object x, int i);
 extern cl_object instance_set(cl_object x, int i, cl_object v);
 extern void init_instance(void);
 #endif /* CLOS */
-
-
-/* iteration.c */
-
-extern void do_bindings(cl_object var_list, struct iterator *bt);
-extern void init_iteration(void);
-
-
-/* let.c */
-
-extern void let_bindings(cl_object var_list, struct let *let);
-extern void init_let(void);
 
 
 /* list.c */
@@ -620,7 +584,6 @@ extern cl_object assq(cl_object x, cl_object l);
 extern cl_object assql(cl_object x, cl_object l);
 extern cl_object assoc(cl_object x, cl_object l);
 extern cl_object assqlp(cl_object x, cl_object l);
-extern void init_list(void);
 
 
 /* load.c */
@@ -630,7 +593,7 @@ extern cl_object si_load_binary(cl_object file, cl_object verbose, cl_object pri
 extern cl_object cl_load _ARGS((int narg, cl_object pathname, ...));
 
 extern void init_load(void);
-extern void load_until_tag(cl_object stream, cl_object end_tag);
+
 
 /* lwp.c */
 #ifdef THREADS
@@ -688,9 +651,9 @@ extern cl_object si_setenv(cl_object var, cl_object value);
 extern cl_object si_pointer(cl_object x);
 extern cl_object cl_quit _ARGS((int narg, ...));
 
-extern int cl_boot(int argc, char **argv);
+extern bool ecl_booted;
 extern const char *ecl_self;
-extern void init_main(void);
+extern int cl_boot(int argc, char **argv);
 
 
 /* mapfun.c */
@@ -701,7 +664,6 @@ extern cl_object cl_mapc _ARGS((int narg, cl_object fun, ...));
 extern cl_object cl_mapl _ARGS((int narg, cl_object fun, ...));
 extern cl_object cl_mapcan _ARGS((int narg, cl_object fun, ...));
 extern cl_object cl_mapcon _ARGS((int narg, cl_object fun, ...));
-extern void init_mapfun(void);
 
 
 /* multival.c */
@@ -734,7 +696,6 @@ extern cl_object integer_divide(cl_object x, cl_object y);
 extern cl_object get_gcd(cl_object x, cl_object y);
 extern cl_object one_plus(cl_object x);
 extern cl_object one_minus(cl_object x);
-extern void init_num_arith(void);
 
 
 /* number.c */
@@ -824,8 +785,7 @@ extern cl_object cl_logxor _ARGS((int narg, ...));
 extern cl_object cl_logand _ARGS((int narg, ...));
 extern cl_object cl_logeqv _ARGS((int narg, ...));
 
-extern cl_object integer_shift(cl_object x, cl_fixnum w);
-extern int int_bit_length(int i);
+extern cl_object ecl_ash(cl_object x, cl_fixnum w);
 extern void init_num_log(void);
 
 
@@ -842,7 +802,6 @@ extern int number_plusp(cl_object x);
 extern int number_minusp(cl_object x);
 extern int number_oddp(cl_object x);
 extern int number_evenp(cl_object x);
-extern void init_num_pred(void);
 
 
 /* num_rand.c */
@@ -929,7 +888,6 @@ extern void use_package(cl_object x0, cl_object p);
 extern void unuse_package(cl_object x0, cl_object p);
 extern void delete_package(cl_object p);
 extern void init_package(void);
-extern void init_package_function(void);
 
 
 /* pathname.c */
@@ -1004,7 +962,6 @@ extern bool numberp(cl_object x);
 extern bool eql(cl_object x, cl_object y);
 extern bool equal(register cl_object x, cl_object y);
 extern bool equalp(cl_object x, cl_object y);
-extern void init_predicate(void);
 
 
 /* print.c */
@@ -1043,11 +1000,6 @@ extern cl_object si_display_profile _ARGS((int narg));
 extern int total_ticks(unsigned short *aar, unsigned int dim);
 extern int init_profile(void);
 #endif
-
-
-/* prog.c */
-
-extern void init_prog(void);
 
 
 /* read.c */
@@ -1110,7 +1062,6 @@ extern cl_object cl_special_operator_p(cl_object form);
 extern cl_object cl_macro_function _ARGS((int narg, cl_object sym, ...));
 
 extern cl_object symbol_function(cl_object sym);
-extern void init_reference(void);
 
 
 /* sequence.c */
@@ -1128,7 +1079,6 @@ extern cl_object cl_alloc_simple_bitvector(int l);
 extern cl_object elt(cl_object seq, cl_fixnum index);
 extern cl_object elt_set(cl_object seq, cl_fixnum index, cl_object val);
 extern cl_fixnum length(cl_object x);
-extern void init_sequence(void);
 
 
 /* stacks.c */
@@ -1199,7 +1149,6 @@ extern bool string_equal(cl_object x, cl_object y);
 extern bool member_char(int c, cl_object char_bag);
 extern int cl_string_push_extend(cl_object s, int c);
 extern void get_string_start_end(cl_object s, cl_object start, cl_object end, cl_index *ps, cl_index *pe);
-extern void init_string(void);
 
 
 /* structure.c */
@@ -1219,7 +1168,6 @@ extern cl_object structure_to_list(cl_object x);
 #endif
 extern cl_object structure_ref(cl_object x, cl_object name, int n);
 extern cl_object structure_set(cl_object x, cl_object name, int n, cl_object v);
-extern void init_structure(void);
 
 
 /* symbol.c */
@@ -1306,7 +1254,6 @@ extern cl_object si_open_server_stream(cl_object port);
 extern cl_object si_open_unix_socket_stream(cl_object path);
 extern cl_object si_lookup_host_entry(cl_object host_or_address);
 extern cl_object make_stream(cl_object host, int fd, enum smmode smm);
-extern int init_tcp(void);
 #endif
 
 
@@ -1331,11 +1278,6 @@ extern int Tk_initialized;
 extern cl_object Tk_root_window;
 extern void Tk_main(int synchronize, char *name, char *fileName, char *Xdisplay, char *geometry);
 #endif
-
-
-/* toplevel.c */
-
-extern void init_toplevel(void);
 
 
 /* typespec.c */
@@ -1401,7 +1343,6 @@ extern bool file_exists(cl_object file);
 extern FILE *backup_fopen(const char *filename, const char *option);
 extern int file_len(FILE *fp);
 extern cl_object homedir_pathname(cl_object user);
-extern void init_unixfsys(void);
 extern void FEfilesystem_error(const char *msg, int narg, ...);
 
 
@@ -1420,7 +1361,6 @@ extern void init_interrupt(void);
 
 extern cl_object si_system(cl_object cmd);
 extern cl_object si_open_pipe(cl_object cmd);
-extern void init_unixsys(void);
 
 #ifdef __cplusplus
 }

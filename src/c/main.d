@@ -41,9 +41,11 @@ int data_start = (int)&data_start;
 
 /******************************* EXPORTS ******************************/
 
+bool ecl_booted = 0;
+
 const char *ecl_self;
 
-/******************************* ------- ******************************/
+/************************ GLOBAL INITIALIZATION ***********************/
 
 static int	ARGC;
 static char	**ARGV;
@@ -52,6 +54,15 @@ static char	**ARGV;
 static char stdin_buf[BUFSIZ];
 static char stdout_buf[BUFSIZ];
 #endif
+
+#ifdef __cplusplus
+extern "C" void init_LSP(void);
+extern "C" void init_CLOS(void);
+#else
+extern void init_LSP();
+extern void init_CLOS();
+#endif
+static void init_main();
 
 int
 cl_boot(int argc, char **argv)
@@ -75,7 +86,69 @@ cl_boot(int argc, char **argv)
 	lex_new();
 
 	/* Initialize library */
-	init_lisp();
+	init_symbol();
+	init_package();
+
+	/* These must come _after_ init_symbol() and init_package() */
+	GC_disable();
+	init_all_symbols();
+	GC_enable();
+
+#if !defined(GBC_BOEHM)
+	/* We need this because a lot of stuff is to be created */
+	init_GC();
+#endif
+
+	SYM_VAL(@'*package*') = lisp_package;
+	SYM_VAL(@'*gensym_counter*') = MAKE_FIXNUM(0);
+
+	init_compiler();
+	init_interpreter();
+	init_eval();
+	init_typespec();
+	init_number();
+	init_character();
+	init_file();
+	init_read();
+	init_print();
+	init_pathname();
+	init_load();
+	init_array();
+#if !defined(GBC_BOEHM)
+	init_alloc_function();
+#endif
+#ifdef THREADS
+	init_lwp();
+#endif
+#ifdef CLOS
+	init_clos();
+#endif
+#ifdef TK
+	init_tk();
+#endif
+#ifdef unix
+	init_unixtime();
+#endif
+	init_assignment();
+	init_error();
+	init_macros();
+	init_multival();
+  	init_cmpaux();
+	init_main();
+	init_format();
+	init_interrupt();
+#ifdef RUNTIME
+	SYM_VAL(@'*features*') = CONS(make_keyword("RUNTIME"), SYM_VAL(@'*features*'));
+#endif
+	/* This has to come before init_LSP/CLOS, because we need
+	 * clear_compiler_properties() to work in init_CLOS(). */
+	ecl_booted = 1;
+
+	lex_env = Cnil;
+	init_LSP();
+#ifdef CLOS
+	init_CLOS();
+#endif
 
 	/* Jump to top level */
 	SYM_VAL(@'*package*') = user_package;
@@ -94,6 +167,8 @@ cl_boot(int argc, char **argv)
 	}
 #endif
 }
+
+/************************* ENVIRONMENT ROUTINES ***********************/
 
 @(defun quit (&optional (code MAKE_FIXNUM(0)))
 	cl_fixnum i;
@@ -167,7 +242,7 @@ si_pointer(cl_object x)
 	@(return make_unsigned_integer((cl_index)x))
 }
 
-void
+static void
 init_main(void)
 {
 	{ cl_object features;

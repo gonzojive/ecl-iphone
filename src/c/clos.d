@@ -64,10 +64,9 @@ make_our_hash_table(cl_object test, int size)
 	@(return class)
 @)	
 
-static void
-clos_boot(void)
+void
+init_clos(void)
 {
-
 	SYM_VAL(@'si::*class-name-hash-table*') = make_our_hash_table(@'eq', 1024);
 
 	/* booting Class CLASS */
@@ -109,12 +108,4 @@ clos_boot(void)
 	/* complete now Class CLASS */
 	CLASS_SUPERIORS(class_class) = CONS(class_object, Cnil);
 	CLASS_INFERIORS(class_class) = CONS(class_built_in, Cnil);
-}
-
-void
-init_clos(void)
-{
-	SYM_VAL(@'si::*class-name-hash-table*') = OBJNULL;
-
-	clos_boot();
 }
