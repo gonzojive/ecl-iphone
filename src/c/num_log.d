@@ -264,9 +264,25 @@ static bignum_bit_operator bignum_operations[16] = {
 	mpz_b_set_op};
 
 
+static cl_object log_op2(cl_object x, cl_object y, int op);
+
 static cl_object
 log_op(int narg, int op, cl_va_list ARGS)
 {
+#if 1
+	cl_object x, y;
+	/* FIXME! This can be optimized */
+	x = cl_va_arg(ARGS);
+	if (narg-- == 1) {
+		assert_type_integer(x);
+	} else {
+		do {
+			y = cl_va_arg(ARGS);
+			x = log_op2(x, y, op);
+		} while (--narg);
+	}
+	return x;
+#else
 	cl_object x, numi;
 	bit_operator fix_log_op;
 	bignum_bit_operator big_log_op;
@@ -325,6 +341,7 @@ BIG_OP:
 		}
 	}
 	return(big_normalize(x));
+#endif
 }
 
 static cl_object
@@ -422,8 +439,11 @@ ecl_ash(cl_object x, cl_fixnum w)
 		return(x);
 	y = big_register0_get();
 	if (w < 0) {
-		if (FIXNUMP(x)) 
-			return MAKE_FIXNUM(fix(x) >> -w);
+		if (FIXNUMP(x)) {
+			cl_fixnum y = fix(x);
+			y >>= -w;
+			return MAKE_FIXNUM(y);
+		}
 		mpz_div_2exp(y->big.big_num, x->big.big_num, -w);
 	} else {
 		if (FIXNUMP(x)) {
@@ -539,10 +559,16 @@ cl_logbitp(cl_object p, cl_object x)
 	assert_type_integer(x);
 	if (FIXNUMP(p)) {
 		cl_fixnum n = fixnnint(p);
-		if (FIXNUMP(x))
-			i = ((fix(x) >> n) & 1);
-		else
+		if (FIXNUMP(x)) {
+			cl_fixnum y = fix(x);
+			if (n >= FIXNUM_BITS) {
+				i = (y < 0);
+			} else {
+				i = ((y >> n) & 1);
+			}
+		} else {
 			i = mpz_tstbit(x->big.big_num, n);
+		}
 	} else {
 		assert_type_non_negative_integer(p);
 		if (FIXNUMP(x))
