@@ -17,6 +17,7 @@
 /******************************** IMPORTS *****************************/
 
 #include <stdlib.h>
+#include <limits.h>
 #include "ecl.h"
 #include "internal.h"
 #ifdef TK
