@@ -546,15 +546,6 @@
 	       (t ,(when extend
 		     `(vector-push-extend .val .vec ,@(cddr args))))))))))
 
-;----------------------------------------------------------------------
-
-(defun co1schar (args)
-   (and (listp (car args)) (not *safe-compile*)
-	(cdr args)
-	(eq (caar args) 'SYMBOL-NAME)
-	(c1expr `(aref (the string ,(second (car args)))
-		  ,(second args)))))
-
 ;;; ----------------------------------------------------------------------
 
 (setf (get 'princ 'C1) 'c1princ)
@@ -588,6 +579,5 @@
 (setf (get 'cons 'C1CONDITIONAL) 'co1cons)
 (setf (get 'eql 'C1CONDITIONAL) 'co1eql)		    
 (setf (get 'ldb 'C1CONDITIONAL) 'co1ldb)
-(setf (get 'schar 'C1CONDITIONAL) 'co1schar)
 (setf (get 'vector-push 'C1CONDITIONAL) 'co1vector-push)
 (setf (get 'vector-push-extend 'C1CONDITIONAL) 'co1vector-push-extend)
