@@ -675,15 +675,13 @@
 (RANDOM-STATE-P (T) T NIL T)
 ;(EXP (T) T NIL NIL :inline-always ((number) t nil t "cl_exp(#0)"))
 (EXPT (T T) T NIL NIL
-;	:inline-always ((t t) t nil t "cl_expt(#0,#1)")
-	:inline-always ((fixnum fixnum) fixnum nil nil
-		(lambda (loc1 loc2)
-		  (if (and (consp loc1) (eq (car loc1) 'fixnum)
-			   (consp (cadr loc1)) (eq (caadr loc1) 'fixnum-value)
-			   (eq (cadr (cadr loc1)) 2))
-		      (progn (wt1 "(1<<(") (wt1 loc2) (wt1 "))"))
-		    (progn (wt1 "fixnum_expt(") (wt1 loc1) (wt1 #\,) (wt1 loc2)
-			   (wt1 #\) ))))))
+	:inline-always ((t t) t nil t "cl_expt(#0,#1)")
+	:inline-always (((integer 2 2) (integer 0 #.(integer-length most-positive-fixnum)))
+		       fixnum nil nil "(1<<(#1))")
+	:inline-always (((integer 0 0) t) fixnum nil t "0")
+	:inline-always (((integer 1 1) t) fixnum nil t "1")
+;	:inline-always ((fixnum fixnum) fixnum nil nil "fixnum_expt(#0,#1)")
+)
 (LOG (T *) T NIL NIL
 	:inline-always ((fixnum-float) long-float nil t "log((double)(#0))")
 	:inline-always ((fixnum-float) short-float nil nil

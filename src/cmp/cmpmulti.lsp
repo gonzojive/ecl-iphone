@@ -117,35 +117,37 @@
       (unwind-exit 'VALUES)
       (close-inline-blocks)))))
 
-(defun c1multiple-value-setq (args &aux (info (make-info)) (vrefs nil)
-			      (vars nil) (temp-vars nil) (late-bindings nil))
+(defun c1multiple-value-setq (args &aux (vars nil) (temp-vars nil)
+			      (late-bindings nil))
   (check-args-number 'MULTIPLE-VALUE-SETQ args 2 2)
   (dolist (var (reverse (first args)))
-          (cmpck (not (symbolp var)) "The variable ~s is not a symbol." var)
-	  (setq var (chk-symbol-macrolet var))
-	  (cond ((symbolp var)
-		 (cmpck (constantp var)
-			"The constant ~s is being assigned a value." var)
-		 (push var vars))
-		(t (let ((new-var (gensym)))
-		     (push new-var vars)
-		     (push new-var temp-vars)
-		     (push `(setf ,var ,new-var) late-bindings)))))
-  (if temp-vars
-    (c1expr `(let* (,@temp-vars)
-	      (multiple-value-setq ,vars ,@(second args))
-	      ,@late-bindings))
-    (let ((value (c1expr (second args))))
-      (dolist (var vars
-	       (make-c1form 'MULTIPLE-VALUE-SETQ info (nreverse vrefs) value))
-	(setq var (c1vref var))
-	(push var vrefs)
-	#+nil
-	(unless (subtypep 'T (var-type var))
-	  (cmpwarn "Variable ~s appeared in a MULTIPLE-VALUE-SETQ and declared to have type ~S."
-		   (var-name var)
-		   (var-type var)))
-	(push var (info-changed-vars info))))))
+    (cmpck (not (symbolp var)) "The variable ~s is not a symbol." var)
+    (setq var (chk-symbol-macrolet var))
+    (cond ((symbolp var)
+	   (cmpck (constantp var)
+		  "The constant ~s is being assigned a value." var)
+	   (push var vars))
+	  (t (let ((new-var (gensym)))
+	       (push new-var vars)
+	       (push new-var temp-vars)
+	       (push `(setf ,var ,new-var) late-bindings)))))
+  (let ((value (second args)))
+    (cond (temp-vars
+	   (c1expr `(let* (,@temp-vars)
+		     (multiple-value-setq ,vars ,value)
+		     ,@late-bindings)))
+	  ((endp vars)
+	   (c1expr `(values ,value)))
+	  ((= (length vars) 1)
+	   (c1expr `(setq ,(first vars) ,value)))
+	  (t
+	   (setq value (c1expr value)
+		 vars (mapcar #'c1vref vars))
+	   (make-c1form* 'MULTIPLE-VALUE-SETQ
+			 :changed-vars vars
+			 :referred-vars vars
+			 :local-referred vars
+			 :args vars value)))))
 
 (defun c1form-values-number (form)
   (let ((type (c1form-type form)))
@@ -159,20 +161,33 @@
 	   (let ((l (1- (length type))))
 	     (values l l))))))
 
-(defun do-m-v-setq-fixed (nvalues vars form use-bind)
-  (if (= nvalues 1)
-      (let ((*destination* (first vars)))
-	(c2expr* form))
+(defun do-m-v-setq-fixed (nvalues vars form use-bind &aux (output (first vars)))
+  ;; This routine should evaluate FORM and store the values (whose amount
+  ;; is known to be NVALUES) into the variables VARS. The output is a
+  ;; place from where the first value can be retreived
+  ;;
+  (if (or (> nvalues 1) use-bind)
       (let ((*destination* 'VALUES))
 	(c2expr* form)
 	(dotimes (i nvalues)
-	  (set-var (list 'VALUE i) (pop vars)))))
+	  (funcall (if use-bind #'bind-var #'set-var)
+		   (values-loc i) (pop vars))))
+      (let ((*destination* (pop vars)))
+	(c2expr* form)))
   (dolist (v vars)
     (if use-bind
 	(bind (c1form-arg 0 (default-init v)) v)
-	(set-var '(C-INLINE :object "Cnil" () t nil) v))))
+	(set-var '(C-INLINE :object "Cnil" () t nil) v)))
+  output)
 
 (defun do-m-v-setq-any (min-values max-values vars use-bind)
+  ;; This routine moves values from the multiple-value stack into the
+  ;; variables VARS. The amount of values is not known (or at least we only
+  ;; know that there is some number between MIN-VALUES and MAX-VALUES).  If
+  ;; the values are to be created with BIND, then USED-BIND=T.  The output of
+  ;; this routine is a location containing the first value (typically, the
+  ;; name of the first variable).
+  ;;
   (let* ((*lcl* *lcl*)
          (nr (make-lcl-var :type :int))
 	 (output (first vars))
@@ -218,11 +233,12 @@
 (defun c2multiple-value-setq (vars form)
   (multiple-value-bind (min-values max-values)
       (c1form-values-number form)
-    (if (= min-values max-values)
-	(do-m-v-setq-fixed min-values vars form nil)
-	(progn
-	  (let ((*destination* 'VALUES)) (c2expr* form))
-	  (unwind-exit (do-m-v-setq-any min-values max-values vars nil))))))
+    (unwind-exit 
+     (if (= min-values max-values)
+	 (do-m-v-setq-fixed min-values vars form nil)
+	 (let ((*destination* 'VALUES))
+	   (c2expr* form)
+	   (do-m-v-setq-any min-values max-values vars nil))))))
 
 (defun c1multiple-value-bind (args &aux (vars nil) (vnames nil) init-form
                                    ss is ts body other-decls

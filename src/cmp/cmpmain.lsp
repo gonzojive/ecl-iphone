@@ -198,7 +198,7 @@ main(int argc, char **argv)
 		(prologue-code "")
 		(epilogue-code (if (eq target :program) "
 	funcall(1,_intern(\"TOP-LEVEL\",cl_core.system_package));
-	ecl_library_close_all();
+	cl_shutdown();
 	return 0;" "")))
   (let* ((c-name (si::coerce-to-filename
 		  (compile-file-pathname output-name :type :c)))
