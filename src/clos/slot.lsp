@@ -38,12 +38,16 @@
 		 (option nil)
 		 (value nil))
              (loop (when (null options) (return t))
-		   (setq option (pop options)
-			 value (pop options))
+		   (setq option (pop options))
 		   (unless (legal-slot-option-p option)
 		     (error "In the slot description ~S,~%~
                              the option ~S is not legal."
 			    slot option))
+		   (if (endp options)
+		     (error "In the slot description ~S,~%~
+			     the option ~S is missing an argument"
+			    slot option)
+		     (setq value (pop options)))
                    (case option
                      (:initarg    (push value initargs))
                      (:initform   (setq initform value))
@@ -51,9 +55,7 @@
                      (:reader     (push value readers))
                      (:writer     (push value writers))
                      (:allocation (setq allocation value))
-                     (:type       (setq type (if (null value) (error "In the slot description ~S, ~%~
-                                                                      the type option is not complete")
-					       value)))
+                     (:type       (setq type value))
                      (:documentation     (push value documentation)))))))
 
     (setf (slotd-name slotd)       name
