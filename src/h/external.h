@@ -224,8 +224,8 @@ extern void init_clos(void);
 
 extern cl_object si_specialp(cl_object sym);
 
-extern int ifloor(int x, int y);
-extern int imod(int x, int y);
+extern cl_fixnum ifloor(cl_fixnum x, cl_fixnum y);
+extern cl_fixnum imod(cl_fixnum x, cl_fixnum y);
 extern char object_to_char(cl_object x);
 extern cl_fixnum object_to_fixnum(cl_object x);
 extern float object_to_float(cl_object x);
