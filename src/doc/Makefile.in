@@ -18,32 +18,39 @@ INSTALL_DATA = @INSTALL_DATA@
 VERSION=@ECLS_VERSION@
 
 HTML = index.html license.html lgpl.html news.html ecls.html benchmark.html \
-	install.html
+	install.html eclsdev.html
 
 FILTER = sed 's,@VERSION@,$(VERSION),g'
 
 ECL = ../ecls
 
-all: help.doc ecls.info $(HTML)
+all: help.doc ecls.info eclsdev.info $(HTML)
 
-ecls.dvi: $(srcdir)/user.txi clisp.sty ecl.sty
+ecls.dvi: $(srcdir)/user.txi $(srcdir)/macros.txi clisp.sty ecl.sty
 	tex $(srcdir)/user.txi
+eclsdev.dvi: $(srcdir)/devel.txi $(srcdir)/macros.txi clisp.sty ecl.sty
+	tex $(srcdir)/devel.txi
 
-ecls.ps: ecls.dvi
+ecls.ps: ecls.dvi $(srcdir)/macros.txi
 	dvips -o $@ ecls.dvi
+eclsdev.ps: eclsdev.dvi $(srcdir)/macros.txi
+	dvips -o $@ eclsdev.dvi
 
 install: all
 	$(INSTALL_DATA) help.doc $(PREFIX)$(libdir)
 	$(INSTALL_DATA) ecls.info $(PREFIX)$(infodir)
+	$(INSTALL_DATA) eclsdev.info $(PREFIX)$(infodir)
 
 uninstall:
-	rm -r $(infodir)/ecls.info
+	rm -r $(infodir)/ecls.info $(infodir)/eclsdev.info
 
 help.doc: help.lsp
 	$(ECL) < $(srcdir)/help.lsp > /dev/null
 
-ecls.info: $(srcdir)/user.txi
-	makeinfo --no-split $(srcdir)/user.txi
+ecls.info: $(srcdir)/user.txi $(srcdir)/macros.txi
+	makeinfo -I $(srcdir) --no-split $(srcdir)/user.txi
+eclsdev.info: $(srcdir)/devel.txi $(srcdir)/macros.txi
+	makeinfo -I $(srcdir) --no-split $(srcdir)/devel.txi
 
 index.html: $(srcdir)/index.in.html
 	cat $(srcdir)/head $? $(srcdir)/end | $(FILTER) > $@
@@ -68,7 +75,9 @@ lgpl.html: $(top_srcdir)/../LGPL
 	(cat $(srcdir)/head; \
 	 echo '<pre>'; cat $?; echo '</pre>'; \
 	 cat $(srcdir)/end) | $(FILTER) > $@
-ecls.html: $(srcdir)/user.txi
-	makeinfo --html $(srcdir)/user.txi
+ecls.html: $(srcdir)/user.txi $(srcdir)/macros.txi
+	makeinfo -I $(srcdir) --html $(srcdir)/user.txi
+eclsdev.html: $(srcdir)/devel.txi $(srcdir)/macros.txi
+	makeinfo -I $(srcdir) --html $(srcdir)/devel.txi
 clean:
 	rm -f ecls.* help.doc *.html

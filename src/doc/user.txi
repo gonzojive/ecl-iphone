@@ -5,100 +5,7 @@
 @setchapternewpage odd
 @c %**end of header
 
-@rmacro mopt {a}
-[\a\]@c
-@end rmacro
-@macro mchoice {a}
-<\a\>@c
-@end macro
-@rmacro mstar {a}
-@{\a\@}*@c
-@end rmacro
-@rmacro mplus {a}
-@{\a\@}+@c
-@end rmacro
-@rmacro mgroup {a} 
-@{\a\@},@c
-@end rmacro
-
-@macro kwd{a}
-@var{:\a\}@c
-@end macro
-
-@macro pxlref{a}
-\a\@c
-@end macro
-
-@macro defec{a}
-@defun \a\ 
-@end macro
-
-@macro aux
-@code{&aux}@c
-@end macro
-@macro keys
-@code{&key}@c
-@end macro
-@macro rest
-@code{&rest}@c
-@end macro
-@macro optional
-@code{&optional}@c
-@end macro
-@macro allow
-@code{&allow-other-keys}@c
-@end macro
-
-@macro macref{foo}
-\foo\@c
-@end macro
-@macro tindexed{foo}
-\foo\@c
-@end macro
-@macro cindexed{foo}
-\foo\@c
-@end macro
-@macro vindexed{foo}
-\foo\@c
-@end macro
-@ifhtml
-@macro bibcite{foo}
-[@pxref{Bibliography, \foo\}]
-@end macro
-@end ifhtml
-@ifnothtml
-@macro bibcite{foo}
-[\foo\, @pxref{Bibliography}]
-@end macro
-@end ifnothtml
-
-@macro back
-\\@c
-@end macro
-
-@macro nil
-@code{()}@c
-@end macro
-
-@macro true 
-@code{T}@c
-@end macro
-
-@macro ansi
-@r{ANSI Common-Lisp}@c
-@end macro
-@macro ecls
-@b{@r{ECLS}}
-@end macro
-@macro clisp
-@r{Common-Lisp}@c
-@end macro
-@macro llisp
-@b{@r{Lisp}}
-@end macro
-@macro cltl
-@emph{@clisp{}: The Language}@c
-@end macro
+@include macros.txi
 
 @ifinfo
 @ecls{} is an implementation of @clisp{} designed for being @emph{embeddable}
@@ -140,11 +47,8 @@ Copyright @copyright{} 2000, Juan Jose Garcia Ripoll
 @emph{embeddable} into C based applications.
 This document describes the @ecls{} implementation and how it differs from
 @bibcite{ANSI} and @bibcite{Steele:84}.
-This manual also documents some implementation facilities, such as the
-multithread facility of @ecls{} or the foreign function interface.
-And finally this manual is the main source of information to understand
-the low level details of @ecls{} and the way to customize this
-implementation.
+See @inforef{Top,,eclsdev} for details about the implementation and how to
+interface with other languages.
 
 @menu
 * Introduction::                What ECLS is and how to install it.
@@ -157,10 +61,8 @@ implementation.
 * Declarations::                Helping the compiler
 * OS interface::                Operating system interface.
 * Macros::                      Implementation dependent features of macros.
-* C Language::                  Interfacing with foreign languages.
 * CLOS::                        Common-Lisp's Object System.
 * Multithread::                 Lisp lightweight processes or threads.
-* Implementation details::      What you should know to tweak ECLS.
 * Everything::                  All functions/variables/etc enumerated.
 * Bibliography::                Some interesting books.
 @end menu
@@ -1577,7 +1479,7 @@ and returns @nil{}.
 @chapter Memory Management
 
 The following sections only apply to the @ecls{} original garbage collector.
-If @ecls{} is compiled with @code{--enable-boehm}, then an alternative,
+If @ecls{} is not compiled with @code{--disable-boehm}, then an alternative,
 less restrictive garbage collector is installed, with the disadvantage
 that many of the following functions @code{#'room}, @code{si:*gc-verbose*},
 @dots{} do no longer work.
@@ -2484,9 +2386,7 @@ indicates the base address for the code being profiled.
 Displays the histogram of accumulated tick counts.  The ticks are attributed to
 the compiled Lisp function whose base address is closest to the start of the
 segment.  This may not be totally accurate for system functions which invoke
-some auxiliary function to do the job.  For instance, all allocator functions,
-like @code{cons}, call an internal function @code{allocate_object} and will be
-reported collectively under @code{sys:save-system}.
+some auxiliary function to do the job.
 @end deffn
 
 @deffn {sys} {clear-profile}  
@@ -2602,14 +2502,15 @@ argument. @code{ecl} simply adds @code{.lsp} to the file name argument to
 obtain the full name of the source file.
 
 @example
-        @code{\% ecl} @var{filename}
+        $ ecl @var{filename}
 @end example
 
+@noindent
 has the same effect as the compiler invocation @code{(compile-file
 @var{filename})} from within @ecls{}, and
 
 @example
-        @code{\% ecl -C} @var{filename}
+        $ ecl -C @var{filename}
 @end example
 
 has the same effects as @code{(compile-file @var{filename}
@@ -2617,8 +2518,8 @@ has the same effects as @code{(compile-file @var{filename}
 
 @defun {compile-file} {@var{pathname} @keys{} :output-file :verbose :print :c-file :h-file :data-file}
 @code{compile-file} compiles the Lisp program stored in the file specified by
-@var{pathname}, and generates a binary file.  If the @kwd{verbose} is true, a
-message indicating what file is being compiled is printed.  If the @kwd{print}
+@var{pathname}, and generates a binary file.  If @kwd{verbose} is true, a
+message indicating what file is being compiled is printed.  If @kwd{print}
 is true, information about top-level forms in the file being compiled is
 printed.  @code{compile-file} generates the following temporary files:
 
@@ -3163,7 +3064,7 @@ automatically by the compiler.
 @section Built-in Functions that Operate on Raw Data Directly
  
 Some built-in @clisp{} functions can directly operate on raw data, if
-appropriate declarations are supplied.  The addition function \(+\) is among
+appropriate declarations are supplied.  The addition function @code{+} is among
 such functions.
 
 @example
@@ -3294,7 +3195,7 @@ When @code{tak} is called with the arguments @code{18, 12}, and @code{6}, the
 raw fixnum data of the arguments are set to the parameters @code{x}, @code{y},
 @code{z}.  After that, only raw C data are used to perform the execution: No
 cell pointers are newly allocated nor even referenced.  The built-in functions
-\(<\) and @code{1-} directly operate on the raw data.  Only at the return from
+@code{<} and @code{1-} directly operate on the raw data.  Only at the return from
 the top-level call of @code{tak}, the resulting raw data value (which happens
 to be @code{7}) is reallocated on the heap.  Note that both the @code{function}
 proclamation and the local @tindexed{fixnum} declaration are necessary to
@@ -3308,35 +3209,6 @@ is necessary to unbox the parameters into C variables.
 
 @ecls{} provides the following facilities that are not defined in
 @bibcite{Steele:84}.
-
-@defun {sys} {save-system} {filename}
-@code{save} saves the current memory image into a program file @var{filename}.
-After saving the memory image, the @ecls{} process terminates immediately.  To
-execute the saved program file, specify the full pathname of the file, as
-indicated in the example below.
-
-@c @vspace{1 em}
-
-Example:
-@example
->(defun plus (x y) (+ x y))
-plus
-
->(save "savefile")
-%
-
-% pwd
-/usr/hagiya
-% /usr/hagiya/savefile
-
->(plus 2 3)
-5
-
->(quit)
-Bye.
-%
-@end example
-@end defun
 
 @defun {system} {string}
 Executes a Shell command as if @var{string} is an input to the Shell.  On
@@ -3356,40 +3228,9 @@ Terminates @ecls{} and returns the @var{exit-code} to the parent process.
 @var{exit-code} must be an integer and its default value is @code{0}.
 @end defun
 
-@node Macros, C Language, OS interface, Top
+@node Macros, CLOS, OS interface, Top
 @chapter Macros
 
-@menu
-* System macros::               
-* Defmacro lambda-lists::       
-@end menu
-
-@node System macros, Defmacro lambda-lists, Macros, Macros
-@section System Macros
- 
-The @ecls{} interpreter implements the following system macros as if they were
-special forms.  That is, macro forms of the following macros are directly
-evaluated without being macro-expanded.
-
-@example
-    and       case      cond      decf      defmacro  defun
-    do        do*       dolist    dotimes   incf      locally
-    loop      multiple-value-bind           multiple-value-list
-    multiple-value-setq           or        pop       prog
-    prog*     prog1     prog2     psetq     push      return
-    setf      unless    when
-@end example
-
-For these macro forms, the functions @code{macro-function} and
-@code{special-form-p} both return non-@nil{} values: @code{macro-function}
-returns the macro expansion function and @code{special-form-p} returns @true{}.
-Of course, functions such as @code{macroexpand} and @code{macroexpand-1} will
-successfully expand macro forms for these system macros.
-
-
-@node Defmacro lambda-lists,  , System macros, Macros
-@section Defmacro Lambda-Lists
- 
 A @dfn{defmacro lambda-list} is a lambda-list-like construct that is used as
 the third element in the @code{defmacro} form,
 @example
@@ -3477,299 +3318,7 @@ checking at all.  Otherwise, the compiled code does check the validity of
 arguments.
 
 
-@node C Language, CLOS, Macros, Top
-@chapter The C Language Interface
-
-This chapter describes the facility of @ecls{} to interface the C language and
-@ecls{}.  With this facility, the user can arrange his or her C-language
-programs so that they can be invoked from @ecls{}. In addition, the user can
-write Lisp function definitions in the C language to increase runtime
-efficiency.
-
-@menu
-* The simple way::              
-* Mixing languages::            
-* Examples::                    
-@end menu
-
-@node The simple way, Mixing languages, C Language, C Language
-@section Building a customized image
-
-@ecls{} can be used to control a C library, or it can be used as an embedded
-language to provide some flexibility to an already existing C program. In both
-cases @ecls{} should perform equally well, as far as you follow these rules:
-@enumerate
-@item Organize the C code as a library, let it be static or dynamic.
-
-@item Build a function, say @code{mymain()}, in which the initialization phase
-for your library is performed.
-
-@item Group the code that interfaces to Lisp in separate C files, all of which
-should include @code{#include <ecls.h>} at the beginning.
-
-@item Let @ecls{} build the final executable.
-@end enumerate
-
-The final step, that is building the executable should be performed within a
-working @ecls{} image. The function to build customized images is
-@var{c::build-ecls}. The description of this function is as follows.
-
-@defun {c::build-ecls} {@var{image-name} @keys{} :components :prologue-code :epilogue-code}
-
-This function builds a lisp image up from the core lisp library, plus all
-listed components.  Each component is either:
-@itemize
-@item A symbol: Names a compiled lisp library. Currenty only @code{'CMP} is
-supported, which corresponds to the lisp->C translator.
-
-@item A string: Denotes an object file, a library, or any flag which is passed
-to the compiler.
-@end itemize
-
-In order to build the lisp image, @var{c::build-ecls} first writes down a piece
-of C code which initializes the lisp environment. You can customize the
-initialization process by suppling code to be executed before
-(@var{prologue-code}) or after (@var{epilogue-code}) setting up the lisp
-environment. Typically @var{prologue-code} defaults to an empty string, while
-@var{epilogue-code} invokes the classical lisp @var{top-level}.
-@end defun
-
-@node Mixing languages, Examples, The simple way, C Language
-@section Writing lisp functions in C
-
-The basic idea of interfacing the C language is this: As mentioned before,
-the @ecls{} compiler, given a Lisp source file, creates an intermediate
-C-language program file, called @emph{c-file}, which is then compiled by the
-C-language compiler to obtain the final fasl-file.  Usually, the c-file
-consists of C-language function definitions.  The first C-language function in
-the c-file is the ``initializer'', which is executed when the fasl file is
-loaded, and the other C-language functions are the C versions of the Lisp
-functions (including macro expansion functions) defined in the source file.  By
-using the top-level macros @code{Clines} and @code{defCfun} described below,
-the user can direct the compiler to insert his or her own C-language function
-definitions and/or C-language preprocessor macros such as @code{#define} and
-@code{#include} into the c-file.  In order that such C-language functions be
-invoked from @ecls{}, another top-level macro @code{defentry} is used.  This
-macro defines a Lisp function whose body consists of the calling sequence to
-the specified C-language function.
-
-The C-language function definitions are placed in the c-file in the order of
-the corresponding Lisp functions defined in the source file.  That is, the C
-code for the first Lisp function comes first, the C code for the second Lisp
-function comes second, and so on.  If a @code{Clines} or @code{defCfun} macro
-form appears between two Lisp function definitions in the source file, then the
-C code specified by the macro is placed in between the C code for the Lisp
-functions.
-
-We define some terminology here which is used throughout this Chapter. A
-@emph{C-id} is either a Lisp string consisting of a valid C-language
-identifier, or a Lisp symbol whose print-name, with all its alphabetic
-characters turned into lower case, is a valid C identifier.  Thus the symbol
-@code{foo} is equivalent to the string @code{"foo"} when used as a C-id.
-Similarly, a @emph{C-expr} is a string or a symbol that may be regarded as a
-C-language expression.  A @emph{C-type} is one of the Lisp symbols @code{int,
-char, float, double,} and @code{object}.  Each corresponds to a data type in
-the C language; @code{object} is the type of Lisp object and other C-types are
-primitive data types in C.
-
-@defmac {Clines} {@{string@}*}
-When the @ecls{} compiler encounters a macro form @code{(Clines @var{string1
-...  stringn})}, it simply outputs the @var{strings} into the c-file.  The
-arguments are not evaluated and each argument must be a string.  Each
-@var{string} may consist of any number of lines, and separate lines in the
-@var{string} are placed in separate lines in the c-file.  In addition, each
-@var{string} opens a fresh line in the c-file, i.e., the first character in the
-@var{string} is placed at the first column of a line.  Therefore, C-language
-preprocessor commands such as @code{#define} and @code{#include} will be
-recognized as such by the C compiler, if the ' # ' sign appears as the first
-character of the @var{string} or as the first character of a line within the
-@var{string}.
-
-When interpreted, a @code{Clines} macro form expands to @nil{}.
-
-@end defmac
-
-@defmac {defentry} {function parameter-list C-function}
-
-@code{defentry} defines a Lisp function whose body consists of the calling
-sequence to a C-language function. @var{function} is the name of the Lisp
-function to be defined, and @var{C-function} specifies the C function to be
-invoked. @var{C-function} must be either a list @code{(@var{type C-id})} or
-@var{C-id}, where @var{type} and @var{C-id} are the type and the name of the C
-function. @var{type} must be a C-type or the symbol @code{void} which means
-that the C function returns no value.  @code{(object @var{C-id})} may be
-abbreviated as @var{C-id}.  @var{parameter-list} is a list of C-types for the
-parameters of the C function.  For example, the following @code{defentry} form
-defines a Lisp function @code{tak} from which the C function @code{tak} above
-is called.
-
-@end defmac
-
-@example
-(defentry tak (int int int) (int tak))
-@end example
-
-The Lisp function @code{tak} defined by this @code{defentry} form requires
-three arguments.  The arguments are converted to @code{int} values before they
-are passed to the C function.  On return from the C function, the returned
-@code{int} value is converted to a Lisp integer (actually a fixnum) and this
-fixnum will be returned as the value of the Lisp function.  See below for type
-conversion between Lisp and the C language.
-
-A @code{defentry} form is treated in the above way only when it appears as a
-top-level form of a Lisp source file.  Otherwise, a @code{defentry} form
-expands to @nil{}.
-
-@defmac {defla} {name lambda-list @{declaration | doc-string@}*}
-
-When interpreted, @code{defla} is exactly the same as @code{defun}.  That is,
-@code{(defla @var{name lambda-list .  body})} expands to @code{(defun @var{name
-lambda-list .  body})}.  However, @code{defla} forms are completely ignored by
-the compiler; no C-language code will be generated for @code{defla} forms.  The
-primary use of @code{defla} is to define a Lisp function in two ways within a
-single Lisp source file; one in the C language and the other in Lisp.
-@code{defla} is short for @emph{DEF}ine @emph{L}isp @emph{A}lternative.
-@end defmac
-
-Suppose you have a Lisp source file whose contents are:
-
-@example 
-;;; C version of TAK.
-(Clines "
-
-       int tak(x, y, z)                           
-       int x, y, z;
-       @{      if (y >= x) return(z);
-               else return(tak(tak(x-1, y, z),
-                               tak(y-1, z, x),
-                               tak(z-1, x, y)));
-       @}
-"
-)
-
-;;;  TAK calls the C function tak defined above.
-(defentry tak (int int int) (int tak))
-;;;  The alternative Lisp definition of TAK.
-(defla tak (x y z)
-   (if (>= y x)
-       z
-       (tak (tak (1- x) y z)
-            (tak (1- y) z x)
-            (tak (1- z) x y))))
-@end example
-
-When this file is loaded into @ecls{}, the interpreter uses the Lisp version of
-the @code{tak} definition.  Once this file has been compiled, and when the
-generated fasl file is loaded into @ecls{}, a function call to @code{tak} is
-actually the call to the C version of @code{tak}.
-
-@defun {defCbody} {name args-types result-type C-expr}
-The @ecls{} compiler produces a function named @var{name} with as many
-arguments as @var{arg-types}.  The @var{C-expr} is an arbitrary C expression
-where the arguments to the function are denoted by @code{#@emph{i}}, where
-@code{@emph{i}} is the integer corresponding to the argument position.  The
-@var{args-types} is the list of \clisp types of the arguments to the function,
-while @var{result-type} is the \clisp type of the result.  The actual arguments
-are coerced to the required types before executing the @var{C-expr} and the
-result is converted into a Lisp object.  @code{defCbody} is ignored by the
-interpreter.
-@end defun
-
-For example, the logical AND of two integers could be defined as:
-@example
-(defCbody logand (fixnum fixnum) fixnum "(#0) & (#1)")
-@end example
-
-@defun {definline} {name args-types result-type C-expr}
-@code{definline} behaves exactly as @code{defCbody}.  Moreover, after a
-@code{definline} definition has been supplied, the @ecls{} compiler will expand
-inline any call to function @var{name} into code corresponding to the C
-language expression @var{C-expr}, provided that the actual arguments are of the
-specified type.  If the actual arguments cannot be coerced to those types, the
-inline expansion is not performed.  @code{definline} is ignored by the
-interpreter.
-
-@end defun
-
-For example, a function to access the n-th byte of a string and return it as an
-integer can be defined as follows:
-
-@example
-(definline aref-byte (string fixnum) fixnum
-   "(#0)->ust.ust_self[#1]")
-@end example
-
-The definitions of the C data structures used to represent \clisp objects can
-be found in file @code{ecl.h} in the directory @code{"src/h"} of the source
-distribution.
-
-@ecls{} converts a Lisp object into a C-language data by using the @clisp{}
-function @code{coerce}: For the C-type @code{int} (or @code{char}), the object
-is first coerced to a Lisp integer and the least significant 32-bit (or 8-bit)
-field is used as the C @code{int} (or @code{char}).  For the C-type
-@code{float} (or @code{double}), the object is coerced to a short-float (or a
-long-float) and this value is used as the @code{C float} (or @code{double}).
-Conversion from a C data into a Lisp object is obvious: @code{C char, int,
-float,} and @code{double} become the equivalent Lisp @code{character},
-@code{fixnum}, @code{short-float}, and @code{long-float}, respectively.
-
-Here we list the complete syntax of @code{Clines}, @code{defentry},
-@code{definline} and @code{defCbody} macro forms.
-
-@example
-Clines-form:
-        (Clines @{string@}*)
-
-defentry-form:
-        (defentry symbol (@{C-type@}*)
-                  @{C-function-name | (@{C-type | void@} C-function-name)@})
-
-defCbody-form:
-        (defCbody symbol (@{type@}*) type C-expr)
-
-definline-form:
-        (defCbody symbol (@{type@}*) type C-expr)
-
-C-function-name:
-C-expr:
-        @{ string | symbol @}
- 
-C-type:
-        @{ object | int | char | float | double @}
-@end example
-
-@node Examples,  , Mixing languages, C Language
-@section Examples of customization
-
-Let us see how this all works in practice. We will assume that @ecls{} is
-installed and that it works. The first example simply gives @ecls{} another
-boot message. You just have to type this at the @ecls{} prompt
-
-@example
-(c::build-ecls "myecls"
-	:prologue-code "printf(\"Lisp image to be initialized...\\n\");"
-        :epilogue-code "printf(\"...lisp image initialized!!!\\n\");
-	funcall(1,_intern(\"TPL\",system_package));")
-@end example
-
-@noindent
-With the following text you have a new image:
-
-@example
-% ./myecls
-Lisp image to be initialized...
-*+*+*+
-...lisp image initialized!!!
-ECLS (ECoLisp-Spain) 0.4
-Copyright (C) 1984 Taiichi Yuasa and Masami Hagiya
-Copyright (C) 1993 Giuseppe Attardi
-Copyright (C) 2000 Juan J. Garcia-Ripoll
-	ECLS is free software, and you are welcome to redistribute it
-under certain conditions; see file 'Copyright' for details.
-Type :h for Help.  Top level.
-@end example
-
-@node CLOS, Multithread, C Language, Top
+@node CLOS, Multithread, Macros, Top
 @chapter CLOS
 
 @deffn {Generic} {add-method}  generic-function method
@@ -4141,7 +3690,7 @@ of the slot.
 @end defmac
 
 
-@node Multithread, Implementation details, CLOS, Top
+@node Multithread, Everything, CLOS, Top
 @chapter Multithread
 
 The goals of the present design are to provide a minimal set of facilities,
@@ -4428,621 +3977,7 @@ the function @code{%enable-scheduler} does. The thread will proceed execution
 that case @code{suspend} will return the values specified by @code{resume}.
 @end defun
 
-@node Implementation details, Everything, Multithread, Top
-@chapter Implementation Details
-
-@menu
-* @ecls{} and @clisp{}::        
-* @ecls{} is written in C and Lisp::  
-* Porting @ecls{}::             
-* Extending @ecls{}::           
-* The @ecls{} Compiler::        
-* The C language interface::    
-@end menu
-
-@node @ecls{} and @clisp{}, @ecls{} is written in C and Lisp, Implementation details, Implementation details
-@section @ecls{} is a full @clisp{} system.
-
-@ecls{} is an implementation of the @clisp{} which aims to comply with
-the @ansi{} language described in the X3J13 specification. @ecls{}
-supports most @clisp{} functions, macros, and special forms defined in
-that reference, and all @clisp{} variables and constants should be in
-@ecls{} exactly as described in the @ansi{}. Any deviation should be
-noticed to the maintainers.
-
-
-@node @ecls{} is written in C and Lisp, Porting @ecls{}, @ecls{} and @clisp{}, Implementation details
-@section @ecls{} is written in C and Lisp
-
-@noindent
-The kernel of @ecls{} is written in C, including:
-@itemize
-@item memory management and garbage collection
-@item the bytecodes compiler and interpreter
-@end itemize
-
-The kernel understands all special forms from @clisp{}, and it supplies
-enough functions to create and manipulate all lisp objects. @ecls{} can
-start up using just the C core, as it contains enough functions to
-manipulate all lisp objects. However, in order to support the most of
-the @clisp{} language, @ecls{} also needs lisp implementations of
-@itemize
-@item macros,
-@item CLOS, and
-@item the translator to C.
-@end itemize
-@noindent
-These items are stored as lisp source, that can be either interpreter
-(as during the bootstrap process) or translated to C and later compiled
-(to build the final program).
-
-
-@node Porting @ecls{}, Extending @ecls{}, @ecls{} is written in C and Lisp, Implementation details
-@section Porting @ecls{}
-
-To port @ecls{} to a new architecture, the following steps are required:
-
-@enumerate
-@item Ensure that the GNU Multiprecision library supports this machine.
-
-@item Ensure that the Boehm-Weiser garbage collector is supported by that
-architecture. Alternatively, port ECLS's own garbage collector
-@file{src/c/alloc.d} and @file{src/c/gbc.d} to that platform.
-
-@item Fix @file{src/configure.in} and @file{src/h/machines.h} so that they
-both supply flags for the new host machine.
-
-@item Fix the machine dependent code in @file{src/c/}. The most critical
-parts are in the @file{unix*.d} files.
-
-@item Compile as in any other platform.
-
-@item Run the tests and compare to the results of other platforms.
-@end enumerate
-
-@node Extending @ecls{}, The @ecls{} Compiler, Porting @ecls{}, Implementation details
-@section Extending @ecls{}
-
-If you want to extend, fix or simply customize @ecls{} for your own needs,
-you should understand how the implementation works.
-
-@menu
-* Objects Representation::      
-* @ecls{} stacks::              
-* Procedure Call Conventions::  
-* The lexical environment::     
-* The interpreter stack::       
-@end menu
-
-
-@node Objects Representation, @ecls{} stacks, Extending @ecls{}, Extending @ecls{}
-@subsection Objects Representation
-
-@ecls{} supports immediate data for representing fixnum's and
-@code{character}'s. The two less significant digits in a pointer are used as
-a tag for distinguishing immediate data from pointers.
-
-Fixnum and characters are represented as follows:
-
-@example
-|-------------------|--| 
-|    Fixnum value   |01|
-|-------------------|--| 
-
-|------------|------|--| 
-|  Ctrl bits | char |10|
-|------------|------|--| 
-@end example
-
-Other @ecls{} objects are represented as (a pointer to) a cell that is
-allocated on the heap.  Each cell consists of several words (1 word =
-32 bit) whose first half word is in the format common to all data types:
-half of the word is the type indicator and the other half is used as
-the mark by the garbage collector.  For instance, a cons cell consists
-of three words:
-
-@example
-             
-|---------|----------| 
-|CONS|mark|          |
-|---------|----------| 
-|     car-pointer    |
-|--------------------| 
-|     cdr-pointer    |
-|--------------------| 
-@end example
-
-Array headers and compiled-function headers are represented
-in this way, and array elements and compiled code are placed
-elsewhere.
-
-Internally in compiled functions, certain Lisp objects may
-be represented simply by their values.  For example, a fixnum object
-may be represented by its fixnum value, and a character object may be
-represented by its character code.
-
-
-@node @ecls{} stacks, Procedure Call Conventions, Objects Representation, Extending @ecls{}
-@subsection @ecls{} stacks
-
-@ecls{} uses the following stacks:
-
-@table @sc
-@item Frame Stack
-consisting of catch, block, tagbody frames
-
-@item Bind Stack
-for shallow binding of dynamic variables
-
-@item Interpreter Stack
-acts as a Forth data stack, keeping intermediate arguments to
-interpreted functions, plus a history of called functions.
-
-@item C Control Stack
-used for arguments/values passing, typed lexical variables,
-temporary values, and function invocation.
-@end table
-
-
-@node Procedure Call Conventions, The lexical environment, @ecls{} stacks, Extending @ecls{}
-@subsection Procedure Call Conventions
- 
-@ecls{} employs standard C calling conventions to achieve efficiency and
-interoperability with other languages.
-Each Lisp function is implemented as a C function whcih takes as many
-argument as the Lisp original plus one additional integer argument
-which holds the number of actual arguments.  The function sets @code{NValues}
-to the number of Lisp values produced, it returns the first one and the
-remaining ones are kept in  a global (per thread) array (@code{VALUES}).
-
-To show the argument/value passing mechanism, here we list the actual
-code for the @clisp{} function @code{cons}.
-
-@example
-clLcons(int narg, object car, object cdr)
-@{       object x;
-        check_arg(2);
-        x = alloc_object(t_cons);
-        CAR(x) = car;
-        CDR(x) = cdr;
-        NValues = 1;
-        return x;
-@}
-@end example
-
-@ecls{} adopts the convention that the name of a function that implements a
-@clisp{} function begins with a short package name (@code{cl} for COMMON-LISP,
-@code{si} for SYSTEM, etc), followed by @code{L}, and followed by the name of
-the @clisp{} function.  (Strictly speaking, `@code{-}' and `@code{*}' in the
-@clisp{} function name are replaced by `@code{_}' and `@code{A}', respectively,
-to obey the syntax of C.)
-
-@code{check_arg(2)} in the code of @code{clLcons} checks that exactly two
-arguments are supplied to @code{cons}.  That is, it checks that @code{narg} is
-2, and otherwise, it causes an error.  @code{allocate_object(t_cons)} allocates
-a cons cell in the heap and returns the pointer to the cell.  After the
-@code{CAR} and the @code{CDR} fields of the cell are set, the cell pointer is
-returned directly. The number assigned to NValues set by the function (1 in
-this case) represents the number of values of the function.
-
-In general, if one is to play with the C kernel of @ecls{} there is no need to
-know about all these conventions. There is a preprocessor that takes care of
-the details, by using a lispy representation of the statements that output
-values, and of the function definitions. For instance, the actual source code
-for @code{clLcons} in @file{src/c/lists.d}
-
-@example
-@@(defun cons (car cdr)
-@@
-        @@(return CONS(car, cdr))
-@@)
-@end example
-
-@node The lexical environment, The interpreter stack, Procedure Call Conventions, Extending @ecls{}
-@subsection The lexical environment
-
-The @ecls{} interpreter uses two A-lists (Association lists) to
-represent lexical environments.
-
-@itemize
-@item One for variable bindings
-@item One for local function/macro/tag/block bindings
-@end itemize
-
-When a function closure is created, the current two A-lists are
-saved in the closure along with the lambda expression.  Later, when the
-closure is invoked, the saved A-lists are
-used to recover the lexical environment.
-
-
-@node The interpreter stack,  , The lexical environment, Extending @ecls{}
-@subsection The interpreter stack
- 
-The bytecodes interpreter uses a stack of its own to save and restore values
-from intermediate calculations. This Forth-like data stack is also used in
-other parts of the C kernel for various purposes, such as saving compiled code,
-keeping arguments to FORMAT, etc.
-
-However, one of the most important roles of the Interpreter Stack is to keep a
-log of the functions which are called during the execution of bytecodes. For
-each function invoked, the interpreter keeps three lisp objects on the stack:
-@example
-+----------+------------------------------------------------+
-| function | lexical environment | index to previous record |
-+----------+---------------------+--------------------------+
-@end example
-
-The first item is the object which is funcalled. It can be a bytecodes object,
-a compiled function or a generic function. In the last two cases the lexical
-environment is just NIL. In the first case, the second item on the stack is
-the lexical environment on which the code is executed. Each of these records
-are popped out of the stack after function invocation.
-
-Let us see how these invocation records are used for debugging.
-
-@example
->(defun fact (x)                ;;;  Wrong definition of the 
-   (if (= x 0)                  ;;;  factorial function. 
-       one                      ;;;  one  should be  1. 
-       (* x (fact (1- x)))))
-FACT
-
->(fact 3)                       ;;;  Tries  3!
-Error: The variable ONE is unbound.
-Error signalled by IF.
-Broken at IF.
->>:b                            ;;;  Backtrace. 
-Backtrace: eval > fact > if > fact > if > fact > if > fact > IF
-                                ;;;  Currently at the last  IF.
->>:h                            ;;;  Help. 
-
-Break commands:
-:q(uit)         Return to some previous break level.
-:pop            Pop to previous break level.
-:c(ontinue)     Continue execution.
-:b(acktrace)    Print backtrace.
-:f(unction)     Show current function.
-:p(revious)     Go to previous function.
-:n(ext)         Go to next function.
-:g(o)           Go to next function.
-:fs             Search forward for function.
-:bs             Search backward for function.
-:v(ariables)    Show local variables, functions, blocks, and tags.
-:l(ocal)        Return the nth local value on the stack.
-:hide           Hide function.
-:unhide         Unhide function.
-:hp             Hide package.
-:unhp           Unhide package.
-:unhide-all     Unhide all variables and packages.
-:bds            Show binding stack.
-:m(essage)      Show error message.
-:hs             Help stack.
-Top level commands:
-:cf             Compile file.
-:exit or ^D     Exit Lisp.
-:ld             Load file.
-:step           Single step form.
-:tr(ace)        Trace function.
-:untr(ace)      Untrace function.
-
-Help commands:
-:apropos        Apropos.
-:doc(ument)     Document.
-:h(elp) or ?    Help.  Type ":help help" for more information.
-
->>:p                        ;;;  Move to the last call of  FACT.
-Broken at IF.
-
->>:b
-Backtrace: eval > fact > if > fact > if > fact > if > FACT > if
-                            ;;;  Now at the last  FACT.
->>:v                        ;;;  The environment at the last call 
-Local variables:            ;;;  to  FACT  is recovered. 
-  X: 0                      ;;;  X  is the only bound variable. 
-Block names: FACT.          ;;;  The block  FACT  is established. 
-                   
->>x
-0                           ;;;  The value of  x  is  0.
-        
->>(return-from fact 1)      ;;;  Return from the last call of 
-6                           ;;;  FACT  with the value of  0.
-                            ;;;  The execution is resumed and 
->                           ;;;  the value  6  is returned. 
-                            ;;;  Again at the top-level loop. 
-@end example
-
-
-@node The @ecls{} Compiler, The C language interface, Extending @ecls{}, Implementation details
-@section The @ecls{} Compiler
- 
-The @ecls{} compiler is essentially a translator from @clisp{} to C.  Given
-a Lisp source file, the compiler first generates three intermediate
-files:
-
-@itemize
-@item a C-file which consists of the C version of the Lisp program
-@item an H-file which consists of declarations referenced in the C-file
-@item a Data-file which consists of Lisp data to be used at load time
-@end itemize
-
-The @ecls{} compiler then invokes the C compiler to compile the
-C-file into an object file.  Finally, the contents of the Data-file is
-appended to the object file to make a @emph{Fasl-file}.  The generated
-Fasl-file can be loaded into the @ecls{} system by the @clisp{}
-function @code{load}.  By default, the three intermediate files are
-deleted after the compilation, but, if asked, the compiler leaves
-them.
-
-The merits of the use of C as the intermediate language are:
-
-@itemize -
-@item  The @ecls{} compiler is highly portable.  Indeed the four versions
-of @ecls{} share the same compiler.  Only the calling sequence
-of the C compiler and the handling of the intermediate files are different
-in these versions. 
-
-@item Cross compilation is possible, because the contents of the
-intermediate files are common to all versions of @ecls{}.  For example,
-one can compile his or her Lisp program by the @ecls{} compiler on
-a Sun, bring the intermediate files to DOS, compile the C-file with
-the gcc compiler under DOS, and then append the Data-file to the object
-file.  This procedure generates the Fasl-file for the @ecls{} system on
-DOS.  This kind of cross compilation makes it easier to port @ecls{}.
-
-@item Hardware-dependent optimizations such as register allocations
-are done by the C compiler.
-@end itemize
-
-The demerits are:
-
-@itemize -
-@item  At those sites where no C compiler is available,
-the users cannot compile their Lisp programs.
-
-@item The compilation time is long.  70% to 80% of the
-compilation time is used by the C compiler.  The @ecls{} compiler is
-therefore slower than compiler generating machine code directly.
-@end itemize
-
-@menu
-* The compiler mimics human C programmer::  
-* Implementation of Compiled Closures::  
-* Use of Declarations to Improve Efficiency::  
-* Inspecting generated C code::  
-@end menu
-
-
-@node The compiler mimics human C programmer, Implementation of Compiled Closures, The @ecls{} Compiler, The @ecls{} Compiler
-@subsection The compiler mimics human C programmer
- 
-The format of the intermediate C code generated by the @ecls{} compiler is the
-same as the hand-coded C code of the @ecls{} source programs.  For example,
-supposing that the Lisp source file contains the
-following function definition:
-
-@example
-            (defun add1 (x) (1+ x))
-@end example
-
-The compiler generates the following intermediate C code.
-
-@example
-init_code(char *start,int size,object data)
-@{      VT2
-       Cblock.cd_start=start;Cblock.cd_size=size;Cblock.cd_data=data;
-       set_VV(VV,VM1,data);
-       MF0(VV[0],L1);
-@}
-/*     function definition for ADD1     */
-   
-static L1(int narg, object V1)
-@{      
-       check_arg(1);
-       NValues=1;
-       return one_plus(V1);
-@}
-@end example
-
-The C function @code{L1} implements the Lisp function @code{add1}.  This
-relation is established by @code{MF0} in the initialization function
-@code{init_code}, which is invoked at load time.  There, the vector @code{VV}
-consists of Lisp objects; @code{VV[0]} in this example holds the Lisp symbol
-@code{add1}.  @code{VM1} in the definition of @code{L1} is a C macro declared
-in the corresponding H-file.  The actual value of @code{VM1} is the number of
-value stack locations used by @code{L1}, i.e., 2 in this example.  Thus the
-following macro definition is found in the H-file.
-
-@example
-#define VM1 2
-@end example
-
-
-@node Implementation of Compiled Closures, Use of Declarations to Improve Efficiency, The compiler mimics human C programmer, The @ecls{} Compiler
-@subsection Implementation of Compiled Closures
- 
-The @ecls{} compiler takes two passes before it invokes the C
-compiler.  The major role of the first pass is to detect function
-closures and to detect, for each function closure, those lexical
-objects (i.e., lexical variable, local function definitions, tags, and
-block-names) to be enclosed within the closure.  This check must be
-done before the C code generation in the second pass, because lexical
-objects to be enclosed in function closures are treated in a different
-way from those not enclosed.
-
-Ordinarily, lexical variables in a compiled function @emph{f}
-are allocated on the C stack.  However, if a lexical variable is
-to be enclosed in function closures, it is allocated on a list, called
-the ``environment list'', which is local to @emph{f}.  In addition, a
-local variable is created which points to the lexical
-variable's location (within the environment list), so that
-the variable may be accessed through an indirection rather than by list
-traversal.
-
-@ignore
-\bf{Rewrite this}
-@end ignore
-
-The environment list is a pushdown list: It is empty when @emph{f} is called.
-An element is pushed on the environment list when a variable to be enclosed in
-closures is bound, and is popped when the binding is no more in effect.  That
-is, at any moment during execution of @emph{f}, the environment list contains
-those lexical variables whose binding is still in effect and which should be
-enclosed in closures.  When a compiled closure is created during execution of
-@emph{f}, the compiled code for the closure is coupled with the environment
-list at that moment to form the compiled closure.
-
-Later, when the compiled closure is invoked, a pointer is set up to each
-lexical variable in the environment list, so that each object may be referenced
-through a memory indirection.
-
-Let us see an example.  Suppose the following function has been compiled.
-
-@lisp
-(defun foo (x)
-    (let ((a #'(lambda () (incf x)))
-          (y x))
-      (values a #'(lambda () (incf x y)))))
-@end lisp
-
-@code{foo} returns two compiled closures.  The first closure increments @var{x}
-by one, whereas the second closure increments @var{x} by the initial value of
-@var{x}.  Both closures return the incremented value of @var{x}.
-
-@example
->(multiple-value-setq (f g) (foo 10))
-#<compiled-closure nil>
-
->(funcall f)
-11
-
->(funcall g)
-21
-
->
-@end example
-
-After this, the two compiled closures look like:
-
-@example
-second closure       y:                     x:
-|-------|------|      |-------|------|       |------|------| 
-|  **   |    --|----->|  10   |    --|------>|  21  | nil  |
-|-------|------|      |-------|------|       |------|------| 
-                                                ^
-                      first closure             |
-                      |-------|------|          |
-                      |   *   |    --|----------| 
-                      |-------|------| 
-
- * : address of the compiled code for #'(lambda () (incf x))
-** : address of the compiled code for #'(lambda () (incf x y))
-@end example
-
-
-@node Use of Declarations to Improve Efficiency, Inspecting generated C code, Implementation of Compiled Closures, The @ecls{} Compiler
-@subsection Use of Declarations to Improve Efficiency
-
-Declarations, especially  type  and  function  declarations,
-increase the efficiency of the compiled code.  For example, for the
-following Lisp source file, with two @clisp{} declarations added,
-
-@lisp
-(eval-when (compile)
-  (proclaim '(function tak (fixnum fixnum fixnum) fixnum))
-
-(defun tak (x y z)
-  (declare (fixnum x y z))
-  (if (not (< y x))
-      z
-      (tak (tak (1- x) y z)
-           (tak (1- y) z x)
-           (tak (1- z) x y))))
-@end lisp
-
-The compiler generates the following C code:
-
-@example
-/*      local entry for function TAK                                  */
-static int LI1(register int V1,register int V2,register int V3)
-@{ VT3 VLEX3 CLSR3
-TTL:
-        if (V2 < V1) @{
-        goto L2;@}
-        return(V3);
-L2:
-        @{ int V5;
-          V5 = LI1((V1)-1,V2,V3);
-        @{ int V6;
-          V6 = LI1((V2)-1,V3,V1);
-          V3 = LI1((V3)-1,V1,V2);
-          V2 = V6;
-          V1 = V5;@}@}
-        goto TTL;
-;;; Note: Tail-recursive call of TAK was replaced by iteration.
-@}
-@end example
-
-
-@node Inspecting generated C code,  , Use of Declarations to Improve Efficiency, The @ecls{} Compiler
-@subsection Inspecting generated C code
-
-@clisp{} defines a function disassemble, which is
-supposed to disassemble a compiled function and to display the
-assembler code.  According to @cltl{},
-
-     @emph{This is primary useful for debugging the compiler}, ..\\
- 
-This is, however, @emph{useless} in our case, because we are
-not concerned with assembly language.  Rather, we are interested in
-the C code generated by the @ecls{} compiler.  Thus the disassemble
-function in @ecls{} accepts not-yet-compiled functions only and displays
-the translated C code.
-
-@example
-> (defun add1 (x) (1+ x))
-ADD1
-> (disassemble *)
-;;; Compiling (DEFUN ADD1 ...).
-;;; Emitting code for ADD1.
-
-/*      function definition for ADD1                                  */
-static L1(int narg, object V1)
-@{ VT3 VLEX3 CLSR3
-TTL:
-        VALUES(0) = one_plus((V1));
-        RETURN(1);
-@}
-@end example
-
-
-@node The C language interface,  , The @ecls{} Compiler, Implementation details
-@section The C language interface
-
-There are several mechanism to integrate C code within @ecls{}.
-
-The user can embed his/her own C code into Lisp source code.  The
-idea is quite simple: the specified C code is inserted in the intermediate
-C code that is generated by the @ecls{} compiler.  In the following example,
-@code{Clines}  and @code{defentry}  are top-level macros specific
-to @ecls{}.  The @code{Clines}  macro form specifies the C code to be embedded,
-in terms of strings, and the @code{defentry}  form defines an entry
-of the specified C function from @ecls{}.
-
-@lisp
-(Clines
-"   int tak(x, y, z)                       "
-"   int x, y, z;                           "
-"   @{   if (y >= x) return(z);             "
-"       else return(tak(tak(x-1, y, z),    "
-"                       tak(y-1, z, x),    "
-"                       tak(z-1, x, y)));  "
-"   @}                                      "
-)
-
-(defentry tak (int int int) (int "tak"))
-@end lisp
-
-@node Everything, Bibliography, Implementation details, Top
+@node Everything, Bibliography, Multithread, Top
 @chapter Everything
 
 @defun {*} {@rest{} numbers}
