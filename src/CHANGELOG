@@ -1441,6 +1441,12 @@ ECLS 0.9b
 
   - FORMAT control ~C now works as expected.
 
+  - (SETF DOCUMENTATION) did not work on classes.
+
+  - The option :DOCUMENTATION produced an error in DEFINE-CONDITION.
+
+  - ENSURE-DIRECTORIES-EXIST was broken.
+
 * Visible changes:
 
   - New special form C-INLINE, allows inserting C/C++ code in any
