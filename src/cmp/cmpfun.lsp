@@ -380,8 +380,8 @@
 	 (c1expr `(the fixnum (ldb1 ,size ,pos ,(second args))))))
 
 (put-sysprop 'ldb1 :INLINE-ALWAYS
-	     '((fixnum fixnum fixnum) fixnum nil nil
-	       "((((~(-1 << (#0))) << (#1)) & (#2)) >> (#1))"))
+	     '(((fixnum fixnum fixnum) fixnum nil nil
+		"((((~(-1 << (#0))) << (#1)) & (#2)) >> (#1))")))
 
 ;----------------------------------------------------------------------
 
