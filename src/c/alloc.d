@@ -393,7 +393,7 @@ ONCE_MORE:
 	  obj->foreign.size = 0;
 	  obj->foreign.data = NUL;;
 	  break;
-#endif ECL_FFI
+#endif
 	default:
 	  printf("\ttype = %d\n", t);
 	  error("alloc botch.");
