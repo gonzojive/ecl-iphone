@@ -546,7 +546,7 @@ interpret_dotimes(cl_object *vector) {
 		vector = interpret(vector);
 		output = packed_label(vector-1);
 
-		if (FIXNUMP(VALUES(0))) {
+		if (FIXNUMP(length)) {
 		    cl_fixnum i, l = fix(length);
 		    /* 3) Loop while needed */
 		    for (i = 0; i < l;) {
