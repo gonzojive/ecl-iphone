@@ -52,7 +52,7 @@ extern int backq_level;
 
 static cl_object dispatch_reader;
 
-#define	cat(c)	(READtable->readtable.table[char_code((c))].syntax_type)
+#define	cat(c)	(READtable->readtable.table[c].syntax_type)
 
 static void extra_argument (int c, cl_object d);
 
@@ -118,14 +118,14 @@ unread_char(cl_object c, cl_object in)
 cl_object
 peek_char(bool pt, cl_object in)
 {
-	cl_object c;
+	int c;
 
-	c = read_char(in);
+	c = readc_stream(in);
 	if (pt)
-	  while (cat(c) == cat_whitespace)
-	    c = read_char(in);
-	unread_char(c, in);
-	return(c);
+		while (cat(c) == cat_whitespace)
+			c = readc_stream(in);
+	unreadc_stream(c, in);
+	return CODE_CHAR(c);
 }
 
 static cl_object
@@ -218,7 +218,8 @@ extern bool no_input;
 cl_object
 read_object(cl_object in)
 {
-	cl_object x, c;
+	cl_object x;
+	int c;
 	enum chattrib a;
 	cl_object old_delimiter, p;
 	cl_index length, i, colon;
@@ -244,16 +245,16 @@ BEGIN:
 			else
 				FEend_of_file(in);
 		} else {
-			c = read_char(in);
+			c = readc_stream(in);
 		}
 		a = cat(c);
 	} while (a == cat_whitespace);
 	delimiting_char = OBJNULL;
-	if (old_delimiter != OBJNULL && old_delimiter == c)
+	if (old_delimiter != OBJNULL && old_delimiter == CODE_CHAR(c))
 		return(OBJNULL);
 	if (a == cat_terminating || a == cat_non_terminating) {
-		cl_object x = READtable->readtable.table[char_code(c)].macro;
-		cl_object o = funcall(3, x, in, c);
+		cl_object x = READtable->readtable.table[c].macro;
+		cl_object o = funcall(3, x, in, CODE_CHAR(c));
 		if (NValues == 0) goto BEGIN;
 		if (NValues > 1) FEerror("The readmacro ~S returned ~D values.",
 					 2, x, MAKE_FIXNUM(i));
@@ -265,7 +266,7 @@ BEGIN:
 	cl_token->string.fillp = 0;
 	for (;;) {
 		if (a == cat_single_escape) {
-			c = read_char(in);
+			c = readc_stream(in);
 			a = cat_constituent;
 			escape_flag = TRUE;
 		} else if (a == cat_multiple_escape) {
@@ -273,20 +274,20 @@ BEGIN:
 			for (;;) {
 				if (stream_at_end(in))
 					FEend_of_file(in);
-				c = read_char(in);
+				c = readc_stream(in);
 				a = cat(c);
 				if (a == cat_single_escape) {
-					c = read_char(in);
+					c = readc_stream(in);
 					a = cat_constituent;
 				} else if (a == cat_multiple_escape)
 					break;
-				cl_string_push_extend(cl_token, char_code(c));
+				cl_string_push_extend(cl_token, c);
 				length++;
 			}
 			goto NEXT;
-		} else if (islower(char_code(c)))
-			c = CODE_CHAR(toupper(char_code(c)));
-		else if (char_code(c) == ':') {
+		} else if (islower(c))
+			c = toupper(c);
+		else if (c == ':') {
 			if (colon_type == 0) {
 				colon_type = 1;
 				colon = length;
@@ -299,24 +300,23 @@ BEGIN:
 		if (a == cat_whitespace || a == cat_terminating) {
 			if (preserving_whitespace_flag ||
 			    cat(c) != cat_whitespace)
-				unread_char(c, in);
+				unreadc_stream(c, in);
 			break;
 		}
-		cl_string_push_extend(cl_token, char_code(c));
+		cl_string_push_extend(cl_token, c);
 		length++;
 	NEXT:
 		if (stream_at_end(in))
 			break;
 		else
-			c = read_char(in);
+			c = readc_stream(in);
 		a = cat(c);
 	}
 
 	if (READsuppress)
 		return(Cnil);
 
-	if (ilf && !escape_flag &&
-	    length == 1 && cl_token->string.self[0] == '.') {
+	if (ilf && !escape_flag && length == 1 && cl_token->string.self[0] == '.') {
 		dot_flag = TRUE;
 		return(Cnil);
 	} else if (!escape_flag && length > 0) {
@@ -627,9 +627,10 @@ parse_integer(const char *s, cl_index end, cl_index *ep, int radix)
 }
 
 static
-@(defun "left_parenthesis_reader" (in c)
+@(defun "left_parenthesis_reader" (in character)
   cl_object x, y;
   cl_object *p;
+  int c;
 @
   y = Cnil;
   for (p = &y ; ; p = &(CDR(*p))) {
@@ -645,10 +646,10 @@ static
       *p = read_object(in);
       if (dot_flag)
 	FEerror("Two dots appeared consecutively.", 0);
-      c = read_char(in);
+      c = readc_stream(in);
       while (cat(c) == cat_whitespace)
-	c = read_char(in);
-      if (char_code(c) != ')')
+	c = readc_stream(in);
+      if (c != ')')
 	FEerror("A dot appeared before a right parenthesis.", 0);
       break;
     }
@@ -665,16 +666,16 @@ static
 static void
 read_string(int delim, cl_object in)
 {
-	cl_object c;
+	int c;
 
 	cl_token->string.fillp = 0;
 	for (;;) {
-		c = read_char(in);
-		if (char_code(c) == delim)
+		c = readc_stream(in);
+		if (c == delim)
 			break;
 		else if (cat(c) == cat_single_escape)
-			c = read_char(in);
-		cl_string_push_extend(cl_token, char_code(c));
+			c = readc_stream(in);
+		cl_string_push_extend(cl_token, c);
 	}
 }
 
@@ -686,16 +687,16 @@ read_string(int delim, cl_object in)
 static void
 read_constituent(cl_object in)
 {
-	cl_object c;
+	int c;
 
 	cl_token->string.fillp = 0;
 	for (;;) {
-		c = read_char(in);
+		c = readc_stream(in);
 		if (cat(c) != cat_constituent) {
-			unread_char(c, in);
+			unreadc_stream(c, in);
 			break;
 		}
-		cl_string_push_extend(cl_token, char_code(c));
+		cl_string_push_extend(cl_token, c);
 	}
 }
 
@@ -708,27 +709,27 @@ static
 
 static
 @(defun "dispatch_reader_fun" (in dc)
-	cl_object c, x, y;
-	int i, d;
+	cl_object x, y;
+	int i, d, c;
 @
 	if (READtable->readtable.table[char_code(dc)].dispatch_table == NULL)
 		FEerror("~C is not a dispatching macro character", 1, dc);
 
-	c = read_char(in);
-	d = digitp((int)char_code(c), 10);
+	c = readc_stream(in);
+	d = digitp(c, 10);
 	if (d >= 0) {
 		i = 0;
 		do {
 			i = 10*i + d;
-			c = read_char(in);
-			d = digitp(char_code(c), 10);
+			c = readc_stream(in);
+			d = digitp(c, 10);
 		} while (d >= 0);
 		y = MAKE_FIXNUM(i);
 	} else
 		y = Cnil;
 
-	x = READtable->readtable.table[char_code(dc)].dispatch_table[char_code(c)];
-	return funcall(4, x, in, c, y);
+	x = READtable->readtable.table[char_code(dc)].dispatch_table[c];
+	return funcall(4, x, in, CODE_CHAR(c), y);
 @)
 
 static
@@ -748,10 +749,11 @@ static
 
 static
 @(defun "semicolon_reader" (in c)
+	int auxc;
 @
 	do
-		c = read_char(in);
-	while (char_code(c) != '\n');
+		auxc = readc_stream(in);
+	while (auxc != '\n');
 	/*  no result  */
 	@(return)
 @)
@@ -766,8 +768,7 @@ static
 @
 	if (d != Cnil && !READsuppress)
 		extra_argument('C', d);
-	c = read_char(in);
-	if (char_code(c) != '(')
+	if (readc_stream(in) != '(')
 		FEerror("A left parenthesis is expected.", 0);
 	delimiting_char = CODE_CHAR(')');
 	real = read_object(in);
@@ -796,7 +797,7 @@ static
 		    fix(d) != 0)
 			FEerror("~S is an illegal CHAR-FONT.", 1, d);
 			/*  assuming that CHAR-FONT-LIMIT is 1  */
-	unread_char(CODE_CHAR('\\'), in);
+	unreadc_stream('\\', in);
 	if (READsuppress) {
 		(void)read_object(in);
 		@(return Cnil)
@@ -904,7 +905,7 @@ static
 	bool fixed_size;
 	cl_index dim, dimcount, i;
 	cl_index sp = cl_stack_index();
-	cl_object x, last, elt;
+	cl_object last, elt, x;
 @
 	if (READsuppress) {
 		read_constituent(in);
@@ -917,14 +918,16 @@ static
 		fixed_size = TRUE;
 	}
 	for (dimcount = 0 ;; dimcount++) {
+	 	int x;
 		if (stream_at_end(in))
 			break;
-		x = read_char(in);
-		if (char_code(x) != '0' && char_code(x) != '1') {
-			unread_char(x, in);
+		x = readc_stream(in);
+		if (x != '0' && x != '1') {
+			unreadc_stream(x, in);
 			break;
+		} else {
+			cl_stack_push(MAKE_FIXNUM(x == '1'));
 		}
-		cl_stack_push(x);
 	}	
 	if (fixed_size) {
 		if (dimcount > dim)
@@ -939,7 +942,7 @@ static
 	x->vector.self.bit = (byte *)cl_alloc_atomic((dim + CHAR_BIT - 1)/CHAR_BIT);
 	for (i = 0; i < dim; i++) {
 		elt = (i < dimcount) ? cl_stack[sp+i] : last;
-		if (char_code(elt) == '0')
+		if (elt == MAKE_FIXNUM(0))
 			x->vector.self.bit[i/CHAR_BIT] &= ~(0200 >> i%CHAR_BIT);
 		else
 			x->vector.self.bit[i/CHAR_BIT] |= 0200 >> i%CHAR_BIT;
@@ -949,26 +952,27 @@ static
 @)
 
 static
-@(defun "sharp_colon_reader" (in c d)
+@(defun "sharp_colon_reader" (in ch d)
 	enum chattrib a;
+	int c;
 @
 	if (d != Cnil && !READsuppress)
 		extra_argument(':', d);
-	c = read_char(in);
+	c = readc_stream(in);
 	a = cat(c);
 	escape_flag = FALSE;
 	cl_token->string.fillp = 0;
 	goto L;
 	for (;;) {
-		cl_string_push_extend(cl_token, char_code(c));
+		cl_string_push_extend(cl_token, c);
 	K:
 		if (stream_at_end(in))
 			goto M;
-		c = read_char(in);
+		c = readc_stream(in);
 		a = cat(c);
 	L:
 		if (a == cat_single_escape) {
-			c = read_char(in);
+			c = readc_stream(in);
 			a = cat_constituent;
 			escape_flag = TRUE;
 		} else if (a == cat_multiple_escape) {
@@ -976,23 +980,23 @@ static
 			for (;;) {
 				if (stream_at_end(in))
 					FEend_of_file(in);
-				c = read_char(in);
+				c = readc_stream(in);
 				a = cat(c);
 				if (a == cat_single_escape) {
-					c = read_char(in);
+					c = readc_stream(in);
 					a = cat_constituent;
 				} else if (a == cat_multiple_escape)
 					break;
-				cl_string_push_extend(cl_token, char_code(c));
+				cl_string_push_extend(cl_token, c);
 			}
 			goto K;
-		} else if (islower(char_code(c)))
-			c = CODE_CHAR(toupper(char_code(c)));
+		} else if (islower(c))
+			c = toupper(c);
 		if (a == cat_whitespace || a == cat_terminating)
 			break;
 	}
 	if (preserving_whitespace_flag || cat(c) != cat_whitespace)
-		unread_char(c, in);
+		unreadc_stream(c, in);
 
 M:
 	if (READsuppress)
@@ -1240,14 +1244,14 @@ static
 	if (d != Cnil && !READsuppress)
 		extra_argument('|', d);
 	for (;;) {
-		c = char_code(read_char(in));
+		c = readc_stream(in);
 	L:
 		if (c == '#') {
-			c = char_code(read_char(in));
+			c = readc_stream(in);
 			if (c == '|')
 				level++;
 		} else if (c == '|') {
-			c = char_code(read_char(in));
+			c = readc_stream(in);
 			if (c == '#') {
 				if (level == 0)
 					break;
@@ -1394,16 +1398,16 @@ current_readtable(void)
 		   eof_value
 		   recursivep
 	 &aux x)
-	cl_object c;
+	int c;
 @
 	if (Null(strm))
 		strm = symbol_value(@'*standard_input*');
 	else if (strm == Ct)
 		strm = symbol_value(@'*terminal_io*');
 	while (!stream_at_end(strm)) {
-		c = read_char(strm);
+		c = readc_stream(strm);
 		if (cat(c) != cat_whitespace) {
-			unread_char(c, strm);
+			unreadc_stream(c, strm);
 			goto READ;
 		}
 	}
@@ -1478,8 +1482,9 @@ READ:
 @(defun read_line (&optional (strm symbol_value(@'*standard_input*'))
 			     (eof_errorp Ct)
 			     eof_value
-			     recursivep
-		   &aux c)
+			     recursivep)
+	int c;
+	cl_object eof;
 @
 	if (Null(strm))
 		strm = symbol_value(@'*standard_input*');
@@ -1493,14 +1498,14 @@ READ:
 	}
 	cl_token->string.fillp = 0;
 	for (;;) {
-		c = read_char(strm);
-		if (char_code(c) == '\n') {
-			c = Cnil;
+		c = readc_stream(strm);
+		if (c == '\n') {
+			eof = Cnil;
 			break;
 		}
-		cl_string_push_extend(cl_token, char_code(c));
+		cl_string_push_extend(cl_token, c);
 		if (stream_at_end(strm)) {
-			c = Ct;
+			eof = Ct;
 			break;
 		}
 	}
@@ -1509,7 +1514,7 @@ READ:
 	    cl_token->string.self[cl_token->string.fillp-1] == '\r')
 		cl_token->string.fillp--;
 #endif
-	@(return copy_simple_string(cl_token) c)
+	@(return copy_simple_string(cl_token) eof)
 @)
 
 @(defun read_char (&optional (strm symbol_value(@'*standard_input*'))
@@ -1546,7 +1551,7 @@ READ:
 			     (eof_errorp Ct)
 			     eof_value
 			     recursivep)
-	cl_object c;
+	int c;
 @
 	if (Null(strm))
 		strm = symbol_value(@'*standard_input*');
@@ -1560,16 +1565,16 @@ READ:
 			else
 				FEend_of_file(strm);
 		}
-		c = read_char(strm);
-		unread_char(c, strm);
-		@(return c)
+		c = readc_stream(strm);
+		unreadc_stream(c, strm);
+		@(return CODE_CHAR(c))
 	}
 	if (peek_type == Ct) {
 		while (!stream_at_end(strm)) {
-			c = read_char(strm);
+			c = readc_stream(strm);
 			if (cat(c) != cat_whitespace) {
-				unread_char(c, strm);
-				@(return c)
+				unreadc_stream(c, strm);
+				@(return CODE_CHAR(c))
 			}
 		}
 		if (Null(eof_errorp))
@@ -1579,7 +1584,7 @@ READ:
 	}
 	/* INV: char_eq() checks the type of `peek_type' */
 	while (!stream_at_end(strm)) {
-		c = read_char(strm);
+		cl_object c = read_char(strm);
 		if (char_eq(c, peek_type)) {
 			unread_char(c, strm);
 			@(return c)
