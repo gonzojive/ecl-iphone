@@ -1818,7 +1818,7 @@ ECL 0.9d
     equivalent to (SI:GETCWD).
 
   - The old CLX library has been replaced with the portable CLX
-    library from the CLOCC archive.
+    library from the TELENT archive.
 
 * ANSI compatibility:
 

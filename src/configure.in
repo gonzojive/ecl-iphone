@@ -216,6 +216,7 @@ if test ${tk} ; then
   TKLIBS="-ltk -ltcl -lXpm @XLIBS@"
   AC_DEFINE(TK)
 fi
+AC_SUBST(CLX_INFO)
 if test ${clx} ; then
   if test ${shared} = "yes" ; then
     LSP_LIBRARIES="${LSP_LIBRARIES} clx.fas"
@@ -223,6 +224,9 @@ if test ${clx} ; then
     LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}clx.${LIBEXT}"
   fi
   AC_DEFINE(CLX)
+  CLX_INFO="clx.${INFOEXT}"
+else
+  CLX_INFO=""
 fi
 if test "${tcp}" -o "${clx}"; then
   AC_DEFINE(TCP)
@@ -376,7 +380,7 @@ dnl Notice that we build ${builddir}/h/configpre.h fron ${srcdir}/h/config.h.in,
 dnl and then use all AC_DEF* to build h/config.h from h/configpre.h
 dnl
 AC_CONFIG_FILES(bare.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp
- eclx/load.lsp ../Makefile Makefile c/Makefile doc/Makefile doc/ecl.man
+ ../Makefile Makefile c/Makefile doc/Makefile doc/ecl.man
  tk/Makefile tests/Makefile ansi-tests/Makefile gabriel/Makefile)
 AC_CONFIG_FILES([ecl-config.pre:util/ecl-config])
 AC_CONFIG_FILES([h/configpre:h/config.h.in])

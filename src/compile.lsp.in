@@ -104,12 +104,40 @@ cd ..; rm -rf tmp/*'")))
   #+dlopen
   (c::build-fasl "cmp" :lisp-files objects))
 
+;;;
+;;; * Compile the portable CLX library.
+;;;
+
+(defconstant +clx-module-files+
+'("src:clx;package.lisp"
+  "src:clx;depdefs.lisp"
+  "src:clx;clx.lisp"
+  "src:clx;dependent.lisp"
+  "src:clx;macros.lisp"
+  "src:clx;bufmac.lisp"
+  "src:clx;buffer.lisp"
+  "src:clx;display.lisp"
+  "src:clx;gcontext.lisp"
+  "src:clx;input.lisp"
+  "src:clx;requests.lisp"
+  "src:clx;fonts.lisp"
+  "src:clx;graphics.lisp"
+  "src:clx;text.lisp"
+  "src:clx;attributes.lisp"
+  "src:clx;translate.lisp"
+  "src:clx;keysyms.lisp"
+  "src:clx;manager.lisp"
+  "src:clx;image.lisp"
+  "src:clx;resource.lisp"))
+
 #+WANTS-CLX
 (progn
   (proclaim '(optimize (safety 2) (speed 1)))
-  (load "eclx/load.lsp")
   (push :clx-ansi-common-lisp *features*)
-  (let* ((objects (compile-if-old "build:eclx;" +eclx-module-files+
+  (unless (probe-file "build:clx;")
+    (si::mkdir "build:clx;" #o0777))
+  (mapcar #'load +clx-module-files+)
+  (let* ((objects (compile-if-old "build:clx;" +clx-module-files+
 				  :system-p t :c-file t :data-file t :h-file t)))
     (c::build-static-library "clx" :lisp-files objects)
     #+dlopen
