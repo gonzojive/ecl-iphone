@@ -27,7 +27,7 @@ cl_object cl_token;
 static cl_object gensym_prefix;
 static cl_object gentemp_prefix;
 static cl_object gentemp_counter;
-static void FEtype_error_plist(cl_object x) __attribute__((noreturn,regparm(2)));
+static void FEtype_error_plist(cl_object x) __attribute__((noreturn));
 
 
 cl_object
