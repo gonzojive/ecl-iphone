@@ -905,7 +905,7 @@ one_minus(cl_object x)
 	cl_object lcm;
 @
 	if (narg == 0)
-		@(return MAKE_FIXNUM(0))
+		@(return MAKE_FIXNUM(1))
 	/* INV: get_gcd() checks types. By placing `numi' before `lcm' in
 	   this call, we make sure that errors point to `numi' */
 	lcm = cl_va_arg(nums);
