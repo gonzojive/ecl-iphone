@@ -684,7 +684,10 @@ c_call(cl_object args, int flags) {
 	name = pop(&args);
 	nargs = c_arguments(args);
 	if (ATOM(name)) {
-		cl_object ndx = c_tag_ref(name, @':function');
+		cl_object ndx;
+		if (!SYMBOLP(name))
+			goto ERROR;
+		ndx = c_tag_ref(name, @':function');
 		if (Null(ndx) || (flags & FLAG_GLOBAL)) {
 			/* Globally defined function */
 			asm_op2(push? OP_PCALLG : OP_CALLG, nargs);
@@ -701,7 +704,7 @@ c_call(cl_object args, int flags) {
 	} else {
 		cl_object aux = setf_namep(name);
 		if (aux == OBJNULL)
-			FEprogram_error("FUNCALL: Invalid function name ~S.",
+ ERROR:			FEprogram_error("FUNCALL: Invalid function name ~S.",
 					1, name);
 		/* The outcome of (SETF ...) may be a macro name */
 		return compile_form(CONS(aux, CDR(args)), flags);

@@ -1231,6 +1231,9 @@ ECLS 0.9
     uses MKSTEMP to produce unique file names, and solve the problem
     that dlopen() cannot reload two libraries with the same name.
 
+  - The interpreter now detects syntax errors in function calls: such
+    as in (setq a ("foo")).
+
 * ANSI compatibility:
 
   - WITH-HASH-TABLE-ITERATOR implemented.
