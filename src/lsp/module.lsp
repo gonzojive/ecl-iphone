@@ -66,7 +66,7 @@
       (set-difference *modules* saved-modules))))
 
 (pushnew #'(lambda (module)
-	     (let* ((sysdir (translate-logical-pahtname #P"SYS:"))
+	     (let* ((sysdir (translate-logical-pathname #P"SYS:"))
 		    (module (string module)))
 	       (let ((path (merge-pathnames (make-pathname :name module) sysdir)))
 		 (if (probe-file path) (load path)))
