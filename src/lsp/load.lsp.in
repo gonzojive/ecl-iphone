@@ -39,6 +39,7 @@
   "@abs_srcdir@/tk-init.lsp"
   "@abs_builddir@/config.lsp"
   "@abs_srcdir@/top.lsp"
+#+threads
   "@abs_srcdir@/mp.lsp"
 ))
 
