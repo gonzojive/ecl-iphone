@@ -528,7 +528,7 @@ Enumeration type which distinguishes the different types of lisp objects.  The
 most important values are t_cons, t_fixnum, t_character, t_bignum, t_ratio,
 t_shortfloat, t_longfloat, t_complex, t_symbol, t_package, t_hashtable,
 t_array, t_vector, t_string, t_bitvector, t_stream, t_random, t_readtable,
-t_pathname, t_bytecodes, t_cfun, t_cclosure, t_gfun, t_instance, t_cond and
+t_pathname, t_bytecodes, t_cfun, t_cclosure, t_gfun, t_instance, t_foreign and
 t_thread.
 @end deftp
 
