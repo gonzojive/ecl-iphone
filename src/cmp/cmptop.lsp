@@ -252,6 +252,9 @@
 	(si::process-declarations (rest lambda-list-and-body) nil)
       (cond ((and *allow-c-local-declaration* (assoc 'si::c-local decl))
 	     (setq no-entry t))
+	    #+ecl-min
+	    ((member fname c::*in-all-symbols-functions*)
+	     (setq no-entry t))
 	    ((setq doc (si::expand-set-documentation fname 'function doc))
 	     (t1expr `(progn ,@doc)))))
     (add-load-time-values)

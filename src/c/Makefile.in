@@ -47,7 +47,7 @@ OBJS	= main.o symbol.o package.o list.o\
 	time.o unixint.o\
 	mapfun.o multival.o hash.o format.o pathname.o\
 	structure.o load.o unixfsys.o unixsys.o \
-	all_symbols.o ffi.o @EXTRA_OBJS@
+	ffi.o @EXTRA_OBJS@
 
 .SUFFIXES: .c .o .d
 
@@ -81,7 +81,7 @@ flatinstall: $(HFILES)
 	rm $(prefix)/h/config.h
 	mv $(prefix)/h/config-install.h $(prefix)/h/config.h
 
-../libeclmin.a: $(OBJS)
+../libeclmin.a: $(OBJS) all_symbols.o all_symbols2.o
 	$(RM) $@
 	ar cr $@ $(OBJS)
 	ranlib $@
@@ -116,6 +116,9 @@ apply.o: apply.c $(HFILES) $(HDIR)/cs.h
 #
 all_symbols.o: all_symbols.c
 	$(CC) $(CFLAGS) -I./ all_symbols.c -o $@
+all_symbols2.o: all_symbols.c
+	$(CC) $(CFLAGS) -DECL_FINAL -I./ all_symbols.c -o $@
+
 #
 # This is in another directory
 #

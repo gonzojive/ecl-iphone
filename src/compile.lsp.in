@@ -93,6 +93,7 @@ ranlib ../@LIBPREFIX@ecl.@LIBEXT@'")
       (c::*cc-flags* (concatenate 'string "-I@true_builddir@/c " c::*cc-flags*)))
   (c::shared-cc (compile-file-pathname "ecl" :type :dll)
 		"c/main.@OBJEXT@"
+		"c/all_symbols2.@OBJEXT@"
 		"@LIBPREFIX@lsp.@LIBEXT@"
 		"@LIBPREFIX@eclmin.@LIBEXT@"
 		. #.(unless (equalp "@LDINSTALLNAME@" "")

@@ -1066,58 +1066,88 @@ type_of(#0)==t_bitvector"))
 )) ; end of of #+clos
 
 (in-package "SI")
-(proclaim '(si::c-export-fname
-	    make-array vector array-dimensions
-	    array-in-bounds-p array-row-major-index bit sbit bit-and bit-ior
-	    bit-xor bit-eqv bit-nand bit-nor bit-andc1 bit-andc2 bit-orc1 bit-not
-	    vector-push vector-push-extend vector-pop adjust-array si::ecase-error si::etypecase-error
-	    ccase-error typecase-error-string find-documentation find-declarations
-	    si::check-keyword si::check-arg-length si::dm-too-few-arguments si::dm-bad-key
-	    remove-documentation si::get-documentation
-	    si::set-documentation si::expand-set-documentation read-from-string
-	    write-to-string prin1-to-string princ-to-string union nunion
-	    intersection nintersection set-difference nset-difference
-	    set-exclusive-or nset-exclusive-or subsetp
-	    logical-pathname-translations decode-universal-time
-	    encode-universal-time get-decoded-time isqrt abs phase signum cis asin
-	    acos asinh acosh atanh ffloor fceiling ftruncate fround
-	    logtest byte byte-size byte-position ldb ldb-test mask-field dpb
-	    deposit-field upgraded-array-element-type typep subtypep coerce make-sequence
-	    concatenate map some every notany notevery map-into reduce fill
-	    replace remove remove-if remove-if-not delete delete-if delete-if-not
-	    count count-if count-if-not substitute substitute-if substitute-if-not
-	    nsubstitute nsubstitute-if nsubstitute-if-not find find-if find-if-not
-	    position position-if position-if-not remove-duplicates
-	    delete-duplicates mismatch search sort stable-sort merge
-	    pprint-fill copy-pprint-dispatch pprint-dispatch
-	    pprint-linear pprint-newline pprint-tab pprint-tabular
-	    set-pprint-dispatch pprint-indent
-	    si::simple-program-error
-	    si::closest-vector-type si::packages-iterator
-	    si::define-structure .
-	    #-clos
-	    nil
-	    #+clos
-	    (clos::ensure-class clos::install-method
-	     clos::standard-instance-set
-	     clos::class-id
-	     clos::class-direct-superclasses
-	     clos::class-direct-subclasses
-	     clos::class-slots
-	     clos::class-precedence-list
-	     clos::slot-index-table
-	     clos::class-direct-slots
-	     clos::class-shared-slots
-	     clos::default-initargs-of
-	     clos::generic-function-lambda-list
-	     clos::generic-function-argument-precedence-order
-	     clos::generic-function-method-combination
-	     clos::generic-function-method-class
-	     clos::generic-function-methods
-	     clos::method-generic-function
-	     clos::method-lambda-list
-	     clos::method-specializers
-	     clos::method-qualifiers
-	     clos::method-function
-	     clos::method-plist)))
+
+(defvar c::*in-all-symbols-functions*
+  '(;; arraylib.lsp
+    make-array vector array-dimensions array-in-bounds-p array-row-major-index
+    bit sbit bit-and bit-ior bit-xor bit-eqv bit-nand bit-nor bit-andc1
+    bit-andc2 bit-orc1 bit-orc2 bit-not
+    vector-push vector-push-extend vector-pop adjust-array 
+    ;; iolib.lsp
+    read-from-string write-to-string prin1-to-string princ-to-string
+    y-or-n-p yes-or-no-p
+    ;; listlib.lsp
+    union nunion intersection nintersection set-difference nset-difference
+    set-exclusive-or nset-exclusive-or subsetp rassoc-if rassoc-if-not
+    assoc-if assoc-if-not member-if member-if-not subst-if subst-if-not
+    nsubst-if nsubst-if-not
+    ;; mislib.lsp
+    logical-pathname-translations load-logical-pathname-translations decode-universal-time
+    encode-universal-time get-decoded-time
+    ensure-directories-exist
+    ;; module.lsp
+    provide require
+    ;; numlib.lsp
+    isqrt abs phase signum cis
+    asin acos asinh acosh atanh ffloor fceiling ftruncate fround
+    logtest byte byte-size byte-position ldb ldb-test mask-field dpb
+    deposit-field
+    ;; packlib.lsp
+    find-all-symbols apropos apropos-list
+    ;; predlib.lsp
+    upgraded-array-element-type upgraded-complex-part-type typep subtypep coerce
+    ;; seq.lsp
+    make-sequence concatenate map some every notany notevery map-into
+    ;; seqlib.lsp
+    reduce fill replace
+    remove remove-if remove-if-not delete delete-if delete-if-not
+    count count-if count-if-not substitute substitute-if substitute-if-not
+    nsubstitute nsubstitute-if nsubstitute-if-not find find-if find-if-not
+    position position-if position-if-not remove-duplicates
+    delete-duplicates mismatch search sort stable-sort merge constantly
+    ;; pprint.lsp
+    pprint-fill copy-pprint-dispatch pprint-dispatch
+    pprint-linear pprint-newline pprint-tab pprint-tabular
+    set-pprint-dispatch pprint-indent
+))
+
+(proclaim 
+  `(si::c-export-fname #+ecl-min ,@c::*in-all-symbols-functions*
+    si::ecase-error si::etypecase-error
+    ccase-error typecase-error-string find-documentation find-declarations
+    si::check-keyword si::check-arg-length si::dm-too-few-arguments si::dm-bad-key
+    remove-documentation si::get-documentation
+    si::set-documentation si::expand-set-documentation
+    si::simple-program-error
+    si::closest-vector-type si::packages-iterator
+    si::define-structure .
+    #-clos
+    nil
+    #+clos
+    (;; defclass.lsp
+     clos::ensure-class
+     ;; standard.lsp
+     clos::standard-instance-set
+     ;; kernel.lsp
+     clos::install-method
+     clos::class-id
+     clos::class-direct-superclasses
+     clos::class-direct-subclasses
+     clos::class-slots
+     clos::class-precedence-list
+     clos::slot-index-table
+     clos::class-direct-slots
+     clos::class-shared-slots
+     clos::default-initargs-of
+     clos::generic-function-lambda-list
+     clos::generic-function-argument-precedence-order
+     clos::generic-function-method-combination
+     clos::generic-function-method-class
+     clos::generic-function-methods
+     clos::method-generic-function
+     clos::method-lambda-list
+     clos::method-specializers
+     clos::method-qualifiers
+     clos::method-function
+     clos::method-plist)))
 

@@ -57,7 +57,7 @@ ecl_min$(EXE): $(LIBRARIES) .gdbinit @LIBPREFIX@eclmin.@LIBEXT@
 	if [ -f CROSS-COMPILER ]; then \
 		touch $@; \
 	else \
-		$(CC) $(LDFLAGS) -o $@ cinit.o -L./ @LIBPREFIX@eclmin.@LIBEXT@ $(LIBS);\
+		$(CC) $(LDFLAGS) -o $@ cinit.o c/all_symbols.o -L./ @LIBPREFIX@eclmin.@LIBEXT@ $(LIBS);\
 	fi
 
 .gdbinit: $(srcdir)/util/gdbinit

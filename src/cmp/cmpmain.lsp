@@ -143,6 +143,16 @@ coprocessor).")
 
 ")
 
+;;
+;; This format string contains the structure of the code that initializes
+;; a program, a library, a module, etc. Basically, it processes a codeblock
+;; just like in a normal compiled file, but then adds all the codeblocks of
+;; its corresponding modules.
+;;
+;; IMPORTANT: Notice how the modules are linked to the parent forming a
+;; circular chain. This disables the garbage collection of the library until
+;; _ALL_ functions in all modules are unlinked.
+;;
 (defconstant +lisp-program-init+ "
 #ifdef __cplusplus
 extern \"C\"
@@ -150,7 +160,6 @@ extern \"C\"
 void ~A(cl_object cblock)
 {
 	static cl_object Cblock;
-	cl_object subblock;
         if (!FIXNUMP(cblock)) {
 		Cblock = cblock;
 		cblock->cblock.data_text = compiler_data_text;
@@ -165,9 +174,12 @@ void ~A(cl_object cblock)
 	VV = Cblock->cblock.data;
 #endif
 	~A
-~:[~{	subblock = read_VV(OBJNULL, ~A); subblock->cblock.next = Cblock;~%~}
+{
+	cl_object current, next = Cblock;
+~:[~{	current = read_VV(OBJNULL, ~A); current->cblock.next = next; next = current; ~%~}
+	Cblock->cblock.next = current;
 ~;~{	~A(Cblock);~%~}~]
-
+}
 	~A
 }")
 
