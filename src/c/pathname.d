@@ -1010,9 +1010,9 @@ coerce_to_from_pathname(cl_object x, cl_object host)
 @
 	/* Check that host is a valid host name */
 	assert_type_string(host);
-	parsed_length = host->string.fillp;
+	length = host->string.fillp;
 	parse_word(host->string.self, '\0', WORD_LOGICAL, 0, length, &parsed_length);
-	if (parsed_length <= host->string.fillp)
+	if (parsed_length < host->string.fillp)
 		FEerror("Wrong host syntax ~S", 1, host);
 
 	/* Find its translation list */
