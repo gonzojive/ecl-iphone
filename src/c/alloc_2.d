@@ -56,8 +56,7 @@ finalize(cl_object o, cl_object data)
 		break;
 #ifdef ECL_THREADS
 	case t_lock:
-		if (o->lock.mutex != NULL)
-			pthread_mutex_destroy(o->lock.mutex);
+		pthread_mutex_destroy(&o->lock.mutex);
 		break;
 #endif
 	default:}

@@ -14,134 +14,86 @@
     See file '../Copyright' for full details.
 */
 
-
 #include "ecl.h"
 #include <signal.h>
 #include <unistd.h>
-
-/******************************* EXPORTS ******************************/
-
-int interrupt_enable;		/* console interupt enable */
-int interrupt_flag;		/* console interupt flag */
+#ifdef ECL_THREADS
+#include <pthread.h>
+#endif
 
 /******************************* ------- ******************************/
 
-typedef void (*signalfn)(int);
-
-#ifndef THREADS
-
-#ifdef SIGALRM
-static void
-sigalrm(void)
+void
+handle_signal(int sig)
 {
-	if (interrupt_flag) {
-		interrupt_flag = FALSE;
-		terminal_interrupt(TRUE);
+	switch (sig) {
+#ifdef ECL_THREADS
+	case SIGUSR1:
+		funcall(1, cl_env.own_process->process.interrupt);
+		break;
+#endif
+	case SIGINT:
+		funcall(2, @'si::terminal-interrupt', Ct);
+		break;
+	case SIGFPE:
+		FEerror("Floating-point exception.", 0);
+		break;
+	case SIGSEGV:
+		FEerror("Segmentation violation.", 0);
+		break;
+	default:
+		FEerror("Serious signal ~D caught.", 0, MAKE_FIXNUM(sig));
 	}
 }
-#endif
-
-void
-sigint(void)
-{
-  if (!interrupt_enable || interrupt_flag) {
-    if (!interrupt_enable) {
-      fprintf(stdout, "\n;;;Interrupt delayed.\n"); fflush(stdout);
-      interrupt_flag = TRUE;
-    }
-    signal(SIGINT, (signalfn)sigint);
-    return;
-  }
-  if (symbol_value(@'si::*interrupt-enable*') == Cnil) {
-      ECL_SETQ(@'si::*interrupt-enable*', Ct);
-      signal(SIGINT, (signalfn)sigint);
-      return;
-  }
-#ifdef SIGALRM
-#ifdef __GO32__
-  if (interrupt_flag)
-    sigalrm();
-#endif
-  interrupt_flag = TRUE;
-  signal(SIGALRM, (signalfn)sigalrm);
-  alarm(1);
-#endif
-  signal(SIGINT, (signalfn)sigint);
-}
-
-#else /* THREADS */
-
-extern int critical_level;
-bool scheduler_interrupted = FALSE;
-int scheduler_interruption = 0;
-
-void
-sigint()
-{
-#ifdef SYSV
-  signal(SIGINT, sigint);
-#endif
-  if (critical_level > 0) {
-    scheduler_interrupted = TRUE;
-    scheduler_interruption = ERROR_INT;
-    return;
-  }
-
-  if (symbol_value(@'si::*interrupt-enable*') == Cnil) {
-    ECL_SETQ(@'si::*interrupt-enable*', Ct);
-    return;
-  }
-
-  terminal_interrupt(TRUE);
-}
-
-#endif /*THREADS */
 
 static void
-sigfpe(void)
+signal_catcher(int sig)
 {
-	signal(SIGFPE, (signalfn)sigfpe);
-	FEerror("Floating-point exception.", 0);
+	if (symbol_value(@'si::*interrupt-enable*') == Cnil) {
+		signal(sig, signal_catcher);
+		cl_env.interrupt_pending = sig;
+		return;
+	}
+	signal(sig, signal_catcher);
+	CL_UNWIND_PROTECT_BEGIN {
+		handle_signal(sig);
+	} CL_UNWIND_PROTECT_EXIT {
+		sigset_t block_mask;
+		sigemptyset(&block_mask);
+		sigaddset(&block_mask, sig);
+#ifdef ECL_THREADS
+		pthread_sigmask(SIG_UNBLOCK, &block_mask, NULL);
+#else
+		sigprocmask(SIG_UNBLOCK, &block_mask, NULL);
+#endif
+	} CL_UNWIND_PROTECT_END;
 }
 
-void
-signal_catcher(int sig, int code, int scp)
+cl_object
+si_check_pending_interrupts(void)
 {
-	char str[64];
-
-	if (!interrupt_enable) {
-		sprintf(str, "signal %d caught (during GC)", sig);
-		error(str);
-	}
-	else if (sig == SIGSEGV)
-	  FEerror("Segmentation violation.~%\
-Wrong type argument to a compiled function.", 0);
-	else {
-	  printf("System error. Trying to recover ...\n");
-	  fflush(stdout);
-	  FEerror("Signal ~D caught.~%\
-The internal memory may be broken.~%\
-You should check the signal and exit from Lisp.", 1,
-		  MAKE_FIXNUM(sig));
-	}
+	int what = cl_env.interrupt_pending;
+	cl_env.interrupt_pending = 0;
+	handle_signal(what);
+	@(return)
 }
 
 cl_object
 si_catch_bad_signals()
 {
-	signal(SIGILL, (signalfn)signal_catcher);
+	signal(SIGILL, signal_catcher);
 #ifndef GBC_BOEHM
-	signal(SIGBUS, (signalfn)signal_catcher);
+	signal(SIGBUS, signal_catcher);
 #endif
-	signal(SIGSEGV, (signalfn)signal_catcher);
+	signal(SIGSEGV, signal_catcher);
 #ifdef SIGIOT
-	signal(SIGIOT, (signalfn)signal_catcher);
+	signal(SIGIOT, signal_catcher);
 #endif
 #ifdef SIGEMT
-	signal(SIGEMT, (signalfn)signal_catcher);
+	signal(SIGEMT, signal_catcher);
 #endif
 #ifdef SIGSYS
-	signal(SIGSYS, (signalfn)signal_catcher);
+	signal(SIGSYS, signal_catcher);
 #endif
 	@(return Ct)
 }
@@ -167,12 +119,12 @@ si_uncatch_bad_signals()
 }
 
 void
-enable_interrupt(void)
+init_unixint(void)
 {
-	interrupt_enable = TRUE;
-	signal(SIGFPE, (signalfn)sigfpe);
-	signal(SIGINT, (signalfn)sigint);
-#ifdef __EMX__
-	signal(SIGBREAK, (signalfn)sigint);
+	signal(SIGFPE, signal_catcher);
+	signal(SIGINT, signal_catcher);
+#ifdef ECL_THREADS
+	signal(SIGUSR1, signal_catcher);
 #endif
+	ECL_SET(@'si::*interrupt-enable*', Ct);
 }

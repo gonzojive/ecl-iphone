@@ -350,37 +350,39 @@ Cannot compile ~a."
 	 (shared-data-pathname (get-output-pathname o-pathname shared-data-file
 						    :sdata)))
 
-    (init-env)
+    (mp:with-lock (mp:+load-compile-lock+)
+      (init-env)
 
-    (when (probe-file "./cmpinit.lsp")
-      (load "./cmpinit.lsp" :verbose *compile-verbose*))
+      (when (probe-file "./cmpinit.lsp")
+	(load "./cmpinit.lsp" :verbose *compile-verbose*))
 
-    (if shared-data-file
-	(if system-p
-	    (data-init shared-data-pathname)
-	    (error "Shared data files are only allowed when compiling ~&
+      (if shared-data-file
+	  (if system-p
+	      (data-init shared-data-pathname)
+	      (error "Shared data files are only allowed when compiling ~&
 		    with the flag :SYSTEM-P set to T."))
-	(data-init))
+	  (data-init))
 
-    (with-open-file (*compiler-input* *compile-file-pathname*)
-      (do ((form (read *compiler-input* nil eof)
-		 (read *compiler-input* nil eof)))
-	  ((eq form eof))
-	(t1expr form)))
+      (with-open-file (*compiler-input* *compile-file-pathname*)
+	(do ((form (read *compiler-input* nil eof)
+		   (read *compiler-input* nil eof)))
+	    ((eq form eof))
+	  (t1expr form)))
 
-    (when (zerop *error-count*)
-      (when *compile-verbose* (format t "~&;;; End of Pass 1.  "))
-      (compiler-pass2 c-pathname h-pathname data-pathname system-p
-		      (if system-p
-			  (pathname-name input-pathname)
-			  "code")
-		      shared-data-file))
+      (when (zerop *error-count*)
+	(when *compile-verbose* (format t "~&;;; End of Pass 1.  "))
+	(compiler-pass2 c-pathname h-pathname data-pathname system-p
+			(if system-p
+			    (pathname-name input-pathname)
+			    "code")
+			shared-data-file))
 
-    (if shared-data-file
-	(data-dump shared-data-pathname t)
-	(data-dump data-pathname))
+      (if shared-data-file
+	  (data-dump shared-data-pathname t)
+	  (data-dump data-pathname))
 
-    (init-env)
+      (init-env)
+      )
 
     (if (zerop *error-count*)
         (progn
@@ -430,7 +432,8 @@ Cannot compile ~a."
           (setq *error-p* t)
 	  (values nil t t))
         ))
-  )
+  ) ; mp:with-lock
+)
 
 #-dlopen
 (defun compile (name &optional (def nil supplied-p))
@@ -491,19 +494,16 @@ Cannot compile ~a."
 	(o-pathname (compile-file-pathname data-pathname :type :object))
 	(so-pathname (compile-file-pathname data-pathname)))
 
-    (init-env)
-
-    (data-init)
-
-    (t1expr form)
-
-    (when (zerop *error-count*)
-      (when *compile-verbose* (format t "~&;;; End of Pass 1.  "))
-      (compiler-pass2 c-pathname h-pathname data-pathname nil "code" nil))
-
-    (data-dump data-pathname)
-
-    (init-env)
+    (mp:with-lock (mp:+load-compile-lock+)
+      (init-env)
+      (data-init)
+      (t1expr form)
+      (when (zerop *error-count*)
+	(when *compile-verbose* (format t "~&;;; End of Pass 1.  "))
+	(compiler-pass2 c-pathname h-pathname data-pathname nil "code" nil))
+      (data-dump data-pathname)
+      (init-env)
+      )
 
     (if (zerop *error-count*)
         (progn
@@ -571,30 +571,32 @@ Cannot compile ~a."
          (*error-count* 0)
          (t3local-fun (symbol-function 'T3LOCAL-FUN))
 	 (t3fun (get-sysprop 'DEFUN 'T3)))
-    (unwind-protect
-      (progn
-        (put-sysprop 'DEFUN 'T3
-              #'(lambda (&rest args)
-                 (let ((*compiler-output1* *standard-output*))
-                   (apply t3fun args))))
-        (setf (symbol-function 'T3LOCAL-FUN)
-              #'(lambda (&rest args)
-                 (let ((*compiler-output1* *standard-output*))
-                   (apply t3local-fun args))))
-        (init-env)
-	(data-init)
-        (t1expr disassembled-form)
-        (if (zerop *error-count*)
-          (catch *cmperr-tag* (ctop-write "code"
-					  (if h-file (namestring h-file) "")
-					  (if data-file (namestring data-file) "")
-					  :system-p nil))
-          (setq *error-p* t))
-	(data-dump data-file)
-        )
-      (put-sysprop 'DEFUN 'T3 t3fun)
-      (setf (symbol-function 'T3LOCAL-FUN) t3local-fun)
-      (when h-file (close *compiler-output2*))))
+    (mp:with-lock (mp:+load-compile-lock+)
+      (unwind-protect
+	   (progn
+	     (put-sysprop 'DEFUN 'T3
+			  #'(lambda (&rest args)
+			      (let ((*compiler-output1* *standard-output*))
+				(apply t3fun args))))
+	     (setf (symbol-function 'T3LOCAL-FUN)
+		   #'(lambda (&rest args)
+		       (let ((*compiler-output1* *standard-output*))
+			 (apply t3local-fun args))))
+	     (init-env)
+	     (data-init)
+	     (t1expr disassembled-form)
+	     (if (zerop *error-count*)
+		 (catch *cmperr-tag* (ctop-write "code"
+						 (if h-file (namestring h-file) "")
+						 (if data-file (namestring data-file) "")
+						 :system-p nil))
+		 (setq *error-p* t))
+	     (data-dump data-file)
+	     (init-env)
+	     )
+	(put-sysprop 'DEFUN 'T3 t3fun)
+	(setf (symbol-function 'T3LOCAL-FUN) t3local-fun)
+	(when h-file (close *compiler-output2*)))))
   (values)
   )
 
@@ -651,6 +653,8 @@ Cannot compile ~a."
 
 (defmacro with-compilation-unit (options &rest body)
   `(progn ,@body))
+
+(si::package-lock "CL" nil)
 
 ;;; ----------------------------------------------------------------------
 (provide "compiler")

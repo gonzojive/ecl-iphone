@@ -25,8 +25,10 @@
 #include "gmp.h"
 #include "object.h"
 #include "stacks.h"
-#ifdef THREADS
-# include "lwp.h"
+#ifdef ECL_THREADS
+# include <pthread.h>
+# define start_critical_section()
+# define end_critical_section()
 #else
 # define start_critical_section()
 # define end_critical_section()

@@ -1348,8 +1348,7 @@ BEGIN:
 
 cl_object si_file_column(cl_object strm)
 {
-	int c = file_column(strm);
-	@(return (c < 0? Cnil : MAKE_FIXNUM(c)))
+	@(return MAKE_FIXNUM(file_column(strm)))
 }
 
 int
@@ -1359,14 +1358,14 @@ file_column(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
-		return -1;
+		return 0;
 #endif
 	if (type_of(strm) != t_stream)
 		FEtype_error_stream(strm);
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
-		return(-1);
+		return 0;
 
 	case smm_output:
 	case smm_io:
@@ -1385,26 +1384,14 @@ BEGIN:
 	case smm_input:
 	case smm_probe:
 	case smm_string_input:
-		return(-1);
+		return 0;
 
 	case smm_concatenated:
+	case smm_broadcast:
 		if (endp(strm->stream.object0))
-			return(-1);
+			return 0;
 		strm = CAR(strm->stream.object0);
 		goto BEGIN;
-
-	case smm_broadcast:
-		{
-		  int i;
-		  cl_object x;
-
-		  for (x = strm->stream.object0; !endp(x); x = CDR(x)) {
-		    i = file_column(CAR(x));
-		    if (i >= 0)
-		      return(i);
-		  }
-		  return(-1);
-		}
 	default:
 		error("illegal stream mode");
 	}

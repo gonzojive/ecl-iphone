@@ -105,6 +105,7 @@ si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 	cl_object block;
 	cl_object basename;
 	cl_object prefix;
+	cl_object output;
 
 	/* A full garbage collection enables us to detect unused code
 	   and leave space for the library to be loaded. */
@@ -113,10 +114,19 @@ si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 	/* We need the full pathname */
 	filename = coerce_to_filename(cl_truename(filename));
 
+#ifdef ECL_THREADS
+	/* Loading binary code is not thread safe. When another thread tries
+	   to load the same file, we may end up initializing twice the same
+	   module. */
+	mp_get_lock(1, symbol_value(@'mp::+load-compile-lock+'));
+	CL_UNWIND_PROTECT_BEGIN {
+#endif
 	/* Try to load shared object file */
 	block = ecl_library_open(filename);
-	if (block->cblock.handle == NULL)
-		@(return ecl_library_error(block))
+	if (block->cblock.handle == NULL) {
+		output = ecl_library_error(block);
+		goto OUTPUT;
+	}
 
 	/* Fist try to call "init_CODE()" */
 	block->cblock.entry = ecl_library_symbol(block, INIT_PREFIX "CODE");
@@ -138,15 +148,22 @@ si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 	block->cblock.entry = ecl_library_symbol(block, basename->string.self);
 
 	if (block->cblock.entry == NULL) {
-		cl_object output = ecl_library_error(block);
+		output = ecl_library_error(block);
 		ecl_library_close(block);
-		@(return output)
+		goto OUTPUT;
 	}
 
 	/* Finally, perform initialization */
 GO_ON:	
 	read_VV(block, block->cblock.entry);
-	@(return Cnil)
+	output = Cnil;
+OUTPUT:
+#ifdef ECL_THREADS
+	} CL_UNWIND_PROTECT_EXIT {
+	mp_giveup_lock(symbol_value(@'mp::+load-compile-lock+'));
+	} CL_UNWIND_PROTECT_END;
+#endif
+	@(return output)
 }
 #endif /* ENABLE_DLOPEN */
 

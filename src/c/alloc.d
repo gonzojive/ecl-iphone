@@ -225,14 +225,6 @@ cl_alloc_object(cl_type t)
 	start_critical_section();
 	tm = tm_of(t);
 ONCE_MORE:
-	if (interrupt_flag) {
-		interrupt_flag = FALSE;
-#ifdef HAVE_ALARM
-		alarm(0);
-#endif
-		terminal_interrupt(TRUE);
-	}
-
 	obj = tm->tm_free;
 	if (obj == OBJNULL) {
 		cl_index available = available_pages();
@@ -437,13 +429,6 @@ make_cons(cl_object a, cl_object d)
 	start_critical_section(); 
 
 ONCE_MORE:
-	if (interrupt_flag) {
-		interrupt_flag = FALSE;
-#ifdef HAVE_ALARM
-		alarm(0);
-#endif
-		terminal_interrupt(TRUE);
-	}
 	obj = tm->tm_free;
 	if (obj == OBJNULL) {
 		if (tm->tm_npage >= tm->tm_maxpage)
@@ -515,15 +500,7 @@ cl_alloc(cl_index n)
 	n = round_up(n);
 
 	start_critical_section(); 
-
 ONCE_MORE:
-	if (interrupt_flag) {
-		interrupt_flag = FALSE;
-		gg = g;
-		terminal_interrupt(TRUE);
-		g = gg;
-	}
-
 	/* Use extra indirection so that cb_pointer can be updated */
 	for (cbpp = &cb_pointer; (*cbpp) != NULL; cbpp = &(*cbpp)->cb_link) 
 		if ((*cbpp)->cb_size >= n) {

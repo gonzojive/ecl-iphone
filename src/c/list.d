@@ -849,6 +849,24 @@ error:	    FEerror("The keys ~S and the data ~S are not of the same length",
 	@(return a_list)
 @)
 
+void
+ecl_delete_eq(cl_object x, cl_object *lp)
+{
+	for (;  CONSP(*lp);  lp = &CDR((*lp)))
+		if (CAR((*lp)) == x) {
+			*lp = CDR((*lp));
+			return;
+		}
+}
+
+cl_object
+ecl_remove_eq(cl_object x, cl_object l)
+{
+	l = cl_copy_list(l);
+	ecl_delete_eq(x, &l);
+	return l;
+}
+
 /* Added for use by the compiler, instead of open coding them. Beppe */
 cl_object
 assq(cl_object x, cl_object l)

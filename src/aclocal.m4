@@ -302,16 +302,28 @@ int main() {
     int_type="int";
     for (bits=1; ((t << 1) >> 1) == t; bits++, t <<= 1);
     l = (~l) << (bits - 3);
+#if 1
     fprintf(f,"CL_FIXNUM_MIN='%d';",l);
     fprintf(f,"CL_FIXNUM_MAX='%d';",-(l+1));
+#else
+    l++;
+    fprintf(f,"CL_FIXNUM_MIN='%d';",l);
+    fprintf(f,"CL_FIXNUM_MAX='%d';",-l);
+#endif
   } else if (sizeof(long) >= sizeof(void*)) {
     unsigned long int t = 1;
     signed long int l = 0;
     int_type="long int";
     for (bits=1; ((t << 1) >> 1) == t; bits++, t <<= 1);
     l = (~l) << (bits - 3);
-    fprintf(f,"CL_FIXNUM_MIN='%ld';",l);
-    fprintf(f,"CL_FIXNUM_MAX='%ld';",-(l+1));
+#if 1
+    fprintf(f,"CL_FIXNUM_MIN='%d';",l);
+    fprintf(f,"CL_FIXNUM_MAX='%d';",-(l+1));
+#else
+    l++;
+    fprintf(f,"CL_FIXNUM_MIN='%d';",l);
+    fprintf(f,"CL_FIXNUM_MAX='%d';",-l);
+#endif
   } else
     exit(1);
   fprintf(f,"CL_FIXNUM_TYPE='%s';",int_type);

@@ -701,6 +701,7 @@ ecl_gc(cl_type new_name)
 {
 	int tm;
 	int gc_start = runtime();
+	cl_object old_interrupt_enable;
 
 	start_critical_section();
 	t = new_name;
@@ -713,6 +714,7 @@ ecl_gc(cl_type t)
   int i, j;
   int tm;
   int gc_start = runtime();
+  cl_object old_interrupt_enable;
 #endif /* THREADS */
 
   if (!GC_enabled())
@@ -763,7 +765,7 @@ ecl_gc(cl_type t)
     if (GC_enter_hook != NULL)
       (*GC_enter_hook)();
 
-    interrupt_enable = FALSE;
+    old_interrupt_enable = ecl_enable_interrupt(Cnil);
 
     collect_blocks = t > t_end;
     if (collect_blocks)
@@ -850,7 +852,7 @@ ecl_gc(cl_type t)
       fflush(stdout);
     }
 
-    interrupt_enable = TRUE;
+    ecl_enable_interrupt(old_enable_interrupt);
 
     if (GC_exit_hook != NULL)
       (*GC_exit_hook)();
@@ -888,7 +890,7 @@ ecl_gc(cl_type t)
     fflush(stdout);
   }
 
-  if (interrupt_flag) sigint();
+  if (cl_env.interrupts_pending) si_check_pending_interrupts();
 
   end_critical_section();
 }

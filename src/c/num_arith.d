@@ -289,7 +289,7 @@ number_plus(cl_object x, cl_object y)
 		case t_shortfloat:
 			return make_shortfloat(number_to_double(x) + sf(y));
 		case t_longfloat:
-			return make_shortfloat(number_to_double(x) + lf(y));
+			return make_longfloat(number_to_double(x) + lf(y));
 		case t_complex:
 			goto COMPLEX;
 		default:
@@ -387,7 +387,7 @@ number_minus(cl_object x, cl_object y)
 		case t_shortfloat:
 			return make_shortfloat(fix(x) - sf(y));
 		case t_longfloat:
-			return make_shortfloat(fix(x) - lf(y));
+			return make_longfloat(fix(x) - lf(y));
 		case t_complex:
 			goto COMPLEX;
 		default:
@@ -524,11 +524,14 @@ number_negate(cl_object x)
 	switch (type_of(x)) {
 	case t_fixnum: {
 		cl_fixnum k = fix(x);
-		/* -MOST_NEGATIVE_FIXNUM > MOST_POSITIVE_FIXNUM */
-		if (k == MOST_NEGATIVE_FIXNUM)
+		if (-MOST_NEGATIVE_FIXNUM > MOST_POSITIVE_FIXNUM) {
+		    if (k == MOST_NEGATIVE_FIXNUM)
 			return(bignum1(- MOST_NEGATIVE_FIXNUM));
-		else
+		    else
 			return(MAKE_FIXNUM(-k));
+		} else {
+		    return MAKE_FIXNUM(-k);
+		}
 	}
 	case t_bignum:
 		z = big_register0_get();
@@ -695,8 +698,21 @@ integer_divide(cl_object x, cl_object y)
 	if (tx == t_fixnum) {
  		if (ty == t_fixnum)
 			return MAKE_FIXNUM(fix(x) / fix(y));
-		if (ty == t_bignum)
-			return MAKE_FIXNUM(0);
+		if (ty == t_bignum) {
+			/* The only number "x" which can be a bignum and be
+			 * as large as "-x" is -MOST_NEGATIVE_FIXNUM. However
+			 * in newer versions of ECL we will probably choose
+			 * MOST_NEGATIVE_FIXNUM = - MOST_POSITIVE_FIXNUM.
+			 */
+			if (-MOST_NEGATIVE_FIXNUM > MOST_POSITIVE_FIXNUM) {
+				if (mpz_cmp_si(y->big.big_num, -fix(x)))
+					return MAKE_FIXNUM(0);
+				else
+					return MAKE_FIXNUM(-1);
+			} else {
+				return MAKE_FIXNUM(0);
+			}
+		}
 		FEtype_error_integer(y);
 	}
 	if (tx == t_bignum) {

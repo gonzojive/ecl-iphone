@@ -102,11 +102,11 @@ number_remainder(cl_object x, cl_object y, cl_object q)
 		break;
 	}
 	case t_shortfloat:
-		if (t == t_longfloat)
+		if (y && t == t_longfloat)
 			x = make_longfloat(sf(x));
 		break;
 	case t_longfloat:
-		if (t == t_shortfloat)
+		if (y && t == t_shortfloat)
 			x = make_shortfloat(lf(x));
 		break;
 	default:
@@ -634,34 +634,9 @@ round2(cl_object x, cl_object y)
 		VALUES(1) = number_remainder(x, y, q1);
 		break;
 	}
-	case t_shortfloat: {
-		float d = sf(q);
-		float aux = d + (d >= 0.0 ? 0.5 : -0.5);
-		cl_object q1 = float_to_integer(aux);
-		d -= aux;
-		if (d == 0.5 && number_oddp(q1))
-			q1 = one_plus(q1);
-		if (d == -0.5 && number_oddp(q1))
-			q1 = one_minus(q1);
-		VALUES(0) = q1;
-		VALUES(1) = number_remainder(x, y, q1);
-		break;
-	}
-	case t_longfloat: {
-		double d = lf(q);
-		double aux = d + (d >= 0.0 ? 0.5 : -0.5);
-		cl_object q1 = double_to_integer(aux);
-		d -= aux;
-		if (d == 0.5 && number_oddp(q1))
-			q1 = one_plus(q1);
-		if (d == -0.5 && number_oddp(q1))
-			q1 = one_minus(q1);
-		VALUES(0) = q1;
-		VALUES(1) = number_remainder(x, y, q1);
-		break;
-	}
 	default:
-		FEerror("Complex arguments to round2 (~S, ~S)", 2, x, y);
+		VALUES(0) = q = round1(q);
+		VALUES(1) = number_remainder(x, y, q);
 	}
 	NVALUES = 2;
 	return VALUES(0);

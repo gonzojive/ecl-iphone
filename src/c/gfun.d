@@ -91,7 +91,7 @@ set_meth_hash(cl_object *keys, int argno, cl_object hashtable, cl_object value)
 	else
 		FEerror("internal error, corrupted hashtable ~S", 1, hashtable);
 	if (over)
-		extend_hashtable(hashtable);
+		ecl_extend_hashtable(hashtable);
 	keylist = Cnil;
 	for (p = keys + argno; p > keys; p--) keylist = CONS(p[-1], keylist);
 	e = get_meth_hash(keys, argno, hashtable);

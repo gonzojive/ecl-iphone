@@ -77,7 +77,7 @@ number_equalp(cl_object x, cl_object y)
 			return 0;
 		case t_ratio:
 			return (number_equalp(x->ratio.num, y->ratio.num) &&
-				number_equalp(x->ratio.den, x->ratio.den));
+				number_equalp(x->ratio.den, y->ratio.den));
 		case t_shortfloat:
 			return sf(y) == number_to_double(x);
 		case t_longfloat:

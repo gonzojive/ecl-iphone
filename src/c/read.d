@@ -160,11 +160,10 @@ SYMBOL:
 			p = cl_core.keyword_package;
 		else {
 			cl_env.token->string.fillp = colon;
-			p = find_package(cl_env.token);
-			if (Null(p)) {
+			p = ecl_find_package_nolock(cl_env.token);
+			if (Null(p))
 				FEerror("There is no package with the name ~A.",
-						1, copy_simple_string(cl_env.token));
-			}
+					1, copy_simple_string(cl_env.token));
 		}
 		cl_env.token->string.fillp = length - (colon + 1);
 		memmove(cl_env.token->string.self,
@@ -172,15 +171,16 @@ SYMBOL:
 			sizeof(*cl_env.token->string.self) * cl_env.token->string.fillp);
 		if (colon > 0) {
 			cl_env.token->string.self[cl_env.token->string.fillp] = '\0';
-			x = find_symbol(cl_env.token, p, &intern_flag);
-			if (intern_flag != EXTERNAL)
-			FEerror("Cannot find the external symbol ~A in ~S.",
-				2, copy_simple_string(cl_env.token), p);
+			x = ecl_find_symbol(cl_env.token, p, &intern_flag);
+			if (intern_flag != EXTERNAL) {
+				FEerror("Cannot find the external symbol ~A in ~S.",
+					2, copy_simple_string(cl_env.token), p);
+			}
 			return(x);
 		}
 	} else if (colon_type == 2 /* && colon > 0 && length > colon + 2 */) {
 		cl_env.token->string.fillp = colon;
-		p = find_package(cl_env.token);
+		p = ecl_find_package_nolock(cl_env.token);
 		if (Null(p)) {
 			/* When loading binary files, we sometimes must create
 			   symbols whose package has not yet been maked. We
@@ -207,10 +207,9 @@ SYMBOL:
 	} else
 		p = current_package();
 	cl_env.token->string.self[cl_env.token->string.fillp] = '\0';
-	x = find_symbol(cl_env.token, p, &intern_flag);
-	if (intern_flag == 0)
-		x = intern(copy_simple_string(cl_env.token), p, &intern_flag);
-	return(x);
+	/* INV: make_symbol() copies the string */
+	x = intern(cl_env.token, p, &intern_flag);
+	return x;
 }
 
 /*
@@ -866,7 +865,7 @@ sharp_colon_reader(cl_object in, cl_object ch, cl_object d)
 M:
 	if (read_suppress)
 		@(return Cnil)
-	@(return make_symbol(copy_simple_string(cl_env.token)))
+	@(return make_symbol(cl_env.token))
 }
 
 static cl_object
@@ -1777,7 +1776,7 @@ init_read(void)
 		readtable=copy_readtable(cl_core.standard_readtable, Cnil));
 	readtable->readtable.table['#'].dispatch_table['!']
 	    = cl_core.default_dispatch_macro; /*  We must forget #! macro.  */
-	ECL_SET(@'*read_default_float_format*', @'single-float');
+	ECL_SET(@'*read-default-float-format*', @'single-float');
 }
 
 /*

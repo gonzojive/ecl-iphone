@@ -1708,6 +1708,9 @@ ECL 0.9d
     permits combining (and repeating) the options -load, -eval, -shell
     in a number of ways.
 
+  - SI:FILE-COLUMN now always returns a number, which may be 0 for
+    streams that do not have that information.
+
 TODO:
 =====
 

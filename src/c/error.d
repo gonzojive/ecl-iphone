@@ -59,12 +59,6 @@ internal_error(const char *s)
 /*****************************************************************************/
 
 void
-terminal_interrupt(bool correctable)
-{
-	funcall(2, @'si::terminal-interrupt', correctable? Ct : Cnil);
-}
-
-void
 FEerror(char *s, int narg, ...)
 {
 	cl_va_list args;

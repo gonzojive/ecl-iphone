@@ -16,6 +16,7 @@
 
 #include "ecl.h"
 #include <stdlib.h>
+#include "internal.h"
 
 /*******************
  * CRC-32 ROUTINES *
@@ -229,7 +230,6 @@ ecl_search_hash(cl_object key, cl_object hashtable)
 	int htest;
 	bool b;
 
-	assert_type_hash_table(hashtable);
 	htest = hashtable->hash.test;
 	hsize = hashtable->hash.size;
 	j = hsize;
@@ -279,8 +279,13 @@ ecl_search_hash(cl_object key, cl_object hashtable)
 cl_object
 gethash(cl_object key, cl_object hashtable)
 {
-	/* INV: ecl_search_hash() checks the type of hashtable */
-	return ecl_search_hash(key, hashtable)->value;
+	cl_object output;
+
+	assert_type_hash_table(hashtable);
+	HASH_TABLE_LOCK(hashtable);
+	output = ecl_search_hash(key, hashtable)->value;
+	HASH_TABLE_UNLOCK(hashtable);
+	return output;
 }
 
 cl_object
@@ -288,12 +293,13 @@ gethash_safe(cl_object key, cl_object hashtable, cl_object def)
 {
 	struct ecl_hashtable_entry *e;
 
-	/* INV: ecl_search_hash() checks the type of hashtable */
+	assert_type_hash_table(hashtable);
+	HASH_TABLE_LOCK(hashtable);
 	e = ecl_search_hash(key, hashtable);
-	if (e->key == OBJNULL)
-		return def;
-	else
-		return e->value;
+	if (e->key != OBJNULL)
+		def = e->value;
+	HASH_TABLE_UNLOCK(hashtable);
+	return def;
 }
 
 static void
@@ -336,11 +342,12 @@ sethash(cl_object key, cl_object hashtable, cl_object value)
 	bool over;
 	struct ecl_hashtable_entry *e;
 
-	/* INV: ecl_search_hash() checks the type of hashtable */
+	assert_type_hash_table(hashtable);
+	HASH_TABLE_LOCK(hashtable);
 	e = ecl_search_hash(key, hashtable);
 	if (e->key != OBJNULL) {
 		e->value = value;
-		return;
+		goto OUTPUT;
 	}
 	i = hashtable->hash.entries + 1;
 	if (i >= hashtable->hash.size)
@@ -351,15 +358,19 @@ sethash(cl_object key, cl_object hashtable, cl_object value)
 		over = i >= hashtable->hash.size * sf(hashtable->hash.threshold);
 	else if (type_of(hashtable->hash.threshold) == t_longfloat)
 		over = i >= hashtable->hash.size * lf(hashtable->hash.threshold);
-	else
+	else {
+		HASH_TABLE_UNLOCK(hashtable);
 		corrupted_hash(hashtable);
+	}
 	if (over)
-		extend_hashtable(hashtable);
+		ecl_extend_hashtable(hashtable);
 	add_new_to_hash(key, hashtable, value);
+ OUTPUT:
+	HASH_TABLE_UNLOCK(hashtable);
 }
 
 void
-extend_hashtable(cl_object hashtable)
+ecl_extend_hashtable(cl_object hashtable)
 {
 	cl_object old, key;
 	cl_index old_size, new_size, i;
@@ -402,14 +413,16 @@ extend_hashtable(cl_object hashtable)
 @(defun make_hash_table (&key (test @'eql')
 			      (size MAKE_FIXNUM(1024))
 			      (rehash_size make_shortfloat(1.5))
-			      (rehash_threshold make_shortfloat(0.7)))
+			      (rehash_threshold make_shortfloat(0.7))
+			      (lockable Cnil))
 @
-	@(return cl__make_hash_table(test, size, rehash_size, rehash_threshold))
+	@(return cl__make_hash_table(test, size, rehash_size, rehash_threshold,
+				     lockable))
 @)
 
 cl_object
 cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
-		    cl_object rehash_threshold)
+		    cl_object rehash_threshold, cl_object lockable)
 {
 	int htt;
 	cl_index hsize;
@@ -455,6 +468,11 @@ cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 	h->hash.data = NULL;	/* for GC sake */
 	h->hash.data = (struct ecl_hashtable_entry *)
 	cl_alloc(hsize * sizeof(struct ecl_hashtable_entry));
+	h->hash.lockable = !Null(lockable);
+#ifdef ECL_THREADS
+	if (h->hash.lockable)
+		pthread_mutex_init(&h->hash.lock, NULL);
+#endif
 	return cl_clrhash(h);
 }
 
@@ -465,12 +483,14 @@ cl_hash_table_p(cl_object ht)
 }
 
 @(defun gethash (key ht &optional (no_value Cnil))
-	struct ecl_hashtable_entry *e;
+	struct ecl_hashtable_entry e;
 @
-	/* INV: ecl_search_hash() checks the type of hashtable */
-	e = ecl_search_hash(key, ht);
-	if (e->key != OBJNULL)
-		@(return e->value Ct)
+	assert_type_hash_table(ht);
+	HASH_TABLE_LOCK(ht);
+	e = *ecl_search_hash(key, ht);
+	HASH_TABLE_UNLOCK(ht);
+	if (e.key != OBJNULL)
+		@(return e.value Ct)
 	else
 		@(return no_value Cnil)
 @)
@@ -487,16 +507,21 @@ bool
 remhash(cl_object key, cl_object hashtable)
 {
 	struct ecl_hashtable_entry *e;
+	bool output;
 
-	/* INV: ecl_search_hash() checks the type of hashtable */
+	assert_type_hash_table(hashtable);
+	HASH_TABLE_LOCK(hashtable);
 	e = ecl_search_hash(key, hashtable);
-	if (e->key != OBJNULL) {
+	if (e->key == OBJNULL) {
+		output = FALSE;
+	} else {
 		e->key = OBJNULL;
 		e->value = Cnil;
 		hashtable->hash.entries--;
-		return TRUE;
+		output = TRUE;
 	}
-	return FALSE;
+	HASH_TABLE_UNLOCK(hashtable);
+	return output;
 }
 
 cl_object
@@ -512,11 +537,13 @@ cl_clrhash(cl_object ht)
 	cl_index i;
 
 	assert_type_hash_table(ht);
+	HASH_TABLE_LOCK(ht);
 	for(i = 0; i < ht->hash.size; i++) {
 		ht->hash.data[i].key = OBJNULL;
 		ht->hash.data[i].value = OBJNULL;
 	}
 	ht->hash.entries = 0;
+	HASH_TABLE_UNLOCK(ht);
 	@(return ht)
 }
 
@@ -529,7 +556,8 @@ cl_hash_table_test(cl_object ht)
 	    case htt_eql: output = @'eql'; break;
 	    case htt_equal: output = @'equal'; break;
 	    case htt_equalp: output = @'equalp'; break;
-	    default: output = Cnil;
+	    case htt_pack:
+	    default: output = @'equal';
 	}
 	@(return output)
 }
@@ -557,12 +585,14 @@ si_hash_table_iterate(int narg, cl_object env)
 		i = fix(index);
 		if (i < 0)
 			i = -1;
-		for (; ++i < ht->hash.size; )
-			if (ht->hash.data[i].key != OBJNULL) {
+		for (; ++i < ht->hash.size; ) {
+			struct ecl_hashtable_entry e = ht->hash.data[i];
+			if (e.key != OBJNULL) {
 				@(return (CAR(env) = MAKE_FIXNUM(i))
-					 ht->hash.data[i].key
-					 ht->hash.data[i].value)
+					 e.key
+					 e.value)
 			}
+		}
 		CAR(env) = Cnil;
 	}
 	@(return Cnil)
@@ -602,10 +632,9 @@ cl_maphash(cl_object fun, cl_object ht)
 
 	assert_type_hash_table(ht);
 	for (i = 0;  i < ht->hash.size;  i++) {
-		if(ht->hash.data[i].key != OBJNULL)
-			funcall(3, fun,
-				  ht->hash.data[i].key,
-				  ht->hash.data[i].value);
+		struct ecl_hashtable_entry e = ht->hash.data[i];
+		if(e.key != OBJNULL)
+			funcall(3, fun, e.key, e.value);
 	}
 	@(return Cnil)
 }
@@ -617,9 +646,12 @@ si_copy_hash_table(cl_object orig)
 	hash = cl__make_hash_table(cl_hash_table_test(orig),
 				   cl_hash_table_size(orig),
 				   cl_hash_table_rehash_size(orig),
-				   cl_hash_table_rehash_threshold(orig));
+				   cl_hash_table_rehash_threshold(orig),
+				   orig->hash.lockable? Ct : Cnil);
+	HASH_TABLE_LOCK(hash);
 	memcpy(hash->hash.data, orig->hash.data,
 	       orig->hash.size * sizeof(*orig->hash.data));
 	hash->hash.entries = orig->hash.entries;
+	HASH_TABLE_UNLOCK(hash);
 	@(return hash)
 }

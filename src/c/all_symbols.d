@@ -2,15 +2,26 @@
 #include "ecl.h"
 #include "internal.h"
 
-#define CL_ORDINARY 0
-#define CL_SPECIAL 1
-#define CL_CONSTANT 2
-#define SI_ORDINARY 4
-#define SI_SPECIAL 5
-#define KEYWORD 10
-#define FORM_ORDINARY 16
-#define MP_ORDINARY 12
-#define MP_SPECIAL 13
+#define CL_PACKAGE 0
+#define SI_PACKAGE 4
+#define KEYWORD_PACKAGE 8
+#define MP_PACKAGE 12
+#define ORDINARY_SYMBOL 0
+#define CONSTANT_SYMBOL 1
+#define SPECIAL_SYMBOL 2
+#define FORM_SYMBOL 3
+
+#define CL_ORDINARY	CL_PACKAGE | ORDINARY_SYMBOL
+#define CL_SPECIAL	CL_PACKAGE | SPECIAL_SYMBOL
+#define CL_CONSTANT	CL_PACKAGE | CONSTANT_SYMBOL
+#define SI_ORDINARY	SI_PACKAGE | ORDINARY_SYMBOL
+#define SI_SPECIAL	SI_PACKAGE | SPECIAL_SYMBOL
+#define SI_CONSTANT	SI_PACKAGE | CONSTANT_SYMBOL
+#define MP_ORDINARY	MP_PACKAGE | ORDINARY_SYMBOL
+#define MP_SPECIAL	MP_PACKAGE | SPECIAL_SYMBOL
+#define MP_CONSTANT	MP_PACKAGE | CONSTANT_SYMBOL
+#define KEYWORD		KEYWORD_PACKAGE | CONSTANT_SYMBOL
+#define FORM_ORDINARY	CL_PACKAGE | ORDINARY_SYMBOL | FORM_SYMBOL
 
 #include "symbols_list.h"
 
@@ -143,18 +154,20 @@ make_this_symbol(int i, cl_object s, int code, const char *name,
 {
 	enum ecl_stype stp;
 	cl_object package;
+	bool form = 0;
 
 	switch (code & 3) {
-	case 0: stp = stp_ordinary; break;
-	case 1: stp = stp_special; break;
-	case 2: stp = stp_constant; break;
+	case ORDINARY_SYMBOL: stp = stp_ordinary; break;
+	case SPECIAL_SYMBOL: stp = stp_special; break;
+	case CONSTANT_SYMBOL: stp = stp_constant; break;
+	case FORM_SYMBOL: form = 1;
 	}
 	switch (code & 12) {
-	case 0: package = cl_core.lisp_package; break;
-	case 4: package = cl_core.system_package; break;
-	case 8: package = cl_core.keyword_package; break;
+	case CL_PACKAGE: package = cl_core.lisp_package; break;
+	case SI_PACKAGE: package = cl_core.system_package; break;
+	case KEYWORD_PACKAGE: package = cl_core.keyword_package; break;
 #ifdef ECL_THREADS
-	case 12: package = cl_core.mp_package; break;
+	case MP_PACKAGE: package = cl_core.mp_package; break;
 #endif
 	}
 	s->symbol.t = t_symbol;
@@ -177,9 +190,7 @@ make_this_symbol(int i, cl_object s, int code, const char *name,
 		cl_import2(s, package);
 		cl_export2(s, package);
 	}
-	if (code == FORM_ORDINARY)
-		s->symbol.isform = TRUE;
-	else if (fun != NULL) {
+	if (!(s->symbol.isform = form) && fun) {
 		cl_object f = cl_make_cfun_va(fun, s, NULL);
 		SYM_FUN(s) = f;
 		f->cfun.narg = narg;

@@ -28,8 +28,6 @@ extern void init_big(void);
 #ifdef CLOS
 extern void init_clos(void);
 #endif
-extern void init_cmpaux(void);
-extern void init_compiler(void);
 extern void init_error(void);
 extern void init_eval(void);
 extern void init_file(void);
@@ -40,6 +38,7 @@ extern void init_macros(void);
 extern void init_number(void);
 extern void init_read(void);
 extern void init_stacks(int *);
+extern void init_unixint(void);
 extern void init_unixtime(void);
 
 
@@ -79,6 +78,9 @@ extern cl_object ecl_alloc_bytecodes(cl_index data_size, cl_index code_size);
 #define OPEN_A	"ab"
 #define OPEN_RA	"a+b"
 
+/* hash.d */
+extern void ecl_extend_hashtable(cl_object hashtable);
+
 /* num_log.d */
 
 #define BOOLCLR		0
@@ -113,6 +115,10 @@ cl_object ecl_library_error(cl_object block);
 void ecl_library_close(cl_object block);
 #endif
 
+/* package.d */
+
+extern cl_object ecl_find_symbol_nolock(cl_object name, cl_object p, int *intern_flag);
+
 /* print.d */
 
 #define ECL_PPRINT_QUEUE_SIZE			128
@@ -122,7 +128,39 @@ extern void edit_double(int n, double d, int *sp, char *s, int *ep);
 extern void cl_setup_printer(cl_object strm);
 extern void cl_write_object(cl_object x);
 
- /* read.d */
+/* global locks */
+
+#ifdef ECL_THREADS
+#if 0
+#define HASH_TABLE_LOCK(h) if ((h)->hash.lockable) pthread_mutex_lock(&(h)->hash.lock)
+#define HASH_TABLE_UNLOCK(h) if ((h)->hash.lockable) pthread_mutex_unlock(&(h)->hash.lock)
+#define PACKAGE_LOCK(p) pthread_mutex_lock(&(p)->pack.lock)
+#define PACKAGE_UNLOCK(p) pthread_mutex_unlock(&(p)->pack.lock)
+#define PACKAGE_OP_LOCK() pthread_mutex_lock(&cl_core.global_lock)
+#define PACKAGE_OP_UNLOCK() pthread_mutex_unlock(&cl_core.global_lock)
+#define THREAD_OP_LOCK() pthread_mutex_lock(&cl_core.global_lock)
+#define THREAD_OP_UNLOCK() pthread_mutex_unlock(&cl_core.global_lock)
+#else
+#define HASH_TABLE_LOCK(h) if ((h)->hash.lockable) if (pthread_mutex_lock(&(h)->hash.lock)) internal_error("")
+#define PACKAGE_LOCK(p) if (pthread_mutex_lock(&(p)->pack.lock)) internal_error("")
+#define PACKAGE_OP_LOCK() if (pthread_mutex_lock(&cl_core.global_lock)) internal_error("")
+#define THREAD_OP_LOCK() if (pthread_mutex_lock(&cl_core.global_lock)) internal_error("")
+#define HASH_TABLE_UNLOCK(h) if ((h)->hash.lockable) if (pthread_mutex_unlock(&(h)->hash.lock)) internal_error("")
+#define PACKAGE_UNLOCK(p) if (pthread_mutex_unlock(&(p)->pack.lock)) internal_error("")
+#define PACKAGE_OP_UNLOCK() if (pthread_mutex_unlock(&cl_core.global_lock)) internal_error("")
+#define THREAD_OP_UNLOCK() if (pthread_mutex_unlock(&cl_core.global_lock)) internal_error("")
+#endif
+#else
+#define HASH_TABLE_LOCK(h)
+#define HASH_TABLE_UNLOCK(h)
+#define PACKAGE_LOCK(p)
+#define PACKAGE_UNLOCK(p)
+#define PACKAGE_OP_LOCK()
+#define PACKAGE_OP_UNLOCK()
+#endif
+
+
+/* read.d */
 #define	RTABSIZE	CHAR_CODE_LIMIT	/*  read table size  */
 
 #ifdef __cplusplus

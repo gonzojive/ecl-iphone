@@ -65,15 +65,6 @@ stream_or_default_output(cl_object stream)
 }
 
 static void
-writec_PRINTstream(int c)
-{
-	if (c == INDENT || c == INDENT1)
-		writec_stream(' ', cl_env.print_stream);
-	else if (c < 0400)
-		writec_stream(c, cl_env.print_stream);
-}
-
-static void
 writec_queue(int c)
 {
 	if (cl_env.qc >= ECL_PPRINT_QUEUE_SIZE)
@@ -93,7 +84,9 @@ flush_queue(bool force)
 BEGIN:
 	while (cl_env.qc > 0) {
 		c = cl_env.queue[cl_env.qh];
-		if (c == MARK)
+		if (c < 0400) {
+			writec_stream(c, cl_env.print_stream);
+		} else if (c == MARK)
 			goto DO_MARK;
 		else if (c == UNMARK)
 			cl_env.isp -= 2;
@@ -104,7 +97,7 @@ BEGIN:
 		} else if (c == INDENT1) {
 			i = file_column(cl_env.print_stream)-cl_env.indent_stack[cl_env.isp];
 			if (i < 8 && cl_env.indent_stack[cl_env.isp] < LINE_LENGTH/2) {
-				writec_PRINTstream(' ');
+				writec_stream(' ', cl_env.print_stream);
 				cl_env.indent_stack[cl_env.isp]
 				= file_column(cl_env.print_stream);
 			} else {
@@ -117,8 +110,7 @@ BEGIN:
 		} else if (c == INDENT2) {
 			cl_env.indent_stack[cl_env.isp] = cl_env.indent_stack[cl_env.isp-1] + 2;
 			goto PUT_INDENT;
-		} else if (c < 0400)
-			writec_PRINTstream(c);
+		}
 		cl_env.qh = mod(cl_env.qh+1);
 		--cl_env.qc;
 	}
@@ -143,9 +135,10 @@ DO_MARK:
 		return;
 	cl_env.qh = mod(cl_env.qh+1);
 	--cl_env.qc;
-	if (++cl_env.isp >= ECL_PPRINT_INDENTATION_STACK_SIZE-1)
+	if (cl_env.isp >= ECL_PPRINT_INDENTATION_STACK_SIZE-2)
 		FEerror("Can't pretty-print.", 0);
-	cl_env.indent_stack[cl_env.isp++] = file_column(cl_env.print_stream);
+	cl_env.isp+=2;
+	cl_env.indent_stack[cl_env.isp-1] = file_column(cl_env.print_stream);
 	cl_env.indent_stack[cl_env.isp] = cl_env.indent_stack[cl_env.isp-1];
 	goto BEGIN;
 
@@ -190,9 +183,9 @@ DO_INDENT:
 PUT_INDENT:
 	cl_env.qh = mod(cl_env.qh+1);
 	--cl_env.qc;
-	writec_PRINTstream('\n');
+	writec_stream('\n', cl_env.print_stream);
 	for (i = cl_env.indent_stack[cl_env.isp];  i > 0;  --i)
-		writec_PRINTstream(' ');
+		writec_stream(' ', cl_env.print_stream);
 	cl_env.iisp = cl_env.isp;
 	goto BEGIN;
 
@@ -200,9 +193,9 @@ FLUSH:
 	for (j = 0;  j < i;  j++) {
 		c = cl_env.queue[cl_env.qh];
 		if (c == INDENT || c == INDENT1 || c == INDENT2)
-			writec_PRINTstream(' ');
+			writec_stream(' ', cl_env.print_stream);
 		else if (c < 0400)
-			writec_PRINTstream(c);
+			writec_stream(c, cl_env.print_stream);
 		cl_env.qh = mod(cl_env.qh+1);
 		--cl_env.qc;
 	}
@@ -446,14 +439,6 @@ call_structure_print_function(cl_object x, int level)
 	int oisp;
 	int oiisp;
 
-	while (interrupt_flag) {
-		interrupt_flag = FALSE;
-#ifdef HAVE_ALARM
-		alarm(0);
-#endif
-		terminal_interrupt(TRUE);
-	}
-
 	if (cl_env.print_pretty)
 		flush_queue(TRUE);
 
@@ -556,7 +541,7 @@ write_symbol(register cl_object x)
 	} else if (x->symbol.hpack == cl_core.keyword_package)
 		write_ch(':');
 	else if ((cl_env.print_package != OBJNULL && x->symbol.hpack != cl_env.print_package)
-		 || find_symbol(x, current_package(), &intern_flag)!=x
+		 || ecl_find_symbol(x, current_package(), &intern_flag)!=x
 		 || intern_flag == 0) {
 		escaped = 0;
 		for (i = 0;
@@ -582,7 +567,7 @@ write_symbol(register cl_object x)
 		}
 		if (escaped)
 			write_ch('|');
-		if (find_symbol(x, x->symbol.hpack, &intern_flag) != x)
+		if (ecl_find_symbol(x, x->symbol.hpack, &intern_flag) != x)
 			error("can't print symbol");
 		if ((cl_env.print_package != OBJNULL &&
 		     x->symbol.hpack != cl_env.print_package)
@@ -1435,7 +1420,7 @@ potential_number_p(cl_object strng, int base)
 	cl_setup_printer(strm);
 	cl_env.print_escape = TRUE;
 	cl_env.print_pretty = TRUE;
-	writec_PRINTstream('\n');
+	writec_stream('\n', cl_env.print_stream);
 	cl_write_object(obj);
 	flush_stream(cl_env.print_stream);
 	@(return)

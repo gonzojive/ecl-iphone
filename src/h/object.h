@@ -144,6 +144,9 @@ struct ecl_package {
 	cl_object usedby;	/*  used-by-list of packages  */
 	cl_object internal;	/*  hashtable for internal symbols  */
 	cl_object external;	/*  hashtable for external symbols  */
+#ifdef ECL_THREADS
+	pthread_mutex_t lock;	/*  thread safe packages  */
+#endif
 };
 
 /*
@@ -178,12 +181,15 @@ struct ecl_hashtable_entry {	/*  hash table entry  */
 };
 
 struct ecl_hashtable {		/*  hash table header  */
-	HEADER1(test);
+	HEADER2(test,lockable);
 	struct ecl_hashtable_entry *data; /*  pointer to the hash table  */
 	cl_object rehash_size;	/*  rehash size  */
 	cl_object threshold;	/*  rehash threshold  */
 	cl_index entries;	/*  number of entries  */
 	cl_index size;		/*  hash table size  */
+#ifdef ECL_THREADS
+	pthread_mutex_t lock;	/*  mutex to prevent race conditions  */
+#endif
 };
 
 typedef enum {			/*  array element type  */
@@ -401,11 +407,11 @@ struct ecl_dummy {
 
 #ifdef ECL_THREADS
 struct ecl_process {
-	HEADER;
+	HEADER1(active);
 	cl_object name;
 	cl_object function;
 	cl_object args;
-	void *thread;
+	pthread_t thread;
 	struct cl_env_struct *env;
 	cl_object interrupt;
 };
@@ -413,7 +419,7 @@ struct ecl_process {
 struct ecl_lock {
 	HEADER;
 	cl_object name;
-	void *mutex;
+	pthread_mutex_t mutex;
 };
 #endif
 

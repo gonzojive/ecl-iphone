@@ -34,7 +34,7 @@ make_symbol(cl_object st)
 
 	x = cl_alloc_object(t_symbol);
 	/* FIXME! Should we copy? */
-	x->symbol.name = st;
+	x->symbol.name = copy_simple_string(st);
 	x->symbol.dynamic = 0;
 	ECL_SET(x,OBJNULL);
 	SYM_FUN(x) = OBJNULL;

@@ -10,6 +10,8 @@
 
 ;;;; CMPDEF	Definitions
 
+(si::package-lock "CL" nil)
+
 (defpackage "C"
   (:nicknames "COMPILER")
   (:use "FFI" "CL")

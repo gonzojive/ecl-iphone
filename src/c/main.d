@@ -82,7 +82,7 @@ ecl_init_env(struct cl_env_struct *env)
 	env->circle_counter = -2;
 	env->circle_stack = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024),
 						  make_shortfloat(1.5),	
-						  make_shortfloat(0.7));
+						  make_shortfloat(0.7), Cnil);
 #ifndef ECL_CMU_FORMAT
 	env->fmt_aux_stream = make_string_output_stream(64);
 #endif
@@ -215,7 +215,8 @@ cl_boot(int argc, char **argv)
 	cl_core.system_properties =
 	    cl__make_hash_table(@'eq', MAKE_FIXNUM(1024), /* size */
 				make_shortfloat(1.5), /* rehash-size */
-				make_shortfloat(0.7)); /* rehash-threshold */
+				make_shortfloat(0.7), /* rehash-threshold */
+				Ct); /* thread-safe */
 
 	cl_core.gensym_prefix = make_simple_string("G");
 	cl_core.gentemp_prefix = make_simple_string("T");
@@ -233,7 +234,9 @@ cl_boot(int argc, char **argv)
 #ifdef ECL_THREADS
 	cl_env.bindings_hash = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024),
 						   make_shortfloat(1.5),
-						   make_shortfloat(0.7));
+						   make_shortfloat(0.7),
+						   Cnil); /* no locking */
+	ECL_SET(@'mp::*current-process*', cl_env.own_process);
 #endif
 
 	/*
@@ -254,6 +257,10 @@ cl_boot(int argc, char **argv)
 	/*
 	 * 5) Set up hooks for LOAD, errors and macros.
 	 */
+#ifdef ECL_THREADS
+	ECL_SET(@'mp::+load-compile-lock+',
+		mp_make_lock(2, @':name', @'mp::+load-compile-lock+'));
+#endif
 	ECL_SET(@'si::*load-hooks*', cl_list(
 #ifdef ENABLE_DLOPEN
 		4,CONS(make_simple_string("fas"), @'si::load-binary'),
@@ -276,7 +283,8 @@ cl_boot(int argc, char **argv)
 	ECL_SET(@'si::*class-name-hash-table*',
 		cl__make_hash_table(@'eq', MAKE_FIXNUM(1024), /* size */
 				    make_shortfloat(1.5), /* rehash-size */
-				    make_shortfloat(0.7))); /* rehash-threshold */
+				    make_shortfloat(0.7), /* rehash-threshold */
+				    Ct)); /* thread safe */
 #endif
 
 	/*
@@ -350,7 +358,7 @@ cl_boot(int argc, char **argv)
 
 	/* Jump to top level */
 	ECL_SET(@'*package*', cl_core.user_package);
-	enable_interrupt();
+	init_unixint();
 	si_catch_bad_signals();
 }
 

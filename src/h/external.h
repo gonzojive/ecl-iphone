@@ -112,6 +112,7 @@ struct cl_env_struct {
 #ifdef ECL_THREADS
 	cl_object own_process;
 #endif
+	int interrupt_pending;
 };
 
 #ifdef ECL_THREADS
@@ -176,6 +177,7 @@ struct cl_core_struct {
 
 #ifdef ECL_THREADS
 	cl_object processes;
+	pthread_mutex_t global_lock;
 #endif
 };
 
@@ -434,7 +436,6 @@ extern cl_object cl_cerror _ARGS((int narg, cl_object cformat, cl_object eformat
 extern void internal_error(const char *s) __attribute__((noreturn));
 extern void cs_overflow(void) __attribute__((noreturn));
 extern void error(const char *s) __attribute__((noreturn));
-extern void terminal_interrupt(bool correctable);
 extern void FEprogram_error(const char *s, int narg, ...) __attribute__((noreturn));
 extern void FEcontrol_error(const char *s, int narg, ...) __attribute__((noreturn));
 extern void FEreader_error(const char *s, cl_object stream, int narg, ...) __attribute__((noreturn));
@@ -582,7 +583,7 @@ extern cl_object compute_method(int narg, cl_object fun, cl_object *args);
 
 /* hash.c */
 
-extern cl_object cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size, cl_object rehash_threshold);
+extern cl_object cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size, cl_object rehash_threshold, cl_object lockable);
 extern cl_object cl_hash_table_p(cl_object ht);
 extern cl_object si_hash_set(cl_object key, cl_object ht, cl_object val);
 extern cl_object cl_remhash(cl_object key, cl_object ht);
@@ -603,7 +604,6 @@ extern cl_hashkey hash_eq(cl_object x);
 extern cl_hashkey hash_eql(cl_object x);
 extern cl_hashkey hash_equal(cl_object x);
 extern void sethash(cl_object key, cl_object hashtable, cl_object value);
-extern void extend_hashtable(cl_object hashtable);
 extern cl_object gethash(cl_object key, cl_object hash);
 extern cl_object gethash_safe(cl_object key, cl_object hash, cl_object def);
 extern bool remhash(cl_object key, cl_object hash);
@@ -727,6 +727,8 @@ extern cl_object assq(cl_object x, cl_object l);
 extern cl_object assql(cl_object x, cl_object l);
 extern cl_object assoc(cl_object x, cl_object l);
 extern cl_object assqlp(cl_object x, cl_object l);
+extern cl_object ecl_remove_eq(cl_object x, cl_object l);
+extern void ecl_delete_eq(cl_object x, cl_object *l);
 
 
 /* load.c */
@@ -956,12 +958,12 @@ extern cl_object cl_unuse_package _ARGS((int narg, cl_object pack, ...));
 
 extern cl_object make_package(cl_object n, cl_object ns, cl_object ul);
 extern cl_object rename_package(cl_object x, cl_object n, cl_object ns);
-extern cl_object find_package(cl_object n);
+extern cl_object ecl_find_package_nolock(cl_object n);
 extern cl_object si_coerce_to_package(cl_object p);
 extern cl_object current_package(void);
+extern cl_object ecl_find_symbol(cl_object n, cl_object p, int *intern_flag);
 extern cl_object intern(cl_object name, cl_object p, int *intern_flag);
 extern cl_object _intern(const char *s, cl_object p);
-extern cl_object find_symbol(cl_object name, cl_object p, int *intern_flag);
 extern bool unintern(cl_object s, cl_object p);
 extern void cl_export2(cl_object s, cl_object p);
 extern void cl_unexport2(cl_object s, cl_object p);
@@ -1325,6 +1327,7 @@ extern cl_object make_stream(cl_object host, int fd, enum ecl_smmode smm);
 extern cl_object mp_own_process(void) __attribute__((const));
 extern cl_object mp_all_processes(void);
 extern cl_object mp_exit_process(void) __attribute__((noreturn));
+extern cl_object mp_interrupt_process(cl_object process, cl_object function);
 extern cl_object mp_make_process _ARGS((int narg, ...));
 extern cl_object mp_process_active_p(cl_object process);
 extern cl_object mp_process_enable(cl_object process);
@@ -1420,10 +1423,7 @@ extern cl_object homedir_pathname(cl_object user);
 
 extern cl_object si_catch_bad_signals();
 extern cl_object si_uncatch_bad_signals();
-extern int interrupt_enable;
-extern int interrupt_flag;
-extern void signal_catcher(int sig, int code, int scp);
-extern void enable_interrupt(void);
+extern cl_object si_check_pending_interrupts();
 
 
 /* unixsys.c */
