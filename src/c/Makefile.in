@@ -9,7 +9,7 @@ VPATH	= @srcdir@
 #
 CC	= @CC@
 DEFS	= -D@host@
-CFLAGS	= -c -I../h -I$(HDIR) -I$(top_srcdir)/gc/include @CFLAGS@ $(DEFS)
+CFLAGS	= -c -I../h -I$(HDIR) @BOEHM_HEADERS@ @CFLAGS@ $(DEFS)
 
 SHELL	= /bin/sh
 RM	= @RM@
@@ -66,7 +66,7 @@ clean:
 
 # Build rules
 
-./dpp$(EXE): $(srcdir)/dpp.c
+$(DPP): $(srcdir)/dpp.c
 	$(CC) @CFLAGS@ -I$(HDIR) $(srcdir)/dpp.c  -o $@
 
 #

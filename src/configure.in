@@ -44,27 +44,30 @@ AC_SUBST(mandir)
 AC_SUBST(infodir)
 AC_SUBST(builddir)
 AC_SUBST(top_srcdir)
-AC_ARG_ENABLE(boehm,
-	[--disable-boehm	Disable Boehm's garbage collector.],
-	boehm="${enableval}", boehm="yes")
 dnl AC_ARG_ENABLE(tk,
-dnl 	[--enable-tk	Include Tk.],
+dnl 	[--enable-tk            Include Tk.],
 dnl 	tk="$enable_tk")
-AC_ARG_ENABLE(clx,
-	[--enable-clx	Include CLX.],
-	clx="$enableval")
+dnl AC_ARG_ENABLE(clx,
+dnl 	[--enable-clx           Include CLX.],
+dnl 	clx="$enableval")
 AC_ARG_WITH(tcp,
-	[--with-tcp	Include socket interface.],
+	[--with-tcp             Include socket interface.],
 	tcp="yes")
+AC_ARG_ENABLE(boehm,
+	[--disable-boehm        Disable Boehm's garbage collector.],
+	boehm="${enableval}", boehm="yes")
+AC_ARG_ENABLE(local-boehm,
+	[--enable-local-boehm   Use already installed Boehm GC library.],
+	local_boehm="${enableval}"; boehm="yes")
 AC_ARG_ENABLE(local-gmp,
-	[--enable-local-gmp	Use already installed GMP library.],
-	gmp="${enableval}")
+	[--enable-local-gmp     Use already installed GMP library.],
+	local_gmp="${enableval}")
 AC_ARG_WITH(gmp,
-	[--with-gmp=args	Configure supplied GMP library with arguments.],
+	[--with-gmp=args        Configure supplied GMP library with arguments.],
 	[gmp_flags=$withval; enable_local_gmp=no],
 	gmp_flags="")
 dnl AC_ARG_ENABLE(locative,
-dnl 	[--enable-locative	Include locative support.],
+dnl 	[--enable-locative      Include locative support.],
 dnl 	locative="$enable_locative")
 dnl AC_ARG_ENABLE(threads,
 dnl 	[--enable-threads	Include the multiple thread facility.],
@@ -73,10 +76,10 @@ dnl AC_ARG_ENABLE(runtime,
 dnl 	[--enable-runtime	Build no compiler.],
 dnl 	runtime="$enable_runtime")
 AC_ARG_ENABLE(shared,
-	[--disable-shared	Enable building dynamically loadable extensions.],
+	[--disable-shared       Enable building dynamically loadable extensions.],
 	shared="$enable_shared",shared="yes")
 AC_ARG_WITH(oldloop,
-	[--with-oldloop		Use the old MIT LOOP macro.],
+	[--with-oldloop         Use the old MIT LOOP macro.],
 	oldloop="yes")
 
 ### ----------------------------------------------------------------------
@@ -107,6 +110,7 @@ AC_SUBST(TKLIBS)dnl		Libraries with the Tcl/Tk components
 AC_SUBST(SUBDIR)dnl		Subdirectories that make should process
 AC_SUBST(LIBRARIES)dnl		GMP, Boehm's GC, etc
 AC_SUBST(LSP_LIBRARIES)dnl	Libraries produced by lisp translator
+AC_SUBST(BOEHM_HEADERS)dnl	Header path for Boehm GC
 
 dnl ----------------------------------------------------------------------
 dnl           checks for UNIX variants that set DEFS
@@ -148,8 +152,14 @@ SUBDIR=c
 CLIBS="${CLIBS} -lgmp -lm"
 if test ${boehm} ; then
   LIBRARIES="${LIBRARIES} libgc.a"
+  if test ${local_boehm}; then
+    BOEHM_HEADERS=""
+  else
+    LIBRARIES="${LIBRARIES} libgc.a"
+    SUBDIR="${SUBDIR} gc"
+    BOEHM_HEADERS="-I\$(top_srcdir)/gc/include"
+  fi
   CLIBS="-lgc ${CLIBS}"
-  SUBDIR="${SUBDIR} gc"
   EXTRA_OBJS="${EXTRA_OBJS} alloc_2.o"
   AC_DEFINE(GBC_BOEHM)
 else
@@ -158,9 +168,7 @@ fi
 if test ${shared} = "yes"; then
   AC_DEFINE(ENABLE_DLOPEN)
 fi
-if test ${gmp} ; then
-  AC_DEFINE(HAVE_LOCAL_GMP)
-else
+if test ! ${local_gmp} ; then
   LIBRARIES="${LIBRARIES} libgmp.a"
   SUBDIR="${SUBDIR} gmp"
 fi
@@ -256,10 +264,10 @@ dnl ---------------------------------------------------------------------
 dnl		GNU multiprecision library
 dnl
 AC_MSG_CHECKING(checking for gmp...)
-if test ${gmp} ; then
-  AC_MSG_RESULT(no)
+if test ${local_gmp} ; then
+  AC_MSG_RESULT(already installed)
 else
-  AC_MSG_RESULT(yes, configuring)
+  AC_MSG_RESULT(configuring local copy)
   test -d gmp && rm -rf gmp
   if mkdir gmp; then
    (cd gmp;
@@ -271,16 +279,16 @@ dnl ---------------------------------------------------------------------
 dnl		Boehm-Weiser garbage collector
 dnl
 AC_MSG_CHECKING(checking for Boehm-Weiser gc...)
-if test ${boehm} ; then
-  AC_MSG_RESULT(yes, configuring)
+if test ${local_boehm} ; then
+  AC_MSG_RESULT(already installed)
+else
+  AC_MSG_RESULT(configuring local copy)
   test -d gc && rm -rf gc
   if mkdir gc; then
    (cd gc;
-     $srcdir/gc/configure --libdir="$libdir" --bindir="$bindir" \
-	 --includedir="$includedir" --disable-shared)
+     $srcdir/gc/configure --disable-shared --prefix=$bindir \
+	--includedir=${builddir}/h --libdir=${builddir})
   fi
-else
-  AC_MSG_RESULT(no)
 fi
 dnl ---------------------------------------------------------------------
 dnl		Final pass over configuration files

@@ -59,36 +59,35 @@ ecl_min$(EXE): $(LIBRARIES) .gdbinit
 .gdbinit: $(srcdir)/util/gdbinit
 	cp $(srcdir)/util/gdbinit $@
 
-libecl.a:
-	(echo $(SUBDIR) | grep gmp) && cp $(top_srcdir)/gmp/*.h h/
+libecl.a: libgmp.a libgc.a
 	cd c; $(MAKE)
 libgc.a:
-	cd gc; $(MAKE); mv .libs/libgc.a ..
+	if (echo $(SUBDIR) | grep gc); then \
+	  cd gc; $(MAKE) install; \
+	fi
 libgmp.a:
-	cd gmp; $(MAKE); mv .libs/libgmp.a ..
+	if (echo $(SUBDIR) | grep gmp); then \
+	  cd gmp; $(MAKE) install; \
+	fi
 
 BUILD-STAMP: config.status
 	(echo "#"; uname -a) > $@
 	head -8 config.status | tail -6 >> $@
 install: BUILD-STAMP
-	for i in $(TARGETS); do	$(INSTALL_PROGRAM) $$i $(PREFIX)$(bindir); strip $(PREFIX)$(bindir)/$$i; done
+	for i in $(TARGETS); do	\
+	  $(INSTALL_PROGRAM) $$i $(PREFIX)$(bindir); \
+	  strip $(PREFIX)$(bindir)/$$i; \
+	done
 	$(INSTALL_DATA) $(srcdir)/etc/ecl.1 $(PREFIX)$(mandir)
-	test -d $(PREFIX)$(libdir) || (mkdir $(PREFIX)$(libdir); chmod 755 $(PREFIX)$(libdir))
-	test -d $(PREFIX)$(libdir)/h || (mkdir $(PREFIX)$(libdir)/h; chmod 755 $(PREFIX)$(libdir)/h)
+	test -d $(PREFIX)$(libdir) || \
+	  (mkdir $(PREFIX)$(libdir); chmod 755 $(PREFIX)$(libdir))
+	test -d $(PREFIX)$(libdir)/h || \
+	  (mkdir $(PREFIX)$(libdir)/h; chmod 755 $(PREFIX)$(libdir)/h)
 	$(INSTALL_DATA) BUILD-STAMP $(PREFIX)$(libdir)
 	$(INSTALL_DATA) h/config.h $(PREFIX)$(libdir)/h
-	if ( echo $(SUBDIR) | grep gmp ); then \
-	$(INSTALL_DATA) gmp/?*.h $(PREFIX)$(libdir)/h; \
-	$(INSTALL_DATA) $(srcdir)/gmp/?*.h $(PREFIX)$(libdir)/h; \
-	fi
 	for i in $(LSP_LIBRARIES) $(LIBRARIES); do \
-	$(INSTALL_DATA) $$i $(PREFIX)$(libdir); \
+	  $(INSTALL_DATA) $$i $(PREFIX)$(libdir); \
 	done
-	if ( echo $(SUBDIR) | grep gmp ); then \
-	for i in $(srcdir)/gc/include/?*.h; do $(INSTALL_DATA) $$i $(PREFIX)$(libdir)/h/`basename $$i`; done; \
-	test -d $(PREFIX)$(libdir)/h/private  || (mkdir $(PREFIX)$(libdir)/h/private; chmod 755 $(PREFIX)$(libdir)/h/private); \
-	for i in $(srcdir)/gc/include/private/?*.h; do $(INSTALL_DATA) $$i $(PREFIX)$(libdir)/h/private/`basename $$i`; done; \
-	fi
 	$(INSTALL_DATA) help.doc $(PREFIX)$(libdir)
 	cd c; $(MAKE) PREFIX="$(PREFIX)" install
 	cd doc; $(MAKE) PREFIX="$(PREFIX)" install
