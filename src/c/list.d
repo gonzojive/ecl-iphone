@@ -276,11 +276,6 @@ cl_return @ninth	LENTH(8)
 cl_return @tenth	LENTH(9)
 #undef LENTH
 
-@(defun cons (car cdr)
-@
-	@(return CONS(car, cdr))
-@)
-
 static bool
 tree_equal(cl_object x, cl_object y)
 {
@@ -850,10 +845,17 @@ cl_return
 	return1(output);
 }
 
-@(defun acons (x y z)
-@
+cl_object
+cl_cons(cl_object x, cl_object y)
+{
+	@(return CONS(x, y))
+}
+
+cl_object
+cl_acons(cl_object x, cl_object y, cl_object z)
+{
 	@(return CONS(CONS(x, y), z))
-@)
+}
 
 @(defun pairlis (keys data &optional a_list)
 	cl_object k, d;
