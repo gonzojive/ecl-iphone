@@ -1670,6 +1670,13 @@ ECL 0.9d
   - New manual page documents the scripting facilities of ECL
     (contributed by Julian St.)
 
+* Visible changes:
+
+  - New command line options -shell and -norc, which are useful for
+    scripting. New handling of command line options, is more robust
+    and allows combining the options -load, -eval, -shell in a number
+    of ways.
+
 TODO:
 =====
 

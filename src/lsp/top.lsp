@@ -340,70 +340,80 @@ value of this variable is non-NIL.")
     `(locally (declare (notinline ,(car form)))
 	      ,form)))
 
-(defun process-command-args ()
-  (do ((i 1 (1+ i))
+(defun process-command-args (&aux (load-rc t) (commands nil) (quit nil))
+  #-ecl-min
+  (do ((load-rc t)
+       (commands nil)
+       (quit nil)
+       (i 1 (1+ i))
        (argc (argc)))
-      ((= i argc))
-    (cond
-      ((string= "-dir" (argv i))
-       (incf i)
-       (if (= i argc)
-	   (error "Missing directory")
+      ((>= i argc)
+       (when load-rc
+	 (dolist (file *lisp-init-file-list*)
+	   (when (load file :if-does-not-exist nil :search-list nil :verbose nil)
+	     (return))))
+       (eval `(progn ,@(nreverse commands)))
+       (when quit (quit))
+       )
+    (labels
+	((get-argument (n k default)
+	   (do ((j (1+ n) (1+ j))
+		(argc (argc)))
+	       ((>= j argc) default)
+	     (when (string= k (argv j))
+	       (incf j)
+	       (return
+		 (or (= j argc)
+		     (eql (schar (argv j) 0) #\-)
+		     (let ((arg (argv j)))
+		       (if (string-equal "nil" arg)
+			   NIL
+			   (or (string-equal "t" arg) arg))))))))
+	 (help-message (stream)
+	   (princ "Usage: ecl [-? | --help]
+           [-dir dir] [-load file] [-shell file] [-eval expr] [-norc]
+           [-compile file [-o ofile] [-c [cfile]] [-h [hfile]]
+                          [-data [datafile]] [-s]]
+"
+		  stream))
+	 (pop-arg (option)
+	   (when (= (incf i) argc)
+	     (format *error-output* "Missing argument to command line option ~A.~%" option)
+	     (help-message *error-output*)
+	     (quit 1))
+	   (argv i)))
+      (let ((option (argv i)))
+	(cond
+	  ((string= "-dir" option)
 	   (setf (logical-pathname-translations "SYS")
-		 `(("SYS:*.*" ,(concatenate 'string (argv i) "*.*"))))))
-      ((string= "-compile" (argv i))
-       (incf i)
-       (if (= i argc)
-	   (error "Missing file name")
-	   (flet ((get-argument (n k default)
-		    (do ((j (1+ n) (1+ j))
-			 (argc (argc)))
-			((= j argc) default)
-		      (when (string= k (argv j))
-			(incf j)
-			(return
-			  (or (= j argc)
-			      (eql (schar (argv j) 0) #\-)
-			      (let ((arg (argv j)))
-				(if (string-equal "nil" arg)
-				    NIL
-				    (or (string-equal "t" arg) arg)))))))))
-	     (if (nth-value 3
-			    (compile-file
-			     (argv i)
-			     :output-file (get-argument i "-o" T)
-			     :c-file  (get-argument i "-c" NIL)
-			     :h-file  (get-argument i "-h" NIL)
-			     :data-file (get-argument i "-data" NIL)
-			     :system-p  (get-argument i "-s" NIL)))
+		 `(("SYS:*.*" ,(concatenate 'string (pop-arg "-dir") "*.*")))))
+	  ((string= "-compile" option)
+	   (if (nth-value 3
+			  (compile-file
+			   (pop-arg "-compile")
+			   :output-file (get-argument i "-o" T)
+			   :c-file  (get-argument i "-c" NIL)
+			   :h-file  (get-argument i "-h" NIL)
+			   :data-file (get-argument i "-data" NIL)
+			   :system-p  (get-argument i "-s" NIL)))
 	       (quit 1)
-	       (quit 0)))))
-      ((string= "-load" (argv i))
-       (incf i)
-       (if (= i argc)
-	   (error "Missing file name")
-	   (load (argv i))))
-      ((string= "-shell" (argv i))
-       (incf i)
-       #-ecl-min
-       (let ((*break-enable* nil))
-	 (handler-case
-	     (if (= i argc)
-		 (format t "Missing file name")
-		 (let ((*load-verbose* nil))
-		   (load (argv i))))
-	   (condition (c) (format t "~A" c))))
-       (quit))
-      ((string= "-eval" (argv i))
-       (incf i)
-       (if (= i argc)
-	   (error "Missing file name")
-	   (eval (read-from-string (argv i)))))
-      (t (format t "Unknown flag ~A
-Usage: ecl [-dir dir] [-load file] [-eval expr]
-	[-compile file [-o ofile] [-c [cfile]] [-h [hfile]] [-data [datafile]] [-s]]"
-		(argv i))
-	 (quit 1)))))
+	       (quit 0)))
+	  ((string= "-load" option)
+	   (push `(load ,(pop-arg "-load") :verbose t) commands))
+	  ((string= "-shell" option)
+	   (push `(load ,(pop-arg "-shell") :verbose nil) commands)
+	   (setf quit t load-rc nil))
+	  ((string= "-eval" option)
+	   (push (read-from-string (pop-arg "-eval")) commands))
+	  ((string= "-norc" option)
+	   (setf load-rc nil))
+	  ((or (string= "-?" option) (string= "--help" option))
+	   (help-message t)
+	   (quit 0))
+	  (t
+	   (format *error-output* "Unknown command line option ~A.~%" option)
+	   (help-message *error-output*)
+	   (quit 1)))))))
 
 (defvar *lisp-initialized* nil)
 
@@ -417,12 +427,9 @@ file.  When the saved image is invoked, it will start the redefined top-level."
   (let* (+ ++ +++ - * ** *** / // ///)
 
     (unless *lisp-initialized*
+
       (catch *quit-tag*
 	(let ((*break-enable* nil))
-
-	  (dolist (file *lisp-init-file-list*)
-	    (when (load file :if-does-not-exist nil :search-list nil)
-	      (return)))
 	  ;; process command arguments
 	  (notinline (process-command-args))))
 

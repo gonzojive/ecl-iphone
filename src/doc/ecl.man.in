@@ -56,12 +56,19 @@ The Boehm-Weiser garbage collector.
 interactive lisp.
 .SH OPTIONS
 .TP 1i
-.B \-shell " file"
+.BI \-shell " file"
 Executes the given file and exits, without providing a read-eval-print loop.
 If you want to use lisp as a scripting language, you can write
 .BR "#!@bindir@/ecl -shell"
 on the first line of the file to be executed, and then ECL will be
 automatically invoked.
+.TP
+.B \-norc
+Do not try to load the files
+.I ~/.ecl
+or
+.I ~/.eclrc
+at startup.
 .TP
 .B \-dir
 Use
@@ -109,6 +116,15 @@ with .data as extension.
 Produce a linkable object file. It cannot be loaded 
 with load, but it can be used to build libraries 
 or standalone executable programs. 
+
+.PP
+The options
+.B \-load,
+.B \-shell,
+and
+.B \-eval
+may appear any number of times, and they are combined and processed from left
+to right.
 .SH AUTHORS
 The original version was developed by Giuseppe Attardi starting from the Kyoto
 Common Lisp implementation by Taiichi Yuasa and Masami Hagiya.  The current
@@ -117,7 +133,9 @@ mailing list.
 .SH FILES
 .TP
 .BR "~/.ecl, ~/.eclrc"
-Default initialization files loaded at startup
+Default initialization files loaded at startup unless the option
+.BR \-norc
+is provided.
 (if they exist).
 .SH SEE ALSO
 .IP ""
