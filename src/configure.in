@@ -191,7 +191,7 @@ dnl
 AC_SUBST(INFOEXT)
 AC_SUBST(INSTALL_INFO)
 AC_PATH_PROG([INSTALL_INFO], [install-info], [foo], [$PATH:/sbin:/usr/sbin:/usr/etc])
-if which gzip; then
+if test -z `which gzip`; then
   INFOEXT=info.gz
 else
   INFOEXT=info
@@ -210,16 +210,16 @@ ECL_MODULES=""
 if test ${boehm} = "no" ; then
   EXTRA_OBJS="${EXTRA_OBJS} alloc.${OBJEXT} gbc.${OBJEXT}"
 else
-  if test ${system_boehm} = "no"; then
+  if test ${system_boehm} = "yes"; then
+    BOEHM_HEADERS=""
+    CLIBS="-lgc ${CLIBS}"
+  else
     SUBDIR="${SUBDIR} gc"
     BOEHM_HEADERS="-I../include"
     STATICLIBS="-leclgc"
     if test ${shared} = "no"; then
       LIBRARIES="${LIBRARIES} ${LIBPREFIX}eclgc.${LIBEXT}"
     fi
-  else
-    BOEHM_HEADERS=""
-    CLIBS="-lgc ${CLIBS}"
   fi
   EXTRA_OBJS="${EXTRA_OBJS} alloc_2.${OBJEXT}"
   AC_DEFINE(GBC_BOEHM)
@@ -231,14 +231,14 @@ else
   LSP_LIBRARIES="${LIBPREFIX}ecl.${LIBEXT}"
   LDRPATH='~*'
 fi
-if test ${system_gmp} = "no" ; then
+if test "${system_gmp}" = "yes" ; then
+  CLIBS="-lgmp ${CLIBS}"
+else
   SUBDIR="${SUBDIR} gmp"
   STATICLIBS="-leclgmp ${STATICLIBS}"
   if test ${shared} = "no"; then
     LIBRARIES="${LIBRARIES} ${LIBPREFIX}eclgmp.${LIBEXT}"
   fi
-else
-  CLIBS="-lgmp ${CLIBS}"
 fi
 if test ${runtime} ; then
   AC_DEFINE(RUNTIME)
@@ -378,7 +378,7 @@ dnl ---------------------------------------------------------------------
 dnl		GNU multiprecision library
 dnl
 AC_MSG_CHECKING(for gmp...)
-if test ${system_gmp} = "yes" ; then
+if test "${system_gmp}" = "yes" ; then
   AC_MSG_RESULT(already installed)
 else
   AC_MSG_RESULT(configuring local copy)
@@ -396,7 +396,7 @@ dnl
 AC_MSG_CHECKING(for Boehm-Weiser gc...)
 if test ${boehm} = "no"; then
   AC_MSG_RESULT(use small collector instead)
-elif test "${system_boehm}" = "no" ; then
+elif test "${system_boehm}" != "yes" ; then
   AC_MSG_RESULT(configuring local copy)
   test -d gc && rm -rf gc
   if mkdir gc; then

@@ -4604,16 +4604,16 @@ ECL_MODULES=""
 if test ${boehm} = "no" ; then
   EXTRA_OBJS="${EXTRA_OBJS} alloc.${OBJEXT} gbc.${OBJEXT}"
 else
-  if test ${system_boehm} = "no"; then
+  if test ${system_boehm} = "yes"; then
+    BOEHM_HEADERS=""
+    CLIBS="-lgc ${CLIBS}"
+  else
     SUBDIR="${SUBDIR} gc"
     BOEHM_HEADERS="-I../include"
     STATICLIBS="-leclgc"
     if test ${shared} = "no"; then
       LIBRARIES="${LIBRARIES} ${LIBPREFIX}eclgc.${LIBEXT}"
     fi
-  else
-    BOEHM_HEADERS=""
-    CLIBS="-lgc ${CLIBS}"
   fi
   EXTRA_OBJS="${EXTRA_OBJS} alloc_2.${OBJEXT}"
   cat >>confdefs.h <<\_ACEOF
@@ -4631,14 +4631,15 @@ else
   LSP_LIBRARIES="${LIBPREFIX}ecl.${LIBEXT}"
   LDRPATH='~*'
 fi
-if test ${system_gmp} = "no" ; then
+echo ${system_gmp}
+if test "${system_gmp}" = "yes" ; then
+  CLIBS="-lgmp ${CLIBS}"
+else
   SUBDIR="${SUBDIR} gmp"
   STATICLIBS="-leclgmp ${STATICLIBS}"
   if test ${shared} = "no"; then
     LIBRARIES="${LIBRARIES} ${LIBPREFIX}eclgmp.${LIBEXT}"
   fi
-else
-  CLIBS="-lgmp ${CLIBS}"
 fi
 if test ${runtime} ; then
   cat >>confdefs.h <<\_ACEOF
@@ -5146,7 +5147,7 @@ esac
 
 echo "$as_me:$LINENO: checking for gmp..." >&5
 echo $ECHO_N "checking for gmp...... $ECHO_C" >&6
-if test ${system_gmp} = "yes" ; then
+if test "${system_gmp}" = "yes" ; then
   echo "$as_me:$LINENO: result: already installed" >&5
 echo "${ECHO_T}already installed" >&6
 else
@@ -5165,7 +5166,7 @@ echo $ECHO_N "checking for Boehm-Weiser gc...... $ECHO_C" >&6
 if test ${boehm} = "no"; then
   echo "$as_me:$LINENO: result: use small collector instead" >&5
 echo "${ECHO_T}use small collector instead" >&6
-elif test "${system_boehm}" = "no" ; then
+elif test "${system_boehm}" != "yes" ; then
   echo "$as_me:$LINENO: result: configuring local copy" >&5
 echo "${ECHO_T}configuring local copy" >&6
   test -d gc && rm -rf gc
