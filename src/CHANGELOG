@@ -1671,7 +1671,8 @@ ECL 0.9d
     compilation/linking flags for a given architecture. This is required
     in platforms such as Solaris/Ultrasparc, where there are multiple
     ABIs (i.e. applications may use 32-bit or 64-pointers, 32-bit or
-    64-registers, etc).
+    64-registers, etc). On other platforms this process is not required,
+    and you may get a faster configuration using --enable-simple-conf
 
 * System design: Multithreading
 
@@ -1728,6 +1729,9 @@ ECL 0.9d
 
   - HASH-TABLE-SIZE and HASH-TABLE-TEST have been finally implemented.
 
+  - The configuration process now does respect the values of libdir,
+    bindir, infodir,... supplied by the user.
+
 * Documentation:
 
   - New manual page documents the scripting facilities of ECL
@@ -1747,7 +1751,13 @@ ECL 0.9d
     logical pathnames.
 
   - Under windows, the system directory is defined to be the place
-    where ecl.exe resides.
+    where ecl.exe resides. Windows user will want to use the
+    command "make windows-dist", which builds a ZIP file with a
+    ready to be installed ECL.
+
+  - If you want to install ECL to a different place, use "make prefix=..."
+    instead of the old form "make PREFIX=...". ECL now follows the GNU
+    coding standards in this particular point.
 
 TODO:
 =====

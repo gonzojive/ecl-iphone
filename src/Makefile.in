@@ -21,9 +21,10 @@ EXE	= @EXEEXT@
 # subdirectories of this directory.  The default values for many of
 # the variables below are expressed in terms of this one, so you may
 # not need to change them.  This defaults to /usr/local.
+prefix=@prefix@
+exec_prefix=@exec_prefix@
 bindir=@bindir@
 libdir=@libdir@
-infodir=@infodir@
 
 # Programs used by "make install":
 #
@@ -56,19 +57,21 @@ ecl_min$(EXE): $(LIBRARIES) .gdbinit libecl.a
 	if [ -f CROSS-COMPILER ]; then \
 		touch $@; \
 	else \
-		$(CC) $(LDFLAGS) -o $@ c/cinit.o -L./ libecl.a -lgmp -lgc $(LIBS);\
+		$(CC) $(LDFLAGS) -o $@ c/cinit.o -L./ @LIBPREFIX@ecl.@LIBEXT@ -lgmp -lgc $(LIBS);\
 	fi
 
 .gdbinit: $(srcdir)/util/gdbinit
 	cp $(srcdir)/util/gdbinit $@
 
-libecl.a: libgmp.a libgc.a
+lsp/config.lsp: lsp/config.lsp.in
+	sed -e 's,@ecldir@,$(libdir),g' < lsp/config.lsp.in > lsp/config.lsp
+@LIBPREFIX@ecl.@LIBEXT@: @LIBPREFIX@gmp.@LIBEXT@ @LIBPREFIX@gc.@LIBEXT@ lsp/config.lsp
 	cd c; $(MAKE)
-libgc.a:
+@LIBPREFIX@gc.@LIBEXT@:
 	if (echo $(SUBDIR) | grep gc); then \
 	  cd gc; $(MAKE) install; \
 	fi
-libgmp.a:
+@LIBPREFIX@gmp.@LIBEXT@:
 	if (echo $(SUBDIR) | grep gmp); then \
 	  cd gmp; $(MAKE) install; \
 	fi
@@ -79,38 +82,26 @@ BUILD-STAMP: config.status
 	(echo "#"; uname -a) > $@
 	head -8 config.status | tail -6 >> $@
 install: BUILD-STAMP install-base
-	cd c; $(MAKE) PREFIX="$(PREFIX)" install
-	cd doc; $(MAKE) PREFIX="$(PREFIX)" install
+	cd c; $(MAKE) prefix=$(prefix) install
+	cd doc; $(MAKE) prefix=$(prefix) install
 install-base:
-	$(mkinstalldirs) $(PREFIX)$(bindir) $(PREFIX)$(libdir)/h
+	$(mkinstalldirs) $(bindir) $(libdir)/h
 	for i in $(TARGETS); do \
-	  $(INSTALL) -s $$i $(PREFIX)$(bindir); \
+	  $(INSTALL) -s $$i $(bindir); \
 	done
-	$(INSTALL_PROGRAM) -s $(TARGETS) $(PREFIX)$(bindir)
+	$(INSTALL_PROGRAM) -s $(TARGETS) $(bindir)
 	sed 's,~A,$(libdir),;s,~\*,,;' ecl-config > foo; \
-	$(INSTALL_PROGRAM) foo $(PREFIX)$(bindir)/ecl-config; \
+	$(INSTALL_PROGRAM) foo $(bindir)/ecl-config; \
 	rm foo
 	for i in BUILD-STAMP $(LSP_LIBRARIES) $(LIBRARIES) c/dpp* help.doc ; do \
-	  $(INSTALL_DATA) $$i $(PREFIX)$(libdir); \
+	  $(INSTALL_DATA) $$i $(libdir); \
 	done
-	$(INSTALL_DATA) h/config.h $(PREFIX)$(libdir)/h
-	if (echo $(SUBDIR) | grep gc); then $(MAKE) installgc; fi
-	if (echo $(SUBDIR) | grep gmp); then $(MAKE) installgmp; fi
-installgc:
-	$(mkinstalldirs) $(PREFIX)$(libdir)/h/private
-	for i in $(srcdir)/gc/include/*.h; do \
-	  $(INSTALL_DATA) $$i $(PREFIX)$(libdir)/h/; \
-	done
-	for i in $(srcdir)/gc/include/private/*.h; do \
-	  $(INSTALL_DATA) $$i $(PREFIX)$(libdir)/h/private/; \
-	done
-installgmp:
-	$(INSTALL_DATA) h/gmp.h $(PREFIX)$(libdir)/h/
+	$(INSTALL_DATA) h/config.h $(libdir)/h
 
 flatinstall: BUILD-STAMP
-	$(MAKE) install PREFIX= bindir=$(PREFIX) libdir=$(PREFIX) install-base
-	cd c; $(MAKE) PREFIX=$(PREFIX) flatinstall
-	cd doc; $(MAKE) PREFIX=$(PREFIX) flatinstall
+	$(MAKE) install bindir=$(prefix) libdir=$(prefix) install-base
+	cd c; $(MAKE) prefix=$(prefix) flatinstall
+	cd doc; $(MAKE) prefix=$(prefix) flatinstall
 
 uninstall:
 	for i in $(TARGETS) ecl-config; do rm -rf $(bindir)/$$i; done

@@ -67,9 +67,11 @@ Returns, as a string, the version of the software under which ECL runs."
 ;; * Set configuration pathnames. Notice the trailing slash!
 ;;   Otherwise it would not be a directory.
 ;;
-#-mingw32
-(si::pathname-translations "SYS" '(("**;*.*" "@libdir@/**/*.*")))
-#+mingw32
-(si::pathname-translations "SYS"
-  `(("**;*.*" ,(merge-pathnames "**/*.*" (si::argv 0)))))
+#+(and (not mingw32) (not ecl-min))
+(si::pathname-translations "SYS" '(("**;*.*" "@ecldir@/**/*.*")))
+#+(and mingw32 (not ecl-min))
+(let ((d (merge-pathnames "**/*.*"
+			  (or (si::getenv "ECLDIR") (si::argv 0)))))
+  (si::pathname-translations "SYS"
+  `(("**;*.*" ,d))))
 (si::pathname-translations "HOME" '(("**;*.*" "~/**/*.*")))

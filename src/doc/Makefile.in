@@ -1,8 +1,9 @@
 top_srcdir= @top_srcdir@
 srcdir	= @srcdir@
 
+prefix=@prefix@
+exec_prefix=@exec_prefix@
 infodir = @infodir@
-libdir = @libdir@
 mandir=@mandir@
 manext=1
 
@@ -33,28 +34,28 @@ ecldev.ps: ecldev.dvi $(srcdir)/macros.txi
 	dvips -o $@ ecldev.dvi
 
 install: all
-	$(mkinstalldirs) $(PREFIX)$(infodir)
-	$(INSTALL_DATA) ecl.info $(PREFIX)$(infodir)
-	$(INSTALL_DATA) ecldev.info $(PREFIX)$(infodir)
-	$(mkinstalldirs) $(PREFIX)$(mandir)/man$(manext)
-	$(INSTALL_DATA) ecl.man $(PREFIX)$(mandir)/man$(manext)/ecl.$(manext)
+	$(mkinstalldirs) $(infodir)
+	$(INSTALL_DATA) ecl.info $(infodir)
+	$(INSTALL_DATA) ecldev.info $(infodir)
+	$(mkinstalldirs) $(mandir)/man$(manext)
+	$(INSTALL_DATA) ecl.man $(mandir)/man$(manext)/ecl.$(manext)
 flatinstall: all
-	$(mkinstalldirs) $(PREFIX)/doc
-	$(INSTALL_DATA) ecl.info $(PREFIX)/doc
-	$(INSTALL_DATA) ecldev.info $(PREFIX)/doc
+	$(mkinstalldirs) $(prefix)/doc
+	$(INSTALL_DATA) ecl.info $(prefix)/doc
+	$(INSTALL_DATA) ecldev.info $(prefix)/doc
 	if [ -f user.html ]; then \
-	  $(INSTALL_DATA) $$i $(PREFIX)/doc/; \
+	  $(INSTALL_DATA) $$i $(prefix)/doc/; \
 	else \
-	  $(mkinstalldirs) $(PREFIX)/doc/ecl; \
-	  for i in ecl/*; do $(INSTALL_DATA) $$i $(PREFIX)/doc/ecl/; done; \
+	  $(mkinstalldirs) $(prefix)/doc/ecl; \
+	  for i in ecl/*; do $(INSTALL_DATA) $$i $(prefix)/doc/ecl/; done; \
 	fi
 	if [ -f devel.html ]; then \
-	  $(INSTALL_DATA) devel.html $(PREFIX)/doc/; \
+	  $(INSTALL_DATA) devel.html $(prefix)/doc/; \
 	else \
-	  $(mkinstalldirs) $(PREFIX)/doc/ecldev; \
-	  for i in ecldev/*; do $(INSTALL_DATA) $$i $(PREFIX)/doc/ecldev/; done; \
+	  $(mkinstalldirs) $(prefix)/doc/ecldev; \
+	  for i in ecldev/*; do $(INSTALL_DATA) $$i $(prefix)/doc/ecldev/; done; \
 	fi
-	for i in *.html; do $(INSTALL_DATA) $$i $(PREFIX)/doc/; done
+	for i in *.html; do $(INSTALL_DATA) $$i $(prefix)/doc/; done
 
 uninstall:
 	rm -r $(infodir)/ecl.info $(infodir)/ecldev.info

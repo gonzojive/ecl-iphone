@@ -262,7 +262,7 @@ cl_boot(int argc, char **argv)
 		mp_make_lock(2, @':name', @'mp::+load-compile-lock+'));
 #endif
 	aux = cl_list(
-#ifdef ECL_DLOPEN
+#ifdef ENABLE_DLOPEN
 		4,CONS(make_simple_string("fas"), @'si::load-binary'),
 #else
 		3,

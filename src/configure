@@ -3742,13 +3742,8 @@ if test "$ac_cv_search_strerror" != no; then
 fi
 
 
-if test "x$prefix" = "xNONE"; then prefix=${ac_default_prefix}; fi
-if test "x$exec_prefix" = "xNONE"; then exec_prefix=${prefix}; fi
-bindir="${exec_prefix}/bin"
-libdir="${exec_prefix}/lib/ecl"
-includedir="${exec_prefix}/lib/ecl/h"
-mandir="${prefix}/man"
-infodir="${prefix}/info"
+libdir="${libdir}/ecl"
+includedir="${libdir}/ecl/h"
 
 
 
@@ -6027,6 +6022,8 @@ fi
 
           ac_config_files="$ac_config_files h/configpre:h/config.h.in"
 
+          ac_config_files="$ac_config_files lsp/config.lsp.in:lsp/config.lsp.in"
+
           ac_config_headers="$ac_config_headers h/config.h:h/configpre"
 
 cat >confcache <<\_ACEOF
@@ -6571,6 +6568,7 @@ do
   "gabriel/Makefile" ) CONFIG_FILES="$CONFIG_FILES gabriel/Makefile" ;;
   "ecl-config" ) CONFIG_FILES="$CONFIG_FILES ecl-config:util/ecl-config" ;;
   "h/configpre" ) CONFIG_FILES="$CONFIG_FILES h/configpre:h/config.h.in" ;;
+  "lsp/config.lsp.in" ) CONFIG_FILES="$CONFIG_FILES lsp/config.lsp.in:lsp/config.lsp.in" ;;
   "h/config.h" ) CONFIG_HEADERS="$CONFIG_HEADERS h/config.h:h/configpre" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}

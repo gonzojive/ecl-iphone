@@ -148,13 +148,8 @@ AC_ISC_POSIX
 dnl ----------------------------------------------------------------------
 dnl		Installation directories
 dnl
-if test "x$prefix" = "xNONE"; then prefix=${ac_default_prefix}; fi
-if test "x$exec_prefix" = "xNONE"; then exec_prefix=${prefix}; fi
-bindir="${exec_prefix}/bin"
-libdir="${exec_prefix}/lib/ecl"
-includedir="${exec_prefix}/lib/ecl/h"
-mandir="${prefix}/man"
-infodir="${prefix}/info"
+libdir="${libdir}/ecl"
+includedir="${libdir}/ecl/h"
 
 dnl ----------------------------------------------------------------------
 dnl		Checks which do not come with autoconf
@@ -374,5 +369,6 @@ AC_CONFIG_FILES(compile.lsp bare.lsp
  tk/Makefile tests/Makefile ansi-tests/Makefile gabriel/Makefile)
 AC_CONFIG_FILES([ecl-config:util/ecl-config],[chmod +x ecl-config])
 AC_CONFIG_FILES([h/configpre:h/config.h.in])
+AC_CONFIG_FILES([lsp/config.lsp.in:lsp/config.lsp.in])
 AC_CONFIG_HEADER([h/config.h:h/configpre])
 AC_OUTPUT

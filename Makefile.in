@@ -46,6 +46,8 @@ CFLAGS=@CFLAGS@
 #  This is set by the configure script's `--srcdir' option.
 srcdir=@srcdir@
 
+prefix=@prefix@
+exec_prefix=@exec_prefix@
 bindir=@bindir@
 infodir=@infodir@
 mandir=@mandir@
@@ -169,15 +171,15 @@ binary-dist: all
 	su -c "rm -rf tmp"
 	mkdir tmp
 	for i in tmp$(bindir) tmp$(infodir) tmp$(mandir) tmp$(libdir); do \
-	(echo $$i; IFS="/"; for k in $$i; do echo $$k; (test -d $$k || mkdir $$k); chmod 755 $$k; cd $$k; done); \
+	(echo $$i; IFS="/"; \for k in $$i; do echo $$k; (test -d $$k || mkdir $$k); chmod 755 $$k; cd $$k; done); \
 	done
-	PREFIX=`pwd`/tmp; cd build; $(MAKE) install PREFIX="$${PREFIX}"
+	prefix=`pwd`/tmp; cd build; $(MAKE) install prefix=$(prefix)
 	su -c "chown -R root.root tmp && cd tmp; tar czf ../ecl-$(VERSION)-$(MACHINE).tgz * && cd .. && rm -rf tmp"
 
 # This creates a ZIP file with a flattened directory structure
 windows-dist: all
 	cd build; rm -rf $(TAR_DIR); mkdir $(TAR_DIR); \
-	$(MAKE) flatinstall PREFIX=`pwd`/$(TAR_DIR); \
+	$(MAKE) flatinstall prefix=`pwd`/$(TAR_DIR); \
 	zip -r $(TAR_DIR).zip $(TAR_DIR)
 
 dist:
