@@ -27,7 +27,7 @@
 (load "@srcdir@/defpackage.lsp" :verbose t)
 (load "@srcdir@/ffi.lsp" :verbose t)
  #+threads
-(load "@srcdir@/threads.lsp" :verbose t)
+(load "@srcdir@/thread.lsp" :verbose t)
  #+tk
 (load "@srcdir@/tk-init.lsp" :verbose t)
 (load "@builddir@/lsp/config.lsp" :verbose t)

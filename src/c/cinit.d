@@ -15,11 +15,11 @@
 
 #include "ecl.h"
 
-static
-@(defun si::simple_toplevel ()
+static cl_object si_simple_toplevel ()
+{
 	cl_object sentence;
 	cl_object lex_old = lex_env;
-@
+
 	/* Simple minded top level loop */
 	printf(";*** Lisp core booted ****\nECLS (Embeddable Common Lisp)  %d pages\n", MAXPAGE);
 	fflush(stdout);
@@ -39,11 +39,13 @@ static
 #endif
 	}
 	lex_env = lex_old;
-@)
+}
 
 int
 main(int argc, char **args)
 {
+	cl_object top_level;
+
 	/* This should be always the first call */
 	cl_boot(argc, args);
 
@@ -58,9 +60,9 @@ main(int argc, char **args)
 #ifdef CLX
 	SYM_VAL(@'*features*') = CONS(make_keyword("WANTS-CLX"), SYM_VAL(@'*features*'));
 #endif
-	make_si_function("TOP-LEVEL", (cl_objectfn)@si::simple-toplevel);
-
-	funcall(1, _intern("TOP-LEVEL", system_package));
+	top_level = _intern("TOP-LEVEL", system_package);
+	cl_def_c_function(top_level, si_simple_toplevel, 0);
+	funcall(1, top_level);
 	return(0);
 }
 

@@ -237,17 +237,21 @@
   (let* (lambda-expr
 	 (fname (car args))
 	 (cfun (exported-fname fname))
+	 (no-entry nil)
 	 (doc nil)
 	 output)
     
     (setq lambda-expr (c1lambda-expr (cdr args) fname))
     (unless (eql setjmps *setjmps*)
       (setf (info-volatile (second lambda-expr)) t))
-    (when (and (setq doc (fourth lambda-expr))
-	       (setq doc (si::expand-set-documentation fname 'function doc)))
-      (t1expr `(progn ,@doc)))
+    (multiple-value-bind (decl body doc)
+	(si::process-declarations (cddr args) nil)
+      (cond ((assoc 'si::c-local decl)
+	     (setq no-entry t))
+	    ((setq doc (si::expand-set-documentation fname 'function doc))
+	     (t1expr `(progn ,@doc)))))
     (add-load-time-values)
-    (setq output (new-defun fname cfun lambda-expr *special-binding*))
+    (setq output (new-defun fname cfun lambda-expr *special-binding* no-entry))
     (when
       (and
        (get fname 'PROCLAIMED-FUNCTION)
@@ -282,7 +286,7 @@
     output))
 
 ;;; Mechanism for sharing code:
-(defun new-defun (fname cfun lambda-expr special-binding)
+(defun new-defun (fname cfun lambda-expr special-binding &optional no-entry)
   (let ((previous (dolist (form *global-funs*)
 		    (when (and (eq 'DEFUN (car form))
 			       (equal special-binding (fifth form))
@@ -291,9 +295,10 @@
     (if previous
 	(progn
 	  (cmpnote "Sharing code for function ~A" fname)
-	  (list 'DEFUN fname previous nil special-binding *funarg-vars*))
+	  (list 'DEFUN fname previous nil special-binding *funarg-vars*
+		no-entry))
 	(let ((fun-desc (list fname cfun lambda-expr special-binding
-			      *funarg-vars*)))
+			      *funarg-vars* no-entry)))
 	  (push fun-desc *global-funs*)
 	  (cons 'DEFUN fun-desc)))))
 
@@ -331,19 +336,18 @@
       "register "
       ""))
 
-(defun t2defun (fname cfun lambda-expr sp funarg-vars
-                      &aux (vv (add-symbol fname))
-		      (nkey (length (fifth (third lambda-expr)))))
+(defun t2defun (fname cfun lambda-expr sp funarg-vars no-entry)
   (declare (ignore sp funarg-vars))
-  (when (get fname 'NO-GLOBAL-ENTRY) (return-from t2defun nil))
-  (if (numberp cfun)
-    (wt-nl "MF(" vv ",(cl_objectfn)L" cfun ",Cblock);")
-    (wt-nl "MF(" vv ",(cl_objectfn)" cfun ",Cblock);"))
-  (when (get fname 'PROCLAIMED-FUNCTION)
-	(wt-if-proclaimed fname cfun vv lambda-expr))
-)
+  (if no-entry
+    (return-from t2defun nil))
+    (let ((vv (add-symbol fname)))
+      (if (numberp cfun)
+	(wt-nl "cl_def_c_function_va(" vv ",(cl_objectfn)L" cfun ");")
+	(wt-nl "cl_def_c_function_va(" vv ",(cl_objectfn)" cfun ");"))
+      (when (get fname 'PROCLAIMED-FUNCTION)
+	(wt-if-proclaimed fname cfun vv lambda-expr))))
 
-(defun t3defun (fname cfun lambda-expr sp funarg-vars
+(defun t3defun (fname cfun lambda-expr sp funarg-vars no-entry
                       &aux inline-info lambda-list requireds
                       (*current-form* (list 'DEFUN fname))
                       (*volatile* (when lambda-expr
@@ -587,7 +591,7 @@
       (wt-nl "(void)putprop(" vv "," ppn ",siSpretty_print_format);")
       (wt-nl)))
   (wt-h "static cl_object L" cfun "();")
-  (wt-nl "MM(" vv ",(cl_objectfn)L" cfun ",Cblock);"))
+  (wt-nl "cl_def_c_macro_va(" vv ",(cl_objectfn)L" cfun ");"))
 
 (defun t3defmacro (fname cfun macro-lambda ppn sp
                          &aux (*lcl* 0) (*temp* 0) (*max-temp* 0)
@@ -662,13 +666,13 @@
 				      :loc (add-symbol name)) form))))
 
 (defun t2defvar (var form &aux (vv (var-loc var)))
-  (wt-nl vv "->symbol.stype=(short)stp_special;")
-  (let* ((*exit* (next-label)) (*unwind-exit* (list *exit*))
-         (*destination* (list 'VAR var)))
-        (wt-nl "if(" vv "->symbol.dbind == OBJNULL){")
+  (let* ((*exit* (next-label))
+	 (*unwind-exit* (list *exit*))
+	 (*temp* *temp*)
+	 (*destination* `(TEMP ,(next-temp))))
         (c2expr form)
-        (wt "}")
-        (wt-label *exit*)))
+        (wt-nl "cl_defvar(" vv "," *destination* ");")
+	(wt-label *exit*)))
 
 (defun t1decl-body (decls body)
   (if (null decls)
@@ -858,7 +862,7 @@
                          &aux (vv (add-symbol fname)))
   (declare (ignore arg-types type body))
   (wt-h "static cl_object L" cfun "();")
-  (wt-nl "MF(" vv ",(cl_objectfn)L" cfun ",Cblock);")
+  (wt-nl "cl_def_c_function_va(" vv ",(cl_objectfn)L" cfun ");")
   )
 
 (eval-when (compile eval)		; also in cmpinline.lsp
@@ -947,7 +951,7 @@
   (let ((previous (new-local *level* fun funob)))
     (if (and previous (fun-var previous))
 	(setf (fun-var fun) (fun-var previous))
-	(let ((loc (progn (wt-data nil) `(VV ,(incf *next-vv*)))))
+	(let ((loc (progn (wt-data 0) `(VV ,(incf *next-vv*)))))
 	  (wt-nl loc " = ") (wt-make-closure fun) (wt ";")
 	  (setf (fun-var fun) loc))))
 )

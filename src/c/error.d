@@ -111,8 +111,8 @@ FEprogram_error(const char *s, int narg, ...)
 	funcall(4, @'si::universal-error-handler',
 		Cnil,                    /*  not correctable  */
 		@'si::simple-program-error', /*  condition name  */
-		list(4, @':format-control', make_constant_string(s),
-		     @':format-arguments', cl_grab_rest_args(args)));
+		cl_list(4, @':format-control', make_constant_string(s),
+			@':format-arguments', cl_grab_rest_args(args)));
 }
 
 void
@@ -123,8 +123,8 @@ FEcontrol_error(const char *s, int narg, ...)
 	funcall(4, @'si::universal-error-handler',
 		Cnil,                    /*  not correctable  */
 		@'si::simple-control-error', /*  condition name  */
-		list(4, @':format-control', make_constant_string(s),
-		     @':format-arguments', cl_grab_rest_args(args)));
+		cl_list(4, @':format-control', make_constant_string(s),
+			@':format-arguments', cl_grab_rest_args(args)));
 }
 
 void
@@ -261,7 +261,7 @@ not_a_variable(cl_object obj)
 void
 init_error(void)
 {
-	MF(@'si::universal-error-handler', universal_error_handler, Cnil);
+	cl_def_c_function_va(@'si::universal-error-handler', universal_error_handler);
 	null_string = make_constant_string("");
 	register_root(&null_string);
 }

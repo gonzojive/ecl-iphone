@@ -12,7 +12,8 @@
 (in-package "SYSTEM")
 
 (defun make-access-function (name conc-name type named slot-descr)
-  (declare (ignore named))
+  (declare (ignore named)
+	   (si::c-local))
   (let* ((slot-name (nth 0 slot-descr))
 	 ;; (default-init (nth 1 slot-descr))
 	 ;; (slot-type (nth 2 slot-descr))
@@ -50,7 +51,8 @@
   )
 
 (defun make-constructor (name constructor type named slot-descriptions)
-  (declare (ignore named))
+  (declare (ignore named)
+	   (si::c-local))
   (let ((slot-names
          ;; Collect the slot-names.
          (mapcar #'(lambda (x)
@@ -227,6 +229,7 @@
 
 
 (defun illegal-boa ()
+  (declare (si::c-local))
   (error "An illegal BOA constructor."))
 
 
@@ -264,6 +267,7 @@
 ;;;        (slot-name default-init slot-type read-only offset)
 
 (defun parse-slot-description (slot-description offset)
+  (declare (si::c-local))
   (let (slot-name default-init slot-type read-only)
     (cond ((atom slot-description)
            (setq slot-name slot-description))
@@ -293,6 +297,7 @@
 ;;;  :include defstruct option.
 
 (defun overwrite-slot-descriptions (news olds)
+  (declare (si::c-local))
   (when olds
       (let ((sds (member (caar olds) news :key #'car)))
         (cond (sds
@@ -585,35 +590,6 @@ as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
 	    (list `(fset ',predicate
 		    (make-predicate ',name ',type ',named ',name-offset))))
 	',name))))
-
-
-;;; The #S reader.
-
-(defun sharp-s-reader (stream subchar arg)
-  (declare (ignore subchar))
-  (when (and arg (null *read-suppress*))
-        (error "An extra argument was supplied for the #S readmacro."))
-  (let ((l (read stream)))
-    (when *read-suppress*
-      (return-from sharp-s-reader nil))
-    (unless (get (car l) 'IS-A-STRUCTURE)
-            (error "~S is not a structure." (car l)))
-    ;; Intern keywords in the keyword package.
-    (do ((ll (cdr l) (cddr ll)))
-        ((endp ll)
-         ;; Find an appropriate construtor.
-         (do ((cs (get (car l) 'STRUCTURE-CONSTRUCTORS) (cdr cs)))
-             ((endp cs)
-              (error "The structure ~S has no structure constructor."
-                     (car l)))
-           (when (symbolp (car cs))
-                 (return (apply (car cs) (cdr l))))))
-      (rplaca ll (intern (string (car ll)) 'KEYWORD)))))
-
-
-;; Set the dispatch macro.
-(set-dispatch-macro-character #\# #\s 'sharp-s-reader)
-(set-dispatch-macro-character #\# #\S 'sharp-s-reader)
 
 
 ;; Examples from Common Lisp Reference Manual.

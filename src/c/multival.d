@@ -28,8 +28,9 @@
 	returnn(VALUES(0));
 @)
 
-@(defun values_list (list)
-@
+cl_object
+cl_values_list(cl_object list)
+{
 	VALUES(0) = Cnil;
 	for (NValues=0; !endp(list); list=CDR(list)) {
 		if (NValues == VSSIZE)
@@ -37,10 +38,10 @@
 		VALUES(NValues++) = CAR(list);
 	}
 	returnn(VALUES(0));
-@)
+}
 
 void
 init_multival(void)
 {
-	make_constant("MULTIPLE-VALUES-LIMIT",MAKE_FIXNUM(32));
+	SYM_VAL(@'MULTIPLE-VALUES-LIMIT') = MAKE_FIXNUM(32);
 }

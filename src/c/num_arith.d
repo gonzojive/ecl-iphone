@@ -497,8 +497,9 @@ number_minus(cl_object x, cl_object y)
 	}
 }
 
-@(defun conjugate (c)
-@
+cl_object
+cl_conjugate(cl_object c)
+{
 	switch (type_of(c)) {
 	case t_complex:
 		c = make_complex(c->complex.real,
@@ -513,7 +514,7 @@ number_minus(cl_object x, cl_object y)
 		FEtype_error_number(c);
 	}
 	@(return c)
-@)
+}
 
 cl_object
 number_negate(cl_object x)
@@ -777,10 +778,12 @@ get_gcd(cl_object x, cl_object y)
 }
 
 /*  (1+ x)  */
-@(defun 1+ (x)
-@	/* INV: type check is in one_plus() */
+cl_object
+@1+(cl_object x)
+{
+	/* INV: type check is in one_plus() */
 	@(return one_plus(x))
-@)
+}
 
 
 cl_object
@@ -823,11 +826,11 @@ one_plus(cl_object x)
 }
 
 /*  (1-	x)  */
-@(defun 1- (x)
-@	/* INV: type check is in one_minus() */
+cl_object
+@1-(cl_object x)
+{	/* INV: type check is in one_minus() */
 	@(return one_minus(x))
-@)
-
+}
 
 cl_object
 one_minus(cl_object x)

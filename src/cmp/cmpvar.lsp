@@ -240,7 +240,7 @@
       (SPECIAL (wt-nl "(" var-loc "->symbol.dbind)= " loc ";"))
       (GLOBAL
        (if *safe-compile*
-         (wt-nl "set(" var-loc "," loc ");")
+         (wt-nl "cl_set(" var-loc "," loc ");")
          (wt-nl "(" var-loc "->symbol.dbind)= " loc ";")))
       (t
        (wt-nl) (wt-lcl var-loc) (wt "= ")

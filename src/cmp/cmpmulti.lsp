@@ -156,7 +156,7 @@
       (wt "}"))
     (unless (eq *exit* 'RETURN) (wt-nl))
     (wt-nl "if (NValues>1) NValues=1;}")
-    (unwind-exit 'VALUES)))
+    (unwind-exit (if vrefs (caar vrefs) '(VALUE 0)))))
 
 (defun c1multiple-value-bind (args &aux (info (make-info))
                                    (vars nil) (vnames nil) init-form

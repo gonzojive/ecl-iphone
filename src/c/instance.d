@@ -26,21 +26,24 @@ cl_allocate_instance(cl_object clas, int size)
 	return(x);
 }
 
-@(defun si::allocate_instance (clas size)
-@
+cl_object
+si_allocate_instance(cl_object clas, cl_object size)
+{
 	if (type_of(clas) != t_instance)
 	  FEwrong_type_argument(@'instance', clas);
 
 	@(return cl_allocate_instance(clas, fixnnint(size)))
-@)
+}
 
 /* corr is a list of (newi . oldi) describing which of the new slots
    retains a value from an old slot
  */
-@(defun si::change_instance (x clas size corr)
+cl_object
+si_change_instance(cl_object x, cl_object clas, cl_object size, cl_object corr)
+{
 	int nslot, i;
 	cl_object * oldslots;
-@
+
 	if (type_of(x) != t_instance)
 	  FEwrong_type_argument(@'instance', x);
 
@@ -61,24 +64,26 @@ cl_allocate_instance(cl_object clas, int size)
 	    x->instance.slots[i] = OBJNULL;
 	}
 	@(return) /* FIXME! Is this what we need? */
-@)
+}
 
-@(defun si::instance_class (x)
-@
+cl_object
+si_instance_class(cl_object x)
+{
 	if (type_of(x) != t_instance)
 		FEwrong_type_argument(@'instance', x);
 	@(return CLASS_OF(x))
-@)
+}
 
-@(defun si::instance_class_set (x y)
-@
+cl_object
+si_instance_class_set(cl_object x, cl_object y)
+{
 	if (type_of(x) != t_instance)
 		FEwrong_type_argument(@'instance', x);
 	if (type_of(y) != t_instance)
 		FEwrong_type_argument(@'instance', y);
 	CLASS_OF(x) = y;
 	@(return x)
-@)
+}
 
 cl_object
 instance_ref(cl_object x, int i)
@@ -90,20 +95,24 @@ instance_ref(cl_object x, int i)
 	return(x->instance.slots[i]);
 }
 
-@(defun si::instance_ref (x index)
+cl_object
+si_instance_ref(cl_object x, cl_object index)
+{
 	cl_fixnum i;
-@
+
 	if (type_of(x) != t_instance)
 		FEwrong_type_argument(@'instance', x);
 	if (!FIXNUMP(index) ||
 	    (i = fix(index)) < 0 || i >= x->instance.length)
 		FEerror("~S is an illegal slot index.", 1, index);
 	@(return x->instance.slots[i])
-@)
+}
 
-@(defun si::instance_ref_safe (x index)
+cl_object
+si_instance_ref_safe(cl_object x, cl_object index)
+{
 	cl_fixnum i;
-@
+
 	if (type_of(x) != t_instance)
 		FEwrong_type_argument(@'instance', x);
 	if (!FIXNUMP(index) ||
@@ -113,7 +122,7 @@ instance_ref(cl_object x, int i)
 	if (x == OBJNULL)
 		FEerror("Slot index ~S unbound", 1, index);
 	@(return x->instance.slots[i])
-@)
+}
 
 cl_object
 instance_set(cl_object x, int i, cl_object v)
@@ -126,9 +135,11 @@ instance_set(cl_object x, int i, cl_object v)
 	return(v);
 }
 
-@(defun si::instance_set (x index value)
+cl_object
+si_instance_set(cl_object x, cl_object index, cl_object value)
+{
 	cl_fixnum i;
-@
+
 	if (type_of(x) != t_instance)
 		FEwrong_type_argument(@'instance', x);
 	if (!FIXNUMP(index) ||
@@ -136,28 +147,33 @@ instance_set(cl_object x, int i, cl_object v)
 		FEerror("~S is an illegal slot index.", 1, index);
 	x->instance.slots[i] = value;
 	@(return value)
-@)
+}
 
-@(defun si::instancep (x)
-@
+cl_object
+si_instancep(cl_object x)
+{
 	@(return ((type_of(x) == t_instance) ? Ct : Cnil))
-@)
+}
 
-@(defun si::unbound ()
-@
+cl_object
+si_unbound()
+{
 	/* Returns an object that cannot be read or written and which
 	   is used to represent an unitialized slot */
 	@(return OBJNULL)
-@)
+}
 
-@(defun si::sl_boundp (x)
-@
+cl_object
+si_sl_boundp(cl_object x)
+{
 	@(return ((x == OBJNULL) ? Cnil : Ct))
-@)
+}
 
-@(defun si::sl_makunbound (x index)
+cl_object
+si_sl_makunbound(cl_object x, cl_object index)
+{
 	cl_fixnum i;
-@
+
 	if (type_of(x) != t_instance)
 		FEwrong_type_argument(@'instance', x);
 	if (!FIXNUMP(index) ||
@@ -165,4 +181,4 @@ instance_set(cl_object x, int i, cl_object v)
 		FEerror("~S is an illegal slot index.", 1, index);
 	x->instance.slots[i] = OBJNULL;
 	@(return x)
-@)
+}

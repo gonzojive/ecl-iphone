@@ -12,7 +12,8 @@
 (si::select-package "SYSTEM")
 
 #-ecl-min
-(c-declaim (si::c-export-fname find-documentation remove-documentation))
+(c-declaim (si::c-export-fname find-documentation remove-documentation
+			       si::check-keyword))
 
 #-ecl-min
 (defvar *dl*)
@@ -90,15 +91,19 @@
 	   (setq err head)))))
 
 (defun dm-bad-key (key)
-       (error "Defmacro-lambda-list contains illegal use of ~s." key))
+  (declare (si::c-local))
+  (error "Defmacro-lambda-list contains illegal use of ~s." key))
 
 (defun dm-too-few-arguments ()
-       (error "Too few arguments are supplied to defmacro-lambda-list."))
+  (declare (si::c-local))
+  (error "Too few arguments are supplied to defmacro-lambda-list."))
 
 (defun dm-too-many-arguments ()
-       (error "Too many arguments are supplied to defmacro-lambda-list."))
+  (declare (si::c-local))
+  (error "Too many arguments are supplied to defmacro-lambda-list."))
 
 (defun sys::destructure (vl whole macro &aux (*dl* nil) (*key-check* nil) (*arg-check* nil))
+  (declare (si::c-local))
   (labels ((dm-vl (vl whole top &aux v allow-other-keys-p)
 	     (do*((optionalp) (restp) (keyp)
 		  (allow-other-keys-p) (auxp)

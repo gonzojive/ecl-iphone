@@ -10,10 +10,11 @@
 (in-package "CLOS")
 
 (defun legal-generic-function-p (name)
+  (declare (si::c-local))
   (cond ((not (fboundp name)))
 	; a generic function already exists
 	((si:gfunp (symbol-function name)))
-	((special-form-p name)
+	((special-operator-p name)
 	 (error "~A is a special form" name))
 	((macro-function name)
 	 (error "~A is a macro" name))
@@ -96,6 +97,7 @@
 ;;;                                                                parsing
 
 (defun parse-defgeneric (args)
+  (declare (si::c-local))
   ;; (values function-specifier lambda-list options)
   (let (function-specifier)
     (unless args
@@ -111,12 +113,14 @@
     (values function-specifier (first args) (rest args))))
 
 (defun parse-generic-function (args)
+  (declare (si::c-local))
   ;; (values lambda-list options)
   (unless args
     (error "Illegal generic-function form: missing lambda-list"))
   (values (first args) (rest args)))
 	
 (defun parse-generic-options (options lambda-list)
+  (declare (si::c-local))
   (let (argument-precedence-order
 	declaration
 	documentation
@@ -237,6 +241,7 @@ than once")
 ;;; ----------------------------------------------------------------------
 ;;;                                                             congruence
 
+#+nil
 (defun congruent-lambda-list-p (l1 l2)
   (let (post-keyword)
     (do ((scan1 l1 (cdr scan1))
@@ -273,6 +278,7 @@ than once")
 ;;;                                                                parsing
 
 (defun parse-lambda-list (lambda-list &optional post-keyword)
+  (declare (si::c-local))
   (let ((arg (car lambda-list)))
     (cond ((null lambda-list))
 	  ((eq arg '&AUX)
@@ -288,6 +294,7 @@ than once")
 	       (parse-lambda-list (cdr lambda-list)))))))
 
 (defun parse-parameter-names (parameter-list lambda-list)
+  (declare (si::c-local))
   (let (required-list count)
     (setf required-list
 	  (do ((l lambda-list (cdr l)))
@@ -303,6 +310,7 @@ than once")
                                 option" l)))))
 
 (defun parse-legal-declaration (decl)
+  (declare (si::c-local))
   (unless (eq (car decl) 'OPTIMIZE)
 	  (error "The only declaration allowed is optimize"))
   (do* ((d (cdr decl) (cdr d))
@@ -312,11 +320,13 @@ than once")
 	       (error "The only qualities allowed are speed and space"))))
 
 (defun parse-legal-documentation (doc)
+  (declare (si::c-local))
   (unless (stringp doc)
 	  (error "The documentation must be a string"))
   doc)
 
 (defun parse-legal-method-combination (name args)
+  (declare (si::c-local))
   (unless (method-combination-p name)
 	  (error "~A is not the name of a method-combination type" name))
   (unless (legal-method-combination-args name args)
@@ -325,6 +335,7 @@ than once")
   (values name args))
 
 (defun legal-generic-function-classp (class-name)
+  (declare (si::c-local))
   ; until we don't know when a class can be the class of a generic function
   (unless (subtypep (find-class class-name) 
 		    (find-class 'GENERIC-FUNCTION))
@@ -333,9 +344,11 @@ than once")
   class-name)
 
 (defun parse-legal-method-class (class-name)
+  (declare (si::c-local))
   ; until we don't know when a class can be the class of a method
   (error "At the moment the class of a method can be only standard-method"))
 
 (defun parse-legal-method-list (methods-list)
+  (declare (si::c-local))
   methods-list)
 

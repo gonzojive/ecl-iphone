@@ -468,22 +468,15 @@ Cannot compile ~a."
 			      &aux def disassembled-form
 			      (*compiler-in-use* *compiler-in-use*)
 			      (*print-pretty* nil))
+  (when (or (symbolp thing) (si::setf-namep thing))
+    (setq thing (eval `(function ,thing))))
   (cond ((null thing))
-	((symbolp thing)
-	 (setq def (symbol-function thing))
-	 (when (macro-function thing)
-	   (setq def (cdr def)))
-	 (return-from disassemble (disassemble def)))
 	((functionp thing)
-	 (if (setq def (si::compiled-function-source thing))
-	   (setq disassembled-form
-		`(defun ,(or (si::compiled-function-name thing)
-			     GAZONK)
-		  ,@def))
+	 (unless (si::bc-disassemble thing)
 	   (error "The function definition for ~S was lost." thing)))
 	((and (consp thing) (eq (car thing) 'LAMBDA))
 	 (setq disassembled-form `(defun gazonk ,@(cdr thing))))
-       (t (setq disassembled-form thing)))
+	(t (setq disassembled-form thing)))
 
   (when *compiler-in-use*
     (format t "~&;;; The compiler was called recursively.~

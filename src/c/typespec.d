@@ -62,7 +62,7 @@ void
 FEtype_error_proper_list(cl_object x) {
 	FEcondition(9, @'simple-type-error', @':format-control',
 		    make_simple_string("Not a proper list ~D"),
-		    @':format-arguments', list(1, x),
+		    @':format-arguments', cl_list(1, x),
 		    @':expected-type', @'list',
 		    @':datum', x);
 }
@@ -72,7 +72,7 @@ FEtype_error_alist(cl_object x)
 {
 	FEcondition(9, @'simple-type-error', @':format-control',
 		    make_simple_string("Not a valid association list ~D"),
-		    @':format-arguments', list(1, x),
+		    @':format-arguments', cl_list(1, x),
 		    @':expected-type', @'list',
 		    @':datum', x);
 }
@@ -82,7 +82,7 @@ FEtype_error_plist(cl_object x)
 {
 	FEcondition(9, @'simple-type-error', @':format-control',
 		    make_simple_string("Not a valid property list ~D"),
-		    @':format-arguments', list(1, x),
+		    @':format-arguments', cl_list(1, x),
 		    @':expected-type', @'list',
 		    @':datum', x);
 }
@@ -94,7 +94,7 @@ FEcircular_list(cl_object x)
 	bds_bind(@'*print-circle*', Ct);
 	FEcondition(9, @'simple-type-error', @':format-control',
 		    make_simple_string("Circular list ~D"),
-		    @':format-arguments', list(1, x),
+		    @':format-arguments', cl_list(1, x),
 		    @':expected-type', @'list',
 		    @':datum', x);
 }
@@ -104,7 +104,7 @@ FEtype_error_index(cl_object x)
 {
 	FEcondition(9, @'simple-type-error', @':format-control',
 		    make_simple_string("Index out of bounds ~D"),
-		    @':format-arguments', list(1, x),
+		    @':format-arguments', cl_list(1, x),
 		    @':expected-type', @'fixnum',
 		    @':datum', x);
 }
@@ -233,155 +233,158 @@ assert_type_vector(cl_object p)
 }
 
 cl_object
-TYPE_OF(cl_object x)
+cl_type_of(cl_object x)
 {
+	cl_object t;
 	switch (type_of(x)) {
 #ifdef CLOS
         case t_instance:
 		{ cl_object cl = CLASS_OF(x);
 		  if (CLASS_NAME(cl) != Cnil)
-		    return(CLASS_NAME(cl));
+		    t = CLASS_NAME(cl);
 		  else
-		    return(cl);
+		    t = cl;
 		}
+		break;
 #endif
-
 	case t_fixnum:
-		return(@'fixnum');
+		t = @'fixnum'; break;
 
 	case t_bignum:
-		return(@'bignum');
+		t = @'bignum'; break;
 
 	case t_ratio:
-		return(@'ratio');
+		t = @'ratio'; break;
 
 	case t_shortfloat:
-		return(@'short-float');
+		t = @'short-float'; break;
 
 	case t_longfloat:
-		return(@'long-float');
+		t = @'long-float'; break;
 
 	case t_complex:
-		return(@'complex');
+		t = @'complex'; break;
 
 	case t_character: {
 		int i = CHAR_CODE(x);
 		if ((' ' <= i && i < '\177') || i == '\n')
-			return(@'standard-char');
+			t = @'standard-char';
 		else
-			return(@'base-char');
+			t = @'base-char';
+		break;
 	}
 
 	case t_symbol:
 		if (x == Cnil)
-			return(@'null');
-		if (x->symbol.hpack == keyword_package)
-			return(@'keyword');
+			t = @'null';
+		else if (x->symbol.hpack == keyword_package)
+			t = @'keyword';
 		else
-			return(@'symbol');
+			t = @'symbol';
+		break;
 
 	case t_package:
-		return(@'package');
+		t = @'package'; break;
 
 	case t_cons:
-		return(@'cons');
+		t = @'cons'; break;
 
 	case t_hashtable:
-		return(@'hash-table');
+		t = @'hash-table'; break;
 
 	case t_array:
 		if (x->array.adjustable ||
 		    Null(CAR(x->array.displaced)))
-			return(@'array');
+			t = @'array';
 		else
-			return(@'simple-array');
+			t = @'simple-array';
+		break;
 
 	case t_vector:
 		if (x->vector.adjustable ||
 		    x->vector.hasfillp ||
 		    Null(CAR(x->vector.displaced)) ||
 		    (cl_elttype)x->vector.elttype != aet_object)
-			return(@'vector');
+			t = @'vector';
 		else
-			return(@'simple-vector');
+			t = @'simple-vector';
+		break;
 
 	case t_string:
 		if (x->string.adjustable ||
 		    x->string.hasfillp ||
 		    Null(CAR(x->string.displaced)))
-			return(@'string');
+			t = @'string';
 		else
-			return(@'simple-string');
+			t = @'simple-string';
+		break;
 
 	case t_bitvector:
 		if (x->vector.adjustable ||
 		    x->vector.hasfillp ||
 		    Null(CAR(x->vector.displaced)))
-			return(@'bit-vector');
+			t = @'bit-vector';
 		else
-			return(@'simple-bit-vector');
+			t = @'simple-bit-vector';
+		break;
 
 #ifndef CLOS
 	case t_structure:
-		return(x->str.name);
+		t = x->str.name; break;
 #endif
 
 	case t_stream:
 		switch (x->stream.mode) {
-		case smm_synonym:	return @'synonym-stream';
-		case smm_broadcast:	return @'broadcast-stream';
-		case smm_concatenated:	return @'concatenated-stream';
-		case smm_two_way:	return @'two-way-stream';
+		case smm_synonym:	t = @'synonym-stream'; break;
+		case smm_broadcast:	t = @'broadcast-stream'; break;
+		case smm_concatenated:	t = @'concatenated-stream'; break;
+		case smm_two_way:	t =  @'two-way-stream'; break;
 		case smm_string_input:
-		case smm_string_output:	return @'string-stream';
-		case smm_echo:		return @'echo-stream';
-		default:		return @'file-stream';
+		case smm_string_output:	t = @'string-stream'; break;
+		case smm_echo:		t = @'echo-stream'; break;
+		default:		t = @'file-stream'; break;
 		}
+		break;
 
 	case t_readtable:
-		return(@'readtable');
+		t = @'readtable'; break;
 
 	case t_pathname:
-		if (x->pathname.logical)
-			return @'logical-pathname';
-		return(@'pathname');
+		t = x->pathname.logical? @'logical-pathname' : @'pathname';
+		break;
 
 	case t_random:
-		return(@'random-state');
+		t = @'random-state'; break;
 
 	case t_bytecodes:
 	case t_cfun:
 	case t_cclosure:
-		return(@'function');
+		t = @'function'; break;
 
 #ifdef THREADS
 	case t_cont:
-		return(@'cont');
+		t = @'cont'; break;
 
 	case t_thread:
-		return(@'thread');
+		t = @'thread'; break;
 #endif
 #ifdef CLOS
 	case t_gfun:
-		return(@'dispatch-function');
+		t = @'dispatch-function'; break;
 #endif
 
 	default:
 		error("not a lisp data object");
 	}
+	return1(t);
 }
-
-@(defun type_of (x)
-@
-	@(return TYPE_OF(x))
-@)
 
 void
 init_typespec(void)
 {
 
-	TSnon_negative_integer = list(3, @'integer', MAKE_FIXNUM(0), @'*');
+	TSnon_negative_integer = cl_list(3, @'integer', MAKE_FIXNUM(0), @'*');
 	register_root(&TSnon_negative_integer);
-	TSpositive_number = list(2, @'satisfies', @'plusp');
+	TSpositive_number = cl_list(2, @'satisfies', @'plusp');
 	register_root(&TSpositive_number);
 }				

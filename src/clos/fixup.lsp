@@ -13,6 +13,7 @@
 ;;; Fixup
 
 (defun fix-early-methods ()
+  (declare (si::c-local))
   (dolist (method-info *early-methods*)
     (let* ((method-name (car method-info))
 	   (gfun (symbol-function method-name))
@@ -43,6 +44,7 @@
 				   function plist options gf-object
 				   'STANDARD-METHOD))))))
 
+      #-ecl-min
       (fmakunbound 'FIX-EARLY-METHODS)
       (makunbound '*EARLY-METHODS*))
 
@@ -146,12 +148,14 @@
 ;;;                                                      method comparison
 
 (defun compare-methods (method-1 method-2 args-specializers)
+  (declare (si::c-local))
   (let ((specializers-list-1 (specializers method-1))
 	(specializers-list-2 (specializers method-2)))
     (compare-specializers-lists specializers-list-1 
 				specializers-list-2 args-specializers)))
 
 (defun compare-specializers-lists (spec-list-1 spec-list-2 args-specializers)
+  (declare (si::c-local))
   (when (or spec-list-1 spec-list-2)
     (ecase (compare-specializers (first spec-list-1)
 				 (first spec-list-2)
@@ -171,6 +175,7 @@
   )
 
 (defun compare-specializers (spec-1 spec-2 arg-spec)
+  (declare (si::c-local))
   (let* ((arg-class (closest-class arg-spec))
 	 (cpl (cons arg-class
 		    (if (typep arg-class 'STANDARD-CLASS)
@@ -193,7 +198,8 @@
 	  (t (compare-complex-specializers spec-1 spec-2 arg-spec)))))
 
 (defun compare-complex-specializers (spec-1 spec-2 arg-spec)
-  (declare (ignore spec-1 spec-2 arg-spec))
+  (declare (ignore spec-1 spec-2 arg-spec)
+	   (si::c-local))
   (error "Complex type specifiers are not yet supported."))
 
 (defun si:compute-effective-method (gf applicable-methods

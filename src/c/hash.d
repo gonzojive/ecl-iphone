@@ -401,7 +401,7 @@ extend_hashtable(cl_object hashtable)
 			      (rehash_size make_shortfloat(1.5))
 			      (rehash_threshold make_shortfloat(0.7)))
 @
-	@(return cl_make_hash_table(test, size, rehash_size, rehash_threshold))
+	@(return cl__make_hash_table(test, size, rehash_size, rehash_threshold))
 @)
 
 cl_object
@@ -417,8 +417,8 @@ cl_clear_hash_table(cl_object hashtable)
 }
 
 cl_object
-cl_make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
-		   cl_object rehash_threshold)
+cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
+		    cl_object rehash_threshold)
 {
 	enum httest htt;
 	cl_index i, hsize;
@@ -466,10 +466,11 @@ cl_make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 	return h;
 }
 
-@(defun hash_table_p (ht)
-@
+cl_object
+cl_hash_table_p(cl_object ht)
+{
 	@(return ((type_of(ht) == t_hashtable) ? Ct : Cnil))
-@)
+}
 
 @(defun gethash (key ht &optional (no_value Cnil))
 	struct hashtable_entry *e;
@@ -482,12 +483,13 @@ cl_make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 		@(return no_value Cnil)
 @)
 
-@(defun si::hash_set (key ht val)
-@
+cl_object
+si_hash_set(cl_object key, cl_object ht, cl_object val)
+{
 	/* INV: sethash() checks the type of hashtable */
 	sethash(key, ht, val);
 	@(return val)
-@)
+}
 
 bool
 remhash(cl_object key, cl_object hashtable)
@@ -505,16 +507,18 @@ remhash(cl_object key, cl_object hashtable)
 	return FALSE;
 }
 
-@(defun remhash (key ht)
-	struct hashtable_entry *e;
-@
+cl_object
+cl_remhash(cl_object key, cl_object ht)
+{
 	/* INV: search_hash() checks the type of hashtable */
 	@(return (remhash(key, ht)? Ct : Cnil));
-@)
+}
 
-@(defun clrhash (ht)
+cl_object
+cl_clrhash(cl_object ht)
+{
 	cl_index i;
-@
+
 	assert_type_hash_table(ht);
 	for(i = 0; i < ht->hash.size; i++) {
 		ht->hash.data[i].key = OBJNULL;
@@ -522,34 +526,40 @@ remhash(cl_object key, cl_object hashtable)
 	}
 	ht->hash.entries = 0;
 	@(return ht)
-@)
+}
 
-@(defun hash_table_count (ht)
-@
+cl_object
+cl_hash_table_count(cl_object ht)
+{
 	assert_type_hash_table(ht);
 	@(return (MAKE_FIXNUM(ht->hash.entries)))
-@)
+}
 
-@(defun hash_table_rehash_size (ht)
-@
+cl_object
+cl_hash_table_rehash_size(cl_object ht)
+{
 	assert_type_hash_table(ht);
 	@(return ht->hash.rehash_size)
-@)
+}
 
-@(defun hash_table_rehash_threshold (ht)
-@
+cl_object
+cl_hash_table_rehash_threshold(cl_object ht)
+{
 	assert_type_hash_table(ht);
 	@(return ht->hash.threshold)
-@)
+}
 
-@(defun sxhash (key)
-@
+cl_object
+cl_sxhash(cl_object key)
+{
 	@(return (MAKE_FIXNUM(_hash_equal(~(cl_hashkey)0, 0, key) & 0x7fffffff)))
-@)
+}
 
-@(defun maphash (fun ht)
+cl_object
+cl_maphash(cl_object fun, cl_object ht)
+{
 	cl_index i;
-@
+
 	assert_type_hash_table(ht);
 	for (i = 0;  i < ht->hash.size;  i++) {
 		if(ht->hash.data[i].key != OBJNULL)
@@ -558,4 +568,4 @@ remhash(cl_object key, cl_object hashtable)
 				  ht->hash.data[i].value);
 	}
 	@(return Cnil)
-@)
+}

@@ -49,7 +49,7 @@ fixnnint(cl_object x)
 	}
 	FEcondition(9, @'simple-type-error', @':format-control',
 		    make_simple_string("Not a non-negative fixnum ~S"),
-		    @':format-arguments', list(1,x),
+		    @':format-arguments', cl_list(1,x),
 		    @':expected-type', @'fixnum', @':datum', x);
 }
 

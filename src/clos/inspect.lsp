@@ -282,6 +282,7 @@
 	      (terpri)))))
 
 (defun select-clos-? ()
+  (declare (si::c-local))
   (terpri)
   (format t
 	  "Inspect commands for clos instances:~%~

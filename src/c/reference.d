@@ -20,9 +20,11 @@
 #define SBOUNDP(sym) (SYM_VAL(sym) == OBJNULL)
 #define FBOUNDP(sym) (SYM_FUN(sym) == OBJNULL)
 
-@(defun fboundp (sym)
+cl_object
+cl_fboundp(cl_object sym)
+{
 	cl_object output;
-@
+
 	if (!SYMBOLP(sym)) {
 		cl_object sym1 = setf_namep(sym);
 		if (sym1 != OBJNULL)
@@ -37,7 +39,7 @@
 	else
 		output = Ct;
 	@(return output)
-@)
+}
 
 cl_object
 symbol_function(cl_object sym)
@@ -64,9 +66,11 @@ symbol_function(cl_object sym)
 	(if defined CLOS it returns also
 		generic-function                for generic functions)
 */
-@(defun symbol_function (sym)
+cl_object
+cl_symbol_function(cl_object sym)
+{
 	cl_object output;
-@
+
 	if (!SYMBOLP(sym)) {
 		cl_object sym1 = setf_namep(sym);
 		if (sym1 == OBJNULL)
@@ -82,18 +86,20 @@ symbol_function(cl_object sym)
 	else
 		output = SYM_FUN(sym);
 	@(return output)
-@)
+}
 
-@(defun si::coerce_to_function (fun)
+cl_object
+si_coerce_to_function(cl_object fun)
+{
 	cl_type t = type_of(fun);
-@
+
 	if (t == t_symbol) {
 		if (FBOUNDP(fun) || fun->symbol.mflag)
 			FEundefined_function(fun);
 		else
 			@(return SYM_FUN(fun))
 	} else if (t == t_cons && CAR(fun) == @'lambda') {
-		return @si::make-lambda(2, Cnil, CDR(fun));
+		return si_make_lambda(Cnil, CDR(fun));
 	} else {
 	  	cl_object setf_sym = setf_namep(fun);
 		if ((setf_sym != OBJNULL) && !FBOUNDP(setf_sym))
@@ -101,23 +107,25 @@ symbol_function(cl_object sym)
 		else
 			FEinvalid_function(fun);
 	}
-@)
+}
 
-@(defun symbol_value (sym)
-@
+cl_object
+cl_symbol_value(cl_object sym)
+{
 	if (!SYMBOLP(sym))
 		FEtype_error_symbol(sym);
 	if (SBOUNDP(sym))
 		FEunbound_variable(sym);
 	@(return SYM_VAL(sym))
-@)
+}
 
-@(defun boundp (sym)
-@
+cl_object
+cl_boundp(cl_object sym)
+{
 	if (!SYMBOLP(sym))
 		FEtype_error_symbol(sym);
 	@(return (SBOUNDP(sym)? Cnil : Ct))
-@)
+}
 
 @(defun macro_function (sym &optional env)
 	cl_object fd;
@@ -135,9 +143,10 @@ symbol_function(cl_object sym)
 	@(return fd)
 @)
 
-@(defun special_form_p (form)
-@
+cl_object
+cl_special_operator_p(cl_object form)
+{
 	if (!SYMBOLP(form))
 		FEtype_error_symbol(form);
 	@(return (form->symbol.isform? Ct : Cnil))
-@)
+}

@@ -141,41 +141,23 @@ cl_return f ## _if_not(int narg, cl_object arg1, cl_object pred, cl_object arg3,
 	return f(narg+2, arg1, pred, arg3, @':test-not', @'funcall', key, val);  \
 }
 
-@(defun car (x)
-@
-	if (Null(x))
-		@(return Cnil)
-	if (ATOM(x))
-		FEtype_error_list(x);
-	@(return CAR(x))
-@)
-
 cl_object
-car(cl_object x)
+cl_car(cl_object x)
 {
 	if (Null(x))
-		return(x);
+		return1(x);
 	if (CONSP(x))
-		return(CAR(x));
+		return1(CAR(x));
 	FEtype_error_list(x);
 }
 
-@(defun cdr (x)
-@
-	if (Null(x))
-		@(return Cnil)
-	if (ATOM(x))
-		FEtype_error_list(x);
-	@(return CDR(x))
-@)
-
 cl_object
-cdr(cl_object x)
+cl_cdr(cl_object x)
 {
 	if (Null(x))
-		return(x);
+		return1(x);
 	if (CONSP(x))
-		return(CDR(x));
+		return1(CDR(x));
 	FEtype_error_list(x);
 }
 
@@ -190,18 +172,6 @@ cdr(cl_object x)
 	@(return list)
 @)
 
-cl_object
-list(int narg, ...)
-{
-	cl_object p = Cnil, *z = &p;
-	va_list args;
-
-	va_start(args, narg);
-	while (narg-- > 0)
-		z = &CDR(*z = CONS(va_arg(args, cl_object), Cnil));
-	return(p);
-}
-
 @(defun list* (&rest args)
 	cl_object p = Cnil, *z=&p;
 @
@@ -212,19 +182,6 @@ list(int narg, ...)
 	*z = cl_va_arg(args);
 	@(return p)
 @)
-
-cl_object
-listX(int narg, ...)
-{
-	cl_object p = Cnil, *z = &p;
-	va_list args;
-
-	va_start(args, narg);
-	while (--narg > 0)
-		z = &CDR( *z = CONS(va_arg(args,cl_object), Cnil));
-	*z = va_arg(args, cl_object);
-	return(p);
-}
 
 static void
 copy_list_to(cl_object x, cl_object **z)
@@ -263,7 +220,6 @@ append(cl_object x, cl_object y)
 	return(w);
 }
 
-#if 1
 /* Open coded CARs and CDRs */
 #define car(foo) \
 	(void)foo; \
@@ -282,22 +238,10 @@ append(cl_object x, cl_object y)
 	     goto E; \
 	}
 #define defcxr(name, arg, code) \
-cl_object name(cl_object foo) { \
+cl_object cl_##name(cl_object foo) { \
 	cl_object arg = foo; \
-	code; return x; \
-E:	FEtype_error_list(arg);} \
-cl_return clL##name(int narg, cl_object arg) { \
-	check_arg(1); \
-	return1(name(arg)); \
-}
-#else
-#define defcxr(name, arg, code) \
-cl_object name(cl_object arg) { return code; } \
-cl_return clL##name(int narg, cl_object arg) { \
-	check_arg(1); \
-	return1(name(arg)); \
-}
-#endif
+	code; return1(x); \
+E:	FEtype_error_list(arg);}
 
 defcxr(caar, x, car(car(x)))
 defcxr(cadr, x, car(cdr(x)))
@@ -330,8 +274,7 @@ defcxr(cddddr, x, cdr(cdr(cdr(cdr(x)))))
 #undef car
 #undef cdr
 
-#define LENTH(n) (int narg, cl_object x) {\
-	check_arg(1);\
+#define LENTH(n) (cl_object x) {\
 	return1(nth(n, x));\
 }
 cl_return @fifth	LENTH(4)
@@ -754,8 +697,8 @@ sublis(cl_object alist, cl_object tree)
 
 	cs_check(alist);
 	loop_for_in(x) {
-		item_compared = car(CAR(x));
-		if (TEST(tree)) return(cdr(CAR(x)));
+		item_compared = cl_car(CAR(x));
+		if (TEST(tree)) return(cl_cdr(CAR(x)));
 	} end_loop_for_in;
 	if (CONSP(tree))
 		return(CONS(sublis(alist, CAR(tree)), sublis(alist, CDR(tree))));
@@ -785,7 +728,7 @@ nsublis(cl_object alist, cl_object *treep)
 
 	cs_check(alist);
 	loop_for_in(x) {
-		item_compared = car(CAR(x));
+		item_compared = cl_car(CAR(x));
 		if (TEST(*treep)) {
 			*treep = CDAR(x);
 			return;

@@ -554,9 +554,9 @@
       (wt-nl "narg -= i;")
       (wt-nl "narg -=" nreq ";"))
 
-  (wt-h "#define L" cfun "keys (&" (add-keyword (caar keywords)) ")")
-  (dolist (kwd (rest keywords))
-    (add-keyword (first kwd)))
+  (wt-h "#define L" cfun "keys (&"
+	(add-keywords (mapcar #'car keywords))
+	")")
 
   (wt-nl "{ cl_object keyvars[" (* 2 nkey) "];")
   (wt-nl "cl_parse_key(args," (length keywords) ",L" cfun "keys,keyvars")

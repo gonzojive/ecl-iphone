@@ -153,7 +153,7 @@
 #ifdef	__FreeBSD__
 #include <dlfcn.h>
 #define	IEEEFLOAT
-#define	JB_SP 4
+#define	JB_SP 2
 #define	BRAND "IBM-PC"
 #define	CLIBS -lcompat
 #define	LDFLAGS -Wl,--export-dynamic

@@ -4,6 +4,11 @@
 (load "bare.lsp")
 
 ;;;
+;;; Trick to make names shorter
+;;;
+(rename-package "CL" "CL" '("COMMON-LISP" "LISP"))
+
+;;;
 ;;; * Compile, load and link Common-Lisp base library
 ;;;
 (setq si::*keep-documentation* nil)

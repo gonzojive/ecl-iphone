@@ -64,7 +64,7 @@
 
 (defun set-loc (loc &aux fd
 		    (is-call (and (consp loc)
-				  (member (car loc) '(CALL CALL-LOCAL)
+				  (member (car loc) '(CALL CALL-LOCAL CALL-FIX)
 					  :test #'eq))))
   (case *destination*
     (VALUES

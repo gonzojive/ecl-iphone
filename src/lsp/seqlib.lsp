@@ -26,6 +26,7 @@
 
 (declaim (function seqtype (t) t))
 (defun seqtype (sequence)
+  (declare (si::c-local))
   (cond ((listp sequence) 'list)
         ((stringp sequence) 'string)
         ((bit-vector-p sequence) 'bit-vector)
@@ -34,15 +35,18 @@
 
 (declaim (function call-test (t t t t) t))
 (defun call-test (test test-not item keyx)
+  (declare (si::c-local))
   (cond (test (funcall test item keyx))
         (test-not (not (funcall test-not item keyx)))
         (t (eql item keyx))))
 
 (declaim (function test-error() t))
 (defun test-error()
+  (declare (si::c-local))
   (error "both test and test are supplied"))
 
 (defun bad-seq-limit (x &optional y)
+  (declare (si::c-local))
   (error "bad sequence limit ~a" (if y (list x y) x)))
 
 (eval-when (compile eval)
@@ -55,6 +59,7 @@
   )
 
 (defun the-end (x y)
+  (declare (si::c-local))
   (cond ((fixnump x)
 	 (unless (<= (the fixnum x) (the fixnum (length y)))
 	   (bad-seq-limit x))
@@ -64,6 +69,7 @@
 	(t (bad-seq-limit x))))
 
 (defun the-start (x)
+  (declare (si::c-local))
   (cond ((fixnump x)
 	 (unless (>= (the fixnum x) 0)
 	     (bad-seq-limit x))

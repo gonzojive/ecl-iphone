@@ -18,19 +18,14 @@
 #include <string.h>
 
 cl_object
-set(cl_object var, cl_object val)
+cl_set(cl_object var, cl_object val)
 {
 	if (!SYMBOLP(var))
 		FEtype_error_symbol(var);
 	if (var->symbol.stype == stp_constant)
 		FEinvalid_variable("Cannot assign to the constant ~S.", var);
-	return (SYM_VAL(var) = val);
+	return1(SYM_VAL(var) = val);
 }
-
-@(defun set (var val)
-@
-	@(return set(var, val))
-@)
 
 cl_object
 setf_namep(cl_object fun_spec)
@@ -53,12 +48,14 @@ setf_namep(cl_object fun_spec)
 	} else return(OBJNULL);
 }
 
-@(defun si::setf_namep (arg)
+cl_object
+si_setf_namep(cl_object arg)
+{
 	cl_object x;
-@
+
 	x = setf_namep(arg);
 	@(return ((x != OBJNULL) ? x : Cnil))
-@)
+}
 
 @(defun si::fset (fun def &optional macro pprint)
 	cl_type t;
@@ -101,18 +98,20 @@ setf_namep(cl_object fun_spec)
 	@(return fun)
 @)
 
-@(defun makunbound (sym)
-@
+cl_object
+cl_makunbound(cl_object sym)
+{
 	if (!SYMBOLP(sym))
 		FEtype_error_symbol(sym);
 	if ((enum stype)sym->symbol.stype == stp_constant)
 		FEinvalid_variable("Cannot unbind the constant ~S.", sym);
 	SYM_VAL(sym) = OBJNULL;
 	@(return sym)
-@)
+}
 	
-@(defun fmakunbound (sym)
-@
+cl_object
+cl_fmakunbound(cl_object sym)
+{
 	if (!SYMBOLP(sym)) {
 		cl_object sym1 = setf_namep(sym);
 		if (sym1 == OBJNULL)
@@ -121,7 +120,7 @@ setf_namep(cl_object fun_spec)
 		remprop(sym, @'si::setf-lambda');
 		remprop(sym, @'si::setf-method');
 		remprop(sym, @'si::setf-update');
-		@fmakunbound(1, sym1);
+		cl_fmakunbound(sym1);
 		@(return sym)
 	}
 	if (sym->symbol.isform) {
@@ -140,20 +139,21 @@ setf_namep(cl_object fun_spec)
 	SYM_FUN(sym) = OBJNULL;
 	sym->symbol.mflag = FALSE;
 	@(return sym)
-@)
+}
 
 void
 clear_compiler_properties(cl_object sym)
 {
-	@si::unlink-symbol(1, sym);
+	si_unlink_symbol(sym);
 	if (symbol_value(@'si::*inhibit-macro-special*') != Cnil)
 		(void)funcall(2, @'si::clear-compiler-properties', sym);
 }
 
-@(defun si::clear_compiler_properties (sym)
-@
+cl_object
+si_clear_compiler_properties(cl_object sym)
+{
 	@(return sym)
-@)
+}
 
 #ifdef PDE
 void

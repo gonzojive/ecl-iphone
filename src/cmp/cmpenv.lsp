@@ -24,7 +24,7 @@
   (setq *next-cfun* 0)
   (setq *last-label* 0)
   (setq *objects* nil)
-  (setq *constants* nil)
+  (setq *keywords* nil)
   (setq *local-funs* nil)
   (setq *global-funs* nil)
   (setq *linking-calls* nil)
@@ -64,23 +64,55 @@
 (defun add-symbol (symbol)
   (add-object symbol))
 
-(defun add-keyword (symbol &aux x)
-  (incf *next-vv*)
-  (setq x (format nil "VV[~d]" *next-vv*))
-  (push (list symbol x) *objects*)
-  (wt-data symbol)
-  x)
+#+nil
+(defun add-keywords (keywords)
+  ;; We have to build, in the vector VV[], a sequence with all
+  ;; the keywords that this function uses. It does not matter
+  ;; whether the same keywords appeared before, because
+  ;; cl_parse_key() needs the whole list. However, we can optimize
+  ;; the case of a single keyword, reusing the value of a previous
+  ;; occurrence.
+  (let ((x (assoc keywords *keywords* :test #'equalp)))
+    (cond (x
+	   (second x))
+	  ((and (setq x (assoc (first keywords) *objects*))
+		(= (length keywords) 1))
+	   (second x))
+	  (t
+	   (flet ((add-keyword (keyword)
+		   (let ((x (format nil "VV[~d]" (incf *next-vv*))))
+		     (push (list keyword x *next-vv*) *objects*)
+		     (wt-data keyword)
+		     x)))
+	     (setq x (add-keyword (first keywords)))
+	     (dolist (k keywords)
+	       (add-keyword k))
+	     x)))))
+
+(defun add-keywords (keywords)
+  (flet ((add-keyword (keyword &aux x)
+	   (incf *next-vv*)
+	   (setq x (format nil "VV[~d]" *next-vv*))
+	   (let ((y (assoc keyword *objects*)))
+	     (if y
+		 (wt-filtered-data (format nil "#!~d" (- (1+ (third y)))))
+	         (wt-data keyword)))
+	   (push (list keyword x *next-vv*) *objects*)
+	   x))
+    (let ((x (add-keyword (first keywords))))
+      (dolist (k (rest keywords))
+	(add-keyword k))
+      x)))
 
 (defun add-object (object &aux x found)
-  ;;; Used only during Pass 1.
-  (cond ((setq x (assoc object *objects*))
+  (cond ((setq x (assoc object *objects* :test 'equalp))
          (second x))
 	((and (symbolp object)
 	      (multiple-value-setq (found x) (si::mangle-name object)))
 	 x)
         (t (incf *next-vv*)
 	   (setq x (format nil "VV[~d]" *next-vv*))
-	   (push (list object x) *objects*)
+	   (push (list object x *next-vv*) *objects*)
            (wt-data object)
            x)))
 
@@ -429,6 +461,7 @@
 	   (pushnew x *alien-declarations*)
 	   (warn "The declaration specifier ~s is not a symbol."
 		 x))))
+      (SI::C-LOCAL)
       (otherwise
        (unless (member (car decl) *alien-declarations*)
 	 (warn "The declaration specifier ~s is unknown."

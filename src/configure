@@ -841,6 +841,7 @@ Optional Features:
 --enable-clx           Include CLX.
 --enable-local-boehm   Use already installed Boehm GC library.
 --enable-local-gmp     Use already installed GMP library.
+--enable-threads	Include the multiple thread facility.
 --disable-shared       Enable building dynamically loadable extensions.
 --enable-cxx           Build ECL using C++ compiler
 
@@ -1224,7 +1225,7 @@ echo "***"
 exit 2;
 fi
 
-ECL_VERSION=0.7
+ECL_VERSION=0.7b
 
 
 ac_aux_dir=
@@ -1348,6 +1349,11 @@ if test "${with_gmp+set}" = set; then
   gmp_flags=${withval}; local_gmp="no"
 else
   gmp_flags=""
+fi;
+# Check whether --enable-threads or --disable-threads was given.
+if test "${enable_threads+set}" = set; then
+  enableval="$enable_threads"
+  threads="$enable_threads"
 fi;
 # Check whether --enable-shared or --disable-shared was given.
 if test "${enable_shared+set}" = set; then
@@ -3795,7 +3801,7 @@ configure___software_version=SOFTWARE_VERSION
 CPP=`eval "echo $CPP"`
 eval `${CPP} -D${host} ${tempcname} \
        | grep 'configure___' \
-       | sed -e 's/^configure___\([^=]*=\)[ ]*\(.*[^ ]\) */\1"\2"/'`
+       | sed -e 's/^configure___\([^=]*\)=[ ]*\(.*[^ ]\) */\1="$\1 \2"/'`
 rm ${tempcname}
 
 echo "$as_me:$LINENO: checking for ld flags when building shared libraries" >&5
@@ -3833,7 +3839,6 @@ libdir="${exec_prefix}/lib/ecl"
 includedir="${exec_prefix}/lib/ecl/h"
 mandir="${prefix}/man/man1"
 infodir="${prefix}/info"
-builddir=`pwd`
 TARGETS="ecl${EXEEXT}"
 LIBRARIES="libecl.a"
 LSP_LIBRARIES="liblsp.a libclos.a"
@@ -3919,12 +3924,19 @@ if test "${locative}" ; then
 _ACEOF
 
 fi
+echo "$as_me:$LINENO: checking Checking for threads support" >&5
+echo $ECHO_N "checking Checking for threads support... $ECHO_C" >&6
 if test "${threads}" ; then
   EXTRA_OBJS="${EXTRA_OBJS} lwp.o"
   cat >>confdefs.h <<\_ACEOF
 #define THREADS 1
 _ACEOF
 
+  echo "$as_me:$LINENO: result: userland threads" >&5
+echo "${ECHO_T}userland threads" >&6
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
 fi
 if test ${usecxx} = "no" ; then
   ECL_CC="${CC}"
@@ -5565,10 +5577,10 @@ else
 echo "${ECHO_T}configuring local copy" >&6
   test -d gmp && rm -rf gmp
   if mkdir gmp; then
-   (cd gmp;
+   (destdir=`pwd`; cd gmp;
      $srcdir/gmp/configure --disable-shared --prefix=$bindir \
-	--infodir=${builddir}/doc --includedir=${builddir}/h \
-        --libdir=${builddir} $gmp_flags)
+	--infodir=${destdir}/doc --includedir=${destdir}/h \
+        --libdir=${destdir} $gmp_flags)
   fi
 fi
 echo "$as_me:$LINENO: checking checking for Boehm-Weiser gc..." >&5
@@ -5581,15 +5593,18 @@ elif test "${local_boehm}" = "no" ; then
 echo "${ECHO_T}configuring local copy" >&6
   test -d gc && rm -rf gc
   if mkdir gc; then
-   (cd gc;
+   (destdir=`pwd`; cd gc;
      $srcdir/gc/configure --disable-threads --disable-shared --prefix=$bindir \
-	--includedir=${builddir}/h --libdir=${builddir})
+	--includedir=${destdir}/h --libdir=${destdir})
   fi
 else
   echo "$as_me:$LINENO: result: already installed" >&5
 echo "${ECHO_T}already installed" >&6
 fi
 ac_config_files="$ac_config_files compile.lsp compile_rest.lsp bare.lsp lsp/config.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp ../Makefile Makefile c/Makefile doc/Makefile tk/Makefile clx/defsys.lsp tests/Makefile ansi-tests/Makefile gabriel/Makefile lsp/defsys.lsp cmp/defsys.lsp clos/defsys.lsp"
+
+ac_config_files="$ac_config_files ecl-config:util/ecl-config"
+
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -6081,6 +6096,7 @@ do
   "lsp/defsys.lsp" ) CONFIG_FILES="$CONFIG_FILES lsp/defsys.lsp" ;;
   "cmp/defsys.lsp" ) CONFIG_FILES="$CONFIG_FILES cmp/defsys.lsp" ;;
   "clos/defsys.lsp" ) CONFIG_FILES="$CONFIG_FILES clos/defsys.lsp" ;;
+  "ecl-config" ) CONFIG_FILES="$CONFIG_FILES ecl-config:util/ecl-config" ;;
   "h/config.h" ) CONFIG_HEADERS="$CONFIG_HEADERS h/config.h" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
@@ -6420,6 +6436,10 @@ s,@INSTALL@,$ac_INSTALL,;t t
     rm -f $tmp/out
   fi
 
+  # Run the commands associated with the file.
+  case $ac_file in
+    ecl-config ) chmod +x ecl-config ;;
+  esac
 done
 _ACEOF
 cat >>$CONFIG_STATUS <<\_ACEOF

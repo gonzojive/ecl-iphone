@@ -181,7 +181,7 @@ truedirectory(cl_object pathname)
 }
 
 cl_object
-truename(cl_object pathname)
+cl_truename(cl_object pathname)
 {
 	cl_object directory;
 	cl_object truefilename;
@@ -216,12 +216,10 @@ truename(cl_object pathname)
 	switch (get_file_system_type(truefilename->string.self)) {
 	case FILE_DOES_NOT_EXIST:
 	  FEerror("truename: file does not exist or cannot be accessed",1,pathname);
-	  return OBJNULL;
 	case FILE_DIRECTORY:
 	  FEerror("truename: ~A is a directory", 1, truefilename);
-	  return OBJNULL;
 	default:
-	  return coerce_to_pathname(truefilename);
+	  return1(cl_pathname(truefilename));
 	}
 }
 
@@ -258,49 +256,50 @@ file_len(FILE *fp)
 	return(filestatus.st_size);
 }
 
-@(defun truename (file)
-@
-	/* INV: truename() checks type of file */
-	@(return truename(file))
-@)
-
-@(defun rename_file (oldn newn)
+cl_object
+cl_rename_file(cl_object oldn, cl_object newn)
+{
 	cl_object filename, newfilename, old_truename, new_truename;
-@
+
 	/* INV: coerce_to_file_pathname() checks types */
 	oldn = coerce_to_file_pathname(oldn);
 	newn = coerce_to_file_pathname(newn);
 	newn = merge_pathnames(newn, oldn, Cnil);
-	old_truename = truename(oldn);
+	old_truename = cl_truename(oldn);
 	filename = coerce_to_filename(oldn);
 	newfilename = coerce_to_filename(newn);
 	if (rename(filename->string.self, newfilename->string.self) < 0)
 		FEfilesystem_error("Cannot rename the file ~S to ~S.", 2,
 				   oldn, newn);
-	new_truename = truename(newn);
+	new_truename = cl_truename(newn);
 	@(return newn old_truename new_truename)
-@)
+}
 
-@(defun delete_file (file)
+cl_object
+cl_delete_file(cl_object file)
+{
 	cl_object filename;
-@
+
 	/* INV: coerce_to_filename() checks types */
 	filename = coerce_to_filename(file);
 	if (unlink(filename->string.self) < 0)
 		FEfilesystem_error("Cannot delete the file ~S.", 1, file);
 	@(return Ct)
-@)
+}
 
-@(defun probe_file (file)
-@
+cl_object
+cl_probe_file(cl_object file)
+{
 	/* INV: file_exists() and truename() check types */
-	@(return (file_exists(file)? truename(file) : Cnil))
-@)
+	@(return (file_exists(file)? cl_truename(file) : Cnil))
+}
 
-@(defun file_write_date (file)
+cl_object
+cl_file_write_date(cl_object file)
+{
 	cl_object filename, time;
 	struct stat filestatus;
-@
+
 	/* INV: coerce_to_filename() checks types */
 	filename = coerce_to_filename(file);
 	if (stat(filename->string.self, &filestatus) < 0)
@@ -308,16 +307,18 @@ file_len(FILE *fp)
 	else
 	  time = UTC_time_to_universal_time(filestatus.st_mtime);
 	@(return time)
-@)
+}
 
-@(defun file_author (file)
+cl_object
+cl_file_author(cl_object file)
+{
 	cl_object filename;
 	struct stat filestatus;
 	struct passwd *pwent;
 #ifndef __STDC__
 	extern struct passwd *getpwuid(uid_t);
 #endif
-@
+
 	/* INV: coerce_to_filename() checks types */
 	filename = coerce_to_filename(file);
 	if (stat(filename->string.self, &filestatus) < 0)
@@ -325,7 +326,7 @@ file_len(FILE *fp)
 				   file);
 	pwent = getpwuid(filestatus.st_uid);
 	@(return make_string_copy(pwent->pw_name))
-@)
+}
 
 const char *
 expand_pathname(const char *name)
@@ -368,7 +369,7 @@ homedir_pathname(cl_object user)
 	if (Null(user))
 		pwent = getpwuid(getuid());
 	else {
-		user = coerce_to_string(user);
+		user = cl_string(user);
 		p = user->string.self;
 		i = user->string.fillp;
 		if (i > 0 && *p == '~') {
@@ -460,12 +461,13 @@ string_match(const char *s, const char *p) {
 	return (*p == 0);
 }
 
-@(defun si::string_match (s1 s2)
-@
+cl_object
+si_string_match(cl_object s1, cl_object s2)
+{
 	assert_type_string(s1);
 	assert_type_string(s2);
 	@(return (string_match(s1->string.self, s2->string.self) ? Ct : Cnil))
-@)
+}
 
 static cl_object
 actual_directory(cl_object namestring, cl_object mask, bool all)
@@ -595,9 +597,11 @@ actual_directory(cl_object namestring, cl_object mask, bool all)
 	@(return actual_directory(directory, mask, all))
 @)
 
-@(defun si::chdir (directory)
+cl_object
+si_chdir(cl_object directory)
+{
 	cl_object filename, previous;
-@
+
 	/* INV: coerce_to_filename() checks types */
 	filename = coerce_to_filename(directory);
 	previous = current_dir();
@@ -606,12 +610,14 @@ actual_directory(cl_object namestring, cl_object mask, bool all)
 				   1, filename);
 	}
 	@(return previous)
-@)
+}
 
-@(defun si::mkdir (directory mode)
+cl_object
+si_mkdir(cl_object directory, cl_object mode)
+{
 	cl_object filename;
 	int modeint;
-@
+
 	/* INV: coerce_to_filename() checks types */
 	filename = coerce_to_filename(directory);
 	modeint = fixnnint(mode);
@@ -620,7 +626,7 @@ actual_directory(cl_object namestring, cl_object mask, bool all)
 				   filename);
 	}
 	@(return filename)
-@)
+}
 
 #ifdef sun4sol2
 /* These functions can't be used with static linking on Solaris */

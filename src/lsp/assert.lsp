@@ -46,6 +46,7 @@ for the error message and ARGs are arguments to the format string."
 
 
 (defun ask-for-form (place)
+  (declare (si::c-local))
   `(progn (format  *error-output*
                    "Please input the new value for the place ~:@(~S~): "
                    ',place)
@@ -70,6 +71,7 @@ for the error message and ARGs are arguments to the format string."
      keyform value values)))
 
 (defun case-values (clauses)
+  (declare (si::c-local))
   (mapcan #'(lambda (x)
 	      (if (listp (car x))
 		(mapcar #'(lambda (y) `',y) (car x))

@@ -29,7 +29,6 @@
 #include "critical.h"
 #endif
 #include "external.h"
-#include "lisp_external.h"
 #include "eval.h"
 #include "number.h"
 #ifdef LOCATIVE

@@ -28,8 +28,6 @@ int interrupt_flag;		/* console interupt flag */
 
 typedef void (*signalfn)(int);
 
-static cl_object SVinterrupt_enable;
-
 #ifndef THREADS
 
 static void
@@ -52,8 +50,8 @@ sigint(void)
     signal(SIGINT, (signalfn)sigint);
     return;
   }
-  if (symbol_value(SVinterrupt_enable) == Cnil) {
-    SYM_VAL(SVinterrupt_enable) = Ct;
+  if (symbol_value(@'si::*interrupt-enable*') == Cnil) {
+    SYM_VAL(@'si::*interrupt-enable*') = Ct;
     signal(SIGINT, (signalfn)sigint);
     return;
   }
@@ -85,8 +83,8 @@ sigint()
     return;
   }
 
-  if (symbol_value(SVinterrupt_enable) == Cnil) {
-    SVinterrupt_enable->symbol.dbind = Ct;
+  if (symbol_value(@'si::*interrupt-enable*') == Cnil) {
+    SYM_VAL(@'si::*interrupt-enable*') = Ct;
     return;
   }
 
@@ -125,10 +123,13 @@ You should check the signal and exit from Lisp.", 1,
 	}
 }
 
-@(defun si::catch_bad_signals ()
-@
+cl_object
+si_catch_bad_signals()
+{
 	signal(SIGILL, (signalfn)signal_catcher);
+#ifndef GBC_BOEHM
 	signal(SIGBUS, (signalfn)signal_catcher);
+#endif
 	signal(SIGSEGV, (signalfn)signal_catcher);
 #ifdef SIGIOT
 	signal(SIGIOT, (signalfn)signal_catcher);
@@ -140,12 +141,15 @@ You should check the signal and exit from Lisp.", 1,
 	signal(SIGSYS, (signalfn)signal_catcher);
 #endif
 	@(return Ct)
-@)
+}
 
-@(defun si::uncatch_bad_signals ()
-@
+cl_object
+si_uncatch_bad_signals()
+{
 	signal(SIGILL, SIG_DFL);
+#ifndef GBC_BOEHM
 	signal(SIGBUS, SIG_DFL);
+#endif
 	signal(SIGSEGV, SIG_DFL);
 #ifdef SIGIOT
 	signal(SIGIOT, SIG_DFL);
@@ -157,7 +161,7 @@ You should check the signal and exit from Lisp.", 1,
 	signal(SIGSYS, SIG_DFL);
 #endif
 	@(return Ct)
-@)
+}
 #endif /* unix */
 
 void
@@ -174,5 +178,5 @@ enable_interrupt(void)
 void
 init_interrupt(void)
 {
-	SVinterrupt_enable = make_si_special("*INTERRUPT-ENABLE*", Ct);
+	SYM_VAL(@'SI::*INTERRUPT-ENABLE*') = Ct;
 }

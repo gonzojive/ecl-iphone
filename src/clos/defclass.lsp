@@ -54,6 +54,7 @@
 	    :slots all-slots))))))
 
 (defun collect-all-slots (slots name superclasses-names)
+  (declare (si::c-local))
   (let* ((superclasses (mapcar #'find-class superclasses-names))
 	 (cpl (compute-class-precedence-list name superclasses)))
     (collect-slotds cpl slots)))
@@ -83,6 +84,7 @@
 ;;;                                                                parsing
 
 (defun parse-defclass (args)
+  (declare (si::c-local))
   (let (name superclasses slots options
 	     metaclass-name default-initargs documentation)
     (unless args
@@ -156,6 +158,7 @@
 	       shared-slots)))))))
 
 (defun generate-slot-accessors (name slotds shared-slotds)
+  (declare (si::c-local))
   (when (plusp (length slotds))
     (append
     (if  (< (+ (length slotds)
@@ -244,6 +247,7 @@
 
 (defun generate-optional-slot-accessors (name slotds shared-slotds
 					      &optional optimized)
+  (declare (si::c-type))
   (nconc
    ;; instance slots accessor methods
    (do ((scan slotds (cdr scan))
@@ -479,6 +483,7 @@
       cpl))))
 
 (defun walk-supers (supers cpl precedence-alist)
+  (declare (si::c-local))
   (do* ((pre (reverse supers))
 	(sup)
 	(precedence))
@@ -494,6 +499,7 @@
     (setq cpl (adjoin sup cpl))))
 
 (defun class-ordering-error (root element path precedence-alist)
+  (declare (si::c-local))
   (setq path (cons element (reverse (member element (reverse path) :test #'eq))))
   (flet ((pretty (class) (or (class-name class) class)))
     (let ((explanations ()))

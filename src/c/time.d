@@ -50,22 +50,24 @@ UTC_time_to_universal_time(int i)
 	return number_plus(bignum1(i), Jan1st1970UT);
 }
 
-@(defun get_universal_time ()
-@
+cl_object
+cl_get_universal_time()
+{
 	@(return UTC_time_to_universal_time(time(0)))
-@)
+}
 
-@(defun sleep (z)
+cl_object
+cl_sleep(cl_object z)
+{
 	double r;
 #ifdef HAVE_NANOSLEEP
 	struct timespec tm;
 #endif
-@
 	/* INV: number_minusp() makes sure `z' is real */
 	if (number_minusp(z))
 		FEcondition(9, @'simple-type-error', @':format-control',
 			    make_simple_string("Not a non-negative number ~S"),
-			    @':format-arguments', list(1, z),
+			    @':format-arguments', cl_list(1, z),
 			    @':expected-type', @'real', @':datum', z);
 #ifdef HAVE_NANOSLEEP
 	r = object_to_double(z);
@@ -81,30 +83,35 @@ UTC_time_to_universal_time(int i)
 			sleep(1000);
 #endif
 	@(return Cnil)
-@)
+}
 
-@(defun get_internal_run_time ()
+cl_object
+cl_get_internal_run_time()
+{
 	struct tms buf;
-@
+
 	times(&buf);
 	@(return MAKE_FIXNUM(buf.tms_utime))
-@)
+}
 
-@(defun get_internal_real_time ()
-@
+cl_object
+cl_get_internal_real_time()
+{
 	@(return MAKE_FIXNUM((time(0) - beginning)*HZ))
-@)
+}
 
 /*
  * Return the hours west of Greenwich for the current timezone.
  *
  * Based on Lott's get_timezone() function from CMU Common Lisp.
  */
-@(defun si::get_local_time_zone ()
+cl_object
+si_get_local_time_zone()
+{
   struct tm ltm, gtm;
   int mw;
   time_t when = 0L;
-@
+
   ltm = *localtime(&when);
   gtm = *gmtime(&when);
 
@@ -116,7 +123,7 @@ UTC_time_to_universal_time(int i)
     mw += 24*60;
 
   @(return make_ratio(MAKE_FIXNUM(mw), MAKE_FIXNUM(60)))
-@)
+}
 
 /*
  * Return T if daylight saving is in effect at Universal Time UT, which

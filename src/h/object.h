@@ -93,10 +93,10 @@ typedef cl_object (*cl_objectfn)(int narg, ...);
 #define ARRAYP(x)	((IMMEDIATE(x) == 0) && (x)->d.t >= t_array && (x)->d.t <= t_bitvector)
 #define VECTORP(x)	((IMMEDIATE(x) == 0) && (x)->d.t >= t_vector && (x)->d.t <= t_bitvector)
 
-#define HEADER			byte t, m, padding[2]
-#define HEADER1(field)		byte t, m, field, padding
-#define HEADER2(field1,field2)	byte t, m, field1, field2
-#define HEADER3(field1,flag2,flag3) byte t, m, field1; unsigned flag2:4, flag3:4
+#define HEADER			int8_t t, m, padding[2]
+#define HEADER1(field)		int8_t t, m, field, padding
+#define HEADER2(field1,field2)	int8_t t, m, field1, field2
+#define HEADER3(field1,flag2,flag3) int8_t t, m, field1; unsigned flag2:4, flag3:4
 
 struct shortfloat_struct {
 	HEADER;
@@ -278,8 +278,6 @@ struct string {			/*  string header  */
 #define SLENGTH(x)	(x)->instance.length
 #define SLOT(x,i)	(x)->instance.slots[i]
 #define SNAME(x)	CLASS_NAME(CLASS_OF(x))
-#define STRUCTUREP(x)	(type_of(x) == t_instance && \
-			 structure_subtypep(CLASS_OF(x), clSstructure_object))
 #else
 struct structure {		/*  structure header  */
 	HEADER;
@@ -294,7 +292,6 @@ struct structure {		/*  structure header  */
 #define SLENGTH(x)	(x)->str.length
 #define SLOT(x,i)	(x)->str.self[i]
 #define SNAME(x)	x->str.name
-#define STRUCTUREP(x)	(type_of(x) == t_structure)
 #endif
 
 enum smmode {			/*  stream mode  */
@@ -386,7 +383,7 @@ struct bytecodes {
 };
 
 struct cfun {			/*  compiled function header  */
-	HEADER;
+	HEADER1(narg);
 	cl_object name;		/*  compiled function name  */
 	cl_objectfn entry;	/*  entry address  */
 	cl_object block;	/*  descriptor of C code block for GC  */

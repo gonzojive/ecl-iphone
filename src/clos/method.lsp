@@ -42,11 +42,9 @@
     (parse-defmethod args)
     (multiple-value-bind (fn-form specializers doc plist)
       (expand-defmethod name qualifiers lambda-list body env)
-      (multiple-value-bind
-	  (parameters specialized-lambda-list specializers)
+      (multiple-value-bind (parameters specialized-lambda-list specializers)
 	(parse-specialized-lambda-list lambda-list nil)
 	(declare (ignore parameters))
-	(walker::env-lexical-variables env)
 	`(PROGN
 	  #+PDE
 	  (EVAL-WHEN
@@ -71,7 +69,8 @@
 (defun expand-defmethod
     (generic-function-name qualifiers specialized-lambda-list body env)
   ;; (values fn-form specializers doc)
-  (declare (ignore qualifiers))
+  (declare (ignore qualifiers)
+	   (si::c-local))
   (multiple-value-bind (declarations real-body documentation)
       (sys::find-declarations body)
     (multiple-value-bind (parameters lambda-list specializers)
@@ -290,6 +289,7 @@
 					       aux-bindings
 					       call-next-method-p
 					       next-method-p-p)
+  (declare (si::c-local))
   (cond ((and (null save-original-args)
 	      (null applyp))
 	 ;;
@@ -424,6 +424,7 @@
   (or (symbolp name) (si:setf-namep name)))
 
 (defun parse-defmethod (args)
+  (declare (si::c-local))
   ;; (values name qualifiers arglist body)
   (let (name qualifiers)
     (unless args
@@ -444,6 +445,7 @@
     (values name qualifiers (first args) (rest args))))
 
 (defun parse-specialized-lambda-list (arglist warningp)
+  (declare (si::c-local))
   ;; This function has been modified to get an easy control on the
   ;; correctness of the specialized-lambda-list. Furthermore it has became
   ;; an iterative function.
@@ -519,6 +521,7 @@
 	    (nreverse specializers))))
 
 (defun declaration-specializers (arglist declarations)
+  (declare (si::c-local))
   (do ((argscan arglist (cdr argscan))
        (declist (when declarations (cdr declarations))))
       ((or
@@ -587,6 +590,7 @@
   )
 
 (defun update-method-key-hash-table (class lambda-list)
+  (declare (si::c-local))
   (let (post-key-list keywords-list)
     ;; search &key in lambda-list
     (setq post-key-list
@@ -697,6 +701,7 @@
 ;;;                                                             optimizers
 
 (defun can-optimize-access (var env)
+  (declare (si::c-local))
   ;; (values required-parameter class)
   (let ((required-parameter?
 	  (or (third (variable-declaration 'VARIABLE-REBINDING var env))
@@ -708,6 +713,7 @@
 
 
 (defun optimize-standard-instance-access (class parameter form slots)
+  (declare (si::c-local))
   ;; Returns an optimized form corresponding to FORM.
   ;; SLOTS is a list of:
   ;;	(parameter [(class . class-index-table) {(slot-name . slot-index)}+])
@@ -752,9 +758,11 @@
 ;  (slotd-type (find slot (slot-value class 'SLOTS) :key #'slotd-name)))
 
 (defun signal-slot-unbound (instance slot-name)
+  (declare (si::c-local))
   (slot-unbound (si:instance-class instance) instance slot-name))
 
 (defun add-index-binding (method-body isl)
+  (declare (si::c-local))
   (let (class-index-bindings
 	slot-index-bindings
 	slot-index-declarations)

@@ -345,8 +345,8 @@ The default value is NIL.")
 
 (defvar *non-package-operation* nil)
 
-(defvar *objects* nil)			; holds { ( object vv-index ) }*
-(defvar *constants* nil)		; holds { ( symbol vv-index ) }*
+(defvar *objects* nil)			; holds { ( object text vv-index ) }*
+(defvar *keywords* nil)			; holds { ( key-list text vv-index ) }*
 (defvar *load-time-values* nil)		; holds { ( vv-index form ) }*,
 ;;;  where each vv-index should be given an object before
 ;;;  defining the current function during loading process.

@@ -233,10 +233,12 @@ make_stream(cl_object host, int fd, enum smmode smm)
    (read-line s)
    "Wed Jun 22 19:44:36 METDST 1994"
 */
-@(defun si::open_client_stream (host port)
+cl_object
+si_open_client_stream(cl_object host, cl_object port)
+{
    int fd, p;			/* file descriptor */
    cl_object streamIn, streamOut;
-@
+
    assert_type_string(host);	/* Ensure "host" is a string */
    p = fixnnint(port);		/* INV: fixnnint() checks type */
 
@@ -254,13 +256,15 @@ make_stream(cl_object host, int fd, enum smmode smm)
    streamOut = make_stream(host, fd, smm_output);
 
    @(return make_two_way_stream(streamIn, streamOut))
-@)
+}
 
-@(defun si::open_server_stream (port)
+cl_object
+si_open_server_stream(cl_object port)
+{
    int fd;			/* file descriptor */
    cl_object streamIn, streamOut;
    cl_object output;
-@
+
    if (!FIXNUMP(port))
      FEwrong_type_argument(TSpositive_number, port);
 
@@ -276,17 +280,19 @@ make_stream(cl_object host, int fd, enum smmode smm)
      output = make_two_way_stream(streamIn, streamOut);
    }
    @(return output)
-@)
+}
 
 /************************************************************
  * Unix sockets						    *
  ************************************************************/
 
-@(defun si::open-unix-socket-stream (path)
+cl_object
+si_open_unix_socket_stream(cl_object path)
+{
 	int fd;			/* file descriptor */
 	cl_object streamIn, streamOut;
 	struct sockaddr_un addr;
-@
+
 	if (type_of(path) != t_string)
 		FEwrong_type_argument(@'string', path);
 	if (path->string.fillp > UNIX_MAX_PATH-1)
@@ -312,18 +318,20 @@ make_stream(cl_object host, int fd, enum smmode smm)
 	streamOut = make_stream(path, fd, smm_output);
 
 	@(return make_two_way_stream(streamIn, streamOut))
-@)
+}
 
 /************************************************************
  * Hostname resolution					    *
  ************************************************************/
-@(defun si::lookup-host-entry (host_or_address)
+cl_object
+si_lookup_host_entry(cl_object host_or_address)
+{
 	struct hostent *he;
 	unsigned long l;
 	unsigned char address[4];
 	cl_object name, aliases, addresses;
 	int i;
-@
+
 	switch (type_of(host_or_address)) {
 	case t_string:
 		host_or_address->string.self[host_or_address->string.fillp] = 0;
@@ -357,4 +365,4 @@ make_stream(cl_object host, int fd, enum smmode smm)
 		addresses = CONS(make_integer(l), addresses);
 	}
 	@(return name aliases addresses)
-@)
+}

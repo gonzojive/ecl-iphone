@@ -310,6 +310,7 @@ Does not check if the third gang is a single-element list."
 
 ;;; The expansion function for SETF.
 (defun setf-expand-1 (place newvalue env &aux g)
+  (declare (si::c-local))
   (multiple-value-bind (vars vals stores store-form access-form)
       (get-setf-expansion place env)
     (declare (ignore access-form))
@@ -320,12 +321,14 @@ Does not check if the third gang is a single-element list."
        ,store-form)))
 
 (defun setf-structure-access (struct type index newvalue)
+  (declare (si::c-local))
   (case type
     (LIST `(sys:rplaca-nthcdr ,struct ,index ,newvalue))
     (VECTOR `(sys:elt-set ,struct ,index ,newvalue))
     (t `(sys::structure-set ,struct ',type ,index ,newvalue))))
 
 (defun setf-expand (l env)
+  (declare (si::c-local))
   (cond ((endp l) nil)
         ((endp (cdr l)) (error "~S is an illegal SETF form." l))
         (t

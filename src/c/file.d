@@ -143,27 +143,27 @@ BEGIN:
 }
 
 cl_object
-stream_element_type(cl_object strm)
+cl_stream_element_type(cl_object strm)
 {
 	cl_object x;
 
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
-		return(@'base-char');
+		@(return @'base-char');
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
 		closed_stream(strm);
-		return(FALSE);
 
 	case smm_input:
 	case smm_output:
 	case smm_io:
 	case smm_probe:
-		return(strm->stream.object0);
+		x = strm->stream.object0;
+		break;
 
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
@@ -173,25 +173,29 @@ BEGIN:
 		x = strm->stream.object0;
 		if (endp(x))
 			return(Ct);
-		return(stream_element_type(CAR(x)));
+		strm = CAR(x);
+		goto BEGIN;
 
 	case smm_concatenated:
 		x = strm->stream.object0;
 		if (endp(x))
 			return(Ct);
-		return(stream_element_type(CAR(x)));
+		strm = CAR(x);
+		goto BEGIN;
 
 	case smm_two_way:
 	case smm_echo:
-		return(stream_element_type(strm->stream.object0));
+		strm = strm->stream.object0;
+		goto BEGIN;
 
 	case smm_string_input:
 	case smm_string_output:
-		return(@'base-char');
+		x = @'base-char';
 
 	default:
 		error("illegal stream mode");
 	}
+	@(return x)
 }
 
 /*----------------------------------------------------------------------
@@ -1291,9 +1295,11 @@ BEGIN:
 	}
 }
 
-@(defun make_synonym_stream (sym)
+cl_object
+cl_make_synonym_stream(cl_object sym)
+{
 	cl_object x;
-@
+
 	assert_type_symbol(sym);
 	x = cl_alloc_object(t_stream);
 	x->stream.mode = (short)smm_synonym;
@@ -1302,7 +1308,7 @@ BEGIN:
 	x->stream.object1 = OBJNULL;
 	x->stream.int0 = x->stream.int1 = 0;
 	@(return x)
-@)
+}
 
 
 @(defun make_broadcast_stream (&rest ap)
@@ -1319,7 +1325,7 @@ BEGIN:
 	x = cl_alloc_object(t_stream);
 	x->stream.mode = (short)smm_broadcast;
 	x->stream.file = NULL;
-	x->stream.object0 = nreverse(streams);
+	x->stream.object0 = cl_nreverse(streams);
 	x->stream.object1 = OBJNULL;
 	x->stream.int0 = x->stream.int1 = 0;
 	@(return x)
@@ -1339,29 +1345,31 @@ BEGIN:
 	x = cl_alloc_object(t_stream);
 	x->stream.mode = (short)smm_concatenated;
 	x->stream.file = NULL;
-	x->stream.object0 = nreverse(streams);
+	x->stream.object0 = cl_nreverse(streams);
 	x->stream.object1 = OBJNULL;
 	x->stream.int0 = x->stream.int1 = 0;
 	@(return x)
 @)
 
-@(defun make_two_way_stream (strm1 strm2)
-@
+cl_object
+cl_make_two_way_stream(cl_object strm1, cl_object strm2)
+{
 	if (type_of(strm1) != t_stream || !input_stream_p(strm1))
 		cannot_read(strm1);
 	if (type_of(strm2) != t_stream || !output_stream_p(strm2))
 		cannot_write(strm2);
 	@(return make_two_way_stream(strm1, strm2))
-@)
+}
 
-@(defun make_echo_stream (strm1 strm2)
-@
+cl_object
+cl_make_echo_stream(cl_object strm1, cl_object strm2)
+{
 	if (type_of(strm1) != t_stream || !input_stream_p(strm1))
 		cannot_read(strm1);
 	if (type_of(strm2) != t_stream || !output_stream_p(strm2))
 		cannot_write(strm2);
 	@(return make_echo_stream(strm1, strm2))
-@)
+}
 
 @(defun make_string_input_stream (strng &o istart iend)
 	cl_index s, e;
@@ -1389,18 +1397,20 @@ for the string ~S.",
 		3, istart, iend, strng);
 @)
 
-@(defun make_string_output_stream ()
-@
+cl_object
+cl_make_string_output_stream()
+{
 	@(return make_string_output_stream(64))
-@)
+}
 
-@(defun get_output_stream_string (strm)
-@
+cl_object
+cl_get_output_stream_string(cl_object strm)
+{
 	if (type_of(strm) != t_stream ||
 	    (enum smmode)strm->stream.mode != smm_string_output)
 		FEerror("~S is not a string-output stream.", 1, strm);
 	@(return get_output_stream_string(strm))
-@)
+}
 
 /*----------------------------------------------------------------------
  *	(SI:OUTPUT-STREAM-STRING string-output-stream)
@@ -1409,33 +1419,32 @@ for the string ~S.",
  *		string-output-stream.
  *----------------------------------------------------------------------
  */
-@(defun si::output_stream_string (strm)
-@
+cl_object
+si_output_stream_string(cl_object strm)
+{
 	if (type_of(strm) != t_stream ||
 	    (enum smmode)strm->stream.mode != smm_string_output)
 		FEerror("~S is not a string-output stream.", 1, strm);
 	@(return strm->stream.object0)
-@)
+}
 
-@(defun streamp (strm)
-@
+cl_object
+cl_streamp(cl_object strm)
+{
 	@(return ((type_of(strm) == t_stream) ? Ct : Cnil))
-@)
+}
 
-@(defun input_stream_p (strm)
-@
+cl_object
+cl_input_stream_p(cl_object strm)
+{
 	@(return (input_stream_p(strm) ? Ct : Cnil))
-@)
+}
 
-@(defun output_stream_p (strm)
-@
+cl_object
+cl_output_stream_p(cl_object strm)
+{
 	@(return (output_stream_p(strm) ? Ct : Cnil))
-@)
-
-@(defun stream_element_type (strm)
-@
-	@(return stream_element_type(strm))
-@)
+}
 
 @(defun close (strm &key abort)
 @
@@ -1513,41 +1522,44 @@ for the file-stream ~S.",
 	}       
 @)
 
-@(defun file_length (strm)
-	int i;
-@
-	i = file_length(strm);
+cl_object
+cl_file_length(cl_object strm)
+{
+	cl_fixnum i = file_length(strm);
 	@(return ((i < 0) ? Cnil : MAKE_FIXNUM(i)))
-@)
+}
 
-@(defun open_stream_p (strm)
-@
+cl_object
+cl_open_stream_p(cl_object strm)
+{
 	/* ANSI and Cltl2 specify that open-stream-p should work
 	   on closed streams, and that a stream is only closed
 	   when #'close has been applied on it */
 	@(return (strm->stream.mode != smm_closed ? Ct : Cnil))
-@)
+}
 
-@(defun si::get_string_input_stream_index (strm)
-@
+cl_object
+si_get_string_input_stream_index(cl_object strm)
+{
 	if ((enum smmode)strm->stream.mode != smm_string_input)
 		FEerror("~S is not a string-input stream.", 1, strm);
 	@(return MAKE_FIXNUM(strm->stream.int0))
-@)
+}
 
-@(defun si::make_string_output_stream_from_string (s)
-	cl_object strm;
-@
+cl_object
+si_make_string_output_stream_from_string(cl_object s)
+{
 	@(return make_string_output_stream_from_string(s))
-@)
+}
 
-@(defun si::copy_stream (in out)
-@
+cl_object
+si_copy_stream(cl_object in, cl_object out)
+{
 	while (!stream_at_end(in))
 		writec_stream(readc_stream(in), out);
 	flush_stream(out);
 	@(return Ct)
-@)
+}
 
 void
 init_file(void)

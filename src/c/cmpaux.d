@@ -21,11 +21,12 @@
 #define CHAR_BIT (sizeof(char)*8)
 #endif
 
-@(defun si::specialp (sym)
-@
+cl_object
+si_specialp(cl_object sym)
+{
 	@(return ((SYMBOLP(sym) && sym->symbol.stype == stp_special) ?
 		   Ct : Cnil))
-@)
+}
 
 int
 ifloor(int x, int y)
@@ -280,7 +281,7 @@ void
 init_cmpaux(void)
 {
 	SYM_VAL(@'LAMBDA-LIST-KEYWORDS') =
-	list(8, @'&optional', @'&rest', @'&key', @'&allow-other-keys', @'&aux',
+	cl_list(8, @'&optional', @'&rest', @'&key', @'&allow-other-keys', @'&aux',
 		@'&whole', @'&environment', @'&body');
 
 	SYM_VAL(@'LAMBDA-PARAMETERS-LIMIT') = MAKE_FIXNUM(LAMBDA_PARAMETERS_LIMIT);

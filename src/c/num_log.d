@@ -252,10 +252,11 @@ b_c2_op(cl_fixnum i, cl_fixnum j)
 	return(~j);
 }
 
-@(defun lognot (x)
-@
+cl_object
+cl_lognot(cl_object x)
+{
 	return @logxor(2,x,MAKE_FIXNUM(-1));
-@)
+}
 
 static cl_fixnum
 count_bits(cl_object x)
@@ -354,39 +355,47 @@ int_bit_length(int i)
 	@(return log_op(narg, eqv_op, nums))
 @)
 
-@(defun lognand (x y)
-@
+cl_object
+cl_lognand(cl_object x, cl_object y)
+{
 	@(return log_op2(x, y, nand_op))
-@)
+}
 
-@(defun lognor (x y)
-@
+cl_object
+cl_lognor(cl_object x, cl_object y)
+{
 	@(return log_op2(x, y, nor_op))
-@)
+}
 
-@(defun logandc1 (x y)
-@
+cl_object
+cl_logandc1(cl_object x, cl_object y)
+{
 	@(return log_op2(x, y, andc1_op))
-@)
+}
 
-@(defun logandc2 (x y)
-@
+cl_object
+cl_logandc2(cl_object x, cl_object y)
+{
 	@(return log_op2(x, y, andc2_op))
-@)
+}
 
-@(defun logorc1 (x y)
-@
+cl_object
+cl_logorc1(cl_object x, cl_object y)
+{
 	@(return log_op2(x, y, orc1_op))
-@)
+}
 
-@(defun logorc2 (x y)
-@
+cl_object
+cl_logorc2(cl_object x, cl_object y)
+{
 	@(return log_op2(x, y, orc2_op))
-@)
+}
 
-@(defun boole (o x y)
+cl_object
+cl_boole(cl_object o, cl_object x, cl_object y)
+{
 	bit_operator op;
-@
+
 	/* INV: log_op() checks types */
 	switch(fixint(o)) {
 		case BOOLCLR:	op = b_clr_op;	break;
@@ -410,12 +419,14 @@ int_bit_length(int i)
 				1, o);
 	}
 	@(return log_op2(x, y, op))
-@)
+}
 
-@(defun logbitp (p x)
+cl_object
+cl_logbitp(cl_object p, cl_object x)
+{
 	bool	i;
 	int	n;
-@
+
 	assert_type_integer(x);
 	if (FIXNUMP(p)) {
 		cl_fixnum n = fixnnint(p);
@@ -433,12 +444,14 @@ int_bit_length(int i)
 			i = (big_sign(x) < 0);
 	}
 	@(return (i ? Ct : Cnil))
-@)
+}
 
-@(defun ash (x y)
+cl_object
+cl_ash(cl_object x, cl_object y)
+{
 	cl_object r;
 	int sign_x;
-@
+
         assert_type_integer(x);
 	assert_type_integer(y);
 	if (FIXNUMP(y))
@@ -469,16 +482,19 @@ int_bit_length(int i)
 	    FEerror("Insufficient memory.", 0);
 	}
 	@(return r)
-@)
+}
 
-@(defun logcount (x)
-@
+cl_object
+cl_logcount(cl_object x)
+{
 	@(return MAKE_FIXNUM(count_bits(x)))
-@)
+}
 
-@(defun integer_length (x)
+cl_object
+cl_integer_length(cl_object x)
+{
 	int	count, i;
-@
+
 	switch (type_of(x)) {
 	case t_fixnum:
 		i = fix(x);
@@ -494,7 +510,7 @@ int_bit_length(int i)
 		FEtype_error_integer(x);
 	}
 	@(return MAKE_FIXNUM(count))
-@)
+}
 
 void
 init_num_log(void)
@@ -517,7 +533,9 @@ init_num_log(void)
 	SYM_VAL(@'BOOLE-ORC2') = MAKE_FIXNUM(BOOLORC2);
 }
 
-@(defun si::bit_array_op (o x y r)
+cl_object
+si_bit_array_op(cl_object o, cl_object x, cl_object y, cl_object r)
+{
 	cl_fixnum i, j, n, d;
 	cl_object r0;
 	bit_operator op;
@@ -525,7 +543,7 @@ init_num_log(void)
 	int xi, yi, ri;
 	byte *xp, *yp, *rp;
 	int xo, yo, ro;
-@
+
 	if (type_of(x) == t_bitvector) {
 		d = x->vector.dim;
 		xp = x->vector.self.bit;
@@ -559,7 +577,7 @@ init_num_log(void)
 		}
 	L1:
 		if (Null(r)) {
-			r = @si::make-vector(6, @'bit', MAKE_FIXNUM(d), Cnil, Cnil, Cnil, Cnil);
+			r = si_make_vector(@'bit', MAKE_FIXNUM(d), Cnil, Cnil, Cnil, Cnil);
 		}
 	} else {
 		if (type_of(x) != t_array)
@@ -695,5 +713,4 @@ init_num_log(void)
 	@(return r0)
 ERROR:
 	FEerror("Illegal arguments for bit-array operation.", 0);
-@)
-
+}

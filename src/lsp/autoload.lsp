@@ -12,6 +12,8 @@
 
 ;;; Program Development Environment
 
+#+PDE
+(progn
 (in-package "SYSTEM")
 (setq *record-source-pathname-p* nil)
 (defun record-source-pathname (symbol type)
@@ -33,6 +35,7 @@
 		    (push (cons spec *source-pathname*) alist)))
 	      (setq alist (list (cons spec *source-pathname*))))
 	  (putprop symbol alist (car type))))))
+)
 
 ;;; Go into LISP.
 (in-package "LISP")
@@ -83,7 +86,7 @@ after compilation."
   (load "SYS:cmp")
   (apply 'compile-file-pathname args))
 
-(defun disassemble (&rest args)
+(defun disassemble (f &rest args)
   "Args: (&optional (thing nil) &key (h-file nil) (data-file nil))
 Compiles the form specified by THING and prints the intermediate C language
 code for that form.  But does not install the result of compilation.  If THING
@@ -93,8 +96,11 @@ disassembled.  If THING is a lambda expression, it is disassembled as a
 function definition.  Otherwise, THING itself is disassembled as a top-level
 form.  H-FILE and DATA-FILE specify intermediate files to build a fasl file
 from the C language code.  NIL means \"do not create the file\"."
-  (load "SYS:cmp")
-  (apply 'disassemble args))
+  (when (or (symbolp f) (si::setf-namep f))
+    (setq function (eval `(function ,f))))
+  (unless (si::bc-disassemble f)
+    (load "SYS:cmp")
+    (apply 'disassemble f args)))
 )
 
 ;;; Editor.
@@ -103,7 +109,7 @@ from the C language code.  NIL means \"do not create the file\"."
   "Args: (&optional filename)
 Invokes the editor.  The action depends on the version of ECL.  See the ECL
 Report for details."
-  (si:system (format nil "emacs ~A" filename)))
+  (si:system (format nil "~S ~A" (si::getenv "EDITOR") filename)))
 
 
 ;;; Allocator.
@@ -284,8 +290,6 @@ NIL, then all packages are searched."
 	(labels 1)
 	(lambda 1)
 	(lambda-block 2)
-	(lambda-closure 4)
-	(lambda-block-closure 5)
 	(let 1)
 	(let* 1)
 	(locally 0)

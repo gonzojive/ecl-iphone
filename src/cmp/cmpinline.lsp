@@ -527,14 +527,14 @@
       (otherwise (return t)))))
 
 (defun list-inline (&rest x)
-       (wt "list(" (length x)) (dolist (loc x) (wt #\, loc)) (wt #\)))
+       (wt "cl_list(" (length x)) (dolist (loc x) (wt #\, loc)) (wt #\)))
 
 (defun list*-inline (&rest x)
   (case (length x)
         (1 (wt (car x)))
         (2 (wt "make_cons(" (car x) "," (second x) ")"))
         (otherwise
-         (wt "listX(" (length x)) (dolist (loc x) (wt #\, loc)) (wt #\)))))
+         (wt "cl_listX(" (length x)) (dolist (loc x) (wt #\, loc)) (wt #\)))))
 
 ;;; ----------------------------------------------------------------------
 

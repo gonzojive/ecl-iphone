@@ -120,7 +120,7 @@ If MERGE is true, merges the contents of this table with the original values in
 the help file."
   (let ((dict (first *documentation-pool*)))
     (when (hash-table-p dict)
-      (dump-help-file dict file nil)
+      (dump-help-file dict file merge)
       (rplaca *documentation-pool* file))))
 
 (defun get-documentation (symbol doc-type &aux output)

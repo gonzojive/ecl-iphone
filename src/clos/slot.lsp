@@ -18,6 +18,7 @@
   documentation)
 
 (defun PARSE-SLOT (slot)
+  (declare (si::c-local))
   (let ((name nil)
         (initargs nil)
         (initform 'INITFORM-UNSUPPLIED)	; default
@@ -75,6 +76,7 @@
     (push (parse-slot (first scan)) collect)))
 
 (defun LEGAL-SLOT-OPTION-P (option)
+  (declare (si::c-local))
   (member option
 	  '(:accessor :reader :writer :allocation :initarg :initform :type
 		      :documentation)))

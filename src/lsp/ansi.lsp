@@ -30,10 +30,3 @@
 	 (print-unreadable-object-function
 	   ,object ,stream ,type ,identity #'.print-unreadable-object-body.))
     `(print-unreadable-object-function ,object ,stream ,type ,identity nil)))
-
-;;; SPECIAL-OPERATOR-P --
-;;; Added 19951011 Marco Antoniotti
-
-(eval-when (load eval)
-  (setf (symbol-function 'special-operator-p)
-	(symbol-function 'special-form-p)))

@@ -76,6 +76,7 @@ BUILD-STAMP: config.status
 install: BUILD-STAMP
 	$(INSTALL) -d $(PREFIX)$(bindir) $(PREFIX)$(mandir) $(PREFIX)$(libdir)/h
 	$(INSTALL_PROGRAM) -s $(TARGETS) $(PREFIX)$(bindir)
+	$(INSTALL_PROGRAM) ecl-config $(PREFIX)$(bindir)
 	$(INSTALL_DATA) $(srcdir)/etc/ecl.1 $(PREFIX)$(mandir)
 	$(INSTALL_DATA) BUILD-STAMP $(LSP_LIBRARIES) $(LIBRARIES) $(PREFIX)$(libdir)
 	$(INSTALL_DATA) h/config.h $(PREFIX)$(libdir)/h
@@ -90,7 +91,7 @@ installgc:
 
 uninstall:
 	rm -rf $(mandir)/ecl.1
-	rm -rf $(bindir)/ecl$(EXE)
+	for i in $(TARGETS) ecl-config; do rm -rf $(bindir)/$$i; done
 	rm -rf $(libdir)
 	cd doc; $(MAKE) uninstall
 

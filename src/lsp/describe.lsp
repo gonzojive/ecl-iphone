@@ -20,15 +20,18 @@
 
 
 (defun inspect-read-line ()
+  (declare (si::c-local))
   (do ((char (read-char *query-io*) (read-char *query-io*)))
       ((or (char= char #\Newline) (char= char #\Return)))))
 
 (defun select-P (object)
+  (declare (si::c-local))
   (let ((*print-pretty* t) (*print-level* nil) (*print-length* nil))
        (prin1 object)
        (terpri)))
 
 (defun select-E ()
+  (declare (si::c-local))
   (dolist (x (multiple-value-list
 	       (multiple-value-prog1
 		 (eval (read-preserving-whitespace *query-io*))
@@ -39,11 +42,13 @@
 	  (terpri)))
 
 (defun select-U ()
+  (declare (si::c-local))
   (prog1
     (eval (read-preserving-whitespace *query-io*))
     (inspect-read-line)))
 
 (defun select-? ()
+  (declare (si::c-local))
   (terpri)
   (format t
 	  "Inspect commands:~%~
@@ -59,6 +64,7 @@
                 ?:                      prints this.~%~%"))
 
 (defun read-inspect-command (label object allow-recursive)
+  (declare (si::c-local))
   (unless *inspect-mode*
     (inspect-indent-1)
     (if allow-recursive
@@ -125,17 +131,20 @@
              (terpri))))
           
 (defun inspect-indent ()
+  (declare (si::c-local))
   (fresh-line)
   (format t "~V@T"
           (* 4 (if (< *inspect-level* 8) *inspect-level* 8))))
 
 (defun inspect-indent-1 ()
+  (declare (si::c-local))
   (fresh-line)
   (format t "~V@T"
           (- (* 4 (if (< *inspect-level* 8) *inspect-level* 8)) 3)))
 
 
 (defun inspect-symbol (symbol)
+  (declare (si::c-local))
   (let ((p (symbol-package symbol)))
     (cond ((null p)
            (format t "~:@(~S~) - uninterned symbol" symbol))
@@ -177,6 +186,7 @@
   )
 
 (defun inspect-package (package)
+  (declare (si::c-local))
   (format t "~S - package" package)
   (when (package-nicknames package)
         (inspect-print "nicknames:  ~S" (package-nicknames package)))
@@ -189,6 +199,7 @@
                        (package-shadowing-symbols package))))
 
 (defun inspect-character (character)
+  (declare (si::c-local))
   (format t
           (cond ((standard-char-p character) "~S - standard character")
                 (t "~S - character"))
@@ -196,6 +207,7 @@
   (inspect-print "code:  #x~X" (char-code character)))
 
 (defun inspect-number (number)
+  (declare (si::c-local))
   (case (type-of number)
     (FIXNUM (format t "~S - fixnum (32 bits)" number))
     (BIGNUM (format t "~S - bignum" number))
@@ -223,13 +235,8 @@
        (inspect-print "mantissa:  ~D" signif)))))
 
 (defun inspect-cons (cons)
-  (format t
-          (case (car cons)
-            ((LAMBDA LAMBDA-BLOCK LAMBDA-CLOSURE LAMBDA-BLOCK-CLOSURE)
-             "~S - function")
-            (QUOTE "~S - constant")
-            (t "~S - cons"))
-          cons)
+  (declare (si::c-local))
+  (format t "~S - cons" cons)
   (when *inspect-mode*
         (do ((i 0 (1+ i))
              (l cons (cdr l)))
@@ -240,6 +247,7 @@
                                (car l) (nth i cons)))))
 
 (defun inspect-string (string)
+  (declare (si::c-local))
   (format t (if (simple-string-p string) "~S - simple string" "~S - string")
           string)
   (inspect-print  "dimension:  ~D"(array-dimension string 0))
@@ -254,6 +262,7 @@
                                       (char string i)))))
 
 (defun inspect-vector (vector)
+  (declare (si::c-local))
   (format t (if (simple-vector-p vector) "~S - simple vector" "~S - vector")
           vector)
   (inspect-print  "dimension:  ~D" (array-dimension vector 0))
@@ -268,6 +277,7 @@
                                       (aref vector i)))))
 
 (defun inspect-array (array)
+  (declare (si::c-local))
   (format t (if (adjustable-array-p array)
                 "~S - adjustable aray"
                 "~S - array")
@@ -277,6 +287,7 @@
   (inspect-print "total size:  ~D" (array-total-size array)))
 
 (defun select-ht-N (hashtable)
+  (declare (si::c-local))
   (incf *inspect-level*)
   (maphash #'(lambda (key val)
 	       (inspect-indent-1)
@@ -286,6 +297,7 @@
   (decf *inspect-level*))
 
 (defun select-ht-L (hashtable)
+  (declare (si::c-local))
   (terpri)
   (format t "The keys of the hash table are:~%")
   (maphash #'(lambda (key val)
@@ -295,6 +307,7 @@
   (terpri))
 
 (defun select-ht-J (hashtable)
+  (declare (si::c-local))
   (let* ((key (prog1
 		(read-preserving-whitespace *query-io*)
 		(inspect-read-line)))
@@ -313,6 +326,7 @@
 	      (terpri)))))
 
 (defun select-ht-? ()
+  (declare (si::c-local))
   (terpri)
   (format t
 	  "Inspect commands for hash tables:~%~
@@ -328,6 +342,7 @@ q (or Q):             quits the inspection.~%~
 	  ))
 
 (defun inspect-hashtable (hashtable)
+  (declare (si::c-local))
   (if *inspect-mode*
       (progn
 	(decf *inspect-level*)
@@ -378,11 +393,13 @@ q (or Q):             quits the inspection.~%~
 
 #+CLOS
 (defun inspect-instance (instance)
+  (declare (si::c-local))
   (if *inspect-mode*
       (clos::inspect-obj instance)
       (clos::describe-object instance)))
 
 (defun inspect-object (object &aux (*inspect-level* *inspect-level*))
+  (declare (si::c-local))
   (inspect-indent)
   (when (and (not *inspect-mode*)
              (or (> *inspect-level* 5)
@@ -448,7 +465,7 @@ inspect commands, or type '?' to the inspector."
                (find-package "SYSTEM")
                *package*)))
 
-    (cond ((special-form-p symbol)
+    (cond ((special-operator-p symbol)
            (doc1 (or (si::get-documentation symbol 'FUNCTION) "")
                  (if (macro-function symbol)
                      "[Special form and Macro]"
@@ -456,19 +473,7 @@ inspect commands, or type '?' to the inspector."
           ((macro-function symbol)
            (doc1 (or (si::get-documentation symbol 'FUNCTION) "") "[Macro]"))
           ((fboundp symbol)
-           (doc1
-            (or (si::get-documentation symbol 'FUNCTION)
-                (if (consp (setq x (symbol-function symbol)))
-                    (case (car x)
-                          (LAMBDA (format nil "~%Args: ~S" (cadr x)))
-                          (LAMBDA-BLOCK (format nil "~%Args: ~S" (caddr x)))
-                          (LAMBDA-CLOSURE
-                           (format nil "~%Args: ~S" (car (cddddr x))))
-                          (LAMBDA-BLOCK-CLOSURE
-                           (format nil "~%Args: ~S" (cadr (cddddr x))))
-                          (t ""))
-                    ""))
-            "[Function]"))
+           (doc1 (or (si::get-documentation symbol 'FUNCTION) "") "[Function]"))
           ((setq x (si::get-documentation symbol 'FUNCTION))
            (doc1 x "[Macro or Function]")))
 
@@ -516,9 +521,6 @@ inspect commands, or type '?' to the inspector."
                     (case (car x)
                           (LAMBDA `(define-setf-expander ,@(cdr x)))
                           (LAMBDA-BLOCK `(define-setf-expander ,@(cddr x)))
-                          (LAMBDA-CLOSURE `(define-setf-expander ,@(cddddr x)))
-                          (LAMBDA-BLOCK-CLOSURE
-                           `(define-setf-expander ,@(cdr (cddddr x))))
                           (t nil))
                     nil))
             "[Setf]"))))

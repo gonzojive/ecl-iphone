@@ -114,30 +114,37 @@ cl_boot(int argc, char **argv)
 	exit(i);
 @)
 
-@(defun si::argc ()
-@
+cl_object
+si_argc()
+{
 	@(return MAKE_FIXNUM(ARGC))
-@)
+}
 
-@(defun si::argv (index)
+cl_object
+si_argv(cl_object index)
+{
 	cl_fixnum i;
-@
+
 	if (!FIXNUMP(index) || (i = fix(index)) < 0 || i >= ARGC)
 		FEerror("Illegal argument index: ~S.", 1, index);
 	@(return make_string_copy(ARGV[i]))
-@)
+}
 
-@(defun si::getenv (var)
+cl_object
+si_getenv(cl_object var)
+{
 	const char *value;
-@
+
 	assert_type_string(var);
 	value = getenv(var->string.self);
 	@(return ((value == NULL)? Cnil : make_string_copy(value)))
-@)
+}
 
-@(defun si::setenv (var value)
+cl_object
+si_setenv(cl_object var, cl_object value)
+{
 	cl_fixnum ret_val;
-@
+
 	assert_type_string(var);
 	if (value == Cnil) {
 		/* Remove the variable when setting to nil, so that
@@ -153,12 +160,13 @@ cl_boot(int argc, char **argv)
 		CEerror("SI:SETENV failed: insufficient space in environment.",
 			1, "Continue anyway");
 	@(return (value))
-@)
+}
 
-@(defun si::pointer (x)
-@
+cl_object
+si_pointer(cl_object x)
+{
 	@(return make_unsigned_integer((cl_index)x))
-@)
+}
 
 void
 init_main(void)

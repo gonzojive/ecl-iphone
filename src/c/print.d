@@ -1555,19 +1555,22 @@ potential_number_p(cl_object strng, int base)
 	@(return Cnil)
 @)
 
-@(defun write-byte (integer binary_output_stream)
-@
+cl_object
+cl_write_byte(cl_object integer, cl_object binary_output_stream)
+{
 	if (!FIXNUMP(integer))
 		FEerror("~S is not a byte.", 1, integer);
 	assert_type_stream(binary_output_stream);
 	writec_stream(fix(integer), binary_output_stream);
 	@(return integer)
-@)
+}
 
-@(defun si::write-bytes (stream string start end)
+cl_object
+si_write_bytes(cl_object stream, cl_object string, cl_object start, cl_object end)
+{
         cl_index is, ie; FILE *fp;
 	int written, sofarwritten, towrite;
-@
+
 	assert_type_stream(stream);
 	if (stream->stream.mode == smm_closed)
 	  closed_stream(stream);
@@ -1588,7 +1591,7 @@ potential_number_p(cl_object strng, int base)
 	  else @(return MAKE_FIXNUM(-1))
 	}
 	@(return MAKE_FIXNUM(sofarwritten - is))
-@)
+}
 
 void
 init_print(void)
@@ -1621,8 +1624,8 @@ init_print(void)
 	PRINTlength = -1;
 	PRINTarray = FALSE;
 
-	CIRCLEstack = cl_make_hash_table(@'eq', MAKE_FIXNUM(1024), make_shortfloat(1.5),	
-					 make_shortfloat(0.7));
+	CIRCLEstack = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024), make_shortfloat(1.5),	
+					  make_shortfloat(0.7));
 	register_root(&CIRCLEstack);
 
 	no_stream = @make_broadcast_stream(0);

@@ -28,7 +28,7 @@ libdir	= @libdir@
 HDIR	= $(top_srcdir)/h
 HFILES	= ../h/config.h $(HDIR)/ecl.h $(HDIR)/ecl-cmp.h\
 	$(HDIR)/machines.h $(HDIR)/object.h $(HDIR)/cs.h $(HDIR)/stacks.h\
-	$(HDIR)/external.h $(HDIR)/lisp_external.h $(HDIR)/eval.h\
+	$(HDIR)/external.h $(HDIR)/eval.h\
 	$(HDIR)/number.h $(HDIR)/page.h $(HDIR)/unify.h\
 	$(HDIR)/lwp.h $(HDIR)/critical.h
 OBJS	= main.o symbol.o package.o list.o\
@@ -71,8 +71,8 @@ $(DPP): $(srcdir)/dpp.c symbols_list2.h
 	$(TRUE_CC) @CFLAGS@ -I../h -I./ -I$(HDIR) $(DEFS) $(srcdir)/dpp.c  -o $@
 symbols_list2.h: $(srcdir)/symbols_list.h Makefile
 	cat $(srcdir)/symbols_list.h | \
-	sed -e 's%{"\(.*\)",.*,.*,[ ]*NULL}%{"\1",NULL}%g' \
-	    -e 's%{"\(.*\)",.*,.*,[ ]*\(.*\)}%{"\1","\2"}%g' \
+	sed -e 's%{"\(.*\)",.*,[ ]*NULL,.*}%{"\1",NULL}%g' \
+	    -e 's%{"\(.*\)",.*,[ ]*\(.*\),.*}%{"\1","\2"}%g' \
 	    -e 's%{NULL.*%{NULL,NULL}};%' > $@
 
 #
@@ -88,8 +88,5 @@ apply.o: apply.c $(HFILES) $(HDIR)/cs.h
 #
 # These files are interrelated
 #
-all_symbols.o: all_symbols.c symbols_def.h
+all_symbols.o: all_symbols.c
 	$(CC) $(CFLAGS) -I./ all_symbols.c -o $@
-symbols_def.h: $(srcdir)/symbols_list.h Makefile
-	cat $(srcdir)/symbols_list.h | grep '[ ]&' | \
-	sed 's/^.* &\([a-zA-Z_0-9]*\),.*/cl_object \1;/g' > symbols_def.h

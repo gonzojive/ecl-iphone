@@ -109,7 +109,7 @@ configure___software_version=SOFTWARE_VERSION
 CPP=`eval "echo $CPP"`
 eval `${CPP} -D${host} ${tempcname} \
        | grep 'configure___' \
-       | sed -e 's/^configure___\([^=]*=\)[ ]*\(.*[^ ]\) */\1"\2"/'`
+       | sed -e 's/^configure___\([^=]*\)=[ ]*\(.*[^ ]\) */\1="$\1 \2"/'`
 rm ${tempcname}
 ]
 AC_MSG_CHECKING(for ld flags when building shared libraries)

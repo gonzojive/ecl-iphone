@@ -105,6 +105,7 @@ strings."
   interactive-function)
 
 (defun restart-report (restart stream)
+  (declare (si::c-local))
   (let ((fn (restart-report-function restart)))
     (if fn
 	(funcall fn stream)
@@ -213,6 +214,7 @@ strings."
 ;;; ----------------------------------------------------------------------
 ;;; Condition Data Type
 
+#+nil
 (defun condition-print (condition stream depth)
   (declare (ignore depth))
   (if *print-escape*
@@ -447,6 +449,7 @@ strings."
 ;;;  by all the other routines.
 
 (defun coerce-to-condition (datum arguments default-type function-name)
+  (declare (si::c-local))
   (cond ((typep datum 'CONDITION)
 	 (when arguments
 	   (cerror "Ignore the additional arguments."
@@ -591,6 +594,7 @@ returns with NIL."
   (:REPORT (lambda (c s) (declare (ignore c))
 		   (write-string "Abort failed." s))))
 
+#+nil
 (defun simple-condition-class-p (type)
   (typep type 'SIMPLE-CONDITION-CLASS))
 

@@ -332,30 +332,22 @@ FEill_formed_input()
 }
 
 static void
-c_new_env()
-{
-	c_env.variables = Cnil;
-	c_env.macros = Cnil;
-	c_env.lexical_level = 0;
-}
-
-static void
 c_register_block(cl_object name)
 {
-	c_env.variables = CONS(list(2, @':block', name), c_env.variables);
+	c_env.variables = CONS(cl_list(2, @':block', name), c_env.variables);
 }
 
 static void
 c_register_tags(cl_object all_tags)
 {
-	c_env.variables = CONS(list(2, @':tag', all_tags), c_env.variables);
+	c_env.variables = CONS(cl_list(2, @':tag', all_tags), c_env.variables);
 }
 
 static void
 c_register_function(cl_object name)
 {
-	c_env.variables = CONS(list(2, @':function', name), c_env.variables);
-	c_env.macros = CONS(list(2, name, @'function'), c_env.macros);
+	c_env.variables = CONS(cl_list(2, @':function', name), c_env.variables);
+	c_env.macros = CONS(cl_list(2, name, @'function'), c_env.macros);
 }
 
 static cl_object
@@ -367,21 +359,46 @@ c_macro_expand1(cl_object stmt)
 static void
 c_register_symbol_macro(cl_object name, cl_object exp_fun)
 {
-	c_env.variables = CONS(list(3, name, @'si::symbol-macro', exp_fun),
+	c_env.variables = CONS(cl_list(3, name, @'si::symbol-macro', exp_fun),
 			       c_env.variables);
 }
 
 static void
 c_register_macro(cl_object name, cl_object exp_fun)
 {
-	c_env.macros = CONS(list(3, name, @'macro', exp_fun), c_env.macros);
+	c_env.macros = CONS(cl_list(3, name, @'macro', exp_fun), c_env.macros);
 }
 
 static void
 c_register_var(register cl_object var, bool special)
 {
-	c_env.variables = CONS(list(2, var, special? @'special' : Cnil),
+	c_env.variables = CONS(cl_list(2, var, special? @'special' : Cnil),
 			       c_env.variables);
+}
+
+static void
+c_new_env(cl_object env)
+{
+	c_env.variables = Cnil;
+	c_env.macros = Cnil;
+	if (Null(env)) {
+		c_env.lexical_level = 0;
+		return;
+	}
+	c_env.lexical_level = 1;
+	for (env = @revappend(2, env, Cnil); !Null(env); env = CDDR(env))
+	{
+		cl_object tag = CADR(env);
+		cl_object what = CAR(env);
+		if (tag == @':tag')
+			c_register_tags(Cnil);
+		else if (tag == @':block')
+			c_register_block(CAR(what));
+		else if (tag == @':function')
+			c_register_function(CAR(what));
+		else
+			c_register_var(tag, FALSE);
+	}
 }
 
 static cl_object
@@ -879,7 +896,7 @@ c_do_doa(int op, cl_object args) {
 	/* Compile stepping clauses */
 	if (length(stepping) == 1)
 		op = OP_BIND;
-	for (vars = Cnil, stepping=nreverse(stepping); !endp(stepping); ) {
+	for (vars = Cnil, stepping=cl_nreverse(stepping); !endp(stepping); ) {
 		cl_object pair = pop(&stepping);
 		cl_object var = CAR(pair);
 		cl_object value = CDR(pair);
@@ -1223,7 +1240,7 @@ c_let_leta(int op, cl_object args) {
 	cl_object bindings, specials, body, l, vars;
 	cl_object old_variables = c_env.variables;
 
-	bindings = car(args);
+	bindings = cl_car(args);
 	body = c_process_declarations(CDR(args));
 	specials = VALUES(3);
 
@@ -1336,7 +1353,7 @@ c_multiple_value_bind(cl_object args)
 		c_env.variables = old_env;
 	} else {
 		cl_object old_variables = c_env.variables;
-		for (vars=reverse(vars); n; n--){
+		for (vars=cl_reverse(vars); n; n--){
 			cl_object var = pop(&vars);
 			if (!SYMBOLP(var))
 				FEillegal_variable_name(var);
@@ -1362,7 +1379,7 @@ c_multiple_value_call(cl_object args) {
 	name = pop(&args);
 	if (endp(args)) {
 		/* If no arguments, just use ordinary call */
-		c_call(list(1, name), FALSE);
+		c_call(cl_list(1, name), FALSE);
 		return;
 	}
 	asm_op(OP_MCALL);
@@ -1397,7 +1414,7 @@ c_multiple_value_setq(cl_object args) {
 
 	/* Look for symbol macros, building the list of variables
 	   and the list of late assignments. */
-	for (orig_vars = reverse(pop(&args)); !endp(orig_vars); ) {
+	for (orig_vars = cl_reverse(pop(&args)); !endp(orig_vars); ) {
 		cl_object aux, v = pop(&orig_vars);
 		if (!SYMBOLP(v))
 			FEillegal_variable_name(v);
@@ -1406,7 +1423,7 @@ c_multiple_value_setq(cl_object args) {
 			aux = v;
 			v = @gensym(0);
 			temp_vars = CONS(v, temp_vars);
-			late_assignment = CONS(list(3, @'setf', aux, v),
+			late_assignment = CONS(cl_list(3, @'setf', aux, v),
 					       late_assignment);
 		}
 		vars = CONS(v, vars);
@@ -1432,7 +1449,7 @@ c_multiple_value_setq(cl_object args) {
 
 	/* Compile variables */
 	asm_op2(OP_MSETQ, nvars);
-	vars = reverse(vars);
+	vars = cl_reverse(vars);
 	while (nvars--) {
 		cl_object var = pop(&vars);
 		cl_fixnum ndx;
@@ -1450,7 +1467,9 @@ c_multiple_value_setq(cl_object args) {
 
 	/* Assign to symbol-macros */
 	if (!Null(late_assignment)) {
+		asm_op(OP_MPROG1);
 		compile_body(late_assignment);
+		asm_op(OP_EXIT);
 		c_undo_bindings(old_variables);
 	}
 }
@@ -1628,7 +1647,7 @@ c_setq(cl_object args) {
 			compile_form(value, FALSE);
 			compile_setq(OP_SETQ, var);
 		} else {
-			compile_form(list(3, @'setf', var, value), FALSE);
+			compile_form(cl_list(3, @'setf', var, value), FALSE);
 		}
 	}
 }
@@ -1651,12 +1670,12 @@ c_symbol_macrolet(cl_object args)
 		cl_object definition = pop(&def_list);
 		cl_object name = pop(&definition);
 		cl_object expansion = pop(&definition);
-		cl_object arglist = list(2, @gensym(0), @gensym(0));
+		cl_object arglist = cl_list(2, @gensym(0), @gensym(0));
 		cl_object function;
 		if (name->symbol.stype == stp_special || c_var_ref(name) == -2)
 			FEprogram_error("SYMBOL-MACROLET: Symbol ~A cannot be \
 declared special and appear in a symbol-macrolet.", 1, name);
-		definition = list(2, arglist, list(2, @'quote', expansion));
+		definition = cl_list(2, arglist, cl_list(2, @'quote', expansion));
 		function = make_lambda(name, definition);
 		c_register_symbol_macro(name, function);
 	}
@@ -1973,14 +1992,16 @@ compile_body(cl_object body) {
 	@(return declarations body documentation specials)
 @)
 
-@(defun si::process_lambda_list (lambda)
+cl_object
+si_process_lambda_list(cl_object lambda)
+{
 	cl_object documentation, declarations, specials;
 	cl_object lambda_list, body, form;
 	cl_object x, v, key, init, spp;
 	cl_object reqs = Cnil, opts = Cnil, keys = Cnil, rest = Cnil, auxs = Cnil;
 	int nreq = 0, nopt = 0, nkey = 0, naux = 0;
 	cl_object allow_other_keys = Cnil;
-@
+
 	bds_check;
 	if (ATOM(lambda))
 		FEprogram_error("LAMBDA: No lambda list.", 0);
@@ -2154,12 +2175,12 @@ OUTPUT:
 	if ((nreq+nopt+(!Null(rest))+nkey) >= LAMBDA_PARAMETERS_LIMIT)
 		FEprogram_error("LAMBDA: Argument list ist too long, ~S.", 1,
 				CAR(lambda));
-	@(return CONS(MAKE_FIXNUM(nreq), nreverse(reqs))
-		 CONS(MAKE_FIXNUM(nopt), nreverse(opts))
-		 nreverse(rest)
+	@(return CONS(MAKE_FIXNUM(nreq), cl_nreverse(reqs))
+		 CONS(MAKE_FIXNUM(nopt), cl_nreverse(opts))
+		 cl_nreverse(rest)
 		 allow_other_keys
-		 CONS(MAKE_FIXNUM(nkey), nreverse(keys))
-		 nreverse(auxs)
+		 CONS(MAKE_FIXNUM(nkey), cl_nreverse(keys))
+		 cl_nreverse(auxs)
 		 documentation
 		 specials
 		 declarations
@@ -2167,7 +2188,7 @@ OUTPUT:
 
 ILLEGAL_LAMBDA:
 	FEprogram_error("LAMBDA: Illegal lambda list ~S.", 1, CAR(lambda));
-@)
+}
 
 static void
 c_default(cl_index deflt_pc) {
@@ -2211,7 +2232,7 @@ make_lambda(cl_object name, cl_object lambda) {
 
 	c_env.lexical_level++;
 
-	reqs = @si::process-lambda-list(1,lambda);
+	reqs = si_process_lambda_list(lambda);
 	opts = VALUES(1);
 	rest = VALUES(2);
 	allow_other_keys = VALUES(3);
@@ -2261,7 +2282,7 @@ make_lambda(cl_object name, cl_object lambda) {
 		c_register_var2(asm_ref(opts_pc+2), &specials);
 		opts_pc+=3;
 	}
-	c_register_var2(car(rest), &specials);
+	c_register_var2(cl_car(rest), &specials);
 	while (nkeys--) {
 		c_default(keys_pc+2);
 		c_register_var2(asm_ref(keys_pc+1), &specials);
@@ -2296,21 +2317,24 @@ make_lambda(cl_object name, cl_object lambda) {
 	return asm_end(handle, Cnil);
 }
 
-@(defun si::function-block-name (name)
-@
+cl_object
+si_function_block_name(cl_object name)
+{
 	if (SYMBOLP(name))
 		@(return name)
 	if (CONSP(name) && CAR(name) == @'setf' && CONSP(CDR(name)) &&
 	    SYMBOLP(CADR(name)) && Null(CDDR(name)))
 		@(return CADR(name))
 	FEerror("Not a valid function name ~S",1,name);
-@)
+}
 
-@(defun si::make_lambda (name rest)
+cl_object
+si_make_lambda(cl_object name, cl_object rest)
+{
 	cl_object lambda;
 	cl_compiler_env old_c_env = c_env;
-@
-	c_new_env();
+
+	c_new_env(Cnil);
 	if (frs_push(FRS_PROTECT, Cnil)) {
 		c_env = old_c_env;
 		frs_pop();
@@ -2320,30 +2344,24 @@ make_lambda(cl_object name, cl_object lambda) {
 	frs_pop();
 	c_env = old_c_env;
 	@(return lambda)
-@)
+}
 
 cl_object
 eval(cl_object form, cl_object *new_bytecodes, cl_object env)
 {
 	cl_compiler_env old_c_env = c_env;
-	cl_object bytecodes, lex_old = lex_env;
+	cl_object bytecodes;
 	cl_index handle;
 	bool unwinding;
 
-	c_new_env();
-	if (Null(env)) {
-		lex_new();
-		c_env.lexical_level = 0;
-	} else {
-		c_env.lexical_level = 1;
-		lex_env = env;
-		lex_copy();
-	}
+	ihs_push(@'eval');
+	lex_env = env;
+	c_new_env(env);
 	handle = asm_begin();
 	if (frs_push(FRS_PROTECT, Cnil)) {
 		asm_clear(handle);
-		lex_env = lex_old;
 		c_env = old_c_env;
+		ihs_pop();
 		frs_pop();
 		unwind(nlj_fr, nlj_tag);
 	}
@@ -2359,9 +2377,9 @@ eval(cl_object form, cl_object *new_bytecodes, cl_object env)
 		*new_bytecodes = bytecodes;
 	}
 	interpret(bytecodes->bytecodes.data);
-	frs_pop();
-	lex_env = lex_old;
 	c_env = old_c_env;
+	ihs_pop();
+	frs_pop();
 	return VALUES(0);
 }
 

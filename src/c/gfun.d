@@ -14,10 +14,12 @@
 
 #include "ecl.h"
 
-@(defun si::allocate_gfun (name arg_no ht)
+cl_object
+si_allocate_gfun(cl_object name, cl_object arg_no, cl_object ht)
+{
 	cl_object x;
 	int n, i;
-@
+
 	if (type_of(ht) != t_hashtable)
 		FEwrong_type_argument(@'hash-table', ht);
 
@@ -32,84 +34,94 @@
 		x->gfun.specializers[i] = OBJNULL;
 	x->gfun.instance = Cnil;
 	@(return x)
-@)
+}
 
-@(defun si::gfun_name (x)
-@
+cl_object
+si_gfun_name(cl_object x)
+{
 	if (type_of(x) != t_gfun)
 		FEwrong_type_argument(@'dispatch-function', x);
 	@(return x->gfun.name)
-@)
+}
 
-@(defun si::gfun_name_set (x name)
-@
+cl_object
+si_gfun_name_set(cl_object x, cl_object name)
+{
 	if (type_of(x) != t_gfun)
 		FEwrong_type_argument(@'dispatch-function', x);
 	x->gfun.name = name;
 	@(return x)
-@)
+}
 
-@(defun si::gfun_method_ht (x)
-@
+cl_object
+si_gfun_method_ht(cl_object x)
+{
 	if (type_of(x) != t_gfun)
 		FEwrong_type_argument(@'dispatch-function', x);
 	@(return x->gfun.method_hash)
-@)
+}
 
-@(defun si::gfun_method_ht_set (x y)
-@
+cl_object
+si_gfun_method_ht_set(cl_object x, cl_object y)
+{
 	if (type_of(x) != t_gfun)
 		FEwrong_type_argument(@'dispatch-function', x);
 	if (type_of(y) != t_hashtable)
 		FEwrong_type_argument(@'hash-table', y);
 	x->gfun.method_hash = y;
 	@(return x)
-@)
+}
 
-@(defun si::gfun_spec_how_ref (x y)
+cl_object
+si_gfun_spec_how_ref(cl_object x, cl_object y)
+{
 	int i;
-@
+
 	if (type_of(x) != t_gfun)
 		FEwrong_type_argument(@'dispatch-function', x);
 	if (!FIXNUMP(y) ||
 	    (i = fix(y)) < 0 || i >= x->gfun.arg_no)
 		FEerror("~S is an illegal spec_how index.", 1, y);
 	@(return x->gfun.specializers[i])
-@)
+}
 
-@(defun si::gfun_spec_how_set (x y spec)
+cl_object
+si_gfun_spec_how_set(cl_object x, cl_object y, cl_object spec)
+{
 	int i;
-@
+
 	if (type_of(x) != t_gfun)
 		FEwrong_type_argument(@'dispatch-function', x);
 	if (!FIXNUMP(y) || (i = fix(y)) >= x->gfun.arg_no)
 		FEerror("~S is an illegal spec_how index.", 1, y);
 	x->gfun.specializers[i] = spec;
 	@(return spec)
-@)
+}
 
-@(defun si::gfun_instance (x)
-@
+cl_object
+si_gfun_instance(cl_object x)
+{
 	if (type_of(x) != t_gfun)
 		FEwrong_type_argument(@'dispatch-function', x);
 	@(return x->gfun.instance)
-@)
+}
 
-@(defun si::gfun_instance_set (x y)
-@
+cl_object
+si_gfun_instance_set(cl_object x, cl_object y)
+{
 	if (type_of(x) != t_gfun)
 		FEwrong_type_argument(@'dispatch-function', x);
 	if (type_of(y) != t_instance)
 		FEwrong_type_argument(@'instance', y);
 	x->gfun.instance = y;
 	@(return x)
-@)
+}
 
-@(defun si::gfunp (x)
-@
+cl_object
+si_gfunp(cl_object x)
+{
 	@(return ((type_of(x) == t_gfun)? Ct : Cnil))
-@)
-
+}
 
 /*
  * variation of gethash from hash.d, which takes an array of objects as key
@@ -147,9 +159,11 @@ get_meth_hash(cl_object *keys, int argno, cl_object hashtable)
 	internal_error("get_meth_hash");
 }
 
-@(defun si::method_ht_get (keylist table)
+cl_object
+si_method_ht_get(cl_object keylist, cl_object table)
+{
 	struct hashtable_entry *e;
-@
+
 	{  int i, argn = length(keylist);
 	   cl_object keys[argn];	/* __GNUC__ */
 
@@ -158,7 +172,7 @@ get_meth_hash(cl_object *keys, int argno, cl_object hashtable)
 	   e = get_meth_hash(keys, argn, table);
 	}
 	@(return ((e->key == OBJNULL)? Cnil : e->value))
-@)
+}
 
 static void
 set_meth_hash(cl_object *keys, int argno, cl_object hashtable, cl_object value)
@@ -194,7 +208,7 @@ compute_method(int narg, cl_object fun, cl_object *args)
 	    if (*spec_how != Cnil)
 	      argtype[spec_no++] = (ATOM(*spec_how) ||
 				    !member_eq(args[i], *spec_how)) ?
-				      TYPE_OF(args[i]) :
+				      cl_type_of(args[i]) :
 					args[i];
 	  }
 
@@ -223,12 +237,14 @@ compute_method(int narg, cl_object fun, cl_object *args)
 	return func;
 }
 
-@(defun si::set_compiled_function_name (fn new_name)
+cl_object
+si_set_compiled_function_name(cl_object fn, cl_object new_name)
+{
 	cl_type t = type_of(fn);
-@
+
 	if (t == t_cfun)
 		@(return (fn->cfun.name = new_name))
 	if (t == t_bytecodes)
 		@(return (fn->bytecodes.data[0] = new_name))
 	FEerror("~S is not a compiled-function.", 1, fn);
-@)
+}

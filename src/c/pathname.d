@@ -45,13 +45,13 @@ make_pathname(cl_object host, cl_object device, cl_object directory,
 
 	switch (type_of(directory)) {
 	case t_string:
-		directory = list(2, @':absolute', directory);
+		directory = cl_list(2, @':absolute', directory);
 		break;
 	case t_symbol:
 		if (directory == Cnil)
 			break;
 		if (directory == @':wild')
-			directory = list(2, @':absolute', @':wild-inferiors');
+			directory = cl_list(2, @':absolute', @':wild-inferiors');
 		error_directory(directory);
 		break;
 	case t_cons:
@@ -344,7 +344,7 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 	if (!endp(path)) {
 		if (CAR(path) == @':absolute') {
 			/* According to ANSI CL, "/.." is erroneous */
-			if (cadr(path) == @':up')
+			if (cl_cadr(path) == @':up')
 				return Cnil;
 		} else  {
 			/* If path is relative and we got here, then it
@@ -371,7 +371,7 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 }
 
 cl_object
-coerce_to_pathname(cl_object x)
+cl_pathname(cl_object x)
 {
 	cl_object y;
 	cl_index e;
@@ -383,10 +383,10 @@ L:
 		y = parse_namestring(x->string.self, 0, x->string.fillp, &e,Cnil);
 		if (y == Cnil || e != x->string.fillp)
 		  FEerror("~S is not a valid pathname string", 1, x);
-		return(y);
+		return1(y);
 
 	case t_pathname:
-		return(x);
+		return1(x);
 
 	case t_stream:
 		switch ((enum smmode)x->stream.mode) {
@@ -425,14 +425,12 @@ coerce_to_file_pathname(cl_object pathname)
 	return pathname;
 }
 
-static cl_object translate_logical_pathname(cl_object x);
-
 cl_object
 coerce_to_physical_pathname(cl_object x)
 {
-	x = coerce_to_pathname(x);
+	x = cl_pathname(x);
 	if (x->pathname.logical)
-	  return translate_logical_pathname(x);
+	  return cl_translate_logical_pathname(x);
 	return x;
 }
 
@@ -459,7 +457,7 @@ merge_pathnames(cl_object path, cl_object defaults, cl_object default_version)
 {
 	cl_object host, device, directory, name, type, version;
 
-	defaults = coerce_to_pathname(defaults);
+	defaults = cl_pathname(defaults);
 	if (type_of(path) == t_string) {
 		cl_index foo;
 		cl_object aux = parse_namestring(path->string.self, 0,
@@ -468,7 +466,7 @@ merge_pathnames(cl_object path, cl_object defaults, cl_object default_version)
 		if (aux != Cnil) path = aux;
 	}
 	if (type_of(path) != t_pathname)
-		path = coerce_to_pathname(path);
+		path = cl_pathname(path);
 	if (Null(path->pathname.host))
 		host = defaults->pathname.host;
 	else
@@ -630,7 +628,7 @@ L:
 		if (x->string.self[0] != '~')
 		  return(x);
 		/* added by E. Wang */
-		return(namestring(coerce_to_pathname(x)));
+		return(namestring(cl_pathname(x)));
 
 	case t_pathname:
 		return(namestring(x));
@@ -662,11 +660,6 @@ L:
 	}
 }
 
-@(defun pathname (name)
-@	/* INV: coerce_to_pathname() checks types */
-	@(return coerce_to_pathname(name))
-@)
-
 @(defun parse_namestring (thing
 	&o host
 	   (defaults symbol_value(@'*default-pathname-defaults*'))
@@ -674,7 +667,6 @@ L:
 	&a x y)
 	cl_index s, e, ee;
 @
-	/* INV: coerce_to_pathname() checks types */
 	/* defaults is ignored */
 	x = thing;
 L:
@@ -735,9 +727,8 @@ L:
 	&o (defaults symbol_value(@'*default-pathname-defaults*'))
  	   (default_version @':newest'))
 @
-	/* INV: coerce_to_pathname() checks types */
-	path = coerce_to_pathname(path);
-	defaults = coerce_to_pathname(defaults);
+	path = cl_pathname(path);
+	defaults = cl_pathname(defaults);
 	@(return merge_pathnames(path, defaults, default_version))
 @)
 
@@ -748,112 +739,113 @@ L:
 	if (Null(defaults)) {
 		defaults
 		= symbol_value(@'*default-pathname-defaults*');
-		defaults = coerce_to_pathname(defaults);
+		defaults = cl_pathname(defaults);
 		defaults
 		= make_pathname(defaults->pathname.host,
 			        Cnil, Cnil, Cnil, Cnil, Cnil);
 	} else
-		defaults = coerce_to_pathname(defaults);
+		defaults = cl_pathname(defaults);
 	x = make_pathname(host, device, directory, name, type, version);
 	x = merge_pathnames(x, defaults, Cnil);
 	@(return x)
 @)
 
-@(defun pathnamep (pname)
-@
+cl_object
+cl_pathnamep(cl_object pname)
+{
 	@(return ((type_of(pname) == t_pathname)? Ct : Cnil))
-@)
+}
 
-@(defun si::logical_pathname_p (pname)
-@
+cl_object
+si_logical_pathname_p(cl_object pname)
+{
 	@(return ((type_of(pname) == t_pathname && pname->pathname.logical)?
 		  Ct : Cnil))
-@)
+}
 
-@(defun pathname_host (pname)
-@
-	/* INV: coerce_to_pathname() checks types */
-	pname = coerce_to_pathname(pname);
+cl_object
+cl_pathname_host(cl_object pname)
+{
+	pname = cl_pathname(pname);
 	@(return pname->pathname.host)
-@)
+}
 
-@(defun pathname_device (pname)
-@
-	/* INV: coerce_to_pathname() checks types */
-	pname = coerce_to_pathname(pname);
+cl_object
+cl_pathname_device(cl_object pname)
+{
+	pname = cl_pathname(pname);
 	@(return pname->pathname.device)
-@)
+}
 
-@(defun pathname_directory (pname)
-@
-	/* INV: coerce_to_pathname() checks types */
-	pname = coerce_to_pathname(pname);
+cl_object
+cl_pathname_directory(cl_object pname)
+{
+	pname = cl_pathname(pname);
 	@(return pname->pathname.directory)
-@)
+}
 
-@(defun pathname_name (pname)
-@
-	/* INV: coerce_to_pathname() checks types */
-	pname = coerce_to_pathname(pname);
+cl_object
+cl_pathname_name(cl_object pname)
+{
+	pname = cl_pathname(pname);
 	@(return pname->pathname.name)
-@)
+}
 
-@(defun pathname_type (pname)
-@
-	/* INV: coerce_to_pathname() checks types */
-	pname = coerce_to_pathname(pname);
+cl_object
+cl_pathname_type(cl_object pname)
+{
+	pname = cl_pathname(pname);
 	@(return pname->pathname.type)
-@)
+}
 
-@(defun pathname_version (pname)
-@
-	/* INV: coerce_to_pathname() checks types */
-	pname = coerce_to_pathname(pname);
+cl_object
+cl_pathname_version(cl_object pname)
+{
+	pname = cl_pathname(pname);
 	@(return  pname->pathname.version)
-@)
+}
 
-@(defun namestring (pname)
-@
-	/* INV: coerce_to_pathname() checks types */
+cl_object
+cl_namestring(cl_object pname)
+{
 	@(return coerce_to_namestring(pname))
-@)
+}
 
-@(defun file_namestring (pname)
-@
-	/* INV: coerce_to_filename() checks types */
+cl_object
+cl_file_namestring(cl_object pname)
+{
 	pname = coerce_to_filename(pname);
 	@(return namestring(make_pathname(Cnil, Cnil, Cnil,
 					     pname->pathname.name,
 					     pname->pathname.type,
 					     pname->pathname.version)))
-@)
+}
 
-@(defun directory_namestring (pname)
-@
-	/* INV: coerce_to_pathname() checks types */
-	pname = coerce_to_pathname(pname);
+cl_object
+cl_directory_namestring(cl_object pname)
+{
+	pname = cl_pathname(pname);
 	@(return namestring(make_pathname(Cnil, Cnil,
 					     pname->pathname.directory,
 					     Cnil, Cnil, Cnil)))
-@)
+}
 
-@(defun host_namestring (pname)
-@
-	/* INV: coerce_to_pathname() checks types */
-	pname = coerce_to_pathname(pname);
+cl_object
+cl_host_namestring(cl_object pname)
+{
+	pname = cl_pathname(pname);
 	pname = pname->pathname.host;
 	if (Null(pname) || pname == @':wild')
 		pname = null_string;
 	@(return pname)
-@)
+}
 
 @(defun enough_namestring (path
 	&o (defaults symbol_value(@'*default-pathname-defaults*')))
 	cl_object newpath;
 @
-	/* INV: coerce_to_pathname() checks types */
-	defaults = coerce_to_pathname(defaults);
-	path = coerce_to_pathname(path);
+	defaults = cl_pathname(defaults);
+	path = cl_pathname(path);
 	newpath
 	= make_pathname(equalp(path->pathname.host, defaults->pathname.host) ?
 			Cnil : path->pathname.host,
@@ -941,8 +933,8 @@ path_list_match(cl_object a, cl_object mask) {
 bool
 pathname_match_p(cl_object path, cl_object mask)
 {
-	path = coerce_to_pathname(path);
-	mask = coerce_to_pathname(mask);
+	path = cl_pathname(path);
+	mask = cl_pathname(mask);
 	if (path->pathname.logical != mask->pathname.logical)
 		return FALSE;
 #if 0
@@ -962,10 +954,10 @@ pathname_match_p(cl_object path, cl_object mask)
 	return TRUE;
 }
 
-@(defun pathname_match_p (path mask)
-@
+cl_object cl_pathname_match_p(cl_object path, cl_object mask)
+{
 	@(return (pathname_match_p(path, mask)? Ct : Cnil))
-@)
+}
 
 /* --------------- PATHNAME TRANSLATIONS ------------------ */
 
@@ -1014,8 +1006,8 @@ coerce_to_from_pathname(cl_object x, cl_object host)
 	}
 	for (l = set, set = Cnil; !endp(l); l = CDR(l)) {
 		cl_object item = CAR(l);
-		cl_object from = coerce_to_from_pathname(car(item), host);
-		cl_object to = coerce_to_pathname(cadr(item));
+		cl_object from = coerce_to_from_pathname(cl_car(item), host);
+		cl_object to = cl_pathname(cl_cadr(item));
 		if (type_of(from) != t_pathname || !from->pathname.logical)
 		  FEerror("~S is not a valid from-pathname translation", 1, from);
 		if (type_of(to) != t_pathname)
@@ -1154,13 +1146,13 @@ copy_list_wildcards(cl_object *wilds, cl_object to)
 }
 
 cl_object
-translate_pathname(cl_object source, cl_object from, cl_object to)
+cl_translate_pathname(cl_object source, cl_object from, cl_object to)
 {
 	cl_object wilds, out, d, *pc;
 
-	source = coerce_to_pathname(source);
-	from = coerce_to_pathname(from);
-	to = coerce_to_pathname(to);
+	source = cl_pathname(source);
+	from = cl_pathname(from);
+	to = cl_pathname(to);
 
 	if (source->pathname.logical != from->pathname.logical)
 		goto error;
@@ -1221,16 +1213,11 @@ translate_pathname(cl_object source, cl_object from, cl_object to)
 	FEerror("Number of wildcards in ~S do not match  ~S", 2, from, to);
 }
 
-@(defun translate_pathname (source from to)
-@
-	@(return translate_pathname(source, from, to))
-@)
-
-static cl_object
-translate_logical_pathname(cl_object source)
+cl_object
+cl_translate_logical_pathname(cl_object source)
 {
 	cl_object l, pair;
-	source = coerce_to_pathname(source);
+	source = cl_pathname(source);
 	if (!source->pathname.logical)
 		goto error;
  begin:
@@ -1238,7 +1225,7 @@ translate_logical_pathname(cl_object source)
 	for(; !endp(l); l = CDR(l)) {
 		pair = CAR(l);
 		if (pathname_match_p(source, CAR(pair))) {
-			source = translate_pathname(source, CAR(pair), CADR(pair));
+			source = cl_translate_pathname(source, CAR(pair), CADR(pair));
 			if (source->pathname.logical)
 				goto begin;
 			return source;
@@ -1248,11 +1235,6 @@ translate_logical_pathname(cl_object source)
 	FEerror("~S admits no logical pathname translations", 1, source);
 }
 
-@(defun translate_logical_pathname (source)
-@
-	@(return translate_logical_pathname(source))
-@)
-
 void
 init_pathname(void)
 {
@@ -1260,6 +1242,6 @@ init_pathname(void)
 	SYM_VAL(@'*default-pathname-defaults*') =
 	  make_pathname(Cnil, Cnil, Cnil, Cnil, Cnil, Cnil);
 	@si::pathname-translations(2,make_simple_string("SYS"),
-				   list(1,list(2,make_simple_string("*.*"),
-					       make_simple_string("./*.*"))));
+				   cl_list(1,cl_list(2,make_simple_string("*.*"),
+						     make_simple_string("./*.*"))));
 }

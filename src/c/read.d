@@ -723,7 +723,7 @@ static
 				n = 8*n + c->string.self[i] - '0';
 		c = CODE_CHAR(n & 0377);
 	} else {
-		c = @name_char(1,c);
+		c = cl_name_char(c);
 		if (Null(c)) FEerror("~S is an illegal character name.", 1, c);
 	}
 	@(return c)
@@ -776,8 +776,8 @@ static
 		    cl_stack_push(CAR(x));
 		  goto L;
 		}
-		@(return list(4, @'si::,', @'apply',
-			      CONS(@'quote', CONS(@'vector', Cnil)), x))
+		@(return cl_list(4, @'si::,', @'apply',
+				 CONS(@'quote', CONS(@'vector', Cnil)), x))
 	}
 	for (dimcount = 0 ;; dimcount++) {
 		delimiting_char = CODE_CHAR(')');
@@ -935,7 +935,7 @@ static
 	switch (code) {
 	case 0: {
 		cl_object name = read_object(in);
-		@si::select-package(1,name);
+		si_select_package(name);
 		break;
 	}
 	case 1: {
@@ -945,7 +945,7 @@ static
 		break;
 	}
 	default: {
-		cl_object read_VV_block = SYM_VAL(@'si::*read-vv-block*');
+		cl_object read_VV_block = SYM_VAL(@'si::*cblock*');
 		code = -code - 1;
 		if (code < 0 || code >= read_VV_block->cblock.data_size)
 			FEerror("Bogus binary file. #!~S unknown.",1,
@@ -1181,7 +1181,7 @@ static
 static
 @(defun "sharp_P_reader" (in c d)
 @
-	@(return coerce_to_pathname(read_object(in)))
+	@(return cl_pathname(read_object(in)))
 @)
 
 /*
@@ -1193,7 +1193,7 @@ static
 	if (d != Cnil && !read_suppress)
 		extra_argument('"', d);
 	unread_char(c, in);
-	@(return coerce_to_pathname(read_object(in)))
+	@(return cl_pathname(read_object(in)))
 @)
 
 /*
@@ -1591,9 +1591,11 @@ CANNOT_PARSE:
 	@(return MAKE_FIXNUM(c))
 @)
 
-@(defun si::read_bytes (stream string start end)
+cl_object
+si_read_bytes(cl_object stream, cl_object string, cl_object start, cl_object end)
+{
 	int is, ie, c; FILE *fp;
-@
+
 	assert_type_stream(stream);
 	if (stream->stream.mode == smm_closed)
 	  closed_stream(stream);
@@ -1607,7 +1609,7 @@ CANNOT_PARSE:
 		   ie - is,
 		   fp);
 	@(return MAKE_FIXNUM(c))
-@)
+}
 
 
 
@@ -1629,10 +1631,11 @@ CANNOT_PARSE:
 	@(return copy_readtable(from, to))
 @)
 
-@(defun readtablep (readtable)
-@
+cl_object
+cl_readtablep(cl_object readtable)
+{
 	@(return ((type_of(readtable) == t_readtable)? Ct : Cnil))
-@)
+}
 
 static struct readtable_entry*
 read_table_entry(cl_object rdtbl, cl_object c)
@@ -1751,31 +1754,27 @@ read_table_entry(cl_object rdtbl, cl_object c)
 cl_object
 c_string_to_object(const char *s)
 {
-	return string_to_object(make_constant_string(s));
+	return si_string_to_object(make_constant_string(s));
 }
 
 cl_object
-string_to_object(cl_object x)
+si_string_to_object(cl_object x)
 {
 	cl_object in;
 
+	assert_type_string(x);
 	in = make_string_input_stream(x, 0, x->string.fillp);
 	preserving_whitespace_flag = FALSE;
 	detect_eos_flag = FALSE;
 	x = read_object(in);
-	return(x);
+	@(return x)
 }
 
-@(defun si::string_to_object (str)
-@
-	assert_type_string(str);
-	@(return string_to_object(str))
-@)
-
-@(defun si::standard_readtable ()
-@
+cl_object
+si_standard_readtable()
+{
 	@(return standard_readtable)
-@)
+}
 
 static void
 extra_argument(int c, cl_object d)
@@ -1785,7 +1784,7 @@ extra_argument(int c, cl_object d)
 }
 
 
-#define	make_cf(f)	make_cfun((cl_objectfn)(f), Cnil, NULL)
+#define	make_cf(f)	cl_make_cfun_va((cl_objectfn)(f), Cnil, NULL)
 
 void
 init_read(void)
@@ -1865,8 +1864,8 @@ init_read(void)
 	dtab['A'] = dtab['a'] = make_cf(sharp_A_reader);
 	dtab['S'] = dtab['s'] = make_cf(sharp_S_reader);
 */
-	dtab['A'] = dtab['a'] = make_si_ordinary("SHARP-A-READER");
-	dtab['S'] = dtab['s'] = make_si_ordinary("SHARP-S-READER");
+	dtab['A'] = dtab['a'] = @'si::sharp-a-reader';
+	dtab['S'] = dtab['s'] = @'si::sharp-s-reader';
 	dtab['P'] = dtab['p'] = make_cf(sharp_P_reader);
 
 	dtab['='] = make_cf(sharp_eq_reader);
@@ -1904,6 +1903,8 @@ init_read(void)
 	register_root(&delimiting_char);
 
 	detect_eos_flag = FALSE;
+
+	SYM_VAL(@'si::*cblock*') = Cnil;
 }
 
 /*
@@ -1944,6 +1945,7 @@ read_VV(cl_object block, void *entry)
 	if (frs_push(FRS_PROTECT, Cnil))
 		e = TRUE;
 	else {
+		bds_bind(@'si::*cblock*', block);
 		if (len == 0) goto NO_DATA;
 		in=make_string_input_stream(make_constant_string(block->cblock.data_text),
 					    0, block->cblock.data_text_size);
@@ -1952,18 +1954,18 @@ read_VV(cl_object block, void *entry)
 		bds_bind(@'*read-suppress*', Cnil);
 		bds_bind(@'*package*', lisp_package);
 		bds_bind(@'*readtable*', standard_readtable);
-		bds_bind(@'si::*read-vv-block*', block);
 		for (i = 0 ; i < len; i++) {
 			x = @read(4, in, Cnil, OBJNULL, Cnil);
 			if (x == OBJNULL)
 				break;
 			VV[i] = x;
 		}
-		bds_unwind_n(6);
+		bds_unwind_n(5);
 		if (i < len)
 			FEerror("Not enough data while loading binary file",0);
 	NO_DATA:
 		(*entry_point)(MAKE_FIXNUM(0));
+		bds_unwind1;
 		e = FALSE;
 	}
 

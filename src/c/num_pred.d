@@ -116,27 +116,32 @@ number_evenp(cl_object x)
 	FEtype_error_integer(x);
 }
 
-@(defun zerop (x)
-@	/* INV: number_zerop() checks type */
+cl_object
+cl_zerop(cl_object x)
+{	/* INV: number_zerop() checks type */
 	@(return (number_zerop(x) ? Ct : Cnil))
-@)
+}
 
-@(defun plusp (x)
-@	/* INV: number_plusp()  checks type */
+cl_object
+cl_plusp(cl_object x)
+{	/* INV: number_plusp()  checks type */
 	@(return (number_plusp(x) ? Ct : Cnil))
-@)
+}
 
-@(defun minusp (x)
-@	/* INV: number_minusp() checks type */
+cl_object
+cl_minusp(cl_object x)
+{	/* INV: number_minusp() checks type */
 	@(return (number_minusp(x) ? Ct : Cnil))
-@)
+}
 
-@(defun oddp (x)
-@	/* INV: number_oddp() checks type */
+cl_object
+cl_oddp(cl_object x)
+{	/* INV: number_oddp() checks type */
 	@(return (number_oddp(x) ? Ct : Cnil))
-@)
+}
 
-@(defun evenp (x)
-@	/* INV: number_evenp() checks_type */
+cl_object
+cl_evenp(cl_object x)
+{	/* INV: number_evenp() checks_type */
 	@(return (number_evenp(x) ? Ct : Cnil))
-@)
+}

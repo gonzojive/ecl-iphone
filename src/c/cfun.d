@@ -18,7 +18,7 @@
 #include <string.h>	/* for memmove() */
 
 cl_object
-make_cfun(cl_objectfn self, cl_object name, cl_object cblock)
+cl_make_cfun(cl_object (*self)(), cl_object name, cl_object cblock, int narg)
 {
 	cl_object cf;
 
@@ -26,11 +26,27 @@ make_cfun(cl_objectfn self, cl_object name, cl_object cblock)
 	cf->cfun.entry = self;
 	cf->cfun.name = name;
 	cf->cfun.block = cblock;
+	cf->cfun.narg = narg;
+	if (narg < 0 || narg >= C_ARGUMENTS_LIMIT)
+	    FEprogram_error("cl_make_cfun: function requires too many arguments.",0);
 	return(cf);
 }
 
 cl_object
-make_cclosure(cl_objectfn self, cl_object env, cl_object block)
+cl_make_cfun_va(cl_objectfn self, cl_object name, cl_object cblock)
+{
+	cl_object cf;
+
+	cf = cl_alloc_object(t_cfun);
+	cf->cfun.entry = self;
+	cf->cfun.name = name;
+	cf->cfun.block = cblock;
+	cf->cfun.narg = -1;
+	return(cf);
+}
+
+cl_object
+cl_make_cclosure_va(cl_objectfn self, cl_object env, cl_object block)
 {
 	cl_object cc;
 
@@ -42,25 +58,19 @@ make_cclosure(cl_objectfn self, cl_object env, cl_object block)
 }
 
 void
-MF(cl_object sym, cl_objectfn self, cl_object block)
+cl_def_c_function(cl_object sym, cl_object (*self)(), int narg)
 {
-	cl_object cf;
-
 	if (!SYMBOLP(sym))
 		FEtype_error_symbol(sym);
 	if (sym->symbol.isform && sym->symbol.mflag)
 		sym->symbol.isform = FALSE;
 	clear_compiler_properties(sym);
-	cf = cl_alloc_object(t_cfun);
-	cf->cfun.entry = self;
-	cf->cfun.name = sym;
-	cf->cfun.block = block;
-	SYM_FUN(sym) = cf;
+	SYM_FUN(sym) = cl_make_cfun(self, sym, symbol_value(@'si::*cblock*'), narg);
 	sym->symbol.mflag = FALSE;
 }
 
 void
-MM(cl_object sym, cl_objectfn self, cl_object block)
+cl_def_c_macro_va(cl_object sym, cl_objectfn self)
 {
 	cl_object cf;
 
@@ -72,39 +82,27 @@ MM(cl_object sym, cl_objectfn self, cl_object block)
 #ifdef PDE
 	record_source_pathname(sym, @'defmacro');
 #endif
-	cf = cl_alloc_object(t_cfun);
-	cf->cfun.entry = self;
-	cf->cfun.name = sym;
-	cf->cfun.block = block;
-	SYM_FUN(sym) = cf;
+	SYM_FUN(sym) = cl_make_cfun_va(self, sym, symbol_value(@'si::*cblock*'));
 	sym->symbol.mflag = TRUE;
 }
 
-cl_object
-make_function(const char *s, cl_objectfn f)
+void
+cl_def_c_function_va(cl_object sym, cl_objectfn self)
 {
-	cl_object x;
-
-	x = make_ordinary(s);
-	SYM_FUN(x) = make_cfun(f, x, NULL);
-	x->symbol.mflag = FALSE;
-	return(x);
+	if (!SYMBOLP(sym))
+		FEtype_error_symbol(sym);
+	if (sym->symbol.isform && sym->symbol.mflag)
+		sym->symbol.isform = FALSE;
+	clear_compiler_properties(sym);
+	SYM_FUN(sym) = cl_make_cfun_va(self, sym, symbol_value(@'si::*cblock*'));
+	sym->symbol.mflag = FALSE;
 }
 
 cl_object
-make_si_function(const char *s, cl_objectfn f)
+si_compiled_function_name(cl_object fun)
 {
-	cl_object x;
-
-	x = make_si_ordinary(s);
-	SYM_FUN(x) = make_cfun(f, x, NULL);
-	x->symbol.mflag = FALSE;
-	return(x);
-}
-
-@(defun si::compiled_function_name (fun)
 	cl_object output;
-@
+
 	switch(type_of(fun)) {
 	case t_bytecodes:
 		output = fun->bytecodes.data[0]; break;
@@ -116,11 +114,13 @@ make_si_function(const char *s, cl_objectfn f)
 		FEerror("~S is not a compiled-function.", 1, fun);
 	}
 	@(return output)
-@)
+}
 
-@(defun si::compiled_function_source (fun)
+cl_object
+si_compiled_function_source(cl_object fun)
+{
 	cl_object output;
-@
+
 	switch(type_of(fun)) {
 	case t_bytecodes:
 		if (!Null(fun->bytecodes.lex))
@@ -137,11 +137,13 @@ make_si_function(const char *s, cl_objectfn f)
 		FEerror("~S is not a compiled-function.", 1, fun);
 	}
 	@(return output)
-@)
+}
 
-@(defun si::compiled_function_block (fun)
+cl_object
+si_compiled_function_block(cl_object fun)
+{
        cl_object output;
-@
+
        switch(type_of(fun)) {
 	case t_cfun:
 		output = fun->cfun.block; break;
@@ -151,4 +153,4 @@ make_si_function(const char *s, cl_objectfn f)
 		FEerror("~S is not a compiled-function.", 1, fun);
 	}
 	@(return output)
-@)
+}

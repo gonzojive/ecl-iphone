@@ -44,10 +44,6 @@
 		  &rest optimizers)
   ;; The value NIL for each parameter except for fname means "not known".
   ;; optimizers is a list of alternating {safety inline-info}* as above.
-  (multiple-value-bind (found name)
-      (si::mangle-name fname t)
-    (when found
-      (setf (get fname 'Lfun) name)))
   (when arg-types
     (setf (get fname 'arg-types)
 	  (mapcar #'(lambda (x) (if (eql x '*) '* (type-filter x)))
@@ -353,94 +349,64 @@
 
 ; file list.d
 (CAR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "car(#0)")
 	:inline-unsafe ((t) t nil nil "CAR(#0)"))
 (CDR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cdr(#0)")
 	:inline-unsafe ((t) t nil nil "CDR(#0)"))
 (CAAR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "caar(#0)")
 	:inline-unsafe ((t) t nil nil "CAAR(#0)"))
 (CADR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cadr(#0)")
 	:inline-unsafe ((t) t nil nil "CADR(#0)"))
 (CDAR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cdar(#0)")
 	:inline-unsafe ((t) t nil nil "CDAR(#0)"))
 (CDDR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cddr(#0)")
 	:inline-unsafe ((t) t nil nil "CDDR(#0)"))
 (CAAAR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "caaar(#0)")
 	:inline-unsafe ((t) t nil nil "CAAAR(#0)"))
 (CAADR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "caadr(#0)")
 	:inline-unsafe ((t) t nil nil "CAADR(#0)"))
 (CADAR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cadar(#0)")
 	:inline-unsafe ((t) t nil nil "CADAR(#0)"))
 (CADDR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "caddr(#0)")
 	:inline-unsafe ((t) t nil nil "CADDR(#0)"))
 (CDAAR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cdaar(#0)")
 	:inline-unsafe ((t) t nil nil "CDAAR(#0)"))
 (CDADR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cdadr(#0)")
 	:inline-unsafe ((t) t nil nil "CDADR(#0)"))
 (CDDAR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cddar(#0)")
 	:inline-unsafe ((t) t nil nil "CDDAR(#0)"))
 (CDDDR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cdddr(#0)")
 	:inline-unsafe ((t) t nil nil "CDDDR(#0)"))
 (CAAAAR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "caaaar(#0)")
 	:inline-unsafe ((t) t nil nil "CAAAAR(#0)"))
 (CAAADR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "caaadr(#0)")
 	:inline-unsafe ((t) t nil nil "CAAADR(#0)"))
 (CAADAR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "caadar(#0)")
 	:inline-unsafe ((t) t nil nil "CAADAR(#0)"))
 (CAADDR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "caaddr(#0)")
 	:inline-unsafe ((t) t nil nil "CAADDR(#0)"))
 (CADAAR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cadaar(#0)")
 	:inline-unsafe ((t) t nil nil "CADAAR(#0)"))
 (CADADR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cadadr(#0)")
 	:inline-unsafe ((t) t nil nil "CADADR(#0)"))
 (CADDAR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "caddar(#0)")
 	:inline-unsafe ((t) t nil nil "CADDAR(#0)"))
 (CADDDR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cadddr(#0)")
 	:inline-unsafe ((t) t nil nil "CADDDR(#0)"))
 (CDAAAR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cdaaar(#0)")
 	:inline-unsafe ((t) t nil nil "CDAAAR(#0)"))
 (CDAADR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cdaadr(#0)")
 	:inline-unsafe ((t) t nil nil "CDAADR(#0)"))
 (CDADAR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cdadar(#0)")
 	:inline-unsafe ((t) t nil nil "CDADAR(#0)"))
 (CDADDR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cdaddr(#0)")
 	:inline-unsafe ((t) t nil nil "CDADDR(#0)"))
 (CDDAAR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cddaar(#0)")
 	:inline-unsafe ((t) t nil nil "CDDAAR(#0)"))
 (CDDADR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cddadr(#0)")
 	:inline-unsafe ((t) t nil nil "CDDADR(#0)"))
 (CDDDAR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cdddar(#0)")
 	:inline-unsafe ((t) t nil nil "CDDDAR(#0)"))
 (CDDDDR (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cddddr(#0)")
 	:inline-unsafe ((t) t nil nil "CDDDDR(#0)"))
 (CONS (T T) T NIL NIL
 	:inline-always ((t t) t nil t "CONS(#0,#1)"))
@@ -455,16 +421,16 @@
 	:inline-unsafe ((t t) t nil nil "nth(fix(#0),#1)")
 	:inline-unsafe ((fixnum t) t nil nil "nth(#0,#1)"))
 (FIRST (T) T NIL NIL
-	:inline-safe ((t) t nil nil "car(#0)")
+	:inline-safe ((t) t nil nil "cl_car(#0)")
 	:inline-unsafe ((t) t nil nil "CAR(#0)"))
 (SECOND (T) T nil nil
-	:inline-safe ((t) t nil nil "cadr(#0)")
+	:inline-safe ((t) t nil nil "cl_cadr(#0)")
 	:inline-unsafe ((t) t nil nil "CADR(#0)"))
 (THIRD (T) T nil nil
-	:inline-safe ((t) t nil nil "caddr(#0)")
+	:inline-safe ((t) t nil nil "cl_caddr(#0)")
 	:inline-unsafe ((t) t nil nil "CADDR(#0)"))
 (FOURTH (T) T nil nil
-	:inline-safe ((t) t nil nil "cadddr(#0)")
+	:inline-safe ((t) t nil nil "cl_cadddr(#0)")
 	:inline-unsafe ((t) t nil nil "CADDDR(#0)"))
 (FIFTH (T) T)
 (SIXTH (T) T)
@@ -473,7 +439,7 @@
 (NINTH (T) T)
 (TENTH (T) T)
 (REST (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cdr(#0)")
+	:inline-safe ((t) t nil nil "cl_cdr(#0)")
 	:inline-unsafe ((t) t nil nil "CDR(#0)"))
 (NTHCDR (fixnum t) T nil nil
 	:inline-always ((t t) t nil nil "nthcdr(fixint(#0),#1)")
@@ -705,9 +671,9 @@
 (RANDOM (T *) T)
 (MAKE-RANDOM-STATE (*) T)
 (RANDOM-STATE-P (T) T NIL T)
-(EXP (T) T NIL NIL :inline-always ((number) t nil t "number_exp(#0)"))
+(EXP (T) T NIL NIL :inline-always ((number) t nil t "cl_exp(#0)"))
 (EXPT (T T) T NIL NIL
-	:inline-always ((t t) t nil t "number_expt(#0,#1)")
+	:inline-always ((t t) t nil t "cl_expt(#0,#1)")
 	:inline-always ((fixnum fixnum) fixnum nil nil
 		(lambda (loc1 loc2)
 		  (if (and (consp loc1) (eq (car loc1) 'fixnum)
@@ -917,10 +883,8 @@ type_of(#0)==t_bitvector"))
 	:inline-always ((t) fixnum nil nil "length(#0)")
 	:inline-unsafe (((array t)) fixnum nil nil "(#0)->vector.fillp")
 	:inline-unsafe ((string) fixnum nil nil "(#0)->string.fillp"))
-(REVERSE (sequence) sequence nil nil
-	:inline-always ((t) t nil t "reverse(#0)"))
-(NREVERSE (sequence) sequence nil nil
-	:inline-always ((t) t t t "nreverse(#0)"))
+(REVERSE (sequence) sequence nil nil)
+(NREVERSE (sequence) sequence nil nil)
 
 ; file character.d
 (CHAR (string fixnum) character nil nil
@@ -976,8 +940,7 @@ type_of(#0)==t_bitvector"))
 (NSTRING-UPCASE (string *) string)
 (NSTRING-DOWNCASE (string *) string)
 (NSTRING-CAPITALIZE (string *) string)
-(STRING (T) string nil t
-	:inline-always ((t) t nil nil "coerce_to_string(#0)"))
+(STRING (T) string nil t)
 (STRING-CONCATENATE (T) string nil nil)
 
 ; file structure.d
@@ -1045,8 +1008,7 @@ type_of(#0)==t_bitvector"))
 (si::GET-LOCAL-TIME-ZONE nil T)
 (SLEEP (real) T)
 
-(TYPE-OF (T) T NIL NIL
-	:inline-always ((t) t nil t "TYPE_OF(#0)"))
+(TYPE-OF (T) T NIL NIL)
 
 ;;; Beppe's additions
 (READ-BYTES (stream vector fixnum fixnum) T)

@@ -85,10 +85,12 @@ system(const char *command)
 #endif
 #endif
 
-@(defun si::system (cmd)
+cl_object
+si_system(cl_object cmd)
+{
 	volatile char *s;
 	volatile int code;
-@
+
 	assert_type_string(cmd);
 	s = cmd->string.self;
 	code = system((const char *)s);
@@ -97,12 +99,14 @@ system(const char *command)
 		FEerror("Too long command line: ~S.", 1, cmd);*/
 	/* FIXME! This is a non portable way of getting the exit code */
 	@(return MAKE_FIXNUM(code >> 8))
-@)
+}
 
-@(defun si::open_pipe (cmd)
+cl_object
+si_open_pipe(cl_object cmd)
+{
   FILE *ptr;
   cl_object stream;
-@
+
   assert_type_string(cmd);
  
   if ((ptr = popen(cmd->string.self, OPEN_R)) == NULL)
@@ -117,4 +121,4 @@ system(const char *command)
   setbuf(ptr, stream->stream.buffer = cl_alloc_atomic(BUFSIZ));
 #endif
   @(return stream)
-@)
+}

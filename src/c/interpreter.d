@@ -43,6 +43,8 @@ cl_stack_set_size(cl_index new_size)
 
 	new_stack = (cl_object *)cl_alloc(new_size * sizeof(cl_object));
 	memcpy(new_stack, cl_stack, cl_stack_size * sizeof(cl_object));
+
+	GC_free(cl_stack);
 	cl_stack_size = new_size;
 	cl_stack = new_stack;
 	cl_stack_top = cl_stack + top;
@@ -425,7 +427,13 @@ interpret_funcall(int narg, cl_object fun) {
 	case t_cfun:
 		ihs_push(fun->cfun.name);
 		lex_env = Cnil;
-		x = APPLY(narg, fun->cfun.entry, args);
+		if (fun->cfun.narg >= 0) {
+			if (narg != fun->cfun.narg)
+				check_arg_failed(narg, fun->cfun.narg);
+			x = APPLY_fixed(narg, fun->cfun.entry, args);
+		} else {
+			x = APPLY(narg, fun->cfun.entry, args);
+		}
 		ihs_pop();
 		break;
 	case t_cclosure:
@@ -802,7 +810,7 @@ interpret_mcall(cl_object *vector) {
 	return vector;
 }
 
-/* OP_PROG1
+/* OP_MPROG1
    ...
    OP_EXIT
 
@@ -874,7 +882,7 @@ interpret_progv(cl_object *vector) {
 		if (values == Cnil)
 			bds_bind(CAR(vars), OBJNULL);
 		else {
-			bds_bind(CAR(vars), car(values));
+			bds_bind(CAR(vars), cl_car(values));
 			values = CDR(values);
 		}
 		vars = CDR(vars);

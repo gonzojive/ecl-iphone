@@ -300,6 +300,7 @@ SECOND-FORM."
 (defun do/do*-expand (control test result body let psetq
 			      &aux (decl nil) (label (gensym))
 			      (vl nil) (step nil))
+  (declare (si::c-local))
   (multiple-value-setq (decl body)
     (find-declarations body))
   (dolist (c control)
@@ -382,7 +383,6 @@ SECOND-FORM."
 (defmacro the (type value)
   value)
 
-#+nil
 (defmacro define-symbol-macro (symbol expansion)
   (cond ((not (symbolp symbol))
 	 (error "DEFINE-SYMBOL-MACRO: ~A is not a symbol"

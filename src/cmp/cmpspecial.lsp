@@ -170,8 +170,8 @@
 (defun wt-make-closure (fun &aux (cfun (fun-cfun fun)))
   (declare (type fun fun))
   (if (fun-closure fun)
-      (wt "make_cclosure((cl_objectfn)LC" cfun ",env" *env-lvl*)
-      (wt "make_cfun((cl_objectfn)LC" cfun ",Cnil")) ; empty environment
+      (wt "cl_make_cclosure_va((cl_objectfn)LC" cfun ",env" *env-lvl*)
+      (wt "cl_make_cfun_va((cl_objectfn)LC" cfun ",Cnil")) ; empty environment
   (wt ",Cblock)"))
 
 

@@ -18,6 +18,10 @@
 (setf (symbol-function 'setf-gethash)
       (symbol-function 'sb-impl::%puthash)) t
 
+#+ecl
+(setf (symbol-function 'setf-gethash)
+      (symbol-function 'si::hash-set))
+
 (check-for-bug :hashlong-legacy-21
   (defun symbole ()
     (let ((b 0.)

@@ -33,14 +33,13 @@
 (setq *dump-defmacro-definitions* *dump-defun-definitions*)
 
 (si::fset 'defun
-	  (si::bc-disassemble
 	  #'(lambda-block defun (def env)
 	      (let* ((name (second def))
 		     (function `#'(lambda-block ,@(cdr def))))
 		(when *dump-defun-definitions*
 		  (print function)
 		  (setq function `(si::bc-disassemble ,function)))
-		`(si::fset ',name ,function))))
+		`(si::fset ',name ,function)))
 	  t)
 
 (si::fset 'in-package
@@ -49,6 +48,7 @@
 	  t)
 
 (defun eval-feature (x)
+  (declare (si::c-local))
   (cond ((symbolp x)
          (member x *features*
                  :test #'(lambda (a b)
@@ -67,6 +67,7 @@
 
 ;;; Revised by G. Attardi
 (defun check-no-infix (stream subchar arg)
+  (declare (si::c-local))
   (when arg
     (error "Reading from ~S: no number should appear between # and ~A"
 	   stream subchar)))

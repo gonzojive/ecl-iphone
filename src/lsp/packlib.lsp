@@ -12,15 +12,6 @@
 
 (in-package "SYSTEM")
 
-(defmacro coerce-to-package (p)
-  (if (eq p '*package*)
-      p
-      (let ((g (gensym)))
-        `(let ((,g ,p))
-           (if (packagep ,g)
-               ,g
-               (find-package (string ,g)))))))
-
 (defun find-all-symbols (string-or-symbol)
   "Args: (string-designator)
 Returns a list of all symbols that have the specified print name.
@@ -108,7 +99,7 @@ to NIL) and returns all values."
 (defun print-symbol-apropos (symbol)
   (prin1 symbol)
   (when (fboundp symbol)
-        (if (special-form-p symbol)
+        (if (special-operator-p symbol)
             (princ "  Special form")
             (if (macro-function symbol)
                 (princ "  Macro")

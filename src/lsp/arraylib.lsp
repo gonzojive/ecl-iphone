@@ -101,6 +101,7 @@ contiguous block."
 	    x))))
 
 (defun increment-cursor (cursor dimensions)
+  (declare (si::c-local))
   (if (null cursor)
       t
       (let ((carry (increment-cursor (cdr cursor) (cdr dimensions))))
@@ -117,6 +118,7 @@ contiguous block."
 
 
 (defun sequence-cursor (sequence cursor)
+  (declare (si::c-local))
   (if (null cursor)
       sequence
       (sequence-cursor (elt sequence (the fixnum (car cursor)))

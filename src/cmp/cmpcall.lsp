@@ -257,7 +257,7 @@
 ;;;   NARG is a location containing the number of ARGS-PUSHED
 ;;;   LOC is either NIL or the location of the function object
 ;;;
-(defun call-global (fname locs loc return-type narg &aux fd)
+(defun call-global (fname locs loc return-type narg &aux found fd maxarg)
   (flet ((emit-linking-call (fname locs narg &aux i)
 	   (cond ((null *linking-calls*)
 		  (cmpwarn "Emitting linking call for ~a" fname)
@@ -292,9 +292,8 @@
 	  ;; Call to a function whose C language function name is known,
 	  ;; either because it has been proclaimed so, or because it belongs
 	  ;; to the runtime.
-	  ((or (setq fd (get fname 'Lfun))
-	       (and (car (setq fd (multiple-value-list (si::mangle-name fname t))))
-		    (setq fd (cadr fd))))
+	  ((or (setq maxarg -1 fd (get fname 'Lfun))
+	       (multiple-value-setq (found fd maxarg) (si::mangle-name fname t)))
 	   (multiple-value-bind (val found)
 	       (gethash fd *compiler-declared-globals*)
 	     ;; We only write declarations for functions which are not
@@ -302,7 +301,10 @@
 	     (when (and (not found) (not (si::mangle-name fname t)))
 	       (wt-h "extern cl_object " fd "();")
 	       (setf (gethash fd *compiler-declared-globals*) 1)))
-	   (unwind-exit (call-loc fname fd locs narg)))
+	   (unwind-exit
+	    (if (minusp maxarg)
+		(call-loc fname fd locs narg)
+		(call-loc-fixed fname fd locs narg maxarg))))
 
 	  ;; Linking call
 	  (*compile-to-linking-call*	; disabled within init_code
@@ -347,6 +349,17 @@
 	(t
 	 (list 'CALL "cl_apply_from_stack" narg-loc (list fun) fname))))
 
+(defun call-loc-fixed (fname fun args narg-loc maxarg)
+  (cond ((not (eq 'ARGS-PUSHED args))
+	 (when (/= (length args) maxarg)
+	     (error "Too many arguments to function ~S." fname))
+	 (list 'CALL-FIX fun (coerce-locs args nil) fname))
+	((stringp fun)
+	 (wt "if(" narg-loc "!=" maxarg ") check_arg_failed(" narg-loc "," maxarg ");")
+	 (list 'CALL-FIX "APPLY_fixed" (list fun `(STACK-POINTER ,narg-loc)) fname narg-loc))
+	(t
+	 (baboon))))
+
 (defun wt-stack-pointer (narg)
   (wt "cl_stack_top-" narg))
 
@@ -354,6 +367,15 @@
   (wt fun "(" narg)
   (dolist (arg args)
     (wt "," arg))
+  (wt ")")
+  (when fname (wt-comment fname)))
+
+(defun wt-call-fix (fun args &optional fname)
+  (wt fun "(")
+  (when args
+    (wt (pop args))
+    (dolist (arg args)
+      (wt "," arg)))
   (wt ")")
   (when fname (wt-comment fname)))
 
@@ -384,4 +406,5 @@
 (setf (get 'call-global 'c2) #'c2call-global)
 
 (setf (get 'CALL 'WT-LOC) #'wt-call)
+(setf (get 'CALL-FIX 'WT-LOC) #'wt-call-fix)
 (setf (get 'STACK-POINTER 'WT-LOC) #'wt-stack-pointer)

@@ -94,10 +94,11 @@ advance_random_state(cl_object rs)
 	@(return make_random_state(rs))
 @)
 
-@(defun random_state_p (x)
-@
+cl_object
+cl_random_state_p(cl_object x)
+{
 	@(return ((type_of(x) == t_random) ? Ct : Cnil))
-@)
+}
 
 void
 init_num_rand(void)

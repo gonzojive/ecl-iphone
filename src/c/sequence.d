@@ -60,10 +60,11 @@ cl_alloc_simple_bitvector(int l)
 	return(x);
 }
 
-@(defun elt (x i)
-@
+cl_object
+cl_elt(cl_object x, cl_object i)
+{
 	@(return elt(x, fixint(i)))
-@)
+}
 
 cl_object
 elt(cl_object seq, cl_fixnum index)
@@ -103,10 +104,11 @@ E:
 	FEtype_error_index(MAKE_FIXNUM(index));
 }
 
-@(defun si::elt_set (seq index val)
-@
+cl_object
+si_elt_set(cl_object seq, cl_object index, cl_object val)
+{
 	@(return elt_set(seq, fixint(index), val))
-@)
+}
 
 cl_object
 elt_set(cl_object seq, cl_fixnum index, cl_object val)
@@ -264,16 +266,17 @@ ILLEGAL_START_END:
 for the sequence ~S.", 3, start, end, sequence);
 @)
 
-@(defun copy_seq (x)
-@
-	/* INV: #'subseq outputs only one value */
+cl_object
+cl_copy_seq(cl_object x)
+{
 	return @subseq(2, x, MAKE_FIXNUM(0));
-@)
+}
 
-@(defun length (x)
-@
+cl_object
+cl_length(cl_object x)
+{
 	@(return MAKE_FIXNUM(length(x)))
-@)
+}
 
 cl_fixnum
 length(cl_object x)
@@ -304,29 +307,26 @@ length(cl_object x)
 	}
 }
 
-@(defun reverse (x)
-@
-	@(return reverse(x))
-@)
-
 cl_object
-reverse(cl_object seq)
+cl_reverse(cl_object seq)
 {
-	cl_object x, y, v;
+	cl_object x, y;
 	int i, j, k;
 	cl_object endp_temp;
 
 	switch (type_of(seq)) {
 	case t_symbol:
 		if (Null(seq))
-			return(Cnil);
-		FEwrong_type_argument(@'sequence', seq);
+			y = Cnil;
+		else
+			FEwrong_type_argument(@'sequence', seq);
+		break;
 
 	case t_cons:
-		v = Cnil;
+		y = Cnil;
 		for (x = seq;  !endp(x);  x = CDR(x))
-			v = CONS(CAR(x), v);
-		return(v);
+			y = CONS(CAR(x), y);
+		break;
 
 	case t_vector:
 		x = seq;
@@ -355,7 +355,7 @@ reverse(cl_object seq)
 		default:
 			internal_error("reverse");
 		}
-		return(y);
+		break;
 
 	case t_string:
 		x = seq;
@@ -364,7 +364,7 @@ reverse(cl_object seq)
 		for (j = x->string.fillp - 1, i = 0;  j >=0;  --j, i++)
 			y->string.self[j] = x->string.self[i];
 		y->string.self[x->string.fillp] = '\0';
-		return(y);
+		break;
 
 	case t_bitvector:
 		x = seq;
@@ -377,20 +377,16 @@ reverse(cl_object seq)
 				y->vector.self.bit[j/CHAR_BIT] |= 0200>>j%CHAR_BIT;
 			else
 				y->vector.self.bit[j/CHAR_BIT] &= ~(0200>>j%CHAR_BIT);
-		return(v);
+		break;
 
 	default:
 		FEwrong_type_argument(@'sequence', seq);
 	}
+	@(return y)
 }
 
-@(defun nreverse (x)
-@
-	@(return nreverse(x))
-@)
-
 cl_object
-nreverse(cl_object seq)
+cl_nreverse(cl_object seq)
 {
 	cl_object x, y, z;
 	int i, j, k;
@@ -398,9 +394,9 @@ nreverse(cl_object seq)
 
 	switch (type_of(seq)) {
 	case t_symbol:
-		if (Null(seq))
-			return(Cnil);
-		FEwrong_type_argument(@'sequence', seq);
+		if (!Null(seq))
+			FEwrong_type_argument(@'sequence', seq);
+		break;
 
 	case t_cons:
 		for (x = Cnil, y = seq;  !endp(CDR(y));) {
@@ -410,7 +406,8 @@ nreverse(cl_object seq)
 			x = z;
 		}
 		CDR(y) = x;
-		return(y);
+		seq = y;
+		break;
 
 	case t_vector:
 		x = seq;
@@ -423,40 +420,39 @@ nreverse(cl_object seq)
 				x->vector.self.t[i] = x->vector.self.t[j];
 				x->vector.self.t[j] = y;
 			}
-			return(seq);
-
+			break;
 		case aet_sf:
 			for (i = 0, j = k - 1;  i < j;  i++, --j) {
 				float y = x->array.self.sf[i];
 				x->array.self.sf[i] = x->array.self.sf[j];
 				x->array.self.sf[j] = y;
 			}
-			return(seq);
-
+			break;
 		case aet_lf:
 			for (i = 0, j = k - 1;  i < j;  i++, --j) {
 				double y = x->array.self.lf[i];
 				x->array.self.lf[i] = x->array.self.lf[j];
 				x->array.self.lf[j] = y;
 			}
-			return(seq);
+			break;
 		case aet_b8:
 			for (i = 0, j = k - 1;  i < j;  i++, --j) {
 				u_int8_t y = x->array.self.b8[i];
 				x->array.self.b8[i] = x->array.self.b8[j];
 				x->array.self.b8[j] = y;
 			}
-			return(seq);
+			break;
 		case aet_i8:
 			for (i = 0, j = k - 1;  i < j;  i++, --j) {
 				int8_t y = x->array.self.i8[i];
 				x->array.self.i8[i] = x->array.self.i8[j];
 				x->array.self.i8[j] = y;
 			}
-			return(seq);
+			break;
 		default:
 			internal_error("subseq");
 		}
+		break;
 
 	case t_string:
 		x = seq;
@@ -465,7 +461,7 @@ nreverse(cl_object seq)
 			x->string.self[i] = x->string.self[j];
 			x->string.self[j] = k;
 		}
-		return(seq);
+		break;
 
 	case t_bitvector:
 		x = seq;
@@ -487,9 +483,9 @@ nreverse(cl_object seq)
 				x->vector.self.bit[j/CHAR_BIT]
 				&= ~(0200>>j%CHAR_BIT);
 		}
-		return(seq);
-
+		break;
 	default:
 		FEwrong_type_argument(@'sequence', seq);
 	}
+	@(return seq)
 }

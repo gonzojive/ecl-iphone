@@ -22,16 +22,41 @@ static cl_object *disassemble(cl_object *vector);
 
 static cl_object *base = NULL;
 
+static void
+print_noarg(const char *s) {
+	princ_str(s, Cnil);
+}
+
+static void
+print_oparg(const char *s, cl_fixnum n) {
+	princ_str(s, Cnil);
+	princ(MAKE_FIXNUM(n), Cnil);
+}
+
+static void
+print_arg(const char *s, cl_object x) {
+	princ_str(s, Cnil);
+	princ(x, Cnil);
+}
+
+static void
+print_oparg_arg(const char *s, cl_fixnum n, cl_object x) {
+	princ_str(s, Cnil);
+	princ(MAKE_FIXNUM(n), Cnil);
+	princ_str(",", Cnil);
+	princ(x, Cnil);
+}
+
 static cl_object *
 disassemble_vars(const char *message, cl_object *vector, cl_index step) {
 	cl_index n = fix(next_code(vector));
 
 	if (n) {
-	  @terpri(0);
-	  printf(message);
+	  terpri(Cnil);
+	  print_noarg(message);
 	  for (; n; n--, vector+=step) {
-	    @prin1(1,vector[0]);
-	    if (n > 1) printf(", ");
+	    prin1(vector[0], Cnil);
+	    if (n > 1) print_noarg(", ");
 	  }
 	}
 	return vector;
@@ -42,10 +67,8 @@ disassemble_lambda(cl_object *vector) {
 	cl_object specials;
 	cl_index n;
 
-	@terpri(0);
 	/* Name of LAMBDA */
-	printf("Name:\t\t");
-	@prin1(1, next_code(vector));
+	print_arg("\nName:\t\t", next_code(vector));
 
 	/* Variables that have been declared special */
 	specials = next_code(vector);
@@ -58,27 +81,20 @@ disassemble_lambda(cl_object *vector) {
 
 	/* Print rest argument */
 	if (vector[0] != Cnil) {
-		@terpri(0);
-		printf("Rest:\t\t%s");
-		@prin1(1, vector[0]);
+		print_arg("\nRest:\t\t", vector[0]);
 	}
 	vector++;
 
 	/* Print keyword arguments */
 	if (vector[0] != Cnil) {
-		@terpri(0);
-		printf("Other keys:\t");
-		@prin1(1, vector[0]);
+		print_arg("\nOther keys:\t", vector[0]);
 	}
 	vector++;
 	vector = disassemble_vars("Keywords:\t", vector, 4);
 
 	/* Print aux arguments */
-	@terpri(0);
-	printf("\nDocumentation:\t");
-	@prin1(1, next_code(vector));
-	printf("\nDeclarations:\t");
-	@prin1(1, next_code(vector));
+	print_arg("\nDocumentation:\t", next_code(vector));
+	print_arg("\nDeclarations:\t", next_code(vector));
 
 	base = vector;
 	while (vector[0] != MAKE_FIXNUM(OP_HALT))
@@ -123,13 +139,11 @@ disassemble_block(cl_object *vector) {
 	cl_fixnum exit = packed_label(vector-1);
 	cl_object block_name = next_code(vector);
 
-	lex_env = listX(3, @':block', CONS(block_name, Cnil), lex_env);
+	lex_env = cl_listX(3, @':block', CONS(block_name, Cnil), lex_env);
 
-	printf("BLOCK\t");
-	@prin1(1, block_name);
-	printf(",%d", exit);
+	print_oparg_arg("BLOCK\t", exit, block_name);
 	vector = disassemble(vector);
-	printf("\t\t; block");
+	print_noarg("\t\t; block");
 
 	lex_env = lex_old;
 	return vector;
@@ -145,9 +159,9 @@ disassemble_block(cl_object *vector) {
 */
 static cl_object *
 disassemble_catch(cl_object *vector) {
-	printf("CATCH\t%d", packed_label(vector - 1));
+	print_oparg("CATCH\t", packed_label(vector - 1));
 	vector = disassemble(vector);
-	printf("\t\t; catch");
+	print_noarg("\t\t; catch");
 	return vector;
 }
 
@@ -165,9 +179,9 @@ disassemble_do(cl_object *vector) {
 	lex_copy();
 
 	exit = packed_label(vector-1);
-	printf("DO\t%d", exit);
+	print_oparg("DO\t", exit);
 	vector = disassemble(vector);
-	printf("\t\t; do");
+	print_noarg("\t\t; do");
 
 	lex_env = lex_old;
 	return vector;
@@ -192,13 +206,13 @@ disassemble_dolist(cl_object *vector) {
 
 	lex_copy();
 	exit = packed_label(vector-1);
-	printf("DOLIST\t%d", exit);
+	print_oparg("DOLIST\t", exit);
 	vector = disassemble(vector);
-	printf("\t\t; dolist binding");
+	print_noarg("\t\t; dolist binding");
 	vector = disassemble(vector);
-	printf("\t\t; dolist body");
+	print_noarg("\t\t; dolist body");
 	vector = disassemble(vector);
-	printf("\t\t; dolist");
+	print_noarg("\t\t; dolist");
 
 	lex_env = lex_old;
 	return vector;
@@ -223,13 +237,13 @@ disassemble_dotimes(cl_object *vector) {
 
 	lex_copy();
 	exit = packed_label(vector-1);
-	printf("DOTIMES\t%d", exit);
+	print_oparg("DOTIMES\t", exit);
 	vector = disassemble(vector);
-	printf("\t\t; dotimes times");
+	print_noarg("\t\t; dotimes times");
 	vector = disassemble(vector);
-	printf("\t\t; dotimes body");
+	print_noarg("\t\t; dotimes body");
 	vector = disassemble(vector);
-	printf("\t\t; dotimes");
+	print_noarg("\t\t; dotimes");
 
 	lex_env = lex_old;
 	return vector;
@@ -250,16 +264,15 @@ disassemble_flet(cl_object *vector) {
 	cl_object lex_old = lex_env;
 	cl_index nfun = get_oparg(vector[-1]);
 
-	printf("FLET");
+	print_noarg("FLET");
 	lex_copy();
 	while (nfun--) {
 		cl_object fun = next_code(vector);
-		@terpri(0);
-		printf("\tFLET\t");
+		print_noarg("\n\tFLET\t");
 		@prin1(1, fun->bytecodes.data[0]);
 	}
 	vector = disassemble(vector);
-	printf("\t\t; flet");
+	print_noarg("\t\t; flet");
 
 	lex_env = lex_old;
 	return vector;
@@ -280,16 +293,14 @@ disassemble_labels(cl_object *vector) {
 	cl_object lex_old = lex_env;
 	cl_index nfun = get_oparg(vector[-1]);
 
-	printf("LABELS");
+	print_noarg("LABELS");
 	lex_copy();
 	while (nfun--) {
 		cl_object fun = next_code(vector);
-		@terpri(0);
-		printf("\tLABELS\t");
-		@prin1(1, fun->bytecodes.data[0]);
+		print_arg("\n\tLABELS\t", fun->bytecodes.data[0]);
 	}
 	vector = disassemble(vector);
-	printf("\t\t; labels");
+	print_noarg("\t\t; labels");
 
 	lex_env = lex_old;
 	return vector;
@@ -304,9 +315,9 @@ disassemble_labels(cl_object *vector) {
 */
 static cl_object *
 disassemble_mcall(cl_object *vector) {
-	printf("MCALL");
+	print_noarg("MCALL");
 	vector = disassemble(vector);
-	printf("\t\t; mcall");
+	print_noarg("\t\t; mcall");
 	return vector;
 }
 
@@ -319,9 +330,9 @@ disassemble_mcall(cl_object *vector) {
 */
 static cl_object *
 disassemble_mprog1(cl_object *vector) {
-	printf("MPROG1");
+	print_noarg("MPROG1");
 	vector = disassemble(vector);
-	printf("\t\t; mprog1");
+	print_noarg("\t\t; mprog1");
 	return vector;
 }
 
@@ -340,20 +351,20 @@ disassemble_msetq(cl_object *vector)
 {
 	int i = get_oparg(vector[-1]);
 	bool newline = FALSE;
+
 	while (i--) {
 		cl_object var = next_code(vector);
 		if (newline) {
-			@terpri(0);
-			printf("\t");
+			print_noarg("\n\t");
 		} else
 			newline = TRUE;
 		if (FIXNUMP(var)) {
-			printf("MSETQ\t%d", fix(var));
+			@format(4, Ct, make_constant_string("MSETQ\t~D,VALUES(~D)"),
+				var, MAKE_FIXNUM(i));
 		} else {
-			printf("MSETQS\t");
-			@prin1(1, var);
+			@format(4, Ct, make_constant_string("MSETQS\t~A,VALUES(~D)"),
+				var, MAKE_FIXNUM(i));
 		}
-		printf(", VALUES(%d)", i);
 	}
 	return vector;
 }
@@ -367,9 +378,9 @@ disassemble_msetq(cl_object *vector)
 */
 static cl_object *
 disassemble_progv(cl_object *vector) {
-	printf("PROGV");
+	print_noarg("PROGV");
 	vector = disassemble(vector);
-	printf("\t\t; progv");
+	print_noarg("\t\t; progv");
 	return vector;
 }
 
@@ -393,14 +404,13 @@ disassemble_tagbody(cl_object *vector) {
 	cl_object lex_old = lex_env;
 	lex_copy();
 
-	printf("TAGBODY");
+	print_noarg("TAGBODY");
 	for (i=0; i<ntags; i++, vector++) {
-		@terpri(0);
-		printf("\tTAG\t%d",i);
-		printf(" @@ %d", simple_label(vector));
+		@format(4, Ct, make_constant_string("\n\tTAG\t~D @@ ~D"),
+			MAKE_FIXNUM(i), MAKE_FIXNUM(simple_label(vector)));
 	}
 	vector = disassemble(vector);
-	printf("\t\t; tagbody");
+	print_noarg("\t\t; tagbody");
 
 	lex_env = lex_old;
 	return vector;
@@ -422,10 +432,10 @@ static cl_object *
 disassemble_unwind_protect(cl_object *vector) {
 	cl_fixnum exit = packed_label(vector-1);
 
-	printf("PROTECT\t%d", exit);
+	print_oparg("PROTECT\t", exit);
 	vector = disassemble(vector);
 	vector = disassemble(vector);
-	printf("\t\t; protect");
+	print_noarg("\t\t; protect");
 
 	return vector;
 }
@@ -436,10 +446,10 @@ disassemble(cl_object *vector) {
 	cl_type t;
 	cl_object s;
 	cl_fixnum n;
+	cl_object line_format = make_constant_string("~%~4d\t");
 
  BEGIN:
-	@terpri(0);
-	printf("%4d\t", vector - base);
+	@format(3, Ct, line_format, MAKE_FIXNUM(vector-base));
 	s = next_code(vector);
 	t = type_of(s);
 	if (t == t_symbol) {
@@ -562,13 +572,13 @@ disassemble(cl_object *vector) {
 	/* OP_EXIT
 		Marks the end of a high level construct (BLOCK, CATCH...)
 	*/
-	case OP_EXIT:		printf("EXIT");
+	case OP_EXIT:		print_noarg("EXIT");
 				return vector;
 
 	/* OP_HALT
 		Marks the end of a function.
 	*/
-	case OP_HALT:		printf("HALT");
+	case OP_HALT:		print_noarg("HALT");
 				return vector-1;
 
 	case OP_FLET:		vector = disassemble_flet(vector);
@@ -746,33 +756,37 @@ disassemble(cl_object *vector) {
 	default:
 		FEerror("Unknown code ~S", 1, MAKE_FIXNUM(*(vector-1)));
 		return vector;
-	NOARG:			printf(string);
+	NOARG:			print_noarg(string);
 				break;
-	ARG:			printf(string);
+	ARG:			print_noarg(string);
 				@prin1(1, s);
 				break;
-	OPARG:			printf("%s%d", string, n);
+	OPARG:			print_oparg(string, n);
 				break;
-	OPARG_ARG:		printf("%s%d,", string, n);
-				@prin1(1, s);
+	OPARG_ARG:		print_oparg_arg(string, n, s);
 				break;
 	}
 	goto BEGIN;
 }
 
-@(defun si::bc_disassemble (v)
-@
-	if (type_of(v) == t_bytecodes)
+cl_object
+si_bc_disassemble(cl_object v)
+{
+	if (type_of(v) == t_bytecodes) {
 		disassemble_lambda(v->bytecodes.data);
-	@(return v)
-@)
+		@(return v)
+	}
+	@(return Cnil)
+}
 
-@(defun si::bc_split (b)
+cl_object
+si_bc_split(cl_object b)
+{
 	cl_object vector;
-@
+
 	if (type_of(b) != t_bytecodes)
 		@(return Cnil Cnil)
 	vector = cl_alloc_simple_vector(b->bytecodes.size, aet_object);
 	vector->vector.self.t = b->bytecodes.data;
 	@(return b->bytecodes.lex vector)
-@)
+}

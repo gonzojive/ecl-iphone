@@ -42,6 +42,7 @@
 	  (switch-to-buffer b)
 	  (beginning-of-buffer)))
       (print '*)
+      (setq case-fold-search nil)
       (if (search-forward string nil t)
 	  (return)))))
 
@@ -185,7 +186,6 @@
 	      '(
 "h/object.h"
 "h/eval.h"
-"h/lisp_external.h"
 "h/external.h"
 "c/character.d"
 "c/gfun.d"

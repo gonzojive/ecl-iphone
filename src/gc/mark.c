@@ -566,6 +566,7 @@ mse * mark_stack_limit;
           break;
         case GC_DS_BITMAP:
           mark_stack_top--;
+#if 0
           descr &= ~GC_DS_TAGS;
           credit -= WORDS_TO_BYTES(WORDSZ/2); /* guess */
           while (descr != 0) {
@@ -580,6 +581,22 @@ mse * mark_stack_limit;
 	    descr <<= 1;
 	    ++ current_p;
           }
+#else
+	  descr = BYTES_TO_WORDS(descr);
+          credit -= WORDS_TO_BYTES(WORDSZ/2); /* guess */
+          while (descr) {
+	    current = *current_p;
+            if ((long)current & 3 == 0) {
+	      if ((ptr_t)current >= least_ha && (ptr_t)current < greatest_ha) {
+		PREFETCH(current);
+                HC_PUSH_CONTENTS((ptr_t)current, mark_stack_top,
+			      mark_stack_limit, current_p, exit1);
+	      }
+            }
+	    descr--;
+	    ++ current_p;
+          }
+#endif
           continue;
         case GC_DS_PROC:
           mark_stack_top--;

@@ -762,8 +762,6 @@ LOOP:
 		put_declaration();
 		put_lineno();
 	} else if (strcmp(p, "return") == 0) {
-		if (!in_defun)
-			error("@(return) found outside @(defun)");
 		tab_save = tab;
 		get_return();
 		put_return();

@@ -39,6 +39,7 @@
 
 
 (defun search-make-instance (obj)
+  (declare (si::c-local))
   (let* ((gfun (symbol-function (if (si::tracing-body 'make-instance)
 				    (get 'make-instance 'si::traced)
 				    'make-instance)))
@@ -57,6 +58,7 @@
        t))
 
 (defun metaclassp (obj)
+  (declare (si::c-local))
   (and (si:instancep obj)
        (search-make-instance (si:instance-class obj))
        (search-make-instance obj)
@@ -74,7 +76,7 @@
 (defun install-method (name qualifiers specializers lambda-list doc plist
 			    fun &rest options)
   (declare (ignore doc)
-	   (notinline ensure-generic-function method-class))
+	   (notinline cos ensure-generic-function method-class))
 ;  (record-definition 'method `(method ,name ,@qualifiers ,specializers))
   (let* ((gf (ensure-generic-function name :lambda-list lambda-list))
 	 (method (make-method qualifiers specializers lambda-list

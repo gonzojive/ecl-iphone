@@ -21,13 +21,15 @@
 #endif
 
 #ifdef ENABLE_DLOPEN
-@(defun si::load_binary (filename verbose print)
+cl_object
+si_load_binary(cl_object filename, cl_object verbose, cl_object print)
+{
 	cl_object block;
 	cl_object basename;
 	cl_object prefix;
-@
+
 	/* We need the full pathname */
-	filename = coerce_to_filename(truename(filename));
+	filename = coerce_to_filename(cl_truename(filename));
 
 	/* Try to load shared object file */
 	block = cl_alloc_object(t_codeblock);
@@ -52,8 +54,8 @@
 						 make_simple_string("init_"),
 						 prefix,
 						 make_simple_string("_"));
-	basename = coerce_to_pathname(filename);
-	basename = @pathname-name(1,basename);
+	basename = cl_pathname(filename);
+	basename = cl_pathname_name(basename);
 	basename = @si::string-concatenate(2, prefix, @string-upcase(1,basename));
 	block->cblock.entry = dlsym(block->cblock.handle, basename->string.self);
 
@@ -66,12 +68,14 @@
 GO_ON:	
 	read_VV(block, block->cblock.entry);
 	@(return Cnil)
-@)
+}
 #endif /* ENABLE_DLOPEN */
 
-@(defun si::load_source (source verbose print)
+cl_object
+si_load_source(cl_object source, cl_object verbose, cl_object print)
+{
 	cl_object x, strm;
-@
+
 	/* Source may be either a stream or a filename */
 	if (type_of(source) != t_pathname && type_of(source) != t_string) {
 		/* INV: if "source" is not a valid stream, file.d will complain */
@@ -109,7 +113,7 @@ GO_ON:
 		close_stream(strm, TRUE);
 	frs_pop();
 	@(return Cnil)
-@)	
+}
 
 @(defun load (source
 	      &key (verbose symbol_value(@'*load-verbose*'))
@@ -140,7 +144,7 @@ GO_ON:
 		if (!file_exists(filename)) {
 			filename = Cnil;
 		} else {
-			function = cdr(assoc(pathname->pathname.type, hooks));
+			function = cl_cdr(assoc(pathname->pathname.type, hooks));
 		}
 	} else loop_for_in(hooks) {
 		/* Otherwise try with known extensions until a matching
@@ -175,7 +179,7 @@ NOT_A_FILENAME:
 		unwind(nlj_fr, nlj_tag);
 	}
 	if (Null(function))
-		ok = @si::load-source(3, filename, verbose, print);
+		ok = si_load_source(filename, verbose, print);
 	else
 		ok = funcall(4, function, filename, verbose, print);
 	if (!Null(ok))
@@ -195,25 +199,19 @@ NOT_A_FILENAME:
 void
 init_load(void)
 {
-  cl_object load_source, load_binary;
-
   SYM_VAL(@'*load-verbose*') = Ct;
   SYM_VAL(@'*load-print*') = Cnil;
 #ifdef PDE
   SYM_VAL(@'si::*source-pathname*') = Cnil;
 #endif
 
-  load_source = make_si_ordinary("LOAD-SOURCE");
+  SYM_VAL(@'si::*load-hooks*') = cl_list(4,
 #ifdef ENABLE_DLOPEN
-  load_binary = make_si_ordinary("LOAD-BINARY");
+				CONS(make_simple_string("so"), @'si::load-binary'),
 #endif
-  SYM_VAL(@'si::*load-hooks*') = list(4,
-#ifdef ENABLE_DLOPEN
-				CONS(make_simple_string("so"), load_binary),
-#endif
-				CONS(make_simple_string("lsp"), load_source),
-				CONS(make_simple_string("lisp"), load_source),
-				CONS(Cnil, load_source));
+				CONS(make_simple_string("lsp"), @'si::load-source'),
+				CONS(make_simple_string("lisp"), @'si::load-source'),
+				CONS(Cnil, @'si::load-source'));
 
 #ifdef ENABLE_DLOPEN
   if (dlopen(NULL, RTLD_NOW|RTLD_GLOBAL) == NULL)

@@ -719,7 +719,7 @@ static int
 t_from_type(cl_object type)
 {  int t;
 
-   type = coerce_to_string(type);
+   type = cl_string(type);
    for (t = (int)t_start ; t < (int)t_end ; t++) {
      struct typemanager *tm = &tm_table[t];
      if (tm->tm_name &&

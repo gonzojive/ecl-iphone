@@ -56,6 +56,7 @@ SI::ARGS."
 (defvar *inside-trace* nil)
 
 (defun trace-one (spec)
+  (declare (si::c-local))
   (let (break exitbreak (entrycond t) (exitcond t) entry exit
 	      step (barfp t) fname oldf)
     (cond ((atom spec)
@@ -89,7 +90,7 @@ SI::ARGS."
     (when (null (fboundp fname))
       (format *trace-output* "The function ~S is not defined.~%" fname)
       (return-from trace-one nil))
-    (when (special-form-p fname)
+    (when (special-operator-p fname)
       (format *trace-output* "~S is a special form.~%" fname)
       (return-from trace-one nil))
     (when (macro-function fname)
@@ -142,6 +143,7 @@ SI::ARGS."
   (cons fname nil)))
 
 (defun trace-print (direction fname vals &rest extras)
+  (declare (si::c-local))
   (let ((indent (min (* (1- *trace-level*) 2) 20)))
     (fresh-line *trace-output*)
     (case direction
@@ -173,6 +175,7 @@ SI::ARGS."
 	      extras))))
 
 (defun untrace-one (fname)
+  (declare (si::c-local))
   (cond ((get fname 'TRACED)
          (if (tracing-body fname)
 	   (sys:fset fname (symbol-function (get fname 'TRACED)))

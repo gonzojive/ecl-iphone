@@ -317,7 +317,7 @@
   (if *safe-compile*
       (progn
        (wt-nl "{cl_object l= ")
-       (dotimes (i index) (declare (fixnum i)) (wt "cdr("))
+       (dotimes (i index) (declare (fixnum i)) (wt "cl_cdr("))
        (wt (car args))
        (dotimes (i index)(declare (fixnum i)) (wt ")"))
        (wt ";")
@@ -350,7 +350,7 @@
   (wt-nl "{cl_object ") (wt-lcl l) (wt "= ")
   (if *safe-compile*
       (progn
-       (dotimes (i index) (declare (fixnum i)) (wt "cdr("))
+       (dotimes (i index) (declare (fixnum i)) (wt "cl_cdr("))
        (wt (car args))
        (dotimes (i index) (declare (fixnum i)) (wt ")"))
        (wt ";")

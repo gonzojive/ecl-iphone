@@ -322,6 +322,7 @@ Returns T if X belongs to TYPE; NIL otherwise."
 ;;; KNOWN-TYPE-P answers if the given type is a known base type.
 ;;; The type MUST be normalized.
 (defun known-type-p (type)
+  (declare (si::c-local))
   (cond #+clos
 	((sys::instancep type) t)
 	((not (symbolp type)) nil)
@@ -581,6 +582,7 @@ second value is T."
     (return-from sub-interval-p t)))
 
 (defun in-interval-p (x interval)
+  (declare (si::c-local))
   (let (low high)
     (if (endp interval)
         (setq low '* high '*)
@@ -598,6 +600,7 @@ second value is T."
     (return-from in-interval-p t)))
 
 (defun match-dimensions (dim pat)
+  (declare (si::c-local))
   (if (null dim)
       (null pat)
       (and (or (eq (car pat) '*)

@@ -54,10 +54,12 @@ Evaluates FORM, outputs the realtime and runtime used for the evaluation to
 (defconstant seconds-per-day #.(* 24 3600))
 
 (defun leap-year-p (y)
+  (declare (si::c-local))
   (and (zerop (mod y 4))
        (or (not (zerop (mod y 100))) (zerop (mod y 400)))))
 
 (defun number-of-days-from-1900 (y)
+  (declare (si::c-local))
   (let ((y1 (1- y)))
     (+ (* (- y 1900) 365)
        (floor y1 4) (- (floor y1 100)) (floor y1 400)

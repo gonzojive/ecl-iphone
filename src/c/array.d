@@ -41,19 +41,19 @@ object_to_index(cl_object n)
 	}
 }
 
-@(defun row-major-aref (x indx)
-  cl_index j;
-@
-  j = fixnnint(indx);
-  @(return aref(x, j))
-@)
+cl_object
+cl_row_major_aref(cl_object x, cl_object indx)
+{
+	cl_index j = fixnnint(indx);
+	@(return aref(x, j))
+}
 
-@(defun si::row-major-aset (x indx val)
-  cl_index j;
-@
-  j = fixnnint(indx);
-  @(return aset(x, j, val))
-@)
+cl_object
+si_row_major_aset(cl_object x, cl_object indx, cl_object val)
+{
+	cl_index j = fixnnint(indx);
+	@(return aset(x, j, val))
+}
 
 @(defun aref (x &rest indx)
   cl_index r, s, i, j;
@@ -307,11 +307,14 @@ aset1(cl_object v, cl_index index, cl_object val)
 		(si:make-vector element-type dimension adjustable fill-pointer
 				displaced-to displaced-index-offset)
 */
-@(defun si::make_vector (etype dim adj fillp displ disploff)
+cl_object
+si_make_vector(cl_object etype, cl_object dim, cl_object adj,
+	       cl_object fillp, cl_object displ, cl_object disploff)
+{
   cl_index d, f;
   cl_object x;
   cl_elttype aet;
-@
+
   aet = get_elttype(etype);
   if ((d = fixnnint(dim)) > ADIMLIM)
     FEerror("The vector dimension, ~D, is too large.", 1, dim);
@@ -346,7 +349,7 @@ aset1(cl_object v, cl_index index, cl_object val)
   else
     displace(x, displ, disploff);
   @(return x)
-@)
+}
 
 void
 array_allocself(cl_object x)
@@ -477,9 +480,11 @@ array_address(cl_object x, cl_index inc)
 	}
 }
 
-@(defun array_element_type (a)
+cl_object
+cl_array_element_type(cl_object a)
+{
 	cl_object output;
-@
+
 	switch (array_elttype(a)) {
 	case aet_object:	output = Ct; break;
 	case aet_ch:		output = @'base-char'; break;
@@ -491,7 +496,7 @@ array_address(cl_object x, cl_index inc)
 	case aet_i8:		output = @'integer8'; break;
 	}
 	@(return output)
-@)
+}
 
 /*
 	Displace(from, to, offset) displaces the from-array
@@ -598,16 +603,19 @@ array_elttype(cl_object x)
 	}
 }
 
-@(defun array_rank (a)
-@
+cl_object
+cl_array_rank(cl_object a)
+{
 	assert_type_array(a);
 	@(return ((type_of(a) == t_array) ? MAKE_FIXNUM(a->array.rank)
 					  : MAKE_FIXNUM(1)))
-@)
+}
 
-@(defun array_dimension (a index)
+cl_object
+cl_array_dimension(cl_object a, cl_object index)
+{
 	cl_index i, dim;
-@
+
 	i = fixnnint(index);
 	switch (type_of(a)) {
 	case t_array:
@@ -631,32 +639,37 @@ ILLEGAL:		FEerror("~S is an illegal axis-number to the array ~S.",
 		FEwrong_type_argument(@'array', a);
 	}
 	@(return MAKE_FIXNUM(dim))
-@)
+}
 
-@(defun array_total_size (a)
-@
+cl_object
+cl_array_total_size(cl_object a)
+{
 	assert_type_array(a);
 	@(return MAKE_FIXNUM(a->array.dim))
-@)
+}
 
-@(defun adjustable_array_p (a)
-@
+cl_object
+cl_adjustable_array_p(cl_object a)
+{
 	assert_type_array(a);
 	@(return (a->array.adjustable ? Ct : Cnil))
-@)
+}
 
 /*
 	Internal function for checking if an array is displaced.
 */
-@(defun si::displaced_array_p (a)
-@
+cl_object
+si_displaced_array_p(cl_object a)
+{
 	assert_type_array(a);
 	@(return ((CAR(a->array.displaced) != Cnil) ? Ct : Cnil))
-@)
+}
 
-@(defun svref (x index)
+cl_object
+cl_svref(cl_object x, cl_object index)
+{
   cl_index i;
-@
+
   if (type_of(x) != t_vector ||
       x->vector.adjustable ||
       x->vector.hasfillp ||
@@ -666,11 +679,13 @@ ILLEGAL:		FEerror("~S is an illegal axis-number to the array ~S.",
   if ((i = fixnnint(index)) >= x->vector.dim)
     illegal_index(x, index);
   @(return x->vector.self.t[i])
-@)
+}
 
-@(defun si::svset (x index v)
+cl_object
+si_svset(cl_object x, cl_object index, cl_object v)
+{
   cl_index i;
-@
+
   if (type_of(x) != t_vector ||
       x->vector.adjustable ||
       x->vector.hasfillp ||
@@ -680,11 +695,13 @@ ILLEGAL:		FEerror("~S is an illegal axis-number to the array ~S.",
   if ((i = fixnnint(index)) >= x->vector.dim)
     illegal_index(x, index);
   @(return (x->vector.self.t[i] = v))
-@)
+}
 
-@(defun array_has_fill_pointer_p (a)
+cl_object
+cl_array_has_fill_pointer_p(cl_object a)
+{
 	cl_object r;
-@
+
 	switch (type_of(a)) {
 	case t_array:
 		r = Cnil; break;
@@ -697,22 +714,25 @@ ILLEGAL:		FEerror("~S is an illegal axis-number to the array ~S.",
 		FEwrong_type_argument(@'array', a);
 	}
 	@(return r)
-@)
+}
 
-@(defun fill_pointer (a)
-@
+cl_object
+cl_fill_pointer(cl_object a)
+{
   assert_type_vector(a);
   if (a->vector.hasfillp)
     @(return MAKE_FIXNUM(a->vector.fillp))
   FEerror("The vector ~S has no fill pointer.", 1, a);
-@)
+}
 
 /*
 	Internal function for setting fill pointer.
 */
-@(defun si::fill_pointer_set (a fp)
+cl_object
+si_fill_pointer_set(cl_object a, cl_object fp)
+{
   cl_index i;
-@
+
   assert_type_vector(a);
   i = fixnnint(fp);
   if (a->vector.hasfillp)
@@ -723,7 +743,7 @@ ILLEGAL:		FEerror("~S is an illegal axis-number to the array ~S.",
   else
     FEerror("The vector ~S has no fill pointer.", 1, a);
   @(return fp)
-@)
+}
 
 /*
 	Internal function for replacing the contents of arrays:
@@ -732,10 +752,12 @@ ILLEGAL:		FEerror("~S is an illegal axis-number to the array ~S.",
 
 	Used in ADJUST-ARRAY.
 */
-@(defun si::replace_array (olda newa)
+cl_object
+si_replace_array(cl_object olda, cl_object newa)
+{
   cl_object displaced, dlist;
   ptrdiff_t diff;
-@
+
   if (type_of(olda) != type_of(newa)
       || (type_of(olda) == t_array && olda->array.rank != newa->array.rank))
     goto CANNOT;
@@ -765,7 +787,7 @@ ILLEGAL:		FEerror("~S is an illegal axis-number to the array ~S.",
 
  CANNOT:
   FEerror("Cannot replace the array ~S by the array ~S.", 2, olda, newa);
-@)
+}
 
 void
 init_array(void)

@@ -56,31 +56,31 @@ fixnum_expt(cl_fixnum x, cl_fixnum y)
 }
 
 cl_object
-number_exp(cl_object x)
+cl_exp(cl_object x)
 {
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		return(make_shortfloat(expf(number_to_double(x))));
+		return1(make_shortfloat(expf(number_to_double(x))));
 
 	case t_shortfloat:
-		return(make_shortfloat(expf(sf(x))));
+		return1(make_shortfloat(expf(sf(x))));
 
 	case t_longfloat:
-		return(make_longfloat(exp(lf(x))));
+		return1(make_longfloat(exp(lf(x))));
 
 	case t_complex: {
 		cl_object y, y1;
 	
 		y = x->complex.imag;
 		x = x->complex.real;
-		x = number_exp(x);
-		y1 = number_cos(y);
-		y = number_sin(y);
+		x = cl_exp(x);
+		y1 = cl_cos(y);
+		y = cl_sin(y);
 		y = make_complex(y1, y);
 		x = number_times(x, y);
-		return(x);
+		return1(x);
 	}
 
 	default:
@@ -89,7 +89,7 @@ number_exp(cl_object x)
 }
 
 cl_object
-number_expt(cl_object x, cl_object y)
+cl_expt(cl_object x, cl_object y)
 {
 	cl_type tx, ty;
 	cl_object z;
@@ -97,18 +97,18 @@ number_expt(cl_object x, cl_object y)
 	if (y == MAKE_FIXNUM(0))
 		switch (type_of(x)) {
 		case t_fixnum:  case t_bignum:  case t_ratio:
-			return(MAKE_FIXNUM(1));
+			return1(MAKE_FIXNUM(1));
 
 		case t_shortfloat:
-			return(make_shortfloat(1.0));
+			return1(make_shortfloat(1.0));
 
 		case t_longfloat:
-			return(make_longfloat(1.0));
+			return1(make_longfloat(1.0));
 
 		case t_complex:
-			z = number_expt(x->complex.real, y);
+			z = cl_expt(x->complex.real, y);
 			z = make_complex(z, MAKE_FIXNUM(0));
-			return(z);
+			return1(z);
 
 		default:
 			FEtype_error_number(x);
@@ -117,14 +117,14 @@ number_expt(cl_object x, cl_object y)
 	if (number_zerop(x)) {
 		if (!number_plusp(ty==t_complex?y->complex.real:y))
 			FEerror("Cannot raise zero to the power ~S.", 1, y);
-		return(number_times(x, y));
+		return1(number_times(x, y));
 	}
 	if (ty == t_fixnum || ty == t_bignum) {
 		if (number_minusp(y)) {
 			z = number_negate(y);
-			z = number_expt(x, z);
+			z = cl_expt(x, z);
 			z = number_divide(MAKE_FIXNUM(1), z);
-			return(z);
+			return1(z);
 		}
 		z = MAKE_FIXNUM(1);
 		do {
@@ -134,16 +134,16 @@ number_expt(cl_object x, cl_object y)
 			x = number_times(x, x);
 			y = integer_divide(y, MAKE_FIXNUM(2));
 		} while (number_plusp(y));
-		return z;
+		return1(z);
 	}
-	z = number_nlog(x);
+	z = cl_log1(x);
 	z = number_times(z, y);
-	z = number_exp(z);
-	return(z);
+	z = cl_exp(z);
+	return1(z);
 }
 
 cl_object
-number_nlog(cl_object x)
+cl_log1(cl_object x)
 {
 	cl_object r, i, a, p;
 
@@ -163,13 +163,13 @@ number_nlog(cl_object x)
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		return(make_shortfloat(logf(number_to_double(x))));
+		return1(make_shortfloat(logf(number_to_double(x))));
 
 	case t_shortfloat:
-		return(make_shortfloat(logf(sf(x))));
+		return1(make_shortfloat(logf(sf(x))));
 
 	case t_longfloat:
-		return(make_longfloat(log(lf(x))));
+		return1(make_longfloat(log(lf(x))));
 
 	default:
 		FEtype_error_number(x);
@@ -178,41 +178,41 @@ COMPLEX:
 	a = number_times(r, r);
 	p = number_times(i, i);
 	a = number_plus(a, p);
-	a = number_nlog(a);
+	a = cl_log1(a);
 	a = number_divide(a, MAKE_FIXNUM(2));
-	p = number_atan2(i, r);
+	p = cl_atan2(i, r);
 	x = make_complex(a, p);
-	return(x);
+	return1(x);
 }
 
 cl_object
-number_log(cl_object x, cl_object y)
+cl_log2(cl_object x, cl_object y)
 {
 	if (number_zerop(y))
 		FEerror("Zero is the logarithmic singularity.", 0);
-	return(number_divide(number_nlog(y), number_nlog(x)));
+	return1(number_divide(cl_log1(y), cl_log1(x)));
 }
 
 cl_object
-number_sqrt(cl_object x)
+cl_sqrt(cl_object x)
 {
 	cl_object z;
 
 	if (type_of(x) == t_complex)
 		goto COMPLEX;
 	if (number_minusp(x))
-		return make_complex(MAKE_FIXNUM(0), number_sqrt(number_negate(x)));
+		return1(make_complex(MAKE_FIXNUM(0), cl_sqrt(number_negate(x))));
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		return(make_shortfloat(sqrtf(number_to_double(x))));
+		return1(make_shortfloat(sqrtf(number_to_double(x))));
 
 	case t_shortfloat:
-		return(make_shortfloat(sqrtf(sf(x))));
+		return1(make_shortfloat(sqrtf(sf(x))));
 
 	case t_longfloat:
-		return(make_longfloat(sqrt(lf(x))));
+		return1(make_longfloat(sqrt(lf(x))));
 
 	default:
 		FEtype_error_number(x);
@@ -220,12 +220,12 @@ number_sqrt(cl_object x)
 
 COMPLEX:
 	z = make_ratio(MAKE_FIXNUM(1), MAKE_FIXNUM(2));
-	z = number_expt(x, z);
-	return(z);
+	z = cl_expt(x, z);
+	return1(z);
 }
 
 cl_object
-number_atan2(cl_object y, cl_object x)
+cl_atan2(cl_object y, cl_object x)
 {
 	cl_object z;
 	double dy, dx, dz;
@@ -257,47 +257,47 @@ number_atan2(cl_object y, cl_object x)
 		z = make_longfloat(dz);
 	else
 		z = make_shortfloat(dz);
-	return(z);
+	return1(z);
 }
 
 cl_object
-number_atan(cl_object y)
+cl_atan1(cl_object y)
 {
 	cl_object z, z1;
 
 	if (type_of(y) == t_complex) {
 #if 0 /* FIXME! ANSI states it should be this first part */
 		z = number_times(imag_unit, y);
-		z = number_nlog(one_plus(z)) +
-		  number_nlog(number_minus(MAKE_FIXNUM(1), z));
+		z = cl_log1(one_plus(z)) +
+		  cl_log1(number_minus(MAKE_FIXNUM(1), z));
 		z = number_divide(z, number_times(MAKE_FIXNUM(2), imag_unit));
 #else
 		z = number_times(imag_unit, y);
 		z = one_plus(z);
 		z1 = number_times(y, y);
 		z1 = one_plus(z1);
-		z1 = number_sqrt(z1);
+		z1 = cl_sqrt(z1);
 		z = number_divide(z, z1);
-		z = number_nlog(z);
+		z = cl_log1(z);
 		z = number_times(minus_imag_unit, z);
 #endif /* ANSI */
-		return(z);
+		return1(z);
 	}
-	return(number_atan2(y, MAKE_FIXNUM(1)));
+	return1(cl_atan2(y, MAKE_FIXNUM(1)));
 }
 
 cl_object
-number_sin(cl_object x)
+cl_sin(cl_object x)
 {
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		return(make_shortfloat(sinf(number_to_double(x))));
+		return1(make_shortfloat(sinf(number_to_double(x))));
 	case t_shortfloat:
-		return(make_shortfloat(sinf(sf(x))));
+		return1(make_shortfloat(sinf(sf(x))));
 	case t_longfloat:
-		return(make_longfloat(sin(lf(x))));
+		return1(make_longfloat(sin(lf(x))));
 	case t_complex: {
 		/*
 		  z = x + I y
@@ -309,8 +309,8 @@ number_sin(cl_object x)
 		double a = sin(dx) * cosh(dy);
 		double b = cos(dx) * sinh(dy);
 		if (type_of(x->complex.real) != t_longfloat)
-			return make_complex(make_shortfloat(a), make_shortfloat(b));
-		return make_complex(make_longfloat(a), make_longfloat(b));
+			return1(make_complex(make_shortfloat(a), make_shortfloat(b)));
+		return1(make_complex(make_longfloat(a), make_longfloat(b)));
 	}
 	default:
 		FEtype_error_number(x);
@@ -318,17 +318,17 @@ number_sin(cl_object x)
 }
 
 cl_object
-number_cos(cl_object x)
+cl_cos(cl_object x)
 {
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		return(make_shortfloat(cosf(number_to_double(x))));
+		return1(make_shortfloat(cosf(number_to_double(x))));
 	case t_shortfloat:
-		return(make_shortfloat(cosf(sf(x))));
+		return1(make_shortfloat(cosf(sf(x))));
 	case t_longfloat:
-		return(make_longfloat(cos(lf(x))));
+		return1(make_longfloat(cos(lf(x))));
 	case t_complex: {
 		/*
 		  z = x + I y
@@ -339,8 +339,8 @@ number_cos(cl_object x)
 		double a =  cos(dx) * cosh(dy);
 		double b = -sin(dx) * sinh(dy);
 		if (type_of(x->complex.real) != t_longfloat)
-			return make_complex(make_shortfloat(a), make_shortfloat(b));
-		return make_complex(make_longfloat(a), make_longfloat(b));
+			return1(make_complex(make_shortfloat(a), make_shortfloat(b)));
+		return1(make_complex(make_longfloat(a), make_longfloat(b)));
 	}
 	default:
 		FEtype_error_number(x);
@@ -348,21 +348,21 @@ number_cos(cl_object x)
 }
 
 cl_object
-number_tan(cl_object x)
+cl_tan(cl_object x)
 {
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		return(make_shortfloat(tanf(number_to_double(x))));
+		return1(make_shortfloat(tanf(number_to_double(x))));
 	case t_shortfloat:
-		return(make_shortfloat(tanf(sf(x))));
+		return1(make_shortfloat(tanf(sf(x))));
 	case t_longfloat:
-		return(make_longfloat(tan(lf(x))));
+		return1(make_longfloat(tan(lf(x))));
 	case t_complex: {
-		cl_object a = number_sin(x);
-		cl_object b = number_cos(x);
-		return number_divide(a, b);
+		cl_object a = cl_sin(x);
+		cl_object b = cl_cos(x);
+		return1(number_divide(a, b));
 	}
 	default:
 		FEtype_error_number(x);
@@ -370,18 +370,18 @@ number_tan(cl_object x)
 }
 
 cl_object
-number_sinh(cl_object x)
+cl_sinh(cl_object x)
 {
 
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		return make_shortfloat(sinhf(number_to_double(x)));
+		return1(make_shortfloat(sinhf(number_to_double(x))));
 	case t_shortfloat:
-		return make_shortfloat(sinhf(sf(x)));
+		return1(make_shortfloat(sinhf(sf(x))));
 	case t_longfloat:
-		return make_longfloat(sinh(lf(x)));
+		return1(make_longfloat(sinh(lf(x))));
 	case t_complex: {
 		/*
 		  z = x + I y
@@ -394,8 +394,8 @@ number_sinh(cl_object x)
 		double a = sinh(dx) * cos(dy);
 		double b = cosh(dx) * sin(dy);
 		if (type_of(x->complex.real) != t_longfloat)
-			return make_complex(make_shortfloat(a), make_shortfloat(b));
-		return make_complex(make_longfloat(a), make_longfloat(b));
+			return1(make_complex(make_shortfloat(a), make_shortfloat(b)));
+		return1(make_complex(make_longfloat(a), make_longfloat(b)));
 	}
 	default:
 		FEtype_error_number(x);
@@ -403,17 +403,17 @@ number_sinh(cl_object x)
 }
 
 cl_object
-number_cosh(cl_object x)
+cl_cosh(cl_object x)
 {
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		return make_shortfloat(coshf(number_to_double(x)));
+		return1(make_shortfloat(coshf(number_to_double(x))));
 	case t_shortfloat:
-		return make_shortfloat(coshf(sf(x)));
+		return1(make_shortfloat(coshf(sf(x))));
 	case t_longfloat:
-		return make_longfloat(cosh(lf(x)));
+		return1(make_longfloat(cosh(lf(x))));
 	case t_complex: {
 		/*
 		  z = x + I y
@@ -426,8 +426,8 @@ number_cosh(cl_object x)
 		double a = cosh(dx) * cos(dy);
 		double b = sinh(dx) * sin(dy);
 		if (type_of(x->complex.real) != t_longfloat)
-			return make_complex(make_shortfloat(a), make_shortfloat(b));
-		return make_complex(make_longfloat(a), make_longfloat(b));
+			return1(make_complex(make_shortfloat(a), make_shortfloat(b)));
+		return1(make_complex(make_longfloat(a), make_longfloat(b)));
 	}
 	default:
 		FEtype_error_number(x);
@@ -435,84 +435,39 @@ number_cosh(cl_object x)
 }
 
 cl_object
-number_tanh(cl_object x)
+cl_tanh(cl_object x)
 {
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		return(make_shortfloat(tanhf(number_to_double(x))));
+		return1(make_shortfloat(tanhf(number_to_double(x))));
 	case t_shortfloat:
-		return(make_shortfloat(tanhf(sf(x))));
+		return1(make_shortfloat(tanhf(sf(x))));
 	case t_longfloat:
-		return(make_longfloat(tanh(lf(x))));
+		return1(make_longfloat(tanh(lf(x))));
 	case t_complex: {
-		cl_object a = number_sinh(x);
-		cl_object b = number_cosh(x);
-		return number_divide(a, b);
+		cl_object a = cl_sinh(x);
+		cl_object b = cl_cosh(x);
+		return1(number_divide(a, b));
 	}
 	default:
 		FEtype_error_number(x);
 	}
 }
 
-@(defun exp (x)
-@	/* INV: type check in number_exp() */
-	@(return number_exp(x))
-@)
-
-@(defun expt (x y)
-@	/* INV: type check in number_expt() */
-	@(return number_expt(x, y))
-@)
-
 @(defun log (x &optional (y OBJNULL))
-@	/* INV: type check in number_nlog() and number_log() */
+@	/* INV: type check in cl_log1() and cl_log2() */
 	if (y == OBJNULL)
-		@(return number_nlog(x))
-	@(return number_log(y, x))
-@)
-
-@(defun sqrt (x)
-@	/* INV: type check in number_sqrt() */
-	@(return number_sqrt(x))
-@)
-
-@(defun sin (x)
-@	/* INV: type check in number_sin() */
-	@(return number_sin(x))
-@)
-
-@(defun cos (x)
-@	/* INV: type check in number_cos() */
-	@(return number_cos(x))
-@)
-
-@(defun tan (x)
-@	/* INV: type check in number_tan() */
-	@(return number_tan(x))
+		@(return cl_log1(x))
+	@(return cl_log2(y, x))
 @)
 
 @(defun atan (x &optional (y OBJNULL))
-@	/* INV: type check in number_atan() & number_atan2() */
+@	/* INV: type check in cl_atan() & cl_atan2() */
 	if (y == OBJNULL)
-		@(return number_atan(x))
-	@(return number_atan2(x, y))
-@)
-
-@(defun sinh (x)
-@	/* INV: type check in number_sin() */
-	@(return number_sinh(x))
-@)
-
-@(defun cosh (x)
-@	/* INV: type check in number_cos() */
-	@(return number_cosh(x))
-@)
-
-@(defun tanh (x)
-@	/* INV: type check in number_tan() */
-	@(return number_tanh(x))
+		@(return cl_atan1(x))
+	@(return cl_atan2(x, y))
 @)
 
 void

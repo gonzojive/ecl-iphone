@@ -14,6 +14,8 @@
 
 #include "ecl.h"
 #include "page.h"
+#include "gc.h"
+#include "private/gc_priv.h"
 
 #ifdef GBC_BOEHM
 
@@ -45,8 +47,14 @@ cl_alloc_object(cl_type t)
 	}
 	tm = tm_of(t);
 
-	start_critical_section(); 
+	start_critical_section();
+#if 0
 	obj = (cl_object)GC_malloc(tm->tm_size);
+#else
+	obj = (cl_object)GC_malloc_explicitly_typed
+	  (tm->tm_size & ~GC_DS_BITMAP,
+	   tm->tm_size);
+#endif
 	obj->d.t = t;
 	/* GC_malloc already resets objects */
 	end_critical_section();
@@ -157,13 +165,18 @@ init_tm(cl_type t, char *name, cl_index elsize)
 
 static int alloc_initialized = FALSE;
 
+static void (*old_GC_push_other_roots)();
+
 void
 init_alloc(void)
 {
+	static void stacks_scanner();
+
 	if (alloc_initialized) return;
 	alloc_initialized = TRUE;
 
 	GC_no_dls = 1;
+	GC_init_explicit_typing();
 
 	init_tm(t_shortfloat, "SHORT-FLOAT", /* 8 */
 		sizeof(struct shortfloat_struct));
@@ -198,6 +211,34 @@ init_alloc(void)
 	init_tm(t_cont, "CONT", sizeof(struct cont));
 	init_tm(t_thread, "THREAD", sizeof(struct thread));
 #endif /* THREADS */
+
+	old_GC_push_other_roots = GC_push_other_roots;
+	GC_push_other_roots = stacks_scanner;
+}
+
+/**********************************************************
+ *		GARBAGE COLLECTOR			  *
+ **********************************************************/
+
+static void
+stacks_scanner(void)
+{
+	if (cl_stack) {
+		GC_push_conditional(cl_stack, cl_stack_top,1);
+		GC_set_mark_bit(cl_stack);
+	}
+	if (frs_top && (frs_top >= frs_org)) {
+		GC_push_conditional(frs_org, frs_top+1,1);
+		GC_set_mark_bit(frs_org);
+	}
+	if (bds_top && (bds_top >= bds_org)) {
+		GC_push_conditional(bds_org, bds_top+1,1);
+		GC_set_mark_bit(bds_top);
+	}
+	if (NValues)
+		GC_push_all(Values, Values+NValues+1);
+	if (old_GC_push_other_roots)
+		(*old_GC_push_other_roots)();
 }
 
 /**********************************************************

@@ -28,11 +28,12 @@ static cl_object gensym_prefix;
 static cl_object gentemp_prefix;
 static cl_index gentemp_counter;
 
-@(defun make_symbol (str)
-@
+cl_object
+cl_make_symbol(cl_object str)
+{
 	assert_type_string(str);
 	@(return make_symbol(str))
-@)
+}
 
 cl_object
 make_symbol(cl_object st)
@@ -53,79 +54,28 @@ make_symbol(cl_object st)
 }
 
 /*
-	Make_ordinary(s) makes an ordinary symbol from C string s
-	and interns it in lisp package as an external symbol.
+	cl_defvar(s, v) makes a special variable from a symbol and, if it was
+	unbound, assignes it the value V.
 */
-cl_object
-make_ordinary(const char *s)
+void
+cl_defvar(cl_object s, cl_object v)
 {
-	cl_object x = _intern(s, lisp_package);
-	cl_export(x, lisp_package);
-	return(x);
+	assert_type_symbol(s);
+	s->symbol.stype = (short)stp_special;
+	if (SYM_VAL(s) == OBJNULL)
+	SYM_VAL(s) = v;
 }
 
 /*
-	Make_special(s, v) makes a special variable from C string s
-	with initial value v in lisp package.
+	cl_defparameter(s, v) makes a special variable from a symbol and,
+	assignes it the value V.
 */
-cl_object
-make_special(const char *s, cl_object v)
+void
+cl_defparameter(cl_object s, cl_object v)
 {
-	cl_object x = make_ordinary(s);
-	x->symbol.stype = (short)stp_special;
-	SYM_VAL(x) = v;
-	return(x);
-}
-
-/*
-	Make_constant(s, v) makes a constant from C string s
-	with constant value v in lisp package.
-*/
-cl_object
-make_constant(const char *s, cl_object v)
-{
-	cl_object x = make_ordinary(s);
-	x->symbol.stype = (short)stp_constant;
-	SYM_VAL(x) = v;
-	return(x);
-}
-
-/*
-	Make_si_ordinary(s) makes an ordinary symbol from C string s
-	and interns it in system package as an external symbol.
-*/
-cl_object
-make_si_ordinary(const char *s)
-{
-	cl_object x = _intern(s, system_package);
-	cl_export(x, system_package);
-	return(x);
-}
-
-/*
-	Make_si_special(s, v) makes a special variable from C string s
-	with initial value v in system package.
-*/
-cl_object
-make_si_special(const char *s, cl_object v)
-{
-	cl_object x = make_si_ordinary(s);
-	x->symbol.stype = (short)stp_special;
-	SYM_VAL(x) = v;
-	return(x);
-}
-
-/*
-	Make_si_constant(s, v) makes a constant from C string s
-	with constant value v in system package.
-*/
-cl_object
-make_si_constant(const char *s, cl_object v)
-{
-	cl_object x = make_si_ordinary(s);
-	x->symbol.stype = (short)stp_constant;
-	SYM_VAL(x) = v;
-	return(x);
+	assert_type_symbol(s);
+	s->symbol.stype = (short)stp_special;
+	SYM_VAL(s) = v;
 }
 
 /*
@@ -275,26 +225,30 @@ keywordp(cl_object s)
 	@(return getf(sym->symbol.plist, indicator, deflt))
 @)
 
-@(defun remprop (sym prop)
-@
+cl_object
+cl_remprop(cl_object sym, cl_object prop)
+{
 	assert_type_symbol(sym);
 	@(return (remf(&sym->symbol.plist, prop)? Ct: Cnil))
-@)
+}
 
-@(defun symbol_plist (sym)
-@
+cl_object
+cl_symbol_plist(cl_object sym)
+{
 	assert_type_symbol(sym);
 	@(return sym->symbol.plist)
-@)
+}
 
 @(defun getf (place indicator &optional deflt)
 @
 	@(return getf(place, indicator, deflt))
 @)
 
-@(defun get_properties (place indicator_list)
+cl_object
+cl_get_properties(cl_object place, cl_object indicator_list)
+{
 	cl_object slow, cdr_l, l;
-@
+
 	/* This loop guarantees finishing for circular lists */
 	for (slow = l = place;  CONSP(l); ) {
 		cdr_l = CDR(l);
@@ -310,7 +264,7 @@ keywordp(cl_object s)
 	if (l != Cnil)
 		FEtype_error_plist(place);
 	@(return Cnil Cnil Cnil)
-@)
+}
 
 cl_object
 symbol_name(cl_object x)
@@ -319,10 +273,11 @@ symbol_name(cl_object x)
 	return x->symbol.name;
 }
 
-@(defun symbol_name (sym)
-@
+cl_object
+cl_symbol_name(cl_object sym)
+{
 	@(return symbol_name(sym))
-@)
+}
 
 @(defun copy_symbol (sym &optional cp &aux x)
 @
@@ -403,26 +358,29 @@ ONCE_MORE:
 	@(return smbl)
 @)
 
-@(defun symbol_package (sym)
-@
+cl_object
+cl_symbol_package(cl_object sym)
+{
 	assert_type_symbol(sym);
 	@(return sym->symbol.hpack)
-@)
+}
 
-@(defun keywordp (sym)
-@
+cl_object
+cl_keywordp(cl_object sym)
+{
 	@(return ((SYMBOLP(sym) && keywordp(sym))? Ct: Cnil))
-@)
+}
 
 /*
 	(SI:PUT-F plist value indicator)
 	returns the new property list with value for property indicator.
 	It will be used in SETF for GETF.
 */
-@(defun si::put_f (plist value indicator)
-@
+cl_object
+si_put_f(cl_object plist, cl_object value, cl_object indicator)
+{
 	@(return putf(plist, value, indicator))
-@)
+}
 
 /*
 	(SI:REM-F plist indicator) returns two values:
@@ -435,26 +393,28 @@ ONCE_MORE:
 
 	It will be used for macro REMF.
 */
-@(defun si::rem_f (plist indicator)
-	bool found;
-@
-	found = remf(&plist, indicator);
+cl_object
+si_rem_f(cl_object plist, cl_object indicator)
+{
+	bool found = remf(&plist, indicator);
 	@(return plist (found? Ct : Cnil))
-@)
+}
 
-@(defun si::set_symbol_plist (sym plist)
-@
+cl_object
+si_set_symbol_plist(cl_object sym, cl_object plist)
+{
 	assert_type_symbol(sym);
 	sym->symbol.plist = plist;
 	@(return plist)
-@)
+}
 
-@(defun si::putprop (sym value indicator)
-@
+cl_object
+si_putprop(cl_object sym, cl_object value, cl_object indicator)
+{
 	assert_type_symbol(sym);
 	sym->symbol.plist = putf(sym->symbol.plist, value, indicator);
 	@(return value)
-@)
+}
 
 /* Added for defstruct. Beppe */
 @(defun si::put_properties (sym &rest ind_values)
@@ -468,18 +428,20 @@ ONCE_MORE:
 	@(return sym)
 @)
 
-@(defun si::*make_special (sym)
-@
+cl_object
+@si::*make_special(cl_object sym)
+{
 	assert_type_symbol(sym);
 	if ((enum stype)sym->symbol.stype == stp_constant)
 		FEerror("~S is a constant.", 1, sym);
 	sym->symbol.stype = (short)stp_special;
 	remf(&sym->symbol.plist, @'si::symbol-macro');
 	@(return sym)
-@)
+}
 
-@(defun si::*make_constant (sym val)
-@
+cl_object
+@si::*make_constant(cl_object sym, cl_object val)
+{
 	assert_type_symbol(sym);
 	if ((enum stype)sym->symbol.stype == stp_special)
 		FEerror(
@@ -488,7 +450,7 @@ ONCE_MORE:
 	sym->symbol.stype = (short)stp_constant;
 	SYM_VAL(sym) = val;
 	@(return sym)
-@)
+}
 
 void
 init_symbol(void)

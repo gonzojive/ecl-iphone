@@ -10,7 +10,6 @@
 #define KEYWORD 10
 #define FORM_ORDINARY 16
 
-#include "symbols_def.h"
 #include "symbols_list.h"
 
 cl_index cl_num_symbols_in_core = 0;
@@ -21,6 +20,7 @@ cl_index cl_num_symbols_in_core = 0;
 	cl_object output;
 	cl_object package;
 	cl_object found = Cnil;
+	cl_object maxarg = MAKE_FIXNUM(-1);
 	bool is_symbol;
 @
 	assert_type_symbol(symbol);
@@ -38,7 +38,7 @@ cl_index cl_num_symbols_in_core = 0;
 			output = @format(3, Cnil,
 					 make_constant_string("((cl_object)(cl_symbols+~A))"),
 					 MAKE_FIXNUM(p));
-			@(return found output)
+			@(return found output maxarg)
 		}
 	} else {
 		cl_object fun;
@@ -50,6 +50,7 @@ cl_index cl_num_symbols_in_core = 0;
 				if (fun == SYM_FUN(s)) {
 					symbol = s;
 					found = Ct;
+					maxarg = MAKE_FIXNUM(fun->cfun.narg);
 					break;
 				}
 			}
@@ -71,7 +72,7 @@ cl_index cl_num_symbols_in_core = 0;
 		l-= 2;
 		source++;
 	} else if (!is_symbol) {
-		c = 'L';
+		c = '_';
 	} else if (package == keyword_package) {
 		c = 'K';
 	} else {
@@ -112,7 +113,7 @@ cl_index cl_num_symbols_in_core = 0;
 		} else if (c == ':') {
 			c = 'X';
 		} else {
-			@(return Cnil Cnil)
+			@(return Cnil Cnil maxarg)
 		}
 		*(dest++) = c;
 		output->string.fillp++;
@@ -122,12 +123,12 @@ cl_index cl_num_symbols_in_core = 0;
 	*(dest++) = '\0';
 	if (!Null(package))
 		output = @si::string-concatenate(2,package,output);
-	@(return found output)
+	@(return found output maxarg)
 @)
 
 static void
-make_this_symbol(int i, cl_object s, int code, const char *name, cl_object *loc,
-		 cl_objectfn fun)
+make_this_symbol(int i, cl_object s, int code, const char *name,
+		 cl_objectfn fun, int narg)
 {
 	enum stype stp;
 	cl_object package;
@@ -157,24 +158,25 @@ make_this_symbol(int i, cl_object s, int code, const char *name, cl_object *loc,
 		sethash(s->symbol.name, package->pack.external, s);
 		SYM_VAL(s) = s;
 	} else {
-		cl_import(s, package);
-		cl_export(s, package);
+		cl_import2(s, package);
+		cl_export2(s, package);
 	}
-	if (loc != NULL)
-		*loc = s;
 	if (code == FORM_ORDINARY)
 		s->symbol.isform = TRUE;
-	else if (fun != NULL)
-		SYM_FUN(s) = make_cfun(fun, s, NULL);
+	else if (fun != NULL) {
+		cl_object f = cl_make_cfun_va(fun, s, NULL);
+		SYM_FUN(s) = f;
+		f->cfun.narg = narg;
+	}
 	cl_num_symbols_in_core = i + 1;
 }
 
 void
 init_all_symbols(void)
 {
-	int i, code;
+	int i, code, narg;
 	const char *name;
-	cl_object s, *loc;
+	cl_object s;
 	cl_objectfn fun;
 
 	/* We skip NIL and T */
@@ -182,8 +184,8 @@ init_all_symbols(void)
 		s = (cl_object)(cl_symbols + i);
 		code = cl_symbols[i].init.type;
 		name = cl_symbols[i].init.name;
-		loc = cl_symbols[i].init.loc;
 		fun = (cl_objectfn)cl_symbols[i].init.fun;
-		make_this_symbol(i, s, code, name, loc, fun);
+		narg = cl_symbols[i].init.narg;
+		make_this_symbol(i, s, code, name, fun, narg);
 	}
 }

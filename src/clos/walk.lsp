@@ -149,6 +149,7 @@
       (push `(,(car m) macro ,(second m)) funs))
     (cons vars funs)))
 
+#+nil
 (defun environment-function (env fn)
   (when env
 	(let ((entry (assoc fn (cdr env))))
@@ -157,6 +158,7 @@
 	       (third entry)))))
 
 (defun environment-macro (env macro)
+  (declare (si::c-local))
   (when env
 	(let ((entry (assoc macro (cdr env))))
 	  (and entry
@@ -187,6 +189,7 @@
 	 ,@body))))
 
 (defun convert-macro-to-lambda (llist body &optional (name "Dummy Macro"))
+  (declare (si::c-local))
   (let ((gensym (make-symbol name)))
     (eval `(defmacro ,gensym ,llist ,@body))
     (macro-function gensym)))
@@ -210,12 +213,14 @@
 (defvar *key-to-walker-environment* (gensym))
 
 (defun env-lock (env)
+  (declare (si::c-local))
   (environment-macro env *key-to-walker-environment*))
 
 (defun walker-environment-bind-1 (env &key (walk-function nil wfnp)
 					   (walk-form nil wfop)
 					   (declarations nil decp)
 					   (lexical-variables nil lexp))
+  (declare (si::c-local))
   (let ((lock (env-lock env)))
     (list
       (list *key-to-walker-environment*
@@ -225,25 +230,31 @@
 		  (if lexp lexical-variables (fourth lock)))))))
 		  
 (defun env-walk-function (env)
+  (declare (si::c-local))
   (first (env-lock env)))
 
 (defun env-walk-form (env)
+  (declare (si::c-local))
   (second (env-lock env)))
 
 (defun env-declarations (env)
+  (declare (si::c-local))
   (third (env-lock env)))
 
 (defun env-lexical-variables (env)
+  (declare (si::c-local))
   (fourth (env-lock env)))
 
 
 (defun note-declaration (declaration env)
+  (declare (si::c-local))
   (push declaration (third (env-lock env))))
 
 (defun note-lexical-binding (thing env)
   (push #+NEW (list thing :LEXICAL-VAR) #-NEW thing (fourth (env-lock env))))
 
 (defun VARIABLE-LEXICAL-P (var env)
+  (declare (si::c-local))
   #+NEW
   (let ((entry (member var (env-lexical-variables env) :key #'car)))
     (when (eq (cadar entry) :LEXICAL-VAR)
@@ -253,6 +264,7 @@
 
 #+NEW
 (defun variable-symbol-macro-p (var env)
+  (declare (si::c-local))
   (let ((entry (member var (env-lexical-variables env) :key #'car)))
     (when (eq (cadar entry) :macro)
       entry)))
@@ -260,6 +272,7 @@
 (defvar *VARIABLE-DECLARATIONS* '(SPECIAL TYPE)) ; Beppe
 
 (defun VARIABLE-DECLARATION (declaration var env)
+  (declare (si::c-local))
   (if (not (member declaration *variable-declarations*))
       (error "~S is not a recognized variable declaration." declaration)
       (let ((id (or (variable-lexical-p var env) var)))
@@ -271,6 +284,7 @@
 	    (return decl))))))
 
 (defun VARIABLE-SPECIAL-P (var env)
+  (declare (si::c-local))
   (or (not (null (variable-declaration 'SPECIAL var env)))
       (variable-globally-special-p var)))
 
@@ -583,7 +597,7 @@
 		    (walk-form-internal newnewform context env))
 		   ((and (symbolp fn)
 			 (not (fboundp fn))
-			 (special-form-p fn))
+			 (special-operator-p fn))
 		    (error
 		     "~S is a special form, not defined in the CommonLisp.~%~
                        manual This code walker doesn't know how to walk it.~%~
@@ -597,6 +611,7 @@
 		     newnewform '(CALL REPEAT (EVAL)) context env))))))))))
 
 (defun walk-template (form template context env)
+  (declare (si::c-local))
   (if (atom template)
       (ecase template
         ((EVAL FUNCTION TEST EFFECT RETURN)
@@ -645,6 +660,7 @@
 			     (cdr form) (cdr template) context env))))))))
 
 (defun walk-template-handle-repeat (form template stop-form context env)
+  (declare (si::c-local))
   (if (eq form stop-form)
       (walk-template form (cdr template) context env)
       (walk-template-handle-repeat-1 form
@@ -656,6 +672,7 @@
 
 (defun walk-template-handle-repeat-1 (form template repeat-template
 					   stop-form context env)
+  (declare (si::c-local))
   (cond ((null form) ())
         ((eq form stop-form)
          (if (null repeat-template)
@@ -682,20 +699,24 @@
 	       (walk-repeat-eval (cdr form) env))))
 
 (defun recons (x car cdr)
+  (declare (si::c-local))
   (if (or (not (eq (car x) car))
           (not (eq (cdr x) cdr)))
       (cons car cdr)
       x))
 
 (defun relist (x &rest args)
+  (declare (si::c-local))
   (if (null args)
       nil
       (relist-internal x args nil)))
 
 (defun relist* (x &rest args)
+  (declare (si::c-local))
   (relist-internal x args 'T))
 
 (defun relist-internal (x args *p)
+  (declare (si::c-local))
   (if (null (cdr args))
       (if *p (car args) (recons x (car args) nil))
       (recons x
@@ -710,6 +731,7 @@
 (defun walk-declarations (body fn env
 			       &optional doc-string-p declarations old-body
 			       &aux (form (car body)) macrop new-form)
+  (declare (si::c-local))
   (cond ((and (stringp form)			;might be a doc string
               (cdr body)			;isn't the returned value
               (null doc-string-p)		;no doc string yet
@@ -755,13 +777,15 @@
 
 
 (defun walk-unexpected-declare (form context env)
-  (declare (ignore context env))
+  (declare (ignore context env)
+	   (si::c-local))
   (warn "Encountered declare ~S in a place where a declare was not expected."
 	form)
   form)
 
 (defun walk-arglist (arglist context env &optional (destructuringp nil)
 					 &aux arg)
+  (declare (si::c-local))
   (cond ((null arglist) ())
         ((symbolp (setq arg (car arglist)))
          (or (member arg lambda-list-keywords)
@@ -966,6 +990,7 @@
 				  sequentialp)))))
 
 (defun walk-bindings-2 (bindings walked-bindings context env)
+  (declare (si::c-local))
   (and bindings
        (let ((binding (car bindings))
              (walked-binding (car walked-bindings)))
@@ -1054,6 +1079,7 @@
   (recons form (car form) (walk-tagbody-1 (cdr form) context env)))
 
 (defun walk-tagbody-1 (form context env)
+  (declare (si::c-local))
   (and form
        (recons form
                (walk-form-internal (car form)

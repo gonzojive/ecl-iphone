@@ -118,23 +118,23 @@ copy_simple_string(cl_object x)
 }
 
 cl_object
-coerce_to_string(cl_object x)
+cl_string(cl_object x)
 {
 	cl_object y;
 
 	switch (type_of(x)) {
 	case t_symbol:
-		return x->symbol.name;
+		return1(x->symbol.name);
 
 	case t_character:
 		y = cl_alloc_simple_string(1);
 		y->string.self = (char *)cl_alloc_atomic(2);
 		y->string.self[1] = '\0';
 		y->string.self[0] = CHAR_CODE(x);
-		return(y);
+		return1(y);
 
 	case t_string:
-		return(x);
+		return1(x);
 
 	default:
 		FEtype_error_string(x);
@@ -170,20 +170,24 @@ coerce_to_string_designator(cl_object x)
 	}
 }
 
-@(defun char (s i)
+cl_object
+cl_char(cl_object s, cl_object i)
+{
 	cl_index j;
-@
+
 	assert_type_string(s);
 	j = object_to_index(i);
 	/* CHAR bypasses fill pointers when accessing strings */
 	if (j >= s->string.dim-1)
 		illegal_index(s, i);
 	@(return CODE_CHAR(s->string.self[j]))
-@)
+}
 
-@(defun si::char_set (str index c)
+cl_object
+si_char_set(cl_object str, cl_object index, cl_object c)
+{
 	cl_index j;
-@
+
 	assert_type_string(str);
 	j = object_to_index(index);
 	/* CHAR bypasses fill pointers when accessing strings */
@@ -192,7 +196,7 @@ coerce_to_string_designator(cl_object x)
 	/* INV: char_code() checks type of `c' */
 	str->string.self[j] = char_code(c);
 	@(return c)
-@)
+}
 
 void
 get_string_start_end(cl_object string, cl_object start, cl_object end,
@@ -505,14 +509,11 @@ member_char(int c, cl_object char_bag)
 }
 
 static cl_return
-string_trim0(int narg, bool left_trim, bool right_trim, cl_object char_bag,
-	     cl_object strng)
+string_trim0(bool left_trim, bool right_trim, cl_object char_bag, cl_object strng)
 {
 	cl_object res;
 	cl_index i, j, k;
 
-	if (narg != 2)
-		check_arg_failed(narg, 2);
 	strng = coerce_to_string_designator(strng);
 	i = 0;
 	j = strng->string.fillp - 1;
@@ -533,14 +534,14 @@ string_trim0(int narg, bool left_trim, bool right_trim, cl_object char_bag,
 }
 
 cl_return
-@string-trim(int narg, cl_object char_bag, cl_object strng)
-	{ return string_trim0(narg, TRUE, TRUE, char_bag, strng); }
+cl_string_trim(cl_object char_bag, cl_object strng)
+	{ return string_trim0(TRUE, TRUE, char_bag, strng); }
 cl_return
-@string-left-trim(int narg, cl_object char_bag, cl_object strng)
-	{ return string_trim0(narg, TRUE, FALSE, char_bag, strng); }
+cl_string_left_trim(cl_object char_bag, cl_object strng)
+	{ return string_trim0(TRUE, FALSE, char_bag, strng); }
 cl_return
-@string-right-trim(int narg, cl_object char_bag, cl_object strng)
-	{ return string_trim0(narg, FALSE, TRUE, char_bag, strng);}
+cl_string_right_trim(cl_object char_bag, cl_object strng)
+	{ return string_trim0(FALSE, TRUE, char_bag, strng);}
 
 
 static cl_return
@@ -660,12 +661,6 @@ nstring_case(int narg, int (*casefun)(int, bool *), cl_va_list ARGS)
 @(defun nstring-capitalize (&rest args)
 @
 	@(return nstring_case(narg, char_capitalize, args))
-@)
-
-
-@(defun string (x)
-@
-	@(return coerce_to_string(x))
 @)
 
 @(defun si::string_concatenate (&rest args)

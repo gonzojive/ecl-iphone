@@ -162,13 +162,13 @@ printed.  If FORMAT-STRING is NIL, however, no prompt will appear."
 (set-dispatch-macro-character #\# #\a 'sharp-a-reader)
 (set-dispatch-macro-character #\# #\A 'sharp-a-reader)
 
-(defun sharp-s-reader-si (stream subchar arg)
+(defun sharp-s-reader (stream subchar arg)
   (declare (ignore subchar))
   (when (and arg (null *read-suppress*))
         (error "~S is an extra argument for the #s readmacro." arg))
   (let ((l (read stream)))
     (when *read-suppress*
-      (return-from sharp-s-reader-si nil))
+      (return-from sharp-s-reader nil))
     (unless (get (car l) 'is-a-structure)
             (error "~S is not a structure." (car l)))
     ;; Intern keywords in the keyword package.
@@ -183,8 +183,8 @@ printed.  If FORMAT-STRING is NIL, however, no prompt will appear."
                  (return (apply (car cs) (cdr l))))))
       (rplaca ll (intern (string (car ll)) 'keyword)))))
 
-(set-dispatch-macro-character #\# #\s 'sharp-s-reader-si)
-(set-dispatch-macro-character #\# #\S 'sharp-s-reader-si)
+(set-dispatch-macro-character #\# #\s 'sharp-s-reader)
+(set-dispatch-macro-character #\# #\S 'sharp-s-reader)
 
 (defvar *dribble-stream* nil)
 (defvar *dribble-io* nil)
@@ -244,7 +244,7 @@ the one defined in the ANSI standard. *print-base* is 10, *print-array* is t,
 	 (*print-miser-width* nil)
 	 (*print-pretty* nil)
 	 (*print-radix* nil)
-	 (*print-radably* t)
+	 (*print-readably* t)
 	 (*print-right-margin* nil)
 	 (*read-base* 10)
 	 (*read-default-float-format* 'single-float)

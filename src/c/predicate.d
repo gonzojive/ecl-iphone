@@ -16,42 +16,48 @@
 
 #include "ecl.h"
 
-@(defun identity (x)
-@
+cl_object
+cl_identity(cl_object x)
+{
 	@(return x)
-@)
+}
 
-@(defun null (x)
-@
+cl_object
+cl_null(cl_object x)
+{
 	@(return (Null(x) ? Ct : Cnil))
-@)
+}
 
-@(defun symbolp (x)
-@
+cl_object
+cl_symbolp(cl_object x)
+{
 	@(return (SYMBOLP(x) ? Ct : Cnil))
-@)
+}
 
-@(defun atom (x)
-@
+cl_object
+cl_atom(cl_object x)
+{
 	@(return (ATOM(x) ? Ct : Cnil))
-@)
+}
 
-@(defun consp (x)
-@
+cl_object
+cl_consp(cl_object x)
+{
 	@(return (CONSP(x) ? Ct : Cnil))
-@)
+}
 
-@(defun listp (x)
-@
+cl_object
+cl_listp(cl_object x)
+{
 	@(return ((Null(x) || CONSP(x)) ? Ct : Cnil))
-@)
+}
 
-@(defun numberp (x)
-	cl_type t;
-@
-	t = type_of(x);
+cl_object
+cl_numberp(cl_object x)
+{
+	cl_type t = type_of(x);
 	@(return (NUMBER_TYPE(t) ? Ct : Cnil))
-@)
+}
 
 /*	Used in compiled code		*/
 bool numberp(cl_object x)
@@ -60,123 +66,132 @@ bool numberp(cl_object x)
   return(NUMBER_TYPE(t));
 }
 
-@(defun integerp (x)
-	cl_type t;
-@
-	t = type_of(x);
+cl_object
+cl_integerp(cl_object x)
+{
+	cl_type t = type_of(x);
 	@(return ((t == t_fixnum || t == t_bignum) ? Ct : Cnil))
-@)
+}
 
-@(defun rationalp (x)
-	cl_type t;
-@
-	t = type_of(x);
+cl_object
+cl_rationalp(cl_object x)
+{
+	cl_type t = type_of(x);
 	@(return ((t == t_fixnum || t == t_bignum || t == t_ratio) ? Ct : Cnil))
-@)
+}
 
-@(defun floatp (x)
-	cl_type t;
-@
-	t = type_of(x);
+cl_object
+cl_floatp(cl_object x)
+{
+	cl_type t = type_of(x);
 	@(return ((t == t_longfloat || t == t_shortfloat) ? Ct : Cnil))
-@)
+}
 
-@(defun realp (x)
-	cl_type t;
-@
-	t = type_of(x);
+cl_object
+cl_realp(cl_object x)
+{
+	cl_type t = type_of(x);
 	@(return (REAL_TYPE(t) ? Ct : Cnil))
-@)
+}
 
-@(defun complexp (x)
-@
+cl_object
+cl_complexp(cl_object x)
+{
 	@(return ((type_of(x) == t_complex) ? Ct : Cnil))
-@)
+}
 
-@(defun characterp (x)
-@
+cl_object
+cl_characterp(cl_object x)
+{
 	@(return (CHARACTERP(x) ? Ct : Cnil))
-@)
+}
 
-@(defun stringp (x)
-@
+cl_object
+cl_stringp(cl_object x)
+{
 	@(return ((type_of(x) == t_string) ? Ct : Cnil))
-@)
+}
 
-@(defun bit_vector_p (x)
-@
+cl_object
+cl_bit_vector_p(cl_object x)
+{
 	@(return ((type_of(x) == t_bitvector) ? Ct : Cnil))
-@)
+}
 
-@(defun vectorp (x)
-	cl_type t;
-@
-	t = type_of(x);
+cl_object
+cl_vectorp(cl_object x)
+{
+	cl_type t = type_of(x);
 	@(return ((t == t_vector || t == t_string || t == t_bitvector) ? Ct : Cnil))
-@)
+}
 
-@(defun simple_string_p (x)
-@
+cl_object
+cl_simple_string_p(cl_object x)
+{
 	@(return ((type_of(x) == t_string &&
 		     !x->string.adjustable &&
 		     !x->string.hasfillp &&
 		     Null(CAR(x->string.displaced))) ? Ct : Cnil))
-@)
+}
 
-@(defun simple_bit_vector_p (x)
-@
+cl_object
+cl_simple_bit_vector_p(cl_object x)
+{
 	@(return ((type_of(x) == t_bitvector &&
 		     !x->vector.adjustable &&
 		     !x->vector.hasfillp &&
 		     Null(CAR(x->vector.displaced))) ? Ct : Cnil))
-@)
+}
 
-@(defun simple_vector_p (x)
-	cl_type t;
-@
-	t = type_of(x);
+cl_object
+cl_simple_vector_p(cl_object x)
+{
+	cl_type t = type_of(x);
 	@(return ((t == t_vector &&
 		     !x->vector.adjustable &&
 		     !x->vector.hasfillp &&
 		     Null(CAR(x->vector.displaced)) &&
 		     (cl_elttype)x->vector.elttype == aet_object) ? Ct : Cnil))
-@)
+}
 
-@(defun arrayp (x)
-	cl_type t;
-@
-	t = type_of(x);
+cl_object
+cl_arrayp(cl_object x)
+{
+	cl_type t = type_of(x);
 	@(return (ARRAY_TYPE(t) ? Ct : Cnil))
-@)
+}
 
-@(defun packagep (x)
-@
+cl_object
+cl_packagep(cl_object x)
+{
 	@(return ((type_of(x) == t_package) ? Ct : Cnil))
-@)
+}
 
-@(defun functionp (x)
+cl_object
+cl_functionp(cl_object x)
+{
 	cl_type t;
 	cl_object output;
-@
+
 	t = type_of(x);
 	if (t == t_bytecodes || t == t_cfun || t == t_cclosure)
 		output = Ct;
 	else
 		output = Cnil;
 	@(return output)
-@)
+}
 
-@(defun compiled_function_p (x)
-	cl_type t;
-@
-	t = type_of(x);
+cl_object
+cl_compiled_function_p(cl_object x)
+{
+	cl_type t = type_of(x);
 	@(return ((t == t_bytecodes || t == t_cfun || t == t_cclosure) ? Ct : Cnil))
-@)
+}
 
-@(defun commonp (x)
-	cl_object output;
-@
-	output = (FALSE /* type_of(x) == t_spice */
+cl_object
+cl_commonp(cl_object x)
+{
+	cl_object output = (FALSE /* type_of(x) == t_spice */
 #ifdef THREADS
 		     || type_of(x) == t_thread
 		     || type_of(x) == t_cont
@@ -187,12 +202,13 @@ bool numberp(cl_object x)
 #endif
 		     ) ? Cnil : Ct;
 	@(return output)
-@)
+}
 
-@(defun eq (x y)
-@
+cl_object
+cl_eq(cl_object x, cl_object y)
+{
 	@(return ((x == y) ? Ct : Cnil))
-@)
+}
 
 bool
 eql(cl_object x, cl_object y)
@@ -236,10 +252,11 @@ eql(cl_object x, cl_object y)
 	}
 }
 
-@(defun eql (x y)
-@
+cl_object
+cl_eql(cl_object x, cl_object y)
+{
 	@(return (eql(x, y) ? Ct : Cnil))
-@)
+}
 
 bool
 equal(register cl_object x, cl_object y)
@@ -330,10 +347,11 @@ BEGIN:
 	}
 }
 
-@(defun equal (x y)
-@
+cl_object
+cl_equal(cl_object x, cl_object y)
+{
 	@(return (equal(x, y) ? Ct : Cnil))
-@)
+}
 
 bool
 equalp(cl_object x, cl_object y)
@@ -445,12 +463,14 @@ ARRAY:
 	}
 }
 
-@(defun equalp (x y)
-@
+cl_object
+cl_equalp(cl_object x, cl_object y)
+{
 	@(return (equalp(x, y) ? Ct : Cnil))
-@)
+}
 
-@(defun si::fixnump (x)
-@
+cl_object
+si_fixnump(cl_object x)
+{
 	@(return (FIXNUMP(x) ? Ct : Cnil))
-@)
+}

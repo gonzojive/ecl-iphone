@@ -76,20 +76,23 @@ get_bds_ptr(cl_object x)
 	FEerror("~S is an illegal bds index.", 1, x);
 }
 
-@(defun si::bds_top ()
-@
+cl_object
+si_bds_top()
+{
 	@(return MAKE_FIXNUM(bds_top - bds_org))
-@)
+}
 
-@(defun si::bds_var (arg)
-@
+cl_object
+si_bds_var(cl_object arg)
+{
 	@(return get_bds_ptr(arg)->bds_sym)
-@)
+}
 
-@(defun si::bds_val (arg)
-@
+cl_object
+si_bds_val(cl_object arg)
+{
 	@(return get_bds_ptr(arg)->bds_val)
-@)
+}
 
 /******************** INVOCATION STACK **********************/
 
@@ -120,6 +123,7 @@ ihs_function_name(cl_object x)
 void
 ihs_push(cl_object function)
 {
+	/* INV: ihs_push saves the lexical environment */
 	cl_stack_push(function);
 	cl_stack_push(lex_env);
 	cl_stack_push(MAKE_FIXNUM(ihs_top));
@@ -129,6 +133,7 @@ ihs_push(cl_object function)
 void
 ihs_pop(void)
 {
+	/* INV: ihs_pop restores the lexical environment */
 	cl_stack_set_index(ihs_top);
 	ihs_top = fix(cl_stack_top[-1]);
 	lex_env = cl_stack_top[-2];
@@ -183,10 +188,12 @@ ihs_top_function_name(void)
 	return(Cnil);
 }
 
-@(defun si::ihs_top (name)
+cl_object
+si_ihs_top(cl_object name)
+{
 	cl_index h = ihs_top;
 	cl_object *sp;
-@
+
 	name = ihs_function_name(name);
 	while (h > 0) {
 		cl_object *sp = get_ihs_ptr(h);
@@ -198,29 +205,32 @@ ihs_top_function_name(void)
 	if (h == 0)
 		h = ihs_top;
 	@(return MAKE_FIXNUM(h))
-@)
+}
 
-@(defun si::ihs-prev (x)
-@
+cl_object
+si_ihs_prev(cl_object x)
+{
 	@(return MAKE_FIXNUM(ihs_prev(fixnnint(x))))
-@)
+}
 
-@(defun si::ihs-next (x)
-@
+cl_object
+si_ihs_next(cl_object x)
+{
 	@(return MAKE_FIXNUM(ihs_next(fixnnint(x))))
-@)
+}
 
-@(defun si::ihs_fun (arg)
-@
+cl_object
+si_ihs_fun(cl_object arg)
+{
 	@(return get_ihs_ptr(fixnnint(arg))[-3])
-@)
+}
 
-@(defun si::ihs_env (arg)
-	cl_object lex;
-@
-	lex = get_ihs_ptr(ihs_next(fixnnint(arg)))[-2];
+cl_object
+si_ihs_env(cl_object arg)
+{
+	cl_object lex = get_ihs_ptr(ihs_next(fixnnint(arg)))[-2];
 	@(return lex)
-@)
+}
 
 /********************** FRAME STACK *************************/
 
@@ -307,51 +317,61 @@ get_frame_ptr(cl_object x)
 	FEerror("~S is an illegal frs index.", 1, x);
 }
 
-@(defun si::frs_top ()
-@
+cl_object
+si_frs_top()
+{
 	@(return MAKE_FIXNUM(frs_top - frs_org))
-@)
+}
 
-@(defun si::frs_bds (arg)
-@
+cl_object
+si_frs_bds(cl_object arg)
+{
 	@(return MAKE_FIXNUM(get_frame_ptr(arg)->frs_bds_top - bds_org))
-@)
+}
 
-@(defun si::frs_class (arg)
+cl_object
+si_frs_class(cl_object arg)
+{
 	enum fr_class c;
 	cl_object output;
-@
+
 	c = get_frame_ptr(arg)->frs_class;
 	if (c == FRS_CATCH) output = @':catch';
 	else if (c == FRS_PROTECT) output = @':protect';
 	else if (c == FRS_CATCHALL) output = @':catchall';
 	else FEerror("Unknown frs class was detected.", 0);
 	@(return output)
-@)
+}
 
-@(defun si::frs_tag (arg)
-@
+cl_object
+si_frs_tag(cl_object arg)
+{
 	@(return get_frame_ptr(arg)->frs_val)
-@)
+}
 
-@(defun si::frs_ihs (arg)
-@
+cl_object
+si_frs_ihs(cl_object arg)
+{
 	@(return MAKE_FIXNUM(get_frame_ptr(arg)->frs_ihs))
-@)
+}
 
-@(defun si::sch_frs_base (fr ihs)
+cl_object
+si_sch_frs_base(cl_object fr, cl_object ihs)
+{
 	frame_ptr x;
 	cl_index y;
-@
+
 	y = fixnnint(ihs);
 	for (x = get_frame_ptr(fr); x <= frs_top && x->frs_ihs < y; x++);
 	@(return ((x > frs_top) ? Cnil : MAKE_FIXNUM(x - frs_org)))
-@)
+}
 
 /********************* INITIALIZATION ***********************/
 
-@(defun si::reset_stack_limits ()
-@
+cl_object
+si_reset_stack_limits()
+{
+	volatile foo = 0;
 	if (bds_top < bds_org + (bds_size - 2*BDSGETA))
 		bds_limit = bds_org + (bds_size - 2*BDSGETA);
 	else
@@ -361,17 +381,17 @@ get_frame_ptr(cl_object x)
 	else
 		error("can't reset frs_limit.");
 #ifdef DOWN_STACK
-	if (&narg > cs_org - cssize + 16)
+	if (&foo > cs_org - cssize + 16)
 		cs_limit = cs_org - cssize;
 #else
-	if (&narg < cs_org + cssize - 16)
+	if (&foo < cs_org + cssize - 16)
 		cs_limit = cs_org + cssize;
 #endif
 	else
 		error("can't reset cs_limit.");
 
 	@(return Cnil)
-@)
+}
 
 void
 init_stacks(int *new_cs_org)

@@ -31,7 +31,7 @@ exit 2;
 fi
 
 dnl Set the version number. This seems the best place to keep it.
-ECL_VERSION=0.7
+ECL_VERSION=0.7b
 AC_SUBST(ECL_VERSION)
 
 dnl Guess operating system of host. We do not allow cross-compiling.
@@ -70,9 +70,9 @@ AC_ARG_WITH(gmp,
 dnl AC_ARG_ENABLE(locative,
 dnl 	[--enable-locative      Include locative support.],
 dnl 	locative="$enable_locative")
-dnl AC_ARG_ENABLE(threads,
-dnl 	[--enable-threads	Include the multiple thread facility.],
-dnl 	threads="$enable_threads")
+AC_ARG_ENABLE(threads,
+	[--enable-threads	Include the multiple thread facility.],
+	threads="$enable_threads")
 dnl AC_ARG_ENABLE(runtime,
 dnl 	[--enable-runtime	Build no compiler.],
 dnl 	runtime="$enable_runtime")
@@ -209,9 +209,13 @@ if test "${locative}" ; then
   EXTRA_OBJS="${EXTRA_OBJS} unify.o"
   AC_DEFINE(LOCATIVE)
 fi
+AC_MSG_CHECKING(Checking for threads support)
 if test "${threads}" ; then
   EXTRA_OBJS="${EXTRA_OBJS} lwp.o"
   AC_DEFINE(THREADS)
+  AC_MSG_RESULT(userland threads)
+else
+  AC_MSG_RESULT(no)
 fi
 if test ${usecxx} = "no" ; then
   ECL_CC="${CC}"
@@ -283,10 +287,10 @@ else
   AC_MSG_RESULT(configuring local copy)
   test -d gmp && rm -rf gmp
   if mkdir gmp; then
-   (cd gmp;
+   (destdir=`pwd`; cd gmp;
      $srcdir/gmp/configure --disable-shared --prefix=$bindir \
-	--infodir=${builddir}/doc --includedir=${builddir}/h \
-        --libdir=${builddir} $gmp_flags)
+	--infodir=${destdir}/doc --includedir=${destdir}/h \
+        --libdir=${destdir} $gmp_flags)
   fi
 fi
 dnl ---------------------------------------------------------------------
@@ -299,9 +303,9 @@ elif test "${local_boehm}" = "no" ; then
   AC_MSG_RESULT(configuring local copy)
   test -d gc && rm -rf gc
   if mkdir gc; then
-   (cd gc;
+   (destdir=`pwd`; cd gc;
      $srcdir/gc/configure --disable-threads --disable-shared --prefix=$bindir \
-	--includedir=${builddir}/h --libdir=${builddir})
+	--includedir=${destdir}/h --libdir=${destdir})
   fi
 else
   AC_MSG_RESULT(already installed)
@@ -309,8 +313,10 @@ fi
 dnl ---------------------------------------------------------------------
 dnl		Final pass over configuration files
 dnl
-AC_OUTPUT(compile.lsp compile_rest.lsp bare.lsp
+AC_CONFIG_FILES(compile.lsp compile_rest.lsp bare.lsp
  lsp/config.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp
  ../Makefile Makefile c/Makefile doc/Makefile
  tk/Makefile clx/defsys.lsp tests/Makefile ansi-tests/Makefile gabriel/Makefile
  lsp/defsys.lsp cmp/defsys.lsp clos/defsys.lsp)
+AC_CONFIG_FILES([ecl-config:util/ecl-config],[chmod +x ecl-config])
+AC_OUTPUT

@@ -39,60 +39,62 @@ char_code(cl_object c)
 	FEtype_error_character(c);
 }
 
-@(defun standard_char_p (c)
-	cl_fixnum i;
-@
+cl_object
+cl_standard_char_p(cl_object c)
+{
 	/* INV: char_code() checks the type */
-	i = char_code(c);
+	cl_fixnum i = char_code(c);
 	if ((' ' <= i && i < '\177') || i == '\n')
-		@(return Ct)
-	@(return Cnil)
-@)
+		return1(Ct);
+	return1(Cnil);
+}
 
-@(defun graphic_char_p (c)
-	cl_fixnum i;
-@
+cl_object
+cl_graphic_char_p(cl_object c)
+{
 	/* INV: char_code() checks the type */
-	i = char_code(c);
+	cl_fixnum i = char_code(c);
 	if (' ' <= i && i < '\177')     /* ' ' < '\177'  ??? Beppe*/
-		@(return Ct)
-	@(return Cnil)
-@)
+		return1(Ct);
+	return1(Cnil);
+}
 
-@(defun alpha_char_p (c)
-	cl_fixnum i;
-@
+cl_object
+cl_alpha_char_p(cl_object c)
+{
 	/* INV: char_code() checks the type */
-	i = char_code(c);
+	cl_fixnum i = char_code(c);
 	if (isalpha(i))
-		@(return Ct)
+		return1(Ct);
 	else
-		@(return Cnil)
-@)
+		return1(Cnil);
+}
 
-@(defun upper_case_p (c)
-@
+cl_object
+cl_upper_case_p(cl_object c)
+{
 	/* INV: char_code() checks the type */
 	if (isupper(char_code(c)))
-		@(return Ct)
-	@(return Cnil)
-@)
+		return1(Ct);
+	return1(Cnil);
+}
 
-@(defun lower_case_p (c)
-@
+cl_object
+cl_lower_case_p(cl_object c)
+{
 	/* INV: char_code() checks the type */
 	if (islower(char_code(c)))
-		@(return Ct)
-	@(return Cnil)
-@)
+		return1(Ct);
+	return1(Cnil);
+}
 
-@(defun both_case_p (c)
-	cl_fixnum code;
-@
+cl_object
+cl_both_case_p(cl_object c)
+{
 	/* INV: char_code() checks the type */
-	code = char_code(c);
-	@(return ((isupper(code) || islower(code)) ? Ct : Cnil))
-@)
+	cl_fixnum code = char_code(c);
+	return1((isupper(code) || islower(code)) ? Ct : Cnil);
+}
 
 #define basep(d)	(d <= 36)
 
@@ -125,16 +127,13 @@ digitp(int i, int r)
 	return(-1);
 }
 
-@(defun alphanumericp (c)
-	cl_fixnum i;
-@
+cl_object
+cl_alphanumericp(cl_object c)
+{
 	/* INV: char_code() checks type of `c' */
-	i = char_code(c);
-	if (isalnum(i))
-		@(return Ct)
-	else
-		@(return Cnil)
-@)
+	cl_fixnum i = char_code(c);
+	return1(isalnum(i)? Ct : Cnil);
+}
 
 @(defun char= (c &rest cs)
 @
@@ -317,10 +316,11 @@ char_compare(cl_object x, cl_object y)
 @)
 
 
-@(defun character (x)
-@
-	@(return coerce_to_character(x))
-@)
+cl_object
+cl_character(cl_object x)
+{
+	return1(coerce_to_character(x));
+}
 
 cl_object
 coerce_to_character(cl_object x)
@@ -338,42 +338,45 @@ coerce_to_character(cl_object x)
 	}
 }
 
-@(defun char_code (c)
-@
+cl_object
+cl_char_code(cl_object c)
+{
 	/* INV: char_code() checks the type of `c' */
-	@(return MAKE_FIXNUM(char_code(c)))
-@)
+	return1(MAKE_FIXNUM(char_code(c)));
+}
 
-@(defun code_char (c)
+cl_object
+cl_code_char(cl_object c)
+{
 	cl_fixnum fc;
-@
+
 	/* INV: fixnnint() checks the type of `c' */
 	if (type_of(c) == t_bignum)
-		@(return Cnil)
+		return1(Cnil);
 	if ((fc = fixnnint(c)) >= CHAR_CODE_LIMIT)
-		@(return Cnil)
-	@(return CODE_CHAR(fc))
-@)
+		return1(Cnil);
+	return1(CODE_CHAR(fc));
+}
 
-@(defun char_upcase (c)
-	cl_fixnum code;
-@
+cl_object
+cl_char_upcase(cl_object c)
+{
 	/* INV: char_code() checks the type of `c' */
-	code = char_code(c);
-	@(return (islower(char_code(c)) ?
-				CODE_CHAR(toupper(char_code(c))) :
-				c))
-@)
+	cl_fixnum code = char_code(c);
+	return1(islower(char_code(c)) ?
+		CODE_CHAR(toupper(char_code(c))) :
+		c);
+}
 
-@(defun char_downcase (c)
-	cl_fixnum code;
-@
+cl_object
+cl_char_downcase(cl_object c)
+{
 	/* INV: char_code() checks the type of `c' */
-	code = char_code(c);
-	@(return (isupper(char_code(c)) ?
-				CODE_CHAR(tolower(char_code(c))) :
-				c))
-@)
+	cl_fixnum code = char_code(c);
+	return1(isupper(char_code(c)) ?
+		CODE_CHAR(tolower(char_code(c))) :
+		c);
+}
 
 @(defun digit_char (w &optional (r MAKE_FIXNUM(10)))
 	int dw;
@@ -398,48 +401,53 @@ digit_weight(int w, int r)
 		return(w - 10 + 'A');
 }
 
-@(defun char_int (c)
-@
+cl_object
+cl_char_int(cl_object c)
+{
 	/* INV: char_code() checks the type of `c' */
-	@(return MAKE_FIXNUM(char_code(c)))
-@)
+	return1(MAKE_FIXNUM(char_code(c)));
+}
 
-@(defun int_char (x)
-@
+cl_object
+cl_int_char(cl_object x)
+{
 	/* INV: fixnnint(x) checks the type of `c' */
 	if (type_of(x) == t_bignum)
-		@(return Cnil)
-	@(return CODE_CHAR(fixnnint(x)))
-@)
+		return1(Cnil);
+	return1(CODE_CHAR(fixnnint(x)));
+}
 
-@(defun char_name (c)
-@
+cl_object
+cl_char_name(cl_object c)
+{
 	/* INV: char_code() checks the type of `c' */
 	switch (char_code(c)) {
 	case '0':
-		@(return STnull)
+		return1(STnull);
 	case '\r':
-		@(return STreturn)
+		return1(STreturn);
 	case ' ':
-		@(return STspace)
+		return1(STspace);
 	case '\177':
-		@(return STrubout)
+		return1(STrubout);
 	case '\f':
-		@(return STpage)
+		return1(STpage);
 	case '\t':
-		@(return STtab)
+		return1(STtab);
 	case '\b':
-		@(return STbackspace)
+		return1(STbackspace);
 	case '\n':
-		@(return STnewline)
+		return1(STnewline);
 	}
-	@(return Cnil)
-@)
+	return1(Cnil);
+}
 
-@(defun name_char (s)
+cl_object
+cl_name_char(cl_object s)
+{
 	char c;
-@
-	s = coerce_to_string(s);
+
+	s = cl_string(s);
 	if (string_equal(s, STreturn))
 		c = '\r'; else
 	if (string_equal(s, STspace))
@@ -456,9 +464,9 @@ digit_weight(int w, int r)
 		c = '\n'; else
 	if (string_equal(s, STnull))
 		c = '\000'; else
-		@(return Cnil)
-	@(return CODE_CHAR(c))
-@)
+		return1(Cnil);
+	return1(CODE_CHAR(c));
+}
 
 void
 init_character(void)

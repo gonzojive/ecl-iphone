@@ -318,6 +318,7 @@
 ;;; check-initargs
 
 (defun check-initargs (class initargs)
+  (declare (si::c-local))
   ;; scan initarg list 
   (do* ((name-loc initargs (cddr name-loc))
 	(name (first name-loc) (first name-loc)))

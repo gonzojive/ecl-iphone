@@ -283,7 +283,7 @@ static
 	@(return backq(in))
 @)
 
-#define	make_cf(f)	make_cfun((f), Cnil, NULL);
+#define	make_cf(f)	cl_make_cfun_va((f), Cnil, NULL);
 
 void
 init_backq(void)

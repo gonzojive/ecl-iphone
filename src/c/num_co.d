@@ -117,9 +117,11 @@ number_remainder(cl_object x, cl_object y, cl_object q)
 	@(return x)
 @)
 
-@(defun numerator (x)
+cl_object
+cl_numerator(cl_object x)
+{
 	cl_object out;
-@
+
 	switch (type_of(x)) {
 	case t_ratio:
 		out = x->ratio.num;
@@ -132,11 +134,13 @@ number_remainder(cl_object x, cl_object y, cl_object q)
 		FEwrong_type_argument(@'rational', x);
 	}
 	@(return out)
-@)
+}
 
-@(defun denominator (x)
+cl_object
+cl_denominator(cl_object x)
+{
 	cl_object out;
-@
+
 	switch (type_of(x)) {
 	case t_ratio:
 		out = x->ratio.den;
@@ -149,7 +153,7 @@ number_remainder(cl_object x, cl_object y, cl_object q)
 		FEwrong_type_argument(@'rational', x);
 	}
 	@(return out)
-@)
+}
 
 cl_object
 floor1(cl_object x)
@@ -675,26 +679,28 @@ round2(cl_object x, cl_object y)
 @)
 
 
-@(defun mod (x y)
-@
+cl_object
+cl_mod(cl_object x, cl_object y)
+{
 	/* INV: #'floor always outputs two values */
 	@floor(2, x, y);
 	@(return VALUES(1))
-@)
+}
 
-
-@(defun rem (x y)
-@
+cl_object
+cl_rem(cl_object x, cl_object y)
+{
 	@truncate(2, x, y);
 	@(return VALUES(1))
-@)
+}
 
-
-@(defun decode_float (x)
+cl_object
+cl_decode_float(cl_object x)
+{
 	double d;
 	int e, s;
 	cl_type tx = type_of(x);
-@
+
 	switch (tx) {
 	case t_shortfloat: {
 		float d = sf(x);
@@ -724,12 +730,13 @@ round2(cl_object x, cl_object y)
 		FEtype_error_float(x);
 	}
 	@(return x MAKE_FIXNUM(e) make_shortfloat(s))
-@)
+}
 
-
-@(defun scale_float (x y)
+cl_object
+cl_scale_float(cl_object x, cl_object y)
+{
 	int k;
-@
+
 	if (FIXNUMP(y))
 		k = fix(y);
 	else
@@ -745,17 +752,17 @@ round2(cl_object x, cl_object y)
 		FEtype_error_float(x);
 	}
 	@(return x)
-@)
+}
 
-
-@(defun float_radix (x)
+cl_object
+cl_float_radix(cl_object x)
+{
 	cl_type t = type_of(x);
-@
+
 	if (t != t_shortfloat && t != t_longfloat)
 		FEtype_error_float(x);
 	@(return MAKE_FIXNUM(2))
-@)
-
+}
 
 @(defun float_sign (x &optional (y x))
 	int negativep;
@@ -782,8 +789,9 @@ round2(cl_object x, cl_object y)
 	}
 @)
 
-@(defun float_digits (x)
-@
+cl_object
+cl_float_digits(cl_object x)
+{
 	switch (type_of(x)) {
 	case t_shortfloat:
 		x = MAKE_FIXNUM(6);
@@ -795,26 +803,28 @@ round2(cl_object x, cl_object y)
 		FEtype_error_float(x);
 	}
 	@(return x)
-@)
+}
 
-
-@(defun float_precision (x)
-@
+cl_object
+cl_float_precision(cl_object x)
+{
 	switch (type_of(x)) {
 	case t_shortfloat:
-		@(return ((sf(x) == 0.0) ? MAKE_FIXNUM(0) : MAKE_FIXNUM(24)))
+		x = (sf(x) == 0.0) ? MAKE_FIXNUM(0) : MAKE_FIXNUM(24);
 	case t_longfloat:
-		@(return ((lf(x) == 0.0) ? MAKE_FIXNUM(0) : MAKE_FIXNUM(53)))
+		x = (lf(x) == 0.0) ? MAKE_FIXNUM(0) : MAKE_FIXNUM(53);
 	default:
 		FEtype_error_float(x);
 	}
-@)
+	@(return x)
+}
 
-
-@(defun integer_decode_float (x)
+cl_object
+cl_integer_decode_float(cl_object x)
+{
 	unsigned int h, l;
 	int e, s;
-@
+
 	switch (type_of(x)) {
 	case t_longfloat: {
 		double d = lf(x);
@@ -858,7 +868,7 @@ round2(cl_object x, cl_object y)
 		FEtype_error_float(x);
 	}
 	@(return x MAKE_FIXNUM(e) MAKE_FIXNUM(s))
-@)
+}
 
 
 @(defun complex (r &optional (i MAKE_FIXNUM(0)))
@@ -866,9 +876,9 @@ round2(cl_object x, cl_object y)
 	@(return make_complex(r, i))
 @)
 
-
-@(defun realpart (x)
-@
+cl_object
+cl_realpart(cl_object x)
+{
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
@@ -883,11 +893,11 @@ round2(cl_object x, cl_object y)
 		FEtype_error_number(x);
 	}
 	@(return x)
-@)
+}
 
-
-@(defun imagpart (x)
-@
+cl_object
+cl_imagpart(cl_object x)
+{
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
@@ -907,7 +917,7 @@ round2(cl_object x, cl_object y)
 		FEtype_error_number(x);
 	}
 	@(return x)
-@)
+}
 
 void
 init_num_co(void)

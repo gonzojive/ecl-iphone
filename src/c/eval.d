@@ -73,6 +73,11 @@ cl_apply_from_stack(cl_index narg, cl_object fun)
       AGAIN:
 	switch (type_of(fun)) {
 	case t_cfun:
+		if (fun->cfun.narg >= 0) {
+			if (narg != fun->cfun.narg)
+				check_arg_failed(narg, fun->cfun.narg);
+			return APPLY_fixed(narg, fun->cfun.entry, cl_stack_top - narg);
+		}
 		return APPLY(narg, fun->cfun.entry, cl_stack_top - narg);
 	case t_cclosure:
 		return APPLY_closure(narg, fun->cclosure.entry,
@@ -114,14 +119,20 @@ link_call(cl_object sym, cl_objectfn *pLK, int narg, cl_va_list args)
  AGAIN:
 	switch (type_of(fun)) {
 	case t_cfun:
-		if (pLK) {
-			putprop(sym, CONS(CONS(make_unsigned_integer((cl_index)pLK),
-					       make_unsigned_integer((cl_index)*pLK)),
-					  getf(sym->symbol.plist, @'si::link-from', Cnil)),
-				@'si::link-from');
-			*pLK = fun->cfun.entry;
+		if (fun->cfun.narg >= 0) {
+			if (narg != fun->cfun.narg)
+				check_arg_failed(narg, fun->cfun.narg);
+			out = APPLY_fixed(narg, fun->cfun.entry, cl_stack_top - narg);
+		} else {
+			if (pLK) {
+				putprop(sym, CONS(CONS(make_unsigned_integer((cl_index)pLK),
+						       make_unsigned_integer((cl_index)*pLK)),
+						  getf(sym->symbol.plist, @'si::link-from', Cnil)),
+					@'si::link-from');
+				*pLK = fun->cfun.entry;
+			}
+			out = APPLY(narg, fun->cfun.entry, cl_stack + sp);
 		}
-		out = APPLY(narg, fun->cfun.entry, cl_stack + sp);
 		break;
 #ifdef CLOS
 	case t_gfun: {
@@ -145,9 +156,11 @@ link_call(cl_object sym, cl_objectfn *pLK, int narg, cl_va_list args)
 	return out;
 }
 
-@(defun si::unlink_symbol (s)
+cl_object
+si_unlink_symbol(cl_object s)
+{
 	cl_object pl;
-@
+
 	if (!SYMBOLP(s))
 		FEtype_error_symbol(s);
 	pl = getf(s->symbol.plist, @'si::link-from', Cnil);
@@ -157,7 +170,7 @@ link_call(cl_object sym, cl_objectfn *pLK, int narg, cl_va_list args)
 		remf(&s->symbol.plist, @'si::link-from');
 	}
 	@(return)
-@)
+}
 
 @(defun funcall (function &rest funargs)
 	cl_index sp;
@@ -171,7 +184,13 @@ link_call(cl_object sym, cl_objectfn *pLK, int narg, cl_va_list args)
       AGAIN:
 	switch (type_of(fun)) {
 	case t_cfun:
-		out = APPLY(narg, fun->cfun.entry, cl_stack + sp);
+		if (fun->cfun.narg >= 0) {
+			if (narg != fun->cfun.narg)
+				check_arg_failed(narg, fun->cfun.narg);
+			out = APPLY_fixed(narg, fun->cfun.entry, cl_stack_top - narg);
+		} else {
+			out = APPLY(narg, fun->cfun.entry, cl_stack + sp);
+		}
 		break;
 	case t_cclosure:
 		out = APPLY_closure(narg, fun->cclosure.entry,
@@ -198,19 +217,17 @@ link_call(cl_object sym, cl_objectfn *pLK, int narg, cl_va_list args)
 	return out;
 @)
 
-@(defun eval (form)
-	cl_object output;
-@
-	output = eval(form, NULL, Cnil);
-	returnn(output);
-@)
+cl_object
+cl_eval(cl_object form)
+{
+	return eval(form, NULL, Cnil);
+}
 
-@(defun si::eval-with-env (form env)
-	cl_object output;
-@
-	output = eval(form, NULL, env);
-	returnn(output);
-@)
+cl_object
+si_eval_with_env(cl_object form, cl_object env)
+{
+	return eval(form, NULL, env);
+}
 
 cl_object
 cl_safe_eval(cl_object form, cl_object *new_bytecodes, cl_object env, cl_object err_value)
@@ -234,9 +251,11 @@ cl_safe_eval(cl_object form, cl_object *new_bytecodes, cl_object env, cl_object 
 	returnn(cl_safe_eval(form, NULL, env, err_value));
 @)
 
-@(defun constantp (arg)
+cl_object
+cl_constantp(cl_object arg)
+{
 	cl_object flag;
-@
+
 	switch (type_of(arg)) {
 	case t_cons:
 		flag = (CAR(arg) == @'quote') ? Ct : Cnil;
@@ -248,7 +267,7 @@ cl_safe_eval(cl_object form, cl_object *new_bytecodes, cl_object env, cl_object 
 		flag = Ct;
 	}
 	@(return flag)
-@)
+}
 
 void
 init_eval(void)

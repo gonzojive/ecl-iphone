@@ -1,4 +1,4 @@
-Announcement of ECL v0.7
+Announcement of ECL v0.7b
 =========================
 
 ECL stands for Embeddable Common-Lisp. The ECL project is an effort to
@@ -10,66 +10,106 @@ ECL is currently hosted at SourceForge. The home page of the project
 is http://ecls.sourceforge.net, and in it you will find source code
 releases, a CVS tree and an up to date documentation.
 
-ECL 0.7
-=======
+Notes for this release
+======================
+
+The names of many functions have changed. The global variables which
+held pointers to symbols and keywords have disappeared. But the most
+important change is the change on the calling conventions. Now there
+are two types of C functions which the Lisp environment recognizes
+
+1) Functions with a fixed number of arguments
+	cl_object my_function(cl_object arg1, cl_object arg2)
+They are passed to the lisp environment using cl_def_c_function()
+and cl_make_cfun(). They take a fixed number of arguments and the
+interpreter checks this for them
+
+2) Functions with optional and keyword arguments
+	cl_object my_function(int narg, ...)
+They get a variable number of arguments, given by "narg". They should
+check this and signal an error if needed. They are manipulated using
+cl_def_c_function_va() and cl_make_cfun_va().
+
+See below for a list of changes (And read src/h/external.h,
+src/c/cfun.d, src/c/eval.d if you want :-)
+
+ECL 0.7b
+========
 
 * Errors fixed:
 
-  - When installing, ECL would not build all required directories.
-
-  - Symbol BUILD-PROGRAM should be exported from package C.
-
-  - In compiled code UNWIND-PROTECT would procted also the exit form,
-    resulting in an infinite loop when the exit form fails.
+  - SI::BC-DISASSEMBLE would not use Lisp streams for output.
 
 * System design:
 
-  - Global variables READsuppress, READdefault_float_format,
-    READtable, and READbase have been removed. The corresponding
-    special variables are used instead.
+  - Setting a (DECLARE (SI::C-LOCAL)) inside a function, we advise the
+    compiler to make it local to an object file and do not export it
+    for general use outside this file, neither as C code nor in Lisp.
 
-  - No need for function read_object_recursive(), since read_object()
-    is equivalent to it.
+  - New function cl_defvar() implements DEFVAR.
 
-  - Changed the algorithm of the list reader. A dot which is not
-    escaped is read as a symbol SI::. which is recognized by
-    LEFT-PARENTHESIS-READER. This avoids using global variables
-    "in_list_flag" and "dot_flag".
-
-  - The calling conventions have been changed. SI::C-ARGUMENTS-LIMIT
-    and LAMBDA-PARAMETERS-LIMIT are both 64. Up to C-ARGUMENTS-LIMIT
-    may be passed to a function using C calling conventions. If the
-    function is to retrieve more arguments, (for instance through a
-    &rest variable), this can be done, but then the arguments have to
-    be pushed on the lisp stack. This method allows us to raise the
-    CALL-ARGUMENTS-LIMIT up to MOST-POSITIVE-FIXNUM. From a users
-    point of view, there is no visible change, excep the fact that a
-    function may receive more &optional, &key and &rest arguments.
-
-  - The function apply() has been replaced with cl_apply_from_stack().
-    The former took a pointer to the list of arguments. The latter
-    assumes that the last "narg" elements on the lisp stack are the
-    arguments of the function.
+  - Global variable si::*cblock* keeps a pointer to the descriptor of the
+    library being loaded (on systems which support DLLs).
 
 * Visible changes:
 
-  - New functions SI:SAFE-EVAL and cl_safe_eval() allow the user to
-    evaluate code with errors without jumping into the
-    debugger. Useful when embedding ECL in other programs.
+  - The C counterparts of the Lisp functions have now the prefix
+    cl_*. For instance, LIST-LENGTH is named cl_list_length(). There
+    are two types of functions. Those who take a fixed number of
+    arguments, are just called using C calling conventions:
+	cl_object form = c_string_to_object("(1 2 3 4)");
+	cl_object l = cl_list_length(form);
+    But there are functions which take a variable number of arguments:
+    in this case, the first argument must be the total number of
+    arguments. For instance
+	cl_object form = cl_read(0);
+    or
+	cl_object form = cl_read(1, Cnil);
 
-  - New function SI:OPEN-UNIX-SOCKET-STREAM creates a two-way stream
-    attached to a unix socked (Unix sockets are pipes which programs
-    from the same computer may use to communicate with each other, and
-    they are either anonymous (not supported by ECL) or associated to
-    a file of the filesystem).
+  - Renamed functions MF() and MM() to cl_def_c_function(),
+    cl_def_c_function_va() and cl_def_c_macro_va(). Removed
+    make_function() and make_si_function(), which had a more limited
+    purpose. The *_va() functions take as argument a C function with
+    prototype
+	cl_object (*function)(int narg, ...)
+    which means that the function should accept any number of
+    arguments and signal an error when the number is incorrect. The
+    functions without *_va() suffix, take as argument a C function
+    with prototype
+	cl_object (*function)()
+    and an integer "narg" denoting the number of arguments that this
+    function actually receives.
 
-  - New function SI:LOOKUP-HOST-ENTRY encompasses the C calls
-    gethostbyname() and gethostbyaddress() and it is used to guess the
-    address, aliases and hostname of a machine in the Internet (Currently
-    we only support AF_INET protocol).
+  - Within the debugger, users are now able to evaluate expressions using the
+    lexical environment of the functions being debugged. Sample session:
+	> (defun foo (x) (cos x))
+	FOO
+	> (foo 'a)
+	A is not of type NUMBER.
+	Broken at COS.
+	>> :b
+	Backtrace: COS > foo > eval
+	>> :p
+	Broken at FOO.
+	>> :v
+	Block names: FOO.
+	Local variables: 
+	  X: A
+	>> (return-from foo (cos 2.0))
+	-0.4161468
+
+  - DISASSEMBLE can now either disassemble the bytecodes of an interpreted
+    function, or translate a lisp expression into C and show the result.
+
+  - New program "ecl-config" outputs either the flags compile ("ecl-config -c")
+    or to link ("ecl-config -l") a program using the ECL library.
+
+  - In compiled code, constants which are EQUALP are merged; that is, they
+    become EQ at run time.
+
+  - cl_special_form_p() renamed to cl_special_operator_p().
 
 * ANSI compatibility:
 
-  - READ and READ-PRESERVING-WHITESPACE behave the same when
-    RECURSIVE-P is NIL. Furthermore, EOF is detected when EOF-ERROR-P
-    is true, regardless of the value of RECURSIVE-P.
+  - DEFINE-SYMBOL-MACRO finally implemented.
+
