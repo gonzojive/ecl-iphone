@@ -820,9 +820,11 @@ extern cl_object clLnreverse _ARGS((int narg, cl_object x));
 /* stacks.c */
 
 extern cl_object Kcatch, Kcatchall, Kprotect;
-extern cl_object siLihs_top _ARGS((int narg));
+extern cl_object siLihs_top _ARGS((int narg, cl_object arg));
 extern cl_object siLihs_fun _ARGS((int narg, cl_object arg));
 extern cl_object siLihs_env _ARGS((int narg, cl_object arg));
+extern cl_object siLihs_next _ARGS((int narg, cl_object arg));
+extern cl_object siLihs_prev _ARGS((int narg, cl_object arg));
 extern cl_object siLfrs_top _ARGS((int narg));
 extern cl_object siLfrs_bds _ARGS((int narg, cl_object arg));
 extern cl_object siLfrs_class _ARGS((int narg, cl_object arg));

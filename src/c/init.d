@@ -109,5 +109,6 @@ init_lisp(void)
 #ifdef RUNTIME
 	SYM_VAL(@'*features*') = CONS(make_keyword("RUNTIME"), SYM_VAL(@'*features*'));
 #endif
+	ihs_push(_intern("TOP-LEVEL", system_package), Cnil);
 	init_lisp_libs();
 }

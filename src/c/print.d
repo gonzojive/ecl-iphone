@@ -111,10 +111,7 @@ cl_object @'si::sharp-exclamation';
 #define isp        clwp->lwp_isp
 #define iisp       clwp->lwp_iisp
 
-#define CIRCLEsize clwp->lwp_CIRCLEsize
 #define CIRCLEbase clwp->lwp_CIRCLEbase
-#define CIRCLEtop clwp->lwp_CIRCLEtop
-#define CIRCLElimit clwp->lwp_CIRCLElimit
 
 #else
 static short queue[Q_SIZE];
@@ -126,10 +123,7 @@ static int qc;
 static int isp;
 static int iisp;
 
-cl_index CIRCLEsize;
-cl_object *CIRCLEbase;
-cl_object *CIRCLEtop;
-cl_object *CIRCLElimit;
+cl_fixnum CIRCLEbase;
 cl_object PRINTstream;
 
 #endif THREADS
@@ -139,7 +133,7 @@ cl_object PRINTstream;
 static void flush_queue (bool force);
 static void write_decimal1 (int i);
 static void travel_push_object (cl_object x);
-static cl_object *searchPRINTcircle(cl_object x);
+static cl_index searchPRINTcircle(cl_object x);
 static bool doPRINTcircle(cl_object x);
 
 
@@ -550,6 +544,7 @@ call_structure_print_function(cl_object x, int level)
 	bool a = PRINTarray;
 	cl_object ps = PRINTstream;
 	cl_object pc = PRINTcase;
+	cl_fixnum cb = CIRCLEbase;
 
 	short ois[IS_SIZE];
 
@@ -612,6 +607,7 @@ call_structure_print_function(cl_object x, int level)
 	qt = oqt;
 	qh = oqh;
 
+	CIRCLEbase = cb;
 	PRINTcase = pc;
 	PRINTstream = ps;
 	PRINTarray = a;
@@ -650,6 +646,7 @@ call_print_object(cl_object x, int level)
 	bool a = PRINTarray;
 	cl_object ps = PRINTstream;
 	cl_object pc = PRINTcase;
+	cl_index cb = CIRCLEbase;
 
 	short ois[IS_SIZE];
 
@@ -711,6 +708,7 @@ call_print_object(cl_object x, int level)
 	qt = oqt;
 	qh = oqh;
 
+	CIRCLEbase = cb;
 	PRINTcase = pc;
 	PRINTstream = ps;
 	PRINTarray = a;
@@ -1174,11 +1172,11 @@ write_object(cl_object x, int level)
 				break;
 			}
 			if (PRINTcircle) {
-				cl_object *vp = searchPRINTcircle(x);
-				if (vp != NULL) {
-					if (vp[1] != Cnil) {
+				cl_index vp = searchPRINTcircle(x);
+				if (vp != 0) {
+					if (cl_stack[vp] != Cnil) {
 						write_str(" . #");
-						write_decimal((vp-CIRCLEbase)/2);
+						write_decimal((vp-CIRCLEbase)/2+1);
 						write_ch('#');
 						goto RIGHT_PAREN;
 					} else {
@@ -1460,58 +1458,62 @@ write_object(cl_object x, int level)
 }
 
 /* To print circular structures, we traverse the structure by adding
-   a pair <element, flag> to the array CIRCLEbase for each element visited.
+   a pair <element, flag> to the interpreter stack for each element visited.
    flag is initially NIL and becomes T if the element is visited again.
    After the visit we squeeze out all the non circular elements.
    The flags is used during printing to distinguish between the first visit
    to the element.
  */
 
-/* Allocates space for travel_push: if not enough, get back with
-  longjmp and increase it */
-
 static void
 setupPRINTcircle(cl_object x)
 {
-	cl_object *vp, *vq;
+	cl_object *vp, *vq, *CIRCLEtop;
 
-	CIRCLEsize = 4000;
-	CIRCLEbase = alloc_atomic(CIRCLEsize * sizeof(cl_object));
-	CIRCLEtop = CIRCLEbase;
-	CIRCLElimit = &CIRCLEbase[CIRCLEsize];
+	if (CIRCLEbase >= 0)
+		FEerror("Internal error: tried to overwrite CIRCLEbase.",0);
+	if (!PRINTcircle) {
+		CIRCLEbase = -1;
+		return;
+	}
+	CIRCLEbase = cl_stack_index();
 	travel_push_object(x);
+	CIRCLEtop = cl_stack_top;
 	/* compact shared elements towards CIRCLEbase */
-	for (vp = vq = CIRCLEbase;  vp < CIRCLEtop;  vp += 2)
+	for (vp = vq = &cl_stack[CIRCLEbase];  vp < CIRCLEtop;  vp += 2)
 		if (vp[1] != Cnil) {
 			vq[0] = vp[0]; vq[1] = Cnil; vq += 2;
 		}
-	CIRCLEtop = vq;
+	cl_stack_set_index(vq - cl_stack);
 }
 
-static cl_object *
+static cl_index
 searchPRINTcircle(cl_object x)
 {
-	cl_object *vp;
+	cl_object *vp, *CIRCLEtop;
 
-	for (vp = CIRCLEbase; vp < CIRCLEtop; vp += 2)
+	if (CIRCLEbase < 0)
+		return 0;
+	CIRCLEtop = cl_stack_top;
+	for (vp = &cl_stack[CIRCLEbase]; vp < CIRCLEtop; vp += 2)
 		if (vp[0] == x)
-			return vp;
-	return NULL;
+			return vp-cl_stack+1;
+	return 0;
 }
 
 static bool
 doPRINTcircle(cl_object x)
 {
-	cl_object *vp = searchPRINTcircle(x);
-	if (vp != NULL) {
+	cl_index vp = searchPRINTcircle(x);
+	if (vp != 0) {
 		write_ch('#');
-		write_decimal((vp-CIRCLEbase)/2);
-		if (vp[1] != Cnil) {
+		write_decimal((vp-CIRCLEbase)/2+1);
+		if (cl_stack[vp] != Cnil) {
 			write_ch('#');
 			return TRUE; /* All is done */
 		} else {
 			write_ch('=');
-			vp[1] = Ct;
+			cl_stack[vp] = Ct;
 		}
 	}
 	return FALSE; /* Print the structure */
@@ -1522,7 +1524,7 @@ travel_push_object(cl_object x)
 {
 	enum type t;
 	cl_index i;
-	cl_object *vp;
+	cl_object *vp, *CIRCLEtop;
 
 	cs_check(x);
 
@@ -1537,25 +1539,14 @@ BEGIN:
 #endif CLOS
 	    !(t == t_symbol && Null(x->symbol.hpack)))
 		return;
-	for (vp = CIRCLEbase;  vp < CIRCLEtop;  vp += 2)
-		if (x == *vp) {
-		  /* if (vp[1] == Cnil) */ vp[1] = Ct;
+	CIRCLEtop = cl_stack_top;
+	for (vp = &cl_stack[CIRCLEbase];  vp < CIRCLEtop;  vp += 2)
+		if (x == vp[0]) {
+			vp[1] = Ct;
 			return;
 		}
-	if (CIRCLEtop >= CIRCLElimit) {
-		/* allocate more space */
-		cl_object *ptr;
-		int newsize = CIRCLEsize + 4000;
-		ptr = alloc_atomic(newsize * sizeof(cl_object));
-		memcpy(ptr, CIRCLEbase, CIRCLEsize * sizeof(cl_object));
-		CIRCLEsize = newsize;
-		CIRCLEtop = (CIRCLEtop - CIRCLEbase) + ptr;
-		CIRCLEbase = ptr;
-		CIRCLElimit = &CIRCLEbase[CIRCLEsize];
-	}
-	CIRCLEtop[0] = x;
-	CIRCLEtop[1] = Cnil;
-	CIRCLEtop += 2;
+	cl_stack_push(x);
+	cl_stack_push(Cnil);
 
 	switch (t) {
 	case t_array:
@@ -1646,6 +1637,7 @@ RETRY:	if (type_of(PRINTstream) == t_stream) {
 		PRINTlength = fix(y);
 	PRINTarray = symbol_value(@'*print-array*') != Cnil;
 /*	setupPRINTcircle(x); */
+	CIRCLEbase = -1;
 	if (PRINTpretty) {
 		qh = qt = qc = 0;
 		isp = iisp = 0;
@@ -1660,6 +1652,10 @@ RETRY:	if (type_of(PRINTstream) == t_stream) {
 
 void cleanupPRINT(void)
 {
+	if (CIRCLEbase >= 0) {
+		cl_stack_set_index(CIRCLEbase);
+		CIRCLEbase = -1;
+	}
 	if (PRINTpretty)
 		flush_queue(TRUE);
 }

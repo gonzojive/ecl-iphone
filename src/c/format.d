@@ -73,7 +73,7 @@ static cl_object fmt_stream;
 static int ctl_origin;
 static int ctl_index;
 static int ctl_end;
-static cl_object *fmt_base;
+static cl_index fmt_base;
 static int fmt_index;
 static int fmt_end;
 static int *fmt_jmp_buf;
@@ -98,7 +98,7 @@ static int fmt_line_length;
 			volatile int old_ctl_origin; \
 			volatile int old_ctl_index; \
 			volatile int old_ctl_end; \
-			cl_object * volatile old_fmt_base; \
+			volatile cl_index old_fmt_base; \
 			volatile int old_fmt_index; \
 			volatile int old_fmt_end; \
 			int * volatile old_fmt_jmp_buf; \
@@ -196,7 +196,14 @@ fmt_advance(void)
 {
 	if (fmt_index >= fmt_end)
 		fmt_error("arguments exhausted");
-	return(fmt_base[fmt_index++]);
+	return(cl_stack[fmt_index++]);
+}
+
+static cl_object
+fmt_push_list(cl_object l)
+{
+	for (;  !endp(l);  l = CDR(l))
+		cl_stack_push(CAR(l));
 }
 
 static int
@@ -677,7 +684,7 @@ fmt_plural(bool colon, bool atsign)
 {
 	fmt_max_param(0);
 	if (colon) {
-		if (fmt_index == 0)
+		if (fmt_index == fmt_base)
 			fmt_error("can't back up");
 		--fmt_index;
 	}
@@ -821,7 +828,7 @@ fmt_fix_float(bool colon, bool atsign)
 				WRITEC_STREAM(overflowchar, fmt_stream);
 			return;
 		}
-		if (j < w && b[j-1] == '.') {
+		if (j < w && d < 0 && b[j-1] == '.') {
 			b[j++] = '0';
 			b[j] = '\0';
 		}
@@ -1007,10 +1014,6 @@ fmt_exponential_float(bool colon, bool atsign)
 			w -= i + 2;
 		if (j > w && overflowchar >= 0)
 			goto OVER;
-		if (j < w && b[j-1] == '.') {
-			b[j++] = '0';
-			b[j] = '\0';
-		}
 		if (j < w && b[0] == '.') {
 			*--b = '0';
 			j++;
@@ -1333,7 +1336,8 @@ fmt_asterisk(bool colon, bool atsign)
 	fmt_not_colon_atsign(colon, atsign);
 	if (atsign) {
 		fmt_set_param(0, &n, INT, 0);
-		if (n < 0 || n >= fmt_end)
+		n += fmt_base;
+		if (n < fmt_base || n >= fmt_end)
 			fmt_error("can't goto");
 		fmt_index = n;
 	} else if (colon) {
@@ -1374,10 +1378,10 @@ fmt_indirection(bool colon, bool atsign)
 	} else {
 		l = fmt_advance();
 		fmt_save;
-		fmt_base = alloca(length(l) * sizeof(cl_object));
-		fmt_index = 0;
-		for (fmt_end = 0;  !endp(l);  fmt_end++, l = CDR(l))
-			fmt_base[fmt_end] = CAR(l);
+		fmt_base = cl_stack_index();
+		fmt_push_list(l);
+		fmt_index = fmt_base;
+		fmt_end = cl_stack_index();
 		fmt_jmp_buf = (int *)fmt_jmp_buf0;
 		fmt_string = s;
 		if ((up_colon = ecls_setjmp(fmt_jmp_buf))) {
@@ -1385,6 +1389,7 @@ fmt_indirection(bool colon, bool atsign)
 				fmt_error("illegal ~:^");
 		} else
 			format(fmt_stream, 0, s->string.fillp);
+		cl_stack_set_index(fmt_base);
 		fmt_restore;
 	}
 }
@@ -1572,10 +1577,10 @@ fmt_iteration(bool colon, bool atsign)
 	if (!colon && !atsign) {
 		l = fmt_advance();
 		fmt_save;
-		fmt_base = (cl_object *)alloca(length(l) * sizeof(cl_object));
-		fmt_index = 0;
-		for (fmt_end = 0;  !endp(l);  fmt_end++, l = CDR(l))
-			fmt_base[fmt_end] = CAR(l);
+		fmt_base = cl_stack_index();
+		fmt_push_list(l);
+		fmt_index = fmt_base;
+		fmt_end = cl_stack_index();
 		fmt_jmp_buf = (int *)fmt_jmp_buf0;
 		if (colon_close)
 			goto L1;
@@ -1590,6 +1595,7 @@ fmt_iteration(bool colon, bool atsign)
 			}
 			format(fmt_stream, o + i, j - i);
 		}
+		cl_stack_set_index(fmt_base);
 		fmt_restore;
 	} else if (colon && !atsign) {
 	  	int fl = 0;
@@ -1598,7 +1604,7 @@ fmt_iteration(bool colon, bool atsign)
 		fmt_save;
 		for (l = l0; !endp(l); l = CDR(l))
 		  fl += length(CAR(l));
-		fmt_base = (cl_object *)alloca(fl * sizeof(cl_object));
+		fmt_base = cl_stack_index();
 		fmt_jmp_buf = (int *)fmt_jmp_buf0;
 		if (colon_close)
 			goto L2;
@@ -1608,9 +1614,9 @@ fmt_iteration(bool colon, bool atsign)
 				break;
 			l = CAR(l0);
 			l0 = CDR(l0);
-			fmt_index = 0;
-			for (fmt_end = 0; !endp(l); fmt_end++, l = CDR(l))
-				fmt_base[fmt_end] = CAR(l);
+			fmt_push_list(l);
+			fmt_index = fmt_base;
+			fmt_end = cl_stack_index();
 			if ((up_colon = ecls_setjmp(fmt_jmp_buf))) {
 				if (--up_colon)
 					break;
@@ -1618,6 +1624,7 @@ fmt_iteration(bool colon, bool atsign)
 					continue;
 			}
 			format(fmt_stream, o + i, j - i);
+			cl_stack_set_index(fmt_base);
 		}
 		fmt_restore;
 	} else if (!colon && atsign) {
@@ -1646,10 +1653,10 @@ fmt_iteration(bool colon, bool atsign)
 				break;
 			l = fmt_advance();
 			fmt_save;
-			fmt_base = (cl_object *)alloca(length(l) * sizeof(cl_object));
-			fmt_index = 0;
-			for (fmt_end = 0; !endp(l); fmt_end++, l = CDR(l))
-				fmt_base[fmt_end] = CAR(l);
+			fmt_base = cl_stack_index();
+			fmt_push_list(l);
+			fmt_index = fmt_base;
+			fmt_end = cl_stack_index();
 			fmt_jmp_buf = (int *)fmt_jmp_buf0;
 			if ((up_colon = ecls_setjmp(fmt_jmp_buf))) {
 				fmt_restore;
@@ -1659,6 +1666,7 @@ fmt_iteration(bool colon, bool atsign)
 					continue;
 			}
 			format(fmt_stream, o + i, j - i);
+			cl_stack_set_index(fmt_base);
 			fmt_restore;
 		}
 	}
@@ -1668,12 +1676,13 @@ static void
 fmt_justification(volatile bool colon, bool atsign)
 {
 	int mincol, colinc, minpad, padchar;
-	cl_object fields[16];
+	volatile cl_index fields_start;
+	cl_index fields_end;
 	fmt_old;
 	jmp_buf fmt_jmp_buf0;
-	volatile int i, j, k, l, m, n, j0, l0;
+	volatile int i, j, k, l, m, j0, l0;
 	int up_colon;
-	volatile int special = 0;
+	volatile cl_object special = Cnil;
 	volatile int spare_spaces, line_length;
 
 	fmt_max_param(4);
@@ -1682,19 +1691,16 @@ fmt_justification(volatile bool colon, bool atsign)
 	fmt_set_param(2, &minpad, INT, 0);
 	fmt_set_param(3, &padchar, CHAR, ' ');
 
-	n = 0;
+	fields_start = cl_stack_index();
 	for (;;) {
-		if (n >= 16)
-			fmt_error("too many fields");
+		cl_object this_field = make_string_output_stream(64);
 		i = ctl_index;
 		j0 = j = fmt_skip();
 		while (ctl_string[--j] != '~')
 			;
-		fields[n] = make_string_output_stream(64);
 		fmt_save;
 		fmt_jmp_buf = (int *)fmt_jmp_buf0;
 		if ((up_colon = ecls_setjmp(fmt_jmp_buf))) {
-			--n;
 			if (--up_colon)
 				fmt_error("illegal ~:^");
 			fmt_restore1;
@@ -1704,7 +1710,8 @@ fmt_justification(volatile bool colon, bool atsign)
 				fmt_error("~> expected");
 			break;
 		}
-		format(fields[n++], ctl_origin + i, j - i);
+		format(this_field, ctl_origin + i, j - i);
+		cl_stack_push(this_field->stream.object0);
 		fmt_restore1;
 		if (ctl_string[--j0] == '>') {
 			if (ctl_string[--j0] != '~')
@@ -1713,9 +1720,9 @@ fmt_justification(volatile bool colon, bool atsign)
 		} else if (ctl_string[j0] != ';')
 			fmt_error("~; expected");
 		else if (ctl_string[--j0] == ':') {
-			if (n != 1)
+			if (cl_stack_index() - fields_start != 1 || !Null(special))
 				fmt_error("illegal ~:;");
-			special = 1;
+			special = cl_stack_pop();
 			for (j = j0;  ctl_string[j] != '~';  --j)
 				;
 			fmt_save;
@@ -1726,9 +1733,19 @@ fmt_justification(volatile bool colon, bool atsign)
 		} else if (ctl_string[j0] != '~')
 			fmt_error("~; expected");
 	}
-	for (i = special, l = 0;  i < n;  i++)
-		l += fields[i]->stream.object0->string.fillp;
-	m = n - 1 - special;
+	/*
+	 * Compute the length of items to be output. If the clause ~:; was
+	 * found, the first item is not included.
+	 */
+	fields_end = cl_stack_index();
+	for (i = fields_start, l = 0;  i < fields_end;  i++)
+		l += cl_stack[i]->string.fillp;
+	/*
+	 * Count the number of segments that need padding, "M". If the colon
+	 * modifier, the first item needs padding. If the @ modifier is
+	 * present, the last modifier also needs padding.
+	 */
+	m = fields_end - fields_start - 1;
 	if (m <= 0 && !colon && !atsign) {
 		m = 0;
 		colon = TRUE;
@@ -1737,24 +1754,35 @@ fmt_justification(volatile bool colon, bool atsign)
 		m++;
 	if (atsign)
 		m++;
+	/*
+	 * Count the minimal length in which the text fits. This length must
+	 * the smallest integer of the form l = mincol + k * colinc. If the
+	 * length exceeds the line length, the text before the ~:; is output
+	 * first.
+	 */
 	l0 = l;
 	l += minpad * m;
 	for (k = 0;  mincol + k * colinc < l;  k++)
 		;
 	l = mincol + k * colinc;
-	if (special != 0 &&
-	    FILE_COLUMN(fmt_stream) + l + spare_spaces >= line_length)
-		princ(fields[0]->stream.object0, fmt_stream);
+	if (special != Cnil &&
+	    FILE_COLUMN(fmt_stream) + l + spare_spaces > line_length)
+		princ(special, fmt_stream);
+	/*
+	 * Output the text with the padding segments. The total number of
+	 * padchars is kept in "l", and it is shared equally among all segments.
+	 */
 	l -= l0;
-	for (i = special;  i < n;  i++) {
-		if (i > 0 || colon)
+	for (i = fields_start;  i < fields_end;  i++) {
+		if (i > fields_start || colon)
 			for (j = l / m, l -= j, --m;  j > 0;  --j)
 				WRITEC_STREAM(padchar, fmt_stream);
-		princ(fields[i]->stream.object0, fmt_stream);
+		princ(cl_stack[i], fmt_stream);
 	}
 	if (atsign)
 		for (j = l;  j > 0;  --j)
 			WRITEC_STREAM(padchar, fmt_stream);
+	cl_stack_set_index(fields_start);
 }
 
 static void
@@ -1836,16 +1864,11 @@ RETRY:	if (type_of(strm) == t_stream) {
 		fmt_restore;
 		unwind(nlj_fr, nlj_tag);
 	}
-#if 0
-	fmt_base = (cl_object *)args;
-	fmt_index = 0;
-	fmt_end = narg - 2;
-#else
-	fmt_base = (cl_object *)alloca((narg - 2) * sizeof(cl_object));
-	fmt_index = 0;
-	for (fmt_end = 0; fmt_end < (narg - 2); fmt_end++)
-		fmt_base[fmt_end] = cl_nextarg(args);
-#endif
+	fmt_base = cl_stack_index();
+	for (narg -= 2; narg; narg--)
+		cl_stack_push(cl_nextarg(args));
+	fmt_index = fmt_base;
+	fmt_end = cl_stack_index();
 	fmt_jmp_buf = (int *)fmt_jmp_buf0;
 	if (symbol_value(@'si::*indent-formatted-output*') != Cnil)
 		fmt_indents = FILE_COLUMN(strm);
@@ -1859,6 +1882,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 		format(strm, 0, string->string.fillp);
 		FLUSH_STREAM(strm);
 	}
+	cl_stack_set_index(fmt_base);
 	frs_pop();
 	fmt_restore;
 	@(return (x == OBJNULL? Cnil : x))

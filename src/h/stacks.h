@@ -17,7 +17,19 @@
  * INTERPRETER STACK
  ********************/
 
-extern cl_object stack;
+extern cl_index cl_stack_size;
+extern cl_object *cl_stack;
+extern cl_object *cl_stack_top;
+extern cl_object *cl_stack_limit;
+
+extern void cl_stack_push(cl_object o);
+extern cl_object cl_stack_pop();
+extern cl_index cl_stack_index();
+extern void cl_stack_set_index(cl_index sp);
+extern void cl_stack_pop_n(cl_index n);
+extern void cl_stack_insert(cl_index where, cl_index n);
+extern void cl_stack_push_varargs(cl_index n, va_list args);
+extern void cl_stack_push_n(cl_index n, cl_object *args);
 
 /**************
  * BIND STACK
@@ -60,59 +72,11 @@ extern bds_ptr bds_top;	/*  bind stack top  */
  * INVOCATION HISTORY STACK
  ****************************/
 
-typedef struct invocation_history {
-	cl_object ihs_function;
-	cl_object ihs_base;
-} *ihs_ptr;
+cl_index ihs_top;
 
-#ifdef THREADS
-#define ihs_size	clwp->lwp_ihs_size
-#define ihs_org		clwp->lwp_ihs_org
-#define ihs_limit       clwp->lwp_ihs_limit
-#define ihs_top         clwp->lwp_ihs_top
-#else
-extern size_t ihs_size;
-extern ihs_ptr ihs_org;
-extern ihs_ptr ihs_limit;
-extern ihs_ptr ihs_top;
-#endif
-#define ihs_stack       ihs_org
-
-#define	ihs_check  \
-	if (ihs_top >= ihs_limit)  \
-		ihs_overflow()
-
-#define ihs_push(function, args) { \
-	(++ihs_top)->ihs_function = (function);  \
-	ihs_top->ihs_base = args; \
-}
-
-#define ihs_push_funcall(function) { \
-	ihs_check; \
-	(++ihs_top)->ihs_function = (function);  \
-	ihs_top->ihs_base = Cnil; \
-}
-
-#define ihs_pop() 	(ihs_top--)
-
-#define make_nil_block(r) { \
-	cl_object x;  \
-	lex_copy();  \
-	x = new_frame_id();  \
-	lex_block_bind(Cnil, x);  \
-	r = frs_push(FRS_CATCH, x);  \
-}
-
-#define BLOCK(name,output) { \
-	cl_object *lex_old = lex_env; lex_dcl; \
-	cl_object _x; \
-	lex_copy(); \
-	_x = new_frame_id(); \
-	lex_block_bind(name,_x); \
-	if (frs_push(FRS_CATCH,_x) != 0) output = Values[0]; else
-#define END_BLOCK \
-	frs_pop(); \
-	lex_env = lex_old; }
+extern void ihs_push(cl_object fun, cl_object env);
+extern cl_object ihs_top_function_name();
+extern void ihs_pop();
 
 /***************
  * FRAME STACK
@@ -143,7 +107,7 @@ typedef struct frame {
 	bds_ptr		frs_bds_top;
 	enum fr_class	frs_class;
 	cl_object	frs_val;
-	ihs_ptr		frs_ihs;
+	cl_index	frs_ihs;
 	cl_index	frs_sp;
 } *frame_ptr;
 
@@ -267,7 +231,6 @@ extern cl_object lex_env;
 
 #define lex_copy()		lex_env = CONS(car(lex_env),cdr(lex_env))
 #define lex_new()		lex_env = CONS(Cnil,Cnil)
-#define lex_var_sch(name)	assq((name),CAR(lex_env))
 #define lex_fun_sch(name)	lex_sch(CDR(lex_env),(name),clSfunction)
 #define lex_tag_sch(name)	lex_sch(CDR(lex_env),(name),clStag)
 #define lex_block_sch(name)	lex_sch(CDR(lex_env),(name),clSblock)

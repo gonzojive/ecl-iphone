@@ -44,8 +44,6 @@
 #define MAXPAGE	16384		/* Maximum Memory Size			*/
 #define BDSSIZE	2048		/* Size of Binding Stack		*/
 #define	BDSGETA	16		/* Safety zone of BDS			*/
-#define	IHSSIZE	1024		/* Size of Invocation History Stack	*/
-#define	IHSGETA	32		/* Safety zone of IHS			*/
 #define FRSSIZE	1024		/* Size of Frame Stack			*/
 #define	FRSGETA	16		/* Safety zone of FRS			*/
 #ifdef THREADS

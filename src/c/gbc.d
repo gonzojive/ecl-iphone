@@ -438,11 +438,11 @@ mark_stack_conservative(cl_ptr bottom, cl_ptr top)
 static void
 mark_phase(void)
 {
-	register int i;
-	register struct package *pp;
-	register bds_ptr bdp;
-	register frame_ptr frp;
-	register ihs_ptr ihsp;
+	int i;
+	struct package *pp;
+	bds_ptr bdp;
+	frame_ptr frp;
+	cl_object *sp;
 
 	mark_object(Cnil);
 	mark_object(Ct);
@@ -457,14 +457,15 @@ mark_phase(void)
 	    clwp = pdp->pd_lpd;
 #endif THREADS
 
-	    mark_contblock(CIRCLEbase, CIRCLEsize*sizeof(cl_object));
-	    
+	    mark_contblock(cl_stack, cl_stack_size * sizeof(*cl_stack));
+	    for (sp=cl_stack; sp < cl_stack_top; sp++)
+	      mark_object(*sp);
+
 	    for (i=0; i<NValues; i++)
 	      mark_object(VALUES(i));
 
 	    mark_contblock(frs_org, frs_size * sizeof(*frs_org));
 	    mark_contblock(bds_org, frs_size * sizeof(*bds_org));
-	    mark_contblock(ihs_org, frs_size * sizeof(*ihs_org));
 
 	    for (bdp = bds_org;  bdp <= bds_top;  bdp++) {
 	      mark_object(bdp->bds_sym);
@@ -473,14 +474,8 @@ mark_phase(void)
 	    
 	    for (frp = frs_org;  frp <= frs_top;  frp++) {
 	      mark_object(frp->frs_val);
-	      mark_object(frp->frs_lex);
 	    }
 	    
-	    for (ihsp = ihs_org;  ihsp <= ihs_top;  ihsp++) {
-	      mark_object(ihsp->ihs_function);
-	      mark_object(ihsp->ihs_base);
-	    }
-
 	    mark_object(lex_env);
 
 #ifdef THREADS	      

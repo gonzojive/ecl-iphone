@@ -10,6 +10,20 @@
   OP_PUSH
 	Pushes the object in VALUES(0)
 
+  OP_PUSHV	n{arg}, var{symbol}
+	Pushes the value of the n-th local onto the stack. VAR is given
+	for readability purposes only.
+
+  OP_PUSHVS	var{symbol}
+	Pushes the value of the symbol VAR onto the stack.
+
+  OP_VAR	n{arg}, var{symbol}
+	Returns the value of the n-th local. VAR is given for readability
+	of diassembled code only.
+
+  OP_VARS	var{symbol}
+	Returns the value of the symbol VAR.
+
   OP_PUSHQ	value{obj}
 	Pushes "value"
 
@@ -103,7 +117,10 @@ enum {
   OP_PUSH,
   OP_PUSHQ,
   OP_PUSHV,
+  OP_PUSHVS,
   OP_PUSHVALUES,
+  OP_VAR,
+  OP_VARS,
   OP_MCALL,
   OP_CALL,
   OP_FCALL,

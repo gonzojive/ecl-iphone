@@ -193,14 +193,13 @@ extern void check_other_key(cl_object l, int n, ...);
 
 /* compiler.c */
 
-cl_object make_lambda(cl_object name, cl_object lambda);
-cl_object eval(cl_object form, cl_object *bytecodes, cl_object env);
+extern cl_object make_lambda(cl_object name, cl_object lambda);
+extern cl_object eval(cl_object form, cl_object *bytecodes, cl_object env);
 
 /* interpreter.c */
 
-cl_object stack;
-cl_object lambda_apply(int narg, cl_object fun, cl_object *args);
-cl_object *interpret(cl_object *memory);
+extern cl_object lambda_apply(int narg, cl_object fun, cl_object *args);
+extern cl_object *interpret(cl_object *memory);
 
 /* conditional.c */
 
@@ -383,7 +382,6 @@ extern void init_let(void);
 /* lex.c */
 
 extern void lex_fun_bind(cl_object name, cl_object fun);
-extern void lex_macro_bind(cl_object name, cl_object exp_fun);
 extern void lex_tag_bind(cl_object tag, cl_object id);
 extern void lex_block_bind(cl_object name, cl_object id);
 extern cl_object lex_sch(cl_object lex_list, cl_object name, cl_object type);
@@ -665,10 +663,7 @@ extern void (*write_ch_fun)();
 extern void (*output_ch_fun)();
 extern cl_object PRINTpackage;
 extern bool PRINTstructure;
-extern cl_index CIRCLEsize;
-extern cl_object *CIRCLEbase;
-extern cl_object *CIRCLEtop;
-extern cl_object *CIRCLElimit;
+extern cl_fixnum CIRCLEbase;
 extern cl_object PRINTstream;
 extern void interactive_writec_stream(int c, cl_object stream);
 extern void flush_interactive_stream(cl_object stream);
@@ -764,9 +759,6 @@ extern void init_sequence(void);
 
 extern void bds_overflow(void) __attribute__((noreturn));
 extern void bds_unwind(bds_ptr new_bds_top);
-extern void ihs_overflow(void) __attribute__((noreturn));
-extern cl_object ihs_function_name(cl_object x);
-extern cl_object ihs_top_function_name(void);
 extern int frs_overflow(void) __attribute__((noreturn));
 extern void unwind(frame_ptr fr, cl_object tag) __attribute__((noreturn));
 extern frame_ptr frs_sch(cl_object frame_id);

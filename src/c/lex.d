@@ -37,18 +37,6 @@ lex_fun_bind(cl_object name, cl_object fun)
 }
 
 void
-lex_symbol_macro_bind(cl_object name, cl_object exp_fun)
-{
-	CAR(lex_env) = CONS(list(3, name, @'si::symbol-macro', exp_fun), CAR(lex_env));
-}
-
-void
-lex_macro_bind(cl_object name, cl_object exp_fun)
-{
-	CDR(lex_env) = CONS(list(3, name, @'macro', exp_fun), CDR(lex_env));
-}
-
-void
 lex_tag_bind(cl_object tag, cl_object id)
 {
 	CDR(lex_env) = CONS(list(3, tag, @'tag', id), CDR(lex_env));

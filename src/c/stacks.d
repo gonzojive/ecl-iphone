@@ -26,10 +26,7 @@ bds_ptr bds_org;
 bds_ptr bds_limit;
 bds_ptr bds_top;
 
-size_t ihs_size;
-ihs_ptr ihs_org;
-ihs_ptr ihs_limit;
-ihs_ptr ihs_top;
+cl_index ihs_top;
 
 size_t frs_size;
 frame_ptr frs_org;
@@ -98,17 +95,7 @@ get_bds_ptr(cl_object x)
 
 /******************** INVOCATION STACK **********************/
 
-void
-ihs_overflow(void)
-{
-	--ihs_top;
-	if (ihs_limit > ihs_org + ihs_size)
-		error("invocation history stack overflow.");
-	ihs_limit += IHSGETA;
-	FEerror("Invocation history stack overflow.", 0);
-}
-
-cl_object
+static cl_object
 ihs_function_name(cl_object x)
 {
 	cl_object y;
@@ -132,52 +119,102 @@ ihs_function_name(cl_object x)
 	}
 }
 
+void
+ihs_push(cl_object function, cl_object env)
+{
+	cl_stack_push(function);
+	cl_stack_push(env);
+	cl_stack_push(MAKE_FIXNUM(ihs_top));
+	ihs_top = cl_stack_index();
+}
+
+void
+ihs_pop()
+{
+	cl_stack_set_index(ihs_top);
+	ihs_top = fix(cl_stack_top[-1]);
+	cl_stack_pop_n(3);
+}
+
+static cl_object *
+get_ihs_ptr(cl_index n)
+{
+	cl_object *sp = &cl_stack[n];
+
+	if (sp > cl_stack && sp <= cl_stack_top)
+		return sp;
+	FEerror("~S is an illegal ihs index.", 1, MAKE_FIXNUM(n));
+}
+
+static cl_index
+ihs_prev(cl_index n)
+{
+	cl_object *sp = get_ihs_ptr(n);
+	n = fixnnint(sp[-1]);
+	return n;
+}
+
 cl_object
 ihs_top_function_name(void)
 {
-	cl_object x;
-	ihs_ptr h = ihs_top;
+	cl_index h = ihs_top;
 
-	while (h >= ihs_org) {
-		x = ihs_function_name(h->ihs_function);
-		if (x != Cnil)
-			return(x);
-		h--;
+	while (h > 0) {
+		cl_object *sp = get_ihs_ptr(h);
+		cl_object next_h = sp[-1];
+		cl_object lex_env = sp[-2];
+		cl_object name = ihs_function_name(sp[-3]);
+		if (name != Cnil)
+			return name;
+		h = fixnnint(next_h);
 	}
 	return(Cnil);
 }
 
-/*
-	Lisp interface to IHS
-*/
-
-static ihs_ptr
-get_ihs_ptr(cl_object x)
-{
-	ihs_ptr p;
-
-	if (FIXNUMP(x)) {
-	  p = ihs_org + fix(x);
-	  if (ihs_org <= p && p <= ihs_top)
-	    return(p);
-	}
-	FEerror("~S is an illegal ihs index.", 1, x);
-}
-
-@(defun si::ihs_top ()
+@(defun si::ihs_top (name)
+	cl_index h = ihs_top;
+	cl_object *sp;
 @
-	@(return MAKE_FIXNUM(ihs_top - ihs_org))
+	name = ihs_function_name(name);
+	while (h > 0) {
+		cl_object *sp = get_ihs_ptr(h);
+		cl_object fun = sp[-3];
+		if (ihs_function_name(fun) == name)
+			break;
+		h = fixnnint(sp[-1]);
+	}
+	if (h == 0)
+		h = ihs_top;
+	@(return MAKE_FIXNUM(h))
+@)
+
+@(defun si::ihs-prev (x)
+@
+	@(return MAKE_FIXNUM(ihs_prev(fixnnint(x))))
+@)
+
+@(defun si::ihs-next (x)
+	cl_index h1 = ihs_top, h2 = ihs_top;
+	cl_index n = fixnnint(x);
+@
+	while (h2 > n) {
+		h1 = h2;
+		h2 = ihs_prev(h1);
+	}
+	if (h2 == n)
+		@(return MAKE_FIXNUM(h1))
+	FEerror("Internal error: ihs record ~S not found.", 1, x);
 @)
 
 @(defun si::ihs_fun (arg)
 @
-	@(return get_ihs_ptr(arg)->ihs_function)
+	@(return get_ihs_ptr(fixnnint(arg))[-3])
 @)
 
 @(defun si::ihs_env (arg)
 	cl_object lex;
 @
-	lex = get_ihs_ptr(arg)->ihs_base;
+	lex = get_ihs_ptr(fixnnint(arg))[-2];
 	@(return CONS(car(lex),cdr(lex)))
 @)
 
@@ -210,7 +247,7 @@ _frs_push(register enum fr_class class, register cl_object val)
 	frs_top->frs_class = class;
 	frs_top->frs_val = val;
 	frs_top->frs_ihs = ihs_top;
-	frs_top->frs_sp = stack->vector.fillp;
+	frs_top->frs_sp = cl_stack_index();
 	return frs_top;
 }
 
@@ -225,7 +262,7 @@ unwind(frame_ptr fr, cl_object tag)
 	lex_env = frs_top->frs_lex;
 	ihs_top = frs_top->frs_ihs;
 	bds_unwind(frs_top->frs_bds_top);
-	stack->vector.fillp = frs_top->frs_sp;
+	cl_stack_set_index(frs_top->frs_sp);
 	ecls_longjmp(frs_top->frs_jmpbuf, 1);
 	/* never reached */
 }
@@ -295,14 +332,14 @@ get_frame_ptr(cl_object x)
 
 @(defun si::frs_ihs (arg)
 @
-	@(return MAKE_FIXNUM(get_frame_ptr(arg)->frs_ihs - ihs_org))
+	@(return MAKE_FIXNUM(get_frame_ptr(arg)->frs_ihs))
 @)
 
 @(defun si::sch_frs_base (fr ihs)
 	frame_ptr x;
-	ihs_ptr y;
+	cl_index y;
 @
-	y = get_ihs_ptr(ihs);
+	y = fixnnint(ihs);
 	for (x = get_frame_ptr(fr); x <= frs_top && x->frs_ihs < y; x++);
 	@(return ((x > frs_top) ? Cnil : MAKE_FIXNUM(x - frs_org)))
 @)
@@ -319,10 +356,6 @@ get_frame_ptr(cl_object x)
 		frs_limit = frs_org + (frs_size - 2*FRSGETA);
 	else
 		error("can't reset frs_limit.");
-	if (ihs_top < ihs_org + (ihs_size - 2*IHSGETA))
-		ihs_limit = ihs_org + (ihs_size - 2*IHSGETA);
-	else
-		error("can't reset ihs_limit.");
 #ifdef DOWN_STACK
 	if (&narg > cs_org - cssize + 16)
 		cs_limit = cs_org - cssize;
@@ -351,10 +384,8 @@ alloc_stacks(int *new_cs_org)
 	bds_org = alloc(bds_size * sizeof(*bds_org));
 	bds_top = bds_org-1;
 	bds_limit = &bds_org[bds_size - 2*BDSGETA];
-	ihs_size = IHSSIZE + 2*IHSGETA;
-	ihs_org = alloc(ihs_size * sizeof(*ihs_org));
-  	ihs_top = ihs_org-1;
-	ihs_limit = &ihs_org[ihs_size - 2*IHSGETA];
+
+	ihs_top = 0;
 
 	cs_org = new_cs_org;
 #if defined(HAVE_SYS_RESOURCE_H) && defined(RLIMIT_STACK)

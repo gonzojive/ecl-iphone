@@ -42,7 +42,7 @@
 (defvar *break-level* 0)		; nesting level of error loops
 (defvar *break-env* nil)
 (defvar *ihs-base* 0)
-(defvar *ihs-top* 0)
+(defvar *ihs-top* (ihs-top 'si::top-level))
 (defvar *ihs-current* 0)
 (defvar *frs-base* 0)
 (defvar *frs-top* 0)
@@ -425,7 +425,6 @@ Usage: ecls [-dir dir] [-load file] [-eval expr]
       (setq *lisp-initialized* t))
 
     (in-package "CL-USER")
-    (setq sys::*gc-verbose* t)
 
     (catch *quit-tag*
       (let ((*tpl-level* -1))
@@ -442,7 +441,7 @@ Usage: ecls [-dir dir] [-load file] [-eval expr]
 		 ((:prompt-hook *tpl-prompt-hook*) nil)
 		 (quiet nil))
   (let* ((*ihs-base* *ihs-top*)
-	 (*ihs-top* (ihs-top))
+	 (*ihs-top* (ihs-top 'tpl))
 	 (*ihs-current* *ihs-top*)
 	 (*frs-base* (or (sch-frs-base *frs-top* *ihs-base*) (1+ (frs-top))))
 	 (*frs-top* (frs-top))
@@ -581,7 +580,7 @@ Usage: ecls [-dir dir] [-load file] [-eval expr]
   (tpl-print-current))
 
 (defun tpl-previous (&optional (n 1))
-  (do ((i (1- *ihs-current*) (1- i)))
+  (do ((i (si::ihs-prev *ihs-current*) (si::ihs-prev i)))
       ((or (< i *ihs-base*) (<= n 0)))
     (when (ihs-visible i)
       (setq *ihs-current* i)
@@ -590,7 +589,7 @@ Usage: ecls [-dir dir] [-load file] [-eval expr]
   (tpl-print-current))
 
 (defun tpl-next (&optional (n 1))
-  (do ((i (1+ *ihs-current*) (1+ i)))
+  (do ((i (si::ihs-next *ihs-current*) (si::ihs-next i)))
       ((or (> i *ihs-top*) (<= n 0)))
     (when (ihs-visible i)
       (setq *ihs-current* i)
@@ -616,70 +615,24 @@ Usage: ecls [-dir dir] [-load file] [-eval expr]
 	(*print-pretty* t)
         (fun (ihs-fun *ihs-current*))
         name args)
-    (if (and (compiled-function-p fun)
-	     (symbolp (setq name (compiled-function-name fun)))
-	     (setq args (get name 'arglist)))
-	(progn
-#|
-	  (format t
-		  "Local variables:~%")
-	  (do ((args args (cdr args))
-	       (i (ihs-vs *ihs-current*) (1+ i)))
-	      ((null args))
-	    (declare (fixnum i))
-	    (format t "~:[~s: ~s~;~s~]~%" no-values (car args) (vs i)))
-|#
-)
-	(apply #'format t
-	       "Local variables:~#[~; none~:;~:[ ~1{~s~}~:@{, ~s~}~;~
-					  ~:@{~%  ~s: ~s~}~]~]~%"
-	       (not no-values) (car *break-env*)))
-    (apply #'format t
-	   "~#[~:;Local functions: ~@{~s~^, ~}.~%~]"
+    (format t
+	   "~:[~;Local functions: ~:*~{~s~^, ~}.~%~]"
 	   (mapcan #'(lambda (x) (and (eq (second x) 'FUNCTION) (list (car x))))
 		   (cdr *break-env*)))
-    (apply #'format t
-	   "~#[~:;Block names: ~@{~s~^, ~}.~%~]"
+    (format t
+	   "~:[~;Block names: ~:*~{~s~^, ~}.~%~]"
 	   (mapcan #'(lambda (x) (and (eq (second x) 'BLOCK) (list (car x))))
 		   (cdr *break-env*)))
-    (apply #'format t
-	   "~#[~:;Tags: ~@{~s~^, ~}.~%~]"
+    (format t
+	   "~:[~;Tags: ~:*~{~s~^, ~}.~%~]"
 	   (mapcan #'(lambda (x) (when (eq (second x) 'TAG) (list (car x))))
 		   (cdr *break-env*)))
+    (format t
+	    "Local variables:~:[ ~:[none~;~:*~{~s~1*~:@{, ~s~1*~}~}~]~;~
+				 ~:[ none~;~:*~{~%  ~s: ~s~}~]~]~%"
+	    (not no-values) (car *break-env*)))
     (values)))
-#|
-(defun tpl-vs-command (&optional x)
-  (let ((min (ihs-vs *ihs-base*))
-	(max (1- (ihs-vs (1+ *ihs-top*))))
-	y)
-    (cond ((integerp x)
-	   (if (and (>= x min) (<= x max))
-	     (vs x)
-	     (format t "Illegal value stack index.~%")))
-	  ((null x)
-	   (setq x min)
-	   (setq y max)
-	   (do ((ii *ihs-base* (1+ ii))
-		(*print-level* 2)
-		(*print-length* 4)
-		(*print-pretty* t))
-	       ((or (>= ii *ihs-top*) (>= (ihs-vs ii) x))
-		(do ((vi x (1+ vi)))
-		    ((> vi y))
-		  (do ()
-		      ((> (ihs-vs ii) vi))
-		    (when (ihs-visible ii)
-		      (print-ihs ii))
-		    (incf ii))
-		  (format t "    VS[~d]: ~s~%" vi (vs vi)))))
-	   (values))
-	  (t
-	   (format t "Argument must be a number.~%")
-	   (values)))))
 
-(defun tpl-local-command (&optional (n 0))
-  (tpl-vs-command (+ (ihs-vs *ihs-current*) n)))
-|#
 (defun tpl-bds-command (&optional var)
   (if var
     (do ((bi (1+ (frs-bds (max 0 (1- *frs-base*)))) (1+ bi))
@@ -708,23 +661,20 @@ Usage: ecls [-dir dir] [-load file] [-eval expr]
       (let ((*print-pretty* nil))	; because CLOS allows (setf foo)
 					; as function names
 	(princ "Backtrace:")
-	(do ((i *ihs-base* (1+ i))
+	(do ((i *ihs-top* (si::ihs-prev i))
 	     (b nil t))
-	    ((> i *ihs-top*))
+	    ((< i *ihs-base*))
 	  (when (ihs-visible i)
 	    (let ((*print-case* (if (= i *ihs-current*) :UPCASE :DOWNCASE)))
 	      (format t "~:[~; >~] ~S" b (ihs-fname i)))))
 	(terpri))
-      (let ((from (if (integerp n)
-		      (max (1+ (- *ihs-current* n)) *ihs-base*)
-		      *ihs-base*))
-	    (to (if (integerp n) *ihs-current* *ihs-top*)))
-	(do ((i from (1+ i))
-	     (j (or (sch-frs-base *frs-base* from) (1+ *frs-top*)))
-	     (*print-level* 2)
-	     (*print-length* 4)
-	     (*print-pretty* t))
-	    ((> i to) (values))
+      (do ((i *ihs-top* (si::ihs-prev i))
+	   (k (if (integerp n) n Cnil) (and k (1- k))))
+	  ((= k 0) (values))
+	(let ((j (or (sch-frs-base *frs-base* i) (1+ *frs-top*)))
+	      (*print-level* 2)
+	      (*print-length* 4)
+	      (*print-pretty* t))
 	  (when (ihs-visible i)
 	    (print-ihs i))
 	  (do () ((or (> j *frs-top*) (> (frs-ihs j) i)))
@@ -732,54 +682,9 @@ Usage: ecls [-dir dir] [-load file] [-eval expr]
 	    (incf j)))))
   (values))
 
-#|
-(defun print-ihs (i)
-  (format t "~:[  ~;@ ~]IHS[~d]: ~s ---> VS[~d]~%"
-	  (= i *ihs-current*) i
-	  (let ((fun (ihs-fun i)))
-	    (cond ((or (symbolp fun) (compiled-function-p fun)) fun)
-		  ((consp fun)
-		   (case (car fun)
-		     (lambda fun)
-		     (lambda-block (cdr fun))
-		     (lambda-closure (cons 'lambda (cddddr fun)))
-		     (lambda-block-closure (cddddr fun))
-		     #+clos
-		     (setf fun)
-		     (t '(:zombi))))
-		  #+clos
-		  ((sys:gfunp fun) fun)
-		  (t :zombi)))
-	  (ihs-vs i)))
-|#
-
 (defun print-frs (i)
   (format *debug-io* "    FRS[~d]: ---> IHS[~d],BDS[~d]~%"
 	  i (frs-ihs i) (frs-bds i)))
-
-#|
-(defun print-frs (i)
-  (format *debug-io* "~&    FRS[~d]: ~s ---> IHS[~d],VS[~d],BDS[~d]"
-          i (frs-kind i) (frs-ihs i) (frs-vs i) (frs-bds i)))
-
-(defun frs-kind (i &aux x)
-  (case (frs-class i)
-    (:catch
-     (if (spicep (frs-tag i))
-       (or (and (setq x (member (frs-tag i) (vs (+ (frs-vs i) 2))
-				:key #'third :test #'eq))
-		(if (eq (cadar x) 'block)
-		  `(block ,(caar x) ***)
-		  `(tagbody
-		     ,@(reverse
-			(mapcar #'car (remove (frs-tag i) x :test-not #'eq
-					      :key #'third)))
-		     ***)))
-	   `(block/tagbody ,(frs-tag i)))
-       `(catch ',(frs-tag i) ***)))
-    (:protect '(unwind-protect ***))
-    (t `(system-internal-catcher ,(frs-tag i)))))
-|#
 
 (defun break-where (&aux (fname (ihs-fname *ihs-current*)))
   (if (or (eq fname 'TOP-LEVEL) (eq fname 'BREAK-WHERE))
@@ -842,16 +747,16 @@ Usage: ecls [-dir dir] [-load file] [-eval expr]
           (t :zombi))))
 
 (defun set-current-ihs ()
-  (do ((i *ihs-current* (1- i)))
+  (do ((i *ihs-current* (si::ihs-prev i)))
       ((or (and (ihs-visible i) (setq *ihs-current* i))
 	   (<= i *ihs-base*))))
   (set-break-env))
 
 (defun set-break-env ()
-  (setq *break-env* (ihs-env *ihs-current*)))
+  (setq *break-env* (if (= *ihs-current* *ihs-top*) nil (ihs-env *ihs-current*))))
 
 (defun tpl-backward-search (string)
-  (do ((ihs (1- *ihs-current*) (1- ihs)))
+  (do ((ihs (si::ihs-prev *ihs-current*) (si::ihs-prev ihs)))
       ((< ihs *ihs-base*)
        (format *debug-io* "Search for ~a failed.~%" string))
     (when (and (ihs-visible ihs)
@@ -864,7 +769,7 @@ Usage: ecls [-dir dir] [-load file] [-eval expr]
   (values))
 
 (defun tpl-forward-search (string)
-  (do ((ihs (1+ *ihs-current*) (1+ ihs)))
+  (do ((ihs (si::ihs-next *ihs-current*) (si::ihs-next ihs)))
       ((> ihs *ihs-top*)
        (format *debug-io* "Search for ~a failed.~%" string))
     (when (and (ihs-visible ihs)

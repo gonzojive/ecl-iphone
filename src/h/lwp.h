@@ -92,10 +92,7 @@ typedef struct lpd {
   int lwp_intern_flag;
 
   /* print.d */
-  jmp_buf lwp_CIRCLEjmp;
-  cl_object *lwp_CIRCLEbase;
-  cl_object *lwp_CIRCLEtop;
-  cl_object *lwp_CIRCLElimit;
+  cl_fixnum lwp_CIRCLEbase;
   cl_object lwp_PRINTstream;
   bool lwp_PRINTescape;
   bool lwp_PRINTpretty;

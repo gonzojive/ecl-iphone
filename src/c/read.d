@@ -924,30 +924,19 @@ static
  *----------------------------------------------------------------------
  */
 
-#define INCREMENT 64
-#define ESTACK(st)	volatile int _esize = 0; cl_object *(st), *(st ## 0);
-#define ETOP(st)	(st ## 0)
-
-#define EPUSH(st, val, count) \
-    { int i; if (count == _esize) { \
-      st = (cl_object *)alloca(INCREMENT*sizeof(cl_object)); \
-      for ( i = 0; i < _esize; i++) \
-	st[i] = st ## 0[i]; \
-      (st ## 0) = st; st += _esize;\
-      _esize += INCREMENT; \
-    }; *(st)++ = (val);}
-
-
 static
 @(defun si::sharp_left_parenthesis_reader (in c d)
-	int dim, dimcount, i, a;
+	bool fixed_size;
+	cl_index dim, dimcount, i, a;
+	cl_index sp = cl_stack_index();
 	cl_object x, last;
-	ESTACK(vsp);
 @
 	if (Null(d) || READsuppress)
-		dim = -1;
-	else if (FIXNUMP(d))
-		dim = fix(d);
+		fixed_size = FALSE;
+	else {
+		fixed_size = TRUE;
+		dim = fixnnint(d);
+	}
 	if (backq_level > 0) {
 		unreadc_stream('(', in);
 		x = read_object(in);
@@ -956,7 +945,7 @@ static
 		  FEerror(",at or ,. has appeared in an illegal position.", 0);
 		if (a == QUOTE) {
 		  for (dimcount = 0;  !endp(x);  x = CDR(x), dimcount++)
-		    EPUSH(vsp, CAR(x), dimcount);
+		    cl_stack_push(CAR(x));
 		  goto L;
 		}
 		@(return list(4, siScomma, @'apply',
@@ -967,38 +956,42 @@ static
 	  x = read_object(in);
 	  if (x == OBJNULL)
 	    break;
-	  EPUSH(vsp, x, dimcount);
+	  cl_stack_push(x);
 	}
 L:
-	if (dim >= 0) {
+	if (fixed_size) {
 		if (dimcount > dim)
 			FEerror("Too many elements in #(...).", 0);
 		if (dimcount == 0)
 			FEerror("Cannot fill the vector #().", 0);
-		else last = vsp[-1];
+		else last = cl_stack_top[-1];
 	} else
-	  dim = dimcount;
+		dim = dimcount;
 	x = alloc_simple_vector(dim, aet_object);
 	x->vector.self.t = alloc_align(dim * sizeof(cl_object), sizeof(cl_object));
 	for (i = 0; i < dim; i++)
-		x->vector.self.t[i] = (i < dimcount) ? ETOP(vsp)[i] : last;
+		x->vector.self.t[i] = (i < dimcount) ? cl_stack[sp+i] : last;
+	cl_stack_pop_n(dimcount);
 	@(return x)
 @)
 
 static
 @(defun si::sharp_asterisk_reader (in c d)
-	int dim, dimcount, i;
+	bool fixed_size;
+	cl_index dim, dimcount, i;
+	cl_index sp = cl_stack_index();
 	cl_object x, last, elt;
-	ESTACK(vsp);
 @
 	if (READsuppress) {
 		read_constituent(in);
 		@(return Cnil)
 	}
 	if (Null(d))
-		dim = -1;
-	else if (FIXNUMP(d))
-		dim = fix(d);
+		fixed_size = FALSE;
+	else {
+		dim = fixnnint(d);
+		fixed_size = TRUE;
+	}
 	for (dimcount = 0 ;; dimcount++) {
 		if (stream_at_end(in))
 			break;
@@ -1007,27 +1000,27 @@ static
 			unread_char(x, in);
 			break;
 		}
-		EPUSH(vsp, x, dimcount);
+		cl_stack_push(x);
 	}	
-	if (dim >= 0) {
+	if (fixed_size) {
 		if (dimcount > dim)
 			FEerror("Too many elements in #*....", 0);
 		if (dimcount == 0)
 			FEerror("Cannot fill the bit-vector #*.", 0);
-		else last = vsp[-1];
+		else last = cl_stack_top[-1];
 	} else {
-	  dim = dimcount;	/* Beppe ? */
-	  last = MAKE_FIXNUM(0);
+		dim = dimcount;
 	}
 	x = alloc_simple_bitvector(dim);
 	x->vector.self.bit = alloc_atomic((dim + CHAR_BIT - 1)/CHAR_BIT);
 	for (i = 0; i < dim; i++) {
-		elt = (i < dimcount) ? ETOP(vsp)[i] : last;
+		elt = (i < dimcount) ? cl_stack[sp+i] : last;
 		if (char_code(elt) == '0')
 			x->vector.self.bit[i/CHAR_BIT] &= ~(0200 >> i%CHAR_BIT);
 		else
 			x->vector.self.bit[i/CHAR_BIT] |= 0200 >> i%CHAR_BIT;
-		}
+	}
+	cl_stack_pop_n(dimcount);
 	@(return x)
 @)
 

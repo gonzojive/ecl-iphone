@@ -33,25 +33,41 @@ cl_object @'&aux';
 
 cl_object @':allow-other-keys';
 
-cl_object bytecodes;
-int lexical_level;
+typedef struct {
+	cl_object variables;
+	cl_object macros;
+	cl_fixnum lexical_level;
+#ifdef CL_COMP_OWN_STACK
+	cl_object bytecodes;
+#endif
+} cl_compiler_env;
+
+static cl_compiler_env c_env;
 
 /********************* PRIVATE ********************/
 
-static cl_index asm_begin(void);
-static cl_object asm_end(cl_index);
-static void asm_clear(cl_index);
-static void asm_grow(void);
-static void asm1(register cl_object op);
-static void asm_op(register int n);
-static void asm_list(register cl_object l);
-static void asmn(int narg, ...);
-static void asm_at(register cl_index where, register cl_object what);
-static cl_index asm_jmp(register int op);
-static void asm_complete(register int op, register cl_index original);
+#ifdef CL_COMP_OWN_STACK
 static cl_index current_pc();
 static void set_pc(cl_index pc);
 static cl_object asm_ref(register cl_index where);
+static cl_index asm_begin(void);
+static void asm_clear(cl_index);
+static void asm1(register cl_object op);
+static void asm_at(register cl_index where, register cl_object what);
+#else
+#define asm_begin() cl_stack_index()
+#define asm_clear(h) cl_stack_set_index(h)
+#define current_pc() cl_stack_index()
+#define set_pc(n) cl_stack_set_index(n)
+#define asm1(o) cl_stack_push(o)
+#define asm_ref(n) cl_stack[n]
+#define asm_at(n,o) cl_stack[n] = o
+#endif
+#define asm_op(n) asm1(MAKE_FIXNUM(n))
+static cl_object asm_end(cl_index handle, cl_object bytecodes);
+static void asm_list(register cl_object l);
+static cl_index asm_jmp(register int op);
+static void asm_complete(register int op, register cl_index original);
 
 static void c_and(cl_object args);
 static void c_block(cl_object args);
@@ -123,6 +139,17 @@ pop_maybe_nil(cl_object *l) {
 
 /* ------------------------------ ASSEMBLER ------------------------------ */
 
+#ifdef CL_COMP_OWN_STACK
+static cl_object
+alloc_bytecodes()
+{
+	cl_object vector = alloc_simple_vector(128, aet_object);
+	array_allocself(vector);
+	vector->vector.hasfillp = TRUE;
+	vector->vector.fillp = 0;
+	return vector;
+}
+
 static cl_index
 asm_begin(void) {
 	/* Save beginning of bytecodes for this session */
@@ -133,51 +160,82 @@ static void
 asm_clear(cl_index beginning) {
 	cl_index i;
 	/* Remove data from this session */
-	bytecodes->vector.fillp = beginning;
+	c_env.bytecodes->vector.fillp = beginning;
+}
+
+static void
+asm_grow(void) {
+	cl_object *old_data = c_env.bytecodes->vector.self.t;
+	cl_index old_size = c_env.bytecodes->vector.fillp;
+	c_env.bytecodes->vector.dim += 128;
+	array_allocself(c_env.bytecodes);
+	memcpy(c_env.bytecodes->vector.self.t, old_data, old_size*sizeof(cl_object));
+}
+
+static void
+asm1(register cl_object op) {
+	int where = c_env.bytecodes->vector.fillp;
+	if (where >= c_env.bytecodes->vector.dim)
+		asm_grow();
+	c_env.bytecodes->vector.self.t[where] = op;
+	c_env.bytecodes->vector.fillp++;
+}
+
+static void
+asm_at(register cl_index where, register cl_object what) {
+	if (where > c_env.bytecodes->vector.fillp)
+		FEprogram_error("Internal error at asm_at()",0);
+	c_env.bytecodes->vector.self.t[where] = what;
+}
+
+static cl_index
+current_pc(void) {
+	return c_env.bytecodes->vector.fillp;
+}
+
+static void
+set_pc(cl_index pc) {
+	c_env.bytecodes->vector.fillp = pc;
 }
 
 static cl_object
-asm_end(cl_index beginning) {
+asm_ref(register cl_index n) {
+	return c_env.bytecodes->vector.self.t[n];
+}
+#endif /* CL_COMP_OWN_STACK */
+
+static cl_object
+asm_end(cl_index beginning, cl_object bytecodes) {
 	cl_object new_bytecodes;
 	cl_index length, bytes, i;
 
 	/* Save bytecodes from this session in a new vector */
 	length = current_pc() - beginning;
 	bytes = length * sizeof(cl_object);
-	new_bytecodes = alloc_object(t_bytecodes);
+	if (!Null(bytecodes))
+		new_bytecodes = bytecodes;
+	else {
+		new_bytecodes = alloc_object(t_bytecodes);
+		new_bytecodes->bytecodes.size = 0;
+	}
 	new_bytecodes->bytecodes.lex = Cnil;
-	new_bytecodes->bytecodes.data = alloc(bytes);
-	new_bytecodes->bytecodes.size = length;
+	if (new_bytecodes->bytecodes.size < length) {
+		new_bytecodes->bytecodes.data = alloc(bytes);
+		new_bytecodes->bytecodes.size = length;
+	}
+#ifdef CL_COMP_OWN_STACK
 	memcpy(new_bytecodes->bytecodes.data,
-	       &bytecodes->vector.self.t[beginning],
+	       &c_env.bytecodes->vector.self.t[beginning],
 	       bytes);
-
+#else
+	memcpy(new_bytecodes->bytecodes.data,
+	       &cl_stack[beginning],
+	       bytes);
+#endif	
 	asm_clear(beginning);
 	return new_bytecodes;
 }
 
-static void
-asm_grow(void) {
-	cl_object *old_data = bytecodes->vector.self.t;
-	cl_index old_size = bytecodes->vector.fillp;
-	bytecodes->vector.dim += 128;
-	array_allocself(bytecodes);
-	memcpy(bytecodes->vector.self.t, old_data, old_size*sizeof(cl_object));
-}
-
-static void
-asm1(register cl_object op) {
-	int where = bytecodes->vector.fillp;
-	if (where >= bytecodes->vector.dim)
-		asm_grow();
-	bytecodes->vector.self.t[where] = op;
-	bytecodes->vector.fillp++;
-}
-
-static void
-asm_op(register int n) {
-	asm1(MAKE_FIXNUM(n));
-}
 
 static void
 asm_op2(register int code, register cl_fixnum n) {
@@ -189,34 +247,6 @@ asm_op2(register int code, register cl_fixnum n) {
 		asm1(new_op);
 }
 
-static inline cl_object
-make_op(int code) {
-	return MAKE_FIXNUM(code);
-}
-
-static cl_object
-make_op2(int code, cl_fixnum n) {
-	cl_object volatile op = MAKE_FIXNUM(code);
-	cl_object new_op = SET_OPARG(op, n);
-	if (n < -MAX_OPARG || MAX_OPARG < n)
-		FEprogram_error("Argument to bytecode is too large", 0);
-	return new_op;
-}
-
-static void
-asm_insert(cl_fixnum where, cl_object op) {
-	cl_fixnum end = bytecodes->vector.fillp;
-	if (where > end)
-		FEprogram_error("asm1_insert: position out of range", 0);
-	if (end >= bytecodes->vector.dim)
-		asm_grow();
-	memmove(&bytecodes->vector.self.t[where+1],
-		&bytecodes->vector.self.t[where],
-		(end - where) * sizeof(cl_object));
-	bytecodes->vector.fillp++;
-	bytecodes->vector.self.t[where] = op;
-}
-
 static void
 asm_list(register cl_object l) {
 	if (ATOM(l))
@@ -226,30 +256,6 @@ asm_list(register cl_object l) {
 		l = CDR(l);
 	}
 }
-
-static void
-asmn(int narg, ...) {
-	va_list args;
-
-	va_start(args, narg);
-	while (narg-- > 0)
-		asm1(va_arg(args, cl_object));
-}
-
-static void
-asm_at(register cl_index where, register cl_object what) {
-	if (where > bytecodes->vector.fillp)
-		FEprogram_error("Internal error at asm_at()",0);
-	bytecodes->vector.self.t[where] = what;
-}
-
-static cl_index
-asm_block(void) {
-	cl_index output;
-	output = current_pc();
-	asm1(MAKE_FIXNUM(0));
-	return output;
-}	
 
 static cl_index
 asm_jmp(register int op) {
@@ -269,21 +275,6 @@ asm_complete(register int op, register cl_index original) {
 		FEprogram_error("Too large jump", 0);
 	else
 		asm_at(original, new_code);
-}
-
-static cl_index
-current_pc(void) {
-	return bytecodes->vector.fillp;
-}
-
-static void
-set_pc(cl_index pc) {
-	bytecodes->vector.fillp = pc;
-}
-
-static cl_object
-asm_ref(register cl_index n) {
-	return bytecodes->vector.self.t[n];
 }
 
 /* ------------------------------ COMPILER ------------------------------ */
@@ -353,9 +344,61 @@ FEill_formed_input()
 }
 
 static void
+c_new_env()
+{
+	c_env.variables = Cnil;
+	c_env.macros = Cnil;
+	c_env.lexical_level = 0;
+}
+
+static cl_object
+c_macro_expand1(cl_object stmt)
+{
+	return macro_expand1(stmt, CONS(c_env.variables, c_env.macros));
+}
+
+void
+c_register_symbol_macro(cl_object name, cl_object exp_fun)
+{
+	c_env.variables = CONS(list(3, name, @'si::symbol-macro', exp_fun),
+			       c_env.variables);
+}
+
+void
+c_register_macro(cl_object name, cl_object exp_fun)
+{
+	c_env.macros = CONS(list(3, name, @'macro', exp_fun), c_env.macros);
+}
+
+static void
 c_register_var(register cl_object var, bool special)
 {
-	CAR(lex_env) = CONS(CONS(var, special? @'special' : Cnil), CAR(lex_env));
+	c_env.variables = CONS(list(2, var, special? @'special' : Cnil),
+			       c_env.variables);
+}
+
+static cl_fixnum
+c_var_ref(cl_object var)
+{
+	cl_fixnum n = 0;
+	cl_object l;
+	for (l = c_env.variables; CONSP(l); l = CDR(l)) {
+		cl_object record = CAR(l);
+		cl_object name = CAR(record);
+		cl_object special = CADR(record);
+		if (name != var) {
+			/* Symbol not yet found. Only count locals. */
+			n++;
+		} else if (special == @'si::symbol-macro') {
+			/* We should never get here. The variable should have
+			   been macro expanded. */
+			FEerror("Internal error: symbol macro ~S used as variable",
+				1, var);
+		} else {
+			return Null(special)? n : -1;
+		}
+	}
+	return -1;
 }
 
 static bool
@@ -397,13 +440,13 @@ c_bind(cl_object var, cl_object specials)
 static void
 compile_setq(int op, cl_object var)
 {
-	cl_object ndx;
+	cl_fixnum ndx;
 
 	if (!SYMBOLP(var))
 		FEillegal_variable_name(var);
-	ndx = lex_var_sch(var);
-	if (!Null(ndx) && CDR(ndx) != @'special')
-		asm_op(op); /* Lexical variable */
+	ndx = c_var_ref(var);
+	if (ndx >= 0)
+		asm_op2(op, ndx); /* Lexical variable */
 	else if (var->symbol.stype == stp_constant)
 		FEassignment_to_constant(var);
 	else if (op == OP_SETQ)
@@ -688,8 +731,7 @@ c_do_doa(int op, cl_object args) {
 	cl_object bindings, test, specials, body, l;
 	cl_object stepping = Cnil, vars = Cnil;
 	cl_index labelb, labelt, labelz;
-	cl_object lex_old = lex_env;
-	lex_copy();
+	cl_object old_variables = c_env.variables;
 
 	bindings = pop(&args);
 	test = pop(&args);
@@ -767,7 +809,7 @@ c_do_doa(int op, cl_object args) {
 	/* Compile return point of block */
 	asm_complete(OP_DO, labelz);
 
-	lex_env = lex_old;
+	c_env.variables = old_variables;
 }
 
 
@@ -809,8 +851,7 @@ c_dolist_dotimes(int op, cl_object args) {
 	cl_object list = pop(&head);
 	cl_object specials, body;
 	cl_index labelz, labelo;
-	cl_object lex_old = lex_env;
-	lex_copy();
+	cl_object old_variables = c_env.variables;
 
 	@si::process-declarations(1, args);
 	body = VALUES(1);
@@ -848,7 +889,7 @@ c_dolist_dotimes(int op, cl_object args) {
 	/* Exit point for block */
 	asm_complete(op, labelz);
 
-	lex_env = lex_old;
+	c_env.variables = old_variables;
 }
 
 
@@ -889,8 +930,6 @@ static void
 c_labels_flet(int op, cl_object args) {
 	cl_object def_list = pop(&args);
 	int nfun = length(def_list);
-	cl_object lex_old = lex_env;
-	lex_copy();
 
 	/* Remove declarations */
 	@si::process-declarations(1, args);
@@ -907,8 +946,6 @@ c_labels_flet(int op, cl_object args) {
 	} while (!endp(def_list));
 	compile_body(args);
 	asm_op(OP_EXIT);
-
-	lex_env = lex_old;
 }
 
 
@@ -1037,8 +1074,7 @@ c_labels(cl_object args) {
 static void
 c_let_leta(int op, cl_object args) {
 	cl_object bindings, specials, body, l, vars;
-	cl_object lex_old = lex_env;
-	lex_copy();
+	cl_object old_variables = c_env.variables;
 
 	bindings = car(args);
 	@si::process-declarations(1, CDR(args));
@@ -1080,7 +1116,7 @@ c_let_leta(int op, cl_object args) {
 	compile_body(body);
 	asm_op(OP_EXIT);
 
-	lex_env = lex_old;
+	c_env.variables = old_variables;
 }
 
 static void
@@ -1114,8 +1150,7 @@ c_macrolet(cl_object args)
 {
 	cl_object def_list, def, name;
 	int nfun = 0;
-	cl_object lex_old = lex_env;
-	lex_copy();
+	cl_object old_macros = c_env.macros;
 
 	/* Pop the list of definitions */
 	for (def_list = pop(&args); !endp(def_list); ) {
@@ -1126,10 +1161,10 @@ c_macrolet(cl_object args)
 		macro = funcall(4, @'si::expand-defmacro', name, arglist,
 				definition);
 		function = make_lambda(name, CDR(macro));
-		lex_macro_bind(name, function);
+		c_register_macro(name, function);
 	}
 	compile_body(args);
-	lex_env = lex_old;
+	c_env.macros = old_macros;
 }
 
 
@@ -1138,8 +1173,7 @@ c_multiple_value_bind(cl_object args)
 {
 	cl_object vars, value, body, specials;
 	cl_index save_pc, n;
-	cl_object lex_old = lex_env;
-	lex_copy();
+	cl_object old_variables = c_env.variables;
 
 	vars = pop(&args);
 	value = pop(&args);
@@ -1168,7 +1202,7 @@ c_multiple_value_bind(cl_object args)
 		compile_body(body);
 		asm_op(OP_EXIT);
 	}
-	lex_env = lex_old;
+	c_env.variables = old_variables;
 }
 
 
@@ -1217,7 +1251,7 @@ c_multiple_value_setq(cl_object args) {
 		cl_object aux, v = pop(&orig_vars);
 		if (!SYMBOLP(v))
 			FEillegal_variable_name(v);
-		v = macro_expand1(v, lex_env);
+		v = c_macro_expand1(v);
 		if (!SYMBOLP(v)) {
 			aux = v;
 			v = @gensym(0);
@@ -1250,11 +1284,12 @@ c_multiple_value_setq(cl_object args) {
 	asm_op2(OP_MSETQ, nvars);
 	vars = reverse(vars);
 	while (nvars--) {
-		cl_object ndx, var = pop(&vars);
+		cl_object var = pop(&vars);
+		cl_fixnum ndx;
 		if (!SYMBOLP(var))
 			FEillegal_variable_name(var);
-		ndx = lex_var_sch(var);
-		if (!Null(ndx) && CDR(ndx) != @'special')
+		ndx = c_var_ref(var);
+		if (ndx >= 0)
 			asm1(var); /* Lexical variable */
 		else if (var->symbol.stype == stp_constant)
 			FEassignment_to_constant(var);
@@ -1291,7 +1326,7 @@ c_nth_value(cl_object args) {
 static void
 c_or(cl_object args) {
 	if (Null(args)) {
-		asm1(Cnil);
+		compile_form(Cnil, FALSE);
 		return;
 	} else if (ATOM(args)) {
 		FEill_formed_input();
@@ -1376,7 +1411,7 @@ c_psetq(cl_object old_args) {
 		cl_object value = pop(&old_args);
 		if (!SYMBOLP(var))
 			FEillegal_variable_name(var);
-		var = macro_expand1(var, lex_env);
+		var = c_macro_expand1(var);
 		if (!SYMBOLP(var))
 			use_psetf = TRUE;
 		args = CONS(var, CONS(value, args));
@@ -1439,7 +1474,7 @@ c_setq(cl_object args) {
 		cl_object value = pop(&args);
 		if (!SYMBOLP(var))
 			FEillegal_variable_name(var);
-		var = macro_expand1(var, lex_env);
+		var = c_macro_expand1(var);
 		if (SYMBOLP(var)) {
 			compile_form(value, FALSE);
 			compile_setq(OP_SETQ, var);
@@ -1454,12 +1489,8 @@ static void
 c_symbol_macrolet(cl_object args)
 {
 	cl_object def_list, def, name, specials, body;
-	cl_object lex_old = lex_env;
+	cl_object old_variables = c_env.variables;
 	int nfun = 0;
-
-	/* Set a new lexical environment where we will bind
-	   our macrology */
-	lex_copy();
 
 	def_list = pop(&args);
 	@si::process-declarations(1,args);
@@ -1478,10 +1509,10 @@ c_symbol_macrolet(cl_object args)
 declared special and appear in a symbol-macrolet.", 1, name);
 		definition = list(2, arglist, list(2, @'quote', expansion));
 		function = make_lambda(name, definition);
-		lex_symbol_macro_bind(name, function);
+		c_register_symbol_macro(name, function);
 	}
 	compile_body(body);
-	lex_env = lex_old;
+	c_env.variables = old_variables;
 }
 
 static void
@@ -1490,7 +1521,7 @@ c_tagbody(cl_object args)
 	cl_fixnum tag_base;
 	cl_object label, body;
 	enum type item_type;
-	int nt;
+	int nt, i;
 
 	/* count the tags */
 	for (nt = 0, body = args; !endp(body); body = CDR(body)) {
@@ -1508,7 +1539,8 @@ c_tagbody(cl_object args)
 	}
 	asm_op2(OP_TAGBODY, nt);
 	tag_base = current_pc();
-	set_pc(tag_base + 2 * nt);
+	for (i = 2*nt; i; i--)
+		asm1(Cnil);
 
 	for (body = args; !endp(body); body = CDR(body)) {
 		label = CAR(body);
@@ -1559,7 +1591,7 @@ c_unless(cl_object form) {
 	asm_complete(OP_JT, label_true);
 
 	/* When test failed, output NIL */
-	asm1(Cnil);
+	compile_form(Cnil, FALSE);
 	asm_complete(OP_JMP, label_false);
 }
 
@@ -1623,19 +1655,25 @@ compile_form(cl_object stmt, bool push) {
 	 */
 	if (ATOM(stmt)) {
 		if (SYMBOLP(stmt)) {
-			cl_object stmt1 = macro_expand1(stmt, lex_env);
+			cl_object stmt1 = c_macro_expand1(stmt);
+			cl_fixnum index;
 			if (stmt1 != stmt) {
 				stmt = stmt1;
 				goto BEGIN;
 			}
-			if (push) asm_op(OP_PUSHV);
+			index = c_var_ref(stmt);
+			if (index >= 0) {
+				asm_op2(push? OP_PUSHV : OP_VAR, index);
+			} else {
+				asm_op(push? OP_PUSHVS : OP_VARS);
+			}
 			asm1(stmt);
 			goto OUTPUT;
 		}
 	QUOTED:
 		if (push)
 			asm_op(OP_PUSHQ);
-		else if (FIXNUMP(stmt) || SYMBOLP(stmt))
+		else if (FIXNUMP(stmt))
 			asm_op(OP_QUOTE);
 		asm1(stmt);
 		goto OUTPUT;
@@ -1660,7 +1698,7 @@ compile_form(cl_object stmt, bool push) {
 	}
 	for (l = database; l->symbol != OBJNULL; l++)
 		if (l->symbol == function) {
-			lexical_level += l->lexical_increment;
+			c_env.lexical_level += l->lexical_increment;
 			(*(l->compiler))(CDR(stmt));
 			if (push) asm_op(OP_PUSH);
 			goto OUTPUT;
@@ -1669,7 +1707,7 @@ compile_form(cl_object stmt, bool push) {
 	 * Next try to macroexpand
 	 */
 	{
-		cl_object new_stmt = macro_expand1(stmt, lex_env);
+		cl_object new_stmt = c_macro_expand1(stmt);
 		if (new_stmt != stmt){
 			stmt = new_stmt;
 			goto BEGIN;
@@ -1689,15 +1727,17 @@ for special form ~S.", 1, function);
 
 static void
 compile_body(cl_object body) {
-	if (lexical_level == 0 && !endp(body)) {
+	if (c_env.lexical_level == 0 && !endp(body)) {
 		while (!endp(CDR(body))) {
 			cl_index handle = asm_begin();
+			cl_object bytecodes;
 			compile_form(CAR(body), FALSE);
 			asm_op(OP_EXIT);
 			asm_op(OP_HALT);
 			VALUES(0) = Cnil;
 			NValues = 0;
-			interpret(&bytecodes->vector.self.t[handle]);
+			bytecodes = asm_end(handle, Cnil);
+			interpret(bytecodes->bytecodes.data);
 			asm_clear(handle);
 			body = CDR(body);
 		}
@@ -2011,11 +2051,9 @@ make_lambda(cl_object name, cl_object lambda) {
 	cl_index specials_pc, opts_pc, keys_pc, label;
 	int nopts, nkeys;
 	cl_index handle;
-	cl_object lex_old = lex_env;
-	int old_lexical_level = lexical_level;
+	cl_compiler_env old_c_env = c_env;
 
-	lex_copy();
-	lexical_level++;
+	c_env.lexical_level++;
 
 	reqs = @si::process-lambda-list(1,lambda);
 	opts = VALUES(1);
@@ -2052,7 +2090,8 @@ make_lambda(cl_object name, cl_object lambda) {
 	keys_pc = current_pc()+1;	/* Keyword arguments */
 	nkeys = fix(CAR(keys));
 	asm_list(keys);
-	asmn(2, doc, decl);
+	asm1(doc);
+	asm1(decl);
 
 	label = asm_jmp(OP_JMP);
 
@@ -2085,84 +2124,67 @@ make_lambda(cl_object name, cl_object lambda) {
 	compile_body(body);
 	asm_op(OP_HALT);
 
-	lexical_level = old_lexical_level;
-	lex_env = lex_old;
+	c_env = old_c_env;
 
-	return asm_end(handle);
-}
-
-static cl_object
-alloc_bytecodes()
-{
-	cl_object vector = alloc_simple_vector(128, aet_object);
-	array_allocself(vector);
-	vector->vector.hasfillp = TRUE;
-	vector->vector.fillp = 0;
-	return vector;
+	return asm_end(handle, Cnil);
 }
 
 @(defun si::make_lambda (name rest)
-	cl_object lambda, old_bytecodes = bytecodes;
-	cl_object lex_old = lex_env;
+	cl_object lambda;
+	cl_compiler_env old_c_env = c_env;
 @
-	lex_new();
+	c_new_env();
 	if (frs_push(FRS_PROTECT, Cnil)) {
-		lex_env = lex_old;
-		bytecodes = old_bytecodes;
+		c_env = old_c_env;
 		frs_pop();
 		unwind(nlj_fr, nlj_tag);
 	}
-	bytecodes = alloc_bytecodes();
 	lambda = make_lambda(name,rest);
 	frs_pop();
-	bytecodes = old_bytecodes;
-	lex_env = lex_old;
+	c_env = old_c_env;
 	@(return lambda)
 @)
 
 cl_object
 eval(cl_object form, cl_object *new_bytecodes, cl_object env)
 {
-	cl_object old_bytecodes = bytecodes;
-	int old_lexical_level = lexical_level;
-	cl_object lex_old = lex_env;
+	cl_compiler_env old_c_env = c_env;
+	cl_object bytecodes, lex_old = lex_env;
 	cl_index handle;
 	bool unwinding;
 
-	if (new_bytecodes == NULL)
-		bytecodes = alloc_bytecodes();
-	else if (*new_bytecodes != Cnil) {
-		bytecodes = *new_bytecodes;
-	} else {
-		bytecodes = *new_bytecodes = alloc_bytecodes();
-	}
+	c_new_env();
 	if (Null(env)) {
 		lex_new();
-		lexical_level = 0;
+		c_env.lexical_level = 0;
 	} else {
-		lexical_level = 1;
+		c_env.lexical_level = 1;
 		lex_env = env;
 		lex_copy();
 	}
+	handle = asm_begin();
 	if (frs_push(FRS_PROTECT, Cnil)) {
+		asm_clear(handle);
 		lex_env = lex_old;
-		bytecodes = old_bytecodes;
-		lexical_level = old_lexical_level;
+		c_env = old_c_env;
 		frs_pop();
 		unwind(nlj_fr, nlj_tag);
 	}
-	handle = asm_begin();
 	compile_form(form, FALSE);
 	asm_op(OP_EXIT);
 	asm_op(OP_HALT);
 	VALUES(0) = Cnil;
 	NValues = 0;
-	interpret(&bytecodes->vector.self.t[handle]);
-	asm_clear(handle);
+	if (new_bytecodes == NULL)
+		bytecodes = asm_end(handle, Cnil);
+	else {
+		bytecodes = asm_end(handle, *new_bytecodes);
+		*new_bytecodes = bytecodes;
+	}
+	interpret(bytecodes->bytecodes.data);
 	frs_pop();
 	lex_env = lex_old;
-	bytecodes = old_bytecodes;
-	lexical_level = old_lexical_level;
+	c_env = old_c_env;
 	return VALUES(0);
 }
 
@@ -2171,8 +2193,12 @@ init_compiler(void)
 {
 	compiler_record *l;
 
-	register_root(&bytecodes);
-
+	register_root(&c_env.variables);
+	register_root(&c_env.macros);
+#ifdef CL_COMP_OWN_STACK
+	register_root(&c_env.bytecodes);
+	c_env.bytecodes = alloc_bytecodes();
+#endif
 	for (l = database; l->name[0] != 0; l++)
 	  l->symbol = _intern(l->name, lisp_package);
 }

@@ -114,10 +114,7 @@ make_pd()
   npd->lwp_cs_limit = npd->lwp_cs_org + STACK_SIZE;
 #endif    
   /* invocation history stack */
-  npd->lwp_ihssize = IHSSIZE + 2*IHSGETA;
-  npd->lwp_ihsorg = malloc(npd->lwp_ihssize * sizeof(*npd->lwp_ihsorg));
-  npd->lwp_ihstop = npd->lwp_ihsorg-1;
-  npd->lwp_ihslimit = &npd->lwp_ihsorg[npd->lwp_ihssize - 2*IHSGETA];
+  npd->lwp_ihstop = 0
   /* frame stack */
   npd->lwp_frs_size = FRSSIZE + 2*FRSGETA;
   npd->lwp_frs_org = malloc(npd->lwp_frs_size * sizeof(*npd->lwp_frs_org));

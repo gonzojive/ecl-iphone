@@ -102,7 +102,6 @@ main(int argc, char **argv)
 		  NULL); /* geometry */
 	}
 #endif
-	ihs_push(_intern("TOP-LEVEL", system_package), Cnil);
 	funcall(1, @'si::top-level');
 	return(0);
 }

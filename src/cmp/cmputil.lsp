@@ -161,7 +161,7 @@
    (let*
      #-:CCL
      ((sys::*ihs-base* sys::*ihs-top*)
-      (sys::*ihs-top* (1- (sys::ihs-top)))
+      (sys::*ihs-top* (sys::ihs-top 'cmp-toplevel-eval))
       (*break-enable* *compiler-break-enable*)
       (sys::*break-hidden-packages*
        (cons (find-package 'compiler)

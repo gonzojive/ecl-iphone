@@ -261,7 +261,7 @@
 #-clcs
 (CERROR (T T *) T nil nil)
 
-(si::IHS-TOP)
+(si::IHS-TOP (T) T)
 (si::IHS-FUN)
 (si::IHS-ENV)
 (si::FRS-TOP)

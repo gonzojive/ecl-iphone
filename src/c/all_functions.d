@@ -712,6 +712,8 @@ const struct function_info all_functions[] = {
 	{"IHS-TOP", siLihs_top, si},
 	{"IHS-FUN", siLihs_fun, si},
 	{"IHS-ENV", siLihs_env, si},
+	{"IHS-NEXT", siLihs_next, si},
+	{"IHS-PREV", siLihs_prev, si},
 	{"FRS-TOP", siLfrs_top, si},
 	{"FRS-BDS", siLfrs_bds, si},
 	{"FRS-CLASS", siLfrs_class, si},
