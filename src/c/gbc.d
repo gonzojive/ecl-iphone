@@ -34,33 +34,14 @@ int gc_time;			/* Beppe */
 
 static int	*mark_table;
 
-#define MTbit(x)	(((((int)(char*)x) >> 2) & 0x1f))
-#define MTword(x)	mark_table[((int)(char*)x - DATA_START) >> 7]
-#if 1
+#define MTbit(x)	((ptr2int(x) >> 2) & 0x1f)
+#define MTword(x)	mark_table[((cl_ptr)x - heap_start) >> 7]
 #define get_mark_bit(x) (MTword(x) >> MTbit(x) & 1)
 #define set_mark_bit(x) (MTword(x) |= (1 << MTbit(x)))
 #define clear_mark_bit(x) (MTword(x) ~= (~1 << MTbit(x)))
-#else /* !__GNUC__ */
-static void inline
-set_mark_bit(int *x) {
-	int w = (int)x;
-	int m = (w - DATA_START) >> 7;
-	int i = (w >> 2) & 0x1f;
-	mark_table[m] |= (1 << i);
-}
-static int inline
-get_mark_bit(int *x) {
-	int w = (int)x;
-	int m = (w - DATA_START) >> 7;
-	int i = (w >> 2) & 0x1f;
-	return (mark_table[m] >> i) & 1;
-}
-#endif /* __GNUC__ */
 
-
-#define	inheap(pp)	((unsigned long)(pp) < (unsigned long)heap_end)
 #define VALID_DATA_ADDRESS(pp) \
-  !IMMEDIATE(pp) && (cl_index)DATA_START <= (cl_index)(pp) && (cl_index)(pp) < (cl_index)heap_end
+  (!IMMEDIATE(pp) && (heap_start <= (cl_ptr)(pp)) && ((cl_ptr)(pp) < heap_end))
 
 static bool	debug = FALSE;
 static int	maxpage;
@@ -76,7 +57,7 @@ static bool	collect_blocks;
  */
 
 static void _mark_object (cl_object x);
-static void _mark_contblock (void *p, size_t s);
+static void _mark_contblock (void *p, cl_index s);
 extern void sigint (void);
 
 void
@@ -122,9 +103,9 @@ register_root(cl_object *p)
 static void
 _mark_object(cl_object x)
 {
-	size_t i, j;
+	cl_index i, j;
 	cl_object *p, y;
-	char *cp;
+	cl_ptr cp;
 
 	cs_check(x);
 BEGIN:
@@ -151,8 +132,8 @@ BEGIN:
 		     we don't have to. Besides, we use big_dim as the size
 		     of the object, because big_size might even be smaller.
 		  */
-		  char *limbs = (char *)x->big.big_limbs;
-		  size_t size = x->big.big_dim * sizeof(mp_limb_t);
+		  cl_ptr limbs = (cl_ptr)x->big.big_limbs;
+		  cl_index size = x->big.big_dim * sizeof(mp_limb_t);
 		  if (size) mark_contblock(limbs, size);
 		}
 		break;
@@ -213,7 +194,7 @@ BEGIN:
 	case t_vector:
 		if ((y = x->array.displaced) != Cnil)
 			mark_displaced(y);
-		cp = (char *)x->array.self.t;
+		cp = (cl_ptr)x->array.self.t;
 		if (cp == NULL)
 			break;
 		switch ((enum aelttype)x->array.elttype) {
@@ -326,7 +307,8 @@ BEGIN:
 	case t_readtable:
 		if (x->readtable.table == NULL)
 			break;
-		mark_contblock((char *)(x->readtable.table), RTABSIZE*sizeof(struct readtable_entry));
+		mark_contblock((cl_ptr)(x->readtable.table),
+			       RTABSIZE*sizeof(struct readtable_entry));
 		for (i = 0;  i < RTABSIZE;  i++) {
 			cl_object *p = x->readtable.table[i].dispatch_table;
 			mark_object(x->readtable.table[i].macro);
@@ -418,12 +400,12 @@ BEGIN:
 }
 
 static void
-mark_stack_conservative(int *top, int *bottom)
+mark_stack_conservative(cl_ptr bottom, cl_ptr top)
 {
   int p, m;
   cl_object x;
   struct typemanager *tm;
-  register int *j;
+  cl_ptr j;
 
   if (debug) { printf("Traversing C stack .."); fflush(stdout); }
 
@@ -432,11 +414,12 @@ mark_stack_conservative(int *top, int *bottom)
 
   if (offset) mark_stack_conservative(bottom, ((char *) top) + offset, 0);
      */
-  for (j = top ; j >= bottom ; j--) {
+  for (j = bottom ; j <= top ; j+=sizeof(cl_ptr)) {
+    cl_ptr aux = *((cl_ptr*)j);
     /* improved Beppe: */
-    if (VALID_DATA_ADDRESS(*j) && type_map[p = page(*j)] < (char)t_end) {
+    if (VALID_DATA_ADDRESS(aux) && type_map[p = page(aux)] < (char)t_end) {
       tm = tm_of((enum type)type_map[p]);
-      x = (cl_object)(*j - (*j - (int)pagetochar(p)) % tm->tm_size);
+      x = (cl_object)(aux - (aux - pagetochar(p)) % tm->tm_size);
       m = x->d.m;
       if (m != FREE && m != TRUE) {
 	if (m) {
@@ -537,11 +520,13 @@ mark_phase(void)
 	      /* If the locals of type object in a C function could be
 		 aligned other than on multiples of sizeof (char *)
 		 we would have to mark twice */
-	      
-	      if (where > cs_org)
-		mark_stack_conservative(where, cs_org);
-	      else
-		mark_stack_conservative(cs_org, where);
+#if DOWN_STACK
+	      /* if (where < cs_org) */
+	      mark_stack_conservative((cl_ptr)where, (cl_ptr)cs_org);
+#else
+	      /* if (where > cs_org) */
+	      mark_stack_conservative((cl_ptr)cs_org, (cl_ptr)where);
+#endif
 	    }
 #ifdef THREADS
 	  }
@@ -574,7 +559,7 @@ sweep_phase(void)
 {
 	register int i, j, k;
 	register cl_object x;
-	register char *p;
+	register cl_ptr p;
 	register struct typemanager *tm;
 	register cl_object f;
 
@@ -634,7 +619,7 @@ static void
 contblock_sweep_phase(void)
 {
 	register int i, j;
-	register char *s, *e, *p, *q;
+	register cl_ptr s, e, p, q;
 	register struct contblock *cbp;
 
 	cb_pointer = NULL;
@@ -781,7 +766,7 @@ gc(enum type t)
 	512 bit = 16 word
       */
       int mark_table_size = maxpage * (LISP_PAGESIZE / 32);
-      extern void resize_hole(size_t);
+      extern void resize_hole(cl_index);
 
       if (holepage < mark_table_size*sizeof(int)/LISP_PAGESIZE + 1)
 	new_holepage = mark_table_size*sizeof(int)/LISP_PAGESIZE + 1;
@@ -906,52 +891,18 @@ gc(enum type t)
  */
 
 static void
-_mark_contblock(void *x, size_t s)
+_mark_contblock(void *x, cl_index s)
 {
-	register char *p = x, *q;
+	register cl_ptr p = x, q;
 	register ptrdiff_t pg = page(p);
 
 	if (pg < 0 || (enum type)type_map[pg] != t_contiguous)
 		return;
-#if 1
 	q = p + s;
-	p = (char *)((int)p&~3);
-	q = (char *)(((int)q+3)&~3);
+	p = int2ptr(ptr2int(p) & ~3);
+	q = int2ptr(ptr2int(q + 3) & ~3);
 	for (;  p < q;  p+= 4)
 	  set_mark_bit(p);
-#elif 0
-	{
-	int bit_start = ((int)p - DATA_START) >> 2;
-	int bit_end = ((int)p + s + 3 - DATA_START) >> 2;
-	int *w = &mark_table[bit_start >> 5];
-	int b = bit_start & (32 - 1);
-	int mask = ~0 << b;
-	int bits = b + bit_end - bit_start;
-	while (bits >= 32) {
-	  *w |= mask;
-	  w++;
-	  bits -= 32;
-	  mask = ~0;
-	}
-	mask &= ~(~0 << bits);
-	*w |= mask;
-	}
-#else
-	{
-	int bit_start = ((int)p - DATA_START) >> 2;
-	int bits = ((int)p + s + 3 - DATA_START) >> 2 - bit_start;
-	int mask = 1 << bit_start & (32 - 1);
-	int *w = &mark_table[bit_start >> 5];
-	while (bits) {
-	  *w |= mask;
-	  mask <<= 1;
-	  if (!mask) {
-	    mask = 1;
-	    w++;
-	  }
-	}
-	}
-#endif
 }
 
 /*----------------------------------------------------------------------

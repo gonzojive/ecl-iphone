@@ -56,12 +56,7 @@ static struct nil3 { cl_object nil3_self[3]; } three_nils;
 cl_object
 apply(int narg, cl_object fun, cl_object *args)
 {
-	cl_object x = fun;
-
       AGAIN:
-	if (fun == OBJNULL)
-		FEundefined_function(x);
-
 	switch (type_of(fun)) {
 	case t_cfun:
 		return APPLY(narg, fun->cfun.entry, args);
@@ -72,9 +67,13 @@ apply(int narg, cl_object fun, cl_object *args)
 	case t_gfun:
 		return gcall(narg, fun, args);
 #endif
-	case t_symbol:
-		fun = SYM_FUN(fun);
+	case t_symbol: {
+		cl_object x = SYM_FUN(fun);
+		if (x == OBJNULL)
+			FEundefined_function(fun);
+		fun = x;
 		goto AGAIN;
+	}
 	case t_bytecodes:
 		return lambda_apply(narg, fun, args);
 	default:

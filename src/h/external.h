@@ -14,15 +14,15 @@ struct iterator {
 /* alloc.c */
 
 #if !defined(GBC_BOEHM)
-extern void *alloc_page(size_t n);
+extern void *alloc_page(cl_index n);
 extern cl_object alloc_object(enum type t);
 extern cl_object alloc_instance(cl_index slots);
 extern cl_object make_cons(cl_object a, cl_object d);
-extern void *alloc(size_t n);
-extern void *alloc_align(size_t size, size_t align);
+extern void *alloc(cl_index n);
+extern void *alloc_align(cl_index size, cl_index align);
 #define alloc_atomic(x) alloc(x)
 #define alloc_atomic_align(x,s) alloc_align(x,s)
-extern void dealloc(void *p, size_t s);
+extern void dealloc(void *p, cl_index s);
 extern void init_alloc(void);
 extern void init_alloc_function(void);
 #endif /* !GBC_BOEHM */
@@ -34,11 +34,11 @@ extern void init_alloc_function(void);
 extern cl_object alloc_object(enum type t);
 extern cl_object alloc_instance(cl_index slots);
 extern cl_object make_cons(cl_object a, cl_object d);
-extern void *alloc(size_t n);
-extern void *alloc_align(size_t size, size_t align);
-extern void *alloc_atomic(size_t size);
-extern void *alloc_atomic_align(size_t size, size_t align);
-extern void dealloc(void *p, size_t s);
+extern void *alloc(cl_index n);
+extern void *alloc_align(cl_index size, cl_index align);
+extern void *alloc_atomic(cl_index size);
+extern void *alloc_atomic_align(cl_index size, cl_index align);
+extern void dealloc(void *p, cl_index s);
 extern void init_alloc(void);
 #endif /* GBC_BOEHM */
 

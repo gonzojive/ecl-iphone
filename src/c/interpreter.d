@@ -324,7 +324,7 @@ search_symbol_value(register cl_object s) {
 }
 		
 static cl_object
-interpret_apply(int narg, cl_object fun, cl_object *args) {
+interpret_call(int narg, cl_object fun, cl_object *args) {
 	cl_object x;
 
  AGAIN:
@@ -349,6 +349,44 @@ interpret_apply(int narg, cl_object fun, cl_object *args) {
 	case t_symbol:
 		fun = search_symbol_function(fun);
 		goto AGAIN;
+	default:
+	}
+	FEinvalid_function(fun);
+}
+
+/* Similar to interpret_call(), but looks for symbol functions in the
+   global environment. */
+
+static cl_object
+interpret_funcall(int narg, cl_object fun, cl_object *args) {
+	cl_object x;
+
+ AGAIN:
+	switch (type_of(fun)) {
+	case t_cfun:
+		ihs_push_funcall(fun->cfun.name);
+		x = APPLY(narg, fun->cfun.entry, args);
+		ihs_pop();
+		return x;
+	case t_cclosure:
+		/* FIXME! Shouldn't we register this call somehow? */
+		return APPLY_closure(narg, fun->cclosure.entry, fun->cclosure.env, args);
+#ifdef CLOS
+	case t_gfun:
+		ihs_push_funcall(fun->gfun.name);
+		x = gcall(narg, fun, args);
+		ihs_pop();
+		return x;
+#endif
+	case t_bytecodes:
+		return lambda_apply(narg, fun, args);
+	case t_symbol: {
+		cl_object function = SYM_FUN(fun);
+		if (function == OBJNULL)
+			FEundefined_function(fun);
+		fun = function;
+		goto AGAIN;
+	}
 	default:
 	}
 	FEinvalid_function(fun);
@@ -586,7 +624,7 @@ static cl_object *
 interpret_mcall(cl_object *vector) {
 	cl_index sp = get_sp_index();
 	vector = interpret(vector);
-	VALUES(0) = interpret_apply(get_sp_index()-sp, VALUES(0), get_sp_at(sp));
+	VALUES(0) = interpret_call(get_sp_index()-sp, VALUES(0), get_sp_at(sp));
 	set_sp_index(sp);
 	return vector;
 }
@@ -714,14 +752,14 @@ interpret(cl_object *vector) {
 	case OP_CALL: {
 		cl_fixnum n = get_oparg(s);
 		cl_object name = next_code(vector);
-		VALUES(0) = interpret_apply(n, name, get_sp()-n);
+		VALUES(0) = interpret_call(n, name, get_sp()-n);
 		dec_sp_index(n);
 		break;
 	}
 	case OP_PCALL: {
 		cl_fixnum n = get_oparg(s);
 		cl_object name = next_code(vector);
-		VALUES(0) = interpret_apply(n, name, get_sp()-n);
+		VALUES(0) = interpret_call(n, name, get_sp()-n);
 		dec_sp_index(n);
 		push1(VALUES(0));
 		break;
@@ -729,14 +767,14 @@ interpret(cl_object *vector) {
 	case OP_FCALL: {
 		cl_fixnum n = get_oparg(s);
 		cl_object fun = VALUES(0);
-		VALUES(0) = interpret_apply(n, fun, get_sp()-n);
+		VALUES(0) = interpret_funcall(n, fun, get_sp()-n);
 		dec_sp_index(n);
 		break;
 	}
 	case OP_PFCALL: {
 		cl_fixnum n = get_oparg(s);
 		cl_object fun = VALUES(0);
-		VALUES(0) = interpret_apply(n, fun, get_sp()-n);
+		VALUES(0) = interpret_funcall(n, fun, get_sp()-n);
 		dec_sp_index(n);
 		push1(VALUES(0));
 		break;

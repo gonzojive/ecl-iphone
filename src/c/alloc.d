@@ -43,21 +43,21 @@
 
 /******************************* EXPORTS ******************************/
 
-size_t real_maxpage;
-size_t new_holepage;
+cl_index real_maxpage;
+cl_index new_holepage;
 char type_map[MAXPAGE];
 struct typemanager tm_table[(int)t_end];
 struct contblock *cb_pointer = NULL;
 
-size_t ncb;			/*  number of contblocks  */
-size_t ncbpage;			/*  number of contblock pages  */
-size_t maxcbpage;		/*  maximum number of contblock pages  */
-size_t cbgccount;		/*  contblock gc count  */
-size_t holepage;		/*  hole pages  */
+cl_index ncb;			/*  number of contblocks  */
+cl_index ncbpage;		/*  number of contblock pages  */
+cl_index maxcbpage;		/*  maximum number of contblock pages  */
+cl_index cbgccount;		/*  contblock gc count  */
+cl_index holepage;		/*  hole pages  */
 
-char *heap_end;			/*  heap end  */
-char *heap_start;		/*  heap start  */
-char *data_end;			/*  end of data space  */
+cl_ptr heap_end;		/*  heap end  */
+cl_ptr heap_start;		/*  heap start  */
+cl_ptr data_end;		/*  end of data space  */
 
 /******************************* ------- ******************************/
 
@@ -82,16 +82,15 @@ static cl_object malloc_list;
 */
 
 void
-resize_hole(size_t n)
+resize_hole(cl_index n)
 {
-	char *e;
-	size_t m;
+	cl_ptr e;
+	cl_index m;
 	m = (data_end - heap_end)/LISP_PAGESIZE;
 	if (n <= m)
 	  return;
 
 	/* Create the hole */
-#ifdef unix
 	e = sbrk(0);
 	if (data_end == e)
 	  n -= m;
@@ -108,16 +107,15 @@ resize_hole(size_t n)
 	}
 	if ((int)sbrk(LISP_PAGESIZE * n) < 0)
 	  error("Can't allocate.  Good-bye!");
-#endif unix
 	data_end += LISP_PAGESIZE*(n);
 	holepage += n;
 }
 
 /* Allocates n pages from the hole.  */
 void *
-alloc_page(size_t n)
+alloc_page(cl_index n)
 {
-	char *e = heap_end;
+	cl_ptr e = heap_end;
 	if (n >= holepage) {
 	  gc(t_contiguous);
 	  resize_hole(new_holepage+n);
@@ -128,10 +126,10 @@ alloc_page(size_t n)
 }
 
 static void
-add_page_to_freelist(char *p, struct typemanager *tm)
+add_page_to_freelist(cl_ptr p, struct typemanager *tm)
 { enum type t;
   cl_object x, f;
-  size_t i;
+  cl_index i;
   t = tm->tm_type;
   type_map[page(p)] = t;
   f = tm->tm_free;
@@ -152,7 +150,7 @@ alloc_object(enum type t)
 {
 	register cl_object obj;
 	register struct typemanager *tm;
-	register char *p;
+	register cl_ptr p;
 
 	switch (t) {
 	case t_fixnum:
@@ -163,10 +161,8 @@ alloc_object(enum type t)
 	}
 	
 	start_critical_section(); 
-
-ONCE_MORE:
 	tm = tm_of(t);
-
+ONCE_MORE:
 	if (interrupt_flag) {
 		interrupt_flag = FALSE;
 #ifdef unix
@@ -177,7 +173,7 @@ ONCE_MORE:
 
 	obj = tm->tm_free;
 	if (obj == OBJNULL) {
-		size_t available = available_pages();
+		cl_index available = available_pages();
 		if (tm->tm_npage >= tm->tm_maxpage)
 			goto CALL_GC;
 		if (available < 1) {
@@ -338,7 +334,6 @@ ONCE_MORE:
 #endif THREADS
 	end_critical_section();
 	return(obj);
-
 CALL_GC:
 	gc(tm->tm_type);
 	if (tm->tm_nfree != 0 &&
@@ -368,7 +363,7 @@ cl_object
 make_cons(cl_object a, cl_object d)
 {
 	register cl_object obj;
-	register char *p;
+	register cl_ptr p;
 	struct typemanager *tm=(&tm_table[(int)t_cons]);
 
 	start_critical_section(); 
@@ -438,12 +433,12 @@ alloc_instance(cl_index slots)
 }
 
 void *
-alloc(size_t n)
+alloc(cl_index n)
 {
-	register char *p;
+	register cl_ptr p;
 	register struct contblock **cbpp;
-	register size_t i;
-	register size_t m;
+	register cl_index i;
+	register cl_index m;
 	register bool g;
 	bool gg;
 
@@ -463,7 +458,7 @@ ONCE_MORE:
 	/* Use extra indirection so that cb_pointer can be updated */
 	for (cbpp = &cb_pointer; (*cbpp) != NULL; cbpp = &(*cbpp)->cb_link) 
 		if ((*cbpp)->cb_size >= n) {
-			p = (char *)(*cbpp);
+			p = (cl_ptr)(*cbpp);
 			i = (*cbpp)->cb_size - n;
 			*cbpp = (*cbpp)->cb_link;
 			--ncb;
@@ -512,7 +507,7 @@ Use ALLOCATE-CONTIGUOUS-PAGES to expand the space.",
  * sorted by increasing size.
  */
 void
-dealloc(void *p, size_t s)
+dealloc(void *p, cl_index s)
 {
 	struct contblock **cbpp, *cbp;
 
@@ -536,7 +531,7 @@ dealloc(void *p, size_t s)
  * required for the block.
  */
 void *
-alloc_align(size_t size, size_t align)
+alloc_align(cl_index size, cl_index align)
 {
 	void *output;
 	start_critical_section();
@@ -547,7 +542,7 @@ alloc_align(size_t size, size_t align)
 }
 
 static void
-init_tm(enum type t, char *name, size_t elsize, size_t maxpage)
+init_tm(enum type t, char *name, cl_index elsize, cl_index maxpage)
 {
 	int i, j;
 	struct typemanager *tm = &tm_table[(int)t];
@@ -614,15 +609,11 @@ init_alloc(void)
 	if (real_maxpage > MAXPAGE) real_maxpage = MAXPAGE;
 #endif MSDOS
 
-#ifdef unix
 	heap_end = sbrk(0);
 	i = (int)heap_end & (LISP_PAGESIZE - 1);
 	if (i)
 	  sbrk(LISP_PAGESIZE - i);
 	heap_end = heap_start = data_end = sbrk(0);
-#else
-#error "Non unix allocation scheme not defined"
-#endif unix
 
 	resize_hole(INIT_HOLEPAGE);
 	for (i = 0;  i < MAXPAGE;  i++)
@@ -693,8 +684,8 @@ t_from_type(cl_object type)
 
 @(defun si::allocate (type qty &optional (now Cnil))
 	struct typemanager *tm;
-	char *pp;
-	size_t i;
+	cl_ptr pp;
+	cl_index i;
 @
 	tm = tm_of(t_from_type(type));
 	i = fixnnint(qty);
@@ -722,8 +713,8 @@ t_from_type(cl_object type)
 @)
 
 @(defun si::alloc_contpage (qty &optional (now Cnil))
-	size_t i, m;
-	char *p;
+	cl_index i, m;
+	cl_ptr p;
 @
 	i = fixnnint(qty);
 	if (ncbpage > i)
@@ -760,7 +751,7 @@ since ~D pages are already allocated.",
 @)
 
 @(defun si::set_hole_size (size)
-	size_t i;
+	cl_index i;
 @
 	i = fixnnint(size);
 	if (i == 0 || i > available_pages() + new_holepage)

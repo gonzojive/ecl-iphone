@@ -506,6 +506,19 @@ c_call(cl_object args, bool push) {
 }
 
 static void
+c_funcall(cl_object args, bool push) {
+	cl_object name;
+	cl_index nargs;
+
+	name = pop(&args);
+	for (nargs = 0; !endp(args); nargs++) {
+		compile_form(pop(&args),TRUE);
+	}
+	compile_form(name, FALSE);
+	asm_op2(push? OP_PFCALL : OP_FCALL, nargs);
+}
+
+static void
 perform_c_case(cl_object args) {
 	cl_object test, clause, conseq;
 	cl_fixnum label1, label2;
@@ -1640,6 +1653,10 @@ compile_form(cl_object stmt, bool push) {
 			FEprogram_error("QUOTE: Too many arguments.",0);
 		stmt = CAR(stmt);
 		goto QUOTED;
+	}
+	if (function == @'funcall') {
+		c_funcall(CDR(stmt), push);
+		goto OUTPUT;
 	}
 	for (l = database; l->symbol != OBJNULL; l++)
 		if (l->symbol == function) {

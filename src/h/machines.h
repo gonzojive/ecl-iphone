@@ -156,11 +156,6 @@
 #define	LDFLAGS -Wl,--export-dynamic
 #define SHARED_LDFLAGS -shared
 #define HAVE_ISOC99
-#ifdef __ELF__
-# define DATA_START 0x8000000
-#else
-# define DATA_START 0
-#endif
 #ifndef unix
 #define unix
 #endif
@@ -174,11 +169,6 @@
 #define CLIBS -ldl
 #define LDFLAGS -Wl,--export-dynamic
 #define SHARED_LDFLAGS -shared
-#ifdef __ELF__
-# define DATA_START 0x8000000
-#else
-# error "A.out not supported in FreeBSD"
-#endif
 #define HAVE_ISOC99
 #define HAVE_POSIX
 #ifndef unix
@@ -198,11 +188,6 @@
 #ifndef unix
 # define unix
 #endif
-#ifdef __ELF__
-# define DATA_START 0x8000000
-#else
-# error "A.out not supported in NetBSD"
-#endif
 #define	BRAND "IBM-PC"
 #define	CLIBS -lcompat
 #define	LDFLAGS
@@ -210,7 +195,6 @@
 
 #ifdef	sun
 #define	IEEEFLOAT
-#define	DATA_START 0
 #define	BSD
 #define	BRAND "SUN"
 #define LDFLAGS
