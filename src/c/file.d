@@ -154,7 +154,6 @@ cl_stream_element_type(cl_object strm)
 {
 	cl_object x;
 	cl_object output = @'base-char';
-
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
@@ -165,7 +164,6 @@ BEGIN:
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
-
 	case smm_input:
 	case smm_output:
 #ifdef _MSC_VER
@@ -173,9 +171,16 @@ BEGIN:
 	case smm_output_wsock:
 #endif
 	case smm_io:
-		output = ecl_elttype_to_symbol(strm->stream.elttype);
+		if (strm->stream.char_stream_p)
+			output = @'base-char';
+		else {
+			cl_fixnum bs = strm->stream.byte_size;
+			output = strm->stream.signed_bytes?
+				@'signed-byte' : @'unsigned-byte';
+			if (bs != 8)
+				output = cl_list(2, output, MAKE_FIXNUM(bs));
+		}
 		break;
-
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		goto BEGIN;
@@ -250,6 +255,16 @@ not_an_output_stream(cl_object strm)
 }
 
 static void
+not_a_character_stream(cl_object s)
+{
+	cl_error(9, @'simple-type-error', @':format-control',
+		 make_constant_string("~A is not a character stream"),
+		 @':format-arguments', cl_list(1, s),
+		 @':expected-type', @'character',
+		 @':datum', cl_stream_element_type(s));
+}
+
+static void
 io_error(cl_object strm)
 {
 	FElibc_error("Read or write operation to stream ~S signaled an error.",
@@ -284,20 +299,22 @@ wsock_error( const char *err_msg, cl_object strm )
  */
 cl_object
 open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
-	    cl_object if_does_not_exist, cl_elttype elttype)
+	    cl_object if_does_not_exist, cl_fixnum byte_size, bool char_stream_p)
 {
 	cl_object x;
 	FILE *fp;
 	cl_object filename = si_coerce_to_filename(fn);
 	char *fname = filename->string.self;
+	bool signed_bytes;
 
-	if (elttype == aet_bit) {
-		elttype = aet_b8;
-	} else if (elttype != aet_b8 &&
-		   elttype != aet_i8 &&
-		   elttype != aet_ch) {
-		FEerror("~S is not a valid stream element type",
-			1, ecl_elttype_to_symbol(elttype));
+	if (byte_size < 0) {
+		signed_bytes = 1;
+		byte_size = -byte_size;
+	} else {
+		signed_bytes = 0;
+	}
+	if (char_stream_p && byte_size != 8) {
+		FEerror("Tried to make a character stream of byte size /= 8.",0);
 	}
 	if (smm == smm_input || smm == smm_probe) {
 		fp = fopen(fname, OPEN_R);
@@ -377,7 +394,9 @@ open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	x = cl_alloc_object(t_stream);
 	x->stream.mode = (short)smm;
 	x->stream.file = fp;
-	x->stream.elttype = elttype;
+	x->stream.char_stream_p = char_stream_p;
+	x->stream.byte_size = byte_size;
+	x->stream.signed_bytes = signed_bytes;
 	x->stream.object1 = fn;
 	x->stream.int0 = x->stream.int1 = 0;
 #if !defined(GBC_BOEHM)
@@ -492,6 +511,9 @@ make_string_input_stream(cl_object strng, cl_index istart, cl_index iend)
 	strm->stream.object1 = OBJNULL;
 	strm->stream.int0 = istart;
 	strm->stream.int1 = iend;
+	strm->stream.char_stream_p = 1;
+	strm->stream.byte_size = 8;
+	strm->stream.signed_bytes = 0;
 	return(strm);
 }
 
@@ -516,6 +538,9 @@ make_string_output_stream_from_string(cl_object s)
 	strm->stream.object1 = OBJNULL;
 	strm->stream.int0 = s->string.fillp;
 	strm->stream.int1 = 0;
+	strm->stream.char_stream_p = 1;
+	strm->stream.byte_size = 8;
+	strm->stream.signed_bytes = 0;
 	return strm;
 }
 
@@ -530,18 +555,283 @@ get_output_stream_string(cl_object strm)
 }
 
 
+/**********************************************************************
+ * BYTE INPUT/OUTPUT
+ *
+ * CLOS streams should handle byte input/output separately. For the
+ * rest of streams, we decompose each byte into octets and write them
+ * from the least significant to the most significant one.
+ */
+
+static void
+ecl_write_byte8(int c, cl_object strm)
+{
+	/*
+	 * INV: We only get streams of the following four modes.
+	 */
+	switch ((enum ecl_smmode)strm->stream.mode) {
+	case smm_output:
+	case smm_io: {
+		FILE *fp = strm->stream.file;
+		if (fp == NULL)
+			wrong_file_handler(strm);
+		if (putc(c, fp) == EOF)
+			io_error(strm);
+		break;
+	}
+#ifdef _MSC_VER
+	case smm_output_wsock: {
+		int fp = (int)strm->stream.file;
+		if ( fp == INVALID_SOCKET )
+			wrong_file_handler( strm );
+		else
+		{
+			char ch = ( char )c;
+			if ( send( fp, &ch, 1, 0 ) == SOCKET_ERROR )
+				wsock_error( "Cannot write char to Windows Socket ~S.~%~A", strm );
+		}
+		break;
+	}
+#endif
+	case smm_string_output:
+		strm->stream.int0++;
+		ecl_string_push_extend(strm->stream.object0, c);
+		break;
+	default:
+		error("illegal stream mode");
+	}
+}
+
+void
+ecl_write_byte(cl_object c, cl_object strm)
+{
+	cl_index bs, nb;
+	cl_object aux;
+	/*
+	 * The first part is only for composite or complex streams.
+	 */
+BEGIN:
+#ifdef ECL_CLOS_STREAMS
+	if (type_of(strm) == t_instance) {
+		funcall(3, @'ext::stream-write-byte', strm, c);
+		return;
+	}
+#endif
+	if (type_of(strm) != t_stream)
+		FEtype_error_stream(strm);
+	switch ((enum ecl_smmode)strm->stream.mode) {
+	case smm_closed:
+		FEclosed_stream(strm);
+		break;
+	case smm_output:
+	case smm_io:
+#ifdef _MSC_VER
+	case smm_output_wsock:
+#endif
+	case smm_string_output:
+		break;
+	case smm_synonym:
+		strm = symbol_value(strm->stream.object0);
+		goto BEGIN;
+	case smm_broadcast: {
+		cl_object x;
+		for (x = strm->stream.object0; !endp(x); x = CDR(x))
+			ecl_write_byte(c, CAR(x));
+		return;
+	}
+	case smm_two_way:
+		strm->stream.int0++;
+		strm = strm->stream.object1;
+		goto BEGIN;
+	case smm_echo:
+		strm = strm->stream.object1;
+		goto BEGIN;
+	case smm_input:
+#ifdef _MSC_VER
+	case smm_input_wsock:
+#endif
+	case smm_concatenated:
+	case smm_string_input:
+		not_an_output_stream(strm);
+	default:
+		error("illegal stream mode");
+	}
+	/*
+	 * Here is the real output of the byte.
+	 */
+	bs = strm->stream.byte_size;
+	if (bs == 8) {
+		cl_fixnum n = fixint(c);
+		ecl_write_byte8(n & 0xFF, strm);
+	} else if (bs & 7) {
+		/* Michael: remove this when you implement
+		 * bitwise reading and writing */
+		FEerror("Unsupported stream byte size", 0);
+	} else do {
+		cl_object b = cl_logand(2, c, MAKE_FIXNUM(0xFF));
+		ecl_write_byte8(fix(b), strm);
+		c = cl_ash(c, MAKE_FIXNUM(8));
+		bs -= 8;
+	} while (bs);
+}
+
+static int
+ecl_read_byte8(cl_object strm)
+{
+	/*
+	 * INV: We only get streams of the following four modes.
+	 */
+	int c;
+	switch ((enum ecl_smmode)strm->stream.mode) {
+	case smm_input:
+	case smm_io: {
+		FILE *fp = strm->stream.file;
+		if (fp == NULL)
+			wrong_file_handler(strm);
+		c = getc(fp);
+		if (c == EOF && ferror(fp))
+			io_error(strm);
+		break;
+	}
+#ifdef _MSC_VER
+	case smm_input_wsock: {
+		int fp = (int)strm->stream.file;
+		if ( fp == INVALID_SOCKET )
+			wrong_file_handler( strm );
+		else
+		{
+			char ch;
+			if ( recv( fp, &ch, 1, 0 ) == SOCKET_ERROR )
+				wsock_error( "Cannot read char from Windows socket ~S.~%~A", strm );
+			c = ( unsigned char )ch;
+		}
+		break;
+	}
+#endif
+	case smm_string_input:
+		if (strm->stream.int0 >= strm->stream.int1)
+			c = EOF;
+		else
+			c = strm->stream.object0->string.self[strm->stream.int0++];
+		break;
+	default:
+		error("illegal stream mode");
+	}
+	return c;
+}
+
+cl_object
+ecl_read_byte(cl_object strm)
+{
+	cl_object c;
+	cl_index bs, nb;
+	/*
+	 * In this first part, we identify the composite streams and
+	 * also CLOS streams.
+	 */
+BEGIN:
+#ifdef ECL_CLOS_STREAMS
+	if (type_of(strm) == t_instance) {
+		return funcall(2, @'ext::stream-read-byte', strm);
+	}
+#endif
+	if (type_of(strm) != t_stream) 
+		FEtype_error_stream(strm);
+	switch ((enum ecl_smmode)strm->stream.mode) {
+	case smm_closed:
+		FEclosed_stream(strm);
+		break;
+	case smm_input:
+	case smm_io:
+	case smm_string_input:
+#ifdef _MSC_VER
+	case smm_input_wsock:
+#endif
+		break;
+	case smm_synonym:
+		strm = symbol_value(strm->stream.object0);
+		goto BEGIN;
+	case smm_concatenated: {
+		cl_object strmi = strm->stream.object0;
+		c = Cnil;
+		while (!endp(strmi)) {
+			c = ecl_read_byte(CAR(strmi));
+			if (c != Cnil)
+				break;
+			strm->stream.object0 = strmi = CDR(strmi);
+		}
+		return c;
+	}
+	case smm_two_way:
+		if (strm == cl_core.terminal_io)
+			flush_stream(cl_core.terminal_io->stream.object1);
+		strm->stream.int1 = 0;
+		strm = strm->stream.object0;
+		goto BEGIN;
+	case smm_echo:
+		c = ecl_read_byte(strm->stream.object0);
+		if (c != Cnil) {
+			if (strm->stream.int0 == 0)
+				ecl_write_byte(c, strm->stream.object1);
+			else		/* don't echo twice if it was unread */
+				--(strm->stream.int0);
+		}
+		return c;
+	case smm_output:
+#ifdef _MSC_VER
+	case smm_output_wsock:
+#endif
+	case smm_broadcast:
+	case smm_string_output:
+		not_an_input_stream(strm);
+	default:
+		error("illegal stream mode");
+	}
+	/*
+	 * Here we treat the case of streams for which ecl_read_byte8 works.
+	 */
+	bs = strm->stream.byte_size;
+	if (bs == 8) {
+		cl_fixnum i = ecl_read_byte8(strm);
+		if (i == EOF)
+			return Cnil;
+		if (strm->stream.signed_bytes) {
+			unsigned char c = i;
+			return MAKE_FIXNUM((signed char)c);
+		}
+		return MAKE_FIXNUM(i);
+	}
+	if (bs & 7) {
+		/* Michael: remove this when you implement
+		 * bitwise reading and writing */
+		FEerror("Unsupported stream byte size", 0);
+	}
+	c = MAKE_FIXNUM(0);
+	for (nb = 0; bs >= 8; bs -= 8, nb += 8) {
+		cl_fixnum i = ecl_read_byte8(strm);
+		if (i == EOF)
+			return Cnil;
+		c = cl_logior(2, c, cl_ash(MAKE_FIXNUM(i), MAKE_FIXNUM(nb)));
+	}
+	return c;
+}
+
+
+/**********************************************************************
+ * CHARACTER INPUT/OUTPUT
+ */
 
 /*
- * ecl_getc(s) tries to read a character from the stream S. It outputs
+ * ecl_read_char(s) tries to read a character from the stream S. It outputs
  * either the code of the character read, or EOF. Whe compiled with
  * CLOS-STREAMS and S is an instance object, STREAM-READ-CHAR is invoked
  * to retrieve the character. Then STREAM-READ-CHAR should either
  * output the character, or NIL, indicating EOF.
  *
- * INV: ecl_getc(strm) checks the type of STRM.
+ * INV: ecl_read_char(strm) checks the type of STRM.
  */
 int
-ecl_getc(cl_object strm)
+ecl_read_char(cl_object strm)
 {
 	int c;
 	FILE *fp;
@@ -555,36 +845,38 @@ BEGIN:
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
-	fp = strm->stream.file;
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
 		break;
 
 	case smm_input:
-	case smm_io:
+	case smm_io: {
+		FILE *fp = strm->stream.file;
+		if (!strm->stream.char_stream_p)
+			not_a_character_stream(strm);
 		if (fp == NULL)
 			wrong_file_handler(strm);
 		c = getc(fp);
 		if (c == EOF && ferror(fp))
 			io_error(strm);
-		if (strm->stream.elttype == aet_i8) {
-			c = (signed char)c;
-		}
 		break;
-
+	}
 #ifdef _MSC_VER
-	case smm_input_wsock:
-		if ( ( int )fp == INVALID_SOCKET )
+	case smm_input_wsock: {
+		int fp = strm->stream.file;
+		if (!strm->stream.char_stream_p)
+			not_a_character_stream(strm);
+		if ( fp == INVALID_SOCKET )
 			wrong_file_handler( strm );
-		else
-		{
+		else {
 			char ch;
-			if ( recv( ( int )fp, &ch, 1, 0 ) == SOCKET_ERROR )
+			if ( recv( fp, &ch, 1, 0 ) == SOCKET_ERROR )
 				wsock_error( "Cannot read char from Windows socket ~S.~%~A", strm );
 			c = ( unsigned char )ch;
 		}
 		break;
+	}
 #endif
 
 	case smm_synonym:
@@ -595,7 +887,7 @@ BEGIN:
 		cl_object strmi = strm->stream.object0;
 		c = EOF;
 		while (!endp(strmi)) {
-			c = ecl_getc(CAR(strmi));
+			c = ecl_read_char(CAR(strmi));
 			if (c != EOF)
 				break;
 			strm->stream.object0 = strmi = CDR(strmi);
@@ -610,10 +902,10 @@ BEGIN:
 		goto BEGIN;
 
 	case smm_echo:
-		c = ecl_getc(strm->stream.object0);
+		c = ecl_read_char(strm->stream.object0);
 		if (c != EOF) {
 			if (strm->stream.int0 == 0)
-				writec_stream(c, strm->stream.object1);
+				ecl_write_char(c, strm->stream.object1);
 			else		/* don't echo twice if it was unread */
 				--(strm->stream.int0);
 		}
@@ -641,13 +933,13 @@ BEGIN:
 }
 
 /*
- * ecl_getc(s) tries to read a character from the stream S. It outputs
+ * ecl_read_char(s) tries to read a character from the stream S. It outputs
  * either the code of the character read, or EOF. Whe compiled with
  * CLOS-STREAMS and S is an instance object, STREAM-READ-CHAR is invoked
  * to retrieve the character. Then STREAM-READ-CHAR should either
  * output the character, or NIL, indicating EOF.
  *
- * INV: ecl_getc(strm) checks the type of STRM.
+ * INV: ecl_read_char(strm) checks the type of STRM.
  */
 int
 ecl_peek_char(cl_object strm)
@@ -677,15 +969,14 @@ BEGIN:
 
 	case smm_input:
 	case smm_io:
+		if (!strm->stream.char_stream_p)
+			not_a_character_stream(strm);
 		if (fp == NULL)
 			wrong_file_handler(strm);
 		c = getc(fp);
 		if (c == EOF && ferror(fp))
 			io_error(strm);
 		ungetc(c, fp);
-		if (strm->stream.elttype == aet_i8) {
-			c = (signed char)c;
-		}
 		break;
 
 #ifdef _MSC_VER
@@ -742,16 +1033,16 @@ BEGIN:
 }
 
 int
-ecl_getc_noeof(cl_object strm)
+ecl_read_char_noeof(cl_object strm)
 {
-	int c = ecl_getc(strm);
+	int c = ecl_read_char(strm);
 	if (c == EOF)
 		FEend_of_file(strm);
 	return c;
 }
 
 void
-ecl_ungetc(int c, cl_object strm)
+ecl_unread_char(int c, cl_object strm)
 {
 	FILE *fp;
 
@@ -772,6 +1063,8 @@ BEGIN:
 
 	case smm_input:
 	case smm_io:
+		if (!strm->stream.char_stream_p)
+			not_a_character_stream(strm);
 		if (fp == NULL)
 			wrong_file_handler(strm);
 		ungetc(c, fp);
@@ -800,7 +1093,7 @@ BEGIN:
 		goto BEGIN;
 
 	case smm_echo:
-		ecl_ungetc(c, strm->stream.object0);
+		ecl_unread_char(c, strm->stream.object0);
 		(strm->stream.int0)++;
 		break;
 
@@ -828,7 +1121,7 @@ UNREAD_ERROR:
 }
 
 int
-writec_stream(int c, cl_object strm)
+ecl_write_char(int c, cl_object strm)
 {
 	cl_object x;
 	FILE *fp;
@@ -850,6 +1143,8 @@ BEGIN:
 
 	case smm_output:
 	case smm_io:
+		if (!strm->stream.char_stream_p)
+			not_a_character_stream(strm);
 		if (c == '\n')
 			strm->stream.int1 = 0;
 		else if (c == '\t')
@@ -864,6 +1159,8 @@ BEGIN:
 
 #ifdef _MSC_VER
 	case smm_output_wsock:
+		if (!strm->stream.char_stream_p)
+			not_a_character_stream(strm);
 		if (c == '\n')
 			strm->stream.int1 = 0;
 		else if (c == '\t')
@@ -887,7 +1184,7 @@ BEGIN:
 
 	case smm_broadcast:
 		for (x = strm->stream.object0; !endp(x); x = CDR(x))
-			writec_stream(c, CAR(x));
+			ecl_write_char(c, CAR(x));
 		break;
 
 	case smm_two_way:
@@ -934,7 +1231,7 @@ void
 writestr_stream(const char *s, cl_object strm)
 {
 	while (*s != '\0')
-		writec_stream(*s++, strm);
+		ecl_write_char(*s++, strm);
 }
 
 cl_object
@@ -977,7 +1274,11 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 		bool ischar = cl_stream_element_type(stream) == @'base-char';
 		while (start < end) {
 			cl_object elt = aref(seq, start++);
-			cl_write_byte(ischar? cl_char_code(elt) : elt, stream);
+			if (ischar) {
+				ecl_write_char(char_code(elt), stream);
+			} else {
+				ecl_write_byte(elt, stream);
+			}
 		}
 		goto OUTPUT;
 	}
@@ -997,7 +1298,7 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 	} else {
 		unsigned char *p;
 		for (p= seq->vector.self.ch; start < end; start++) {
-			writec_stream(p[start], stream);
+			ecl_write_char(p[start], stream);
 		}
 	}
  OUTPUT:
@@ -1029,10 +1330,16 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 			if (start >= end) {
 				goto OUTPUT;
 			} else {
-				int c = ecl_getc(stream);
-				if (c == EOF)
-					goto OUTPUT;
-				CAR(seq) = ischar? CODE_CHAR(c) : MAKE_FIXNUM(c);
+				cl_object c;
+				if (ischar) {
+					int i = ecl_read_char(stream);
+					if (i < 0) goto OUTPUT;
+					c = CODE_CHAR(i);
+				} else {
+					c = ecl_read_byte(stream);
+					if (c == Cnil) goto OUTPUT;
+				}
+				CAR(seq) = c;
 				start++;
 			}
 		} end_loop_for_in;
@@ -1044,10 +1351,16 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 	{
 		bool ischar = cl_stream_element_type(stream) == @'base-char';
 		while (start < end) {
-			int c = ecl_getc(stream);
-			if (c == EOF)
-				goto OUTPUT;
-			aset(seq, start++, ischar? CODE_CHAR(c) : MAKE_FIXNUM(c));
+			cl_object c;
+			if (ischar) {
+				int i = ecl_read_char(stream);
+				if (i < 0) goto OUTPUT;
+				c = CODE_CHAR(i);
+			} else {
+				c = ecl_read_byte(stream);
+				if (c == Cnil) goto OUTPUT;
+			}
+			aset(seq, start++, c);
 		}
 		goto OUTPUT;
 	}
@@ -1068,7 +1381,7 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 	} else {
 		unsigned char *p;
 		for (p = seq->vector.self.ch; start < end; start++) {
-			int c = ecl_getc(stream);
+			int c = ecl_read_char(stream);
 			if (c == EOF)
 				break;
 			p[start] = c;
@@ -1484,7 +1797,7 @@ BEGIN:
 		} else {
 			disp -= strm->stream.object0->string.fillp;
 			while (disp-- > 0)
-				writec_stream(' ', strm);
+				ecl_write_char(' ', strm);
 		}
 		return(0);
 
@@ -1841,6 +2154,34 @@ cl_output_stream_p(cl_object strm)
 	@(return Ct)
 @)
 
+static cl_fixnum
+normalize_stream_element_type(cl_object element_type)
+{
+	cl_fixnum sign = 0;
+	cl_index size;
+	if (funcall(3, @'subtypep', element_type, @'unsigned-byte') != Cnil) {
+		sign = +1;
+	} else if (funcall(3, @'subtypep', element_type, @'signed-byte') != Cnil) {
+		sign = -1;
+	} else {
+		FEerror("Not a valid stream element type: ~A", 1, element_type);
+	}
+	if (CONSP(element_type)) {
+		if (CAR(element_type) == @'unsigned-byte')
+			return fixnnint(cl_cadr(element_type));
+		if (CAR(element_type) == @'signed-byte')
+			return -fixnnint(cl_cadr(element_type));
+	}
+	for (size = 1; 1; size++) {
+		cl_object type;
+		type = cl_list(2, sign>0? @'unsigned-byte' : @'signed-byte',
+			       MAKE_FIXNUM(size));
+		if (funcall(3, @'subtypep', element_type, type) != Cnil) {
+			return size * sign;
+		}
+	}
+}
+
 @(defun open (filename
 	      &key (direction @':input')
 		   (element_type @'base-char')
@@ -1849,7 +2190,8 @@ cl_output_stream_p(cl_object strm)
 	           (external_format @':default')
 	      &aux strm)
 	enum ecl_smmode smm;
-	cl_elttype elttype;
+	bool char_stream_p;
+	cl_fixnum byte_size;
 @
 	if (external_format != @':default')
 		FEerror("~S is not a valid stream external format.", 1,
@@ -1890,19 +2232,28 @@ cl_output_stream_p(cl_object strm)
 			1, direction);
  	}
 	if (element_type == @':default') {
-		elttype = aet_ch;
+		char_stream_p = 1;
+		byte_size = 8;
 	} else if (element_type == @'signed-byte') {
-		elttype = aet_i8;
+		char_stream_p = 0;
+		byte_size = -8;
 	} else if (element_type == @'unsigned-byte') {
-		elttype = aet_b8;
+		char_stream_p = 0;
+		byte_size = 8;
+	} else if (funcall(3, @'subtypep', element_type, @'character') != Cnil) {
+		char_stream_p = 1;
+		byte_size = 8;
 	} else {
-		elttype = ecl_symbol_to_elttype(element_type);
-		if (elttype == aet_object) {
-			FEerror("~S is not a valid stream element type",
-				1, element_type);
+		char_stream_p = 0;
+		byte_size = normalize_stream_element_type(element_type);
+		if (byte_size & 7) {
+			/* Michael: remove this when you implement
+			 * bitwise reading and writing */
+			byte_size = (byte_size & ~7) + 8;
 		}
 	}
-	strm = open_stream(filename, smm, if_exists, if_does_not_exist, elttype);
+	strm = open_stream(filename, smm, if_exists, if_does_not_exist,
+			   byte_size, char_stream_p);
 	@(return strm)
 @)
 
@@ -1992,8 +2343,8 @@ cl_object
 si_copy_stream(cl_object in, cl_object out)
 {
 	int c;
-	for (c = ecl_getc(in); c != EOF; c = ecl_getc(in)) {
-		writec_stream(c, out);
+	for (c = ecl_read_char(in); c != EOF; c = ecl_read_char(in)) {
+		ecl_write_char(c, out);
 	}
 	flush_stream(out);
 	@(return Ct)
@@ -2069,6 +2420,9 @@ ecl_make_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm)
    fp->_IO_buf_base = NULL; /* BASEFF */; 
    setbuf(fp, stream->stream.buffer = cl_alloc_atomic(BUFSIZ)); 
 #endif
+   stream->stream.char_stream_p = 1;
+   stream->stream.byte_size = 8;
+   stream->stream.signed_bytes = 0;
    return(stream);
 }
 
@@ -2082,22 +2436,26 @@ init_file(void)
 	cl_object x;
 
 	standard_input = cl_alloc_object(t_stream);
-	standard_input->stream.elttype = aet_ch;
 	standard_input->stream.mode = (short)smm_input;
 	standard_input->stream.file = stdin;
 	standard_input->stream.object0 = @'base-char';
 	standard_input->stream.object1 = make_constant_string("stdin");
 	standard_input->stream.int0 = 0;
 	standard_input->stream.int1 = 0;
+	standard_input->stream.char_stream_p = 1;
+	standard_input->stream.byte_size = 8;
+	standard_input->stream.signed_bytes = 0;
 
 	standard_output = cl_alloc_object(t_stream);
-	standard_output->stream.elttype = aet_ch;
 	standard_output->stream.mode = (short)smm_output;
 	standard_output->stream.file = stdout;
 	standard_output->stream.object0 = @'base-char';
 	standard_output->stream.object1= make_constant_string("stdout");
 	standard_output->stream.int0 = 0;
 	standard_output->stream.int1 = 0;
+	standard_output->stream.char_stream_p = 1;
+	standard_output->stream.byte_size = 8;
+	standard_output->stream.signed_bytes = 0;
 
 	cl_core.terminal_io = standard
 	= make_two_way_stream(standard_input, standard_output);

@@ -1465,6 +1465,11 @@ cl_symbols[] = {
 {SYS_ "GET-LIBRARY-PATHNAME", SI_ORDINARY, si_get_library_pathname, 0, OBJNULL},
 #endif
 
+#ifdef ECL_CLOS_STREAMS
+{EXT_ "STREAM-WRITE-BYTE", EXT_ORDINARY, NULL, -1, OBJNULL},
+{EXT_ "STREAM-READ-BYTE", EXT_ORDINARY, NULL, -1, OBJNULL},
+#endif
+
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1, OBJNULL}};
 

@@ -258,10 +258,10 @@ cl_object comma_reader(cl_object in, cl_object c)
 	c = cl_peek_char(2,Ct,in);
 	if (c == CODE_CHAR('@@')) {
 		x = @'si::,@';
-		read_char(in);
+		ecl_read_char(in);
 	} else if (c == CODE_CHAR('.')) {
 		x = @'si::,.';
-		read_char(in);
+		ecl_read_char(in);
 	} else
 		x = @'si::,';
 	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level-1));

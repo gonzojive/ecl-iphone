@@ -40,7 +40,7 @@ static cl_object si_write_object_recursive(cl_object, cl_object);
 #define INDENT		' '
 #define INDENT1		' '
 #define INDENT2		' '
-#define write_ch	writec_stream
+#define write_ch	ecl_write_char
 #define call_print_object(x,s)	funcall(3, @'print-object',(x),(s))
 #define call_structure_print_function(f,x,s) funcall(4,(f),(x),(s),MAKE_FIXNUM(0))
 #endif /* ECL_CMU_FORMAT */
@@ -80,7 +80,7 @@ BEGIN:
 	while (cl_env.qc > 0) {
 		c = cl_env.queue[cl_env.qh];
 		if (c < 0400) {
-			writec_stream(c, stream);
+			ecl_write_char(c, stream);
 		} else if (c == MARK)
 			goto DO_MARK;
 		else if (c == UNMARK)
@@ -92,7 +92,7 @@ BEGIN:
 		} else if (c == INDENT1) {
 			i = file_column(stream)-cl_env.indent_stack[cl_env.isp];
 			if (i < 8 && cl_env.indent_stack[cl_env.isp] < LINE_LENGTH/2) {
-				writec_stream(' ', stream);
+				ecl_write_char(' ', stream);
 				cl_env.indent_stack[cl_env.isp]
 				= file_column(stream);
 			} else {
@@ -178,9 +178,9 @@ DO_INDENT:
 PUT_INDENT:
 	cl_env.qh = mod(cl_env.qh+1);
 	--cl_env.qc;
-	writec_stream('\n', stream);
+	ecl_write_char('\n', stream);
 	for (i = cl_env.indent_stack[cl_env.isp];  i > 0;  --i)
-		writec_stream(' ', stream);
+		ecl_write_char(' ', stream);
 	cl_env.iisp = cl_env.isp;
 	goto BEGIN;
 
@@ -188,9 +188,9 @@ FLUSH:
 	for (j = 0;  j < i;  j++) {
 		c = cl_env.queue[cl_env.qh];
 		if (c == INDENT || c == INDENT1 || c == INDENT2)
-			writec_stream(' ', stream);
+			ecl_write_char(' ', stream);
 		else if (c < 0400)
-			writec_stream(c, stream);
+			ecl_write_char(c, stream);
 		cl_env.qh = mod(cl_env.qh+1);
 		--cl_env.qc;
 	}
@@ -203,9 +203,9 @@ write_ch(int c, cl_object stream)
 	if (cl_env.print_pretty)
 		writec_queue(c, stream);
 	else if (c == INDENT || c == INDENT1)
-		writec_stream(' ', stream);
+		ecl_write_char(' ', stream);
 	else if (c < 0400)
-		writec_stream(c, stream);
+		ecl_write_char(c, stream);
 }
 
 static void
@@ -1611,7 +1611,7 @@ potential_number_p(cl_object strng, int base)
 	strm = stream_or_default_output(strm);
 	bds_bind(@'*print-escape*', Ct);
 	bds_bind(@'*print-pretty*', Ct);
-	writec_stream('\n', strm);
+	ecl_write_char('\n', strm);
 	si_write_object(obj, strm);
 	flush_stream(strm);
 	bds_unwind_n(2);
@@ -1628,7 +1628,7 @@ potential_number_p(cl_object strng, int base)
 @
 	/* INV: char_code() checks the type of `c' */
  	strm = stream_or_default_output(strm);
-	writec_stream(char_code(c), strm);
+	ecl_write_char(char_code(c), strm);
 	@(return c)
 @)
 
@@ -1645,7 +1645,7 @@ potential_number_p(cl_object strng, int base)
 	assert_type_string(strng);
 	strm = stream_or_default_output(strm);
 	si_do_write_sequence(strng, strm, start, end);
-	writec_stream('\n', strm);
+	ecl_write_char('\n', strm);
 	flush_stream(strm);
 	@(return strng)
 @)
@@ -1661,7 +1661,7 @@ potential_number_p(cl_object strng, int base)
  	strm = stream_or_default_output(strm);
 	if (file_column(strm) == 0)
 		@(return Cnil)
-	writec_stream('\n', strm);
+	ecl_write_char('\n', strm);
 	flush_stream(strm);
 	@(return Ct)
 @)
@@ -1683,9 +1683,7 @@ potential_number_p(cl_object strng, int base)
 cl_object
 cl_write_byte(cl_object integer, cl_object binary_output_stream)
 {
-	if (!FIXNUMP(integer))
-		FEerror("~S is not a byte.", 1, integer);
-	writec_stream(fix(integer), binary_output_stream);
+	ecl_write_byte(integer, binary_output_stream);
 	@(return integer)
 }
 
@@ -1730,7 +1728,7 @@ cl_object
 terpri(cl_object strm)
 {
 	strm = stream_or_default_output(strm);
-	writec_stream('\n', strm);
+	ecl_write_char('\n', strm);
 	flush_stream(strm);
 	return(Cnil);
 }
@@ -1743,7 +1741,7 @@ write_string(cl_object strng, cl_object strm)
 	strm = stream_or_default_output(strm);
 	assert_type_string(strng);
 	for (i = 0;  i < strng->string.fillp;  i++)
-		writec_stream(strng->string.self[i], strm);
+		ecl_write_char(strng->string.self[i], strm);
 	flush_stream(strm);
 }
 
@@ -1761,7 +1759,7 @@ void
 princ_char(int c, cl_object strm)
 {
 	strm = stream_or_default_output(strm);
-	writec_stream(c, strm);
+	ecl_write_char(c, strm);
 	if (c == '\n')
 		flush_stream(strm);
 }

@@ -304,7 +304,8 @@ enum ecl_smmode {		/*  stream mode  */
 };
 
 struct ecl_stream {
-	HEADER2(mode,elttype);	/*  stream mode of enum smmode  */
+	HEADER3(mode,char_stream_p,signed_bytes);
+				/*  stream mode of enum smmode  */
 				/*  stream element type  */
 	FILE	*file;		/*  file pointer  */
 	cl_object object0;	/*  some object  */
@@ -314,6 +315,7 @@ struct ecl_stream {
 #if !defined(GBC_BOEHM)
 	char	*buffer;	/*  file buffer  */
 #endif
+	cl_index byte_size;	/*  size of byte in binary streams  */
 };
 
 struct ecl_random {

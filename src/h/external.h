@@ -534,18 +534,21 @@ extern cl_object cl_interactive_stream_p(cl_object strm);
 extern bool input_stream_p(cl_object strm);
 extern bool output_stream_p(cl_object strm);
 extern cl_object stream_element_type(cl_object strm);
-extern cl_object open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists, cl_object if_does_not_exist, cl_elttype elttype);
+extern cl_object open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists, cl_object if_does_not_exist,
+			     cl_fixnum byte_size, bool char_stream_p);
 extern void close_stream(cl_object strm, bool abort_flag);
 extern cl_object make_two_way_stream(cl_object istrm, cl_object ostrm);
 extern cl_object make_string_input_stream(cl_object strng, cl_index istart, cl_index iend);
 extern cl_object make_string_output_stream(cl_index line_length);
 extern cl_object make_string_output_stream_from_string(cl_object s);
 extern cl_object get_output_stream_string(cl_object strm);
-extern int ecl_getc_noeof(cl_object strm);
-extern int ecl_getc(cl_object strm);
-extern void ecl_ungetc(int c, cl_object strm);
+extern cl_object ecl_read_byte(cl_object strm);
+extern void ecl_write_byte(cl_object byte, cl_object strm);
+extern int ecl_read_char_noeof(cl_object strm);
+extern int ecl_read_char(cl_object strm);
+extern void ecl_unread_char(int c, cl_object strm);
 extern int ecl_peek_char(cl_object strm);
-extern int writec_stream(int c, cl_object strm);
+extern int ecl_write_char(int c, cl_object strm);
 extern void writestr_stream(const char *s, cl_object strm);
 extern void flush_stream(cl_object strm);
 extern void clear_input_stream(cl_object strm);
@@ -1142,8 +1145,6 @@ extern cl_object cl_make_dispatch_macro_character _ARGS((cl_narg narg, cl_object
 extern cl_object cl_set_dispatch_macro_character _ARGS((cl_narg narg, cl_object dspchr, cl_object subchr, cl_object fnc, ...));
 extern cl_object cl_get_dispatch_macro_character _ARGS((cl_narg narg, cl_object dspchr, cl_object subchr, ...));
 
-extern cl_object read_char(cl_object in);
-extern void unread_char(cl_object c, cl_object in);
 extern cl_object read_object_non_recursive(cl_object in);
 extern cl_object read_object(cl_object in);
 extern cl_object parse_number(const char *s, cl_index end, cl_index *ep, int radix);

@@ -337,10 +337,10 @@ fmt_ascii(format_stack fmt, bool colon, bool atsign)
 	if (!atsign) {
 		write_string(fmt->aux_string, fmt->stream);
 		while (i-- > 0)
-			writec_stream(padchar, fmt->stream);
+			ecl_write_char(padchar, fmt->stream);
 	} else {
 		while (i-- > 0)
-			writec_stream(padchar, fmt->stream);
+			ecl_write_char(padchar, fmt->stream);
 		write_string(fmt->aux_string, fmt->stream);
 	}
 }
@@ -373,10 +373,10 @@ fmt_S_expression(format_stack fmt, bool colon, bool atsign)
 	if (!atsign) {
 		write_string(fmt->aux_string, fmt->stream);
 		while (i-- > 0)
-			writec_stream(padchar, fmt->stream);
+			ecl_write_char(padchar, fmt->stream);
 	} else {
 		while (i-- > 0)
-			writec_stream(padchar, fmt->stream);
+			ecl_write_char(padchar, fmt->stream);
 		write_string(fmt->aux_string, fmt->stream);
 	}
 }
@@ -398,9 +398,9 @@ fmt_integer(format_stack fmt, cl_object x, bool colon, bool atsign,
 		l = fmt->aux_string->string.fillp;
 		mincol -= l;
 		while (mincol-- > 0)
-			writec_stream(padchar, fmt->stream);
+			ecl_write_char(padchar, fmt->stream);
 		for (s = 0;  l > 0;  --l, s++)
-			writec_stream(tempstr(fmt, s), fmt->stream);
+			ecl_write_char(tempstr(fmt, s), fmt->stream);
 		return;
 	}
 	fmt_prepare_aux_stream(fmt);
@@ -418,16 +418,16 @@ fmt_integer(format_stack fmt, cl_object x, bool colon, bool atsign,
 	if (atsign && tempstr(fmt, s) != '-')
 		--mincol;
 	while (mincol-- > 0)
-		writec_stream(padchar, fmt->stream);
+		ecl_write_char(padchar, fmt->stream);
 	if (tempstr(fmt, s) == '-') {
 		s++;
-		writec_stream('-', fmt->stream);
+		ecl_write_char('-', fmt->stream);
 	} else if (atsign)
-		writec_stream('+', fmt->stream);
+		ecl_write_char('+', fmt->stream);
 	while (l1-- > 0) {
-		writec_stream(tempstr(fmt, s++), fmt->stream);
+		ecl_write_char(tempstr(fmt, s++), fmt->stream);
 		if (colon && l1 > 0 && l1%3 == 0)
-			writec_stream(commachar, fmt->stream);
+			ecl_write_char(commachar, fmt->stream);
 	}
 }
 
@@ -500,7 +500,7 @@ fmt_thousand(format_stack fmt, int s, int i, bool b, bool o, int t)
 {
 	if (i == 3 && tempstr(fmt, s) > '0') {
 		if (b)
-			writec_stream(' ', fmt->stream);
+			ecl_write_char(' ', fmt->stream);
 		fmt_write_numeral(fmt, s, 0);
 		writestr_stream(" hundred", fmt->stream);
 		--i;
@@ -515,7 +515,7 @@ fmt_thousand(format_stack fmt, int s, int i, bool b, bool o, int t)
 	}
 	if (i == 2 && tempstr(fmt, s) > '0') {
 		if (b)
-			writec_stream(' ', fmt->stream);
+			ecl_write_char(' ', fmt->stream);
 		if (tempstr(fmt, s) == '1') {
 			if (o && (s + 2 > t))
 				fmt_write_ordinal(fmt, ++s, 10);
@@ -529,7 +529,7 @@ fmt_thousand(format_stack fmt, int s, int i, bool b, bool o, int t)
 				fmt_write_numeral(fmt, s, 20);
 			s++;
 			if (tempstr(fmt, s) > '0') {
-				writec_stream('-', fmt->stream);
+				ecl_write_char('-', fmt->stream);
 				if (o && s + 1 > t)
 					fmt_write_ordinal(fmt, s, 0);
 				else
@@ -542,7 +542,7 @@ fmt_thousand(format_stack fmt, int s, int i, bool b, bool o, int t)
 		s++;
 	if (tempstr(fmt, s) > '0') {
 		if (b)
-			writec_stream(' ', fmt->stream);
+			ecl_write_char(' ', fmt->stream);
 		if (o && s + 1 > t)
 			fmt_write_ordinal(fmt, s, 0);
 		else
@@ -561,7 +561,7 @@ fmt_nonillion(format_stack fmt, int s, int i, bool b, bool o, int t)
 		b = fmt_thousand(fmt, s, j = (i+2)%3+1, b, FALSE, t);
 		if (j != 3 || tempstr(fmt, s) != '0' ||
 		    tempstr(fmt, s+1) != '0' || tempstr(fmt, s+2) != '0') {
-			writec_stream(' ', fmt->stream);
+			ecl_write_char(' ', fmt->stream);
 			writestr_stream(fmt_big_numeral[(i - 1)/3 - 1],
 					fmt->stream);
 			s += j;
@@ -582,17 +582,17 @@ fmt_roman(format_stack fmt, int i, int one, int five, int ten, bool colon)
 		return;
 	if ((!colon && i < 4) || (colon && i < 5))
 		for (j = 0;  j < i;  j++)
-			writec_stream(one, fmt->stream);
+			ecl_write_char(one, fmt->stream);
 	else if (!colon && i == 4) {
-		writec_stream(one, fmt->stream);
-		writec_stream(five, fmt->stream);
+		ecl_write_char(one, fmt->stream);
+		ecl_write_char(five, fmt->stream);
 	} else if ((!colon && i < 9) || colon) {
-		writec_stream(five, fmt->stream);
+		ecl_write_char(five, fmt->stream);
 		for (j = 5;  j < i;  j++)
-			writec_stream(one, fmt->stream);
+			ecl_write_char(one, fmt->stream);
 	} else if (!colon && i == 9) {
-		writec_stream(one, fmt->stream);
-		writec_stream(ten, fmt->stream);
+		ecl_write_char(one, fmt->stream);
+		ecl_write_char(ten, fmt->stream);
 	}
 }
 
@@ -678,13 +678,13 @@ fmt_plural(format_stack fmt, bool colon, bool atsign)
 	}
 	if (eql(fmt_advance(fmt), MAKE_FIXNUM(1))) {
 		if (atsign)
-			writec_stream('y', fmt->stream);
+			ecl_write_char('y', fmt->stream);
 	      }
 	else
 		if (atsign)
 			writestr_stream("ies", fmt->stream);
 		else
-			writec_stream('s', fmt->stream);
+			ecl_write_char('s', fmt->stream);
 }
 
 static void
@@ -697,7 +697,7 @@ fmt_character(format_stack fmt, bool colon, bool atsign)
 	x = fmt_advance(fmt);
 	assert_type_character(x);
 	if (!colon && !atsign) {
-		writec_stream(CHAR_CODE(x), fmt->stream);
+		ecl_write_char(CHAR_CODE(x), fmt->stream);
 	} else {
 		fmt_prepare_aux_stream(fmt);
 		prin1(x, fmt->aux_stream);
@@ -706,7 +706,7 @@ fmt_character(format_stack fmt, bool colon, bool atsign)
 		else
 			i = 2;
 		for (;  i < fmt->aux_string->string.fillp;  i++)
-			writec_stream(tempstr(fmt, i), fmt->stream);
+			ecl_write_char(tempstr(fmt, i), fmt->stream);
 	}
 }
 
@@ -815,7 +815,7 @@ fmt_fix_float(format_stack fmt, bool colon, bool atsign)
 		if (j > w && overflowchar >= 0) {
 			w = set_param(fmt, 0, INT, 0);
 			for (i = 0;  i < w;  i++)
-				writec_stream(overflowchar, fmt->stream);
+				ecl_write_char(overflowchar, fmt->stream);
 			return;
 		}
 		if (j < w && d < 0 && b[j-1] == '.') {
@@ -827,7 +827,7 @@ fmt_fix_float(format_stack fmt, bool colon, bool atsign)
 			j++;
 		}
 		for (i = j;  i < w;  i++)
-			writec_stream(padchar, fmt->stream);
+			ecl_write_char(padchar, fmt->stream);
 	} else {
 		if (b[0] == '.') {
 			*--b = '0';
@@ -839,9 +839,9 @@ fmt_fix_float(format_stack fmt, bool colon, bool atsign)
 		}
 	}
 	if (sign < 0)
-		writec_stream('-', fmt->stream);
+		ecl_write_char('-', fmt->stream);
 	else if (atsign)
-		writec_stream('+', fmt->stream);
+		ecl_write_char('+', fmt->stream);
 	writestr_stream(b, fmt->stream);
 }
 
@@ -865,14 +865,14 @@ fmt_exponent1(cl_object stream, int e)
 	if (e == 0)
 		return;
 	fmt_exponent1(stream, e/10);
-	writec_stream('0' + e%10, stream);
+	ecl_write_char('0' + e%10, stream);
 }
 
 static void
 fmt_exponent(format_stack fmt, int e)
 {
 	if (e == 0) {
-		writec_stream('0', fmt->stream);
+		ecl_write_char('0', fmt->stream);
 		return;
 	}
 	if (e < 0)
@@ -1009,7 +1009,7 @@ fmt_exponential_float(format_stack fmt, bool colon, bool atsign)
 			j++;
 		}
 		for (i = j;  i < w;  i++)
-			writec_stream(padchar, fmt->stream);
+			ecl_write_char(padchar, fmt->stream);
 	} else {
 		if (b[j-1] == '.') {
 			b[j++] = '0';
@@ -1021,9 +1021,9 @@ fmt_exponential_float(format_stack fmt, bool colon, bool atsign)
 		}
 	}
 	if (sign < 0)
-		writec_stream('-', fmt->stream);
+		ecl_write_char('-', fmt->stream);
 	else if (atsign)
-		writec_stream('+', fmt->stream);
+		ecl_write_char('+', fmt->stream);
 	writestr_stream(b, fmt->stream);
 	y = symbol_value(@'*read-default-float-format*');
 	if (exponentchar < 0) {
@@ -1038,21 +1038,21 @@ fmt_exponential_float(format_stack fmt, bool colon, bool atsign)
 		else
 			exponentchar = 'L';
 	}
-	writec_stream(exponentchar, fmt->stream);
+	ecl_write_char(exponentchar, fmt->stream);
 	if (exp < 0)
-		writec_stream('-', fmt->stream);
+		ecl_write_char('-', fmt->stream);
 	else
-		writec_stream('+', fmt->stream);
+		ecl_write_char('+', fmt->stream);
 	if (e >= 0)
 		for (i = e - fmt_exponent_length(exp);  i > 0;  --i)
-			writec_stream('0', fmt->stream);
+			ecl_write_char('0', fmt->stream);
 	fmt_exponent(fmt, exp);
 	return;
 
 OVER:
 	w = set_param(fmt, 0, INT, -1);
 	for (i = 0;  i < w;  i++)
-		writec_stream(overflowchar, fmt->stream);
+		ecl_write_char(overflowchar, fmt->stream);
 	return;
 }
 
@@ -1115,7 +1115,7 @@ fmt_general_float(format_stack fmt, bool colon, bool atsign)
 		fmt_fix_float(fmt, colon, atsign);
 		if (w >= 0)
 			while (ww++ < w)
-				writec_stream(padchar, fmt->stream);
+				ecl_write_char(padchar, fmt->stream);
 		return;
 	}
 	fmt->param[1].value = d;
@@ -1181,26 +1181,26 @@ fmt_dollars_float(format_stack fmt, bool colon, bool atsign)
 		--w;
 	if (colon) {
 		if (sign < 0)
-			writec_stream('-', fmt->stream);
+			ecl_write_char('-', fmt->stream);
 		else if (atsign)
-			writec_stream('+', fmt->stream);
+			ecl_write_char('+', fmt->stream);
 		while (--w > n + d)
-			writec_stream(padchar, fmt->stream);
+			ecl_write_char(padchar, fmt->stream);
 	} else {
 		while (--w > n + d)
-			writec_stream(padchar, fmt->stream);
+			ecl_write_char(padchar, fmt->stream);
 		if (sign < 0)
-			writec_stream('-', fmt->stream);
+			ecl_write_char('-', fmt->stream);
 		else if (atsign)
-			writec_stream('+', fmt->stream);
+			ecl_write_char('+', fmt->stream);
 	}
 	for (i = n - exp;  i > 0;  --i)
-		writec_stream('0', fmt->stream);
+		ecl_write_char('0', fmt->stream);
 	for (i = 0;  i < exp;  i++)
-		writec_stream((i < q ? buff[i] : '0'), fmt->stream);
-	writec_stream('.', fmt->stream);
+		ecl_write_char((i < q ? buff[i] : '0'), fmt->stream);
+	ecl_write_char('.', fmt->stream);
 	for (d += i;  i < d;  i++)
-		writec_stream((i < q ? buff[i] : '0'), fmt->stream);
+		ecl_write_char((i < q ? buff[i] : '0'), fmt->stream);
 }
 
 static void
@@ -1213,10 +1213,10 @@ fmt_percent(format_stack fmt, bool colon, bool atsign)
 	fmt_not_colon(fmt, colon);
 	fmt_not_atsign(fmt, atsign);
 	while (n-- > 0) {
-		writec_stream('\n', fmt->stream);
+		ecl_write_char('\n', fmt->stream);
 		if (n == 0)
 			for (i = fmt->indents;  i > 0;  --i)
-				writec_stream(' ', fmt->stream);
+				ecl_write_char(' ', fmt->stream);
 	}
 }
 
@@ -1232,9 +1232,9 @@ fmt_ampersand(format_stack fmt, bool colon, bool atsign)
 	if (n == 0)
 		return;
 	if (file_column(fmt->stream) != 0)
-		writec_stream('\n', fmt->stream);
+		ecl_write_char('\n', fmt->stream);
 	while (--n > 0)
-		writec_stream('\n', fmt->stream);
+		ecl_write_char('\n', fmt->stream);
 	fmt->indents = 0;
 }
 
@@ -1248,7 +1248,7 @@ fmt_bar(format_stack fmt, bool colon, bool atsign)
 	fmt_not_colon(fmt, colon);
 	fmt_not_atsign(fmt, atsign);
 	while (n-- > 0)
-		writec_stream('\f', fmt->stream);
+		ecl_write_char('\f', fmt->stream);
 }
 
 static void
@@ -1261,7 +1261,7 @@ fmt_tilde(format_stack fmt, bool colon, bool atsign)
 	fmt_not_colon(fmt, colon);
 	fmt_not_atsign(fmt, atsign);
 	while (n-- > 0)
-		writec_stream('~', fmt->stream);
+		ecl_write_char('~', fmt->stream);
 }
 
 static void
@@ -1270,10 +1270,10 @@ fmt_newline(format_stack fmt, bool colon, bool atsign)
 	ensure_param(fmt, 0);
 	fmt_not_colon_atsign(fmt, colon, atsign);
 	if (atsign)
-		writec_stream('\n', fmt->stream);
+		ecl_write_char('\n', fmt->stream);
 	while (fmt->ctl_index < fmt->ctl_end && isspace(fmt->ctl_str[fmt->ctl_index])) {
 		if (colon)
-			writec_stream(fmt->ctl_str[fmt->ctl_index], fmt->stream);
+			ecl_write_char(fmt->ctl_str[fmt->ctl_index], fmt->stream);
 		fmt->ctl_index++;
 	}
 }
@@ -1299,10 +1299,10 @@ fmt_tabulate(format_stack fmt, bool colon, bool atsign)
 		while (c > colnum)
 			colnum += colinc;
 		for (i = colnum - c;  i > 0;  --i)
-			writec_stream(' ', fmt->stream);
+			ecl_write_char(' ', fmt->stream);
 	} else {
 		for (i = colnum;  i > 0;  --i)
-			writec_stream(' ', fmt->stream);
+			ecl_write_char(' ', fmt->stream);
 		c = file_column(fmt->stream);
 		if (c < 0 || colinc <= 0)
 			return;
@@ -1310,7 +1310,7 @@ fmt_tabulate(format_stack fmt, bool colon, bool atsign)
 		while (c > colnum)
 			colnum += colinc;
 		for (i = colnum - c;  i > 0;  --i)
-			writec_stream(' ', fmt->stream);
+			ecl_write_char(' ', fmt->stream);
 	}
 }
 
@@ -1401,7 +1401,7 @@ fmt_case(format_stack fmt, bool colon, bool atsign)
 		for (i = 0;  i < x->string.fillp;  i++) {
 			if (isupper(j = x->string.self[i]))
 				j = tolower(j);
-			writec_stream(j, fmt->stream);
+			ecl_write_char(j, fmt->stream);
 		}
 	else if (colon && !atsign)
 		for (b = TRUE, i = 0;  i < x->string.fillp;  i++) {
@@ -1415,7 +1415,7 @@ fmt_case(format_stack fmt, bool colon, bool atsign)
 				b = FALSE;
 			} else if (!isdigit(j))
 				b = TRUE;
-			writec_stream(j, fmt->stream);
+			ecl_write_char(j, fmt->stream);
 		}
 	else if (!colon && atsign)
 		for (b = TRUE, i = 0;  i < x->string.fillp;  i++) {
@@ -1428,13 +1428,13 @@ fmt_case(format_stack fmt, bool colon, bool atsign)
 					j = tolower(j);
 				b = FALSE;
 			}
-			writec_stream(j, fmt->stream);
+			ecl_write_char(j, fmt->stream);
 		}
 	else
 		for (i = 0;  i < x->string.fillp;  i++) {
 			if (islower(j = x->string.self[i]))
 				j = toupper(j);
-			writec_stream(j, fmt->stream);
+			ecl_write_char(j, fmt->stream);
 		}
 	if (up_colon)
 		ecl_longjmp(*fmt->jmp_buf, up_colon);
@@ -1748,12 +1748,12 @@ fmt_justification(format_stack fmt, volatile bool colon, bool atsign)
 	for (p = fields;  p != Cnil; p = CDR(p)) {
 		if (p != fields || colon)
 			for (j = l / m, l -= j, --m;  j > 0;  --j)
-				writec_stream(padchar, fmt->stream);
+				ecl_write_char(padchar, fmt->stream);
 		princ(CAR(p), fmt->stream);
 	}
 	if (atsign)
 		for (j = l;  j > 0;  --j)
-			writec_stream(padchar, fmt->stream);
+			ecl_write_char(padchar, fmt->stream);
 }
 
 static void
@@ -1848,7 +1848,7 @@ LOOP:
 	if (fmt->ctl_index >= fmt->ctl_end)
 		return;
 	if ((c = ctl_advance(fmt)) != '~') {
-		writec_stream(c, fmt->stream);
+		ecl_write_char(c, fmt->stream);
 		goto LOOP;
 	}
 	n = 0;
