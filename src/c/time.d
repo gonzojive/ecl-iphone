@@ -22,6 +22,12 @@
 #endif
 #include <unistd.h>
 
+#ifdef mignw32
+/* The function sleep() in MinGW is bogus: it counts millisecons! */
+#include <winbase.h>
+#define sleep(x) Sleep(x*1000)
+#endif
+
 #ifndef HZ			/* usually from <sys/param.h> */
 #define HZ 60
 #endif
