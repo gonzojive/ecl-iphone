@@ -389,7 +389,7 @@ SB-SYS:MAKE-FD-STREAM."))
 	     (slot-makunbound socket 'stream))
 	    ((= (socket-close-low-level socket) -1)
 	     (socket-error "close")))
-      (setf (socket-file-descriptor socket) -1))))
+      (setf (slot-value socket 'file-descriptor) -1))))
 
 ;; FIXME: How bad is manipulating fillp directly?
 (defmethod socket-receive ((socket socket) buffer length
@@ -500,15 +500,17 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
 		     :side-effects t))
 	(socket-error "bind"))))
 
-(Clines
-"
-static cl_object do_accept_inet(cl_object cl_socket_fd)
-{
+(defmethod socket-accept ((socket inet-socket))
+  (multiple-value-bind (fd vector)
+      (c-inline ((socket-file-descriptor socket)) (:int) (values :int :object)
+"{
         struct sockaddr_in sockaddr;
-        int socket_fd = fixint(cl_socket_fd);
+        int socket_fd = fixint(#0);
         int addr_len = sizeof(struct sockaddr_in);
         int new_fd = accept(socket_fd, (struct sockaddr*)&sockaddr, &addr_len);
 
+	@(return 0) = new_fd;
+	@(return 1) = Cnil;
         if (new_fd != -1) {
                 uint32_t ip = ntohl(sockaddr.sin_addr.s_addr);
                 uint16_t port = ntohs(sockaddr.sin_port);
@@ -519,19 +521,9 @@ static cl_object do_accept_inet(cl_object cl_socket_fd)
 		aset(vector,2, MAKE_FIXNUM( (ip>>8) & 0xFF));
                 aset(vector,3, MAKE_FIXNUM( ip & 0xFF ));
 
-		NVALUES = 2;
-		VALUES(0) = make_integer(new_fd);
-		VALUES(1) = vector;
-		return VALUES(0);
-	} else return MAKE_FIXNUM(-1);
-}
-")
-
-(c-inline () () t "cl_def_c_function(@do-accept-inet,do_accept_inet,1)" :one-liner t)
-
-(defmethod socket-accept ((socket inet-socket))
-  (multiple-value-bind (fd vector)
-      (do-accept-inet (socket-file-descriptor socket))
+		@(return 1) = vector;
+	}
+}")
     (cond
       ((= fd -1)
        (socket-error "accept"))
@@ -628,27 +620,17 @@ also known as unix-domain sockets."))
 }"))
 	(socket-error "bind"))))
 
-(Clines
- "
-static cl_object do_accept_un(cl_object cl_socket_fd)
-{
-        struct sockaddr_un sockaddr;
-        int socket_fd = fixint(cl_socket_fd);
-        int addr_len = sizeof(struct sockaddr_un);
-        int new_fd = accept(socket_fd, &sockaddr, &addr_len);
-
-        NVALUES = 2;
-        VALUES(0) = make_integer(new_fd);
-	VALUES(1) = (new_fd == -1) ? Cnil : make_string_copy(&sockaddr.sun_path);
-        return VALUES(0);
-}
-")
-
-(c-inline () () nil  "cl_def_c_function(@do-accept-un,do_accept_un,1)" :one-liner t)
-
 (defmethod socket-accept ((socket local-socket))
   (multiple-value-bind (fd name)
-      (do-accept-un (socket-file-descriptor socket))
+      (c-inline ((socket-file-descriptor socket)) (:int) (values :int :object)
+"{
+        struct sockaddr_un sockaddr;
+        int socket_fd = fixint(#0);
+        int addr_len = sizeof(struct sockaddr_un);
+        int new_fd = accept(socket_fd, &sockaddr, &addr_len);
+	@(return 0) = new_fd;
+	@(return 1) = (new_fd == -1) ? Cnil : make_string_copy(&sockaddr.sun_path);
+}")
     (cond
       ((= fd -1)
        (socket-error "accept"))
