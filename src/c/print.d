@@ -1223,7 +1223,9 @@ _write_object(cl_object x, int level)
 		break;
 #endif /* CLOS */
 	default:
-		error("illegal type --- cannot print");
+		write_str("#<illegal pointer ");
+		write_addr(x);
+		write_ch('>');
 	}
 }
 

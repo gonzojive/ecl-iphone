@@ -814,7 +814,7 @@ cl_namestring(cl_object pname)
 cl_object
 cl_file_namestring(cl_object pname)
 {
-	pname = coerce_to_filename(pname);
+	pname = cl_pathname(pname);
 	@(return namestring(make_pathname(Cnil, Cnil, Cnil,
 					     pname->pathname.name,
 					     pname->pathname.type,
