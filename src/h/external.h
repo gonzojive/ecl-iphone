@@ -1396,6 +1396,7 @@ extern void FEtype_error_stream(cl_object x) __attribute__((noreturn));
 extern void FEcircular_list(cl_object x) __attribute__((noreturn));
 extern void FEtype_error_index(cl_object seq, cl_object ndx) __attribute__((noreturn));
 extern void FEtype_error_string(cl_object x) __attribute__((noreturn));
+extern void FEdivision_by_zero(void) __attribute__((noreturn));
 
 /* unixfsys.c */
 

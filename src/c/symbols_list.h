@@ -1378,6 +1378,8 @@ cl_symbols[] = {
 {SYS_ "STEPPER", SI_ORDINARY, OBJNULL, -1, OBJNULL},
 {SYS_ "COERCE-TO-FILENAME", SI_ORDINARY, si_coerce_to_filename, 1, OBJNULL},
 
+{KEY_ "OPERATION", KEYWORD, NULL, -1, OBJNULL},
+
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1, OBJNULL}};
 

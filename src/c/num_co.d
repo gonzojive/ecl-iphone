@@ -206,13 +206,18 @@ floor2(cl_object x, cl_object y)
 		  break;
 		}
 		case t_bignum: {	/* FIX / BIG */
-		  if (number_plusp(x) != number_plusp(y)) {
-		    VALUES(0) = MAKE_FIXNUM(-1);
-		    VALUES(1) = number_plus(y, x);
-		  } else {
-		    VALUES(0) = MAKE_FIXNUM(0);
-		    VALUES(1) = x;
-		  }
+		  /* We must perform the division because there is the
+		   * pathological case
+		   *	x = MOST_NEGATIVE_FIXNUM
+		   *    y = - MOST_NEGATIVE_FIXNUM
+		   */
+		  cl_object q = big_register0_get();
+		  cl_object r = big_register1_get();
+		  cl_object j = big_register2_get();
+		  mpz_set_si(j->big.big_num, fix(x));
+		  mpz_fdiv_qr(q->big.big_num, r->big.big_num, y->big.big_num, j->big.big_num);
+		  VALUES(0) = big_register_normalize(q);
+		  VALUES(1) = big_register_normalize(r);
 		  break;
 		}
 		case t_ratio:		/* FIX / RAT */
@@ -380,13 +385,18 @@ ceiling2(cl_object x, cl_object y)
 		  break;
 		}
 		case t_bignum: {	/* FIX / BIG */
-		  if (number_plusp(x) != number_plusp(y)) {
-		    VALUES(0) = MAKE_FIXNUM(0);
-		    VALUES(1) = x;
-		  } else {
-		    VALUES(0) = MAKE_FIXNUM(1);
-		    VALUES(1) = number_minus(x, y);
-		  }
+		  /* We must perform the division because there is the
+		   * pathological case
+		   *	x = MOST_NEGATIVE_FIXNUM
+		   *    y = - MOST_NEGATIVE_FIXNUM
+		   */
+		  cl_object q = big_register0_get();
+		  cl_object r = big_register1_get();
+		  cl_object j = big_register2_get();
+		  mpz_set_si(j->big.big_num, fix(x));
+		  mpz_cdiv_qr(q->big.big_num, r->big.big_num, y->big.big_num, j->big.big_num);
+		  VALUES(0) = big_register_normalize(q);
+		  VALUES(1) = big_register_normalize(r);
 		  break;
 		}
 		case t_ratio:		/* FIX / RAT */

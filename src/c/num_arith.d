@@ -519,7 +519,7 @@ cl_conjugate(cl_object c)
 cl_object
 number_negate(cl_object x)
 {
-	cl_object	z, z1;
+	cl_object z, z1;
 
 	switch (type_of(x)) {
 	case t_fixnum: {
@@ -536,7 +536,7 @@ number_negate(cl_object x)
 	case t_bignum:
 		z = big_register0_get();
 		mpz_neg(z->big.big_num, x->big.big_num);
-		return(big_register_copy(z));
+		return big_register_normalize(z);
 
 	case t_ratio:
 		z1 = number_negate(x->ratio.num);
@@ -589,6 +589,8 @@ number_divide(cl_object x, cl_object y)
 	case t_bignum:
 		switch (type_of(y)) {
 		case t_fixnum:
+			if (y == MAKE_FIXNUM(0))
+				FEdivision_by_zero();
 		case t_bignum:
 			if (number_minusp(y) == TRUE) {
 				x = number_negate(x);
@@ -612,6 +614,8 @@ number_divide(cl_object x, cl_object y)
 	case t_ratio:
 		switch (type_of(y)) {
 		case t_fixnum:
+			if (y == MAKE_FIXNUM(0))
+				FEdivision_by_zero();
 		case t_bignum:
 			z = number_times(x->ratio.den, y);
 			z = make_ratio(x->ratio.num, z);
@@ -633,6 +637,8 @@ number_divide(cl_object x, cl_object y)
 	case t_shortfloat:
 		switch (type_of(y)) {
 		case t_fixnum:
+			if (y == MAKE_FIXNUM(0))
+				FEdivision_by_zero();
 			return make_shortfloat(sf(x) / fix(y));
 		case t_bignum:
 		case t_ratio:
@@ -649,6 +655,8 @@ number_divide(cl_object x, cl_object y)
 	case t_longfloat:
 		switch (type_of(y)) {
 		case t_fixnum:
+			if (y == MAKE_FIXNUM(0))
+				FEdivision_by_zero();
 			return make_longfloat(lf(x) / fix(y));
 		case t_bignum:
 		case t_ratio:
@@ -696,8 +704,11 @@ integer_divide(cl_object x, cl_object y)
 	tx = type_of(x);
 	ty = type_of(y);
 	if (tx == t_fixnum) {
- 		if (ty == t_fixnum)
+ 		if (ty == t_fixnum) {
+			if (y == MAKE_FIXNUM(0))
+				FEdivision_by_zero();
 			return MAKE_FIXNUM(fix(x) / fix(y));
+		}
 		if (ty == t_bignum) {
 			/* The only number "x" which can be a bignum and be
 			 * as large as "-x" is -MOST_NEGATIVE_FIXNUM. However

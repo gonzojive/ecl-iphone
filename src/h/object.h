@@ -485,6 +485,8 @@ union cl_lispunion {
 typedef enum {
 	t_cons = 0,
 	t_start = 0,
+	/* The most specific numeric types come first. Assumed by
+	   some routines, like cl_expt */
 	t_fixnum,		/* 1 immediate fixnum */
 	t_character,		/* 2 immediate character */
 	t_bignum = 4,		/* 4 */

@@ -93,21 +93,22 @@ cl_expt(cl_object x, cl_object y)
 	cl_object z;
 
 	if (number_zerop(y)) {
-		switch (type_of(y)) {
-		case t_fixnum:  case t_bignum:  case t_ratio:
+		/* INV: The most specific numeric types come first. */
+		cl_type tx = type_of(x);
+		ty = type_of(y);
+		switch ((ty > tx)? ty : tx) {
+		case t_fixnum:
+		case t_bignum:
+		case t_ratio:
 			return1(MAKE_FIXNUM(1));
-
 		case t_shortfloat:
 			return1(make_shortfloat(1.0));
-
 		case t_longfloat:
 			return1(make_longfloat(1.0));
-
 		case t_complex:
-			z = cl_expt(x->complex.real, y);
+			z = cl_float(2, MAKE_FIXNUM(1), x->complex.real);
 			z = make_complex(z, MAKE_FIXNUM(0));
 			return1(z);
-
 		default:
 			FEtype_error_number(x);
 		}
