@@ -773,12 +773,12 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 		FEtype_error_index(seq, MAKE_FIXNUM(start));
 	} else if (end > limit) {
 		FEtype_error_index(seq, MAKE_FIXNUM(end));
-	} else if (end < start) {
+	} else if (end <= start) {
 		;
 	} else if (t == t_cons || t == t_symbol) {
 		seq = nthcdr(start, seq);
 		loop_for_in(seq) {
-			if (start <= end) {
+			if (start < end) {
 				cl_write_byte(CAR(seq), stream);
 			} else {
 				goto OUTPUT;
@@ -793,14 +793,14 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 		   (stream->stream.mode == smm_io ||
 		    stream->stream.mode == smm_output))
 	{
-		int towrite = end - start + 1;
+		int towrite = end - start;
 		if (fwrite(seq->vector.self.ch + start, sizeof(char),
 			   towrite, stream->stream.file) < towrite) {
 			io_error(stream);
 		}
 	} else {
 		unsigned char *p;
-		for (p= seq->vector.self.ch; start <= end; start++, p++) {
+		for (p= seq->vector.self.ch; start < end; start++, p++) {
 			writec_stream(*p, stream);
 		}
 	}
@@ -823,12 +823,12 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 		FEtype_error_index(seq, MAKE_FIXNUM(start));
 	} else if (end > limit) {
 		FEtype_error_index(seq, MAKE_FIXNUM(end));
-	} else if (end < start) {
+	} else if (end <= start) {
 		;
 	} else if (t == t_cons || t == t_symbol) {
 		seq = nthcdr(start, seq);
 		loop_for_in(seq) {
-			if (start > end) {
+			if (start >= end) {
 				goto OUTPUT;
 			} else {
 				char c = ecl_getc(stream);
@@ -847,7 +847,7 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 		    (stream->stream.mode == smm_io ||
 		     stream->stream.mode == smm_output))
 	{
-		int toread = end - start + 1;
+		int toread = end - start;
 		int n = fread(seq->vector.self.ch + start, sizeof(char),
 			      toread, stream->stream.file);
 		if (n < toread && ferror(stream->stream.file))
@@ -855,7 +855,7 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 		start += n;
 	} else {
 		unsigned char *p;
-		for (p = seq->vector.self.ch; start <= end; start++, p++) {
+		for (p = seq->vector.self.ch; start < end; start++, p++) {
 			int c = ecl_getc(stream);
 			if (c == EOF)
 				break;
