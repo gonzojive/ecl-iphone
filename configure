@@ -24,7 +24,8 @@ echo Switching to directory "\`${buildir}'" to continue configuration.
 # we let it configure itself and later on retrieve the appropiate flags
 #
 if ( echo $* | grep enable-local-gmp ) ||\
-   ( echo $* | grep enable-simple-conf ); then
+   ( echo $* | grep enable-simple-conf ) ||\
+   ( echo $* | grep help ) ; then
   cd ${buildir}
   ${srcdir}/configure --srcdir=${srcdir} $*
 else
