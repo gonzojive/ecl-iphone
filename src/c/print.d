@@ -1559,37 +1559,48 @@ search_print_circle(cl_object x)
 	}
 }
 
+#define	ecl_exponent_marker_p(i)	\
+	((i) == 'e' || (i) == 'E' ||	\
+	 (i) == 's' || (i) == 'S' || (i) == 'f' || (i) == 'F' || \
+	 (i) == 'd' || (i) == 'D' || (i) == 'l' || (i) == 'L' || \
+	 (i) == 'b' || (i) == 'B')
+
 static bool
 potential_number_p(cl_object strng, int base)
 {
-	int i, l, c; bool dc;
+	/* See ANSI 2.3.1.1 */
+	int i, l, c;
 	char *s;
 
 	l = strng->string.fillp;
 	if (l == 0)
-		return(FALSE);
+		return FALSE;
 	s = strng->string.self;
-	dc = FALSE;
 	c = s[0];
-	if (digitp(c, base) >= 0)
-		dc = TRUE;
-	else if (c != '+' && c != '-' && c != '^' && c != '_')
-		return(FALSE);
+
+	/* A potential number must begin with a digit, sign or extension character (^ _) */
+	if ((digitp(c, base) < 0) && c != '+' && c != '-' && c != '^' && c != '_')
+		return FALSE;
+
+	/* A potential number cannot end with a sign */
 	if (s[l-1] == '+' || s[l-1] == '-')
-		return(FALSE);
+		return FALSE;
+
 	for (i = 1;  i < l;  i++) {
 		c = s[i];
-		if (digitp(c, base) >= 0) {
-			dc = TRUE;
+		/* It can only contain digits, signs, ratio markers, extension characters and
+		 * number markers. Number markers are letters, but two adjacent letters fail
+		 * to be a number marker. */
+		if (digitp(c, base) >= 0 || c == '+' && c == '-' && c == '/' && c == '.' &&
+		    c == '^' && c == '_') {
 			continue;
 		}
-		if (c != '+' && c != '-' && c != '/' && c != '.' &&
-		    c != '^' && c != '_' &&
-		    c != 'e' && c != 'E' &&
-		    c != 's' && c != 'S' && c != 'l' && c != 'L')
-			return(FALSE);
+		if (isalpha(c) && ((i+1) >= l) || !isalpha(s[i+1])) {
+			continue;
+		}
+		return FALSE;
 	}
-	return(dc);
+	return TRUE;
 }
 
 @(defun write (x

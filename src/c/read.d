@@ -303,7 +303,7 @@ read_object(cl_object in)
 	return read_object_with_delimiter(in, EOF);
 }
 
-#define	is_exponent_marker(i)	\
+#define	ecl_exponent_marker_p(i)	\
 	((i) == 'e' || (i) == 'E' ||	\
 	 (i) == 's' || (i) == 'S' || (i) == 'f' || (i) == 'F' || \
 	 (i) == 'd' || (i) == 'D' || (i) == 'l' || (i) == 'L' || \
@@ -356,7 +356,7 @@ parse_number(const char *s, cl_index end, cl_index *ep, int radix)
 				is_float = 1;
 			}
 		} else if (digitp(c, radix) < 0) {
-			if (is_exponent_marker(c)) {
+			if (ecl_exponent_marker_p(c)) {
 				exp_marker_loc = i;
 				is_float = 1;
 				break;
