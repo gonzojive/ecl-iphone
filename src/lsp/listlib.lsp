@@ -87,26 +87,27 @@ Destructive SET-DIFFERENCE.  Only LIST1 may be destroyed."
 	  (setq first x))
       (setq last x))))
 
+(defun swap-args (f)
+  (declare (si::c-local))
+  (and f #'(lambda (x y) (funcall f y x))))
+
 (defun set-exclusive-or (list1 list2 &key test test-not key)
   "Args: (list1 list2 &key (key #'identity) (test #'eql) test-not)
 Returns, as a list, those elements of LIST1 that are not elements of LIST2 and
 those elements of LIST2 that are not elements of LIST1."
-  (declare (ignore test test-not key))
   (nconc (set-difference list1 list2 :test test :test-not test-not :key key)
-         (set-difference list2 list1 :test test :test-not test-not :key key)))
+         (set-difference list2 list1 :test (swap-args test) :test-not (swap-args test-not) :key key)))
 
 (defun nset-exclusive-or (list1 list2 &key test test-not key)
   "Args: (list1 list2 &key (key #'identity) (test #'eql) test-not)
 Destructive SET-EXCLUSIVE-OR.  Both LIST1 and LIST2 may be destroyed."
-  (declare (ignore test test-not key))
   (nconc (set-difference list1 list2 :test test :test-not test-not :key key)
-	 (nset-difference list2 list1 :test test :test-not test-not :key key)))
+	 (nset-difference list2 list1 :test (swap-args test) :test-not (swap-args test-not) :key key)))
 
 (defun subsetp (list1 list2 &key test test-not key)
   "Args: (list1 list2 &key (key #'identity) (test #'eql) test-not)
 Returns T if every element of LIST1 is also an element of LIST2.  Returns NIL
 otherwise."
-  (declare (ignore test test-not key))
   (do ((l list1 (cdr l)))
       ((null l) t)
     (unless (member1 (car l) list2 test test-not key)

@@ -1780,6 +1780,11 @@ ECL 0.9d
     file that links against ECL. It does not include optimization flags, or
     flags to create position independent object files.
 
+  - Fixed a long lasting bug: the TEST or TEST-NOT function to
+    [N]SET-EXCLUSIVE-OR can assume that the first argument belongs to
+    the first list and the second to the second one. However, ECL
+    would not respect this.
+
 * ANSI compatibility:
 
   - No symbol is exported from the CL package other than those specificied in
