@@ -67,6 +67,7 @@ BEGIN:
 	case smm_input:
 #if defined(ECL_WSOCK)
 	case smm_input_wsock:
+	case smm_io_wsock:
 #endif
 	case smm_concatenated:
 	case smm_two_way:
@@ -121,6 +122,7 @@ BEGIN:
 	case smm_output:
 #if defined(ECL_WSOCK)
 	case smm_output_wsock:
+	case smm_io_wsock:
 #endif
 	case smm_io:
 	case smm_two_way:
@@ -166,6 +168,7 @@ BEGIN:
 #if defined(ECL_WSOCK)
 	case smm_input_wsock:
 	case smm_output_wsock:
+	case smm_io_wsock:
 #endif
 	case smm_io:
 		if (strm->stream.char_stream_p)
@@ -527,6 +530,7 @@ close_stream(cl_object strm, bool abort_flag)        /*  Not used now!  */
 #if defined(ECL_WSOCK)
 	case smm_input_wsock:
 	case smm_output_wsock:
+	case smm_io_wsock:
 		if ( closesocket( ( int )strm->stream.file ) != 0 )
 			wsock_error( "Cannot close Windows Socket ~S~%~A.", strm );
 #if !defined(GBC_BOEHM)
@@ -655,6 +659,7 @@ ecl_write_byte8(int c, cl_object strm)
 		break;
 	}
 #if defined(ECL_WSOCK)
+	case smm_io_wsock:
 	case smm_output_wsock: {
 		int fp = (int)strm->stream.file;
 		if ( fp == INVALID_SOCKET )
@@ -700,6 +705,7 @@ BEGIN:
 	case smm_output:
 	case smm_io:
 #if defined(ECL_WSOCK)
+	case smm_io_wsock:
 	case smm_output_wsock:
 #endif
 	case smm_string_output:
@@ -793,6 +799,7 @@ ecl_read_byte8(cl_object strm)
 		break;
 	}
 #if defined(ECL_WSOCK)
+	case smm_io_wsock:
 	case smm_input_wsock: {
 		int fp = (int)strm->stream.file;
 		if ( fp == INVALID_SOCKET )
@@ -905,6 +912,7 @@ BEGIN:
 	case smm_io:
 	case smm_string_input:
 #if defined(ECL_WSOCK)
+	case smm_io_wsock:
 	case smm_input_wsock:
 #endif
 		break;
@@ -1051,6 +1059,7 @@ BEGIN:
 		break;
 	}
 #if defined(ECL_WSOCK)
+	case smm_io_wsock:
 	case smm_input_wsock: {
 		int fp = strm->stream.file;
 		if (!strm->stream.char_stream_p)
@@ -1166,6 +1175,7 @@ BEGIN:
 		break;
 
 #if defined(ECL_WSOCK)
+	case smm_io_wsock:
 	case smm_input_wsock:
 		wsock_error( "Cannot peek char on Windows Socket ~S.~%~A", strm );
 		break;
@@ -1258,6 +1268,7 @@ BEGIN:
 		break;
 
 #if defined(ECL_WSOCK)
+	case smm_io_wsock:
 	case smm_input_wsock:
 		goto UNREAD_ERROR;
 #endif
@@ -1340,6 +1351,7 @@ BEGIN:
 		break;
 
 #if defined(ECL_WSOCK)
+	case smm_io_wsock:
 	case smm_output_wsock:
 		if (!strm->stream.char_stream_p)
 			not_a_character_stream(strm);
@@ -1603,6 +1615,7 @@ BEGIN:
 		break;
 	}
 #if defined(ECL_WSOCK)
+	case smm_io_wsock:
 	case smm_output_wsock:
 		/* do not do anything (yet) */
 		break;
@@ -1676,6 +1689,7 @@ BEGIN:
 		break;
 
 #if defined(ECL_WSOCK)
+	case smm_io_wsock:
 	case smm_input_wsock:
 		/* do not do anything (yet) */
 		printf( "Trying to clear input on windows socket stream!\n" );
@@ -1740,6 +1754,7 @@ BEGIN:
 		break;
 
 #if defined(ECL_WSOCK)
+	case smm_io_wsock:
 	case smm_output_wsock:
 		/* do not do anything (yet) */
 		printf( "Trying to clear output windows socket stream\n!" );
@@ -1899,6 +1914,7 @@ BEGIN:
 		return flisten(fp);
 
 #if defined(ECL_WSOCK)
+	case smm_io_wsock:
 	case smm_input_wsock:
 		fp = strm->stream.file;
 		if ( ( int )fp == INVALID_SOCKET )
@@ -2010,6 +2026,7 @@ BEGIN:
 #if defined(ECL_WSOCK)
 	case smm_input_wsock:
 	case smm_output_wsock:
+	case smm_io_wsock:
 #endif
 	case smm_concatenated:
 	case smm_two_way:
@@ -2130,6 +2147,7 @@ BEGIN:
 #if defined(ECL_WSOCK)
 	case smm_input_wsock:
 	case smm_output_wsock:
+	case smm_io_wsock:
 #endif
 	case smm_concatenated:
 	case smm_two_way:
@@ -2200,6 +2218,7 @@ BEGIN:
 #if defined(ECL_WSOCK)
 	case smm_input_wsock:
 	case smm_output_wsock:
+	case smm_io_wsock:
 #endif
 	case smm_concatenated:
 	case smm_two_way:
@@ -2236,6 +2255,7 @@ BEGIN:
 	case smm_output:
 #if defined(ECL_WSOCK)
 	case smm_output_wsock:
+	case smm_io_wsock:
 #endif
 	case smm_io:
 	case smm_two_way:
@@ -2723,13 +2743,14 @@ ecl_make_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm)
 #if defined(ECL_WSOCK)
     case smm_input_wsock:
     case smm_output_wsock:
+    case smm_io_wsock:
       break;
 #endif
     default:
       FEerror("make_stream: wrong mode", 0);
    }
 #if defined(ECL_WSOCK)
-   if ( smm == smm_input_wsock || smm == smm_output_wsock )
+   if ( smm == smm_input_wsock || smm == smm_output_wsock || smm == smm_io_wsock )
      fp = ( FILE* )fd;
    else
      fp = fdopen( fd, mode );

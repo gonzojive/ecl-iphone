@@ -1231,6 +1231,11 @@ si_write_ugly_object(cl_object x, cl_object stream)
 			write_str("output win32 socket stream ", stream);
 			si_write_ugly_object(x->stream.object1, stream);
 			break;
+
+		case smm_io_wsock:
+			write_str("i/o win32 socket stream ", stream);
+			si_write_ugly_object(x->stream.object1, stream);
+			break;
 #endif
 
 		case smm_io:

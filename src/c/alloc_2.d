@@ -54,7 +54,10 @@ finalize(cl_object o, cl_object data)
 #endif
 	case t_stream:
 #if defined(ECL_WSOCK)
-		if (o->stream.mode == smm_input_wsock || o->stream.mode == smm_output_wsock) {
+		if (o->stream.mode == smm_input_wsock
+		    || o->stream.mode == smm_output_wsock
+		    || o->stream.mode == smm_io_wsock)
+		{
 			closesocket((int)o->stream.file);
 		} else
 #endif

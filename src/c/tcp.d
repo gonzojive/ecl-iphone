@@ -266,7 +266,7 @@ cl_object
 si_open_client_stream(cl_object host, cl_object port)
 {
    int fd, p;			/* file descriptor */
-   cl_object streamIn, streamOut;
+   cl_object stream;
 
    /* Ensure "host" is a string that we can pass to a C function */
    host = coerce_to_simple_string(host);
@@ -285,21 +285,18 @@ si_open_client_stream(cl_object host, cl_object port)
      @(return Cnil)
 
 #if defined(_MSC_VER) || defined(mingw32)
-   streamIn = ecl_make_stream_from_fd(host, fd, smm_input_wsock);
-   streamOut = ecl_make_stream_from_fd(host, fd, smm_output_wsock);
+   stream = ecl_make_stream_from_fd(host, fd, smm_io_wsock);
 #else
-   streamIn = ecl_make_stream_from_fd(host, fd, smm_input);
-   streamOut = ecl_make_stream_from_fd(host, fd, smm_output);
+   stream = ecl_make_stream_from_fd(host, fd, smm_io);
 #endif
 
-   @(return make_two_way_stream(streamIn, streamOut))
+   @(return stream)
 }
 
 cl_object
 si_open_server_stream(cl_object port)
 {
    int fd;			/* file descriptor */
-   cl_object streamIn, streamOut;
    cl_object output;
 
    start_critical_section();
@@ -309,9 +306,7 @@ si_open_server_stream(cl_object port)
    if (fd == 0)
      output = Cnil;
    else {
-     streamIn = ecl_make_stream_from_fd(Cnil, fd, smm_input);
-     streamOut = ecl_make_stream_from_fd(Cnil, fd, smm_output);
-     output = make_two_way_stream(streamIn, streamOut);
+     output = ecl_make_stream_from_fd(Cnil, fd, smm_io);
    }
    @(return output)
 }
@@ -327,7 +322,7 @@ si_open_unix_socket_stream(cl_object path)
 	FEerror("UNIX socket not supported under Win32 platform", 0);
 #else
 	int fd;			/* file descriptor */
-	cl_object streamIn, streamOut;
+	cl_object stream;
 	struct sockaddr_un addr;
 
 	if (type_of(path) != t_string)
@@ -351,10 +346,7 @@ si_open_unix_socket_stream(cl_object path)
 		@(return Cnil)
 	}
 
-	streamIn = ecl_make_stream_from_fd(path, fd, smm_input);
-	streamOut = ecl_make_stream_from_fd(path, fd, smm_output);
-
-	@(return make_two_way_stream(streamIn, streamOut))
+	@(return ecl_make_stream_from_fd(path, fd, smm_io))
 #endif
 }
 
