@@ -73,6 +73,7 @@
 
 #define DPP
 #include "config.h"
+#include "machines.h"
 #include "functions_list.h"
 #include "symbols_list.h"
 
