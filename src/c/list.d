@@ -365,8 +365,7 @@ nthcdr(cl_fixnum n, cl_object x)
 @(defun make_list (size &key initial_element &aux x)
 	cl_fixnum i;
 @
-	if (!FIXNUMP(size))
-		FEerror("Cannot make a list of the size ~D.", 1, size);
+	/* INV: fixnnint() signals a type-error if SIZE is not a integer >=0 */
 	i = fixnnint(size);
 	while (i-- > 0)
 		x = CONS(initial_element, x);
@@ -483,8 +482,9 @@ cl_nreconc(cl_object l, cl_object y)
 	cl_fixnum delay;
 @
 	/* INV: No list has more than MOST_POSITIVE_FIXNUM elements */
-	if (!FIXNUMP(nn))
+	if (type_of(nn) == t_bignum)
 		@(return Cnil)
+	/* INV: fixnnint() signas a type-error if NN is not an integer >=0 */
 	delay = fixnnint(nn);
 	r = lis;
 	loop_for_on(lis) {
@@ -503,8 +503,9 @@ cl_nreconc(cl_object l, cl_object y)
 	cl_object x, r;
 @
 	/* INV: No list has more than MOST_POSITIVE_FIXNUM elements */
-	if (!FIXNUMP(nn))
+	if (type_of(nn) == t_bignum)
 		@(return Cnil)
+	/* INV: fixnnint() signas a type-error if NN is not an integer >=0 */
 	/* We add 1 because at the end `r' must point to the
 	   cons that must be modified */
 	delay = fixnnint(nn)+1;
