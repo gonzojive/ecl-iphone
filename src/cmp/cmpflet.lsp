@@ -227,7 +227,6 @@
       body))
 
 (defun c1locally (args)
-  (print "FOO")
   (multiple-value-bind (body ss ts is other-decl)
       (c1body args t)
     (c1add-globals ss)
