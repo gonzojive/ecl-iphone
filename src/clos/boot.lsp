@@ -131,4 +131,7 @@
     (defmethod slot-unbound ((class t) object slot-name)
       (error 'slot-unbound :instance object :name slot-name))
 
+(defmethod slot-exists-p ((instance t) slot-name)
+  nil)
+
 ;;; ----------------------------------------------------------------------
