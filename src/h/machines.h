@@ -78,6 +78,10 @@
 #  define ARCHITECTURE	"ARM"
 #elif	defined(PPC) || defined(__PPC__) || defined(__powerpc) || defined(__ppc__)
 #  define ARCHITECTURE	"POWERPC"
+#elif	defined(__alpha__)
+#  define ARCHITECTURE	"ALPHA"
+#else
+#  define ARCHITECTURE	"UNKNOWN"
 #endif
 
 #ifdef	MSDOS
