@@ -1657,7 +1657,6 @@ collected result will be returned as the value of the LOOP."
     (apply (car tem) var first-arg data-type (cdr tem))))
 
 (defun loop-do-repeat ()
-  (declare (si::c-local))
   (loop-disallow-conditional :repeat)
   (let ((form (loop-get-form))
 	(type 'real))
