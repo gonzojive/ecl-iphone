@@ -901,10 +901,15 @@ one_minus(cl_object x)
 	}
 }
 
-@(defun lcm (lcm &rest nums)
+@(defun lcm (&rest nums)
+	cl_object lcm;
 @
+	if (narg == 0)
+		@(return MAKE_FIXNUM(0))
 	/* INV: get_gcd() checks types. By placing `numi' before `lcm' in
 	   this call, we make sure that errors point to `numi' */
+	lcm = cl_va_arg(nums);
+	assert_type_integer(lcm);
 	while (narg-- > 1) {
 		cl_object numi = cl_va_arg(nums);
 		cl_object t = number_times(lcm, numi);
@@ -912,6 +917,5 @@ one_minus(cl_object x)
 		if (g != MAKE_FIXNUM(0))
 			lcm = number_divide(t, g);
 	}
-	assert_type_integer(lcm);
 	@(return (number_minusp(lcm) ? number_negate(lcm) : lcm))
 @)
