@@ -26,7 +26,9 @@
 (in-package "USER")
 (load "lsp/defsys.lsp")
 (sbt::operate-on-system lsp :library)
-;(sbt::operate-on-system lsp :load)
+(sbt::operate-on-system lsp :load)
+(si::pathname-translations "SYS" '(("*.*" "./*.*")))
+(setq compiler::*cc-flags* (concatenate 'string compiler::*cc-flags* " -I@srcdir@/h -I@srcdir@/gmp -I@builddir@/h"))
 
 #ifndef RUNTIME
 ;;;

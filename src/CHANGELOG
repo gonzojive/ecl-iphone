@@ -758,6 +758,9 @@ TODO:
 
 * Remove most property lists from standard symbols.
 
+* Make the version with Boehm's GC and the version without it binary
+  compatible.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:70 ***
