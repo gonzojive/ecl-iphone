@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include "ecl.h"
 #include "machines.h"
+#include "internal.h"
 
 cl_object
 si_system(cl_object cmd)

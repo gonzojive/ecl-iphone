@@ -47,22 +47,6 @@
 #  define PATH_SEPARATOR	':'
 #endif /* MSDOS */
 
-#if defined(MSDOS) || defined(cygwin) || defined(darwin)
-#  define OPEN_R	"rb"
-#  define OPEN_W	"wb"
-#  define OPEN_RW	"w+b"
-#  define OPEN_A	"ab"
-#  define OPEN_RA	"a+b"
-#  define CRLF
-#else
-#  define OPEN_R	"r"
-#  define OPEN_W	"w"
-#  define OPEN_RW	"w+"
-#  define OPEN_A	"a"
-#  define OPEN_RA	"a+"
-#endif /* MSDOS */
-
-
 /***********************************************************************
 
   Architectural features:

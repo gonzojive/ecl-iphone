@@ -34,6 +34,21 @@ extern const struct {
 	short type;
 } all_functions[];
 
+/* file.d */
+
+/*
+ * POSIX specifies that the "b" flag is ignored. This is good, because
+ * under MSDOS and Apple's OS we need to open text files in binary mode,
+ * so that we get both the carriage return and the linefeed characters.
+ * Otherwise, it would be complicated to implement file-position and
+ * seek operations.
+ */
+#define OPEN_R	"rb"
+#define OPEN_W	"wb"
+#define OPEN_RW	"w+b"
+#define OPEN_A	"ab"
+#define OPEN_RA	"a+b"
+#define CRLF
 
 /* print.d */
 

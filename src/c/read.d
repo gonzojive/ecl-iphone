@@ -26,7 +26,6 @@
 cl_object standard_readtable;
 
 #ifndef THREADS
-bool preserving_whitespace_flag;
 bool escape_flag;
 cl_object delimiting_char;
 bool detect_eos_flag;
@@ -53,24 +52,6 @@ unread_char(cl_object c, cl_object in)
 {
 	/* INV: char_code() checks the type of `c' */
 	unreadc_stream(char_code(c), in);
-}
-
-/*
-	peek_char corresponds to COMMON Lisp function PEEK-CHAR.
-	When pt is TRUE, preceeding whitespaces are ignored.
-*/
-cl_object
-peek_char(bool pt, cl_object in)
-{
-	int c;
-	cl_object rtbl = ecl_current_readtable();
-
-	c = readc_stream(in);
-	if (pt)
-		while (cat(rtbl, c) == cat_whitespace)
-			c = readc_stream(in);
-	unreadc_stream(c, in);
-	return CODE_CHAR(c);
 }
 
 static cl_object patch_sharp(cl_object x);
@@ -175,9 +156,7 @@ BEGIN:
 				/*  Colon has appeared twice.  */
 		}
 		if (a == cat_whitespace || a == cat_terminating) {
-			if (preserving_whitespace_flag ||
-			    cat(rtbl, c) != cat_whitespace)
-				unreadc_stream(c, in);
+			unreadc_stream(c, in);
 			break;
 		}
 		cl_string_push_extend(cl_token, c);
@@ -883,8 +862,7 @@ sharp_colon_reader(cl_object in, cl_object ch, cl_object d)
 		if (a == cat_whitespace || a == cat_terminating)
 			break;
 	}
-	if (preserving_whitespace_flag || cat(rtbl, c) != cat_whitespace)
-		unreadc_stream(c, in);
+	unreadc_stream(c, in);
 
 M:
 	if (read_suppress)
@@ -1314,13 +1292,12 @@ stream_or_default_input(cl_object stream)
 @(defun read (&optional (strm Cnil)
 			(eof_errorp Ct)
 			eof_value
-			recursivep
-	      &aux x)
+			recursivep)
+	cl_object x;
 @
 	strm = stream_or_default_input(strm);
 	detect_eos_flag = TRUE;
 	if (Null(recursivep)) {
-		preserving_whitespace_flag = FALSE;
 		x = read_object_non_recursive(strm);
 	} else {
 		x = read_object(strm);
@@ -1329,6 +1306,19 @@ stream_or_default_input(cl_object stream)
 		if (Null(eof_errorp))
 			@(return eof_value)
 		FEend_of_file(strm);
+	}
+	/* Skip whitespace characters, but stop at beginning of new line or token */
+	if (Null(recursivep)) {
+		cl_object rtbl = ecl_current_readtable();
+		while (!stream_at_end(strm)) {
+			int c = readc_stream(strm);
+			if (c == '\n')
+				break;
+			if (cat(rtbl, c) != cat_whitespace) {
+				unreadc_stream(c, strm);
+				break;
+			}
+		}
 	}
 	@(return x)
 @)
@@ -1344,7 +1334,6 @@ stream_or_default_input(cl_object stream)
 	strm = stream_or_default_input(strm);
 	detect_eos_flag = TRUE;
 	if (Null(recursivep)) {
-		preserving_whitespace_flag = TRUE;
 		x = read_object_non_recursive(strm);
 	} else {
 		x = read_object(strm);
@@ -1363,7 +1352,6 @@ do_read_delimited_list(cl_object d, cl_object strm)
 	cl_object l, x, *p;
 	l = Cnil;
 	p = &l;
-	preserving_whitespace_flag = FALSE;	/*  necessary?  */
 	for (;;) {
 		delimiting_char = d;
 		x = read_object(strm);
@@ -1754,7 +1742,6 @@ si_string_to_object(cl_object x)
 
 	assert_type_string(x);
 	in = make_string_input_stream(x, 0, x->string.fillp);
-	preserving_whitespace_flag = FALSE;
 	detect_eos_flag = FALSE;
 	x = read_object(in);
 	@(return x)

@@ -23,6 +23,7 @@
 
 #include <ecl.h>
 #include "machines.h"
+#include "internal.h"
 
 #if defined(BSD) && !defined(MSDOS)
 #include <sys/ioctl.h>

@@ -1037,7 +1037,6 @@ extern bool detect_eos_flag;
 #endif
 extern cl_object read_char(cl_object in);
 extern void unread_char(cl_object c, cl_object in);
-extern cl_object peek_char(bool pt, cl_object in);
 extern cl_object read_object_non_recursive(cl_object in);
 extern cl_object read_object(cl_object in);
 extern cl_object parse_number(const char *s, cl_index end, cl_index *ep, int radix);
