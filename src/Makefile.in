@@ -149,4 +149,4 @@ test3:
 test:
 	$(MAKE) -C tests
 	$(MAKE) -C ansi-tests > ansi-tests/log
-	-(diff tests ~/src/tests; diff --exclude log ansi-tests ~/src/ansi-tests) | less
+	#-(diff tests ~/src/tests; diff --exclude log ansi-tests ~/src/ansi-tests) | less
