@@ -539,7 +539,10 @@ returns with NIL."
 		     (stream-error-stream condition)))))
 
 (define-condition file-error (error)
-  ((pathname :INITARG :PATHNAME :READER file-error-pathname)))
+  ((pathname :INITARG :PATHNAME :READER file-error-pathname))
+  (:REPORT (lambda (condition stream)
+	     (format stream "Filesystem error with pathname ~S.~%Either the file cannot be accessed or the pathname is not a valid one."
+		     (file-error-pathname condition)))))
 
 (define-condition package-error (error)
   ((package :INITARG :PACKAGE :READER package-error-package)))

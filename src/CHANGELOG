@@ -1800,7 +1800,9 @@ ECL 0.9d
   - There is support for the :CASE argument in all pathname functions
     that require it (Contributed by Julian Stecklina). The function
     PARSE-NAMESTRING now handles the optional host and
-    default-pathname arguments properly.
+    default-pathname arguments properly. MAKE-PATHNAME now signals
+    conditions of type FILE-ERROR when the components of the pathname
+    have errors (wrong types, '(:ABSOLUTE :BACK), etc).
 
 TODO:
 =====

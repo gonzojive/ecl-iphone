@@ -33,14 +33,10 @@
 
 typedef int (*delim_fn)(int);
 
-static void
-error_directory(cl_object d) {
-	FEerror("make-pathname: ~A is not a valid directory", 1, d);
-}
-
 static cl_object
 check_directory(cl_object directory, bool logical)
 {
+	/* INV: directory is always a list */
 	cl_object ptr, item;
 	int i;
 
@@ -52,9 +48,7 @@ check_directory(cl_object directory, bool logical)
 		if (item == @':back') {
 			if (i == 0)
 				return @':error';
-			if (i == 1)
-				return @':error';
-			item = nthcdr(i-1, directory);
+			item = nth(i-1, directory);
 			if (item == @':absolute' || item == @':wild-inferiors')
 				return @':error';
 			if (i > 2)
@@ -62,7 +56,7 @@ check_directory(cl_object directory, bool logical)
 		} if (item == @':up') {
 			if (i == 0)
 				return @':error';
-			item = nthcdr(i-1, directory);
+			item = nth(i-1, directory);
 			if (item == @':absolute' || item == @':wild-inferiors')
 				return @':error';
 		} else if (item == @':relative' || item == @':absolute') {
@@ -99,10 +93,11 @@ make_pathname(cl_object host, cl_object device, cl_object directory,
 	case t_symbol:
 		if (directory == Cnil)
 			break;
-		if (directory == @':wild')
+		if (directory == @':wild') {
 			directory = cl_list(2, @':absolute', @':wild-inferiors');
-		error_directory(directory);
-		break;
+			break;
+		}
+		goto ERROR;
 	case t_cons: {
 		cl_object aux = check_directory(cl_copy_list(directory), 1);
 		if (aux != @':error') {
@@ -111,8 +106,7 @@ make_pathname(cl_object host, cl_object device, cl_object directory,
 		}
 	}
 	default:
-		error_directory(directory);
-
+		goto ERROR;
 	}
 	x = cl_alloc_object(t_pathname);
 	if (type_of(host) == t_string)
@@ -120,22 +114,30 @@ make_pathname(cl_object host, cl_object device, cl_object directory,
 	else if (host == Cnil)
 		x->pathname.logical = FALSE;
 	else
-		FEerror("make-pathname: ~A is not a valid hostname", 1, host);
+		goto ERROR;
 	if (device != Cnil && device != @':unspecific' &&
 	    !(!x->pathname.logical && type_of(device) == t_string))
-		FEerror("make-pathname: ~A is not a valid device name", 1, device);
+		goto ERROR;
 	if (name != Cnil && name != @':wild' && type_of(name) != t_string)
-		FEerror("make-pathname: ~A is not a valid file name", 1, name);
+		goto ERROR;
 	if (type != Cnil && type != @':wild' && type_of(type) != t_string)
-		FEerror("make-pathname: ~A is not a valid file type", 1, type);
-	if (version != @':unspecific' && version != @':newest' && version != Cnil)
-		FEerror("make-pathname: version numbers not allowed", 0);
+		goto ERROR;
+	if (version != @':unspecific' && version != @':newest' && version != Cnil) {
+	ERROR:	cl_error(3, @'file-error', @':pathname',
+			 cl_list(13, @'make-pathname',
+				 @':host', host,
+				 @':device', device,
+				 @':directory', directory,
+				 @':name', name,
+				 @':type', type,
+				 @':version', version));
+	}
 	x->pathname.host = host;
 	x->pathname.device = device;
 	x->pathname.directory = directory;
 	x->pathname.name = name;
 	x->pathname.type = type;
-	x->pathname.version = @':unspecific';
+	x->pathname.version = version;
 	return(x);
 }
 
@@ -254,13 +256,15 @@ translate_directory_case(cl_object list, cl_object scase)
 	if (!CONSP(list)) {
 		return translate_pathname_case(list,scase);
 	} else {
-		cl_object l = cl_copy_list(list);
+		cl_object l;
+		list = cl_copy_list(list);
 		for (l = cl_copy_list(list); !endp(l); l = CDR(l)) {
 			/* It is safe to pass anything to translate_pathname_case,
 			 * because it will only transform strings, leaving other
 			 * object (such as symbols) unchanged.*/
 			CAR(l) = translate_pathname_case(CAR(l), scase);
 		}
+		return list;
 	}
 }
 
@@ -622,10 +626,8 @@ merge_pathnames(cl_object path, cl_object defaults, cl_object default_version)
 
 	defaults = cl_pathname(defaults);
 	path = cl_parse_namestring(1, path, Cnil, defaults);
-	if (Null(path->pathname.host))
+	if (Null(host = path->pathname.host))
 		host = defaults->pathname.host;
-	else
-		host = path->pathname.host;
 	if (Null(path->pathname.device))
 		if (Null(path->pathname.host))
 			device = defaults->pathname.device;
@@ -644,15 +646,12 @@ merge_pathnames(cl_object path, cl_object defaults, cl_object default_version)
 				   CDR(path->pathname.directory));
 	else
 		directory = path->pathname.directory;
-	if (Null(path->pathname.name))
+	if (Null(name = path->pathname.name))
 		name = defaults->pathname.name;
-	else
-		name = path->pathname.name;
-	if (Null(path->pathname.type))
+	if (Null(type = path->pathname.type))
 		type = defaults->pathname.type;
-	else
-		type = path->pathname.type;
-	version = Cnil;
+	if (Null(version = path->pathname.version))
+		version = defaults->pathname.type;
 	/*
 		In this implementation, version is not considered
 	*/
