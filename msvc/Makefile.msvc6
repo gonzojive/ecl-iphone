@@ -59,7 +59,7 @@ mkinstalldirs = $(SHELL) $(top_srcdir)/gc/mkinstalldirs
 
 SUBDIR        = c gc gmp
 LIBRARIES     =
-LSP_LIBRARIES = cmp.fas clx.fas sysfun.lsp
+LSP_LIBRARIES = cmp.fas clx.fas sysfun.lsp sockets.fas
 TARGETS       = ecl.exe
 DEF           = ecl.def
 # Define here the processor type to compile GMP library
@@ -186,6 +186,9 @@ eclgmp.lib:
 	cd ..
 sysfun.lsp:
 	$(CP) $(srcdir)\cmp\sysfun.lsp .\
+
+rt.lisp:
+	$(CP) $(srcdir)\..\contrib\rt\rt.lisp .\
 
 install: install-base
 	for %h in (gc.h gc_local_alloc.h gc_pthread_redirects.h \
