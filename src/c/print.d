@@ -246,7 +246,8 @@ call_structure_print_function(cl_object f, cl_object x, cl_object stream)
 	 != cat_constituent || \
 	 islower((c)&0377) || (c) == ':')
 
-static cl_fixnum search_print_circle(cl_object x);
+static bool object_will_print_as_hash(cl_object x);
+extern cl_fixnum search_print_circle(cl_object x);
 static bool potential_number_p(cl_object s, int base);
 
 static void FEprint_not_readable(cl_object x) __attribute__((noreturn));
@@ -1060,7 +1061,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 			si_write_ugly_object(y, stream);
 			/* FIXME! */
 			if (x == OBJNULL || ATOM(x) ||
-			    (circle && search_print_circle(x)))
+			    (circle && object_will_print_as_hash(x)))
 			{
 				if (x != Cnil) {
 					write_ch(INDENT, stream);
@@ -1095,7 +1096,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 				si_write_ugly_object(y, stream);
 			/* FIXME! */
 			if (x == OBJNULL || ATOM(x) ||
-			    (circle && search_print_circle(x))) {
+			    (circle && object_will_print_as_hash(x))) {
 				if (x != Cnil) {
 					write_ch(INDENT, stream);
 					write_str(". ", stream);
@@ -1345,6 +1346,23 @@ si_write_object(cl_object x, cl_object stream)
 #endif /* !ECL_CMU_FORMAT */
 }
 
+static bool
+object_will_print_as_hash(cl_object x)
+{
+	cl_object circle_counter = symbol_value(@'si::*circle-counter*');
+	cl_object circle_stack = symbol_value(@'si::*circle-stack*');
+	cl_object code = gethash_safe(x, circle_stack, OBJNULL);
+	if (FIXNUMP(circle_counter)) {
+		return !(code == OBJNULL || code == Cnil);
+	} else if (code == OBJNULL) {
+		/* Was not found before */
+		sethash(x, circle_stack, Cnil);
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
 /* To print circular structures, we traverse the structure by adding
    a pair <element, flag> to the interpreter stack for each element visited.
    flag is initially NIL and becomes T if the element is visited again.
@@ -1377,7 +1395,7 @@ search_print_circle(cl_object x)
 		code = gethash_safe(x, circle_stack, OBJNULL);
 		if (code == OBJNULL || code == Cnil) {
 			/* Is not referenced or was not found before */
-			sethash(x, circle_stack, Cnil);
+			/* sethash(x, circle_stack, Cnil); */
 			return 0;
 		} else if (code == Ct) {
 			/* This object is referenced twice, but has no code yet */

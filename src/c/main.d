@@ -120,6 +120,14 @@ static const struct {
 };
 
 int
+cl_shutdown(void)
+{
+#ifdef ENABLE_DLOPEN
+	ecl_library_close_all();
+#endif
+}
+
+int
 cl_boot(int argc, char **argv)
 {
 	cl_object aux;

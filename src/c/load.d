@@ -239,7 +239,7 @@ OUTPUT:
 #endif
 	@(return output)
 }
-#endif /* ENABLE_DLOPEN */
+#endif /* !ENABLE_DLOPEN */
 
 cl_object
 si_load_source(cl_object source, cl_object verbose, cl_object print)

@@ -769,6 +769,7 @@ extern cl_object si_quit _ARGS((cl_narg narg, ...)) /*__attribute__((noreturn))*
 extern bool ecl_booted;
 extern const char *ecl_self;
 extern int cl_boot(int argc, char **argv);
+extern int cl_shutdown(void);
 
 
 /* mapfun.c */
