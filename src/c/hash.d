@@ -16,6 +16,7 @@
 
 #include "ecl.h"
 #include <stdlib.h>
+#include <string.h>
 #include "internal.h"
 
 /*******************
