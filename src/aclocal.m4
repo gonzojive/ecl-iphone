@@ -138,15 +138,16 @@ AC_DEFUN(ECLS_ARGS_ARRAY,[
   AC_MSG_CHECKING(if arguments can be accessed through vector)
   AC_TRY_RUN([
 #include <stdarg.h>
+#include <stdlib.h>
 int f(int narg, ...) {
   va_list args;
   int *vector;
-  va_start(args);
+  va_start(args,narg);
   vector = NULL;
   while (narg--) {
     if (vector == NULL) {
       vector = &va_arg(args, int);
-    } else if (*(vector++) != va_arg(args,int)) {
+    } else if (*(++vector) != va_arg(args,int)) {
       return 1;
     }
   }
