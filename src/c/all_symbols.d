@@ -137,7 +137,7 @@ mangle_name(cl_object output, char *source, int l)
 
 static void
 make_this_symbol(int i, cl_object s, int code, const char *name,
-		 cl_objectfn fun, int narg)
+		 cl_objectfn fun, int narg, cl_object value)
 {
 	enum stype stp;
 	cl_object package;
@@ -167,6 +167,7 @@ make_this_symbol(int i, cl_object s, int code, const char *name,
 		sethash(s->symbol.name, package->pack.external, s);
 		SYM_VAL(s) = s;
 	} else {
+		SYM_VAL(s) = value;
 		cl_import2(s, package);
 		cl_export2(s, package);
 	}
@@ -185,7 +186,7 @@ init_all_symbols(void)
 {
 	int i, code, narg;
 	const char *name;
-	cl_object s;
+	cl_object s, value;
 	cl_objectfn fun;
 
 	/* We skip NIL and T */
@@ -195,6 +196,7 @@ init_all_symbols(void)
 		name = cl_symbols[i].init.name;
 		fun = (cl_objectfn)cl_symbols[i].init.fun;
 		narg = cl_symbols[i].init.narg;
-		make_this_symbol(i, s, code, name, fun, narg);
+		value = cl_symbols[i].init.value;
+		make_this_symbol(i, s, code, name, fun, narg, value);
 	}
 }

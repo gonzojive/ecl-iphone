@@ -1738,6 +1738,4 @@ init_file(void)
 	SYM_VAL(@'*query-io*') = standard;
 	SYM_VAL(@'*debug-io*') = standard;
 	SYM_VAL(@'*trace-output*') = standard;
-
-	SYM_VAL(@'si::*ignore-eof-on-terminal-io*') = Cnil;
 }

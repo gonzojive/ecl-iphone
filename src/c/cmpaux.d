@@ -285,7 +285,4 @@ init_cmpaux(void)
 	SYM_VAL(@'LAMBDA-LIST-KEYWORDS') =
 	cl_list(8, @'&optional', @'&rest', @'&key', @'&allow-other-keys', @'&aux',
 		@'&whole', @'&environment', @'&body');
-
-	SYM_VAL(@'LAMBDA-PARAMETERS-LIMIT') = MAKE_FIXNUM(LAMBDA_PARAMETERS_LIMIT);
-	SYM_VAL(@'SI::C-ARGUMENTS-LIMIT') = MAKE_FIXNUM(C_ARGUMENTS_LIMIT);
 }

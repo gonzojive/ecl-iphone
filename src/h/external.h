@@ -66,6 +66,7 @@ typedef union {
 		int type;
 		void *fun;
 		short narg;
+		cl_object value;
 	} init;
 	struct symbol data;
 } cl_symbol_initializer;
@@ -1228,14 +1229,6 @@ extern void Tk_main(int synchronize, char *name, char *fileName, char *Xdisplay,
 
 /* typespec.c */
 
-extern cl_object TSor_string_symbol;
-extern cl_object TSor_symbol_string_package;
-extern cl_object TSnon_negative_integer;
-extern cl_object TSpositive_number;
-extern cl_object TSor_integer_float;
-extern cl_object TSor_rational_float;
-extern cl_object TSor_pathname_string_symbol;
-extern cl_object TSor_pathname_string_symbol_stream;
 extern void assert_type_integer(cl_object p);
 extern void assert_type_non_negative_integer(cl_object p);
 extern void assert_type_character(cl_object p);

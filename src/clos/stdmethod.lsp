@@ -30,27 +30,11 @@
 
 
 (defun function-keywords (method)
-  (let* ((lambda-list (slot-value method 'lambda-list))
-	 arg
-	 key-list
-	 keyp
-	 allowed)
-    (dolist (arg lambda-list (setq key-list (nreverse key-list)))
-      (cond 
-       ((eq arg '&key)
-	(setf keyp t))
-       ((and keyp 
-	     (not (member arg '(&allow-other-keys &aux))))
-	(push (if (listp arg)
-		  (let ((key-par (first arg)))
-		    (if (listp key-par) (first key-par)
-		      (make-keyword key-par)))
-		(make-keyword arg))
-	      key-list))
-       ((eq arg '&allow-other-keys)
-	(setf allowed t)
-	(return))
-       ((eq arg '&aux) 
-	(return))
-       (t ())))
-    (values key-list allowed)))
+  (multiple-value-bind (reqs opts rest-var key-flag keywords)
+      (si::process-lambda-list (slot-value method 'lambda-list) 'function)
+    (when key-flag
+      (do* ((output '())
+	    (l (cdr keywords) (cddddr l)))
+	   ((endp l)
+	    output)
+	(push (first l) output)))))

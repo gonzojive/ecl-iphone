@@ -2553,8 +2553,6 @@ si_eval_with_env(cl_object form, cl_object env)
 void
 init_compiler(void)
 {
-	SYM_VAL(@'si::*keep-definitions*') = Ct;
-
 	ecl_register_static_root(&c_env.variables);
 	ecl_register_static_root(&c_env.macros);
 #ifdef CL_COMP_OWN_STACK

@@ -268,11 +268,8 @@ si_open_server_stream(cl_object port)
    cl_object streamIn, streamOut;
    cl_object output;
 
-   if (!FIXNUMP(port))
-     FEwrong_type_argument(TSpositive_number, port);
-
    start_critical_section();
-   fd = create_server_port(fix(port));
+   fd = create_server_port(fixnnint(port));
    end_critical_section();
 
    if (fd == 0)

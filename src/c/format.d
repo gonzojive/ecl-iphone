@@ -2045,8 +2045,6 @@ init_format(void)
 {
 	fmt_aux_stream = make_string_output_stream(64);
 	ecl_register_static_root(&fmt_aux_stream);
-
-	SYM_VAL(@'si::*indent-formatted-output*') = Cnil;
 }
 #endif /* !ECL_CMU_FORMAT */
 

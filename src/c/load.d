@@ -207,12 +207,6 @@ NOT_A_FILENAME:
 void
 init_load(void)
 {
-  SYM_VAL(@'*load-verbose*') = Ct;
-  SYM_VAL(@'*load-print*') = Cnil;
-#ifdef PDE
-  SYM_VAL(@'si::*source-pathname*') = Cnil;
-#endif
-
   SYM_VAL(@'si::*load-hooks*') = cl_list(
 #ifdef ENABLE_DLOPEN
 				4,CONS(make_simple_string("so"), @'si::load-binary'),
@@ -223,11 +217,9 @@ init_load(void)
 				CONS(make_simple_string("lsp"), @'si::load-source'),
 				CONS(make_simple_string("lisp"), @'si::load-source'),
 				CONS(Cnil, @'si::load-source'));
-  SYM_VAL(@'si::*load-search-list*') = Cnil;
 
 #ifdef ENABLE_DLOPEN
   if (dlopen(NULL, RTLD_NOW|RTLD_GLOBAL) == NULL)
     printf(";;; Error dlopening self file\n;;; Error: %s\n", dlerror());
 #endif
-  SYM_VAL(@'si::*init-function-prefix*') = Cnil;
 }

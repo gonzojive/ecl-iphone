@@ -16,12 +16,6 @@
 
 #include "ecl.h"
 
-/******************************* EXPORTS ******************************/
-
-cl_object TSnon_negative_integer;
-cl_object TSpositive_number;
-
-/**********************************************************************/
 
 void
 FEtype_error_character(cl_object x) {
@@ -133,7 +127,7 @@ assert_type_non_negative_integer(cl_object p)
 		if (big_sign(p) >= 0)
 			return;
 	}
-	FEwrong_type_argument(TSnon_negative_integer, p);
+	FEwrong_type_argument(c_string_to_object("(REAL 0 *)"), p);
 }
 
 void
@@ -367,13 +361,3 @@ cl_type_of(cl_object x)
 	}
 	return1(t);
 }
-
-void
-init_typespec(void)
-{
-
-	TSnon_negative_integer = cl_list(3, @'integer', MAKE_FIXNUM(0), @'*');
-	ecl_register_static_root(&TSnon_negative_integer);
-	TSpositive_number = cl_list(2, @'satisfies', @'plusp');
-	ecl_register_static_root(&TSpositive_number);
-}				

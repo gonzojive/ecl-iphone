@@ -110,7 +110,7 @@ stream_or_default_output(cl_object stream)
 	else if (stream == Ct)
 		return SYM_VAL(@'*terminal-io*');
 	return stream;
-}	
+}
 
 static void
 writec_PRINTstream(int c)
@@ -1582,20 +1582,7 @@ cl_write_byte(cl_object integer, cl_object binary_output_stream)
 void
 init_print(void)
 {
-	SYM_VAL(@'*print-readably*') = Cnil;
-	SYM_VAL(@'*print-escape*') = Ct;
-	SYM_VAL(@'*print-pretty*') = Ct;
-	SYM_VAL(@'*print-circle*') = Cnil;
-	SYM_VAL(@'*print-base*') = MAKE_FIXNUM(10);
-	SYM_VAL(@'*print-radix*') = Cnil;
 	SYM_VAL(@'*print-case*') = @':upcase';
-	SYM_VAL(@'*print-gensym*') = Ct;
-	SYM_VAL(@'*print-level*') = Cnil;
-	SYM_VAL(@'*print-length*') = Cnil;
-	SYM_VAL(@'*print-array*') = Ct;
-
-	SYM_VAL(@'si::*print-package*') = Cnil;
-	SYM_VAL(@'si::*print-structure*') = Cnil;
 
 	PRINTstream = Cnil;
 	ecl_register_static_root(&PRINTstream);

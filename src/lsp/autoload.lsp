@@ -45,10 +45,6 @@ Returns the string \"ECL\"."
 
 ;;; Compiler functions.
 
-(defvar *compile-file-pathname* nil)
-
-(defvar *compile-file-truename* nil)
-
 (defun autoload (pathname &rest function-names)
   (dolist (fname function-names)
     (let ((thename fname))
@@ -79,18 +75,6 @@ Report for details."
 
 ;;; Allocator.
 
-(defvar *type-list*
-        '(cons
-          ;; fixnum Beppe
-	  fixnum char
-	  bignum ratio short-float long-float complex
-          symbol package hash-table
-          array vector string bit-vector
-          stream random-state readtable pathname
-          bytecodes cfun cclosure
-	  #-clos structure #+clos instance #+clos generic-function
-	  #+threads cont #+threads thread))
-
 #-boehm-gc
 (defun room (&optional x)
   "Args: (&optional (x t))
@@ -120,7 +104,17 @@ number is zero.  The optional X is simply ignored."
 	(sys::room-report)
 
       (do ((l l (nthcdr 5 l))
-	   (tl *type-list* (cdr tl))
+	   (type-list '(cons
+		       ;; fixnum Beppe
+			fixnum char
+			bignum ratio short-float long-float complex
+			symbol package hash-table
+			array vector string bit-vector
+			stream random-state readtable pathname
+			bytecodes cfun cclosure
+			#-clos structure #+clos instance #+clos generic-function
+			#+threads cont #+threads thread))
+	   (tl type-list (cdr tl))
 	   (i 0 (+ i (if (nth 2 l) (nth 2 l) 0))))
 	  ((null l) (setq npage i))
 	(let* ((typename (car tl))
@@ -136,10 +130,10 @@ number is zero.  The optional X is simply ignored."
 			      (/ nused 0.01 (+ nused nfree)))
 			  (if (zerop gbccount) nil gbccount))
 		    info-list)
-	      (let ((a (assoc (nth nfree *type-list*) link-alist)))
+	      (let ((a (assoc (nth nfree type-list) link-alist)))
 		(if a
 		    (nconc a (list typename))
-		    (push (list (nth nfree *type-list*) typename)
+		    (push (list (nth nfree type-list) typename)
 			  link-alist))))))
       (dolist (info (nreverse info-list))
 	(apply #'format t "~4D/~D~10T~5,1F%~@[~3D~]~20T~{~A~^ ~}"
@@ -165,16 +159,12 @@ number is zero.  The optional X is simply ignored."
 
 ;;; Help.
 
-(in-package "SYSTEM")
-
-(defun help (&optional (symbol nil s))
+(defun help (&optional (symbol 'help))
   "Args: (&optional symbol)
 ECL specific.
 Prints the documentation associated with SYMBOL.  With no args, prints the
-greeting message to ECL beginners."
-  (if s (sys::print-doc symbol)
-      (progn
-        (princ "
+greeting message to ECL beginners.
+
 Welcome to ECL. Here are the few functions you should learn first.
 
 	(HELP symbol) prints the online documentation associated with the
@@ -186,15 +176,15 @@ Welcome to ECL. Here are the few functions you should learn first.
 	(HELP* \"PROG\") will print the documentation of the symbols such as
 	PROG, PROGN, and MULTIPLE-VALUE-PROG1.
 
-	(BYE) ends the current ECL session.
+	(QUIT) ends the current ECL session.
 
 For the precise language specification, refere to Guy Steele's \"Common Lisp,
 the Language\" and our \"ECL Manual\".  \"ECL Dictionary\", the hard-copied
 version of ECL online documentation, will be useful as a handbook.
 
 Good luck!
-")
-        (values))))
+"
+  (print-doc symbol))
 
 (defun help* (string &optional (package (find-package "CL")))
   "Args: (string &optional (package-spec 'lisp))
@@ -203,7 +193,7 @@ Prints the documentation associated with those symbols in the specified
 package whose print names contain STRING as substring.  STRING may be a
 symbol, in which case the print-name of that symbol is used.  If PACKAGE is
 NIL, then all packages are searched."
-  (sys::apropos-doc string package))
+  (apropos-doc string package))
 
 ;;; Pretty-print-formats.
 ;;;

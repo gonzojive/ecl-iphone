@@ -265,10 +265,3 @@ cl_safe_eval(cl_object form, cl_object env, cl_object err_value)
 	}
 	@(return flag)
 @)
-
-void
-init_eval(void)
-{
-	SYM_VAL(@'si::*ignore-errors*') = Cnil;
-	SYM_VAL(@'call-arguments-limit') = MAKE_FIXNUM(CALL_ARGUMENTS_LIMIT);
-}

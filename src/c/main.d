@@ -83,12 +83,9 @@ cl_boot(int argc, char **argv)
 #endif
 
 	SYM_VAL(@'*package*') = lisp_package;
-	SYM_VAL(@'*gensym_counter*') = MAKE_FIXNUM(0);
 
 	init_compiler();
 	init_interpreter();
-	init_eval();
-	init_typespec();
 	init_number();
 	init_character();
 	init_file();
@@ -96,7 +93,6 @@ cl_boot(int argc, char **argv)
 	init_print();
 	init_pathname();
 	init_load();
-	init_array();
 #if !defined(GBC_BOEHM)
 	init_alloc_function();
 #endif
@@ -113,13 +109,11 @@ cl_boot(int argc, char **argv)
 	init_assignment();
 	init_error();
 	init_macros();
-	init_multival();
   	init_cmpaux();
 	init_main();
 #ifndef ECL_CMU_FORMAT
 	init_format();
 #endif
-	init_interrupt();
 #ifdef RUNTIME
 	SYM_VAL(@'*features*') = CONS(make_keyword("RUNTIME"), SYM_VAL(@'*features*'));
 #endif

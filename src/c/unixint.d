@@ -176,9 +176,3 @@ enable_interrupt(void)
 	signal(SIGBREAK, (signalfn)sigint);
 #endif
 }
-
-void
-init_interrupt(void)
-{
-	SYM_VAL(@'SI::*INTERRUPT-ENABLE*') = Ct;
-}

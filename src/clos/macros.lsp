@@ -19,12 +19,7 @@
 ;(proclaim '(DECLARATION VARIABLE-REBINDING))
 ;;; Make this stable:
 (declaim (DECLARATION VARIABLE-REBINDING))
-
-(defvar *keyword-package* (find-package 'KEYWORD))
-
-(defun make-keyword (symbol)
-  (intern (symbol-name symbol) *keyword-package*))
-
+(eval-when (compile eval)
 (defmacro doplist ((key val) plist &body body)
   `(let* ((.plist-tail. ,plist) ,key ,val)
      (loop (when (null .plist-tail.) (return nil))
@@ -33,6 +28,8 @@
 	     (error "Malformed plist in doplist, odd number of elements."))
 	   (setq ,val (pop .plist-tail.))
 	   (progn ,@body))))
+)
+
 ;;;
 ;;;;;; FIND-CLASS  naming classes.
 ;;;
@@ -60,9 +57,6 @@
 (defsetf find-class setf-find-class)
 
 ;;; ----------------------------------------------------------------------
-
-(defmacro keyword-bind (keywords form &body body)
-  `(apply (function (lambda (&key . ,keywords) . ,body)) ,form))
 
 (defun mapappend (fun &rest args)
   (reduce #'append (apply #'mapcar fun args)))

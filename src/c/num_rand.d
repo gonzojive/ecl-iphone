@@ -23,10 +23,11 @@ rando(cl_object x, cl_object rs)
 	cl_type tx;
 	cl_object z;
 	double d;
-	
+
 	tx = type_of(x);
 	if (number_compare(x, MAKE_FIXNUM(0)) != 1)
-		FEwrong_type_argument(TSpositive_number, x);
+		FEwrong_type_argument(c_string_to_object("(REAL (0) *)"),
+				      x);
 	d = (double)(rs->random.value>>1) / (4294967296.0/2.0);
 	d = number_to_double(x) * d;
 	if (tx == t_fixnum) {

@@ -230,12 +230,8 @@ init_number(void)
 	ecl_register_static_root(&shortfloat_zero);
 	ecl_register_static_root(&longfloat_zero);
 
-  	SYM_VAL(@'most-positive-fixnum') = MAKE_FIXNUM(MOST_POSITIVE_FIXNUM);
-	SYM_VAL(@'most-negative-fixnum') = MAKE_FIXNUM(MOST_NEGATIVE_FIXNUM);
-
 	init_big();
 	init_num_co();
-	init_num_log();
 	init_num_sfun();
 	init_num_rand();
 }

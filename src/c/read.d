@@ -1816,10 +1816,6 @@ init_read(void)
 	  = @'single-float';
 	SYM_VAL(@'*read_base*') = MAKE_FIXNUM(10);
 	SYM_VAL(@'*read_suppress*') = Cnil;
-
-	SYM_VAL(@'si::*sharp-eq-context*') = Cnil;
-
-	SYM_VAL(@'si::*cblock*') = Cnil;
 }
 
 /*

@@ -950,8 +950,6 @@ _mark_contblock(void *x, cl_index s)
 void
 init_GC(void)
 {
-	SYM_VAL(@'si::*gc-verbose*') = Cnil;
-	SYM_VAL(@'si::*gc-message*') = Cnil;
 	GC_enable();
 	gc_time = 0;
 }

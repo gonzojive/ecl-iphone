@@ -815,11 +815,3 @@ si_replace_array(cl_object olda, cl_object newa)
  CANNOT:
   FEerror("Cannot replace the array ~S by the array ~S.", 2, olda, newa);
 }
-
-void
-init_array(void)
-{
-	SYM_VAL(@'array-rank-limit') = MAKE_FIXNUM(ARANKLIM);
-	SYM_VAL(@'array-dimension-limit') = MAKE_FIXNUM(ADIMLIM);
-	SYM_VAL(@'array-total-size-limit') = MAKE_FIXNUM(ATOTLIM);
-}

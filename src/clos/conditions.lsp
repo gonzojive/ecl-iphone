@@ -398,8 +398,6 @@ strings."
 		*handler-clusters*)))
      ,@forms))
 
-(defvar *break-on-signals* nil)
-
 (defun signal (datum &rest arguments)
   (let* ((condition
 	  (coerce-to-condition datum arguments 'SIMPLE-CONDITION 'SIGNAL))

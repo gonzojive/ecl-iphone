@@ -57,6 +57,30 @@
 ;;;	Ordered alphabetically for binary search
 ;;;----------------------------------------------------------------------
 
+(docvar + variable "
+The last top-level form.")
+
+(docvar ++ variable "
+The last-but-one top-level form.")
+
+(docvar +++ variable "
+The last-but-two top-level form.")
+
+(docvar / variable "
+The list of all values of the last top-level form.")
+
+(docvar // variable "
+The list of all values of the last-but-one top-level form.")
+
+(docvar /// variable "
+The list of all values of the last-but-two top-level form.")
+
+(docvar - variable "
+The top-level form ECL is currently evaluating.")
+
+(docvar * variable "
+The value of the last top-level form.")
+
 (docfun * function (&rest numbers) "
 Returns the product of the args.  With no args, returns 1.")
 

@@ -39,9 +39,3 @@ cl_values_list(cl_object list)
 	}
 	returnn(VALUES(0));
 }
-
-void
-init_multival(void)
-{
-	SYM_VAL(@'MULTIPLE-VALUES-LIMIT') = MAKE_FIXNUM(32);
-}

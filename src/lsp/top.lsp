@@ -21,17 +21,6 @@
 (export '(*break-readtable* *break-on-warnings* *break-enable*
 	  *lisp-init-file-list* *tpl-evalhook*))
 
-(defvar + nil "The last top-level form.")
-(defvar ++ nil "The last-but-one top-level form.")
-(defvar +++ nil "The last-but-two top-level form.")
-(defvar - nil "The top-level form ECL is currently evaluating.")
-(defvar * nil "The value of the last top-level form.")
-(defvar ** nil "The value of the last-but-one top-level form.")
-(defvar *** nil "The value of the last-but-two top-level form.")
-(defvar / nil "The list of all values of the last top-level form.")
-(defvar // nil "The list of all values of the last-but-one top-level form.")
-(defvar /// nil "The list of all values of the last-but-two top-level form.")
-
 (defvar *lisp-init-file-list* '("~/.ecl" "~/.eclrc")
   "List of files automatically loaded when ECL is invoked.")
 
@@ -49,7 +38,6 @@
 (defvar *eof* (cons nil nil))
 
 (defvar *ignore-errors-tag* (gensym))	; return tag for ignorable error
-(defvar *ignore-errors* nil)		; flag about whether to ignore errors
 (defvar *last-error* nil)
 
 (defvar *break-enable* t
@@ -891,8 +879,6 @@ package."
       (clear-input *debug-io*))
     (princ *break-message*)
     (tpl :commands (adjoin break-commands *tpl-commands*)))))
-
-(defvar *debugger-hook* nil)
 
 (defun invoke-debugger (condition)
   (let* ((old-hook *debugger-hook*)

@@ -23,7 +23,6 @@ extern "C" {
 /* booting */
 extern void init_all_symbols(void);
 extern void init_alloc(void);
-extern void init_array(void);
 extern void init_assignment(void);
 extern void init_backq(void);
 extern void init_big(void);
@@ -46,11 +45,9 @@ extern void init_hash(void);
 extern void init_interpreter(void);
 extern void init_load(void);
 extern void init_macros(void);
-extern void init_multival(void);
 extern void init_number(void);
 extern void init_num_co(void);
 extern void init_num_comp(void);
-extern void init_num_log(void);
 extern void init_num_rand(void);
 extern void init_num_sfun(void);
 extern void init_package(void);
@@ -60,8 +57,6 @@ extern void init_read(void);
 extern void init_stacks(int *);
 extern void init_symbol(void);
 extern void init_unixtime(void);
-extern void init_typespec(void);
-extern void init_interrupt(void);
 
 
 /* all_symbols.d */
@@ -94,6 +89,25 @@ extern cl_object ecl_alloc_bytecodes(cl_index data_size, cl_index code_size);
 #define OPEN_RW	"w+b"
 #define OPEN_A	"ab"
 #define OPEN_RA	"a+b"
+
+/* num_log.d */
+
+#define BOOLCLR		0
+#define BOOLAND		01
+#define BOOLANDC2	02
+#define BOOL1		03
+#define BOOLANDC1	04
+#define BOOL2		05
+#define BOOLXOR		06
+#define BOOLIOR		07
+#define BOOLNOR		010
+#define BOOLEQV		011
+#define BOOLC2		012
+#define BOOLORC2	013
+#define BOOLC1		014
+#define BOOLORC1	015
+#define BOOLNAND	016
+#define BOOLSET		017
 
 /* gfun.d, kernel.lsp */
 

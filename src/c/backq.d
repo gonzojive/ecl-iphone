@@ -295,6 +295,4 @@ init_backq(void)
 	r->readtable.table['`'].macro = make_cf(backquote_reader);
 	r->readtable.table[','].syntax_type = cat_terminating;
 	r->readtable.table[','].macro = make_cf(comma_reader);
-
-	SYM_VAL(@'si::*backq-level*') = MAKE_FIXNUM(0);
 }

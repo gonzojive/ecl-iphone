@@ -74,8 +74,8 @@ $(DPP): $(srcdir)/dpp.c symbols_list2.h
 	fi
 symbols_list2.h: $(srcdir)/symbols_list.h Makefile
 	cat $(srcdir)/symbols_list.h | \
-	sed -e 's%{\([A-Z ]*.*".*"\),.*,[ ]*NULL,.*}%{\1,NULL}%g' \
-	    -e 's%{\([A-Z ]*.*".*"\),.*,[ ]*\(.*\),.*}%{\1,"\2"}%g' \
+	sed -e 's%{\([A-Z ]*.*".*"\),[^,]*,[ ]*NULL,.*}%{\1,NULL}%g' \
+	    -e 's%{\([A-Z ]*.*".*"\),[^,]*,[ ]*\([^,]*\),.*}%{\1,"\2"}%g' \
 	    -e 's%{NULL.*%{NULL,NULL}};%' > $@
 
 #
