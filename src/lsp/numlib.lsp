@@ -53,7 +53,9 @@ Returns the absolute value of NUMBER."
   "Args: (number)
 Returns the angle part (in radians) of the polar representation of NUMBER.
 Returns zero for non-complex numbers."
-       (atan (imagpart x) (realpart x)))
+  (if (zerop x)
+    (float 0 (realpart x))
+    (atan (imagpart x) (realpart x))))
 
 (defun signum (x)
   "Args: (number)
