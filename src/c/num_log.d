@@ -286,7 +286,8 @@ log_op(int narg, int op, cl_va_list ARGS)
 	cl_object x, numi;
 	bit_operator fix_log_op;
 	bignum_bit_operator big_log_op;
-	int i = 1, j;
+	int i = 1;
+	cl_fixnum j;
 
 	x = cl_va_arg(ARGS);
 	switch (type_of(x)) {
