@@ -196,7 +196,6 @@
 "c/num_log.d"
 "c/structure.d"
 "c/clos.d"
-"c/init.d"
 "c/num_pred.d"
 "c/symbol.d"
 "c/cmpaux.d"
