@@ -14,42 +14,45 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_INFO = @INSTALL_INFO@
 mkinstalldirs = $(SHELL) $(top_srcdir)/gc/mkinstalldirs
+INFO_FILES = ecl.$(INFOEXT) ecldev.$(INFOEXT) @CLX_INFO@
+HTML_FILES = index.html license.html lgpl.html news.html benchmark.html \
+	install.html download.html
 
 VERSION=@ECL_VERSION@
-
-HTML = index.html license.html lgpl.html news.html benchmark.html \
-	install.html download.html
 
 FILTER = sed 's,@VERSION@,$(VERSION),g'
 
 ECL = ../ecl
 
-all: ecl.$(INFOEXT) ecldev.$(INFOEXT) $(HTML)
+all: $(INFO_FILES) $(HTML_FILES)
 
 ecl.dvi: $(srcdir)/user.txi $(srcdir)/macros.txi clisp.sty ecl.sty
 	tex $(srcdir)/user.txi
 ecldev.dvi: $(srcdir)/devel.txi $(srcdir)/macros.txi clisp.sty ecl.sty
 	tex $(srcdir)/devel.txi
+clx.ps: clx.texinfo
+	tex clx.texinfo
 
 ecl.ps: ecl.dvi $(srcdir)/macros.txi
 	dvips -o $@ ecl.dvi
 ecldev.ps: ecldev.dvi $(srcdir)/macros.txi
 	dvips -o $@ ecldev.dvi
+clx.ps: clx.dvi
+	dvips -o $@ clx.dvi
 
 install: all
 	$(mkinstalldirs) $(infodir)
-	$(INSTALL_DATA) ecl.$(INFOEXT) $(infodir);
-	$(INSTALL_DATA) ecldev.$(INFOEXT) $(infodir);
-	if [ -x $(INSTALL_INFO) ]; then \
-	  $(INSTALL_INFO) --info-dir=$(infodir) ecl.$(INFOEXT); \
-	  $(INSTALL_INFO) --info-dir=$(infodir) ecldev.$(INFOEXT); \
-	fi
+	for k in $(INFO_FILES); do \
+	  $(INSTALL_DATA) $$k $(infodir); \
+	  if [ -x $(INSTALL_INFO) ]; then \
+	    $(INSTALL_INFO) --info-dir=$(infodir) $$k; \
+	  fi; \
+	done
 	$(mkinstalldirs) $(mandir)/man$(manext)
 	$(INSTALL_DATA) ecl.man $(mandir)/man$(manext)/ecl.$(manext)
 flatinstall: all
 	$(mkinstalldirs) $(prefix)/doc
-	$(INSTALL_DATA) ecl.$(INFOEXT) $(prefix)/doc
-	$(INSTALL_DATA) ecldev.$(INFOEXT) $(prefix)/doc
+	for k in $(INFO_FILES); do $(INSTALL_DATA) $$k $(prefix)/doc; done
 	if [ -f user.html ]; then \
 	  $(INSTALL_DATA) $$i $(prefix)/doc/; \
 	else \
@@ -65,10 +68,12 @@ flatinstall: all
 	for i in *.html; do $(INSTALL_DATA) $$i $(prefix)/doc/; done
 
 uninstall:
-	if [ -x $(INSTALL_INFO) ]; then \
-	  $(INSTALL_INFO) --delete ecl.$(INFOEXT); \
-	  $(INSTALL_INFO) --delete ecl.$(INFOEXT); \
-	fi
+	for k in $(INFO_FILES); do \
+	  rm $$k; \
+	  if [ -x $(INSTALL_INFO) ]; then \
+	    $(INSTALL_INFO) --delete $$k; \
+	  fi; \
+	done
 	rm -r $(infodir)/ecl.$(INFOEXT) $(infodir)/ecldev.$(INFOEXT); \
 	rm $(mandir)/man$(manext)/ecl.$(manext)
 
@@ -83,10 +88,16 @@ ecl.info.gz: ecl.info
 	gzip < ecl.info > ecl.info.gz
 ecldev.info.gz: ecldev.info
 	gzip < ecldev.info > ecldev.info.gz
+clx.info.gz: clx.info
+	gzip < clx.info > clx.info.gz
 ecl.info: $(srcdir)/user.txi $(srcdir)/macros.txi
 	makeinfo -I $(srcdir) --no-split $(srcdir)/user.txi
 ecldev.info: $(srcdir)/devel.txi $(srcdir)/macros.txi
 	makeinfo -I $(srcdir) --no-split $(srcdir)/devel.txi
+clx.info: clx.texinfo
+	makeinfo --no-split clx.texinfo
+clx.texinfo: $(top_srcdir)/clx/manual/clx.texinfo
+	cp $(top_srcdir)/clx/manual/clx.texinfo .
 
 download.html: $(srcdir)/download.in.html head
 	cat head $(srcdir)/download.in.html $(srcdir)/end | $(FILTER) > $@

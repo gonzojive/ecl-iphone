@@ -869,8 +869,8 @@ by every function, which attempts to generate RENDER requests."
 
 
 ;; $Log$
-;; Revision 1.1  2004-06-11 11:34:29  jjgarcia
-;; Imported the sources of portable CLX library (from www.telent.net)
+;; Revision 1.2  2004-06-11 12:01:58  jjgarcia
+;; The docs for CLX can now be processed ansd installed
 ;;
 ;; Revision 1.1  2004/06/10 07:59:31  jlr
 ;; Portable CLX library imported
