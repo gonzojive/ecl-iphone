@@ -38,6 +38,6 @@
 ;(sbt::operate-on-system clos :load)
 )
 
-(compiler::build-ecls "ecls" :components '(#+(and (not dlopen) WANTS-CMP) cmp))
+(compiler::build-ecls "ecls" :lisp-files '(#+(and (not dlopen) WANTS-CMP) cmp))
 
 (quit)

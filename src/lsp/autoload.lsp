@@ -79,6 +79,10 @@ after compilation."
   (load "SYS:cmp")
   (apply 'compile args))
 
+(defun compile-file-pathname (&rest args)
+  (load "SYS:cmp")
+  (apply 'compile-file-pathname args))
+
 (defun disassemble (&rest args)
   "Args: (&optional (thing nil) &key (h-file nil) (data-file nil))
 Compiles the form specified by THING and prints the intermediate C language

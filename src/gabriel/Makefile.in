@@ -2,7 +2,7 @@ top_srcdir=@top_srcdir@
 srcdir=@srcdir@
 
 FILES =  CMUCLc ECLSc CLISPc CMUCLi ECLSi CLISPi
-LISP ?= ../ecls -eval '(setf (logical-pathname-translations "SYS") '"'"'(("SYS:*.*" "../*.*")))'
+LISP ?= ../ecls -dir `pwd`/
 NAME ?= ECLSc
 COMPILE ?= NIL
 

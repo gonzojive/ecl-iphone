@@ -33,7 +33,7 @@ cl_stack_set_size(cl_index new_size)
 	cl_index top = cl_stack_top - cl_stack;
 	cl_object *new_stack;
 
-	printf("*+*+*+\n");
+	/*printf("*+*+*+\n");*/
 
 	if (top > new_size)
 		FEerror("Internal error: cannot shrink stack that much.",0);

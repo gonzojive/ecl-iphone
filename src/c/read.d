@@ -2294,11 +2294,9 @@ read_VV(cl_object block, void *entry)
 
 	(*entry_point)(block);
 	len = block->cblock.data_size;
-	if (len == 0)
-	  return;
 
 #ifdef GBC_BOEHM
-	VV = block->cblock.data = alloc(len * sizeof(cl_object));
+	VV = block->cblock.data = len? alloc(len * sizeof(cl_object)) : NULL;
 #else
 	VV = block->cblock.data;
 #endif
@@ -2315,11 +2313,13 @@ read_VV(cl_object block, void *entry)
 
 	setup_standard_READ();
 
-	in = make_string_input_stream(make_simple_string(block->cblock.data_text),
-				      0, block->cblock.data_text_size);
+	in = OBJNULL;
 	if (frs_push(FRS_PROTECT, Cnil))
 		e = TRUE;
 	else {
+	  if (len == 0) goto NO_DATA;
+	  in=make_string_input_stream(make_simple_string(block->cblock.data_text),
+				      0, block->cblock.data_text_size);
 	  read_VV_block = block;
 	  for (i = 0 ; i < len; i++) {
 	    sharp_eq_context = Cnil;
@@ -2335,16 +2335,18 @@ read_VV(cl_object block, void *entry)
 	  }
 	  if (i < len)
 	    FEerror("Not enough data while loading binary file",0);
-	  SYM_VAL(@'*package*') = old_package;
 #ifdef PDE
 	  bds_bind(@'si::*source-pathname*', VV[block->cblock.source_pathname]);
 #endif
+	NO_DATA:
+	  SYM_VAL(@'*package*') = old_package;
 	  (*entry_point)(MAKE_FIXNUM(0));
 	  e = FALSE;
 	}
 
 	frs_pop();
-	close_stream(in, 0);
+	if (in != OBJNULL)
+	  close_stream(in, 0);
 
 	read_VV_block = OBJNULL;
 	bds_unwind(old_bds_top);

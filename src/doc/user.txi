@@ -64,6 +64,7 @@ interface with other languages.
 * CLOS::                        Common-Lisp's Object System.
 * Multithread::                 Lisp lightweight processes or threads.
 * Everything::                  All functions/variables/etc enumerated.
+* ::
 * Bibliography::                Some interesting books.
 @end menu
 
@@ -140,64 +141,26 @@ William F. Schelter improved KCL in several areas and developed Austin Kyoto
 @clisp{} (AKCL). Many ideas and code from AKCL have been incorporated in
 @ecls{}.
 
-The following is the full list of contributors to ECoLisp:
+The following is the full list of contributors to ECoLisp: Taiichi Yuasa and
+Masami Hagiya (KCL), William F. Schelter (Dynamic loader, conservative Gc),
+Giuseppe Attardi (Top-level, trace, stepper, compiler, CLOS, multithread),
+Marcus Daniels (Linux port) Cornelis van der Laan (FreeBSD port) David Rudloff
+(NeXT port) Dan Stanger, Don Cohen, and Brian Spilsbury.
 
+We have to thank for the following pieces of software that have helped in the
+development of @ecls{}
 @table @sc
-@item Authors:
-
-@table @sc
-@item KCL:
-Taiichi Yuasa and Masami Hagiya
-@item Dynamic loader:
-William F. Schelter (@email{wfs@@fireant.ma.utexas.edu})
-@item Conservative GC:
-William F. Schelter
-@item Top-level, trace, stepper:
-Giuseppe Attardi
-@item Compiler:
-Giuseppe Attardi
-@item CLOS:
-Giuseppe Attardi with excepts from PCL by Gregor Kiczales
-@item Multithread:
-Giuseppe Attardi, Stefano Diomedi, Tito Flagella
-@item Unification:
-Giuseppe Attardi, Mauro Gaspari
+@item Bruno Haible
+For the Cltl2-compliance test
+@item Peter Van Eynde
+For the ANSI-compliance test
+@item Symbolic's Inc.
+For the ANSI-compliant LOOP macro.
 @end table
 
-@item MSDOS EMX port:
-Giuseppe Attardi
-@item ndmake45.exe
-Make utility by D. G. Kneller
-
-@item MSDOS GO32 port:
-Giuseppe Attardi
-@item ndmake45.exe
-Make utility by D. G. Kneller
-
-@item Linux port:
-Marcus Daniels (@email{marcus@@ee.pdx.edu})
-@item FreeBSD port:
-Cornelis van der Laan (@email{nils@@ims.uni-stuttgart.de})
-@item NeXT port:
-David Rudloff (@email{rudloff@@steinway.u-strasbg.fr})
-
-@item Other contributors:
-Dan Stanger (@email{dxs@@evolving.com}), Don Cohen
-(@email{donc@@ISI.EDU}), Brian Spilsbury
-(@email{brian@@bizo.biz.usyd.edu.au})
-@end table
-
-There is no list of contributors to @ecls{}, yet, but you are free to contact me
-at the following address:
-
-@example
-  Juan Jose Garcia-Ripoll (@email{worm@@arrakis.es})
-  Universidad de Castilla-La Mancha
-  Departamento de Matematicas,
-  E.T.S.I. Industriales,
-  Av. Camilo Jose Cela, 3
-  E-13071, Ciudad Real, Spain
-@end example
+The @ecls{} project also owes a lot to the people who have tested this program
+and contributed with suggestions and error messages: Eric Marsden, Hannu
+Koivisto and Jeff Bowden, and others whose name I may have omitted.
 
 @node Copyright, Installation, Credits, Introduction
 @section Copyright

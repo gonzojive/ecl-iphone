@@ -47,17 +47,16 @@ differs from standards.
 
 @menu
 * Introduction::                How @ecls{} relates to C/C++.
-* Building executables::        How to build executables.
+* Building programs::           How to build programs using ECLS.
 * Lisp objects::                Dealing with lisp object from C.
 * The interpreter::             Understanding the interpreter.
 * The compiler::                How the Lisp2C translator works.
-* Examples::                    Examples of mixed programming.
 * Porting @ecls{}::             Porting @ecls{} to other architectures.
 @end menu
 
 @c ---------------------------------------------------------------------
 
-@node Introduction, Building executables, Top, Top
+@node Introduction, Building programs, Top, Top
 @chapter Introduction
 
 @ecls{} is an implementation of the @clisp{} language that is based on a kernel
@@ -81,47 +80,322 @@ programs so that they can be invoked from @ecls{}. In addition, the user can
 write Lisp function definitions in the C language to increase runtime
 efficiency.
 
-@node Building executables, Lisp objects, Introduction, Top
-@chapter Building a customized image
+@c ---------------------------------------------------------------------
 
-@ecls{} can be used to control a C library, or it can be used as an embedded
-language to provide some flexibility to an already existing C program. In both
-cases @ecls{} should perform equally well, as far as you follow these rules:
+@node Building programs, Lisp objects, Introduction, Top
+@chapter Building programs
+
+In this chapter we describe how you can use @ecls{} to build programs and
+loadable extensions that you can later on distribute to other people. 
+@menu
+* What can @ecls{} do?::        
+* Compiling files::             
+* Building standalone executables::  
+* Building libraries::          
+* Compiler examples::           
+@end menu
+
+@node What can @ecls{} do?, Compiling files, Building programs, Building programs
+@section What can @ecls{} do?
+
+Some day for some reasons you will be in the need to distribute code that
+has been developed using @ecls{}. In the following sections we will describe
+the means that @ecls{} offers you to do so. Basically, these are the
+alternatives
+
+@table @sc
+@item Source code
+You distribute your programs in source code form. This is the easiest and most
+portable way, but not the fastest one.
+@item Standalone programs
+You translate all your lisp code to C using the @ecls{} compiler. The final
+object files can be linked against other C/C++ libraries to obtain a standalone
+executable.
+@item You can build statically linked libraries.
+You translate all your lisp code to C and combine the resulting object files
+into a single library with @file{.a} extension. You can distribute this library
+to other people and the final users can utilize these libraries to build
+standalone programs.
+@item You can build dynamically loadable libraries.
+This is the most flexible way. You translate all lisp code to C and link it
+against possibly other C/C++ libraries to obtain a dynamically loadable library
+(file type @file{.so} under unix). This library can be loaded a startup time to
+add new functionality to the @ecls{} environment.
+@end table
+
+In several of these options, we have mentioned the possibility to include C/C++
+code. Even if this is possible, you cannot use ordinary C/C++ compilers and
+makefiles to build @ecls{} extensions, let it be programs or
+libraries. Briefly, you have to organize your code as follows
 @enumerate
 @item Organize the C code as a library, let it be static or dynamic.
 @item Build a function, say @code{mymain()}, in which the initialization phase
 for your library is performed.
 @item Group the code that interfaces to Lisp in separate C files, all of which
 should include @code{#include <ecls.h>} at the beginning.
-@item Let @ecls{} build the final executable.
+@item Compile your lisp source files.
+@item Let @ecls{} build the final executable or library.
 @end enumerate
+@noindent
+In the final step there are ways to instruct @ecls{} to call your
+initialization function (@code{mymain()} in the example above). These means
+are explained in the following sections.
 
-The final step, that is building the executable should be performed within a
-working @ecls{} image. The function to build customized images is
-@var{c::build-ecls}. The description of this function is as follows.
+@c ---------------------------------------------------------------------
 
-@defun {c::build-ecls} {@var{image-name} @keys{} :components :prologue-code :epilogue-code}
+@node Compiling files, Building standalone executables, What can @ecls{} do?, Building programs
+@section Compiling files
+
+@ecls{} supports two types of compilation. One is bytecodes compilation. This
+process is performed on-the-fly, as you load source files with lisp code. This
+leads to a series of bytes for each instruction, the so called
+"bytecodes". These bytecodes are interpreted in a virtual machine, which is
+written in C and which is reasonably fast.
+
+The other type of compilation is the so-called "native" compilation. This
+process consists on translating the lisp source file to C language. The
+intermediate file is later compiled using a C compiler. The result is an object
+file which may have different purposes.
+
+@table @sc
+@item dynamically loadable object files
+These are produced in a @ecls{} built with support for dynamically loadable
+libraries (Feature @kwd{DLOPEN} is in @var{*features*}), when no extra
+arguments are passed to @code{compile-file}. These object files typically have
+the @file{.so} extension, and can be loaded with @code{load}. They cannot be used
+to build libraries nor standalone executable programs.
+
+@item linkable object files
+These are produced when invoking @code{compile-file} with the keyword argument
+@kwd{system-p} set to true. The object file typically has the @file{.o}
+extension. It cannot be loaded with @code{load}, but it can be used to build
+libraries or standalone executable programs.
+@end table
+
+@c ---------------------------------------------------------------------
+
+@node Building standalone executables, Building libraries, Compiling files, Building programs
+@section Building standalone executables
+
+To build an executable you need a working @ecls{} image with the compiler. The
+function to build customized images is @var{c::build-ecls}. The description of
+this function is as follows.
+
+@defun {c:build-ecls} {@var{image-name} @keys{} @var{lisp-files} @var{ld-flags} @var{prologue-code} @var{epilogue-code}}
 
 This function builds a lisp image up from the core lisp library, plus all
-listed components.  Each component is either:
+components listed in @var{lisp-files}.  Each component is either:
 @itemize
-@item A symbol: Names a compiled lisp library. Currenty only @code{'CMP} is
-supported, which corresponds to the lisp->C translator.
-@item A string: Denotes an object file, a library, or any flag which is passed
-to the compiler.
+@item A symbol: Names a statically linked library built from lisp code.
+@item A string: Denotes an object file built from lisp code.
 @end itemize
+@noindent
+@var{ld-flags} is a list of strings with aditional parameters to be passed
+to the linker. You can include here your favorite C/C++ libraries.
 
-In order to build the lisp image, @var{c::build-ecls} first writes down a piece
-of C code which initializes the lisp environment. You can customize the
-initialization process by suppling code to be executed before
-(@var{prologue-code}) or after (@var{epilogue-code}) setting up the lisp
-environment. Typically @var{prologue-code} defaults to an empty string, while
-@var{epilogue-code} invokes the classical lisp @var{top-level}.
+@var{prologue-code} and @var{epilogue-code} are used to customize the
+initialization process of the lisp image.  In order to build the executable,
+@var{c:build-ecls} first writes down a piece of C code which initializes the
+lisp environment. You can customize the initialization process by suppling code
+to be executed before (@var{prologue-code}) or after (@var{epilogue-code})
+setting up the lisp environment. Typically @var{prologue-code} defaults to an
+empty string, while @var{epilogue-code} invokes the classical lisp
+@var{top-level}.
 @end defun
 
 @c ---------------------------------------------------------------------
 
-@node Lisp objects, The interpreter, Building executables, Top
+@node Building libraries, Compiler examples, Building standalone executables, Building programs
+@section Building libraries
+
+To build a library you proceed more or less the same way as with standalone
+executables. There are two different functions depending on whether you need
+to build static or dynamically loadable libraries.
+
+@defun {c:build-static-library} {@var{library-name} @keys{} @var{lisp-files} @var{prologue-code} @var{epilogue-code}}
+@defunx {c:build-shared-library} {@var{library-name} @keys{} @var{lisp-files} @var{prologue-code} @var{epilogue-code} @var{ld-flags}}
+
+This function builds a library file up from the object files listed in
+@var{lisp-files}. Each of the arguments to @var{lisp-file} must name a single
+object file produced with @code{compile-file}.
+
+@var{library-name} is the physical pathname corresponding to the library. The
+value of @var{library-name} must follow some system-specific conventions.  To
+make your program portable, @var{library-name} should be built using the output
+of @code{c:library-pathname}.
+
+@var{prologue-code} and @var{epilogue-code} are strings with C code to be
+executed before and after initializing the library, respectively. For
+dynamically linked libraries you can also provide a list of strings in 
+@var{ld-flags}. These strings are additional parameters for the linker and
+their purpose is to link C/C++ extensions into the library.
+@end defun
+
+@defun {c:static-library-pathname} {@var{filename-base}}
+@defunx {c:shared-library-pathname} {@var{filename-base}}
+
+These function outputs a valid library pathname built using @var{filename-base}
+to extract the directory and part of the file name, and using the type of
+library to determine the right file type.
+
+The output of this function is system specific. For example, under FreeBSD
+@example
+> (c:static-library-pathname "/this/path/mylib")
+#P"/this/path/libmylib.a"
+> (c:shared-library-pathname "/this/path/mylib")
+#P"/this/path/mylib.so"
+@end example
+@end defun
+
+@c ---------------------------------------------------------------------
+
+@node Compiler examples,  , Building libraries, Building programs
+@section Compiler examples
+
+@subsection The @file{hello.lsp} file
+In the follwoing examples we will use the same lisp program. You have to
+create a file called @file{hello.lsp} which contains the following lines
+
+@example
+(princ "Hello world!")
+(terpri)
+(quit)
+@end example
+@noindent
+If you start @ecls{} and load this file in the Common-Lisp environment you
+will see the @code{"Hello world!"} message and the interpreter will be closed.
+@example
+ECLS (ECoLisp-Spain) 0.4
+Copyright (C) 1984 Taiichi Yuasa and Masami Hagiya
+Copyright (C) 1993 Giuseppe Attardi
+Copyright (C) 2000 Juan J. Garcia-Ripoll
+        ECLS is free software, and you are welcome to redistribute it
+under certain conditions; see file 'Copyright' for details.
+Type :h for Help.  Top level.
+> @b{(load "hello.lsp")}
+;;; Loading hello.lsp
+Hello world!
+Bye.
+@end example
+
+@subsection Example of loadable object file
+You can only perform the example in this section if your @ecls{} image supports
+dynamically loading of object files. This is true if you find the keyword
+@kwd{dlopen} in the @var{*features*} variable. This is true, for instance,
+in a typical FreeBSD or Linux box,
+@example
+Type :h for Help.  Top level.
+> @b{*features*}
+(:IEEE-FLOATING-POINT :IBM-PC :I386 :BSD :UNIX :DLOPEN :ANSI-CL :CLOS
+    :BOEHM-GC :ECLS :COMMON)
+@end example
+
+In this example we build a loadable extension which prints the @code{"Hello
+world!"} message. First you need to create a the @file{hello.lsp} file. Next
+you have to enter the @ecls{} environment and type @code{(compile-file
+"hello.lsp")}. This produces a loadable object file.
+
+@example
+Type :h for Help.  Top level.
+> @b{(compile-file "hello.lsp")}
+;;; Loading /home/worm/lib/ecls/cmp.so
+;;; Compiling hello.lsp.
+;;; End of Pass 1.  
+;;; Calling the C compiler... 
+"gcc -g -O2 -Dfreebsd  -O -I/home/worm/lib/ecls//h -w -c hello.c -o hello.o" 
+"ld -shared -o hello.so -L/home/worm/lib/ecls/ hello.o  " 
+;;; OPTIMIZE levels: Safety=0 (No runtime error checking), Space=0, Speed=3
+;;; Finished compiling hello.lsp.
+#P"hello.so"
+> @b{(load "hello")}
+;;; Loading hello.so
+Hello world!
+Bye.
+@end example
+
+@subsection Example of standalone program
+In this example we build a standalone program which prints the @code{"Hello
+world!"} message and does nothing else. First you must create the
+@file{hello.lsp} file shown above. Next you have to enter the @ecls{}
+environment and type @code{(compile-file "hello.lsp" :system-p t)}. This
+produces an object file that can be linked agains the @ecls{} core image.
+
+@example
+Type :h for Help.  Top level.
+> @b{(compile-file "hello.lsp" :system-p t)}
+;;; Loading /home/worm/lib/ecls/cmp.so
+;;; Compiling hello.lsp.
+;;; End of Pass 1.  
+;;; Calling the C compiler... 
+"gcc -g -O2 -Dfreebsd  -O -I/home/worm/lib/ecls//h -w -c hello.c -o hello.o" 
+;;; OPTIMIZE levels: Safety=0 (No runtime error checking), Space=0, Speed=3
+;;; Finished compiling hello.lsp.
+#P"hello.o
+@end example
+
+@noindent
+The final step is to build the executable using the @code{c:build-ecls}
+instruction.
+@example
+> @b{(c:build-ecls "myecls" :lisp-files '("hello.o"))}
+"gcc -g -O2 -Dfreebsd  -O -I/home/worm/lib/ecls//h -w -c myecls.c -o myecls.o" 
+"gcc  -w -o myecls -L/home/worm/lib/ecls/ myecls.o hello.o -lecls -lclos -llsp  -lgmp -Wl,--export-dynamic -lgc -lcompat -lgmp -lm" 
+"myecls"
+@end example
+@noindent
+Now you can execute this program from your favourite shell.
+
+@example
+worm@@arrakis.es% @b{./myecls}
+Hello world!
+Bye.
+@end example
+
+@subsection Example of loadable library
+You can only perform the example in this section if your @ecls{} image supports
+dynamically loading of object files. In this example we build a loadable
+library which prints the @code{"Hello world!"} message and does nothing
+else. First you must create the @file{hello.lsp} file shown above. Next you
+have to enter the @ecls{} environment and type @code{(compile-file "hello.lsp"
+:system-p t)}. This produces an object file that can be linked to form a loadable
+library.
+
+@example
+Type :h for Help.  Top level.
+> @b{(compile-file "hello.lsp" :system-p t)}
+;;; Loading /home/worm/lib/ecls/cmp.so
+;;; Compiling hello.lsp.
+;;; End of Pass 1.  
+;;; Calling the C compiler... 
+"gcc -g -O2 -Dfreebsd  -O -I/home/worm/lib/ecls//h -w -c hello.c -o hello.o" 
+;;; OPTIMIZE levels: Safety=0 (No runtime error checking), Space=0, Speed=3
+;;; Finished compiling hello.lsp.
+#P"hello.o
+@end example
+
+@noindent
+The final step is to build the library using the @code{c:build-shared-library}
+instruction.
+@example
+> @b{(c:build-shared-library (c:shared-library-pathname "myecls") :lisp-files '("hello.o"))}
+"gcc -g -O2 -Dfreebsd  -O -I/home/worm/lib/ecls//h -w -c myecls.c -o myecls.o" 
+"gcc  -w -o myecls.so -L/home/worm/lib/ecls/ myecls.o hello.o -lecls -lclos -llsp  -lgmp -Wl,--export-dynamic -lgc -lcompat -lgmp -lm" 
+"myecls.so"
+@end example
+@noindent
+Now you can load this extension from any @ecls{} image, even those you produce
+with @code{c:build-ecls}
+
+@example
+> (load (c:shared-library-pathname "myecls"))
+;;; Loading myecls.so
+Hello world!
+Bye.
+@end example
+
+@c ---------------------------------------------------------------------
+
+@node Lisp objects, The interpreter, Building programs, Top
 @chapter Manipulating lisp objects
 
 If you want to extend, fix or simply customize @ecls{} for your own needs,
@@ -783,7 +1057,7 @@ Block names: FACT.          ;;;  The block  FACT  is established.
 
 @c ---------------------------------------------------------------------
 
-@node The compiler, Examples, The interpreter, Top
+@node The compiler, Porting @ecls{}, The interpreter, Top
 @chapter The compiler
  
 @menu
@@ -1285,40 +1559,7 @@ C-type:
 
 @c ---------------------------------------------------------------------
 
-@node Examples, Porting @ecls{}, The compiler, Top
-@chapter Examples of customization
-
-Let us see how this all works in practice. We will assume that @ecls{} is
-installed and that it works. The first example simply gives @ecls{} another
-boot message. You just have to type this at the @ecls{} prompt
-
-@example
-(c::build-ecls "myecls"
-	:prologue-code "printf(\"Lisp image to be initialized...\\n\");"
-        :epilogue-code "printf(\"...lisp image initialized!!!\\n\");
-	funcall(1,_intern(\"TPL\",system_package));")
-@end example
-
-@noindent
-With the following text you have a new image:
-
-@example
-% ./myecls
-Lisp image to be initialized...
-*+*+*+
-...lisp image initialized!!!
-ECLS (ECoLisp-Spain) 0.4
-Copyright (C) 1984 Taiichi Yuasa and Masami Hagiya
-Copyright (C) 1993 Giuseppe Attardi
-Copyright (C) 2000 Juan J. Garcia-Ripoll
-	ECLS is free software, and you are welcome to redistribute it
-under certain conditions; see file 'Copyright' for details.
-Type :h for Help.  Top level.
-@end example
-
-@c ---------------------------------------------------------------------
-
-@node Porting @ecls{},  , Examples, Top
+@node Porting @ecls{},  , The compiler, Top
 @chapter Porting @ecls{}
 
 To port @ecls{} to a new architecture, the following steps are required:

@@ -364,7 +364,7 @@ const struct function_info all_functions[] = {
 	/* load.d */
 
 	{"LOAD", clLload, cl},
-#ifdef USE_DLOPEN
+#ifdef ENABLE_DLOPEN
 	{"LOAD-BINARY", siLload_binary, si},
 #endif
 	{"LOAD-SOURCE", siLload_source, si},

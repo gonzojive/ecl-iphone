@@ -111,10 +111,16 @@
 	:inline-always ((t fixnum) t nil t "aref1(#0,#1)")
 	:inline-unsafe ((t t) t nil t "aref1(#0,fix(#1))")
 	:inline-unsafe ((t fixnum) t nil t "aref1(#0,#1)")
-	:inline-unsafe (((array t) t) t nil nil "(#0)->vector.self.t[fix(#1)]")
 	:inline-unsafe (((array bit) t) fixnum nil nil "aref_bv(#0,fix(#1))")
-	:inline-unsafe (((array t) fixnum) t nil nil "(#0)->vector.self.t[#1]")
 	:inline-unsafe (((array bit) fixnum) fixnum nil nil "aref_bv(#0,#1)")
+	:inline-unsafe (((array base-char) fixnum) t nil nil
+		"CODE_CHAR((#0)->string.self[#1])")
+	:inline-unsafe (((array long-float) fixnum) t nil nil
+		"make_longfloat((#0)->array.self.lf[#1])")
+	:inline-unsafe (((array short-float) fixnum) t nil nil
+		"make_shortfloat((#0)->array.self.sf[#1])")
+	:inline-unsafe (((array fixnum) fixnum) t nil nil
+		"MAKE_FIXNUM((#0)->array.self.fix[#1])")
 	:inline-unsafe (((array base-char) fixnum) fixnum nil nil
 		"(#0)->string.self[#1]")
 	:inline-unsafe (((array base-char) fixnum) character nil nil
@@ -124,7 +130,8 @@
 	:inline-unsafe (((array short-float) fixnum) short-float nil nil
 		"(#0)->array.self.sf[#1]")
 	:inline-unsafe (((array fixnum) fixnum) fixnum nil nil
-		"(#0)->array.self.fix[#1]"))
+		"(#0)->array.self.fix[#1]")
+)
 (SI::ASET (T ARRAY *) NIL NIL NIL
 	:inline-unsafe ((t t t t) t t nil
 		"@0;aset(#1,fix(#2)*(#1)->array.dims[1]+fix(#3),#0)")

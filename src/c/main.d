@@ -180,7 +180,7 @@ init_main(void)
 
 	 ADD_FEATURE("ANSI-CL");
 
-#ifdef USE_DLOPEN
+#ifdef ENABLE_DLOPEN
 	 ADD_FEATURE("DLOPEN");
 #endif
 

@@ -37,7 +37,10 @@
 	   *cc*
 	   *cc-optimize*
 	   build-ecls
-	   make-library
+	   build-static-library
+	   build-shared-library
+	   shared-library-pathname
+	   static-library-pathname
 	   *suppress-compiler-warnings*
 	   *suppress-compiler-notes*))
 

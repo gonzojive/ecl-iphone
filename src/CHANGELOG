@@ -806,6 +806,8 @@ ECLS 0.5
   - PROBE-FILE would not translate logical pathnames before checking for
     file existence.
 
+  - In unsafe mode, inlining AREF lead to bogus code.
+
 * System design and portability:
 
   - Remove function_entry_table.
@@ -831,12 +833,6 @@ ECLS 0.5
     These definitions are lost once the function is compiled, hence
     the second error message.
 
-  - C::BUILD-ECLS rewritten to accept three keyword parameters:
-    :COMPONENTS, the object files, libraries and flags to be passed to
-    the compiler; :PROLOGUE-CODE, a string with C code to be executed
-    before initialization; and :EPILOGUE-CODE, a string with C code to
-    be executed after initializing Lisp. 
-
   - Reader macro '#,' has been dropped. LOAD-TIME-VALUE added to both
     the interpreter and the compiler.
 
@@ -845,6 +841,12 @@ ECLS 0.5
     si::*keep-documentation* determines whether documentation strings
     are stored in memory. It is possible to dump documentation strings
     to a help file.
+
+  - New interface for building standalone programs and libraries, based
+    on the functions C:BUILD-ECLS, C:BUILD-STATIC-LIBRARY and
+    C:BUILD-SHARED-LIBRARY, all of which accept similar parameters,
+    :PROLOGUE-CODE, :EPILOGE-CODE, :LISP-FILES, and :LD-FLAGS. Exhaustive
+    documentation with examples included in the Developer's Guide.
 
 TODO:
 =====

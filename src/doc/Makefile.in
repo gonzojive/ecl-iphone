@@ -60,9 +60,7 @@ benchmark.html: $(srcdir)/benchmark.in.html ../gabriel/BENCHMARK
 	 echo '<pre>'; cat ../gabriel/BENCHMARK; echo '</pre>'; \
 	 cat $(srcdir)/end) | $(FILTER) > $@
 ../gabriel/BENCHMARK:
-	cd ../gabriel; \
-	if (which lisp && which clisp) > /dev/null; then make; \
-	else echo "No benchmarks available" > BENCHMARK; fi
+	echo "No benchmarks available" > $@
 license.html: $(top_srcdir)/../Copyright
 	(cat $(srcdir)/head; \
 	 echo '<pre>'; cat $?; echo '</pre>'; \

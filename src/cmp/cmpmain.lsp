@@ -59,45 +59,25 @@ coprocessor).")
 	      string result))
     result))
 
-(defun library-pathname (name shared &optional(directory "./"))
-  (if shared
-    (make-pathname :name name :type "so" :defaults directory)
-    (make-pathname :name (concatenate 'string "lib" name)
-		   :type "a" :defaults directory)))
+(defun static-library-pathname (output-file)
+  (let* ((real-name (format nil "lib~A.a" (pathname-name output-file))))
+    (merge-pathnames real-name output-file)))
 
-(defun compile-file-pathname (name &key output-file)
-  (merge-pathnames (or output-file name) #+dlopen #P".so" #-dlopen #P".o"))
+(defun shared-library-pathname (output-file)
+  #-dlopen
+  (error "Dynamically loadable libraries not supported in this system.")
+  #+dlopen
+  (let* ((real-name (format nil "~A.so" (pathname-name output-file))))
+    (merge-pathnames real-name output-file)))
 
-(defun make-library (lib objects &key (output-dir "./") (shared nil))
-  (let* ((lib (string-upcase lib))
-	 (init-name (mapcar #'(lambda (x) (string-upcase (pathname-name x)))
-			    objects))
-	 (liba (library-pathname (string-downcase lib) shared output-dir))
-	 (libc (make-pathname :name lib :type "c" :defaults output-dir))
-	 (libo (make-pathname :name lib :type "o" :defaults output-dir)))
-    (with-open-file (libc-file libc :direction :output)
-      (format libc-file
-	      "
-void
-init_~A(cl_object)
-{
-~{	extern void init_~A(cl_object);~%~}
-~{	read_VV((void*)0,init_~A);~%~}
-}
-"
-	      lib init-name init-name)
-    (compiler-cc libc libo)
-    #-dlopen
-    (safe-system (format nil "ar cr ~A ~A ~{~A ~}"
-		     (namestring liba) (namestring libo) objects))
-    #+dlopen
-    (if shared
-      (apply #'shared-cc (namestring liba) (namestring libo) objects)
-      (safe-system (format nil "ar cr ~A ~A ~{~A ~}"
-			   (namestring liba) (namestring libo) objects)))
-    (delete-file (namestring libc))
-    (delete-file (namestring libo)))
-    liba))
+(defun compile-file-pathname (name &key output-file system-p)
+  (let ((extension ".o"))
+    (unless system-p
+      #+dlopen
+      (setq extension ".so")
+      #-dlopen
+      (error "This platform only supports compiling files with :SYSTEM-P T"))
+    (merge-pathnames extension (or output-file name))))
 
 (defun linker-cc (o-pathname &rest options)
   (safe-system
@@ -120,38 +100,95 @@ init_~A(cl_object)
 	   options
 	   "")))
 
-(defun build-ecls (name &key components (prologue-code "")
-		   (epilogue-code "
-	  funcall(1,_intern(\"TOP-LEVEL\",system_package));
-	  return;"))
-  (let ((c-name (make-pathname :name name :type "c"))
-	(o-name (make-pathname :name name :type "o"))
-	(ld-flags (list "-lecls" #+CLOS "-lclos" "-llsp")))
-    (with-open-file (c-file c-name :direction :output)
-      (format c-file "
-#include \"ecls.h\"
-
-extern cl_object lisp_package;
+(defconstant +lisp-program-main+ "
+#include <ecls.h>
 
 int
 main(int argc, char **argv)
 {
+~{	extern void init_~A(cl_object);~%~}
 	~A
 	cl_boot(argc, argv);
-	siLpackage_lock(2, lisp_package, Ct);~%" prologue-code)
-      (dolist (item (reverse components))
-	(cond ((symbolp item)
-	       (format c-file "	init_~A();~%" (string-upcase item))
-	       (push (format nil "-l~A" (string-downcase item)) ld-flags))
-	      ((stringp item)
-	       (push item ld-flags))
-	      (t
-	       (error "compiler::build-ecls wrong argument ~A" item))))
-      (format c-file "~A;~%}~%" epilogue-code))
-    (compiler-cc c-name o-name)
-    (apply #'linker-cc name (namestring o-name) ld-flags)
-    (delete-file c-name)
-    ))
+~{	read_VV((void*)0,init_~A);~%~}
+	~A
+}")
+
+(defconstant +lisp-library-main+ "
+#include <ecls.h>
+
+int
+init_~A(cl_object foo)
+{
+~{	extern void init_~A();~%~}
+	~A
+~{	read_VV((void*)0,init_~A);~%~}
+	~A
+}")
+
+(defun builder (target output-name &key lisp-files ld-flags (prologue-code "")
+		(epilogue-code (if (eq target :program) "
+	funcall(1,_intern(\"TOP-LEVEL\",system_package));
+	return;" "")))
+  (let* (init-name c-name o-name)
+    (when (eq target :program)
+      (setq ld-flags (append ld-flags '("-lecls" "-lclos" "-llsp"))))
+    (dolist (item (reverse lisp-files))
+      (cond ((symbolp item)
+	     (push (format nil "-l~A" (string-downcase item)) ld-flags)
+	     (push (string-upcase item) init-name))
+	    (t
+	     (push (namestring (merge-pathnames ".o" item)) ld-flags)
+	     (setq item (pathname-name item))
+	     (push (string-upcase item) init-name))))
+    (setq c-name (namestring (merge-pathnames ".c" output-name))
+	  o-name (namestring (merge-pathnames ".o" output-name)))
+    (ecase target
+      (:program
+       (setq output-name (namestring output-name))
+       (with-open-file (c-file c-name :direction :output)
+	 (format c-file +lisp-program-main+ init-name prologue-code init-name
+		 epilogue-code))
+       (compiler-cc c-name o-name)
+       (apply #'linker-cc output-name (namestring o-name) ld-flags))
+      (:static-library
+       (when (symbolp output-name)
+	 (setq output-name (static-library-pathname output-name)))
+       (let ((library-name (string-upcase (pathname-name output-name))))
+	 (unless (equalp (subseq library-name 0 3) "LIB")
+	   (error "Filename ~A is not a valid library name."
+		  output-name))
+	 (with-open-file (c-file c-name :direction :output)
+	   (format c-file +lisp-library-main+
+		   ;; Remove the leading "lib"
+		   (subseq library-name 3)
+		   init-name prologue-code init-name epilogue-code)))
+       (compiler-cc c-name o-name)
+       (safe-system (format nil "ar cr ~A ~A ~{~A ~}"
+			    output-name o-name ld-flags)))
+      #+dlopen
+      (:shared-library
+       (when (or (symbolp output-name) (not (pathname-type output-name)))
+	 (setq output-name (shared-library-pathname output-name)))
+       (with-open-file (c-file c-name :direction :output)
+	 (format c-file +lisp-library-main+
+		 "CODE" init-name prologue-code init-name epilogue-code))
+       (compiler-cc c-name o-name)
+       (apply #'shared-cc output-name o-name ld-flags)))
+    ;(delete-file c-name)
+    (delete-file o-name)
+    output-name))
+
+(defun build-ecls (&rest args)
+  (apply #'builder :program args))
+
+(defun build-static-library (&rest args)
+  (apply #'builder :static-library args))
+
+(defun build-shared-library (&rest args)
+  #-dlopen
+  (error "Dynamically loadable libraries not supported in this system.")
+  #+dlopen
+  (apply #'builder :shared-library args))
 
 (defun compile-file (input-pathname
                       &key (output-file 'T)

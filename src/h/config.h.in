@@ -38,6 +38,9 @@
 /* Use Boehm's garbage collector					*/
 #undef GBC_BOEHM
 
+/* Allow loading dynamically linked code				*/
+#undef ENABLE_DLOPEN
+
 /* Undefine this if you do not want ECLS to check for circular lists    */
 #define ECLS_SAFE
 

@@ -110,7 +110,12 @@ eval `${CPP} -D${host} ${tempcname} \
 rm ${tempcname}
 ]
 AC_MSG_CHECKING(for ld flags when building shared libraries)
+if test "${shared}" = "yes" -a "${SHARED_LDFLAGS}" ; then
 AC_MSG_RESULT([${SHARED_LDFLAGS}])
+else
+shared="no";
+AC_MSG_RESULT(cannot build)
+fi
 AC_MSG_CHECKING(for required libraries)
 AC_MSG_RESULT([${CLIBS}])
 AC_MSG_CHECKING(for architecture)
