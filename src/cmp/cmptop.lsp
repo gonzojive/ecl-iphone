@@ -639,13 +639,13 @@
 (defun t1defvar (args &aux form (doc nil) (name (car args)))
   (when *compile-time-too* (cmp-eval `(defvar ,@args)))
   (setq *non-package-operation* nil)
+  (push name *global-vars*)
   (if (endp (cdr args))
       (list 'DECLARE (add-symbol name))
       (progn
 	(unless (endp (cddr args)) (setq doc (add-object (third args))))
 	(setq form (c1expr (second args)))
 	(add-load-time-sharp-comma)
-	(push name *global-vars*)
 	(list 'DEFVAR (make-var :name name :kind 'SPECIAL
 				      :loc (add-symbol name)) form doc))))
 
