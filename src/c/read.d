@@ -1479,7 +1479,8 @@ do_read_delimited_list(int d, cl_object strm)
 	@(return x MAKE_FIXNUM(e))
 
 CANNOT_PARSE:
-	FEerror("Cannot parse an integer in the string ~S.", 1, strng);
+	FEreader_error("Cannot parse an integer in the string ~S.", Cnil,
+		       1, strng);
 @)
 
 @(defun read_byte (binary_input_stream
