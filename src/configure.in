@@ -52,11 +52,11 @@ dnl 	[--enable-tk	Include Tk.],
 dnl 	tk="$enable_tk")
 AC_ARG_ENABLE(clx,
 	[--enable-clx	Include CLX.],
-	clx="$enable_clx")
+	clx="$enableval")
 AC_ARG_WITH(tcp,
 	[--with-tcp	Include socket interface.],
 	tcp="yes")
-AC_ARG_ENABLE(gmp,
+AC_ARG_ENABLE(local-gmp,
 	[--enable-local-gmp	Use already installed GMP library.],
 	gmp="${enableval}")
 AC_ARG_WITH(gmp,
@@ -263,7 +263,8 @@ else
   test -d gmp && rm -rf gmp
   if mkdir gmp; then
    (cd gmp;
-     $srcdir/gmp/configure $gmp_flags)
+     $srcdir/gmp/configure --disable-shared --prefix=$bindir \
+	--includedir=${builddir}/h --libdir=${builddir} $gmp_flags)
   fi
 fi
 dnl ---------------------------------------------------------------------

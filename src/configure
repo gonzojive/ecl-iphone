@@ -617,7 +617,7 @@ fi
 # Check whether --enable-clx or --disable-clx was given.
 if test "${enable_clx+set}" = set; then
   enableval="$enable_clx"
-  clx="$enable_clx"
+  clx="$enableval"
 fi
 
 # Check whether --with-tcp or --without-tcp was given.
@@ -626,9 +626,9 @@ if test "${with_tcp+set}" = set; then
   tcp="yes"
 fi
 
-# Check whether --enable-gmp or --disable-gmp was given.
-if test "${enable_gmp+set}" = set; then
-  enableval="$enable_gmp"
+# Check whether --enable-local-gmp or --disable-local-gmp was given.
+if test "${enable_local_gmp+set}" = set; then
+  enableval="$enable_local_gmp"
   gmp="${enableval}"
 fi
 
@@ -2761,11 +2761,12 @@ else
   test -d gmp && rm -rf gmp
   if mkdir gmp; then
    (cd gmp;
-     $srcdir/gmp/configure $gmp_flags)
+     $srcdir/gmp/configure --disable-shared --prefix=$bindir \
+	--includedir=${builddir}/h --libdir=${builddir} $gmp_flags)
   fi
 fi
 echo $ac_n "checking checking for Boehm-Weiser gc...""... $ac_c" 1>&6
-echo "configure:2769: checking checking for Boehm-Weiser gc..." >&5
+echo "configure:2770: checking checking for Boehm-Weiser gc..." >&5
 if test ${boehm} ; then
   echo "$ac_t""yes" 1>&6
   test -d gc && rm -rf gc
