@@ -922,6 +922,7 @@ cl_symbols[] = {
 {"SI::*MAKE-SPECIAL", SI_ORDINARY, NULL, siLXmake_special},
 {"SI::*PRINT-PACKAGE*", SI_SPECIAL, &siVprint_package, NULL},
 {"SI::*PRINT-STRUCTURE*", SI_SPECIAL, &siVprint_structure, NULL},
+{"SI::*READ-VV-BLOCK*", SI_SPECIAL, NULL, NULL},
 {"SI::,", SI_ORDINARY, &siScomma, NULL},
 {"SI::,.", SI_ORDINARY, &siScomma_dot, NULL},
 {"SI::,@", SI_ORDINARY, &siScomma_at, NULL},

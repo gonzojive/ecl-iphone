@@ -948,8 +948,6 @@ static
 /*
 	For fasload.
 */
-static cl_object read_VV_block = OBJNULL;
-
 static
 @(defun "sharp_exclamation_reader" (in c d)
 	cl_fixnum code;
@@ -971,12 +969,14 @@ static
 		if (Null(p)) make_package(name,Cnil,Cnil);
 		break;
 	}
-	default:
+	default: {
+		cl_object read_VV_block = SYM_VAL(@'si::*read-vv-block*');
 		code = -code - 1;
 		if (code < 0 || code >= read_VV_block->cblock.data_size)
 			FEerror("Bogus binary file. #!~S unknown.",1,
 				MAKE_FIXNUM(code));
 		@(return read_VV_block->cblock.data[code])
+	}
 	}
 	@(return)
 @)
@@ -2011,13 +2011,14 @@ read_VV(cl_object block, void *entry)
 					    0, block->cblock.data_text_size);
 		bds_bind(@'*package*', lisp_package);
 		bds_bind(@'*readtable*', standard_readtable);
-		read_VV_block = block;
+		bds_bind(@'si::*read-vv-block*', block);
 		for (i = 0 ; i < len; i++) {
 			x = @read(4, in, Cnil, OBJNULL, Cnil);
 			if (x == OBJNULL)
 				break;
 			VV[i] = x;
 		}
+		bds_unwind1;
 		bds_unwind1;
 		bds_unwind1;
 		if (i < len)
@@ -2030,7 +2031,6 @@ read_VV(cl_object block, void *entry)
 	frs_pop();
 	if (in != OBJNULL)
 		close_stream(in, 0);
-	read_VV_block = OBJNULL;
 	bds_unwind(old_bds_top);
 
 	if (e) unwind(nlj_fr, nlj_tag);
