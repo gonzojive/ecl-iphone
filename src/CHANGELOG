@@ -1414,6 +1414,15 @@ ECLS 0.9
   - In destructuring lambda lists, &WHOLE may be accompanied by a
     destructuring form.
 
+  - In DEF{CLASS,CONDITION}, arguments to the :INITFORM option, or to
+    the :DEFAULT-INITARGS option, are now properly evaluated in the
+    lexical environment corresponding to the DEF{CLASS,CONDITION} form.
+
+  - Structures may now have :TYPE (VECTOR BIT), (VECTOR CHARACTER),
+    etc. That sequence type is used, rather than the general one
+    (VECTOR T). (:TYPE option from slots is not used, though).
+
+
 TODO:
 =====
 

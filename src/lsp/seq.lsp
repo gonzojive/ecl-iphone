@@ -30,7 +30,6 @@
 	 :datum NIL))
 
 (defun closest-vector-type (type)
-  (declare (si::c-local))
   (let (elt-type length name args)
     (if (atom type)
 	(setq name type args nil)

@@ -1086,4 +1086,5 @@ type_of(#0)==t_bitvector"))
 	    count count-if count-if-not substitute substitute-if substitute-if-not
 	    nsubstitute nsubstitute-if nsubstitute-if-not find find-if find-if-not
 	    position position-if position-if-not remove-duplicates
-	    delete-duplicates mismatch search sort stable-sort merge))
+	    delete-duplicates mismatch search sort stable-sort merge
+	    si::closest-vector-type))

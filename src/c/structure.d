@@ -119,6 +119,8 @@ cl_copy_structure(cl_object s)
 		s = ecl_copy_structure(s);
 		break;
 	case t_cons:
+	case t_string:
+	case t_bitvector:
 	case t_vector:
 		s = cl_copy_seq(s);
 		break;

@@ -27,9 +27,7 @@
            ;;  the slot is at the offset in the structure-body.
 	   (fset access-function #'(lambda (x)
 				     (sys:structure-ref x name offset))))
-          ((or (eq type 'VECTOR)
-               (and (consp type)
-                    (eq (car type) 'VECTOR)))
+          ((subtypep type 'VECTOR)
 	   ;; If TYPE is VECTOR or (VECTOR ... ), ELT is used.
            (fset access-function
 		 #'(lambda (x) (elt x offset))))
@@ -140,10 +138,14 @@
               (sys:make-structure ',name ,@slot-names)
 	      #+CLOS
 	      (sys:make-structure (find-class ',name) ,@slot-names)))
-          ((or (eq type 'VECTOR)
-               (and (consp type) (eq (car type) 'vector)))
+	  ((subtypep type '(VECTOR T))
+	   `(defun ,constructor ,keys
+	     (vector ,@slot-names)))
+          ((subtypep type 'VECTOR)
            `(defun ,constructor ,keys
-              (vector ,@slot-names)))
+              (make-array ',(list (length slot-names))
+			  :element-type ',(closest-vector-type type)
+	       		  :initial-contents (list ,@slot-names))))
           ((eq type 'LIST)
            `(defun ,constructor ,keys
               (list ,@slot-names)))
@@ -371,6 +373,9 @@ as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
     (when (and type initial-offset)
           (setq offset (+ offset initial-offset)))
     (when (and type named)
+	  (unless (or (subtypep '(vector symbol) type)
+		      (subtypep type 'list))
+	    (error "Structure cannot have type ~S and be :NAMED." type))
           (setq name-offset offset)
           (setq offset (1+ offset)))
 
