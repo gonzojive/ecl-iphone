@@ -244,8 +244,8 @@
 
 
 (defun define-structure (name conc-name type named slots slot-descriptions
-			      copier include print-function constructors
-			      offset name-offset documentation predicate)
+			 copier include print-function print-object constructors
+			 offset name-offset documentation predicate)
   ;; We are going to modify this list!!!
   (setf slot-descriptions (copy-tree slot-descriptions))
   ;; FIXME! We could do the same with ENSURE-CLASS!
@@ -269,6 +269,10 @@
   (when print-function
     (eval `(defmethod print-object ((obj ,name) stream)
 	     (,print-function obj stream *print-level*))))
+  #+clos
+  (when print-object
+    (eval `(defmethod print-object ((obj ,name) stream)
+	    (,print-object obj stream))))
   (when predicate
     (fset predicate (make-predicate name type named name-offset)))
   (put-sysprop name 'DEFSTRUCT-FORM `(defstruct ,name ,@slots))
@@ -302,6 +306,7 @@
                         :predicate | (:predicate symbol) |
                         (:include symbol) |
                         (:print-function function) |
+                        (:print-object function) |
                         (:type {vector | (vector type) | list}) |
                         :named |
                         (:initial-offset number)}*)}
@@ -321,7 +326,7 @@ as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
         constructors no-constructor
         predicate-specified
         include
-        print-function type named initial-offset
+        print-function print-object type named initial-offset
         offset name-offset
         documentation)
 
@@ -350,6 +355,7 @@ as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
                 (unless (get-sysprop v 'IS-A-STRUCTURE)
                         (error "~S is an illegal included structure." v)))
                (:PRINT-FUNCTION (setq print-function v))
+	       (:PRINT-OBJECT (setq print-object v))
                (:TYPE (setq type v))
                (:INITIAL-OFFSET (setq initial-offset v))
                (t (error "~S is an illegal defstruct option." o))))
@@ -363,7 +369,7 @@ as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
                       (cons default-constructor constructors)))
 	       (:CONC-NAME
 		(setq conc-name nil))
-               ((:COPIER :PREDICATE :PRINT-FUNCTION))
+               ((:COPIER :PREDICATE :PRINT-FUNCTION :PRINT-OBJECT))
                (:NAMED (setq named t))
                (t (error "~S is an illegal defstruct option." o))))))
 
@@ -372,7 +378,7 @@ as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
                (stringp (car slot-descriptions)))
           (setq documentation (car slot-descriptions))
           (setq slot-descriptions (cdr slot-descriptions)))
-    
+
     ;; Check the include option.
     (when include
           (unless (equal type (get-sysprop (car include) 'STRUCTURE-TYPE))
@@ -455,7 +461,7 @@ as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
     `(eval-when (:compile-toplevel :load-toplevel :execute)
        (define-structure ',name ',conc-name ',type ',named ',slots
 	 ',slot-descriptions ',copier ',include
-	 ',print-function ',constructors ',offset ',name-offset
+	 ',print-function ',print-object ',constructors ',offset ',name-offset
 	 ',documentation ',predicate)
        ,@(mapcar #'(lambda (constructor)
 		     (make-constructor name constructor type named
