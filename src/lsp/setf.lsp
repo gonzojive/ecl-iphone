@@ -52,12 +52,12 @@ by (documentation 'SYMBOL 'setf)."
 
 
 ;;; DEFINE-SETF-METHOD macro.
-(defmacro define-setf-method (access-fn args &rest body &aux doc)
-  "Syntax: (define-setf-method symbol defmacro-lambda-list {decl | doc}*
+(defmacro define-setf-expander (access-fn args &rest body &aux doc)
+  "Syntax: (define-setf-expander symbol defmacro-lambda-list {decl | doc}*
           {form}*)
 Defines the SETF-method for generalized-variables (SYMBOL ...).
 When a form (setf (SYMBOL arg1 ... argn) value-form) is evaluated, the FORMs
-given in the DEFINE-SETF-METHOD are evaluated in order with the parameters in
+given in the DEFINE-SETF-EXPANDER are evaluated in order with the parameters in
 DEFMACRO-LAMBDA-LIST bound to ARG1 ... ARGn.  The last FORM must return five
 values
 	(var1 ... vark)
@@ -94,9 +94,9 @@ by (DOCUMENTATION 'SYMBOL 'SETF)."
 ;;; GET-SETF-METHOD.
 ;;; It just calls GET-SETF-METHOD-MULTIPLE-VALUE
 ;;;  and checks the number of the store variable.
-(defun get-setf-method (form &optional env)
+(defun get-setf-expansion (form &optional env)
   "Args: (place)
-Returns the 'five gangs' (see DEFINE-SETF-METHOD) for PLACE as five values.
+Returns the 'five gangs' (see DEFINE-SETF-EXPANDER) for PLACE as five values.
 Checks if the third gang is a single-element list."
   (multiple-value-bind (vars vals stores store-form access-form)
       (get-setf-method-multiple-value form env)
@@ -109,7 +109,7 @@ Checks if the third gang is a single-element list."
 
 (defun get-setf-method-multiple-value (form &optional env &aux tem)
   "Args: (form)
-Returns the 'five gangs' (see DEFINE-SETF-METHOD) for PLACE as five values.
+Returns the 'five gangs' (see DEFINE-SETF-EXPANDER) for PLACE as five values.
 Does not check if the third gang is a single-element list."
   (cond ((symbolp form)
 	 (let ((store (gensym)))
@@ -231,9 +231,9 @@ Does not check if the third gang is a single-element list."
 (defsetf sys:gfun-instance sys:gfun-instance-set)
 
 
-(define-setf-method getf (&environment env place indicator &optional default)
+(define-setf-expander getf (&environment env place indicator &optional default)
   (multiple-value-bind (vars vals stores store-form access-form)
-      (get-setf-method place env)
+      (get-setf-expansion place env)
     (let ((itemp (gensym)) (store (gensym)) (def (gensym)))
       (values `(,@vars ,itemp ,def)
               `(,@vals ,indicator ,default)
@@ -248,20 +248,20 @@ Does not check if the third gang is a single-element list."
   `(PROGN (REPLACE ,sequence1 ,sequence2 :START1 ,start1 :END1 ,end1)
     ,sequence2))
 
-(define-setf-method THE (&environment env type place)
+(define-setf-expander THE (&environment env type place)
   (multiple-value-bind (vars vals stores store-form access-form)
-      (get-setf-method place env)
+      (get-setf-expansion place env)
     (values vars vals stores
             (subst `(THE ,type ,(first stores)) (first stores) store-form)
             `(THE ,type ,access-form))))
 
 #|
-(define-setf-method apply (&environment env fn &rest rest)
+(define-setf-expander apply (&environment env fn &rest rest)
   (unless (and (consp fn) (eq (car fn) 'FUNCTION) (symbolp (cadr fn))
 	       (null (cddr fn)))
 	  (error "Can't get the setf-method of ~S." fn))
   (multiple-value-bind (vars vals stores store-form access-form)
-      (get-setf-method (cons (cadr fn) rest) env)
+      (get-setf-expansion (cons (cadr fn) rest) env)
     (unless (eq (car (last store-form)) (car (last vars)))
             (error "Can't get the setf-method of ~S." fn))
     (values vars vals stores
@@ -269,14 +269,14 @@ Does not check if the third gang is a single-element list."
 	    `(apply #',(cadr fn) ,@(cdr access-form)))))
 |#
 
-(define-setf-method apply (&environment env fn &rest rest)
+(define-setf-expander apply (&environment env fn &rest rest)
   (unless (and (consp fn)
                (or (eq (car fn) 'FUNCTION) (eq (car fn) 'QUOTE))
                (symbolp (cadr fn))
                (null (cddr fn)))
     (error "Can't get the setf-method of ~S." fn))
   (multiple-value-bind (vars vals stores store-form access-form)
-      (get-setf-method (cons (cadr fn) rest) env)
+      (get-setf-expansion (cons (cadr fn) rest) env)
     (cond ((eq (car (last store-form)) (car (last vars)))
            (values vars vals stores
                    `(apply #',(car store-form) ,@(cdr store-form))
@@ -290,9 +290,9 @@ Does not check if the third gang is a single-element list."
                    `(apply #',(cadr fn) ,@(cdr access-form))))
           (t (error "Can't get the setf-method of ~S." fn)))))
 
-(define-setf-method ldb (&environment env bytespec int)
+(define-setf-expander ldb (&environment env bytespec int)
   (multiple-value-bind (temps vals stores store-form access-form)
-      (get-setf-method int env)
+      (get-setf-expansion int env)
     (let ((btemp (gensym))
 	  (store (gensym))
 	  (stemp (first stores)))
@@ -303,9 +303,9 @@ Does not check if the third gang is a single-element list."
 	         ,store-form ,store)
 	      `(ldb ,btemp ,access-form)))))
 
-(define-setf-method mask-field (&environment env bytespec int)
+(define-setf-expander mask-field (&environment env bytespec int)
   (multiple-value-bind (temps vals stores store-form access-form)
-      (get-setf-method int env)
+      (get-setf-expansion int env)
     (let ((btemp (gensym))
 	  (store (gensym))
 	  (stemp (first stores)))
@@ -319,25 +319,9 @@ Does not check if the third gang is a single-element list."
 
 ;;; The expansion function for SETF.
 (defun setf-expand-1 (place newvalue env &aux g)
-  (when (and (consp place) (eq (car place) 'THE))
-        (return-from setf-expand-1
-          (setf-expand-1 (caddr place) `(the ,(cadr place) ,newvalue) env)))
-  (when (symbolp place)
-        (return-from setf-expand-1 `(setq ,place ,newvalue)))
-  (when (and (consp place)
-	     (not (or (get (car place) 'SETF-LAMBDA)
-		      (get (car place) 'SETF-UPDATE-FN))))
-	(multiple-value-setq (place g) (macroexpand place env))
-	(if g (return-from setf-expand-1 (setf-expand-1 place newvalue env))))
-  (when (and (symbolp (car place)) (setq g (get (car place) 'SETF-UPDATE-FN)))
-        (return-from setf-expand-1 `(,g ,@(cdr place) ,newvalue)))
-  (when (and (symbolp (car place))
-             (setq g (get (car place) 'STRUCTURE-ACCESS)))
-    (return-from setf-expand-1
-      (setf-structure-access (cadr place) (car g) (cdr g) newvalue)))
   (multiple-value-bind (vars vals stores store-form access-form)
-      (get-setf-method place env)
-;    (declare (ignore access-form))
+      (get-setf-expansion place env)
+    (declare (ignore access-form))
     `(let* ,(mapcar #'list
 		    (append vars stores)
 		    (append vals (list newvalue)))
@@ -380,7 +364,7 @@ Each PLACE may be any one of the following:
         1. an accessor method for a CLOS object
   * the form (THE type place) with PLACE being a place recognized by SETF.
   * a macro call which expands to a place recognized by SETF.
-  * any form for which a DEFSETF or DEFINE-SETF-METHOD declaration has been
+  * any form for which a DEFSETF or DEFINE-SETF-EXPANDER declaration has been
     made."
   (cond ((endp rest) nil)
         ((endp (cdr rest)) (error "~S is an illegal SETF form." rest))
@@ -408,7 +392,7 @@ the corresponding PLACE.  Returns NIL."
 		 nil))
 	   (when (endp (cdr r)) (error "~S is an illegal PSETF form." rest))
 	   (multiple-value-bind (vars vals stores store-form access-form)
-	       (get-setf-method (car r) env)
+	       (get-setf-expansion (car r) env)
              (declare (ignore access-form))
 	     (setq store-forms (cons store-form store-forms))
 	     (setq pairs
@@ -441,7 +425,7 @@ Returns the original value of the leftmost PLACE."
 	    ,@store-forms
 	    ,g))
     (multiple-value-bind (vars vals stores1 store-form access-form)
-	(get-setf-method (car r) env)
+	(get-setf-expansion (car r) env)
       (setq pairs (nconc pairs (mapcar #'list vars vals)))
       (setq stores (cons (car stores1) stores))
       (setq store-forms (cons store-form store-forms))
@@ -469,7 +453,7 @@ PLACE.  Returns NIL."
 	    ,@store-forms
 	    nil))
     (multiple-value-bind (vars vals stores1 store-form access-form)
-	(get-setf-method (car r) env)
+	(get-setf-expansion (car r) env)
       (setq pairs (nconc pairs (mapcar #'list vars vals)))
       (setq stores (cons (car stores1) stores))
       (setq store-forms (cons store-form store-forms))
@@ -520,7 +504,7 @@ retrieved by (DOCUMENTATION 'SYMBOL 'FUNCTION)."
     (setq varlist (nreverse varlist))
     `(DEFMACRO ,name (&ENVIRONMENT ENV %REFERENCE ,@lambdalist) ,docstring
        (MULTIPLE-VALUE-BIND (VARS VALS STORES SETTER GETTER)
-           (GET-SETF-METHOD %REFERENCE ENV)
+           (GET-SETF-EXPANSION %REFERENCE ENV)
 	 (IF (SYMBOLP GETTER)
 	     (SUBST (LIST* (QUOTE ,function) GETTER ,@varlist ,restvar)
                     (CAR STORES)
@@ -560,7 +544,7 @@ retrieved by (DOCUMENTATION 'SYMBOL 'FUNCTION)."
                (let ((access-form reference))
                  (list 'setq reference ,update-form))))
        (multiple-value-bind (vars vals stores store-form access-form)
-	   (get-setf-method reference env)
+	   (get-setf-expansion reference env)
          `(let* ,(mapcar #'list
 		  (append vars stores)
 		  (append vals (list ,update-form)))
@@ -575,7 +559,7 @@ retrieved by (DOCUMENTATION 'SYMBOL 'FUNCTION)."
 Removes the property specified by FORM from the property list stored in PLACE.
 Returns T if the property list had the specified property; NIL otherwise."
   (multiple-value-bind (vars vals stores store-form access-form)
-      (get-setf-method place env)
+      (get-setf-expansion place env)
     `(let* ,(mapcar #'list vars vals)
        (declare (:read-only ,@vars)) ; Beppe
        (multiple-value-bind (,(car stores) flag)
@@ -598,7 +582,7 @@ makes it the new value of PLACE.  Returns the new value of PLACE."
   (when (symbolp place)
     (return-from push `(setq ,place (cons ,item ,place))))
   (multiple-value-bind (vars vals stores store-form access-form)
-      (get-setf-method place env)
+      (get-setf-expansion place env)
     `(let* ,(mapcar #'list
 		    (append vars stores)
 		    (append vals (list (list 'cons item access-form))))
@@ -615,7 +599,7 @@ to MEMBER."
   (cond ((symbolp place)
 	 (return-from pushnew `(setq ,place (adjoin ,item ,place ,@rest)))))
   (multiple-value-bind (vars vals stores store-form access-form)
-      (get-setf-method place env)
+      (get-setf-expansion place env)
     `(let* ,(mapcar #'list
 		    (append vars stores)
 		    (append vals
@@ -634,7 +618,7 @@ Returns the car of the old value in PLACE."
                 (setq ,place (cdr ,place))
                 ,temp))))
   (multiple-value-bind (vars vals stores store-form access-form)
-      (get-setf-method place env)
+      (get-setf-expansion place env)
     `(let* ,(mapcar #'list
 		    (append vars stores)
 		    (append vals (list (list 'cdr access-form))))
@@ -647,7 +631,7 @@ Returns the car of the old value in PLACE."
 ; --> (MULTIPLE-VALUE-BIND (dummy1 ... dummyk) form
 ;       (SETF place1 dummy1 ... placek dummyk)
 ;       (VALUES dummy1 ... dummyk))
-(define-setf-method VALUES (&environment env &rest subplaces)
+(define-setf-expander VALUES (&environment env &rest subplaces)
   (do ((temps) (vals) (stores)
        (storeforms) (accessforms)
        (placesr subplaces))
@@ -663,7 +647,7 @@ Returns the car of the old value in PLACE."
             `(VALUES ,@storeforms)
             `(VALUES ,@accessforms)))
     (multiple-value-bind (SM1 SM2 SM3 SM4 SM5)
-        (get-setf-method (pop placesr) env)
+        (get-setf-expansion (pop placesr) env)
       (setq temps (revappend SM1 temps)
 	    vals (revappend SM2 vals)
 	    stores (revappend SM3 stores)

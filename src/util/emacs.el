@@ -1,3 +1,5 @@
+(require 'cl)
+
 (defun replace-in-files (matches files)
   (save-excursion
     (mapc (lambda (file)

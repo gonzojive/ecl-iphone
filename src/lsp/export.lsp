@@ -100,7 +100,7 @@
 	  decode-universal-time
 	  defconstant
 	  define-modify-macro
-	  define-setf-method
+	  define-setf-expander
 	  define-symbol-macro
 	  defmacro
 	  defpackage
@@ -152,8 +152,7 @@
 	  fround
 	  ftruncate
 	  get-decoded-time
-	  get-setf-method
-	  get-setf-method-multiple-value
+	  get-setf-expansion
 	  get-universal-time
 	  getf
 	  ignore
@@ -398,7 +397,7 @@
 	  initialize-instance
 	  invalid-method-error
 	  make-instance
-	  make-instance-obsolete
+	  make-instances-obsolete
 	  make-method-call
 	  method
 	  method-combination-error
@@ -407,7 +406,9 @@
 	  no-applicable-method
 	  print-object
 	  print-unreadable-object
+          reinitialize-instance
 	  remove-method
+          shared-initialize
 	  slot-boundp
 	  slot-exists-p
 	  slot-makunbound
@@ -416,6 +417,7 @@
 	  slot-value
 	  subclassp
 	  symbol-macrolet
+          update-instance-for-redefined-class
 	  update-instance-structure
 	  with-accessors
 	  with-added-methods

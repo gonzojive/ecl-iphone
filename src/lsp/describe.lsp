@@ -511,14 +511,14 @@ inspect commands, or type '?' to the inspector."
            (let ((*package* (good-package)))
              (doc1
               (format nil
-                "~@[~%Defined as: ~S~%See the doc of DEFINE-SETF-METHOD.~]"
+                "~@[~%Defined as: ~S~%See the doc of DEFINE-SETF-EXPANDER.~]"
                 (if (consp x)
                     (case (car x)
-                          (LAMBDA `(define-setf-method ,@(cdr x)))
-                          (LAMBDA-BLOCK `(define-setf-method ,@(cddr x)))
-                          (LAMBDA-CLOSURE `(define-setf-method ,@(cddddr x)))
+                          (LAMBDA `(define-setf-expander ,@(cdr x)))
+                          (LAMBDA-BLOCK `(define-setf-expander ,@(cddr x)))
+                          (LAMBDA-CLOSURE `(define-setf-expander ,@(cddddr x)))
                           (LAMBDA-BLOCK-CLOSURE
-                           `(define-setf-method ,@(cdr (cddddr x))))
+                           `(define-setf-expander ,@(cdr (cddddr x))))
                           (t nil))
                     nil))
             "[Setf]"))))
