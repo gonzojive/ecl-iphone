@@ -34,7 +34,7 @@
 ;;; Use structures of type vector to avoid creating
 ;;; normal structures before booting CLOS.
 
-(defstruct (ref)
+(defstruct (ref (:print-object print-ref))
   name			;;; Identifier of reference.
   (ref 0 :type fixnum)	;;; Number of references.
   ref-ccb		;;; Cross closure reference.

@@ -12,6 +12,12 @@
 
 (in-package "COMPILER")
 
+(defun print-ref (ref-object stream)
+  (let ((name (ref-name ref-object)))
+    (if name
+	(format stream "#<a ~A: ~A>" (type-of ref-object) name)
+	(format stream "#<a ~A>" (type-of ref-object)))))
+
 (defun cmperr (string &rest args &aux (*print-case* :upcase))
   (print-current-form)
   (format t "~&;;; Error: ")

@@ -69,12 +69,16 @@
 		      :args local-funs body-c1form (eq origin 'LABELS))
 	body-c1form)))
 
+(defun fun-referred-local-vars (fun)
+  (remove-if #'(lambda (v) (member (var-kind v) '(SPECIAL GLOBAL REPLACED)))
+	     (fun-referred-vars fun)))
+
 (defun compute-fun-closure-type (fun)
   (labels
       ((closure-type (fun &aux (lambda-form (fun-lambda fun)))
-	 (let ((vars (fun-referred-vars fun))
+	 (let ((vars (fun-referred-local-vars fun))
 	       (funs (remove fun (fun-referred-funs fun) :test #'child-p)))
-	   ;; it will have a full closure if it refers external variables
+	   ;; it will have a full closure if it refers external non-global variables
 	   (unless (or vars funs)
 	     (return-from closure-type nil))
 	   (dolist (var vars)
@@ -108,15 +112,16 @@
 		(eq old-type 'CLOSURE))
 	(baboon))
       (setf (fun-closure fun) new-type)
+      ;; All external, non-global variables become of type closure
       (when (eq new-type 'CLOSURE)
-	(dolist (var (fun-referred-vars fun))
-	  (unless (or (ref-ref-ccb var)
-		      (member (var-kind var) '(GLOBAL SPECIAL REPLACED CLOSURE)))
-	    (setf (var-ref-clb var) nil
-		  (var-ref-ccb var) t
-		  (var-kind var) 'CLOSURE
-		  (var-loc var) 'OBJECT))))
-      (dolist (f (fun-child-funs fun))
+	(dolist (var (fun-referred-local-vars fun))
+	  (setf (var-ref-clb var) nil
+		(var-ref-ccb var) t
+		(var-kind var) 'CLOSURE
+		(var-loc var) 'OBJECT)))
+      ;; If the status of some of the children changes, we have
+      ;; to recompute the closure type.
+      (when (some #'compute-fun-closure-type (fun-child-funs fun))
 	(compute-fun-closure-type f))
       t)))
 
