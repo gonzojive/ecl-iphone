@@ -219,7 +219,6 @@ si_foreign_data_ref_elt(cl_object f, cl_object andx, cl_object tag)
 cl_object
 si_foreign_data_set_elt(cl_object f, cl_object andx, cl_object tag, cl_object value)
 {
-	cl_object output;
 	cl_index ndx = fixnnint(andx);
 	cl_index limit = f->foreign.size;
 	void *p;
@@ -276,7 +275,7 @@ si_foreign_data_set_elt(cl_object f, cl_object andx, cl_object tag, cl_object va
 	} else {
 		FEerror("~A does not denote a foreign type.", 1, tag);
 	}
-	@(return output)
+	@(return value)
 }
 
 cl_object

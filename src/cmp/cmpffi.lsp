@@ -45,9 +45,10 @@
 (defun rep-type->lisp-type (rep-type)
   (let ((output (getf +representation-types+ rep-type)))
     (cond (output
-	   (or (first output)
-	       (error "Representation type ~S cannot be coerced to lisp"
-		      rep-type)))
+           (if (eq rep-type :void) nil
+	     (or (first output)
+	         (error "Representation type ~S cannot be coerced to lisp"
+		        rep-type))))
 	  ((lisp-type-p rep-type) rep-type)
 	  (t (error "Unknown representation type ~S" rep-type)))))
 
@@ -264,14 +265,16 @@
 	       (eq (char c-expression ndx) #\;)))
 	(push (- (char-code (char c-expression ndx)) (char-code #\0))
 	      args-to-be-saved)))
-    
+   
     (setf coerced-arguments (coerce-locs inlined-arguments arg-types args-to-be-saved))
     (setf output-rep-type (lisp-type->rep-type output-rep-type))
     ;; If the form does not output any data, and there are no side
     ;; effects, try to omit it.
     (cond ((eq output-rep-type :void)
 	   (if side-effects
-	     (wt-c-inline-loc output-rep-type c-expression coerced-arguments t nil)
+	     (progn
+	       (wt-c-inline-loc output-rep-type c-expression coerced-arguments t nil)
+	       (wt ";"))
 	     (cmpwarn "Ignoring form ~S" c-expression))
 	   NIL)
 	  (one-liner

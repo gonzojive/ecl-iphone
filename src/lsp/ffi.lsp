@@ -19,9 +19,11 @@
 	   "DEF-ARRAY-POINTER" "DEF-FUNCTION" "DEF-UNION" "DEF-ARRAY"
 	   "ALLOCATE-FOREIGN-OBJECT" "FREE-FOREIGN-OBJECT" "MAKE-NULL-POINTER"
 	   "GET-SLOT-VALUE" "GET-SLOT-POINTER" "DEREF-ARRAY" "DEREF-POINTER"
-	   "POINTER-ADDRESS" "SIZE-OF-FOREIGN-TYPE"
+	   "POINTER-ADDRESS" "SIZE-OF-FOREIGN-TYPE" "DEF-FOREIGN-VAR"
 	   "NULL-CHAR-P" "ENSURE-CHAR-CHARACTER" "ENSURE-CHAR-INTEGER"
-	   "NULL-POINTER-P" "+NULL-CSTRING-POINTER+"
+	   "NULL-POINTER-P" "+NULL-CSTRING-POINTER+" "WITH-FOREIGN-OBJECTS"
+	   "MAKE-POINTER" "CHAR-ARRAY-TO-POINTER" "CONVERT-TO-FOREIGN-STRING"
+	   "CONVERT-FROM-FOREIGN-STRING" "WITH-FOREIGN-OBJECT"
 	   ))
 
 (in-package "FFI")
@@ -64,10 +66,23 @@
   `(eval-when (compile load eval)
      (setf (gethash ',name ffi::*ffi-types*) ',definition)))
 
+(defun %convert-to-ffi-type (type &optional context)
+  (if (atom type)
+    (if (member type context)
+      type
+      (multiple-value-bind (value present-p) (gethash type *ffi-types* type)
+        (if present-p
+          (%convert-to-ffi-type value (cons type context))
+          value)))
+    (cons (%convert-to-ffi-type (first type) context)
+          (%convert-to-ffi-type (rest type) context))))
+
+(defmacro %align-data (data align)
+  `(setf ,data (* (ceiling (/ ,data ,align)) ,align)))
 
 (defun size-of-foreign-type (name)
-  (let* ((size 0)
-	 (type (gethash name *ffi-types* name)))
+  (let* ((size 0) align
+	 (type (%convert-to-ffi-type name)))
     (unless type
       (error "Incomplete or unknown foreign type ~A" name))
     (cond ((symbolp type)
@@ -75,16 +90,35 @@
 	  ((atom type)
 	   (error "~A is not a valid foreign type identifier" name))
 	  ((eq (setf name (first type)) :struct)
-	   (setf size (slot-position type nil)))
+	   (setf size (slot-position type nil))
+	   (setf align (apply #'max (mapcar #'(lambda (field)
+	                                        (multiple-value-bind (field-size field-align)
+						  (size-of-foreign-type (second field))
+						  field-align))
+	                                    (rest type))))
+	   (%align-data size align))
 	  ((eq name :array)
-	   (when (eq (setf size (second array)) '*)
-	     (error "Incomplete foreign type"))
-	   (setf size (* size (size-of-foreign-type (third array)))))
+	   (unless (and (setf size (third type)) (realp size))
+	     (error "Incomplete foreign type: ~S" type))
+	   (multiple-value-bind (elt-size elt-align)
+	     (size-of-foreign-type (second type))
+	     (setf size (* size elt-size))
+	     (setf align elt-align)))
+	  ((eq name :union)
+	   (dolist (field (rest type))
+	     (multiple-value-bind (field-size field-align)
+	       (size-of-foreign-type (second field))
+	       (when (> field-size size)
+	         (setf size field-size))
+	       (when (or (null align) (> field-align align))
+	         (setf align field-align)))))
 	  ((eq name '*)
-	   (si::size-of-foreign-elt-type :pointer-void))
+	   (setf size (si::size-of-foreign-elt-type :pointer-void)))
 	  (t
 	   (error "~A does not denote a foreign type" name)))
-    size))
+    (unless align
+      (setf align size))
+    (values size align)))
 
 (defun allocate-foreign-object (type &optional (size 0 size-flag))
   (declare (fixnum size))
@@ -93,7 +127,7 @@
 	   (si::allocate-foreign-data type type-size))
 	  ((>= size 0)
 	   (let ((bytes (* size type-size)))
-	     (si::allocate-foreign-data `(array ,size ,type) bytes)))
+	     (si::allocate-foreign-data `(:array ,type ,size) bytes)))
 	  (t
 	   (error "~A is not a valid array dimension size" size)))))
 
@@ -106,9 +140,10 @@
 
 (defmacro def-enum (name values-list &key (separator-string "#"))
   (let ((constants '())
-	(value 0)
-	field)
-    (setf name (string name)
+	(value -1)
+	field
+	forms)
+    (setf #| name (string name) |#
 	  separator-string (string separator-string))
     (dolist (item values-list)
       (cond ((symbolp item)
@@ -146,17 +181,17 @@
   (let ((struct-type (list :struct))
 	field
 	type)
-    (dolist (item (subst `(* ,struct-type) :pointer-self slots))
+    (dolist (item (subst `(* ,name) :pointer-self slots))
       (if (and (consp item)
 	       (= (length item) 2)
 	       (symbolp (setf field (first item))))
 	(setf type (second item))
 	(error "Not a valid DEF-STRUCT slot ~A" item))
-      (push (cons field type) struct-type))
+      (push (list field type) struct-type))
     `(def-foreign-type ,name ,(nreverse struct-type))))
 
 (defun slot-position (type field)
-  (setf type (gethash type *ffi-types* type))
+  (setf type (%convert-to-ffi-type type))
   (let ((ndx 0)
 	(is-union nil))
     (cond ((atom type)
@@ -168,12 +203,14 @@
 	   (error "~A is not a foreign STRUCT or UNION type" type)))
     (dolist (slot (rest type))
       (let* ((slot-name (car slot))
-	     (slot-type (cdr slot))
-	     (slot-size (size-of-foreign-type slot-type)))
-	(when (eq slot-name field)
-	  (return-from slot-position (values ndx slot-type slot-size)))
-	(unless is-union
-	  (incf ndx slot-size))))
+	     (slot-type (cadr slot)))
+	(multiple-value-bind (slot-size slot-align)
+	  (size-of-foreign-type slot-type)
+	  (%align-data ndx slot-align)
+	  (when (eq slot-name field)
+	    (return-from slot-position (values ndx slot-type slot-size)))
+	  (unless is-union
+	    (incf ndx slot-size)))))
     (values ndx nil nil)))
 
 (defun get-slot-value (object struct-type field)
@@ -181,25 +218,21 @@
       (slot-position struct-type field)
     (unless slot-size
       (error "~A is not a field of the type ~A" field struct-type))
-    (if (foreign-elt-type-p slot-type)
-	(si::foreign-data-ref-elt object slot-ndx slot-type)
-	(si::foreign-data-ref object slot-ndx slot-size slot-type))))
+    (%foreign-data-ref object slot-ndx slot-type slot-size)))
 
 (defun (setf get-slot-value) (value object struct-type field)
   (multiple-value-bind (slot-ndx slot-type slot-size)
       (slot-position struct-type field)
     (unless slot-size
       (error "~A is not a field of the type ~A" field struct-type))
-    (if (foreign-elt-type-p slot-type)
-	(si::foreign-data-set-elt object slot-ndx slot-type value)
-	(si::foreign-data-set object slot-ndx value))))
+    (%foreign-data-set object slot-ndx slot-type value)))
 
 (defun get-slot-pointer (object struct-type field)
   (multiple-value-bind (slot-ndx slot-type slot-size)
       (slot-position struct-type field)
     (unless slot-size
       (error "~A is not a field of the type ~A" field struct-type))
-    (si::foreign-data-pointer object ndx slot-size field-type)))
+    (si::foreign-data-pointer object slot-ndx slot-size slot-type)))
 
 
 ;;;----------------------------------------------------------------------
@@ -207,20 +240,49 @@
 ;;;
 
 (defmacro def-array-pointer (name element-type)
-  `(def-foreign-type ,name (* (array * ,element-type))))
+  `(def-foreign-type ,name (:array ,element-type *)))
 
 (defun deref-array (array array-type position)
-  (let* ((element-type (third array-type))
-	 (element-size (size-of-foreign-type array-type))
+  (setf array-type (%convert-to-ffi-type array-type))
+  (let* ((element-type (second array-type))
+	 (element-size (size-of-foreign-type element-type))
 	 (ndx (* position element-size))
-	 (length (second array-type)))
-    (unless (or (eq length *)
+	 (length (or (third array-type) '*)))
+    (unless (or (eq length '*)
 		(> length position -1))
       (error "Out of bounds when accessing array ~A." array))
-    (if (foreign-elt-type-p element-type)
-	(si::foreign-data-ref-elt array ndx element-type)
-        (si::foreign-data-ref array ndx element-size element-type))))
+    (%foreign-data-ref array ndx element-type element-size)))
 
+(defun (setf deref-array) (value array array-type position)
+  (setf array-type (%convert-to-ffi-type array-type))
+  (let* ((element-type (second array-type))
+	 (element-size (size-of-foreign-type element-type))
+	 (ndx (* position element-size))
+	 (length (or (third array-type) '*)))
+    (unless (or (eq length '*)
+		(> length position -1))
+      (error "Out of bounds when accessing array ~A." array))
+    (%foreign-data-set array ndx element-type value)))
+
+(defun %foreign-data-set (obj ndx type value)
+  (cond ((foreign-elt-type-p type)
+         (si::foreign-data-set-elt obj ndx type value))
+	((atom type)
+	 (error "Unknown foreign primitive type: ~A" type))
+	((eq (first type) '*)
+	 (si::foreign-data-set-elt obj ndx :object value))
+	(t
+	 (si::foreign-data-set obj ndx value))))
+
+(defun %foreign-data-ref (obj ndx type &optional (size 0 size-p))
+  (cond ((foreign-elt-type-p type)
+         (si::foreign-data-ref-elt obj ndx type))
+	((atom type)
+	 (error "Unknown foreign primitive type: ~A" type))
+	((eq (first type) '*)
+	 (si::foreign-data-ref-elt obj ndx :object))
+	(t
+	 (si::foreign-data-ref obj ndx (if size-p size (size-of-foreign-type type)) type))))
 
 ;;;----------------------------------------------------------------------
 ;;; UNIONS
@@ -235,8 +297,9 @@
 		   (= (length item) 2)
 		   (symbolp (setf field (first item))))
 	(error "Not a valid DEF-UNION slot ~A" item))
-      (push (cons field type) struct-type))
-    `(def-foreign-type ,name (nreverse struct-type))))
+      (setf type (second item))
+      (push (list field type) struct-type))
+    `(def-foreign-type ,name ,(nreverse struct-type))))
 
 ;;;----------------------------------------------------------------------
 ;;; POINTERS
@@ -245,25 +308,31 @@
 (defvar +null-cstring-pointer+ (si:allocate-foreign-data :pointer-void 0))
 
 (defun pointer-address (ptr)
-  (error "POINTER-ADDRESS not yet implemented."))
+  (si::foreign-data-address ptr))
 
 (defun deref-pointer (ptr type)
   ;; FIXME! No checking!
-  (setf type (gethash type *ffi-types* type))
+  (setf type (%convert-to-ffi-type type))
   (if (foreign-elt-type-p type)
-      (si::foreign-data-ref-elt ptr ndx type)
-      (error "Cannot dereference pointer to foreign data, ~A" ptr))
+      (si::foreign-data-ref-elt ptr 0 type)
+      (error "Cannot dereference pointer to foreign data, ~A" ptr)))
 
 (defun (setf deref-pointer) (value ptr type)
   ;; FIXME! No checking!
-  (setf type (gethash type *ffi-types* type))
+  (setf type (%convert-to-ffi-type type))
   (if (foreign-elt-type-p type)
-      (si::foreign-data-set-elt ptr ndx type value)
-      (si::foreign-data-set ptr ndx value)))
+      (si::foreign-data-set-elt ptr 0 type value)
+      (si::foreign-data-set ptr 0 value)))
 
 (defun make-null-pointer (type)
-  (setf type (gethash type *ffi-types* type))
+  ;(setf type (%convert-to-ffi-type type))
   (si::allocate-foreign-data type 0))
+
+(defun make-pointer (addr type)
+  (c-inline (type (size-of-foreign-type type) addr) (:object :int :int) :object
+            "ecl_make_foreign_data(#0, #1, (void*)#2)"
+	    :side-effects t
+	    :one-liner t))
 
 (defun null-pointer-p (object)
   (si::null-pointer-p object))
@@ -287,6 +356,9 @@
   (cond ((characterp char) (char-code char))
 	((integerp char) char)
 	(t (error "~a cannot be coerced to type INTEGER" char))))
+
+(defun char-array-to-pointer (obj)
+  (si::foreign-data-pointer obj 0 1 '(* :unsigned-char)))
 
 (defmacro convert-from-cstring (object)
   object)
@@ -327,8 +399,8 @@
     (c-inline (lisp-string) (t) t
        "{
 	cl_object lisp_string = #0;
-	cl_index size = lisp_string->string.dim;
-	cl_object output = ecl_allocate_foreign_data(@(* :char), size);
+	cl_index size = lisp_string->string.fillp;
+	cl_object output = ecl_allocate_foreign_data(@(* :char), size+1);
 	memcpy(output->foreign.data, lisp_string->string.self, size);
 	@(return) = output;
 	}"
@@ -338,17 +410,24 @@
 
 (defun allocate-foreign-string (size &key unsigned)
   (si::allocate-foreign-data `(* ,(if unsigned :unsigned-char :char))
-			     size))
+			     (1+ size)))
 
 ;;;----------------------------------------------------------------------
 ;;; MACROLOGY
 ;;;
 
 (defmacro with-foreign-object ((var type) &body body)
-  `(let ((,var (allocate-foreign-object type)))
+  `(let ((,var (allocate-foreign-object ,type)))
      (unwind-protect
 	 (progn ,@body)
        (free-foreign-object ,var))))
+
+(defmacro with-foreign-objects (bindings &rest body)
+  (if bindings
+    `(with-foreign-object ,(car bindings)
+      (with-foreign-objects ,(cdr bindings)
+        ,@body))
+    `(progn ,@body)))
 
 (defmacro with-cast-pointer (bind &body body)
   (let (binding-name ptr type)
@@ -376,16 +455,24 @@
 	      (= (length name) 2))
 	 (values (first name) (second name)))))
 
+(defun %convert-to-arg-type (type)
+  (let ((type (%convert-to-ffi-type type)))
+    (cond ((atom type) type)
+          ((eq (first type) '*) :pointer-void)
+	  ((eq (first type) :array) :pointer-void)
+	  (t (error "Unsupported argument type: ~A" type))
+    )))
+
 (defmacro def-function (name args &key module (returning :void))
   (multiple-value-bind (c-name lisp-name)
-      (lisp-to-c-name)
+      (lisp-to-c-name name)
     (let* ((arguments (mapcar #'first args))
-	   (arg-types (mapcar #'second args))
+	   (arg-types (mapcar #'(lambda (type) (%convert-to-arg-type (second type))) args))
 	   (nargs (length arguments))
-	   (c-string (format nil "~s(~s)" c-name
-			     (subseq 'string "0,1,2,3,4,5,6,7,8,9,a,b,c,d,e,f"
-				     :end (if arguments (1- (* nargs 2)) 0))))
-	   (casting-required (not (or (eq returning :cstring)
+	   (c-string (format nil "~a(~a)" c-name
+			     (subseq "#0,#1,#2,#3,#4,#5,#6,#7,#8,#9,#a,#b,#c,#d,#e,#f,#g,#h,#i,#j,#k,#l,#m,#n,#o,#p,#q,#r,#s,#t,#u,#v,#w,#x,#y,#z"
+				     0 (if arguments (1- (* nargs 3)) 0))))
+	   (casting-required (not (or (member returning '(:void :cstring))
 				      (foreign-elt-type-p returning))))
 	   (inline-form `(c-inline ,arguments ,arg-types
 				   ,(if casting-required :pointer-void returning)
@@ -403,3 +490,19 @@
 	 ,inline-form)
       )))
 
+(defmacro def-foreign-var (name type module)
+  (declare (ignore module))
+  (multiple-value-bind (c-name lisp-name)
+      (lisp-to-c-name name)
+    (let* ((s (gensym "FFI"))
+           (can-deref (foreign-elt-type-p (%convert-to-ffi-type type))))
+     `(progn
+         (defvar ,s (c-inline () () :object
+	                      ,(format nil "ecl_make_foreign_data(@~S, ~A, &~A)" type (size-of-foreign-type type) c-name)
+			      :side-effects t :one-liner t))
+	 (eval-when (load compile eval)
+           (define-symbol-macro ,lisp-name
+	                        ,(if can-deref
+			          `(ffi:deref-pointer ,s ',type)
+				  s)))
+      ))))

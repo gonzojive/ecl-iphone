@@ -41,7 +41,7 @@
 	     ;; At the end, loof for a DEFINE-SYMBOL-MACRO definition
 	     (let ((expansion (get-sysprop form 'si::symbol-macro)))
 	       (if expansion
-		 (setq form expansion)
+		 (setq form (funcall expansion form nil))
 		 (return-from chk-symbol-macrolet form))))
       ;; Search for a SYMBOL-MACROLET definition
       (cond ((consp v)
