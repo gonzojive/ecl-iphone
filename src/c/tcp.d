@@ -190,7 +190,7 @@ create_server_port(int port)
  **********************************************************************/
 
 cl_object
-make_stream(cl_object host, int fd, enum smmode smm)
+make_stream(cl_object host, int fd, enum ecl_smmode smm)
 {
    cl_object stream;
    char *mode;			/* file open mode */
