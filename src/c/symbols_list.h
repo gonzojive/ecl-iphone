@@ -1177,10 +1177,6 @@ cl_symbols[] = {
 {SYS_ "*PROFILE-ARRAY*", SI_SPECIAL, NULL, -1, OBJNULL},
 #endif
 
-#ifdef ENABLE_DLOPEN
-{SYS_ "LOAD-BINARY", SI_ORDINARY, si_load_binary, 3, OBJNULL},
-#endif
-
 #ifdef ECL_CLOS_STREAMS
 {"STREAM-CLEAR-INPUT", CL_ORDINARY, NULL, -1, OBJNULL},
 {"STREAM-CLEAR-OUTPUT", CL_ORDINARY, NULL, -1, OBJNULL},
@@ -1341,6 +1337,21 @@ cl_symbols[] = {
 {KEY_ "WILD", KEYWORD, NULL, -1, OBJNULL},
 {KEY_ "WILD-INFERIORS", KEYWORD, NULL, -1, OBJNULL},
 
+{SYS_ "VALID-FUNCTION-NAME-P", SI_ORDINARY, si_valid_function_name_p, 1, OBJNULL},
+
+#ifdef ECL_FFI
+{SYS_ "ALLOCATE-FOREIGN-DATA", SI_ORDINARY, si_allocate_foreign_data, 2, OBJNULL},
+{SYS_ "FOREIGN-DATA", SI_ORDINARY, NULL, -1, OBJNULL},
+{SYS_ "FOREIGN-DATA-TAG", SI_ORDINARY, si_foreign_data_tag, 1, OBJNULL},
+{SYS_ "FREE-FOREIGN-DATA", SI_ORDINARY, si_free_foreign_data, 1, OBJNULL},
+#endif
+
+{KEY_ "FILE", KEYWORD, NULL, -1, OBJNULL},
+{KEY_ "LINK", KEYWORD, NULL, -1, OBJNULL},
+{KEY_ "SPECIAL", KEYWORD, NULL, -1, OBJNULL},
+
+{SYS_ "FILE-COLUMN", SI_ORDINARY, si_file_column, 1, OBJNULL},
+
 #ifdef GBC_BOEHM
 {SYS_ "GC", SI_ORDINARY, si_gc, 1, OBJNULL},
 {SYS_ "GC-DUMP", SI_ORDINARY, si_gc_dump, 0, OBJNULL},
@@ -1362,20 +1373,9 @@ cl_symbols[] = {
 {SYS_ "RESET-GC-COUNT", SI_ORDINARY, si_reset_gc_count, -1, OBJNULL},
 #endif /* !GBC_BOEHM */
 
-{SYS_ "VALID-FUNCTION-NAME-P", SI_ORDINARY, si_valid_function_name_p, 1, OBJNULL},
-
-#ifdef ECL_FFI
-{SYS_ "ALLOCATE-FOREIGN-DATA", SI_ORDINARY, si_allocate_foreign_data, 2, OBJNULL},
-{SYS_ "FOREIGN-DATA", SI_ORDINARY, NULL, -1, OBJNULL},
-{SYS_ "FOREIGN-DATA-TAG", SI_ORDINARY, si_foreign_data_tag, 1, OBJNULL},
-{SYS_ "FREE-FOREIGN-DATA", SI_ORDINARY, si_free_foreign_data, 1, OBJNULL},
+#ifdef ENABLE_DLOPEN
+{SYS_ "LOAD-BINARY", SI_ORDINARY, si_load_binary, 3, OBJNULL},
 #endif
-
-{KEY_ "FILE", KEYWORD, NULL, -1, OBJNULL},
-{KEY_ "LINK", KEYWORD, NULL, -1, OBJNULL},
-{KEY_ "SPECIAL", KEYWORD, NULL, -1, OBJNULL},
-
-{SYS_ "FILE-COLUMN", SI_ORDINARY, si_file_column, 1, OBJNULL},
 
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1, OBJNULL}};
