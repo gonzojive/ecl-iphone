@@ -118,7 +118,7 @@
 	 (if index
 	     (si:sl-boundp (si:instance-ref self (the fixnum index)))
 	     (slot-missing (si:instance-class class) class slot-name
-			   'SLOT-VALUE)))))
+			   'SLOT-BOUNDP)))))
 
     (defmethod (setf slot-value) (val (self class) slot-name)
       (ensure-up-to-date-instance self)
@@ -128,7 +128,7 @@
 	(if index
 	    (si:instance-set self (the fixnum index) val)
 	    (slot-missing (si:instance-class self) self slot-name
-			  'SLOT-VALUE)))
+			  'SETF val)))
       val)
 
     (defmethod slot-missing ((class t) object slot-name operation 

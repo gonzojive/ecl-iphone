@@ -95,9 +95,20 @@
 ;;; ENSURE-CLASS
 ;;;
 (defun ensure-class (name &rest initargs)
-  (let ((class (apply #'ensure-class-using-class (find-class name nil) name
-		      initargs)))
-    (when name (setf (find-class name) class))))
+  (let* ((old-class nil)
+	 new-class)
+    ;; Only classes which have a PROPER name are redefined. If a class
+    ;; with the same name is register, but the name of the class does not
+    ;; correspond to the registered name, a new class is returned.
+    ;; [Hyperspec 7.7 for DEFCLASS]
+    (when name
+      (when (and (setf old-class (find-class name nil))
+		 (not (eq (class-name old-class) name)))
+	(setf old-class nil)))
+    (setf new-class (apply #'ensure-class-using-class old-class name initargs))
+    (when name (setf (find-class name) new-class))
+    new-class))
+
 (eval-when (compile)
   (defun ensure-class (name &rest initargs)
     (warn "Ignoring definition for class ~S" name)))

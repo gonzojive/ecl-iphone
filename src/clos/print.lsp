@@ -10,6 +10,37 @@
 (in-package "CLOS")
 
 ;;; ----------------------------------------------------------------------
+;;; Load forms
+;;;
+
+(defun make-load-form-saving-slots (object &key slot-names environment)
+  (declare (ignore environment))
+  (do* ((class (class-of object))
+	(initialization (list 'progn))
+	(slots (class-slots class) (cdr slots)))
+      ((endp slots)
+       (values `(allocate-instance ,class) (nreverse initialization)))
+    (let* ((slot (first slots))
+	   (slot-name (slotd-name slot)))
+      (when (or (and (null slot-names)
+		     (eq (slotd-allocation slot) :instance))
+		(member slot-name slot-names))
+	(push (if (slot-boundp object slot-name)
+		  `(setf (slot-value ,object ',slot-name)
+			 ',(slot-value object slot-name))
+		  `(slot-makunbound ,object ',slot-name))
+	      initialization)))))
+
+(defmethod make-load-form ((object standard-object) &optional environment)
+  (make-load-form-saving-slots object))
+
+(defmethod make-load-form ((class class) &optional environment)
+  (let ((name (class-name class)))
+    (if (and name (eq (find-class name) class))
+	`(find-class ',name)
+	(error "Cannot externalize anonymous class ~A" class))))
+
+;;; ----------------------------------------------------------------------
 ;;; Printing
 ;;; ----------------------------------------------------------------------
 

@@ -129,6 +129,9 @@
 (defclass structure-object (t) ()
   (:metaclass structure-class))
 
+(defmethod make-load-form ((object structure-object) &optional environment)
+  (make-load-form-saving-slots object))
+
 (defmethod print-object ((obj structure-object) stream)
   (let* ((class (si:instance-class obj))
 	 (slotds (class-slots class)))

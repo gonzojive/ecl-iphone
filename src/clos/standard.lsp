@@ -357,7 +357,7 @@ because it contains a reference to the undefined class~%  ~A"
 			   (let ((value (si:instance-ref self index)))
 			     (if (si:sl-boundp value)
 				 value
-				 (slot-unbound self slot-name))))
+				 (values (slot-unbound (class-of self) self slot-name)))))
 		setter #'(lambda (value self)
 			   (si:instance-set self index value))
 		i (1+ i))
@@ -517,7 +517,7 @@ because it contains a reference to the undefined class~%  ~A"
 	    ;; else it is a shared slot
 	    (setf (svref (class-shared-slots (car index)) (cdr index)) val))
 	(slot-missing (si:instance-class instance) instance slot-name
-		      'SLOT-VALUE))
+		      'SETF val))
     val))
 
 ;;; ----------------------------------------------------------------------
