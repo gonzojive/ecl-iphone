@@ -162,7 +162,7 @@ GO_ON:
 NOT_A_FILENAME:
 	if (verbose != Cnil) {
 		@fresh-line(0);
-		@format(3, Cnil, make_simple_string(";;; Loading ~s~%"), filename);
+		@format(3, Ct, make_simple_string(";;; Loading ~s~%"), filename);
 	}
 	old_bds_top = bds_top;
 	bds_bind(@'*package*', symbol_value(@'*package*'));
@@ -185,7 +185,7 @@ NOT_A_FILENAME:
 	bds_unwind(old_bds_top);
 	if (print != Cnil) {
 		@fresh-line(0);
-		@format(3, Cnil, make_simple_string(";;; Loading ~s~%"), filename);
+		@format(3, Ct, make_simple_string(";;; Loading ~s~%"), filename);
 	}
 	@(return pathname)
 @)
