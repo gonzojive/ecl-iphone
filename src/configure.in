@@ -4,7 +4,7 @@ dnl  To rebuild the `configure' script from this, execute the command
 dnl 	autoconf
 dnl  in the directory containing this script.
 dnl
-dnl  AUTOCONF configuration for ECLS
+dnl  AUTOCONF configuration for ECL
 dnl  Giuseppe Attardi 25.1.1994
 dnl
 dnl  configure.in    ---<autoconf>--->> configure
@@ -14,7 +14,7 @@ dnl  configure                \
 dnl  src/h/config.h.in   ----<sh>---->> $(machine)/h/config.h
 dnl  src/*/Makefile.in   _____/         $(machine)/*/Makefile
 dnl
-dnl  $(machine)/Makefile ---<make>--->> ecls
+dnl  $(machine)/Makefile ---<make>--->> ecl
 dnl
 dnl
 AC_INIT(configure.in)
@@ -31,8 +31,8 @@ exit 2;
 fi
 
 dnl Set the version number. This seems the best place to keep it.
-ECLS_VERSION=0.5
-AC_SUBST(ECLS_VERSION)
+ECL_VERSION=0.5
+AC_SUBST(ECL_VERSION)
 
 dnl Guess operating system of host. We do not allow cross-compiling.
 AC_CANONICAL_HOST
@@ -84,7 +84,7 @@ AC_ARG_WITH(oldloop,
 ###
 AC_PROG_CC	      # sets variable CC
 if test "$GCC" != "yes"; then
-  AC_MSG_ERROR(Cannot build ECLS without GCC)
+  AC_MSG_ERROR(Cannot build ECL without GCC)
 fi
 AC_PROG_CPP           # sets variable CPP
 AC_PROG_RANLIB        # sets variable RANLIB
@@ -101,8 +101,8 @@ AC_SUBST(software_type)dnl	Type of operating system
 AC_SUBST(software_version)dnl	Version number of operating system
 AC_SUBST(SHORT_SITE_NAME)dnl	Short name for the machine we built this on
 AC_SUBST(LONG_SITE_NAME)dnl	Long name for the machine we built this on
-AC_SUBST(EXTRA_OBJS)dnl		Extra *.o files to be compiled into libecls.a
-AC_SUBST(TARGETS)dnl		Versions of ECLS to be built
+AC_SUBST(EXTRA_OBJS)dnl		Extra *.o files to be compiled into libecl.a
+AC_SUBST(TARGETS)dnl		Versions of ECL to be built
 AC_SUBST(TKLIBS)dnl		Libraries with the Tcl/Tk components
 AC_SUBST(SUBDIR)dnl		Subdirectories that make should process
 AC_SUBST(LIBRARIES)dnl		GMP, Boehm's GC, etc
@@ -126,9 +126,9 @@ AC_ISC_POSIX
 dnl ----------------------------------------------------------------------
 dnl		Establish some default values
 dnl
-ECLS_MAKE_ABSOLUTE_SRCDIR()
-ECLS_GUESS_HOST_OS()
-ECLS_PROCESS_MACHINES_H()
+ECL_MAKE_ABSOLUTE_SRCDIR()
+ECL_GUESS_HOST_OS()
+ECL_PROCESS_MACHINES_H()
 
 dnl ----------------------------------------------------------------------
 dnl		Set options
@@ -136,13 +136,13 @@ dnl
 if test "x$prefix" = "xNONE"; then prefix=${ac_default_prefix}; fi
 if test "x$exec_prefix" = "xNONE"; then exec_prefix=${prefix}; fi
 bindir="${exec_prefix}/bin"
-libdir="${exec_prefix}/lib/ecls"
-includedir="${exec_prefix}/lib/ecls/h"
+libdir="${exec_prefix}/lib/ecl"
+includedir="${exec_prefix}/lib/ecl/h"
 mandir="${prefix}/man/man1"
 infodir="${prefix}/info"
 builddir=`pwd`
-TARGETS="ecls${EXEEXT}"
-LIBRARIES="libecls.a"
+TARGETS="ecl${EXEEXT}"
+LIBRARIES="libecl.a"
 LSP_LIBRARIES="liblsp.a libclos.a"
 SUBDIR=c
 CLIBS="${CLIBS} -lgmp -lm"
@@ -187,7 +187,7 @@ if test "${tcp}" -o "${clx}"; then
   EXTRA_OBJS="${EXTRA_OBJS} tcp.o"
 fi
 if test "${oldloop}"; then
-  AC_DEFINE(ECLS_OLD_LOOP)
+  AC_DEFINE(ECL_OLD_LOOP)
 fi
 if test "${locative}" ; then
   EXTRA_OBJS="${EXTRA_OBJS} unify.o"
@@ -201,13 +201,13 @@ fi
 dnl ----------------------------------------------------------------------
 dnl		Study the call conventions
 dnl
-ECLS_STACK_DIRECTION()
-ECLS_ARGS_ARRAY()
+ECL_STACK_DIRECTION()
+ECL_ARGS_ARRAY()
 
 dnl ---------------------------------------------------------------------
 dnl		Check the appropiate type for cl_fixnum/cl_index
 dnl
-ECLS_FIXNUM_TYPE()
+ECL_FIXNUM_TYPE()
 
 dnl		      # DEFS HAVE_UNISTD_H, HAVE_STDLIB_H, HAVE_STDARG_H
 dnl		      # and HAVE_STRING_H

@@ -5,18 +5,18 @@ RM=rm -fr
 MV=mv -f
 MKDIR=mkdir -p
 
-.PHONY: clisp sbcl normal safe ecls ecls_min
+.PHONY: clisp sbcl normal safe ecl ecl_min
 
-ecls:
+ecl:
 	ln -sf ../../src/h/*.h ../h/
 	(echo '(load "$(srcdir)/tests")'; \
 	 echo '(setf (logical-pathname-translations "SYS")'; \
 	 echo "      '"'(("*.*" "../*.*")))'; \
 	 echo "(run-all-tests \"$(srcdir)/\")"; \
-	 echo "(quit)") | ../ecls
+	 echo "(quit)") | ../ecl
 	true
 
-ecls_min:
+ecl_min:
 	ln -sf ../../src/h/*.h ../h/
 	(echo '(load "bare.lsp")'; \
 	 echo '(setf (logical-pathname-translations "SYS")'; \
@@ -25,7 +25,7 @@ ecls_min:
 	 echo '(in-package "CL-USER")'; \
 	 echo '(load "$(srcdir)/tests")'; \
 	 echo "(run-all-tests \"$(srcdir)/\")"; \
-	 echo "(quit)") | (cd ..; ./ecls_min)
+	 echo "(quit)") | (cd ..; ./ecl_min)
 	true
 
 clean:

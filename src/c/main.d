@@ -6,7 +6,7 @@
     Copyright (c) 1990, Giuseppe Attardi.
     Copyright (c) 2001, Juan Jose Garcia Ripoll.
 
-    ECLS is free software; you can redistribute it and/or
+    ECL is free software; you can redistribute it and/or
     modify it under the terms of the GNU Library General Public
     License as published by the Free Software Foundation; either
     version 2 of the License, or (at your option) any later version.
@@ -33,7 +33,7 @@ int data_start = (int)&data_start;
 
 /******************************** IMPORTS *****************************/
 
-#include "ecls.h"
+#include "ecl.h"
 #ifdef TK
 # include "tk.h"
 #endif
@@ -161,7 +161,7 @@ init_main(void)
 
 	{ cl_object features;
 	  features =
-	    CONS(make_keyword("ECLS"),
+	    CONS(make_keyword("ECL"),
 		 CONS(make_keyword("COMMON"), Cnil));
 
 #define ADD_FEATURE(name)	features = CONS(make_keyword(name),features)
@@ -184,7 +184,7 @@ init_main(void)
 	 ADD_FEATURE("DLOPEN");
 #endif
 
-#ifdef ECLS_OLD_LOOP
+#ifdef ECL_OLD_LOOP
 	 ADD_FEATURE("OLD-LOOP");
 #endif
 

@@ -5,9 +5,9 @@
 (my-assert
  char-code-limit
  #+xcl 128
- #+(or (and clisp (not unicode)) akcl sbcl cmu ecls) 256
+ #+(or (and clisp (not unicode)) akcl sbcl cmu ecl) 256
  #+(or (and clisp unicode) allegro) 65536
- #-(or xcl clisp akcl allegro cmu sbcl ecls) unknown)
+ #-(or xcl clisp akcl allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (standard-char-p #\a)

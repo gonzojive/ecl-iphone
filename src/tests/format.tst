@@ -13,7 +13,7 @@
 "foo  bar  "
 
 (format nil "~10:@<foo~;bar~>")
-#+(or XCL CLISP ALLEGRO) "  foo bar " #+(or AKCL ECLS) " foo bar  " #-(or XCL CLISP AKCL ALLEGRO ECLS) UNKNOWN
+#+(or XCL CLISP ALLEGRO) "  foo bar " #+(or AKCL ECL) " foo bar  " #-(or XCL CLISP AKCL ALLEGRO ECL) UNKNOWN
 
 (format nil "~10<foobar~>")
 "    foobar"

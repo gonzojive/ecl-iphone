@@ -105,8 +105,8 @@
 
 (my-assert
  (eq (symbol-name temp-symbol) temp-string)
- #+(or cmu sbcl clisp ecls) t
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+(or cmu sbcl clisp ecl) t
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 
 
 (my-assert

@@ -55,13 +55,13 @@
 
 #+allegro
 (in-package :excl)
-#+ecls
+#+ecl
 (in-package "SI")
 
-#-(or allegro ecls)
+#-(or allegro ecl)
 (in-package :ansi-loop)
 
-#-ecls
+#-ecl
 (provide :loop)
 
 #+Cloe-Runtime					;Don't ask.
@@ -317,7 +317,7 @@ constructed.
 
 
 (defstruct (loop-minimax
-	     #+ecls (:type vector)
+	     #+ecl (:type vector)
 	     (:constructor make-loop-minimax-internal)
 	     #+nil (:copier nil)
 	     #+nil (:predicate nil))
@@ -464,8 +464,8 @@ code to be loaded.
 
 
 (defstruct (loop-universe
-	     #+ecls (:type vector)
-	     #-ecls (:print-function print-loop-universe)
+	     #+ecl (:type vector)
+	     #-ecl (:print-function print-loop-universe)
 	     #+nil (:copier nil)
 	     #+nil (:predicate nil))
   keywords					;hash table, value = (fn-name . extra-data).
@@ -479,7 +479,7 @@ code to be loaded.
   )
 
 
-#-ecls
+#-ecl
 (defun print-loop-universe (u stream level)
   (declare (ignore level))
   (let ((str (case (loop-universe-ansi u)
@@ -505,7 +505,7 @@ code to be loaded.
 
 (defun make-standard-loop-universe (&key keywords for-keywords iteration-keywords path-keywords
 				    type-keywords type-symbols ansi)
-  #-(and CLOE Source-Bootstrap ecls) (check-type ansi (member nil t :extended))
+  #-(and CLOE Source-Bootstrap ecl) (check-type ansi (member nil t :extended))
   (flet ((maketable (entries)
 	   (let* ((size (length entries))
 		  (ht (make-hash-table :size (if (< size 10) 10 size) :test #'equal)))
@@ -1331,7 +1331,7 @@ collected result will be returned as the value of the LOOP."
 
 
 (defstruct (loop-collector
-	     #+ecls (:type vector)
+	     #+ecl (:type vector)
 	     #+nil (:copier nil)
 	     #+nil (:predicate nil))
   name
@@ -1716,7 +1716,7 @@ collected result will be returned as the value of the LOOP."
 
 
 (defstruct (loop-path
-	     #+ecls (:type vector)
+	     #+ecl (:type vector)
 	     #+nil (:copier nil)
 	     #+nil (:predicate nil))
   names
@@ -1729,7 +1729,7 @@ collected result will be returned as the value of the LOOP."
 (defun add-loop-path (names function universe &key preposition-groups inclusive-permitted user-data)
   (unless (listp names) (setq names (list names)))
   ;; Can't do this due to CLOS bootstrapping problems.
-  #-(or Genera (and CLOE Source-Bootstrap) ecls) (check-type universe loop-universe)
+  #-(or Genera (and CLOE Source-Bootstrap) ecl) (check-type universe loop-universe)
   (let ((ht (loop-universe-path-keywords universe))
 	(lp (make-loop-path
 	      :names (mapcar #'symbol-name names)

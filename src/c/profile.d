@@ -10,7 +10,7 @@
     See file '../Copyright' for full details.
 */
 
-#include "ecls.h"
+#include "ecl.h"
 
 /*
  *----------------------------------------------------------------------

@@ -78,11 +78,11 @@
  lambda-list-keywords
  #+xcl (&optional &rest &key &allow-other-keys &aux &body &whole system::&environment)
  #+clisp (&optional &rest &key &allow-other-keys &aux &body &whole &environment)
- #+(or akcl ecls)
+ #+(or akcl ecl)
  (&optional &rest &key &allow-other-keys &aux &whole &environment &body)
  #+(or allegro cmu sbcl)
  (&optional &rest &key &aux &body &whole &allow-other-keys &environment)
- #-(or xcl clisp akcl allegro cmu sbcl ecls) unknown)
+ #-(or xcl clisp akcl allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (let ((s (prin1-to-string lambda-parameters-limit )))
@@ -277,8 +277,8 @@
 (my-assert
  (consp (acons 'x 'y 'a))
  #+xcl error
- #+(or clisp akcl allegro cmu sbcl sbcl ecls) t
- #-(or xcl clisp akcl allegro cmu sbcl sbcl ecls) unknown)
+ #+(or clisp akcl allegro cmu sbcl sbcl ecl) t
+ #-(or xcl clisp akcl allegro cmu sbcl sbcl ecl) unknown)
 
 (my-assert
  (listp (list (append (cons 'a 'b) 'c)))
@@ -724,8 +724,8 @@
  #+xcl (documentation ((typ2 . "doc 3") (typ1 . "doc 1")))
  #+clisp (system::documentation-strings (typ2 "doc 3" typ1 "doc 1"))
  #+allegro (excl::%documentation ((typ2 . "doc 3") (typ1 . "doc 1")))
- #+(or cmu sbcl ecls) nil
- #-(or xcl clisp allegro cmu sbcl sbcl ecls) unknown)
+ #+(or cmu sbcl ecl) nil
+ #-(or xcl clisp allegro cmu sbcl sbcl ecl) unknown)
 
 (my-assert
  (setf (symbol-value 'xx) 'voelligneu)
@@ -1047,8 +1047,8 @@
  #+xcl "-4.576950980887866D-17"
  #+clisp "2.0066230454737344098L-19"
  #+akcl "-4.898425415289509E-16"
- #+(or allegro cmu sbcl sbcl ecls) "-4.898425415289509d-16"
- #-(or xcl clisp akcl allegro cmu sbcl  ecls) unknown)
+ #+(or allegro cmu sbcl sbcl ecl) "-4.898425415289509d-16"
+ #-(or xcl clisp akcl allegro cmu sbcl  ecl) unknown)
 
 (my-assert
  (prin1-to-string (sin (expt 10 3)) )
@@ -1063,8 +1063,8 @@
  #+xcl "5.721188726109832D-18"
  #+clisp "-2.5082788076048218878L-20"
  #+akcl "6.1230317691118863E-17"
- #+(or allegro cmu sbcl sbcl ecls) "6.123031769111886d-17"
- #-(or xcl clisp akcl allegro cmu sbcl ecls) unknown)
+ #+(or allegro cmu sbcl sbcl ecl) "6.123031769111886d-17"
+ #-(or xcl clisp akcl allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (prin1-to-string (tan 1) )
@@ -1075,9 +1075,9 @@
  #+xcl "1.747888503373944D17"
  #+clisp "-3.986797629004264116L19"
  #+akcl "1.6331778728383844E16"
- #+ecls "1.6331778728383844d16"
+ #+ecl "1.6331778728383844d16"
  #+(or allegro cmu sbcl sbcl) "1.6331778728383844d+16"
- #-(or xcl clisp akcl allegro cmu sbcl ecls) unknown)
+ #-(or xcl clisp akcl allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (prin1-to-string (cis -1) )
@@ -1118,9 +1118,9 @@
  "#C(0 1.316958)"
  #+allegro
  "#c(0.0 1.316958)"
- #+(or cmu sbcl sbcl ecls)
+ #+(or cmu sbcl sbcl ecl)
  "#C(0.0 1.3169578)"
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (acos 1.00001)
@@ -1143,16 +1143,16 @@
 
 (my-assert
  (atan 1)
- #+(or xcl allegro cmu sbcl sbcl ecls) 0.7853982
+ #+(or xcl allegro cmu sbcl sbcl ecl) 0.7853982
  #+clisp 0.7853981
- #-(or xcl allegro clisp cmu sbcl sbcl ecls) unknown)
+ #-(or xcl allegro clisp cmu sbcl sbcl ecl) unknown)
 
 (my-assert
  (prin1-to-string pi )
  #+xcl "3.141592653589793D0"
  #+clisp "3.1415926535897932385L0"
- #+(or allegro cmu sbcl sbcl ecls) "3.141592653589793d0"
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+(or allegro cmu sbcl sbcl ecl) "3.141592653589793d0"
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (sinh 0)
@@ -1268,9 +1268,9 @@
  (rationalize pi)
  #+xcl 28296953155597409/9007199254740992
  #+clisp 8717442233/2774848045
- #+ecls 884279719003555/281474976710656
+ #+ecl 884279719003555/281474976710656
  #+(or allegro cmu sbcl sbcl) 245850922/78256779
- #-(or xcl clisp allegro cmu sbcl sbcl ecls) unknown)
+ #-(or xcl clisp allegro cmu sbcl sbcl ecl) unknown)
 
 (my-assert
  (numerator 5/2)
@@ -1478,100 +1478,100 @@
 (my-assert
  boole-set
  #+(or xcl allegro cmu sbcl sbcl) 1
- #+(or clisp ecls) 15
- #-(or xcl clisp allegro cmu sbcl sbcl ecls) unknown)
+ #+(or clisp ecl) 15
+ #-(or xcl clisp allegro cmu sbcl sbcl ecl) unknown)
 
 (my-assert
  boole-1
  #+(or xcl allegro cmu sbcl sbcl) 2
  #+clisp 10
- #+ecls 3
- #-(or xcl clisp allegro cmu sbcl sbcl ecls) unknown)
+ #+ecl 3
+ #-(or xcl clisp allegro cmu sbcl sbcl ecl) unknown)
 
 (my-assert
  boole-2
  #+(or xcl allegro cmu sbcl sbcl) 3
  #+clisp 12
- #+ecls 5
- #-(or xcl clisp allegro cmu sbcl sbcl ecls) unknown)
+ #+ecl 5
+ #-(or xcl clisp allegro cmu sbcl sbcl ecl) unknown)
 
 (my-assert
  boole-c1
  #+(or xcl allegro cmu sbcl sbcl) 4
  #+clisp 5
- #+ecls 12
- #-(or xcl clisp allegro cmu sbcl sbcl ecls) unknown)
+ #+ecl 12
+ #-(or xcl clisp allegro cmu sbcl sbcl ecl) unknown)
 
 (my-assert
  boole-c2
  #+(or xcl allegro cmu sbcl sbcl) 5
  #+clisp 3
- #+ecls 10
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+ecl 10
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  boole-and
  #+(or xcl allegro cmu sbcl sbcl) 6
  #+clisp 8
- #+ecls 1
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+ecl 1
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  boole-ior
  #+(or xcl allegro cmu sbcl sbcl) 7
  #+clisp 14
- #+ecls 7
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+ecl 7
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  boole-xor
  #+(or xcl allegro cmu sbcl sbcl) 8
- #+(or clisp ecls) 6
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+(or clisp ecl) 6
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  boole-eqv
  #+(or xcl allegro cmu sbcl sbcl) 9
- #+(or clisp ecls) 9
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+(or clisp ecl) 9
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  boole-nand
  #+(or xcl allegro cmu sbcl sbcl) 10
  #+clisp 7
- #+ecls 14
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+ecl 14
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  boole-nor
  #+(or xcl allegro cmu sbcl sbcl) 11
  #+clisp 1
- #+ecls 8
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+ecl 8
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  boole-andc1
  #+(or xcl allegro cmu sbcl sbcl) 12
- #+(or clisp ecls) 4
- #-(or xcl clisp allegro cmu sbcl sbcl ecls) unknown)
+ #+(or clisp ecl) 4
+ #-(or xcl clisp allegro cmu sbcl sbcl ecl) unknown)
 
 (my-assert
  boole-andc2
  #+(or xcl allegro cmu sbcl sbcl) 13
- #+(or clisp ecls) 2
- #-(or xcl clisp allegro cmu sbcl sbcl ecls) unknown)
+ #+(or clisp ecl) 2
+ #-(or xcl clisp allegro cmu sbcl sbcl ecl) unknown)
 
 (my-assert
  boole-orc1
  #+(or xcl allegro cmu sbcl sbcl) 14
- #+(or clisp ecls) 13
- #-(or xcl clisp allegro cmu sbcl sbcl ecls) unknown)
+ #+(or clisp ecl) 13
+ #-(or xcl clisp allegro cmu sbcl sbcl ecl) unknown)
 
 (my-assert
  boole-orc2
  #+(or xcl allegro cmu sbcl sbcl) 15
- #+(or clisp ecls) 11
- #-(or xcl clisp allegro cmu sbcl sbcl ecls) unknown)
+ #+(or clisp ecl) 11
+ #-(or xcl clisp allegro cmu sbcl sbcl ecl) unknown)
 
 (my-assert
  (let ((s (prin1-to-string most-positive-fixnum )))
@@ -1599,24 +1599,24 @@
  #+clisp "1.7014s38"
  #+allegro "3.4028232e+38"
  #+(or cmu sbcl sbcll) "3.4028235e+38"
- #+ecls "3.4028235e38"
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+ecl "3.4028235e38"
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (prin1-to-string least-positive-short-float )
  #+xcl "2.939S-39"
  #+clisp "2.93874s-39"
  #+(or allegro cmu sbcl sbcl) "1.4012985e-45"
- #+ecls "1.401298E-45"
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+ecl "1.401298E-45"
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (prin1-to-string least-negative-short-float )
  #+xcl "-2.939S-39"
  #+clisp "-2.93874s-39"
  #+(or allegro cmu sbcl sbcl) "-1.4012985e-45"
- #+ecls "-1.401298E-45"
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+ecl "-1.401298E-45"
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (prin1-to-string most-negative-short-float )
@@ -1624,8 +1624,8 @@
  #+clisp "-1.7014s38"
  #+allegro "-3.4028232e+38"
  #+(or cmu sbcl sbcll) "-3.4028235e+38"
- #+ecls "-3.402823E38"
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+ecl "-3.402823E38"
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (let ((s (prin1-to-string most-positive-single-float )))
@@ -1709,24 +1709,24 @@
  #+clisp "8.8080652584198167656L646456992"
  #+allegro "4.494232837155787d+307"
  #+(or cmu sbcl sbcll) "1.7976931348623157d+308"
- #+ecls "1.797693134862316d308"
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+ecl "1.797693134862316d308"
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (prin1-to-string least-positive-long-float )
  #+xcl "2.938735877055719D-39"
  #+clisp "5.676615526003731344L-646456994"
  #+allegro "4.9406564584124657d-324"
- #+(or cmu sbcl ecls) "4.940656458412465d-324"
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+(or cmu sbcl ecl) "4.940656458412465d-324"
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (prin1-to-string least-negative-long-float )
  #+xcl "-2.938735877055719D-39"
  #+clisp "-5.676615526003731344L-646456994"
  #+allegro "-4.9406564584124657d-324"
- #+(or cmu sbcl ecls) "-4.940656458412465d-324"
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+(or cmu sbcl ecl) "-4.940656458412465d-324"
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (prin1-to-string most-negative-long-float )
@@ -1734,8 +1734,8 @@
  #+clisp "-8.8080652584198167656L646456992"
  #+allegro "-4.494232837155787d+307"
  #+(or cmu sbcl sbcll) "-1.7976931348623157d+308"
- #+ecls "-1.797693134862316d308"
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+ecl "-1.797693134862316d308"
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (prin1-to-string short-float-epsilon )
@@ -1743,8 +1743,8 @@
  #+clisp "7.6295s-6"
  #+allegro "1.1920929e-7"
  #+(or cmu sbcl sbcll) "5.960465e-8"
- #+ecls "6.258487E-8"
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+ecl "6.258487E-8"
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (prin1-to-string single-float-epsilon )
@@ -1752,16 +1752,16 @@
  #+clisp "5.960465E-8"
  #+allegro "1.1920929e-7"
  #+(or cmu sbcl sbcll) "5.960465e-8"
- #+ecls "6.258487E-8"
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+ecl "6.258487E-8"
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (prin1-to-string double-float-epsilon )
  #+xcl "1.387778780781446D-17"
  #+(or clisp cmu sbcl sbcl) "1.1102230246251568d-16"
  #+allegro "2.220446049250313d-16"
- #+ecls "1.165734175856414d-16"
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+ecl "1.165734175856414d-16"
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (prin1-to-string long-float-epsilon )
@@ -1769,8 +1769,8 @@
  #+clisp "5.4210108624275221706L-20"
  #+allegro "2.220446049250313d-16"
  #+(or cmu sbcl sbcll) "1.1102230246251568d-16"
- #+ecls "1.165734175856414d-16"
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+ecl "1.165734175856414d-16"
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (prin1-to-string short-float-negative-epsilon )
@@ -1778,8 +1778,8 @@
  #+clisp "3.81476s-6"
  #+allegro "1.1920929e-7"
  #+(or cmu sbcl sbcll) "2.9802325e-8"
- #+ecls "3.129244E-8"
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+ecl "3.129244E-8"
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (prin1-to-string single-float-negative-epsilon )
@@ -1787,16 +1787,16 @@
  #+clisp "2.9802326E-8"
  #+allegro "1.1920929e-7"
  #+(or cmu sbcl sbcll) "2.9802325e-8"
- #+ecls "3.129244E-8"
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+ecl "3.129244E-8"
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (prin1-to-string double-float-negative-epsilon )
  #+xcl "1.387778780781446D-17"
  #+(or clisp cmu sbcl sbcl) "5.551115123125784d-17"
  #+allegro "2.220446049250313d-16"
- #+ecls "5.828670879282072d-17"
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+ecl "5.828670879282072d-17"
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (prin1-to-string long-float-negative-epsilon )
@@ -1804,8 +1804,8 @@
  #+clisp "2.7105054312137610853L-20"
  #+allegro "2.220446049250313d-16"
  #+(or cmu sbcl sbcll) "5.551115123125784d-17"
- #+ecls "5.828670879282072d-17"
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #+ecl "5.828670879282072d-17"
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (/ 1 0)
@@ -1989,9 +1989,9 @@
 (my-assert
  char-code-limit
  #+xcl 128
- #+(or (and clisp (not unicode)) akcl sbcl cmu ecls) 256
+ #+(or (and clisp (not unicode)) akcl sbcl cmu ecl) 256
  #+(or (and clisp unicode) allegro) 655366
- #-(or xcl clisp akcl allegro cmu sbcl ecls) unknown)
+ #-(or xcl clisp akcl allegro cmu sbcl ecl) unknown)
 
 ;; kap 14 sequenzen
 ;; ----------------------------------------------------------------------------
@@ -2863,9 +2863,9 @@
 	  (lambda (x y)
 	    (when (listp y)
 	      (eql x (car y)))))
- #+(or xcl allegro ecls) (i ii . ii)	; x aus der aliste, y ein blatt des baumes
+ #+(or xcl allegro ecl) (i ii . ii)	; x aus der aliste, y ein blatt des baumes
  #+(or clisp cmu sbcl lucid) (i (uu) uu) ; x ein blatt, y aus der aliste
- #-(or xcl clisp cmu sbcl lucid allegro ecls) unknown)
+ #-(or xcl clisp cmu sbcl lucid allegro ecl) unknown)
 
 (my-assert
  (SUBLIS (QUOTE (((A) . UU) (A . II)))
@@ -2879,9 +2879,9 @@
 	 :test (lambda (x y)
 		 (when (listp y)
 		   (eql x (car y)))))
- #+(or xcl allegro lucid ecls) (i ii . ii)	; x aus der aliste, y ein blatt des baumes
+ #+(or xcl allegro lucid ecl) (i ii . ii)	; x aus der aliste, y ein blatt des baumes
  #+(or clisp cmu sbcl sbcl) (i (uu) uu) ; x ein blatt, y aus der aliste
- #-(or xcl clisp cmu sbcl lucid allegro ecls) unknown)
+ #-(or xcl clisp cmu sbcl lucid allegro ecl) unknown)
 
 (my-assert
  (member 'A
@@ -2935,17 +2935,17 @@
  (nunion (list 'a 'b 'c 'd)
 	 (list 'u 'i 'b 'a))
  #+xcl (a b c d u i)
- #+(or ecls clisp) (c d u i b a)
+ #+(or ecl clisp) (c d u i b a)
  #+(or allegro cmu sbcl) (d c u i b a)
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (union (list 'a 'b 'c 'd)
 	(list 'a 'd 'i 'v))
  #+xcl (v i a b c d)
- #+(or ecls clisp) (b c a d i v)
+ #+(or ecl clisp) (b c a d i v)
  #+(or allegro cmu sbcl) (c b a d i v)
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (intersection (list (list 'a 1)
@@ -2983,8 +2983,8 @@
 			 (eql (elt (symbol-name x) 0)
 			      (elt (symbol-name y) 0))))
  #+(or xcl allegro cmu sbcl sbcl) (berlin berta)
- #+(or clisp akcl ecls) (berta berlin)
- #-(or xcl clisp akcl allegro cmu sbcl ecls) unknown)
+ #+(or clisp akcl ecl) (berta berlin)
+ #-(or xcl clisp akcl allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (set-exclusive-or (list 'anton 'anna 'emil)

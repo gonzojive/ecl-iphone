@@ -34,7 +34,7 @@
 	  KYOTO
 	  KCL
 	  ECL
-	  ECLS
+	  ECL
 	  abs
 	  acos
 	  acosh

@@ -1,5 +1,5 @@
 ;;;
-;;; Configuration file for the bootstrapping version of ECLS
+;;; Configuration file for the bootstrapping version of ECL
 ;;;
 
 ;;;
@@ -48,7 +48,7 @@
 ;(sbt::operate-on-system clos :load)
 #endif CLOS
 
-(compiler::build-ecls "ecls"
+(compiler::build-program "ecl"
 #ifndef RUNTIME
 	   'cmp
 #endif

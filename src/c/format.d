@@ -6,7 +6,7 @@
     Copyright (c) 1990, Giuseppe Attardi.
     Copyright (c) 2001, Juan Jose Garcia Ripoll.
 
-    ECLS is free software; you can redistribute it and/or
+    ECL is free software; you can redistribute it and/or
     modify it under the terms of the GNU Library General Public
     License as published by the Free Software Foundation; either
     version 2 of the License, or (at your option) any later version.
@@ -14,7 +14,7 @@
     See file '../Copyright' for full details.
 */
 
-#include "ecls.h"
+#include "ecl.h"
 #include <ctype.h>
 
 cl_object @'si::*indent-formatted-output*';
@@ -1369,7 +1369,7 @@ fmt_indirection(bool colon, bool atsign)
 		fmt_save;
 		fmt_jmp_buf = (int *)fmt_jmp_buf0;
 		fmt_string = s;
-		if ((up_colon = ecls_setjmp(fmt_jmp_buf))) {
+		if ((up_colon = ecl_setjmp(fmt_jmp_buf))) {
 			if (--up_colon)
 				fmt_error("illegal ~:^");
 		} else
@@ -1384,7 +1384,7 @@ fmt_indirection(bool colon, bool atsign)
 		fmt_end = cl_stack_index();
 		fmt_jmp_buf = (int *)fmt_jmp_buf0;
 		fmt_string = s;
-		if ((up_colon = ecls_setjmp(fmt_jmp_buf))) {
+		if ((up_colon = ecl_setjmp(fmt_jmp_buf))) {
 			if (--up_colon)
 				fmt_error("illegal ~:^");
 		} else
@@ -1412,7 +1412,7 @@ fmt_case(bool colon, bool atsign)
 		fmt_error("~) expected");
 	fmt_save;
 	fmt_jmp_buf = (int *)fmt_jmp_buf0;
-	if ((up_colon = ecls_setjmp(fmt_jmp_buf)))
+	if ((up_colon = ecl_setjmp(fmt_jmp_buf)))
 		;
 	else
 		format(x, ctl_origin + i, j - i);
@@ -1458,7 +1458,7 @@ fmt_case(bool colon, bool atsign)
 			WRITEC_STREAM(j, fmt_stream);
 		}
 	if (up_colon)
-		ecls_longjmp(fmt_jmp_buf, up_colon);
+		ecl_longjmp(fmt_jmp_buf, up_colon);
 }
 
 static void
@@ -1588,7 +1588,7 @@ fmt_iteration(bool colon, bool atsign)
 		L1:
 			if (n-- <= 0)
 				break;
-			if ((up_colon = ecls_setjmp(fmt_jmp_buf))) {
+			if ((up_colon = ecl_setjmp(fmt_jmp_buf))) {
 				if (--up_colon)
 					fmt_error("illegal ~:^");
 				break;
@@ -1617,7 +1617,7 @@ fmt_iteration(bool colon, bool atsign)
 			fmt_push_list(l);
 			fmt_index = fmt_base;
 			fmt_end = cl_stack_index();
-			if ((up_colon = ecls_setjmp(fmt_jmp_buf))) {
+			if ((up_colon = ecl_setjmp(fmt_jmp_buf))) {
 				if (--up_colon)
 					break;
 				else
@@ -1636,7 +1636,7 @@ fmt_iteration(bool colon, bool atsign)
 		L3:
 			if (n-- <= 0)
 				break;
-			if ((up_colon = ecls_setjmp(fmt_jmp_buf))) {
+			if ((up_colon = ecl_setjmp(fmt_jmp_buf))) {
 				if (--up_colon)
 					fmt_error("illegal ~:^");
 				break;
@@ -1658,7 +1658,7 @@ fmt_iteration(bool colon, bool atsign)
 			fmt_index = fmt_base;
 			fmt_end = cl_stack_index();
 			fmt_jmp_buf = (int *)fmt_jmp_buf0;
-			if ((up_colon = ecls_setjmp(fmt_jmp_buf))) {
+			if ((up_colon = ecl_setjmp(fmt_jmp_buf))) {
 				fmt_restore;
 				if (--up_colon)
 					break;
@@ -1700,7 +1700,7 @@ fmt_justification(volatile bool colon, bool atsign)
 			;
 		fmt_save;
 		fmt_jmp_buf = (int *)fmt_jmp_buf0;
-		if ((up_colon = ecls_setjmp(fmt_jmp_buf))) {
+		if ((up_colon = ecl_setjmp(fmt_jmp_buf))) {
 			if (--up_colon)
 				fmt_error("illegal ~:^");
 			fmt_restore1;
@@ -1794,22 +1794,22 @@ fmt_up_and_out(bool colon, bool atsign)
 	fmt_not_atsign(atsign);
 	if (fmt_nparam == 0) {
 		if (fmt_index >= fmt_end)
-			ecls_longjmp(fmt_jmp_buf, ++colon);
+			ecl_longjmp(fmt_jmp_buf, ++colon);
 	} else if (fmt_nparam == 1) {
 		fmt_set_param(0, &i, INT, 0);
 		if (i == 0)
-			ecls_longjmp(fmt_jmp_buf, ++colon);
+			ecl_longjmp(fmt_jmp_buf, ++colon);
 	} else if (fmt_nparam == 2) {
 		fmt_set_param(0, &i, INT, 0);
 		fmt_set_param(1, &j, INT, 0);
 		if (i == j)
-			ecls_longjmp(fmt_jmp_buf, ++colon);
+			ecl_longjmp(fmt_jmp_buf, ++colon);
 	} else {
 		fmt_set_param(0, &i, INT, 0);
 		fmt_set_param(1, &j, INT, 0);
 		fmt_set_param(2, &k, INT, 0);
 		if (i <= j && j <= k)
-			ecls_longjmp(fmt_jmp_buf, ++colon);
+			ecl_longjmp(fmt_jmp_buf, ++colon);
 	}
 }
 
@@ -1875,7 +1875,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 	else
 		fmt_indents = 0;
 	fmt_string = string;
-	if ((colon = ecls_setjmp(fmt_jmp_buf))) {
+	if ((colon = ecl_setjmp(fmt_jmp_buf))) {
 		if (--colon)
 			fmt_error("illegal ~:^");
 	} else {

@@ -1,5 +1,5 @@
 #
-#			Makefile for ECLS core library
+#			Makefile for ECL core library
 #
 top_srcdir= @top_srcdir@
 srcdir	= @srcdir@
@@ -25,7 +25,7 @@ libdir	= @libdir@
 # Files
 
 HDIR	= $(top_srcdir)/h
-HFILES	= ../h/config.h $(HDIR)/ecls.h $(HDIR)/ecls-cmp.h\
+HFILES	= ../h/config.h $(HDIR)/ecl.h $(HDIR)/ecl-cmp.h\
 	$(HDIR)/machines.h $(HDIR)/object.h $(HDIR)/cs.h $(HDIR)/stacks.h\
 	$(HDIR)/external.h $(HDIR)/lisp_external.h $(HDIR)/eval.h\
 	$(HDIR)/number.h $(HDIR)/page.h $(HDIR)/unify.h\
@@ -51,18 +51,18 @@ OBJS	= main.o symbol.o package.o list.o\
 .d.c: $(DPP) $(HFILES)
 	$(DPP) $< $@
 
-all:	$(DPP) ../libecls.a cinit.o
+all:	$(DPP) ../libecl.a cinit.o
 .PHONY:	all
 
 install: $(HFILES)
 	for i in $(HFILES); do $(INSTALL_DATA) $$i $(PREFIX)$(libdir)/h; done
 
-../libecls.a: $(OBJS)
+../libecl.a: $(OBJS)
 	ar cr $@ $(OBJS)
 	ranlib $@
 
 clean:
-	$(RM) *.c $(OBJS) ../libecls.a cinit.o core a.out
+	$(RM) *.c $(OBJS) ../libecl.a cinit.o core a.out
 
 # Build rules
 

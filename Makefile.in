@@ -33,7 +33,7 @@ MACHINE = @MACHINE@
 
 # ========================= Last release ================================
 
-VERSION=@ECLS_VERSION@
+VERSION=@ECL_VERSION@
 WWW=http://ecls.sourceforge.net/
 
 # ==================== Things `configure' Might Edit ====================
@@ -129,7 +129,7 @@ TAGS tags:
 check:
 	@echo "We don't have any tests for ECL yet."
 
-TAR_DIR=ecls-$(VERSION)
+TAR_DIR=ecl-$(VERSION)
 
 doc: build/doc/index.html
 	-mkdir doc
@@ -137,21 +137,21 @@ doc: build/doc/index.html
 build/doc/index.html:
 	cd build/doc; make
 
-source-dist: ecls.tgz ecls-tests.tgz
+source-dist: ecl.tgz ecl-tests.tgz
 
-ecls.tgz: doc
+ecl.tgz: doc
 	-rm -rf $(TAR_DIR)
 	mkdir $(TAR_DIR) $(TAR_DIR)/src \
 	$(TAR_DIR)/src/tests $(TAR_DIR)/src/ansi-tests && \
 	for i in $(TAR_CONTENTS); do cp -rf $$i $(TAR_DIR)/$$i; done && \
-	tar -cz --exclude '*~' --exclude '#*' --exclude 'CVS' -f ecls.tgz $(TAR_DIR)
+	tar -cz --exclude '*~' --exclude '#*' --exclude 'CVS' -f ecl.tgz $(TAR_DIR)
 	-rm -rf $(TAR_DIR)
-ecls-tests.tgz:
+ecl-tests.tgz:
 	-rm -rf $(TAR_DIR)
 	mkdir $(TAR_DIR) && \
 	mkdir $(TAR_DIR)/src && \
 	cp -rf src/ansi-tests $(TAR_DIR)/src && \
-	tar -cz --exclude '*~' --exclude '#*' --exclude 'CVS' -f ecls-tests.tgz $(TAR_DIR);
+	tar -cz --exclude '*~' --exclude '#*' --exclude 'CVS' -f ecl-tests.tgz $(TAR_DIR);
 	-rm -rf $(TAR_DIR)
 
 binary-dist: all
@@ -161,7 +161,7 @@ binary-dist: all
 	(echo $$i; IFS="/"; for k in $$i; do echo $$k; (test -d $$k || mkdir $$k); chmod 755 $$k; cd $$k; done); \
 	done
 	PREFIX=`pwd`/tmp; cd build; make install PREFIX="$${PREFIX}"
-	su -c "chown -R root.root tmp && cd tmp; tar czf ../ecls-$(VERSION)-$(MACHINE).tgz * && cd .. && rm -rf tmp"
+	su -c "chown -R root.root tmp && cd tmp; tar czf ../ecl-$(VERSION)-$(MACHINE).tgz * && cd .. && rm -rf tmp"
 
 dist:
 	cd dist; make-dist

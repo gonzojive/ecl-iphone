@@ -1,5 +1,5 @@
 ;;;
-;;; Configuration file for the bootstrapping version of ECLS
+;;; Configuration file for the bootstrapping version of ECL
 ;;;
 ;;; * Set ourselves in the 'SYSTEM package
 ;;;
@@ -27,7 +27,7 @@
 (si::dump-documentation "help.doc")
 
 ;;;
-;;; * By redefining "SYS:" ECLS will be able to
+;;; * By redefining "SYS:" ECL will be able to
 ;;;   find headers and libraries in the build directory.
 ;;;
 (si::pathname-translations "SYS" '(("*.*" "./*.*")))
@@ -61,4 +61,4 @@
 ;;;
 ;;; * Go back to build directory to start compiling
 ;;;
-(setq *features* (remove :ecls-min *features*))
+(setq *features* (remove :ecl-min *features*))

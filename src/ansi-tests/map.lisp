@@ -4,8 +4,8 @@
 (my-assert
  (setf a-vector (make-array 10))
  #+(or XCL cmu sbcl) #(0 0 0 0 0 0 0 0 0 0)
- #+(or CLISP AKCL ALLEGRO ecls) #(NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL)
- #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecls) UNKNOWN)
+ #+(or CLISP AKCL ALLEGRO ecl) #(NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL)
+ #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecl) UNKNOWN)
 
 (my-assert
  (do ((i 0 (1+ i))

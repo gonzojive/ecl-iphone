@@ -182,11 +182,11 @@
 
 (my-assert
  (format nil "~10:@<foo~;bar~>")
- #+(or sbcl cmu ecls)
+ #+(or sbcl cmu ecl)
  " foo bar  "
  #+clisp
  "  foo bar "
- #-(or sbcl cmu clisp ecls)
+ #-(or sbcl cmu clisp ecl)
  fill-this-in)
  
 (my-assert

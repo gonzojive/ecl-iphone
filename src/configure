@@ -549,7 +549,7 @@ echo "***"
 exit 2;
 fi
 
-ECLS_VERSION=0.5
+ECL_VERSION=0.5
 
 
 ac_aux_dir=
@@ -881,7 +881,7 @@ else
 fi
 	      # sets variable CC
 if test "$GCC" != "yes"; then
-  { echo "configure: error: Cannot build ECLS without GCC" 1>&2; exit 1; }
+  { echo "configure: error: Cannot build ECL without GCC" 1>&2; exit 1; }
 fi
 echo $ac_n "checking how to run the C preprocessor""... $ac_c" 1>&6
 echo "configure:888: checking how to run the C preprocessor" >&5
@@ -1540,13 +1540,13 @@ echo "$ac_t""${software_version}" 1>&6
 if test "x$prefix" = "xNONE"; then prefix=${ac_default_prefix}; fi
 if test "x$exec_prefix" = "xNONE"; then exec_prefix=${prefix}; fi
 bindir="${exec_prefix}/bin"
-libdir="${exec_prefix}/lib/ecls"
-includedir="${exec_prefix}/lib/ecls/h"
+libdir="${exec_prefix}/lib/ecl"
+includedir="${exec_prefix}/lib/ecl/h"
 mandir="${prefix}/man/man1"
 infodir="${prefix}/info"
 builddir=`pwd`
-TARGETS="ecls${EXEEXT}"
-LIBRARIES="libecls.a"
+TARGETS="ecl${EXEEXT}"
+LIBRARIES="libecl.a"
 LSP_LIBRARIES="liblsp.a libclos.a"
 SUBDIR=c
 CLIBS="${CLIBS} -lgmp -lm"
@@ -1613,7 +1613,7 @@ EOF
 fi
 if test "${oldloop}"; then
   cat >> confdefs.h <<\EOF
-#define ECLS_OLD_LOOP 1
+#define ECL_OLD_LOOP 1
 EOF
 
 fi
@@ -2914,7 +2914,7 @@ s%@includedir@%$includedir%g
 s%@oldincludedir@%$oldincludedir%g
 s%@infodir@%$infodir%g
 s%@mandir@%$mandir%g
-s%@ECLS_VERSION@%$ECLS_VERSION%g
+s%@ECL_VERSION@%$ECL_VERSION%g
 s%@host@%$host%g
 s%@host_alias@%$host_alias%g
 s%@host_cpu@%$host_cpu%g

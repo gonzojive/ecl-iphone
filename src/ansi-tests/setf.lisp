@@ -235,8 +235,8 @@
  #+xcl (documentation ((typ2 . "doc 3") (typ1 . "doc 1")))
  #+clisp (system::documentation-strings (typ2 "doc 3" typ1 "doc 1"))
  #+allegro (excl::%documentation ((typ2 . "doc 3") (typ1 . "doc 1")))
- #+(or cmu ecls) nil
- #-(or xcl clisp allegro cmu ecls) unknown)
+ #+(or cmu ecl) nil
+ #-(or xcl clisp allegro cmu ecl) unknown)
 
 (my-assert
  (setf (symbol-value (quote xx)) (quote voelligneu))
@@ -346,8 +346,8 @@
 (my-assert
  (aref a 2 2)
  #+(or xcl cmu) 0
- #+(or clisp akcl allegro ecls) nil
- #-(or xcl clisp akcl allegro cmu ecls) unknown)
+ #+(or clisp akcl allegro ecl) nil
+ #-(or xcl clisp akcl allegro cmu ecl) unknown)
 
 (my-assert
  (setf (apply #'aref a '(2 2)) 'xxxx)

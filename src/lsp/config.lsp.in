@@ -1,5 +1,5 @@
 ;;
-;; Configuration file for ECLS
+;; Configuration file for ECL
 ;;
 (in-package "LISP")
 ;;
@@ -18,12 +18,12 @@ Returns, as a string, the location of the machine on which ECL runs."
   "@LONG_SITE_NAME@")
 
 ;;
-;; * ECLS version, architecture, etc
+;; * ECL version, architecture, etc
 ;;
 (defun lisp-implementation-version ()
   "Args:()
 Returns the version of your ECL as a string."
-  "@ECLS_VERSION@")
+  "@ECL_VERSION@")
 
 (defun machine-type ()
   "Args: ()

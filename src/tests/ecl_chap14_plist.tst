@@ -13,7 +13,7 @@ safe-mapcar
 ((a . b) (c . d))
 
 (acons 'a 'b 1)
-#+ecls ((a . b) . 1) #-ecls error
+#+ecl ((a . b) . 1) #-ecl error
 
 ;;
 ;; PAIRLIS
@@ -96,20 +96,20 @@ error
 (getf '(a 1 . b) 'c)
 error
 
-; Failure due to circular lists. Only ECLS passes this.
-#+ecls
+; Failure due to circular lists. Only ECL passes this.
+#+ecl
 (let ((a '(a 1 b 2)))
   (nconc a a)
   (getf a 'c))
-#+ecls
+#+ecl
 error
 
-#+ecls
+#+ecl
 (let ((a '(a 1 b 2)))
   (nconc a a)
   (setf (getf a 'c) 3)
   a)
-#+ecls
+#+ecl
 error
 
 ;;
@@ -143,11 +143,11 @@ error
 (let ((a '(a 1 . b))) (remf a 'b))
 error
 
-; Failure due to circular lists. Only ECLS passes this.
-#+ecls
+; Failure due to circular lists. Only ECL passes this.
+#+ecl
 (let ((a '(a 1 b 2)))
   (nconc a a)
   (remf a 'c))
-#+ecls
+#+ecl
 error
 

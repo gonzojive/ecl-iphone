@@ -17,12 +17,12 @@ ERROR
 
 (PAIRLIS '(A B C)
        '(1 2 3))
-#+(or ECLS XCL CLISP ALLEGRO)
+#+(or ECL XCL CLISP ALLEGRO)
 ((C . 3)
  (B . 2)
  (A . 1))
 #+(or AKCL) ((A . 1) (B . 2) (C . 3))
-#-(or XCL CLISP ECLS AKCL ALLEGRO) UNKNOWN
+#-(or XCL CLISP ECL AKCL ALLEGRO) UNKNOWN
 
 (ASSOC 'A
        '((B C)
@@ -59,8 +59,8 @@ ERROR
        #'(LAMBDA (X)
                 (IF (LISTP X)
                     (CAR X))))
-#-(or GCL ECLS ALLEGRO) ((A) U)
-#+(or GCL ECLS ALLEGRO) ERROR
+#-(or GCL ECL ALLEGRO) ((A) U)
+#+(or GCL ECL ALLEGRO) ERROR
 
 (ASSOC 'A
        '((B C)
@@ -72,8 +72,8 @@ ERROR
        #'(LAMBDA (X)
                 (IF (ATOM X)
                     X)))
-#-(or GCL ECLS ALLEGRO) (A I)
-#+(or GCL ECLS ALLEGRO) ERROR
+#-(or GCL ECL ALLEGRO) (A I)
+#+(or GCL ECL ALLEGRO) ERROR
 
 (ASSOC 'A
        '((B C)
@@ -86,8 +86,8 @@ ERROR
                 (IF (LISTP Y)
                     (EQL (CAR Y)
                          X))))
-#-(or GCL ECLS ALLEGRO) ((A) U)
-#+(or GCL ECLS ALLEGRO) ERROR
+#-(or GCL ECL ALLEGRO) ((A) U)
+#+(or GCL ECL ALLEGRO) ERROR
 
 (ASSOC 'A
        '((B C)
@@ -99,8 +99,8 @@ ERROR
        #'(LAMBDA (X Y)
                 (IF (ATOM Y)
                     (EQL Y X))))
-#-(or GCL ECLS ALLEGRO) (A I)
-#+(or GCL ECLS ALLEGRO) ERROR
+#-(or GCL ECL ALLEGRO) (A I)
+#+(or GCL ECL ALLEGRO) ERROR
 
 (ASSOC 'A
        '((B C)

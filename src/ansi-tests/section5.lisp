@@ -61,8 +61,8 @@
 
 (my-assert
  (apply #'strange-test *some-list*)
- #+(or cmu sbcl clisp ecls) nil
- #-(or cmu sbcl clisp ecls) fill-this-in )
+ #+(or cmu sbcl clisp ecl) nil
+ #-(or cmu sbcl clisp ecl) fill-this-in )
 
 ;;(my-assert
 ;;(defun foo (size &rest keys &key double &allow-other-keys)
@@ -372,9 +372,9 @@
 
 (my-assert
  (compiled-function-p #'f)
- #+(or cmu sbcl ecls) t
+ #+(or cmu sbcl ecl) t
  #+clisp nil
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 ;;  false OR true
 
 (my-assert
@@ -399,9 +399,9 @@
 
 (my-assert
  (compiled-function-p #'(lambda (x) x))
- #+(or cmu sbcl ecls) t
+ #+(or cmu sbcl ecl) t
  #+clisp nil
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 					;  false OR true
 
 (my-assert
@@ -974,8 +974,8 @@
 
 (my-assert
  (eq 3 3)
- #+(or cmu sbcl clisp ecls) t
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+(or cmu sbcl clisp ecl) t
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 					;  true OR false
 
 (my-assert
@@ -984,14 +984,14 @@
 
 (my-assert
  (eq 3.0 3.0)
- #+(or cmu sbcl clisp ecls) nil
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+(or cmu sbcl clisp ecl) nil
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 					;  true OR  false
 
 (my-assert
  (eq #c(3 -4) #c(3 -4))
- #+(or cmu sbcl clisp ecls) nil
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+(or cmu sbcl clisp ecl) nil
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 					; true OR  false
 
 (my-assert
@@ -1008,8 +1008,8 @@
 
 (my-assert
  (eq '(a . b) '(a . b))
- #+(or cmu sbcl clisp ecls) nil
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+(or cmu sbcl clisp ecl) nil
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 					;  true OR  false
 
 (my-assert
@@ -1022,8 +1022,8 @@
 
 (my-assert
  (eq #\A #\A)
- #+(or cmu sbcl clisp ecls) t
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+(or cmu sbcl clisp ecl) t
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 					;  true OR  false
 
 (my-assert
@@ -1032,8 +1032,8 @@
 
 (my-assert
  (eq "Foo" "Foo")
- #+(or cmu sbcl clisp ecls) nil
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+(or cmu sbcl clisp ecl) nil
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 					;  true OR  false
 
 (my-assert
@@ -1050,8 +1050,8 @@
 
 (my-assert
  (let ((x 5)) (eq x x))
- #+(or cmu sbcl clisp ecls) t
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+(or cmu sbcl clisp ecl) t
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 					; true OR false
 
 ;;; eql
@@ -1094,8 +1094,8 @@
 
 (my-assert
  (eql '(a . b) '(a . b))
- #+(or cmu sbcl clisp ecls) nil
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+(or cmu sbcl clisp ecl) nil
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 					; true OR  false
 
 (my-assert
@@ -1112,8 +1112,8 @@
 
 (my-assert
  (eql "Foo" "Foo")
- #+(or cmu sbcl clisp ecls) nil
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+(or cmu sbcl clisp ecl) nil
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 					; true OR  false
 
 (my-assert

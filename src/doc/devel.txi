@@ -1,14 +1,14 @@
 \input texinfo   @c -*-texinfo-*-
 @c %**start of header
-@setfilename eclsdev.info
-@settitle ECLS Developers' Guide
+@setfilename ecldev.info
+@settitle ECL Developers' Guide
 @setchapternewpage odd
 @c %**end of header
 
 @include macros.txi
 
 @ifinfo
-@ecls{} is an implementation of @clisp{} designed for being @emph{embeddable}
+@ecl{} is an implementation of @clisp{} designed for being @emph{embeddable}
 into C based applications. This manual documents the interface for C programmers.
 
 @noindent
@@ -16,7 +16,7 @@ Copyright @copyright{} 2001, Juan Jose Garcia-Ripoll
 @end ifinfo
 
 @titlepage
-@title ECLS Developers' Guide
+@title ECL Developers' Guide
 @author Juan Jose Garcia Ripoll
 
 @page
@@ -37,21 +37,21 @@ Copyright @copyright{} 2001, Juan Jose Garcia Ripoll
 @vskip 1cm
 @end iftex
 
-@ecls{} is an implementation of @clisp{} originally designed for being
+@ecl{} is an implementation of @clisp{} originally designed for being
 @emph{embeddable} into C based applications.  This document describes
-the guts of the @ecls{} implementation and how it can cooperate with
+the guts of the @ecl{} implementation and how it can cooperate with
 code written in other languages, such as C and C++. See
-@inforef{Top,,ecls} for details about the @clisp{} implementation and how it
+@inforef{Top,,ecl} for details about the @clisp{} implementation and how it
 differs from standards.
 
 
 @menu
-* Introduction::                How @ecls{} relates to C/C++.
-* Building programs::           How to build programs using ECLS.
+* Introduction::                How @ecl{} relates to C/C++.
+* Building programs::           How to build programs using ECL.
 * Lisp objects::                Dealing with lisp object from C.
 * The interpreter::             Understanding the interpreter.
 * The compiler::                How the Lisp2C translator works.
-* Porting @ecls{}::             Porting @ecls{} to other architectures.
+* Porting @ecl{}::             Porting @ecl{} to other architectures.
 @end menu
 
 @c ---------------------------------------------------------------------
@@ -59,7 +59,7 @@ differs from standards.
 @node Introduction, Building programs, Top, Top
 @chapter Introduction
 
-@ecls{} is an implementation of the @clisp{} language that is based on a kernel
+@ecl{} is an implementation of the @clisp{} language that is based on a kernel
 written in C plus a set of libraries written in @clisp{}. The kernel includes a
 bytecodes compiler, an interpreter, and enough functions to create and
 manipulate all lisp objects. The lisp libraries provide higher level constructs
@@ -67,16 +67,16 @@ such as macro definitions, LOOPs, an implementation of CLOS, and a translator
 from Lisp to C.
 
 As a result of this design, which dates back to the Kyoto CL and was later
-improved in Giusseppe Attardi's ECoLisp, @ecls{} can be used as
+improved in Giusseppe Attardi's ECoLisp, @ecl{} can be used as
 @itemize
 @item As a standalone implementation of the @clisp{} language
 @item As an embedded interpreter subject to the control of a larger C program.
 @item As a @clisp{} environment with C/C++ extensions.
 @end itemize
 @noindent
-This manual describes the facility of @ecls{} to interface the C language and
-@ecls{}.  With this facility, the user can arrange his or her C-language
-programs so that they can be invoked from @ecls{}. In addition, the user can
+This manual describes the facility of @ecl{} to interface the C language and
+@ecl{}.  With this facility, the user can arrange his or her C-language
+programs so that they can be invoked from @ecl{}. In addition, the user can
 write Lisp function definitions in the C language to increase runtime
 efficiency.
 
@@ -85,22 +85,22 @@ efficiency.
 @node Building programs, Lisp objects, Introduction, Top
 @chapter Building programs
 
-In this chapter we describe how you can use @ecls{} to build programs and
+In this chapter we describe how you can use @ecl{} to build programs and
 loadable extensions that you can later on distribute to other people. 
 @menu
-* What can @ecls{} do?::        
+* What can @ecl{} do?::        
 * Compiling files::             
 * Building standalone executables::  
 * Building libraries::          
 * Compiler examples::           
 @end menu
 
-@node What can @ecls{} do?, Compiling files, Building programs, Building programs
-@section What can @ecls{} do?
+@node What can @ecl{} do?, Compiling files, Building programs, Building programs
+@section What can @ecl{} do?
 
 Some day for some reasons you will be in the need to distribute code that
-has been developed using @ecls{}. In the following sections we will describe
-the means that @ecls{} offers you to do so. Basically, these are the
+has been developed using @ecl{}. In the following sections we will describe
+the means that @ecl{} offers you to do so. Basically, these are the
 alternatives
 
 @table @sc
@@ -108,7 +108,7 @@ alternatives
 You distribute your programs in source code form. This is the easiest and most
 portable way, but not the fastest one.
 @item Standalone programs
-You translate all your lisp code to C using the @ecls{} compiler. The final
+You translate all your lisp code to C using the @ecl{} compiler. The final
 object files can be linked against other C/C++ libraries to obtain a standalone
 executable.
 @item You can build statically linked libraries.
@@ -120,33 +120,33 @@ standalone programs.
 This is the most flexible way. You translate all lisp code to C and link it
 against possibly other C/C++ libraries to obtain a dynamically loadable library
 (file type @file{.so} under unix). This library can be loaded a startup time to
-add new functionality to the @ecls{} environment.
+add new functionality to the @ecl{} environment.
 @end table
 
 In several of these options, we have mentioned the possibility to include C/C++
 code. Even if this is possible, you cannot use ordinary C/C++ compilers and
-makefiles to build @ecls{} extensions, let it be programs or
+makefiles to build @ecl{} extensions, let it be programs or
 libraries. Briefly, you have to organize your code as follows
 @enumerate
 @item Organize the C code as a library, let it be static or dynamic.
 @item Build a function, say @code{mymain()}, in which the initialization phase
 for your library is performed.
 @item Group the code that interfaces to Lisp in separate C files, all of which
-should include @code{#include <ecls.h>} at the beginning.
+should include @code{#include <ecl.h>} at the beginning.
 @item Compile your lisp source files.
-@item Let @ecls{} build the final executable or library.
+@item Let @ecl{} build the final executable or library.
 @end enumerate
 @noindent
-In the final step there are ways to instruct @ecls{} to call your
+In the final step there are ways to instruct @ecl{} to call your
 initialization function (@code{mymain()} in the example above). These means
 are explained in the following sections.
 
 @c ---------------------------------------------------------------------
 
-@node Compiling files, Building standalone executables, What can @ecls{} do?, Building programs
+@node Compiling files, Building standalone executables, What can @ecl{} do?, Building programs
 @section Compiling files
 
-@ecls{} supports two types of compilation. One is bytecodes compilation. This
+@ecl{} supports two types of compilation. One is bytecodes compilation. This
 process is performed on-the-fly, as you load source files with lisp code. This
 leads to a series of bytes for each instruction, the so called
 "bytecodes". These bytecodes are interpreted in a virtual machine, which is
@@ -159,7 +159,7 @@ file which may have different purposes.
 
 @table @sc
 @item dynamically loadable object files
-These are produced in a @ecls{} built with support for dynamically loadable
+These are produced in a @ecl{} built with support for dynamically loadable
 libraries (Feature @kwd{DLOPEN} is in @var{*features*}), when no extra
 arguments are passed to @code{compile-file}. These object files typically have
 the @file{.so} extension, and can be loaded with @code{load}. They cannot be used
@@ -177,11 +177,11 @@ libraries or standalone executable programs.
 @node Building standalone executables, Building libraries, Compiling files, Building programs
 @section Building standalone executables
 
-To build an executable you need a working @ecls{} image with the compiler. The
-function to build customized images is @var{c::build-ecls}. The description of
+To build an executable you need a working @ecl{} image with the compiler. The
+function to build customized images is @var{c::build-program}. The description of
 this function is as follows.
 
-@defun {c:build-ecls} {@var{image-name} @keys{} @var{lisp-files} @var{ld-flags} @var{prologue-code} @var{epilogue-code}}
+@defun {c:build-program} {@var{image-name} @keys{} @var{lisp-files} @var{ld-flags} @var{prologue-code} @var{epilogue-code}}
 
 This function builds a lisp image up from the core lisp library, plus all
 components listed in @var{lisp-files}.  Each component is either:
@@ -195,7 +195,7 @@ to the linker. You can include here your favorite C/C++ libraries.
 
 @var{prologue-code} and @var{epilogue-code} are used to customize the
 initialization process of the lisp image.  In order to build the executable,
-@var{c:build-ecls} first writes down a piece of C code which initializes the
+@var{c:build-program} first writes down a piece of C code which initializes the
 lisp environment. You can customize the initialization process by suppling code
 to be executed before (@var{prologue-code}) or after (@var{epilogue-code})
 setting up the lisp environment. Typically @var{prologue-code} defaults to an
@@ -262,14 +262,14 @@ create a file called @file{hello.lsp} which contains the following lines
 (quit)
 @end example
 @noindent
-If you start @ecls{} and load this file in the Common-Lisp environment you
+If you start @ecl{} and load this file in the Common-Lisp environment you
 will see the @code{"Hello world!"} message and the interpreter will be closed.
 @example
-ECLS (ECoLisp-Spain) 0.4
+ECL (ECoLisp-Spain) 0.4
 Copyright (C) 1984 Taiichi Yuasa and Masami Hagiya
 Copyright (C) 1993 Giuseppe Attardi
 Copyright (C) 2000 Juan J. Garcia-Ripoll
-        ECLS is free software, and you are welcome to redistribute it
+        ECL is free software, and you are welcome to redistribute it
 under certain conditions; see file 'Copyright' for details.
 Type :h for Help.  Top level.
 > @b{(load "hello.lsp")}
@@ -279,7 +279,7 @@ Bye.
 @end example
 
 @subsection Example of loadable object file
-You can only perform the example in this section if your @ecls{} image supports
+You can only perform the example in this section if your @ecl{} image supports
 dynamically loading of object files. This is true if you find the keyword
 @kwd{dlopen} in the @var{*features*} variable. This is true, for instance,
 in a typical FreeBSD or Linux box,
@@ -287,23 +287,23 @@ in a typical FreeBSD or Linux box,
 Type :h for Help.  Top level.
 > @b{*features*}
 (:IEEE-FLOATING-POINT :IBM-PC :I386 :BSD :UNIX :DLOPEN :ANSI-CL :CLOS
-    :BOEHM-GC :ECLS :COMMON)
+    :BOEHM-GC :ECL :COMMON)
 @end example
 
 In this example we build a loadable extension which prints the @code{"Hello
 world!"} message. First you need to create a the @file{hello.lsp} file. Next
-you have to enter the @ecls{} environment and type @code{(compile-file
+you have to enter the @ecl{} environment and type @code{(compile-file
 "hello.lsp")}. This produces a loadable object file.
 
 @example
 Type :h for Help.  Top level.
 > @b{(compile-file "hello.lsp")}
-;;; Loading /home/worm/lib/ecls/cmp.so
+;;; Loading /home/worm/lib/ecl/cmp.so
 ;;; Compiling hello.lsp.
 ;;; End of Pass 1.  
 ;;; Calling the C compiler... 
-"gcc -g -O2 -Dfreebsd  -O -I/home/worm/lib/ecls//h -w -c hello.c -o hello.o" 
-"ld -shared -o hello.so -L/home/worm/lib/ecls/ hello.o  " 
+"gcc -g -O2 -Dfreebsd  -O -I/home/worm/lib/ecl//h -w -c hello.c -o hello.o" 
+"ld -shared -o hello.so -L/home/worm/lib/ecl/ hello.o  " 
 ;;; OPTIMIZE levels: Safety=0 (No runtime error checking), Space=0, Speed=3
 ;;; Finished compiling hello.lsp.
 #P"hello.so"
@@ -316,58 +316,58 @@ Bye.
 @subsection Example of standalone program
 In this example we build a standalone program which prints the @code{"Hello
 world!"} message and does nothing else. First you must create the
-@file{hello.lsp} file shown above. Next you have to enter the @ecls{}
+@file{hello.lsp} file shown above. Next you have to enter the @ecl{}
 environment and type @code{(compile-file "hello.lsp" :system-p t)}. This
-produces an object file that can be linked agains the @ecls{} core image.
+produces an object file that can be linked agains the @ecl{} core image.
 
 @example
 Type :h for Help.  Top level.
 > @b{(compile-file "hello.lsp" :system-p t)}
-;;; Loading /home/worm/lib/ecls/cmp.so
+;;; Loading /home/worm/lib/ecl/cmp.so
 ;;; Compiling hello.lsp.
 ;;; End of Pass 1.  
 ;;; Calling the C compiler... 
-"gcc -g -O2 -Dfreebsd  -O -I/home/worm/lib/ecls//h -w -c hello.c -o hello.o" 
+"gcc -g -O2 -Dfreebsd  -O -I/home/worm/lib/ecl//h -w -c hello.c -o hello.o" 
 ;;; OPTIMIZE levels: Safety=0 (No runtime error checking), Space=0, Speed=3
 ;;; Finished compiling hello.lsp.
 #P"hello.o
 @end example
 
 @noindent
-The final step is to build the executable using the @code{c:build-ecls}
+The final step is to build the executable using the @code{c:build-program}
 instruction.
 @example
-> @b{(c:build-ecls "myecls" :lisp-files '("hello.o"))}
-"gcc -g -O2 -Dfreebsd  -O -I/home/worm/lib/ecls//h -w -c myecls.c -o myecls.o" 
-"gcc  -w -o myecls -L/home/worm/lib/ecls/ myecls.o hello.o -lecls -lclos -llsp  -lgmp -Wl,--export-dynamic -lgc -lcompat -lgmp -lm" 
-"myecls"
+> @b{(c:build-program "myecl" :lisp-files '("hello.o"))}
+"gcc -g -O2 -Dfreebsd  -O -I/home/worm/lib/ecl//h -w -c myecl.c -o myecl.o" 
+"gcc  -w -o myecl -L/home/worm/lib/ecl/ myecl.o hello.o -lecl -lclos -llsp  -lgmp -Wl,--export-dynamic -lgc -lcompat -lgmp -lm" 
+"myecl"
 @end example
 @noindent
 Now you can execute this program from your favourite shell.
 
 @example
-worm@@arrakis.es% @b{./myecls}
+worm@@arrakis.es% @b{./myecl}
 Hello world!
 Bye.
 @end example
 
 @subsection Example of loadable library
-You can only perform the example in this section if your @ecls{} image supports
+You can only perform the example in this section if your @ecl{} image supports
 dynamically loading of object files. In this example we build a loadable
 library which prints the @code{"Hello world!"} message and does nothing
 else. First you must create the @file{hello.lsp} file shown above. Next you
-have to enter the @ecls{} environment and type @code{(compile-file "hello.lsp"
+have to enter the @ecl{} environment and type @code{(compile-file "hello.lsp"
 :system-p t)}. This produces an object file that can be linked to form a loadable
 library.
 
 @example
 Type :h for Help.  Top level.
 > @b{(compile-file "hello.lsp" :system-p t)}
-;;; Loading /home/worm/lib/ecls/cmp.so
+;;; Loading /home/worm/lib/ecl/cmp.so
 ;;; Compiling hello.lsp.
 ;;; End of Pass 1.  
 ;;; Calling the C compiler... 
-"gcc -g -O2 -Dfreebsd  -O -I/home/worm/lib/ecls//h -w -c hello.c -o hello.o" 
+"gcc -g -O2 -Dfreebsd  -O -I/home/worm/lib/ecl//h -w -c hello.c -o hello.o" 
 ;;; OPTIMIZE levels: Safety=0 (No runtime error checking), Space=0, Speed=3
 ;;; Finished compiling hello.lsp.
 #P"hello.o
@@ -377,18 +377,18 @@ Type :h for Help.  Top level.
 The final step is to build the library using the @code{c:build-shared-library}
 instruction.
 @example
-> @b{(c:build-shared-library (c:shared-library-pathname "myecls") :lisp-files '("hello.o"))}
-"gcc -g -O2 -Dfreebsd  -O -I/home/worm/lib/ecls//h -w -c myecls.c -o myecls.o" 
-"gcc  -w -o myecls.so -L/home/worm/lib/ecls/ myecls.o hello.o -lecls -lclos -llsp  -lgmp -Wl,--export-dynamic -lgc -lcompat -lgmp -lm" 
-"myecls.so"
+> @b{(c:build-shared-library (c:shared-library-pathname "myecl") :lisp-files '("hello.o"))}
+"gcc -g -O2 -Dfreebsd  -O -I/home/worm/lib/ecl//h -w -c myecl.c -o myecl.o" 
+"gcc  -w -o myecl.so -L/home/worm/lib/ecl/ myecl.o hello.o -lecl -lclos -llsp  -lgmp -Wl,--export-dynamic -lgc -lcompat -lgmp -lm" 
+"myecl.so"
 @end example
 @noindent
-Now you can load this extension from any @ecls{} image, even those you produce
-with @code{c:build-ecls}
+Now you can load this extension from any @ecl{} image, even those you produce
+with @code{c:build-program}
 
 @example
-> (load (c:shared-library-pathname "myecls"))
-;;; Loading myecls.so
+> (load (c:shared-library-pathname "myecl"))
+;;; Loading myecl.so
 Hello world!
 Bye.
 @end example
@@ -398,7 +398,7 @@ Bye.
 @node Lisp objects, The interpreter, Building programs, Top
 @chapter Manipulating lisp objects
 
-If you want to extend, fix or simply customize @ecls{} for your own needs,
+If you want to extend, fix or simply customize @ecl{} for your own needs,
 you should understand how the implementation works.
 
 @menu
@@ -419,7 +419,7 @@ you should understand how the implementation works.
 @node Objects representation, Constructing objects, Lisp objects, Lisp objects
 @section Objects representation
 
-In @ecls{} a lisp object is represented by a type called @code{cl_object}. This
+In @ecl{} a lisp object is represented by a type called @code{cl_object}. This
 type is a word which is long enough to host both an integer and a pointer. The
 least significant bits of this word, also called the tag bits, determine
 whether it is a pointer to a C structure representing a complex object, or
@@ -442,7 +442,7 @@ whether it is an immediate data, such as a fixnum or a character.
 
 The fixnums and characters are called immediate datatypes, because they require
 no more than the @code{cl_object} datatype to store all information.  All other
-@ecls{} objects are non-immediate and they are represented by a pointer to a
+@ecl{} objects are non-immediate and they are represented by a pointer to a
 cell that is allocated on the heap.  Each cell consists of several words of
 memory and contains all the information related to that object. By storing data
 in multiples of a word size, we make sure that the least significant bits of a
@@ -572,10 +572,10 @@ which is between the values @var{MOST-NEGATIVE-FIXNUM} and
 @var{MOST-POSITIVE-FIXNUM}. A bignum is any integer which is not a fixnum and
 it is only constrained by the amount of memory available to represent it.
 
-In @ecls{} a fixnum is an integer that, together with the tag bits, fits in a
+In @ecl{} a fixnum is an integer that, together with the tag bits, fits in a
 word of memory. The size of a word, and thus the size of a fixnum, varies from
 one architecture to another, and you should refer to the types and constants in
-the @file{ecls.h} header to make sure that your C extensions are portable.
+the @file{ecl.h} header to make sure that your C extensions are portable.
 All other integers are stored as bignums, they are not immediate objects, they
 take up a variable amount of memory and the GNU Multiprecision Library is
 required to create, manipulate and calculate with them.
@@ -625,7 +625,7 @@ Similar to @code{fixint} but also ensures that @var{o} is not negative.
 @node Characters, Arrays, Integers, Lisp objects
 @section Characters
 
-@ecls{} has only one type of characters, which fits in the C type @code{char}.
+@ecl{} has only one type of characters, which fits in the C type @code{char}.
 The following constants and functions operate on characters.
 
 @defvr {Constant} CHAR_CODE_LIMIT
@@ -668,7 +668,7 @@ comparing them.
 @section Arrays
 
 An array is an aggregate of data of a common type, which can be accessed with
-one or more nonnegative indices. @ecls{} stores arrays as a C structure with a
+one or more nonnegative indices. @ecl{} stores arrays as a C structure with a
 pointer to the region of memory which contains the actual data. The cell
 of an array datatype varies depending on whether it is a vector, a bytevector,
 a multidimensional array or a string.
@@ -709,7 +709,7 @@ Whether @code{x->vector.fillp} can be smaller than @code{x->vector.dim}.
 Bitvectors and strings are treated separately.
 
 Each array is of an specialized type which is the type of the elements of the
-array. @ecls{} has arrays only a few following specialized types, and for each
+array. @ecl{} has arrays only a few following specialized types, and for each
 of these types there is a C integer which is the corresponding value of
 @code{x->array.elttype} or @code{x->vector.elttype}. We list those types
 together with the C constant that denotes that type:
@@ -769,11 +769,11 @@ vectors.
 @node Strings, Bitvectors, Arrays, Lisp objects
 @section Strings
 
-A string, both in @clisp{} and in @ecls{} is nothing but a vector of
+A string, both in @clisp{} and in @ecl{} is nothing but a vector of
 characters. Therefore, almost everything mentioned in the section of arrays
-remains valid here. The only important difference is that @ecls{} stores
+remains valid here. The only important difference is that @ecl{} stores
 strings as a lisp object with a pointer to a zero terminated C string. Thus, if
-a string has @var{n} characters, @ecls{} will reserve @var{n}+1 bytes for the
+a string has @var{n} characters, @ecl{} will reserve @var{n}+1 bytes for the
 string. This allows us to pass the string @code{self} pointer to any C
 routine.
 
@@ -859,17 +859,17 @@ with the following code
 @chapter The interpreter
 
 @menu
-* @ecls{} stacks::              
+* @ecl{} stacks::              
 * Procedure Call Conventions::  
 * The lexical environment::     
 * The interpreter stack::       
 @end menu
 
 
-@node @ecls{} stacks, Procedure Call Conventions, The interpreter, The interpreter
-@section @ecls{} stacks
+@node @ecl{} stacks, Procedure Call Conventions, The interpreter, The interpreter
+@section @ecl{} stacks
 
-@ecls{} uses the following stacks:
+@ecl{} uses the following stacks:
 
 @table @sc
 @item Frame Stack
@@ -888,10 +888,10 @@ temporary values, and function invocation.
 @end table
 
 
-@node Procedure Call Conventions, The lexical environment, @ecls{} stacks, The interpreter
+@node Procedure Call Conventions, The lexical environment, @ecl{} stacks, The interpreter
 @section Procedure Call Conventions
  
-@ecls{} employs standard C calling conventions to achieve efficiency and
+@ecl{} employs standard C calling conventions to achieve efficiency and
 interoperability with other languages.
 Each Lisp function is implemented as a C function whcih takes as many
 argument as the Lisp original plus one additional integer argument
@@ -914,7 +914,7 @@ clLcons(int narg, object car, object cdr)
 @}
 @end example
 
-@ecls{} adopts the convention that the name of a function that implements a
+@ecl{} adopts the convention that the name of a function that implements a
 @clisp{} function begins with a short package name (@code{cl} for COMMON-LISP,
 @code{si} for SYSTEM, etc), followed by @code{L}, and followed by the name of
 the @clisp{} function.  (Strictly speaking, `@code{-}' and `@code{*}' in the
@@ -929,7 +929,7 @@ a cons cell in the heap and returns the pointer to the cell.  After the
 returned directly. The number assigned to NValues set by the function (1 in
 this case) represents the number of values of the function.
 
-In general, if one is to play with the C kernel of @ecls{} there is no need to
+In general, if one is to play with the C kernel of @ecl{} there is no need to
 know about all these conventions. There is a preprocessor that takes care of
 the details, by using a lispy representation of the statements that output
 values, and of the function definitions. For instance, the actual source code
@@ -945,7 +945,7 @@ for @code{clLcons} in @file{src/c/lists.d}
 @node The lexical environment, The interpreter stack, Procedure Call Conventions, The interpreter
 @section The lexical environment
 
-The @ecls{} interpreter uses two A-lists (Association lists) to
+The @ecl{} interpreter uses two A-lists (Association lists) to
 represent lexical environments.
 
 @itemize
@@ -1057,7 +1057,7 @@ Block names: FACT.          ;;;  The block  FACT  is established.
 
 @c ---------------------------------------------------------------------
 
-@node The compiler, Porting @ecls{}, The interpreter, Top
+@node The compiler, Porting @ecl{}, The interpreter, Top
 @chapter The compiler
  
 @menu
@@ -1073,7 +1073,7 @@ Block names: FACT.          ;;;  The block  FACT  is established.
 @node The compiler translates to C, The compiler mimics human C programmer, The compiler, The compiler
 @section The compiler translates to C
 
-The @ecls{} compiler is essentially a translator from @clisp{} to C.  Given
+The @ecl{} compiler is essentially a translator from @clisp{} to C.  Given
 a Lisp source file, the compiler first generates three intermediate
 files:
 
@@ -1083,10 +1083,10 @@ files:
 @item a Data-file which consists of Lisp data to be used at load time
 @end itemize
 
-The @ecls{} compiler then invokes the C compiler to compile the
+The @ecl{} compiler then invokes the C compiler to compile the
 C-file into an object file.  Finally, the contents of the Data-file is
 appended to the object file to make a @emph{Fasl-file}.  The generated
-Fasl-file can be loaded into the @ecls{} system by the @clisp{}
+Fasl-file can be loaded into the @ecl{} system by the @clisp{}
 function @code{load}.  By default, the three intermediate files are
 deleted after the compilation, but, if asked, the compiler leaves
 them.
@@ -1094,18 +1094,18 @@ them.
 The merits of the use of C as the intermediate language are:
 
 @itemize -
-@item  The @ecls{} compiler is highly portable.  Indeed the four versions
-of @ecls{} share the same compiler.  Only the calling sequence
+@item  The @ecl{} compiler is highly portable.  Indeed the four versions
+of @ecl{} share the same compiler.  Only the calling sequence
 of the C compiler and the handling of the intermediate files are different
 in these versions. 
 
 @item Cross compilation is possible, because the contents of the
-intermediate files are common to all versions of @ecls{}.  For example,
-one can compile his or her Lisp program by the @ecls{} compiler on
+intermediate files are common to all versions of @ecl{}.  For example,
+one can compile his or her Lisp program by the @ecl{} compiler on
 a Sun, bring the intermediate files to DOS, compile the C-file with
 the gcc compiler under DOS, and then append the Data-file to the object
-file.  This procedure generates the Fasl-file for the @ecls{} system on
-DOS.  This kind of cross compilation makes it easier to port @ecls{}.
+file.  This procedure generates the Fasl-file for the @ecl{} system on
+DOS.  This kind of cross compilation makes it easier to port @ecl{}.
 
 @item Hardware-dependent optimizations such as register allocations
 are done by the C compiler.
@@ -1118,15 +1118,15 @@ The demerits are:
 the users cannot compile their Lisp programs.
 
 @item The compilation time is long.  70% to 80% of the
-compilation time is used by the C compiler.  The @ecls{} compiler is
+compilation time is used by the C compiler.  The @ecl{} compiler is
 therefore slower than compiler generating machine code directly.
 @end itemize
 
 @node The compiler mimics human C programmer, Implementation of Compiled Closures, The compiler translates to C, The compiler
 @section The compiler mimics human C programmer
  
-The format of the intermediate C code generated by the @ecls{} compiler is the
-same as the hand-coded C code of the @ecls{} source programs.  For example,
+The format of the intermediate C code generated by the @ecl{} compiler is the
+same as the hand-coded C code of the @ecl{} source programs.  For example,
 supposing that the Lisp source file contains the
 following function definition:
 
@@ -1171,7 +1171,7 @@ following macro definition is found in the H-file.
 @node Implementation of Compiled Closures, Use of Declarations to Improve Efficiency, The compiler mimics human C programmer, The compiler
 @section Implementation of Compiled Closures
  
-The @ecls{} compiler takes two passes before it invokes the C
+The @ecl{} compiler takes two passes before it invokes the C
 compiler.  The major role of the first pass is to detect function
 closures and to detect, for each function closure, those lexical
 objects (i.e., lexical variable, local function definitions, tags, and
@@ -1305,8 +1305,8 @@ assembler code.  According to @cltl{},
  
 This is, however, @emph{useless} in our case, because we are
 not concerned with assembly language.  Rather, we are interested in
-the C code generated by the @ecls{} compiler.  Thus the disassemble
-function in @ecls{} accepts not-yet-compiled functions only and displays
+the C code generated by the @ecl{} compiler.  Thus the disassemble
+function in @ecl{} accepts not-yet-compiled functions only and displays
 the translated C code.
 
 @example
@@ -1329,15 +1329,15 @@ TTL:
 @node The C language interface, Embedding C code, Inspecting generated C code, The compiler
 @section The C language interface
 
-There are several mechanism to integrate C code within @ecls{}.
+There are several mechanism to integrate C code within @ecl{}.
 
 The user can embed his/her own C code into Lisp source code.  The
 idea is quite simple: the specified C code is inserted in the intermediate
-C code that is generated by the @ecls{} compiler.  In the following example,
+C code that is generated by the @ecl{} compiler.  In the following example,
 @code{Clines}  and @code{defentry}  are top-level macros specific
-to @ecls{}.  The @code{Clines}  macro form specifies the C code to be embedded,
+to @ecl{}.  The @code{Clines}  macro form specifies the C code to be embedded,
 in terms of strings, and the @code{defentry}  form defines an entry
-of the specified C function from @ecls{}.
+of the specified C function from @ecl{}.
 
 @lisp
 (Clines
@@ -1357,7 +1357,7 @@ of the specified C function from @ecls{}.
 @section Embedding C code in lisp source
 
 The basic idea of interfacing the C language is this: As mentioned before,
-the @ecls{} compiler, given a Lisp source file, creates an intermediate
+the @ecl{} compiler, given a Lisp source file, creates an intermediate
 C-language program file, called @emph{c-file}, which is then compiled by the
 C-language compiler to obtain the final fasl-file.  Usually, the c-file
 consists of C-language function definitions.  The first C-language function in
@@ -1368,7 +1368,7 @@ using the top-level macros @code{Clines} and @code{defCfun} described below,
 the user can direct the compiler to insert his or her own C-language function
 definitions and/or C-language preprocessor macros such as @code{#define} and
 @code{#include} into the c-file.  In order that such C-language functions be
-invoked from @ecls{}, another top-level macro @code{defentry} is used.  This
+invoked from @ecl{}, another top-level macro @code{defentry} is used.  This
 macro defines a Lisp function whose body consists of the calling sequence to
 the specified C-language function.
 
@@ -1392,7 +1392,7 @@ the C language; @code{object} is the type of Lisp object and other C-types are
 primitive data types in C.
 
 @defmac {Clines} {@{string@}*}
-When the @ecls{} compiler encounters a macro form @code{(Clines @var{string1
+When the @ecl{} compiler encounters a macro form @code{(Clines @var{string1
 ...  stringn})}, it simply outputs the @var{strings} into the c-file.  The
 arguments are not evaluated and each argument must be a string.  Each
 @var{string} may consist of any number of lines, and separate lines in the
@@ -1477,13 +1477,13 @@ Suppose you have a Lisp source file whose contents are:
             (tak (1- z) x y))))
 @end example
 
-When this file is loaded into @ecls{}, the interpreter uses the Lisp version of
+When this file is loaded into @ecl{}, the interpreter uses the Lisp version of
 the @code{tak} definition.  Once this file has been compiled, and when the
-generated fasl file is loaded into @ecls{}, a function call to @code{tak} is
+generated fasl file is loaded into @ecl{}, a function call to @code{tak} is
 actually the call to the C version of @code{tak}.
 
 @defun {defCbody} {name args-types result-type C-expr}
-The @ecls{} compiler produces a function named @var{name} with as many
+The @ecl{} compiler produces a function named @var{name} with as many
 arguments as @var{arg-types}.  The @var{C-expr} is an arbitrary C expression
 where the arguments to the function are denoted by @code{#@emph{i}}, where
 @code{@emph{i}} is the integer corresponding to the argument position.  The
@@ -1501,7 +1501,7 @@ For example, the logical AND of two integers could be defined as:
 
 @defun {definline} {name args-types result-type C-expr}
 @code{definline} behaves exactly as @code{defCbody}.  Moreover, after a
-@code{definline} definition has been supplied, the @ecls{} compiler will expand
+@code{definline} definition has been supplied, the @ecl{} compiler will expand
 inline any call to function @var{name} into code corresponding to the C
 language expression @var{C-expr}, provided that the actual arguments are of the
 specified type.  If the actual arguments cannot be coerced to those types, the
@@ -1522,7 +1522,7 @@ The definitions of the C data structures used to represent \clisp objects can
 be found in file @code{ecl.h} in the directory @code{"src/h"} of the source
 distribution.
 
-@ecls{} converts a Lisp object into a C-language data by using the @clisp{}
+@ecl{} converts a Lisp object into a C-language data by using the @clisp{}
 function @code{coerce}: For the C-type @code{int} (or @code{char}), the object
 is first coerced to a Lisp integer and the least significant 32-bit (or 8-bit)
 field is used as the C @code{int} (or @code{char}).  For the C-type
@@ -1559,16 +1559,16 @@ C-type:
 
 @c ---------------------------------------------------------------------
 
-@node Porting @ecls{},  , The compiler, Top
-@chapter Porting @ecls{}
+@node Porting @ecl{},  , The compiler, Top
+@chapter Porting @ecl{}
 
-To port @ecls{} to a new architecture, the following steps are required:
+To port @ecl{} to a new architecture, the following steps are required:
 
 @enumerate
 @item Ensure that the GNU Multiprecision library supports this machine.
 
 @item Ensure that the Boehm-Weiser garbage collector is supported by that
-architecture. Alternatively, port ECLS's own garbage collector
+architecture. Alternatively, port ECL's own garbage collector
 @file{src/c/alloc.d} and @file{src/c/gbc.d} to that platform.
 
 @item Fix @file{src/configure.in} and @file{src/h/machines.h} so that they

@@ -5,7 +5,7 @@
 (setf (symbol-function 'setf-gethash)
       (symbol-function 'sys::puthash))
 
-#+(or akcl ecls)
+#+(or akcl ecl)
 (setf (symbol-function 'setf-gethash)
       (symbol-function 'sys:hash-set)) t
 #+allegro

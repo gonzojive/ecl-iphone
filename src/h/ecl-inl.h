@@ -1,7 +1,7 @@
 /*
  * Loops over a proper list
  */
-#ifdef ECLS_SAFE
+#ifdef ECL_SAFE
 #define loop_for_in(list) { \
   cl_object __slow; \
   bool __flag = ~0; \
@@ -19,7 +19,7 @@
 /*
  * Loops over a dotted list
  */
-#ifdef ECLS_SAFE
+#ifdef ECL_SAFE
 #define loop_for_on(list) \
   if (!CONSP(list)) { \
     if (list != Cnil) FEtype_error_list(list); \

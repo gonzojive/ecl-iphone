@@ -1019,49 +1019,49 @@ is actually performed using its cddr instead")
 
 (my-assert
  (constantp (values 37 Pi 'foo))
- #+(or cmu sbcl sbcl clisp ecls) t
- #-(or cmu sbcl sbcl clisp ecls) FILL-THIS-IN)
+ #+(or cmu sbcl sbcl clisp ecl) t
+ #-(or cmu sbcl sbcl clisp ecl) FILL-THIS-IN)
 
 
 (my-assert
  (constantp '(sin pi))
- #+(or cmu sbcl sbcl clisp ecls) nil
- #-(or cmu sbcl sbcl clisp ecls) FILL-THIS-IN)
+ #+(or cmu sbcl sbcl clisp ecl) nil
+ #-(or cmu sbcl sbcl clisp ecl) FILL-THIS-IN)
 
 (my-assert
  (constantp '(car '(x)))
- #+(or cmu sbcl sbcl clisp ecls) nil
- #-(or cmu sbcl sbcl clisp ecls) FILL-THIS-IN)
+ #+(or cmu sbcl sbcl clisp ecl) nil
+ #-(or cmu sbcl sbcl clisp ecl) FILL-THIS-IN)
 
 (my-assert
  (constantp '(eql x x))
- #+(or cmu sbcl sbcl clisp ecls) nil
- #-(or cmu sbcl sbcl clisp ecls) FILL-THIS-IN)
+ #+(or cmu sbcl sbcl clisp ecl) nil
+ #-(or cmu sbcl sbcl clisp ecl) FILL-THIS-IN)
 
 (my-assert
  (constantp '(typep x 'nil))
- #+(or cmu sbcl sbcl clisp ecls) nil
- #-(or cmu sbcl sbcl clisp ecls) FILL-THIS-IN)
+ #+(or cmu sbcl sbcl clisp ecl) nil
+ #-(or cmu sbcl sbcl clisp ecl) FILL-THIS-IN)
 
 (my-assert
  (constantp '(typep x 't))
- #+(or cmu sbcl sbcl clisp ecls) nil
- #-(or cmu sbcl sbcl clisp ecls) FILL-THIS-IN)
+ #+(or cmu sbcl sbcl clisp ecl) nil
+ #-(or cmu sbcl sbcl clisp ecl) FILL-THIS-IN)
 
 (my-assert
  (constantp '(values this-is-a-constant))
- #+(or cmu sbcl sbcl clisp ecls) nil
- #-(or cmu sbcl sbcl clisp ecls) FILL-THIS-IN)
+ #+(or cmu sbcl sbcl clisp ecl) nil
+ #-(or cmu sbcl sbcl clisp ecl) FILL-THIS-IN)
 
 (my-assert
  (constantp '(values 'x 'y))
- #+(or cmu sbcl sbcl clisp ecls) nil
- #-(or cmu sbcl sbcl clisp ecls) FILL-THIS-IN)
+ #+(or cmu sbcl sbcl clisp ecl) nil
+ #-(or cmu sbcl sbcl clisp ecl) FILL-THIS-IN)
 
 (my-assert
  (constantp '(let ((a '(a b c))) (+ (length a) 6)))
- #+(or cmu sbcl sbcl clisp ecls) nil
- #-(or cmu sbcl sbcl clisp ecls) FILL-THIS-IN)
+ #+(or cmu sbcl sbcl clisp ecl) nil
+ #-(or cmu sbcl sbcl clisp ecl) FILL-THIS-IN)
 
 
 

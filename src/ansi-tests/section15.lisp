@@ -204,8 +204,8 @@
 (my-assert
  (aref (setq alpha (make-array 4)) 3)
  #+(or cmu sbcl) 0
- #+(or clisp ecls) nil
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+(or clisp ecl) nil
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 
 (my-assert
  (setf (aref alpha 3) 'sirens)
@@ -275,28 +275,28 @@
 (my-assert
  (array-element-type (make-array 12 :element-type '(unsigned-byte 8)))
  #+(or cmu sbcl clisp) (unsigned-byte 8)
- #+ecls fixnum
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+ecl fixnum
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 
 (my-assert
  (array-element-type (make-array 12 :element-type '(unsigned-byte 5)))
  #+(or cmu sbcl clisp) (unsigned-byte 8)
- #+ecls fixnum
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+ecl fixnum
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 
 (my-assert
  (array-element-type (make-array 5 :element-type '(mod 5)))
  #+(or cmu sbcl clisp) (UNSIGNED-BYTE 4)
- #+ecls fixnum
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+ecl fixnum
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 					; (mod 5), (mod 8), fixnum, t, or any other type of which (mod 5) is a subtype.
 
 ;;; array-has-fill-pointer
 
 (my-assert
  (array-has-fill-pointer-p (make-array 4))
- #+(or cmu sbcl clisp ecls) nil
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+(or cmu sbcl clisp ecl) nil
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 
 (my-assert
  (array-has-fill-pointer-p (make-array '(2 3)))

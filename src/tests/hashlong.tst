@@ -4,9 +4,9 @@
 #+AKCL (progn (setf (symbol-function 'setf-gethash)
                     (symbol-function 'sys:hash-set)) t)
 #+AKCL t
-#+ECLS (progn (setf (symbol-function 'setf-gethash)
+#+ECL (progn (setf (symbol-function 'setf-gethash)
                    (symbol-function 'sys:hash-set)) t)
-#+ECLS t
+#+ECL t
 #+ALLEGRO (progn (setf (symbol-function 'setf-gethash)
                        (symbol-function 'excl::%puthash)) t)
 #+ALLEGRO t

@@ -14,7 +14,7 @@
 */
 
 
-#include "ecls.h"
+#include "ecl.h"
 
 @(defun values (&rest args)
 	int i;

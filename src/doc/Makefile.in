@@ -15,37 +15,37 @@ INSTALL	= @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 
-VERSION=@ECLS_VERSION@
+VERSION=@ECL_VERSION@
 
-HTML = index.html license.html lgpl.html news.html ecls.html benchmark.html \
-	install.html eclsdev.html
+HTML = index.html license.html lgpl.html news.html ecl.html benchmark.html \
+	install.html ecldev.html
 
 FILTER = sed 's,@VERSION@,$(VERSION),g'
 
-ECL = ../ecls
+ECL = ../ecl
 
-all: ecls.info eclsdev.info $(HTML)
+all: ecl.info ecldev.info $(HTML)
 
-ecls.dvi: $(srcdir)/user.txi $(srcdir)/macros.txi clisp.sty ecl.sty
+ecl.dvi: $(srcdir)/user.txi $(srcdir)/macros.txi clisp.sty ecl.sty
 	tex $(srcdir)/user.txi
-eclsdev.dvi: $(srcdir)/devel.txi $(srcdir)/macros.txi clisp.sty ecl.sty
+ecldev.dvi: $(srcdir)/devel.txi $(srcdir)/macros.txi clisp.sty ecl.sty
 	tex $(srcdir)/devel.txi
 
-ecls.ps: ecls.dvi $(srcdir)/macros.txi
-	dvips -o $@ ecls.dvi
-eclsdev.ps: eclsdev.dvi $(srcdir)/macros.txi
-	dvips -o $@ eclsdev.dvi
+ecl.ps: ecl.dvi $(srcdir)/macros.txi
+	dvips -o $@ ecl.dvi
+ecldev.ps: ecldev.dvi $(srcdir)/macros.txi
+	dvips -o $@ ecldev.dvi
 
 install: all
-	$(INSTALL_DATA) ecls.info $(PREFIX)$(infodir)
-	$(INSTALL_DATA) eclsdev.info $(PREFIX)$(infodir)
+	$(INSTALL_DATA) ecl.info $(PREFIX)$(infodir)
+	$(INSTALL_DATA) ecldev.info $(PREFIX)$(infodir)
 
 uninstall:
-	rm -r $(infodir)/ecls.info $(infodir)/eclsdev.info
+	rm -r $(infodir)/ecl.info $(infodir)/ecldev.info
 
-ecls.info: $(srcdir)/user.txi $(srcdir)/macros.txi
+ecl.info: $(srcdir)/user.txi $(srcdir)/macros.txi
 	makeinfo -I $(srcdir) --no-split $(srcdir)/user.txi
-eclsdev.info: $(srcdir)/devel.txi $(srcdir)/macros.txi
+ecldev.info: $(srcdir)/devel.txi $(srcdir)/macros.txi
 	makeinfo -I $(srcdir) --no-split $(srcdir)/devel.txi
 
 index.html: $(srcdir)/index.in.html
@@ -69,9 +69,9 @@ lgpl.html: $(top_srcdir)/../LGPL
 	(cat $(srcdir)/head; \
 	 echo '<pre>'; cat $?; echo '</pre>'; \
 	 cat $(srcdir)/end) | $(FILTER) > $@
-ecls.html: $(srcdir)/user.txi $(srcdir)/macros.txi
+ecl.html: $(srcdir)/user.txi $(srcdir)/macros.txi
 	makeinfo -I $(srcdir) --html $(srcdir)/user.txi
-eclsdev.html: $(srcdir)/devel.txi $(srcdir)/macros.txi
+ecldev.html: $(srcdir)/devel.txi $(srcdir)/macros.txi
 	makeinfo -I $(srcdir) --html $(srcdir)/devel.txi
 clean:
-	rm -f ecls.* *.html
+	rm -f ecl.* *.html

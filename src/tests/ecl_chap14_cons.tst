@@ -379,10 +379,10 @@ check-fresh-list
   (safe-mapcar2 #'check-fresh-list b a))
 (t t t t t t)
 
-#+ecls
+#+ecl
 (let ((a (list 1 2 3)))
   (rplacd (last a) a)
   (copy-list a))
-#+ecls
+#+ecl
 error
 

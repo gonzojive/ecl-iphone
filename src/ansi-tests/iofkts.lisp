@@ -127,20 +127,20 @@ out of sync")
 (my-assert
  (multiple-value-list (parse-integer "  123  " :junk-allowed t))
  (123 #+xcl 7
-      #+(or clisp akcl allegro cmu sbcl ecls) 5
-      #-(or xcl clisp akcl allegro cmu sbcl ecls) unknown))
+      #+(or clisp akcl allegro cmu sbcl ecl) 5
+      #-(or xcl clisp akcl allegro cmu sbcl ecl) unknown))
 
 (my-assert
  (multiple-value-list (parse-integer "123 t" :junk-allowed t))
  (123 #+xcl 4
-      #+(or clisp akcl allegro cmu sbcl ecls) 3
-      #-(or xcl clisp akcl allegro cmu sbcl ecls) unknown))
+      #+(or clisp akcl allegro cmu sbcl ecl) 3
+      #-(or xcl clisp akcl allegro cmu sbcl ecl) unknown))
 
 (my-assert
  (multiple-value-list (parse-integer "  123   t  " :junk-allowed t))
  (123 #+xcl 8
-      #+(or clisp akcl allegro cmu sbcl ecls) 5
-      #-(or xcl clisp akcl allegro cmu sbcl ecls) unknown))
+      #+(or clisp akcl allegro cmu sbcl ecl) 5
+      #-(or xcl clisp akcl allegro cmu sbcl ecl) unknown))
 
 (my-assert
  (multiple-value-list (parse-integer " ( 12 ) 43   t  " :junk-allowed
@@ -234,7 +234,7 @@ out of sync")
 (my-assert
  (multiple-value-list (parse-integer b :junk-allowed t))
  (1 #+xcl 2
-    #+(or clisp akcl allegro cmu sbcl ecls) 1
+    #+(or clisp akcl allegro cmu sbcl ecl) 1
     #-(or xcl clisp akcl allegro cmu sbcl) unknown))
 
 (my-assert
@@ -729,18 +729,18 @@ a b c")) t)
 			 (read s))
  #+xcl
  crackers
- #+(or clisp akcl allegro sbcl cmu ecls)
+ #+(or clisp akcl allegro sbcl cmu ecl)
  error
- #-(or xcl clisp akcl allegro sbcl cmu ecls)
+ #-(or xcl clisp akcl allegro sbcl cmu ecl)
  unknown)
 
 (my-assert
  j
  #+xcl
  20
- #+(or clisp akcl allegro sbcl cmu ecls)
+ #+(or clisp akcl allegro sbcl cmu ecl)
  7
- #-(or xcl clisp akcl allegro sbcl cmu ecls)
+ #-(or xcl clisp akcl allegro sbcl cmu ecl)
  unknown)
 
 (my-assert
@@ -792,9 +792,9 @@ a b c")) t)
  (get-output-stream-string b)
  #+(or sbcl cmu xcl)
  "Das ist wieder einmal einer der SUUPERTESTstrings.eder einmal einer der SUUPERTESTstrings.Das iDas ist wieder einmal einer der SUUPERTESTstrings.st wieder einma"
- #+(or clisp akcl ecls)
+ #+(or clisp akcl ecl)
  "Das ist wieder einmal einer der SUUPERTESTstrings.eder einmal einer der SUUPERTESTstrings.Das ist wieder einma"
- #-(or xcl clisp akcl sbcl cmu ecls)
+ #-(or xcl clisp akcl sbcl cmu ecl)
  unknown)
 
 (my-assert

@@ -6,7 +6,7 @@
     Copyright (c) 1990, Giuseppe Attardi.
     Copyright (c) 2001, Juan Jose Garcia Ripoll.
 
-    ECLS is free software; you can redistribute it and/or
+    ECL is free software; you can redistribute it and/or
     modify it under the terms of the GNU Library General Public
     License as published by the Free Software Foundation; either
     version 2 of the License, or (at your option) any later version.
@@ -14,7 +14,7 @@
     See file '../Copyright' for full details.
 */
 
-#include "ecls.h"
+#include "ecl.h"
 #ifdef HAVE_SYS_RESOURCE_H
 # include <sys/time.h>
 # include <sys/resource.h>
@@ -269,7 +269,7 @@ unwind(frame_ptr fr, cl_object tag)
 	ihs_top = frs_top->frs_ihs;
 	bds_unwind(frs_top->frs_bds_top);
 	cl_stack_set_index(frs_top->frs_sp);
-	ecls_longjmp(frs_top->frs_jmpbuf, 1);
+	ecl_longjmp(frs_top->frs_jmpbuf, 1);
 	/* never reached */
 }
 

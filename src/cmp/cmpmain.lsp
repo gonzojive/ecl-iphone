@@ -17,7 +17,7 @@
 
 (in-package "COMPILER")
 
-(defvar *cmpinclude* "<ecls-cmp.h>")
+(defvar *cmpinclude* "<ecl-cmp.h>")
 ;;; This is copied into each .h file generated, EXCEPT for system-p calls.
 ;;; The constant string *include-string* is the content of file "ecl.h".
 ;;; Here we use just a placeholder: it will be replaced with sed.
@@ -101,7 +101,7 @@ coprocessor).")
 	   "")))
 
 (defconstant +lisp-program-main+ "
-#include <ecls.h>
+#include <ecl.h>
 
 int
 main(int argc, char **argv)
@@ -114,7 +114,7 @@ main(int argc, char **argv)
 }")
 
 (defconstant +lisp-library-main+ "
-#include <ecls.h>
+#include <ecl.h>
 
 int
 init_~A(cl_object foo)
@@ -137,7 +137,7 @@ init_~A(cl_object foo)
 	return;" "")))
   (let* (init-name c-name o-name)
     (when (eq target :program)
-      (setq ld-flags (append ld-flags '("-lecls" "-lclos" "-llsp"))))
+      (setq ld-flags (append ld-flags '("-lecl" "-lclos" "-llsp"))))
     (dolist (item (reverse lisp-files))
       (cond ((symbolp item)
 	     (push (format nil "-l~A" (string-downcase item)) ld-flags)
@@ -184,7 +184,7 @@ init_~A(cl_object foo)
     (delete-file o-name)
     output-name))
 
-(defun build-ecls (&rest args)
+(defun build-program (&rest args)
   (apply #'builder :program args))
 
 (defun build-static-library (&rest args)

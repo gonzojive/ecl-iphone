@@ -10,7 +10,7 @@
 
 (in-package "SYSTEM")
 
-#-ecls-min
+#-ecl-min
 (c-declaim (si::c-export-fname si::get-documentation si::set-documentation
 			       si::expand-set-documentation))
 
@@ -94,14 +94,14 @@
 ;;;; Documentation system
 ;;;;
 
-#+ecls-min
+#+ecl-min
 (progn
   (*make-special '*documentation-pool*)
   (setq *documentation-pool* nil)
   (*make-special '*keep-documentation*)
   (setq *keep-documentation* t))
 
-#-ecls-min
+#-ecl-min
 (progn
   (defvar *documentation-pool* (list (make-hash-table :test #'eq :size 128)
 				     "SYS:help.doc"))
@@ -176,5 +176,5 @@ strings."
 	(t
 	 (error "~S is an unknown documentation type" type))))
 
-#+ecls-min
+#+ecl-min
 (unless *documentation-pool* (new-documentation-pool 1024))

@@ -1,5 +1,5 @@
 #
-# Recommended settings for debuggin either ecls_min or ecls.
+# Recommended settings for debuggin either ecl_min or ecl.
 #
 delete break
 break clLcos

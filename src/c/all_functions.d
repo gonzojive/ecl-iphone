@@ -1,6 +1,6 @@
 #define _ARGS(x) (int n, ...)
 
-#include "ecls.h"
+#include "ecl.h"
 #include "page.h"
 
 #define form 2

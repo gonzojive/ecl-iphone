@@ -364,19 +364,19 @@ T
 T
 
 ;-- NSUBST ging in Zyklus ! 
-#-ecls
+#-ecl
 (prin1-to-string '(#1=(a b #1#)) ) 
-#-ecls
+#-ecl
 "(#1=(a b #1#))"  
 
-#-ecls
+#-ecl
 (prin1-to-string '(#1=(#1#)))
-#-ecls
+#-ecl
 "(#1=(#1#))"
 
-#-ecls
+#-ecl
 (prin1-to-string '(#1=(a b #1#) (c d #1#)))
-#-ecls
+#-ecl
 "(#1=(a b #1#) (c d #1#))"
 
 (setq *print-level* nil)
@@ -390,10 +390,10 @@ NIL
 "(1 2 3 4 (5 5) 6 7 8 9 10 11 ...)"
 
 ;;;; NSUBST  
-#-ECLS
+#-ECL
 (prin1-to-string '#1=(a b . #1#))
 #+XCL "#2=(a b . #2#)"
-#-(or ECLS XCL) "#1=(A B . #1#)"
+#-(or ECL XCL) "#1=(A B . #1#)"
 
 (setq *print-length* nil)
 NIL
@@ -411,7 +411,7 @@ NIL
         'abc::de
    ABC::DE
         (read-from-string "::111")
-   #+(or ECLS XCL) ERROR #+CLISP :|111|
+   #+(or ECL XCL) ERROR #+CLISP :|111|
         (read-from-string ":abc:")
    ERROR
         (read-from-string ":abc:00")
@@ -424,7 +424,7 @@ NIL
         (read-from-string "ab:cd:")
    ERROR
         (read-from-string "abc::")
-   #+XCL ERROR #+(or ECLS CLISP) abc::||
+   #+XCL ERROR #+(or ECL CLISP) abc::||
  ;
 
 ;&----- Tread1.tst -------------------------------------------------------------
@@ -537,7 +537,7 @@ ERROR
 
  ;        -6         packagezeichenfehler
           (read-from-string "::")
-   #+(or ECLS XCL) ERROR #+CLISP :||
+   #+(or ECL XCL) ERROR #+CLISP :||
  ;        -7         zu langer bitvektor
           (read-from-string "#2*1010")
    ERROR
@@ -621,7 +621,7 @@ ERROR
         (prin1-to-string (make-synonym-stream '*read-base*))
    #+XCL "#<SYSTEM::%TYPE-SYNONYM-STREAM *READ-BASE*>"
    #+CLISP "#<SYNONYM-STREAM *READ-BASE*>"
-   #+ECLS "#<synonym stream to *READ-BASE*>"
+   #+ECL "#<synonym stream to *READ-BASE*>"
 
  ;        -24        falscher abschluss fuer vektor
 

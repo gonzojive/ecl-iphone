@@ -27,7 +27,7 @@
      ) ) )
 ) )
 
-#+ECLS
+#+ECL
 (defmacro with-ignored-errors (&rest forms)
   `(catch si::*ignore-errors-tag*
       (let* ((si::*ignore-errors* t)
@@ -42,7 +42,7 @@
      )
 ) )
 
-#-(or CLISP AKCL ALLEGRO ECLS)
+#-(or CLISP AKCL ALLEGRO ECL)
 (defmacro with-ignored-errors (&rest forms)
   (let ((b (gensym)))
     `(BLOCK ,b
@@ -87,7 +87,7 @@
                  (format t "~%FEHLER!! ~S sollte ~S sein!" my-result result)
                  (format log "~%Form: ~S~%SOLL: ~S~%~A: ~S~%"
                              form result
-                             #+CLISP "CLISP" #+AKCL "AKCL" #+ALLEGRO "ALLEGRO" #+ECLS "ECLS"
+                             #+CLISP "CLISP" #+AKCL "AKCL" #+ALLEGRO "ALLEGRO" #+ECL "ECL"
                              my-result)
 		 (stop))
 ) ) ) ) ) )
@@ -118,7 +118,7 @@
                  (format t "~%FEHLER!! ~S sollte ~S sein!" my-result result)
                  (format log "~%Form: ~S~%SOLL: ~S~%~A: ~S~%"
                              form result
-                             #+CLISP "CLISP" #+AKCL "AKCL" #+ALLEGRO "ALLEGRO" #+ECLS "ECLS"
+                             #+CLISP "CLISP" #+AKCL "AKCL" #+ALLEGRO "ALLEGRO" #+ECL "ECL"
                              my-result
                 ))
 ) ) ) ) ) )
@@ -217,16 +217,16 @@
                                 "lists154"
                                 "lists155"
                                 "lists156"
-           #+(or ECLS CLISP ALLEGRO)
+           #+(or ECL CLISP ALLEGRO)
 	  			"loop"
                                 "macro8"
                                 "map"
            #+(or CLISP ALLEGRO) "mop"
                                 "number"
            #+CLISP              "number2"
-           #-(or ECLS AKCL ALLEGRO)
+           #-(or ECL AKCL ALLEGRO)
 	  			"pack11"
-           #+(or XCL CLISP ECLS)
+           #+(or XCL CLISP ECL)
 	  			"path"
            #+XCL                "readtable"
                                 "setf"
@@ -246,7 +246,7 @@
   )      )
   #+(or CLISP ALLEGRO)
   (run-test "conditions" #'(lambda (stream log) (do-test stream log nil)))
-  #-ECLS
+  #-ECL
   (run-test "excepsit" #'do-errcheck)
   t
 )

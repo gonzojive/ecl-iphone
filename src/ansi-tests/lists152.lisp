@@ -505,8 +505,8 @@
 (my-assert
  (copy-alist (list 'a 'b))
  #+(or xcl clisp allegro cmu sbcl) (a b)
- #+(or ecls gcl) error
- #-(or xcl clisp gcl allegro cmu sbcl ecls) unknown)
+ #+(or ecl gcl) error
+ #-(or xcl clisp gcl allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (copy-alist (list (cons 1 'a)
@@ -565,8 +565,8 @@
 		   'c
 		   (list 'd 'e)))
  #+(or xcl clisp allegro cmu sbcl) ((a b) c (d e))
- #+(or gcl ecls) error
- #-(or xcl clisp gcl allegro cmu sbcl ecls) unknown)
+ #+(or gcl ecl) error
+ #-(or xcl clisp gcl allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (copy-tree 'x)
@@ -814,14 +814,14 @@
  (nconc (list 1 2)
 	'a)
  #+xcl error
- #+(or clisp akcl allegro cmu sbcl ecls) (1 2 . a)
- #-(or xcl clisp akcl allegro cmu sbcl ecls) unknown)
+ #+(or clisp akcl allegro cmu sbcl ecl) (1 2 . a)
+ #-(or xcl clisp akcl allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (nconc 'a)
  #+xcl error
- #+(or clisp akcl allegro cmu sbcl ecls) a
- #-(or xcl clisp akcl allegro cmu sbcl ecls) unknown)
+ #+(or clisp akcl allegro cmu sbcl ecl) a
+ #-(or xcl clisp akcl allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (setq x
@@ -838,8 +838,8 @@
  x
  #+xcl was-destroyed			; wo kommt denn so was her?
  #+clisp (c b a d e f)
- #+(or akcl allegro cmu sbcl ecls) (a d e f)
- #-(or xcl clisp akcl allegro cmu sbcl ecls) unknown)
+ #+(or akcl allegro cmu sbcl ecl) (a d e f)
+ #-(or xcl clisp akcl allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (tailp y x)
@@ -878,8 +878,8 @@
  x
  #+xcl was-destroyed
  #+clisp (c b a)
- #+(or akcl allegro cmu sbcl ecls) (a)
- #-(or xcl clisp akcl allegro cmu sbcl ecls) unknown)
+ #+(or akcl allegro cmu sbcl ecl) (a)
+ #-(or xcl clisp akcl allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (nreconc nil nil nil nil)
@@ -888,8 +888,8 @@
 (my-assert
  (nconc nil 'x)
  #+xcl error
- #+(or clisp akcl allegro cmu sbcl ecls) x
- #-(or xcl clisp akcl allegro cmu sbcl ecls) unknown)
+ #+(or clisp akcl allegro cmu sbcl ecl) x
+ #-(or xcl clisp akcl allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (setq aa nil)

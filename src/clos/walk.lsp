@@ -63,7 +63,7 @@
 	   walk-form
 	   #+NEW
 	   walk-form-expand-macros-p
-	   #-ecls nested-walk-form
+	   #-ecl nested-walk-form
 	   variable-lexical-p
 	   variable-special-p
 	   *variable-declarations*
@@ -420,13 +420,13 @@
 ;;;
 ;;; And the extra templates...
 ;;;
-#+ecls
+#+ecl
 (define-walker-template DOTIMES	walk-dotimes/dolist)
-#+ecls
+#+ecl
 (define-walker-template DOLIST	walk-dotimes/dolist)
-#+ecls
+#+ecl
 (define-walker-template WHEN	walk-when/unless)
-#+ecls
+#+ecl
 (define-walker-template UNLESS	walk-when/unless)
 (define-walker-template DO      walk-do)
 (define-walker-template DO*     walk-do*)
@@ -474,7 +474,7 @@
 ;;; equivalence between this nested-walk-form function and two seperate
 ;;; walk-forms.
 ;;;
-#-ecls
+#-ecl
 (defun NESTED-WALK-FORM (whole
 			 form
 			 &optional environment
@@ -882,7 +882,7 @@
 	       (walk-template end-test '(TEST REPEAT (EVAL)) context new-env)
 	       walked-body))))
 
-#+ecls
+#+ecl
 (defun walk-dotimes/dolist (form context old-env)
   (walker-environment-bind (new-env old-env)
     (let* ((dotimes/dolist (car form))
@@ -1158,7 +1158,7 @@
 	    (walk-form-internal arm1 context env)
 	    (walk-form-internal arm2 context env))))
 
-#+ecls
+#+ecl
 (defun walk-when/unless (form context env)
   (relist* form
 	   (first form)

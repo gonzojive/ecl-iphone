@@ -1241,8 +1241,8 @@
 (my-assert
  (string-trim   (quote (a)) "ababa")
  #+xcl error
- #+(or clisp gcl allegro cmu ecls) "ababa"
- #-(or xcl clisp gcl allegro cmu ecls) unknown)
+ #+(or clisp gcl allegro cmu ecl) "ababa"
+ #-(or xcl clisp gcl allegro cmu ecl) unknown)
 
 (my-assert
  (string-trim   "a" "ababa")
@@ -1281,8 +1281,8 @@
 (my-assert
  (string-left-trim   (quote (a)) "ababa")
  #+xcl error
- #+(or clisp gcl allegro cmu ecls) "ababa"
- #-(or xcl clisp gcl allegro cmu ecls) unknown)
+ #+(or clisp gcl allegro cmu ecl) "ababa"
+ #-(or xcl clisp gcl allegro cmu ecl) unknown)
 
 (my-assert
  (string-left-trim   "a" "ababa")
@@ -1320,8 +1320,8 @@
 (my-assert
  (string-right-trim   (quote (a)) "ababa")
  #+xcl error
- #+(or clisp gcl allegro cmu ecls) "ababa"
- #-(or xcl clisp gcl allegro cmu ecls) unknown)
+ #+(or clisp gcl allegro cmu ecl) "ababa"
+ #-(or xcl clisp gcl allegro cmu ecl) unknown)
 
 (my-assert
  (string-right-trim   "a" "ababa")

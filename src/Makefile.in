@@ -47,19 +47,19 @@ all:	$(TARGETS) doc
 %Makefile: $(srcdir)/%Makefile.in config.status
 	./config.status
 
-eclx$(EXE): ecls_min$(EXE) compile_rest.lsp
-	./ecls_min < compile_rest.lsp
+eclx$(EXE): ecl_min$(EXE) compile_rest.lsp
+	./ecl_min < compile_rest.lsp
 
-ecls$(EXE): ecls_min$(EXE) compile.lsp
-	./ecls_min < compile.lsp
+ecl$(EXE): ecl_min$(EXE) compile.lsp
+	./ecl_min < compile.lsp
 
-ecls_min$(EXE): $(LIBRARIES) .gdbinit
+ecl_min$(EXE): $(LIBRARIES) .gdbinit
 	$(CC) $(LDFLAGS) -o $@ c/cinit.o -L./ $(LIBRARIES) $(LIBS)
 
 .gdbinit: $(srcdir)/util/gdbinit
 	cp $(srcdir)/util/gdbinit $@
 
-libecls.a:
+libecl.a:
 	(echo $(SUBDIR) | grep gmp) && cp $(top_srcdir)/gmp/*.h h/
 	cd c; $(MAKE)
 libgc.a:
@@ -72,7 +72,7 @@ BUILD-STAMP: config.status
 	head -8 config.status | tail -6 >> $@
 install: BUILD-STAMP
 	for i in $(TARGETS); do	$(INSTALL_PROGRAM) $$i $(PREFIX)$(bindir); strip $(PREFIX)$(bindir)/$$i; done
-	$(INSTALL_DATA) $(srcdir)/etc/ecls.1 $(PREFIX)$(mandir)
+	$(INSTALL_DATA) $(srcdir)/etc/ecl.1 $(PREFIX)$(mandir)
 	test -d $(PREFIX)$(libdir) || (mkdir $(PREFIX)$(libdir); chmod 755 $(PREFIX)$(libdir))
 	test -d $(PREFIX)$(libdir)/h || (mkdir $(PREFIX)$(libdir)/h; chmod 755 $(PREFIX)$(libdir)/h)
 	$(INSTALL_DATA) BUILD-STAMP $(PREFIX)$(libdir)
@@ -94,8 +94,8 @@ install: BUILD-STAMP
 	cd doc; $(MAKE) PREFIX="$(PREFIX)" install
 
 uninstall:
-	rm -rf $(mandir)/ecls.1
-	rm -rf $(bindir)/ecls$(EXE)
+	rm -rf $(mandir)/ecl.1
+	rm -rf $(bindir)/ecl$(EXE)
 	rm -rf $(libdir)
 	cd doc; $(MAKE) uninstall
 
@@ -104,7 +104,7 @@ doc: $(TARGETS)
 
 clean: clean_lisp
 	for i in ${SUBDIR}; do (cd $$i; make clean); done
-	$(RM) ecls_min$(EXE) ecls$(EXE) help.doc core a.out
+	$(RM) ecl_min$(EXE) ecl$(EXE) help.doc core a.out
 	$(RM) config.version config.log config.cache
 	$(RM) *.c *.o *.a *.h *.data
 clean_lisp:
@@ -114,21 +114,21 @@ distclean: clean
 realclean: distclean
 test1:
 	cd c; make
-	make ecls_min
-	make ecls
+	make ecl_min
+	make ecl
 	cd tests; make
 	diff tests tests2
 test2:
 	make clean_lisp
 	cd c; make
-	make ecls_min
-	$(RM) ecls
-	make ecls
+	make ecl_min
+	$(RM) ecl
+	make ecl
 	for i in lsp clos cmp; do diff --exclude=\*.o $$i old/$$i; done
 test3:
 	-mkdir stage2
 	cp -rf lsp clos cmp stage2
 	-for i in lsp cmp clos clx tk; do test -f lib$$i.a && mv lib$$i.a stage2; done
 	make clean_lisp
-	./ecls < compile2.lsp
+	./ecl < compile2.lsp
 	for i in lsp clos cmp clx tk; do test -d $$i && diff --exclude=\*.o $$i stage2/$$i; done

@@ -1,7 +1,7 @@
-<h2>News in this release (ECLS-@VERSION@)</h2>
+<h2>News in this release (ECL-@VERSION@)</h2>
 <pre>
-ECLS 0.5
-=========
+ECL 0.5
+========
 
 * Errors fixed:
 
@@ -32,7 +32,7 @@ ECLS 0.5
   - Each compiled file has an entry point whose name is either
     init_CODE() or another name based on the name of the source file.
     The algorithm for computing these names has been slightly changed
-    so that the entry points of ECLS's own library do not conflict with
+    so that the entry points of ECL's own library do not conflict with
     user defined entry points.
 
 * Visible changes and ANSI compatibility:
@@ -66,7 +66,7 @@ ECLS 0.5
     to a help file.
 
   - New interface for building standalone programs and libraries, based
-    on the functions C:BUILD-ECLS, C:BUILD-STATIC-LIBRARY and
+    on the functions C:BUILD-ECL, C:BUILD-STATIC-LIBRARY and
     C:BUILD-SHARED-LIBRARY, all of which accept similar parameters,
     :PROLOGUE-CODE, :EPILOGE-CODE, :LISP-FILES, and :LD-FLAGS. Exhaustive
     documentation with examples included in the Developer's Guide.
@@ -89,7 +89,7 @@ ECLS 0.5
 
 As I mentioned above, the problem I am finding here is the lack of test suites
 which I can use to detect failures in the behavior of any function. Currently I
-can assure that <a href="http://ecls.sourceforge.net">ECLS</a> passes most of
+can assure that <a href="http://ecls.sourceforge.net">ECL</a> passes most of
 the tests from the <a href="http://clocc.sourceforge.net">the CLOCC suite</a>.
 The most important exceptions are
 <ul>
@@ -110,5 +110,5 @@ Some other bugs which need to be fixed are:
 <li>#'format doesn't pass the Cltl-1 tests.
 <li>Needs better support for wildcards in pathnames.
 <li>Support for CLOS needs yet more optimization.
-<li>ECLS has its own pretty-printer, which does not conform ANSI.
+<li>ECL has its own pretty-printer, which does not conform ANSI.
 </ul>

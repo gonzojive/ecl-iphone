@@ -1,4 +1,4 @@
-#include "ecls.h"
+#include "ecl.h"
 #include "page.h"
 
 const struct symbol_info all_symbols[] = {

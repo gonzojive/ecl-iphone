@@ -317,8 +317,8 @@
   (let  ((tree1 (list 1 (list 1 2) (list 1 2 3) (list 1 2 3 4))))
     (eq tree1 (subst "five" 5 tree1)))
   #+(or sbcl cmu sbcl clisp) T
-  #+ecls nil
-  #-(or sbcl cmu sbcl clisp ecls) fill-this-in)
+  #+ecl nil
+  #-(or sbcl cmu sbcl clisp ecl) fill-this-in)
 
 (my-assert
  (subst 'tempest 'hurricane
@@ -1894,8 +1894,8 @@
 (my-assert
  (union (list 'a 'b 'c) (list 'f 'a 'd))
  #+(or sbcl cmu) (C B F A D)
- #+(or clisp ecls) (B C F A D)
- #-(or sbcl cmu sbcl clisp ecls) fill-this-in)
+ #+(or clisp ecl) (B C F A D)
+ #-(or sbcl cmu sbcl clisp ecl) fill-this-in)
 
 ;; (A B C F D) OR  (B C F A D) OR  (D F A B C)
 
@@ -1905,8 +1905,8 @@
 	(list (list 'z 2)
 	      (list 'x 4))
 	:key #'car)
- #+(or sbcl cmu sbcl clisp ecls) ((Y 6) (Z 2) (X 4))
- #-(or sbcl cmu sbcl clisp ecls) fill-this-in)
+ #+(or sbcl cmu sbcl clisp ecl) ((Y 6) (Z 2) (X 4))
+ #-(or sbcl cmu sbcl clisp ecl) fill-this-in)
 ;;  ((X 5) (Y 6) (Z 2)) OR  ((X 4) (Y 6) (Z 2))
 
 (my-assert
@@ -1915,9 +1915,9 @@
    (nunion lst1 lst2))
  #+(or sbcl cmu)
  ("b" "a" (1 2) 1 2 3 (2 3) "B" "C")
- #+(or clisp ecls)
+ #+(or clisp ecl)
  (1 (1 2) "a" "b" 2 3 (2 3) "B" "C")
- #-(or sbcl cmu sbcl clisp ecls)
+ #-(or sbcl cmu sbcl clisp ecl)
  fill-this-in)
 
 ;;  (1 (1 2) "a" "b" 2 3 (2 3) "B" "C")  OR  (1 2 (1 2) "a" "b" "C" "B" (2 3) 3)

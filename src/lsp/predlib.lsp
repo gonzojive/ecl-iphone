@@ -340,7 +340,7 @@ Returns T if X belongs to TYPE; NIL otherwise."
 	(t nil)))
 
 ;;; Dummy version before CLOS is loaded
-#+(and clos ecls-min)
+#+(and clos ecl-min)
 (unless (fboundp 'sys::fpp)
   (defun find-class (n &optional err env) (declare (ignore n err env)) nil))
 

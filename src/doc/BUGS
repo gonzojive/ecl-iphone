@@ -10,9 +10,6 @@ must be taken so that changes in ECLS do not break these "invariants".
 REAL BUGS
 =========
 
-* Logical operations do not work well with bignums because of the two's
-  complement representation. Furthermore, #'logcount also fails for fixnums.
-
 * Routines in bind.c do not check length of arguments and may cause buffer
   overflows.
 

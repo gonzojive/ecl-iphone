@@ -31,7 +31,7 @@
  *
  */
 
-#include "ecls.h"
+#include "ecl.h"
 #include "tk.h"
 
 

@@ -128,29 +128,29 @@
   (or #+XCL (equal s "256")
       #+CLISP (equal s "4294967296") #+CLISP (equal s "65536")
       #+AKCL (equal s "64") #+GCL (equal s "63")
-      #+ECLS (equal s "64")
+      #+ECL (equal s "64")
       #+ALLEGRO (equal s "65536")
-      #-(or XCL CLISP AKCL ALLEGRO ECLS) "UNKNOWN"
+      #-(or XCL CLISP AKCL ALLEGRO ECL) "UNKNOWN"
 ) )
 T
 
 (let ((s (prin1-to-string ARRAY-DIMENSION-LIMIT )))
   (or #+XCL (equal s "17920")
       #+AKCL (equal s "16777216") #+GCL (equal s "2147483647")
-      #+ECLS (equal s "16777216")
+      #+ECL (equal s "16777216")
       #+CLISP (equal s (prin1-to-string (1+ most-positive-fixnum)))
       #+ALLEGRO (equal s "16777216")
-      #-(or XCL CLISP AKCL ALLEGRO ECLS) "UNKNOWN"
+      #-(or XCL CLISP AKCL ALLEGRO ECL) "UNKNOWN"
 ) )
 T
 
 (let ((s (prin1-to-string ARRAY-TOTAL-SIZE-LIMIT )))
   (or #+XCL (equal s "17920")
       #+AKCL (equal s "16777216")
-      #+ECLS (equal s "16777216")
+      #+ECL (equal s "16777216")
       #+CLISP (equal s (prin1-to-string (1+ most-positive-fixnum)))
       #+ALLEGRO (equal s "16777216")
-      #-(or XCL CLISP AKCL ALLEGRO ECLS) "UNKNOWN"
+      #-(or XCL CLISP AKCL ALLEGRO ECL) "UNKNOWN"
 ) )
 T
 
@@ -182,8 +182,8 @@ T
 
 (ARRAY-ELEMENT-TYPE DA1)
 #+(or XCL ALLEGRO) DOUBLE-FLOAT #+CLISP T #+AKCL LONG-FLOAT
-#+ECLS LONG-FLOAT
-#-(or XCL CLISP ECLS AKCL ALLEGRO) UNKNOWN
+#+ECL LONG-FLOAT
+#-(or XCL CLISP ECL AKCL ALLEGRO) UNKNOWN
 
 (FORMAT T "~%Test Rang~%")   NIL
 
@@ -211,7 +211,7 @@ T
 
 (SETF (AREF ZERO) 4)   4
 
-(SETF (AREF ZERO) 1.0)   #+(or ECLS XCL CLISP AKCL ALLEGRO) ERROR #-(or XCL CLISP AKCL ALLEGRO ECLS) UNKNOWN
+(SETF (AREF ZERO) 1.0)   #+(or ECL XCL CLISP AKCL ALLEGRO) ERROR #-(or XCL CLISP AKCL ALLEGRO ECL) UNKNOWN
 
 (FORMAT T "~%Erzeuge ein 3-dim gen. Feld~%")   NIL
 
@@ -638,6 +638,6 @@ T)   T
 (VECTOR-POP VMFAD)   0.0D0
 
 (VECTOR-PUSH-EXTEND 5.0S0 VMFAD)
-#+(or XCL GCL ALLEGRO) ERROR #+(or CLISP ECLS (and AKCL (not GCL))) 0
-#-(or XCL CLISP AKCL ALLEGRO ECLS) UNKNOWN
+#+(or XCL GCL ALLEGRO) ERROR #+(or CLISP ECL (and AKCL (not GCL))) 0
+#-(or XCL CLISP AKCL ALLEGRO ECL) UNKNOWN
 

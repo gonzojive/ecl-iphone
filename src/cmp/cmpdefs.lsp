@@ -19,7 +19,7 @@
 	   *compile-verbose*
 	   *cc*
 	   *cc-optimize*
-	   build-ecls
+	   build-ecl
 	   build-static-library
 	   build-shared-library
 	   shared-library-pathname

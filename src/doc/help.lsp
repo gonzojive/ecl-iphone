@@ -531,7 +531,7 @@ If FORMAT-STRING is non-NIL, it is used as the format string to be output to
 *ERROR-OUTPUT* before entering the break loop.  ARGs are arguments to the
 format string.")
 
-(docfun compiler:build-ecls function (program-name &rest components) "
+(docfun compiler:build-ecl function (program-name &rest components) "
 
 Builds a standalone executable using the object files, libraries and flags
 which follow PROGRAM-NAME, which is the name of the final executable.
@@ -547,9 +547,9 @@ interpreter, such as the compiler 'CMP or the 'CLX library (not yet available)
 
 For example:
 	(compile-file \"my-code.lsp\" :system-p)
-	(build-ecls \"my-ecls\" \"my-code.o\" \"-Bdynamic -lX11\" 'cmp)
+	(build-ecl \"my-ecl\" \"my-code.o\" \"-Bdynamic -lX11\" 'cmp)
 builds an new interpreter with some custom lisp code given in \"my-code.o\" and
-with the ECLS compiler (You must explicitely mention the compiler if you want
+with the ECL compiler (You must explicitely mention the compiler if you want
 it). Finally, the X-Windows dynamically linked libraries are also included
 because \"my-code.lsp\" uses the foreign function interface to do some
 graphics.")

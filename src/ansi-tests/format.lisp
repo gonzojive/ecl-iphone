@@ -21,8 +21,8 @@
 (my-assert
  (format nil "~10:@<foo~;bar~>")
  #+(or XCL CLISP ALLEGRO) "  foo bar "
- #+(or AKCL cmu sbcl ecls) " foo bar  "
- #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecls) UNKNOWN)
+ #+(or AKCL cmu sbcl ecl) " foo bar  "
+ #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecl) UNKNOWN)
 
 (my-assert
  (format nil "~10<foobar~>")
@@ -68,8 +68,8 @@
 (my-assert
  (format nil "~12<~S~;~^~S~;~^~S~>" 'foo 'bar 'baz)
  #+(or CLISP ALLEGRO) "foo  bar baz"
- #+(OR CMU SBCL ECLS) "foo bar  baz"
- #-(or CLISP ALLEGRO cmu sbcl ECLS) UNKNOWN)
+ #+(OR CMU SBCL ECL) "foo bar  baz"
+ #-(or CLISP ALLEGRO cmu sbcl ECL) UNKNOWN)
 
 (my-assert
  (progn
@@ -344,9 +344,9 @@ but it makes more sense to print non-numeric arguments properly alighned")
 (my-assert
  (foo 1100.0L0)
  #+XCL "  1.10D+3| 11.00$+02|+.001D+06|  1.10D+3"
- #+(or CLISP AKCL ECLS) "  1.10L+3| 11.00$+02|+.001L+06|  1.10L+3"
+ #+(or CLISP AKCL ECL) "  1.10L+3| 11.00$+02|+.001L+06|  1.10L+3"
  #+(or ALLEGRO cmu sbcl) "  1.10d+3| 11.00$+02|+.001d+06|  1.10d+3"
- #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ECLS) UNKNOWN)
+ #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ECL) UNKNOWN)
 
 (my-assert
  (foo 1.1E13)
@@ -419,9 +419,9 @@ Scale factor -5: | 0.000003E+06|"))
 (my-assert
  (foo 3141.59L0)
  #+XCL "  3.14D+3|314.2$+01|0.314D+04|  3.14D+3"
- #+(or CLISP AKCL ecls) "  3.14L+3|314.2$+01|0.314L+04|  3.14L+3"
+ #+(or CLISP AKCL ecl) "  3.14L+3|314.2$+01|0.314L+04|  3.14L+3"
  #+(or ALLEGRO cmu sbcl) "  3.14d+3|314.2$+01|0.314d+04|  3.14d+3"
- #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecls) UNKNOWN)
+ #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecl) UNKNOWN)
 
 (my-assert
  (foo 3.14E12)
@@ -502,68 +502,68 @@ Scale factor -5: | 0.000003E+06|"))
 (my-assert
  (FORMAT NIL "format-s:--~s--ende-*" (QUOTE AB\c))
  #+XCL "format-s:--AB\\c--ende-*"
- #+(or CLISP AKCL ALLEGRO cmu sbcl ecls) "format-s:--|ABc|--ende-*"
- #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecls) UNKNOWN)
+ #+(or CLISP AKCL ALLEGRO cmu sbcl ecl) "format-s:--|ABc|--ende-*"
+ #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecl) UNKNOWN)
 
 (my-assert
  (FORMAT NIL "format-s:--~5s--ende-*" (QUOTE AB\c))
  #+XCL "format-s:--AB\\c --ende-*"
- #+(or CLISP AKCL ALLEGRO cmu sbcl ecls) "format-s:--|ABc|--ende-*"
- #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecls) UNKNOWN)
+ #+(or CLISP AKCL ALLEGRO cmu sbcl ecl) "format-s:--|ABc|--ende-*"
+ #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecl) UNKNOWN)
 
 (my-assert
  (FORMAT NIL "format-s:--~5,2s--ende-*" (QUOTE AB\c))
  #+XCL "format-s:--AB\\c  --ende-*"
- #+(or CLISP AKCL ALLEGRO cmu sbcl ecls) "format-s:--|ABc|--ende-*"
- #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecls) UNKNOWN)
+ #+(or CLISP AKCL ALLEGRO cmu sbcl ecl) "format-s:--|ABc|--ende-*"
+ #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecl) UNKNOWN)
 
 (my-assert
  (FORMAT NIL "format-s:--~5,2,3s--ende-*" (QUOTE AB\c))
  #+XCL "format-s:--AB\\c   --ende-*"
- #+(or CLISP AKCL ALLEGRO cmu sbcl ecls) "format-s:--|ABc|   --ende-*"
- #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecls) UNKNOWN)
+ #+(or CLISP AKCL ALLEGRO cmu sbcl ecl) "format-s:--|ABc|   --ende-*"
+ #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecl) UNKNOWN)
 
 (my-assert
  (FORMAT NIL "format-s:--~5,2,3,'*s--ende-*" (QUOTE AB\c))
  #+XCL "format-s:--AB\\c***--ende-*"
- #+(or CLISP AKCL ALLEGRO cmu sbcl ecls) "format-s:--|ABc|***--ende-*"
- #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecls) UNKNOWN)
+ #+(or CLISP AKCL ALLEGRO cmu sbcl ecl) "format-s:--|ABc|***--ende-*"
+ #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecl) UNKNOWN)
 
 (my-assert
  (FORMAT NIL "format-s:--~@s--ende-*" (QUOTE AB\c))
  #+XCL "format-s:--AB\\c--ende-*"
- #+(or CLISP AKCL ALLEGRO cmu sbcl ecls) "format-s:--|ABc|--ende-*"
- #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecls) UNKNOWN)
+ #+(or CLISP AKCL ALLEGRO cmu sbcl ecl) "format-s:--|ABc|--ende-*"
+ #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecl) UNKNOWN)
 
 (my-assert
  (FORMAT NIL "format-s:--~5@s--ende-*" (QUOTE AB\c))
  #+XCL "format-s:-- AB\\c--ende-*"
- #+(or CLISP AKCL ALLEGRO cmu sbcl ecls) "format-s:--|ABc|--ende-*"
- #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecls) UNKNOWN)
+ #+(or CLISP AKCL ALLEGRO cmu sbcl ecl) "format-s:--|ABc|--ende-*"
+ #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecl) UNKNOWN)
 
 (my-assert
  (FORMAT NIL "format-s:--~5,2@s--ende-*" (QUOTE AB\c))
  #+XCL "format-s:--  AB\\c--ende-*"
- #+(or CLISP AKCL ALLEGRO cmu sbcl ecls) "format-s:--|ABc|--ende-*"
- #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecls) UNKNOWN)
+ #+(or CLISP AKCL ALLEGRO cmu sbcl ecl) "format-s:--|ABc|--ende-*"
+ #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecl) UNKNOWN)
 
 (my-assert
  (FORMAT NIL "format-s:--~5,2,3@s--ende-*" (QUOTE AB\c))
  #+XCL "format-s:--   AB\\c--ende-*"
- #+(or CLISP AKCL ALLEGRO cmu sbcl ecls) "format-s:--   |ABc|--ende-*"
- #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecls) UNKNOWN)
+ #+(or CLISP AKCL ALLEGRO cmu sbcl ecl) "format-s:--   |ABc|--ende-*"
+ #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecl) UNKNOWN)
 
 (my-assert
  (FORMAT NIL "format-s:--~5,2,3,'*@s--ende-*" (QUOTE AB\c))
  #+XCL "format-s:--***AB\\c--ende-*"
- #+(or CLISP AKCL ALLEGRO cmu sbcl ecls) "format-s:--***|ABc|--ende-*"
- #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecls) UNKNOWN)
+ #+(or CLISP AKCL ALLEGRO cmu sbcl ecl) "format-s:--***|ABc|--ende-*"
+ #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecl) UNKNOWN)
 
 (my-assert
  (FORMAT NIL "format-s:--~:s--ende-*" (QUOTE (AB\c NIL XYZ)))
  #+XCL "format-s:--(AB\\c NIL XYZ)--ende-*"
- #+(or CLISP AKCL ALLEGRO cmu sbcl ecls) "format-s:--(|ABc| NIL XYZ)--ende-*"
- #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecls) UNKNOWN)
+ #+(or CLISP AKCL ALLEGRO cmu sbcl ecl) "format-s:--(|ABc| NIL XYZ)--ende-*"
+ #-(or XCL CLISP AKCL ALLEGRO cmu sbcl ecl) UNKNOWN)
 
 (my-assert
  (SETQ X 5)
@@ -971,13 +971,13 @@ freshline:
  #+(or XCL cmu sbcl CLISP) "char normal: , as 
 # would read:
 #\\Space, human read:Space-*"
- #+(or AKCL LUCID ecls)    "char normal:Space, as 
+ #+(or AKCL LUCID ecl)    "char normal:Space, as 
 # would read:
 #\\Space, human read:Space-*"
  #+ALLEGRO            "char normal: , as 
 # would read:
 #\\space, human read:space-*"
- #-(or XCL cmu sbcl CLISP AKCL LUCID ALLEGRO ecls) UNKNOWN)
+ #-(or XCL cmu sbcl CLISP AKCL LUCID ALLEGRO ecl) UNKNOWN)
 
 (my-assert
  (FORMAT NIL
@@ -1216,8 +1216,8 @@ but it was called with an argument of type SHORT-FLOAT.-*")
 (my-assert
  (FORMAT NIL "**~c**" #\SPACE)
  #+(or XCL cmu sbcl CLISP ALLEGRO) "** **"
- #+(or AKCL LUCID ecls)            "**Space**"
- #-(or XCL cmu sbcl CLISP AKCL LUCID ALLEGRO ecls) UNKNOWN)
+ #+(or AKCL LUCID ecl)            "**Space**"
+ #-(or XCL cmu sbcl CLISP AKCL LUCID ALLEGRO ecl) UNKNOWN)
 
 (my-assert
  (FORMAT NIL "**~:c**" #\SPACE)

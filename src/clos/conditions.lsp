@@ -24,7 +24,7 @@
 (in-package "SYSTEM")
 
 ;;; ----------------------------------------------------------------------
-;;; ECLS's interface to the toplevel and debugger
+;;; ECL's interface to the toplevel and debugger
 
 (defun invoke-debugger (&optional (datum "Debug") &rest arguments)
   (let ((condition
@@ -599,7 +599,7 @@ returns with NIL."
   (typep type 'SIMPLE-CONDITION-CLASS))
 
 ;;;
-;;; Additions by ECLS
+;;; Additions by ECL
 ;;;
 (define-condition simple-program-error (simple-condition program-error) ())
 

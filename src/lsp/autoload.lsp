@@ -39,8 +39,8 @@
 
 (defun lisp-implementation-type ()
   "Args: ()
-Returns the string \"ECLS\"."
-  "ECLS")
+Returns the string \"ECL\"."
+  "ECL")
 
 ;;; Compiler functions.
 
@@ -101,7 +101,7 @@ from the C language code.  NIL means \"do not create the file\"."
 
 (defun ed (&optional filename)
   "Args: (&optional filename)
-Invokes the editor.  The action depends on the version of ECLS.  See the ECLS
+Invokes the editor.  The action depends on the version of ECL.  See the ECL
 Report for details."
   (si:system (format nil "emacs ~A" filename)))
 
@@ -200,13 +200,13 @@ number is zero.  The optional X is simply ignored."
 
 (defun help (&optional (symbol nil s))
   "Args: (&optional symbol)
-ECLS specific.
+ECL specific.
 Prints the documentation associated with SYMBOL.  With no args, prints the
-greeting message to ECLS beginners."
+greeting message to ECL beginners."
   (if s (sys::print-doc symbol)
       (progn
         (princ "
-Welcome to ECLS. Here are the few functions you should learn first.
+Welcome to ECL. Here are the few functions you should learn first.
 
 	(HELP symbol) prints the online documentation associated with the
 	symbol.  For example, (HELP 'CONS) will print the useful information
@@ -217,11 +217,11 @@ Welcome to ECLS. Here are the few functions you should learn first.
 	(HELP* \"PROG\") will print the documentation of the symbols such as
 	PROG, PROGN, and MULTIPLE-VALUE-PROG1.
 
-	(BYE) ends the current ECLS session.
+	(BYE) ends the current ECL session.
 
 For the precise language specification, refere to Guy Steele's \"Common Lisp,
-the Language\" and our \"ECLS Manual\".  \"ECLS Dictionary\", the hard-copied
-version of ECLS online documentation, will be useful as a handbook.
+the Language\" and our \"ECL Manual\".  \"ECL Dictionary\", the hard-copied
+version of ECL online documentation, will be useful as a handbook.
 
 Good luck!
 ")
@@ -246,7 +246,7 @@ NIL, then all packages are searched."
 ;;;	The number N as the property of a symbol SYMBOL indicates that,
 ;;;	in the form (SYMBOL f1 ... fN fN+1 ... fM), the subforms fN+1,...,fM
 ;;;	are the 'body' of the form and thus are treated in a special way by
-;;;	the ECLS pretty-printer.
+;;;	the ECL pretty-printer.
 
 ;;; (At boot we don't have setf yet)
 

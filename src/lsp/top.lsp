@@ -33,7 +33,7 @@
 (defvar /// nil "The list of all values of the last-but-two top-level form.")
 
 ; Can't use ~ on Solaris 2:
-;(defvar *lisp-init-file-list* '("./init" "~/.ecls"))
+;(defvar *lisp-init-file-list* '("./init" "~/.ecl"))
 (defvar *lisp-init-file-list* '("./init")
   "List of files automatically loaded when ECL is invoked.")
 
@@ -404,7 +404,7 @@ value of this variable is non-NIL.")
 	   (error "Missing file name")
 	   (eval (read-from-string (argv i)))))
       (t (format t "Unknown flag ~A
-Usage: ecls [-dir dir] [-load file] [-eval expr]
+Usage: ecl [-dir dir] [-load file] [-eval expr]
 	[-compile file [-o ofile] [-c [cfile]] [-h [hfile]] [-data [datafile]] [-s]]"
 		(argv i))
 	 (quit 1)))))
@@ -430,11 +430,11 @@ file.  When the saved image is invoked, it will start the redefined top-level."
 	  ;; process command arguments
 	  (notinline (process-command-args))))
 
-      (format t "ECLS (ECoLisp-Spain) ~A" (lisp-implementation-version))
+      (format t "ECL (ECoLisp-Spain) ~A" (lisp-implementation-version))
       (format t "~%Copyright (C) 1984 Taiichi Yuasa and Masami Hagiya~@
 	Copyright (C) 1993 Giuseppe Attardi~@
 	Copyright (C) 2000 Juan J. Garcia-Ripoll
-	ECLS is free software, and you are welcome to redistribute it~@
+	ECL is free software, and you are welcome to redistribute it~@
 	under certain conditions; see file 'Copyright' for details.")
       (format *standard-output* "~%Type :h for Help.  ")
 
@@ -853,7 +853,7 @@ file.  When the saved image is invoked, it will start the redefined top-level."
 
 (defun tpl-help-stack-command ()
   (format t "
-Use the following functions to directly access ECLS stacks.
+Use the following functions to directly access ECL stacks.
 
 Invocation History Stack:
 (sys:IHS-TOP)	Returns the index of the TOP of the IHS.

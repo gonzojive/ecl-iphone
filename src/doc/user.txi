@@ -1,14 +1,14 @@
-\input texinfo   @c -*-texinfo-*-
+\input texinfo                  @c -*-texinfo-*-
 @c %**start of header
-@setfilename ecls.info
-@settitle ECLS User's Guide
+@setfilename ecl.info
+@settitle ECL User's Guide
 @setchapternewpage odd
 @c %**end of header
 
 @include macros.txi
 
 @ifinfo
-@ecls{} is an implementation of @clisp{} designed for being @emph{embeddable}
+@ecl{} is an implementation of @clisp{} designed for being @emph{embeddable}
 into C based applications.
 
 @noindent
@@ -19,7 +19,7 @@ Copyright @copyright{} 1990, Giusseppe Attardi
 @end ifinfo
 
 @titlepage
-@title ECLS User's Guide
+@title ECL User's Guide
 @author Giusseppe Attardi
 @author Juan Jose Garcia Ripoll (revised version)
 
@@ -43,20 +43,20 @@ Copyright @copyright{} 2000, Juan Jose Garcia Ripoll
 @vskip 1cm
 @end iftex
 
-@ecls{} is an implementation of @clisp{} originally designed for being
+@ecl{} is an implementation of @clisp{} originally designed for being
 @emph{embeddable} into C based applications.
-This document describes the @ecls{} implementation and how it differs from
+This document describes the @ecl{} implementation and how it differs from
 @bibcite{ANSI} and @bibcite{Steele:84}.
-See @inforef{Top,,eclsdev} for details about the implementation and how to
+See @inforef{Top,,ecldev} for details about the implementation and how to
 interface with other languages.
 
 @menu
-* Introduction::                What ECLS is and how to install it.
+* Introduction::                What ECL is and how to install it.
 * Standards::                   Deviations from standards.
-* Input and output::            Accessing files with ECLS.
+* Input and output::            Accessing files with ECL.
 * Memory management::           Bits and bytes of every object.
 * Program development::         Tracing, steppping, error handling, etc.
-* The interpreter::             The guts behind ECLS.
+* The interpreter::             The guts behind ECL.
 * The compiler::                When you need speed@dots{}
 * Declarations::                Helping the compiler
 * OS interface::                Operating system interface.
@@ -71,35 +71,35 @@ interface with other languages.
 @node Introduction, Standards, Top, Top
 @chapter Introduction
 
-@ecls{} is an implementation of the @clisp{} language that was born from
+@ecl{} is an implementation of the @clisp{} language that was born from
 Giusseppe Attardi's ECoLisp environment, which was in turn based on Kyoto
 Common-Lisp. See @ref{Credits} for the history of the code you are up to use.
 
-@ecls{} (ECL for short) uses standard C calling conventions for Lisp compiled
+@ecl{} (ECL for short) uses standard C calling conventions for Lisp compiled
 functions, which allows C programs to easily call Lisp functions and
 viceversa. No foreign function interface is required: data can be exchanged
 between C and Lisp with no need for conversion.
 
-@ecls{} is based on a Common Runtime Support (CRS) which provides basic
+@ecl{} is based on a Common Runtime Support (CRS) which provides basic
 facilities for memory managment, dynamic loading and dumping of binary images,
 support for multiple threads of execution.  The CRS is built into a library
-that can be linked with the code of the application.  @ecls{} is modular: main
+that can be linked with the code of the application.  @ecl{} is modular: main
 modules are the program development tools (top level, debugger, trace,
 stepper), the compiler, and CLOS.  A native implementation of CLOS is available
-in @ecls{}: one can configure @ecls{} with or without CLOS.  A runtime version
-of @ecls{} can be built with just the modules which are required by the
+in @ecl{}: one can configure @ecl{} with or without CLOS.  A runtime version
+of @ecl{} can be built with just the modules which are required by the
 application.
 
-The @ecls{} compiler compiles from Lisp to C, and then invokes the GNU C
+The @ecl{} compiler compiles from Lisp to C, and then invokes the GNU C
 compiler to produce binaries.
 
 While ECoLisp adheres to the the reference of the language given in
-@bibcite{Steele:84}, the aim of @ecls{} is to achieve maximum compliance with
+@bibcite{Steele:84}, the aim of @ecl{} is to achieve maximum compliance with
 @ansi{}, the most up to date standard for @clisp{}.
 
-Throughout this manual we will describe the @ecls{} implementation and
+Throughout this manual we will describe the @ecl{} implementation and
 how it differs from @bibcite{ANSI} and @bibcite{Steele:84}. In general, as
-work in @ecls{} is completed section by section, we will drop compatibility
+work in @ecl{} is completed section by section, we will drop compatibility
 with @bibcite{Steele:84} and the corresponding chapter will be updated to
 document @emph{only} the differences with @bibcite{ANSI}.
 
@@ -107,14 +107,14 @@ document @emph{only} the differences with @bibcite{ANSI}.
 * Credits::                     
 * Copyright::                   
 * Installation::                Installing a binary distribution.  
-* Rebuilding ECLS::             Building @ecls{} from sources.
-* Invoking ECLS::               Basic skills.
+* Rebuilding ECL::             Building @ecl{} from sources.
+* Invoking ECL::               Basic skills.
 @end menu
 
 @node Credits, Copyright, Introduction, Introduction
 @section Credits
 
-@ecls{} is derived from Giusseppe Attardi's ECoLisp, a full implementation of
+@ecl{} is derived from Giusseppe Attardi's ECoLisp, a full implementation of
 Common-Lisp as reported in @cite{Steele:84}. ECoLisp derives itself mostly
 from Kyoto @clisp{}, an implementation developed at the Research Institute for
 Mathematical Sciences (RIMS), Kyoto University, with the cooperation of Nippon
@@ -139,7 +139,7 @@ Etsuya Shibayama; Hagiwara Laboratory; Shuji Doshita; Takashi Hattori.
 
 William F. Schelter improved KCL in several areas and developed Austin Kyoto
 @clisp{} (AKCL). Many ideas and code from AKCL have been incorporated in
-@ecls{}.
+@ecl{}.
 
 The following is the full list of contributors to ECoLisp: Taiichi Yuasa and
 Masami Hagiya (KCL), William F. Schelter (Dynamic loader, conservative Gc),
@@ -148,7 +148,7 @@ Marcus Daniels (Linux port) Cornelis van der Laan (FreeBSD port) David Rudloff
 (NeXT port) Dan Stanger, Don Cohen, and Brian Spilsbury.
 
 We have to thank for the following pieces of software that have helped in the
-development of @ecls{}
+development of @ecl{}
 @table @sc
 @item Bruno Haible
 For the Cltl2-compliance test
@@ -158,7 +158,7 @@ For the ANSI-compliance test
 For the ANSI-compliant LOOP macro.
 @end table
 
-The @ecls{} project also owes a lot to the people who have tested this program
+The @ecl{} project also owes a lot to the people who have tested this program
 and contributed with suggestions and error messages: Eric Marsden, Hannu
 Koivisto and Jeff Bowden, and others whose name I may have omitted.
 
@@ -217,7 +217,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
 Additionally:
 
 @quotation
-@ecls{} is free software; you can redistribute it and/or modify it
+@ecl{} is free software; you can redistribute it and/or modify it
 under the terms of the GNU Library General Public License as published
 by the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version; see file 'Copying'.
@@ -239,48 +239,53 @@ Address for reporting bugs, comments, suggestions:
 @end quotation
 
 
-@node Installation, Rebuilding ECLS, Copyright, Introduction
+@node Installation, Rebuilding ECL, Copyright, Introduction
 @section Installation
+
+***
+*** Building of binary distributions has been discontinued. The
+*** following paragraphs do not apply
+***
 
 Usually I build current binaries for the platforms I have access to,
 and these are placed in
 @table @asis
 @item Linux
-@uref{http://www.arrakis.es/~worm/ecls-linux.tgz}
+@uref{http://www.arrakis.es/~worm/ecl-linux.tgz}
 @item FreeBSD (>= 4.0)
-@uref{http://www.arrakis.es/~worm/ecls-freebsd.tgz}
+@uref{http://www.arrakis.es/~worm/ecl-freebsd.tgz}
 @end table
 
 To install them you need only unpack them on the root directory,
 and the program will install itself under
 @example
-/usr/local/bin		ecls program
-/usr/local/lib/ecls	libraries and headers
-/usr/local/man/man1     ecls.1 manual page
-/usr/local/info         ecls.info user guide
+/usr/local/bin		ecl program
+/usr/local/lib/ecl	libraries and headers
+/usr/local/man/man1     ecl.1 manual page
+/usr/local/info         ecl.info user guide
 @end example
 
 The flags which I used to build the program are summarized in
-@file{/usr/local/lib/ecls/BUILD-STAMP}. You should check that they
-correspond to your needs before using @ecls{} --i.e., it could be a too
+@file{/usr/local/lib/ecl/BUILD-STAMP}. You should check that they
+correspond to your needs before using @ecl{} --i.e., it could be a too
 old version, garbage collector might not be the right one or TCP/IP
 support could have been removed.
 
-@node Rebuilding ECLS, Invoking ECLS, Installation, Introduction
-@section Rebuilding ECLS
+@node Rebuilding ECL, Invoking ECL, Installation, Introduction
+@section Rebuilding ECL
 
 @enumerate
-@item Obtain the distribution from @uref{http://www.arrakis.es/~worm/ecls.html}.
+@item Obtain the distribution from @uref{http://ecls.sourceforge.net}.
 The distribution is in a gzip-compressed tar file named like
-@file{ecls.tgz}
+@file{ecl.tgz}
 
-@item Prepare a directory (hereafter called @dfn{ECLS directory}) for
-ECLS.  In the following examples, we suppose that the @emph{ECL
+@item Prepare a directory (hereafter called @dfn{ECL directory}) for
+ECL.  In the following examples, we suppose that the @emph{ECL
 directory} is @file{/usr/local/ecl}.
 
 @item  Extract the content from the compressed tar file.
 @example
-zcat ecls.tgz | tar xf -
+zcat ecl.tgz | tar xf -
 @end example
 
 @item An autoconfiguration mechanism allows you to perform a standard
@@ -319,57 +324,53 @@ invoking @file{configure} the layout should be
 
 @example 
 Executable files:
-    /usr/local/bin/ecls              the @ecls{} interpreter and compiler
+    /usr/local/bin/ecl               the @ecl{} interpreter and compiler
 
 Help documents:
-    /usr/local/lib/ecls/help.doc     data for the online help
-    /usr/local/man/man1/ecls.1       manual page for @ecls{}
-    /usr/local/info/ecls.info        this manual you are reading
+    /usr/local/lib/ecl/help.doc      data for the online help
+    /usr/local/man/man1/ecl.1        manual page for @ecl{}
+    /usr/local/info/ecl.info         this manual you are reading
 
 Library files and headers:
-    /usr/local/lib/ecls/libecls.a    the core library in C
-    /usr/local/lib/ecls/libgmp.a     GNU library for bignums
-    /usr/local/lib/ecls/libgc.a      Boehm-Weiser garbage collector
-    /usr/local/lib/ecls/*.a          Other lisp compiled code
-    /usr/local/lib/ecls/h/           Header files
-
-Support files:
-    /usr/local/lib/ecls/ecls.sym     Symbols defined in executable.
-                                     Required for loading object files.
+    /usr/local/lib/ecl/libecl.a      the core library in C
+    /usr/local/lib/ecl/libgmp.a      GNU library for bignums
+    /usr/local/lib/ecl/libgc.a       Boehm-Weiser garbage collector
+    /usr/local/lib/ecl/*.a           Other lisp compiled code
+    /usr/local/lib/ecl/h/            Header files
 @end example
 
 You can remove all intermediate files produced during installation with the
 command @code{make clean}.
 
 
-@node Invoking ECLS,  , Rebuilding ECLS, Introduction
-@section Entering and leaving @ecls{}
+@node Invoking ECL,  , Rebuilding ECL, Introduction
+@section Entering and leaving @ecl{}
  
-@ecls{} is invoked by the command @code{ecls}.
+@ecl{} is invoked by the command @code{ecl}.
 
 @example
-% ecls
-ECLS (ECoLisp-Spain) 0.0e
+% ecl
+ECL (ECoLisp-Spain) 0.0e
 Copyright (C) 1984 Taiichi Yuasa and Masami Hagiya
 Copyright (C) 1993 Giuseppe Attardi
 Copyright (C) 2000 Juan J. Garcia-Ripoll
-        ECLS is free software, and you are welcome to redistribute it
+        ECL is free software, and you are welcome to redistribute it@c 
 under certain conditions; see file 'Copyright' for details.
 Type :h for Help.  Top level.
 > 
 @end example
 
-When invoked, @ecls{} will print the banner and initialize the system.  The
-date in the @ecls{} banner identifies the revision of @ecls{}.  @code{Version
+When invoked, @ecl{} will print the banner and initialize the system.  The
+date in the @ecl{} banner identifies the revision of @ecl{}.  @code{Version
 (0.8) 05/14/1993} is the value of the function
 @code{lisp-implementation-version}.
 
 If there exists a file named @file{init.lsp} in the current working directory,
-@ecls{} successively evaluates the forms in the file, immediately after the
-system initialization.  The user may set up his or her own @ecls{} environment
+@ecl{} successively evaluates the forms in the file, immediately after the
+system initialization.  The user may set up his or her own @ecl{} environment
 (e.g., the memory configuration) with @file{init.lsp}.
 
-After the initialization, @ecls{} enters the @dfn{top-level loop} and prints
+After the initialization, @ecl{} enters the @dfn{top-level loop} and prints
 the prompt `@code{>}'.
 
 @example
@@ -377,7 +378,7 @@ Type :h for Help.  Top level.
 >
 @end example
 
-The prompt indicates that @ecls{} is now ready to receive a form from the
+The prompt indicates that @ecl{} is now ready to receive a form from the
 terminal and to evaluate it.
 
 Usually, the current package (i.e., the value of @var{*package*}) is the user
@@ -393,7 +394,7 @@ COMMON-LISP> (in-package 'system)
 SYSTEM>
 @end example
 
-To exit from @ecls{}, call the function @code{quit}.
+To exit from @ecl{}, call the function @code{quit}.
 
 @example
 >(quit)
@@ -416,7 +417,7 @@ This variable controls whether an end of file character (normally @ctrl{D})
 should terminate the session. The default value is @nil{}.
 @end defvr
 
-The top-level loop of @ecls{} is almost the same as that defined in Section
+The top-level loop of @ecl{} is almost the same as that defined in Section
 20.2 of @bibcite{Steele:84}.  Since the input from the terminal is in line
 mode, each top-level form should be followed by a newline.  If more than one
 value is returned by the evaluation of the top-level form, the values will be
@@ -486,7 +487,7 @@ Broken at FOO.
 @node Standards, Input and output, Introduction, Top
 @chapter Standards
 
-@ecls{} supports all @clisp{} data types exactly as defined in the
+@ecl{} supports all @clisp{} data types exactly as defined in the
 @bibcite{Steele:84}.  This chapter simply complements Chapter 2 of
 @bibcite{Steele:84}, by describing implementation dependent features of
 @clisp{} data types.  Each section in this chapter corresponds to the section
@@ -526,7 +527,7 @@ in Chapter 2 of @bibcite{Steele:84}, with the same section title.
 @node Integers, Ratios, Numbers, Numbers
 @subsection Integers
 
-@tindexed{Fixnum}'s in @ecls{} are those integers in the range (-2^29)
+@tindexed{Fixnum}'s in @ecl{} are those integers in the range (-2^29)
 to (2^29-1), inclusive.  They are represented as immediate data, so no
 memory allocation is involved when using @code{fixnum}'s.  Other
 integers are @code{bignums}. Thus 25 factorial (25!)
@@ -536,10 +537,10 @@ integers are @code{bignums}. Thus 25 factorial (25!)
 @end example
 
 @noindent
-is definetely a bignum in @ecls{}.
+is definetely a bignum in @ecl{}.
 
 @clisp{} constants related to integers have the following values
-in @ecls{}.
+in @ecl{}.
 
 @example
 most-positive-fixnum = 536870911 = 2^29-1
@@ -573,7 +574,7 @@ There are no implementation-dependent features for ratios.
 @node Floating-point numbers, Complex numbers, Ratios, Numbers
 @subsection Floating-Point Numbers
 
-@ecls{} supports two floating point formats: @tindexed{single-float} and
+@ecl{} supports two floating point formats: @tindexed{single-float} and
 @tindexed{double-float}.  These are implemented with IEEE single and double
 float arithmetic, respectively.  @code{short-float} is a synonym for
 @code{single-float}, and @code{long-float} is a synonym for
@@ -605,7 +606,7 @@ There is no ``minus zero.'' @code{(eql 0.0 -0.0)} is true.
 
 
 @clisp{} constants related to floating-point numbers have the following values
-in @ecls{}.
+in @ecl{}.
 @example
 most-positive-short-float
   = most-positive-single-float
@@ -661,7 +662,7 @@ There are no implementation-dependent features for complex numbers.
 @node Characters, Symbols, Numbers, Standards
 @section Characteres
 
-@ecls{} is fully @ansi{} compliant in all aspects of the character
+@ecl{} is fully @ansi{} compliant in all aspects of the character
 data type, with the following peculiarities.
 
 @menu
@@ -675,14 +676,14 @@ data type, with the following peculiarities.
 @node Character types, Standard characters, Characters, Characters
 @subsection Character types
 
-In @ecls{} the @code{extended-character} is empty, and all characters
+In @ecl{} the @code{extended-character} is empty, and all characters
 are implemented using 8-bit codes.
 
 
 @node Standard characters, Line divisions, Character types, Characters
 @subsection Standard Characters
 
-@ecls{} supports all standard and semi-standard characters listed in Section
+@ecl{} supports all standard and semi-standard characters listed in Section
 2.2.1 of @bibcite{Steele:84}.  Non-printing characters have the following
 character codes.
 @example
@@ -706,21 +707,21 @@ not members of @code{standard-char}.
 @node Line divisions, Non-standard characters, Standard characters, Characters
 @subsection Line Divisions
 
-Since @ecls{} represents the @code{#@back{}Newline} character by a single code
+Since @ecl{} represents the @code{#@back{}Newline} character by a single code
 12, problems with line divisions discussed in Section 2.2.2 of the
-@bibcite{Steele:84} are absent in @ecls{}.
+@bibcite{Steele:84} are absent in @ecl{}.
 
 
 @node Non-standard characters, Character attributes, Line divisions, Characters
 @subsection Non-standard Characters
 
-@ecls{} supports no additional non-standard characters.
+@ecl{} supports no additional non-standard characters.
 
 
 @node Character attributes,  , Non-standard characters, Characters
 @subsection Character Attributes
 
-Characters in @ecls{} have no attributes, and thus it lacks the functions and
+Characters in @ecl{} have no attributes, and thus it lacks the functions and
 variables @code{#'char-bits}, @code{#'char-font}, @code{char-bits-limit}, etc,
 defined in Chapter 13 of @bibcite{Steele:84}.
 
@@ -745,7 +746,7 @@ There are no implementation-dependent features for lists and conses.
 @node Arrays, Hash tables, List and conses, Standards
 @section Arrays
 
-@ecls{} arrays can have up to 64 ranks.
+@ecl{} arrays can have up to 64 ranks.
 
 When the value of the @clisp{} variable @code{*print-array*} (see Section
 22.1.6 of @bibcite{Steele:84}) is @nil{}, then bit-vectors are printed as
@@ -753,7 +754,7 @@ When the value of the @clisp{} variable @code{*print-array*} (see Section
 vector @var{address}>}, and other arrays are printed as @code{#<an array
 @var{address}>}. The default value for @code{*print-array*} is @nil{}.
 
-@clisp{} constants related to arrays have the following values in @ecls{}.
+@clisp{} constants related to arrays have the following values in @ecl{}.
 
 @example
     array-dimension-limit = 16777216
@@ -773,7 +774,7 @@ See Section 17.1 of @bibcite{Steele:84} for their meanings.
 @node Vectors, Strings, Arrays, Arrays
 @subsection Vectors
 
-In @ecls{}, array elements are represented in one of six ways depending on the
+In @ecl{}, array elements are represented in one of six ways depending on the
 type of the @code{array}.
 
 @example
@@ -792,7 +793,7 @@ Array Type                               Element Representation
 @node Strings, Bit-Vectors, Vectors, Arrays
 @subsection Strings
 
-The @ecls{} implementation of strings is @ansi{} compliant. Four types 'string,
+The @ecl{} implementation of strings is @ansi{} compliant. Four types 'string,
 'base-string, 'simple-string and 'simple-base-string are defined, but due to
 the lack of extended characters 'base-string and 'simple-base-string are
 simple aliases of 'string and 'simple-string.
@@ -824,7 +825,7 @@ All readtables are printed as @code{#<a readtable @var{address}>}.
 @node Packages, Pathnames, Readtables, Standards
 @section Packages
 
-The following packages are built into @ecls{}.
+The following packages are built into @ecl{}.
 
 @multitable {common-lisp-user} {cl-user, user}
 @item @b{Name} @tab @b{Nicknames}
@@ -838,13 +839,13 @@ For instance, the @code{system} package has two nicknames @code{sys} and
 @code{si}; @code{system:symbol} may be written as @code{sys:symbol} or
 @code{si:symbol}.
 
-Depending on the configuation option by which @ecls{} has been built,
+Depending on the configuation option by which @ecl{} has been built,
 additional packages may be available:
 @example
 compiler clos xlib
 @end example
 
-The @code{compiler} package contains symbols used by the @ecls{} compiler.
+The @code{compiler} package contains symbols used by the @ecl{} compiler.
 Other packages are described in Section 11.6 of @bibcite{Steele:84}.  The
 @code{clos} package is used for the internal symbols of the @clisp{} Object
 System, which is described in Chapter 14.  The @code{xlib} package is used for
@@ -857,7 +858,7 @@ Packages are printed as @code{#<@var{package-name} package>}.
 @node Pathnames, Streams, Packages, Standards
 @section Pathnames
 
-@ecls{} provides a @code{#} macro @code{#P"} that reads a pathname:
+@ecl{} provides a @code{#} macro @code{#P"} that reads a pathname:
 @code{#P"@var{string}"} is equivalent to @code{(pathname "@var{string}"}).  For
 example, @code{#P"foo.lsp"} is equivalent to @code{(pathname "foo.lsp")}.
 The same format is used when a pathname is printed.
@@ -868,13 +869,13 @@ The initial value of the @clisp{} variable
 
 A pathname in the file system of @clisp{} consists of six elements:
 host, device, directory, name, type and version.  Among these elements,
-@ecls{} does not use @code{version}.  That is, when converting a
-namestring into a pathname, @ecls{} turns this element into @nil{}.
-Conversely, when converting a pathname into a namestring, @ecls{}
+@ecl{} does not use @code{version}.  That is, when converting a
+namestring into a pathname, @ecl{} turns this element into @nil{}.
+Conversely, when converting a pathname into a namestring, @ecl{}
 ignores the version.
 
-Let me briefly explain how @ecls{} converts a namestring into a
-pathname. First @ecls{} tries parsing the namestring using the logical
+Let me briefly explain how @ecl{} converts a namestring into a
+pathname. First @ecl{} tries parsing the namestring using the logical
 pathnames syntax, which is as follows
 @example
         [hostname:][;][directory-item;]*[name][.type]
@@ -889,7 +890,7 @@ the @code{#\Null} character and the asterisk `*'. And
 allowed).
 
 If @var{hostname} is not found or it is not a logical hostname, then
-@ecls{} tries the physical pathname syntax,
+@ecl{} tries the physical pathname syntax,
 @example
         [device:][[//hostname]/][directory-item/]*[name][.type]
         device, hostname = word
@@ -1039,7 +1040,7 @@ An output stream generated by the function @code{make-broadcast-stream}.
 @node Random-states, Structures, Streams, Standards
 @section Random-States
 
-@ecls{} provides a @code{#} macro `@code{#$}' that reads a random state.
+@ecl{} provides a @code{#} macro `@code{#$}' that reads a random state.
 @code{#$}@var{integer} is equivalent to @code{(make-random-state
 @var{integer})}.  The same format is used when a random state is printed.
 
@@ -1053,7 +1054,7 @@ There are no implementation-dependent features for structures.
 @node Functions, Unreadable data objects, Structures, Standards
 @section Functions
 
-All functions in @ecls{} are either compiled into bytecodes to be interpreted,
+All functions in @ecl{} are either compiled into bytecodes to be interpreted,
 or they are translated into C and then compiled using a native C compiler.
 Interpreted functions are printed using the formats
 @example
@@ -1073,14 +1074,14 @@ function object if @code{'fun} is has a function definition,
 @code{(macro . function-object)} if @code{'fun} is a macro, and @code{'special}
 if @code{'fun} is a special form.
 
-@ecls{} usually drops the source code of a function unless the global
+@ecl{} usually drops the source code of a function unless the global
 variable @var{si:*keep-definitions*} was true when the function was
 translated into bytecodes. Therefore, if you wish to use
 @code{#'compile} and @code{#'disassemble} on defined functions, you
 should issue @code{(setq si:*keep-definitions* t)} at the beginning of
 your session.
 
-@clisp{} constants related to functions have the following values in @ecls{}.
+@clisp{} constants related to functions have the following values in @ecl{}.
 
 @example
 call-arguments-limit = 64
@@ -1102,14 +1103,14 @@ There are no implementation-dependent features for unreadable data objects.
 @node Overlap of types, ANSI-CL compliance, Unreadable data objects, Standards
 @section Overlap types
 
-In @ecls{}, the types @code{number} and @code{array} are certainly subtypes of
-@code{common}, since @ecls{} does not extend the set of objects of these types.
+In @ecl{}, the types @code{number} and @code{array} are certainly subtypes of
+@code{common}, since @ecl{} does not extend the set of objects of these types.
 
 
 @node ANSI-CL compliance,  , Overlap of types, Standards
 @section ANSI-CL compliance
 
-In this section we have documented the how much @ecls{} implements of
+In this section we have documented the how much @ecl{} implements of
 each section in @bibcite{ANSI}, and which are the most important
 implementation-dependent features.
 
@@ -1239,12 +1240,12 @@ macro '@code{#.}'.
 @node Input/Output functions, Block transfer, Read macros, Input and output
 @section Input and Output Functions
 
-The input and output functions of @ecls{} almost follow the definitions in
+The input and output functions of @ecl{} almost follow the definitions in
 Chapter 22 of @bibcite{Steele:84}.  Most of the differences come from the fact
-that, in @ecls{}, input from the terminal is always in line mode and binary I/O
+that, in @ecl{}, input from the terminal is always in line mode and binary I/O
 is not supported.
 
-In @ecls{}, @code{*terminal-io*} is a two-way stream from the standard input
+In @ecl{}, @code{*terminal-io*} is a two-way stream from the standard input
 and to the standard output.  The echoing to the terminal is performed by the
 underlying operating system.  In particular, when a disk file is assigned to
 the standard output, nothing will be echoed at the terminal.
@@ -1256,7 +1257,7 @@ listed below.
 If @var{pathname} does not specify the filetype of the input file, then load
 first tries to load a file with the filetype @code{.o}, i.e., the fasl file
 (see Chapter 6). If it fails, then @code{load} tries to load a file with the
-filetype @code{.lsp}.  @ecls{} assumes that @code{.lsp} is the standard
+filetype @code{.lsp}.  @ecl{} assumes that @code{.lsp} is the standard
 filetype for source files.  If it fails again, then @code{load} will load the
 specified file with no filetype.
 
@@ -1346,7 +1347,7 @@ the stream operations.
 @section CLOS Streams
 
 When the optional CLOS subsystem is available, an interface is provided by
-@ecls{} for using CLOS objects as @clisp{} input/output character streams.
+@ecl{} for using CLOS objects as @clisp{} input/output character streams.
 Such support can be used for instance to build interactive character streams,
 which may be used by applications as the stream argument for @clisp{} I/O
 functions such as @code{read}, @code{listen}, @code{prin1}, etc.  The
@@ -1355,7 +1356,7 @@ fundamental interface to @code{interactive-stream} objects consists of
 operations (see @clisp{}, Chapter 22) but whose details are implementation
 dependent.
 
-The following functions are automatically invoked by @ecls{} when a stream
+The following functions are automatically invoked by @ecl{} when a stream
 operation involves a CLOS object as a stream parameter. The programmer should
 define these methods for any class of objects which are to be used for
 character input/output.
@@ -1441,8 +1442,8 @@ and returns @nil{}.
 @node Memory management, Program development, Input and output, Top
 @chapter Memory Management
 
-The following sections only apply to the @ecls{} original garbage collector.
-If @ecls{} is not compiled with @code{--disable-boehm}, then an alternative,
+The following sections only apply to the @ecl{} original garbage collector.
+If @ecl{} is not compiled with @code{--disable-boehm}, then an alternative,
 less restrictive garbage collector is installed, with the disadvantage
 that many of the following functions @code{#'room}, @code{si:*gc-verbose*},
 @dots{} do no longer work.
@@ -1458,7 +1459,7 @@ that many of the following functions @code{#'room}, @code{si:*gc-verbose*},
 @node Implementation types, Heap and relocatable areas, Memory management, Memory management
 @section Implementation Types
 
-Each @ecls{} object belongs to one of the 22 @emph{implementation types}.  The
+Each @ecl{} object belongs to one of the 22 @emph{implementation types}.  The
 implementation types are shown in Table 4-1 with the corresponding @clisp{}
 data types.  In the table, the compiled functions are divided into three
 implementation types; @code{cfun} is the type of compiled functions without
@@ -1550,7 +1551,7 @@ these types, along with the contents of the body and the kind of the block.
 @end multitable
 
 Usually, the body of an array, a vector, a bit-vector, or a string is allocated
-as a relocatable block.  In @ecls{}, the function @code{make-array} takes an
+as a relocatable block.  In @ecl{}, the function @code{make-array} takes an
 extra keyword argument @kwd{static}.  If the @kwd{static} argument is supplied
 with a non-@nil{} value, then the body of the array is allocated as a
 contiguous block.
@@ -1559,10 +1560,10 @@ contiguous block.
 @node Heap and relocatable areas, The garbage collector, Implementation types, Memory management
 @section Heap and Relocatable Areas
 
-The memory space of @ecls{} is divided into two parts: the heap area and the
+The memory space of @ecl{} is divided into two parts: the heap area and the
 relocatable area.  Both areas occupy a contiguous space in the memory.
 
-Cells of @ecls{} objects are allocated in the heap.  @ecls{} divides the heap
+Cells of @ecl{} objects are allocated in the heap.  @ecl{} divides the heap
 into pages (1 page = 2048 bytes), and each page consists of cells in the same
 type class (see Table 4-2).  Cells in different type classes are allocated in
 different pages.  Some blocks are also allocated in the heap: They are called
@@ -1572,14 +1573,14 @@ type class, or a page for contiguous blocks.  Blocks not in the heap are called
 relocatable blocks and are allocated in the relocatable area.
 
 The user may specify the maximum number of pages that can be allocated for each
-type class by calling the @ecls{} specific function @code{allocate}.  There is
+type class by calling the @ecl{} specific function @code{allocate}.  There is
 also a limit on the number of pages for contiguous blocks; the limit can be
-altered by calling the @ecls{} specific function
+altered by calling the @ecl{} specific function
 @code{allocate-contiguous-pages} size of the relocatable area is specified by
-the @ecls{} specific function @code{allocate-relocatable-pages}.  See Section
+the @ecl{} specific function @code{allocate-relocatable-pages}.  See Section
 4.4 for these functions.
 
-In some installations of @ecls{}, the total amount of memory that @ecls{} can
+In some installations of @ecl{}, the total amount of memory that @ecl{} can
 use is limited.  In such cases, the entire memory may become exhausted before
 the maximum number of pages for each type class, for contiguous blocks, or for
 the relocatable area have been allocated.
@@ -1603,7 +1604,7 @@ Lower address                         Higher address
 @node The garbage collector, Allocation functions, Heap and relocatable areas, Memory management
 @section The Garbage Collector
 
-@ecls{} uses a @emph{conservative garbage collection} technique for collecting
+@ecl{} uses a @emph{conservative garbage collection} technique for collecting
 the C stack and a type accurate technique for areas containing Lisp objects.
 Scanning conservatively the C stack, looking for potential pointers to Lisp
 objects, ensures that no live Lisp objects get collected, even if they are
@@ -1611,7 +1612,7 @@ passed to external procedures in C or some other language.  This approach
 greatly simplies integration of Lisp and C code, since it is not necessary to
 protect Lisp object form collection when a foreign function is invoked.
 
-The garbage collector of @ecls{} has three levels according to what it
+The garbage collector of @ecl{} has three levels according to what it
 collects:
 @enumerate
 @item cells
@@ -1622,7 +1623,7 @@ collects:
 In levels 2 and 3, the relocatable area is shifted to the higher address space
 to reserve an appropriate number of pages in the hole.
 
-For each type class, @ecls{} keeps a free list of unused cells, and when the
+For each type class, @ecl{} keeps a free list of unused cells, and when the
 free list is exhausted, a new page is allocated, or the garbage collector is
 invoked, depending on whether the maximum number of pages for that class have
 been allocated or not.
@@ -1652,7 +1653,7 @@ pages have been allocated for the relocatable area (2).
 pages have been allocated for contiguous blocks (3).
 @end enumerate
 
-The garbage collector is also invoked by the following @ecls{} specific
+The garbage collector is also invoked by the following @ecl{} specific
 function.
 
 @defun {system} {gc} {x}
@@ -1718,9 +1719,9 @@ Returns the number of pages allocated for relocatable blocks.
 
 If the pages for a particular type class are exhausted after the maximum number
 of pages for that class have been allocated, and if there remain no free cells
-(actually, if there remain very few cells), @ecls{} behaves as directed by the
-argument that was initially passed to the @ecls{} specific function @code{(si::ignore-maximum-pages)}.  If the
-value is @nil{}, then @ecls{} signals a correctable error and enters the break loop.
+(actually, if there remain very few cells), @ecl{} behaves as directed by the
+argument that was initially passed to the @ecl{} specific function @code{(si::ignore-maximum-pages)}.  If the
+value is @nil{}, then @ecl{} signals a correctable error and enters the break loop.
 The user can reset the maximum number by calling @code{allocate} and then
 continue the execution of the program by typing @kwd{r}.
 
@@ -1746,7 +1747,7 @@ t
  
 The user can also reset the maximum number of pages for relocatable blocks and
 for contiguous blocks in a similar manner.  On the other hand, if the value of
-@code{(si::ignore-maximum-pages)} is non-@nil{}, then @ecls{} automatically
+@code{(si::ignore-maximum-pages)} is non-@nil{}, then @ecl{} automatically
 increments the maximum number of pages for the class by 50 percent.  The
 initial value of @code{(si::ignore-maximum-pages)} is @true{}.
 
@@ -1783,7 +1784,7 @@ collect relocatable blocks
 @item the total number of pages allocated for cells
 @item the total number of pages allocated
 @item the number of available pages
-@item the number of pages @ecls{} can use.
+@item the number of pages @ecl{} can use.
 @end itemize
 
 The number of times the garbage collector has been called is not shown, if the
@@ -1850,7 +1851,7 @@ which is incremented each time a traced @code{function} is invoked and is
 decremented at the completion of the invocation.  Trace print-outs are indented
 according to the @var{level}.
 
-In the current version of @ecls{}, macros and special forms cannot be traced.
+In the current version of @ecl{}, macros and special forms cannot be traced.
 
 @defmac {trace} {@{function-name | (function-name @{@keys{} form@}*)@}*}
 
@@ -1971,7 +1972,7 @@ errors, such as @code{ error}, will just print an error message and control
 will return to the top-level loop (or to the current break loop, if already in
 the break loop).  Functions that cause correctable errors, such as @code{
 cerror}, will print an error message and a ``continue message'', and control
-will return to the next form.  In @ecls{}, backtrace is not part of an error
+will return to the next form.  In @ecl{}, backtrace is not part of an error
 message, but a break loop command will print backtrace.  Therefore, if
 @vindexed{break-enable} is @nil{}, no backtrace appears on the screen.
 
@@ -2028,7 +2029,7 @@ An event is pushed on the event stack when execution of its event function
 begins, and is poped away at the completion of the execution.  An event
 environment is the `environment' of the event function at the time the next
 event is pushed.  Actually, an event environment is a pointer to the main stack
-of @ecls{}.  For each interpreted event function (i.e., event function in
+of @ecl{}.  For each interpreted event function (i.e., event function in
 classes 1, 2, and 3), the pointer points to the first entry of the three
 contiguous main stack entries that hold the lexical environment of the event
 function.  For each compiled event function (i.e., event function in classes 4
@@ -2333,7 +2334,7 @@ Help. Lists the @code{inspect} commands.
 @node The profiler, Online help, Describe and inspect, Program development
 @section The Profiler
 
-The profiler tool is enabled by default in the basic @ecls{} configuration.  It
+The profiler tool is enabled by default in the basic @ecl{} configuration.  It
 can be disabled with the @code{configure} option @code{--disable-profiler}.
 
 @deffn {sys} {profile}  @var{grain} @optional{} @var{address}
@@ -2368,7 +2369,7 @@ value of this array of fixnums.
 Online help is provided by the following functions.
 
 @defun {help} {@optional{} @var{symbol}}
-@code{help} with no arguments prints a greeting message to @ecls{} beginners.
+@code{help} with no arguments prints a greeting message to @ecl{} beginners.
 @code{help} with a symbol argument prints the documentation associated
 with the symbol.
 @end defun
@@ -2384,12 +2385,12 @@ If @var{package} is @nil{}, then all packages are searched.
 @node The interpreter, The compiler, Program development, Top
 @chapter The Interpreter
 
-Former versions of @ecls{}, as well as many other lisps, used linked lists to
+Former versions of @ecl{}, as well as many other lisps, used linked lists to
 represent code. As of version 0.3 a bytecodes compiler and a bytecodes
 interpreter were developed to circumvent the limitations of linked lists.
 
 When you enter code at the lisp prompt, or when you load a source file,
-@ecls{} begins a process known as minimal compilation. Barely this
+@ecl{} begins a process known as minimal compilation. Barely this
 process consists on parsing each form, macroexpanding it and translating
 it into an intermediate language made of @emph{bytecodes}.
 
@@ -2405,14 +2406,14 @@ lisp object that can be invoked. For instance,
 3
 @end example
 
-@ecls{} can only execute bytecodes. When a list is passed to @code{EVAL} it
+@ecl{} can only execute bytecodes. When a list is passed to @code{EVAL} it
 must be first compiled to bytecodes and, if the process succeeds, then the
 resulting bytecodes are passed to the interpreter. Similarly, every time a
 function object is created, such as in @code{DEFUN} or @code{DEFMACRO}, the
 bytecodes compiler processes the lambda form to produce a suitable bytecodes
 object.
 
-The fact that @ecls{} performs this eager compilation means that changes on
+The fact that @ecl{} performs this eager compilation means that changes on
 a macro are not immediately seen in code which was already compiled. This has
 subtle implications. Take the following code:
 @example
@@ -2436,30 +2437,30 @@ implementations based on processing of lambda lists it would produce @code{-1}.
 @node The compiler, Declarations, The interpreter, Top
 @chapter The Compiler
  
-The @ecls{} compiler translates a Lisp program stored in a source file into a C
+The @ecl{} compiler translates a Lisp program stored in a source file into a C
 program, invokes the C compiler to compile the C program, and then generates an
 object file, called @emph{fasl file} (or @emph{o-file} because of the actual
 filetype).  The compiled program in a fasl file is loaded by the function
 @code{load}.
 
-Ordinarily, the object program generated by the @ecls{} compiler scarcely does
+Ordinarily, the object program generated by the @ecl{} compiler scarcely does
 runtime error-checking for runtime efficiency.  In addition, Lisp functions in
 the same source file are linked together and some system functions are
 open-coded in-line.  To control runtime error checking, supply appropriate
 @code{optimize} declarations (see Section 7.1).
 
-The @ecls{} compiler processes the @code{eval-when} special form exactly as
+The @ecl{} compiler processes the @code{eval-when} special form exactly as
 specified in @bibcite{Steele:84} (see Section 5.3.3 of @bibcite{Steele:84}).
 
 Notice that KCL and AKCL instead behave differently from the @clisp{}
 specification, since they normally process all top-level forms in
 @emph{compile-time-too} mode.  If it is desired that each top-level form be
-processed in @emph{compile-time-too} mode, set the value of the @ecls{}
+processed in @emph{compile-time-too} mode, set the value of the @ecl{}
 specific variable @code{*eval-when-compiler*} to @true{}.
 
-The @ecls{} compiler is invoked by the functions @code{compile-file},
+The @ecl{} compiler is invoked by the functions @code{compile-file},
 @code{compile}, and @code{disassemble} described below.  In addition, the
-@ecls{} compiler may be invoked directly by the Shell commands @code{ecl}.
+@ecl{} compiler may be invoked directly by the Shell commands @code{ecl}.
 This command requires the file name of the source file as its
 argument. @code{ecl} simply adds @code{.lsp} to the file name argument to
 obtain the full name of the source file.
@@ -2470,7 +2471,7 @@ obtain the full name of the source file.
 
 @noindent
 has the same effect as the compiler invocation @code{(compile-file
-@var{filename})} from within @ecls{}, and
+@var{filename})} from within @ecl{}, and
 
 @example
         $ ecl -C @var{filename}
@@ -2552,11 +2553,11 @@ If @var{name} is a non-@nil{} symbol, then compile installs the compiled
 function as the function definition of @var{name} and returns @var{name}.  If
 @var{name} is @nil{}, then compile simply returns the compiled function.
 
-The @ecls{} compiler is essentially a file compiler, and forms to be
+The @ecl{} compiler is essentially a file compiler, and forms to be
 compiled are supposed to be stored in a file.  Thus compile actually
 creates a source file which contains the form designated by the
 arguments.  Then compile calls @code{compile-file} to get a fasl file,
-which is then loaded into @ecls{}.  The source file and the fasl file
+which is then loaded into @ecl{}.  The source file and the fasl file
 are given the names @file{gazonk.lsp} and @file{gazonk.fasl},
 respectively.  These files are not deleted automatically after the
 execution of @code{compile}.
@@ -2565,9 +2566,9 @@ execution of @code{compile}.
 
 @defun {disassemble} {@optional{} @var{thing} @keys{} :h-file :data-file}
 
-This function does not actually disassemble.  It always calls the @ecls{}
+This function does not actually disassemble.  It always calls the @ecl{}
 compiler and prints the contents of the c-file, i.e., the C-language code,
-generated by the @ecls{} compiler.  If @var{thing} is not supplied, or if it is
+generated by the @ecl{} compiler.  If @var{thing} is not supplied, or if it is
 @nil{}, then the previously compiled form by disassemble will be compiled
 again.  If @var{thing} is a symbol other than @nil{}, then it must be the name
 of a not-yet-compiled function, whose definition is to be compiled.  In this
@@ -2599,16 +2600,16 @@ initial value of this variable is @nil{}.
 @node Declarations, OS interface, The compiler, Top
 @chapter Declarations
  
-@ecls{} supports all kinds of declarations described in the
-@bibcite{Steele:84}.  Any valid declaration will affect the @ecls{} environment
+@ecl{} supports all kinds of declarations described in the
+@bibcite{Steele:84}.  Any valid declaration will affect the @ecl{} environment
 in some way or another, although information obtained by declarations, other
-than special declarations, is mainly used by the @ecls{} compiler.
+than special declarations, is mainly used by the @ecl{} compiler.
 
 As described in @bibcite{Steele:84}, @clisp{} declarations are divided into two
 classes: @var{proclamations} and others.  A proclamation is a global
 declaration given by the function @code{proclaim}, the top-level @emph{macro}
 @code{defvar}, or the top-level macro @code{defparameter}.  Once given, a
-proclamation remains effective during the @ecls{} session unless it is shadowed
+proclamation remains effective during the @ecl{} session unless it is shadowed
 by a local declaration or is canceled by another proclamation.  Any other
 declaration is a @emph{local declaration} and is given only by the special form
 @code{declare}.  A local declaration remains in effect only within the body of
@@ -2631,7 +2632,7 @@ the @emph{surrounding construct} of these declarations.
 
 @defspec {the} {@var{value-type form}}
 
-The @ecls{} interpreter does actually check whether the value of the
+The @ecl{} interpreter does actually check whether the value of the
 @emph{form} conforms to the data type specified by @emph{value-type} and
 signals an error if the value does not.  The type checking is performed by
 the function @code{typep}.  For example,
@@ -2653,7 +2654,7 @@ is equivalent to
          (t (error ``~s is not of type fixnum." (car values)))))
 @end example
 
-On the other hand, the @ecls{} compiler uses the special form to
+On the other hand, the @ecl{} compiler uses the special form to
 obtain type information for compiled code optimization. No code for
 runtime type-checking is embedded in the compiled code.
 
@@ -2670,13 +2671,13 @@ runtime type-checking is embedded in the compiled code.
 @node Declaration specifiers, Type specifiers, Declarations, Declarations
 @section Declaration Specifiers
  
-@ecls{} recognizes all declaration specifiers defined in @bibcite{Steele:84}.
+@ecl{} recognizes all declaration specifiers defined in @bibcite{Steele:84}.
 The syntax of each such declaration specifier is exactly the same as defined in
-@bibcite{Steele:84}.  In addition, @ecls{} recognizes the @code{object}
-declaration specifier which is specific to @ecls{}.
+@bibcite{Steele:84}.  In addition, @ecl{} recognizes the @code{object}
+declaration specifier which is specific to @ecl{}.
 
 @deffn {Declaration} {special}  @{@var{variable-name}@}*
-The interpreter and the compiler of @ecls{} both treat special declarations
+The interpreter and the compiler of @ecl{} both treat special declarations
 exactly as described in @bibcite{Steele:84}.
 @end deffn
 
@@ -2839,7 +2840,7 @@ Usually, primitive functions such as @code{car} are compiled in-line.
 Therefore, in this example, only the first call to @code{car} within @code{foo}
 is compiled not in-line.
 
-In general, the @ecls{} compiler compiles functions in-line whenever possible.
+In general, the @ecl{} compiler compiles functions in-line whenever possible.
 Thus an @code{inline} declaration @code{(inline @var{function1 function2} ...)}
 is worthless if none of the named functions have previously been declared to be
 @code{notinline}.
@@ -2854,20 +2855,20 @@ proclamations are simply ignored.
 @end deffn
 
 @deffn {Declaration} {optimize}  @{(quality value) | quality@}*
-@ecls{} supports the four @code{optimize} qualities listed in the
+@ecl{} supports the four @code{optimize} qualities listed in the
 @bibcite{Steele:84}.
 
 @code{speed} and @code{compilation-speed} are used to set up the optimization
 switch of the C language compiler which is invoked to compile the C-language
-code generated by the @ecls{} compiler (see Chapter 6).  @code{(optimize (speed
+code generated by the @ecl{} compiler (see Chapter 6).  @code{(optimize (speed
 @var{n}))} and @code{(optimize (compilation-speed @var{m}))} are equivalent,
 where @var{n} and @var{m} are integers between 0 and 3, and @var{m} is equal to
-3-@var{n}.  When a @ecls{} session is started, the @code{speed} quality is set
+3-@var{n}.  When a @ecl{} session is started, the @code{speed} quality is set
 to 3.  That is, by default, the compiler generates the fastest code in the
 longest compilation time.  The @code{space} quality specifies whether the code
 size is important or not: The compiled code is a little bit larger and faster
 when compiled with the space quality 0, than when compiled with the space
-quality 1, 2, or 3.  When a @ecls{} session is started, the @code{space}
+quality 1, 2, or 3.  When a @ecl{} session is started, the @code{space}
 quality is set to 0.  The @code{safety} quality determines how much runtime
 error checking code should be embedded in the compiled code.  If the
 @code{safety} quality is 0, the compiled code scarcely does runtime error
@@ -2876,7 +2877,7 @@ function will check the number of arguments to the function at runtime.  If the
 @code{safety} quality is 2 or 3, then the compiled code does full runtime error
 checking.  In addition, the highest quality value 3 causes the compiler to
 treat all functions as if they were declared to be @code{notinline}.  When a
-@ecls{} session is started, the @code{safety} quality is set to 0.
+@ecl{} session is started, the @code{safety} quality is set to 0.
 @end deffn
 
 @deffn {Declaration} {declaration}  @{name@}*
@@ -2885,7 +2886,7 @@ A @code{declaration} declaration is used exactly as specified in the
 @end deffn
 
 @deffn {Declaration} {object}  @{variable-name@}*
-This is the only declaration specifier that is specific to @ecls{}.
+This is the only declaration specifier that is specific to @ecl{}.
 @code{(object @var{var1 ...  varn})} affects only variable bindings and
 specifies that the named variables can be allocated in the C stack (see Section
 7.3).  The compiler issues a warning if one of the named variables is not bound
@@ -2927,9 +2928,9 @@ specifier that is a subtype of other specifiers is selected.  For example, type
 specifiers @tindexed{fixnum}, @code{(mod 3)}, and @code{(member 0 1)} are all
 converted to @tindexed{fixnum}, though they are also subtypes of @true{}.
 
-Because of this type specifier conversion, @ecls{} may sometimes regard two
+Because of this type specifier conversion, @ecl{} may sometimes regard two
 seemingly distinct declarations as the same.  For example, the following
-@code{type} declarations are completely equivalent, internally in @ecls{}.
+@code{type} declarations are completely equivalent, internally in @ecl{}.
 
 @example
 declare (type fixnum x))
@@ -2939,7 +2940,7 @@ declare (type (mod 3) x))
 declare (type (member 0 1) x))
 @end example
  
-Type specifiers in declaration specifications passed to the @ecls{} specific
+Type specifiers in declaration specifications passed to the @ecl{} specific
 function @code{proclamation} are also converted to significant type specifiers.
 Thus, for example,
 
@@ -2962,7 +2963,7 @@ function type of @code{foo} is checked.
 @node Type declarations, Variable allocations, Type specifiers, Declarations
 @section Treatment of Type Declarations
  
-@ecls{} uses several runtime stacks.
+@ecl{} uses several runtime stacks.
 
 Arguments to functions, lexical and temporary variables are allocated on the C
 stack. Temporary values saved on the C stack may sometimes be represented as
@@ -2972,7 +2973,7 @@ deferencing operation is necessary, and partly because no cell is newly
 allocated on the heap when a new object is created. This is particularly
 helpful for numeric code which computes with floating point numbers.
 
-@ecls{} uses a conservative garbage collector to scan the C stack and find
+@ecl{} uses a conservative garbage collector to scan the C stack and find
 references to live object.
 
 @node Variable allocations, Raw data functions, Type declarations, Declarations
@@ -2983,7 +2984,7 @@ If a lexical variable is declared to be of @tindexed{fixnum}, @code{character},
 on the C stack rather than on the value stack.  In addition, the variable
 always has a raw datum as its value: 32 bit signed integer for fixnums, 8 bit
 character code with 24 bit padding for characters (remember that the font and
-bit fields of @ecls{} characters are always 0), 32 bit floating point
+bit fields of @ecl{} characters are always 0), 32 bit floating point
 representation for short-floats, and 64 bit floating point representation for
 long-floats.  Similarly, if a lexical variable is named in an @code{object}
 declaration (see Section 7.1), then it is allocated on the C stack but, in this
@@ -3170,7 +3171,7 @@ is necessary to unbox the parameters into C variables.
 @node OS interface, Macros, Declarations, Top
 @chapter Operating System Interface
 
-@ecls{} provides the following facilities that are not defined in
+@ecl{} provides the following facilities that are not defined in
 @bibcite{Steele:84}.
 
 @defun {system} {string}
@@ -3187,7 +3188,7 @@ which one can read its output.
 
 
 @defun {quit} {@optional{} exit-code}
-Terminates @ecls{} and returns the @var{exit-code} to the parent process.
+Terminates @ecl{} and returns the @var{exit-code} to the parent process.
 @var{exit-code} must be an integer and its default value is @code{0}.
 @end defun
 
@@ -3201,7 +3202,7 @@ the third element in the @code{defmacro} form,
 @end example
 
 The description of defmacro lambda-lists in @bibcite{Steele:84} is quite
-ambiguous.  @ecls{} employs the following syntax.
+ambiguous.  @ecl{} employs the following syntax.
 
 The complete syntax of a defmacro lambda-list is:
 
@@ -3258,14 +3259,14 @@ or immediately after the variable that follows @code{&whole}, if @code{&whole}
 is supplied.  @code{&environment} is not allowed within @var{pseudo-var}.  Like
 @code{&whole}, use of @code{&environment} does not affect the processing of the
 rest of the defmacro lambda-list.  If an @code{&environment} parameter is
-supplied andif this parameter is not used at all, then the @ecls{} compiler
+supplied andif this parameter is not used at all, then the @ecl{} compiler
 will issue a warning.  To suppress the warning, just remove the parameter from
 the defmacro lambda-list, or add an @code{ignore} declaration.
  
 The defmacro lambda-list keyword @code{&body} is completely equivalent to the
-@rest{} keyword.  @ecls{} takes no special action for @code{&body} parameters.
+@rest{} keyword.  @ecl{} takes no special action for @code{&body} parameters.
 
-Although useless, @ecls{} allows supplied-p parameters to be destructured.
+Although useless, @ecl{} allows supplied-p parameters to be destructured.
 This is useless because supplied-p parameters can never be bound to a non-empty
 list.  Our intention is to stick to the specification in the
 @bibcite{Steele:84} as far as possible, even if it is silly to do so.

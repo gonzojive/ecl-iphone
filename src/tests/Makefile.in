@@ -1,7 +1,7 @@
 top_srcdir=@top_srcdir@
 srcdir=@srcdir@
 
-ECL = ../ecls
+ECL = ../ecl
 TESTS = array backquot characters eval20 format hashlong iofkts lambda \
 	lists151 lists152 lists153 lists154 lists155 lists156 loop \
 	macro8 map number setf steele7 streams streamslong \
@@ -15,11 +15,11 @@ serious_test:
 	 echo "(quit)") | $(ECL)
 	rm -f *.plc
 
-ecls_min_test:
+ecl_min_test:
 	(echo '(load "bare.lsp")'; \
 	 echo '(load "$(srcdir)/tests")'; \
 	 echo "(run-all-tests \"$(srcdir)/\" \"`pwd`/\")"; \
-	 echo "(quit)") | (cd ..; ./ecls_min)
+	 echo "(quit)") | (cd ..; ./ecl_min)
 	rm -f *.plc
 
 $(TESTS):

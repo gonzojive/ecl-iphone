@@ -3,7 +3,7 @@ dnl Make srcdir absolute, if it isn't already.  It's important to
 dnl avoid running the path through pwd unnecessarily, since pwd can
 dnl give you automounter prefixes, which can go away.
 dnl
-AC_DEFUN(ECLS_MAKE_ABSOLUTE_SRCDIR,[
+AC_DEFUN(ECL_MAKE_ABSOLUTE_SRCDIR,[
 case "${srcdir}" in
   /* ) ;;
   . )
@@ -22,7 +22,7 @@ dnl
 dnl --------------------------------------------------------------
 dnl Define a name for this operating system and set some defaults
 dnl
-AC_DEFUN(ECLS_GUESS_HOST_OS,[
+AC_DEFUN(ECL_GUESS_HOST_OS,[
 #### Some command variations:
 AC_SUBST(CP)
 AC_SUBST(RM)
@@ -67,7 +67,7 @@ dnl --------------------------------------------------------------
 dnl Extract some information from the machine description file.
 dnl WARNING: file confdefs.h may depend on version of Autoconf
 dnl
-AC_DEFUN(ECLS_PROCESS_MACHINES_H,[
+AC_DEFUN(ECL_PROCESS_MACHINES_H,[
 [
 echo "Extracting parameters from the machine description file"
 
@@ -130,7 +130,7 @@ dnl --------------------------------------------------------------
 dnl Check the direction to which the stack grows (for garbage
 dnl collection).
 dnl
-AC_DEFUN(ECLS_STACK_DIRECTION,[
+AC_DEFUN(ECL_STACK_DIRECTION,[
   AC_MSG_CHECKING(whether stack growns downwards)
   AC_SUBST(DOWN_STACK)
   AC_TRY_RUN([
@@ -159,7 +159,7 @@ dnl --------------------------------------------------------------
 dnl Check whether we can access the values in va_list() as an
 dnl ordinary C vector.
 dnl
-AC_DEFUN(ECLS_ARGS_ARRAY,[
+AC_DEFUN(ECL_ARGS_ARRAY,[
   AC_MSG_CHECKING(if arguments can be accessed through vector)
   AC_TRY_RUN([
 #include <stdarg.h>
@@ -191,7 +191,7 @@ dnl --------------------------------------------------------------
 dnl Guess the right type and size for cl_fixnum. It must be large
 dnl enough that convertion back and forth to pointer implies no
 dnl loss of information.
-AC_DEFUN(ECLS_FIXNUM_TYPE,[
+AC_DEFUN(ECL_FIXNUM_TYPE,[
 AC_MSG_CHECKING(appropiate type for fixnums)
 dnl
 dnl 1.- Guess the type of a fixnum

@@ -161,7 +161,7 @@ typedef char *  caddr_t;
 #if defined(vax) && 0
 #define PC_INDEX 0
 #define TRANSFER(buf, addr)	buf[PC_INDEX] = (int)addr+((((int *)addr)[0] >> 19) & 4)+4; \
-  				ecls_longjmp(buf)
+  				ecl_longjmp(buf)
 #define TRANSFER_CALL(fun)	REG = (cl_object)fun; \
 				asm("	ashl	$-19,(r11),r0"); \
 				asm("	bicl2	$-5,r0"); \

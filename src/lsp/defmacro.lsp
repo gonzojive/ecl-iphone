@@ -11,24 +11,24 @@
 
 (si::select-package "SYSTEM")
 
-#-ecls-min
+#-ecl-min
 (c-declaim (si::c-export-fname find-documentation remove-documentation))
 
-#-ecls-min
+#-ecl-min
 (defvar *dl*)
-#-ecls-min
+#-ecl-min
 (defvar *key-check*)
-#-ecls-min
+#-ecl-min
 (defvar *arg-check*)
 
-#+ecls-min
+#+ecl-min
 (sys:*make-special '*dl*)
-#+ecls-min
+#+ecl-min
 (sys:*make-special '*key-check*)
-#+ecls-min
+#+ecl-min
 (sys:*make-special '*arg-check*)
 
-#+ecls-min
+#+ecl-min
 (si::fset 'push
 	  #'(lambda-block push (args env)
 	      (let* ((what (second args))
@@ -36,7 +36,7 @@
 		`(setq ,where (cons ,what ,where))))
 	  t)
 
-#+ecls-min
+#+ecl-min
 (si::fset 'pop
 	  #'(lambda-block pop (args env)
 	      (let ((where (cadr args)))
@@ -46,7 +46,7 @@
 		  v)))
 	  t)
 
-#+ecls-min
+#+ecl-min
 (si::fset 'incf
 	  #'(lambda-block incf (args env)
 	      (let* ((where (second args))
@@ -56,7 +56,7 @@
 		  `(setq ,where (1+ ,where)))))
 	  t)
 
-#+ecls-min
+#+ecl-min
 (si::fset 'decf
 	  #'(lambda-block decf (args env)
 	      (let* ((where (second args))

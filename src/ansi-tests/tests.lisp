@@ -21,7 +21,7 @@ the returnvalues or the type of the condition used."
 (defvar *log* nil)
 (defvar *output-generated* nil)
 (defvar *lisp-type*
-  #+ecls "ECLS"
+  #+ecl "ECL"
   #+CLISP "CLISP"
   #+AKCL "AKCL"
   #+CMU "CMUCL"
@@ -158,11 +158,11 @@ the returnvalues or the type of the condition used."
 	  "backquot"
 	  #-akcl "characters"
 	  #+(or CLISP ALLEGRO CMU SBCL)"clos"
-	  #-ECLS
+	  #-ECL
 	  "cmucl-bugs"
-	  #+(or CLISP ALLEGRO CMU SBCL ECLS) "conditions"
+	  #+(or CLISP ALLEGRO CMU SBCL ECL) "conditions"
 	  "eval20"
-	  #-ecls
+	  #-ecl
 	  "excepsit"
 	  "format"
 	  #+xcl "hash"
@@ -180,7 +180,7 @@ the returnvalues or the type of the condition used."
 	  "map"
 	  #+(or CLISP ALLEGRO CMU SBCL) "mop"
 	  "new-bugs"
-	  #-(or cmu sbcl ecls) "number"
+	  #-(or cmu sbcl ecl) "number"
 	  #+clisp "number2"
 	  #+(or XCL CLISP) "path"
 	  #+xcl "readtable"
@@ -192,7 +192,7 @@ the returnvalues or the type of the condition used."
 	  "section15"
 	  "section16"
 	  "section17"
-	  #-ecls
+	  #-ecl
 	  "section18-errors"
 	  "section18"
 	  "section19"

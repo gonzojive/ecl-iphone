@@ -126,7 +126,7 @@ extern frame_ptr frs_top;
 
 extern frame_ptr _frs_push(register enum fr_class class, register cl_object val);
 
-#define frs_push(class, val)  ecls_setjmp(_frs_push(class, val)->frs_jmpbuf)
+#define frs_push(class, val)  ecl_setjmp(_frs_push(class, val)->frs_jmpbuf)
 
 #define frs_pop() (frs_top--)
 

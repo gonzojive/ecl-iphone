@@ -30,7 +30,7 @@ T
 T
 
 (constantp '#(110))
-#+(or XCL AKCL ANSI-CL ECLS) T #-(or XCL AKCL ANSI-CL ECLS) NIL
+#+(or XCL AKCL ANSI-CL ECL) T #-(or XCL AKCL ANSI-CL ECL) NIL
 
 (constantp :max)
 T

@@ -256,9 +256,9 @@
  (sublis '(((a) . uu) (a . ii))
 	 '(i (a) a)
 	 :test #'(lambda (x y) (if (listp y) (eql x (car y)))))
- #+(or xcl akcl lucid allegro ecls) (i ii . ii) ; x aus der aliste, y ein blatt des baumes
+ #+(or xcl akcl lucid allegro ecl) (i ii . ii) ; x aus der aliste, y ein blatt des baumes
  #+(or clisp cmu sbcl)              (i (uu) uu) ; x ein blatt, y aus der aliste
- #-(or xcl clisp akcl cmu sbcl lucid allegro ecls) unknown)
+ #-(or xcl clisp akcl cmu sbcl lucid allegro ecl) unknown)
 
 (my-assert
  (nsublis '(((a) . uu) (a . ii))
@@ -282,7 +282,7 @@
  (nsublis '(((a) . uu) (a . ii))
 	  '(i (a) a)
 	  :test #'(lambda (x y) (if (listp y) (eql x (car y)))))
- #+(or xcl akcl allegro ecls) (i ii . ii)	; x aus der aliste, y ein blatt des baumes
+ #+(or xcl akcl allegro ecl) (i ii . ii)	; x aus der aliste, y ein blatt des baumes
  #+(or clisp cmu sbcl lucid)  (i (uu) uu) ; x ein blatt, y aus der aliste
- #-(or xcl clisp akcl cmu sbcl lucid allegro ecls) unknown)
+ #-(or xcl clisp akcl cmu sbcl lucid allegro ecl) unknown)
 

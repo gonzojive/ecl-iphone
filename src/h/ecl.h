@@ -1,5 +1,5 @@
 /*
-    ecls.h -- Main headers for development of ECLS
+    ecl.h -- Main headers for development of ECL
 */
 /*
     Copyright (c) 1984, Taiichi Yuasa and Masami Hagiya.
@@ -51,7 +51,7 @@
 #ifndef _ARGS
 #define _ARGS(x) x
 #endif
-/*#include "ecls-inl.h"*/
+/*#include "ecl-inl.h"*/
 #include "lisp_external.h"
 #include "eval.h"
 #include "number.h"

@@ -328,9 +328,9 @@ nil
 (my-assert
  (subtypep '(or (integer 1 (5) float))
 	   '(or float (mod 5)))
- #+(or xcl clisp ecls) t
+ #+(or xcl clisp ecl) t
  #+(or allegro cmu sbcl) error
- #-(or xcl clisp allegro cmu sbcl ecls) unknown)
+ #-(or xcl clisp allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (subtypep '(or (integer 1 (5)) float)

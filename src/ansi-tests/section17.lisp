@@ -385,8 +385,8 @@
 
 (my-assert
  str
- #+(or cmu sbcl clisp ecls) "cba"
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+(or cmu sbcl clisp ecl) "cba"
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 
 (my-assert
  (let ((l (list 1 2 3)))
@@ -402,9 +402,9 @@
  (let ((l (list 1 2 3)))
    (nreverse l)
    l)
- #+(or cmu sbcl ecls) (1)
+ #+(or cmu sbcl ecl) (1)
  #+clisp (3 2 1)
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 
 ;;; sort
 
@@ -784,8 +784,8 @@
 
 (my-assert
  tester
- #+(or cmu sbcl clisp ecls) (1 3 5)
- #-(or cmu sbcl clisp ecls)  fill-this-in)
+ #+(or cmu sbcl clisp ecl) (1 3 5)
+ #-(or cmu sbcl clisp ecl)  fill-this-in)
 
 (my-assert
  (setq foo (list 'a 'b 'c))
@@ -801,14 +801,14 @@
 
 (my-assert
  bar
- #+(or cmu sbcl clisp ecls) (B C)
- #-(or cmu sbcl clisp ecls)  fill-this-in)
+ #+(or cmu sbcl clisp ecl) (B C)
+ #-(or cmu sbcl clisp ecl)  fill-this-in)
 					; ((C))) or ...
 
 (my-assert
  (eq (cdr foo) (car bar))
- #+(or cmu sbcl clisp ecls) nil
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+(or cmu sbcl clisp ecl) nil
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 					; T or ...
 
 

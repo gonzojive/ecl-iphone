@@ -20,11 +20,11 @@
 #endif
 
 #if defined(linux)
-#  define ecls_setjmp	setjmp
-#  define ecls_longjmp	longjmp
+#  define ecl_setjmp	setjmp
+#  define ecl_longjmp	longjmp
 #else
-#  define ecls_setjmp	_setjmp
-#  define ecls_longjmp	_longjmp
+#  define ecl_setjmp	_setjmp
+#  define ecl_longjmp	_longjmp
 #endif
 
 #ifdef __linux__

@@ -6,7 +6,7 @@
     Copyright (c) 1990, Giuseppe Attardi and William F. Schelter.
     Copyright (c) 2001, Juan Jose Garcia Ripoll.
 
-    ECLS is free software; you can redistribute it and/or
+    ECL is free software; you can redistribute it and/or
     modify it under the terms of the GNU Library General Public
     License as published by the Free Software Foundation; either
     version 2 of the License, or (at your option) any later version.
@@ -15,7 +15,7 @@
 */
 
 
-#include "ecls.h"
+#include "ecl.h"
 #include "page.h"
 
 /******************************* EXPORTS ******************************/
@@ -498,7 +498,7 @@ mark_phase(void)
 	      volatile jmp_buf buf;
 
 	      /* ensure flushing of register caches */
-	      if (ecls_setjmp(buf) == 0) ecls_longjmp(buf, 1);
+	      if (ecl_setjmp(buf) == 0) ecl_longjmp(buf, 1);
 
 #ifdef THREADS
 	      if (clwp != old_clwp) /* is not the executing stack */

@@ -1,5 +1,5 @@
 ;;;
-;;; Configuration file for the bootstrapping version of ECLS
+;;; Configuration file for the bootstrapping version of ECL
 ;;;
 (load "bare.lsp")
 
@@ -38,6 +38,6 @@
 ;(sbt::operate-on-system cmp :load)
 )
 
-(compiler::build-ecls "ecls" :lisp-files '(#+(and (not dlopen) WANTS-CMP) cmp))
+(compiler::build-program "ecl" :lisp-files '(#+(and (not dlopen) WANTS-CMP) cmp))
 
 (quit)

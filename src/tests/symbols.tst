@@ -7,6 +7,6 @@
 
 (PROGN (SETQ *GENSYM-COUNTER* 32) (gensym) (PRIN1-TO-STRING (GENSYM "garbage-")))
 #+XCL "#:|garbage|-33"
-#+(or CLISP ECLS AKCL ALLEGRO) "#:|garbage-33|"
+#+(or CLISP ECL AKCL ALLEGRO) "#:|garbage-33|"
 #-(or XCL CLISP AKCL ALLEGRO) UNKNOWN
 

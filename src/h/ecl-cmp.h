@@ -1,5 +1,5 @@
 /*
-    ecls-cmp.h  -- Include file for compiled code.
+    ecl-cmp.h  -- Include file for compiled code.
 */
 /*
     Copyright (c) 1984, Taiichi Yuasa and Masami Hagiya.

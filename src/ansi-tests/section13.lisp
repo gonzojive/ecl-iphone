@@ -182,14 +182,14 @@ extended-char, character, t")
 
 (my-assert
  (char> #\z #\A)
- #+(or cmu sbcl clisp ecls) T
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+(or cmu sbcl clisp ecl) T
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 
 
 (my-assert
  (char> #\Z #\a)
- #+(or cmu sbcl clisp ecls) nil
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+(or cmu sbcl clisp ecl) nil
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 
 
 (my-assert
@@ -204,8 +204,8 @@ extended-char, character, t")
 
 (my-assert
  (stable-sort (list #\b #\A #\B #\a #\c #\C) #'char<)
- #+(or cmu sbcl clisp ecls) (#\A #\B #\C #\a #\b #\c)
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+(or cmu sbcl clisp ecl) (#\A #\B #\C #\a #\b #\c)
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 					;  (#\A #\B #\C #\a #\b #\c) ;Implementation A
 					;  (#\a #\b #\c #\A #\B #\C) ;Implementation B
 					;  (#\a #\A #\b #\B #\c #\C) ;Implementation C
@@ -524,17 +524,17 @@ extended-char, character, t")
 
 (my-assert
  (char-name #\a)
- #+(or cmu sbcl ecls) nil
+ #+(or cmu sbcl ecl) nil
  #+clisp "LATIN_SMALL_LETTER_A"
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 ;; NIL OR "LOWERCASE-a" OR  "Small-A" OR  "LA01"
 
 
 (my-assert
  (char-name #\A)
- #+(or cmu sbcl ecls) nil
+ #+(or cmu sbcl ecl) nil
  #+clisp "LATIN_CAPITAL_LETTER_A"
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 ;;  NIL OR "UPPERCASE-A" OR  "Capital-A" OR  "LA02"
 
 ;; Even though its CHAR-NAME can vary, #\A prints as #\A

@@ -2,12 +2,12 @@
 <ul>
 <li>Unpack the tar file
 <pre>
-	gunzip -c ecls.tgz | tar xf -
+	gunzip -c ecl.tgz | tar xf -
 </pre>
 
 <li>Run the configuration file.
 <pre>
-	cd ecls-@VERSION@
+	cd ecl-@VERSION@
 	./configure
 </pre>
 The previous step creates a directory with the name <b>build</b>, and
@@ -19,7 +19,7 @@ stores a bunch of makefiles in it.
 </pre>
 
 <li>If you want to test the fresh new executable before installing. You you
-should invoke ECLS from withing the build directory using the "-dir ./"
+should invoke ECL from withing the build directory using the "-dir ./"
 argument to advice him about the right place to find header files, libraries,
 etc.  For instance, under linux the build directory is "linux" and we would do
 <pre>
@@ -28,7 +28,7 @@ etc.  For instance, under linux the build directory is "linux" and we would do
 	$ cd build
 	$ make
 	[...]
-	$ ./ecls -dir ./
+	$ ./ecl -dir ./
 </pre>
 
 <li>Install it in the desired location

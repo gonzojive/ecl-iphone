@@ -381,22 +381,22 @@
 
 (my-assert
  (min 5.0 2)
- #+(or cmu sbcl clisp ecls) 2
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+(or cmu sbcl clisp ecl) 2
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 					;  2 OR  2.0
 
 
 (my-assert
  (max 3.0 7 1)
- #+(or cmu sbcl clisp ecls) 7
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+(or cmu sbcl clisp ecl) 7
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 					;  7 OR  7.0
 
 
 (my-assert
  (min 3.0 7 1)
- #+(or cmu sbcl clisp ecls) 1
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+(or cmu sbcl clisp ecl) 1
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 					; 1 OR  1.0
 
 
@@ -407,23 +407,23 @@
 
 (my-assert
  (min 1.0s0 7.0d0)
- #+(or cmu sbcl ecls) 1.0		;hmm in fact an error?
+ #+(or cmu sbcl ecl) 1.0		;hmm in fact an error?
  #+clisp 1.0s0
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 					;  1.0s0 OR  1.0d0
 
 
 (my-assert
  (max 3 1 1.0s0 1.0d0)
- #+(or cmu sbcl clisp ecls) 3
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+(or cmu sbcl clisp ecl) 3
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 					;  3 OR 3.0d0
 
 
 (my-assert
  (min 3 1 1.0s0 1.0d0)
- #+(or cmu sbcl clisp ecls) 1
- #-(or cmu sbcl clisp ecls) fill-this-in)
+ #+(or cmu sbcl clisp ecl) 1
+ #-(or cmu sbcl clisp ecl) fill-this-in)
 					;  1 OR  1.0s0  OR  1.0d0
 
 ;;; plusp minusp

@@ -10,13 +10,13 @@ NIL
          (constantp var)                             ; Konstante
          #+XCL (eq (sys::%p-get-cdr var 0) sys::%cdr-specsym) ; specvar
          #+CLISP (and (sys::special-variable-p var) (not (constantp var))) ; specvar
-	 #+ECLS (and (sys::specialp var) (not (constantp var))) ; specvar
+	 #+ECL (and (sys::specialp var) (not (constantp var))) ; specvar
          #+ALLEGRO (and (not (constantp var)) (eval `(let ((,var (list nil))) (and (boundp ',var) (eq (symbol-value ',var) ,var)))))
          (and (fboundp var) t)                       ; funktion. Eigenschaft
          (and (fboundp var) (macro-function var) t)  ; Macro?
          (and (fboundp var) (special-form-p var) t)  ; Spezialform?
-         #-(or ECLS CLISP) (and (symbol-plist var) t)          ; p-Liste?
-         #+(or ECLS CLISP) (and (or (get var 'i1) (get var 'i2) (get var 'i3)) t) ; p-Liste?
+         #-(or ECL CLISP) (and (symbol-plist var) t)          ; p-Liste?
+         #+(or ECL CLISP) (and (or (get var 'i1) (get var 'i2) (get var 'i3)) t) ; p-Liste?
          (get var 'i1)                               ; i1
          (get var 'i2)                               ; i2
          (get var 'i3)                               ; i3
@@ -39,9 +39,9 @@ clrvar
 #+(or XCL CLISP ALLEGRO)
 T
 
-#+ECLS
+#+ECL
 (defun setf-get (s p v) (setf (get s p) v))
-#+ECLS
+#+ECL
 SETF-GET
 
 ;;; Begin Breitentest
@@ -266,7 +266,7 @@ v3
 ;;; rebind
 
 (makunbound 'v3)
-#+(or XCL ALLEGRO) v3 #+(or ECLS CLISP) ERROR #-(or XCL ALLEGRO ECLS CLISP) UNKNOWN
+#+(or XCL ALLEGRO) v3 #+(or ECL CLISP) ERROR #-(or XCL ALLEGRO ECL CLISP) UNKNOWN
 (fmakunbound 'v3)
 v3
 
@@ -448,7 +448,7 @@ v5
 ;;; rebind
 
 (makunbound 'v5)
-#+(or XCL ALLEGRO) v5 #+(or ECLS CLISP) ERROR #-(or XCL ALLEGRO ECLS CLISP) UNKNOWN
+#+(or XCL ALLEGRO) v5 #+(or ECL CLISP) ERROR #-(or XCL ALLEGRO ECL CLISP) UNKNOWN
 (remprop 'v5 'i2)
 t
 (remprop 'v5 'i1)

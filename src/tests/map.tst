@@ -1,7 +1,7 @@
 (setf a-vector (make-array 10))
 #+XCL #(0 0 0 0 0 0 0 0 0 0)
-#+(or CLISP ECLS AKCL ALLEGRO) #(NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL)
-#-(or XCL CLISP ECLS AKCL ALLEGRO) UNKNOWN
+#+(or CLISP ECL AKCL ALLEGRO) #(NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL)
+#-(or XCL CLISP ECL AKCL ALLEGRO) UNKNOWN
 
 (do ((i 0 (1+ i))
      (n (length a-vector)))

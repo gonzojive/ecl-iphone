@@ -86,39 +86,39 @@
  (union '(a b c d)
 	'(a d i v))
  #+xcl (v i a b c d)
- #+(or clisp akcl ecls) (b c a d i v)
+ #+(or clisp akcl ecl) (b c a d i v)
  #+(or allegro cmu sbcl) (c b a d i v)
- #-(or xcl clisp akcl allegro cmu sbcl ecls) unknown)
+ #-(or xcl clisp akcl allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (nunion '(a b c d)
 	 '(u i b a))
  #+xcl (a b c d u i)
- #+(or clisp akcl ecls) (c d u i b a)
+ #+(or clisp akcl ecl) (c d u i b a)
  #+(or allegro cmu sbcl) (d c u i b a)
- #-(or xcl clisp akcl allegro cmu sbcl ecls) unknown)
+ #-(or xcl clisp akcl allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (nintersection '(a b c d)
 		'(c d e f g))
- #+(or xcl clisp gcl ecls) (c d)
+ #+(or xcl clisp gcl ecl) (c d)
  #+(or allegro cmu sbcl) (d c)
- #-(or xcl clisp gcl allegro cmu sbcl ecls) unknown)
+ #-(or xcl clisp gcl allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (nintersection '(a b c d)
 		'(c d e f g)
 		:test-not 'eql)
- #+(or xcl clisp gcl ecls) (a b c d)
+ #+(or xcl clisp gcl ecl) (a b c d)
  #+(or allegro cmu sbcl) (d c b a)
- #-(or xcl clisp gcl allegro cmu sbcl ecls) unknown)
+ #-(or xcl clisp gcl allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (set-difference '(a b c d e)
 		 '(d b e))
- #+(or xcl allegro gcl cmu sbcl ecls) (c a)
+ #+(or xcl allegro gcl cmu sbcl ecl) (c a)
  #+(or clisp (and akcl (not gcl))) (a c)
- #-(or xcl clisp akcl allegro cmu sbcl ecls) unknown)
+ #-(or xcl clisp akcl allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (set-difference
@@ -145,23 +145,23 @@
 				(elt (symbol-name y)
 				     0))))
  #+(or xcl gcl allegro cmu sbcl) (berlin berta)
- #+(or clisp (and akcl (not gcl)) ecls) (berta berlin)
- #-(or xcl clisp akcl allegro cmu sbcl ecls) unknown)
+ #+(or clisp (and akcl (not gcl)) ecl) (berta berlin)
+ #-(or xcl clisp akcl allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (nset-difference '(a b c d)
 		  '(i j c))
- #+(or xcl clisp gcl ecls) (a b d)
+ #+(or xcl clisp gcl ecl) (a b d)
  #+(or allegro cmu sbcl) (d b a)
- #-(or xcl clisp gcl allegro cmu sbcl ecls) unknown)
+ #-(or xcl clisp gcl allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (set-exclusive-or '(a b c d)
 		   '(c a i l))
  #+(or xcl gcl) (d b l i)
- #+(or clisp (and akcl (not gcl)) ecls) (b d i l)
+ #+(or clisp (and akcl (not gcl)) ecl) (b d i l)
  #+(or allegro cmu sbcl) (l i d b)
- #-(or xcl clisp akcl allegro cmu sbcl ecls) unknown)
+ #-(or xcl clisp akcl allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (set-exclusive-or '(anton anna emil)
@@ -172,9 +172,9 @@
 				       0)
 				  (elt (symbol-name y)
 				       0))))
- #+(or xcl clisp gcl ecls) (emil berta)
+ #+(or xcl clisp gcl ecl) (emil berta)
  #+(or allegro cmu sbcl) (berta emil)
- #-(or xcl clisp gcl allegro cmu sbcl ecls) unknown)
+ #-(or xcl clisp gcl allegro cmu sbcl ecl) unknown)
 
 (my-assert
  (nset-exclusive-or '(a b c)
