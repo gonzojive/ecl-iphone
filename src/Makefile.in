@@ -103,9 +103,8 @@ install-base:
 	  $(INSTALL_DATA) $$i $(libdir); \
 	done
 	$(INSTALL_DATA) h/config.h $(libdir)/h
-
 flatinstall: BUILD-STAMP
-	$(MAKE) install bindir=$(prefix) libdir=$(prefix) install-base
+	$(MAKE) bindir=$(prefix) libdir=$(prefix) install-base
 	cd c; $(MAKE) prefix=$(prefix) flatinstall
 	cd doc; $(MAKE) prefix=$(prefix) flatinstall
 
