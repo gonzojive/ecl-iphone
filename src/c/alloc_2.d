@@ -48,13 +48,7 @@ cl_alloc_object(cl_type t)
 	tm = tm_of(t);
 
 	start_critical_section();
-#if 0
 	obj = (cl_object)GC_malloc(tm->tm_size);
-#else
-	obj = (cl_object)GC_malloc_explicitly_typed
-	  (tm->tm_size & ~GC_DS_BITMAP,
-	   tm->tm_size);
-#endif
 	obj->d.t = t;
 	/* GC_malloc already resets objects */
 	end_critical_section();
@@ -223,7 +217,6 @@ init_alloc(void)
 static void
 stacks_scanner(void)
 {
-#if 0
 	if (cl_stack) {
 		GC_push_conditional(cl_stack, cl_stack_top,1);
 		GC_set_mark_bit(cl_stack);
@@ -238,7 +231,6 @@ stacks_scanner(void)
 	}
 	if (NValues)
 		GC_push_all(Values, Values+NValues+1);
-#endif
 	if (old_GC_push_other_roots)
 		(*old_GC_push_other_roots)();
 }
