@@ -22,6 +22,9 @@ ECL 0.9f
 
  - ext:c-uint-max and ext:c-ulong-max did not have the right bignum value.
 
+ - All strings in a pathname must be valid C strings, with a null terminating
+   character and no fill pointer.
+
 * Visible changes:
 
  - Multithreaded ECL now in Windows, either with Microsoft VC++

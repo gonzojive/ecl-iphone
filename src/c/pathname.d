@@ -37,8 +37,20 @@
 typedef int (*delim_fn)(int);
 
 static cl_object
-check_directory(cl_object directory, bool logical)
+ensure_simple_string(cl_object s)
 {
+	return (type_of(s) == t_string)? coerce_to_simple_string(s) : s;
+}
+
+static cl_object
+destructively_check_directory(cl_object directory, bool logical)
+{
+	/* This function performs two tasks
+	 * 1) It ensures that the list is a valid directory list
+	 * 2) It ensures that all strings in the list are valid C strings without fill pointer
+	 *    All strings are copied, thus avoiding problems with the user modifying the
+	 *    list that was passed to MAKE-PATHNAME.
+	 */
 	/* INV: directory is always a list */
 	cl_object ptr;
 	int i;
@@ -66,6 +78,7 @@ check_directory(cl_object directory, bool logical)
 			if (i > 0)
 				return @':error';
 		} else if (type_of(item) == t_string) {
+			CAR(ptr) = copy_simple_string(item);
 			if (logical)
 				continue;
 			if (strcmp(item->string.self,".")==0) {
@@ -102,7 +115,7 @@ make_pathname(cl_object host, cl_object device, cl_object directory,
 		}
 		goto ERROR;
 	case t_cons: {
-		cl_object aux = check_directory(cl_copy_list(directory), 1);
+		cl_object aux = destructively_check_directory(cl_copy_list(directory), 1);
 		if (aux != @':error') {
 			directory = aux;
 			break;
@@ -137,12 +150,12 @@ make_pathname(cl_object host, cl_object device, cl_object directory,
 				 @':type', type,
 				 @':version', version));
 	}
-	x->pathname.host = host;
-	x->pathname.device = device;
+	x->pathname.host = ensure_simple_string(host);
+	x->pathname.device = ensure_simple_string(device);
 	x->pathname.directory = directory;
-	x->pathname.name = name;
-	x->pathname.type = type;
-	x->pathname.version = version;
+	x->pathname.name = ensure_simple_string(name);
+	x->pathname.type = ensure_simple_string(type);
+	x->pathname.version = ensure_simple_string(version);
 	return(x);
 }
 
@@ -437,7 +450,7 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 	if (CONSP(path)) {
 		if (CAR(path) != @':relative' && CAR(path) != @':absolute')
 			path = CONS(@':absolute', path);
-		path = check_directory(path, TRUE);
+		path = destructively_check_directory(path, TRUE);
 	}
 	if (path == @':error')
 		return Cnil;
@@ -509,7 +522,7 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 		if (CAR(path) != @':relative' && CAR(path) != @':absolute')
 			path = CONS(@':relative', path);
 		path = tilde_expand(path);
-		path = check_directory(path, FALSE);
+		path = destructively_check_directory(path, FALSE);
 	}
 	if (path == @':error')
 		return Cnil;
