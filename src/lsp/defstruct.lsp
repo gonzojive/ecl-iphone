@@ -22,6 +22,9 @@
 	 (access-function (if conc-name
 			      (intern (string-concatenate conc-name slot-name))
 			      slot-name)))
+    (if (eql access-function (sixth slot-descr))
+	(return-from make-access-function nil)
+	(setf (sixth slot-descr) access-function))
     (cond ((null type)
            ;; If TYPE is NIL,
            ;;  the slot is at the offset in the structure-body.
@@ -183,7 +186,7 @@
 
 ;;; PARSE-SLOT-DESCRIPTION parses the given slot-description
 ;;;  and returns a list of the form:
-;;;        (slot-name default-init slot-type read-only offset)
+;;;        (slot-name default-init slot-type read-only offset accessor-name)
 
 (defun parse-slot-description (slot-description offset)
   (declare (si::c-local))
@@ -208,7 +211,7 @@
                (t
                 (error "~S is an illegal structure slot option."
                          os))))))
-    (list slot-name default-init slot-type read-only offset)))
+    (list slot-name default-init slot-type read-only offset nil)))
 
 
 ;;; OVERWRITE-SLOT-DESCRIPTIONS overwrites the old slot-descriptions
@@ -231,7 +234,8 @@
                            (caddar sds)
                            (cadddr (car sds))
                            ;; The offset if from the old.
-                           (car (cddddr (car olds))))
+                           (car (cddddr (car olds)))
+			   (cadr (cddddr (car olds))))
                      (overwrite-slot-descriptions news (cdr olds))))
               (t
                (cons (car olds)
@@ -241,6 +245,8 @@
 (defun define-structure (name conc-name type named slots slot-descriptions
 			      copier include print-function constructors
 			      offset documentation)
+  ;; We are going to modify this list!!!
+  (setf slot-descriptions (copy-tree slot-descriptions))
   (put-sysprop name 'DEFSTRUCT-FORM `(defstruct ,name ,@slots))
   (put-sysprop name 'IS-A-STRUCTURE t)
   (put-sysprop name 'STRUCTURE-SLOT-DESCRIPTIONS slot-descriptions)
