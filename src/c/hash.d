@@ -422,7 +422,6 @@ cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 	cl_index hsize;
 	cl_object h;
 	double factor;
-	double delta;
 	cl_type t;
 
 	if (test == @'eq' || test == SYM_FUN(@'eq'))
@@ -439,12 +438,9 @@ cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
   	if (!FIXNUMP(size) || FIXNUM_MINUSP(size))
 		FEerror("~S is an illegal hash-table size.", 1, size);
 	hsize = fix(size);
-	delta = 0;
 	t = type_of(rehash_size);
-	if (t == t_fixnum || t == t_shortfloat || t == t_longfloat) {
-		delta = number_to_double(rehash_size);
-	}
-	if (delta < 1 || delta > MOST_POSITIVE_FIXNUM) {
+	if ((t != t_fixnum && t != t_shortfloat && t != t_longfloat) ||
+	    (number_compare(rehash_size, MAKE_FIXNUM(1)) < 0))
 		FEerror("~S is an illegal hash-table rehash-size.",
 			1, rehash_size);
 	}
