@@ -1454,7 +1454,7 @@ extern cl_object si_check_pending_interrupts(void);
 extern cl_object si_system(cl_object cmd);
 extern cl_object si_open_pipe(cl_object cmd);
 extern cl_object si_close_pipe(cl_object stream);
-extern cl_object si_run_program _ARGS((int narg, cl_object command, cl_object args, ...));
+extern cl_object si_run_program _ARGS((cl_narg narg, cl_object command, cl_object args, ...));
 
 #ifdef __cplusplus
 }
