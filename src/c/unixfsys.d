@@ -242,7 +242,7 @@ cl_object
 cl_file_author(cl_object file)
 {
 	cl_object filename = coerce_to_filename(file);
-#ifdef HAVE_PW_H
+#ifdef HAVE_PWD_H
 	struct stat filestatus;
 	struct passwd *pwent;
 
@@ -298,7 +298,7 @@ homedir_pathname(cl_object user)
 		namestring = (h == NULL)? make_simple_string("/")
 			: make_string_copy(h);
 	} else {
-#ifdef HAVE_PW_H
+#ifdef HAVE_PWD_H
 		struct passwd *pwent = NULL;
 #endif
 		char *p;
@@ -313,7 +313,7 @@ homedir_pathname(cl_object user)
 		}
 		if (i == 0)
 			return homedir_pathname(Cnil);
-#ifdef HAVE_PW_H
+#ifdef HAVE_PWD_H
 		pwent = getpwnam(p);
 		if (pwent == NULL)
 			FEerror("Unknown user ~S.", 1, p);

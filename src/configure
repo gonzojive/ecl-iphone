@@ -3389,7 +3389,7 @@ done
 
 
 
-for ac_header in sys/resource.h sys/utsname.h float.h pw.h dlfcn.h link.h\
+for ac_header in sys/resource.h sys/utsname.h float.h pwd.h dlfcn.h link.h\
  ulimit.h dirent.h sys/ioctl.h
 do
 as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`
