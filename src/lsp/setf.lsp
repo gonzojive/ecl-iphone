@@ -488,23 +488,25 @@ retrieved by (DOCUMENTATION 'SYMBOL 'FUNCTION)."
     `(DEFMACRO ,name (&ENVIRONMENT ENV %REFERENCE ,@lambdalist) ,docstring
        (MULTIPLE-VALUE-BIND (VARS VALS STORES SETTER GETTER)
            (GET-SETF-EXPANSION %REFERENCE ENV)
+	 (LET ((ALL-VARS (MAPCAR #'(LAMBDA (V) (LIST (GENSYM) V)) (LIST* ,@varlist ,restvar))))
 	 (IF (SYMBOLP GETTER)
-	     (SUBST (LIST* (QUOTE ,function) GETTER ,@varlist ,restvar)
+	     (SUBST (LIST* (QUOTE ,function) GETTER (MAPCAR #'CAR ALL-VARS))
                     (CAR STORES)
-                    SETTER)
+                    `(LET* ,ALL-VARS ,SETTER))
 	     (DO ((D VARS (CDR D))
 		  (V VALS (CDR V))
 		  (LET-LIST NIL (CONS (LIST (CAR D) (CAR V)) LET-LIST)))
 		 ((NULL D)
+		  (SETQ LET-LIST (APPEND (NREVERSE ALL-VARS) LET-LIST))
 		  (PUSH
 		   (LIST
 		    (CAR STORES)
 		    (IF (AND (LISTP %REFERENCE) (EQ (CAR %REFERENCE) 'THE))
 			(LIST 'THE (CADR %REFERENCE)
 			      (LIST* (QUOTE ,function) GETTER ,@varlist ,restvar))
-			(LIST* (QUOTE ,function) GETTER ,@varlist ,restvar)))
+			(LIST* (QUOTE ,function) GETTER (MAPCAR #'CAR ALL-VARS))))
 		   LET-LIST)
-		  `(LET* ,(NREVERSE LET-LIST) ,SETTER))))))))
+		  `(LET* ,(NREVERSE LET-LIST) ,SETTER)))))))))
 #|
 (defmacro define-modify-macro (name lambda-list function &optional doc-string)
   (let ((update-form
@@ -543,12 +545,13 @@ Removes the property specified by FORM from the property list stored in PLACE.
 Returns T if the property list had the specified property; NIL otherwise."
   (multiple-value-bind (vars vals stores store-form access-form)
       (get-setf-expansion place env)
-    `(let* ,(mapcar #'list vars vals)
-       (declare (:read-only ,@vars)) ; Beppe
-       (multiple-value-bind (,(car stores) flag)
-           (sys:rem-f ,access-form ,indicator)
-         ,store-form
-         flag))))
+    (let ((s (gensym)))
+      `(let* (,@(mapcar #'list vars vals) (,s ,indicator))
+         (declare (:read-only ,@vars)) ; Beppe
+         (multiple-value-bind (,(car stores) flag)
+             (sys:rem-f ,access-form ,s)
+           ,store-form
+           flag)))))
 
 (define-modify-macro incf (&optional (delta 1)) +
   "Syntax: (incf place [form])
