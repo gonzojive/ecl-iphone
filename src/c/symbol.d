@@ -378,6 +378,7 @@ symbol_name(cl_object x)
 @(defun gentemp (&optional (prefix gentemp_prefix) (pack current_package())
 		 &aux str smbl)
 	size_t name_length, j;
+	int intern_flag;
 @
 	assert_type_string(prefix);
 	assert_type_package(pack);
@@ -398,7 +399,7 @@ ONCE_MORE:
 		for (;  j > 0;  j /= 10)
 			str->string.self[--name_length] = j%10 + '0';
 	gentemp_counter++;
-	smbl = intern(str, pack);
+	smbl = intern(str, pack, &intern_flag);
 	if (intern_flag != 0)
 		goto ONCE_MORE;
 	@(return smbl)

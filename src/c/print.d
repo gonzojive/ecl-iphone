@@ -702,6 +702,7 @@ write_symbol(register cl_object x)
 	bool escaped;
 	cl_index i;
 	cl_object s = x->symbol.name;
+	int intern_flag;
 
 	if (!PRINTescape) {
 		for (i = 0;  i < s->string.fillp;  i++) {
@@ -722,7 +723,7 @@ write_symbol(register cl_object x)
 	} else if (x->symbol.hpack == keyword_package)
 		write_ch(':');
 	else if ((PRINTpackage != OBJNULL && x->symbol.hpack != PRINTpackage)
-		 || find_symbol(x, current_package())!=x
+		 || find_symbol(x, current_package(), &intern_flag)!=x
 		 || intern_flag == 0) {
 		escaped = 0;
 		for (i = 0;
@@ -748,7 +749,7 @@ write_symbol(register cl_object x)
 		}
 		if (escaped)
 			write_ch('|');
-		if (find_symbol(x, x->symbol.hpack) != x)
+		if (find_symbol(x, x->symbol.hpack, &intern_flag) != x)
 			error("can't print symbol");
 		if ((PRINTpackage != OBJNULL &&
 		     x->symbol.hpack != PRINTpackage)

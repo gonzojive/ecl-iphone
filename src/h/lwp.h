@@ -88,9 +88,6 @@ typedef struct lpd {
   cl_object lwp_key_function;
   cl_object (*lwp_kf)();
 
-  /* package.d */
-  int lwp_intern_flag;
-
   /* print.d */
   cl_fixnum lwp_CIRCLEbase;
   cl_object lwp_PRINTstream;

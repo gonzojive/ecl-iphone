@@ -227,7 +227,7 @@ read_object(cl_object in)
 	enum chattrib a;
 	cl_object old_delimiter, p;
 	cl_index length, i, colon;
-	int colon_type;
+	int colon_type, intern_flag;
 	bool df, ilf;
 
 	cs_check(in);
@@ -358,7 +358,7 @@ SYMBOL:
 		cl_token->string.fillp = length - (colon + 1);
 		if (colon > 0) {
 			cl_token->string.self[cl_token->string.fillp] = '\0';
-			x = find_symbol(cl_token, p);
+			x = find_symbol(cl_token, p, &intern_flag);
 			if (intern_flag != EXTERNAL)
 			FEerror("Cannot find the external symbol ~A in ~S.",
 						2, copy_simple_string(cl_token), p);
@@ -376,7 +376,7 @@ SYMBOL:
 	} else
 		p = current_package();
 	token_buffer[cl_token->string.fillp] = '\0';
-	x = intern(cl_token, p);
+	x = intern(cl_token, p, &intern_flag);
 	if (x->symbol.name == cl_token)
 		x->symbol.name = copy_simple_string(cl_token);
 	return(x);

@@ -32,10 +32,6 @@ cl_object tk_package;
 #endif
 cl_object @'*package*';		/*  *package*  */
 
-#ifndef THREADS
-int intern_flag;
-#endif
-
 cl_object @':internal';
 cl_object @':external';
 cl_object @':inherited';
@@ -234,12 +230,13 @@ current_package(void)
 cl_object
 _intern(const char *s, cl_object p)
 {
+	int intern_flag;
 	cl_object str = make_constant_string(s);
-	return intern(str, p);
+	return intern(str, p, &intern_flag);
 }
 
 cl_object
-intern(cl_object name, cl_object p)
+intern(cl_object name, cl_object p, int *intern_flag)
 {
 	cl_object s, ul;
 
@@ -247,27 +244,27 @@ intern(cl_object name, cl_object p)
 	p = coerce_to_package(p);
 	s = gethash_safe(name, p->pack.external, OBJNULL);
 	if (s != OBJNULL) {
-		intern_flag = EXTERNAL;
+		*intern_flag = EXTERNAL;
 		return s;
 	}
 	/* Keyword package has no intern section nor can it be used */
 	if (p == keyword_package) goto INTERN;
 	s = gethash_safe(name, p->pack.internal, OBJNULL);
 	if (s != OBJNULL) {
-		intern_flag = INTERNAL;
+		*intern_flag = INTERNAL;
 		return s;
 	}
 	for (ul=p->pack.uses; CONSP(ul); ul = CDR(ul)) {
 		s = gethash_safe(name, CAR(ul)->pack.external, OBJNULL);
 		if (s != OBJNULL) {
-			intern_flag = INHERITED;
+			*intern_flag = INHERITED;
 			return s;
 		}
 	}
  INTERN:
 	s = make_symbol(name);
 	s->symbol.hpack = p;
-	intern_flag = 0;
+	*intern_flag = 0;
 	if (p == keyword_package) {
 		s->symbol.stype = stp_constant;
 		SYM_VAL(s) = s;
@@ -282,7 +279,7 @@ intern(cl_object name, cl_object p)
 	Find_symbol(st, len, p) searches for string st of length len in package p.
 */
 cl_object
-find_symbol(cl_object name, cl_object p)
+find_symbol(cl_object name, cl_object p, int *intern_flag)
 {
 	cl_object s, ul;
 	
@@ -290,24 +287,24 @@ find_symbol(cl_object name, cl_object p)
 	p = coerce_to_package(p);
 	s = gethash_safe(name, p->pack.external, OBJNULL);
 	if (s != OBJNULL) {
-		intern_flag = EXTERNAL;
+		*intern_flag = EXTERNAL;
 		return s;
 	}
 	if (p == keyword_package) goto RETURN;
 	s = gethash_safe(name, p->pack.internal, OBJNULL);
 	if (s != OBJNULL) {
-		intern_flag = INTERNAL;
+		*intern_flag = INTERNAL;
 		return s;
 	}
 	for (ul=p->pack.uses; CONSP(ul); ul = CDR(ul)) {
 		s = gethash_safe(name, CAR(ul)->pack.external, OBJNULL);
 		if (s != OBJNULL) {
-			intern_flag = INHERITED;
+			*intern_flag = INHERITED;
 			return s;
 		}
 	}
 RETURN:
-	intern_flag = 0;
+	*intern_flag = 0;
 	return(Cnil);
 }
 
@@ -373,10 +370,11 @@ void
 cl_export(cl_object s, cl_object p)
 {
 	cl_object x, l, hash = OBJNULL;
+	int intern_flag;
 BEGIN:
 	assert_type_symbol(s);
 	p = coerce_to_package(p);
-	x = find_symbol(s, p);
+	x = find_symbol(s, p, &intern_flag);
 	if (!intern_flag)
 		FEerror("The symbol ~S is not accessible from ~S.", 2,
 			s, p);
@@ -389,7 +387,7 @@ BEGIN:
 	if (intern_flag == INTERNAL)
 		hash = p->pack.internal;
 	for (l = p->pack.usedby; CONSP(l); l = CDR(l)) {
-		x = find_symbol(s, CAR(l));
+		x = find_symbol(s, CAR(l), &intern_flag);
 		if (intern_flag && s != x &&
 		    !member_eq(x, CAR(l)->pack.shadowings))
 FEerror("Cannot export the symbol ~S~%\
@@ -430,13 +428,14 @@ delete_package(cl_object p)
 void
 cl_unexport(cl_object s, cl_object p)
 {
+	int intern_flag;
 	cl_object x;
 
 	if (p == keyword_package)
 		FEerror("Cannot unexport a symbol from the keyword.", 0);
 	assert_type_symbol(s);
 	p = coerce_to_package(p);
-	x = find_symbol(s, p);
+	x = find_symbol(s, p, &intern_flag);
 	if (intern_flag != EXTERNAL || x != s)
 		/* According to ANSI & Cltl, internal symbols are
 		   ignored in unexport */
@@ -448,11 +447,12 @@ cl_unexport(cl_object s, cl_object p)
 void
 cl_import(cl_object s, cl_object p)
 {
+	int intern_flag;
 	cl_object x;
 
 	assert_type_symbol(s);
 	p = coerce_to_package(p);
-	x = find_symbol(s, p);
+	x = find_symbol(s, p, &intern_flag);
 	if (intern_flag) {
 		if (x != s)
 			FEerror("Cannot import the symbol ~S~%\
@@ -470,11 +470,12 @@ in the package.", 2, s, p);
 void
 shadowing_import(cl_object s, cl_object p)
 {
+	int intern_flag;
 	cl_object x;
 
 	assert_type_symbol(s);
 	p = coerce_to_package(p);
-	x = find_symbol(s, p);
+	x = find_symbol(s, p, &intern_flag);
 	if (intern_flag && intern_flag != INHERITED) {
 		if (x == s) {
 			if (!member_eq(x, p->pack.shadowings))
@@ -500,11 +501,12 @@ shadowing_import(cl_object s, cl_object p)
 void
 shadow(cl_object s, cl_object p)
 {
+	int intern_flag;
 	cl_object x;
 
 	assert_type_symbol(s);
 	p = coerce_to_package(p);
-	x = find_symbol(s, p);
+	x = find_symbol(s, p, &intern_flag);
 	if (intern_flag != INTERNAL && intern_flag != EXTERNAL) {
 		x = make_symbol(s);
 		sethash(x->symbol.name, p->pack.internal, x);
@@ -518,6 +520,7 @@ use_package(cl_object x, cl_object p)
 {
 	struct hashtable_entry *hash_entries;
 	cl_index i, hash_length;
+	int intern_flag;
 
 	x = coerce_to_package(x);
 	if (x == keyword_package)
@@ -534,7 +537,7 @@ use_package(cl_object x, cl_object p)
 	for (i = 0;  i < hash_length;  i++)
 		if (hash_entries[i].key != OBJNULL) {
 			cl_object here = hash_entries[i].value;
-			cl_object there = find_symbol(here, p);
+			cl_object there = find_symbol(here, p, &intern_flag);
 			if (intern_flag && here != there
 			    && ! member_eq(there, p->pack.shadowings))
 FEerror("Cannot use ~S~%\
@@ -636,8 +639,9 @@ unuse_package(cl_object x, cl_object p)
 @)
 
 @(defun intern (strng &optional (p current_package()) &aux sym)
+	int intern_flag;
 @
-	sym = intern(strng, p);
+	sym = intern(strng, p, &intern_flag);
 	if (intern_flag == INTERNAL)
 		@(return sym @':internal')
 	if (intern_flag == EXTERNAL)
@@ -649,8 +653,9 @@ unuse_package(cl_object x, cl_object p)
 
 @(defun find_symbol (strng &optional (p current_package()))
 	cl_object x;
+	int intern_flag;
 @
-	x = find_symbol(strng, p);
+	x = find_symbol(strng, p, &intern_flag);
 	if (intern_flag == INTERNAL)
 		@(return x @':internal')
 	if (intern_flag == EXTERNAL)

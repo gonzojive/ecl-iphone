@@ -2127,8 +2127,9 @@ KEYWORD:
 			check_symbol(v);
 			check_symbol(key);
 		} else {
+			int intern_flag;
 			check_symbol(v);
-			key = intern(v->symbol.name, keyword_package);
+			key = intern(v->symbol.name, keyword_package, &intern_flag);
 		}
 		nkey++;
 		push(key, keys);

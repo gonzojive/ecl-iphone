@@ -47,6 +47,7 @@ set(cl_object var, cl_object val)
 cl_object
 setf_namep(cl_object fun_spec)
 {	cl_object cdr;
+	int intern_flag; 
 	if (CONSP(fun_spec) && !endp(cdr = CDR(fun_spec)) &&
 	    endp(CDR(cdr)) && CAR(fun_spec) == @'setf') {
 	  cl_object sym, fn_name = CAR(cdr);
@@ -59,7 +60,7 @@ setf_namep(cl_object fun_spec)
 	  strncpy(str + 6, fn_str->string.self, fn_str->string.fillp);
 	  str[l-1] = ')';
 	  str[l] = '\0';
-	  sym = intern(string, fn_name->symbol.hpack);
+	  sym = intern(string, fn_name->symbol.hpack, &intern_flag);
 	  return(sym);
 	} else return(OBJNULL);
 }
