@@ -9,19 +9,17 @@
 (defvar **iii** 0)
 (defvar **kount** 0)
 (defvar puzzle-d 8.)
-(proclaim '(type fixnum **iii** **kount** puzzle-d))
-
 (defvar piececount (make-array (1+ puzzle-classmax) :initial-element 0))
 (defvar puzzle-class (make-array (1+ puzzle-typemax) :initial-element 0))
 (defvar piecemax (make-array (1+ puzzle-typemax) :initial-element 0))
 (defvar puzzle (make-array (1+ puzzle-size)))
 (defvar puzzle-p (make-array (list (1+ puzzle-typemax) (1+ puzzle-size))))
 
-(proclaim '(type simple-vector 
-		 piececount puzzle-class piecemax puzzle))
-
-(proclaim '(type (simple-array t (#.(1+ puzzle-typemax) #.(1+ puzzle-size)))
-		 puzzle-p))
+(eval-when (eval compile)
+  (proclaim '(type fixnum **iii** **kount** puzzle-d))
+  (proclaim '(type simple-vector  piececount puzzle-class piecemax puzzle))
+  (proclaim '(type (simple-array t (#.(1+ puzzle-typemax) #.(1+ puzzle-size)))
+	       puzzle-p)))
 		 
 (defun fit (i j)
   (declare (type fixnum i j))

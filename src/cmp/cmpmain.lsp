@@ -29,7 +29,8 @@
 ;(defvar *cc-format* "~A ~A ~:[~*~;~A~] -I~A/h -c ~A -o ~A"))
 (defvar *ld-flags* "")
 (defvar *ld-format* "~A ~A -w -o ~A -L~A ~{~A ~} -llsp ~A")
-(defvar *ld-shared-format* "ld -shared -o ~A -L~A ~{~A ~} ~A")
+(defvar *ld-shared-flags* "")
+(defvar *ld-shared-format* "ld ~A -o ~A -L~A ~{~A ~} ~A")
 
 (eval-when (compile eval)
   (defmacro get-output-pathname (file ext)
@@ -94,6 +95,7 @@ init_~A(cl_object)
   (safe-system
    (format nil
 	   *ld-shared-format*
+	   *ld-shared-flags*
 	   (namestring o-pathname)
 	   (namestring (translate-logical-pathname "SYS:"))
 	   options
@@ -491,7 +493,7 @@ Cannot compile ~a."
     (shared-cc tmp (list file))
     (when (probe-file tmp)
       (load tmp :verbose nil :print nil)
-      (delete-file tmp)
+      ;(delete-file tmp)
       nil)))
 
 (push (cons "o" #'load-o-file) si::*load-hooks*)

@@ -227,6 +227,7 @@
       body))
 
 (defun c1locally (args)
+  (print "FOO")
   (multiple-value-bind (body ss ts is other-decl)
       (c1body args t)
     (c1add-globals ss)
@@ -358,6 +359,7 @@
 
 (setf (get 'FLET 'C1SPECIAL) 'c1flet)
 (setf (get 'LABELS 'C1SPECIAL) 'c1labels)
+(setf (get 'LOCALLY 'C1SPECIAL) 'c1locally)
 (setf (get 'MACROLET 'C1SPECIAL) 'c1macrolet)
 (setf (get 'SYMBOL-MACROLET 'C1SPECIAL) 'c1symbol-macrolet)
 

@@ -192,14 +192,11 @@ extern cl_object clLcerror _ARGS((int narg, cl_object cformat, cl_object eformat
 
 extern cl_object clSapply;
 extern cl_object clSfuncall;
-extern cl_object clVevalhook;
-extern cl_object clVapplyhook;
 extern cl_object siLunlink_symbol _ARGS((int narg, cl_object s));
 extern cl_object clLfuncall _ARGS((int narg, cl_object fun, ...));
 extern cl_object clLapply _ARGS((int narg, cl_object fun, cl_object arg, ...));
 extern cl_object clLeval _ARGS((int narg, cl_object form));
-extern cl_object clLevalhook _ARGS((int n, cl_object form, cl_object evalhookfn, cl_object applyhookfn, ...));
-extern cl_object clLapplyhook _ARGS((int narg, cl_object fun, cl_object args, cl_object evalhookfn, cl_object applyhookfn));
+extern cl_object siLeval_with_env _ARGS((int n, cl_object form, cl_object env));
 extern cl_object clLconstantp _ARGS((int narg, cl_object arg));
 
 /* file.c */
@@ -435,7 +432,6 @@ extern cl_object siLload_source _ARGS((int narg, cl_object file, cl_object verbo
 				       cl_object print));
 extern cl_object siLload_binary _ARGS((int narg, cl_object file, cl_object verbose,
 				       cl_object print));
-extern cl_object siLfaslink _ARGS((int narg, cl_object file, cl_object lib));
 
 /* lwp.c */
 
@@ -859,11 +855,9 @@ extern cl_object clLstring_trim _ARGS((int narg, cl_object char_bag, cl_object s
 extern cl_object clLstring_left_trim _ARGS((int narg, cl_object char_bag, cl_object strng));
 extern cl_object clLstring_right_trim _ARGS((int narg, cl_object char_bag, cl_object strng));
 extern cl_object clLstring_trim0 _ARGS((int narg, bool left_trim, bool right_trim, cl_object char_bag, cl_object strng));
-extern cl_object clLstring_case(int narg, int (*casefun)(), cl_object *ARGS);
 extern cl_object clLstring_upcase _ARGS((int narg, ...));
 extern cl_object clLstring_downcase _ARGS((int narg, ...));
 extern cl_object clLstring_capitalize _ARGS((int narg, ...));
-extern cl_object clLnstring_case(int narg, int (*casefun)(), cl_object *ARGS);
 extern cl_object clLnstring_upcase _ARGS((int narg, ...));
 extern cl_object clLnstring_downcase _ARGS((int narg, ...));
 extern cl_object clLnstring_capitalize _ARGS((int narg, ...));

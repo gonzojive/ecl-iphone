@@ -35,7 +35,7 @@ cl_object @':end';
 	if (element_type != @'character'
 	    && element_type != @'base-char'
 	    && element_type != @'standard-char') {
-	  if (_funcall(2, @'subtypep', element_type, @'character') == Cnil)
+	  if (funcall(2, @'subtypep', element_type, @'character') == Cnil)
 	    FEerror("The type ~S is not a valid string char type.",
 		    1, element_type);
 	}
@@ -302,9 +302,10 @@ string_equal(cl_object x, cl_object y)
 }
 
 static cl_return
-string_cmp(int narg, int sign, int boundary, cl_object *ARGS)
+string_cmp(int narg, int sign, int boundary, va_list ARGS)
 {
-	cl_object string1 = ARGS[0], string2 = ARGS[1];
+	cl_object string1 = cl_nextarg(ARGS);
+	cl_object string2 = cl_nextarg(ARGS);
 	cl_index s1, e1, s2, e2;
 	int s, i1, i2;
 	cl_object KEYS[4];
@@ -321,7 +322,7 @@ string_cmp(int narg, int sign, int boundary, cl_object *ARGS)
 	KEYS[1]=@':end1';
 	KEYS[2]=@':start2';
 	KEYS[3]=@':end2';
-	parse_key(narg-2, ARGS+2, 4, KEYS, KEY_VARS, OBJNULL, 0);
+	parse_key(narg-2, ARGS, 4, KEYS, KEY_VARS, OBJNULL, 0);
 
 	string1 = coerce_to_string_designator(string1);
 	string2 = coerce_to_string_designator(string2);
@@ -359,40 +360,36 @@ string_cmp(int narg, int sign, int boundary, cl_object *ARGS)
 #undef end2
 }
 
-cl_return @string<(int narg, ...)
-{
-	va_list args; va_start(args, narg);
-	return string_cmp(narg, 1, 1, (cl_object *)args);
-}
+@(defun string< (&rest args)
+@
+	@(return string_cmp(narg, 1, 1, args))
+@)
 
-cl_return @string>(int narg, ...)
-{
-	va_list args; va_start(args, narg);
-	return string_cmp(narg,-1, 1, (cl_object *)args);
-}
+@(defun string> (&rest args)
+@
+	@(return string_cmp(narg,-1, 1, args))
+@)
 
-cl_return @string<=(int narg, ...)
-{
-	va_list args; va_start(args, narg);
-	return string_cmp(narg, 1, 0, (cl_object *)args);
-}
+@(defun string<= (&rest args)
+@
+	@(return string_cmp(narg, 1, 0, args))
+@)
 
-cl_return @string>=(int narg, ...)
-{
-	va_list args; va_start(args, narg);
-	return string_cmp(narg,-1, 0, (cl_object *)args);
-}
+@(defun string>= (&rest args)
+@
+	@(return string_cmp(narg,-1, 0, args))
+@)
 
-cl_return @string/=(int narg, ...)
-{
-	va_list args; va_start(args, narg);
-	return string_cmp(narg, 0, 1, (cl_object *)args);
-}
+@(defun string/= (&rest args)
+@
+	@(return string_cmp(narg, 0, 1, args))
+@)
 
 static cl_return
-string_compare(int narg, int sign, int boundary, cl_object *ARGS)
+string_compare(int narg, int sign, int boundary, va_list ARGS)
 {
-	cl_object string1 = ARGS[0], string2 = ARGS[1];
+	cl_object string1 = cl_nextarg(ARGS);
+	cl_object string2 = cl_nextarg(ARGS);
 	cl_index s1, e1, s2, e2;
 	int i1, i2, s;
 
@@ -410,7 +407,7 @@ string_compare(int narg, int sign, int boundary, cl_object *ARGS)
 	KEYS[1]=@':end1';
 	KEYS[2]=@':start2';
 	KEYS[3]=@':end2';
-	parse_key(narg-2, ARGS+2, 4, KEYS, KEY_VARS, OBJNULL, 0);
+	parse_key(narg-2, ARGS, 4, KEYS, KEY_VARS, OBJNULL, 0);
 
 	string1 = coerce_to_string_designator(string1);
 	string2 = coerce_to_string_designator(string2);
@@ -450,26 +447,30 @@ string_compare(int narg, int sign, int boundary, cl_object *ARGS)
 #undef end2
 }
 
-cl_return
-@string-lessp(int narg, ...)
-{ va_list args; va_start(args, narg);
-  return string_compare(narg, 1, 1, (cl_object *)args); }
-cl_return
-@string-greaterp(int narg, ...)
-{ va_list args; va_start(args, narg);
-  return string_compare(narg,-1, 1, (cl_object *)args); }
-cl_return
-@string-not-greaterp(int narg, ...)
-{ va_list args; va_start(args, narg);
-  return string_compare(narg, 1, 0, (cl_object *)args); }
-cl_return
-@string-not-lessp(int narg, ...)
-{ va_list args; va_start(args, narg);
-  return string_compare(narg,-1, 0, (cl_object *)args); }
-cl_return
-@string-not-equal(int narg, ...)
-{ va_list args; va_start(args, narg);
-  return string_compare(narg, 0, 1, (cl_object *)args); }
+@(defun string-lessp (&rest args)
+@
+	@(return string_compare(narg, 1, 1, args))
+@)
+
+@(defun string-greaterp (&rest args)
+@
+	@(return string_compare(narg,-1, 1, args))
+@)
+
+@(defun string-not-greaterp (&rest args)
+@
+	@(return string_compare(narg, 1, 0, args))
+@)
+
+@(defun string-not-lessp (&rest args)
+@
+	@(return string_compare(narg,-1, 0, args))
+@)
+
+@(defun string-not-equal (&rest args)
+@
+	@(return string_compare(narg, 0, 1, args))
+@)
 
 bool
 member_char(int c, cl_object char_bag)
@@ -549,9 +550,9 @@ cl_return
 
 
 static cl_return
-string_case(int narg, int (*casefun)(), cl_object *ARGS)
+string_case(int narg, int (*casefun)(), va_list ARGS)
 {
-	cl_object strng = ARGS[0];
+	cl_object strng = cl_nextarg(ARGS);
 	cl_index s, e, i;
 	bool b;
 	cl_object KEYS[2];
@@ -564,7 +565,7 @@ string_case(int narg, int (*casefun)(), cl_object *ARGS)
 	if (narg < 1) FEtoo_few_arguments(&narg);
 	KEYS[0]=@':start';
 	KEYS[1]=@':end';
-	parse_key(narg-1, ARGS+1, 2, KEYS, KEY_VARS, OBJNULL, 0);
+	parse_key(narg-1, ARGS, 2, KEYS, KEY_VARS, OBJNULL, 0);
 
 	strng = coerce_to_string_designator(strng);
 	conv = copy_simple_string(strng);
@@ -585,10 +586,10 @@ char_upcase(int c, int *bp)
 	return(toupper(c));
 }
 
-cl_return
-@string-upcase(int narg, ...)
-{ va_list args; va_start(args, narg);
-  return string_case(narg, char_upcase, (cl_object *)args); }
+@(defun string-upcase (&rest args)
+@
+	@(return string_case(narg, char_upcase, args))
+@)
 
 static int
 char_downcase(int c, int *bp)
@@ -596,10 +597,10 @@ char_downcase(int c, int *bp)
 	return(tolower(c));
 }
 
-cl_return
-@string-downcase(int narg, ...)
-{ va_list args; va_start(args, narg);
-  return string_case(narg, char_downcase, (cl_object *)args); }
+@(defun string-downcase (&rest args)
+@
+	@(return string_case(narg, char_downcase, args))
+@)
 
 static int
 char_capitalize(int c, int *bp)
@@ -617,16 +618,16 @@ char_capitalize(int c, int *bp)
 	return(c);
 }
 
-cl_return
-@string-capitalize(int narg, ...)
-{ va_list args; va_start(args, narg);
-  return string_case(narg, char_capitalize, (cl_object *)args); }
+@(defun string-capitalize (&rest args)
+@
+	@(return string_case(narg, char_capitalize, args))
+@)
 
 
 static cl_return
-nstring_case(int narg, int (*casefun)(), cl_object *ARGS)
+nstring_case(int narg, int (*casefun)(), va_list ARGS)
 {
-	cl_object strng = ARGS[0];
+	cl_object strng = cl_nextarg(ARGS);
 	cl_index s, e, i;
 	bool b;
 	cl_object KEYS[2];
@@ -638,7 +639,7 @@ nstring_case(int narg, int (*casefun)(), cl_object *ARGS)
 	if (narg < 1) FEtoo_few_arguments(&narg);
 	KEYS[0]=@':start';
 	KEYS[1]=@':end';
-	parse_key(narg-1, ARGS+1, 2, KEYS, KEY_VARS, OBJNULL, 0);
+	parse_key(narg-1, ARGS, 2, KEYS, KEY_VARS, OBJNULL, 0);
 
 	assert_type_string(strng);
 	if (startp == Cnil) start = MAKE_FIXNUM(0);
@@ -652,18 +653,20 @@ nstring_case(int narg, int (*casefun)(), cl_object *ARGS)
 #undef end
 }
 
-cl_return
-@nstring-upcase(int narg, ...)
-{ va_list args; va_start(args, narg);
-  return nstring_case(narg, char_upcase, (cl_object *)args); }
-cl_return
-@nstring-downcase(int narg, ...)
-{ va_list args; va_start(args, narg);
-  return nstring_case(narg, char_downcase, (cl_object *)args); }
-cl_return
-@nstring-capitalize(int narg, ...)
-{ va_list args; va_start(args, narg);
-  return nstring_case(narg, char_capitalize, (cl_object *)args); }
+@(defun nstring-upcase (&rest args)
+@
+	@(return nstring_case(narg, char_upcase, args))
+@)
+
+@(defun nstring-downcase (&rest args)
+@
+	@(return nstring_case(narg, char_downcase, args))
+@)
+
+@(defun nstring-capitalize (&rest args)
+@
+	@(return nstring_case(narg, char_capitalize, args))
+@)
 
 
 @(defun string (x)
@@ -674,12 +677,11 @@ cl_return
 @(defun si::string_concatenate (&rest args)
 	cl_index l;
 	int i;
-	cl_object v, *strings;
+	cl_object v, strings[narg];
 	char *vself;
 @
-	strings = (cl_object *)args;
 	for (i = 0, l = 0;  i < narg;  i++) {
-		strings[i] = coerce_to_string_designator(va_arg(args, cl_object));
+		strings[i] = coerce_to_string_designator(cl_nextarg(args));
 		l += strings[i]->string.fillp;
 	}
 	v = alloc_simple_string(l);

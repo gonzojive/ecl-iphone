@@ -20,7 +20,7 @@
 (defvar traverse-sn 0)
 (defvar traverse-rand 21.)
 (defvar traverse-count 0)
-(proclaim `(type fixnum traverse-sn traverse-rand traverse-count))
+(declaim (type fixnum traverse-sn traverse-rand traverse-count))
 (defvar traverse-marker nil)
 (defvar traverse-root)
 

@@ -115,7 +115,7 @@ setup_standard_READ(void)
 cl_object
 interactive_readc(cl_object stream)
 {
-	return _funcall(2, @'stream_read_char', stream);
+	return funcall(2, @'stream_read_char', stream);
 }
 #endif CLOS
 
@@ -292,7 +292,7 @@ BEGIN:
 		return(OBJNULL);
 	if (a == cat_terminating || a == cat_non_terminating) {
 		cl_object x = READtable->readtable.table[char_code(c)].macro;
-		cl_object o = _funcall(3, x, in, c);
+		cl_object o = funcall(3, x, in, c);
 		if (NValues == 0) goto BEGIN;
 		if (NValues > 1) FEerror("The readmacro ~S returned ~D values.",
 					 2, x, MAKE_FIXNUM(i));
@@ -1087,31 +1087,25 @@ M:
 
 static
 @(defun si::sharp_dot_reader (in c d)
-	cl_object lex_old = lex_env;
 @
 	if(d != Cnil && !READsuppress)
 		extra_argument('.', d);
 	if (READsuppress)
 		@(return Cnil)
 	in = read_object(in);
-	lex_new();
-	in = eval(in, NULL);
-	lex_env = lex_old;
+	in = eval(in, NULL, Cnil);
 	@(return in)
 @)
 
 static
 @(defun si::sharp_comma_reader (in c d)
-	cl_object lex_old = lex_env;
 @
 	if(d != Cnil && !READsuppress)
 		extra_argument(',', d);
 	if (READsuppress)
 		@(return Cnil)
 	in = read_object(in);
-	lex_new();
-	in = eval(in, NULL);
-	lex_env = lex_old;
+	in = eval(in, NULL, Cnil);
 	@(return in)
 @)
 
@@ -1856,7 +1850,7 @@ RETRY:	if (type_of(strm) == t_stream) {
 #ifdef CLOS
 	/* FIXME! Is this all right? */
 	if (type_of(strm) == t_instance) {
-	  if (_funcall(2, @'stream_listen', strm) == Cnil)
+	  if (funcall(2, @'stream_listen', strm) == Cnil)
 	    @(return Cnil)
 	  else
 	    return funcall(2, @'stream_read_char', strm);

@@ -1294,7 +1294,7 @@ BEGIN:
 @
 	streams = Cnil;
 	for (i = 0; i < narg; i++) {
-		x = va_arg(ap, cl_object);
+		x = cl_nextarg(ap);
 		if (type_of(x) != t_stream || !output_stream_p(x))
 			cannot_write(x);
 		streams = CONS(x, streams);
@@ -1314,7 +1314,7 @@ BEGIN:
 @
 	streams = Cnil;
 	for (i = 0; i < narg; i++) {
-		x = va_arg(ap, cl_object);
+		x = cl_nextarg(ap);
 		if (type_of(x) != t_stream || !input_stream_p(x))
 			cannot_read(x);
 		streams = CONS(x, streams);

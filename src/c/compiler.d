@@ -34,6 +34,7 @@ cl_object @'&aux';
 cl_object @':allow-other-keys';
 
 cl_object bytecodes;
+int lexical_level;
 
 /********************* PRIVATE ********************/
 
@@ -69,6 +70,7 @@ static void c_if(cl_object args);
 static void c_labels(cl_object args);
 static void c_let(cl_object args);
 static void c_leta(cl_object args);
+static void c_locally(cl_object args);
 static void c_macrolet(cl_object args);
 static void c_multiple_value_bind(cl_object args);
 static void c_multiple_value_call(cl_object args);
@@ -289,47 +291,49 @@ typedef struct {
   cl_object symbol;
   const char *const name;
   void (*compiler)(cl_object);
+  int lexical_increment;
 } compiler_record;
 
 static compiler_record database[] = {
-  {OBJNULL, "AND", c_and},
-  {OBJNULL, "BLOCK", c_block},
-  {OBJNULL, "CASE", c_case},
-  {OBJNULL, "CATCH", c_catch},
-  {OBJNULL, "COND", c_cond},
-  {OBJNULL, "DO", c_do},
-  {OBJNULL, "DO*", c_doa},
-  {OBJNULL, "DOLIST", c_dolist},
-  {OBJNULL, "DOTIMES", c_dotimes},
-  {OBJNULL, "EVAL-WHEN", c_eval_when},
-  {OBJNULL, "FLET", c_flet},
-  {OBJNULL, "FUNCTION", c_function},
-  {OBJNULL, "GO", c_go},
-  {OBJNULL, "IF", c_if},
-  {OBJNULL, "LABELS", c_labels},
-  {OBJNULL, "LET", c_let},
-  {OBJNULL, "LET*", c_leta},
-  {OBJNULL, "MACROLET", c_macrolet},
-  {OBJNULL, "MULTIPLE-VALUE-BIND", c_multiple_value_bind},
-  {OBJNULL, "MULTIPLE-VALUE-CALL", c_multiple_value_call},
-  {OBJNULL, "MULTIPLE-VALUE-PROG1", c_multiple_value_prog1},
-  {OBJNULL, "MULTIPLE-VALUE-SETQ", c_multiple_value_setq},
-  {OBJNULL, "NTH-VALUE", c_nth_value},
-  {OBJNULL, "OR", c_or},
-  {OBJNULL, "PROGN", compile_body},
-  {OBJNULL, "PROGV", c_progv},
-  {OBJNULL, "PSETQ", c_psetq},
-  {OBJNULL, "RETURN", c_return},
-  {OBJNULL, "RETURN-FROM", c_return_from},
-  {OBJNULL, "SETQ", c_setq},
-  {OBJNULL, "SYMBOL-MACROLET", c_symbol_macrolet},
-  {OBJNULL, "TAGBODY", c_tagbody},
-  {OBJNULL, "THROW", c_throw},
-  {OBJNULL, "UNWIND-PROTECT", c_unwind_protect},
-  {OBJNULL, "UNLESS", c_unless},
-  {OBJNULL, "VALUES", c_values},
-  {OBJNULL, "WHEN", c_when},
-  {OBJNULL, "", c_when}
+  {OBJNULL, "AND", c_and, 1},
+  {OBJNULL, "BLOCK", c_block, 1},
+  {OBJNULL, "CASE", c_case, 1},
+  {OBJNULL, "CATCH", c_catch, 1},
+  {OBJNULL, "COND", c_cond, 1},
+  {OBJNULL, "DO", c_do, 1},
+  {OBJNULL, "DO*", c_doa, 1},
+  {OBJNULL, "DOLIST", c_dolist, 1},
+  {OBJNULL, "DOTIMES", c_dotimes, 1},
+  {OBJNULL, "EVAL-WHEN", c_eval_when, 0},
+  {OBJNULL, "FLET", c_flet, 1},
+  {OBJNULL, "FUNCTION", c_function, 1},
+  {OBJNULL, "GO", c_go, 1},
+  {OBJNULL, "IF", c_if, 1},
+  {OBJNULL, "LABELS", c_labels, 1},
+  {OBJNULL, "LET", c_let, 1},
+  {OBJNULL, "LET*", c_leta, 1},
+  {OBJNULL, "LOCALLY", c_locally, 0},
+  {OBJNULL, "MACROLET", c_macrolet, 0},
+  {OBJNULL, "MULTIPLE-VALUE-BIND", c_multiple_value_bind, 1},
+  {OBJNULL, "MULTIPLE-VALUE-CALL", c_multiple_value_call, 1},
+  {OBJNULL, "MULTIPLE-VALUE-PROG1", c_multiple_value_prog1, 1},
+  {OBJNULL, "MULTIPLE-VALUE-SETQ", c_multiple_value_setq, 1},
+  {OBJNULL, "NTH-VALUE", c_nth_value, 1},
+  {OBJNULL, "OR", c_or, 1},
+  {OBJNULL, "PROGN", compile_body, 0},
+  {OBJNULL, "PROGV", c_progv, 1},
+  {OBJNULL, "PSETQ", c_psetq, 1},
+  {OBJNULL, "RETURN", c_return, 1},
+  {OBJNULL, "RETURN-FROM", c_return_from, 1},
+  {OBJNULL, "SETQ", c_setq, 1},
+  {OBJNULL, "SYMBOL-MACROLET", c_symbol_macrolet, 0},
+  {OBJNULL, "TAGBODY", c_tagbody, 1},
+  {OBJNULL, "THROW", c_throw, 1},
+  {OBJNULL, "UNWIND-PROTECT", c_unwind_protect, 1},
+  {OBJNULL, "UNLESS", c_unless, 1},
+  {OBJNULL, "VALUES", c_values, 1},
+  {OBJNULL, "WHEN", c_when, 1},
+  {OBJNULL, "", c_when, 1}
 };
 
 /* ----------------- LEXICAL ENVIRONMENT HANDLING -------------------- */
@@ -1059,6 +1063,15 @@ c_leta(cl_object args) {
 	c_let_leta(OP_BIND, args);
 }
 
+static void
+c_locally(cl_object args) {
+	/* Forget about declarations... */
+	@si::process-declarations(1, args);
+
+	/* ...and only process body */
+	compile_body(VALUES(1));
+}
+
 /*
 	MACROLET
 
@@ -1087,7 +1100,7 @@ c_macrolet(cl_object args)
 	}
 	compile_body(args);
 	lex_env = lex_old;
-}	
+}
 
 
 static void
@@ -1613,6 +1626,7 @@ compile_form(cl_object stmt, bool push) {
 	}
 	for (l = database; l->symbol != OBJNULL; l++)
 		if (l->symbol == function) {
+			lexical_level += l->lexical_increment;
 			(*(l->compiler))(CDR(stmt));
 			if (push) asm_op(OP_PUSH);
 			goto OUTPUT;
@@ -1641,6 +1655,19 @@ for special form ~S.", 1, function);
 
 static void
 compile_body(cl_object body) {
+	if (lexical_level == 0 && !endp(body)) {
+		while (!endp(CDR(body))) {
+			cl_index handle = asm_begin();
+			compile_form(CAR(body), FALSE);
+			asm_op(OP_EXIT);
+			asm_op(OP_HALT);
+			VALUES(0) = Cnil;
+			NValues = 0;
+			interpret(&bytecodes->vector.self.t[handle]);
+			asm_clear(handle);
+			body = CDR(body);
+		}
+	}
 	if (endp(body))
 		asm_op(OP_NOP);
 	else do {
@@ -1951,8 +1978,10 @@ make_lambda(cl_object name, cl_object lambda) {
 	int nopts, nkeys;
 	cl_index handle;
 	cl_object lex_old = lex_env;
+	int old_lexical_level = lexical_level;
 
 	lex_copy();
+	lexical_level++;
 
 	reqs = @si::process-lambda-list(1,lambda);
 	opts = VALUES(1);
@@ -2014,6 +2043,7 @@ make_lambda(cl_object name, cl_object lambda) {
 	while (!endp(auxs)) {		/* Local bindings */
 		cl_object var = pop(&auxs);
 		cl_object value = pop(&auxs);
+		
 		compile_form(value, FALSE);
 		c_bind(var, specials);
 	}
@@ -2021,6 +2051,7 @@ make_lambda(cl_object name, cl_object lambda) {
 	compile_body(body);
 	asm_op(OP_HALT);
 
+	lexical_level = old_lexical_level;
 	lex_env = lex_old;
 
 	return asm_end(handle);
@@ -2056,9 +2087,11 @@ alloc_bytecodes()
 @)
 
 cl_object
-eval(cl_object form, cl_object *new_bytecodes)
+eval(cl_object form, cl_object *new_bytecodes, cl_object env)
 {
 	cl_object old_bytecodes = bytecodes;
+	int old_lexical_level = lexical_level;
+	cl_object lex_old = lex_env;
 	cl_index handle;
 	bool unwinding;
 
@@ -2069,8 +2102,18 @@ eval(cl_object form, cl_object *new_bytecodes)
 	} else {
 		bytecodes = *new_bytecodes = alloc_bytecodes();
 	}
+	if (Null(env)) {
+		lex_new();
+		lexical_level = 0;
+	} else {
+		lexical_level = 1;
+		lex_env = env;
+		lex_copy();
+	}
 	if (frs_push(FRS_PROTECT, Cnil)) {
+		lex_env = lex_old;
 		bytecodes = old_bytecodes;
+		lexical_level = old_lexical_level;
 		frs_pop();
 		unwind(nlj_fr, nlj_tag);
 	}
@@ -2078,13 +2121,14 @@ eval(cl_object form, cl_object *new_bytecodes)
 	compile_form(form, FALSE);
 	asm_op(OP_EXIT);
 	asm_op(OP_HALT);
-/*  	@print(1,bytecodes); */
 	VALUES(0) = Cnil;
 	NValues = 0;
 	interpret(&bytecodes->vector.self.t[handle]);
 	asm_clear(handle);
 	frs_pop();
+	lex_env = lex_old;
 	bytecodes = old_bytecodes;
+	lexical_level = old_lexical_level;
 	return VALUES(0);
 }
 

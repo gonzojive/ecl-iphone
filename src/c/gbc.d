@@ -471,6 +471,8 @@ mark_phase(void)
 
 	    clwp = pdp->pd_lpd;
 #endif THREADS
+
+	    mark_contblock(CIRCLEbase, CIRCLEsize*sizeof(cl_object));
 	    
 	    for (i=0; i<NValues; i++)
 	      mark_object(VALUES(i));

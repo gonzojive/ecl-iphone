@@ -120,16 +120,6 @@ extern long big_to_long(cl_object x);
 extern void init_big(void);
 
 
-/* bind.c */
-
-extern cl_object let_bind(cl_object body, struct let *start, struct let *end, int size);
-extern cl_object letA_bind(cl_object body, struct let *start, struct let *end, int size);
-extern cl_object process_decl(cl_object body, struct let *start, struct let *end, int size);
-extern void parse_key(int narg, cl_object *args, int nkey, cl_object *keys, cl_object *vars, cl_object rest, bool allow_other_keys);
-extern void check_other_key(cl_object l, int n, ...);
-extern void init_bind(void);
-
-
 /* block.c */
 
 extern void init_block(void);
@@ -196,11 +186,14 @@ extern int aset_bv(cl_object x, cl_index index, int value);
 extern void throw(cl_object tag) __attribute__((noreturn));
 extern void return_from(cl_object block_id, cl_object block_name) __attribute__((noreturn));
 extern void go(cl_object tag_id, cl_object label) __attribute__((noreturn));
+extern void parse_key(int narg, va_list args, int nkey, cl_object *keys, cl_object *vars, cl_object rest, bool allow_other_keys);
+extern void check_other_key(cl_object l, int n, ...);
+
 
 /* compiler.c */
 
 cl_object make_lambda(cl_object name, cl_object lambda);
-cl_object eval(cl_object form, cl_object *bytecodes);
+cl_object eval(cl_object form, cl_object *bytecodes, cl_object env);
 
 /* interpreter.c */
 
@@ -250,15 +243,24 @@ extern void FEend_of_file(cl_object strm);
 
 /* eval.c */
 
-#define _eval	eval
-#define _apply	apply
-#define _funcall funcall
-extern cl_object lambda_apply(int narg, cl_object fun, cl_object *args);
+#define funcall clLfuncall
+
 extern cl_object apply(int narg, cl_object fun, cl_object *args);
-extern cl_object funcall(int narg, ...);
-extern cl_object link_call(cl_object sym, cl_object (**pLK)(), cl_object *gfun, cl_object *args);
+extern cl_object link_call(cl_object sym, cl_object (**pLK)(), cl_object *gfun,
+			   int narg, va_list args);
 extern void init_eval(void);
 
+#ifdef NO_ARGS_ARRAY
+extern cl_object va_APPLY(int narg, cl_object (*fn)(), va_list args);
+extern cl_object va_APPLY_closure(int narg, cl_object (*fn)(), cl_object data, va_list args);
+extern cl_object va_gcall(int narg, cl_object fun, va_list args);
+extern cl_object va_lambda_apply(int narg, cl_object fun, va_list args);
+#else
+#define va_APPLY(x,y,z) APPLY(x,y,&cl_nextarg(z))
+#define va_APPLY_closure(x,y,p,z) APPLY_closure(x,y,p,&cl_nextarg(z))
+#define va_gcall(x,y,z) gcall(x,y,&cl_nextarg(z))
+#define va_lambda_apply(x,y,z) lambda_apply(x,y,&cl_nextarg(z))
+#endif
 
 /* file.c */
 
@@ -537,7 +539,6 @@ extern void init_num_co(void);
 
 extern int number_equalp(cl_object x, cl_object y);
 extern int number_compare(cl_object x, cl_object y);
-extern cl_object monotonic(int s, int t, int narg, cl_object *nums);
 extern void init_num_comp(void);
 
 
@@ -658,7 +659,7 @@ extern void (*write_ch_fun)();
 extern void (*output_ch_fun)();
 extern cl_object PRINTpackage;
 extern bool PRINTstructure;
-extern jmp_buf CIRCLEjmp;
+extern cl_index CIRCLEsize;
 extern cl_object *CIRCLEbase;
 extern cl_object *CIRCLEtop;
 extern cl_object *CIRCLElimit;

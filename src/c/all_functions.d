@@ -152,8 +152,7 @@ const struct function_info all_functions[] = {
 	/* eval.c */
 
 	{"EVAL", clLeval, cl},
-	{"EVALHOOK", clLevalhook, cl},
-	{"APPLYHOOK", clLapplyhook, cl},
+	{"EVAL-WITH-ENV", siLeval_with_env, si},
 	{"CONSTANTP", clLconstantp, cl},
 	{"UNLINK-SYMBOL", siLunlink_symbol, si},
 	{"APPLY", clLapply, cl},
@@ -368,9 +367,6 @@ const struct function_info all_functions[] = {
 	{"LOAD", clLload, cl},
 	{"LOAD-BINARY", siLload_binary, si},
 	{"LOAD-SOURCE", siLload_source, si},
-#if 0
-	{"FASLINK", siLfaslink, si},
-#endif
 
 	/* lwp.d */
 #ifdef THREADS

@@ -56,6 +56,7 @@
 #define	CSGETA	4000
 #endif THREADS
 #define VSSIZE	128		/* Size of return values stack		*/
+#define CALL_ARGUMENTS_LIMIT 64	/* Maximum number of function arguments */
 
 #define BIGNUM_REGISTER_SIZE 16	/* Size in words of each register	*/
 
@@ -63,6 +64,9 @@
  *	SYSTEM FEATURES							*
  * -------------------------------------------------------------------- */
 
+#undef CL_FIXNUM_TYPE		/* Integer type for fixnums		*/
+#define MOST_POSITIVE_FIX 1	/* Positive limit for fixnums           */
+#undef DOWN_STACK		/* Stack grows downwards		*/
 #undef NO_ARG_ARRAY		/* arguments can be accessed as array	*/
 #undef WORDS_BIGENDIAN		/* most significant byte first		*/
 

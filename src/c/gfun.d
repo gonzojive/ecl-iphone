@@ -216,12 +216,11 @@ gcall(int narg, cl_object fun, cl_object *args)
 	    i = narg;
 	    while (i-- > 0)
 	      arglist = CONS(args[i], arglist);
-	    methods = _funcall(3, siScompute_applicable_methods, gf, arglist);
-	    meth_comb = _funcall(2, siSgeneric_function_method_combination, gf);
-	    meth_args = _funcall(2, siSgeneric_function_method_combination_args,
-				 gf);
-	    func = _funcall(5, siScompute_effective_method, gf, methods,
-			    meth_comb, meth_args);
+	    methods = funcall(3, siScompute_applicable_methods, gf, arglist);
+	    meth_comb = funcall(2, siSgeneric_function_method_combination, gf);
+	    meth_args = funcall(2, siSgeneric_function_method_combination_args,gf);
+	    func = funcall(5, siScompute_effective_method, gf, methods,
+			   meth_comb, meth_args);
 	  
 	    /* update cache */
 	    set_meth_hash(argtype, spec_no, fun->gfun.method_hash, func);

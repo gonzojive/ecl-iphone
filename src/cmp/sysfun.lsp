@@ -1031,8 +1031,6 @@ type_of(#0)==t_bitvector"))
 (si::READ-EXTERNALS nil T)
 (si::SET-UP-COMBINED nil T)
 (si::BUILD-SYMBOL-TABLE nil T)
-#+bsd
-(si::FASLINK nil T)
 
 ; file unixtime.c
 (si::DAYLIGHT-SAVING-TIME-P nil T nil t)

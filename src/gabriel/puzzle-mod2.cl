@@ -9,7 +9,6 @@
 (defvar **iii** 0)
 (defvar **kount** 0)
 (defvar puzzle-d 8.)
-(proclaim '(type fixnum **iii** **kount** puzzle-d))
 
 (defvar piececount (make-array (1+ puzzle-classmax) :element-type 'fixnum :initial-element 0))
 (defvar puzzle-class (make-array (1+ puzzle-typemax) :element-type 'fixnum :initial-element 0))
@@ -17,14 +16,14 @@
 (defvar puzzle (make-array (1+ puzzle-size)))
 (defvar puzzle-p (make-array (list (1+ puzzle-typemax) (1+ puzzle-size))))
 
-(proclaim '(type (array fixnum) piececount puzzle-class piecemax))
 (defmacro fref (a i) `(the fixnum (aref ,a (the fixnum ,i))))
 
-
-(proclaim '(type simple-vector   puzzle))
-
-(proclaim '(type (simple-array t (#.(1+ puzzle-typemax) #.(1+ puzzle-size)))
-		 puzzle-p))
+(eval-when (eval compile)
+  (proclaim '(type fixnum **iii** **kount** puzzle-d))
+  (proclaim '(type (array fixnum) piececount puzzle-class piecemax))
+  (proclaim '(type simple-vector puzzle))
+  (proclaim '(type (simple-array t (#.(1+ puzzle-typemax) #.(1+ puzzle-size)))
+	       puzzle-p)))
 
 (defun fit (i j)
   (declare (type fixnum i j))
@@ -37,8 +36,8 @@
 	     (cond ((aref puzzle (the fixnum (+ j k)))
 		    (return nil))))))))
 
-(proclaim '(function place (fixnum fixnum ) fixnum))
-(proclaim '(function puzzle-remove (fixnum fixnum) fixnum))
+(declaim (function place (fixnum fixnum ) fixnum))
+(declaim (function puzzle-remove (fixnum fixnum) fixnum))
 (defun jil () 3)
 (defun place (i j)
   (declare (type fixnum i j))

@@ -69,14 +69,14 @@ L:  \
 static bool
 test_compare(cl_object x)
 {
-	cl_object test = _funcall(3, test_function, item_compared, (*kf)(x));
+	cl_object test = funcall(3, test_function, item_compared, (*kf)(x));
 	return (test != Cnil);
 }
 
 static bool
 test_compare_not(cl_object x)
 {
-	cl_object test = _funcall(3, test_function, item_compared, (*kf)(x));
+	cl_object test = funcall(3, test_function, item_compared, (*kf)(x));
 	return (test == Cnil);
 }
 
@@ -89,7 +89,7 @@ test_eql(cl_object x)
 static cl_object
 apply_key_function(cl_object x)
 {
-	return _funcall(2, key_function, x);
+	return funcall(2, key_function, x);
 }
 
 cl_object
@@ -217,7 +217,7 @@ list(int narg, ...)
 	if (narg == 0)
 		FEtoo_few_arguments(&narg);
 	while (--narg > 0)
-	  z = &CDR( *z = CONS(va_arg(args, cl_object), Cnil));
+		z = &CDR( *z = CONS(cl_nextarg(args), Cnil));
 	*z = va_arg(args, cl_object);
 	@(return p)
 @)
@@ -230,7 +230,7 @@ listX(int narg, ...)
 
 	va_start(args, narg);
 	while (--narg > 0)
-	  z = &CDR( *z = CONS(va_arg(args, cl_object), Cnil));
+		z = &CDR( *z = CONS(cl_nextarg(args), Cnil));
 	*z = va_arg(args, cl_object);
 	return(p);
 }
@@ -254,10 +254,9 @@ copy_list_to(cl_object x, cl_object **z)
 		x = Cnil;
 	else {
 		lastcdr = &x;
-		va_start(rest, narg);
 		while (narg-- > 1)
-			copy_list_to(va_arg(rest, cl_object), &lastcdr);
-		*lastcdr = va_arg(rest, cl_object);
+			copy_list_to(cl_nextarg(rest), &lastcdr);
+		*lastcdr = cl_nextarg(rest);
 	}
 	@(return x)
 @)
@@ -878,7 +877,7 @@ PREDICATE2(@member)
 @
 	protectTEST;
 	if (key != Cnil)
-		item = _funcall(2, key, item);
+		item = funcall(2, key, item);
 	setupTEST(item, test, test_not, key);
 	loop_for_in(list) {
 		if (TEST(CAR(list)))

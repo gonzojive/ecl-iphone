@@ -83,8 +83,6 @@ const struct symbol_info all_symbols[] = {
 /* eval.c */
 {&clSapply, "APPLY", CL_ORDINARY},
 {&clSfuncall, "FUNCALL", CL_ORDINARY},
-{&clVevalhook, "*EVALHOOK*", CL_SPECIAL},
-{&clVapplyhook, "*APPLYHOOK*", CL_SPECIAL},
 
 /* file.c */
 {&clVstandard_input, "*STANDARD-INPUT*", CL_SPECIAL},

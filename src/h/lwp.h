@@ -56,9 +56,6 @@ typedef struct lpd {
   /* backq.c */
   int lwp_backq_level;		/* It should be initialized with 0 (zero) */
 
-  /* eval.c */
-  int lwp_eval1;                /* It should be initialized with 0 (zero) */
-
   /* format.c */
   int (*lwp_fmt_ch_fun)();
   cl_object lwp_fmt_stream;

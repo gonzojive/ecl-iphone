@@ -27,6 +27,8 @@
  *----------------------------------------------------------------------
  */
 
+#define cl_nextarg(arg)		va_arg((arg),cl_object)
+
 #define CSTACK(size)     	register cl_object *_stack_top; \
   				cl_object _stack_bot[size]; \
   				_stack_top = _stack_bot /*  __GNUC__ */
@@ -117,7 +119,7 @@ typedef char *  caddr_t;
 
 /*---------------------------------------------------------------------- */
 
-#ifdef sparc
+#if defined(sparc) && 0
    
 /*
 #define JB_SP 1
@@ -156,7 +158,7 @@ typedef char *  caddr_t;
 
 /*---------------------------------------------------------------------- */
 
-#ifdef vax
+#if defined(vax) && 0
 #define PC_INDEX 0
 #define TRANSFER(buf, addr)	buf[PC_INDEX] = (int)addr+((((int *)addr)[0] >> 19) & 4)+4; \
   				ecls_longjmp(buf)

@@ -24,6 +24,7 @@
 (defun t1expr* (form &aux (*current-form* form) (*first-error* t)
                     *funarg-vars*
 		    (*setjmps* 0))
+  ;(let ((*print-level* 3)) (print form))
   (catch *cmperr-tag*
     (when (consp form)
       (let ((fun (car form)) (args (cdr form)) fd setf-symbol) ; #+cltl2
@@ -162,7 +163,7 @@
   (dolist (x *linking-calls*)
     (let ((i (second x)))
       (wt-nl1 "static cl_object LKF" i
-	      "(int narg, ...) {TRAMPOLINK(" (third x) ",&LK" i ");}")))
+	      "(int narg, ...) {TRAMPOLINK(narg," (third x) ",&LK" i ");}")))
 
   (wt-h "#define compiler_data_text_size " *wt-string-size*)
   (wt-nl1 "static const char *compiler_data_text = ")
@@ -1215,6 +1216,9 @@
          (wt-nl "{cl_object *p=vs_top;")
          (wt-nl " for(;p>vs_base+" (+ nreq nopt) ";p--)"
 		rest "=CONS(p[-1]," rest ");}"))
+      (when key-flag
+	(cmperr "Keywords not allowed in defunC"))
+      #+nil
       (when key-flag
 	(wt-nl "parse_key(vs_base+" (+ nreq nopt) ",FALSE,"
 	       (if allow-other-keys "TRUE," "FALSE,") (length keywords))

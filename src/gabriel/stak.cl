@@ -7,7 +7,7 @@
 (defvar stak-x)
 (defvar stak-y)
 (defvar stak-z)
-(proclaim '(fixnum stak-x stak-y stak-z))
+(declaim (fixnum stak-x stak-y stak-z))
 
 (defun stak (stak-x stak-y stak-z)
   (stak-aux))

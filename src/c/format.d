@@ -1836,9 +1836,16 @@ RETRY:	if (type_of(strm) == t_stream) {
 		fmt_restore;
 		unwind(nlj_fr, nlj_tag);
 	}
+#if 0
 	fmt_base = (cl_object *)args;
 	fmt_index = 0;
 	fmt_end = narg - 2;
+#else
+	fmt_base = (cl_object *)alloca((narg - 2) * sizeof(cl_object));
+	fmt_index = 0;
+	for (fmt_end = 0; fmt_end < (narg - 2); fmt_end++)
+		fmt_base[fmt_end] = cl_nextarg(args);
+#endif
 	fmt_jmp_buf = (int *)fmt_jmp_buf0;
 	if (symbol_value(@'si::*indent-formatted-output*') != Cnil)
 		fmt_indents = FILE_COLUMN(strm);

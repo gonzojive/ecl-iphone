@@ -97,6 +97,8 @@
 		  (setq values
 			(let (*inside-trace*)
 			  (multiple-value-list
+			      `(apply ',oldf args)
+			      #+nil
 			      ,(if step
 				   `(let (*step-quit*)
 				     (applyhook ',oldf args #'stepper nil))
@@ -168,6 +170,8 @@
 	    (return-from tracing-body t))))))
   nil)
 
+#+nil
+(progn
 (defvar *step-level* 0)
 (defvar *step-quit* nil)
 (defvar *step-function* nil)		; skip stepping until this function
@@ -333,5 +337,5 @@
 
 (defun step-return (&rest values)
   (throw *step-tag* values))
-
+)
 ;(provide 'TRACE)

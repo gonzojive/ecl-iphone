@@ -19,10 +19,7 @@
 #  define	stack_align(n)	(((n) + 03) & ~03)
 #endif
 
-#if defined(linux) \
- && !defined(__FreeBSD__) \
- && !defined(__NetBSD__) \
- && !(defined(sun) && !defined(sun4sol2))
+#if defined(linux)
 #  define ecls_setjmp	setjmp
 #  define ecls_longjmp	longjmp
 #else
@@ -104,6 +101,8 @@
 #  define ARCHITECTURE	"ARM2"
 #elif	defined(arm) || defined(__arm)
 #  define ARCHITECTURE	"ARM"
+#elif	defined(PPC) || defined(__PPC__) || defined(__powerpc)
+#  define ARCHITECTURE	"POWERPC"
 #endif
 
 #ifdef	MSDOS
@@ -151,11 +150,11 @@
 #ifdef	__FreeBSD__
 #include <dlfcn.h>
 #define	IEEEFLOAT
-#define	DOWN_STACK
 #define	JB_SP 4
 #define	BRAND "IBM-PC"
 #define	CLIBS -lcompat
 #define	LDFLAGS -Wl,--export-dynamic
+#define SHARED_LDFLAGS -shared
 #define HAVE_ISOC99
 #ifdef __ELF__
 # define DATA_START 0x8000000
@@ -171,14 +170,14 @@
 #include <dlfcn.h>
 #define	BRAND "IBM-PC"
 #define	IEEEFLOAT
-#define	DOWN_STACK
 #define	BSD
 #define CLIBS -ldl
 #define LDFLAGS -Wl,--export-dynamic
+#define SHARED_LDFLAGS -shared
 #ifdef __ELF__
 # define DATA_START 0x8000000
 #else
-# define DATA_START 0
+# error "A.out not supported in FreeBSD"
 #endif
 #define HAVE_ISOC99
 #define HAVE_POSIX
@@ -190,8 +189,9 @@
 #ifdef	__NetBSD__
 #include <dlfcn.h>
 #define	IEEEFLOAT
-#define	DOWN_STACK
 #define	JB_SP 4
+#define LDFLAGS -Wl,--export-dynamic
+#define SHARED_LDFLAGS -shared
 #ifndef BSD
 # define BSD
 #endif
@@ -201,8 +201,7 @@
 #ifdef __ELF__
 # define DATA_START 0x8000000
 #else
-#error "A.out not yet supported in NetBSD"
-# define DATA_START 0
+# error "A.out not supported in NetBSD"
 #endif
 #define	BRAND "IBM-PC"
 #define	CLIBS -lcompat
@@ -212,11 +211,10 @@
 #ifdef	sun
 #define	IEEEFLOAT
 #define	DATA_START 0
-#define	DOWN_STACK
 #define	BSD
 #define	BRAND "SUN"
 #define LDFLAGS
-
+#define SHARED_LDFLAGS -dy
 #ifdef	sun4sol2
 #  include <dlfcn.h>
 #  include <link.h>

@@ -664,39 +664,70 @@ ECLS 0.2
 ECLS 0.3
 ========
 
+* Errors fixed:
+
+  - The dynamic linker in eval.d (link_call) truncated addresses
+    larger than MOST_POSITIVE_FIXNUM.
+
+  - The routine that outputs addresses as hexadecimal numbers, and
+    which is used in print-unreadable, would only output the first
+    digit.
+
+  - Make sure that the proclamations in Gabriel's benchmark are
+    evaluated at compile time, too.
+
+  - Fix the native compiler and the bytecodes compiler so that when
+    they finds LOCALLY, MACROLET or SYMBOL-MACROLET at the top level,
+    it processes their bodies as top level forms as well. For
+    instance, this now works:
+	(LOCALLY (EVAL-WHEN (:COMPILE-TOPLEVEL) (PRINT "HELLO")))
+
 * Add name mangling to ECLS:
+
   - In the preprocessed files (*.d) @package::symbol can be used to
     refer to a lisp function, while @'package::symbol can be used to
     refer to a lisp symbol. The preprocessor translates these names
     into valid C names.
+
   - Function SI::MANGLE-NAME returns the C name for a lisp symbol
     or function, and tells whether that symbol has been defined as
     external C function already.
+
   - A new proclamation
 	(proclaim '(si::c-export-fname union))
     advises the lisp->C translator to produce a C function with
     mangle named (clLunion in this case), that can be directly called
     from other translated files and from user written code.
-  - The dynamic loader can now reexport symbols from object files,
-    so that they become available to other files.
 
-* Remove variable si::*system-directory* and use logical hostname
-  "SYS:" instead.
+* Changes to user interface:
 
-* Fix the compiler so that when it finds LOCALLY, MACROLET or
-  SYMBOL-MACROLET at the top level, it processes their bodies as top
-  level forms as well. For instance, this now works
-	(LOCALLY (EVAL-WHEN (:COMPILE-TOPLEVEL) (PRINT "HELLO")))
+  - Remove variable si::*system-directory* and use logical hostname
+    "SYS:" instead.
 
-* Implement loading of object files using the native "dlopen" function
-  which is present in most operating systems. Support for "dld" has
-  been dropped.
+  - Remove *EVALHOOK*, *APPLYHOOK*, #'EVALHOOK and #'APPLYHOOK, which
+    make little sense when working in a early compilation environment.
 
-* The dynamic linker in eval.d (link_call) truncated addresses larger
-  than MOST_POSITIVE_FIXNUM.
+  - Stepper removed until we figure out how to implement this using
+    the bytecodes.
 
-* The routine that outputs addresses as hexadecimal numbers, and which
-  is used in print-unreadable, would only output the first digit.
+  - The library function eval() now accepts an environment as a third
+    parameter. On top of this function, SI:EVAL-WITH-ENV, evaluates
+    a form on a given environment.
+
+* System design and portability:
+
+  - Code has been revised so that it works in environments where stack
+    grows upwards, as well as in environments where the parameters to
+    a function cannot be accessed as an array and only va_list/va_arg
+    work.
+
+  - Implement loading of object files using the native "dlopen"
+    function which is present in most operating systems. Support for
+    "dld" has been dropped and the whole of the CRS library has been
+    removed
+
+  - Remove use of alloca() when printing circular structures.
+
 
 TODO:
 =====

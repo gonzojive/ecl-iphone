@@ -25,15 +25,12 @@
 
 @(defun = (num &rest nums)
 	int i;
-	cl_object numi;
 @
 	/* ANSI: Need not signal error for 1 argument */
 	/* INV: For >= 2 arguments, number_equalp() performs checks */
-	for (i = 1; i < narg; i++) {
-		numi = va_arg(nums, cl_object);
-		if (!number_equalp(num, numi))
+	for (i = 1; i < narg; i++)
+		if (!number_equalp(num, cl_nextarg(nums)))
 			@(return Cnil)
-	}
 	@(return Ct)
 @)
 
@@ -261,67 +258,61 @@ number_compare(cl_object x, cl_object y)
 
 @(defun /= (&rest nums)
 	int i, j;
-	va_list numb;
 @
 	if (narg == 0)
 		FEtoo_few_arguments(&narg);
-	if (narg == 1)
-		@(return Ct)
-	for (i = 0; i < narg; i++) {
-	  cl_object numi = va_arg(nums, cl_object);
-	  va_start(numb, narg);
-	  for (j = 0; j < i; j++)
-	    if (number_equalp(numi, va_arg(numb, cl_object)))
-	      @(return Cnil)
+	for (i = narg-1; i; i--) {
+		cl_object numi = cl_nextarg(nums);
+		va_list numb = nums;
+		for (j = i; j; j--)
+			if (number_equalp(numi, cl_nextarg(numb)))
+				@(return Cnil)
 	}
 	@(return Ct)
 @)
 
+static cl_object
+monotonic(int s, int t, int narg, va_list nums)
+{
+	cl_object c, d;
+
+	if (narg == 0)
+		FEtoo_few_arguments(&narg);
+	/* INV: type check occurs in number_compare() */
+	for (c = cl_nextarg(nums); --narg; c = d) {
+		d = cl_nextarg(nums);
+		if (s*number_compare(d, c) < t)
+			return1(Cnil);
+	}
+	return1(Ct);
+}
+
 #define MONOTONIC(i, j) (int narg, ...) \
 { va_list nums; va_start(nums, narg); \
-  return monotonic(i, j, narg, (cl_object *)nums); }
+  return monotonic(i, j, narg, nums); }
 
 cl_object @<= MONOTONIC( 1, 0)
 cl_object @>= MONOTONIC(-1, 0)
 cl_object @<  MONOTONIC( 1, 1)
 cl_object @>  MONOTONIC(-1, 1)
 
-cl_object
-monotonic(int s, int t, int narg, cl_object *nums)
-{
-	int i;
-
-	if (narg == 0)
-		FEtoo_few_arguments(&narg);
-	/* INV: type check occurs in number_compare() */
-	for (i = 1; i < narg; i++)
-		if (s*number_compare(nums[i], nums[i-1]) < t)
-			return1(Cnil);
-	return1(Ct);
-}
-
 @(defun max (max &rest nums)
-	cl_object numi;
-	int i;
 @
 	/* INV: type check occurs in number_compare() */
-	for (i = 1;  i < narg;  i++) {
-	  numi = va_arg(nums, cl_object);
-	  if (number_compare(max, numi) < 0)
-	    max = numi;
+	while (--narg) {
+		cl_object numi = cl_nextarg(nums);
+		if (number_compare(max, numi) < 0)
+		    max = numi;
 	}
 	@(return max)
 @)
 
 @(defun min (min &rest nums)
-	cl_object numi;
-	int i;
 @	
 	/* INV: type check occurs in number_compare() */
-	va_start(nums, min);
-	for (i = 1;  i < narg;  i++) {
-	  numi = va_arg(nums, cl_object);
-	  if (number_compare(min, numi) > 0)
+	while (--narg) {
+		cl_object numi = va_arg(nums, cl_object);
+		if (number_compare(min, numi) > 0)
 			min = numi;
 	}
 	@(return min)

@@ -107,7 +107,6 @@ install: BUILD-STAMP
 	$(INSTALL_DATA) $(srcdir)/etc/ecls.1 $(PREFIX)$(mandir)
 	test -d $(PREFIX)$(libdir) || (mkdir $(PREFIX)$(libdir); chmod 755 $(PREFIX)$(libdir))
 	test -d $(PREFIX)$(libdir)/h || (mkdir $(PREFIX)$(libdir)/h; chmod 755 $(PREFIX)$(libdir)/h)
-	for i in $(TARGETS); do $(INSTALL_PROGRAM) $$i.sym $(PREFIX)$(libdir); done
 	$(INSTALL_DATA) BUILD-STAMP $(PREFIX)$(libdir)
 	$(INSTALL_DATA) h/config.h $(PREFIX)$(libdir)/h
 #ifndef HAVE_LOCAL_GMP

@@ -43,14 +43,14 @@
 static cl_object big_log_op(struct bignum *x, cl_object y, int (*op)());
 
 static cl_object
-log_op(int narg, int (*op)(), cl_object *nums)
+log_op(int narg, int (*op)(), va_list ARGS)
 {
 	enum cl_type t;
 	cl_object x, numi;
 	int i = 1, j;
 
 	if (narg < 2) FEtoo_few_arguments(&narg);
-	x = *nums++;
+	x = cl_nextarg(ARGS);
 	t = type_of(x);
 	if (t == t_bignum) {
 		x = big_copy(x);	/* since big_log_op clobbers it */
@@ -60,7 +60,7 @@ log_op(int narg, int (*op)(), cl_object *nums)
 	}
 	j = fix(x);
 	for (; i < narg; i++) {
-	  numi = *nums++;
+	  numi = cl_nextarg(ARGS);
 	  t = type_of(numi);
 	  if (t == t_bignum) {
 	    x = big_log_op(&bignum1(j)->big, numi, op);
@@ -75,7 +75,7 @@ log_op(int narg, int (*op)(), cl_object *nums)
 
 BIG_OP:
 	for (; i < narg; i++)	  
-	  x = big_log_op(&x->big, *nums++, op);
+	  x = big_log_op(&x->big, cl_nextarg(ARGS), op);
 	return(big_normalize(x));
 }
 /*
@@ -226,7 +226,7 @@ b_c2_op(int i, int j)
 }
 
 static int
-big_bitp(cl_object	x, int p)
+big_bitp(cl_object x, int p)
 {
 	if (p < 0)
 		return 0;
@@ -348,8 +348,8 @@ int_bit_length(int i)
 		@(return MAKE_FIXNUM(0))
 	/* INV: log_op() checks types */
 	if (narg == 1)
-		@(return va_arg(nums, cl_object))
-	@(return log_op(narg, ior_op, (cl_object *)nums))
+		@(return cl_nextarg(nums))
+	@(return log_op(narg, ior_op, nums))
 @)
 
 @(defun logxor (&rest nums)
@@ -358,8 +358,8 @@ int_bit_length(int i)
 		@(return MAKE_FIXNUM(0))
 	/* INV: log_op() checks types */
 	if (narg == 1)
-		@(return va_arg(nums, cl_object))
-	@(return log_op(narg, xor_op, (cl_object *)nums))
+		@(return cl_nextarg(nums))
+	@(return log_op(narg, xor_op, nums))
 @)
 
 @(defun logand (&rest nums)
@@ -368,8 +368,8 @@ int_bit_length(int i)
 		@(return MAKE_FIXNUM(-1))
 	/* INV: log_op() checks types */
 	if (narg == 1)
-		@(return va_arg(nums, cl_object))
-	@(return log_op(narg, and_op, (cl_object *)nums))
+		@(return cl_nextarg(nums))
+	@(return log_op(narg, and_op, nums))
 @)
 
 @(defun logeqv (&rest nums)
@@ -378,8 +378,8 @@ int_bit_length(int i)
 		@(return MAKE_FIXNUM(-1))
 	/* INV: log_op() checks types */
 	if (narg == 1)
-		@(return va_arg(nums, cl_object))
-	@(return log_op(narg, eqv_op, (cl_object *)nums))
+		@(return cl_nextarg(nums))
+	@(return log_op(narg, eqv_op, nums))
 @)
 
 @(defun boole (o &rest nums)
@@ -409,7 +409,7 @@ int_bit_length(int i)
 			FEerror("~S is an invalid logical operator.",
 				1, o);
 	}
-	@(return log_op(2, op, (cl_object *)nums))
+	@(return log_op(2, op, nums))
 @)
 
 @(defun logbitp (p x)

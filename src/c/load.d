@@ -96,6 +96,7 @@ GO_ON:
 	}
 	bds_bind(@'*standard-input*', strm);
 	for (;;) {
+		cl_object bytecodes = Cnil;
 		preserving_whitespace_flag = FALSE;
 		detect_eos_flag = TRUE;
 		read_ch_fun = readc; /* setup for read. Beppe */
@@ -103,14 +104,7 @@ GO_ON:
 		read_ch_fun = old_read_ch_fun;
 		if (x == OBJNULL)
 			break;
-		{
-			cl_object lex_old = lex_env;
-			cl_object bytecodes = Cnil;
-
-			lex_new();
-			eval(x, &bytecodes);
-			lex_env = lex_old;
-		}
+		eval(x, &bytecodes, Cnil);
 		if (print != Cnil) {
 			setupPRINT(x, symbol_value(@'*standard-output*'));
 			write_object(x, 0);
@@ -210,26 +204,6 @@ GO_ON:
 
 
 /* ---------------------------------------------------------------------- */
-#if 0
-
-@(defun si::faslink (file lib)
-	bds_ptr old_bds_top;
-	cl_object package;
-@
-	check_type_string(&lib);
-	/* INV: coerce_to_physical_pathname() checks types */
-	file = coerce_to_filename(file);
-	file->pathname.type = FASL_string;
-	file = namestring(file);
-	package = symbol_value(@'*package*');
-	old_bds_top = bds_top;
-	bds_bind(@'*package*', package);
-	faslink(file, lib);
-	bds_unwind(old_bds_top);
-	@(return Cnil)
-@)
-#endif unix
-
 void
 init_load(void)
 {

@@ -3,6 +3,10 @@
 
 ;;; TRIANG -- Board game benchmark.
 
+(defvar answer)
+(defvar final)
+
+(eval-when (eval compile)
 (proclaim '(special board sequence a b c))
 (proclaim '(special board sequence a b c))
 (proclaim '(type (vector fixnum ) board))
@@ -10,14 +14,12 @@
 (proclaim '(type (vector fixnum ) a))
 (proclaim '(type (vector fixnum ) b))
 (proclaim '(type (vector fixnum ) c))
-(defvar answer)
-(defvar final)
 (proclaim '(function triang-setup () t))
 (proclaim '(function last-position () fixnum))
 (proclaim '(function try (fixnum fixnum) t))
 (proclaim '(function simple-vector-to-list (t) t))
 (proclaim '(function gogogo (fixnum) t))
-(proclaim '(function testtriang () t))
+(proclaim '(function testtriang () t)))
 
 (defun triang-setup ()
   (setq board (make-array 16 :element-type 'fixnum :initial-element 1))

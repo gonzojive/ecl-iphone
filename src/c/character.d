@@ -137,13 +137,11 @@ digitp(int i, int r)
 @)
 
 @(defun char= (c &rest cs)
-	cl_fixnum i;
 @
 	/* INV: char_eq() checks types of `c' and `cs' */
-	for (narg--, i = 0;  i < narg;  i++) {
-		if (!char_eq(c, ((cl_object *)cs)[i]))
+	while (--narg)
+		if (!char_eq(c, cl_nextarg(cs)))
 			@(return Cnil)
-	}
 	@(return Ct)
 @)
 
@@ -159,24 +157,29 @@ char_eq(cl_object x, cl_object y)
 	/* INV: char_eq() checks types of its arguments */
 	if (narg == 0)
 		@(return Ct)
-	for (i = 0;  i < narg;  i++) {
-		for (j = 0;  j < i;  j++)
-			if (char_eq(((cl_object *)cs)[j], ((cl_object *)cs)[i]))
+	for (i = narg-1; i; i--) {
+		cl_object c = cl_nextarg(cs);
+		va_list ds = cs;
+		for (j = i; j; j--)
+			if (char_eq(cl_nextarg(ds), c))
 				@(return Cnil)
 	}
 	@(return Ct)
 @)
 
 static cl_return
-Lchar_cmp(int narg, int s, int t, cl_object *args)
+Lchar_cmp(int narg, int s, int t, va_list args)
 {
-	int i;
+	cl_object c, d;
 
 	if (narg == 0)
 		FEtoo_few_arguments(&narg);
-	for (i = 1; i < narg; i++)
-		if (s*char_cmp(args[i], args[i-1]) < t)
+	c = cl_nextarg(args);
+	for (; --narg; c = d) {
+		d = cl_nextarg(args);
+		if (s*char_cmp(d, c) < t)
 			return1(Cnil);
+	}
 	return1(Ct);
 }
 
@@ -192,36 +195,32 @@ char_cmp(cl_object x, cl_object y)
 	return(0);
 }
 
-cl_return @char<(int narg, ...)
-{
-	va_list(args); va_start(args, narg);
-	return Lchar_cmp(narg, 1, 1, (cl_object *)args);
-}
+@(defun char< (&rest args)
+@
+	@(return Lchar_cmp(narg, 1, 1, args))
+@)
 
-cl_return @char>(int narg, ...)
-{
-	va_list(args); va_start(args, narg);
-	return Lchar_cmp(narg,-1, 1, (cl_object *)args);
-}
+@(defun char> (&rest args)
+@
+	@(return Lchar_cmp(narg,-1, 1, args))
+@)
 
-cl_return @char<=(int narg, ...)
-{
-	va_list(args); va_start(args, narg);
-	return Lchar_cmp(narg, 1, 0, (cl_object *)args);
-}
+@(defun char<= (&rest args)
+@
+	@(return Lchar_cmp(narg, 1, 0, args))
+@)
 
-cl_return @char>=(int narg, ...)
-{
-	va_list(args); va_start(args, narg);
-	return Lchar_cmp(narg,-1, 0, (cl_object *)args);
-}
+@(defun char>= (&rest args)
+@
+	@(return Lchar_cmp(narg,-1, 0, args))
+@)
 
 @(defun char_equal (c &rest cs)
 	int i;
 @
 	/* INV: char_equal() checks the type of its arguments */
 	for (narg--, i = 0;  i < narg;  i++) {
-		if (!char_equal(c, ((cl_object *)cs)[i]))
+		if (!char_equal(c, cl_nextarg(cs)))
 			@(return Cnil)
 	}
 	@(return Ct)
@@ -240,29 +239,34 @@ char_equal(cl_object x, cl_object y)
 	return(i == j);
 }
 
-@(defun char_not_equal (&rest cs)
+@(defun char-not-equal (&rest cs)
 	int i, j;
 @
 	/* INV: char_equal() checks the type of its arguments */
-	for (i = 0;  i < narg;  i++) {
-		for (j = 0;  j < i;  j++)
-			if (char_equal(((cl_object *)cs)[j], ((cl_object *)cs)[i]))
+	for (i = narg-1;  i;  i--) {
+		cl_object c = cl_nextarg(cs);
+		va_list ds = cs;
+		for (j = i;  j;  j--)
+			if (char_equal(c, cl_nextarg(ds)))
 				@(return Cnil)
 	}
 	@(return Ct)
 @)
 
 static cl_return
-Lchar_compare(int narg, int s, int t, cl_object *args)
+Lchar_compare(int narg, int s, int t, va_list args)
 {
-	int i;
+	cl_object c, d;
 
 	/* INV: char_compare() checks the types of its arguments */
 	if (narg == 0)
 		FEtoo_few_arguments(&narg);
-	for (i = 1; i < narg; i++)
-		if (s*char_compare(args[i], args[i-1]) < t)
+	c = cl_nextarg(args);
+	for (; --narg; c = d) {
+		d = cl_nextarg(args);
+		if (s*char_compare(d, c) < t)
 			return1(Cnil);
+	}
 	return1(Ct);
 }
 
@@ -284,29 +288,25 @@ char_compare(cl_object x, cl_object y)
 		return(1);
 }
 
-cl_return @char-lessp(int narg, ...)
-{
-	va_list(args); va_start(args, narg);
-	return Lchar_compare(narg, 1, 1, (cl_object *)args);
-}
+@(defun char-lessp (&rest args)
+@
+	@(return Lchar_compare(narg, 1, 1, args))
+@)
 
-cl_return @char-greaterp(int narg, ...)
-{
-	va_list(args); va_start(args, narg);
-	return Lchar_compare(narg,-1, 1, (cl_object *)args);
-}
+@(defun char-greaterp (&rest args)
+@
+	@(return Lchar_compare(narg,-1, 1, args))
+@)
 
-cl_return @char-not-greaterp(int narg, ...)
-{
-	va_list(args); va_start(args, narg);
-	return Lchar_compare(narg, 1, 0, (cl_object *)args);
-}
+@(defun char-not-greaterp (&rest args)
+@
+	@(return Lchar_compare(narg, 1, 0, args))
+@)
 
-cl_return @char-not-lessp(int narg, ...)
-{
-	va_list(args); va_start(args, narg);
-	return Lchar_compare(narg,-1, 0, (cl_object *)args);
-}
+@(defun char-not-lessp (&rest args)
+@
+	@(return Lchar_compare(narg,-1, 0, args))
+@)
 
 
 @(defun character (x)

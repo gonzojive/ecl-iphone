@@ -3,7 +3,7 @@
 
 ;;; TRIANG -- Board game benchmark.
 
-(proclaim '(special board sequence a b c))
+(declaim (special board sequence a b c))
 (defvar answer)
 (defvar final)
 

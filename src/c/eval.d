@@ -30,15 +30,6 @@ static struct nil3 { cl_object nil3_self[3]; } three_nils;
 #define SYMBOL_FUNCTION(sym)    (SYM_FUN(sym) == OBJNULL ? \
 				 (FEundefined_function(sym),Cnil) : SYM_FUN(sym))
 
-#ifdef THREADS
-#define eval1            clwp->lwp_eval1
-#else
-static int eval1 = 0;          /*  = 1 during one-shot bypass of evalhook/applyhook  */
-#endif THREADS
-
-cl_object @'*evalhook*';
-cl_object @'*applyhook*';
-
 /* Calling conventions:
    Compiled C code calls lisp function supplying #args, and args.
    Linking function performs check_args, gets jmp_buf with _setjmp, then
@@ -74,65 +65,18 @@ apply(int narg, cl_object fun, cl_object *args)
 	switch (type_of(fun)) {
 	case t_cfun:
 		return APPLY(narg, fun->cfun.entry, args);
-
 	case t_cclosure:
-		return APPLY_closure(narg, fun->cclosure.entry, fun->cclosure.env, args);
-		
+		return APPLY_closure(narg, fun->cclosure.entry, fun->cclosure.env,
+				     args);
 #ifdef CLOS
 	case t_gfun:
 		return gcall(narg, fun, args);
 #endif
-
 	case t_symbol:
 		fun = SYM_FUN(fun);
 		goto AGAIN;
-
 	case t_bytecodes:
-		{
-		  cl_object mv_values[narg]; /* __GNUC__ */
-		  /* move args out of VALUES, or macroexpand of fun's body
-		     will clobber them */
-		  memcpy(mv_values, args, narg * sizeof(cl_object));
-		  return lambda_apply(narg, fun, mv_values);
-		}
-		break;
-	default:
-	}
-	FEinvalid_function(fun);
-}
-
-cl_return
-funcall(int narg, ...)
-{
-	cl_object fun, x;
-	va_list funargs;
-	va_start(funargs, narg);
-	fun = va_arg(funargs, cl_object);
-
-      AGAIN:
-	if (fun == OBJNULL) {
-		va_start(funargs, narg);
-		FEundefined_function(va_arg(funargs, cl_object));
-	      }
-	switch (type_of(fun)) {
-	case t_cfun:
-		return APPLY(narg-1, fun->cfun.entry, funargs);
-
-	case t_cclosure:
-		return APPLY_closure(narg-1, fun->cclosure.entry, fun->cclosure.env, funargs);
-
-#ifdef CLOS
-	case t_gfun:
-		return gcall(narg-1, fun, funargs);
-#endif
-
-	case t_symbol:
-		fun = SYM_FUN(fun);
-		goto AGAIN;
-
-	case t_bytecodes:
-		return lambda_apply(narg-1, fun, (cl_object *)funargs);
-
+		return lambda_apply(narg, fun, args);
 	default:
 	}
 	FEinvalid_function(fun);
@@ -147,39 +91,38 @@ static cl_object @'si::link-from';
 
 cl_object
 #ifdef CLOS
-link_call(cl_object sym, cl_object (**pLK)(), cl_object *gfun, cl_object *args)
+link_call(cl_object sym, cl_object (**pLK)(), cl_object *gfun,
+	  int narg, va_list args)
 #else
-link_call(cl_object sym, cl_object (**pLK)(), cl_object *args)
+link_call(cl_object sym, cl_object (**pLK)(), int narg, va_list args)
 #endif CLOS
-{       int narg = (int)args[0];
+{
 	cl_object fun = symbol_function(sym);
 
 	if (fun == OBJNULL) FEerror("Undefined function.", 0);
 
 	switch (type_of(fun)) {
 	case t_cfun:
-	  putprop(sym, CONS(CONS(make_unsigned_integer((cl_index)pLK),
-				 make_unsigned_integer((cl_index)*pLK)),
-			    getf(sym->symbol.plist, @'si::link-from', Cnil)),
-		  @'si::link-from');
-	  *pLK = fun->cfun.entry;
-	  return APPLY(narg, fun->cfun.entry, &args[1]);
+		putprop(sym, CONS(CONS(make_unsigned_integer((cl_index)pLK),
+				       make_unsigned_integer((cl_index)*pLK)),
+				  getf(sym->symbol.plist, @'si::link-from', Cnil)),
+			@'si::link-from');
+		*pLK = fun->cfun.entry;
+		return va_APPLY(narg, fun->cfun.entry, args);
 #ifdef CLOS
 	case t_gfun:
-	  putprop(sym, CONS(CONS(make_unsigned_integer((cl_index)gfun),
-				 make_unsigned_integer((cl_index)OBJNULL)),
-			    getf(sym->symbol.plist, @'si::link-from', Cnil)),
-		  @'si::link-from');
-	  *gfun = fun;
-	  return gcall(narg, fun, &args[1]);
+		putprop(sym, CONS(CONS(make_unsigned_integer((cl_index)gfun),
+				       make_unsigned_integer((cl_index)OBJNULL)),
+				  getf(sym->symbol.plist, @'si::link-from', Cnil)),
+			@'si::link-from');
+		*gfun = fun;
+		return va_gcall(narg, fun, args);
 #endif CLOS
 	case t_cclosure:
-		args[0] = (cl_object)fun->cclosure.env;
-		return APPLY(narg+1, fun->cclosure.entry, args);
-
+		return va_APPLY_closure(narg, fun->cclosure.entry,
+					fun->cclosure.env, args);
 	case t_bytecodes:
-		return lambda_apply(narg, fun, &args[1]);
-
+		return va_lambda_apply(narg, fun, args);
 	default:
 		FEinvalid_function(fun);
 	}
@@ -199,9 +142,30 @@ link_call(cl_object sym, cl_object (**pLK)(), cl_object *args)
 	@(return)
 @)
 
-@(defun funcall (fun &rest args)
+@(defun funcall (function &rest funargs)
+	cl_object fun = function, x;
 @
-	return(apply(narg-1, fun, (cl_object *)args));
+      AGAIN:
+	switch (type_of(fun)) {
+	case t_cfun:
+		return va_APPLY(narg-1, fun->cfun.entry, funargs);
+	case t_cclosure:
+		return va_APPLY_closure(narg-1, fun->cclosure.entry,
+					fun->cclosure.env, funargs);
+#ifdef CLOS
+	case t_gfun:
+		return va_gcall(narg-1, fun, funargs);
+#endif
+	case t_symbol:
+		fun = SYM_FUN(fun);
+		if (fun == OBJNULL)
+			FEundefined_function(function);
+		goto AGAIN;
+	case t_bytecodes:
+		return va_lambda_apply(narg-1, fun, funargs);
+	default:
+	}
+	FEinvalid_function(fun);
 @)
 
 @(defun apply (fun lastarg &rest args)
@@ -213,47 +177,29 @@ link_call(cl_object sym, cl_object (**pLK)(), cl_object *args)
 		lastarg = va_arg(args, cl_object);
 	}
 	loop_for_in (lastarg) {
+		if (i >= CALL_ARGUMENTS_LIMIT)
+			FEprogram_error("CALL-ARGUMENTS-LIMIT exceeded",0);
 		VALUES(i++) = CAR(lastarg);
 	} end_loop_for_in;
- 	{
- 	cl_object savargs[i];
- 	memcpy(savargs, &VALUES(0), i*sizeof(cl_object));
- 	return apply(i, fun, savargs);
- 	}
+	{
+		cl_object savargs[i];
+		memcpy(savargs, &VALUES(0), i * sizeof(cl_object));
+		return apply(i, fun, savargs);
+	}
 @)
 
 @(defun eval (form)
-	cl_object output, lex_old = lex_env;
+	cl_object output;
 @
-	lex_new();
-	output = eval(form, NULL);
-	lex_env = lex_old;
+	output = eval(form, NULL, Cnil);
 	returnn(output);
 @)
 
-@(defun evalhook (form evalhookfn applyhookfn &optional (env Cnil))
-	cl_object output, lex_old = lex_env;
-	bds_ptr old_bds_top = bds_top;
+@(defun si::eval-with-env (form env)
+	cl_object output;
 @
-	lex_env = env;
-	lex_copy();
-	bds_bind(@'*evalhook*', evalhookfn);
-	bds_bind(@'*applyhook*', applyhookfn);
-	eval1 = 1;
-	output = eval(form, NULL);
-	bds_unwind(old_bds_top);
-	lex_env = lex_old;
+	output = eval(form, NULL, env);
 	returnn(output);
-@)
-
-@(defun applyhook (fun args evalhookfn applyhookfn)
-	bds_ptr old_bds_top = bds_top;
-@
-	bds_bind(@'*evalhook*', evalhookfn);
-	bds_bind(@'*applyhook*', applyhookfn);
-	VALUES(0) = @apply(2, fun, args);
-	bds_unwind(old_bds_top);
-	returnn(VALUES(0));
 @)
 
 @(defun constantp (arg)
@@ -276,11 +222,6 @@ void
 init_eval(void)
 {
 	make_constant("CALL-ARGUMENTS-LIMIT", MAKE_FIXNUM(64));
-
-	SYM_VAL(@'*evalhook*') = Cnil;
-	SYM_VAL(@'*applyhook*') = Cnil;
-
-	eval1 = 0;
 
 	three_nils.nil3_self[0] = Cnil;
 	three_nils.nil3_self[1] = Cnil;

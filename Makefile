@@ -46,12 +46,12 @@ CFLAGS=-g -O2
 
 #  Where to find the source code.
 #  This is set by the configure script's `--srcdir' option.
-srcdir=/home/jjgarcia/src/ecls/src
+srcdir=/home/worm/src/ecls/src
 
-bindir=/home/jjgarcia/bin
-infodir=/home/jjgarcia/info
-mandir=/home/jjgarcia/man/man1
-libdir=/home/jjgarcia/lib/ecls
+bindir=/home/worm/bin
+infodir=/home/worm/info
+mandir=/home/worm/man/man1
+libdir=/home/worm/lib/ecls
 
 #  What to release
 TAR_CONTENTS=Makefile.in Copy* README.1st README.orig doc \

@@ -18,8 +18,6 @@
 #include <ctype.h>
 #include <unistd.h>
 
-extern void *alloca(size_t size);
-
 /******************************* EXPORTS ******************************/
 
 cl_object @':upcase';
@@ -113,7 +111,7 @@ cl_object @'si::sharp-exclamation';
 #define isp        clwp->lwp_isp
 #define iisp       clwp->lwp_iisp
 
-#define CIRCLEjmp clwp->lwp_CIRCLEjmp
+#define CIRCLEsize clwp->lwp_CIRCLEsize
 #define CIRCLEbase clwp->lwp_CIRCLEbase
 #define CIRCLEtop clwp->lwp_CIRCLEtop
 #define CIRCLElimit clwp->lwp_CIRCLElimit
@@ -128,7 +126,7 @@ static int qc;
 static int isp;
 static int iisp;
 
-jmp_buf CIRCLEjmp;
+cl_index CIRCLEsize;
 cl_object *CIRCLEbase;
 cl_object *CIRCLEtop;
 cl_object *CIRCLElimit;
@@ -141,6 +139,9 @@ cl_object PRINTstream;
 static void flush_queue (bool force);
 static void write_decimal1 (int i);
 static void travel_push_object (cl_object x);
+static cl_object *searchPRINTcircle(cl_object x);
+static bool doPRINTcircle(cl_object x);
+
 
 void
 interactive_writec_stream(int c, cl_object stream)
@@ -770,21 +771,8 @@ write_symbol(register cl_object x)
 		return;
 	}
 	if (Null(x->symbol.hpack)) {
-		if (PRINTcircle) {
-			cl_object *vp;
-			for (vp = CIRCLEbase;  vp < CIRCLEtop;  vp += 2)
-				if (x == *vp) {
-					write_ch('#');
-					write_decimal((vp-CIRCLEbase)/2);
-					if (vp[1] != Cnil) {
-						write_ch('#');
-						return;
-					} else {
-						write_ch('=');
-						vp[1] = Ct;
-					}
-				}
-		}
+		if (PRINTcircle && doPRINTcircle(x))
+			return;
 		if (PRINTgensym)
 			write_str("#:");
 	} else if (x->symbol.hpack == keyword_package)
@@ -996,21 +984,8 @@ write_object(cl_object x, int level)
 			write_ch('>');
 			return;
 		}
-		if (PRINTcircle) {
-			for (vp = CIRCLEbase;  vp < CIRCLEtop;  vp += 2)
-			    if (x == *vp) {
-				write_ch('#');
-				write_decimal((vp-CIRCLEbase)/2);
-				if (vp[1] != Cnil) {
-				    write_ch('#');
-				    return;
-				} else {
-				    write_ch('=');
-				    vp[1] = Ct;
-				    break;
-				}
-			    }
-		}
+		if (PRINTcircle && doPRINTcircle(x))
+			return;
 		if (PRINTlevel >= 0 && level >= PRINTlevel) {
 			write_ch('#');
 			return;
@@ -1084,21 +1059,8 @@ write_object(cl_object x, int level)
 			write_ch('>');
 			return;
 		}
-		if (PRINTcircle) {
-			for (vp = CIRCLEbase;  vp < CIRCLEtop;  vp += 2)
-			    if (x == *vp) {
-				write_ch('#');
-				write_decimal((vp-CIRCLEbase)/2);
-				if (vp[1] != Cnil) {
-				    write_ch('#');
-				    return;
-				} else {
-				    write_ch('=');
-				    vp[1] = Ct;
-				    break;
-				}
-			    }
-		}
+		if (PRINTcircle && doPRINTcircle(x))
+			return;
 		if (PRINTlevel >= 0 && level >= PRINTlevel) {
 			write_ch('#');
 			return;
@@ -1169,21 +1131,8 @@ write_object(cl_object x, int level)
 			x = CDR(x);
 			goto BEGIN;
 		}
-		if (PRINTcircle) {
-			for (vp = CIRCLEbase;  vp < CIRCLEtop;  vp += 2)
-			    if (x == *vp) {
-			        write_ch('#');
-				write_decimal((vp-CIRCLEbase)/2);
-				if (vp[1] != Cnil) {
-				    write_ch('#');
-				    return;
-				} else {
-				    write_ch('=');
-				    vp[1] = Ct;
-				    break;
-				}
-			    }
-		}
+		if (PRINTcircle && doPRINTcircle(x))
+			return;
 		if (CAR(x) == @'quote' && CONSP(CDR(x)) && Null(CDDR(x))) {
 			write_ch('\'');
 			x = CADR(x);
@@ -1225,20 +1174,20 @@ write_object(cl_object x, int level)
 				break;
 			}
 			if (PRINTcircle) {
-			  for (vp = CIRCLEbase; vp < CIRCLEtop; vp += 2)
-			    if (x == *vp) {
-				if (vp[1] != Cnil) {
-				    write_str(" . #");
-				    write_decimal((vp-CIRCLEbase)/2);
-				    write_ch('#');
-				    goto RIGHT_PAREN;
-				} else {
-				    write_ch(INDENT);
-				    write_str(". ");
-				    write_object(x, level);
-				    goto RIGHT_PAREN;
+				cl_object *vp = searchPRINTcircle(x);
+				if (vp != NULL) {
+					if (vp[1] != Cnil) {
+						write_str(" . #");
+						write_decimal((vp-CIRCLEbase)/2);
+						write_ch('#');
+						goto RIGHT_PAREN;
+					} else {
+						write_ch(INDENT);
+						write_str(". ");
+						write_object(x, level);
+						goto RIGHT_PAREN;
+					}
 				}
-			    }
 			}
 			if (i == 0 && y != OBJNULL && type_of(y) == t_symbol)
 				write_ch(INDENT1);
@@ -1375,21 +1324,8 @@ write_object(cl_object x, int level)
 
 #ifndef CLOS
 	case t_structure:
-		if (PRINTcircle) {
-			for (vp = CIRCLEbase;  vp < CIRCLEtop;  vp += 2)
-			    if (x == *vp) {
-				write_ch('#');
-				write_decimal((vp-CIRCLEbase)/2);
-				if (vp[1] != Cnil) {
-				    write_ch('#');
-				    return;
-				} else {
-				    write_ch('=');
-				    vp[1] = Ct;
-				    break;
-				}
-			    }
-		}
+		if (PRINTcircle && doPRINTcircle(x))
+			return;
 		if (PRINTlevel >= 0 && level >= PRINTlevel) {
 			write_ch('#');
 			break;
@@ -1523,8 +1459,6 @@ write_object(cl_object x, int level)
 	}
 }
 
-#define PRINTcircleSIZE	4000
-
 /* To print circular structures, we traverse the structure by adding
    a pair <element, flag> to the array CIRCLEbase for each element visited.
    flag is initially NIL and becomes T if the element is visited again.
@@ -1536,49 +1470,51 @@ write_object(cl_object x, int level)
 /* Allocates space for travel_push: if not enough, get back with
   longjmp and increase it */
 
-#ifdef DOWN_STACK
-
-/*
-fixed with new alloca() since gcc 2.7 ?
-#ifdef i386
-#define SIZEincrement PRINTcircleSIZE
-#endif i386
-*/
-#define SIZEincrement size
-
-#define setupPRINTcircle(x) \
-	if (PRINTcircle) { volatile int size = PRINTcircleSIZE; \
-	  if (ecls_setjmp(CIRCLEjmp) != 0) \
-	    size += PRINTcircleSIZE; \
-	  CIRCLEbase = alloca(SIZEincrement * sizeof(cl_object)); \
-	  CIRCLElimit = &CIRCLEbase[size]; \
-	  setupPRINTcircle1(x); }
-#else
-#define setupPRINTcircle(x) \
-	if (PRINTcircle) { volatile int size = PRINTcircleSIZE; \
-	  if (ecls_setjmp(CIRCLEjmp) != 0) { \
-	    size += PRINTcircleSIZE; \
-	    alloca(PRINTcircleSIZE * sizeof(cl_object)); \
-	  } else \
-	     CIRCLEbase = alloca(PRINTcircleSIZE * sizeof(cl_object)); \
-	  CIRCLElimit = &CIRCLEbase[size]; \
-	  setupPRINTcircle1(x); }
-#endif DOWN_STACK
-
-
-
 static void
-setupPRINTcircle1(cl_object x)
-{   cl_object *vp, *vq;
+setupPRINTcircle(cl_object x)
+{
+	cl_object *vp, *vq;
 
-    CIRCLEtop = CIRCLEbase;
-    travel_push_object(x);
-    /* compact shared elements towards CIRCLEbase */
-    for (vp = vq = CIRCLEbase;  vp < CIRCLEtop;  vp += 2)
-      if (vp[1] != Cnil) {
-	vq[0] = vp[0]; vq[1] = Cnil; vq += 2;
-      }
-    CIRCLEtop = vq;
+	CIRCLEsize = 4000;
+	CIRCLEbase = alloc_atomic(CIRCLEsize * sizeof(cl_object));
+	CIRCLEtop = CIRCLEbase;
+	CIRCLElimit = &CIRCLEbase[CIRCLEsize];
+	travel_push_object(x);
+	/* compact shared elements towards CIRCLEbase */
+	for (vp = vq = CIRCLEbase;  vp < CIRCLEtop;  vp += 2)
+		if (vp[1] != Cnil) {
+			vq[0] = vp[0]; vq[1] = Cnil; vq += 2;
+		}
+	CIRCLEtop = vq;
+}
+
+static cl_object *
+searchPRINTcircle(cl_object x)
+{
+	cl_object *vp;
+
+	for (vp = CIRCLEbase; vp < CIRCLEtop; vp += 2)
+		if (vp[0] == x)
+			return vp;
+	return NULL;
+}
+
+static bool
+doPRINTcircle(cl_object x)
+{
+	cl_object *vp = searchPRINTcircle(x);
+	if (vp != NULL) {
+		write_ch('#');
+		write_decimal((vp-CIRCLEbase)/2);
+		if (vp[1] != Cnil) {
+			write_ch('#');
+			return TRUE; /* All is done */
+		} else {
+			write_ch('=');
+			vp[1] = Ct;
+		}
+	}
+	return FALSE; /* Print the structure */
 }
 
 static void
@@ -1606,8 +1542,17 @@ BEGIN:
 		  /* if (vp[1] == Cnil) */ vp[1] = Ct;
 			return;
 		}
-	if (CIRCLEtop >= CIRCLElimit)
-	  ecls_longjmp(CIRCLEjmp, 1); /* go back to allocate more space */
+	if (CIRCLEtop >= CIRCLElimit) {
+		/* allocate more space */
+		cl_object *ptr;
+		int newsize = CIRCLEsize + 4000;
+		ptr = alloc_atomic(newsize * sizeof(cl_object));
+		memcpy(ptr, CIRCLEbase, CIRCLEsize * sizeof(cl_object));
+		CIRCLEsize = newsize;
+		CIRCLEtop = (CIRCLEtop - CIRCLEbase) + ptr;
+		CIRCLEbase = ptr;
+		CIRCLElimit = &CIRCLEbase[CIRCLEsize];
+	}
 	CIRCLEtop[0] = x;
 	CIRCLEtop[1] = Cnil;
 	CIRCLEtop += 2;

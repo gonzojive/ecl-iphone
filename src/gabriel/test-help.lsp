@@ -80,7 +80,8 @@
     (cond (compile
 	   (proclaim-file source-file)
 	   (compile-file source-file :output-file fasl-file
-			 #+ecls :c-file #+ecls t #+ecls :h-file #+ecls t)
+			 #+ecls :c-file #+ecls t #+ecls :h-file #+ecls t
+			 #+ecls :verbose #+ecls t)
 	   (print fasl-file)
 	   (load fasl-file :verbose t))
 	  (t

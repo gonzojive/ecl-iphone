@@ -20,8 +20,6 @@
 #include <stdarg.h>
 #include <setjmp.h>
 #include <math.h>
-#include <inttypes.h>
-#include <limits.h>
 #include <sys/types.h>
 
 #ifdef __GNUC__
@@ -53,15 +51,15 @@
 
 #define LINK_ARGS	&narg
 #ifdef CLOS
-#define TRAMPOLINK(vv, lk) \
+#define TRAMPOLINK(narg, vv, lk) \
 	static cl_object gfun = OBJNULL; \
 	va_list args; va_start(args, narg); \
 	if (gfun) return(gcall(narg, gfun, args)); \
-	else return(link_call(vv, lk , &gfun, &narg))
+	else return(link_call(vv, lk , &gfun, narg, args))
 #else
-#define TRAMPOLINK(vv, lk) \
+#define TRAMPOLINK(narg, vv, lk) \
 	va_list args; va_start(args, narg); \
-	return(link_call(vv, lk , &narg))
+	return(link_call(vv, lk, narg, args))
 #endif CLOS
 
 #define	cclosure_call	funcall

@@ -33,7 +33,7 @@ static
 	  sentence = @read(3, Cnil, Cnil, OBJNULL);
 	  if (sentence == OBJNULL)
 	    @(return);
-	  prin1(eval(sentence, &bytecodes), Cnil);
+	  prin1(eval(sentence, &bytecodes, Cnil), Cnil);
 #ifdef TK
 	  StdinResume();
 #endif

@@ -463,7 +463,7 @@ Usage: ecls [-dir dir] [-load file] [-eval expr]
 	     (setq - (notinline (tpl-read)))
 	     (setq values
 		   (multiple-value-list
-		    (evalhook - nil nil *break-env*)))
+		    (eval-with-env - *break-env*)))
 	     (setq /// // // / / values *** ** ** * * (car /))
 	     (tpl-print values)
 	     nil)
@@ -826,7 +826,7 @@ Usage: ecls [-dir dir] [-load file] [-eval expr]
     (when (and (consp fname) (eq 'SETF (car fname)))
 	  (setq fname (second fname)))
     (or (eq fname 'EVAL)
-	(eq fname 'EVALHOOK)
+	(eq fname 'EVAL-WITH-ENV)
 	(and (not (member (symbol-package fname) *break-hidden-packages*
 			  :TEST #'eq))
 	     (not (null fname))

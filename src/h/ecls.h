@@ -22,8 +22,6 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <setjmp.h>
-#include <inttypes.h>
-#include <limits.h>
 
 #ifdef __GNUC__
 #define VOID void

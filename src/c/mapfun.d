@@ -24,7 +24,7 @@
 @
 	cdrs[0] = onelist;
 	for (--narg, i = 1; i < narg; i++)
-		cdrs[i] = va_arg(lists, cl_object);
+		cdrs[i] = cl_nextarg(lists);
 	res = Cnil;
 	while (TRUE) {
 		for (i = 0;  i < narg;  i++) {
@@ -33,7 +33,7 @@
 			cars[i] = CAR(cdrs[i]);
 			cdrs[i] = CDR(cdrs[i]);
 		}
-		*val = CONS(_apply(narg, fun, cars), Cnil);
+		*val = CONS(apply(narg, fun, cars), Cnil);
 		val = &CDR(*val);
 	}
 @)
@@ -46,7 +46,7 @@
 @
 	cdrs[0] = onelist;
 	for (--narg, i = 1; i < narg; i++)
-		cdrs[i] = va_arg(lists, cl_object);
+		cdrs[i] = cl_nextarg(lists);
 	res = Cnil;
 	while (TRUE) {
 		for (i = 0;  i < narg;  i++) {
@@ -55,7 +55,7 @@
 			cars[i] = cdrs[i];
 			cdrs[i] = CDR(cdrs[i]);
 		}
-		*val = CONS(_apply(narg, fun, cars), Cnil);
+		*val = CONS(apply(narg, fun, cars), Cnil);
 		val = &CDR(*val);
 	}
 @)
@@ -86,7 +86,7 @@
 @
 	cdrs[0] = onelist;
 	for (--narg, i = 1; i < narg; i++)
-		cdrs[i] = va_arg(lists, cl_object);
+		cdrs[i] = cl_nextarg(lists);
 	while (TRUE) {
 		for (i = 0;  i < narg;  i++) {
 			if (endp(cdrs[i]))
@@ -106,7 +106,7 @@
 @
 	cdrs[0] = onelist;
 	for (--narg, i = 1; i < narg; i++)
-		cdrs[i] = va_arg(lists, cl_object);
+		cdrs[i] = cl_nextarg(lists);
 	res = Cnil;
 	while (TRUE) {
 		for (i = 0;  i < narg;  i++) {
@@ -115,7 +115,7 @@
 			cars[i] = CAR(cdrs[i]);
 			cdrs[i] = CDR(cdrs[i]);
 		}
-		*val = _apply(narg, fun, cars);
+		*val = apply(narg, fun, cars);
 		while (CONSP(*val))
 			val = &CDR(*val);
 	}
@@ -129,7 +129,7 @@
 @
 	cdrs[0] = onelist;
 	for (--narg, i = 1; i < narg; i++)
-		cdrs[i] = va_arg(lists, cl_object);
+		cdrs[i] = cl_nextarg(lists);
 	res = Cnil;
 	while (TRUE) {
 		for (i = 0;  i < narg;  i++) {
@@ -138,7 +138,7 @@
 			cars[i] = cdrs[i];
 			cdrs[i] = CDR(cdrs[i]);
 		}
-		*val = _apply(narg, fun, cars);
+		*val = apply(narg, fun, cars);
 		while (CONSP(*val))
 			val = &CDR(*val);
 	}

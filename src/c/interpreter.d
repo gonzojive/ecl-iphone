@@ -251,6 +251,17 @@ get_sp_at(cl_index where) {
 	return stack->vector.self.t + where;
 }
 
+#ifdef NO_ARGS_ARRAY
+cl_object
+va_lambda_apply(int narg, cl_object fun, va_list args)
+{
+	cl_object sp = get_sp();
+	while (narg--)
+		push1(cl_nextarg(args));
+	lambda_apply(narg, fun, sp);
+}
+#endif
+
 /* -------------------- AIDS TO THE INTERPRETER -------------------- */
 
 static inline cl_fixnum

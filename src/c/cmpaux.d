@@ -226,55 +226,59 @@ go(cl_object tag_id, cl_object label)
 void
 parse_key(
      int narg,			/* number of actual args */
-     cl_object *args,		/* actual args */
+     va_list args,		/* actual args */
      int nkey,			/* number of keywords */
      cl_object *keys,		/* keywords for the function */
      cl_object *vars,		/* where to put values (vars[0..nkey-1])
 				   and suppliedp (vars[nkey..2*nkey-1]) */
      cl_object rest,		/* rest variable or NULL */
      bool allow_other_keys)	/* whether other key are allowed */
-{ cl_object *p;
+{
   int i;
-  cl_object k;
 
   /* fill in the rest arg list */
-  if (rest != OBJNULL)
-    for (i = narg, p = args; i > 0; i--) {
-      CAR(rest) = *p++;
+  if (rest != OBJNULL) {
+    va_list p = args;
+    for (i = narg; i > 0; i--) {
+      CAR(rest) = cl_nextarg(p);
       rest = CDR(rest);
     }
+  }
 
   for (i = 0; i < 2*nkey; i++)
     vars[i] = Cnil;             /* default values: NIL, supplied: NIL */
   if (narg <= 0) return;
 
-  /* scan backwards, so that if a keyword is duplicated, first one is used */
-  args = args + narg;
-  top:
-    while (narg >= 2) {
-     args = args - 2;
-     k = args[0];
-     for (i = 0; i < nkey; i++) {
-       if (keys[i] == k) {
-	 vars[i] = args[1];
-	 vars[nkey+i] = Ct;
-	 narg = narg-2;
-	 goto top;
-       }
-     }
-     /* the key is a new one */
-     if (allow_other_keys)
-	 narg = narg-2;
-     else {
-       /* look for :allow-other-keys t */
-       for ( i = narg-2, p = args; i >= 0; i -= 2, p -=2)
-	 if (*p == @':allow-other-keys') {
-	   allow_other_keys = (p[1] != Cnil); break;
-	 }
-       if (allow_other_keys) narg = narg-2;
-       else FEprogram_error("Unrecognized key ~a", 1, k);
-     }
-   }
+  for (; narg>=2; narg-= 2) {
+    cl_object keyword = cl_nextarg(args);
+    cl_object value = cl_nextarg(args);
+    for (i = 0; i < nkey; i++) {
+      if (keys[i] == keyword) {
+	if (vars[nkey+i] == Cnil) {
+	  vars[i] = value;
+	  vars[nkey+i] = Ct;
+	}
+	goto go_on;
+      }
+    }
+    /* the key is a new one */
+    if (!allow_other_keys) {
+      if (keyword == @':allow-other-keys')
+	allow_other_keys = (value != Cnil);
+      else {
+	va_list p = args;
+	/* look for :allow-other-keys t */
+	for (i = narg-2; i >= 0; i -= 2, p -=2)
+	  if (cl_nextarg(p) == @':allow-other-keys') {
+	    allow_other_keys = (cl_nextarg(p) != Cnil);
+	    break;
+	  }
+	if (!allow_other_keys)
+	  FEprogram_error("Unrecognized key ~a", 1, keyword);
+      }
+    }
+  go_on:
+  }
   if (narg != 0) FEprogram_error("Odd number of keys", 0);
 }
 

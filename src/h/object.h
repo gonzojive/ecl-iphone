@@ -23,10 +23,8 @@
   INV: CHCODELIM is a power of two
   INV: PHTABSIZE is a power of two
   INV: ARANKLIM is of type "index"
-  INV: fixnum, u_fixnum are large enough to hold a pointer
-
+  INV: fixnum, cl_index are large enough to hold a pointer
   INV: symbol and cons share cons.car = symbol.dbind, cons.cdr = symbol.sfun.
-  INV: symbol and string share fillp and self.
 */
 
 #define	TRUE		1	/*  boolean true value  */
@@ -48,9 +46,9 @@
 
 
 typedef int bool;
-typedef long cl_fixnum;
-typedef unsigned long cl_index;
-typedef unsigned long cl_hashkey;
+typedef CL_FIXNUM_TYPE cl_fixnum;
+typedef unsigned CL_FIXNUM_TYPE cl_index;
+typedef unsigned CL_FIXNUM_TYPE cl_hashkey;
 typedef unsigned char byte;
 
 /*
@@ -75,6 +73,7 @@ typedef cl_object cl_return;
 /* Immediate fixnums:		*/
 #define FIXNUM_TAG		1
 #define FIXNUM_BITS		((sizeof)(cl_fixnum)/sizeof(byte) - 2)
+#define MOST_NEGATIVE_FIX	(-MOST_POSITIVE_FIX-1)
 #define MAKE_FIXNUM(n)		((cl_object)(((cl_fixnum)(n) << 2) | FIXNUM_TAG))
 #define FIXNUM_MINUSP(n)	((cl_fixnum)(n) < 0)
 #define FIXNUM_PLUSP(n)		((cl_fixnum)(n) >= (cl_fixnum)MAKE_FIXNUM(0))
@@ -84,8 +83,7 @@ typedef cl_object cl_return;
 #else
 #define FIXNUMP(obje)		(((cl_fixnum)(obje)) & FIXNUM_TAG)
 #endif
-#define MOST_POSITIVE_FIX	(LONG_MAX >> 2)
-#define MOST_NEGATIVE_FIX	(LONG_MIN >> 2)
+
 
 /* Immediate characters:	*/
 #ifdef LOCATIVE
@@ -309,9 +307,9 @@ struct string {			/*  string header  */
 #else
 struct structure {		/*  structure header  */
 	HEADER;
-	int16_t	length;		/*  structure length  */
 	cl_object name;		/*  structure name  */
 	cl_object *self;	/*  structure self  */
+	cl_fixnum length;	/*  structure length  */
 };
 
 #define T_STRUCTURE	t_structure
@@ -349,9 +347,6 @@ struct stream {
 	char	*buffer;	/*  file buffer  */
 #endif
 };
-
-
-#define	BASEFF		(unsigned char *)0xffffffff
 
 struct random {
 	HEADER;

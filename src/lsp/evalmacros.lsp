@@ -73,8 +73,6 @@
                ((endp forms) form))))
   )
                
-(defmacro locally (&rest body) `(LET () ,@body))
-
 (defmacro loop (&rest body &aux (tag (gensym)))
   `(BLOCK NIL (TAGBODY ,tag (PROGN ,@body) (GO ,tag))))
 
