@@ -1123,16 +1123,12 @@ coerce_to_from_pathname(cl_object x, cl_object host)
 	switch (type_of(x)) {
 	case t_string:
 		x = cl_parse_namestring(2, x, host);
-		break;
 	case t_pathname:
 		if (x->pathname.logical)
 			return x;
 	default:
-		return Cnil;
-	}
-	if (type_of(x) != t_pathname || !x->pathname.logical)
 		FEerror("~S is not a valid from-pathname translation", 1, x);
-	return x;
+	}
 }
 
 @(defun si::pathname_translations (host &optional (set OBJNULL))
