@@ -480,7 +480,7 @@ extern cl_object si_allocate_foreign_data(cl_object tag, cl_object size);
 extern cl_object si_free_foreign_data(cl_object x);
 extern cl_object si_foreign_data_tag(cl_object x);
 extern cl_object ecl_make_foreign_data(cl_object tag, cl_index size, void *data);
-extern cl_object ecl_foreign_data_pointer_safe(cl_object f, cl_object tag);
+extern void *ecl_foreign_data_pointer_safe(cl_object f, cl_object tag);
 #endif
 
 /* file.c */
