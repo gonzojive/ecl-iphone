@@ -25,7 +25,7 @@
    <tr><td><a href="ecls.html"><b>User's guide</b></a></td></tr>
    <tr><td><a href="benchmark.html"><b>Benchmarks</b></a></td></tr>
    <tr><td><a href="download.html"><b>Distribution</b></a></td></tr>
-   <tr><td><a href="http://cvs.sourceforge.net/cgi-bin/cvsweb.cgi/?cvsroot=ecls"><b>Browse CVS</b></a></td></tr>
+   <tr><td><a href="http://cvs.sourceforge.net/cgi-bin/viewcvs.cgi/ecls/ecls"><b>Browse CVS</b></a></td></tr>
    </table>
   <td width="7"></td>
   <td width="100%" bgcolor="#FFFFFF" valign="top">
