@@ -214,6 +214,8 @@ Does not check if the third gang is a single-element list."
 (defsetf sys:gfun-spec-how-ref sys:gfun-spec-how-set)
 #+clos
 (defsetf sys:gfun-instance sys:gfun-instance-set)
+(defsetf compiler-macro-function (fname) (function)
+  `(sys::put-sysprop ,fname 'sys::compiler-macro ,function))
 
 
 (define-setf-expander getf (&environment env place indicator &optional default)
