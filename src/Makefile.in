@@ -62,7 +62,7 @@ libecls.a:
 	(echo $(SUBDIR) | grep gmp) && cp $(top_srcdir)/gmp/*.h h/
 	cd c; $(MAKE)
 libgc.a:
-	cd gc; $(MAKE)
+	cd gc; $(MAKE); mv .libs/libgc.a ..
 libgmp.a:
 	cd gmp; $(MAKE); mv .libs/libgmp.a ..
 
