@@ -496,9 +496,6 @@ union lispunion {
 	struct codeblock cblock; /*  codeblock  */
 };
 
-/* Used for initalizing array of keywords for compiled functions */
-typedef union { int i; cl_object o;} intUobject;
-
 /*
 	Implementation types.
 */
