@@ -108,9 +108,9 @@
 
 (defun method-class (gfun) 'standard-method)
 
-(defun methods (gf) (si:instance-ref gf 7))
+(defun methods (gf) (si:instance-ref gf 6))
 
-;(defun generic-function-dispatcher (gf) (si:instance-ref gf 6)) anticipata
+;(defun generic-function-dispatcher (gf) (si:instance-ref gf 5)) anticipata
 
 (defun make-gfun (name lambda-list)
   (let* ((nargs
@@ -150,11 +150,10 @@
 
 	(si:instance-set gf-object 0 lambda-list) ; lambda-list
 	(si:instance-set gf-object 1 'default) ; argument-precedence-order
-	(si:instance-set gf-object 2 'standard)	; method-combination
-	(si:instance-set gf-object 3 nil) ; method-combination-arguments
-	(si:instance-set gf-object 5 nil) ; documentation
-	(si:instance-set gf-object 6 gfun) ; gfun
-	(si:instance-set gf-object 7 nil) ; methods
+	(si:instance-set gf-object 2 '(standard)) ; method-combination
+	(si:instance-set gf-object 4 nil) ; documentation
+	(si:instance-set gf-object 5 gfun) ; gfun
+	(si:instance-set gf-object 6 nil) ; methods
 	(si:gfun-instance-set gfun gf-object)
 	(setf (fdefinition name) gfun)))
 

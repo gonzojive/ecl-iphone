@@ -570,7 +570,7 @@
 (defun method-needs-next-methods-p (method)
   (getf (nth 5 method) :needs-next-methods-p))
 
-(defun generic-function-dispatcher (gf) (si:instance-ref gf 6))
+(defun generic-function-dispatcher (gf) (si:instance-ref gf 5))
 
 ;;; early version used during bootstrap
 (defun add-method (gf method)
@@ -660,19 +660,12 @@
       (nreverse methods))))
 
 
-(defun si:generic-function-method-combination (gf))
-
-(defun si:generic-function-method-combination-args (gf))
-
-(defun si:compute-effective-method (gf applicable-methods 
-				    method-combination-type
-				    method-combination-args)
-  (declare (ignore method-combination-type method-combination-args))
+(defun compute-effective-method (gf method-combination applicable-methods)
+  (declare (ignore method-combination))
   ; the simplest case
   (if applicable-methods
       (make-effective-method-function
-       `(call-method ,(first applicable-methods)
-		     ,(cdr applicable-methods)))
+       `(call-method ,(first applicable-methods) ,(cdr applicable-methods)))
     (no-applicable-method gf)))
 
 

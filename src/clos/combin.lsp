@@ -256,14 +256,14 @@
       (collect-forms forms)
       (cons 'PROGN progn-form))))
 
-(defun error-qualifiers (m qualifiers)
+(defun error-qualifier (m qualifier)
   (declare (si::c-local))
   (error "Standard method combination allows only one qualifier ~
           per method, either :BEFORE, :AFTER, or :AROUND; while ~
           a method with ~S was found."
-	 m qualifiers))
+	 m qualifier))
 
-(defun standard-compute-combined-method (gf methods)
+(defun standard-compute-effective-method (gf methods)
   (declare (ignore gf))
   (let*((before ())
 	(primary ())
@@ -281,7 +281,7 @@
     ;; When there are no primary methods, an error is to be signaled,
     ;; and we need not care about :AROUND, :AFTER or :BEFORE methods.
     (when (null primary)
-      (return-from standard-compute-combined-method
+      (return-from standard-compute-effective-method
 	#'(lambda (&rest args)
 	    (apply 'no-primary-method gf args))))
     (setq before (nreverse before)
@@ -306,3 +306,115 @@
 		 (,@(rest around)
 		  (MAKE-METHOD ,main-effective-method)))
 	       main-effective-method))))))
+
+;; ----------------------------------------------------------------------
+;; DEFINE-METHOD-COMBINATION
+;;
+;; METHOD-COMBINATION objects are just a list
+;;	(name arg*)
+;; where NAME is the name of the method combination type defined with
+;; DEFINE-METHOD-COMBINATION, and ARG* is zero or more arguments.
+;;
+;; For each method combination type there is an associated function,
+;; and the list of all known method combination types is kept in
+;; *METHOD-COMBINATIONS* in the form of property list:
+;;	(mc-type-name1 function1 mc-type-name2 function2 ....)
+;;
+;; FUNCTIONn is the function associated to a method combination. It
+;; is of type (FUNCTION (generic-function method-list) FUNCTION),
+;; and it outputs an anonymous function which is the effective method.
+;;
+
+(defvar *method-combinations* '())
+
+(defun install-method-combination (name function)
+  (setf (getf *method-combinations* name) function)
+  name)
+
+(defun define-simple-method-combination (name &key documentation
+					 identity-with-one-argument
+					 (operator name))
+  (declare (si::c-local))
+  `(define-method-combination
+     ,name (&key (order :MOST-SPECIFIC-FIRST))
+     ((around (:AROUND))
+      (principal (,name) :REQUIRED t))
+     (let ((main-effective-method
+	    `(,',operator ,@(mapcar #'(lambda (x) `(CALL-METHOD ,x NIL))
+				    principal))))
+       (cond (around
+	      `(call-method ,(first around)
+		(,@(rest around) (make-method ,main-effective-method))))
+	     (,(if identity-with-one-argument
+		   '(rest principal)
+		   t)
+	      main-effective-method)
+	     (t (second main-effective-method))))))
+
+(defun define-complex-method-combination (form)
+  (declare (si::c-local))
+  (flet ((syntax-error ()
+	   (error "~S is not a valid DEFINE-METHOD-COMBINATION form"
+		  whole)))
+    (destructuring-bind (name lambda-list method-groups &rest body &aux
+			 (group-names '())
+			 (group-checks '())
+			 (group-after '())
+			 (generic-function '.generic-function.)
+			 (method-arguments '()))
+	form
+      (unless (symbolp name) (syntax-error))
+      (let ((x (first body)))
+	(when (and (consp x) (eql (first x) :ARGUMENTS))
+	  (error "Option :ARGUMENTS is not supported in DEFINE-METHOD-COMBINATION.")))
+      (let ((x (first body)))
+	(when (and (consp x) (eql (first x) :GENERIC-FUNCTION))
+	  (setf body (rest body))
+	  (unless (symbolp (setf generic-function (second x)))
+	    (syntax-error))))
+      (dolist (group method-groups)
+	(destructuring-bind (name predicate &key description
+				  (order :most-specific-first) (required nil))
+	    group
+	  (if (symbolp name)
+	      (push name group-names)
+	      (syntax-error))
+	  (setf condition
+		(cond ((eql predicate '*) 'T)
+		      ((symbolp predicate) `(,predicate .METHOD-QUALIFIERS.))
+		      ((and (listp predicate)
+			    (let* ((q (last predicate 0))
+				   (p (copy-list (butlast predicate 0))))
+			      (when (every #'symbolp p)
+				(if (eql q '*)
+				    `(every #'equal ',p .METHOD-QUALIFIERS.)
+				    `(equal ',p .METHOD-QUALIFIERS.))))))
+		      (t (syntax-error))))
+	  (push `(,condition (push .METHOD. ,name)) group-checks)
+	  (when required
+	    (push `(unless ,name
+		    (invalid-method-error "Method combination: ~S. No methods ~
+					   in required group ~S." ,name))
+		  group-after))
+	  (case order
+	    (:most-specific-first
+	     (push `(setf ,name (nreverse ,name)) group-after))
+	    (:most-specific-last)
+	    (otherwise (syntax-error)))))
+      `(install-method-combination ',name
+	  (lambda-block ,name (,generic-function .methods-list. ,@lambda-list)
+	    (let (,@group-names)
+	      (dolist (.method. .methods-list.)
+		(let ((.method-qualifiers. (get-method-qualifiers .method.)))
+		  (cond ,@(nreverse group-checks)
+			(t (invalid-method-error .method.
+			     "Method qualifiers ~S are not allowed in the method~
+			      combination ~S." .method-qualifiers. ,name)))))
+	      ,@group-after
+	      (make-effective-method-function ,@body))))
+      )))
+
+(defmacro define-method-combination (name &body body)
+  (if (and body (listp (first body)))
+      (define-complex-method-combination (list* name body))
+      (apply #'define-simple-method-combination name body)))

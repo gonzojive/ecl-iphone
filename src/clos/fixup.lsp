@@ -197,13 +197,19 @@
 	   (si::c-local))
   (error "Complex type specifiers are not yet supported."))
 
-(defun si:compute-effective-method (gf applicable-methods
-				    method-combination-type
-				    method-combination-args)
+(defun compute-effective-method (gf method-combination applicable-methods)
   (declare (ignore method-combination-type method-combination-args))
-  (if applicable-methods
-      (standard-compute-combined-method gf applicable-methods)
-    (no-applicable-method gf)))
+  (if (not applicable-methods)
+      (no-applicable-method gf)
+      (let* ((method-combination-name (car method-combination))
+	     (method-combination-args (cdr method-combination)))
+	(if (eq method-combination-name 'STANDARD)
+	    (standard-compute-effective-method gf applicable-methods)
+	    (apply (or (getf *method-combinations* method-combination-name)
+		       (error "~S is not a valid method combination object"
+			      method-combination))
+		   gf applicable-methods
+		   method-combination-args)))))
 
 (defmethod no-applicable-method (gf &rest args)
     (declare (ignore args))
@@ -217,6 +223,21 @@
 (defun no-primary-method (gf &rest args)
   (error "Generic function: ~A. No primary method given arguments: ~S"
 	 (si:gfun-name (generic-function-dispatcher gf)) args))
+
+;;
+;; These method combinations are bytecompiled, for simplicity.
+;;
+(eval '(progn
+	(defclass method-combination (t) ())
+	(define-method-combination progn :identity-with-one-argument t)
+	(define-method-combination and :identity-with-one-argument t)
+	(define-method-combination max :identity-with-one-argument t)
+	(define-method-combination + :identity-with-one-argument t)
+	(define-method-combination nconc :identity-with-one-argument t)
+	(define-method-combination append :identity-with-one-argument nil)
+	(define-method-combination list :identity-with-one-argument nil)
+	(define-method-combination min :identity-with-one-argument t)
+	(define-method-combination or :identity-with-one-argument t)))
 
 ;;; ----------------------------------------------------------------------
 ;;; Redefinition Protocol

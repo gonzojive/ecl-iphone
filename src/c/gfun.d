@@ -206,14 +206,14 @@ compute_method(int narg, cl_object fun, cl_object *args)
 	  for (i = 0, spec_no = 0; i < fun->gfun.arg_no; i++, spec_how++) {
 	    if (*spec_how != Cnil)
 	      argtype[spec_no++] = (ATOM(*spec_how) ||
-				    !member_eq(args[i], *spec_how)) ?
+				    Null(memql(args[i], *spec_how))) ?
 				      cl_type_of(args[i]) :
 					args[i];
 	  }
 
 	  e = get_meth_hash(argtype, spec_no, fun->gfun.method_hash);
 
-	  if (e->key == OBJNULL)  { 
+	  if (e->key == OBJNULL) { 
 	    /* method not cached */
 	    register cl_object gf = fun->gfun.instance;
 	    cl_object methods, meth_comb, meth_args, arglist = Cnil;
@@ -222,11 +222,9 @@ compute_method(int narg, cl_object fun, cl_object *args)
 	    while (i-- > 0)
 	      arglist = CONS(args[i], arglist);
 	    methods = funcall(3, @'compute-applicable-methods', gf, arglist);
-	    meth_comb = funcall(2, @'si::generic-function-method-combination', gf);
-	    meth_args = funcall(2, @'si::generic-function-method-combination-args', gf);
-	    func = funcall(5, @'si::compute-effective-method', gf, methods,
-			   meth_comb, meth_args);
-	  
+	    meth_comb = instance_ref(gf, 2);
+	    func = funcall(4, @'si::compute-effective-method', gf, meth_comb,
+			   methods);
 	    /* update cache */
 	    set_meth_hash(argtype, spec_no, fun->gfun.method_hash, func);
 	  } else

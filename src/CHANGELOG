@@ -1447,6 +1447,9 @@ ECLS 0.9b
 
   - ENSURE-DIRECTORIES-EXIST was broken.
 
+  - EQL specializers were compared to the arguments using EQ instead
+    of EQL.
+
 * Visible changes:
 
   - New special form C-INLINE, allows inserting C/C++ code in any
@@ -1531,6 +1534,8 @@ ECLS 0.9b
   - OPEN now accepts the parameter :EXTERNAL-FORMAT, which can only be
     :DEFAULT, as ECL does not support the notion of external formats
     (all streams have element type (UNSIGNED-BYTE 8)).
+
+  - Method combinations are now fully supported.
 
 TODO:
 =====

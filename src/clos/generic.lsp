@@ -150,17 +150,12 @@
 		   (if documentation
 		       (error "Option :documentation specified more than once")
 		     (setq documentation
-			   (parse-legal-documentation
-			    (second option)))))
+			   (parse-legal-documentation (second option)))))
 		  (:method-combination
 		   (if method-combination
 		       (error "Option :method-combination specified more than \
 once")
-		     (setq method-combination
-			   ;(parse-legal-method-combination
-			    ;(second option))
-			   ; until method-combination is implemented
-			   (second option))))
+		       (setq method-combination (rest option))))
 		  (:generic-function-class
 		   (if generic-function-class
 		       (error "Option :generic-function-class specified more \
@@ -179,27 +174,26 @@ than once")
 		   (error "~S is not a legal defgeneric option" 
 			  (first option)))))
     (values argument-precedence-order declaration documentation 
-	    method-combination generic-function-class  method-class 
+	    (or method-combination '(STANDARD))
+	    generic-function-class  method-class 
 	    method-list)))
 
-(defun ensure-generic-function (function-specifier 
-				&key lambda-list
-				argument-precedence-order
-				declare
-				documentation
-				(generic-function-class
-				 'STANDARD-GENERIC-FUNCTION)
-				(method-combination 'STANDARD)
+(defun ensure-generic-function (function-specifier &rest args &key
+				lambda-list
+				(generic-function-class 'STANDARD-GENERIC-FUNCTION)
 				(method-class 'STANDARD-METHOD)
-				environment)
+				&allow-other-keys)
   (unless (LEGAL-GENERIC-FUNCTION-NAME-P function-specifier)
     (error "Generic function ~A has incorrect function specifier
                   (a non-nil symbol, a list whose car is SETF)"
 	   function-specifier))
   (when (LEGAL-GENERIC-FUNCTION-P function-specifier)
+    (setf args (copy-list args))
+    (remf args :generic-function-class)
+    (remf args :declare)
+    (remf args :environment)
     (unless (classp method-class)
-      (setq method-class 
-	    (find-class method-class)))
+      (setf (getf args :method-class) (find-class method-class)))
 
     (let (dispatcher gf-object)
       (if (and (fboundp function-specifier)
@@ -207,16 +201,8 @@ than once")
 
 	  ;; modify the existing object
 	  (progn
-	    (setf gf-object
-		  (si:gfun-instance dispatcher)
-		  (slot-value gf-object 'ARGUMENT-PRECEDENCE-ORDER)
-		  argument-precedence-order
-		  (slot-value gf-object 'DOCUMENTATION)
-		  documentation
-		  (generic-function-method-combination gf-object)
-		  method-combination
-		  (slot-value gf-object 'METHOD-CLASS)
-		  method-class)
+	    (setf gf-object (si:gfun-instance dispatcher)
+		  gf-object (apply #'reinitialize-instance gf-object args))
 	    ;;(if (or
 	    ;;     (not (method-exist-p function-specifier))
 	    ;;     (congruent-lambda-list-p lambda-list 
@@ -229,17 +215,11 @@ than once")
 	    )
 	  ;; else create a new generic function object
 	  (setf dispatcher (make-gfun function-specifier lambda-list)
-		gf-object (make-instance 
-			   generic-function-class
-			   :lambda-list lambda-list
-			   :argument-precedence-order argument-precedence-order
-			   :method-combination method-combination
-			   :method-class method-class
-			   :documentation documentation
-			   :gfun dispatcher)
-		(si:gfun-instance dispatcher) gf-object
-		(fdefinition function-specifier) dispatcher))
-      gf-object)))
+		gf-object (apply #'make-instance generic-function-class args)))
+      (setf (si:gfun-instance dispatcher) gf-object
+	    (gfun gf-object) dispatcher
+	    (fdefinition function-specifier) dispatcher)
+      gf-object))))
 
 ;;; ----------------------------------------------------------------------
 ;;;                                                             congruence
@@ -329,15 +309,6 @@ than once")
   (unless (stringp doc)
 	  (error "The documentation must be a string"))
   doc)
-
-(defun parse-legal-method-combination (name args)
-  (declare (si::c-local))
-  (unless (method-combination-p name)
-	  (error "~A is not the name of a method-combination type" name))
-  (unless (legal-method-combination-args name args)
-	  (error "~S are not legal args for the method combination type ~A"
-		 args name))
-  (values name args))
 
 (defun legal-generic-function-classp (class-name)
   (declare (si::c-local))

@@ -573,6 +573,12 @@
 ;;; ----------------------------------------------------------------------
 ;;; Standard Generic Function
 ;;; ----------------------------------------------------------------------
+;;
+;; The order of the slots in the STANDARD-GENERIC-FUNCTION is extremely
+;; important, because the C core (gfun.d) and the bootstrap process
+;; (kernel.lsp, method.lsp) access them directly, and not via generic
+;; functions.
+;;
 
 (defclass standard-generic-function (generic-function)
   ((lambda-list :initarg :lambda-list :accessor lambda-list)
@@ -580,18 +586,11 @@
     :initarg :argument-precedence-order
     :accessor generic-function-argument-precedence-order)
    (method-combination 
-    :initarg :method-combination 
-    :accessor generic-function-method-combination
-    )
-   (method-combination-arguments
-    :initarg :method-combination-arguments
-    :accessor generic-function-method-combination-arguments
-    )
+    :initarg :method-combination :initform '(STANDARD)
+    :accessor generic-function-method-combination)
    (method-class :initarg :method-class)
-   (documentation :initarg :documentation 
-;                 :accessor documentation
-		  )
+   (documentation :initarg :documentation)
    (gfun :initarg :gfun :accessor gfun :initform nil)
-   (methods :initform nil :accessor methods))) ; 7th slot as in kernel.lsp
+   (methods :initform nil :accessor methods)))
 
 ;;;----------------------------------------------------------------------

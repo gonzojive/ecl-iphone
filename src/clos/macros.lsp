@@ -9,7 +9,8 @@
 
 (defpackage "CLOS"
   (:use "WALKER" "CL")
-  (:import-from "SI" "UNBOUND" "GET-SYSPROP" "PUT-SYSPROP" "REM-SYSPROP"))
+  (:import-from "SI" "UNBOUND" "GET-SYSPROP" "PUT-SYSPROP" "REM-SYSPROP"
+		"COMPUTE-EFFECTIVE-METHOD"))
 
 (in-package "CLOS")
 
