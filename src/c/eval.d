@@ -30,14 +30,15 @@
 void
 cl__va_start(cl_va_list args, int narg_before)
 {
-	if (args[0].narg > C_ARGUMENTS_LIMIT) {
-		args[0].sp = cl_stack_index() - args[0].narg;
-	} else {
-		args[0].sp = 0;
-	}
 	if (args[0].narg < narg_before)
 		FEtoo_few_arguments(args[0].narg);
-	args[0].narg -= narg_before;
+	if (args[0].narg > C_ARGUMENTS_LIMIT) {
+		args[0].narg -= narg_before;
+		args[0].sp = cl_stack_index() - args[0].narg;
+	} else {
+		args[0].narg -= narg_before;
+		args[0].sp = 0;
+	}
 }
 
 cl_object
