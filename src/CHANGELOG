@@ -1240,6 +1240,8 @@ ECLS 0.9
 
   - Excesive arguments to NOT or NULL were not detected.
 
+  - (COND) is a valid expression which returns NIL.
+
 * Visible changes:
 
   - No "Bye" message in QUIT.

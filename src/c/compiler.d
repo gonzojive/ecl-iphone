@@ -869,6 +869,8 @@ c_cond(cl_object args, int flags) {
 	cl_object test, clause;
 	cl_fixnum label_nil, label_exit;
 
+	if (Null(args))
+		return compile_form(Cnil, flags);
 	clause = pop(&args);
 	if (ATOM(clause))
 		FEprogram_error("COND: Illegal clause ~S.",1,clause);
