@@ -10,7 +10,7 @@ VPATH	= @srcdir@
 TRUE_CC = @CC@
 CC	= @ECL_CC@
 DEFS	= -D@host@
-CFLAGS	= -c -I../h -I$(HDIR) @BOEHM_HEADERS@ @CFLAGS@ $(DEFS)
+CFLAGS	= -c -I../h -I$(srcdir) -I$(HDIR) @BOEHM_HEADERS@ @CFLAGS@ $(DEFS)
 
 SHELL	= /bin/sh
 RM	= @RM@
