@@ -44,8 +44,8 @@
        (the-class (make-empty-standard-class 'CLASS standard-class))
        (the-t (make-empty-standard-class 'T standard-class))
        (class-slots '((NAME :INITARG :NAME :INITFORM NIL)
-		      (SUPERIORS :INITARG :DIRECT-SUPERCLASSES)
-		      (INFERIORS :INITFORM NIL)
+		      (DIRECT-SUPERCLASSES :INITARG :DIRECT-SUPERCLASSES)
+		      (DIRECT-SUBCLASSES :INITFORM NIL)
 		      (SLOTS :INITARG :SLOTS)
 		      (PRECEDENCE-LIST :INITARG :CLASS-PRECEDENCE-LIST)))
        (standard-slots (append class-slots
@@ -84,13 +84,13 @@
 	(si:instance-ref standard-class 8) (length standard-slots))
 
   ;; 3) Fix the class hierarchy
-  (setf (class-superiors the-t) nil
-	(class-inferiors the-t) (list standard-object)
-	(class-superiors standard-object) (list the-t)
-	(class-inferiors standard-object) (list the-class)
-	(class-superiors the-class) (list standard-object)
-	(class-inferiors the-class) (list standard-class)
-	(class-superiors standard-class) (list the-class))
+  (setf (class-direct-superclasses the-t) nil
+	(class-direct-subclasses the-t) (list standard-object)
+	(class-direct-superclasses standard-object) (list the-t)
+	(class-direct-subclasses standard-object) (list the-class)
+	(class-direct-superclasses the-class) (list standard-object)
+	(class-direct-subclasses the-class) (list standard-class)
+	(class-direct-superclasses standard-class) (list the-class))
 
   ;; 4) Fix the class precedence list
   (let ((cpl (list standard-class the-class standard-object the-t)))
@@ -120,14 +120,14 @@
 
 	;; default inheritance
 	(unless direct-superclasses 
-	  (setf (class-superiors class)
+	  (setf (class-direct-superclasses class)
 		(class-default-direct-superclasses class direct-superclasses)))
 	  
 	;; if the class has a name register it in hash table
 	(when (si:sl-boundp (class-name class))
 	  (setf (find-class (class-name class)) class))
-	(dolist (s (class-superiors class)) ; inheritance lattice
-	  (push class (class-inferiors s)))
+	(dolist (s (class-direct-superclasses class)) ; inheritance lattice
+	  (push class (class-direct-subclasses s)))
 	class)
 
     (defmethod class-default-direct-superclasses ((class class)
@@ -201,15 +201,6 @@
 	      ;; can initialize more than one slot
 	      )))
       instance)
-
-    (defmethod slot-value ((object t) slot-name)
-      (slot-missing (class-of object) object slot-name 'SLOT-VALUE))
-
-    (defmethod slot-boundp ((object t) slot-name)
-      (slot-missing (class-of object) object slot-name 'SLOT-BOUNDP))
-
-    (defmethod (setf slot-value) (value (object t) slot-name)
-      (slot-missing (class-of object) object slot-name '(SETF SLOT-VALUE)))
 
     (defmethod slot-missing ((class t) object slot-name operation 
 			     &optional new-value)

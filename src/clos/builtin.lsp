@@ -40,8 +40,8 @@
 		  (eq metaclass (si:instance-class existing))
 		  (equal (or superclasses-names '(STRUCTURE-OBJECT))
 			 ;; i.e. class-default-direct-superclasses
-			 (mapcar #'(lambda (x) (class-name x))
-				 (class-superiors existing)))
+			 (mapcar #'class-name
+				 (class-direct-superclasses existing)))
 		  (equal all-slots (slot-value existing 'SLOTS))
 		  (prog2 (setf (slot-value existing 'DOCUMENTATION)
 			       documentation)
@@ -76,8 +76,8 @@
   (when (system:sl-boundp (class-name class))
     (setf (find-class (class-name class)) class))
 
-  (dolist (s (class-superiors class))	; inheritance lattice
-    (push class (class-inferiors s)))
+  (dolist (s (class-direct-superclasses class))	; inheritance lattice
+    (push class (class-direct-subclasses s)))
   (push class (slot-value class 'PRECEDENCE-LIST)) ;; add itself in cpl
   class)
 
@@ -140,19 +140,12 @@
 				&key name direct-superclasses)
   (let* ((cpl (compute-class-precedence-list name direct-superclasses)))
     (setf (class-name class) name
-	  (class-superiors class) direct-superclasses
-	  (class-inferiors class) nil
+	  (class-direct-superclasses class) direct-superclasses
+	  (class-direct-subclasses class) nil
 	  (class-precedence-list class) cpl
 	  (find-class name) class)
     (dolist (s direct-superclasses)
-      (push class (class-inferiors s)))))
-
-(defmethod print-object ((class built-in-class) stream)
-  (print-unreadable-object
-      (class stream)
-    (format stream "The ~A ~A" (class-name (si:instance-class class))
-	    (class-name class)))
-  class)
+      (push class (class-direct-subclasses s)))))
 
 (eval-when (compile load eval)
   (mapcar #'create-built-in-class

@@ -32,9 +32,9 @@
 	     (error "Malformed plist in doplist, odd number of elements."))
 	   (setq ,val (pop .plist-tail.))
 	   (progn ,@body))))
-  ;;
+;;;
 ;;;;;; FIND-CLASS  naming classes.
-  ;;
+;;;
 ;;;
 ;;; (FIND-CLASS <name>) returns the class named <name>.  setf can be used
 ;;; with find-class to set the class named <name>.  These are "extrinsic"
@@ -54,9 +54,9 @@
 
 (defsetf find-class setf-find-class)
 
-(defun legal-class-name-p (x)
-  (and (symbolp x)
-       #+nil(not (keywordp x))))
+#+ecl-min
+(defmacro legal-class-name-p (x)
+  `(symbolp ,x))
 
 ;;; ----------------------------------------------------------------------
 
@@ -66,11 +66,6 @@
 ;;;----------------------------------------------------------------------
 ;;; Implementation of Instance
 
-;;; ECL implementation:
-
-(declaim (ftype (function (t fixnum) t) si:instance-ref))
-(declaim (ftype (function (t fixnum t) t) si:instance-set))
-
 ;;; ----------------------------------------------------------------------
 ;;; Class CLASS
 ;;;
@@ -78,22 +73,22 @@
 ;;; name superiors inferiors slots methods
 
 ;(defmacro class-name		(class) `(si:instance-ref ,class 0))
-;(defmacro class-superiors	(class) `(si:instance-ref ,class 1))
-;(defmacro class-inferiors	(class) `(si:instance-ref ,class 2))
+;(defmacro class-direct-superclasses	(class) `(si:instance-ref ,class 1))
+;(defmacro class-direct-subclasses	(class) `(si:instance-ref ,class 2))
 ;(defmacro class-slots		(class) `(si:instance-ref ,class 3))
 (defun class-name		(class) (si:instance-ref class 0))
-(defun class-superiors		(class) (si:instance-ref class 1))
-(defun class-inferiors		(class) (si:instance-ref class 2))
+(defun class-direct-superclasses(class) (si:instance-ref class 1))
+(defun class-direct-subclasses	(class) (si:instance-ref class 2))
 (defun class-slots		(class) (si:instance-ref class 3))
 (defun class-precedence-list	(class) (si:instance-ref class 4))
 (defsetf class-name		(class) (x) `(si::instance-set ,class 0 ,x))
-(defsetf class-superiors	(class) (x) `(si::instance-set ,class 1 ,x))
-(defsetf class-inferiors	(class) (x) `(si::instance-set ,class 2 ,x))
+(defsetf class-direct-superclasses	(class) (x) `(si::instance-set ,class 1 ,x))
+(defsetf class-direct-subclasses	(class) (x) `(si::instance-set ,class 2 ,x))
 (defsetf class-slots		(class) (x) `(si::instance-set ,class 3 ,x))
 (defsetf class-precedence-list	(class) (x) `(si::instance-set ,class 4 ,x))
 (define-compiler-macro class-name	(class) `(si:instance-ref ,class 0))
-(define-compiler-macro class-superiors	(class) `(si:instance-ref ,class 1))
-(define-compiler-macro class-inferiors	(class) `(si:instance-ref ,class 2))
+(define-compiler-macro class-direct-superclasses	(class) `(si:instance-ref ,class 1))
+(define-compiler-macro class-direct-subclasses	(class) `(si:instance-ref ,class 2))
 (define-compiler-macro class-slots	(class) `(si:instance-ref ,class 3))
 (define-compiler-macro class-precedence-list (class) `(si:instance-ref ,class 4))
 

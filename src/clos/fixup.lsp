@@ -230,7 +230,7 @@
     ;; update subclasses
     (dolist (subclass (nreverse inferiors))
       (let* ((subclass-superclasses
-	      (mapcar #'(lambda (x) (class-name x)) (class-superiors subclass)))
+	      (mapcar #'class-name (class-direct-superclasses subclass)))
 	     (subclass-name (class-name subclass))
 	     (slots (collect-slotds
 		     (compute-class-precedence-list
@@ -244,7 +244,7 @@
 		       ; slots
 		       (default-initargs-of subclass)
 		       (documentation-of subclass))
-	 (class-inferiors new-class))))
+	 (class-direct-subclasses new-class))))
 
     ;; invalidate the class
     (setf (class-name class) 'INVALID)

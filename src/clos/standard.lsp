@@ -29,8 +29,8 @@
 		    (eq metaclass (si:instance-class existing))
 		    (equal (or superclasses-names '(STANDARD-OBJECT))
 					; i.e. class-default-direct-superclasses
-			   (mapcar #'(lambda (x) (class-name x))
-				   (class-superiors existing)))
+			   (mapcar #'class-name
+				   (class-direct-superclasses existing)))
 		    (equal direct-slots (slot-value existing 'DIRECT-SLOTS))
 		    (equal all-slots (slot-value existing 'SLOTS))
 		    (equal default-initargs (default-initargs-of existing))
@@ -56,7 +56,7 @@
 		    :documentation documentation)))
 	      (when existing
 		(redefine-class existing new-class superclasses-names
-				(class-inferiors existing))) ; Beppe
+				(class-direct-subclasses existing))) ; Beppe
 	      (generate-accessors new-class)
 	      new-class)))))
   ;;; Bootstrap versions.
@@ -330,14 +330,6 @@
   obj)
 
 ;;; ----------------------------------------------------------------------
-;;; Now we can fix inheritance for standard-class:
-
-(eval-when (compile load eval)
-	   (setf (class-superiors (find-class 'STANDARD-CLASS))
-		 (list (find-class 'CLASS)
-		       (find-class 'STANDARD-OBJECT))))
-
-;;; ----------------------------------------------------------------------
 ;;; default-initargs
 
 (defmethod default-initargs ((class t) initargs)
@@ -466,7 +458,7 @@
 	 (shared-index -1))
     (declare (fixnum local-index shared-index))
 
-    (setf (slot-value class 'SUPERIORS) superclasses)
+    (setf (slot-value class 'DIRECT-SUPERCLASSES) superclasses)
     (setf (slot-value class 'PRECEDENCE-LIST) cpl)
     (setf (slot-index-table class) table)
     (dolist (slot slots)

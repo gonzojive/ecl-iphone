@@ -643,7 +643,7 @@
 						  (eq (first x) (first y)))))))
 		 (when method (push method methods))
 		 ;; search in the superclasses
-		 (dolist (c (class-superiors class))
+		 (dolist (c (class-direct-superclasses class))
 		   (search-early-methods c)))))
       (search-early-methods
 	   (find-class (type-of (if setfp (second args) (first args)))))

@@ -318,7 +318,7 @@
 	  (setq precedence (cons (car precedence) (union pre precedence)))
 	  (push (cons sup pre) precedence-alist)))
     (multiple-value-setq (cpl precedence-alist)
-      (walk-supers (class-superiors sup) cpl precedence-alist))
+      (walk-supers (class-direct-superclasses sup) cpl precedence-alist))
     (setq cpl (adjoin sup cpl))))
 
 (defun class-ordering-error (root element path precedence-alist)
@@ -330,7 +330,7 @@
 	  ((null (cdr tail)))
 	(let* ((after (cadr tail))
 	       (before (car tail)))
-	  (if (member after (class-superiors before) :test #'eq)
+	  (if (member after (class-direct-superclasses before) :test #'eq)
 	      (push (format nil
 			    "~% ~A must precede ~A -- ~
                               ~A is in the local supers of ~A."
@@ -342,7 +342,7 @@
 			  (cdr (assoc after precedence-alist :test #'eq))
 			  (cdr (assoc before precedence-alist :test #'eq))))
 		(when (member after (member before
-					    (class-superiors common-precede)
+					    (class-direct-superclasses common-precede)
 					    :test #'eq)
 			      :test #'eq)
 		  (push (format nil
@@ -351,7 +351,7 @@
 				(pretty before) (pretty after)
 				(pretty common-precede)
 				(mapcar #'pretty
-					(class-superiors common-precede)))
+					(class-direct-superclasses common-precede)))
 			explanations))))))
       (error "While computing the class-precedence-list for the class ~A:~%~
               There is a circular constraint through the classes:~{ ~A~}.~%~
