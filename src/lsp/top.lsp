@@ -57,7 +57,7 @@ value of this variable is non-NIL.")
 (defvar *step-level* 0)			; repeated from trace.lsp
 
 (defvar *break-hidden-functions* '(error cerror apply funcall invoke-debugger))
-(defvar *break-hidden-packages* (list (find-package 'system)))
+(defvar *break-hidden-packages* (list #-ecl-min (find-package 'system)))
 
 (defconstant tpl-commands
    '(("Top level commands"

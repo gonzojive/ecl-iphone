@@ -60,6 +60,7 @@ install: $(HFILES)
 	$(INSTALL_DATA) ../h/config-install.h $(PREFIX)$(libdir)/h/config.h
 
 ../libecl.a: $(OBJS)
+	$(RM) $@
 	ar cr $@ $(OBJS)
 	ranlib $@
 

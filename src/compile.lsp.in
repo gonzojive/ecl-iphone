@@ -35,10 +35,6 @@
 (load "lsp/defsys.lsp")
 (proclaim '(optimize (safety 2) (space 3)))
 (sbt::operate-on-system lsp :library)
-#+(and stage1 dlopen)
-(progn
-  (sbt::operate-on-system lsp :shared-library)
-  (load "lsp"))
 (si::pathname-translations "SYS" '(("**;*.*" "@abs_builddir@/**/*.*")))
 (setq compiler::*cc-flags* (concatenate 'string compiler::*cc-flags* " -I@srcdir@/h -I@srcdir@/gmp -I@builddir@/h"))
 
@@ -51,8 +47,20 @@
 (proclaim '(optimize (safety 2) (space 3)))
 (let ((c::*compile-to-linking-call* nil))
   (sbt::operate-on-system clos :library))
-;(sbt::operate-on-system clos :load)
 )
+
+(si::system (format nil "
+mkdir tmp; ~
+cd tmp; ~
+ar -x ../liblsp.a; for i in *.o; do mv $i lsp_$i; done; ar -r ../libecl.a *o; rm *.o; ~
+ar -x ../libclos.a; for i in *.o; do mv $i lsp_$i; done; ar -r ../libecl.a *o; rm *.o; ~
+ranlib ../libecl.a; ~
+cd ..; rm -rf tmp/* liblsp* libclos* "))
+
+#+dlopen
+(progn
+  (c::shared-cc "./tmp/libecl.so" "c/main.o" "./libecl.a" #+boehm-gc "-lgc")
+  (si::system "mv ./tmp/libecl.so ."))
 
 ;;;
 ;;; * Compile, load and link Common-Lisp to C compiler
@@ -65,9 +73,12 @@
 ;(sbt::operate-on-system cmp :load)
 )
 
+(si::pathname-translations "SYS" '(("**;*.*" "@libdir@/**/*.*")))
+
 (compiler::build-program
  #+(or cross stage1) "ecl"
  #-(or cross stage1) "ecl2"
- :lisp-files '(#+(and (not dlopen) WANTS-CMP) cmp))
+ :lisp-files '(#+(and (not dlopen) WANTS-CMP) cmp)
+ :ld-flags '("-L./"))
 
 (quit)

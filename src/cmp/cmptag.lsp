@@ -63,9 +63,10 @@
 		   (incf (var-ref form) (the fixnum *reg-amount*)))))
 	   (jumps-to-p (clause tag-name)
 	     ;; Does CLAUSE have a go TAG-NAME in it?
-	     (cond ((atom clause) nil)
-		   ((eq (car clause) 'GO)
-		    (eq (tag-name (third clause)) tag-name))
+	     (cond ((c1form-p clause)
+		    (and (eq (c1form-name clause) 'GO)
+			 (eq (tag-name (c1form-arg 0 clause)) tag-name)))
+		   ((atom clause) nil)
 		   (t (or (jumps-to-p (car clause) tag-name)
 			  (jumps-to-p (cdr clause) tag-name))))))
     (do ((v tagbody (cdr v))
@@ -83,7 +84,7 @@
 	  (when (jumps-to-p (car w) name)
 	    (setq end w)))))))
 
-(defun c1tagbody (body &aux (*tags* *tags*) (info (make-info))
+(defun c1tagbody (body &aux (*tags* *tags*)
                        (tag-var (make-var :name 'TAGBODY :kind NIL))
 		       (tag-index 0))
   ;;; Establish tags.
@@ -99,8 +100,7 @@
          body))
 
   ;;; Process non-tag forms.
-  (setq body (mapcar #'(lambda (x) (if (tag-p x) x (c1expr* x info)))
-                     body))
+  (setq body (mapcar #'(lambda (x) (if (tag-p x) x (c1expr x))) body))
 
   ;;; Delete redundant tags.
   (let ((body1 nil) (ref nil))
@@ -114,8 +114,8 @@
 	       (when (var-ref-ccb tag-var)
 		 (incf *setjmps*))
 	       (add-loop-registers body1)
-	       (list 'TAGBODY info tag-var body1))
-	(list 'PROGN info (nreverse (cons (c1nil) body1))))))
+	       (make-c1form* 'TAGBODY :args tag-var body1))
+	(make-c1form* 'PROGN :args (nreverse (cons (c1nil) body1))))))
 
 (defun c2tagbody (tag-loc body)
   (declare (type var tag-loc))
@@ -172,25 +172,26 @@
                        (*destination* 'TRASH))
                   (c2expr (car l))
                   (wt-label *exit*))
-                (unless (eq (caar l) 'GO) (unwind-exit nil)))))
-    (cond (written (setq written nil))
-          ((tag-p (car l)) (wt-label (tag-label (car l))))
-          (t (let* ((*exit* (if (tag-p (second l))
-                                (progn (setq written t) (tag-label (second l)))
-                                (next-label)))
-                    (*unwind-exit* (cons *exit* *unwind-exit*))
-                    (*destination* 'TRASH))
-               (c2expr (car l))
-               (wt-label *exit*))))))
+                (unless (eq (c1form-name (first l)) 'GO)
+		  (unwind-exit nil)))))
+    (let ((this-form (first l)))
+      (cond (written (setq written nil))
+	    ((tag-p this-form) (wt-label (tag-label this-form)))
+	    (t (let* ((next-form (second l))
+		      (*exit* (if (tag-p next-form)
+				  (progn (setq written t) (tag-label next-form))
+				  (next-label)))
+		      (*unwind-exit* (cons *exit* *unwind-exit*))
+		      (*destination* 'TRASH))
+		 (c2expr this-form)
+		 (wt-label *exit*)))))))
 
 (defun c1go (args)
-  (cond ((endp args) (too-few-args 'GO 1 0))
-        ((not (endp (cdr args))) (too-many-args 'GO 1 (length args)))
-        ((not (or (symbolp (car args)) (integerp (car args))))
-         "The tag name ~s is not a symbol nor an integer." (car args)))
+  (check-args-number 'GO args 1 1)
+  (unless (or (symbolp (car args)) (integerp (car args)))
+    (cmperr "The tag name ~s is not a symbol nor an integer." (car args)))
   (do ((tags *tags* (cdr tags))
        (name (car args))
-       (info (make-info))
        (ccb) (clb) (unw) (tag) (var))
       ((endp tags) (cmperr "The tag ~s is undefined." name))
     (declare (type var var))
@@ -210,14 +211,16 @@
 			(setf (var-kind var) :OBJECT))))
 	   (incf (var-ref var))
 	   (incf (tag-ref tag))
-	   (push var (info-local-referred info)) ; no pushnew
-	   (pushnew var (info-referred-vars info))
-;          (push tag (info-referred-tags info))
-	   (return (list 'GO info tag (or ccb clb unw))))))))
+	   (return (make-c1form* 'GO
+				 :local-referred (list var)
+				 :referred-vars (list var)
+				 ;; :referred-tags tag
+				 :args tag (or ccb clb unw))))))))
 
-(defun c2go (tag nonlocal &aux (var (tag-var tag)))
+(defun c2go (tag nonlocal)
   (if nonlocal
-      (wt-nl "cl_go(" var ",MAKE_FIXNUM(" (tag-index tag) "));")
+      (let ((var (tag-var tag)))
+	(wt-nl "cl_go(" var ",MAKE_FIXNUM(" (tag-index tag) "));"))
       ;; local go
       (progn
 	(unwind-no-exit (tag-unwind-exit tag))

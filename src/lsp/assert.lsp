@@ -58,7 +58,7 @@ value is used to indicate the expected type in the error message."
   (cond ((y-or-n-p "The old value of ~S is ~S.~
 		  ~%Do you want to supply a new value? "
 		   name value)
-	 (format *query-io* "~&type a form to be evaluated:~%")
+	 (format *query-io* "~&Type a form to be evaluated:~%")
 	 (flet ((read-it () (eval (read *query-io*))))
 	   (if (symbolp name) ;Help user debug lexical variables
 	       (progv (list name) (list value) (read-it))

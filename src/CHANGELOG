@@ -1843,6 +1843,30 @@ ECLS 0.9b
   - FORMAT has been ported from CMUCL, to have a second implementation
     which is more easy to maintain, and less error-prone.
 
+ECL 0.9c
+========
+
+* System design:
+
+  - The data structures of the lisp->C translator are being changed
+    from pure lists, to lisp structures, and the routines for handling
+    them have now more meaningful names.
+
+* Errors fixed:
+
+  - The compiler was too eager when replacing variables, so that
+	(let ((exit *exit*) (*exit* (1+ *exit*)))
+	     (declare (special *exit*))
+	     ...
+	     (print exit))
+    would be changed into
+        (let ((*exit* (1+ *exit*)))
+	     (declare (special *exit*))
+	     ...
+	     (print *exit*))
+
+  - Fix a bug that prevented ECL from compiling under CYGWIN.
+
 TODO:
 =====
 

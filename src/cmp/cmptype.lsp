@@ -37,6 +37,8 @@
 ;;;	SHORT-FLOAT	float
 ;;;	LONG-FLOAT	double
 
+(defun member-type (type disjoint-supertypes)
+  (member type disjoint-supertypes :test #'subtypep))
 
 ;;; Check if THING is an object of the type TYPE.
 ;;; Depends on the implementation of TYPE-OF.
@@ -100,160 +102,66 @@
 		       (get-sysprop (car type-args) 'TYPE-FILTER)))
 		 (t t))))))
 
-;;; The algebra of types should be more complete. Beppe
-#+nil
-(defun type-and (type1 type2)
-  (cond ((equal type1 type2) type1)
-        ((eq type1 t) type2)
-	((eq type1 '*) type2)		; optional args
-	((eq type1 'OBJECT) type2)	; Beppe
-	((eq type2 'OBJECT) type1)	; Beppe
-        ((eq type2 t) type1)
-	((eq type2 '*) type1)		; optional args
-	((and (consp type2) (eq (car type2) 'VALUES))
-	 (type-and type1 (second type2)))
-        ((consp type1)
-         (case (car type1)
-               (ARRAY
-                (case (cadr type1)
-                      (BASE-CHAR
-		       (if (eq type2 'STRING)
-			   type2
-			 (if (and (consp type2)	; Beppe
-				  (member (car type2) '(ARRAY VECTOR))
-				  (null (cddr type2))
-				  (type>= 'BASE-CHAR (cadr type2)))
-			     type1 nil)))
-                      (BIT (if (eq type2 'BIT-VECTOR) type2 nil))
-		      ;; Beppe:
-                      (t (case type2
-			   (STRING
-			    (when (type-and (cadr type1) 'BASE-CHAR)
-			      '(ARRAY BASE-CHAR)))
-			   (BIT-VECTOR
-			    (when (type-and (cadr type1) 'BIT)
-			      '(ARRAY BIT)))
-			   ((ARRAY VECTOR) type1)
-			   (t (if (and (consp type2)
-				       (member (car type2) '(ARRAY VECTOR)))
-				  (cond ((type>= (cadr type1) (cadr type2))
-					 type2)
-					((type>= (cadr type2) (cadr type1))
-					 type1))))))))
-               (VECTOR
-                (case (cadr type1)	; Beppe
-                      (BASE-CHAR
-		       (if (eq type2 'STRING)
-			   type2
-			 (if (and (consp type2)	; Beppe
-				  (member (car type2) '(ARRAY VECTOR))
-				  (null (cddr type2))
-				  (type>= 'BASE-CHAR (cadr type2)))
-			     type1 nil)))
-                      (BIT (if (eq type2 'BIT-VECTOR) type2 nil))
-		      ;; Beppe
-                      (t (case type2
-			   (STRING
-			    (when (eq (cadr type1) 'BASE-CHAR) type1))
-			   (BIT-VECTOR
-			    (when (eq (cadr type1) 'BIT) type1))
-			   ((ARRAY VECTOR) type1)
-			   (t (if (and (consp type2)
-				       (member (car type2) '(ARRAY VECTOR)))
-				  (cond ((type>= (cadr type1) (cadr type2))
-					 type2)
-					((type>= (cadr type2) (cadr type1))
-					 type1))))))))
-	       (values (type-and (second type1) type2)))
-	 )
-	((and (consp type2) (eq (car type2) 'OR)) ; Beppe
-	 (do ((types (cdr type2) (cdr types))
-	      (res))
-	     ((null types) nil)
-	     (when (setq res (type-and type1 (car types)))
-	       (return res))))
-        (t (case type1
-                 (STRING
-                  (if (and (consp type2) (eq (car type2) 'ARRAY)
-                           (eq (cadr type2) 'BASE-CHAR))
-                      type1 nil))
-                 (BIT-VECTOR
-                  (if (and (consp type2) (eq (car type2) 'ARRAY)
-                           (eq (cadr type2) 'BIT))
-                      type1 nil))
-                 (FIXNUM-FLOAT
-                  (if (member type2 '(FIXNUM FLOAT SHORT-FLOAT LONG-FLOAT))
-                      type2 nil))
-                 (FLOAT
-                  (if (member type2 '(SHORT-FLOAT LONG-FLOAT))
-                      type2 nil))
-                 ((LONG-FLOAT SHORT-FLOAT)
-                  (if (member type2 '(FIXNUM-FLOAT FLOAT))
-                      type1 nil))
-		 ((BYTE8 INTEGER8 BIT)
-		  (if (eq type2 'FIXNUM) type1 nil))
-;;;		 ((UNSIGNED-SHORT)
-;;;		  (if (subtypep type1 type2) type1 nil))
-                 (FIXNUM
-		  (case type2
-		    ((bit FIXNUM-FLOAT) 'FIXNUM)
-		    ((BYTE8 INTEGER8 BIT)
-		     type2)
-;;;		    ((UNSIGNED-SHORT)
-;;;		     (if (subtypep type2 type1) type2 nil))
-		    ))
-		 #+clos
-		 (STANDARD-OBJECT
-                  (if (subtypep type2 'STANDARD-OBJECT) type2 nil))
-		 #+clos
-		 (STRUCTURE-OBJECT
-                  (if (subtypep type2 'STRUCTURE-OBJECT) type2 nil))))))
+(defun type-and (t1 t2)
+  ;; FIXME! Should we allow "*" as type name???
+  (when (or (eq t1 t2) (eq t2 '*))
+    (return-from type-and t1))
+  (when (eq t1 '*)
+    (return-from type-and t2))
+  (let* ((si::*highest-type-tag* si::*highest-type-tag*)
+	 (si::*save-types-database* t)
+	 (si::*member-types* si::*member-types*)
+	 (si::*elementary-types* si::*elementary-types*)
+	 (tag1 (si::safe-canonical-type t1))
+	 (tag2 (si::safe-canonical-type t2)))
+    (cond ((and (numberp tag1) (numberp tag2))
+	   (setf tag1 (si::safe-canonical-type t1)
+		 tag2 (si::safe-canonical-type t2))
+	   (cond ((zerop (logand tag1 tag2)) ; '(AND t1 t2) = NIL
+		  NIL)
+		 ((zerop (logandc2 tag1 tag2)) ; t1 <= t2
+		  t1)
+		 ((zerop (logandc2 tag2 tag1)) ; t2 <= t1
+		  t2)
+		 (t
+		  `(AND ,t1 ,t2))))
+	  ((null tag1)
+	   (cmpwarn "Unkonwn type ~S" t1)
+	   t2)
+	  (t
+	   (cmpwarn "Unkonwn type ~S" t2)
+	   t1))))
 
-;;; The algebra of types should be more complete. Beppe
-(defun type-and (type1 type2 &optional finish &aux out t2 args2)
-  (when (or (eq type1 type2) (eq type1 'OBJECT) (eq type1 '*))
-    (return-from type-and type2))
-  (when (or (eq type2 'OBJECT) (eq type2 '*))
-    (return-from type-and type1))
-  (when (subtypep type1 type2)
-    (return-from type-and type1))
-  (when (subtypep type2 type1)
-    (return-from type-and type2))
-  (multiple-value-setq (name2 args2) (sys::normalize-type type2))
-  (case name2
-    (VALUES (type-and type1 (car args2)))
-    (AND (loop for i in args2
-	       when (setq t2 (type-and type1 i))
-	       collect i into out
-	       finally (return (and out (cons 'AND out)))))
-    (OR (loop for i in args2
-	      when (setq t2 (type-and type1 i))
-	      collect i into out
-	      finally (return (and out (cons 'OR out)))))
-    (MEMBER (loop for i in args2
-		  when (setq t2 (typep i type1))
-		  collect i into out
-		  finally (return (and out (cons 'MEMBER out)))))
-    (NOT (setq t2 (type-and type1 (car args2)))
-	 (cond ((null t2) type1)
-	       ((eq t2 type1) nil)
-	       (t (list 'AND type1 type2))))
-    (otherwise
-     (if finish nil (type-and type2 type1 t)))))
-
-#+nil
-(defun type>= (type1 type2)
-  (equal (type-and type1 type2) type2))
+(defun type-or (t1 t2)
+  ;; FIXME! Should we allow "*" as type name???
+  (when (or (eq t1 t2) (eq t2 '*))
+    (return-from type-or t1))
+  (when (eq t1 '*)
+    (return-from type-or t2))
+  (let* ((si::*highest-type-tag* si::*highest-type-tag*)
+	 (si::*save-types-database* t)
+	 (si::*member-types* si::*member-types*)
+	 (si::*elementary-types* si::*elementary-types*)
+	 (tag1 (si::safe-canonical-type t1))
+	 (tag2 (si::safe-canonical-type t2)))
+    (cond ((and (numberp tag1) (numberp tag2))
+	   (setf tag1 (si::safe-canonical-type t1)
+		 tag2 (si::safe-canonical-type t2))
+	   (cond ((zerop (logandc2 tag1 tag2)) ; t1 <= t2
+		  t2)
+		 ((zerop (logandc2 tag2 tag1)) ; t2 <= t1
+		  t1)
+		 (t
+		  `(OR ,t1 ,t2))))
+	  ((null tag1)
+	   (cmpwarn "Unkonwn type ~S" t1)
+	   'T)
+	  (t
+	   (cmpwarn "Unkonwn type ~S" t2)
+	   'T))))
 
 (defun type>= (type1 type2)
   (subtypep type2 type1))
-
-(defun reset-info-type (info)
-  (if (info-type info)
-      (let ((info1 (copy-info info)))
-           (setf (info-type info1) t)
-           info1)
-      info))
 
 ;;;
 ;;; and-form-type
@@ -262,26 +170,185 @@
 ;;;
 (defun and-form-type (type form original-form &optional (mode :safe)
 		      (format-string "") &rest format-args)
-  (let* ((type2 (info-type (cadr form)))
-	 (type1 (or (type-and type type2)
-		    (when (subtypep type2 type) type2)))) ; class types. Beppe
+  (let* ((type2 (c1form-type form))
+	 (type1 (type-and type type2)))
     (unless type1
       (funcall (if (eq mode :safe) #'cmperr #'cmpwarn)
 	       "~?, the type of the form ~s is ~s, not ~s." format-string
 	       format-args original-form type2 type))
-    (if (eq type1 type2)
-      form
-      (let ((info (copy-info (cadr form))))
-	(setf (info-type info) type1)
-	(list* (car form) info (cddr form))))))
+    (unless (eq type1 type2)
+      (setf form (copy-c1form form))
+      (setf (c1form-type form) type1))
+    form))
 
-(defun default-init (type)
-  (let ((new-value (getf '(fixnum 0 character #\space long-float 0.0L1
-			   short-float 0.0S1)
-			 type)))
+(defun default-init (var)
+  (let ((new-value (cdr (assoc (var-type var)
+			       '((fixnum . 0) (character . #\space)
+				 (long-float . 0.0L1) (short-float . 0.0S1))
+			       :test #'subtypep))))
     (cond (new-value
-	   (cmpwarn "The default value of NIL is not ~s. Using ~s instead."
-		    type new-value)
+	   (cmpwarn "The default value of ~s is not ~s. Using ~s instead."
+		    (var-name var) (var-type var) new-value)
 	   (c1constant-value new-value nil))
 	  (t
 	   (c1nil)))))
+
+;;----------------------------------------------------------------------
+;; (FUNCTION ...) types. This code is a continuation of predlib.lsp.
+;; It implements function types and a SUBTYPEP relationship between them.
+;;
+
+(in-package "SI")
+
+(defstruct function-type
+  required
+  optional
+  rest
+  key-p
+  keywords
+  keyword-types
+  allow-other-keys-p
+  output)
+
+(defun canonical-function-type (ftype)
+  (when (function-type-p ftype)
+    (return-from canonical-function-type ftype))
+  (flet ((ftype-error ()
+	   (error "Syntax error in FUNCTION type definition ~S" ftype)))
+    (let (o k k-t values)
+      (unless (and (= (length ftype) 3) (eql (first ftype) 'FUNCTION))
+	(ftype-error))
+      (multiple-value-bind (requireds optionals rest key-flag keywords
+				      allow-other-keys-p auxs)
+	  (si::process-lambda-list (second ftype) 'FTYPE)
+	(dotimes (i (pop optionals))
+	  (let ((type (first optionals))
+		(init (second optionals))
+		(flag (third optionals)))
+	    (setq optionals (cdddr optionals))
+	    (when (or init flag) (ftype-error))
+	    (push type o)))
+	(dotimes (i (pop keywords))
+	  (let ((keyword (first keywords))
+		(var (second keywords))
+		(type (third keywords))
+		(flag (fourth keywords)))
+	    (setq keywords (cddddr keywords))
+	    (when (or var flag) (ftype-error))
+	    (push keyword k)
+	    (push type k-t)))
+	(setf values (third ftype))
+	(cond ((atom values) (setf values (list 'VALUES values)))
+	      ((and (listp values) (eql (first values) 'VALUES)))
+	      (t (ftype-error)))
+	(when (and rest key-flag
+		   (not (subtypep 'keyword rest)))
+	  (ftype-error))
+	(make-function-type :required (rest requireds)
+			    :optional o
+			    :rest rest
+			    :key-p key-flag
+			    :keywords k
+			    :keyword-types k-t
+			    :allow-other-keys-p allow-other-keys-p
+			    :output (canonical-values-type values))))))
+
+(defconstant +function-type-tag+ (cdr (assoc 'FUNCTION *elementary-types*)))
+
+(defun register-function-type (type)
+  (or (find-registered-tag type)
+      (find-registered-tag (setq ftype (canonical-function-type type)))
+      (let ((tag (register-type ftype #'function-type-p #'function-type-<=)))
+	(update-types +function-type-tag+ tag)
+	tag)))
+
+(defun function-type-<= (f1 f2)
+  (unless (and (every* #'subtypep
+		       (function-type-required f2)
+		       (function-type-required f1))
+	       (do* ((o1 (function-type-optional f1) (cdr o1))
+		     (o2 (function-type-optional f2) (cdr o2))
+		     (r1 (function-type-rest f1))
+		     (r2 (function-type-rest f2))
+		     t1 t2)
+		    ((and (endp o1) (endp o2)) t)
+		 (setf t1 (cond ((consp o1) (first o1))
+				(r1 r1)
+				(t (return nil)))
+		       t2 (cond ((consp o2) (first o2))
+				(r2 r2)
+				(t (return nil))))
+		 (unless (subtypep t1 t2)
+		   (return nil)))
+	       (subtypep (function-type-output f1)
+			 (function-type-output f2))
+	       (eql (function-type-key-p f1) (function-type-key-p f2))
+	       (or (function-type-allow-other-keys-p f2)
+		   (not (function-type-allow-other-keys-p f1))))
+    (return-from function-type-<= nil))
+  (do* ((k2 (function-type-keywords f2))
+	(k-t2 (function-type-keyword-types f2))
+	(k1 (function-type-keywords f1) (cdr k1))
+	(k-t1 (function-type-keyword-types f1) (cdr k1)))
+       ((endp k1)
+	t)
+    (unless
+	(let* ((n (position (first k1) k2)))
+	  (when n
+	    (let ((t2 (nth n k-t2)))
+	      (subtypep (first k-t1) t2))))
+      (return-from function-type-<= nil))))
+
+;;----------------------------------------------------------------------
+;; (VALUES ...) type
+
+(defstruct values-type
+  min-values
+  max-values
+  required
+  optional
+  rest)
+
+(defun register-values-type (vtype)
+  (or (find-registered-tag vtype)
+      (find-registered-tag (setf vtype (canonical-values-type vtype)))
+      (register-type vtype #'values-type-p #'values-type-<=)))
+
+(defun canonical-values-type (vtype)
+  (when (values-type-p vtype)
+    (return-from canonical-values-type vtype))
+  (flet ((vtype-error ()
+	   (error "Syntax error in VALUES type definition ~S" vtype)))
+    (unless (and (listp vtype) (eql (pop vtype) 'VALUES))
+      (vtype-error))
+    (let ((required '())
+	  (optional '())
+	  (rest nil))
+      (do ()
+	  ((endp vtype)
+	   (make-values-type :min-values (length required)
+			     :max-values (if rest multiple-values-limit
+					     (+ (length required)
+						(length optional)))
+			     :required (nreverse required)
+			     :optional (nreverse optional)
+			     :rest rest))
+
+	(let ((type (pop vtype)))
+	  (if (eql type '&optional)
+	      (do ()
+		  ((endp vtype))
+		(let ((type (pop vtype)))
+		  (if (eql type '&rest)
+		      (if (endp vtype)
+			  (ftype-error)
+			  (setf rest (first vtype)))
+		      (push type optional))))
+	      (push type required)))))))
+
+(defun values-type-<= (v1 v2)
+  (and (= (values-type-min-values v1) (values-type-min-values v2))
+       (= (values-type-max-values v1) (values-type-max-values v2))
+       (every* #'subtypep (values-type-required v1) (values-type-required v2))
+       (every* #'subtypep (values-type-optional v1) (values-type-optional v2))
+       (subtypep (values-type-rest v1) (values-type-rest v2))))

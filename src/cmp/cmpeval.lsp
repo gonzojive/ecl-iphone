@@ -12,11 +12,6 @@
 
 (in-package "COMPILER")
 
-(defun c1expr* (form info)
-  (setq form (c1expr form))
-  (add-info info (second form) (eq (car form) 'FUNCTION))
-  form)
-
 (defun c1expr (form)
   (setq form (catch *cmperr-tag*
     (cond ((symbolp form)
@@ -26,8 +21,8 @@
 		 ((eq form nil) (c1nil))
 		 ((eq form t) (c1t))
 		 ((keywordp form)
-		  (list 'LOCATION (make-info :type (object-type form))
-			(list 'VV (add-object form))))
+		  (make-c1form* 'LOCATION :type (object-type form)
+				:args (list 'VV (add-object form))))
 		 ((constantp form)
 		  (or (c1constant-value (symbol-value form) nil)
 		      (c1var form)))
@@ -42,24 +37,21 @@
 		    (c1funcall form))
 		   (t (cmperr "~s is not a legal function name." fun)))))
 	  (t (c1constant-value form t)))))
-  (if (eq form '*cmperr-tag*) (c1nil) form))
+  (if (eq form '*cmperr-tag*)
+      (c1nil)
+      form))
 
-(defvar *c1nil* (list 'LOCATION (make-info :type (object-type nil)) nil))
+(defvar *c1nil* (make-c1form* 'LOCATION :type (object-type nil) :args nil))
 (defun c1nil () *c1nil*)
-(defvar *c1t* (list 'LOCATION (make-info :type (object-type t)) t))
+(defvar *c1t* (make-c1form* 'LOCATION :type (object-type t) :args t))
 (defun c1t () *c1t*)
 
 (defun c1call-symbol (fname args &aux fd)
   (cond ((setq fd (get-sysprop fname 'c1special)) (funcall fd args))
 	((setq fd (c1call-local fname))
-	 (let* ((info (make-info :sp-change t
-				 :referred-vars
-				 (info-referred-vars (second fd))
-				 :local-referred
-				 (info-local-referred (second fd))))
-		(forms (c1args args info)))
-	   (let ((return-type (get-local-return-type (third fd))))
-	     (when return-type (setf (info-type info) return-type)))
+	 (let* ((forms (c1args* args))
+		(fun (c1form-arg 0 fd))
+		(return-type (or (get-local-return-type fun) 'T)))
 	   (let ((arg-types (get-local-arg-types (third fd))))
 	     ;; Add type information to the arguments.
 	     (when arg-types
@@ -72,7 +64,12 @@
 			    (pop arg-types)
 			    (pop args))))
 		 (setq forms (nreverse fl)))))
-	   (list 'CALL-LOCAL info (third fd) forms)))
+	   (make-c1form* 'CALL-LOCAL
+			 :sp-change t
+			 :referred-vars (c1form-referred-vars fd)
+			 :local-referred (c1form-local-referred fd)
+			 :type return-type
+			 :args fun forms)))
 	((setq fd (sch-local-macro fname))
 	 (c1expr (cmp-expand-macro fd fname args)))
 	((and (setq fd (get-sysprop fname 'C1))
@@ -102,94 +99,58 @@
 	   (t (c1structure-ref1 (car args) (car fd) (cdr fd)))
 	   )
 	 )
-	(t (let* ((info (make-info
-			 :sp-change (null (get-sysprop fname 'NO-SP-CHANGE))))
-		  (forms (c1args args info)))
-	     (let ((return-type (get-return-type fname)))
-	       (when return-type (setf (info-type info) return-type)))
-	     (let ((arg-types (get-arg-types fname)))
-	       ;; Add type information to the arguments.
-	       (when arg-types
-		 (do ((fl forms (cdr fl))
-		      (fl1 nil)
-		      (al args (cdr al)))
-		     ((endp fl)
-		      (setq forms (nreverse fl1)))
-		   (cond ((endp arg-types) (push (car fl) fl1))
-			 (t (push (and-form-type (car arg-types) (car fl) (car al)
-						 :safe "In a call to ~a" fname)
-				  fl1)
-			    (pop arg-types))))))
-	     (let ((arg-types (get-sysprop fname 'ARG-TYPES)))
-	       ;; Check argument types.
-	       (when arg-types
-		 (do ((fl forms (cdr fl))
-		      (al args (cdr al)))
-		     ((or (endp arg-types) (endp fl)))
-		   (and-form-type (car arg-types) (car fl) (car al) :safe
-				  "In a call to ~a" fname)
-		   (pop arg-types))))
-#|
-	;; Do this in c2call-global, when we know types of variables rebound
-	;; by let
-	     (case fname
-	       (AREF
-		(let ((etype (info-type (cadar forms))))
-		  (when (or (and (eq etype 'STRING)
-				 (setq etype 'CHARACTER))
-			    (and (consp etype)
-				 (or (eq (car etype) 'ARRAY)
-				     (eq (car etype) 'VECTOR))
-				 (setq etype (second etype))))
-		    (setq etype
-			  (type-and (info-type info) etype))
-		    (unless etype
-		      (cmpwarn "Type mismatch was found in ~s."
-			       (cons fname args))
-		      (setq etype T))	; assume no information
-		    (setf (info-type info) etype))))
-	       (SYS:ASET		; (sys:aset value array i0 ... in)
-		(let ((etype (info-type (cadr (second forms)))))
-		  (when (or (and (eq etype 'STRING)
-				 (setq etype 'CHARACTER))
-			    (and (consp etype)
-				 (or (eq (car etype) 'ARRAY)
-				     (eq (car etype) 'VECTOR))
-				 (setq etype (second etype))))
-		    (setq etype
-			  (type-and (info-type info)
-				    (type-and (info-type (cadr (first forms)))
-					      etype)))
-		    (unless etype
-		      (cmpwarn "Type mismatch was found in ~s."
-			       (cons fname args))
-		      (setq etype T))
-		    (setf (info-type info) etype)
-		    (setf (info-type (cadr (first forms))) etype)
-		    ))))
-|#
-	     (list 'CALL-GLOBAL info fname forms)))))
+	(t (c1call-global fname args))))
 
-(defun c2expr (form)
-  (if (eq (car form) 'CALL-GLOBAL)
+(defun c1call-global (fname args)
+  (let* ((forms (c1args* args))
+	 (return-type (or (get-return-type fname) 'T)))
+    (let ((arg-types (get-arg-types fname)))
+      ;; Add type information to the arguments.
+      (when arg-types
+	(do ((fl forms (cdr fl))
+	     (fl1 nil)
+	     (al args (cdr al)))
+	    ((endp fl)
+	     (setq forms (nreverse fl1)))
+	  (cond ((endp arg-types) (push (car fl) fl1))
+		(t (push (and-form-type (car arg-types) (car fl) (car al)
+					:safe "In a call to ~a" fname)
+			 fl1)
+		   (pop arg-types))))))
+    (let ((arg-types (get-sysprop fname 'ARG-TYPES)))
+      ;; Check argument types.
+      (when arg-types
+	(do ((fl forms (cdr fl))
+	     (al args (cdr al)))
+	    ((or (endp arg-types) (endp fl)))
+	  (and-form-type (car arg-types) (car fl) (car al) :safe
+			 "In a call to ~a" fname)
+	  (pop arg-types))))
+    (make-c1form* 'CALL-GLOBAL
+		  :sp-change (not (get-sysprop fname 'NO-SP-CHANGE))
+		  :type return-type
+		  :args fname forms)))
+
+(defun c2expr (form &aux (name (c1form-name form)) (args (c1form-args form)))
+  (if (eq name 'CALL-GLOBAL)
 ;;; ----------------------------------------------------------------------
 ;;; Added optimization for proclaimed functions: Beppe
 ;;; ----------------------------------------------------------------------
     (let ((fname (car *tail-recursion-info*)))
-      (c2call-global (third form) (fourth form) nil
-		     (if (and
+      (c2call-global (first args) (second args) nil (destination-type)))
+#|		     (if (and
 			  (last-call-p)
 			  (symbolp fname) ; locally defined function are
 					; represented as variables
 			  (get-sysprop fname 'PROCLAIMED-FUNCTION))
 			 (get-sysprop fname 'PROCLAIMED-RETURN-TYPE)
-			 (info-type (second form)))))
-    (if (or (eq (car form) 'LET)
-	    (eq (car form) 'LET*))
-      (let ((*volatile* (volatile (second form))))
-	(declare (special *volatile*))
-	(apply (get-sysprop (car form) 'C2) (cddr form)))
-      (apply (get-sysprop (car form) 'C2) (cddr form)))))
+			 (c1form-type form)))))|#
+    (let ((dispatch (get-sysprop name 'C2)))
+      (if (or (eq name 'LET) (eq name 'LET*))
+	  (let ((*volatile* (c1form-volatile* form)))
+	    (declare (special *volatile*))
+	    (apply dispatch args))
+	  (apply dispatch args)))))
 
 (defun c2expr* (form)
   (let* ((*exit* (next-label))
@@ -201,18 +162,13 @@
     (wt-label *exit*))
   )
 
-(defun c1progn (forms &aux (fl nil))
+(defun c1progn (forms)
   (cond ((endp forms) (c1nil))
 	((endp (cdr forms)) (c1expr (car forms)))
-	(t (let ((info (make-info)))
-		(dolist (form forms)
-			(setq form (c1expr form))
-			(push form fl)
-			(add-info info (second form)))
-		(setf (info-type info) (info-type (cadar fl)))
-		(list 'PROGN info (nreverse fl))
-		)))
-  )
+	(t (let* ((fl (mapcar #'c1expr forms))
+		  (output-form (first (last fl)))
+		  (output-type (and output-form (c1form-type output-form))))
+	     (make-c1form* 'PROGN :type output-type :args fl)))))
 
 (defun c2progn (forms)
   ;; c1progn ensures that the length of forms is not less than 1.
@@ -224,8 +180,8 @@
     (setq *lex* lex)			; recycle lex locations
   ))
 
-(defun c1args (forms info)
-  (mapcar #'(lambda (form) (c1expr* form info)) forms))
+(defun c1args* (forms)
+  (mapcar #'(lambda (form) (c1expr form)) forms))
 
 ;;; Structures
 
@@ -242,14 +198,12 @@
 	   (sys::fixnump (third args))
 	   (endp (cdddr args)))
       (c1structure-ref1 (car args) (cadadr args) (third args))
-      (let ((info (make-info)))
-	(list 'CALL-GLOBAL info 'SYS:STRUCTURE-REF (c1args args info)))))
+      (c1call-global 'SYS:STRUCTURE-REF args)))
 
-(defun c1structure-ref1 (form name index
-			      &aux (info (make-info
-					  :type (get-slot-type name index))))
+(defun c1structure-ref1 (form name index)
   ;;; Explicitly called from c1expr and c1structure-ref.
-  (list 'SYS:STRUCTURE-REF info (c1expr* form info) (add-symbol name) index))
+  (make-c1form* 'SYS:STRUCTURE-REF :type (get-slot-type name index)
+		:args (c1expr form) (add-symbol name) index))
 
 (defun get-slot-type (name index)
   ;; default is t
@@ -271,7 +225,7 @@
       #-clos
       (wt "(" loc ")->str.self[" `(COERCE-LOC :fixnum ,index) "]")))
 
-(defun c1structure-set (args &aux (info (make-info)))
+(defun c1structure-set (args)
   (if (and (not *safe-compile*)         ; Beppe
 	   (not (endp args))
 	   (not (endp (cdr args)))
@@ -287,22 +241,20 @@
       (let ((x (c1expr (car args)))
 	    (y (c1expr (fourth args)))
 	    (name (cadadr args)))       ; remove QUOTE.
-	(add-info info (second x))
-	(add-info info (second y))
 	;; Beppe. Type check added:
 	(let* ((slot-type (get-slot-type name (third args)))
-	       (new-type (type-and slot-type (info-type (second y)))))
-	  (if new-type                  ; compatible
-	      (if (eq 'VAR (car y))     ; it's a variable
-		(setf (var-type (third y)) new-type)   ; propagate type
-		(setf (info-type (second y)) new-type))
+	       (new-type (type-and slot-type (c1form-type y))))
+	  (if (null new-type)
 	      (cmpwarn "The type of the form ~s is not ~s."
-		       (fourth args) slot-type)))
-	(setf (info-type info) (info-type (second y)))
-	(list 'SYS:STRUCTURE-SET info x
-	      (add-symbol name)
-	      (third args) y))
-      (list 'CALL-GLOBAL info 'SYS:STRUCTURE-SET (c1args args info))))
+		       (fourth args) slot-type)
+	      (progn
+		(when (eq 'VAR (car y))
+		  ;; it's a variable, propagate type
+		  (setf (var-type (third y)) new-type))
+		(setf (c1form-type y) new-type))))
+	(make-c1form* 'SYS:STRUCTURE-SET :type (c1form-type y)
+		      :args x (add-symbol name) (third args) y))
+      (c1call-global 'SYS:STRUCTURE-SET args)))
 
 (defun c2structure-set (x name-vv index y
 			  &aux locs (*inline-blocks* 0))
@@ -328,20 +280,19 @@
    ((eq val nil) (c1nil))
    ((eq val t) (c1t))
    ((sys::fixnump val)
-    (list 'LOCATION (make-info :type 'FIXNUM)
-	  (list 'FIXNUM-VALUE val)))
+    (make-c1form* 'LOCATION :type 'FIXNUM :args (list 'FIXNUM-VALUE val)))
    ((characterp val)
-    (list 'LOCATION (make-info :type 'CHARACTER)
-	  (list 'CHARACTER-VALUE (char-code val))))
+    (make-c1form* 'LOCATION :type 'CHARACTER
+		  :args (list 'CHARACTER-VALUE (char-code val))))
    ((typep val 'LONG-FLOAT)
-    (list 'LOCATION (make-info :type 'LONG-FLOAT)
-	  (list 'LONG-FLOAT-VALUE val (add-object val))))
+    (make-c1form* 'LOCATION :type 'LONG-FLOAT
+		  :args (list 'LONG-FLOAT-VALUE val (add-object val))))
    ((typep val 'SHORT-FLOAT)
-    (list 'LOCATION (make-info :type 'SHORT-FLOAT)
-	  (list 'SHORT-FLOAT-VALUE val (add-object val))))
+    (make-c1form* 'LOCATION :type 'SHORT-FLOAT
+		  :args (list 'SHORT-FLOAT-VALUE val (add-object val))))
    (always-p
-    (list 'LOCATION (make-info :type (object-type val))
-	  (list 'VV (add-object val))))
+    (make-c1form* 'LOCATION :type (object-type val)
+		  :args (list 'VV (add-object val))))
    (t nil)))
 
 (defvar *compiler-temps*

@@ -293,22 +293,28 @@ cl_object @>  MONOTONIC(-1, 1)
 
 @(defun max (max &rest nums)
 @
-	/* INV: type check occurs in number_compare() */
-	while (--narg) {
+	/* INV: type check occurs in number_compare() for the rest of
+	   numbers, but for the first argument it happens in number_zerop(). */
+	if (narg-- == 1) {
+		number_zerop(max);
+	} else do {
 		cl_object numi = cl_va_arg(nums);
 		if (number_compare(max, numi) < 0)
-		    max = numi;
-	}
+			max = numi;
+	} while (--narg);
 	@(return max)
 @)
 
 @(defun min (min &rest nums)
-@	
-	/* INV: type check occurs in number_compare() */
-	while (--narg) {
+@
+	/* INV: type check occurs in number_compare() for the rest of
+	   numbers, but for the first argument it happens in number_zerop(). */
+	if (narg-- == 1) {
+		number_zerop(min);
+	} else do {
 		cl_object numi = cl_va_arg(nums);
 		if (number_compare(min, numi) > 0)
 			min = numi;
-	}
+	} while (--narg);
 	@(return min)
 @)

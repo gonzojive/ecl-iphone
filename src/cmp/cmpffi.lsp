@@ -198,8 +198,7 @@
 	(setq output-rep-type (lisp-type->rep-type output-type))
 	(setq output-rep-type output-type
 	      output-type (rep-type->lisp-type output-type)))
-    (let* ((info (make-info :type output-type))
-	   (processed-arguments '()))
+    (let* ((processed-arguments '()))
       (unless (and (listp arguments)
 		   (listp arg-types)
 		   (stringp c-expression))
@@ -208,15 +207,15 @@
       (do ((processed-arguments '())
 	   (processed-arg-types '()))
 	  ((and (endp arguments) (endp arg-types))
-	   (list 'C-INLINE info
-		 (nreverse processed-arguments)
-		 (nreverse processed-arg-types)
-		 output-rep-type
-		 c-expression
-		 side-effects
-		 one-liner))
+	   (make-c1form* 'C-INLINE :type output-type :args
+			 (nreverse processed-arguments)
+			 (nreverse processed-arg-types)
+			 output-rep-type
+			 c-expression
+			 side-effects
+			 one-liner))
 	(push (or (pop arg-types) 'T) processed-arg-types)
-	(push (c1expr* (pop arguments) info) processed-arguments)))))
+	(push (c1expr (pop arguments)) processed-arguments)))))
 
 (defun produce-inline-loc (inlined-arguments arg-types output-rep-type
 			   c-expression side-effects one-liner)

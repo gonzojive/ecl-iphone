@@ -169,6 +169,14 @@ Returns T if every elements of SEQUENCEs satisfy PREDICATE; NIL otherwise."
             (return nil))))
 
 
+(defun every* (predicate &rest sequences)
+  "Args: (predicate sequence &rest more-sequences)
+Returns T if every elements of SEQUENCEs satisfy PREDICATE and all sequences
+have the same length; NIL otherwise."
+  (and (apply #'= (mapcar #'length sequences))
+       (apply #'every predicate sequences)))
+
+
 (defun notany (predicate sequence &rest more-sequences)
   "Args: (predicate sequence &rest more-sequences)
 Returns T if none of the elements in SEQUENCEs satisfies PREDICATE; NIL

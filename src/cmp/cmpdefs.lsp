@@ -131,6 +131,7 @@
   exit			;;; Where to return.  A label.
   destination		;;; Where the value of the block to go.
   var			;;; Variable containing the block ID.
+  (type 'NIL)		;;; Estimated type.
   )
 ;(deftype blk () '(satisfies blk-p))
 

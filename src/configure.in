@@ -160,8 +160,8 @@ includedir="${exec_prefix}/lib/ecl/h"
 mandir="${prefix}/man/man1"
 infodir="${prefix}/info"
 TARGETS="ecl${EXEEXT}"
-LIBRARIES="libecl.a"
-LSP_LIBRARIES="liblsp.a libclos.a"
+LIBRARIES=""
+LSP_LIBRARIES="libecl.a"
 SUBDIR=c
 CLIBS="${CLIBS} -lgmp -lm"
 if test ${boehm} = "no" ; then
@@ -174,12 +174,12 @@ else
   else
     BOEHM_HEADERS=""
   fi
-  CLIBS="-lgc ${CLIBS}"
   EXTRA_OBJS="${EXTRA_OBJS} alloc_2.o"
   AC_DEFINE(GBC_BOEHM)
 fi
 if test ${shared} = "yes"; then
   AC_DEFINE(ENABLE_DLOPEN)
+  LSP_LIBRARIES="${LSP_LIBRARIES} libecl.so"
 fi
 if test ${local_gmp} = "no" ; then
   LIBRARIES="${LIBRARIES} libgmp.a"

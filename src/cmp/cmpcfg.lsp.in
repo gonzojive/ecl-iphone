@@ -5,7 +5,7 @@
 (in-package "COMPILER")
 (setq compiler::*cc* "@ECL_CC@")
 (setq compiler::*cc-flags* "@CFLAGS@ @LSPCFLAGS@")
-(setq compiler::*ld-flags* "-lgmp @LDFLAGS@ @CLIBS@")
+(setq compiler::*ld-flags* "@LDRPATH@ -lecl @LDFLAGS@ @CLIBS@")
 #+dlopen
 (setq compiler::*ld-shared-flags* "@SHARED_LDFLAGS@")
 (load "sys:sysfun.lsp" :verbose nil :print nil)

@@ -15,21 +15,19 @@
 
 (defvar *princ-string-limit* 80)
 
-(defun c1princ (args &aux stream (info (make-info)))
-  (when (endp args) (too-few-args 'PRINC 1 0))
-  (unless (or (endp (cdr args)) (endp (cddr args)))
-	  (too-many-args 'PRINC 2 (length args)))
-  (setq stream (if (endp (cdr args))
-		   (c1nil)
-		   (c1expr* (second args) info)))
-  (if (and (or (and (stringp (car args))
-		    (<= (length (car args)) *princ-string-limit*))
-	       (characterp (car args)))
-	   (or (endp (cdr args))
-	       (eq (car stream) 'VAR)))
-      (list 'C2PRINC info (car args) (if (endp (cdr args)) nil (third stream))
-	    stream)
-      (list 'CALL-GLOBAL info 'PRINC (list (c1expr* (car args) info) stream))))
+(defun c1princ (args)
+  (check-args-number 'PRINC args 1 2)
+  (let ((object (first args))
+	(stream (if (endp (rest args))
+		    (c1nil)
+		    (c1expr (second args)))))
+    (if (and (or (and (stringp object)
+		      (<= (length object) *princ-string-limit*))
+		 (characterp object))
+	     (or (endp (rest args))
+		 (eq (c1form-name stream) 'VAR)))
+	(make-c1form* 'C2PRINC :args object (c1form-arg 0 stream) stream)
+	(c1call-global 'PRINC args))))
 
 (defun c2princ (string stream-var stream)
   (cond ((eq *destination* 'TRASH)
@@ -52,28 +50,25 @@
 	((eql string #\Newline) (c2call-global 'TERPRI (list stream) nil t))
 	(t (c2call-global
 	    'PRINC
-	    (list (list 'LOCATION
-			*info*
-			(list 'VV (add-object string)))
+	    (list (make-c1form 'LOCATION *info*
+			       (list 'VV (add-object string)))
 		  stream) nil t))))
 
-(defun c1terpri (args &aux stream (info (make-info)))
-  (unless (or (endp args) (endp (cdr args)))
-	  (too-many-args 'TERPRI 1 (length args)))
+(defun c1terpri (args &aux stream)
+  (check-args-number 'TERPRI args 0 1)
   (setq stream (if (endp args)
 		   (c1nil)
-		   (c1expr* (car args) info)))
+		   (c1expr (first args))))
   (if (or (endp args)
-	  (and (eq (car stream) 'VAR)
+	  (and (eq (c1form-name stream) 'VAR)
 	       (member (var-kind (third stream)) '(GLOBAL SPECIAL))))
-      (list 'C2PRINC info #\Newline
-	    (if (endp args) nil (third stream))
-	    stream)
-      (list 'CALL-GLOBAL info 'TERPRI (list stream))))
+      (make-c1form* 'C2PRINC :args  #\Newline
+		    (if (endp args) nil (third stream))
+		    stream)
+      (c1call-global 'TERPRI args)))
 
 (defun c1apply (args)
-  (when (or (endp args) (endp (cdr args)))
-    (too-few-args 'APPLY 2 (length args)))
+  (check-args-number 'APPLY args 2)
   (let* ((fun (first args))
 	 (arguments (rest args)))
     (cond ((and (consp fun)
@@ -91,13 +86,9 @@
 	  (t
 	   (c1funcall (list* '#'APPLY args))))))
 
-(defun c1rplaca (args &aux (info (make-info)))
-  (when (or (endp args) (endp (cdr args)))
-	(too-few-args 'RPLACA 2 (length args)))
-  (unless (endp (cddr args))
-	  (too-many-args 'RPLACA 2 (length args)))
-  (setq args (c1args args info))
-  (list 'RPLACA info args))
+(defun c1rplaca (args)
+  (check-args-number 'RPLACA args 2 2)
+  (make-c1form* 'RPLACA :args (c1args* args)))
 
 (defun c2rplaca (args &aux (*inline-blocks* 0) x y)
   (setq args (coerce-locs (inline-args args))
@@ -110,13 +101,9 @@
   (unwind-exit x)
   (close-inline-blocks))
 
-(defun c1rplacd (args &aux (info (make-info)))
-  (when (or (endp args) (endp (cdr args)))
-	(too-few-args 'RPLACD 2 (length args)))
-  (when (not (endp (cddr args)))
-	(too-many-args 'RPLACD 2 (length args)))
-  (setq args (c1args args info))
-  (list 'RPLACD info args))
+(defun c1rplacd (args)
+  (check-args-number 'RPLACD args 2 2)
+  (make-c1form* 'RPLACD :args (c1args* args)))
 
 (defun c2rplacd (args &aux (*inline-blocks* 0) x y)
   (setq args (coerce-locs (inline-args args))
@@ -129,19 +116,18 @@
   (unwind-exit x)
   (close-inline-blocks))
 
-(defun c1member (args &aux (info (make-info)))
-  (when (or (endp args) (endp (cdr args)))
-	(too-few-args 'MEMBER 2 (length args)))
+(defun c1member (args)
+  (check-args-number 'MEMBER args 2)
   (cond ((endp (cddr args))
-	 (list 'MEMBER!2 info 'EQL (c1args args info)))
+	 (make-c1form* 'MEMBER!2 :args 'EQL (c1args* args)))
 	((and (eq (third args) :test)
 	      (= (length args) 4)       ; Beppe
 	      (member (fourth args) '('EQ #'EQ 'EQUAL #'EQUAL 'EQL #'EQL)
 		      :test #'EQUAL))	; arg4 = (QUOTE EQ)
-	 (list 'MEMBER!2 info (second (fourth args))
-	       (c1args (list (car args) (second args)) info)))
+	 (make-c1form* 'MEMBER!2 :args (second (fourth args))
+		       (c1args* (list (car args) (second args)))))
 	(t
-	 (list 'CALL-GLOBAL info 'MEMBER (c1args args info)))))
+	 (c1call-global 'MEMBER args))))
 
 (defun c2member!2 (fun args
 		       &aux (*inline-blocks* 0))
@@ -155,20 +141,19 @@
 	 t)) ; one liner?
   (close-inline-blocks))
 
-(defun c1assoc (args &aux (info (make-info)))
-  (when (or (endp args) (endp (cdr args)))
-	(too-few-args 'ASSOC 2 (length args)))
+(defun c1assoc (args)
+  (check-args-number 'ASSOC args 2)
   (cond ((endp (cddr args))
-	 (list 'ASSOC!2 info 'EQL (c1args args info)))
+	 (make-c1form* 'ASSOC!2 :args 'EQL (c1args* args)))
 	((and (eq (third args) ':TEST)
 	      (= (length args) 4)       ; Beppe
 	      (member (fourth args) '('EQ #'EQ 'EQUAL #'EQUAL
 				      'EQUALP #'EQUALP 'EQL #'EQL)
 		      :test 'EQUAL))
-	 (list 'ASSOC!2 info (second (fourth args))
-	       (c1args (list (car args) (second args)) info)))
+	 (make-c1form* 'ASSOC!2 :args (second (fourth args))
+		       (c1args* (list (car args) (second args)))))
 	(t
-	 (list 'CALL-GLOBAL info 'ASSOC (c1args args info)))))
+	 (c1call-global 'ASSOC args))))
 
 (defun c2assoc!2 (fun args
 		      &aux (*inline-blocks* 0))
@@ -217,16 +202,13 @@
 		 (6 (list 'CDDR (cons 'CDDDDR (cdr args))))
 		 (7 (list 'CDDDR (cons 'CDDDDR (cdr args))))))))
 
-(defun c1rplaca-nthcdr (args &aux (info (make-info)))
-  (when (or (endp args) (endp (cdr args)) (endp (cddr args)))
-	(too-few-args 'SYS:RPLACA-NTHCDR 3 (length args)))
-  (unless (endp (cdddr args))
-	  (too-few-args 'SYS:RPLACA-NTHCDR 3 (length args)))
+(defun c1rplaca-nthcdr (args)
+  (check-args-number 'SYS:RPLACA-NTHCDR args 3 3)
   (if (and (numberp (second args)) (<= 0 (second args) 10))
-      (list 'RPLACA-NTHCDR-IMMEDIATE info
-	    (second args)
-	    (c1args (list (car args) (third args)) info))
-      (list 'CALL-GLOBAL info 'SYS:RPLACA-NTHCDR (c1args args info))))
+      (make-c1form* 'RPLACA-NTHCDR-IMMEDIATE
+		    :args (second args)
+		    (c1args* (list (car args) (third args))))
+      (c1call-global 'SYS:RPLACA-NTHCDR args)))
 
 (defun c2rplaca-nthcdr-immediate (index args
 					&aux (*inline-blocks* 0))
@@ -250,16 +232,12 @@
   (unwind-exit (second args))
   (close-inline-blocks))
 
-(defun c1list-nth (args &aux (info (make-info)))
-  (when (or (endp args) (endp (cdr args)))
-	(too-few-args 'SYS:RPLACA-NTHCDR 2 (length args)))
-  (unless (endp (cddr args))
-	  (too-few-args 'SYS:RPLACA-NTHCDR 2 (length args)))
+(defun c1list-nth (args)
+  (check-args-number 'LIST-NTH args 2 2)
   (if (and (numberp (car args)) (<= 0 (car args) 10))
-      (list 'LIST-NTH-IMMEDIATE info
-	    (car args)
-	    (c1args (list (second args)) info))
-      (list 'CALL-GLOBAL info 'SYS:LIST-NTH (c1args args info))))
+      (make-c1form* 'LIST-NTH-IMMEDIATE
+		    :args (car args) (c1args* (list (second args))))
+      (c1call-global 'SYS:LIST-NTH args)))
 
 (defun c2list-nth-immediate (index args &aux (l (make-lcl-var))
 					     (*inline-blocks* 0))
@@ -314,13 +292,12 @@
    (and (not (endp (cddr args)))
 	(endp (cdddr args))
 	(let ((op-code (first args))
-	      (info (make-info))
 	      c1args string)
 	  (and (constantp op-code)
 	       (sys:fixnump (setq op-code (eval op-code)))
-	       (setq c1args (c1args (rest args) info))
-	       (eq 'FIXNUM (info-type (second (second c1args))))
-	       (eq 'FIXNUM (info-type (second (third c1args))))
+	       (setq c1args (c1args* (rest args)))
+	       (eq 'FIXNUM (c1form-type (second c1args)))
+	       (eq 'FIXNUM (c1form-type (third c1args)))
 	       `(C-INLINE ,c1args (T T) FIXNUM
 		 ,(boole-inline-string op-code)
 		 :side-effects nil
@@ -382,7 +359,7 @@
 ;; Return the most particular type we can EASILY obtain from x.  
 (defun result-type (x)
   (cond ((symbolp x)
-	 (info-type (second (c1expr x))))
+	 (c1form-type (c1expr x)))
 	((constantp x)
 	 (type-filter (type-of x)))
 	((and (consp x) (eq (car x) 'the))

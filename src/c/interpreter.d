@@ -537,19 +537,26 @@ interpret_dotimes(cl_object bytecodes, char *vector) {
 		if (FIXNUMP(length)) {
 		    cl_fixnum i, l = fix(length);
 		    /* 3) Loop while needed */
-		    for (i = 0; i < l;) {
-			interpret(bytecodes, vector);
+		    for (i = 0; i < l; i++) {
 			NValues = 1;
-			VALUES(0) = MAKE_FIXNUM(++i);
+			VALUES(0) = MAKE_FIXNUM(i);
+			interpret(bytecodes, vector);
 		    }
+		    length = MAKE_FIXNUM(i);
 		} else {
-		    cl_object i = MAKE_FIXNUM(0);
-		    while (number_compare(i, length) < 0) {
-			interpret(bytecodes, vector);
+		    cl_object i;
+		    for (i = MAKE_FIXNUM(0);
+			 number_compare(i, length) < 0;
+			 i = one_plus(i))
+		    {
 			NValues = 1;
-			VALUES(0) = i = one_plus(i);
+			VALUES(0) = i;
+			interpret(bytecodes, vector);
 		    }
+		    length = i;
 		}
+		NValues = 1;
+		VALUES(0) = length;
 		interpret(bytecodes, output);
 
 		/* 4) Restore environment */
@@ -692,36 +699,33 @@ interpret_progv(cl_object bytecodes, char *vector) {
 
 char *
 interpret(cl_object bytecodes, char *vector) {
-
+	cl_object reg0 = VALUES(0);
  BEGIN:
 	switch (GET_OPCODE(vector)) {
 	/* OP_QUOTE
-		Sets VALUES(0) to an immediate value.
+		Sets REG0 to an immediate value.
 	*/
 	case OP_QUOTE:
-		VALUES(0) = GET_DATA(vector, bytecodes);
-		NValues = 1;
+		reg0 = GET_DATA(vector, bytecodes);
 		break;
 
 	/* OP_VAR	n{arg}, var{symbol}
-		Sets NValues=1 and VALUES(0) to the value of the n-th local.
+		Sets REG0 to the value of the n-th local.
 		VAR is the name of the variable for readability purposes.
 	*/
 	case OP_VAR: {
 		int lex_env_index = GET_OPARG(vector);
-		VALUES(0) = search_local(lex_env_index);
-		NValues = 1;
+		reg0 = search_local(lex_env_index);
 		break;
 	}
 
 	/* OP_VARS	var{symbol}
-		Sets NValues=1 and VALUES(0) to the value of the symbol VAR.
+		Sets REG0 to the value of the symbol VAR.
 		VAR should be either a special variable or a constant.
 	*/
 	case OP_VARS: {
 		cl_object var_name = GET_DATA(vector, bytecodes);
-		VALUES(0) = search_global(var_name);
-		NValues = 1;
+		reg0 = search_global(var_name);
 		break;
 	}
 
@@ -729,7 +733,7 @@ interpret(cl_object bytecodes, char *vector) {
 		Pushes the object in VALUES(0).
 	*/
 	case OP_PUSH:
-		cl_stack_push(VALUES(0));
+		cl_stack_push(reg0);
 		break;
 
 	/* OP_PUSHV	n{arg}
@@ -759,14 +763,24 @@ interpret(cl_object bytecodes, char *vector) {
 		break;
 
 	/* OP_CALL	n{arg}
-		Calls the function in VALUES(0) with N arguments which
+		Calls the function in REG0 with N arguments which
 		have been deposited in the stack. The output values
 		are left in VALUES(...)
 	*/
 	case OP_CALL: {
 		cl_fixnum n = GET_OPARG(vector);
-		cl_object fun = VALUES(0);
-		VALUES(0) = interpret_funcall(n, fun);
+		VALUES(0) = reg0 = interpret_funcall(n, reg0);
+		break;
+	}
+
+	/* OP_CALLG	n{arg}, name{arg}
+		Calls the function NAME with N arguments which have been
+		deposited in the stack. The output values are left in VALUES.
+	*/
+	case OP_CALLG: {
+		cl_fixnum n = GET_OPARG(vector);
+		cl_object f = GET_DATA(vector, bytecodes);
+		VALUES(0) = reg0 = interpret_funcall(n, f);
 		break;
 	}
 
@@ -778,7 +792,7 @@ interpret(cl_object bytecodes, char *vector) {
 	case OP_FCALL: {
 		cl_fixnum n = GET_OPARG(vector);
 		cl_object fun = cl_stack_top[-n-1];
-		VALUES(0) = interpret_funcall(n, fun);
+		VALUES(0) = reg0 = interpret_funcall(n, fun);
 		cl_stack_pop();
 		break;
 	}
@@ -790,21 +804,31 @@ interpret(cl_object bytecodes, char *vector) {
 	case OP_MCALL: {
 		cl_fixnum n = fix(cl_stack_pop());
 		cl_object fun = cl_stack_top[-n-1];
-		VALUES(0) = interpret_funcall(n, fun);
+		VALUES(0) = reg0 = interpret_funcall(n, fun);
 		cl_stack_pop();
 		break;
 	}
 
 	/* OP_PCALL	n{arg}
-		Calls the function in VALUES(0) with N arguments which
+		Calls the function in REG0 with N arguments which
 		have been deposited in the stack. The first output value
 		is pushed on the stack.
 	*/
 	case OP_PCALL: {
 		cl_fixnum n = GET_OPARG(vector);
-		cl_object fun = VALUES(0);
-		VALUES(0) = interpret_funcall(n, fun);
-		cl_stack_push(VALUES(0));
+		cl_stack_push(interpret_funcall(n, reg0));
+		break;
+	}
+
+	/* OP_PCALLG	n{arg}, name{arg}
+		Calls the function NAME with N arguments which have been
+		deposited in the stack. The first output value is pushed on
+		the stack.
+	*/
+	case OP_PCALLG: {
+		cl_fixnum n = GET_OPARG(vector);
+		cl_object f = GET_DATA(vector, bytecodes);
+		cl_stack_push(interpret_funcall(n, f));
 		break;
 	}
 
@@ -816,22 +840,17 @@ interpret(cl_object bytecodes, char *vector) {
 	case OP_PFCALL: {
 		cl_fixnum n = GET_OPARG(vector);
 		cl_object fun = cl_stack_top[-n-1];
-		VALUES(0) = interpret_funcall(n, fun);
-		cl_stack_top[-1] = VALUES(0);
+		cl_stack_top[-1] = interpret_funcall(n, fun);
 		break;
 	}
 
 	/* OP_EXIT
 		Marks the end of a high level construct (BLOCK, CATCH...)
+		or a function.
 	*/
 	case OP_EXIT:
 		return vector;
 
-	/* OP_HALT
-		Marks the end of a function.
-	*/
-	case OP_HALT:
-		return vector-1;
 	case OP_FLET:
 		vector = interpret_flet(bytecodes, vector);
 		break;
@@ -846,9 +865,7 @@ interpret(cl_object bytecodes, char *vector) {
 	case OP_LFUNCTION: {
 		int lex_env_index = GET_OPARG(vector);
 		cl_object fun_record = search_local(lex_env_index);
-		cl_object fun_object = CDR(fun_record);
-		VALUES(0) = fun_object;
-		NValues = 1;
+		reg0 = CDR(fun_record);
 		break;
 	}
 
@@ -858,8 +875,7 @@ interpret(cl_object bytecodes, char *vector) {
 		environment. This last value takes precedence.
 	*/
 	case OP_FUNCTION:
-		VALUES(0) = ecl_fdefinition(GET_DATA(vector, bytecodes));
-		NValues = 1;
+		reg0 = ecl_fdefinition(GET_DATA(vector, bytecodes));
 		break;
 
 	/* OP_CLOSE	name{symbol}
@@ -869,8 +885,7 @@ interpret(cl_object bytecodes, char *vector) {
 	*/
 	case OP_CLOSE: {
 		cl_object function_object = GET_DATA(vector, bytecodes);
-		VALUES(0) = close_around(function_object, lex_env);
-		NValues = 1;
+		reg0 = close_around(function_object, lex_env);
 		break;
 	}
 	/* OP_GO	n{arg}
@@ -882,8 +897,6 @@ interpret(cl_object bytecodes, char *vector) {
 	case OP_GO: {
 		cl_object id = search_local(GET_OPARG(vector));
 		cl_object tag_name = GET_DATA(vector, bytecodes);
-		VALUES(0) = Cnil;
-		NValues = 0;
 		cl_go(id, tag_name);
 		break;
 	}
@@ -915,7 +928,7 @@ interpret(cl_object bytecodes, char *vector) {
 	   OP_JEQ	value{object}, label{arg}
 	   OP_JNEQ	value{object}, label{arg}
 		Direct or conditional jumps. The conditional jumps are made
-		comparing with the value of VALUES(0).
+		comparing with the value of REG0.
 	*/
 	case OP_JMP: {
 		cl_oparg jump = GET_OPARG(vector);
@@ -939,20 +952,19 @@ interpret(cl_object bytecodes, char *vector) {
 	case OP_JEQL: {
 		cl_oparg value = GET_OPARG(vector);
 		cl_oparg jump = GET_OPARG(vector);
-		if (eql(VALUES(0), bytecodes->bytecodes.data[value]))
+		if (eql(reg0, bytecodes->bytecodes.data[value]))
 			vector += jump - OPARG_SIZE;
 		break;
 	}
 	case OP_JNEQL: {
 		cl_oparg value = GET_OPARG(vector);
 		cl_oparg jump = GET_OPARG(vector);
-		if (!eql(VALUES(0), bytecodes->bytecodes.data[value]))
+		if (!eql(reg0, bytecodes->bytecodes.data[value]))
 			vector += jump - OPARG_SIZE;
 		break;
 	}
 	case OP_NOT:
-		VALUES(0) = (VALUES(0) == Cnil)? Ct : Cnil;
-		NValues = 1;
+		reg0 = (reg0 == Cnil)? Ct : Cnil;
 		break;
 	/* OP_UNBIND	n{arg}
 		Undo "n" local bindings.
@@ -976,12 +988,11 @@ interpret(cl_object bytecodes, char *vector) {
 	   OP_BINDS	name{symbol}
 	   OP_PBINDS	name{symbol}
 		Binds a lexical or special variable to the either the
-		value of VALUES(0) or the first value of the stack.
+		value of REG0 or the first value of the stack.
 	*/
 	case OP_BIND: {
 		cl_object var_name = GET_DATA(vector, bytecodes);
-		cl_object value = VALUES(0);
-		bind_var(var_name, value);
+		bind_var(var_name, reg0);
 		break;
 	}
 	case OP_PBIND: {
@@ -999,8 +1010,7 @@ interpret(cl_object bytecodes, char *vector) {
 	}
 	case OP_BINDS: {
 		cl_object var_name = GET_DATA(vector, bytecodes);
-		cl_object value = VALUES(0);
-		bind_special(var_name, value);
+		bind_special(var_name, reg0);
 		break;
 	}
 	case OP_PBINDS: {
@@ -1021,39 +1031,31 @@ interpret(cl_object bytecodes, char *vector) {
 	   OP_SETQS	var-name{symbol}
 	   OP_PSETQS	var-name{symbol}
 		Sets either the n-th local or a special variable VAR-NAME,
-		to either the value in VALUES(0) (OP_SETQ[S]) or to the 
+		to either the value in REG0 (OP_SETQ[S]) or to the 
 		first value on the stack (OP_PSETQ[S]).
 	*/
 	case OP_SETQ: {
 		int lex_env_index = GET_OPARG(vector);
-		setq_local(lex_env_index, VALUES(0));
-		NValues = 1;
+		setq_local(lex_env_index, reg0);
 		break;
 	}
 	case OP_SETQS: {
 		cl_object var = GET_DATA(vector, bytecodes);
 		if (var->symbol.stype == stp_constant)
 			FEassignment_to_constant(var);
-		else
-			SYM_VAL(var) = VALUES(0);
-		NValues = 1;
+		SYM_VAL(var) = reg0;
 		break;
 	}
 	case OP_PSETQ: {
 		int lex_env_index = GET_OPARG(vector);
 		setq_local(lex_env_index, cl_stack_pop());
-		Values[0] = Cnil;
-		NValues = 1;
 		break;
 	}
 	case OP_PSETQS: {
 		cl_object var = GET_DATA(vector, bytecodes);
 		if (var->symbol.stype == stp_constant)
 			FEassignment_to_constant(var);
-		else
-			SYM_VAL(var) = cl_stack_pop();
-		Values[0] = Cnil;
-		NValues = 1;
+		SYM_VAL(var) = cl_stack_pop();
 		break;
 	}
 
@@ -1070,9 +1072,9 @@ interpret(cl_object bytecodes, char *vector) {
 		cl_object id = new_frame_id();
 		char *exit;
 		/* FIXME! */
+		name = GET_DATA(vector, bytecodes);
 		GET_LABEL(exit, vector);
 		cl_stack_push((cl_object)exit);
-		name = GET_DATA(vector, bytecodes);
 		if (frs_push(FRS_CATCH, id) == 0) {
 			bind_block(name, id);
 		} else {
@@ -1117,7 +1119,8 @@ interpret(cl_object bytecodes, char *vector) {
 		char *exit;
 		GET_LABEL(exit, vector);
 		cl_stack_push((cl_object)exit);
-		if (frs_push(FRS_CATCH, VALUES(0)) != 0) {
+		if (frs_push(FRS_CATCH, reg0) != 0) {
+			reg0 = VALUES(0);
 			lex_env = frs_top->frs_lex;
 			frs_pop();
 			vector = (char *)cl_stack_pop(); /* FIXME! */
@@ -1162,14 +1165,17 @@ interpret(cl_object bytecodes, char *vector) {
 		frs_pop();
 		cl_stack_pop();
 	case OP_NIL:
-		VALUES(0) = Cnil;
-		NValues = 1;
+		reg0 = Cnil;
 		break;
 	case OP_PUSHNIL:
 		cl_stack_push(Cnil);
 		break;
+	case OP_VALUEREG0:
+		VALUES(0) = reg0;
+		NValues = 1;
+		break;
 	case OP_NOP:
-		VALUES(0) = Cnil;
+		VALUES(0) = reg0 = Cnil;
 		NValues = 0;
 		break;
 	case OP_EXIT_FRAME:
@@ -1180,15 +1186,19 @@ interpret(cl_object bytecodes, char *vector) {
 		break;
 	case OP_DOLIST:
 		vector = interpret_dolist(bytecodes, vector);
+		reg0 = VALUES(0);
 		break;
 	case OP_DOTIMES:
 		vector = interpret_dotimes(bytecodes, vector);
+		reg0 = VALUES(0);
 		break;
 	case OP_MSETQ:
 		vector = interpret_msetq(bytecodes, vector);
+		reg0 = VALUES(0);
 		break;
 	case OP_PROGV:
 		vector = interpret_progv(bytecodes, vector);
+		reg0 = VALUES(0);
 		break;
 	/* OP_PUSHVALUES
 		Pushes the values output by the last form, plus the number
@@ -1216,7 +1226,7 @@ interpret(cl_object bytecodes, char *vector) {
 		Pops a singe value pushed by a OP_PUSH* operator.
 	*/
 	case OP_POP:
-		VALUES(0) = cl_stack_pop();
+		VALUES(0) = reg0 = cl_stack_pop();
 		NValues = 1;
 		break;
 	/* OP_POPVALUES
@@ -1224,8 +1234,12 @@ interpret(cl_object bytecodes, char *vector) {
 	*/
 	case OP_POPVALUES: {
 		int n = NValues = fix(cl_stack_pop());
-		while (n--)
-			VALUES(n) = cl_stack_pop();
+		if (n == 0) {
+			VALUES(0) = Cnil;
+		} else do {
+			VALUES(--n) = cl_stack_pop();
+		} while (n);
+		reg0 = VALUES(0);
 		break;
 	}
 	/* OP_VALUES	n{arg}
@@ -1234,8 +1248,9 @@ interpret(cl_object bytecodes, char *vector) {
 	case OP_VALUES: {
 		cl_fixnum n = GET_OPARG(vector);
 		NValues = n;
-		while (n)
-			VALUES(--n) = cl_stack_pop();
+		while (--n)
+			VALUES(n) = cl_stack_pop();
+		VALUES(0) = reg0 = cl_stack_pop();
 		break;
 	}
 	/* OP_NTHVAL
@@ -1245,9 +1260,9 @@ interpret(cl_object bytecodes, char *vector) {
 	case OP_NTHVAL: {
 		cl_fixnum n = fix(cl_stack_pop());
 		if (n < 0 || n >= NValues)
-			VALUES(0) = Cnil;
+			VALUES(0) = reg0 = Cnil;
 		else
-			VALUES(0) = VALUES(n);
+			VALUES(0) = reg0 = VALUES(n);
 		NValues = 1;
 		break;
 	}
@@ -1288,6 +1303,7 @@ interpret(cl_object bytecodes, char *vector) {
 		volatile cl_fixnum n = NValues = fix(cl_stack_pop());
 		while (n--)
 			VALUES(n) = cl_stack_pop();
+		reg0 = VALUES(0);
 		n = fix(cl_stack_pop());
 		if (n <= 0)
 			unwind(frs_top + n);

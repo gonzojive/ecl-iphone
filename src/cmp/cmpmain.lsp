@@ -35,11 +35,11 @@ coprocessor).")
 (defvar *cc-format* "~A ~A ~:[~*~;~A~] -I~A/h -w -c ~A -o ~A"))
 ;(defvar *cc-format* "~A ~A ~:[~*~;~A~] -I~A/h -c ~A -o ~A"))
 (defvar *ld-flags* "")
-(defvar *ld-format* "~A ~A -w -o ~A -L~A ~{~A ~} ~A")
+(defvar *ld-format* "~A ~A -w -o ~A -L~A ~{~A ~} ~@?")
 #+dlopen
 (defvar *ld-shared-flags* "")
 #+dlopen
-(defvar *ld-shared-format* "~A ~A -o ~A -L~A ~{~A ~} ~A")
+(defvar *ld-shared-format* "~A ~A -o ~A -L~A ~{~A ~} ~@?")
 
 (eval-when (compile eval)
   (defmacro get-output-pathname (file ext)
@@ -87,7 +87,8 @@ coprocessor).")
 	   ""
 	   (namestring o-pathname)
 	   (namestring (translate-logical-pathname "SYS:"))
-	   options *ld-flags*)))
+	   options
+	   *ld-flags* (namestring (translate-logical-pathname "SYS:")))))
 
 #+dlopen
 (defun shared-cc (o-pathname &rest options)
@@ -99,7 +100,7 @@ coprocessor).")
 	   (namestring o-pathname)
 	   (namestring (translate-logical-pathname "SYS:"))
 	   options
-	   "")))
+	   *ld-flags* (namestring (translate-logical-pathname "SYS:")))))
 
 (defconstant +lisp-program-main+ "
 #include <ecl.h>
@@ -172,8 +173,6 @@ int init_~A(cl_object cblock)
 	funcall(1,_intern(\"TOP-LEVEL\",system_package));
 	return 0;" "")))
   (let* (init-name c-name o-name)
-    (when (eq target :program)
-      (setq ld-flags (append ld-flags '("-lecl" "-lclos" "-llsp"))))
     (dolist (item (reverse lisp-files))
       (cond ((symbolp item)
 	     (push (format nil "-l~A" (string-downcase item)) ld-flags)

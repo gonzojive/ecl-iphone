@@ -19,6 +19,13 @@
   (incf *error-count*)
   (throw *cmperr-tag* '*cmperr-tag*))
 
+(defun check-args-number (operator args &optional (min 0) (max nil))
+  (let ((l (length args)))
+    (when (< l min)
+      (too-few-args operator min l))
+    (when (and max (> l max))
+      (too-many-args operator max l))))
+
 (defun too-many-args (name upper-bound n &aux (*print-case* :upcase))
   (print-current-form)
   (format t

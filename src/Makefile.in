@@ -57,11 +57,11 @@ ecl$(EXE): ecl_min$(EXE) compile.lsp sysfun.lsp
 		./ecl_min < compile.lsp; \
 	fi
 
-ecl_min$(EXE): $(LIBRARIES) .gdbinit
+ecl_min$(EXE): $(LIBRARIES) .gdbinit libecl.a
 	if [ -f CROSS-COMPILER ]; then \
 		touch $@; \
 	else \
-		$(CC) $(LDFLAGS) -o $@ c/cinit.o -L./ $(LIBRARIES) $(LIBS);\
+		$(CC) $(LDFLAGS) -o $@ c/cinit.o -L./ libecl.a $(LIBRARIES) $(LIBS);\
 	fi
 
 .gdbinit: $(srcdir)/util/gdbinit

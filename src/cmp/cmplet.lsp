@@ -12,12 +12,11 @@
 
 (in-package "COMPILER")
 
-(defun c1let (args &aux (info (make-info))
-                   	(setjmps *setjmps*)
+(defun c1let (args &aux	(setjmps *setjmps*)
                         (forms nil) (vars nil) (vnames nil)
                         ss is ts body other-decls
                         (*vars* *vars*))
-  (when (endp args) (too-few-args 'let 1 0))
+  (check-args-number 'LET args 1)
 
   (multiple-value-setq (body ss ts is other-decls) (c1body (cdr args) nil))
 
@@ -28,69 +27,98 @@
            (let ((v (c1make-var x ss is ts)))
                 (push x vnames)
                 (push v vars)
-                (push (default-init (var-type v)) forms)))
+                (push (default-init v) forms)))
           (t (cmpck (not (and (consp x) (or (endp (cdr x)) (endp (cddr x)))))
                     "The variable binding ~s is illegal." x)
              (let* ((vname (car x))
 		    (v (c1make-var vname ss is ts))
 		    (form (if (endp (cdr x))
-                            (default-init (var-type v))
+                            (default-init v)
                             (and-form-type (var-type v)
-                                           (c1expr* (second x) info)
+                                           (c1expr (second x))
                                            (second x)
 					   :unsafe
 					   "In LET bindings"))))
 	       ;; :read-only variable handling. Beppe
 ;	       (when (read-only-variable-p vname ts)
-;		     (setf (var-type v) (info-type (second form))))
+;		     (setf (var-type v) (c1form-type form)))
 	       (push vname vnames)
 	       (push v vars)
 	       (push form forms)))))
 
-  (dolist (v (reverse vars)) (push-vars v))
+  (setf vars (nreverse vars) forms (nreverse forms))
+
+  (mapc #'push-vars vars)
 
   (check-vdecl vnames ts is)
 
   (setq body (c1decl-body other-decls body))
-
-  (add-info info (second body))
-  (setf (info-type info) (info-type (second body)))
 
   ;; since the body may produce type constraints on variables:
   ;; (let (x) (foo x)) where (type (function (fixnum) fixnum) foo)
   ;; do it again
   (do ((vars vars (cdr vars))
        (forms forms (cdr forms))
-       (form) (var))
-      ((null vars))
-    (declare (type var var))
-    (setq var (first vars)
-	  form (first forms))
-    (setf (car forms)
-	  (and-form-type (var-type var) form (var-name var) :unsafe "In LET body"))
-    (when (member (info-type (second (car forms)))
-		  '(FIXNUM CHARACTER LONG-FLOAT SHORT-FLOAT) :test #'eq)
-      (incf (var-ref var)))		; force unboxing
-    ;; Automatic treatement for READ-ONLY variables:
-    (unless (var-changed-in-forms var (list body))
-      (let ((type (info-type (second (car forms)))))
-	(setf (var-type var) type)
-	(update-var-type var type body)))
-    (check-vref var)
-    )
-
-  (unless (eql setjmps *setjmps*) (setf (info-volatile info) t))
-
-  (list 'LET info (reverse vars) (reverse forms) body)
-  )
+       (all-vars vars)
+       (used-vars '())
+       (used-forms '()))
+      ((null vars)
+       (make-c1form* 'LET :type (c1form-type body)
+		     :volatile (not (eql setjmps *setjmps*))
+		     :args (nreverse used-vars) (nreverse used-forms) body))
+    (let* ((var (first vars))
+	   (form (and-form-type (var-type var) (first forms) (var-name var)
+				:unsafe "In LET body"))
+	   (form-type (c1form-type form)))
+      (declare (type var var))
+      ;; Automatic treatement for READ-ONLY variables:
+      (unless (var-changed-in-forms var (list body))
+	(setf (var-type var) form-type)
+	(update-var-type var form-type body)
+	;; * (let ((v2 e2)) e3 e4) => (let () e3 e4)
+	;;   provided
+	;;   - v2 does not appear in body
+	;;   - e2 produces no side effects
+	(when (and (= 0 (var-ref var))
+		   (not (member (var-kind var) '(special global)))
+		   (not (form-causes-side-effect form)))
+	  (go continue))
+	;;  (let ((v1 e1) (v2 e2) (v3 e3)) (expr e4 v2 e5))
+	;;  can become
+	;;  (let ((v1 e1) (v3 e3)) (expr e4 e2 e5))
+	;;  provided
+	;;  - v2 appears only once
+	;;  - v2 appears only in body
+	;;  - e2 does not affect v1 nor e3, e3 does not affect e2
+	;;  - e4 does not affect e2
+	(when (and (= 1 (var-ref var))
+		   (member-var var (c1form-referred-vars body))
+		   ;; it does not refer to special variables which
+		   ;; are changed in the LET form
+		   (dolist (v all-vars t)
+		     (when (member-var v (c1form-referred-vars form))
+		       (return nil)))
+		   (catch var
+		     (replaceable var body)))
+	  (unless (nsubst-var var form body)
+ 	    (baboon))
+	  (go continue))
+	)
+      #+nil
+      (when (member-type form-type '(FIXNUM CHARACTER LONG-FLOAT SHORT-FLOAT))
+	(incf (var-ref var)))		; force unboxing
+      (check-vref var)
+      (push var used-vars)
+      (push form used-forms))
+    continue))
 
 (defun update-var-type (var type x)
   (when (listp x)
     (if (and (eq (car x) 'VAR)
 	     (eq var (third x)))
-	(setf (info-type (second x))
+	(setf (c1form-type x)
 	      ;; some occurrences might be typed with 'the'
-	      (type-and (info-type (second x)) type))
+	      (type-and (c1form-type x) type))
 	(dolist (e x)
 	  (update-var-type var type e)))))
 
@@ -147,7 +175,7 @@
 	(if (unboxed var)
 	    (push (cons var form) initials)	; nil (ccb)
 	    ;; LEXICAL, SPECIAL, GLOBAL or :OBJECT
-	    (case (car form)
+	    (case (c1form-name form)
 	      (LOCATION
 	       (if (can-be-replaced var body)
 		   (setf (var-kind var) 'REPLACED
@@ -162,8 +190,7 @@
 		       ((and (can-be-replaced var body)
 			     (member (var-kind var1) '(LEXICAL REPLACED :OBJECT))
 			     (not (var-ref-ccb var1))
-			     (not (member var1
-					  (info-changed-vars (second body)))))
+			     (not (member var1 (c1form-changed-vars body))))
 			(setf (var-kind var) 'REPLACED
 			      (var-loc var) var1))
 		       (t (push (cons var var1) bindings)))))
@@ -205,8 +232,8 @@
 (defun c1let* (args &aux (forms nil) (vars nil) (vnames nil)
                     (setjmps *setjmps*)
                     ss is ts body other-decls
-                    (info (make-info)) (*vars* *vars*))
-  (when (endp args) (too-few-args 'let* 1 0))
+                    (*vars* *vars*))
+  (check-args-number 'LET* args 1)
 
   (multiple-value-setq (body ss ts is other-decls) (c1body (cdr args) nil))
   (c1add-globals ss)
@@ -215,22 +242,22 @@
     (cond ((symbolp x)
            (let ((v (c1make-var x ss is ts)))
 	     (push x vnames)
-	     (push (default-init (var-type v)) forms)
+	     (push (default-init v) forms)
 	     (push v vars)
 	     (push-vars v)))
           ((not (and (consp x) (or (endp (cdr x)) (endp (cddr x)))))
            (cmperr "The variable binding ~s is illegal." x))
           (t (let* ((v (c1make-var (car x) ss is ts))
 		    (form (if (endp (cdr x))
-			      (default-init (var-type v))
+			      (default-init v)
 			      (and-form-type (var-type v)
-					     (c1expr* (second x) info)
+					     (c1expr (second x))
 					     (second x)
 					     :unsafe
 					     "In LET* bindings"))))
 	       ;; :read-only variable handling.
 ;	       (when (read-only-variable-p (car x) ts)
-;		     (setf (var-type v) (info-type (second form))))
+;		     (setf (var-type v) (c1form-type form)))
 	       (push (car x) vnames)
 	       (push form forms)
 	       (push v vars)
@@ -238,82 +265,88 @@
 
   (check-vdecl vnames ts is)
   (setq body (c1decl-body other-decls body))
-  (add-info info (second body))
-  (setf (info-type info) (info-type (second body)))
 
   ;; since the body may produce type constraints on variables,
   ;; do it again:
-  (let (used-vars used-forms)
-    (do ((vs (setq vars (nreverse vars)) (cdr vs))
-	 (fs (nreverse forms) (cdr fs))
-	 (var) (form))
-	((null vs))
-      (setq var (car vs)
-	    form (and-form-type (var-type var) (car fs) (cadar args)
+  (do ((vs (setq vars (nreverse vars)) (cdr vs))
+       (fs (nreverse forms) (cdr fs))
+       (used-vars '())
+       (used-forms '()))
+      ((null vs)
+       (make-c1form* 'LET* :type (c1form-type body)
+		     :volatile (not (eql setjmps *setjmps*))
+		     :args (nreverse used-vars) (nreverse used-forms) body))
+    (let* ((var (first vs))
+	   (form (and-form-type (var-type var) (car fs) (cadar args)
 				:unsafe "~&;;; In LET* body"))
+	   (form-type (c1form-type form))
+	   (rest-forms (cons body (rest fs))))
       ;; Automatic treatement for READ-ONLY variables:
-      (let ((rest-forms (cons body (cdr fs))))
-	(unless (var-changed-in-forms var rest-forms)
-	  (let ((type (info-type (second form))))
-	    (setf (var-type var) type)
-	    (update-var-type var type rest-forms))))
+      (unless (var-changed-in-forms var rest-forms)
+	(setf (var-type var) form-type)
+	(update-var-type var form-type rest-forms)
+	;; * (let* ((v2 e2)) e3 e4) => (let () e3 e4)
+	;;   provided
+	;;   - v2 does not appear in body
+	;;   - e2 produces no side effects
+	(when (and (= 0 (var-ref var))
+		   (not (member (var-kind var) '(SPECIAL GLOBAL)))
+		   (not (form-causes-side-effect form)))
+	  (go continue))
+	;;  (let* ((v1 e1) (v2 e2) (v3 e3)) (expr e4 v2 e5))
+	;;  can become
+	;;  (let* ((v1 e1) (v3 e3)) (expr e4 e2 e5))
+	;;  provided
+	;;  - v2 appears only once
+	;;  - v2 appears only in body
+	;;  - e2 does not affect v1 nor e3, e3 does not affect e2
+	;;  - e4 does not affect e2
+	(when (and (= 1 (var-ref var))
+		   (member-var var (c1form-referred-vars body))
+		   ;; it does not refer to special variables which
+		   ;; are changed in later assignments
+		   (dolist (v (rest vs) t)
+		     (when (member-var v (c1form-referred-vars form))
+		       (return nil)))
+		   (or (and (null (rest vs))	; last variable
+			    ;; its form does not affect previous variables
+			    (let ((tforms (list form)))
+			      (dolist (v vars)
+				(when (eq v var) (return t))
+				(when (var-changed-in-forms v tforms)
+				  (return nil)))))
+		       (not (args-cause-side-effect fs)))
+		   (catch var
+		     (replaceable var body)))
+	  (unless (nsubst-var var form body)
+ 	    (baboon))
+	  (go continue))
+	)
+      #+nil
+      ;; Force unboxing
+      (when (member-type (c1form-type form)
+			 '(FIXNUM CHARACTER LONG-FLOAT SHORT-FLOAT))
+	(incf (var-ref var)))
       (check-vref var)
-
-      ;;  (let* ((v1 e1) (v2 e2) (v3 e3)) (expr e4 v2 e5))
-      ;;  can become
-      ;;  (let* ((v1 e1) (v3 e3)) (expr e4 e2 e5))
-      ;;  provided
-      ;;  - v2 appears only once
-      ;;  - v2 appears only in body
-      ;;  - e2 does not affect v1 nor e3, e3 does not affect e2
-      ;;  - e4 does not affect e2
-
-      (if (and (= 1 (var-ref var))
-	       (member var (info-referred-vars (second body)))
-	       (or (and (null (cdr fs))	; last variable
-			;; its form does not affect previous variables
-			(let ((tforms (list (car fs))))
-			  (dolist (v vars)
-			    (when (eq v var) (return t))
-			    (when (var-changed-in-forms v tforms)
-			      (return nil)))))
-		   (not (args-cause-side-effect fs)))
-	       (catch var
-		 (replaceable var body)))
-
-	  (locally (declare (notinline nsubst))
-	    (setq body
-		  (nsubst-if form #'(lambda (x)
-				      (and (listp x)
-					   (eq (first x) 'VAR)
-					   (eq var (third x))))
-			     body)))
-	  (progn
-	    (push var used-vars)
-	    (push form used-forms)
-	    (when (member (info-type (second form))
-			  '(FIXNUM CHARACTER LONG-FLOAT SHORT-FLOAT)
-			  :test #'eq)
-	      (incf (var-ref var))))))		; force unboxing
-
-    (unless (eql setjmps *setjmps*) (setf (info-volatile info) t))
-    (list 'LET* info (nreverse used-vars) (nreverse used-forms) body)))
+      (push var used-vars)
+      (push form used-forms))
+    continue))
 
 ;; should check whether a form before var causes a side-effect
 ;; exactly one occurrence of var is present in forms
-(defun replaceable (var form)
-  (case (car form)
+(defun replaceable (var form &aux (args (c1form-args form)))
+  (case (c1form-name form)
     (VAR
-     (if (eq var (third form))
+     (if (eq var (first args))
 	 (throw var T)
 	 T))
     ((LOCATION SYS:STRUCTURE-REF) T)
     (CALL-GLOBAL
-     (dolist (arg (fourth form) T)
-       (when (or (not (replaceable var arg))
-		 (args-cause-side-effect (list arg)))
+     (dolist (subform (second args) T)
+       (when (or (not (replaceable var subform))
+		 (form-causes-side-effect subform))
 	 (return nil))))
-    (SETQ (replaceable var (fourth form)))))
+    (SETQ (replaceable var (second args)))))
 
 (defun c2let* (vars forms body
                     &aux (block-p nil)
@@ -332,7 +365,7 @@
           kind (local var))
     (unless (unboxed var)
       ;; LEXICAL, SPECIAL, GLOBAL or OBJECT
-      (case (car form)
+      (case (c1form-name form)
         (LOCATION
          (when (can-be-replaced* var body (cdr fl))
            (setf (var-kind var) 'REPLACED
@@ -344,7 +377,7 @@
 		      (member (var-kind var1) '(LEXICAL REPLACED :OBJECT))
 		      (not (var-ref-ccb var1))
 		      (not (var-changed-in-forms var1 (cdr fl)))
-		      (not (member var1 (info-changed-vars (second body)))))
+		      (not (member var1 (c1form-changed-vars body))))
              (setf (var-kind var) 'REPLACED
                    (var-loc var) var1)))))
       (unless env-grows
@@ -372,9 +405,9 @@
     (case (var-kind var)
       (REPLACED)
       ((LEXICAL SPECIAL GLOBAL)
-       (case (car form)
-	 (LOCATION (bind (third form) var))
-	 (VAR (bind (third form) var))
+       (case (c1form-name form)
+	 (LOCATION (bind (c1form-arg 0 form) var))
+	 (VAR (bind (c1form-arg 0 form) var))
 	 (t (bind-init var form))))
       (t ; local var
        (let ((*destination* var)) ; nil (ccb)
@@ -387,15 +420,15 @@
   )
 
 (defun discarded (var form body &aux last)
-  (labels ((last-form (x)
-	     (case (car x)
+  (labels ((last-form (x &aux (args (c1form-args x)))
+	     (case (c1form-name x)
 	       (PROGN
-		 (last-form (car (last (third x)))))
+		 (last-form (car (last (first args)))))
 	       ((LET LET* FLET LABELS BLOCK CATCH)
-		(last-form (car (last x))))
-	       (VAR (third x))
+		(last-form (car (last args))))
+	       (VAR (first x))
 	       (t x))))
-    (and (not (args-cause-side-effect (list form)))
+    (and (not (form-causes-side-effect form))
 	 (or (< (var-ref var) 1)
 	     (and (= (var-ref var) 1)
 		  (eq var (last-form body))
@@ -405,20 +438,62 @@
   (declare (type var var))
   (and (eq (var-kind var) :OBJECT)
        (< (var-ref var) *register-min*)
-       (not (member var (info-changed-vars (second body))))))
+       (not (member var (c1form-changed-vars body)))))
 #|  (and (or (eq (var-kind var) 'LEXICAL)
 	   (and (eq (var-kind var) :OBJECT)
 		(< (var-ref var) *register-min*)))
        (not (var-ref-ccb var))
-       (not (member var (info-changed-vars (second body)))))
+       (not (member var (c1form-changed-vars body))))
 |#
 
 (defun can-be-replaced* (var body forms)
   (declare (type var var))
   (and (can-be-replaced var body)
        (dolist (form forms t)
-         (when (member var (info-changed-vars (second form)))
+         (when (member var (c1form-changed-vars form))
                (return nil)))))
+
+(defun nsubst-var (var form where)
+  (cond ((null where)
+	 nil)
+	((c1form-p where)
+	 (cond ((not (member var (c1form-referred-vars where)))
+		nil)
+	       ((and (eql (c1form-name where) 'VAR)
+		     (eql (c1form-arg 0 where) var))
+		(setf (c1form-changed-vars where) (c1form-changed-vars form)
+		      (c1form-referred-vars where) (c1form-referred-vars form)
+		      (c1form-type where) (c1form-type form)
+		      (c1form-sp-change where) (c1form-sp-change form)
+		      (c1form-volatile where) (c1form-volatile form)
+		      (c1form-local-referred where) (c1form-local-referred form)
+		      (c1form-name where) (c1form-name form)
+		      (c1form-args where) (c1form-args form))
+		t)
+	       ((nsubst-var var form (c1form-args where))
+		(c1form-add-info1 where form)
+		(setf (c1form-referred-vars where)
+		      (delete var (c1form-referred-vars where))
+		      (c1form-local-referred where)
+		      (delete var (c1form-local-referred where)))
+		t)))
+	((atom where)
+	 nil)
+	(t
+	 (let ((output NIL))
+	   (dolist (subform where)
+	     (when (nsubst-var var form subform)
+	       (setf output T)))
+	   output))))
+
+(defun member-var (var list)
+  (let ((kind (var-kind var)))
+    (if (member kind '(SPECIAL GLOBAL))
+	(member var list :test
+		#'(lambda (v1 v2)
+		    (and (member (var-kind v2) '(SPECIAL GLOBAL))
+			 (eql (var-name v1) (var-name v2)))))
+	(member var list))))
 
 ;;; ----------------------------------------------------------------------
 

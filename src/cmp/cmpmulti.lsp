@@ -13,13 +13,11 @@
 (in-package "COMPILER")
 
 (defun c1multiple-value-call (args &aux info funob)
-  (when (endp args) (too-few-args 'multiple-value-call 1 0))
+  (check-args-number 'MULTIPLE-VALUE-CALL args 1)
   (cond ((endp (rest args)) (c1funcall args))
         (t (setq funob (c1funob (first args)))
            (setq info (copy-info (second funob)))
-           (setq args (c1args (rest args) info))
-           (list 'MULTIPLE-VALUE-CALL info funob args)))
-  )
+           (make-c1form 'MULTIPLE-VALUE-CALL info funob (c1args* (rest args))))))
 
 (defun c2multiple-value-call (funob forms)
   (let ((tot (make-lcl-var :rep-type :cl-index))
@@ -34,12 +32,10 @@
     (wt "}"))
   )
 
-(defun c1multiple-value-prog1 (args &aux (info (make-info)) form)
-  (when (endp args) (too-few-args 'multiple-value-prog1 1 0))
-  (setq form (c1expr* (first args) info))
-  (setq args (c1args (rest args) info))
-  (list 'MULTIPLE-VALUE-PROG1 info form args)
-  )
+(defun c1multiple-value-prog1 (args)
+  (check-args-number 'MULTIPLE-VALUE-PROG1 args 1)
+  (make-c1form* 'MULTIPLE-VALUE-PROG1 :args (c1expr (first args))
+		(c1args* (rest args))))
 
 (defun c2multiple-value-prog1 (form forms)
   (if (eq 'TRASH *destination*)
@@ -61,13 +57,11 @@
 ;;; be used to restrict to one value, so we would not have to warn
 ;;; if this occurred in a proclaimed fun.
 
-(defun c1values (args &aux (info (make-info)))
+(defun c1values (args)
   (if (and args (null (rest args)))
     ;; unnecessary code is produced for expression (values nil)
     (c1expr (first args))
-    (progn
-      (setq args (c1args args info))
-      (list 'VALUES info args))))
+    (make-c1form* 'VALUES :args (c1args* args))))
 
 (defun c2values (forms)
   (when (and (eq *destination* 'RETURN-OBJECT)
@@ -99,10 +93,7 @@
 
 (defun c1multiple-value-setq (args &aux (info (make-info)) (vrefs nil)
 			      (vars nil) (temp-vars nil) (late-bindings nil))
-  (when (or (endp args) (endp (rest args)))
-        (too-few-args 'multiple-value-setq 2 0))
-  (unless (endp (cddr args))
-          (too-many-args 'multiple-value-setq 2 (length args)))
+  (check-args-number 'MULTIPLE-VALUE-SETQ args 2 2)
   (dolist (var (reverse (first args)))
           (cmpck (not (symbolp var)) "The variable ~s is not a symbol." var)
 	  (setq var (chk-symbol-macrolet var))
@@ -119,16 +110,16 @@
 	      (multiple-value-setq ,vars ,@(second args))
 	      ,@late-bindings))
     (dolist (var vars
-	     (list 'MULTIPLE-VALUE-SETQ info (nreverse vrefs)
-		   (c1expr* (second args) info)))
+	     (make-c1form 'MULTIPLE-VALUE-SETQ info (nreverse vrefs)
+			  (c1expr (second args))))
       (setq var (c1vref var))
       (push var vrefs)
       (push var (info-changed-vars info)))))
 
 (defun multiple-value-check (vrefs form)
   (and (rest vrefs)
-       (eq (first form) 'CALL-GLOBAL)
-       (let ((fname (third form)))
+       (eq (c1form-name form) 'CALL-GLOBAL)
+       (let ((fname (c1form-arg 0 form)))
          (when (and (symbolp fname)
                     (get-sysprop fname 'PROCLAIMED-RETURN-TYPE))
            (cmpwarn "~A was proclaimed to have only one return value. ~
@@ -155,12 +146,10 @@
     (wt-nl "if (NValues>1) NValues=1;}")
     (unwind-exit (if vrefs (first vrefs) '(VALUE 0)))))
 
-(defun c1multiple-value-bind (args &aux (info (make-info))
-                                   (vars nil) (vnames nil) init-form
+(defun c1multiple-value-bind (args &aux (vars nil) (vnames nil) init-form
                                    ss is ts body other-decls
                                    (*vars* *vars*))
-  (when (or (endp args) (endp (rest args)))
-    (too-few-args 'multiple-value-bind 2 (length args)))
+  (check-args-number 'MULTIPLE-VALUE-BIND args 2)
 
   (multiple-value-setq (body ss ts is other-decls) (c1body (cddr args) nil))
 
@@ -169,15 +158,14 @@
   (dolist (s (first args))
     (push s vnames)
     (push (c1make-var s ss is ts) vars))
-  (setq init-form (c1expr* (second args) info))
+  (setq init-form (c1expr (second args)))
   (dolist (v (setq vars (nreverse vars)))
     (push-vars v))
   (check-vdecl vnames ts is)
   (setq body (c1decl-body other-decls body))
-  (add-info info (second body))
-  (setf (info-type info) (info-type (second body)))
   (dolist (var vars) (check-vref var))
-  (list 'MULTIPLE-VALUE-BIND info vars init-form body)
+  (make-c1form* 'MULTIPLE-VALUE-BIND :type (c1form-type body)
+		:args vars init-form body)
   )
 
 (defun c2multiple-value-bind (vars init-form body)
@@ -235,7 +223,7 @@
 	(dolist (v vars)
 	  (wt-label (first labels))
 	  (pop labels)
-	  (bind (third (default-init (var-type v))) v)))
+	  (bind (third (default-init v)) v)))
       (wt-label label))
 
     ;; 6) Compile the body. If there are bindings of special variables,

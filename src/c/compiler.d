@@ -41,11 +41,13 @@
 #define FLAG_PUSH		1
 /* + Set the output of this form in VALUES */
 #define FLAG_VALUES		2
+/* + Set the output of this form in REG0 */
+#define FLAG_REG0		4
 /* + Search function binding in the global environment */
-#define FLAG_GLOBAL		4
+#define FLAG_GLOBAL		8
 /* + Ignore this form */
 #define FLAG_IGNORE		0
-#define FLAG_USEFUL		(FLAG_PUSH | FLAG_VALUES)
+#define FLAG_USEFUL		(FLAG_PUSH | FLAG_VALUES | FLAG_REG0)
 
 typedef struct {
 	bool coalesce;
@@ -611,12 +613,31 @@ compile_setq(int op, cl_object var)
  * forms. Qualitative behavior:
  *	FLAG_PUSH		-> FLAG_VALUES
  *	FLAG_VALUES		-> FLAG_VALUES
+ *	FLAG_REG0		-> FLAG_REG0
  *	FLAG_IGNORE		-> FLAG_IGNORE
  */
 static int
 maybe_values(int flags) {
 	if (flags & FLAG_PUSH)
 		return (flags | FLAG_VALUES) & ~FLAG_PUSH;
+	else
+		return flags;
+}
+
+/*
+ * This routine is used to change the compilation flags in optimizers
+ * that do not want to push values onto the stack.  Its purpose is to
+ * keep ignorable forms ignored, while preserving the value of useful
+ * forms. Qualitative behavior:
+ *	FLAG_PUSH		-> FLAG_REG0
+ *	FLAG_VALUES		-> FLAG_REG0
+ *	FLAG_REG0		-> FLAG_REG0
+ *	FLAG_IGNORE		-> FLAG_IGNORE
+ */
+static int
+maybe_reg0(int flags) {
+	if (flags & FLAG_USEFUL)
+		return (flags & ~(FLAG_VALUES | FLAG_PUSH)) | FLAG_REG0;
 	else
 		return flags;
 }
@@ -630,8 +651,7 @@ maybe_values(int flags) {
 	the OP_EXIT operator and the LABELZ which is packed within
 	the OP_BLOCK operator.
 
-		[OP_BLOCK + labelz]
-		name
+		[OP_BLOCK + name + labelz]
 		....
 		OP_EXIT_FRAME
 	labelz:	...
@@ -651,12 +671,14 @@ c_block(cl_object body, int flags) {
 	if (Null(name))
 		labelz = asm_jmp(OP_DO);
 	else {
-		labelz = asm_jmp(OP_BLOCK);
+		asm_op(OP_BLOCK);
 		asm_c(name);
+		labelz = current_pc();
+		asm_arg(0);
 	}
 	compile_body(body, flags);
 	asm_op(OP_EXIT_FRAME);
-	asm_complete(Null(name)? OP_DO : OP_BLOCK, labelz);
+	asm_complete(Null(name)? OP_DO : 0, labelz);
 	c_env.variables = old_env;
 	return flags;
 }
@@ -702,13 +724,16 @@ c_call(cl_object args, int flags) {
 
 	name = pop(&args);
 	nargs = c_arguments(args);
-	if (SYMBOLP(name) && (flags & FLAG_GLOBAL)) {
-		asm_op2c(OP_FUNCTION, name);
+	if (SYMBOLP(name) && 
+	    ((flags & FLAG_GLOBAL) || Null(c_tag_ref(name, @':function'))))
+	{
+		asm_op2(push? OP_PCALLG : OP_CALLG, nargs);
+		asm_c(name);
 	} else {
 		/* Fixme!! We can optimize the case of global functions! */
-		asm_function(name, (flags & FLAG_GLOBAL) || FLAG_VALUES);
+		asm_function(name, (flags & FLAG_GLOBAL) | FLAG_REG0);
+		asm_op2(push? OP_PCALL : OP_CALL, nargs);
 	}
-	asm_op2(push? OP_PCALL : OP_CALL, nargs);
 	return flags;
 }
 
@@ -787,7 +812,7 @@ perform_c_case(cl_object args, int flags) {
 
 static int
 c_case(cl_object clause, int flags) {
-	compile_form(pop(&clause), FLAG_VALUES);
+	compile_form(pop(&clause), FLAG_REG0);
 	return perform_c_case(clause, maybe_values(flags));
 }
 
@@ -809,7 +834,7 @@ c_catch(cl_object args, int flags) {
 	cl_index labelz;
 
 	/* Compile evaluation of tag */
-	compile_form(pop(&args), FLAG_VALUES);
+	compile_form(pop(&args), FLAG_REG0);
 
 	/* Compile jump point */
 	labelz = asm_jmp(OP_CATCH);
@@ -877,18 +902,28 @@ c_cond(cl_object args, int flags) {
 			compile_body(clause, flags);
 	} else {
 		/* Compile the test. If no more forms, just output
-		   the first value (this is guaranteed by OP_JNIL */
-		compile_form(test, FLAG_VALUES);
-		label_nil = asm_jmp(OP_JNIL);
-		if (!Null(clause))
-			compile_body(clause, flags);
-		if (Null(args))
-			asm_complete(OP_JNIL, label_nil);
-		else {
-			label_exit = asm_jmp(OP_JMP);
-			asm_complete(OP_JNIL, label_nil);
+		   the first value (this is guaranteed by OP_JT) */
+		if (Null(clause)) {
+			if (Null(args)) {
+				c_values(cl_list(1,test), flags);
+				return flags;
+			}
+			compile_form(test, FLAG_VALUES);
+			label_exit = asm_jmp(OP_JT);
 			c_cond(args, flags);
-			asm_complete(OP_JMP, label_exit);
+			asm_complete(OP_JT, label_exit);
+		} else {
+			compile_form(test, FLAG_VALUES);
+			label_nil = asm_jmp(OP_JNIL);
+			compile_body(clause, flags);
+			if (Null(args))
+				asm_complete(OP_JNIL, label_nil);
+			else {
+				label_exit = asm_jmp(OP_JMP);
+				asm_complete(OP_JNIL, label_nil);
+				c_cond(args, flags);
+				asm_complete(OP_JMP, label_exit);
+			}
 		}
 	}
 	return flags;
@@ -953,7 +988,7 @@ c_do_doa(int op, cl_object args, int flags) {
 			compile_form(value, FLAG_PUSH);
 			vars = CONS(var, vars);
 		} else {
-			compile_form(value, FLAG_VALUES);
+			compile_form(value, FLAG_REG0);
 			c_bind(var, specials);
 		}
 	}
@@ -978,7 +1013,7 @@ c_do_doa(int op, cl_object args, int flags) {
 			compile_form(value, FLAG_PUSH);
 			vars = CONS(var, vars);
 		} else {
-			compile_form(value, FLAG_VALUES);
+			compile_form(value, FLAG_REG0);
 			compile_setq(OP_SETQ, var);
 		}
 	}
@@ -1059,7 +1094,7 @@ c_dolist_dotimes(int op, cl_object args, int flags) {
 	c_register_block(Cnil);
 
 	/* Initialize the variable */
-	compile_form((op == OP_DOLIST)? Cnil : MAKE_FIXNUM(0), FLAG_VALUES);
+	compile_form((op == OP_DOLIST)? Cnil : MAKE_FIXNUM(0), FLAG_REG0);
 	c_bind(var, specials);
 	asm_op(OP_EXIT);
 
@@ -1227,7 +1262,7 @@ asm_function(cl_object function, int flags) {
 	} else {
 		FEprogram_error("FUNCTION: Not a valid argument ~S.", 1, function);
 	}
-	return FLAG_VALUES;
+	return FLAG_REG0;
 }
 
 
@@ -1361,7 +1396,7 @@ c_let_leta(int op, cl_object args, int flags) {
 			compile_form(value, FLAG_PUSH);
 			vars = CONS(var, vars);
 		} else {
-			compile_form(value, FLAG_VALUES);
+			compile_form(value, FLAG_REG0);
 			c_bind(var, specials);
 		}
 	}
@@ -1538,7 +1573,7 @@ c_multiple_value_setq(cl_object args, int flags) {
 	if (!Null(temp_vars)) {
 		old_variables = c_env.variables;
 		do {
-			compile_form(Cnil, FLAG_VALUES);
+			compile_form(Cnil, FLAG_REG0);
 			c_bind(CAR(temp_vars), Cnil);
 			temp_vars = CDR(temp_vars);
 		} while (!Null(temp_vars));
@@ -1585,10 +1620,10 @@ c_multiple_value_setq(cl_object args, int flags) {
 */
 static int
 c_not(cl_object args, int flags) {
-	flags = maybe_values(flags);
-	if (flags & FLAG_VALUES) {
+	flags = maybe_reg0(flags);
+	if (flags & FLAG_USEFUL) {
 		/* The value is useful */
-		compile_form(pop(&args), FLAG_VALUES);
+		compile_form(pop(&args), FLAG_REG0);
 		asm_op(OP_NOT);
 	} else {
 		/* The value may be ignored. */
@@ -1619,14 +1654,14 @@ c_nth_value(cl_object args, int flags) {
 static int
 c_prog1(cl_object args, int flags) {
 	cl_object form = pop(&args);
-	if (!(flags & FLAG_VALUES)) {
+	if (!(flags & FLAG_USEFUL) || (flags & FLAG_PUSH)) {
 		flags = compile_form(form, flags);
 		compile_body(args, FLAG_IGNORE);
 	} else {
+		flags = FLAG_VALUES;
 		compile_form(form, FLAG_PUSH);
 		compile_body(args, FLAG_IGNORE);
-		if (!(flags & FLAG_PUSH))
-			asm_op(OP_POP);
+		asm_op(OP_POP);
 	}
 	return flags;
 }
@@ -1721,7 +1756,7 @@ c_psetq(cl_object old_args, int flags) {
 	}
 	while (!endp(vars))
 		compile_setq(OP_PSETQ, pop(&vars));
-	return FLAG_VALUES;
+	return compile_form(Cnil, flags);
 }
 
 
@@ -1772,13 +1807,15 @@ c_setq(cl_object args, int flags) {
 			FEillegal_variable_name(var);
 		var = c_macro_expand1(var);
 		if (SYMBOLP(var)) {
-			compile_form(value, FLAG_VALUES);
+			flags = FLAG_REG0;
+			compile_form(value, FLAG_REG0);
 			compile_setq(OP_SETQ, var);
 		} else {
-			compile_form(cl_list(3, @'setf', var, value), FLAG_VALUES);
+			flags = endp(args)? FLAG_VALUES : FLAG_REG0;
+			compile_form(cl_list(3, @'setf', var, value), flags);
 		}
 	} while (!endp(args));
-	return FLAG_VALUES;
+	return flags;
 }
 
 
@@ -1854,7 +1891,7 @@ c_tagbody(cl_object args, int flags)
 	}
 	asm_op(OP_EXIT_TAGBODY);
 	c_env.variables = old_env;
-	return FLAG_VALUES;
+	return FLAG_REG0;
 }
 
 
@@ -1966,7 +2003,11 @@ compile_form(cl_object stmt, int flags) {
 				asm_op2c(push? OP_PUSHQ : OP_QUOTE, stmt);
 			}
 		}
-		new_flags = flags;
+
+		if (flags & FLAG_VALUES)
+			new_flags = (flags & ~FLAG_VALUES) | FLAG_REG0;
+		else
+			new_flags = flags;
 		goto OUTPUT;
 	}
 	/*
@@ -2007,8 +2048,29 @@ for special form ~S.", 1, function);
 	 */
 	new_flags = c_call(stmt, flags);
  OUTPUT:
-	if (push && !(new_flags & FLAG_PUSH))
-		asm_op(OP_PUSH);
+	/*
+		flags		new_flags		action
+		PUSH		PUSH			---
+		PUSH		VALUES			OP_PUSH
+		PUSH		REG0			OP_PUSH
+		VALUES		PUSH			Impossible
+		VALUES		VALUES			---
+		VALUES		REG0			OP_VALUEREG0
+		REG0		PUSH			Impossible
+		REG0		VALUES			---
+		REG0		REG0			---
+	*/
+	if (push) {
+		if (new_flags & (FLAG_REG0 | FLAG_VALUES))
+			asm_op(OP_PUSH);
+	} else if (flags & FLAG_VALUES) {
+		if (new_flags & FLAG_REG0)
+			asm_op(OP_VALUEREG0);
+		else if (new_flags & FLAG_PUSH)
+			FEerror("Internal error in bytecodes compiler", 0);
+	} else if (new_flags & FLAG_PUSH) {
+		FEerror("Internal error in bytecodes compiler", 0);
+	}
 	return flags;
 }
 
@@ -2021,7 +2083,6 @@ compile_body(cl_object body, int flags) {
 			cl_object bytecodes;
 			compile_form(CAR(body), FLAG_VALUES);
 			asm_op(OP_EXIT);
-			asm_op(OP_HALT);
 			VALUES(0) = Cnil;
 			NValues = 0;
 			bytecodes = asm_end(handle);
@@ -2145,9 +2206,9 @@ si_process_lambda(cl_object lambda)
 /*
  * (si::process-lambda-list lambda-list context)
  *
- * Parses different types of lambda lists. CONTEXT may be MACRO, FUNCTION or
- * DESTRUCTURING-BIND, and determines the valid sytax. The output is made of
- * several values:
+ * Parses different types of lambda lists. CONTEXT may be MACRO, FTYPE,
+ * FUNCTION or DESTRUCTURING-BIND, and determines the valid sytax. The output
+ * is made of several values:
  *
  * VALUES(0) = (N req1 ... )			; required values
  * VALUES(1) = (N opt1 init1 flag1 ... )	; optional values
@@ -2207,7 +2268,7 @@ LOOP:
 		stage = AT_OPTIONALS;
 		goto LOOP;
 	}
-	if (v == @'&rest' || (v == @'&body' && context != @'function')) {
+	if (v == @'&rest' || (v == @'&body' && (context == @'si::macro' || context == @'destructuring-bind'))) {
 		if (ATOM(lambda_list))
 			goto ILLEGAL_LAMBDA;
 		v = CAR(lambda_list);
@@ -2450,19 +2511,19 @@ make_lambda(cl_object name, cl_object lambda) {
 	if (!Null(name))
 		c_register_block(si_function_block_name(name));
 
-	if ((current_pc() - label) == 1)
+	if ((current_pc() - label) == OPARG_SIZE)
 		set_pc(handle);
 	else
 		asm_complete(OP_JMP, label);
 	while (!endp(auxs)) {		/* Local bindings */
 		cl_object var = pop(&auxs);
 		cl_object value = pop(&auxs);
-		compile_form(value, FLAG_VALUES);
+		compile_form(value, FLAG_REG0);
 		c_bind(var, specials);
 	}
 
 	compile_body(body, FLAG_VALUES);
-	asm_op(OP_HALT);
+	asm_op(OP_EXIT);
 
 	output = asm_end(handle);
 	output->bytecodes.name = name;
@@ -2528,7 +2589,6 @@ si_eval_with_env(cl_object form, cl_object env)
 	CL_UNWIND_PROTECT_BEGIN {
 		compile_form(form, FLAG_VALUES);
 		asm_op(OP_EXIT);
-		asm_op(OP_HALT);
 		bytecodes = asm_end(handle);
 	} CL_UNWIND_PROTECT_EXIT {
 #ifdef CL_COMP_OWN_STACK

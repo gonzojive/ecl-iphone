@@ -98,8 +98,7 @@ NO_KEYS:
 	print_arg("\nDeclarations:\t", *(data++));
 
 	base = vector = bytecodes->bytecodes.code;
-	while (vector[0] != OP_HALT)
-		vector = disassemble(bytecodes, vector);
+	disassemble(bytecodes, vector);
 }
 
 /* -------------------- DISASSEMBLER CORE -------------------- */
@@ -181,20 +180,12 @@ disassemble_dotimes(cl_object bytecodes, char *vector) {
 */
 static char *
 disassemble_flet(cl_object bytecodes, char *vector) {
-	cl_object lex_old = lex_env;
 	cl_index nfun = GET_OPARG(vector);
-
 	print_noarg("FLET");
-	lex_copy();
 	while (nfun--) {
 		cl_object fun = GET_DATA(vector, bytecodes);
-		print_noarg("\n\tFLET\t");
-		@prin1(1, fun->bytecodes.name);
+		print_arg("\n\tFLET\t", fun->bytecodes.name);
 	}
-	vector = disassemble(bytecodes, vector);
-	print_noarg("\t\t; flet");
-
-	lex_env = lex_old;
 	return vector;
 }
 
@@ -209,19 +200,12 @@ disassemble_flet(cl_object bytecodes, char *vector) {
 */
 static char *
 disassemble_labels(cl_object bytecodes, char *vector) {
-	cl_object lex_old = lex_env;
 	cl_index nfun = GET_OPARG(vector);
-
 	print_noarg("LABELS");
-	lex_copy();
 	while (nfun--) {
 		cl_object fun = GET_DATA(vector, bytecodes);
 		print_arg("\n\tLABELS\t", fun->bytecodes.name);
 	}
-	vector = disassemble(bytecodes, vector);
-	print_noarg("\t\t; labels");
-
-	lex_env = lex_old;
 	return vector;
 }
 
@@ -354,6 +338,9 @@ disassemble(cl_object bytecodes, char *vector) {
 	case OP_PUSH:		string = "PUSH\tVALUES(0)";
 				goto NOARG;
 
+	case OP_VALUEREG0:	string = "SET\tVALUES(0),REG0";
+				goto NOARG;
+
 	/* OP_PUSHV	n{arg}
 		Pushes the value of the n-th local onto the stack.
 	*/
@@ -418,6 +405,15 @@ disassemble(cl_object bytecodes, char *vector) {
 				n = GET_OPARG(vector);
 				goto OPARG;
 
+	/* OP_CALLG	n{arg}, name{arg}
+		Calls the function NAME with N arguments which have been
+		deposited in the stack. The output values are left in VALUES.
+	*/
+	case OP_CALLG:		string = "CALLG\t";
+				n = GET_OPARG(vector);
+				o = GET_DATA(vector, bytecodes);
+				goto OPARG_ARG;
+
 	/* OP_FCALL	n{arg}
 		Calls the function in the stack with N arguments which
 		have been also deposited in the stack. The output values
@@ -435,6 +431,16 @@ disassemble(cl_object bytecodes, char *vector) {
 	case OP_PCALL:		string = "PCALL\t";
 				n = GET_OPARG(vector);
 				goto OPARG;
+
+	/* OP_PCALLG	n{arg}, name{arg}
+		Calls the function NAME with N arguments which have been
+		deposited in the stack. The first output value is pushed on
+		the stack.
+	*/
+	case OP_PCALLG:		string = "PCALLG\t";
+				n = GET_OPARG(vector);
+				o = GET_DATA(vector, bytecodes);
+				goto OPARG_ARG;
 
 	/* OP_PFCALL	n{arg}
 		Calls the function in the stack with N arguments which
@@ -477,12 +483,6 @@ disassemble(cl_object bytecodes, char *vector) {
 	*/
 	case OP_EXIT_TAGBODY:	print_noarg("EXIT\tTAGBODY");
 				return vector;
-
-	/* OP_HALT
-		Marks the end of a function.
-	*/
-	case OP_HALT:		print_noarg("HALT");
-				return vector-1;
 
 	case OP_FLET:		vector = disassemble_flet(bytecodes, vector);
 				break;
@@ -569,7 +569,7 @@ disassemble(cl_object bytecodes, char *vector) {
 				n = vector + jmp - OPARG_SIZE - base;
 				goto OPARG_ARG;
 	}
-	case OP_NOT:		string = "NOT\t";
+	case OP_NOT:		string = "NOT";
 				goto NOARG;
 
 	/* OP_UNBIND	n{arg}
@@ -626,10 +626,10 @@ disassemble(cl_object bytecodes, char *vector) {
 	case OP_PSETQ:		string = "PSETQ\t";
 				n = GET_OPARG(vector);
 				goto OPARG;
-	case OP_SETQS:		string = "SETQS";
+	case OP_SETQS:		string = "SETQS\t";
 				o = GET_DATA(vector, bytecodes);
 				goto ARG;
-	case OP_PSETQS:		string = "PSETQS";
+	case OP_PSETQS:		string = "PSETQS\t";
 				o = GET_DATA(vector, bytecodes);
 				goto ARG;
 

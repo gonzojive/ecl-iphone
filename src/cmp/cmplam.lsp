@@ -51,8 +51,7 @@
                       &aux doc body ss is ts
                            other-decls
                            (*vars* *vars*)
-		           (old-vars *vars*)
-                           (info (make-info)))
+		           (old-vars *vars*))
   (cmpck (endp lambda-expr)
          "The lambda expression ~s is illegal." (cons 'LAMBDA lambda-expr))
 
@@ -81,9 +80,9 @@
 	(when flag
 	  (push-vars (setq flag (c1make-var flag ss is ts))))
 	(setq init (if init
-		       (and-form-type (var-type var) (c1expr* init info) init
+		       (and-form-type (var-type var) (c1expr init) init
 				      :safe "In (LAMBDA ~a...)" block-name)
-		       (default-init (var-type var))))
+		       (default-init var)))
 	(setf (first specs) var
 	      (second specs) init
 	      (third specs) flag)))
@@ -101,9 +100,9 @@
 	(when flag
 	  (push-vars (setq flag (c1make-var flag ss is ts))))
 	(setq init (if init
-		       (and-form-type (var-type var) (c1expr* init info) init
+		       (and-form-type (var-type var) (c1expr init) init
 				      :safe "In (LAMBDA ~a...)" block-name)
-		       (default-init (var-type var))))
+		       (default-init var)))
 	(setf (second specs) var
 	      (third specs) init
 	      (fourth specs) flag)))
@@ -119,15 +118,13 @@
 
     (let ((new-vars (ldiff *vars* old-vars)))
       (setq body (c1decl-body other-decls body))
-      (add-info info (second body))
       (dolist (var new-vars)
 	(check-vref var)))
 
-    (list 'LAMBDA
-	  info
-	  (list requireds optionals rest key-flag keywords allow-other-keys)
-	  doc
-	  body)))
+    (make-c1form* 'LAMBDA
+		  :args (list requireds optionals rest key-flag keywords
+			      allow-other-keys)
+		  doc body)))
 
 #| Steps:
  1. defun creates declarations for requireds + va_alist
@@ -453,7 +450,7 @@
 			    (t (setq x (car v))
 			       (if (endp (cdr v))
 				   (setq init (c1nil))
-				   (setq init (c1expr* (second v) dm-info)))))
+				   (setq init (c1expr (second v))))))
 		      (push (list (c1dm-v x ss is ts) init) auxs))
 		    (pop vl))
 		   (keyp
@@ -467,7 +464,7 @@
 					 k (intern (string (car v)) 'KEYWORD))
 				   (setq x (cadar v) k (caar v)))
 			       (cond ((endp (cdr v)) (setq init (c1nil)))
-				     (t (setq init (c1expr* (second v) dm-info))
+				     (t (setq init (c1expr (second v)))
 					(unless (endp (cddr v))
 					  (setq sv (third v)))))))
 		      (push (list k (c1dm-v x ss is ts) init
@@ -481,7 +478,7 @@
 			    (t (setq x (car v))
 			       (cond ((endp (cdr v))
 				      (setq init (c1nil)))
-				     (t (setq init (c1expr* (second v) dm-info))
+				     (t (setq init (c1expr (second v)))
 					(unless (endp (cddr v))
 					  (setq sv (third v)))))))
 		      (push (list (c1dm-v x ss is ts) init
@@ -509,7 +506,6 @@
 
   (check-vdecl vnames ts is)
   (setq body (c1decl-body other-decls body))
-  (add-info dm-info (second body))
   (unless (eql setjmps *setjmps*)
     (setf (info-volatile dm-info) t)
     (put-sysprop macro-name 'CONTAINS-SETJMP t))

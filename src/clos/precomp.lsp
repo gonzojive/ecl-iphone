@@ -9,6 +9,7 @@
 
 (in-package "CLOS")
 
+(eval-when (compile eval)
 (defmacro pre-make-caching-discriminating-functions (specs)
   `(progn ,.(mapcar #'(lambda (s)
 			`(pre-make-templated-function-constructor
@@ -39,6 +40,7 @@
 	       (FUNCTION (LAMBDA ,(eval instance-params)
 		 ,(eval (cons 'PROGN body)))))))))
     form))
+)
 
 (eval-when (load)
   (pre-make-caching-discriminating-functions

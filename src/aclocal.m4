@@ -107,11 +107,16 @@ SOFTWARE_VERSION="unknown"
 MACHINE_INSTANCE="${host_cpu}"
 MACHINE_VERSION="unknown"
 ARCHITECTURE=`echo "${host_cpu}" | tr a-z A-Z` # i386 -> I386
+
+### Sometimes the path for finding DLLs must be hardcoded.
+LDRPATH='~*'
+AC_SUBST(LDRPATH)
 case "${host_os}" in
+	# libdir may have a dollar expression inside
 	linux*)
 		thehost="linux"
 		SHARED_LDFLAGS="-shared"
-		LDFLAGS="-Wl,--export-dynamic"
+		LDRPATH="-Wl,--rpath,~A"
 		CLIBS="-ldl"
 		# Maybe CFLAGS="-D_ISOC99_SOURCE ${CFLAGS}" ???
 		;;
@@ -119,18 +124,18 @@ case "${host_os}" in
 		thehost="freebsd"
 		CLIBS="-lcompat"
 		SHARED_LDFLAGS="-shared"
-		LDFLAGS="-Wl,--export-dynamic"
+		LDRPATH="-Wl,--rpath,~A"
 		;;
 	netbsd*)
 		thehost="netbsd"
 		SHARED_LDFLAGS="-shared"
-		LDFLAGS="-Wl,--export-dynamic"
+		LDRPATH="-Wl,--rpath,~A"
 		CLIBS="-lcompat"
 		;;
 	solaris*)
 		thehost="sun4sol2"
 		SHARED_LDFLAGS="-dy -G"
-		LDFLAGS="-Wl,--export-dynamic"
+		LDRPATH="-Wl,--rpath,~A"
 		TCPLIBS="-lsocket -lnsl -lintl"
 		CLIBS="-ldl"
 		;;

@@ -33,7 +33,7 @@
 #elif defined(mingw32)
 #include <winsock.h>
 #define HAVE_SELECT
-#elif defined(HAVE_SYS_IOCTL_H) && !defined(MSDOS)
+#elif defined(HAVE_SYS_IOCTL_H) && !defined(MSDOS) && !defined(cygwin)
 #include <sys/ioctl.h>
 #endif
 

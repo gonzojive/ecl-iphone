@@ -91,10 +91,7 @@
 	     (unless (member (car arg) '(LOCATION VAR SYS:STRUCTURE-REF
 					 #+clos SYS:INSTANCE-REF)
 			     :test #'eq)
-	       (setq res nil))))
-
-	 (form-type (form)
-	   (info-type (second form))))
+	       (setq res nil)))))
 
     (do ((forms forms (cdr forms))
 	 (form) (locs))
@@ -102,21 +99,21 @@
       (setq form (car forms))
       (case (car form)
 	(LOCATION
-	 (push (list (form-type form) (third form)) locs))
+	 (push (list (c1form-type form) (third form)) locs))
 	(VAR
 	 (let ((var (third form)))
 	   (if (var-changed-in-forms var (cdr forms))
 	       (let* ((var-rep-type (var-rep-type var))
 		      (lcl (make-lcl-var :rep-type var-rep-type :type (var-type var))))
 		 (wt-nl "{" (rep-type-name var-rep-type) " " lcl "= " var ";")
-		 (push (list (form-type form) lcl) locs)
+		 (push (list (c1form-type form) lcl) locs)
 		 (incf *inline-blocks*))
-	       (push (list (form-type form) var) locs))))
+	       (push (list (c1form-type form) var) locs))))
 
 	(CALL-GLOBAL
 	 (let* ((fname (third form))
 		(args (fourth form))
-		(return-type (info-type (second form)))
+		(return-type (c1form-type form))
 		(arg-locs (inline-args args))
 		(loc (inline-function fname arg-locs return-type)))
 	   (if loc
@@ -161,7 +158,7 @@
 		  locs)))))
 
 	(SYS:STRUCTURE-REF
-	 (let ((type (form-type form)))
+	 (let ((type (c1form-type form)))
 	   (if (args-cause-side-effect (cdr forms))
 	       (let* ((temp (make-temp-var))
 		      (*destination* temp))
@@ -176,7 +173,7 @@
 		     locs))))
 	#+clos
 	(SYS:INSTANCE-REF
-	 (let ((type (form-type form)))
+	 (let ((type (c1form-type form)))
 	   (if (args-cause-side-effect (cdr forms))
 	       (let* ((temp (make-temp-var))
 		      (*destination* temp))
@@ -194,18 +191,21 @@
 	       (form1 (fourth form)))
 	   (let ((*destination* vref)) (c2expr* form1))
 	   (if (eq (car form1) 'LOCATION)
-	       (push (list (form-type form1) (third form1)) locs)
+	       (push (list (c1form-type form1) (third form1)) locs)
 	       (setq forms (list* nil	; discarded at iteration
-				  (list 'VAR (second form) vref) (cdr forms))
+				  (make-c1form 'VAR (second form) vref)
+				  (cdr forms))
 		     ))))
 
 	(t (let ((temp (make-temp-var)))
 	     (let ((*destination* temp)) (c2expr* form))
-	     (push (list (form-type form) temp) locs))))))
+	     (push (list (c1form-type form) temp) locs))))))
   )
 
 (defun destination-type ()
-  (loc-type *destination*))
+  (rep-type->lisp-type (loc-representation-type *destination*)))
+  ;;(loc-type *destination*)
+)
 
 ;;;
 ;;; inline-function:
@@ -318,10 +318,8 @@
 	   (when (or (not (inline-possible fname))
 		     (null (setq ii (get-inline-info
 				     fname
-				     (mapcar #'(lambda (x)
-						 (info-type (second x)))
-					     args)
-				     (info-type (second form)))))
+				     (mapcar #'c1form-type args)
+				     (c1form-type form))))
 		     (third ii)
 		     (fourth ii)
 		     (need-to-protect args))
@@ -335,22 +333,25 @@
 (defun close-inline-blocks ()
   (dotimes (i *inline-blocks*) (declare (fixnum i)) (wt #\})))
 
-(defun args-cause-side-effect (forms &aux ii)
-  (dolist (form forms nil)
-    (case (car form)
-      ((LOCATION VAR SYS:STRUCTURE-REF #+clos SYS:INSTANCE-REF))
-      (CALL-GLOBAL
-       (let ((fname (third form)))
-	 (unless (and (inline-possible fname)
-		      (setq ii (get-inline-info
-				fname (mapcar #'(lambda (x)
-						 (info-type (second x)))
-					      (fourth form))
-				(info-type (second form))))
-		      (not (third ii))	; no side-effectp
-		      )
-	   (return t))))
-      (otherwise (return t)))))
+(defun form-causes-side-effect (form)
+  (case (c1form-name form)
+    ((LOCATION VAR SYS:STRUCTURE-REF #+clos SYS:INSTANCE-REF)
+     nil)
+    (CALL-GLOBAL
+     (let* ((form-args (c1form-args form))
+	    (fname (first form-args))
+	    (args (second form-args))
+	    ii)
+       (not (and (inline-possible fname)
+		 (setq ii (get-inline-info
+			   fname (mapcar #'c1form-type args)
+			   (c1form-type form)))
+		 (not (third ii))	; no side-effectp
+		 ))))
+    (t t)))
+
+(defun args-cause-side-effect (forms)
+  (some #'form-causes-side-effect forms))
 
 ;;; ----------------------------------------------------------------------
 

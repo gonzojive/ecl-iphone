@@ -78,6 +78,9 @@
 ;;; Redefinition Protocol
 
 (defun redefine-class (class new-class)
+  (when (typep class 'STRUCTURE-CLASS)
+    (return-from redefine-class new-class))
+
   (unless (typep class 'STANDARD-CLASS)
     (error "Class ~A cannot be redefined: it is not a standard class" class))
 

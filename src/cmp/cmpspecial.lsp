@@ -14,12 +14,11 @@
 (in-package "COMPILER")
 
 (defun c1quote (args)
-  (when (endp args) (too-few-args 'QUOTE 1 0))
-  (unless (endp (cdr args)) (too-many-args 'QUOTE 1 (length args)))
+  (check-args-number 'QUOTE args 1 1)
   (c1constant-value (car args) t))
 
 (defun c1eval-when (args)
-  (when (endp args) (too-few-args 'EVAL-WHEN 1 0))
+  (check-args-number 'EVAL-WHEN args 1)
   (dolist (situation (car args) (c1nil))
     (case situation
       ((EVAL :EXECUTE) (return-from c1eval-when (c1progn (cdr args))))
@@ -30,20 +29,16 @@
 (defun c1declare (args)
   (cmperr "The declaration ~s was found in a bad place." (cons 'DECLARE args)))
 
-(defun c1the (args &aux info form type)
-  (when (or (endp args) (endp (cdr args)))
-        (too-few-args 'THE 2 (length args)))
-  (unless (endp (cddr args))
-          (too-many-args 'THE 2 (length args)))
-  (setq form (c1expr (second args)))
-  (setq info (copy-info (second form)))
-  (setq type (type-and (type-filter (car args)) (info-type info)))
-  (unless type
-    (cmpwarn "Type mismatch was found in ~s." (cons 'THE args))
-    (setq type T))
-  (setf (info-type info) type)
-  (setf (second form) info)
-  form)
+(defun c1the (args)
+  (check-args-number 'THE args 2 2)
+  (let* ((form (c1expr (second args)))
+	 (the-type (type-filter (first args)))
+	 (type (type-and the-type (c1form-type form))))
+    (unless type
+      (cmpwarn "Type mismatch was found in ~s." (cons 'THE args))
+      (setq type T))
+    (setf (c1form-type form) type)
+    form))
 
 (defun c1compiler-let (args &aux (symbols nil) (values nil))
   (when (endp args) (too-few-args 'COMPILER-LET 1 0))
@@ -62,14 +57,13 @@
   (setq symbols (nreverse symbols))
   (setq values (nreverse values))
   (setq args (progv symbols values (c1progn (cdr args))))
-  (list 'COMPILER-LET (second args) symbols values args))
+  (make-c1form 'COMPILER-LET (second args) symbols values args))
 
 (defun c2compiler-let (symbols values body)
   (progv symbols values (c2expr body)))
 
 (defun c1function (args &aux fd)
-  (when (endp args) (too-few-args 'function 1 0))
-  (unless (endp (cdr args)) (too-many-args 'function 1 (length args)))
+  (check-args-number 'FUNCTION args 1 1)
   (let ((fun (car args))
 	(*vars* (cons 'CB *vars*))
 	(*funs* (cons 'CB *funs*))
@@ -80,13 +74,13 @@
 	     (if funob
 		 (let* ((vars (list (fun-var funob))))
 		   (incf (var-ref (fun-var funob)))
-		   (list 'VAR (make-info :referred-vars vars
-					 :local-referred vars)
-			 (first vars)))
-		 `(FUNCTION ,(make-info :sp-change 
-					(not (and (symbolp fun)
-						  (get-sysprop fun 'NO-SP-CHANGE))))
-		   GLOBAL nil ,fun))))
+		   (make-c1form* 'VAR :referred-vars vars
+				 :local-referred vars
+				 :args (first vars)))
+		 (make-c1form* 'FUNCTION
+			       :sp-change (not (and (symbolp fun)
+						    (get-sysprop fun 'NO-SP-CHANGE)))
+			       :args 'GLOBAL nil fun))))
           ((and (consp fun) (eq (car fun) 'LAMBDA))
            (cmpck (endp (cdr fun))
                   "The lambda expression ~s is illegal." fun)
@@ -98,11 +92,11 @@
 				 :cfun (next-cfun)
 				 :closure closure)))
 	     (if closure
-		 `(FUNCTION ,info CLOSURE ,funob ,fun)
+		 (make-c1form 'FUNCTION info 'CLOSURE funob fun)
 		 (progn
-		   (push `(FUNCTION-CONSTANT ,funob ,fun)
+		   (push (make-c1form* 'FUNCTION-CONSTANT :args funob fun)
 			 *top-level-forms*)
-		   `(FUNCTION ,info CONSTANT ,funob ,fun)))))
+		   (make-c1form 'FUNCTION info 'CONSTANT funob fun)))))
 	  ((and (consp fun) (eq (car fun) 'LAMBDA-BLOCK))
            (cmpck (endp (cdr fun))
                   "The lambda expression ~s is illegal." fun)
@@ -115,11 +109,11 @@
 				 :cfun (next-cfun)
 				 :closure closure)))
 	     (if closure
-		 `(FUNCTION ,info CLOSURE ,funob ,fun)
+		 (make-c1form 'FUNCTION info 'CLOSURE funob fun)
 		 (progn
-		   (push `(FUNCTION-CONSTANT ,funob ,fun)
+		   (push (make-c1form* 'FUNCTION-CONSTANT :args funob fun)
 			 *top-level-forms*)
-		   `(FUNCTION ,info CONSTANT ,funob ,fun)))))
+		   (make-c1form 'FUNCTION info 'CONSTANT funob fun)))))
 	  (t (cmperr "The function ~s is illegal." fun)))))
 
 (defun c2function (kind funob fun)

@@ -42,22 +42,19 @@
 		   (eq (first fun) 'FUNCTION)
 		   (consp (cdr fun))
 		   (endp (cddr fun))))
-	 (let ((x (c1expr fun)) (info (make-info :sp-change t)))
-	   (add-info info (second x))
-	   (list 'ORDINARY info x)))
+	 (make-c1form* 'ORDINARY :sp-change t :args (c1expr fun)))
 	((si::valid-function-name-p (setq function (second fun)))
 	 (or (c1call-local function)
-	     (list 'GLOBAL
-		   (make-info :sp-change
-			      (not (get-sysprop function 'NO-SP-CHANGE)))
-		   function)))
+	     (make-c1form* 'GLOBAL
+			   :sp-change (not (get-sysprop function 'NO-SP-CHANGE))
+			   :args function)))
 	((and (consp function)
 	      (eq (first function) 'LAMBDA)
 	      (consp (rest function)))
 	 ;; Don't create closure boundary like in c1function
 	 ;; since funob is used in this same environment
 	 (let ((lambda-expr (c1lambda-expr (rest function))))
-	   (list 'LAMBDA (second lambda-expr) lambda-expr (next-cfun))))
+	   (make-c1form 'LAMBDA (second lambda-expr) lambda-expr (next-cfun))))
 	((and (consp function)
 	      (eq (first function) 'LAMBDA-BLOCK)
 	      (consp (rest function)))
@@ -65,11 +62,11 @@
 	 ;; since funob is used in this same environment
 	 (let* ((block-name (second function)))
 	   (let ((lambda-expr (c1lambda-expr (cddr function) block-name)))
-	     (list 'LAMBDA (second lambda-expr) lambda-expr (next-cfun)))))
+	     (make-c1form 'LAMBDA (second lambda-expr) lambda-expr (next-cfun)))))
 	(t (cmperr "Malformed function: ~A" fun))))
 
 (defun c1funcall (args)
-  (when (endp args) (too-few-args 'FUNCALL 1 0))
+  (check-args-number 'FUNCALL args 1)
   (let ((fun (first args))
 	(arguments (rest args)))
     (cond ((and (consp fun)
@@ -85,10 +82,7 @@
 		(member (caadr fun) '(LAMBDA LAMBDA-BLOCK)))
 	   (c1funcall (list* (second fun) arguments)))
 	  (t
-	   (let ((info (make-info)))
-	     (setq fun (c1funob fun))
-	     (add-info info (second fun))
-	     (list 'FUNCALL info fun (c1args arguments info)))))))
+	   (make-c1form* 'FUNCALL :args (c1funob fun) (c1args* arguments))))))
 
 (defun c2funcall (funob args &optional loc narg
 			&aux (form (third funob)))
@@ -104,10 +98,10 @@
               		;;; arguments are already on VALUES, then
               		;;; LOC cannot be NIL.  Callers of C2FUNCALL must be
               		;;; responsible for maintaining this condition.
-     (let ((fun (third form)))
+     (let ((fun (c1form-arg 0 form)))
        (unless loc
-	 (cond ((eq (first form) 'LOCATION) (setq loc fun))
-	       ((and (eq (first form) 'VAR)
+	 (cond ((eq (c1form-name form) 'LOCATION) (setq loc fun))
+	       ((and (eq (c1form-name form) 'VAR)
 		     (not (var-changed-in-forms fun args)))
 		(setq loc fun))
 	       (t
@@ -152,7 +146,7 @@
   (unless (eq 'ARGS-PUSHED args)
     (case fname
       (AREF
-       (let (etype (elttype (info-type (cadar args))))
+       (let (etype (elttype (c1form-type (car args))))
 	 (when (or (and (eq elttype 'STRING)
 			(setq elttype 'CHARACTER))
 		   (and (consp elttype)
@@ -166,8 +160,8 @@
 	   (setf return-type etype))))
       (SYS:ASET				; (sys:aset value array i0 ... in)
        (let (etype
-	     (valtype (info-type (cadr (first args))))
-	     (elttype (info-type (cadr (second args)))))
+	     (valtype (c1form-type (first args)))
+	     (elttype (c1form-type (second args))))
 	 (when (or (and (eq elttype 'STRING)
 			(setq elttype 'CHARACTER))
 		   (and (consp elttype)
@@ -179,7 +173,7 @@
 	     (cmpwarn "Type mismatch found in (SETF AREF). Expected output type ~s, array element type ~s, value type ~s." return-type elttype valtype)
 	     (setq etype T))
 	   (setf return-type etype)
-	   (setf (info-type (cadr (first args))) etype))))))
+	   (setf (c1form-type (first args)) etype))))))
   (if (and (inline-possible fname)
 	   (not (eq 'ARGS-PUSHED args))
 	   *tail-recursion-info*
@@ -276,10 +270,10 @@
 
 ;;; Functions that use SAVE-FUNOB should rebind *temp*.
 (defun save-funob (funob)
-  (case (first funob)
+  (case (c1form-name funob)
     ((LAMBDA LOCAL))
     (GLOBAL
-     (let ((fun-name (third funob)))
+     (let ((fun-name (c1form-arg 0 funob)))
        (unless (and (inline-possible fun-name)
 		    (or (and (symbolp fun-name) (get-sysprop fun-name 'Lfun))
 			(assoc fun-name *global-funs* :test #'same-fname-p)))

@@ -872,6 +872,7 @@ type_of(#0)==t_bitvector"))
 (SUBSEQ (sequence fixnum *) sequence)
 (COPY-SEQ (sequence) sequence)
 (LENGTH (sequence) fixnum t nil
+	:inline-always ((t) t nil nil "cl_length(#0)")
 	:inline-always ((t) fixnum nil nil "length(#0)")
 	:inline-unsafe (((array t)) fixnum nil nil "(#0)->vector.fillp")
 	:inline-unsafe ((string) fixnum nil nil "(#0)->string.fillp"))

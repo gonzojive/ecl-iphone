@@ -62,7 +62,7 @@ cl_boot(int argc, char **argv)
 	init_alloc();
 	init_stacks(&argc);
 
-#ifndef MSDOS
+#if !defined(MSDOS) && !defined(cygwin)
 	ecl_self = expand_pathname(ecl_self);
 #endif
 

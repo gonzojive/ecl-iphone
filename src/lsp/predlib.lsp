@@ -464,7 +464,7 @@ if not possible."
 	 (concatenate type object))
 	(t
 	 (error-coerce object type))))
-	    
+
 ;;************************************************************
 ;;			SUBTYPEP
 ;;************************************************************
@@ -540,7 +540,6 @@ if not possible."
 ;; us in recognizing these supertypes.
 ;;
 (defun update-types (type-mask new-tag)
-  (declare (si::c-local))
   (maybe-save-types)
   (dolist (i *elementary-types*)
     (unless (zerop (logand (cdr i) type-mask))
@@ -855,7 +854,7 @@ if not possible."
 	  ((and (= car-tag -1) (= cdr-tag -1))
 	   (canonical-type 'CONS))
 	  (t
-	   (throw '+canonical-type-failure+ 'cons)))))		     
+	   (throw '+canonical-type-failure+ 'cons)))))
 
 ;;----------------------------------------------------------------------
 ;; (CANONICAL-TYPE TYPE)
@@ -901,6 +900,8 @@ if not possible."
 	   (COMPLEX (canonical-complex-type (second type)))
 	   (CONS (apply #'register-cons-type (rest type)))
 	   ((ARRAY SIMPLE-ARRAY) (register-array-type type))
+	   (FUNCTION (register-function-type type))
+	   (VALUES (register-values-type type))
 	   (t (let ((expander (get-sysprop (first type) 'DEFTYPE-DEFINITION)))
 		(if expander
 		    (canonical-type (apply expander (rest type)))
@@ -908,11 +909,14 @@ if not possible."
 		      (throw '+canonical-type-failure+ nil)))))))
 	((clos::classp type)
 	 (register-class type))
+	((function-type-p type)
+	 (register-function-type type))
+	((values-type-p type)
+	 (register-values-type type))
 	(t
 	 (error-type-specifier type))))
 
 (defun safe-canonical-type (type)
-  (declare (si::c-local))
   (catch '+canonical-type-failure+
     (canonical-type type)))
 
@@ -975,6 +979,8 @@ if not possible."
 	(when (zerop (logandc2 minimal-supertype-tag other-tag))
 	  (setf (cdr type) (logior tag other-tag))))))
 
+  ;; FIXME! We should include here some important classes, such as
+  ;; GENERIC-FUNCTION, etc.
   (dolist (i '((SYMBOL)
 	       (KEYWORD NIL SYMBOL)
 	       (PACKAGE)

@@ -32,9 +32,9 @@
 			;;; During Pass2, T if env is used inside the function
   ) |#
 
-(defun c1flet (args &aux body ss ts is other-decl info
+(defun c1flet (args &aux body ss ts is other-decl
                          (defs nil) (local-funs nil))
-  (when (endp args) (too-few-args 'flet 1 0))
+  (check-args-number 'FLET args 1)
   (let ((*funs* *funs*))
     (dolist (def (car args))
       (cmpck (or (endp def)
@@ -50,8 +50,7 @@
     (let ((*vars* *vars*))
       (c1add-globals ss)
       (check-vdecl nil ts is)
-      (setq body (c1decl-body other-decl body)))
-    (setq info (copy-info (second body))))
+      (setq body (c1decl-body other-decl body))))
 
   (dolist (def (nreverse defs))
     (let ((fun (car def)) lam CB/LB)
@@ -64,7 +63,6 @@
 		    (*tags* (cons CB/LB *tags*)))
 		(c1lambda-expr (second def)
 			       (si::function-block-name (fun-name fun)))))
-	(add-info info (second lam) CB/LB)
 	(push (list fun lam) local-funs)
 	(setf (fun-cfun fun) (next-cfun)))))
 
@@ -73,25 +71,25 @@
     (setf (fun-closure (first fun-lam)) (closure-p (second fun-lam))))
 
   (if local-funs
-      (list 'LOCALS info (nreverse local-funs) body nil)
+      (make-c1form* 'LOCALS :type (c1form-type body)
+		    :args (nreverse local-funs) body nil)
       body))
 
 (defun closure-p (funob)
-  (let ((info (second funob)))
-    ;; It's a closure if inside its body there is a reference (var)
-    (dolist (var (info-referred-vars info))
-      ;; referred across CB
-      (when (ref-ref-ccb var)
-	;; established outside the body
-	(when (or
-	       (member var *vars* :test #'eq)
-	       (member var *funs* :test #'eq :key
-		       #'(lambda (x) (unless (or (consp x) (symbolp x)) (fun-var x))))
-	       (member var *blocks* :test #'eq :key
-		       #'(lambda (x) (unless (symbolp x) (blk-var x))))
-	       (member var *tags* :test #'eql :key
-		       #'(lambda (x) (unless (symbolp x) (tag-var x)))))
-	  (return t))))))
+  ;; It's a closure if inside its body there is a reference (var)
+  (dolist (var (c1form-referred-vars funob))
+    ;; referred across CB
+    (when (ref-ref-ccb var)
+      ;; established outside the body
+      (when (or
+	     (member var *vars* :test #'eq)
+	     (member var *funs* :test #'eq :key
+		     #'(lambda (x) (unless (or (consp x) (symbolp x)) (fun-var x))))
+	     (member var *blocks* :test #'eq :key
+		     #'(lambda (x) (unless (symbolp x) (blk-var x))))
+	     (member var *tags* :test #'eql :key
+		     #'(lambda (x) (unless (symbolp x) (tag-var x)))))
+	(return t)))))
 
 (defvar *within-labels* NIL)		;; used to optimize lex env
 
@@ -150,10 +148,9 @@
     (c2expr body))
   (when block-p (wt-nl "}")))
 
-(defun c1labels (args &aux body ss ts is other-decl info
-                      defs fun local-funs
+(defun c1labels (args &aux body ss ts is other-decl defs fun local-funs
                       fnames (*funs* *funs*))
-  (when (endp args) (too-few-args 'labels 1 0))
+  (check-args-number 'LABELS args 1)
 
   ;;; bind local-functions
   (dolist (def (car args))
@@ -177,7 +174,6 @@
     (c1add-globals ss)
     (check-vdecl nil ts is)
     (setq body (c1decl-body other-decl body)))
-  (setq info (copy-info (second body)))
 
   (do ((finished))
       (finished)
@@ -194,7 +190,6 @@
               (*tags* (cons 'LB *tags*)))
           (let ((lam (c1lambda-expr (third def)
 				    (si::function-block-name (fun-name fun)))))
-            (add-info info (second lam) 'LB)
             (push (list fun lam) local-funs)))
 	(setf (second def) T)))
     )
@@ -217,7 +212,6 @@
 	      (*tags* (cons 'CB *tags*)))
 	  (let ((lam (c1lambda-expr (third def)
 				    (si::function-block-name (fun-name fun)))))
-	    (add-info info (second lam) 'CB)
 	    (push (list fun lam) local-funs)))
 	(setf (car def) NIL)))		; def processed
     )
@@ -228,7 +222,8 @@
     (setf (fun-cfun fun) (next-cfun)))
 
   (if local-funs
-      (list 'LOCALS info local-funs body T) ; T means labels
+      (make-c1form* 'LOCALS :type (c1form-type body)
+		    :args local-funs body T) ; T means labels
       body))
 
 (defun c1locally (args)
@@ -239,7 +234,7 @@
     (c1decl-body other-decl body)))
 
 (defun c1macrolet (args &aux (*funs* *funs*))
-  (when (endp args) (too-few-args 'macrolet 1 0))
+  (check-args-number 'MACROLET args 1)
   (dolist (def (car args))
     (cmpck (or (endp def) (not (symbolp (car def))) (endp (cdr def)))
            "The macro definition ~s is illegal." def)
@@ -251,7 +246,7 @@
   (c1locally (cdr args)))
 
 (defun c1symbol-macrolet (args &aux (*vars* *vars*))
-  (when (endp args) (too-few-args 'symbol-macrolet 1 0))
+  (check-args-number 'SYMBOL-MACROLET args 1)
   (dolist (def (car args))
     (cmpck (or (endp def) (not (symbolp (car def))) (endp (cdr def)))
            "The symbol-macro definition ~s is illegal." def)
@@ -281,9 +276,9 @@
   ;; used by c1funob and c1call-symbol
   (let ((fun (local-closure fname)))
     (when fun
-      (list 'LOCAL (make-info :local-referred (list (fun-var fun))
-				   :referred-vars  (list (fun-var fun)))
-	    fun))))
+      (make-c1form* 'LOCAL :local-referred (list (fun-var fun))
+		    :referred-vars  (list (fun-var fun))
+		    :args fun))))
 
 (defun sch-local-fun (fname)
   ;; Returns fun-ob for the local function (not locat macro) named FNAME,

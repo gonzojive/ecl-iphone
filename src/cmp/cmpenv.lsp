@@ -445,7 +445,7 @@
 	     (*compiler-push-events* *compiler-push-events*)
 	     (dl (c1add-declarations decls)))
 	(setq body (c1progn body))
-	(list 'DECL-BODY (second body) dl body))))
+	(make-c1form 'DECL-BODY (second body) dl body))))
 
 (put-sysprop 'decl-body 'c2 'c2decl-body)
 
