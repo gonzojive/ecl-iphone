@@ -246,7 +246,6 @@ si_close_pipe(cl_object stream)
 }
 #else
 {
-	int child_pid;
 	int child_stdin, child_stdout, child_stderr;
 	argv = CONS(command, nconc(argv, CONS(Cnil, Cnil)));
 	argv = cl_funcall(3, @'coerce', argv, @'vector');
@@ -298,9 +297,10 @@ si_close_pipe(cl_object stream)
 				argv_ptr[j] = arg->string.self;
 			}
 		}
-		if (execvp(command, argv_ptr) < 0) {
-			abort();
-		}
+		execvp(command->string.self, argv_ptr);
+		/* at this point exec has failed */
+		perror("exec");
+		abort();
 	}
 	close(child_stdin);
 	close(child_stdout);
