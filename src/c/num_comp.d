@@ -32,10 +32,10 @@ int
 number_equalp(cl_object x, cl_object y)
 {
 	double dx;
-
 	/* INV: (= fixnum bignum) => 0 */
 	/* INV: (= fixnum ratio) => 0 */
 	/* INV: (= bignum ratio) => 0 */
+ BEGIN:
 	switch (type_of(x)) {
 	case t_fixnum:
 		switch (type_of(y)) {
@@ -62,9 +62,9 @@ number_equalp(cl_object x, cl_object y)
 		case t_ratio:
 			return 0;
 		case t_shortfloat:
-			return sf(y) == number_to_double(x);
 		case t_longfloat:
-			return lf(y) == number_to_double(x);
+			y = cl_rational(y);
+			goto BEGIN;
 		case t_complex:
 			goto Y_COMPLEX;
 		default:
@@ -79,9 +79,9 @@ number_equalp(cl_object x, cl_object y)
 			return (number_equalp(x->ratio.num, y->ratio.num) &&
 				number_equalp(x->ratio.den, y->ratio.den));
 		case t_shortfloat:
-			return sf(y) == number_to_double(x);
 		case t_longfloat:
-			return lf(y) == number_to_double(x);
+			y = cl_rational(y);
+			goto BEGIN;
 		case t_complex:
 			goto Y_COMPLEX;
 		default:
@@ -98,7 +98,8 @@ number_equalp(cl_object x, cl_object y)
 			return dx == fix(y);
 		case t_bignum:
 		case t_ratio:
-			return dx == number_to_double(y);
+			x = cl_rational(x);
+			goto BEGIN;
 		case t_shortfloat:
 			return dx == sf(y);
 		case t_longfloat:
@@ -142,7 +143,7 @@ number_compare(cl_object x, cl_object y)
 {
 	cl_fixnum ix, iy;
 	double dx, dy;
-
+ BEGIN:
 	switch (type_of(x)) {
 	case t_fixnum:
 	  	ix = fix(x);
@@ -181,13 +182,9 @@ number_compare(cl_object x, cl_object y)
 			y = y->ratio.num;
 			return(number_compare(x, y));
 		case t_shortfloat:
-			dx = number_to_double(x);
-			dy = (double)(sf(y));
-			goto LONGFLOAT;
 		case t_longfloat:
-			dx = number_to_double(x);
-			dy = lf(y);
-			goto LONGFLOAT;
+			y = cl_rational(y);
+			goto BEGIN;
 		default:
 			FEtype_error_real(y);
 		}
@@ -204,13 +201,9 @@ number_compare(cl_object x, cl_object y)
 					      number_times(y->ratio.num,
 							   x->ratio.den)));
 		case t_shortfloat:
-			dx = number_to_double(x);
-			dy = (double)(sf(y));
-			goto LONGFLOAT;
 		case t_longfloat:
-			dx = number_to_double(x);
-			dy = lf(y);
-			goto LONGFLOAT;
+			y = cl_rational(y);
+			goto BEGIN;
 		default:
 			FEtype_error_real(y);
 		}
@@ -226,8 +219,8 @@ number_compare(cl_object x, cl_object y)
 			break;
 		case t_bignum:
 		case t_ratio:
-			dy = number_to_double(y);
-			break;
+			x = cl_rational(x);
+			goto BEGIN;
 		case t_shortfloat:
 			dy = (double)(sf(y));
 			break;

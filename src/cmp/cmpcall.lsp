@@ -282,14 +282,15 @@
   (when fname (wt-comment fname)))
 
 (defun wt-call-normal (fun args)
+  (unless (fun-cfun fun)
+    (baboon "Function without a C name: ~A" (fun-name fun)))
   (let* ((minarg (fun-minarg fun))
 	 (maxarg (fun-maxarg fun))
-	 (fixed-args (= minarg maxarg))
 	 (lex-lvl (fun-level fun))
 	 (fun-c-name (fun-cfun fun))
 	 (fun-lisp-name (fun-name fun))
 	 (narg (length args)))
-    (when (fun-closure fun)
+    (when (eq (fun-closure fun) 'CLOSURE)
       (let ((x (nth *env-lvl* *text-for-closure*)))
 	(unless x
 	  (setf x (format nil "env~d" n)
@@ -306,28 +307,25 @@
     (unless (<= minarg narg maxarg)
       (error "Wrong number of arguments for function ~S"
 	      (or fun-lisp-name 'ANONYMOUS)))
-    (unless fixed-args
+    (when (fun-needs-narg fun)
       (push narg args))
     (wt-call fun-c-name args fun-lisp-name)))
 
 (defun wt-call-args-pushed (fname fun narg)
-  (let* ((minarg (fun-minarg fun))
-	 (maxarg (fun-maxarg fun))
-	 (fixed-args (= minarg maxarg))
-	 (lex-lvl (fun-level fun))
+  (let* ((lex-lvl (fun-level fun))
 	 (fun-c-name (fun-cfun fun))
 	 (fun-lisp-name (fun-name fun)))
-    (when (or (plusp lex-lvl) (fun-closure fun))
+    (when (fun-closure fun)
       (error "WT-CALL-ARGS-PUSHED used with lexical closure.")
       (when (fun-closure fun)
 	(wt "cl_stack_push(env~d" *env-lvl* ")," narg "++,"))
       (dotimes (n lex-lvl)
 	(let ((j (- lex-lvl n 1)))
 	  (wt "cl_stack_push(lex" j ")," narg "++,"))))
-    (if fixed-args
+    (if (fun-needs-narg fun)
+	(wt "APPLY(" narg "," fun-c-name "," `(STACK-POINTER ,narg) ")")
 	(wt "((" narg "!=" maxarg ")&&FEwrong_num_arguments_anonym(),"
-	    "APPLY_fixed(" narg "," fun-c-name "," `(STACK-POINTER ,narg) "))")
-	(wt "APPLY(" narg "," fun-c-name "," `(STACK-POINTER ,narg) ")"))
+	    "APPLY_fixed(" narg "," fun-c-name "," `(STACK-POINTER ,narg) "))"))
     (when fun-lisp-name (wt-comment fun-lisp-name))))
 
 ;;;

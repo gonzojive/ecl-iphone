@@ -134,6 +134,11 @@
   (minarg 0)		;;; Min. number arguments that the function receives.
   (maxarg call-arguments-limit)
 			;;; Max. number arguments that the function receives.
+  (parent *current-function*)
+			;;; Parent function, NIL if global.
+  (referred-funs nil)	;;; List of local functions called in this one.
+			;;; We only register direct calls, not calls via object.
+  (child-funs nil)	;;; List of local functions defined here.
   )
 
 (defstruct (blk (:include ref))
@@ -213,7 +218,7 @@
 (defvar *error-p* nil)
 (defconstant *cmperr-tag* (cons nil nil))
 
-(defvar *compile-print* nil
+(defvar *compile-print* t
   "This variable controls whether the compiler displays messages about
 each form it processes. The default value is NIL.")
 
@@ -331,6 +336,7 @@ The default value is NIL.")
 ;;; A local macro definition is a list ( macro-name expansion-function).
 
 (defvar *funs* nil)
+(defvar *current-function* nil)
 
 ;;; --cmplog.lsp--
 ;;;
@@ -379,7 +385,6 @@ The default value is NIL.")
 ;;;	| ( 'DEFCFUN'	header vs-size body )
 ;;;	| ( 'LOAD-TIME-VALUE' vv )
 ;;;	| ( 'DEFCBODY'	fun-name cfun arg-types type body ) ;;; Beppe
-;;;	| ( 'FUNCTION-CONSTANT'	vv-index fun )              ;;; Beppe
 ;;; Eliminated:
 ;;;	| ( 'DEFENTRY'	fun-name cfun cvspecs type cfun-name )
 ;;;	| ( 'DEFUNC'	fun-name cfun lambda-list string* ) ;;; Beppe

@@ -823,6 +823,8 @@ extern cl_object make_ratio(cl_object num, cl_object den);
 extern cl_object make_shortfloat(float f);
 extern cl_object make_longfloat(double f);
 extern cl_object make_complex(cl_object r, cl_object i);
+extern cl_object cl_rational(cl_object x);
+#define cl_rationalize cl_rational
 extern double number_to_double(cl_object x);
 
 /* num_co.c */

@@ -210,6 +210,8 @@ case "${host_os}" in
 		BUNDLE_LDFLAGS="-bundle ${LDFLAGS}"
 		LDRPATH=''
 		LDINSTALLNAME="-Wl,-install_name,${libdir}/${SHAREDPREFIX}ecl.${SHAREDEXT}"
+		THREAD_CFLAGS='-D_THREAD_SAFE'
+		THREAD_LDFLAGS='-lpthread'
 		;;
 	*)
 		thehost="$host_os"

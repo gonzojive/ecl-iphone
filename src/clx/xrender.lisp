@@ -869,8 +869,8 @@ by every function, which attempts to generate RENDER requests."
 
 
 ;; $Log$
-;; Revision 1.3  2004-06-18 07:51:18  jjgarcia
-;; Support for DLL in Windows
+;; Revision 1.4  2004-10-04 08:02:44  jjgarcia
+;; Summer fixes
 ;;
 ;; Revision 1.1  2004/06/10 07:59:31  jlr
 ;; Portable CLX library imported

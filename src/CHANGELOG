@@ -1736,6 +1736,12 @@ ECL 0.9d
 
   - MULTIPLE-VALUE-{BIND,SETQ} produce now more economical forms.
 
+  - A separate pass over the functions is used to find out which ones
+    use a lexical environment, which functions are made into closures,
+    etc.
+
+  - FLET and LABELS are now compiled by the same routine.
+
 * Errors fixed:
 
   - Bugs in the mechanism for automatically creating packages when
@@ -1878,6 +1884,10 @@ ECL 0.9d
   - The pretty printer and the FORMAT routine from CMUCL have been
     finally integrated and put together. By default, they are not
     compiled in, unless configured with "--with-cmu-format".
+
+  - When comparing floats with bignums or rationals, the float has to
+    be converted first to a rational number, or else the comparison
+    will be inaccurate.
 
 TODO:
 =====

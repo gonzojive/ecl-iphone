@@ -228,7 +228,38 @@ number_to_double(cl_object x)
 	}
 }
 
+cl_object
+cl_rational(cl_object x)
+{
+	double d;
 
+	switch (type_of(x)) {
+	case t_fixnum:
+	case t_bignum:
+	case t_ratio:
+		break;
+	case t_shortfloat:
+		d = sf(x);
+		goto GO_ON;
+	case t_longfloat:
+		d = lf(x);
+	GO_ON:	if (d == 0.0) {
+			x = MAKE_FIXNUM(0);
+		} else {
+			int e;
+			d = frexp(d, &e);
+			e -= DBL_MANT_DIG;
+			x = double_to_integer(ldexp(d, DBL_MANT_DIG));
+			x = number_times(cl_expt(MAKE_FIXNUM(FLT_RADIX),
+						 MAKE_FIXNUM(e)),
+					 x);
+		}
+		break;
+	default:
+		FEtype_error_number(x);
+	}
+	@(return x)
+}
 
 void
 init_number(void)

@@ -8,7 +8,7 @@ srcdir	= @srcdir@
 #
 
 CC	= @ECL_CC@
-LIBS	= @LIBS@ @TKLIBS@ @CLIBS@
+LIBS	= @STATICLIBS@ @LIBS@ @TKLIBS@ @CLIBS@
 LDFLAGS	= @LDFLAGS@
 RM	= @RM@
 EXE	= @EXEEXT@
@@ -57,7 +57,7 @@ ecl_min$(EXE): $(LIBRARIES) .gdbinit @LIBPREFIX@eclmin.@LIBEXT@
 	if [ -f CROSS-COMPILER ]; then \
 		touch $@; \
 	else \
-		$(CC) $(LDFLAGS) -o $@ cinit.o -L./ @LIBPREFIX@eclmin.@LIBEXT@ -lgmp @GCLIB@ $(LIBS);\
+		$(CC) $(LDFLAGS) -o $@ cinit.o -L./ @LIBPREFIX@eclmin.@LIBEXT@ $(LIBS);\
 	fi
 
 .gdbinit: $(srcdir)/util/gdbinit
@@ -73,16 +73,18 @@ ecl-config: ecl-config.pre
 	    -e 's,@includedir\\@,$(libdir)/h,' ecl-config.pre > ecl-config
 
 
-@LIBPREFIX@eclmin.@LIBEXT@: @LIBPREFIX@gmp.@LIBEXT@ @LIBPREFIX@gc.@LIBEXT@ lsp/config.lsp
+@LIBPREFIX@eclmin.@LIBEXT@: @LIBPREFIX@eclgmp.@LIBEXT@ @LIBPREFIX@eclgc.@LIBEXT@ lsp/config.lsp
 	cd c; $(MAKE)
-@LIBPREFIX@gc.@LIBEXT@:
+@LIBPREFIX@eclgc.@LIBEXT@:
 	if (echo $(SUBDIR) | grep gc); then \
 	  cd gc; $(MAKE) install; \
 	  cp -rf $(srcdir)/gc/include/private ../h/gc/; \
+	  mv ../@LIBPREFIX@gc.@LIBEXT@ ../@LIBPREFIX@eclgc.@LIBEXT@; \
 	fi
-@LIBPREFIX@gmp.@LIBEXT@:
+@LIBPREFIX@eclgmp.@LIBEXT@:
 	if (echo $(SUBDIR) | grep gmp); then \
 	  cd gmp; $(MAKE) install; \
+	  mv ../@LIBPREFIX@gmp.@LIBEXT@ ../@LIBPREFIX@eclgmp.@LIBEXT@; \
 	fi
 sysfun.lsp:
 	ln -s -f $(srcdir)/cmp/sysfun.lsp ./

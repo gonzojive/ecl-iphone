@@ -1080,7 +1080,7 @@ type_of(#0)==t_bitvector"))
 	    set-exclusive-or nset-exclusive-or subsetp
 	    logical-pathname-translations decode-universal-time
 	    encode-universal-time get-decoded-time isqrt abs phase signum cis asin
-	    acos asinh acosh atanh rational ffloor fceiling ftruncate fround
+	    acos asinh acosh atanh ffloor fceiling ftruncate fround
 	    logtest byte byte-size byte-position ldb ldb-test mask-field dpb
 	    deposit-field upgraded-array-element-type typep subtypep coerce make-sequence
 	    concatenate map some every notany notevery map-into reduce fill

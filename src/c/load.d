@@ -20,16 +20,19 @@
 #ifdef ENABLE_DLOPEN
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
+#define INIT_PREFIX "init_"
 #endif
 #ifdef HAVE_LINK_H
 #include <link.h>
 #endif
 #ifdef HAVE_MACH_O_DYLD_H
 #include <mach-o/dyld.h>
+#define INIT_PREFIX "_init_"
 #endif
 #ifdef mingw32
 #include <windef.h>
 #include <winbase.h>
+#define INIT_PREFIX "init_"
 #endif
 #endif
 
@@ -92,7 +95,7 @@ ecl_library_symbol(cl_object block, const char *symbol) {
 	HMODULE h = (HMODULE)(block->cblock.handle);
 	return GetProcAddress(h, symbol);
 #endif
-#ifdef HAVE_MACH_O_DYLD
+#ifdef HAVE_MACH_O_DYLD_H
 	NSSymbol sym;
 	sym = NSLookupSymbolInModule((NSModule)(block->cblock.handle),
 				     symbol);
@@ -107,7 +110,7 @@ ecl_library_error(cl_object block) {
 #ifdef HAVE_DLFCN_H
 	message = dlerror();
 #endif
-#ifdef HAVE_MACH_O_DYLD
+#ifdef HAVE_MACH_O_DYLD_H
 	NSLinkEditErrors c;
 	int number;
 	const char *filename;
@@ -139,15 +142,12 @@ ecl_library_close(cl_object block) {
 		filename = "<anonymous>";
 	printf("\n;;; Freeing library %s\n", filename);
 #ifdef HAVE_DLFCN_H
-#define INIT_PREFIX "init_"
 	dlclose(block->cblock.handle);
 #endif
-#ifdef HAVE_MACH_O_DYLD
-#define INIT_PREFIX "_init_"
+#ifdef HAVE_MACH_O_DYLD_H
 	NSUnLinkModule(block->cblock.handle, NSUNLINKMODULE_OPTION_NONE);
 #endif
 #ifdef mingw32
-#define INIT_PREFIX "init_"
 	FreeLibrary(block->cblock.handle);
 #endif
 	if (block->cblock.self_destruct)

@@ -46,12 +46,86 @@
 ;;; Body' is body possibly surrounded by a LET* (if &aux parameters are
 ;;; supplied) and an implicit block.
 
+(defun c1lambda-doc (form)
+  (second (c1form-args form)))
+
+(defun c1lambda-body (form)
+  (third (c1form-args form)))
+
+(defun c1lambda-list (form)
+  (first (c1form-args form)))
+
+(defun fun-needs-narg (fun)
+  (or (eq (fun-closure fun) 'CLOSURE)
+      (/= (fun-minarg fun) (fun-maxarg fun))))
+
+(defun c1compile-function (lambda-list-and-body &key (fun (make-fun))
+			   (name (fun-name fun)) global (CB/LB 'CB))
+  (setf (fun-name fun) name
+	(fun-parent fun) *current-function*)
+  (when *current-function*
+    (push fun (fun-child-funs *current-function*)))
+  (let* ((*current-function* fun)
+	 (*vars* (cons CB/LB *vars*))
+	 (*funs* (cons CB/LB *funs*))
+	 (*blocks* (cons CB/LB *blocks*))
+	 (*tags* (cons CB/LB *tags*))
+	 (setjmps *setjmps*)
+	 (lambda-expr (c1lambda-expr lambda-list-and-body
+				     (si::function-block-name name)))
+	 cfun exported minarg maxarg)
+    (unless (eql setjmps *setjmps*)
+      (setf (c1form-volatile lambda-expr) t))
+    (setf (fun-lambda fun) lambda-expr)
+    (if global
+	(multiple-value-setq (cfun exported) (exported-fname name))
+	(setf cfun (next-cfun "LC~D") exported nil))
+    (if exported
+	;; Check whether the function was proclaimed to have a certain
+	;; number of arguments, and otherwise produce a function with
+	;; a flexible signature.
+	(progn
+	  (multiple-value-setq (minarg maxarg) (get-proclaimed-narg name))
+	  (unless minarg
+	    (setf minarg 0 maxarg call-arguments-limit)))
+	(multiple-value-setq (minarg maxarg)
+	  (lambda-form-allowed-nargs lambda-expr)))
+    (setf (fun-cfun fun) cfun
+	  (fun-global fun) global
+	  (fun-exported fun) exported
+	  (fun-closure fun) nil
+	  (fun-minarg fun) minarg
+	  (fun-maxarg fun) maxarg
+	  (fun-description fun) name
+	  )
+    (loop
+     (unless (some #'compute-fun-closure-type (fun-child-funs fun))
+       (return)))
+    (unless (fun-parent fun)
+      (compute-fun-closure-type fun)
+      (when (and global (fun-closure fun))
+	(cmperr "Function ~A is global but is closed over some variables.~%~
+~{~A~}"
+		(fun-name fun) (mapcar #'var-name (c1form-referred-vars (fun-lambda fun))))))
+    )
+  fun)
+
+(defun fun-referred-vars (fun &key global)
+  (let ((lambda-form (fun-lambda fun)))
+    (when lambda-form
+      (let ((vars (c1form-referred-vars lambda-form)))
+	(if global
+	    vars
+	    (remove 'GLOBAL vars :key #'var-kind))))))
+
 (defun c1lambda-expr (lambda-expr
                       &optional (block-name nil block-it)
                       &aux doc body ss is ts
                            other-decls
                            (*vars* *vars*)
 		           (old-vars *vars*))
+  (declare (si::c-local))
+
   (cmpck (endp lambda-expr)
          "The lambda expression ~s is illegal." (cons 'LAMBDA lambda-expr))
 
@@ -122,7 +196,7 @@
 	(check-vref var))
       (make-c1form* 'LAMBDA
 		    :local-vars new-vars
-		    :args (list requireds optionals rest key-flag keywords
+ 		    :args (list requireds optionals rest key-flag keywords
 				allow-other-keys)
 		    doc body))))
 
@@ -135,15 +209,6 @@
 	(setf minarg (length requireds)
 	      maxarg (+ minarg (/ (length optionals) 3)))))
     (values minarg maxarg)))
-
-(defun set-fun-lambda (fun lambda)
-  (setf (fun-lambda fun) lambda)
-  (multiple-value-bind (minarg maxarg)
-      (lambda-form-allowed-nargs lambda)
-    (when (fun-closure fun)
-      (setf minarg 0 maxarg call-arguments-limit))
-    (setf (fun-minarg fun) minarg
-	  (fun-maxarg fun) maxarg)))
 
 #| Steps:
  1. defun creates declarations for requireds + va_alist
@@ -159,7 +224,7 @@
 |#
 
 (defun c2lambda-expr
-    (lambda-list body cfun fname use-narg &optional closure-p local-entry-p
+    (lambda-list body cfun fname use-narg &optional closure-type local-entry-p
 		 &aux (requireds (first lambda-list))
 		 (optionals (second lambda-list))
 		 (rest (third lambda-list)) rest-loc
@@ -246,7 +311,7 @@
 
     (when varargs
       (let ((first-arg (cond ((plusp nreq) (format nil "V~d" (+ req0 nreq)))
-			     (closure-p "env0")
+			     ((eq closure-type 'CLOSURE) "env0")
 			     (t "narg"))))
 	(wt-nl
 	  (format nil

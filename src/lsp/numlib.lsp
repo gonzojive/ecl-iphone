@@ -211,28 +211,6 @@ Returns the hyperbolic arc tangent of NUMBER."
   (declare (number x) (si::c-local))
   (/ (- (log (1+ z)) (log (- 1 z))) 2))
 
-(defun rational (x)
-  "Args: (real)
-Converts REAL into rational accurately and returns the result."
-  (etypecase x
-    (FLOAT
-      (multiple-value-bind (i e s) (integer-decode-float x)
-			   (if (>= s 0)
-			       (* i (expt (float-radix x) e))
-			     (- (* i (expt (float-radix x) e))))))
-    (RATIONAL x)))
-
-(defun rationalize (x)
-  "Args: (real)
-Converts REAL into rational approximately and returns the result."
-  (etypecase x
-    (FLOAT
-      (multiple-value-bind (i e s) (integer-decode-float x)
-			   (if (>= s 0)
-			       (* i (expt (float-radix x) e))
-			     (- (* i (expt (float-radix x) e))))))
-    (RATIONAL x)))
-
 (defun ffloor (x &optional (y 1))
   "Args: (number &optional (divisor 1))
 Same as FLOOR, but returns a float as the first value."

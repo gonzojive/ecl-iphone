@@ -176,7 +176,7 @@ floor1(cl_object x)
 	case t_longfloat: {
 		double d = lf(x);
 		double y = floor(d);
-		VALUES(0) = float_to_integer(y);
+		VALUES(0) = double_to_integer(y);
 		VALUES(1) = make_longfloat(d - y);
 		break;
 	}

@@ -79,47 +79,14 @@
 			       :sp-change (not (and (symbolp fun)
 						    (get-sysprop fun 'NO-SP-CHANGE)))
 			       :args 'GLOBAL nil fun))))
-          ((and (consp fun) (eq (car fun) 'LAMBDA))
+          ((and (consp fun) (member (car fun) '(LAMBDA EXT::LAMBDA-BLOCK)))
            (cmpck (endp (cdr fun))
                   "The lambda expression ~s is illegal." fun)
-           (let* ((*vars* (cons 'CB *vars*))
-		  (*funs* (cons 'CB *funs*))
-		  (*blocks* (cons 'CB *blocks*))
-		  (*tags* (cons 'CB *tags*))
-		  (funob (c1lambda-expr (cdr fun)))
-		  (closure (closure-p funob))
-		  (body (cddr fun))
-		  (fun (make-fun :name NIL
-				 :cfun (next-cfun "LC~D")
-				 :closure closure)))
-	     (set-fun-lambda fun funob)
-	     (if closure
-		 (make-c1form 'FUNCTION funob 'CLOSURE funob fun)
-		 (progn
-		   (push (make-c1form* 'FUNCTION-CONSTANT :args funob fun)
-			 *top-level-forms*)
-		   (make-c1form 'FUNCTION funob 'CONSTANT funob fun)))))
-	  ((and (consp fun) (eq (car fun) 'EXT::LAMBDA-BLOCK))
-           (cmpck (endp (cdr fun))
-                  "The lambda expression ~s is illegal." fun)
-           (let* ((*vars* (cons 'CB *vars*))
-		  (*funs* (cons 'CB *funs*))
-		  (*blocks* (cons 'CB *blocks*))
-		  (*tags* (cons 'CB *tags*))
-		  (name (second fun))
-		  (funob (c1lambda-expr (cddr fun) name))
-		  (closure (closure-p funob))
-		  (fun (make-fun :name NIL
-				 :description name
-				 :cfun (next-cfun "LC~D")
-				 :closure closure)))
-	     (set-fun-lambda fun funob)
-	     (if closure
-		 (make-c1form 'FUNCTION funob 'CLOSURE funob fun)
-		 (progn
-		   (push (make-c1form* 'FUNCTION-CONSTANT :args funob fun)
-			 *top-level-forms*)
-		   (make-c1form 'FUNCTION funob 'CONSTANT funob fun)))))
+           (let* ((name (and (eq (first fun) 'EXT::LAMBDA-BLOCK)
+			    (first (setf fun (rest fun)))))
+		  (fun (c1compile-function (rest fun) :name name :global nil))
+		  (lambda-form (fun-lambda fun)))
+	     (make-c1form 'FUNCTION lambda-form 'CLOSURE lambda-form fun)))
 	  (t (cmperr "The function ~s is illegal." fun)))))
 
 (defun c2function (kind funob fun)
@@ -127,33 +94,28 @@
     (GLOBAL
      (unwind-exit (list 'FDEFINITION fun)))
     (CLOSURE
-     (setf (fun-closure fun) (> *env* 0))
-     (new-local 0 fun funob)	; 0 was *level*
-     (unwind-exit `(MAKE-CCLOSURE ,fun)))
-    ;; Notice that C1FSET relies on the meaning CONSTANT = (NOT CLOSURE)!
-    (CONSTANT
-     (unwind-exit (fun-var fun)))))
+     (new-local 0 fun)	; 0 was *level*
+     (unwind-exit `(MAKE-CCLOSURE ,fun)))))
 
 ;;; Mechanism for sharing code.
-(defun new-local (level fun &optional (funob (fun-lambda fun)))
+(defun new-local (level fun)
   ;; returns the previous function or NIL.
   (declare (type fun fun))
-  (let ((previous (dolist (local *local-funs*)
-		    (when (and (= *env* (fun-env local))
+  (let ((previous (dolist (old *local-funs*)
+		    (when (and (= *env* (fun-env old))
 			       ;; closures must be embedded in env of
 			       ;; same size
-			       (similar funob (fun-lambda local)))
-		      (return local)))))
+			       (similar (fun-lambda fun) (fun-lambda old)))
+		      (return old)))))
     (if previous
 	(progn
-          (if (fun-closure fun)
+          (if (eq (fun-closure fun) 'CLOSURE)
 	      (cmpnote "Sharing code for closure")
 	      (cmpnote "Sharing code for local function ~A" (fun-name fun)))
-	  (setf (fun-cfun fun) (fun-cfun previous))
-	  (set-fun-lambda fun (fun-lambda previous))
+	  (setf (fun-cfun fun) (fun-cfun previous)
+		(fun-lambda fun) nil)
 	  previous)
         (progn
-	  (set-fun-lambda fun funob)
           (setf (fun-level fun) (if (fun-ref-ccb fun) 0 level)
                 (fun-env fun) *env*
 		*local-funs* (cons fun *local-funs*))
@@ -170,11 +132,14 @@
 
 (defun wt-make-closure (fun &aux (cfun (fun-cfun fun)))
   (declare (type fun fun))
-  (let* ((minarg (fun-minarg fun))
+  (let* ((closure (fun-closure fun))
+	 (minarg (fun-minarg fun))
 	 (maxarg (fun-maxarg fun))
 	 (narg (if (= minarg maxarg) maxarg nil)))
-    (cond ((fun-closure fun)
+    (cond ((eq closure 'CLOSURE)
 	   (wt "cl_make_cclosure_va((void*)" cfun ",env" *env-lvl* ",Cblock)"))
+	  ((eq closure 'LEXICAL)
+	   (baboon))
 	  (narg ; empty environment fixed number of args
 	   (wt "cl_make_cfun((void*)" cfun ",Cnil,Cblock," narg ")"))
 	  (t ; empty environment variable number of args

@@ -1132,10 +1132,7 @@ them.
 The merits of the use of C as the intermediate language are:
 
 @itemize -
-@item  The @ecl{} compiler is highly portable.  Indeed the four versions
-of @ecl{} share the same compiler.  Only the calling sequence
-of the C compiler and the handling of the intermediate files are different
-in these versions. 
+@item The @ecl{} compiler is highly portable.
 
 @item Cross compilation is possible, because the contents of the
 intermediate files are common to all versions of @ecl{}.  For example,
@@ -1169,40 +1166,56 @@ supposing that the Lisp source file contains the
 following function definition:
 
 @example
-            (defun add1 (x) (1+ x))
+	(defvar *delta* 2)
+	(defun add1 (x) (+ *delta* x))
 @end example
 
 @noindent
 The compiler generates the following intermediate C code.
 
 @example
-init_code(char *start,int size,object data)
-@{      VT2
-       Cblock.cd_start=start;Cblock.cd_size=size;Cblock.cd_data=data;
-       set_VV(VV,VM1,data);
-       MF0(VV[0],L1);
+/*	function definition for ADD1                                  */
+static cl_object L1(cl_object V1)
+@{ VT2 VLEX2 CLSR2
+	cl_object value0;
+	value0=number_plus(symbol_value(VV[0]),V1); NVALUES=1;
+	return value0;
 @}
-/*     function definition for ADD1     */
-   
-static L1(int narg, object V1)
-@{      
-       check_arg(1);
-       NValues=1;
-       return one_plus(V1);
+/*      initialization of this module                                 */
+void init_CODE(cl_object flag)
+@{ VT1 CLSR1
+	cl_object value0;
+	if (!FIXNUMP(flag))@{
+	Cblock=flag;
+	#ifndef ECL_DYNAMIC_VV
+	flag->cblock.data = VV;
+	#endif
+	flag->cblock.self_destruct=0;
+	flag->cblock.data_size = VM;
+	flag->cblock.data_text = compiler_data_text;
+	flag->cblock.data_text_size = compiler_data_text_size;
+	return;@}
+	#ifdef ECL_DYNAMIC_VV
+	VV = Cblock->cblock.data;
+	#endif
+	T0= MAKE_FIXNUM(2);
+	cl_defvar(VV[0],T0);
+	cl_def_c_function(VV[1],(void*)L1,1);
 @}
 @end example
 
-The C function @code{L1} implements the Lisp function @code{add1}.  This
-relation is established by @code{MF0} in the initialization function
-@code{init_code}, which is invoked at load time.  There, the vector @code{VV}
-consists of Lisp objects; @code{VV[0]} in this example holds the Lisp symbol
-@code{add1}.  @code{VM1} in the definition of @code{L1} is a C macro declared
-in the corresponding H-file.  The actual value of @code{VM1} is the number of
-value stack locations used by @code{L1}, i.e., 2 in this example.  Thus the
-following macro definition is found in the H-file.
-
+The C function @code{L1} implements the Lisp function @code{add1}.
+This relation is established by @code{cl_def_c_function} in the
+initialization function @code{init_CODE}, which is invoked at load
+time.  There, the vector @code{VV} consists of Lisp objects;
+@code{VV[0]} and @code{VV[1]} in this example hold the Lisp symbols
+@code{*delta*} and @code{add1}. @code{VM} in the definition of
+@code{L1} is a C macro declared in the corresponding H-file.  The
+actual value of @code{VM} is the number of value stack locations used
+by this module, i.e., 2 in this example.  Thus the following macro
+definition is found in the H-file.
 @example
-#define VM1 2
+#define VM 2
 @end example
 
 

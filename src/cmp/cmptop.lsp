@@ -55,6 +55,15 @@
 
 (defvar *emitted-local-funs* nil)
 
+#+nil
+(defun emit-local-funs ()
+  ;; Local functions and closure functions
+  (do ()
+      ((eq *local-funs* *emitted-local-funs*))
+    (let ((to-be-emitted (ldiff *local-funs* *emitted-local-funs*)))
+      (setf *emitted-local-funs* *local-funs*)
+      (mapc #'t3local-fun (nreverse to-be-emitted)))))
+
 (defun emit-local-funs ()
   ;; Local functions and closure functions
   (do ()
@@ -69,7 +78,6 @@
 	   (t3local-fun (first lfs)))))))
 
 (defun t3expr (form)
-  ;(pprint (cons 'T3 form))
   (when form
     (emit-local-funs)
     (let ((def (get-sysprop (c1form-name form) 'T3)))
@@ -235,53 +243,38 @@
 (defun t1defun (args)
   (check-args-number 'DEFUN args 2)
   (when *compile-time-too* (cmp-eval (cons 'DEFUN args)))
-  (let* ((fname (car args))
-	 (setjmps *setjmps*)
-	 (lambda-expr (c1lambda-expr (cdr args) (si::function-block-name fname)))
+  (let* ((fname (first args))
+	 (lambda-list-and-body (rest args))
+	 (fun (c1compile-function lambda-list-and-body :name fname :global t))
 	 (no-entry nil)
 	 (doc nil))
-    (unless (eql setjmps *setjmps*)
-      (setf (c1form-volatile lambda-expr) t))
     (multiple-value-bind (decl body doc)
-	(si::process-declarations (cddr args) nil)
+	(si::process-declarations (rest lambda-list-and-body) nil)
       (cond ((and *allow-c-local-declaration* (assoc 'si::c-local decl))
 	     (setq no-entry t))
 	    ((setq doc (si::expand-set-documentation fname 'function doc))
 	     (t1expr `(progn ,@doc)))))
     (add-load-time-values)
-    (setq output (new-defun fname lambda-expr no-entry))
+    (setq output (new-defun fun no-entry))
     output))
 
 ;;; Mechanism for sharing code:
 ;;; FIXME! Revise this 'DEFUN stuff.
-(defun new-defun (fname lambda-expr &optional no-entry)
-  (multiple-value-bind (cfun exported)
-      (exported-fname fname)
-    (multiple-value-bind (minarg maxarg)
-	(lambda-form-allowed-nargs lambda-expr)
-      (if exported
-	  ;; Check whether the function was proclaimed to have a certain
-	  ;; number of arguments, and otherwise produce a function with
-	  ;; a flexible signature.
-	  (progn
-	    (multiple-value-setq (minarg maxarg) (get-proclaimed-narg fname))
-	    (unless minarg
-	      (setf minarg 0 maxarg call-arguments-limit)))
-	  ;; Check whether this function is similar to a previous one and
-	  ;; share code with it.
-	  (dolist (f *global-funs*)
-	    (when (similar lambda-expr (fun-lambda f))
-	      (cmpnote "Sharing code among functions ~A and ~A" fname (fun-name f))
-	      (setf cfun (fun-cfun f)
-		    lambda-expr nil
-		    minarg (fun-minarg f)
-		    maxarg (fun-maxarg f))
-	      (return))))
-      (let ((fun (make-fun :name fname :cfun cfun :global t :exported exported
-			   :minarg minarg :maxarg maxarg
-			   :lambda lambda-expr)))
-	(push fun *global-funs*)
-	(make-c1form* 'DEFUN :args fun no-entry)))))
+(defun new-defun (new &optional no-entry)
+  (unless (fun-exported new)
+    ;; Check whether this function is similar to a previous one and
+    ;; share code with it.
+    (dolist (old *global-funs*)
+      (when (similar (fun-lambda new) (fun-lambda old))
+	(cmpnote "Sharing code among functions ~A and ~A"
+		 (fun-name new) (fun-name old))
+	(setf (fun-cfun new) (fun-cfun old)
+	      (fun-lambda new) nil
+	      (fun-minarg new) (fun-minarg old)
+	      (fun-maxarg new) (fun-maxarg old))
+	(return))))
+  (push new *global-funs*)
+  (make-c1form* 'DEFUN :args new no-entry))
 
 (defun similar (x y)
   (or (equal x y)
@@ -321,7 +314,7 @@
   ; (when (compiler-push-events) (wt-nl "ihs_check;"))
   )
 
-(defun wt-function-epilogue (&optional closure-p)
+(defun wt-function-epilogue (&optional closure-type)
   (push (cons *reservation-cmacro* *max-temp*) *reservations*)
   (wt-h "#define VT" *reservation-cmacro*)
   (when (plusp *max-temp*)
@@ -337,7 +330,8 @@
     (wt-h1 "[") (wt-h1 *max-lex*) (wt-h1 "];"))
   (wt-h "#define CLSR" *reservation-cmacro*)
   (when (plusp *max-env*)
-    (unless closure-p (wt-h1 " volatile cl_object env0;"))
+    (unless (eq closure-type 'CLOSURE)
+      (wt-h1 " volatile cl_object env0;"))
     (wt-h1 " cl_object ")
     (dotimes (i *max-env*)
       (wt-h1 "*CLV") (wt-h1 i)
@@ -533,15 +527,12 @@
           (t (cmperr "The C variable specification ~s is illegal." cvs))))
   )
 
-(defun t3local-fun (fun &optional
-                              &aux
-			      (closure-p (fun-closure fun))
-			      (lambda-expr (fun-lambda fun))
+(defun t3local-fun (fun &aux  (lambda-expr (fun-lambda fun))
 			      (level (fun-level fun))
 			      (cfun (fun-cfun fun))
 		    	      (minarg (fun-minarg fun))
 		    	      (maxarg (fun-maxarg fun))
-		    	      (narg (if (= minarg maxarg) nil t))
+		    	      (narg (fun-needs-narg fun))
 			      (nenvs level)
 			      (*volatile* (c1form-volatile* lambda-expr))
 			      (*tail-recursion-info* fun)
@@ -550,7 +541,7 @@
   (declare (fixnum level nenvs))
   (when *compile-print* (print-emitting fun))
   (wt-comment (cond ((fun-global fun) "function definition for ")
-		    ((fun-closure fun) "closure ")
+		    ((eq (fun-closure fun) 'CLOSURE) "closure ")
 		    (t "local function "))
 	      (or (fun-name fun) (fun-description fun) 'CLOSURE))
   (cond ((fun-exported fun)
@@ -568,7 +559,7 @@
       (wt-h1 comma) (wt-h1 "cl_object *")
       (wt comma "cl_object *lex" n)
       (setf comma ", "))
-    (when closure-p
+    (when (eq (fun-closure fun) 'CLOSURE)
       (wt-h1 comma) (wt-h1 "cl_object ")
       (wt comma "cl_object env0")
       (setf comma ", "))
@@ -596,7 +587,7 @@
 	" VLEX" *reservation-cmacro*
 	" CLSR" *reservation-cmacro*)
     (wt-nl "cl_object value0;")
-    (when (fun-closure fun)
+    (when (eq (fun-closure fun) 'CLOSURE)
       (let ((clv-used (remove-if
 		       #'(lambda (x)
 			   (or
@@ -627,43 +618,40 @@
 		   narg
 		   (fun-closure fun))
     (wt-nl1 "}")
-    (wt-function-epilogue closure-p))	; we should declare in CLSR only those used
+    (wt-function-epilogue (fun-closure fun)))	; we should declare in CLSR only those used
   )
-
-(defun t2function-constant (funob fun)
-  (let ((previous (new-local *level* fun funob)))
-    (if (and previous (fun-var previous))
-	(setf (fun-var fun) (fun-var previous))
-	(let ((loc (data-empty-loc)))
-	  (wt-nl loc " = ") (wt-make-closure fun) (wt ";")
-	  (setf (fun-var fun) loc))))
-)
 
 ;;; ----------------------------------------------------------------------
 ;;; Optimizer for FSET. Should remove the need for a special handling of
 ;;; DEFUN as a toplevel form.
 ;;;
 (defun c1fset (args)
+  ;; When the function or macro to be defined is not a closure, we can use the
+  ;; auxiliary C functions c_def_c_*() instead of creating a closure and
+  ;; invoking si_fset(). However until the C2 phase of the compiler we do not
+  ;; know whether a function is a closure, hence the need for a c2fset.
   (destructuring-bind (fname def &optional (macro nil) (pprint nil))
       args
-    (let* ((fun (c1expr def)))
-      (cond ((and (eq (c1form-name fun) 'FUNCTION)
-		  ;; When a function is 'CONSTANT, it is not a closure!
-	          (eq (c1form-arg 0 fun) 'CONSTANT)
-		  (typep macro 'boolean)
-		  (typep pprint '(or integer null)))
-	     ;; We need no function constant
-	     (pop *top-level-forms*)
-	     (make-c1form* 'SI:FSET :args
-			   (c1expr fname)
-			   (c1form-arg 1 fun) ;; Lambda form
-			   (c1form-arg 2 fun) ;; Function object
-			   macro
-			   pprint))
-	    (t
-	     (c1call-global 'SI:FSET (list fname def macro pprint)))))))
+    (let* ((args (mapcar #'c1expr args))
+	   (fun (second args)))
+      (if (and (eq (c1form-name fun) 'FUNCTION)
+	       (not (eq (c1form-arg 0 fun) 'GLOBAL))
+	       (typep macro 'boolean)
+	       (typep pprint '(or integer null)))
+	  (make-c1form* 'SI:FSET :args
+			(c1form-arg 2 fun) ;; Function object
+			(c1expr fname)
+			macro
+			pprint
+			args) ;; The c1form, when we do not optimize
+	  (c1call-global 'SI:FSET (list fname def macro pprint))))))
 
-(defun c2fset (fname funob fun macro pprint)
+(defun c2fset (fun fname macro pprint c1forms)
+  (unless (and (not (fun-closure fun))
+	       (eq *destination* 'TRASH))
+    (return-from c2fset
+      (c2call-global 'SI:FSET c1forms 'NIL
+		     (c1form-primary-type (second c1forms)))))
   (let* ((*inline-blocks* 0)
 	 (fname (first (coerce-locs (inline-args (list fname)))))
 	 (cfun (fun-cfun fun))
@@ -671,7 +659,7 @@
 	 (maxarg (fun-maxarg fun))
 	 (narg (if (= minarg maxarg) maxarg nil)))
     ;; FIXME! Look at c2function!
-    (new-local 0 fun funob)
+    (new-local 0 fun)
     (if macro
 	(if narg
 	    (wt-nl "cl_def_c_macro(" fname ",(void*)" cfun "," narg ");")
@@ -713,7 +701,6 @@
 ;(put-sysprop 'DEFENTRY 'T2 't2defentry)
 (put-sysprop 'DEFCBODY 'T2 't2defCbody)	; Beppe
 ;(put-sysprop 'DEFUNC 'T2	't2defunC); Beppe
-(put-sysprop 'FUNCTION-CONSTANT 'T2 't2function-constant); Beppe
 (put-sysprop 'LOAD-TIME-VALUE 'T2 't2load-time-value)
 (put-sysprop 'SI:FSET 'C2 'c2fset)
 

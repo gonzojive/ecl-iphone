@@ -27,7 +27,7 @@ extern "C" {
 
 #define	CHAR_CODE_LIMIT	256	/*  ASCII character code limit  */
 
-#ifndef __cplusplus
+#if !defined(__cplusplus) && !defined(bool)
 typedef int bool;
 #endif
 typedef unsigned char byte;

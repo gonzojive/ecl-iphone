@@ -2615,6 +2615,12 @@ The following syntax is also available for radix 2, 8, 10, and 16.
 	# {o | O} [sign] {digit}+ / {digit}+
 	# {x | X} [sign] {digit}+ / {digit}+")
 
+(docfun rational fnction (real) "
+Converts REAL into rational accurately and returns the result.")
+
+(docfun rationalize function (real) "
+Converts REAL into rational approximately and returns the result.")
+
 (doctype rational "
 A ratio is either an integer or a ratio.")
 
