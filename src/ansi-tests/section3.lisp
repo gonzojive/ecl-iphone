@@ -301,25 +301,25 @@ be a symbol in any package. ...
 
 (my-assert
  (let ((a 1)) 
- (quote (setq a 3)))
+ (quote (setq a 3))
  a)
  1)
 
 (my-assert
  (let ((a 1)) 
- (quote (setq a 3)))
+ (quote (setq a 3))
  'a)
  A)
 
 (my-assert
  (let ((a 1)) 
- (quote (setq a 3)))
+ (quote (setq a 3))
  ''a)
  (QUOTE A) )
 
 (my-assert
  (let ((a 1)) 
- (quote (setq a 3)))
+ (quote (setq a 3))
  '''a)
  (QUOTE (QUOTE A)))
 
