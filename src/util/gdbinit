@@ -10,7 +10,6 @@ break FEunbound_variable
 break FEundefined_function
 break FEwrong_type_argument
 break FEinvalid_function
-break FEcondition
 break error
 set confirm off
 handle SIGBUS nostop
