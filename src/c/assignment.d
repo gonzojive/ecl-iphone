@@ -55,7 +55,7 @@ cl_set(cl_object var, cl_object val)
 		si_rem_sysprop(sym, @'si::setf-method');
 		si_rem_sysprop(sym, @'si::setf-update');
 	}
-	@(return fname)
+	@(return def)
 @)
 
 cl_object
