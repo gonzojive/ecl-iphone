@@ -617,10 +617,9 @@ also known as unix-domain sockets."))
         struct sockaddr_un sockaddr;
 	size_t size;
 
-	/* This does not seem to be needed and the field does not exist
-	 * in linux:
+#ifdef BSD
         sockaddr.sun_len = sizeof(struct sockaddr_un);
-	 */
+#endif
         sockaddr.sun_family = #2;
         strncpy(&sockaddr.sun_path,#1,sizeof(sockaddr.sun_path));
 	sockaddr.sun_path[sizeof(sockaddr.sun_path)-1] = '\0';
@@ -672,10 +671,9 @@ static cl_object do_accept_un(cl_object cl_socket_fd)
 {
         struct sockaddr_un sockaddr;
 
-	/* This does not seem to be needed and the field does not exist
-	 * in linux:
+#ifdef BSD
         sockaddr.sun_len = sizeof(struct sockaddr_un);
-	 */
+#endif
         sockaddr.sun_family = #1;
         strncpy(&sockaddr.sun_path,#2,sizeof(sockaddr.sun_path));
 	sockaddr.sun_path[sizeof(sockaddr.sun_path)-1] = '\0';
