@@ -233,6 +233,7 @@ EXPORTS
 	FEinvalid_function_name
 	FEtype_error_symbol
 	FElibc_error
+	FEwin32_error
 	CEerror
 	illegal_index
 
@@ -887,6 +888,7 @@ EXPORTS
 	read_object
 	parse_number
 	parse_integer
+	ecl_invalid_character_p
 	copy_readtable
 	ecl_current_readtable
 	ecl_current_read_base
@@ -1344,6 +1346,8 @@ EXPORTS
 	cl_copy_pprint_dispatch
 	cl_pprint_dispatch
 	cl_set_pprint_dispatch
+	si_pprint_logical_block_helper
+	si_pprint_pop_helper
 
 	; clos\boot.lsp
 
@@ -1351,6 +1355,11 @@ EXPORTS
 	cl_slot_exists_p
 	cl_slot_makunbound
 	cl_slot_value
+
+	; clos\combin.lsp
+	clos_simple_code_walker
+	cl_method_combination_error
+	cl_invalid_method_error
 
 	; clos\defclass.lsp
 
