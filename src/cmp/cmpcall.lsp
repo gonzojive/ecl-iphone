@@ -100,7 +100,6 @@
   (case (first funob)
     (GLOBAL (c2call-global form args loc t narg))
     (LOCAL (c2call-local form args narg))
-    (LAMBDA (c2call-lambda form args (fourth funob) narg))
     (ORDINARY		;;; An ordinary expression.  In this case, if
               		;;; arguments are already on VALUES, then
               		;;; LOC cannot be NIL.  Callers of C2FUNCALL must be
@@ -122,63 +121,6 @@
 	 (close-inline-blocks))))
     (otherwise (baboon))
     ))
-
-(defun c2call-lambda (lambda-expr args cfun &optional narg)
-  ;; ARGS is either the list of arguments or 'ARGS-PUSHED
-  ;; NARG is a location containing the number of ARGS-PUSHED
-  (let ((lambda-list (third lambda-expr))
-	(args-pushed (eq 'ARGS-PUSHED args)))
-    (if (or (second lambda-list)		;;; Has optional?
-	    (third lambda-list)			;;; Has rest?
-	    (fourth lambda-list)		;;; Has key?
-	    args-pushed				;;; Args already pushed?
-	    )
-	(let* ((requireds (first lambda-list))
-	       (nreq (length requireds))
-	       (nopt (if args-pushed narg (- (length args) nreq)))
-	       (*unwind-exit* *unwind-exit*))
-	  (wt-nl "{ ")
-	  (unless args-pushed
-	    (setq narg (make-lcl-var :type :cl-index))
-	    (wt-nl "cl_index " narg "=0;"))
-	  (when requireds
-	    (wt-nl "cl_object ")
-	    (do ((l requireds (cdr l)))
-		((endp l))
-	      (setf (var-loc (first l)) (next-lcl))
-	      (unless (eq l requireds)
-		(wt ", "))
-	      (wt (first l)))
-	    (wt ";"))
-	  (wt-nl "int narg;")
-	  (wt-nl "cl_va_list args;")
-	  (cond (args-pushed
-		 (wt-nl "args[0].sp=cl_stack_index()-" narg ";")
-		 (wt-nl "args[0].narg=" narg ";")
-		 (dolist (l requireds)
-		   (wt-nl l "=cl_va_arg(args);")))
-		(t
-		 (dolist (l requireds)
-		   (let ((*destination* l))
-		     (c2expr* (pop args))))
-		 (push (list STACK narg) *unwind-exit*)
-		 (wt-nl "args[0].sp=cl_stack_index();")
-		 (wt-nl "args[0].narg=" nopt ";")
-		 (do* ((*inline-blocks* 0)
-		       (vals (coerce-locs (inline-args args)) (cdr vals))
-		       (i 0 (1+ i)))
-		     ((null vals) (close-inline-blocks))
-		   (declare (fixnum i))
-		   (wt-nl "cl_stack_push(" (first vals) ");")
-		   (wt-nl narg "++;"))
-		 (wt-nl "args[0].narg=" narg ";")))
-	  (wt "narg=" narg ";")
-	  (c2lambda-expr lambda-list (third (cddr lambda-expr)) cfun
-			 nil nil 'CALL-LAMBDA)
-	  (unless args-pushed
-	    (wt-nl "cl_stack_pop_n(" narg ");"))
-	  (wt-nl "}"))
-	(c2let (first lambda-list) args (third (cddr lambda-expr))))))
 
 (defun maybe-push-args (args)
   (when (or (eq args 'ARGS-PUSHED)
@@ -414,7 +356,6 @@
 
 (put-sysprop 'funcall 'C1 #'c1funcall)
 (put-sysprop 'funcall 'c2 #'c2funcall)
-(put-sysprop 'call-lambda 'c2 #'c2call-lambda)
 (put-sysprop 'call-global 'c2 #'c2call-global)
 
 (put-sysprop 'CALL 'WT-LOC #'wt-call)

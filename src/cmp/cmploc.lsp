@@ -32,6 +32,8 @@
 ;;;	( 'CHARACTER-VALUE' character-code )
 ;;;	( 'LONG-FLOAT-VALUE' long-float-value vv )
 ;;;	( 'SHORT-FLOAT-VALUE' short-float-value vv )
+;;;	'VA-ARG'
+;;;	'CL-VA-ARG'
 
 ;;; Valid *DESTINATION* locations are:
 ;;;
@@ -97,6 +99,8 @@
 	((eq loc 'VALUES)
 	 (wt "VALUES(0)"))
 	((eq loc 'VA-ARG)
+	 (wt "va_arg(args,cl_object)"))
+	((eq loc 'CL-VA-ARG)
 	 (wt "cl_va_arg(args)"))
 	((var-p loc)
 	 (wt-var loc))

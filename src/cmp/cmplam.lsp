@@ -129,24 +129,6 @@
 	  doc
 	  body)))
 
-
-(defun c2lambda-expr (lambda-list body cfun fname
-				  &optional closure-p call-lambda)
-  (let ((*tail-recursion-info*		;;; Tail recursion possible if
-         (and fname			;;; named function
-				        ;;; no required appears in closure,
-              (dolist (var (car lambda-list) t)
-                (declare (type var var))
-                (when (var-ref-ccb var) (return nil)))
-              (null (second lambda-list))	;;; no optionals,
-              (null (third lambda-list))	;;; no rest parameter, and
-              (null (fourth lambda-list))	;;; no keywords.
-              (cons fname (car lambda-list)))))
-    (if (fourth lambda-list)
-      (c2lambda-expr-with-key lambda-list body closure-p call-lambda cfun)
-      (c2lambda-expr-without-key lambda-list body closure-p call-lambda)))
-  )
-
 #| Steps:
  1. defun creates declarations for requireds + va_alist
  2. c2lambda-expr adds declarations for:
@@ -160,147 +142,8 @@
 	optionals, rest, keywords
 |#
 
-(defun c2lambda-expr-without-key (lambda-list
-                                  body
-				  closure-p
-				  kind
-                                  &aux
-				  (requireds (first lambda-list))
-                                  (optionals (second lambda-list))
-                                  (rest (third lambda-list)) rest-loc
-                                  (nreq (length requireds))
-				  (nopt (/ (length optionals) 3))
-                                  (labels nil)
-                                  (*unwind-exit* *unwind-exit*)
-                                  (*env* *env*)
-                                  (block-p nil))
-  (declare (fixnum nreq nopt))
-
-  ;; kind is either:
-  ;; 1. CALL-LAMBDA, for a lambda expression
-  ;; 2. LOCAL-ENTRY, for the local entry of a proclaimed function
-  ;; 3. NIL, otherwise
-
-  (if (eq 'LOCAL-ENTRY kind)
-
-   ;; for local entry functions arguments are processed by t3defun
-   (dolist (reqs requireds)
-     (bind (next-lcl) reqs))
-
-   ;; For each variable, set its var-loc.
-   ;; For optional parameters, and lexical variables which can be unboxed,
-   ;; this will be a new LCL.
-   ;; The bind step later will assign to such variable.
-   (let* ((req0 (if (eq 'CALL-LAMBDA kind) (- *lcl* nreq) *lcl*))
-	  (lcl (+ req0 nreq)))
-     (declare (fixnum lcl))
-
-     ;; check arguments
-     (when (or *safe-compile* *compiler-check-args*)
-       (cond ((or rest optionals)
-	      (when requireds
-		(wt-nl "if(narg<" nreq ") FEwrong_num_arguments_anonym();"))
-	      (unless rest
-		(wt-nl "if(narg>" (+ nreq nopt)
-		       ") FEwrong_num_arguments_anonym();")))
-	     (t (wt-nl "check_arg(" nreq ");"))))
-
-     ;; declare variables
-     (labels ((wt-decl (var)
-		(wt-nl)
-		(unless block-p
-		  (wt "{") (setq block-p t))
-		(wt *volatile* (register var) (rep-type-name (var-rep-type var)) " ")
-		(wt-lcl (incf lcl)) (wt ";")
-		`(LCL ,lcl))
-	      (do-decl (var)
-		(when (local var)	; no LCL needed for SPECIAL or LEX
-		  (setf (var-loc var) (wt-decl var)))))
-       (do ((reqs requireds (cdr reqs))
-	    (reqi (1+ req0) (1+ reqi)) (var))
-	   ((endp reqs))
-	 (declare (fixnum reqi) (type cons reqs) (type var var))
-	 (setq var (first reqs))
-	 (when (unboxed var)
-	   (setf (var-loc var) (wt-decl var)))) ; create unboxed variable
-       (when (and rest (< (var-ref rest) 1)) ; dont create rest if not used
-	 (setq rest nil))
-       (when (or optionals rest)	; rest necessary for CALL-LAMBDA
-	 (unless block-p
-	   (wt-nl "{") (setq block-p t))
-	 ;; count optionals
-	 (wt "int i=" (if (eq 'CALL-LAMBDA kind) 0 nreq) ";"))
-       (do ((opt optionals (cdddr opt)))
-	   ((endp opt))
-	 (do-decl (first opt))
-	 (when (third opt) (do-decl (third opt))))
-       (when rest (setq rest-loc (wt-decl rest))))
-
-     (unless (eq 'CALL-LAMBDA kind)
-       (when (or optionals rest)
-	 (unless block-p
-	   (wt-nl "{") (setq block-p t))
-	 (wt-nl "cl_va_list args; cl_va_start(args,"
-		(cond ((plusp nreq) (format nil "V~d" (+ req0 nreq)))
-		      (closure-p "env0")
-		      (t "narg"))
-		(format nil ",narg,~d);" nreq))))
-
-     ;; Bind required parameters.
-     (do ((reqs requireds (cdr reqs))
-	  (reqi (1+ req0) (1+ reqi)))
-	 ((endp reqs))
-       (declare (fixnum reqi) (type cons reqs))
-       (bind `(LCL ,reqi) (first reqs)))
-
-     (setq *lcl* lcl))
-   )
-  ;; Bind optional parameters as long as there remain arguments.
-  (when optionals
-    ;; When binding optional values, we use two calls to BIND. This means
-    ;; 'BDS-BIND is pushed twice on *unwind-exit*, which results in two calls
-    ;; to bds_unwind1, which is wrong. A possible fix is to save *unwind-exit*
-    (let ((*unwind-exit* *unwind-exit*)
-	  (va-arg-loc 'VA-ARG))
-      (do ((opt optionals (cdddr opt)))
-	  ((endp opt))
-	(push (next-label) labels)
-	(wt-nl "if (i==narg) ") (wt-go (car labels))
-	(bind va-arg-loc (first opt))
-	(when (third opt) (bind t (third opt)))
-	(wt-nl "i++;")
-	))
-    (let ((label (next-label)))
-      (wt-nl) (wt-go label)
-      (setq labels (nreverse labels))
-      ;;; Bind unspecified optional parameters.
-      (do ((opt optionals (cdddr opt)))
-	  ((endp opt))
-        (wt-label (car labels))
-        (pop labels)
-	(bind-init (first opt) (second opt))
-        (when (third opt) (bind nil (third opt))))
-      (wt-label label))
-    )
-  (when rest
-    (if optionals
-	(wt-nl "narg -= i;")
-	(wt-nl "narg -=" nreq ";"))
-    (wt-nl rest-loc)
-    (wt "=cl_grab_rest_args(args);")
-    (bind rest-loc rest))
-
-  (when *tail-recursion-info*
-        (push 'TAIL-RECURSION-MARK *unwind-exit*) (wt-nl1 "TTL:"))
-
-  ;;; Now the parameters are ready!
-  (c2expr body)
-
-  (when block-p (wt-nl "}"))
-  )
-
-(defun c2lambda-expr-with-key
-    (lambda-list body closure-p call-lambda cfun
+(defun c2lambda-expr
+    (lambda-list body cfun fname &optional closure-p local-entry-p
 		 &aux (requireds (first lambda-list))
 		 (optionals (second lambda-list))
 		 (rest (third lambda-list)) rest-loc
@@ -310,23 +153,52 @@
 		 (nopt (/ (length optionals) 3))
 		 (nkey (/ (length keywords) 4))
 		 (labels nil)
+		 (varargs (or optionals rest keywords allow-other-keys))
+		 simple-varargs
+		 (*tail-recursion-info* nil)
 		 (*unwind-exit* *unwind-exit*)
 		 (*env* *env*)
 		 (block-p nil)
 		 (last-arg))
   (declare (fixnum nreq nkey))
 
+  (when (and fname ;; named function
+	     ;; no required appears in closure,
+	     (dolist (var (car lambda-list) t)
+	       (declare (type var var))
+	       (when (var-ref-ccb var) (return nil)))
+	     (null (second lambda-list))	;; no optionals,
+	     (null (third lambda-list))		;; no rest parameter, and
+	     (null (fourth lambda-list)))	;; no keywords.
+    (setf *tail-recursion-info* (cons fname (car lambda-list))))
+
+  ;; For local entry functions arguments are processed by t3defun.
+  ;; They must have a fixed number of arguments, no optionals, rest, etc.
+  (when (and local-entry-p varargs)
+    (baboon))
+
+  ;; check arguments
+  (unless (or local-entry-p (not (or *safe-compile* *compiler-check-args*)))
+    (setq block-p t)
+    (cond (varargs
+	   (when requireds
+	     (wt-nl "if(narg<" nreq ") FEwrong_num_arguments_anonym();"))
+	   (unless (or rest keywords allow-other-keys)
+	     (wt-nl "if(narg>" (+ nreq nopt)
+		    ") FEwrong_num_arguments_anonym();")))
+	  (t
+	   (wt-nl "check_arg(" nreq ");")))
+    (wt-nl "{"))
+
   ;; For each variable, set its var-loc.
   ;; For optional and keyword parameters, and lexical variables which
   ;; can be unboxed, this will be a new LCL.
   ;; The bind step later will assign to such variable.
-  (let* ((req0 (if call-lambda (- *lcl* nreq) *lcl*))
+  (let* ((req0 *lcl*)
 	 (lcl (+ req0 nreq)))
     (declare (fixnum lcl))
     (labels ((wt-decl (var)
                (wt-nl)
-               (unless block-p
-                 (wt "{") (setq block-p t))
                (wt *volatile* (register var) (rep-type-name (var-rep-type var)) " ")
                (wt-lcl (incf lcl)) (wt ";")
                `(LCL ,lcl))
@@ -338,15 +210,15 @@
 	  ((endp reqs))
 	(declare (fixnum reqi) (type cons reqs) (type var var))
 	(setq var (first reqs))
-	(if (unboxed var)
-	    (setf (var-loc var) (wt-decl var)))) ; create unboxed variable
+	(cond (local-entry-p
+	       (bind `(LCL ,reqi) var))
+	      ((unboxed var) ; create unboxed variable
+	       (setf (var-loc var) (wt-decl var)))))
       (when (and rest (< (var-ref rest) 1)) ; dont create rest if not used
 	(setq rest nil))
-      (when (or optionals rest)		; rest necessary for CALL-LAMBDA
-        (unless block-p
-          (wt-nl "{") (setq block-p t))
+      (when (or optionals rest)
 	;; count optionals
-        (wt "int i=" (if call-lambda 0 nreq) ";"))
+        (wt "int i=" nreq ";"))
       (do ((opt optionals (cdddr opt)))
 	  ((endp opt))
         (do-decl (first opt))
@@ -357,23 +229,22 @@
         (do-decl (second key))
         (when (fourth key) (do-decl (fourth key)))))
 
-    (unless call-lambda
-      (unless block-p
-	(wt-nl "{") (setq block-p t))
-      (wt-nl "cl_va_list args; cl_va_start(args, "
-	     (cond ((plusp nreq) (format nil "V~d" (+ req0 nreq)))
-		   (closure-p "env0")
-		   (t "narg"))
-	     (format nil ", narg, ~d);" nreq)))
-
-    ;; check arguments
-    (when (and (or *safe-compile* *compiler-check-args*) requireds)
-      (wt-nl "if(narg<" nreq ") FEwrong_num_arguments_anonym();"))
+    (when varargs
+      (let ((first-arg (cond ((plusp nreq) (format nil "V~d" (+ req0 nreq)))
+			     (closure-p "env0")
+			     (t "narg"))))
+	(wt-nl
+	  (format nil
+	     (if (setq simple-varargs (and (not (or rest keywords allow-other-keys))
+					   (< (+ nreq nopt) 30)))
+		 "va_list args; va_start(args,~a);"
+		 "cl_va_list args; cl_va_start(args,~a,narg,~d);")
+	     first-arg nreq))))
 
     ;; Bind required parameters.
     (do ((reqs requireds (cdr reqs))
 	 (reqi (1+ req0) (1+ reqi)))	; to allow concurrent compilations
-	((endp reqs))
+	((or local-entry-p (endp reqs)))
       (declare (fixnum reqi) (type cons reqs))
       (bind `(LCL ,reqi) (first reqs)))
 
@@ -385,7 +256,7 @@
     ;; 'BDS-BIND is pushed twice on *unwind-exit*, which results in two calls
     ;; to bds_unwind1, which is wrong. A possible fix is to save *unwind-exit*
     (let ((*unwind-exit* *unwind-exit*)
-	  (va-arg-loc 'VA-ARG))
+	  (va-arg-loc (if simple-varargs 'VA-ARG 'CL-VA-ARG)))
       (do ((opt optionals (cdddr opt)))
 	  ((endp opt))
 	(push (next-label) labels)
@@ -407,18 +278,21 @@
       (wt-label label))
     )
 
-  (if optionals
-      (wt-nl "narg -= i;")
-      (wt-nl "narg -=" nreq ";"))
-
-  (cond (keywords
-	 (wt-nl "{ cl_object keyvars[" (* 2 nkey) "];")
-	 (wt-nl "cl_parse_key(args," nkey ",L" cfun "keys,keyvars"))
-	(t
-	 (wt-nl "cl_parse_key(args,0,NULL,NULL")))
-  (if rest (wt ",&" rest-loc) (wt ",NULL"))
-  (wt (if allow-other-keys ",TRUE);" ",FALSE);"))
-  (when rest (bind rest-loc rest))
+  (when (or rest keywords allow-other-keys)
+    (if optionals
+	(wt-nl "narg -= i;")
+	(wt-nl "narg -=" nreq ";"))
+    (cond ((not (or keywords allow-other-keys))
+	   (wt-nl rest-loc "=cl_grab_rest_args(args);"))
+	  (t
+	   (cond (keywords
+		  (wt-nl "{ cl_object keyvars[" (* 2 nkey) "];")
+		  (wt-nl "cl_parse_key(args," nkey ",L" cfun "keys,keyvars"))
+		 (t
+		  (wt-nl "cl_parse_key(args,0,NULL,NULL")))
+	   (if rest (wt ",&" rest-loc) (wt ",NULL"))
+	   (wt (if allow-other-keys ",TRUE);" ",FALSE);"))))
+    (when rest (bind rest-loc rest)))
 
   ;;; Bind keywords.
   (do ((kwd keywords (cddddr kwd))
@@ -453,6 +327,10 @@
       (when flag
 	(setf (second KEYVARS[i]) (+ nkey i))
 	(bind KEYVARS[i] flag))))
+
+  (when *tail-recursion-info*
+    (push 'TAIL-RECURSION-MARK *unwind-exit*)
+    (wt-nl1 "TTL:"))
 
   ;;; Now the parameters are ready, after all!
   (c2expr body)

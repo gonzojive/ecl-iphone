@@ -170,12 +170,6 @@
 |#
 	     (list 'CALL-GLOBAL info fname forms)))))
 
-(defun c1call-lambda (lambda-expr args &aux (info (make-info :sp-change t)))
-  (setq args (c1args args info))
-  (setq lambda-expr (c1lambda-expr lambda-expr))
-  (add-info info (second lambda-expr))
-  (list 'CALL-LAMBDA info lambda-expr args (next-cfun)))
-
 (defun c2expr (form)
   (if (eq (car form) 'CALL-GLOBAL)
 ;;; ----------------------------------------------------------------------

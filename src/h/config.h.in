@@ -74,6 +74,7 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #define LAMBDA_PARAMETERS_LIMIT 64
 
 /*	Numb. of args. which can be passed using the C stack		*/
+/*	See cmplam.lsp if you change this value				*/
 #define C_ARGUMENTS_LIMIT 64
 
 /* A setjmp that does not save signals					*/

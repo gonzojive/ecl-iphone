@@ -608,6 +608,7 @@ put_fhead(void)
 put_declaration(void)
 {
   int i;
+  int simple_varargs;
 
   for (i = 0;  i < nopt;  i++) {
     put_lineno();
@@ -641,14 +642,19 @@ put_declaration(void)
     put_lineno();
     fprintf(out, "\tif (narg!=%d) FEwrong_num_arguments(%s);\n", nreq, function_symbol);
   } else {
+    simple_varargs = !rest_flag && !key_flag && ((nreq + nopt) < 32);
     if (key_flag) {
       put_lineno();
       fprintf(out, "\tcl_object KEY_VARS[%d];\n", 2*nkey);
     }
     put_lineno();
-    fprintf(out, "\tcl_va_list %s;\n\tcl_va_start(%s, %s, narg, %d);\n",
-	    rest_var, rest_var, ((nreq > 0) ? required[nreq-1] : "narg"),
-	    nreq);
+    if (simple_varargs)
+	fprintf(out,"\tva_list %s;\n\tva_start(%s, %s);\n",
+		rest_var, rest_var, ((nreq > 0) ? required[nreq-1] : "narg"));
+    else
+	fprintf(out,"\tcl_va_list %s;\n\tcl_va_start(%s, %s, narg, %d);\n",
+		rest_var, rest_var, ((nreq > 0) ? required[nreq-1] : "narg"),
+		nreq);
     put_lineno();
     fprintf(out, "\tif (narg < %d", nreq);
     if (nopt > 0 && !rest_flag && !key_flag) {
@@ -659,7 +665,9 @@ put_declaration(void)
       put_lineno();
       fprintf(out, "\tif (narg > %d) {\n", nreq+i, optional[i].o_var);
       put_lineno();
-      fprintf(out, "\t\t%s = cl_va_arg(%s);\n",
+      fprintf(out, simple_varargs?
+	      "\t\t%s = va_arg(%s,cl_object);\n":
+	      "\t\t%s = cl_va_arg(%s);\n",
 	      optional[i].o_var, rest_var);
       if (optional[i].o_svar) {
 	put_lineno();

@@ -1466,6 +1466,14 @@ ECLS 0.9b
   - AND, OR and WHEN are now just macros, without any special
     treatment in the bytecodes compiler.
 
+  - To support a large number of arguments, when a function receives
+    more than 64 values they get stored in the stack of the lisp
+    interpreter, and general purpose routines are used to handle
+    them (cl_va_list, cl_va_arg, etc). Now, for functions which can
+    only receive up to 32 values (i.e. functions without &rest,
+    &key, and thess than 32 arguments including optionals), ECL
+    avoids using this overhead by using directly va_list and va_arg. 
+
 * Visible changes:
 
   - New special form C-INLINE, allows inserting C/C++ code in any
