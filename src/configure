@@ -3746,7 +3746,7 @@ fi
 
 libdir="${libdir}/ecl"
 includedir="${libdir}/ecl/h"
-if  -z "${docdir}" ; then docdir="${shareddir}/doc/ecl"; fi
+if test -z "${docdir}"; then docdir="${shareddir}/doc/ecl"; fi
 
 
 
