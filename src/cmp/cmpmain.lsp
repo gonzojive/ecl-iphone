@@ -245,8 +245,8 @@ cl_object Cblock;
        (si:system (format nil "cat ~A" (namestring c-name)))
        (compiler-cc c-name o-name)
        (apply #'shared-cc output-name o-name ld-flags)))
-    ;(delete-file c-name)
-    ;(delete-file o-name)
+    (delete-file c-name)
+    (delete-file o-name)
     output-name))
 
 (defun build-fasl (&rest args)
@@ -396,12 +396,12 @@ Cannot compile ~a."
 		 (print-compiler-info)
 		 (format t "~&;;; Finished compiling ~a."
 			 (namestring input-pathname))))
-          ;(unless c-file (delete-file c-pathname))
-          ;(unless h-file (delete-file h-pathname))
-          ;(unless (or data-file shared-data-file)
-	  ;  (delete-file data-pathname))
+          (unless c-file (delete-file c-pathname))
+          (unless h-file (delete-file h-pathname))
+          (unless (or data-file shared-data-file)
+	    (delete-file data-pathname))
 	  #+dlopen
-	  ;(unless system-p (delete-file o-pathname))
+	  (unless system-p (delete-file o-pathname))
 	  #+dlopen
 	  (if system-p o-pathname so-pathname)
 	  #-dlopen
@@ -631,7 +631,7 @@ Cannot compile ~a."
     (shared-cc tmp file)
     (when (probe-file tmp)
       (load tmp :verbose nil :print nil)
-      ;(delete-file tmp)
+      (delete-file tmp)
       nil)))
 
 #+dlopen
