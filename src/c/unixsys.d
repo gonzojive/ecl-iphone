@@ -128,7 +128,7 @@ si_close_pipe(cl_object stream)
 					     DUPLICATE_CLOSE_SOURCE |
 					     DUPLICATE_SAME_ACCESS);
 			if (ok) {
-				parent_write = _open_osfhandle(tmp, _O_WRONLY | _O_TEXT);
+				parent_write = _open_osfhandle(tmp, _O_WRONLY /*| _O_TEXT*/);
 				if (parent_write < 0)
 					printf("open_osfhandle failed\n");
 			}
@@ -156,7 +156,7 @@ si_close_pipe(cl_object stream)
 					     DUPLICATE_CLOSE_SOURCE |
 					     DUPLICATE_SAME_ACCESS);
 			if (ok) {
-				parent_read = _open_osfhandle(tmp, _O_RDONLY | _O_TEXT);
+				parent_read = _open_osfhandle(tmp, _O_RDONLY /*| _O_TEXT*/);
 				if (parent_read < 0)
 					printf("open_osfhandle failed\n");
 			}
