@@ -227,8 +227,8 @@ A1
 (SUBLIS '(((A) . UU) (A . II))
        '(I (A) A)
        :TEST #'(LAMBDA (X Y) (IF (LISTP Y) (EQL X (CAR Y)))))
-#+(or XCL ECL AKCL LUCID ALLEGRO) (I II . II) ; X aus der Aliste, Y ein Blatt des Baumes
-#+(or CLISP CMU)              (I (UU) UU) ; X ein Blatt, Y aus der Aliste
+#+(or XCL AKCL LUCID ALLEGRO) (I II . II) ; X aus der Aliste, Y ein Blatt des Baumes
+#+(or CLISP CMU ECL)              (I (UU) UU) ; X ein Blatt, Y aus der Aliste
 #-(or XCL CLISP ECL AKCL CMU LUCID ALLEGRO) UNKNOWN
 
 (NSUBLIS '(((A) . UU) (A . II))
@@ -249,7 +249,7 @@ A1
 (NSUBLIS '(((A) . UU) (A . II))
        '(I (A) A)
        :TEST #'(LAMBDA (X Y) (IF (LISTP Y) (EQL X (CAR Y)))))
-#+(or XCL ECL AKCL ALLEGRO) (I II . II) ; X aus der Aliste, Y ein Blatt des Baumes
-#+(or CLISP CMU LUCID)  (I (UU) UU) ; X ein Blatt, Y aus der Aliste
+#+(or XCL AKCL ALLEGRO) (I II . II) ; X aus der Aliste, Y ein Blatt des Baumes
+#+(or CLISP CMU LUCID ECL)  (I (UU) UU) ; X ein Blatt, Y aus der Aliste
 #-(or XCL CLISP ECL AKCL CMU LUCID ALLEGRO) UNKNOWN
 
