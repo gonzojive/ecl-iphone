@@ -1129,7 +1129,7 @@ sharp_vertical_bar_reader(cl_object in, cl_object ch, cl_object d)
 static cl_object
 default_dispatch_macro_fun(cl_object in, cl_object c, cl_object d)
 {
-	FEreader_error("Undefined dispatch macro character.", in, 1, c);
+	FEreader_error("No dispatch function defined for character ~s.", in, 1, c);
 }
 
 /*
@@ -1138,18 +1138,8 @@ default_dispatch_macro_fun(cl_object in, cl_object c, cl_object d)
 static cl_object
 sharp_P_reader(cl_object in, cl_object c, cl_object d)
 {
-	@(return cl_pathname(read_object(in)))
-}
-
-/*
-	#" ... " returns the pathname with namestring ... .
-*/
-static cl_object
-sharp_double_quote_reader(cl_object in, cl_object c, cl_object d)
-{
 	if (d != Cnil && !read_suppress)
-		extra_argument('"', in, d);
-	unread_char(c, in);
+		extra_argument('P', in, d);
 	@(return cl_pathname(read_object(in)))
 }
 
@@ -1791,7 +1781,6 @@ init_read(void)
 	dtab['<'] = make_cf3(sharp_less_than_reader);
 */
 	dtab['|'] = make_cf3(sharp_vertical_bar_reader);
-	dtab['"'] = make_cf3(sharp_double_quote_reader);
 	/*  This is specific to this implementation  */
 	dtab['$'] = make_cf3(sharp_dollar_reader);
 	/*  This is specific to this implimentation  */
