@@ -213,9 +213,9 @@ create_server_port(int port)
   inaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
   if (bind(request, (struct sockaddr *)&inaddr, sizeof (inaddr)))
-    FEerror("Binding TCP socket", 0);
+    FElibc_error("Binding TCP socket", 0);
   if (listen(request, 1))
-    FEerror("TCP listening", 0);
+    FElibc_error("TCP listening", 0);
 #ifdef THREADS
   /* Don't make this file-descriptor non-blocking
    * just block on it before we attempt to accept from it
@@ -238,13 +238,13 @@ create_server_port(int port)
       goto loop;
     } else {
       fclose(fp);
-      FEerror("Accepting requests", 0);
+      FElibc_error("Accepting requests", 0);
     }
     fclose(fp);
   }
 #else
   if ((conn = accept(request, (struct sockaddr *)NULL, (int *)NULL)) < 0)
-    FEerror("Accepting requests", 0);
+    FElibc_error("Accepting requests", 0);
 #endif	/* THREADS */
 
   return(conn);
