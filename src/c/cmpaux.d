@@ -361,8 +361,6 @@ check_other_key(cl_object l, int n, ...)
 	cl_object k;
 	int i;
 	bool allow_other_keys = FALSE;
-	va_list ap;
-	va_start(ap, n);                /* extracting arguments */
 
 	for (;  !endp(l);  l = CDDR(l)) {
 		k = CAR(l);
@@ -373,17 +371,13 @@ check_other_key(cl_object l, int n, ...)
 		if (k == @':allow-other-keys' && CADR(l) != Cnil) {
 			allow_other_keys = TRUE;
 		} else {
-#ifndef NO_ARG_ARRAY
-		        cl_object *ktab = (cl_object *)ap;
+			va_list ktab;
+			va_start(ktab, n); /* extracting arguments */
 			for (i = 0;  i < n;  i++)
-				if (ktab[i] == k) {
-				  ktab[i] = Cnil; /* remember seen */
-				  break;
-				}
+				if (cl_nextarg(ktab) == k)
+					break;
+			va_end(ktab);
 			if (i >= n) other_key = k;
-#else
-			Rewrite this!
-#endif NO_ARG_ARRAY
 		}
 	}
 	if (other_key != OBJNULL && !allow_other_keys)
