@@ -66,8 +66,14 @@ ECL 0.9f
 
  - SBCL sockets have been ported to unix (J. Stecklina) and to windows
    (M. Goffioul) and are built when using the configuration option --with-tcp.
-   Both INET and Unix sockets are implemented, although under windows the
-   latter must be simulated using pipes.
+   Both INET and Unix sockets are implemented. Under windows Unix sockets are
+   simulated the cygwin way (i.e. creating a file with the address and port
+   of a INET socket), and we also offer the possibility of creating named
+   pipes.
+
+ - SBCL's implementation of PROVIDE/REQUIRE is now in ECL. By default, modules
+   are searched in the #P"SYS:" path, but you can add your own searching
+   functions to *module-provider-functions*. (J. Stecklina)
 
 ;;; Local Variables: ***
 ;;; mode:text ***
