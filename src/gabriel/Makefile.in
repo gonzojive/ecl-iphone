@@ -1,9 +1,9 @@
 top_srcdir=@top_srcdir@
 srcdir=@srcdir@
 
-FILES =  CMUCLc ECLSc CLISPc CMUCLi ECLSi CLISPi
-LISP ?= ../ecls -dir `pwd`/
-NAME ?= ECLSc
+FILES =  CMUCLc ECLc CLISPc CMUCLi ECLi CLISPi
+LISP ?= ../ecl -dir `pwd`/../
+NAME ?= ECLc
 COMPILE ?= NIL
 
 BENCHMARK: $(FILES)
@@ -12,7 +12,7 @@ BENCHMARK: $(FILES)
 	 echo "(beautify-output \"BENCHMARK\")"; \
 	 cat $(FILES); \
 	 echo "NIL";)\
-	| ../ecls ; cat BENCHMARK
+	| ../ecl ; cat BENCHMARK
 
 CMUCLi:
 	make test LISP="lisp" NAME=CMUCLi COMPILE="NIL"
@@ -22,10 +22,10 @@ CLISPi:
 	make test LISP="clisp -a" NAME=CLISPi COMPILE="NIL"
 CLISPc:
 	make test LISP="clisp -a" NAME=CLISPc COMPILE="T"
-ECLSi:
-	make test NAME=ECLSi COMPILE="NIL"
-ECLSc: ../h/ecls.h
-	make test NAME=ECLSc COMPILE="T"
+ECLi:
+	make test NAME=ECLi COMPILE="NIL"
+ECLc: ../h/ecl.h
+	make test NAME=ECLc COMPILE="T"
 
 test:
 	(echo "(load \"$(srcdir)/make-declare.lsp\")"; \
@@ -33,10 +33,7 @@ test:
 	 echo "(do-all-tests \"$(NAME)\" \"$(srcdir)/\" \""`pwd`"/\" $(COMPILE))"; \
 	 echo "#+(or cmu ecl) (quit)") | $(LISP)
 
-../h/ecls.h:
-#ifndef HAVE_LOCAL_GMP
-	cp $(top_srcdir)/gmp/gmp.h ../h
-#endif
+../h/ecl.h:
 	ln -sf $(top_srcdir)/h/*.h ../h
 
 clean:
