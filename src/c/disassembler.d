@@ -715,10 +715,13 @@ cl_object
 si_bc_split(cl_object b)
 {
 	cl_object vector;
+	cl_object data;
 
 	if (type_of(b) != t_bytecodes)
 		@(return Cnil Cnil)
-	vector = cl_alloc_simple_vector(b->bytecodes.code_size, aet_fix);
-	vector->vector.self.fix = b->bytecodes.code;
-	@(return b->bytecodes.lex vector)
+	vector = cl_alloc_simple_vector(b->bytecodes.code_size, aet_b8);
+	vector->vector.self.b8 = b->bytecodes.code;
+	data = cl_alloc_simple_vector(b->bytecodes.data_size, aet_object);
+	data->vector.self.t = b->bytecodes.data;
+	@(return b->bytecodes.lex vector data)
 }
