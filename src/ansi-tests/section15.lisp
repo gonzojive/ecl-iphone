@@ -275,19 +275,19 @@
 (my-assert
  (array-element-type (make-array 12 :element-type '(unsigned-byte 8)))
  #+(or cmu sbcl clisp) (unsigned-byte 8)
- #+ecl fixnum
+ #+ecl byte8
  #-(or cmu sbcl clisp ecl) fill-this-in)
 
 (my-assert
  (array-element-type (make-array 12 :element-type '(unsigned-byte 5)))
  #+(or cmu sbcl clisp) (unsigned-byte 8)
- #+ecl fixnum
+ #+ecl byte8
  #-(or cmu sbcl clisp ecl) fill-this-in)
 
 (my-assert
  (array-element-type (make-array 5 :element-type '(mod 5)))
  #+(or cmu sbcl clisp) (UNSIGNED-BYTE 4)
- #+ecl fixnum
+ #+ecl byte8
  #-(or cmu sbcl clisp ecl) fill-this-in)
 					; (mod 5), (mod 8), fixnum, t, or any other type of which (mod 5) is a subtype.
 

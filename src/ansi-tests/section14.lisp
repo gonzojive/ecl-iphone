@@ -1578,36 +1578,36 @@
  (let ((list1 (list 1 1 2 3 4 'a 'b 'c "A" (string #\B) "C" "d"))
        (list2 (list 1 4 5 'b 'c 'd "a" (string #\B) "c" "D")))
    (intersection list1 list2))
- #-clisp
+ #-(or clisp ecl)
  (C B 4 1 1)
- #+clisp
+ #+(or clisp ecl)
  (1 1 4 B C))
 
 (my-assert
  (let ((list1 (list 1 1 2 3 4 'a 'b 'c "A" (string #\B) "C" "d"))
        (list2 (list 1 4 5 'b 'c 'd "a" (string #\B) "c" "D")))
    (intersection list1 list2 :test 'equal))
- #-clisp
+ #-(or clisp ecl)
  ("B" C B 4 1 1)
- #+clisp
+ #+(or clisp ecl)
  (1 1 4 B C "B"))
 
 (my-assert
  (let ((list1 (list 1 1 2 3 4 'a 'b 'c "A" "B" "C" "d"))
        (list2 (list 1 4 5 'b 'c 'd "a" "B" "c" "D")))
    (intersection list1 list2 :test #'equalp))
-  #-clisp
+  #-(or clisp ecl)
   ("d" "C" "B" "A" C B 4 1 1)
-  #+clisp
+  #+(or clisp ecl)
   (1 1 4 B C "A" "B" "C" "d"))
 
 (my-assert
  (let ((list1 (list 1 1 2 3 4 'a 'b 'c "A" "B" "C" "d"))
        (list2 (list 1 4 5 'b 'c 'd "a" "B" "c" "D")))
    (nintersection list1 list2))
- #-clisp
+ #-(or clisp ecl)
  (C B 4 1 1)
- #+clisp
+ #+(or clisp ecl)
  (1 1 4 B C))
 					;(1 1 4 B C))
 
@@ -1716,18 +1716,18 @@
  (let ((lst1 (mapcar #'string (list #\A #\b #\C #\d)))
        (lst2 (mapcar #'string (list #\a #\B #\C #\d))))
       (set-difference lst1 lst2))
- #-clisp
+ #-(or clisp ecl)
  ("d" "C" "b" "A")
- #+clisp
+ #+(or clisp ecl)
  ("A" "b" "C" "d"))
 
 (my-assert
  (let ((lst1 (list "A" "b" "C" "d"))
        (lst2 (list "a" "B" "C" "d")))
     (set-difference lst1 lst2 :test 'equal))
- #-clisp
+ #-(or clisp ecl)
  ("b" "A")
- #+clisp
+ #+(or clisp ecl)
  ("A" "b"))
 
 (my-assert
@@ -1790,8 +1790,8 @@
 		 '(#\c #\w)
 		 :test #'(lambda (s c) (find c s)))
  #+(or sbcl cmu) ("rhubarb" "lemon" "banana")
- #+clisp ("banana" "lemon" "rhubarb")
- #-(or sbcl cmu sbcl clisp) ("banana" "rhubarb" "lemon"))
+ #+(or clisp ecl) ("banana" "lemon" "rhubarb")
+ #-(or sbcl cmu sbcl ecl clisp) ("banana" "rhubarb" "lemon"))
 ;;One possible ordering.)
 
 ;;; set-exclusive-or
@@ -1800,9 +1800,9 @@
  (let ((lst1 (list 1 (string #\a) (string #\b)))
        (lst2 (list 1 (string #\A) (string #\b))))
    (set-exclusive-or lst1 lst2))
-  #-clisp
+  #-(or clisp ecl)
   ("b" "A" "b" "a")
-  #+clisp
+  #+(or clisp ecl)
   ("a" "b" "A" "b"))
 
 (my-assert
