@@ -312,7 +312,6 @@
 Defines a structure named by NAME.  The doc-string DOC, if supplied, is saved
 as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
   (let*((slot-descriptions slots)
-	;;#+clos
 	(name (if (consp name&opts) (first name&opts) name&opts))
         (options (when (consp name&opts) (rest name&opts)))
         (conc-name (string-concatenate name "-"))
@@ -325,11 +324,6 @@ as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
         print-function type named initial-offset
         offset name-offset
         documentation)
-
-    (when (consp name)
-      ;; The defstruct options are supplied.
-      (setq options (cdr name))
-      (setq name (car name)))
 
     ;; Parse the defstruct options.
     (do ((os options (cdr os)) (o) (v))
