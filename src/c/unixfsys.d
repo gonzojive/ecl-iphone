@@ -760,7 +760,7 @@ si_mkstemp(cl_object template)
 	cl_index l;
 	int fd;
 
-	assert_type_string(template);
+	template = si_coerce_to_filename(template);
 	l = template->string.fillp;
 	output = cl_alloc_simple_string(l + 6);
 	memcpy(output->string.self, template->string.self, l);
@@ -774,5 +774,5 @@ si_mkstemp(cl_object template)
 	if (fd < 0)
 		@(return Cnil)
 	close(fd);
-	@(return output)
+	@(return cl_truename(output))
 }
