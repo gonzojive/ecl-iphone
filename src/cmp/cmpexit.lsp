@@ -56,9 +56,7 @@
 			    ;; no need for temporary if we can use
 			    ;; *destination* directly
 			    (consp *destination*)
-			    (member (car *destination*)
-				    '(VAR BIND PUSH-CATCH-FRAME)
-				    :test #'eq))
+			    (member (car *destination*) '(VAR BIND) :test #'eq))
 		       (let* ((*temp* *temp*)
 			      (temp (list 'TEMP (next-temp))))
 			 (let ((*destination* temp))

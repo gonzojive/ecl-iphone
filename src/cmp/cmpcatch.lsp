@@ -22,16 +22,17 @@
   (list 'CATCH info tag args))
 
 (defun c2catch (tag body)
-  (let ((*destination* '(PUSH-CATCH-FRAME)))
-    (c2expr* tag))
-  (let ((*unwind-exit* (cons 'FRAME *unwind-exit*)))
-    (unwind-exit 'VALUES)
-    (wt-nl "} else {")
-    (c2expr body)
-    (wt-nl "}")))
-
-(defun set-push-catch-frame (loc)
-  (wt-nl "if (frs_push(FRS_CATCH," loc ")!=0){"))
+  (let* ((*lcl* *lcl*)
+	 (tag-lcl (list 'LCL (next-lcl))))
+    (wt-nl "{ cl_object " tag-lcl ";")
+    (let* ((*destination* tag-lcl))
+      (c2expr* tag))
+    (let* ((*unwind-exit* (cons 'FRAME *unwind-exit*)))
+      (wt-nl "if (frs_push(FRS_CATCH," tag-lcl ")!=0){")
+      (unwind-exit 'VALUES)
+      (wt-nl "} else {")
+      (c2expr body)
+      (wt-nl "}}"))))
 
 (defun c1unwind-protect (args &aux (info (make-info :sp-change t)) form)
   (incf *setjmps*)
@@ -91,5 +92,3 @@
 (setf (get 'UNWIND-PROTECT 'C2) 'c2unwind-protect)
 (setf (get 'THROW 'C1SPECIAL) 'c1throw)
 (setf (get 'THROW 'C2) 'c2throw)
-
-(setf (get 'PUSH-CATCH-FRAME 'SET-LOC) 'set-push-catch-frame)
