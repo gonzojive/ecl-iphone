@@ -17,8 +17,8 @@ INSTALL_DATA = @INSTALL_DATA@
 
 VERSION=@ECL_VERSION@
 
-HTML = index.html license.html lgpl.html news.html ecl.html benchmark.html \
-	install.html ecldev.html
+HTML = index.html license.html lgpl.html news.html user_manual benchmark.html \
+	install.html developers_manual
 
 FILTER = sed 's,@VERSION@,$(VERSION),g'
 
@@ -70,15 +70,17 @@ lgpl.html: $(top_srcdir)/../LGPL
 	(cat $(srcdir)/head; \
 	 echo '<pre>'; cat $?; echo '</pre>'; \
 	 cat $(srcdir)/end) | $(FILTER) > $@
-ecl.html: $(srcdir)/user.txi $(srcdir)/macros.txi
+user_manual: $(srcdir)/user.txi $(srcdir)/macros.txi
 	echo "Producing ecl.html; ignore error messages."
 	test -d ecl || mkdir ecl; \
-	texi2html -I=$(srcdir) -subdir=ecl -split=chapter $(srcdir)/user.txi \
-	|| (makeinfo -I $(srcdir) --html $(srcdir)/user.txi; rm -rf ecl)
-ecldev.html: $(srcdir)/devel.txi $(srcdir)/macros.txi
+	(texi2html -I=$(srcdir) -subdir=ecl -split=chapter $(srcdir)/user.txi \
+	|| (makeinfo -I $(srcdir) --html $(srcdir)/user.txi; rm -rf ecl)) \
+	&& touch user_manual
+developers_manual: $(srcdir)/devel.txi $(srcdir)/macros.txi
 	echo "Producing ecldev.html; ignore error messages."
 	test -d ecldev || mkdir ecldev; \
-	texi2html -I=$(srcdir) -subdir=ecldev -split=chapter $(srcdir)/devel.txi \
-	|| (makeinfo -I $(srcdir) --html $(srcdir)/devel.txi; rm -rf ecldev)
+	(texi2html -I=$(srcdir) -subdir=ecldev -split=chapter $(srcdir)/devel.txi \
+	|| (makeinfo -I $(srcdir) --html $(srcdir)/devel.txi; rm -rf ecldev)) \
+	&& touch developers_manual
 clean:
-	rm -r -f ecl ecldev ecl.info ecldev.info *.html
+	rm -r -f ecl ecldev ecl.info ecldev.info *.html user_manual developers_manual
