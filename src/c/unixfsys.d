@@ -645,7 +645,7 @@ si_getcwd(void)
 	directory = cl_truename(directory);
 	if (directory->pathname.name != Cnil ||
 	    directory->pathname.type != Cnil)
-		FEerror(1, "~A is not a directory pathname.", directory);
+		FEerror("~A is not a directory pathname.", 1, directory);
 	namestring = si_coerce_to_filename(directory);
 	if (chdir(namestring->string.self) <0)
 		FElibc_error("Can't change the current directory to ~A",

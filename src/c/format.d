@@ -73,6 +73,7 @@ static const char *fmt_ordinal[] = {
 };
 
 static void format(format_stack, const char *s, cl_index);
+static cl_object doformat(int narg, cl_object strm, cl_object string, cl_va_list args, bool in_formatter);
 
 static cl_object
 get_aux_stream(void)
@@ -1782,6 +1783,7 @@ doformat(int narg, cl_object strm, cl_object string, cl_va_list args, bool in_fo
 	struct format_stack_struct fmt;
 	jmp_buf fmt_jmp_buf0;
 	int colon;
+	cl_object output;
 	assert_type_string(string);
 	fmt.stream = strm;
 	fmt.base = cl_stack_index();
@@ -1806,14 +1808,14 @@ doformat(int narg, cl_object strm, cl_object string, cl_va_list args, bool in_fo
 	}
 	cl_stack_set_index(fmt.base);
 	cl_env.fmt_aux_stream = fmt.aux_stream;
-	args = Cnil;
+	output = Cnil;
 	if (in_formatter) {
 		while (fmt.index < fmt.end) {
-			args = CONS(cl_env.stack[fmt.index++], args);
+			output = CONS(cl_env.stack[fmt.index++], output);
 		}
-		args = cl_nreverse(args);
+		output = cl_nreverse(output);
 	}
-	return args;
+	return output;
 }
 
 static void
