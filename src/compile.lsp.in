@@ -57,8 +57,17 @@ ar -x ../@LIBPREFIX@clos.@LIBEXT@; for i in *.@OBJEXT@; do mv $i lsp_$i; done; a
 @RANLIB@ ../@LIBPREFIX@ecl.@LIBEXT@; ~
 cd ..; rm -rf tmp/* @LIBPREFIX@{lsp,clos} "))
 
+;;
+;; Notice that we must explicitely mention libecl.so/ecl.dll instead
+;; of using -lecl. This is to avoid interference with an already
+;; installed copy of ECL.
+;;
+(setf c::*ld-flags* "@LDRPATH@ @SHAREDPREFIX@ecl.@SHAREDEXT@ @CLIBS@")
+
 #+dlopen
+;;
 ;; We do not need the -rpath flag for the library, nor -lecl.
+;;
 (let ((c::*ld-flags* "@CLIBS@"))
   (c::shared-cc (compile-file-pathname "ecl" :type :dll)
 		"c/main.@OBJEXT@"
