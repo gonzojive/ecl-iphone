@@ -250,7 +250,7 @@ static bool object_will_print_as_hash(cl_object x);
 extern cl_fixnum search_print_circle(cl_object x);
 static bool potential_number_p(cl_object s, int base);
 
-static void FEprint_not_readable(cl_object x) __attribute__((noreturn));
+static void FEprint_not_readable(cl_object x) /*__attribute__((noreturn))*/;
 
 static void
 FEprint_not_readable(cl_object x)

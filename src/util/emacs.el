@@ -355,7 +355,6 @@
 "clx/depdefs.lisp"
 "clx/dependent.lisp"
 "clx/display.lisp"
-"clx/doc.lisp"
 "clx/clx.lisp"
 "clx/fonts.lisp"
 "clx/gcontext.lisp"

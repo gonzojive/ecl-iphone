@@ -18,7 +18,7 @@
 
 /******************************* ------- ******************************/
 
-static void FEtype_error_plist(cl_object x) __attribute__((noreturn));
+static void FEtype_error_plist(cl_object x) /*__attribute__((noreturn))*/;
 
 cl_object
 cl_make_symbol(cl_object str)

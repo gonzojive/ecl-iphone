@@ -414,31 +414,31 @@ extern cl_object si_bc_split(cl_object v);
 extern cl_object cl_error _ARGS((cl_narg narg, cl_object eformat, ...)) /*__attribute__((noreturn))*/;
 extern cl_object cl_cerror _ARGS((cl_narg narg, cl_object cformat, cl_object eformat, ...));
 
-extern void internal_error(const char *s) __attribute__((noreturn));
-extern void cs_overflow(void) __attribute__((noreturn));
-extern void error(const char *s) __attribute__((noreturn));
-extern void FEprogram_error(const char *s, int narg, ...) __attribute__((noreturn));
-extern void FEcontrol_error(const char *s, int narg, ...) __attribute__((noreturn));
-extern void FEreader_error(const char *s, cl_object stream, int narg, ...) __attribute__((noreturn));
+extern void internal_error(const char *s) /*__attribute__((noreturn))*/;
+extern void cs_overflow(void) /*__attribute__((noreturn))*/;
+extern void error(const char *s) /*__attribute__((noreturn))*/;
+extern void FEprogram_error(const char *s, int narg, ...) /*__attribute__((noreturn))*/;
+extern void FEcontrol_error(const char *s, int narg, ...) /*__attribute__((noreturn))*/;
+extern void FEreader_error(const char *s, cl_object stream, int narg, ...) /*__attribute__((noreturn))*/;
 #define FEparse_error FEreader_error
-extern void FEerror(const char *s, int narg, ...) __attribute__((noreturn));
-extern void FEcannot_open(cl_object fn) __attribute__((noreturn));
-extern void FEend_of_file(cl_object strm) __attribute__((noreturn));
+extern void FEerror(const char *s, int narg, ...) /*__attribute__((noreturn))*/;
+extern void FEcannot_open(cl_object fn) /*__attribute__((noreturn))*/;
+extern void FEend_of_file(cl_object strm) /*__attribute__((noreturn))*/;
 extern void FEclosed_stream(cl_object strm) __attribute__ ((noreturn));
-extern void FEwrong_type_argument(cl_object type, cl_object value) __attribute__((noreturn));
-extern void FEwrong_num_arguments(cl_object fun) __attribute__((noreturn));
-extern void FEwrong_num_arguments_anonym(void) __attribute__((noreturn));
-extern void FEunbound_variable(cl_object sym) __attribute__((noreturn));
-extern void FEinvalid_macro_call(cl_object obj) __attribute__((noreturn));
-extern void FEinvalid_variable(const char *s, cl_object obj) __attribute__((noreturn));
-extern void FEassignment_to_constant(cl_object v) __attribute__((noreturn));
-extern void FEundefined_function(cl_object fname) __attribute__((noreturn));
-extern void FEinvalid_function(cl_object obj) __attribute__((noreturn));
-extern void FEinvalid_function_name(cl_object obj) __attribute__((noreturn));
+extern void FEwrong_type_argument(cl_object type, cl_object value) /*__attribute__((noreturn))*/;
+extern void FEwrong_num_arguments(cl_object fun) /*__attribute__((noreturn))*/;
+extern void FEwrong_num_arguments_anonym(void) /*__attribute__((noreturn))*/;
+extern void FEunbound_variable(cl_object sym) /*__attribute__((noreturn))*/;
+extern void FEinvalid_macro_call(cl_object obj) /*__attribute__((noreturn))*/;
+extern void FEinvalid_variable(const char *s, cl_object obj) /*__attribute__((noreturn))*/;
+extern void FEassignment_to_constant(cl_object v) /*__attribute__((noreturn))*/;
+extern void FEundefined_function(cl_object fname) /*__attribute__((noreturn))*/;
+extern void FEinvalid_function(cl_object obj) /*__attribute__((noreturn))*/;
+extern void FEinvalid_function_name(cl_object obj) /*__attribute__((noreturn))*/;
 extern cl_object CEerror(const char *err_str, int narg, ...);
 extern void illegal_index(cl_object x, cl_object i);
-extern void FEtype_error_symbol(cl_object obj) __attribute__((noreturn));
-extern void FElibc_error(const char *msg, int narg, ...) __attribute__((noreturn));
+extern void FEtype_error_symbol(cl_object obj) /*__attribute__((noreturn))*/;
+extern void FElibc_error(const char *msg, int narg, ...) /*__attribute__((noreturn))*/;
 
 /* eval.c */
 
@@ -1189,9 +1189,9 @@ extern cl_object si_bds_val(cl_object arg);
 extern cl_object si_sch_frs_base(cl_object fr, cl_object ihs);
 extern cl_object si_reset_stack_limits(void);
 
-extern void bds_overflow(void) __attribute__((noreturn));
+extern void bds_overflow(void) /*__attribute__((noreturn))*/;
 extern void bds_unwind(bds_ptr new_bds_top);
-extern int frs_overflow(void) __attribute__((noreturn));
+extern int frs_overflow(void) /*__attribute__((noreturn))*/;
 extern void unwind(frame_ptr fr) /*__attribute__((noreturn))*/;
 extern frame_ptr frs_sch(cl_object frame_id);
 extern frame_ptr frs_sch_catch(cl_object frame_id);
@@ -1341,7 +1341,7 @@ extern cl_object si_lookup_host_entry(cl_object host_or_address);
 #ifdef ECL_THREADS
 extern cl_object mp_own_process(void) __attribute__((const));
 extern cl_object mp_all_processes(void);
-extern cl_object mp_exit_process(void) __attribute__((noreturn));
+extern cl_object mp_exit_process(void) /*__attribute__((noreturn))*/;
 extern cl_object mp_interrupt_process(cl_object process, cl_object function);
 extern cl_object mp_make_process _ARGS((cl_narg narg, ...));
 extern cl_object mp_process_active_p(cl_object process);
@@ -1398,20 +1398,20 @@ extern void assert_type_proper_list(cl_object p);
 extern void assert_non_wild_pathname(cl_object p);
 extern cl_object cl_type_of(cl_object x);
 
-extern void FEtype_error_character(cl_object x) __attribute__((noreturn));
-extern void FEtype_error_cons(cl_object x) __attribute__((noreturn));
-extern void FEtype_error_number(cl_object x) __attribute__((noreturn));
-extern void FEtype_error_real(cl_object x) __attribute__((noreturn));
-extern void FEtype_error_float(cl_object x) __attribute__((noreturn));
-extern void FEtype_error_integer(cl_object x) __attribute__((noreturn));
-extern void FEtype_error_list(cl_object x) __attribute__((noreturn));
-extern void FEtype_error_proper_list(cl_object x) __attribute__((noreturn));
-extern void FEtype_error_alist(cl_object x) __attribute__((noreturn));
-extern void FEtype_error_stream(cl_object x) __attribute__((noreturn));
-extern void FEcircular_list(cl_object x) __attribute__((noreturn));
-extern void FEtype_error_index(cl_object seq, cl_object ndx) __attribute__((noreturn));
-extern void FEtype_error_string(cl_object x) __attribute__((noreturn));
-extern void FEdivision_by_zero(cl_object x, cl_object y) __attribute__((noreturn));
+extern void FEtype_error_character(cl_object x) /*__attribute__((noreturn))*/;
+extern void FEtype_error_cons(cl_object x) /*__attribute__((noreturn))*/;
+extern void FEtype_error_number(cl_object x) /*__attribute__((noreturn))*/;
+extern void FEtype_error_real(cl_object x) /*__attribute__((noreturn))*/;
+extern void FEtype_error_float(cl_object x) /*__attribute__((noreturn))*/;
+extern void FEtype_error_integer(cl_object x) /*__attribute__((noreturn))*/;
+extern void FEtype_error_list(cl_object x) /*__attribute__((noreturn))*/;
+extern void FEtype_error_proper_list(cl_object x) /*__attribute__((noreturn))*/;
+extern void FEtype_error_alist(cl_object x) /*__attribute__((noreturn))*/;
+extern void FEtype_error_stream(cl_object x) /*__attribute__((noreturn))*/;
+extern void FEcircular_list(cl_object x) /*__attribute__((noreturn))*/;
+extern void FEtype_error_index(cl_object seq, cl_object ndx) /*__attribute__((noreturn))*/;
+extern void FEtype_error_string(cl_object x) /*__attribute__((noreturn))*/;
+extern void FEdivision_by_zero(cl_object x, cl_object y) /*__attribute__((noreturn))*/;
 
 /* unixfsys.c */
 

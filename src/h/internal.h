@@ -114,15 +114,6 @@ extern void ecl_extend_hashtable(cl_object hashtable);
 #define GFUN_SPEC(x) ((x)->instance.slots[2])
 #define GFUN_COMB(x) ((x)->instance.slots[3])
 
-/* load.d */
-#ifdef ENABLE_DLOPEN
-cl_object ecl_library_open(cl_object filename);
-void *ecl_library_symbol(cl_object block, const char *symbol);
-cl_object ecl_library_error(cl_object block);
-void ecl_library_close(cl_object block);
-void ecl_library_close_all(void);
-#endif
-
 /* package.d */
 
 extern cl_object ecl_find_symbol_nolock(cl_object name, cl_object p, int *intern_flag);

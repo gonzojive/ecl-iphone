@@ -36,7 +36,7 @@ hash_string(const char *buf, cl_index len)
 	return h;
 }
 
-static void corrupted_hash(cl_object hashtable) __attribute__((noreturn));
+static void corrupted_hash(cl_object hashtable) /*__attribute__((noreturn))*/;
 
 static void
 corrupted_hash(cl_object hashtable)

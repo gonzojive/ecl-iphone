@@ -113,8 +113,8 @@ static int c_unwind_protect(cl_object args, int flags);
 static int compile_body(cl_object args, int flags);
 static int compile_form(cl_object args, int push);
 
-static void FEillegal_variable_name(cl_object) __attribute__((noreturn));
-static void FEill_formed_input(void) __attribute__((noreturn));
+static void FEillegal_variable_name(cl_object) /*__attribute__((noreturn))*/;
+static void FEill_formed_input(void) /*__attribute__((noreturn))*/;
 
 /* -------------------- SAFE LIST HANDLING -------------------- */
 

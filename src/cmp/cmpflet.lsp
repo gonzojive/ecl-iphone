@@ -99,12 +99,6 @@
     ;; do not change.
     (let ((new-type (closure-type fun))
 	  (old-type (fun-closure fun)))
-      ;; Functions which have no closure or whatever should also
-      ;; have no LEXICAL or CLOSURE variables referred from outside
-      (when (and (null new-type)
-		 (intersection '(LEXICAL CLOSURE)
-			       (mapcar #'var-kind (fun-referred-vars fun))))
-	(baboon))
       ;; Same type
       (when (eq new-type old-type)
 	(return-from compute-fun-closure-type nil))
@@ -115,7 +109,6 @@
 	(baboon))
       (setf (fun-closure fun) new-type)
       (when (eq new-type 'CLOSURE)
-	;; any -> closure
 	(dolist (var (fun-referred-vars fun))
 	  (unless (or (ref-ref-ccb var)
 		      (member (var-kind var) '(GLOBAL SPECIAL REPLACED CLOSURE)))

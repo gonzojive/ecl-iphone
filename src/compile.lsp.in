@@ -85,12 +85,13 @@ ranlib ../@LIBPREFIX@ecl.@LIBEXT@'")
 ;;;
 ;;; We do not need the -rpath flag for the library, nor -lecl.
 ;;;
-(let ((c::*ld-shared-flags* "@SHARED_LDFLAGS@ @LDFLAGS@ @STATICLIBS@ @CLIBS@")
+(let ((c::*ld-shared-flags* "@SHARED_LDFLAGS@ @LDFLAGS@ @CLIBS@")
       (c::*cc-flags* (concatenate 'string "-I@true_builddir@/c " c::*cc-flags*)))
   (c::shared-cc (compile-file-pathname "ecl" :type :dll)
 		"c/main.@OBJEXT@"
 		"@LIBPREFIX@lsp.@LIBEXT@"
 		"@LIBPREFIX@eclmin.@LIBEXT@"
+		"@STATICLIBS@"
 		. #.(unless (equalp "@LDINSTALLNAME@" "")
 			'("@LDINSTALLNAME@"))))
 

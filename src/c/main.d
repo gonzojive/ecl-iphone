@@ -78,7 +78,7 @@ ecl_init_env(struct cl_env_struct *env)
 }
 
 static const struct {
-	char *name;
+	const char *name;
 	int code;
 } char_names[] = {
 	{"Null", 0},
@@ -125,6 +125,7 @@ cl_shutdown(void)
 #ifdef ENABLE_DLOPEN
 	ecl_library_close_all();
 #endif
+	return 1;
 }
 
 int

@@ -217,9 +217,9 @@ cl_stream_external_format(cl_object strm)
  *----------------------------------------------------------------------
  */
 
-static void not_an_input_stream(cl_object fn) __attribute__((noreturn));
-static void not_an_output_stream(cl_object fn) __attribute__((noreturn));
-static void wrong_file_handler(cl_object strm) __attribute__((noreturn));
+static void not_an_input_stream(cl_object fn) /*__attribute__((noreturn))*/;
+static void not_an_output_stream(cl_object fn) /*__attribute__((noreturn))*/;
+static void wrong_file_handler(cl_object strm) /*__attribute__((noreturn))*/;
 
 static void
 not_an_input_stream(cl_object strm)
