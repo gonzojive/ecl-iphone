@@ -167,7 +167,7 @@
       `(si::%defpackage
 	,name
 	',nicknames
-	,documentation
+	,(car documentation)
 	',(option-values ':use options)
 	',shadowed-symbol-names
 	',interned-symbol-names
