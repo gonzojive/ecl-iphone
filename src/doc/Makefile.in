@@ -31,7 +31,7 @@ ecl.dvi: $(srcdir)/user.txi $(srcdir)/macros.txi clisp.sty ecl.sty
 	tex $(srcdir)/user.txi
 ecldev.dvi: $(srcdir)/devel.txi $(srcdir)/macros.txi clisp.sty ecl.sty
 	tex $(srcdir)/devel.txi
-clx.ps: clx.texinfo
+clx.dvi: clx.texinfo
 	tex clx.texinfo
 
 ecl.ps: ecl.dvi $(srcdir)/macros.txi
