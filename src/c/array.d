@@ -275,7 +275,7 @@ aset1(cl_object v, cl_index index, cl_object val)
   x->array.displaced = Cnil;
   x->array.self.t = NULL;		/* for GC sake */
   x->array.rank = r;
-  x->array.elttype = (short)get_elttype(etype);
+  x->array.elttype = (short)ecl_symbol_to_elttype(etype);
   x->array.dims = (cl_index *)cl_alloc_atomic_align(sizeof(cl_index)*r, sizeof(cl_index));
   if (r >= ARANKLIM)
     FEerror("The array rank, ~R, is too large.", 1, MAKE_FIXNUM(r));
@@ -311,7 +311,7 @@ si_make_vector(cl_object etype, cl_object dim, cl_object adj,
   cl_object x;
   cl_elttype aet;
 
-  aet = get_elttype(etype);
+  aet = ecl_symbol_to_elttype(etype);
   if ((d = fixnnint(dim)) > ADIMLIM)
     FEerror("The vector dimension, ~D, is too large.", 1, dim);
   f = d;
@@ -427,8 +427,9 @@ array_allocself(cl_object x)
 }
 
 cl_elttype
-get_elttype(cl_object x)
+ecl_symbol_to_elttype(cl_object x)
 {
+ BEGIN:
 	if (x == @'base-char')
 		return(aet_ch);
 	else if (x == @'bit')
@@ -443,12 +444,27 @@ get_elttype(cl_object x)
 		return(aet_b8);
 	else if (x == @'ext::integer8')
 		return(aet_i8);
-/*	else if (x == @'ext::signed-short')
-		return(aet_short);
-	else if (x == @'ext::unsigned-short')
-		return(aet_ushort);
-*/	else
+	else if (x == @'t')
 		return(aet_object);
+	x = cl_funcall(2, @'upgraded-array-element-type', x);
+	goto BEGIN;
+}
+
+cl_object
+ecl_elttype_to_symbol(cl_elttype aet)
+{
+	cl_object output;
+	switch (aet) {
+	case aet_object:	output = Ct; break;
+	case aet_ch:		output = @'base-char'; break;
+	case aet_bit:		output = @'bit'; break;
+	case aet_fix:		output = @'fixnum'; break;
+	case aet_sf:		output = @'short-float'; break;
+	case aet_lf:		output = @'long-float'; break;
+	case aet_b8:		output = @'ext::byte8'; break;
+	case aet_i8:		output = @'ext::integer8'; break;
+	}
+	return output;
 }
 
 static void *
@@ -477,19 +493,7 @@ array_address(cl_object x, cl_index inc)
 cl_object
 cl_array_element_type(cl_object a)
 {
-	cl_object output;
-
-	switch (array_elttype(a)) {
-	case aet_object:	output = Ct; break;
-	case aet_ch:		output = @'base-char'; break;
-	case aet_bit:		output = @'bit'; break;
-	case aet_fix:		output = @'fixnum'; break;
-	case aet_sf:		output = @'short-float'; break;
-	case aet_lf:		output = @'long-float'; break;
-	case aet_b8:		output = @'ext::byte8'; break;
-	case aet_i8:		output = @'ext::integer8'; break;
-	}
-	@(return output)
+	@(return ecl_elttype_to_symbol(array_elttype(a)))
 }
 
 /*
@@ -781,36 +785,36 @@ si_fill_pointer_set(cl_object a, cl_object fp)
 cl_object
 si_replace_array(cl_object olda, cl_object newa)
 {
-  cl_object displaced, dlist;
-  ptrdiff_t diff;
+	cl_object displaced, dlist;
+	ptrdiff_t diff;
 
-  if (type_of(olda) != type_of(newa)
-      || (type_of(olda) == t_array && olda->array.rank != newa->array.rank))
-    goto CANNOT;
-  if (!olda->array.adjustable)
-    FEerror("~S is not adjustable.", 1, olda);
-  diff = (char*)(newa->array.self.t) - (char*)(olda->array.self.t);
-  dlist = CDR(olda->array.displaced);
-  displaced = CONS(CAR(newa->array.displaced), dlist);
-  check_displaced(dlist, olda, newa->array.dim);
-  adjust_displaced(olda, diff);
-  switch (type_of(olda)) {
-  case t_array:
-  case t_vector:
-  case t_bitvector:
-    olda->array = newa->array;
-    break;
-
-  case t_string:
-    olda->string = newa->string;
-    break;
-
-  default:
-    goto CANNOT;
-  }
-  olda->array.displaced = displaced;
-  @(return olda)
-
- CANNOT:
-  FEerror("Cannot replace the array ~S by the array ~S.", 2, olda, newa);
+	if (type_of(olda) != type_of(newa)
+	    || (type_of(olda) == t_array && olda->array.rank != newa->array.rank))
+		goto CANNOT;
+	if (!olda->array.adjustable) {
+		/* When an array is not adjustable, we simply output the new array */
+		olda = newa;
+		goto OUTPUT;
+	}
+	diff = (char*)(newa->array.self.t) - (char*)(olda->array.self.t);
+	dlist = CDR(olda->array.displaced);
+	displaced = CONS(CAR(newa->array.displaced), dlist);
+	check_displaced(dlist, olda, newa->array.dim);
+	adjust_displaced(olda, diff);
+	switch (type_of(olda)) {
+	case t_array:
+	case t_vector:
+	case t_bitvector:
+		olda->array = newa->array;
+		break;
+	case t_string:
+		olda->string = newa->string;
+		break;
+	default:
+	CANNOT:
+		FEerror("Cannot replace the array ~S by the array ~S.", 2, olda, newa);
+	}
+	olda->array.displaced = displaced;
+ OUTPUT:
+	@(return olda)
 }

@@ -1479,11 +1479,6 @@ c_multiple_value_call(cl_object args, int flags) {
 
 static int
 c_multiple_value_prog1(cl_object args, int flags) {
-	if ((flags & FLAG_PUSH) || !(flags & FLAG_VALUES)) {
-		flags = compile_form(pop(&args), flags);
-		compile_body(args, FLAG_IGNORE);
-		return flags;
-	}
 	compile_form(pop(&args), FLAG_VALUES);
 	if (!endp(args)) {
 		asm_op(OP_PUSHVALUES);

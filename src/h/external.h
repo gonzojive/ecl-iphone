@@ -272,7 +272,8 @@ extern cl_object aset1(cl_object v, cl_index index, cl_object val);
 extern void array_allocself(cl_object x);
 extern void adjust_displaced(cl_object x, ptrdiff_t diff);
 extern cl_elttype array_elttype(cl_object x);
-extern cl_elttype get_elttype(cl_object x);
+extern cl_elttype ecl_symbol_to_elttype(cl_object x);
+extern cl_object ecl_elttype_to_symbol(cl_elttype aet);
 
 
 /* assignment.c */
@@ -495,6 +496,10 @@ extern char *ecl_string_pointer_safe(cl_object f);
 
 /* file.c */
 
+#define ECL_LISTEN_NO_CHAR	0
+#define ECL_LISTEN_AVAILABLE	1
+#define ECL_LISTEN_EOF		-1
+
 extern cl_object cl_make_synonym_stream(cl_object sym);
 extern cl_object cl_synonym_stream_symbol(cl_object strm);
 extern cl_object cl_make_two_way_stream(cl_object strm1, cl_object strm2);
@@ -503,7 +508,7 @@ extern cl_object cl_two_way_stream_output_stream(cl_object strm);
 extern cl_object cl_make_echo_stream(cl_object strm1, cl_object strm2);
 extern cl_object cl_echo_stream_input_stream(cl_object strm);
 extern cl_object cl_echo_stream_output_stream(cl_object strm);
-extern cl_object cl_make_string_output_stream(void);
+extern cl_object cl_make_string_output_stream _ARGS((cl_narg narg, ...));
 extern cl_object cl_get_output_stream_string(cl_object strm);
 extern cl_object si_output_stream_string(cl_object strm);
 extern cl_object cl_streamp(cl_object strm);
@@ -524,7 +529,7 @@ extern cl_object cl_make_string_input_stream _ARGS((cl_narg narg, cl_object strn
 extern cl_object cl_close _ARGS((cl_narg narg, cl_object strm, ...));
 extern cl_object cl_open _ARGS((cl_narg narg, cl_object filename, ...));
 extern cl_object cl_file_position _ARGS((cl_narg narg, cl_object file_stream, ...));
-extern cl_object cl_file_string_length(cl_object string);
+extern cl_object cl_file_string_length(cl_object stream, cl_object string);
 extern cl_object si_do_write_sequence(cl_object string, cl_object stream, cl_object start, cl_object end);
 extern cl_object si_do_read_sequence(cl_object string, cl_object stream, cl_object start, cl_object end);
 extern cl_object si_file_column(cl_object strm);
@@ -533,7 +538,7 @@ extern cl_object cl_interactive_stream_p(cl_object strm);
 extern bool input_stream_p(cl_object strm);
 extern bool output_stream_p(cl_object strm);
 extern cl_object stream_element_type(cl_object strm);
-extern cl_object open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists, cl_object if_does_not_exist);
+extern cl_object open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists, cl_object if_does_not_exist, cl_elttype elttype);
 extern void close_stream(cl_object strm, bool abort_flag);
 extern cl_object make_two_way_stream(cl_object istrm, cl_object ostrm);
 extern cl_object make_string_input_stream(cl_object strng, cl_index istart, cl_index iend);
@@ -543,13 +548,13 @@ extern cl_object get_output_stream_string(cl_object strm);
 extern int ecl_getc_noeof(cl_object strm);
 extern int ecl_getc(cl_object strm);
 extern void ecl_ungetc(int c, cl_object strm);
+extern int ecl_peek_char(cl_object strm);
 extern int writec_stream(int c, cl_object strm);
 extern void writestr_stream(const char *s, cl_object strm);
 extern void flush_stream(cl_object strm);
 extern void clear_input_stream(cl_object strm);
 extern void clear_output_stream(cl_object strm);
-extern bool stream_at_end(cl_object strm);
-extern bool listen_stream(cl_object strm);
+extern bool ecl_listen_stream(cl_object strm);
 extern long file_position(cl_object strm);
 extern long file_position_set(cl_object strm, long disp);
 extern long file_length(cl_object strm);

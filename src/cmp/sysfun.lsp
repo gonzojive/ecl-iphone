@@ -303,7 +303,7 @@
 (MAKE-TWO-WAY-STREAM (T T) T)
 (MAKE-ECHO-STREAM (T T) T)
 (MAKE-STRING-INPUT-STREAM nil T)
-(MAKE-STRING-OUTPUT-STREAM nil T)
+(MAKE-STRING-OUTPUT-STREAM (*) T)
 (GET-OUTPUT-STREAM-STRING nil T)
 (SI::OUTPUT-STREAM-STRING (T) T)
 (STREAMP (T) T NIL T)
@@ -584,7 +584,9 @@
 
 ; file num_co.c
 (FLOAT (T *) T NIL NIL
-;	:inline-always ((T) short-float nil nil "(Lfloat(1,#0),sf(VALUES(0)))")
+;	:inline-always ((T) short-float nil nil "(Lfloat(1,#0),sf(VALUES(0)))")
+	:inline-always ((T short-float) short-float nil nil "number_to_double(#0)")
+	:inline-always ((T long-float) long-float nil nil "number_to_double(#0)")
 	:inline-always ((fixnum-float) long-float nil nil "((double)(#0))")
 	:inline-always ((fixnum-float) short-float nil nil "((float)(#0))"))
 (NUMERATOR (T) T)

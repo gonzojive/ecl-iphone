@@ -12,6 +12,9 @@
 
 (in-package "SYSTEM")
 
+#-ecl-min
+(ffi:clines "#include <math.h>")
+
 (defconstant imag-one #C(0.0 1.0))
 
 (defun isqrt (i)
@@ -72,91 +75,110 @@ RADIANS) and (SIN RADIANS) respectively."
 (defun asin (x)
   "Args: (number)
 Returns the arc sine of NUMBER."
-  ;; (* #C(0.0 -1.0) (log (+ (* imag-one x) (sqrt (- 1.0 (* x x))))))
-  (let ((c (log (+ (* imag-one x)
-		   (sqrt (- 1.0 (* x x)))))))
-    (if (and (complexp c) (zerop (realpart c)))
-	(imagpart c)
-	(* #C(0.0 -1.0) c))))
+  (if #+ecl-min t #-ecl-min (complexp x)
+      (complex-asin x)
+      #-ecl-min
+      (let* ((x (float x))
+	     (xr (float x 1d0)))
+	(declare (double-float xr))
+	(if (and (<= -1.0 xr) (<= xr 1.0))
+	    (float (ffi::c-inline (xr) (:double) :double "asin(#0)" :one-liner t)
+		   x)
+	    (complex-asin x)))))
+
+;; Ported from CMUCL
+(defun complex-asin (z)
+  (declare (number z)
+	   (si::c-local))
+  (let ((sqrt-1-z (sqrt (- 1 z)))
+	(sqrt-1+z (sqrt (+ 1 z))))
+    (complex (atan (realpart z) (realpart (* sqrt-1-z sqrt-1+z)))
+	     (asinh (imagpart (* (conjugate sqrt-1-z)
+				 sqrt-1+z))))))
 
 (defun acos (x)
   "Args: (number)
 Returns the arc cosine of NUMBER."
-  ;; (* #C(0.0 -1.0) (log (+ x (* imag-one (sqrt (- 1.0 (* x x)))))))
-  (let ((c (log (+ x (* imag-one
-			(sqrt (- 1.0 (* x x))))))))
-    (if (and (complexp c) (zerop (realpart c)))
-	(imagpart c)
-	(* #C(0.0 -1.0) c))))
+  (if #+ecl-min t #-ecl-min (complexp x)
+      (complex-acos x)
+      #-ecl-min
+      (let* ((x (float x))
+	     (xr (float x 1d0)))
+	(declare (double-float xr))
+	(if (and (<= -1.0 xr) (<= xr 1.0))
+	    (float (ffi::c-inline (xr) (:double) :double "acos(#0)" :one-liner t)
+		   (float x))
+	    (complex-acos x)))))
 
-;;; (defun sinh (x) (/ (- (exp x) (exp (- x))) 2.0))
-;;; version by Raymond Toy <toy@rtp.ericsson.se>
-#+nil
-(defun sinh (z)
-  (if (complexp z)
-      ;; For complex Z, compute the real and imaginary parts
-      ;; separately to get better precision.
-      (let* ((x (realpart z))
-	     (y (imagpart z)))
-	(complex (* (sinh x) (cos y))
-		 (* (cosh x) (sin y))))
-      (let ((limit #.(expt (* double-float-epsilon 45/2) 1/5)))
-	(if (< (- limit) z limit)
-	    ;; For this region, write use the fact that sinh z =
-	    ;; z*exp(z)*[(1 - exp(-2z))/(2z)].  Then use the first
-	    ;; 4 terms in the Taylor series expansion of
-	    ;; (1-exp(-2z))/2/z.  series expansion of (1 -
-	    ;; exp(2*x)).  This is needed because there is severe
-	    ;; roundoff error calculating (1 - exp(-2z)) for z near
-	    ;; 0.
-	    (* z (exp z)
-	       (- 1 (* z
-		       (- 1 (* z
-			       (- 2/3 (* z
-					 (- 1/3 (* 2/15 z)))))))))
-	    (let ((e (exp z)))
-	      (/ (- e (/ e)) 2.0))))))
+;; Ported from CMUCL
+(defun complex-acos (z)
+  (declare (number z)
+	   (si::c-local))
+  (let ((sqrt-1+z (sqrt (+ 1 z)))
+	(sqrt-1-z (sqrt (- 1 z))))
+    (complex (* 2 (atan (realpart sqrt-1-z) (realpart sqrt-1+z)))
+	     (asinh (imagpart (* (conjugate sqrt-1+z)
+				 sqrt-1-z))))))
 
-;;; (defun cosh (x) (/ (+ (exp x) (exp (- x))) 2.0))
-;;; version by Raymond Toy <toy@rtp.ericsson.se>
-#+nil
-(defun cosh (z)
-  (if (complexp z)
-      ;; For complex Z, compute the real and imaginary parts
-      ;; separately to get better precision.
-      (let* ((x (realpart z))
-	     (y (imagpart z)))
-	(complex (* (cosh x) (cos y))
-		 (* (sinh x) (sin y))))
-      ;; For real Z, there's no chance of round-off error, so
-      ;; direct evaluation is ok.
-      (let ((e (exp z)))
-	(/ (+ e (/ e)) 2.0))))
-
-#+nil
-(defun tanh (x) (/ (sinh x) (cosh x)))
-
+;; Ported from CMUCL
 (defun asinh (x)
   "Args: (number)
 Returns the hyperbolic arc sine of NUMBER."
-  (log (+ x (sqrt (+ 1.0 (* x x))))))
+  (if #+ecl-min t #-ecl-min (complexp x)
+      (let* ((iz (complex (- (imagpart x)) (realpart x)))
+	     (result (complex-asin iz)))
+	(complex (imagpart result)
+		 (- (realpart result))))
+      #-ecl-min
+      (float (ffi:c-inline (x) (:double) :double "asinh(#0)" :one-liner t)
+	     (float x))))
 
+;; Ported from CMUCL
 (defun acosh (x)
   "Args: (number)
 Returns the hyperbolic arc cosine of NUMBER."
-  ;; CLtL1: (log (+ x (* (1+ x) (sqrt (/ (1- x) (1+ x))))))
-  (* 2 (log (+ (sqrt (/ (1+ x) 2)) (sqrt (/ (1- x) 2))))))
+  (if #+ecl-min t #-ecl-min (complexp x)
+      (complex-acos x)
+      #-ecl-min
+      (let* ((x (float x))
+	     (xr (float x 1d0)))
+	(declare (double-float xr))
+	(if (<= 1.0 xr)
+	    (float (ffi::c-inline (xr) (:double) :double "acosh(#0)" :one-liner t)
+		   (float x))
+	    (complex-acosh x)))))
+
+(defun complex-acosh (z)
+  (declare (number z) (si::c-local))
+  (let ((sqrt-z-1 (sqrt (- z 1)))
+	(sqrt-z+1 (sqrt (+ z 1))))
+    (complex (asinh (realpart (* (conjugate sqrt-z-1)
+				 sqrt-z+1)))
+	     (* 2 (atan (imagpart sqrt-z-1) (realpart sqrt-z+1))))))
 
 (defun atanh (x)
   "Args: (number)
 Returns the hyperbolic arc tangent of NUMBER."
-  (/ (- (log (1+ x)) (log (- 1 x))) 2))	; CLtL2
+  (if #+ecl-min t #-ecl-min (complexp x)
+      (complex-atanh x)
+      #-ecl-min
+      (let* ((x (float x))
+	     (xr (float x 1d0)))
+	(declare (double-float xr))
+	(if (and (<= -1.0 xr) (<= xr 1.0))
+	    (float (ffi::c-inline (xr) (:double) :double "atanh(#0)" :one-liner t)
+		   (float x))
+	    (complex-atanh x)))))
+
+(defun complex-atanh (z)
+  (declare (number x) (si::c-local))
+  (/ (- (log (1+ z)) (log (- 1 z))) 2))
 
 (defun rational (x)
   "Args: (real)
 Converts REAL into rational accurately and returns the result."
   (etypecase x
-    (FLOAT	  
+    (FLOAT
       (multiple-value-bind (i e s) (integer-decode-float x)
 			   (if (>= s 0)
 			       (* i (expt (float-radix x) e))
@@ -167,7 +189,7 @@ Converts REAL into rational accurately and returns the result."
   "Args: (real)
 Converts REAL into rational approximately and returns the result."
   (etypecase x
-    (FLOAT	  
+    (FLOAT
       (multiple-value-bind (i e s) (integer-decode-float x)
 			   (if (>= s 0)
 			       (* i (expt (float-radix x) e))

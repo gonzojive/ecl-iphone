@@ -40,7 +40,7 @@ Possible keywords are :INDEX, :START, and :END."
       `(LET ((,var (MAKE-STRING-INPUT-STREAM ,string ,start ,end)))
          ,@body)))
 
-(defmacro with-output-to-string ((var &optional string) &rest body)
+(defmacro with-output-to-string ((var &optional string &rest r &key element-type) &rest body)
   "Syntax: (with-output-to-string (var [string-form]) {decl}* {form}*)
 Evaluates FORMs with VAR bound to a string output stream to the string that is
 the value of STRING-FORM.  If STRING-FORM is not given, a new string is used.
@@ -48,7 +48,7 @@ The stream is automatically closed on exit and the string is returned."
   (if string
       `(LET ((,var (MAKE-STRING-OUTPUT-STREAM-FROM-STRING ,string)))
          ,@body)
-      `(LET ((,var (MAKE-STRING-OUTPUT-STREAM)))
+      `(LET ((,var (MAKE-STRING-OUTPUT-STREAM ,@r)))
          ,@body
          (GET-OUTPUT-STREAM-STRING ,var))))
 

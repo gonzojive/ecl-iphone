@@ -197,17 +197,14 @@ struct ecl_hashtable {		/*  hash table header  */
 
 typedef enum {			/*  array element type  */
 	aet_object,		/*  t                */
-	aet_ch,			/*  string-char      */
-	aet_bit,		/*  bit              */
-	aet_fix,		/*  fixnum           */
 	aet_sf,			/*  short-float      */
 	aet_lf,			/*  long-float       */
+	aet_bit,		/*  bit              */
+	aet_fix,		/*  fixnum           */
+	/* Below here, list types accepted by streams (i.e. OPEN) */
 	aet_b8,			/*  byte8	     */
 	aet_i8,			/*  integer8	     */
-#if 0
-	aet_short,		/*  signed short     */
-	aet_ushort		/*  unsigned short   */
-#endif
+	aet_ch,			/*  string-char      */
 } cl_elttype;
 
 union ecl_array_data {
@@ -283,23 +280,24 @@ struct ecl_structure {		/*  structure header  */
 #define SNAME(x)	x->str.name
 #endif
 
-enum ecl_smmode {			/*  stream mode  */
+enum ecl_smmode {		/*  stream mode  */
 	smm_closed,		/*  closed  */
 	smm_input,		/*  input  */
 	smm_output,		/*  output  */
 	smm_io,			/*  input-output  */
-	smm_probe,		/*  probe  */
 	smm_synonym,		/*  synonym  */
 	smm_broadcast,		/*  broadcast  */
 	smm_concatenated,	/*  concatenated  */
 	smm_two_way,		/*  two way  */
 	smm_echo,		/*  echo  */
 	smm_string_input,	/*  string input  */
-	smm_string_output	/*  string output  */
+	smm_string_output,	/*  string output  */
+	smm_probe		/*  probe (only used in open_stream())  */
 };
 
 struct ecl_stream {
-	HEADER1(mode);		/*  stream mode of enum smmode  */
+	HEADER2(mode,elttype);	/*  stream mode of enum smmode  */
+				/*  stream element type  */
 	FILE	*file;		/*  file pointer  */
 	cl_object object0;	/*  some object  */
 	cl_object object1;	/*  some object */

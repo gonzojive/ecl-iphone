@@ -1214,7 +1214,6 @@ implementation-dependent features.
 @menu
 * Read macros::                 
 * Input/Output functions::      
-* Block transfer::              
 * Network streams::             
 * CLOS streams::                
 @end menu
@@ -1249,7 +1248,7 @@ interpreted code is loaded, '@code{#,}' has the same effect as the @code{#}
 macro '@code{#.}'.
 
 
-@node Input/Output functions, Block transfer, Read macros, Input and output
+@node Input/Output functions, Network streams, Read macros, Input and output
 @section Input and Output Functions
 
 The input and output functions of @ecl{} almost follow the definitions in
@@ -1267,19 +1266,15 @@ listed below.
 
 @defun {load} {@var{pathname} @keys{} :print :verbose :if-does-not-exist}
 If @var{pathname} does not specify the filetype of the input file, then load
-first tries to load a file with the filetype @code{.o}, i.e., the fasl file
-(see Chapter 6). If it fails, then @code{load} tries to load a file with the
-filetype @code{.lsp}.  @ecl{} assumes that @code{.lsp} is the standard
-filetype for source files.  If it fails again, then @code{load} will load the
-specified file with no filetype.
-
-@code{load} recognizes a file as a fasl file if and only if the filetype of the
-file is @code{.o}.  Other files are assumed to be source files.
+uses the association list @var{si::*load-search-list*} to find out a suitable
+filetype and the function to load it. Typically, this search list is made of
+the elements @code{.fas}, @code{.lsp} and @code{.lisp}, in this order. If
+everything fails, a file without filetype will be loaded.
 @end defun
 
 @defun {open} {}
-The argument to the keyword variable @code{:element-type} and
-@code{:element-type} is always bound to the value @code{string-char}.
+Streams can only have element type @code{base-char}, @code{(signed-byte 8)}
+and @code{(unsigned-byte 8)}. The @code{:external-format} is always @code{:default}.
 @end defun
 
 @defun {close} {}
@@ -1287,23 +1282,18 @@ The keyword variable @var{:abort} is always ignored.
 @end defun
 
 @defun {listen} {}
-@code{listen} always returns @true{}.
+This routine requires some low level functions which are not available on
+all platforms (For instance on @code{Windows}). When ECL is not able to
+determine whether a stream is interactive, @code{listen} returns true unless
+an end of file has been previously detected.
+@end defun
+
+@defun {clear-input} {}
+The functions @code{clear-input} and @code{clear-output} do nothing.
 @end defun
 
 @defun {read-char-no-hang} {}
 @code{read-char-no-hang} is equivalent to @code{read-char}.
-@end defun
-
-@defun {clear-input} {}
-@code{clear-input} and @code{clear-output} simply
-return @nil{} without doing anything.
-@end defun
-
-@defun {read-byte} {}
-@end defun
-@defun {write-byte} {}
-These functions may operate on any stream.  They read or write a byte (8 bits)
-at a time.
 @end defun
 
 The functions @code{princ}, @code{write-char} and @code{write-byte} do not
@@ -1316,27 +1306,7 @@ functions operate on @code{*terminal-io*}
 @end enumerate
 
 
-@node Block transfer, Network streams, Input/Output functions, Input and output
-@section Block Transfer
-
-More efficient block transfer can be obtained with the following functions.
-
-@defun {read-bytes} {stream string start end}
-It reads from @var{stream} a series of bytes to be placed into @var{string}
-starting from position @var{start} up to @var{end} (exclusive). It returns the
-number of bytes actually transferred, or @code{-1} if the operation failed. The
-@var{stream} is automatically flushed. This function may operate on any stream.
-@end defun
-
-@defun {write-bytes} {stream string start end}
-It writes onto @var{stream}the series of bytes from @var{string} starting from
-position @var{start} up to @var{end} (exclusive). It returns the number of
-bytes actually transferred, or @code{-1} if the operation failed. The
-@var{stream} is automatically flushed. This function may operate on any stream.
-@end defun
-
-
-@node Network streams, CLOS streams, Block transfer, Input and output
+@node Network streams, CLOS streams, Input/Output functions, Input and output
 @section Network Streams
 
 With a configuration option, the following function is available which opens
@@ -1363,7 +1333,7 @@ When the optional CLOS subsystem is available, an interface is provided by
 Such support can be used for instance to build interactive character streams,
 which may be used by applications as the stream argument for @clisp{} I/O
 functions such as @code{read}, @code{listen}, @code{prin1}, etc.  The
-fundamental interface to @code{interactive-stream} objects consists of
+fundamental interface to @code{clos-stream} objects consists of
 (generic) functions which implement the basic @clisp{} character stream
 operations (see @clisp{}, Chapter 22) but whose details are implementation
 dependent.
@@ -1376,38 +1346,39 @@ character input/output.
 @menu
 * CLOS Stream Input::           
 * CLOS Stream Output::          
+* CLOS Stream common::
 @end menu
 
 @node CLOS Stream Input, CLOS Stream Output, CLOS streams, CLOS streams
 @subsection CLOS Stream Input
 
-Character input from an @code{interactive-stream} is implemented by the
+Character input from an @code{clos-stream} is implemented by the
 following methods.
 
-@deffn {Method} {stream-read-char} (object interactive-stream)
+@deffn {Method} {stream-read-char} (object clos-stream)
 Returns the next character object read from the CLOS stream @var{object}.
 @end deffn
 
-@deffn {Method} {stream-read-line} (object interactive-stream) @rest{} make-array-options
-Reads character objects from the CLOS stream @var{object}, up to and including
-the next @code{#\newline} character, and returns them as a string (without the
-@code{#\newline}. If given, the @var{make-array-options} arguments are passed
-to @code{make-array} when the returned string is created.
-@end deffn
+@c @deffn {Method} {stream-read-line} (object clos-stream) @rest{} make-array-options
+@c Reads character objects from the CLOS stream @var{object}, up to and including
+@c the next @code{#\newline} character, and returns them as a string (without the
+@c @code{#\newline}. If given, the @var{make-array-options} arguments are passed
+@c to @code{make-array} when the returned string is created.
+@c @end deffn
 
-@deffn {Method} {stream-unread-char} (object interactive-stream) character
+@deffn {Method} {stream-unread-char} (object clos-stream) character
 Unreads the character object @var{character} from the CLOS stream @var{object}.
 @var{character} will be the next character read by @code{stream-read-char}.
 @end deffn
 
-@deffn {Method} {stream-peek-char} (object interactive-stream) peek-type
-Returns the character object which would be returned by @code{stream-read-char}
-but does not remove it from the input buffer.  If @var{peek-type} is @true{},
-@code{steam-peek-char} skips over any whitespace characters, removing them from
-the input buffer, and returns the next character.
-@end deffn
+@c @deffn {Method} {stream-peek-char} (object clos-stream) peek-type
+@c Returns the character object which would be returned by @code{stream-read-char}
+@c but does not remove it from the input buffer.  If @var{peek-type} is @true{},
+@c @code{steam-peek-char} skips over any whitespace characters, removing them from
+@c the input buffer, and returns the next character.
+@c @end deffn
 
-@deffn {Method} {stream-listen} (object interactive-stream)
+@deffn {Method} {stream-listen} (object clos-stream)
 Returns @nil{} is no character is immediately available from the CLOS stream
 @var{object}. Otherwise, the next character is returned, as if
 @code{stream-peek-char} had been called.
@@ -1417,38 +1388,50 @@ Returns @nil{} is no character is immediately available from the CLOS stream
 Clears any buffered characters on the CLOS stream @var{object}. Returns @nil{}.
 @end deffn
 
-@node CLOS Stream Output,  , CLOS Stream Input, CLOS streams
+@node CLOS Stream Output, CLOS Stream common, CLOS Stream Input, CLOS streams
 @subsection CLOS Stream Output
 
-Character output from an @code{interactive-stream} is implemented by the
+Character output from an @code{clos-stream} is implemented by the
 following methods.
 
-@deffn {Method} {stream-write-char}  (object interactive-stream) character
+@deffn {Method} {stream-write-char}  (object clos-stream) character
 Outputs the character @var{character} to the CLOS stream @var{object} and
 returns it.
 @end deffn
 
-@deffn {Method} {stream-write-line}  (object interactive-stream) string @optional{} start end
-Writes character objects from thestring @var{string} onto the CLOS stream
-@var{object}. If given, the @var{start} and @var{end} arguments indicate a
-substring that is to be output.
-@end deffn
+@c @deffn {Method} {stream-write-line}  (object clos-stream) string @optional{} start end
+@c Writes character objects from thestring @var{string} onto the CLOS stream
+@c @var{object}. If given, the @var{start} and @var{end} arguments indicate a
+@c substring that is to be output.
+@c @end deffn
 
-@deffn {Method} {stream-fresh-line}  (object interactive-stream)
-Outputs a @code{#\back}@code{newline} character to the CLOS stream @var{object}
-if and only if the stream is not already at the beginning of a new line.
-Returns non-@nil{} if a @code{#\back}@code{newline} was output and @nil{}
-otherwise.
-@end deffn
+@c @deffn {Method} {stream-fresh-line}  (object clos-stream)
+@c Outputs a @code{#\back}@code{newline} character to the CLOS stream @var{object}
+@c if and only if the stream is not already at the beginning of a new line.
+@c Returns non-@nil{} if a @code{#\back}@code{newline} was output and @nil{}
+@c otherwise.
+@c @end deffn
 
-@deffn {Method} {stream-clear-output}  (object interactive-stream)
+@deffn {Method} {stream-clear-output}  (object clos-stream)
 Aborts any outstanding output operation on the CLOS stream @var{object} and
 returns @nil{}.
 @end deffn
 
-@deffn {Method} {stream-forse-output}  (object interactive-stream)
+@deffn {Method} {stream-force-output}  (object clos-stream)
 Initiates the emptying of the internal buffers on the CLOS stream @var{object}
 and returns @nil{}.
+@end deffn
+
+@node CLOS Stream common, , CLOS Stream Output, CLOS streams
+@subsection CLOS Stream common
+
+The following functions should be available for all CLOS streams.
+
+@deffn {Method} {stream-interactive-p} (object clos-stream)
+@end deffn
+
+@deffn {Method} {stream-close} (object clos-stream)
+Closes the stream for any further input or output.
 @end deffn
 
 @node Memory management, Program development, Input and output, Top

@@ -49,12 +49,12 @@ FEpackage_error(const char *message, cl_object package, int narg, ...)
 }
 
 static void
-CEpackage_error(const char *message, cl_object package, int narg, ...)
+CEpackage_error(const char *message, const char *continue_message, cl_object package, int narg, ...)
 {
 	cl_va_list args;
 	cl_va_start(args, narg, narg, 0);
 	cl_cerror(8,
-		  make_constant_string("Ignore error message"),
+		  make_constant_string(continue_message),
 		  @'si::simple-package-error',
 		  @':format-control', make_constant_string(message),
 		  @':format-arguments',
@@ -188,7 +188,8 @@ rename_package(cl_object x, cl_object name, cl_object nicknames)
 	name = cl_string(name);
 	x = si_coerce_to_package(x);
 	if (x->pack.locked)
-		CEpackage_error("Cannot rename locked package ~S.", x, 0);
+		CEpackage_error("Cannot rename locked package ~S.",
+				"Ignore lock and proceed", x, 0);
 
 	PACKAGE_OP_LOCK();
 	y = ecl_find_package_nolock(name);
@@ -315,7 +316,7 @@ intern(cl_object name, cl_object p, int *intern_flag)
 	if (p->pack.locked) {
 		PACKAGE_UNLOCK(p);
 		CEpackage_error("Cannot intern symbol ~S in locked package ~S.",
-				p, 2, name, p);
+				"Ignore lock and proceed", p, 2, name, p);
 		goto TRY_AGAIN;
 	}
 	s = make_symbol(name);
@@ -403,7 +404,7 @@ unintern(cl_object s, cl_object p)
 	if (p->pack.locked) {
 		PACKAGE_UNLOCK(p);
 		CEpackage_error("Cannot unintern symbol ~S from locked package ~S.",
-				p, 2, s, p);
+				"Ignore lock and proceed", p, 2, s, p);
 		goto TRY_AGAIN;
 	}
 	if (!member_eq(s, p->pack.shadowings))
@@ -444,19 +445,19 @@ cl_export2(cl_object s, cl_object p)
 	p = si_coerce_to_package(p);
 
 	if (p->pack.locked)
-		CEpackage_error("Cannot export symbol ~S from locked package ~S.", p,
-				2, s, p);
+		CEpackage_error("Cannot export symbol ~S from locked package ~S.",
+				"Ignore lock and proceed", p, 2, s, p);
 	PACKAGE_LOCK(p);
 	x = ecl_find_symbol_nolock(s->symbol.name, p, &intern_flag);
 	if (!intern_flag) {
 		PACKAGE_UNLOCK(p);
-		FEpackage_error("The symbol ~S is not accessible from ~S.", p, 2,
-				s, p);
+		CEpackage_error("The symbol ~S is not accessible from ~S and cannot be exported.",
+				"Import the symbol in the package and proceed.",
+				p, 2, s, p);
 	}
 	if (x != s) {
 		PACKAGE_UNLOCK(p);
-		FEpackage_error("Cannot export the symbol ~S~%"
-				"from ~S,~%"
+		FEpackage_error("Cannot export the symbol ~S from ~S,~%"
 				"because there is already a symbol with the same name~%"
 				"in the package.", p, 2, s, p);
 	}
@@ -491,11 +492,13 @@ cl_delete_package(cl_object p)
 	/* 1) Try to remove the package from the global list */
 	p = ecl_find_package_nolock(p);
 	if (Null(p)) {
-		CEpackage_error("Package ~S not found. Cannot delete it.", p, 0);
+		CEpackage_error("Package ~S not found. Cannot delete it.",
+				"Ignore error and continue", p, 0);
 		@(return Cnil);
 	}
 	if (p->pack.locked)
-		CEpackage_error("Cannot delete locked package ~S.", p, 0);
+		CEpackage_error("Cannot delete locked package ~S.",
+				"Ignore lock and proceed", p, 0);
 	if (p == cl_core.lisp_package || p == cl_core.keyword_package) {
 		FEpackage_error("Cannot remove package ~S", p, 0);
 	}
@@ -549,7 +552,7 @@ cl_unexport2(cl_object s, cl_object p)
 				cl_core.keyword_package, 0);
 	if (p->pack.locked)
 		CEpackage_error("Cannot unexport symbol ~S from locked package ~S.",
-				p, 2, s, p);
+				"Ignore lock and proceed", p, 2, s, p);
 	PACKAGE_LOCK(p);
 	x = ecl_find_symbol_nolock(s->symbol.name, p, &intern_flag);
 	if (intern_flag == 0) {
@@ -578,16 +581,17 @@ cl_import2(cl_object s, cl_object p)
 	p = si_coerce_to_package(p);
 	if (p->pack.locked)
 		CEpackage_error("Cannot import symbol ~S into locked package ~S.",
-				p, 2, s, p);
+				"Ignore lock and proceed", p, 2, s, p);
 	PACKAGE_LOCK(p);
 	x = ecl_find_symbol_nolock(s->symbol.name, p, &intern_flag);
 	if (intern_flag) {
 		if (x != s) {
 			PACKAGE_UNLOCK(p);
-			FEpackage_error("Cannot import the symbol ~S~%"
-					"from ~S,~%"
+			CEpackage_error("Cannot import the symbol ~S "
+					"from package ~A,~%"
 					"because there is already a symbol with the same name~%"
-					"in the package.", p, 2, s, p);
+					"in the package.",
+					"Ignore conflict and proceed", p, 2, s, p);
 		}
 		if (intern_flag == INTERNAL || intern_flag == EXTERNAL)
 			goto OUTPUT;
@@ -609,7 +613,7 @@ shadowing_import(cl_object s, cl_object p)
 	p = si_coerce_to_package(p);
 	if (p->pack.locked)
 		CEpackage_error("Cannot shadowing-import symbol ~S into locked package ~S.",
-				p, 2, s, p);
+				"Ignore lock and proceed", p, 2, s, p);
 
 	PACKAGE_LOCK(p);
 	x = ecl_find_symbol_nolock(s->symbol.name, p, &intern_flag);
@@ -646,7 +650,7 @@ shadow(cl_object s, cl_object p)
 	p = si_coerce_to_package(p);
 	if (p->pack.locked)
 		CEpackage_error("Cannot shadow symbol ~S in locked package ~S.",
-				p, 2, s, p);
+				"Ignore lock and proceed", p, 2, s, p);
 	PACKAGE_LOCK(p);
 	x = ecl_find_symbol_nolock(s, p, &intern_flag);
 	if (intern_flag != INTERNAL && intern_flag != EXTERNAL) {
@@ -671,6 +675,7 @@ use_package(cl_object x, cl_object p)
 	p = si_coerce_to_package(p);
 	if (p->pack.locked)
 		CEpackage_error("Cannot use package ~S in locked package ~S.",
+				"Ignore lock and proceed",
 				p, 2, x, p);
 	if (p == cl_core.keyword_package)
 		FEpackage_error("Cannot use in keyword package.", cl_core.keyword_package, 0);
@@ -710,6 +715,7 @@ unuse_package(cl_object x, cl_object p)
 	p = si_coerce_to_package(p);
 	if (p->pack.locked)
 		CEpackage_error("Cannot unuse package ~S from locked package ~S.",
+				"Ignore lock and proceed",
 				p, 2, x, p);
 	PACKAGE_LOCK(x);
 	PACKAGE_LOCK(p);

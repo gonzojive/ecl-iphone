@@ -179,11 +179,15 @@
 	     ,@(if everywherep '((declare (fixnum l))))
 	     (unless key (setq key #'identity))
 	     (with-start-end start end sequence
+			     ;; FIXME! We use that no object have more than
+			     ;; MOST-POSITIVE-FIXNUM elements.
 			     (let ,@(if countp
 					'(((count (cond ((null count)
 							 most-positive-fixnum)
 							((minusp count)
 							 0)
+							((> count most-positive-fixnum)
+							 most-positive-fixnum)
 							(t count))))))
 				  ,@(if countp '((declare (fixnum count))))
 				  nil

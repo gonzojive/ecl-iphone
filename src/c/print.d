@@ -1444,27 +1444,18 @@ potential_number_p(cl_object strng, int base)
 @)
 
 @(defun write-string (strng &o strm &k (start MAKE_FIXNUM(0)) end)
-	cl_index s, e, i;
 @
-	get_string_start_end(strng, start, end, &s, &e);
- 	strm = stream_or_default_output(strm);
 	assert_type_string(strng);
-
-	for (i = s;  i < e;  i++)
-		writec_stream(strng->string.self[i], strm);
-	flush_stream(strm);
+	si_do_write_sequence(strng, stream_or_default_output(strm),
+			     start, end);
 	@(return strng)
 @)
 
 @(defun write-line (strng &o strm &k (start MAKE_FIXNUM(0)) end)
-	cl_index s, e, i;
 @
-	get_string_start_end(strng, start, end, &s, &e);
- 	strm = stream_or_default_output(strm);
 	assert_type_string(strng);
-
-	for (i = s;  i < e;  i++)
-		writec_stream(strng->string.self[i], strm);
+	strm = stream_or_default_output(strm);
+	si_do_write_sequence(strng, strm, start, end);
 	writec_stream('\n', strm);
 	flush_stream(strm);
 	@(return strng)

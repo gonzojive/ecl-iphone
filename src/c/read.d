@@ -529,25 +529,31 @@ read_string(int delim, cl_object in)
 }
 
 /*
-	Read_constituent(in) reads
-	a sequence of constituent characters from stream in
-	and places it in cl_env.token.
+	read_constituent(in) reads a sequence of constituent characters from
+	stream in and places it in cl_env.token.  As a help, it returns TRUE
+	or FALSE depending on the value of *READ-SUPPRESS*.
 */
-static void
+static int
 read_constituent(cl_object in)
 {
-	int c;
+	int store = !read_suppress;
 	cl_object rtbl = ecl_current_readtable();
 
 	cl_env.token->string.fillp = 0;
 	for (;;) {
-		c = ecl_getc_noeof(in);
+		int c = ecl_getc(in);
+		if (c == EOF) {
+			break;
+		}
 		if (cat(rtbl, c) != cat_constituent) {
 			ecl_ungetc(c, in);
 			break;
 		}
-		ecl_string_push_extend(cl_env.token, c);
+		if (store) {
+			ecl_string_push_extend(cl_env.token, c);
+		}
 	}
+	return store;
 }
 
 static cl_object
@@ -888,9 +894,9 @@ sharp_B_reader(cl_object in, cl_object c, cl_object d)
 
 	if(d != Cnil && !read_suppress)
 		extra_argument('B', in, d);
-	read_constituent(in);
-	if (read_suppress)
-		@(return Cnil)
+	if (!read_constituent(in)) {
+		@(return Cnil);
+	}
 	x = parse_number(cl_env.token->string.self, cl_env.token->string.fillp, &i, 2);
 	if (x == OBJNULL || i != cl_env.token->string.fillp)
 		FEreader_error("Cannot parse the #B readmacro.", in, 0);
@@ -909,9 +915,9 @@ sharp_O_reader(cl_object in, cl_object c, cl_object d)
 
 	if(d != Cnil && !read_suppress)
 		extra_argument('O', in, d);
-	read_constituent(in);
-	if (read_suppress)
-		@(return Cnil)
+	if (!read_constituent(in)) {
+		@(return Cnil);
+	}
 	x = parse_number(cl_env.token->string.self, cl_env.token->string.fillp, &i, 8);
 	if (x == OBJNULL || i != cl_env.token->string.fillp)
 		FEreader_error("Cannot parse the #O readmacro.", in, 0);
@@ -930,9 +936,9 @@ sharp_X_reader(cl_object in, cl_object c, cl_object d)
 
 	if(d != Cnil && !read_suppress)
 		extra_argument('X', in, d);
-	read_constituent(in);
-	if (read_suppress)
-		@(return Cnil)
+	if (!read_constituent(in)) {
+		@(return Cnil);
+	}
 	x = parse_number(cl_env.token->string.self, cl_env.token->string.fillp, &i, 16);
 	if (x == OBJNULL || i != cl_env.token->string.fillp)
 		FEreader_error("Cannot parse the #X readmacro.", in, 0);
@@ -958,9 +964,9 @@ sharp_R_reader(cl_object in, cl_object c, cl_object d)
 			FEreader_error("~S is an illegal radix.", in, 1, d);
 	} else
 		FEreader_error("No radix was supplied in the #R readmacro.", in, 0);
-	read_constituent(in);
-	if (read_suppress)
-		@(return Cnil)
+	if (!read_constituent(in)) {
+		@(return Cnil);
+	}
 	x = parse_number(cl_env.token->string.self, cl_env.token->string.fillp, &i, radix);
 	if (x == OBJNULL || i != cl_env.token->string.fillp)
 		FEreader_error("Cannot parse the #R readmacro.", in, 0);
@@ -1351,7 +1357,7 @@ do_read_delimited_list(int d, cl_object strm)
 	@(return copy_simple_string(cl_env.token) (c == EOF? Ct : Cnil))
 @)
 
-@(defun read_char (&optional (strm Cnil) (eof_errorp Ct) eof_value recursivep)
+@(defun read-char (&optional (strm Cnil) (eof_errorp Ct) eof_value recursivep)
 	int c;
 	cl_object output;
 @
@@ -1374,29 +1380,37 @@ do_read_delimited_list(int d, cl_object strm)
 	@(return Cnil)
 @)
 
-@(defun peek_char (&optional peek_type (strm Cnil) (eof_errorp Ct) eof_value recursivep)
+@(defun peek-char (&optional peek_type (strm Cnil) (eof_errorp Ct) eof_value recursivep)
 	int c;
 	cl_object rtbl = ecl_current_readtable();
 @
 	strm = stream_or_default_input(strm);
-	c = ecl_getc(strm);
+	c = ecl_peek_char(strm);
 	if (c != EOF && !Null(peek_type)) {
 		if (peek_type == Ct) {
 			do {
+				/* If the character is not a whitespace, output */
 				if (cat(rtbl, c) != cat_whitespace)
 					break;
-				c = ecl_getc(strm);
+				/* Otherwise, read the whitespace and peek the
+				 * next character */
+				ecl_getc(strm);
+				c = ecl_peek_char(strm);
 			} while (c != EOF);
 		} else {
 			do {
+				/* If the character belongs to the given class,
+				 * we're done. */
 				if (char_eq(CODE_CHAR(c), peek_type))
 					break;
-				c = ecl_getc(strm);
+				/* Otherwise, consume the character and
+				 * peek the next one. */
+				ecl_getc(strm);
+				c = ecl_peek_char(strm);
 			} while (c != EOF);
 		}
 	}
 	if (c != EOF) {
-		ecl_ungetc(c, strm);
 		eof_value = CODE_CHAR(c);
 	} else if (!Null(eof_errorp)) {
 		FEend_of_file(strm);
@@ -1407,28 +1421,27 @@ do_read_delimited_list(int d, cl_object strm)
 @(defun listen (&optional (strm Cnil))
 @
 	strm = stream_or_default_input(strm);
-	@(return (listen_stream(strm)? Ct : Cnil))
+	@(return ((ecl_listen_stream(strm) == ECL_LISTEN_AVAILABLE)? Ct : Cnil))
 @)
 
 @(defun read_char_no_hang (&optional (strm Cnil) (eof_errorp Ct) eof_value recursivep)
+	int f;
 @
 	strm = stream_or_default_input(strm);
-#if 0
-	if (!listen_stream(strm))
-		/* Incomplete! */
-		@(return Cnil)
-	@(return read_char(strm))
-#else
-	/* This implementation fails for EOF. */
-	if (listen_stream(strm))
-		@(return read_char(strm))
-	else if (!stream_at_end(strm))
-		@(return Cnil)
-	else if (Null(eof_errorp) && Null(recursivep))
+	f = ecl_listen_stream(strm);
+	if (f == ECL_LISTEN_AVAILABLE) {
+		int c = ecl_getc(strm);
+		if (c != EOF) {
+			@(return CODE_CHAR(c));
+		}
+	} else if (f == ECL_LISTEN_NO_CHAR) {
+		@(return @'nil');
+	}
+	/* We reach here if there was an EOF */
+	if (Null(eof_errorp) && Null(recursivep))
 		@(return eof_value)
 	else
 		FEend_of_file(strm);
-#endif
 @)
 
 @(defun clear_input (&optional (strm Cnil))

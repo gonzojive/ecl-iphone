@@ -38,7 +38,7 @@
 #include <sys/ioctl.h>
 #endif
 
-static bool flisten(FILE *fp);
+static int flisten(FILE *fp);
 
 /*----------------------------------------------------------------------
  *	Input_stream_p(strm) answers
@@ -72,7 +72,6 @@ BEGIN:
 		return(TRUE);
 
 	case smm_output:
-	case smm_probe:
 	case smm_string_output:
 	case smm_broadcast:
 		return(FALSE);
@@ -110,7 +109,6 @@ BEGIN:
 		return(FALSE);
 
 	case smm_input:
-	case smm_probe:
 	case smm_concatenated:
 	case smm_string_input:
 		return(FALSE);
@@ -133,8 +131,9 @@ BEGIN:
 }
 
 /*
- * In ECL, all streams have element type (UNSIGNED-BYTE 8). Nevertheless,
- * READ-CHAR and WRITE-CHAR are allowed in them, and they perform as if
+ * In ECL, all streams have element type (UNSIGNED-BYTE 8), (SIGNED-BYTE 8)
+ * or BASE-CHAR. Nevertheless, READ-CHAR and WRITE-CHAR are allowed in them,
+ * and they perform more or less as if
  *	(READ-CHAR) = (CODE-CHAR (READ-BYTE))
  *	(WRITE-CHAR c) = (WRITE-BYTE (CHAR-CODE c))
  */
@@ -142,6 +141,7 @@ cl_object
 cl_stream_element_type(cl_object strm)
 {
 	cl_object x;
+	cl_object output = @'base-char';
 
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
@@ -157,7 +157,7 @@ BEGIN:
 	case smm_input:
 	case smm_output:
 	case smm_io:
-	case smm_probe:
+		output = ecl_elttype_to_symbol(strm->stream.elttype);
 		break;
 
 	case smm_synonym:
@@ -166,8 +166,10 @@ BEGIN:
 
 	case smm_broadcast:
 		x = strm->stream.object0;
-		if (endp(x))
+		if (endp(x)) {
+			output = @'t';
 			break;
+		}
 		strm = CAR(x);
 		goto BEGIN;
 
@@ -190,7 +192,7 @@ BEGIN:
 	default:
 		error("illegal stream mode");
 	}
-	@(return @'ext::byte8')
+	@(return output)
 }
 
 cl_object
@@ -215,16 +217,9 @@ cl_stream_external_format(cl_object strm)
  *----------------------------------------------------------------------
  */
 
-static void cannot_create(cl_object fn) __attribute__((noreturn));
 static void not_an_input_stream(cl_object fn) __attribute__((noreturn));
 static void not_an_output_stream(cl_object fn) __attribute__((noreturn));
 static void wrong_file_handler(cl_object strm) __attribute__((noreturn));
-
-static void
-cannot_create(cl_object fn)
-{
-	FElibc_error("Cannot create the file ~A.", 1, fn);
-}
 
 static void
 not_an_input_stream(cl_object strm)
@@ -259,7 +254,7 @@ wrong_file_handler(cl_object strm)
  */
 cl_object
 open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
-	    cl_object if_does_not_exist)
+	    cl_object if_does_not_exist, cl_elttype elttype)
 {
 	cl_object x;
 	FILE *fp;
@@ -274,16 +269,17 @@ open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 			else if (if_does_not_exist == @':create') {
 				fp = fopen(fname, OPEN_W);
 				if (fp == NULL)
-					cannot_create(fn);
+					FEcannot_open(fn);
 				fclose(fp);
 				fp = fopen(fname, OPEN_R);
 				if (fp == NULL)
 					FEcannot_open(fn);
-			} else if (Null(if_does_not_exist))
+			} else if (Null(if_does_not_exist)) {
 				return(Cnil);
-			else
-			 FEerror("~S is an illegal IF-DOES-NOT-EXIST option.",
-				 1, if_does_not_exist);
+			} else {
+				FEerror("~S is an illegal IF-DOES-NOT-EXIST option.",
+					1, if_does_not_exist);
+			}
 		}
 	} else if (smm == smm_output || smm == smm_io) {
 		if (if_exists == @':new_version' && if_does_not_exist == @':create')
@@ -292,13 +288,13 @@ open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 		if (fp != NULL) {
 			fclose(fp);
 			if (if_exists == @':error')
-				FEerror("The file ~A already exists.", 1, fn);
+				FEcannot_open(fn);
 			else if (if_exists == @':rename') {
 				fp = backup_fopen(fname, (smm == smm_output)
 						  ? OPEN_W
 						  : OPEN_RW);
 				if (fp == NULL)
-					cannot_create(fn);
+					FEcannot_open(fn);
 			} else if (if_exists == @':rename_and_delete' ||
 				   if_exists == @':new_version' ||
 				   if_exists == @':supersede') {
@@ -306,7 +302,7 @@ open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 					   ? OPEN_W
 					   : OPEN_RW);
 				if (fp == NULL)
-					cannot_create(fn);
+					FEcannot_open(fn);
 			} else if (if_exists == @':overwrite') {
 				fp = fopen(fname, OPEN_RW);
 				if (fp == NULL)
@@ -316,39 +312,52 @@ open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 					   ? OPEN_A
 					   : OPEN_RA);
 				if (fp == NULL)
-				FEerror("Cannot append to the file ~A.",1,fn);
-			} else if (Null(if_exists))
+					FEcannot_open(fn);
+			} else if (Null(if_exists)) {
 				return(Cnil);
-			else
+			} else {
 				FEerror("~S is an illegal IF-EXISTS option.",
 					1, if_exists);
+			}
 		} else {
 			if (if_does_not_exist == @':error')
-				FEerror("The file ~A does not exist.", 1, fn);
+				FEcannot_open(fn);
 			else if (if_does_not_exist == @':create') {
 			CREATE:
 				fp = fopen(fname, (smm == smm_output)
 					   ? OPEN_W
 					   : OPEN_RW);
 				if (fp == NULL)
-					cannot_create(fn);
-			} else if (Null(if_does_not_exist))
+					FEcannot_open(fn);
+			} else if (Null(if_does_not_exist)) {
 				return(Cnil);
-			else
-			 FEerror("~S is an illegal IF-DOES-NOT-EXIST option.",
-				 1, if_does_not_exist);
+			} else {
+				FEerror("~S is an illegal IF-DOES-NOT-EXIST option.",
+					1, if_does_not_exist);
+			}
 		}
-	} else
-		error("illegal stream mode");
+	} else {
+		FEerror("Illegal stream mode ~S", 1, MAKE_FIXNUM(smm));
+	}
+	if (elttype == aet_bit) {
+		elttype = aet_b8;
+	} else if (elttype != aet_b8 &&
+		   elttype != aet_i8 &&
+		   elttype != aet_ch) {
+		FEerror("~S is not a valid stream element type",
+			1, ecl_elttype_to_symbol(elttype));
+	}
 	x = cl_alloc_object(t_stream);
 	x->stream.mode = (short)smm;
 	x->stream.file = fp;
-	x->stream.object0 = @'ext::byte8';
+	x->stream.elttype = elttype;
 	x->stream.object1 = fn;
 	x->stream.int0 = x->stream.int1 = 0;
 #if !defined(GBC_BOEHM)
 	setbuf(fp, x->stream.buffer = cl_alloc(BUFSIZ));
 #endif
+	if (smm == smm_probe)
+		close_stream(x, 0);
 	return(x);
 }
 
@@ -484,28 +493,6 @@ get_output_stream_string(cl_object strm)
 
 
 
-#ifdef TK
-bool no_input = FALSE;
-
-StdinEnableEvents()
-{
-  no_input = TRUE;
-}
-
-StdinResume()
-{
-  no_input = FALSE;
-}
-# define GETC(c, fp)	{ if (fp == stdin) \
-			   while (no_input) Tk_DoOneEvent(0); \
-			  c = getc(fp); \
-			  no_input = !FILE_CNT(fp); }
-# define UNGETC(c, fp)	{ if (fp == stdin) no_input = FALSE; ungetc(c, fp); }
-#else
-# define GETC(c, fp)	c = getc(fp)
-# define UNGETC(c, fp)	ungetc(c, fp)
-#endif
-
 /*
  * ecl_getc(s) tries to read a character from the stream S. It outputs
  * either the code of the character read, or EOF. Whe compiled with
@@ -540,9 +527,12 @@ BEGIN:
 	case smm_io:
 		if (fp == NULL)
 			wrong_file_handler(strm);
-		GETC(c, fp);
+		c = getc(fp);
 		if (c == EOF && ferror(fp))
 			io_error(strm);
+		if (strm->stream.elttype == aet_i8) {
+			c = (signed char)c;
+		}
 		break;
 
 	case smm_synonym:
@@ -585,7 +575,98 @@ BEGIN:
 		break;
 
 	case smm_output:
-	case smm_probe:
+	case smm_broadcast:
+	case smm_string_output:
+		not_an_input_stream(strm);
+
+	default:
+		error("illegal stream mode");
+	}
+	return c;
+}
+
+/*
+ * ecl_getc(s) tries to read a character from the stream S. It outputs
+ * either the code of the character read, or EOF. Whe compiled with
+ * CLOS-STREAMS and S is an instance object, STREAM-READ-CHAR is invoked
+ * to retrieve the character. Then STREAM-READ-CHAR should either
+ * output the character, or NIL, indicating EOF.
+ *
+ * INV: ecl_getc(strm) checks the type of STRM.
+ */
+int
+ecl_peek_char(cl_object strm)
+{
+	int c;
+	FILE *fp;
+
+BEGIN:
+#ifdef ECL_CLOS_STREAMS
+	if (type_of(strm) == t_instance) {
+		cl_object c = funcall(2, @'ext::stream-read-char', strm);
+		if (CHARACTERP(c)) {
+			funcall(3, @'ext::stream-unread-char', strm, c);
+			return CHAR_CODE(c);
+		} else {
+			return EOF;
+		}
+	}
+#endif
+	if (type_of(strm) != t_stream) 
+		FEtype_error_stream(strm);
+	fp = strm->stream.file;
+	switch ((enum ecl_smmode)strm->stream.mode) {
+	case smm_closed:
+		FEclosed_stream(strm);
+		break;
+
+	case smm_input:
+	case smm_io:
+		if (fp == NULL)
+			wrong_file_handler(strm);
+		c = getc(fp);
+		if (c == EOF && ferror(fp))
+			io_error(strm);
+		ungetc(c, fp);
+		if (strm->stream.elttype == aet_i8) {
+			c = (signed char)c;
+		}
+		break;
+
+	case smm_synonym:
+		strm = symbol_value(strm->stream.object0);
+		goto BEGIN;
+
+	case smm_concatenated: {
+		cl_object strmi = strm->stream.object0;
+		c = EOF;
+		while (!endp(strmi)) {
+			c = ecl_getc(CAR(strmi));
+			if (c != EOF)
+				break;
+			strm->stream.object0 = strmi = CDR(strmi);
+		}
+		break;
+	}
+	case smm_two_way:
+		if (strm == cl_core.terminal_io)
+			flush_stream(cl_core.terminal_io->stream.object1);
+		strm->stream.int1 = 0;
+		strm = strm->stream.object0;
+		goto BEGIN;
+
+	case smm_echo:
+		c = ecl_peek_char(strm->stream.object0);
+		break;
+
+	case smm_string_input:
+		if (strm->stream.int0 >= strm->stream.int1)
+			c = EOF;
+		else
+			c = strm->stream.object0->string.self[strm->stream.int0];
+		break;
+
+	case smm_output:
 	case smm_broadcast:
 	case smm_string_output:
 		not_an_input_stream(strm);
@@ -629,7 +710,7 @@ BEGIN:
 	case smm_io:
 		if (fp == NULL)
 			wrong_file_handler(strm);
-		UNGETC(c, fp);
+		ungetc(c, fp);
 		if (c == EOF)
 			io_error(strm);
 /*		--strm->stream.int0; useless in smm_io, Beppe */
@@ -661,10 +742,9 @@ BEGIN:
 		break;
 
 	case smm_output:
-	case smm_probe:
 	case smm_broadcast:
 	case smm_string_output:
-		goto UNREAD_ERROR;
+		not_an_input_stream(strm);
 
 	default:
 		error("illegal stream mode");
@@ -746,7 +826,6 @@ BEGIN:
 		break;
 
 	case smm_input:
-	case smm_probe:
 	case smm_concatenated:
 	case smm_string_input:
 		not_an_output_stream(strm);
@@ -783,21 +862,30 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 		goto OUTPUT;
 	}
 	if (t == t_cons || t == t_symbol) {
-		seq = nthcdr(start, seq);
-		loop_for_in(seq) {
+		bool ischar = cl_stream_element_type(stream) == @'base-char';
+		cl_object s = nthcdr(start, seq);
+		loop_for_in(s) {
 			if (start < end) {
-				cl_write_byte(CAR(seq), stream);
+				cl_object elt = CAR(s);
+				cl_write_byte(ischar? cl_char_code(elt) : elt,
+					      stream);
+				start++;
 			} else {
 				goto OUTPUT;
 			}
 		} end_loop_for_in;
 		goto OUTPUT;
 	}
-	if ((t == t_bitvector) ||
-	    (t != t_string &&  seq->vector.elttype != aet_b8))
+	if (t != t_string &&
+	    !(t == t_array &&
+	      (seq->vector.elttype == aet_b8 || seq->vector.elttype == aet_i8)))
 	{
-		FEerror("~S is not of a valid sequence type for WRITE-BYTES",
-			1, seq);
+		bool ischar = cl_stream_element_type(stream) == @'base-char';
+		while (start < end) {
+			cl_object elt = aref(seq, start++);
+			cl_write_byte(ischar? cl_char_code(elt) : elt, stream);
+		}
+		goto OUTPUT;
 	}
  AGAIN:
 	if ((t = type_of(stream)) == t_stream &&
@@ -841,25 +929,33 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 		goto OUTPUT;
 	}
 	if (t == t_cons || t == t_symbol) {
+		bool ischar = cl_stream_element_type(stream) == @'base-char';
 		seq = nthcdr(start, seq);
 		loop_for_in(seq) {
 			if (start >= end) {
 				goto OUTPUT;
 			} else {
-				char c = ecl_getc(stream);
+				int c = ecl_getc(stream);
 				if (c == EOF)
 					goto OUTPUT;
-				CAR(seq) = CODE_CHAR(c);
+				CAR(seq) = ischar? CODE_CHAR(c) : MAKE_FIXNUM(c);
 				start++;
 			}
 		} end_loop_for_in;
 		goto OUTPUT;
 	}
-	if (t == t_bitvector ||
-	    (t != t_string && seq->vector.elttype != aet_b8))
+	if (t != t_string &&
+	    !(t == t_array &&
+	      (seq->vector.elttype == aet_b8 || seq->vector.elttype == aet_i8)))
 	{
-		FEerror("~S is not of a valid sequence type for READ-BYTES",
-			1, seq);
+		bool ischar = cl_stream_element_type(stream) == @'base-char';
+		while (start < end) {
+			int c = ecl_getc(stream);
+			if (c == EOF)
+				goto OUTPUT;
+			aset(seq, start++, ischar? CODE_CHAR(c) : MAKE_FIXNUM(c));
+		}
+		goto OUTPUT;
 	}
  AGAIN:
 	if ((t = type_of(stream)) == t_stream &&
@@ -937,7 +1033,6 @@ BEGIN:
 		break;
 	      }
 	case smm_input:
-	case smm_probe:
 	case smm_concatenated:
 	case smm_string_input:
 		FEerror("Cannot flush the stream ~S.", 1, strm);
@@ -971,9 +1066,8 @@ BEGIN:
 	case smm_input:
 		if (fp == NULL)
 			wrong_file_handler(strm);
-		while (flisten(fp)) {
-			int c;
-			GETC(c, fp);
+		while (flisten(fp) == ECL_LISTEN_AVAILABLE) {
+			getc(fp);
 		}
 		break;
 
@@ -992,15 +1086,11 @@ BEGIN:
 		goto BEGIN;
 
 	case smm_string_output:
-	  break;
-
 	case smm_io:
 	case smm_output:
-	case smm_probe:
 	case smm_concatenated:
 	case smm_string_input:
-	  FEerror("Cannot clear the input of the stream ~S.", 1, strm);
-	  break;
+		break;
 
 	default:
 		error("illegal stream mode");
@@ -1029,10 +1119,12 @@ BEGIN:
 		break;
 
 	case smm_output:
+#if 0
 		if (fp == NULL)
 			wrong_file_handler(strm);
 		if (fseek(fp, 0L, 2) != 0)
 			io_error(strm);
+#endif
 		break;
 
 	case smm_synonym:
@@ -1050,96 +1142,18 @@ BEGIN:
 		goto BEGIN;
 
 	case smm_string_output:
-	  break;
-
 	case smm_io:
 	case smm_input:
-	case smm_probe:
 	case smm_concatenated:
 	case smm_string_input:
-	  FEerror("Cannot clear the output of the stream ~S.", 1, strm);
-	  break;
+		break;
 
 	default:
 		error("illegal stream mode");
 	}
 }
 
-bool
-stream_at_end(cl_object strm)
-{
-	int c;
-	FILE *fp;
-
-BEGIN:
-#ifdef ECL_CLOS_STREAMS
-	if (type_of(strm) == t_instance)
-		return(FALSE);
-#endif
-	if (type_of(strm) != t_stream) 
-		FEtype_error_stream(strm);
-	fp = strm->stream.file;
-	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_closed:
-		FEclosed_stream(strm);
-		return(TRUE);
-
-	case smm_io:
-	case smm_input:
-		if (fp == NULL)
-			FEclosed_stream(strm);
-		GETC(c, fp);
-		if (c == EOF) {
-			if (ferror(fp))
-				io_error(strm);
-			return(TRUE);
-		} else {
-			UNGETC(c, fp);
-			return(FALSE);
-		}
-
-	case smm_output:
-	case smm_probe:
-	case smm_broadcast:
-	case smm_string_output:
-		return(FALSE);
-
-	case smm_synonym:
-		strm = symbol_value(strm->stream.object0);
-		goto BEGIN;
-
-	case smm_concatenated:
-		{ cl_object strmi = strm->stream.object0;
-		  while (!endp(strmi)) {
-		    if (!stream_at_end(CAR(strmi)))
-		      return(FALSE);
-		    strm->stream.object0 = strmi = CDR(strmi);
-		  }
-		  return(TRUE);
-		}
-
-	case smm_two_way:
-		if (strm == cl_core.terminal_io)
-			flush_stream(cl_core.terminal_io->stream.object1);
-		strm = strm->stream.object0;
-		goto BEGIN;
-
-	case smm_echo:
-		strm = strm->stream.object0;
-		goto BEGIN;
-
-	case smm_string_input:
-		if (strm->stream.int0 >= strm->stream.int1)
-			return(TRUE);
-		else
-			return(FALSE);
-
-	default:
-		error("illegal stream mode");
-	}
-}
-
-static bool
+static int
 flisten(FILE *fp)
 {
 #ifdef HAVE_SELECT
@@ -1148,10 +1162,10 @@ flisten(FILE *fp)
 	struct timeval tv = { 0, 0 };
 #endif
 	if (feof(fp))
-		return(FALSE);
+		return ECL_LISTEN_EOF;
 #ifdef FILE_CNT
 	if (FILE_CNT(fp) > 0)
-		return(TRUE);
+		return ECL_LISTEN_AVAILABLE;
 #endif
 #if !defined(mingw32)
 #if defined(HAVE_SELECT)
@@ -1161,19 +1175,19 @@ flisten(FILE *fp)
 	retv = select(fd + 1, &fds, NULL, NULL, &tv);
 	if (retv < 0)
 		FElibc_error("select() returned an error value", 0);
-	return (retv > 0);
+	return (retv > 0)? ECL_LISTEN_AVAILABLE : ECL_LISTEN_NO_CHAR;
 #elif defined(FIONREAD)
 	{ long c = 0;
 	ioctl(fileno(fp), FIONREAD, &c);
-	return (c > 0);
+	return (c > 0)? ECL_LISTEN_AVAILABLE : ECL_LISTEN_NO_CHAR;
 	}
 #endif /* FIONREAD */
 #endif
-	return FALSE;
+	return ECL_LISTEN_AVAILABLE;
 }
 
-bool
-listen_stream(cl_object strm)
+int
+ecl_listen_stream(cl_object strm)
 {
 	FILE *fp;
 
@@ -1189,7 +1203,7 @@ BEGIN:
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_closed:
 		FEclosed_stream(strm);
-		return(FALSE);
+		return ECL_LISTEN_EOF;
 
 	case smm_input:
 	case smm_io:
@@ -1202,25 +1216,34 @@ BEGIN:
 		strm = symbol_value(strm->stream.object0);
 		goto BEGIN;
 
-	case smm_concatenated:
-		if (endp(strm->stream.object0))
-			return(FALSE);
-		strm = CAR(strm->stream.object0);        /* Incomplete! */
-		goto BEGIN;
-
+	case smm_concatenated: {
+		cl_object l = strm->stream.object0;
+		while (!endp(l)) {
+			int f = ecl_listen_stream(CAR(l));
+			l = CDR(l);
+			if (f == ECL_LISTEN_EOF) {
+				strm->stream.object0 = l;
+			} else {
+				return f;
+			}
+		}
+		return ECL_LISTEN_EOF;
+	}
 	case smm_two_way:
 	case smm_echo:
 		strm = strm->stream.object0;
 		goto BEGIN;
 
 	case smm_string_input:
-		return(strm->stream.int0 < strm->stream.int1);
+		if (strm->stream.int0 < strm->stream.int1)
+			return ECL_LISTEN_AVAILABLE;
+		else
+			return ECL_LISTEN_EOF;
 
 	case smm_output:
-	case smm_probe:
 	case smm_broadcast:
 	case smm_string_output:
-		FEerror("Can't listen to ~S.", 1, strm);
+		not_an_input_stream(strm);
 
 	default:
 		error("illegal stream mode");
@@ -1259,8 +1282,13 @@ BEGIN:
 		strm = symbol_value(strm->stream.object0);
 		goto BEGIN;
 
-	case smm_probe:
 	case smm_broadcast:
+		strm = strm->stream.object0;
+		if (endp(strm))
+			return 0;
+		strm = CAR(strm);
+		goto BEGIN;
+
 	case smm_concatenated:
 	case smm_two_way:
 	case smm_echo:
@@ -1314,8 +1342,13 @@ BEGIN:
 		strm = symbol_value(strm->stream.object0);
 		goto BEGIN;
 
-	case smm_probe:
 	case smm_broadcast:
+		strm = strm->stream.object0;
+		if (endp(strm))
+			return 0;
+		strm = CAR(strm);
+		goto BEGIN;
+
 	case smm_concatenated:
 	case smm_two_way:
 	case smm_echo:
@@ -1335,7 +1368,7 @@ file_length(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
-		FEerror("file-length not implemented for CLOS streams", 0);
+		goto ERROR;
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
@@ -1356,15 +1389,23 @@ BEGIN:
 		strm = symbol_value(strm->stream.object0);
 		goto BEGIN;
 
-	/* FIXME! Should signal an error of type-error */
-	case smm_probe:
 	case smm_broadcast:
+		strm = strm->stream.object0;
+		if (endp(strm)) {
+			return 0;
+		}
+		strm = CAR(strm);
+		goto BEGIN;
+
+	/* FIXME! Should signal an error of type-error */
 	case smm_concatenated:
 	case smm_two_way:
 	case smm_echo:
 	case smm_string_input:
 	case smm_string_output:
-		return(-1);
+	ERROR:
+		FEwrong_type_argument(c_string_to_object("(OR BROADCAST-STREAM SYNONYM-STREAM FILE-STREAM)"),
+				      strm);
 
 	default:
 		error("illegal stream mode");
@@ -1407,15 +1448,15 @@ BEGIN:
 		goto BEGIN;
 
 	case smm_input:
-	case smm_probe:
 	case smm_string_input:
 		return 0;
 
 	case smm_concatenated:
 	case smm_broadcast:
-		if (endp(strm->stream.object0))
+		strm = strm->stream.object0;
+		if (endp(strm))
 			return 0;
-		strm = CAR(strm->stream.object0);
+		strm = CAR(strm);
 		goto BEGIN;
 	default:
 		error("illegal stream mode");
@@ -1582,11 +1623,10 @@ for the string ~S.",
 		3, istart, iend, strng);
 @)
 
-cl_object
-cl_make_string_output_stream()
-{
+@(defun make-string-output-stream (&key (element_type @'base-char'))
+@
 	@(return make_string_output_stream(128))
-}
+@)
 
 cl_object
 cl_get_output_stream_string(cl_object strm)
@@ -1645,6 +1685,7 @@ cl_output_stream_p(cl_object strm)
 	           (external_format @':default')
 	      &aux strm)
 	enum ecl_smmode smm;
+	cl_elttype elttype;
 @
 	if (external_format != @':default')
 		FEerror("~S is not a valid stream external format.", 1,
@@ -1680,10 +1721,24 @@ cl_output_stream_p(cl_object strm)
 		smm = smm_probe;
 		if (!idnesp)
 			if_does_not_exist = Cnil;
-	} else
+	} else {
 		FEerror("~S is an illegal DIRECTION for OPEN.",
 			1, direction);
-	strm = open_stream(filename, smm, if_exists, if_does_not_exist);
+ 	}
+	if (element_type == @':default') {
+		elttype = aet_ch;
+	} else if (element_type == @'signed-byte') {
+		elttype = aet_i8;
+	} else if (element_type == @'unsigned-byte') {
+		elttype = aet_b8;
+	} else {
+		elttype = ecl_symbol_to_elttype(element_type);
+		if (elttype == aet_object) {
+			FEerror("~S is not a valid stream element type",
+				1, elttype);
+		}
+	}
+	strm = open_stream(filename, smm, if_exists, if_does_not_exist, elttype);
 	@(return strm)
 @)
 
@@ -1710,9 +1765,19 @@ for the file-stream ~S.",
 @)
 
 cl_object
-cl_file_string_length(cl_object string)
+cl_file_string_length(cl_object stream, cl_object string)
 {
 	cl_fixnum l;
+	/* This is a stupid requirement from the spec. Why returning 1???
+	 * Why not simply leaving the value unspecified, as with other
+	 * streams one cannot write to???
+	 */
+	if (type_of(stream) == t_stream &&
+	    stream->stream.mode == smm_broadcast) {
+		stream = stream->stream.object0;
+		if (endp(stream))
+			@(return MAKE_FIXNUM(1))
+	}
 	switch (type_of(string)) {
 	case t_string:
 		l = string->string.fillp;
@@ -1808,6 +1873,7 @@ init_file(void)
 	cl_object x;
 
 	standard_input = cl_alloc_object(t_stream);
+	standard_input->stream.elttype = aet_ch;
 	standard_input->stream.mode = (short)smm_input;
 	standard_input->stream.file = stdin;
 	standard_input->stream.object0 = @'base-char';
@@ -1816,6 +1882,7 @@ init_file(void)
 	standard_input->stream.int1 = 0;
 
 	standard_output = cl_alloc_object(t_stream);
+	standard_output->stream.elttype = aet_ch;
 	standard_output->stream.mode = (short)smm_output;
 	standard_output->stream.file = stdout;
 	standard_output->stream.object0 = @'base-char';

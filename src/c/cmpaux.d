@@ -74,8 +74,7 @@ object_to_fixnum(cl_object x)
 	case t_fixnum:
 	case t_bignum:
 		return fixint(x);
-	case t_character:
-		return (cl_fixnum)CHAR_CODE(x);
+/*	case t_character: return (cl_fixnum)CHAR_CODE(x); */
 	case t_ratio:
 		return (cl_fixnum)number_to_double(x);
 	case t_shortfloat:
@@ -93,9 +92,8 @@ object_to_float(cl_object x)
 	if (FIXNUMP(x)) return(fix(x));	/* Immediate fixnum */
 
 	switch (type_of(x)) {
-	  /*	case t_fixnum: return fix(x);	*/
-	case t_character:
-		return CHAR_CODE(x);
+/*	case t_fixnum: return fix(x);	*/
+/*	case t_character: return CHAR_CODE(x); */
 	case t_bignum:
 	case t_ratio:
 		return number_to_double(x);
@@ -104,7 +102,7 @@ object_to_float(cl_object x)
 	case t_longfloat:
 		return lf(x);
 	default:
-		FEerror("~S cannot be coerced to a C float.", 1, x);
+		FEtype_error_real(x);
 	}
 }
 
@@ -115,9 +113,8 @@ object_to_double(cl_object x)
 	if (FIXNUMP(x)) return(fix(x));	/* Immediate fixnum */
 
 	switch (type_of(x)) {
-	  /*	case t_fixnum: return fix(x);	*/
-	case t_character:
-		return CHAR_CODE(x);
+/*	case t_fixnum: return fix(x);	*/
+/*	case t_character: return CHAR_CODE(x); */
 	case t_bignum:
 	case t_ratio:
 		return number_to_double(x);
@@ -126,7 +123,7 @@ object_to_double(cl_object x)
 	case t_longfloat:
 		return lf(x);
 	default:
-		FEerror("~S cannot be coerced to a C double.", 1, x);
+		FEtype_error_real(x);
 	}
 }
 

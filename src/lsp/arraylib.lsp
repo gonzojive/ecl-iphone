@@ -339,12 +339,12 @@ adjustable array."
                    displaced-index-offset))
   (when (integerp new-dimensions)
         (setq new-dimensions (list new-dimensions)))
-  (let ((element-type (array-element-type array)))
-    (unless (eq element-type t) (push element-type r)
-	    (push :element-type r)))
+  ;; FILL-POINTER = NIL means use the old value of the fill pointer
+  (when (and (null fill-pointer) (array-has-fill-pointer-p array))
+    (setf r (list* :fill-pointer (fill-pointer array) r)))
   (let ((x (apply #'make-array new-dimensions :adjustable t r)))
     (declare (array x))
-    (unless displaced-to
+    (unless (or displaced-to initial-contents)
       (do ((cursor (make-list (length new-dimensions) :initial-element 0)))
 	  (nil)
 	(when (apply #'array-in-bounds-p array cursor)

@@ -1844,6 +1844,9 @@ ECL 0.9d
   - Implemented WILD-PATHNAME-P, and LOAD-LOGICAL-PATHNAME-TRANSLATIONS
     (which similar to CMUCL looks for the translations at sys:host.translation).
 
+  - Streams now can have element types CHARACTER, (SIGNED-BYTE 8) and
+    (UNSIGNED-BYTE 8).
+
 TODO:
 =====
 

@@ -24,7 +24,7 @@
   (declare (si::c-local))
   (error 'simple-type-error
 	 :format-control
-	 "Cannot create a sequnce of size ~S which matches type ~S."
+	 "Cannot create a sequence of size ~S which matches type ~S."
 	 :format-arguments (list size type)
 	 :expected-type type
 	 :datum NIL))
@@ -35,9 +35,12 @@
 	(setq name type args nil)
 	(setq name (first type) args (cdr type)))
     (case name
-      ((VECTOR SIMPLE-VECTOR)
+      ((VECTOR)
        (setq elt-type (if (endp args) '* (first args))
 	     length (if (endp (rest args)) '* (second args))))
+      ((SIMPLE-VECTOR)
+       (setq elt-type 'T
+	     length (if (endp args) '* (first args))))
       ((STRING SIMPLE-STRING)
        (setq elt-type 'BASE-CHAR
 	     length (if (endp args) '* (first args))))
