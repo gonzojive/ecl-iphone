@@ -195,15 +195,11 @@ SI::ARGS."
 	    (return-from tracing-body t))))))
   nil)
 
-#+nil
-(progn
 (defvar *step-level* 0)
-(defvar *step-quit* nil)
-(defvar *step-function* nil)		; skip stepping until this function
-(defvar *step-form*)
-(defvar *step-env*)
+(defvar *step-action* nil)
+(defvar *step-form* nil)
 (defvar *step-tag* (cons nil nil))
-
+(defvar *step-functions* nil)
 (defconstant step-commands
   `("Stepper commands"
      ((:newline) (step-next) :constant
@@ -220,12 +216,6 @@ SI::ARGS."
 	stepping after the current form.  With numeric argument (n),
 	resume stepping at the n-th level above.  With function name, resume
 	when given function is called.~%")
-     ((:b :back) (tpl-pop-command) :constant
-      ":b(ack)		Step backward"
-      ":back						[Stepper command]~@
-	:b						[Abbreviation]~@
-	~@
-	Go back one step.~%")
      ((:pr :print) (step-print) :constant
       ":pr(int)	Pretty print current form"
       ":print						[Stepper command]~@
@@ -241,12 +231,6 @@ SI::ARGS."
 	it is printed by the top level in the usual way and saved in~@
 	the variable *.  The main purpose of this command is to allow~@
 	the current form to be examined further by accessing *.~%")
-     ((:ret :return) step-return :eval
-      ":ret(urn)	Return without evaluating current form"
-      ":return &eval &rest values			[Stepper command]~@
-	:ret &eval &rest values				[Abbreviation]~@
-	~@
-	Return from current form without evaluating it.~%")
      ((:x :exit) (step-quit) :constant
       ":x or :exit	Finish evaluation and exit stepper"
       ":exit						[Stepper command]~@
@@ -262,39 +246,29 @@ for Stepper mode commands."
   `(step* ',form))
 
 (defun step* (form)
-  (let* ((*step-quit* nil)
-	 (*step-function* nil)
-	 (*step-level* 0))
-    (stepper form nil)))
+  (let* ((*step-action* t)
+	 (*step-level* 0)
+	 (*step-functions* (make-hash-table :size 128 :test 'eq :lockable t)))
+    (catch *step-tag*
+      (si:eval-with-env form nil t))))
 
-(defun stepper (form &optional env)
-  (when (eq *step-quit* t)
-    (return-from stepper (evalhook form nil nil env)))
-  ;; skip the encapsulation of traced functions:
-  (when (and (consp form)
-	     (symbolp (car form))
-	     (get-sysprop (car form) 'TRACED)
-	     (tracing-body (car form)))
-    (do ((args (cdr form) (cdr args))
-	 (values))
-	((null args)
-	 (return-from stepper
-	   (applyhook (car form) (nreverse values) #'stepper nil env)))
-      (push (evalhook (car args) #'stepper nil env) values)))
-  (when (numberp *step-quit*)
-    (if (>= *step-level* *step-quit*)
-      (return-from stepper (evalhook form nil nil env))
-      (setq *step-quit* nil)))
-  (when *step-function*
-    (if (and (consp form) (eq (car form) *step-function*))
-      (let ((*step-function* nil))
-	(return-from stepper (stepper form env)))
-      (return-from stepper (evalhook form #'stepper nil env))))
-  (let* ((*step-level* (1+ *step-level*))
-	 (*step-form* form)
-	 (*step-env* env)
-	 values indent prompt)
-    (setq indent (min (* *tpl-level* 2) 20))
+(defun steppable-function (form)
+  (let ((*step-action* nil))
+    (or (gethash form *step-functions*)
+	(multiple-value-bind (f env name)
+	    (function-lambda-expression form)
+	  (if (and (not (get-sysprop name 'TRACED)) f)
+	      (setf (gethash form *step-functions*)
+		    (eval-with-env `(function ,f) env t))
+	      form)))))
+
+(defun stepper (form)
+  (when (typep form '(or symbol function))
+    (return-from stepper (steppable-function (coerce form 'function))))
+  (let* ((*step-form* form)
+	 (*step-action* nil)
+	 (indent (min (* *tpl-level* 2) 20))
+	 prompt)
     (setq prompt
 	  #'(lambda ()
 	      (format *debug-io* "~VT" indent)
@@ -302,54 +276,20 @@ for Stepper mode commands."
 		     :level 2 :length 2)
 	      (princ #\space *debug-io*)
 	      (princ #\- *debug-io*)))
-    (if (constantp form)
-      (progn
-	(format *debug-io* "~VT" indent)
-	(write form :stream *debug-io* :pretty nil
-	       :level 2 :length 2)
-	(princ #\space *debug-io*)
-	(princ #\= *debug-io*)
-	(setq values (multiple-value-list (evalhook form nil nil env)))
-	(dolist (v values)
-	  (princ #\space *debug-io*)
-	  (write v :stream *debug-io* :pretty nil :level 2 :length 2))
-	(terpri *debug-io*))
-      (progn
-	(setq values
-	      (catch *step-tag*
-		(tpl :quiet t
-		     :commands (adjoin step-commands
-				       (adjoin break-commands *tpl-commands*))
-		     :prompt-hook prompt)))
-	(if (endp values)
-	  (format *debug-io* "~V@T=~%" indent)
-	  (do ((l values (cdr l))
-	       (b t nil))
-	      ((endp l))
-	    (format *debug-io* "~V@T~C " indent (if b #\= #\&) (car l))
-	    (write (car l) :stream *debug-io* :pretty nil
-		   :level 2 :length 2)
-	    (terpri *debug-io*)))))
-    (values-list values)))
+    (when (catch *step-tag*
+	    (tpl :quiet t
+		 :commands (adjoin step-commands
+				   (adjoin break-commands *tpl-commands*))
+		 :broken-at 'stepper
+		 :prompt-hook prompt))
+      (throw *step-tag* t))))
 
 (defun step-next ()
-  (throw *step-tag*
-	 (multiple-value-list
-	  (locally (declare (notinline evalhook))
-		   (evalhook *step-form* #'stepper nil *step-env*)))))
+  (throw *step-tag* nil))
 
 (defun step-skip (&optional (when 0))
-  (throw *step-tag*
-	 (multiple-value-list
-	  (locally (declare (notinline evalhook))
-	   (cond ((symbolp when)
-		  (let ((*step-function* when))
-		    (evalhook *step-form* #'stepper nil *step-env*)))
-		 ((integerp when)
-		  (setq *step-quit* (- *step-level* when))
-		  (evalhook *step-form* nil nil *step-env*))
-		 (t
-		  (error "Skip: argument must be integer or symbol.")))))))
+  (setf *step-action* 0)
+  (throw *step-tag* nil))
 
 (defun step-print ()
   (write *step-form* :stream *debug-io* :pretty t :level nil :length nil)
@@ -357,13 +297,4 @@ for Stepper mode commands."
   (values))
 
 (defun step-quit ()
-  (setq *step-quit* t)
-  (throw *step-tag*
-	 (multiple-value-list
-	  (locally (declare (notinline evalhook))
-		   (evalhook *step-form* nil nil *step-env*)))))
-
-(defun step-return (&rest values)
-  (throw *step-tag* values))
-)
-;(provide 'TRACE)
+  (throw *step-tag* t))

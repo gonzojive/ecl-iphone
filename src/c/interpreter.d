@@ -1307,6 +1307,55 @@ interpret(cl_object bytecodes, void *pc) {
 			unwind(cl_env.frs_top + n);
 		break;
 	}
+	case OP_STEPIN: {
+		cl_object form = GET_DATA(vector, bytecodes);
+		cl_object a = SYM_VAL(@'si::*step-action*');
+		if (a == Ct) {
+			/* We are stepping in, but must first ask the user
+			 * what to do. */
+			ECL_SETQ(@'si::*step-level*',
+				 cl_1P(SYM_VAL(@'si::*step-level*')));
+			cl_stack_push(form);
+			interpret_funcall(1, @'si::stepper');
+		} else if (a != Cnil) {
+			/* The user told us to step over. *step-level* contains
+			 * an integer number that, when it becomes 0, means
+			 * that we have finished stepping over. */
+			ECL_SETQ(@'si::*step-action*', cl_1P(a));
+		} else {
+			/* We are not inside a STEP form. This should
+			 * actually never happen. */
+		}
+		break;
+	}
+	case OP_STEPCALL: {
+		/* We are going to call a function. However, we would
+		 * like to step _in_ the function. STEPPER takes care of
+		 * that. */
+		cl_fixnum n = GET_OPARG(vector);
+		if (SYM_VAL(@'si::*step-action*') == Ct) {
+			cl_stack_push(reg0);
+			reg0 = interpret_funcall(1, @'si::stepper');
+		}
+		reg0 = interpret_funcall(n, reg0);
+	}
+	case OP_STEPOUT: {
+		cl_object a = SYM_VAL(@'si::*step-action*');
+		if (a == Ct) {
+			/* We exit one stepping level */
+			ECL_SETQ(@'si::*step-level*',
+				 cl_1M(SYM_VAL(@'si::*step-level*')));
+		} else if (a == MAKE_FIXNUM(0)) {
+			/* We are back to the level in which the user
+			 * selected to step over. */
+			ECL_SETQ(@'si::*step-action*', Ct);
+		} else if (a != Cnil) {
+			ECL_SETQ(@'si::*step-action*', cl_1M(a));
+		} else {
+			/* Not stepping, nothing to be done. */
+		}
+		break;
+	}
 	default:
 		FEerror("Internal error: Unknown code ~S",
 			1, MAKE_FIXNUM(*(vector-1)));

@@ -232,7 +232,7 @@ si_unlink_symbol(cl_object s)
 cl_object
 cl_eval(cl_object form)
 {
-	return si_eval_with_env(form, Cnil);
+	return si_eval_with_env(1, form);
 }
 
 cl_object
@@ -244,7 +244,7 @@ cl_safe_eval(cl_object form, cl_object env, cl_object err_value)
 		output = err_value;
 	} else {
 		bds_bind(@'si::*ignore-errors*', Ct);
-		output = si_eval_with_env(form, env);
+		output = si_eval_with_env(2, form, env);
 		bds_unwind1();
 	}
 	frs_pop();

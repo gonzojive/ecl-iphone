@@ -416,6 +416,7 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 		have been also deposited in the stack. The output values
 		are left in VALUES(...)
 	*/
+	case OP_STEPCALL:
 	case OP_FCALL:		string = "FCALL\t";
 				n = GET_OPARG(vector);
 				goto OPARG;
@@ -685,6 +686,10 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 				goto NOARG;
 	case OP_PUSHNIL:	string = "PUSH\t'NIL";
 		    		goto NOARG;
+	case OP_STEPIN:		string = "STEP\tIN";
+				goto ARG;
+	case OP_STEPOUT:	string = "STEP\tOUT";
+				goto NOARG;
 	default:
 		FEerror("Unknown code ~S", 1, MAKE_FIXNUM(*(vector-1)));
 		return vector;

@@ -50,11 +50,12 @@
 #define FLAG_USEFUL		(FLAG_PUSH | FLAG_VALUES | FLAG_REG0)
 
 typedef struct cl_compiler_env {
-	bool coalesce;
 	cl_object variables;
 	cl_object macros;
 	cl_fixnum lexical_level;
 	cl_object constants;
+	bool coalesce;
+	bool stepping;
 };
 
 #define ENV cl_env.c_env
@@ -363,6 +364,7 @@ static void
 c_new_env(struct cl_compiler_env *new_c_env, cl_object env)
 {
 	ENV = new_c_env;
+	ENV->stepping = 0;
 	ENV->coalesce = TRUE;
 	ENV->constants = Cnil;
 	ENV->variables = Cnil;
@@ -655,8 +657,14 @@ c_call(cl_object args, int flags) {
 
 	name = pop(&args);
 	nargs = c_arguments(args);
-	if (SYMBOLP(name) && 
-	    ((flags & FLAG_GLOBAL) || Null(c_tag_ref(name, @':function'))))
+	if (ENV->stepping) {
+		/* When stepping, we only have one opcode to do function
+		 * calls: OP_STEPFCALL. */
+		asm_function(name, (flags & FLAG_GLOBAL) | FLAG_REG0);
+		asm_op2(OP_STEPCALL, nargs);
+		flags = FLAG_REG0;
+	} else if (SYMBOLP(name) &&
+		   ((flags & FLAG_GLOBAL) || Null(c_tag_ref(name, @':function'))))
 	{
 		asm_op2(push? OP_PCALLG : OP_CALLG, nargs);
 		asm_c(name);
@@ -690,7 +698,12 @@ c_funcall(cl_object args, int flags) {
 	}
 	compile_form(name, FLAG_PUSH);
 	nargs = c_arguments(args);
-	asm_op2((flags & FLAG_PUSH)? OP_PFCALL : OP_FCALL, nargs);
+	if (ENV->stepping) {
+		asm_op2(OP_STEPCALL, nargs);
+		flags = FLAG_REG0;
+	} else {
+		asm_op2((flags & FLAG_PUSH)? OP_PFCALL : OP_FCALL, nargs);
+	}
 	return flags;
 }
 
@@ -1957,10 +1970,14 @@ compile_form(cl_object stmt, int flags) {
 		stmt = CAR(stmt);
 		goto QUOTED;
 	}
+	if (ENV->stepping)
+		asm_op2c(OP_STEPIN, stmt);
 	for (l = database; l->symbol != OBJNULL; l++)
 		if (l->symbol == function) {
 			ENV->lexical_level += l->lexical_increment;
 			new_flags = (*(l->compiler))(CDR(stmt), flags);
+			if (ENV->stepping)
+				asm_op(OP_STEPOUT);
 			goto OUTPUT;
 		}
 	/*
@@ -2516,20 +2533,20 @@ si_make_lambda(cl_object name, cl_object rest)
 	@(return lambda)
 }
 
-cl_object
-si_eval_with_env(cl_object form, cl_object env)
-{
+@(defun si::eval-with-env (form &optional (env Cnil) (stepping Cnil))
 	volatile struct cl_compiler_env *old_c_env = ENV;
 	struct cl_compiler_env new_c_env;
 	volatile cl_index handle;
 	struct ihs_frame ihs;
 	cl_object bytecodes;
-
+@
 	/*
 	 * Compile to bytecodes.
 	 */
 	ENV = &new_c_env;
 	c_new_env(&new_c_env, env);
+	cl_env.lex_env = env;
+	ENV->stepping = stepping != Cnil;
 	handle = asm_begin();
 	CL_UNWIND_PROTECT_BEGIN {
 		compile_form(form, FLAG_VALUES);
@@ -2556,4 +2573,4 @@ si_eval_with_env(cl_object form, cl_object env)
 #endif
 	ihs_pop();
 	return VALUES(0);
-}
+@)

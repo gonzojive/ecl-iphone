@@ -457,10 +457,11 @@ file.  When the saved image is invoked, it will start the redefined top-level."
 
 (defun tpl (&key ((:commands *tpl-commands*) tpl-commands)
 		 ((:prompt-hook *tpl-prompt-hook*) nil)
+		 (broken-at nil)
 		 (quiet nil))
   (let* ((*ihs-base* *ihs-top*)
-	 (*ihs-top* (ihs-top 'tpl))
-	 (*ihs-current* *ihs-top*)
+	 (*ihs-top* (if broken-at (ihs-search t broken-at) (ihs-top 'tpl)))
+	 (*ihs-current* (if broken-at (ihs-prev *ihs-top*) *ihs-top*))
 	 (*frs-base* (or (sch-frs-base *frs-top* *ihs-base*) (1+ (frs-top))))
 	 (*frs-top* (frs-top))
 	 (*read-suppress* nil)
@@ -468,6 +469,7 @@ file.  When the saved image is invoked, it will start the redefined top-level."
 	 (*quit-tag* *quit-tags*)	; any unique new value
 	 (*tpl-level* (1+ *tpl-level*))
 	 values)
+    (set-break-env)
     (set-current-ihs)
     (unless quiet
       (break-where))
@@ -478,6 +480,7 @@ file.  When the saved image is invoked, it will start the redefined top-level."
      (when (catch *quit-tag*
 	     (tpl-prompt)
 	     (setq - (notinline (tpl-read)))
+	     (cos 1.0)
 	     (setq values
 		   (multiple-value-list
 		    (eval-with-env - *break-env*)))
@@ -767,18 +770,24 @@ file.  When the saved image is invoked, it will start the redefined top-level."
 (defun set-break-env ()
   (setq *break-env* (if (= *ihs-current* *ihs-top*) nil (ihs-env *ihs-current*))))
 
-(defun tpl-backward-search (string)
-  (do ((ihs (si::ihs-prev *ihs-current*) (si::ihs-prev ihs)))
+(defun ihs-search (string unrestricted &optional (start (si::ihs-top 'tpl)))
+  (do ((ihs start (si::ihs-prev ihs)))
       ((< ihs *ihs-base*)
-       (format *debug-io* "Search for ~a failed.~%" string))
-    (when (and (ihs-visible ihs)
-	       (search string (symbol-name (ihs-fname ihs))
+       (return nil))
+    (when (and (or unrestricted (ihs-visible ihs))
+	       (search (string string) (symbol-name (ihs-fname ihs))
 		       :test #'char-equal))
-      (setq *ihs-current* ihs)
-      (set-current-ihs)
-      (tpl-print-current)
-      (return)))
-  (values))
+      (return ihs))))
+
+(defun tpl-backward-search (string)
+  (let ((new-ihs (ihs-search string nil *ihs-current*)))
+    (cond (new-ihs
+	   (setf *ihs-current* new-ihs)
+	   (set-current-ihs)
+	   (tpl-print-current))
+	  (t
+	   (format *debug-io* "Search for ~a failed.~%" string)))
+    (values)))
 
 (defun tpl-forward-search (string)
   (do ((ihs (si::ihs-next *ihs-current*) (si::ihs-next ihs)))

@@ -35,7 +35,7 @@ static cl_object si_simple_toplevel ()
 	  sentence = @read(3, Cnil, Cnil, OBJNULL);
 	  if (sentence == OBJNULL)
 	    @(return);
-	  prin1(si_eval_with_env(sentence, Cnil), Cnil);
+	  prin1(si_eval_with_env(1, sentence), Cnil);
 #ifdef TK
 	  StdinResume();
 #endif

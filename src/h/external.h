@@ -402,7 +402,7 @@ extern cl_object si_valid_function_name_p(cl_object name);
 extern cl_object si_process_declarations _ARGS((int narg, cl_object body, ...));
 
 extern cl_object make_lambda(cl_object name, cl_object lambda);
-extern cl_object si_eval_with_env(cl_object form, cl_object env);
+extern cl_object si_eval_with_env _ARGS((int narg, cl_object form, ...));
 
 /* interpreter.c */
 

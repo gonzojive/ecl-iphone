@@ -876,7 +876,7 @@ sharp_dot_reader(cl_object in, cl_object c, cl_object d)
 	in = read_object(in);
 	if (read_suppress)
 		@(return Cnil)
-	in = si_eval_with_env(in, Cnil);
+	in = si_eval_with_env(1, in);
 	@(return in)
 }
 

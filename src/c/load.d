@@ -186,7 +186,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 			x = cl_read(3, strm, Cnil, OBJNULL);
 			if (x == OBJNULL)
 				break;
-			si_eval_with_env(x, Cnil);
+			si_eval_with_env(1, x);
 			if (print != Cnil) {
 				@write(1, x);
 				@terpri(0);
