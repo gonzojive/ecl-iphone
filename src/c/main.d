@@ -228,40 +228,37 @@ si_pointer(cl_object x)
 static void
 init_main(void)
 {
-	{ cl_object features;
-	  features =
-	    CONS(make_keyword("ECL"),
-		 CONS(make_keyword("COMMON"), Cnil));
+	cl_object features;
 
-#define ADD_FEATURE(name)	features = CONS(make_keyword(name),features)
+	features = cl_list(6,
+			   make_keyword("ECL"),
+			   make_keyword("COMMON"),
+			   make_keyword("ANSI-CL"),
+			   make_keyword("COMMON-LISP"),
+			   make_keyword(ARCHITECTURE),
+			   make_keyword(BRAND));
+
+#define ADD_FEATURE(name) features = CONS(make_keyword(name),features)
 
 #if defined(GBC_BOEHM)
 	 ADD_FEATURE("BOEHM-GC");
 #endif
-
 #ifdef THREADS
 	 ADD_FEATURE("THREADS");
 #endif
-	
 #ifdef CLOS
 	 ADD_FEATURE("CLOS");
 #endif
-
-	 ADD_FEATURE("ANSI-CL");
-
 #ifdef ENABLE_DLOPEN
 	 ADD_FEATURE("DLOPEN");
 #endif
-
 #ifdef ECL_OLD_LOOP
 	 ADD_FEATURE("OLD-LOOP");
 #endif
-
 #ifdef PDE
 	 ADD_FEATURE("PDE");
 #endif
 
-/* ---------- Operating System ---------- */
 #ifdef unix
 	 ADD_FEATURE("UNIX");
 #endif
@@ -275,13 +272,9 @@ init_main(void)
 	 ADD_FEATURE("MS-DOS");
 #endif
 
-	 ADD_FEATURE(ARCHITECTURE);
-	 ADD_FEATURE(BRAND);
-
 #ifdef IEEEFLOAT
 	 ADD_FEATURE("IEEE-FLOATING-POINT");
 #endif
 
 	 SYM_VAL(@'*features*') = features;
-       }
 }
