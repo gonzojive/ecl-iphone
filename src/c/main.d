@@ -409,9 +409,6 @@ cl_boot(int argc, char **argv)
 	ecl_booted = 1;
 
 	read_VV(OBJNULL,init_LSP);
-#ifdef CLOS
-	read_VV(OBJNULL,init_CLOS);
-#endif
 
 	/* Jump to top level */
 	ECL_SET(@'*package*', cl_core.user_package);

@@ -53,28 +53,28 @@
       "@LDRPATH@ @BUNDLE_LDFLAGS@ @LDFLAGS@ @SHAREDPREFIX@ecl.@SHAREDEXT@ @CLIBS@")
 
 ;;;
-;;; * Compile, load and link Common-Lisp base library
+;;; * Avoid name clashes with user supplied code.
+;;;
+(setq si::*init-function-prefix* "ECL")
+
+;;;
+;;; * Compile and link Common-Lisp base library
 ;;;
 (setq si::*keep-documentation* nil)
 (proclaim '(optimize (safety 2) (space 3)))
-(let ((objects (compile-if-old "build:lsp;" +lisp-module-files+
-			       :system-p t :c-file t :data-file t :h-file t)))
-  (c::build-static-library "lsp" :lisp-files objects))
-
-;;;
-;;; * Compile, load and link PCL based Common-Lisp Object System
-;;;
-(proclaim '(optimize (safety 2) (space 3)))
-#+CLOS
-(let* ((c::*compile-to-linking-call* nil)
-       (objects (compile-if-old "build:clos;" +clos-module-files+
-				:system-p t :c-file t :data-file t :h-file t)))
-  (c::build-static-library "clos" :lisp-files objects))
+(let ((lsp-objects (compile-if-old "build:lsp;" +lisp-module-files+
+				   :system-p t :c-file t :data-file t :h-file t)))
+  #+CLOS
+  (let* ((c::*compile-to-linking-call* nil))
+    (proclaim '(optimize (safety 2) (space 3)))
+    (setq lsp-objects (append lsp-objects
+			      (compile-if-old "build:clos;" +clos-module-files+
+					      :system-p t :c-file t :data-file t :h-file t))))
+  (c::build-static-library "lsp" :lisp-files lsp-objects))
 
 (si::system (print (format nil "sh -c 'mkdir tmp; ~
 cd tmp; rm -f *; ~
 ar -x ../liblsp.a; for i in *.o; do mv $i lsp_$i; done; ar -r ../libecl.a *.o; rm *.o; ~
-ar -x ../libclos.a; for i in *.o; do mv $i lsp_$i; done; ar -r ../libecl.a *.o; rm *.o; ~
 ranlib ../libecl.a; ~
 cd ..; rm -rf tmp/*'")))
 
