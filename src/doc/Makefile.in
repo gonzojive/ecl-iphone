@@ -41,8 +41,8 @@ install: all
 	$(INSTALL_DATA) ecl.$(INFOEXT) $(infodir);
 	$(INSTALL_DATA) ecldev.$(INFOEXT) $(infodir);
 	if [ -x $(INSTALL_INFO) ]; then \
-	  $(INSTALL_INFO) --infodir=$(infodir) ecl.$(INFOEXT); \
-	  $(INSTALL_INFO) --infodir=$(infodir) ecldev.$(INFOEXT); \
+	  $(INSTALL_INFO) --info-dir=$(infodir) ecl.$(INFOEXT); \
+	  $(INSTALL_INFO) --info-dir=$(infodir) ecldev.$(INFOEXT); \
 	fi
 	$(mkinstalldirs) $(mandir)/man$(manext)
 	$(INSTALL_DATA) ecl.man $(mandir)/man$(manext)/ecl.$(manext)
