@@ -255,7 +255,7 @@
 	   (wt-nl "cl_set(" var-loc ",")
 	   (wt-nl "(" var-loc "->symbol.dbind)= "))
        (wt-coerce-loc (var-rep-type var) loc)
-       (wt ");"))
+       (wt (if *safe-compile* ");" ";")))
       (t
        (wt-nl var-loc "= ")
        (wt-coerce-loc (var-rep-type var) loc)
