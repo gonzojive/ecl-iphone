@@ -188,12 +188,6 @@ extern void init_interpreter(void);
 extern void init_conditional(void);
 
 
-/* earith.c */
-
-extern void extended_mul(int d, int q, int r, int *hp, int *lp);
-extern void extended_div(int d, int h, int l, int *qp, int *rp);
-
-
 /* error.c */
 
 extern cl_object null_string;
