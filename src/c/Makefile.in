@@ -56,7 +56,7 @@ all:	$(DPP) ../libecl.a cinit.o
 .PHONY:	all
 
 install: $(HFILES)
-	for i in $(HFILES); do $(INSTALL_DATA) $$i $(PREFIX)$(libdir)/h; done
+	$(INSTALL_DATA) $(HFILES) $(PREFIX)$(libdir)/h/
 
 ../libecl.a: $(OBJS)
 	ar cr $@ $(OBJS)

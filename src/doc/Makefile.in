@@ -37,7 +37,7 @@ ecldev.ps: ecldev.dvi $(srcdir)/macros.txi
 	dvips -o $@ ecldev.dvi
 
 install: all
-	test -d $(PREFIX)$(infodir) || (mkdir $(PREFIX)$(infodir); chmod 755 $(PREFIX)$(infodir))
+	$(INSTALL) -d $(PREFIX)$(infodir)
 	$(INSTALL_DATA) ecl.info $(PREFIX)$(infodir)
 	$(INSTALL_DATA) ecldev.info $(PREFIX)$(infodir)
 
