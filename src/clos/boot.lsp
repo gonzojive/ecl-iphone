@@ -12,7 +12,7 @@
 ;;; ----------------------------------------------------------------------
 ;;; BOOT
 
-(defun boot ()
+(progn
   (let* ((class (find-class 'class))
 	 (built-in-class (find-class 'built-in-class)))
 
@@ -136,7 +136,5 @@
     (defmethod slot-unbound ((class t) object slot-name)
       (error 'slot-unbound :instance object :name slot-name))
     ))
-
-(boot)
 
 ;;; ----------------------------------------------------------------------
