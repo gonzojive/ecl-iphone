@@ -217,7 +217,7 @@
     ((OBJECT IGNORE DYNAMIC-EXTENT IGNORABLE)
      ;; FIXME! IGNORED!
      (dolist (var (cdr decl))
-       (unless (si:.valid-function-name-p var)
+       (unless (si::valid-function-name-p var)
 	 (warn "Not a valid function name ~s" fun))))
     (DECLARATION
      (dolist (x (cdr decl))
