@@ -566,7 +566,7 @@ read_constituent(cl_object in)
 static cl_object
 double_quote_reader(cl_object in, cl_object c)
 {
-	read_string('"', in);
+	read_string(CHAR_CODE(c), in);
 	@(return copy_simple_string(cl_env.token))
 }
 
