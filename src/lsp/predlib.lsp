@@ -166,6 +166,7 @@ has no fill-pointer, and is not adjustable."
 	     (STRUCTURE . SYS:STRUCTUREP)
 	     (FUNCTION . FUNCTIONP)
 	     (COMPILED-FUNCTION . COMPILED-FUNCTION-P)
+	     (DISPATCH-FUNCTION . DISPATCH-FUNCTION-P)
 	     (COMMON . COMMONP)
 	     (REAL . REALP)
 	     ))

@@ -1003,6 +1003,7 @@ extern cl_object cl_eql(cl_object x, cl_object y);
 extern cl_object cl_equal(cl_object x, cl_object y);
 extern cl_object cl_equalp(cl_object x, cl_object y);
 extern cl_object si_fixnump(cl_object x);
+extern cl_object si_dispatch_function_p(cl_object x);
 
 extern bool numberp(cl_object x);
 extern bool eql(cl_object x, cl_object y);

@@ -474,3 +474,9 @@ si_fixnump(cl_object x)
 {
 	@(return (FIXNUMP(x) ? Ct : Cnil))
 }
+
+cl_object
+si_dispatch_function_p(cl_object x)
+{
+	@(return ((type_of(x) == t_cfun)? Ct : Cnil))
+}

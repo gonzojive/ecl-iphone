@@ -956,6 +956,7 @@ cl_symbols[] = {
 {"SI::COPY-STREAM", SI_ORDINARY, si_copy_stream, 1},
 {"SI::COPY-STRUCTURE", SI_ORDINARY, si_copy_structure, 1},
 {"SI::DAYLIGHT-SAVING-TIME-P", SI_ORDINARY, si_daylight_saving_time_p, -1},
+{"SI::DISPATCH-FUNCTION-P", SI_ORDINARY, si_dispatch_function_p, 1},
 {"SI::DISPLACED-ARRAY-P", SI_ORDINARY, si_displaced_array_p, 1},
 {"SI::ELT-SET", SI_ORDINARY, si_elt_set, 3},
 {"SI::EVAL-WITH-ENV", SI_ORDINARY, si_eval_with_env, 2},
