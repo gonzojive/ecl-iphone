@@ -128,10 +128,11 @@
   (pretty-out stream char))
 
 (defmethod ext::stream-force-output ((stream pretty-stream))
-  (flush-stream (pprint-target stream)))
+  ;(force-pretty-output stream)
+)
 
 (defmethod ext::stream-clear-output ((stream pretty-stream))
-  (clear-output (pprint-target stream)))
+  (clear-output (pretty-stream-target stream)))
 
 (defun pretty-out (stream char)
   (declare (type pretty-stream stream)
