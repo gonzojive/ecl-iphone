@@ -17,6 +17,7 @@
 #include "ecl.h"
 #include "page.h"
 #include "internal.h"
+#include "bytecodes.h"
 
 #ifndef GBC_BOEHM
 
@@ -331,7 +332,7 @@ BEGIN:
 		mark_object(x->bytecodes.lex);
 		mark_object(x->bytecodes.specials);
 		mark_object(x->bytecodes.definition);
-		mark_contblock(x->bytecodes.code, x->bytecodes.code_size);
+		mark_contblock(x->bytecodes.code, x->bytecodes.code_size * sizeof(cl_opcode));
 		p = x->bytecodes.data;
 		i = x->bytecodes.data_size;
 		goto MARK_DATA;
@@ -692,6 +693,8 @@ ecl_gc(cl_type t)
   if (!GC_enabled())
     return;
 
+  CL_SAVE_ENVIRONMENT;
+
   if (SYM_VAL(@'si::*gc-verbose*') != Cnil) {
     printf("\n[GC ..");
     /* To use this should add entries in tm_table for reloc and contig.
@@ -826,6 +829,8 @@ ecl_gc(cl_type t)
 
     if (GC_exit_hook != NULL)
       (*GC_exit_hook)();
+
+    CL_RESTORE_ENVIRONMENT;
 
 #ifdef THREADS
 

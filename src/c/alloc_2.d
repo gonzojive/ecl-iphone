@@ -32,9 +32,10 @@ struct typemanager tm_table[(int)t_end];
 static void
 finalize(cl_object o, cl_object data)
 {
+	CL_NEWENV_BEGIN {
 	switch (type_of(o)) {
 #ifdef ENABLE_DLOPEN
-	case t_codeblock:
+	case t_codeblock: {
 		cl_mapc(2, @'si::unlink-symbol', o->cblock.links);
 		if (o->cblock.handle != NULL) {
 			printf("\n;;; Freeing library %s\n", o->cblock.name?
@@ -46,13 +47,14 @@ finalize(cl_object o, cl_object data)
 #endif
 		break;
 #endif
+	}
 	case t_stream:
 		if (o->stream.file != NULL)
 			fclose(o->stream.file);
 		o->stream.file = NULL;
 		break;
-	default:
-	}
+	default:}
+	} CL_NEWENV_END;
 }
 
 cl_object

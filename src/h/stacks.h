@@ -231,6 +231,14 @@ extern cl_object lex_env;
  * HIGH LEVEL CONTROL STRUCTURES *
  *********************************/
 
+#define CL_NEWENV_BEGIN {\
+	int __i = cl_stack_push_values(); \
+	cl_object __env = lex_env;
+
+#define CL_NEWENV_END \
+	cl_stack_pop_values(__i); \
+	lex_env = __env; }
+
 #define CL_UNWIND_PROTECT_BEGIN {\
 	bool __unwinding; frame_ptr __next_fr; \
 	cl_index __nr; \
