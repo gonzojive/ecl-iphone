@@ -145,6 +145,16 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 /* putenv() or setenv()							*/
 #undef HAVE_SETENV
 #undef HAVE_PUTENV
+/* times() and sys/times.h						*/
+#undef HAVE_TIMES
+/* user home directory, user name, etc...				*/
+#undef HAVE_PW_H
+/* symbolic links and checking their existence				*/
+#undef HAVE_LSTAT
+/* safe creation of temporary files					*/
+#undef HAVE_MKSTEMP
+/* timer for userland threads						*/
+#undef HAVE_ALARM
 
 /* what characters are used to mark beginning of new line		*/
 #undef ECL_NEWLINE_IS_CRLF

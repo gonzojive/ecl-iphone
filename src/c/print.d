@@ -496,7 +496,7 @@ call_structure_print_function(cl_object x, int level)
 
 	while (interrupt_flag) {
 		interrupt_flag = FALSE;
-#ifdef unix
+#ifdef HAVE_ALARM
 		alarm(0);
 #endif
 		terminal_interrupt(TRUE);

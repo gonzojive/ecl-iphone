@@ -131,14 +131,8 @@ dnl ----------------------------------------------------------------------
 dnl           checks for header files
 dnl
 dnl AC_CHECK_HEADERS(unistd.h stdlib.h stdarg.h string.h)
-AC_CHECK_HEADERS(sys/resource.h)
-AC_CHECK_HEADERS(sys/utsname.h)
-AC_CHECK_HEADERS(float.h)
-AC_CHECK_FUNCS(nanosleep)
-AC_CHECK_FUNCS(isnanf)
-AC_CHECK_FUNCS(select)
-AC_CHECK_FUNCS(setenv)
-AC_CHECK_FUNCS(putenv)
+AC_CHECK_HEADERS(sys/resource.h sys/utsname.h float.h pw.h)
+AC_CHECK_FUNCS(nanosleep alarm times isnanf select setenv putenv lstat mkstemp)
 AC_ISC_POSIX
 
 dnl ----------------------------------------------------------------------
@@ -306,7 +300,7 @@ else
   AC_MSG_RESULT(configuring local copy)
   test -d gmp && rm -rf gmp
   if mkdir gmp; then
-   (destdir=`pwd`; cd gmp;
+   (destdir=`${PWDCMD}`; cd gmp;
      $srcdir/gmp/configure --disable-shared --prefix=$bindir \
 	--infodir=${destdir}/doc --includedir=${destdir}/h \
         --libdir=${destdir} $gmp_flags)
@@ -322,7 +316,7 @@ elif test "${local_boehm}" = "no" ; then
   AC_MSG_RESULT(configuring local copy)
   test -d gc && rm -rf gc
   if mkdir gc; then
-   (destdir=`pwd`; cd gc;
+   (destdir=`${PWDCMD}`; cd gc;
      $srcdir/gc/configure --disable-threads --disable-shared --prefix=$bindir \
 	--includedir=${destdir}/h --libdir=${destdir})
   fi

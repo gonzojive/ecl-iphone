@@ -17,7 +17,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#ifdef HAVE_PWD_H
 #include <pwd.h>
+#endif
 #include <sys/stat.h>
 #include <stdlib.h>
 #include "ecl.h"
@@ -27,6 +29,9 @@
 #include <dirent.h>
 #else
 #include <sys/dir.h>
+#endif
+#ifndef HAVE_MKSTEMP
+#include <fcntl.h>
 #endif
 #ifndef MAXPATHLEN
 # ifdef PATH_MAX
@@ -81,10 +86,16 @@ current_dir(void) {
 static cl_object
 file_kind(char *filename, bool follow_links) {
 	struct stat buf;
+#ifdef HAVE_LSTAT
 	if ((follow_links? stat : lstat)(filename, &buf) < 0)
+#else
+	if (stat(filename, &buf) < 0)
+#endif
 		return Cnil;
+#ifdef HAVE_LSTAT
 	if (S_ISLNK(buf.st_mode))
 		return @':link';
+#endif
 	if (S_ISDIR(buf.st_mode))
 		return @':directory';
 	if (S_ISREG(buf.st_mode))
@@ -106,6 +117,7 @@ si_follow_symlink(cl_object filename) {
 
 	output = coerce_to_filename(filename);
 	kind = file_kind(output->string.self, FALSE);
+#ifdef HAVE_LSTAT
 	while (kind == @':link') {
 		cl_object aux;
 		do {
@@ -122,6 +134,7 @@ si_follow_symlink(cl_object filename) {
 		}
 		output->string.fillp = written;
 	}
+#endif
 	if (kind == @':directory' &&
 	    output->string.self[output->string.fillp-1] != '/')
 		FEerror("Filename ~S actually points to a directory", 1, filename);
@@ -229,18 +242,21 @@ cl_file_write_date(cl_object file)
 cl_object
 cl_file_author(cl_object file)
 {
-	cl_object filename;
+	cl_object filename = coerce_to_filename(file);
+#ifdef HAVE_PW_H
 	struct stat filestatus;
 	struct passwd *pwent;
-#ifndef __STDC__
-	extern struct passwd *getpwuid(uid_t);
-#endif
 
-	filename = coerce_to_filename(file);
 	if (stat(filename->string.self, &filestatus) < 0)
 		FElibc_error("Cannot get the file status of ~S.", 1, file);
 	pwent = getpwuid(filestatus.st_uid);
 	@(return make_string_copy(pwent->pw_name))
+#else
+	struct stat filestatus;
+	if (stat(filename->string.self, &filestatus) < 0)
+		FElibc_error("Cannot get the file status of ~S.", 1, file);
+	@(return make_simple_string("UNKNOWN"))
+#endif
 }
 
 const char *
@@ -284,7 +300,9 @@ homedir_pathname(cl_object user)
 			: make_string_copy(h);
 		return cl_pathname(namestring);
 	} else {
+#ifdef HAVE_PW_H
 		struct passwd *pwent = NULL;
+#endif
 		char *p;
 		/* This ensures that our string has the right length
 		   and it is terminated with a '\0' */
@@ -297,10 +315,13 @@ homedir_pathname(cl_object user)
 		}
 		if (i == 0)
 			return homedir_pathname(Cnil);
+#ifdef HAVE_PW_H
 		pwent = getpwnam(p);
 		if (pwent == NULL)
 			FEerror("Unknown user ~S.", 1, p);
 		namestring = make_string_copy(pwent->pw_dir);
+#endif
+		FEerror("Unknown user ~S.", 1, p);
 	}
 	i = namestring->string.fillp;
 	if (namestring->string.self[i-1] != '/')
@@ -463,7 +484,11 @@ dir_files(cl_object basedir, cl_object pathname)
 			cl_object new = cl_pathname(CAR(all_files));
 			if (mask != Cnil && Null(cl_pathname_match_p(new, mask)))
 				continue;
+#ifdef HAVE_LSTAT
 			if (file_kind(text, FALSE) == @':link')
+#else
+			if (0)
+#endif
 				new = cl_truename(CAR(all_files));
 			else {
 				new->pathname.host = basedir->pathname.host;
@@ -511,7 +536,7 @@ dir_recursive(cl_object pathname, cl_object directory)
 		 * enter & scan all subdirectories in our curent directory.
 		 */
 		next_dir = list_current_directory((item == @':wild')? "*" :
-						  item->string.self, TRUE);
+						  (const char *)item->string.self, TRUE);
 		loop_for_in(next_dir) {
 			char *text = CAR(next_dir)->string.self;
 			/* We are unable to move into this directory! */
@@ -619,9 +644,12 @@ si_mkdir(cl_object directory, cl_object mode)
 	/* INV: coerce_to_filename() checks types */
 	filename = coerce_to_filename(directory);
 	modeint = fixnnint(mode);
-	if (mkdir(filename->string.self, modeint) < 0) {
+#ifdef mingw32
+	if (mkdir(filename->string.self) < 0)
+#else
+	if (mkdir(filename->string.self, modeint) < 0)
+#endif
 		FElibc_error("Could not create directory ~S", 1, filename);
-	}
 	@(return filename)
 }
 
@@ -637,7 +665,12 @@ si_mkstemp(cl_object template)
 	output = cl_alloc_simple_string(l + 6);
 	memcpy(output->string.self, template->string.self, l);
 	memcpy(output->string.self + l, "XXXXXX", 6);
+#ifdef HAVE_MKSTEMP
 	fd = mkstemp(output->string.self);
+#else
+	mktemp(output->string.self);
+	fd = open(fd, O_CREAT|O_TRUNC);
+#endif
 	if (fd < 0)
 		@(return Cnil)
 	close(fd);

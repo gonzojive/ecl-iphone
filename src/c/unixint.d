@@ -31,6 +31,7 @@ typedef void (*signalfn)(int);
 
 #ifndef THREADS
 
+#ifdef SIGALRM
 static void
 sigalrm(void)
 {
@@ -39,6 +40,7 @@ sigalrm(void)
 		terminal_interrupt(TRUE);
 	}
 }
+#endif
 
 void
 sigint(void)
@@ -56,6 +58,7 @@ sigint(void)
     signal(SIGINT, (signalfn)sigint);
     return;
   }
+#ifdef SIGALRM
 #ifdef __GO32__
   if (interrupt_flag)
     sigalrm();
@@ -63,6 +66,7 @@ sigint(void)
   interrupt_flag = TRUE;
   signal(SIGALRM, (signalfn)sigalrm);
   alarm(1);
+#endif
   signal(SIGINT, (signalfn)sigint);
 }
 

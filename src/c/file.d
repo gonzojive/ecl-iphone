@@ -30,6 +30,9 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#elif defined(mingw32)
+#include <winsock.h>
+#define HAVE_SELECT
 #elif defined(BSD) && !defined(MSDOS)
 #include <sys/ioctl.h>
 #endif

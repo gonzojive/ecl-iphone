@@ -17,7 +17,9 @@
 #include "ecl.h"
 #include <math.h>
 #include <time.h>
+#ifdef HAVE_TIMES
 #include <sys/times.h>
+#endif
 #include <unistd.h>
 
 #ifndef HZ			/* usually from <sys/param.h> */
@@ -36,10 +38,14 @@ runtime(void)
    user space of the calling process, measured in 1/HZ seconds.
 */
 {
+#ifdef HAVE_TIMES
 	struct tms buf;
 
 	times(&buf);
 	return(buf.tms_utime);
+#else
+	return 0;
+#endif
 }
 
 static cl_object Jan1st1970UT;
@@ -88,10 +94,13 @@ cl_sleep(cl_object z)
 cl_object
 cl_get_internal_run_time()
 {
+#ifdef HAVE_TIMES
 	struct tms buf;
-
 	times(&buf);
 	@(return MAKE_FIXNUM(buf.tms_utime))
+#else
+	return cl_get_internal_real_time();
+#endif
 }
 
 cl_object

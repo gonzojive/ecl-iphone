@@ -484,7 +484,7 @@ cl_object
 coerce_to_file_pathname(cl_object pathname)
 {
 	pathname = coerce_to_physical_pathname(pathname);
-#ifndef cygwin
+#if !defined(cygwin) && !defined(mingw32)
 	if (pathname->pathname.device != Cnil)
 		FEerror("Device ~S not yet supported.", 1,
 			pathname->pathname.device);

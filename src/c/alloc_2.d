@@ -139,7 +139,7 @@ init_alloc(void)
 	if (alloc_initialized) return;
 	alloc_initialized = TRUE;
 
-	GC_no_dls = 1;
+	/* GC_no_dls = 1; */
 #if 0
 	GC_init_explicit_typing();
 #endif

@@ -20,7 +20,7 @@
 #endif
 
 #ifndef ecl_setjmp
-#if defined(linux)
+#if defined(linux) || defined(mingw32)
 #  define ecl_setjmp	"setjmp"
 #  define ecl_longjmp	"longjmp"
 #else
@@ -37,7 +37,7 @@
 #  define FILE_CNT(fp)	(fp)->_cnt
 #endif
 
-#if defined(MSDOS) || defined(cygwin)
+#if defined(MSDOS) || defined(cygwin) || defined(mingw32)
 #  define IS_DIR_SEPARATOR(x) ((x=='/')||(x=='\\'))
 #  define DIR_SEPARATOR	'\\'
 #  define PATH_SEPARATOR	';'
@@ -88,7 +88,7 @@
 #  define SOFTWARE_TYPE	"MSDOS"
 #elif	defined(unix)
 #  define SOFTWARE_TYPE	"UNIX"
-#elif	defined(__WIN32__) || defined(cygwin)
+#elif	defined(__WIN32__) || defined(cygwin) || defined(mingw32)
 #  define SOFTWARE_TYPE "WIN32"
 #else
 #  define SOFTWARE_TYPE	"UNKNOWN"
@@ -122,6 +122,8 @@
 #  define SOFTWARE_VERSION	"SYSTEM-V"
 #elif	defined(cygwin)
 #  define SOFTWARE_VERSION	"CYGWIN"
+#elif	defined(mingw32)
+#  define SOFTWARE_VERSION	"MINGW32"
 #else
 #  define SOFTWARE_VERSION	"UNKNOWN"
 #endif
@@ -211,8 +213,19 @@
 #define	IEEEFLOAT
 #define	BSD
 #define	BRAND "REDHAT"
-#define LDFLAGS
-#define SHARED_LDFLAGS
+#define HAVE_ISOC99
+#define HAVE_POSIX
+#undef USE_DLOPEN
+#ifndef unix
+#  define unix
+#endif
+#endif /* cygwin */
+
+#ifdef	mingw32
+#define	IEEEFLOAT
+#define	BSD
+#define CLIBS "-lwsock32"
+#define	BRAND "MINGW32"
 #define HAVE_ISOC99
 #define HAVE_POSIX
 #undef USE_DLOPEN

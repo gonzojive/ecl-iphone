@@ -4,18 +4,14 @@ dnl avoid running the path through pwd unnecessarily, since pwd can
 dnl give you automounter prefixes, which can go away.
 dnl
 AC_DEFUN(ECL_MAKE_ABSOLUTE_SRCDIR,[
+if uname -a | grep -i 'mingw32' > /dev/null; then
+  PWDCMD="pwd -W";
+else
+  PWDCMD="pwd";
+fi
 case "${srcdir}" in
-  /* ) ;;
-  . )
-    ## We may be able to use the $PWD environment variable to make this
-    ## absolute.  But sometimes PWD is inaccurate.
-    if [ "${PWD}" != "" ] && [ "`(cd ${PWD} ; sh -c pwd)`" = "`pwd`" ] ; then
-      srcdir="$PWD"
-    else
-      srcdir="`(cd ${srcdir}; pwd)`"
-    fi
-  ;;
-  *  ) srcdir="`(cd ${srcdir}; pwd)`" ;;
+  /* | ?:/* ) ;;
+  *  ) srcdir="`(cd ${srcdir}; ${PWDCMD})`";
 esac
 ])
 dnl
@@ -64,6 +60,7 @@ case $host_os in
 		host="$host_os"
 		;;
 esac
+CFLAGS="${CFLAGS} -D$host"
 ])
 dnl
 dnl --------------------------------------------------------------
@@ -72,9 +69,10 @@ dnl WARNING: file confdefs.h may depend on version of Autoconf
 dnl
 AC_DEFUN(ECL_PROCESS_MACHINES_H,[
 AC_MSG_CHECKING(parameters from the machine description file)
+cp ${srcdir}/h/machines.h .
 AC_TRY_RUN([#include <stdio.h>
 #include "confdefs.h"
-#include "${srcdir}/h/machines.h"
+#include "machines.h"
 
 int
 main() {
@@ -112,6 +110,7 @@ exit(0);
 }
 ],
 eval "`cat conftestval`"
+rm machines.h
 AC_MSG_CHECKING(for ld flags when building shared libraries)
 if test "${shared}" = "yes" -a "${SHARED_LDFLAGS}" ; then
 AC_MSG_RESULT([${SHARED_LDFLAGS}])
