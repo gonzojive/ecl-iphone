@@ -2166,7 +2166,7 @@ OUTPUT:
 		 body)
 
 ILLEGAL_LAMBDA:
-	FEprogram_error("LAMBDA: Illegal lambda list ~S.", 0);
+	FEprogram_error("LAMBDA: Illegal lambda list ~S.", 1, CAR(lambda));
 @)
 
 static void
