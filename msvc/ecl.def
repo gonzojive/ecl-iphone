@@ -332,9 +332,9 @@ EXPORTS
 	clear_input_stream
 	clear_output_stream
 	ecl_listen_stream
-	file_position
-	file_position_set
-	file_length
+	ecl_file_position
+	ecl_file_position_set
+	cl_file_length
 	file_column
 	ecl_make_stream_from_fd
 
@@ -1130,7 +1130,7 @@ EXPORTS
 	expand_pathname
 	ecl_string_to_pathname
 	backup_fopen
-	file_len
+	ecl_file_len
 	homedir_pathname
 
 
@@ -1147,3 +1147,230 @@ EXPORTS
 	si_open_pipe
 	si_close_pipe
 	si_run_program
+
+	; arraylib.lsp
+
+	cl_make_array
+	cl_vector
+	cl_array_dimensions
+	cl_array_in_bounds_p
+	cl_array_row_major_index
+	cl_bit
+	cl_sbit
+	cl_bit_and
+	cl_bit_ior
+	cl_bit_xor
+	cl_bit_eqv
+	cl_bit_nand
+	cl_bit_nor
+	cl_bit_andc1
+	cl_bit_andc2
+	cl_bit_orc1
+	cl_bit_orc2
+	cl_bit_not
+	cl_vector_push
+	cl_vector_push_extend
+	cl_vector_pop
+	cl_adjust_array
+
+	; assert.lsp
+	si_etypecase_error
+	si_ecase_error
+	si_ccase_error
+
+	; defmacro.lsp
+
+	si_check_keyword
+	si_check_arg_length
+	si_dm_too_few_arguments
+	si_dm_bad_key
+	si_find_declarations
+	si_find_documentation
+	si_remove_documentation
+
+	; defstruct.lsp
+
+	si_define_structure
+
+	; helpfile.lsp
+
+	si_expand_set_documentation
+	si_get_documentation
+	si_set_documentation
+
+	; iolib.lsp
+
+	cl_read_from_string
+	cl_write_to_string
+	cl_prin1_to_string
+	cl_princ_to_string
+	cl_y_or_n_p
+	cl_yes_or_no_p
+
+	; listlib.lsp
+
+	cl_union
+	cl_nunion
+	cl_intersection
+	cl_nintersection
+	cl_set_difference
+	cl_nset_difference
+	cl_set_exclusive_or
+	cl_nset_exclusive_or
+	cl_subsetp
+	cl_rassoc_if
+	cl_rassoc_if_not
+	cl_assoc_if
+	cl_assoc_if_not
+	cl_member_if
+	cl_member_if_not
+	cl_subst_if
+	cl_subst_if_not
+	cl_nsubst_if
+	cl_nsubst_if_not
+
+	; mislib.lsp
+
+	cl_logical_pathname_translations
+	cl_load_logical_pathname_translations
+	cl_decode_universal_time
+	cl_encode_universal_time
+	cl_get_decoded_time
+	cl_ensure_directories_exist
+	si_simple_program_error
+
+	; module.lsp
+
+	cl_provide
+	cl_require
+
+	; numlib.lsp
+
+	cl_isqrt
+	cl_abs
+	cl_phase
+	cl_signum
+	cl_cis
+	cl_asin
+	cl_acos
+	cl_asinh
+	cl_acosh
+	cl_atanh
+	cl_ffloor
+	cl_fceiling
+	cl_ftruncate
+	cl_fround
+	cl_logtest
+	cl_byte
+	cl_byte_size
+	cl_byte_position
+	cl_ldb
+	cl_ldb_test
+	cl_mask_field
+	cl_dpb
+	cl_deposit_field
+
+	; packlib.lsp
+
+	cl_find_all_symbols
+	cl_apropos
+	cl_apropos_list
+	si_packages_iterator
+
+	; predlib.lsp
+
+	cl_upgraded_array_element_type
+	cl_upgraded_complex_part_type
+	cl_typep
+	cl_coerce
+	cl_subtypep
+
+	; seq.lsp
+
+	cl_make_sequence
+	cl_concatenate
+	cl_map
+	cl_some
+	cl_every
+	cl_notany
+	cl_notevery
+	cl_map_into
+	si_closest_vector_type
+
+	; seqlib.lsp
+
+	cl_reduce
+	cl_fill
+	cl_replace
+	cl_remove
+	cl_remove_if
+	cl_remove_if_not
+	cl_delete
+	cl_delete_if
+	cl_delete_if_not
+	cl_count
+	cl_count_if
+	cl_count_if_not
+	cl_substitute
+	cl_substitute_if
+	cl_substitute_if_not
+	cl_nsubstitute
+	cl_nsubstitute_if
+	cl_nsubstitute_if_not
+	cl_find
+	cl_find_if
+	cl_find_if_not
+	cl_position
+	cl_position_if
+	cl_position_if_not
+	cl_remove_duplicates
+	cl_delete_duplicates
+	cl_mismatch
+	cl_search
+	cl_sort
+	cl_stable_sort
+	cl_merge
+	cl_constantly
+
+	; pprint.lsp
+
+	cl_pprint_newline
+	cl_pprint_indent
+	cl_pprint_tab
+	cl_pprint_fill
+	cl_pprint_linear
+	cl_pprint_tabular
+	cl_copy_pprint_dispatch
+	cl_pprint_dispatch
+	cl_set_pprint_dispatch
+
+	; clos\defclass.lsp
+
+	clos_ensure_class
+
+	; clos\kernel.lsp
+
+	clos_class_id
+	clos_class_direct_superclasses
+	clos_class_direct_subclasses
+	clos_class_slots
+	clos_class_precedence_list
+	clos_class_direct_slots
+	clos_slot_index_table
+	clos_class_shared_slots
+	clos_generic_function_method_combination
+	clos_generic_function_lambda_list
+	clos_generic_function_argument_precedence_order
+	clos_generic_function_method_class
+	clos_generic_function_methods
+	clos_method_generic_function
+	clos_method_lambda_list
+	clos_method_specializers
+	cl_method_qualifiers
+	clos_method_function
+	clos_method_plist
+	clos_install_method
+
+	; clos\standard.lsp
+
+	clos_standard_instance_set

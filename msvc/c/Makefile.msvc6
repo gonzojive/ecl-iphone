@@ -49,7 +49,7 @@ OBJS	= main.obj symbol.obj package.obj list.obj\
 	time.obj unixint.obj\
 	mapfun.obj multival.obj hash.obj format.obj pathname.obj\
 	structure.obj load.obj unixfsys.obj unixsys.obj \
-	all_symbols.obj ffi.obj alloc_2.obj tcp.obj
+	ffi.obj alloc_2.obj tcp.obj
 
 all:	$(DPP) external.h ..\eclmin.lib ..\cinit.obj
 
@@ -84,7 +84,7 @@ flatinstall: $(HFILES)
 	$(RM) $(prefix)\h\config.h
 	$(MV) $(prefix)\h\config-install.h $(prefix)\h\config.h
 
-..\eclmin.lib: $(OBJS:.obj=.c) $(OBJS)
+..\eclmin.lib: $(OBJS:.obj=.c) $(OBJS) all_symbols.obj all_symbols2.obj
 	-$(RM) $@
 	$(LINK) -lib -nodefaultlib -out:$@ $(OBJS)
 
@@ -121,8 +121,10 @@ apply.o: apply.c $(HFILES) $(HDIR)/cs.h
 #
 # These files are interrelated
 #
-all_symbols.o: all_symbols.c
-	$(CC) $(CFLAGS) -I./ all_symbols.c -o $@
+all_symbols.obj: all_symbols.c
+	$(CC) $(CFLAGS) -Fo$@ -I./ all_symbols.c
+all_symbols2.obj: all_symbols.c
+	$(CC) $(CFLAGS) -DECL_FINAL -Fo$@ -I./ all_symbols.c
 #
 # This is in another directory
 #

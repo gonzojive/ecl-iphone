@@ -88,7 +88,7 @@ h/external-lsp.h: ecl$(EXE)
 	echo #endif >> $@
 
 ecl_min$(EXE): $(LIBRARIES) eclmin.lib
-	$(CC) $(LDFLAGS) /Fe$@ eclmin.lib cinit.obj $(LIBS)
+	$(CC) $(LDFLAGS) /Fe$@ cinit.obj c\all_symbols.obj eclmin.lib $(LIBS)
 
 .gdbinit: $(srcdir)\util\gdbinit
 	$(CP) $(srcdir)\util\gdbinit $@
