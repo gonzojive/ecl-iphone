@@ -430,6 +430,11 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 	cl_object host, device, path, name, type, aux, version;
 	bool logical;
 
+	if (start == end) {
+		host = device = path = name = type = aux = version = @'nil';
+		logical = 0;
+		goto make_it;
+	}
 	/* We first try parsing as logical-pathname. In case of
 	 * failure, physical-pathname parsing is performed only when
 	 * there is no supplied *logical* host name. All other failures
