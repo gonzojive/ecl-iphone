@@ -36,6 +36,8 @@ ECL 1.0
   - In the compiled code, special declarations affected the expressions in
     the binding forms as well.
 
+  - MAKE-STRING-OUTPUT-STREAM now checks the validity of the :ELEMENT-TYPE.
+
 * Visible changes:
 
   - SI:MKSTEMP now accepts and returns pathnames.
