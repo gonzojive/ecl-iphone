@@ -9,7 +9,6 @@ VPATH	= @srcdir@
 #
 
 CC	= @ECL_CC@
-DEFS	= -D@host@
 LIBS	= @LIBS@ @TKLIBS@ @CLIBS@
 CFLAGS	= @CFLAGS@
 LDFLAGS	= @LDFLAGS@
