@@ -134,9 +134,7 @@ const struct symbol_info all_symbols[] = {
 {&clVload_verbose, "*LOAD-VERBOSE*", CL_SPECIAL},
 {&clVload_print, "*LOAD-PRINT*", CL_SPECIAL},
 {&siVload_hooks, "*LOAD-HOOKS*", SI_SPECIAL},
-#ifdef ENABLE_DLOPEN
 {&siVinit_function_prefix, "*INIT-FUNCTION-PREFIX*", SI_SPECIAL},
-#endif
 #ifdef PDE
 {&siVsource_pathname, "*SOURCE-PATHNAME*", CL_SPECIAL},
 #endif

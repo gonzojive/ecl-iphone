@@ -29,9 +29,7 @@ cl_object @'si::*load-hooks*';
 #ifdef PDE
 cl_object @'si::*source-pathname*';
 #endif PDE
-#ifdef ENABLE_DLOPEN
 cl_object @'si::*init-function-prefix*';
-#endif
 
 /******************************* ------- ******************************/
 
@@ -241,6 +239,6 @@ init_load(void)
 #ifdef ENABLE_DLOPEN
   if (dlopen(NULL, RTLD_NOW|RTLD_GLOBAL) == NULL)
     printf(";;; Error dlopening self file\n;;; Error: %s\n", dlerror());
-  SYM_VAL(@'si::*init-function-prefix*') = Cnil;
 #endif
+  SYM_VAL(@'si::*init-function-prefix*') = Cnil;
 }
