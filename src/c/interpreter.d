@@ -414,6 +414,8 @@ interpret_funcall(int narg, cl_object fun) {
 	cl_object x;
 
 	args = cl_stack_top - narg;
+	if (fun == OBJNULL)
+		goto ERROR;
  AGAIN:
 	switch (type_of(fun)) {
 	case t_cfun: {
@@ -448,7 +450,7 @@ interpret_funcall(int narg, cl_object fun) {
 		fun = function;
 		goto AGAIN;
 	}
-	default:
+	default: ERROR:
 		FEinvalid_function(fun);
 	}
 	cl_stack_pop_n(narg);

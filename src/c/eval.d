@@ -68,9 +68,12 @@ cl_va_arg(cl_va_list args)
  *----------------------------------------------------------------------
  */
 cl_object
-cl_apply_from_stack(cl_index narg, cl_object fun)
+cl_apply_from_stack(cl_index narg, cl_object x)
 {
+	cl_object fun = x;
       AGAIN:
+	if (fun == OBJNULL)
+		FEundefined_function(fun);
 	switch (type_of(fun)) {
 	case t_cfun:
 		if (fun->cfun.narg >= 0) {
@@ -87,14 +90,10 @@ cl_apply_from_stack(cl_index narg, cl_object fun)
 		fun = compute_method(narg, fun, cl_stack_top - narg);
 		goto AGAIN;
 #endif
-	case t_symbol: {
-		cl_object x = SYM_FUN(fun);
-		if (x == OBJNULL)
-			FEundefined_function(fun);
-		fun = x;
+	case t_symbol:
+		fun = SYM_FUN(fun);
 		goto AGAIN;
-	}
-	case t_bytecodes:
+	case t_bytecodes: ERROR:
 		return lambda_apply(narg, fun);
 	}
 	FEinvalid_function(fun);
@@ -117,6 +116,8 @@ link_call(cl_object sym, cl_objectfn *pLK, int narg, cl_va_list args)
 	else
 		sp = cl_stack_push_va_list(args);
  AGAIN:
+	if (fun == OBJNULL)
+		goto ERROR;
 	switch (type_of(fun)) {
 	case t_cfun:
 		if (fun->cfun.narg >= 0) {
@@ -148,7 +149,7 @@ link_call(cl_object sym, cl_objectfn *pLK, int narg, cl_va_list args)
 	case t_bytecodes:
 		out = lambda_apply(narg, fun);
 		break;
-	default:
+	default: ERROR:
 		FEinvalid_function(fun);
 	}
 	if (!args[0].sp)
@@ -182,6 +183,8 @@ si_unlink_symbol(cl_object s)
 	else
 		sp = cl_stack_push_va_list(funargs);
       AGAIN:
+	if (fun == OBJNULL)
+		FEundefined_function(function);
 	switch (type_of(fun)) {
 	case t_cfun:
 		if (fun->cfun.narg >= 0) {
@@ -203,8 +206,6 @@ si_unlink_symbol(cl_object s)
 #endif
 	case t_symbol:
 		fun = SYM_FUN(fun);
-		if (fun == OBJNULL)
-			FEundefined_function(function);
 		goto AGAIN;
 	case t_bytecodes:
 		out = lambda_apply(narg, fun);
