@@ -235,7 +235,11 @@ mp_process_run_function(cl_narg narg, cl_object name, cl_object function, ...)
 	pthread_mutexattr_t attr;
 @
 	pthread_mutexattr_init(&attr);
+#if defined(__APPLE__)
+	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+#else
 	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP);
+#endif
 	cl_object output = cl_alloc_object(t_lock);
 	output->lock.name = name;
 	pthread_mutex_init(&output->lock.mutex, &attr);
@@ -277,7 +281,11 @@ init_threads()
 
 	cl_core.processes = OBJNULL;
 	pthread_mutexattr_init(&attr);
+#if defined(__APPLE__)
+	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
+#else
 	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK_NP);
+#endif
 	pthread_mutex_init(&cl_core.global_lock, &attr);
 	pthread_mutexattr_destroy(&attr);
 
