@@ -31,6 +31,18 @@
 
 (defvar ecl-search-string)
 
+(defun query-replace-ecl (from-string to-string &optional delimited start end)
+  (interactive (query-replace-read-args "Query replace" nil))
+  (setq ecl-search-string from-string)
+  (let ((remaining (member (buffer-file-name (current-buffer)) ecl-files)))
+    (dolist (i (or remaining ecl-files))
+      (let ((b (find-buffer-visiting i)))
+	(unless (equal b (current-buffer))
+	  (switch-to-buffer b)
+	  (beginning-of-buffer)))
+      (perform-replace from-string to-string t nil delimited nil nil
+		       start end))))
+
 (defun search-ecl (string)
   (interactive "sString: ")
   (setq ecl-search-string string)
@@ -195,7 +207,6 @@
 "c/hash.d"
 "c/num_log.d"
 "c/structure.d"
-"c/clos.d"
 "c/num_pred.d"
 "c/symbol.d"
 "c/cmpaux.d"
