@@ -1,3 +1,21 @@
+GOODIES:
+========
+
+* In local functions, remove unused arguments.
+
+* It should be possible, in local functions that do not reference variables
+  from the enclosing code, and do not call any other functions that do it,
+  to remove the "lex*" arguments.
+
+* Inline local functions which are only referenced once.
+
+* Optimize out (multiple-value-call ... (values ...)).
+
+KNOWN BUGS:
+===========
+
+OLD: (Maybe out of date)
+========================
 
 *	error-set can be eliminated, as well as FRS_CATCHALL fr_class and
 	Kcatchall keyword.
