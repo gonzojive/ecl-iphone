@@ -76,8 +76,8 @@ typedef cl_object (*cl_objectfn)(cl_narg narg, ...);
 #define HEADER			int8_t t, m, padding[2]
 #define HEADER1(field)		int8_t t, m, field, padding
 #define HEADER2(field1,field2)	int8_t t, m, field1, field2
-#define HEADER3(field1,flag2,flag3) int8_t t, m, field1; unsigned flag2:4, flag3:4
-#define HEADER4(field1,flag2,flag3,flag4) int8_t t, m, field1; unsigned flag2:4, flag3:2, flag4:2
+#define HEADER3(field1,flag2,flag3) int8_t t, m, field1; uint8_t flag2:4, flag3:4
+#define HEADER4(field1,flag2,flag3,flag4) int8_t t, m, field1; uint8_t flag2:4, flag3:2, flag4:2
 
 struct ecl_shortfloat {
 	HEADER;
