@@ -71,9 +71,9 @@ interface with other languages.
 @node Introduction, Standards, Top, Top
 @chapter Introduction
 
-@ecl{} is an implementation of the @clisp{} language that was born from
-Giusseppe Attardi's ECoLisp environment, which was in turn based on Kyoto
-Common-Lisp. See @ref{Credits} for the history of the code you are up to use.
+@ecl{} is an implementation of the @clisp{} language that was developed
+by Giusseppe Attardi's up from the Kyoto Common-Lisp. See @ref{Credits}
+for the history of the code you are up to use.
 
 @ecl{} (ECL for short) uses standard C calling conventions for Lisp compiled
 functions, which allows C programs to easily call Lisp functions and
@@ -91,11 +91,10 @@ of @ecl{} can be built with just the modules which are required by the
 application.
 
 The @ecl{} compiler compiles from Lisp to C, and then invokes the GNU C
-compiler to produce binaries.
-
-While ECoLisp adheres to the the reference of the language given in
-@bibcite{Steele:84}, the aim of @ecl{} is to achieve maximum compliance with
-@ansi{}, the most up to date standard for @clisp{}.
+compiler to produce binaries. While former releases of ECL adhere to the
+the reference of the language given in @bibcite{Steele:84}, the aim of
+@ecl{} is now to achieve maximum compliance with @ansi{}, the most up to
+date standard for @clisp{}.
 
 Throughout this manual we will describe the @ecl{} implementation and
 how it differs from @bibcite{ANSI} and @bibcite{Steele:84}. In general, as
@@ -114,8 +113,10 @@ document @emph{only} the differences with @bibcite{ANSI}.
 @node Credits, Copyright, Introduction, Introduction
 @section Credits
 
-@ecl{} is derived from Giusseppe Attardi's ECoLisp, a full implementation of
-Common-Lisp as reported in @cite{Steele:84}. ECoLisp derives itself mostly
+The @ecl{} project is an implementation of the @clisp{} language that aims to
+comply with the @ansi{} standard. The first ECL implementations were developed
+by Giusseppe Attardi's who produced an interpreter and compiler fully conformat
+with the Common-Lisp as reported in @cite{Steele:84}. ECL derives itself mostly
 from Kyoto @clisp{}, an implementation developed at the Research Institute for
 Mathematical Sciences (RIMS), Kyoto University, with the cooperation of Nippon
 Data General Corporation.  The main developers of Kyoto @clisp{} were Taiichi
@@ -127,8 +128,8 @@ preceding implementations and for putting them in the Public Domain under the
 GNU General Public Licence as published by the Free Software Foundation.
 Without them this product would have never been possible.
 
-This document is an update of the original ECoLisp documentation, which was
-based in part on the material in @bibcite{Yuasa:85}
+This document is an update of the original ECL documentation, which was based
+in part on the material in @bibcite{Yuasa:85}
 
 The following people or organizations must be credited for support in the
 devlopement of Kyoto @clisp{}: Prof. Reiji Nakajima at RIMS, Kyoto University;
@@ -141,7 +142,7 @@ William F. Schelter improved KCL in several areas and developed Austin Kyoto
 @clisp{} (AKCL). Many ideas and code from AKCL have been incorporated in
 @ecl{}.
 
-The following is the full list of contributors to ECoLisp: Taiichi Yuasa and
+The following is the full list of contributors to ECL: Taiichi Yuasa and
 Masami Hagiya (KCL), William F. Schelter (Dynamic loader, conservative Gc),
 Giuseppe Attardi (Top-level, trace, stepper, compiler, CLOS, multithread),
 Marcus Daniels (Linux port) Cornelis van der Laan (FreeBSD port) David Rudloff
@@ -350,7 +351,7 @@ command @code{make clean}.
 
 @example
 % ecl
-ECL (ECoLisp-Spain) 0.0e
+ECL (Embeddable Common-Lisp) 0.0e
 Copyright (C) 1984 Taiichi Yuasa and Masami Hagiya
 Copyright (C) 1993 Giuseppe Attardi
 Copyright (C) 2000 Juan J. Garcia-Ripoll

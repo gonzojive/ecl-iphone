@@ -430,7 +430,7 @@ file.  When the saved image is invoked, it will start the redefined top-level."
 	  ;; process command arguments
 	  (notinline (process-command-args))))
 
-      (format t "ECL (ECoLisp-Spain) ~A" (lisp-implementation-version))
+      (format t "ECL (Embeddable Common-Lisp) ~A" (lisp-implementation-version))
       (format t "~%Copyright (C) 1984 Taiichi Yuasa and Masami Hagiya~@
 	Copyright (C) 1993 Giuseppe Attardi~@
 	Copyright (C) 2000 Juan J. Garcia-Ripoll
