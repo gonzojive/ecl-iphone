@@ -57,11 +57,16 @@ contiguous block."
 	    (declare (fixnum n i))
 	    (sys:aset initial-element x i)))
 	(when initial-contents-supplied-p
-	  (do ((n dimensions)
-	       (i 0 (1+ i)))
-	      ((>= i n))
+	  (do* ((n dimensions)
+		(l initial-contents (rest l))
+		(i 0 (1+ i)))
+	      ((or (atom l) (>= i n))
+	       (when l
+		 (error "In MAKE-ARRAY: the number of elements in :INITIAL-CONTENTS does not match the array length")))
 	    (declare (fixnum n i))
-	    (sys:aset (elt initial-contents i) x i)))
+	    (unless (consp l)
+	      (error "In MAKE-ARRAY: the number of elements in :INITIAL-CONTENTS does not match the array length"))
+	    (sys:aset (first l) x i)))
 	x)
       (if fill-pointer
 	  (error ":FILL-POINTER may not be specified for an array of rank ~D"
