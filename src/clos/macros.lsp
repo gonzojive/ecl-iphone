@@ -68,8 +68,8 @@
 
 ;;; ECL implementation:
 
-(declaim (function si:instance-ref (t fixnum) t))
-(declaim (function si:instance-set (t fixnum t) t))
+(declaim (ftype si:instance-ref (t fixnum) t))
+(declaim (ftype si:instance-set (t fixnum t) t))
 
 ;;; ----------------------------------------------------------------------
 ;;; Class CLASS

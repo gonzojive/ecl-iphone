@@ -242,19 +242,13 @@
      (if (consp (cdr decl))
          (proclaim-var (second decl) (cddr decl))
          (warn "The type declaration ~s is illegal." decl)))
-    ((FIXNUM CHARACTER SHORT-FLOAT LONG-FLOAT)
-     (proclaim-var (car decl) (cdr decl)))
     (FTYPE
      (cond ((and (consp (cdr decl))
-		 (consp (second decl)))
-	    (eq (caadr decl) 'FUNCTION)
+		 (consp (second decl))
+		 (eq (caadr decl) 'FUNCTION))
 	    (dolist (v (cddr decl))
 		    (add-function-proclamation v (cdr (second decl)))
 		    ))
-	   (t (cmpwarn "Bad function proclamation ~a" decl))))
-    (FUNCTION
-     (cond ((and (consp (cdr decl)))
-	    (add-function-proclamation (second decl) (cddr decl)))
 	   (t (cmpwarn "Bad function proclamation ~a" decl))))
     (INLINE
      (dolist (fun (cdr decl))
@@ -289,7 +283,7 @@
       LONG-FLOAT NIL NULL NUMBER PACKAGE PATHNAME RANDOM-STATE RATIO RATIONAL
       READTABLE SEQUENCE SHORT-FLOAT SIMPLE-ARRAY SIMPLE-BIT-VECTOR
       SIMPLE-STRING SIMPLE-VECTOR SINGLE-FLOAT STANDARD-CHAR STREAM STRING
-      SYMBOL T VECTOR SIGNED-BYTE UNSIGNED-BYTE)
+      SYMBOL T VECTOR SIGNED-BYTE UNSIGNED-BYTE FUNCTION)
      (proclaim-var (car decl) (cdr decl)))
     (otherwise
      (unless (member (car decl) *alien-declarations*)
@@ -387,7 +381,7 @@
             RANDOM-STATE RATIO RATIONAL READTABLE SEQUENCE SIMPLE-ARRAY
             SIMPLE-BIT-VECTOR SIMPLE-STRING SIMPLE-VECTOR SINGLE-FLOAT
             STANDARD-CHAR STREAM STRING SYMBOL T VECTOR
-            SIGNED-BYTE UNSIGNED-BYTE)
+            SIGNED-BYTE UNSIGNED-BYTE FUNCTION)
            (let ((type (type-filter (car decl))))
                 (when type
                       (dolist (var (cdr decl))
@@ -436,13 +430,6 @@
 	 (dolist (fname (cddr decl))
 	   (add-function-declaration
 	    fname (cadadr decl) (cddadr decl)))))
-      (FUNCTION
-       (if (or (endp (cdr decl))
-	       (endp (cddr decl))
-	       (not (symbolp (second decl))))
-	 (warn "The function declaration ~s is illegal." decl)
-	 (add-function-declaration
-	  (second decl) (caddr decl) (cdddr decl))))
       (INLINE
        (push decl dl)
        (dolist (fun (cdr decl))
