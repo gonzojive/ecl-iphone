@@ -91,7 +91,9 @@ install: BUILD-STAMP
 	  $(INSTALL) -s $$i $(PREFIX)$(bindir); \
 	done
 	$(INSTALL_PROGRAM) -s $(TARGETS) $(PREFIX)$(bindir)
-	$(INSTALL_PROGRAM) ecl-config $(PREFIX)$(bindir)
+	sed 's,~A,$(libdir),;s,~\*,,;' ecl-config > aux; \
+	$(INSTALL_PROGRAM) aux $(PREFIX)$(bindir)/ecl-config; \
+	rm aux
 	$(INSTALL_DATA) $(srcdir)/etc/ecl.1 $(PREFIX)$(mandir)
 	for i in BUILD-STAMP $(LSP_LIBRARIES) $(LIBRARIES) c/dpp* help.doc ; do \
 	  $(INSTALL_DATA) $$i $(PREFIX)$(libdir); \
