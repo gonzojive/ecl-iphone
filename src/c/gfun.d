@@ -222,7 +222,7 @@ compute_method(int narg, cl_object fun, cl_object *args)
 	    i = narg;
 	    while (i-- > 0)
 	      arglist = CONS(args[i], arglist);
-	    methods = funcall(3, @'si::compute-applicable-methods', gf, arglist);
+	    methods = funcall(3, @'compute-applicable-methods', gf, arglist);
 	    meth_comb = funcall(2, @'si::generic-function-method-combination', gf);
 	    meth_args = funcall(2, @'si::generic-function-method-combination-args', gf);
 	    func = funcall(5, @'si::compute-effective-method', gf, methods,

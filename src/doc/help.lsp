@@ -20,7 +20,7 @@
   (si::set-documentation
    symbol 'function
    (format nil "~A in ~A package:~%~A: ~A~A~%"
-	   (cond ((special-form-p symbol) "Special Form")
+	   (cond ((special-operator-p symbol) "Special Form")
 		 ((macro-function symbol) "Macro")
 		 ((fboundp symbol) "Function")
 		 (t ""))
@@ -2853,7 +2853,7 @@ Returns nil if the OBJECT is not null.")
 ECL/CLOS specific.
 Removes the value associated with the INDEX-th slot of INSTANCE.")
 
-(docfun special-form-p function (symbol) "
+(docfun special-operator-p function (symbol) "
 Returns T if SYMBOL names a special form; NIL otherwise.
 The special forms defined in Common Lisp are:
 	block		if			progv

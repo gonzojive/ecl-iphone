@@ -1605,6 +1605,8 @@ si_write_bytes(cl_object stream, cl_object string, cl_object start, cl_object en
 	@(return MAKE_FIXNUM(sofarwritten - is))
 }
 
+/* FIXME! WRITE-SEQUENCE is missing! */
+
 void
 init_print(void)
 {

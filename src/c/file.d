@@ -1317,6 +1317,17 @@ cl_make_synonym_stream(cl_object sym)
 	@(return x)
 @)
 
+/* FIXME! BROADCAST-STREAM-STREAMS is missing! */
+/* FIXME! CONCATENATED-STREAM-STREAMS is missing! */
+/* FIXME! ECHO-STREAM-INPUT-STREAM is missing! */
+/* FIXME! ECHO-STREAM-OUTPUT-STREAM is missing! */
+/* FIXME! TWO-WAY-STREAM-INPUT-STREAM is missing! */
+/* FIXME! TWO-WAY-STREAM-OUTPUT-STREAM is missing! */
+/* FIXME! FILE-STRING-LENGTH is missing! */
+/* FIXME! INTERACTIVE-STREAM-P is missing! */
+/* FIXME! STREAM-EXTERNAL-FORMAT is missing! */
+/* FIXME! SYNONYM-STREAM-SYMBOL is missing! */
+
 cl_object
 cl_make_two_way_stream(cl_object strm1, cl_object strm2)
 {

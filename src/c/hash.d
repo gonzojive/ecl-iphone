@@ -516,6 +516,9 @@ cl_clrhash(cl_object ht)
 	@(return ht)
 }
 
+/* FIXME! HASH-TABLE-SIZE is missing! */
+/* FIXME! HASH-TABLE-TEST is missing! */
+
 cl_object
 cl_hash_table_count(cl_object ht)
 {

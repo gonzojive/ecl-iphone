@@ -34,6 +34,8 @@ static cl_object default_dispatch_macro;
 #define	cat(rtbl,c)	((rtbl)->readtable.table[c].syntax_type)
 #define read_suppress (SYM_VAL(@'*read-suppress*') != Cnil)
 
+/* FIXME! *READ-EVAL* is not taken into account */
+
 static void extra_argument (int c, cl_object stream, cl_object d);
 
 cl_object
@@ -1547,6 +1549,7 @@ si_read_bytes(cl_object stream, cl_object string, cl_object start, cl_object end
 	@(return ((c < (ie - is))? Cnil : MAKE_FIXNUM(c)))
 }
 
+/* FIXME! READ-SEQUENCE is missing! */
 
 
 @(defun copy_readtable (&o (from ecl_current_readtable()) to)
@@ -1572,6 +1575,8 @@ cl_readtablep(cl_object readtable)
 {
 	@(return ((type_of(readtable) == t_readtable)? Ct : Cnil))
 }
+
+/* FIXME! READTABLE-CASE is missing! */
 
 static struct readtable_entry*
 read_table_entry(cl_object rdtbl, cl_object c)

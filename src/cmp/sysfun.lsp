@@ -849,7 +849,7 @@ type_of(#0)==t_bitvector"))
 (BOUNDP (symbol) T nil t
 	:inline-unsafe ((t) boolean nil nil "(#0)->symbol.dbind!=OBJNULL"))
 (MACRO-FUNCTION (symbol) T)
-(SPECIAL-FORM-P (symbol) T nil t)
+(SPECIAL-OPERATOR-P (symbol) T nil t)
 
 ; file unixsave.c
 (SAVE (T) T)
@@ -1034,7 +1034,7 @@ type_of(#0)==t_bitvector"))
 (si::SETF-NAMEP nil T nil t)
 
 ; file instance.c
-(si::ALLOCATE-INSTANCE (t fixnum) T)
+(si::ALLOCATE-RAW-INSTANCE (t fixnum) T)
 (si::INSTANCE-REF (t fixnum) T nil nil
 	:inline-always ((standard-object fixnum) t nil nil
 		"(#0)->instance.slots[#1]"))

@@ -74,7 +74,7 @@ cl_symbol_function(cl_object sym)
 	else if (SYM_FUN(sym) == OBJNULL)
 		FEundefined_function(sym);
 	else if (sym->symbol.mflag)
-		output = CONS(@'macro', SYM_FUN(sym));
+		output = CONS(@'si::macro', SYM_FUN(sym));
 	else
 		output = SYM_FUN(sym);
 	@(return output)

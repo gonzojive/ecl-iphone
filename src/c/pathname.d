@@ -421,6 +421,8 @@ cl_logical_pathname(cl_object x)
 	return x;
 }
 
+/* FIXME! WILD-PATHNAME-P is missing! */
+
 /*
  * coerce_to_physical_pathname(P) converts P to a physical pathname,
  * for a file which is accesible in our filesystem.

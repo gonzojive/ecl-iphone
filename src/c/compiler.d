@@ -385,7 +385,7 @@ c_register_symbol_macro(cl_object name, cl_object exp_fun)
 static void
 c_register_macro(cl_object name, cl_object exp_fun)
 {
-	c_env.macros = CONS(cl_list(3, name, @'macro', exp_fun), c_env.macros);
+	c_env.macros = CONS(cl_list(3, name, @'si::macro', exp_fun), c_env.macros);
 }
 
 static void

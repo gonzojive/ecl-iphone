@@ -650,7 +650,7 @@
 ;;; ----------------------------------------------------------------------
 ;;;                                                              bootstrap
 
-(defun si:compute-applicable-methods (gf args)
+(defun compute-applicable-methods (gf args)
   (let* ((gfun (generic-function-dispatcher gf))
 	 (name (si:gfun-name gfun))
 	 (setfp (and (listp name) (eq 'SETF (first name))))

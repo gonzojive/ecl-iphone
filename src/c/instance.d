@@ -16,7 +16,7 @@
 #include "ecl.h"
 
 cl_object
-cl_allocate_instance(cl_object clas, int size)
+ecl_allocate_instance(cl_object clas, int size)
 {
 	cl_object x = cl_alloc_instance(size);
 	int i;
@@ -27,12 +27,12 @@ cl_allocate_instance(cl_object clas, int size)
 }
 
 cl_object
-si_allocate_instance(cl_object clas, cl_object size)
+si_allocate_raw_instance(cl_object clas, cl_object size)
 {
 	if (type_of(clas) != t_instance)
 	  FEwrong_type_argument(@'instance', clas);
 
-	@(return cl_allocate_instance(clas, fixnnint(size)))
+	@(return ecl_allocate_instance(clas, fixnnint(size)))
 }
 
 /* corr is a list of (newi . oldi) describing which of the new slots

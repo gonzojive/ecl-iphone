@@ -101,7 +101,7 @@
       (si:instance-ref method 4)
     (error "~A is not a standard method" method)))
 
-(defun si:compute-applicable-methods (gf args)
+(defun compute-applicable-methods (gf args)
   (let* ((methods (methods gf))
 	 applicable-list
 	 args-specializers)

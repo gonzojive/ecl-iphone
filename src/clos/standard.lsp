@@ -514,7 +514,7 @@
 	(if (not (search-allow-other-keys initargs))
 	    (check-initargs class initargs)))
   (let ((instance
-	 (si:allocate-instance class (class-instance-slot-count class))))
+	 (si:allocate-raw-instance class (class-instance-slot-count class))))
     (apply #'initialize-instance instance initargs)
     instance))
 

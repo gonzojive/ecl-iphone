@@ -16,7 +16,6 @@
 	  KYOTO
 	  KCL
 	  ECL
-	  ECL
 	  common-lisp
 	  common-lisp-user
 	  cl
@@ -93,27 +92,3 @@
 (set-dispatch-macro-character #\# #\- 'sharp---reader)
 (set-dispatch-macro-character #\# #\- 'sharp---reader
                               (sys::standard-readtable))
-
-;;; ----------------------------------------------------------------------
-
-(in-package "CL")
-
-;
-; Conditions system
-;
-(export '(*break-on-signals* *debugger-hook* signal
-	  handler-case handler-bind ignore-errors define-condition make-condition
-	  with-simple-restart restart-case restart-bind restart-name
-	  restart-name find-restart compute-restarts invoke-restart
-	  invoke-restart-interactively abort continue muffle-warning
-	  store-value use-value invoke-debugger restart condition
-	  warning serious-condition simple-condition simple-warning simple-error
-	  simple-condition-format-string simple-condition-format-arguments
-	  storage-condition stack-overflow storage-exhausted type-error
-	  type-error-datum type-error-expected-type simple-type-error
-	  program-error control-error stream-error stream-error-stream
-	  end-of-file file-error file-error-pathname cell-error
-	  unbound-variable undefined-function arithmetic-error
-	  arithmetic-error-operation arithmetic-error-operands
-	  package-error package-error-package
-	  division-by-zero floating-point-overflow floating-point-underflow))

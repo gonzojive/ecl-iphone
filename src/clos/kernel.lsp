@@ -47,7 +47,7 @@
 	 (key (list (class-name (si:instance-class obj))))
 	 (method (si:method-ht-get key table)))
     (unless method
-      (setq method (si:compute-applicable-methods
+      (setq method (compute-applicable-methods
 		    (si:gfun-instance gfun)
 		    (list obj))))
     method))
@@ -68,7 +68,7 @@
 ;;; Object initializations
 
 (defun allocate-instance (class)
-  (si:allocate-instance class (length (class-slots class))))
+  (si:allocate-raw-instance class (length (class-slots class))))
 
 ;;; ----------------------------------------------------------------------
 ;;; Methods
@@ -142,7 +142,7 @@
 		 (si:gfunp (setq gfun (fdefinition name))))
 
       ;; create a fake standard-generic-function object:
-      (let ((gf-object (si:allocate-instance (find-class 't) 8)))
+      (let ((gf-object (si:allocate-raw-instance (find-class 't) 8)))
 	(declare (type standard-object gf-object))
 	;; create a new gfun
 	(setq gfun (make-gfun name lambda-list))

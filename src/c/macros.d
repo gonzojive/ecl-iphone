@@ -43,7 +43,7 @@ cl_object
 search_macro(cl_object name, cl_object env)
 {
 	cl_object record = assq(name, CDR(env));
-	if (CONSP(record) && CADR(record) == @'macro')
+	if (CONSP(record) && CADR(record) == @'si::macro')
 		return CADDR(record);
 	return Cnil;
 }

@@ -470,7 +470,7 @@ extern bool remhash(cl_object key, cl_object hash);
 /* instance.c */
 
 #ifdef CLOS
-extern cl_object si_allocate_instance(cl_object clas, cl_object size);
+extern cl_object si_allocate_raw_instance(cl_object clas, cl_object size);
 extern cl_object si_change_instance(cl_object x, cl_object clas, cl_object size, cl_object corr);
 extern cl_object si_instance_class(cl_object x);
 extern cl_object si_instance_class_set(cl_object x, cl_object y);
@@ -482,7 +482,7 @@ extern cl_object si_unbound();
 extern cl_object si_sl_boundp(cl_object x);
 extern cl_object si_sl_makunbound(cl_object x, cl_object index);
 
-extern cl_object cl_allocate_instance(cl_object clas, int size);
+extern cl_object ecl_allocate_instance(cl_object clas, int size);
 extern cl_object instance_ref(cl_object x, int i);
 extern cl_object instance_set(cl_object x, int i, cl_object v);
 extern void init_instance(void);
