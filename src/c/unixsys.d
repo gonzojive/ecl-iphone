@@ -100,7 +100,9 @@ si_close_pipe(cl_object stream)
 	} else {
 		child_stdout = open("/dev/null", O_WRONLY);
 	}
-	if (error == @'t') {
+	if (error == @':output') {
+		child_stderr = dup(child_stdout);
+	} else if (error == @'t') {
 		child_stderr = dup(2);
 	} else {
 		child_stderr = open("/dev/null", O_WRONLY);
@@ -130,7 +132,9 @@ si_close_pipe(cl_object stream)
 				argv_ptr[j] = arg->string.self;
 			}
 		}
-		execv(command->string.self, (const char **)argv_ptr);
+		if (execvp(command->string.self, (const char **)argv_ptr) < 0) {
+			abort();
+		}
 	} else {
 		/* Parent */
 		close(child_stdin);
@@ -155,6 +159,6 @@ si_close_pipe(cl_object stream)
 		}
 	}
 	@(return ((parent_read || parent_write)?
-		  make_two_way_stream(stream_write, stream_read) :
+		  make_two_way_stream(stream_read, stream_write) :
 		  Cnil))
 @)
