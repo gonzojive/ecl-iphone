@@ -731,6 +731,7 @@ extern cl_object parse_integer(char *s, cl_index end, cl_index *ep, int radix);
 extern cl_object copy_readtable(cl_object from, cl_object to);
 extern cl_object current_readtable(void);
 extern cl_object string_to_object(cl_object x);
+extern cl_object c_string_to_object(const char *s);
 extern void init_read(void);
 extern void init_read_function(void);
 extern void read_VV(cl_object block, void *entry);

@@ -2096,6 +2096,12 @@ read_table_entry(cl_object rdtbl, cl_object c)
 @)
 
 cl_object
+c_string_to_object(const char *s)
+{
+	return string_to_object(make_simple_string(s));
+}
+
+cl_object
 string_to_object(cl_object x)
 {
 	cl_object in;
