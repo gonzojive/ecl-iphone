@@ -658,11 +658,17 @@ all_dots(cl_object s)
 static bool
 needs_to_be_escaped(cl_object s, cl_object readtable, cl_object print_case)
 {
-	enum ecl_readtable_case action = readtable->readtable.read_case;
+	int action = readtable->readtable.read_case;
 	bool all_dots;
 	cl_index i;
 	if (potential_number_p(s, ecl_print_base()))
 		return 1;
+	/* The value of *PRINT-ESCAPE* is T. We need to check whether the
+	 * symbol name S needs to be escaped. This will happen if it has some
+	 * strange character, or if it has a lowercase character (because such
+	 * a character cannot be read with the standard readtable) or if the
+	 * string has to be escaped according to readtable case and the rules
+	 * of 22.1.3.3.2. */
 	for (i = 0; i < s->string.fillp;  i++) {
 		int c = s->string.self[i] & 0377;
 		int syntax = readtable->readtable.table[c].syntax_type;
@@ -670,7 +676,7 @@ needs_to_be_escaped(cl_object s, cl_object readtable, cl_object print_case)
 			return 1;
 		if ((action == ecl_case_downcase) && isupper(c))
 			return 1;
-		if ((action == ecl_case_upcase) && islower(c))
+		if (islower(c))
 			return 1;
 	}
 	return 0;
@@ -679,19 +685,18 @@ needs_to_be_escaped(cl_object s, cl_object readtable, cl_object print_case)
 #define needs_to_be_inverted(s) (ecl_string_case(s) != 0)
 
 static void
-write_symbol_string(cl_object s, cl_object readtable, cl_object print_case,
+write_symbol_string(cl_object s, int action, cl_object print_case,
 		    cl_object stream, bool escape)
 {
-	enum ecl_readtable_case action = readtable->readtable.read_case;
 	cl_index i;
-	bool capitalize_flag;
+	bool capitalize;
 	if (action == ecl_case_invert) {
 		if (!needs_to_be_inverted(s))
 			action = ecl_case_preserve;
 	}
 	if (escape)
 		write_ch('|', stream);
-	capitalize_flag = 1;
+	capitalize = 1;
 	for (i = 0;  i < s->string.fillp;  i++) {
 		int c = s->string.self[i];
 		if (escape) {
@@ -703,22 +708,22 @@ write_symbol_string(cl_object s, cl_object readtable, cl_object print_case,
 				if ((action == ecl_case_invert) ||
 				    ((action == ecl_case_upcase) &&
 				     ((print_case == @':downcase') ||
-				      ((print_case == @':capitalize') && !capitalize_flag))))
+				      ((print_case == @':capitalize') && !capitalize))))
 				{
 					c = tolower(c);
 				}
-				capitalize_flag = 0;
+				capitalize = 0;
 			} else if (islower(c)) {
 				if ((action == ecl_case_invert) ||
 				    ((action == ecl_case_downcase) &&
 				     ((print_case == @':upcase') ||
-				      ((print_case == @':capitalize') && capitalize_flag))))
+				      ((print_case == @':capitalize') && capitalize))))
 				{
 					c = toupper(c);
 				}
-				capitalize_flag = 0;
+				capitalize = 0;
 			} else {
-				capitalize_flag = !isdigit(c);
+				capitalize = !isdigit(c);
 			}
 		}
 		write_ch(c, stream);
@@ -730,20 +735,25 @@ write_symbol_string(cl_object s, cl_object readtable, cl_object print_case,
 static void
 write_symbol(cl_object x, cl_object stream)
 {
-	bool print_readably = ecl_print_readably();
 	cl_object print_package = symbol_value(@'si::*print-package*');
-	cl_object print_case = ecl_print_case();
 	cl_object readtable = ecl_current_readtable();
+	cl_object print_case = ecl_print_case();
 	cl_object package = x->symbol.hpack;
 	cl_object name = x->symbol.name;
 	int intern_flag;
+	bool print_readably = ecl_print_readably();
 
-	if (!ecl_print_escape() && !print_readably) {
-		write_symbol_string(name, readtable, print_case, stream, 0);
+	if (!print_readably && !ecl_print_escape()) {
+		write_symbol_string(name, readtable->readtable.read_case,
+				    print_case, stream, 0);
 		return;
 	}
+	/* From here on, print-escape is true which means that it should
+	 * be possible to recover the same symbol by reading it with
+	 * the standard readtable (which has readtable-case = :UPCASE)
+	 */
 	if (Null(package)) {
-		if (print_readably || ecl_print_gensym())
+		if (ecl_print_gensym() || print_readably)
 			write_str("#:", stream);
 	} else if (package == cl_core.keyword_package) {
 		write_ch(':', stream);
@@ -752,7 +762,8 @@ write_symbol(cl_object x, cl_object stream)
 		   || intern_flag == 0)
 	{
 		cl_object name = package->pack.name;
-		write_symbol_string(name, readtable, print_case, stream,
+		write_symbol_string(name, readtable->readtable.read_case,
+				    print_case, stream,
 				    needs_to_be_escaped(name, readtable, print_case));
 		if (ecl_find_symbol(x, package, &intern_flag) != x)
 			error("can't print symbol");
@@ -765,7 +776,7 @@ write_symbol(cl_object x, cl_object stream)
 			FEerror("Pathological symbol --- cannot print.", 0);
 		}
 	}
-	write_symbol_string(name, readtable, print_case, stream,
+	write_symbol_string(name, readtable->readtable.read_case, print_case, stream,
 			    needs_to_be_escaped(name, readtable, print_case) ||
 			    all_dots(name));
 }
@@ -801,7 +812,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 	if (x == OBJNULL) {
 		if (ecl_print_readably()) FEprint_not_readable(x);
 		write_str("#<OBJNULL>", stream);
-		return x;
+		goto OUTPUT;
 	}
 	switch (type_of(x)) {
 
@@ -809,7 +820,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		write_str("#<FREE OBJECT ", stream);
 		write_addr(x, stream);
 		write_ch('>', stream);
-		return x;
+		break;
 
 	case t_fixnum: {
 		bool print_radix = ecl_print_radix();
@@ -827,7 +838,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		if (print_radix && print_base == 10) {
 			write_ch('.', stream);
 		}
-		return x;
+		break;
 	}
 	case t_bignum: {
 		bool print_radix = ecl_print_radix();
@@ -837,7 +848,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		write_bignum(x, stream);
 		if (print_radix && print_base == 10)
 			write_ch('.', stream);
-		return x;
+		break;
 	}
 	case t_ratio:
 		if (ecl_print_radix()) {
@@ -848,7 +859,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		write_ch('/', stream);
 		si_write_ugly_object(x->ratio.den, stream);
 		bds_unwind1();
-		return x;
+		break;
 
 	case t_shortfloat:
 		r = symbol_value(@'*read-default-float-format*');
@@ -856,7 +867,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 			write_double((double)sf(x), 0, TRUE, stream);
 		else
 			write_double((double)sf(x), 'f', TRUE, stream);
-		return x;
+		break;
 
 	case t_longfloat:
 		r = symbol_value(@'*read-default-float-format*');
@@ -864,7 +875,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 			write_double(lf(x), 0, FALSE, stream);
 		else
 			write_double(lf(x), 'd', FALSE, stream);
-		return x;
+		break;
 
 	case t_complex:
 		write_str("#C(", stream);
@@ -872,15 +883,15 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		write_ch(' ', stream);
 		si_write_ugly_object(x->complex.imag, stream);
 		write_ch(')', stream);
-		return x;
+		break;
 
 	case t_character:
 		write_character(CHAR_CODE(x), stream);
-		return x;
+		break;
 
 	case t_symbol:
 		write_symbol(x, stream);
-		return x;
+		break;
 
 	case t_array: {
 		cl_index subscripts[ARANKLIM];
@@ -894,7 +905,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 				write_str("#<array ", stream);
 				write_addr(x, stream);
 				write_ch('>', stream);
-				return x;
+				break;
 			}
 			print_length = MOST_POSITIVE_FIXNUM;
 			print_level = MOST_POSITIVE_FIXNUM;
@@ -904,7 +915,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		}
 		write_ch('#', stream);
 		if (print_level == 0)
-			return x;
+			break;
 		n = x->array.rank;
 		write_decimal(n, stream);
 		write_ch('A', stream);
@@ -971,7 +982,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		if (print_level >= 0) {
 			bds_unwind1();
 		}
-		return x;
+		break;
 	}
 	case t_vector: {
 		cl_fixnum print_length, print_level;
@@ -985,7 +996,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 				write_ch(' ', stream);
 				write_addr(x, stream);
 				write_ch('>', stream);
-				return x;
+				break;
 			}
 			print_length = MOST_POSITIVE_FIXNUM;
 			print_level = MOST_POSITIVE_FIXNUM;
@@ -995,14 +1006,14 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		}
 		write_ch('#', stream);
 		if (print_level == 0)
-			return x;
+			break;
 		WRITE_MARK(stream);
 		write_ch('(', stream);
 		WRITE_SET_INDENT(stream);
 		if (n > 0) {
 			if (print_length == 0) {
 				write_str("...)", stream);
-				return x;
+				break;
 			}
 			bds_bind(@'*print-level*', MAKE_FIXNUM(print_level-1));
 			si_write_object_recursive(aref(x, 0), stream);
@@ -1018,13 +1029,13 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		}
 		write_ch(')', stream);
 		WRITE_UNMARK(stream);
-		return x;
+		break;
 	}
 	case t_string:
 		if (!ecl_print_escape() && !ecl_print_readably()) {
 			for (ndx = 0;  ndx < x->string.fillp;  ndx++)
 				write_ch(x->string.self[ndx], stream);
-			return x;
+			break;
 		}
 		write_ch('"', stream);
 		for (ndx = 0;  ndx < x->string.fillp;  ndx++) {
@@ -1080,7 +1091,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		}
 		if (print_level == 0) {
 			write_ch('#', stream);
-			return x;
+			break;
 		}
 		bds_bind(@'*print-level*', MAKE_FIXNUM(print_level-1));
 		WRITE_MARK(stream);
@@ -1120,7 +1131,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		write_ch(')', stream);
 		WRITE_UNMARK(stream);
 		bds_unwind1();
-		return x;
+		break;
 #if !defined(ECL_CMU_FORMAT)
 	PRETTY_PRINT_FORMAT:
 		j = fixint(r);
@@ -1279,8 +1290,8 @@ si_write_ugly_object(cl_object x, cl_object stream)
 			call_structure_print_function(print_function, x, stream);
 		}
 		break;
+	}
 #endif /* CLOS */
-
 	case t_readtable:
 		if (ecl_print_readably()) FEprint_not_readable(x);
 		write_str("#<readtable ", stream);
@@ -1370,7 +1381,8 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		write_addr(x, stream);
 		write_ch('>', stream);
 	}
-	@(return)
+ OUTPUT:
+	@(return x)
 }
 
 #if defined(ECL_CMU_FORMAT)

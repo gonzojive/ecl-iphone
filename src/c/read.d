@@ -93,8 +93,9 @@ read_object_with_delimiter(cl_object in, int delimiter)
 	int c, base;
 	enum ecl_chattrib a;
 	cl_object p;
-	cl_index length, i, colon;
-	int colon_type, intern_flag;
+	cl_index length, i;
+	int colon, intern_flag;
+	bool external_symbol;
 	cl_object rtbl = ecl_current_readtable();
 	enum ecl_readtable_case read_case = rtbl->readtable.read_case;
 	cl_object escape_list; /* intervals of escaped characters */
@@ -116,11 +117,61 @@ BEGIN:
 					 2, x, MAKE_FIXNUM(i));
 		return o;
 	}
-	escape_list = Cnil;
+	p = escape_list = Cnil;
 	upcase = count = length = 0;
-	colon_type = 0;
+	external_symbol = colon = 0;
 	cl_env.token->string.fillp = 0;
 	for (;;) {
+		if (c == ':') {
+			colon++;
+			goto NEXT;
+		}
+		if (colon > 2) {
+			while (colon--) {
+				ecl_string_push_extend(cl_env.token, ':');
+				length++;
+			}
+		} else if (colon) {
+			external_symbol = (colon == 1);
+			cl_env.token->string.self[length] = '\0';
+			/* If the readtable case was :INVERT and all non-escaped characters
+			 * had the same case, we revert their case. */
+			if (read_case == ecl_case_invert) {
+				if (upcase == count) {
+					invert_buffer_case(cl_env.token, escape_list, -1);
+				} else if (upcase == -count) {
+					invert_buffer_case(cl_env.token, escape_list, +1);
+				}
+			}
+			if (length == 0) {
+				p = cl_core.keyword_package;
+				external_symbol = 0;
+			} else {
+				p = ecl_find_package_nolock(cl_env.token);
+			}
+			if (Null(p)) {
+				/* When loading binary files, we sometimes must create
+				   symbols whose package has not yet been maked. We
+				   allow it, but later on in read_VV we make sure that
+				   all referenced packages have been properly built.
+				*/
+				cl_object name = copy_simple_string(cl_env.token);
+				if (cl_core.packages_to_be_created == OBJNULL) {
+					FEerror("There is no package with the name ~A.",
+						1, name);
+				} else if (!Null(p = assoc(name, cl_core.packages_to_be_created))) {
+					p = CDR(p);
+				} else {
+					p = make_package(name,Cnil,Cnil);
+					cl_core.packages = CDR(cl_core.packages);
+					cl_core.packages_to_be_created =
+						cl_acons(name, p, cl_core.packages_to_be_created);
+				}
+			}
+			cl_env.token->string.fillp = length = 0;
+			upcase = count = colon = 0;
+			escape_list = Cnil;
+		}
 		if (a == cat_single_escape) {
 			c = ecl_read_char_noeof(in);
 			a = cat_constituent;
@@ -128,10 +179,14 @@ BEGIN:
 				escape_list = CONS(CONS(MAKE_FIXNUM(length),
 							MAKE_FIXNUM(length)),
 						   escape_list);
+			} else {
+				escape_list = Ct;
 			}
 			ecl_string_push_extend(cl_env.token, c);
 			length++;
-		} else if (a == cat_multiple_escape) {
+			goto NEXT;
+		}
+		if (a == cat_multiple_escape) {
 			cl_index begin = length;
 			for (;;) {
 				c = ecl_read_char_noeof(in);
@@ -148,38 +203,30 @@ BEGIN:
 				escape_list = CONS(CONS(MAKE_FIXNUM(begin),
 							MAKE_FIXNUM(length-1)),
 						   escape_list);
+			} else {
+				escape_list = Ct;
 			}
-		} else {
-			if (a == cat_whitespace || a == cat_terminating) {
-				ecl_unread_char(c, in);
-				break;
-			}
-			if (c == ':') {
-				if (colon_type == 0) {
-					colon_type = 1;
-					colon = length;
-				} else if (colon_type == 1 && colon == length-1) {
-					colon_type = 2;
-				} else {
-					colon_type = -1;
-					/*  Colon has appeared twice.  */
-				}
-			}
-			if (read_case != ecl_case_preserve) {
-				if (isupper(c)) {
-					upcase++;
-					if (read_case == ecl_case_downcase)
-						c = tolower(c);
-				} else if (islower(c)) {
-					upcase++;
-					if (read_case == ecl_case_upcase)
-						c = toupper(c);
-				}
-			}
-			ecl_string_push_extend(cl_env.token, c);
-			length++;
-			count++;
+			goto NEXT;
 		}
+		if (a == cat_whitespace || a == cat_terminating) {
+			ecl_unread_char(c, in);
+			break;
+		}
+		if (read_case != ecl_case_preserve) {
+			if (isupper(c)) {
+				upcase++;
+				count++;
+				if (read_case == ecl_case_downcase)
+					c = tolower(c);
+			} else if (islower(c)) {
+				upcase--;
+				count++;
+				if (read_case == ecl_case_upcase)
+					c = toupper(c);
+			}
+		}
+		ecl_string_push_extend(cl_env.token, c);
+		length++;
 	NEXT:
 		c = ecl_read_char(in);
 		if (c == EOF)
@@ -190,18 +237,8 @@ BEGIN:
 	if (read_suppress)
 		return(Cnil);
 
-	/* If the readtable case was :INVERT and all non-escaped characters
-	 * had the same case, we revert their case. */
-	if (read_case == ecl_case_invert) {
-		if (upcase == count) {
-			invert_buffer_case(cl_env.token, escape_list, +1);
-		} else if (upcase == -count) {
-			invert_buffer_case(cl_env.token, escape_list, +1);
-		}
-	}
-
 	/* If there are some escaped characters, it must be a symbol */
-	if (length == 0 || (count < length))
+	if (p != Cnil || escape_list != Cnil || length == 0)
 		goto SYMBOL;
 
 	/* The case in which the buffer is full of dots has to be especial cased */
@@ -221,61 +258,30 @@ MAYBE_NUMBER:
 		goto SYMBOL;
 	x = parse_number(cl_env.token->string.self, cl_env.token->string.fillp, &i, base);
 	if (x != OBJNULL && length == i)
-		return(x);
+		return x;
 
 SYMBOL:
-	if (colon_type == 1 /* && length > colon + 1 */) {
-		if (colon == 0)
-			p = cl_core.keyword_package;
-		else {
-			cl_env.token->string.fillp = colon;
-			p = ecl_find_package_nolock(cl_env.token);
-			if (Null(p))
-				FEerror("There is no package with the name ~A.",
-					1, copy_simple_string(cl_env.token));
+	cl_env.token->string.self[length] = '\0';
+ 	/* If the readtable case was :INVERT and all non-escaped characters
+	 * had the same case, we revert their case. */
+	if (read_case == ecl_case_invert) {
+		if (upcase == count) {
+			invert_buffer_case(cl_env.token, escape_list, -1);
+		} else if (upcase == -count) {
+			invert_buffer_case(cl_env.token, escape_list, +1);
 		}
-		cl_env.token->string.fillp = length - (colon + 1);
-		memmove(cl_env.token->string.self,
-			cl_env.token->string.self + colon + 1,
-			sizeof(*cl_env.token->string.self) * cl_env.token->string.fillp);
-		if (colon > 0) {
-			cl_env.token->string.self[cl_env.token->string.fillp] = '\0';
-			x = ecl_find_symbol(cl_env.token, p, &intern_flag);
-			if (intern_flag != EXTERNAL) {
-				FEerror("Cannot find the external symbol ~A in ~S.",
-					2, copy_simple_string(cl_env.token), p);
-			}
-			return(x);
+	}
+	if (external_symbol) {
+		x = ecl_find_symbol(cl_env.token, p, &intern_flag);
+		if (intern_flag != EXTERNAL) {
+			FEerror("Cannot find the external symbol ~A in ~S.",
+				2, copy_simple_string(cl_env.token), p);
 		}
-	} else if (colon_type == 2 /* && colon > 0 && length > colon + 2 */) {
-		cl_env.token->string.fillp = colon;
-		p = ecl_find_package_nolock(cl_env.token);
-		if (Null(p)) {
-			/* When loading binary files, we sometimes must create
-			   symbols whose package has not yet been maked. We
-			   allow it, but later on in read_VV we make sure that
-			   all referenced packages have been properly built.
-			*/
-			cl_object name = copy_simple_string(cl_env.token);
-			if (cl_core.packages_to_be_created == OBJNULL) {
-				FEerror("There is no package with the name ~A.",
-					1, name);
-			} else if (!Null(p = assoc(name, cl_core.packages_to_be_created))) {
-				p = CDR(p);
-			} else {
-				p = make_package(name,Cnil,Cnil);
-				cl_core.packages = CDR(cl_core.packages);
-				cl_core.packages_to_be_created =
-					cl_acons(name, p, cl_core.packages_to_be_created);
-			}
-		}
-		cl_env.token->string.fillp = length - (colon + 2);
-		memmove(cl_env.token->string.self,
-			cl_env.token->string.self + colon + 2,
-			sizeof(*cl_env.token->string.self) * cl_env.token->string.fillp);
-	} else
+		return x;
+	}
+	if (p == Cnil) {
 		p = current_package();
-	cl_env.token->string.self[cl_env.token->string.fillp] = '\0';
+	}
 	/* INV: make_symbol() copies the string */
 	x = intern(cl_env.token, p, &intern_flag);
 	return x;
