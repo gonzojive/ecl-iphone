@@ -80,6 +80,7 @@ href="http://ecls.sourceforge.net">ECL</a>, either statically or at runtime.
 <li>Debian Linux on PowerPC</li>
 <li>FreeBSD 4.x</li>
 <li>Cygwin on Intel Windows</li>
+<li>MacOSX</li>
 </ul>
 Most of the code is portable. The parts
 which change from operating system to operating system are about the
@@ -97,13 +98,10 @@ platform, but work is in progress to remove GCC dependencies.
 
 <li><b>Better garbage collection.</b>
 
-<p>As of this release the memory that <a
-href="http://ecls.sourceforge.net">ECL</a> can allocate is restricted to
-16Mb. I have tried replacing the garbage collector with a conservative one
-(Boehm's GC v 4.11) and that did fix the problems, but increases the memory
-requirements of <a href="http://ecls.sourceforge.net">ECL</a>. Since this is
-really undesirable, I have been also thinking about revamping the current
-garbage collector with an interface to mmap(). Time wil tell...
+<p>As of this release the ECL fully relies on the Boehm-Weiser Garbage
+Collector. This increases the memory requirements of <a
+href="http://ecls.sourceforge.net">ECL</a> with respect to the old
+garbage collector, but the whole environment results faster and more robust.
 
 <li><b>Improve the compiler: more agressive inlining, better operations among
 numbers and unboxed arrays of complex numbers.</b>

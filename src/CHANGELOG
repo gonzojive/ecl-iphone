@@ -883,6 +883,10 @@ ECLS 0.5
 ECL 0.6
 =======
 
+* Supported platforms:
+
+  - ECL now compiles and runs in static mode under MacOSX.
+
 * Errors fixed:
 
   - Code for handling :IMPORT-FROM in DEFPACKAGE was bogus
@@ -920,6 +924,13 @@ ECL 0.6
     kept in a single array, "cl_symbols". The translator "dpp" and the
     routine SI::MANGLE-NAME, output the right name for any symbol
     which is in this array.
+
+  - ECL relies fully on the Boehm-Weiser garbage collector
+    (v. 6.1). The old garbage collector is known to reclaim too much
+    data, resulting in heap corruption. Help is welcome on this field.
+
+  - The headers of the Boehm-Weiser garbage collector are installed
+    together with ECL.
 
 * Visible changes and ANSI compatibility:
 
