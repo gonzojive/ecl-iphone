@@ -1531,7 +1531,7 @@ si_read_bytes(cl_object stream, cl_object string, cl_object start, cl_object end
 
 	assert_type_stream(stream);
 	if (stream->stream.mode == smm_closed)
-	  closed_stream(stream);
+	  FEclosed_stream(stream);
 
 	/* FIXME! this may fail! */
         is = fix(start);

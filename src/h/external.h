@@ -292,6 +292,8 @@ extern void FEprogram_error(const char *s, int narg, ...) __attribute__((noretur
 extern void FEcontrol_error(const char *s, int narg, ...) __attribute__((noreturn));
 extern void FEerror(char *s, int narg, ...) __attribute__((noreturn));
 extern void FEcannot_open(cl_object fn) __attribute__((noreturn,regparm(2)));
+extern void FEend_of_file(cl_object strm) __attribute__((noreturn,regparm(2)));
+extern void FEclosed_stream(cl_object strm) __attribute__ ((noreturn,regparm(2)));
 extern void FEwrong_type_argument(cl_object type, cl_object value) __attribute__((noreturn,regparm(2)));
 extern void FEwrong_num_argumens(cl_object fun) __attribute__((noreturn,regparm(2)));
 extern void FEwrong_num_argumens_anonym(void) __attribute__((noreturn));
@@ -306,8 +308,6 @@ extern void illegal_index(cl_object x, cl_object i);
 extern void FEtype_error_symbol(cl_object obj) __attribute__((noreturn,regparm(2)));
 extern void FElibc_error(const char *msg, int narg, ...) __attribute__((noreturn));
 extern void init_error(void);
-
-extern void FEend_of_file(cl_object strm);
 
 /* eval.c */
 
@@ -357,7 +357,6 @@ extern cl_object cl_file_position _ARGS((int narg, cl_object file_stream, ...));
 extern bool input_stream_p(cl_object strm);
 extern bool output_stream_p(cl_object strm);
 extern cl_object stream_element_type(cl_object strm);
-extern void closed_stream(cl_object strm) __attribute__ ((noreturn,regparm(2)));
 extern cl_object open_stream(cl_object fn, enum smmode smm, cl_object if_exists, cl_object if_does_not_exist);
 extern void close_stream(cl_object strm, bool abort_flag);
 extern cl_object make_two_way_stream(cl_object istrm, cl_object ostrm);

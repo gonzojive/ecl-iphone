@@ -1559,7 +1559,7 @@ si_write_bytes(cl_object stream, cl_object string, cl_object start, cl_object en
 
 	assert_type_stream(stream);
 	if (stream->stream.mode == smm_closed)
-	  closed_stream(stream);
+		FEclosed_stream(stream);
 
         is = fix(start);	/* FIXME: Unsafe! */
 	ie = fix(end);

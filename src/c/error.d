@@ -140,6 +140,12 @@ FEend_of_file(cl_object strm)
 }
 
 void
+FEclosed_stream(cl_object strm)
+{
+	FEcondition(3, @'stream-error', @':stream', strm);
+}
+
+void
 FEwrong_type_argument(cl_object type, cl_object value)
 {
 	FEcondition(5, @'type-error', @':datum', value, @':expected-type', type);

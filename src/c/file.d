@@ -51,7 +51,7 @@ BEGIN:
 		FEtype_error_stream(strm);
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
-		closed_stream(strm);
+		FEclosed_stream(strm);
 		break;
 
 	case smm_io:
@@ -97,7 +97,7 @@ BEGIN:
 		FEtype_error_stream(strm);
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
-		closed_stream(strm);
+		FEclosed_stream(strm);
 		return(FALSE);
 
 	case smm_input:
@@ -137,7 +137,7 @@ BEGIN:
 		FEtype_error_stream(strm);
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
-		closed_stream(strm);
+		FEclosed_stream(strm);
 
 	case smm_input:
 	case smm_output:
@@ -185,39 +185,39 @@ BEGIN:
  */
 
 static void cannot_create(cl_object fn) __attribute__((noreturn));
-static void cannot_read(cl_object fn) __attribute__((noreturn));
-static void cannot_write(cl_object fn) __attribute__((noreturn));
-static void internal_stream_error(const char *routine, cl_object strm) __attribute__((noreturn));
+static void not_an_input_stream(cl_object fn) __attribute__((noreturn));
+static void not_an_output_stream(cl_object fn) __attribute__((noreturn));
+static void wrong_file_handler(cl_object strm) __attribute__((noreturn));
 
 static void
 cannot_create(cl_object fn)
 {
-	FEerror("Cannot create the file ~A.", 1, fn);
+	FElibc_error("Cannot create the file ~A.", 1, fn);
 }
 
 static void
-cannot_read(cl_object strm)
+not_an_input_stream(cl_object strm)
 {
 	FEerror("Cannot read the stream ~S.", 1, strm);
 }
 
 static void
-cannot_write(cl_object strm)
+not_an_output_stream(cl_object strm)
 {
 	FEerror("Cannot write to the stream ~S.", 1, strm);
 }
 
 static void
-internal_stream_error(const char *routine, cl_object strm)
+io_error(cl_object strm)
 {
-	FEerror("~A : internal error, closed stream ~S without smm_mode flag.",
-		2, make_constant_string(routine), strm);
+	FElibc_error("Read or write operation to stream ~S signaled an error.",
+		     1, strm);
 }
 
-void
-closed_stream(cl_object strm)
+static void
+wrong_file_handler(cl_object strm)
 {
-	FEerror("The stream ~S is already closed.", 1, strm);
+	FEerror("Internal error: closed stream ~S without smm_mode flag.", 1, strm);
 }
 
 /*----------------------------------------------------------------------
@@ -344,70 +344,30 @@ BEGIN:
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
-	  /* It is permissible to close a closed stream, although the output
-	     is unspecified in those cases. */
+		/* It is permissible to close a closed stream, although the output
+		   is unspecified in those cases. */
 		break;
 
 	case smm_output:
-	    if (fp == stdout)
-	      FEerror("Cannot close the standard output.", 0);
-	    if (fp == NULL)
-	      internal_stream_error("close_stream", strm);
-	    fflush(fp);
-	    fclose(fp);
-#if !defined(GBC_BOEHM)
-	    cl_dealloc(strm->stream.buffer, BUFSIZ);
-	    strm->stream.buffer = NULL;
-#endif
-	    strm->stream.file = NULL;
-	    break;
-
+		if (fp == stdout)
+			FEerror("Cannot close the standard output.", 0);
+		goto DO_CLOSE;
 	case smm_input:
 		if (fp == stdin)
 			FEerror("Cannot close the standard input.", 0);
-
+	DO_CLOSE:
 	case smm_io:
 	case smm_probe:
-	    if (fp == NULL)
-	      internal_stream_error("close_stream", strm);
-	    fclose(fp);
+		if (fp == NULL)
+			wrong_file_handler(strm);
+		if (fclose(fp) != 0)
+			FElibc_error("Cannot close stream ~S.", 1, strm);
 #if !defined(GBC_BOEHM)
-	    cl_dealloc(strm->stream.buffer, BUFSIZ);
-	    strm->stream.file = NULL;
+		cl_dealloc(strm->stream.buffer, BUFSIZ);
+		strm->stream.file = NULL;
 #endif
-	    break;
-#if 0
-	case smm_synonym:
-		strm = symbol_value(strm->stream.object0);
-		goto BEGIN;
-
-	case smm_broadcast:
-		for (x = strm->stream.object0; !endp(x); x = CDR(x))
-			close_stream(CAR(x), abort_flag);
-		strm->stream.object0 = Cnil;
 		break;
 
-	case smm_concatenated:
-		for (x = strm->stream.object0; !endp(x); x = CDR(x))
-			close_stream(CAR(x), abort_flag);
-		break;
-
-	case smm_two_way:
-		close_stream(strm->stream.object0, abort_flag);
-		close_stream(strm->stream.object1, abort_flag);
-		break;
-
-	case smm_echo:
-		close_stream(strm->stream.object0, abort_flag);
-		close_stream(strm->stream.object1, abort_flag);
-		break;
-
-	case smm_string_input:
-		break;          /*  There is nothing to do.  */
-
-	case smm_string_output:
-		break;          /*  There is nothing to do.  */
-#else
 	case smm_synonym:
 	case smm_broadcast:
 	case smm_concatenated:
@@ -420,7 +380,7 @@ BEGIN:
 	     as it might contain an useful pathname */
 		strm->stream.object1 = OBJNULL;
 		break;
-#endif
+
 	default:
 		error("illegal stream mode");
 	}
@@ -551,16 +511,16 @@ BEGIN:
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
-		closed_stream(strm);
+		FEclosed_stream(strm);
 		break;
 
 	case smm_input:
 	case smm_io:
 		if (fp == NULL)
-			internal_stream_error("ecl_getc",strm);
+			wrong_file_handler(strm);
 		GETC(c, fp);
 		if (c == EOF && ferror(fp))
-			FElibc_error("File I/O error",0);
+			io_error(strm);
 		break;
 
 	case smm_synonym:
@@ -608,7 +568,7 @@ BEGIN:
 	case smm_probe:
 	case smm_broadcast:
 	case smm_string_output:
-		cannot_read(strm);
+		not_an_input_stream(strm);
 
 	default:
 		error("illegal stream mode");
@@ -642,14 +602,16 @@ BEGIN:
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
-		closed_stream(strm);
+		FEclosed_stream(strm);
 		break;
 
 	case smm_input:
 	case smm_io:
 		if (fp == NULL)
-			internal_stream_error("ecl_ungetc",strm);
+			wrong_file_handler(strm);
 		UNGETC(c, fp);
+		if (c == EOF)
+			io_error(strm);
 /*		--strm->stream.int0; useless in smm_io, Beppe */
 		break;
 
@@ -712,7 +674,7 @@ BEGIN:
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
-		closed_stream(strm);
+		FEclosed_stream(strm);
 		break;
 
 	case smm_output:
@@ -724,8 +686,9 @@ BEGIN:
 		else
 			strm->stream.int1++;
 		if (fp == NULL)
-			internal_stream_error("writec",strm);
-		putc(c, fp);
+			wrong_file_handler(strm);
+		if (putc(c, fp) == EOF)
+			io_error(strm);
 		break;
 
 	case smm_synonym:
@@ -767,7 +730,7 @@ BEGIN:
 	case smm_probe:
 	case smm_concatenated:
 	case smm_string_input:
-		cannot_write(strm);
+		not_an_output_stream(strm);
 
 	default:
 		error("illegal stream mode");
@@ -800,14 +763,15 @@ BEGIN:
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
-		closed_stream(strm);
+		FEclosed_stream(strm);
 		break;
 
 	case smm_output:
 	case smm_io:
 		if (fp == NULL)
-			internal_stream_error("flush_stream",strm);
-		fflush(fp);
+			wrong_file_handler(strm);
+		if (fflush(fp) == EOF)
+			io_error(strm);
 		break;
 
 	case smm_synonym:
@@ -858,13 +822,14 @@ BEGIN:
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
-		closed_stream(strm);
+		FEclosed_stream(strm);
 		break;
 
 	case smm_input:
 		if (fp == NULL)
-			internal_stream_error("clear_input_stream",strm);
-		fseek(fp, 0L, 2);
+			wrong_file_handler(strm);
+		if (fseek(fp, 0L, 2) != 0)
+			io_error(strm);
 		break;
 
 	case smm_synonym:
@@ -915,13 +880,14 @@ BEGIN:
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
-		closed_stream(strm);
+		FEclosed_stream(strm);
 		break;
 
 	case smm_output:
 		if (fp == NULL)
-			internal_stream_error("clear_output_stream",strm);
-		fseek(fp, 0L, 2);
+			wrong_file_handler(strm);
+		if (fseek(fp, 0L, 2) != 0)
+			io_error(strm);
 		break;
 
 	case smm_synonym:
@@ -970,17 +936,17 @@ BEGIN:
 	fp = strm->stream.file;
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
-		closed_stream(strm);
+		FEclosed_stream(strm);
 		return(TRUE);
 
 	case smm_io:
 	case smm_input:
 		if (fp == NULL)
-			closed_stream(strm);
+			FEclosed_stream(strm);
 		GETC(c, fp);
 		if (c == EOF) {
 			if (ferror(fp))
-				FElibc_error("File I/O error", 0);
+				io_error(strm);
 			return(TRUE);
 		} else {
 			UNGETC(c, fp);
@@ -1046,14 +1012,14 @@ BEGIN:
 		FEtype_error_stream(strm);
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
-		closed_stream(strm);
+		FEclosed_stream(strm);
 		return(FALSE);
 
 	case smm_input:
 	case smm_io:
 		fp = strm->stream.file;
 		if (fp == NULL)
-			internal_stream_error("listen_stream",strm);
+			wrong_file_handler(strm);
 		if (feof(fp))
 			return(FALSE);
 		if (FILE_CNT(fp) > 0)
@@ -1110,7 +1076,7 @@ BEGIN:
 		FEtype_error_stream(strm);
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
-		closed_stream(strm);
+		FEclosed_stream(strm);
 		return(-1);
 
 	case smm_input:
@@ -1118,7 +1084,7 @@ BEGIN:
 	case smm_io:
 		fp = strm->stream.file;
 		if (fp == NULL)
-			internal_stream_error("file_position",strm);
+			wrong_file_handler(strm);
 		return(ftell(fp));
 
 	case smm_string_output:
@@ -1155,7 +1121,7 @@ BEGIN:
 		FEtype_error_stream(strm);
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
-		closed_stream(strm);
+		FEclosed_stream(strm);
 		return(-1);
 
 	case smm_input:
@@ -1163,8 +1129,8 @@ BEGIN:
 	case smm_io:
 		fp = strm->stream.file;
 		if (fp == NULL)
-			internal_stream_error("file_position_set",strm);
-		if (fseek(fp, disp, 0) < 0)
+			wrong_file_handler(strm);
+		if (fseek(fp, disp, 0) != 0)
 			return(-1);
 		return(0);
 
@@ -1210,7 +1176,7 @@ BEGIN:
 		FEtype_error_stream(strm);
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
-		closed_stream(strm);
+		FEclosed_stream(strm);
 		return(-1);
 
 	case smm_input:
@@ -1218,7 +1184,7 @@ BEGIN:
 	case smm_io:
 		fp = strm->stream.file;
 		if (fp == NULL)
-			internal_stream_error("file_length",strm);
+			wrong_file_handler(strm);
 		return(file_len(fp));
 
 	case smm_synonym:
@@ -1253,7 +1219,7 @@ BEGIN:
 		FEtype_error_stream(strm);
 	switch ((enum smmode)strm->stream.mode) {
 	case smm_closed:
-		closed_stream(strm);
+		FEclosed_stream(strm);
 		return(-1);
 
 	case smm_output:
@@ -1322,7 +1288,7 @@ cl_make_synonym_stream(cl_object sym)
 	for (i = 0; i < narg; i++) {
 		x = cl_va_arg(ap);
 		if (type_of(x) != t_stream || !output_stream_p(x))
-			cannot_write(x);
+			not_an_output_stream(x);
 		streams = CONS(x, streams);
 	}
 	x = cl_alloc_object(t_stream);
@@ -1342,7 +1308,7 @@ cl_make_synonym_stream(cl_object sym)
 	for (i = 0; i < narg; i++) {
 		x = cl_va_arg(ap);
 		if (type_of(x) != t_stream || !input_stream_p(x))
-			cannot_read(x);
+			not_an_input_stream(x);
 		streams = CONS(x, streams);
 	}
 	x = cl_alloc_object(t_stream);
@@ -1358,9 +1324,9 @@ cl_object
 cl_make_two_way_stream(cl_object strm1, cl_object strm2)
 {
 	if (type_of(strm1) != t_stream || !input_stream_p(strm1))
-		cannot_read(strm1);
+		not_an_input_stream(strm1);
 	if (type_of(strm2) != t_stream || !output_stream_p(strm2))
-		cannot_write(strm2);
+		not_an_output_stream(strm2);
 	@(return make_two_way_stream(strm1, strm2))
 }
 
@@ -1368,9 +1334,9 @@ cl_object
 cl_make_echo_stream(cl_object strm1, cl_object strm2)
 {
 	if (type_of(strm1) != t_stream || !input_stream_p(strm1))
-		cannot_read(strm1);
+		not_an_input_stream(strm1);
 	if (type_of(strm2) != t_stream || !output_stream_p(strm2))
-		cannot_write(strm2);
+		not_an_output_stream(strm2);
 	@(return make_echo_stream(strm1, strm2))
 }
 
