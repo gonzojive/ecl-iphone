@@ -91,6 +91,7 @@ static const struct {
 	{"Bell", 7},
 	{"Backspace", 8},
 	{"Tab", 9},
+	{"Linefeed", 10},
 	{"Newline", 10},
 	{"Vt", 11},
 	{"Page", 12},
