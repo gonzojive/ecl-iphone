@@ -684,12 +684,14 @@ write_symbol_string(cl_object s, cl_object readtable, cl_object print_case,
 {
 	enum ecl_readtable_case action = readtable->readtable.read_case;
 	cl_index i;
+	bool capitalize_flag;
 	if (action == ecl_case_invert) {
 		if (!needs_to_be_inverted(s))
 			action = ecl_case_preserve;
 	}
 	if (escape)
 		write_ch('|', stream);
+	capitalize_flag = 1;
 	for (i = 0;  i < s->string.fillp;  i++) {
 		int c = s->string.self[i];
 		if (escape) {
@@ -699,18 +701,24 @@ write_symbol_string(cl_object s, cl_object readtable, cl_object print_case,
 		} else if (action != ecl_case_preserve) {
 			if (isupper(c)) {
 				if ((action == ecl_case_invert) ||
-				    (print_case == @':downcase') ||
-				    ((print_case == @':capitalize') && (i > 0)))
+				    ((action == ecl_case_upcase) &&
+				     ((print_case == @':downcase') ||
+				      ((print_case == @':capitalize') && !capitalize_flag))))
 				{
 					c = tolower(c);
 				}
+				capitalize_flag = 0;
 			} else if (islower(c)) {
 				if ((action == ecl_case_invert) ||
-				    (print_case == @':upcase') ||
-				    ((print_case == @':capitalize') && (i == 0)))
+				    ((action == ecl_case_downcase) &&
+				     ((print_case == @':upcase') ||
+				      ((print_case == @':capitalize') && capitalize_flag))))
 				{
 					c = toupper(c);
 				}
+				capitalize_flag = 0;
+			} else {
+				capitalize_flag = !isdigit(c);
 			}
 		}
 		write_ch(c, stream);
@@ -722,6 +730,7 @@ write_symbol_string(cl_object s, cl_object readtable, cl_object print_case,
 static void
 write_symbol(cl_object x, cl_object stream)
 {
+	bool print_readably = ecl_print_readably();
 	cl_object print_package = symbol_value(@'si::*print-package*');
 	cl_object print_case = ecl_print_case();
 	cl_object readtable = ecl_current_readtable();
@@ -729,12 +738,12 @@ write_symbol(cl_object x, cl_object stream)
 	cl_object name = x->symbol.name;
 	int intern_flag;
 
-	if (!ecl_print_escape() && !ecl_print_readably()) {
+	if (!ecl_print_escape() && !print_readably) {
 		write_symbol_string(name, readtable, print_case, stream, 0);
 		return;
 	}
 	if (Null(package)) {
-		if (ecl_print_gensym())
+		if (print_readably || ecl_print_gensym())
 			write_str("#:", stream);
 	} else if (package == cl_core.keyword_package) {
 		write_ch(':', stream);
