@@ -245,12 +245,12 @@ frs_overflow(void)		/* used as condition in list.d */
 }
 
 frame_ptr
-_frs_push(register enum fr_class class, register cl_object val)
+_frs_push(register enum fr_class clas, register cl_object val)
 {
 	if (++frs_top >= frs_limit) frs_overflow();
 	frs_top->frs_lex = lex_env;
 	frs_top->frs_bds_top = bds_top;
-	frs_top->frs_class = class;
+	frs_top->frs_class = clas;
 	frs_top->frs_val = val;
 	frs_top->frs_ihs = ihs_top;
 	frs_top->frs_sp = cl_stack_index();
@@ -376,18 +376,18 @@ get_frame_ptr(cl_object x)
 @)
 
 void
-alloc_stacks(int *new_cs_org)
+init_stacks(int *new_cs_org)
 {
 #ifdef THREADS
 	Values = main_lpd.lwp_Values;
 #endif
 
 	frs_size = FRSSIZE + 2*FRSGETA;
-	frs_org = alloc(frs_size * sizeof(*frs_org));
+	frs_org = (frame_ptr)cl_alloc(frs_size * sizeof(*frs_org));
 	frs_top = frs_org-1;
 	frs_limit = &frs_org[frs_size - 2*FRSGETA];
 	bds_size = BDSSIZE + 2*BDSGETA;
-	bds_org = alloc(bds_size * sizeof(*bds_org));
+	bds_org = (bds_ptr)cl_alloc(bds_size * sizeof(*bds_org));
 	bds_top = bds_org-1;
 	bds_limit = &bds_org[bds_size - 2*BDSGETA];
 

@@ -248,7 +248,7 @@ static void
 internal_stream_error(const char *routine, cl_object strm)
 {
 	FEerror("~A : internal error, closed stream ~S without smm_mode flag.",
-		2, make_simple_string(routine), strm);
+		2, make_constant_string(routine), strm);
 }
 
 void
@@ -345,14 +345,14 @@ open_stream(cl_object fn, enum smmode smm, cl_object if_exists,
 		}
 	} else
 		error("illegal stream mode");
-	x = alloc_object(t_stream);
+	x = cl_alloc_object(t_stream);
 	x->stream.mode = (short)smm;
 	x->stream.file = fp;
 	x->stream.object0 = @'base-char';
 	x->stream.object1 = fn;
 	x->stream.int0 = x->stream.int1 = 0;
 #if !defined(GBC_BOEHM)
-	setbuf(fp, x->stream.buffer = alloc(BUFSIZ));
+	setbuf(fp, x->stream.buffer = cl_alloc(BUFSIZ));
 #endif
 	return(x);
 }
@@ -383,7 +383,7 @@ close_stream(cl_object strm, bool abort_flag)        /*  Not used now!  */
 	    fflush(fp);
 	    fclose(fp);
 #if !defined(GBC_BOEHM)
-	    dealloc(strm->stream.buffer, BUFSIZ);
+	    cl_dealloc(strm->stream.buffer, BUFSIZ);
 	    strm->stream.buffer = NULL;
 #endif
 	    strm->stream.file = NULL;
@@ -399,7 +399,7 @@ close_stream(cl_object strm, bool abort_flag)        /*  Not used now!  */
 	      internal_stream_error("close_stream", strm);
 	    fclose(fp);
 #if !defined(GBC_BOEHM)
-	    dealloc(strm->stream.buffer, BUFSIZ);
+	    cl_dealloc(strm->stream.buffer, BUFSIZ);
 	    strm->stream.file = NULL;
 #endif
 	    break;
@@ -463,7 +463,7 @@ make_two_way_stream(cl_object istrm, cl_object ostrm)
 {
 	cl_object strm;
 
-	strm = alloc_object(t_stream);
+	strm = cl_alloc_object(t_stream);
 	strm->stream.mode = (short)smm_two_way;
 	strm->stream.file = NULL;
 	strm->stream.object0 = istrm;
@@ -487,7 +487,7 @@ make_string_input_stream(cl_object strng, cl_index istart, cl_index iend)
 {
 	cl_object strm;
 
-	strm = alloc_object(t_stream);
+	strm = cl_alloc_object(t_stream);
 	strm->stream.mode = (short)smm_string_input;
 	strm->stream.file = NULL;
 	strm->stream.object0 = strng;
@@ -503,16 +503,16 @@ make_string_output_stream(cl_index line_length)
 	cl_object strng, strm;
 
 	line_length++;
-	strng = alloc_object(t_string);
+	strng = cl_alloc_object(t_string);
 	strng->string.hasfillp = TRUE;
 	strng->string.adjustable = TRUE;
 	strng->string.displaced = Cnil;
 	strng->string.dim = line_length;
 	strng->string.fillp = 0;
 	strng->string.self = NULL; /*  For GC sake  */
-	strng->string.self = alloc(line_length);
+	strng->string.self = (char *)cl_alloc(line_length);
 	strng->string.self[0] = '\0';
-	strm = alloc_object(t_stream);
+	strm = cl_alloc_object(t_stream);
 	strm->stream.mode = (short)smm_string_output;
 	strm->stream.file = NULL;
 	strm->stream.object0 = strng;
@@ -694,7 +694,7 @@ int
 writec_stream(int c, cl_object strm)
 {
 	cl_object x;
-	unsigned char *p;
+	char *p;
 	cl_index i;
 	FILE *fp;
 
@@ -761,7 +761,7 @@ BEGIN:
 #ifdef THREADS
 			start_critical_section(); /* avoid losing p */
 #endif THREADS
-			p = alloc(x->string.dim * 2 + 16);
+			p = (char *)cl_alloc(x->string.dim * 2 + 16);
 			for (i = 0;  i < x->string.dim;  i++)
 				p[i] = x->string.self[i];
 			i = x->string.dim * 2 + 16;
@@ -1277,7 +1277,7 @@ BEGIN:
 	cl_object x;
 @
 	assert_type_symbol(sym);
-	x = alloc_object(t_stream);
+	x = cl_alloc_object(t_stream);
 	x->stream.mode = (short)smm_synonym;
 	x->stream.file = NULL;
 	x->stream.object0 = sym;
@@ -1298,7 +1298,7 @@ BEGIN:
 			cannot_write(x);
 		streams = CONS(x, streams);
 	}
-	x = alloc_object(t_stream);
+	x = cl_alloc_object(t_stream);
 	x->stream.mode = (short)smm_broadcast;
 	x->stream.file = NULL;
 	x->stream.object0 = nreverse(streams);
@@ -1318,7 +1318,7 @@ BEGIN:
 			cannot_read(x);
 		streams = CONS(x, streams);
 	}
-	x = alloc_object(t_stream);
+	x = cl_alloc_object(t_stream);
 	x->stream.mode = (short)smm_concatenated;
 	x->stream.file = NULL;
 	x->stream.object0 = nreverse(streams);
@@ -1530,7 +1530,7 @@ for the file-stream ~S.",
 @
 	if (type_of(strng) != t_string || !strng->string.hasfillp)
 		FEerror("~S is not a string with a fill-pointer.", 1, strng);
-	strm = alloc_object(t_stream);
+	strm = cl_alloc_object(t_stream);
 	strm->stream.mode = (short)smm_string_output;
 	strm->stream.file = NULL;
 	strm->stream.object0 = strng;
@@ -1558,7 +1558,7 @@ init_file(void)
 	cl_object standard;
 	cl_object x;
 
-	standard_input = alloc_object(t_stream);
+	standard_input = cl_alloc_object(t_stream);
 	standard_input->stream.mode = (short)smm_input;
 	standard_input->stream.file = stdin;
 	standard_input->stream.object0 = @'base-char';
@@ -1566,7 +1566,7 @@ init_file(void)
 	standard_input->stream.int0 = 0;
 	standard_input->stream.int1 = 0;
 
-	standard_output = alloc_object(t_stream);
+	standard_output = cl_alloc_object(t_stream);
 	standard_output->stream.mode = (short)smm_output;
 	standard_output->stream.file = stdout;
 	standard_output->stream.object0 = @'base-char';
@@ -1580,7 +1580,7 @@ init_file(void)
 
 	SYM_VAL(@'*terminal-io*') = standard;
 
-	x = alloc_object(t_stream);
+	x = cl_alloc_object(t_stream);
 	x->stream.mode = (short)smm_synonym;
 	x->stream.file = NULL;
 	x->stream.object0 = @'*terminal-io*';

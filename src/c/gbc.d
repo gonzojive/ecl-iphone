@@ -370,7 +370,7 @@ BEGIN:
 #endif THREADS
 #ifdef CLOS
 	case t_instance:
-		mark_object(x->instance.class);
+		mark_object(CLASS_OF(x));
 		p = x->instance.slots;
 		if (p == NULL)
 			break;

@@ -41,14 +41,14 @@ make_our_hash_table(cl_object test, int size)
 	else if (test == @'equal')
 		htt = htt_equal;
 
-	h = alloc_object(t_hashtable);
+	h = cl_alloc_object(t_hashtable);
 	h->hash.data = NULL;	/* for GC sake */
 	h->hash.test = (short)htt;
 	h->hash.size = size;
 	h->hash.rehash_size = rehash_size;
 	h->hash.threshold = rehash_threshold;
         h->hash.entries = 0;
-	h->hash.data = alloc_align(size * sizeof(struct hashtable_entry), sizeof(int));
+	h->hash.data = (struct hashtable_entry *)cl_alloc_align(size * sizeof(struct hashtable_entry), sizeof(int));
 	for(i = 0;  i < size;  i++) {
 		h->hash.data[i].key = OBJNULL;
 		h->hash.data[i].value = OBJNULL;
@@ -64,9 +64,9 @@ clos_boot(void)
 
 	/* booting Class CLASS */
 	
-  	class_class = alloc_instance(4);
+  	class_class = cl_alloc_instance(4);
 	register_root(&class_class);
-	class_class->instance.class = class_class;
+	CLASS_OF(class_class) = class_class;
 	CLASS_NAME(class_class) = @'class';
 	CLASS_SUPERIORS(class_class) = Cnil;
 	CLASS_INFERIORS(class_class) = Cnil;
@@ -76,9 +76,9 @@ clos_boot(void)
 
 	/* booting Class BUILT-IN */
 	
-  	class_built_in = alloc_instance(4);
+  	class_built_in = cl_alloc_instance(4);
 	register_root(&class_built_in);
-	class_built_in->instance.class = class_class;
+	CLASS_OF(class_built_in) = class_class;
 	CLASS_NAME(class_built_in) = @'built-in';
 	CLASS_SUPERIORS(class_built_in) = CONS(class_class, Cnil);
 	CLASS_INFERIORS(class_built_in) = Cnil;
@@ -88,9 +88,9 @@ clos_boot(void)
 
 	/* booting Class T (= OBJECT) */
 	
-  	class_object = alloc_instance(4);
+  	class_object = cl_alloc_instance(4);
 	register_root(&class_object);
-	class_object->instance.class = class_built_in;
+	CLASS_OF(class_object) = class_built_in;
 	CLASS_NAME(class_object) = Ct;
 	CLASS_SUPERIORS(class_object) = Cnil;
 	CLASS_INFERIORS(class_object) = CONS(class_class, Cnil);

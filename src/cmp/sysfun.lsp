@@ -1097,7 +1097,7 @@ type_of(#0)==t_bitvector"))
 	:inline-always ((standard-object fixnum t) t t nil
 		"(#0)->instance.slots[#1]=(#2)"))
 (si::INSTANCE-CLASS (t) T nil nil
-	:inline-always ((standard-object) t nil nil "(#0)->instance.class"))
+	:inline-always ((standard-object) t nil nil "CLASS_OF(#0)"))
 (si::INSTANCE-CLASS-SET (t t) T)
 (si::INSTANCEP (t) T nil t)
 (si::SL-BOUNDP (t) T nil t

@@ -161,8 +161,11 @@ number_times(cl_object x, cl_object y)
 			return make_longfloat(sf(y) * lf(x));
 		case t_longfloat:
 			return make_longfloat(lf(y) * lf(x));
-		case t_complex:
-			goto COMPLEX;
+		case t_complex: {
+		COMPLEX: /* INV: x is real, y is complex */
+			return make_complex(number_times(x, y->complex.real),
+					    number_times(x, y->complex.imag));
+		}
 		default:
 			FEtype_error_number(y);
 		}
@@ -173,9 +176,7 @@ number_times(cl_object x, cl_object y)
 		if (type_of(y) != t_complex) {
 			cl_object aux = x;
 			x = y; y = aux;
-		COMPLEX: /* INV: x is real, y is complex */
-			return make_complex(number_times(x, y->complex.real),
-					    number_times(x, y->complex.imag));
+			goto COMPLEX;
 		}
 		z11 = number_times(x->complex.real, y->complex.real);
 		z12 = number_times(x->complex.imag, y->complex.imag);
@@ -234,7 +235,9 @@ number_plus(cl_object x, cl_object y)
 		case t_longfloat:
 			return make_longfloat(fix(x) + lf(y));
 		case t_complex:
-			goto COMPLEX;
+		COMPLEX: /* INV: x is real, y is complex */
+			return make_complex(number_plus(x, y->complex.real),
+					    y->complex.imag);
 		default:
 			FEtype_error_number(y);
 		}
@@ -328,8 +331,7 @@ number_plus(cl_object x, cl_object y)
 		if (type_of(y) != t_complex) {
 			cl_object aux = x;
 			x = y; y = aux;
-		COMPLEX: /* INV: x is real, y is complex */
-			return make_complex(number_plus(x, y->complex.real), y->complex.imag);
+			goto COMPLEX;
 		}
 		z = number_plus(x->complex.real, y->complex.real);
 		z1 = number_plus(x->complex.imag, y->complex.imag);
@@ -534,18 +536,18 @@ number_negate(cl_object x)
 
 	case t_ratio:
 		z1 = number_negate(x->ratio.num);
-		z = alloc_object(t_ratio);
+		z = cl_alloc_object(t_ratio);
 		z->ratio.num = z1;
 		z->ratio.den = x->ratio.den;
 		return(z);
 
 	case t_shortfloat:
-		z = alloc_object(t_shortfloat);
+		z = cl_alloc_object(t_shortfloat);
 		sf(z) = -sf(x);
 		return(z);
 
 	case t_longfloat:
-		z = alloc_object(t_longfloat);
+		z = cl_alloc_object(t_longfloat);
 		lf(z) = -lf(x);
 		return(z);
 
@@ -801,12 +803,12 @@ one_plus(cl_object x)
 		return(z);
 
 	case t_shortfloat:
-		z = alloc_object(t_shortfloat);
+		z = cl_alloc_object(t_shortfloat);
 		sf(z) = sf(x) + 1.0;
 		return(z);
 
 	case t_longfloat:
-		z = alloc_object(t_longfloat);
+		z = cl_alloc_object(t_longfloat);
 		lf(z) = lf(x) + 1.0;
 		return(z);
 
@@ -848,12 +850,12 @@ one_minus(cl_object x)
 		return(z);
 
 	case t_shortfloat:
-		z = alloc_object(t_shortfloat);
+		z = cl_alloc_object(t_shortfloat);
 		sf(z) = sf(x) - 1.0;
 		return(z);
 
 	case t_longfloat:
-		z = alloc_object(t_longfloat);
+		z = cl_alloc_object(t_longfloat);
 		lf(z) = lf(x) - 1.0;
 		return(z);
 

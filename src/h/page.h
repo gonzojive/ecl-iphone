@@ -12,6 +12,10 @@
     See file '../Copyright' for full details.
 */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*****************************
  * BOEHM's GARBAGE COLLECTOR *
  *****************************/
@@ -19,7 +23,7 @@
 #ifdef GBC_BOEHM
 #include "gc.h"
 
-struct typemanager {
+extern struct typemanager {
 	const char *tm_name;
 	size_t tm_size;
 } tm_table[(int)t_end];
@@ -125,15 +129,12 @@ extern char *data_end;			/*  core end  */
  * SYMBOLS & KEYWORDS DATABASE *
  *******************************/
 
+
+
 struct symbol_info {
   cl_object * const loc;
   const char *name;
-  enum {
-    CL_ORDINARY,
-    CL_SPECIAL,
-    SI_SPECIAL,
-    SI_ORDINARY
-  } type;
+  int type;
 };
 
 extern const struct symbol_info all_symbols[];
@@ -152,3 +153,7 @@ struct function_info {
 };
 
 extern const struct function_info all_functions[];
+
+#ifdef __cplusplus
+}
+#endif

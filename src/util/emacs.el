@@ -1,13 +1,3 @@
-(if t
-(let ((here (subseq (buffer-file-name (current-buffer)) 0 -13))
-      (files nil))
-  (setq files (append files (directory-files (concat here "tests") t ".*\\.tst")))
-  (print files)
-  (replace-in-files '(("\\becls\\b" . "ecl") ("\\bECLS\\b" . "ECL")
-		      ("ecl\\.h" . "ecl.h") ("ecl-inl\\.h" . "ecl-inl.h")
-		      ("ecl-cmp\\.h" . "ecl-cmp.h"))
-		    files)))
-
 (defun replace-in-files (matches files)
   (save-excursion
     (mapc (lambda (file)

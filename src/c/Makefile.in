@@ -7,7 +7,8 @@ VPATH	= @srcdir@
 
 # Programs used by "make":
 #
-CC	= @CC@
+TRUE_CC = @CC@
+CC	= @ECL_CC@
 DEFS	= -D@host@
 CFLAGS	= -c -I../h -I$(HDIR) @BOEHM_HEADERS@ @CFLAGS@ $(DEFS)
 
@@ -67,7 +68,7 @@ clean:
 # Build rules
 
 $(DPP): $(srcdir)/dpp.c
-	$(CC) @CFLAGS@ -I$(HDIR) $(srcdir)/dpp.c  -o $@
+	$(TRUE_CC) @CFLAGS@ -I$(HDIR) $(srcdir)/dpp.c  -o $@
 
 #
 # Some files may break due to gcc optimizations

@@ -103,6 +103,9 @@
   (setq *top-level-forms* (nreverse *top-level-forms*))
 
   (wt-nl1 "#include \"" h-namestring "\"")
+  (wt-h "#ifdef __cplusplus")
+  (wt-h "extern \"C\" {")
+  (wt-h "#endif")
   ;;; Initialization function.
   (let* ((*lcl* 0) (*lex* 0) (*max-lex* 0) (*max-env* 0) (*max-temp* 0)
 	 (*unboxed* nil)
@@ -110,10 +113,15 @@
 	 (c-output-file *compiler-output1*)
 	 (*compiler-output1* (make-string-output-stream))
 	 (*emitted-local-funs* nil)
+	 (*compiler-declared-globals* (make-hash-table))
 	 #+PDE (optimize-space (>= *space* 3)))
-    (wt-nl1 "static const char *compiler_data_text;")
-    (wt-nl1 "void")
-    (wt-nl1 "init_" (init-function-name name) "(cl_object flag)")
+    (wt-nl1 "static const char *compiler_data_text =")
+    (wt-nl1 "#include \"" data-namestring "\"")
+    (wt-nl1 ";")
+    (wt-nl1 "#ifdef __cplusplus")
+    (wt-nl1 "extern \"C\"")
+    (wt-nl1 "#endif")
+    (wt-nl1 "void init_" (init-function-name name) "(cl_object flag)")
     (wt-nl1 "{ VT" *reservation-cmacro* " CLSR" *reservation-cmacro*)
     (wt-nl "cl_object value0;")
     (wt-nl "if (!FIXNUMP(flag)){")
@@ -167,10 +175,10 @@
 	      "(int narg, ...) {TRAMPOLINK(narg," (third x) ",&LK" i ");}")))
 
   (wt-h "#define compiler_data_text_size " *wt-string-size*)
-  (wt-nl1 "static const char *compiler_data_text = ")
-  (wt-nl1 "#include \"" data-namestring "\"")
-  (wt-nl1 ";")
 
+  (wt-h "#ifdef __cplusplus")
+  (wt-h "}")
+  (wt-h "#endif")
   (wt-h1 top-output-string))
 
 (defun t1eval-when (args &aux (load-flag nil) (compile-flag nil))
@@ -335,8 +343,8 @@
   (declare (ignore sp funarg-vars))
   (when (get fname 'NO-GLOBAL-ENTRY) (return-from t2defun nil))
   (if (numberp cfun)
-    (wt-nl "MF(" vv ",L" cfun ",Cblock);")
-    (wt-nl "MF(" vv "," cfun ",Cblock);"))
+    (wt-nl "MF(" vv ",(cl_objectfn)L" cfun ",Cblock);")
+    (wt-nl "MF(" vv ",(cl_objectfn)" cfun ",Cblock);"))
   (when (get fname 'PROCLAIMED-FUNCTION)
 	(wt-if-proclaimed fname cfun vv lambda-expr))
 )
@@ -585,7 +593,7 @@
       (wt-nl "(void)putprop(" vv "," ppn ",siSpretty_print_format);")
       (wt-nl)))
   (wt-h "static cl_object L" cfun "();")
-  (wt-nl "MM(" vv ",L" cfun ",Cblock);"))
+  (wt-nl "MM(" vv ",(cl_objectfn)L" cfun ",Cblock);"))
 
 (defun t3defmacro (fname cfun macro-lambda ppn sp
                          &aux (*lcl* 0) (*temp* 0) (*max-temp* 0)
@@ -954,7 +962,7 @@
                          &aux (vv (add-symbol fname)))
   (declare (ignore arg-types type cname))
   (wt-h "static L" cfun "();")
-  (wt-nl "MF(" vv ",L" cfun ",Cblock);")
+  (wt-nl "MF(" vv ",(cl_objectfn)L" cfun ",Cblock);")
   )
 
 (defun t3defentry (fname cfun arg-types type cname)
@@ -1030,7 +1038,7 @@
                          &aux (vv (add-symbol fname)))
   (declare (ignore arg-types type body))
   (wt-h "static cl_object L" cfun "();")
-  (wt-nl "MF(" vv ",L" cfun ",Cblock);")
+  (wt-nl "MF(" vv ",(cl_objectfn)L" cfun ",Cblock);")
   )
 
 #|
@@ -1165,7 +1173,7 @@
 		       &aux (vv (add-symbol fname)))
   (declare (ignore lambda-list body))
   (wt-h "static L" cfun "();")
-  (wt-nl "MF(" vv ",L" cfun ",Cblock);")
+  (wt-nl "MF(" vv ",(cl_objectfn)L" cfun ",Cblock);")
   )
 
 (defun t3defunC (fname cfun lambda-list body)

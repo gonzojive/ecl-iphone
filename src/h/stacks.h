@@ -13,6 +13,10 @@
     See file '../Copyright' for full details.
 */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /********************
  * INTERPRETER STACK
  ********************/
@@ -72,7 +76,7 @@ extern bds_ptr bds_top;	/*  bind stack top  */
  * INVOCATION HISTORY STACK
  ****************************/
 
-cl_index ihs_top;
+extern cl_index ihs_top;
 
 extern void ihs_push(cl_object fun);
 extern cl_object ihs_top_function_name();
@@ -124,7 +128,7 @@ extern frame_ptr frs_top;
 #endif
 #define frame_stack	frs_org
 
-extern frame_ptr _frs_push(register enum fr_class class, register cl_object val);
+extern frame_ptr _frs_push(register enum fr_class clas, register cl_object val);
 
 #define frs_push(class, val)  ecl_setjmp(_frs_push(class, val)->frs_jmpbuf)
 
@@ -232,3 +236,6 @@ extern cl_object lex_env;
 #define lex_copy()		(void)0
 #define lex_new()		lex_env = Cnil
 
+#ifdef __cplusplus
+}
+#endif

@@ -24,7 +24,6 @@
 
 cl_object @'*macroexpand-hook*';
 cl_object @'si::expand-defmacro';
-cl_object @'si::*inhibit-macro-special*';
 
 /******************************* ------- ******************************/
 

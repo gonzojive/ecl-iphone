@@ -12,6 +12,7 @@
     See file '../Copyright' for full details.
 */
 
+#include <string.h>
 #include "ecl.h"
 #include "ecl-inl.h"
 #include "bytecodes.h"
@@ -40,7 +41,7 @@ cl_stack_set_size(cl_index new_size)
 
 	start_critical_section();
 
-	new_stack = alloc(new_size * sizeof(cl_object));
+	new_stack = (cl_object *)cl_alloc(new_size * sizeof(cl_object));
 	memcpy(new_stack, cl_stack, cl_stack_size * sizeof(cl_object));
 	cl_stack_size = new_size;
 	cl_stack = new_stack;
@@ -146,7 +147,7 @@ search_local(register cl_object name, register int s) {
 	return CADR(x);
 }
 
-static cl_object
+static void
 setq_local(register cl_object s, register cl_object v) {
 	cl_object x;
 	for (x = lex_env; CONSP(x); x = CDDR(x))
@@ -271,6 +272,7 @@ lambda_bind(int narg, cl_object lambda_list, cl_object *args)
 	      other_keys = !Null(args[1]);
 	    }
 	  FOUND:
+	    (void)0;
 	  }
 	  if (other_found && !other_keys)
 	    FEprogram_error("LAMBDA: Unknown keys found in function ~S.",
@@ -643,7 +645,7 @@ interpret_dotimes(cl_object *vector) {
 
 static cl_object
 close_around(cl_object fun, cl_object lex) {
-	cl_object v = alloc_object(t_bytecodes);
+	cl_object v = cl_alloc_object(t_bytecodes);
 	v->bytecodes.size = fun->bytecodes.size;
 	v->bytecodes.data = fun->bytecodes.data;
 	v->bytecodes.lex = lex;
@@ -897,7 +899,7 @@ interpret(cl_object *vector) {
 		cl_object id = search_local(@':tag',get_oparg(s));
 		VALUES(0) = Cnil;
 		NValues = 0;
-		go(id, tag);
+		cl_go(id, tag);
 		break;
 	}
 	case OP_RETURN: {
@@ -905,11 +907,11 @@ interpret(cl_object *vector) {
 		cl_object id = search_tag(tag, @':block');
 		if (Null(id))
 			FEcontrol_error("RETURN-FROM: Unknown block ~S.", 1, tag);
-		return_from(id, tag);
+		cl_return_from(id, tag);
 		break;
 	}
 	case OP_THROW:
-		throw(cl_stack_pop());
+		cl_throw(cl_stack_pop());
 		break;
 	case OP_JMP:
 		vector = vector - 1 + get_oparg(s);

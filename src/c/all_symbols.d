@@ -1,5 +1,11 @@
+#include <ctype.h>
 #include "ecl.h"
 #include "page.h"
+
+#define CL_ORDINARY 1
+#define CL_SPECIAL 2
+#define SI_SPECIAL 3
+#define SI_ORDINARY 4
 
 const struct symbol_info all_symbols[] = {
 /* array.c */
@@ -329,7 +335,8 @@ const struct symbol_info all_symbols[] = {
 		fun = symbol->symbol.gfdef;
 		if (fun != OBJNULL && type_of(fun) == t_cfun) {
 			for (l = 0; all_functions[l].name != NULL; l++)
-				if (fun->cfun.entry == all_functions[l].f) {
+				if ((cl_objectfn)fun->cfun.entry ==
+				    (cl_objectfn)all_functions[l].f) {
 					if (fun->cfun.name != Cnil)
 						symbol = fun->cfun.name;
 					found = Ct;
@@ -341,7 +348,7 @@ const struct symbol_info all_symbols[] = {
 	symbol = symbol->symbol.name;
 	l      = symbol->string.fillp;
 	source = symbol->string.self;
-	output = alloc_simple_string(l+1); array_allocself(output);
+	output = cl_alloc_simple_string(l+1); array_allocself(output);
 	dest   = output->string.self;
 	if (is_symbol && source[0] == '*') {
 		if (l > 2 && source[l-1] == '*') l--;

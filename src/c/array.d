@@ -278,12 +278,12 @@ aset1(cl_object v, cl_index index, cl_object val)
   cl_object x;
 @
   r = narg - 4;
-  x = alloc_object(t_array);
+  x = cl_alloc_object(t_array);
   x->array.displaced = Cnil;
   x->array.self.t = NULL;		/* for GC sake */
   x->array.rank = r;
   x->array.elttype = (short)get_elttype(etype);
-  x->array.dims = alloc_atomic_align(sizeof(int)*r, sizeof(int));
+  x->array.dims = (cl_index *)cl_alloc_atomic_align(sizeof(cl_index)*r, sizeof(cl_index));
   if (r >= ARANKLIM)
     FEerror("The array rank, ~R, is too large.", 1, MAKE_FIXNUM(r));
   for (i = 0, s = 1;  i < r;  i++) {
@@ -320,13 +320,13 @@ aset1(cl_object v, cl_index index, cl_object val)
     FEerror("The vector dimension, ~D, is too large.", 1, dim);
   f = d;
   if (aet == aet_ch) {
-    x = alloc_object(t_string);
+    x = cl_alloc_object(t_string);
     d++;			/* extra for null terminator */
   }
   else if (aet == aet_bit)
-    x = alloc_object(t_bitvector);
+    x = cl_alloc_object(t_bitvector);
   else {
-    x = alloc_object(t_vector);
+    x = cl_alloc_object(t_vector);
     x->vector.elttype = (short)aet;
   }
   x->vector.self.t = NULL;		/* for GC sake */
@@ -365,7 +365,7 @@ array_allocself(cl_object x)
 	/* assign self field only after it has been filled, for GC sake  */
 	case aet_object: {
 		cl_object *elts;
-		elts = alloc_align(sizeof(cl_object)*d, sizeof(cl_object));
+		elts = (cl_object *)cl_alloc_align(sizeof(cl_object)*d, sizeof(cl_object));
 		for (i = 0;  i < d;  i++)
 			elts[i] = Cnil;
 		x->array.self.t = elts;
@@ -373,7 +373,7 @@ array_allocself(cl_object x)
 	      }
 	case aet_ch: {
 		char *elts;
-		elts = alloc_atomic(d);
+		elts = (char *)cl_alloc_atomic(d);
 		for (i = 0;  i < d;  i++)
 			elts[i] = ' ';
 		if (type_of(x) == t_string) elts[d-1] = '\0';
@@ -381,9 +381,9 @@ array_allocself(cl_object x)
 		break;
 	      }
 	case aet_bit: {
-		char *elts;
+		byte *elts;
 		d = (d+(CHAR_BIT-1))/CHAR_BIT;
-		elts = alloc_atomic(d);
+		elts = (byte *)cl_alloc_atomic(d);
 		for (i = 0;  i < d;  i++)
 			elts[i] = '\0';
 		x->vector.offset = 0;
@@ -392,7 +392,7 @@ array_allocself(cl_object x)
 	      }
 	case aet_fix: {
 		cl_fixnum *elts;
-		elts = alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
+		elts = (cl_fixnum *)cl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
 		for (i = 0;  i < d;  i++)
 			elts[i] = 0;
 		x->array.self.fix = elts;
@@ -400,7 +400,7 @@ array_allocself(cl_object x)
 	      }
 	case aet_sf: {
 		float *elts;
-		elts = alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
+		elts = (float *)cl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
 		for (i = 0;  i < d;  i++)
 			elts[i] = 0.0;
 		x->array.self.sf = elts;
@@ -408,7 +408,7 @@ array_allocself(cl_object x)
 	      }
 	case aet_lf: {
 		double *elts;
-		elts = alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
+		elts = (double *)cl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
 		for (i = 0;  i < d;  i++)
 			elts[i] = 0.0;
 		x->array.self.lf = elts;
@@ -416,7 +416,7 @@ array_allocself(cl_object x)
 	      }
 	case aet_b8: {
 		u_int8_t *elts;
-		elts = alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
+		elts = (u_int8_t *)cl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
 		for (i = 0;  i < d;  i++)
 			elts[i] = 0;
 		x->array.self.b8 = elts;
@@ -424,7 +424,7 @@ array_allocself(cl_object x)
 	      }
 	case aet_i8: {
 		int8_t *elts;
-		elts = alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
+		elts = (int8_t *)cl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
 		for (i = 0;  i < d;  i++)
 			elts[i] = 0;
 		x->array.self.i8 = elts;
@@ -539,7 +539,7 @@ because the total size of the to-array is too small.", 0);
 		from->array.self.t = (cl_object *)(array_address(to, j));
 #endif
 	else
-		from->string.self = array_address(to, j);
+		from->string.self = (char *)array_address(to, j);
 }
 
 /*
@@ -739,40 +739,39 @@ ILLEGAL:		FEerror("~S is an illegal axis-number to the array ~S.",
 
 	Used in ADJUST-ARRAY.
 */
-@(defun si::replace_array (old new)
+@(defun si::replace_array (olda newa)
   cl_object displaced, dlist;
   ptrdiff_t diff;
 @
-  if (type_of(old) != type_of(new)
-      || (type_of(old) == t_array && old->array.rank != new->array.rank))
+  if (type_of(olda) != type_of(newa)
+      || (type_of(olda) == t_array && olda->array.rank != newa->array.rank))
     goto CANNOT;
-  if (!old->array.adjustable)
-    FEerror("~S is not adjustable.", 1, old);
-  diff = (char*)(new->array.self.t) - (char*)(old->array.self.t);
-  dlist = CDR(old->array.displaced);
-  displaced = CONS(CAR(new->array.displaced), dlist);
-  check_displaced(dlist, old, new->array.dim);
-  adjust_displaced(old, diff);
-/*  undisplace(old); */
-  switch (type_of(old)) {
+  if (!olda->array.adjustable)
+    FEerror("~S is not adjustable.", 1, olda);
+  diff = (char*)(newa->array.self.t) - (char*)(olda->array.self.t);
+  dlist = CDR(olda->array.displaced);
+  displaced = CONS(CAR(newa->array.displaced), dlist);
+  check_displaced(dlist, olda, newa->array.dim);
+  adjust_displaced(olda, diff);
+  switch (type_of(olda)) {
   case t_array:
   case t_vector:
   case t_bitvector:
-    old->array = new->array;
+    olda->array = newa->array;
     break;
 
   case t_string:
-    old->string = new->string;
+    olda->string = newa->string;
     break;
 
   default:
     goto CANNOT;
   }
-  old->array.displaced = displaced;
-  @(return old)
+  olda->array.displaced = displaced;
+  @(return olda)
 
  CANNOT:
-  FEerror("Cannot replace the array ~S by the array ~S.", 2, old, new);
+  FEerror("Cannot replace the array ~S by the array ~S.", 2, olda, newa);
 @)
 
 void

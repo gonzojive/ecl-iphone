@@ -14,12 +14,12 @@
     See file '../Copyright' for full details.
 */
 
-#include "ecl.h"
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <pwd.h>
 #include <sys/stat.h>
+#include "ecl.h"
 #ifdef BSD
 #include <dirent.h>
 #else
@@ -46,18 +46,17 @@ static cl_object
 current_dir(void) {
 	cl_object output;
 	const char *ok;
-	extern char *getcwd(char *, size_t);
 	cl_index size = 128;
 
 	do {
-	  output = alloc_adjustable_string(size);
+	  output = cl_alloc_adjustable_string(size);
 	  ok = getcwd(output->string.self, size);
 	  size += 256;
 	} while(ok == NULL);
 	size = strlen(output->string.self);
 	if ((size + 1 /* / */ + 1 /* 0 */) >= output->string.dim) {
 	  /* Too large to host the trailing '/' */
-	  cl_object other = alloc_adjustable_string(size+2);
+	  cl_object other = cl_alloc_adjustable_string(size+2);
 	  strcpy(other->string.self, output->string.self);
 	  output = other;
 	}
@@ -189,7 +188,7 @@ file_exists(cl_object file)
 }
 
 FILE *
-backup_fopen(char *filename, char *option)
+backup_fopen(const char *filename, const char *option)
 {
 	char backupfilename[MAXPATHLEN];
 	char command[MAXPATHLEN * 2];
@@ -215,20 +214,20 @@ file_len(FILE *fp)
 	@(return truename(file))
 @)
 
-@(defun rename_file (old new)
+@(defun rename_file (oldn newn)
 	cl_object filename, newfilename, old_truename, new_truename;
 @
 	/* INV: coerce_to_file_pathname() checks types */
-	old = coerce_to_file_pathname(old);
-	new = coerce_to_file_pathname(new);
-	new = merge_pathnames(new, old, Cnil);
-	old_truename = truename(old);
-	filename = coerce_to_filename(old);
-	newfilename = coerce_to_filename(new);
+	oldn = coerce_to_file_pathname(oldn);
+	newn = coerce_to_file_pathname(newn);
+	newn = merge_pathnames(newn, oldn, Cnil);
+	old_truename = truename(oldn);
+	filename = coerce_to_filename(oldn);
+	newfilename = coerce_to_filename(newn);
 	if (rename(filename->string.self, newfilename->string.self) < 0)
-		FEerror("Cannot rename the file ~S to ~S.", 2, old, new);
-	new_truename = truename(new);
-	@(return new old_truename new_truename)
+		FEerror("Cannot rename the file ~S to ~S.", 2, oldn, newn);
+	new_truename = truename(newn);
+	@(return newn old_truename new_truename)
 @)
 
 @(defun delete_file (file)
@@ -443,7 +442,7 @@ actual_directory(cl_object namestring, cl_object mask, bool all)
 	}
 
 	while ((entry = readdir(dir))) {
-	  t = get_file_system_type(entry->d_name);
+	  t = (enum file_system_type)get_file_system_type(entry->d_name);
 	  if ((all || t == FILE_REGULAR) &&
 	      string_match(entry->d_name, mask->string.self))
 	    {

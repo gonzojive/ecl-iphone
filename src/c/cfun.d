@@ -22,11 +22,11 @@ cl_object @'defun', @'defmacro';
 #endif PDE
 
 cl_object
-make_cfun(cl_object (*self)(), cl_object name, cl_object cblock)
+make_cfun(cl_objectfn self, cl_object name, cl_object cblock)
 {
 	cl_object cf;
 
-	cf = alloc_object(t_cfun);
+	cf = cl_alloc_object(t_cfun);
 	cf->cfun.entry = self;
 	cf->cfun.name = name;
 	cf->cfun.block = cblock;
@@ -34,11 +34,11 @@ make_cfun(cl_object (*self)(), cl_object name, cl_object cblock)
 }
 
 cl_object
-make_cclosure(cl_object (*self)(), cl_object env, cl_object block)
+make_cclosure(cl_objectfn self, cl_object env, cl_object block)
 {
 	cl_object cc;
 
-	cc = alloc_object(t_cclosure);
+	cc = cl_alloc_object(t_cclosure);
 	cc->cclosure.entry = self;
 	cc->cclosure.env = env;
 	cc->cclosure.block = block;
@@ -46,7 +46,7 @@ make_cclosure(cl_object (*self)(), cl_object env, cl_object block)
 }
 
 void
-MF(cl_object sym, cl_object (*self)(), cl_object block)
+MF(cl_object sym, cl_objectfn self, cl_object block)
 {
 	cl_object cf;
 
@@ -58,7 +58,7 @@ MF(cl_object sym, cl_object (*self)(), cl_object block)
 #ifdef PDE
 	record_source_pathname(sym, @'defun');
 #endif PDE
-	cf = alloc_object(t_cfun);
+	cf = cl_alloc_object(t_cfun);
 	cf->cfun.entry = self;
 	cf->cfun.name = sym;
 	cf->cfun.block = block;
@@ -67,7 +67,7 @@ MF(cl_object sym, cl_object (*self)(), cl_object block)
 }
 
 void
-MM(cl_object sym, cl_object (*self)(), cl_object block)
+MM(cl_object sym, cl_objectfn self, cl_object block)
 {
 	cl_object cf;
 
@@ -79,7 +79,7 @@ MM(cl_object sym, cl_object (*self)(), cl_object block)
 #ifdef PDE
 	record_source_pathname(sym, @'defmacro');
 #endif PDE
-	cf = alloc_object(t_cfun);
+	cf = cl_alloc_object(t_cfun);
 	cf->cfun.entry = self;
 	cf->cfun.name = sym;
 	cf->cfun.block = block;
@@ -88,7 +88,7 @@ MM(cl_object sym, cl_object (*self)(), cl_object block)
 }
 
 cl_object
-make_function(char *s, cl_object (*f)())
+make_function(const char *s, cl_objectfn f)
 {
 	cl_object x;
 
@@ -99,7 +99,7 @@ make_function(char *s, cl_object (*f)())
 }
 
 cl_object
-make_si_function(char *s, cl_object (*f)())
+make_si_function(const char *s, cl_objectfn f)
 {
 	cl_object x;
 

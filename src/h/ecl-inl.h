@@ -4,9 +4,9 @@
 #ifdef ECL_SAFE
 #define loop_for_in(list) { \
   cl_object __slow; \
-  bool __flag = ~0; \
+  bool __flag = TRUE; \
   for (__slow = list; !ENDP(list); list = CDR(list)) { \
-    if ((__flag = ~__flag)) { \
+    if ((__flag = !__flag)) { \
       if (__slow == list) FEcircular_list(list); \
       __slow = CDR(__slow); \
     }
@@ -25,9 +25,9 @@
     if (list != Cnil) FEtype_error_list(list); \
   }else { \
     cl_object __slow; \
-    bool __flag = ~0; \
+    bool __flag = TRUE; \
     for (__slow = list; CONSP(list); list = CDR(list)) { \
-      if ((__flag = ~__flag)) { \
+      if ((__flag = !__flag)) { \
         if (__slow == list) FEcircular_list(list); \
         __slow = CDR(__slow); \
       }

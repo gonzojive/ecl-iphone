@@ -298,9 +298,9 @@ init_backq(void)
 
 	r = standard_readtable;
 	r->readtable.table['`'].syntax_type = cat_terminating;
-	r->readtable.table['`'].macro = make_cf(@backquote-reader);
+	r->readtable.table['`'].macro = make_cf((cl_objectfn)@backquote-reader);
 	r->readtable.table[','].syntax_type = cat_terminating;
-	r->readtable.table[','].macro = make_cf(@comma-reader);
+	r->readtable.table[','].macro = make_cf((cl_objectfn)@comma-reader);
 
 	backq_level = 0;
 }

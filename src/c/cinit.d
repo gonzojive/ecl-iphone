@@ -58,12 +58,16 @@ main(int argc, char **args)
 #ifdef CLX
 	SYM_VAL(@'*features*') = CONS(make_keyword("WANTS-CLX"), SYM_VAL(@'*features*'));
 #endif
-	make_si_function("TOP-LEVEL", @si::simple-toplevel);
+	make_si_function("TOP-LEVEL", (cl_objectfn)@si::simple-toplevel);
 
 	funcall(1, _intern("TOP-LEVEL", system_package));
 	return(0);
 }
 
-int init_LSP() {}
+#ifdef __cplusplus
+extern "C" void init_LSP(void);
+extern "C" void init_CLOS(void);
+#endif
 
-int init_CLOS() {}
+void init_LSP(void) {}
+void init_CLOS(void) {}

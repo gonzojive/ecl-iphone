@@ -77,7 +77,7 @@ make_pathname(cl_object host, cl_object device, cl_object directory,
 		error_directory(directory);
 
 	}
-	x = alloc_object(t_pathname);
+	x = cl_alloc_object(t_pathname);
 	if (type_of(host) == t_string)
 		x->pathname.logical = logical_hostname_p(host);
 	else if (host == Cnil)
@@ -130,8 +130,8 @@ tilde_expand(cl_object directory)
 static cl_object
 make_one(const char *s, cl_index end)
 {
-	cl_object x = alloc_simple_string(end);
-	x->string.self = alloc(end+1);
+	cl_object x = cl_alloc_simple_string(end);
+	x->string.self = (char *)cl_alloc(end+1);
 	memcpy(x->string.self, s, end);
 	x->string.self[end] = '\0';
 	return(x);
@@ -416,7 +416,6 @@ L:
 		case smm_synonym:
 			x = symbol_value(x->stream.object0);
 			goto L;
-		default:
 		}
 	default:
 		FEerror("~S cannot be coerced to a pathname.", 1, x);
@@ -532,7 +531,7 @@ push_c_string(cl_object buffer, const char *s, cl_index length)
 	for (; length; length--, s++) {
 		dest[fillp++] = *s;
 		if (fillp >= dim) {
-			char *new_dest = alloc_atomic(dim += 32);
+			char *new_dest = (char *)cl_alloc_atomic(dim += 32);
 			memcpy(new_dest, dest, fillp);
 			buffer->string.dim = dim;
 			buffer->string.self = new_dest;
@@ -1093,28 +1092,28 @@ find_list_wilds(cl_object a, cl_object b)
 }		
 
 static cl_object
-copy_wildcards(cl_object *wilds_list, cl_object template)
+copy_wildcards(cl_object *wilds_list, cl_object pattern)
 {
 	char *s;
 	cl_index i, l, j;
 	bool new_string;
 	cl_object wilds = *wilds_list;
 
-	if (template == @':wild') {
+	if (pattern == @':wild') {
 		if (endp(wilds))
 			return @':error';
-		template = CAR(wilds);
+		pattern = CAR(wilds);
 		*wilds_list = CDR(wilds);
-		return template;
+		return pattern;
 	}
-	if (template == @':wild-inferiors')
+	if (pattern == @':wild-inferiors')
 		return @':error';
-	if (type_of(template) != t_string)
-		return template;
+	if (type_of(pattern) != t_string)
+		return pattern;
 
 	new_string = FALSE;
-	s = template->string.self;
-	l = template->string.fillp;
+	s = pattern->string.self;
+	l = pattern->string.fillp;
 	cl_token->string.fillp = 0;
 
 	for (j = i = 0; i < l; ) {
@@ -1133,9 +1132,9 @@ copy_wildcards(cl_object *wilds_list, cl_object template)
 	}
 	/* Only create a new string when needed */
 	if (new_string)
-		template = copy_simple_string(cl_token);
+		pattern = copy_simple_string(cl_token);
 	*wilds_list = wilds;
-	return template;
+	return pattern;
 }
 
 static cl_object
@@ -1174,7 +1173,7 @@ translate_pathname(cl_object source, cl_object from, cl_object to)
 
 	if (source->pathname.logical != from->pathname.logical)
 		goto error;
-	out = alloc_object(t_pathname);
+	out = cl_alloc_object(t_pathname);
 	out->pathname.logical = to->pathname.logical;
 
 	/* Match host names */

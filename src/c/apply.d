@@ -17,7 +17,7 @@
 #include "ecl.h"
 
 cl_object
-APPLY(int n, cl_object (*fn)(), cl_object *x)
+APPLY(int n, cl_objectfn fn, cl_object *x)
 {
   switch (n) {
   case 0:  return (*fn)(n);
@@ -342,7 +342,7 @@ APPLY(int n, cl_object (*fn)(), cl_object *x)
 }
 
 cl_object
-APPLY_closure(int n, cl_object (*fn)(), cl_object cl, cl_object *x)
+APPLY_closure(int n, cl_objectfn fn, cl_object cl, cl_object *x)
 {
   switch (++n) {
   case 1:  return (*fn)(n, cl);
@@ -663,7 +663,7 @@ APPLY_closure(int n, cl_object (*fn)(), cl_object cl, cl_object *x)
 
 #ifdef NO_ARGS_ARRAY
 cl_object
-va_APPLY(int n, cl_object (*fn)(), va_list args)
+va_APPLY(int n, cl_objectfn fn, va_list args)
 {
   cl_object x[n];
   int i;
@@ -672,7 +672,7 @@ va_APPLY(int n, cl_object (*fn)(), va_list args)
 }
 
 cl_object
-va_APPLY_closure(int n, cl_object (*fn)(), cl_object cl, va_list args)
+va_APPLY_closure(int n, cl_objectfn fn, cl_object cl, va_list args)
 {
   cl_object x[n+1];
   int i;

@@ -43,7 +43,7 @@ cl_object @'si::*init-function-prefix*';
 	filename = coerce_to_filename(truename(filename));
 
 	/* Try to load shared object file */
-	block = alloc_object(t_codeblock);
+	block = cl_alloc_object(t_codeblock);
 	block->cblock.data = NULL;
 	block->cblock.data_size = 0;
 	block->cblock.name = filename;
@@ -79,7 +79,7 @@ cl_object @'si::*init-function-prefix*';
 		setupPRINT(filename, symbol_value(@'*standard-output*'));
 		write_str(";;; Address = ");
 		PRINTescape = FALSE;
-		write_addr(block->cblock.handle);
+		write_addr((cl_object)block->cblock.handle);
 		write_str("\n");
 		cleanupPRINT();
 		flush_stream(PRINTstream);
@@ -93,7 +93,7 @@ GO_ON:
 
 @(defun si::load_source (filename verbose print)
 	cl_object x, strm;
-	cl_object (*old_read_ch_fun)() = read_ch_fun;
+	cl_object (*old_read_ch_fun)(cl_object) = read_ch_fun;
 @
 	strm = open_stream(filename, smm_input, Cnil, Cnil);
 	if (Null(strm))

@@ -17,6 +17,7 @@
 
 #include "ecl.h"
 #include <signal.h>
+#include <unistd.h>
 
 /******************************* EXPORTS ******************************/
 
@@ -24,6 +25,8 @@ int interrupt_enable;		/* console interupt enable */
 int interrupt_flag;		/* console interupt flag */
 
 /******************************* ------- ******************************/
+
+typedef void (*signalfn)(int);
 
 static cl_object SVinterrupt_enable;
 
@@ -46,12 +49,12 @@ sigint(void)
       fprintf(stdout, "\n;;;Interrupt delayed.\n"); fflush(stdout);
       interrupt_flag = TRUE;
     }
-    signal(SIGINT, sigint);
+    signal(SIGINT, (signalfn)sigint);
     return;
   }
   if (symbol_value(SVinterrupt_enable) == Cnil) {
     SYM_VAL(SVinterrupt_enable) = Ct;
-    signal(SIGINT, sigint);
+    signal(SIGINT, (signalfn)sigint);
     return;
   }
 #ifdef __GO32__
@@ -59,9 +62,9 @@ sigint(void)
     sigalrm();
 #endif
   interrupt_flag = TRUE;
-  signal(SIGALRM, sigalrm);
+  signal(SIGALRM, (signalfn)sigalrm);
   alarm(1);
-  signal(SIGINT, sigint);
+  signal(SIGINT, (signalfn)sigint);
 }
 
 #else /* THREADS */
@@ -95,7 +98,7 @@ sigint()
 static void
 sigfpe(void)
 {
-	signal(SIGFPE, sigfpe);
+	signal(SIGFPE, (signalfn)sigfpe);
 	FEerror("Floating-point exception.", 0);
 }
 
@@ -124,17 +127,17 @@ You should check the signal and exit from Lisp.", 1,
 
 @(defun si::catch_bad_signals ()
 @
-	signal(SIGILL, signal_catcher);
-	signal(SIGBUS, signal_catcher);
-	signal(SIGSEGV, signal_catcher);
+	signal(SIGILL, (signalfn)signal_catcher);
+	signal(SIGBUS, (signalfn)signal_catcher);
+	signal(SIGSEGV, (signalfn)signal_catcher);
 #ifdef SIGIOT
-	signal(SIGIOT, signal_catcher);
+	signal(SIGIOT, (signalfn)signal_catcher);
 #endif
 #ifdef SIGEMT
-	signal(SIGEMT, signal_catcher);
+	signal(SIGEMT, (signalfn)signal_catcher);
 #endif
 #ifdef SIGSYS
-	signal(SIGSYS, signal_catcher);
+	signal(SIGSYS, (signalfn)signal_catcher);
 #endif
 	@(return Ct)
 @)
@@ -161,10 +164,10 @@ void
 enable_interrupt(void)
 {
 	interrupt_enable = TRUE;
-	signal(SIGFPE, sigfpe);
-	signal(SIGINT, sigint);
+	signal(SIGFPE, (signalfn)sigfpe);
+	signal(SIGINT, (signalfn)sigint);
 #ifdef __EMX__
-	signal(SIGBREAK, sigint);
+	signal(SIGBREAK, (signalfn)sigint);
 #endif
 }
 

@@ -91,11 +91,11 @@ structure_to_list(cl_object x)
 	cl_object x;
 	int i;
 @
-	x = alloc_object(T_STRUCTURE);
+	x = cl_alloc_object(T_STRUCTURE);
 	STYPE(x) = type;
 	SLOTS(x) = NULL;	/* for GC sake */
 	SLENGTH(x) = --narg;
-	SLOTS(x) = alloc_align(sizeof(cl_object)*narg, sizeof(cl_object));
+	SLOTS(x) = (cl_object *)cl_alloc_align(sizeof(cl_object)*narg, sizeof(cl_object));
 	for (i = 0;  i < narg;  i++)
 		SLOT(x, i) = va_arg(args, cl_object);
 	@(return x)
@@ -107,12 +107,12 @@ structure_to_list(cl_object x)
 @
 	if (!STRUCTUREP(x))
 		FEwrong_type_argument(@'structure', x);
-	y = alloc_object(T_STRUCTURE);
+	y = cl_alloc_object(T_STRUCTURE);
 	STYPE(y) = STYPE(x);
 	SLENGTH(y) = j = SLENGTH(x);
 	size = sizeof(cl_object)*j;
 	SLOTS(y) = NULL;	/* for GC sake */
-	SLOTS(y) = alloc_align(size, sizeof(cl_object));
+	SLOTS(y) = (cl_object *)cl_alloc_align(size, sizeof(cl_object));
 	memcpy(SLOTS(y), SLOTS(x), size);
 	@(return y)
 @)

@@ -14,6 +14,7 @@
     See file '../Copyright' for full details.
 */
 
+#include <math.h>
 #include "ecl.h"
 
 cl_object shortfloat_zero;
@@ -52,7 +53,7 @@ cl_object
 make_integer(cl_fixnum l)
 {
 	if (l > MOST_POSITIVE_FIXNUM || l < MOST_NEGATIVE_FIXNUM) {
-		cl_object z = alloc_object(t_bignum);
+		cl_object z = cl_alloc_object(t_bignum);
 		mpz_init_set_si(z->big.big_num, l);
 		return z;
 	}
@@ -63,7 +64,7 @@ cl_object
 make_unsigned_integer(cl_index l)
 {
 	if (l > MOST_POSITIVE_FIXNUM) {
-		cl_object z = alloc_object(t_bignum);
+		cl_object z = cl_alloc_object(t_bignum);
 		mpz_init_set_ui(z->big.big_num, l);
 		return z;
 	}
@@ -92,7 +93,7 @@ make_ratio(cl_object num, cl_object den)
 		return num;
 	if (den == MAKE_FIXNUM(-1))
 		return number_negate(num);
-	r = alloc_object(t_ratio);
+	r = cl_alloc_object(t_ratio);
 	r->ratio.num = num;
 	r->ratio.den = den;
 	return(r);
@@ -107,7 +108,7 @@ make_shortfloat(float f)
 		return(shortfloat_zero);
 	if (isnanf(f) || !finite(f))
 		FEerror("Not a number.",0);
-	x = alloc_object(t_shortfloat);
+	x = cl_alloc_object(t_shortfloat);
 	sf(x) = f;
 	return(x);
 }
@@ -121,7 +122,7 @@ make_longfloat(double f)
 		return(longfloat_zero);
 	if (isnan(f) || !finite(f))
 		FEerror("Not a number.",0);
-	x = alloc_object(t_longfloat);
+	x = cl_alloc_object(t_longfloat);
 	lf(x) = f;
 	return(x);
 }
@@ -183,7 +184,7 @@ make_complex(cl_object r, cl_object i)
 	default:
 		FEtype_error_real(r);
 	}			
-	c = alloc_object(t_complex);
+	c = cl_alloc_object(t_complex);
 	c->complex.real = r;
 	c->complex.imag = i;
 	return(c);
@@ -217,9 +218,9 @@ number_to_double(cl_object x)
 void
 init_number(void)
 {
-	shortfloat_zero = alloc_object(t_shortfloat);
+	shortfloat_zero = cl_alloc_object(t_shortfloat);
 	sf(shortfloat_zero) = (float)0.0;
-	longfloat_zero = alloc_object(t_longfloat);
+	longfloat_zero = cl_alloc_object(t_longfloat);
 	lf(longfloat_zero) = (double)0.0;
 	register_root(&shortfloat_zero);
 	register_root(&longfloat_zero);

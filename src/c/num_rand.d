@@ -38,11 +38,11 @@ rando(cl_object x, cl_object rs)
 		z = double_to_integer(d);
 		return(z);
 	} else if (tx == t_shortfloat) {
-		z = alloc_object(t_shortfloat);
+		z = cl_alloc_object(t_shortfloat);
 		sf(z) = (float)d;
 		return(z);
 	} else if (tx == t_longfloat) {
-		z = alloc_object(t_longfloat);
+		z = cl_alloc_object(t_longfloat);
 		lf(z) = d;
 		return(z);
 	} else
@@ -56,17 +56,17 @@ make_random_state(cl_object rs)
         cl_object z;
 
 	if (Null(rs)) {
-		z = alloc_object(t_random);
+		z = cl_alloc_object(t_random);
 		z->random.value = symbol_value(@'*random-state*')->random.value;
 		return(z);
 	} else if (rs == Ct) {
-		z = alloc_object(t_random);
+		z = cl_alloc_object(t_random);
 		z->random.value = time(0);
 		return(z);
 	} else if (type_of(rs) != t_random)
    		FEwrong_type_argument(@'random-state', rs);
 	else {
-		z =alloc_object(t_random);
+		z = cl_alloc_object(t_random);
 		z->random.value = rs->random.value;
 		return(z);
 	}

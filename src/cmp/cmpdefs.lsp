@@ -226,6 +226,7 @@ The default value is NIL.")
 ;;; Whether to use linking calls.
 ;;;
 (defvar *compile-to-linking-call* t)
+(defvar *compiler-declared-globals*)
 
 ;;; --cmpenv.lsp--
 ;;;

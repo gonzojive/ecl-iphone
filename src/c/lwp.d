@@ -173,14 +173,14 @@ make_pd()
     npd->lwp_fmt_temporary_stream->stream.object0;
   
   npd->lwp_gentemp_prefix = make_simple_string("T");
-  npd->lwp_token = alloc_simple_string(LISP_PAGESIZE);
-  npd->lwp_token->string.self = alloc_atomic(LISP_PAGESIZE);
+  npd->lwp_token = cl_alloc_simple_string(LISP_PAGESIZE);
+  npd->lwp_token->string.self = cl_alloc_atomic(LISP_PAGESIZE);
   npd->lwp_token->string.fillp = 0;
   npd->lwp_token->string.hasfillp = TRUE;
   npd->lwp_token->string.adjustable = TRUE;
 
   for (i=0; i<3; i++)
-    npd->lwp_bignum_register[i] = alloc_object(t_bignum);
+    npd->lwp_bignum_register[i] = cl_alloc_object(t_bignum);
   
   return new_pd;
 }
@@ -503,7 +503,7 @@ resume(pd *rpd)
     /*  fun = SYM_FUN(fun); confusing */
   }
 
-  x = alloc_object(t_thread);
+  x = cl_alloc_object(t_thread);
   x->thread.entry = fun;
   x->thread.size = sizeof(pd);
   x->thread.data = npd = make_pd();
@@ -650,7 +650,7 @@ resume(pd *rpd)
     FEerror("Thread ~A is DEAD.", 1, thread);
   }
 
-  x = alloc_object(t_cont);
+  x = cl_alloc_object(t_cont);
 
   x->cn.cn_thread = thread;
   x->cn.cn_resumed = FALSE;
@@ -853,7 +853,7 @@ init_lwp()
   temp_pd = &main_pd;
   PUSH(temp_pd);
 
-  main_thread = alloc_object(t_thread);
+  main_thread = cl_alloc_object(t_thread);
   main_pd.pd_thread = main_thread;
   main_thread->thread.entry = Cnil;
   main_thread->thread.size = sizeof (pd);

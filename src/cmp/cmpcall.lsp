@@ -268,7 +268,13 @@
 	  ((or (setq fd (get fname 'Lfun))
 	       (and (car (setq fd (multiple-value-list (si::mangle-name fname t))))
 		    (setq fd (cadr fd))))
-	   (wt-h "extern cl_object " fd "();")
+	   (multiple-value-bind (val found)
+	       (gethash fd *compiler-declared-globals*)
+	     ;; We only write declarations for functions which are not
+	     ;; in lisp_external.h
+	     (when (and (not found) (not (si::mangle-name fname t)))
+	       (wt-h "extern cl_object " fd "();")
+	       (setf (gethash fd *compiler-declared-globals*) 1)))
 	   (unwind-exit (call-loc fname fd locs narg)))
 
 	  ;; Linking call

@@ -115,7 +115,7 @@ resize_hole(cl_index n)
 }
 
 /* Allocates n pages from the hole.  */
-void *
+static void *
 alloc_page(cl_index n)
 {
 	cl_ptr e = heap_end;
@@ -149,7 +149,7 @@ add_page_to_freelist(cl_ptr p, struct typemanager *tm)
 }
 
 cl_object
-alloc_object(cl_type t)
+cl_alloc_object(cl_type t)
 {
 	register cl_object obj;
 	register struct typemanager *tm;
@@ -309,7 +309,7 @@ ONCE_MORE:
 #endif
 #ifdef CLOS
 	case t_instance:
-	  obj->instance.class = OBJNULL;
+	  CLASS_OF(obj) = OBJNULL;
 	  obj->instance.slots = NULL;
 	  break;
 	case t_gfun:
@@ -426,7 +426,7 @@ Use ALLOCATE to expand the space.",
 }
 
 cl_object
-alloc_instance(cl_index slots)
+cl_alloc_instance(cl_index slots)
 {
 	cl_object i = alloc_object(t_instance);
 	/* INV: slots > 0 */
@@ -436,7 +436,7 @@ alloc_instance(cl_index slots)
 }
 
 void *
-alloc(cl_index n)
+cl_alloc(cl_index n)
 {
 	register cl_ptr p;
 	register struct contblock **cbpp;
@@ -510,7 +510,7 @@ Use ALLOCATE-CONTIGUOUS-PAGES to expand the space.",
  * sorted by increasing size.
  */
 void
-dealloc(void *p, cl_index s)
+cl_dealloc(void *p, cl_index s)
 {
 	struct contblock **cbpp, *cbp;
 
@@ -534,7 +534,7 @@ dealloc(void *p, cl_index s)
  * required for the block.
  */
 void *
-alloc_align(cl_index size, cl_index align)
+cl_alloc_align(cl_index size, cl_index align)
 {
 	void *output;
 	start_critical_section();

@@ -71,7 +71,7 @@ cl_boot(int argc, char **argv)
 	ecl_self = argv[0];
 
 	init_alloc();
-	alloc_stacks(&argc);
+	init_stacks(&argc);
 
 #ifndef MSDOS
 	ecl_self = expand_pathname(ecl_self);
@@ -111,7 +111,7 @@ cl_boot(int argc, char **argv)
 	if (clwp != &main_lpd) {
 	  VALUES(0) = Cnil;
 	  NValues = 0;
-	  throw(@'si::*thread-top*');
+	  cl_throw(@'si::*thread-top*');
 	  /* never reached */
 	}
 #endif THREADS

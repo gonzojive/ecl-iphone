@@ -153,7 +153,7 @@ pop_maybe_nil(cl_object *l) {
 static cl_object
 alloc_bytecodes()
 {
-	cl_object vector = alloc_simple_vector(128, aet_object);
+	cl_object vector = cl_alloc_simple_vector(128, aet_object);
 	array_allocself(vector);
 	vector->vector.hasfillp = TRUE;
 	vector->vector.fillp = 0;
@@ -225,12 +225,12 @@ asm_end(cl_index beginning, cl_object bytecodes) {
 	if (!Null(bytecodes))
 		new_bytecodes = bytecodes;
 	else {
-		new_bytecodes = alloc_object(t_bytecodes);
+		new_bytecodes = cl_alloc_object(t_bytecodes);
 		new_bytecodes->bytecodes.size = 0;
 	}
 	new_bytecodes->bytecodes.lex = Cnil;
 	if (new_bytecodes->bytecodes.size < length) {
-		new_bytecodes->bytecodes.data = alloc(bytes);
+		new_bytecodes->bytecodes.data = (cl_object *)cl_alloc(bytes);
 		new_bytecodes->bytecodes.size = length;
 	}
 #ifdef CL_COMP_OWN_STACK
@@ -1225,7 +1225,6 @@ c_let_leta(int op, cl_object args) {
 	switch(length(bindings)) {
 	case 0:		compile_body(body); return;
 	case 1:		op = OP_BIND; break;
-	default:
 	}
 
 	for (vars=Cnil, l=bindings; !endp(l); ) {
@@ -1862,6 +1861,7 @@ for special form ~S.", 1, function);
 	 */
 	c_call(stmt, push);
  OUTPUT:
+	(void)0;
 }
 
 

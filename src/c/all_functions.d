@@ -845,10 +845,10 @@ init_all_functions(void) {
   for (f = all_functions; f->name != NULL; f++) {
     switch (f->type) {
     case cl:
-      make_function(f->name, f->f);
+      make_function(f->name, (cl_objectfn)f->f);
       break;
     case si:
-      make_si_function(f->name, f->f);
+      make_si_function(f->name, (cl_objectfn)f->f);
       break;
     case form: {
       cl_object s = make_ordinary(f->name);

@@ -76,7 +76,6 @@ apply(int narg, cl_object fun, cl_object *args)
 	}
 	case t_bytecodes:
 		return lambda_apply(narg, fun, args);
-	default:
 	}
 	FEinvalid_function(fun);
 }
@@ -90,10 +89,10 @@ static cl_object @'si::link-from';
 
 cl_object
 #ifdef CLOS
-link_call(cl_object sym, cl_object (**pLK)(), cl_object *gfun,
+link_call(cl_object sym, cl_objectfn *pLK, cl_object *gfun,
 	  int narg, va_list args)
 #else
-link_call(cl_object sym, cl_object (**pLK)(), int narg, va_list args)
+link_call(cl_object sym, cl_objectfn *pLK, int narg, va_list args)
 #endif CLOS
 {
 	cl_object fun = symbol_function(sym);
@@ -162,7 +161,6 @@ link_call(cl_object sym, cl_object (**pLK)(), int narg, va_list args)
 		goto AGAIN;
 	case t_bytecodes:
 		return va_lambda_apply(narg-1, fun, funargs);
-	default:
 	}
 	FEinvalid_function(fun);
 @)

@@ -42,8 +42,8 @@ cl_object @':end';
 	/* INV: char_code() checks the type of initial_element() */
 	code = char_code(initial_element);
 	s = object_to_index(size);
-	x = alloc_simple_string(s);
-	x->string.self = alloc_atomic(s+1);
+	x = cl_alloc_simple_string(s);
+	x->string.self = (char *)cl_alloc_atomic(s+1);
 	x->string.self[s] = '\0';
 	for (i = 0;  i < s;  i++)
 		x->string.self[i] = code;
@@ -51,11 +51,11 @@ cl_object @':end';
 @)
 
 cl_object
-alloc_simple_string(cl_index l)
+cl_alloc_simple_string(cl_index l)
 {
 	cl_object x;
 
-	x = alloc_object(t_string);
+	x = cl_alloc_object(t_string);
 	x->string.hasfillp = FALSE;
 	x->string.adjustable = FALSE;
 	x->string.displaced = Cnil;
@@ -70,10 +70,10 @@ alloc_simple_string(cl_index l)
 	growth. (See unixfsys.c for its use).
 */
 cl_object
-alloc_adjustable_string(cl_index l)
+cl_alloc_adjustable_string(cl_index l)
 {
-	cl_object output = alloc_simple_string(l);
-	output->string.self = alloc_atomic(l+1);
+	cl_object output = cl_alloc_simple_string(l);
+	output->string.self = (char *)cl_alloc_atomic(l+1);
 	output->string.self[l] = output->string.self[0] = 0;
 	output->string.fillp = 0;
 	output->string.hasfillp = TRUE;
@@ -89,7 +89,7 @@ make_simple_string(char *s)
 {
 	cl_object x;
 
-	x = alloc_simple_string(strlen(s));
+	x = cl_alloc_simple_string(strlen(s));
 	x->string.self = s;
 	
 	return(x);
@@ -101,8 +101,8 @@ make_string_copy(char *s)
 	cl_object x;
 	cl_index l = strlen(s);
 
-	x = alloc_simple_string(l);
-	x->string.self = alloc_atomic(l+1);
+	x = cl_alloc_simple_string(l);
+	x->string.self = (char *)cl_alloc_atomic(l+1);
 	memcpy(x->string.self, s, l+1);
 	return(x);
 }
@@ -117,8 +117,8 @@ copy_simple_string(cl_object x)
 	cl_object y;
 	cl_index l = x->string.fillp;
 
-	y = alloc_simple_string(l);
-	y->string.self = alloc_atomic(l+1);
+	y = cl_alloc_simple_string(l);
+	y->string.self = (char *)cl_alloc_atomic(l+1);
 	memcpy(y->string.self, x->string.self, l);
 	y->string.self[l] = '\0';
 	return(y);
@@ -134,8 +134,8 @@ coerce_to_string(cl_object x)
 		return x->symbol.name;
 
 	case t_character:
-		y = alloc_simple_string(1);
-		y->string.self = alloc_atomic(2);
+		y = cl_alloc_simple_string(1);
+		y->string.self = (char *)cl_alloc_atomic(2);
 		y->string.self[1] = '\0';
 		y->string.self[0] = CHAR_CODE(x);
 		return(y);
@@ -166,8 +166,8 @@ coerce_to_string_designator(cl_object x)
 		return x;
 
 	case t_character:
-		y = alloc_simple_string(1);
-		y->string.self = alloc_atomic(2);
+		y = cl_alloc_simple_string(1);
+		y->string.self = (char *)cl_alloc_atomic(2);
 		y->string.self[1] = '\0';
 		y->string.self[0] = CHAR_CODE(x);
 		return(y);
@@ -531,8 +531,8 @@ string_trim0(int narg, bool left_trim, bool right_trim, cl_object char_bag,
 			if (!member_char(strng->string.self[j], char_bag))
 				break;
 	k = j - i + 1;
-	res = alloc_simple_string(k);
-	res->string.self = alloc_atomic(k+1);
+	res = cl_alloc_simple_string(k);
+	res->string.self = (char *)cl_alloc_atomic(k+1);
 	res->string.self[k] = '\0';
 	memcpy(res->string.self, strng->string.self+i, k);
 	return1(res);
@@ -550,7 +550,7 @@ cl_return
 
 
 static cl_return
-string_case(int narg, int (*casefun)(), va_list ARGS)
+string_case(int narg, int (*casefun)(int c, bool *bp), va_list ARGS)
 {
 	cl_object strng = cl_nextarg(ARGS);
 	cl_index s, e, i;
@@ -581,7 +581,7 @@ string_case(int narg, int (*casefun)(), va_list ARGS)
 }
 
 static int
-char_upcase(int c, int *bp)
+char_upcase(int c, bool *bp)
 {
 	return(toupper(c));
 }
@@ -592,7 +592,7 @@ char_upcase(int c, int *bp)
 @)
 
 static int
-char_downcase(int c, int *bp)
+char_downcase(int c, bool *bp)
 {
 	return(tolower(c));
 }
@@ -603,7 +603,7 @@ char_downcase(int c, int *bp)
 @)
 
 static int
-char_capitalize(int c, int *bp)
+char_capitalize(int c, bool *bp)
 {
 	if (islower(c)) {
 		if (*bp)
@@ -625,7 +625,7 @@ char_capitalize(int c, int *bp)
 
 
 static cl_return
-nstring_case(int narg, int (*casefun)(), va_list ARGS)
+nstring_case(int narg, int (*casefun)(int, bool *), va_list ARGS)
 {
 	cl_object strng = cl_nextarg(ARGS);
 	cl_index s, e, i;
@@ -684,8 +684,8 @@ nstring_case(int narg, int (*casefun)(), va_list ARGS)
 		strings[i] = coerce_to_string_designator(cl_nextarg(args));
 		l += strings[i]->string.fillp;
 	}
-	v = alloc_simple_string(l);
-	v->string.self = alloc_atomic(l+1);
+	v = cl_alloc_simple_string(l);
+	v->string.self = (char *)cl_alloc_atomic(l+1);
 	v->string.self[l] = '\0';
 	for (i = 0, vself = v->string.self;  i < narg;  i++, vself += l) {
 		l = strings[i]->string.fillp;

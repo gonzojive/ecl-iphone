@@ -52,8 +52,8 @@ setf_namep(cl_object fun_spec)
 	  cl_object sym, fn_name = CAR(cdr);
 	  cl_object fn_str = fn_name->symbol.name;
 	  int l = fn_str->string.fillp + 7;
-	  cl_object string = alloc_simple_string(l);
-	  char *str = alloc_atomic(l+1);
+	  cl_object string = cl_alloc_simple_string(l);
+	  char *str = (char *)cl_alloc_atomic(l+1);
 	  string->string.self = str;
 	  strncpy(str, "(SETF ", 6);
 	  strncpy(str + 6, fn_str->string.self, fn_str->string.fillp);

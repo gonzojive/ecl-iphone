@@ -82,7 +82,7 @@
     (t (setq loc (list 'TEMP (next-temp)))
        (let ((*destination* loc)) (c2expr* tag))))
   (let ((*destination* 'VALUES)) (c2expr* val))
-  (wt-nl "throw(" loc ");"))
+  (wt-nl "cl_throw(" loc ");"))
 
 ;;; ----------------------------------------------------------------------
 

@@ -364,14 +364,14 @@ extend_hashtable(cl_object hashtable)
 	if (FIXNUMP(hashtable->hash.rehash_size))
 		new_size = old_size + fix(hashtable->hash.rehash_size);
 	else if (type_of(hashtable->hash.rehash_size) == t_shortfloat)
-		new_size = old_size * sf(hashtable->hash.rehash_size);
+		new_size = (cl_index)(old_size * sf(hashtable->hash.rehash_size));
 	else if (type_of(hashtable->hash.rehash_size) == t_longfloat)
-		new_size = old_size * lf(hashtable->hash.rehash_size);
+		new_size = (cl_index)(old_size * lf(hashtable->hash.rehash_size));
 	else
 		corrupted_hash(hashtable);
 	if (new_size <= old_size)
 		new_size = old_size + 1;
-	old = alloc_object(t_hashtable);
+	old = cl_alloc_object(t_hashtable);
 	old->hash = hashtable->hash;
 	hashtable->hash.data = NULL; /* for GC sake */
 	hashtable->hash.size = new_size;
@@ -379,8 +379,8 @@ extend_hashtable(cl_object hashtable)
 		hashtable->hash.threshold =
 		MAKE_FIXNUM(fix(hashtable->hash.threshold) +
 			    (new_size - old->hash.size));
-	hashtable->hash.data = alloc_align(new_size * sizeof(struct hashtable_entry),
-					    sizeof(cl_object));
+	hashtable->hash.data = (struct hashtable_entry *)
+	  cl_alloc(new_size * sizeof(struct hashtable_entry));
 	for (i = 0;  i < new_size;  i++) {
 		hashtable->hash.data[i].key = OBJNULL;
 		hashtable->hash.data[i].value = OBJNULL;
@@ -431,15 +431,15 @@ extend_hashtable(cl_object hashtable)
 	else
 		FEerror("~S is an illegal hash-table rehash-threshold.",
 			1, rehash_threshold);
-	h = alloc_object(t_hashtable);
+	h = cl_alloc_object(t_hashtable);
 	h->hash.test = htt;
 	h->hash.size = hsize;
 	h->hash.rehash_size = rehash_size;
 	h->hash.threshold = rehash_threshold;
         h->hash.entries = 0;
 	h->hash.data = NULL;	/* for GC sake */
-	h->hash.data = alloc_align(hsize * sizeof(struct hashtable_entry),
-				    sizeof(cl_object));
+	h->hash.data = (struct hashtable_entry *)
+	cl_alloc(hsize * sizeof(struct hashtable_entry));
 	for(i = 0;  i < hsize;  i++) {
 		h->hash.data[i].key = OBJNULL;
 		h->hash.data[i].value = OBJNULL;

@@ -1,3 +1,6 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifndef _ARGS
 #define _ARGS(x) (int n, ...)
@@ -52,7 +55,7 @@ extern cl_object siLsvset _ARGS((int narg, cl_object x, cl_object index, cl_obje
 extern cl_object clLarray_has_fill_pointer_p _ARGS((int narg, cl_object a));
 extern cl_object clLfill_pointer _ARGS((int narg, cl_object a));
 extern cl_object siLfill_pointer_set _ARGS((int narg, cl_object a, cl_object fp));
-extern cl_object siLreplace_array _ARGS((int narg, cl_object old, cl_object new));
+extern cl_object siLreplace_array _ARGS((int narg, cl_object old_obj, cl_object new_obj));
 
 /* assignment.c */
 
@@ -313,8 +316,8 @@ extern cl_object clLhash_table_rehash_threshold _ARGS((int narg, cl_object ht));
 
 #ifdef CLOS
 extern cl_object clSprint_object;
-extern cl_object siLallocate_instance _ARGS((int narg, cl_object class, cl_object size));
-extern cl_object siLchange_instance _ARGS((int narg, cl_object x, cl_object class, cl_object size, cl_object corr));
+extern cl_object siLallocate_instance _ARGS((int narg, cl_object clas, cl_object size));
+extern cl_object siLchange_instance _ARGS((int narg, cl_object x, cl_object clas, cl_object size, cl_object corr));
 extern cl_object siLinstance_class _ARGS((int narg, cl_object x));
 extern cl_object siLinstance_class_set _ARGS((int narg, cl_object x, cl_object y));
 extern cl_object siLinstance_ref _ARGS((int narg, cl_object x, cl_object index));
@@ -404,10 +407,10 @@ extern cl_object clLnbutlast _ARGS((int narg, cl_object lis, ...));
 extern cl_object clLldiff _ARGS((int narg, cl_object x, cl_object y));
 extern cl_object clLrplaca _ARGS((int narg, cl_object x, cl_object v));
 extern cl_object clLrplacd _ARGS((int narg, cl_object x, cl_object v));
-extern cl_object clLsubst _ARGS((int narg, cl_object new, cl_object old, cl_object tree, ...));
+extern cl_object clLsubst _ARGS((int narg, cl_object new_obj, cl_object old_obj, cl_object tree, ...));
 extern cl_object clLsubst_if _ARGS((int narg, cl_object arg1, cl_object pred, cl_object arg3, cl_object key, cl_object val));
 extern cl_object clLsubst_if_not _ARGS((int narg, cl_object arg1, cl_object pred, cl_object arg3, cl_object key, cl_object val));
-extern cl_object clLnsubst _ARGS((int narg, cl_object new, cl_object old, cl_object tree, ...));
+extern cl_object clLnsubst _ARGS((int narg, cl_object new_obj, cl_object old_obj, cl_object tree, ...));
 extern cl_object clLnsubst_if _ARGS((int narg, cl_object arg1, cl_object pred, cl_object arg3, cl_object key, cl_object val));
 extern cl_object clLnsubst_if_not _ARGS((int narg, cl_object arg1, cl_object pred, cl_object arg3, cl_object key, cl_object val));
 extern cl_object clLsublis _ARGS((int narg, cl_object alist, cl_object tree, ...));
@@ -1015,7 +1018,7 @@ extern cl_object clLtype_of _ARGS((int narg, cl_object x));
 
 extern cl_object Klist_all;
 extern cl_object clLtruename _ARGS((int narg, cl_object file));
-extern cl_object clLrename_file _ARGS((int narg, cl_object old, cl_object new));
+extern cl_object clLrename_file _ARGS((int narg, cl_object old_obj, cl_object new_obj));
 extern cl_object clLdelete_file _ARGS((int narg, cl_object file));
 extern cl_object clLprobe_file _ARGS((int narg, cl_object file));
 extern cl_object clLfile_write_date _ARGS((int narg, cl_object file));
@@ -1034,3 +1037,7 @@ extern cl_object siLuncatch_bad_signals _ARGS((int narg));
 
 extern cl_object siLsystem _ARGS((int narg, cl_object cmd));
 extern cl_object siLopen_pipe _ARGS((int narg, cl_object cmd));
+
+#ifdef __cplusplus
+}
+#endif

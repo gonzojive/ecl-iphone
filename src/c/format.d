@@ -68,7 +68,7 @@ cl_object @'si::*indent-formatted-output*';
 
 /******************* WITHOUT THREADS ******************/
 #ifndef THREADS
-static int (*fmt_writec)();
+static int (*fmt_writec)(int, cl_object);
 static cl_object fmt_stream;
 static int ctl_origin;
 static int ctl_index;
@@ -76,7 +76,7 @@ static int ctl_end;
 static cl_index fmt_base;
 static int fmt_index;
 static int fmt_end;
-static int *fmt_jmp_buf;
+static jmp_buf *fmt_jmp_buf;
 static int fmt_indents;
 static cl_object fmt_string;
 static cl_object fmt_temporary_stream;
@@ -101,7 +101,7 @@ static int fmt_line_length;
 			volatile cl_index old_fmt_base; \
 			volatile int old_fmt_index; \
 			volatile int old_fmt_end; \
-			int * volatile old_fmt_jmp_buf; \
+			jmp_buf * volatile old_fmt_jmp_buf; \
 			volatile int old_fmt_indents; \
 			volatile cl_object old_fmt_string
 #define	fmt_save	old_fmt_stream = fmt_stream; \
@@ -169,10 +169,10 @@ static const char *fmt_ordinal[] = {
 static void format(cl_object, int, int);
 
 static void
-fmt_error(char *s)
+fmt_error(const char *s)
 {
 	FEerror("Format error: ~A.~%~V@@TV~%\"~A\"~%",
-		3, make_simple_string(s),
+		3, make_constant_string(s),
 		MAKE_FIXNUM(&ctl_string[ctl_index] - fmt_string->string.self),
 		fmt_string);
 }
@@ -1367,9 +1367,9 @@ fmt_indirection(bool colon, bool atsign)
 		fmt_error("control string expected");
 	if (atsign) {
 		fmt_save;
-		fmt_jmp_buf = (int *)fmt_jmp_buf0;
+		fmt_jmp_buf = &fmt_jmp_buf0;
 		fmt_string = s;
-		if ((up_colon = ecl_setjmp(fmt_jmp_buf))) {
+		if ((up_colon = ecl_setjmp(*fmt_jmp_buf))) {
 			if (--up_colon)
 				fmt_error("illegal ~:^");
 		} else
@@ -1382,9 +1382,9 @@ fmt_indirection(bool colon, bool atsign)
 		fmt_push_list(l);
 		fmt_index = fmt_base;
 		fmt_end = cl_stack_index();
-		fmt_jmp_buf = (int *)fmt_jmp_buf0;
+		fmt_jmp_buf = &fmt_jmp_buf0;
 		fmt_string = s;
-		if ((up_colon = ecl_setjmp(fmt_jmp_buf))) {
+		if ((up_colon = ecl_setjmp(*fmt_jmp_buf))) {
 			if (--up_colon)
 				fmt_error("illegal ~:^");
 		} else
@@ -1411,8 +1411,8 @@ fmt_case(bool colon, bool atsign)
 	if (ctl_string[--j] != ')' || ctl_string[--j] != '~')
 		fmt_error("~) expected");
 	fmt_save;
-	fmt_jmp_buf = (int *)fmt_jmp_buf0;
-	if ((up_colon = ecl_setjmp(fmt_jmp_buf)))
+	fmt_jmp_buf = &fmt_jmp_buf0;
+	if ((up_colon = ecl_setjmp(*fmt_jmp_buf)))
 		;
 	else
 		format(x, ctl_origin + i, j - i);
@@ -1458,7 +1458,7 @@ fmt_case(bool colon, bool atsign)
 			WRITEC_STREAM(j, fmt_stream);
 		}
 	if (up_colon)
-		ecl_longjmp(fmt_jmp_buf, up_colon);
+		ecl_longjmp(*fmt_jmp_buf, up_colon);
 }
 
 static void
@@ -1581,14 +1581,14 @@ fmt_iteration(bool colon, bool atsign)
 		fmt_push_list(l);
 		fmt_index = fmt_base;
 		fmt_end = cl_stack_index();
-		fmt_jmp_buf = (int *)fmt_jmp_buf0;
+		fmt_jmp_buf = &fmt_jmp_buf0;
 		if (colon_close)
 			goto L1;
 		while (fmt_index < fmt_end) {
 		L1:
 			if (n-- <= 0)
 				break;
-			if ((up_colon = ecl_setjmp(fmt_jmp_buf))) {
+			if ((up_colon = ecl_setjmp(*fmt_jmp_buf))) {
 				if (--up_colon)
 					fmt_error("illegal ~:^");
 				break;
@@ -1605,7 +1605,7 @@ fmt_iteration(bool colon, bool atsign)
 		for (l = l0; !endp(l); l = CDR(l))
 		  fl += length(CAR(l));
 		fmt_base = cl_stack_index();
-		fmt_jmp_buf = (int *)fmt_jmp_buf0;
+		fmt_jmp_buf = &fmt_jmp_buf0;
 		if (colon_close)
 			goto L2;
 		while (!endp(l0)) {
@@ -1617,7 +1617,7 @@ fmt_iteration(bool colon, bool atsign)
 			fmt_push_list(l);
 			fmt_index = fmt_base;
 			fmt_end = cl_stack_index();
-			if ((up_colon = ecl_setjmp(fmt_jmp_buf))) {
+			if ((up_colon = ecl_setjmp(*fmt_jmp_buf))) {
 				if (--up_colon)
 					break;
 				else
@@ -1629,14 +1629,14 @@ fmt_iteration(bool colon, bool atsign)
 		fmt_restore;
 	} else if (!colon && atsign) {
 		fmt_save;
-		fmt_jmp_buf = (int *)fmt_jmp_buf0;
+		fmt_jmp_buf = &fmt_jmp_buf0;
 		if (colon_close)
 			goto L3;
 		while (fmt_index < fmt_end) {
 		L3:
 			if (n-- <= 0)
 				break;
-			if ((up_colon = ecl_setjmp(fmt_jmp_buf))) {
+			if ((up_colon = ecl_setjmp(*fmt_jmp_buf))) {
 				if (--up_colon)
 					fmt_error("illegal ~:^");
 				break;
@@ -1657,8 +1657,8 @@ fmt_iteration(bool colon, bool atsign)
 			fmt_push_list(l);
 			fmt_index = fmt_base;
 			fmt_end = cl_stack_index();
-			fmt_jmp_buf = (int *)fmt_jmp_buf0;
-			if ((up_colon = ecl_setjmp(fmt_jmp_buf))) {
+			fmt_jmp_buf = &fmt_jmp_buf0;
+			if ((up_colon = ecl_setjmp(*fmt_jmp_buf))) {
 				fmt_restore;
 				if (--up_colon)
 					break;
@@ -1699,8 +1699,8 @@ fmt_justification(volatile bool colon, bool atsign)
 		while (ctl_string[--j] != '~')
 			;
 		fmt_save;
-		fmt_jmp_buf = (int *)fmt_jmp_buf0;
-		if ((up_colon = ecl_setjmp(fmt_jmp_buf))) {
+		fmt_jmp_buf = &fmt_jmp_buf0;
+		if ((up_colon = ecl_setjmp(*fmt_jmp_buf))) {
 			if (--up_colon)
 				fmt_error("illegal ~:^");
 			fmt_restore1;
@@ -1794,22 +1794,22 @@ fmt_up_and_out(bool colon, bool atsign)
 	fmt_not_atsign(atsign);
 	if (fmt_nparam == 0) {
 		if (fmt_index >= fmt_end)
-			ecl_longjmp(fmt_jmp_buf, ++colon);
+			ecl_longjmp(*fmt_jmp_buf, ++colon);
 	} else if (fmt_nparam == 1) {
 		fmt_set_param(0, &i, INT, 0);
 		if (i == 0)
-			ecl_longjmp(fmt_jmp_buf, ++colon);
+			ecl_longjmp(*fmt_jmp_buf, ++colon);
 	} else if (fmt_nparam == 2) {
 		fmt_set_param(0, &i, INT, 0);
 		fmt_set_param(1, &j, INT, 0);
 		if (i == j)
-			ecl_longjmp(fmt_jmp_buf, ++colon);
+			ecl_longjmp(*fmt_jmp_buf, ++colon);
 	} else {
 		fmt_set_param(0, &i, INT, 0);
 		fmt_set_param(1, &j, INT, 0);
 		fmt_set_param(2, &k, INT, 0);
 		if (i <= j && j <= k)
-			ecl_longjmp(fmt_jmp_buf, ++colon);
+			ecl_longjmp(*fmt_jmp_buf, ++colon);
 	}
 }
 
@@ -1827,7 +1827,7 @@ fmt_semicolon(bool colon, bool atsign)
 @(defun format (strm string &rest args)
 	cl_object x = OBJNULL;
 	jmp_buf fmt_jmp_buf0;
-	bool colon;
+	int colon;
 	fmt_old;
 @
 	if (Null(strm)) {
@@ -1869,13 +1869,13 @@ RETRY:	if (type_of(strm) == t_stream) {
 		cl_stack_push(cl_nextarg(args));
 	fmt_index = fmt_base;
 	fmt_end = cl_stack_index();
-	fmt_jmp_buf = (int *)fmt_jmp_buf0;
+	fmt_jmp_buf = &fmt_jmp_buf0;
 	if (symbol_value(@'si::*indent-formatted-output*') != Cnil)
 		fmt_indents = FILE_COLUMN(strm);
 	else
 		fmt_indents = 0;
 	fmt_string = string;
-	if ((colon = ecl_setjmp(fmt_jmp_buf))) {
+	if ((colon = ecl_setjmp(*fmt_jmp_buf))) {
 		if (--colon)
 			fmt_error("illegal ~:^");
 	} else {

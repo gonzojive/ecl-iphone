@@ -204,7 +204,7 @@ make_stream(cl_object host, int fd, enum smmode smm)
    }
    fp = fdopen(fd, mode);
 
-   stream = alloc_object(t_stream);
+   stream = cl_alloc_object(t_stream);
    stream->stream.mode = (short)smm;
    stream->stream.file = fp;
    stream->stream.object0 = @'base-char';
@@ -212,7 +212,7 @@ make_stream(cl_object host, int fd, enum smmode smm)
    stream->stream.int0 = stream->stream.int1 = 0;
 #if !defined(GBC_BOEHM)
    fp->_IO_buf_base = NULL; /* BASEFF */; 
-   setbuf(fp, stream->stream.buffer = alloc_atomic(BUFSIZ)); 
+   setbuf(fp, stream->stream.buffer = cl_alloc_atomic(BUFSIZ)); 
 #endif
    return(stream);
 }

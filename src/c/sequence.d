@@ -31,11 +31,11 @@
 	I know the following name is not good.
 */
 cl_object
-alloc_simple_vector(int l, cl_elttype aet)
+cl_alloc_simple_vector(int l, cl_elttype aet)
 {
 	cl_object x;
 
-	x = alloc_object(t_vector);
+	x = cl_alloc_object(t_vector);
 	x->vector.hasfillp = FALSE;
 	x->vector.adjustable = FALSE;
 	x->vector.displaced = Cnil;
@@ -46,11 +46,11 @@ alloc_simple_vector(int l, cl_elttype aet)
 }
 
 cl_object
-alloc_simple_bitvector(int l)
+cl_alloc_simple_bitvector(int l)
 {
 	cl_object x;
 
-	x = alloc_object(t_bitvector);
+	x = cl_alloc_object(t_bitvector);
 	x->vector.hasfillp = FALSE;
 	x->vector.adjustable = FALSE;
 	x->vector.displaced = Cnil;
@@ -196,7 +196,7 @@ E:
 			e = sequence->vector.fillp;
 		else if (e < s || e > sequence->vector.fillp)
 			goto ILLEGAL_START_END;
-		x = alloc_simple_vector(e - s, sequence->vector.elttype);
+		x = cl_alloc_simple_vector(e - s, (cl_elttype)sequence->vector.elttype);
 		array_allocself(x);
 		switch ((cl_elttype)sequence->vector.elttype) {
 		case aet_object:
@@ -223,8 +223,8 @@ E:
 			e = sequence->string.fillp;
 		else if (e < s || e > sequence->string.fillp)
 			goto ILLEGAL_START_END;
-		x = alloc_simple_string(e - s);
-		x->string.self = alloc_atomic(e - s + 1);
+		x = cl_alloc_simple_string(e - s);
+		x->string.self = (char *)cl_alloc_atomic(e - s + 1);
 		x->string.self[e-s] = '\0';
 		for (i = s, j = 0;  i < e;  i++, j++)
 			x->string.self[j] = sequence->string.self[i];
@@ -237,8 +237,8 @@ E:
 			e = sequence->vector.fillp;
 		else if (e < s || e > sequence->vector.fillp)
 			goto ILLEGAL_START_END;
-		x = alloc_simple_bitvector(e - s);
-		x->vector.self.bit = alloc_atomic((e-s+CHAR_BIT-1)/CHAR_BIT);
+		x = cl_alloc_simple_bitvector(e - s);
+		x->vector.self.bit = (byte *)cl_alloc_atomic((e-s+CHAR_BIT-1)/CHAR_BIT);
 		s += sequence->vector.offset;
 		e += sequence->vector.offset;
 		for (i = s, j = 0;  i < e;  i++, j++)
@@ -326,7 +326,7 @@ reverse(cl_object seq)
 	case t_vector:
 		x = seq;
 		k = x->vector.fillp;
-		y = alloc_simple_vector(k, x->vector.elttype);
+		y = cl_alloc_simple_vector(k, (cl_elttype)x->vector.elttype);
 		array_allocself(y);
 		switch ((cl_elttype)x->vector.elttype) {
 		case aet_object:
@@ -354,8 +354,8 @@ reverse(cl_object seq)
 
 	case t_string:
 		x = seq;
-		y = alloc_simple_string(x->string.fillp);
-		y->string.self = alloc_atomic(x->string.fillp+1);
+		y = cl_alloc_simple_string(x->string.fillp);
+		y->string.self = (char *)cl_alloc_atomic(x->string.fillp+1);
 		for (j = x->string.fillp - 1, i = 0;  j >=0;  --j, i++)
 			y->string.self[j] = x->string.self[i];
 		y->string.self[x->string.fillp] = '\0';
@@ -363,8 +363,8 @@ reverse(cl_object seq)
 
 	case t_bitvector:
 		x = seq;
-		y = alloc_simple_bitvector(x->vector.fillp);
-		y->vector.self.bit = alloc_atomic((x->vector.fillp+CHAR_BIT-1)/CHAR_BIT);
+		y = cl_alloc_simple_bitvector(x->vector.fillp);
+		y->vector.self.bit = (byte *)cl_alloc_atomic((x->vector.fillp+CHAR_BIT-1)/CHAR_BIT);
 		for (j = x->vector.fillp - 1, i = x->vector.offset;
 		     j >=0;
 		     --j, i++)

@@ -100,7 +100,7 @@ FEerror(char *s, int narg, ...)
 	  r = &CDR(*r = CONS(va_arg(args, cl_object), Cnil));
 	funcall(4, @'si::universal-error-handler',
 		Cnil,                    /*  not correctable  */
-		make_simple_string(s),	 /*  condition text  */
+		make_constant_string(s),	 /*  condition text  */
 		rest);
 }
 
@@ -116,7 +116,7 @@ CEerror(char *err, int narg, ...)
 	  r = &CDR(*r = CONS(va_arg(args, cl_object), Cnil));
 	return funcall(4, @'si::universal-error-handler',
 		       Ct,			/*  correctable  */
-		       make_simple_string(err),	/*  continue-format-string  */
+		       make_constant_string(err),	/*  continue-format-string  */
 		       rest);
 }
 
@@ -156,7 +156,7 @@ FEprogram_error(const char *s, int narg, ...)
 	funcall(4, @'si::universal-error-handler',
 		Cnil,                    /*  not correctable  */
 		@'si::simple-program-error', /*  condition name  */
-		list(4, @':format-control', make_simple_string(s),
+		list(4, @':format-control', make_constant_string(s),
 		     @':format-arguments', rest));
 }
 
@@ -174,7 +174,7 @@ FEcontrol_error(const char *s, int narg, ...)
 	funcall(4, @'si::universal-error-handler',
 		Cnil,                    /*  not correctable  */
 		@'si::simple-control-error', /*  condition name  */
-		list(4, @':format-control', make_simple_string(s),
+		list(4, @':format-control', make_constant_string(s),
 		     @':format-arguments', rest));
 }
 
@@ -329,6 +329,6 @@ not_a_variable(cl_object obj)
 void
 init_error(void)
 {
-	null_string = make_simple_string("");
+	null_string = make_constant_string("");
 	register_root(&null_string);
 }

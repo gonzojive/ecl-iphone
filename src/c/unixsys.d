@@ -88,7 +88,7 @@ system(command)
 @
 	assert_type_string(cmd);
 	s = cmd->string.self;
-	code = system(s);
+	code = system((const char *)s);
 	/* FIXME! Are there any limits for system()? */
 	/* if (cmd->string.fillp >= 1024)
 		FEerror("Too long command line: ~S.", 1, cmd);*/
@@ -104,14 +104,14 @@ system(command)
  
   if ((ptr = popen(cmd->string.self, OPEN_R)) == NULL)
     @(return Cnil)
-  stream = alloc_object(t_stream);
+  stream = cl_alloc_object(t_stream);
   stream->stream.mode = smm_input;
   stream->stream.file = ptr;
   stream->stream.object0 = @'base-char';
   stream->stream.object1 = cmd;
   stream->stream.int0 = stream->stream.int1 = 0;
 #if !defined(GBC_BOEHM)
-  setbuf(ptr, stream->stream.buffer = alloc_atomic(BUFSIZ));
+  setbuf(ptr, stream->stream.buffer = cl_alloc_atomic(BUFSIZ));
 #endif
   @(return stream)
 @)

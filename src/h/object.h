@@ -14,6 +14,9 @@
     See file '../Copyright' for full details.
 */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
 	Some system constants.
@@ -43,8 +46,9 @@
 #define Q_SIZE    	128	/*  output character queue size (for print) */
 #define IS_SIZE   	256	/*  indentation stack size (for print)	*/
 
-
+#ifndef __cplusplus
 typedef int bool;
+#endif
 typedef CL_FIXNUM_TYPE cl_fixnum;
 typedef unsigned CL_FIXNUM_TYPE cl_index;
 typedef unsigned CL_FIXNUM_TYPE cl_hashkey;
@@ -55,6 +59,7 @@ typedef unsigned char byte;
 */
 typedef union lispunion *cl_object;
 typedef cl_object cl_return;
+typedef cl_object (*cl_objectfn)(int narg, ...);
 
 /*
 	OBJect NULL value.
@@ -268,7 +273,7 @@ struct string {			/*  string header  */
 	cl_index fillp;		/*  fill pointer  */
 				/*  For simple strings,  */
 				/*  st_fillp is equal to st_dim-1.  */
-	unsigned char *self;	/*  pointer to the string  */
+	char *self;		/*  pointer to the string  */
 };
 
 #ifdef CLOS
@@ -388,14 +393,14 @@ struct bytecodes {
 struct cfun {			/*  compiled function header  */
 	HEADER;
 	cl_object name;		/*  compiled function name  */
-	cl_object (*entry)();	/*  entry address  */
+	cl_objectfn entry;	/*  entry address  */
 	cl_object block;	/*  descriptor of C code block for GC  */
 };
 
 struct cclosure {		/*  compiled closure header  */
 	HEADER;
 	cl_object env;		/*  environment  */
-	cl_object (*entry)();	/*  entry address  */
+	cl_objectfn entry;	/*  entry address  */
 	cl_object block;	/*  descriptor of C code block for GC  */
 };
 /*
@@ -424,17 +429,17 @@ struct thread {
 
 
 #ifdef CLOS
-#define CLASS_OF(x)		x->instance.class
-#define CLASS_NAME(x)		x->instance.slots[0]
-#define CLASS_SUPERIORS(x)	x->instance.slots[1]
-#define CLASS_INFERIORS(x)	x->instance.slots[2]
-#define CLASS_SLOTS(x)		x->instance.slots[3]
-#define CLASS_CPL(x)		x->instance.slots[4]
+#define CLASS_OF(x)		(x)->instance.clas
+#define CLASS_NAME(x)		(x)->instance.slots[0]
+#define CLASS_SUPERIORS(x)	(x)->instance.slots[1]
+#define CLASS_INFERIORS(x)	(x)->instance.slots[2]
+#define CLASS_SLOTS(x)		(x)->instance.slots[3]
+#define CLASS_CPL(x)		(x)->instance.slots[4]
 
 struct instance {		/*  instance header  */
 	HEADER;
 	cl_index length;	/*  instance length  */
-	cl_object class;	/*  instance class  */
+	cl_object clas;		/*  instance class  */
 	cl_object *slots;	/*  instance slots  */
 };
 
@@ -563,3 +568,7 @@ typedef enum {
 #define HIND 1  /* (int) of double where the exponent and most signif is */
 #define LIND 0  /* low part of a double */
 #endif WORDS_BIGENDIAN
+
+#ifdef __cplusplus
+}
+#endif

@@ -3,7 +3,7 @@
 ;;   to the directory with our header files.
 ;;
 (in-package "COMPILER")
-(setq compiler::*cc* "@CC@")
+(setq compiler::*cc* "@ECL_CC@")
 (setq compiler::*cc-flags* "@CFLAGS@ -D@host@ @LSPCFLAGS@")
 (setq compiler::*ld-flags* "-lgmp @LDFLAGS@ @CLIBS@")
 #+dlopen

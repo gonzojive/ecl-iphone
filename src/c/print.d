@@ -61,8 +61,8 @@ bool PRINTgensym;
 int PRINTlevel;
 int PRINTlength;
 bool PRINTarray;
-void (*write_ch_fun)();		/* virtual output (for pretty-print) */
-void (*output_ch_fun)();	/* physical output */
+void (*write_ch_fun)(int);	/* virtual output (for pretty-print) */
+void (*output_ch_fun)(int);	/* physical output */
 #endif THREADS
 
 /******************************* ------- ******************************/
@@ -137,10 +137,11 @@ static cl_index searchPRINTcircle(cl_object x);
 static bool doPRINTcircle(cl_object x);
 
 
-void
+int
 interactive_writec_stream(int c, cl_object stream)
 {
 	funcall(3, @'stream-write-char', stream, CODE_CHAR(c));
+	return c;
 }
 
 void
@@ -633,7 +634,7 @@ call_print_object(cl_object x, int level)
 	bool eflag;
 	bds_ptr old_bds_top;
 
-	void (*wf)() = write_ch_fun;
+	void (*wf)(int) = write_ch_fun;
 
 	bool e = PRINTescape;
 	bool r = PRINTradix;
@@ -1399,8 +1400,8 @@ write_object(cl_object x, int level)
 #endif THREADS
 #ifdef CLOS
 	case t_instance:
-		if (type_of(x->instance.class) != t_instance)
-			FEwrong_type_argument(@'instance', x->instance.class);
+		if (type_of(CLASS_OF(x)) != t_instance)
+			FEwrong_type_argument(@'instance', CLASS_OF(x));
 		call_print_object(x, level);
 		break;
 
@@ -1537,8 +1538,7 @@ BEGIN:
 	  for (i = 0;  i < x->str.length;  i++)
 	    travel_push_object(x->str.self[i]);
 #endif CLOS
-	default:
-	  /* INV: all types of 'x' have been handled */
+	/* INV: all types of 'x' have been handled */
 	}
 }
 
@@ -2127,6 +2127,7 @@ print(cl_object obj, cl_object strm)
 cl_object
 terpri(cl_object strm)
 {
+	int (*write_fun)(int, cl_object);
 	if (Null(strm))
 		strm = symbol_value(@'*standard-output*');
 	else if (strm == Ct)
@@ -2137,15 +2138,15 @@ RETRY:	if (type_of(strm) == t_stream) {
 	    goto RETRY;
 	  }
 	  else
-	    write_ch_fun = writec_stream;
+	    write_fun = writec_stream;
 	} else
 #ifdef CLOS
 	  if (type_of(strm) == t_instance)
-	    write_ch_fun = interactive_writec_stream;
+	    write_fun = interactive_writec_stream;
 	  else
 #endif CLOS
 	    FEtype_error_stream(strm);
-	write_ch('\n', strm);
+	write_fun('\n', strm);
 	FLUSH_STREAM(strm);
 	return(Cnil);
 }

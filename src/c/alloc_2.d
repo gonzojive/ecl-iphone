@@ -28,7 +28,7 @@ struct typemanager tm_table[(int)t_end];
 #endif
 
 cl_object
-alloc_object(cl_type t)
+cl_alloc_object(cl_type t)
 {
 	register cl_object obj;
 	register struct typemanager *tm;
@@ -38,7 +38,6 @@ alloc_object(cl_type t)
 	  return MAKE_FIXNUM(0); /* Immediate fixnum */
 	case t_character:
 	  return CODE_CHAR(' '); /* Immediate character */
-	default:
 	}
 	if (t < t_start || t >= t_end) {
 	  printf("\ttype = %d\n", t);
@@ -47,7 +46,7 @@ alloc_object(cl_type t)
 	tm = tm_of(t);
 
 	start_critical_section(); 
-	obj = GC_malloc(tm->tm_size);
+	obj = (cl_object)GC_malloc(tm->tm_size);
 	obj->d.t = t;
 	/* GC_malloc already resets objects */
 	end_critical_section();
@@ -66,7 +65,7 @@ make_cons(cl_object a, cl_object d)
 
 	start_critical_section(); 
 
-	obj = GC_malloc(sizeof(struct cons));
+	obj = (cl_object)GC_malloc(sizeof(struct cons));
 	obj->d.t = (short)t_cons;
 	CAR(obj) = a;
 	CDR(obj) = d;
@@ -77,17 +76,17 @@ make_cons(cl_object a, cl_object d)
 }
 
 cl_object
-alloc_instance(cl_index slots)
+cl_alloc_instance(cl_index slots)
 {
 	cl_object i;
-	i = alloc_object(t_instance);
-	i->instance.slots = alloc_align(sizeof(cl_object) * slots, sizeof(cl_object));
+	i = cl_alloc_object(t_instance);
+	i->instance.slots = (cl_object *)cl_alloc_align(sizeof(cl_object) * slots, sizeof(cl_object));
 	i->instance.length = slots;
 	return i;
 }
 
 void *
-alloc(size_t n)
+cl_alloc(size_t n)
 {
 	void *output;
 	start_critical_section(); 
@@ -97,7 +96,7 @@ alloc(size_t n)
 }
 
 void *
-alloc_atomic(size_t n)
+cl_alloc_atomic(size_t n)
 {
 	void *output;
 	start_critical_section(); 
@@ -111,7 +110,7 @@ alloc_atomic(size_t n)
  * sorted by increasing size.
  */
 void
-dealloc(void *p, size_t s)
+cl_dealloc(void *p, size_t s)
 {
 	GC_free(p);	
 }
@@ -121,12 +120,12 @@ dealloc(void *p, size_t s)
  * required for the block.
  */
 void *
-alloc_align(size_t size, size_t align)
+cl_alloc_align(size_t size, size_t align)
 {
 	char *output;
 	start_critical_section();
 	align--;
-	output = GC_malloc(size + align);
+	output = (char*)GC_malloc(size + align);
 	output = (char*)(((cl_fixnum)output + align) & ~align);
 	end_critical_section();
 	return output;
@@ -137,12 +136,12 @@ alloc_align(size_t size, size_t align)
  * required for the block.
  */
 void *
-alloc_atomic_align(size_t size, size_t align)
+cl_alloc_atomic_align(size_t size, size_t align)
 {
 	char *output;
 	start_critical_section();
 	align--;
-	output = GC_malloc_atomic_ignore_off_page(size + align);
+	output = (char*)GC_malloc_atomic_ignore_off_page(size + align);
 	output = (char*)(((cl_fixnum)output + align) & ~align);
 	end_critical_section();
 	return output;
@@ -277,12 +276,12 @@ cl_object @'si::*gc-message*';
 void
 register_root(cl_object *p)
 {
-	GC_add_roots(p, p+1);
+	GC_add_roots((char*)p, (char*)(p+1));
 }
 
 @(defun gc (area)
 @
-	gc(0);
+	gc((enum cl_type)0);
 	@(return)
 @)
 

@@ -14,10 +14,10 @@
     See file '../Copyright' for full details.
 */
 
-
+#include <math.h>
+#include <ctype.h>
 #include "ecl.h"
 #include "ecl-inl.h"
-#include <ctype.h>
 
 #ifndef CHAR_BIT
 #define CHAR_BIT (sizeof(char)*8)
@@ -47,7 +47,7 @@ bool in_list_flag;
 bool dot_flag;
 cl_object default_dispatch_macro;
 cl_object sharp_eq_context;
-cl_object (*read_ch_fun)() = readc;
+cl_object (*read_ch_fun)(cl_object) = readc;
 #endif THREADS
 
 #ifdef CLOS
@@ -186,6 +186,8 @@ read_object_recursive(cl_object in)
 	return(x);
 }
 
+static cl_object patch_sharp(cl_object x);
+
 cl_object
 read_object_non_recursive(cl_object in)
 {
@@ -211,7 +213,6 @@ read_object_non_recursive(cl_object in)
 	if (frs_push(FRS_PROTECT, Cnil))
 		e = TRUE;
 	else {
-	  	static cl_object patch_sharp(cl_object x);
 		e = FALSE;
 		x = read_object(in);
 		if (!Null(sharp_eq_context))
@@ -594,7 +595,6 @@ EXPONENT:
 	f = 10.0;
 	/* Use pow because it is more accurate */
 	{
-	  double pow(double, double);
 	  double po = pow(10.0, (double)(sign * d));
           if (po == 0.0) {
 	    fraction *= pow(10.0, (double)(sign * (d-1)));
@@ -958,8 +958,8 @@ L:
 		else last = cl_stack_top[-1];
 	} else
 		dim = dimcount;
-	x = alloc_simple_vector(dim, aet_object);
-	x->vector.self.t = alloc_align(dim * sizeof(cl_object), sizeof(cl_object));
+	x = cl_alloc_simple_vector(dim, aet_object);
+	x->vector.self.t = (cl_object *)cl_alloc_align(dim * sizeof(cl_object), sizeof(cl_object));
 	for (i = 0; i < dim; i++)
 		x->vector.self.t[i] = (i < dimcount) ? cl_stack[sp+i] : last;
 	cl_stack_pop_n(dimcount);
@@ -1002,8 +1002,8 @@ static
 	} else {
 		dim = dimcount;
 	}
-	x = alloc_simple_bitvector(dim);
-	x->vector.self.bit = alloc_atomic((dim + CHAR_BIT - 1)/CHAR_BIT);
+	x = cl_alloc_simple_bitvector(dim);
+	x->vector.self.bit = (byte *)cl_alloc_atomic((dim + CHAR_BIT - 1)/CHAR_BIT);
 	for (i = 0; i < dim; i++) {
 		elt = (i < dimcount) ? cl_stack[sp+i] : last;
 		if (char_code(elt) == '0')
@@ -1278,7 +1278,6 @@ do_patch_sharp(cl_object x)
 			x->array.self.t[i] = do_patch_sharp(x->array.self.t[i]);
 		break;
 	}
-	default:
 	}
 	return(x);
 }
@@ -1376,7 +1375,7 @@ static
 	if (!FIXNUMP(c))
 		FEerror("Cannot make a random-state with the value ~S.",
 			1, c);
-	output = alloc_object(t_random);
+	output = cl_alloc_object(t_random);
 	output->random.value = fix(c);
 	@(return output)
 @)
@@ -1392,12 +1391,12 @@ copy_readtable(cl_object from, cl_object to)
 	cl_index i;
 
 	if (Null(to)) {
-		to = alloc_object(t_readtable);
+		to = cl_alloc_object(t_readtable);
 		to->readtable.table = NULL;
 			/*  Saving for GC.  */
 		to->readtable.table
 		= rtab
- 		= alloc_align(RTABSIZE * sizeof(struct readtable_entry), sizeof(struct readtable_entry));
+ 		= (struct readtable_entry *)cl_alloc_align(RTABSIZE * sizeof(struct readtable_entry), sizeof(struct readtable_entry));
 		memcpy(rtab, from->readtable.table,
 			 RTABSIZE * sizeof(struct readtable_entry));
 /*
@@ -1410,7 +1409,7 @@ copy_readtable(cl_object from, cl_object to)
 	for (i = 0;  i < RTABSIZE;  i++)
 		if (from->readtable.table[i].dispatch_table != NULL) {
 			rtab[i].dispatch_table
- 			= alloc_align(RTABSIZE * sizeof(cl_object), sizeof(cl_object));
+ 			= (cl_object *)cl_alloc_align(RTABSIZE * sizeof(cl_object), sizeof(cl_object));
 			memcpy(rtab[i].dispatch_table, from->readtable.table[i].dispatch_table,
 			      RTABSIZE * sizeof(cl_object *));
 /*
@@ -1974,7 +1973,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 	torte->macro = fromrte->macro;
 	if ((torte->dispatch_table = fromrte->dispatch_table) != NULL) {
 		size_t rtab_size = RTABSIZE * sizeof(cl_object);
-		torte->dispatch_table = alloc(rtab_size);
+		torte->dispatch_table = (cl_object *)cl_alloc(rtab_size);
 		memcpy(torte->dispatch_table, fromrte->dispatch_table, rtab_size);
 	}
 	@(return Ct)
@@ -2026,7 +2025,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 		entry->syntax_type = cat_non_terminating;
 	else
 		entry->syntax_type = cat_terminating;
-	table = alloc(RTABSIZE * sizeof(cl_object));
+	table = (cl_object *)cl_alloc(RTABSIZE * sizeof(cl_object));
 	entry->dispatch_table = table;
 	for (i = 0;  i < RTABSIZE;  i++)
 		table[i] = default_dispatch_macro;
@@ -2068,7 +2067,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 cl_object
 c_string_to_object(const char *s)
 {
-	return string_to_object(make_simple_string(s));
+	return string_to_object(make_constant_string(s));
 }
 
 cl_object
@@ -2099,7 +2098,7 @@ too_long_token(void)
 {
 	char *q;
 
-	q = alloc_atomic(cl_token->string.dim*2);
+	q = (char *)cl_alloc_atomic(cl_token->string.dim*2);
 	memcpy(q, cl_token->string.self, cl_token->string.dim);
 	cl_token->string.self = q;
 	cl_token->string.dim *= 2;
@@ -2110,7 +2109,7 @@ too_long_string(void)
 {
 	char *q;
 
-	q = alloc_atomic(cl_token->string.dim*2);
+	q = (char *)cl_alloc_atomic(cl_token->string.dim*2);
 	memcpy(q, cl_token->string.self, cl_token->string.dim);
 	cl_token->string.self = q;
 	cl_token->string.dim *= 2;
@@ -2124,7 +2123,7 @@ extra_argument(int c, cl_object d)
 }
 
 
-#define	make_cf(f)	make_cfun((f), Cnil, NULL)
+#define	make_cf(f)	make_cfun((cl_objectfn)(f), Cnil, NULL)
 
 void
 init_read(void)
@@ -2133,12 +2132,12 @@ init_read(void)
 	cl_object *dtab;
 	int i;
 
-	standard_readtable = alloc_object(t_readtable);
+	standard_readtable = cl_alloc_object(t_readtable);
 	register_root(&standard_readtable);
 
 	standard_readtable->readtable.table
 	= rtab
-	= alloc(RTABSIZE * sizeof(struct readtable_entry));
+	= (struct readtable_entry *)cl_alloc(RTABSIZE * sizeof(struct readtable_entry));
 	for (i = 0;  i < RTABSIZE;  i++) {
 		rtab[i].syntax_type = cat_constituent;
 		rtab[i].macro = OBJNULL;
@@ -2186,7 +2185,7 @@ init_read(void)
 
 	rtab['#'].dispatch_table
 	= dtab
-	= alloc(RTABSIZE * sizeof(cl_object));
+	= (cl_object *)cl_alloc(RTABSIZE * sizeof(cl_object));
 	for (i = 0;  i < RTABSIZE;  i++)
 		dtab[i] = default_dispatch_macro;
 	dtab['C'] = dtab['c'] = make_cf(@si::sharp_C_reader);
@@ -2284,19 +2283,19 @@ read_VV(cl_object block, void *entry)
 	cl_object old_sharp_eq_context;
 	cl_object old_package;
 
-	entry_point_ptr entry_point = entry;
+	entry_point_ptr entry_point = (entry_point_ptr)entry;
 	cl_object *VV;
 	int len;
 	bds_ptr old_bds_top = bds_top;
 
 	if (block == NULL)
-		block = alloc_object(t_codeblock);
+		block = cl_alloc_object(t_codeblock);
 
 	(*entry_point)(block);
 	len = block->cblock.data_size;
 
 #ifdef GBC_BOEHM
-	VV = block->cblock.data = len? alloc(len * sizeof(cl_object)) : NULL;
+	VV = block->cblock.data = len? (cl_object *)cl_alloc(len * sizeof(cl_object)) : NULL;
 #else
 	VV = block->cblock.data;
 #endif
@@ -2318,7 +2317,7 @@ read_VV(cl_object block, void *entry)
 		e = TRUE;
 	else {
 	  if (len == 0) goto NO_DATA;
-	  in=make_string_input_stream(make_simple_string(block->cblock.data_text),
+	  in=make_string_input_stream(make_constant_string(block->cblock.data_text),
 				      0, block->cblock.data_text_size);
 	  read_VV_block = block;
 	  for (i = 0 ; i < len; i++) {

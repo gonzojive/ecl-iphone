@@ -128,7 +128,7 @@ integer_decode_double(double d, unsigned *hp, unsigned *lp, int *ep, int *sp)
 */
 #endif
 static void
-integer_decode_float(double d, int *mp, int *ep, int *sp)
+integer_decode_float(double d, unsigned int *mp, int *ep, int *sp)
 {
 	float f;
 	int m;
@@ -176,7 +176,7 @@ double_exponent(double value)
 static void
 set_exponent(double *value, int e)
 {
-	unsigned int *d = (int*)value;
+	unsigned int *d = (unsigned int *)value;
 	if (*value == 0.0)
 		return;
 #ifdef VAX
@@ -194,7 +194,8 @@ set_exponent(double *value, int e)
 cl_object
 double_to_integer(double d)
 {
-	int h, l, e, s;
+	unsigned int h, l;
+	int e, s;
 	cl_object x;
 
 	if (d == 0.0)
@@ -967,7 +968,8 @@ round2(cl_object x, cl_object y)
 
 
 @(defun integer_decode_float (x)
-	int h, l, e, s;
+	unsigned int h, l;
+	int e, s;
 @
 	switch (type_of(x)) {
 	case t_longfloat:

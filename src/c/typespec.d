@@ -42,7 +42,6 @@ cl_object @'simple-vector';
 cl_object @'simple-string';
 cl_object @'simple-bit-vector';
 
-cl_object @'function';
 cl_object @'pathname';
 cl_object @'character';
 cl_object @'compiled-function';
@@ -100,7 +99,6 @@ cl_object @'values';
 cl_object @'mod';
 cl_object @'signed-byte';
 cl_object @'unsigned-byte';
-cl_object @'*';
 
 cl_object @'package';
 

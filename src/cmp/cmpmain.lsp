@@ -39,7 +39,7 @@ coprocessor).")
 #+dlopen
 (defvar *ld-shared-flags* "")
 #+dlopen
-(defvar *ld-shared-format* "ld ~A -o ~A -L~A ~{~A ~} ~A")
+(defvar *ld-shared-format* "~A ~A -o ~A -L~A ~{~A ~} ~A")
 
 (eval-when (compile eval)
   (defmacro get-output-pathname (file ext)
@@ -94,6 +94,7 @@ coprocessor).")
   (safe-system
    (format nil
 	   *ld-shared-format*
+	   *cc*
 	   *ld-shared-flags*
 	   (namestring o-pathname)
 	   (namestring (translate-logical-pathname "SYS:"))
@@ -103,25 +104,40 @@ coprocessor).")
 (defconstant +lisp-program-main+ "
 #include <ecl.h>
 
+#ifdef __cplusplus
+#define ECL_CPP_TAG \"C\"
+#else
+#define ECL_CPP_TAG
+#endif
+
 int
 main(int argc, char **argv)
 {
-~{	extern void init_~A(cl_object);~%~}
+~{	extern ECL_CPP_TAG void init_~A(cl_object);~%~}
 	~A
 	cl_boot(argc, argv);
-~{	read_VV((void*)0,init_~A);~%~}
+~{	read_VV(OBJNULL,init_~A);~%~}
 	~A
 }")
 
 (defconstant +lisp-library-main+ "
 #include <ecl.h>
 
-int
-init_~A(cl_object foo)
+#ifdef __cplusplus
+#define ECL_CPP_TAG \"C\"
+#else
+#define ECL_CPP_TAG
+#endif
+
+~{	extern ECL_CPP_TAG void init_~A();~%~}
+
+#ifdef __cplusplus
+extern \"C\"
+#endif
+int init_~A(cl_object foo)
 {
-~{	extern void init_~A();~%~}
 	~A
-~{	read_VV((void*)0,init_~A);~%~}
+~{	read_VV(OBJNULL,init_~A);~%~}
 	~A
 }")
 
@@ -134,7 +150,7 @@ init_~A(cl_object foo)
 (defun builder (target output-name &key lisp-files ld-flags (prologue-code "")
 		(epilogue-code (if (eq target :program) "
 	funcall(1,_intern(\"TOP-LEVEL\",system_package));
-	return;" "")))
+	return 0;" "")))
   (let* (init-name c-name o-name)
     (when (eq target :program)
       (setq ld-flags (append ld-flags '("-lecl" "-lclos" "-llsp"))))
@@ -164,10 +180,10 @@ init_~A(cl_object foo)
 	   (error "Filename ~A is not a valid library name."
 		  output-name))
 	 (with-open-file (c-file c-name :direction :output)
-	   (format c-file +lisp-library-main+
+	   (format c-file +lisp-library-main+ init-name
 		   ;; Remove the leading "lib"
 		   (subseq library-name 3)
-		   init-name prologue-code init-name epilogue-code)))
+		   prologue-code init-name epilogue-code)))
        (compiler-cc c-name o-name)
        (safe-system (format nil "ar cr ~A ~A ~{~A ~}"
 			    output-name o-name ld-flags)))
@@ -177,7 +193,7 @@ init_~A(cl_object foo)
 	 (setq output-name (shared-library-pathname output-name)))
        (with-open-file (c-file c-name :direction :output)
 	 (format c-file +lisp-library-main+
-		 "CODE" init-name prologue-code init-name epilogue-code))
+		 init-name "CODE" prologue-code init-name epilogue-code))
        (compiler-cc c-name o-name)
        (apply #'shared-cc output-name o-name ld-flags)))
     (delete-file c-name)

@@ -385,7 +385,7 @@ int_bit_length(int i)
 @)
 
 @(defun boole (o x y)
-	int	(*op)();
+	bit_operator op;
 @
 	/* INV: log_op() checks types */
 	switch(fixint(o)) {
@@ -520,7 +520,7 @@ init_num_log(void)
 @(defun si::bit_array_op (o x y r)
 	cl_fixnum i, j, n, d;
 	cl_object r0;
-	int (*op)();
+	bit_operator op;
 	bool replace = FALSE;
 	int xi, yi, ri;
 	byte *xp, *yp, *rp;
@@ -608,13 +608,13 @@ init_num_log(void)
 		}
 	L2:
 		if (Null(r)) {
-		  r = alloc_object(t_array);
+		  r = cl_alloc_object(t_array);
 		  r->array.self.t = NULL;
 		  r->array.displaced = Cnil;
 		  r->array.rank = 1;
 		  r->array.dims = NULL;
 		  r->array.elttype = get_elttype(@'bit');
-		  r->array.dims = alloc_atomic_align(sizeof(int), sizeof(int));
+		  r->array.dims = (cl_index *)cl_alloc_atomic_align(x->array.dim * sizeof(cl_index), sizeof(cl_index));
 		  r->array.dim = x->array.dim;
 		  r->array.adjustable = FALSE;
 		  array_allocself(r);

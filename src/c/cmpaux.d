@@ -14,19 +14,13 @@
     See file '../Copyright' for full details.
 */
 
+#include <malloc.h>
 #include "ecl.h"
 #include "ecl-inl.h"
 
 #ifndef CHAR_BIT
 #define CHAR_BIT (sizeof(char)*8)
 #endif
-
-cl_object @'&optional';
-cl_object @'&rest';
-cl_object @'&key';
-cl_object @'&allow-other-keys';
-cl_object @'&aux';
-cl_object @':allow-other-keys';
 
 cl_object
 make_list(int i)
@@ -87,22 +81,22 @@ object_to_char(cl_object x)
 	}
 }
 
-int
-object_to_int(cl_object x)
+cl_fixnum
+object_to_fixnum(cl_object x)
 {
 	switch (type_of(x)) {
 	case t_fixnum:
 		return fix(x);
 	case t_character:
-		return CHAR_CODE(x);
+		return (cl_fixnum)CHAR_CODE(x);
 	case t_bignum:
-		return big_to_long(x);
+		return (cl_fixnum)big_to_long(x);
 	case t_ratio:
-		return number_to_double(x);
+		return (cl_fixnum)number_to_double(x);
 	case t_shortfloat:
-		return sf(x);
+		return (cl_fixnum)sf(x);
 	case t_longfloat:
-		return lf(x);
+		return (cl_fixnum)lf(x);
 	default:
 		FEerror("~S cannot be coerced to a C int.", 1, x);
 	}
@@ -111,18 +105,17 @@ object_to_int(cl_object x)
 char *
 object_to_string(cl_object x)
 {
-  extern VOID *malloc(size_t size);
   switch (type_of(x)) {
   case t_string:
   case t_symbol:
     return(x->string.self);
   case t_fixnum: {
-    char *num = malloc(12);
+    char *num = (char *)malloc(12);
     sprintf(num, "%ld", (long)fix(x));
     return(num);
   }
   case t_character: {
-    char *c = malloc(2);
+    char *c = (char *)malloc(2);
     c[0] = CHAR_CODE(x);
     c[1] = '\0';
     return c;
@@ -196,7 +189,7 @@ aset_bv(cl_object x, cl_index index, int value)
 }
 
 void
-throw(cl_object tag)
+cl_throw(cl_object tag)
 {
   frame_ptr fr = frs_sch_catch(tag);
   if (fr == NULL)
@@ -205,7 +198,7 @@ throw(cl_object tag)
 }
 
 void
-return_from(cl_object block_id, cl_object block_name)
+cl_return_from(cl_object block_id, cl_object block_name)
 {
   frame_ptr fr = frs_sch(block_id);
   if (fr == NULL)
@@ -215,7 +208,7 @@ return_from(cl_object block_id, cl_object block_name)
 }
 
 void
-go(cl_object tag_id, cl_object label)
+cl_go(cl_object tag_id, cl_object label)
 {
   frame_ptr fr = frs_sch(tag_id);
   if (fr == NULL)
@@ -279,6 +272,7 @@ parse_key(
     } else if (unknown_keyword != OBJNULL)
       unknown_keyword = keyword;
   go_on:
+    (void)0;
   }
   if (narg != 0)
     FEprogram_error("Odd number of keys", 0);

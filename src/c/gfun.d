@@ -29,13 +29,13 @@ cl_object @'si::generic-function-method-combination-args';
 	if (type_of(ht) != t_hashtable)
 		FEwrong_type_argument(@'hash-table', ht);
 
-	x = alloc_object(t_gfun);
+	x = cl_alloc_object(t_gfun);
 	x->gfun.specializers = NULL; /* for GC sake */
 	x->gfun.name = name;
 	x->gfun.method_hash = ht;
 	n = fixnnint(arg_no);
 	x->gfun.arg_no = n;
-	x->gfun.specializers = alloc_align(sizeof(cl_object)*n, sizeof(cl_object));
+	x->gfun.specializers = (cl_object *)cl_alloc_align(sizeof(cl_object)*n, sizeof(cl_object));
 	for (i = 0;  i < n;  i++)
 		x->gfun.specializers[i] = OBJNULL;
 	x->gfun.instance = Cnil;

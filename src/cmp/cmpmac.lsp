@@ -14,7 +14,7 @@
 (defmacro next-label* () `(cons (incf *last-label*) t))
 
 (defmacro wt-label (label)
-  `(when (cdr ,label) (wt-nl1 "L" (car ,label) ":")))
+  `(when (cdr ,label) (wt-nl1 "L" (car ,label) ":;")))
 
 (defmacro wt-go (label)
   `(progn (rplacd ,label t) (wt "goto L" (car ,label) ";")))

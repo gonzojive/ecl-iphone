@@ -464,7 +464,7 @@ disassemble(cl_object *vector) {
 				break;
 	default:
 		FEerror("Unknown code ~S", 1, MAKE_FIXNUM(*(vector-1)));
-		return;
+		return vector;
 	NOARG:			printf(string);
 				break;
 	ARG:			printf("%s\t", string);
@@ -491,7 +491,7 @@ disassemble(cl_object *vector) {
 @
 	if (type_of(b) != t_bytecodes)
 		@(return Cnil Cnil)
-	vector = alloc_simple_vector(b->bytecodes.size, aet_object);
+	vector = cl_alloc_simple_vector(b->bytecodes.size, aet_object);
 	vector->vector.self.t = b->bytecodes.data;
 	@(return b->bytecodes.lex vector)
 @)

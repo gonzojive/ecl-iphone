@@ -35,9 +35,9 @@ cl_object @':initial-element';
 #else
 static cl_object test_function;
 static cl_object item_compared;
-static bool (*tf)();
+static bool (*tf)(cl_object);
 static cl_object key_function;
-static cl_object (*kf)();
+static cl_object (*kf)(cl_object);
 #endif THREADS
 
 #define TEST(x)         (*tf)(x)
@@ -45,9 +45,9 @@ static cl_object (*kf)();
 #define saveTEST  \
 	cl_object old_test_function = test_function;  \
 	cl_object old_item_compared = item_compared;  \
-	bool (*old_tf)() = tf;  \
+	bool (*old_tf)(cl_object) = tf;  \
 	cl_object old_key_function = key_function;  \
-	cl_object (*old_kf)() = kf;  \
+	cl_object (*old_kf)(cl_object) = kf;  \
 	volatile bool eflag = FALSE
 
 #define protectTEST  \
@@ -682,12 +682,12 @@ nconc(cl_object l, cl_object y)
 	@(return x)
 @)
 
-@(defun subst (new old tree &key test test_not key)
+@(defun subst (new_obj old_obj tree &key test test_not key)
 	saveTEST;
 @
 	protectTEST;
-	setupTEST(old, test, test_not, key);
-	tree = subst(new, tree);
+	setupTEST(old_obj, test, test_not, key);
+	tree = subst(new_obj, tree);
 	restoreTEST;
 	@(return tree)
 @)
@@ -698,26 +698,26 @@ nconc(cl_object l, cl_object y)
 	the result of substituting new in tree.
 */
 cl_object
-subst(cl_object new, cl_object tree)
+subst(cl_object new_obj, cl_object tree)
 {
-	cs_check(new);
+	cs_check(new_obj);
 
 	if (TEST(tree))
-		return(new);
+		return(new_obj);
 	else if (CONSP(tree))
-		return(CONS(subst(new, CAR(tree)), subst(new, CDR(tree))));
+		return(CONS(subst(new_obj, CAR(tree)), subst(new_obj, CDR(tree))));
 	else
 		return(tree);
 }
 
 PREDICATE3(@subst)
 
-@(defun nsubst (new old tree &key test test_not key)
+@(defun nsubst (new_obj old_obj tree &key test test_not key)
 	saveTEST;
 @
 	protectTEST;
-	setupTEST(old, test, test_not, key);
-	nsubst(new, &tree);
+	setupTEST(old_obj, test, test_not, key);
+	nsubst(new_obj, &tree);
 	restoreTEST;
 	@(return tree)
 @)
@@ -728,15 +728,15 @@ PREDICATE3(@subst)
 	to *treep.
 */
 void
-nsubst(cl_object new, cl_object *treep)
+nsubst(cl_object new_obj, cl_object *treep)
 {
-	cs_check(new);
+	cs_check(new_obj);
 
 	if (TEST(*treep))
-		*treep = new;
+		*treep = new_obj;
 	else if (CONSP(*treep)) {
-		nsubst(new, &CAR(*treep));
-		nsubst(new, &CDR(*treep));
+		nsubst(new_obj, &CAR(*treep));
+		nsubst(new_obj, &CDR(*treep));
 	}
 }
 

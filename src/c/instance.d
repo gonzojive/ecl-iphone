@@ -22,42 +22,42 @@ cl_object @'print-object';
 /******************************* ------- ******************************/
 
 cl_object
-allocate_instance(cl_object class, int size)
+cl_allocate_instance(cl_object clas, int size)
 {
-	cl_object x = alloc_instance(size);
+	cl_object x = cl_alloc_instance(size);
 	int i;
-	x->instance.class = class;
+	CLASS_OF(x) = clas;
 	for (i = 0;  i < size;  i++)
 		x->instance.slots[i] = OBJNULL;
 	return(x);
 }
 
-@(defun si::allocate_instance (class size)
+@(defun si::allocate_instance (clas size)
 @
-	if (type_of(class) != t_instance)
-	  FEwrong_type_argument(@'instance', class);
+	if (type_of(clas) != t_instance)
+	  FEwrong_type_argument(@'instance', clas);
 
-	@(return allocate_instance(class, fixnnint(size)))
+	@(return cl_allocate_instance(clas, fixnnint(size)))
 @)
 
 /* corr is a list of (newi . oldi) describing which of the new slots
    retains a value from an old slot
  */
-@(defun si::change_instance (x class size corr)
+@(defun si::change_instance (x clas size corr)
 	int nslot, i;
 	cl_object * oldslots;
 @
 	if (type_of(x) != t_instance)
 	  FEwrong_type_argument(@'instance', x);
 
-	if (type_of(class) != t_instance)
-	  FEwrong_type_argument(@'instance', class);
+	if (type_of(clas) != t_instance)
+	  FEwrong_type_argument(@'instance', clas);
 
 	nslot = fixnnint(size);
-	x->instance.class = class;
+	CLASS_OF(x) = clas;
 	x->instance.length = nslot;
 	oldslots = x->instance.slots;
-	x->instance.slots = alloc_align(sizeof(cl_object)*nslot,sizeof(cl_object));
+	x->instance.slots = (cl_object *)cl_alloc_align(sizeof(cl_object)*nslot,sizeof(cl_object));
 	for (i = 0;  i < nslot;  i++) {
 	  if (!Null(corr) && fix(CAAR(corr)) == i) {
 	    x->instance.slots[i] = oldslots[fix(CDAR(corr))];
@@ -73,7 +73,7 @@ allocate_instance(cl_object class, int size)
 @
 	if (type_of(x) != t_instance)
 		FEwrong_type_argument(@'instance', x);
-	@(return x->instance.class)
+	@(return CLASS_OF(x))
 @)
 
 @(defun si::instance_class_set (x y)
@@ -82,7 +82,7 @@ allocate_instance(cl_object class, int size)
 		FEwrong_type_argument(@'instance', x);
 	if (type_of(y) != t_instance)
 		FEwrong_type_argument(@'instance', y);
-	x->instance.class = y;
+	CLASS_OF(x) = y;
 	@(return x)
 @)
 

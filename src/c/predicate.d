@@ -296,7 +296,7 @@ BEGIN:
 	case t_instance: {
 		cl_index i;
 
-		if (x->instance.class != y->instance.class)
+		if (CLASS_OF(x) != CLASS_OF(y))
 			return(FALSE);
 		for (i = 0;  i < x->instance.length;  i++)
 			if (!equal(x->instance.slots[i], y->instance.slots[i]))
@@ -389,8 +389,6 @@ BEGIN:
 		}
 		else
 			return(FALSE);
-
-	default:
 	}
 	if (tx != ty)
 		return(FALSE);
@@ -409,7 +407,7 @@ BEGIN:
 	case t_instance: {
 		cl_index i;
 
-		if (x->instance.class != y->instance.class)
+		if (CLASS_OF(x) != CLASS_OF(y))
 			return(FALSE);
 		for (i = 0;  i < x->instance.length;  i++)
 			if (!equal(x->instance.slots[i], y->instance.slots[i]))

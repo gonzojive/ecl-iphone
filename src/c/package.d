@@ -89,13 +89,13 @@ make_package_hashtable()
 	cl_object h;
 	cl_index hsize = 128, i;
 
-	h = alloc_object(t_hashtable);
+	h = cl_alloc_object(t_hashtable);
 	h->hash.test = htt_pack;
 	h->hash.size = hsize;
 	h->hash.rehash_size = make_shortfloat(1.5);
 	h->hash.threshold = make_shortfloat(0.7);
 	h->hash.entries = 0;
-	h->hash.data = alloc(hsize * sizeof(struct hashtable_entry));
+	h->hash.data = (struct hashtable_entry *)cl_alloc(hsize * sizeof(struct hashtable_entry));
 	for(i = 0;  i < hsize;  i++) {
 		h->hash.data[i].key = OBJNULL;
 		h->hash.data[i].value = OBJNULL;
@@ -115,7 +115,7 @@ make_package(cl_object name, cl_object nicknames, cl_object use_list)
 
 	if (find_package(name) != Cnil)
 		package_already(name);
-	x = alloc_object(t_package);
+	x = cl_alloc_object(t_package);
 	x->pack.name = name;
 	x->pack.nicknames = Cnil;
 	x->pack.shadowings = Cnil;
@@ -234,7 +234,7 @@ current_package(void)
 cl_object
 _intern(const char *s, cl_object p)
 {
-	cl_object str = make_simple_string(s);
+	cl_object str = make_constant_string(s);
 	return intern(str, p);
 }
 
@@ -370,7 +370,7 @@ UNINTERN:
 }
 
 void
-export(cl_object s, cl_object p)
+cl_export(cl_object s, cl_object p)
 {
 	cl_object x, l, hash = OBJNULL;
 BEGIN:
@@ -381,7 +381,7 @@ BEGIN:
 		FEerror("The symbol ~S is not accessible from ~S.", 2,
 			s, p);
 	if (x != s) {
-		import(s, p);	/*  signals an error  */
+		cl_import(s, p); /*  signals an error  */
 		goto BEGIN;
 	}
 	if (intern_flag == EXTERNAL)
@@ -428,7 +428,7 @@ delete_package(cl_object p)
 }
 
 void
-unexport(cl_object s, cl_object p)
+cl_unexport(cl_object s, cl_object p)
 {
 	cl_object x;
 
@@ -446,7 +446,7 @@ unexport(cl_object s, cl_object p)
 }
 
 void
-import(cl_object s, cl_object p)
+cl_import(cl_object s, cl_object p)
 {
 	cl_object x;
 
@@ -673,13 +673,13 @@ BEGIN:
 	case t_symbol:
 		if (Null(symbols))
 			break;
-		export(symbols, pack);
+		cl_export(symbols, pack);
 		break;
 
 	case t_cons:
 		pack = coerce_to_package(pack); /* Saves time */
 		for (l = symbols;  !endp(l);  l = CDR(l))
-			export(CAR(l), pack);
+			cl_export(CAR(l), pack);
 		break;
 
 	default:
@@ -697,13 +697,13 @@ BEGIN:
 	case t_symbol:
 		if (Null(symbols))
 			break;
-		unexport(symbols, pack);
+		cl_unexport(symbols, pack);
 		break;
 
 	case t_cons:
 		pack = coerce_to_package(pack); /* Saves time */
 		for (l = symbols;  !endp(l);  l = CDR(l))
-			unexport(CAR(l), pack);
+			cl_unexport(CAR(l), pack);
 		break;
 
 	default:
@@ -721,13 +721,13 @@ BEGIN:
 	case t_symbol:
 		if (Null(symbols))
 			break;
-		import(symbols, pack);
+		cl_import(symbols, pack);
 		break;
 
 	case t_cons:
 		pack = coerce_to_package(pack); /* Saves time */
 		for (l = symbols;  !endp(l);  l = CDR(l))
-			import(CAR(l), pack);
+			cl_import(CAR(l), pack);
 		break;
 
 	default:
@@ -915,12 +915,12 @@ init_package(void)
 #endif
 
 	Cnil->symbol.hpack = lisp_package;
-	import(Cnil, lisp_package);
-	export(Cnil, lisp_package);
+	cl_import(Cnil, lisp_package);
+	cl_export(Cnil, lisp_package);
 
 	Ct->symbol.hpack = lisp_package;
-	import(Ct, lisp_package);
-	export(Ct, lisp_package);
+	cl_import(Ct, lisp_package);
+	cl_export(Ct, lisp_package);
 
 	/*  There is no need to enter a package as a mark origin.  */
 

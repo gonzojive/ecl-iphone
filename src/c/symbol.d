@@ -43,7 +43,7 @@ make_symbol(cl_object st)
 {
 	cl_object x;
 
-	x = alloc_object(t_symbol);
+	x = cl_alloc_object(t_symbol);
 	SYM_VAL(x) = OBJNULL;
 	/* FIXME! Should we copy? */
 	x->symbol.name = st;
@@ -64,7 +64,7 @@ cl_object
 make_ordinary(const char *s)
 {
 	cl_object x = _intern(s, lisp_package);
-	export(x, lisp_package);
+	cl_export(x, lisp_package);
 	return(x);
 }
 
@@ -102,7 +102,7 @@ cl_object
 make_si_ordinary(const char *s)
 {
 	cl_object x = _intern(s, system_package);
-	export(x, system_package);
+	cl_export(x, system_package);
 	return(x);
 }
 
@@ -139,7 +139,7 @@ cl_object
 make_keyword(const char *s)
 {
 	cl_object x = _intern(s, keyword_package);
-	/* export(x, keyword_package); this is implicit in intern() */
+	/* cl_export(x, keyword_package); this is implicit in intern() */
 	return x;
 }
 
@@ -361,8 +361,8 @@ symbol_name(cl_object x)
 		name_length++;
 	if (name_length == 0)
 		name_length++;
-	str = alloc_simple_string(name_length);
-	str->string.self = alloc_atomic(name_length+1);
+	str = cl_alloc_simple_string(name_length);
+	str->string.self = (char *)cl_alloc_atomic(name_length+1);
 	str->string.self[name_length] = '\0';
 	for (j = 0;  j < gensym_prefix->string.fillp;  j++)
 		str->string.self[j] = gensym_prefix->string.self[j];
@@ -387,8 +387,8 @@ ONCE_MORE:
 		name_length++;
 	if (name_length == 0)
 		name_length++;
-	str = alloc_simple_string(name_length);
-        str->string.self = alloc_atomic(name_length+1);
+	str = cl_alloc_simple_string(name_length);
+        str->string.self = (char *)cl_alloc_atomic(name_length+1);
 	str->string.self[name_length] = '\0';
         for (j = 0;  j < prefix->string.fillp;  j++)
                 str->string.self[j] = prefix->string.self[j];
@@ -517,9 +517,9 @@ init_symbol(void)
 	gensym_prefix = make_simple_string("G");
 	gentemp_prefix = make_simple_string("T");
 	gentemp_counter = 0;
-	cl_token = alloc_simple_string(LISP_PAGESIZE);
+	cl_token = cl_alloc_simple_string(LISP_PAGESIZE);
 	cl_token->string.fillp = 0;
-	cl_token->string.self = alloc_atomic(LISP_PAGESIZE);
+	cl_token->string.self = (char *)cl_alloc_atomic(LISP_PAGESIZE);
 	cl_token->string.hasfillp = TRUE;
 	cl_token->string.adjustable = TRUE;
 

@@ -17,8 +17,13 @@
 
 /******************************* ------- ******************************/
 
+#ifdef __cplusplus
+extern "C" void init_LSP(void);
+extern "C" void init_CLOS(void);
+#else
 extern void init_LSP();
 extern void init_CLOS();
+#endif
 
 void
 init_lisp(void)
@@ -84,7 +89,6 @@ init_lisp(void)
 	init_eval();
 /*  	init_reference(); */
 	init_assignment();
-/*  	init_stacks(); */
 	init_error();
 /*  	init_toplevel(); */
 /*  	init_conditional(); */

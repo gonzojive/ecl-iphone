@@ -214,7 +214,7 @@
 
 (defun c2go (tag nonlocal &aux (var (tag-var tag)))
   (if nonlocal
-      (wt-nl "go(" var "," (add-symbol (tag-name tag)) ");")
+      (wt-nl "cl_go(" var "," (add-symbol (tag-name tag)) ");")
       ;; local go
       (progn
 	(unwind-no-exit (tag-unwind-exit tag))
