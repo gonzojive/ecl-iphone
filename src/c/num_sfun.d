@@ -526,5 +526,5 @@ init_num_sfun(void)
 	imag_two = make_complex(make_shortfloat(0.0), make_shortfloat(2.0));
 	register_root(&imag_two);
 
-	make_constant("PI", make_longfloat(M_PI));
+	SYM_VAL(@'pi') = make_longfloat(M_PI);
 }

@@ -2,6 +2,13 @@
 #include "ecl.h"
 #include "internal.h"
 
+#define CL_ORDINARY 0
+#define CL_SPECIAL 1
+#define CL_CONSTANT 2
+#define SI_ORDINARY 4
+#define SI_SPECIAL 5
+#define KEYWORD 10
+
 #include "symbols_def.h"
 #include "symbols_list.h"
 
@@ -117,54 +124,54 @@ cl_index cl_num_symbols_in_core = 0;
 @)
 
 static void
-make_this_symbol(int index, const char *name, cl_object package, bool special)
+make_this_symbol(int i, cl_object s, int code, const char *name, cl_object *loc)
 {
-	cl_object s = (cl_object)(cl_symbols + index);
+	enum stype stp;
+	cl_object package;
+
+	switch (code & 3) {
+	case 0: stp = stp_ordinary; break;
+	case 1: stp = stp_special; break;
+	case 2: stp = stp_constant; break;
+	}
+	switch (code & 12) {
+	case 0: package = lisp_package; break;
+	case 4: package = system_package; name = name + 4; break;
+	case 8: package = keyword_package; name = name + 1; break;
+	}
 	s->symbol.t = t_symbol;
 	s->symbol.mflag = FALSE;
 	SYM_VAL(s) = OBJNULL;
 	SYM_FUN(s) = OBJNULL;
 	s->symbol.plist = Cnil;
 	s->symbol.hpack = Cnil;
-	s->symbol.stype = special? stp_special : stp_ordinary;
+	s->symbol.stype = stp;
 	s->symbol.mflag = FALSE;
 	s->symbol.isform = FALSE;
 	s->symbol.hpack = package;
 	s->symbol.name = make_constant_string(name);
 	sethash(s->symbol.name, package->pack.external, s);
 	if (package == keyword_package) {
-		s->symbol.stype = stp_constant;
 		SYM_VAL(s) = s;
 	}
-	cl_num_symbols_in_core = index + 1;
+	if (loc != NULL)
+		*loc = s;
+	cl_num_symbols_in_core = i + 1;
 }
 
 void
 init_all_symbols(void)
 {
-	int i;
+	int i, code;
+	const char *name;
+	cl_object s, *loc;
 
 	/* We skip NIL and T */
 	for (i = 2; cl_symbols[i].init.name != NULL; i++) {
-		cl_object *loc = cl_symbols[i].init.loc;
-
-		switch (cl_symbols[i].init.type) {
-		case CL_ORDINARY:
-			make_this_symbol(i, cl_symbols[i].init.name, lisp_package, FALSE);
-			break;
-		case CL_SPECIAL:
-			make_this_symbol(i, cl_symbols[i].init.name, lisp_package, TRUE);
-			break;
-		case SI_ORDINARY:
-			make_this_symbol(i, cl_symbols[i].init.name+4, system_package, FALSE);
-			break;
-		case SI_SPECIAL:
-			make_this_symbol(i, cl_symbols[i].init.name+4, system_package, TRUE);
-			break;
-		case KEYWORD:
-			make_this_symbol(i, cl_symbols[i].init.name+1, keyword_package, TRUE);
-		}
-		if (loc != NULL)
-			*loc = (cl_object)(cl_symbols+i);
+		s = (cl_object)(cl_symbols + i);
+		code = cl_symbols[i].init.type;
+		name = cl_symbols[i].init.name;
+		loc = cl_symbols[i].init.loc;
+		make_this_symbol(i, s, code, name, loc);
 	}
 }

@@ -770,7 +770,7 @@ ILLEGAL:		FEerror("~S is an illegal axis-number to the array ~S.",
 void
 init_array(void)
 {
-	make_constant("ARRAY-RANK-LIMIT", MAKE_FIXNUM(ARANKLIM));
-	make_constant("ARRAY-DIMENSION-LIMIT", MAKE_FIXNUM(ADIMLIM));
-	make_constant("ARRAY-TOTAL-SIZE-LIMIT", MAKE_FIXNUM(ATOTLIM));
+	SYM_VAL(@'array-rank-limit') = MAKE_FIXNUM(ARANKLIM);
+	SYM_VAL(@'array-dimension-limit') = MAKE_FIXNUM(ADIMLIM);
+	SYM_VAL(@'array-total-size-limit') = MAKE_FIXNUM(ATOTLIM);
 }

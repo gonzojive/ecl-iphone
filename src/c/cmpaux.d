@@ -384,9 +384,9 @@ check_other_key(cl_object l, int n, ...)
 void
 init_cmpaux(void)
 {
-	make_constant("LAMBDA-LIST-KEYWORDS",
+	SYM_VAL(@'LAMBDA-LIST-KEYWORDS') =
 	list(8, @'&optional', @'&rest', @'&key', @'&allow-other-keys', @'&aux',
-		make_ordinary("&WHOLE"), make_ordinary("&ENVIRONMENT"), make_ordinary("&BODY")));
+		@'&whole', @'&environment', @'&body');
 
-	make_constant("LAMBDA-PARAMETERS-LIMIT", MAKE_FIXNUM(64));
+	SYM_VAL(@'LAMBDA-PARAMETERS-LIMIT') = MAKE_FIXNUM(64);
 }

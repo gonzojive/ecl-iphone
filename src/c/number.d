@@ -229,8 +229,8 @@ init_number(void)
 	register_root(&shortfloat_zero);
 	register_root(&longfloat_zero);
 
-  	make_constant("MOST-POSITIVE-FIXNUM", MAKE_FIXNUM(MOST_POSITIVE_FIXNUM));
-	make_constant("MOST-NEGATIVE-FIXNUM", MAKE_FIXNUM(MOST_NEGATIVE_FIXNUM));
+  	SYM_VAL(@'most-positive-fixnum') = MAKE_FIXNUM(MOST_POSITIVE_FIXNUM);
+	SYM_VAL(@'most-negative-fixnum') = MAKE_FIXNUM(MOST_NEGATIVE_FIXNUM);
 
 	init_big();
 	init_num_co();

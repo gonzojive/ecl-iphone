@@ -156,7 +156,7 @@ init_unixtime(void)
 {
 	beginning = time(0);
 
-	make_constant("INTERNAL-TIME-UNITS-PER-SECOND", MAKE_FIXNUM(HZ));
+	SYM_VAL(@'internal-time-units-per-second') = MAKE_FIXNUM(HZ);
 
 	Jan1st1970UT =
 	  number_times(MAKE_FIXNUM(24 * 60 * 60),

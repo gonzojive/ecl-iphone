@@ -163,8 +163,6 @@ cl_boot(int argc, char **argv)
 void
 init_main(void)
 {
-	make_ordinary("LISP-IMPLEMENTATION-VERSION");
-
 	{ cl_object features;
 	  features =
 	    CONS(make_keyword("ECL"),
@@ -221,6 +219,4 @@ init_main(void)
 
 	 SYM_VAL(@'*features*') = features;
        }
-
-	make_si_constant("+OBJNULL+", OBJNULL);
 }

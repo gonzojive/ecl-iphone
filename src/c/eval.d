@@ -208,7 +208,7 @@ link_call(cl_object sym, cl_objectfn *pLK, int narg, va_list args)
 void
 init_eval(void)
 {
-	make_constant("CALL-ARGUMENTS-LIMIT", MAKE_FIXNUM(64));
+	SYM_VAL(@'call-arguments-limit') = MAKE_FIXNUM(64);
 
 	three_nils.nil3_self[0] = Cnil;
 	three_nils.nil3_self[1] = Cnil;

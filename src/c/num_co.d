@@ -915,50 +915,50 @@ init_num_co(void)
 	cl_object num;
 
 	num = make_shortfloat(FLT_MAX);
-	make_constant("MOST-POSITIVE-SHORT-FLOAT", num);
-	make_constant("MOST-POSITIVE-SINGLE-FLOAT", num);
+	SYM_VAL(@'MOST-POSITIVE-SHORT-FLOAT') = num;
+	SYM_VAL(@'MOST-POSITIVE-SINGLE-FLOAT') = num;
 
 	num = make_shortfloat(FLT_MIN);
-	make_constant("LEAST-POSITIVE-SHORT-FLOAT", num);
-	make_constant("LEAST-POSITIVE-SINGLE-FLOAT", num);
+	SYM_VAL(@'LEAST-POSITIVE-SHORT-FLOAT') = num;
+	SYM_VAL(@'LEAST-POSITIVE-SINGLE-FLOAT') = num;
 
 	num = make_shortfloat(-FLT_MIN);
-	make_constant("LEAST-NEGATIVE-SHORT-FLOAT", num);
-	make_constant("LEAST-NEGATIVE-SINGLE-FLOAT", num);
+	SYM_VAL(@'LEAST-NEGATIVE-SHORT-FLOAT') = num;
+	SYM_VAL(@'LEAST-NEGATIVE-SINGLE-FLOAT') = num;
 
 	num = make_shortfloat(-FLT_MAX);
-	make_constant("MOST-NEGATIVE-SHORT-FLOAT", num);
-	make_constant("MOST-NEGATIVE-SINGLE-FLOAT", num);
+	SYM_VAL(@'MOST-NEGATIVE-SHORT-FLOAT') = num;
+	SYM_VAL(@'MOST-NEGATIVE-SINGLE-FLOAT') = num;
 
 	num = make_longfloat(DBL_MAX);
-	make_constant("MOST-POSITIVE-DOUBLE-FLOAT", num);
-	make_constant("MOST-POSITIVE-LONG-FLOAT", num);
+	SYM_VAL(@'MOST-POSITIVE-DOUBLE-FLOAT') = num;
+	SYM_VAL(@'MOST-POSITIVE-LONG-FLOAT') = num;
 
 	num = make_longfloat(DBL_MIN);
-	make_constant("LEAST-POSITIVE-DOUBLE-FLOAT", num);
-	make_constant("LEAST-POSITIVE-LONG-FLOAT", num);
+	SYM_VAL(@'LEAST-POSITIVE-DOUBLE-FLOAT') = num;
+	SYM_VAL(@'LEAST-POSITIVE-LONG-FLOAT') = num;
 
 	num = make_longfloat(-DBL_MIN);
-	make_constant("LEAST-NEGATIVE-DOUBLE-FLOAT", num);
-	make_constant("LEAST-NEGATIVE-LONG-FLOAT", num);
+	SYM_VAL(@'LEAST-NEGATIVE-DOUBLE-FLOAT') = num;
+	SYM_VAL(@'LEAST-NEGATIVE-LONG-FLOAT') = num;
 
 	num = make_longfloat(-DBL_MAX);
-	make_constant("MOST-NEGATIVE-DOUBLE-FLOAT", num);
-	make_constant("MOST-NEGATIVE-LONG-FLOAT", num);
+	SYM_VAL(@'MOST-NEGATIVE-DOUBLE-FLOAT') = num;
+	SYM_VAL(@'MOST-NEGATIVE-LONG-FLOAT') = num;
 
 	num = make_shortfloat(FLT_EPSILON);
-	make_constant("SHORT-FLOAT-EPSILON", num);
-	make_constant("SINGLE-FLOAT-EPSILON", num);
+	SYM_VAL(@'SHORT-FLOAT-EPSILON') = num;
+	SYM_VAL(@'SINGLE-FLOAT-EPSILON') = num;
 	num = make_longfloat(DBL_EPSILON);
-	make_constant("DOUBLE-FLOAT-EPSILON", num);
-	make_constant("LONG-FLOAT-EPSILON", num);
+	SYM_VAL(@'DOUBLE-FLOAT-EPSILON') = num;
+	SYM_VAL(@'LONG-FLOAT-EPSILON') = num;
 
 	num = make_shortfloat(-FLT_EPSILON);
-	make_constant("SHORT-FLOAT-NEGATIVE-EPSILON", num);
-	make_constant("SINGLE-FLOAT-NEGATIVE-EPSILON", num);
+	SYM_VAL(@'SHORT-FLOAT-NEGATIVE-EPSILON') = num;
+	SYM_VAL(@'SINGLE-FLOAT-NEGATIVE-EPSILON') = num;
 	num = make_longfloat(-DBL_EPSILON);
-	make_constant("DOUBLE-FLOAT-NEGATIVE-EPSILON", num);
-	make_constant("LONG-FLOAT-NEGATIVE-EPSILON", num);
+	SYM_VAL(@'DOUBLE-FLOAT-NEGATIVE-EPSILON') = num;
+	SYM_VAL(@'LONG-FLOAT-NEGATIVE-EPSILON') = num;
 
 	plus_half = make_ratio(MAKE_FIXNUM(1), MAKE_FIXNUM(2));
 	register_root(&plus_half);

@@ -463,7 +463,7 @@ digit_weight(int w, int r)
 void
 init_character(void)
 {
-	make_constant("CHAR-CODE-LIMIT", MAKE_FIXNUM(CHAR_CODE_LIMIT));
+	SYM_VAL(@'char-code-limit') = MAKE_FIXNUM(CHAR_CODE_LIMIT);
 
 	STreturn = make_simple_string("RETURN");
 	register_root(&STreturn);
