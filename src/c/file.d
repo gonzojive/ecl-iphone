@@ -675,7 +675,7 @@ unreadc_stream(int c, cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		funcall(3, @'stream-unread-char', strm, c);
+		funcall(3, @'stream-unread-char', strm, CODE_CHAR(c));
 		return;
 	}
 #endif
