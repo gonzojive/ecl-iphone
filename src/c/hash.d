@@ -228,6 +228,7 @@ search_hash(cl_object key, cl_object hashtable)
 	int htest;
 	bool b;
 
+	assert_type_hash_table(hashtable);
 	htest = hashtable->hash.test;
 	hsize = hashtable->hash.size;
 	j = hsize;
@@ -275,6 +276,7 @@ search_hash(cl_object key, cl_object hashtable)
 cl_object
 gethash(cl_object key, cl_object hashtable)
 {
+	/* INV: search_hash() checks the type of hashtable */
 	return search_hash(key, hashtable)->value;
 }
 
@@ -282,6 +284,8 @@ cl_object
 gethash_safe(cl_object key, cl_object hashtable, cl_object def)
 {
 	struct hashtable_entry *e;
+
+	/* INV: search_hash() checks the type of hashtable */
 	e = search_hash(key, hashtable);
 	if (e->key == OBJNULL)
 		return def;
@@ -297,6 +301,7 @@ add_new_to_hash(cl_object key, cl_object hashtable, cl_object value)
 	cl_index i, hsize;
 	struct hashtable_entry *e;
 
+	/* INV: hashtable has the right type */
 	htest = hashtable->hash.test;
 	hsize = hashtable->hash.size;
 	switch (htest) {
@@ -326,6 +331,8 @@ sethash(cl_object key, cl_object hashtable, cl_object value)
 	cl_index i;
 	bool over;
 	struct hashtable_entry *e;
+
+	/* INV: search_hash() checks the type of hashtable */
 	e = search_hash(key, hashtable);
 	if (e->key != OBJNULL) {
 		e->value = value;
@@ -353,6 +360,8 @@ extend_hashtable(cl_object hashtable)
 	cl_object old, key;
 	cl_index old_size, new_size, i;
 	struct hashtable_entry *e;
+
+	assert_type_hash_table(hashtable);
 	old_size = hashtable->hash.size;
 	if (FIXNUMP(hashtable->hash.rehash_size))
 		new_size = old_size + fix(hashtable->hash.rehash_size);
@@ -398,11 +407,12 @@ extend_hashtable(cl_object hashtable)
 cl_object
 cl_clear_hash_table(cl_object hashtable)
 {
-	struct hashtable_entry *e = hashtable->hash.data;
+	struct hashtable_entry *e;
 	cl_index i;
 
+	assert_type_hash_table(hashtable);
 	hashtable->hash.entries = 0;
-	for (i=hashtable->hash.size; i--; e++)
+	for (i=hashtable->hash.size, e=hashtable->hash.data; i--; e++)
 		e->key = e->value = OBJNULL;
 }
 
@@ -464,7 +474,7 @@ cl_make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 @(defun gethash (key ht &optional (no_value Cnil))
 	struct hashtable_entry *e;
 @
-	assert_type_hash_table(ht);
+	/* INV: search_hash() checks the type of hashtable */
 	e = search_hash(key, ht);
 	if (e->key != OBJNULL)
 		@(return e->value Ct)
@@ -474,7 +484,7 @@ cl_make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 
 @(defun si::hash_set (key ht val)
 @
-	assert_type_hash_table(ht);
+	/* INV: sethash() checks the type of hashtable */
 	sethash(key, ht, val);
 	@(return val)
 @)
@@ -483,7 +493,8 @@ bool
 remhash(cl_object key, cl_object hashtable)
 {
 	struct hashtable_entry *e;
-	assert_type_hash_table(hashtable);
+
+	/* INV: search_hash() checks the type of hashtable */
 	e = search_hash(key, hashtable);
 	if (e->key != OBJNULL) {
 		e->key = OBJNULL;
@@ -497,6 +508,7 @@ remhash(cl_object key, cl_object hashtable)
 @(defun remhash (key ht)
 	struct hashtable_entry *e;
 @
+	/* INV: search_hash() checks the type of hashtable */
 	@(return (remhash(key, ht)? Ct : Cnil));
 @)
 
