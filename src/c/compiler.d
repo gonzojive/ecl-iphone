@@ -1524,7 +1524,7 @@ c_multiple_value_setq(cl_object args, int flags) {
 
 	/* Look for symbol macros, building the list of variables
 	   and the list of late assignments. */
-	for (orig_vars = cl_reverse(pop(&args)); !endp(orig_vars); ) {
+	for (orig_vars = pop(&args); !endp(orig_vars); ) {
 		cl_object aux, v = pop(&orig_vars);
 		if (!SYMBOLP(v))
 			FEillegal_variable_name(v);
@@ -1559,7 +1559,7 @@ c_multiple_value_setq(cl_object args, int flags) {
 
 	/* Compile variables */
 	asm_op2(OP_MSETQ, nvars);
-	vars = cl_reverse(vars);
+	vars = cl_nreverse(vars);
 	while (nvars--) {
 		cl_object var = pop(&vars);
 		cl_fixnum ndx;

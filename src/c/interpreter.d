@@ -650,8 +650,8 @@ static cl_object *
 interpret_msetq(cl_object *vector)
 {
 	cl_object var, value;
-	int i = get_oparg(vector[-1]);
-	while (i--) {
+	int i, n = get_oparg(vector[-1]);
+	for (i=0; i<n; i++) {
 		var = next_code(vector);
 		value = (i < NValues) ? VALUES(i) : Cnil;
 		if (FIXNUMP(var))

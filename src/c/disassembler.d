@@ -250,10 +250,10 @@ disassemble_labels(cl_object *vector) {
 static cl_object *
 disassemble_msetq(cl_object *vector)
 {
-	int i = get_oparg(vector[-1]);
+	int i, n = get_oparg(vector[-1]);
 	bool newline = FALSE;
 
-	while (i--) {
+	for (i=0; i<n; i++) {
 		cl_object var = next_code(vector);
 		if (newline) {
 			print_noarg("\n\t");
