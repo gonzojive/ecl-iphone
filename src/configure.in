@@ -161,6 +161,18 @@ ECL_LINEFEED_MODE()
 ECL_FIND_SETJMP()
 ECL_FILE_STRUCTURE()
 
+dnl ------------------------------------------------------------
+dnl Find out how to install the INFO files.
+dnl
+AC_SUBST(INFOEXT)
+AC_SUBST(INSTALL_INFO)
+AC_PATH_PROG([INSTALL_INFO], [install-info], [foo], [$PATH:/sbin:/usr/sbin:/usr/etc])
+if which gzip; then
+  INFOEXT=info.gz
+else
+  INFOEXT=info
+fi
+
 dnl ----------------------------------------------------------------------
 dnl		Set options
 dnl

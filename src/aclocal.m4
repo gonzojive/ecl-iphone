@@ -403,3 +403,12 @@ case "${ECL_NEWLINE}" in
 esac
 ])
 
+dnl
+dnl ------------------------------------------------------------
+dnl Find out which program we can use to install INFO files
+dnl
+AC_DEFUN(ECL_INSTALL_INFO,[
+AC_SUBST(INSTALL_INFO)
+AC_PATH_PROG(INSTALL_INFO, install-info, [/sbin/install-info],
+[$PATH:/usr/bin:/usr/sbin:/usr/etc:/usr/libexec])
+])

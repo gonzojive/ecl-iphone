@@ -7,10 +7,12 @@ infodir = @infodir@
 mandir=@mandir@
 manext=1
 
+INFOEXT = @INFOEXT@
 SHELL = @SHELL@
 INSTALL	= @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
+INSTALL_INFO = @INSTALL_INFO@
 mkinstalldirs = $(SHELL) $(top_srcdir)/gc/mkinstalldirs
 
 VERSION=@ECL_VERSION@
@@ -22,7 +24,7 @@ FILTER = sed 's,@VERSION@,$(VERSION),g'
 
 ECL = ../ecl
 
-all: ecl.info ecldev.info $(HTML)
+all: ecl.$(INFOEXT) ecldev.$(INFOEXT) $(HTML)
 
 ecl.dvi: $(srcdir)/user.txi $(srcdir)/macros.txi clisp.sty ecl.sty
 	tex $(srcdir)/user.txi
@@ -36,14 +38,18 @@ ecldev.ps: ecldev.dvi $(srcdir)/macros.txi
 
 install: all
 	$(mkinstalldirs) $(infodir)
-	$(INSTALL_DATA) ecl.info $(infodir)
-	$(INSTALL_DATA) ecldev.info $(infodir)
+	$(INSTALL_DATA) ecl.$(INFOEXT) $(infodir);
+	$(INSTALL_DATA) ecldev.$(INFOEXT) $(infodir);
+	if [ -x $(INSTALL_INFO) ]; then \
+	  $(INSTALL_INFO) --infodir=$(infodir) ecl.$(INFOEXT); \
+	  $(INSTALL_INFO) --infodir=$(infodir) ecldev.$(INFOEXT); \
+	fi
 	$(mkinstalldirs) $(mandir)/man$(manext)
 	$(INSTALL_DATA) ecl.man $(mandir)/man$(manext)/ecl.$(manext)
 flatinstall: all
 	$(mkinstalldirs) $(prefix)/doc
-	$(INSTALL_DATA) ecl.info $(prefix)/doc
-	$(INSTALL_DATA) ecldev.info $(prefix)/doc
+	$(INSTALL_DATA) ecl.$(INFOEXT) $(prefix)/doc
+	$(INSTALL_DATA) ecldev.$(INFOEXT) $(prefix)/doc
 	if [ -f user.html ]; then \
 	  $(INSTALL_DATA) $$i $(prefix)/doc/; \
 	else \
@@ -59,7 +65,11 @@ flatinstall: all
 	for i in *.html; do $(INSTALL_DATA) $$i $(prefix)/doc/; done
 
 uninstall:
-	rm -r $(infodir)/ecl.info $(infodir)/ecldev.info
+	if [ -x $(INSTALL_INFO) ]; then \
+	  $(INSTALL_INFO) --delete ecl.$(INFOEXT); \
+	  $(INSTALL_INFO) --delete ecl.$(INFOEXT); \
+	fi
+	rm -r $(infodir)/ecl.$(INFOEXT) $(infodir)/ecldev.$(INFOEXT); \
 	rm $(mandir)/man$(manext)/ecl.$(manext)
 
 head: developers_manual user_manual $(srcdir)/head
@@ -69,6 +79,10 @@ head: developers_manual user_manual $(srcdir)/head
 	else \
 	  cp $(srcdir)/head head; \
 	fi
+ecl.info.gz: ecl.info
+	gzip < ecl.info > ecl.info.gz
+ecldev.info.gz: ecldev.info
+	gzip < ecldev.info > ecldev.info.gz
 ecl.info: $(srcdir)/user.txi $(srcdir)/macros.txi
 	makeinfo -I $(srcdir) --no-split $(srcdir)/user.txi
 ecldev.info: $(srcdir)/devel.txi $(srcdir)/macros.txi
@@ -112,4 +126,4 @@ developers_manual: $(srcdir)/devel.txi $(srcdir)/macros.txi
 	|| (makeinfo -I $(srcdir) --html $(srcdir)/devel.txi)) \
 	&& touch developers_manual
 clean:
-	rm -r -f ecl ecldev ecl.info ecldev.info *.html user_manual developers_manual
+	rm -r -f ecl ecldev ecl.info* ecldev.info* *.html user_manual developers_manual
