@@ -16,6 +16,7 @@
 
 
 #include "ecl.h"
+#include <signal.h>
 
 void
 cs_overflow(void)
@@ -270,6 +271,7 @@ not_a_variable(cl_object obj)
 void
 init_error(void)
 {
+	MF(@'si::universal-error-handler', universal_error_handler, Cnil);
 	null_string = make_constant_string("");
 	register_root(&null_string);
 }
