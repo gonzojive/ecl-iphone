@@ -249,6 +249,7 @@ AC_TRY_RUN([#include <stdio.h>
 int main() {
   FILE *f = fopen("conftestval","w");
   int c1, c2;
+  char *output;
   if (f == NULL) exit(1);
   fprintf(f, "\n");
   fclose(f);
@@ -260,12 +261,17 @@ int main() {
   f = fopen("conftestval","w");
   if (f == NULL) exit(1);
   if (c1 == '\r')
-    fprintf(f,"crlf");
+    output="crlf";
   else if (c2 == '\r')
-    fprintf(f,"lfcr");
+    output="lfcr";
   else
-    fprintf(f,"unix");
+    output="unix";
   fclose(f);
+  f = fopen("conftestval","w");
+  if (f == NULL) exit(1);
+  fprintf(f, output);
+  fclose(f);
+  exit(0);
 }
 ],
 if test `cat conftestval` = "crlf"; then
