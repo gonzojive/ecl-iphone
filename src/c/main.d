@@ -129,9 +129,9 @@ cl_boot(int argc, char **argv)
 	ecl_booted = 1;
 
 	lex_env = Cnil;
-	init_LSP();
+	read_VV(OBJNULL,init_LSP);
 #ifdef CLOS
-	init_CLOS();
+	read_VV(OBJNULL,init_CLOS);
 #endif
 
 	/* Jump to top level */

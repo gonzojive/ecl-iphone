@@ -137,6 +137,12 @@ extern \"C\"
 int init_~A(cl_object cblock)
 {
 	cl_object next;
+        if (FIXNUMP(cblock))
+		return;
+	cblock->cblock.data = NULL;
+	cblock->cblock.data_size = 0;
+	cblock->cblock.data_text = \"\";
+	cblock->cblock.data_text_size = 0;
 	~A
 ~{	next = read_VV(OBJNULL,init_~A); next->cblock.next = cblock; cblock = next; ~%~}
 	~A
@@ -211,7 +217,7 @@ int init_~A(cl_object cblock)
 		 init-name "CODE" prologue-code init-name epilogue-code))
        (compiler-cc c-name o-name)
        (apply #'shared-cc output-name o-name ld-flags)))
-    (delete-file c-name)
+    ;(delete-file c-name)
     (delete-file o-name)
     output-name))
 
@@ -252,7 +258,15 @@ int init_~A(cl_object cblock)
 ~%;;; Therefore, COMPILE-FILE without :SYSTEM-P T is unsupported.~
 ~%;;;"))
 
-  (setq input-pathname (merge-pathnames input-pathname #".lsp"))
+  (let ((lisp-pathname (merge-pathnames input-pathname #".lsp")))
+    (unless (probe-file lisp-pathname)
+      (setq lisp-pathname (merge-pathnames input-pathname #".lisp"))
+      (unless (probe-file lisp-pathname)
+	(format t "~&;;; The source file ~a is not found.~%"
+		(namestring input-pathname))
+	(setq *error-p* t)
+	(return-from compile-file (values nil t t))))
+    (setq input-pathname lisp-pathname))
 
   #+PDE (setq sys:*source-pathname* (truename input-pathname))
 
@@ -268,12 +282,6 @@ Cannot compile ~a."
 
   (setq *error-p* nil
 	*compiler-in-use* t)
-
-  (unless (probe-file input-pathname)
-    (format t "~&;;; The source file ~a is not found.~%"
-            (namestring input-pathname))
-    (setq *error-p* t)
-    (return-from compile-file (values nil t t)))
 
   (when *compile-verbose*
     (format t "~&;;; Compiling ~a."
