@@ -213,7 +213,7 @@
 (defvar *error-p* nil)
 (defconstant *cmperr-tag* (cons nil nil))
 
-(defvar *compile-print* nil
+(defvar *compile-print* t
   "This variable controls whether the compiler displays messages about
 each form it processes. The default value is NIL.")
 

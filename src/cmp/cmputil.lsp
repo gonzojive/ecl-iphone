@@ -27,17 +27,26 @@
       (too-many-args operator max l))))
 
 (defun too-many-args (name upper-bound n &aux (*print-case* :upcase))
-  (cmperr "~&;;; ~S requires at most ~R argument~:p, ~
+  (print-current-form)
+  (format t
+          "~&;;; ~S requires at most ~R argument~:p, ~
           but ~R ~:*~[were~;was~:;were~] supplied.~%"
           name
           upper-bound
-          n))
+          n)
+  (incf *error-count*)
+  (throw *cmperr-tag* '*cmperr-tag*))
 
 (defun too-few-args (name lower-bound n &aux (*print-case* :upcase))
-  (cmperr "~S requires at least ~R argument~:p, but only ~R ~:*~[were~;was~:;were~] supplied.~%"
+  (print-current-form)
+  (format t
+          "~&;;; ~S requires at least ~R argument~:p, ~
+          but only ~R ~:*~[were~;was~:;were~] supplied.~%"
           name
           lower-bound
-          n))
+          n)
+  (incf *error-count*)
+  (throw *cmperr-tag* '*cmperr-tag*))
 
 (defun cmpwarn (string &rest args &aux (*print-case* :upcase))
   (unless *suppress-compiler-warnings*
@@ -55,20 +64,26 @@
   nil)
 
 (defun print-current-form ()
-  (let ((*print-length* 2)
-	(*print-level* 2))
-    (format t "~&;;; Compiling ~s.~%" *current-form*))
+  (unless *suppress-compiler-notes*
+    (let ((*print-length* 2)
+	  (*print-level* 2))
+      (format t "~&;;; Compiling ~s.~%" *current-form*)))
   nil)
 
 (defun print-emitting (f)
-  (let* ((name (or (fun-name f) (fun-description f))))
-    (when name
+  (let* ((name (fun-name f)))
+    (unless name
+      (setf name (fun-description f)))
+    (when (and name (not *suppress-compiler-notes*))
       (format t "~&;;; Emitting code for ~s.~%" name))))
 
 (defun undefined-variable (sym &aux (*print-case* :upcase))
-  (cmpwarn "The variable ~s is undefined.~
-           ~%;;; The compiler will assume this variable is a global."
-	   sym))
+  (print-current-form)
+  (format t
+          "~&;;; The variable ~s is undefined.~
+           ~%;;; The compiler will assume this variable is a global.~%"
+          sym)
+  nil)
 
 (defun baboon (&aux (*print-case* :upcase))
   (print-current-form)
@@ -86,9 +101,12 @@
 	   (cmp-toplevel-eval form)
 	 (setq throw-flag nil))
     (when throw-flag
-      (cmpwarning "The form ~s was not evaluated successfully.~
-                  ~%;;; You are recommended to compile again.~%"
-		  form))))
+      (let ((*print-case* :upcase))
+	(print-current-form)
+	(format t "~&;;; The form ~s was not evaluated successfully.~
+                   ~%;;; You are recommended to compile again.~%"
+		form)))))
+
 
 (defun cmp-macroexpand (form &aux env (throw-flag t))
   ;; Obtain the local macro environment for expansion.
@@ -100,9 +118,12 @@
 	  (cmp-toplevel-eval `(macroexpand ',form ',env))
 	(setq throw-flag nil))
     (when throw-flag
-      (cmpwarn "The macro form ~s was not expanded successfully.~
-               ~%;;; You are recommended to compile again.~%"
-	       form))))
+      (let ((*print-case* :upcase))
+	(print-current-form)
+	(format t
+		"~&;;; The macro form ~s was not expanded successfully.~
+                   ~%;;; You are recommended to compile again.~%"
+		form)))))
 
 (defun cmp-expand-macro (fd fname args &aux env (throw-flag t))
   (dolist (v *funs*)
@@ -113,10 +134,13 @@
 	  (cmp-toplevel-eval
 	   `(funcall *macroexpand-hook* ',fd ',(cons fname args) ',env))
 	(setq throw-flag nil))
-    (when throw-flag
-      (cmpwarn "The macro form (~s ...) was not expanded successfully.~
-               ~%;;; You are recommended to compile again.~%"
-	       fname))))
+    (if throw-flag
+        (let ((*print-case* :upcase))
+          (print-current-form)
+          (format t
+		  "~&;;; The macro form (~s ...) was not expanded successfully.~
+                   ~%;;; You are recommended to compile again.~%"
+		  fname)))))
 
 (defun cmp-expand-compiler-macro (fd fname args &aux env (throw-flag t))
   (dolist (v *funs*)
@@ -128,9 +152,12 @@
 	   (setq throw-flag nil)
 	   (values new-form (not (eql new-form form))))
       (when throw-flag
-	(cmpwarn "The macro form (~s ...) was not expanded successfully.~
-                 ~%;;; You are recommended to compile again.~%"
-		 fname)))))
+	  (let ((*print-case* :upcase))
+	    (print-current-form)
+	    (format t
+		    "~&;;; The macro form (~s ...) was not expanded successfully.~
+                   ~%;;; You are recommended to compile again.~%"
+		    fname))))))
 
 (defun cmp-toplevel-eval (form)
    (let*
