@@ -137,7 +137,7 @@ T
 (let ((s (prin1-to-string ARRAY-DIMENSION-LIMIT )))
   (or #+XCL (equal s "17920")
       #+AKCL (equal s "16777216") #+GCL (equal s "2147483647")
-      #+ECL (equal s "16777216")
+      #+ECL (equal s #-BOEHM-GC "16777216" #+BOEHM-GC (prin1-to-string most-positive-fixnum))
       #+CLISP (equal s (prin1-to-string (1+ most-positive-fixnum)))
       #+ALLEGRO (equal s "16777216")
       #-(or XCL CLISP AKCL ALLEGRO ECL) "UNKNOWN"
@@ -147,7 +147,7 @@ T
 (let ((s (prin1-to-string ARRAY-TOTAL-SIZE-LIMIT )))
   (or #+XCL (equal s "17920")
       #+AKCL (equal s "16777216")
-      #+ECL (equal s "16777216")
+      #+ECL (equal s #-BOEHM-GC "16777216" #+BOEHM-GC (prin1-to-string most-positive-fixnum))
       #+CLISP (equal s (prin1-to-string (1+ most-positive-fixnum)))
       #+ALLEGRO (equal s "16777216")
       #-(or XCL CLISP AKCL ALLEGRO ECL) "UNKNOWN"

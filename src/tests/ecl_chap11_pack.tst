@@ -494,7 +494,7 @@ nil
 ; modules | provide | (require nicht getestet !)
 
 (and *modules* T)
-#+(or ECL XCL) T #+CLISP NIL #-(or ECL XCL CLISP) UNKNOWN
+#+XCL T #+(or CLISP ECL) NIL #-(or ECL XCL CLISP) UNKNOWN
 
 (and (provide 'provide-test) t)
 t
