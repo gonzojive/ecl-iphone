@@ -89,11 +89,11 @@ AC_ARG_WITH(oldloop,
 	[--with-oldloop         Use the old MIT LOOP macro.],
 	oldloop="yes")
 AC_ARG_WITH(cmuformat,
-	[--with-cmuformat       Use the FORMAT routine from CMUCL.],
-	cmuformat="yes")
+	[--without-cmuformat    Use the FORMAT routine from CMUCL.],
+	cmuformat="${withval}",cmuformat="yes")
 AC_ARG_WITH(clos-streams,
 	[--with-clos-streams    Allow user defined stream objects.],
-	closstreams="yes")
+	closstreams="${withval}",closstreams="no")
 AC_ARG_WITH(cxx,
 	[--with-cxx             Build ECL using C++ compiler.],
 	usecxx="${withval}",usecxx="no")

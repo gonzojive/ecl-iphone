@@ -872,7 +872,7 @@ Optional Packages:
 --with-gmp=args        Configure supplied GMP library with arguments.
 --with-config-file=f	Supply configuration for a cross compiler.
 --with-oldloop         Use the old MIT LOOP macro.
---with-cmuformat       Use the FORMAT routine from CMUCL.
+--without-cmuformat    Use the FORMAT routine from CMUCL.
 --with-clos-streams    Allow user defined stream objects.
 --with-cxx             Build ECL using C++ compiler.
   --with-x                use the X Window System
@@ -1501,13 +1501,17 @@ fi;
 # Check whether --with-cmuformat or --without-cmuformat was given.
 if test "${with_cmuformat+set}" = set; then
   withval="$with_cmuformat"
+  cmuformat="${withval}"
+else
   cmuformat="yes"
 fi;
 
 # Check whether --with-clos-streams or --without-clos-streams was given.
 if test "${with_clos_streams+set}" = set; then
   withval="$with_clos_streams"
-  closstreams="yes"
+  closstreams="${withval}"
+else
+  closstreams="no"
 fi;
 
 # Check whether --with-cxx or --without-cxx was given.
