@@ -37,6 +37,7 @@ ecldev.ps: ecldev.dvi $(srcdir)/macros.txi
 	dvips -o $@ ecldev.dvi
 
 install: all
+	test -d $(PREFIX)$(infodir) || (mkdir $(PREFIX)$(infodir); chmod 755 $(PREFIX)$(infodir))
 	$(INSTALL_DATA) ecl.info $(PREFIX)$(infodir)
 	$(INSTALL_DATA) ecldev.info $(PREFIX)$(infodir)
 
@@ -70,8 +71,14 @@ lgpl.html: $(top_srcdir)/../LGPL
 	 echo '<pre>'; cat $?; echo '</pre>'; \
 	 cat $(srcdir)/end) | $(FILTER) > $@
 ecl.html: $(srcdir)/user.txi $(srcdir)/macros.txi
-	makeinfo -I $(srcdir) --html $(srcdir)/user.txi
+	echo "Producing ecl.html; ignore error messages."
+	test -d ecl || mkdir ecl; \
+	texi2html -I=$(srcdir) -subdir=ecl -split=chapter $(srcdir)/user.txi \
+	|| (makeinfo -I $(srcdir) --html $(srcdir)/user.txi; rm -rf ecl)
 ecldev.html: $(srcdir)/devel.txi $(srcdir)/macros.txi
-	makeinfo -I $(srcdir) --html $(srcdir)/devel.txi
+	echo "Producing ecldev.html; ignore error messages."
+	test -d ecldev || mkdir ecldev; \
+	texi2html -I=$(srcdir) -subdir=ecldev -split=chapter $(srcdir)/devel.txi \
+	|| (makeinfo -I $(srcdir) --html $(srcdir)/devel.txi; rm -rf ecldev)
 clean:
-	rm -f ecl.* *.html
+	rm -r -f ecl ecldev ecl.info ecldev.info *.html
