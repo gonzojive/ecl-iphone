@@ -1609,6 +1609,14 @@ ECL 0.9c
   - New tools and makefile rules for building RPM files kindly
     contributed by Robert Lehr.
 
+  - The interpreter now uses by default 16-bit bytecodes. This avoids
+    pointer misalignments and SIGBUS signals on architectures which
+    are sensitive to this, and does not cost too much space. A
+    fallback option for the Intel, --enable-opcode8, has been
+    introduced.
+
+  - The GMP Library is updated to 4.1.2.
+
 * Errors fixed:
 
   - The compiler was too eager when replacing variables, so that
@@ -1633,6 +1641,9 @@ ECL 0.9c
     required.
 
   - LOAD-TIME-VALUE was broken.
+
+  - Invoking finalizers during GC could trash the environment of a
+    running function, either interpreted or compiled.
 
 * ANSI compatibility:
 
