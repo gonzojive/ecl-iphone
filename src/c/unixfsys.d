@@ -638,7 +638,7 @@ si_getcwd(void)
 }
 
 @(defun si::chdir (directory &optional change_d_p_d)
-	cl_object previous = si_default_pathname_defaults();
+	cl_object previous = si_getcwd();
 	cl_object namestring;
 @
 	/* This will fail if the new directory does not exist */
