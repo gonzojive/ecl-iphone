@@ -177,7 +177,7 @@ find_package(cl_object name)
 
 	if (type_of(name) == t_package)
 		return name;
-	name = coerce_to_string_designator(name);
+	name = cl_string(name);
 	/* INV: package_list is a proper list */
 	for (l = package_list; CONSP(l); l = CDR(l)) {
 		p = CAR(l);
@@ -271,7 +271,7 @@ find_symbol(cl_object name, cl_object p, int *intern_flag)
 {
 	cl_object s, ul;
 	
-	name = coerce_to_string_designator(name);
+	name = cl_string(name);
 	p = si_coerce_to_package(p);
 	s = gethash_safe(name, p->pack.external, OBJNULL);
 	if (s != OBJNULL) {

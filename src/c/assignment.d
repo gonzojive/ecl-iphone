@@ -37,12 +37,10 @@ setf_namep(cl_object fun_spec)
 	  cl_object fn_str = fn_name->symbol.name;
 	  int l = fn_str->string.fillp + 7;
 	  cl_object string = cl_alloc_simple_string(l);
-	  char *str = (char *)cl_alloc_atomic(l+1);
-	  string->string.self = str;
+	  char *str = string->string.self;
 	  strncpy(str, "(SETF ", 6);
 	  strncpy(str + 6, fn_str->string.self, fn_str->string.fillp);
 	  str[l-1] = ')';
-	  str[l] = '\0';
 	  sym = intern(string, fn_name->symbol.hpack, &intern_flag);
 	  return(sym);
 	} else return(OBJNULL);

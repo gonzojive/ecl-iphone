@@ -1215,7 +1215,6 @@ extern cl_object make_simple_string(char *s);
 #define make_constant_string(s) (make_simple_string((char *)s))
 extern cl_object make_string_copy(const char *s);
 extern cl_object copy_simple_string(cl_object x);
-extern cl_object coerce_to_string_designator(cl_object x);
 extern bool string_eq(cl_object x, cl_object y);
 extern bool string_equal(cl_object x, cl_object y);
 extern bool member_char(int c, cl_object char_bag);

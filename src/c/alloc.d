@@ -857,7 +857,7 @@ free(void *ptr)
   if (ptr) {
     for (p = &malloc_list;  !endp(*p);  p = &(CDR((*p))))
       if ((CAR((*p)))->string.self == ptr) {
-	cl_dealloc(CAR((*p))->string.self, CAR((*p))->string.dim);
+	cl_dealloc(CAR((*p))->string.self, CAR((*p))->string.dim+1);
 	CAR((*p))->string.self = NULL;
 	*p = CDR((*p));
 	return;
@@ -920,7 +920,6 @@ void cfree(void *ptr)
 void *
 memalign(size_t align, size_t size)
 { cl_object x = alloc_simple_string(size);
-  x->string.self = (char *)ALLOC_ALIGNED(alloc, size, align);
   malloc_list = make_cons(x, malloc_list);
   return x->string.self;
 }

@@ -242,7 +242,7 @@ BEGIN:
 		cp = x->string.self;
 		if (cp == NULL)
 			break;
-		j = x->string.dim;
+		j = x->string.dim+1;
 	COPY_ARRAY:
 		mark_contblock(cp, j);
 		break;

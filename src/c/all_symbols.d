@@ -60,7 +60,7 @@ cl_index cl_num_symbols_in_core = 0;
 	symbol = symbol->symbol.name;
 	l      = symbol->string.fillp;
 	source = symbol->string.self;
-	output = cl_alloc_simple_string(l+1); array_allocself(output);
+	output = cl_alloc_simple_string(l+1);
 	dest   = output->string.self;
 	if (is_symbol && source[0] == '*') {
 		if (l > 2 && source[l-1] == '*') l--;

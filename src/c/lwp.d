@@ -155,11 +155,7 @@ make_pd()
   npd->lwp_fmt_temporary_string =
     npd->lwp_fmt_temporary_stream->stream.object0;
   
-  npd->lwp_token = cl_alloc_simple_string(LISP_PAGESIZE);
-  npd->lwp_token->string.self = cl_alloc_atomic(LISP_PAGESIZE);
-  npd->lwp_token->string.fillp = 0;
-  npd->lwp_token->string.hasfillp = TRUE;
-  npd->lwp_token->string.adjustable = TRUE;
+  npd->lwp_token = cl_alloc_adjustable_string(LISP_PAGESIZE);
 
   for (i=0; i<3; i++)
     npd->lwp_bignum_register[i] = cl_alloc_object(t_bignum);

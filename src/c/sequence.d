@@ -231,8 +231,6 @@ E:
 		else if (e < s || e > sequence->string.fillp)
 			goto ILLEGAL_START_END;
 		x = cl_alloc_simple_string(e - s);
-		x->string.self = (char *)cl_alloc_atomic(e - s + 1);
-		x->string.self[e-s] = '\0';
 		for (i = s, j = 0;  i < e;  i++, j++)
 			x->string.self[j] = sequence->string.self[i];
 		@(return x)
@@ -360,10 +358,8 @@ cl_reverse(cl_object seq)
 	case t_string:
 		x = seq;
 		y = cl_alloc_simple_string(x->string.fillp);
-		y->string.self = (char *)cl_alloc_atomic(x->string.fillp+1);
 		for (j = x->string.fillp - 1, i = 0;  j >=0;  --j, i++)
 			y->string.self[j] = x->string.self[i];
-		y->string.self[x->string.fillp] = '\0';
 		break;
 
 	case t_bitvector:

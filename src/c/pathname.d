@@ -116,9 +116,7 @@ static cl_object
 make_one(const char *s, cl_index end)
 {
 	cl_object x = cl_alloc_simple_string(end);
-	x->string.self = (char *)cl_alloc(end+1);
 	memcpy(x->string.self, s, end);
-	x->string.self[end] = '\0';
 	return(x);
 }
 
@@ -530,7 +528,7 @@ push_c_string(cl_object buffer, const char *s, cl_index length)
 static void
 push_string(cl_object buffer, cl_object string)
 {
-	string = coerce_to_string_designator(string);
+	string = cl_string(string);
 	push_c_string(buffer, string->string.self, string->string.fillp);
 }
 

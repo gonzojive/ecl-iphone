@@ -36,8 +36,6 @@
 	code = char_code(initial_element);
 	s = object_to_index(size);
 	x = cl_alloc_simple_string(s);
-	x->string.self = (char *)cl_alloc_atomic(s+1);
-	x->string.self[s] = '\0';
 	for (i = 0;  i < s;  i++)
 		x->string.self[i] = code;
 	@(return x)
@@ -52,8 +50,9 @@ cl_alloc_simple_string(cl_index l)
 	x->string.hasfillp = FALSE;
 	x->string.adjustable = FALSE;
 	x->string.displaced = Cnil;
-	x->string.dim = (x->string.fillp = l) + 1;
-	x->string.self = NULL;
+	x->string.dim = (x->string.fillp = l);
+	x->string.self = (char *)cl_alloc_atomic(l+1);
+	x->string.self[l] = x->string.self[0] = 0;
 	return(x);
 }
 
@@ -66,8 +65,6 @@ cl_object
 cl_alloc_adjustable_string(cl_index l)
 {
 	cl_object output = cl_alloc_simple_string(l);
-	output->string.self = (char *)cl_alloc_atomic(l+1);
-	output->string.self[l] = output->string.self[0] = 0;
 	output->string.fillp = 0;
 	output->string.hasfillp = TRUE;
  	output->string.adjustable = TRUE;
@@ -81,8 +78,13 @@ cl_object
 make_simple_string(char *s)
 {
 	cl_object x;
+	cl_index l = strlen(s);
 
-	x = cl_alloc_simple_string(strlen(s));
+	x = cl_alloc_object(t_string);
+	x->string.hasfillp = FALSE;
+	x->string.adjustable = FALSE;
+	x->string.displaced = Cnil;
+	x->string.dim = (x->string.fillp = l);
 	x->string.self = s;
 	
 	return(x);
@@ -95,8 +97,7 @@ make_string_copy(const char *s)
 	cl_index l = strlen(s);
 
 	x = cl_alloc_simple_string(l);
-	x->string.self = (char *)cl_alloc_atomic(l+1);
-	memcpy(x->string.self, s, l+1);
+	memcpy(x->string.self, s, l);
 	return(x);
 }
 
@@ -111,9 +112,7 @@ copy_simple_string(cl_object x)
 	cl_index l = x->string.fillp;
 
 	y = cl_alloc_simple_string(l);
-	y->string.self = (char *)cl_alloc_atomic(l+1);
 	memcpy(y->string.self, x->string.self, l);
-	y->string.self[l] = '\0';
 	return(y);
 }
 
@@ -128,42 +127,11 @@ cl_string(cl_object x)
 
 	case t_character:
 		y = cl_alloc_simple_string(1);
-		y->string.self = (char *)cl_alloc_atomic(2);
-		y->string.self[1] = '\0';
 		y->string.self[0] = CHAR_CODE(x);
 		return1(y);
 
 	case t_string:
 		return1(x);
-
-	default:
-		FEtype_error_string(x);
-	}
-}
-
-/*
-	Outputs a valid string designator which is either a string or
-	a symbol, avoiding copying as far as possible. Characters are
-	coerced to strings.
-*/
-cl_object
-coerce_to_string_designator(cl_object x)
-{
-	cl_object y;
-
-	switch (type_of(x)) {
-	case t_symbol:
-		return x->symbol.name;
-
-	case t_string:
-		return x;
-
-	case t_character:
-		y = cl_alloc_simple_string(1);
-		y->string.self = (char *)cl_alloc_atomic(2);
-		y->string.self[1] = '\0';
-		y->string.self[0] = CHAR_CODE(x);
-		return(y);
 
 	default:
 		FEtype_error_string(x);
@@ -178,7 +146,7 @@ cl_char(cl_object s, cl_object i)
 	assert_type_string(s);
 	j = object_to_index(i);
 	/* CHAR bypasses fill pointers when accessing strings */
-	if (j >= s->string.dim-1)
+	if (j >= s->string.dim)
 		illegal_index(s, i);
 	@(return CODE_CHAR(s->string.self[j]))
 }
@@ -191,7 +159,7 @@ si_char_set(cl_object str, cl_object index, cl_object c)
 	assert_type_string(str);
 	j = object_to_index(index);
 	/* CHAR bypasses fill pointers when accessing strings */
-	if (j >= str->string.dim-1)
+	if (j >= str->string.dim)
 		illegal_index(str, index);
 	/* INV: char_code() checks type of `c' */
 	str->string.self[j] = char_code(c);
@@ -229,8 +197,8 @@ for the string designator ~S.", 3, start, end, string);
 		   (start2 MAKE_FIXNUM(0)) end2)
 	cl_index s1, e1, s2, e2;
 @
-	string1 = coerce_to_string_designator(string1);
-	string2 = coerce_to_string_designator(string2);
+	string1 = cl_string(string1);
+	string2 = cl_string(string2);
 	get_string_start_end(string1, start1, end1, &s1, &e1);
 	get_string_start_end(string2, start2, end2, &s2, &e2);
 	if (e1 - s1 != e2 - s2)
@@ -261,8 +229,8 @@ string_eq(cl_object x, cl_object y)
 	cl_index s1, e1, s2, e2;
 	cl_index i1, i2;
 @
-	string1 = coerce_to_string_designator(string1);
-	string2 = coerce_to_string_designator(string2);
+	string1 = cl_string(string1);
+	string2 = cl_string(string2);
 	get_string_start_end(string1, start1, end1, &s1, &e1);
 	get_string_start_end(string2, start2, end2, &s2, &e2);
 	if (e1 - s1 != e2 - s2)
@@ -322,8 +290,8 @@ string_cmp(int narg, int sign, int boundary, cl_va_list ARGS)
 	KEYS[3]=@':end2';
 	cl_parse_key(ARGS, 4, KEYS, KEY_VARS, NULL, FALSE);
 
-	string1 = coerce_to_string_designator(string1);
-	string2 = coerce_to_string_designator(string2);
+	string1 = cl_string(string1);
+	string2 = cl_string(string2);
 	if (start1p == Cnil) start1 = MAKE_FIXNUM(0);
 	if (start2p == Cnil) start2 = MAKE_FIXNUM(0);
 	get_string_start_end(string1, start1, end1, &s1, &e1);
@@ -407,8 +375,8 @@ string_compare(int narg, int sign, int boundary, cl_va_list ARGS)
 	KEYS[3]=@':end2';
 	cl_parse_key(ARGS, 4, KEYS, KEY_VARS, NULL, FALSE);
 
-	string1 = coerce_to_string_designator(string1);
-	string2 = coerce_to_string_designator(string2);
+	string1 = cl_string(string1);
+	string2 = cl_string(string2);
 	if (start1p == Cnil) start1 = MAKE_FIXNUM(0);
 	if (start2p == Cnil) start2 = MAKE_FIXNUM(0);
 	get_string_start_end(string1, start1, end1, &s1, &e1);
@@ -514,7 +482,7 @@ string_trim0(bool left_trim, bool right_trim, cl_object char_bag, cl_object strn
 	cl_object res;
 	cl_index i, j, k;
 
-	strng = coerce_to_string_designator(strng);
+	strng = cl_string(strng);
 	i = 0;
 	j = strng->string.fillp - 1;
 	if (left_trim)
@@ -527,8 +495,6 @@ string_trim0(bool left_trim, bool right_trim, cl_object char_bag, cl_object strn
 				break;
 	k = j - i + 1;
 	res = cl_alloc_simple_string(k);
-	res->string.self = (char *)cl_alloc_atomic(k+1);
-	res->string.self[k] = '\0';
 	memcpy(res->string.self, strng->string.self+i, k);
 	return1(res);
 }
@@ -562,7 +528,7 @@ string_case(int narg, int (*casefun)(int c, bool *bp), cl_va_list ARGS)
 	KEYS[1]=@':end';
 	cl_parse_key(ARGS, 2, KEYS, KEY_VARS, NULL, FALSE);
 
-	strng = coerce_to_string_designator(strng);
+	strng = cl_string(strng);
 	conv = copy_simple_string(strng);
 	if (startp == Cnil) start = MAKE_FIXNUM(0);
 	get_string_start_end(conv, start, end, &s, &e);
@@ -670,12 +636,10 @@ nstring_case(int narg, int (*casefun)(int, bool *), cl_va_list ARGS)
 	char *vself;
 @
 	for (i = 0, l = 0;  i < narg;  i++) {
-		strings[i] = coerce_to_string_designator(cl_va_arg(args));
+		strings[i] = cl_string(cl_va_arg(args));
 		l += strings[i]->string.fillp;
 	}
 	v = cl_alloc_simple_string(l);
-	v->string.self = (char *)cl_alloc_atomic(l+1);
-	v->string.self[l] = '\0';
 	for (i = 0, vself = v->string.self;  i < narg;  i++, vself += l) {
 		l = strings[i]->string.fillp;
 		memcpy(vself, strings[i]->string.self, l);
@@ -701,7 +665,7 @@ cl_string_push_extend(cl_object s, int c)
 		if (s->string.dim >= ADIMLIM/2)
 			FEerror("Can't extend the string.", 0);
 		new_length = s->string.dim * 2;
-		p = (char *)cl_alloc(new_length);
+		p = (char *)cl_alloc(new_length+1); p[new_length] = 0;
 		memcpy(p, s->string.self, s->string.dim * sizeof(char));
 		s->string.dim = new_length;
 		adjust_displaced(s, p - s->string.self);

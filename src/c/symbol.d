@@ -314,8 +314,6 @@ cl_symbol_name(cl_object sym)
 	if (name_length == 0)
 		name_length++;
 	str = cl_alloc_simple_string(name_length);
-	str->string.self = (char *)cl_alloc_atomic(name_length+1);
-	str->string.self[name_length] = '\0';
 	for (j = 0;  j < prefix->string.fillp;  j++)
 		str->string.self[j] = prefix->string.self[j];
 	if (counter_value == 0)
@@ -342,8 +340,6 @@ ONCE_MORE:
 	if (name_length == 0)
 		name_length++;
 	str = cl_alloc_simple_string(name_length);
-        str->string.self = (char *)cl_alloc_atomic(name_length+1);
-	str->string.self[name_length] = '\0';
         for (j = 0;  j < prefix->string.fillp;  j++)
                 str->string.self[j] = prefix->string.self[j];
 	if ((j = gentemp_counter) == 0)
@@ -480,11 +476,7 @@ init_symbol(void)
 	gensym_prefix = make_simple_string("G");
 	gentemp_prefix = make_simple_string("T");
 	gentemp_counter = 0;
-	cl_token = cl_alloc_simple_string(LISP_PAGESIZE);
-	cl_token->string.fillp = 0;
-	cl_token->string.self = (char *)cl_alloc_atomic(LISP_PAGESIZE);
-	cl_token->string.hasfillp = TRUE;
-	cl_token->string.adjustable = TRUE;
+	cl_token = cl_alloc_adjustable_string(LISP_PAGESIZE);
 
 	register_root(&gensym_prefix);
 	register_root(&gentemp_prefix);
