@@ -57,7 +57,7 @@
 	    ;; set location for lambda list requireds
 	    (setf (var-loc var) loc))
 	   (t
-	    (error)))
+	    (baboon)))
 	 )))
 
 ;;; Used by let*, defmacro and lambda's &aux, &optional, &rest, &keyword

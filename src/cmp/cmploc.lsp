@@ -131,7 +131,7 @@
 
 (defun wt-cadr (loc) (wt "CADR(" loc ")"))
 
-(defun wt-lcl (lcl) (unless (numberp lcl) (error)) (wt "V" lcl))
+(defun wt-lcl (lcl) (unless (numberp lcl) (baboon)) (wt "V" lcl))
 
 (defun wt-vv (vv)
   (if (numberp vv)

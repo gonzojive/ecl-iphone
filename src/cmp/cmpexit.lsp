@@ -65,7 +65,7 @@
 	      (when jump-p (wt-nl) (wt-go *exit*))
 	      (return))
 	     (t (setq jump-p t))))
-      ((numberp ue) (error)
+      ((numberp ue) (baboon)
        (setq bds-lcl ue bds-bind 0))
       (t (case ue
 	   (BDS-BIND (incf bds-bind))
