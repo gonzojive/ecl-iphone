@@ -77,3 +77,13 @@ Returns, as a string, the version of the software under which ECL runs."
 #+msvc
 (si::pathname-translations "HOME"
   `(("**;*.*" ,(merge-pathnames "**/*.*" (user-homedir-pathname)))))
+(let (x)
+  (cond ((and (setf x (ext:getenv "TMPDIR"))
+	      (probe-file x)))
+	((and (setf x (ext:getenv "TEMP"))
+	      (probe-file x)))
+	((and (setf x (ext:getenv "TMP"))
+	      (probe-file x)))
+	(t (setf x "./")))
+  (si::pathname-translations "TMP"
+     `(("**;*.*" ,(format nil "~A/**/*.*" x)))))

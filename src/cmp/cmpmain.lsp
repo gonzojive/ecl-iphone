@@ -93,7 +93,7 @@ coprocessor).")
   (let ((lib-file (compile-file-pathname o-pathname :type :lib)))
     (safe-system
      (format nil
-	     "dllwrap --export-all-symbols -o ~A -L~A ~{~A ~} ~@?"
+	     "dllwrap --export-all-symbols -o ~S -L~S ~{~S ~} ~@?"
 	     (si::coerce-to-filename o-pathname)
 	     (namestring (translate-logical-pathname "SYS:"))
 	     options
@@ -116,7 +116,7 @@ coprocessor).")
   #+(or mingw32)
   (safe-system
    (format nil
-	   "dllwrap -o ~A --export-all-symbols -L~A ~{~A ~} ~@?"
+	   "dllwrap -o ~A --export-all-symbols -L~S ~{~S ~} ~@?"
 	   (si::coerce-to-filename o-pathname)
 	   (namestring (translate-logical-pathname "SYS:"))
 	   options
@@ -293,8 +293,8 @@ cl_object Cblock;
        (print o-name)
        (compiler-cc c-name o-name)
        (apply #'bundle-cc output-name o-name ld-flags)))
-    ;(delete-file c-name)
-    ;(delete-file o-name)
+    (delete-file c-name)
+    (delete-file o-name)
     output-name))
 
 (defun build-fasl (&rest args)
@@ -516,10 +516,8 @@ Cannot compile ~a."
 	 (setq form `(setf (symbol-function ',name) #',form)))
         (t (error "No lambda expression is assigned to the symbol ~s." name)))
 
-  (let ((template (format nil "~A/ecl~3,'0x"
-			  (or (si::getenv "TMPDIR") "/tmp")
-			  (incf *gazonk-counter*))))
-    (unless (setq data-pathname (pathname (si::mkstemp template)))
+  (let ((template (format nil "TMP:ECL~3,'0x" (incf *gazonk-counter*))))
+    (unless (setq data-pathname (si::mkstemp template))
       (format t "~&;;; Unable to create temporay file~%~
 ;;;	~AXXXXXX
 ;;; Make sure you have enough free space in disk, check permissions or set~%~

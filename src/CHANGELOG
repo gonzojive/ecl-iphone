@@ -7,6 +7,15 @@ ECL 1.0
     produced by "ln -sf ../tmp/foo faa") are now properly recognized and
     followed by TRUENAME.
 
+* Visible changes:
+
+  - SI:MKSTEMP now accepts and returns pathnames.
+
+  - A new logical hostname TMP points to a suitable directory for temporary
+    files. The value is guessed using environment variables TMPDIR, TEMP and
+    TMP. In some systems this directory might need to have execution
+    permissions.
+
 * ANSI compliance:
 
   - The value of *READTABLE* can now be modified by the user.
