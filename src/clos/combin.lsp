@@ -256,8 +256,14 @@
       (collect-forms forms)
       (cons 'PROGN progn-form))))
 
+(defun error-qualifiers (m qualifiers)
+  (declare (si::c-local))
+  (error "Standard method combination allows only one qualifier ~
+          per method, either :BEFORE, :AFTER, or :AROUND; while ~
+          a method with ~S was found."
+	 m qualifiers))
 
-(defun compute-combined-method (gf methods)
+(defun standard-compute-combined-method (gf methods)
   (declare (ignore gf))
   (let*((before ())
 	(primary ())
@@ -265,16 +271,23 @@
 	(around ()))
     (dolist (m methods)
       (let ((qualifiers (get-method-qualifiers m)))
-	(cond ((member :BEFORE qualifiers) (push m before))
-	      ((member :AFTER  qualifiers) (push m after))
-	      ((member :AROUND  qualifiers) (push m around))
-	      (t
-	       (push m primary)))))
+	(cond ((null qualifiers) (push m primary))
+	      ((rest qualifiers) (error-qualifier m qualifiers))
+	      ((eq (setq qualifiers (first qualifiers)) :BEFORE)
+	       (push m before))
+	      ((eq qualifiers :AFTER) (push m after))
+	      ((eq qualifiers :AROUND) (push m around))
+	      (t (error-qualifier m qualifiers)))))
+    ;; When there are no primary methods, an error is to be signaled,
+    ;; and we need not care about :AROUND, :AFTER or :BEFORE methods.
+    (when (null primary)
+      (return-from standard-compute-combined-method
+	#'(lambda (&rest args)
+	    (apply 'no-primary-method gf args))))
     (setq before (nreverse before)
 	  after (nreverse after)
 	  primary (nreverse primary)
 	  around (nreverse around))
-
     (make-effective-method-function
      (if (and (null before)
 	      (null after))
@@ -286,9 +299,7 @@
 	 (let ((main-effective-method
 		`(PROGN ,@(mapcar #'make-method-call before)
 		  (MULTIPLE-VALUE-PROG1
-		      ,(if primary
-			   `(CALL-METHOD ,(first primary) ,(rest primary))
-			   '(error "No applicable primary method."))
+		      (CALL-METHOD ,(first primary) ,(rest primary))
 		    ,@(mapcar #'make-method-call after)))))
 	   (if around
 	       `(CALL-METHOD ,(first around)

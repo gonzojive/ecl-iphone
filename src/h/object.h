@@ -203,7 +203,7 @@ typedef enum {			/*  array element type  */
 union array_data {
 	cl_object *t;
         unsigned char *ch;
-	u_int8_t *b8;
+	uint8_t *b8;
 	int8_t *i8;
 	float *sf;
 	double *lf;

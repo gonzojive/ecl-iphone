@@ -408,8 +408,8 @@ array_allocself(cl_object x)
 		break;
 	      }
 	case aet_b8: {
-		u_int8_t *elts;
-		elts = (u_int8_t *)cl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
+		uint8_t *elts;
+		elts = (uint8_t *)cl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
 		for (i = 0;  i < d;  i++)
 			elts[i] = 0;
 		x->array.self.b8 = elts;

@@ -142,6 +142,9 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #undef HAVE_FLOAT_H
 /* select()								*/
 #undef HAVE_SELECT
+/* putenv() or setenv()							*/
+#undef HAVE_SETENV
+#undef HAVE_PUTENV
 
 /* what characters are used to mark beginning of new line		*/
 #undef ECL_NEWLINE_IS_CRLF

@@ -636,20 +636,6 @@ si_mkdir(cl_object directory, cl_object mode)
 	@(return filename)
 }
 
-#ifdef sun4sol2
-/* These functions can't be used with static linking on Solaris */
-struct passwd *
-getpwnam(const char *name)
-{
-  FEerror("~~ expansion not supported on Solaris.", 0);
-}
-struct passwd *
-getpwuid(uid_t uid)
-{
-  FEerror("ECL can't use getpwuid on Solaris.", 0);
-}
-#endif
-
 cl_object
 si_mkstemp(cl_object template)
 {

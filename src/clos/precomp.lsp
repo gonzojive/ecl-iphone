@@ -78,23 +78,6 @@
 						      ;whenever there are
 						      ;:around methods
 
-
-   (PROGN (_call-method_)			      ;1 :before 1 :after
-	  (MULTIPLE-VALUE-PROG1			      ;*** NO PRIMARY, COMMON
-	    (error "No applicable primary method.")   ;*** INTERMEDIATE STATE
-	    (_call-method_)))
-
-   (PROGN (_call-method_)			      ;1 :before 0 :after
-	  (MULTIPLE-VALUE-PROG1			      ;*** NO PRIMARY, COMMON
-	    (error "No applicable primary method."))) ;*** INTERMEDIATE STATE
-
-
-   (PROGN ()					      ;0 :before 1 :after
-	  (MULTIPLE-VALUE-PROG1			      ;*** NO PRIMARY, COMMON
-	    (error "No applicable primary method.")   ;*** INTERMEDIATE STATE
-	    (_call-method_)))
-
-
    (PROGN (_call-method_)			      ;1 :before 1 :after
 	  (MULTIPLE-VALUE-PROG1 (_call-method_)
 				(_call-method_)))

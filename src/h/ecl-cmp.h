@@ -20,6 +20,7 @@
 #include <stdarg.h>
 #include <setjmp.h>
 #include <math.h>
+#include <inttypes.h>
 #include "config.h"
 #include "gmp.h"
 #include "object.h"

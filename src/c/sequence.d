@@ -433,7 +433,7 @@ cl_nreverse(cl_object seq)
 			break;
 		case aet_b8:
 			for (i = 0, j = k - 1;  i < j;  i++, --j) {
-				u_int8_t y = x->array.self.b8[i];
+				uint8_t y = x->array.self.b8[i];
 				x->array.self.b8[i] = x->array.self.b8[j];
 				x->array.self.b8[j] = y;
 			}

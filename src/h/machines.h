@@ -194,8 +194,7 @@
 #define	IEEEFLOAT
 #define	BSD
 #define	BRAND "SUN"
-#define LDFLAGS
-#define SHARED_LDFLAGS -dy -G
+#define SHARED_LDFLAGS "-dy -G"
 #ifdef	sun4sol2
 #  include <dlfcn.h>
 #  include <link.h>

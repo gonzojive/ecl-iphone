@@ -1422,8 +1422,12 @@ ECLS 0.9
     etc. That sequence type is used, rather than the general one
     (VECTOR T). (:TYPE option from slots is not used, though).
 
-ECLS 1.0
-========
+ECLS 0.9b
+=========
+
+* Supported platforms:
+
+  - Solaris 32-bits.
 
 * Errors fixed:
 

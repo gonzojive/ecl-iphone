@@ -1106,7 +1106,9 @@ cl_symbols[] = {
 {SYS_ "SHARP-S-READER", SI_ORDINARY, NULL, -1},
 {SYS_ "SELECT-PACKAGE", SI_ORDINARY, si_select_package, 1},
 {SYS_ "SET-SYMBOL-PLIST", SI_ORDINARY, si_set_symbol_plist, 2},
+#if defined(HAVE_PUTENV) || defined(HAVE_SETENV)
 {SYS_ "SETENV", SI_ORDINARY, si_setenv, 2},
+#endif
 {SYS_ "SETF-LAMBDA", SI_ORDINARY, NULL, -1},
 {SYS_ "SETF-METHOD", SI_ORDINARY, NULL, -1},
 {SYS_ "SETF-NAMEP", SI_ORDINARY, NULL, -1},

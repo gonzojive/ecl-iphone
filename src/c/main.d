@@ -197,6 +197,7 @@ si_getenv(cl_object var)
 	@(return ((value == NULL)? Cnil : make_string_copy(value)))
 }
 
+#if defined(HAVE_SETENV) || defined(HAVE_PUTENV)
 cl_object
 si_setenv(cl_object var, cl_object value)
 {
@@ -204,20 +205,32 @@ si_setenv(cl_object var, cl_object value)
 
 	assert_type_string(var);
 	if (value == Cnil) {
+#ifdef HAVE_SETENV
 		/* Remove the variable when setting to nil, so that
 		 * (si:setenv "foo" nil), then (si:getenv "foo) returns
 		 * the right thing. */
 		unsetenv(var->string.self);
+#else
+		putenv(var->string.self);
+#endif
 		ret_val = 0;
 	} else {
+#ifdef HAVE_SETENV
 		assert_type_string(value);
 		ret_val = setenv(var->string.self, value->string.self, 1);
+#else
+		cl_object temp =
+		  cl_format(4, Cnil, make_simple_string("~A=~A"),
+			    var, value);
+		putenv(temp->string.self);
+#endif
 	}
 	if (ret_val == -1)
 		CEerror("SI:SETENV failed: insufficient space in environment.",
 			1, "Continue anyway");
 	@(return (value))
 }
+#endif
 
 cl_object
 si_pointer(cl_object x)

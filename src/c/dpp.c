@@ -333,6 +333,7 @@ translate_function(char *name)
 		pushstr("unknown");
 		output = poolp;
 	}
+	return output;
 }
 
 char *

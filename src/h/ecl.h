@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <setjmp.h>
+#include <inttypes.h>
 #include "config.h"
 #include "gmp.h"
 #include "object.h"

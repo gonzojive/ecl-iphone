@@ -456,7 +456,7 @@ int_bit_length(cl_fixnum i)
 	register int count, j;
 
 	count = 0;
-	for (j = 0; j < (sizeof(cl_index)/sizeof(u_int8_t))*8-1; j++)
+	for (j = 0; j < (sizeof(cl_index)/sizeof(uint8_t))*8-1; j++)
 		if (((i >> j) & 1) == 1) count = j + 1;
 	return(count);
 }

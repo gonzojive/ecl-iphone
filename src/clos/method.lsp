@@ -113,21 +113,6 @@
 		;; (progn ,@parameters-to-reference)
 		,@real-body))
 
-	     (call-next-method-p nil)	;flag indicating that call-next-method
-					;should be in the method definition
-	     (next-method-p-p nil)	;flag indicating that next-method-p
-					;should be in the method definition
-	     (save-original-args nil)	;flag indicating whether or not the
-					;original arguments to the method
-					;must be preserved.  This happens
-					;for two reasons:
-					; - the method takes &mumble args,
-					;   so one of the lexical functions
-					;   might be used in a default value
-					;   form
-					; - call-next-method is used without
-					;   arguments at least once in the
-					;   body of the method
 	     (original-args ())
 	     (applyp nil)		; flag indicating whether or not the
 					; method takes &mumble arguments. If
@@ -144,91 +129,10 @@
 					; - slot-index-table
 					; - slot-indexes for each slot
 					; See optimize-standard-instance-access.
-	     (plist ())
-	     (walked-lambda nil))
-	(flet ((walk-function (form context env)
-		 (cond ((not (eq context ':EVAL)) form)
-		       ((not (listp form)) form)
-		       ((eq (car form) 'CALL-NEXT-METHOD)
-			(setq call-next-method-p 't)
-			(setq save-original-args (not (cdr form)))
-			form)
-		       ((eq (car form) 'NEXT-METHOD-P)
-			(setq next-method-p-p 't)
-			form)
-		       ((and (eq (car form) 'FUNCTION)
-			     (case (second form)
-			       (CALL-NEXT-METHOD
-				(setq call-next-method-p 'T)
-				(setq save-original-args 'T)
-				form)
-			       (NEXT-METHOD-P
-				(setq next-method-p-p 'T)
-				form)
-			       (t nil))))
-		       ((and (eq (car form) 'SLOT-VALUE)
-			     (symbolp (second form))
-			     (constantp (third form)))
-			(multiple-value-bind (ignore class)
-			    (can-optimize-access (second form) env)
-			  (if class
-			      (optimize-slot-value class form)
-			      form)))
-		       ;; does not work for (push x (slot-value y 's))
-		       ;; and similia, since push is turned into
-		       ;; (|(setf slot-value)| (cons (slot-value y 's) x) x 's)
-		       ((eq (car form) 'SETF)
-			(if (cdddr form)
-			    (do* ((setf-list (cdr form) (cddr setf-list))
-				  (instance-access)
-				  (value)
-				  (result))
-				 ((null setf-list)
-				  (cons 'PROGN (nreverse result)))
-			      (setq instance-access (car setf-list)
-				    value (second setf-list))
-			      (push
-			       (if (and instance-access
-					(listp instance-access)
-					(eq (car instance-access)
-					    'SLOT-VALUE)
-					(symbolp (second instance-access))
-					(constantp (third instance-access)))
-				   (multiple-value-bind (ignore class)
-				       (can-optimize-access
-					(second instance-access) env)
-				     (let ((new-form
-					    (list 'SETF instance-access
-						  value)))
-				       (if class
-					   (optimize-set-slot-value class
-								    new-form)
-					   new-form)))
-				   (list 'SETF instance-access value))
-			       result))
-			    (if (and (cdr form)
-				     (second form)
-				     (listp (second form))
-				     (eq (caadr form) 'SLOT-VALUE)
-				     (symbolp (cadadr form))
-				     (constantp (third (second form))))
-				(multiple-value-bind (ignore class)
-				    (can-optimize-access (cadadr form) env)
-				  (if class
-				      (optimize-set-slot-value class form)
-				      form))
-				form)))
-
-		       ((eq (car form) 'STANDARD-INSTANCE-ACCESS)
-			(multiple-value-bind (parameter class)
-			    (can-optimize-access (second form) env)
-			  (if class
-			      (optimize-standard-instance-access
-			       class parameter form slots)
-			      form)))
-		       (t form))))
-
-	  (setq walked-lambda (walk-form method-lambda env #'walk-function))
+	     (plist ()))
+	(multiple-value-bind (walked-lambda call-next-method-p
+			      save-original-args next-method-p-p)
+	    (walk-method-lambda method-lambda required-parameters env slots)
 
 	  ;; Scan the lambda list to determine whether this method
 	  ;; takes &mumble arguments.  If it does, we set applyp and
@@ -287,6 +191,112 @@
 	     specializers
 	     documentation
 	     plist)))))))
+
+(defun walk-method-lambda (method-lambda required-parameters env slots)
+  (declare (si::c-local))
+  (let ((call-next-method-p nil);flag indicating that call-next-method
+				;should be in the method definition
+	(next-method-p-p nil)	;flag indicating that next-method-p
+				;should be in the method definition
+	(save-original-args nil);flag indicating whether or not the
+				;original arguments to the method
+				;must be preserved.  This happens
+				;for two reasons:
+				; - the method takes &mumble args,
+				;   so one of the lexical functions
+				;   might be used in a default value
+				;   form
+				; - call-next-method is used without
+				;   arguments at least once in the
+				;   body of the method
+	(closurep nil)		;flag indicating whether #'call-next-method
+				;was seen in the code
+	)
+    (flet ((walk-function (form context env)
+	     (cond ((not (eq context ':EVAL)) form)
+		   ((not (listp form)) form)
+		   ((eq (car form) 'CALL-NEXT-METHOD)
+		    (setq call-next-method-p 'T
+			  save-original-args (not (cdr form)))
+		    form)
+		   ((eq (car form) 'NEXT-METHOD-P)
+		    (setq next-method-p-p 'T)
+		    form)
+		   ((and (eq (car form) 'FUNCTION)
+			 (case (second form)
+			   (CALL-NEXT-METHOD
+			    (setq call-next-method-p 'T
+				  closurep 'T
+				  save-original-args 'T)
+			    form)
+			   (NEXT-METHOD-P
+			    (setq next-method-p-p 'T)
+			    form)
+			   (t nil))))
+		   ((and (eq (car form) 'SLOT-VALUE)
+			 (symbolp (second form))
+			 (constantp (third form)))
+		    (multiple-value-bind (ignore class)
+			(can-optimize-access (second form) env)
+		      (if class
+			  (optimize-slot-value class form)
+			  form)))
+		   ;; does not work for (push x (slot-value y 's))
+		   ;; and similia, since push is turned into
+		   ;; (|(setf slot-value)| (cons (slot-value y 's) x) x 's)
+		   ((eq (car form) 'SETF)
+		    (if (cdddr form)
+			(do* ((setf-list (cdr form) (cddr setf-list))
+			      (instance-access)
+			      (value)
+			      (result))
+			     ((null setf-list)
+			      (cons 'PROGN (nreverse result)))
+			  (setq instance-access (car setf-list)
+				value (second setf-list))
+			  (push
+			   (if (and instance-access
+				    (listp instance-access)
+				    (eq (car instance-access)
+					'SLOT-VALUE)
+				    (symbolp (second instance-access))
+				    (constantp (third instance-access)))
+			       (multiple-value-bind (ignore class)
+				   (can-optimize-access
+				    (second instance-access) env)
+				 (let ((new-form
+					(list 'SETF instance-access
+					      value)))
+				   (if class
+				       (optimize-set-slot-value class
+								new-form)
+				       new-form)))
+			       (list 'SETF instance-access value))
+			   result))
+			(if (and (cdr form)
+				 (second form)
+				 (listp (second form))
+				 (eq (caadr form) 'SLOT-VALUE)
+				 (symbolp (cadadr form))
+				 (constantp (third (second form))))
+			    (multiple-value-bind (ignore class)
+				(can-optimize-access (cadadr form) env)
+			      (if class
+				  (optimize-set-slot-value class form)
+				  form))
+			    form)))
+		   ((eq (car form) 'STANDARD-INSTANCE-ACCESS)
+		    (multiple-value-bind (parameter class)
+			(can-optimize-access (second form) env)
+		      (if class
+			  (optimize-standard-instance-access
+			   class parameter form slots)
+			  form)))
+		   (t form))))
+      (values (walk-form method-lambda env #'walk-function)
+	      (if closurep 'FUNCTION call-next-method-p)
+	      save-original-args
+	      next-method-p-p))))
 
 (defun add-lexical-functions-to-method-lambda (walked-declarations
 					       walked-lambda-body

@@ -202,7 +202,7 @@
 				    method-combination-args)
   (declare (ignore method-combination-type method-combination-args))
   (if applicable-methods
-      (compute-combined-method gf applicable-methods)
+      (standard-compute-combined-method gf applicable-methods)
     (no-applicable-method gf)))
 
 (defmethod no-applicable-method (gf &rest args)
@@ -214,6 +214,9 @@
   (declare (ignore gf args))
   (error "No next method for method ~A" method))
 
+(defun no-primary-method (gf &rest args)
+  (error "Generic function: ~A. No primary method given arguments: ~S"
+	 (si:gfun-name (generic-function-dispatcher gf)) args))
 
 ;;; ----------------------------------------------------------------------
 ;;; Redefinition Protocol
