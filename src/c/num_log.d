@@ -467,8 +467,8 @@ ecl_ash(cl_object x, cl_fixnum w)
 	return(big_register_normalize(y));
 }
 
-static int
-int_bit_length(cl_fixnum i)
+int
+ecl_fixnum_bit_length(cl_fixnum i)
 {
 	int count;
 	if (i < 0)
@@ -644,7 +644,7 @@ cl_integer_length(cl_object x)
 	switch (type_of(x)) {
 	case t_fixnum:
 		i = fix(x);
-		count = int_bit_length(i);
+		count = ecl_fixnum_bit_length(i);
 		break;
 	case t_bignum:
 		if (mpz_sgn(x->big.big_num) < 0)

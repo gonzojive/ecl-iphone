@@ -7,6 +7,9 @@ ECL 1.0
     produced by "ln -sf ../tmp/foo faa") are now properly recognized and
     followed by TRUENAME.
 
+  - The routines for writing bignums had a size limit that has been
+    removed. Besides the library does not rely on GMP for printing bignums.
+
 * Visible changes:
 
   - SI:MKSTEMP now accepts and returns pathnames.
@@ -19,6 +22,9 @@ ECL 1.0
 * ANSI compliance:
 
   - The value of *READTABLE* can now be modified by the user.
+
+  - Implemented READTABLE-CASE, including the appropiate changes to the
+    reader and the printer.
 
 ;;; Local Variables: ***
 ;;; mode:text ***

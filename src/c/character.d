@@ -71,6 +71,26 @@ cl_both_case_p(cl_object c)
 	@(return ((isupper(code) || islower(code)) ? Ct : Cnil))
 }
 
+int
+ecl_string_case(cl_object s)
+{
+	int upcase;
+	cl_index i;
+	const char *text;
+	for (i = 0, upcase = 0, text = s->string.self; i <= s->string.dim; i++) {
+		if (isupper(text[i])) {
+			if (upcase < 0)
+				return 0;
+			upcase = +1;
+		} else if (islower(text[i])) {
+			if (upcase > 0)
+				return 0;
+			upcase = -1;
+		}
+	}
+	return upcase;
+}
+
 #define basep(d)	(d <= 36)
 
 @(defun digit_char_p (c &optional (r MAKE_FIXNUM(10)))

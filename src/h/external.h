@@ -348,6 +348,7 @@ extern cl_object cl_name_char(cl_object s);
 extern cl_object cl_standard_char_p(cl_object c);
 extern cl_object cl_upper_case_p(cl_object c);
 
+extern int ecl_string_case(cl_object s);
 extern cl_fixnum char_code(cl_object c);
 extern int digitp(int i, int r);
 extern bool char_eq(cl_object x, cl_object y);
@@ -907,6 +908,7 @@ extern cl_object cl_logand _ARGS((cl_narg narg, ...));
 extern cl_object cl_logeqv _ARGS((cl_narg narg, ...));
 
 extern cl_object ecl_ash(cl_object x, cl_fixnum w);
+extern int ecl_fixnum_bit_length(cl_fixnum l);
 
 
 /* num_pred.c */
@@ -1131,6 +1133,8 @@ extern cl_object cl_clear_input _ARGS((cl_narg narg, ...));
 extern cl_object cl_parse_integer _ARGS((cl_narg narg, cl_object strng, ...));
 extern cl_object cl_read_byte _ARGS((cl_narg narg, cl_object binary_input_stream, ...));
 extern cl_object cl_copy_readtable _ARGS((cl_narg narg, ...));
+extern cl_object cl_readtable_case(cl_object r);
+extern cl_object si_readtable_case_set(cl_object r, cl_object mode);
 extern cl_object cl_set_syntax_from_char _ARGS((cl_narg narg, cl_object tochr, cl_object fromchr, ...));
 extern cl_object cl_set_macro_character _ARGS((cl_narg narg, cl_object chr, cl_object fnc, ...));
 extern cl_object cl_get_macro_character _ARGS((cl_narg narg, cl_object chr, ...));

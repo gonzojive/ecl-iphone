@@ -59,6 +59,45 @@ read_object_non_recursive(cl_object in)
 	return(x);
 }
 
+/*
+ * This routine inverts the case of the characters in the buffer which
+ * were not escaped. ESCAPE_LIST is a list of intevals of characters
+ * that were escaped, as in ({(low-limit . high-limit)}*). The list
+ * goes from the last interval to the first one, in reverse order,
+ * and thus we run the buffer from the end to the beginning.
+ */
+static void
+invert_buffer_case(cl_object x, cl_object escape_list, int sign)
+{
+	cl_fixnum high_limit, low_limit;
+	cl_object escape_interval;
+	cl_fixnum i = x->string.fillp;
+	do {
+		if (escape_list != Cnil) {
+			cl_object escape_interval = CAR(escape_list);
+			high_limit = fix(CAR(escape_interval));
+			low_limit = fix(CDR(escape_interval));
+			escape_list = CDR(escape_list);
+		} else {
+			high_limit = low_limit = -1;
+		}
+		for (; i > high_limit; i--) {
+			/* The character is not escaped */
+			char c = x->string.self[i];
+			if (isupper(c) && (sign < 0)) {
+				c = tolower(c);
+			} else if (islower(c) && (sign > 0)) {
+				c = toupper(c);
+			}
+			x->string.self[i] = c;
+		}
+		for (; i > low_limit; i--) {
+			/* The character is within an escaped interval */
+			;
+		}
+	} while (i >= 0);
+}
+
 static cl_object
 read_object_with_delimiter(cl_object in, int delimiter)
 {
@@ -68,11 +107,13 @@ read_object_with_delimiter(cl_object in, int delimiter)
 	cl_object p;
 	cl_index length, i, colon;
 	int colon_type, intern_flag;
-	bool escape_flag;
 	cl_object rtbl = ecl_current_readtable();
+	enum ecl_readtable_case read_case = rtbl->readtable.read_case;
+	cl_object escape_list; /* intervals of escaped characters */
+	cl_fixnum upcase; /* # uppercase characters - # downcase characters */
+	cl_fixnum count; /* number of unescaped characters */
 
 BEGIN:
-	/* Beppe: */
 	do {
 		c = ecl_getc(in);
 		if (c == EOF || c == delimiter)
@@ -87,17 +128,23 @@ BEGIN:
 					 2, x, MAKE_FIXNUM(i));
 		return o;
 	}
-	escape_flag = FALSE;
-	length = 0;
+	escape_list = Cnil;
+	upcase = count = length = 0;
 	colon_type = 0;
 	cl_env.token->string.fillp = 0;
 	for (;;) {
 		if (a == cat_single_escape) {
 			c = ecl_getc_noeof(in);
 			a = cat_constituent;
-			escape_flag = TRUE;
+			if (read_case == ecl_case_invert) {
+				escape_list = CONS(CONS(MAKE_FIXNUM(length),
+							MAKE_FIXNUM(length)),
+						   escape_list);
+			}
+			ecl_string_push_extend(cl_env.token, c);
+			length++;
 		} else if (a == cat_multiple_escape) {
-			escape_flag = TRUE;
+			cl_index begin = length;
 			for (;;) {
 				c = ecl_getc_noeof(in);
 				a = cat(rtbl, c);
@@ -109,25 +156,42 @@ BEGIN:
 				ecl_string_push_extend(cl_env.token, c);
 				length++;
 			}
-			goto NEXT;
-		} else if (islower(c))
-			c = toupper(c);
-		else if (c == ':') {
-			if (colon_type == 0) {
-				colon_type = 1;
-				colon = length;
-			} else if (colon_type == 1 && colon == length-1)
-				colon_type = 2;
-			else
-				colon_type = -1;
-				/*  Colon has appeared twice.  */
+			if (read_case == ecl_case_invert) {
+				escape_list = CONS(CONS(MAKE_FIXNUM(begin),
+							MAKE_FIXNUM(length-1)),
+						   escape_list);
+			}
+		} else {
+			if (a == cat_whitespace || a == cat_terminating) {
+				ecl_ungetc(c, in);
+				break;
+			}
+			if (c == ':') {
+				if (colon_type == 0) {
+					colon_type = 1;
+					colon = length;
+				} else if (colon_type == 1 && colon == length-1) {
+					colon_type = 2;
+				} else {
+					colon_type = -1;
+					/*  Colon has appeared twice.  */
+				}
+			}
+			if (read_case != ecl_case_preserve) {
+				if (isupper(c)) {
+					upcase++;
+					if (read_case == ecl_case_downcase)
+						c = tolower(c);
+				} else if (islower(c)) {
+					upcase++;
+					if (read_case == ecl_case_upcase)
+						c = toupper(c);
+				}
+			}
+			ecl_string_push_extend(cl_env.token, c);
+			length++;
+			count++;
 		}
-		if (a == cat_whitespace || a == cat_terminating) {
-			ecl_ungetc(c, in);
-			break;
-		}
-		ecl_string_push_extend(cl_env.token, c);
-		length++;
 	NEXT:
 		c = ecl_getc(in);
 		if (c == EOF)
@@ -137,20 +201,35 @@ BEGIN:
 
 	if (read_suppress)
 		return(Cnil);
-	if (escape_flag || length == 0)
+
+	/* If the readtable case was :INVERT and all non-escaped characters
+	 * had the same case, we revert their case. */
+	if (read_case == ecl_case_invert) {
+		if (upcase == count) {
+			invert_buffer_case(cl_env.token, escape_list, +1);
+		} else if (upcase == -count) {
+			invert_buffer_case(cl_env.token, escape_list, +1);
+		}
+	}
+
+	/* If there are some escaped characters, it must be a symbol */
+	if (length == 0 || (count < length))
 		goto SYMBOL;
+
+	/* The case in which the buffer is full of dots has to be especial cased */
 	if (length == 1 && cl_env.token->string.self[0] == '.') {
 		return @'si::.';
 	} else {
 		for (i = 0;  i < length;  i++)
 			if (cl_env.token->string.self[i] != '.')
-				goto N;
+				goto MAYBE_NUMBER;
 		FEreader_error("Dots appeared illegally.", in, 0);
 	}
 
-N:
+MAYBE_NUMBER:
+	/* Here we try to parse a number from the content of the buffer */
 	base = ecl_current_read_base();
-	if (escape_flag || (base <= 10 && isalpha(cl_env.token->string.self[0])))
+	if ((base <= 10) && isalpha(cl_env.token->string.self[0]))
 		goto SYMBOL;
 	x = parse_number(cl_env.token->string.self, cl_env.token->string.fillp, &i, base);
 	if (x != OBJNULL && length == i)
@@ -1164,6 +1243,7 @@ copy_readtable(cl_object from, cl_object to)
 	struct ecl_readtable_entry *rtab;
 	cl_index i;
 
+	/* Copy also the case for reading */
 	if (Null(to)) {
 		to = cl_alloc_object(t_readtable);
 		to->readtable.table = NULL;
@@ -1178,8 +1258,11 @@ copy_readtable(cl_object from, cl_object to)
 			rtab[i] = from->readtable.table[i];
 */
 				/*  structure assignment  */
-	} else
-	  rtab=to->readtable.table;
+	} else {
+		rtab=to->readtable.table;
+	}
+	to->readtable.read_case = from->readtable.read_case;
+
 	for (i = 0;  i < RTABSIZE;  i++)
 		if (from->readtable.table[i].dispatch_table != NULL) {
 			rtab[i].dispatch_table
@@ -1241,9 +1324,7 @@ ecl_current_read_default_float_format(void)
 	FEerror("The value of *READ-DEFAULT-FLOAT-FORMAT*, ~S, was illegal.",
 		1, x);
 }
-	
 
-
 static cl_object
 stream_or_default_input(cl_object stream)
 {
@@ -1540,6 +1621,39 @@ CANNOT_PARSE:
 @)
 
 cl_object
+cl_readtable_case(cl_object r)
+{
+	assert_type_readtable(r);
+	switch (r->readtable.read_case) {
+	case ecl_case_upcase: r = @':upcase'; break;
+	case ecl_case_downcase: r = @':downcase'; break;
+	case ecl_case_invert: r = @':invert'; break;
+	case ecl_case_preserve: r = @':preserve';
+	}
+	@(return r)
+}
+
+cl_object
+si_readtable_case_set(cl_object r, cl_object mode)
+{
+	assert_type_readtable(r);
+	if (mode == @':upcase') {
+		r->readtable.read_case = ecl_case_upcase;
+	} else if (mode == @':downcase') {
+		r->readtable.read_case = ecl_case_downcase;
+	} else if (mode == @':preserve') {
+		r->readtable.read_case = ecl_case_preserve;
+	} else if (mode == @':invert') {
+		r->readtable.read_case = ecl_case_invert;
+	} else {
+		FEwrong_type_argument(mode, cl_list(5, @'member', @':upcase',
+						    @':downcase', @':preserve',
+						    @':invert'));
+	}
+	@(return mode)
+}
+
+cl_object
 cl_readtablep(cl_object readtable)
 {
 	@(return ((type_of(readtable) == t_readtable)? Ct : Cnil))
@@ -1703,6 +1817,7 @@ init_read(void)
 	int i;
 
 	cl_core.standard_readtable = cl_alloc_object(t_readtable);
+	cl_core.standard_readtable->readtable.read_case = ecl_case_upcase;
 	cl_core.standard_readtable->readtable.table
 	= rtab
 	= (struct ecl_readtable_entry *)cl_alloc(RTABSIZE * sizeof(struct ecl_readtable_entry));

@@ -203,6 +203,7 @@ Does not check if the third gang is a single-element list."
 (defsetf sys:instance-ref sys:instance-set)
 (defsetf compiler-macro-function (fname) (function)
   `(sys::put-sysprop ,fname 'sys::compiler-macro ,function))
+(defsetf readtable-case sys:readtable-case-set)
 
 
 (define-setf-expander getf (&environment env place indicator &optional default)

@@ -386,22 +386,29 @@ write_str(const char *s, cl_object stream)
 }
 
 static void
-write_decimal1(cl_object stream, cl_fixnum i)
+write_positive_fixnum(cl_index i, int base, cl_index len, cl_object stream)
 {
-	if (i == 0)
-		return;
-	write_decimal1(stream, i/10);
-	write_ch(i%10 + '0', stream);
+	/* The maximum number of digits is achieved for base 2 and it
+	   is always < FIXNUM_BITS, since we use at least one bit for
+	   tagging */
+	short digits[FIXNUM_BITS];
+	int j = 0;
+	if (i == 0) {
+		digits[j++] = '0';
+	} else do {
+		digits[j++] = ecl_digit_char(i % base, base);
+		i /= base;
+	} while (i > 0);
+	while (len-- > j)
+		write_ch('0', stream);
+	while (j-- > 0)
+		write_ch(digits[j], stream);
 }
 
 static void
 write_decimal(cl_fixnum i, cl_object stream)
 {
-	if (i == 0) {
-		write_ch('0', stream);
-		return;
-	}
-	write_decimal1(stream, i);
+	return write_positive_fixnum(i, 10, 0, stream);
 }
 
 static void
@@ -496,7 +503,6 @@ edit_double(int n, double d, int *sp, char *s, int *ep)
 	s[n] = '\0';
 }
 
-
 static void
 write_double(double d, int e, bool shortp, cl_object stream)
 {
@@ -574,133 +580,185 @@ write_double(double d, int e, bool shortp, cl_object stream)
 }
 
 
+struct powers {
+	cl_object number;
+	cl_index n_digits;
+	int base;
+};
+
 static void
-write_positive_fixnum(cl_index i, cl_object stream)
+do_write_integer(cl_object x, struct powers *powers, cl_index len,
+		 cl_object stream)
 {
-	/* The maximum number of digits is achieved for base 2 and it
-	   is always < FIXNUM_BITS, since we use at least one bit for
-	   tagging */
-	short digits[FIXNUM_BITS];
-	int j, base = ecl_print_base();
-	for (j = 0;  i != 0;  i /= base)
-		digits[j++] = ecl_digit_char(i % base, base);
-	while (j-- > 0)
-		write_ch(digits[j], stream);
+	cl_object left;
+	do {
+		if (FIXNUMP(x)) {
+			write_positive_fixnum(fix(x), powers->base, len, stream);
+			return;
+		}
+		while (number_compare(x, powers->number) < 0) {
+			if (len)
+				write_positive_fixnum(0, powers->base, len, stream);
+			powers--;
+		}
+		floor2(x, powers->number);
+		left = VALUES(0);
+		x = VALUES(1);
+		if (len) len -= powers->n_digits;
+		do_write_integer(left, powers-1, len, stream);
+		len = powers->n_digits;
+		powers--;
+	} while(1);
 }
 
 static void
 write_bignum(cl_object x, cl_object stream)
 {
 	int base = ecl_print_base();
-	cl_fixnum str_size = mpz_sizeinbase(x->big.big_num, base);
+	cl_index str_size = mpz_sizeinbase(x->big.big_num, base);
+	cl_fixnum num_powers = ecl_fixnum_bit_length(str_size-1);
 #ifdef __GNUC__
-	char str[str_size+2];
+	struct powers powers[num_powers];
 #else
-	char *str = (char*)malloc(sizeof(char)*(str_size+2));
+	struct powers *powers = malloc(sizeof(struct powers)*num_powers);
 	CL_UNWIND_PROTECT_BEGIN {
 #endif
-	char *s = str;
-	mpz_get_str(str, base, x->big.big_num);
-	while (*s)
-		write_ch(*s++, stream);
+		cl_object p;
+		cl_index i, n_digits;
+		powers[0].number = p = MAKE_FIXNUM(base);
+		powers[0].n_digits = n_digits = 1;
+		powers[0].base = base;
+		for (i = 1; i < num_powers; i++) {
+			powers[i].number = p = number_times(p, p);
+			powers[i].n_digits = n_digits = 2*n_digits;
+			powers[i].base = base;
+		}
+		if (number_minusp(x)) {
+			write_ch('-', stream);
+			x = number_negate(x);
+		}
+		do_write_integer(x, &powers[num_powers-1], 0, stream);
 #ifndef __GNUC__
 	} CL_UNWIND_PROTECT_EXIT {
-	free(str);
+		free(str);
 	} CL_UNWIND_PROTECT_END;
 #endif
+}
+
+static bool
+all_dots(cl_object s)
+{
+	cl_index i;
+	for (i = 0;  i < s->string.fillp;  i++)
+		if (s->string.self[i] != '.')
+			return 0;
+	return 1;
+}
+
+static bool
+needs_to_be_escaped(cl_object s, cl_object readtable, cl_object print_case)
+{
+	enum ecl_readtable_case action = readtable->readtable.read_case;
+	bool all_dots;
+	cl_index i;
+	if (potential_number_p(s, ecl_print_base()))
+		return 1;
+	for (i = 0; i < s->string.fillp;  i++) {
+		int c = s->string.self[i] & 0377;
+		int syntax = readtable->readtable.table[c].syntax_type;
+		if (syntax != cat_constituent || (c) == ':')
+			return 1;
+		if ((action == ecl_case_downcase) && isupper(c))
+			return 1;
+		if ((action == ecl_case_upcase) && islower(c))
+			return 1;
+	}
+	return 0;
+}
+
+#define needs_to_be_inverted(s) (ecl_string_case(s) != 0)
+
+static void
+write_symbol_string(cl_object s, cl_object readtable, cl_object print_case,
+		    cl_object stream, bool escape)
+{
+	enum ecl_readtable_case action = readtable->readtable.read_case;
+	cl_index i;
+	if (action == ecl_case_invert) {
+		if (!needs_to_be_inverted(s))
+			action = ecl_case_preserve;
+	}
+	if (escape)
+		write_ch('|', stream);
+	for (i = 0;  i < s->string.fillp;  i++) {
+		int c = s->string.self[i];
+		if (escape) {
+			if (c == '|' || c == '\\') {
+				write_ch('\\', stream);
+			}
+		} else if (action != ecl_case_preserve) {
+			if (isupper(c)) {
+				if ((action == ecl_case_invert) ||
+				    (print_case == @':downcase') ||
+				    ((print_case == @':capitalize') && (i > 0)))
+				{
+					c = tolower(c);
+				}
+			} else if (islower(c)) {
+				if ((action == ecl_case_invert) ||
+				    (print_case == @':upcase') ||
+				    ((print_case == @':capitalize') && (i == 0)))
+				{
+					c = toupper(c);
+				}
+			}
+		}
+		write_ch(c, stream);
+	}
+	if (escape)
+		write_ch('|', stream);
 }
 
 static void
 write_symbol(cl_object x, cl_object stream)
 {
-	bool escaped;
-	cl_index i;
-	cl_object s = x->symbol.name;
 	cl_object print_package = symbol_value(@'si::*print-package*');
 	cl_object print_case = ecl_print_case();
+	cl_object readtable = ecl_current_readtable();
+	cl_object package = x->symbol.hpack;
+	cl_object name = x->symbol.name;
 	int intern_flag;
 
 	if (!ecl_print_escape() && !ecl_print_readably()) {
-		for (i = 0;  i < s->string.fillp;  i++) {
-			int c = s->string.self[i];
-			if (isupper(c) &&
-			    (print_case == @':downcase' ||
-			     (print_case == @':capitalize' && i != 0)))
-				c = tolower(c);
-			write_ch(c, stream);
-		}
+		write_symbol_string(name, readtable, print_case, stream, 0);
 		return;
 	}
-	if (Null(x->symbol.hpack)) {
+	if (Null(package)) {
 		if (ecl_print_gensym())
 			write_str("#:", stream);
-	} else if (x->symbol.hpack == cl_core.keyword_package)
+	} else if (package == cl_core.keyword_package) {
 		write_ch(':', stream);
-	else if ((print_package != Cnil && x->symbol.hpack != print_package)
-		 || ecl_find_symbol(x, current_package(), &intern_flag)!=x
-		 || intern_flag == 0) {
-		escaped = 0;
-		for (i = 0;
-		     i < x->symbol.hpack->pack.name->string.fillp;
-		     i++) {
-			int c = x->symbol.hpack->pack.name->string.self[i];
-			if (to_be_escaped(c))
-				escaped = 1;
-		}
-		if (escaped)
-			write_ch('|', stream);
-		for (i = 0;
-		     i < x->symbol.hpack->pack.name->string.fillp;
-		     i++) {
-			int c = x->symbol.hpack->pack.name->string.self[i];
-			if (c == '|' || c == '\\')
-				write_ch('\\', stream);
-			if (escaped == 0 && isupper(c) &&
-			    (print_case == @':downcase' ||
-			     (print_case == @':capitalize' && i!=0)))
-				c = tolower(c);
-			write_ch(c, stream);
-		}
-		if (escaped)
-			write_ch('|', stream);
-		if (ecl_find_symbol(x, x->symbol.hpack, &intern_flag) != x)
+	} else if ((print_package != Cnil && package != print_package)
+		   || ecl_find_symbol(x, current_package(), &intern_flag)!=x
+		   || intern_flag == 0)
+	{
+		cl_object name = package->pack.name;
+		write_symbol_string(name, readtable, print_case, stream,
+				    needs_to_be_escaped(name, readtable, print_case));
+		if (ecl_find_symbol(x, package, &intern_flag) != x)
 			error("can't print symbol");
-		if ((print_package != Cnil && x->symbol.hpack != print_package)
-		    || intern_flag == INTERNAL)
+		if ((print_package != Cnil && package != print_package)
+		    || intern_flag == INTERNAL) {
 			write_str("::", stream);
-		else if (intern_flag == EXTERNAL)
+		} else if (intern_flag == EXTERNAL) {
 			write_ch(':', stream);
-		else
+		} else {
 			FEerror("Pathological symbol --- cannot print.", 0);
+		}
 	}
-	escaped = 0;
-	if (potential_number_p(s, ecl_print_base()))
-		escaped = 1;
-	for (i = 0;  i < s->string.fillp;  i++) {
-		int c = s->string.self[i];
-		if (to_be_escaped(c))
-			escaped = 1;
-	}
-	for (i = 0;  i < s->string.fillp;  i++)
-		if (s->string.self[i] != '.')
-			goto NOT_DOT;
-	escaped = 1;
-
- NOT_DOT:
-	if (escaped)
-		write_ch('|', stream);
-	for (i = 0;  i < s->string.fillp;  i++) {
-		int c = s->string.self[i];
-		if (c == '|' || c == '\\')
-			write_ch('\\', stream);
-		if (escaped == 0 && isupper(c) &&
-		    (print_case == @':downcase' ||
-		     (print_case == @':capitalize' && i != 0)))
-			c = tolower(c);
-		write_ch(c, stream);
-	}
-	if (escaped)
-		write_ch('|', stream);
+	write_symbol_string(name, readtable, print_case, stream,
+			    needs_to_be_escaped(name, readtable, print_case) ||
+			    all_dots(name));
 }
 
 static void
@@ -753,9 +811,9 @@ si_write_ugly_object(cl_object x, cl_object stream)
 			write_ch('0', stream);
 		} else if (FIXNUM_MINUSP(x)) {
 			write_ch('-', stream);
-			write_positive_fixnum(-fix(x), stream);
+			write_positive_fixnum(-fix(x), print_base, 0, stream);
 		} else {
-			write_positive_fixnum(fix(x), stream);
+			write_positive_fixnum(fix(x), print_base, 0, stream);
 		}
 		if (print_radix && print_base == 10) {
 			write_ch('.', stream);

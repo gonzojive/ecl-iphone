@@ -185,30 +185,6 @@ static int is_semicolon(int c) { return c == ';'; }
 static int is_dot(int c) { return c == '.'; }
 static int is_null(int c) { return c == '\0'; }
 
-static int
-is_all_upper(cl_object s)
-{
-	cl_index i;
-	const char *text;
-	for (i = 0, text = s->string.self; i <= s->string.dim; i++) {
-		if (!isupper(text[i]))
-			return 0;
-	}
-	return 1;
-}
-
-static int
-is_all_lower(cl_object s)
-{
-	cl_index i;
-	const char *text;
-	for (i = 0, text = s->string.self; i <= s->string.dim; i++) {
-		if (!islower(text[i]))
-			return 0;
-	}
-	return 1;
-}
-
 /*
  * Translates a string into the host's preferred case.
  * See CLHS 19.2.2.1.2.2 Common Case in Pathname Components.
@@ -217,17 +193,20 @@ is_all_lower(cl_object s)
 static cl_object
 translate_common_case(cl_object str)
 {
+	int string_case;
 	if (type_of(str) != t_string) {
 		/* Pathnames may contain some other objects, such as symbols,
 		 * numbers, etc, which need not be translated */
 		return str;
-	} else if (is_all_upper(str)) {
+	}
+	string_case = ecl_string_case(str);
+	if (string_case > 0) { /* ALL_UPPER */
 		/* We use UN*X conventions, so lower case is default.
 		 * However, this really should be conditionalised to the OS type,
 		 * and it should translate to the _local_ case.
 		 */
 		return cl_string_downcase(1, str);
-	} else if (is_all_lower(str)) {
+	} else if (string_case < 0) { /* ALL_LOWER */
 		/* We use UN*X conventions, so lower case is default.
 		 * However, this really should be conditionalised to the OS type,
 		 * and it should translate to _opposite_ of the local case.

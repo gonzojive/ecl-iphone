@@ -341,8 +341,16 @@ struct ecl_readtable_entry {		/*  read table entry  */
 					/*  non-macro character  */
 };
 
+enum ecl_readtable_case {
+	ecl_case_upcase,
+	ecl_case_downcase,
+	ecl_case_invert,
+	ecl_case_preserve,
+};
+
 struct ecl_readtable {			/*  read table  */
 	HEADER;
+	enum ecl_readtable_case read_case; /*  readtable-case  */
 	struct ecl_readtable_entry *table; /*  read table itself  */
 };
 
