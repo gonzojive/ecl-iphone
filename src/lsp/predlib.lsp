@@ -238,7 +238,23 @@ has no fill-pointer, and is not adjustable."
     (return-from in-interval-p t)))
 
 (defun error-type-specifier (type)
+  (declare (si::c-local))
   (error "~S is not a valid type specifier." type))
+
+(defun match-dimensions (array pat)
+  (declare (si::c-local))
+  (or (eq pat '*)
+      (let ((rank (array-rank array)))
+	(cond ((numberp pat) (= rank pat))
+	      ((listp pat)
+	       (dotimes (i rank (null pat))
+		 (unless (and (consp pat)
+			      (or (eq (car pat) '*)
+				  (eql (array-dimension array i) (car pat))))
+		   (return nil))
+		 (setq pat (cdr pat))))
+	      ((atom pat)
+	       (error "~S does not describe array dimensions." pat))))))
 
 (defun typep (object type &aux tp i c)
   "Args: (object type)
@@ -296,27 +312,26 @@ Returns T if X belongs to TYPE; NIL otherwise."
 	       (or (endp (cdr i)) (typep (cdr object) (second i)))))
     (STRING
      (and (stringp object)
-          (or (null i) (match-dimensions (array-dimensions object) i))))
+          (or (null i) (match-dimensions object i))))
     (BIT-VECTOR
      (and (bit-vector-p object)
-          (or (null i) (match-dimensions (array-dimensions object) i))))
+          (or (null i) (match-dimensions object i))))
     (SIMPLE-STRING
      (and (simple-string-p object)
-          (or (null i) (match-dimensions (array-dimensions object) i))))
+          (or (null i) (match-dimensions object i))))
     (SIMPLE-BIT-VECTOR
      (and (simple-bit-vector-p object)
-          (or (null i) (match-dimensions (array-dimensions object) i))))
+          (or (null i) (match-dimensions object i))))
     (SIMPLE-VECTOR
      (and (simple-vector-p object)
-          (or (null i) (match-dimensions (array-dimensions object) i))))
+          (or (null i) (match-dimensions object i))))
     (SIMPLE-ARRAY
      (and (simple-array-p object)
           (or (endp i) (eq (car i) '*)
 	      ;; (car i) needs expansion
 	      (eq (array-element-type object)
 		  (upgraded-array-element-type (car i))))
-          (or (endp (cdr i)) (eq (second i) '*)
-              (match-dimensions (array-dimensions object) (second i)))))
+          (or (endp (cdr i)) (match-dimensions object (second i)))))
     (ARRAY
      (and (arrayp object)
           (or (endp i) (eq (car i) '*)
@@ -324,8 +339,7 @@ Returns T if X belongs to TYPE; NIL otherwise."
               ;; Is this too strict?
               (eq (array-element-type object)
 		  (upgraded-array-element-type (car i))))
-          (or (endp (cdr i)) (eq (second i) '*)
-              (match-dimensions (array-dimensions object) (second i)))))
+          (or (endp (cdr i)) (match-dimensions object (second i)))))
     (t
      (cond
            ((get-sysprop tp 'DEFTYPE-DEFINITION)
@@ -690,14 +704,6 @@ if not possible."
 			   (eql (car pat) (car dim)))))
 		  (and (null a) (null b)))
 	       )))))
-
-(defun match-dimensions (dim pat)
-  (declare (si::c-local))
-  (cond ((null dim) (null pat))
-	((numberp pat) (= (length dim) pat))
-	(t (and (or (eq (car pat) '*)
-		    (eq (car dim) (car pat)))
-		(match-dimensions (cdr dim) (cdr pat))))))
 
 (defun array-type-p (type)
   (and (consp type)
