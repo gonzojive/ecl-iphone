@@ -234,16 +234,12 @@ make_stream(cl_object host, int fd, enum smmode smm)
    "Wed Jun 22 19:44:36 METDST 1994"
 */
 @(defun si::open_client_stream (host port)
-   int fd;			/* file descriptor */
+   int fd, p;			/* file descriptor */
    cl_object streamIn, streamOut;
 @
-   if (type_of(host) != t_string)
-     FEwrong_type_argument(@'string', host);
+   assert_type_string(host);	/* Ensure "host" is a string */
+   p = fixnnint(port);		/* INV: fixnnint() checks type */
 
-   if (!FIXNUMP(port))
-     FEwrong_type_argument(TSpositive_number, port);
-
-   /* FIXME! Why? */
    if (host->string.fillp > BUFSIZ - 1)
      FEerror("~S is a too long file name.", 1, host);
 
@@ -345,8 +341,7 @@ make_stream(cl_object host, int fd, enum smmode smm)
 			1, host_or_address);
 	}
 	if (he == NULL)
-		FEerror("LOOKUP-HOST-ENTRY: Failed to find entry for ~S",
-			1, host_or_address);
+		@(return Cnil Cnil Cnil)
 	name = make_string_copy(he->h_name);
 	aliases = Cnil;
 	for (i = 0; he->h_aliases[i] != 0; i++)
