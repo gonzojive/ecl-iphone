@@ -1785,6 +1785,10 @@ ECL 0.9d
     the first list and the second to the second one. However, ECL
     would not respect this.
 
+  - TRUENAME now merges a pathname with the current working directory
+    when it has no directory of its own. Thus (TRUENAME #P"") is
+    equivalent to (SI:GETCWD).
+
 * ANSI compatibility:
 
   - No symbol is exported from the CL package other than those specificied in
@@ -1823,7 +1827,7 @@ ECL 0.9d
     class A and this class is renamed as B, the method still
     specializes on the same class.
 
-  - Implemented WILD-PATHNAME-P.
+  - Implemented WILD-PATHNAME-P, and LOAD-LOGICAL-PATHNAME-TRANSLATIONS.
 
 TODO:
 =====

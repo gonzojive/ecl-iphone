@@ -151,7 +151,12 @@ si_follow_symlink(cl_object filename) {
 cl_object
 cl_truename(cl_object pathname)
 {
-	cl_object previous, dir, directory, filename;
+	cl_object dir, directory, filename;
+	cl_object previous = current_dir();
+
+	pathname = coerce_to_file_pathname(pathname);
+	if (pathname->pathname.directory == Cnil)
+		pathname = merge_pathnames(previous, pathname, @':newest');
 
 	/* First we ensure that PATHNAME itself does not point to a symlink. */
 	filename = si_follow_symlink(pathname);
@@ -166,7 +171,6 @@ cl_truename(cl_object pathname)
 	 * possible symlinks. To do so, we only have to change to the directory
 	 * which contains our file, and come back.
 	 */
-	previous = current_dir();
 	CL_UNWIND_PROTECT_BEGIN {
 		for (dir = filename->pathname.directory;
 		     !Null(dir);

@@ -13,6 +13,27 @@
 (defun   logical-pathname-translations (p) (si:pathname-translations p))
 (defsetf logical-pathname-translations si:pathname-translations)
 
+(defun load-logical-pathname-translations (host)
+  "Search for a logical pathname named host, if not already defined. If already
+   defined no attempt to find or load a definition is attempted and NIL is
+   returned. If host is not already defined, but definition is found and loaded
+   successfully, T is returned, else error."
+  (declare (type string host)
+           (values (member t nil)))
+  (let ((*autoload-translations* nil))
+    (unless (or (string-equal host "sys")
+                (find-logical-host host nil))
+      (with-open-file (in-str (make-pathname :defaults "sys:"
+                                             :name (string-downcase host)
+                                             :type "translations"))
+        (if *load-verbose*
+            (format *error-output*
+                    ";; Loading pathname translations from ~A~%"
+                    (namestring (truename in-str))))
+        (setf (logical-pathname-translations host) (read in-str)))
+      t)))
+
+
 (defmacro time (form)
   "Syntax: (time form)
 Evaluates FORM, outputs the realtime and runtime used for the evaluation to

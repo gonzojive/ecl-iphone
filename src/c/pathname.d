@@ -674,6 +674,8 @@ cl_object
 coerce_to_file_pathname(cl_object pathname)
 {
 	pathname = coerce_to_physical_pathname(pathname);
+	if (!Null(cl_wild_pathname_p(1, pathname)))
+		cl_error(3, @'file-error', @':pathname', pathname);
 	pathname = cl_merge_pathnames(1, pathname);
 #if !defined(cygwin) && !defined(mingw32)
 	if (pathname->pathname.device != Cnil)
