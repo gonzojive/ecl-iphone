@@ -63,15 +63,10 @@ cl_object @'si::*source-pathname*';
 		@(return make_string_copy(dlerror()))
 	}
 	if (1 || !Null(verbose)) {
-		extern char * heap_start, * heap_end;
 		setupPRINT(filename, symbol_value(@'*standard-output*'));
 		write_str(";;; Address = ");
 		PRINTescape = FALSE;
 		write_addr(block->cblock.handle);
-		write_str(", heap = ");
-		write_addr(heap_start);
-		write_str(", heap end = ");
-		write_addr(heap_end);
 		write_str("\n");
 		cleanupPRINT();
 		flush_stream(PRINTstream);
