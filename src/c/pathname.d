@@ -1132,6 +1132,7 @@ coerce_to_from_pathname(cl_object x, cl_object host)
 	}
 	if (type_of(x) != t_pathname || !x->pathname.logical)
 		FEerror("~S is not a valid from-pathname translation", 1, x);
+	return x;
 }
 
 @(defun si::pathname_translations (host &optional (set OBJNULL))
@@ -1387,7 +1388,7 @@ cl_translate_logical_pathname(cl_object source)
 	if (!source->pathname.logical)
 		goto error;
  begin:
-	l = @si::pathname-translations(1, source->pathname.host, Cnil);
+	l = @si::pathname-translations(1, source->pathname.host);
 	for(; !endp(l); l = CDR(l)) {
 		pair = CAR(l);
 		if (!Null(cl_pathname_match_p(source, CAR(pair)))) {
