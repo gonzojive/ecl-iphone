@@ -184,6 +184,7 @@ main(int argc, char **argv)
 	 (o-name (si::coerce-to-filename
 		  (compile-file-pathname output-name :type :object)))
 	 (init-name (string-upcase (pathname-name c-name)))
+	 (si::*init-function-prefix* (and (member target '(:library :static-library :lib :shared-library :dll)) si::*init-function-prefix*))
 	 submodules
 	 c-file)
     (dolist (item (reverse lisp-files))
