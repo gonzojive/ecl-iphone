@@ -865,11 +865,10 @@ si_package_external(cl_object p, cl_object index)
 }
 
 cl_object
-si_package_size(cl_object p)
+si_package_hash_tables(cl_object p)
 {
 	assert_type_package(p);
-	@(return MAKE_FIXNUM(p->pack.external->hash.size)
-		 MAKE_FIXNUM(p->pack.internal->hash.size))
+	@(return p->pack.external p->pack.internal p->pack.uses)
 }
 
 cl_object

@@ -91,32 +91,46 @@ si_compiled_function_name(cl_object fun)
 	case t_cclosure:
 		output = Cnil; break;
 	default:
-		FEerror("~S is not a compiled-function.", 1, fun);
+		FEinvalid_function(fun);
 	}
 	@(return output)
 }
 
 cl_object
-si_compiled_function_source(cl_object fun)
+cl_function_lambda_expression(cl_object fun)
 {
-	cl_object output;
+	cl_object output, name = Cnil, lex = Cnil;
 
 	switch(type_of(fun)) {
 	case t_bytecodes:
 		if (!Null(fun->bytecodes.lex))
 			output = Cnil;
 		else {
+			lex = fun->bytecodes.lex;
 			output = fun->bytecodes.data[fun->bytecodes.size-1];
-			if (!CONSP(output)) output = Cnil;
+			name = fun->bytecodes.data[0];
+			if (!CONSP(output))
+				output = Cnil;
+			else if (name == Cnil)
+				output = cl_cons(@'lambda', output);
+			else
+				output = @list*(3, @'lambda-block', name, output);
 		}
 		break;
 	case t_cfun:
+		name = fun->cfun.name;
+		lex = Cnil;
+		output = Cnil;
+		break;
 	case t_cclosure:
-		output = Cnil; break;
+		name = Cnil;
+		lex = Ct;
+		output = Cnil;
+		break;
 	default:
-		FEerror("~S is not a compiled-function.", 1, fun);
+		FEinvalid_function(fun);
 	}
-	@(return output)
+	@(return output lex name)
 }
 
 cl_object

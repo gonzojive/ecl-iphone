@@ -4,6 +4,7 @@
 ;;; * Set ourselves in the 'SYSTEM package
 ;;;
 (setq *package* (find-package "SYSTEM"))
+(setq si::*keep-definitions* nil)
 
 ;;;
 ;;; * Load Common-Lisp base library
@@ -20,15 +21,15 @@
 (load "@abs_builddir@/clos/load.lsp")
 
 ;;;
-;;; * Load the compiler.
-;;;
-(load #+ecl-min "@abs_builddir@/cmp/load.lsp" #-ecl-min "@abs_builddir@/cmp.so")
-
-;;;
 ;;; * By redefining "SYS:" ECL will be able to
 ;;;   find headers and libraries in the build directory.
 ;;;
 (si::pathname-translations "SYS" '(("*.*" "@abs_builddir@/*.*")))
+
+;;;
+;;; * Load the compiler.
+;;;
+(load #+ecl-min "@abs_builddir@/cmp/load.lsp" #-ecl-min "@abs_builddir@/cmp.so")
 
 ;;;
 ;;; * Add include path to not yet installed headers

@@ -3997,9 +3997,9 @@ _ACEOF
 
 else
   if test ${shared} = "yes" ; then
-    LSP_LIBRARIES="${LSP_LIBRARIES} cmp.so"
+    LSP_LIBRARIES="${LSP_LIBRARIES} cmp.so sysfun.lsp"
   else
-    LSP_LIBRARIES="${LSP_LIBRARIES} libcmp.a"
+    LSP_LIBRARIES="${LSP_LIBRARIES} libcmp.a sysfun.lsp"
   fi
 fi
 if test ${tk} ; then

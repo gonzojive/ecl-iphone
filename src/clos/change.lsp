@@ -100,7 +100,7 @@
 	(let* ((gfun (symbol-function accessor))
 	       (gf-object (si:gfun-instance gfun))
 	       (setf-accessor (list 'setf accessor))
-	       (setf-gfun (symbol-function setf-accessor))
+	       (setf-gfun (fdefinition setf-accessor))
 	       (setf-gf-object (si:gfun-instance setf-gfun))
 	       found)
 	  ;; primary reader method

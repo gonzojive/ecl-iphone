@@ -139,7 +139,7 @@
 (defun ensure-generic-function (name &key lambda-list)
   (let (gfun)
     (unless (and (fboundp name)
-		 (si:gfunp (setq gfun (symbol-function name))))
+		 (si:gfunp (setq gfun (fdefinition name))))
 
       ;; create a fake standard-generic-function object:
       (let ((gf-object (si:allocate-instance (find-class 't) 8)))
@@ -155,7 +155,7 @@
 	(si:instance-set gf-object 6 gfun) ; gfun
 	(si:instance-set gf-object 7 nil) ; methods
 	(si:gfun-instance-set gfun gf-object)
-	(setf (symbol-function name) gfun)))
+	(setf (fdefinition name) gfun)))
 
     (si:gfun-instance gfun)))
 

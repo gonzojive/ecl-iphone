@@ -2184,7 +2184,7 @@ collected result will be returned as the value of the LOOP."
     (add-loop-path '(present-symbol present-symbols) 'loop-package-symbols-iteration-path w
 		   :preposition-groups '((:of :in))
 		   :inclusive-permitted nil
-		   :user-data '(:symbol-types (:internal)))
+		   :user-data '(:symbol-types (:internal :external)))
     w))
 
 

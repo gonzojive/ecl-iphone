@@ -58,7 +58,7 @@
 						  (symbol-name b)))))))
 	((atom x) (error "~ is not allowed as a feature" x))
         ((eq (car x) 'AND)
-         (dolist (x (cdr x) t) (unless (eval-feature x) (return nil))))
+         (dolist (x (cdr x) t) (when (not (eval-feature x)) (return nil))))
         ((eq (car x) 'OR)
          (dolist (x (cdr x) nil) (when (eval-feature x) (return t))))
         ((eq (car x) 'NOT)

@@ -41,7 +41,10 @@ setf_namep(cl_object fun_spec)
 	  strncpy(str, "(SETF ", 6);
 	  strncpy(str + 6, fn_str->string.self, fn_str->string.fillp);
 	  str[l-1] = ')';
-	  sym = intern(string, fn_name->symbol.hpack, &intern_flag);
+	  if (fn_name->symbol.hpack == Cnil)
+		  sym = make_symbol(string);
+	  else
+		  sym = intern(string, fn_name->symbol.hpack, &intern_flag);
 	  return(sym);
 	} else return(OBJNULL);
 }

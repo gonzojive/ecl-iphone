@@ -26,25 +26,6 @@
 ;;; ----------------------------------------------------------------------
 ;;; ECL's interface to the toplevel and debugger
 
-(defun invoke-debugger (&optional (datum "Debug") &rest arguments)
-  (let ((condition
-	 (coerce-to-condition datum arguments 'simple-condition 'debug)))
-    (break-level t (format t "~&~A~%" condition))))
-
-(defun break-level (continuable *break-message*)
-  (unless *break-enable*
-    (throw *quit-tag* nil))
-  (let*((*break-level* (1+ *break-level*))
-	(*break-env* nil)
-	(*standard-input* *debug-io*)
-	(*standard-output* *debug-io*)
-	(*readtable* (or *break-readtable* *readtable*)))
-    (catch *continue-tag*
-      (when (listen *debug-io*)
-	(clear-input *debug-io*))
-      (tpl :continuable continuable
-	   :commands (adjoin break-commands *tpl-commands*)))))
-
 (defun sys::universal-error-handler (continue-string datum args)
   "Args: (error-name continuable-p function-name
        continue-format-string error-format-string

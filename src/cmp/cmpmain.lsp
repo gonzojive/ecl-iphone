@@ -379,9 +379,11 @@ Cannot compile ~a."
 ~%;;;"))
 
 #+dlopen
+(defvar *gazonk-counter* 0)
+
+#+dlopen
 (defun compile (name &optional (def nil supplied-p)
-                      &aux form gazonk-name
-                      data-pathname
+                      &aux form data-pathname
                       (*compiler-in-use* *compiler-in-use*)
                       (*standard-output* *standard-output*)
                       (*error-output* *error-output*)
@@ -396,39 +398,37 @@ Cannot compile ~a."
     (format t "~&;;; The compiler was called recursively.~
 		~%Cannot compile ~s." name)
     (setq *error-p* t)
-    (return-from compile))
+    (return-from compile (values name nil t)))
 
   (setq *error-p* nil
 	*compiler-in-use* t)
 
   (cond ((and supplied-p def)
-         (unless (and (consp def) (eq (car def) 'LAMBDA))
-                 (error "~s is invalid lambda expression." def))
          (setq form (if name
-                        `(defun ,name ,@(cdr def))
+                        `(setf (symbol-function ',name) #',def)
                         `(set 'GAZONK #',def))))
         ((and (fboundp name)
 	      (setq def (symbol-function name))
-	      (setq form (si::compiled-function-source def)))
-	 (setq form `(defun ,name ,@form)))
+	      (setq form (function-lambda-expression def)))
+	 (setq form `(setf (symbol-function ',name) #',form)))
         (t (error "No lambda expression is assigned to the symbol ~s." name)))
 
-  (dotimes (n 1000
-              (progn
-                (format t "~&;;; The name space for GAZONK files exhausted.~%~
-;;; Delete one of your GAZONK*** files before compiling ~s." name)
-                (setq *error-p* t)
-                (return-from compile (values))))
-    (setq gazonk-name (format nil "gazonk~3,'0d" n))
-    (setq data-pathname (make-pathname :name gazonk-name :type "data"))
-    (unless (probe-file data-pathname)
-      (return)))
+  (let ((template (format nil "~A/ecl~3,'0x"
+			  (or (si::getenv "TMPDIR") "/tmp")
+			  (incf *gazonk-counter*))))
+    (unless (setq data-pathname (pathname (si::mkstemp template)))
+      (format t "~&;;; Unable to create temporay file~%~
+;;;	~AXXXXXX
+;;; Make sure you have enough free space in disk, check permissions or set~%~
+;;; the environment variable TMPDIR to a different value." template)
+      (setq *error-p* t)
+      (return-from compile (values nil t t))))
 
   (let ((*load-time-values* 'values) ;; Only the value is kept
-	(c-pathname (make-pathname :name gazonk-name :type "c"))
-        (h-pathname (make-pathname :name gazonk-name :type "h"))
-        (o-pathname (make-pathname :name gazonk-name :type "o"))
-	(so-pathname (make-pathname :name gazonk-name :type "so")))
+	(c-pathname (make-pathname :type "c" :defaults data-pathname))
+	(h-pathname (make-pathname :type "h" :defaults data-pathname))
+	(o-pathname (make-pathname :type "o" :defaults data-pathname))
+	(so-pathname (make-pathname :type "so" :defaults data-pathname)))
 
     (init-env)
 
@@ -460,22 +460,21 @@ Cannot compile ~a."
                  (load so-pathname :verbose nil)
                  (when *compile-verbose* (print-compiler-info))
                  (delete-file so-pathname)
-                 (delete-file data-pathname))
-                (t (delete-file data-pathname)
+                 (delete-file data-pathname)
+		 (values (or name (symbol-value 'GAZONK)) nil nil))
+		(t (delete-file data-pathname)
                    (format t "~&;;; The C compiler failed to compile~
 			~the intermediate code for ~s.~%" name)
-                   (setq *error-p* t)))
-	  (or name (symbol-value 'GAZONK)))
-
+                   (setq *error-p* t)
+		   (values name t t))))
         (progn
-	  (print c-pathname)
           (when (probe-file c-pathname) (delete-file c-pathname))
           (when (probe-file h-pathname) (delete-file h-pathname))
           (when (probe-file so-pathname) (delete-file so-pathname))
           (when (probe-file data-pathname) (delete-file data-pathname))
           (format t "~&;;; Failed to compile ~s.~%" name)
           (setq *error-p* t)
-          name))))
+          (values name t t)))))
 
 (defun disassemble (&optional (thing nil)
 			      &key (h-file nil) (data-file nil)

@@ -50,7 +50,7 @@ all:	$(TARGETS) doc
 eclx$(EXE): ecl_min$(EXE) compile_rest.lsp
 	./ecl_min < compile_rest.lsp
 
-ecl$(EXE): ecl_min$(EXE) compile.lsp
+ecl$(EXE): ecl_min$(EXE) compile.lsp sysfun.lsp
 	./ecl_min < compile.lsp
 
 ecl_min$(EXE): $(LIBRARIES) .gdbinit
@@ -69,6 +69,8 @@ libgmp.a:
 	if (echo $(SUBDIR) | grep gmp); then \
 	  cd gmp; $(MAKE) install; \
 	fi
+sysfun.lsp:
+	ln -sf $(srcdir)/cmp/sysfun.lsp .
 
 BUILD-STAMP: config.status
 	(echo "#"; uname -a) > $@
@@ -131,3 +133,7 @@ test3:
 	$(MAKE) clean_lisp
 	./ecl < compile2.lsp
 	for i in lsp clos cmp clx tk; do test -d $$i && diff --exclude=\*.o $$i stage2/$$i; done
+test:
+	make -C tests
+	make -C ansi-tests > ansi-tests/log
+	-(diff tests ~/src/tests; diff --exclude log ansi-tests ~/src/ansi-tests) | less

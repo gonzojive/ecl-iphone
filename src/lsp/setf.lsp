@@ -120,19 +120,14 @@ Does not check if the third gang is a single-element list."
 	       (push item names))
 	     (push item all-args))
 	   (values (gensym) (nreverse names) (nreverse values) (nreverse all-args))))
-    (cond ((symbolp form)
+    (cond ((and (setq f (macroexpand form env)) (not (equal f form)))
+	   (return-from get-setf-method-multiple-value
+	     (get-setf-method-multiple-value f env)))
+	  ((symbolp form)
 	   (let ((store (gensym)))
 	     (values nil nil (list store) `(setq ,form ,store) form)))
 	  ((or (not (consp form)) (not (symbolp (car form))))
 	   (error "Cannot get the setf-method of ~S." form))
-	  ((and env (setq f (assoc (car form) (cdr env))))
-	   (setq f (macroexpand form env))
-	   (when (eq form f)
-	     (error "Cannot get setf-method for ~a" form))
-	   (return-from get-setf-method-multiple-value
-	     (get-setf-method-multiple-value f env)))
-	  ((macro-function (car form))
-	   (get-setf-method-multiple-value (macroexpand form)))
 	  ((setq f (get (car form) 'SETF-METHOD))
 	   (apply f env (cdr form)))
 	  (t
@@ -197,6 +192,7 @@ Does not check if the third gang is a single-element list."
 (defsetf elt sys:elt-set)
 (defsetf symbol-value set)
 (defsetf symbol-function sys:fset)
+(defsetf fdefinition sys:fset)
 (defsetf macro-function (s) (v) `(sys:fset ,s ,v t))
 (defsetf aref (a &rest il) (v) `(sys:aset ,v ,a ,@il))
 (defsetf row-major-aref (a i) (v) `(sys:row-major-aset ,v ,i ,a))
@@ -346,7 +342,7 @@ Each PLACE may be any one of the following:
 	c?r	c??r	c???r	c????r
 	aref	svref	char	schar	bit	sbit	fill-pointer
 	get	getf	documentation	symbol-value	symbol-function
-	symbol-plist	macro-function	gethash
+	symbol-plist	macro-function	gethash		fdefinition
 	char-bit	ldb	mask-field
 	apply	slot-value
     where '?' stands for either 'a' or 'd'.
@@ -574,6 +570,11 @@ makes it the new value of PLACE.  Returns the new value of PLACE."
     (return-from push `(setq ,place (cons ,item ,place))))
   (multiple-value-bind (vars vals stores store-form access-form)
       (get-setf-expansion place env)
+    ;; The item to be pushed has to be evaluated before the destination
+    (unless (constantp item)
+      (setq vals (cons item vals)
+	    item (gensym)
+	    vars (cons item vars)))
     `(let* ,(mapcar #'list
 		    (append vars stores)
 		    (append vals (list (list 'cons item access-form))))
@@ -591,6 +592,11 @@ to MEMBER."
 	 (return-from pushnew `(setq ,place (adjoin ,item ,place ,@rest)))))
   (multiple-value-bind (vars vals stores store-form access-form)
       (get-setf-expansion place env)
+    ;; The item to be pushed has to be evaluated before the destination
+    (unless (constantp item)
+      (setq vals (cons item vals)
+	    item (gensym)
+	    vars (cons item vars)))
     `(let* ,(mapcar #'list
 		    (append vars stores)
 		    (append vals

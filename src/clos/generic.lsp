@@ -13,7 +13,7 @@
   (declare (si::c-local))
   (cond ((not (fboundp name)))
 	; a generic function already exists
-	((si:gfunp (symbol-function name)))
+	((si:gfunp (fdefinition name)))
 	((special-operator-p name)
 	 (error "~A is a special form" name))
 	((macro-function name)
@@ -199,8 +199,7 @@ than once")
 
     (let (dispatcher gf-object)
       (if (and (fboundp function-specifier)
-	       (si:gfunp 
-		(setq dispatcher (symbol-function function-specifier))))
+	       (si:gfunp (setq dispatcher (fdefinition function-specifier))))
 
 	  ;; modify the existing object
 	  (progn
@@ -235,7 +234,7 @@ than once")
 			   :documentation documentation
 			   :gfun dispatcher)
 		(si:gfun-instance dispatcher) gf-object
-		(symbol-function function-specifier) dispatcher))
+		(fdefinition function-specifier) dispatcher))
       gf-object)))
 
 ;;; ----------------------------------------------------------------------

@@ -10,8 +10,6 @@
 
 (in-package "SYSTEM")
 
-(c-declaim (optimize (safety 0) (space 3)))
-
 (defun union (list1 list2 &rest rest)
   "Args: (list1 list2 &key (key #'identity) (test #'eql) test-not)
 Returns, as a list, the union of elements in LIST1 and in LIST2."
@@ -120,3 +118,28 @@ otherwise."
     (unless (consp l) (error "SUBSETP not passed a list"))
     (unless (apply #'member1 (car l) list2 rest)
       (return nil))))
+
+(defun rassoc-if (pred arg &rest args)
+  (apply #'rassoc pred arg :test #'funcall args))
+(defun rassoc-if-not (pred arg &rest args)
+  (apply #'rassoc pred arg :test-not #'funcall args))
+
+(defun assoc-if (pred arg &rest args)
+  (apply #'assoc pred arg :test #'funcall args))
+(defun assoc-if-not (pred arg &rest args)
+  (apply #'assoc pred arg :test-not #'funcall args))
+
+(defun member-if (pred arg &rest args)
+  (apply #'member pred arg :test #'funcall args))
+(defun member-if-not (pred arg &rest args)
+  (apply #'member pred arg :test-not #'funcall args))
+
+(defun subst-if (new old where &rest args)
+  (apply #'subst new old where :test #'funcall args))
+(defun subst-if-not (new old where &rest args)
+  (apply #'subst new old where :test-not #'funcall args))
+
+(defun nsubst-if (new old where &rest args)
+  (apply #'nsubst new old where :test #'funcall args))
+(defun nsubst-if-not (new old where &rest args)
+  (apply #'nsubst new old where :test-not #'funcall args))

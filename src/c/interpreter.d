@@ -173,10 +173,12 @@ bind_function(cl_object name, cl_object fun)
 	lex_env = CONS(@':function', CONS(CONS(name, fun), lex_env));
 }
 
-static void
-bind_tagbody(cl_object id)
+static cl_object
+bind_tagbody()
 {
+	cl_object id = new_frame_id();
 	lex_env = CONS(@':tag', CONS(id, lex_env));
+	return id;
 }
 
 static void
@@ -305,6 +307,12 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 	    if (!SYMBOLP(key))
 	      FEprogram_error("LAMBDA: Keyword expected, got ~S.", 1, key);
 	    keys = data;
+	    if (key == @':allow-other-keys') {
+	      if (!allow_other_keys_found) {
+		allow_other_keys_found = TRUE;
+		other_keys = !Null(value);
+	      }
+	    }
 	    for (i = 0; i < n; i++, keys += 4) {
 	      if (key == keys[0]) {
 		if (spp[i] == OBJNULL)
@@ -314,10 +322,6 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 	    }
 	    if (key != @':allow-other-keys')
 	      other_found = TRUE;
-	    else if (!allow_other_keys_found) {
-	      allow_other_keys_found = TRUE;
-	      other_keys = !Null(value);
-	    }
 	  FOUND:
 	    (void)0;
 	  }
@@ -483,123 +487,6 @@ interpret_funcall(int narg, cl_object fun) {
 
 /* -------------------- THE INTERPRETER -------------------- */
 
-/* OP_BLOCK	label{arg}, block-name{symbol}
-	...
-   OP_EXIT
-   label:
-
-	Executes the enclosed code in a named block.
-	LABEL points to the first instruction after OP_EXIT.
-*/
-static cl_object *
-interpret_block(cl_object *vector) {
-	cl_object * volatile exit = packed_label(vector - 1);
-	CL_BLOCK_BEGIN(id) {
-		bind_block(next_code(vector), id);
-		vector = interpret(vector);
-		lex_env = frs_top->frs_lex;
-	} CL_BLOCK_END;
-	return exit;
-}
-
-
-
-static cl_object *
-interpret_catch(cl_object *vector) {
-	cl_object * volatile exit;
-	exit = packed_label(vector - 1);
-	if (frs_push(FRS_CATCH,VALUES(0)) == 0)
-		interpret(vector);
-	frs_pop();
-	return exit;
-}
-
-/* OP_TAGBODY	n{arg}
-   tag1
-   label1
-   ...
-   tagn
-   labeln
-label1:
-   ...
-labeln:
-   ...
-   OP_EXIT
-
-	High level construct for the TAGBODY form.
-*/
-static cl_object *
-interpret_tagbody(cl_object *vector) {
-	cl_index i, ntags = get_oparg(vector[-1]);
-	cl_object id = new_frame_id();
-	cl_object *aux, *tag_list = vector;
-
-	/* 1) Save current environment */
-	cl_object old_lex_env = lex_env;
-
-	/* 2) Bind tags */
-	bind_tagbody(id);
-
-	/* 3) Wait here for gotos. Each goto sets VALUES(0) to a integer
-	      which ranges from 0 to ntags-1, depending on the tag. These
-	      numbers are indices into the jump table and are computed
-	      at compile time.
-	*/
-	aux = vector + ntags;
-	if (frs_push(FRS_CATCH, id) != 0)
-		aux = simple_label(vector + fix(VALUES(0)));
-	vector = interpret(aux);
-	frs_pop();
-
-	/* 4) Restore environment */
-	lex_env = old_lex_env;
-	VALUES(0) = Cnil;
-	NValues = 0;
-	return vector;
-}
-
-/* OP_UNWIND	label
-   ...		; code to be protected and whose value is output
-   OP_EXIT
-label:
-   ...		; code executed at exit
-   OP_EXIT
-	High level construct for UNWIND-PROTECT. The first piece of code
-	is executed and its output value is saved. Then the second piece
-	of code is executed and the output values restored. The second
-	piece of code is always executed, even if a THROW, RETURN or GO
-	happen within the first piece of code.
-*/
-static cl_object *
-interpret_unwind_protect(cl_object *vector) {
-	cl_object * volatile exit = packed_label(vector-1);
-	CL_UNWIND_PROTECT_BEGIN {
-		interpret(vector);
-	} CL_UNWIND_PROTECT_EXIT {
-		exit = interpret(exit);
-	} CL_UNWIND_PROTECT_END;
-	return exit;
-}
-
-/* OP_DO	label
-   ...		; code executed within a NIL block
-   OP_EXIT
-   label:
-
-	High level construct for the DO and BLOCK forms.
-*/
-static cl_object *
-interpret_do(cl_object *vector) {
-	cl_object *volatile exit = packed_label(vector-1);
-	CL_BLOCK_BEGIN(id) {
-		bind_block(Cnil, id);
-		interpret(vector);
-		bds_unwind(frs_top->frs_bds_top);
-		lex_env = frs_top->frs_lex;
-	} CL_BLOCK_END;
-	return exit;
-}
-
 /* OP_DOLIST	label
    ...		; code to bind the local variable
    OP_EXIT
@@ -663,24 +550,31 @@ static cl_object *
 interpret_dotimes(cl_object *vector) {
 	cl_object *volatile exit = packed_label(vector - 1);
 	CL_BLOCK_BEGIN(id) {
-		cl_object *output;
-		cl_fixnum length, i;
-		cl_object var;
+		cl_object *output, length = VALUES(0);
 
 		/* 1) Set up a nil block */
 		bind_block(Cnil, id);
 
 		/* 2) Retrieve number and bind variables */
-		length = fix(VALUES(0));
 		exit = packed_label(vector - 1);
 		vector = interpret(vector);
 		output = packed_label(vector-1);
 
-		/* 3) Loop while needed */
-		for (i = 0; i < length;) {
+		if (FIXNUMP(VALUES(0))) {
+		    cl_fixnum i, l = fix(length);
+		    /* 3) Loop while needed */
+		    for (i = 0; i < l;) {
 			interpret(vector);
 			NValues = 1;
 			VALUES(0) = MAKE_FIXNUM(++i);
+		    }
+		} else {
+		    cl_object i = MAKE_FIXNUM(0);
+		    while (number_compare(i, length) < 0) {
+			interpret(vector);
+			NValues = 1;
+			VALUES(0) = i = one_plus(i);
+		    }
 		}
 		interpret(output);
 
@@ -754,42 +648,6 @@ interpret_labels(cl_object *vector) {
 		CDR(record) = close_around(CDR(record), lex_env);
 		l = CDDR(l);
 	}
-	return vector;
-}
-
-/* OP_MCALL
-   ...
-   OP_EXIT
-
-	Saves the stack pointer, executes the enclosed code and
-	funcalls VALUE(0) using the content of the stack.
-*/
-static cl_object *
-interpret_mcall(cl_object *vector) {
-	cl_index sp = cl_stack_index();
-	vector = interpret(vector);
-	VALUES(0) = interpret_funcall(cl_stack_index()-sp, VALUES(0));
-	return vector;
-}
-
-/* OP_MPROG1
-   ...
-   OP_EXIT
-
-	Save the values in VALUES(..), execute the code enclosed, and
-	restore the values.
-*/
-static cl_object *
-interpret_mprog1(cl_object *vector) {
-	cl_index i,n = NValues;
-	for (i=0; i<n; i++) {
-		cl_stack_push(VALUES(i));
-	}
-	vector = interpret(vector);
-	for (i=n; i;) {
-		VALUES(--i) = cl_stack_pop();
-	}
-	NValues = n;
 	return vector;
 }
 
@@ -949,15 +807,40 @@ interpret(cl_object *vector) {
 		break;
 	}
 
-	/* OP_FCALL	n{arg}
+	/* OP_CALL	n{arg}
 		Calls the function in VALUES(0) with N arguments which
 		have been deposited in the stack. The output values
 		are left in VALUES(...)
 	*/
-	case OP_FCALL: {
+	case OP_CALL: {
 		cl_fixnum n = get_oparg(s);
 		cl_object fun = VALUES(0);
 		VALUES(0) = interpret_funcall(n, fun);
+		break;
+	}
+
+	/* OP_FCALL	n{arg}
+		Calls a function in the stack with N arguments which
+		have been also deposited in the stack. The output values
+		are left in VALUES(...)
+	*/
+	case OP_FCALL: {
+		cl_fixnum n = get_oparg(s);
+		cl_object fun = cl_stack_top[-n-1];
+		VALUES(0) = interpret_funcall(n, fun);
+		cl_stack_pop();
+		break;
+	}
+
+	/* OP_MCALL
+		Similar to FCALL, but gets the number of arguments from
+		the stack (They all have been deposited by OP_PUSHVALUES)
+	*/
+	case OP_MCALL: {
+		cl_fixnum n = fix(cl_stack_pop());
+		cl_object fun = cl_stack_top[-n-1];
+		VALUES(0) = interpret_funcall(n, fun);
+		cl_stack_pop();
 		break;
 	}
 
@@ -976,16 +859,29 @@ interpret(cl_object *vector) {
 		break;
 	}
 
-	/* OP_PFCALL	n{arg}
+	/* OP_PCALL	n{arg}
 		Calls the function in VALUES(0) with N arguments which
 		have been deposited in the stack. The first output value
 		is pushed on the stack.
 	*/
-	case OP_PFCALL: {
+	case OP_PCALL: {
 		cl_fixnum n = get_oparg(s);
 		cl_object fun = VALUES(0);
 		VALUES(0) = interpret_funcall(n, fun);
 		cl_stack_push(VALUES(0));
+		break;
+	}
+
+	/* OP_PFCALL	n{arg}
+		Calls the function in the stack with N arguments which
+		have been also deposited in the stack. The first output value
+		is pushed on the stack.
+	*/
+	case OP_PFCALL: {
+		cl_fixnum n = get_oparg(s);
+		cl_object fun = cl_stack_top[-n-1];
+		VALUES(0) = interpret_funcall(n, fun);
+		cl_stack_top[-1] = VALUES(0);
 		break;
 	}
 
@@ -994,14 +890,6 @@ interpret(cl_object *vector) {
 	*/
 	case OP_EXIT:
 		return vector;
-
-	/* OP_NOP
-		Sets VALUES(0) = NIL and NValues = 1
-	*/   		
-	case OP_NOP:
-		VALUES(0) = Cnil;
-		NValues = 0;
-		break;
 
 	/* OP_HALT
 		Marks the end of a function.
@@ -1107,13 +995,17 @@ interpret(cl_object *vector) {
 		NValues = 1;
 		if (!Null(VALUES(0))) vector = vector - 1 + get_oparg(s);
 		break;
-	case OP_JEQ:
-		if (VALUES(0) == next_code(vector))
+	case OP_JEQL:
+		if (eql(VALUES(0), next_code(vector)))
 			vector = vector + get_oparg(s) - 2;
 		break;
-	case OP_JNEQ:
-		if (VALUES(0) != next_code(vector))
+	case OP_JNEQL:
+		if (!eql(VALUES(0), next_code(vector)))
 			vector = vector + get_oparg(s) - 2;
+		break;
+	case OP_NOT:
+		VALUES(0) = (VALUES(0) == Cnil)? Ct : Cnil;
+		NValues = 1;
 		break;
 	/* OP_UNBIND	n{arg}
 		Undo "n" local bindings.
@@ -1154,7 +1046,7 @@ interpret(cl_object *vector) {
 	case OP_VBIND: {
 		int n = get_oparg(s);
 		cl_object var_name = next_code(vector);
-		cl_object value = (--n < NValues) ? VALUES(n) : Cnil;
+		cl_object value = (n < NValues) ? VALUES(n) : Cnil;
 		bind_var(var_name, value);
 		break;
 	}
@@ -1173,7 +1065,7 @@ interpret(cl_object *vector) {
 	case OP_VBINDS: {
 		int n = get_oparg(s);
 		cl_object var_name = next_code(vector);
-		cl_object value = (--n < NValues) ? VALUES(n) : Cnil;
+		cl_object value = (n < NValues) ? VALUES(n) : Cnil;
 		bind_special(var_name, value);
 		break;
 	}
@@ -1188,6 +1080,7 @@ interpret(cl_object *vector) {
 	case OP_SETQ: {
 		int lex_env_index = get_oparg(s);
 		setq_local(lex_env_index, VALUES(0));
+		NValues = 1;
 		break;
 	}
 	case OP_SETQS: {
@@ -1196,6 +1089,7 @@ interpret(cl_object *vector) {
 			FEassignment_to_constant(var);
 		else
 			SYM_VAL(var) = VALUES(0);
+		NValues = 1;
 		break;
 	}
 	case OP_PSETQ: {
@@ -1216,8 +1110,112 @@ interpret(cl_object *vector) {
 		break;
 	}
 
-	case OP_BLOCK:
-		vector = interpret_block(vector);
+	/* OP_BLOCK	label{arg}, block-name{symbol}
+	   ...
+	   OP_EXIT
+	 label:
+
+	   Executes the enclosed code in a named block.
+	   LABEL points to the first instruction after OP_EXIT.
+	*/
+	case OP_BLOCK: {
+		cl_object id = new_frame_id();
+		cl_stack_push(packed_label(vector - 1));
+		if (frs_push(FRS_CATCH, id) == 0) {
+			bind_block(next_code(vector), id);
+		} else {
+			lex_env = frs_top->frs_lex;
+			frs_pop();
+			vector = cl_stack_pop();
+		}
+		break;
+	}
+	/* OP_DO	label
+	     ...	; code executed within a NIL block
+	   OP_EXIT_FRAME
+	   label:
+
+	   High level construct for the DO and BLOCK forms.
+	*/
+	case OP_DO: {
+		cl_object id = new_frame_id();
+		cl_stack_push(packed_label(vector - 1));
+		if (frs_push(FRS_CATCH, id) == 0) {
+			bind_block(Cnil, id);
+		} else {
+			lex_env = frs_top->frs_lex;
+			frs_pop();
+			vector = cl_stack_pop();
+		}
+		break;
+	}
+	/* OP_CATCH	label{arg}
+	   ...
+	   OP_EXIT_FRAME
+	   label:
+
+	   Sets a catch point using the tag in VALUES(0). LABEL points to the
+	   first instruction after the end (OP_EXIT) of the block
+	*/
+	case OP_CATCH:
+		cl_stack_push(packed_label(vector - 1));
+		if (frs_push(FRS_CATCH, VALUES(0)) != 0) {
+			lex_env = frs_top->frs_lex;
+			frs_pop();
+			vector = cl_stack_pop();
+		}
+		break;
+	/* OP_TAGBODY	n{arg}
+	     label1
+	     ...
+	     labeln
+	   label1:
+	     ...
+	   labeln:
+	     ...
+	   OP_EXIT
+
+	   High level construct for the TAGBODY form.
+	*/
+	case OP_TAGBODY: {
+		/* Here we save the location of the jump table */
+		cl_stack_push(vector);
+		if (frs_push(FRS_CATCH, bind_tagbody()) == 0) {
+			/* The first time, we "name" the tagbody and
+			 * skip the jump table */
+			vector += get_oparg(s);
+		} else {
+			/* Wait here for gotos. Each goto sets
+			   VALUES(0) to an integer which ranges from 0
+			   to ntags-1, depending on the tag. These
+			   numbers are indices into the jump table and
+			   are computed at compile time. */
+			cl_object *table = (cl_object*)cl_stack_top[-1];
+			vector = simple_label(table + fix(VALUES(0)));
+			lex_env = frs_top->frs_lex;
+		}
+		break;
+	}
+	case OP_EXIT_TAGBODY:
+		lex_env = CDDR(frs_top->frs_lex);
+		frs_pop();
+		cl_stack_pop();
+	case OP_NIL:
+		VALUES(0) = Cnil;
+		NValues = 1;
+		break;
+	case OP_PUSHNIL:
+		cl_stack_push(Cnil);
+		break;
+	case OP_NOP:
+		VALUES(0) = Cnil;
+		NValues = 0;
+		break;
+	case OP_EXIT_FRAME:
+		bds_unwind(frs_top->frs_bds_top);
+		lex_env = frs_top->frs_lex;
+		frs_pop();
+		cl_stack_pop();
 		break;
 	case OP_DOLIST:
 		vector = interpret_dolist(vector);
@@ -1225,40 +1223,50 @@ interpret(cl_object *vector) {
 	case OP_DOTIMES:
 		vector = interpret_dotimes(vector);
 		break;
-	case OP_DO:
-		vector = interpret_do(vector);
-		break;
-	case OP_TAGBODY:
-		vector = interpret_tagbody(vector);
-		break;
-	case OP_UNWIND:
-		vector = interpret_unwind_protect(vector);
-		break;
-	case OP_MCALL:
-		vector = interpret_mcall(vector);
-		break;
-	case OP_CATCH:
-		vector = interpret_catch(vector);
-		break;
 	case OP_MSETQ:
 		vector = interpret_msetq(vector);
-		break;
-	case OP_MPROG1:
-		vector = interpret_mprog1(vector);
 		break;
 	case OP_PROGV:
 		vector = interpret_progv(vector);
 		break;
 	/* OP_PUSHVALUES
-		Pushes the values output by the last form.
+		Pushes the values output by the last form, plus the number
+		of values.
 	*/
+	PUSH_VALUES:
 	case OP_PUSHVALUES: {
 		int i;
 		for (i=0; i<NValues; i++)
 			cl_stack_push(VALUES(i));
+		cl_stack_push(MAKE_FIXNUM(NValues));
 		break;
 	}
-
+	/* OP_PUSHMOREVALUES
+		Adds more values to the ones pushed by OP_PUSHVALUES.
+	*/
+	case OP_PUSHMOREVALUES: {
+		int i, n = fix(cl_stack_pop());
+		for (i=0; i<NValues; i++)
+			cl_stack_push(VALUES(i));
+		cl_stack_push(MAKE_FIXNUM(n + NValues));
+		break;
+	}
+	/* OP_POP
+		Pops a singe value pushed by a OP_PUSH* operator.
+	*/
+	case OP_POP:
+		VALUES(0) = cl_stack_pop();
+		NValues = 1;
+		break;
+	/* OP_POPVALUES
+		Pops all values pushed by a OP_PUSHVALUES operator.
+	*/
+	case OP_POPVALUES: {
+		int n = NValues = fix(cl_stack_pop());
+		while (n--)
+			VALUES(n) = cl_stack_pop();
+		break;
+	}
 	/* OP_VALUES	n{arg}
 		Pop N values from the stack and store them in VALUES(...)
 	*/
@@ -1280,6 +1288,45 @@ interpret(cl_object *vector) {
 		else
 			VALUES(0) = VALUES(n);
 		NValues = 1;
+		break;
+	}
+	/* OP_PROTECT	label
+	     ...	; code to be protected and whose value is output
+	   OP_EXIT
+	   label:
+	     ...	; code executed at exit
+	   OP_EXIT
+
+	  High level construct for UNWIND-PROTECT. The first piece of code is
+	  executed and its output value is saved. Then the second piece of code
+	  is executed and the output values restored. The second piece of code
+	  is always executed, even if a THROW, RETURN or GO happen within the
+	  first piece of code.
+	*/
+	case OP_PROTECT:
+		cl_stack_push(packed_label(vector - 1));
+		if (frs_push(FRS_PROTECT,Cnil) != 0) {
+			lex_env = frs_top->frs_lex;
+			frs_pop();
+			vector = cl_stack_pop();
+			cl_stack_push(MAKE_FIXNUM(nlj_fr - frs_top));
+			goto PUSH_VALUES;
+		}
+		break;
+	case OP_PROTECT_NORMAL:
+		bds_unwind(frs_top->frs_bds_top);
+		lex_env = frs_top->frs_lex;
+		frs_pop();
+		cl_stack_pop();
+		cl_stack_push(MAKE_FIXNUM(1));
+		goto PUSH_VALUES;
+	case OP_PROTECT_EXIT: {
+		volatile cl_fixnum n = NValues = fix(cl_stack_pop());
+		while (n--)
+			VALUES(n) = cl_stack_pop();
+		n = fix(cl_stack_pop());
+		if (n <= 0)
+			unwind(frs_top + n);
 		break;
 	}
 	default:

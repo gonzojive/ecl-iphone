@@ -1168,12 +1168,68 @@ ECLS 0.9
 * Errors fixed:
 
   - The PCL relied on the compiler to optimize certain method
-    combinations. However, the compiler is not always present, and
-    therefore it is safer to use interpreted functions instead.
+    combinations. However, the native compiler is not always present,
+    and therefore it is safer to use interpreted functions instead.
+
+  - The compiler had wrong type information about CHAR-NAME &
+    NAME-CHAR.
+
+  - DOTIMES fails with negative bignums and floats.
+
+  - LOAD-TIME-VALUE should be a special operator.
+
+  - COPY-SYMBOL fails with uninterned symbols.
+
+  - GENSYM and GENTEMP failed if the suffix becomes a bignum.
+
+  - COMPILE has to generate libraries with different names for each
+    function. Otherwise, when compiling a second function, the
+    dlopen() loader will not load the library because it thinks it has
+    it already in memory.
+
+  - When a compound form consists only of a string, this string should
+    not be interpreted as a documentation string, but as a form.
+
+  - SYMBOL-MACROLET definitions were ignored by GET-SETF-EXPANSION.
+
+  - DESTRUCTURING-BIND fails to interpret &WHOLE arguments.
+
+* Errors of the interpreter:
+
+  - CASE should use EQL to compare objects, not EQ.
+
+  - Empty PROGN and implicit PROGNs (LAMBDA, etc) should output NIL
+    instead of (VALUES). Similarly, a CASE with no matching clause
+    should also output NIL.
+
+  - A NIL in the keys position of a CASE clause can never match
+    anything: (CASE () (NIL 'A) (T 'B)) => B
+
+  - SETQ can only output one value
+
+  - User could not have a keyword variable with name ALLOW-OTHER-KEYS,
+    as in (LAMBDA (&KEY ALLOW-OTHER-KEYS) (PRINT ALLOW-OTHER-KEYS)).
 
 * Visible changes:
 
   - No "Bye" message in QUIT.
+
+  - Function definitions from the interpreter are now remembered by
+    default. This means you can now type
+	     (DEFUN MY-FUNCTION (X) (COS X))
+    and later on
+	     (COMPILE 'MY-FUNCTION)
+    If you want to save memory, use this to forget these definitions
+	     (SETQ SI::*KEEP-DEFINITIONS* NIL)
+
+  - New function SI:MKSTEMP creates an totally new empty file by
+    appending a 6-characters prefix to a template supplied by the
+    user.
+
+  - COMPILE now creates all temporary files in the directory pointed
+    to by the environment variable TMPDIR (Or /tmp if none). It also
+    uses MKSTEMP to produce unique file names, and solve the problem
+    that dlopen() cannot reload two libraries with the same name.
 
 * ANSI compatibility:
 
@@ -1187,6 +1243,31 @@ ECLS 0.9
   - In MAKE-PATHNAME, values which are supplied (even if NIL), are not
     overwritten by the :DEFAULTS. For instance, (MAKE-PATHNAME :TYPE
     NIL :DEFAULTS "FOO.LISP") => #P"FOO"
+
+  - INVOKE-DEBUGGER now uses the value of *DEBUGGER-HOOK*.
+
+  - Implemented LEAST-*-NORMALIZED-*-FLOAT.
+
+  - WITH-PACKAGE-ITERATOR implemented. LOOP clauses which iterate over
+    the symbols of a package now work. Furthermore, LOOP... FOR
+    PRESENT-SYMBOL... now iterates both over internal and external
+    symbols, just to be conformant with other implementations.
+
+  - COMPILE should output three values: the function itself, plus two
+    flags indicating the existence of errors.
+
+  - CONSTANTP takes two arguments, the second being an environment.
+
+  - Implemented FUNCTION-LAMBDA-EXPRESSION (Replaces non-standard
+    SI::COMPILED-FUNCTION-SOURCE).
+
+  - Right evaluation order enforced in PUSH, PUSHNEW, PSETQ.
+
+  - In FUNCALL, the interpreter evaluated the function form *after*
+    the arguments.
+
+  - (SETF #:GXXX), where #:GXXX is any uninterned symbol, should be a
+    valid function name.
 
 TODO:
 =====

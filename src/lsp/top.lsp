@@ -39,7 +39,6 @@
 
 (defvar *quit-tag* (cons nil nil))
 (defvar *quit-tags* nil)
-(defvar *continue-tag* (cons nil nil))	; return tag from current error
 (defvar *break-level* 0)		; nesting level of error loops
 (defvar *break-env* nil)
 (defvar *ihs-base* 0)
@@ -177,7 +176,7 @@ value of this variable is non-NIL.")
 	~@
 	Pop to previous break level, or if already in top level,~@
 	exit Lisp after confirmation.~%")
-      ((:c :continue) tpl-continue-command nil
+      ((:c :continue) continue nil
        ":c(ontinue)	Continue execution"
        ":continue					[Break command]~@
 	:c						[Abbreviation]~@
@@ -459,8 +458,7 @@ file.  When the saved image is invoked, it will start the redefined top-level."
       (cerror "Continues execution." "Console interrupt.")
       (error "Console interrupt -- cannot continue."))))
 
-(defun tpl (&key ((:continuable *tpl-continuable*) t)
-		 ((:commands *tpl-commands*) tpl-commands)
+(defun tpl (&key ((:commands *tpl-commands*) tpl-commands)
 		 ((:prompt-hook *tpl-prompt-hook*) nil)
 		 (quiet nil))
   (let* ((*ihs-base* *ihs-top*)
@@ -588,13 +586,6 @@ file.  When the saved image is invoked, it will start the redefined top-level."
 (defun tpl-pop-command (&rest any)
   (declare (ignore any))
   (throw (pop *quit-tags*) t))
-
-(defun tpl-continue-command (&rest any)
-  (declare (ignore any))
-  (if *tpl-continuable*
-    (throw *continue-tag* nil)
-    (format t "Can't continue from error.~%"))
-  (values))
 
 (defun tpl-quit-command (&optional (level 0))
   (when (and (>= level 0) (< level *tpl-level*))
@@ -879,3 +870,27 @@ Binding Stack:
 Note that these functions are named by external symbols in the SYSTEM
 package."
 ))
+
+(defun default-debugger (condition)
+  (declare (si::c-local))
+  (unless *break-enable*
+    (throw *quit-tag* nil))
+  (let*((*break-message* (format nil "~&~A~%" condition))
+	(*break-level* (1+ *break-level*))
+	(*break-env* nil)
+	(*standard-input* *debug-io*)
+	(*standard-output* *debug-io*)
+	(*readtable* (or *break-readtable* *readtable*)))
+    (when (listen *debug-io*)
+      (clear-input *debug-io*))
+    (princ *break-message*)
+    (tpl :commands (adjoin break-commands *tpl-commands*)))))
+
+(defvar *debugger-hook* nil)
+
+(defun invoke-debugger (condition)
+  (let* ((old-hook *debugger-hook*)
+	 (*debugger-hook* nil))
+    (if old-hook
+      (funcall old-hook condition old-hook)
+      (default-debugger condition))))

@@ -42,7 +42,7 @@
 	  (switch-to-buffer b)
 	  (beginning-of-buffer)))
       (print '*)
-      (setq case-fold-search nil)
+      (setq case-fold-search t)
       (if (search-forward string nil t)
 	  (return)))))
 

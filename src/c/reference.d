@@ -17,9 +17,6 @@
 #include "ecl.h"
 #include "ecl-inl.h"
 
-#define SBOUNDP(sym) (SYM_VAL(sym) == OBJNULL)
-#define FBOUNDP(sym) (SYM_FUN(sym) == OBJNULL)
-
 cl_object
 cl_fboundp(cl_object sym)
 {
@@ -34,7 +31,7 @@ cl_fboundp(cl_object sym)
 	}
 	if (sym->symbol.isform)
 		output = Ct;
-	else if (FBOUNDP(sym))
+	else if (SYM_FUN(sym) == OBJNULL)
 		output = Cnil;
 	else
 		output = Ct;
@@ -53,7 +50,7 @@ symbol_function(cl_object sym)
 	}
 	if (sym->symbol.isform || sym->symbol.mflag)
 		FEinvalid_function(sym);
-	if (FBOUNDP(sym))
+	if (SYM_FUN(sym) == OBJNULL)
 		FEundefined_function(sym);
 	return(SYM_FUN(sym));
 }
@@ -71,15 +68,10 @@ cl_symbol_function(cl_object sym)
 {
 	cl_object output;
 
-	if (!SYMBOLP(sym)) {
-		cl_object sym1 = setf_namep(sym);
-		if (sym1 == OBJNULL)
-			FEtype_error_symbol(sym);
-		sym = sym1;
-	}
+	assert_type_symbol(sym);
 	if (sym->symbol.isform)
 		output = @'special';
-	else if (FBOUNDP(sym))
+	else if (SYM_FUN(sym) == OBJNULL)
 		FEundefined_function(sym);
 	else if (sym->symbol.mflag)
 		output = CONS(@'macro', SYM_FUN(sym));
@@ -89,12 +81,24 @@ cl_symbol_function(cl_object sym)
 }
 
 cl_object
+cl_fdefinition(cl_object fname)
+{
+	if (!SYMBOLP(fname)) {
+		cl_object sym = setf_namep(fname);
+		if (sym == OBJNULL)
+			FEtype_error_symbol(fname);
+		fname = sym;
+	}
+	return cl_symbol_function(fname);
+}
+
+cl_object
 si_coerce_to_function(cl_object fun)
 {
 	cl_type t = type_of(fun);
 
 	if (t == t_symbol) {
-		if (FBOUNDP(fun) || fun->symbol.mflag)
+		if ((SYM_FUN(fun) == OBJNULL) || fun->symbol.mflag)
 			FEundefined_function(fun);
 		else
 			@(return SYM_FUN(fun))
@@ -102,7 +106,7 @@ si_coerce_to_function(cl_object fun)
 		return si_make_lambda(Cnil, CDR(fun));
 	} else {
 	  	cl_object setf_sym = setf_namep(fun);
-		if ((setf_sym != OBJNULL) && !FBOUNDP(setf_sym))
+		if ((setf_sym != OBJNULL) && (SYM_FUN(setf_sym) != OBJNULL))
 			@(return SYM_FUN(setf_sym))
 		else
 			FEinvalid_function(fun);
@@ -114,7 +118,7 @@ cl_symbol_value(cl_object sym)
 {
 	if (!SYMBOLP(sym))
 		FEtype_error_symbol(sym);
-	if (SBOUNDP(sym))
+	if (SYM_VAL(sym) == OBJNULL)
 		FEunbound_variable(sym);
 	@(return SYM_VAL(sym))
 }
@@ -124,7 +128,7 @@ cl_boundp(cl_object sym)
 {
 	if (!SYMBOLP(sym))
 		FEtype_error_symbol(sym);
-	@(return (SBOUNDP(sym)? Cnil : Ct))
+	@(return ((SYM_VAL(sym) == OBJNULL)? Cnil : Ct))
 }
 
 @(defun macro_function (sym &optional env)

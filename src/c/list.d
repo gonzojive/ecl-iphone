@@ -101,37 +101,6 @@ setupTEST(cl_object item, cl_object test, cl_object test_not, cl_object key)
 		kf = cl_identity;
 }
 
-#define PREDICATE2(f,name)  \
-cl_return f ## _if(int narg, cl_object pred, cl_object arg, cl_object key, cl_object val) \
-{  \
-	if (narg < 2)  \
-		FEwrong_num_arguments(name);  \
-	return f(narg+2, pred, arg, @':test', @'funcall', key, val);  \
-}  \
-\
-cl_return f ## _if_not(int narg, cl_object pred, cl_object arg, cl_object key, cl_object val) \
-{  \
-	if (narg < 2)  \
-		FEwrong_num_arguments(name);  \
-	return f(narg+2, pred, arg, @':test-not', @'funcall', key, val);  \
-}
-
-#define PREDICATE3(f,name)  \
-cl_return f ## _if(int narg, cl_object arg1, cl_object pred, cl_object arg3, cl_object key, cl_object val) \
-{  \
-	if (narg < 3)  \
-		FEwrong_num_arguments(name);  \
-	return f(narg+2, arg1, pred, arg3, @':test', @'funcall', key, val);  \
-}  \
-\
-cl_return f ## _if_not(int narg, cl_object arg1, cl_object pred, cl_object arg3, cl_object key, \
-	cl_object val)  \
-{  \
-	if (narg < 3)  \
-		FEwrong_num_arguments(name);  \
-	return f(narg+2, arg1, pred, arg3, @':test-not', @'funcall', key, val);  \
-}
-
 cl_object
 cl_car(cl_object x)
 {
@@ -167,7 +136,7 @@ cl_cdr(cl_object x)
 	cl_object p = Cnil, *z=&p;
 @
 	if (narg == 0)
-		FEwrong_num_arguments(narg);
+		FEwrong_num_arguments(@'list*');
 	while (--narg > 0)
 		z = &CDR( *z = CONS(cl_va_arg(args), Cnil));
 	*z = cl_va_arg(args);
@@ -618,8 +587,6 @@ subst(cl_object new_obj, cl_object tree)
 		return(tree);
 }
 
-PREDICATE3(@subst, @'subst')
-
 @(defun nsubst (new_obj old_obj tree &key test test_not key)
 	saveTEST;
 @
@@ -649,8 +616,6 @@ nsubst(cl_object new_obj, cl_object *treep)
 		nsubst(new_obj, &CDR(*treep));
 	}
 }
-
-PREDICATE3(@nsubst, @'nsubst')
 
 @(defun sublis (alist tree &key test test_not key)
 	saveTEST;
@@ -777,8 +742,6 @@ member(cl_object x, cl_object l)
 }
 /* End of addition. Beppe */
 
-PREDICATE2(@member, @'member')
-
 @(defun si::member1 (item list &key test test_not key)
 	saveTEST;
 @
@@ -813,7 +776,7 @@ cl_return
 	cl_object output;
 
 	if (narg < 2)
-		FEwrong_num_arguments(narg);
+		FEwrong_num_arguments(@'adjoin');
 	output = @si::member1(narg, item, list, k1, v1, k2, v2, k3, v3);
 	if (Null(output))
 		output = CONS(item, list);
@@ -937,6 +900,3 @@ assqlp(cl_object x, cl_object l)
 	return(Cnil);
 }
 /* End of addition. Beppe */
-
-PREDICATE2(@assoc, @'assoc')
-PREDICATE2(@rassoc, @'rassoc')

@@ -27,6 +27,59 @@ is used."
                     nil)))
           (list-all-packages)))
 
+(defun packages-iterator (packages options maybe-list)
+  (let ((all-symbols nil))
+    (when (or (atom packages) (not maybe-list))
+      (setq packages (list packages)))
+    (dolist (package packages)
+      (multiple-value-bind (hash-ext hash-int packages-used)
+	  (si::package-hash-tables (si::coerce-to-package package))
+	(when (member :external options :test #'eq)
+	  (push (list package :external hash-ext) all-symbols))
+	(when (member :internal options :test #'eq)
+	  (push (list package :internal hash-int) all-symbols))
+	(when (member :inherited options :test #'eq)
+	  (dolist (p packages-used)
+	    (push (list package :internal (si::package-hash-tables p))
+		  all-symbols)))))
+    (let* ((current (pop all-symbols))
+	   (package (first current))
+	   (type (second current))
+	   (iterator (si::hash-table-iterator (third current))))
+      (flet ((iterate ()
+	       (do () (nil)
+		(multiple-value-bind (found key value)
+		    (funcall iterator)
+		  (cond (found (return (values t value type package)))
+			((null all-symbols) (return (values nil nil nil nil)))
+			(t
+			 (setq current (pop all-symbols))
+			 (setq package (first current)
+			       type (second current)
+			       iterator (si::hash-table-iterator (third current))
+			       )))))))
+	#'iterate))))
+
+(defmacro with-package-iterator ((iterator package-list &rest conditions)
+				 &rest body)
+  `(let ((,iterator (packages-iterator ,package-list ',conditions t)))
+    (macrolet ((,iterator () (list 'funcall ',iterator)))
+      ,@body)))
+
+(defun expand-do-symbols (var package result-form body options)
+  (declare (si::c-local))
+  (let* ((i (gensym))
+	 (found (gensym))
+	 declaration)
+    (multiple-value-setq (declaration body doc)
+      (find-declarations body nil))
+    `(let* ((,i (packages-iterator ,package ',options t)))
+      (loop
+       (multiple-value-bind (,found ,var)
+	   (funcall ,i)
+	 ,@declaration
+	 (unless ,found (return ,result-form))
+	 ,@body)))))
 
 (defmacro do-symbols ((var &optional (package '*package*) (result-form nil))
                       &rest body)
@@ -35,24 +88,7 @@ is used."
 Executes STATEMENTs once for each symbol in PACKAGE (which defaults to the
 current package), with VAR bound to the symbol.  Then evaluates RESULT (which
 defaults to NIL) and returns all values."
-  (let* ((p (gensym)) (i (gensym))
-	 (x (gensym)) (y (gensym))
-	 declaration)
-    (multiple-value-setq (declaration body doc)
-      (find-declarations body nil))
-    `(let* ((,p (coerce-to-package ,package)) ,var)
-       ,@declaration
-       (multiple-value-bind (,y ,x)
-	    (package-size ,p)
-            (declare (fixnum ,x ,y))
-       (dotimes (,i (the fixnum (+ ,x ,y))
-		 (progn (setq ,var nil) ,result-form))
-         (setq ,var (if (< ,i ,x)
-                      (sys:package-internal ,p ,i)
-                      (sys:package-external ,p (the fixnum (- ,i ,x)))))
-         (unless (fixnump ,var)
-	   ,@body))))))
-       
+  (expand-do-symbols var package result-form body '(:external :internal :inherited)))
 
 (defmacro do-external-symbols
           ((var &optional (package '*package*) (result-form nil)) &rest body)
@@ -62,28 +98,14 @@ Establishes a NIL block and executes STATEMENTs once for each external symbol
 in PACKAGE (which defaults to the current package), with VAR bound to the
 variable.  Then evaluates RESULT (which defaults to NIL) and returns all
 values."
-  (let* ((p (gensym))
-	 (i (gensym))
-	 declaration)
-    (multiple-value-setq (declaration body)
-      (find-declarations body nil))
-    `(let* ((,p (coerce-to-package ,package)) ,var)
-       ,@declaration
-       (dotimes (,i (the fixnum (package-size ,p))
-		 (progn (setq ,var nil) ,result-form))
-         (setq ,var (sys:package-external ,p ,i))
-         (unless (fixnump ,var)
-	   ,@body)))))
+  (expand-do-symbols var package result-form body '(:external)))
 
 (defmacro do-all-symbols ((var &optional (result-form nil)) &rest body)
   "Syntax: (do-all-symbols (var [result]) {decl}* {tag | statement}*)
 Establishes a NIL block and executes STATEMENTs once for each symbol in each
 package, with VAR bound to the symbol.  Then evaluates RESULT (which defaults
 to NIL) and returns all values."
-  `(dolist (.v (list-all-packages) ,result-form)
-	   (do-symbols (,var .v)
-		       ,@ body)))
-
+  (expand-do-symbols var '(list-all-packages) result-form body '(:external :internal)))
 
 (defun substringp (sub str)
   (do ((i (the fixnum (- (length str) (length sub))))

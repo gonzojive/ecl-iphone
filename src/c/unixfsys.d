@@ -604,3 +604,22 @@ getpwuid(uid_t uid)
   FEerror("ECL can't use getpwuid on Solaris.", 0);
 }
 #endif
+
+cl_object
+si_mkstemp(cl_object template)
+{
+	cl_object output;
+	cl_index l;
+	int fd;
+
+	assert_type_string(template);
+	l = template->string.fillp;
+	output = cl_alloc_simple_string(l + 6);
+	memcpy(output->string.self, template->string.self, l);
+	memcpy(output->string.self + l, "XXXXXX", 6);
+	fd = mkstemp(output->string.self);
+	if (fd < 0)
+		@(return Cnil)
+	close(fd);
+	@(return output)
+}

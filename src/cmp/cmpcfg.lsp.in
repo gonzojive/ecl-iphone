@@ -8,3 +8,4 @@
 (setq compiler::*ld-flags* "-lgmp @LDFLAGS@ @CLIBS@")
 #+dlopen
 (setq compiler::*ld-shared-flags* "@SHARED_LDFLAGS@")
+(load "sys:sysfun.lsp" :verbose nil :print nil)

@@ -24,9 +24,9 @@
 	(end h)
       (do ((c (read-char file nil)))
 	  ((or (not c) (eq c #\^_))
-	   (unless c (setq end t)))
+	   (when (not c) (setq end t)))
 	)
-      (unless end
+      (when (not end)
 	(let* ((key (read file))
 	       (value (read file)))
 	  (si::hash-set key h value))))))
@@ -75,7 +75,7 @@
 		  (n 0 (1+ n)))
 		 ((or (eql v #\^_) (not v)) (if v n -1))
 	       (declare (fixnum n)))))
-    (unless (probe-file path)
+    (when (not (probe-file path))
       (return-from search-help-file nil))
     (let* ((*package* (find-package "CL"))
 	   (file (open path :direction :input))
@@ -120,7 +120,7 @@ the help file."
       (rplaca *documentation-pool* file))))
 
 (defun get-documentation (symbol doc-type &aux output)
-  (unless (member doc-type '(variable function setf type structure))
+  (when (not (member doc-type '(variable function setf type structure)))
     (error "~S is not a valid documentation type" doc-type))
   (dolist (dict *documentation-pool*)
     (cond ((hash-table-p dict)
@@ -134,9 +134,9 @@ the help file."
 
 (defun set-documentation (symbol doc-type string)
   (tan 1.0)
-  (unless (member doc-type '(variable function setf type structure))
+  (when (not (member doc-type '(variable function setf type structure)))
     (error "~S is not a valid documentation type" doc-type))
-  (unless (or (stringp string) (null string))
+  (when (not (or (stringp string) (null string)))
     (error "~S is not a valid documentation string" string))
   (let ((dict (first *documentation-pool*)))
     (when (hash-table-p dict)
@@ -151,7 +151,7 @@ the help file."
 
 (defun expand-set-documentation (symbol doc-type string)
   (when (and *keep-documentation* string)
-    (unless (stringp string)
+    (when (not (stringp string))
       (error "~S is not a valid documentation string" string))
     `((set-documentation ',symbol ',doc-type ,string))))
 
@@ -167,11 +167,11 @@ types are:
 All built-in special forms, macros, functions, and variables have their doc-
 strings."
   (cond ((member type '(function type variable setf structure))
-	 (unless (symbolp object)
+	 (when (not (symbolp object))
 	   (error "~S is not a symbol." object))
 	 (si::get-documentation object type))
 	(t
 	 (error "~S is an unknown documentation type" type))))
 
 #+ecl-min
-(unless *documentation-pool* (new-documentation-pool 1024))
+(when (null *documentation-pool*) (new-documentation-pool 1024))

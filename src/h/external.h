@@ -156,7 +156,7 @@ extern void init_big(void);
 
 extern cl_object si_compiled_function_name(cl_object fun);
 extern cl_object si_compiled_function_block(cl_object fun);
-extern cl_object si_compiled_function_source(cl_object fun);
+extern cl_object cl_function_lambda_expression(cl_object fun);
 
 extern cl_object cl_make_cfun(cl_object (*self)(), cl_object name, cl_object block, int narg);
 extern cl_object cl_make_cfun_va(cl_object (*self)(int narg,...), cl_object name, cl_object block);
@@ -323,7 +323,7 @@ extern cl_object cl_va_arg(cl_va_list args);
 extern cl_object si_unlink_symbol(cl_object s);
 extern cl_object cl_eval(cl_object form);
 extern cl_object si_eval_with_env(cl_object form, cl_object env);
-extern cl_object cl_constantp(cl_object arg);
+extern cl_object cl_constantp(int narg, cl_object arg, ...);
 
 #define funcall cl_funcall
 extern cl_object cl_apply_from_stack(cl_index narg, cl_object fun);
@@ -547,25 +547,15 @@ extern cl_object cl_nconc _ARGS((int narg, ...));
 extern cl_object cl_butlast _ARGS((int narg, cl_object lis, ...));
 extern cl_object cl_nbutlast _ARGS((int narg, cl_object lis, ...));
 extern cl_object cl_subst _ARGS((int narg, cl_object new_obj, cl_object old_obj, cl_object tree, ...));
-extern cl_object cl_subst_if _ARGS((int narg, cl_object arg1, cl_object pred, cl_object arg3, cl_object key, cl_object val));
-extern cl_object cl_subst_if_not _ARGS((int narg, cl_object arg1, cl_object pred, cl_object arg3, cl_object key, cl_object val));
 extern cl_object cl_nsubst _ARGS((int narg, cl_object new_obj, cl_object old_obj, cl_object tree, ...));
-extern cl_object cl_nsubst_if _ARGS((int narg, cl_object arg1, cl_object pred, cl_object arg3, cl_object key, cl_object val));
-extern cl_object cl_nsubst_if_not _ARGS((int narg, cl_object arg1, cl_object pred, cl_object arg3, cl_object key, cl_object val));
 extern cl_object cl_sublis _ARGS((int narg, cl_object alist, cl_object tree, ...));
 extern cl_object cl_nsublis _ARGS((int narg, cl_object alist, cl_object tree, ...));
 extern cl_object cl_member _ARGS((int narg, cl_object item, cl_object list, ...));
-extern cl_object cl_member_if _ARGS((int narg, cl_object pred, cl_object arg, cl_object key, cl_object val));
-extern cl_object cl_member_if_not _ARGS((int narg, cl_object pred, cl_object arg, cl_object key, cl_object val));
 extern cl_object si_member1 _ARGS((int narg, cl_object item, cl_object list, ...));
 extern cl_object cl_adjoin _ARGS((int narg, cl_object item, cl_object list, cl_object k1, cl_object v1, cl_object k2, cl_object v2, cl_object k3, cl_object v3));
 extern cl_object cl_pairlis _ARGS((int narg, cl_object keys, cl_object data, ...));
 extern cl_object cl_rassoc _ARGS((int narg, cl_object item, cl_object alist, ...));
 extern cl_object cl_assoc _ARGS((int narg, cl_object item, cl_object alist, ...));
-extern cl_object cl_assoc_if _ARGS((int narg, cl_object pred, cl_object arg, cl_object key, cl_object val));
-extern cl_object cl_assoc_if_not _ARGS((int narg, cl_object pred, cl_object arg, cl_object key, cl_object val));
-extern cl_object cl_rassoc_if _ARGS((int narg, cl_object pred, cl_object arg, cl_object key, cl_object val));
-extern cl_object cl_rassoc_if_not _ARGS((int narg, cl_object pred, cl_object arg, cl_object key, cl_object val));
 
 extern cl_object list_length(cl_object x);
 extern cl_object cl_car(cl_object x);
@@ -849,9 +839,7 @@ extern cl_object cl_package_use_list(cl_object p);
 extern cl_object cl_package_used_by_list(cl_object p);
 extern cl_object cl_package_shadowing_symbols(cl_object p);
 extern cl_object cl_list_all_packages();
-extern cl_object si_package_internal(cl_object p, cl_object index);
-extern cl_object si_package_external(cl_object p, cl_object index);
-extern cl_object si_package_size(cl_object p);
+extern cl_object si_package_hash_tables(cl_object p);
 extern cl_object si_package_lock(cl_object p, cl_object t);
 extern cl_object cl_delete_package(cl_object p);
 extern cl_object cl_make_package _ARGS((int narg, cl_object pack_name, ...));
@@ -1051,6 +1039,7 @@ extern void read_VV(cl_object block, void *entry);
 
 extern cl_object cl_fboundp(cl_object sym);
 extern cl_object cl_symbol_function(cl_object sym);
+extern cl_object cl_fdefinition(cl_object fname);
 extern cl_object si_coerce_to_function(cl_object form);
 extern cl_object cl_symbol_value(cl_object sym);
 extern cl_object cl_boundp(cl_object sym);
@@ -1332,6 +1321,7 @@ extern cl_object si_string_match(cl_object string, cl_object pattern);
 extern cl_object cl_user_homedir_pathname _ARGS((int narg, ...));
 extern cl_object cl_directory _ARGS((int narg, ...));
 extern cl_object si_file_exists (cl_object pathname);
+extern cl_object si_mkstemp(cl_object template);
 
 extern const char *expand_pathname(const char *name);
 extern cl_object string_to_pathname(char *s);

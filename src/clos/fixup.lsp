@@ -16,7 +16,7 @@
   (declare (si::c-local))
   (dolist (method-info *early-methods*)
     (let* ((method-name (car method-info))
-	   (gfun (symbol-function method-name))
+	   (gfun (fdefinition method-name))
 	   (gf-object (si:gfun-instance gfun)))
 
       (when (eq 'T (class-name (si:instance-class gf-object)))

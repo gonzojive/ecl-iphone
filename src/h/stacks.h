@@ -149,11 +149,8 @@ extern frame_ptr _frs_push(register enum fr_class clas, register cl_object val);
 
 #ifdef THREADS
 #define nlj_fr           clwp->lwp_nlj_fr
-#define nlj_tag          clwp->lwp_nlj_tag
 #else
 extern frame_ptr nlj_fr;	/* frame to return  */
-extern cl_object nlj_tag;	/* throw-tag, block-id, or */
-				/* (tagbody-id . label).   */
 #endif
 
 /*******************

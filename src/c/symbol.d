@@ -26,7 +26,7 @@ cl_object cl_token;
 
 static cl_object gensym_prefix;
 static cl_object gentemp_prefix;
-static cl_index gentemp_counter;
+static cl_object gentemp_counter;
 
 cl_object
 cl_make_symbol(cl_object str)
@@ -276,7 +276,7 @@ cl_symbol_name(cl_object x)
 @(defun copy_symbol (sym &optional cp &aux x)
 @
 	assert_type_symbol(sym);
-	x = make_symbol(sym);
+	x = make_symbol(sym->symbol.name);
 	if (Null(cp))
 		@(return x)
 	x->symbol.stype = sym->symbol.stype;
@@ -287,65 +287,54 @@ cl_symbol_name(cl_object x)
 	@(return x)
 @)
 
-@(defun gensym (&optional (prefix gensym_prefix) &aux str)
-	cl_index name_length, j, counter_value;
-	cl_object counter;
+@(defun gensym (&optional (prefix gensym_prefix))
+	cl_type t;
+	cl_object counter, output;
+	bool increment;
 @
-	if (type_of(prefix) == t_string) {
+	t = type_of(prefix);
+	if (t == t_string) {
 		counter = SYM_VAL(@'*gensym-counter*');
-	} else {
+		increment = 1;
+	} else if (t == t_fixnum || t == t_bignum) {
 		counter = prefix;
 		prefix = gensym_prefix;
+		increment = 0;
+	} else {
+		FEwrong_type_argument(cl_list(3, @'or', @'string', @'integer'),
+				      prefix);
 	}
-	if (!FIXNUMP(counter) || FIXNUM_MINUSP(counter)) {
-		FEerror("*gensym-counter*, ~A, not a positive fixnum",
-			1, counter);
-	}
-	counter_value = fix(counter);
-	name_length = prefix->string.fillp;
-	for (j = counter_value;  j > 0;  j /= 10)
-		name_length++;
-	if (name_length == 0)
-		name_length++;
-	str = cl_alloc_simple_string(name_length);
-	for (j = 0;  j < prefix->string.fillp;  j++)
-		str->string.self[j] = prefix->string.self[j];
-	if (counter_value == 0)
-		str->string.self[--name_length] = '0';
-	else
-		for (j=counter_value;  j > 0;  j /= 10)
-			str->string.self[--name_length] = j%10 + '0';
-	if (prefix == gensym_prefix)
-		SYM_VAL(@'*gensym-counter*') = MAKE_FIXNUM(counter_value+1);
-	@(return make_symbol(str))
+	output = make_string_output_stream(64);
+	bds_bind(@'*print-base*', MAKE_FIXNUM(10));
+	bds_bind(@'*print-radix*', Cnil);
+	princ(prefix, output);
+	princ(counter, output);
+	bds_unwind_n(2);
+	output = make_symbol(get_output_stream_string(output));
+	if (increment)
+		SYM_VAL(@'*gensym-counter*') = one_plus(counter);
+	@(return output)
 @)
 
-@(defun gentemp (&optional (prefix gentemp_prefix) (pack current_package())
-		 &aux str smbl)
-	size_t name_length, j;
+@(defun gentemp (&optional (prefix gentemp_prefix) (pack current_package()))
+	cl_object output, s;
 	int intern_flag;
 @
 	assert_type_string(prefix);
 	assert_type_package(pack);
+	s = cl_alloc_adjustable_string(64);
 ONCE_MORE:
-	name_length = prefix->string.fillp;
-	for (j = gentemp_counter;  j > 0;  j /= 10)
-		name_length++;
-	if (name_length == 0)
-		name_length++;
-	str = cl_alloc_simple_string(name_length);
-        for (j = 0;  j < prefix->string.fillp;  j++)
-                str->string.self[j] = prefix->string.self[j];
-	if ((j = gentemp_counter) == 0)
-		str->string.self[--name_length] = '0';
-	else
-		for (;  j > 0;  j /= 10)
-			str->string.self[--name_length] = j%10 + '0';
-	gentemp_counter++;
-	smbl = intern(str, pack, &intern_flag);
+	output = make_string_output_stream_from_string(s);
+	bds_bind(@'*print-base*', MAKE_FIXNUM(10));
+	bds_bind(@'*print-radix*', Cnil);
+	princ(prefix, output);
+	princ(gentemp_counter, output);
+	bds_unwind_n(2);
+	gentemp_counter = one_plus(gentemp_counter);
+	s = intern(get_output_stream_string(output), pack, &intern_flag);
 	if (intern_flag != 0)
 		goto ONCE_MORE;
-	@(return smbl)
+	@(return s)
 @)
 
 cl_object
@@ -469,11 +458,12 @@ init_symbol(void)
 
 	gensym_prefix = make_simple_string("G");
 	gentemp_prefix = make_simple_string("T");
-	gentemp_counter = 0;
+	gentemp_counter = MAKE_FIXNUM(0);
 	cl_token = cl_alloc_adjustable_string(LISP_PAGESIZE);
 
 	ecl_register_static_root(&gensym_prefix);
 	ecl_register_static_root(&gentemp_prefix);
+	ecl_register_static_root(&gentemp_counter);
 	ecl_register_static_root(&cl_token);
 }
 

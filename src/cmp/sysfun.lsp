@@ -260,8 +260,8 @@
 (DIGIT-CHAR (fixnum *) character nil nil)
 (CHAR-INT (character) fixnum nil nil
 	:inline-always ((character) fixnum nil nil "#0"))
-(CHAR-NAME (character) symbol)
-(NAME-CHAR (symbol) character)
+(CHAR-NAME (character) string)
+(NAME-CHAR (string) character)
 
 ; ; file error.c
 #-clcs

@@ -177,6 +177,7 @@ cl_go(cl_object tag_id, cl_object label)
   if (fr == NULL)
     FEcontrol_error("GO: The tagbody ~S is missing.", 1, tag_id);
   VALUES(0)=label;
+  NValues=1;
   unwind(fr);
 }
 

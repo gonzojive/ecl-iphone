@@ -252,11 +252,9 @@ cl_safe_eval(cl_object form, cl_object *new_bytecodes, cl_object env, cl_object 
 	returnn(cl_safe_eval(form, NULL, env, err_value));
 @)
 
-cl_object
-cl_constantp(cl_object arg)
-{
+@(defun constantp (arg &optional env)
 	cl_object flag;
-
+@
 	switch (type_of(arg)) {
 	case t_cons:
 		flag = (CAR(arg) == @'quote') ? Ct : Cnil;
@@ -268,7 +266,7 @@ cl_constantp(cl_object arg)
 		flag = Ct;
 	}
 	@(return flag)
-}
+@)
 
 void
 init_eval(void)

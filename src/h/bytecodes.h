@@ -1,9 +1,9 @@
 /*
-  OP_NOP
-	Sets VALUES(0) = NIL and NValues = 1
-
   OP_BLOCK	block-name{obj}
   ...
+  OP_EXIT_FRAME
+	Exits the innermost frame (created by OP_BLOCK, OP_DO, etc).
+
   OP_EXIT
 	Executes the enclosed forms in a named block
 
@@ -39,17 +39,21 @@
 	Saves the stack pointer, executes several forms and
 	funcalls VALUES(0) using the content of the stack.
 
-  OP_CALL	narg{arg}, function{symbol}
-	Calls "function" using the last "narg" values in the stack.
-  OP_PCALL	narg{arg}, function{symbol}
-	Calls "function" using the last "narg" values in the stack.
+  OP_CALLG	narg{arg}, function{symbol}
+	Calls global "function" using the last "narg" values in the stack.
+  OP_PCALLG	narg{arg}, function{symbol}
+	Calls global "function" using the last "narg" values in the stack.
+	The first result of the call is also pushed.
+
+  OP_CALL	narg{arg}
+	Calls VALUES(0) using the last "narg" values in the stack.
+  OP_PCALL	narg{arg}
+	Calls VALUES(0) using the last "narg" values in the stack.
 	The first result of the call is also pushed.
 
   OP_FCALL	narg{arg}
-	Calls VALUES(0) using the last "narg" values in the stack.
-  OP_PCALL	narg{arg}, function{symbol}
-	Calls VALUES(0) using the last "narg" values in the stack.
-	The first result of the call is also pushed.
+	Pops NARG arguments from the stack, plus a function object and
+	builds up a function call.
 
   OP_CATCH	dest{label}
   ...
@@ -113,20 +117,20 @@
 
 enum {
   OP_NOP,
-  OP_BLOCK,
-  OP_PUSH,
-  OP_PUSHQ,
-  OP_PUSHV,
-  OP_PUSHVS,
-  OP_PUSHVALUES,
+  OP_QUOTE,
   OP_VAR,
   OP_VARS,
-  OP_MCALL,
+  OP_PUSH,
+  OP_PUSHV,
+  OP_PUSHVS,
+  OP_PUSHQ,
   OP_CALLG,
+  OP_CALL,
   OP_FCALL,
   OP_PCALLG,
+  OP_PCALL,
   OP_PFCALL,
-  OP_CATCH,
+  OP_MCALL,
   OP_EXIT,
   OP_FLET,
   OP_LABELS,
@@ -134,37 +138,48 @@ enum {
   OP_FUNCTION,
   OP_CLOSE,
   OP_GO,
+  OP_RETURN,
   OP_THROW,
   OP_JMP,
   OP_JNIL,
   OP_JT,
-  OP_JEQ,
-  OP_JNEQ,
-  OP_BIND,
-  OP_BINDS,
-  OP_SETQ,
-  OP_SETQS,
-  OP_PBIND,
-  OP_PBINDS,
-  OP_PSETQ,
-  OP_PSETQS,
-  OP_VBIND,
-  OP_VBINDS,
+  OP_JEQL,
+  OP_JNEQL,
   OP_UNBIND,
   OP_UNBINDS,
-  OP_MSETQ,
-  OP_PROGV,
-  OP_VALUES,
-  OP_NTHVAL,
-  OP_MPROG1,
-  OP_RETURN,
+  OP_BIND,
+  OP_PBIND,
+  OP_VBIND,
+  OP_BINDS,
+  OP_PBINDS,
+  OP_VBINDS,
+  OP_SETQ,
+  OP_SETQS,
+  OP_PSETQ,
+  OP_PSETQS,
+  OP_BLOCK,
+  OP_DO,
+  OP_CATCH,
   OP_TAGBODY,
-  OP_UNWIND,
-  OP_QUOTE,
+  OP_EXIT_TAGBODY,
+  OP_EXIT_FRAME,
   OP_DOLIST,
   OP_DOTIMES,
-  OP_DO,
+  OP_PROTECT,
+  OP_PROTECT_NORMAL,
+  OP_PROTECT_EXIT,
+  OP_MSETQ,
+  OP_PROGV,
+  OP_PUSHVALUES,
+  OP_POP,
+  OP_POPVALUES,
+  OP_PUSHMOREVALUES,
+  OP_VALUES,
+  OP_NTHVAL,
   OP_HALT,
+  OP_NIL,
+  OP_NOT,
+  OP_PUSHNIL,
   OP_MAXOPCODES = 128,
   OP_OPCODE_SHIFT = 7
 };
