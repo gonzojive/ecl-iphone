@@ -110,7 +110,7 @@ gbc.o: gbc.c $(HFILES)
 # This reduces the overhead of jumping to other functions
 #
 apply.o: apply.c $(HFILES) $(HDIR)/cs.h
-	$(CC) $(CFLAGS) -fomit-frame-pointer apply.c -o $@
+	$(CC) $(CFLAGS) apply.c -o $@
 #
 # These files are interrelated
 #
