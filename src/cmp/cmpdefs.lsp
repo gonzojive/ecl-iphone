@@ -232,8 +232,10 @@ The default value is NIL.")
 
 ;;; --cmpenv.lsp--
 ;;;
-(defvar *safe-compile* nil)
-(defvar *compiler-check-args* nil)
+;;; These default settings are equivalent to (optimize (speed 3) (space 0) (safety 2))
+;;;
+(defvar *safe-compile* t)
+(defvar *compiler-check-args* t)
 (defvar *compiler-push-events* nil)
 (defvar *speed* 3)
 (defvar *space* 0)
