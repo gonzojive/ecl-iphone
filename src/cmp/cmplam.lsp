@@ -317,6 +317,7 @@
     (when varargs
       (let ((first-arg (cond ((plusp nreq) (format nil "V~d" (+ req0 nreq)))
 			     ((eq closure-type 'CLOSURE) "env0")
+			     ((eq closure-type 'LEXICAL) (format nil "lex~D" (1- *level*)))
 			     (t "narg"))))
 	(wt-nl
 	  (format nil
@@ -365,9 +366,10 @@
     )
 
   (when (or rest keywords allow-other-keys)
-    (if optionals
-	(wt-nl "narg -= i;")
-	(wt-nl "narg -=" nreq ";"))
+    (cond (optionals
+	   (wt-nl "narg -= i;"))
+	  ((plusp nreq)
+	   (wt-nl "narg -=" nreq ";")))
     (cond ((not (or keywords allow-other-keys))
 	   (wt-nl rest-loc "=cl_grab_rest_args(args);"))
 	  (t
