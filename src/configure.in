@@ -143,13 +143,14 @@ AC_CHECK_FUNCS(nanosleep alarm times isnanf select setenv putenv\
 AC_ISC_POSIX
 
 dnl ----------------------------------------------------------------------
-dnl		Establish some default values
+dnl		Checks which do not come with autoconf
 dnl
 ECL_CROSS_CONFIG()
 ECL_MAKE_ABSOLUTE_SRCDIR()
 ECL_GUESS_HOST_OS()
 ECL_LINEFEED_MODE()
 ECL_FIND_SETJMP()
+ECL_FILE_STRUCTURE()
 
 dnl ----------------------------------------------------------------------
 dnl		Set options

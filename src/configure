@@ -308,7 +308,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS ECL_VERSION build build_cpu build_vendor build_os host host_cpu host_vendor host_os builddir top_srcdir CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CXX CXXFLAGS ac_ct_CXX CPP RANLIB ac_ct_RANLIB INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA LN_S ECL_CC LSPCFLAGS CLIBS SHARED_LDFLAGS SHORT_SITE_NAME LONG_SITE_NAME EXTRA_OBJS TARGETS TKLIBS SUBDIR LIBRARIES LSP_LIBRARIES BOEHM_HEADERS EGREP CP RM MV EXE_SUFFIX ARCHITECTURE SOFTWARE_TYPE SOFTWARE_VERSION MACHINE_INSTANCE MACHINE_VERSION LDRPATH LIBPREFIX LIBEXT SHAREDEXT SHAREDPREFIX ECL_SETJMP ECL_LONGJMP CL_FIXNUM_TYPE CL_FIXNUM_BITS CL_FIXNUM_MAX CL_FIXNUM_MIN X_CFLAGS X_PRE_LIBS X_LIBS X_EXTRA_LIBS XINCLUDES XLIBS LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS ECL_VERSION build build_cpu build_vendor build_os host host_cpu host_vendor host_os builddir top_srcdir CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CXX CXXFLAGS ac_ct_CXX CPP RANLIB ac_ct_RANLIB INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA LN_S ECL_CC LSPCFLAGS CLIBS SHARED_LDFLAGS SHORT_SITE_NAME LONG_SITE_NAME EXTRA_OBJS TARGETS TKLIBS SUBDIR LIBRARIES LSP_LIBRARIES BOEHM_HEADERS EGREP CP RM MV EXE_SUFFIX ARCHITECTURE SOFTWARE_TYPE SOFTWARE_VERSION MACHINE_INSTANCE MACHINE_VERSION LDRPATH LIBPREFIX LIBEXT SHAREDEXT SHAREDPREFIX ECL_SETJMP ECL_LONGJMP ECL_FILE_CNT CL_FIXNUM_TYPE CL_FIXNUM_BITS CL_FIXNUM_MAX CL_FIXNUM_MIN X_CFLAGS X_PRE_LIBS X_LIBS X_EXTRA_LIBS XINCLUDES XLIBS LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -3775,6 +3775,14 @@ ECL_BIGENDIAN=no
 ###      CR (Carriage return or \\r), and CRLF (CR followed by LF).
 ECL_NEWLINE=LF
 
+### 1.5) Can we guess how many characters are available for reading from
+###      the FILE structure?
+###          0 = no
+###          1 = (f)->_IO_read_end - (f)->_IO_read_ptr
+###          2 = (f)->_r
+###          3 = (f)->_cnt
+ECL_FILE_CNT=0
+
 ### 2) To cross-compile ECL so that it runs on the system
 ###		${host}
 ### you need to first compile ECL on the system in which you are building
@@ -4078,6 +4086,132 @@ if test $ac_cv_func__setjmp = yes; then
   ECL_SETJMP="setjmp";ECL_LONGJMP="longjmp"
 else
   ECL_SETJMP="_setjmp";ECL_LONGJMP="_longjmp"
+fi
+
+
+
+if test -z "${ECL_FILE_CNT}"; then
+ECL_FILE_CNT=0
+cat >conftest.$ac_ext <<_ACEOF
+#line $LINENO "configure"
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <stdio.h>
+int
+main ()
+{
+
+int main() {
+  FILE *f = fopen("conftestval","w");
+  if ((f)->_IO_read_end - (f)->_IO_read_ptr)
+    return 1;
+}
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
+  (eval $ac_compile) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+         { ac_try='test -s conftest.$ac_objext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ECL_FILE_CNT=1
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+fi
+rm -f conftest.$ac_objext conftest.$ac_ext
+cat >conftest.$ac_ext <<_ACEOF
+#line $LINENO "configure"
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <stdio.h>
+int
+main ()
+{
+
+int main() {
+  FILE *f = fopen("conftestval","w");
+  if ((f)->_r)
+    return 1;
+}
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
+  (eval $ac_compile) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+         { ac_try='test -s conftest.$ac_objext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ECL_FILE_CNT=2
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+fi
+rm -f conftest.$ac_objext conftest.$ac_ext
+cat >conftest.$ac_ext <<_ACEOF
+#line $LINENO "configure"
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <stdio.h>
+int
+main ()
+{
+
+int main() {
+  FILE *f = fopen("conftestval","w");
+  if ((f)->_cnt)
+    return 1;
+}
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
+  (eval $ac_compile) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+         { ac_try='test -s conftest.$ac_objext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ECL_FILE_CNT=3
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+fi
+rm -f conftest.$ac_objext conftest.$ac_ext
 fi
 
 
@@ -6530,6 +6664,7 @@ s,@SHAREDEXT@,$SHAREDEXT,;t t
 s,@SHAREDPREFIX@,$SHAREDPREFIX,;t t
 s,@ECL_SETJMP@,$ECL_SETJMP,;t t
 s,@ECL_LONGJMP@,$ECL_LONGJMP,;t t
+s,@ECL_FILE_CNT@,$ECL_FILE_CNT,;t t
 s,@CL_FIXNUM_TYPE@,$CL_FIXNUM_TYPE,;t t
 s,@CL_FIXNUM_BITS@,$CL_FIXNUM_BITS,;t t
 s,@CL_FIXNUM_MAX@,$CL_FIXNUM_MAX,;t t

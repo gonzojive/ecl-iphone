@@ -215,12 +215,15 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #  define	stack_align(n)	(((n) + 03) & ~03)
 #endif
 
-#ifdef __linux__
+#undef FILE_CNT
+#if @ECL_FILE_CNT@ == 1
 #  define FILE_CNT(fp)	((fp)->_IO_read_end - (fp)->_IO_read_ptr)
-#elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(cygwin) || defined(darwin)
+#endif
+#if @ECL_FILE_CNT@ == 2
 #  define FILE_CNT(fp)	((fp)->_r)
-#else
-#  define FILE_CNT(fp)	(fp)->_cnt
+#endif
+#if @ECL_FILE_CNT@ == 3
+#  define FILE_CNT(fp)	((fp)->_cnt)
 #endif
 
 #if defined(MSDOS) || defined(cygwin) || defined(mingw32)

@@ -1127,8 +1127,10 @@ flisten(FILE *fp)
 #endif
 	if (feof(fp))
 		return(FALSE);
+#ifdef FILE_CNT
 	if (FILE_CNT(fp) > 0)
 		return(TRUE);
+#endif
 #if defined(HAVE_SELECT)
 	fd = fileno(fp);
 	FD_ZERO(&fds);

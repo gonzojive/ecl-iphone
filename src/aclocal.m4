@@ -39,6 +39,14 @@ ECL_BIGENDIAN=no
 ###      CR (Carriage return or \\r), and CRLF (CR followed by LF).
 ECL_NEWLINE=LF
 
+### 1.5) Can we guess how many characters are available for reading from
+###      the FILE structure?
+###          0 = no
+###          1 = (f)->_IO_read_end - (f)->_IO_read_ptr
+###          2 = (f)->_r
+###          3 = (f)->_cnt
+ECL_FILE_CNT=0
+
 ### 2) To cross-compile ECL so that it runs on the system
 ###		${host}
 ### you need to first compile ECL on the system in which you are building
@@ -179,6 +187,36 @@ AC_MSG_CHECKING(for architecture)
 AC_MSG_RESULT([${ARCHITECTURE}])
 AC_MSG_CHECKING(for software type)
 AC_MSG_RESULT([${SOFTWARE_TYPE}])
+])
+
+dnl
+dnl --------------------------------------------------------------
+dnl Check whether the FILE structure has a field with the number of
+dnl characters left in the buffer.
+dnl
+AC_DEFUN(ECL_FILE_STRUCTURE,[
+AC_SUBST(ECL_FILE_CNT)
+if test -z "${ECL_FILE_CNT}"; then
+ECL_FILE_CNT=0
+AC_TRY_COMPILE([#include <stdio.h>],[
+int main() {
+  FILE *f = fopen("conftestval","w");
+  if ((f)->_IO_read_end - (f)->_IO_read_ptr)
+    return 1;
+}],ECL_FILE_CNT=1)
+AC_TRY_COMPILE([#include <stdio.h>],[
+int main() {
+  FILE *f = fopen("conftestval","w");
+  if ((f)->_r)
+    return 1;
+}],ECL_FILE_CNT=2)
+AC_TRY_COMPILE([#include <stdio.h>],[
+int main() {
+  FILE *f = fopen("conftestval","w");
+  if ((f)->_cnt)
+    return 1;
+}],ECL_FILE_CNT=3)
+fi
 ])
 
 dnl
