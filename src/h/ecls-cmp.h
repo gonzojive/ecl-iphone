@@ -54,7 +54,7 @@
 #define TRAMPOLINK(narg, vv, lk) \
 	static cl_object gfun = OBJNULL; \
 	va_list args; va_start(args, narg); \
-	if (gfun) return(gcall(narg, gfun, args)); \
+	if (gfun) return(va_gcall(narg, gfun, args)); \
 	else return(link_call(vv, lk , &gfun, narg, args))
 #else
 #define TRAMPOLINK(narg, vv, lk) \
