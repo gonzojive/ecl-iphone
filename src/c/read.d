@@ -17,6 +17,7 @@
 #include <limits.h>
 #include <math.h>
 #include <ctype.h>
+#include <string.h>
 #include "ecl.h"
 #include "internal.h"
 #include "ecl-inl.h"

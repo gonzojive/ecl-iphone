@@ -20,6 +20,7 @@
 	This file contains those functions that interpret namestrings.
 */
 
+#include <string.h>
 #include "ecl.h"
 #include <ctype.h>
 #ifndef MAXPATHLEN
