@@ -31,27 +31,6 @@
 
 static cl_object terminal_io;
 
-static bool
-feof1(FILE *fp)
-{
-	if (!feof(fp))
-		return(FALSE);
-	if (fp == terminal_io->stream.object0->stream.file) {
-		if (Null(symbol_value(@'si::*ignore-eof-on-terminal-io*')))
-			return(TRUE);
-#ifdef unix
-		fp = freopen("/dev/tty", "r", fp);
-#endif
-		if (fp == NULL)
-			error("can't reopen the console");
-		return(FALSE);
-	}
-	return(TRUE);
-}
-
-#undef  feof
-#define feof    feof1
-
 /*----------------------------------------------------------------------
  *	Input_stream_p(strm) answers
  *	if stream strm is an input stream or not.
@@ -547,16 +526,25 @@ StdinResume()
 # define UNGETC(c, fp)	ungetc(c, fp)
 #endif
 
+/*
+ * ecl_getc(s) tries to read a character from the stream S. It outputs
+ * either the code of the character read, or EOF. Whe compiled with
+ * CLOS-STREAMS and S is an instance object, STREAM-READ-CHAR is invoked
+ * to retrieve the character. Then STREAM-READ-CHAR should either
+ * output the character, or NIL, indicating EOF.
+ */
 int
-readc_stream(cl_object strm)
+ecl_getc(cl_object strm)
 {
 	int c;
 	FILE *fp;
 
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
-	if (type_of(strm) == t_instance)
-		return CHAR_CODE(funcall(2, @'stream-read-char', strm));
+	if (type_of(strm) == t_instance) {
+		cl_object c = funcall(2, @'stream-read-char', strm);
+		return CHARACTERP(c)? CHAR_CODE(c) : EOF;
+	}
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
@@ -569,28 +557,27 @@ BEGIN:
 	case smm_input:
 	case smm_io:
 		if (fp == NULL)
-			internal_stream_error("readc_stream",strm);
+			internal_stream_error("ecl_getc",strm);
 		GETC(c, fp);
-/*		c &= 0377; */
-		if (feof(fp))
-			FEend_of_file(strm);
-/* 		strm->stream.int0++; useless in smm_io, Beppe */
-		return(c);
+		if (c == EOF && ferror(fp))
+			FElibc_error("File I/O error",0);
+		break;
 
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		goto BEGIN;
 
-	case smm_concatenated:
-		{ cl_object strmi = strm->stream.object0;
-		  while (!endp(strmi)) {
-		    if (!stream_at_end(CAR(strmi)))
-		      return(readc_stream(CAR(strmi)));
-		    strm->stream.object0 = strmi = CDR(strmi);
-		  }
-		  FEend_of_file(strm);
+	case smm_concatenated: {
+		cl_object strmi = strm->stream.object0;
+		c = EOF;
+		while (!endp(strmi)) {
+			c = ecl_getc(CAR(strmi));
+			if (c != EOF)
+				break;
+			strm->stream.object0 = strmi = CDR(strmi);
 		}
-
+		break;
+	}
 	case smm_two_way:
 #ifdef unix
 		if (strm == terminal_io)                                /**/
@@ -601,17 +588,21 @@ BEGIN:
 		goto BEGIN;
 
 	case smm_echo:
-		c = readc_stream(strm->stream.object0);
-		if (strm->stream.int0 == 0)
-			writec_stream(c, strm->stream.object1);
-		else		/* don't echo twice if it was unread */
-			--(strm->stream.int0);
-		return(c);
+		c = ecl_getc(strm->stream.object0);
+		if (c != EOF) {
+			if (strm->stream.int0 == 0)
+				writec_stream(c, strm->stream.object1);
+			else		/* don't echo twice if it was unread */
+				--(strm->stream.int0);
+		}
+		break;
 
 	case smm_string_input:
 		if (strm->stream.int0 >= strm->stream.int1)
-			FEend_of_file(strm);
-		return(strm->stream.object0->string.self[strm->stream.int0++]);
+			c = EOF;
+		else
+			c = strm->stream.object0->string.self[strm->stream.int0++];
+		break;
 
 	case smm_output:
 	case smm_probe:
@@ -622,10 +613,20 @@ BEGIN:
 	default:
 		error("illegal stream mode");
 	}
+	return c;
+}
+
+int
+ecl_getc_noeof(cl_object strm)
+{
+	int c = ecl_getc(strm);
+	if (c == EOF)
+		FEend_of_file(strm);
+	return c;
 }
 
 void
-unreadc_stream(int c, cl_object strm)
+ecl_ungetc(int c, cl_object strm)
 {
 	FILE *fp;
 
@@ -647,7 +648,7 @@ BEGIN:
 	case smm_input:
 	case smm_io:
 		if (fp == NULL)
-			internal_stream_error("unreadc_stream",strm);
+			internal_stream_error("ecl_ungetc",strm);
 		UNGETC(c, fp);
 /*		--strm->stream.int0; useless in smm_io, Beppe */
 		break;
@@ -667,7 +668,7 @@ BEGIN:
 		goto BEGIN;
 
 	case smm_echo:
-		unreadc_stream(c, strm->stream.object0);
+		ecl_ungetc(c, strm->stream.object0);
 		(strm->stream.int0)++;
 		break;
 
@@ -716,7 +717,6 @@ BEGIN:
 
 	case smm_output:
 	case smm_io:
-/*		strm->stream.int0++; useless in smm_io, Beppe */
 		if (c == '\n')
 			strm->stream.int1 = 0;
 		else if (c == '\t')
@@ -978,9 +978,11 @@ BEGIN:
 		if (fp == NULL)
 			closed_stream(strm);
 		GETC(c, fp);
-		if (feof(fp))
+		if (c == EOF) {
+			if (ferror(fp))
+				FElibc_error("File I/O error", 0);
 			return(TRUE);
-		else {
+		} else {
 			UNGETC(c, fp);
 			return(FALSE);
 		}
@@ -1053,9 +1055,9 @@ BEGIN:
 		if (fp == NULL)
 			internal_stream_error("listen_stream",strm);
 		if (feof(fp))
-		  return(FALSE);
+			return(FALSE);
 		if (FILE_CNT(fp) > 0)
-		  return(TRUE);
+			return(TRUE);
 #ifdef FIONREAD
 		{ long c = 0;
 		  ioctl(fileno(fp), FIONREAD, &c);
@@ -1114,7 +1116,6 @@ BEGIN:
 	case smm_input:
 	case smm_output:
 	case smm_io:
-		/*  return(strm->stream.int0);  */
 		fp = strm->stream.file;
 		if (fp == NULL)
 			internal_stream_error("file_position",strm);
@@ -1165,7 +1166,6 @@ BEGIN:
 			internal_stream_error("file_position_set",strm);
 		if (fseek(fp, disp, 0) < 0)
 			return(-1);
-/*		strm->stream.int0 = disp; useless in smm_io, Beppe */
 		return(0);
 
 	case smm_string_output:
@@ -1558,8 +1558,10 @@ si_make_string_output_stream_from_string(cl_object s)
 cl_object
 si_copy_stream(cl_object in, cl_object out)
 {
-	while (!stream_at_end(in))
-		writec_stream(readc_stream(in), out);
+	int c;
+	for (c = ecl_getc(in); c != EOF; c = ecl_getc(in)) {
+		writec_stream(c, out);
+	}
 	flush_stream(out);
 	@(return Ct)
 }

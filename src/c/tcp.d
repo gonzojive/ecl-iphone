@@ -303,7 +303,7 @@ si_open_unix_socket_stream(cl_object path)
 
 	fd = socket(PF_UNIX, SOCK_STREAM, 0);
 	if (fd < 0) {
-		FEfilesystem_error("Unable to create unix socket", 0);
+		FElibc_error("Unable to create unix socket", 0);
 		@(return Cnil)
 	}
 
@@ -313,7 +313,7 @@ si_open_unix_socket_stream(cl_object path)
 
 	if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 		close(fd);
-		FEfilesystem_error("Unable to connect to unix socket ~A", 1, path);
+		FElibc_error("Unable to connect to unix socket ~A", 1, path);
 		@(return Cnil)
 	}
 

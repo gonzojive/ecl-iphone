@@ -303,7 +303,8 @@ extern void FEundefined_function(cl_object fname) __attribute__((noreturn,regpar
 extern void FEinvalid_function(cl_object obj) __attribute__((noreturn,regparm(2)));
 extern cl_object CEerror(char *err_str, int narg, ...);
 extern void illegal_index(cl_object x, cl_object i);
-extern void FEtype_error_symbol(cl_object obj);
+extern void FEtype_error_symbol(cl_object obj) __attribute__((noreturn,regparm(2)));
+extern void FElibc_error(const char *msg, int narg, ...) __attribute__((noreturn));
 extern void init_error(void);
 
 extern void FEend_of_file(cl_object strm);
@@ -365,8 +366,8 @@ extern cl_object make_string_input_stream(cl_object strng, cl_index istart, cl_i
 extern cl_object make_string_output_stream(cl_index line_length);
 extern cl_object make_string_output_stream_from_string(cl_object s);
 extern cl_object get_output_stream_string(cl_object strm);
-extern int readc_stream(cl_object strm);
-extern void unreadc_stream(int c, cl_object strm);
+extern int ecl_getc(cl_object strm);
+extern void ecl_ungetc(int c, cl_object strm);
 extern int writec_stream(int c, cl_object strm);
 extern void writestr_stream(const char *s, cl_object strm);
 extern void flush_stream(cl_object strm);
@@ -1029,12 +1030,6 @@ extern cl_object cl_set_dispatch_macro_character _ARGS((int narg, cl_object dspc
 extern cl_object cl_get_dispatch_macro_character _ARGS((int narg, cl_object dspchr, cl_object subchr, ...));
 
 extern cl_object standard_readtable;
-#ifndef THREADS
-extern bool preserving_whitespace_flag;
-extern bool escape_flag;
-extern cl_object delimiting_char;
-extern bool detect_eos_flag;
-#endif
 extern cl_object read_char(cl_object in);
 extern void unread_char(cl_object c, cl_object in);
 extern cl_object read_object_non_recursive(cl_object in);
@@ -1342,7 +1337,6 @@ extern bool file_exists(cl_object file);
 extern FILE *backup_fopen(const char *filename, const char *option);
 extern int file_len(FILE *fp);
 extern cl_object homedir_pathname(cl_object user);
-extern void FEfilesystem_error(const char *msg, int narg, ...);
 
 
 /* unixint.c */

@@ -57,7 +57,7 @@ all:	$(DPP) ../libecl.a cinit.o
 
 install: $(HFILES)
 	$(INSTALL_DATA) $(HFILES) $(PREFIX)$(libdir)/h/
-	sed ',-CUT-,$$d' ../h/config.h > ../h/config-install.h
+	sed '/-CUT-/,$$d' ../h/config.h > ../h/config-install.h
 	$(INSTALL_DATA) ../h/config-install.h $(PREFIX)$(libdir)/h/config.h
 
 ../libecl.a: $(OBJS)

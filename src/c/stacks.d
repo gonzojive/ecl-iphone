@@ -146,13 +146,13 @@ si_ihs_top(cl_object name)
 cl_object
 si_ihs_prev(cl_object x)
 {
-	@(return @1-(x))
+	@(return cl_1M(x))
 }
 
 cl_object
 si_ihs_next(cl_object x)
 {
-	@(return @1+(x))
+	@(return cl_1P(x))
 }
 
 cl_object

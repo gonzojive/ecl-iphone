@@ -25,12 +25,6 @@
 
 cl_object standard_readtable;
 
-#ifndef THREADS
-bool escape_flag;
-cl_object delimiting_char;
-bool detect_eos_flag;
-#endif /* THREADS */
-
 /******************************* ------- ******************************/
 
 static cl_object dispatch_reader;
@@ -44,14 +38,13 @@ static void extra_argument (int c, cl_object d);
 cl_object
 read_char(cl_object stream)
 {
-	return CODE_CHAR(readc_stream(stream));
+	return CODE_CHAR(ecl_getc_noeof(stream));
 }
 
 void
 unread_char(cl_object c, cl_object in)
 {
-	/* INV: char_code() checks the type of `c' */
-	unreadc_stream(char_code(c), in);
+	ecl_ungetc(char_code(c), in);
 }
 
 static cl_object patch_sharp(cl_object x);
@@ -71,45 +64,28 @@ read_object_non_recursive(cl_object in)
 	return(x);
 }
 
-/*
-	Read_object(in) reads an object from stream in.
-	This routine corresponds to COMMON Lisp function READ.
-*/
-cl_object
-read_object(cl_object in)
+static cl_object
+read_object_with_delimiter(cl_object in, int delimiter)
 {
 	cl_object x;
 	int c, base;
 	enum chattrib a;
-	cl_object old_delimiter, p;
+	cl_object p;
 	cl_index length, i, colon;
 	int colon_type, intern_flag;
-	bool df;
+	bool escape_flag;
 	cl_object rtbl = ecl_current_readtable();
 
 	cs_check(in);
 
-	old_delimiter = delimiting_char;
-	delimiting_char = OBJNULL;
-	df = detect_eos_flag;
-	detect_eos_flag = FALSE;
-
 BEGIN:
 	/* Beppe: */
 	do {
-		if (stream_at_end(in)) {
-			if (df)
-				return(OBJNULL);
-			else
-				FEend_of_file(in);
-		} else {
-			c = readc_stream(in);
-		}
+		c = ecl_getc(in);
+		if (c == EOF || c == delimiter)
+			return(OBJNULL);
 		a = cat(rtbl, c);
 	} while (a == cat_whitespace);
-	delimiting_char = OBJNULL;
-	if (old_delimiter != OBJNULL && old_delimiter == CODE_CHAR(c))
-		return(OBJNULL);
 	if (a == cat_terminating || a == cat_non_terminating) {
 		cl_object x = rtbl->readtable.table[c].macro;
 		cl_object o = funcall(3, x, in, CODE_CHAR(c));
@@ -124,18 +100,16 @@ BEGIN:
 	cl_token->string.fillp = 0;
 	for (;;) {
 		if (a == cat_single_escape) {
-			c = readc_stream(in);
+			c = ecl_getc_noeof(in);
 			a = cat_constituent;
 			escape_flag = TRUE;
 		} else if (a == cat_multiple_escape) {
 			escape_flag = TRUE;
 			for (;;) {
-				if (stream_at_end(in))
-					FEend_of_file(in);
-				c = readc_stream(in);
+				c = ecl_getc_noeof(in);
 				a = cat(rtbl, c);
 				if (a == cat_single_escape) {
-					c = readc_stream(in);
+					c = ecl_getc_noeof(in);
 					a = cat_constituent;
 				} else if (a == cat_multiple_escape)
 					break;
@@ -156,16 +130,15 @@ BEGIN:
 				/*  Colon has appeared twice.  */
 		}
 		if (a == cat_whitespace || a == cat_terminating) {
-			unreadc_stream(c, in);
+			ecl_ungetc(c, in);
 			break;
 		}
 		cl_string_push_extend(cl_token, c);
 		length++;
 	NEXT:
-		if (stream_at_end(in))
+		c = ecl_getc(in);
+		if (c == EOF)
 			break;
-		else
-			c = readc_stream(in);
 		a = cat(rtbl, c);
 	}
 
@@ -229,6 +202,16 @@ SYMBOL:
 	if (x->symbol.name == cl_token)
 		x->symbol.name = copy_simple_string(cl_token);
 	return(x);
+}
+
+/*
+	Read_object(in) reads an object from stream in.
+	This routine corresponds to COMMON Lisp function READ.
+*/
+cl_object
+read_object(cl_object in)
+{
+	return read_object_with_delimiter(in, EOF);
 }
 
 #define	is_exponent_marker(i)	\
@@ -492,21 +475,22 @@ left_parenthesis_reader(cl_object in, cl_object character)
 
 	y = Cnil;
 	for (p = &y ; ; p = &(CDR(*p))) {
-		delimiting_char = CODE_CHAR(')');
-		x = read_object(in);
+		x = read_object_with_delimiter(in, ')');
 		if (x == OBJNULL)
 			break;
 		if (x == @'si::.') {
 			if (p == &y)
 				FEerror("A dot appeared after a left parenthesis.", 0);
 			*p = read_object(in);
+			if (*p == OBJNULL)
+				FEend_of_file(in);
 			if (*p == @'si::.')
 				FEerror("Two dots appeared consecutively.", 0);
-			c = readc_stream(in);
+			c = ecl_getc_noeof(in);
 			while (cat(rtbl, c) == cat_whitespace)
-				c = readc_stream(in);
+				c = ecl_getc_noeof(in);
 			if (c != ')')
-				FEerror("A dot appeared before a right parenthesis.", 0);
+				FEerror("More than one object after '.' in a list", 0);
 			break;
 		}
 		*p = CONS(x, Cnil);
@@ -527,11 +511,11 @@ read_string(int delim, cl_object in)
 
 	cl_token->string.fillp = 0;
 	for (;;) {
-		c = readc_stream(in);
+		c = ecl_getc_noeof(in);
 		if (c == delim)
 			break;
 		else if (cat(rtbl, c) == cat_single_escape)
-			c = readc_stream(in);
+			c = ecl_getc_noeof(in);
 		cl_string_push_extend(cl_token, c);
 	}
 }
@@ -549,9 +533,9 @@ read_constituent(cl_object in)
 
 	cl_token->string.fillp = 0;
 	for (;;) {
-		c = readc_stream(in);
+		c = ecl_getc_noeof(in);
 		if (cat(rtbl, c) != cat_constituent) {
-			unreadc_stream(c, in);
+			ecl_ungetc(c, in);
 			break;
 		}
 		cl_string_push_extend(cl_token, c);
@@ -575,13 +559,13 @@ dispatch_reader_fun(cl_object in, cl_object dc)
 	if (rtbl->readtable.table[char_code(dc)].dispatch_table == NULL)
 		FEerror("~C is not a dispatching macro character", 1, dc);
 
-	c = readc_stream(in);
+	c = ecl_getc_noeof(in);
 	d = digitp(c, 10);
 	if (d >= 0) {
 		i = 0;
 		do {
 			i = 10*i + d;
-			c = readc_stream(in);
+			c = ecl_getc_noeof(in);
 			d = digitp(c, 10);
 		} while (d >= 0);
 		y = MAKE_FIXNUM(i);
@@ -613,7 +597,7 @@ semicolon_reader(cl_object in, cl_object c)
 	int auxc;
 
 	do
-		auxc = readc_stream(in);
+		auxc = ecl_getc_noeof(in);
 	while (auxc != '\n');
 	/*  no result  */
 	@(return)
@@ -630,18 +614,15 @@ sharp_C_reader(cl_object in, cl_object c, cl_object d)
 
 	if (d != Cnil && !read_suppress)
 		extra_argument('C', d);
-	if (readc_stream(in) != '(')
+	if (ecl_getc_noeof(in) != '(')
 		FEerror("A left parenthesis is expected.", 0);
-	delimiting_char = CODE_CHAR(')');
-	real = read_object(in);
+	real = read_object_with_delimiter(in, ')');
 	if (real == OBJNULL)
 		FEerror("No real part.", 0);
-	delimiting_char = CODE_CHAR(')');
-	imag = read_object(in);
+	imag = read_object_with_delimiter(in, ')');
 	if (imag == OBJNULL)
 		FEerror("No imaginary part.", 0);
-	delimiting_char = CODE_CHAR(')');
-	x = read_object(in);
+	x = read_object_with_delimiter(in, ')');
 	if (x != OBJNULL)
 		FEerror("A right parenthesis is expected.", 0);
 	if (read_suppress)
@@ -659,7 +640,7 @@ sharp_backslash_reader(cl_object in, cl_object c, cl_object d)
 		    fix(d) != 0)
 			FEerror("~S is an illegal CHAR-FONT.", 1, d);
 			/*  assuming that CHAR-FONT-LIMIT is 1  */
-	unreadc_stream('\\', in);
+	ecl_ungetc('\\', in);
 	if (read_suppress) {
 		(void)read_object(in);
 		@(return Cnil)
@@ -727,7 +708,7 @@ sharp_left_parenthesis_reader(cl_object in, cl_object c, cl_object d)
 		dim = fixnnint(d);
 	}
 	if (fix(SYM_VAL(@'si::*backq-level*')) > 0) {
-		unreadc_stream('(', in);
+		ecl_ungetc('(', in);
 		x = read_object(in);
 		a = _cl_backq_car(&x);
 		if (a == APPEND || a == NCONC)
@@ -741,8 +722,7 @@ sharp_left_parenthesis_reader(cl_object in, cl_object c, cl_object d)
 				 CONS(@'quote', CONS(@'vector', Cnil)), x))
 	}
 	for (dimcount = 0 ;; dimcount++) {
-		delimiting_char = CODE_CHAR(')');
-		x = read_object(in);
+		x = read_object_with_delimiter(in, ')');
 		if (x == OBJNULL)
 			break;
 		cl_stack_push(x);
@@ -783,17 +763,16 @@ sharp_asterisk_reader(cl_object in, cl_object c, cl_object d)
 		fixed_size = TRUE;
 	}
 	for (dimcount = 0 ;; dimcount++) {
-	 	int x;
-		if (stream_at_end(in))
+	 	int x = ecl_getc(in);
+		if (x == EOF)
 			break;
-		x = readc_stream(in);
 		if (x != '0' && x != '1') {
-			unreadc_stream(x, in);
+			ecl_ungetc(x, in);
 			break;
 		} else {
 			cl_stack_push(MAKE_FIXNUM(x == '1'));
 		}
-	}	
+	}
 	if (fixed_size) {
 		if (dimcount > dim)
 			FEerror("Too many elements in #*....", 0);
@@ -821,11 +800,12 @@ sharp_colon_reader(cl_object in, cl_object ch, cl_object d)
 {
 	cl_object rtbl = ecl_current_readtable();
 	enum chattrib a;
+	bool escape_flag;
 	int c;
 
 	if (d != Cnil && !read_suppress)
 		extra_argument(':', d);
-	c = readc_stream(in);
+	c = ecl_getc_noeof(in);
 	a = cat(rtbl, c);
 	escape_flag = FALSE;
 	cl_token->string.fillp = 0;
@@ -833,24 +813,22 @@ sharp_colon_reader(cl_object in, cl_object ch, cl_object d)
 	for (;;) {
 		cl_string_push_extend(cl_token, c);
 	K:
-		if (stream_at_end(in))
+		c = ecl_getc(in);
+		if (c == EOF)
 			goto M;
-		c = readc_stream(in);
 		a = cat(rtbl, c);
 	L:
 		if (a == cat_single_escape) {
-			c = readc_stream(in);
+			c = ecl_getc_noeof(in);
 			a = cat_constituent;
 			escape_flag = TRUE;
 		} else if (a == cat_multiple_escape) {
 			escape_flag = TRUE;
 			for (;;) {
-				if (stream_at_end(in))
-					FEend_of_file(in);
-				c = readc_stream(in);
+				c = ecl_getc_noeof(in);
 				a = cat(rtbl, c);
 				if (a == cat_single_escape) {
-					c = readc_stream(in);
+					c = ecl_getc_noeof(in);
 					a = cat_constituent;
 				} else if (a == cat_multiple_escape)
 					break;
@@ -862,7 +840,7 @@ sharp_colon_reader(cl_object in, cl_object ch, cl_object d)
 		if (a == cat_whitespace || a == cat_terminating)
 			break;
 	}
-	unreadc_stream(c, in);
+	ecl_ungetc(c, in);
 
 M:
 	if (read_suppress)
@@ -1121,14 +1099,14 @@ sharp_vertical_bar_reader(cl_object in, cl_object ch, cl_object d)
 	if (d != Cnil && !read_suppress)
 		extra_argument('|', d);
 	for (;;) {
-		c = readc_stream(in);
+		c = ecl_getc_noeof(in);
 	L:
 		if (c == '#') {
-			c = readc_stream(in);
+			c = ecl_getc_noeof(in);
 			if (c == '|')
 				level++;
 		} else if (c == '|') {
-			c = readc_stream(in);
+			c = ecl_getc_noeof(in);
 			if (c == '#') {
 				if (level == 0)
 					break;
@@ -1296,7 +1274,6 @@ stream_or_default_input(cl_object stream)
 	cl_object x;
 @
 	strm = stream_or_default_input(strm);
-	detect_eos_flag = TRUE;
 	if (Null(recursivep)) {
 		x = read_object_non_recursive(strm);
 	} else {
@@ -1310,11 +1287,9 @@ stream_or_default_input(cl_object stream)
 	/* Skip whitespace characters, but stop at beginning of new line or token */
 	if (Null(recursivep)) {
 		cl_object rtbl = ecl_current_readtable();
-		if (!stream_at_end(strm)) {
-			int c = readc_stream(strm);
-			if (cat(rtbl, c) != cat_whitespace) {
-				unreadc_stream(c, strm);
-			}
+		int c = ecl_getc(strm);
+		if (c != EOF && (cat(rtbl, c) != cat_whitespace)) {
+			ecl_ungetc(c, strm);
 		}
 	}
 	@(return x)
@@ -1329,7 +1304,6 @@ stream_or_default_input(cl_object stream)
 	int c;
 @
 	strm = stream_or_default_input(strm);
-	detect_eos_flag = TRUE;
 	if (Null(recursivep)) {
 		x = read_object_non_recursive(strm);
 	} else {
@@ -1344,14 +1318,13 @@ stream_or_default_input(cl_object stream)
 @)
 
 static cl_object
-do_read_delimited_list(cl_object d, cl_object strm)
+do_read_delimited_list(int d, cl_object strm)
 {
 	cl_object l, x, *p;
 	l = Cnil;
 	p = &l;
 	for (;;) {
-		delimiting_char = d;
-		x = read_object(strm);
+		x = read_object_with_delimiter(strm, d);
 		if (x == OBJNULL)
 			break;
 		*p = CONS(x, Cnil);
@@ -1362,16 +1335,15 @@ do_read_delimited_list(cl_object d, cl_object strm)
 
 @(defun read_delimited_list (d &optional (strm Cnil) recursivep)
 	cl_object l;
+	int delimiter = char_code(d);
 @
-	if (!CHARACTERP(d))
-		FEtype_error_character(d);
 	strm = stream_or_default_input(strm);
 	if (Null(recursivep))
-		l = do_read_delimited_list(d, strm);
+		l = do_read_delimited_list(delimiter, strm);
 	else {
 		bds_bind(@'si::*sharp-eq-context*', Cnil);
 		bds_bind(@'si::*backq-level*', MAKE_FIXNUM(0));
-		l = do_read_delimited_list(d, strm);
+		l = do_read_delimited_list(delimiter, strm);
 		if (!Null(SYM_VAL(@'si::*sharp-eq-context*')))
 			l = patch_sharp(l);
 		bds_unwind1;
@@ -1382,27 +1354,20 @@ do_read_delimited_list(cl_object d, cl_object strm)
 
 @(defun read_line (&optional (strm Cnil) (eof_errorp Ct) eof_value recursivep)
 	int c;
-	cl_object eof;
+	cl_object output;
 @
 	strm = stream_or_default_input(strm);
-	if (stream_at_end(strm)) {
-		if (Null(eof_errorp) && Null(recursivep))
-			@(return eof_value Ct)
-		else
-			FEend_of_file(strm);
-	}
 	cl_token->string.fillp = 0;
 	for (;;) {
-		c = readc_stream(strm);
-		if (c == '\n') {
-			eof = Cnil;
+		c = ecl_getc(strm);
+		if (c == EOF || c == '\n')
 			break;
-		}
 		cl_string_push_extend(cl_token, c);
-		if (stream_at_end(strm)) {
-			eof = Ct;
-			break;
-		}
+	}
+	if (c == EOF && cl_token->string.fillp == 0) {
+		if (!Null(eof_errorp) || !Null(recursivep))
+			FEend_of_file(strm);
+		@(return eof_value Ct)
 	}
 #ifdef ECL_NEWLINE_IS_CRLF	/* From \r\n, ignore \r */
 	if (cl_token->string.fillp > 0 &&
@@ -1410,21 +1375,24 @@ do_read_delimited_list(cl_object d, cl_object strm)
 		cl_token->string.fillp--;
 #endif
 #ifdef ECL_NEWLINE_IS_LFCR	/* From \n\r, ignore \r */
-	cl_read_char(strm);
+	ecl_getc(strm);
 #endif
-	@(return copy_simple_string(cl_token) eof)
+	@(return copy_simple_string(cl_token) (c == EOF? Ct : Cnil))
 @)
 
 @(defun read_char (&optional (strm Cnil) (eof_errorp Ct) eof_value recursivep)
+	int c;
+	cl_object output;
 @
 	strm = stream_or_default_input(strm);
-	if (stream_at_end(strm)) {
-		if (Null(eof_errorp) && Null(recursivep))
-			@(return eof_value)
-		else
-			FEend_of_file(strm);
-	}
-	@(return read_char(strm))
+	c = ecl_getc(strm);
+	if (c != EOF)
+		output = CODE_CHAR(c);
+	else if (Null(eof_errorp) && Null(recursivep))
+		output = eof_value;
+	else
+		FEend_of_file(strm);
+	@(return output)
 @)
 
 @(defun unread_char (c &optional (strm Cnil))
@@ -1440,42 +1408,29 @@ do_read_delimited_list(cl_object d, cl_object strm)
 	cl_object rtbl = ecl_current_readtable();
 @
 	strm = stream_or_default_input(strm);
-	if (Null(peek_type)) {
-		if (stream_at_end(strm)) {
-			if (Null(eof_errorp) && Null(recursivep))
-				@(return eof_value)
-			else
-				FEend_of_file(strm);
-		}
-		c = readc_stream(strm);
-		unreadc_stream(c, strm);
-		@(return CODE_CHAR(c))
-	}
-	if (peek_type == Ct) {
-		while (!stream_at_end(strm)) {
-			c = readc_stream(strm);
-			if (cat(rtbl, c) != cat_whitespace) {
-				unreadc_stream(c, strm);
-				@(return CODE_CHAR(c))
-			}
-		}
-		if (Null(eof_errorp))
-			@(return eof_value)
-		else
-			FEend_of_file(strm);
-	}
-	/* INV: char_eq() checks the type of `peek_type' */
-	while (!stream_at_end(strm)) {
-		cl_object c = read_char(strm);
-		if (char_eq(c, peek_type)) {
-			unread_char(c, strm);
-			@(return c)
+	c = ecl_getc(strm);
+	if (c != EOF && !Null(peek_type)) {
+		if (peek_type == Ct) {
+			do {
+				if (cat(rtbl, c) != cat_whitespace)
+					break;
+				c = ecl_getc(strm);
+			} while (c != EOF);
+		} else {
+			do {
+				if (char_eq(CODE_CHAR(c), peek_type))
+					break;
+				c = ecl_getc(strm);
+			} while (c != EOF);
 		}
 	}
-	if (Null(eof_errorp))
-		@(return eof_value)
-	else
+	if (c != EOF) {
+		ecl_ungetc(c, strm);
+		eof_value = CODE_CHAR(c);
+	} else if (!Null(eof_errorp)) {
 		FEend_of_file(strm);
+	}
+	@(return eof_value)
 @)
 
 @(defun listen (&optional (strm Cnil))
@@ -1559,13 +1514,13 @@ CANNOT_PARSE:
 	int c;
 @
 	assert_type_stream(binary_input_stream);
-	if (stream_at_end(binary_input_stream)) {
+	c = ecl_getc(binary_input_stream);
+	if (c == EOF) {
 		if (Null(eof_errorp))
 			@(return eof_value)
 		else
 			FEend_of_file(binary_input_stream);
 	}
-	c = readc_stream(binary_input_stream);
 	@(return MAKE_FIXNUM(c))
 @)
 
@@ -1742,8 +1697,9 @@ si_string_to_object(cl_object x)
 
 	assert_type_string(x);
 	in = make_string_input_stream(x, 0, x->string.fillp);
-	detect_eos_flag = FALSE;
 	x = read_object(in);
+	if (x == OBJNULL)
+		FEend_of_file(in);
 	@(return x)
 }
 
@@ -1876,11 +1832,6 @@ init_read(void)
 	SYM_VAL(@'*read_suppress*') = Cnil;
 
 	SYM_VAL(@'si::*sharp-eq-context*') = Cnil;
-
-	delimiting_char = OBJNULL;
-	ecl_register_static_root(&delimiting_char);
-
-	detect_eos_flag = FALSE;
 
 	SYM_VAL(@'si::*cblock*') = Cnil;
 }

@@ -14,7 +14,6 @@
     See file '../Copyright' for full details.
 */
 
-#include <errno.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -35,49 +34,6 @@
 #   error "Either MAXPATHLEN or PATH_MAX should be defined"
 # endif
 #endif
-
-/*
- * Interprets an error code from the C library according to the POSIX
- * standard, and produces a suitable error message by combining the user
- * supplied format with an explanation of the cause of the error.
- */
-void
-FEfilesystem_error(const char *msg, int narg, ...)
-{
-	cl_va_list args;
-	cl_object rest;
-	const char *extra_msg;
-
-	cl_va_start(args, narg, narg, 0);
-	rest = cl_grab_rest_args(args);
-
-	switch (errno) {
-	case EPERM:
-	case EACCES:
-	case EROFS:
-		extra_msg = "Insufficient permissions";
-		break;
-	case EEXIST:
-		extra_msg = "Already exists";
-		break;
-	case ENAMETOOLONG:
-		extra_msg = "File or directory name too long";
-		break;
-	case ENOENT:
-	case ENOTDIR:
-	case ELOOP:
-		extra_msg = "Invalid or not existent path";
-		break;
-	case ENOSPC:
-		extra_msg = "Not enough space or quota exceeded";
-		break;
-	default:
-		extra_msg = "Uknown reason";
-		break;
-	}
-	FEerror("~?~%Explanation: ~A.", 3, make_constant_string(msg), rest,
-		make_constant_string(extra_msg));
-}
 
 /*
  * string_to_pathanme, to be used when s is a real pathname
@@ -149,7 +105,7 @@ get_file_system_type(const char *namestring) {
  */
 static cl_object
 error_no_dir(cl_object pathname) {
-	FEfilesystem_error("truedirectory: ~S cannot be accessed", 1, pathname);
+	FElibc_error("truedirectory: ~S cannot be accessed", 1, pathname);
 	return Cnil;
 }
 
@@ -244,8 +200,8 @@ backup_fopen(const char *filename, const char *option)
 
 	strcat(strcpy(backupfilename, filename), ".BAK");
 	if (rename(filename, backupfilename))
-	    FEfilesystem_error("Cannot rename the file ~S to ~S.", 2,
-			       filename, backupfilename);
+		FElibc_error("Cannot rename the file ~S to ~S.", 2,
+			     filename, backupfilename);
 	return fopen(filename, option);
 }
 
@@ -271,8 +227,7 @@ cl_rename_file(cl_object oldn, cl_object newn)
 	filename = coerce_to_filename(oldn);
 	newfilename = coerce_to_filename(newn);
 	if (rename(filename->string.self, newfilename->string.self) < 0)
-		FEfilesystem_error("Cannot rename the file ~S to ~S.", 2,
-				   oldn, newn);
+		FElibc_error("Cannot rename the file ~S to ~S.", 2, oldn, newn);
 	new_truename = cl_truename(newn);
 	@(return newn old_truename new_truename)
 }
@@ -284,7 +239,7 @@ cl_delete_file(cl_object file)
 
 	filename = coerce_to_filename(file);
 	if (unlink(filename->string.self) < 0)
-		FEfilesystem_error("Cannot delete the file ~S.", 1, file);
+		FElibc_error("Cannot delete the file ~S.", 1, file);
 	@(return Ct)
 }
 
@@ -328,8 +283,7 @@ cl_file_author(cl_object file)
 
 	filename = coerce_to_filename(file);
 	if (stat(filename->string.self, &filestatus) < 0)
-		FEfilesystem_error("Cannot get the file status of ~S.", 1,
-				   file);
+		FElibc_error("Cannot get the file status of ~S.", 1, file);
 	pwent = getpwuid(filestatus.st_uid);
 	@(return make_string_copy(pwent->pw_name))
 }
@@ -494,13 +448,13 @@ actual_directory(cl_object namestring, cl_object mask, bool all)
 	namestring = coerce_to_simple_string(namestring);
 	mask = coerce_to_simple_string(mask);
 	if (chdir(namestring->string.self) < 0) {
-	  chdir(saved_dir->string.self);
-	  FEfilesystem_error("directory: cannot access ~A", 1, namestring);
+		chdir(saved_dir->string.self);
+		FElibc_error("directory: cannot access ~A", 1, namestring);
 	}
 	dir = opendir(".");
 	if (dir == NULL) {
-	  chdir(saved_dir->string.self);
-	  FEfilesystem_error("Can't open the directory ~S.", 1, dir);
+		chdir(saved_dir->string.self);
+		FElibc_error("Can't open the directory ~S.", 1, dir);
 	}
 
 	while ((entry = readdir(dir))) {
@@ -525,13 +479,13 @@ actual_directory(cl_object namestring, cl_object mask, bool all)
 	namestring = coerce_to_simple_string(namestring);
 	mask = coerce_to_simple_string(mask);
 	if (chdir(namestring->string.self) < 0) {
-	  chdir(saved_dir->string.self);
-	  FEfilesystem_error("directory: cannot access ~A",1,namestring);
+		chdir(saved_dir->string.self);
+		FElibc_error("directory: cannot access ~A",1,namestring);
 	}
 	fp = fopen(".", OPEN_R);
 	if (fp == NULL) {
-	  chdir(saved_dir->string.self);
-	  FEfilesystem_error("Can't open the directory ~S.", 1, dir);
+		chdir(saved_dir->string.self);
+		FElibc_error("Can't open the directory ~S.", 1, dir);
 	}
 
 	setbuf(fp, iobuffer);
@@ -616,8 +570,8 @@ si_chdir(cl_object directory)
 	filename = coerce_to_filename(directory);
 	previous = current_dir();
 	if (chdir(filename->string.self) < 0) {
-		FEfilesystem_error("Can't change the current directory to ~S",
-				   1, filename);
+		FElibc_error("Can't change the current directory to ~S", 1,
+			     filename);
 	}
 	@(return previous)
 }
@@ -632,8 +586,7 @@ si_mkdir(cl_object directory, cl_object mode)
 	filename = coerce_to_filename(directory);
 	modeint = fixnnint(mode);
 	if (mkdir(filename->string.self, modeint) < 0) {
-		FEfilesystem_error("Could not create directory ~S", 1,
-				   filename);
+		FElibc_error("Could not create directory ~S", 1, filename);
 	}
 	@(return filename)
 }

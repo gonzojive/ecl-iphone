@@ -502,9 +502,7 @@ call_structure_print_function(cl_object x, int level)
 	oqc = qc;
 	oisp = isp;
 	oiisp = iisp;
-
-	for (i = 0;  i <= isp;  i++)
-		ois[i] = indent_stack[i];
+	memcpy(ois, indent_stack, isp * sizeof(*ois));
 
 	CL_UNWIND_PROTECT_BEGIN {
 		bds_bind(@'*print-escape*', PRINTescape?Ct:Cnil);
@@ -526,9 +524,7 @@ call_structure_print_function(cl_object x, int level)
 #endif
 		bds_unwind_n(10);
 	} CL_UNWIND_PROTECT_EXIT {
-		for (i = 0;  i <= oisp;  i++)
-			indent_stack[i] = ois[i];
-
+		memcpy(indent_stack, ois, oisp * sizeof(*ois));
 		iisp = oiisp;
 		isp = oisp;
 		qc = oqc;

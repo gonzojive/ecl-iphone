@@ -90,7 +90,6 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 		bds_bind(@'*standard-input*', strm);
 		for (;;) {
 			cl_object bytecodes = Cnil;
-			detect_eos_flag = TRUE;
 			x = read_object_non_recursive(strm);
 			if (x == OBJNULL)
 				break;

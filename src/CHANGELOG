@@ -1054,6 +1054,20 @@ ECL 0.8
 
   - Added a new virtual host "HOME:".
 
+  - Global variable preserving_whitespace removed. By default,
+    read_object() and other routines preserve whitespaces, and only
+    READ gets read of the trailing whitespace when required to do so.
+
+  - Global variable detect_eos_flag removed. read_object() always
+    returns OBJNULL when EOF is met. It is up to the calling routine
+    to handle this.
+
+  - Global variable escape_flag removed. A local variable is enough.
+
+  - Global variable delimiter_char removed. A new local function
+    read_object_with_delimiter(), which reads up to a certain
+    delimiting char is used instead.
+
 * Visible changes:
 
   - The C counterparts of the Lisp functions have now the prefix
