@@ -12,9 +12,6 @@
 
 (in-package "SYSTEM")
 
-(c-declaim (si::c-export-fname make-sequence concatenate map some every
-			       notany notevery map-into))
-
 (defun make-sequence (type size	&key (initial-element nil iesp)
                                 &aux element-type sequence)
   "Args: (type length &key initial-element)

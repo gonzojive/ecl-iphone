@@ -1076,3 +1076,26 @@ type_of(#0)==t_bitvector"))
 (si::GFUNP nil T)
 )) ; end of of #+clos
 
+(in-package "SI")
+(proclaim '(si::c-export-fname
+	    make-array vector array-dimensions
+	    array-in-bounds-p array-row-major-index bit sbit bit-and bit-ior
+	    bit-xor bit-eqv bit-nand bit-nor bit-andc1 bit-andc2 bit-orc1 bit-not
+	    vector-push vector-push-extend vector-pop adjust-array ecase-error
+	    ccase-error typecase-error-string find-documentation find-declarations
+	    remove-documentation si::check-keyword si::get-documentation
+	    si::set-documentation si::expand-set-documentation read-from-string
+	    write-to-string prin1-to-string princ-to-string union nunion
+	    intersection nintersection set-difference nset-difference
+	    set-exclusive-or nset-exclusive-or subsetp
+	    logical-pathname-translations decode-universal-time
+	    encode-universal-time get-decoded-time isqrt abs phase signum cis asin
+	    acos asinh acosh atanh rational ffloor fceiling ftruncate fround
+	    logtest byte byte-size byte-position ldb ldb-test mask-field dpb
+	    deposit-field typep subtypep coerce type-for-array make-sequence
+	    concatenate map some every notany notevery map-into reduce fill
+	    replace remove remove-if remove-if-not delete delete-if delete-if-not
+	    count count-if count-if-not substitute substitute-if substitute-if-not
+	    nsubstitute nsubstitute-if nsubstitute-if-not find find-if find-if-not
+	    position position-if position-if-not remove-duplicates
+	    delete-duplicates mismatch search sort stable-sort merge))

@@ -14,14 +14,6 @@
 
 (in-package "SYSTEM")
 
-(c-declaim (si::c-export-fname make-array vector array-dimensions
-			       array-in-bounds-p array-row-major-index
-			       bit sbit bit-and bit-ior bit-xor bit-eqv
-			       bit-nand bit-nor bit-andc1 bit-andc2 bit-orc1
-			       bit-not
-			       vector-push vector-push-extend
-			       vector-pop adjust-array))
-
 (defun make-array (dimensions
 		   &key (element-type t)
 			(initial-element nil initial-element-supplied-p)

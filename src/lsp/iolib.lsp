@@ -11,9 +11,6 @@
 
 (in-package "SYSTEM")
 
-(c-declaim (si::c-export-fname read-from-string write-to-string
-			       prin1-to-string princ-to-string))
-
 (defmacro with-open-stream ((var stream) &rest body)
   "Syntax: (with-open-stream (var stream-form) {decl}* {form}*)
 Evaluates FORMs with VAR bound to the value of STREAM-FORM.  The stream is

@@ -12,12 +12,9 @@
 
 
 (in-package "CL")
-(export '(DEFTYPE TYPEP SUBTYPEP COERCE))
-#+clos(export 'subclassp)
+(export '(DEFTYPE TYPEP SUBTYPEP COERCE #+clos subclassp))
 
 (in-package "SYSTEM")
-
-(c-declaim (si::c-export-fname typep subtypep coerce type-for-array))
 
 ;;; DEFTYPE macro.
 (defmacro deftype (name lambda-list &rest body)

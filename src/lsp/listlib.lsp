@@ -10,10 +10,7 @@
 
 (in-package "SYSTEM")
 
-(c-declaim (optimize (safety 0) (space 3))
-	   (si::c-export-fname union nunion intersection nintersection
-			       set-difference nset-difference set-exclusive-or
-			       nset-exclusive-or subsetp))
+(c-declaim (optimize (safety 0) (space 3)))
 
 (defun union (list1 list2 &rest rest)
   "Args: (list1 list2 &key (key #'identity) (test #'eql) test-not)

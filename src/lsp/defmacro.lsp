@@ -12,10 +12,6 @@
 (si::select-package "SYSTEM")
 
 #-ecl-min
-(c-declaim (si::c-export-fname find-documentation remove-documentation
-			       si::check-keyword))
-
-#-ecl-min
 (defvar *dl*)
 #-ecl-min
 (defvar *key-check*)

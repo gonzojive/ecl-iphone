@@ -12,12 +12,6 @@
 
 (in-package "SYSTEM")
 
-(c-declaim (si::c-export-fname isqrt abs phase signum cis asin acos
-			       asinh acosh atanh rational
-			       ffloor fceiling ftruncate fround
-			       logtest byte byte-size byte-position
-			       ldb ldb-test mask-field dpb deposit-field))
-
 (defconstant imag-one #C(0.0 1.0))
 
 (defun isqrt (i)

@@ -17,7 +17,9 @@
 (proclaim '(optimize (safety 2) (space 3)))
 (sbt::operate-on-system lsp :library)
 #+dlopen
-(sbt::operate-on-system lsp :load)
+(progn
+  (sbt::operate-on-system lsp :shared-library)
+  (load "lsp"))
 (si::pathname-translations "SYS" '(("**;*.*" "@abs_builddir@/**/*.*")))
 (setq compiler::*cc-flags* (concatenate 'string compiler::*cc-flags* " -I@srcdir@/h -I@srcdir@/gmp -I@builddir@/h"))
 

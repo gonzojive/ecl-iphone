@@ -10,8 +10,6 @@
 
 (in-package "SYSTEM")
 
-(c-declaim (si::c-export-fname ecase-error ccase-error typecase-error-string))
-
 (defmacro check-type (place typespec &optional (string nil s))
   "Args: (check-type place typespec [string-form])
 Signals a continuable error, if the value of PLACE is not of the specified

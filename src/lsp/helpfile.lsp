@@ -10,10 +10,6 @@
 
 (in-package "SYSTEM")
 
-#-ecl-min
-(c-declaim (si::c-export-fname si::get-documentation si::set-documentation
-			       si::expand-set-documentation))
-
 (export '(get-documentation set-documentation))
 
 ;;;;----------------------------------------------------------------------
