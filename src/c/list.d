@@ -391,13 +391,13 @@ cl_copy_alist(cl_object x)
 	cl_object copy;
 	cl_object *y = &copy;
 
-	loop_for_on(x) {
+	loop_for_in(x) {
 		cl_object pair = CAR(x);
-		if (ATOM(pair))
-			FEtype_error_alist(x);
-		*y = CONS(CONS(CAR(pair), CDR(pair)), Cnil);
+		if (CONSP(pair))
+			pair = CONS(CAR(pair), CDR(pair));
+		*y = CONS(pair, Cnil);
 		y = &CDR(*y);
-	} end_loop_for_on;
+	} end_loop_for_in;
 	*y = x;
 	@(return copy);
 }
