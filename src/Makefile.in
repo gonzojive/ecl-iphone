@@ -38,6 +38,7 @@ mkinstalldirs = $(SHELL) $(top_srcdir)/gc/mkinstalldirs
 SUBDIR = @SUBDIR@
 LIBRARIES = @LIBRARIES@
 LSP_LIBRARIES = @LSP_LIBRARIES@
+ECL_MODULES = @ECL_MODULES@
 TARGETS = @TARGETS@
 
 all:	$(TARGETS) ecl-config doc
@@ -107,6 +108,9 @@ install-base:
 	for i in BUILD-STAMP $(LSP_LIBRARIES) $(LIBRARIES) c/dpp* help.doc ; do \
 	  $(INSTALL_DATA) $$i $(libdir); \
 	done
+	for i in $(ECL_MODULES); do \
+	  $(INSTALL_DATA) $$i.fas $(libdir); \
+	done
 	$(INSTALL_DATA) h/config.h $(libdir)/h
 flatinstall: BUILD-STAMP
 	$(MAKE) bindir=$(prefix) libdir=$(prefix) install-base
@@ -125,7 +129,7 @@ clean: clean_lisp
 	for i in ${SUBDIR}; do (cd $$i; $(MAKE) clean); done
 	$(RM) ecl_min$(EXE) ecl$(EXE) help.doc core a.out
 	$(RM) config.version config.log config.cache
-	$(RM) *.c *.o *.a *.h *.data
+	$(RM) *.c *.o *.a *.h *.data *.fas
 clean_lisp:
 	for i in lsp cmp clos clx tk; do $(RM) lib$$i.a $$i/?*.{o,dat,c,sdat,h,fas}; done
 	$(RM) help.doc

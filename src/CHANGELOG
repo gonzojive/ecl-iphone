@@ -75,6 +75,9 @@ ECL 0.9f
    are searched in the #P"SYS:" path, but you can add your own searching
    functions to *module-provider-functions*. (J. Stecklina)
 
+ - ASDF is now provided together with ECL. Hopefully, in a near future we will
+   be able to customize it to produce shared libraries out of definition files.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

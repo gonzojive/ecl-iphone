@@ -124,62 +124,65 @@ ranlib ../@LIBPREFIX@ecl.@LIBEXT@'")
    ;;:shared-data-file "build:cmp.sdat"
    ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; EXTENSIONS
+;;;
+
+(defvar *ecl-modules* '(@ECL_MODULES@))
+
+;;;
+;;; * ASDF
+;;;
+(when (member 'asdf *ecl-modules*)
+  (build-module "asdf"
+		'("ext:asdf;asdf.lisp")
+		:dir "build:ext;"
+		:prefix "EXT"))
+
 ;;;
 ;;; * Sockets library.
 ;;;
 
-(defconstant +sockets-module-files+
-'("ext:sockets;sockets.lisp"))
-
-(setq si::*init-function-prefix* "EXT")
-
 #+WANTS-SOCKETS
-(progn
-  (proclaim '(optimize (safety 2) (speed 1)))
-  (let* ((objects (compile-if-old "build:ext;" +sockets-module-files+
-				  :system-p t :c-file t :data-file t :h-file t)))
-    (c::build-static-library "sockets" :lisp-files objects)
-    #+dlopen
-    (c::build-fasl "sockets" :lisp-files objects)))
+(build-module "sockets"
+	      '("ext:sockets;sockets.lisp")
+	      :dir "build:ext;"
+	      :prefix "EXT")
 
 ;;;
 ;;; * Compile the portable CLX library.
 ;;;
 
-(defconstant +clx-module-files+
-'("src:clx;package.lisp"
-  "src:clx;depdefs.lisp"
-  "src:clx;clx.lisp"
-  "src:clx;dependent.lisp"
-  "src:clx;macros.lisp"
-  "src:clx;bufmac.lisp"
-  "src:clx;buffer.lisp"
-  "src:clx;display.lisp"
-  "src:clx;gcontext.lisp"
-  "src:clx;input.lisp"
-  "src:clx;requests.lisp"
-  "src:clx;fonts.lisp"
-  "src:clx;graphics.lisp"
-  "src:clx;text.lisp"
-  "src:clx;attributes.lisp"
-  "src:clx;translate.lisp"
-  "src:clx;keysyms.lisp"
-  "src:clx;manager.lisp"
-  "src:clx;image.lisp"
-  "src:clx;resource.lisp"))
-
-(setq si::*init-function-prefix* "CLX")
-
 #+WANTS-CLX
-(progn
-  (proclaim '(optimize (safety 2) (speed 1)))
-  (push :clx-ansi-common-lisp *features*)
-  (mapcar #'load +clx-module-files+)
-  (let* ((objects (compile-if-old "build:clx;" +clx-module-files+
-				  :system-p t :c-file t :data-file t :h-file t)))
-    (c::build-static-library "clx" :lisp-files objects)
-    #+dlopen
-    (c::build-fasl "clx" :lisp-files objects)))
+(build-module "clx"
+	      '("src:clx;package.lisp"
+		"src:clx;depdefs.lisp"
+		"src:clx;clx.lisp"
+		"src:clx;dependent.lisp"
+		"src:clx;macros.lisp"
+		"src:clx;bufmac.lisp"
+		"src:clx;buffer.lisp"
+		"src:clx;display.lisp"
+		"src:clx;gcontext.lisp"
+		"src:clx;input.lisp"
+		"src:clx;requests.lisp"
+		"src:clx;fonts.lisp"
+		"src:clx;graphics.lisp"
+		"src:clx;text.lisp"
+		"src:clx;attributes.lisp"
+		"src:clx;translate.lisp"
+		"src:clx;keysyms.lisp"
+		"src:clx;manager.lisp"
+		"src:clx;image.lisp"
+		"src:clx;resource.lisp")
+	      :dir "build:clx;"
+	      :prefix "CLX")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; THE FINAL EXECUTABLE
+;;;
 
 (setq si::*init-function-prefix* "ECL")
 

@@ -310,7 +310,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS ECL_VERSION build build_cpu build_vendor build_os host host_cpu host_vendor host_os thehost builddir docdir top_srcdir CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CXX CXXFLAGS ac_ct_CXX CPP RANLIB ac_ct_RANLIB INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA LN_S ECL_CC ECL_CFLAGS CLIBS STATICLIBS SHARED_LDFLAGS BUNDLE_LDFLAGS SHORT_SITE_NAME LONG_SITE_NAME EXTRA_OBJS TARGETS TKLIBS SUBDIR LIBRARIES LSP_LIBRARIES BOEHM_HEADERS EGREP true_srcdir true_builddir CP RM MV EXE_SUFFIX ARCHITECTURE SOFTWARE_TYPE SOFTWARE_VERSION MACHINE_INSTANCE MACHINE_VERSION LDRPATH LIBPREFIX LIBEXT SHAREDEXT SHAREDPREFIX LDINSTALLNAME INSTALL_TARGET ECL_SETJMP ECL_LONGJMP ECL_FILE_CNT INFOEXT INSTALL_INFO CLX_INFO CL_FIXNUM_TYPE CL_FIXNUM_BITS CL_FIXNUM_MAX CL_FIXNUM_MIN LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS ECL_VERSION build build_cpu build_vendor build_os host host_cpu host_vendor host_os thehost builddir docdir top_srcdir CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CXX CXXFLAGS ac_ct_CXX CPP RANLIB ac_ct_RANLIB INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA LN_S ECL_CC ECL_CFLAGS CLIBS STATICLIBS SHARED_LDFLAGS BUNDLE_LDFLAGS SHORT_SITE_NAME LONG_SITE_NAME EXTRA_OBJS TARGETS TKLIBS SUBDIR LIBRARIES LSP_LIBRARIES BOEHM_HEADERS ECL_MODULES EGREP true_srcdir true_builddir CP RM MV EXE_SUFFIX ARCHITECTURE SOFTWARE_TYPE SOFTWARE_VERSION MACHINE_INSTANCE MACHINE_VERSION LDRPATH LIBPREFIX LIBEXT SHAREDEXT SHAREDPREFIX LDINSTALLNAME INSTALL_TARGET ECL_SETJMP ECL_LONGJMP ECL_FILE_CNT INFOEXT INSTALL_INFO CLX_INFO CL_FIXNUM_TYPE CL_FIXNUM_BITS CL_FIXNUM_MAX CL_FIXNUM_MIN LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -866,6 +866,7 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-asdf             include ASDF building facility (default is YES)
   --with-config-file=f    supply configuration for a cross compiler
   --with-cmuformat        use CMUCL's FORMAT routine (default is YES)
   --with-clos-streams     user defined stream objects (default is YES)
@@ -1469,6 +1470,14 @@ if test "${enable_threads+set}" = set; then
 fi;
 
 
+# Check whether --with-asdf or --without-asdf was given.
+if test "${with_asdf+set}" = set; then
+  withval="$with_asdf"
+  asdf="${withval}"
+else
+  asdf=yes
+fi;
+
 # Check whether --with-cross_config or --without-cross_config was given.
 if test "${with_cross_config+set}" = set; then
   withval="$with_cross_config"
@@ -1518,7 +1527,9 @@ fi;
 # Check whether --with-tcp or --without-tcp was given.
 if test "${with_tcp+set}" = set; then
   withval="$with_tcp"
-  tcp=yes
+  tcp="${withval}"
+else
+  tcp=no
 fi;
 
 ### ----------------------------------------------------------------------
@@ -4575,6 +4586,7 @@ LIBRARIES=""
 SUBDIR=c
 CLIBS="${CLIBS} -lm"
 STATICLIBS=""
+ECL_MODULES=""
 if test ${boehm} = "no" ; then
   EXTRA_OBJS="${EXTRA_OBJS} alloc.${OBJEXT} gbc.${OBJEXT}"
 else
@@ -4655,7 +4667,7 @@ _ACEOF
 
   EXTRA_OBJS="${EXTRA_OBJS} tcp.${OBJEXT}"
   if test ${shared} = "yes" ; then
-    LSP_LIBRARIES="${LSP_LIBRARIES} sockets.fas"
+    ECL_MODULES="${ECL_MODULES} sockets"
   else
     LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}sockets.${LIBEXT}"
   fi
@@ -4724,7 +4736,9 @@ if test ! ${opcode8} = "no" ; then
 _ACEOF
 
 fi
-
+if test "${asdf}"; then
+  ECL_MODULES="${ECL_MODULES} asdf";
+fi
 if test "${GCC}" = "yes"; then
   CFLAGS="${CFLAGS} -fstrict-aliasing"
 fi
@@ -5842,6 +5856,7 @@ s,@SUBDIR@,$SUBDIR,;t t
 s,@LIBRARIES@,$LIBRARIES,;t t
 s,@LSP_LIBRARIES@,$LSP_LIBRARIES,;t t
 s,@BOEHM_HEADERS@,$BOEHM_HEADERS,;t t
+s,@ECL_MODULES@,$ECL_MODULES,;t t
 s,@EGREP@,$EGREP,;t t
 s,@true_srcdir@,$true_srcdir,;t t
 s,@true_builddir@,$true_builddir,;t t

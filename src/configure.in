@@ -82,6 +82,10 @@ AC_ARG_ENABLE(threads,
 		       [support for native threads (default is NO).]),
 	[threads="$enable_threads"])
 
+AC_ARG_WITH(asdf,
+	AS_HELP_STRING([--with-asdf],
+		       [include ASDF building facility (default is YES)]),
+	[asdf="${withval}"],[asdf=yes])
 AC_ARG_WITH(cross_config,
 	AS_HELP_STRING([--with-config-file=f],
 		       [supply configuration for a cross compiler]),
@@ -112,7 +116,7 @@ AC_ARG_WITH(gmp,
 AC_ARG_WITH(tcp,
 	AS_HELP_STRING([--with-tcp],
 		       [include socket interface (default is NO)]),
-	[tcp=yes])
+	[tcp="${withval}"],[tcp=no])
 
 ### ----------------------------------------------------------------------
 ###           Checks for programs
@@ -141,6 +145,7 @@ AC_SUBST(SUBDIR)dnl		Subdirectories that make should process
 AC_SUBST(LIBRARIES)dnl		GMP, Boehm's GC, etc
 AC_SUBST(LSP_LIBRARIES)dnl	Libraries produced by lisp translator
 AC_SUBST(BOEHM_HEADERS)dnl	Header path for Boehm GC
+AC_SUBST(ECL_MODULES)dnl	Contributed modules to be built in
 
 dnl ----------------------------------------------------------------------
 dnl           checks for UNIX variants that set DEFS
@@ -195,6 +200,7 @@ LIBRARIES=""
 SUBDIR=c
 CLIBS="${CLIBS} -lm"
 STATICLIBS=""
+ECL_MODULES=""
 if test ${boehm} = "no" ; then
   EXTRA_OBJS="${EXTRA_OBJS} alloc.${OBJEXT} gbc.${OBJEXT}"
 else
@@ -237,10 +243,10 @@ else
     LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}cmp.${LIBEXT} sysfun.lsp"
   fi
 fi
-if test ${tk} ; then
-  TKLIBS="-ltk -ltcl -lXpm @XLIBS@"
-  AC_DEFINE(TK)
-fi
+dnl if test ${tk} ; then
+dnl   TKLIBS="-ltk -ltcl -lXpm @XLIBS@"
+dnl   AC_DEFINE(TK)
+dnl fi
 AC_SUBST(CLX_INFO)
 if test ${clx} ; then
   if test ${shared} = "yes" ; then
@@ -257,7 +263,7 @@ if test "${tcp}" -o "${clx}"; then
   AC_DEFINE(TCP)
   EXTRA_OBJS="${EXTRA_OBJS} tcp.${OBJEXT}"
   if test ${shared} = "yes" ; then
-    LSP_LIBRARIES="${LSP_LIBRARIES} sockets.fas"
+    ECL_MODULES="${ECL_MODULES} sockets"
   else
     LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}sockets.${LIBEXT}"
   fi
@@ -304,7 +310,9 @@ fi
 if test ! ${opcode8} = "no" ; then
   AC_DEFINE(ECL_SMALL_BYTECODES)
 fi
-
+if test "${asdf}"; then
+  ECL_MODULES="${ECL_MODULES} asdf";
+fi
 dnl ---------------------------------------------------------------------
 dnl		This flag is an optimization for GNU
 dnl ---------------------------------------------------------------------
@@ -401,7 +409,7 @@ dnl and then use all AC_DEF* to build h/config.h from h/configpre.h
 dnl
 AC_CONFIG_FILES(bare.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp
  ../Makefile Makefile c/Makefile doc/Makefile doc/ecl.man
- tk/Makefile tests/Makefile ansi-tests/Makefile gabriel/Makefile)
+ tests/Makefile ansi-tests/Makefile gabriel/Makefile)
 AC_CONFIG_FILES([ecl-config.pre:util/ecl-config])
 AC_CONFIG_FILES([h/configpre:h/config.h.in])
 AC_CONFIG_FILES([lsp/config.pre:lsp/config.lsp.in])
