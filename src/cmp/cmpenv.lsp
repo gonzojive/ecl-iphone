@@ -249,9 +249,6 @@
 	    (dolist (v (cddr decl))
 		    (add-function-proclamation v (cdr (second decl)))
 		    ))
-	   ((and (equal (length decl) 4)
-		 (consp (third decl)))
-	    (add-function-proclamation (second decl) (cddr decl)))
 	   (t (cmpwarn "Bad function proclamation ~a" decl))))
     (INLINE
      (dolist (fun (cdr decl))
@@ -430,9 +427,6 @@
 		   (eq (caadr decl) 'FUNCTION))
 	      (dolist (v (cddr decl))
 		(add-function-declaration v (cadr (second decl)) (caddr (second decl)))))
-	     ((and (equal (length decl) 4)
-		   (consp (third decl)))
-	      (add-function-declaration (second decl) (third decl) (cdddr decl)))
 	     (t (cmpwarn "The function declaration ~a is illegal" decl))))
       (INLINE
        (push decl dl)
