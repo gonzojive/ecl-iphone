@@ -371,6 +371,18 @@ va_gcall(int narg, cl_object fun, va_list args)
 	cl_stack_pop_n(narg);
 	return out;
 }
+
+cl_object
+va_compute_method(int narg, cl_object fun, va_list args)
+{
+	cl_object out;
+	int i;
+	for (i=narg; i; i--)
+		cl_stack_push(cl_nextarg(args));
+	out = compute_method(narg, fun, cl_stack_top-narg);
+	cl_stack_pop_n(narg);
+	return out;
+}
 #endif
 #endif
 
@@ -438,11 +450,8 @@ interpret_funcall(int narg, cl_object fun) {
 		break;
 #ifdef CLOS
 	case t_gfun:
-		ihs_push(fun->gfun.name);
-		lex_env = Cnil;
-		x = gcall(narg, fun, args);
-		ihs_pop();
-		break;
+		fun = compute_method(narg, fun, args);
+		goto AGAIN;
 #endif
 	case t_bytecodes:
 		x = lambda_apply(narg, fun, args);
@@ -460,6 +469,25 @@ interpret_funcall(int narg, cl_object fun) {
 	cl_stack_pop_n(narg);
 	return x;
 }
+
+@(defun apply (fun lastarg &rest args)
+	int i;
+@
+	narg -= 2;
+	for (i = 0; narg; i++,narg--) {
+		cl_stack_push(lastarg);
+		lastarg = va_arg(args, cl_object);
+	}
+	loop_for_in (lastarg) {
+		if (i >= CALL_ARGUMENTS_LIMIT) {
+			cl_stack_pop_n(i);
+			FEprogram_error("CALL-ARGUMENTS-LIMIT exceeded",0);
+		}
+		cl_stack_push(CAR(lastarg));
+		i++;
+	} end_loop_for_in;
+	returnn(interpret_funcall(i, fun));
+@)
 
 /* -------------------- THE INTERPRETER -------------------- */
 

@@ -53,7 +53,8 @@ apply(int narg, cl_object fun, cl_object *args)
 				     args);
 #ifdef CLOS
 	case t_gfun:
-		return gcall(narg, fun, args);
+		fun = compute_method(narg, fun, args);
+		goto AGAIN;
 #endif
 	case t_symbol: {
 		cl_object x = SYM_FUN(fun);
@@ -78,18 +79,27 @@ link_call(cl_object sym, cl_objectfn *pLK, int narg, va_list args)
 	cl_object fun = symbol_function(sym);
 
 	if (fun == OBJNULL) FEerror("Undefined function.", 0);
-
+ AGAIN:
 	switch (type_of(fun)) {
 	case t_cfun:
-		putprop(sym, CONS(CONS(make_unsigned_integer((cl_index)pLK),
-				       make_unsigned_integer((cl_index)*pLK)),
-				  getf(sym->symbol.plist, @'si::link-from', Cnil)),
-			@'si::link-from');
-		*pLK = fun->cfun.entry;
+		if (pLK) {
+			putprop(sym, CONS(CONS(make_unsigned_integer((cl_index)pLK),
+					       make_unsigned_integer((cl_index)*pLK)),
+					  getf(sym->symbol.plist, @'si::link-from', Cnil)),
+				@'si::link-from');
+			*pLK = fun->cfun.entry;
+		}
 		return va_APPLY(narg, fun->cfun.entry, args);
 #ifdef CLOS
-	case t_gfun:
-		return va_gcall(narg, fun, args);
+#ifndef va_copy
+#define va_copy(x) (x)
+#endif
+	case t_gfun: {
+		va_list aux = va_copy(args);
+		fun = va_compute_method(narg, fun, aux);
+		pLK = NULL;
+		goto AGAIN;
+	}
 #endif /* CLOS */
 	case t_cclosure:
 		return va_APPLY_closure(narg, fun->cclosure.entry,
@@ -126,8 +136,11 @@ link_call(cl_object sym, cl_objectfn *pLK, int narg, va_list args)
 		return va_APPLY_closure(narg-1, fun->cclosure.entry,
 					fun->cclosure.env, funargs);
 #ifdef CLOS
-	case t_gfun:
-		return va_gcall(narg-1, fun, funargs);
+	case t_gfun: {
+		va_list aux = va_copy(funargs);
+		fun = va_compute_method(narg-1, fun, aux);
+		goto AGAIN;
+	}
 #endif
 	case t_symbol:
 		fun = SYM_FUN(fun);
@@ -138,26 +151,6 @@ link_call(cl_object sym, cl_objectfn *pLK, int narg, va_list args)
 		return va_lambda_apply(narg-1, fun, funargs);
 	}
 	FEinvalid_function(fun);
-@)
-
-@(defun apply (fun lastarg &rest args)
-	int i;
-@
-	narg -= 2;
-	for (i = 0; narg; narg--) {
-		VALUES(i++) = lastarg;
-		lastarg = va_arg(args, cl_object);
-	}
-	loop_for_in (lastarg) {
-		if (i >= CALL_ARGUMENTS_LIMIT)
-			FEprogram_error("CALL-ARGUMENTS-LIMIT exceeded",0);
-		VALUES(i++) = CAR(lastarg);
-	} end_loop_for_in;
-	{
-		cl_object savargs[i];
-		memcpy(savargs, &VALUES(0), i * sizeof(cl_object));
-		return apply(i, fun, savargs);
-	}
 @)
 
 @(defun eval (form)

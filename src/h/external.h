@@ -238,14 +238,14 @@ extern void init_eval(void);
 #ifdef NO_ARGS_ARRAY
 extern cl_object va_APPLY(int narg, cl_objectfn fn, va_list args);
 extern cl_object va_APPLY_closure(int narg, cl_objectfn fn, cl_object data, va_list args);
-extern cl_object va_gcall(int narg, cl_object fun, va_list args);
+extern cl_object va_compute_method(int narg, cl_object fn, cl_object data, va_list args);
 extern cl_object va_lambda_apply(int narg, cl_object fun, va_list args);
 extern void va_parse_key(int narg, va_list args, int nkey, cl_object *keys, cl_object *vars, cl_object *rest, bool allow_other_keys);
 extern cl_object va_grab_rest_args(int narg, va_list args);
 #else
 #define va_APPLY(x,y,z) APPLY(x,y,&va_arg(z,cl_object))
 #define va_APPLY_closure(x,y,p,z) APPLY_closure(x,y,p,&va_arg(z,cl_object))
-#define va_gcall(x,y,z) gcall(x,y,&va_arg(z,cl_object))
+#define va_compute_method(x,y,z) compute_method(x,y,&va_arg(z,cl_object))
 #define va_lambda_apply(x,y,z) lambda_apply(x,y,&va_arg(z,cl_object))
 #define va_parse_key(a,b,c,d,e,f,g) parse_key(a,&va_arg(b,cl_object),c,d,e,f,g)
 #define va_grab_rest_args(a,b) grab_rest_args(a,&va_arg(b,cl_object))
@@ -317,7 +317,7 @@ extern void gc(cl_type t);
 /* gfun.c */
 
 #ifdef CLOS
-extern cl_object gcall(int narg, cl_object fun, cl_object *args);
+extern cl_object compute_method(int narg, cl_object fun, cl_object *args);
 extern void init_gfun(void);
 #endif /* CLOS */
 

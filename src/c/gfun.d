@@ -178,7 +178,7 @@ set_meth_hash(cl_object *keys, int argno, cl_object hashtable, cl_object value)
 }
 
 cl_object
-gcall(int narg, cl_object fun, cl_object *args)
+compute_method(int narg, cl_object fun, cl_object *args)
 {
 	cl_object func;
 
@@ -220,28 +220,7 @@ gcall(int narg, cl_object fun, cl_object *args)
 	    /* method is already cached */
 	    func = e->value;
 	}
-	switch (type_of(func)) {
-
-	case t_cfun:
-	  return APPLY(narg, *func->cfun.entry, args);
-
-	case t_cclosure:
-	  { int i; CSTACK(narg+1);
-	    CPUSH(func->cclosure.env);
-	    for (i = 0; i < narg; i++)
-	      CPUSH(*args++);
-#ifdef CCALL
-	    return CCALL(narg+1, func->cclosure.entry);
-#else
-	    return APPLY(narg+1, func->cclosure.entry, CSTACK_BOT);
-#endif
-	  }
-	case t_bytecodes:
-	  return apply(narg, func, args);
-
-	default:
-	  FEinvalid_function(func);
-	}
+	return func;
 }
 
 @(defun si::set_compiled_function_name (fn new_name)
