@@ -6537,17 +6537,18 @@ elif test "${local_boehm}" = "no" ; then
   echo "$as_me:$LINENO: result: configuring local copy" >&5
 echo "${ECHO_T}configuring local copy" >&6
   test -d gc && rm -rf gc
+  echo $host
   if mkdir gc; then
     if test "${threads}" ; then
       (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
        $srcdir/gc/configure --disable-shared --prefix=${destdir} \
-	--includedir=${destdir}/h --libdir=${destdir} --build=${build} \
-	--host=${host})
+	--includedir=${destdir}/h --libdir=${destdir} --build=${build_alias} \
+	--host=${host_alias})
     else
       (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
        $srcdir/gc/configure --disable-threads --disable-shared --prefix=${destdir} \
-	--includedir=${destdir}/h --libdir=${destdir} --build=${build} \
-	--host=${host})
+	--includedir=${destdir}/h --libdir=${destdir} --build=${build_alias} \
+	--host=${host_alias})
     fi
   fi
 else

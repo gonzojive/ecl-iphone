@@ -356,7 +356,7 @@ else
    (destdir=`${PWDCMD}`; cd gmp; CC="${CC} ${PICFLAG}" \
      $srcdir/gmp/configure --disable-shared --prefix=${destdir} \
 	--infodir=${destdir}/doc --includedir=${destdir}/h \
-        --libdir=${destdir} --build=${build} --host=${host} $gmp_flags)
+        --libdir=${destdir} --build=${build_alias} --host=${host_alias} $gmp_flags)
   fi
 fi
 dnl ---------------------------------------------------------------------
@@ -372,13 +372,13 @@ elif test "${local_boehm}" = "no" ; then
     if test "${threads}" ; then
       (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
        $srcdir/gc/configure --disable-shared --prefix=${destdir} \
-	--includedir=${destdir}/h --libdir=${destdir} --build=${build} \
-	--host=${host})
+	--includedir=${destdir}/h --libdir=${destdir} --build=${build_alias} \
+	--host=${host_alias})
     else
       (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
        $srcdir/gc/configure --disable-threads --disable-shared --prefix=${destdir} \
-	--includedir=${destdir}/h --libdir=${destdir} --build=${build} \
-	--host=${host})
+	--includedir=${destdir}/h --libdir=${destdir} --build=${build_alias} \
+	--host=${host_alias})
     fi
   fi
 else
