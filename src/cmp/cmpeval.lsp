@@ -86,8 +86,12 @@
 	      (funcall fd args)))
 	((setq fd (macro-function fname))
 	 (c1expr (cmp-expand-macro fd fname args)))
-	((setq fd (compiler-macro-function fname))
-	 (c1expr (funcall fd (cons fname args) nil)))
+	((and (setq fd (compiler-macro-function fname))
+	      (let ((success nil))
+		(multiple-value-setq (fd success)
+		  (cmp-expand-compiler-macro fd fname args))
+		success))
+	 (c1expr fd))
 	((and (setq fd (get fname 'SYS::STRUCTURE-ACCESS))
 	      (inline-possible fname)
 	      ;;; Structure hack.
@@ -95,8 +99,9 @@
 	      (sys::fixnump (cdr fd))
 	      (not (endp args))
 	      (endp (cdr args)))
+	 (print args *standard-output*)(terpri *standard-output*)
 	 (case (car fd)
-	   (VECTOR (c1expr `(svref ,(car args) ,(cdr fd)))) ; Beppe
+	   (VECTOR (c1expr `(svref ,(car args) ,(cdr fd)))) ; Beppe3
 	   (LIST (c1expr `(sys:list-nth ,(cdr fd) ,(car args))))
 	   (t (c1structure-ref1 (car args) (car fd) (cdr fd)))
 	   )

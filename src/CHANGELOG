@@ -1194,6 +1194,9 @@ ECLS 0.9
 
   - DESTRUCTURING-BIND fails to interpret &WHOLE arguments.
 
+  - The compiler might get into an infinite loop when dealing with
+    compiler-macros.
+
 * Errors of the interpreter:
 
   - CASE should use EQL to compare objects, not EQ.
