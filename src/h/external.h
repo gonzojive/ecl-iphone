@@ -663,7 +663,6 @@ extern cl_object delimiting_char;
 extern bool detect_eos_flag;
 extern bool in_list_flag;
 extern bool dot_flag;
-extern cl_object default_dispatch_macro;
 extern cl_object sharp_eq_context;
 #endif
 extern cl_object interactive_readc(cl_object stream);

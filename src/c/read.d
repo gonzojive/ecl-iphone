@@ -34,7 +34,6 @@ cl_object delimiting_char;
 bool detect_eos_flag;
 bool in_list_flag;
 bool dot_flag;
-cl_object default_dispatch_macro;
 cl_object sharp_eq_context;
 #endif /* THREADS */
 
@@ -47,6 +46,7 @@ extern int backq_level;
 #endif
 
 static cl_object dispatch_reader;
+static cl_object default_dispatch_macro;
 
 #define	cat(rtbl,c)	((rtbl)->readtable.table[c].syntax_type)
 #define read_suppress (SYM_VAL(@'*read-suppress*') != Cnil)
@@ -1894,9 +1894,7 @@ init_read(void)
 */
 
 	default_dispatch_macro = make_cf(default_dispatch_macro_fun);
-#ifndef THREADS
 	register_root(&default_dispatch_macro);
-#endif
 
 	rtab['#'].dispatch_table
 	= dtab
