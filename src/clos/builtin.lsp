@@ -66,6 +66,15 @@
     (princ ")" stream)
     obj))
 
+(defmethod slot-exists-p ((obj structure-object) slot-name)
+  (let ((class (si:instance-class obj)))
+    ;(declare (type structure-class class))
+    ;; FIXME! NIL could, in principle, be valid slot name. We reject it here
+    ;; because DEFSTRUCT uses this name to mark padding slots for initial-offset.
+    (and slot-name
+	 (member slot-name (slot-value class 'slots) :key #'slotd-name)
+	 t)))
+
 ;;; ======================================================================
 ;;; Built-in classes
 ;;; ----------------------------------------------------------------------
