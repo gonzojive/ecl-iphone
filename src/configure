@@ -3824,17 +3824,6 @@ echo "$as_me: error: The program DPP is not installed in your system" >&2;}
 fi
 
 
-if uname -a | grep -i 'mingw32' > /dev/null; then
-  PWDCMD="pwd -W";
-else
-  PWDCMD="pwd";
-fi
-case "${srcdir}" in
-  /* | ?:/* ) ;;
-  *  ) srcdir="`(cd ${srcdir}; ${PWDCMD})`";
-esac
-
-
 #### Some command variations:
 
 

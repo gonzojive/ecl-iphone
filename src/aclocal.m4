@@ -73,23 +73,6 @@ EOF
 fi
 ])
 
-dnl --------------------------------------------------------------
-dnl Make srcdir absolute, if it isn't already.  It's important to
-dnl avoid running the path through pwd unnecessarily, since pwd can
-dnl give you automounter prefixes, which can go away.
-dnl
-AC_DEFUN(ECL_MAKE_ABSOLUTE_SRCDIR,[
-if uname -a | grep -i 'mingw32' > /dev/null; then
-  PWDCMD="pwd -W";
-else
-  PWDCMD="pwd";
-fi
-case "${srcdir}" in
-  /* | ?:/* ) ;;
-  *  ) srcdir="`(cd ${srcdir}; ${PWDCMD})`";
-esac
-])
-
 dnl
 dnl --------------------------------------------------------------
 dnl Define a name for this operating system and set some defaults
