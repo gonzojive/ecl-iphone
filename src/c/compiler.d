@@ -1490,38 +1490,32 @@ c_multiple_value_prog1(cl_object args, int flags) {
 
 
 static int
-c_multiple_value_setq(cl_object args, int flags) {
+c_multiple_value_setq(cl_object orig_args, int flags) {
+	cl_object args = orig_args;
 	cl_object orig_vars;
 	cl_object vars = Cnil;
-	cl_object temp_vars = Cnil;
-	cl_object late_assignment = Cnil;
 	cl_object old_variables = ENV->variables;
 	cl_index nvars = 0;
 
 	/* Look for symbol macros, building the list of variables
 	   and the list of late assignments. */
 	for (orig_vars = pop(&args); !endp(orig_vars); ) {
-		cl_object aux, v = pop(&orig_vars);
+		cl_object v = pop(&orig_vars);
 		if (!SYMBOLP(v))
 			FEillegal_variable_name(v);
 		v = c_macro_expand1(v);
 		if (!SYMBOLP(v)) {
-			aux = v;
-			v = @gensym(0);
-			temp_vars = CONS(v, temp_vars);
-			late_assignment = CONS(cl_list(3, @'setf', aux, v),
-					       late_assignment);
+			/* If any of the places to be set is not a variable,
+			 * transform MULTIPLE-VALUE-SETQ into (SETF (VALUES ...))
+			 */
+			args = orig_args;
+			return compile_form(cl_listX(3, @'setf',
+						     CONS(@'values', CAR(args)),
+						     CDR(args)),
+					    flags);
 		}
 		vars = CONS(v, vars);
 		nvars++;
-	}
-
-	if (!Null(temp_vars)) {
-		do {
-			compile_form(Cnil, FLAG_REG0);
-			c_bind(CAR(temp_vars), Cnil);
-			temp_vars = CDR(temp_vars);
-		} while (!Null(temp_vars));
 	}
 
 	/* Compile values */
@@ -1537,10 +1531,7 @@ c_multiple_value_setq(cl_object args, int flags) {
 	vars = cl_nreverse(vars);
 	while (nvars--) {
 		cl_object var = pop(&vars);
-		cl_fixnum ndx;
-		if (!SYMBOLP(var))
-			FEillegal_variable_name(var);
-		ndx = c_var_ref(var,0);
+		cl_fixnum ndx = c_var_ref(var,0);
 		if (ndx < 0) { /* Global variable */
 			if (var->symbol.stype == stp_constant)
 				FEassignment_to_constant(var);
@@ -1549,12 +1540,6 @@ c_multiple_value_setq(cl_object args, int flags) {
 		asm_arg(ndx);
 	}
 
-	/* Assign to symbol-macros */
-	if (!Null(late_assignment)) {
-		asm_op(OP_PUSHVALUES);
-		compile_body(late_assignment, FLAG_VALUES);
-		asm_op(OP_POPVALUES);
-	}
 	c_undo_bindings(old_variables);
 
 	return FLAG_VALUES;
