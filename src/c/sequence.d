@@ -211,6 +211,11 @@ E:
 				x->array.self.lf[j] =
 				sequence->array.self.lf[i];
 			break;
+		case aet_b8:
+		case aet_i8:
+			for (i = s, j = 0;  i < e;  i++, j++)
+				x->vector.self.b8[j] = sequence->vector.self.b8[i];
+			break;
 		default:
 			internal_error("subseq");
 		}
