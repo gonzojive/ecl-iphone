@@ -298,7 +298,6 @@ homedir_pathname(cl_object user)
 		char *h = getenv("HOME");
 		namestring = (h == NULL)? make_simple_string("/")
 			: make_string_copy(h);
-		return cl_pathname(namestring);
 	} else {
 #ifdef HAVE_PW_H
 		struct passwd *pwent = NULL;
