@@ -1076,6 +1076,7 @@ interpret(cl_object bytecodes, void *pc) {
 		if (frs_push(FRS_CATCH, id) == 0) {
 			bind_block(name, id);
 		} else {
+			reg0 = VALUES(0);
 			cl_env.lex_env = cl_env.frs_top->frs_lex;
 			frs_pop();
 			vector = (cl_opcode *)cl_stack_pop();
@@ -1099,6 +1100,7 @@ interpret(cl_object bytecodes, void *pc) {
 		if (frs_push(FRS_CATCH, id) == 0) {
 			bind_block(name, id);
 		} else {
+			reg0 = VALUES(0);
 			cl_env.lex_env = cl_env.frs_top->frs_lex;
 			frs_pop();
 			vector = (cl_opcode *)cl_stack_pop(); /* FIXME! */
