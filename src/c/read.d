@@ -604,6 +604,9 @@ EXPONENT:
 	}
 
 MAKE_FLOAT:
+	/* make_{short|long}float signals an error when an overflow
+	   occurred while reading the number. Thus, no safety check
+	   is required here. */
 	switch (exponent_marker) {
 
 	case 'e':  case 'E':
@@ -611,22 +614,10 @@ MAKE_FLOAT:
 		goto MAKE_FLOAT;
 
 	case 's':  case 'S':
-#ifdef IEEEFLOAT
-		{
-		  float biggest_float;
-		  *((int *)&biggest_float) = 0x7f7fffff;
-		  if (fraction > biggest_float || fraction < -biggest_float)
-		    FEerror("Floating-point overflow.", 0);
-		}
-#endif
 		x = make_shortfloat((float)fraction);
 		break;
 
 	case 'f':  case 'F':  case 'd':  case 'D':  case 'l':  case 'L':
-#ifdef IEEEFLOAT
-		if ((*((int *)&fraction + HIND) & 0x7ff00000) == 0x7ff00000)
-		  FEerror("Floating-point overflow.", 0);
-#endif
 		x = make_longfloat((double)fraction);
 		break;
 
