@@ -319,30 +319,25 @@ char_compare(cl_object x, cl_object y)
 cl_object
 cl_character(cl_object x)
 {
-	return1(coerce_to_character(x));
-}
-
-cl_object
-coerce_to_character(cl_object x)
-{
 	switch (type_of(x)) {
 	case t_character:
-		return x;
+		break;
 	case t_symbol:
 		x = x->symbol.name;
 	case t_string:
 		if (x->string.fillp == 1)
-			return(CODE_CHAR(x->string.self[0]));
+			x = CODE_CHAR(x->string.self[0]);
 	default:
 		FEtype_error_character(x);
 	}
+	@(return x)
 }
 
 cl_object
 cl_char_code(cl_object c)
 {
 	/* INV: char_code() checks the type of `c' */
-	return1(MAKE_FIXNUM(char_code(c)));
+	@(return MAKE_FIXNUM(char_code(c)))
 }
 
 cl_object
@@ -350,12 +345,20 @@ cl_code_char(cl_object c)
 {
 	cl_fixnum fc;
 
-	/* INV: fixnnint() checks the type of `c' */
-	if (type_of(c) == t_bignum)
-		return1(Cnil);
-	if ((fc = fixnnint(c)) >= CHAR_CODE_LIMIT)
-		return1(Cnil);
-	return1(CODE_CHAR(fc));
+	switch (type_of(c)) {
+	case t_fixnum:
+		fc = fix(c);
+		if (fc < CHAR_CODE_LIMIT && fc >= 0) {
+			c = CODE_CHAR(fc);
+			break;
+		}
+	case t_bignum:
+		c = Cnil;
+		break;
+	default:
+		FEtype_error_integer(c);
+	}
+	@(return c)
 }
 
 cl_object

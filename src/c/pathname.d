@@ -612,6 +612,8 @@ M:
 	push_string(buffer, y);
 	/* INV: pathname.version is always @':unspecific' or Cnil */
 N:
+	/* INV: namestring() must return a simple string which can
+	 * be used by a C function */
 	return(copy_simple_string(cl_token));
 }
 
