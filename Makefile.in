@@ -53,10 +53,11 @@ mandir=@mandir@
 libdir=@libdir@
 
 #  What to release
-TAR_CONTENTS=Makefile.in README.1st LGPL ANNOUNCEMENT doc \
-	configure site.lsp src/c src/cmp src/clos src/lsp src/doc \
+TAR_CONTENTS=Makefile.in README.1st LGPL ANNOUNCEMENT Copyright doc \
+	configure src/c src/cmp src/clos src/lsp src/doc \
 	src/h src/etc src/gmp src/config* src/install.sh src/Makefile.in \
-	src/util contrib/ src/clx src/tk src/gc src/*.in src/*.m4 src/gabriel
+	src/util contrib/ src/clx src/tk src/gc src/*.in src/*.m4 src/gabriel \
+	src/tests/Makefile.in src/ansi-tests/Makefile.in
 
 # ==================== Utility Programs for the Build ====================
 
@@ -140,7 +141,8 @@ source-dist: ecls.tgz ecls-tests.tgz
 
 ecls.tgz: doc
 	-rm -rf $(TAR_DIR)
-	mkdir $(TAR_DIR) $(TAR_DIR)/src && \
+	mkdir $(TAR_DIR) $(TAR_DIR)/src \
+	$(TAR_DIR)/src/tests $(TAR_DIR)/src/ansi-tests && \
 	for i in $(TAR_CONTENTS); do cp -rf $$i $(TAR_DIR)/$$i; done && \
 	tar -cz --exclude '*~' --exclude '#*' --exclude 'CVS' -f ecls.tgz $(TAR_DIR)
 	-rm -rf $(TAR_DIR)
@@ -159,7 +161,7 @@ binary-dist: all
 	(echo $$i; IFS="/"; for k in $$i; do echo $$k; (test -d $$k || mkdir $$k); chmod 755 $$k; cd $$k; done); \
 	done
 	PREFIX=`pwd`/tmp; cd build; make install PREFIX="$${PREFIX}"
-	su -c "chown -R root.root tmp; cd tmp; tar czf ../ecls-$(VERSION)-@host@.tgz * && cd .. && rm -rf tmp"
+	su -c "chown -R root.root tmp && cd tmp; tar czf ../ecls-$(VERSION)-$(MACHINE).tgz * && cd .. && rm -rf tmp"
 
 dist:
 	cd dist; make-dist
