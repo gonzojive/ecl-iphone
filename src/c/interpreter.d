@@ -255,11 +255,28 @@ get_sp_at(cl_index where) {
 cl_object
 va_lambda_apply(int narg, cl_object fun, va_list args)
 {
-	cl_object sp = get_sp();
-	while (narg--)
+	cl_object out;
+	int i;
+	for (i=narg; i; i--)
 		push1(cl_nextarg(args));
-	lambda_apply(narg, fun, sp);
+	out = lambda_apply(narg, fun, get_sp()-narg);
+	dec_sp_index(narg);
+	return out;
 }
+
+#ifdef CLOS
+cl_object
+va_gcall(int narg, cl_object fun, va_list args)
+{
+	cl_object out;
+	int i;
+	for (i=narg; i; i--)
+		push1(cl_nextarg(args));
+	out = gcall(narg, fun, get_sp()-narg);
+	dec_sp_index(narg);
+	return out;
+}
+#endif
 #endif
 
 /* -------------------- AIDS TO THE INTERPRETER -------------------- */
