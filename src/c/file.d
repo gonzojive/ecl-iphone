@@ -536,10 +536,11 @@ close_stream(cl_object strm, bool abort_flag)        /*  Not used now!  */
 		break;
 #endif
 
+	case smm_two_way:
+		strm->stream.object0 = OBJNULL;
 	case smm_synonym:
 	case smm_broadcast:
 	case smm_concatenated:
-	case smm_two_way:
 	case smm_echo:
 	case smm_string_input:
 	case smm_string_output:
