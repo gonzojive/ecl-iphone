@@ -16,7 +16,9 @@
 
 #include <string.h>
 #include "ecl.h"
+#ifndef _MSC_VER
 #include <math.h>
+#endif
 #include <ctype.h>
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -1316,7 +1318,8 @@ si_write_ugly_object(cl_object x, cl_object stream)
 	case t_foreign:
 		if (ecl_print_readably()) FEprint_not_readable(x);
 		write_str("#<foreign ", stream);
-		/*_write_ugly_object(x->foreign.tag, level);*/
+		si_write_ugly_object(x->foreign.tag, stream);
+		write_ch(' ', stream);
 		write_addr((cl_object)x->foreign.data, stream);
 		write_ch('>', stream);
 		break;
