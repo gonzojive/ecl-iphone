@@ -1664,8 +1664,8 @@ ECL 0.9d
 
   - ECL now builds under Windows using MinGW-32.
 
-  - It is possible now under OS/X to build ECL as a shared library and
-    to compile and load code on the fly.
+  - It is possible now both under OS/X and Microsoft Windows to build
+    ECL as a shared library and to compile and load code on the fly.
 
   - ECL now uses the configuration files of GMP to guess the best
     compilation/linking flags for a given architecture. This is required
