@@ -45,7 +45,7 @@ runtime(void)
 static cl_object Jan1st1970UT;
 
 cl_object
-UTC_time_to_universal_time(int i)
+UTC_time_to_universal_time(cl_fixnum i)
 {
 	return number_plus(bignum1(i), Jan1st1970UT);
 }

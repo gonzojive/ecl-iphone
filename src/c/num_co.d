@@ -735,7 +735,7 @@ cl_decode_float(cl_object x)
 cl_object
 cl_scale_float(cl_object x, cl_object y)
 {
-	int k;
+	cl_fixnum k;
 
 	if (FIXNUMP(y))
 		k = fix(y);

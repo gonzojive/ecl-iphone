@@ -474,6 +474,9 @@ cl_object
 cl_alloc_instance(cl_index slots)
 {
 	cl_object i = cl_alloc_object(t_instance);
+	if (slots >= ECL_SLOTS_LIMIT)
+		FEerror("Limit on instance size exceeded: ~S slots requested.",
+			1, MAKE_FIXNUM(slots));
 	/* INV: slots > 0 */
 	i->instance.slots = (cl_object*)cl_alloc(sizeof(cl_object) * slots);
 	i->instance.length = slots;

@@ -25,8 +25,8 @@ si_specialp(cl_object sym)
 		   Ct : Cnil))
 }
 
-int
-ifloor(int x, int y)
+cl_fixnum
+ifloor(cl_fixnum x, cl_fixnum y)
 {
 	if (y == 0)
 		FEerror("Zero divizor", 0);
@@ -42,8 +42,8 @@ ifloor(int x, int y)
 			return((-x)/(-y));
 }
 
-int
-imod(int x, int y)
+cl_fixnum
+imod(cl_fixnum x, cl_fixnum y)
 {
 	return(x - ifloor(x, y)*y);
 }

@@ -642,6 +642,7 @@ nstring_case(int narg, int (*casefun)(int, bool *), cl_va_list ARGS)
 	cl_object v, strings[narg];
 	char *vself;
 @
+	/* FIXME! We should use cl_va_start() instead of this ugly trick */
 	for (i = 0, l = 0;  i < narg;  i++) {
 		strings[i] = cl_string(cl_va_arg(args));
 		l += strings[i]->string.fillp;

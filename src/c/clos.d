@@ -21,38 +21,6 @@ cl_object class_class, class_object, class_built_in;
 
 /******************************* ------- ******************************/
 
-static cl_object
-make_our_hash_table(cl_object test, int size)
-{
-	enum httest htt;
-	int i;
-	cl_object rehash_size, rehash_threshold, h;
-
-	rehash_size = make_shortfloat(1.5);
-	rehash_threshold = make_shortfloat(0.7);
-
-	if (test == @'eq')
-		htt = htt_eq;
-	else if (test == @'eql')
-		htt = htt_eql;
-	else if (test == @'equal')
-		htt = htt_equal;
-
-	h = cl_alloc_object(t_hashtable);
-	h->hash.data = NULL;	/* for GC sake */
-	h->hash.test = (short)htt;
-	h->hash.size = size;
-	h->hash.rehash_size = rehash_size;
-	h->hash.threshold = rehash_threshold;
-        h->hash.entries = 0;
-	h->hash.data = (struct hashtable_entry *)cl_alloc_align(size * sizeof(struct hashtable_entry), sizeof(int));
-	for(i = 0;  i < size;  i++) {
-		h->hash.data[i].key = OBJNULL;
-		h->hash.data[i].value = OBJNULL;
-	}
-	return(h);
-}
-
 @(defun find-class (name &optional (errorp Ct) env)
 	cl_object class;
 @
@@ -67,7 +35,10 @@ make_our_hash_table(cl_object test, int size)
 void
 init_clos(void)
 {
-	SYM_VAL(@'si::*class-name-hash-table*') = make_our_hash_table(@'eq', 1024);
+	SYM_VAL(@'si::*class-name-hash-table*') =
+	    cl__make_hash_table(@'eq', MAKE_FIXNUM(1024), /* size */
+				make_shortfloat(1.5), /* rehash-size */
+				make_shortfloat(0.7)); /* rehash-threshold */
 
 	/* booting Class CLASS */
 	

@@ -14,23 +14,6 @@
     See file '../Copyright' for full details.
 */
 
-/*		********  WARNING ********
-    Do not insert any data definitions before data_start!
-    Since this is the first file linked, the address of the following
-    variable should correspond to the start of initialized data space.
-    On some systems this is a constant that is independent of the text
-    size for shared executables.  On others, it is a function of the
-    text size. In short, this seems to be the most portable way to
-    discover the start of initialized data space dynamically at runtime,
-    for either shared or unshared executables, on either swapping or
-    virtual systems.  It only requires that the linker allocate objects
-    in the order encountered, a reasonable model for most Unix systems.
-      Fred Fish, UniSoft Systems Inc.  */
-
-/*  On SGI one could use extern _fdata[] instead */
-
-int data_start = (int)&data_start;
-
 /******************************** IMPORTS *****************************/
 
 #include <stdlib.h>

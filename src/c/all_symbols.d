@@ -15,7 +15,7 @@
 cl_index cl_num_symbols_in_core = 0;
 
 @(defun si::mangle-name (symbol &optional as_symbol)
-	int l;
+	cl_index l;
 	char c, *source, *dest;
 	cl_object output;
 	cl_object package;

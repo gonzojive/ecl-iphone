@@ -102,7 +102,7 @@
 		;; *destination* must be RETURN-FIXNUM
 		(if (or bds-lcl (plusp bds-bind))
 		    (let ((lcl (next-lcl)))
-		      (wt-nl "{int ") (wt-lcl lcl) (wt "= ")
+		      (wt-nl "{cl_fixnum ") (wt-lcl lcl) (wt "= ")
 		      (wt-fixnum-loc loc) (wt ";")
 		      (unwind-bds bds-lcl bds-bind stack-pop)
 		      (wt-nl "return(") (wt-lcl lcl) (wt ");}"))

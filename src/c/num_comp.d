@@ -140,7 +140,7 @@ number_equalp(cl_object x, cl_object y)
 int
 number_compare(cl_object x, cl_object y)
 {
-	int ix, iy;
+	cl_fixnum ix, iy;
 	double dx, dy;
 
 	switch (type_of(x)) {

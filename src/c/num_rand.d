@@ -30,7 +30,7 @@ rando(cl_object x, cl_object rs)
 	d = (double)(rs->random.value>>1) / (4294967296.0/2.0);
 	d = number_to_double(x) * d;
 	if (tx == t_fixnum) {
-		z = MAKE_FIXNUM((int)d);
+		z = MAKE_FIXNUM((cl_fixnum)d);
 		return(z);
 	} else if (tx == t_bignum) {
 		z = double_to_integer(d);

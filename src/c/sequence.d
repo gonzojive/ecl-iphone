@@ -28,7 +28,7 @@
 	I know the following name is not good.
 */
 cl_object
-cl_alloc_simple_vector(int l, cl_elttype aet)
+cl_alloc_simple_vector(cl_index l, cl_elttype aet)
 {
 	cl_object x;
 
@@ -43,7 +43,7 @@ cl_alloc_simple_vector(int l, cl_elttype aet)
 }
 
 cl_object
-cl_alloc_simple_bitvector(int l)
+cl_alloc_simple_bitvector(cl_index l)
 {
 	cl_object x;
 
@@ -110,7 +110,7 @@ si_elt_set(cl_object seq, cl_object index, cl_object val)
 cl_object
 elt_set(cl_object seq, cl_fixnum index, cl_object val)
 {
-	int i;
+	cl_fixnum i;
 	cl_object l;
 	cl_object endp_temp;
 
@@ -306,7 +306,7 @@ cl_object
 cl_reverse(cl_object seq)
 {
 	cl_object x, y;
-	int i, j, k;
+	cl_fixnum i, j, k;
 	cl_object endp_temp;
 
 	switch (type_of(seq)) {
@@ -382,7 +382,7 @@ cl_object
 cl_nreverse(cl_object seq)
 {
 	cl_object x, y, z;
-	int i, j, k;
+	cl_fixnum i, j, k;
 	cl_object endp_temp;
 
 	switch (type_of(seq)) {

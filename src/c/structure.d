@@ -82,6 +82,9 @@ structure_to_list(cl_object x)
 	SLOTS(x) = NULL;	/* for GC sake */
 	SLENGTH(x) = --narg;
 	SLOTS(x) = (cl_object *)cl_alloc_align(sizeof(cl_object)*narg, sizeof(cl_object));
+	if (narg >= ECL_SLOTS_LIMIT)
+		FEerror("Limit on structure size exceeded: ~S slots requested.",
+			1, MAKE_FIXNUM(narg));
 	for (i = 0;  i < narg;  i++)
 		SLOT(x, i) = cl_va_arg(args);
 	@(return x)

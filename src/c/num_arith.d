@@ -43,7 +43,7 @@ fixnum_times(cl_fixnum i, cl_fixnum j)
 }
 
 static cl_object
-big_times_fix(cl_object b, int i)
+big_times_fix(cl_object b, cl_fixnum i)
 {
 	cl_object z;
 
@@ -202,19 +202,19 @@ number_times(cl_object x, cl_object y)
 cl_object
 number_plus(cl_object x, cl_object y)
 {
-	int i, j;
+	cl_fixnum i, j;
 	cl_object z, z1;
 	
 	switch (type_of(x)) {
 	case t_fixnum:
 	        switch (type_of(y)) {
 		case t_fixnum: {
-			int k = fix(x) + fix(y);
+			cl_fixnum k = fix(x) + fix(y);
 			if (k >= MOST_NEGATIVE_FIXNUM && k <= MOST_POSITIVE_FIXNUM)
 			  return(MAKE_FIXNUM(k));
 			else
 			  return(bignum1(k));
-		      }
+		}
 		case t_bignum:
 			if ((i = fix(x)) == 0)
 				return(y);
@@ -357,7 +357,7 @@ number_plus(cl_object x, cl_object y)
 cl_object
 number_minus(cl_object x, cl_object y)
 {
-	int i, j, k;
+	cl_fixnum i, j, k;
 	cl_object z, z1;
 	
 	switch (type_of(x)) {
@@ -523,7 +523,7 @@ number_negate(cl_object x)
 
 	switch (type_of(x)) {
 	case t_fixnum: {
-		int k = fix(x);
+		cl_fixnum k = fix(x);
 		/* -MOST_NEGATIVE_FIXNUM > MOST_POSITIVE_FIXNUM */
 		if (k == MOST_NEGATIVE_FIXNUM)
 			return(bignum1(- MOST_NEGATIVE_FIXNUM));

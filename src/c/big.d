@@ -130,7 +130,7 @@ big_alloc(int size)
 }
 
 cl_object
-bignum1(int val)
+bignum1(cl_fixnum val)
 {
   volatile cl_object z = cl_alloc_object(t_bignum);
   mpz_init_set_si(z->big.big_num, val);

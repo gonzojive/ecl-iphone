@@ -140,7 +140,7 @@ extern cl_object big_register2_get(void);
 extern cl_object big_register_copy(cl_object x);
 extern cl_object big_register_normalize(cl_object x);
 extern void big_register_free(cl_object x);
-extern cl_object bignum1(int val);
+extern cl_object bignum1(cl_fixnum val);
 extern cl_object bignum2(mp_limb_t hi, mp_limb_t lo);
 extern cl_object big_set_fixnum(cl_object x, cl_object fix);
 extern cl_object big_copy(cl_object x);
@@ -1068,8 +1068,8 @@ extern cl_object cl_reverse(cl_object x);
 extern cl_object cl_nreverse(cl_object x);
 extern cl_object cl_subseq _ARGS((int narg, cl_object sequence, cl_object start, ...));
 
-extern cl_object cl_alloc_simple_vector(int l, cl_elttype aet);
-extern cl_object cl_alloc_simple_bitvector(int l);
+extern cl_object cl_alloc_simple_vector(cl_index l, cl_elttype aet);
+extern cl_object cl_alloc_simple_bitvector(cl_index l);
 extern cl_object elt(cl_object seq, cl_fixnum index);
 extern cl_object elt_set(cl_object seq, cl_fixnum index, cl_object val);
 extern cl_fixnum length(cl_object x);
@@ -1260,7 +1260,7 @@ extern cl_object cl_get_internal_real_time();
 extern cl_object si_get_local_time_zone();
 extern cl_object si_daylight_saving_time_p _ARGS((int narg, ...));
 
-extern cl_object UTC_time_to_universal_time(int i);
+extern cl_object UTC_time_to_universal_time(cl_fixnum i);
 extern void init_unixtime(void);
 
 

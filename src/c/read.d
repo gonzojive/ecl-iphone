@@ -553,7 +553,8 @@ static cl_object
 dispatch_reader_fun(cl_object in, cl_object dc)
 {
 	cl_object x, y;
-	int i, d, c;
+	cl_fixnum i;
+	int d, c;
 	cl_object rtbl = ecl_current_readtable();
 
 	if (rtbl->readtable.table[char_code(dc)].dispatch_table == NULL)
@@ -1528,13 +1529,14 @@ CANNOT_PARSE:
 cl_object
 si_read_bytes(cl_object stream, cl_object string, cl_object start, cl_object end)
 {
-	int is, ie, c; FILE *fp;
+	cl_fixnum is, ie, c;
+	FILE *fp;
 
 	assert_type_stream(stream);
 	if (stream->stream.mode == smm_closed)
 	  FEclosed_stream(stream);
 
-	/* FIXME! this may fail! */
+	/* FIXME! this may fail! We have to check the signs of is, ie, etc.*/
         is = fix(start);
 	ie = fix(end);
 	fp = stream->stream.file;
@@ -1853,7 +1855,7 @@ read_VV(cl_object block, void *entry)
 {
 	typedef void (*entry_point_ptr)(cl_object);
 	volatile cl_object x;
-	int i, len;
+	cl_index i, len;
 	cl_object in;
 	entry_point_ptr entry_point = (entry_point_ptr)entry;
 	cl_object *VV;

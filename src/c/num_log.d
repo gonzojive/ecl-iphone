@@ -313,7 +313,7 @@ ecl_ash(cl_object x, cl_fixnum w)
 }
 
 static int
-int_bit_length(int i)
+int_bit_length(cl_fixnum i)
 {
 	register int count, j;
 
@@ -424,14 +424,11 @@ cl_boole(cl_object o, cl_object x, cl_object y)
 cl_object
 cl_logbitp(cl_object p, cl_object x)
 {
-	bool	i;
-	int	n;
+	bool i;
 
 	assert_type_integer(x);
 	if (FIXNUMP(p)) {
 		cl_fixnum n = fixnnint(p);
-		if (n < 0)
-			FEtype_error_index(p);
 		if (FIXNUMP(x))
 			i = ((fix(x) >> n) & 1);
 		else
@@ -493,7 +490,8 @@ cl_logcount(cl_object x)
 cl_object
 cl_integer_length(cl_object x)
 {
-	int	count, i;
+	int count;
+	cl_fixnum i;
 
 	switch (type_of(x)) {
 	case t_fixnum:
@@ -501,6 +499,7 @@ cl_integer_length(cl_object x)
 		count = int_bit_length((i < 0) ? ~i : i);
 		break;
 	case t_bignum: {
+		/* FIXME! We should not be using internals of GMP here */
 	  	int last = abs(x->big.big_size) - 1;
 		i = x->big.big_limbs[last];
 		count = last * (sizeof(mp_limb_t) * 8) + int_bit_length(i);

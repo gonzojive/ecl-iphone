@@ -561,7 +561,7 @@
 
 (defun rep-type (type)
   (case type
-    (FIXNUM "int ")
+    (FIXNUM "cl_fixnum ")
     (CHARACTER "unsigned char ")
     (SHORT-FLOAT "float ")
     (LONG-FLOAT "double ")

@@ -60,10 +60,12 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #define	ATOTLIM		16*1024*1024	/*  array total limit		*/
 
 /*
- * Function limits
+ * Function limits.
+ *
+ * In general, any of these limits must fit in a "signed int".
  */
 /*	Maximum number of function arguments 				*/
-#define CALL_ARGUMENTS_LIMIT @CL_FIXNUM_MAX@
+#define CALL_ARGUMENTS_LIMIT 65536
 
 /*	Maximum number of required arguments				*/
 #define LAMBDA_PARAMETERS_LIMIT 64
@@ -75,6 +77,13 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #define ecl_setjmp	@ecl_setjmp@
 #define ecl_longjmp	@ecl_longjmp@
 
+/*
+ * Structure/Instance limits. The index to a slot must fit in the
+ * "int" type. We also require ECL_SLOTS_LIMIT <= CALL_ARGUMENTS_LIMIT
+ * because constructors typically require as many arguments as slots,
+ * or more.
+ */
+#define ECL_SLOTS_LIMIT	32768
 
 /* -CUT-: Everything below this mark will not be installed		*/
 /* -------------------------------------------------------------------- *

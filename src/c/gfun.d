@@ -75,7 +75,7 @@ si_gfun_method_ht_set(cl_object x, cl_object y)
 cl_object
 si_gfun_spec_how_ref(cl_object x, cl_object y)
 {
-	int i;
+	cl_fixnum i;
 
 	if (type_of(x) != t_gfun)
 		FEwrong_type_argument(@'dispatch-function', x);

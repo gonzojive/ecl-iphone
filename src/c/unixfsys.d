@@ -501,7 +501,7 @@ actual_directory(cl_object namestring, cl_object mask, bool all)
 	  if ((all || t == FILE_REGULAR) &&
 	      string_match(dir.d_name, mask->string.self))
 	    {
-	      int e = strlen(dir.d_name);
+	      cl_index e = strlen(dir.d_name);
 	      cl_object file = parse_namestring(dir.d_name, 0, e, &e);
 	      file = merge_pathnames(dir_path, file,Cnil);
 	      *directory = CONS(file, Cnil);
@@ -580,7 +580,7 @@ cl_object
 si_mkdir(cl_object directory, cl_object mode)
 {
 	cl_object filename;
-	int modeint;
+	cl_index modeint;
 
 	/* INV: coerce_to_filename() checks types */
 	filename = coerce_to_filename(directory);

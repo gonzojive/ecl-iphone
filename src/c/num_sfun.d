@@ -41,9 +41,7 @@ cl_object imag_unit, minus_imag_unit, imag_two;
 cl_fixnum
 fixnum_expt(cl_fixnum x, cl_fixnum y)
 {
-	int z;
-
-	z = 1;
+	cl_fixnum z = 1;
 	while (y > 0)
 		if (y%2 == 0) {
 			x *= x;

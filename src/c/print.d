@@ -87,7 +87,7 @@ static cl_fixnum CIRCLEcounter = -2;
 static cl_object no_stream;
 
 static void flush_queue (bool force);
-static void write_decimal1 (int i);
+static void write_decimal1 (cl_fixnum i);
 static void travel_push_object (cl_object x);
 static cl_fixnum search_print_circle(cl_object x);
 static bool do_print_circle(cl_fixnum mark);
@@ -267,7 +267,7 @@ write_str(char *s)
 }
 
 static void
-write_decimal(int i)
+write_decimal(cl_fixnum i)
 {
 	if (i == 0) {
 		write_ch('0');
@@ -277,7 +277,7 @@ write_decimal(int i)
 }
 
 static void
-write_decimal1(int i)
+write_decimal1(cl_fixnum i)
 {
 	if (i == 0)
 		return;
@@ -464,8 +464,6 @@ call_print_object(cl_object x, int level)
 call_structure_print_function(cl_object x, int level)
 #endif
 {
-	int i;
-
 	bool e = PRINTescape;
 	bool r = PRINTradix;
 	int b = PRINTbase;
@@ -548,13 +546,15 @@ call_structure_print_function(cl_object x, int level)
 static void
 write_fixnum(cl_fixnum i)
 {
-	short digits[16];
+	/* The maximum number of digits is achieved for base 2 and it
+	   is always < FIXNUM_BITS, since we use at least one bit for
+	   tagging */
+	short digits[FIXNUM_BITS];
 	int j;
-	for (j = 0;  j < 16 && i != 0;  i /= PRINTbase)
-	  digits[j++] = digit_weight(i%PRINTbase, PRINTbase);
-	if (j == 16) write_fixnum(i);
+	for (j = 0;  j < FIXNUM_BITS && i != 0;  i /= PRINTbase)
+		digits[j++] = digit_weight(i%PRINTbase, PRINTbase);
 	while (j-- > 0)
-	  write_ch(digits[j]);
+		write_ch(digits[j]);
 }
 
 static void
@@ -800,7 +800,7 @@ _write_object(cl_object x, int level)
 		return;
 
 	case t_array: {
-		int subscripts[ARANKLIM];
+		cl_index subscripts[ARANKLIM];
 		cl_index n, m, k, i;
 
 		if (!PRINTarray) {
@@ -1554,8 +1554,9 @@ cl_write_byte(cl_object integer, cl_object binary_output_stream)
 cl_object
 si_write_bytes(cl_object stream, cl_object string, cl_object start, cl_object end)
 {
-        cl_index is, ie; FILE *fp;
-	int written, sofarwritten, towrite;
+	FILE *fp;
+        cl_index is, ie;
+	cl_fixnum written, sofarwritten, towrite;
 
 	assert_type_stream(stream);
 	if (stream->stream.mode == smm_closed)

@@ -160,7 +160,7 @@
 	(FIXNUM-VALUE
 	 (wt (second loc)))
 	((INLINE-SHORT-FLOAT INLINE-LONG-FLOAT)
-	 (wt "((int)(")
+	 (wt "((cl_fixnum)(")
 	 (wt-inline-loc (third loc) (fourth loc))
 	 (wt "))"))
 	(t (wt "fix(" loc ")")))

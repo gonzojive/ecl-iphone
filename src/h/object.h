@@ -293,8 +293,8 @@ struct stream {
 	FILE	*file;		/*  file pointer  */
 	cl_object object0;	/*  some object  */
 	cl_object object1;	/*  some object */
-	int	int0;		/*  some int  */
-	int	int1;		/*  some int  */
+	cl_fixnum int0;		/*  some int  */
+	cl_fixnum int1;		/*  some int  */
 #if !defined(GBC_BOEHM)
 	char	*buffer;	/*  file buffer  */
 #endif
