@@ -563,7 +563,9 @@ round1(cl_object x)
 		VALUES(1) = MAKE_FIXNUM(0);
 		break;
 	case t_ratio:
-		return round2(x->ratio.num, x->ratio.den);
+		VALUES(0) = round2(x->ratio.num, x->ratio.den);
+		VALUES(1) = make_ratio(VALUES(1), x->ratio.den);
+		break;
 	case t_shortfloat: {
 		float d = sf(x);
 		cl_object q = float_to_integer(d + (d>=0? 0.5 : -0.5));
@@ -624,11 +626,16 @@ round2(cl_object x, cl_object y)
 	case t_ratio: {
 		cl_object q1 = integer_divide(q->ratio.num, q->ratio.den);
 		cl_object r = number_minus(q, q1);
-		int c = number_compare(r, cl_core.plus_half);
-		if (c > 0 || (c == 0 && number_oddp(q1))) {
-			q1 = one_plus(q1);
-		} else if (c < 0 || (c == 0 && number_oddp(q1))) {
-			q1 = one_minus(q1);
+		if (number_minusp(r)) {
+			int c = number_compare(cl_core.minus_half, r);
+			if (c > 0 || (c == 0 && number_oddp(q1))) {
+				q1 = one_minus(q1);
+			}
+		} else {
+			int c = number_compare(r, cl_core.plus_half);
+			if (c > 0 || (c == 0 && number_oddp(q1))) {
+				q1 = one_plus(q1);
+			}
 		}
 		VALUES(0) = q1;
 		VALUES(1) = number_remainder(x, y, q1);
