@@ -257,7 +257,8 @@ cl_object comma_reader(cl_object in, cl_object c)
 
 	if (backq_level <= 0)
 		FEerror("A comma has appeared out of a backquote.", 0);
-	c = cl_peek_char(0); /* Read character but skip spaces & complain at EOF */
+	/* Read character but skip spaces & complain at EOF */
+	c = cl_peek_char(2,Ct,in);
 	if (c == CODE_CHAR('@@')) {
 		x = @'si::,@';
 		read_char(in);

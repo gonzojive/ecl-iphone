@@ -1407,10 +1407,13 @@ do_read_delimited_list(cl_object d, cl_object strm)
 			break;
 		}
 	}
-#ifdef CRLF
+#ifdef ECL_NEWLINE_IS_CRLF	/* From \r\n, ignore \r */
 	if (cl_token->string.fillp > 0 &&
 	    cl_token->string.self[cl_token->string.fillp-1] == '\r')
 		cl_token->string.fillp--;
+#endif
+#ifdef ECL_NEWLINE_IS_LFCR	/* From \n\r, ignore \r */
+	cl_read_char(strm);
 #endif
 	@(return copy_simple_string(cl_token) eof)
 @)

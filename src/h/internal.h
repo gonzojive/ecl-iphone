@@ -48,7 +48,6 @@ extern const struct {
 #define OPEN_RW	"w+b"
 #define OPEN_A	"ab"
 #define OPEN_RA	"a+b"
-#define CRLF
 
 /* print.d */
 
