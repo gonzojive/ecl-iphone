@@ -1970,13 +1970,15 @@ compile_form(cl_object stmt, int flags) {
 		stmt = CAR(stmt);
 		goto QUOTED;
 	}
-	if (ENV->stepping)
-		asm_op2c(OP_STEPIN, stmt);
 	for (l = database; l->symbol != OBJNULL; l++)
 		if (l->symbol == function) {
 			ENV->lexical_level += l->lexical_increment;
+			if (ENV->stepping && function != @'function' &&
+			    ENV->lexical_level)
+				asm_op2c(OP_STEPIN, stmt);
 			new_flags = (*(l->compiler))(CDR(stmt), flags);
-			if (ENV->stepping)
+			if (ENV->stepping && function != @'function' &&
+			    ENV->lexical_level)
 				asm_op(OP_STEPOUT);
 			goto OUTPUT;
 		}
@@ -1997,6 +1999,8 @@ for special form ~S.", 1, function);
 	/*
 	 * Finally resort to ordinary function calls.
 	 */
+	if (ENV->stepping)
+		asm_op2c(OP_STEPIN, stmt);
 	new_flags = c_call(stmt, flags);
  OUTPUT:
 	/*
@@ -2030,8 +2034,12 @@ static int
 compile_body(cl_object body, int flags) {
 	if (ENV->lexical_level == 0 && !endp(body)) {
 		while (!endp(CDR(body))) {
-			cl_index handle = asm_begin();
+			struct cl_compiler_env *old_c_env = ENV;
+			struct cl_compiler_env new_c_env = *old_c_env;
+			cl_index handle;
 			cl_object bytecodes;
+			ENV = &new_c_env;
+			handle = asm_begin();
 			compile_form(CAR(body), FLAG_VALUES);
 			asm_op(OP_EXIT);
 			VALUES(0) = Cnil;
@@ -2039,6 +2047,7 @@ compile_body(cl_object body, int flags) {
 			bytecodes = asm_end(handle);
 			interpret(bytecodes, bytecodes->bytecodes.code);
 			asm_clear(handle);
+			ENV = old_c_env;
 #ifdef GBC_BOEHM
 			GC_free(bytecodes->bytecodes.code);
 			GC_free(bytecodes->bytecodes.data);

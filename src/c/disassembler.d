@@ -686,7 +686,8 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 				goto NOARG;
 	case OP_PUSHNIL:	string = "PUSH\t'NIL";
 		    		goto NOARG;
-	case OP_STEPIN:		string = "STEP\tIN";
+	case OP_STEPIN:		string = "STEP\tIN,";
+				o = GET_DATA(vector, bytecodes);
 				goto ARG;
 	case OP_STEPOUT:	string = "STEP\tOUT";
 				goto NOARG;

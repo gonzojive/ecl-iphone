@@ -1310,6 +1310,7 @@ interpret(cl_object bytecodes, void *pc) {
 	case OP_STEPIN: {
 		cl_object form = GET_DATA(vector, bytecodes);
 		cl_object a = SYM_VAL(@'si::*step-action*');
+		int n = cl_stack_push_values();
 		if (a == Ct) {
 			/* We are stepping in, but must first ask the user
 			 * what to do. */
@@ -1326,6 +1327,7 @@ interpret(cl_object bytecodes, void *pc) {
 			/* We are not inside a STEP form. This should
 			 * actually never happen. */
 		}
+		cl_stack_pop_values(n);
 		break;
 	}
 	case OP_STEPCALL: {
@@ -1341,6 +1343,7 @@ interpret(cl_object bytecodes, void *pc) {
 	}
 	case OP_STEPOUT: {
 		cl_object a = SYM_VAL(@'si::*step-action*');
+		int n = cl_stack_push_values();
 		if (a == Ct) {
 			/* We exit one stepping level */
 			ECL_SETQ(@'si::*step-level*',
@@ -1354,6 +1357,7 @@ interpret(cl_object bytecodes, void *pc) {
 		} else {
 			/* Not stepping, nothing to be done. */
 		}
+		cl_stack_pop_values(n);
 		break;
 	}
 	default:
