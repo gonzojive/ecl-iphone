@@ -34,6 +34,8 @@
 (print *features*)
 #+(or (and wants-clos ecl-min) cross)
 (load "clos/load.lsp")
+#+cmu-format
+(load "src:lsp;format.lsp" :verbose nil)
 
 ;;;
 ;;; * Load the compiler.
