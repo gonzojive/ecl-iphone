@@ -38,7 +38,7 @@ cl_object tk_package;
 #define	INHERITED	3
 
 cl_object ecl_package_list = Cnil;
-static uninterned_list = Cnil;
+static cl_object uninterned_list = Cnil;
 
 static void
 FEpackage_error(char *message, cl_object package, int narg, ...)
