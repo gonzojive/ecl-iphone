@@ -53,70 +53,76 @@ dnl 	[--enable-tk            Include Tk.],
 dnl 	tk="$enable_tk")
 AC_ARG_ENABLE(boehm,
 	AS_HELP_STRING([--enable-boehm],
-		       [use the Boehm-Weiser garbage collector (default is YES)]),
+		       [use the Boehm-Weiser garbage collector (default=YES)]),
 	[boehm="${enableval}"], [boehm=yes])
 AC_ARG_ENABLE(local-boehm,
-	AS_HELP_STRING([--enable-local-boehm],
-		       [use already installed Boehm GC library (default is NO)]),
-	[local_boehm="${enableval}" boehm="yes"], [local_boehm=no])
+	AS_HELP_STRING([--enable-local-boehm], [Deprecated! See --with-system-boehm]),
+	[system_boehm="${enableval}" boehm="yes"])
 AC_ARG_ENABLE(local-gmp,
-	AS_HELP_STRING([--enable-local-gmp],
-		       [use already installed GMP library (default is NO)]),
-	[local_gmp="${enableval}"], [local_gmp=no])
+	AS_HELP_STRING([--enable-local-gmp], [Deprecated! See --with-system-gmp]),
+	[system_gmp="${enableval}"])
 dnl AC_ARG_ENABLE(locative,
 dnl 	[--enable-locative      Include locative support.],
 dnl 	locative="$enable_locative")
 AC_ARG_ENABLE(opcode8,
 	AS_HELP_STRING([--enable-opcode8],
-		       [interpreter uses 8-bit codes (default is NO, only works on Intel)]),
+		       [interpreter uses 8-bit codes (default=NO, only works on Intel)]),
 	[opcode8=${enableval}], [opcode8=no])
 dnl AC_ARG_ENABLE(runtime,
 dnl 	[--enable-runtime	Build no compiler.],
 dnl 	runtime="$enable_runtime")
 AC_ARG_ENABLE(shared,
 	AS_HELP_STRING([--enable-shared],
-		       [enable loading compiled files (default is YES)]),
+		       [enable loading compiled files (default=YES)]),
 	[shared="$enable_shared"], [shared=yes])
 AC_ARG_ENABLE(threads,
 	AS_HELP_STRING([--enable-threads],
-		       [support for native threads (default is NO).]),
+		       [support for native threads (default=NO).]),
 	[threads="$enable_threads"])
 
 AC_ARG_WITH(asdf,
 	AS_HELP_STRING([--with-asdf],
-		       [include ASDF building facility (default is YES)]),
+		       [include ASDF building facility (default=YES)]),
 	[asdf="${withval}"],[asdf=yes])
 AC_ARG_WITH(cross_config,
 	AS_HELP_STRING([--with-config-file=f],
 		       [supply configuration for a cross compiler]),
 	[cross_config="${withval}"], [cross_config="`pwd`/cross_config"])
 dnl AC_ARG_WITH(oldloop,
-dnl	AS_HELP_STRING([--with-oldloop],[use the old MIT LOOP macro (default is NO)]),
+dnl	AS_HELP_STRING([--with-oldloop],[use the old MIT LOOP macro (default=NO)]),
 dnl	oldloop="yes")
 AC_ARG_WITH(cmuformat,
 	AS_HELP_STRING([--with-cmuformat],
-		       [use CMUCL's FORMAT routine (default is YES)]),
+		       [use CMUCL's FORMAT routine (default=YES)]),
 	[cmuformat="${withval}"], [cmuformat=yes])
 AC_ARG_WITH(clos-streams,
 	AS_HELP_STRING([--with-clos-streams],
-		       [user defined stream objects (default is YES)]),
+		       [user defined stream objects (default=YES)]),
 	[closstreams="${withval}"], [closstreams=yes])
 AC_ARG_WITH(clx,
 	AS_HELP_STRING([--with-clx],
-		       [include CLX library (default is NO)]),
+		       [include CLX library (default=NO)]),
 	[clx="${withval}"],[clx=no])
 AC_ARG_WITH(cxx,
 	AS_HELP_STRING([--with-cxx],
-		       [build ECL using C++ compiler (default is NO)]),
+		       [build ECL using C++ compiler (default=NO)]),
 	[usecxx="${withval}"], [usecxx=no])
 AC_ARG_WITH(gmp,
 	AS_HELP_STRING([--with-gmp=args],
 		       [supply arguments for configuring GMP library]),
-	[gmp_flags=${withval}; local_gmp=no], [gmp_flags=""])
+	[gmp_flags=${withval}; system_gmp=no], [gmp_flags=""])
 AC_ARG_WITH(tcp,
 	AS_HELP_STRING([--with-tcp],
-		       [include socket interface (default is NO)]),
+		       [include socket interface (default=NO)]),
 	[tcp="${withval}"],[tcp=no])
+AC_ARG_WITH(system-boehm,
+	AS_HELP_STRING([--with-system-boehm],
+		       [use already installed Boehm GC library (default=NO)]),
+	[system_boehm="${enableval}" boehm="yes"], [system_boehm="${system_boehm:-no}"])
+AC_ARG_WITH(system-gmp,
+	AS_HELP_STRING([--with-system-gmp],
+		       [use already installed GMP library (default=NO)]),
+	[system_gmp="${enableval}"], [system_gmp="${system_gmp:-no}"])
 
 ### ----------------------------------------------------------------------
 ###           Checks for programs
@@ -204,7 +210,7 @@ ECL_MODULES=""
 if test ${boehm} = "no" ; then
   EXTRA_OBJS="${EXTRA_OBJS} alloc.${OBJEXT} gbc.${OBJEXT}"
 else
-  if test ${local_boehm} = "no"; then
+  if test ${system_boehm} = "no"; then
     SUBDIR="${SUBDIR} gc"
     BOEHM_HEADERS="-I../include"
     STATICLIBS="-leclgc"
@@ -225,7 +231,7 @@ else
   LSP_LIBRARIES="${LIBPREFIX}ecl.${LIBEXT}"
   LDRPATH='~*'
 fi
-if test ${local_gmp} = "no" ; then
+if test ${system_gmp} = "no" ; then
   SUBDIR="${SUBDIR} gmp"
   STATICLIBS="-leclgmp ${STATICLIBS}"
   if test ${shared} = "no"; then
@@ -372,7 +378,7 @@ dnl ---------------------------------------------------------------------
 dnl		GNU multiprecision library
 dnl
 AC_MSG_CHECKING(for gmp...)
-if test ${local_gmp} = "yes" ; then
+if test ${system_gmp} = "yes" ; then
   AC_MSG_RESULT(already installed)
 else
   AC_MSG_RESULT(configuring local copy)
@@ -390,7 +396,7 @@ dnl
 AC_MSG_CHECKING(for Boehm-Weiser gc...)
 if test ${boehm} = "no"; then
   AC_MSG_RESULT(use small collector instead)
-elif test "${local_boehm}" = "no" ; then
+elif test "${system_boehm}" = "no" ; then
   AC_MSG_RESULT(configuring local copy)
   test -d gc && rm -rf gc
   if mkdir gc; then

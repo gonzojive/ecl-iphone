@@ -853,27 +853,27 @@ if test -n "$ac_init_help"; then
 Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --enable-boehm          use the Boehm-Weiser garbage collector (default is
-                          YES)
-  --enable-local-boehm    use already installed Boehm GC library (default is
-                          NO)
-  --enable-local-gmp      use already installed GMP library (default is NO)
-  --enable-opcode8        interpreter uses 8-bit codes (default is NO, only
-                          works on Intel)
-  --enable-shared         enable loading compiled files (default is YES)
-  --enable-threads        support for native threads (default is NO).
+  --enable-boehm          use the Boehm-Weiser garbage collector (default=YES)
+  --enable-local-boehm    Deprecated! See --with-system-boehm
+  --enable-local-gmp      Deprecated! See --with-system-gmp
+  --enable-opcode8        interpreter uses 8-bit codes (default=NO, only works
+                          on Intel)
+  --enable-shared         enable loading compiled files (default=YES)
+  --enable-threads        support for native threads (default=NO).
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-asdf             include ASDF building facility (default is YES)
+  --with-asdf             include ASDF building facility (default=YES)
   --with-config-file=f    supply configuration for a cross compiler
-  --with-cmuformat        use CMUCL's FORMAT routine (default is YES)
-  --with-clos-streams     user defined stream objects (default is YES)
-  --with-clx              include CLX library (default is NO)
-  --with-cxx              build ECL using C++ compiler (default is NO)
+  --with-cmuformat        use CMUCL's FORMAT routine (default=YES)
+  --with-clos-streams     user defined stream objects (default=YES)
+  --with-clx              include CLX library (default=NO)
+  --with-cxx              build ECL using C++ compiler (default=NO)
   --with-gmp=args         supply arguments for configuring GMP library
-  --with-tcp              include socket interface (default is NO)
+  --with-tcp              include socket interface (default=NO)
+  --with-system-boehm     use already installed Boehm GC library (default=NO)
+  --with-system-gmp       use already installed GMP library (default=NO)
 
 Some influential environment variables:
   CC          C compiler command
@@ -1438,16 +1438,12 @@ fi;
 # Check whether --enable-local-boehm or --disable-local-boehm was given.
 if test "${enable_local_boehm+set}" = set; then
   enableval="$enable_local_boehm"
-  local_boehm="${enableval}" boehm="yes"
-else
-  local_boehm=no
+  system_boehm="${enableval}" boehm="yes"
 fi;
 # Check whether --enable-local-gmp or --disable-local-gmp was given.
 if test "${enable_local_gmp+set}" = set; then
   enableval="$enable_local_gmp"
-  local_gmp="${enableval}"
-else
-  local_gmp=no
+  system_gmp="${enableval}"
 fi;
 # Check whether --enable-opcode8 or --disable-opcode8 was given.
 if test "${enable_opcode8+set}" = set; then
@@ -1521,7 +1517,7 @@ fi;
 # Check whether --with-gmp or --without-gmp was given.
 if test "${with_gmp+set}" = set; then
   withval="$with_gmp"
-  gmp_flags=${withval}; local_gmp=no
+  gmp_flags=${withval}; system_gmp=no
 else
   gmp_flags=""
 fi;
@@ -1532,6 +1528,22 @@ if test "${with_tcp+set}" = set; then
   tcp="${withval}"
 else
   tcp=no
+fi;
+
+# Check whether --with-system-boehm or --without-system-boehm was given.
+if test "${with_system_boehm+set}" = set; then
+  withval="$with_system_boehm"
+  system_boehm="${enableval}" boehm="yes"
+else
+  system_boehm="${system_boehm:-no}"
+fi;
+
+# Check whether --with-system-gmp or --without-system-gmp was given.
+if test "${with_system_gmp+set}" = set; then
+  withval="$with_system_gmp"
+  system_gmp="${enableval}"
+else
+  system_gmp="${system_gmp:-no}"
 fi;
 
 ### ----------------------------------------------------------------------
@@ -4592,7 +4604,7 @@ ECL_MODULES=""
 if test ${boehm} = "no" ; then
   EXTRA_OBJS="${EXTRA_OBJS} alloc.${OBJEXT} gbc.${OBJEXT}"
 else
-  if test ${local_boehm} = "no"; then
+  if test ${system_boehm} = "no"; then
     SUBDIR="${SUBDIR} gc"
     BOEHM_HEADERS="-I../include"
     STATICLIBS="-leclgc"
@@ -4619,7 +4631,7 @@ else
   LSP_LIBRARIES="${LIBPREFIX}ecl.${LIBEXT}"
   LDRPATH='~*'
 fi
-if test ${local_gmp} = "no" ; then
+if test ${system_gmp} = "no" ; then
   SUBDIR="${SUBDIR} gmp"
   STATICLIBS="-leclgmp ${STATICLIBS}"
   if test ${shared} = "no"; then
@@ -5134,7 +5146,7 @@ esac
 
 echo "$as_me:$LINENO: checking for gmp..." >&5
 echo $ECHO_N "checking for gmp...... $ECHO_C" >&6
-if test ${local_gmp} = "yes" ; then
+if test ${system_gmp} = "yes" ; then
   echo "$as_me:$LINENO: result: already installed" >&5
 echo "${ECHO_T}already installed" >&6
 else
@@ -5153,7 +5165,7 @@ echo $ECHO_N "checking for Boehm-Weiser gc...... $ECHO_C" >&6
 if test ${boehm} = "no"; then
   echo "$as_me:$LINENO: result: use small collector instead" >&5
 echo "${ECHO_T}use small collector instead" >&6
-elif test "${local_boehm}" = "no" ; then
+elif test "${system_boehm}" = "no" ; then
   echo "$as_me:$LINENO: result: configuring local copy" >&5
 echo "${ECHO_T}configuring local copy" >&6
   test -d gc && rm -rf gc
