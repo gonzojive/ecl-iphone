@@ -16,14 +16,24 @@ standalone executables.
 <p><a href="http://ecls.sourceforge.net">ECLS</a> is distributed under the <a
 href="#copyright">GNU Library General Public License (GNU LGPL)</a>.
 
+<h2>ECLS vs other implementations</h2>
+
 <p><a href="http://ecls.sourceforge.net">ECLS</a> is not a brand new
 product. It has evolved from the EcoLisp implementation by Giusseppe Attardi
 which in turn was based on the Kyoto Common-Lisp implementation done by Taiichi
 Yuasa and Masami Hagiya, with contributions from several people. Nevertheless
 the program has been seriously modified and the current code base bears little
 resemblance to the previous implementations and the author of those
-implementations should not be blamed for the faults of thi <a
+implementations should not be blamed for the faults of <a
 href="http://ecls.sourceforge.net">ECLS</a>.
+
+<p>I have received several questions concerning why I work on ECLS
+instead of improving GCL. The main reason for this is the simplicity
+of the code base. The EcoLisp implementation on which ECLS is based
+already was Cltl2 compliant. It had low level support for CLOS, a LOOP
+package, DEFPACKAGE and the code in general was much more readable and
+easier to maintain. It would be a huge task to get all these
+improvements back and the code I put into ECLS back into GCL.</p>
 
 <h2>Project goals</h2>
 
@@ -76,7 +86,7 @@ href="http://ecls.sourceforge.net">ECLS</a> to 64-bit environments.
 
 <p><a href="http://ecls.sourceforge.net">ECLS</a> can translate lisp code to C
 code that can be dynamically loaded or linked to the runtime to produce a
-standalone executable. Currently this process relies on GCC as a targed
+standalone executable. Currently this process relies on GCC as a target
 platform, but work is in progress to remove GCC dependencies.
 
 <li><b>Better garbage collection.</b>
