@@ -4220,7 +4220,7 @@ if test "x$exec_prefix" = "xNONE"; then exec_prefix=${prefix}; fi
 bindir="${exec_prefix}/bin"
 libdir="${exec_prefix}/lib/ecl"
 includedir="${exec_prefix}/lib/ecl/h"
-mandir="${prefix}/man/man1"
+mandir="${prefix}/man"
 infodir="${prefix}/info"
 TARGETS="ecl${EXEEXT}"
 LIBRARIES=""
@@ -5968,7 +5968,7 @@ else
   echo "$as_me:$LINENO: result: already installed" >&5
 echo "${ECHO_T}already installed" >&6
 fi
-                                                                                                                                                                                              ac_config_files="$ac_config_files compile.lsp bare.lsp lsp/config.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp ../Makefile Makefile c/Makefile doc/Makefile tk/Makefile clx/defsys.lsp tests/Makefile ansi-tests/Makefile gabriel/Makefile lsp/defsys.lsp cmp/defsys.lsp clos/defsys.lsp"
+                                                                                                                                                                ac_config_files="$ac_config_files compile.lsp bare.lsp lsp/config.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp ../Makefile Makefile c/Makefile doc/Makefile doc/ecl.man tk/Makefile tests/Makefile ansi-tests/Makefile gabriel/Makefile"
 
           ac_config_files="$ac_config_files ecl-config:util/ecl-config"
 
@@ -6511,14 +6511,11 @@ do
   "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile" ;;
   "c/Makefile" ) CONFIG_FILES="$CONFIG_FILES c/Makefile" ;;
   "doc/Makefile" ) CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;
+  "doc/ecl.man" ) CONFIG_FILES="$CONFIG_FILES doc/ecl.man" ;;
   "tk/Makefile" ) CONFIG_FILES="$CONFIG_FILES tk/Makefile" ;;
-  "clx/defsys.lsp" ) CONFIG_FILES="$CONFIG_FILES clx/defsys.lsp" ;;
   "tests/Makefile" ) CONFIG_FILES="$CONFIG_FILES tests/Makefile" ;;
   "ansi-tests/Makefile" ) CONFIG_FILES="$CONFIG_FILES ansi-tests/Makefile" ;;
   "gabriel/Makefile" ) CONFIG_FILES="$CONFIG_FILES gabriel/Makefile" ;;
-  "lsp/defsys.lsp" ) CONFIG_FILES="$CONFIG_FILES lsp/defsys.lsp" ;;
-  "cmp/defsys.lsp" ) CONFIG_FILES="$CONFIG_FILES cmp/defsys.lsp" ;;
-  "clos/defsys.lsp" ) CONFIG_FILES="$CONFIG_FILES clos/defsys.lsp" ;;
   "ecl-config" ) CONFIG_FILES="$CONFIG_FILES ecl-config:util/ecl-config" ;;
   "h/configpre" ) CONFIG_FILES="$CONFIG_FILES h/configpre:h/config.h.in" ;;
   "h/config.h" ) CONFIG_HEADERS="$CONFIG_HEADERS h/config.h:h/configpre" ;;

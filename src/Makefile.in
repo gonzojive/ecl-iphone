@@ -24,8 +24,6 @@ EXE	= @EXEEXT@
 # not need to change them.  This defaults to /usr/local.
 bindir=@bindir@
 libdir=@libdir@
-mandir=@mandir@
-manext=.1
 infodir=@infodir@
 
 # Programs used by "make install":
@@ -81,7 +79,7 @@ BUILD-STAMP: config.status
 	(echo "#"; uname -a) > $@
 	head -8 config.status | tail -6 >> $@
 install: BUILD-STAMP
-	for i in $(PREFIX)$(bindir) $(PREFIX)$(mandir) $(PREFIX)$(libdir)/h; do\
+	for i in $(PREFIX)$(bindir) $(PREFIX)$(libdir)/h; do\
 	  $(INSTALL) -d $$i; \
 	done
 	for i in $(TARGETS); do \
@@ -91,7 +89,6 @@ install: BUILD-STAMP
 	sed 's,~A,$(libdir),;s,~\*,,;' ecl-config > aux; \
 	$(INSTALL_PROGRAM) aux $(PREFIX)$(bindir)/ecl-config; \
 	rm aux
-	$(INSTALL_DATA) $(srcdir)/etc/ecl.1 $(PREFIX)$(mandir)
 	for i in BUILD-STAMP $(LSP_LIBRARIES) $(LIBRARIES) c/dpp* help.doc ; do \
 	  $(INSTALL_DATA) $$i $(PREFIX)$(libdir); \
 	done
@@ -112,7 +109,6 @@ installgmp:
 	$(INSTALL_DATA) h/gmp.h $(PREFIX)$(libdir)/h/
 
 uninstall:
-	rm -rf $(mandir)/ecl.1
 	for i in $(TARGETS) ecl-config; do rm -rf $(bindir)/$$i; done
 	rm -rf $(libdir)
 	cd doc; $(MAKE) uninstall

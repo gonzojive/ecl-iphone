@@ -10,6 +10,8 @@ VPATH	= @srcdir@
 
 infodir = @infodir@
 libdir = @libdir@
+mandir=@mandir@
+manext=1
 
 INSTALL	= @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -40,9 +42,12 @@ install: all
 	$(INSTALL) -d $(PREFIX)$(infodir)
 	$(INSTALL_DATA) ecl.info $(PREFIX)$(infodir)
 	$(INSTALL_DATA) ecldev.info $(PREFIX)$(infodir)
+	$(INSTALL) -d $(PREFIX)$(mandir)/man$(manext)
+	$(INSTALL_DATA) ecl.man $(PREFIX)$(mandir)/man$(manext)/ecl.$(manext)
 
 uninstall:
 	rm -r $(infodir)/ecl.info $(infodir)/ecldev.info
+	rm $(mandir)/man$(manext)/ecl.$(manext)
 
 ecl.info: $(srcdir)/user.txi $(srcdir)/macros.txi
 	makeinfo -I $(srcdir) --no-split $(srcdir)/user.txi

@@ -1657,6 +1657,19 @@ ECL 0.9c
     end of the load process there are still incomplete packages, a
     correctable error is signaled.
 
+ECL 0.9d
+========
+
+* Errors fixed:
+
+  - Bugs in the mechanism for automatically creating packages when
+    loading binary files.
+
+* Documentation:
+
+  - New manual page documents the scripting facilities of ECL
+    (contributed by Julian St.)
+
 TODO:
 =====
 
