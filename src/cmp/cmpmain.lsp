@@ -300,7 +300,6 @@ cl_object Cblock;
        (format c-file +lisp-program-init+ init-name prologue-code
 	       shared-data-file submodules epilogue-code)
        (close c-file)
-       (print o-name)
        (compiler-cc c-name o-name)
        (apply #'bundle-cc output-name o-name ld-flags)))
     (delete-file c-name)
