@@ -368,7 +368,6 @@ ecl_find_symbol_nolock(cl_object name, cl_object p, int *intern_flag)
 	return s;
 }
 
-#ifdef ECL_THREADS
 cl_object
 ecl_find_symbol(cl_object n, cl_object p, int *intern_flag)
 {
@@ -379,7 +378,6 @@ ecl_find_symbol(cl_object n, cl_object p, int *intern_flag)
 	PACKAGE_UNLOCK(p);
 	return n;
 }
-#endif
 
 bool
 unintern(cl_object s, cl_object p)
