@@ -21,7 +21,9 @@
 #ifdef HAVE_TIMES
 #include <sys/times.h>
 #endif
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
 
 #ifdef mignw32
 /* The function sleep() in MinGW is bogus: it counts millisecons! */

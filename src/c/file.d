@@ -31,7 +31,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
-#elif defined(mingw32)
+#elif defined(mingw32) || defined(_MSC_VER)
 #include <winsock.h>
 #define HAVE_SELECT
 #elif defined(HAVE_SYS_IOCTL_H) && !defined(MSDOS) && !defined(cygwin)
@@ -65,6 +65,9 @@ BEGIN:
 
 	case smm_io:
 	case smm_input:
+#ifdef _MSC_VER
+	case smm_input_wsock:
+#endif
 	case smm_concatenated:
 	case smm_two_way:
 	case smm_echo:
@@ -72,6 +75,9 @@ BEGIN:
 		return(TRUE);
 
 	case smm_output:
+#ifdef _MSC_VER
+	case smm_output_wsock:
+#endif
 	case smm_string_output:
 	case smm_broadcast:
 		return(FALSE);
@@ -109,11 +115,17 @@ BEGIN:
 		return(FALSE);
 
 	case smm_input:
+#ifdef _MSC_VER
+	case smm_input_wsock:
+#endif
 	case smm_concatenated:
 	case smm_string_input:
 		return(FALSE);
 
 	case smm_output:
+#ifdef _MSC_VER
+	case smm_output_wsock:
+#endif
 	case smm_io:
 	case smm_two_way:
 	case smm_echo:
@@ -156,6 +168,10 @@ BEGIN:
 
 	case smm_input:
 	case smm_output:
+#ifdef _MSC_VER
+	case smm_input_wsock:
+	case smm_output_wsock:
+#endif
 	case smm_io:
 		output = ecl_elttype_to_symbol(strm->stream.elttype);
 		break;
@@ -245,6 +261,20 @@ wrong_file_handler(cl_object strm)
 {
 	FEerror("Internal error: closed stream ~S without smm_mode flag.", 1, strm);
 }
+
+#ifdef _MSC_VER
+static void
+wsock_error( const char *err_msg, cl_object strm )
+{
+	char *msg;
+	cl_object msg_obj;
+	FormatMessage( FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+		       0, WSAGetLastError(), 0, ( void* )&msg, 0, NULL );
+	msg_obj = make_string_copy( msg );
+	LocalFree( msg );
+	FEerror( err_msg, 2, strm, msg_obj );
+}
+#endif
 
 /*----------------------------------------------------------------------
  *	Open_stream(fn, smm, if_exists, if_does_not_exist)
@@ -403,6 +433,17 @@ close_stream(cl_object strm, bool abort_flag)        /*  Not used now!  */
 		strm->stream.file = NULL;
 #endif
 		break;
+#ifdef _MSC_VER
+	case smm_input_wsock:
+	case smm_output_wsock:
+		if ( closesocket( ( int )strm->stream.file ) != 0 )
+			wsock_error( "Cannot close Windows Socket ~S~%~A.", strm );
+#if !defined(GBC_BOEHM)
+		cl_dealloc(strm->stream.buffer, BUFSIZ);
+		strm->stream.file = NULL;
+#endif
+		break;
+#endif
 
 	case smm_synonym:
 	case smm_broadcast:
@@ -532,6 +573,20 @@ BEGIN:
 		}
 		break;
 
+#ifdef _MSC_VER
+	case smm_input_wsock:
+		if ( ( int )fp == INVALID_SOCKET )
+			wrong_file_handler( strm );
+		else
+		{
+			char ch;
+			if ( recv( ( int )fp, &ch, 1, 0 ) == SOCKET_ERROR )
+				wsock_error( "Cannot read char from Windows socket ~S.~%~A", strm );
+			c = ( unsigned char )ch;
+		}
+		break;
+#endif
+
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		goto BEGIN;
@@ -572,6 +627,9 @@ BEGIN:
 		break;
 
 	case smm_output:
+#ifdef _MSC_VER
+	case smm_output_wsock:
+#endif
 	case smm_broadcast:
 	case smm_string_output:
 		not_an_input_stream(strm);
@@ -630,6 +688,12 @@ BEGIN:
 		}
 		break;
 
+#ifdef _MSC_VER
+	case smm_input_wsock:
+		wsock_error( "Cannot peek char on Windows Socket ~S.~%~A", strm );
+		break;
+#endif
+
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		goto BEGIN;
@@ -664,6 +728,9 @@ BEGIN:
 		break;
 
 	case smm_output:
+#ifdef _MSC_VER
+	case smm_output_wsock:
+#endif
 	case smm_broadcast:
 	case smm_string_output:
 		not_an_input_stream(strm);
@@ -713,6 +780,11 @@ BEGIN:
 /*		--strm->stream.int0; useless in smm_io, Beppe */
 		break;
 
+#ifdef _MSC_VER
+	case smm_input_wsock:
+		goto UNREAD_ERROR;
+#endif
+
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		goto BEGIN;
@@ -739,6 +811,9 @@ BEGIN:
 		break;
 
 	case smm_output:
+#ifdef _MSC_VER
+	case smm_output_wsock:
+#endif
 	case smm_broadcast:
 	case smm_string_output:
 		not_an_input_stream(strm);
@@ -787,6 +862,25 @@ BEGIN:
 			io_error(strm);
 		break;
 
+#ifdef _MSC_VER
+	case smm_output_wsock:
+		if (c == '\n')
+			strm->stream.int1 = 0;
+		else if (c == '\t')
+			strm->stream.int1 = (strm->stream.int1&~07) + 8;
+		else
+			strm->stream.int1++;
+		if ( ( int )fp == INVALID_SOCKET )
+			wrong_file_handler( strm );
+		else
+		{
+			char ch = ( char )c;
+			if ( send( ( int )fp, &ch, 1, 0 ) == SOCKET_ERROR )
+				wsock_error( "Cannot write char to Windows Socket ~S.~%~A", strm );
+		}
+		break;
+#endif
+
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		goto BEGIN;
@@ -823,6 +917,9 @@ BEGIN:
 		break;
 
 	case smm_input:
+#ifdef _MSC_VER
+	case smm_input_wsock:
+#endif
 	case smm_concatenated:
 	case smm_string_input:
 		not_an_output_stream(strm);
@@ -1010,6 +1107,12 @@ BEGIN:
 			io_error(strm);
 		break;
 
+#ifdef _MSC_VER
+	case smm_output_wsock:
+		/* do not do anything (yet) */
+		break;
+#endif
+
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		goto BEGIN;
@@ -1030,6 +1133,9 @@ BEGIN:
 		break;
 	      }
 	case smm_input:
+#ifdef _MSC_VER
+	case smm_input_wsock:
+#endif
 	case smm_concatenated:
 	case smm_string_input:
 		FEerror("Cannot flush the stream ~S.", 1, strm);
@@ -1068,6 +1174,13 @@ BEGIN:
 		}
 		break;
 
+#ifdef _MSC_VER
+	case smm_input_wsock:
+		/* do not do anything (yet) */
+		printf( "Trying to clear input on windows socket stream!\n" );
+		break;
+#endif
+
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		goto BEGIN;
@@ -1085,6 +1198,9 @@ BEGIN:
 	case smm_string_output:
 	case smm_io:
 	case smm_output:
+#ifdef _MSC_VER
+	case smm_output_wsock:
+#endif
 	case smm_concatenated:
 	case smm_string_input:
 		break;
@@ -1124,6 +1240,13 @@ BEGIN:
 #endif
 		break;
 
+#ifdef _MSC_VER
+	case smm_output_wsock:
+		/* do not do anything (yet) */
+		printf( "Trying to clear output windows socket stream\n!" );
+		break;
+#endif
+
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		goto BEGIN;
@@ -1141,6 +1264,9 @@ BEGIN:
 	case smm_string_output:
 	case smm_io:
 	case smm_input:
+#ifdef _MSC_VER
+	case smm_input_wsock:
+#endif
 	case smm_concatenated:
 	case smm_string_input:
 		break;
@@ -1164,7 +1290,7 @@ flisten(FILE *fp)
 	if (FILE_CNT(fp) > 0)
 		return ECL_LISTEN_AVAILABLE;
 #endif
-#if !defined(mingw32)
+#if !defined(mingw32) && !defined(_MSC_VER)
 #if defined(HAVE_SELECT)
 	fd = fileno(fp);
 	FD_ZERO(&fds);
@@ -1209,6 +1335,26 @@ BEGIN:
 			wrong_file_handler(strm);
 		return flisten(fp);
 
+#ifdef _MSC_VER
+	case smm_input_wsock:
+		fp = strm->stream.file;
+		if ( ( int )fp == INVALID_SOCKET )
+			wrong_file_handler( strm );
+		else
+		{
+			struct timeval tv = { 0, 0 };
+			fd_set fds;
+			int result;
+
+			FD_ZERO( &fds );
+			FD_SET( ( int )fp, &fds );
+			result = select( 0, &fds, NULL, NULL,  &tv );
+			if ( result == SOCKET_ERROR )
+				wsock_error( "Cannot listen on Windows socket ~S.~%~A", strm );
+			return ( result > 0 ? ECL_LISTEN_AVAILABLE : ECL_LISTEN_NO_CHAR );
+		}
+#endif
+
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		goto BEGIN;
@@ -1238,6 +1384,9 @@ BEGIN:
 			return ECL_LISTEN_EOF;
 
 	case smm_output:
+#ifdef _MSC_VER
+	case smm_output_wsock:
+#endif
 	case smm_broadcast:
 	case smm_string_output:
 		not_an_input_stream(strm);
@@ -1286,6 +1435,10 @@ BEGIN:
 		strm = CAR(strm);
 		goto BEGIN;
 
+#ifdef _MSC_VER
+	case smm_input_wsock:
+	case smm_output_wsock:
+#endif
 	case smm_concatenated:
 	case smm_two_way:
 	case smm_echo:
@@ -1346,6 +1499,10 @@ BEGIN:
 		strm = CAR(strm);
 		goto BEGIN;
 
+#ifdef _MSC_VER
+	case smm_input_wsock:
+	case smm_output_wsock:
+#endif
 	case smm_concatenated:
 	case smm_two_way:
 	case smm_echo:
@@ -1396,6 +1553,10 @@ BEGIN:
 		goto BEGIN;
 
 	/* FIXME! Should signal an error of type-error */
+#ifdef _MSC_VER
+	case smm_input_wsock:
+	case smm_output_wsock:
+#endif
 	case smm_concatenated:
 	case smm_two_way:
 	case smm_echo:
@@ -1431,6 +1592,9 @@ BEGIN:
 		return 0;
 
 	case smm_output:
+#ifdef _MSC_VER
+	case smm_output_wsock:
+#endif
 	case smm_io:
 	case smm_two_way:
 	case smm_string_output:
@@ -1445,6 +1609,9 @@ BEGIN:
 		goto BEGIN;
 
 	case smm_input:
+#ifdef _MSC_VER
+	case smm_input_wsock:
+#endif
 	case smm_string_input:
 		return 0;
 
@@ -1875,10 +2042,22 @@ ecl_make_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm)
     case smm_output:
       mode = "w";
       break;
+#ifdef _MSC_VER
+    case smm_input_wsock:
+    case smm_output_wsock:
+      break;
+#endif
     default:
       FEerror("make_stream: wrong mode", 0);
    }
+#ifdef _MSC_VER
+   if ( smm == smm_input_wsock || smm == smm_output_wsock )
+     fp = ( FILE* )fd;
+   else
+     fp = fdopen( fd, mode );
+#else
    fp = fdopen(fd, mode);
+#endif
 
    stream = cl_alloc_object(t_stream);
    stream->stream.mode = (short)smm;

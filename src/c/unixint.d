@@ -17,7 +17,9 @@
 #include "ecl.h"
 #include "internal.h"
 #include <signal.h>
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
 #ifdef ECL_THREADS
 #include <pthread.h>
 #endif

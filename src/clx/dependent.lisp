@@ -2894,6 +2894,11 @@ Returns a list of (host display-number screen protocol)."
 		(t :internet))))
     (list host (or display 0) (or screen 0) protocol)))
 
+#+win32
+(defun get-default-display (&optional display-name)
+  (declare (ignore display-name))
+  (list "127.0.0.1" 0 0 :internet))
+
 
 ;;-----------------------------------------------------------------------------
 ;; GC stuff

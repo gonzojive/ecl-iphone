@@ -13,14 +13,23 @@
     See file '../Copyright' for full details.
 */
 
+#ifndef _MSC_VER
 #include <sys/param.h>
+#endif
 #include <sys/types.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <setjmp.h>
 #include <math.h>
+#ifndef _MSC_VER
 #include <inttypes.h>
+#else
+typedef char int8_t;
+typedef short int16_t;
+typedef unsigned char uint8_t;
+typedef unsigned short uint16_t;
+#endif
 #include <config.h>
 #include <gmp.h>
 #include <object.h>

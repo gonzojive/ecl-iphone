@@ -36,11 +36,14 @@
 ;;;   with an already installed copy of ECL.
 ;;;
 (setq c::*cc-flags*
-      "@CFLAGS@ @ECL_CFLAGS@ -I\"@true_srcdir@\"/h -I\"@true_srcdir@\"/gmp -I\"@true_builddir@\"/h"
+      #-msvc "@CFLAGS@ @ECL_CFLAGS@ -I\"@true_srcdir@\"/h -I\"@true_srcdir@\"/gmp -I\"@true_builddir@\"/h"
+      #+msvc "@CFLAGS@ @ECL_CFLAGS@ -I\"@true_srcdir@\"/h -I\"@true_builddir@\"/h"
       c::*cc-format*
-      "~A ~A ~:[~*~;~A~] -I\"@true_builddir@\"/h~* -w -c ~S -o ~S"
+      #-msvc "~A ~A ~:[~*~;~A~] -I\"@true_builddir@\"/h~* -w -c ~S -o ~S"
+      #+msvc "~A ~A ~:[~*~;~A~] -I\"@true_builddir@\"/h~* -Zi -W3 -c ~S -Fo~S"
       c::*ld-format*
-      "~A -o ~S -L\"@true_builddir@\"~* ~{~S ~} ~@?")
+      #-msvc "~A -o ~S -L\"@true_builddir@\"~* ~{~S ~} ~@?"
+      #+msvc "~A -Zi -Fe~S ~{~S ~} ~@?")
 #-dlopen 
 (setf c::*ld-flags*
       "@LDFLAGS@ @LDRPATH@ @LIBPREFIX@ecl.@LIBEXT@ @STATICLIBS@ @CLIBS@")
@@ -85,7 +88,8 @@ ranlib ../@LIBPREFIX@ecl.@LIBEXT@'")
 ;;;
 ;;; We do not need the -rpath flag for the library, nor -lecl.
 ;;;
-(let ((c::*ld-shared-flags* "@SHARED_LDFLAGS@ @LDFLAGS@ @STATICLIBS@ @CLIBS@")
+(let ((c::*ld-shared-flags* #-msvc "@SHARED_LDFLAGS@ @LDFLAGS@ @STATICLIBS@ @CLIBS@"
+			    #+msvc "@SHARED_LDFLAGS@ @LDFLAGS@ @STATICLIBS@ @CLIBS@ /DEF:ecl.def")
       (c::*cc-flags* (concatenate 'string "-I@true_builddir@/c " c::*cc-flags*)))
   (c::shared-cc (compile-file-pathname "ecl" :type :dll)
 		"c/main.@OBJEXT@"
@@ -153,4 +157,4 @@ ranlib ../@LIBPREFIX@ecl.@LIBEXT@'")
  #-(or cross stage1) "ecl2"
  :lisp-files '(#+(and (not dlopen) WANTS-CMP) cmp
 	       #+(and (not dlopen) WANTS-CLX) clx)
- :ld-flags '("-L./"))
+ :ld-flags '(#-msvc "-L./"))

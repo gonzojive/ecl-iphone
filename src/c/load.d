@@ -29,7 +29,10 @@
 #include <mach-o/dyld.h>
 #define INIT_PREFIX "_init_"
 #endif
-#ifdef mingw32
+#if defined(mingw32) || defined(_MSC_VER)
+#ifdef _MSC_VER
+#include <windows.h>
+#endif
 #include <windef.h>
 #include <winbase.h>
 #define INIT_PREFIX "init_"
@@ -64,7 +67,7 @@ ecl_library_open(cl_object filename) {
 		block->cblock.handle = out;
 	}}
 #endif
-#ifdef mingw32
+#if defined(mingw32) || defined(_MSC_VER)
 	block->cblock.handle = LoadLibrary(filename->string.self);
 #endif
 	/* INV: We can modify "libraries" in a multithread
@@ -91,7 +94,7 @@ ecl_library_symbol(cl_object block, const char *symbol) {
 #ifdef HAVE_DLFCN_H
 	return dlsym(block->cblock.handle, symbol);
 #endif
-#ifdef mingw32
+#if defined(mingw32) || defined(_MSC_VER)
 	HMODULE h = (HMODULE)(block->cblock.handle);
 	return GetProcAddress(h, symbol);
 #endif
@@ -116,7 +119,7 @@ ecl_library_error(cl_object block) {
 	const char *filename;
 	NSLinkEditError(&c, &number, &filename, &message);
 #endif
-#ifdef mingw32
+#if defined(mingw32) || defined(_MSC_VER)
 	cl_object output;
 	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
 		      FORMAT_MESSAGE_ALLOCATE_BUFFER,
@@ -147,7 +150,7 @@ ecl_library_close(cl_object block) {
 #ifdef HAVE_MACH_O_DYLD_H
 	NSUnLinkModule(block->cblock.handle, NSUNLINKMODULE_OPTION_NONE);
 #endif
-#ifdef mingw32
+#if defined(mingw32) || defined(_MSC_VER)
 	FreeLibrary(block->cblock.handle);
 #endif
 	if (block->cblock.self_destruct)

@@ -1,0 +1,131 @@
+#
+#			Makefile for ECL core library
+#
+top_srcdir = ..\..\src
+srcdir	= ..\..\src\c
+
+# Programs used by "make":
+#
+TRUE_CC = cl
+CC	= cl
+CFLAGS	= -c -Zi -I./ -I$(srcdir) -I$(HDIR) -I../h -I$(top_srcdir)/gc/include -DECL_CMU_FORMAT \
+#	  -Wall -W -Wfloat-equal -Wundef -Wendif-labels -Wpointer-arith -Wcast-align \
+#	  -Wwrite-strings -Wconversion -Wsign-compare -Wmissing-prototypes -Wredundant-decls \
+#	  -Wunreachable-code -Winline
+
+SHELL	= /bin/sh
+RM	= del
+CP      = copy /Y
+MV      = move /Y
+LINK    = link
+EXE	= .exe
+DPP	= .\dpp$(EXE)
+
+# Data for installation
+#
+INSTALL = @INSTALL@
+INSTALL_DATA = @INSTALL_DATA@
+prefix=@prefix@
+exec_prefix=$(prefix)
+libdir=$(prefix)\lib\ecl
+
+# Files
+
+HDIR	= $(top_srcdir)\h
+HFILES	= ..\h\config.h $(HDIR)\ecl.h $(HDIR)\ecl-cmp.h\
+	$(HDIR)\object.h $(HDIR)\cs.h $(HDIR)\stacks.h\
+	$(HDIR)\external.h $(HDIR)\eval.h\
+	$(HDIR)\number.h $(HDIR)\page.h $(HDIR)\unify.h\
+	$(HDIR)\lwp.h
+OBJS	= main.obj symbol.obj package.obj list.obj\
+	apply.obj eval.obj interpreter.obj compiler.obj disassembler.obj \
+	instance.obj gfun.obj reference.obj character.obj\
+	file.obj read.obj print.obj error.obj string.obj cfun.obj\
+	typespec.obj assignment.obj \
+	predicate.obj big.obj number.obj\
+	num_pred.obj num_comp.obj num_arith.obj num_sfun.obj num_co.obj\
+	num_log.obj num_rand.obj array.obj sequence.obj cmpaux.obj\
+	macros.obj backq.obj stacks.obj \
+	time.obj unixint.obj\
+	mapfun.obj multival.obj hash.obj format.obj pathname.obj\
+	structure.obj load.obj unixfsys.obj unixsys.obj \
+	all_symbols.obj ffi.obj alloc_2.obj tcp.obj
+
+all:	$(DPP) external.h ..\eclmin.lib ..\cinit.obj
+
+.SUFFIXES: .obj .c .d
+
+{$(srcdir:\=/)}.d{}.c:
+	$(DPP) $< $@
+.c.obj:
+	$(CC) $(CFLAGS) -o $@ $<
+
+.PHONY:	all
+
+#
+# When compiling the library itself, we have to remove the dllimport
+# declarations, because the variables that they mark are in the
+# in the library and can be referenced without indirection.
+#
+external.h: $(top_srcdir)/h/external.h Makefile.msvc6
+	sed -e "s,__declspec(dllimport),,g" \
+	    $(top_srcdir)\h\external.h > $@
+
+install: $(HFILES)
+	for %i in ($(HFILES)) do $(CP) %i $(libdir)\h\ 
+	sed -e "/-CUT-/,$$d" ..\h\config.h > $(libdir)\h\config-install.h
+	$(RM) $(libdir)\h\config.h
+	$(MV) $(libdir)\h\config-install.h $(libdir)\h\config.h
+
+flatinstal: $(HFILES)
+	for i in $(HFILES); do $(INSTALL_DATA) $$i $(prefix)/h/; done
+	sed '/-CUT-/,$$d' ../h/config.h > ../h/config-install.h
+	$(INSTALL_DATA) ../h/*.h $(prefix)/h/
+	rm $(prefix)/h/config.h
+	mv $(prefix)/h/config-install.h $(prefix)/h/config.h
+
+..\eclmin.lib: $(OBJS:.obj=.c) $(OBJS)
+	-$(RM) $@
+	$(LINK) -lib -nodefaultlib -out:$@ $(OBJS)
+
+clean:
+	-for %f in (..\h\config.h dpp dpp.obj $(DPP) external.h \
+	            ..\eclmin.lib ..\cinit.obj cinit.c \
+		    symbols_list2.h) \
+	     do $(RM) %f
+	-for %f in ($(OBJS:.obj=.c)) do $(RM) %f
+	-for %f in ($(OBJS)) do $(RM) %f
+	-$(RM) *.pdb
+
+# Build rules
+
+$(DPP): $(srcdir)/dpp.c symbols_list2.h ../h/config.h
+	$(TRUE_CC) -I../h -I./ -I$(HDIR) $(DEFS) $(srcdir)/dpp.c  -o $@
+symbols_list2.h: $(srcdir)/symbols_list.h
+	sed -e "s%{\([A-Z ]*.*\".*\"\),[^,]*,[ ]*NULL,.*}%{\1,NULL}%g" \
+	    -e "s%{\([A-Z ]*.*\".*\"\),[^,]*,[ ]*\([^,]*\),.*}%{\1,\"\2\"}%g" \
+	    -e "s%{NULL.*%{NULL,NULL}};%" $(srcdir)\symbols_list.h > $@
+../h/config.h: ../h/config.h.msvc6
+	$(CP) ..\h\config.h.msvc6 ..\h\config.h
+
+#
+# GCC might break this code
+#
+gbc.o: gbc.c $(HFILES)
+	$(CC) $(CFLAGS) -O0 gbc.c -o $@
+#
+# This reduces the overhead of jumping to other functions
+#
+apply.o: apply.c $(HFILES) $(HDIR)/cs.h
+	$(CC) $(CFLAGS) apply.c -o $@
+#
+# These files are interrelated
+#
+all_symbols.o: all_symbols.c
+	$(CC) $(CFLAGS) -I./ all_symbols.c -o $@
+#
+# This is in another directory
+#
+../cinit.obj: cinit.c
+	$(CC) $(CFLAGS) -I./ -o cinit.obj cinit.c
+	$(MV) cinit.obj ..\

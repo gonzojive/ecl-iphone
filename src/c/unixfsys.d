@@ -15,22 +15,30 @@
 */
 
 #include <string.h>
-#include <unistd.h>
+#ifndef _MSC_VER
+# include <unistd.h>
+#endif
 #include <sys/types.h>
 #ifdef HAVE_PWD_H
-#include <pwd.h>
+# include <pwd.h>
 #endif
 #include <sys/stat.h>
 #include <stdlib.h>
 #include "ecl.h"
 #include "ecl-inl.h"
 #ifdef HAVE_DIRENT_H
-#include <dirent.h>
+# include <dirent.h>
 #else
-#include <sys/dir.h>
+# ifndef _MSC_VER
+#  include <sys/dir.h>
+# else
+#  include <windows.h>
+#  undef ERROR
+#  define MAXPATHLEN 512
+# endif
 #endif
 #ifndef HAVE_MKSTEMP
-#include <fcntl.h>
+# include <fcntl.h>
 #endif
 #ifndef MAXPATHLEN
 # ifdef PATH_MAX
@@ -84,6 +92,15 @@ current_dir(void) {
 
 static cl_object
 file_kind(char *filename, bool follow_links) {
+#ifdef _MSC_VER
+	DWORD dw = GetFileAttributes( filename );
+	if (dw == -1)
+		return Cnil;
+	else if ( dw & FILE_ATTRIBUTE_DIRECTORY )
+		return @':directory';
+	else
+		return @':file';
+#else
 	struct stat buf;
 #ifdef HAVE_LSTAT
 	if ((follow_links? stat : lstat)(filename, &buf) < 0)
@@ -100,6 +117,7 @@ file_kind(char *filename, bool follow_links) {
 	if (S_ISREG(buf.st_mode))
 		return @':file';
 	return @':special';
+#endif
 }
 
 cl_object
@@ -108,7 +126,7 @@ si_file_kind(cl_object filename, cl_object follow_links) {
 	@(return file_kind(filename->string.self, !Null(follow_links)))
 }
 
-#if defined(mingw32)
+#if defined(mingw32) || defined(_MSC_VER)
 #define si_follow_symlink si_coerce_to_filename
 #else
 
@@ -177,6 +195,15 @@ cl_truename(cl_object pathname)
 	 * which contains our file, and come back.
 	 */
 	CL_UNWIND_PROTECT_BEGIN {
+#ifdef _MSC_VER
+		if (filename->pathname.device != Cnil)
+		{
+			char device[3] = {'\0', ':', '\0'};
+			device[0] = filename->pathname.device->string.self[0];
+			if (chdir( device ) < 0)
+				goto ERROR;
+		}
+#endif
 		for (dir = filename->pathname.directory;
 		     !Null(dir);
 		     dir = CDR(dir))
@@ -317,8 +344,13 @@ expand_pathname(const char *name)
     if ((*p == '\0') || (*p == PATH_SEPARATOR)) {
       if (pn != pathname) *pn++ = DIR_SEPARATOR; /* on SYSV . is empty */
 LAST: strcpy(pn, name);
+#ifdef _MSC_VER
+      if (GetFileAttributes(pathname) & FILE_ATTRIBUTE_DIRECTORY)
+        return ( pathname );
+#else
       if (access(pathname, X_OK) == 0)
 	return (pathname);
+#endif
       pn = pathname;
       if (p[0] == PATH_SEPARATOR && p[1] == '\0') { /* last entry is empty */
 	p++;
@@ -451,8 +483,20 @@ list_current_directory(const char *mask, bool only_dir)
 
 	while ((entry = readdir(dir))) {
 		text = entry->d_name;
+#else
+# ifdef _MSC_VER
+	WIN32_FIND_DATA fd;
+	HANDLE hFind = FindFirstFile(".\\*", &fd);
+	BOOL found = FALSE;
 
-#else /* sys/dir.h as in SYSV */
+	if (hFind == INVALID_HANDLE_VALUE)
+		return Cnil;
+	found = TRUE;
+
+	while (found) {
+		text = fd.cFileName;
+
+# else /* sys/dir.h as in SYSV */
 	FILE *fp;
 	char iobuffer[BUFSIZ];
 	DIRECTORY dir;
@@ -468,7 +512,8 @@ list_current_directory(const char *mask, bool only_dir)
 		if (dir.d_ino == 0)
 			continue;
 		text = dir.d_name;
-#endif
+# endif /* !_MSC_VER */
+#endif /* !HAVE_DIRENT_H */
 		if (text[0] == '.' &&
 		    (text[1] == '\0' ||
 		     (text[1] == '.' && text[2] == '\0')))
@@ -479,12 +524,19 @@ list_current_directory(const char *mask, bool only_dir)
 			continue;
 		*out_cdr = CONS(make_string_copy(text), Cnil);
 		out_cdr = &CDR(*out_cdr);
+#ifdef _MSC_VER
+		found = FindNextFile(hFind, &fd);
+#endif
 	}
 #ifdef HAVE_DIRENT_H
 	closedir(dir);
 #else
+# ifdef _MSC_VER
+        FindClose(hFind);
+# else
 	fclose(fp);
-#endif
+# endif /* !_MSC_VER */
+#endif /* !HAVE_DIRENT_H */
 	return out;
 }
 

@@ -13,15 +13,25 @@
     See file '../Copyright' for full details.
 */
 
+#ifndef _MSC_VER
 #include <sys/param.h>		/* includes <sys/signal.h> and <sys/types.h> */
+#else
+#include <limits.h>
+#endif
 #include <sys/types.h>		/* for EMX */
 #include <stddef.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <setjmp.h>
 #include "config.h"
-#ifndef cygwin
+#if !defined(cygwin) && !defined(_MSC_VER)
 #include <inttypes.h>
+#endif
+#ifdef _MSC_VER
+typedef char int8_t;
+typedef short int16_t;
+typedef unsigned char uint8_t;
+typedef unsigned short uint16_t;
 #endif
 #include <gmp.h>
 #include <object.h>

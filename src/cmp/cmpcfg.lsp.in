@@ -5,15 +5,23 @@
 (in-package "COMPILER")
 (setq *cc* "@ECL_CC@")
 (setq *cc-flags* "@CFLAGS@ @ECL_CFLAGS@")
-(setq *ld-format* "~A -o ~S -L~S ~{~S ~} ~@?")
+(setq *cc-optimize* #-msvc "-O"
+                    #+msvc "-O2")
+(setq *ld-format* #-msvc "~A -o ~S -L~S ~{~S ~} ~@?"
+                  #+msvc "~A -Zi -Fe~S ~{~S ~} ~@?")
+(setq *cc-format* #-msvc "~A ~A ~:[~*~;~A~] \"-I~A/h\" -w -c \"~A\" -o \"~A\""
+                  #+msvc "~A ~A ~:[~*~;~A~] -I\"~A/h\" -Zi -W3 -c \"~A\" -Fo\"~A\"")
 #-dlopen
 (setq *ld-flags* "@LDRPATH@ @LDFLAGS@ -lecl @STATICLIBS@ @CLIBS@")
 #+dlopen
-(setq *ld-flags* "@LDRPATH@ @LDFLAGS@ -lecl @CLIBS@")
+(setq *ld-flags* #-msvc "@LDRPATH@ @LDFLAGS@ -lecl @CLIBS@"
+                 #+msvc "@LDRPATH@ @LDFLAGS@ ecl.lib @CLIBS@")
 #+dlopen
-(setq *ld-shared-flags* "@LDRPATH@ @SHARED_LDFLAGS@ @LDFLAGS@ -lecl @CLIBS@")
+(setq *ld-shared-flags* #-msvc "@LDRPATH@ @SHARED_LDFLAGS@ @LDFLAGS@ -lecl @CLIBS@"
+                        #+msvc "@LDRPATH@ @SHARED_LDFLAGS@ @LDFLAGS@ ecl.lib @CLIBS@")
 #+dlopen
-(setq *ld-bundle-flags* "@LDRPATH@ @BUNDLE_LDFLAGS@ @LDFLAGS@ -lecl @CLIBS@")
+(setq *ld-bundle-flags* #-msvc "@LDRPATH@ @BUNDLE_LDFLAGS@ @LDFLAGS@ -lecl @CLIBS@"
+                        #+msvc "@LDRPATH@ @BUNDLE_LDFLAGS@ @LDFLAGS@ ecl.lib @CLIBS@")
 (eval-when (eval)
   (setq +shared-library-prefix+ "@SHAREDPREFIX@"
         +shared-library-extension+ "@SHAREDEXT@"

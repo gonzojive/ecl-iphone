@@ -100,7 +100,14 @@ compute_method(cl_narg narg, cl_object gf, cl_object *args)
 	struct ecl_hashtable_entry *e;
 	cl_object spec_how_list = GFUN_SPEC(gf);
 	cl_object table = GFUN_HASH(gf);
+#ifdef __GNUC__
 	cl_object argtype[narg]; /* __GNUC__ */
+#else
+#define ARGTYPE_MAX 64
+	cl_object argtype[ARGTYPE_MAX];
+	if (narg > ARGTYPE_MAX)
+	  FEerror("compute_method: Too many arguments, limited to ~A.", 1, MAKE_FIXNUM(ARGTYPE_MAX));
+#endif
 
 	for (i = 0, spec_no = 0; spec_how_list != Cnil; i++) {
 		cl_object spec_how = CAR(spec_how_list);

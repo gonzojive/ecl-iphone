@@ -24,6 +24,9 @@
 #include "winbase.h"
 #include "io.h"
 #endif
+#ifdef _MSC_VER
+#include <windows.h>
+#endif
 
 cl_object
 si_system(cl_object cmd)
@@ -43,6 +46,9 @@ si_system(cl_object cmd)
 cl_object
 si_open_pipe(cl_object cmd)
 {
+#ifdef _MSC_VER
+	FEerror("Pipes are not supported under Win32/MSVC", 0);
+#else
 	FILE *ptr;
 	cl_object stream;
 
@@ -60,11 +66,15 @@ si_open_pipe(cl_object cmd)
 	setbuf(ptr, stream->stream.buffer = cl_alloc_atomic(BUFSIZ));
 #endif
 	@(return stream)
+#endif
 }
 
 cl_object
 si_close_pipe(cl_object stream)
 {
+#ifdef _MSC_VER
+	FEerror("Pipes are not supported under Win32/MSVC", 0);
+#else
 	if (type_of(stream) == t_stream &&
 	    stream->stream.object1 == @'si::open-pipe') {
 		stream->stream.mode = smm_closed;
@@ -73,6 +83,7 @@ si_close_pipe(cl_object stream)
 		stream->stream.object0 = OBJNULL;
 	}
 	@(return)
+#endif
 }
 
 @(defun ext::run-program (command argv &key (input @':stream') (output @':stream')
@@ -84,7 +95,7 @@ si_close_pipe(cl_object stream)
 @{
 	command = cl_string(command);
 	argv = cl_mapcar(2, @'string', argv);
-#ifdef mingw32
+#if defined(mingw32) || defined (_MSC_VER)
 {
 	BOOL ok;
 	STARTUPINFO st_info;

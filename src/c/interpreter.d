@@ -279,13 +279,25 @@ lambda_bind(cl_narg narg, cl_object lambda, cl_index sp)
 	  bool allow_other_keys_found = allow_other_keys;
 	  int n = fix(*(data++));
 	  cl_object *keys;
+#ifdef __GNUC__
 	  cl_object spp[n];
+#else
+#define SPP_MAX 64
+	  cl_object spp[SPP_MAX];
+#endif
 	  bool other_found = FALSE;
 	  void *unbound = spp; /* not a valid lisp object */
 	  if ((narg & 1) != 0)
 	    FEprogram_error("Function called with odd number of keyword arguments.", 0);
 	  for (i=0; i<n; i++)
+#ifdef __GNUC__
 	    spp[i] = unbound;
+#else
+	    if (i >= SPP_MAX)
+	      FEerror("lambda_bind: Too many keyword arguments, limited to ~A.", 1, MAKE_FIXNUM(SPP_MAX));
+	    else
+	    spp[i] = unbound;
+#endif
 	  for (; narg; narg-=2) {
 	    cl_object key = cl_env.stack[sp++];
 	    cl_object value = cl_env.stack[sp++];

@@ -646,9 +646,18 @@ nstring_case(cl_narg narg, int (*casefun)(int, bool *), cl_va_list ARGS)
 @(defun si::string_concatenate (&rest args)
 	cl_index l;
 	int i;
-	cl_object v, strings[narg];
 	char *vself;
+#ifdef __GNUC__
+	cl_object v, strings[narg];
+#else
+#define NARG_MAX 64
+	cl_object v, strings[NARG_MAX];
+#endif
 @
+#ifndef __GNUC__
+	if (narg > NARG_MAX)
+		FEerror("si::string_concatenate: Too many arguments, limited to ~A", 1, MAKE_FIXNUM(NARG_MAX));
+#endif
 	/* FIXME! We should use cl_va_start() instead of this ugly trick */
 	for (i = 0, l = 0;  i < narg;  i++) {
 		strings[i] = cl_string(cl_va_arg(args));

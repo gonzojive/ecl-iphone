@@ -869,8 +869,8 @@ by every function, which attempts to generate RENDER requests."
 
 
 ;; $Log$
-;; Revision 1.4  2004-10-04 08:02:44  jjgarcia
-;; Summer fixes
+;; Revision 1.5  2004-10-25 16:34:21  jjgarcia
+;; Port to Microsoft VC++ by Goffioul Michael <goffioul@imec.be>
 ;;
 ;; Revision 1.1  2004/06/10 07:59:31  jlr
 ;; Portable CLX library imported

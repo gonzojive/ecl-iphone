@@ -621,13 +621,17 @@ put_declaration(void)
     }
   if (key_flag) {
     put_lineno();
-    fprintf(out, "\tstatic cl_object KEYS[%d] = {", nkey);
-    for (i = 0; i < nkey; i++) {
-      if (i > 0)
-	fprintf(out, ", ");
-      fprintf(out, "(cl_object)(cl_symbols+%d)", search_keyword(keyword[i].k_key));
+    if (nkey) {
+      fprintf(out, "\tstatic cl_object KEYS[%d] = {", nkey);
+      for (i = 0; i < nkey; i++) {
+	if (i > 0)
+	  fprintf(out, ", ");
+	fprintf(out, "(cl_object)(cl_symbols+%d)", search_keyword(keyword[i].k_key));
+      }
+      fprintf(out, "};\n");
+    } else {
+      fprintf(out, "\tconst cl_object *KEYS = NULL;\n");
     }
-    fprintf(out, "};\n");
   }
   for (i = 0;  i < nkey;  i++) {
     fprintf(out, "\tcl_object %s;\n", keyword[i].k_var);
@@ -645,7 +649,12 @@ put_declaration(void)
     simple_varargs = !rest_flag && !key_flag && ((nreq + nopt) < 32);
     if (key_flag) {
       put_lineno();
-      fprintf(out, "\tcl_object KEY_VARS[%d];\n", 2*nkey);
+      /* We do this because Microsoft VC++ does not support arrays of zero size */
+      if (nkey) {
+	fprintf(out, "\tcl_object KEY_VARS[%d];\n", 2*nkey);
+      } else {
+	fprintf(out, "\tconst cl_object *KEY_VARS = NULL;\n");
+      }
     }
     put_lineno();
     if (simple_varargs)
@@ -831,6 +840,14 @@ main(int argc, char **argv)
 	  in = fopen(argv[1],"r");
 	  strncpy(filename, argv[1], BUFSIZ);
 	}
+#ifdef _MSC_VER
+	/* Convert all backslashes in filename into slashes,
+	 * to avoid warnings when compiling with MSVC
+	 */
+	for ( p=filename; *p; p++ )
+		if ( *p == '\\' )
+			*p = '/';
+#endif
 	if (argc < 3 || !strcmp(argv[2],"-")) {
 	  out = stdout;
 	  strncpy(outfile, "-", BUFSIZ);

@@ -545,7 +545,7 @@
 		    (t "local function "))
 	      (or (fun-name fun) (fun-description fun) 'CLOSURE))
   (cond ((fun-exported fun)
-	 (wt-h "cl_object " cfun "(")
+	 (wt-h #+msvc "__declspec(dllexport) cl_object " #-msvc "cl_object " cfun "(")
 	 (wt-nl1 "cl_object " cfun "("))
 	(t
 	 (wt-h "static cl_object " cfun "(")

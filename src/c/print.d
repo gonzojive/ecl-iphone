@@ -18,7 +18,9 @@
 #include "ecl.h"
 #include <math.h>
 #include <ctype.h>
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
 #include "internal.h"
 
 /**********************************************************************/
@@ -585,11 +587,21 @@ write_bignum(cl_object x, cl_object stream)
 {
 	int base = ecl_print_base();
 	cl_fixnum str_size = mpz_sizeinbase(x->big.big_num, base);
+#ifdef __GNUC__
 	char str[str_size+2];
+#else
+	char *str = (char*)malloc(sizeof(char)*(str_size+2));
+	CL_UNWIND_PROTECT_BEGIN {
+#endif
 	char *s = str;
 	mpz_get_str(str, base, x->big.big_num);
 	while (*s)
 		write_ch(*s++, stream);
+#ifndef __GNUC__
+	} CL_UNWIND_PROTECT_EXIT {
+	free(str);
+	} CL_UNWIND_PROTECT_END;
+#endif
 }
 
 static void
@@ -718,7 +730,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 	if (x == OBJNULL) {
 		if (ecl_print_readably()) FEprint_not_readable(x);
 		write_str("#<OBJNULL>", stream);
-		return;
+		return x;
 	}
 	if (circle) {
 		cl_object circle_counter;
@@ -741,13 +753,13 @@ si_write_ugly_object(cl_object x, cl_object stream)
 			si_write_ugly_object(x, stream);
 			cl_clrhash(hash);
 			bds_unwind_n(2);
-			return;
+			return x;
 		}
 		code = search_print_circle(x);
 		if (!FIXNUMP(circle_counter)) {
 			/* We are only inspecting the object to be printed. */
 			/* Only run X if it was not referenced before */
-			if (code != 0) return;
+			if (code != 0) return x;
 		} else if (code == 0) {
 			/* Object is not referenced twice */
 		} else if (code < 0) {
@@ -760,7 +772,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 			write_ch('#', stream);
 			write_decimal(code, stream);
 			write_ch('#', stream);
-			return;
+			return x;
 		}
 	}
  DOPRINT:
@@ -770,7 +782,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		write_str("#<FREE OBJECT ", stream);
 		write_addr(x, stream);
 		write_ch('>', stream);
-		return;
+		return x;
 
 	case t_fixnum: {
 		bool print_radix = ecl_print_radix();
@@ -788,7 +800,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		if (print_radix && print_base == 10) {
 			write_ch('.', stream);
 		}
-		return;
+		return x;
 	}
 	case t_bignum: {
 		bool print_radix = ecl_print_radix();
@@ -798,7 +810,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		write_bignum(x, stream);
 		if (print_radix && print_base == 10)
 			write_ch('.', stream);
-		return;
+		return x;
 	}
 	case t_ratio:
 		if (ecl_print_radix()) {
@@ -809,7 +821,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		write_ch('/', stream);
 		si_write_ugly_object(x->ratio.den, stream);
 		bds_unwind1();
-		return;
+		return x;
 
 	case t_shortfloat:
 		r = symbol_value(@'*read-default-float-format*');
@@ -817,7 +829,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 			write_double((double)sf(x), 0, TRUE, stream);
 		else
 			write_double((double)sf(x), 'f', TRUE, stream);
-		return;
+		return x;
 
 	case t_longfloat:
 		r = symbol_value(@'*read-default-float-format*');
@@ -825,7 +837,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 			write_double(lf(x), 0, FALSE, stream);
 		else
 			write_double(lf(x), 'd', FALSE, stream);
-		return;
+		return x;
 
 	case t_complex:
 		write_str("#C(", stream);
@@ -833,15 +845,15 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		write_ch(' ', stream);
 		si_write_ugly_object(x->complex.imag, stream);
 		write_ch(')', stream);
-		return;
+		return x;
 
 	case t_character:
 		write_character(CHAR_CODE(x), stream);
-		return;
+		return x;
 
 	case t_symbol:
 		write_symbol(x, stream);
-		return;
+		return x;
 
 	case t_array: {
 		cl_index subscripts[ARANKLIM];
@@ -855,7 +867,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 				write_str("#<array ", stream);
 				write_addr(x, stream);
 				write_ch('>', stream);
-				return;
+				return x;
 			}
 			print_length = MOST_POSITIVE_FIXNUM;
 			print_level = MOST_POSITIVE_FIXNUM;
@@ -865,7 +877,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		}
 		write_ch('#', stream);
 		if (print_level == 0)
-			return;
+			return x;
 		n = x->array.rank;
 		write_decimal(n, stream);
 		write_ch('A', stream);
@@ -932,7 +944,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		if (print_level >= 0) {
 			bds_unwind1();
 		}
-		return;
+		return x;
 	}
 	case t_vector: {
 		cl_fixnum print_length, print_level;
@@ -946,7 +958,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 				write_ch(' ', stream);
 				write_addr(x, stream);
 				write_ch('>', stream);
-				return;
+				return x;
 			}
 			print_length = MOST_POSITIVE_FIXNUM;
 			print_level = MOST_POSITIVE_FIXNUM;
@@ -956,14 +968,14 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		}
 		write_ch('#', stream);
 		if (print_level == 0)
-			return;
+			return x;
 		WRITE_MARK(stream);
 		write_ch('(', stream);
 		WRITE_SET_INDENT(stream);
 		if (n > 0) {
 			if (print_length == 0) {
 				write_str("...)", stream);
-				return;
+				return x;
 			}
 			bds_bind(@'*print-level*', MAKE_FIXNUM(print_level-1));
 			si_write_ugly_object(aref(x, 0), stream);
@@ -979,13 +991,13 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		}
 		write_ch(')', stream);
 		WRITE_UNMARK(stream);
-		return;
+		return x;
 	}
 	case t_string:
 		if (!ecl_print_escape() && !ecl_print_readably()) {
 			for (ndx = 0;  ndx < x->string.fillp;  ndx++)
 				write_ch(x->string.self[ndx], stream);
-			return;
+			return x;
 		}
 		write_ch('"', stream);
 		for (ndx = 0;  ndx < x->string.fillp;  ndx++) {
@@ -1039,7 +1051,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		}
 		if (print_level == 0) {
 			write_ch('#', stream);
-			return;
+			return x;
 		}
 		bds_bind(@'*print-level*', MAKE_FIXNUM(print_level-1));
 		WRITE_MARK(stream);
@@ -1079,7 +1091,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		write_ch(')', stream);
 		WRITE_UNMARK(stream);
 		bds_unwind1();
-		return;
+		return x;
 #if !defined(ECL_CMU_FORMAT)
 	PRETTY_PRINT_FORMAT:
 		j = fixint(r);
@@ -1145,6 +1157,18 @@ si_write_ugly_object(cl_object x, cl_object stream)
 			write_str("#<output stream ", stream);
 			si_write_ugly_object(x->stream.object1, stream);
 			break;
+
+#ifdef _MSC_VER
+		case smm_input_wsock:
+			write_str("#<input win32 socket stream ", stream);
+			si_write_ugly_object(x->stream.object1, stream);
+			break;
+
+		case smm_output_wsock:
+			write_str("#<output win32 socket stream ", stream);
+			si_write_ugly_object(x->stream.object1, stream);
+			break;
+#endif
 
 		case smm_io:
 			write_str("#<io stream ", stream);
@@ -1293,7 +1317,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		if (ecl_print_readably()) FEprint_not_readable(x);
 		write_str("#<foreign ", stream);
 		/*_write_ugly_object(x->foreign.tag, level);*/
-		write_addr(x->foreign.data, stream);
+		write_addr((cl_object)x->foreign.data, stream);
 		write_ch('>', stream);
 		break;
 #ifdef ECL_THREADS
@@ -1327,7 +1351,7 @@ si_write_object(cl_object x, cl_object stream)
 		cl_object f = funcall(2, @'pprint-dispatch', x);
 		if (VALUES(1) != Cnil) {
 			funcall(3, f, stream, x);
-			return;
+			return x;
 		}
 	}
 	return si_write_ugly_object(x, stream);

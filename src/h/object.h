@@ -105,6 +105,9 @@ struct ecl_ratio {
 	cl_object num;		/*  numerator, must be an integer  */
 };
 
+#ifdef _MSC_VER
+#undef complex			/* Otherwise we cannot do x->complex.real */
+#endif
 struct ecl_complex {
 	HEADER;
 	cl_object real;		/*  real part, must be a number  */
@@ -293,6 +296,11 @@ enum ecl_smmode {		/*  stream mode  */
 	smm_string_input,	/*  string input  */
 	smm_string_output,	/*  string output  */
 	smm_probe		/*  probe (only used in open_stream())  */
+#ifdef _MSC_VER
+	,
+	smm_input_wsock,	/* input socket (Win32) */
+	smm_output_wsock	/* output socket (Win32) */
+#endif
 };
 
 struct ecl_stream {

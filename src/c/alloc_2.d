@@ -18,8 +18,13 @@
 #include "ecl.h"
 #include "internal.h"
 #include "page.h"
+#ifdef _MSC_VER
+#include "gc.h"
+#include "private/gc_priv.h"
+#else
 #include "gc/gc.h"
 #include "gc/private/gc_priv.h"
+#endif
 
 #ifdef GBC_BOEHM
 

@@ -125,6 +125,9 @@ cl_shutdown(void)
 #ifdef ENABLE_DLOPEN
 	ecl_library_close_all();
 #endif
+#ifdef TCP
+	ecl_tcp_close_all();
+#endif
 	return 1;
 }
 
@@ -401,6 +404,9 @@ cl_boot(int argc, char **argv)
 #endif
 #ifdef mingw32
 	ADD_FEATURE("MINGW32");
+#endif
+#ifdef _MSC_VER
+	ADD_FEATURE("MSVC");
 #endif
 #ifdef ECL_CMU_FORMAT
 	ADD_FEATURE("CMU-FORMAT");

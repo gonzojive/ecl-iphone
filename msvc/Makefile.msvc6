@@ -1,0 +1,268 @@
+#
+#		Makefile for ECoLisp
+#
+top_srcdir= ..\src
+srcdir	= ..\src
+
+# ECL configuration
+#
+
+SHORT_SITE_NAME   =
+LONG_SITE_NAME    =
+ECL_VERSION       = 0.9d
+ARCHITECTURE      = PENTIUM4
+MACHINE_INSTANCE  = localhost
+MACHINE           =
+SOFTWARE_TYPE     = NT
+SOFTWARE_VERSION  = 5.0
+THEHOST           = win32
+
+# Programs used by "make":
+#
+
+CC	= cl
+CFLAGS  =
+LIBS	= eclgc.lib eclgmp.lib user32.lib ws2_32.lib
+LDFLAGS	= -Zi
+RM	= del
+RMDIR   = rmdir /Q /S
+MKDIR   = mkdir
+EXE	= .exe
+CP      = copy /Y
+MV      = move /Y
+MSDEV   = msdev
+
+# ==================== Where To Install Things ====================
+
+# The default location for installation.  Everything is placed in
+# subdirectories of this directory.  The default values for many of
+# the variables below are expressed in terms of this one, so you may
+# not need to change them.  This defaults to /usr/local.
+prefix=D:\Software\ECL
+exec_prefix=$(prefix)
+bindir=$(prefix)\bin
+libdir=$(prefix)\lib\ecl
+
+# Programs used by "make install":
+#
+SHELL = @SHELL@
+INSTALL	= @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
+INSTALL_DATA = @INSTALL_DATA@
+mkinstalldirs = $(SHELL) $(top_srcdir)/gc/mkinstalldirs
+
+# Files
+
+SUBDIR        = c gc gmp
+LIBRARIES     =
+LSP_LIBRARIES = cmp.fas clx.fas sysfun.lsp
+TARGETS       = ecl.exe
+GMP_TYPE      = p4
+
+all:	$(TARGETS) h/external-lsp.h doc ecl-config.bat
+.PHONY:	all
+
+%Makefile: $(srcdir)/%Makefile.in config.status
+	./config.status
+
+ecl$(EXE): ecl_min$(EXE) compile.lsp sysfun.lsp
+	.\ecl_min < compile.lsp
+
+h/external-lsp.h: ecl$(EXE)
+	echo #ifdef __cplusplus > $@
+	echo extern "C" { >> $@
+	echo #endif >> $@
+	( grep -h -e "dllexport" lsp\*.h clos\*.h | sed -e "s,__declspec(dllexport) ,,g" ) >> $@
+	echo #ifdef __cplusplus >> $@
+	echo } >> $@
+	echo #endif >> $@
+
+ecl_min$(EXE): $(LIBRARIES) eclmin.lib
+	$(CC) $(LDFLAGS) /Fe$@ eclmin.lib cinit.obj $(LIBS)
+
+.gdbinit: $(srcdir)\util\gdbinit
+	$(CP) $(srcdir)\util\gdbinit $@
+
+lsp/config.lsp: $(srcdir)/lsp/config.lsp.in Makefile.msvc6
+	if not exist lsp $(MKDIR) lsp
+	sed -e "s,@ecldir@,$(libdir:\=/),g" \
+	    -e "s,@SHORT_SITE_NAME@,$(SHORT_SITE_NAME),g" \
+	    -e "s,@LONG_SITE_NAME@,$(LONG_SITE_NAME),g" \
+	    -e "s,@ECL_VERSION@,$(ECL_VERSION),g" \
+	    -e "s,@ARCHITECTURE@,$(ARCHITECTURE),g" \
+	    -e "s,@MACHINE_INSTANCE@,$(MACHINE_INSTANCE),g" \
+	    -e "s,@MACHINE@,$(MACHINE),g" \
+	    -e "s,@SOFTWARE_TYPE@,$(SOFTWARE_TYPE),g" \
+	    -e "s,@SOFTWARE_VERSION@,$(SOFTWARE_VERSION),g" \
+	    -e "s,@thehost@,$(THEHOST),g" \
+	    < $(srcdir)\lsp\config.lsp.in > lsp\config.lsp
+compile.lsp: bare.lsp $(srcdir)/compile.lsp.in Makefile.msvc6
+	sed -e "s,@ecldir@,$(libdir:\=/),g" \
+	    -e "s,@true_srcdir@,$(srcdir:\=/),g" \
+	    -e "s,@true_builddir@,$(MAKEDIR:\=/),g" \
+	    -e "s,@CFLAGS@,$(CFLAGS),g" \
+	    -e "s,@ECL_CFLAGS@,-I$(libdir:\=/)/h,g" \
+	    -e "s,@LDRPATH@,,g" \
+	    -e "s,@LDFLAGS@,/link /LIBPATH:$(libdir:\=/),g" \
+	    -e "s,@SHARED_LDFLAGS@,/LD,g" \
+	    -e "s,@BUNDLE_LDFLAGS@,/LD,g" \
+	    -e "s,@CLIBS@,user32.lib ws2_32.lib,g" \
+	    -e "s,@STATICLIBS@,eclgmp.lib eclgc.lib,g" \
+	    -e "s,@OBJEXT@,obj,g" \
+	    -e "s,@SHAREDPREFIX@,,g" \
+	    -e "s,@SHAREDEXT@,lib,g" \
+	    -e "s,@LIBPREFIX@,,g" \
+	    -e "s,@LIBEXT@,lib,g" \
+	    -e "s,@EXEEXT@,.exe,g" \
+	    -e "s,@LDINSTALLNAME@,,g" \
+	    < $(srcdir)\compile.lsp.in > compile.lsp
+bare.lsp: $(srcdir)/bare.lsp.in lsp/load.lsp clos/load.lsp cmp/load.lsp cmp/cmpcfg.lsp
+	sed -e "s,@true_srcdir@,$(srcdir:\=/),g" \
+	    -e "s,@true_builddir@,$(MAKEDIR:\=/),g" < $(srcdir)\bare.lsp.in > bare.lsp
+lsp/load.lsp: $(srcdir)/lsp/load.lsp.in
+	$(CP) $(srcdir)\lsp\load.lsp.in lsp\load.lsp
+clos/load.lsp: $(srcdir)/clos/load.lsp.in
+	if not exist clos $(MKDIR) clos
+	$(CP) $(srcdir)\clos\load.lsp.in clos\load.lsp
+cmp/load.lsp: $(srcdir)/cmp/load.lsp.in
+	if not exist cmp $(MKDIR) cmp
+	$(CP) $(srcdir)\cmp\load.lsp.in cmp\load.lsp
+cmp/cmpcfg.lsp: $(srcdir)/cmp/cmpcfg.lsp.in Makefile.msvc6
+	sed -e "s,@ECL_CC@,$(CC),g" \
+	    -e "s,@CFLAGS@,$(CFLAGS),g" \
+	    -e "s,@ECL_CFLAGS@,-I$(libdir:\=/)/h,g" \
+	    -e "s,@LDRPATH@,,g" \
+	    -e "s,@LDFLAGS@,/link /LIBPATH:$(libdir:\=/),g" \
+	    -e "s,@SHARED_LDFLAGS@,/LD,g" \
+	    -e "s,@BUNDLE_LDFLAGS@,/LD,g" \
+	    -e "s,@CLIBS@,user32.lib ws2_32.lib,g" \
+	    -e "s,@STATICLIBS@,eclgmp.lib eclgc.lib,g" \
+	    -e "s,@OBJEXT@,obj,g" \
+	    -e "s,@SHAREDPREFIX@,,g" \
+	    -e "s,@SHAREDEXT@,dll,g" \
+	    -e "s,@LIBPREFIX@,,g" \
+	    -e "s,@LIBEXT@,lib,g" \
+	    -e "s,@EXEEXT@,.exe,g" \
+	    < $(srcdir)\cmp\cmpcfg.lsp.in > cmp\cmpcfg.lsp
+ecl-config.bat: util\ecl-config.bat Makefile.msvc6
+	sed -e "s,~A,$(libdir:\=/),;s,~\*,," \
+	    -e "s,@ECL_CFLAGS@,$(CFLAGS),g" \
+	    -e "s,@LDFLAGS@,,g" \
+	    -e "s,@CLIBS@,,g" \
+	    -e "s,@libdir@,$(libdir:\=/)," \
+	    -e "s,@includedir@,$(libdir:\=/)/h," util\ecl-config.bat > ecl-config.bat
+
+
+eclmin.lib: eclgmp.lib eclgc.lib lsp/config.lsp
+	cd c
+	$(MAKE) -f Makefile.msvc6
+	cd ..
+eclgc.lib:
+	cd gc
+	$(MAKE) -f Makefile.msvc6 gc.lib
+	$(CP) gc.lib ..\eclgc.lib
+	cd ..
+	for %h in (gc.h gc_local_alloc.h gc_pthread_redirects.h \
+	           gc_config_macros.h leak_detector.h gc_typed.h) \
+	    do $(CP) $(srcdir)\gc\include\%h h\%h
+eclgmp.lib:
+	cd gmp
+	$(MAKE) -f Makefile.msvc6 "MPN_TYPE = $(GMP_TYPE)"
+	$(CP) gmp.lib ..\eclgmp.lib
+	$(CP) gmp.h ..\h\gmp.h
+	cd ..
+sysfun.lsp:
+	$(CP) $(srcdir)\cmp\sysfun.lsp .\
+
+install: install-base
+	for %h in (gc.h gc_local_alloc.h gc_pthread_redirects.h \
+	           gc_config_macros.h leak_detector.h gc_typed.h) \
+	    do $(CP) h\%h $(libdir)\h
+	$(CP) h\gmp.h $(libdir)\h\gmp.h
+	$(CP) h\external-lsp.h $(libdir)\h\external-lsp.h
+	cd c
+	$(MAKE) -f Makefile.msvc6 install "prefix=$(prefix)"
+	cd ..\doc
+	$(MAKE) -f Makefile.msvc6 install "prefix=$(prefix)"
+install-base:
+	IF NOT EXIST $(bindir) $(MKDIR) $(bindir)
+	IF NOT EXIST $(libdir) $(MKDIR) $(libdir)\h
+	for %i in ($(TARGETS) ecl.dll) do $(CP) %i $(bindir)\%i
+	$(CP) ecl-config.bat $(bindir)\ecl-config.bat
+	for %i in ($(LSP_LIBRARIES) $(LIBRARIES) c\dpp.exe help.doc ecl.lib) do $(CP) %i $(libdir)
+	$(CP) h\config.h $(libdir)\h
+flatinstall: BUILD-STAMP
+	$(MAKE) bindir=$(prefix) libdir=$(prefix) install-base
+	cd c; $(MAKE) prefix=$(prefix) flatinstall
+	cd doc; $(MAKE) prefix=$(prefix) flatinstall
+
+uninstall:
+	for i in $(TARGETS) ecl-config; do rm -rf $(bindir)/$$i; done
+	rm -rf $(libdir)
+	cd doc; $(MAKE) uninstall
+
+doc: $(TARGETS)
+	cd doc
+	$(MAKE) -f Makefile.msvc6
+	cd ..
+
+clean: clean_ecl clean_lisp clean_doc
+	-$(RM) .gdbinit
+	cd gc
+	-$(MAKE) -f Makefile.msvc6 clean
+	cd ..
+	-for %h in (gc.h gc_local_alloc.h gc_pthread_redirects.h \
+	            gc_config_macros.h leak_detector.h gc_typed.h) \
+	     do $(RM) h\%h
+	cd gmp
+	$(MAKE) -f Makefile.msvc6 clean
+	cd ..
+	-$(RM) h\gmp.h
+clean_ecl:
+	-for %i in (eclgc.lib eclgmp.lib lsp\config.lsp compile.lsp bare.lsp \
+	            lsp\load.lsp clos\load.lsp cmp\load.lsp cmp\cmpcfg.lsp \
+		    ecl.lib ecl.dll ecl_min$(EXE) eclmin.lib help.doc sysfun.lsp \
+		    ecl$(EXE) *.exp *.ilk *.pdb *.c *.obj h\external-lsp.h ecl-config.bat) \
+	     do $(RM) %i
+	cd c
+	-$(MAKE) -f Makefile.msvc6 clean
+	cd ..
+#	for i in $(SUBDIR); do (cd $$i; $(MAKE) clean); done
+#	$(RM) ecl_min$(EXE) ecl$(EXE) help.doc core a.out
+#	$(RM) config.version config.log config.cache
+#	$(RM) *.c *.o *.a *.h *.data
+clean_lisp:
+	-for %i in (lsp cmp clos clx tk) do for %k in (%i.lib %i.fas %i.ilk %i.c %i.obj %i.pdb) do $(RM) %k
+	-for %i in (lsp cmp clos clx tk) do $(RMDIR) %i
+	-$(RM) help.doc
+clean_doc:
+	cd doc
+	-$(MAKE) -f Makefile.msvc6 clean
+	cd ..
+distclean: clean
+realclean: distclean
+test1:
+	cd c; $(MAKE)
+	$(MAKE) ecl_min
+	$(MAKE) ecl
+	cd tests; $(MAKE)
+	diff tests tests2
+test2:
+	$(MAKE) clean_lisp
+	cd c; $(MAKE)
+	$(MAKE) ecl_min
+	$(RM) ecl
+	$(MAKE) ecl
+	for i in lsp clos cmp; do diff --exclude=\*.o $$i old/$$i; done
+test3:
+	-mkdir stage2
+	cp -rf lsp clos cmp stage2
+	-for i in lsp cmp clos clx tk; do test -f lib$$i.a && mv lib$$i.a stage2; done
+	$(MAKE) clean_lisp
+	./ecl < compile.lsp
+	-for i in lsp clos cmp clx tk; do test -d $$i && diff --exclude=\*.o $$i stage2/$$i; done | less
+test:
+	$(MAKE) -C tests
+	$(MAKE) -C ansi-tests > ansi-tests/log
+	#-(diff tests ~/src/tests; diff --exclude log ansi-tests ~/src/ansi-tests) | less

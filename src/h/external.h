@@ -102,7 +102,7 @@ struct cl_env_struct {
 #define cl_env (*ecl_process_env())
 extern struct cl_env_struct *ecl_process_env(void) __attribute__((const));
 #else
-#ifdef mingw32
+#if defined(mingw32) || defined(_MSC_VER)
 __declspec(dllimport)
 #endif
 extern struct cl_env_struct cl_env;
@@ -160,7 +160,7 @@ struct cl_core_struct {
 #endif
 };
 
-#ifdef mingw32
+#if defined(mingw32) || defined(_MSC_VER)
 __declspec(dllimport)
 #endif
 extern struct cl_core_struct cl_core;
@@ -174,8 +174,13 @@ extern void cl_dealloc(void *p, cl_index s);
 #ifdef GBC_BOEHM
 extern cl_object si_gc(cl_object area);
 extern cl_object si_gc_dump(void);
+#ifdef _MSC_VER
+extern char *GC_malloc(size_t size);
+extern char *GC_malloc_atomic_ignore_off_page(size_t size);
+#else
 extern void *GC_malloc(size_t size);
 extern void *GC_malloc_atomic_ignore_off_page(size_t size);
+#endif
 extern void GC_free(void *);
 #define cl_alloc GC_malloc
 #define cl_alloc_atomic GC_malloc_atomic_ignore_off_page
@@ -215,7 +220,7 @@ typedef union {
 	} init;
 	struct ecl_symbol data;
 } cl_symbol_initializer;
-#ifdef mingw32
+#if defined(mingw32) || defined(_MSC_VER)
 __declspec(dllimport)
 #endif
 extern cl_symbol_initializer cl_symbols[];
@@ -1333,6 +1338,7 @@ extern cl_object si_open_client_stream(cl_object host, cl_object port);
 extern cl_object si_open_server_stream(cl_object port);
 extern cl_object si_open_unix_socket_stream(cl_object path);
 extern cl_object si_lookup_host_entry(cl_object host_or_address);
+extern void ecl_tcp_close_all(void);
 #endif
 
 

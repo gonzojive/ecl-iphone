@@ -1701,6 +1701,38 @@
 	    (cdr directives))
       directives))
 
+(def-complex-format-directive #\return (colonp atsignp params directives)
+  (when (and colonp atsignp)
+    (error 'format-error
+	   :complaint
+	   "Cannot specify both colon and atsign for this directive."))
+  (values (expand-bind-defaults () params
+	    (if atsignp
+		'(write-char #\newline stream)
+		nil))
+	  (if (and (not colonp)
+		   directives
+		   (simple-string-p (car directives)))
+	      (cons (string-left-trim '(#\space #\newline #\tab)
+				      (car directives))
+		    (cdr directives))
+	      directives)))
+
+(def-complex-format-interpreter #\return (colonp atsignp params directives)
+  (when (and colonp atsignp)
+    (error 'format-error
+	   :complaint
+	   "Cannot specify both colon and atsign for this directive."))
+  (interpret-bind-defaults () params
+    (when atsignp
+      (write-char #\newline stream)))
+  (if (and (not colonp)
+	   directives
+	   (simple-string-p (car directives)))
+      (cons (string-left-trim '(#\space #\newline #\tab)
+			      (car directives))
+	    (cdr directives))
+      directives))
 
 ;;;; Tab and simple pretty-printing noise.
 

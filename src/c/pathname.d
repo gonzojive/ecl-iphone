@@ -23,6 +23,9 @@
 #include <string.h>
 #include "ecl.h"
 #include <ctype.h>
+#ifdef _MSC_VER
+#define MAXPATHLEN 512
+#endif
 #ifndef MAXPATHLEN
 # ifdef PATH_MAX
 #   define MAXPATHLEN PATH_MAX
@@ -682,7 +685,7 @@ coerce_to_file_pathname(cl_object pathname)
 {
 	pathname = coerce_to_physical_pathname(pathname);
 	pathname = cl_merge_pathnames(1, pathname);
-#if !defined(cygwin) && !defined(mingw32)
+#if !defined(cygwin) && !defined(mingw32) && !defined(_MSC_VER)
 	if (pathname->pathname.device != Cnil)
 		FEerror("Device ~S not yet supported.", 1,
 			pathname->pathname.device);

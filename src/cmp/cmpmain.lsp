@@ -32,7 +32,7 @@ coprocessor).")
 
 (defvar *cc-flags* "-g -I.")
 (defvar *cc-optimize* "-O")		; C compiler otimization flag
-(defvar *cc-format* "~A ~A ~:[~*~;~A~] \"-I~A/h\" -w -c \"~A\" -o \"~A\""))
+(defvar *cc-format* "~A ~A ~:[~*~;~A~] \"-I~A/h\" -w -c \"~A\" -o \"~A\"")
 (defvar *ld-flags* "")
 (defvar *ld-format* "~A -o ~S -L~S ~{~S ~} ~@?")
 #+dlopen
@@ -73,7 +73,7 @@ coprocessor).")
 	   *ld-format*
 	   *cc*
 	   (si::coerce-to-filename o-pathname)
-	   (namestring (translate-logical-pathname "SYS:"))
+	   #-msvc (namestring (translate-logical-pathname "SYS:"))
 	   options
 	   *ld-flags* (namestring (translate-logical-pathname "SYS:")))))
 
@@ -85,7 +85,7 @@ coprocessor).")
 	   *ld-format*
 	   *cc*
 	   (si::coerce-to-filename o-pathname)
-	   (namestring (translate-logical-pathname "SYS:"))
+	   #-msvc (namestring (translate-logical-pathname "SYS:"))
 	   options
 	   *ld-shared-flags*
 	   (namestring (translate-logical-pathname "SYS:"))))
@@ -108,9 +108,10 @@ coprocessor).")
 	   *ld-format*
 	   *cc*
 	   (si::coerce-to-filename o-pathname)
-	   (namestring (translate-logical-pathname "SYS:"))
+	   #-msvc (namestring (translate-logical-pathname "SYS:"))
 	   options
-	   *ld-bundle-flags*
+	   #-msvc *ld-bundle-flags*
+	   #+msvc (concatenate 'string *ld-bundle-flags* " /EXPORT:init_CODE")
 	   (namestring (translate-logical-pathname "SYS:"))))
   #+(or mingw32)
   (safe-system
@@ -245,7 +246,6 @@ cl_object Cblock;
 	       submodules "")
        (format c-file +lisp-program-main+ prologue-code init-name epilogue-code)
        (close c-file)
-       (si:system (format nil "cat ~A" (namestring c-name)))
        (compiler-cc c-name o-name)
        (apply #'linker-cc output-name (namestring o-name) ld-flags))
       ((:library :static-library :lib)
@@ -256,11 +256,22 @@ cl_object Cblock;
        (format c-file +lisp-program-init+ init-name prologue-code
 	       shared-data-file submodules epilogue-code)
        (close c-file)
-       (si:system (format nil "cat ~A" (namestring c-name)))
        (compiler-cc c-name o-name)
+       #-msvc
+       (progn
        (safe-system (format nil "ar cr ~A ~A ~{~A ~}"
 			    output-name o-name ld-flags))
        (safe-system (format nil "ranlib ~A" output-name)))
+       #+msvc
+       (unwind-protect
+         (progn
+           (with-open-file (f "static_lib.tmp" :direction :output :if-does-not-exist :create :if-exists :overwrite)
+             (format f "/NODEFAULTLIB /OUT:~A ~A ~{\"~&~A\"~}"
+                     output-name o-name ld-flags))
+           (safe-system "link -lib -debug @static_lib.tmp"))
+         (when (probe-file "static_lib.tmp")
+           (delete-file "static_lib.tmp")))
+       )
       #+dlopen
       ((:shared-library :dll)
        (if (or (symbolp output-name) (stringp output-name))
@@ -270,7 +281,6 @@ cl_object Cblock;
        (format c-file +lisp-program-init+ init-name prologue-code
 	       shared-data-file submodules epilogue-code)
        (close c-file)
-       (si:system (format nil "cat ~A" (namestring c-name)))
        (compiler-cc c-name o-name)
        (apply #'shared-cc output-name o-name ld-flags))
       #+dlopen
@@ -280,7 +290,6 @@ cl_object Cblock;
        (format c-file +lisp-program-init+ "CODE" prologue-code
 	       shared-data-file submodules epilogue-code)
        (close c-file)
-       (si:system (format nil "cat ~A" (namestring c-name)))
        (print o-name)
        (compiler-cc c-name o-name)
        (apply #'bundle-cc output-name o-name ld-flags)))
