@@ -34,7 +34,7 @@ extern void GC_free(void *);
 #define cl_alloc_atomic GC_malloc_atomic_ignore_off_page
 #define cl_alloc_align(s,d) GC_malloc(s)
 #define cl_alloc_atomic_align(s,d) GC_malloc_atomic_ignore_off_page(s)
-#define cl_dealloc(p,s) GC_free(p)
+#define cl_dealloc(p,s)
 #define ecl_register_static_root(x)
 #else
 extern cl_object si_room_report _ARGS((int narg));
