@@ -23,9 +23,9 @@ TAR_DIR = %%CD%%\ecl-$(ECL_VERSION)
 #
 
 CC	= cl
-CFLAGS  =
+CFLAGS  = /MD /DGC_NOT_DLL
 LIBS	= eclgc.lib eclgmp.lib user32.lib ws2_32.lib
-LDFLAGS	= -Zi
+LDFLAGS	= -MD -Zi
 RM	= del
 RMDIR   = rmdir /Q /S
 MKDIR   = mkdir
@@ -115,7 +115,7 @@ compile.lsp: bare.lsp $(srcdir)/compile.lsp.in Makefile.msvc6
 	    -e "s,@CFLAGS@,$(CFLAGS),g" \
 	    -e "s,@ECL_CFLAGS@,,g" \
 	    -e "s,@LDRPATH@,,g" \
-	    -e "s,@LDFLAGS@,/link /LIBPATH:~S,g" \
+	    -e "s,@LDFLAGS@,/MD /link /LIBPATH:~S,g" \
 	    -e "s,@SHARED_LDFLAGS@,/LD,g" \
 	    -e "s,@BUNDLE_LDFLAGS@,/LD,g" \
 	    -e "s,@CLIBS@,user32.lib ws2_32.lib,g" \
@@ -145,7 +145,7 @@ cmp/cmpcfg.lsp: $(srcdir)/cmp/cmpcfg.lsp.in Makefile.msvc6
 	    -e "s,@CFLAGS@,$(CFLAGS),g" \
 	    -e "s,@ECL_CFLAGS@,,g" \
 	    -e "s,@LDRPATH@,,g" \
-	    -e "s,@LDFLAGS@,/link /LIBPATH:~S,g" \
+	    -e "s,@LDFLAGS@,/MD /link /LIBPATH:~S,g" \
 	    -e "s,@SHARED_LDFLAGS@,/LD,g" \
 	    -e "s,@BUNDLE_LDFLAGS@,/LD,g" \
 	    -e "s,@CLIBS@,user32.lib ws2_32.lib,g" \
@@ -234,13 +234,13 @@ doc: $(TARGETS)
 clean: clean_ecl clean_lisp clean_doc
 	-$(RM) .gdbinit
 	cd gc
-	-$(MAKE) -f Makefile.msvc6 clean
+	-$(MAKE) -f Makefile.msvc6 "ECL_THREADS = $(ECL_THREADS)" clean
 	cd ..
 	-for %h in (gc.h gc_local_alloc.h gc_pthread_redirects.h \
 	            gc_config_macros.h leak_detector.h gc_typed.h) \
 	     do $(RM) h\%h
 	cd gmp
-	$(MAKE) -f Makefile.msvc6 clean
+	$(MAKE) -f Makefile.msvc6 "ECL_THREADS = $(ECL_THREADS)" clean
 	cd ..
 	-$(RM) h\gmp.h
 clean_ecl:
@@ -250,7 +250,7 @@ clean_ecl:
 		    ecl$(EXE) *.exp *.ilk *.pdb *.c *.obj ecl-config.bat) \
 	     do $(RM) %i
 	cd c
-	-$(MAKE) -f Makefile.msvc6 clean
+	-$(MAKE) -f Makefile.msvc6 "ECL_THREADS = $(ECL_THREADS)" clean
 	cd ..
 clean_lisp:
 	-for %i in (lsp cmp clos clx tk) do for %k in (%i.lib %i.fas %i.ilk %i.c %i.obj %i.pdb) do $(RM) %k
@@ -258,7 +258,7 @@ clean_lisp:
 	-$(RM) help.doc
 clean_doc:
 	cd doc
-	-$(MAKE) -f Makefile.msvc6 clean
+	-$(MAKE) -f Makefile.msvc6 "ECL_THREADS = $(ECL_THREADS)" clean
 	cd ..
 distclean: clean
 realclean: distclean

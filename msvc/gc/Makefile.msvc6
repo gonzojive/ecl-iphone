@@ -20,15 +20,15 @@ OBJS= alloc.obj reclaim.obj allchblk.obj misc.obj mach_dep.obj os_dep.obj mark_r
 all: gctest.exe cord\de.exe test_cpp.exe
 
 {$(srcdir)}.c{}.obj:
-	$(cc) $(cdebug) $(cflags) $(cvars) -I$(srcdir)\include -DSILENT -DALL_INTERIOR_POINTERS -D__STDC__ -DGC_NOT_DLL $(THREADS_FLAGS) $< /Fo$*.obj
+	$(cc) /MD $(cdebug) $(cflags) $(cvars) -I$(srcdir)\include -DSILENT -DALL_INTERIOR_POINTERS -D__STDC__ -DGC_NOT_DLL $(THREADS_FLAGS) $< /Fo$*.obj
 
 .cpp.obj:
-	$(cc) $(cdebug) $(cflags) $(cvars) -I$(srcdir)\include -DSILENT -DALL_INTERIOR_POINTERS -DGC_NOT_DLL $(THREADS_FLAGS) $*.CPP /Fo$*.obj
+	$(cc) /MD $(cdebug) $(cflags) $(cvars) -I$(srcdir)\include -DSILENT -DALL_INTERIOR_POINTERS -DGC_NOT_DLL $(THREADS_FLAGS) $*.CPP /Fo$*.obj
 
 $(OBJS) tests\test.obj: $(srcdir)\include\private\gc_priv.h $(srcdir)\include\private\gc_hdrs.h $(srcdir)\include\gc.h $(srcdir)\include\private\gcconfig.h $(srcdir)\include\private\gc_locks.h $(srcdir)\include\private\gc_pmark.h $(srcdir)\include\gc_mark.h
 
 gc.lib: $(OBJS)
-	lib /NODEFAULTLIB /MACHINE:i386 /out:gc.lib $(OBJS)
+	lib /MACHINE:i386 /out:gc.lib $(OBJS)
 # The original NT SDK used lib32 instead of lib
 
 gctest.exe: tests\test.obj gc.lib

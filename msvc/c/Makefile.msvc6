@@ -16,7 +16,7 @@ THREADS_FLAGS=
 #
 TRUE_CC = cl
 CC	= cl
-CFLAGS	= -c -Zi -I./ -I$(srcdir) -I$(HDIR) -I../h -I$(top_srcdir)/gc/include -DHAVE_ISATTY $(THREADS_FLAGS)
+CFLAGS	= -c -MD -Zi -I./ -I$(srcdir) -I$(HDIR) -I../h -I$(top_srcdir)/gc/include -DHAVE_ISATTY $(THREADS_FLAGS) -DGC_NOT_DLL
 #	  -Wall -W -Wfloat-equal -Wundef -Wendif-labels -Wpointer-arith -Wcast-align \
 #	  -Wwrite-strings -Wconversion -Wsign-compare -Wmissing-prototypes -Wredundant-decls \
 #	  -Wunreachable-code -Winline
@@ -97,7 +97,7 @@ flatinstall: $(HFILES)
 
 ..\eclmin.lib: $(OBJS:.obj=.c) all_symbols.c $(OBJS) all_symbols.obj all_symbols2.obj
 	-$(RM) $@
-	$(LINK) -lib -nodefaultlib -out:$@ $(OBJS)
+	$(LINK) -lib -out:$@ $(OBJS)
 
 clean:
 	-for %f in (..\h\config.h dpp dpp.obj $(DPP) external.h \
