@@ -32,7 +32,8 @@ ECL 0.9d
 
 * Supported platforms:
 
-  - ECL now builds under Windows using MinGW-32.
+  - ECL now builds under Windows using MinGW-32 and Microsoft VC++
+    (the last port is a contribution from Goffioul Michael).
 
   - It is possible now both under OS/X and Microsoft Windows to build
     ECL as a shared library and to compile and load code on the fly.
@@ -105,6 +106,13 @@ ECL 0.9d
     &optional, &rest, &key or &allow-other-keys.
 
   - MULTIPLE-VALUE-{BIND,SETQ} produce now more economical forms.
+
+  - A separate pass over the functions is used to find out which ones
+    use a lexical environment, which functions are made into closures,
+    etc (This implied a much deeped rewrite of the compiler than what
+    these three lines seem to suggest).
+
+  - FLET and LABELS are now compiled by the same routine.
 
 * Errors fixed:
 
@@ -190,6 +198,12 @@ ECL 0.9d
   - The old CLX library has been replaced with the portable CLX
     library from the TELENT archive.
 
+  - New command line option, -q, makes the compiler quieter (by Julian
+    Stecklina).
+
+  - New function, SI:RUN-PROGRAM to spawn processes with redirected
+    input, output and error streams.
+
 * ANSI compatibility:
 
   - No symbol is exported from the CL package other than those specificied in
@@ -242,4 +256,13 @@ ECL 0.9d
   - The pretty printer and the FORMAT routine from CMUCL have been
     finally integrated and put together. By default, they are not
     compiled in, unless configured with "--with-cmu-format".
+
+  - When comparing floats with bignums or rationals, the float has to
+    be converted first to a rational number, or else the comparison
+    will be inaccurate.
+
+  - :PRINT-OBJECT is now supported in structures.
+
+  - FORMAT directives now accept bignums as arguments, though they
+    are truncated to most-{positive/negative}-fixnum.
 
