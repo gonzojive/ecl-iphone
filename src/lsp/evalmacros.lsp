@@ -236,16 +236,10 @@ SECOND-FORM."
       (push `(SETQ ,(car vl) (NTH ,n ,sym)) forms))
   )
 
+;; We do not use this macroexpanso, and thus we do not care whether
+;; it is efficiently compiled by ECL or not.
 (defmacro multiple-value-bind (vars form &rest body)
-  (do ((vl vars (cdr vl))
-       (sym (gensym))
-       (bind nil)
-       (n 0 (1+ n)))
-      ((endp vl) `(LET* ((,sym (MULTIPLE-VALUE-LIST ,form)) ,@(nreverse bind))
-		   ,@body))
-    (declare (fixnum n))
-    (push `(,(car vl) (NTH ,n ,sym)) bind))
-  )
+  `(multiple-value-call #'(lambda (&optional ,@(mapcar #'list vars)) ,@body) ,form))
 
 (defun do/do*-expand (control test result body let psetq
 			      &aux (decl nil) (label (gensym)) (exit (gensym))
