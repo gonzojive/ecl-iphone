@@ -1192,8 +1192,6 @@ extern cl_object getf(cl_object place, cl_object indicator, cl_object deflt);
 extern cl_object get(cl_object s, cl_object p, cl_object d);
 extern cl_object putf(cl_object p, cl_object v, cl_object i);
 extern cl_object putprop(cl_object s, cl_object v, cl_object p);
-extern bool remf(cl_object *p, cl_object i);
-extern cl_object remprop(cl_object s, cl_object p);
 extern bool keywordp(cl_object s);
 extern cl_object symbol_name(cl_object x);
 extern void init_symbol(void);

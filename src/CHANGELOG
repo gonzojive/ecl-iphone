@@ -1264,6 +1264,9 @@ ECLS 0.9
   - The interpreter now detects syntax errors in function calls: such
     as in (setq a ("foo")).
 
+  - Functions remf() and remprop() removed. Use si_rem_f and cl_remprop
+    instead.
+
 * ANSI compatibility:
 
   - WITH-HASH-TABLE-ITERATOR implemented.

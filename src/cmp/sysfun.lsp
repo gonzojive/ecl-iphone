@@ -957,8 +957,7 @@ type_of(#0)==t_bitvector"))
 	:inline-always ((t t) t nil nil "get(#0,#1,Cnil)")
 	:inline-unsafe ((t t t) t nil nil "getf((#0)->symbol.plist,#1,#2)")
 	:inline-unsafe ((t t) t nil nil "getf((#0)->symbol.plist,#1,Cnil)"))
-(REMPROP (symbol t) T nil nil
-	:inline-always ((t t) t t nil "remprop(#0,#1)"))
+(REMPROP (symbol t) T nil nil)
 (SYMBOL-PLIST (symbol) T nil T
 	:inline-always ((t) t nil nil "((#0)->symbol.plist)"))
 (GETF (T T *) T)

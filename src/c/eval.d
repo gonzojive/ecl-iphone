@@ -169,7 +169,7 @@ si_unlink_symbol(cl_object s)
 	if (!endp(pl)) {
 		for (; !endp(pl); pl = CDR(pl))
 			*(void **)(fixnnint(CAAR(pl))) = (void *)fixnnint(CDAR(pl));
-		remf(&s->symbol.plist, @'si::link-from');
+		cl_remprop(s, @'si::link-from');
 	}
 	@(return)
 }

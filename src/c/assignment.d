@@ -71,9 +71,9 @@ si_setf_namep(cl_object arg)
 			FEerror("Cannot define a macro with name (SETF ~S).", 1, fun);
 		fun = CADR(fun);
 		putprop(fun, sym, @'si::setf-symbol');
-		remprop(fun, @'si::setf-lambda');
-		remprop(fun, @'si::setf-method');
-		remprop(fun, @'si::setf-update');
+		cl_remprop(fun, @'si::setf-lambda');
+		cl_remprop(fun, @'si::setf-method');
+		cl_remprop(fun, @'si::setf-update');
 		fun = sym;
 	}
 	if (fun->symbol.isform && !mflag)
@@ -118,15 +118,15 @@ cl_fmakunbound(cl_object sym)
 		if (sym1 == OBJNULL)
 			FEtype_error_symbol(sym);
 		sym = CADR(sym);
-		remprop(sym, @'si::setf-lambda');
-		remprop(sym, @'si::setf-method');
-		remprop(sym, @'si::setf-update');
+		cl_remprop(sym, @'si::setf-lambda');
+		cl_remprop(sym, @'si::setf-method');
+		cl_remprop(sym, @'si::setf-update');
 		cl_fmakunbound(sym1);
 		@(return sym)
 	}
 	clear_compiler_properties(sym);
 #ifdef PDE
-	remprop(sym, @'defun');
+	cl_remprop(sym, @'defun');
 #endif
 	if (sym->symbol.hpack->pack.locked && SYM_FUN(sym) != OBJNULL)
 	  funcall(3, @'warn', make_simple_string("~S is being redefined."), sym);

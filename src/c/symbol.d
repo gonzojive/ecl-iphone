@@ -177,7 +177,7 @@ putprop(cl_object s, cl_object v, cl_object p)
 		TRUE    if the property existed
 		FALSE   otherwise.
 */
-bool
+static bool
 remf(cl_object *place, cl_object indicator)
 {
 	cl_object *slow, *l;
@@ -200,17 +200,6 @@ remf(cl_object *place, cl_object indicator)
 	if (*l != Cnil)
 		FEtype_error_plist(*place);
 	return(FALSE);
-}
-
-cl_object
-remprop(cl_object s, cl_object p)
-{
-	if (!SYMBOLP(s))
-		FEtype_error_symbol(s);
-	if (remf(&s->symbol.plist, p))
-		return(Ct);
-	else
-		return(Cnil);
 }
 
 bool
@@ -414,7 +403,7 @@ cl_object
 	if ((enum stype)sym->symbol.stype == stp_constant)
 		FEerror("~S is a constant.", 1, sym);
 	sym->symbol.stype = (short)stp_special;
-	remf(&sym->symbol.plist, @'si::symbol-macro');
+	cl_remprop(sym, @'si::symbol-macro');
 	@(return sym)
 }
 
