@@ -1,43 +1,72 @@
 <h2>News in this release (ECLS-@VERSION@)</h2>
 
 <ul>
-<li>Due to human errors, the bytecompiler shipped with 0.1a was an
-  unfinished version. In 0.1b we shipped a more polished files. Some
-  of the errors which are fixed are
-  <ul>
-  <li>Produce the right code for TAGBODY inside closures</li>
-  <li>Activate compiler for SYMBOL-MACROLET</li>
-  <li>Allow non-keyword symbols as lambda-list-keywords</li>
-  <li>Allow more than one :ALLOW-OTHER-KEYS to be supplied, but discard other than the first one
-  <li> Process declarations in FLET/LABELS forms
-  </ul>
+<li> Errors fixed:
+<ul>
+<li> The dynamic linker in eval.d (link_call) truncated addresses
+    larger than MOST_POSITIVE_FIXNUM.
 
-<li> Fixed the C compiler routines for TAGBODY: it would produce wrong
-  code when jumping out of a closure.
+<li> The routine that outputs addresses as hexadecimal numbers, and
+    which is used in print-unreadable, would only output the first
+    digit.
 
-<li> Rewrite the error system using KMP's condition system, CLOS and a
-  rudimentary interface to the toplevel.
+<li> Make sure that the proclamations in Gabriel's benchmark are
+    evaluated at compile time, too.
 
-<li> Enclosing the bytecompiler in an UNWIND-PROTECT ensures that the
-  status of the compiler and of the interpreter is always consistent.
+<li> Fix the native compiler and the bytecodes compiler so that when
+    they finds LOCALLY, MACROLET or SYMBOL-MACROLET at the top level,
+    it processes their bodies as top level forms as well. For
+    instance, this now works:
+	(LOCALLY (EVAL-WHEN (:COMPILE-TOPLEVEL) (PRINT "HELLO")))
+</ul>
+<li> Add name mangling to ECLS:
+<ul>
+<li> In the preprocessed files (*.d) @package::symbol can be used to
+    refer to a lisp function, while @'package::symbol can be used to
+    refer to a lisp symbol. The preprocessor translates these names
+    into valid C names.
 
-<li> Port and incorporate Peter Van Eynde's test suite for ANSI
-  compliance.
+<li> Function SI::MANGLE-NAME returns the C name for a lisp symbol
+    or function, and tells whether that symbol has been defined as
+    external C function already.
 
-<li> Replace features ECL/ECL-MIN with ECLS and ECLS-MIN. All references
-  to ECL (Eco-Common-Lisp) should have been dropped by now.
+<li> A new proclamation
+	(proclaim '(si::c-export-fname union))
+    advises the lisp->C translator to produce a C function with
+    mangle named (clLunion in this case), that can be directly called
+    from other translated files and from user written code.
+</ul>
+<li> Visible changes and ANSI compatibility:
+<ul>
+<li> Remove variable si::*system-directory* and use logical hostname
+    "SYS:" instead.
 
-<li> Add simple-program-error and simple-control-error to the hierarchy
-  of conditions, and try to ensure that all routines in libecls.a
-  signal the right type of condition.
+<li> Remove *EVALHOOK*, *APPLYHOOK*, #'EVALHOOK and #'APPLYHOOK, which
+    make little sense when working in a early compilation environment.
 
-<li> Define COMPLEMENT and CONTINOUSLY.
+<li> Stepper removed until we figure out how to implement this using
+    the bytecodes.
 
-<li> Fix #'= between bignums.
+<li> The library function eval() now accepts an environment as a third
+    parameter. On top of this function, SI:EVAL-WITH-ENV, evaluates
+    a form on a given environment.
 
-<li> NIL is no longer valid as the first of a pair of bounding index
-  designators, i.e. (nstring-upcase "aa" :start nil :end nil) causes
-  an error.
+<li> New accessor ROW-MAJOR-AREF.
+</ul>
+<li> System design and portability:
+</ul>
+<li> Code has been revised so that it works in environments where stack
+    grows upwards, as well as in environments where the parameters to
+    a function cannot be accessed as an array and only va_list/va_arg
+    work.
+
+<li> Implement loading of object files using the native "dlopen"
+    function which is present in most operating systems. Support for
+    "dld" has been dropped and the whole of the CRS library has been
+    removed
+
+<li> Remove use of alloca() when printing circular structures. In a
+    near future, use of alloca() should be dropped completely.
 </ul>
 
 <h2>Known bugs</h2>
