@@ -96,7 +96,7 @@ fmt_error(format_stack fmt, const char *s)
 {
 	FEerror("Format error: ~A.~%~V@@TV~%\"~A\"~%",
 		3, make_constant_string(s),
-		MAKE_FIXNUM(&fmt->ctl_str[fmt->ctl_index] - fmt->string->string.self),
+		MAKE_FIXNUM(&fmt->ctl_str[fmt->ctl_index] - (char *)fmt->string->string.self),
 		fmt->string);
 }
 
@@ -122,7 +122,7 @@ fmt_advance(format_stack fmt)
 	return(cl_stack[fmt->index++]);
 }
 
-static cl_object
+static void
 fmt_push_list(format_stack fmt, cl_object l)
 {
 	for (;  !endp(l);  l = CDR(l))

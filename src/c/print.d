@@ -24,6 +24,7 @@
 /******************************* EXPORTS ******************************/
 
 #ifndef THREADS
+bool PRINTreadably;
 bool PRINTescape;
 bool PRINTpretty;
 bool PRINTcircle;
@@ -89,10 +90,17 @@ static cl_object no_stream;
 
 static void flush_queue (bool force);
 static void write_decimal1 (cl_fixnum i);
-static void travel_push_object (cl_object x);
 static cl_fixnum search_print_circle(cl_object x);
 static bool do_print_circle(cl_fixnum mark);
 static bool potential_number_p(cl_object s, int base);
+
+static void FEprint_not_readable(cl_object x) __attribute__((noreturn));
+
+static void
+FEprint_not_readable(cl_object x)
+{
+	cl_error(3, @'print-not-readable', @':object', x);
+}
 
 static cl_object
 stream_or_default_output(cl_object stream)
@@ -465,6 +473,7 @@ call_print_object(cl_object x, int level)
 call_structure_print_function(cl_object x, int level)
 #endif
 {
+	bool re = PRINTreadably;
 	bool e = PRINTescape;
 	bool r = PRINTradix;
 	int b = PRINTbase;
@@ -504,6 +513,7 @@ call_structure_print_function(cl_object x, int level)
 	memcpy(ois, indent_stack, isp * sizeof(*ois));
 
 	CL_UNWIND_PROTECT_BEGIN {
+		bds_bind(@'*print-readably*', PRINTreadably?Ct:Cnil);
 		bds_bind(@'*print-escape*', PRINTescape?Ct:Cnil);
 		bds_bind(@'*print-radix*', PRINTradix?Ct:Cnil);
 		bds_bind(@'*print-base*', MAKE_FIXNUM(PRINTbase));
@@ -541,6 +551,7 @@ call_structure_print_function(cl_object x, int level)
 		PRINTbase = b;
 		PRINTradix = r;
 		PRINTescape = e;
+		PRINTreadably = re;
 	} CL_UNWIND_PROTECT_END;
 }
 
@@ -577,7 +588,7 @@ write_symbol(register cl_object x)
 	cl_object s = x->symbol.name;
 	int intern_flag;
 
-	if (!PRINTescape) {
+	if (!PRINTescape && !PRINTreadably) {
 		for (i = 0;  i < s->string.fillp;  i++) {
 			int c = s->string.self[i];
 			if (isupper(c) &&
@@ -664,7 +675,7 @@ write_symbol(register cl_object x)
 static void
 write_character(register int i)
 {
-	if (!PRINTescape) {
+	if (!PRINTescape && !PRINTreadably) {
 		write_ch(i);
 		return;
 	}
@@ -702,7 +713,6 @@ _write_object(cl_object x, int level)
 	cl_object r, y;
 	cl_fixnum i, j;
 	cl_index ndx, k;
-	cl_object *vp;
 
 	cs_check(x);
 
@@ -804,13 +814,13 @@ _write_object(cl_object x, int level)
 		cl_index subscripts[ARANKLIM];
 		cl_index n, m, k, i;
 
-		if (!PRINTarray) {
+		if (!PRINTarray && !PRINTreadably) {
 			write_str("#<array ");
 			write_addr(x);
 			write_ch('>');
 			return;
 		}
-		if (PRINTlevel >= 0 && level >= PRINTlevel) {
+		if (!PRINTreadably && PRINTlevel >= 0 && level >= PRINTlevel) {
 			write_ch('#');
 			return;
 		}
@@ -818,7 +828,7 @@ _write_object(cl_object x, int level)
 		write_ch('#');
 		write_decimal(n);
 		write_ch('A');
-		if (PRINTlevel >= 0 && level+n >= PRINTlevel)
+		if (!PRINTreadably && PRINTlevel >= 0 && level+n >= PRINTlevel)
 			n = PRINTlevel - level;
 		for (j = 0;  j < n;  j++)
 			subscripts[j] = 0;
@@ -838,7 +848,8 @@ _write_object(cl_object x, int level)
 				}
 				if (subscripts[i] > 0)
 					write_ch(INDENT);
-				if (PRINTlength >= 0 &&
+				if (!PRINTreadably &&
+				    PRINTlength >= 0 &&
 				    subscripts[i] >= PRINTlength) {
 					write_str("...)");
 					write_ch(UNMARK);
@@ -875,7 +886,7 @@ _write_object(cl_object x, int level)
 	}
 
 	case t_vector:
-		if (!PRINTarray) {
+		if (!PRINTarray && !PRINTreadably) {
 			write_str("#<vector ");
 			write_decimal(x->vector.dim);
 			write_ch(' ');
@@ -883,7 +894,7 @@ _write_object(cl_object x, int level)
 			write_ch('>');
 			return;
 		}
-		if (PRINTlevel >= 0 && level >= PRINTlevel) {
+		if (!PRINTreadably && PRINTlevel >= 0 && level >= PRINTlevel) {
 			write_ch('#');
 			return;
 		}
@@ -892,7 +903,7 @@ _write_object(cl_object x, int level)
 		write_ch('(');
 		write_ch(SET_INDENT);
 		if (x->vector.fillp > 0) {
-			if (PRINTlength == 0) {
+			if (!PRINTreadably && PRINTlength == 0) {
 				write_str("...)");
 				write_ch(UNMARK);
 				return;
@@ -900,7 +911,7 @@ _write_object(cl_object x, int level)
 			_write_object(aref(x, 0), level+1);
 			for (ndx = 1;  ndx < x->vector.fillp;  ndx++) {
 				write_ch(INDENT);
-				if (PRINTlength>=0 && ndx>=PRINTlength){
+				if (!PRINTreadably && PRINTlength>=0 && ndx>=PRINTlength){
 					write_str("...");
 					break;
 				}
@@ -912,7 +923,7 @@ _write_object(cl_object x, int level)
 		return;
 
 	case t_string:
-		if (!PRINTescape) {
+		if (!PRINTescape && !PRINTreadably) {
 			for (ndx = 0;  ndx < x->string.fillp;  ndx++)
 				write_ch(x->string.self[ndx]);
 			return;
@@ -928,7 +939,7 @@ _write_object(cl_object x, int level)
 		break;
 
 	case t_bitvector:
-		if (!PRINTarray) {
+		if (!PRINTarray && !PRINTreadably) {
 			write_str("#<bit-vector ");
 			write_addr(x);
 			write_ch('>');
@@ -959,7 +970,7 @@ _write_object(cl_object x, int level)
 			x = CADR(x);
 			goto BEGIN;
 		}
-		if (PRINTlevel >= 0 && level >= PRINTlevel) {
+		if (!PRINTreadably && PRINTlevel >= 0 && level >= PRINTlevel) {
 			write_ch('#');
 			return;
 		}
@@ -972,7 +983,7 @@ _write_object(cl_object x, int level)
 		              @'si::pretty-print-format', Cnil)) != Cnil)
 			goto PRETTY_PRINT_FORMAT;
 		for (i = 0;  ;  i++) {
-			if (PRINTlength >= 0 && i >= PRINTlength) {
+			if (!PRINTreadably && PRINTlength >= 0 && i >= PRINTlength) {
 				write_str("...");
 				break;
 			}
@@ -1003,7 +1014,7 @@ _write_object(cl_object x, int level)
 	PRETTY_PRINT_FORMAT:
 		j = fixint(r);
 		for (i = 0;  ;  i++) {
-			if (PRINTlength >= 0 && i >= PRINTlength) {
+			if (!PRINTreadably && PRINTlength >= 0 && i >= PRINTlength) {
 				write_str("...");
 				break;
 			}
@@ -1033,18 +1044,21 @@ _write_object(cl_object x, int level)
 		goto RIGHT_PAREN;
 
 	case t_package:
+		if (PRINTreadably) FEprint_not_readable(x);
 		write_str("#<");
 		_write_object(x->pack.name, level);
  		write_str(" package>");
 		break;
 
 	case t_hashtable:
+		if (PRINTreadably) FEprint_not_readable(x);
 		write_str("#<hash-table ");
 		write_addr(x);
 		write_ch('>');
 		break;
 
 	case t_stream:
+		if (PRINTreadably) FEprint_not_readable(x);
 		switch ((enum smmode)x->stream.mode) {
 		case smm_closed:
 			write_str("#<closed stream ");
@@ -1125,7 +1139,7 @@ _write_object(cl_object x, int level)
 
 #ifndef CLOS
 	case t_structure:
-		if (PRINTlevel >= 0 && level >= PRINTlevel) {
+		if (!PRINTreadably && PRINTlevel >= 0 && level >= PRINTlevel) {
 			write_ch('#');
 			break;
 		}
@@ -1146,19 +1160,21 @@ _write_object(cl_object x, int level)
 #endif /* CLOS */
 
 	case t_readtable:
+		if (PRINTreadably) FEprint_not_readable(x);
 		write_str("#<readtable ");
 		write_addr(x);
 		write_ch('>');
 		break;
 
 	case t_pathname:
-		if (PRINTescape)
+		if (PRINTescape || PRINTreadably)
 			write_str("#P");
 		_write_object(cl_namestring(x), level);
 		break;
 
 	case t_bytecodes: {
-		cl_object name = x->bytecodes.data[0];
+		cl_object name = x->bytecodes.name;
+		if (PRINTreadably) FEprint_not_readable(x);
 		write_str("#<interpreted-function ");
 		if (name != Cnil)
 			_write_object(name, level);
@@ -1168,6 +1184,7 @@ _write_object(cl_object x, int level)
 		break;
 	}
 	case t_cfun:
+		if (PRINTreadably) FEprint_not_readable(x);
 		write_str("#<compiled-function ");
 		if (x->cfun.name != Cnil)
 			_write_object(x->cfun.name, level);
@@ -1176,6 +1193,7 @@ _write_object(cl_object x, int level)
 		write_ch('>');
 		break;
 	case t_codeblock:
+		if (PRINTreadably) FEprint_not_readable(x);
 		write_str("#<codeblock ");
 		if (x->cblock.name != Cnil)
 			_write_object(x->cblock.name, level);
@@ -1184,18 +1202,21 @@ _write_object(cl_object x, int level)
 		write_ch('>');
 		break;
 	case t_cclosure:
+		if (PRINTreadably) FEprint_not_readable(x);
 		write_str("#<compiled-closure ");
 		write_addr(x);
 		write_ch('>');
 		break;
 #ifdef THREADS
       	case t_cont:
+		if (PRINTreadably) FEprint_not_readable(x);
 		write_str("#<cont ");
 		_write_object(x->cn.cn_thread, level);
 		write_ch('>');
 		break;
 
 	case t_thread:
+		if (PRINTreadably) FEprint_not_readable(x);
 		write_str("#<thread ");
 		_write_object(x->thread.entry, level);
 		write_ch(' ');
@@ -1211,6 +1232,7 @@ _write_object(cl_object x, int level)
 		break;
 
 	case t_gfun:
+		if (PRINTreadably) FEprint_not_readable(x);
 		write_str("#<dispatch-function ");
 		if (x->gfun.name != Cnil)
 			_write_object(x->gfun.name, level);
@@ -1220,6 +1242,7 @@ _write_object(cl_object x, int level)
 		break;
 #endif /* CLOS */
 	default:
+		if (PRINTreadably) FEprint_not_readable(x);
 		write_str("#<illegal pointer ");
 		write_addr(x);
 		write_ch('>');
@@ -1299,6 +1322,7 @@ cl_setup_printer(cl_object strm)
 	cl_object y;
 
 	PRINTstream = stream_or_default_output(strm);
+	PRINTreadably = symbol_value(@'*print-readably*') != Cnil;
 	PRINTescape = symbol_value(@'*print-escape*') != Cnil;
 	PRINTpretty = symbol_value(@'*print-pretty*') != Cnil;
 	PRINTcircle = symbol_value(@'*print-circle*') != Cnil;
@@ -1352,7 +1376,7 @@ cl_write_object(cl_object x)
 		PRINTstream = real_stream;
 		cl_write_object(x);
 
-		cl_clear_hash_table(CIRCLEstack);
+		cl_clrhash(CIRCLEstack);
 		CIRCLEcounter = -2;
 		return;
 	}
@@ -1402,6 +1426,7 @@ potential_number_p(cl_object strng, int base)
 @(defun write (x
 	       &key ((:stream strm) Cnil)
 		    (escape symbol_value(@'*print-escape*'))
+		    (readably symbol_value(@'*print-readably*'))
 		    (radix symbol_value(@'*print-radix*'))
 		    (base symbol_value(@'*print-base*'))
 		    (circle symbol_value(@'*print-circle*'))
@@ -1413,6 +1438,7 @@ potential_number_p(cl_object strng, int base)
 		    (array symbol_value(@'*print-array*')))
 @
 	PRINTstream = stream_or_default_output(strm);
+	PRINTreadably = readably != Cnil;
 	PRINTescape = escape != Cnil;
 	PRINTpretty = pretty != Cnil;
 	PRINTcircle = circle != Cnil;
@@ -1584,6 +1610,7 @@ si_write_bytes(cl_object stream, cl_object string, cl_object start, cl_object en
 void
 init_print(void)
 {
+	SYM_VAL(@'*print-readably*') = Cnil;
 	SYM_VAL(@'*print-escape*') = Ct;
 	SYM_VAL(@'*print-pretty*') = Ct;
 	SYM_VAL(@'*print-circle*') = Cnil;
@@ -1625,6 +1652,7 @@ princ(cl_object obj, cl_object strm)
 {
 	cl_setup_printer(strm);
 	PRINTescape = FALSE;
+	PRINTreadably = FALSE;
 	cl_write_object(obj);
 	return obj;
 }

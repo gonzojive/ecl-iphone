@@ -45,7 +45,7 @@ cl_object
 cl_va_arg(cl_va_list args)
 {
 	if (args[0].narg <= 0)
-		FEerror("Too few arguments", 0);
+		FEwrong_num_arguments_anonym();
 	args[0].narg--;
 	if (args[0].sp)
 		return cl_stack[args[0].sp++];
@@ -93,10 +93,11 @@ cl_apply_from_stack(cl_index narg, cl_object x)
 	case t_symbol:
 		fun = SYM_FUN(fun);
 		goto AGAIN;
-	case t_bytecodes: ERROR:
+	case t_bytecodes:
 		return lambda_apply(narg, fun);
+	default:
+		FEinvalid_function(fun);
 	}
-	FEinvalid_function(fun);
 }
 
 /*----------------------------------------------------------------------*
@@ -247,9 +248,8 @@ cl_safe_eval(cl_object form, cl_object *new_bytecodes, cl_object env, cl_object 
 }
 
 @(defun si::safe-eval (form &optional (err_value @'error') env)
-	cl_object output;
 @
-	returnn(cl_safe_eval(form, NULL, env, err_value));
+	return cl_safe_eval(form, NULL, env, err_value);
 @)
 
 @(defun constantp (arg &optional env)

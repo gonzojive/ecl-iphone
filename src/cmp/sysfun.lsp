@@ -257,11 +257,11 @@
 	:inline-always ((character) character nil nil "toupper(#0)"))
 (CHAR-DOWNCASE (character) character nil nil
 	:inline-always ((character) character nil nil "tolower(#0)"))
-(DIGIT-CHAR (fixnum *) character nil nil)
+(DIGIT-CHAR (fixnum *) (or character null) nil nil)
 (CHAR-INT (character) fixnum nil nil
 	:inline-always ((character) fixnum nil nil "#0"))
-(CHAR-NAME (character) string)
-(NAME-CHAR (string) character)
+(CHAR-NAME (character) (or string null))
+(NAME-CHAR (string) (or character null))
 
 ; ; file error.c
 #-clcs
@@ -428,16 +428,16 @@
 	:inline-unsafe ((t t) t nil nil "nth(fix(#0),#1)")
 	:inline-unsafe ((fixnum t) t nil nil "nth(#0,#1)"))
 (FIRST (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cl_car(#0)")
+;	:inline-safe ((t) t nil nil "cl_car(#0)")
 	:inline-unsafe ((t) t nil nil "CAR(#0)"))
 (SECOND (T) T nil nil
-	:inline-safe ((t) t nil nil "cl_cadr(#0)")
+;	:inline-safe ((t) t nil nil "cl_cadr(#0)")
 	:inline-unsafe ((t) t nil nil "CADR(#0)"))
 (THIRD (T) T nil nil
-	:inline-safe ((t) t nil nil "cl_caddr(#0)")
+;	:inline-safe ((t) t nil nil "cl_caddr(#0)")
 	:inline-unsafe ((t) t nil nil "CADDR(#0)"))
 (FOURTH (T) T nil nil
-	:inline-safe ((t) t nil nil "cl_cadddr(#0)")
+;	:inline-safe ((t) t nil nil "cl_cadddr(#0)")
 	:inline-unsafe ((t) t nil nil "CADDDR(#0)"))
 (FIFTH (T) T)
 (SIXTH (T) T)
@@ -446,7 +446,7 @@
 (NINTH (T) T)
 (TENTH (T) T)
 (REST (T) T NIL NIL
-	:inline-safe ((t) t nil nil "cl_cdr(#0)")
+;	:inline-safe ((t) t nil nil "cl_cdr(#0)")
 	:inline-unsafe ((t) t nil nil "CDR(#0)"))
 (NTHCDR (fixnum t) T nil nil
 	:inline-always ((t t) t nil nil "nthcdr(fixint(#0),#1)")
@@ -456,27 +456,10 @@
 (LAST (T) T)
 (LIST (*) T NIL NIL
 	:inline-always (nil t nil nil "Cnil")
-	:inline-always ((t) t nil t "CONS(#0,Cnil)")
-	:inline-always ((t t) t nil t list-inline)
-	:inline-always ((t t t) t nil t list-inline)
-	:inline-always ((t t t t) t nil t list-inline)
-	:inline-always ((t t t t t) t nil t list-inline)
-	:inline-always ((t t t t t t) t nil t list-inline)
-	:inline-always ((t t t t t t t) t nil t list-inline)
-	:inline-always ((t t t t t t t t) t nil t list-inline)
-	:inline-always ((t t t t t t t t t) t nil t list-inline)
-	:inline-always ((t t t t t t t t t t) t nil t list-inline))
+	:inline-always ((t) t nil t "CONS(#0,Cnil)"))
 (LIST* (T *) T NIL NIL
 	:inline-always ((t) t nil nil "#0")
-	:inline-always ((t t) t nil t "CONS(#0,#1)")
-	:inline-always ((t t t) t nil t list*-inline)
-	:inline-always ((t t t t) t nil t list*-inline)
-	:inline-always ((t t t t t) t nil t list*-inline)
-	:inline-always ((t t t t t t) t nil t list*-inline)
-	:inline-always ((t t t t t t t) t nil t list*-inline)
-	:inline-always ((t t t t t t t t) t nil t list*-inline)
-	:inline-always ((t t t t t t t t t) t nil t list*-inline)
-	:inline-always ((t t t t t t t t t t) t nil t list*-inline))
+	:inline-always ((t t) t nil t "CONS(#0,#1)"))
 (MAKE-LIST (fixnum *) T)
 (APPEND (*) T NIL NIL
 	:inline-always ((t t) t nil t "append(#0,#1)"))
@@ -598,7 +581,7 @@
 
 ; file num_co.c
 (FLOAT (T *) T NIL NIL
-	:inline-always ((T) short-float nil nil "(Lfloat(1,#0),sf(VALUES(0)))")
+;	:inline-always ((T) short-float nil nil "(Lfloat(1,#0),sf(VALUES(0)))")
 	:inline-always ((fixnum-float) long-float nil nil "((double)(#0))")
 	:inline-always ((fixnum-float) short-float nil nil "((float)(#0))"))
 (NUMERATOR (T) T)
@@ -678,9 +661,9 @@
 (RANDOM (T *) T)
 (MAKE-RANDOM-STATE (*) T)
 (RANDOM-STATE-P (T) T NIL T)
-(EXP (T) T NIL NIL :inline-always ((number) t nil t "cl_exp(#0)"))
+;(EXP (T) T NIL NIL :inline-always ((number) t nil t "cl_exp(#0)"))
 (EXPT (T T) T NIL NIL
-	:inline-always ((t t) t nil t "cl_expt(#0,#1)")
+;	:inline-always ((t t) t nil t "cl_expt(#0,#1)")
 	:inline-always ((fixnum fixnum) fixnum nil nil
 		(lambda (loc1 loc2)
 		  (if (and (consp loc1) (eq (car loc1) 'fixnum)
@@ -982,7 +965,8 @@ type_of(#0)==t_bitvector"))
 (GET-PROPERTIES (T T) *)
 (SYMBOL-NAME (symbol) string nil nil
 	:inline-always ((symbol) t nil t "((#0)->symbol.name)")
-	:inline-always ((t) t nil t "cl_symbol_name(#0)"))
+;	:inline-always ((t) t nil t "cl_symbol_name(#0)")
+)
 (MAKE-SYMBOL (string) symbol)
 (COPY-SYMBOL (symbol *) symbol)
 (GENSYM (*) symbol)

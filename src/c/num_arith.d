@@ -14,7 +14,7 @@
 */
 
 #include "ecl.h"
-
+#include <stdlib.h>
 
 /*  (*		)  */
 
@@ -579,7 +579,7 @@ number_negate(cl_object x)
 cl_object
 number_divide(cl_object x, cl_object y)
 {
-	cl_object z, z1, z2, z3;
+	cl_object z, z1, z2;
 
 	switch (type_of(x)) {
 	case t_fixnum:

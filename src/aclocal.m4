@@ -83,11 +83,11 @@ if (f == NULL)
   exit(1);
 
 #ifdef CFLAGS
-fprintf(f,"CFLAGS='%s';\n", CFLAGS);
+fprintf(f,"CFLAGS=\"$CFLAGS \"'%s';\n", CFLAGS);
 #endif
 
 #ifdef LSPCFLAGS
-fprintf(f,"LSPCFLAGS='%s';\n", LSPCFLAGS);
+fprintf(f,"LSPCFLAGS=\"$CFLAGS \"'%s';\n", LSPCFLAGS);
 #endif
 
 #ifdef CLIBS
@@ -95,11 +95,11 @@ fprintf(f,"CLIBS='%s';\n", CLIBS);
 #endif
 
 #ifdef LDFLAGS
-fprintf(f,"LDFLAGS='%s';\n", LDFLAGS);
+fprintf(f,"LDFLAGS=\"$LDFLAGS \"'%s';\n", LDFLAGS);
 #endif
 
 #ifdef SHARED_LDFLAGS
-fprintf(f,"SHARED_LDFLAGS='%s';\n", SHARED_LDFLAGS);
+fprintf(f,"SHARED_LDFLAGS=\"$LDFLAGS \"'%s';\n", SHARED_LDFLAGS);
 #endif
 
 fprintf(f,"SETJMP='%s';\n", ecl_setjmp);

@@ -33,10 +33,11 @@
 */
 
 #include <unistd.h>
+#include <string.h>
 #include "ecl.h"
 #include "page.h"
 
-#undef USE_MMAP
+#define USE_MMAP
 #ifdef USE_MMAP
 #include <sys/types.h>
 #include <sys/mman.h>
@@ -84,15 +85,18 @@ static cl_object malloc_list;
 void
 cl_resize_hole(cl_index n)
 {
+#define PAGESIZE 8192
 	cl_index m, bytes;
 	cl_ptr result, last_addr;
+	bytes = n * LISP_PAGESIZE;
+	bytes = (bytes + PAGESIZE-1) / PAGESIZE;
+	bytes = bytes * PAGESIZE;
 	if (heap_start == NULL) {
 		/* First time use. We allocate the memory and keep the first
 		 * address in heap_start.
 		 */
-		bytes = n * LISP_PAGESIZE;
-		result = mmap(NULL, bytes, PROT_READ | PROT_WRITE,
-			      MAP_ANON | MAP_PRIVATE, -1 ,0);
+		result = mmap(0x2E000000, bytes, PROT_READ | PROT_WRITE,
+			      MAP_ANON | MAP_FIXED | MAP_PRIVATE, -1 ,0);
 		if (result == MAP_FAILED)
 			error("Cannot allocate memory. Good-bye!");
 		data_end = heap_end = heap_start = result;
@@ -105,9 +109,8 @@ cl_resize_hole(cl_index n)
 		m = (data_end - heap_end)/LISP_PAGESIZE;
 		if (n <= m)
 			return;
-		bytes = n * LISP_PAGESIZE;
 		result = mmap(data_end, bytes, PROT_READ | PROT_WRITE,
-			      MAP_ANON | MAP_PRIVATE, -1, 0);
+			      MAP_ANON | MAP_FIXED | MAP_PRIVATE, -1, 0);
 		if (result == MAP_FAILED)
 			error("Cannot resize memory pool. Good-bye!");
 		last_addr = result + bytes;
@@ -136,26 +139,27 @@ cl_resize_hole(cl_index n)
 	cl_index m;
 	m = (data_end - heap_end)/LISP_PAGESIZE;
 	if (n <= m)
-	  return;
+		return;
 
 	/* Create the hole */
 	e = sbrk(0);
-	if (data_end == e)
-	  n -= m;
-	else {
- 	  cl_dealloc(heap_end, data_end - heap_end);
-	  /* FIXME! Horrible hack! */
-	  /* mark as t_other pages not allocated by us */
-	  heap_end = e;
-	  while (data_end < heap_end) {
-	    type_map[page(data_end)] = t_other;
-	    data_end += LISP_PAGESIZE;
-	  }
-	  holepage = 0;
+	if (data_end == e) {
+		e = sbrk((n -= m) * LISP_PAGESIZE);
+	} else {
+		cl_dealloc(heap_end, data_end - heap_end);
+		/* FIXME! Horrible hack! */
+		/* mark as t_other pages not allocated by us */
+		heap_end = e;
+		while (data_end < heap_end) {
+			type_map[page(data_end)] = t_other;
+			data_end += LISP_PAGESIZE;
+		}
+		holepage = 0;
+		e = sbrk(n * LISP_PAGESIZE + (data_end - e));
 	}
-	if ((int)sbrk(LISP_PAGESIZE * n) < 0)
-	  error("Can't allocate.  Good-bye!");
-	data_end += LISP_PAGESIZE*(n);
+	if ((int)e < 0)
+		error("Can't allocate.  Good-bye!");
+	data_end = e;
 	holepage += n;
 }
 #endif
@@ -174,24 +178,36 @@ alloc_page(cl_index n)
 	return e;
 }
 
+/*
+ * We have to mark all objects within the page as FREE. However, at
+ * the end of the page there might be extra bytes, which have to be
+ * tagged as useless. Since these bytes are at least 4, x->m points to
+ * data within the page and we can mark this object setting x->m=FREE.
+ */
 static void
 add_page_to_freelist(cl_ptr p, struct typemanager *tm)
-{ cl_type t;
-  cl_object x, f;
-  cl_index i;
-  t = tm->tm_type;
-  type_map[page(p)] = t;
-  f = tm->tm_free;
-  for (i = tm->tm_nppage; i > 0; --i, p += tm->tm_size) {
-    x = (cl_object)p;
-    ((struct freelist *)x)->t = (short)t;
-    ((struct freelist *)x)->m = FREE;
-    ((struct freelist *)x)->f_link = f;
-    f = x;
-  }
-  tm->tm_free = f;
-  tm->tm_nfree += tm->tm_nppage;
-  tm->tm_npage++;
+{
+	cl_type t;
+	cl_object x, f;
+	cl_index i;
+	t = tm->tm_type;
+	type_map[page(p)] = t;
+	f = tm->tm_free;
+	for (i = tm->tm_nppage; i > 0; --i, p += tm->tm_size) {
+		x = (cl_object)p;
+		((struct freelist *)x)->t = (short)t;
+		((struct freelist *)x)->m = FREE;
+		((struct freelist *)x)->f_link = f;
+		f = x;
+	}
+	/* Mark the extra bytes which cannot be used. */
+	if (tm->tm_size * tm->tm_nppage < LISP_PAGESIZE) {
+		x = (cl_object)p;
+		x->d.m = FREE;
+	}
+	tm->tm_free = f;
+	tm->tm_nfree += tm->tm_nppage;
+	tm->tm_npage++;
 }
 
 cl_object
@@ -206,6 +222,7 @@ cl_alloc_object(cl_type t)
 	  return MAKE_FIXNUM(0); /* Immediate fixnum */
 	case t_character:
 	  return CODE_CHAR('\0'); /* Immediate character */
+	default:
 	}
 	
 	start_critical_section(); 
@@ -329,6 +346,9 @@ ONCE_MORE:
 	  break;
 	case t_bytecodes:
 	  obj->bytecodes.lex = Cnil;
+	  obj->bytecodes.name = Cnil;
+	  obj->bytecodes.definition = Cnil;
+	  obj->bytecodes.specials = Cnil;
 	  obj->bytecodes.size = 0;
 	  obj->bytecodes.data = NULL;
 	  break;
@@ -548,7 +568,7 @@ Use ALLOCATE-CONTIGUOUS-PAGES to expand the space.",
 	cl_dealloc(p+n, LISP_PAGESIZE*m - n);
 
 	end_critical_section();
-	return(p);
+	return memset(p, 0, n);
 }
 
 /*
@@ -660,7 +680,7 @@ init_alloc(void)
 	heap_start = NULL;
 #else
 	heap_end = sbrk(0);
-	i = (int)heap_end & (LISP_PAGESIZE - 1);
+	i = ((cl_index)heap_end) % LISP_PAGESIZE;
 	if (i)
 	  sbrk(LISP_PAGESIZE - i);
 	heap_end = heap_start = data_end = sbrk(0);

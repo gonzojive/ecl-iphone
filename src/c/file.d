@@ -332,7 +332,6 @@ close_stream(cl_object strm, bool abort_flag)        /*  Not used now!  */
 {
 	FILE *fp;
 
-BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
 		funcall(2, @'stream-close', strm);
@@ -659,7 +658,6 @@ int
 writec_stream(int c, cl_object strm)
 {
 	cl_object x;
-	cl_index i;
 	FILE *fp;
 
 BEGIN:

@@ -697,7 +697,6 @@ cl_rem(cl_object x, cl_object y)
 cl_object
 cl_decode_float(cl_object x)
 {
-	double d;
 	int e, s;
 	cl_type tx = type_of(x);
 
@@ -822,7 +821,6 @@ cl_float_precision(cl_object x)
 cl_object
 cl_integer_decode_float(cl_object x)
 {
-	unsigned int h, l;
 	int e, s;
 
 	switch (type_of(x)) {

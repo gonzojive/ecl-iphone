@@ -27,6 +27,7 @@ extern cl_object make_cons(cl_object a, cl_object d);
 extern void cl_dealloc(void *p, cl_index s);
 #ifdef GBC_BOEHM
 extern cl_object si_gc(cl_object area);
+extern cl_object si_gc_dump();
 extern void *GC_malloc(size_t size);
 extern void *GC_malloc_atomic_ignore_off_page(size_t size);
 extern void GC_free(void *);
@@ -280,7 +281,7 @@ extern cl_object si_bc_split(cl_object v);
 
 /* error.c */
 
-extern cl_object cl_error _ARGS((int narg, cl_object eformat, ...));
+extern cl_object cl_error _ARGS((int narg, cl_object eformat, ...)) __attribute__((noreturn));
 extern cl_object cl_cerror _ARGS((int narg, cl_object cformat, cl_object eformat, ...));
 
 extern cl_object null_string;
@@ -288,7 +289,6 @@ extern void internal_error(const char *s) __attribute__((noreturn,regparm(2)));
 extern void cs_overflow(void) __attribute__((noreturn));
 extern void error(const char *s) __attribute__((noreturn,regparm(2)));
 extern void terminal_interrupt(bool correctable);
-extern void FEcondition(int narg, cl_object name, ...) __attribute__((noreturn));
 extern void FEprogram_error(const char *s, int narg, ...) __attribute__((noreturn));
 extern void FEcontrol_error(const char *s, int narg, ...) __attribute__((noreturn));
 extern void FEerror(char *s, int narg, ...) __attribute__((noreturn));
@@ -460,7 +460,6 @@ extern void init_hash(void);
 extern cl_object gethash(cl_object key, cl_object hash);
 extern cl_object gethash_safe(cl_object key, cl_object hash, cl_object def);
 extern bool remhash(cl_object key, cl_object hash);
-extern void cl_clear_hashtable(cl_object hashtable);
 
 
 /* instance.c */
@@ -487,6 +486,8 @@ extern void init_instance(void);
 
 /* list.c */
 
+extern cl_object cl_car(cl_object x);
+extern cl_object cl_cdr(cl_object x);
 extern cl_object cl_caar(cl_object x);
 extern cl_object cl_cadr(cl_object x);
 extern cl_object cl_cdar(cl_object x);
@@ -515,6 +516,11 @@ extern cl_object cl_cddaar(cl_object x);
 extern cl_object cl_cddadr(cl_object x);
 extern cl_object cl_cdddar(cl_object x);
 extern cl_object cl_cddddr(cl_object x);
+#define cl_rest cl_cdr
+#define cl_first cl_car
+#define cl_second cl_cadr
+#define cl_third cl_caddr
+#define cl_fourth cl_cadddr
 extern cl_object cl_fifth(cl_object x);
 extern cl_object cl_sixth(cl_object x);
 extern cl_object cl_seventh(cl_object x);
@@ -558,8 +564,6 @@ extern cl_object cl_rassoc _ARGS((int narg, cl_object item, cl_object alist, ...
 extern cl_object cl_assoc _ARGS((int narg, cl_object item, cl_object alist, ...));
 
 extern cl_object list_length(cl_object x);
-extern cl_object cl_car(cl_object x);
-extern cl_object cl_cdr(cl_object x);
 extern cl_object append(cl_object x, cl_object y);
 extern bool endp(cl_object x);
 extern cl_object nth(cl_fixnum n, cl_object x);
@@ -876,7 +880,6 @@ extern void shadowing_import(cl_object s, cl_object p);
 extern void shadow(cl_object s, cl_object p);
 extern void use_package(cl_object x0, cl_object p);
 extern void unuse_package(cl_object x0, cl_object p);
-extern void delete_package(cl_object p);
 extern void init_package(void);
 
 

@@ -525,9 +525,12 @@ file.  When the saved image is invoked, it will start the redefined top-level."
 	  (return (tpl-make-command :HELP (read-line))))
 	 (t
 	  (unread-char #\?)
-	  (return (read)))))
+	  (return (read-preserving-whitespace)))))
+      ;; We use READ-PRESERVING-WHITESPACE because with READ, if an
+      ;; error happens within the reader, and we perform a ":C" or
+      ;; (CONTINUE), the reader will wait for an inexistent #\Newline.
       (t
-       (return (read))))))
+       (return (read-preserving-whitespace))))))
 
 (defun tpl-make-command (name line &aux (c nil))
   (dolist (commands *tpl-commands*)

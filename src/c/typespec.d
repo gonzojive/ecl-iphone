@@ -60,7 +60,7 @@ FEtype_error_list(cl_object x) {
 
 void
 FEtype_error_proper_list(cl_object x) {
-	FEcondition(9, @'simple-type-error', @':format-control',
+	cl_error(9, @'simple-type-error', @':format-control',
 		    make_simple_string("Not a proper list ~D"),
 		    @':format-arguments', cl_list(1, x),
 		    @':expected-type', @'list',
@@ -70,7 +70,7 @@ FEtype_error_proper_list(cl_object x) {
 void
 FEtype_error_alist(cl_object x)
 {
-	FEcondition(9, @'simple-type-error', @':format-control',
+	cl_error(9, @'simple-type-error', @':format-control',
 		    make_simple_string("Not a valid association list ~D"),
 		    @':format-arguments', cl_list(1, x),
 		    @':expected-type', @'list',
@@ -80,7 +80,7 @@ FEtype_error_alist(cl_object x)
 void
 FEtype_error_plist(cl_object x)
 {
-	FEcondition(9, @'simple-type-error', @':format-control',
+	cl_error(9, @'simple-type-error', @':format-control',
 		    make_simple_string("Not a valid property list ~D"),
 		    @':format-arguments', cl_list(1, x),
 		    @':expected-type', @'list',
@@ -92,7 +92,7 @@ FEcircular_list(cl_object x)
 {
 	/* FIXME: Is this the right way to rebind it? */
 	bds_bind(@'*print-circle*', Ct);
-	FEcondition(9, @'simple-type-error', @':format-control',
+	cl_error(9, @'simple-type-error', @':format-control',
 		    make_simple_string("Circular list ~D"),
 		    @':format-arguments', cl_list(1, x),
 		    @':expected-type', @'list',
@@ -102,7 +102,7 @@ FEcircular_list(cl_object x)
 void
 FEtype_error_index(cl_object x)
 {
-	FEcondition(9, @'simple-type-error', @':format-control',
+	cl_error(9, @'simple-type-error', @':format-control',
 		    make_simple_string("Index out of bounds ~D"),
 		    @':format-arguments', cl_list(1, x),
 		    @':expected-type', @'fixnum',

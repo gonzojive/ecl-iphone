@@ -47,6 +47,10 @@ Returns the string \"ECL\"."
 
 ;;; Compiler functions.
 
+(defvar *compile-file-pathname* nil)
+
+(defvar *compile-file-truename* nil)
+
 (unless (fboundp 'compile)
 (defun proclaim (d)
   "Args: (decl-spec)

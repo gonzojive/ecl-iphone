@@ -30,6 +30,8 @@ cl_symbols[] = {
 {"//", CL_SPECIAL, NULL, -1},
 {"///", CL_SPECIAL, NULL, -1},
 {"/=", CL_ORDINARY, cl_NE, -1},
+{"*COMPILE-FILE-PATHNAME*", CL_SPECIAL, NULL, -1},
+{"*COMPILE-FILE-TRUENAME*", CL_SPECIAL, NULL, -1},
 {"*COMPILE-PRINT*", CL_SPECIAL, NULL, -1},
 {"*COMPILE-VERBOSE*", CL_SPECIAL, NULL, -1},
 {"*DEBUG-IO*", CL_SPECIAL, NULL, -1},
@@ -55,6 +57,7 @@ cl_symbols[] = {
 {"*PRINT-LEVEL*", CL_SPECIAL, NULL, -1},
 {"*PRINT-PRETTY*", CL_SPECIAL, NULL, -1},
 {"*PRINT-RADIX*", CL_SPECIAL, NULL, -1},
+{"*PRINT-READABLY*", CL_SPECIAL, NULL, -1},
 {"*QUERY-IO*", CL_SPECIAL, NULL, -1},
 {"*RANDOM-STATE*", CL_SPECIAL, NULL, -1},
 {"*READ-BASE*", CL_SPECIAL, NULL, -1},
@@ -1049,6 +1052,7 @@ cl_symbols[] = {
 {"SI::SETF-SYMBOL", SI_ORDINARY, NULL, -1},
 {"SI::SETF-UPDATE", SI_ORDINARY, NULL, -1},
 {"SI::SIMPLE-CONTROL-ERROR", SI_ORDINARY, NULL, -1},
+{"SI::SIMPLE-PACKAGE-ERROR", SI_ORDINARY, NULL, -1},
 {"SI::SIMPLE-PROGRAM-ERROR", SI_ORDINARY, NULL, -1},
 {"SI::SPECIALP", SI_ORDINARY, si_specialp, 1},
 {"SI::STANDARD-READTABLE", SI_ORDINARY, si_standard_readtable, 0},
@@ -1157,26 +1161,6 @@ cl_symbols[] = {
 {"%THREAD-WAIT-WITH-TIMEOUT", CL_ORDINARY, cl_thread_wait_with_timeout, -1},
 #endif
 
-#ifdef GBC_BOEHM
-{"SI::GC", SI_ORDINARY, si_gc, 1},
-#endif
-
-#if !defined(GBC_BOEHM)
-{"SI::GC", SI_ORDINARY, si_gc, -1},
-{"SI::ALLOCATE", SI_ORDINARY, si_allocate, -1},
-{"SI::ALLOCATED-PAGES", SI_ORDINARY, si_allocated_pages, -1},
-{"SI::MAXIMUM-ALLOCATABLE-PAGES", SI_ORDINARY, si_maximum_allocatable_pages, -1},
-{"SI::ALLOCATE-CONTIGUOUS-PAGES", SI_ORDINARY, si_allocate_contiguous_pages, -1},
-{"SI::ALLOCATED-CONTIGUOUS-PAGES", SI_ORDINARY, si_allocated_contiguous_pages, -1},
-{"SI::MAXIMUM-CONTIGUOUS-PAGES", SI_ORDINARY, si_maximum_contiguous_pages, -1},
-{"SI::GC-TIME", SI_ORDINARY, si_gc_time, -1},
-{"SI::GET-HOLE-SIZE", SI_ORDINARY, si_get_hole_size, -1},
-{"SI::SET-HOLE-SIZE", SI_ORDINARY, si_set_hole_size, -1},
-{"SI::IGNORE-MAXIMUM-PAGES", SI_ORDINARY, si_ignore_maximum_pages, -1},
-{"SI::ROOM-REPORT", SI_ORDINARY, si_room_report, -1},
-{"SI::RESET-GC-COUNT", SI_ORDINARY, si_reset_gc_count, -1},
-#endif /* !GBC_BOEHM */
-
 #ifdef PROFILE
 {"SI::PROFILE", SI_ORDINARY, si_profile, -1},
 {"SI::CLEAR-PROFILE", SI_ORDINARY, si_clear_profile, -1},
@@ -1248,14 +1232,17 @@ cl_symbols[] = {
 {":NEW-VERSION", KEYWORD, NULL, -1},
 {":NEWEST", KEYWORD, NULL, -1},
 {":NICKNAMES", KEYWORD, NULL, -1},
+{":OBJECT", KEYWORD, NULL, -1},
 {":OUTPUT", KEYWORD, NULL, -1},
 {":OVERWRITE", KEYWORD, NULL, -1},
+{":PACKAGE", KEYWORD, NULL, -1},
 {":PATHNAME", KEYWORD, NULL, -1},
 {":PRETTY", KEYWORD, NULL, -1},
 {":PRINT", KEYWORD, NULL, -1},
 {":PROBE", KEYWORD, NULL, -1},
 {":PROTECT", KEYWORD, NULL, -1},
 {":RADIX", KEYWORD, NULL, -1},
+{":READABLY", KEYWORD, NULL, -1},
 {":REHASH-SIZE", KEYWORD, NULL, -1},
 {":REHASH-THRESHOLD", KEYWORD, NULL, -1},
 {":RELATIVE", KEYWORD, NULL, -1},
@@ -1280,6 +1267,27 @@ cl_symbols[] = {
 {":VERSION", KEYWORD, NULL, -1},
 {":WILD", KEYWORD, NULL, -1},
 {":WILD-INFERIORS", KEYWORD, NULL, -1},
+
+#ifdef GBC_BOEHM
+{"SI::GC", SI_ORDINARY, si_gc, 1},
+{"SI::GC-DUMP", SI_ORDINARY, si_gc_dump, 0},
+#endif
+
+#if !defined(GBC_BOEHM)
+{"SI::GC", SI_ORDINARY, si_gc, -1},
+{"SI::ALLOCATE", SI_ORDINARY, si_allocate, -1},
+{"SI::ALLOCATED-PAGES", SI_ORDINARY, si_allocated_pages, -1},
+{"SI::MAXIMUM-ALLOCATABLE-PAGES", SI_ORDINARY, si_maximum_allocatable_pages, -1},
+{"SI::ALLOCATE-CONTIGUOUS-PAGES", SI_ORDINARY, si_allocate_contiguous_pages, -1},
+{"SI::ALLOCATED-CONTIGUOUS-PAGES", SI_ORDINARY, si_allocated_contiguous_pages, -1},
+{"SI::MAXIMUM-CONTIGUOUS-PAGES", SI_ORDINARY, si_maximum_contiguous_pages, -1},
+{"SI::GC-TIME", SI_ORDINARY, si_gc_time, -1},
+{"SI::GET-HOLE-SIZE", SI_ORDINARY, si_get_hole_size, -1},
+{"SI::SET-HOLE-SIZE", SI_ORDINARY, si_set_hole_size, -1},
+{"SI::IGNORE-MAXIMUM-PAGES", SI_ORDINARY, si_ignore_maximum_pages, -1},
+{"SI::ROOM-REPORT", SI_ORDINARY, si_room_report, -1},
+{"SI::RESET-GC-COUNT", SI_ORDINARY, si_reset_gc_count, -1},
+#endif /* !GBC_BOEHM */
 
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1}};

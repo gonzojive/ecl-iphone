@@ -209,7 +209,7 @@ asm_ref(register cl_index n) {
 static cl_object
 asm_end(cl_index beginning, cl_object bytecodes) {
 	cl_object new_bytecodes;
-	cl_index length, bytes, i;
+	cl_index length, bytes;
 
 	/* Save bytecodes from this session in a new vector */
 	length = current_pc() - beginning;
@@ -224,6 +224,9 @@ asm_end(cl_index beginning, cl_object bytecodes) {
 	if (new_bytecodes->bytecodes.size < length) {
 		new_bytecodes->bytecodes.data = (cl_object *)cl_alloc(bytes);
 		new_bytecodes->bytecodes.size = length;
+	} else {
+		memset(new_bytecodes->bytecodes.data, 0,
+		       new_bytecodes->bytecodes.size * sizeof(cl_object));
 	}
 #ifdef CL_COMP_OWN_STACK
 	memcpy(new_bytecodes->bytecodes.data,
@@ -427,9 +430,9 @@ c_tag_ref(cl_object the_tag, cl_object the_type)
 		cl_object type = CAR(record);
 		cl_object name = CADR(record);
 		if (type == @':tag') {
-			if (type == the_type && !Null(assq(the_tag, name)))
+			if (type == the_type && !Null(assql(the_tag, name)))
 				return CONS(MAKE_FIXNUM(n),
-					    CDR(assq(the_tag, name)));
+					    CDR(assql(the_tag, name)));
 			n++;
 		} else if (type == @':block' || type == @':function') {
 			if (type == the_type && name == the_tag)
@@ -716,7 +719,6 @@ static int
 c_funcall(cl_object args, int flags) {
 	cl_object name;
 	cl_index nargs;
-	bool push = flags & FLAG_PUSH;
 
 	name = pop(&args);
 	if (CONSP(name)) {
@@ -741,8 +743,7 @@ c_funcall(cl_object args, int flags) {
 
 static int
 perform_c_case(cl_object args, int flags) {
-	cl_object test, clause, conseq;
-	cl_fixnum label1, label2;
+	cl_object test, clause;
 
 	do {
 		if (Null(args))
@@ -865,7 +866,7 @@ c_compiler_let(cl_object args, int flags) {
 */
 static int
 c_cond(cl_object args, int flags) {
-	cl_object test, clause, conseq;
+	cl_object test, clause;
 	cl_fixnum label_nil, label_exit;
 
 	clause = pop(&args);
@@ -1260,7 +1261,6 @@ c_go(cl_object args, int flags) {
 static int
 c_if(cl_object form, int flags) {
 	cl_fixnum label_nil, label_true;
-	cl_object if_then;
 
 	/* Compile test */
 	compile_form(pop(&form), FLAG_VALUES);
@@ -1412,8 +1412,7 @@ c_locally(cl_object args, int flags) {
 static int
 c_macrolet(cl_object args, int flags)
 {
-	cl_object def_list, def, name;
-	int nfun = 0;
+	cl_object def_list;
 	cl_object old_macros = c_env.macros;
 
 	/* Pop the list of definitions */
@@ -1439,7 +1438,7 @@ c_multiple_value_bind(cl_object args, int flags)
 {
 	cl_object old_env = c_env.variables;
 	cl_object vars, value, body, specials;
-	cl_index save_pc, n;
+	cl_index n;
 
 	vars = pop(&args);
 	value = pop(&args);
@@ -1554,7 +1553,7 @@ c_multiple_value_setq(cl_object args, int flags) {
 		FEprogram_error("MULTIPLE-VALUE-SETQ: Too many arguments.", 0);
 	if (nvars == 0)
 		/* No variables */
-		return;
+		return flags;
 
 	/* Compile variables */
 	asm_op2(OP_MSETQ, nvars);
@@ -1599,6 +1598,8 @@ c_not(cl_object args, int flags) {
 		/* The value may be ignored. */
 		flags = compile_form(pop(&args), flags);
 	}
+	if (!Null(args))
+		FEprogram_error("NOT/NULL: Too many arguments.", 0);
 	return flags;
 }
 
@@ -1808,9 +1809,8 @@ c_setq(cl_object args, int flags) {
 static int
 c_symbol_macrolet(cl_object args, int flags)
 {
-	cl_object def_list, def, name, specials, body;
+	cl_object def_list, specials, body;
 	cl_object old_variables = c_env.variables;
-	int nfun = 0;
 
 	def_list = pop(&args);
 	body = c_process_declarations(args);
@@ -1977,7 +1977,6 @@ static int
 compile_form(cl_object stmt, int flags) {
 	compiler_record *l;
 	cl_object function;
-	cl_object macro;
 	bool push = flags & FLAG_PUSH;
 
 	/* FIXME! We should protect this region with error handling */
@@ -2016,7 +2015,6 @@ compile_form(cl_object stmt, int flags) {
 		asm1(stmt);
 		goto OUTPUT;
 	}
- LIST:
 	/*
 	 * Next try with special forms.
 	 */
@@ -2417,8 +2415,8 @@ c_register_var2(register cl_object var, register cl_object *specials)
 cl_object
 make_lambda(cl_object name, cl_object lambda) {
 	cl_object reqs, opts, rest, key, keys, auxs, allow_other_keys;
-	cl_object specials, doc, decl, body, l;
-	cl_index specials_pc, opts_pc, keys_pc, label;
+	cl_object specials, doc, decl, body, output;
+	cl_index opts_pc, keys_pc, label;
 	int nopts, nkeys;
 	cl_index handle;
 	cl_compiler_env old_c_env = c_env;
@@ -2442,10 +2440,6 @@ make_lambda(cl_object name, cl_object lambda) {
 	/* Transform (SETF fname) => fname */
 	if (CONSP(name) && setf_namep(name) == OBJNULL)
 		FEprogram_error("LAMBDA: Not a valid function name ~S",1,name);
-
-	asm1(name);			/* Name of the function */
-	specials_pc = current_pc();	/* Which variables are declared special */
-	asm1(specials);
 
 	asm_list(reqs);			/* Special arguments */
 	reqs = CDR(reqs);
@@ -2502,17 +2496,19 @@ make_lambda(cl_object name, cl_object lambda) {
 		compile_form(value, FLAG_VALUES);
 		c_bind(var, specials);
 	}
-	asm_at(specials_pc, specials);
 
 	compile_body(body, FLAG_VALUES);
 	asm_op(OP_HALT);
 
-	if (!Null(SYM_VAL(@'si::*keep-definitions*')))
-		asm1(lambda);
+	output = asm_end(handle, Cnil);
+	output->bytecodes.name = name;
+	output->bytecodes.specials = specials;
+	output->bytecodes.definition = Null(SYM_VAL(@'si::*keep-definitions*'))?
+		Cnil : lambda;
 
 	c_env = old_c_env;
 
-	return asm_end(handle, Cnil);
+	return output;
 }
 
 cl_object
@@ -2579,8 +2575,6 @@ eval(cl_object form, cl_object *new_bytecodes, cl_object env)
 void
 init_compiler(void)
 {
-	compiler_record *l;
-
 	SYM_VAL(@'si::*keep-definitions*') = Ct;
 
 	ecl_register_static_root(&c_env.variables);

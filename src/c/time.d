@@ -65,7 +65,7 @@ cl_sleep(cl_object z)
 #endif
 	/* INV: number_minusp() makes sure `z' is real */
 	if (number_minusp(z))
-		FEcondition(9, @'simple-type-error', @':format-control',
+		cl_error(9, @'simple-type-error', @':format-control',
 			    make_simple_string("Not a non-negative number ~S"),
 			    @':format-arguments', cl_list(1, z),
 			    @':expected-type', @'real', @':datum', z);

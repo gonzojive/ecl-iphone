@@ -156,7 +156,7 @@ char_eq(cl_object x, cl_object y)
 @
 	/* INV: char_eq() checks types of its arguments */
 	if (narg == 0)
-		@(return Ct)
+		FEwrong_num_arguments(@'char/=');
 	c = cl_va_arg(cs);
 	for (i = 2; i<=narg; i++) {
 		cl_va_list ds;
@@ -242,9 +242,9 @@ char_equal(cl_object x, cl_object y)
 	int i, j;
 	cl_object c;
 @
-	if (narg == 0)
-		@(return Ct)
 	/* INV: char_equal() checks the type of its arguments */
+	if (narg == 0)
+		FEwrong_num_arguments(@'char-not-equal');
 	c = cl_va_arg(cs);
 	for (i = 2;  i<=narg;  i++) {
 		cl_va_list ds;
@@ -364,8 +364,8 @@ cl_char_upcase(cl_object c)
 {
 	/* INV: char_code() checks the type of `c' */
 	cl_fixnum code = char_code(c);
-	return1(islower(char_code(c)) ?
-		CODE_CHAR(toupper(char_code(c))) :
+	return1(islower(code) ?
+		CODE_CHAR(toupper(code)) :
 		c);
 }
 
@@ -374,8 +374,8 @@ cl_char_downcase(cl_object c)
 {
 	/* INV: char_code() checks the type of `c' */
 	cl_fixnum code = char_code(c);
-	return1(isupper(char_code(c)) ?
-		CODE_CHAR(tolower(char_code(c))) :
+	return1(isupper(code) ?
+		CODE_CHAR(tolower(code)) :
 		c);
 }
 
@@ -423,7 +423,7 @@ cl_char_name(cl_object c)
 {
 	/* INV: char_code() checks the type of `c' */
 	switch (char_code(c)) {
-	case '0':
+	case '\000':
 		return1(STnull);
 	case '\r':
 		return1(STreturn);
@@ -474,22 +474,22 @@ init_character(void)
 {
 	SYM_VAL(@'char-code-limit') = MAKE_FIXNUM(CHAR_CODE_LIMIT);
 
-	STreturn = make_simple_string("RETURN");
+	STreturn = make_simple_string("Return");
 	ecl_register_static_root(&STreturn);
-	STspace = make_simple_string("SPACE");
+	STspace = make_simple_string("Space");
 	ecl_register_static_root(&STspace);
-	STrubout = make_simple_string("RUBOUT");
+	STrubout = make_simple_string("Rubout");
 	ecl_register_static_root(&STrubout);
-	STpage = make_simple_string("PAGE");
+	STpage = make_simple_string("Page");
 	ecl_register_static_root(&STpage);
-	STtab = make_simple_string("TAB");
+	STtab = make_simple_string("Tab");
 	ecl_register_static_root(&STtab);
-	STbackspace = make_simple_string("BACKSPACE");
+	STbackspace = make_simple_string("Backspace");
 	ecl_register_static_root(&STbackspace);
-	STlinefeed = make_simple_string("LINEFEED");
+	STlinefeed = make_simple_string("Linefeed");
 	ecl_register_static_root(&STlinefeed);
-	STnull = make_simple_string("NULL");
+	STnull = make_simple_string("Null");
 	ecl_register_static_root(&STnull);
-	STnewline = make_simple_string("NEWLINE");
+	STnewline = make_simple_string("Newline");
 	ecl_register_static_root(&STnewline);
 }

@@ -100,8 +100,7 @@ macro_def(cl_object form, cl_object env)
 cl_object
 macro_expand1(cl_object form, cl_object env)
 {
-	cl_object hook, lex;
-	cl_object exp_fun;
+	cl_object hook, exp_fun;
 
 	exp_fun = macro_def(form, env);
 	if (Null(exp_fun))

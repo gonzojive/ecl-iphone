@@ -63,15 +63,11 @@ disassemble_vars(const char *message, cl_object *vector, cl_index step) {
 }
 
 static void
-disassemble_lambda(cl_object *vector) {
-	cl_object specials;
-	cl_index n;
+disassemble_lambda(cl_object bytecodes) {
+	cl_object *vector = bytecodes->bytecodes.data;
 
 	/* Name of LAMBDA */
-	print_arg("\nName:\t\t", next_code(vector));
-
-	/* Variables that have been declared special */
-	specials = next_code(vector);
+	print_arg("\nName:\t\t", bytecodes->bytecodes.name);
 
 	/* Print required arguments */
 	vector = disassemble_vars("Required:\t", vector, 1);
@@ -205,7 +201,7 @@ disassemble_flet(cl_object *vector) {
 	while (nfun--) {
 		cl_object fun = next_code(vector);
 		print_noarg("\n\tFLET\t");
-		@prin1(1, fun->bytecodes.data[0]);
+		@prin1(1, fun->bytecodes.name);
 	}
 	vector = disassemble(vector);
 	print_noarg("\t\t; flet");
@@ -232,7 +228,7 @@ disassemble_labels(cl_object *vector) {
 	lex_copy();
 	while (nfun--) {
 		cl_object fun = next_code(vector);
-		print_arg("\n\tLABELS\t", fun->bytecodes.data[0]);
+		print_arg("\n\tLABELS\t", fun->bytecodes.name);
 	}
 	vector = disassemble(vector);
 	print_noarg("\t\t; labels");
@@ -754,7 +750,7 @@ cl_object
 si_bc_disassemble(cl_object v)
 {
 	if (type_of(v) == t_bytecodes) {
-		disassemble_lambda(v->bytecodes.data);
+		disassemble_lambda(v);
 		@(return v)
 	}
 	@(return Cnil)

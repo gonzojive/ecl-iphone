@@ -89,7 +89,7 @@ cl_exp(cl_object x)
 cl_object
 cl_expt(cl_object x, cl_object y)
 {
-	cl_type tx, ty;
+	cl_type ty;
 	cl_object z;
 
 	if (y == MAKE_FIXNUM(0))

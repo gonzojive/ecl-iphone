@@ -77,9 +77,9 @@ cl_alloc_object(cl_type t)
 	}
 	tm = tm_of(t);
 
-	obj = (cl_object)GC_malloc(tm->tm_size);
+	obj = (cl_object)GC_MALLOC(tm->tm_size);
 	obj->d.t = t;
-	/* GC_malloc already resets objects */
+	/* GC_MALLOC already resets objects */
 	if (t == t_stream
 #ifdef ENABLE_DLOPEN
 	    || t == t_codeblock
@@ -101,7 +101,7 @@ make_cons(cl_object a, cl_object d)
 {
 	cl_object obj;
 
-	obj = (cl_object)GC_malloc(sizeof(struct cons));
+	obj = (cl_object)GC_MALLOC(sizeof(struct cons));
 	obj->d.t = (short)t_cons;
 	CAR(obj) = a;
 	CDR(obj) = d;
@@ -140,7 +140,9 @@ init_alloc(void)
 	alloc_initialized = TRUE;
 
 	GC_no_dls = 1;
+#if 0
 	GC_init_explicit_typing();
+#endif
 
 	init_tm(t_shortfloat, "SHORT-FLOAT", /* 8 */
 		sizeof(struct shortfloat_struct));
@@ -187,6 +189,7 @@ init_alloc(void)
 static void
 stacks_scanner(void)
 {
+#if 1
 	if (cl_stack) {
 		GC_push_conditional(cl_stack, cl_stack_top,1);
 		GC_set_mark_bit(cl_stack);
@@ -199,6 +202,7 @@ stacks_scanner(void)
 		GC_push_conditional(bds_org, bds_top+1,1);
 		GC_set_mark_bit(bds_top);
 	}
+#endif
 	if (NValues)
 		GC_push_all(Values, Values+NValues+1);
 	if (old_GC_push_other_roots)
@@ -219,7 +223,7 @@ stacks_scanner(void)
 void *
 malloc(size_t size)
 {
-	return GC_malloc(size);
+	return GC_MALLOC(size);
 }
 
 void
@@ -239,7 +243,7 @@ calloc(size_t nelem, size_t elsize)
 {
 	char *ptr;
 	size_t i;
-	ptr = GC_malloc(i = nelem*elsize);
+	ptr = GC_MALLOC(i = nelem*elsize);
 	memset(ptr, 0 , i);
 	return ptr;
 }
@@ -257,7 +261,7 @@ cfree(void *ptr)
 void *
 memalign(size_t align, size_t size)
 {
-	return (void *)ALLOC_ALIGNED(GC_malloc, size, align);
+	return (void *)ALLOC_ALIGNED(GC_MALLOC, size, align);
 }
 
 # ifdef WANT_VALLOC
@@ -285,6 +289,12 @@ si_gc(cl_object area)
 {
 	GC_gcollect();
 	@(return)
+}
+
+cl_object
+si_gc_dump()
+{
+	GC_dump();
 }
 
 #endif /* GBC_BOEHM */

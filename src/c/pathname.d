@@ -404,6 +404,8 @@ L:
 		case smm_synonym:
 			x = symbol_value(x->stream.object0);
 			goto L;
+		default:
+			/* Fall through to error message */
 		}
 	default:
 		FEerror("~S cannot be coerced to a pathname.", 1, x);
@@ -637,7 +639,6 @@ N:
 cl_object
 cl_namestring(cl_object x)
 {
-	cl_object y;
 L:
 	switch (type_of(x)) {
 	case t_string:
@@ -1178,7 +1179,7 @@ copy_list_wildcards(cl_object *wilds, cl_object to)
 cl_object
 cl_translate_pathname(cl_object source, cl_object from, cl_object to)
 {
-	cl_object wilds, out, d, *pc;
+	cl_object wilds, out, d;
 
 	source = cl_pathname(source);
 	from = cl_pathname(from);

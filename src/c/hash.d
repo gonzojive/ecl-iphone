@@ -15,6 +15,7 @@
 */
 
 #include "ecl.h"
+#include <stdlib.h>
 
 /*******************
  * CRC-32 ROUTINES *
@@ -89,6 +90,7 @@ static const cl_hashkey crc_table[256] = {
 #define DO4(crc,buf) DO2(crc,buf); DO2(crc,buf);
 #define DO8(crc,buf) DO4(crc,buf); DO4(crc,buf);
 
+#if 0
 static cl_hashkey
 update_crc32(cl_hashkey crc, const char *buf, cl_index len)
 {
@@ -101,7 +103,7 @@ update_crc32(cl_hashkey crc, const char *buf, cl_index len)
     } while (--len);
     return crc;
 }
-
+#endif
 
 static void corrupted_hash(cl_object hashtable) __attribute__((noreturn));
 
@@ -359,7 +361,6 @@ extend_hashtable(cl_object hashtable)
 {
 	cl_object old, key;
 	cl_index old_size, new_size, i;
-	struct hashtable_entry *e;
 
 	assert_type_hash_table(hashtable);
 	old_size = hashtable->hash.size;
@@ -405,23 +406,11 @@ extend_hashtable(cl_object hashtable)
 @)
 
 cl_object
-cl_clear_hash_table(cl_object hashtable)
-{
-	struct hashtable_entry *e;
-	cl_index i;
-
-	assert_type_hash_table(hashtable);
-	hashtable->hash.entries = 0;
-	for (i=hashtable->hash.size, e=hashtable->hash.data; i--; e++)
-		e->key = e->value = OBJNULL;
-}
-
-cl_object
 cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 		    cl_object rehash_threshold)
 {
 	enum httest htt;
-	cl_index i, hsize;
+	cl_index hsize;
 	cl_object h;
 
 	if (test == @'eq' || test == SYM_FUN(@'eq'))
@@ -462,8 +451,7 @@ cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 	h->hash.data = NULL;	/* for GC sake */
 	h->hash.data = (struct hashtable_entry *)
 	cl_alloc(hsize * sizeof(struct hashtable_entry));
-	cl_clear_hash_table(h);
-	return h;
+	return cl_clrhash(h);
 }
 
 cl_object

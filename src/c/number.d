@@ -47,7 +47,7 @@ fixnnint(cl_object x)
 		if (x->big.big_size == 1)
 			return big_to_ulong(x);
 	}
-	FEcondition(9, @'simple-type-error', @':format-control',
+	cl_error(9, @'simple-type-error', @':format-control',
 		    make_simple_string("Not a non-negative fixnum ~S"),
 		    @':format-arguments', cl_list(1,x),
 		    @':expected-type', @'fixnum', @':datum', x);

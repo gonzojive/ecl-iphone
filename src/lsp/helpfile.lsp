@@ -20,7 +20,7 @@
   (let* ((*package* (find-package "CL"))
 	 (file (open path :direction :input)))
     (do ((end nil)
-	 (h (make-hash-table :size 1024 :key #'eq)))
+	 (h (make-hash-table :size 1024 :test #'eql)))
 	(end h)
       (do ((c (read-char file nil)))
 	  ((or (not c) (eq c #\^_))
@@ -106,7 +106,7 @@
 (defun new-documentation-pool (&optional (size 1024))
   "Args: (&optional hash-size)
 Sets up a new hash table for storing documentation strings."
-  (push (make-hash-table :key #'eq :size size)
+  (push (make-hash-table :test #'eql :size size)
 	*documentation-pool*))
 
 (defun dump-documentation (file &optional (merge nil))

@@ -39,19 +39,44 @@ cl_object tk_package;
 static cl_object package_list = Cnil;
 static cl_object uninterned_list = Cnil;
 
-static void no_package(cl_object n) __attribute__((noreturn));
-static void package_already(cl_object n) __attribute__((noreturn));
+static void FEpackage_already(cl_object n) __attribute__((noreturn));
 
 static void
-no_package(cl_object n)
+FEpackage_error(char *message, cl_object package, int narg, ...)
 {
-	FEerror("There is no package with the name ~A.", 1, n);
+	cl_va_list args;
+	cl_va_start(args, narg, narg, 0);
+	cl_error(7,
+		 @'si::simple-package-error',
+		 @':format-control', make_simple_string(message),
+		 @':format-arguments',
+		 narg? cl_grab_rest_args(args) : cl_list(1,package),
+		 @':package', package);
 }
 
 static void
-package_already(cl_object n)
+CEpackage_error(char *message, cl_object package, int narg, ...)
 {
-	FEerror("A package with the name ~A already exists.", 1, n);
+	cl_va_list args;
+	cl_va_start(args, narg, narg, 0);
+	cl_cerror(8,
+		  make_simple_string("Ignore error message"),
+		  @'si::simple-package-error',
+		  @':format-control', make_simple_string(message),
+		  @':format-arguments',
+		  narg? cl_grab_rest_args(args) : cl_list(1,package),
+		  @':package', package);
+}
+
+static void
+FEpackage_already(cl_object n)
+{
+	cl_error(7,
+		 @'si::simple-package-error',
+		 @':format-control',
+		 make_simple_string("A package with the name ~A already exists."),
+		 @':format-arguments', cl_list(1,n),
+		 @':package', find_package(n));
 }
 
 static bool
@@ -75,7 +100,7 @@ static cl_object
 make_package_hashtable()
 {
 	cl_object h;
-	cl_index hsize = 128, i;
+	cl_index hsize = 128;
 
 	h = cl_alloc_object(t_hashtable);
 	h->hash.test = htt_pack;
@@ -85,22 +110,20 @@ make_package_hashtable()
 	h->hash.entries = 0;
 	h->hash.data = NULL; /* for GC sake */
 	h->hash.data = (struct hashtable_entry *)cl_alloc(hsize * sizeof(struct hashtable_entry));
-	cl_clear_hash_table(h);
-	return h;
+	return cl_clrhash(h);
 }
 
 cl_object
 make_package(cl_object name, cl_object nicknames, cl_object use_list)
 {
 	cl_object x, y;
-	cl_index i;
 
 	name = cl_string(name);
 	assert_type_proper_list(nicknames);
 	assert_type_proper_list(use_list);
 
 	if (find_package(name) != Cnil)
-		package_already(name);
+		FEpackage_already(name);
 	x = cl_alloc_object(t_package);
 	x->pack.name = name;
 	x->pack.nicknames = Cnil;
@@ -111,17 +134,11 @@ make_package(cl_object name, cl_object nicknames, cl_object use_list)
 	for (;  !endp(nicknames);  nicknames = CDR(nicknames)) {
 		cl_object nick = cl_string(CAR(nicknames));
 		if (find_package(nick) != Cnil)
-			package_already(nick);
+			FEpackage_already(nick);
 		x->pack.nicknames = CONS(nick, x->pack.nicknames);
 	}
 	for (;  !endp(use_list);  use_list = CDR(use_list)) {
-		if (type_of(CAR(use_list)) == t_package)
-			y = CAR(use_list);
-		else {
-			y = find_package(CAR(use_list));
-			if (Null(y))
-				no_package(CAR(use_list));
-		}
+		y = si_coerce_to_package(CAR(use_list));
 		x->pack.uses = CONS(y, x->pack.uses);
 		y->pack.usedby = CONS(x, y->pack.usedby);
 	}
@@ -144,10 +161,12 @@ rename_package(cl_object x, cl_object name, cl_object nicknames)
 	   Marco Antoniotti 19951028
 	 */
 	x = si_coerce_to_package(x);
+	if (x->pack.locked)
+		CEpackage_error("Cannot rename package ~S.", x, 0);
 	name = cl_string(name);
 	y = find_package(name);
 	if ((y != Cnil) && (y != x))
-		package_already(name);
+		FEpackage_already(name);
 
 	x->pack.name = name;
 	x->pack.nicknames = Cnil;
@@ -158,7 +177,7 @@ rename_package(cl_object x, cl_object name, cl_object nicknames)
 		if (x == y)
 			continue;
 		if (y != Cnil)
-			package_already(nick);
+			FEpackage_already(nick);
 		x->pack.nicknames = CONS(cl_string(nick), x->pack.nicknames);
 	}
 	return(x);
@@ -249,6 +268,9 @@ intern(cl_object name, cl_object p, int *intern_flag)
 		}
 	}
  INTERN:
+	if (p->pack.locked)
+		CEpackage_error("Cannot intern symbol ~S in locked package ~S.",
+				p, 2, name, p);
 	s = make_symbol(name);
 	s->symbol.hpack = p;
 	*intern_flag = 0;
@@ -329,6 +351,9 @@ unintern(cl_object s, cl_object p)
 	return(FALSE);
 
 L:
+	if (p->pack.locked)
+		CEpackage_error("Cannot unintern symbol ~S from locked package ~S.",
+				p, 2, s, p);
 	x = OBJNULL;
 	for (l = p->pack.uses; CONSP(l); l = CDR(l)) {
 		y = gethash_safe(s->symbol.name, CAR(l)->pack.external, OBJNULL);
@@ -336,10 +361,11 @@ L:
 			if (x == OBJNULL)
 				x = y;
 			else if (x != y)
-FEerror("Cannot unintern the shadowing symbol ~S~%\
+				FEpackage_error(
+"Cannot unintern the shadowing symbol ~S~%\
 from ~S,~%\
 because ~S and ~S will cause~%\
-a name conflict.", 4, s, p, x, y);
+a name conflict.", p, 4, s, p, x, y);
 		}
 	}
 	delete_eq(s, &p->pack.shadowings);
@@ -361,10 +387,13 @@ cl_export2(cl_object s, cl_object p)
 BEGIN:
 	assert_type_symbol(s);
 	p = si_coerce_to_package(p);
+	if (p->pack.locked)
+		CEpackage_error("Cannot export symbol ~S from locked package ~S.", p,
+				2, s, p);
 	x = find_symbol(s, p, &intern_flag);
 	if (!intern_flag)
-		FEerror("The symbol ~S is not accessible from ~S.", 2,
-			s, p);
+		FEpackage_error("The symbol ~S is not accessible from ~S.", p, 2,
+				s, p);
 	if (x != s) {
 		cl_import2(s, p); /*  signals an error  */
 		goto BEGIN;
@@ -377,25 +406,29 @@ BEGIN:
 		x = find_symbol(s, CAR(l), &intern_flag);
 		if (intern_flag && s != x &&
 		    !member_eq(x, CAR(l)->pack.shadowings))
-FEerror("Cannot export the symbol ~S~%\
+			FEpackage_error("Cannot export the symbol ~S~%\
 from ~S,~%\
 because it will cause a name conflict~%\
-in ~S.", 3, s, p, CAR(l));
+in ~S.", p, 3, s, p, CAR(l));
 	}
 	if (hash != OBJNULL)
 		remhash(s->symbol.name, hash);
 	sethash(s->symbol.name, p->pack.external, s);
 }
 
-void
-delete_package(cl_object p)
+cl_object
+cl_delete_package(cl_object p)
 {
 	cl_object hash, list;
 	cl_index i;
 
 	p = si_coerce_to_package(p);
+	if (p->pack.locked)
+		CEpackage_error("Cannot delete locked package ~S.", p, 0);
+	if (Null(p->pack.name))
+		@(return Cnil)
 	if (p == lisp_package || p == keyword_package)
-		FEerror("Cannot remove package ~S", 1, p->pack.name);
+		FEpackage_error("Cannot remove package ~S", p, 0);
 	for (list = p->pack.uses; !endp(list); list = CDR(list))
 		unuse_package(CAR(list), p);
 	for (list = p->pack.usedby; !endp(list); list = CDR(list))
@@ -408,8 +441,8 @@ delete_package(cl_object p)
 			unintern(hash->hash.data[i].value, p);
 	delete_eq(p, &package_list);
 	p->pack.shadowings = Cnil;
-	p->pack.internal = OBJNULL;
-	p->pack.external = OBJNULL;
+	p->pack.name = Cnil;
+	@(return Ct)
 }
 
 void
@@ -418,10 +451,14 @@ cl_unexport2(cl_object s, cl_object p)
 	int intern_flag;
 	cl_object x;
 
-	if (p == keyword_package)
-		FEerror("Cannot unexport a symbol from the keyword.", 0);
 	assert_type_symbol(s);
 	p = si_coerce_to_package(p);
+	if (p == keyword_package)
+		FEpackage_error("Cannot unexport a symbol from the keyword package.",
+				keyword_package, 0);
+	if (p->pack.locked)
+		CEpackage_error("Cannot unexport symbol ~S from locked package ~S.",
+				p, 2, s, p);
 	x = find_symbol(s, p, &intern_flag);
 	if (intern_flag != EXTERNAL || x != s)
 		/* According to ANSI & Cltl, internal symbols are
@@ -439,13 +476,16 @@ cl_import2(cl_object s, cl_object p)
 
 	assert_type_symbol(s);
 	p = si_coerce_to_package(p);
+	if (p->pack.locked)
+		CEpackage_error("Cannot import symbol ~S into locked package ~S.",
+				p, 2, s, p);
 	x = find_symbol(s, p, &intern_flag);
 	if (intern_flag) {
 		if (x != s)
-			FEerror("Cannot import the symbol ~S~%\
+			FEpackage_error("Cannot import the symbol ~S~%\
 from ~S,~%\
 because there is already a symbol with the same name~%\
-in the package.", 2, s, p);
+in the package.", p, 2, s, p);
 		if (intern_flag == INTERNAL || intern_flag == EXTERNAL)
 			return;
 	}
@@ -462,6 +502,9 @@ shadowing_import(cl_object s, cl_object p)
 
 	assert_type_symbol(s);
 	p = si_coerce_to_package(p);
+	if (p->pack.locked)
+		CEpackage_error("Cannot shadowing-import symbol ~S into locked package ~S.",
+				p, 2, s, p);
 	x = find_symbol(s, p, &intern_flag);
 	if (intern_flag && intern_flag != INHERITED) {
 		if (x == s) {
@@ -493,6 +536,9 @@ shadow(cl_object s, cl_object p)
 
 	assert_type_symbol(s);
 	p = si_coerce_to_package(p);
+	if (p->pack.locked)
+		CEpackage_error("Cannot shadow symbol ~S in locked package ~S.",
+				p, 2, s, p);
 	x = find_symbol(s, p, &intern_flag);
 	if (intern_flag != INTERNAL && intern_flag != EXTERNAL) {
 		x = make_symbol(s);
@@ -511,10 +557,13 @@ use_package(cl_object x, cl_object p)
 
 	x = si_coerce_to_package(x);
 	if (x == keyword_package)
-		FEerror("Cannot use keyword package.", 0);
+		FEpackage_error("Cannot use keyword package.", keyword_package, 0);
 	p = si_coerce_to_package(p);
+	if (p->pack.locked)
+		CEpackage_error("Cannot use package ~S in locked package ~S.",
+				p, 2, x, p);
 	if (p == keyword_package)
-		FEerror("Cannot use in keyword package.", 0);
+		FEpackage_error("Cannot use in keyword package.", keyword_package, 0);
 	if (p == x)
 		return;
 	if (member_eq(x, p->pack.uses))
@@ -527,10 +576,10 @@ use_package(cl_object x, cl_object p)
 			cl_object there = find_symbol(here, p, &intern_flag);
 			if (intern_flag && here != there
 			    && ! member_eq(there, p->pack.shadowings))
-FEerror("Cannot use ~S~%\
+FEpackage_error("Cannot use ~S~%\
 from ~S,~%\
 because ~S and ~S will cause~%\
-a name conflict.", 4, x, p, here, there);
+a name conflict.", p, 4, x, p, here, there);
 		}
 	p->pack.uses = CONS(x, p->pack.uses);
 	x->pack.usedby = CONS(p, x->pack.usedby);
@@ -541,6 +590,9 @@ unuse_package(cl_object x, cl_object p)
 {
 	x = si_coerce_to_package(x);
 	p = si_coerce_to_package(p);
+	if (p->pack.locked)
+		CEpackage_error("Cannot unuse package ~S from locked package ~S.",
+				p, 2, x, p);
 	delete_eq(x, &p->pack.uses);
 	delete_eq(p, &x->pack.usedby);
 }
@@ -554,12 +606,7 @@ unuse_package(cl_object x, cl_object p)
 cl_object
 si_select_package(cl_object pack_name)
 {
-	cl_object p;
-
-	/* INV: find_package()/in_package() perform type checks */
-	p = find_package(pack_name);
-	if (Null(p))
-		FEerror("Package ~s not found", 1, pack_name);
+	cl_object p = si_coerce_to_package(pack_name);
 	@(return (SYM_VAL(@'*package*') = p))
 }
 
@@ -835,46 +882,10 @@ BEGIN:
 @)
 
 cl_object
-si_package_internal(cl_object p, cl_object index)
-{
-	cl_fixnum j;
-	cl_object hash;
-
-	p = si_coerce_to_package(p);
-	hash = p->pack.internal;
-	if (!FIXNUMP(index) || (j = fix(index)) < 0 || j >= hash->hash.size)
-		FEerror("~S is an illegal index to a package hashtable.",
-			1, index);
-	@(return ((hash->hash.data[j].key != OBJNULL)?
-		   hash->hash.data[j].value : MAKE_FIXNUM(1)))
-}
-
-cl_object
-si_package_external(cl_object p, cl_object index)
-{
-	cl_fixnum j;
-	cl_object hash;
-
-	p = si_coerce_to_package(p);
-	hash = p->pack.external;
-	if (!FIXNUMP(index) || (j = fix(index)) < 0 || j >= hash->hash.size)
-		FEerror("~S is an illegal index to a package hashtable.",
-			1, index);
-	@(return ((hash->hash.data[j].key != OBJNULL)?
-		  hash->hash.data[j].value : MAKE_FIXNUM(1)))
-}
-
-cl_object
 si_package_hash_tables(cl_object p)
 {
 	assert_type_package(p);
 	@(return p->pack.external p->pack.internal p->pack.uses)
-}
-
-cl_object
-cl_delete_package(cl_object p)
-{
-	delete_package(p);
 }
 
 void

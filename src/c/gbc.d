@@ -16,6 +16,7 @@
 
 #include "ecl.h"
 #include "page.h"
+#include "internal.h"
 
 #ifndef GBC_BOEHM
 
@@ -69,7 +70,7 @@ ecl_register_root(cl_object *p)
 }
 
 cl_object
-cl_gc(cl_object area)
+si_gc(cl_object area)
 {
 	if (!GC_enabled())
 		error("GC is not enabled");
@@ -339,20 +340,23 @@ BEGIN:
 	case t_bytecodes: {
 		cl_index i, size;
 		size = x->bytecodes.size;
+		mark_object(x->bytecodes.name);
 		mark_object(x->bytecodes.lex);
+		mark_object(x->bytecodes.specials);
 		mark_contblock(x->bytecodes.data, size * sizeof(cl_object));
 		for (i=0; i<size; i++)
 			mark_object(x->bytecodes.data[i]);
+		mark_next(x->bytecodes.definition);
 		break;
 	}
 	case t_cfun:
 		mark_object(x->cfun.block);
-		mark_object(x->cfun.name);
+		mark_next(x->cfun.name);
 		break;
 
 	case t_cclosure:
 		mark_object(x->cfun.block);
-		mark_object(x->cclosure.env);
+		mark_next(x->cclosure.env);
 		break;
 
 #ifdef THREADS
@@ -398,6 +402,7 @@ BEGIN:
 			while (i--)
 				mark_object(p[i]);
 		}
+		mark_next(x->cblock.next);
 		break;
 	default:
 		if (debug)
@@ -444,10 +449,8 @@ static void
 mark_phase(void)
 {
 	int i;
-	struct package *pp;
 	bds_ptr bdp;
 	frame_ptr frp;
-	cl_object *sp;
 
 	/* mark registered symbols & keywords */
 	for (i=0; i<cl_num_symbols_in_core; i++) {
@@ -470,8 +473,7 @@ mark_phase(void)
 #endif /* THREADS */
 
 	    mark_contblock(cl_stack, cl_stack_size * sizeof(*cl_stack));
-	    for (sp=cl_stack; sp < cl_stack_top; sp++)
-	      mark_object(*sp);
+	    mark_stack_conservative(cl_stack, cl_stack_top);
 
 	    for (i=0; i<NValues; i++)
 	      mark_object(VALUES(i));
@@ -534,6 +536,7 @@ mark_phase(void)
 	      /* if (where > cs_org) */
 	      mark_stack_conservative((cl_ptr)cs_org, (cl_ptr)where);
 #endif
+	      mark_stack_conservative(&buf, (&buf) + 1);
 	    }
 #ifdef THREADS
 	  }

@@ -111,15 +111,18 @@ Some vectors may be displaced to another array, may have a fill-pointer, or
 may be adjustable.  Other vectors are called simple-vectors."
   `(array ,element-type (,size)))
 
+(deftype extended-char ()
+  '(and character (not base-char)))
+
 (deftype string (&optional size)
   "A string is a vector of characters.  A string is notated by surrounding the
 characters with double quotes.  Some strings may be displaced to another
 string, may have a fill-pointer, or may be adjustable.  Other strings are
 called simple-strings."
-  (if size `(array character ,size) '(array character (*))))
+  (if size `(array character (,size)) '(array character (*))))
 
 (deftype base-string (&optional size)
-  (if size `(array base-char ,size) '(array base-char (*))))
+  (if size `(array base-char (,size)) '(array base-char (*))))
 (deftype bit-vector (&optional size)
   (if size `(array bit (,size)) '(array bit (*))))
 
@@ -134,7 +137,7 @@ fill-pointer, and is not adjustable."
   (if size `(simple-array character (,size)) '(simple-array character (*))))
 
 (deftype simple-base-string (&optional size)
-  (if size `(simple-array base-char ,size) '(simple-array base-char (*))))
+  (if size `(simple-array base-char (,size)) '(simple-array base-char (*))))
 
 (deftype simple-bit-vector (&optional size)
   "A simple-bit-vector is a bit-vector that is not displaced to another array,

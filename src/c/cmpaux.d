@@ -233,14 +233,15 @@ cl_parse_key(
     if (keyword == @':allow-other-keys') {
       if (supplied_allow_other_keys == OBJNULL)
 	supplied_allow_other_keys = value;
-    } else if (unknown_keyword != OBJNULL)
+    } else if (unknown_keyword == OBJNULL)
       unknown_keyword = keyword;
   go_on:
   }
   if (args[0].narg != 0)
     FEprogram_error("Odd number of keys", 0);
   if (unknown_keyword != OBJNULL && !allow_other_keys &&
-      supplied_allow_other_keys != Cnil)
+      (supplied_allow_other_keys == Cnil ||
+       supplied_allow_other_keys == OBJNULL))
     FEprogram_error("Unknown keyword ~S", 1, unknown_keyword);
 }
 

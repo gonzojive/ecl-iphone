@@ -199,9 +199,9 @@ SYMBOL:
 	} else
 		p = current_package();
 	cl_token->string.self[cl_token->string.fillp] = '\0';
-	x = intern(cl_token, p, &intern_flag);
-	if (x->symbol.name == cl_token)
-		x->symbol.name = copy_simple_string(cl_token);
+	x = find_symbol(cl_token, p, &intern_flag);
+	if (intern_flag == 0)
+		x = intern(copy_simple_string(cl_token), p, &intern_flag);
 	return(x);
 }
 
@@ -1064,6 +1064,7 @@ do_patch_sharp(cl_object x)
 			x->array.self.t[i] = do_patch_sharp(x->array.self.t[i]);
 		break;
 	}
+	default:
 	}
 	return(x);
 }
@@ -1303,8 +1304,7 @@ stream_or_default_input(cl_object stream)
 		   (eof_errorp Ct)
 		   eof_value
 		   recursivep)
-	cl_object x, rtbl = ecl_current_readtable();
-	int c;
+	cl_object x;
 @
 	strm = stream_or_default_input(strm);
 	if (Null(recursivep)) {
@@ -1357,7 +1357,6 @@ do_read_delimited_list(int d, cl_object strm)
 
 @(defun read_line (&optional (strm Cnil) (eof_errorp Ct) eof_value recursivep)
 	int c;
-	cl_object output;
 @
 	strm = stream_or_default_input(strm);
 	cl_token->string.fillp = 0;
@@ -1630,11 +1629,8 @@ read_table_entry(cl_object rdtbl, cl_object c)
 	entry = read_table_entry(rdtbl, chr);
 	m = entry->macro;
 	if (m == OBJNULL)
-		@(return Cnil)
-	if (entry->syntax_type = cat_non_terminating)
-		@(return m Ct)
-	else
-		@(return m Cnil)
+		@(return Cnil Cnil)
+	@(return m ((entry->syntax_type == cat_non_terminating)? Ct : Cnil))
 @)
 
 @(defun make_dispatch_macro_character (chr

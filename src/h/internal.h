@@ -55,6 +55,7 @@ extern const struct {
 #define ECL_PPRINT_INDENTATION_STACK_SIZE	256
 
 #ifndef THREADS
+extern bool PRINTreadably;
 extern bool PRINTescape;
 extern bool PRINTpretty;
 extern bool PRINTcircle;

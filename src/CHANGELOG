@@ -1200,6 +1200,28 @@ ECLS 0.9
   - When the functions/macros in a DLL are no longer used, and the
     garbage collector notices this, the library is properly deallocated.
 
+  - BIT-* fails when the input is made of arrays with rank <> 1.
+
+  - A few leaks from ECL's original garbage collector have been
+    fixed. Thus, the option "--disable-boehm" at configuration time is
+    again active.
+
+  - When returning from a function, the values are stored in the
+    VALUES() array. This process has to be "atomic", in the sense that
+    no lisp function (cl_*, si_*, bytecodes) may be called, because
+    they also try to overwrite these values. This requirement was not
+    accomplished by the previous inliner.
+
+  - CCASE forms would output no value.
+
+  - Tags in TAGBODY should be compared with EQL so that a bignums may
+    tags (Two bignums which are EQL may be not EQ!).
+
+  - Various errors in STRING-TRIM* and *CAPITALIZE.
+
+  - Wrong type information about NAME-CHAR, CHAR-NAME and DIGIT-CHAR
+    lead to compilation errors.
+
 * Errors of the interpreter:
 
   - CASE should use EQL to compare objects, not EQ.
@@ -1215,6 +1237,8 @@ ECLS 0.9
 
   - User could not have a keyword variable with name ALLOW-OTHER-KEYS,
     as in (LAMBDA (&KEY ALLOW-OTHER-KEYS) (PRINT ALLOW-OTHER-KEYS)).
+
+  - Excesive arguments to NOT or NULL were not detected.
 
 * Visible changes:
 
@@ -1279,6 +1303,34 @@ ECLS 0.9
     valid function name.
 
   - Symbol GC moved from the COMMON-LISP package, to SI and CL-USER.
+
+  - DELETE-PACKAGE turns a package into an illegal object. Thus, if a
+    reference to the package is around, this may cause problems.
+
+  - *CASE and *TYPECASE now use condition & restarts for signaling errors.
+
+  - Restarts may be associated to conditions. WITH-CONDITION-RESTART
+    implemented.
+
+  - *COMPILE-FILE-{PATHNAME,TRUENAME}* defined and used.
+
+  - All package function now signal errors of type
+    PACKAGE-ERROR. Also, when trying to operate on a locked package
+    (See SI::PACKAGE-LOCK), a correctable error is signaled.
+
+  - Errors in LOOP macro are signaled as PROGRAM-ERROR.
+
+  - When a LOOP has a NAMED sentence, no enclosing NIL block is
+    produced. Furthermore, the blocks always surround the whole of the
+    code, so that (LOOP FOR A IN (RETURN :GOOD)) works.
+
+  - Character names ("Return", "Tab", etc) now have the right case.
+
+  - CHAR/= and CHAR-NOT-EQUAL require at least one character.
+
+  - Implemented *PRINT-READABLY*, and the condition PRINT-NOT-READABLY.
+
+  - Implemented type EXTENDED-CHAR.
 
 TODO:
 =====

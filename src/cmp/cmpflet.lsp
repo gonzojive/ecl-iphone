@@ -88,7 +88,7 @@
 		       #'(lambda (x) (unless (or (consp x) (symbolp x)) (fun-var x))))
 	       (member var *blocks* :test #'eq :key
 		       #'(lambda (x) (unless (symbolp x) (blk-var x))))
-	       (member var *tags* :test #'eq :key
+	       (member var *tags* :test #'eql :key
 		       #'(lambda (x) (unless (symbolp x) (tag-var x)))))
 	  (return t))))))
 

@@ -93,17 +93,6 @@ CEerror(char *err, int narg, ...)
  ***********************/
 
 void
-FEcondition(int narg, cl_object name, ...)
-{
-	cl_va_list args;
-	cl_va_start(args, name, narg, 1);
-	funcall(4, @'si::universal-error-handler',
-		Cnil,                    /*  not correctable  */
-		name,                    /*  condition name  */
-		cl_grab_rest_args(args));
-}
-
-void
 FEprogram_error(const char *s, int narg, ...)
 {
 	cl_va_list args;
@@ -130,37 +119,37 @@ FEcontrol_error(const char *s, int narg, ...)
 void
 FEcannot_open(cl_object fn)
 {
-	FEcondition(3, @'file-error', @':pathname', fn);
+	cl_error(3, @'file-error', @':pathname', fn);
 }
 
 void
 FEend_of_file(cl_object strm)
 {
-	FEcondition(3, @'end-of-file', @':stream', strm);
+	cl_error(3, @'end-of-file', @':stream', strm);
 }
 
 void
 FEclosed_stream(cl_object strm)
 {
-	FEcondition(3, @'stream-error', @':stream', strm);
+	cl_error(3, @'stream-error', @':stream', strm);
 }
 
 void
 FEwrong_type_argument(cl_object type, cl_object value)
 {
-	FEcondition(5, @'type-error', @':datum', value, @':expected-type', type);
+	cl_error(5, @'type-error', @':datum', value, @':expected-type', type);
 }
 
 void
 FEunbound_variable(cl_object sym)
 {
-	FEcondition(3, @'unbound-variable', @':name', sym);
+	cl_error(3, @'unbound-variable', @':name', sym);
 }
 
 void
 FEundefined_function(cl_object fname)
 {
-	FEcondition(3, @'undefined-function', @':name', fname);
+	cl_error(3, @'undefined-function', @':name', fname);
 }
 
 /*************

@@ -118,7 +118,7 @@ prepare_map(cl_va_list lists, cl_index *cdrs_sp)
 @)
 
 @(defun mapcan (fun &rest lists)
-	cl_object *x, res, *val = &res;
+	cl_object res, *val = &res;
 	cl_index i, nlist, cdrs_sp;
 @
 	nlist = prepare_map(lists, &cdrs_sp);

@@ -44,7 +44,11 @@ cl_stack_set_size(cl_index new_size)
 	new_stack = (cl_object *)cl_alloc(new_size * sizeof(cl_object));
 	memcpy(new_stack, cl_stack, cl_stack_size * sizeof(cl_object));
 
+#ifdef BOEHM_GBC
 	GC_free(cl_stack);
+#else
+	cl_dealloc(cl_stack, cl_stack_size);
+#endif
 	cl_stack_size = new_size;
 	cl_stack = new_stack;
 	cl_stack_top = cl_stack + top;
@@ -211,23 +215,6 @@ setq_local(register int s, register cl_object v) {
 	CADR(x) = v;
 }
 
-static cl_object
-search_tag(cl_object name, cl_object type)
-{
-	cl_object x;
-
-	for (x = lex_env;  CONSP(x);  x = CDDR(x))
-		if (CAR(x) == type) {
-			cl_object record = CADR(x);
-			cl_object the_name = CAR(record);
-			cl_object the_value = CDR(record);
-			if (name == the_name)
-				return the_value;
-		}
-	return Cnil;
-}
-
-
 /* -------------------- LAMBDA FUNCTIONS -------------------- */
 
 static void
@@ -242,9 +229,8 @@ lambda_bind_var(cl_object var, cl_object val, cl_object specials)
 static cl_object *
 lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 {
-	cl_object *data = &lambda_list->bytecodes.data[2];
-	cl_object specials = lambda_list->bytecodes.data[1];
-	cl_object aux;
+	cl_object *data = lambda_list->bytecodes.data;
+	cl_object specials = lambda_list->bytecodes.specials;
 	int i, n;
 	bool other_keys = FALSE;
 	bool check_remaining = TRUE;
@@ -253,7 +239,7 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 	/* 1) REQUIRED ARGUMENTS:  N var1 ... varN */
 	n = fix(next_code(data));
 	if (narg < n)
-	  FEwrong_num_arguments(lambda_list->bytecodes.data[0]);
+	  FEwrong_num_arguments(lambda_list->bytecodes.name);
 	for (; n; n--, narg--)
 	  lambda_bind_var(next_code(data), cl_stack[sp++], specials);
 
@@ -327,7 +313,7 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
 	  }
 	  if (other_found && !other_keys)
 	    FEprogram_error("LAMBDA: Unknown keys found in function ~S.",
-			    1, lambda_list->bytecodes.data[0]);
+			    1, lambda_list->bytecodes.name);
 	  for (i=0; i<n; i++, data+=4) {
 	    if (spp[i] != OBJNULL)
 	      lambda_bind_var(data[1],spp[i],specials);
@@ -346,16 +332,16 @@ lambda_bind(int narg, cl_object lambda_list, cl_index sp)
  NO_KEYS:
 	if (narg && !other_keys && check_remaining)
 	  FEprogram_error("LAMBDA: Too many arguments to function ~S.", 1,
-			  lambda_list->bytecodes.data[0]);
+			  lambda_list->bytecodes.name);
 	/* Skip documentation and declarations */
-	return &data[2];
+	return data;
 }
 
 cl_object
 lambda_apply(int narg, cl_object fun)
 {
 	cl_index args = cl_stack_index() - narg;
-	cl_object output, name, *body;
+	cl_object name, *body;
 	bds_ptr old_bds_top;
 	struct ihs_frame ihs;
 
@@ -373,7 +359,7 @@ lambda_apply(int narg, cl_object fun)
 	/* If it is a named lambda, set a block for RETURN-FROM */
 	VALUES(0) = Cnil;
 	NValues = 0;
-	name = fun->bytecodes.data[0];
+	name = fun->bytecodes.name;
 	if (Null(name))
 		interpret(body);
 	else {
@@ -506,7 +492,7 @@ interpret_dolist(cl_object *vector) {
 	/* 1) Set NIL block */
 	CL_BLOCK_BEGIN(id) {
 		cl_object *output;
-		cl_object list, var;
+		cl_object list;
 
 		bind_block(Cnil, id);
 		list = VALUES(0);
@@ -588,8 +574,7 @@ interpret_dotimes(cl_object *vector) {
 static cl_object
 close_around(cl_object fun, cl_object lex) {
 	cl_object v = cl_alloc_object(t_bytecodes);
-	v->bytecodes.size = fun->bytecodes.size;
-	v->bytecodes.data = fun->bytecodes.data;
+	v->bytecodes = fun->bytecodes;
 	v->bytecodes.lex = lex;
 	return v;
 }
@@ -616,7 +601,7 @@ interpret_flet(cl_object *vector) {
 	while (nfun--) {
 		cl_object fun = next_code(vector);
 		cl_object f = close_around(fun,lex);
-		bind_function(f->bytecodes.data[0], f);
+		bind_function(f->bytecodes.name, f);
 	}
 	return vector;
 }
@@ -639,7 +624,7 @@ interpret_labels(cl_object *vector) {
 	/* 1) Build up a new environment with all functions */
 	for (i=0; i<nfun; i++) {
 		cl_object f = next_code(vector);
-		bind_function(f->bytecodes.data[0], f);
+		bind_function(f->bytecodes.name, f);
 	}
 
 	/* 2) Update the closures so that all functions can call each other */
@@ -719,7 +704,6 @@ cl_object *
 interpret(cl_object *vector) {
 	cl_type t;
 	cl_object s;
-	cl_fixnum n;
 
  BEGIN:
 	s = next_code(vector);

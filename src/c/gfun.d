@@ -245,6 +245,6 @@ si_set_compiled_function_name(cl_object fn, cl_object new_name)
 	if (t == t_cfun)
 		@(return (fn->cfun.name = new_name))
 	if (t == t_bytecodes)
-		@(return (fn->bytecodes.data[0] = new_name))
+		@(return (fn->bytecodes.name = new_name))
 	FEerror("~S is not a compiled-function.", 1, fn);
 }

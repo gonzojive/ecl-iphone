@@ -725,15 +725,18 @@ put_return(void)
 	} else {
 	  fprintf(out, "{\n");
 	  put_tabs(t);
-	  fprintf(out, "cl_object saved_value = %s;\n", result[0]);
-	  for (i = 1;  i < nres;  i++) {
+	  for (i = 0;  i < nres;  i++) {
 		put_tabs(t);
-		fprintf(out, "VALUES(%d) = %s;\n", i, result[i]);
+		fprintf(out, "cl_object value%d = %s;\n", i, result[i]);
 	  }
 	  put_tabs(t);
 	  fprintf(out, "NValues = %d;\n", nres);
+	  for (i = nres-1;  i > 0;  i--) {
+		put_tabs(t);
+		fprintf(out, "VALUES(%d) = value%d;\n", i, i);
+	  }
 	  put_tabs(t);
-	  fprintf(out, "return saved_value;\n");
+	  fprintf(out, "return value0;\n");
 	  put_tabs(tab_save);
 	  fprintf(out, "}\n");
 	}

@@ -981,7 +981,9 @@ a LET-like macro, and a SETQ-like macro, which perform LOOP-style destructuring.
   (declare (si::c-local))
   #+(or Genera CLOE) (declare (dbg:error-reporter))
   #+Genera (setq format-args (copy-list format-args))	;Don't ask.
-  (error "~?~%Current LOOP context:~{ ~S~}." format-string format-args (loop-context)))
+  (error 'simple-program-error
+	 :format-control "~?~%Current LOOP context:~{ ~S~}."
+	 :format-arguments (list format-string format-args (loop-context))))
 
 
 (defun loop-warn (format-string &rest format-args)
@@ -1048,9 +1050,6 @@ collected result will be returned as the value of the LOOP."
 		     ,(nreverse *loop-body*)
 		     ,(nreverse *loop-after-body*)
 		     ,(nreconc *loop-epilogue* (nreverse *loop-after-epilogue*)))))
-      (do () (nil)
-	(setq answer `(block ,(pop *loop-names*) ,answer))
-	(unless *loop-names* (return nil)))
       (dolist (entry *loop-bind-stack*)
 	(let ((vars (first entry))
 	      (dcls (second entry))
@@ -1070,6 +1069,10 @@ collected result will be returned as the value of the LOOP."
 				   `((destructuring-bind ,@crocks
 					 ,@forms))
 				 forms)))))))
+      (setq *loop-names* (or *loop-names* 'nil))
+      (do () (nil)
+	(setq answer `(block ,(pop *loop-names*) ,answer))
+	(unless *loop-names* (return nil)))
       answer)))
 
 
@@ -1361,7 +1364,7 @@ collected result will be returned as the value of the LOOP."
     (when *loop-names*
       (loop-error "You may only use one NAMED clause in your loop: NAMED ~S ... NAMED ~S."
 		  (car *loop-names*) name))
-    (setq *loop-names* (list name nil))))
+    (push name *loop-names*)))
 
 (defun loop-do-return ()
   (loop-pseudo-body (loop-construct-return (loop-get-form))))

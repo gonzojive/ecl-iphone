@@ -63,8 +63,8 @@ typedef cl_object (*cl_objectfn)(int narg, ...);
 /* Immediate characters:	*/
 #define CHARACTER_TAG		2
 #define CHARACTERP(obje)	(((cl_fixnum)(obje)) & 2)
-#define	CODE_CHAR(c)		((cl_object)(((cl_fixnum)(c) << 2)|CHARACTER_TAG))
-#define	CHAR_CODE(obje)		((((cl_fixnum)(obje)) >> 2) & 0xffff)
+#define	CODE_CHAR(c)		((cl_object)(((cl_fixnum)((unsigned char)c) << 2)|CHARACTER_TAG))
+#define	CHAR_CODE(obje)		((((cl_fixnum)(obje)) >> 2) & 0xff)
 
 #define NUMBER_TYPE(t)	(t == t_fixnum || (t >= t_bignum && t <= t_complex))
 #define REAL_TYPE(t)	(t == t_fixnum || (t >= t_bignum && t < t_complex))
@@ -202,7 +202,7 @@ typedef enum {			/*  array element type  */
 
 union array_data {
 	cl_object *t;
-        char *ch;
+        unsigned char *ch;
 	u_int8_t *b8;
 	int8_t *i8;
 	float *sf;
@@ -247,7 +247,7 @@ struct string {			/*  string header  */
 	cl_index fillp;		/*  fill pointer  */
 				/*  For simple strings,  */
 				/*  st_fillp is equal to st_dim-1.  */
-	char *self;		/*  pointer to the string  */
+	unsigned char *self;	/*  pointer to the string  */
 };
 
 #ifdef CLOS
@@ -357,9 +357,12 @@ struct codeblock {
 
 struct bytecodes {
 	HEADER;
+	cl_object name;		/*  function name  */
 	cl_object lex;		/*  lexical environment  */
+	cl_object specials;	/*  list of special variables  */
 	cl_index size;		/*  number of bytecodes  */
 	cl_object *data;	/*  the intermediate language  */
+	cl_object definition;	/*  function definition in list form  */
 };
 
 struct cfun {			/*  compiled function header  */
@@ -509,7 +512,7 @@ typedef enum {
 	t_end,
 	t_other,
 	t_contiguous,		/*  contiguous block  */
-	FREE = 255		/*  free object  */
+	FREE = 127		/*  free object  */
 } cl_type;
 
 

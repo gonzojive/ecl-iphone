@@ -106,7 +106,7 @@ ihs_function_name(cl_object x)
 		return(x);
 
 	case t_bytecodes:
-		y = x->bytecodes.data[0];
+		y = x->bytecodes.name;
 		if (Null(y))
 			return(@'lambda');
 		else
@@ -305,7 +305,7 @@ si_sch_frs_base(cl_object fr, cl_object ihs)
 cl_object
 si_reset_stack_limits()
 {
-	volatile foo = 0;
+	volatile int foo = 0;
 	if (bds_top < bds_org + (bds_size - 2*BDSGETA))
 		bds_limit = bds_org + (bds_size - 2*BDSGETA);
 	else

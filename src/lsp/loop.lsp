@@ -117,9 +117,9 @@
 ;;;; Random Macros
 
 (defmacro loop-simple-error (unquoted-message &optional (datum nil datump))
-  `(error ,(if datump "LOOP:  ~S ~A" "LOOP:  ~A")
-	  ',unquoted-message ,@(and datump (list datum))))
-
+  `(error 'simple-program-error
+	  :format-control ,(if datump "LOOP:  ~S ~A" "LOOP:  ~A")
+	  :format-arguments (list ',unquoted-message ,@(and datump (list datum)))))
 
 (defmacro loop-warn (unquoted-message &optional (datum nil datump))
   (if datump

@@ -15,6 +15,7 @@
 */
 
 #include "ecl.h"
+#include <stdlib.h>
 
 #define BOOLCLR		0
 #define BOOLSET		017
@@ -628,10 +629,9 @@ si_bit_array_op(cl_object o, cl_object x, cl_object y, cl_object r)
 		  r = cl_alloc_object(t_array);
 		  r->array.self.t = NULL;
 		  r->array.displaced = Cnil;
-		  r->array.rank = 1;
-		  r->array.dims = NULL;
-		  r->array.elttype = get_elttype(@'bit');
-		  r->array.dims = (cl_index *)cl_alloc_atomic_align(x->array.dim * sizeof(cl_index), sizeof(cl_index));
+		  r->array.rank = x->array.rank;
+		  r->array.dims = x->array.dims;
+		  r->array.elttype = aet_bit;
 		  r->array.dim = x->array.dim;
 		  r->array.adjustable = FALSE;
 		  array_allocself(r);

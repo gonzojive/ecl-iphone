@@ -407,6 +407,7 @@ BEGIN:
 		}
 		else
 			return(FALSE);
+	default:
 	}
 	if (tx != ty)
 		return(FALSE);

@@ -189,8 +189,7 @@ extern size_t cssize;
 
 #define VALUES(n)	Values[n]
 #define return0()	return ((NValues = 0),Cnil)
-#define return1(x)	return ((NValues = 1),(x))
-#define return2(x,y)	return ((NValues = 2),(Values[1] = (y)),(x))
+#define return1(x)	return ((Values[0]=(x)),(NValues = 1),Values[0])
 #define returnn(x)	return x
 
 #ifdef THREADS

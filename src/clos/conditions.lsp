@@ -68,10 +68,27 @@ strings."
 
 ;;; Restarts
 
-(defvar *restart-clusters* '())
+(defvar *restart-clusters* ())
+(defvar *condition-restarts* ())
 
 ;;; do we need copy-list if *restart-clusters* has only one element? Beppe
-(defun compute-restarts () (apply #'append *restart-clusters*))
+(defun compute-restarts (&optional condition)
+  (let* ((assoc-restart ())
+	 (other ())
+	 (output ()))
+    (unless condition
+      (dolist (i *condition-restarts*)
+	(if (eq (car i) condition)
+	    (setq assoc-restart (append i assoc-restart))
+	    (setq other (append i other)))))
+    (dolist (restart-cluster *restart-clusters*)
+      (dolist (restart restart-cluster)
+	(when (and (or (not condition)
+		       (member restart assoc-restart)
+		       (not (member restart other)))
+		   (funcall (restart-test-function restart) condition))
+	  (push restart output))))
+    output))
 
 (defun restart-print (restart stream depth)
   (declare (ignore depth))
@@ -83,7 +100,8 @@ strings."
   name
   function
   report-function
-  interactive-function)
+  interactive-function
+  (test-function (constantly t)))
 
 (defun restart-report (restart stream)
   (declare (si::c-local))
@@ -103,20 +121,22 @@ strings."
 		*restart-clusters*)))
      ,@forms))
 
-(defun find-restart (name)
-  (dolist (restart-cluster *restart-clusters*)
-    (dolist (restart restart-cluster)
-      (when (or (eq restart name) (eq (restart-name restart) name))
-	(return-from find-restart restart)))))
-  
+(defun find-restart (name &optional condition)
+  (dolist (restart (compute-restarts condition))
+    (when (or (eq restart name) (eq (restart-name restart) name))
+      (return-from find-restart restart))))
+
+(defun find-restart-never-fail (restart &optional condition)
+  (declare (si::c-local))
+  (or (find-restart restart condition)
+      (error "Restart ~S is not active." restart)))
+
 (defun invoke-restart (restart &rest values)
-  (let ((real-restart (or (find-restart restart)
-			  (error "Restart ~S is not active." restart))))
+  (let ((real-restart (find-restart-never-fail restart)))
     (apply (restart-function real-restart) values)))
 
 (defun invoke-restart-interactively (restart)
-  (let ((real-restart (or (find-restart restart)
-			  (error "Restart ~S is not active." restart))))
+  (let ((real-restart (find-restart-never-fail restart)))
     (apply (restart-function real-restart)
 	   (let ((interactive-function
 		   (restart-interactive-function real-restart)))
@@ -190,6 +210,11 @@ strings."
         :REPORT (lambda (stream)
 		  (format stream ,format-control ,@format-arguments))
       (values nil t))))
+
+(defmacro with-condition-restarts (condition restarts &body forms)
+  `(let ((*condition-restarts* (cons (cons ,condition ,restarts)
+				     *condition-restarts*)))
+    ,@forms))
 
 
 ;;; ----------------------------------------------------------------------
@@ -547,6 +572,8 @@ returns with NIL."
 (define-condition package-error (error)
   ((package :INITARG :PACKAGE :READER package-error-package)))
 
+(define-condition simple-package-error (simple-condition package-error) ())
+
 (define-condition cell-error (error)
   ((name :INITARG :NAME :READER cell-error-name)))
 
@@ -574,6 +601,12 @@ returns with NIL."
 (define-condition abort-failure (control-error) ()
   (:REPORT (lambda (c s) (declare (ignore c))
 		   (write-string "Abort failed." s))))
+
+(define-condition print-not-readable (error)
+  ((object :INITARG :OBJECT :READER print-not-readable-object))
+  (:REPORT (lambda (c s)
+		   (format s "Cannot print object ~A readably."
+			   (print-not-readable-object c)))))
 
 #+nil
 (defun simple-condition-class-p (type)
@@ -633,12 +666,24 @@ returns with NIL."
   `(handler-case (progn ,@forms)
      (error (condition) (values nil condition))))
 
-(defun abort          ()      (invoke-restart 'ABORT)
-       			      (error 'ABORT-FAILURE))
-(defun continue       ()      (invoke-restart 'CONTINUE))
-(defun muffle-warning ()      (invoke-restart 'MUFFLE-WARNING))
-(defun store-value    (value) (invoke-restart 'STORE-VALUE value))
-(defun use-value      (value) (invoke-restart 'USE-VALUE   value))
+(defun abort (&optional c)
+  (invoke-restart (find-restart-never-fail 'ABORT c))
+  (error 'ABORT-FAILURE))
+
+(defun continue (&optional c)
+  (invoke-restart (find-restart-never-fail 'CONTINUE c)))
+
+(defun muffle-warning (&optional c)
+  (invoke-restart (find-restart-never-fail 'MUFFLE-WARNING c)))
+
+(defun store-value (value &optional c)
+  (invoke-restart (find-restart-never-fail 'STORE-VALUE c) value))
+
+(defun use-value (value &optional c)
+  (invoke-restart (find-restart-never-fail 'USE-VALUE c) value))
+
+#-ecl-min
+(package-lock "COMMON-LISP" t)
 
 #|
 ;;; ----------------------------------------------------------------------

@@ -199,7 +199,7 @@
       (CB (setq ccb t))
       (LB (setq clb t))
       (UNWIND-PROTECT (setq unw T))
-      (T (when (eq (tag-name tag) name)
+      (T (when (eql (tag-name tag) name)
 	   (setq var (tag-var tag))
 	   (cond (ccb (setf (tag-ref-ccb tag) t
 			    (var-ref-ccb var) T

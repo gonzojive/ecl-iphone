@@ -195,7 +195,7 @@ Does not check if the third gang is a single-element list."
 (defsetf fdefinition sys:fset)
 (defsetf macro-function (s) (v) `(sys:fset ,s ,v t))
 (defsetf aref (a &rest il) (v) `(sys:aset ,v ,a ,@il))
-(defsetf row-major-aref (a i) (v) `(sys:row-major-aset ,v ,i ,a))
+(defsetf row-major-aref (a i) (v) `(sys:row-major-aset ,a ,i ,v))
 (defsetf get (s p &optional d) (v)
   (if d `(progn ,d (sys:putprop ,s ,v ,p)) `(sys:putprop ,s ,v ,p)))
 (defsetf nth (n l) (v) `(progn (rplaca (nthcdr ,n ,l) ,v) ,v))

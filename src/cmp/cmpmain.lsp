@@ -248,6 +248,8 @@ int init_~A(cl_object cblock)
                            (*package* *package*)
 			   (*print-pretty* nil)
                            (*error-count* 0)
+			   (*compile-file-pathname* nil)
+			   (*compile-file-trueame* nil)
 			   #+PDE sys:*source-pathname*)
   (declare (notinline compiler-cc))
 
@@ -258,17 +260,17 @@ int init_~A(cl_object cblock)
 ~%;;; Therefore, COMPILE-FILE without :SYSTEM-P T is unsupported.~
 ~%;;;"))
 
-  (let ((lisp-pathname (merge-pathnames input-pathname #".lsp")))
-    (unless (probe-file lisp-pathname)
-      (setq lisp-pathname (merge-pathnames input-pathname #".lisp"))
-      (unless (probe-file lisp-pathname)
-	(format t "~&;;; The source file ~a is not found.~%"
-		(namestring input-pathname))
-	(setq *error-p* t)
-	(return-from compile-file (values nil t t))))
-    (setq input-pathname lisp-pathname))
+  (setq *compile-file-pathname* (merge-pathnames input-pathname #P".lsp"))
+  (unless (probe-file *compile-file-pathname*)
+    (setq *compile-file-pathname* (merge-pathnames input-pathname #P".lisp"))
+    (unless (probe-file *compile-file-pathname*)
+      (format t "~&;;; The source file ~a is not found.~%"
+	      (namestring input-pathname))
+      (setq *error-p* t)
+      (return-from compile-file (values nil t t))))
+  (setq *compile-file-truename* (truename *compile-file-pathname*))
 
-  #+PDE (setq sys:*source-pathname* (truename input-pathname))
+  #+PDE (setq sys:*source-pathname* *compile-file-truename*)
 
   (when (and system-p load)
     (error "Cannot load system files."))
@@ -308,12 +310,10 @@ Cannot compile ~a."
     (when (probe-file "./cmpinit.lsp")
       (load "./cmpinit.lsp" :verbose *compile-verbose*))
 
-    (with-open-file (*compiler-output-data*
-                     data-pathname :direction :output)
+    (with-open-file (*compiler-output-data* data-pathname :direction :output)
       (wt-data-begin)
 
-      (with-open-file
-          (*compiler-input* input-pathname)
+      (with-open-file (*compiler-input* *compile-file-pathname*)
 	(do ((form (read *compiler-input* nil eof)
 		   (read *compiler-input* nil eof)))
 	    ((eq form eof))

@@ -456,7 +456,6 @@ member_char(int c, cl_object char_bag)
 			cl_object other = CAR(char_bag);
 			if (CHARACTERP(other) && c == CHAR_CODE(other))
 				return(TRUE);
-			char_bag = CDR(char_bag);
 		} end_loop_for_in;
 		return(FALSE);
 
@@ -581,8 +580,9 @@ char_capitalize(int c, bool *bp)
 		if (!*bp)
 			c = tolower(c);
 		*bp = FALSE;
-	} else if (!isdigit(c))
-		*bp = TRUE;
+	} else {
+		*bp = !isdigit(c);
+	}
 	return(c);
 }
 
@@ -676,7 +676,7 @@ cl_string_push_extend(cl_object s, int c)
 		p = (char *)cl_alloc(new_length+1); p[new_length] = 0;
 		memcpy(p, s->string.self, s->string.dim * sizeof(char));
 		s->string.dim = new_length;
-		adjust_displaced(s, p - s->string.self);
+		adjust_displaced(s, p - (char *)s->string.self);
 #ifdef THREADS
 		end_critical_section();
 #endif
