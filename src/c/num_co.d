@@ -28,7 +28,16 @@
 # define floorf floor
 # define ceilf ceil
 # define fabsf fabs
-# error "We need ISOC99 mathematical functions for compiling ECL"
+# define frexpf frexp
+# define ldexpf ldexp
+# define cosf cos
+# define coshf cosh
+# define expf exp
+# define logf log
+# define sinf sin
+# define sqrtf sqrt
+# define tanf tan
+# define tanhf tanh
 #endif
 
 static cl_object plus_half, minus_half;
