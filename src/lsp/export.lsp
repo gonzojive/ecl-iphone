@@ -318,7 +318,6 @@
 		`(si::fset ',name ,function))))
 	  t)
 
-
 (si::fset 'in-package
 	  #'(lambda-block in-package (def env)
 	      `(si::select-package ,(string (second def))))

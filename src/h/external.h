@@ -39,7 +39,16 @@ extern void init_all_functions(void);
 
 
 /* all_symbols */
-extern struct symbol cl_symbols[];
+typedef union {
+	struct {
+		const char *name;
+		int type;
+		cl_object *loc;
+	} init;
+	struct symbol data;
+} cl_symbol_initializer;
+extern cl_symbol_initializer cl_symbols[];
+extern cl_index cl_num_symbols_in_core;
 extern void init_all_symbols(void);
 
 

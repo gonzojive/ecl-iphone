@@ -53,9 +53,9 @@ dnl 	clx="$enableval")
 AC_ARG_WITH(tcp,
 	[--with-tcp             Include socket interface.],
 	tcp="yes")
-AC_ARG_ENABLE(boehm,
-	[--disable-boehm        Disable Boehm's garbage collector.],
-	boehm="${enableval}",boehm="yes")
+dnl AC_ARG_ENABLE(boehm,
+dnl	[--disable-boehm        Disable Boehm's garbage collector.],
+dnl	boehm="${enableval}",boehm="yes")
 AC_ARG_ENABLE(local-boehm,
 	[--enable-local-boehm   Use already installed Boehm GC library.],
 	[local_boehm="${enableval}" boehm="yes"],local_boehm="no")

@@ -16,6 +16,10 @@
 extern "C" {
 #endif
 
+/* all_symbols.d */
+
+extern cl_index cl_num_symbols_in_core;
+
 /* all_functions.d */
 
 extern const struct {

@@ -225,9 +225,9 @@ search_keyword(const char *name)
 	if (i == 255)
 		error("Too long keyword");
 	c[i] = 0;
-	for (i = 0; all_symbols[i].name != NULL; i++) {
-		if (all_symbols[i].name[0] == ':')
-			if (!strcasecmp(c, all_symbols[i].name+1))
+	for (i = 0; cl_symbols[i].name != NULL; i++) {
+		if (cl_symbols[i].name[0] == ':')
+			if (!strcasecmp(c, cl_symbols[i].name+1))
 				return i;
 	}
 	printf("Keyword not found: %s.\n", c);
@@ -248,8 +248,8 @@ read_symbol()
 	}
 	pushc(0);
 
-	for (i = 0; all_symbols[i].name != NULL; i++) {
-		if (!strcasecmp(name, all_symbols[i].name)) {
+	for (i = 0; cl_symbols[i].name != NULL; i++) {
+		if (!strcasecmp(name, cl_symbols[i].name)) {
 			poolp = name;
 			pushstr("(cl_object)(cl_symbols+");
 			if (i >= 100)

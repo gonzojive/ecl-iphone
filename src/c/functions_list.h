@@ -20,13 +20,14 @@ const struct {
 
 	/* alloc.c */
 
+	{"LOAD", SW("clLload",clLload,cl)},
 #if !defined(GBC_BOEHM)
 	{"SI::ALLOCATE", SW("siLallocate",siLallocate,si)},
 	{"SI::ALLOCATED-PAGES", SW("siLallocated_pages",siLallocated_pages,si)},
-	{"SI::MAXIMUM-ALLOCATABLE-PAGES", SW("siLmaxpage",siLmaxpage,si)},
-	{"SI::ALLOCATE-CONTIGUOUS-PAGES", SW("siLalloc_contpage",siLalloc_contpage,si)},
-	{"SI::ALLOCATED-CONTIGUOUS-PAGES", SW("siLncbpage",siLncbpage,si)},
-	{"SI::MAXIMUM-CONTIGUOUS-PAGES", SW("siLmaxcbpage",siLmaxcbpage,si)},
+	{"SI::MAXIMUM-ALLOCATABLE-PAGES", SW("siLmaximum_allocatable_pages",siLmaximum_allocatable_pages,si)},
+	{"SI::ALLOCATE-CONTIGUOUS-PAGES", SW("siLallocate_contiguous_pages",siLallocate_contiguous_pages,si)},
+	{"SI::ALLOCATED-CONTIGUOUS-PAGES", SW("siLallocated_contiguous_pages",siLallocated_contiguous_pages,si)},
+	{"SI::MAXIMUM-CONTIGUOUS-PAGES", SW("siLmaximum_contiguous_pages",siLmaximum_contiguous_pages,si)},
 	{"SI::GET-HOLE-SIZE", SW("siLget_hole_size",siLget_hole_size,si)},
 	{"SI::SET-HOLE-SIZE", SW("siLset_hole_size",siLset_hole_size,si)},
 	{"SI::IGNORE-MAXIMUM-PAGES", SW("siLignore_maximum_pages",siLignore_maximum_pages,si)},
@@ -373,7 +374,6 @@ const struct {
 
 	/* load.d */
 
-	{"LOAD", SW("clLload",clLload,cl)},
 #ifdef ENABLE_DLOPEN
 	{"SI::LOAD-BINARY", SW("siLload_binary",siLload_binary,si)},
 #endif

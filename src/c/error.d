@@ -210,12 +210,7 @@ FEinvalid_function(cl_object obj)
 static
 @(defun "universal_error_handler" (c err args)
 @
-	printf("\nLisp initialization error.\n");
-	@print(1, err);
-	@print(1, args);
-#ifndef ALFA
-	exit(0);
-#endif
+	error("\nLisp initialization error.\n");
 @)
 
 void

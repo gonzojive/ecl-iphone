@@ -7,18 +7,17 @@
 #ifdef DPP
 #define SW(a,b,c) a
 #else
-#define SW(a,b,c) {a, b, c}
+#define SW(a,b,c) {{a, b, c}}
 #endif
 
-#define ECL_NUM_SYMBOLS_IN_CORE	393
-
-const struct {
+#ifdef DPP
+struct {
 	const char *name;
-#ifndef DPP
-	int type;
-	cl_object *loc;
+}
+#else
+cl_symbol_initializer
 #endif
-} all_symbols[ECL_NUM_SYMBOLS_IN_CORE + 1] = {
+cl_symbols[] = {
 
 SW("NIL", CL_ORDINARY, NULL),
 SW("T", CL_ORDINARY, NULL),

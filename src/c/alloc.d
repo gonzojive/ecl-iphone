@@ -36,7 +36,7 @@
 #include "ecl.h"
 #include "page.h"
 
-#define USE_MMAP
+#undef USE_MMAP
 #ifdef USE_MMAP
 #include <sys/types.h>
 #include <sys/mman.h>
@@ -749,17 +749,17 @@ t_from_type(cl_object type)
 	@(return Ct)
 @)
 
-@(defun si::maxpage (type)
+@(defun si::maximum-allocatable-pages (type)
 @
 	@(return MAKE_FIXNUM(tm_of(t_from_type(type))->tm_maxpage))
 @)
 
-@(defun si::allocated_pages (type)
+@(defun si::allocated-pages (type)
 @
 	@(return MAKE_FIXNUM(tm_of(t_from_type(type))->tm_npage))
 @)
 
-@(defun si::alloc_contpage (qty &optional (now Cnil))
+@(defun si::allocate-contiguous-pages (qty &optional (now Cnil))
 	cl_index i, m;
 	cl_ptr p;
 @
@@ -782,12 +782,12 @@ since ~D pages are already allocated.",
 	@(return Ct)
 @)
 
-@(defun si::ncbpage ()
+@(defun si::allocated-contiguous-pages ()
 @
 	@(return MAKE_FIXNUM(ncbpage))
 @)
 
-@(defun si::maxcbpage ()
+@(defun si::maximum-contiguous-pages ()
 @
 	@(return MAKE_FIXNUM(maxcbpage))
 @)
@@ -815,17 +815,10 @@ since ~D pages are already allocated.",
 	@(return flag)
 @)
 
-static cl_object @'si::*lisp-maxpages*', @'si::+lisp_pagesize+';
-
 void
 init_alloc_function(void)
 {
 	ignore_maximum_pages = TRUE;
-	@'si::*lisp-maxpages*' =
-		make_si_special("*LISP-MAXPAGES*", MAKE_FIXNUM(real_maxpage));
-	@'si::+lisp_pagesize+' =
-		make_si_constant("+LISP-PAGESIZE+", MAKE_FIXNUM(LISP_PAGESIZE));
-	SYM_VAL(@'si::*lisp-maxpages*') = MAKE_FIXNUM(real_maxpage);
 }
 
 #ifdef NEED_MALLOC

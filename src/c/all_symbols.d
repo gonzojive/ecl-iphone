@@ -4,7 +4,7 @@
 
 #include "symbols_list.h"
 
-struct symbol cl_symbols[393];
+cl_index cl_num_symbols_in_core = 0;
 
 @(defun si::mangle-name (symbol &optional as_symbol)
 	int l;
@@ -17,18 +17,19 @@ struct symbol cl_symbols[393];
 	assert_type_symbol(symbol);
 	is_symbol = (as_symbol == Cnil);
 	if (is_symbol) {
+		cl_fixnum p;
+
 		if (symbol == Cnil)
 			@(return Ct make_simple_string("Cnil"))
 		else if (symbol == Ct)
 			@(return Ct make_simple_string("Ct"))
-		for (l = 0; all_symbols[l].name != NULL; l++) {
-			if (symbol == (cl_object)(cl_symbols + l)) {
-				found = Ct;
-				output = @format(3, Cnil,
-						 make_constant_string("((cl_object)(cl_symbols+~A))"),
-						 MAKE_FIXNUM(l));
-				@(return found output)
-			}
+		p  = (cl_symbol_initializer*)symbol - cl_symbols;
+		if (p >= 0 && p <= cl_num_symbols_in_core) {
+			found = Ct;
+			output = @format(3, Cnil,
+					 make_constant_string("((cl_object)(cl_symbols+~A))"),
+					 MAKE_FIXNUM(p));
+			@(return found output)
 		}
 	} else {
 		cl_object fun;
@@ -119,6 +120,7 @@ make_this_symbol(int index, const char *name, cl_object package, bool special)
 {
 	cl_object s = (cl_object)(cl_symbols + index);
 	s->symbol.t = t_symbol;
+	s->symbol.mflag = FALSE;
 	SYM_VAL(s) = OBJNULL;
 	SYM_FUN(s) = OBJNULL;
 	s->symbol.plist = Cnil;
@@ -126,14 +128,14 @@ make_this_symbol(int index, const char *name, cl_object package, bool special)
 	s->symbol.stype = special? stp_special : stp_ordinary;
 	s->symbol.mflag = FALSE;
 	s->symbol.isform = FALSE;
-	s->symbol.name = make_constant_string(name);
 	s->symbol.hpack = package;
-	cl_import(s, package);
+	s->symbol.name = make_constant_string(name);
 	sethash(s->symbol.name, package->pack.external, s);
 	if (package == keyword_package) {
 		s->symbol.stype = stp_constant;
 		SYM_VAL(s) = s;
 	}
+	cl_num_symbols_in_core = index + 1;
 }
 
 void
@@ -142,24 +144,26 @@ init_all_symbols(void)
 	int i;
 
 	/* We skip NIL and T */
-	for (i = 2; all_symbols[i].name != NULL; i++) {
-		switch (all_symbols[i].type) {
+	for (i = 2; cl_symbols[i].init.name != NULL; i++) {
+		cl_object *loc = cl_symbols[i].init.loc;
+
+		switch (cl_symbols[i].init.type) {
 		case CL_ORDINARY:
-			make_this_symbol(i, all_symbols[i].name, lisp_package, FALSE);
+			make_this_symbol(i, cl_symbols[i].init.name, lisp_package, FALSE);
 			break;
 		case CL_SPECIAL:
-			make_this_symbol(i, all_symbols[i].name, lisp_package, TRUE);
+			make_this_symbol(i, cl_symbols[i].init.name, lisp_package, TRUE);
 			break;
 		case SI_ORDINARY:
-			make_this_symbol(i, all_symbols[i].name+4, system_package, FALSE);
+			make_this_symbol(i, cl_symbols[i].init.name+4, system_package, FALSE);
 			break;
 		case SI_SPECIAL:
-			make_this_symbol(i, all_symbols[i].name+4, system_package, TRUE);
+			make_this_symbol(i, cl_symbols[i].init.name+4, system_package, TRUE);
 			break;
 		case KEYWORD:
-			make_this_symbol(i, all_symbols[i].name+1, keyword_package, TRUE);
+			make_this_symbol(i, cl_symbols[i].init.name+1, keyword_package, TRUE);
 		}
-		if (all_symbols[i].loc != NULL)
-		  *(all_symbols[i].loc) = (cl_object)(cl_symbols+i);
+		if (loc != NULL)
+			*loc = (cl_object)(cl_symbols+i);
 	}
 }

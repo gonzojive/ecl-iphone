@@ -84,11 +84,9 @@ make_package_hashtable()
 	h->hash.rehash_size = make_shortfloat(1.5);
 	h->hash.threshold = make_shortfloat(0.7);
 	h->hash.entries = 0;
+	h->hash.data = NULL; /* for GC sake */
 	h->hash.data = (struct hashtable_entry *)cl_alloc(hsize * sizeof(struct hashtable_entry));
-	for(i = 0;  i < hsize;  i++) {
-		h->hash.data[i].key = OBJNULL;
-		h->hash.data[i].value = OBJNULL;
-	}
+	cl_clear_hash_table(h);
 	return h;
 }
 

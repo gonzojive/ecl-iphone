@@ -448,8 +448,15 @@ mark_phase(void)
 	frame_ptr frp;
 	cl_object *sp;
 
-	mark_object(Cnil);
-	mark_object(Ct);
+	/* mark registered symbols & keywords */
+	for (i=0; i<cl_num_symbols_in_core; i++) {
+		cl_object s = (cl_object)(cl_symbols + i);
+		s->symbol.m = FALSE;
+	}
+	for (i=0; i<cl_num_symbols_in_core; i++) {
+		cl_object s = (cl_object)(cl_symbols + i);
+		mark_object(s);
+	}
 
 #ifdef THREADS
 	{
@@ -537,17 +544,6 @@ mark_phase(void)
 	/* mark roots */
 	for (i = 0; i < gc_roots;  i++)
 		mark_object(*gc_root[i]);
-
-	/* mark registered symbols & keywords */
-	{
-	int i;
-	for (i=0; i<ECL_NUM_SYMBOLS_IN_CORE; i++)
-		mark_object((cl_object)(cl_symbols + i));
-
-	if (debug) {
-		printf("symbol navigation\n");
-		fflush(stdout);
-	}
 }
 
 static void
@@ -736,7 +732,7 @@ gc(cl_type t)
 #endif /* THREADS */
 
     if (GC_enter_hook != NULL)
-      (*GC_enter_hook)(0);
+      (*GC_enter_hook)();
 
     interrupt_enable = FALSE;
 

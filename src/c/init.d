@@ -31,14 +31,16 @@ init_lisp(void)
 	init_symbol();
 	init_package();
 
+	/* These must come _after_ init_symbol() and init_package() */
+	GC_disable();
+	init_all_symbols();
+	init_all_functions();
+	GC_enable();
+
 #if !defined(GBC_BOEHM)
 	/* We need this because a lot of stuff is to be created */
 	init_GC();
 #endif
-
-	/* These must come _after_ init_symbol() and init_package() */
-	init_all_symbols();
-	init_all_functions();
 
 	SYM_VAL(@'*package*') = lisp_package;
 	SYM_VAL(@'*gensym_counter*') = MAKE_FIXNUM(0);

@@ -10,13 +10,12 @@ extern "C" {
 
 #if !defined(GBC_BOEHM)
 extern cl_object siLallocate _ARGS((int narg, cl_object type, cl_object qty, ...));
-extern cl_object siLmaxpage _ARGS((int narg, cl_object type));
+extern cl_object siLmaximum_allocatable_pages _ARGS((int narg, cl_object type));
 extern cl_object siLallocated_pages _ARGS((int narg, cl_object type));
 extern cl_object siLalloc_contpage _ARGS((int narg, cl_object qty, ...));
-extern cl_object siLncbpage _ARGS((int narg));
-extern cl_object siLmaxcbpage _ARGS((int narg));
-extern cl_object siLalloc_relpage _ARGS((int narg, cl_object qty, cl_object now));
-extern cl_object siLnrbpage _ARGS((int narg));
+extern cl_object siLallocated_contiguous_pages _ARGS((int narg));
+extern cl_object siLmaximum_contiguous_pages _ARGS((int narg));
+extern cl_object siLallocate_contiguous_pages _ARGS((int narg, cl_object qty, ...));
 extern cl_object siLget_hole_size _ARGS((int narg));
 extern cl_object siLset_hole_size _ARGS((int narg, cl_object size));
 extern cl_object siLignore_maximum_pages _ARGS((int narg, ...));

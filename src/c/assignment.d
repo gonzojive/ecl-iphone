@@ -167,6 +167,7 @@ record_source_pathname(cl_object sym, cl_object def)
 void
 init_assignment(void)
 {
+	SYM_VAL(@'si::*inhibit-macro-special*') = Cnil;
 #ifdef PDE
 	SYM_VAL(@'si::*record-source-pathname-p*') = Cnil;
 #endif

@@ -77,9 +77,9 @@ $(DPP): $(srcdir)/dpp.c $(srcdir)/symbols_list.h $(srcdir)/functions_list.h
 # dangerous to optimize due to assembler hack
 #	$(CC) $(CFLAGS) -O0 -g apply.c -o $@
 assignment.o: assignment.c $(HFILES)
-	$(CC) $(CFLAGS) assignment.c -o $@
+	$(CC) $(CFLAGS) -O0 assignment.c -o $@
 gbc.o: gbc.c $(HFILES)
-	$(CC) $(CFLAGS) gbc.c -o $@
+	$(CC) $(CFLAGS) -O0 gbc.c -o $@
 symbols_def.o: $(srcdir)/symbols_list.h
 	echo '#include "ecl.h"' > symbols_def.c
 	cat $(srcdir)/symbols_list.h | grep 'SW("' | grep -v 'NULL[,)]' | sed 's/SW(".*&\([a-zA-Z_0-9]*\)),/cl_object \1;/g' >> symbols_def.c
