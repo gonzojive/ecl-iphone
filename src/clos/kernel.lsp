@@ -16,29 +16,9 @@
 (defun class-of (object)
   (if (si:instancep object)
       (si:instance-class object)
-      (typecase object
-	(NULL (find-class 'null))
-	(KEYWORD (find-class 'keyword))
-	(SYMBOL (find-class 'symbol))
-	(CONS (find-class 'cons))
-	(LIST (find-class 'list))
-	(STRING (find-class 'string))
-	(BIT-VECTOR (find-class 'bit-vector))
-	(VECTOR (find-class 'vector))
-	(SEQUENCE (find-class 'sequence))
-	(ARRAY (find-class 'array))
-	(CHARACTER (find-class 'character))
-	(INTEGER (find-class 'integer))
-	(RATIO (find-class 'ratio))
-	(RATIONAL (find-class 'rational))
-	(FLOAT (find-class 'float))
-	(COMPLEX (find-class 'complex))
-	(NUMBER (find-class 'number))
-	(PATHNAME (find-class 'pathname))
-	(LOGICAL-PATHNAME (find-class 'logical-pathname))
-	(t (find-class 't)))))
+      (closest-class (type-of object))))
 
-(defun closest-class (type &aux fd)
+(defun closest-class (type)
   (or (find-class type nil)
       (case type
 	((FIXNUM BIGNUM) (find-class 'integer))
@@ -48,11 +28,8 @@
 	(SIMPLE-VECTOR (find-class 'vector))
 	(SIMPLE-BIT-VECTOR (find-class 'bit-vector))
 	(SIMPLE-STRING (find-class 'string))
-	((PACKAGE HASHTABLE STREAM READTABLE COMPILED-FUNCTION
-		  CONT THREAD DISPATCH-FUNCTION)
-	 (find-class 't)))))
-	  
-	  
+	((CONT THREAD DISPATCH-FUNCTION) (find-class 't)))))
+
 
 ;;; ----------------------------------------------------------------------
 ;;; Each instance has a pointer to the class of which it is an instance.

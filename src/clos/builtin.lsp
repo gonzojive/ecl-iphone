@@ -16,6 +16,7 @@
 ;;; ----------------------------------------------------------------------
 ;;; Predefined Common Lisp Classes
 
+#|
 ;(defclass t (object) () (:metaclass built-in))
 
 (defclass array (t) () (:metaclass built-in))
@@ -25,6 +26,15 @@
    (defclass string (array sequence) () (:metaclass built-in))
    (defclass vector (array sequence) () (:metaclass built-in))
       (defclass bit-vector (vector) () (:metaclass built-in))
+
+(defclass stream (t) () (:metaclass built-in))
+  (defclass file-stream (stream) () (:metaclass built-in))
+  (defclass echo-stream (stream) () (:metaclass built-in))
+  (defclass string-stream (stream) () (:metaclass built-in))
+  (defclass two-way-stream (stream) () (:metaclass built-in))
+  (defclass synonym-stream (stream) () (:metaclass built-in))
+  (defclass broadcast-stream (stream) () (:metaclass built-in))
+  (defclass concatenated-stream (stream) () (:metaclass built-in))
 
 (defclass character (t) () (:metaclass built-in))
 
@@ -39,19 +49,54 @@
    (defclass null (symbol list) () (:metaclass built-in))
    (defclass keyword (symbol) () (:metaclass built-in))
 
+(defclass function (t) () (:metaclass built-in))
+
 (defclass pathname (t) () (:metaclass built-in))
    (defclass logical-pathname (pathname) () (:metaclass built-in))
+|#
+
+(eval-when (compile load eval)
+  (mapcar #'(lambda (args &aux (class (first args)) (super (cdr args)))
+	      (eval `(defclass ,class ,super () (:metaclass built-in))))
+	  '(;(t object)
+	    (sequence t)
+	      (list sequence)
+	        (cons list)
+	    (array t)
+	      (string array sequence)
+	      (vector array sequence)
+	        (bit-vector vector)
+	    (stream t)
+	      (file-stream stream)
+	      (echo-stream stream)
+	      (string-stream stream)
+	      (two-way-stream stream)
+	      (synonym-stream stream)
+	      (broadcast-stream stream)
+	      (concatenated-stream stream)
+	    (character t)
+	    (number t)
+	      (real number)
+	        (rational real)
+		  (integer rational)
+		  (ratio rational)
+	        (float real)
+	      (complex number)
+	    (symbol t)
+	      (null symbol list)
+	      (keyword symbol)
+	    (package t)
+	    (function t)
+	    (pathname t)
+	      (logical-pathname pathname)
+	    (hash-table t)
+	    (random-state)
+	    (readtable))))
 
 ;;; Now we protect classes from redefinition:
 (defun setf-find-class (name new-value)
   (cond
-   ((member name '(T NIL NULL SYMBOL KEYWORD ATOM CONS LIST SEQUENCE
-		     NUMBER INTEGER BIGNUM RATIONAL RATIO FLOAT
-		     SHORT-FLOAT SINGLE-FLOAT DOUBLE-FLOAT LONG-FLOAT COMPLEX
-		     CHARACTER STANDARD-CHAR BASE-CHAR EXTENDED-CHAR
-		     PACKAGE STREAM PATHNAME READTABLE HASH-TABLE RANDOM-STATE
-		     STRUCTURE ARRAY SIMPLE-ARRAY FUNCTION COMPILED-FUNCTION
-		     LOGICAL-PATHNAME))
+   ((typep (find-class name nil) 'built-in)
     (error "The class associated to the CL specifier ~S cannot be changed."
 	   name))
    ((member name '(CLASS BUILT-IN) :test #'eq)
