@@ -30,8 +30,8 @@ GMP_TYPE      = gc
 ECL_THREADS   =
 
 # Add the extensions to include in the build process. Current
-# extensions are: sockets, asdf
-ECL_MODULES   = sockets asdf
+# extensions are: asdf
+ECL_MODULES   = asdf
 
 # <END> (ECL configuration)
 # =============================================================
@@ -78,7 +78,7 @@ mkinstalldirs = $(SHELL) $(top_srcdir)/gc/mkinstalldirs
 #
 SUBDIR        = c gc gmp
 LIBRARIES     =
-LSP_LIBRARIES = cmp.fas clx.fas sysfun.lsp
+LSP_LIBRARIES = cmp.fas clx.fas sockets.fas sysfun.lsp
 TARGETS       = ecl.exe
 DEF           = ecl.def
 
@@ -102,6 +102,9 @@ all:	$(TARGETS) doc ecl-config.bat
 
 ecl$(EXE): ecl_min$(EXE) compile.lsp sysfun.lsp
 	.\ecl_min < compile.lsp
+
+ecl-static.lib: ecl$(EXE)
+	link -lib -out:$@ eclmin.lib c\all_symbols2.obj lsp.lib eclgmp.lib eclgc.lib
 
 ecl_min$(EXE): $(LIBRARIES) eclmin.lib
 	$(CC) $(LDFLAGS) /Fe$@ cinit.obj c\all_symbols.obj eclmin.lib $(LIBS)
@@ -221,7 +224,7 @@ install-base:
 	$(CP) ecl-config.bat $(bindir)\ecl-config.bat
 	for %i in ($(LSP_LIBRARIES) $(LIBRARIES) c\dpp.exe help.doc ecl.lib) do $(CP) %i $(libdir)
 	for %i in ($(ECL_MODULES)) do $(CP) %i.fas $(libdir)
-	for %i in (ecl-s.lib ecl-full-s.lib) do IF EXIST %i $(CP) %i $(libdir)
+	for %i in (ecl-static.lib) do IF EXIST %i $(CP) %i $(libdir)
 	$(CP) h\config.h $(libdir)\h
 flatinstall:
 	$(MAKE) -f Makefile.msvc6 bindir=$(prefix) libdir=$(prefix) install-base
