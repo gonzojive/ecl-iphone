@@ -136,6 +136,7 @@ make_complex(cl_object r, cl_object i)
 {
 	cl_object c;
 
+	/* Both R and I are promoted to a common type */
 	switch (type_of(r)) {
 	case t_fixnum:
 	case t_bignum:
