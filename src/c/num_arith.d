@@ -33,12 +33,7 @@ fixnum_times(cl_fixnum i, cl_fixnum j)
 	cl_object x = big_register0_get();
 
 	mpz_set_si(x->big.big_num, i);
-	if (j > 0)
-		mpz_mul_ui(x->big.big_num, x->big.big_num, j);
-	else {
-		mpz_mul_ui(x->big.big_num, x->big.big_num, -j);
-		mpz_neg(x->big.big_num, x->big.big_num);
-	}
+	mpz_mul_si(x->big.big_num, x->big.big_num, (long int)j);
 	return big_register_normalize(x);
 }
 
@@ -52,9 +47,7 @@ big_times_fix(cl_object b, cl_fixnum i)
 	if (i == -1)
 		return(big_minus(b));
 	z = big_register0_get();
-	mpz_mul_ui(z->big.big_num, b->big.big_num, abs(i));
-	if (i < 0)
-	  big_complement(z);
+	mpz_mul_si(z->big.big_num, b->big.big_num, (long int)i);
 	z = big_register_normalize(z);
 	return(z);
 }
@@ -220,9 +213,9 @@ number_plus(cl_object x, cl_object y)
 				return(y);
 			z = big_register0_get();
 			if (i > 0)
-			  mpz_add_ui(z->big.big_num, y->big.big_num, i);
+				mpz_add_ui(z->big.big_num, y->big.big_num, (unsigned long)i);
 			else
-			  mpz_sub_ui(z->big.big_num, y->big.big_num, -i);
+				mpz_sub_ui(z->big.big_num, y->big.big_num, (unsigned long)(-i));
 		  	z = big_register_normalize(z);
 			return(z);
 		case t_ratio:
@@ -248,9 +241,9 @@ number_plus(cl_object x, cl_object y)
 				return(x);
 			z = big_register0_get();
 			if (j > 0)
-			  mpz_add_ui(z->big.big_num, x->big.big_num, j);
+				mpz_add_ui(z->big.big_num, x->big.big_num, (unsigned long)j);
 			else
-			  mpz_sub_ui(z->big.big_num, x->big.big_num, -j);
+				mpz_sub_ui(z->big.big_num, x->big.big_num, (unsigned long)(-j));
 			z = big_register_normalize(z);
 			return(z);
 		case t_bignum:
@@ -373,9 +366,9 @@ number_minus(cl_object x, cl_object y)
 			z = big_register0_get();
 			i = fix(x);
 			if (i > 0)
-			  mpz_sub_ui(z->big.big_num, y->big.big_num, i);
+				mpz_sub_ui(z->big.big_num, y->big.big_num, (unsigned long)i);
 			else
-			  mpz_add_ui(z->big.big_num, y->big.big_num, -i);
+				mpz_add_ui(z->big.big_num, y->big.big_num, (unsigned long)(-i));
 			big_complement(z);
 			z = big_register_normalize(z);
 			return(z);
@@ -400,9 +393,9 @@ number_minus(cl_object x, cl_object y)
 				return(x);
 			z = big_register0_get();
 			if (j > 0)
-				mpz_sub_ui(z->big.big_num, x->big.big_num, j);
+				mpz_sub_ui(z->big.big_num, x->big.big_num, (unsigned long)j);
 			else
-				mpz_add_ui(z->big.big_num, x->big.big_num, -j);
+				mpz_add_ui(z->big.big_num, x->big.big_num, (unsigned long)(-j));
 			z = big_register_normalize(z);
 			return(z);
 		case t_bignum:
@@ -725,10 +718,10 @@ integer_divide(cl_object x, cl_object y)
 		if (ty == t_bignum) {
 			mpz_tdiv_q(q->big.big_num, x->big.big_num, y->big.big_num);
 		} else if (ty == t_fixnum) {
-			cl_fixnum j = fix(y);
-			mpz_tdiv_q_ui(q->big.big_num, x->big.big_num, abs(j));
+			long j = fix(y);
+			mpz_tdiv_q_ui(q->big.big_num, x->big.big_num, (unsigned long)labs(j));
 			if (j < 0)
-			  mpz_neg(q->big.big_num, q->big.big_num);
+				mpz_neg(q->big.big_num, q->big.big_num);
 		} else {
 			FEtype_error_integer(y);
 		}

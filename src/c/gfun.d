@@ -93,7 +93,7 @@ set_meth_hash(cl_object *keys, int argno, cl_object hashtable, cl_object value)
 }
 
 cl_object
-compute_method(int narg, cl_object gf, cl_object *args)
+compute_method(cl_narg narg, cl_object gf, cl_object *args)
 {
 	cl_object func;
 	int i, spec_no;

@@ -114,7 +114,7 @@ si_follow_symlink(cl_object filename) {
 	 * have been resolved.
 	 */
 	cl_object output, kind;
-	int size = 128, written;
+	cl_index size = 128, written;
 
 	output = si_coerce_to_filename(filename);
 	kind = file_kind(output->string.self, FALSE);
@@ -294,7 +294,7 @@ cl_file_author(cl_object file)
 	struct stat filestatus;
 	if (stat(filename->string.self, &filestatus) < 0)
 		FElibc_error("Cannot get the file status of ~S.", 1, file);
-	@(return make_simple_string("UNKNOWN"))
+	@(return make_constant_string("UNKNOWN"))
 #endif
 }
 
@@ -333,9 +333,8 @@ homedir_pathname(cl_object user)
 	cl_object namestring;
 	
 	if (Null(user)) {
-		extern char *getenv();
 		char *h = getenv("HOME");
-		namestring = (h == NULL)? make_simple_string("/")
+		namestring = (h == NULL)? make_constant_string("/")
 			: make_string_copy(h);
 	} else {
 #ifdef HAVE_PWD_H
@@ -364,7 +363,7 @@ homedir_pathname(cl_object user)
 	i = namestring->string.fillp;
 	if (namestring->string.self[i-1] != '/')
 		namestring = si_string_concatenate(2, namestring,
-						   make_simple_string("/"));
+						   make_constant_string("/"));
 	return cl_parse_namestring(3, namestring, Cnil, Cnil);
 }
 

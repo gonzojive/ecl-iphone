@@ -17,7 +17,7 @@
 #include "ecl.h"
 
 cl_object
-APPLY(int n, cl_objectfn fn, cl_object *x)
+APPLY(cl_narg n, cl_objectfn fn, cl_object *x)
 {
   switch (n) {
   case 0:  return (*fn)(n);
@@ -342,7 +342,7 @@ APPLY(int n, cl_objectfn fn, cl_object *x)
 }
 
 cl_object
-APPLY_closure(int n, cl_objectfn fn, cl_object cl, cl_object *x)
+APPLY_closure(cl_narg n, cl_objectfn fn, cl_object cl, cl_object *x)
 {
   switch (n) {
   case 0:  return (*fn)(n, cl);
@@ -667,7 +667,7 @@ APPLY_closure(int n, cl_objectfn fn, cl_object cl, cl_object *x)
 }
 
 cl_object
-APPLY_fixed(int n, cl_object (*fn)(), cl_object *x)
+APPLY_fixed(cl_narg n, cl_object (*fn)(), cl_object *x)
 {
   switch (n) {
   case 0:  return (*fn)();

@@ -7,9 +7,6 @@ struct {
 	const char *name, *translation;
 }
 #else
-#ifndef ECL_CMU_FORMAT
-extern cl_object si_formatter_aux _ARGS((int narg, cl_object strm, cl_object string, ...));
-#endif
 #define EXT_
 #define SYS_
 #define MP_
@@ -18,8 +15,8 @@ cl_symbol_initializer
 #endif
 cl_symbols[] = {
 
-{"NIL", CL_ORDINARY, NULL, -1},
-{"T", CL_ORDINARY, NULL, -1},
+{"NIL", CL_ORDINARY, NULL, -1, OBJNULL},
+{"T", CL_ORDINARY, NULL, -1, OBJNULL},
 #ifdef CLOS
 {SYS_ "UNBOUND", SI_ORDINARY, si_unbound, 0, OBJNULL},
 #else
@@ -1288,6 +1285,7 @@ cl_symbols[] = {
 {KEY_ "INITIAL-ELEMENT", KEYWORD, NULL, -1, OBJNULL},
 {KEY_ "INPUT", KEYWORD, NULL, -1, OBJNULL},
 {KEY_ "INTERNAL", KEYWORD, NULL, -1, OBJNULL},
+{KEY_ "INSTANCE", KEYWORD, NULL, -1, OBJNULL},
 {KEY_ "IO", KEYWORD, NULL, -1, OBJNULL},
 {KEY_ "JUNK-ALLOWED", KEYWORD, NULL, -1, OBJNULL},
 {KEY_ "KEY", KEYWORD, NULL, -1, OBJNULL},

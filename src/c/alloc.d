@@ -35,6 +35,7 @@
 #include <unistd.h>
 #include <string.h>
 #include "ecl.h"
+#include "internal.h"
 #include "page.h"
 
 #define USE_MMAP
@@ -167,8 +168,8 @@ alloc_page(cl_index n)
 {
 	cl_ptr e = heap_end;
 	if (n >= holepage) {
-	  ecl_gc(t_contiguous);
-	  cl_resize_hole(new_holepage+n);
+		ecl_gc(t_contiguous);
+		cl_resize_hole(new_holepage+n);
 	}
 	holepage -= n;
 	heap_end += LISP_PAGESIZE*n;
@@ -219,7 +220,7 @@ cl_alloc_object(cl_type t)
 	  return MAKE_FIXNUM(0); /* Immediate fixnum */
 	case t_character:
 	  return CODE_CHAR('\0'); /* Immediate character */
-	default:
+	default:;
 	}
 
 	start_critical_section();
@@ -267,8 +268,8 @@ ONCE_MORE:
 	  break;
 	case t_symbol:
 	  obj->symbol.plist = OBJNULL;
-	  obj->gfdef = OBJNULL;
-	  obj->value = OBJNULL;
+	  obj->symbol.gfdef = OBJNULL;
+	  obj->symbol.value = OBJNULL;
 	  obj->symbol.name = OBJNULL;
 	  break;
 	case t_package:
@@ -494,7 +495,7 @@ cl_alloc(cl_index n)
 	volatile cl_ptr p;
 	struct contblock **cbpp;
 	cl_index i, m;
-	bool g, gg;
+	bool g;
 
 	g = FALSE;
 	n = round_up(n);
@@ -588,7 +589,7 @@ cl_alloc_align(cl_index size, cl_index align)
 }
 
 static void
-init_tm(cl_type t, char *name, cl_index elsize, cl_index maxpage)
+init_tm(cl_type t, const char *name, cl_index elsize, cl_index maxpage)
 {
 	int i, j;
 	struct typemanager *tm = &tm_table[(int)t];
@@ -669,7 +670,7 @@ init_alloc(void)
 /*	Initialization must be done in increasing size order:	*/
 	init_tm(t_shortfloat, "FSHORT-FLOAT", /* 8 */
 		sizeof(struct ecl_shortfloat), 1);
-	init_tm(t_cons, ".CONS", sizeof(struct cons), 384); /* 12 */
+	init_tm(t_cons, ".CONS", sizeof(struct ecl_cons), 384); /* 12 */
 	init_tm(t_longfloat, "LLONG-FLOAT", /* 16 */
 		sizeof(struct ecl_longfloat), 1);
 	init_tm(t_bytecodes, "bBYTECODES", sizeof(struct ecl_bytecodes), 64);
@@ -741,7 +742,7 @@ t_from_type(cl_object type)
 	if (available_pages() < tm->tm_maxpage - tm->tm_npage ||
 	    (pp = alloc_page(tm->tm_maxpage - tm->tm_npage)) == NULL)
 	  FEerror("Can't allocate ~D pages for ~A.", 2, type,
-		  make_simple_string(tm->tm_name+1));
+		  make_constant_string(tm->tm_name+1));
 	for (;  tm->tm_npage < tm->tm_maxpage;  pp += LISP_PAGESIZE)
 	  add_page_to_freelist(pp, tm);
 	@(return Ct)

@@ -386,7 +386,7 @@ ecl_extend_hashtable(cl_object hashtable)
 	if (new_size <= old_size)
 		new_size = old_size + 1;
 	old = cl_alloc_object(t_hashtable);
-	*old = *hashtable;
+	old->pack = hashtable->pack;
 	hashtable->hash.data = NULL; /* for GC sake */
 	hashtable->hash.entries = 0;
 	hashtable->hash.size = new_size;
@@ -574,7 +574,7 @@ cl_hash_table_count(cl_object ht)
 }
 
 static cl_object
-si_hash_table_iterate(int narg, cl_object env)
+si_hash_table_iterate(cl_narg narg, cl_object env)
 {
 	cl_object index = CAR(env);
 	cl_object ht = CADR(env);

@@ -15,6 +15,7 @@
 */
 
 #include "ecl.h"
+#include "internal.h"
 #include <math.h>
 #include <time.h>
 #ifdef HAVE_TIMES
@@ -37,8 +38,8 @@
 
 static time_t beginning;
 
-int
-runtime(void)
+cl_fixnum
+ecl_runtime(void)
 /*
    tms_utime is the CPU time used while executing instructions in the
    user space of the calling process, measured in 1/HZ seconds.
@@ -76,7 +77,7 @@ cl_sleep(cl_object z)
 	/* INV: number_minusp() makes sure `z' is real */
 	if (number_minusp(z))
 		cl_error(9, @'simple-type-error', @':format-control',
-			    make_simple_string("Not a non-negative number ~S"),
+			    make_constant_string("Not a non-negative number ~S"),
 			    @':format-arguments', cl_list(1, z),
 			    @':expected-type', @'real', @':datum', z);
 #ifdef HAVE_NANOSLEEP
@@ -144,26 +145,17 @@ si_get_local_time_zone()
  *
  */
 @(defun si::daylight-saving-time-p (&optional UT)
-  struct tm *ltm;
-  time_t when;
+	struct tm *ltm;
+	time_t when;
 @
-  if (narg == 0)
-    when = time(0);
-  else { /* narg == 1 */
-    cl_object UTC = number_minus(UT, cl_core.Jan1st1970UT);
-    switch (type_of(UTC)) {
-    case t_fixnum:
-      when = fix(UTC);
-      break;
-    case t_bignum:
-      when = big_to_long(UTC);
-      break;
-    default:
-      FEerror("Universal Time out of range: ~A.", 1, UT);
-    }
-  }
-  ltm = localtime(&when);
-  @(return (ltm->tm_isdst ? Ct : Cnil))
+	if (narg == 0) {
+		when = time(0);
+	} else { /* narg == 1 */
+		cl_object UTC = number_minus(UT, cl_core.Jan1st1970UT);
+		when = fixint(UTC);
+	}
+	ltm = localtime(&when);
+	@(return (ltm->tm_isdst ? Ct : Cnil))
 @)
 
 void

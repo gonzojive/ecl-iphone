@@ -60,8 +60,6 @@ object_to_char(cl_object x)
 	switch (type_of(x)) {
 	case t_fixnum:
 		return fix(x);
-	case t_bignum:
-		return big_to_long(x) & (CHAR_CODE_LIMIT - 1);
 	case t_character:
 		return CHAR_CODE(x);
 	default:
@@ -74,11 +72,10 @@ object_to_fixnum(cl_object x)
 {
 	switch (type_of(x)) {
 	case t_fixnum:
-		return fix(x);
+	case t_bignum:
+		return fixint(x);
 	case t_character:
 		return (cl_fixnum)CHAR_CODE(x);
-	case t_bignum:
-		return (cl_fixnum)big_to_long(x);
 	case t_ratio:
 		return (cl_fixnum)number_to_double(x);
 	case t_shortfloat:

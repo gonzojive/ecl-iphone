@@ -185,7 +185,7 @@ static int is_null(int c) { return c == '\0'; }
 static int
 is_all_upper(cl_object s)
 {
-	int i;
+	cl_index i;
 	const char *text;
 	for (i = 0, text = s->string.self; i <= s->string.dim; i++) {
 		if (!isupper(text[i]))
@@ -197,7 +197,7 @@ is_all_upper(cl_object s)
 static int
 is_all_lower(cl_object s)
 {
-	int i;
+	cl_index i;
 	const char *text;
 	for (i = 0, text = s->string.self; i <= s->string.dim; i++) {
 		if (!islower(text[i]))
@@ -609,7 +609,7 @@ cl_logical_pathname(cl_object x)
 	x = cl_pathname(x);
 	if (!x->pathname.logical) {
 		cl_error(9, @'simple-type-error', @':format-control',
-			 make_simple_string("~S cannot be coerced to a logical pathname."),
+			 make_constant_string("~S cannot be coerced to a logical pathname."),
 			 @':format-arguments', cl_list(1, x),
 			 @':expected-type', @'logical-pathname',
 			 @':datum', x);

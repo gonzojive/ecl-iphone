@@ -15,6 +15,7 @@
 */
 
 #include "ecl.h"
+#include "internal.h"
 #include <signal.h>
 #include <unistd.h>
 #ifdef ECL_THREADS
@@ -23,7 +24,9 @@
 
 /******************************* ------- ******************************/
 
-void
+bool ecl_interrupt_enable;
+
+static void
 handle_signal(int sig)
 {
 	switch (sig) {
@@ -49,7 +52,8 @@ handle_signal(int sig)
 static void
 signal_catcher(int sig)
 {
-	if (symbol_value(@'si::*interrupt-enable*') == Cnil) {
+	if (!ecl_interrupt_enable ||
+	    symbol_value(@'si::*interrupt-enable*') == Cnil) {
 		signal(sig, signal_catcher);
 		cl_env.interrupt_pending = sig;
 		return;
@@ -131,4 +135,5 @@ init_unixint(void)
 	signal(SIGUSR1, signal_catcher);
 #endif
 	ECL_SET(@'si::*interrupt-enable*', Ct);
+	ecl_interrupt_enable = 1;
 }

@@ -29,13 +29,12 @@ cl_set(cl_object var, cl_object val)
 
 @(defun si::fset (fname def &optional macro pprint)
 	cl_object sym = si_function_block_name(fname);
-	cl_type t;
 	bool mflag;
 @
 	if (Null(cl_functionp(def)))
 		FEinvalid_function(def);
 	if (sym->symbol.hpack != Cnil && sym->symbol.hpack->pack.locked)
-		funcall(3, @'warn', make_simple_string("~S is being redefined."), fname);
+		funcall(3, @'warn', make_constant_string("~S is being redefined."), fname);
 	mflag = !Null(macro);
 	if (sym->symbol.isform && !mflag)
 		FEerror("Given that ~S is a special form, ~S cannot be defined as a function.",
@@ -78,7 +77,7 @@ cl_fmakunbound(cl_object fname)
 	cl_object sym = si_function_block_name(fname);
 
 	if (sym->symbol.hpack != Cnil && sym->symbol.hpack->pack.locked)
-		funcall(3, @'warn', make_simple_string("~S is being redefined."),
+		funcall(3, @'warn', make_constant_string("~S is being redefined."),
 			fname);
 	if (SYMBOLP(fname)) {
 		clear_compiler_properties(sym);

@@ -18,12 +18,6 @@
 #include "ecl.h"
 #include "ecl-inl.h"
 
-#undef endp
-
-#define	endp(obje)	(endp_temp = (obje), CONSP(endp_temp) ? \
-			 FALSE : endp_temp == Cnil ? TRUE : \
-			 (FEwrong_type_argument(@'list', endp_temp), FALSE))
-
 /*
 	I know the following name is not good.
 */
@@ -68,7 +62,6 @@ elt(cl_object seq, cl_fixnum index)
 {
 	cl_fixnum i;
 	cl_object l;
-	cl_object endp_temp;
 
 	if (index < 0)
 		goto E;
@@ -115,7 +108,6 @@ elt_set(cl_object seq, cl_fixnum index, cl_object val)
 {
 	cl_fixnum i;
 	cl_object l;
-	cl_object endp_temp;
 
 	if (index < 0)
 		goto E;
@@ -310,7 +302,6 @@ cl_reverse(cl_object seq)
 {
 	cl_object x, y;
 	cl_fixnum i, j, k;
-	cl_object endp_temp;
 
 	switch (type_of(seq)) {
 	case t_symbol:
@@ -386,7 +377,6 @@ cl_nreverse(cl_object seq)
 {
 	cl_object x, y, z;
 	cl_fixnum i, j, k;
-	cl_object endp_temp;
 
 	switch (type_of(seq)) {
 	case t_symbol:

@@ -5,14 +5,14 @@
 #define loop_for_in(list) { \
   cl_object __slow; \
   bool __flag = TRUE; \
-  for (__slow = list; !ENDP(list); list = CDR(list)) { \
+  for (__slow = list; !endp(list); list = CDR(list)) { \
     if ((__flag = !__flag)) { \
       if (__slow == list) FEcircular_list(list); \
       __slow = CDR(__slow); \
     }
 #else
 #define loop_for_in(list) { \
-  for (; !ENDP(list); list = CDR(list)) {
+  for (; !endp(list); list = CDR(list)) {
 #endif
 #define end_loop_for_in }}
 

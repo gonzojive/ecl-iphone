@@ -42,8 +42,10 @@ finalize(cl_object o, cl_object data)
 	case t_codeblock:
 		cl_mapc(2, @'si::unlink-symbol', o->cblock.links);
 		if (o->cblock.handle != NULL) {
-			printf("\n;;; Freeing library %s\n", o->cblock.name?
-			       o->cblock.name->string.self : "<anonymous>");
+			const char *name = o->cblock.name?
+				(const char *)o->cblock.name->string.self :
+				"<anonymous>";
+			printf("\n;;; Freeing library %s\n", name);
 			ecl_library_close(o);
 		}
 #ifdef ECL_DYNAMIC_VV
@@ -131,7 +133,7 @@ cl_alloc_instance(cl_index slots)
 }
 
 static void
-init_tm(cl_type t, char *name, cl_index elsize)
+init_tm(cl_type t, const char *name, cl_index elsize)
 {
 	struct typemanager *tm = &tm_table[(int)t];
 	tm->tm_name = name;

@@ -1747,6 +1747,9 @@ ECL 0.9d
   - (VALUES (FOO)) was compiled as a simple call (FOO), without
     truncating the number of values output by the latter.
 
+  - The printer of floating point numbers was inaccurate and could not
+    represent MOST-POSITIVE-LONG-FLOAT reliably.
+
 * Documentation:
 
   - New manual page documents the scripting facilities of ECL

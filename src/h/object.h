@@ -37,7 +37,8 @@ typedef unsigned char byte;
 */
 typedef union cl_lispunion *cl_object;
 typedef cl_object cl_return;
-typedef cl_object (*cl_objectfn)(int narg, ...);
+typedef cl_fixnum cl_narg;
+typedef cl_object (*cl_objectfn)(cl_narg narg, ...);
 
 /*
 	OBJect NULL value.
@@ -535,10 +536,6 @@ typedef enum {
 	Type_of.
 */
 #define	type_of(obje)	((cl_type)(IMMEDIATE(obje) ? IMMEDIATE(obje) : (((cl_object)(obje)) ->d.t)))
-
-#define	ENDP(x)	(type_of(x) == t_cons ? \
-		 FALSE : x == Cnil ? TRUE : \
-		 (FEtype_error_list(x), FALSE))
 
 /*
 	This is used to retrieve optional arguments

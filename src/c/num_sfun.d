@@ -36,8 +36,6 @@
 # endif
 #endif
 
-cl_object imag_unit, minus_imag_unit, imag_two;
-
 cl_fixnum
 fixnum_expt(cl_fixnum x, cl_fixnum y)
 {

@@ -831,7 +831,7 @@ c_compiler_let(cl_object args, int flags) {
 static int
 c_cond(cl_object args, int flags) {
 	cl_object test, clause;
-	cl_fixnum label_nil, label_exit;
+	cl_index label_nil, label_exit;
 
 	if (Null(args))
 		return compile_form(Cnil, flags);
@@ -1241,7 +1241,7 @@ c_go(cl_object args, int flags) {
 */
 static int
 c_if(cl_object form, int flags) {
-	cl_fixnum label_nil, label_true;
+	cl_index label_nil, label_true;
 
 	/* Compile test */
 	compile_form(pop(&form), FLAG_VALUES);
@@ -1500,7 +1500,7 @@ c_multiple_value_setq(cl_object args, int flags) {
 	cl_object vars = Cnil;
 	cl_object temp_vars = Cnil;
 	cl_object late_assignment = Cnil;
-	cl_object old_variables;
+	cl_object old_variables = ENV->variables;
 	cl_index nvars = 0;
 
 	/* Look for symbol macros, building the list of variables
@@ -1522,7 +1522,6 @@ c_multiple_value_setq(cl_object args, int flags) {
 	}
 
 	if (!Null(temp_vars)) {
-		old_variables = ENV->variables;
 		do {
 			compile_form(Cnil, FLAG_REG0);
 			c_bind(CAR(temp_vars), Cnil);
@@ -1560,8 +1559,8 @@ c_multiple_value_setq(cl_object args, int flags) {
 		asm_op(OP_PUSHVALUES);
 		compile_body(late_assignment, FLAG_VALUES);
 		asm_op(OP_POPVALUES);
-		c_undo_bindings(old_variables);
 	}
+	c_undo_bindings(old_variables);
 
 	return FLAG_VALUES;
 }
@@ -1807,7 +1806,7 @@ static int
 c_tagbody(cl_object args, int flags)
 {
 	cl_object old_env = ENV->variables;
-	cl_fixnum tag_base;
+	cl_index tag_base;
 	cl_object labels = Cnil, label, body;
 	cl_type item_type;
 	int nt, i;
@@ -2026,10 +2025,11 @@ for special form ~S.", 1, function);
 		if (new_flags & (FLAG_REG0 | FLAG_VALUES))
 			asm_op(OP_PUSH);
 	} else if (flags & FLAG_VALUES) {
-		if (new_flags & FLAG_REG0)
+		if (new_flags & FLAG_REG0) {
 			asm_op(OP_VALUEREG0);
-		else if (new_flags & FLAG_PUSH)
+		} else if (new_flags & FLAG_PUSH) {
 			FEerror("Internal error in bytecodes compiler", 0);
+		}
 	} else if (new_flags & FLAG_PUSH) {
 		FEerror("Internal error in bytecodes compiler", 0);
 	}
@@ -2370,7 +2370,7 @@ ILLEGAL_LAMBDA:
 }
 
 static cl_object
-c_default(cl_fixnum base_pc, cl_object deflt) {
+c_default(cl_index base_pc, cl_object deflt) {
 	cl_type t = type_of(deflt);
 	if (((t == t_symbol) && (deflt->symbol.stype == stp_constant) &&
 	     !FIXNUMP(SYM_VAL(deflt)))) {
@@ -2379,7 +2379,7 @@ c_default(cl_fixnum base_pc, cl_object deflt) {
 	} else if (CONSP(deflt) && (CAR(deflt) == @'quote') && !FIXNUMP(CADR(deflt))) {
 		deflt = CADR(deflt);
 	} else if ((t == t_symbol) || (t == t_cons) || (t == t_fixnum)) {
-		cl_fixnum pc = current_pc()-base_pc;
+		cl_index pc = current_pc()-base_pc;
 		compile_form(deflt, FLAG_VALUES);
 		asm_op(OP_EXIT);
 		deflt = MAKE_FIXNUM(pc);
@@ -2527,7 +2527,7 @@ si_valid_function_name_p(cl_object name)
 		output = Ct;
 	else if (CONSP(name) && CAR(name) == @'setf') {
 		name = CDR(name);
-		if (CONSP(name) && SYMBOLP(CAR(name)) && ENDP(CDR(name)))
+		if (CONSP(name) && SYMBOLP(CAR(name)) && endp(CDR(name)))
 			output = Ct;
 	}
 	@(return output);

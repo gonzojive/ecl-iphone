@@ -19,7 +19,6 @@
 
 static void displace (cl_object from, cl_object to, cl_object offset);
 static void check_displaced (cl_object dlist, cl_object orig, cl_index newdim);
-extern cl_elttype get_elttype (cl_object x);
 
 cl_index
 object_to_index(cl_object n)

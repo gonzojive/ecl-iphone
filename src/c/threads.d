@@ -120,7 +120,7 @@ thread_entry_point(cl_object process)
 @)
 
 cl_object
-mp_process_preset(int narg, cl_object process, cl_object function, ...)
+mp_process_preset(cl_narg narg, cl_object process, cl_object function, ...)
 {
 	cl_va_list args;
 	cl_va_start(args, function, narg, 2);
@@ -210,7 +210,7 @@ mp_process_whostate(cl_object process)
 }
 
 cl_object
-mp_process_run_function(int narg, cl_object name, cl_object function, ...)
+mp_process_run_function(cl_narg narg, cl_object name, cl_object function, ...)
 {
 	cl_object process;
 	cl_va_list args;

@@ -22,8 +22,6 @@
 #include "internal.h"
 #include "bytecodes.h"
 
-#ifndef GBC_BOEHM
-
 /******************************* EXPORTS ******************************/
 
 bool GC_enable;
@@ -61,8 +59,9 @@ static int gc_time;			/* Beppe */
    We must register location, since value may be reassigned (e.g. malloc_list)
  */
 
-static void _mark_object (cl_object x);
-static void _mark_contblock (void *p, cl_index s);
+static void _mark_object(cl_object x);
+static void _mark_contblock(void *p, cl_index s);
+static void mark_cl_env(struct cl_env_struct *env);
 extern void sigint (void);
 
 void
@@ -158,6 +157,7 @@ BEGIN:
 		break;
 
 	case t_symbol:
+		mark_object(x->symbol.hpack);
 		mark_object(x->symbol.name);
 		mark_object(x->symbol.plist);
 		mark_object(SYM_FUN(x));
@@ -188,7 +188,7 @@ BEGIN:
 			mark_object(x->hash.data[i].key);
 			mark_object(x->hash.data[i].value);
 		}
-		mark_contblock(x->hash.data, j * sizeof(struct hashtable_entry));
+		mark_contblock(x->hash.data, j * sizeof(struct ecl_hashtable_entry));
 		break;
 
 	case t_array:
@@ -261,7 +261,7 @@ BEGIN:
 #endif /* CLOS */
 
 	case t_stream:
-		switch ((enum smmode)x->stream.mode) {
+		switch ((enum ecl_smmode)x->stream.mode) {
 		case smm_closed:
 			/* Rest of fields are NULL */
 			mark_next(x->stream.object1);
@@ -307,7 +307,7 @@ BEGIN:
 		if (x->readtable.table == NULL)
 			break;
 		mark_contblock((cl_ptr)(x->readtable.table),
-			       RTABSIZE*sizeof(struct readtable_entry));
+			       RTABSIZE*sizeof(struct ecl_readtable_entry));
 		for (i = 0;  i < RTABSIZE;  i++) {
 			cl_object *p = x->readtable.table[i].dispatch_table;
 			mark_object(x->readtable.table[i].macro);
@@ -352,13 +352,12 @@ BEGIN:
 	case t_process:
 /* Already marked by malloc: x->process.env
  */
-#error "The old garbage collector does not support threads"
-		mark_contblock(x->process.pthread, sizeof(*x->process.thread));
+		mark_object(x->process.interrupt);
 		mark_object(x->process.function);
+		mark_cl_env(x->process.env);
 		mark_next(x->process.args);
 		break;
 	case t_lock:
-		mark_contblock(x->lock.mutex, sizeof(*x->lock.mutex));
 		mark_next(x->lock.name);
 		break;
 #endif /* THREADS */
@@ -372,6 +371,7 @@ BEGIN:
 	case t_codeblock:
 		mark_object(x->cblock.name);
 		mark_object(x->cblock.next);
+		mark_object(x->cblock.links);
 		i = x->cblock.data_size;
 		p = x->cblock.data;
 		goto MARK_DATA;
@@ -381,7 +381,7 @@ BEGIN:
 			mark_contblock(x->foreign.data, x->foreign.size);
 		mark_next(x->foreign.tag);
 		break;
-#endif ECL_FFI
+#endif /* ECL_FFI */
 	MARK_DATA:
 		if (p) {
 			mark_contblock(p, i * sizeof(cl_object));
@@ -431,12 +431,77 @@ mark_stack_conservative(cl_ptr bottom, cl_ptr top)
 }
 
 static void
+mark_cl_env(struct cl_env_struct *env)
+{
+	int i;
+	cl_object where;
+	bds_ptr bdp;
+	frame_ptr frp;
+
+	mark_contblock(env, sizeof(*env));
+
+	mark_object(env->lex_env);
+
+	mark_contblock(env->stack, env->stack_size * sizeof(cl_object));
+	mark_stack_conservative((cl_ptr)env->stack, (cl_ptr)env->stack_top);
+
+	if (bdp = env->bds_org) {
+		mark_contblock(bdp, env->bds_size * sizeof(*bdp));
+		for (;  bdp <= env->bds_top;  bdp++) {
+			mark_object(bdp->symbol);
+			mark_object(bdp->value);
+		}
+	}
+
+	if (frp = env->frs_org) {
+		mark_contblock(frp, env->frs_size * sizeof(*frp));
+		for (;  frp <= env->frs_top;  frp++) {
+			mark_object(frp->frs_val);
+		}
+	}
+
+	for (i=0; i<env->nvalues; i++)
+		mark_object(env->values[i]);
+
+	mark_object(env->token);
+
+/*	mark_object(env->c_env->variables);
+	mark_object(env->c_env->macros);
+	mark_object(env->c_env->constants); */
+
+	mark_object(env->fmt_aux_stream);
+
+	mark_object(env->print_case);
+	mark_object(env->print_package);
+	mark_object(env->print_stream);
+	mark_object(env->circle_stack);
+	mark_contblock(env->queue, sizeof(short) * ECL_PPRINT_QUEUE_SIZE);
+	mark_contblock(env->indent_stack, sizeof(short) * ECL_PPRINT_INDENTATION_STACK_SIZE);
+
+	mark_object(env->big_register[0]);
+	mark_object(env->big_register[1]);
+	mark_object(env->big_register[2]);
+
+	mark_object(env->print_case);
+	mark_object(env->print_package);
+	mark_object(env->print_stream);
+
+#ifdef THREADS
+/* We should mark the stacks of the threads somehow!!! */
+#error "The old garbage collector does not support threads"
+#else
+# if DOWN_STACK
+	mark_stack_conservative((cl_ptr)(&where), (cl_ptr)env->cs_org);
+# else
+	mark_stack_conservative((cl_ptr)env->cs_org, (cl_ptr)(&where));
+# endif /* DOWN_STACK */
+#endif /* THREADS */
+}
+
+static void
 mark_phase(void)
 {
 	int i;
-	cl_object p;
-	bds_ptr bdp;
-	frame_ptr frp;
 
 	/* mark registered symbols & keywords */
 	for (i=0; i<cl_num_symbols_in_core; i++) {
@@ -448,106 +513,18 @@ mark_phase(void)
 		mark_object(s);
 	}
 
-#ifdef THREADS
-	{
-	  pd *pdp;
-	  lpd *old_clwp = clwp;
-
-	  for (pdp = running_head; pdp != (pd *)NULL; pdp = pdp->pd_next) {
-
-	    clwp = pdp->pd_lpd;
-#endif /* THREADS */
-
-	    mark_contblock(cl_env.stack, cl_env.stack_size * sizeof(cl_object));
-	    mark_stack_conservative(cl_env.stack, cl_env.stack_top);
-
-	    for (i=0; i<NVALUES; i++)
-	      mark_object(VALUES(i));
-
-	    mark_contblock(frs_org, frs_size * sizeof(*frs_org));
-	    mark_contblock(bds_org, frs_size * sizeof(*bds_org));
-
-	    for (bdp = cl_env.bds_org;  bdp <= cl_env.bds_top;  bdp++) {
-	      mark_object(bdp->bds_sym);
-	      mark_object(bdp->bds_val);
-	    }
-
-	    for (frp = cl_env.frs_org;  frp <= cl_env.frs_top;  frp++) {
-	      mark_object(frp->frs_val);
-	    }
-
-	    mark_object(cl_env.lex_env);
-	    mark_object(cl_env.token);
-	    mark_object(cl_env.fmt_aux_stream);
-	    mark_object(cl_env.print_case);
-	    mark_object(cl_env.print_package);
-	    mark_object(cl_env.print_stream);
-	    mark_object(cl_env.circle_stack);
-	    mark_contblock(cl_env.queue, sizeof(short) * ECL_PPRINT_QUEUE_SIZE);
-	    mark_contblock(cl_env.indent_stack, sizeof(short) * ECL_PPRINT_INDENT_STACK_SIZE);
-	    mark_object(cl_env.big_register[0]);
-	    mark_object(cl_env.big_register[1]);
-	    mark_object(cl_env.big_register[2]);
-
-#ifdef THREADS
-	    /* added to mark newly allocated objects */
-	    mark_object(clwp->lwp_alloc_temporary);
-	    mark_object(clwp->lwp_fmt_temporary_stream);
-	    mark_object(clwp->lwp_PRINTstream);
-	    mark_object(clwp->lwp_PRINTcase);
-	    mark_object(clwp->lwp_READtable);
-	    mark_object(clwp->lwp_token);
-	    mark_object(clwp->lwp_CIRCLEstack);
-
-	    /* (current-thread) can return it at any time
-	     */
-	    mark_object(clwp->lwp_thread);
-#endif /* THREADS */
-	    
-	    /* now collect from the c-stack of the thread ... */
-	    
-	    { int *where;
-	      volatile jmp_buf buf;
-
-	      /* ensure flushing of register caches */
-	      if (ecl_setjmp(buf) == 0) ecl_longjmp(buf, 1);
-
-#ifdef THREADS
-	      if (clwp != old_clwp) /* is not the executing stack */
-# ifdef __linux
-		where = (int *)pdp->pd_env[0].__jmpbuf[0].__sp;
-# else
-		where = (int *)pdp->pd_env[JB_SP];
-# endif
-	      else
-#endif /* THREADS */
-		where = (int *)&where ;
-	      
-	      /* If the locals of type object in a C function could be
-		 aligned other than on multiples of sizeof (char *)
-		 we would have to mark twice */
-#if DOWN_STACK
-	      /* if (where < cs_org) */
-	      mark_stack_conservative((cl_ptr)where, (cl_ptr)cs_org);
-#else
-	      /* if (where > cs_org) */
-	      mark_stack_conservative((cl_ptr)cs_org, (cl_ptr)where);
-#endif
-	      mark_stack_conservative(&buf, (&buf) + 1);
-	    }
-#ifdef THREADS
-	  }
-	  clwp = old_clwp;
-	}
-#endif /* THREADS */
-
-	for (p = &cl_core.packages; p <= &cl_core.Jan1st1970UT; p++) {
-		mark_object(*p);
-	}
+	mark_stack_conservative((cl_ptr)&cl_core.packages,
+				(cl_ptr)(&cl_core.system_properties + 1));
 
 	/* mark roots */
 	for (i = 0; i < gc_roots;  i++)
 		mark_object(*gc_root[i]);
+
+#ifdef THREADS
+	mark_object(cl_core.processes);
+#else
+	mark_cl_env(&cl_env);
+#endif
 }
 
 static void
@@ -599,24 +576,25 @@ sweep_phase(void)
 			switch (x->d.t) {
 #ifdef ENABLE_DLOPEN
 			case t_codeblock:
-				cl_mapc(2, @'si::unlink-symbol', o->cblock.links);
-				if (o->cblock.handle != NULL) {
-					printf("\n;;; Freeing library %s\n", o->cblock.name?
-					       o->cblock.name->string.self : "<anonymous>");
-					dlclose(o->cblock.handle);
+				cl_mapc(2, @'si::unlink-symbol', x->cblock.links);
+				if (x->cblock.handle != NULL) {
+					printf("\n;;; Freeing library %s\n", x->cblock.name?
+					       (const char *)x->cblock.name->string.self :
+					       "<anonymous>");
+					ecl_library_close(x);
 				}
 				break;
 #endif
 			case t_stream:
-				if (o->stream.file != NULL)
-					fclose(o->stream.file);
-				o->stream.file = NULL;
+				if (x->stream.file != NULL)
+					fclose(x->stream.file);
+				x->stream.file = NULL;
 #ifdef ECL_THREADS
 			case t_lock:
-				if (o->lock.mutex != NULL)
-					pthread_mutex_destroy(o->lock.mutex);
+				pthread_mutex_destroy(&x->lock.mutex);
 				break;
 #endif
+			default:;
 			}
 			((struct freelist *)x)->f_link = f;
 			x->d.m = FREE;
@@ -678,221 +656,146 @@ contblock_sweep_phase(void)
 cl_object (*GC_enter_hook)() = NULL;
 cl_object (*GC_exit_hook)() = NULL;
 
-
-#ifdef THREADS
-/* 
- * We execute the GC routine in the main stack.
- * The idea is to switch over the main stack that is stopped in the intha
- * and to call the GC from there on garbage_parameter. Then you can switch 
- * back after.
- * In addition the interrupt is disabled.
- */
-static int i, j;
-static sigjmp_buf old_env;
-static int val;
-static lpd *old_clwp;
-static cl_type t;
-static bool stack_switched = FALSE;
-
-static cl_type garbage_parameter;
-
-void
-ecl_gc(cl_type new_name)
-{
-	int tm;
-	int gc_start = runtime();
-	cl_object old_interrupt_enable;
-
-	start_critical_section();
-	t = new_name;
-        garbage_parameter = new_name;
-#else
-
 void
 ecl_gc(cl_type t)
 {
-  int i, j;
-  int tm;
-  int gc_start = runtime();
-  cl_object old_interrupt_enable;
-#endif /* THREADS */
+	int i, j;
+	int tm;
+	int gc_start = ecl_runtime();
+	bool interrupts;
 
-  if (!GC_enabled())
-    return;
+	if (!GC_enabled())
+		return;
 
-  CL_SAVE_ENVIRONMENT;
+	CL_NEWENV_BEGIN {
+	if (SYM_VAL(@'si::*gc-verbose*') != Cnil) {
+		printf("\n[GC ..");
+		/* To use this should add entries in tm_table for reloc and contig.
+		   fprintf(stdout, "\n[GC for %d %s pages ..",
+		   tm_of(t)->tm_npage,
+		   tm_table[(int)t].tm_name + 1); */
+		fflush(stdout);
+	}
 
-  if (SYM_VAL(@'si::*gc-verbose*') != Cnil) {
-    printf("\n[GC ..");
-    /* To use this should add entries in tm_table for reloc and contig.
-       fprintf(stdout, "\n[GC for %d %s pages ..",
-       tm_of(t)->tm_npage,
-       tm_table[(int)t].tm_name + 1); */
-    fflush(stdout);
-  }
+	debug = symbol_value(@'si::*gc-message*') != Cnil;
 
-  debug = symbol_value(@'si::*gc-message*') != Cnil;
-
-#ifdef THREADS
-  if (clwp != &main_lpd)  {
-    if (debug) {
-      printf("*STACK SWITCH*\n");
-      fflush (stdout);
-    }
-
-    stack_switched = TRUE;
-    val = sigsetjmp(old_env, 1);
-    if (val == 0) {
-      /* informations used by the garbage collector need to be updated */
-# ifdef __linux
-      running_head->pd_env[0].__jmpbuf[0].__sp = old_env[0].__jmpbuf[0].__sp;
-# else
-      running_head->pd_env[JB_SP] = old_env[JB_SP];
-# endif
-      old_clwp = clwp;
-      Values = main_lpd.lwp_Values;
-      clwp = &main_lpd;
-      siglongjmp(main_pd.pd_env, 2); /* new line */
-    }
-  }
-
-  else val = 1;
-
-  if (val == 1) {
-
-#endif /* THREADS */
-
-    if (GC_enter_hook != NULL)
-      (*GC_enter_hook)();
-
-    old_interrupt_enable = ecl_enable_interrupt(Cnil);
-
-    collect_blocks = t > t_end;
-    if (collect_blocks)
-      cbgccount++;
-    else
-      tm_table[(int)t].tm_gccount++;
-
-    if (debug) {
-      if (collect_blocks)
-	printf("GC entered for collecting blocks\n");
-      else
-	printf("GC entered for collecting %s\n", tm_table[(int)t].tm_name);
-      fflush(stdout);
-    }
-
-    maxpage = page(heap_end);
-
-    if (collect_blocks) {
-      /*
-	1 page = 512 word
-	512 bit = 16 word
-      */
-      int mark_table_size = maxpage * (LISP_PAGESIZE / 32);
-      extern void cl_resize_hole(cl_index);
-
-      if (holepage < mark_table_size*sizeof(int)/LISP_PAGESIZE + 1)
-	new_holepage = mark_table_size*sizeof(int)/LISP_PAGESIZE + 1;
-      if (new_holepage < HOLEPAGE)
-	new_holepage = HOLEPAGE;
-      cl_resize_hole(new_holepage);
-
-      mark_table = (int*)heap_end;
-      for (i = 0;  i < mark_table_size; i++)
-	mark_table[i] = 0;
-    }
-
-    if (debug) {
-      printf("mark phase\n");
-      fflush(stdout);
-      tm = runtime();
-    }
-    mark_phase();
-    if (debug) {
-      printf("mark ended (%d)\n", runtime() - tm);
-      printf("sweep phase\n");
-      fflush(stdout);
-      tm = runtime();
-    }
-    sweep_phase();
-    if (debug) {
-      printf("sweep ended (%d)\n", runtime() - tm);
-      fflush(stdout);
-    }
-
-    if (t == t_contiguous) {
-      if (debug) {
-	printf("contblock sweep phase\n");
-	fflush(stdout);
-	tm = runtime();
-      }
-      contblock_sweep_phase();
-      if (debug)
-	printf("contblock sweep ended (%d)\n", runtime() - tm);
-    }
-
-    if (debug) {
-      for (i = 0, j = 0;  i < (int)t_end;  i++) {
-	if (tm_table[i].tm_type == (cl_type)i) {
-	  printf("%13s: %8d used %8d free %4d/%d pages\n",
-		 tm_table[i].tm_name,
-		 tm_table[i].tm_nused,
-		 tm_table[i].tm_nfree,
-		 tm_table[i].tm_npage,
-		 tm_table[i].tm_maxpage);
-	  j += tm_table[i].tm_npage;
-	} else
-	  printf("%13s: linked to %s\n",
-		 tm_table[i].tm_name,
-		 tm_table[(int)tm_table[i].tm_type].tm_name);
-      }
-      printf("contblock: %d blocks %d pages\n", ncb, ncbpage);
-      printf("hole: %d pages\n", holepage);
-      printf("GC ended\n");
-      fflush(stdout);
-    }
-
-    ecl_enable_interrupt(old_enable_interrupt);
-
-    if (GC_exit_hook != NULL)
-      (*GC_exit_hook)();
-
-    CL_RESTORE_ENVIRONMENT;
+	if (GC_enter_hook != NULL)
+		(*GC_enter_hook)();
 
 #ifdef THREADS
-
-    /* 
-     * Back in the right stack
-     */
-
-    if (stack_switched) {
-      if (debug) {
-	printf("*STACK BACK*\n");
-	fflush (stdout);
-      }
-
-      stack_switched = FALSE;
-
-      end_critical_section();	/* we get here from the GC call in scheduler */
-	  
-      clwp = old_clwp;
-      Values = clwp->lwp_Values;
-      siglongjmp(old_env, 2);
-    }
-  }
+#error "We need to stop all other threads"
 #endif /* THREADS */
 
-  gc_time += (gc_start = runtime() - gc_start);
+	interrupts = ecl_interrupt_enable;
+	ecl_interrupt_enable = 0;
 
-  if (SYM_VAL(@'si::*gc-verbose*') != Cnil) {
-    /* Don't use fprintf since on Linux it calls malloc() */
-    printf(". finished in %.2f\"]", gc_start/60.0);
-    fflush(stdout);
-  }
+	collect_blocks = t > t_end;
+	if (collect_blocks)
+		cbgccount++;
+	else
+		tm_table[(int)t].tm_gccount++;
 
-  if (cl_env.interrupts_pending) si_check_pending_interrupts();
+	if (debug) {
+		if (collect_blocks)
+			printf("GC entered for collecting blocks\n");
+		else
+			printf("GC entered for collecting %s\n", tm_table[(int)t].tm_name);
+		fflush(stdout);
+	}
 
-  end_critical_section();
+	maxpage = page(heap_end);
+
+	if (collect_blocks) {
+		/*
+		  1 page = 512 word
+		  512 bit = 16 word
+		*/
+		int mark_table_size = maxpage * (LISP_PAGESIZE / 32);
+		extern void cl_resize_hole(cl_index);
+		
+		if (holepage < mark_table_size*sizeof(int)/LISP_PAGESIZE + 1)
+			new_holepage = mark_table_size*sizeof(int)/LISP_PAGESIZE + 1;
+		if (new_holepage < HOLEPAGE)
+			new_holepage = HOLEPAGE;
+		cl_resize_hole(new_holepage);
+
+		mark_table = (int*)heap_end;
+		for (i = 0;  i < mark_table_size; i++)
+			mark_table[i] = 0;
+	}
+
+	if (debug) {
+		printf("mark phase\n");
+		fflush(stdout);
+		tm = ecl_runtime();
+	}
+	mark_phase();
+	if (debug) {
+		printf("mark ended (%d)\n", ecl_runtime() - tm);
+		printf("sweep phase\n");
+		fflush(stdout);
+		tm = ecl_runtime();
+	}
+	sweep_phase();
+	if (debug) {
+		printf("sweep ended (%d)\n", ecl_runtime() - tm);
+		fflush(stdout);
+	}
+
+	if (t == t_contiguous) {
+		if (debug) {
+			printf("contblock sweep phase\n");
+			fflush(stdout);
+			tm = ecl_runtime();
+		}
+		contblock_sweep_phase();
+		if (debug)
+			printf("contblock sweep ended (%d)\n", ecl_runtime() - tm);
+	}
+	
+	if (debug) {
+		for (i = 0, j = 0;  i < (int)t_end;  i++) {
+			if (tm_table[i].tm_type == (cl_type)i) {
+				printf("%13s: %8d used %8d free %4d/%d pages\n",
+				       tm_table[i].tm_name,
+				       tm_table[i].tm_nused,
+				       tm_table[i].tm_nfree,
+				       tm_table[i].tm_npage,
+				       tm_table[i].tm_maxpage);
+				j += tm_table[i].tm_npage;
+			} else
+				printf("%13s: linked to %s\n",
+				       tm_table[i].tm_name,
+				       tm_table[(int)tm_table[i].tm_type].tm_name);
+		}
+		printf("contblock: %d blocks %d pages\n", ncb, ncbpage);
+		printf("hole: %d pages\n", holepage);
+		printf("GC ended\n");
+		fflush(stdout);
+	}
+
+	ecl_interrupt_enable = interrupts;
+
+	if (GC_exit_hook != NULL)
+		(*GC_exit_hook)();
+
+	} CL_NEWENV_END;
+
+#ifdef THREADS
+#error "We need to activate all other threads again"
+#endif /* THREADS */
+
+	gc_time += (gc_start = ecl_runtime() - gc_start);
+
+	if (SYM_VAL(@'si::*gc-verbose*') != Cnil) {
+		/* Don't use fprintf since on Linux it calls malloc() */
+		printf(". finished in %.2f\"]", gc_start/60.0);
+		fflush(stdout);
+	}
+
+	if (cl_env.interrupt_pending) si_check_pending_interrupts();
+	
+	end_critical_section();
 }
 
 /*
@@ -914,7 +817,7 @@ ecl_gc(cl_type t)
 static void
 _mark_contblock(void *x, cl_index s)
 {
-	cl_ptr p = x, q;
+	cl_ptr p = x;
 	if (p >= heap_start && p < data_end) {
 		ptrdiff_t pg = page(p);
 		if ((cl_type)type_map[pg] == t_contiguous) {
@@ -984,5 +887,3 @@ init_GC(void)
 	GC_enable();
 	gc_time = 0;
 }
-
-#endif

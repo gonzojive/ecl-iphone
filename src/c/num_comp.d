@@ -282,7 +282,7 @@ monotonic(int s, int t, int narg, cl_va_list nums)
 	return1(Ct);
 }
 
-#define MONOTONIC(i, j) (int narg, ...) \
+#define MONOTONIC(i, j) (cl_narg narg, ...) \
 { cl_va_list nums; cl_va_start(nums, narg, narg, 0); \
   return monotonic(i, j, narg, nums); }
 

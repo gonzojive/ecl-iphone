@@ -55,7 +55,7 @@ FEtype_error_list(cl_object x) {
 void
 FEtype_error_proper_list(cl_object x) {
 	cl_error(9, @'simple-type-error', @':format-control',
-		    make_simple_string("Not a proper list ~D"),
+		    make_constant_string("Not a proper list ~D"),
 		    @':format-arguments', cl_list(1, x),
 		    @':expected-type', @'list',
 		    @':datum', x);
@@ -65,7 +65,7 @@ void
 FEtype_error_alist(cl_object x)
 {
 	cl_error(9, @'simple-type-error', @':format-control',
-		    make_simple_string("Not a valid association list ~D"),
+		    make_constant_string("Not a valid association list ~D"),
 		    @':format-arguments', cl_list(1, x),
 		    @':expected-type', @'list',
 		    @':datum', x);
@@ -77,7 +77,7 @@ FEcircular_list(cl_object x)
 	/* FIXME: Is this the right way to rebind it? */
 	bds_bind(@'*print-circle*', Ct);
 	cl_error(9, @'simple-type-error', @':format-control',
-		    make_simple_string("Circular list ~D"),
+		    make_constant_string("Circular list ~D"),
 		    @':format-arguments', cl_list(1, x),
 		    @':expected-type', @'list',
 		    @':datum', x);
@@ -87,7 +87,7 @@ void
 FEtype_error_index(cl_object seq, cl_object ndx)
 {
 	cl_error(9, @'simple-type-error', @':format-control',
-		    make_simple_string("~S is not a valid index within the sequence ~S"),
+		    make_constant_string("~S is not a valid index into the object ~S"),
 		    @':format-arguments', cl_list(2, seq, ndx),
 		    @':expected-type', @'fixnum',
 		    @':datum', ndx);

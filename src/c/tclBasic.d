@@ -431,7 +431,7 @@ TkResult2Lisp(Tcl_Interp *interp)
 }
 #endif
 
-tclMethodDispatch(int narg, cl_object env, ...)
+tclMethodDispatch(cl_narg narg, cl_object env, ...)
 {
   va_list args;
   cl_object W = CAR(env);

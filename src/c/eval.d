@@ -77,7 +77,7 @@ cl_apply_from_stack(cl_index narg, cl_object x)
 	switch (type_of(fun)) {
 	case t_cfun:
 		if (fun->cfun.narg >= 0) {
-			if (narg != fun->cfun.narg)
+			if (narg != (cl_index)fun->cfun.narg)
 				FEwrong_num_arguments(fun);
 			return APPLY_fixed(narg, fun->cfun.entry, cl_env.stack_top - narg);
 		}

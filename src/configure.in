@@ -183,6 +183,7 @@ SUBDIR=c
 CLIBS="${CLIBS} -lm"
 if test ${boehm} = "no" ; then
   EXTRA_OBJS="${EXTRA_OBJS} alloc.${OBJEXT} gbc.${OBJEXT}"
+  GCLIB=""
 else
   if test ${local_boehm} = "no"; then
     SUBDIR="${SUBDIR} gc"
@@ -191,6 +192,7 @@ else
     BOEHM_HEADERS=""
   fi
   EXTRA_OBJS="${EXTRA_OBJS} alloc_2.${OBJEXT}"
+  GCLIB="-lgc"
   AC_DEFINE(GBC_BOEHM)
 fi
 if test ${shared} = "yes"; then

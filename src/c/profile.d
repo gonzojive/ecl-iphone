@@ -36,10 +36,10 @@ static unsigned int profile_scale;
  *----------------------------------------------------------------------
  */
 
-extern int siLmake_vector (int narg, object etype, object dim, object adj, object fillp, object displ, object disploff, object staticp);
+extern int siLmake_vector (cl_narg narg, object etype, object dim, object adj, object fillp, object displ, object disploff, object staticp);
 extern void profil (short unsigned int *, size_t, int, unsigned int);
 
-siLprofile(int narg, object scale, object start_address)
+siLprofile(cl_narg narg, object scale, object start_address)
 {
   int size;
   object ar = sSAprofile_arrayA->symbol.dbind;
@@ -72,7 +72,7 @@ siLprofile(int narg, object scale, object start_address)
   RETURN(1);
 }
 
-siLclear_profile(int narg)
+siLclear_profile(cl_narg narg)
 {
   int i;
   object ar = sSAprofile_arrayA->symbol.dbind;
@@ -92,7 +92,7 @@ total_ticks(unsigned short *aar, unsigned int dim)
   return count;
 }
 
-siLdisplay_profile(int narg)
+siLdisplay_profile(cl_narg narg)
 {
   caddr_t prev, next;
   unsigned upto, dim;

@@ -15,6 +15,7 @@
 
 #include <string.h>
 #include "ecl.h"
+#include "internal.h"
 
 /* 
  * Using GMP multiple precision integers:

@@ -799,7 +799,7 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 		   (stream->stream.mode == smm_io ||
 		    stream->stream.mode == smm_output))
 	{
-		int towrite = end - start;
+		size_t towrite = end - start;
 		if (fwrite(seq->vector.self.ch + start, sizeof(char),
 			   towrite, stream->stream.file) < towrite) {
 			io_error(stream);
@@ -853,9 +853,9 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 		    (stream->stream.mode == smm_io ||
 		     stream->stream.mode == smm_output))
 	{
-		int toread = end - start;
-		int n = fread(seq->vector.self.ch + start, sizeof(char),
-			      toread, stream->stream.file);
+		size_t toread = end - start;
+		size_t n = fread(seq->vector.self.ch + start, sizeof(char),
+				 toread, stream->stream.file);
 		if (n < toread && ferror(stream->stream.file))
 			io_error(stream);
 		start += n;
@@ -1671,28 +1671,26 @@ cl_output_stream_p(cl_object strm)
 	@(return strm)
 @)
 
-@(defun file_position (file_stream &o position)
-	int i;
+@(defun file-position (file_stream &o position)
+	long i;
+	cl_object output;
 @
 	if (Null(position)) {
 		i = file_position(file_stream);
-		if (i < 0)
-			@(return Cnil)
-		@(return MAKE_FIXNUM(i))
+		output = (i < 0)? Cnil : MAKE_FIXNUM(i);
 	} else {
-		if (position == @':start')
+		if (position == @':start') {
 			i = 0;
-		else if (position == @':end')
+		} else if (position == @':end') {
 			i = file_length(file_stream);
-		else if (!FIXNUMP(position) ||
-		    (i = fix((position))) < 0)
+		} else if (!FIXNUMP(position) || (i = fix((position))) < 0) {
 			FEerror("~S is an illegal file position~%\
 for the file-stream ~S.",
 				2, position, file_stream);
-		if (file_position_set(file_stream, i) < 0)
-			@(return Cnil)
-		@(return Ct)
+		}
+		output = (file_position_set(file_stream, i) < 0)? Cnil : Ct;
 	}
+	@(return output)
 @)
 
 cl_object
@@ -1797,7 +1795,7 @@ init_file(void)
 	standard_input->stream.mode = (short)smm_input;
 	standard_input->stream.file = stdin;
 	standard_input->stream.object0 = @'base-char';
-	standard_input->stream.object1 = make_simple_string("stdin");
+	standard_input->stream.object1 = make_constant_string("stdin");
 	standard_input->stream.int0 = 0;
 	standard_input->stream.int1 = 0;
 
@@ -1805,7 +1803,7 @@ init_file(void)
 	standard_output->stream.mode = (short)smm_output;
 	standard_output->stream.file = stdout;
 	standard_output->stream.object0 = @'base-char';
-	standard_output->stream.object1= make_simple_string("stdout");
+	standard_output->stream.object1= make_constant_string("stdout");
 	standard_output->stream.int0 = 0;
 	standard_output->stream.int1 = 0;
 

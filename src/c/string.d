@@ -130,19 +130,19 @@ cl_string(cl_object x)
 
 	switch (type_of(x)) {
 	case t_symbol:
-		return1(x->symbol.name);
-
+		x = x->symbol.name;
+		break;
 	case t_character:
 		y = cl_alloc_simple_string(1);
 		y->string.self[0] = CHAR_CODE(x);
-		return1(y);
-
+		x = y;
+		break;
 	case t_string:
-		return1(x);
-
+		break;
 	default:
 		FEtype_error_string(x);
 	}
+	@(return x)
 }
 
 cl_object
@@ -234,7 +234,7 @@ string_eq(cl_object x, cl_object y)
 @(defun string_equal (string1 string2 &key (start1 MAKE_FIXNUM(0)) end1
 		      (start2 MAKE_FIXNUM(0)) end2)
 	cl_index s1, e1, s2, e2;
-	cl_index i1, i2;
+	char i1, i2;
 @
 	string1 = cl_string(string1);
 	string2 = cl_string(string2);
@@ -274,8 +274,8 @@ string_equal(cl_object x, cl_object y)
 	return(TRUE);
 }
 
-static cl_return
-string_cmp(int narg, int sign, int boundary, cl_va_list ARGS)
+static cl_object
+string_cmp(cl_narg narg, int sign, int boundary, cl_va_list ARGS)
 {
 	cl_object string1 = cl_va_arg(ARGS);
 	cl_object string2 = cl_va_arg(ARGS);
@@ -335,31 +335,31 @@ string_cmp(int narg, int sign, int boundary, cl_va_list ARGS)
 
 @(defun string< (&rest args)
 @
-	@(return string_cmp(narg, 1, 1, args))
+	return string_cmp(narg, 1, 1, args);
 @)
 
 @(defun string> (&rest args)
 @
-	@(return string_cmp(narg,-1, 1, args))
+	return string_cmp(narg,-1, 1, args);
 @)
 
 @(defun string<= (&rest args)
 @
-	@(return string_cmp(narg, 1, 0, args))
+	return string_cmp(narg, 1, 0, args);
 @)
 
 @(defun string>= (&rest args)
 @
-	@(return string_cmp(narg,-1, 0, args))
+	return string_cmp(narg,-1, 0, args);
 @)
 
 @(defun string/= (&rest args)
 @
-	@(return string_cmp(narg, 0, 1, args))
+	return string_cmp(narg, 0, 1, args);
 @)
 
-static cl_return
-string_compare(int narg, int sign, int boundary, cl_va_list ARGS)
+static cl_object
+string_compare(cl_narg narg, int sign, int boundary, cl_va_list ARGS)
 {
 	cl_object string1 = cl_va_arg(ARGS);
 	cl_object string2 = cl_va_arg(ARGS);
@@ -422,27 +422,27 @@ string_compare(int narg, int sign, int boundary, cl_va_list ARGS)
 
 @(defun string-lessp (&rest args)
 @
-	@(return string_compare(narg, 1, 1, args))
+	return string_compare(narg, 1, 1, args);
 @)
 
 @(defun string-greaterp (&rest args)
 @
-	@(return string_compare(narg,-1, 1, args))
+	return string_compare(narg,-1, 1, args);
 @)
 
 @(defun string-not-greaterp (&rest args)
 @
-	@(return string_compare(narg, 1, 0, args))
+	return string_compare(narg, 1, 0, args);
 @)
 
 @(defun string-not-lessp (&rest args)
 @
-	@(return string_compare(narg,-1, 0, args))
+	return string_compare(narg,-1, 0, args);
 @)
 
 @(defun string-not-equal (&rest args)
 @
-	@(return string_compare(narg, 0, 1, args))
+	return string_compare(narg, 0, 1, args);
 @)
 
 bool
@@ -482,7 +482,7 @@ member_char(int c, cl_object char_bag)
 	}
 }
 
-static cl_return
+static cl_object
 string_trim0(bool left_trim, bool right_trim, cl_object char_bag, cl_object strng)
 {
 	cl_object res;
@@ -502,22 +502,30 @@ string_trim0(bool left_trim, bool right_trim, cl_object char_bag, cl_object strn
 	k = j - i + 1;
 	res = cl_alloc_simple_string(k);
 	memcpy(res->string.self, strng->string.self+i, k);
-	return1(res);
+	@(return res)
 }
 
-cl_return
+cl_object
 cl_string_trim(cl_object char_bag, cl_object strng)
-	{ return string_trim0(TRUE, TRUE, char_bag, strng); }
-cl_return
+{
+	return string_trim0(TRUE, TRUE, char_bag, strng);
+}
+
+cl_object
 cl_string_left_trim(cl_object char_bag, cl_object strng)
-	{ return string_trim0(TRUE, FALSE, char_bag, strng); }
-cl_return
+{
+	return string_trim0(TRUE, FALSE, char_bag, strng);
+}
+
+cl_object
 cl_string_right_trim(cl_object char_bag, cl_object strng)
-	{ return string_trim0(FALSE, TRUE, char_bag, strng);}
+{
+	return string_trim0(FALSE, TRUE, char_bag, strng);
+}
 
 
-static cl_return
-string_case(int narg, int (*casefun)(int c, bool *bp), cl_va_list ARGS)
+static cl_object
+string_case(cl_narg narg, int (*casefun)(int c, bool *bp), cl_va_list ARGS)
 {
 	cl_object strng = cl_va_arg(ARGS);
 	cl_index s, e, i;
@@ -541,7 +549,7 @@ string_case(int narg, int (*casefun)(int c, bool *bp), cl_va_list ARGS)
 	b = TRUE;
 	for (i = s;  i < e;  i++)
 		conv->string.self[i] = (*casefun)(conv->string.self[i], &b);
-	return1(conv);
+	@(return conv)
 #undef startp
 #undef start
 #undef end
@@ -555,18 +563,18 @@ char_upcase(int c, bool *bp)
 
 @(defun string-upcase (&rest args)
 @
-	@(return string_case(narg, char_upcase, args))
+	return string_case(narg, char_upcase, args);
 @)
 
 static int
 char_downcase(int c, bool *bp)
 {
-	return(tolower(c));
+	return tolower(c);
 }
 
 @(defun string-downcase (&rest args)
 @
-	@(return string_case(narg, char_downcase, args))
+	return string_case(narg, char_downcase, args);
 @)
 
 static int
@@ -588,12 +596,12 @@ char_capitalize(int c, bool *bp)
 
 @(defun string-capitalize (&rest args)
 @
-	@(return string_case(narg, char_capitalize, args))
+	return string_case(narg, char_capitalize, args);
 @)
 
 
-static cl_return
-nstring_case(int narg, int (*casefun)(int, bool *), cl_va_list ARGS)
+static cl_object
+nstring_case(cl_narg narg, int (*casefun)(int, bool *), cl_va_list ARGS)
 {
 	cl_object strng = cl_va_arg(ARGS);
 	cl_index s, e, i;
@@ -615,7 +623,7 @@ nstring_case(int narg, int (*casefun)(int, bool *), cl_va_list ARGS)
 	b = TRUE;
 	for (i = s;  i < e;  i++)
 		strng->string.self[i] = (*casefun)(strng->string.self[i], &b);
-	return1(strng);
+	@(return strng)
 #undef startp
 #undef start
 #undef end
@@ -623,17 +631,17 @@ nstring_case(int narg, int (*casefun)(int, bool *), cl_va_list ARGS)
 
 @(defun nstring-upcase (&rest args)
 @
-	@(return nstring_case(narg, char_upcase, args))
+	return nstring_case(narg, char_upcase, args);
 @)
 
 @(defun nstring-downcase (&rest args)
 @
-	@(return nstring_case(narg, char_downcase, args))
+	return nstring_case(narg, char_downcase, args);
 @)
 
 @(defun nstring-capitalize (&rest args)
 @
-	@(return nstring_case(narg, char_capitalize, args))
+	return nstring_case(narg, char_capitalize, args);
 @)
 
 @(defun si::string_concatenate (&rest args)

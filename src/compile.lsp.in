@@ -41,7 +41,7 @@
       "~A -o ~A -L@true_builddir@~* ~{~A ~} ~@?")
 #-dlopen 
 (setf c::*ld-flags*
-      "@LDFLAGS@ @LDRPATH@ @LIBPREFIX@ecl.@LIBEXT@ -lgmp -lgc @CLIBS@")
+      "@LDFLAGS@ @LDRPATH@ @LIBPREFIX@ecl.@LIBEXT@ -lgmp @GCLIB@ @CLIBS@")
 #+dlopen
 (setf c::*ld-flags*
       "@LDFLAGS@ @LDRPATH@ @SHAREDPREFIX@ecl.@SHAREDEXT@ @CLIBS@"
@@ -84,8 +84,7 @@ cd ..; rm -rf tmp/*'")))
   (c::shared-cc (compile-file-pathname "ecl" :type :dll)
 		"c/main.@OBJEXT@"
 		(compile-file-pathname "ecl" :type :lib)
-		#+boehm-gc "-lgc"
-		"-lgmp"
+		"-lgmp @GCLIB@"
 		. #.(unless (equalp "@LDINSTALLNAME@" "")
 			'("@LDINSTALLNAME@"))))
 

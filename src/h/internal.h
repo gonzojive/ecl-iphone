@@ -40,11 +40,9 @@ extern void init_read(void);
 extern void init_stacks(int *);
 extern void init_unixint(void);
 extern void init_unixtime(void);
-
-
-/* all_symbols.d */
-
-extern cl_index cl_num_symbols_in_core;
+extern void ecl_init_env(struct cl_env_struct *);
+extern void init_LSP(void);
+extern void init_CLOS(void);
 
 /* all_functions.d */
 
@@ -77,6 +75,12 @@ extern cl_object ecl_alloc_bytecodes(cl_index data_size, cl_index code_size);
 #define OPEN_RW	"w+b"
 #define OPEN_A	"ab"
 #define OPEN_RA	"a+b"
+
+/* format.d */
+
+#ifndef ECL_CMU_FORMAT
+extern cl_object si_formatter_aux _ARGS((cl_narg narg, cl_object strm, cl_object string, ...));
+#endif
 
 /* hash.d */
 extern void ecl_extend_hashtable(cl_object hashtable);
@@ -162,6 +166,14 @@ extern void cl_write_object(cl_object x);
 
 /* read.d */
 #define	RTABSIZE	CHAR_CODE_LIMIT	/*  read table size  */
+
+/* time.d */
+
+extern cl_fixnum ecl_runtime(void);
+
+/* unixint.d */
+
+extern bool ecl_interrupt_enable;
 
 #ifdef __cplusplus
 }

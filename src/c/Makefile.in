@@ -9,7 +9,10 @@ VPATH	= @srcdir@
 #
 TRUE_CC = @CC@
 CC	= @ECL_CC@
-CFLAGS	= -c -I$(srcdir) -I$(HDIR) -I../h @BOEHM_HEADERS@ @CFLAGS@ @ECL_CFLAGS@
+CFLAGS	= -c -I$(srcdir) -I$(HDIR) -I../h @BOEHM_HEADERS@ @CFLAGS@ @ECL_CFLAGS@ \
+	  -Wall -W -Wfloat-equal -Wundef -Wendif-labels -Wpointer-arith -Wcast-align \
+	  -Wwrite-strings -Wconversion -Wsign-compare -Wmissing-prototypes -Wredundant-decls \
+	  -Wunreachable-code -Winline
 
 SHELL	= /bin/sh
 RM	= @RM@

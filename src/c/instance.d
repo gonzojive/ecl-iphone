@@ -17,10 +17,10 @@
 #include <string.h>
 
 cl_object
-ecl_allocate_instance(cl_object clas, int size)
+ecl_allocate_instance(cl_object clas, cl_index size)
 {
 	cl_object x = cl_alloc_instance(size);
-	int i;
+	cl_index i;
 	CLASS_OF(x) = clas;
 	for (i = 0;  i < size;  i++)
 		x->instance.slots[i] = ECL_UNBOUND;
@@ -73,12 +73,12 @@ si_instance_class_set(cl_object x, cl_object y)
 }
 
 cl_object
-instance_ref(cl_object x, int i)
+instance_ref(cl_object x, cl_fixnum i)
 {
 	if (type_of(x) != t_instance)
 		FEwrong_type_argument(@'ext::instance', x);
-	if (i >= x->instance.length || i < 0)
-	        FEerror("~S is an illegal slot index1.",1,i);
+	if (i < 0 || i >= (cl_fixnum)x->instance.length)
+	        FEtype_error_index(x, MAKE_FIXNUM(i));
 	return(x->instance.slots[i]);
 }
 
@@ -90,8 +90,8 @@ si_instance_ref(cl_object x, cl_object index)
 	if (type_of(x) != t_instance)
 		FEwrong_type_argument(@'ext::instance', x);
 	if (!FIXNUMP(index) ||
-	    (i = fix(index)) < 0 || i >= x->instance.length)
-		FEerror("~S is an illegal slot index.", 1, index);
+	    (i = fix(index)) < 0 || i >= (cl_fixnum)x->instance.length)
+	        FEtype_error_index(x, index);
 	@(return x->instance.slots[i])
 }
 
@@ -104,20 +104,20 @@ si_instance_ref_safe(cl_object x, cl_object index)
 		FEwrong_type_argument(@'ext::instance', x);
 	if (!FIXNUMP(index) ||
 	    (i = fix(index)) < 0 || i >= x->instance.length)
-		FEerror("~S is an illegal slot index.", 1, index);
+	        FEtype_error_index(x, index);
 	x = x->instance.slots[i];
 	if (x == ECL_UNBOUND)
-		FEerror("Slot index ~S unbound", 1, index);
+		cl_error(5, @'unbound-slot', @':name', index, @':instance', x);
 	@(return x)
 }
 
 cl_object
-instance_set(cl_object x, int i, cl_object v)
+instance_set(cl_object x, cl_fixnum i, cl_object v)
 {
         if (type_of(x) != t_instance)
                 FEwrong_type_argument(@'ext::instance', x);
 	if (i >= x->instance.length || i < 0)
-	        FEerror("~S is an illegal slot index2.", 1, i);
+	        FEtype_error_index(x, MAKE_FIXNUM(i));
 	x->instance.slots[i] = v;
 	return(v);
 }
@@ -130,8 +130,8 @@ si_instance_set(cl_object x, cl_object index, cl_object value)
 	if (type_of(x) != t_instance)
 		FEwrong_type_argument(@'ext::instance', x);
 	if (!FIXNUMP(index) ||
-	    (i = fix(index)) >= x->instance.length || i < 0)
-		FEerror("~S is an illegal slot index.", 1, index);
+	    (i = fix(index)) >= (cl_fixnum)x->instance.length || i < 0)
+		FEtype_error_index(x, index);
 	x->instance.slots[i] = value;
 	@(return value)
 }
@@ -165,7 +165,7 @@ si_sl_makunbound(cl_object x, cl_object index)
 		FEwrong_type_argument(@'ext::instance', x);
 	if (!FIXNUMP(index) ||
 	    (i = fix(index)) >= x->instance.length || i < 0)
-		FEerror("~S is an illegal slot index.", 1, index);
+		FEtype_error_index(x, index);
 	x->instance.slots[i] = ECL_UNBOUND;
 	@(return x)
 }

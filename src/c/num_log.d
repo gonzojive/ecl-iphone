@@ -267,7 +267,7 @@ static bignum_bit_operator bignum_operations[16] = {
 static cl_object log_op2(cl_object x, cl_object y, int op);
 
 static cl_object
-log_op(int narg, int op, cl_va_list ARGS)
+log_op(cl_narg narg, int op, cl_va_list ARGS)
 {
 #if 1
 	cl_object x, y;
@@ -462,7 +462,7 @@ ecl_ash(cl_object x, cl_fixnum w)
 			mpz_set_si(y->big.big_num, fix(x));
 			x = y;
 		}
-		mpz_mul_2exp(y->big.big_num, x->big.big_num, w);
+		mpz_mul_2exp(y->big.big_num, x->big.big_num, (unsigned long)w);
 	}
 	return(big_register_normalize(y));
 }
@@ -570,7 +570,7 @@ cl_logbitp(cl_object p, cl_object x)
 
 	assert_type_integer(x);
 	if (FIXNUMP(p)) {
-		cl_fixnum n = fixnnint(p);
+		cl_index n = fixnnint(p);
 		if (FIXNUMP(x)) {
 			cl_fixnum y = fix(x);
 			if (n >= FIXNUM_BITS) {

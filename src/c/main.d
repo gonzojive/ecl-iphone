@@ -42,14 +42,6 @@ static char stdin_buf[BUFSIZ];
 static char stdout_buf[BUFSIZ];
 #endif
 
-#ifdef __cplusplus
-extern "C" void init_LSP(void);
-extern "C" void init_CLOS(void);
-#else
-extern void init_LSP();
-extern void init_CLOS();
-#endif
-
 void
 ecl_init_env(struct cl_env_struct *env)
 {
@@ -81,11 +73,22 @@ ecl_init_env(struct cl_env_struct *env)
 
 	env->circle_counter = -2;
 	env->circle_stack = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024),
-						  make_shortfloat(1.5),	
-						  make_shortfloat(0.7), Cnil);
+						  make_shortfloat(1.5f),	
+						  make_shortfloat(0.75f), Cnil);
 #ifndef ECL_CMU_FORMAT
 	env->fmt_aux_stream = make_string_output_stream(64);
 #endif
+
+#if !defined(GBC_BOEHM)
+# if defined(THREADS)
+#  error "No means to mark the stack of a thread :-/"
+# else
+	/* Rough estimate. Not very safe. We assume that cl_boot()
+	 * is invoked from the main() routine of the program.
+	 */
+	env->cs_org = (cl_object*)(&env);
+# endif /* THREADS */
+#endif /* !GBC_BOEHM */
 
 	init_stacks(&i);
 }
@@ -122,7 +125,7 @@ cl_boot(int argc, char **argv)
 	Cnil->symbol.t = (short)t_symbol;
 	Cnil->symbol.dynamic = 0;
 	Cnil->symbol.value = Cnil;
-	Cnil->symbol.name = make_simple_string("NIL");
+	Cnil->symbol.name = make_constant_string("NIL");
 	Cnil->symbol.gfdef = OBJNULL;
 	Cnil->symbol.plist = Cnil;
 	Cnil->symbol.hpack = Cnil;
@@ -134,7 +137,7 @@ cl_boot(int argc, char **argv)
 	Ct->symbol.t = (short)t_symbol;
 	Ct->symbol.dynamic = 0;
 	Ct->symbol.value = Ct;
-	Ct->symbol.name = make_simple_string("T");
+	Ct->symbol.name = make_constant_string("T");
 	Ct->symbol.gfdef = OBJNULL;
 	Ct->symbol.plist = Cnil;
 	Ct->symbol.hpack = Cnil;
@@ -147,34 +150,34 @@ cl_boot(int argc, char **argv)
 	cl_core.packages_to_be_created = OBJNULL;
 
 	cl_core.lisp_package =
-	    make_package(make_simple_string("COMMON-LISP"),
-			 CONS(make_simple_string("CL"),
-			      CONS(make_simple_string("LISP"),Cnil)),
+	    make_package(make_constant_string("COMMON-LISP"),
+			 CONS(make_constant_string("CL"),
+			      CONS(make_constant_string("LISP"),Cnil)),
 			 Cnil);
 	cl_core.user_package =
-	    make_package(make_simple_string("COMMON-LISP-USER"),
-			 CONS(make_simple_string("CL-USER"),
-			      CONS(make_simple_string("USER"),Cnil)),
+	    make_package(make_constant_string("COMMON-LISP-USER"),
+			 CONS(make_constant_string("CL-USER"),
+			      CONS(make_constant_string("USER"),Cnil)),
 			 CONS(cl_core.lisp_package, Cnil));
-	cl_core.keyword_package = make_package(make_simple_string("KEYWORD"),
+	cl_core.keyword_package = make_package(make_constant_string("KEYWORD"),
 					       Cnil, Cnil);
-	cl_core.system_package = make_package(make_simple_string("SI"),
-					      CONS(make_simple_string("SYSTEM"),
-						   CONS(make_simple_string("SYS"),
-							CONS(make_simple_string("EXT"),
+	cl_core.system_package = make_package(make_constant_string("SI"),
+					      CONS(make_constant_string("SYSTEM"),
+						   CONS(make_constant_string("SYS"),
+							CONS(make_constant_string("EXT"),
 							     Cnil))),
 					      CONS(cl_core.lisp_package, Cnil));
 #ifdef CLOS
-	cl_core.clos_package = make_package(make_simple_string("CLOS"),
+	cl_core.clos_package = make_package(make_constant_string("CLOS"),
 					    Cnil, CONS(cl_core.lisp_package, Cnil));
 #endif
 #ifdef TK
-	cl_core.tk_package = make_package(make_simple_string("TK"),
+	cl_core.tk_package = make_package(make_constant_string("TK"),
 					  Cnil, CONS(cl_core.lisp_package, Cnil));
 #endif
 #ifdef ECL_THREADS
-	cl_core.mp_package = make_package(make_simple_string("MP"),
-					  CONS(make_simple_string("MULTIPROCESSING"), Cnil),
+	cl_core.mp_package = make_package(make_constant_string("MP"),
+					  CONS(make_constant_string("MULTIPROCESSING"), Cnil),
 					  CONS(cl_core.lisp_package, Cnil));
 #endif
 
@@ -200,27 +203,27 @@ cl_boot(int argc, char **argv)
 	 * 2) Initialize constants (strings, numbers and time).
 	 */
 
-	cl_core.string_return = make_simple_string("Return");
-	cl_core.string_space = make_simple_string("Space");
-	cl_core.string_rubout = make_simple_string("Rubout");
-	cl_core.string_page = make_simple_string("Page");
-	cl_core.string_tab = make_simple_string("Tab");
-	cl_core.string_backspace = make_simple_string("Backspace");
-	cl_core.string_linefeed = make_simple_string("Linefeed");
-	cl_core.string_null = make_simple_string("Null");
-	cl_core.string_newline = make_simple_string("Newline");
+	cl_core.string_return = make_constant_string("Return");
+	cl_core.string_space = make_constant_string("Space");
+	cl_core.string_rubout = make_constant_string("Rubout");
+	cl_core.string_page = make_constant_string("Page");
+	cl_core.string_tab = make_constant_string("Tab");
+	cl_core.string_backspace = make_constant_string("Backspace");
+	cl_core.string_linefeed = make_constant_string("Linefeed");
+	cl_core.string_null = make_constant_string("Null");
+	cl_core.string_newline = make_constant_string("Newline");
 	cl_core.null_string = make_constant_string("");
 
 	cl_core.null_stream = @make_broadcast_stream(0);
 
 	cl_core.system_properties =
 	    cl__make_hash_table(@'eq', MAKE_FIXNUM(1024), /* size */
-				make_shortfloat(1.5), /* rehash-size */
-				make_shortfloat(0.7), /* rehash-threshold */
+				make_shortfloat(1.5f), /* rehash-size */
+				make_shortfloat(0.75f), /* rehash-threshold */
 				Ct); /* thread-safe */
 
-	cl_core.gensym_prefix = make_simple_string("G");
-	cl_core.gentemp_prefix = make_simple_string("T");
+	cl_core.gensym_prefix = make_constant_string("G");
+	cl_core.gentemp_prefix = make_constant_string("T");
 	cl_core.gentemp_counter = MAKE_FIXNUM(0);
 
 	init_number();
@@ -234,8 +237,8 @@ cl_boot(int argc, char **argv)
 	ecl_init_env(&cl_env);
 #ifdef ECL_THREADS
 	cl_env.bindings_hash = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024),
-						   make_shortfloat(1.5),
-						   make_shortfloat(0.7),
+						   make_shortfloat(1.5f),
+						   make_shortfloat(0.75f),
 						   Cnil); /* no locking */
 	ECL_SET(@'mp::*current-process*', cl_env.own_process);
 #endif
@@ -257,9 +260,9 @@ cl_boot(int argc, char **argv)
 		make_pathname(Cnil, Cnil, Cnil, Cnil, Cnil, Cnil));
 #endif
 
-	@si::pathname-translations(2,make_simple_string("SYS"),
-				   cl_list(1,cl_list(2,make_simple_string("*.*"),
-						     make_simple_string("./*.*"))));
+	@si::pathname-translations(2,make_constant_string("SYS"),
+				   cl_list(1,cl_list(2,make_constant_string("*.*"),
+						     make_constant_string("./*.*"))));
 
 	/*
 	 * 5) Set up hooks for LOAD, errors and macros.
@@ -270,12 +273,12 @@ cl_boot(int argc, char **argv)
 #endif
 	aux = cl_list(
 #ifdef ENABLE_DLOPEN
-		4,CONS(make_simple_string("fas"), @'si::load-binary'),
+		4,CONS(make_constant_string("fas"), @'si::load-binary'),
 #else
 		3,
 #endif
-		CONS(make_simple_string("lsp"), @'si::load-source'),
-		CONS(make_simple_string("lisp"), @'si::load-source'),
+		CONS(make_constant_string("lsp"), @'si::load-source'),
+		CONS(make_constant_string("lisp"), @'si::load-source'),
 		CONS(Cnil, @'si::load-source'));
 	ECL_SET(@'si::*load-hooks*', aux);
 #ifdef PDE
@@ -290,8 +293,8 @@ cl_boot(int argc, char **argv)
 #ifdef CLOS
 	ECL_SET(@'si::*class-name-hash-table*',
 		cl__make_hash_table(@'eq', MAKE_FIXNUM(1024), /* size */
-				    make_shortfloat(1.5), /* rehash-size */
-				    make_shortfloat(0.7), /* rehash-threshold */
+				    make_shortfloat(1.5f), /* rehash-size */
+				    make_shortfloat(0.75f), /* rehash-threshold */
 				    Ct)); /* thread safe */
 #endif
 
@@ -431,7 +434,7 @@ si_setenv(cl_object var, cl_object value)
 		ret_val = setenv(var->string.self, value->string.self, 1);
 #else
 		cl_object temp =
-		  cl_format(4, Cnil, make_simple_string("~A=~A"), var,
+		  cl_format(4, Cnil, make_constant_string("~A=~A"), var,
 			    value);
 		putenv(temp->string.self);
 #endif

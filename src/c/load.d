@@ -15,6 +15,7 @@
 
 #include "ecl.h"
 #include "ecl-inl.h"
+#include "internal.h"
 
 #ifdef ENABLE_DLOPEN
 #ifdef HAVE_DLFCN_H
@@ -136,12 +137,12 @@ si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 	/* Next try to call "init_FILE()" where FILE is the file name */
 	prefix = symbol_value(@'si::*init-function-prefix*');
 	if (Null(prefix))
-		prefix = make_simple_string(INIT_PREFIX);
+		prefix = make_constant_string(INIT_PREFIX);
 	else
 		prefix = @si::string-concatenate(3,
-						 make_simple_string(INIT_PREFIX),
+						 make_constant_string(INIT_PREFIX),
 						 prefix,
-						 make_simple_string("_"));
+						 make_constant_string("_"));
 	basename = cl_pathname_name(1,filename);
 	basename = @si::string-concatenate(2, prefix, @string-upcase(1,basename));
 	block->cblock.entry = ecl_library_symbol(block, basename->string.self);
@@ -267,7 +268,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 	}
 NOT_A_FILENAME:
 	if (verbose != Cnil) {
-		cl_format(3, Ct, make_simple_string("~&;;; Loading ~s~%"),
+		cl_format(3, Ct, make_constant_string("~&;;; Loading ~s~%"),
 			  filename);
 	}
 	bds_bind(@'*package*', symbol_value(@'*package*'));
@@ -282,7 +283,7 @@ NOT_A_FILENAME:
 		FEerror("LOAD: Could not load file ~S (Error: ~S)",
 			2, filename, ok);
 	if (print != Cnil) {
-		cl_format(3, Ct, make_simple_string("~&;;; Loading ~s~%"),
+		cl_format(3, Ct, make_constant_string("~&;;; Loading ~s~%"),
 			  filename);
 	}
 	@(return filename)

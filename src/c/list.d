@@ -17,81 +17,77 @@
 #include "ecl.h"
 #include "ecl-inl.h"
 
-#ifdef THREADS
-#define test_function   clwp->lwp_test_function
-#define item_compared   clwp->lwp_item_compared
-#define tf              clwp->lwp_tf
-#define key_function    clwp->lwp_key_function
-#define kf              clwp->lwp_kf
-#else
-static cl_object test_function;
-static cl_object item_compared;
-static bool (*tf)(cl_object);
-static cl_object key_function;
-static cl_object (*kf)(cl_object);
-#endif /* THREADS */
+struct cl_test {
+	bool (*test_c_function)(struct cl_test *, cl_object);
+	cl_object (*key_c_function)(struct cl_test *, cl_object);
+	cl_object test_function;
+	cl_object item_compared;
+	cl_object key_function;
+};
 
-#define TEST(x)         (*tf)(x)
+static cl_object subst(struct cl_test *t, cl_object new_obj, cl_object tree);
+static void nsubst(struct cl_test *t, cl_object new_obj, cl_object *tree);
+static cl_object sublis(struct cl_test *t, cl_object alist, cl_object tree);
+static void nsublis(struct cl_test *t, cl_object alist, cl_object *treep);
 
-#define saveTEST  \
-	cl_object old_test_function = test_function;  \
-	cl_object old_item_compared = item_compared;  \
-	bool (*old_tf)(cl_object) = tf;  \
-	cl_object old_key_function = key_function;  \
-	cl_object (*old_kf)(cl_object) = kf
-
-#define restoreTEST  \
-	test_function = old_test_function;  \
-	item_compared = old_item_compared;  \
-	tf = old_tf;  \
-	key_function = old_key_function;  \
-	kf = old_kf
+#define TEST(t,k) ((t)->test_c_function)((t),(k))
 
 static bool
-test_compare(cl_object x)
+test_compare(struct cl_test *t, cl_object x)
 {
-	cl_object test = funcall(3, test_function, item_compared, (*kf)(x));
-	return (test != Cnil);
+	cl_object outcome = funcall(3, t->test_function, t->item_compared,
+				    (t->key_c_function)(t, x));
+	return (outcome != Cnil);
 }
 
 static bool
-test_compare_not(cl_object x)
+test_compare_not(struct cl_test *t, cl_object x)
 {
-	cl_object test = funcall(3, test_function, item_compared, (*kf)(x));
-	return (test == Cnil);
+	cl_object outcome = funcall(3, t->test_function, t->item_compared,
+				    (t->key_c_function)(t, x));
+	return (outcome == Cnil);
 }
 
 static bool
-test_eql(cl_object x)
+test_eql(struct cl_test *t, cl_object x)
 {
-	return(eql(item_compared, (*kf)(x)));
+	return eql(t->item_compared, (t->key_c_function)(t, x));
 }
 
 static cl_object
-apply_key_function(cl_object x)
+key_function(struct cl_test *t, cl_object x)
 {
-	return funcall(2, key_function, x);
+	return funcall(2, t->key_function, x);
+}
+
+static cl_object
+key_identity(struct cl_test *t, cl_object x)
+{
+	return x;
 }
 
 static void
-setupTEST(cl_object item, cl_object test, cl_object test_not, cl_object key)
+setupTEST(struct cl_test *t, cl_object item, cl_object test,
+	  cl_object test_not, cl_object key)
 {
-	item_compared = item;
+	t->item_compared = item;
 	if (test != Cnil) {
 		if (test_not != Cnil)
 		    FEerror("Both :TEST and :TEST-NOT are specified.", 0);
-		test_function = test;
-		tf = test_compare;
+		t->test_function = test;
+		t->test_c_function = test_compare;
 	} else if (test_not != Cnil) {
-		test_function = test_not;
-		tf = test_compare_not;
-	} else
-		tf = test_eql;
+		t->test_function = test_not;
+		t->test_c_function = test_compare_not;
+	} else {
+		t->test_c_function = test_eql;
+	}
 	if (key != Cnil) {
-		key_function = key;
-		kf = apply_key_function;
-	} else
-		kf = cl_identity;
+		t->key_function = key;
+		t->key_c_function = key_function;
+	} else {
+		t->key_c_function = key_identity;
+	}
 }
 
 cl_object
@@ -230,31 +226,33 @@ defcxr(cddddr, x, cdr(cdr(cdr(cdr(x)))))
 #define LENTH(n) (cl_object x) {\
 	return1(nth(n, x));\
 }
-cl_return @fifth	LENTH(4)
-cl_return @sixth	LENTH(5)
-cl_return @seventh	LENTH(6)
-cl_return @eighth	LENTH(7)
-cl_return @ninth	LENTH(8)
-cl_return @tenth	LENTH(9)
+cl_object @fifth	LENTH(4)
+cl_object @sixth	LENTH(5)
+cl_object @seventh	LENTH(6)
+cl_object @eighth	LENTH(7)
+cl_object @ninth	LENTH(8)
+cl_object @tenth	LENTH(9)
 #undef LENTH
 
 static bool
-tree_equal(cl_object x, cl_object y)
+tree_equal(struct cl_test *t, cl_object x, cl_object y)
 {
 BEGIN:
-	if (CONSP(x))
-		if (CONSP(y))
-			if (tree_equal(CAR(x), CAR(y))) {
+	if (CONSP(x)) {
+		if (CONSP(y)) {
+			if (tree_equal(t, CAR(x), CAR(y))) {
 				x = CDR(x);
 				y = CDR(y);
 				goto BEGIN;
-			} else
+			} else {
 				return(FALSE);
-		else
+			}
+		} else {
 			return(FALSE);
-	else {
-		item_compared = x;
-		if (TEST(y))
+		}
+	} else {
+		t->item_compared = x;
+		if (TEST(t, y))
 			return(TRUE);
 		else
 			return(FALSE);
@@ -262,12 +260,10 @@ BEGIN:
 }
 
 @(defun tree_equal (x y &key test test_not)
+	struct cl_test t;
 @
-	setupTEST(Cnil, test, test_not, Cnil);
-	if (tree_equal(x, y))
-		@(return Ct)
-	else
-		@(return Cnil)
+	setupTEST(&t, Cnil, test, test_not, Cnil);
+	@(return (tree_equal(&t, x, y)? Ct : Cnil))
 @)
 
 cl_object
@@ -343,7 +339,7 @@ nthcdr(cl_fixnum n, cl_object x)
 {
 	if (n < 0)
 		FEtype_error_index(x, MAKE_FIXNUM(n));
-	while (n-- > 0 && !ENDP(x))
+	while (n-- > 0 && !endp(x))
 		x = CDR(x);
 	return(x);
 }
@@ -555,15 +551,10 @@ cl_rplacd(cl_object x, cl_object v)
 }
 
 @(defun subst (new_obj old_obj tree &key test test_not key)
-	saveTEST;
+	struct cl_test t;
 @
-	CL_UNWIND_PROTECT_BEGIN {
-		setupTEST(old_obj, test, test_not, key);
-		tree = subst(new_obj, tree);
-	} CL_UNWIND_PROTECT_EXIT {
-		restoreTEST;
-	} CL_UNWIND_PROTECT_END;
-	@(return tree)
+	setupTEST(&t, old_obj, test, test_not, key);
+	@(return subst(&t, new_obj, tree))
 @)
 
 
@@ -571,26 +562,24 @@ cl_rplacd(cl_object x, cl_object v)
 	Subst(new, tree) returns
 	the result of substituting new in tree.
 */
-cl_object
-subst(cl_object new_obj, cl_object tree)
+static cl_object
+subst(struct cl_test *t, cl_object new_obj, cl_object tree)
 {
-	if (TEST(tree))
-		return(new_obj);
-	else if (CONSP(tree))
-		return(CONS(subst(new_obj, CAR(tree)), subst(new_obj, CDR(tree))));
-	else
-		return(tree);
+	if (TEST(t, tree)) {
+		return new_obj;
+	} else if (CONSP(tree)) {
+		return CONS(subst(t, new_obj, CAR(tree)),
+			    subst(t, new_obj, CDR(tree)));
+	} else {
+		return tree;
+	}
 }
 
 @(defun nsubst (new_obj old_obj tree &key test test_not key)
-	saveTEST;
+	struct cl_test t;
 @
-	CL_UNWIND_PROTECT_BEGIN {
-		setupTEST(old_obj, test, test_not, key);
-		nsubst(new_obj, &tree);
-	} CL_UNWIND_PROTECT_EXIT {
-		restoreTEST;
-	} CL_UNWIND_PROTECT_END;
+	setupTEST(&t, old_obj, test, test_not, key);
+	nsubst(&t, new_obj, &tree);
 	@(return tree)
 @)
 
@@ -599,26 +588,22 @@ subst(cl_object new_obj, cl_object tree)
 	the result of nsubstituting new in *treep
 	to *treep.
 */
-void
-nsubst(cl_object new_obj, cl_object *treep)
+static void
+nsubst(struct cl_test *t, cl_object new_obj, cl_object *treep)
 {
-	if (TEST(*treep))
+	if (TEST(t, *treep)) {
 		*treep = new_obj;
-	else if (CONSP(*treep)) {
-		nsubst(new_obj, &CAR(*treep));
-		nsubst(new_obj, &CDR(*treep));
+	} else if (CONSP(*treep)) {
+		nsubst(t, new_obj, &CAR(*treep));
+		nsubst(t, new_obj, &CDR(*treep));
 	}
 }
 
 @(defun sublis (alist tree &key test test_not key)
-	saveTEST;
+	struct cl_test t;
 @
-	CL_UNWIND_PROTECT_BEGIN {
-		setupTEST(Cnil, test, test_not, key);
-		tree = sublis(alist, tree);
-	} CL_UNWIND_PROTECT_EXIT {
-		restoreTEST;
-	} CL_UNWIND_PROTECT_END;
+	setupTEST(&t, Cnil, test, test_not, key);
+	tree = sublis(&t, alist, tree);
 	@(return tree)
 @)
 
@@ -626,36 +611,32 @@ nsubst(cl_object new_obj, cl_object *treep)
 	Sublis(alist, tree) returns
 	result of substituting tree by alist.
 */
-cl_object
-sublis(cl_object alist, cl_object tree)
+static cl_object
+sublis(struct cl_test *t, cl_object alist, cl_object tree)
 {
 	cl_object x = alist;
-	cl_object (*old_kf)(cl_object) = kf;
-	kf = cl_identity;
-	item_compared = (*old_kf)(tree);
+	struct cl_test local_t = *t;
+	local_t.key_c_function = key_identity;
+	local_t.item_compared = (t->key_c_function)(t, tree);
 	loop_for_in(x) {
 		cl_object node = CAR(x);
-		if (TEST(cl_car(node))) {
-			kf = old_kf;
+		if (TEST(&local_t, cl_car(node))) {
 			return CDR(node);
 		}
 	} end_loop_for_in;
-	kf = old_kf;
-	if (CONSP(tree))
-		return(CONS(sublis(alist, CAR(tree)), sublis(alist, CDR(tree))));
-	else
-		return(tree);
+	if (CONSP(tree)) {
+		return CONS(sublis(t, alist, CAR(tree)),
+			    sublis(t, alist, CDR(tree)));
+	} else {
+		return tree;
+	}
 }
 
 @(defun nsublis (alist tree &key test test_not key)
-	saveTEST;
+	struct cl_test t;
 @
-	CL_UNWIND_PROTECT_BEGIN {
-		setupTEST(Cnil, test, test_not, key);
-		nsublis(alist, &tree);
-	} CL_UNWIND_PROTECT_EXIT {
-		restoreTEST;
-	} CL_UNWIND_PROTECT_END;
+	setupTEST(&t, Cnil, test, test_not, key);
+	nsublis(&t, alist, &tree);
 	@(return tree)
 @)
 
@@ -664,40 +645,34 @@ sublis(cl_object alist, cl_object tree)
 	the result of substiting *treep by alist
 	to *treep.
 */
-void
-nsublis(cl_object alist, cl_object *treep)
+static void
+nsublis(struct cl_test *t, cl_object alist, cl_object *treep)
 {
 	cl_object x = alist;
-	cl_object (*old_kf)(cl_object) = kf;
-	kf = cl_identity;
-	item_compared = (*old_kf)(*treep);
+	struct cl_test local_t = *t;
+	local_t.key_c_function = key_identity;
+	local_t.item_compared = (t->key_c_function)(t, *treep);
 	loop_for_in(x) {
 		cl_object node = CAR(x);
-		if (TEST(cl_car(node))) {
+		if (TEST(&local_t, cl_car(node))) {
 			*treep = CDR(node);
-			kf = old_kf;
 			return;
 		}
 	} end_loop_for_in;
-	kf = old_kf;
 	if (CONSP(*treep)) {
-		nsublis(alist, &CAR(*treep));
-		nsublis(alist, &CDR(*treep));
+		nsublis(t, alist, &CAR(*treep));
+		nsublis(t, alist, &CDR(*treep));
 	}
 }
 
 @(defun member (item list &key test test_not key)
-	saveTEST;
+	struct cl_test t;
 @
-	CL_UNWIND_PROTECT_BEGIN {
-		setupTEST(item, test, test_not, key);
-		loop_for_in(list) {
-			if (TEST(CAR(list)))
-				break;
-		} end_loop_for_in;
-	} CL_UNWIND_PROTECT_EXIT {
-		restoreTEST;
-	} CL_UNWIND_PROTECT_END;
+	setupTEST(&t, item, test, test_not, key);
+	loop_for_in(list) {
+		if (TEST(&t, CAR(list)))
+			break;
+	} end_loop_for_in;
 	@(return list)
 @)
 
@@ -746,19 +721,15 @@ member(cl_object x, cl_object l)
 cl_object
 si_member1(cl_object item, cl_object list, cl_object test, cl_object test_not, cl_object key)
 {
-	saveTEST;
+	struct cl_test t;
 
-	CL_UNWIND_PROTECT_BEGIN {
-		if (key != Cnil)
-			item = funcall(2, key, item);
-		setupTEST(item, test, test_not, key);
-		loop_for_in(list) {
-			if (TEST(CAR(list)))
-				break;
-		} end_loop_for_in;
-	} CL_UNWIND_PROTECT_EXIT {
-		restoreTEST;
-	} CL_UNWIND_PROTECT_END;
+	if (key != Cnil)
+		item = funcall(2, key, item);
+	setupTEST(&t, item, test, test_not, key);
+	loop_for_in(list) {
+		if (TEST(&t, CAR(list)))
+			break;
+	} end_loop_for_in;
 	@(return list)
 }
 
@@ -803,12 +774,12 @@ cl_acons(cl_object x, cl_object y, cl_object z)
 	k = keys;
 	d = data;
 	loop_for_in(k) {
-		if (ENDP(d))
+		if (endp(d))
 			goto error;
 		a_list = CONS(CONS(CAR(k), CAR(d)), a_list);
 		d = CDR(d);
 	} end_loop_for_in;
-	if (!ENDP(d))
+	if (!endp(d))
 error:	    FEerror("The keys ~S and the data ~S are not of the same length",
 		    2, keys, data);
 	@(return a_list)
@@ -816,46 +787,38 @@ error:	    FEerror("The keys ~S and the data ~S are not of the same length",
 
 
 @(defun assoc (item a_list &key test test_not key)
-	saveTEST;
+	struct cl_test t;
 @
-	CL_UNWIND_PROTECT_BEGIN {
-		setupTEST(item, test, test_not, key);
-		loop_for_in(a_list) {
-			cl_object pair = CAR(a_list);
-			if (Null(pair))
-				;
-			else if (ATOM(pair))
-				FEtype_error_alist(pair);
-			else if (TEST(CAAR(a_list))) {
-				a_list = CAR(a_list);
-				break;
-			}
-		} end_loop_for_in;
-	} CL_UNWIND_PROTECT_EXIT {
-		restoreTEST;
-	} CL_UNWIND_PROTECT_END;
+	setupTEST(&t, item, test, test_not, key);
+	loop_for_in(a_list) {
+		cl_object pair = CAR(a_list);
+		if (Null(pair)) {
+			;
+		} else if (ATOM(pair)) {
+			FEtype_error_alist(pair);
+		} else if (TEST(&t, CAAR(a_list))) {
+			a_list = CAR(a_list);
+			break;
+		}
+	} end_loop_for_in;
 	@(return a_list)
 @)
 
 @(defun rassoc (item a_list &key test test_not key)
-	saveTEST;
+	struct cl_test t;
 @
-	CL_UNWIND_PROTECT_BEGIN {
-		setupTEST(item, test, test_not, key);
-		loop_for_in(a_list) {
-			cl_object pair = CAR(a_list);
-			if (Null(pair))
-				;
-			else if (ATOM(pair))
-				FEtype_error_alist(pair);
-			else if (TEST(CDAR(a_list))) {
+	setupTEST(&t, item, test, test_not, key);
+	loop_for_in(a_list) {
+		cl_object pair = CAR(a_list);
+		if (Null(pair)) {
+			;
+		} else if (ATOM(pair)) {
+			FEtype_error_alist(pair);
+		} else if (TEST(&t, CDAR(a_list))) {
 				a_list = CAR(a_list);
 				break;
 			}
-		} end_loop_for_in;
-	} CL_UNWIND_PROTECT_EXIT {
-		restoreTEST;
-	} CL_UNWIND_PROTECT_END;
+	} end_loop_for_in;
 	@(return a_list)
 @)
 

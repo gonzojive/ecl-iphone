@@ -15,6 +15,7 @@
 */
 
 #include "ecl.h"
+#include "internal.h"
 #include <string.h>
 #include <errno.h>
 #include <signal.h>
@@ -60,7 +61,7 @@ internal_error(const char *s)
 /*****************************************************************************/
 
 void
-FEerror(char *s, int narg, ...)
+FEerror(const char *s, int narg, ...)
 {
 	cl_va_list args;
 	cl_va_start(args, narg, narg, 0);
@@ -71,7 +72,7 @@ FEerror(char *s, int narg, ...)
 }
 
 cl_object
-CEerror(char *err, int narg, ...)
+CEerror(const char *err, int narg, ...)
 {
 	cl_va_list args;
 	cl_va_start(args, narg, narg, 0);
@@ -183,7 +184,7 @@ FEinvalid_macro_call(cl_object name)
 }
 
 void
-FEinvalid_variable(char *s, cl_object obj)
+FEinvalid_variable(const char *s, cl_object obj)
 {
 	FEerror(s, 1, obj);
 }
@@ -204,7 +205,7 @@ void
 FEinvalid_function_name(cl_object fname)
 {
 	cl_error(9, @'simple-type-error', @':format-control',
-		 make_simple_string("Not a valid function name ~D"),
+		 make_constant_string("Not a valid function name ~D"),
 		 @':format-arguments', cl_list(1, fname),
 		 @':expected-type', Ct,
 		 @':datum', fname);

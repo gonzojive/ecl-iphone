@@ -30,19 +30,15 @@ cl_standard_char_p(cl_object c)
 {
 	/* INV: char_code() checks the type */
 	cl_fixnum i = char_code(c);
-	if ((' ' <= i && i < '\177') || i == '\n')
-		return1(Ct);
-	return1(Cnil);
+	@(return (((' ' <= i && i < '\177') || i == '\n')? Ct : Cnil))
 }
 
 cl_object
 cl_graphic_char_p(cl_object c)
 {
 	/* INV: char_code() checks the type */
-	cl_fixnum i = char_code(c);
-	if (' ' <= i && i < '\177')     /* ' ' < '\177'  ??? Beppe*/
-		return1(Ct);
-	return1(Cnil);
+	cl_fixnum i = char_code(c);     /* ' ' < '\177'  ??? Beppe*/
+	@(return ((' ' <= i && i < '\177')? Ct : Cnil))
 }
 
 cl_object
@@ -50,28 +46,21 @@ cl_alpha_char_p(cl_object c)
 {
 	/* INV: char_code() checks the type */
 	cl_fixnum i = char_code(c);
-	if (isalpha(i))
-		return1(Ct);
-	else
-		return1(Cnil);
+	@(return (isalpha(i)? Ct : Cnil))
 }
 
 cl_object
 cl_upper_case_p(cl_object c)
 {
 	/* INV: char_code() checks the type */
-	if (isupper(char_code(c)))
-		return1(Ct);
-	return1(Cnil);
+	@(return (isupper(char_code(c))? Ct : Cnil))
 }
 
 cl_object
 cl_lower_case_p(cl_object c)
 {
 	/* INV: char_code() checks the type */
-	if (islower(char_code(c)))
-		return1(Ct);
-	return1(Cnil);
+	@(return (islower(char_code(c))? Ct : Cnil))
 }
 
 cl_object
@@ -79,21 +68,25 @@ cl_both_case_p(cl_object c)
 {
 	/* INV: char_code() checks the type */
 	cl_fixnum code = char_code(c);
-	return1((isupper(code) || islower(code)) ? Ct : Cnil);
+	@(return ((isupper(code) || islower(code)) ? Ct : Cnil))
 }
 
 #define basep(d)	(d <= 36)
 
 @(defun digit_char_p (c &optional (r MAKE_FIXNUM(10)))
-	cl_fixnum d;
+	cl_object output;
 @
 	/* INV: char_code() checks `c' and fixnnint() checks `r' */
-	if (type_of(r) == t_bignum)
-		@(return Cnil)
-	d = fixnnint(r);
-	if (!basep(d) || (d = digitp(char_code(c), d)) < 0)
-		@(return Cnil)
-	@(return MAKE_FIXNUM(d))
+	if (type_of(r) == t_bignum) {
+		output = Cnil;
+	} else {
+		cl_fixnum d = fixnnint(r);
+		if (!basep(d) || (d = digitp(char_code(c), d)) < 0)
+			output = Cnil;
+		else
+			output = MAKE_FIXNUM(d);
+	}
+	@(return output)
 @)
 
 /*
@@ -118,7 +111,7 @@ cl_alphanumericp(cl_object c)
 {
 	/* INV: char_code() checks type of `c' */
 	cl_fixnum i = char_code(c);
-	return1(isalnum(i)? Ct : Cnil);
+	@(return (isalnum(i)? Ct : Cnil))
 }
 
 @(defun char= (c &rest cs)
@@ -155,8 +148,8 @@ char_eq(cl_object x, cl_object y)
 	@(return Ct)
 @)
 
-static cl_return
-Lchar_cmp(int narg, int s, int t, cl_va_list args)
+static cl_object
+Lchar_cmp(cl_narg narg, int s, int t, cl_va_list args)
 {
 	cl_object c, d;
 
@@ -166,9 +159,9 @@ Lchar_cmp(int narg, int s, int t, cl_va_list args)
 	for (; --narg; c = d) {
 		d = cl_va_arg(args);
 		if (s*char_cmp(d, c) < t)
-			return1(Cnil);
+			@(return Cnil)
 	}
-	return1(Ct);
+	@(return Ct)
 }
 
 int
@@ -182,22 +175,22 @@ char_cmp(cl_object x, cl_object y)
 
 @(defun char< (&rest args)
 @
-	@(return Lchar_cmp(narg, 1, 1, args))
+	return Lchar_cmp(narg, 1, 1, args);
 @)
 
 @(defun char> (&rest args)
 @
-	@(return Lchar_cmp(narg,-1, 1, args))
+	return Lchar_cmp(narg,-1, 1, args);
 @)
 
 @(defun char<= (&rest args)
 @
-	@(return Lchar_cmp(narg, 1, 0, args))
+	return Lchar_cmp(narg, 1, 0, args);
 @)
 
 @(defun char>= (&rest args)
 @
-	@(return Lchar_cmp(narg,-1, 0, args))
+	return Lchar_cmp(narg,-1, 0, args);
 @)
 
 @(defun char_equal (c &rest cs)
@@ -243,8 +236,8 @@ char_equal(cl_object x, cl_object y)
 	@(return Ct)
 @)
 
-static cl_return
-Lchar_compare(int narg, int s, int t, cl_va_list args)
+static cl_object
+Lchar_compare(cl_narg narg, int s, int t, cl_va_list args)
 {
 	cl_object c, d;
 
@@ -255,9 +248,9 @@ Lchar_compare(int narg, int s, int t, cl_va_list args)
 	for (; --narg; c = d) {
 		d = cl_va_arg(args);
 		if (s*char_compare(d, c) < t)
-			return1(Cnil);
+			@(return Cnil)
 	}
-	return1(Ct);
+	@(return Ct)
 }
 
 int
@@ -280,22 +273,22 @@ char_compare(cl_object x, cl_object y)
 
 @(defun char-lessp (&rest args)
 @
-	@(return Lchar_compare(narg, 1, 1, args))
+	return Lchar_compare(narg, 1, 1, args);
 @)
 
 @(defun char-greaterp (&rest args)
 @
-	@(return Lchar_compare(narg,-1, 1, args))
+	return Lchar_compare(narg,-1, 1, args);
 @)
 
 @(defun char-not-greaterp (&rest args)
 @
-	@(return Lchar_compare(narg, 1, 0, args))
+	return Lchar_compare(narg, 1, 0, args);
 @)
 
 @(defun char-not-lessp (&rest args)
 @
-	@(return Lchar_compare(narg,-1, 0, args))
+	return Lchar_compare(narg,-1, 0, args);
 @)
 
 
@@ -350,9 +343,7 @@ cl_char_upcase(cl_object c)
 {
 	/* INV: char_code() checks the type of `c' */
 	cl_fixnum code = char_code(c);
-	return1(islower(code) ?
-		CODE_CHAR(toupper(code)) :
-		c);
+	@(return (islower(code) ? CODE_CHAR(toupper(code)) : c))
 }
 
 cl_object
@@ -360,25 +351,24 @@ cl_char_downcase(cl_object c)
 {
 	/* INV: char_code() checks the type of `c' */
 	cl_fixnum code = char_code(c);
-	return1(isupper(code) ?
-		CODE_CHAR(tolower(code)) :
-		c);
+	@(return (isupper(code) ? CODE_CHAR(tolower(code)) : c))
 }
 
 @(defun digit_char (w &optional (r MAKE_FIXNUM(10)))
-	int dw;
+	cl_object output;
 @
 	/* INV: fixnnint() checks the types of `w' and `r' */
-	if (type_of(w) == t_bignum || type_of(r) == t_bignum)
-		@(return Cnil)
-	dw = digit_weight(fixnnint(w), fixnnint(r));
-	if (dw < 0)
-		@(return Cnil)
-	@(return CODE_CHAR(dw))
+	if (type_of(w) == t_bignum) {
+		output = Cnil;
+	} else {
+		int dw = ecl_digit_char(fixnnint(w), fixnnint(r));
+		output = (dw < 0)? Cnil : CODE_CHAR(dw);
+	}
+	@(return output)
 @)
 
 short
-digit_weight(int w, int r)
+ecl_digit_char(cl_fixnum w, cl_fixnum r)
 {
 	if (r < 2 || r > 36 || w < 0 || w >= r)
 		return(-1);
@@ -398,50 +388,47 @@ cl_char_int(cl_object c)
 cl_object
 cl_char_name(cl_object c)
 {
+	cl_object s;
 	/* INV: char_code() checks the type of `c' */
 	switch (char_code(c)) {
-	case '\000':
-		return1(cl_core.string_null);
-	case '\r':
-		return1(cl_core.string_return);
-	case ' ':
-		return1(cl_core.string_space);
-	case '\177':
-		return1(cl_core.string_rubout);
-	case '\f':
-		return1(cl_core.string_page);
-	case '\t':
-		return1(cl_core.string_tab);
-	case '\b':
-		return1(cl_core.string_backspace);
-	case '\n':
-		return1(cl_core.string_newline);
+	case '\000':	s = cl_core.string_null; break;
+	case '\b':	s = cl_core.string_backspace; break;
+	case '\t':	s = cl_core.string_tab; break;
+	case '\n':	s = cl_core.string_newline; break;
+	case '\f':	s = cl_core.string_page; break;
+	case '\r':	s = cl_core.string_return; break;
+	case ' ':	s = cl_core.string_space; break;
+	case '\177':	s = cl_core.string_rubout; break;
+	default:	s = Cnil;
 	}
-	return1(Cnil);
+	@(return s)
 }
 
 cl_object
 cl_name_char(cl_object s)
 {
-	char c;
+	cl_object c;
 
 	s = cl_string(s);
-	if (string_equal(s, cl_core.string_return))
-		c = '\r'; else
-	if (string_equal(s, cl_core.string_space))
-		c = ' '; else
-	if (string_equal(s, cl_core.string_rubout))
-		c = '\177'; else
-	if (string_equal(s, cl_core.string_page))
-		c = '\f'; else
-	if (string_equal(s, cl_core.string_tab))
-		c = '\t'; else
-	if (string_equal(s, cl_core.string_backspace))
-		c = '\b'; else
-	if (string_equal(s, cl_core.string_linefeed) || string_equal(s, cl_core.string_newline))
-		c = '\n'; else
-	if (string_equal(s, cl_core.string_null))
-		c = '\000'; else
-		return1(Cnil);
-	return1(CODE_CHAR(c));
+	if (string_equal(s, cl_core.string_return)) {
+		c = CODE_CHAR('\r');
+	} else if (string_equal(s, cl_core.string_space)) {
+		c = CODE_CHAR(' ');
+	} else if (string_equal(s, cl_core.string_rubout)) {
+		c = CODE_CHAR('\177');
+	} else if (string_equal(s, cl_core.string_page)) {
+		c = CODE_CHAR('\f');
+	} else if (string_equal(s, cl_core.string_tab)) {
+		c = CODE_CHAR('\t');
+	} else if (string_equal(s, cl_core.string_backspace)) {
+		c = CODE_CHAR('\b');
+	} else if (string_equal(s, cl_core.string_linefeed) ||
+		   string_equal(s, cl_core.string_newline)) {
+		c = CODE_CHAR('\n');
+	} else if (string_equal(s, cl_core.string_null)) {
+		c = CODE_CHAR('\000');
+	} else {
+		c = Cnil;
+	}
+	@(return c)
 }

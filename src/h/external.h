@@ -3,7 +3,7 @@ extern "C" {
 #endif
 
 #ifndef _ARGS
-#define _ARGS(x) (int n, ...)
+#define _ARGS(x) (cl_narg n, ...)
 #endif
 
 /*
@@ -191,7 +191,7 @@ extern cl_object make_cons(cl_object a, cl_object d);
 extern void cl_dealloc(void *p, cl_index s);
 #ifdef GBC_BOEHM
 extern cl_object si_gc(cl_object area);
-extern cl_object si_gc_dump();
+extern cl_object si_gc_dump(void);
 extern void *GC_malloc(size_t size);
 extern void *GC_malloc_atomic_ignore_off_page(size_t size);
 extern void GC_free(void *);
@@ -202,17 +202,16 @@ extern void GC_free(void *);
 #define cl_dealloc(p,s)
 #define ecl_register_static_root(x) ecl_register_root(x)
 #else
-extern cl_object si_room_report _ARGS((int narg));
-extern cl_object si_allocate _ARGS((int narg, cl_object type, cl_object qty, ...));
-extern cl_object si_maximum_allocatable_pages _ARGS((int narg, cl_object type));
-extern cl_object si_allocated_pages _ARGS((int narg, cl_object type));
-extern cl_object si_alloc_contpage _ARGS((int narg, cl_object qty, ...));
-extern cl_object si_allocated_contiguous_pages _ARGS((int narg));
-extern cl_object si_maximum_contiguous_pages _ARGS((int narg));
-extern cl_object si_allocate_contiguous_pages _ARGS((int narg, cl_object qty, ...));
-extern cl_object si_get_hole_size _ARGS((int narg));
-extern cl_object si_set_hole_size _ARGS((int narg, cl_object size));
-extern cl_object si_ignore_maximum_pages _ARGS((int narg, ...));
+extern cl_object si_allocate _ARGS((cl_narg narg, cl_object type, cl_object qty, ...));
+extern cl_object si_maximum_allocatable_pages _ARGS((cl_narg narg, cl_object type));
+extern cl_object si_allocated_pages _ARGS((cl_narg narg, cl_object type));
+extern cl_object si_alloc_contpage _ARGS((cl_narg narg, cl_object qty, ...));
+extern cl_object si_allocated_contiguous_pages _ARGS((cl_narg narg));
+extern cl_object si_maximum_contiguous_pages _ARGS((cl_narg narg));
+extern cl_object si_allocate_contiguous_pages _ARGS((cl_narg narg, cl_object qty, ...));
+extern cl_object si_get_hole_size _ARGS((cl_narg narg));
+extern cl_object si_set_hole_size _ARGS((cl_narg narg, cl_object size));
+extern cl_object si_ignore_maximum_pages _ARGS((cl_narg narg, ...));
 extern void *cl_alloc(cl_index n);
 extern void *cl_alloc_align(cl_index size, cl_index align);
 #define cl_alloc_atomic(x) cl_alloc(x)
@@ -222,7 +221,7 @@ extern void *cl_alloc_align(cl_index size, cl_index align);
 
 /* all_symbols */
 
-extern cl_object si_mangle_name _ARGS((int narg, cl_object symbol, ...));
+extern cl_object si_mangle_name _ARGS((cl_narg narg, cl_object symbol, ...));
 
 typedef union {
 	struct {
@@ -239,9 +238,9 @@ extern cl_index cl_num_symbols_in_core;
 
 /* apply.c */
 
-extern cl_object APPLY_fixed(int n, cl_object (*f)(), cl_object *x);
-extern cl_object APPLY(int n, cl_objectfn, cl_object *x);
-extern cl_object APPLY_closure(int n, cl_objectfn, cl_object cl, cl_object *x);
+extern cl_object APPLY_fixed(cl_narg n, cl_object (*f)(), cl_object *x);
+extern cl_object APPLY(cl_narg n, cl_objectfn, cl_object *x);
+extern cl_object APPLY_closure(cl_narg n, cl_objectfn, cl_object cl, cl_object *x);
 
 
 /* array.c */
@@ -261,9 +260,9 @@ extern cl_object cl_array_has_fill_pointer_p(cl_object a);
 extern cl_object cl_fill_pointer(cl_object a);
 extern cl_object si_fill_pointer_set(cl_object a, cl_object fp);
 extern cl_object si_replace_array(cl_object old_obj, cl_object new_obj);
-extern cl_object cl_aref _ARGS((int narg, cl_object x, ...));
-extern cl_object si_aset _ARGS((int narg, cl_object v, cl_object x, ...));
-extern cl_object si_make_pure_array _ARGS((int narg, cl_object etype, cl_object adj, cl_object displ, cl_object disploff, ...));
+extern cl_object cl_aref _ARGS((cl_narg narg, cl_object x, ...));
+extern cl_object si_aset _ARGS((cl_narg narg, cl_object v, cl_object x, ...));
+extern cl_object si_make_pure_array _ARGS((cl_narg narg, cl_object etype, cl_object adj, cl_object displ, cl_object disploff, ...));
 
 extern cl_index object_to_index(cl_object n);
 extern cl_object aref(cl_object x, cl_index index);
@@ -281,7 +280,7 @@ extern cl_elttype get_elttype(cl_object x);
 extern cl_object cl_set(cl_object var, cl_object val);
 extern cl_object cl_makunbound(cl_object sym);
 extern cl_object cl_fmakunbound(cl_object sym);
-extern cl_object si_fset _ARGS((int narg, cl_object fun, cl_object def, ...));
+extern cl_object si_fset _ARGS((cl_narg narg, cl_object fun, cl_object def, ...));
 extern cl_object si_get_sysprop(cl_object sym, cl_object prop);
 extern cl_object si_put_sysprop(cl_object sym, cl_object prop, cl_object value);
 extern cl_object si_rem_sysprop(cl_object sym, cl_object prop);
@@ -304,7 +303,6 @@ extern cl_object big_minus(cl_object x);
 extern cl_object big_plus(cl_object x, cl_object y);
 extern cl_object big_normalize(cl_object x);
 extern double big_to_double(cl_object x);
-extern long big_to_long(cl_object x);
 
 
 /* cfun.c */
@@ -314,29 +312,29 @@ extern cl_object si_compiled_function_block(cl_object fun);
 extern cl_object cl_function_lambda_expression(cl_object fun);
 
 extern cl_object cl_make_cfun(cl_object (*self)(), cl_object name, cl_object block, int narg);
-extern cl_object cl_make_cfun_va(cl_object (*self)(int narg,...), cl_object name, cl_object block);
-extern cl_object cl_make_cclosure_va(cl_object (*self)(int narg,...), cl_object env, cl_object block);
+extern cl_object cl_make_cfun_va(cl_object (*self)(cl_narg narg,...), cl_object name, cl_object block);
+extern cl_object cl_make_cclosure_va(cl_object (*self)(cl_narg narg,...), cl_object env, cl_object block);
 extern void cl_def_c_function(cl_object sym, cl_object (*self)(), int narg);
 extern void cl_def_c_macro(cl_object sym, cl_object (*self)(cl_object, cl_object));
-extern void cl_def_c_function_va(cl_object sym, cl_object (*self)(int narg,...));
+extern void cl_def_c_function_va(cl_object sym, cl_object (*self)(cl_narg narg,...));
 
 
 /* character.c */
 
-extern cl_object cl_digit_char_p _ARGS((int narg, cl_object c, ...));
-extern cl_object cl_charE _ARGS((int narg, cl_object c, ...));
-extern cl_object cl_charNE _ARGS((int narg, ...));
-extern cl_object cl_charL _ARGS((int narg, ...));
-extern cl_object cl_charG _ARGS((int narg, ...));
-extern cl_object cl_charLE _ARGS((int narg, ...));
-extern cl_object cl_charGE _ARGS((int narg, ...));
-extern cl_object cl_char_equal _ARGS((int narg, cl_object c, ...));
-extern cl_object cl_char_not_equal _ARGS((int narg, ...));
-extern cl_object cl_char_lessp _ARGS((int narg, ...));
-extern cl_object cl_char_greaterp _ARGS((int narg, ...));
-extern cl_object cl_char_not_greaterp _ARGS((int narg, ...));
-extern cl_object cl_char_not_lessp _ARGS((int narg, ...));
-extern cl_object cl_digit_char _ARGS((int narg, cl_object w, ...));
+extern cl_object cl_digit_char_p _ARGS((cl_narg narg, cl_object c, ...));
+extern cl_object cl_charE _ARGS((cl_narg narg, cl_object c, ...));
+extern cl_object cl_charNE _ARGS((cl_narg narg, ...));
+extern cl_object cl_charL _ARGS((cl_narg narg, ...));
+extern cl_object cl_charG _ARGS((cl_narg narg, ...));
+extern cl_object cl_charLE _ARGS((cl_narg narg, ...));
+extern cl_object cl_charGE _ARGS((cl_narg narg, ...));
+extern cl_object cl_char_equal _ARGS((cl_narg narg, cl_object c, ...));
+extern cl_object cl_char_not_equal _ARGS((cl_narg narg, ...));
+extern cl_object cl_char_lessp _ARGS((cl_narg narg, ...));
+extern cl_object cl_char_greaterp _ARGS((cl_narg narg, ...));
+extern cl_object cl_char_not_greaterp _ARGS((cl_narg narg, ...));
+extern cl_object cl_char_not_lessp _ARGS((cl_narg narg, ...));
+extern cl_object cl_digit_char _ARGS((cl_narg narg, cl_object w, ...));
 
 extern cl_object cl_alpha_char_p(cl_object c);
 extern cl_object cl_alphanumericp(cl_object c);
@@ -360,17 +358,13 @@ extern bool char_eq(cl_object x, cl_object y);
 extern int char_cmp(cl_object x, cl_object y);
 extern bool char_equal(cl_object x, cl_object y);
 extern int char_compare(cl_object x, cl_object y);
-extern short digit_weight(int w, int r);
+extern short ecl_digit_char(cl_fixnum w, cl_fixnum r);
 
 /* clos.c */
 
 #ifdef CLOS
-extern cl_object cl_find_class _ARGS((int narg, cl_object name, ...));
+extern cl_object cl_find_class _ARGS((cl_narg narg, cl_object name, ...));
 extern cl_object cl_class_of(cl_object x);
-
-extern cl_object class_class;
-extern cl_object class_object;
-extern cl_object class_built_in;
 #endif
 
 /* cmpaux.c */
@@ -399,14 +393,14 @@ extern cl_object si_process_lambda(cl_object lambda);
 extern cl_object si_make_lambda(cl_object name, cl_object body);
 extern cl_object si_function_block_name(cl_object name);
 extern cl_object si_valid_function_name_p(cl_object name);
-extern cl_object si_process_declarations _ARGS((int narg, cl_object body, ...));
+extern cl_object si_process_declarations _ARGS((cl_narg narg, cl_object body, ...));
 
 extern cl_object make_lambda(cl_object name, cl_object lambda);
-extern cl_object si_eval_with_env _ARGS((int narg, cl_object form, ...));
+extern cl_object si_eval_with_env _ARGS((cl_narg narg, cl_object form, ...));
 
 /* interpreter.c */
 
-extern cl_object si_interpreter_stack _ARGS((int narg));
+extern cl_object si_interpreter_stack _ARGS((cl_narg narg));
 
 extern void cl_stack_push(cl_object o);
 extern cl_object cl_stack_pop(void);
@@ -418,10 +412,10 @@ extern void cl_stack_insert(cl_index where, cl_index n);
 extern cl_index cl_stack_push_list(cl_object list);
 extern cl_index cl_stack_push_va_list(cl_va_list args);
 extern void cl_stack_push_n(cl_index n, cl_object *args);
-extern int cl_stack_push_values(void);
-extern void cl_stack_pop_values(int n);
+extern cl_index cl_stack_push_values(void);
+extern void cl_stack_pop_values(cl_index n);
 
-extern cl_object lambda_apply(int narg, cl_object fun);
+extern cl_object lambda_apply(cl_narg narg, cl_object fun);
 extern void *interpret(cl_object bytecodes, void *pc);
 
 /* disassembler.c */
@@ -431,8 +425,8 @@ extern cl_object si_bc_split(cl_object v);
 
 /* error.c */
 
-extern cl_object cl_error _ARGS((int narg, cl_object eformat, ...)) __attribute__((noreturn));
-extern cl_object cl_cerror _ARGS((int narg, cl_object cformat, cl_object eformat, ...));
+extern cl_object cl_error _ARGS((cl_narg narg, cl_object eformat, ...)) __attribute__((noreturn));
+extern cl_object cl_cerror _ARGS((cl_narg narg, cl_object cformat, cl_object eformat, ...));
 
 extern void internal_error(const char *s) __attribute__((noreturn));
 extern void cs_overflow(void) __attribute__((noreturn));
@@ -441,7 +435,7 @@ extern void FEprogram_error(const char *s, int narg, ...) __attribute__((noretur
 extern void FEcontrol_error(const char *s, int narg, ...) __attribute__((noreturn));
 extern void FEreader_error(const char *s, cl_object stream, int narg, ...) __attribute__((noreturn));
 #define FEparse_error FEreader_error
-extern void FEerror(char *s, int narg, ...) __attribute__((noreturn));
+extern void FEerror(const char *s, int narg, ...) __attribute__((noreturn));
 extern void FEcannot_open(cl_object fn) __attribute__((noreturn));
 extern void FEend_of_file(cl_object strm) __attribute__((noreturn));
 extern void FEclosed_stream(cl_object strm) __attribute__ ((noreturn));
@@ -450,21 +444,21 @@ extern void FEwrong_num_arguments(cl_object fun) __attribute__((noreturn));
 extern void FEwrong_num_arguments_anonym(void) __attribute__((noreturn));
 extern void FEunbound_variable(cl_object sym) __attribute__((noreturn));
 extern void FEinvalid_macro_call(cl_object obj) __attribute__((noreturn));
-extern void FEinvalid_variable(char *s, cl_object obj) __attribute__((noreturn));
+extern void FEinvalid_variable(const char *s, cl_object obj) __attribute__((noreturn));
 extern void FEassignment_to_constant(cl_object v) __attribute__((noreturn));
 extern void FEundefined_function(cl_object fname) __attribute__((noreturn));
 extern void FEinvalid_function(cl_object obj) __attribute__((noreturn));
 extern void FEinvalid_function_name(cl_object obj) __attribute__((noreturn));
-extern cl_object CEerror(char *err_str, int narg, ...);
+extern cl_object CEerror(const char *err_str, int narg, ...);
 extern void illegal_index(cl_object x, cl_object i);
 extern void FEtype_error_symbol(cl_object obj) __attribute__((noreturn));
 extern void FElibc_error(const char *msg, int narg, ...) __attribute__((noreturn));
 
 /* eval.c */
 
-extern cl_object cl_funcall _ARGS((int narg, cl_object fun, ...));
-extern cl_object cl_apply _ARGS((int narg, cl_object fun, cl_object arg, ...));
-extern cl_object si_safe_eval _ARGS((int n, cl_object form, ...));
+extern cl_object cl_funcall _ARGS((cl_narg narg, cl_object fun, ...));
+extern cl_object cl_apply _ARGS((cl_narg narg, cl_object fun, cl_object arg, ...));
+extern cl_object si_safe_eval _ARGS((cl_narg narg, cl_object form, ...));
 
 #define cl_va_start(a,p,n,k) (va_start(a[0].args,p),a[0].narg=n,cl__va_start(a,k))
 extern void cl__va_start(cl_va_list args, int args_before);
@@ -472,7 +466,7 @@ extern cl_object cl_va_arg(cl_va_list args);
 
 extern cl_object si_unlink_symbol(cl_object s);
 extern cl_object cl_eval(cl_object form);
-extern cl_object cl_constantp(int narg, cl_object arg, ...);
+extern cl_object cl_constantp(cl_narg narg, cl_object arg, ...);
 
 #define funcall cl_funcall
 extern cl_object cl_apply_from_stack(cl_index narg, cl_object fun);
@@ -498,7 +492,7 @@ extern cl_object cl_two_way_stream_output_stream(cl_object strm);
 extern cl_object cl_make_echo_stream(cl_object strm1, cl_object strm2);
 extern cl_object cl_echo_stream_input_stream(cl_object strm);
 extern cl_object cl_echo_stream_output_stream(cl_object strm);
-extern cl_object cl_make_string_output_stream();
+extern cl_object cl_make_string_output_stream(void);
 extern cl_object cl_get_output_stream_string(cl_object strm);
 extern cl_object si_output_stream_string(cl_object strm);
 extern cl_object cl_streamp(cl_object strm);
@@ -511,14 +505,14 @@ extern cl_object si_get_string_input_stream_index(cl_object strm);
 extern cl_object si_make_string_output_stream_from_string(cl_object strng);
 extern cl_object si_copy_stream(cl_object in, cl_object out);
 extern cl_object cl_open_stream_p(cl_object strm);
-extern cl_object cl_make_broadcast_stream _ARGS((int narg, ...));
+extern cl_object cl_make_broadcast_stream _ARGS((cl_narg narg, ...));
 extern cl_object cl_broadcast_stream_streams(cl_object strm);
-extern cl_object cl_make_concatenated_stream _ARGS((int narg, ...));
+extern cl_object cl_make_concatenated_stream _ARGS((cl_narg narg, ...));
 extern cl_object cl_concatenated_stream_streams(cl_object strm);
-extern cl_object cl_make_string_input_stream _ARGS((int narg, cl_object strng, ...));
-extern cl_object cl_close _ARGS((int narg, cl_object strm, ...));
-extern cl_object cl_open _ARGS((int narg, cl_object filename, ...));
-extern cl_object cl_file_position _ARGS((int narg, cl_object file_stream, ...));
+extern cl_object cl_make_string_input_stream _ARGS((cl_narg narg, cl_object strng, ...));
+extern cl_object cl_close _ARGS((cl_narg narg, cl_object strm, ...));
+extern cl_object cl_open _ARGS((cl_narg narg, cl_object filename, ...));
+extern cl_object cl_file_position _ARGS((cl_narg narg, cl_object file_stream, ...));
 extern cl_object cl_file_string_length(cl_object string);
 extern cl_object si_do_write_sequence(cl_object string, cl_object stream, cl_object start, cl_object end);
 extern cl_object si_do_read_sequence(cl_object string, cl_object stream, cl_object start, cl_object end);
@@ -553,14 +547,14 @@ extern int file_column(cl_object strm);
 
 /* format.c */
 
-extern cl_object cl_format _ARGS((int narg, cl_object stream, cl_object string, ...));
+extern cl_object cl_format _ARGS((cl_narg narg, cl_object stream, cl_object string, ...));
 
 /* gbc.c */
 
 #if !defined(GBC_BOEHM)
-extern cl_object si_room_report _ARGS((int narg));
-extern cl_object si_reset_gc_count _ARGS((int narg));
-extern cl_object si_gc_time _ARGS((int narg));
+extern cl_object si_room_report _ARGS((cl_narg narg));
+extern cl_object si_reset_gc_count _ARGS((cl_narg narg));
+extern cl_object si_gc_time _ARGS((cl_narg narg));
 extern cl_object si_gc(cl_object area);
 #define GC_enabled() GC_enable
 #define GC_enable() GC_enable = TRUE;
@@ -588,7 +582,7 @@ extern cl_object si_set_funcallable(cl_object instance, cl_object flag);
 extern cl_object si_generic_function_p(cl_object instance);
 extern cl_object si_set_compiled_function_name(cl_object keylist, cl_object table);
 
-extern cl_object compute_method(int narg, cl_object fun, cl_object *args);
+extern cl_object compute_method(cl_narg narg, cl_object fun, cl_object *args);
 #endif /* CLOS */
 
 
@@ -607,8 +601,8 @@ extern cl_object cl_hash_table_rehash_threshold(cl_object ht);
 extern cl_object cl_hash_table_size(cl_object ht);
 extern cl_object cl_hash_table_test(cl_object ht);
 extern cl_object si_hash_table_iterator(cl_object ht);
-extern cl_object cl_make_hash_table _ARGS((int narg, ...));
-extern cl_object cl_gethash _ARGS((int narg, cl_object key, cl_object ht, ...));
+extern cl_object cl_make_hash_table _ARGS((cl_narg narg, ...));
+extern cl_object cl_gethash _ARGS((cl_narg narg, cl_object key, cl_object ht, ...));
 extern cl_object si_copy_hash_table(cl_object orig);
 
 extern cl_hashkey hash_eq(cl_object x);
@@ -630,15 +624,15 @@ extern cl_object si_instance_ref(cl_object x, cl_object index);
 extern cl_object si_instance_ref_safe(cl_object x, cl_object index);
 extern cl_object si_instance_set(cl_object x, cl_object index, cl_object value);
 extern cl_object si_instancep(cl_object x);
-extern cl_object si_unbound();
+extern cl_object si_unbound(void);
 extern cl_object si_sl_boundp(cl_object x);
 extern cl_object si_sl_makunbound(cl_object x, cl_object index);
 extern cl_object si_instance_sig(cl_object x);
 extern cl_object si_instance_sig_set(cl_object x);
 
-extern cl_object ecl_allocate_instance(cl_object clas, int size);
-extern cl_object instance_ref(cl_object x, int i);
-extern cl_object instance_set(cl_object x, int i, cl_object v);
+extern cl_object ecl_allocate_instance(cl_object clas, cl_index size);
+extern cl_object instance_ref(cl_object x, cl_fixnum i);
+extern cl_object instance_set(cl_object x, cl_fixnum i, cl_object v);
 extern cl_object si_copy_instance(cl_object x);
 #endif /* CLOS */
 
@@ -702,25 +696,25 @@ extern cl_object si_memq(cl_object x, cl_object l);
 extern cl_object cl_nreconc(cl_object x, cl_object y);
 extern cl_object cl_cons(cl_object x, cl_object y);
 extern cl_object cl_acons(cl_object x, cl_object y, cl_object z);
-extern cl_object cl_list _ARGS((int narg, ...));
-extern cl_object cl_listX _ARGS((int narg, ...));
-extern cl_object cl_append _ARGS((int narg, ...));
-extern cl_object cl_tree_equal _ARGS((int narg, cl_object x, cl_object y, ...));
-extern cl_object cl_last _ARGS((int narg, cl_object x, ...));
-extern cl_object cl_make_list _ARGS((int narg, cl_object size, ...));
-extern cl_object cl_nconc _ARGS((int narg, ...));
-extern cl_object cl_butlast _ARGS((int narg, cl_object lis, ...));
-extern cl_object cl_nbutlast _ARGS((int narg, cl_object lis, ...));
-extern cl_object cl_subst _ARGS((int narg, cl_object new_obj, cl_object old_obj, cl_object tree, ...));
-extern cl_object cl_nsubst _ARGS((int narg, cl_object new_obj, cl_object old_obj, cl_object tree, ...));
-extern cl_object cl_sublis _ARGS((int narg, cl_object alist, cl_object tree, ...));
-extern cl_object cl_nsublis _ARGS((int narg, cl_object alist, cl_object tree, ...));
-extern cl_object cl_member _ARGS((int narg, cl_object item, cl_object list, ...));
+extern cl_object cl_list _ARGS((cl_narg narg, ...));
+extern cl_object cl_listX _ARGS((cl_narg narg, ...));
+extern cl_object cl_append _ARGS((cl_narg narg, ...));
+extern cl_object cl_tree_equal _ARGS((cl_narg narg, cl_object x, cl_object y, ...));
+extern cl_object cl_last _ARGS((cl_narg narg, cl_object x, ...));
+extern cl_object cl_make_list _ARGS((cl_narg narg, cl_object size, ...));
+extern cl_object cl_nconc _ARGS((cl_narg narg, ...));
+extern cl_object cl_butlast _ARGS((cl_narg narg, cl_object lis, ...));
+extern cl_object cl_nbutlast _ARGS((cl_narg narg, cl_object lis, ...));
+extern cl_object cl_subst _ARGS((cl_narg narg, cl_object new_obj, cl_object old_obj, cl_object tree, ...));
+extern cl_object cl_nsubst _ARGS((cl_narg narg, cl_object new_obj, cl_object old_obj, cl_object tree, ...));
+extern cl_object cl_sublis _ARGS((cl_narg narg, cl_object alist, cl_object tree, ...));
+extern cl_object cl_nsublis _ARGS((cl_narg narg, cl_object alist, cl_object tree, ...));
+extern cl_object cl_member _ARGS((cl_narg narg, cl_object item, cl_object list, ...));
 extern cl_object si_member1 (cl_object item, cl_object list, cl_object test, cl_object test_not, cl_object key);
-extern cl_object cl_adjoin _ARGS((int narg, cl_object item, cl_object list, ...));
-extern cl_object cl_pairlis _ARGS((int narg, cl_object keys, cl_object data, ...));
-extern cl_object cl_rassoc _ARGS((int narg, cl_object item, cl_object alist, ...));
-extern cl_object cl_assoc _ARGS((int narg, cl_object item, cl_object alist, ...));
+extern cl_object cl_adjoin _ARGS((cl_narg narg, cl_object item, cl_object list, ...));
+extern cl_object cl_pairlis _ARGS((cl_narg narg, cl_object keys, cl_object data, ...));
+extern cl_object cl_rassoc _ARGS((cl_narg narg, cl_object item, cl_object alist, ...));
+extern cl_object cl_assoc _ARGS((cl_narg narg, cl_object item, cl_object alist, ...));
 
 extern cl_object list_length(cl_object x);
 extern cl_object append(cl_object x, cl_object y);
@@ -728,10 +722,6 @@ extern bool endp(cl_object x);
 extern cl_object nth(cl_fixnum n, cl_object x);
 extern cl_object nthcdr(cl_fixnum n, cl_object x);
 extern cl_object nconc(cl_object x, cl_object y);
-extern cl_object subst(cl_object new_object, cl_object tree);
-extern void nsubst(cl_object new_object, cl_object *treep);
-extern cl_object sublis(cl_object alist, cl_object tree);
-extern void nsublis(cl_object alist, cl_object *treep);
 extern bool member_eq(cl_object x, cl_object l);
 extern cl_object memql(cl_object x, cl_object l);
 extern cl_object member(cl_object x, cl_object l);
@@ -747,13 +737,13 @@ extern void ecl_delete_eq(cl_object x, cl_object *l);
 
 extern cl_object si_load_source(cl_object file, cl_object verbose, cl_object print);
 extern cl_object si_load_binary(cl_object file, cl_object verbose, cl_object print);
-extern cl_object cl_load _ARGS((int narg, cl_object pathname, ...));
+extern cl_object cl_load _ARGS((cl_narg narg, cl_object pathname, ...));
 
 
 /* macros.c */
 
-extern cl_object cl_macroexpand _ARGS((int narg, cl_object form, ...));
-extern cl_object cl_macroexpand_1 _ARGS((int narg, cl_object form, ...));
+extern cl_object cl_macroexpand _ARGS((cl_narg narg, cl_object form, ...));
+extern cl_object cl_macroexpand_1 _ARGS((cl_narg narg, cl_object form, ...));
 
 extern cl_object search_macro(cl_object name, cl_object env);
 extern cl_object macro_expand1(cl_object form, cl_object env);
@@ -762,12 +752,12 @@ extern cl_object macro_expand(cl_object form, cl_object env);
 
 /* main.c */
 
-extern cl_object si_argc();
+extern cl_object si_argc(void);
 extern cl_object si_argv(cl_object index);
 extern cl_object si_getenv(cl_object var);
 extern cl_object si_setenv(cl_object var, cl_object value);
 extern cl_object si_pointer(cl_object x);
-extern cl_object si_quit _ARGS((int narg, ...)) __attribute__((noreturn));
+extern cl_object si_quit _ARGS((cl_narg narg, ...)) __attribute__((noreturn));
 
 extern bool ecl_booted;
 extern const char *ecl_self;
@@ -776,18 +766,18 @@ extern int cl_boot(int argc, char **argv);
 
 /* mapfun.c */
 
-extern cl_object cl_mapcar _ARGS((int narg, cl_object fun, ...));
-extern cl_object cl_maplist _ARGS((int narg, cl_object fun, ...));
-extern cl_object cl_mapc _ARGS((int narg, cl_object fun, ...));
-extern cl_object cl_mapl _ARGS((int narg, cl_object fun, ...));
-extern cl_object cl_mapcan _ARGS((int narg, cl_object fun, ...));
-extern cl_object cl_mapcon _ARGS((int narg, cl_object fun, ...));
+extern cl_object cl_mapcar _ARGS((cl_narg narg, cl_object fun, ...));
+extern cl_object cl_maplist _ARGS((cl_narg narg, cl_object fun, ...));
+extern cl_object cl_mapc _ARGS((cl_narg narg, cl_object fun, ...));
+extern cl_object cl_mapl _ARGS((cl_narg narg, cl_object fun, ...));
+extern cl_object cl_mapcan _ARGS((cl_narg narg, cl_object fun, ...));
+extern cl_object cl_mapcon _ARGS((cl_narg narg, cl_object fun, ...));
 
 
 /* multival.c */
 
 extern cl_object cl_values_list(cl_object list);
-extern cl_object cl_values _ARGS((int narg, ...));
+extern cl_object cl_values _ARGS((cl_narg narg, ...));
 
 
 /* num_arith.c */
@@ -795,12 +785,12 @@ extern cl_object cl_values _ARGS((int narg, ...));
 extern cl_object cl_conjugate(cl_object c);
 extern cl_object cl_1P(cl_object x);
 extern cl_object cl_1M(cl_object x);
-extern cl_object cl_X _ARGS((int narg, ...));
-extern cl_object cl_P _ARGS((int narg, ...));
-extern cl_object cl_M _ARGS((int narg, cl_object num, ...));
-extern cl_object cl_N _ARGS((int narg, cl_object num, ...));
-extern cl_object cl_gcd _ARGS((int narg, ...));
-extern cl_object cl_lcm _ARGS((int narg, ...));
+extern cl_object cl_X _ARGS((cl_narg narg, ...));
+extern cl_object cl_P _ARGS((cl_narg narg, ...));
+extern cl_object cl_M _ARGS((cl_narg narg, cl_object num, ...));
+extern cl_object cl_N _ARGS((cl_narg narg, cl_object num, ...));
+extern cl_object cl_gcd _ARGS((cl_narg narg, ...));
+extern cl_object cl_lcm _ARGS((cl_narg narg, ...));
 
 extern cl_object fixnum_times(cl_fixnum i, cl_fixnum j);
 extern cl_object number_times(cl_object x, cl_object y);
@@ -841,13 +831,13 @@ extern cl_object cl_float_precision(cl_object x);
 extern cl_object cl_integer_decode_float(cl_object x);
 extern cl_object cl_realpart(cl_object x);
 extern cl_object cl_imagpart(cl_object x);
-extern cl_object cl_float _ARGS((int narg, cl_object x, ...));
-extern cl_object cl_floor _ARGS((int narg, cl_object x, ...));
-extern cl_object cl_ceiling _ARGS((int narg, cl_object x, ...));
-extern cl_object cl_truncate _ARGS((int narg, cl_object x, ...));
-extern cl_object cl_round _ARGS((int narg, cl_object x, ...));
-extern cl_object cl_float_sign _ARGS((int narg, cl_object x, ...));
-extern cl_object cl_complex _ARGS((int narg, cl_object r, ...));
+extern cl_object cl_float _ARGS((cl_narg narg, cl_object x, ...));
+extern cl_object cl_floor _ARGS((cl_narg narg, cl_object x, ...));
+extern cl_object cl_ceiling _ARGS((cl_narg narg, cl_object x, ...));
+extern cl_object cl_truncate _ARGS((cl_narg narg, cl_object x, ...));
+extern cl_object cl_round _ARGS((cl_narg narg, cl_object x, ...));
+extern cl_object cl_float_sign _ARGS((cl_narg narg, cl_object x, ...));
+extern cl_object cl_complex _ARGS((cl_narg narg, cl_object r, ...));
 
 extern cl_object double_to_integer(double d);
 extern cl_object float_to_integer(float d);
@@ -863,14 +853,14 @@ extern cl_object round2(cl_object x, cl_object y);
 
 /* num_comp.c */
 
-extern cl_object cl_E _ARGS((int narg, cl_object num, ...));
-extern cl_object cl_NE _ARGS((int narg, ...));
-extern cl_object cl_L _ARGS((int narg, ...));
-extern cl_object cl_G _ARGS((int narg, ...));
-extern cl_object cl_GE _ARGS((int narg, ...));
-extern cl_object cl_LE _ARGS((int narg, ...));
-extern cl_object cl_max _ARGS((int narg, cl_object max, ...));
-extern cl_object cl_min _ARGS((int narg, cl_object min, ...));
+extern cl_object cl_E _ARGS((cl_narg narg, cl_object num, ...));
+extern cl_object cl_NE _ARGS((cl_narg narg, ...));
+extern cl_object cl_L _ARGS((cl_narg narg, ...));
+extern cl_object cl_G _ARGS((cl_narg narg, ...));
+extern cl_object cl_GE _ARGS((cl_narg narg, ...));
+extern cl_object cl_LE _ARGS((cl_narg narg, ...));
+extern cl_object cl_max _ARGS((cl_narg narg, cl_object max, ...));
+extern cl_object cl_min _ARGS((cl_narg narg, cl_object min, ...));
 
 extern int number_equalp(cl_object x, cl_object y);
 extern int number_compare(cl_object x, cl_object y);
@@ -891,10 +881,10 @@ extern cl_object cl_ash(cl_object x, cl_object y);
 extern cl_object cl_logcount(cl_object x);
 extern cl_object cl_integer_length(cl_object x);
 extern cl_object si_bit_array_op(cl_object o, cl_object x, cl_object y, cl_object r);
-extern cl_object cl_logior _ARGS((int narg, ...));
-extern cl_object cl_logxor _ARGS((int narg, ...));
-extern cl_object cl_logand _ARGS((int narg, ...));
-extern cl_object cl_logeqv _ARGS((int narg, ...));
+extern cl_object cl_logior _ARGS((cl_narg narg, ...));
+extern cl_object cl_logxor _ARGS((cl_narg narg, ...));
+extern cl_object cl_logand _ARGS((cl_narg narg, ...));
+extern cl_object cl_logeqv _ARGS((cl_narg narg, ...));
 
 extern cl_object ecl_ash(cl_object x, cl_fixnum w);
 
@@ -917,8 +907,8 @@ extern int number_evenp(cl_object x);
 /* num_rand.c */
 
 extern cl_object cl_random_state_p(cl_object x);
-extern cl_object cl_random _ARGS((int narg, cl_object x, ...));
-extern cl_object cl_make_random_state _ARGS((int narg, ...));
+extern cl_object cl_random _ARGS((cl_narg narg, cl_object x, ...));
+extern cl_object cl_make_random_state _ARGS((cl_narg narg, ...));
 extern cl_object make_random_state(cl_object rs);
 
 
@@ -938,8 +928,8 @@ extern cl_object cl_tan(cl_object x);
 extern cl_object cl_sinh(cl_object x);
 extern cl_object cl_cosh(cl_object x);
 extern cl_object cl_tanh(cl_object x);
-extern cl_object cl_atan _ARGS((int narg, cl_object x, ...));
-extern cl_object cl_log _ARGS((int narg, cl_object x, ...));
+extern cl_object cl_atan _ARGS((cl_narg narg, cl_object x, ...));
+extern cl_object cl_log _ARGS((cl_narg narg, cl_object x, ...));
 
 
 /* package.c */
@@ -951,22 +941,22 @@ extern cl_object cl_package_nicknames(cl_object p);
 extern cl_object cl_package_use_list(cl_object p);
 extern cl_object cl_package_used_by_list(cl_object p);
 extern cl_object cl_package_shadowing_symbols(cl_object p);
-extern cl_object cl_list_all_packages();
+extern cl_object cl_list_all_packages(void);
 extern cl_object si_package_hash_tables(cl_object p);
 extern cl_object si_package_lock(cl_object p, cl_object t);
 extern cl_object cl_delete_package(cl_object p);
-extern cl_object cl_make_package _ARGS((int narg, cl_object pack_name, ...));
-extern cl_object cl_intern _ARGS((int narg, cl_object strng, ...));
-extern cl_object cl_find_symbol _ARGS((int narg, cl_object strng, ...));
-extern cl_object cl_unintern _ARGS((int narg, cl_object symbl, ...));
-extern cl_object cl_export _ARGS((int narg, cl_object symbols, ...));
-extern cl_object cl_unexport _ARGS((int narg, cl_object symbols, ...));
-extern cl_object cl_import _ARGS((int narg, cl_object symbols, ...));
-extern cl_object cl_rename_package _ARGS((int narg, cl_object pack, cl_object new_name, ...));
-extern cl_object cl_shadowing_import _ARGS((int narg, cl_object symbols, ...));
-extern cl_object cl_shadow _ARGS((int narg, cl_object symbols, ...));
-extern cl_object cl_use_package _ARGS((int narg, cl_object pack, ...));
-extern cl_object cl_unuse_package _ARGS((int narg, cl_object pack, ...));
+extern cl_object cl_make_package _ARGS((cl_narg narg, cl_object pack_name, ...));
+extern cl_object cl_intern _ARGS((cl_narg narg, cl_object strng, ...));
+extern cl_object cl_find_symbol _ARGS((cl_narg narg, cl_object strng, ...));
+extern cl_object cl_unintern _ARGS((cl_narg narg, cl_object symbl, ...));
+extern cl_object cl_export _ARGS((cl_narg narg, cl_object symbols, ...));
+extern cl_object cl_unexport _ARGS((cl_narg narg, cl_object symbols, ...));
+extern cl_object cl_import _ARGS((cl_narg narg, cl_object symbols, ...));
+extern cl_object cl_rename_package _ARGS((cl_narg narg, cl_object pack, cl_object new_name, ...));
+extern cl_object cl_shadowing_import _ARGS((cl_narg narg, cl_object symbols, ...));
+extern cl_object cl_shadow _ARGS((cl_narg narg, cl_object symbols, ...));
+extern cl_object cl_use_package _ARGS((cl_narg narg, cl_object pack, ...));
+extern cl_object cl_unuse_package _ARGS((cl_narg narg, cl_object pack, ...));
 
 extern cl_object make_package(cl_object n, cl_object ns, cl_object ul);
 extern cl_object rename_package(cl_object x, cl_object n, cl_object ns);
@@ -991,11 +981,11 @@ extern void unuse_package(cl_object x0, cl_object p);
 extern cl_object cl_pathname(cl_object name);
 extern cl_object cl_logical_pathname(cl_object pname);
 extern cl_object cl_pathnamep(cl_object pname);
-extern cl_object cl_pathname_host _ARGS((int narg, cl_object pname, ...));
-extern cl_object cl_pathname_device _ARGS((int narg, cl_object pname, ...));
-extern cl_object cl_pathname_directory _ARGS((int narg, cl_object pname, ...));
-extern cl_object cl_pathname_name _ARGS((int narg, cl_object pname, ...));
-extern cl_object cl_pathname_type _ARGS((int narg, cl_object pname, ...));
+extern cl_object cl_pathname_host _ARGS((cl_narg narg, cl_object pname, ...));
+extern cl_object cl_pathname_device _ARGS((cl_narg narg, cl_object pname, ...));
+extern cl_object cl_pathname_directory _ARGS((cl_narg narg, cl_object pname, ...));
+extern cl_object cl_pathname_name _ARGS((cl_narg narg, cl_object pname, ...));
+extern cl_object cl_pathname_type _ARGS((cl_narg narg, cl_object pname, ...));
 extern cl_object cl_pathname_version(cl_object pname);
 extern cl_object cl_namestring(cl_object pname);
 extern cl_object cl_file_namestring(cl_object pname);
@@ -1003,16 +993,16 @@ extern cl_object cl_directory_namestring(cl_object pname);
 extern cl_object cl_host_namestring(cl_object pname);
 extern cl_object si_logical_pathname_p(cl_object pname);
 extern cl_object cl_pathname_match_p(cl_object path, cl_object mask);
-extern cl_object cl_translate_pathname _ARGS((int narg, cl_object source, cl_object from, cl_object to, ...));
-extern cl_object cl_translate_logical_pathname _ARGS((int narg, cl_object source, ...));
-extern cl_object cl_parse_namestring _ARGS((int narg, cl_object thing, ...));
-extern cl_object cl_parse_logical_namestring _ARGS((int narg, cl_object thing, ...));
-extern cl_object cl_merge_pathnames _ARGS((int narg, cl_object path, ...));
-extern cl_object cl_make_pathname _ARGS((int narg, ...));
-extern cl_object cl_enough_namestring _ARGS((int narg, cl_object path, ...));
-extern cl_object si_pathname_translations _ARGS((int narg, cl_object host, ...));
+extern cl_object cl_translate_pathname _ARGS((cl_narg narg, cl_object source, cl_object from, cl_object to, ...));
+extern cl_object cl_translate_logical_pathname _ARGS((cl_narg narg, cl_object source, ...));
+extern cl_object cl_parse_namestring _ARGS((cl_narg narg, cl_object thing, ...));
+extern cl_object cl_parse_logical_namestring _ARGS((cl_narg narg, cl_object thing, ...));
+extern cl_object cl_merge_pathnames _ARGS((cl_narg narg, cl_object path, ...));
+extern cl_object cl_make_pathname _ARGS((cl_narg narg, ...));
+extern cl_object cl_enough_namestring _ARGS((cl_narg narg, cl_object path, ...));
+extern cl_object si_pathname_translations _ARGS((cl_narg narg, cl_object host, ...));
 extern cl_object si_default_pathname_defaults(void);
-extern cl_object cl_wild_pathname_p _ARGS((int narg, cl_object pathname, ...));
+extern cl_object cl_wild_pathname_p _ARGS((cl_narg narg, cl_object pathname, ...));
 
 extern cl_object make_pathname(cl_object host, cl_object device, cl_object directory, cl_object name, cl_object type, cl_object version);
 extern cl_object parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep, cl_object default_host);
@@ -1064,20 +1054,20 @@ extern bool equalp(cl_object x, cl_object y);
 /* print.c */
 
 extern cl_object cl_write_byte(cl_object integer, cl_object binary_output_stream);
-extern cl_object cl_write_sequence _ARGS((int narg, cl_object seq, cl_object stream, ...));
-extern cl_object cl_write _ARGS((int narg, cl_object x, ...));
-extern cl_object cl_prin1 _ARGS((int narg, cl_object obj, ...));
-extern cl_object cl_print _ARGS((int narg, cl_object obj, ...));
-extern cl_object cl_pprint _ARGS((int narg, cl_object obj, ...));
-extern cl_object cl_princ _ARGS((int narg, cl_object obj, ...));
-extern cl_object cl_write_char _ARGS((int narg, cl_object c, ...));
-extern cl_object cl_write_string _ARGS((int narg, cl_object strng, ...));
-extern cl_object cl_write_line _ARGS((int narg, cl_object strng, ...));
-extern cl_object cl_terpri _ARGS((int narg, ...));
-extern cl_object cl_fresh_line _ARGS((int narg, ...));
-extern cl_object cl_force_output _ARGS((int narg, ...));
+extern cl_object cl_write_sequence _ARGS((cl_narg narg, cl_object seq, cl_object stream, ...));
+extern cl_object cl_write _ARGS((cl_narg narg, cl_object x, ...));
+extern cl_object cl_prin1 _ARGS((cl_narg narg, cl_object obj, ...));
+extern cl_object cl_print _ARGS((cl_narg narg, cl_object obj, ...));
+extern cl_object cl_pprint _ARGS((cl_narg narg, cl_object obj, ...));
+extern cl_object cl_princ _ARGS((cl_narg narg, cl_object obj, ...));
+extern cl_object cl_write_char _ARGS((cl_narg narg, cl_object c, ...));
+extern cl_object cl_write_string _ARGS((cl_narg narg, cl_object strng, ...));
+extern cl_object cl_write_line _ARGS((cl_narg narg, cl_object strng, ...));
+extern cl_object cl_terpri _ARGS((cl_narg narg, ...));
+extern cl_object cl_fresh_line _ARGS((cl_narg narg, ...));
+extern cl_object cl_force_output _ARGS((cl_narg narg, ...));
 #define cl_finish_output cl_force_output
-extern cl_object cl_clear_output _ARGS((int narg, ...));
+extern cl_object cl_clear_output _ARGS((cl_narg narg, ...));
 
 extern cl_object princ(cl_object obj, cl_object strm);
 extern cl_object prin1(cl_object obj, cl_object strm);
@@ -1090,9 +1080,9 @@ extern void princ_char(int c, cl_object sym);
 
 /* profile.c */
 #ifdef PROFILE
-extern cl_object si_profile _ARGS((int narg, cl_object scale, cl_object start_address));
-extern cl_object si_clear_profile _ARGS((int narg));
-extern cl_object si_display_profile _ARGS((int narg));
+extern cl_object si_profile _ARGS((cl_narg narg, cl_object scale, cl_object start_address));
+extern cl_object si_clear_profile _ARGS((cl_narg narg));
+extern cl_object si_display_profile _ARGS((cl_narg narg));
 extern int total_ticks(unsigned short *aar, unsigned int dim);
 extern int init_profile(void);
 #endif
@@ -1100,31 +1090,30 @@ extern int init_profile(void);
 
 /* read.c */
 
-extern cl_object cl_read_sequence _ARGS((int narg, cl_object seq, cl_object stream, ...));
+extern cl_object cl_read_sequence _ARGS((cl_narg narg, cl_object seq, cl_object stream, ...));
 extern cl_object cl_readtablep(cl_object readtable);
 extern cl_object si_string_to_object(cl_object str);
-extern cl_object si_standard_readtable();
-extern cl_object cl_read _ARGS((int narg, ...));
-extern cl_object cl_read_preserving_whitespace _ARGS((int narg, ...));
-extern cl_object cl_read_delimited_list _ARGS((int narg, cl_object d, ...));
-extern cl_object cl_read_line _ARGS((int narg, ...));
-extern cl_object cl_read_char _ARGS((int narg, ...));
-extern cl_object cl_unread_char _ARGS((int narg, cl_object c, ...));
-extern cl_object cl_peek_char _ARGS((int narg, ...));
-extern cl_object cl_listen _ARGS((int narg, ...));
-extern cl_object cl_read_char_no_hang _ARGS((int narg, ...));
-extern cl_object cl_clear_input _ARGS((int narg, ...));
-extern cl_object cl_parse_integer _ARGS((int narg, cl_object strng, ...));
-extern cl_object cl_read_byte _ARGS((int narg, cl_object binary_input_stream, ...));
-extern cl_object cl_copy_readtable _ARGS((int narg, ...));
-extern cl_object cl_set_syntax_from_char _ARGS((int narg, cl_object tochr, cl_object fromchr, ...));
-extern cl_object cl_set_macro_character _ARGS((int narg, cl_object chr, cl_object fnc, ...));
-extern cl_object cl_get_macro_character _ARGS((int narg, cl_object chr, ...));
-extern cl_object cl_make_dispatch_macro_character _ARGS((int narg, cl_object chr, ...));
-extern cl_object cl_set_dispatch_macro_character _ARGS((int narg, cl_object dspchr, cl_object subchr, cl_object fnc, ...));
-extern cl_object cl_get_dispatch_macro_character _ARGS((int narg, cl_object dspchr, cl_object subchr, ...));
+extern cl_object si_standard_readtable(void);
+extern cl_object cl_read _ARGS((cl_narg narg, ...));
+extern cl_object cl_read_preserving_whitespace _ARGS((cl_narg narg, ...));
+extern cl_object cl_read_delimited_list _ARGS((cl_narg narg, cl_object d, ...));
+extern cl_object cl_read_line _ARGS((cl_narg narg, ...));
+extern cl_object cl_read_char _ARGS((cl_narg narg, ...));
+extern cl_object cl_unread_char _ARGS((cl_narg narg, cl_object c, ...));
+extern cl_object cl_peek_char _ARGS((cl_narg narg, ...));
+extern cl_object cl_listen _ARGS((cl_narg narg, ...));
+extern cl_object cl_read_char_no_hang _ARGS((cl_narg narg, ...));
+extern cl_object cl_clear_input _ARGS((cl_narg narg, ...));
+extern cl_object cl_parse_integer _ARGS((cl_narg narg, cl_object strng, ...));
+extern cl_object cl_read_byte _ARGS((cl_narg narg, cl_object binary_input_stream, ...));
+extern cl_object cl_copy_readtable _ARGS((cl_narg narg, ...));
+extern cl_object cl_set_syntax_from_char _ARGS((cl_narg narg, cl_object tochr, cl_object fromchr, ...));
+extern cl_object cl_set_macro_character _ARGS((cl_narg narg, cl_object chr, cl_object fnc, ...));
+extern cl_object cl_get_macro_character _ARGS((cl_narg narg, cl_object chr, ...));
+extern cl_object cl_make_dispatch_macro_character _ARGS((cl_narg narg, cl_object chr, ...));
+extern cl_object cl_set_dispatch_macro_character _ARGS((cl_narg narg, cl_object dspchr, cl_object subchr, cl_object fnc, ...));
+extern cl_object cl_get_dispatch_macro_character _ARGS((cl_narg narg, cl_object dspchr, cl_object subchr, ...));
 
-extern cl_object standard_readtable;
 extern cl_object read_char(cl_object in);
 extern void unread_char(cl_object c, cl_object in);
 extern cl_object read_object_non_recursive(cl_object in);
@@ -1148,7 +1137,7 @@ extern cl_object si_coerce_to_function(cl_object form);
 extern cl_object cl_symbol_value(cl_object sym);
 extern cl_object cl_boundp(cl_object sym);
 extern cl_object cl_special_operator_p(cl_object form);
-extern cl_object cl_macro_function _ARGS((int narg, cl_object sym, ...));
+extern cl_object cl_macro_function _ARGS((cl_narg narg, cl_object sym, ...));
 
 extern cl_object ecl_fdefinition(cl_object fname);
 
@@ -1160,7 +1149,7 @@ extern cl_object cl_copy_seq(cl_object x);
 extern cl_object cl_length(cl_object x);
 extern cl_object cl_reverse(cl_object x);
 extern cl_object cl_nreverse(cl_object x);
-extern cl_object cl_subseq _ARGS((int narg, cl_object sequence, cl_object start, ...));
+extern cl_object cl_subseq _ARGS((cl_narg narg, cl_object sequence, cl_object start, ...));
 
 extern cl_object cl_alloc_simple_vector(cl_index l, cl_elttype aet);
 extern cl_object cl_alloc_simple_bitvector(cl_index l);
@@ -1176,16 +1165,16 @@ extern cl_object si_ihs_fun(cl_object arg);
 extern cl_object si_ihs_env(cl_object arg);
 extern cl_object si_ihs_next(cl_object arg);
 extern cl_object si_ihs_prev(cl_object arg);
-extern cl_object si_frs_top();
+extern cl_object si_frs_top(void);
 extern cl_object si_frs_bds(cl_object arg);
 extern cl_object si_frs_class(cl_object arg);
 extern cl_object si_frs_tag(cl_object arg);
 extern cl_object si_frs_ihs(cl_object arg);
-extern cl_object si_bds_top();
+extern cl_object si_bds_top(void);
 extern cl_object si_bds_var(cl_object arg);
 extern cl_object si_bds_val(cl_object arg);
 extern cl_object si_sch_frs_base(cl_object fr, cl_object ihs);
-extern cl_object si_reset_stack_limits();
+extern cl_object si_reset_stack_limits(void);
 
 extern void bds_overflow(void) __attribute__((noreturn));
 extern void bds_unwind(bds_ptr new_bds_top);
@@ -1203,26 +1192,26 @@ extern cl_object cl_string_trim(cl_object char_bag, cl_object strng);
 extern cl_object cl_string_left_trim(cl_object char_bag, cl_object strng);
 extern cl_object cl_string_right_trim(cl_object char_bag, cl_object strng);
 extern cl_object cl_string(cl_object x);
-extern cl_object cl_make_string _ARGS((int narg, cl_object size, ...));
-extern cl_object cl_stringE _ARGS((int narg, cl_object string1, cl_object string2, ...));
-extern cl_object cl_string_equal _ARGS((int narg, cl_object string1, cl_object string2, ...));
-extern cl_object cl_stringL _ARGS((int narg, ...));
-extern cl_object cl_stringG _ARGS((int narg, ...));
-extern cl_object cl_stringLE _ARGS((int narg, ...));
-extern cl_object cl_stringGE _ARGS((int narg, ...));
-extern cl_object cl_stringNE _ARGS((int narg, ...));
-extern cl_object cl_string_lessp _ARGS((int narg, ...));
-extern cl_object cl_string_greaterp _ARGS((int narg, ...));
-extern cl_object cl_string_not_greaterp _ARGS((int narg, ...));
-extern cl_object cl_string_not_lessp _ARGS((int narg, ...));
-extern cl_object cl_string_not_equal _ARGS((int narg, ...));
-extern cl_object cl_string_upcase _ARGS((int narg, ...));
-extern cl_object cl_string_downcase _ARGS((int narg, ...));
-extern cl_object cl_string_capitalize _ARGS((int narg, ...));
-extern cl_object cl_nstring_upcase _ARGS((int narg, ...));
-extern cl_object cl_nstring_downcase _ARGS((int narg, ...));
-extern cl_object cl_nstring_capitalize _ARGS((int narg, ...));
-extern cl_object si_string_concatenate _ARGS((int narg, ...));
+extern cl_object cl_make_string _ARGS((cl_narg narg, cl_object size, ...));
+extern cl_object cl_stringE _ARGS((cl_narg narg, cl_object string1, cl_object string2, ...));
+extern cl_object cl_string_equal _ARGS((cl_narg narg, cl_object string1, cl_object string2, ...));
+extern cl_object cl_stringL _ARGS((cl_narg narg, ...));
+extern cl_object cl_stringG _ARGS((cl_narg narg, ...));
+extern cl_object cl_stringLE _ARGS((cl_narg narg, ...));
+extern cl_object cl_stringGE _ARGS((cl_narg narg, ...));
+extern cl_object cl_stringNE _ARGS((cl_narg narg, ...));
+extern cl_object cl_string_lessp _ARGS((cl_narg narg, ...));
+extern cl_object cl_string_greaterp _ARGS((cl_narg narg, ...));
+extern cl_object cl_string_not_greaterp _ARGS((cl_narg narg, ...));
+extern cl_object cl_string_not_lessp _ARGS((cl_narg narg, ...));
+extern cl_object cl_string_not_equal _ARGS((cl_narg narg, ...));
+extern cl_object cl_string_upcase _ARGS((cl_narg narg, ...));
+extern cl_object cl_string_downcase _ARGS((cl_narg narg, ...));
+extern cl_object cl_string_capitalize _ARGS((cl_narg narg, ...));
+extern cl_object cl_nstring_upcase _ARGS((cl_narg narg, ...));
+extern cl_object cl_nstring_downcase _ARGS((cl_narg narg, ...));
+extern cl_object cl_nstring_capitalize _ARGS((cl_narg narg, ...));
+extern cl_object si_string_concatenate _ARGS((cl_narg narg, ...));
 
 extern cl_object cl_alloc_simple_string(cl_index l);
 extern cl_object cl_alloc_adjustable_string(cl_index l);
@@ -1248,7 +1237,7 @@ extern cl_object si_structure_set(cl_object x, cl_object type, cl_object index, 
 extern cl_object si_structurep(cl_object s);
 extern cl_object si_rplaca_nthcdr(cl_object x, cl_object idx, cl_object v);
 extern cl_object si_list_nth(cl_object idx, cl_object x);
-extern cl_object si_make_structure _ARGS((int narg, cl_object type, ...));
+extern cl_object si_make_structure _ARGS((cl_narg narg, cl_object type, ...));
 
 #ifndef CLOS
 extern cl_object structure_to_list(cl_object x);
@@ -1272,12 +1261,12 @@ extern cl_object si_set_symbol_plist(cl_object sym, cl_object plist);
 extern cl_object si_putprop(cl_object sym, cl_object value, cl_object indicator);
 extern cl_object si_Xmake_special(cl_object sym);
 extern cl_object si_Xmake_constant(cl_object sym, cl_object val);
-extern cl_object cl_get _ARGS((int narg, cl_object sym, cl_object indicator, ...));
-extern cl_object cl_getf _ARGS((int narg, cl_object place, cl_object indicator, ...));
-extern cl_object cl_copy_symbol _ARGS((int narg, cl_object sym, ...));
-extern cl_object cl_gensym _ARGS((int narg, ...));
-extern cl_object cl_gentemp _ARGS((int narg, ...));
-extern cl_object si_put_properties _ARGS((int narg, cl_object sym, ...));
+extern cl_object cl_get _ARGS((cl_narg narg, cl_object sym, cl_object indicator, ...));
+extern cl_object cl_getf _ARGS((cl_narg narg, cl_object place, cl_object indicator, ...));
+extern cl_object cl_copy_symbol _ARGS((cl_narg narg, cl_object sym, ...));
+extern cl_object cl_gensym _ARGS((cl_narg narg, ...));
+extern cl_object cl_gentemp _ARGS((cl_narg narg, ...));
+extern cl_object si_put_properties _ARGS((cl_narg narg, cl_object sym, ...));
 
 extern void cl_defvar(cl_object s, cl_object v);
 extern void cl_defparameter(cl_object s, cl_object v);
@@ -1302,7 +1291,7 @@ extern char *Tcl_GetVar2(Tcl_Interp *interp, char *name1, char *name2, int flags
 extern char *Tcl_SetVar(Tcl_Interp *interp, char *var, char *val, int flags);
 extern char *Tcl_SetVar2(Tcl_Interp *interp, char *name1, char *name2, char *val, int flags);
 extern int Tcl_DeleteCommand(Tcl_Interp *interp, char *cmdName);
-extern int tclMethodDispatch(int narg, cl_object env, ...);
+extern int tclMethodDispatch(cl_narg narg, cl_object env, ...);
 extern void Tcl_CreateCommand(Tcl_Interp *interp, char *cmdName, Tcl_CmdProc *proc, ClientData clientData, Tcl_CmdDeleteProc *deleteProc);
 extern int Tcl_GetCommandInfo(Tcl_Interp *interp, char *cmdName, Tcl_CmdInfo *infoPtr);
 extern Tcl_Interp *Tcl_CreateInterp(void);
@@ -1342,29 +1331,29 @@ extern cl_object mp_own_process(void) __attribute__((const));
 extern cl_object mp_all_processes(void);
 extern cl_object mp_exit_process(void) __attribute__((noreturn));
 extern cl_object mp_interrupt_process(cl_object process, cl_object function);
-extern cl_object mp_make_process _ARGS((int narg, ...));
+extern cl_object mp_make_process _ARGS((cl_narg narg, ...));
 extern cl_object mp_process_active_p(cl_object process);
 extern cl_object mp_process_enable(cl_object process);
 extern cl_object mp_process_interrupt(cl_object process, cl_object function);
 extern cl_object mp_process_kill(cl_object process);
 extern cl_object mp_process_name(cl_object process);
-extern cl_object mp_process_preset _ARGS((int narg, cl_object process, cl_object function, ...));
-extern cl_object mp_process_run_function _ARGS((int narg, cl_object name, cl_object function, ...));
+extern cl_object mp_process_preset _ARGS((cl_narg narg, cl_object process, cl_object function, ...));
+extern cl_object mp_process_run_function _ARGS((cl_narg narg, cl_object name, cl_object function, ...));
 extern cl_object mp_process_whostate(cl_object process);
-extern cl_object mp_make_lock _ARGS((int narg, ...));
-extern cl_object mp_get_lock _ARGS((int narg, cl_object lock, ...));
+extern cl_object mp_make_lock _ARGS((cl_narg narg, ...));
+extern cl_object mp_get_lock _ARGS((cl_narg narg, cl_object lock, ...));
 extern cl_object mp_giveup_lock(cl_object lock);
 #endif
 
 
 /* time.c */
 
-extern cl_object cl_get_universal_time();
+extern cl_object cl_get_universal_time(void);
 extern cl_object cl_sleep(cl_object z);
-extern cl_object cl_get_internal_run_time();
-extern cl_object cl_get_internal_real_time();
-extern cl_object si_get_local_time_zone();
-extern cl_object si_daylight_saving_time_p _ARGS((int narg, ...));
+extern cl_object cl_get_internal_run_time(void);
+extern cl_object cl_get_internal_real_time(void);
+extern cl_object si_get_local_time_zone(void);
+extern cl_object si_daylight_saving_time_p _ARGS((cl_narg narg, ...));
 
 extern cl_object UTC_time_to_universal_time(cl_fixnum i);
 
@@ -1422,10 +1411,10 @@ extern cl_object cl_file_write_date(cl_object file);
 extern cl_object cl_file_author(cl_object file);
 extern cl_object si_file_kind(cl_object pathname, cl_object follow_links);
 extern cl_object si_getcwd(void);
-extern cl_object si_chdir _ARGS((int narg, cl_object directory, ...));
+extern cl_object si_chdir _ARGS((cl_narg narg, cl_object directory, ...));
 extern cl_object si_mkdir(cl_object directory, cl_object mode);
-extern cl_object cl_directory _ARGS((int narg, cl_object directory, ...));
-extern cl_object cl_user_homedir_pathname _ARGS((int narg, ...));
+extern cl_object cl_directory _ARGS((cl_narg narg, cl_object directory, ...));
+extern cl_object cl_user_homedir_pathname _ARGS((cl_narg narg, ...));
 extern cl_object si_mkstemp(cl_object template);
 
 extern const char *expand_pathname(const char *name);
@@ -1437,9 +1426,9 @@ extern cl_object homedir_pathname(cl_object user);
 
 /* unixint.c */
 
-extern cl_object si_catch_bad_signals();
-extern cl_object si_uncatch_bad_signals();
-extern cl_object si_check_pending_interrupts();
+extern cl_object si_catch_bad_signals(void);
+extern cl_object si_uncatch_bad_signals(void);
+extern cl_object si_check_pending_interrupts(void);
 
 
 /* unixsys.c */

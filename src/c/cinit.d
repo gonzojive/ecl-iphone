@@ -14,6 +14,7 @@
 */
 
 #include "ecl.h"
+#include "internal.h"
 
 static cl_object si_simple_toplevel ()
 {

@@ -105,16 +105,16 @@ cl_stack_pop_n(cl_index index) {
 	cl_env.stack_top = new_top;
 }
 
-int
+cl_index
 cl_stack_push_values(void) {
-	int i;
+	cl_index i;
 	for (i=0; i<NVALUES; i++)
 		cl_stack_push(VALUES(i));
 	return i;
 }
 
 void
-cl_stack_pop_values(int n) {
+cl_stack_pop_values(cl_index n) {
 	NVALUES = n;
 	while (n > 0)
 		VALUES(--n) = cl_stack_pop();
@@ -221,7 +221,7 @@ lambda_bind_var(cl_object var, cl_object val, cl_object specials)
 }
 
 static void
-lambda_bind(int narg, cl_object lambda, cl_index sp)
+lambda_bind(cl_narg narg, cl_object lambda, cl_index sp)
 {
 	cl_object *data = lambda->bytecodes.data;
 	cl_object specials = lambda->bytecodes.specials;
@@ -331,7 +331,7 @@ lambda_bind(int narg, cl_object lambda, cl_index sp)
 }
 
 cl_object
-lambda_apply(int narg, cl_object fun)
+lambda_apply(cl_narg narg, cl_object fun)
 {
 	cl_index args = cl_stack_index() - narg;
 	cl_object name;
@@ -382,7 +382,7 @@ search_global(register cl_object s) {
 /* Similar to funcall(), but registers calls in the IHS stack. */
 
 static cl_object
-interpret_funcall(int narg, cl_object fun) {
+interpret_funcall(cl_narg narg, cl_object fun) {
 	cl_object *args;
 	cl_object x;
 
@@ -431,7 +431,7 @@ interpret_funcall(int narg, cl_object fun) {
 }
 
 @(defun apply (fun lastarg &rest args)
-	int i;
+	cl_index i;
 @
 	narg -= 2;
 	for (i = 0; narg; i++,narg--) {
@@ -641,7 +641,7 @@ static cl_opcode *
 interpret_msetq(cl_object bytecodes, cl_opcode *vector)
 {
 	cl_object value;
-	int i, n = GET_OPARG(vector);
+	cl_index i, n = GET_OPARG(vector);
 	for (i=0; i<n; i++) {
 		cl_fixnum var = GET_OPARG(vector);
 		value = (i < NVALUES) ? VALUES(i) : Cnil;
@@ -1000,7 +1000,7 @@ interpret(cl_object bytecodes, void *pc) {
 		break;
 	}
 	case OP_VBIND: {
-		int n = GET_OPARG(vector);
+		cl_index n = GET_OPARG(vector);
 		cl_object var_name = GET_DATA(vector, bytecodes);
 		cl_object value = (n < NVALUES) ? VALUES(n) : Cnil;
 		bind_var(var_name, value);
@@ -1018,7 +1018,7 @@ interpret(cl_object bytecodes, void *pc) {
 		break;
 	}
 	case OP_VBINDS: {
-		int n = GET_OPARG(vector);
+		cl_index n = GET_OPARG(vector);
 		cl_object var_name = GET_DATA(vector, bytecodes);
 		cl_object value = (n < NVALUES) ? VALUES(n) : Cnil;
 		bind_special(var_name, value);
@@ -1206,7 +1206,7 @@ interpret(cl_object bytecodes, void *pc) {
 	*/
 	PUSH_VALUES:
 	case OP_PUSHVALUES: {
-		int i;
+		cl_index i;
 		for (i=0; i<NVALUES; i++)
 			cl_stack_push(VALUES(i));
 		cl_stack_push(MAKE_FIXNUM(NVALUES));
@@ -1216,7 +1216,7 @@ interpret(cl_object bytecodes, void *pc) {
 		Adds more values to the ones pushed by OP_PUSHVALUES.
 	*/
 	case OP_PUSHMOREVALUES: {
-		int i, n = fix(cl_stack_pop());
+		cl_index i, n = fix(cl_stack_pop());
 		for (i=0; i<NVALUES; i++)
 			cl_stack_push(VALUES(i));
 		cl_stack_push(MAKE_FIXNUM(n + NVALUES));
@@ -1259,10 +1259,13 @@ interpret(cl_object bytecodes, void *pc) {
 	*/
 	case OP_NTHVAL: {
 		cl_fixnum n = fix(cl_stack_pop());
-		if (n < 0 || n >= NVALUES)
+		if (n < 0) {
+			FEerror("Wrong index passed to NTH-VAL", 1, MAKE_FIXNUM(n));
+		} else if ((cl_index)n >= NVALUES) {
 			VALUES(0) = reg0 = Cnil;
-		else
+		} else {
 			VALUES(0) = reg0 = VALUES(n);
+		}
 		NVALUES = 1;
 		break;
 	}
@@ -1312,7 +1315,7 @@ interpret(cl_object bytecodes, void *pc) {
 	case OP_STEPIN: {
 		cl_object form = GET_DATA(vector, bytecodes);
 		cl_object a = SYM_VAL(@'si::*step-action*');
-		int n = cl_stack_push_values();
+		cl_index n = cl_stack_push_values();
 		if (a == Ct) {
 			/* We are stepping in, but must first ask the user
 			 * what to do. */
@@ -1345,7 +1348,7 @@ interpret(cl_object bytecodes, void *pc) {
 	}
 	case OP_STEPOUT: {
 		cl_object a = SYM_VAL(@'si::*step-action*');
-		int n = cl_stack_push_values();
+		cl_index n = cl_stack_push_values();
 		if (a == Ct) {
 			/* We exit one stepping level */
 			ECL_SETQ(@'si::*step-level*',

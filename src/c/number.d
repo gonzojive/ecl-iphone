@@ -37,8 +37,9 @@ fixint(cl_object x)
 	if (FIXNUMP(x))
 		return fix(x);
 	if (type_of(x) == t_bignum) {
-		if (x->big.big_size == 1 || x->big.big_size == -1)
-			return big_to_long(x);
+		if (mpz_fits_slong_p(x->big.big_num)) {
+			return mpz_get_si(x->big.big_num);
+		}
 	}
 	FEwrong_type_argument(@'fixnum', x);
 }
@@ -51,11 +52,12 @@ fixnnint(cl_object x)
 		if (i >= 0)
 			return i;
 	} else if (type_of(x) == t_bignum) {
-		if (x->big.big_size == 1)
-			return big_to_ulong(x);
+		if (mpz_fits_ulong_p(x->big.big_num)) {
+			return mpz_get_ui(x->big.big_num);
+		}
 	}
 	cl_error(9, @'simple-type-error', @':format-control',
-		    make_simple_string("Not a non-negative fixnum ~S"),
+		    make_constant_string("Not a non-negative fixnum ~S"),
 		    @':format-arguments', cl_list(1,x),
 		    @':expected-type', @'fixnum', @':datum', x);
 }

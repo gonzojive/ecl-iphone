@@ -36,27 +36,27 @@
 #define	INHERITED	3
 
 static void
-FEpackage_error(char *message, cl_object package, int narg, ...)
+FEpackage_error(const char *message, cl_object package, int narg, ...)
 {
 	cl_va_list args;
 	cl_va_start(args, narg, narg, 0);
 	cl_error(7,
 		 @'si::simple-package-error',
-		 @':format-control', make_simple_string(message),
+		 @':format-control', make_constant_string(message),
 		 @':format-arguments',
 		 narg? cl_grab_rest_args(args) : cl_list(1,package),
 		 @':package', package);
 }
 
 static void
-CEpackage_error(char *message, cl_object package, int narg, ...)
+CEpackage_error(const char *message, cl_object package, int narg, ...)
 {
 	cl_va_list args;
 	cl_va_start(args, narg, narg, 0);
 	cl_cerror(8,
-		  make_simple_string("Ignore error message"),
+		  make_constant_string("Ignore error message"),
 		  @'si::simple-package-error',
-		  @':format-control', make_simple_string(message),
+		  @':format-control', make_constant_string(message),
 		  @':format-arguments',
 		  narg? cl_grab_rest_args(args) : cl_list(1,package),
 		  @':package', package);
@@ -89,8 +89,8 @@ make_package_hashtable()
 	h->hash.lockable = 0;
 	h->hash.test = htt_pack;
 	h->hash.size = hsize;
-	h->hash.rehash_size = make_shortfloat(1.5);
-	h->hash.threshold = make_shortfloat(0.7);
+	h->hash.rehash_size = make_shortfloat(1.5f);
+	h->hash.threshold = make_shortfloat(0.75f);
 	h->hash.factor = 0.7;
 	h->hash.entries = 0;
 	h->hash.data = NULL; /* for GC sake */
@@ -129,10 +129,10 @@ make_package(cl_object name, cl_object nicknames, cl_object use_list)
 	if ((other = ecl_find_package_nolock(name)) != Cnil) {
 	ERROR:	PACKAGE_OP_UNLOCK();
 		cl_cerror(8,
-			  make_simple_string("Return existing package"),
+			  make_constant_string("Return existing package"),
 			  @'si::simple-package-error',
 			  @':format-control',
-			  make_simple_string("A package with the name ~A already exists."),
+			  make_constant_string("A package with the name ~A already exists."),
 			  @':format-arguments', cl_list(1,name),
 			  @':package', other);
 		return other;

@@ -168,7 +168,7 @@ cl_env.lex_env ------> ( tag0 value0 tag1 value1 ... )
  *********************************/
 
 #define CL_NEWENV_BEGIN {\
-	int __i = cl_stack_push_values(); \
+	cl_index __i = cl_stack_push_values(); \
 	cl_object __env = cl_env.lex_env;
 
 #define CL_NEWENV_END \

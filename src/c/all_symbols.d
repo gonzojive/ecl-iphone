@@ -84,9 +84,9 @@ mangle_name(cl_object output, char *source, int l)
 		cl_fixnum p;
 
 		if (symbol == Cnil)
-			@(return Ct make_simple_string("Cnil"))
+			@(return Ct make_constant_string("Cnil"))
 		else if (symbol == Ct)
-			@(return Ct make_simple_string("Ct"))
+			@(return Ct make_constant_string("Ct"))
 		p  = (cl_symbol_initializer*)symbol - cl_symbols;
 		if (p >= 0 && p <= cl_num_symbols_in_core) {
 			found = Ct;
@@ -113,9 +113,9 @@ mangle_name(cl_object output, char *source, int l)
 	}
 	package= symbol->symbol.hpack;
 	if (package == cl_core.lisp_package)
-		package = make_simple_string("cl");
+		package = make_constant_string("cl");
 	else if (package == cl_core.system_package)
-		package = make_simple_string("si");
+		package = make_constant_string("si");
 	else if (package == cl_core.keyword_package)
 		package = Cnil;
 	else

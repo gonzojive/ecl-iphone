@@ -95,7 +95,7 @@ static void
 FEtype_error_plist(cl_object x)
 {
 	cl_error(9, @'simple-type-error', @':format-control',
-		 make_simple_string("Not a valid property list ~D"),
+		 make_constant_string("Not a valid property list ~D"),
 		 @':format-arguments', cl_list(1, x),
 		 @':expected-type', @'list',
 		 @':datum', x);

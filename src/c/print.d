@@ -214,7 +214,7 @@ write_ch(int c)
 }
 
 static void
-write_str(char *s)
+write_str(const char *s)
 {
 	while (*s != '\0')
 		write_ch(*s++);
@@ -280,9 +280,7 @@ write_base(void)
    If this is too small, then the rounded off fraction, may be too big
    to read */
 
-#ifndef FPRC 
-#define FPRC 16
-#endif
+#define FPRC 17
 
 void
 edit_double(int n, double d, int *sp, char *s, int *ep)
@@ -492,15 +490,15 @@ call_structure_print_function(cl_object x, int level)
 }
 
 static void
-write_fixnum(cl_fixnum i)
+write_positive_fixnum(cl_index i)
 {
 	/* The maximum number of digits is achieved for base 2 and it
 	   is always < FIXNUM_BITS, since we use at least one bit for
 	   tagging */
 	short digits[FIXNUM_BITS];
-	int j;
-	for (j = 0;  j < FIXNUM_BITS && i != 0;  i /= cl_env.print_base)
-		digits[j++] = digit_weight(i%cl_env.print_base, cl_env.print_base);
+	int j, base = cl_env.print_base;
+	for (j = 0;  i != 0;  i /= base)
+		digits[j++] = ecl_digit_char(i % base, base);
 	while (j-- > 0)
 		write_ch(digits[j]);
 }
@@ -513,7 +511,7 @@ write_bignum(cl_object x)
 	char *s = str;
 	mpz_get_str(str, cl_env.print_base, x->big.big_num);
 	while (*s)
-	  write_ch(*s++);
+		write_ch(*s++);
 }
 
 static void
@@ -682,9 +680,10 @@ _write_object(cl_object x, int level)
 			write_ch('0');
 		} else if (FIXNUM_MINUSP(x)) {
 			write_ch('-');
-			write_fixnum(-fix(x));
-		} else
-			write_fixnum(fix(x));
+			write_positive_fixnum(-fix(x));
+		} else {
+			write_positive_fixnum(fix(x));
+		}
 		if (cl_env.print_radix && cl_env.print_base == 10)
 			write_ch('.');
 		return;

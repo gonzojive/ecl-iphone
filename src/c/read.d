@@ -15,6 +15,7 @@
 */
 
 #include <limits.h>
+#include <float.h>
 #include <math.h>
 #include <ctype.h>
 #include <string.h>
@@ -397,17 +398,16 @@ EXPONENT:
 		exponent = 10 * exponent + d;
 		i++;
 	} while (i < end && (d = digitp(s[i], radix)) >= 0);
-	d = exponent;
+	d = exponent * sign;
 	f = 10.0;
-	/* Use pow because it is more accurate */
-	{
-	  double po = pow(10.0, (double)(sign * d));
-          if (po == 0.0) {
-	    fraction *= pow(10.0, (double)(sign * (d-1)));
-	    fraction /= 10.0;
-	  } else     
-	    fraction *= po;
+	if (d < (DBL_MIN_10_EXP - 1)) {
+		fraction /= pow(10.0, (DBL_MIN_10_EXP - 1) - d);
+		d = DBL_MIN_10_EXP - 1;
+	} else if (d > (DBL_MAX_10_EXP - 1)) {
+		fraction *= pow(10.0, d - (DBL_MAX_10_EXP - 1));
+		d = DBL_MAX_10_EXP - 1;
 	}
+	fraction *= pow(10.0, d);
 
 MAKE_FLOAT:
 	/* make_{short|long}float signals an error when an overflow
