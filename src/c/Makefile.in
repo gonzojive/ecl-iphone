@@ -76,15 +76,18 @@ symbols_list2.h: $(srcdir)/symbols_list.h Makefile
 	    -e 's%{NULL.*%{NULL,NULL}};%' > $@
 
 #
-# Some files may break due to gcc optimizations
+# GCC might break this code
 #
-#apply.o: apply.c $(HFILES) $(HDIR)/cs.h
-# dangerous to optimize due to assembler hack
-#	$(CC) $(CFLAGS) -O0 -g apply.c -o $@
-assignment.o: assignment.c $(HFILES)
-	$(CC) $(CFLAGS) -O0 assignment.c -o $@
 gbc.o: gbc.c $(HFILES)
 	$(CC) $(CFLAGS) -O0 gbc.c -o $@
+#
+# This reduces the overhead of jumping to other functions
+#
+apply.o: apply.c $(HFILES) $(HDIR)/cs.h
+	$(CC) $(CFLAGS) -fomit-frame-pointer apply.c -o $@
+#
+# These files are interrelated
+#
 all_symbols.o: all_symbols.c symbols_def.h
 	$(CC) $(CFLAGS) -I./ all_symbols.c -o $@
 symbols_def.h: $(srcdir)/symbols_list.h Makefile
