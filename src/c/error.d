@@ -93,31 +93,24 @@ void
 FEerror(char *s, int narg, ...)
 {
 	va_list args;
-	cl_object rest = Cnil, *r = &rest;
-
 	va_start(args, narg);
-	while (narg--)
-	  r = &CDR(*r = CONS(va_arg(args, cl_object), Cnil));
 	funcall(4, @'si::universal-error-handler',
 		Cnil,                    /*  not correctable  */
 		make_constant_string(s),	 /*  condition text  */
-		rest);
+		va_grab_rest_args(narg, args));
+	va_end(args);
 }
 
 cl_object
 CEerror(char *err, int narg, ...)
 {
-	int i = narg;
 	va_list args;
-	cl_object rest = Cnil, *r = &rest;
-
 	va_start(args, narg);
-	while (i--)
-	  r = &CDR(*r = CONS(va_arg(args, cl_object), Cnil));
 	return funcall(4, @'si::universal-error-handler',
 		       Ct,			/*  correctable  */
 		       make_constant_string(err),	/*  continue-format-string  */
-		       rest);
+		       va_grab_rest_args(narg, args));
+	va_end(args);
 }
 
 /***********************
@@ -128,54 +121,39 @@ void
 FEcondition(int narg, cl_object name, ...)
 {
 	va_list args;
-	cl_object rest = Cnil, *r = &rest;
-
 	va_start(args, name);
-	while (--narg) {
-		*r = CONS(va_arg(args, cl_object), Cnil);
-		r = &CDR(*r);
-	}
 	funcall(4, @'si::universal-error-handler',
 		Cnil,                    /*  not correctable  */
 		name,                    /*  condition name  */
-		rest);
+		va_grab_rest_args(--narg, args));
+	va_end(args);
 }
 
 void
 FEprogram_error(const char *s, int narg, ...)
 {
 	va_list args;
-	cl_object rest = Cnil, *r = &rest;
-
 	gc(t_contiguous);
 	va_start(args, narg);
-	while (narg--) {
-		*r = CONS(va_arg(args, cl_object), Cnil);
-		r = &CDR(*r);
-	}
 	funcall(4, @'si::universal-error-handler',
 		Cnil,                    /*  not correctable  */
 		@'si::simple-program-error', /*  condition name  */
 		list(4, @':format-control', make_constant_string(s),
-		     @':format-arguments', rest));
+		     @':format-arguments', va_grab_rest_args(narg, args)));
+	va_end(args);
 }
 
 void
 FEcontrol_error(const char *s, int narg, ...)
 {
 	va_list args;
-	cl_object rest = Cnil, *r = &rest;
-
 	va_start(args, narg);
-	while (narg--) {
-		*r = CONS(va_arg(args, cl_object), Cnil);
-		r = &CDR(*r);
-	}
 	funcall(4, @'si::universal-error-handler',
 		Cnil,                    /*  not correctable  */
 		@'si::simple-control-error', /*  condition name  */
 		list(4, @':format-control', make_constant_string(s),
-		     @':format-arguments', rest));
+		     @':format-arguments', va_grab_rest_args(narg, args)));
+	va_end(args);
 }
 
 void
@@ -299,31 +277,19 @@ not_a_variable(cl_object obj)
  ************************************/
 
 @(defun error (eformat &rest args)
-	int i;
-	cl_object rest = Cnil, *r = &rest;
 @
-	for (i=narg-1; i; i--) {
-	  *r = CONS(va_arg(args, cl_object), Cnil);
-	  r = &CDR(*r);
-	}
 	funcall(4, @'si::universal-error-handler',
 		Cnil,
 		eformat,
-		rest);
+		va_grab_rest_args(narg-1, args));
 @)
 
 @(defun cerror (cformat eformat &rest args)
-	int i;
-	cl_object rest = Cnil, *r = &rest;
 @
-	for (i=narg-2; i; i--) {
-	  *r = CONS(va_arg(args, cl_object), Cnil);
-	  r = &CDR(*r);
-	}
 	return(funcall(4, @'si::universal-error-handler',
 		       cformat,
 		       eformat,
-		       rest));
+		       va_grab_rest_args(narg-2, args)));
 @)
 
 void

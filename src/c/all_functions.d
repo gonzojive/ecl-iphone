@@ -827,6 +827,7 @@ const struct function_info all_functions[] = {
 	{"STRING-MATCH", siLstring_match, si},
 	{"DIRECTORY", clLdirectory, cl},
 	{"CHDIR", siLchdir, si},
+	{"MKDIR", siLmkdir, si},
 
 	/* unixsys.c */
 

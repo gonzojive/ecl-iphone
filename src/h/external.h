@@ -907,6 +907,7 @@ extern FILE *backup_fopen(const char *filename, const char *option);
 extern int file_len(FILE *fp);
 extern cl_object homedir_pathname(cl_object user);
 extern void init_unixfsys(void);
+extern void FEfilesystem_error(const char *msg, int narg, ...);
 
 
 /* unixint.c */

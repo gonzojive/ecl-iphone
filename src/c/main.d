@@ -133,8 +133,7 @@ cl_boot(int argc, char **argv)
 @)
 
 @(defun si::getenv (var)
-	char name[256], *value;
-	cl_index i;
+	const char *value;
 @
 	assert_type_string(var);
 	value = getenv(var->string.self);

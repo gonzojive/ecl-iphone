@@ -1025,6 +1025,7 @@ extern cl_object clLfile_write_date _ARGS((int narg, cl_object file));
 extern cl_object clLfile_author _ARGS((int narg, cl_object file));
 extern cl_object clLuser_homedir_pathname _ARGS((int narg, ...));
 extern cl_object siLchdir _ARGS((int narg, cl_object directory));
+extern cl_object siLmkdir _ARGS((int narg, cl_object directory));
 extern cl_object siLstring_match _ARGS((int narg, cl_object string, cl_object pattern));
 extern cl_object clLdirectory _ARGS((int narg, ...));
 
