@@ -94,10 +94,8 @@ number_expt(cl_object x, cl_object y)
 	enum type tx, ty;
 	cl_object z;
 
-	tx = type_of(x);
-	ty = type_of(y);
-	if (ty == t_fixnum && fix(y) == 0)
-		switch (tx) {
+	if (y == MAKE_FIXNUM(0))
+		switch (type_of(x)) {
 		case t_fixnum:  case t_bignum:  case t_ratio:
 			return(MAKE_FIXNUM(1));
 
@@ -115,6 +113,7 @@ number_expt(cl_object x, cl_object y)
 		default:
 			FEtype_error_number(x);
 		}
+	ty = type_of(y);
 	if (number_zerop(x)) {
 		if (!number_plusp(ty==t_complex?y->complex.real:y))
 			FEerror("Cannot raise zero to the power ~S.", 1, y);
@@ -128,15 +127,14 @@ number_expt(cl_object x, cl_object y)
 			return(z);
 		}
 		z = MAKE_FIXNUM(1);
-		while (number_plusp(y))
-			if (number_evenp(y)) {
-				x = number_times(x, x);
-				y = integer_divide(y, MAKE_FIXNUM(2));
-			} else {
+		do {
+			/* INV: integer_divide outputs an integer */
+			if (!number_evenp(y))
 				z = number_times(z, x);
-				y = number_minus(y, MAKE_FIXNUM(1));
-			}
-		return(z);
+			x = number_times(x, x);
+			y = integer_divide(y, MAKE_FIXNUM(2));
+		} while (number_plusp(y));
+		return z;
 	}
 	z = number_nlog(x);
 	z = number_times(z, y);

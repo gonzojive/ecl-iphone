@@ -40,10 +40,12 @@
 	fixnum or bignum ( not normalized )
 */
 
-static cl_object big_log_op(struct bignum *x, cl_object y, int (*op)());
+typedef cl_fixnum (*bit_operator)(cl_fixnum, cl_fixnum);
+
+static cl_object big_log_op(cl_object x, cl_object y, bit_operator op);
 
 static cl_object
-log_op(int narg, int (*op)(), va_list ARGS)
+log_op(int narg, bit_operator op, va_list ARGS)
 {
 	enum cl_type t;
 	cl_object x, numi;
@@ -63,7 +65,7 @@ log_op(int narg, int (*op)(), va_list ARGS)
 	  numi = cl_nextarg(ARGS);
 	  t = type_of(numi);
 	  if (t == t_bignum) {
-	    x = big_log_op(&bignum1(j)->big, numi, op);
+	    x = big_log_op(bignum1(j), numi, op);
 	    i++;
 	    goto BIG_OP;
 	  } else if (t != t_fixnum) {
@@ -75,188 +77,179 @@ log_op(int narg, int (*op)(), va_list ARGS)
 
 BIG_OP:
 	for (; i < narg; i++)	  
-	  x = big_log_op(&x->big, cl_nextarg(ARGS), op);
+	  x = big_log_op(x, cl_nextarg(ARGS), op);
 	return(big_normalize(x));
 }
+
+static cl_object
+log_op2(cl_object x, cl_object y, bit_operator op)
+{
+	switch (type_of(x)) {
+	case t_fixnum:
+		if (FIXNUMP(y))
+			return MAKE_FIXNUM((*op)(fix(x),fix(y)));
+		else
+			x = big_log_op(bignum1(fix(x)), y, op);
+		break;
+	case t_bignum:
+		x = big_log_op(big_copy(x), y, op);
+		break;
+	default:
+		FEtype_error_integer(x);
+	}
+	return big_normalize(x);
+}
+
 /*
 	big_log_op(x, y, op) performs the logical operation op on
 	bignum x and integer y, and returns the result in x destructively.
 */
 static cl_object
-big_log_op(struct bignum *x, cl_object y, int (*op)())
+big_log_op(cl_object x, cl_object y, bit_operator op)
 {
-	int	i, j;
-	int 	y_size, x_size = x->big_size;
-	mp_limb_t *y_limbs, *x_limbs = x->big_limbs;
-	int	y_sign, x_sign = (big_sign((cl_object)x) < 0);
+	int flag;
+	int y_size, x_size;
+	mp_limb_t word, *x_limbs, *y_limbs;
 
 	if (FIXNUMP(y)) {
-	  i = fix(y);
-	  x_limbs[x_size-1] = (*op)(x_limbs[x_size-1], i);
-	  y_sign = (i < 0);
+		cl_object z = big_register1_get();
+		mpz_set_si(y->big.big_num, fix(y));
+		y = z;
 	} else if (type_of(y) != t_bignum) {
-	  FEtype_error_integer(y);
-	} else {
-	  y_sign = big_sign((cl_object)y) < 0;
-	  x_size = abs(x->big_size);
-	  y_size = abs(y->big.big_size);
-	  y_limbs = y->big.big_limbs;
-
-	  if (y_size > x_size) {
-	    /* First loop finds the size of the result.  */
-	    for (i = y_size - 1; i >= 0; i--) {
-	      j = (i >= x_size) ? 0 : x_limbs[i];
-	      if ((*op)(j, y_limbs[i]) != 0)
-		break;
-	    }
-	    x_size = i + 1;
-
-	    /* Handle allocation, now that we know exactly how much space is
-	       needed for the result.  */
-	    if (x->big_dim < x_size) {
-	      _mpz_realloc(x->big_num, x_size);
-	      x_limbs = x->big_limbs;
-	    }
-	  }
-	  /* Second loop computes the real result.  */
-	  for (i = 0 ; i < x_size; i++)
-	    x_limbs[i] = (*op)(x_limbs[i], y_limbs[i]);
+		FEtype_error_integer(y);
 	}
-	/*
-	  Set the sign according to operation.
-	  */
-	x->big_size = (*op)(x_sign, y_sign)? -x_size : x_size;
-	return((cl_object)x);
+	if (big_sign(y) > 0)
+		flag = 0;
+	else {
+		cl_object z = big_register2_get();
+		mpz_com(z->big.big_num, y->big.big_num);
+		y = z;
+		flag = ~0;
+	}
+	y_size = y->big.big_size;
+	y_limbs = y->big.big_limbs;
+	if (big_sign(x) > 0)
+		flag = (*op)(0,flag);
+	else {
+		flag = (*op)(0,flag);
+		mpz_com(x->big.big_num, x->big.big_num);
+	}
+	x_size = x->big.big_size;
+	if (y_size > x_size) {
+		x->big.big_size = x_size = y_size;
+		mpz_realloc(x->big.big_num, x_size);
+	}
+	x_limbs = x->big.big_limbs;
+
+	/* Compute the logical operation */
+	for (word = 0; x_size--; ) {
+		mp_limb_t aux = (*op)(x_limbs[x_size], y_limbs[x_size]);
+		x_limbs[x_size] = aux;
+		word |= aux;
+	}
+	/* When output is zero, notice that */
+	if (word == 0)
+		x->big.big_size = 0;
+	/* If result should be a negative number, perform two's complement. */
+	if (flag)
+		mpz_com(x->big.big_num, x->big.big_num);
+	return x;
 }
 
-static int
-ior_op(int i, int j)
+static cl_fixnum
+ior_op(cl_fixnum i, cl_fixnum j)
 {
 	return(i | j);
 }
 
-static int
-xor_op(int i, int j)
+static cl_fixnum
+xor_op(cl_fixnum i, cl_fixnum j)
 {
 	return(i ^ j);
 }
 
-static int
-and_op(int i, int j)
+static cl_fixnum
+and_op(cl_fixnum i, cl_fixnum j)
 {
 	return(i & j);
 }
 
-static int
-eqv_op(int i, int j)
+static cl_fixnum
+eqv_op(cl_fixnum i, cl_fixnum j)
 {
 	return(~(i ^ j));
 }
 
-static int
-nand_op(int i, int j)
+static cl_fixnum
+nand_op(cl_fixnum i, cl_fixnum j)
 {
 	return(~(i & j));
 }
 
-static int
-nor_op(int i, int j)
+static cl_fixnum
+nor_op(cl_fixnum i, cl_fixnum j)
 {
 	return(~(i | j));
 }
 
-static int
-andc1_op(int i, int j)
+static cl_fixnum
+andc1_op(cl_fixnum i, cl_fixnum j)
 {
 	return((~i) & j);
 }
 
-static int
-andc2_op(int i, int j)
+static cl_fixnum
+andc2_op(cl_fixnum i, cl_fixnum j)
 {
 	return(i & (~j));
 }
 
-static int
-orc1_op(int i, int j)
+static cl_fixnum
+orc1_op(cl_fixnum i, cl_fixnum j)
 {
 	return((~i) | j);
 }
 
-static int
-orc2_op(int i, int j)
+static cl_fixnum
+orc2_op(cl_fixnum i, cl_fixnum j)
 {
 	return(i | (~j));
 }
 
-static int
-b_clr_op(int i, int j)
+static cl_fixnum
+b_clr_op(cl_fixnum i, cl_fixnum j)
 {
 	return(0);
 }
 
-static int
-b_set_op(int i, int j)
+static cl_fixnum
+b_set_op(cl_fixnum i, cl_fixnum j)
 {
 	return(-1);
 }
 
-static int
-b_1_op(int i, int j)
+static cl_fixnum
+b_1_op(cl_fixnum i, cl_fixnum j)
 {
 	return(i);
 }
 
-static int
-b_2_op(int i, int j)
+static cl_fixnum
+b_2_op(cl_fixnum i, cl_fixnum j)
 {
 	return(j);
 }
 
-static int
-b_c1_op(int i, int j)
+static cl_fixnum
+b_c1_op(cl_fixnum i, cl_fixnum j)
 {
 	return(~i);
 }
 
-static int
-b_c2_op(int i, int j)
+static cl_fixnum
+b_c2_op(cl_fixnum i, cl_fixnum j)
 {
 	return(~j);
-}
-
-static int
-big_bitp(cl_object x, int p)
-{
-	if (p < 0)
-		return 0;
-	else {
-#define BITS_PER_LIMB (sizeof(mp_limb_t)*8)
- 	  	int size = x->big.big_size;
- 		mp_limb_t *limbs = x->big.big_limbs;
- 		int cell = p / BITS_PER_LIMB;
- 		int bit = p % BITS_PER_LIMB;
- 		if (size > 0)
-		  if (cell > size)
-		    return(size < 0);
-		  else
-		    return (limbs[cell] >> bit) & 1;
-		else {
-		  mp_size_t zero_bound;
-		  size = -size;
-		  /* Locate the least significant non-zero limb.  */
-		  for (zero_bound = 0; limbs[zero_bound] == 0; zero_bound++)
-		    ;
-		  if (cell > size)
-		    return 1;
-		  else if (cell < zero_bound)
-		    return 0;
-		  else if (cell == zero_bound)
-		    return (-limbs[cell] >> bit) & 1;
-		  else /* cell > zero_bound */
-		    return (~limbs[cell] >> bit) & 1;
-		}
- 	}
 }
 
 @(defun lognot (x)
@@ -264,7 +257,7 @@ big_bitp(cl_object x, int p)
 	return @logxor(1,x,MAKE_FIXNUM(-1));
 @)
 
-static int
+static cl_fixnum
 count_bits(cl_object x)
 {
 	cl_fixnum count;
@@ -278,11 +271,14 @@ count_bits(cl_object x)
 		break;
 	}
 	case t_bignum:
-		if (big_sign(x) < 0) {
-			@lognot(1,x);
-			VALUES(0) = x;
+		if (big_sign(x) >= 0)
+			count = mpz_popcount(x->big.big_num);
+		else {
+			cl_object z = big_register0_get();
+			mpz_com(z->big.big_num, x->big.big_num);
+			count = mpz_popcount(x->big.big_num);
+			big_register_free(z);
 		}
-		count = mpz_popcount(x->big.big_num);
 		break;
 	default:
 		FEtype_error_integer(x);
@@ -294,39 +290,23 @@ count_bits(cl_object x)
    Left shift if w > 0, right shift if w < 0.
  */
 cl_object
-integer_shift(cl_object x, int w)
+integer_shift(cl_object x, cl_fixnum w)
 {
 	cl_object y;
-	int cell, bits, i;
-	
-	if (w == 0) return(x);
-	cell = w / 32;
-	bits = w % 32;
-	if (FIXNUMP(x)) {
-		i = fix(x);
-		if (i == 0) return(x);
-		if (cell == 0) {
-			if (w < 0) {
-				if (i >= 0)
-					return(MAKE_FIXNUM(i >> -w));
-				else
-					return(MAKE_FIXNUM(~((~i) >> -w)));
-			}
-			if (i > 0) {
-				if (((~MOST_POSITIVE_FIX >> w) & i) == 0)
-					return(MAKE_FIXNUM(i << w));
-			} else {
-				if (((MOST_NEGATIVE_FIX >> w) & ~i) == 0)
-					return(MAKE_FIXNUM(i << w));
-			}
-		}
-		x = bignum1(i);
-	}
+
+	if (w == 0)
+		return(x);
 	y = big_register0_get();
 	if (w < 0) {
-	  mpz_div_2exp(y->big.big_num, x->big.big_num, -w);
+		if (FIXNUMP(x)) 
+			return MAKE_FIXNUM(fix(x) >> -w);
+		mpz_div_2exp(y->big.big_num, x->big.big_num, -w);
 	} else {
-	  mpz_mul_2exp(y->big.big_num, x->big.big_num, w);
+		if (FIXNUMP(x)) {
+			mpz_set_si(y->big.big_num, fix(x));
+			x = y;
+		}
+		mpz_mul_2exp(y->big.big_num, x->big.big_num, w);
 	}
 	return(big_register_normalize(y));
 }
@@ -346,9 +326,7 @@ int_bit_length(int i)
 @
 	if (narg == 0)
 		@(return MAKE_FIXNUM(0))
-	/* INV: log_op() checks types */
-	if (narg == 1)
-		@(return cl_nextarg(nums))
+	/* INV: log_op() checks types and outputs first argument as default. */
 	@(return log_op(narg, ior_op, nums))
 @)
 
@@ -356,9 +334,7 @@ int_bit_length(int i)
 @
 	if (narg == 0)
 		@(return MAKE_FIXNUM(0))
-	/* INV: log_op() checks types */
-	if (narg == 1)
-		@(return cl_nextarg(nums))
+	/* INV: log_op() checks types and outputs first argument as default. */
 	@(return log_op(narg, xor_op, nums))
 @)
 
@@ -366,9 +342,7 @@ int_bit_length(int i)
 @
 	if (narg == 0)
 		@(return MAKE_FIXNUM(-1))
-	/* INV: log_op() checks types */
-	if (narg == 1)
-		@(return cl_nextarg(nums))
+	/* INV: log_op() checks types and outputs first argument as default. */
 	@(return log_op(narg, and_op, nums))
 @)
 
@@ -376,17 +350,43 @@ int_bit_length(int i)
 @
 	if (narg == 0)
 		@(return MAKE_FIXNUM(-1))
-	/* INV: log_op() checks types */
-	if (narg == 1)
-		@(return cl_nextarg(nums))
+	/* INV: log_op() checks types and outputs first argument as default. */
 	@(return log_op(narg, eqv_op, nums))
 @)
 
-@(defun boole (o &rest nums)
+@(defun lognand (x y)
+@
+	@(return log_op2(x, y, nand_op))
+@)
+
+@(defun lognor (x y)
+@
+	@(return log_op2(x, y, nor_op))
+@)
+
+@(defun logandc1 (x y)
+@
+	@(return log_op2(x, y, andc1_op))
+@)
+
+@(defun logandc2 (x y)
+@
+	@(return log_op2(x, y, andc2_op))
+@)
+
+@(defun logorc1 (x y)
+@
+	@(return log_op2(x, y, orc1_op))
+@)
+
+@(defun logorc2 (x y)
+@
+	@(return log_op2(x, y, orc2_op))
+@)
+
+@(defun boole (o x y)
 	int	(*op)();
 @
-	/* FIXME! Is this check ok? */
-	check_arg(3);
 	/* INV: log_op() checks types */
 	switch(fixint(o)) {
 		case BOOLCLR:	op = b_clr_op;	break;
@@ -409,23 +409,29 @@ int_bit_length(int i)
 			FEerror("~S is an invalid logical operator.",
 				1, o);
 	}
-	@(return log_op(2, op, nums))
+	@(return log_op2(x, y, op))
 @)
 
 @(defun logbitp (p x)
 	bool	i;
+	int	n;
 @
-	assert_type_non_negative_integer(p);
 	assert_type_integer(x);
-	if (FIXNUMP(p))
+	if (FIXNUMP(p)) {
+		cl_fixnum n = fixnnint(p);
+		if (n < 0)
+			FEtype_error_index(p);
 		if (FIXNUMP(x))
-			i = ((fix(x) >> fix(p)) & 1);
+			i = ((fix(x) >> n) & 1);
 		else
-			i = big_bitp(x, fix(p));
-	else if (FIXNUMP(x))
-		i = (fix(x) < 0);
-	else
-		i = (big_sign(x) < 0);
+			i = mpz_tstbit(x->big.big_num, n);
+	} else {
+		assert_type_non_negative_integer(p);
+		if (FIXNUMP(x))
+			i = (fix(x) < 0);
+		else
+			i = (big_sign(x) < 0);
+	}
 	@(return (i ? Ct : Cnil))
 @)
 
@@ -444,12 +450,12 @@ int_bit_length(int i)
 	    according to sign of integer.
 	    */
 	  if (FIXNUMP(x))
-	    if (fix(x) > 0)
-	      sign_x = 1;
-	    else if (fix(x) == 0)
+	    if (FIXNUM_MINUSP(x))
+	      sign_x = -1;
+	    else if (x == MAKE_FIXNUM(0))
 	      sign_x = 0;
 	    else
-	      sign_x = -1;
+	      sign_x = 1;
 	  else
 	    sign_x = big_sign(x);
 	  if (big_sign(y) < 0)

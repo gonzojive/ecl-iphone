@@ -731,6 +731,16 @@ ECLS 0.3
   - Remove use of alloca() when printing circular structures.
 
 
+ECLS 0.3b
+=========
+
+* Errors fixed:
+
+  - Fixnum product would overflow: (* 65536 32768) => negative number.
+
+  - Bit fiddling operations with negative fixnums now work (i.e.
+    LOGAND, LOGOR, LOGBITP, etc).
+
 TODO:
 =====
 

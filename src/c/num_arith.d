@@ -28,34 +28,18 @@
 @)
 
 cl_object
-fixnum_times(int i, int j)
+fixnum_times(cl_fixnum i, cl_fixnum j)
 {
+	cl_object x = big_register0_get();
 
-	int high, sign;
-	mp_limb_t i0, j0, res[2];
-	cl_object z;
-
-	if (i == 0 || j == 0)
-		return(MAKE_FIXNUM(0));
-	i0 = abs(i);
-	j0 = abs(j);
-	sign = ((i >= 0 && j >= 0) || (i < 0 && j < 0)) ? 1 : -1;
-	high = mpn_mul(res, &i0, 1, &j0, 1);
-	if (high == 0) {
-	  if (sign > 0) {
-	    if (res[0] <= MOST_POSITIVE_FIX)
-	      return(MAKE_FIXNUM(res[0]));
-	  } else {
-	    if (res[0] <= (MOST_POSITIVE_FIX + 1))
-	      return(MAKE_FIXNUM(-res[0]));
-	  }
-	  z = alloc_object(t_bignum);
-	  mpz_init_set_si(z->big.big_num, sign * res[0]);
-	} else {
-	  z = bignum2(res[1], res[0]);
-	  z->big.big_size = sign * 2;
+	mpz_set_si(x->big.big_num, i);
+	if (j > 0)
+		mpz_mul_ui(x->big.big_num, x->big.big_num, j);
+	else {
+		mpz_mul_ui(x->big.big_num, x->big.big_num, -j);
+		mpz_neg(x->big.big_num, x->big.big_num);
 	}
-	return(z);
+	return big_register_normalize(x);
 }
 
 static cl_object

@@ -493,7 +493,7 @@ extern void init_multival(void);
 
 /* num_arith.c */
 
-extern cl_object cl_fixnumimes(int i, int j);
+extern cl_object fixnum_times(cl_fixnum i, cl_fixnum j);
 extern cl_object number_times(cl_object x, cl_object y);
 extern cl_object number_to_complex(cl_object x);
 extern cl_object number_plus(cl_object x, cl_object y);
@@ -546,7 +546,7 @@ extern void init_num_comp(void);
 
 /* num_log.c */
 
-extern cl_object integer_shift(cl_object x, int w);
+extern cl_object integer_shift(cl_object x, cl_fixnum w);
 extern int int_bit_length(int i);
 extern void init_num_log(void);
 

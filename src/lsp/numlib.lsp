@@ -15,9 +15,7 @@
 (c-declaim (si::c-export-fname isqrt abs phase signum cis asin acos
 			       asinh acosh atanh rational
 			       ffloor fceiling ftruncate fround
-			       lognand lognor logandc1 logandc2 logorc1 logorc2
-			       lognot logtest
-			       byte byte-size byte-position
+			       logtest byte byte-size byte-position
 			       ldb ldb-test mask-field dpb deposit-field))
 
 (defconstant imag-one #C(0.0 1.0))
@@ -159,15 +157,6 @@
        (multiple-value-bind (i r) (round (float x) (float y))
         (values (float i r) r)))
 
-
-(defun lognand (x y) (boole boole-nand x y))
-(defun lognor (x y) (boole boole-nor x y))
-(defun logandc1 (x y) (boole boole-andc1 x y))
-(defun logandc2 (x y) (boole boole-andc2 x y))
-(defun logorc1 (x y) (boole boole-orc1 x y))
-(defun logorc2 (x y) (boole boole-orc2 x y))
-
-;(defun lognot (x) (logxor -1 x))
 (defun logtest (x y) (not (zerop (logand x y))))
 
 
