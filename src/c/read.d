@@ -700,15 +700,15 @@ sharp_single_quote_reader(cl_object in, cl_object c, cl_object d)
 static cl_object
 sharp_left_parenthesis_reader(cl_object in, cl_object c, cl_object d)
 {
-	bool fixed_size;
-	cl_index dim, dimcount, i, a;
-	cl_index sp = cl_stack_index();
-	cl_object x, last;
 	extern int _cl_backq_car(cl_object *);
+	bool fixed_size;
+	cl_index dim, i, a;
+	cl_object x, v = Cnil;
+	bool suppress = read_suppress;
 
-	if (Null(d) || read_suppress)
+	if (Null(d) || suppress) {
 		fixed_size = FALSE;
-	else {
+	} else {
 		fixed_size = TRUE;
 		dim = fixnnint(d);
 	}
@@ -719,34 +719,33 @@ sharp_left_parenthesis_reader(cl_object in, cl_object c, cl_object d)
 		if (a == APPEND || a == NCONC)
 			FEreader_error(",at or ,. has appeared in an illegal position.", in, 0);
 		if (a == QUOTE) {
-		  for (dimcount = 0;  !endp(x);  x = CDR(x), dimcount++)
-		    cl_stack_push(CAR(x));
-		  goto L;
+			v = funcall(4, @'make-array', cl_list(1, cl_length(x)),
+				    @':initial-contents', x);
+		} else {
+			v = cl_list(4, @'si::,', @'apply',
+				    CONS(@'quote', CONS(@'vector', Cnil)), x);
 		}
-		@(return cl_list(4, @'si::,', @'apply',
-				 CONS(@'quote', CONS(@'vector', Cnil)), x))
+	} else if (fixed_size) {
+		v = cl_alloc_simple_vector(dim, aet_object);
+		v->vector.self.t = (cl_object *)cl_alloc_align(dim * sizeof(cl_object), sizeof(cl_object));
+		for (i = 0; ; i++) {
+			x = read_object_with_delimiter(in, ')');
+			if (x == OBJNULL) {
+				if (i < dim)
+					FEreader_error("Too few elements in #()", in, 0);
+				break;
+			}
+			if (i >= dim)
+				FEreader_error("Too many elements in #().", in, 0);
+			aset1(v, i, x);
+		}
+	} else {
+		ecl_unread_char('(', in);
+		x = read_object(in);
+		if (!suppress)
+			v = funcall(4, @'make-array', cl_list(1, cl_length(x)), @':initial-contents', x);
 	}
-	for (dimcount = 0 ;; dimcount++) {
-		x = read_object_with_delimiter(in, ')');
-		if (x == OBJNULL)
-			break;
-		cl_stack_push(x);
-	}
-L:
-	if (fixed_size) {
-		if (dimcount > dim)
-			FEreader_error("Too many elements in #(...).", in, 0);
-		if (dim && dimcount == 0)
-			FEreader_error("Cannot fill the vector #().", in, 0);
-		last = cl_env.stack_top[-1];
-	} else
-		dim = dimcount;
-	x = cl_alloc_simple_vector(dim, aet_object);
-	x->vector.self.t = (cl_object *)cl_alloc_align(dim * sizeof(cl_object), sizeof(cl_object));
-	for (i = 0; i < dim; i++)
-		x->vector.self.t[i] = (i < dimcount) ? cl_env.stack[sp+i] : last;
-	cl_stack_pop_n(dimcount);
-	@(return x)
+	@(return v)
 }
 
 static cl_object
