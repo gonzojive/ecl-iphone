@@ -19,9 +19,6 @@
 
 /******************************* ------- ******************************/
 
-/* #define attach(x)	(*px = CONS(x, *px)) */
-#define attach(s)	CDR(x) = CONS(s, CDR(x));
-
 #define	QUOTE	1
 #define	EVAL	2
 #define	LIST	3
@@ -60,11 +57,11 @@ _cl_backq_cdr(cl_object *px)
 
 	if (ATOM(x))
 		return(QUOTE);
-	if (CAR(x) == @'si::,') {
-		*px = CDR(x);
+	if (CAR(x) == @'si::unquote') {
+		*px = CADR(x);
 		return(EVAL);
 	}
-	if (CAR(x) == @'si::,@' || CAR(x) == @'si::,.')
+	if (CAR(x) == @'si::unquote-splice' || CAR(x) == @'si::unquote-nsplice')
 		FEerror(",@@ or ,. has appeared in an illegal position.", 0);
 	{ cl_object ax, dx;
 	  a = _cl_backq_car(&CAR(x));
@@ -126,7 +123,7 @@ _cl_backq_cdr(cl_object *px)
 		}
 		if (a == EVAL)
 			return(LIST);
-		attach(@'list');
+		CDR(x) = CONS(@'list', CDR(x));
 		break;
 
 	  case LISTX:
@@ -136,15 +133,15 @@ _cl_backq_cdr(cl_object *px)
 		}
 		if (a == EVAL)
 			return(LISTX);
-		attach(@'list*');
+		CDR(x) = CONS(@'list*', CDR(x));
 		break;
 
 	  case APPEND:
-		attach(@'append');
+		CDR(x) = CONS(@'append', CDR(x));
 		break;
 
 	  case NCONC:
-		attach(@'nconc');
+		CDR(x) = CONS(@'nconc', CDR(x));
 		break;
 
 	  default:
@@ -189,16 +186,16 @@ _cl_backq_car(cl_object *px)
 
 	if (ATOM(x))
 		return(QUOTE);
-	if (CAR(x) == @'si::,') {
-		*px = CDR(x);
+	if (CAR(x) == @'si::unquote') {
+		*px = CADR(x);
 		return(EVAL);
 	}
-	if (CAR(x) == @'si::,@') {
-		*px = CDR(x);
+	if (CAR(x) == @'si::unquote-splice') {
+		*px = CADR(x);
 		return(APPEND);
 	}
-	if (CAR(x) == @'si::,.') {
-		*px = CDR(x);
+	if (CAR(x) == @'si::unquote-nsplice') {
+		*px = CADR(x);
 		return(NCONC);
 	}
 	d = _cl_backq_cdr(px);
@@ -208,22 +205,18 @@ _cl_backq_car(cl_object *px)
 		return(d);
 
 	case LIST:
-/*		attach(@'list'); */
 		*px = CONS(@'list', *px);
 		break;
 
 	case LISTX:
-/*		attach(@'list*'); */
 		*px = CONS(@'list*', *px);
 		break;
 
 	case APPEND:
-/*		attach(@'append'); */
 		*px = CONS(@'append', *px);
 		break;
 
 	case NCONC:
-/*		attach(@'nconc'); */
 		*px = CONS(@'nconc', *px);
 		break;
 
@@ -246,50 +239,17 @@ backq(cl_object x)
 	return(x);
 }
 
-static
-cl_object comma_reader(cl_object in, cl_object c)
+static cl_object
+quasiquote_macro(cl_object whole, cl_object env)
 {
-	cl_object x, y;
-	cl_fixnum backq_level = fix(SYM_VAL(@'si::*backq-level*'));
-
-	if (backq_level <= 0)
-		FEreader_error("A comma has appeared out of a backquote.", in, 0);
-	/* Read character but skip spaces & complain at EOF */
-	c = cl_peek_char(2,Ct,in);
-	if (c == CODE_CHAR('@@')) {
-		x = @'si::,@';
-		ecl_read_char(in);
-	} else if (c == CODE_CHAR('.')) {
-		x = @'si::,.';
-		ecl_read_char(in);
-	} else
-		x = @'si::,';
-	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level-1));
-	y = read_object(in);
-	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level));
-	@(return CONS(x, y))
+	if (length(whole) != 2) {
+		FEprogram_error("Syntax error: ~S.", 1, whole);
+	}
+	@(return backq(CADR(whole)))
 }
-
-static
-cl_object backquote_reader(cl_object in, cl_object c)
-{
-	cl_fixnum backq_level = fix(SYM_VAL(@'si::*backq-level*'));
-	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level+1));
-	in = read_object(in);
-	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level));
-	@(return backq(in))
-}
-
-#define	make_cf(f)	cl_make_cfun((f), Cnil, NULL, 2);
 
 void
 init_backq(void)
 {
-	cl_object r;
-
-	r = cl_core.standard_readtable;
-	r->readtable.table['`'].syntax_type = cat_terminating;
-	r->readtable.table['`'].macro = make_cf(backquote_reader);
-	r->readtable.table[','].syntax_type = cat_terminating;
-	r->readtable.table[','].macro = make_cf(comma_reader);
+	cl_def_c_macro(@'si::quasiquote', quasiquote_macro, 2);
 }

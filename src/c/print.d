@@ -816,6 +816,127 @@ write_character(int i, cl_object stream)
 	}
 }
 
+static void
+write_array(bool vector, cl_object x, cl_object stream)
+{
+	const cl_index *adims;
+	cl_index subscripts[ARANKLIM];
+	cl_fixnum n, j, m, k, i;
+	cl_fixnum print_length;
+	cl_fixnum print_level;
+	bool readably = ecl_print_readably();
+
+	if (vector) {
+		adims = &x->vector.fillp;
+		n = 1;
+	} else {
+		adims = x->array.dims;
+		n = x->array.rank;
+	}
+	if (readably) {
+		print_length = MOST_POSITIVE_FIXNUM;
+		print_level = MOST_POSITIVE_FIXNUM;
+	} else {
+		if (!ecl_print_array()) {
+			write_str(vector? "#<vector " : "#<array ", stream);
+			write_addr(x, stream);
+			write_ch('>', stream);
+			return;
+		}
+		print_level = ecl_print_level();
+		print_length = ecl_print_length();
+	}
+	write_ch('#', stream);
+	if (print_level == 0)
+		return;
+	if (readably) {
+		write_ch('A', stream);
+		write_ch('(', stream);
+		si_write_object_recursive(ecl_elttype_to_symbol(x->array.elttype), stream);
+		write_ch(INDENT, stream);
+		if (n > 0) {
+			write_ch('(', stream);
+			for (j=0; j<n; j++) {
+				si_write_object_recursive(MAKE_FIXNUM(adims[j]), stream);
+				if (j < n-1)
+					write_ch(INDENT, stream);
+			}
+			write_ch(')', stream);
+		} else {
+			si_write_object_recursive(Cnil, stream);
+		}
+		write_ch(INDENT, stream);
+	} else if (!vector) {
+		write_decimal(n, stream);
+		write_ch('A', stream);
+	}
+	if (print_level >= n) {
+		/* We can write the elements of the array */
+		print_level -= n;
+		bds_bind(@'*print-level*', MAKE_FIXNUM(print_level));
+	} else {
+		/* The elements of the array are not printed */
+		n = print_level;
+		print_level = -1;
+	}
+	for (j = 0;  j < n;  j++)
+		subscripts[j] = 0;
+	for (m = 0, j = 0;;) {
+		for (i = j;  i < n;  i++) {
+			if (subscripts[i] == 0) {
+				WRITE_MARK(stream);
+				write_ch('(', stream);
+				WRITE_SET_INDENT(stream);
+				if (adims[i] == 0) {
+					write_ch(')', stream);
+					WRITE_UNMARK(stream);
+					j = i-1;
+					k = 0;
+					goto INC;
+				}
+			}
+			if (subscripts[i] > 0)
+				write_ch(INDENT, stream);
+			if (subscripts[i] >= print_length) {
+				write_str("...)", stream);
+				WRITE_UNMARK(stream);
+				k=adims[i]-subscripts[i];
+				subscripts[i] = 0;
+				for (j = i+1;  j < n;  j++)
+					k *= adims[j];
+				j = i-1;
+				goto INC;
+			}
+		}
+		/* FIXME: This conses! */
+		if (print_level >= 0)
+			si_write_object_recursive(aref(x, m), stream);
+		else
+			write_ch('#', stream);
+		j = n-1;
+		k = 1;
+
+	INC:
+		while (j >= 0) {
+			if (++subscripts[j] < adims[j])
+				break;
+			subscripts[j] = 0;
+			write_ch(')', stream);
+			WRITE_UNMARK(stream);
+			--j;
+		}
+		if (j < 0)
+			break;
+		m += k;
+	}
+	if (print_level >= 0) {
+		bds_unwind1();
+	}
+	if (readably) {
+		write_ch(')', stream);
+	}
+}
+
 cl_object
 si_write_ugly_object(cl_object x, cl_object stream)
 {
@@ -907,165 +1028,14 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		write_symbol(x, stream);
 		break;
 
-	case t_array: {
-		cl_index subscripts[ARANKLIM];
-		cl_fixnum n, j, m, k, i;
-		cl_fixnum print_length;
-		cl_fixnum print_level;
-		bool readably = ecl_print_readably();
-
-		if (readably) {
-			print_length = MOST_POSITIVE_FIXNUM;
-			print_level = MOST_POSITIVE_FIXNUM;
-		} else {
-			if (!ecl_print_array()) {
-				write_str("#<array ", stream);
-				write_addr(x, stream);
-				write_ch('>', stream);
-				break;
-			}
-			print_level = ecl_print_level();
-			print_length = ecl_print_length();
-		}
-		write_ch('#', stream);
-		if (print_level == 0)
-			break;
-		n = x->array.rank;
-		if (readably) {
-			write_ch('A', stream);
-			write_ch('(', stream);
-			si_write_object_recursive(ecl_elttype_to_symbol(x->array.elttype), stream);
-			write_ch(INDENT, stream);
-			if (n > 0) {
-				write_ch('(', stream);
-				for (j=0; j<n; j++) {
-					si_write_object_recursive(MAKE_FIXNUM(x->array.dims[j]), stream);
-					if (j < n-1)
-						write_ch(INDENT, stream);
-				}
-				write_ch(')', stream);
-			} else
-				si_write_object_recursive(Cnil, stream);
-			write_ch(INDENT, stream);
-		} else {
-			write_decimal(n, stream);
-			write_ch('A', stream);
-		}
-		if (print_level >= n) {
-			/* We can write the elements of the array */
-			print_level -= n;
-			bds_bind(@'*print-level*', MAKE_FIXNUM(print_level));
-		} else {
-			/* The elements of the array are not printed */
-			n = print_level;
-			print_level = -1;
-		}
-		for (j = 0;  j < n;  j++)
-			subscripts[j] = 0;
-		for (m = 0, j = 0;;) {
-			for (i = j;  i < n;  i++) {
-				if (subscripts[i] == 0) {
-					WRITE_MARK(stream);
-					write_ch('(', stream);
-					WRITE_SET_INDENT(stream);
-					if (x->array.dims[i] == 0) {
-						write_ch(')', stream);
-						WRITE_UNMARK(stream);
-						j = i-1;
-						k = 0;
-						goto INC;
-					}
-				}
-				if (subscripts[i] > 0)
-					write_ch(INDENT, stream);
-				if (subscripts[i] >= print_length) {
-					write_str("...)", stream);
-					WRITE_UNMARK(stream);
-					write_ch(INDENT, stream);
-					k=x->array.dims[i]-subscripts[i];
-					subscripts[i] = 0;
-					for (j = i+1;  j < n;  j++)
-						k *= x->array.dims[j];
-					j = i-1;
-					goto INC;
-				}
-			}
-			/* FIXME: This conses! */
-			if (print_level >= 0)
-				si_write_object_recursive(aref(x, m), stream);
-			else
-				write_ch('#', stream);
-			j = n-1;
-			k = 1;
-
-		INC:
-			while (j >= 0) {
-				if (++subscripts[j] < x->array.dims[j])
-					break;
-				subscripts[j] = 0;
-				write_ch(')', stream);
-				WRITE_UNMARK(stream);
-				--j;
-			}
-			if (j < 0)
-				break;
-			m += k;
-		}
-		if (print_level >= 0) {
-			bds_unwind1();
-		}
-		if (readably) {
-			write_ch(')', stream);
-		}
+	case t_array:
+		write_array(0, x, stream);
 		break;
-	}
-	case t_vector: {
-		cl_fixnum print_length, print_level;
-		bool readably = ecl_print_readably();
-		cl_index n = x->vector.fillp;
 
-		if (readably) {
-			print_length = MOST_POSITIVE_FIXNUM;
-			print_level = MOST_POSITIVE_FIXNUM;
-		} else {
-			if (!ecl_print_array()) {
-				write_str("#<vector ", stream);
-				write_decimal(x->vector.dim, stream);
-				write_ch(' ', stream);
-				write_addr(x, stream);
-				write_ch('>', stream);
-				break;
-			}
-			print_level = ecl_print_level();
-			print_length = ecl_print_length();
-		}
-		write_ch('#', stream);
-		if (print_level == 0)
-			break;
-		WRITE_MARK(stream);
-		write_ch('(', stream);
-		WRITE_SET_INDENT(stream);
-		if (n > 0) {
-			if (print_length == 0) {
-				write_str("...)", stream);
-				break;
-			}
-			bds_bind(@'*print-level*', MAKE_FIXNUM(print_level-1));
-			si_write_object_recursive(aref(x, 0), stream);
-			for (ndx = 1;  ndx < x->vector.fillp;  ndx++) {
-				write_ch(INDENT, stream);
-				if (ndx >= print_length) {
-					write_str("...", stream);
-					break;
-				}
-				si_write_object_recursive(aref(x, ndx), stream);
-			}
-			bds_unwind1();
-		}
-		write_ch(')', stream);
-		WRITE_UNMARK(stream);
+	case t_vector:
+		write_array(1, x, stream);
 		break;
-	}
+
 	case t_string:
 		if (!ecl_print_escape() && !ecl_print_readably()) {
 			for (ndx = 0;  ndx < x->string.fillp;  ndx++)
@@ -1105,16 +1075,38 @@ si_write_ugly_object(cl_object x, cl_object stream)
 			x = CDR(x);
 			return si_write_object_recursive(x, stream);
 		}
-		if (CAR(x) == @'quote' && CONSP(CDR(x)) && Null(CDDR(x))) {
-			write_ch('\'', stream);
-			x = CADR(x);
-			return si_write_object_recursive(x, stream);
-		}
-		if (CAR(x) == @'function' && CONSP(CDR(x)) && Null(CDDR(x))) {
-			write_ch('#', stream);
-			write_ch('\'', stream);
-			x = CADR(x);
-			return si_write_object_recursive(x, stream);
+		if (CONSP(CDR(x)) && Null(CDDR(x))) {
+			if (CAR(x) == @'quote') {
+				write_ch('\'', stream);
+				x = CADR(x);
+				return si_write_object_recursive(x, stream);
+			}
+			if (CAR(x) == @'function') {
+				write_ch('#', stream);
+				write_ch('\'', stream);
+				x = CADR(x);
+				return si_write_object_recursive(x, stream);
+			}
+			if (CAR(x) == @'si::quasiquote') {
+				write_ch('`', stream);
+				x = CADR(x);
+				return si_write_object_recursive(x, stream);
+			}
+			if (CAR(x) == @'si::unquote') {
+				write_ch(',', stream);
+				x = CADR(x);
+				return si_write_object_recursive(x, stream);
+			}
+			if (CAR(x) == @'si::unquote-splice') {
+				write_str(",@@", stream);
+				x = CADR(x);
+				return si_write_object_recursive(x, stream);
+			}
+			if (CAR(x) == @'si::unquote-nsplice') {
+				write_str(",.", stream);
+				x = CADR(x);
+				return si_write_object_recursive(x, stream);
+			}
 		}
 		circle = ecl_print_circle();
 		if (ecl_print_readably()) {

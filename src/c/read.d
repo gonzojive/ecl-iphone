@@ -461,6 +461,47 @@ left_parenthesis_reader(cl_object in, cl_object character)
 	const char c = ')';
 	@(return do_read_delimited_list(c, in, 0))
 }
+
+/*
+ * BACKQUOTE READER
+ */
+
+static
+cl_object comma_reader(cl_object in, cl_object c)
+{
+	cl_object x, y;
+	cl_fixnum backq_level = fix(SYM_VAL(@'si::*backq-level*'));
+
+	if (backq_level <= 0)
+		FEreader_error("A comma has appeared out of a backquote.", in, 0);
+	/* Read character but skip spaces & complain at EOF */
+	c = cl_peek_char(2,Ct,in);
+	if (c == CODE_CHAR('@@')) {
+		x = @'si::unquote-splice';
+		ecl_read_char(in);
+	} else if (c == CODE_CHAR('.')) {
+		x = @'si::unquote-nsplice';
+		ecl_read_char(in);
+	} else {
+		x = @'si::unquote';
+	}
+	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level-1));
+	y = read_object(in);
+	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level));
+	return cl_list(2, x, y);
+}
+
+static
+cl_object backquote_reader(cl_object in, cl_object c)
+{
+	cl_fixnum backq_level = fix(SYM_VAL(@'si::*backq-level*'));
+	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level+1));
+	in = read_object(in);
+	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level));
+	@(return cl_macroexpand_1(2, cl_list(2, @'si::quasiquote', in), Cnil));
+}
+
+
 /*
 	read_string(delim, in) reads
 	a simple string	terminated by character code delim
@@ -701,13 +742,7 @@ sharp_left_parenthesis_reader(cl_object in, cl_object c, cl_object d)
 		a = _cl_backq_car(&x);
 		if (a == APPEND || a == NCONC)
 			FEreader_error(",at or ,. has appeared in an illegal position.", in, 0);
-		if (a == QUOTE) {
-			v = funcall(4, @'make-array', cl_list(1, cl_length(x)),
-				    @':initial-contents', x);
-		} else {
-			v = cl_list(4, @'si::,', @'apply',
-				    CONS(@'quote', CONS(@'vector', Cnil)), x);
-		}
+		v = cl_list(3, @'coerce', x, @'vector');
 	} else if (fixed_size) {
 		v = cl_alloc_simple_vector(dim, aet_object);
 		v->vector.self.t = (cl_object *)cl_alloc_align(dim * sizeof(cl_object), sizeof(cl_object));
@@ -1769,17 +1804,13 @@ init_read(void)
 	rtab['('].macro = make_cf2(left_parenthesis_reader);
 	rtab[')'].syntax_type = cat_terminating;
 	rtab[')'].macro = make_cf2(right_parenthesis_reader);
-/*
 	rtab[','].syntax_type = cat_terminating;
 	rtab[','].macro = make_cf2(comma_reader);
-*/
 	rtab[';'].syntax_type = cat_terminating;
 	rtab[';'].macro = make_cf2(semicolon_reader);
 	rtab['\\'].syntax_type = cat_single_escape;
-/*
 	rtab['`'].syntax_type = cat_terminating;
 	rtab['`'].macro = make_cf2(backquote_reader);
-*/
 	rtab['|'].syntax_type = cat_multiple_escape;
 /*
 	rtab['|'].macro = make_cf2(vertical_bar_reader);
