@@ -1,6 +1,6 @@
 (in-package  :cl-user)
 
-;; from Douglas Thomas Crosher <dtc@seagull.cons.org> 
+;; from Douglas Thomas Crosher <dtc@seagull.cons.org>
 
 ;;; Compiling this file caused a type error in
 ;;; maybe-convert-to-assignment due to a continuation-dest being

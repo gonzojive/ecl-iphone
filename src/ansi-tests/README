@@ -1,8 +1,8 @@
 This is a bunch of tests to test if a Common Lisp implementation
-conforms to Ansi standard X3J13 for Common Lisp.
+conforms to ANSI standard X3J13 for Common Lisp.
 
-It is largely based on the clisp test-suite, examples from the HyperSpec and
-bugreports.
+It is largely based on the clisp test-suite (last update 15 dec 2001),
+examples from the HyperSpec and bugreports.
 
 This is a work in progress.
 

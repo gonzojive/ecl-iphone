@@ -9,10 +9,11 @@ MKDIR=mkdir -p
 
 ecl:
 	ln -sf ../../src/h/*.h ../h/
-	(echo '(load "$(srcdir)/tests")'; \
-	 echo '(setf (logical-pathname-translations "SYS")'; \
+	(echo '(setf (logical-pathname-translations "SYS")'; \
 	 echo "      '"'(("*.*" "../*.*")))'; \
-	 echo "(run-all-tests \"$(srcdir)/\")"; \
+	 echo '(setf (logical-pathname-translations "SRC")'; \
+	 echo "      '"'(("*.*" "'$(srcdir)'/*.*")))'; \
+	 echo '(load "$(srcdir)/tests")'; \
 	 echo "(quit)") | ../ecl -dir ../
 	true
 
@@ -21,10 +22,11 @@ ecl_min:
 	(echo '(load "bare.lsp")'; \
 	 echo '(setf (logical-pathname-translations "SYS")'; \
 	 echo "      '"'(("*.*" "../*.*")))'; \
+	 echo '(setf (logical-pathname-translations "SRC")'; \
+	 echo "      '"'(("*.*" "'$(srcdir)'/*.*")))'; \
 	 echo '(sys::chdir "ansi-tests")'; \
 	 echo '(in-package "CL-USER")'; \
 	 echo '(load "$(srcdir)/tests")'; \
-	 echo "(run-all-tests \"$(srcdir)/\")"; \
 	 echo "(quit)") | (cd ..; ./ecl_min)
 	true
 

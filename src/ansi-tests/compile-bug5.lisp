@@ -6,7 +6,7 @@
            (fun2 ()
              (when nil
                (tagbody
-                tag   
+                tag
                   (fun2)
                   (go tag)))
              (when nil
@@ -14,7 +14,7 @@
                 tag
                   (fun1)
                   (go tag)))))
-    
+
     (fun1)
     nil))
 

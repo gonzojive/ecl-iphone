@@ -1,4 +1,4 @@
-;;; based on v1.6 -*- mode: lisp -*-
+;;; based on v1.12 -*- mode: lisp -*-
 ;;;; Test suite for the Common Lisp condition system
 ;;;; Written by David Gadbois <gadbois@cs.utexas.edu> 30.11.1993
 (in-package :cl-user)
@@ -8,45 +8,42 @@
 ;;;
 
 #+(or clisp allegro cmu sbcl)
-(my-assert
- #+CLISP
- (defun my-cpl (class)
-   (clos::class-precedence-list (clos:find-class class))
-   )
- #+ALLEGRO
- (defun my-cpl (class)
-   (clos:finalize-inheritance (find-class class))
-   (clos:class-precedence-list (find-class class))
-   )
- #+cmu
- (defun my-cpl (class)
-   (pcl:class-precedence-list (find-class class))
-   )
- #+sbcl
- (defun my-cpl (class)
-   (sb-pcl:class-precedence-list (find-class class))
-   )
- #+ecl
- (defun my-cpl (class)
-   (slot-value (find-class class) 'clos::precedence-list))
- MY-CPL)
+(check-for-bug :conditions-legacy-11
+  #+CLISP
+  (defun my-cpl (class)
+    (clos::class-precedence-list (clos:find-class class))
+    )
+  #+ALLEGRO
+  (defun my-cpl (class)
+    (clos:finalize-inheritance (find-class class))
+    (clos:class-precedence-list (find-class class))
+    )
+  #+cmu
+  (defun my-cpl (class)
+    (pcl:class-precedence-list (find-class class))
+    )
+  #+sbcl
+  (defun my-cpl (class)
+    (sb-pcl:class-precedence-list (find-class class))
+    )
+  #+ecl
+  (defun my-cpl (class)
+    (slot-value (find-class class) 'clos::precedence-list))
+  MY-CPL)
 
-(my-assert
- (defun check-superclasses (class expected)
-   (let ((expected (list* class 't
-			  #+CLISP 'clos:standard-object
-			  #+(or ALLEGRO ecl) 'standard-object
-			  #+(or cmu sbcl) 'instance
-			  'condition expected))
-	 (super (mapcar #' #+CLISP clos:class-name
-			   #+(or ALLEGRO ecl) class-name
-			   #+cmu pcl:class-name
-			   #+sbcl sb-pcl:class-name
-			   #+ecl class-name
-			   (my-cpl class))))
-     (and (null (set-difference super expected))
-	  (null (set-difference expected super)))))
- CHECK-SUPERCLASSES)
+(check-for-bug :conditions-legacy-31
+  (defun check-superclasses (class expected)
+    (let ((expected (list* class 't
+                           #+(or CLISP ALLEGRO ecl) 'standard-object
+                           #+(or cmu sbcl) 'instance
+                           'condition expected))
+          (super (mapcar #' #+(or CLISP ALLEGRO ecl) class-name
+                            #+cmu pcl:class-name
+                            #+sbcl sb-pcl:class-name
+                            (my-cpl class))))
+      (list (set-difference super expected)
+            (set-difference expected super))))
+  CHECK-SUPERCLASSES)
 
 ;;;
 ;;; IGNORE-ERRORS
@@ -55,214 +52,215 @@
 ;;; will.
 
 ;;; IGNORE-ERRORS should work.
-(my-assert
- (multiple-value-bind (value condition)
-     (ignore-errors (error "Foo"))
-   (list value (type-of condition)))
- (nil simple-error))
+(check-for-bug :conditions-legacy-54
+  (multiple-value-bind (value condition)
+      (ignore-errors (error "Foo"))
+    (list value (type-of condition)))
+  (nil simple-error))
 
 ;;; IGNORE-ERRORS should not interfere with values in non-error situations.
-(my-assert
- (multiple-value-list
-  (ignore-errors (values 23 42)))
- (23 42))
+(check-for-bug :conditions-legacy-61
+  (multiple-value-list
+      (ignore-errors (values 23 42)))
+  (23 42))
 
 ;;;
 ;;; Predefined condition types.
 ;;;
 
-(my-assert
- (check-superclasses 'warning '()) T)
+(check-for-bug :conditions-legacy-70
+  (check-superclasses 'warning '())
+  (nil nil))
 
 
-(my-assert
- (check-superclasses 'style-warning '(warning))
- T)
+(check-for-bug :conditions-legacy-74
+  (check-superclasses 'style-warning '(warning))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'serious-condition '())
- T)
+(check-for-bug :conditions-legacy-78
+  (check-superclasses 'serious-condition '())
+  (nil nil))
 
-(my-assert
- (check-superclasses 'error '(serious-condition))
- T)
+(check-for-bug :conditions-legacy-82
+  (check-superclasses 'error '(serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'cell-error '(error serious-condition))
- T)
+(check-for-bug :conditions-legacy-86
+  (check-superclasses 'cell-error '(error serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'parse-error '(error serious-condition))
- T)
+(check-for-bug :conditions-legacy-90
+  (check-superclasses 'parse-error '(error serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'storage-condition '(serious-condition))
- T)
+(check-for-bug :conditions-legacy-94
+  (check-superclasses 'storage-condition '(serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'simple-error '(simple-condition error serious-condition))
- T)
+(check-for-bug :conditions-legacy-98
+  (check-superclasses 'simple-error '(simple-condition error serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'simple-condition '())
- T)
+(check-for-bug :conditions-legacy-102
+  (check-superclasses 'simple-condition '())
+  (nil nil))
 
-(my-assert
- (check-superclasses 'simple-warning '(simple-condition warning))
- T)
+(check-for-bug :conditions-legacy-106
+  (check-superclasses 'simple-warning '(simple-condition warning))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'file-error '(error serious-condition))
- T)
+(check-for-bug :conditions-legacy-110
+  (check-superclasses 'file-error '(error serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'control-error '(error serious-condition))
- T)
+(check-for-bug :conditions-legacy-114
+  (check-superclasses 'control-error '(error serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'program-error '(error serious-condition))
- T)
+(check-for-bug :conditions-legacy-118
+  (check-superclasses 'program-error '(error serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'undefined-function '(cell-error error serious-condition))
- T)
+(check-for-bug :conditions-legacy-122
+  (check-superclasses 'undefined-function '(cell-error error serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'arithmetic-error '(error serious-condition))
- T)
+(check-for-bug :conditions-legacy-126
+  (check-superclasses 'arithmetic-error '(error serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'division-by-zero '(arithmetic-error error serious-condition))
- T)
+(check-for-bug :conditions-legacy-130
+  (check-superclasses 'division-by-zero '(arithmetic-error error serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'floating-point-invalid-operation '(arithmetic-error error serious-condition))
- T)
+(check-for-bug :conditions-legacy-134
+  (check-superclasses 'floating-point-invalid-operation '(arithmetic-error error serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'floating-point-inexact '(arithmetic-error error serious-condition))
- T)
+(check-for-bug :conditions-legacy-138
+  (check-superclasses 'floating-point-inexact '(arithmetic-error error serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'floating-point-overflow '(arithmetic-error error serious-condition))
- T)
+(check-for-bug :conditions-legacy-142
+  (check-superclasses 'floating-point-overflow '(arithmetic-error error serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'floating-point-underflow '(arithmetic-error error serious-condition))
- T)
+(check-for-bug :conditions-legacy-146
+  (check-superclasses 'floating-point-underflow '(arithmetic-error error serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'unbound-slot '(cell-error error serious-condition))
- T)
+(check-for-bug :conditions-legacy-150
+  (check-superclasses 'unbound-slot '(cell-error error serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'package-error '(error serious-condition))
- T)
+(check-for-bug :conditions-legacy-154
+  (check-superclasses 'package-error '(error serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'print-not-readable '(error serious-condition))
- T)
+(check-for-bug :conditions-legacy-158
+  (check-superclasses 'print-not-readable '(error serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'reader-error '(parse-error stream-error error serious-condition))
- T)
+(check-for-bug :conditions-legacy-162
+  (check-superclasses 'reader-error '(parse-error stream-error error serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'stream-error '(error serious-condition))
- T)
+(check-for-bug :conditions-legacy-166
+  (check-superclasses 'stream-error '(error serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'end-of-file '(stream-error error serious-condition))
- T)
+(check-for-bug :conditions-legacy-170
+  (check-superclasses 'end-of-file '(stream-error error serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'unbound-variable '(cell-error error serious-condition))
- T)
+(check-for-bug :conditions-legacy-174
+  (check-superclasses 'unbound-variable '(cell-error error serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'type-error '(error serious-condition))
- T)
+(check-for-bug :conditions-legacy-178
+  (check-superclasses 'type-error '(error serious-condition))
+  (nil nil))
 
-(my-assert
- (check-superclasses 'simple-type-error
-		     '(simple-condition
-		       type-error error serious-condition))
- T
- "Condition Type SIMPLE-TYPE-ERROR 
+(check-for-bug :conditions-legacy-182
+  (check-superclasses 'simple-type-error
+                      '(simple-condition
+                        type-error error serious-condition))
+  (nil nil)
+  "Condition Type SIMPLE-TYPE-ERROR
 
 Class Precedence List:
 
-simple-type-error, simple-condition, type-error, error, serious-condition, condition, t 
+simple-type-error, simple-condition, type-error, error, serious-condition, condition, t
 ")
 
 ;;;
 ;;; Defining conditions.
 ;;;
-(my-assert
- (progn (define-condition test () ()) t)
- T)
+(check-for-bug :conditions-legacy-197
+  (progn (define-condition test () ()) t)
+  T)
 
-(my-assert
- (check-superclasses  'test '())
- T)
+(check-for-bug :conditions-legacy-201
+  (check-superclasses  'test '())
+  (nil nil))
 
-(my-assert
- (progn (define-condition test2 (test) ()) t)
- T)
+(check-for-bug :conditions-legacy-205
+  (progn (define-condition test2 (test) ()) t)
+  T)
 
-(my-assert
- (check-superclasses 'test2 '(test))
- T)
+(check-for-bug :conditions-legacy-209
+  (check-superclasses 'test2 '(test))
+  (nil nil))
 
-(my-assert
- (progn (define-condition test3 (test2 simple-condition) ()) t)
- T)
+(check-for-bug :conditions-legacy-213
+  (progn (define-condition test3 (test2 simple-condition) ()) t)
+  T)
 
-(my-assert
- (check-superclasses 'test3 '(test2 test simple-condition))
- T)
+(check-for-bug :conditions-legacy-217
+  (check-superclasses 'test3 '(test2 test simple-condition))
+  (nil nil))
 
 ;;;
 ;;; Making conditions
 ;;;
-(my-assert
- (progn (make-condition 'test) t)
- T)
+(check-for-bug :conditions-legacy-224
+  (progn (make-condition 'test) t)
+  T)
 
-(my-assert
- (ignore-errors (progn (make-condition 'integer) t))
- NIL)
+(check-for-bug :conditions-legacy-228
+  (ignore-errors (progn (make-condition 'integer) t))
+  NIL)
 
 ;;;
 ;;; :REPORT option to DEFINE-CONDITION
 ;;;
-(my-assert
- (progn (define-condition test4 (test3)
+(check-for-bug :conditions-legacy-235
+  (progn (define-condition test4 (test3)
 	  ()
 	  (:report (lambda (condition stream)
 		     (format stream "Yow! -- ~S" (type-of condition)))))
 	t)
  T)
 
-(my-assert
- (with-output-to-string (s) (princ (make-condition 'test4) s))
- "Yow! -- TEST4")
+(check-for-bug :conditions-legacy-243
+  (with-output-to-string (s) (princ (make-condition 'test4) s))
+  "Yow! -- TEST4")
 
-(my-assert
- (progn (define-condition test5 (test4) ()) t)
- T)
+(check-for-bug :conditions-legacy-247
+  (progn (define-condition test5 (test4) ()) t)
+  T)
 
-(my-assert
- (with-output-to-string (s) (princ (make-condition 'test5) s))
- "Yow! -- TEST5")
+(check-for-bug :conditions-legacy-251
+  (with-output-to-string (s) (princ (make-condition 'test5) s))
+  "Yow! -- TEST5")
 
-(my-assert
- (with-output-to-string (s)
-   (princ (make-condition 'test3
-			  :format-control "And How! -- ~S"
-			  :format-arguments '(23)) s))
- "And How! -- 23"
- "From simple-condition:
+(check-for-bug :conditions-legacy-255
+  (with-output-to-string (s)
+    (princ (make-condition 'test3
+                           :format-control "And How! -- ~S"
+                           :format-arguments '(23)) s))
+  "And How! -- 23"
+  "From simple-condition:
 
 The type simple-condition represents conditions that are signaled by
 signal whenever a format-control is supplied as the function's first
@@ -272,13 +270,13 @@ the initialization arguments named :format-control and
 simple-condition-format-control and
 simple-condition-format-arguments. If format arguments are not
 supplied to make-condition, nil is used as a default. "
- )
+  )
 
 ;;;
 ;;; Condition slots.
 ;;;
-(my-assert
- (progn (define-condition test6 (test4)
+(check-for-bug :conditions-legacy-276
+  (progn (define-condition test6 (test4)
 	  ((foo :initarg :foo :initform 23 :accessor test6-foo))
 	  (:report (lambda (condition stream)
 		     (format stream "~S -- ~S"
@@ -287,178 +285,178 @@ supplied to make-condition, nil is used as a default. "
 	t)
  T)
 
-(my-assert
- (test6-foo (make-condition 'test6))
- 23)
+(check-for-bug :conditions-legacy-286
+  (test6-foo (make-condition 'test6))
+  23)
 
-(my-assert
- (test6-foo (make-condition 'test6 :foo 42))
- 42)
+(check-for-bug :conditions-legacy-290
+  (test6-foo (make-condition 'test6 :foo 42))
+  42)
 
-(my-assert
- (setf (test6-foo (make-condition 'test6 :foo 42)) 17)
- 17)
+(check-for-bug :conditions-legacy-294
+  (setf (test6-foo (make-condition 'test6 :foo 42)) 17)
+  17)
 
-(my-assert
- (with-output-to-string (s) (princ (make-condition 'test6 :foo 42) s))
- "TEST6 -- 42")
+(check-for-bug :conditions-legacy-298
+  (with-output-to-string (s) (princ (make-condition 'test6 :foo 42) s))
+  "TEST6 -- 42")
 
 ;;;
 ;;; HANDLER-BIND
 ;;;
 
 ;;; You do not have to bind handlers.
-(my-assert
- (ignore-errors
-   (handler-bind
-    ()
-    (error "Foo")))
- nil)
+(check-for-bug :conditions-legacy-307
+  (ignore-errors
+    (handler-bind
+        ()
+      (error "Foo")))
+  nil)
 
 ;;; Handlers should not interfere with values in non-error situations.
-(my-assert
- (multiple-value-list
-  (block foo
-    (handler-bind
-     ((error #'(lambda (c)
-		 (declare (ignore c))
-		 (return-from foo 23))))
-     (values 42 17))))
- (42 17))
+(check-for-bug :conditions-legacy-315
+  (multiple-value-list
+      (block foo
+        (handler-bind
+            ((error #'(lambda (c)
+                        (declare (ignore c))
+                        (return-from foo 23))))
+          (values 42 17))))
+  (42 17))
 
 ;;; Handlers should work.
-(my-assert
- (multiple-value-list
-  (block foo
-    (handler-bind
-     ((error #'(lambda (c)
-		 (declare (ignore c))
-		 (return-from foo (values 23 17)))))
-     (error "Foo"))))
- (23 17))
+(check-for-bug :conditions-legacy-326
+  (multiple-value-list
+      (block foo
+        (handler-bind
+            ((error #'(lambda (c)
+                        (declare (ignore c))
+                        (return-from foo (values 23 17)))))
+          (error "Foo"))))
+  (23 17))
 
 ;;; Only the appropriate handlers should be called.
-(my-assert
- (ignore-errors
-   (block foo
-     (handler-bind
-      ((type-error #'(lambda (c)
-		       (declare (ignore c))
-		       (return-from foo 23))))
-      (error "Foo"))))
- nil)
+(check-for-bug :conditions-legacy-337
+  (ignore-errors
+    (block foo
+      (handler-bind
+          ((type-error #'(lambda (c)
+                           (declare (ignore c))
+                           (return-from foo 23))))
+        (error "Foo"))))
+  nil)
 
 ;;; Handlers can be specified type expressions.
-(my-assert
- (block foo
-   (handler-bind
-    (((or type-error error)
-      #'(lambda (c)
-	  (declare (ignore c))
-	  (return-from foo 23))))
-    (error "Foo")))
- 23
- "typespecifier can be non-trivial.")
+(check-for-bug :conditions-legacy-348
+  (block foo
+    (handler-bind
+        (((or type-error error)
+          #'(lambda (c)
+              (declare (ignore c))
+              (return-from foo 23))))
+      (error "Foo")))
+  23
+  "typespecifier can be non-trivial.")
 
 ;;; Handlers should be undone.
-(my-assert
- (ignore-errors
-   (block foo
-     (let ((first-time t))
-       (handler-bind
-	((error
-	  #'(lambda (c)
-	      (declare (ignore c))
-	      (if first-time
-		  (progn
-		    (setq first-time nil)
-		    (error "Bar"))
-		  (return-from foo 23)))))
-	(error "Foo")))))
- nil)
+(check-for-bug :conditions-legacy-360
+  (ignore-errors
+    (block foo
+      (let ((first-time t))
+        (handler-bind
+            ((error
+              #'(lambda (c)
+                  (declare (ignore c))
+                  (if first-time
+                      (progn
+                        (setq first-time nil)
+                        (error "Bar"))
+                      (return-from foo 23)))))
+          (error "Foo")))))
+  nil)
 
 ;;; Handlers should be undone.
-(my-assert
- (block foo
-   (let ((first-time t))
-     (handler-bind
-      ((error
-	#'(lambda (c)
-	    (declare (ignore c))
-	    (return-from foo 23))))
+(check-for-bug :conditions-legacy-377
+  (block foo
+    (let ((first-time t))
       (handler-bind
-       ((error
-	 #'(lambda (c)
-	     (declare (ignore c))
-	     (if first-time
-		 (progn
-		   (setq first-time nil)
-		   (error "Bar"))
-		 (return-from foo 42)))))
-       (error "Foo")))))
- 23)
+          ((error
+            #'(lambda (c)
+                (declare (ignore c))
+                (return-from foo 23))))
+        (handler-bind
+            ((error
+              #'(lambda (c)
+                  (declare (ignore c))
+                  (if first-time
+                      (progn
+                        (setq first-time nil)
+                        (error "Bar"))
+                      (return-from foo 42)))))
+          (error "Foo")))))
+  23)
 
 ;;; Handlers in the same cluster should be accessible.
-(my-assert
- (ignore-errors
-   (block foo
-     (handler-bind
-      ((error
-	#'(lambda (c) (declare (ignore c)) nil))
-       (error
-	#'(lambda (c)
-	    (declare (ignore c))
-	    (return-from foo 23))))
-      (error "Foo"))))
- 23
- "If a handler declines (ie. just return) the next available is used, so
+(check-for-bug :conditions-legacy-398
+  (ignore-errors
+    (block foo
+      (handler-bind
+          ((error
+            #'(lambda (c) (declare (ignore c)) nil))
+           (error
+            #'(lambda (c)
+                (declare (ignore c))
+                (return-from foo 23))))
+        (error "Foo"))))
+  23
+  "If a handler declines (ie. just return) the next available is used, so
  the first one just returns nil, and the second, returning 23 is called")
 
 ;;; Multiple handlers should work.
-(my-assert
- (block foo
-   (handler-bind
-    ((type-error
-      #'(lambda (c)
-	  (declare (ignore c))
-	  (return-from foo 42)))
-     (error
-      #'(lambda (c)
-	  (declare (ignore c))
-	  (return-from foo 23))))
-    (error "Foo")))
- 23)
+(check-for-bug :conditions-legacy-414
+  (block foo
+    (handler-bind
+        ((type-error
+          #'(lambda (c)
+              (declare (ignore c))
+              (return-from foo 42)))
+         (error
+          #'(lambda (c)
+              (declare (ignore c))
+              (return-from foo 23))))
+      (error "Foo")))
+  23)
 
 ;;; Handlers should be undone.
-(my-assert
- (block foo
-   (handler-bind
-    ((error #'(lambda (c)
-		(declare (ignore c))
-		(return-from foo 23))))
-    (block bar
-      (handler-bind
-       ((error #'(lambda (c)
-		   (declare (ignore c))
-		   (return-from foo 42))))
-       (return-from bar)))
-    (error "Foo")))
- 23)
+(check-for-bug :conditions-legacy-429
+  (block foo
+    (handler-bind
+        ((error #'(lambda (c)
+                    (declare (ignore c))
+                    (return-from foo 23))))
+      (block bar
+        (handler-bind
+            ((error #'(lambda (c)
+                        (declare (ignore c))
+                        (return-from foo 42))))
+          (return-from bar)))
+      (error "Foo")))
+  23)
 
 ;;;
 ;;; HANDLER-CASE
 ;;;
 
 ;;; HANDLER-CASE should handle errors.
-(my-assert
- (multiple-value-list
-  (handler-case
+(check-for-bug :conditions-legacy-449
+  (multiple-value-list
+      (handler-case
    (error "Foo")
    (error (c) (when (typep c 'error) (values 23 42)))))
  (23 42))
 
 ;;; Except those it doesn't handle.
-(my-assert
+(check-for-bug :conditions-legacy-457
  (ignore-errors
    (handler-case
     (error "Foo")
@@ -466,14 +464,14 @@ supplied to make-condition, nil is used as a default. "
  NIL)
 
 ;;; You don't have to specify handlers.
-(my-assert
+(check-for-bug :conditions-legacy-465
  (ignore-errors
    (handler-case
     (error "Foo")))
  NIL)
 
 ;;; HANDLER-CASE should not interfere with values in non-error situations.
-(my-assert
+(check-for-bug :conditions-legacy-472
  (multiple-value-list
   (handler-case
    (values 42 17)
@@ -481,7 +479,7 @@ supplied to make-condition, nil is used as a default. "
  (42 17))
 
 ;;; :NO-ERROR should return values.
-(my-assert
+(check-for-bug :conditions-legacy-480
  (multiple-value-list
   (handler-case
    (values 23 42)
@@ -490,22 +488,22 @@ supplied to make-condition, nil is used as a default. "
  (42 23))
 
 ;;; Except when there is an error.
-(my-assert
+(check-for-bug :conditions-legacy-489
  (handler-case
   (error "Foo")
   (error () 23)
   (:no-error (&rest args) (declare (ignore args)) 42))
  23)
 
-;;; Or if it is not the last clause.
-(my-assert
- (handler-case
+;;; It does not have to be the last clause.
+(check-for-bug :conditions-legacy-497
+  (handler-case
   23
   (:no-error (v) (1+ v))
   (error () 42))
  24
  "The spec is not 100% clear here...
-Macro HANDLER-CASE 
+Macro HANDLER-CASE
 
 Syntax:
 
@@ -521,15 +519,15 @@ Need to ask comp.lang.lisp...
 ")
 
 ;;; Multiple handlers should be OK.
-(my-assert
- (handler-case
+(check-for-bug :conditions-legacy-520
+  (handler-case
   (error "Foo")
   (type-error () 23)
   (error () 42))
  42)
 
 ;;; Handlers should get undone.
-(my-assert
+(check-for-bug :conditions-legacy-528
  (ignore-errors
    (progn
      (block foo
@@ -540,7 +538,7 @@ Need to ask comp.lang.lisp...
  NIL)
 
 ;;; Ditto.
-(my-assert
+(check-for-bug :conditions-legacy-539
  (ignore-errors
    (block foo
      (let ((first-time t))
