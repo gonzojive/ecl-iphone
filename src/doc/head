@@ -19,13 +19,13 @@
    <table align="center" valign="top">
    <tr><td><a href="index.html"><b>Home page</b></a></td></tr>
    <tr><td><a href="http://sourceforge.net/projects/ecls"><b>Project</b></a></td></tr>
-   <tr><td><a href="news.html"><b>Latest news</b></a></td></tr>
+   <tr><td><a href="news.html"><b>Latest release</b></a></td></tr>
    <tr><td><a href="install.html"><b>Installing</b></a></td></tr>
    <tr><td><a href="license.html"><b>License</b></a></td></tr>
    <tr><td><a href="ecls.html"><b>User's guide</b></a></td></tr>
    <tr><td><a href="benchmark.html"><b>Benchmarks</b></a></td></tr>
    <tr><td><a href="download.html"><b>Distribution</b></a></td></tr>
-   <tr><td><a href="download.html"><b>Mailing list</b></a></td></tr>
+   <tr><td><a href="http://lists.sourceforge.net/mailman/listinfo/ecls-list"><b>Mailing list</b></a></td></tr>
    <tr><td><a href="http://cvs.sourceforge.net/cgi-bin/viewcvs.cgi/ecls/ecls"><b>Browse CVS</b></a></td></tr>
    </table>
   <td width="7"></td>
