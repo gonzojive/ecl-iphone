@@ -56,11 +56,6 @@ extern void *cl_alloc_align(cl_index size, cl_index align);
 #endif /* GBC_BOEHM */
 extern void init_alloc(void);
 
-/* all_functions.c */
-
-extern void init_all_functions(void);
-
-
 /* all_symbols */
 
 extern cl_object si_mangle_name _ARGS((int narg, cl_object symbol, ...));
