@@ -664,8 +664,9 @@ sharp_backslash_reader(cl_object in, cl_object c, cl_object d)
 				n = 8*n + c->string.self[i] - '0';
 		c = CODE_CHAR(n & 0377);
 	} else {
-		c = cl_name_char(c);
-		if (Null(c)) FEerror("~S is an illegal character name.", 1, c);
+		cl_object nc = cl_name_char(c);
+		if (Null(nc)) FEerror("~S is an illegal character name.", 1, c);
+		c = nc;
 	}
 	@(return c)
 }
