@@ -444,10 +444,9 @@ if not possible."
 	 (case type
 	   ((T) object)
 	   (LIST
-	    (do ((l nil (cons (elt object i) l))
-		 (i (1- (length object)) (1- i)))
-		((< i 0) l)
-	      (declare (fixnum i))))
+	    (do ((io (make-seq-iterator object) (seq-iterator-next object io))
+	         (l nil (cons (seq-iterator-ref object io) l)))
+	        ((null io) l)))
 	   ((CHARACTER BASE-CHAR) (character object))
 	   (FLOAT (float object))
 	   ((SINGLE-FLOAT SHORT-FLOAT) (float object 0.0S0))
