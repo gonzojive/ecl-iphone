@@ -57,7 +57,7 @@ benchmark.html: $(srcdir)/benchmark.in.html ../gabriel/BENCHMARK
 	 echo '<pre>'; cat ../gabriel/BENCHMARK; echo '</pre>'; \
 	 cat $(srcdir)/end) | $(FILTER) > $@
 ../gabriel/BENCHMARK:
-	cd ../gabriel; make
+	echo '<b>Benchmark not available</b>' > ../gabriel/BENCHMARK
 license.html: $(top_srcdir)/../Copyright
 	(cat $(srcdir)/head; \
 	 echo '<pre>'; cat $?; echo '</pre>'; \
