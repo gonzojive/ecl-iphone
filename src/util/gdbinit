@@ -2,8 +2,8 @@
 # Recommended settings for debuggin either ecl_min or ecl.
 #
 delete break
-break clLcos
-break clLerror
+break cl_cos
+break cl_error
 break CEerror
 break FEerror
 break FEunbound_variable
