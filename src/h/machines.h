@@ -167,6 +167,24 @@
 #endif
 #endif	__FreeBSD__
 
+#ifdef	__linux__
+#define	BRAND "IBM-PC"
+#define	IEEEFLOAT
+#define	DOWN_STACK
+#define	BSD
+#define LDFLAGS -Wl,--export-dynamic
+#ifdef __ELF__
+# define DATA_START 0x8000000
+#else
+# define DATA_START 0
+#endif
+#define HAVE_ISOC99
+#define HAVE_POSIX
+#ifndef unix
+#define unix
+#endif
+#endif	linux
+
 #ifdef	__NetBSD__
 #include <dlfcn.h>
 #define	IEEEFLOAT
