@@ -590,6 +590,9 @@ extern void ecl_gc(cl_type t);
 #define GC_enabled() (!GC_dont_gc)
 #define GC_enable() GC_dont_gc = FALSE;
 #define GC_disable() GC_dont_gc = TRUE;
+#if defined(mingw32) || defined(_MSC_VER)
+__declspec(dllimport)
+#endif
 extern int GC_dont_gc;
 extern void ecl_register_root(cl_object *p);
 #endif /* GBC_BOEHM */

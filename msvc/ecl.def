@@ -12,6 +12,7 @@ EXPORTS
 	GC_malloc
 	GC_malloc_atomic_ignore_off_page
 	GC_free
+	GC_dont_gc		DATA
 
 	; all_symbols
 
