@@ -234,6 +234,11 @@ si_close_pipe(cl_object stream)
 		CloseHandle(pr_info.hProcess);
 		CloseHandle(pr_info.hThread);
 		child_pid = pr_info.dwProcessId;
+		/* Child handles must be closed in the parent process */
+		/* otherwise the created pipes are never closed       */
+		if (child_stdin) CloseHandle(child_stdin);
+		if (child_stdout) CloseHandle(child_stdout);
+		if (child_stderr) CloseHandle(child_stderr);
 	} else {
 		const char *message;
 		FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
