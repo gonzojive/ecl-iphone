@@ -28,6 +28,7 @@
   "build:cmp;cmpcfg.lsp"
   "src:cmp;cmpmain.lsp"))
 
-(mapc #'(lambda (x) (load x :verbose nil)) +cmp-module-files+)
+(let ((si::*keep-documentation* nil))
+  (mapc #'(lambda (x) (load x :verbose nil)) +cmp-module-files+)
+  (load "src:cmp;sysfun" :verbose nil))
 
-(load "src:cmp;sysfun" :verbose nil)
