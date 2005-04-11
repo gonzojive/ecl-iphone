@@ -862,7 +862,7 @@ type_of(#0)==t_bitvector"))
 (FBOUNDP (symbol) T nil t)
 (SYMBOL-VALUE (symbol) T)
 (BOUNDP (symbol) T nil t
-	:inline-unsafe ((t) :bool nil nil "SYM_VAL(#0)!=OBJNULL"))
+	:inline-always ((symbol) :bool nil nil "SYM_VAL(#0)!=OBJNULL"))
 (MACRO-FUNCTION (symbol) T)
 (SPECIAL-OPERATOR-P (symbol) T nil t)
 

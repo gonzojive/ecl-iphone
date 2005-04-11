@@ -47,30 +47,6 @@ make_symbol(cl_object st)
 }
 
 /*
-	cl_defvar(s, v) makes a special variable from a symbol and, if it was
-	unbound, assignes it the value V.
-*/
-void
-cl_defvar(cl_object s, cl_object v)
-{
-	assert_type_symbol(s);
-	s->symbol.stype = (short)stp_special;
-	if (SYM_VAL(s) == OBJNULL)
-		ECL_SET(s, v);
-}
-
-/*
-	cl_defparameter(s, v) makes a special variable from a symbol and,
-	assignes it the value V.
-*/
-void
-cl_defparameter(cl_object s, cl_object v)
-{
-	cl_defvar(s, v);
-	ECL_SET(s, v);
-}
-
-/*
 	Make_keyword(s) makes a keyword from C string s.
 */
 cl_object

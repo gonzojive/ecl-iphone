@@ -70,12 +70,15 @@ Declares the variable named by NAME as a special variable.  If the variable
 does not have a value, then evaluates FORM and assigns the value to the
 variable.  FORM defaults to NIL.  The doc-string DOC, if supplied, is saved
 as a VARIABLE doc and can be retrieved by (documentation 'NAME 'variable)."
-  `(PROGN (SYS:*MAKE-SPECIAL ',var)
-    ,@(si::expand-set-documentation var 'variable doc-string)
+  `(LOCALLY (DECLARE (SPECIAL ,var))
+    (SYS:*MAKE-SPECIAL ',var)
     ,@(when form-sp
 	  `((UNLESS (BOUNDP ',var)
 	      (SETQ ,var ,form))))
+    ,@(si::expand-set-documentation var 'variable doc-string)
     #+PDE (SYS:RECORD-SOURCE-PATHNAME ',var 'defvar)
+    (eval-when (:compile-toplevel)
+      (si::register-global ',var))
     ',var))
 
 (defmacro defparameter (var form &optional doc-string)
@@ -83,12 +86,13 @@ as a VARIABLE doc and can be retrieved by (documentation 'NAME 'variable)."
 Declares the global variable named by NAME as a special variable and assigns
 the value of FORM to the variable.  The doc-string DOC, if supplied, is saved
 as a VARIABLE doc and can be retrieved by (documentation 'NAME 'variable)."
-  `(PROGN (SYS:*MAKE-SPECIAL ',var)
-    ,@(si::expand-set-documentation var 'variable doc-string)
+  `(LOCALLY (DECLARE (SPECIAL ,var))
+    (SYS:*MAKE-SPECIAL ',var)
     (SETQ ,var ,form)
-;    (eval-when (load eval)		; Beppe
-;      (compiler::proclaim-var (type-of ,var) ',var))
+    ,@(si::expand-set-documentation var 'variable doc-string)
     #+PDE (SYS:RECORD-SOURCE-PATHNAME ',var 'DEFPARAMETER)
+    (eval-when (:compile-toplevel)
+      (si::register-global ',var))
     ',var))
 
 (defmacro defconstant (var form &optional doc-string)

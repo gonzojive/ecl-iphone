@@ -10,8 +10,7 @@
 ;;;; FFI	Symbols used in the foreign function interface
 
 (defpackage "FFI"
-  (:export "CLINES" "DEFCFUN" "DEFENTRY" "DEFLA" "DEFCBODY"
-	   "DEFINLINE" "DEFUNC" "C-INLINE"
+  (:export "CLINES" "DEFENTRY" "DEFLA" "DEFCBODY" "DEFINLINE" "C-INLINE"
 
 	   "VOID" "OBJECT" "CHAR*" "INT" "DOUBLE"
 
@@ -41,23 +40,6 @@
 ;;;
 
 (defvar *ffi-types* (make-hash-table :size 128))
-
-(dolist (i '(clines defcfun defentry defla defcbody defunC))
-  (let ((fname i))
-    (si::fset i
-       #'(lambda (&rest x)
-	   (error "The special form ~S cannot be used in the interpreter"
-		  fname)))))
-
-(defmacro definline (fun arg-types type code)
-  `(eval-when (compile load eval)
-              ;; defCbody must go first, because it clears symbol-plist of fun
-              (defCbody ,fun ,arg-types ,type ,code)
-              (proclaim '(function ,fun ,arg-types ,type))
-              (setf (get ',fun ':inline-always)
-                    '((,arg-types ,type
-                       t                ; side-effect-p
-                       nil ,code)))))
 
 (defun foreign-elt-type-p (name)
   (and (symbolp name)
@@ -513,6 +495,12 @@
           ((eq (first type) '*) (second type))
 	  (t type))))
 
+(defun produce-function-call (c-name nargs)
+  (declare (si::c-local))
+  (format nil "~a(~a)" c-name
+	  (subseq "#0,#1,#2,#3,#4,#5,#6,#7,#8,#9,#a,#b,#c,#d,#e,#f,#g,#h,#i,#j,#k,#l,#m,#n,#o,#p,#q,#r,#s,#t,#u,#v,#w,#x,#y,#z"
+		  0 (max 0 (1- (* nargs 3))))))
+
 (defmacro def-function (name args &key module (returning :void))
   (multiple-value-bind (c-name lisp-name)
       (lisp-to-c-name name)
@@ -520,9 +508,7 @@
 	   (arg-types (mapcar #'(lambda (type) (%convert-to-arg-type (second type))) args))
 	   (return-type (%convert-to-return-type returning))
 	   (nargs (length arguments))
-	   (c-string (format nil "~a(~a)" c-name
-			     (subseq "#0,#1,#2,#3,#4,#5,#6,#7,#8,#9,#a,#b,#c,#d,#e,#f,#g,#h,#i,#j,#k,#l,#m,#n,#o,#p,#q,#r,#s,#t,#u,#v,#w,#x,#y,#z"
-				     0 (if arguments (1- (* nargs 3)) 0))))
+	   (c-string (produce-function-call name nargs))
 	   (casting-required (not (or (member returning '(:void :cstring))
 				      (foreign-elt-type-p returning))))
 	   (inline-form `(c-inline ,arguments ,arg-types
@@ -606,3 +592,44 @@
          (setf (symbol-value (intern "*LD-SHARED-FLAGS*" pack)) (concatenate 'string (symbol-value (intern "*LD-SHARED-FLAGS*" pack)) " " filename))
          (push filename ffi::+loaded-libraries+))
        t)))
+
+;;;----------------------------------------------------------------------
+;;; COMPATIBILITY WITH OLDER FFI
+;;;
+
+(si::fset 'clines
+	  #'(lambda (&rest x)
+	      (error "The special form ~S cannot be used in the interpreter"
+		     fname)))
+
+(defmacro definline (fun arg-types type code)
+  `(eval-when (compile load eval)
+              ;; defCbody must go first, because it clears symbol-plist of fun
+              (defCbody ,fun ,arg-types ,type ,code)
+              (proclaim '(function ,fun ,arg-types ,type))
+              (setf (get ',fun ':inline-always)
+                    '((,arg-types ,type
+                       t                ; side-effect-p
+                       nil ,code)))))
+
+(defmacro defla (&rest body)
+  `(eval-when (:load-toplevel :execute)
+     (defun ,@body)))
+
+(defmacro defcbody (name args-types result-type C-expr)
+  (let ((args (mapcar #'(lambda (x) (gensym)) arg-types)))
+  `(defun ,name ,args
+     (c-inline ,args ,args-types ,result-type
+	       ,C-expr :one-liner t))))
+
+(defmacro defentry (name arg-types c-name)
+  (let ((output-type :object)
+	(args (mapcar #'(lambda (x) (gensym)) arg-types)))
+    (if (consp c-name)
+	(setf output-type (first c-name)
+	      c-name (second c-name)))
+    (setf c-name (string c-name))
+    `(defun name ,args
+       (c-inline ,args ,arg-types ,output-type
+		 :one-liner ,(produce-function-call c-name (length arg-types))))))
+

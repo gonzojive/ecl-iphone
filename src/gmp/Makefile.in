@@ -207,7 +207,7 @@ SUBDIRS = tests mpn mpz mpq mpf printf scanf cxx mpbsd $(MPFR_DIR) demos tune
 # but anyone knowledgable enough to be playing with exec_prefix will be able
 # to address that.
 #
-includeexecdir = $(exec_prefix)/include
+includeexecdir = $(exec_prefix)/h
 include_HEADERS = $(GMPXX_HEADERS_OPTION) $(MPFRXX_HEADERS_OPTION)
 nodist_includeexec_HEADERS = gmp.h $(MPBSD_HEADERS_OPTION)
 lib_LTLIBRARIES = libgmp.la $(GMPXX_LTLIBRARIES_OPTION) $(MPBSD_LTLIBRARIES_OPTION)

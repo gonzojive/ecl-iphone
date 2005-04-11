@@ -462,32 +462,6 @@
     (c2expr form)
     (wt-label *exit*)))
 
-(defun t2declare (vv)
-  (wt-nl vv "->symbol.stype=(short)stp_special;"))
-
-(defun t1defvar (args &aux form (doc nil) (name (car args)))
-  (when *compile-time-too* (cmp-eval `(defvar ,@args)))
-  (push name *global-vars*)
-  (if (endp (cdr args))
-      (make-c1form* 'DECLARE :args (add-symbol name))
-      (progn
-	(when (and (setq doc (third args))
-		   (setq doc (si::expand-set-documentation name 'variable doc)))
-	  (t1expr `(progn ,@doc)))
-	(setq form (c1expr (second args)))
-	(add-load-time-values)
-	(make-c1form* 'DEFVAR :args (c1make-global-variable name :kind 'SPECIAL)
-		      form))))
-
-(defun t2defvar (var form &aux (vv (var-loc var)))
-  (let* ((*exit* (next-label))
-	 (*unwind-exit* (list *exit*))
-	 (*temp* *temp*)
-	 (*destination* (make-temp-var)))
-        (c2expr form)
-        (wt-nl "cl_defvar(" vv "," *destination* ");")
-	(wt-label *exit*)))
-
 (defun t1decl-body (decls body)
   (if (null decls)
       (t1progn body)
@@ -545,7 +519,7 @@
 
 (defun t1clines (args)
   (dolist (s args)
-    (cmpck (not (stringp s)) "The argument to CLINE, ~s, is not a string." s))
+    (cmpck (not (stringp s)) "The argument to CLINES, ~s, is not a string." s))
   (make-c1form* 'CLINES :args args))
 
 (defun t3clines (ss) (dolist (s ss) (wt-nl1 s)))
@@ -723,16 +697,10 @@
 (put-sysprop 'EVAL-WHEN 'T1 #'t1eval-when)
 (put-sysprop 'PROGN 'T1 #'t1progn)
 (put-sysprop 'DEFUN 'T1 #'t1defun)
-(put-sysprop 'DEFVAR 'T1 #'t1defvar)
 (put-sysprop 'MACROLET 'T1 #'t1macrolet)
 (put-sysprop 'LOCALLY 'T1 #'t1locally)
 (put-sysprop 'SYMBOL-MACROLET 'T1 #'t1symbol-macrolet)
 (put-sysprop 'CLINES 'T1 't1clines)
-(put-sysprop 'DEFCFUN 'T1 't1defcfun)
-;(put-sysprop 'DEFENTRY 'T1 't1defentry)
-(put-sysprop 'DEFLA 'T1 't1defla)
-(put-sysprop 'DEFCBODY 'T1 't1defCbody)	; Beppe
-;(put-sysprop 'DEFUNC 'T1 't1defunC)	; Beppe
 (put-sysprop 'LOAD-TIME-VALUE 'C1 'c1load-time-value)
 (put-sysprop 'SI:FSET 'C1 'c1fset)
 
@@ -742,11 +710,6 @@
 (put-sysprop 'PROGN 'T2 #'t2progn)
 (put-sysprop 'DEFUN 'T2 #'t2defun)
 (put-sysprop 'ORDINARY 'T2 #'t2ordinary)
-(put-sysprop 'DECLARE 'T2 #'t2declare)
-(put-sysprop 'DEFVAR 'T2 #'t2defvar)
-;(put-sysprop 'DEFENTRY 'T2 't2defentry)
-(put-sysprop 'DEFCBODY 'T2 't2defCbody)	; Beppe
-;(put-sysprop 'DEFUNC 'T2	't2defunC); Beppe
 (put-sysprop 'LOAD-TIME-VALUE 'T2 't2load-time-value)
 (put-sysprop 'SI:FSET 'C2 'c2fset)
 
@@ -755,7 +718,3 @@
 (put-sysprop 'DECL-BODY 't3 #'t3decl-body)
 (put-sysprop 'PROGN 'T3 #'t3progn)
 (put-sysprop 'CLINES 'T3 't3clines)
-(put-sysprop 'DEFCFUN 'T3 't3defcfun)
-;(put-sysprop 'DEFENTRY 'T3 't3defentry)
-(put-sysprop 'DEFCBODY 'T3 't3defCbody)	; Beppe
-;(put-sysprop 'DEFUNC 'T3 't3defunC)	; Beppe

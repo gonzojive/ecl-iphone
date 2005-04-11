@@ -298,10 +298,12 @@
     var))
 
 (defun c1add-globals (globals)
-  (dolist (name globals)
-    (push (c1make-global-variable name :kind 'GLOBAL
-				  :type (or (get-sysprop name 'CMP-TYPE) 'T))
-	  *vars*)))
+  (mapc #'si::register-global globals))
+
+(defun si::register-global (name)
+  (push (c1make-global-variable name :kind 'GLOBAL
+				:type (or (get-sysprop name 'CMP-TYPE) 'T))
+	  *vars*))
 
 (defun c1setq (args)
   (let ((l (length args)))

@@ -329,7 +329,7 @@ ecl_extend_hashtable(cl_object hashtable)
 	if (new_size <= old_size)
 		new_size = old_size + 1;
 	old = cl_alloc_object(t_hashtable);
-	old->pack = hashtable->pack;
+	old->hash = hashtable->hash;
 	hashtable->hash.data = NULL; /* for GC sake */
 	hashtable->hash.entries = 0;
 	hashtable->hash.size = new_size;

@@ -34,6 +34,9 @@ ECL 0.9f
 
  - make_stream_from_fd() did not accept smm_io.
 
+ - Globals declared with DEFPARAMETER toplevel forms were not recognized by
+   the compiler as special variables.
+
 * Foreign function interface (FFI):
 
  - ext:c-uint-max and ext:c-ulong-max did not have the right bignum value.
@@ -51,6 +54,10 @@ ECL 0.9f
 	5
 
  - C-INLINE forms are now understood by the walker in clos/walk.lsp
+
+ - DEFENTRY, DEFCBODY and DEFLA have been reimplemented. The current status
+   of the FFI is now better described in the documentation, with a reference
+   to the UFFI package for further details.
 
 * Visible changes:
 

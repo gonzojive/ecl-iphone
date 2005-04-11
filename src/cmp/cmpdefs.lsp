@@ -28,7 +28,7 @@
 	   "*SUPPRESS-COMPILER-WARNINGS*"
 	   "*SUPPRESS-COMPILER-NOTES*")
   (:import-from "SI" "GET-SYSPROP" "PUT-SYSPROP" "REM-SYSPROP" "MACRO"
-		"*COMPILER-CONSTANTS*"))
+		"*COMPILER-CONSTANTS*" "REGISTER-GLOBAL"))
 
 (in-package "COMPILER")
 
@@ -408,12 +408,7 @@ The default value is NIL.")
 ;;;	| ( 'DECLARE'   var-name-vv )
 ;;;	| ( 'DEFVAR'	var-name-vv expr doc-vv )
 ;;;	| ( 'CLINES'	string* )
-;;;	| ( 'DEFCFUN'	header vs-size body )
 ;;;	| ( 'LOAD-TIME-VALUE' vv )
-;;;	| ( 'DEFCBODY'	fun-name cfun arg-types type body ) ;;; Beppe
-;;; Eliminated:
-;;;	| ( 'DEFENTRY'	fun-name cfun cvspecs type cfun-name )
-;;;	| ( 'DEFUNC'	fun-name cfun lambda-list string* ) ;;; Beppe
 
 (defvar *reservations* nil)
 (defvar *reservation-cmacro* nil)
