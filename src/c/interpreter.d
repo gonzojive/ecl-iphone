@@ -128,7 +128,6 @@ cl_stack_push_va_list(cl_va_list args) {
 	while (cl_env.stack_top + args[0].narg > cl_env.stack_limit)
 		cl_stack_grow();
 	while (args[0].narg > 0) {
-		args[0].narg--;
 		*(cl_env.stack_top++) = cl_va_arg(args);
 	}
 	return sp;
