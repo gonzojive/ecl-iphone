@@ -219,8 +219,7 @@ because it contains a reference to the undefined class~%  ~A"
     (setf (class-precedence-list class) cpl
 	  (class-slots class) (compute-slots class)
 	  (class-default-initargs class) (compute-default-initargs class)
-	  (class-finalized-p class) t
-	  (class-prototype class) (allocate-instance class))
+	  (class-finalized-p class) t)
     ;;
     ;; This is not really needed, because when we modify the list of slots
     ;; all instances automatically become obsolete (See change.lsp)
@@ -592,13 +591,13 @@ because it contains a reference to the undefined class~%  ~A"
 ;;; ----------------------------------------------------------------------
 ;;;                                                             optimizers
 
-(defmethod OPTIMIZE-SLOT-VALUE ((class standard-class) form)
+(defmethod OPTIMIZE-SLOT-VALUE ((prototype standard-object) form)
   (let* ((instance (second form))
 	 (slot-name (third form)))
     `(standard-instance-access ,instance
 			       ',(reduce-constant slot-name) . ,(cdddr form))))
 
-(defmethod OPTIMIZE-SET-SLOT-VALUE ((class standard-class) form)
+(defmethod OPTIMIZE-SET-SLOT-VALUE ((prototype standard-object) form)
   (let* ((instance (cadadr form))
 	 (slot-name (caddr (second form)))
 	 (new-value (third form)))

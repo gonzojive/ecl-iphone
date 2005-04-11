@@ -57,7 +57,8 @@
        :initform nil :accessor class-direct-default-initargs)
       (default-initargs :accessor class-default-initargs)
       (finalized :initform nil :accessor class-finalized-p)
-      (prototype :accessor class-prototype))))
+      (documentation :initarg :documentation :initform nil)
+      (prototype))))
 
 #.(create-accessors +class-slots+ 'class)
 
@@ -69,7 +70,6 @@
     (append +class-slots+
 	    '((slot-index-table :accessor slot-index-table)
 	      (shared-slots :initform nil :accessor class-shared-slots)
-	      (documentation :initarg :documentation :initform nil)
 	      (forward)))))
 
 #.(create-accessors +standard-class-slots+ 'standard-class)

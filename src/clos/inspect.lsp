@@ -456,7 +456,7 @@ q (or Q):             quits the inspection.~%~
     (si::set-documentation object 'package new-value)))
 
 (defmethod documentation ((object class) doc-type)
-  (when (member doc-type '(t type))
+  (when (and (member doc-type '(t type)) (slot-boundp object 'documentation))
     (slot-value object 'documentation)))
 
 (defmethod (setf documentation) (new-value (object class) doc-type)

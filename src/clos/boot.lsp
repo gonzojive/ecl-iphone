@@ -17,7 +17,7 @@
 ;;; SLOT-VALUE does not work.
 
 (defun make-empty-standard-class (name metaclass)
-  (let ((class (si:allocate-raw-instance nil metaclass 12)))
+  (let ((class (si:allocate-raw-instance nil metaclass #.(length +standard-class-slots+))))
     (unless metaclass
       (si:instance-class-set class class))
     (setf (class-id                  class) name
@@ -29,10 +29,10 @@
 	  (class-default-initargs    class) nil
 	  (class-precedence-list     class) nil
 	  (class-finalized-p         class) t
-	  (slot-index-table          class) (make-hash-table :size 2)
-	  (class-shared-slots        class) nil
-	  (find-class name) class
-	  )
+	  (find-class name) class)
+    (unless (eq name 'T)
+      (setf (slot-index-table          class) (make-hash-table :size 2)
+	    (class-shared-slots        class) nil))
     class))
 
 ;; 1) Create the classes
@@ -43,7 +43,7 @@
 (let* ((standard-class (make-empty-standard-class 'STANDARD-CLASS nil))
        (standard-object (make-empty-standard-class 'STANDARD-OBJECT standard-class))
        (the-class (make-empty-standard-class 'CLASS standard-class))
-       (the-t (make-empty-standard-class 'T standard-class))
+       (the-t (make-empty-standard-class 'T the-class))
        (class-slots (mapcar #'canonical-slot-to-direct-slot (parse-slots '#.+class-slots+)))
        (standard-slots (mapcar #'canonical-slot-to-direct-slot
 				  (parse-slots '#.+standard-class-slots+)))
@@ -88,9 +88,14 @@
   ;; 5) Generate accessors (In macros.lsp)
 )
 
-(defmethod OPTIMIZE-SLOT-VALUE ((class t) form) form)
+(defmethod class-prototype ((class class))
+  (unless (slot-boundp class 'prototype)
+    (setf (slot-value class 'prototype) (allocate-instance class)))
+  (slot-value class 'prototype))
 
-(defmethod OPTIMIZE-SET-SLOT-VALUE ((class t) form) form)
+(defmethod OPTIMIZE-SLOT-VALUE ((prototype t) form) form)
+
+(defmethod OPTIMIZE-SET-SLOT-VALUE ((prototype t) form) form)
 
 ;;; ----------------------------------------------------------------------
 ;;; SLOTS READING AND WRITING

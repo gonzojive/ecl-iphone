@@ -234,10 +234,10 @@
 		   ((and (eq (car form) 'SLOT-VALUE)
 			 (symbolp (second form))
 			 (constantp (third form)))
-		    (multiple-value-bind (ignore class)
+		    (multiple-value-bind (ignore prototype)
 			(can-optimize-access (second form) env)
-		      (if class
-			  (optimize-slot-value class form)
+		      (if prototype
+			  (optimize-slot-value prototype form)
 			  form)))
 		   ;; does not work for (push x (slot-value y 's))
 		   ;; and similia, since push is turned into
@@ -259,14 +259,14 @@
 					'SLOT-VALUE)
 				    (symbolp (second instance-access))
 				    (constantp (third instance-access)))
-			       (multiple-value-bind (ignore class)
+			       (multiple-value-bind (ignore prototype)
 				   (can-optimize-access
 				    (second instance-access) env)
 				 (let ((new-form
 					(list 'SETF instance-access
 					      value)))
-				   (if class
-				       (optimize-set-slot-value class
+				   (if prototype
+				       (optimize-set-slot-value prototype
 								new-form)
 				       new-form)))
 			       (list 'SETF instance-access value))
@@ -284,11 +284,11 @@
 				  form))
 			    form)))
 		   ((eq (car form) 'STANDARD-INSTANCE-ACCESS)
-		    (multiple-value-bind (parameter class)
+		    (multiple-value-bind (parameter prototype)
 			(can-optimize-access (second form) env)
-		      (if class
+		      (if prototype
 			  (optimize-standard-instance-access
-			   class parameter form slots)
+			   (class-of prototype) parameter form slots)
 			  form)))
 		   (t form))))
       (values (walk-form method-lambda env #'walk-function)
@@ -629,12 +629,14 @@
   (declare (si::c-local))
   ;; (values required-parameter class)
   (let ((required-parameter?
-	  (or (third (variable-declaration 'VARIABLE-REBINDING var env))
-	      var)))
-    (if required-parameter?
-	(values required-parameter?
-		(find-class (variable-class required-parameter? env) 'NIL))
-	(values nil nil))))
+	 (or (third (variable-declaration 'VARIABLE-REBINDING var env))
+		  var))
+	(class-prototype nil))
+    (when required-parameter?
+      (let ((class (find-class (variable-class required-parameter? env) 'NIL)))
+	(when class
+	  (setf class-prototype (class-prototype class)))))
+    (values required-parameter? class-prototype)))
 
 
 (defun optimize-standard-instance-access (class parameter form slots)
