@@ -1,3 +1,5 @@
+;;; @configure_input@
+
 (if (not (member "CROSS" *features* :test #'string-equal))
   (progn
     (load "src:lsp;export.lsp" :verbose nil)

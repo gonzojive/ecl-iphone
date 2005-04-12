@@ -1,3 +1,4 @@
+;; @configure_input@
 ;;
 ;; Configuration file for ECL
 ;;
@@ -23,7 +24,7 @@ Returns, as a string, the location of the machine on which ECL runs."
 (defun lisp-implementation-version ()
   "Args:()
 Returns the version of your ECL as a string."
-  "@ECL_VERSION@")
+  "@PACKAGE_VERSION@")
 
 (defun machine-type ()
   "Args: ()
@@ -41,7 +42,7 @@ from uname(2) where available."
   "Args: ()
 Returns, as a string, the version of the machine on which ECL runs. Obtained from
 uname(2) where available."
-  "@MACHINE@")
+  "@MACHINE_VERSION@")
 
 (push :@thehost@ *features*)
 

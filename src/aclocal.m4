@@ -1,18 +1,44 @@
+dnl -*- autoconf -*-
+dnl --------------------------------------------------------------
+dnl Add Lisp library to compile in.  Second argument is a hack
+dnl to add sysfun.lsp.
+dnl
+AC_DEFUN([ECL_ADD_LISP_LIBRARY], [
+if test ${enable_shared} = "yes" ; then
+  LSP_LIBRARIES="${LSP_LIBRARIES} $1.fas $2"
+else
+  LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}$1.${LIBEXT} $2"
+fi ])
+
+dnl --------------------------------------------------------------
+dnl Add lisp module to compile; if second argument is given,
+dnl compile module into Lisp library if we don't support shared
+dnl libraries.
+dnl
+AC_DEFUN([ECL_ADD_LISP_MODULE], [
+  if test ${enable_shared} = "yes" ; then
+    ECL_MODULES="${ECL_MODULES} $1"
+  elif test $2; then
+    LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}$1.${LIBEXT}"
+  else
+    AC_MSG_ERROR([Can't compile in $1 without shared library support!])
+  fi ])
+
 dnl --------------------------------------------------------------
 dnl Set up a configuration file for the case when we are cross-
 dnl compiling
 dnl
 AC_DEFUN(ECL_CROSS_CONFIG,[
 if test "x${cross_compiling}" = "xyes"; then
-  if test -n "${cross_config}" -a -f "${cross_config}"; then
-    . ${cross_config}
+  if test -n "${with_cross_config}" -a -f "${with_cross_config}"; then
+    . ${with_cross_config}
   elif test -f ./cross_config; then
     . ./cross_config
   elif test -n "${srcdir}" -a -f ${srcdir}/cross_config; then
     . ${srcdir}/cross_config
   else
-    test -z ${cross_config} && cross_config=`pwd`/cross_config
-    cat > ${cross_config} <<EOF
+    test -z ${with_cross_config} && cross_config=`pwd`/cross_config
+    cat > ${with_cross_config} <<EOF
 ###
 ### YOU ARE TRYING TO CROSS COMPILE ECL.
 ### PLEASE FOLLOW THESE INSTRUCTIONS:
@@ -56,7 +82,7 @@ ECL_FILE_CNT=0
 ### the path.
 ECL_TO_RUN=`which ecl`
 EOF
-    cat ${cross_config}
+    cat ${with_cross_config}
     AC_MSG_ERROR(Configuration aborted)
   fi
   if test "${ECL_TO_RUN}" = "failed"; then
@@ -131,6 +157,7 @@ AC_SUBST(OBJEXT)dnl	These are set by autoconf
 AC_SUBST(EXEEXT)
 AC_SUBST(LDINSTALLNAME)dnl Link-flag that tells where the library will reside.
 AC_SUBST(INSTALL_TARGET)dnl Which type of installation: flat directory or unix like.
+AC_SUBST(thehost)
 LDRPATH='~*'
 SHAREDEXT='so'
 SHAREDPREFIX='lib'
@@ -139,20 +166,21 @@ LIBEXT='a'
 PICFLAG='-fPIC'
 LDINSTALLNAME=''
 THREAD_CFLAGS=''
-THREAD_LDFLAGS=''
+THREAD_LIBS=''
 THREAD_GC_FLAGS='--enable-threads=posix'
 INSTALL_TARGET='install'
 THREAD_OBJ='threads'
+clibs=''
 case "${host_os}" in
 	# libdir may have a dollar expression inside
 	linux*)
 		thehost='linux'
 		THREAD_CFLAGS='-D_THREAD_SAFE'
-		THREAD_LDFLAGS='-lpthread'
+		THREAD_LIBS='-lpthread'
 		SHARED_LDFLAGS="-shared ${LDFLAGS}"
 		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
 		LDRPATH='-Wl,--rpath,~A'
-		CLIBS="-ldl"
+		clibs="-ldl"
 		# Maybe CFLAGS="-D_ISOC99_SOURCE ${CFLAGS}" ???
 		;;
 	freebsd*)
@@ -160,21 +188,21 @@ case "${host_os}" in
 		SHARED_LDFLAGS="-shared ${LDFLAGS}"
 		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
 		LDRPATH="-Wl,--rpath,~A"
-		CLIBS=""
+		clibs=""
 		;;
 	netbsd*)
 		thehost='netbsd'
 		SHARED_LDFLAGS="-shared ${LDFLAGS}"
 		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
 		LDRPATH="-Wl,--rpath,~A"
-		CLIBS=""
+		clibs=""
 		;;
 	openbsd*)
 		thehost='openbsd'
 		SHARED_LDFLAGS="-shared ${LDFLAGS}"
 		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
 		LDRPATH="-Wl,--rpath,~A"
-		CLIBS=""
+		clibs=""
 		;;
 	solaris*)
 		thehost='sun4sol2'
@@ -182,7 +210,7 @@ case "${host_os}" in
 		BUNDLE_LDFLAGS="-dy -G ${LDFLAGS}"
 		LDRPATH='-Wl,-R,~A'
 		TCPLIBS='-lsocket -lnsl -lintl'
-		CLIBS='-ldl'
+		clibs='-ldl'
 		;;
 	cygwin*)
 		thehost='cygwin'
@@ -195,11 +223,10 @@ case "${host_os}" in
 		;;
 	mingw*)
 		thehost='mingw32'
-		CLIBS=''
+		clibs=''
 		shared='yes'
 		THREAD_OBJ='threads_win32'
 		THREAD_CFLAGS='-D_THREAD_SAFE'
-		THREAD_LDFLAGS=''
 		THREAD_GC_FLAGS='--enable-threads=win32'
 		SHARED_LDFLAGS=''
 		BUNDLE_LDFLAGS=''
@@ -219,7 +246,7 @@ case "${host_os}" in
 		LDRPATH=''
 		LDINSTALLNAME="-Wl,-install_name,${libdir}/${SHAREDPREFIX}ecl.${SHAREDEXT}"
 		THREAD_CFLAGS='-D_THREAD_SAFE'
-		THREAD_LDFLAGS='-lpthread'
+		THREAD_LIBS='-lpthread'
 		;;
 	*)
 		thehost="$host_os"
@@ -228,15 +255,16 @@ case "${host_os}" in
 esac
 ECL_CFLAGS="-D${thehost}"
 AC_MSG_CHECKING(for ld flags when building shared libraries)
-if test "${shared}" = "yes"; then
+if test "${enable_shared}" = "yes"; then
 AC_MSG_RESULT([${SHARED_LDFLAGS}])
 CFLAGS="${CFLAGS} ${PICFLAG}"
 else
 shared="no";
 AC_MSG_RESULT(cannot build)
 fi
+LIBS="${clibs} ${LIBS}"
 AC_MSG_CHECKING(for required libraries)
-AC_MSG_RESULT([${CLIBS}])
+AC_MSG_RESULT([${clibs}])
 AC_MSG_CHECKING(for architecture)
 AC_MSG_RESULT([${ARCHITECTURE}])
 AC_MSG_CHECKING(for software type)
@@ -252,24 +280,24 @@ AC_DEFUN(ECL_FILE_STRUCTURE,[
 AC_SUBST(ECL_FILE_CNT)
 if test -z "${ECL_FILE_CNT}"; then
 ECL_FILE_CNT=0
-AC_TRY_COMPILE([#include <stdio.h>],[
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <stdio.h>]], [[
 int main() {
   FILE *f = fopen("conftestval","w");
   if ((f)->_IO_read_end - (f)->_IO_read_ptr)
     return 1;
-}],ECL_FILE_CNT=1)
-AC_TRY_COMPILE([#include <stdio.h>],[
+}]])],[ECL_FILE_CNT=1],[])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <stdio.h>]], [[
 int main() {
   FILE *f = fopen("conftestval","w");
   if ((f)->_r)
     return 1;
-}],ECL_FILE_CNT=2)
-AC_TRY_COMPILE([#include <stdio.h>],[
+}]])],[ECL_FILE_CNT=2],[])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <stdio.h>]], [[
 int main() {
   FILE *f = fopen("conftestval","w");
   if ((f)->_cnt)
     return 1;
-}],ECL_FILE_CNT=3)
+}]])],[ECL_FILE_CNT=3],[])
 fi
 ])
 
@@ -281,7 +309,7 @@ dnl
 AC_DEFUN(ECL_STACK_DIRECTION,[
   AC_MSG_CHECKING(whether stack growns downwards)
 if test -z "${ECL_STACK_DIR}" ; then
-  AC_TRY_RUN([
+  AC_RUN_IFELSE([AC_LANG_SOURCE([[
 char *f2() {
   char c;
   return &c;
@@ -298,12 +326,10 @@ int main() {
   else
     return 0;
 }
-],
-ECL_STACK_DIR=down,
-ECL_STACK_DIR=up,[])
+]])],[ECL_STACK_DIR=down],[ECL_STACK_DIR=up],[])
 fi
 case "${ECL_STACK_DIR}" in
-  down|DOWN) AC_MSG_RESULT(yes); AC_DEFINE(DOWN_STACK) ;;
+  down|DOWN) AC_MSG_RESULT(yes); AC_DEFINE(DOWN_STACK, [1], [Stack grows downwards]) ;;
   up|UP) AC_MSG_RESULT(no) ;;
   *) AC_MSG_ERROR(Unable to determine stack growth direction)
 esac])
@@ -330,7 +356,7 @@ AC_SUBST(CL_FIXNUM_MAX)
 AC_SUBST(CL_FIXNUM_MIN)
 AC_MSG_CHECKING(appropiate type for fixnums)
 if test -z "${CL_FIXNUM_TYPE}" ; then
-  AC_TRY_RUN([#include <stdio.h>
+  AC_RUN_IFELSE([AC_LANG_SOURCE([[#include <stdio.h>
 int main() {
   const char *int_type;
   int bits;
@@ -369,8 +395,7 @@ int main() {
   fprintf(f,"CL_FIXNUM_TYPE='%s';",int_type);
   fprintf(f,"CL_FIXNUM_BITS='%d'",bits);
   exit(0);
-}],
-eval "`cat conftestval`",[])
+}]])],[eval "`cat conftestval`"],[],[])
 fi
 if test -z "${CL_FIXNUM_TYPE}" ; then
 AC_MSG_ERROR(There is no appropiate integer type for the cl_fixnum type)
@@ -385,7 +410,7 @@ dnl
 AC_DEFUN(ECL_LINEFEED_MODE,[
 AC_MSG_CHECKING(character sequence for end of line)
 if test -z "${ECL_NEWLINE}" ; then
-AC_TRY_RUN([#include <stdio.h>
+AC_RUN_IFELSE([AC_LANG_SOURCE([[#include <stdio.h>
 int main() {
   FILE *f = fopen("conftestval","w");
   int c1, c2;
@@ -414,13 +439,12 @@ int main() {
   fclose(f);
   exit(0);
 }
-],
-ECL_NEWLINE=`cat conftestval`,[],[])
+]])],[ECL_NEWLINE=`cat conftestval`],[],[])
 fi
 case "${ECL_NEWLINE}" in
   LF) AC_MSG_RESULT(lf) ;;
-  CR) AC_MSG_RESULT(cr); AC_DEFINE(ECL_NEWLINE_IS_CR) ;;
-  CRLF) AC_MSG_RESULT(cr+lf); AC_DEFINE(ECL_NEWLINE_IS_CRLF) ;;
+  CR) AC_MSG_RESULT(cr); AC_DEFINE(ECL_NEWLINE_IS_CR, [1], [Define if your newline is CR]) ;;
+  CRLF) AC_MSG_RESULT(cr+lf); AC_DEFINE(ECL_NEWLINE_IS_CRLF, [1], [Define if your newline is CRLF]) ;;
   *) AC_MSG_ERROR(Unable to determine linefeed mode) ;;
 esac
 ])

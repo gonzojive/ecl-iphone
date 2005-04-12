@@ -1,3 +1,5 @@
+;;; @configure_input@
+
 (defconstant +cmp-module-files+
 '("src:cmp;cmpdefs.lsp"
   "src:cmp;cmpmac.lsp"

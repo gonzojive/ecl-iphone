@@ -19,7 +19,7 @@ INFO_FILES = ecl.$(INFOEXT) ecldev.$(INFOEXT) @CLX_INFO@
 HTML_FILES = index.html license.html lgpl.html news.html benchmark.html \
 	install.html download.html
 
-VERSION=@ECL_VERSION@
+VERSION=@PACKAGE_VERSION@
 
 FILTER = sed 's,@VERSION@,$(VERSION),g'
 
@@ -42,38 +42,38 @@ clx.ps: clx.dvi
 	dvips -o $@ clx.dvi
 
 install: all
-	$(mkinstalldirs) $(infodir)
+	$(mkinstalldirs) $(DESTDIR)$(infodir)
 	for k in $(INFO_FILES); do \
-	  $(INSTALL_DATA) $$k $(infodir); \
+	  $(INSTALL_DATA) $$k $(DESTDIR)$(infodir); \
 	  if [ -x $(INSTALL_INFO) ]; then \
-	    $(INSTALL_INFO) --info-dir=$(infodir) $$k; \
+	    $(INSTALL_INFO) --info-dir=$(DESTDIR)$(infodir) $$k; \
 	  fi; \
 	done
-	$(mkinstalldirs) $(docdir)
+	$(mkinstalldirs) $(DESTDIR)$(docdir)
 	for i in Copyright LGPL; do \
-	  $(INSTALL_DATA) $(top_srcdir)/../$$i $(docdir); \
+	  $(INSTALL_DATA) $(top_srcdir)/../$$i $(DESTDIR)$(docdir); \
 	done
-	$(mkinstalldirs) $(mandir)/man$(manext)
-	$(INSTALL_DATA) ecl.man $(mandir)/man$(manext)/ecl.$(manext)
+	$(mkinstalldirs) $(DESTDIR)$(mandir)/man$(manext)
+	$(INSTALL_DATA) ecl.man $(DESTDIR)$(mandir)/man$(manext)/ecl.$(manext)
 flatinstall: all
-	$(mkinstalldirs) $(docdir)
-	for k in $(INFO_FILES); do $(INSTALL_DATA) $$k $(docdir); done
+	$(mkinstalldirs) $(DESTDIR)$(docdir)
+	for k in $(INFO_FILES); do $(INSTALL_DATA) $$k $(DESTDIR)$(docdir); done
 	if [ -f user.html ]; then \
-	  $(INSTALL_DATA) $$i $(docdir)/; \
+	  $(INSTALL_DATA) $$i $(DESTDIR)$(docdir)/; \
 	else \
-	  $(mkinstalldirs) $(docdir)/ecl; \
-	  for i in ecl/*; do $(INSTALL_DATA) $$i $(docdir)/ecl/; done; \
+	  $(mkinstalldirs) $(DESTDIR)$(docdir)/ecl; \
+	  for i in ecl/*; do $(INSTALL_DATA) $$i $(DESTDIR)$(docdir)/ecl/; done; \
 	fi
 	if [ -f devel.html ]; then \
-	  $(INSTALL_DATA) devel.html $(docdir)/; \
+	  $(INSTALL_DATA) devel.html $(DESTDIR)$(docdir)/; \
 	else \
-	  $(mkinstalldirs) $(docdir)/ecldev; \
-	  for i in ecldev/*; do $(INSTALL_DATA) $$i $(docdir)/ecldev/; done; \
+	  $(mkinstalldirs) $(DESTDIR)$(docdir)/ecldev; \
+	  for i in ecldev/*; do $(INSTALL_DATA) $$i $(DESTDIR)$(docdir)/ecldev/; done; \
 	fi
 	for i in Copyright LGPL; do \
-	  $(INSTALL_DATA) $(top_srcdir)/../$$i $(docdir); \
+	  $(INSTALL_DATA) $(top_srcdir)/../$$i $(DESTDIR)$(docdir); \
 	done
-	for i in *.html; do $(INSTALL_DATA) $$i $(docdir)/; done
+	for i in *.html; do $(INSTALL_DATA) $$i $(DESTDIR)$(docdir)/; done
 
 uninstall:
 	for k in $(INFO_FILES); do \
@@ -82,8 +82,8 @@ uninstall:
 	    $(INSTALL_INFO) --delete $$k; \
 	  fi; \
 	done
-	rm -r $(infodir)/ecl.$(INFOEXT) $(infodir)/ecldev.$(INFOEXT); \
-	rm $(mandir)/man$(manext)/ecl.$(manext)
+	rm -r $(DESTDIR)$(infodir)/ecl.$(INFOEXT) $(DESTDIR)$(infodir)/ecldev.$(INFOEXT); \
+	rm $(DESTDIR)$(mandir)/man$(manext)/ecl.$(manext)
 
 head: developers_manual user_manual $(srcdir)/head
 	if [ -f ecl/index.html ]; then \

@@ -1,10 +1,11 @@
+;; @configure_input@
 ;;
 ;; * Set compiler and compiler flags -- this includes pointing
 ;;   to the directory with our header files.
 ;;
 (in-package "COMPILER")
 (setq *cc* "@ECL_CC@")
-(setq *cc-flags* "@CFLAGS@ @ECL_CFLAGS@")
+(setq *cc-flags* "@CPPFLAGS@ @CFLAGS@ @ECL_CFLAGS@")
 (setq *cc-optimize* #-msvc "-O"
                     #+msvc "-O2")
 (setq *ld-format* #-msvc "~A -o ~S -L~S ~{~S ~} ~@?"
@@ -12,15 +13,15 @@
 (setq *cc-format* #-msvc "~A ~A ~:[~*~;~A~] \"-I~A/h\" -w -c \"~A\" -o \"~A\""
                   #+msvc "~A ~A ~:[~*~;~A~] -I\"~A/h\" -Zi -W3 -c \"~A\" -Fo\"~A\"")
 #-dlopen
-(setq *ld-flags* "@LDRPATH@ @LDFLAGS@ -lecl @STATICLIBS@ @CLIBS@")
+(setq *ld-flags* "@LDRPATH@ @LDFLAGS@ -lecl @CORE_LIBS@ @LIBS@ @FASL_LIBS@")
 #+dlopen
-(setq *ld-flags* #-msvc "@LDRPATH@ @LDFLAGS@ -lecl @CLIBS@"
+(setq *ld-flags* #-msvc "@LDRPATH@ @LDFLAGS@ -lecl @LIBS@ @FASL_LIBS@"
                  #+msvc "@LDRPATH@ @LDFLAGS@ ecl.lib @CLIBS@")
 #+dlopen
-(setq *ld-shared-flags* #-msvc "@LDRPATH@ @SHARED_LDFLAGS@ @LDFLAGS@ -lecl @CLIBS@"
+(setq *ld-shared-flags* #-msvc "@LDRPATH@ @SHARED_LDFLAGS@ @LDFLAGS@ -lecl @LIBS@ @FASL_LIBS@"
                         #+msvc "@LDRPATH@ @SHARED_LDFLAGS@ @LDFLAGS@ ecl.lib @CLIBS@")
 #+dlopen
-(setq *ld-bundle-flags* #-msvc "@LDRPATH@ @BUNDLE_LDFLAGS@ @LDFLAGS@ -lecl @CLIBS@"
+(setq *ld-bundle-flags* #-msvc "@LDRPATH@ @BUNDLE_LDFLAGS@ @LDFLAGS@ -lecl @LIBS@ @FASL_LIBS@"
                         #+msvc "@LDRPATH@ @BUNDLE_LDFLAGS@ @LDFLAGS@ ecl.lib @CLIBS@")
 (eval-when (eval)
   (setq +shared-library-prefix+ "@SHAREDPREFIX@"

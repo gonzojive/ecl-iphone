@@ -1,6 +1,9 @@
 top_srcdir=@top_srcdir@
 srcdir=@srcdir@
 
+@SET_MAKE@
+LN_S	= @LN_S@
+
 FILES =  CMUCLc ECLc CLISPc CMUCLi ECLi CLISPi
 LISP ?= ../ecl -dir `pwd`/../
 NAME ?= ECLc
@@ -15,17 +18,17 @@ BENCHMARK: $(FILES)
 	| ../ecl ; cat BENCHMARK
 
 CMUCLi:
-	make test LISP="lisp" NAME=CMUCLi COMPILE="NIL"
+	$(MAKE) test LISP="lisp" NAME=CMUCLi COMPILE="NIL"
 CMUCLc:
-	make test LISP="lisp" NAME=CMUCLc COMPILE="T"
+	$(MAKE) test LISP="lisp" NAME=CMUCLc COMPILE="T"
 CLISPi:
-	make test LISP="clisp -a" NAME=CLISPi COMPILE="NIL"
+	$(MAKE) test LISP="clisp -a" NAME=CLISPi COMPILE="NIL"
 CLISPc:
-	make test LISP="clisp -a" NAME=CLISPc COMPILE="T"
+	$(MAKE) test LISP="clisp -a" NAME=CLISPc COMPILE="T"
 ECLi:
-	make test NAME=ECLi COMPILE="NIL"
+	$(MAKE) test NAME=ECLi COMPILE="NIL"
 ECLc: ../h/ecl.h
-	make test NAME=ECLc COMPILE="T"
+	$(MAKE) test NAME=ECLc COMPILE="T"
 
 test:
 	(echo "(load \"$(srcdir)/make-declare.lsp\")"; \
@@ -34,7 +37,7 @@ test:
 	 echo "#+(or cmu ecl) (quit)") | $(LISP)
 
 ../h/ecl.h:
-	ln -sf $(top_srcdir)/h/*.h ../h
+	$(LN_S) $(top_srcdir)/h/*.h ../h
 
 clean:
 	rm -f $(FILES) BENCHMARK

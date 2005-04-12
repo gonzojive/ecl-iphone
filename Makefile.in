@@ -28,11 +28,11 @@
 #      everything deleted by distclean.
 
 SHELL = /bin/sh
-MACHINE = @MACHINE@
+MACHINE = @MACHINE_VERSION@
 
 # ========================= Last release ================================
 
-VERSION=@ECL_VERSION@
+VERSION=@PACKAGE_VERSION@
 WWW=http://ecls.sourceforge.net/
 
 # ==================== Things `configure' Might Edit ====================
@@ -58,6 +58,7 @@ TAR_CONTENTS=Makefile.in README.1st LGPL ANNOUNCEMENT Copyright doc \
 # ==================== Utility Programs for the Build ====================
 
 #  Allow the user to specify the install program.
+@SET_MAKE@
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@

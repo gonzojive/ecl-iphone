@@ -4,7 +4,7 @@ top_srcdir= @top_srcdir@
 srcdir	= @srcdir@
 VPATH	= @srcdir@
 
-MACHINE = @MACHINE@
+MACHINE = @MACHINE_VERSION@
 
 # Programs used by "make":
 #

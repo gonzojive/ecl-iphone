@@ -44,9 +44,9 @@ typedef struct format_stack_struct {
 #endif
 
 #if MOST_NEGATIVE_FIXNUM > INT_MIN
-# define FMT_VALUE_UPPER_LIMIT MOST_NEGATIVE_FIXNUM
+# define FMT_VALUE_LOWER_LIMIT MOST_NEGATIVE_FIXNUM
 #else
-# define FMT_VALUE_UPPER_LIMIT INT_MIN
+# define FMT_VALUE_LOWER_LIMIT INT_MIN
 #endif
 
 

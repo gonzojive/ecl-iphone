@@ -120,7 +120,7 @@ lsp/config.lsp: $(srcdir)/lsp/config.lsp.in Makefile.msvc6
 	    -e "s,@ECL_VERSION@,$(ECL_VERSION),g" \
 	    -e "s,@ARCHITECTURE@,$(ARCHITECTURE),g" \
 	    -e "s,@MACHINE_INSTANCE@,$(MACHINE_INSTANCE),g" \
-	    -e "s,@MACHINE@,$(MACHINE),g" \
+	    -e "s,@MACHINE_VERSION@,$(MACHINE),g" \
 	    -e "s,@SOFTWARE_TYPE@,$(SOFTWARE_TYPE),g" \
 	    -e "s,@SOFTWARE_VERSION@,$(SOFTWARE_VERSION),g" \
 	    -e "s,@thehost@,$(THEHOST),g" \
@@ -146,6 +146,7 @@ compile.lsp: bare.lsp $(srcdir)/compile.lsp.in Makefile.msvc6
 	    -e "s,@LDINSTALLNAME@,,g" \
 	    -e "s,@DEF@,$(DEF),g" \
 	    -e "s,@ECL_MODULES@,$(ECL_MODULES),g" \
+            -e "s,@RANLIB@,ranlib,g" \
 	    < $(srcdir)\compile.lsp.in > compile.lsp
 bare.lsp: $(srcdir)/bare.lsp.in lsp/load.lsp clos/load.lsp cmp/load.lsp cmp/cmpcfg.lsp
 	sed -e "s,@true_srcdir@,$(srcdir:\=/),g" \

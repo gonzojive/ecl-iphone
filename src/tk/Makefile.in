@@ -9,7 +9,7 @@ MACHINE = @host@
 #
 CC	= @CC@
 DEFS	= -D$(MACHINE)
-CFLAGS	= -c @CFLAGS@ $(DEFS)
+CFLAGS	= -c @CPPFLAGS@ @CFLAGS@ $(DEFS)
 OFLAG	= @OFLAG@
 
 SHELL	= /bin/sh

@@ -1,3 +1,4 @@
+;;; @configure_input@
 ;;;
 ;;; This file can be loaded either in ECL_MIN or in the final executable
 ;;; ECL. In both cases, it ensures that we have a working Common-Lisp

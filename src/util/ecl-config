@@ -1,9 +1,10 @@
 #!/bin/sh
+# @configure_input@
 
 usage()
 {
   cat <<EOF
-Usage: eclconfig [OPTIONS] [LIBS]
+Usage: $0 [OPTIONS] [LIBS]
 Options: 
 	[--cflags]
 	[--libs|--ldflags]
@@ -35,5 +36,5 @@ if test "$echo_cflags" = "yes"; then
 fi
 
 if test "$echo_ldflags" = "yes"; then
-  echo "@LDRPATH@ -L@libdir\@ $LDFLAGS @LDFLAGS@ @CLIBS@"
+  echo "@LDRPATH@ -L@libdir\@ $LDFLAGS @LDFLAGS@ @LIBS@"
 fi

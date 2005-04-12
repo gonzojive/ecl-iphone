@@ -1,3 +1,5 @@
+;;; @configure_input@
+
 (defconstant +clos-module-files+
 '("src:clos;walk.lsp"
   "src:clos;macros.lsp"

@@ -26,7 +26,7 @@ CP     = copy /Y
 
 ECL_VERSION=0.9d
 
-FILTER = sed "s,@VERSION@,$(ECL_VERSION),g"
+FILTER = sed "s,@PACKAGE_VERSION@,$(ECL_VERSION),g"
 
 ECL = ../ecl
 

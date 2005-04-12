@@ -7,419 +7,432 @@ dnl
 dnl  AUTOCONF configuration for ECL
 dnl  Giuseppe Attardi 25.1.1994
 dnl
-dnl  configure.in    ---<autoconf>--->> configure
-dnl
-dnl                      _____
-dnl  configure                \
-dnl  src/h/config.h.in   ----<sh>---->> $(machine)/h/config.h
-dnl  src/*/Makefile.in   _____/         $(machine)/*/Makefile
-dnl
-dnl  $(machine)/Makefile ---<make>--->> ecl
-dnl
-dnl
-AC_INIT(configure.in)
-AC_PREREQ(2.1)		# You must have autoconf version 2.1 or later.
 
-###
-### Make sure we do not configure within source directory
-###
-AC_CONFIG_SRCDIR(CHANGELOG)
-AC_CONFIG_AUX_DIR(${srcdir}/gmp)
+AC_INIT([ecl],[0.9e],[])
+AC_REVISION([$Revision$])
+AC_CONFIG_SRCDIR([bare.lsp.in])
+AC_CONFIG_AUX_DIR([${srcdir}/gmp])
+AC_PREREQ(2.59)
+
+dnl -----------------------------------------------------------------------
+dnl Make sure we do not configure within source directory
 if test -f configure; then
-echo "***"
-echo "*** This program cannot be built within the source directory ***"
-echo "***"
-exit 2;
+  AC_MSG_ERROR([This program cannot be built within the source directory])
 fi
 
-dnl Set the version number. This seems the best place to keep it.
-ECL_VERSION=0.9e
-AC_SUBST(ECL_VERSION)
+dnl -----------------------------------------------------------------------
+dnl Configure switches
 
+AC_ARG_WITH(cross_config,
+  AS_HELP_STRING( [--with-cross-config=f],
+                  [supply configuration for a cross compiler]),
+  [], [with_cross_config="`pwd`/cross_config"])
+
+AC_ARG_ENABLE(shared,
+  AS_HELP_STRING( [--enable-shared],
+                  [enable loading compiled files (default=YES)]),
+  [], [enable_shared=yes])
+
+AC_ARG_ENABLE(threads,
+  AS_HELP_STRING( [--enable-threads],
+                  [support for native threads (yes|no|auto, default=NO).]),
+  [], [enable_threads=no])
+
+AC_ARG_ENABLE(boehm,
+  AS_HELP_STRING( [--enable-boehm],
+                  [use the Boehm-Weiser garbage collector]
+                  [(no|included|system|auto, default=auto)] ),
+  [], [enable_boehm=auto] )
+
+AC_ARG_ENABLE(local-boehm,
+  AS_HELP_STRING( [--enable-local-boehm], [Deprecated! See --enable-boehm] ),
+  [AC_MSG_WARN(
+    [--enable-local-boehm is deprecated, use --enable-boehm=system instead!])
+   test ${withval} = "no" || enable_boehm="system"])
+
+AC_ARG_WITH(system-boehm,
+  AS_HELP_STRING( [--with-system-boehm], [Deprecated! See --enable-boehm] ),
+  [AC_MSG_WARN(
+    [--with-system-boehm is deprecated, use --enable-boehm=system instead!])
+   test ${withval} = "no" || enable_boehm="system"])
+
+AC_ARG_WITH(gmp,
+  AS_HELP_STRING( [--with-gmp=args],
+                  [supply arguments for configuring GMP library]))
+
+AC_ARG_WITH(system-gmp,
+  AS_HELP_STRING( [--with-system-gmp],
+                  [use already installed GMP library (default=auto)]),
+  [], [with_system_gmp="auto"])
+
+AC_ARG_ENABLE(local-gmp,
+  AS_HELP_STRING( [--enable-local-gmp],
+                  [Deprecated! See --with-system-gmp]),
+  [AC_MSG_WARN(
+    [--with-local-gmp is deprecated, use --with-system-gmp instead!])
+   with_system_gmp="${enableval}"])
+
+AC_ARG_ENABLE(opcode8,
+  AS_HELP_STRING( [--enable-opcode8],
+                  [interpreter uses 8-bit codes]
+                  [(default=NO, only works on Intel)]),
+  [opcode8=${enableval}], [opcode8=no])
+
+AC_ARG_WITH(cxx,
+  AS_HELP_STRING( [--with-cxx],
+                  [build ECL using C++ compiler (default=NO)]),
+  [], [with_cxx=no])
+
+AC_ARG_WITH(tcp,
+  AS_HELP_STRING( [--with-tcp],
+                  [include socket interface (default=NO)]),
+  [], [with_tcp=no])
+
+AC_ARG_WITH(clx,
+  AS_HELP_STRING( [--with-clx],
+                  [include CLX library (default=NO)]),
+  [], [with_clx=no])
+
+AC_ARG_WITH(clos-streams,
+  AS_HELP_STRING( [--with-clos-streams],
+                  [user defined stream objects (default=YES)]),
+  [], [with_clos_streams=yes])
+
+AC_ARG_WITH(cmuformat,
+  AS_HELP_STRING( [--with-cmuformat],
+                  [use CMUCL's FORMAT routine (default=YES)]),
+  [], [with_cmuformat=${with_clos_streams}])
+
+AC_ARG_WITH(asdf,
+  AS_HELP_STRING( [--with-asdf],
+                  [include ASDF building facility]
+                  [(default=YES if shared library support is on)]),
+  [], [with_asdf=${enable_shared}])
+
+dnl -----------------------------------------------------------------------
+dnl Installation directories
+libdir="${libdir}/ecl"
+includedir="${libdir}/ecl/h"
+test -z "${docdir}" && docdir="${datadir}/doc/ecl"
+AC_SUBST([docdir])
+
+dnl -----------------------------------------------------------------------
+dnl Initialize variables.
+boehm_configure_flags=""
+
+AC_EXEEXT dnl			Guess whether .exe is needed for executables
+AC_SUBST(ECL_CFLAGS)            dnl Similar, but specific to ECL (see src/util/ecl-config)
+AC_SUBST(FASL_LIBS)             dnl Libraries to link into all ecl code but not
+                                dnl into helper programs.
+AC_SUBST(CORE_LIBS, [])         dnl Locally compiled libs to link into
+                                dnl ecl/ecl_min/libecl.so and nowhere else.
+AC_SUBST(SHARED_LDFLAGS)        dnl Flags for shared libraries linker
+AC_SUBST(BUNDLE_LDFLAGS)        dnl Flags for FASL files linker
+AC_SUBST(SHORT_SITE_NAME)       dnl Short name for the machine we built this on
+AC_SUBST(LONG_SITE_NAME)        dnl Long name for the machine we built this on
+AC_SUBST(EXTRA_OBJS)            dnl Extra *.o files to be compiled into libecl.a
+AC_SUBST(TARGETS, [ecl${EXEEXT}]) dnl Versions of ECL to be built 
+AC_SUBST(SUBDIRS, [c])           dnl Subdirectories that make should process
+AC_SUBST(LIBRARIES, [])         dnl GMP, Boehm's GC, etc
+AC_SUBST(LSP_LIBRARIES)         dnl Libraries produced by lisp translator
+AC_SUBST(ECL_MODULES, [])       dnl Contributed modules to be built in
+
+
+dnl -----------------------------------------------------------------------
 dnl Guess operating system of host. We do not allow cross-compiling.
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 
-AC_SUBST(thehost)
-AC_SUBST(bindir)
-AC_SUBST(mandir)
-AC_SUBST(infodir)
-AC_SUBST(builddir)
-AC_SUBST(libdir)
-AC_SUBST(docdir)
-AC_SUBST(top_srcdir)
-dnl AC_ARG_ENABLE(tk,
-dnl 	[--enable-tk            Include Tk.],
-dnl 	tk="$enable_tk")
-AC_ARG_ENABLE(boehm,
-	AS_HELP_STRING([--enable-boehm],
-		       [use the Boehm-Weiser garbage collector (default=YES)]),
-	[boehm="${enableval}"], [boehm=yes])
-AC_ARG_ENABLE(local-boehm,
-	AS_HELP_STRING([--enable-local-boehm], [Deprecated! See --with-system-boehm]),
-	[system_boehm="${enableval}" boehm="yes"])
-AC_ARG_ENABLE(local-gmp,
-	AS_HELP_STRING([--enable-local-gmp], [Deprecated! See --with-system-gmp]),
-	[system_gmp="${enableval}"])
-dnl AC_ARG_ENABLE(locative,
-dnl 	[--enable-locative      Include locative support.],
-dnl 	locative="$enable_locative")
-AC_ARG_ENABLE(opcode8,
-	AS_HELP_STRING([--enable-opcode8],
-		       [interpreter uses 8-bit codes (default=NO, only works on Intel)]),
-	[opcode8=${enableval}], [opcode8=no])
-dnl AC_ARG_ENABLE(runtime,
-dnl 	[--enable-runtime	Build no compiler.],
-dnl 	runtime="$enable_runtime")
-AC_ARG_ENABLE(shared,
-	AS_HELP_STRING([--enable-shared],
-		       [enable loading compiled files (default=YES)]),
-	[shared="$enable_shared"], [shared=yes])
-AC_ARG_ENABLE(threads,
-	AS_HELP_STRING([--enable-threads],
-		       [support for native threads (default=NO).]),
-	[threads="$enable_threads"])
 
-AC_ARG_WITH(asdf,
-	AS_HELP_STRING([--with-asdf],
-		       [include ASDF building facility (default=YES)]),
-	[asdf="${withval}"],[asdf=yes])
-AC_ARG_WITH(cross_config,
-	AS_HELP_STRING([--with-config-file=f],
-		       [supply configuration for a cross compiler]),
-	[cross_config="${withval}"], [cross_config="`pwd`/cross_config"])
-dnl AC_ARG_WITH(oldloop,
-dnl	AS_HELP_STRING([--with-oldloop],[use the old MIT LOOP macro (default=NO)]),
-dnl	oldloop="yes")
-AC_ARG_WITH(cmuformat,
-	AS_HELP_STRING([--with-cmuformat],
-		       [use CMUCL's FORMAT routine (default=YES)]),
-	[cmuformat="${withval}"], [cmuformat=yes])
-AC_ARG_WITH(clos-streams,
-	AS_HELP_STRING([--with-clos-streams],
-		       [user defined stream objects (default=YES)]),
-	[closstreams="${withval}"], [closstreams=yes])
-AC_ARG_WITH(clx,
-	AS_HELP_STRING([--with-clx],
-		       [include CLX library (default=NO)]),
-	[clx="${withval}"],[clx=no])
-AC_ARG_WITH(cxx,
-	AS_HELP_STRING([--with-cxx],
-		       [build ECL using C++ compiler (default=NO)]),
-	[usecxx="${withval}"], [usecxx=no])
-AC_ARG_WITH(gmp,
-	AS_HELP_STRING([--with-gmp=args],
-		       [supply arguments for configuring GMP library]),
-	[gmp_flags=${withval}; system_gmp=no], [gmp_flags=""])
-AC_ARG_WITH(tcp,
-	AS_HELP_STRING([--with-tcp],
-		       [include socket interface (default=NO)]),
-	[tcp="${withval}"],[tcp=no])
-AC_ARG_WITH(system-boehm,
-	AS_HELP_STRING([--with-system-boehm],
-		       [use already installed Boehm GC library (default=NO)]),
-	[system_boehm="${enableval}" boehm="yes"], [system_boehm="${system_boehm:-no}"])
-AC_ARG_WITH(system-gmp,
-	AS_HELP_STRING([--with-system-gmp],
-		       [use already installed GMP library (default=NO)]),
-	[system_gmp="${withval}"], [system_gmp="${system_gmp:-no}"])
-
-### ----------------------------------------------------------------------
-###           Checks for programs
-###
+dnl =====================================================================
+dnl Checks for programs
 AC_PROG_CC	      # sets variable CC
 AC_PROG_CXX           # sets variable CXX
 AC_PROG_CPP           # sets variable CPP
 AC_PROG_RANLIB        # sets variable RANLIB
 AC_PROG_INSTALL       # sets variables INSTALL, INSTALL_DATA, INSTALL_PROGRAM
 AC_PROG_LN_S          # sets variable LN_S
-AC_EXEEXT dnl			Guess whether .exe is needed for executables
-AC_SUBST(ECL_CC)dnl		Which compiler should we use for building ECL
-AC_SUBST(CFLAGS)dnl		Flags for the compiler
-AC_SUBST(ECL_CFLAGS)dnl		Similar, but specific to ECL (see src/util/ecl-config)
-AC_SUBST(CLIBS)dnl		System & ECL libraries to be linked in
-AC_SUBST(STATICLIBS)dnl		Libraries used when linking ECL statically
-AC_SUBST(LDFLAGS)dnl		Flags for program linker
-AC_SUBST(SHARED_LDFLAGS)dnl	Flags for shared libraries linker
-AC_SUBST(BUNDLE_LDFLAGS)dnl	Flags for FASL files linker
-AC_SUBST(SHORT_SITE_NAME)dnl	Short name for the machine we built this on
-AC_SUBST(LONG_SITE_NAME)dnl	Long name for the machine we built this on
-AC_SUBST(EXTRA_OBJS)dnl		Extra *.o files to be compiled into libecl.a
-AC_SUBST(TARGETS)dnl		Versions of ECL to be built
-AC_SUBST(TKLIBS)dnl		Libraries with the Tcl/Tk components
-AC_SUBST(SUBDIR)dnl		Subdirectories that make should process
-AC_SUBST(LIBRARIES)dnl		GMP, Boehm's GC, etc
-AC_SUBST(LSP_LIBRARIES)dnl	Libraries produced by lisp translator
-AC_SUBST(BOEHM_HEADERS)dnl	Header path for Boehm GC
-AC_SUBST(ECL_MODULES)dnl	Contributed modules to be built in
+AC_PROG_MAKE_SET      # set $(MAKE) if needed
 
-dnl ----------------------------------------------------------------------
-dnl           checks for UNIX variants that set DEFS
-dnl
-AC_CHECK_LIB(sun, getpwnam)         # on IRIX adds -lsun
+dnl -----------------------------------------------------------------------
+dnl Checks which do not come with autoconf (must be after AC_PROG_CC)
+ECL_MAKE_ABSOLUTE_SRCDIR
+ECL_CROSS_CONFIG
+ECL_GUESS_HOST_OS
 
-dnl ----------------------------------------------------------------------
-dnl           checks for header files
-dnl
-dnl AC_CHECK_HEADERS(unistd.h stdlib.h stdarg.h string.h)
-AC_CHECK_HEADERS(sys/resource.h sys/utsname.h float.h pwd.h dlfcn.h link.h\
- mach-o/dyld.h ulimit.h dirent.h sys/ioctl.h)
-AC_CHECK_FUNCS(nanosleep alarm times isnanf select setenv putenv\
- lstat mkstemp sigprocmask)
-AC_ISC_POSIX
-
-dnl ----------------------------------------------------------------------
-dnl		Installation directories
-dnl
-libdir="${libdir}/ecl"
-includedir="${libdir}/ecl/h"
-if test -z "${docdir}"; then docdir="${datadir}/doc/ecl"; fi
-
-dnl ----------------------------------------------------------------------
-dnl		Checks which do not come with autoconf
-dnl
-ECL_MAKE_ABSOLUTE_SRCDIR()
-ECL_CROSS_CONFIG()
-ECL_GUESS_HOST_OS()
-ECL_LINEFEED_MODE()
-ECL_FIND_SETJMP()
-ECL_FILE_STRUCTURE()
-
-dnl ------------------------------------------------------------
-dnl Find out how to install the INFO files.
-dnl
 AC_SUBST(INFOEXT)
 AC_SUBST(INSTALL_INFO)
-AC_PATH_PROG([INSTALL_INFO], [install-info], [foo], [$PATH:/sbin:/usr/sbin:/usr/etc])
+AC_PATH_PROG([INSTALL_INFO], [install-info], [/bin/true], [$PATH:/sbin:/usr/sbin:/usr/etc])
 if test -z `which gzip`; then
   INFOEXT=info.gz
 else
   INFOEXT=info
 fi
 
+dnl =====================================================================
+dnl Checks for libraries
+
+LIBS="${LIBS} -lm"
+AC_CHECK_LIB(sun, getpwnam)         # on IRIX adds -lsun
+AC_ISC_POSIX
+
 dnl ----------------------------------------------------------------------
-dnl		Set options
-dnl
-gc_flags=""
-TARGETS="ecl${EXEEXT}"
-LIBRARIES=""
-SUBDIR=c
-CLIBS="${CLIBS} -lm"
-STATICLIBS=""
-ECL_MODULES=""
-if test ${boehm} = "no" ; then
+dnl Native thread support
+if test "${enable_threads}" = "auto"; then
+  AC_MSG_CHECKING([for threads support])
+  if test -z "${THREAD_OBJ}"; then
+    AC_MSG_RESULT([no])
+    enable_threads="no"
+  else
+    AC_MSG_RESULT([yes])
+    enable_threads="yes"
+  fi
+fi
+
+if test "${enable_threads}" = "yes" ; then
+  if test -z "${THREAD_OBJ}"; then
+    AC_MSG_ERROR([Threads aren't supported on this system.])
+  else
+    boehm_configure_flags="${boehm_configure_flags} ${THREAD_GC_FLAGS}"
+    EXTRA_OBJS="${EXTRA_OBJS} ${THREAD_OBJ}.${OBJEXT}"
+    LIBS="${THREAD_LIBS} ${LIBS}"
+    CFLAGS="${CFLAGS} ${THREAD_CFLAGS}"
+    AC_DEFINE( [ECL_THREADS], [1], [Userland threads?])
+  fi
+else
+  boehm_configure_flags="${boehm_configure_flags} --disable-threads"
+fi
+
+dnl ----------------------------------------------------------------------
+dnl		Boehm-Weiser garbage collector
+if test ${enable_boehm} = "no" ; then
   EXTRA_OBJS="${EXTRA_OBJS} alloc.${OBJEXT} gbc.${OBJEXT}"
 else
-  if test ${system_boehm} = "yes"; then
-    BOEHM_HEADERS=""
-    CLIBS="-lgc ${CLIBS}"
+  if test ${enable_boehm} = "auto"; then
+    AC_CHECK_LIB( [gc], [GC_malloc],
+                  [enable_boehm="system"], [enable_boehm="included"])
+  fi
+
+  if test ${enable_boehm} = "system"; then 
+    AC_CHECK_LIB( [gc], [GC_malloc],
+      [FASL_LIBS="${FASL_LIBS} -lgc"],
+      [AC_MSG_ERROR([System Boehm GC library requested but not found.])])
+    AC_MSG_CHECKING( [if we need to copy GC private headers] )
   else
-    SUBDIR="${SUBDIR} gc"
-    BOEHM_HEADERS="-I../include"
-    STATICLIBS="-leclgc"
-    if test ${shared} = "no"; then
+    enable_boehm="included"
+    SUBDIRS="${SUBDIRS} gc"
+    CFLAGS="-I../include ${CFLAGS}"
+    CORE_LIBS="-leclgc ${CORE_LIBS}"
+    if test "${enable_shared}" = "no"; then
       LIBRARIES="${LIBRARIES} ${LIBPREFIX}eclgc.${LIBEXT}"
     fi
   fi
   EXTRA_OBJS="${EXTRA_OBJS} alloc_2.${OBJEXT}"
-  AC_DEFINE(GBC_BOEHM)
+  AC_DEFINE(GBC_BOEHM, [1], [Use Boehm's garbage collector])
 fi
-if test ${shared} = "yes"; then
-  AC_DEFINE(ENABLE_DLOPEN)
+
+
+dnl ----------------------------------------------------------------------
+dnl GNU multiprecision library
+if test ${with_system_gmp} = "auto"; then
+  AC_CHECK_LIB( [gmp], [__gmpz_init],
+                [with_system_gmp=yes], [with_system_gmp=no] )
+fi
+
+if test "${with_system_gmp}" = "yes"; then
+  AC_CHECK_LIB( [gmp], [__gmpz_init],
+    [FASL_LIBS="${FASL_LIBS} -lgmp"],
+    [AC_MSG_ERROR([System gmp library requested but not found.])])
+else
+  SUBDIRS="${SUBDIRS} gmp"
+  CORE_LIBS="-leclgmp ${CORE_LIBS}"
+  if test ${enable_shared} = "no"; then
+    LIBRARIES="${LIBRARIES} ${LIBPREFIX}eclgmp.${LIBEXT}"
+  fi
+fi
+
+
+dnl =====================================================================
+dnl Checks for header files
+
+dnl !!! autoscan
+AC_PATH_X
+AC_HEADER_DIRENT
+AC_HEADER_STDBOOL
+AC_HEADER_STDC
+AC_HEADER_TIME
+AC_CHECK_HEADERS( [fcntl.h inttypes.h limits.h netdb.h netinet/in.h] \
+                  [stddef.h stdlib.h string.h sys/param.h] \
+                  [sys/socket.h sys/time.h unistd.h] )
+dnl !!! end autoscan
+
+AC_CHECK_HEADERS( [sys/resource.h sys/utsname.h float.h pwd.h dlfcn.h link.h] \
+                  [mach-o/dyld.h ulimit.h dirent.h sys/ioctl.h])
+
+dnl =====================================================================
+dnl Checks for typedefs, structures, and compiler characteristics.
+
+dnl !!! autoscan
+AC_C_CONST                      dnl !!! DNLed
+AC_C_INLINE
+AC_TYPE_SIZE_T                  dnl !!! DNLed
+AC_STRUCT_TM
+AC_C_VOLATILE
+AC_CHECK_TYPES([ptrdiff_t])
+dnl !!! end autoscan
+
+dnl !!! dnled in original
+dnl AC_TYPE_PID_T          # DEFS pid_t
+dnl AC_TYPE_UID_T          # DEFS uid_t, gid_t
+dnl AC_TYPE_OFF_T	   # DEFS off_t
+dnl AC_C_CHAR_UNSIGNED     # DEFS __CHAR_UNSIGNED__ if char is unsigned
+dnl !!! end dnled
+
+AC_C_BIGENDIAN([], [],
+  [AC_DEFINE(WORDS_BIGENDIAN, [/* EDIT! - Undefine if small endian */])])
+
+dnl ----------------------------------------------------------------------
+dnl This flag is an optimization for GNU
+if test "${GCC}" = "yes"; then
+  CFLAGS="${CFLAGS} -fstrict-aliasing"
+fi
+
+ECL_LINEFEED_MODE
+ECL_FIND_SETJMP
+ECL_FILE_STRUCTURE
+
+dnl -----------------------------------------------------------------------
+dnl Study the call conventions
+ECL_STACK_DIRECTION
+
+dnl ----------------------------------------------------------------------
+dnl Check the appropiate type for cl_fixnum/cl_index
+ECL_FIXNUM_TYPE
+
+dnl =====================================================================
+dnl Checks for library functions
+
+dnl !!! autoscan
+AC_FUNC_CLOSEDIR_VOID
+AC_FUNC_ERROR_AT_LINE
+AC_FUNC_FORK
+AC_PROG_GCC_TRADITIONAL
+AC_FUNC_MALLOC
+AC_FUNC_MEMCMP
+AC_FUNC_MMAP
+AC_FUNC_REALLOC
+AC_FUNC_SELECT_ARGTYPES
+AC_TYPE_SIGNAL
+AC_FUNC_STAT
+AC_FUNC_STRTOD
+AC_CHECK_FUNCS( [floor getcwd gethostbyaddr gethostbyname getpagesize] \
+                [memmove memset mkdir putenv socket sqrt] \
+                [strcasecmp strchr strerror strtol] )
+dnl !!! end autoscan
+
+AC_CHECK_FUNCS( [nanosleep alarm times isnanf select setenv putenv] \
+                [lstat mkstemp sigprocmask] )
+
+dnl =====================================================================
+dnl Checks for system services
+
+dnl =====================================================================
+dnl Final pass over configuration files
+dnl
+dnl Notice that we build ${builddir}/h/configpre.h from ${srcdir}/h/config.h.in,
+dnl and then use all AC_DEF* to build h/config.h from h/configpre.h
+
+dnl ----------------------------------------------------------------------
+dnl Do we use C or C++ compiler to compile ecl?
+if test ${with_cxx} = "no" ; then
+  AC_SUBST([ECL_CC], [${CC}])
+else
+  AC_SUBST([ECL_CC], [${CXX}])
+  boehm_configure_flags="${boehm_configure_flags} --enable-cplusplus"
+fi
+
+dnl ----------------------------------------------------------------------
+dnl Do we need to have 8-bit opcodes?
+if test ! ${opcode8} = "no" ; then
+  AC_DEFINE( ECL_SMALL_BYTECODES, [1], 
+             [Bytecodes and arguments are 8 and 16 bits large, respectively])
+fi
+
+dnl ----------------------------------------------------------------------
+dnl Lisp library and libecl features
+if test ${enable_shared} = "yes"; then
+  AC_DEFINE(ENABLE_DLOPEN, [1], [Allow loading dynamically linked code])
   LSP_LIBRARIES="${SHAREDPREFIX}ecl.${SHAREDEXT}"
 else
   LSP_LIBRARIES="${LIBPREFIX}ecl.${LIBEXT}"
   LDRPATH='~*'
 fi
-if test "${system_gmp}" = "yes" ; then
-  CLIBS="-lgmp ${CLIBS}"
-else
-  SUBDIR="${SUBDIR} gmp"
-  STATICLIBS="-leclgmp ${STATICLIBS}"
-  if test ${shared} = "no"; then
-    LIBRARIES="${LIBRARIES} ${LIBPREFIX}eclgmp.${LIBEXT}"
-  fi
+
+if test "${with_cmuformat}" = "yes"; then
+  with_clos_streams="yes"
+  AC_DEFINE(ECL_CMU_FORMAT, [1], [Use CMU Common-Lisp's FORMAT routine])
 fi
-if test ${runtime} ; then
-  AC_DEFINE(RUNTIME)
-else
-  if test ${shared} = "yes" ; then
-    LSP_LIBRARIES="${LSP_LIBRARIES} cmp.fas sysfun.lsp"
-  else
-    LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}cmp.${LIBEXT} sysfun.lsp"
-  fi
+
+if test "${with_clos_streams}" = "yes"; then
+  AC_DEFINE( ECL_CLOS_STREAMS, [1],
+             [Allow STREAM operations to work on arbitrary objects])
 fi
-dnl if test ${tk} ; then
-dnl   TKLIBS="-ltk -ltcl -lXpm @XLIBS@"
-dnl   AC_DEFINE(TK)
-dnl fi
+
+ECL_ADD_LISP_LIBRARY([cmp], [sysfun.lsp])
+
 AC_SUBST(CLX_INFO)
-if test ${clx} = "yes"; then
-  tcp = "yes"
-  if test ${shared} = "yes" ; then
-    LSP_LIBRARIES="${LSP_LIBRARIES} clx.fas"
-  else
-    LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}clx.${LIBEXT}"
-  fi
-  AC_DEFINE(CLX)
+if test ${with_clx} = "yes"; then
+  tcp="yes"
+  ECL_ADD_LISP_LIBRARY([clx])
+  AC_DEFINE(CLX, [1], [CLX support])
   CLX_INFO="clx.${INFOEXT}"
 else
   CLX_INFO=""
 fi
-if test "${tcp}" = "yes"; then
-  AC_DEFINE(TCP)
+
+if test "${with_tcp}" = "yes"; then
+  AC_DEFINE(TCP, [1], [Network streams])
   EXTRA_OBJS="${EXTRA_OBJS} tcp.${OBJEXT}"
-  if test ${shared} = "yes" ; then
-    ECL_MODULES="${ECL_MODULES} sockets"
-  else
-    LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}sockets.${LIBEXT}"
-  fi
-  CLIBS="${CLIBS} ${TCPLIBS}"
+  ECL_ADD_LISP_MODULE([sockets], [yes])
+  LIBS="${LIBS} ${TCPLIBS}"
 fi
-if test "${oldloop}"; then
-  AC_DEFINE(ECL_OLD_LOOP)
-fi
-if test "${cmuformat}" = "yes"; then
-  closstreams="yes"
-  AC_DEFINE(ECL_CMU_FORMAT)
-fi
-if test "${closstreams}" = "yes"; then
-  AC_DEFINE(ECL_CLOS_STREAMS)
-fi
-if test "${locative}" ; then
-  EXTRA_OBJS="${EXTRA_OBJS} unify.${OBJEXT}"
-  AC_DEFINE(LOCATIVE)
-fi
-AC_MSG_CHECKING(for threads support)
-if test "${threads}" ; then
-  if test -z "${THREAD_OBJ}"; then
-    gc_flags="${gc_flags} --disable-threads"
-    threads='';
-    AC_MSG_RESULT(no)
-  else
-    gc_flags="${gc_flags} ${THREAD_GC_FLAGS}"
-    EXTRA_OBJS="${EXTRA_OBJS} ${THREAD_OBJ}.${OBJEXT}"
-    CLIBS="${THREAD_LDFLAGS} ${CLIBS}"
-    CFLAGS="${CFLAGS} ${THREAD_CFLAGS}"
-    AC_DEFINE(ECL_THREADS)
-    AC_MSG_RESULT(native threads)
-  fi
-else
-  AC_MSG_RESULT(disabled)
-  gc_flags="${gc_flags} --disable-threads"
-fi
-if test ${usecxx} = "no" ; then
-  ECL_CC="${CC}"
-else
-  ECL_CC="${CXX}"
-  gc_flags="${gc_flags} --enable-cplusplus"
-fi
-if test ! ${opcode8} = "no" ; then
-  AC_DEFINE(ECL_SMALL_BYTECODES)
-fi
-if test "${asdf}" = "yes"; then
-  ECL_MODULES="${ECL_MODULES} asdf";
-fi
-dnl ---------------------------------------------------------------------
-dnl		This flag is an optimization for GNU
-dnl ---------------------------------------------------------------------
-if test "${GCC}" = "yes"; then
-  CFLAGS="${CFLAGS} -fstrict-aliasing"
+
+if test "${with_asdf}" = "yes"; then
+  ECL_ADD_LISP_MODULE([asdf])
 fi
 
 dnl ----------------------------------------------------------------------
-dnl		Study the call conventions
-dnl
-ECL_STACK_DIRECTION()
-
-dnl ---------------------------------------------------------------------
-dnl		Check the appropiate type for cl_fixnum/cl_index
-dnl
-ECL_FIXNUM_TYPE()
-
-dnl		      # DEFS HAVE_UNISTD_H, HAVE_STDLIB_H, HAVE_STDARG_H
-dnl		      # and HAVE_STRING_H
-dnl AC_DIR_HEADER         # directory reading functions, DEFS VOID_CLOSEDIR
-dnl
-dnl           checks for typedefs
-dnl
-dnl AC_TYPE_SIZE_T         # DEFS size_t
-dnl AC_TYPE_PID_T          # DEFS pid_t
-dnl AC_TYPE_UID_T          # DEFS uid_t, gid_t
-dnl AC_TYPE_OFF_T	   # DEFS off_t
-dnl
-dnl           checks for functions and declarations
-dnl
-dnl           checks for compiler characteristics
-dnl
-AC_C_BIGENDIAN([AC_DEFINE(WORDS_BIGENDIAN)],
-[],[AC_DEFINE(WORDS_BIGENDIAN,[/* EDIT!!! - Undefine if small endian */])])
-dnl AC_C_CONST             # DEFS const
-dnl AC_C_CHAR_UNSIGNED     # DEFS __CHAR_UNSIGNED__ if char is unsigned
-
-dnl ---------------------------------------------------------------------
-dnl	      X11 stuff
-dnl
-dnl AC_PATH_X
-dnl AC_PATH_XTRA
-dnl XINCLUDES=""
-dnl XLIBS=""
-dnl if test "$x_includes" != ""; then
-dnl   XINCLUDES=-I$x_includes
-dnl fi
-dnl if test "$x_libraries" != ""; then
-dnl    XLIBS="-L$x_libraries"
-dnl fi
-dnl AC_SUBST(XINCLUDES)
-dnl AC_SUBST(XLIBS)
-dnl XLIBS="$XLIBS $X_PRE_LIBS -lX11 $X_EXTRA_LIBS"
-
-dnl ---------------------------------------------------------------------
-dnl		GNU multiprecision library
-dnl
-AC_MSG_CHECKING(for gmp...)
-if test "${system_gmp}" = "yes" ; then
-  AC_MSG_RESULT(already installed)
-else
-  AC_MSG_RESULT(configuring local copy)
-  test -d gmp && rm -rf gmp
-  if mkdir gmp; then
-   (destdir=`${PWDCMD}`; cd gmp; CC="${CC} ${PICFLAG}" \
-     $srcdir/gmp/configure --disable-shared --prefix=${destdir} \
-	--infodir=${destdir}/doc --includedir=${destdir}/h \
-        --libdir=${destdir} --build=${build_alias} --host=${host_alias} $gmp_flags)
-  fi
-fi
-dnl ---------------------------------------------------------------------
-dnl		Boehm-Weiser garbage collector
-dnl
-AC_MSG_CHECKING(for Boehm-Weiser gc...)
-if test ${boehm} = "no"; then
-  AC_MSG_RESULT(use small collector instead)
-elif test "${system_boehm}" != "yes" ; then
-  AC_MSG_RESULT(configuring local copy)
+dnl Configure included Boehm GC if needed
+if test ${enable_boehm} = "included"; then
+  AC_MSG_NOTICE([Configuring included Boehm GC library:])
   test -d gc && rm -rf gc
   if mkdir gc; then
      (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
         $srcdir/gc/configure --disable-shared --prefix=${destdir} \
 	--includedir=${destdir}/h --libdir=${destdir} --build=${build_alias} \
-	--host=${host_alias} ${gc_flags})
+	--host=${host_alias} ${boehm_configure_flags})
   fi
-else
-  AC_MSG_RESULT(already installed)
 fi
-dnl ---------------------------------------------------------------------
-dnl		Final pass over configuration files
-dnl
-dnl Notice that we build ${builddir}/h/configpre.h fron ${srcdir}/h/config.h.in,
-dnl and then use all AC_DEF* to build h/config.h from h/configpre.h
-dnl
-AC_CONFIG_FILES(bare.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp
- ../Makefile Makefile c/Makefile doc/Makefile doc/ecl.man
- tests/Makefile ansi-tests/Makefile gabriel/Makefile)
-AC_CONFIG_FILES([ecl-config.pre:util/ecl-config])
-AC_CONFIG_FILES([h/configpre:h/config.h.in])
-AC_CONFIG_FILES([lsp/config.pre:lsp/config.lsp.in])
-AC_CONFIG_FILES([compile.pre:compile.lsp.in])
-AC_CONFIG_HEADER([h/config.h:h/configpre])
+
+dnl ----------------------------------------------------------------------
+dnl Configure local GMP if needed
+if test "${with_system_gmp}" = "no" ; then
+  AC_MSG_NOTICE(Configuring included GMP library:)
+  test -d gmp && rm -rf gmp
+  if mkdir gmp; then
+   (destdir=`${PWDCMD}`; cd gmp; CC="${CC} ${PICFLAG}" \
+     $srcdir/gmp/configure --disable-shared --prefix=${destdir} \
+	--infodir=${destdir}/doc --includedir=${destdir}/h \
+        --libdir=${destdir} --build=${build_alias} --host=${host_alias} $with_gmp)
+  fi
+fi
+
+
+AC_CONFIG_FILES([
+  bare.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp
+  ../Makefile Makefile c/Makefile doc/Makefile doc/ecl.man
+  tests/Makefile ansi-tests/Makefile gabriel/Makefile
+  h/configpre.h:h/config.h.in ecl-config.pre:util/ecl-config
+  lsp/config.pre:lsp/config.lsp.in compile.pre:compile.lsp.in ])
+AC_CONFIG_HEADERS([h/config.h:h/configpre.h]) # FIXME
 AC_OUTPUT
