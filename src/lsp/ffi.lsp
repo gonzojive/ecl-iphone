@@ -508,7 +508,7 @@
 	   (arg-types (mapcar #'(lambda (type) (%convert-to-arg-type (second type))) args))
 	   (return-type (%convert-to-return-type returning))
 	   (nargs (length arguments))
-	   (c-string (produce-function-call name nargs))
+	   (c-string (produce-function-call c-name nargs))
 	   (casting-required (not (or (member returning '(:void :cstring))
 				      (foreign-elt-type-p returning))))
 	   (inline-form `(c-inline ,arguments ,arg-types
