@@ -1037,8 +1037,8 @@ EXPORTS
 	cl_gentemp
 	si_put_properties
 
-	cl_defvar
-	cl_defparameter
+	;cl_defvar
+	;cl_defparameter
 	make_symbol
 	make_keyword
 	symbol_value

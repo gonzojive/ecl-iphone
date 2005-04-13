@@ -117,7 +117,7 @@ lsp/config.lsp: $(srcdir)/lsp/config.lsp.in Makefile.msvc6
 	sed -e "s,@ecldir@,$(libdir:\=/),g" \
 	    -e "s,@SHORT_SITE_NAME@,$(SHORT_SITE_NAME),g" \
 	    -e "s,@LONG_SITE_NAME@,$(LONG_SITE_NAME),g" \
-	    -e "s,@ECL_VERSION@,$(ECL_VERSION),g" \
+	    -e "s,@PACKAGE_VERSION@,$(ECL_VERSION),g" \
 	    -e "s,@ARCHITECTURE@,$(ARCHITECTURE),g" \
 	    -e "s,@MACHINE_INSTANCE@,$(MACHINE_INSTANCE),g" \
 	    -e "s,@MACHINE_VERSION@,$(MACHINE),g" \
@@ -131,12 +131,16 @@ compile.lsp: bare.lsp $(srcdir)/compile.lsp.in Makefile.msvc6
 	    -e "s,@true_builddir@,$(MAKEDIR:\=/),g" \
 	    -e "s,@CFLAGS@,$(CFLAGS),g" \
 	    -e "s,@ECL_CFLAGS@,,g" \
+	    -e "s,@CPPFLAGS@,,g" \
 	    -e "s,@LDRPATH@,,g" \
 	    -e "s,@LDFLAGS@,/MD /link /LIBPATH:~S,g" \
 	    -e "s,@SHARED_LDFLAGS@,/LD,g" \
 	    -e "s,@BUNDLE_LDFLAGS@,/LD,g" \
 	    -e "s,@CLIBS@,user32.lib ws2_32.lib,g" \
 	    -e "s,@STATICLIBS@,eclgmp.lib eclgc.lib,g" \
+	    -e "s,@LIBS@,user32.lib ws2_32.lib,g" \
+	    -e "s,@CORE_LIBS@,,g" \
+	    -e "s,@FASL_LIBS@,,g" \
 	    -e "s,@OBJEXT@,obj,g" \
 	    -e "s,@SHAREDPREFIX@,,g" \
 	    -e "s,@SHAREDEXT@,lib,g" \
@@ -163,6 +167,7 @@ cmp/cmpcfg.lsp: $(srcdir)/cmp/cmpcfg.lsp.in Makefile.msvc6
 	sed -e "s,@ECL_CC@,$(CC),g" \
 	    -e "s,@CFLAGS@,$(CFLAGS),g" \
 	    -e "s,@ECL_CFLAGS@,,g" \
+	    -e "s,@CPPFLAGS@,,g" \
 	    -e "s,@LDRPATH@,,g" \
 	    -e "s,@LDFLAGS@,/MD /link /LIBPATH:~S,g" \
 	    -e "s,@SHARED_LDFLAGS@,/LD,g" \
