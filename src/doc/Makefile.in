@@ -76,10 +76,10 @@ flatinstall: all
 	for i in *.html; do $(INSTALL_DATA) $$i $(DESTDIR)$(docdir)/; done
 
 uninstall:
-	for k in $(INFO_FILES); do \
+	-for k in $(INFO_FILES); do \
 	  rm $$k; \
 	  if [ -x $(INSTALL_INFO) ]; then \
-	    $(INSTALL_INFO) --delete $$k; \
+	    $(INSTALL_INFO) --remove $$k; \
 	  fi; \
 	done
 	rm -r $(DESTDIR)$(infodir)/ecl.$(INFOEXT) $(DESTDIR)$(infodir)/ecldev.$(INFOEXT); \
