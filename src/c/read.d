@@ -1745,9 +1745,12 @@ ecl_invalid_character_p(int c)
 	if (entry->macro != cl_core.dispatch_reader || entry->dispatch_table == NULL)
 		FEerror("~S is not a dispatch character.", 1, dspchr);
 	subcode = char_code(subchr);
-	if (islower(subcode))
-		subcode = toupper(subcode);
 	entry->dispatch_table[subcode] = fnc;
+	if (islower(subcode)) {
+		entry->dispatch_table[toupper(subcode)] = fnc;
+	} else if (isupper(subcode)) {
+		entry->dispatch_table[tolower(subcode)] = fnc;
+	}
 	@(return Ct)
 @)
 
