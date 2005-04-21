@@ -431,20 +431,38 @@ q (or Q):             quits the inspection.~%~
 
 (defmethod documentation ((object symbol) doc-type)
   (when (member doc-type +valid-documentation-types+)
-    (or (when (eq doc-type 'type)
-	  (let ((c (find-class object nil)))
-	    (and c (documentation c t))))
-	(si::get-documentation object doc-type))))
+    (case doc-type
+      (type
+       (let ((c (find-class object nil)))
+	 (if c
+	     (documentation c t)
+	     (si::get-documentation object doc-type))))
+      (function
+       (if (fboundp object)
+	   (documentation (fdefinition object) doc-type)
+	   (si::get-documentation object doc-type)))
+      (otherwise
+       (si::get-documentation object doc-type)))))
 
 (defmethod (setf documentation) (new-value (object symbol) doc-type)
   (when (member doc-type +valid-documentation-types+)
-    (or (when (eq doc-type 'type)
-	  (let ((c (find-class object nil)))
-	    (when c
-	      (si::set-documentation object 'type nil)
-	      (si::set-documentation object 'structure nil)
-	      (setf (documentation c t) new-value))))
-	(si::get-documentation object doc-type)))
+    (case doc-type
+      (type
+       (let ((c (find-class object nil)))
+	 (if c
+	     (progn
+	       (si::set-documentation object 'type nil)
+	       (si::set-documentation object 'structure nil)
+	       (setf (documentation c t) new-value))
+	     (si::set-documentation object doc-type new-value))))
+      (function
+       (if (fboundp object)
+	   (let ((c (fdefinition object)))
+	     (si::set-documentation object 'function nil)
+	     (setf (documentation object 'function) new-value))
+	   (si::set-documentation object doc-type new-value)))
+      (otherwise
+       (si::set-documentation object doc-type new-value))))
   new-value)
 
 (defmethod documentation ((object package) doc-type)
