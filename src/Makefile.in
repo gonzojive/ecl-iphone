@@ -73,7 +73,8 @@ lsp/config.lsp: lsp/config.pre
 compile.lsp: compile.pre
 	sed -e 's,@ecldir@,$(libdir),g' < compile.pre > compile.lsp
 ecl-config: ecl-config.pre
-	sed -e 's,@libdir\\@,$(libdir),' \
+	sed -e 's,~A,$(libdir),;s,~\*,,' \
+	    -e 's,@libdir\\@,$(libdir),' \
 	    -e 's,@includedir\\@,$(libdir)/h,' ecl-config.pre > ecl-config
 
 
@@ -108,8 +109,11 @@ install-base:
 	  $(INSTALL_PROGRAM) -s $$i $(DESTDIR)$(bindir); \
 	done;
 	$(INSTALL_SCRIPT) ecl-config $(DESTDIR)$(bindir)
-	for i in BUILD-STAMP $(LSP_LIBRARIES) $(LIBRARIES) c/dpp* help.doc ; do \
+	for i in BUILD-STAMP help.doc ; do \
 	  $(INSTALL_DATA) $$i $(DESTDIR)$(libdir); \
+	done
+	for i in $(LSP_LIBRARIES) $(LIBRARIES) c/dpp* ; do \
+	  $(INSTALL_PROGRAM) $$i $(DESTDIR)$(libdir); \
 	done
 	for i in $(ECL_MODULES); do \
 	  $(INSTALL_DATA) $$i.fas $(DESTDIR)$(libdir); \
