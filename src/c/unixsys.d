@@ -60,6 +60,7 @@ si_open_pipe(cl_object cmd)
 	stream->stream.mode = smm_input;
 	stream->stream.file = ptr;
 	stream->stream.object0 = @'base-char';
+	stream->stream.char_stream_p = 1;
 	stream->stream.object1 = @'si::open-pipe';
 	stream->stream.int0 = stream->stream.int1 = 0;
 #if !defined(GBC_BOEHM)

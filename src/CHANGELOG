@@ -40,6 +40,8 @@ ECL 0.9f
  - Fixed the optimizer for slot access, which now only operates if the
    variables have been declared of type STANDARD-OBJECT.
 
+ - Pipes are now opened in character mode (M. Pasternacki)
+
 * Foreign function interface (FFI):
 
  - ext:c-uint-max and ext:c-ulong-max did not have the right bignum value.
