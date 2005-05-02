@@ -340,7 +340,7 @@ dnl in several architectures.
 AC_DEFUN(ECL_FIND_SETJMP,[
 AC_SUBST(ECL_SETJMP)
 AC_SUBST(ECL_LONGJMP)
-AC_CHECK_FUNC(_setjmp,
+AC_CHECK_FUNC(_longjmp,
 ECL_SETJMP="_setjmp";ECL_LONGJMP="_longjmp",
 ECL_SETJMP="setjmp";ECL_LONGJMP="longjmp")])
 

@@ -1523,8 +1523,8 @@ test -z "${docdir}" && docdir="${datadir}/doc/ecl"
 
 boehm_configure_flags=""
 
-                                                                                                                                              TARGETS=ecl${EXEEXT}
- SUBDIRS=c
+                                                                                                                                              TARGETS='ecl$(EXE)'
+SUBDIRS=c
 
 
 # Make sure we can run config.sub.
@@ -6444,9 +6444,9 @@ esac
 
 
 
-echo "$as_me:$LINENO: checking for _setjmp" >&5
-echo $ECHO_N "checking for _setjmp... $ECHO_C" >&6
-if test "${ac_cv_func__setjmp+set}" = set; then
+echo "$as_me:$LINENO: checking for _longjmp" >&5
+echo $ECHO_N "checking for _longjmp... $ECHO_C" >&6
+if test "${ac_cv_func__longjmp+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   cat >conftest.$ac_ext <<_ACEOF
@@ -6455,12 +6455,12 @@ _ACEOF
 cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
-/* Define _setjmp to an innocuous variant, in case <limits.h> declares _setjmp.
+/* Define _longjmp to an innocuous variant, in case <limits.h> declares _longjmp.
    For example, HP-UX 11i <limits.h> declares gettimeofday.  */
-#define _setjmp innocuous__setjmp
+#define _longjmp innocuous__longjmp
 
 /* System header to define __stub macros and hopefully few prototypes,
-    which can conflict with char _setjmp (); below.
+    which can conflict with char _longjmp (); below.
     Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
     <limits.h> exists even on freestanding compilers.  */
 
@@ -6470,7 +6470,7 @@ cat >>conftest.$ac_ext <<_ACEOF
 # include <assert.h>
 #endif
 
-#undef _setjmp
+#undef _longjmp
 
 /* Override any gcc2 internal prototype to avoid an error.  */
 #ifdef __cplusplus
@@ -6479,14 +6479,14 @@ extern "C"
 #endif
 /* We use char because int might match the return type of a gcc2
    builtin and then its argument prototype would still apply.  */
-char _setjmp ();
+char _longjmp ();
 /* The GNU C library defines this for functions which it implements
     to always fail with ENOSYS.  Some functions are actually named
     something starting with __ and the normal name is an alias.  */
-#if defined (__stub__setjmp) || defined (__stub____setjmp)
+#if defined (__stub__longjmp) || defined (__stub____longjmp)
 choke me
 #else
-char (*f) () = _setjmp;
+char (*f) () = _longjmp;
 #endif
 #ifdef __cplusplus
 }
@@ -6495,7 +6495,7 @@ char (*f) () = _setjmp;
 int
 main ()
 {
-return f != _setjmp;
+return f != _longjmp;
   ;
   return 0;
 }
@@ -6522,19 +6522,19 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  ac_cv_func__setjmp=yes
+  ac_cv_func__longjmp=yes
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-ac_cv_func__setjmp=no
+ac_cv_func__longjmp=no
 fi
 rm -f conftest.err conftest.$ac_objext \
       conftest$ac_exeext conftest.$ac_ext
 fi
-echo "$as_me:$LINENO: result: $ac_cv_func__setjmp" >&5
-echo "${ECHO_T}$ac_cv_func__setjmp" >&6
-if test $ac_cv_func__setjmp = yes; then
+echo "$as_me:$LINENO: result: $ac_cv_func__longjmp" >&5
+echo "${ECHO_T}$ac_cv_func__longjmp" >&6
+if test $ac_cv_func__longjmp = yes; then
   ECL_SETJMP="_setjmp";ECL_LONGJMP="_longjmp"
 else
   ECL_SETJMP="setjmp";ECL_LONGJMP="longjmp"

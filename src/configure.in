@@ -131,8 +131,8 @@ AC_SUBST(BUNDLE_LDFLAGS)        dnl Flags for FASL files linker
 AC_SUBST(SHORT_SITE_NAME)       dnl Short name for the machine we built this on
 AC_SUBST(LONG_SITE_NAME)        dnl Long name for the machine we built this on
 AC_SUBST(EXTRA_OBJS)            dnl Extra *.o files to be compiled into libecl.a
-AC_SUBST(TARGETS, [ecl${EXEEXT}]) dnl Versions of ECL to be built 
-AC_SUBST(SUBDIRS, [c])           dnl Subdirectories that make should process
+AC_SUBST(TARGETS, ['ecl$(EXE)'])dnl Versions of ECL to be built 
+AC_SUBST(SUBDIRS, [c])          dnl Subdirectories that make should process
 AC_SUBST(LIBRARIES, [])         dnl GMP, Boehm's GC, etc
 AC_SUBST(LSP_LIBRARIES)         dnl Libraries produced by lisp translator
 AC_SUBST(ECL_MODULES, [])       dnl Contributed modules to be built in
