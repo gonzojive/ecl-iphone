@@ -29,9 +29,9 @@
 	 (setq var-loc (next-env))
 	 (setf (var-loc var) var-loc))
        (when (zerop var-loc) (wt-nl "env" *env-lvl* " = Cnil;"))
-       (wt-nl "CLV" var-loc "=&CAR(env" *env-lvl* "=CONS(")
+       (wt-nl "CLV" var-loc "=env" *env-lvl* "=CONS(")
        (wt-coerce-loc :object loc)
-       (wt ",env" *env-lvl* "));")
+       (wt ",env" *env-lvl* ");")
        (wt-comment (var-name var))))
     (LEXICAL
      (let ((var-loc (var-loc var)))

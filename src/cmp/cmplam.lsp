@@ -300,9 +300,6 @@
 	       (setf (var-loc var) (wt-decl var)))))
       (when (and rest (< (var-ref rest) 1)) ; dont create rest if not used
 	(setq rest nil))
-      (when (or optionals rest)
-	;; count optionals
-        (wt "int i=" nreq ";"))
       (do ((opt optionals (cdddr opt)))
 	  ((endp opt))
         (do-decl (first opt))
@@ -342,6 +339,8 @@
     ;; to bds_unwind1(), which is wrong. A simple fix is to save *unwind-exit*
     ;; which is what we do here.
     (let ((va-arg-loc (if simple-varargs 'VA-ARG 'CL-VA-ARG)))
+      ;; counter for optionals
+      (wt "{int i=" nreq ";")
       (do ((opt optionals (cdddr opt)))
 	  ((endp opt))
 	(wt-nl "if (i >= narg) {")
@@ -352,7 +351,8 @@
 	  (let ((*unwind-exit* *unwind-exit*))
 	    (bind va-arg-loc (first opt)))
 	  (when (third opt) (bind t (third opt)))
-	(wt-nl "}"))))
+	(wt-nl "}"))
+      (wt "}")))
 
   (when (or rest keywords allow-other-keys)
     (cond ((not (or keywords allow-other-keys))

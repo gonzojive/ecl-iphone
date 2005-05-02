@@ -12,14 +12,6 @@ ECL 0.9f
 	)
    produced an error.
 
- - In compiled code, discarded (VALUES ...) forms did not trigger all the
-   required unwinding forms, so that (TAGBODY (CATCH 'FOO (VALUES 0))) produced
-   wrong code.
-
- - In compiled code, the init-form for keyword and optional arguments could
-   reference the variable that it was going to initialize, as in
-	(LAMBDA (&OPTIONAL (FOO (1+ FOO))) ...)
-
  - All strings in a pathname must be valid C strings, with a null terminating
    character and no fill pointer.
 
@@ -34,9 +26,6 @@ ECL 0.9f
 
  - make_stream_from_fd() did not accept smm_io.
 
- - Globals declared with DEFPARAMETER toplevel forms were not recognized by
-   the compiler as special variables.
-
  - Fixed the optimizer for slot access, which now only operates if the
    variables have been declared of type STANDARD-OBJECT.
 
@@ -45,6 +34,24 @@ ECL 0.9f
  - (DOCUMENTATION 'F 'FUNCTION) did not work with generic functions.
 
  - ADJUST-ARRAY did not work with strings.
+
+ - DEFMACRO admits again lambda lists of the form (a . b).
+
+* Compiler errors:
+
+ - In compiled code, discarded (VALUES ...) forms did not trigger all the
+   required unwinding forms, so that (TAGBODY (CATCH 'FOO (VALUES 0))) produced
+   wrong code.
+
+ - In compiled code, the init-form for keyword and optional arguments could
+   reference the variable that it was going to initialize, as in
+	(LAMBDA (&OPTIONAL (FOO (1+ FOO))) ...)
+
+ - Globals declared with DEFPARAMETER toplevel forms were not recognized by
+   the compiler as special variables.
+
+ - The code for handling closure variables has been changed and now encloses
+   the whole of the function in a C block
 
 * Foreign function interface (FFI):
 
