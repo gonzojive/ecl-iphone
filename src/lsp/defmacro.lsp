@@ -258,6 +258,13 @@
 			     doc decls ppn env)
   (multiple-value-setq (decls body doc)
     (find-declarations body))
+  ;; We turn (a . b) into (a &rest b)
+  ;; This is required because MEMBER (used below) does not like improper lists
+  (let ((cell (last vl)))
+    (when (rest cell)
+      (setq vl (nconc (butlast vl 0) (list '&rest (rest cell))))))
+  ;; If we find an &environment variable in the lambda list, we take not of the
+  ;; name and remove it from the list so that DESTRUCTURE does not get confused
   (if (setq env (member '&environment vl :test #'eq))
       (setq vl (nconc (ldiff vl env) (cddr env))
 	    env (second env))
