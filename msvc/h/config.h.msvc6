@@ -167,7 +167,7 @@ typedef unsigned int cl_hashkey;
 /* #undef HAVE_SYS_IOCTL_H */
 /* putenv() or setenv()							*/
 #undef HAVE_SETENV
-#undef HAVE_PUTENV
+#define HAVE_PUTENV 1
 /* times() and sys/times.h						*/
 /* #undef HAVE_TIMES */
 /* user home directory, user name, etc...				*/

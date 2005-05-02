@@ -497,7 +497,11 @@ si_setenv(cl_object var, cl_object value)
 		 * the right thing. */
 		unsetenv(var->string.self);
 #else
+#if defined(_MSC_VER) || defined(mingw32)
+		si_setenv(var, make_simple_string(""));
+#else
 		putenv(var->string.self);
+#endif
 #endif
 		ret_val = 0;
 	} else {
@@ -508,6 +512,8 @@ si_setenv(cl_object var, cl_object value)
 		cl_object temp =
 		  cl_format(4, Cnil, make_constant_string("~A=~A"), var,
 			    value);
+		if (temp->string.hasfillp && temp->string.fillp < temp->string.dim)
+		  temp->string.self[temp->string.fillp] = '\0';
 		putenv(temp->string.self);
 #endif
 	}
