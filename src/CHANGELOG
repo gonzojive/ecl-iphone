@@ -120,6 +120,9 @@ ECL 0.9f
    --with-system-{gmp,boehm} now take an optional argument which can be "auto",
    for automatic detection of the libraries (M. Pasternacki).
 
+ - By default, the size of binary streams is rounded to a multiple of 8. If you
+   want other behavior, pass :USE-HEADER-P T to the function OPEN.
+
 * ANSI Compatibility:
 
  - DEFSETF forms are enclosed in a block with the name of the accessor.

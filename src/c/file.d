@@ -2539,7 +2539,7 @@ normalize_stream_element_type(cl_object element_type)
 		   (if_exists Cnil iesp)
 		   (if_does_not_exist Cnil idnesp)
 	           (external_format @':default')
-		   (use_header_p Ct)
+		   (use_header_p Cnil)
 	      &aux strm)
 	enum ecl_smmode smm;
 	bool char_stream_p;
