@@ -44,6 +44,8 @@ ECL 0.9f
 
  - (DOCUMENTATION 'F 'FUNCTION) did not work with generic functions.
 
+ - ADJUST-ARRAY did not work with strings.
+
 * Foreign function interface (FFI):
 
  - ext:c-uint-max and ext:c-ulong-max did not have the right bignum value.

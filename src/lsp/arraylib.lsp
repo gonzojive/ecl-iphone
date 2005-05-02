@@ -315,7 +315,7 @@ pointer is 0 already."
 
 (defun adjust-array (array new-dimensions
                      &rest r
-		     &key element-type
+		     &key (element-type (array-element-type array))
 			  initial-element
 			  initial-contents
 			  fill-pointer
@@ -327,8 +327,7 @@ pointer is 0 already."
             (displaced-to nil) (displaced-index-offset 0))
 Adjusts the dimensions of ARRAY to the given DIMENSIONS.  ARRAY must be an
 adjustable array."
-  (declare (ignore element-type
-                   initial-element
+  (declare (ignore initial-element
                    initial-contents
                    fill-pointer
                    displaced-index-offset))
@@ -337,7 +336,7 @@ adjustable array."
   ;; FILL-POINTER = NIL means use the old value of the fill pointer
   (when (and (null fill-pointer) (array-has-fill-pointer-p array))
     (setf r (list* :fill-pointer (fill-pointer array) r)))
-  (let ((x (apply #'make-array new-dimensions :adjustable t r)))
+  (let ((x (apply #'make-array new-dimensions :adjustable t :element-type element-type r)))
     (declare (array x))
     (unless (or displaced-to initial-contents)
       (do ((cursor (make-list (length new-dimensions) :initial-element 0)))
