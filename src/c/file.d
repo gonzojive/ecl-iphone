@@ -805,10 +805,16 @@ ecl_read_byte8(cl_object strm)
 			wrong_file_handler( strm );
 		else
 		{
-			char ch;
-			if ( recv( fp, &ch, 1, 0 ) == SOCKET_ERROR )
-				wsock_error( "Cannot read char from Windows socket ~S.~%~A", strm );
-			c = ( unsigned char )ch;
+			/* check for unread chars first */
+			if (CONSP(strm->stream.object0)) {
+				c = (unsigned char)CHAR_CODE(CAR(strm->stream.object0));
+				strm->stream.object0 = CDR(strm->stream.object0);
+			} else {
+				char ch;
+				if ( recv( fp, &ch, 1, 0 ) == SOCKET_ERROR )
+					wsock_error( "Cannot read char from Windows socket ~S.~%~A", strm );
+				c = ( unsigned char )ch;
+			}
 		}
 		break;
 	}
@@ -1066,10 +1072,15 @@ BEGIN:
 		if ( fp == INVALID_SOCKET )
 			wrong_file_handler( strm );
 		else {
-			char ch;
-			if ( recv( fp, &ch, 1, 0 ) == SOCKET_ERROR )
-				wsock_error( "Cannot read char from Windows socket ~S.~%~A", strm );
-			c = ( unsigned char )ch;
+			if (CONSP(strm->stream.object0)) {
+				c = (unsigned char)CHAR_CODE(CAR(strm->stream.object0));
+				strm->stream.object0 = CDR(strm->stream.object0);
+			} else {
+				char ch;
+				if ( recv( fp, &ch, 1, 0 ) == SOCKET_ERROR )
+					wsock_error( "Cannot read char from Windows socket ~S.~%~A", strm );
+				c = ( unsigned char )ch;
+			}
 		}
 		break;
 	}
@@ -1170,9 +1181,24 @@ BEGIN:
 
 #if defined(ECL_WSOCK)
 	case smm_io_wsock:
-	case smm_input_wsock:
-		wsock_error( "Cannot peek char on Windows Socket ~S.~%~A", strm );
+	case smm_input_wsock: {
+		int fp = strm->stream.file;
+		if (!strm->stream.char_stream_p)
+			not_a_character_stream(strm);
+		if ( fp == INVALID_SOCKET )
+			wrong_file_handler( strm );
+		else {
+			if (CONSP(strm->stream.object0)) {
+				c = (unsigned char)CHAR_CODE(CAR(strm->stream.object0));
+			} else {
+				char ch;
+				if ( recv( fp, &ch, 1, MSG_PEEK ) == SOCKET_ERROR )
+					wsock_error( "Cannot peek char from Windows socket ~S.~%~A", strm );
+				c = ( unsigned char )ch;
+			}
+		}
 		break;
+	}
 #endif
 
 	case smm_synonym:
@@ -1264,7 +1290,8 @@ BEGIN:
 #if defined(ECL_WSOCK)
 	case smm_io_wsock:
 	case smm_input_wsock:
-		goto UNREAD_ERROR;
+		strm->stream.object0 = CONS(CODE_CHAR((unsigned char)c), strm->stream.object0);
+		break;
 #endif
 
 	case smm_synonym:
@@ -1685,6 +1712,8 @@ BEGIN:
 #if defined(ECL_WSOCK)
 	case smm_io_wsock:
 	case smm_input_wsock:
+		/* flush at least the unread chars */
+		strm->stream.object0 = Cnil;
 		/* do not do anything (yet) */
 		printf( "Trying to clear input on windows socket stream!\n" );
 		break;
@@ -1915,16 +1944,20 @@ BEGIN:
 			wrong_file_handler( strm );
 		else
 		{
-			struct timeval tv = { 0, 0 };
-			fd_set fds;
-			int result;
+			if (CONSP(strm->stream.object0))
+				return ECL_LISTEN_AVAILABLE;
+			else {
+				struct timeval tv = { 0, 0 };
+				fd_set fds;
+				int result;
 
-			FD_ZERO( &fds );
-			FD_SET( ( int )fp, &fds );
-			result = select( 0, &fds, NULL, NULL,  &tv );
-			if ( result == SOCKET_ERROR )
-				wsock_error( "Cannot listen on Windows socket ~S.~%~A", strm );
-			return ( result > 0 ? ECL_LISTEN_AVAILABLE : ECL_LISTEN_NO_CHAR );
+				FD_ZERO( &fds );
+				FD_SET( ( int )fp, &fds );
+				result = select( 0, &fds, NULL, NULL,  &tv );
+				if ( result == SOCKET_ERROR )
+					wsock_error( "Cannot listen on Windows socket ~S.~%~A", strm );
+				return ( result > 0 ? ECL_LISTEN_AVAILABLE : ECL_LISTEN_NO_CHAR );
+			}
 		}
 #endif
 
@@ -2760,7 +2793,14 @@ ecl_make_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm)
    stream->stream.mode = (short)smm;
    stream->stream.closed = 0;
    stream->stream.file = fp;
+#if defined (ECL_WSOCK)
+   if ( smm == smm_input_wsock || smm == smm_io_wsock )
+     stream->stream.object0 = Cnil;
+   else
+     stream->stream.object0 = @'base-char';
+#else
    stream->stream.object0 = @'base-char';
+#endif
    stream->stream.object1 = fname; /* not really used */
    stream->stream.int0 = stream->stream.int1 = 0;
 #if !defined(GBC_BOEHM)
