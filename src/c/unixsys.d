@@ -44,6 +44,12 @@ si_system(cl_object cmd)
 }
 
 cl_object
+si_getpid(void)
+{
+	@(return MAKE_FIXNUM(getpid()))
+}
+
+cl_object
 si_open_pipe(cl_object cmd)
 {
 #ifdef _MSC_VER

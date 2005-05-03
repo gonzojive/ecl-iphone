@@ -1113,6 +1113,7 @@ cl_symbols[] = {
 {SYS_ "GET-STRING-INPUT-STREAM-INDEX", SI_ORDINARY, si_get_string_input_stream_index, 1, OBJNULL},
 {SYS_ "GETENV", SI_ORDINARY, si_getenv, 1, OBJNULL},
 {SYS_ "GETCWD", SI_ORDINARY, si_getcwd, 0, OBJNULL},
+{SYS_ "GETPID", SI_ORDINARY, si_getpid, 0, OBJNULL},
 {SYS_ "HASH-SET", SI_ORDINARY, si_hash_set, 3, OBJNULL},
 {SYS_ "HASH-TABLE-ITERATOR", SI_ORDINARY, si_hash_table_iterator, 1, OBJNULL},
 {SYS_ "IHS-ENV", SI_ORDINARY, si_ihs_env, 1, OBJNULL},

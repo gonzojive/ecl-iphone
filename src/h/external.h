@@ -1448,6 +1448,7 @@ extern cl_object cl_file_write_date(cl_object file);
 extern cl_object cl_file_author(cl_object file);
 extern cl_object si_file_kind(cl_object pathname, cl_object follow_links);
 extern cl_object si_getcwd(void);
+extern cl_object si_getpid(void);
 extern cl_object si_chdir _ARGS((cl_narg narg, cl_object directory, ...));
 extern cl_object si_mkdir(cl_object directory, cl_object mode);
 extern cl_object cl_directory _ARGS((cl_narg narg, cl_object directory, ...));
