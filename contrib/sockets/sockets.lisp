@@ -27,8 +27,12 @@
 ;; Obviously this requires the one or other form of BSD compatible
 ;; socket interface.
 
+#+(or :win32 :mingw32)
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (push :wsock *features*))
+
 ;; Include the neccessary headers
-#-:win32
+#-:wsock
 (clines
  "#include <sys/types.h>"
  "#include <sys/socket.h>"
@@ -39,17 +43,19 @@
  "#include <errno.h>"
  "#include <fcntl.h>"
  "#include <stdio.h>")
-#+:win32
+#+:wsock
 (clines
  "#include <winsock2.h>"
  "typedef unsigned int uint32_t;"
- "typedef int ssize_t, socklen_t;"
+ #-:mingw32
+ "typedef int ssize_t;"
+ "typedef int socklen_t;"
  "#define MSG_WAITALL 0"
  "#include <errno.h>"
  "#include <fcntl.h>"
  "#include <stdio.h>")
 
-#+:win32
+#+:wsock
 (progn
   (defvar +wsock-initialized+ nil)
   (defun wsock-initialize ()
@@ -66,7 +72,7 @@
         (setf +wsock-initialized+ t)
 	(error "Unable to initialize Windows Socket library"))))
   (wsock-initialize)
-); #+:win32
+); #+:wsock
 
 (eval-when (:compile-toplevel :load-toplevel)
   (defmacro define-c-constants (&rest args)
@@ -77,7 +83,7 @@
   (defmacro c-constant (name)
     `(c-inline () () :int ,name :one-liner t)))
 
-#+:win32
+#+:wsock
 (Clines
  "#define AF_LOCAL -1"
 )
@@ -86,7 +92,7 @@
   +af-inet+ "AF_INET"
   +af-local+ "AF_LOCAL")
 
-#+:win32
+#+:wsock
 (defconstant +af-named-pipe+ -2)
 
 ;; Foreign functions
@@ -94,7 +100,7 @@
 (defentry ff-socket (:int :int :int) (:int "socket"))
 (defentry ff-listen (:int :int) (:int "listen"))
 (defentry ff-close (:int) (:int "close"))
-#+:win32 (defentry ff-closesocket (:int) (:int "closesocket"))
+#+:wsock (defentry ff-closesocket (:int) (:int "closesocket"))
 
 ;;; This courtesy of Pierre Mai in comp.lang.lisp 08 Jan 1999 00:51:44 +0100
 ;;; Message-ID: <87lnjebq0f.fsf@orion.dent.isdn.cs.tu-berlin.de>
@@ -262,7 +268,7 @@ protocol. Other values are used as-is.")
 	  :initform :stream
 	  :documentation "Type of the socket: :STREAM or :DATAGRAM.")
    (stream)
-   #+:win32
+   #+:wsock
    (non-blocking-p :initform nil))
   (:documentation "Common base class of all sockets, not ment to be
 directly instantiated."))
@@ -283,7 +289,7 @@ directly instantiated."))
 		(t 0)))
 	 (fd (or (and (slot-boundp socket 'file-descriptor)
 		      (socket-file-descriptor socket))
-		 #+:win32
+		 #+:wsock
 		 (and (member (socket-family socket) (list +af-named-pipe+ +af-local+)) 0)
 		 (ff-socket (socket-family socket)
 			    (ecase (or type
@@ -607,7 +613,7 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
 	(values vector port)
 	(socket-error "getsockname"))))
 
-#+:win32
+#+:wsock
 (defmethod socket-close-low-level ((socket inet-socket))
   (ff-closesocket (socket-file-descriptor socket)))
 
@@ -616,7 +622,7 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
 ;;; UNIX SOCKETS
 ;;;
 
-#-:win32
+#-:wsock
 (progn
 
 (defclass local-socket (socket)
@@ -710,7 +716,7 @@ also known as unix-domain sockets."))
 	peer
 	(socket-error "getpeername"))))
 
-) ;#-:win32
+) ;#-:wsock
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -718,7 +724,7 @@ also known as unix-domain sockets."))
 ;;; UNIX SOCKETS [WIN32, using the cygwin way]
 ;;;
 
-#+:win32
+#+:wsock
 (progn
 
 (defclass local-socket (socket)
@@ -788,14 +794,14 @@ also known as unix-domain sockets."))
 (defmethod (setf non-blocking-mode) (non-blocking-p (socket local-socket))
   (setf (non-blocking-mode (slot-value socket 'proxy-socket)) non-blocking-p))
 
-) ;#+:win32
+) ;#+:wsock
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; NAMED PIPE SOCKETS [WIN32]
 ;;;
 
-#+:win32
+#+:wsock
 (progn
 
 (defclass named-pipe-socket (socket)
@@ -912,7 +918,7 @@ also known as unix-domain sockets."))
       (socket-error "DisconnectNamedPipe"))
     (call-next-method)))
 
-) ;#+:win32
+) ;#+:wsock
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -920,10 +926,10 @@ also known as unix-domain sockets."))
 ;;;
 
 (defmethod non-blocking-mode ((socket socket))
-  #-:win32
+  #-:wsock
   (let ((fd (socket-file-descriptor socket)))
     (not (zerop (c-inline (fd) (:int) :int "fcntl(#0,F_GETFL,NULL)&O_NONBLOCK" :one-liner t))))
-  #+:win32
+  #+:wsock
   (slot-value socket 'non-blocking-p)
 )
 
@@ -931,13 +937,13 @@ also known as unix-domain sockets."))
   (let ((fd (socket-file-descriptor socket))
 	(nblock (if non-blocking-p 1 0)))
     (if (= -1 (c-inline (fd nblock) (:int :int) :int
-	      #+:win32
+	      #+:wsock
 	      "
 {
 	int blocking_flag = (#1 ? 1 : 0);
 	@(return) = ioctlsocket(#0, FIONBIO, (u_long*)&blocking_flag);
 }"
-	      #-:win32
+	      #-:wsock
 	      "
 {
         int oldflags = fcntl(#0,F_GETFL,NULL);
@@ -945,9 +951,9 @@ also known as unix-domain sockets."))
                        (#1 ? O_NONBLOCK : 0);
         @(return) = fcntl(#0,F_SETFL,newflags);
 }"))
-	(socket-error #-:win32 "fcntl" #+:win32 "ioctlsocket")
-	#-:win32 non-blocking-p
-	#+:win32 (setf (slot-value socket 'non-blocking-p) non-blocking-p))))
+	(socket-error #-:wsock "fcntl" #+:wsock "ioctlsocket")
+	#-:wsock non-blocking-p
+	#+:wsock (setf (slot-value socket 'non-blocking-p) non-blocking-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -966,11 +972,11 @@ also known as unix-domain sockets."))
 		       (:input (c-constant "smm_input"))
 		       (:output (c-constant "smm_output"))
 		       (:input-output (c-constant "smm_io"))
-		       #+:win32
+		       #+:wsock
 		       (:input-wsock (c-constant "smm_input_wsock"))
-		       #+:win32
+		       #+:wsock
 		       (:output-wsock (c-constant "smm_output_wsock"))
-		       #+:win32
+		       #+:wsock
 		       (:input-output-wsock (c-constant "smm_io_wsock"))
 		       ))
 	    (t :int :int)
@@ -988,13 +994,13 @@ on SOCKET (which must be connected).  ARGS are ignored."))
 		     (slot-value socket 'stream))))
     (unless stream
       (setf stream (let ((fd (socket-file-descriptor socket)))
-		     (make-stream-from-fd fd #-:win32 :input-output #+:win32 :input-output-wsock)))
+		     (make-stream-from-fd fd #-:wsock :input-output #+:wsock :input-output-wsock)))
       (setf (slot-value socket 'stream) stream)
       #+ ignore
       (sb-ext:cancel-finalization socket))
     stream))
 
-#+:win32
+#+:wsock
 (defmethod socket-make-stream ((socket named-pipe-socket) &rest args)
   (declare (ignore args))
   (let ((stream (and (slot-boundp socket 'stream)
@@ -1023,7 +1029,7 @@ on SOCKET (which must be connected).  ARGS are ignored."))
 ;;; possible error produced by the socket or DNS interface.
 ;;;
 
-#+:win32
+#+:wsock
 (defun get-win32-error-string (num)
   (c-inline (num) (:int) t
 	"{char *lpMsgBuf;
@@ -1056,9 +1062,9 @@ on SOCKET (which must be connected).  ARGS are ignored."))
                (format s "Socket error in \"~A\": ~A (~A)"
                        (socket-error-syscall c)
                        (or (socket-error-symbol c) (socket-error-errno c))
-		       #+:win32
+		       #+:wsock
 		       (get-win32-error-string num)
-		       #-:win32
+		       #-:wsock
 		       (c-inline (num) (:int) :cstring
 				 "strerror(#0)" :one-liner t)))))
   (:documentation "Common base class of socket related conditions."))
@@ -1076,7 +1082,7 @@ on SOCKET (which must be connected).  ARGS are ignored."))
 ;;; need symbols to be added to constants.ccon
 ;;; I haven't yet thought of a non-kludgey way of keeping all this in
 ;;; the same place
-#+:win32
+#+:wsock
 (Clines
   "#define EADDRINUSE WSAEADDRINUSE"
   "#define ECONNREFUSED WSAECONNREFUSED"
@@ -1109,7 +1115,7 @@ on SOCKET (which must be connected).  ARGS are ignored."))
   (or (cdr (assoc err *conditions-for-errno* :test #'eql)) 'socket-error))
 
 (defun socket-error (where)
-  (let* ((errno  (c-constant #-:win32 "errno" #+:win32 "WSAGetLastError()"))
+  (let* ((errno  (c-constant #-:wsock "errno" #+:wsock "WSAGetLastError()"))
          (condition (condition-for-errno errno)))
     (error condition :errno errno  :syscall where)))
 
@@ -1169,12 +1175,12 @@ GET-NAME-SERVICE-ERRNO")
       'name-service))
 
 (defun get-name-service-errno ()
-  (setf *name-service-errno* (c-constant #-:win32 "h_errno" #+:win32 "WSAGetLastError()")))
+  (setf *name-service-errno* (c-constant #-:wsock "h_errno" #+:wsock "WSAGetLastError()")))
 
 (defun get-name-service-error-message (num)
-  #-:win32
+  #-:wsock
   (c-inline (num) (:int) :cstring "hstrerror(#0)" :one-liner t)
-  #+:win32
+  #+:wsock
   (get-win32-error-string num)
 )
 
@@ -1254,7 +1260,7 @@ GET-NAME-SERVICE-ERRNO")
 (define-sockopt socket-dont-route "SO_DONTROUTE" bool)
 (define-sockopt socket-linger "SO_LINGER" bool)
 
-#-(or :linux :win32)
+#-(or :linux :wsock)
 (define-sockopt sockopt-reuse-port "SO_REUSEPORT" bool)
 
 ;; Add sockopts here as you need them...
