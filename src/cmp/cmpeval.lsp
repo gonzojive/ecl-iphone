@@ -264,26 +264,6 @@
 
 ;;; ----------------------------------------------------------------------
 
-(defun c1constant-value (val always-p)
-  (cond
-   ((eq val nil) (c1nil))
-   ((eq val t) (c1t))
-   ((sys::fixnump val)
-    (make-c1form* 'LOCATION :type 'FIXNUM :args (list 'FIXNUM-VALUE val)))
-   ((characterp val)
-    (make-c1form* 'LOCATION :type 'CHARACTER
-		  :args (list 'CHARACTER-VALUE (char-code val))))
-   ((typep val 'LONG-FLOAT)
-    (make-c1form* 'LOCATION :type 'LONG-FLOAT
-		  :args (list 'LONG-FLOAT-VALUE val (add-object val))))
-   ((typep val 'SHORT-FLOAT)
-    (make-c1form* 'LOCATION :type 'SHORT-FLOAT
-		  :args (list 'SHORT-FLOAT-VALUE val (add-object val))))
-   (always-p
-    (make-c1form* 'LOCATION :type (object-type val)
-		  :args (list 'VV (add-object val))))
-   (t nil)))
-
 (defvar *compiler-temps*
 	'(tmp0 tmp1 tmp2 tmp3 tmp4 tmp5 tmp6 tmp7 tmp8 tmp9))
 

@@ -51,7 +51,10 @@ ECL 0.9f
    the compiler as special variables.
 
  - The code for handling closure variables has been changed and now encloses
-   the whole of the function in a C block
+   the whole of the function in a C block.
+
+ - Values of MOST-POSTIVE-LONG-FLOAT, and similar constants, are now taken from
+   the float.h header, instead of referencing the lisp variables themselves.
 
 * Foreign function interface (FFI):
 

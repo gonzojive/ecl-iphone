@@ -22,6 +22,7 @@
 #include <stdarg.h>
 #include <setjmp.h>
 #include <math.h>
+#include <float.h>
 #ifndef _MSC_VER
 #include <inttypes.h>
 #else
