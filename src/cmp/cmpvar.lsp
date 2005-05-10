@@ -99,7 +99,7 @@
 ;;; value.
 
 (defun check-global (name)
-  (member name *global-vars* :test #'eq))
+  (member name *global-vars* :test #'eq :key #'var-name))
 
 ;;;
 ;;; Check if the symbol has a symbol macro
@@ -301,9 +301,11 @@
   (mapc #'si::register-global globals))
 
 (defun si::register-global (name)
-  (push (c1make-global-variable name :kind 'GLOBAL
-				:type (or (get-sysprop name 'CMP-TYPE) 'T))
-	  *vars*))
+  (unless (check-global name)
+    (push (c1make-global-variable name :kind 'GLOBAL
+				  :type (or (get-sysprop name 'CMP-TYPE) 'T))
+	  *global-vars*))
+  (values))
 
 (defun c1setq (args)
   (let ((l (length args)))
