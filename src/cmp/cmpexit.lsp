@@ -178,6 +178,7 @@
 	     *tail-recursion-info*
 	     (eq fun (first *tail-recursion-info*))
 	     (last-call-p)
+	     (tail-recursion-possible)
 	     (inline-possible (fun-name fun))
 	     (= (length args) (length (rest *tail-recursion-info*))))
     (let* ((*destination* 'TRASH)
