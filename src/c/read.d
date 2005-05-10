@@ -23,6 +23,7 @@
 #include "ecl.h"
 #include "internal.h"
 #include "ecl-inl.h"
+#include "bytecodes.h"
 
 #define	cat(rtbl,c)	((rtbl)->readtable.table[c].syntax_type)
 #define read_suppress (SYM_VAL(@'*read-suppress*') != Cnil)
@@ -716,6 +717,44 @@ sharp_single_quote_reader(cl_object in, cl_object c, cl_object d)
 		c = cl_list(2, @'function', c);
 	}
 	@(return c)
+}
+
+static cl_object
+sharp_Y_reader(cl_object in, cl_object c, cl_object d)
+{
+        cl_index i;
+        cl_object x, rv, nth;
+
+	if (d != Cnil && !read_suppress)
+		extra_argument('C', in, d);
+	x = read_object(in);
+	if (x == OBJNULL)
+		FEend_of_file(in);
+	if (read_suppress)
+		@(return Cnil);
+	if (type_of(x) != t_cons || length(x) != 6)
+		FEreader_error("Reader macro #Y should be followed by a list",
+			       in, 0);
+
+        rv = cl_alloc_object(t_bytecodes);
+
+        rv->bytecodes.name = CAR(x); x = CDR(x);
+        rv->bytecodes.lex = CAR(x); x = CDR(x);
+        rv->bytecodes.specials = CAR(x); x = CDR(x);
+        rv->bytecodes.definition = CAR(x); x = CDR(x);
+
+        rv->bytecodes.code_size = fixint(cl_list_length(CAR(x)));
+        rv->bytecodes.code = cl_alloc(rv->bytecodes.code_size * sizeof(uint16_t));
+        for ( i=0, nth=CAR(x) ; !endp(nth) ; i++, nth=CDR(nth) )
+             ((cl_opcode*)(rv->bytecodes.code))[i] = fixint(CAR(nth));
+        x = CDR(x);
+
+        rv->bytecodes.data_size = fixint(cl_list_length(CAR(x)));
+        rv->bytecodes.data = cl_alloc(rv->bytecodes.data_size * sizeof(cl_object));
+        for ( i=0, nth=CAR(x) ; !endp(nth) ; i++, nth=CDR(nth) )
+             ((cl_object*)(rv->bytecodes.data))[i] = CAR(nth);
+
+        @(return rv);
 }
 
 #define	QUOTE	1
@@ -1897,6 +1936,7 @@ init_read(void)
 	= make_cf3(sharp_whitespace_reader);
 	dtab[')'] = make_cf3(sharp_right_parenthesis_reader);
 */
+        dtab['Y'] = dtab['y'] = make_cf3(sharp_Y_reader);
 
 	init_backq();
 

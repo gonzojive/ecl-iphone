@@ -1,6 +1,10 @@
 ECL 0.9f
 ========
 
+* Platforms:
+
+ - Cygwin support has been fixed and it now supports DLLs (M. Goffioul).
+
 * Errors fixed:
 
  - The reader macros for lists, ##, #C, #P and #' did not behave as expected
@@ -128,6 +132,9 @@ ECL 0.9f
 
  - ECL now accepts a double dash, '--', as a command line option. Anything
    after the double dash is interpreted as a lisp command.
+
+ - Bytecode functions can now be printed readably as #Y(...). The appropiate
+   reader macro has been also implemented (M. Pasternacki)
 
 * ANSI Compatibility:
 

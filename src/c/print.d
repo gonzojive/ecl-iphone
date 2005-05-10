@@ -24,6 +24,7 @@
 #endif
 #include "ecl.h"
 #include "internal.h"
+#include "bytecodes.h"
 
 #if defined(ECL_CMU_FORMAT)
 # define si_write_object_recursive(x,y) si_write_object(x,y)
@@ -1339,18 +1340,32 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		si_write_ugly_object(namestring, stream);
 		break;
 	}
-	case t_bytecodes: {
-		cl_object name = x->bytecodes.name;
-		if (ecl_print_readably()) FEprint_not_readable(x);
-		write_str("#<bytecompiled-function ", stream);
-		if (name != Cnil)
-			si_write_ugly_object(name, stream);
-		else
-			write_addr(x, stream);
-		write_ch('>', stream);
-		break;
-	}
-	case t_cfun:
+	case t_bytecodes:
+                if ( ecl_print_readably() ) {
+	                cl_index i;
+                        cl_object code_l=Cnil, data_l=Cnil;
+                        for ( i=x->bytecodes.code_size-1 ; i<(cl_index)(-1l) ; i-- )
+                             code_l = make_cons(MAKE_FIXNUM(((cl_opcode*)(x->bytecodes.code))[i]), code_l);
+                        for ( i=x->bytecodes.data_size-1 ; i<(cl_index)(-1l) ; i-- )
+                             data_l = make_cons(x->bytecodes.data[i], data_l);
+
+                        write_str("#Y", stream);
+                        si_write_ugly_object(
+			    cl_list(6, x->bytecodes.name, x->bytecodes.lex,
+				    x->bytecodes.specials, Cnil /* x->bytecodes.definition */,
+				    code_l, data_l),
+			    stream);
+                } else {
+                        cl_object name = x->bytecodes.name;
+                        write_str("#<bytecompiled-function ", stream);
+                        if (name != Cnil)
+                             si_write_ugly_object(name, stream);
+                        else
+                             write_addr(x, stream);
+                        write_ch('>', stream);
+                }
+                break;
+        case t_cfun:
 		if (ecl_print_readably()) FEprint_not_readable(x);
 		write_str("#<compiled-function ", stream);
 		if (x->cfun.name != Cnil)
