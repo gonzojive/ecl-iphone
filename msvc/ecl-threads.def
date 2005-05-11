@@ -527,7 +527,8 @@ EXPORTS
 	si_argc
 	si_argv
 	si_getenv
-	;si_setenv
+	si_setenv
+	si_getpid
 	si_pointer
 	si_quit
 
