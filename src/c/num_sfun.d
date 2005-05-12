@@ -110,32 +110,30 @@ cl_exp(cl_object x)
 cl_object
 cl_expt(cl_object x, cl_object y)
 {
-	cl_type ty;
+	cl_type ty = type_of(y);
 	cl_object z;
 
 	if (number_zerop(y)) {
 		/* INV: The most specific numeric types come first. */
 		cl_type tx = type_of(x);
-		ty = type_of(y);
 		switch ((ty > tx)? ty : tx) {
 		case t_fixnum:
 		case t_bignum:
 		case t_ratio:
-			return1(MAKE_FIXNUM(1));
+			z = MAKE_FIXNUM(1); break;
 		case t_shortfloat:
-			return1(make_shortfloat(1.0));
+			z = make_shortfloat(1.0); break;
 		case t_longfloat:
-			return1(make_longfloat(1.0));
+			z = make_longfloat(1.0); break;
 		case t_complex:
-			z = cl_expt(x->complex.real, y);
+			z = cl_expt((tx == t_complex)? x->complex.real : x,
+				    (ty == t_complex)? y->complex.real : y);
 			z = make_complex(z, MAKE_FIXNUM(0));
-			return1(z);
+			break;
 		default:
 			FEtype_error_number(x);
 		}
-	}
-	ty = type_of(y);
-	if (number_zerop(x)) {
+	} else if (number_zerop(x)) {
 		if (!number_plusp(ty==t_complex?y->complex.real:y))
 			FEerror("Cannot raise zero to the power ~S.", 1, y);
 		z = number_times(x, y);

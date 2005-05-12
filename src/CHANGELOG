@@ -41,6 +41,8 @@ ECL 0.9f
 
  - DEFMACRO admits again lambda lists of the form (a . b).
 
+ - EXPT failed when the exponent was a complex number equal to zero.
+
 * Compiler errors:
 
  - In compiled code, discarded (VALUES ...) forms did not trigger all the
