@@ -189,7 +189,7 @@ make_this_symbol(int i, cl_object s, int code, const char *name,
 	s->symbol.dynamic = 0;
 	s->symbol.mflag = FALSE;
 	ECL_SET(s, OBJNULL);
-	SYM_FUN(s) = OBJNULL;
+	SYM_FUN(s) = Cnil;
 	s->symbol.plist = Cnil;
 	s->symbol.hpack = Cnil;
 	s->symbol.stype = stp;

@@ -84,7 +84,7 @@ cl_fmakunbound(cl_object fname)
 #ifdef PDE
 		si_rem_sysprop(fname, @'defun');
 #endif
-		SYM_FUN(sym) = OBJNULL;
+		SYM_FUN(sym) = Cnil;
 		sym->symbol.mflag = FALSE;
 	} else {
 		si_rem_sysprop(sym, @'si::setf-symbol');

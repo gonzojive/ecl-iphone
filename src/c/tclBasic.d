@@ -294,8 +294,8 @@ Tcl_DeleteCommand(Tcl_Interp *interp, char *cmdName)
 {
   cl_object V   = _intern(cmdName, tk_package);
 
-  if (SYM_FUN(V) == OBJNULL) return -1;
-  SYM_FUN(V) = OBJNULL;		/* Undefine "cmdName" */
+  if (SYM_FUN(V) == Cnil) return -1;
+  SYM_FUN(V) = Cnil;		/* Undefine "cmdName" */
   SYM_VAL(V) = OBJNULL;		/* Undefine "cmdName" */
   return 0;
 }

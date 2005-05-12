@@ -129,13 +129,15 @@ struct ecl_symbol {
 	HEADER4(stype, mflag, isform, dynamic);
 				/*  symbol type and whether it names a macro */
 	cl_object value;	/*  global value of the symbol  */
-	cl_object plist;	/*  property list  */
-				/*  This field coincides with cons.car  */
-	cl_object name;		/*  print name  */
+				/*  Coincides with cons.car  */
 	cl_object gfdef;	/*  global function definition  */
 				/*  For a macro,  */
 				/*  its expansion function  */
 				/*  is to be stored.  */
+				/*  Coincides with cons.cdr  */
+	cl_object plist;	/*  property list  */
+				/*  This field coincides with cons.car  */
+	cl_object name;		/*  print name  */
 	cl_object hpack;	/*  home package  */
 				/*  Cnil for uninterned symbols  */
 };

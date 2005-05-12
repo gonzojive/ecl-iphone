@@ -72,7 +72,7 @@ cl_apply_from_stack(cl_index narg, cl_object x)
 {
 	cl_object fun = x;
       AGAIN:
-	if (fun == OBJNULL)
+	if (fun == OBJNULL || fun == Cnil)
 		FEundefined_function(x);
 	switch (type_of(fun)) {
 	case t_cfun:
@@ -194,7 +194,7 @@ si_unlink_symbol(cl_object s)
 	else
 		sp = cl_stack_push_va_list(funargs);
       AGAIN:
-	if (fun == OBJNULL)
+	if (fun == OBJNULL || fun == Cnil)
 		FEundefined_function(function);
 	switch (type_of(fun)) {
 	case t_cfun:

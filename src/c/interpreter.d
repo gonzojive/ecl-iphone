@@ -403,7 +403,7 @@ interpret_funcall(cl_narg narg, cl_object fun) {
 	cl_object *args;
 	cl_object x;
 	args = cl_env.stack_top - narg;
-	if (fun == OBJNULL)
+	if (fun == OBJNULL || fun == Cnil)
 		goto ERROR;
  AGAIN:
 	switch (type_of(fun)) {
@@ -437,7 +437,7 @@ interpret_funcall(cl_narg narg, cl_object fun) {
 		break;
 	case t_symbol: {
 		cl_object function = SYM_FUN(fun);
-		if (function == OBJNULL || fun->symbol.mflag)
+		if (function == Cnil || fun->symbol.mflag)
 			FEundefined_function(fun);
 		fun = function;
 		goto AGAIN;

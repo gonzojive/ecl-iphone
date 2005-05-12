@@ -176,7 +176,7 @@ cl_boot(int argc, char **argv)
 	Cnil->symbol.dynamic = 0;
 	Cnil->symbol.value = Cnil;
 	Cnil->symbol.name = make_constant_string("NIL");
-	Cnil->symbol.gfdef = OBJNULL;
+	Cnil->symbol.gfdef = Cnil;
 	Cnil->symbol.plist = Cnil;
 	Cnil->symbol.hpack = Cnil;
 	Cnil->symbol.stype = (short)stp_constant;
@@ -188,7 +188,7 @@ cl_boot(int argc, char **argv)
 	Ct->symbol.dynamic = 0;
 	Ct->symbol.value = Ct;
 	Ct->symbol.name = make_constant_string("T");
-	Ct->symbol.gfdef = OBJNULL;
+	Ct->symbol.gfdef = Cnil;
 	Ct->symbol.plist = Cnil;
 	Ct->symbol.hpack = Cnil;
 	Ct->symbol.stype = (short)stp_constant;

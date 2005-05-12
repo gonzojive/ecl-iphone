@@ -31,7 +31,7 @@ cl_symbol_function(cl_object sym)
 	assert_type_symbol(sym);
 	if (sym->symbol.isform)
 		output = @'special';
-	else if (SYM_FUN(sym) == OBJNULL)
+	else if (SYM_FUN(sym) == Cnil)
 		FEundefined_function(sym);
 	else if (sym->symbol.mflag)
 		output = CONS(@'si::macro', SYM_FUN(sym));
@@ -50,7 +50,7 @@ cl_object
 cl_fboundp(cl_object fname)
 {
 	if (SYMBOLP(fname)) {
-		@(return ((fname->symbol.isform || SYM_FUN(fname) != OBJNULL)? Ct : Cnil))
+		@(return ((fname->symbol.isform || SYM_FUN(fname) != Cnil)? Ct : Cnil))
 	} else if (CONSP(fname)) {
 		if (CAR(fname) == @'setf') {
 			cl_object sym = CDR(fname);
@@ -72,7 +72,7 @@ ecl_fdefinition(cl_object fun)
 
 	if (t == t_symbol) {
 		output = SYM_FUN(fun);
-		if (output == OBJNULL)
+		if (output == Cnil)
 			FEundefined_function(fun);
 		if (fun->symbol.isform || fun->symbol.mflag)
 			FEundefined_function(fun);

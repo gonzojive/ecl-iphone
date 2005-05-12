@@ -37,7 +37,7 @@ make_symbol(cl_object st)
 	x->symbol.name = copy_simple_string(st);
 	x->symbol.dynamic = 0;
 	ECL_SET(x,OBJNULL);
-	SYM_FUN(x) = OBJNULL;
+	SYM_FUN(x) = Cnil;
 	x->symbol.plist = Cnil;
 	x->symbol.hpack = Cnil;
 	x->symbol.stype = stp_ordinary;
@@ -335,9 +335,6 @@ cl_object
 si_putprop(cl_object sym, cl_object value, cl_object indicator)
 {
 	assert_type_symbol(sym);
-	if (sym == Cnil) {
-	    FEerror("It is not allowed to change the property list of NIL.\nNote: This restriction is a known bug and will be eventually fixed.", 0);
-	}
 	sym->symbol.plist = si_put_f(sym->symbol.plist, value, indicator);
 	@(return value)
 }

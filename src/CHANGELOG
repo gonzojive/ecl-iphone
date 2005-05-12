@@ -43,6 +43,8 @@ ECL 0.9f
 
  - EXPT failed when the exponent was a complex number equal to zero.
 
+ - Setting the property lists of the symbol NIL no longer breaks ECL.
+
 * Compiler errors:
 
  - In compiled code, discarded (VALUES ...) forms did not trigger all the

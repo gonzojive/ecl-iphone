@@ -107,7 +107,7 @@ struct cl_env_struct {
 #define cl_env (*ecl_process_env())
 extern struct cl_env_struct *ecl_process_env(void) __attribute__((const));
 #else
-#if defined(mingw32) || defined(_MSC_VER)
+#if defined(mingw32) || defined(_MSC_VER) || defined(cygwin)
 __declspec(dllimport)
 #endif
 extern struct cl_env_struct cl_env;
@@ -165,7 +165,7 @@ struct cl_core_struct {
 #endif
 };
 
-#if defined(mingw32) || defined(_MSC_VER)
+#if defined(mingw32) || defined(_MSC_VER) || defined(cygwin)
 __declspec(dllimport)
 #endif
 extern struct cl_core_struct cl_core;
@@ -227,7 +227,7 @@ typedef union {
 	} init;
 	struct ecl_symbol data;
 } cl_symbol_initializer;
-#if defined(mingw32) || defined(_MSC_VER)
+#if defined(mingw32) || defined(_MSC_VER) || defined(cygwin)
 __declspec(dllimport)
 #endif
 extern cl_symbol_initializer cl_symbols[];
@@ -590,7 +590,7 @@ extern void ecl_gc(cl_type t);
 #define GC_enabled() (!GC_dont_gc)
 #define GC_enable() GC_dont_gc = FALSE;
 #define GC_disable() GC_dont_gc = TRUE;
-#if defined(mingw32) || defined(_MSC_VER)
+#if defined(mingw32) || defined(_MSC_VER) || defined(cygwin)
 __declspec(dllimport)
 #endif
 extern int GC_dont_gc;
