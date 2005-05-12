@@ -122,8 +122,14 @@ the help file."
 	   (when (and (setq output (gethash object dict))
 		      (setq output (getf output doc-type)))
 	     (return-from get-documentation output)))
-	  ((and (symbolp object) (stringp dict))
-	   (when (and (setq output (search-help-file object dict))
+	  ((and (stringp dict)
+                (or (symbolp object)
+                    (functionp object)))
+	   (when (and (setq output (search-help-file 
+                                    (if (functionp object)
+                                        (compiled-function-name object)
+                                        object)
+                                    dict))
 		      (setq output (getf output doc-type)))
 	     (return-from get-documentation output))))))
 

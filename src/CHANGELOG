@@ -45,6 +45,8 @@ ECL 0.9f
 
  - Setting the property lists of the symbol NIL no longer breaks ECL.
 
+ - Fixed (documentation) and (setf documentation) behaviour. (M. Pasternacki)
+
 * Compiler errors:
 
  - In compiled code, discarded (VALUES ...) forms did not trigger all the

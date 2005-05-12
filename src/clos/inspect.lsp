@@ -458,8 +458,8 @@ q (or Q):             quits the inspection.~%~
       (function
        (if (fboundp object)
 	   (let ((c (fdefinition object)))
-	     (si::set-documentation object 'function nil)
-	     (setf (documentation object 'function) new-value))
+	     (si::set-documentation c 'function nil)
+	     (setf (documentation c 'function) new-value))
 	   (si::set-documentation object doc-type new-value)))
       (otherwise
        (si::set-documentation object doc-type new-value))))
@@ -515,3 +515,10 @@ q (or Q):             quits the inspection.~%~
   (when (member doc-type '(t function))
     (setf (slot-value object 'documentation) new-value)))
 
+(defmethod documentation ((object function) doc-type)
+  (when (member doc-type '(t function))
+    (si::get-documentation object doc-type)))
+
+(defmethod (setf documentation) (new-value (object function) doc-type)
+  (when (member doc-type '(t function))
+    (si::set-documentation object doc-type new-value)))
