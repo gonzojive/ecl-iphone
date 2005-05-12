@@ -164,11 +164,15 @@
 (defun wt-keyvars (i) (wt "keyvars[" i "]"))
 
 (defun loc-refers-to-special (loc)
-  (unless (atom loc)
-    (case (first loc)
-      (BIND t)
-      (C-INLINE t) ; We do not know, so guess yes
-      (otherwise nil))))
+  (cond ((var-p loc)
+	 (member (var-kind loc) '(SPECIAL GLOBAL)))
+	((atom loc)
+	 nil)
+	((eq (setf loc (first loc)) 'BIND)
+	 t)
+	((eq loc 'C-INLINE)
+	 t) ; We do not know, so guess yes
+	(t nil)))
 
 (defun values-loc (n)
   (list 'VALUE n))
