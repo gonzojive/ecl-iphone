@@ -29,6 +29,9 @@
 	(format stream "#<a ~A: ~A>" (type-of ref-object) name)
 	(format stream "#<a ~A>" (type-of ref-object)))))
 
+(defun print-var (var-object stream)
+  (format stream "#<a VAR: ~A KIND: ~A>" (var-name var-object) (var-kind var-object)))
+
 (defun cmperr (string &rest args &aux (*print-case* :upcase))
   (print-current-form)
   (format t "~&;;; Error: ")
