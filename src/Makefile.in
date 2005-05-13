@@ -116,7 +116,7 @@ install-base:
 	  $(INSTALL_PROGRAM) $$i $(DESTDIR)$(libdir); \
 	done
 	for i in $(ECL_MODULES); do \
-	  $(INSTALL_DATA) $$i.fas $(DESTDIR)$(libdir); \
+	  $(INSTALL_PROGRAM) $$i.fas $(DESTDIR)$(libdir); \
 	done
 flatinstall: BUILD-STAMP
 	$(MAKE) bindir=$(prefix) libdir=$(prefix) install-base
