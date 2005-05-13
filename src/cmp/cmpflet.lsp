@@ -64,7 +64,7 @@
 	(c1body (rest args) t)
       (let ((*vars* *vars*)
 	    (*funs* new-funs))
-	(c1add-globals ss)
+	(c1declare-specials ss)
 	(check-vdecl nil ts is)
 	(setq body-c1form (c1decl-body other-decl body))))
 
@@ -191,7 +191,7 @@
 (defun c1locally (args)
   (multiple-value-bind (body ss ts is other-decl)
       (c1body args t)
-    (c1add-globals ss)
+    (c1declare-specials ss)
     (check-vdecl nil ts is)
     (c1decl-body other-decl body)))
 

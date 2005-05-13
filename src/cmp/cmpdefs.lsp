@@ -61,7 +61,7 @@
 
 (deftype OBJECT () `(not (or fixnum character short-float long-float)))
 
-(defstruct (var (:include ref) (:constructor %make-var))
+(defstruct (var (:include ref) (:constructor %make-var) (:print-object print-var))
 ;  name		;;; Variable name.
 ;  (ref 0 :type fixnum)
 		;;; Number of references to the variable (-1 means IGNORE).
@@ -432,4 +432,3 @@ The default value is NIL.")
 ;;;
 (defvar *vars* nil)
 (defvar *undefined-vars* nil)
-(defvar *special-binding* nil)

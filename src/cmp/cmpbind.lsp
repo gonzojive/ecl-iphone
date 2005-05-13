@@ -82,7 +82,7 @@
 (defun bds-bind (loc var)
   ;; Optimize the case (let ((*special-var* *special-var*)) ...)
   (cond ((and (var-p loc)
-	      (eq (var-kind loc) 'global)
+	      (member (var-kind loc) '(global special))
 	      (eq (var-name loc) (var-name var)))
 	 (wt-nl "bds_push(" (var-loc var) ");"))
 	(t

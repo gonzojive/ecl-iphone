@@ -50,7 +50,7 @@
 
   (check-vdecl vnames ts is)
 
-  (c1add-globals ss)
+  (c1declare-specials ss)
   (setq body (c1decl-body other-decls body))
 
   ;; since the body may produce type constraints on variables:
@@ -273,7 +273,7 @@
 	       (push v vars)
 	       (push-vars v)))))
 
-  (c1add-globals ss)
+  (c1declare-specials ss)
   (check-vdecl vnames ts is)
   (setq body (c1decl-body other-decls body))
 

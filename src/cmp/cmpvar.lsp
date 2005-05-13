@@ -141,7 +141,6 @@
     (cond ((or (member name specials)
 	       (sys:specialp name)
                (check-global name))	;; added. Beppe 17 Aug 1987
-           (setq *special-binding* t)
            (unless type
 	     (setf type (or (get-sysprop name 'CMP-TYPE) 'T)))
 	   (c1make-global-variable name :kind 'SPECIAL :type type))
@@ -297,8 +296,9 @@
 	(push var *undefined-vars*)))
     var))
 
-(defun c1add-globals (globals)
-  (mapc #'si::register-global globals))
+(defun c1declare-specials (globals)
+  (dolist (v globals)
+    (push (c1make-global-variable v :warn nil :kind 'SPECIAL) *vars*)))
 
 (defun si::register-global (name)
   (unless (check-global name)

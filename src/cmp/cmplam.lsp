@@ -139,7 +139,7 @@
 
   (when block-it (setq body (list (cons 'BLOCK (cons block-name body)))))
 
-  (c1add-globals ss)
+  (c1declare-specials ss)
 
   (multiple-value-bind (requireds optionals rest key-flag keywords
 			allow-other-keys aux-vars)

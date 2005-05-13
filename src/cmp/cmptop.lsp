@@ -16,8 +16,7 @@
   (let ((*vars* nil)
 	(*funs* nil)
 	(*blocks* nil)
-	(*tags* nil)
-	(*special-binding* nil))
+	(*tags* nil))
     (push (t1expr* form) *top-level-forms*)))
 
 (defvar *toplevel-forms-to-print*
@@ -493,7 +492,7 @@
 (defun t1locally (args)
   (multiple-value-bind (body ss ts is other-decl)
       (c1body args t)
-    (c1add-globals ss)
+    (c1declare-specials ss)
     (check-vdecl nil ts is)
     (t1decl-body other-decl body)))
 

@@ -256,7 +256,7 @@
 
   (multiple-value-setq (body ss ts is other-decls) (c1body (cddr args) nil))
 
-  (c1add-globals ss)
+  (c1declare-specials ss)
 
   (dolist (s (first args))
     (push s vnames)
