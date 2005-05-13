@@ -214,10 +214,10 @@ case "${host_os}" in
 		;;
 	cygwin*)
 		thehost='cygwin'
-		shared='no'
+		shared='yes'
 		THREAD_OBJ=''
-		SHARED_LDFLAGS=''
-		BUNDLE_LDFLAGS=''
+		SHARED_LDFLAGS="-shared ${LDFLAGS}"
+		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
 		SHAREDPREFIX=''
 		SHAREDEXT='dll'
 		;;
