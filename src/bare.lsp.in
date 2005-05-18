@@ -69,7 +69,7 @@
 
 (defun build-module (name sources &key (dir "build:") ((:prefix si::*init-function-prefix*) "EXT"))
   (proclaim '(optimize (safety 2) (speed 1)))
-  (let* ((objects (compile-if-old "build:ext;" sources :system-p t :c-file t :data-file t :h-file t))
+  (let* ((objects (compile-if-old dir sources :system-p t :c-file t :data-file t :h-file t))
 	 (name (string-downcase name)))
     #-dlopen
     (warn "~%Unable to build module ~A because dynamic linking is not available on this platform"
