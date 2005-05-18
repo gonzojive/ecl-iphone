@@ -2819,6 +2819,7 @@ init_file(void)
 {
 	cl_object standard_input;
 	cl_object standard_output;
+	cl_object error_output;
 	cl_object standard;
 	cl_object x;
 
@@ -2846,6 +2847,18 @@ init_file(void)
 	standard_output->stream.byte_size = 8;
 	standard_output->stream.signed_bytes = 0;
 
+	error_output = cl_alloc_object(t_stream);
+	error_output->stream.mode = (short)smm_output;
+	error_output->stream.closed = 0;
+	error_output->stream.file = stderr;
+	error_output->stream.object0 = @'base-char';
+	error_output->stream.object1= make_constant_string("stderr");
+	error_output->stream.int0 = 0;
+	error_output->stream.int1 = 0;
+	error_output->stream.char_stream_p = 1;
+	error_output->stream.byte_size = 8;
+	error_output->stream.signed_bytes = 0;
+
 	cl_core.terminal_io = standard
 	= make_two_way_stream(standard_input, standard_output);
 
@@ -2862,7 +2875,7 @@ init_file(void)
 
 	ECL_SET(@'*standard-input*', standard);
 	ECL_SET(@'*standard-output*', standard);
-	ECL_SET(@'*error-output*', standard);
+	ECL_SET(@'*error-output*', error_output);
 
 	ECL_SET(@'*query-io*', standard);
 	ECL_SET(@'*debug-io*', standard);

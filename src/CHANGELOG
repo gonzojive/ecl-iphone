@@ -144,6 +144,8 @@ ECL 0.9f
  - Bytecode functions can now be printed readably as #Y(...). The appropiate
    reader macro has been also implemented (M. Pasternacki)
 
+ - *ERROR-OUTPUT* is now properly set to the C error stream.
+
 * ANSI Compatibility:
 
  - DEFSETF forms are enclosed in a block with the name of the accessor.
