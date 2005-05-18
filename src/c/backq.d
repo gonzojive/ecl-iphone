@@ -124,10 +124,10 @@ _cl_backq_cdr(cl_object *px)
 			if (a == QUOTE) {
 				ax = kwote(ax);
 				out = LIST;
-				goto OUT;
+				goto OUTPUT;
 			} else if (a == EVAL) {
 				out = LIST;
-				goto OUT;
+				goto OUTPUT;
 			}
 			dx = CONS(@'list', dx);
 			break;
@@ -135,10 +135,10 @@ _cl_backq_cdr(cl_object *px)
 			if (a == QUOTE) {
 				ax = kwote(ax);
 				out = LISTX;
-				goto OUT;
+				goto OUTPUT;
 			} else if (a == EVAL) {
 				out = LISTX;
-				goto OUT;
+				goto OUTPUT;
 			}
 			dx = CONS(@'list*', dx);
 			break;
@@ -170,7 +170,7 @@ _cl_backq_cdr(cl_object *px)
 			error("backquote botch");
 		}
 	}
- OUT:
+ OUTPUT:
 	*px = CONS(ax, dx);
 	return out;
 }
