@@ -93,6 +93,37 @@ si_close_pipe(cl_object stream)
 #endif
 }
 
+static int
+stream_to_handle(cl_object s, bool output)
+{
+	FILE *f;
+ BEGIN:
+	if (type_of(s) != t_stream)
+		return -1;
+	switch ((enum ecl_smmode)s->stream.mode) {
+	case smm_input:
+		if (output) return -1;
+		f = s->stream.file;
+		break;
+	case smm_output:
+		if (!output) return -1;
+		f = s->stream.file;
+		break;
+	case smm_io:
+		f = s->stream.file;
+		break;
+	case smm_synonym:
+		s = symbol_value(s->stream.object0);
+		goto BEGIN;
+	case smm_two_way:
+		s = output? s->stream.object1 : s->stream.object0;
+		goto BEGIN;
+	default:
+		error("illegal stream mode");
+	}
+	return fileno(f);
+}
+
 @(defun ext::run-program (command argv &key (input @':stream') (output @':stream')
 	  		  (error @'t'))
 	int parent_write = 0, parent_read = 0;
@@ -266,27 +297,40 @@ si_close_pipe(cl_object stream)
 		pipe(fd);
 		parent_write = fd[1];
 		child_stdin = fd[0];
-	} else if (input == @'t') {
-		child_stdin = dup(0);
 	} else {
-		child_stdin = open("/dev/null", O_RDONLY);
+		child_stdin = -1;
+		if (input == @'t')
+			child_stdin = stream_to_handle(SYM_VAL(@'*standard-input*'), 0);
+		if (child_stdin >= 0)
+			child_stdin = dup(child_stdin);
+		else
+			child_stdin = open("/dev/null", O_RDONLY);
 	}
 	if (output == @':stream') {
 		int fd[2];
 		pipe(fd);
 		parent_read = fd[0];
 		child_stdout = fd[1];
-	} else if (output == @'t') {
-		child_stdout = dup(1);
 	} else {
-		child_stdout = open("/dev/null", O_WRONLY);
+		child_stdout = -1;
+		if (output == @'t')
+			child_stdout = stream_to_handle(SYM_VAL(@'*standard-output*'), 1);
+		if (child_stdout >= 0)
+			child_stdout = dup(child_stdout);
+		else
+			child_stdout = open("/dev/null", O_WRONLY);
 	}
 	if (error == @':output') {
-		child_stderr = dup(child_stdout);
+		child_stderr = child_stdout;
 	} else if (error == @'t') {
-		child_stderr = dup(2);
+		child_stderr = stream_to_handle(SYM_VAL(@'*error-output*'), 1);
 	} else {
+		child_stderr = -1;
+	}
+	if (child_stderr < 0) {
 		child_stderr = open("/dev/null", O_WRONLY);
+	} else {
+		child_stderr = dup(child_stderr);
 	}
 	child_pid = fork();
 	if (child_pid == 0) {

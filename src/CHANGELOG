@@ -146,6 +146,16 @@ ECL 0.9f
 
  - *ERROR-OUTPUT* is now properly set to the C error stream.
 
+ - EXT:RUN-PROCESS can now duplicate the *STANDARD-OUTPUT* and *ERROR-OUTPUT*
+   even if they are not the files set at the beginning of the process
+	> (let ((*standard-output* (open "foo.txt" :direction :output
+					  :if-does-not-exist :create :if-exists :supersede)))
+	      (ext:run-program "echo" '("hola!") :output t))
+	#<two-way stream 0868a708>
+	> (si::system "cat foo.txt")
+	hola!
+	0
+
 * ANSI Compatibility:
 
  - DEFSETF forms are enclosed in a block with the name of the accessor.
