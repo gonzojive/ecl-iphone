@@ -269,11 +269,12 @@
 	(warn "The variable name ~s is not a symbol." var))))
 
 (defun c1body (body doc-p &aux
+	            (all-declarations nil)
 		    (ss nil)		; special vars
 		    (is nil)		; ignored vars
 		    (ts nil)		; typed vars (var . type)
 		    (others nil)	; all other vars
-                    doc form)
+	            doc form)
   (loop
     (when (endp body) (return))
     (setq form (cmp-macroexpand (car body)))
@@ -282,6 +283,7 @@
       (when (or (null doc-p) (endp (cdr body)) doc) (return))
       (setq doc form))
      ((and (consp form) (eq (car form) 'DECLARE))
+      (push form all-declarations)
       (dolist (decl (cdr form))
         (cmpck (or (not (consp decl)) (not (symbolp (car decl))))
                "The declaration ~s is illegal." (cons form decl))
@@ -343,7 +345,7 @@
      (t (return)))
     (pop body)
     )
-  (values body ss ts is others doc)
+  (values body ss ts is others doc all-declarations)
   )
 
 (defun c1add-declarations (decls &aux (dl nil))

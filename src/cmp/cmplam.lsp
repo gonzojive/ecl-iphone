@@ -134,7 +134,7 @@
   (cmpck (endp lambda-expr)
          "The lambda expression ~s is illegal." (cons 'LAMBDA lambda-expr))
 
-  (multiple-value-setq (body ss ts is other-decls doc)
+  (multiple-value-setq (body ss ts is other-decls doc all-declarations)
                        (c1body (cdr lambda-expr) t))
 
   (when block-it (setq body (list (cons 'BLOCK (cons block-name body)))))
@@ -193,7 +193,7 @@
 	  (let ((var (first specs))
 		(init (second specs)))
 	    (setq let (cons (if init (list var init) var) let))))
-	(setq body `((let* ,(nreverse let) (declare ,@other-decls) ,@body)))))
+	(setq body `((let* ,(nreverse let) ,@all-declarations ,@body)))))
 
     (let ((new-vars (ldiff *vars* old-vars)))
       (setq body (c1decl-body other-decls body))
