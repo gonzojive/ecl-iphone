@@ -1483,7 +1483,7 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 		goto OUTPUT;
 	}
 	if (t != t_string &&
-	    !(t == t_array &&
+	    !(t == t_vector &&
 	      (seq->vector.elttype == aet_b8 || seq->vector.elttype == aet_i8)))
 	{
 		bool ischar = cl_stream_element_type(stream) == @'base-char';
@@ -1561,7 +1561,7 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 		goto OUTPUT;
 	}
 	if (t != t_string &&
-	    !(t == t_array &&
+	    !(t == t_vector &&
 	      (seq->vector.elttype == aet_b8 || seq->vector.elttype == aet_i8)))
 	{
 		bool ischar = cl_stream_element_type(stream) == @'base-char';
