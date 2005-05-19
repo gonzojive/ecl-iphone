@@ -244,13 +244,21 @@ static void wrong_file_handler(cl_object strm) /*__attribute__((noreturn))*/;
 static void
 not_an_input_stream(cl_object strm)
 {
-	FEerror("Cannot read the stream ~S.", 1, strm);
+	cl_error(9, @'simple-type-error', @':format-control',
+		 make_constant_string("~A is not an input stream"),
+		 @':format-arguments', cl_list(1, strm),
+		 @':expected-type', cl_list(2, @'satisfies', @'input-stream-p'),
+		 @':datum', cl_stream_element_type(strm));
 }
 
 static void
 not_an_output_stream(cl_object strm)
 {
-	FEerror("Cannot write to the stream ~S.", 1, strm);
+	cl_error(9, @'simple-type-error', @':format-control',
+		 make_constant_string("~A is not an output stream"),
+		 @':format-arguments', cl_list(1, strm),
+		 @':expected-type', cl_list(2, @'satisfies', @'output-stream-p'),
+		 @':datum', cl_stream_element_type(strm));
 }
 
 static void
