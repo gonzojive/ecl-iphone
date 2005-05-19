@@ -200,7 +200,7 @@ typedef int16_t cl_opcode;
 typedef int16_t cl_oparg;
 #define READ_OPCODE(v)	(*(cl_opcode *)(v))
 #define READ_OPARG(v)	(*(cl_oparg *)(v))
-#define GET_OPCODE(v)	(*((cl_opcode *)(v))++)
-#define GET_OPARG(v)	(*((cl_oparg *)(v))++)
+#define GET_OPCODE(v)	(*((cl_opcode *)(v)++))
+#define GET_OPARG(v)	(*((cl_oparg *)(v)++))
 #define GET_DATA(v,b)	(b->bytecodes.data[GET_OPARG(v)])
 #define GET_LABEL(pc,v)	{pc = (v) + READ_OPARG(v); v += OPARG_SIZE;}
