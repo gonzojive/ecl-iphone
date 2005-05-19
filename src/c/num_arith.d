@@ -758,7 +758,7 @@ get_gcd(cl_object x, cl_object y)
 		if (ty == t_fixnum) {
 			cl_fixnum i = fix(x);
 			cl_fixnum j = fix(y);
-			for (i = abs(i), j = abs(j); TRUE; ) {
+			for (i = labs(i), j = labs(j); TRUE; ) {
 				cl_fixnum k;
 				if (i < j) {
 					k = i;

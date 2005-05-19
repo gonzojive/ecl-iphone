@@ -51,7 +51,7 @@ hash_eql(cl_object x)
 	switch (type_of(x)) {
 	case t_bignum:
 		return hash_string((char*)x->big.big_limbs,
-				   abs(x->big.big_size) * sizeof(mp_limb_t));
+				   labs(x->big.big_size) * sizeof(mp_limb_t));
 		break;
 	case t_ratio: {
 		cl_hashkey h = hash_eql(x->ratio.num);
