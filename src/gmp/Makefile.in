@@ -462,7 +462,7 @@ CXXLINK = $(LIBTOOL) --mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) \
 CXXFLAGS = @CXXFLAGS@
 DIST_SOURCES = $(libdummy_la_SOURCES) $(libgmp_la_SOURCES) \
 	$(libgmpxx_la_SOURCES) $(libmp_la_SOURCES)
-INFO_DEPS = gmp.info
+INFO_DEPS =
 DVIS = gmp.dvi
 TEXINFOS = gmp.texi
 HEADERS = $(include_HEADERS) $(nodist_includeexec_HEADERS)
