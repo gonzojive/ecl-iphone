@@ -758,6 +758,8 @@ si_mkdir(cl_object directory, cl_object mode)
 
 	filename = si_coerce_to_filename(directory);
 	modeint = fixnnint(mode);
+	if (filename->string.fillp)
+	    filename->string.self[--filename->string.fillp] = 0;
 #ifdef mingw32
 	if (mkdir(filename->string.self) < 0)
 #else

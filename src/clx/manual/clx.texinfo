@@ -11,7 +11,13 @@
 * CLX: (clx).		Common LISP X Interface
 @end direntry
 
-@copying
+
+@titlepage
+@title The Common Lisp X Interface (CLX)
+
+@page
+@vskip 0pt plus 1filll
+@c @copying
 The Common LISP X Interface (CLX)
 
 Copyright @copyright{} 1988, 1989 Texas Instruments Incorporated
@@ -26,14 +32,7 @@ described herein for any purpose. It is provided "as is" without
 express or implied warranty.
 @end quotation
 
-@end copying
-
-@titlepage
-@title The Common Lisp X Interface (CLX)
-
-@page
-@vskip 0pt plus 1filll
-@insertcopying
+@c @end copying
 @end titlepage
 
 @contents
@@ -42,7 +41,22 @@ express or implied warranty.
 @node Top, Acknowledgments, (dir), (dir)
 @top The Common LISP X Interface (CLX)
 
-@insertcopying
+@c @copying
+The Common LISP X Interface (CLX)
+
+Copyright @copyright{} 1988, 1989 Texas Instruments Incorporated
+
+@quotation
+Permission is granted to any individual or institution to use, copy,
+modify and distribute this document, provided that this complete
+copyright and permission notice is maintained, intact, in all copies
+and supporting documentation. Texas Instruments Incorporated makes no
+representations about the suitability of this document or the software
+described herein for any purpose. It is provided "as is" without
+express or implied warranty.
+@end quotation
+
+@c @end copying
 @end ifnottex
 
 @menu

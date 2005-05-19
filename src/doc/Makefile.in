@@ -103,7 +103,7 @@ ecl.info: $(srcdir)/user.txi $(srcdir)/macros.txi
 ecldev.info: $(srcdir)/devel.txi $(srcdir)/macros.txi
 	makeinfo -I $(srcdir) --no-split $(srcdir)/devel.txi
 clx.info: clx.texinfo
-	makeinfo --no-split clx.texinfo
+	-makeinfo --no-split clx.texinfo
 clx.texinfo: $(top_srcdir)/clx/manual/clx.texinfo
 	cp $(top_srcdir)/clx/manual/clx.texinfo .
 

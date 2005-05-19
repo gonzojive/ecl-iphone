@@ -869,7 +869,7 @@ by every function, which attempts to generate RENDER requests."
 
 
 ;; $Log$
-;; Revision 1.15  2005-05-19 11:27:30  jjgarcia
+;; Revision 1.16  2005-05-19 11:31:18  jjgarcia
 ;; NetBSD's mkdir does not like the trailing slash in a directory name
 ;;
 ;; Revision 1.1  2004/06/10 07:59:31  jlr
