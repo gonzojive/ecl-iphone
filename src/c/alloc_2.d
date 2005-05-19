@@ -170,12 +170,11 @@ static int alloc_initialized = FALSE;
 
 extern void (*GC_push_other_roots)();
 static void (*old_GC_push_other_roots)();
+static void stacks_scanner();
 
 void
 init_alloc(void)
 {
-	static void stacks_scanner();
-
 	if (alloc_initialized) return;
 	alloc_initialized = TRUE;
 
@@ -267,7 +266,7 @@ ecl_mark_env(struct cl_env_struct *env)
 }
 
 static void
-stacks_scanner(void)
+stacks_scanner()
 {
 #ifdef ECL_THREADS
 	cl_object l = cl_core.processes;
