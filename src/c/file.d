@@ -2280,7 +2280,13 @@ file_column(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		return fixint(funcall(2, @'ext::stream-line-column', strm));
+		cl_object col = funcall(2, @'ext::stream-line-column', strm);
+		/* FIXME! The Gray streams specifies NIL is a valid value but means
+		 * "unknown". Should we make it zero? */
+		if (col == Cnil)
+			return 0;
+		else
+			return fixnnint(col);
 	}
 #endif
 	if (type_of(strm) != t_stream)
