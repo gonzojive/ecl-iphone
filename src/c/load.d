@@ -348,7 +348,7 @@ NOT_A_FILENAME:
 	}
 	bds_bind(@'*package*', symbol_value(@'*package*'));
 	bds_bind(@'*readtable*', symbol_value(@'*readtable*'));
-	bds_bind(@'*load-pathname*', filename);
+	bds_bind(@'*load-pathname*', cl_pathname(filename));
 	bds_bind(@'*load-truename*', cl_truename(filename));
 	if (Null(function))
 		ok = si_load_source(filename, verbose, print);

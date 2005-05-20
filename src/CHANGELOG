@@ -176,6 +176,8 @@ ECL 0.9f
    dispatcher, so that if the user defines a dispatcher for #f, it is
    automagically set for #F and viceversa.
 
+ - The value of *LOAD-PATHNAME* should be a pathname.
+
 * MOP Compatibility:
 
  - We have implemented the *-SLOT-DEFINITION classes, as well as the protocol
