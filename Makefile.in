@@ -51,8 +51,8 @@ libdir=@libdir@
 #  What to release
 TAR_CONTENTS=Makefile.in README.1st LGPL ANNOUNCEMENT Copyright doc \
 	configure src/c src/cmp src/clos src/CHANGELOG src/lsp src/doc \
-	src/h src/etc src/gmp src/config* src/install.sh src/Makefile.in \
-	src/util contrib/ src/clx src/tk src/gc src/*.in src/*.m4 src/gabriel \
+	src/h  src/gmp src/config* src/install.sh src/Makefile.in \
+	src/util contrib/ src/clx src/gc src/*.in src/*.m4 src/gabriel \
 	src/tests/Makefile.in src/ansi-tests/Makefile.in
 
 # ==================== Utility Programs for the Build ====================
