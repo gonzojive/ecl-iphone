@@ -553,11 +553,16 @@ Cannot compile ~a."
          (setq form (if name
                         `(setf (symbol-function ',name) #',def)
                         `(set 'GAZONK #',def))))
-        ((and (fboundp name)
-	      (setq def (symbol-function name))
-	      (setq form (function-lambda-expression def)))
-	 (setq form `(setf (symbol-function ',name) #',form)))
-        (t (error "No lambda expression is assigned to the symbol ~s." name)))
+	((not (fboundp name))
+	 (error "Symbol ~s is unbound." name))
+	((typep (setf def (symbol-function name)) 'standard-generic-function)
+	 (warn "COMPILE can not compile generic functions yet")
+	 (return-from compile (values def t nil)))
+	((null (setq form (function-lambda-expression def)))
+	 (warn "We have lost the original function definition for ~s. Compilation to C failed")
+	 (return-from compile (values def t nil)))
+	(t
+	 (setq form `(setf (symbol-function ',name) #',form))))
 
   (let ((template (format nil "TMP:ECL~3,'0x" (incf *gazonk-counter*))))
     (unless (setq data-pathname (si::mkstemp template))
