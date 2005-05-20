@@ -34,12 +34,12 @@ typedef struct lpd {
 
   /* stacks.h - The Frame stack */
   size_t lwp_frs_size;
-  frame_ptr lwp_frs_org;
-  frame_ptr lwp_frs_limit;
-  frame_ptr lwp_frs_top;
+  ecl_frame_ptr lwp_frs_org;
+  ecl_frame_ptr lwp_frs_limit;
+  ecl_frame_ptr lwp_frs_top;
 
     /* Non-local jumps */
-  frame_ptr lwp_nlj_fr;
+  ecl_frame_ptr lwp_nlj_fr;
   cl_object lwp_nlj_tag;
 
   /* lex.h - Lexical environment */

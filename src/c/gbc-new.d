@@ -439,7 +439,7 @@ mark_phase(void)
 	register int i;
 	register struct package *pp;
 	register bds_ptr bdp;
-	register frame_ptr frp;
+	register ecl_frame_ptr frp;
 	register ihs_ptr ihsp;
 
 	mark_object(Cnil);

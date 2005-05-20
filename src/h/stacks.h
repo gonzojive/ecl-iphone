@@ -112,7 +112,7 @@ enum fr_class {
 	FRS_PROTECT		/* for protect-all */
 };
 
-typedef struct frame {
+typedef struct ecl_frame {
 	jmp_buf		frs_jmpbuf;
 	cl_object	frs_lex;
 	bds_ptr		frs_bds_top;
@@ -120,9 +120,9 @@ typedef struct frame {
 	cl_object	frs_val;
 	ihs_ptr		frs_ihs;
 	cl_index	frs_sp;
-} *frame_ptr;
+} *ecl_frame_ptr;
 
-extern frame_ptr _frs_push(register enum fr_class clas, register cl_object val);
+extern ecl_frame_ptr _frs_push(register enum fr_class clas, register cl_object val);
 
 #define frs_push(class, val)  ecl_setjmp(_frs_push(class, val)->frs_jmpbuf)
 
@@ -176,7 +176,7 @@ cl_env.lex_env ------> ( tag0 value0 tag1 value1 ... )
 	cl_env.lex_env = __env; }
 
 #define CL_UNWIND_PROTECT_BEGIN {\
-	bool __unwinding; frame_ptr __next_fr; \
+	bool __unwinding; ecl_frame_ptr __next_fr; \
 	cl_index __nr; \
 	if (frs_push(FRS_PROTECT,Cnil)) { \
 		__unwinding=1; __next_fr=cl_env.nlj_fr; \

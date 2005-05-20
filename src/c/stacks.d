@@ -254,10 +254,10 @@ frs_overflow(void)		/* used as condition in list.d */
 	FEerror("Frame stack overflow.", 0);
 }
 
-frame_ptr
+ecl_frame_ptr
 _frs_push(register enum fr_class clas, register cl_object val)
 {
-	frame_ptr output = ++cl_env.frs_top;
+	ecl_frame_ptr output = ++cl_env.frs_top;
 	if (output >= cl_env.frs_limit) frs_overflow();
 	output->frs_lex = cl_env.lex_env;
 	output->frs_bds_top = cl_env.bds_top;
@@ -269,7 +269,7 @@ _frs_push(register enum fr_class clas, register cl_object val)
 }
 
 void
-unwind(frame_ptr fr)
+unwind(ecl_frame_ptr fr)
 {
 	cl_env.nlj_fr = fr;
 	while (cl_env.frs_top != fr && cl_env.frs_top->frs_class == FRS_CATCH)
@@ -282,10 +282,10 @@ unwind(frame_ptr fr)
 	/* never reached */
 }
 
-frame_ptr
+ecl_frame_ptr
 frs_sch (cl_object frame_id)
 {
-	frame_ptr top;
+	ecl_frame_ptr top;
 
 	for (top = cl_env.frs_top;  top >= cl_env.frs_org;  top--)
 		if (top->frs_val == frame_id && top->frs_class == FRS_CATCH)
@@ -293,10 +293,10 @@ frs_sch (cl_object frame_id)
 	return(NULL);
 }
 
-frame_ptr
+ecl_frame_ptr
 frs_sch_catch(cl_object frame_id)
 {
-	frame_ptr top;
+	ecl_frame_ptr top;
 
 	for(top = cl_env.frs_top;  top >= cl_env.frs_org  ;top--)
 	  if ((top->frs_val == frame_id && top->frs_class == FRS_CATCH)
@@ -305,10 +305,10 @@ frs_sch_catch(cl_object frame_id)
 	return(NULL);
 }
 
-static frame_ptr
+static ecl_frame_ptr
 get_frame_ptr(cl_object x)
 {
-	frame_ptr p;
+	ecl_frame_ptr p;
 
 	if (FIXNUMP(x)) {
 	  p = cl_env.frs_org + fix(x);
@@ -359,7 +359,7 @@ si_frs_ihs(cl_object arg)
 cl_object
 si_sch_frs_base(cl_object fr, cl_object ihs)
 {
-	frame_ptr x;
+	ecl_frame_ptr x;
 	cl_index y;
 
 	y = fixnnint(ihs);
@@ -403,7 +403,7 @@ init_stacks(int *new_cs_org)
 	cl_index size;
 
 	cl_env.frs_size = size = FRSSIZE + 2*FRSGETA;
-	cl_env.frs_org = (frame_ptr)cl_alloc(size * sizeof(*cl_env.frs_org));
+	cl_env.frs_org = (ecl_frame_ptr)cl_alloc(size * sizeof(*cl_env.frs_org));
 	cl_env.frs_top = cl_env.frs_org-1;
 	cl_env.frs_limit = &cl_env.frs_org[size - 2*FRSGETA];
 	cl_env.bds_size = size = BDSSIZE + 2*BDSGETA;

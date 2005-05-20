@@ -53,10 +53,10 @@ struct cl_env_struct {
 	 * to set return points.
 	 */
 	cl_index frs_size;
-	struct frame *frs_org;
-	struct frame *frs_top;
-	struct frame *frs_limit;
-	struct frame *nlj_fr;
+	struct ecl_frame *frs_org;
+	struct ecl_frame *frs_top;
+	struct ecl_frame *frs_limit;
+	struct ecl_frame *nlj_fr;
 
 	/*
 	 * The following pointers to the C Stack are used to ensure that a
@@ -1215,9 +1215,9 @@ extern cl_object si_reset_stack_limits(void);
 extern void bds_overflow(void) /*__attribute__((noreturn))*/;
 extern void bds_unwind(bds_ptr new_bds_top);
 extern int frs_overflow(void) /*__attribute__((noreturn))*/;
-extern void unwind(frame_ptr fr) /*__attribute__((noreturn))*/;
-extern frame_ptr frs_sch(cl_object frame_id);
-extern frame_ptr frs_sch_catch(cl_object frame_id);
+extern void unwind(ecl_frame_ptr fr) /*__attribute__((noreturn))*/;
+extern ecl_frame_ptr frs_sch(cl_object frame_id);
+extern ecl_frame_ptr frs_sch_catch(cl_object frame_id);
 extern cl_object new_frame_id(void);
 
 /* string.c */

@@ -57,7 +57,7 @@
 
 (defun c2unwind-protect (form body)
   (wt-nl "{ volatile bool unwinding = FALSE;")
-  (wt-nl "frame_ptr next_fr; cl_object next_tag;")
+  (wt-nl "ecl_frame_ptr next_fr; cl_object next_tag;")
   ;; Here we compile the form which is protected. When this form
   ;; is aborted, it continues at the frs_pop() with unwinding=TRUE.
   (wt-nl "if (frs_push(FRS_PROTECT,Cnil)) {")
