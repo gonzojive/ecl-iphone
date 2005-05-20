@@ -695,7 +695,7 @@ ecl_string_push_extend(cl_object s, int c)
 		start_critical_section(); /* avoid losing p */
 		if (s->string.dim >= ADIMLIM/2)
 			FEerror("Can't extend the string.", 0);
-		new_length = s->string.dim * 2;
+		new_length = (s->string.dim + 1) * 2;
 		p = (char *)cl_alloc(new_length+1); p[new_length] = 0;
 		memcpy(p, s->string.self, s->string.dim * sizeof(char));
 		s->string.dim = new_length;
