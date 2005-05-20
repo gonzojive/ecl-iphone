@@ -102,7 +102,7 @@
        :initarg :method-class
        :initform (find-class 'standard-method)
        :accessor generic-function-method-class)
-      (documentation :initarg :documentation)
+      (documentation :initarg :documentation :initform nil)
       (methods :initform nil :accessor generic-function-methods)
       (a-p-o-function :initform nil :accessor generic-function-a-p-o-function))))
 
