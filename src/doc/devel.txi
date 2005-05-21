@@ -1439,22 +1439,26 @@ to the Lisp world, with an automatic convertion taking place in both directions.
 
 @defmac {c-inline} @{@var{args-list} @var{arg-C-types} @var{output-C-type} @var{C-expr} @keys{} (@var{side-effects} @code{T}) (@var{one-liner} @code{T})@}
 
-@code{c-inline} is a special form that can only be used in compiled code.
-For all purposes it behaves as a Lisp form, which takes the arguments
-given in @var{args-list} and produces a single value. Behind the curtains,
-the arguments of @var{args-list} (which can be any valid Lisp form)
-are coerced to the the C types given in @var{arg-C-types}, passed to
-the C expression @var{C-expr}, and coerced back to Lisp using the
-C type @var{output-C-type} as a guide.
+@code{c-inline} is a special form that can only be used in compiled
+code.  For all purposes it behaves as a Lisp form, which takes the
+arguments given in @var{args-list} and produces a single value. Behind
+the curtains, the arguments of @var{args-list} (which can be any valid
+Lisp form) are coerced to the the C types given in @var{arg-C-types},
+passed to the C expression @var{C-expr}, and coerced back to Lisp
+using the C type @var{output-C-type} as a guide.  Multiple return
+values can be returned by setting @var{output-C-type} to @code{(values
+type-1 type-2 ...)}.
 
-@var{C-expr} is a string containing C code and maybe some special escape codes.
-First, the arguments of the form may be retrieved as @code{#0}, @code{#1}, etc.
-Second, if the @code{c-inline} form is a one-line C expression (That is,
-@var{one-liner} is true), then the whole expression is interpreted as the
-output value. But if the code, on the other hand, is a multiline expression
-(@var{one-liner} is false), the form has to be output using @code{@@(return)
-=...}. Finally, Lisp constants may be used in the C code making use of the
-prefix @code{@@}.
+@var{C-expr} is a string containing C code and maybe some special
+escape codes.  First, the arguments of the form may be retrieved as
+@code{#0}, @code{#1}, etc.  Second, if the @code{c-inline} form is a
+one-line C expression (That is, @var{one-liner} is true), then the
+whole expression is interpreted as the output value. But if the code,
+on the other hand, is a multiline expression (@var{one-liner} is
+false), the form has to be output using @code{@@(return)
+=...}. Multiple values are returned as @code{@@(return 0)=... ;
+@@(return 1)=...;}. Finally, Lisp constants may be used in the C code
+making use of the prefix @code{@@}.
 
 @example
 (use-package "FFI")
