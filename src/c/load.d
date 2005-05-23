@@ -135,24 +135,28 @@ ecl_library_close(cl_object block) {
 	cl_object libraries = cl_core.libraries;
 	int i;
 
-	if (block->cblock.handle == NULL)
-		return;
 	if (block->cblock.name)
 		filename = block->cblock.name->string.self;
 	else
 		filename = "<anonymous>";
-	printf("\n;;; Freeing library %s\n", filename);
+
+        if (block->cblock.handle != NULL) {
+             printf("\n;;; Freeing library %s\n", filename);
 #ifdef HAVE_DLFCN_H
-	dlclose(block->cblock.handle);
+             dlclose(block->cblock.handle);
 #endif
 #ifdef HAVE_MACH_O_DYLD_H
-	NSUnLinkModule(block->cblock.handle, NSUNLINKMODULE_OPTION_NONE);
+             NSUnLinkModule(block->cblock.handle, NSUNLINKMODULE_OPTION_NONE);
 #endif
 #if defined(mingw32) || defined(_MSC_VER)
-	FreeLibrary(block->cblock.handle);
+             FreeLibrary(block->cblock.handle);
 #endif
-	if (block->cblock.self_destruct)
+        }
+
+	if (block->cblock.self_destruct) {
+		printf("\n;;; Removing file %s\n", filename);
 		unlink(filename);
+        }
 	for (i = 0; i <= libraries->vector.fillp; i++) {
 		if (libraries->vector.self.t[i] == block) {
 			memcpy(libraries->vector.self.t+i,
@@ -169,9 +173,8 @@ void
 ecl_library_close_all(void)
 {
 	int i;
-	while ((i = cl_core.libraries->vector.fillp)) {
+	while ((i = cl_core.libraries->vector.fillp))
 		ecl_library_close(cl_core.libraries->vector.self.t[--i]);
-	}
 }
 
 cl_object
