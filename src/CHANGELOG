@@ -10,6 +10,9 @@ ECL 0.9g
  - Now .o files compiled with :SYSTEM-P T with dash in filename load
    correctly. (M. Pasternacki)
 
+ - Incorrectly loaded files are now unloaded without falling into infinite
+   loop.  (M. Pasternacki)
+
 * Foreign function interface (FFI):
 
  - Added nickname UFFI for FFI package; functions ALLOCATE-FOREIGN-STRING,
