@@ -32,6 +32,8 @@ typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 #endif
 
+extern char **environ;
+
 #include <config.h>
 
 #ifdef ECL_THREADS
