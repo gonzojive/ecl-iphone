@@ -111,6 +111,7 @@ static const struct {
 	{"Em", 25},
 	{"Sub", 26},
 	{"Escape", 27},
+	{"Esc", 27},
 	{"Fs", 28},
 	{"Gs", 29},
 	{"Rs", 30},
