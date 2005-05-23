@@ -18,11 +18,11 @@
   "src:clos;fixup.lsp"
   "src:clos;print.lsp"
   "src:clos;inspect.lsp"
+  #+clos-streams
+  "src:clos;streams.lsp"
   #+cmu-format
   "src:lsp;pprint.lsp"
   "src:clos;conditions.lsp"
-  #+clos-streams
-  "src:clos;streams.lsp"
   ))
 
 #-cross

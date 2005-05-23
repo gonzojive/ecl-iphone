@@ -28,76 +28,86 @@
 
 (defconstant default-line-length 80)
 
-(defstruct (pretty-stream
-	    (:constructor make-pretty-stream (target))
-	    (:print-function %print-pretty-stream))
+(defclass pretty-stream (fundamental-character-output-stream) (
   ;;
   ;; Where the output is going to finally go.
-  ;; 
-  (target #-ecl(required-argument) #+ecl t :type stream)
+  ;;
+  (target :initarg :target :initform t :type stream
+	  :accessor pretty-stream-target)
   ;;
   ;; Line length we should format to.  Cached here so we don't have to keep
   ;; extracting it from the target stream.
-  (line-length (or *print-right-margin*
-		   #-ecl(lisp::line-length target)
-		   default-line-length)
-	       :type column)
+  (line-length :initform (or *print-right-margin* default-line-length)
+	       :type column
+	       :accessor pretty-stream-line-length)
   ;;
   ;; A simple string holding all the text that has been output but not yet
   ;; printed.
-  (buffer (make-string initial-buffer-size) :type simple-string)
+  (buffer :initform (make-string initial-buffer-size) :type simple-string
+	  :accessor pretty-stream-buffer)
   ;;
   ;; The index into BUFFER where more text should be put.
-  (buffer-fill-pointer 0 :type index)
+  (buffer-fill-pointer :initform 0 :type index :accessor pretty-stream-buffer-fill-pointer)
   ;;
   ;; Whenever we output stuff from the buffer, we shift the remaining noise
   ;; over.  This makes it difficult to keep references to locations in
   ;; the buffer.  Therefore, we have to keep track of the total amount of
   ;; stuff that has been shifted out of the buffer.
-  (buffer-offset 0 :type posn)
+  (buffer-offset :initform 0 :type posn :accessor pretty-stream-buffer-offset)
   ;;
   ;; The column the first character in the buffer will appear in.  Normally
   ;; zero, but if we end up with a very long line with no breaks in it we
   ;; might have to output part of it.  Then this will no longer be zero.
-  (buffer-start-column (or (file-column target) 0) :type column)
+  (buffer-start-column :initarg :buffer-start-column :type column
+		       :accessor pretty-stream-buffer-start-column)
   ;;
   ;; The line number we are currently on.  Used for *print-lines* abrevs and
   ;; to tell when sections have been split across multiple lines.
-  (line-number 0 :type index)
+  (line-number :initform 0 :type index
+	       :accessor pretty-stream-line-number)
   ;;
   ;; Stack of logical blocks in effect at the buffer start.
-  (blocks (list (make-logical-block)) :type list)
+  (blocks :initform (list (make-logical-block)) :type list
+	       :accessor pretty-stream-blocks)
   ;;
   ;; Buffer holding the per-line prefix active at the buffer start.
   ;; Indentation is included in this.  The length of this is stored
   ;; in the logical block stack.
-  (prefix (make-string initial-buffer-size) :type string)
+  (prefix :initform (make-string initial-buffer-size) :type string
+	       :accessor pretty-stream-prefix)
   ;;
   ;; Buffer holding the total remaining suffix active at the buffer start.
   ;; The characters are right-justified in the buffer to make it easier
   ;; to output the buffer.  The length is stored in the logical block
   ;; stack.
-  (suffix (make-string initial-buffer-size) :type string)
+  (suffix :initform (make-string initial-buffer-size) :type string
+	  :accessor pretty-stream-suffix)
   ;;
   ;; Queue of pending operations.  When empty, HEAD=TAIL=NIL.  Otherwise,
   ;; TAIL holds the first (oldest) cons and HEAD holds the last (newest)
   ;; cons.  Adding things to the queue is basically (setf (cdr head) (list
   ;; new)) and removing them is basically (pop tail) [except that care must
   ;; be taken to handle the empty queue case correctly.]
-  (queue-tail nil :type list)
-  (queue-head nil :type list)
+  (queue-tail :initform nil :type list :accessor pretty-stream-queue-tail)
+  (queue-head :initform nil :type list :accessor pretty-stream-queue-head)
   ;;
   ;; Block-start queue entries in effect at the queue head.
-  (pending-blocks nil :type list)
-  )
+  (pending-blocks :initform nil :type list :accessor pretty-stream-pending-blocks)
+  ))
 
-(defun %print-pretty-stream (pstream stream depth)
-  (declare (ignore depth))
+(defun pretty-stream-p (stream)
+  (typep stream 'pretty-stream))
+
+(defun make-pretty-stream (target)
+  (make-instance 'pretty-stream :target target
+		 :buffer-start-column (or (file-column target) 0)
+		 ))
+
+(defmethod print-object ((pretty-stream pretty-stream) stream)
   (print-unreadable-object (pstream stream :type t :identity t))
   #+nil
   (format stream "#<pretty stream {~8,'0X}>"
 	  (kernel:get-lisp-obj-address pstream)))
-
 
 (declaim (inline index-posn posn-index posn-column))
 (defun index-posn (index stream)
@@ -115,12 +125,6 @@
 
 
 ;;;; Stream interface routines.
-
-(defmethod ext::stream-output-p ((stream pretty-stream))
-  t)
-
-(defmethod ext::stream-input-p ((stream pretty-stream))
-  nil)
 
 (defmethod ext::stream-write-char ((stream pretty-stream) char)
   (pretty-out stream char))
