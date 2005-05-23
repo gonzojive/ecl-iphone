@@ -112,7 +112,7 @@ download.html: $(srcdir)/download.in.html head
 index.html: $(srcdir)/index.in.html head
 	cat head $(srcdir)/index.in.html $(srcdir)/end | $(FILTER) > $@
 install.html: $(srcdir)/install.in.html head
-	cat head $(srcdir)/download.in.html $(srcdir)/end | $(FILTER) > $@
+	cat head $(srcdir)/install.in.html $(srcdir)/end | $(FILTER) > $@
 news.html: $(srcdir)/news.in.html head
 	(cat head; sed -e '/^----.*$$/,$$d' $(srcdir)/news.in.html; \
 	 sed -e '1,/^ECL [0-9\.]*$$/d;/^===*$$/d' $(srcdir)/../../ANNOUNCEMENT| sed -e '1d'; \
