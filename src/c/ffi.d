@@ -201,6 +201,9 @@ si_foreign_data_ref_elt(cl_object f, cl_object andx, cl_object tag)
 	} else if (tag == @':pointer-void') {
 		if (ndx + sizeof(void *) > limit) goto ERROR;
 		output = ecl_make_foreign_data(@':pointer-void', 0, *(void **)p);
+	} else if (tag == @':cstring') {
+		if (ndx + sizeof(char *) > limit) goto ERROR;
+		output = *(char **)p ? make_simple_string(*(char **)p) : Cnil;
 	} else if (tag == @':object') {
 		if (ndx + sizeof(cl_object) > limit) goto ERROR;
 		output = *(cl_object *)p;
@@ -263,6 +266,9 @@ si_foreign_data_set_elt(cl_object f, cl_object andx, cl_object tag, cl_object va
 	} else if (tag == @':pointer-void') {
 		if (ndx + sizeof(void *) > limit) goto ERROR;
 		*(void **)p = ecl_foreign_data_pointer_safe(value);
+	} else if (tag == @':cstring') {
+		if (ndx + sizeof(void *) > limit) goto ERROR;
+		*(char **)p = value == Cnil ? NULL : value->string.self;
 	} else if (tag == @':object') {
 		if (ndx + sizeof(cl_object) > limit) goto ERROR;
 		*(cl_object *)p = value;
@@ -305,6 +311,8 @@ si_size_of_foreign_elt_type(cl_object tag)
 		size = sizeof(unsigned long);
 	} else if (tag == @':pointer-void') {
 		size = sizeof(void *);
+        } else if (tag == @':cstring') {
+		size = sizeof(char*);
 	} else if (tag == @':object') {
 		size = sizeof(cl_object);
 	} else if (tag == @':float') {
