@@ -10,7 +10,7 @@ srcdir	= ..\src
 
 SHORT_SITE_NAME   =
 LONG_SITE_NAME    =
-ECL_VERSION       = 0.9d
+ECL_VERSION       = 0.9f
 ARCHITECTURE      = PENTIUM4
 MACHINE_INSTANCE  = localhost
 MACHINE           =
@@ -79,7 +79,7 @@ mkinstalldirs = $(SHELL) $(top_srcdir)/gc/mkinstalldirs
 SUBDIR        = c gc gmp
 LIBRARIES     =
 LSP_LIBRARIES = cmp.fas clx.fas sockets.fas sysfun.lsp
-TARGETS       = ecl.exe
+TARGETS       = ecl$(EXE)
 DEF           = ecl.def
 
 # Additional configuration for thread support
@@ -100,10 +100,10 @@ all:	$(TARGETS) doc ecl-config.bat
 %Makefile: $(srcdir)/%Makefile.in config.status
 	./config.status
 
-ecl$(EXE): ecl_min$(EXE) compile.lsp sysfun.lsp
+$(TARGETS): ecl_min$(EXE) compile.lsp sysfun.lsp
 	.\ecl_min < compile.lsp
 
-ecl-static.lib: ecl$(EXE)
+ecl-static.lib: $(TARGETS)
 	link -lib -out:$@ eclmin.lib c\all_symbols2.obj lsp.lib eclgmp.lib eclgc.lib
 
 ecl_min$(EXE): $(LIBRARIES) eclmin.lib
@@ -134,8 +134,8 @@ compile.lsp: bare.lsp $(srcdir)/compile.lsp.in Makefile.msvc6
 	    -e "s,@CPPFLAGS@,,g" \
 	    -e "s,@LDRPATH@,,g" \
 	    -e "s,@LDFLAGS@,/MD /link /LIBPATH:~S,g" \
-	    -e "s,@SHARED_LDFLAGS@,/LD,g" \
-	    -e "s,@BUNDLE_LDFLAGS@,/LD,g" \
+	    -e "s,@SHARED_LDFLAGS@,/LDd,g" \
+	    -e "s,@BUNDLE_LDFLAGS@,/LDd,g" \
 	    -e "s,@CLIBS@,user32.lib ws2_32.lib,g" \
 	    -e "s,@STATICLIBS@,eclgmp.lib eclgc.lib,g" \
 	    -e "s,@LIBS@,user32.lib ws2_32.lib,g" \
@@ -170,8 +170,8 @@ cmp/cmpcfg.lsp: $(srcdir)/cmp/cmpcfg.lsp.in Makefile.msvc6
 	    -e "s,@CPPFLAGS@,,g" \
 	    -e "s,@LDRPATH@,,g" \
 	    -e "s,@LDFLAGS@,/MD /link /LIBPATH:~S,g" \
-	    -e "s,@SHARED_LDFLAGS@,/LD,g" \
-	    -e "s,@BUNDLE_LDFLAGS@,/LD,g" \
+	    -e "s,@SHARED_LDFLAGS@,/LDd,g" \
+	    -e "s,@BUNDLE_LDFLAGS@,/LDd,g" \
 	    -e "s,@CLIBS@,user32.lib ws2_32.lib,g" \
 	    -e "s,@STATICLIBS@,eclgmp.lib eclgc.lib,g" \
 	    -e "s,@OBJEXT@,obj,g" \
@@ -227,6 +227,7 @@ install-base:
 	IF NOT EXIST $(bindir) $(MKDIR) $(bindir)
 	IF NOT EXIST $(libdir)\h $(MKDIR) $(libdir)\h
 	for %i in ($(TARGETS) ecl.dll) do $(CP) %i $(bindir)\%i
+	IF EXIST $(bindir)\ecl2$(EXE) $(MV) $(bindir)\ecl2$(EXE) $(bindir)\ecl$(EXE)
 	$(CP) ecl-config.bat $(bindir)\ecl-config.bat
 	for %i in ($(LSP_LIBRARIES) $(LIBRARIES) c\dpp.exe help.doc ecl.lib) do $(CP) %i $(libdir)
 	for %i in ($(ECL_MODULES)) do $(CP) %i.fas $(libdir)
@@ -275,7 +276,7 @@ clean_ecl:
 	-for %i in (eclgc.lib eclgmp.lib lsp\config.lsp compile.lsp bare.lsp \
 	            lsp\load.lsp clos\load.lsp cmp\load.lsp cmp\cmpcfg.lsp \
 		    ecl.lib ecl.dll ecl_min$(EXE) eclmin.lib help.doc sysfun.lsp \
-		    ecl$(EXE) *.exp *.ilk *.pdb *.c *.obj ecl-config.bat ecl-static.lib) \
+		    $(TARGETS) *.exp *.ilk *.pdb *.c *.obj ecl-config.bat ecl-static.lib) \
 	     do $(RM) %i
 	cd c
 	-$(MAKE) -f Makefile.msvc6 "ECL_THREADS = $(ECL_THREADS)" clean
