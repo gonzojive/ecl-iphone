@@ -218,7 +218,7 @@ si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 						 prefix,
 						 make_constant_string("_"));
 	basename = cl_pathname_name(1,filename);
-	basename = @si::string-concatenate(2, prefix, @string-upcase(1,basename));
+	basename = @si::string-concatenate(2, prefix, @string-upcase(1, funcall(4, @'nsubstitute', CODE_CHAR('_'), CODE_CHAR('-'), basename)));
 	block->cblock.entry = ecl_library_symbol(block, basename->string.self);
 
 	if (block->cblock.entry == NULL) {
