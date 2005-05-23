@@ -10,6 +10,7 @@
 ;;;; FFI	Symbols used in the foreign function interface
 
 (defpackage "FFI"
+  (:nicknames "UFFI")
   (:export "CLINES" "DEFENTRY" "DEFLA" "DEFCBODY" "DEFINLINE" "C-INLINE"
 
 	   "VOID" "OBJECT" "CHAR*" "INT" "DOUBLE"
@@ -22,13 +23,15 @@
 	   "NULL-CHAR-P" "ENSURE-CHAR-CHARACTER" "ENSURE-CHAR-INTEGER"
 	   "NULL-POINTER-P" "+NULL-CSTRING-POINTER+" "WITH-FOREIGN-OBJECTS"
 	   "MAKE-POINTER" "CHAR-ARRAY-TO-POINTER" "CONVERT-TO-FOREIGN-STRING"
-	   "CONVERT-FROM-FOREIGN-STRING" "WITH-FOREIGN-OBJECT"
+	   "CONVERT-FROM-FOREIGN-STRING" "ALLOCATE-FOREIGN-STRING" 
+           "WITH-FOREIGN-STRING" "WITH-FOREIGN-STRINGS"
+           "FOREIGN-STRING-LENGTH" "WITH-FOREIGN-OBJECT"
 	   "FIND-FOREIGN-LIBRARY" "LOAD-FOREIGN-LIBRARY" "WITH-FOREIGN-STRING"
 	   "WITH-FOREIGN-STRINGS" "ENSURE-CHAR-STORABLE" "DEF-TYPE"
 	   "WITH-CSTRING" "CONVERT-TO-CSTRING" "CONVERT-FROM-CSTRING" "FREE-CSTRING"
-	   "WITH-CAST-POINTER" "WITH-CSTRINGS"
+           "WITH-CAST-POINTER" "WITH-CSTRINGS"
 	   )
-  (:import-from "SYS" "NULL-POINTER-P"))
+  (:import-from "SYS" "NULL-POINTER-P" "GET-SYSPROP" "PUT-SYSPROP"))
 
 (in-package "FFI")
 
@@ -46,7 +49,7 @@
        (member name '(:byte :unsigned-byte :short :unsigned-short
 		      :int :unsigned-int :char :unsigned-char
 		      :long :unsigned-long :pointer-void :object
-		      :float :double)
+		      :float :double :cstring)
 	       :test 'eq)))
 
 (defmacro def-foreign-type (name definition)
@@ -231,7 +234,7 @@
 ;;;
 
 (defmacro def-array-pointer (name element-type)
-  `(def-foreign-type ,name (:array ,element-type *)))
+  `(def-foreign-type ,name (* ,element-type)))
 
 (defun deref-array (array array-type position)
   (setf array-type (%convert-to-ffi-type array-type))
@@ -531,18 +534,26 @@
   (declare (ignore module))
   (multiple-value-bind (c-name lisp-name)
       (lisp-to-c-name name)
-    (let* ((s (gensym "FFI"))
-           (can-deref (foreign-elt-type-p (%convert-to-ffi-type type))))
-     `(progn
-         (defvar ,s (c-inline () () :object
-	                      ,(format nil "ecl_make_foreign_data(@~S, ~A, &~A)" type (size-of-foreign-type type) c-name)
-			      :side-effects t :one-liner t))
-	 (eval-when (load compile eval)
-           (define-symbol-macro ,lisp-name
-	                        ,(if can-deref
-			          `(ffi:deref-pointer ,s ',type)
-				  s)))
-      ))))
+    (let* ((ffi-type (%convert-to-ffi-type type))
+           (can-deref (or (foreign-elt-type-p ffi-type)
+                          (and (consp ffi-type)
+                               (member (first ffi-type) '(* :array))))))
+      (if can-deref
+          `(progn
+             (put-sysprop ',lisp-name 'ffi-foreign-var
+                          (c-inline () () :object
+                                    ,(format nil "ecl_make_foreign_data(@~S, ~A, &~A)"
+                                             type (size-of-foreign-type type) c-name)
+                                    :side-effects t :one-liner t))
+             (eval-when (load compile eval)
+               (define-symbol-macro ,lisp-name
+                 (ffi:deref-pointer (get-sysprop ',lisp-name 'ffi-foreign-var) ',type)
+                 )))
+          `(defvar ,lisp-name (c-inline () () :object
+                             ,(format nil "ecl_make_foreign_data(@~S, ~A, &~A)"
+                                      type (size-of-foreign-type type) c-name)
+                             :side-effects t :one-liner t)))
+      )))
 
 (defun find-foreign-library (names directories &key drive-letters types)
   (unless (listp names)
