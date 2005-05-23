@@ -1704,7 +1704,7 @@ potential_number_p(cl_object strng, int base)
 	strm = stream_or_default_output(strm);
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) != t_stream)
-		funcall(5, @'ext:.stream-write-string', strm, strng, start, end);
+		funcall(5, @'ext::stream-write-string', strm, strng, start, end);
 	else
 #endif
 		si_do_write_sequence(strng, strm, start, end);
