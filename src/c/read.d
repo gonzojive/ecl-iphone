@@ -1436,7 +1436,7 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 	int c;
 @
 	strm = stream_or_default_input(strm);
-#ifdef CLOS_STREAMS
+#ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) != t_stream) {
 		return funcall(2, @'stream-read-line', strm);
 	}
@@ -1534,7 +1534,7 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 	int f;
 @
 	strm = stream_or_default_input(strm);
-#ifdef CLOS_STREAMS
+#ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) != t_stream) {
 		cl_object output = funcall(2,@'ext::stream-read-char-no-hang', strm);
 		if (output == @':eof')
@@ -1623,7 +1623,7 @@ CANNOT_PARSE:
 
 @(defun read_sequence (sequence stream &key (start MAKE_FIXNUM(0)) end)
 @
-#ifdef CLOS_STREAMS
+#ifdef ECL_CLOS_STREAMS
 	if (type_of(stream) != t_stream)
 		return funcall(5, @'ext::stream-read-sequence', stream, sequence, start, end);
 	else
