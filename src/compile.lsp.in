@@ -103,8 +103,8 @@ ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@ ../c/all_symbols2.@OBJEXT@; rm *.@OB
 		"c/all_symbols2.@OBJEXT@"
 		"@LIBPREFIX@lsp.@LIBEXT@"
 		"@LIBPREFIX@eclmin.@LIBEXT@"
-		. #.(unless (equalp "@LDINSTALLNAME@" "")
-			'("@LDINSTALLNAME@"))))
+		#+darwin
+		"-Wl,-install_name,@ecldir@/@SHAREDPREFIX@ecl.@SHAREDEXT@"))
 
 ;;;
 ;;; * Compile and link Common-Lisp to C compiler

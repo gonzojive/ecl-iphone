@@ -1,6 +1,10 @@
 ECL 0.9g
 ========
 
+* Platforms:
+
+ - Fixed the flags used when linking ECL against the shared library on Mac OSX.
+
 * Foreign function interface (FFI):
 
 ;;; Local Variables: ***

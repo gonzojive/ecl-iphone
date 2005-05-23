@@ -155,7 +155,6 @@ AC_SUBST(SHAREDEXT)dnl	Name components of a dynamically linked library
 AC_SUBST(SHAREDPREFIX)
 AC_SUBST(OBJEXT)dnl	These are set by autoconf
 AC_SUBST(EXEEXT)
-AC_SUBST(LDINSTALLNAME)dnl Link-flag that tells where the library will reside.
 AC_SUBST(INSTALL_TARGET)dnl Which type of installation: flat directory or unix like.
 AC_SUBST(thehost)
 LDRPATH='~*'
@@ -164,7 +163,6 @@ SHAREDPREFIX='lib'
 LIBPREFIX='lib'
 LIBEXT='a'
 PICFLAG='-fPIC'
-LDINSTALLNAME=''
 THREAD_CFLAGS=''
 THREAD_LIBS=''
 THREAD_GC_FLAGS='--enable-threads=posix'
@@ -244,7 +242,6 @@ case "${host_os}" in
 		SHARED_LDFLAGS="-dynamiclib -flat_namespace -undefined suppress ${LDFLAGS}"
 		BUNDLE_LDFLAGS="-bundle ${LDFLAGS}"
 		LDRPATH=''
-		LDINSTALLNAME="-Wl,-install_name,${libdir}/${SHAREDPREFIX}ecl.${SHAREDEXT}"
 		THREAD_CFLAGS='-D_THREAD_SAFE'
 		THREAD_LIBS='-lpthread'
 		;;
