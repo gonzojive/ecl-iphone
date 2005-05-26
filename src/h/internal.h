@@ -47,8 +47,6 @@ extern void ecl_init_env(struct cl_env_struct *);
 extern void init_LSP(cl_object);
 extern void init_CLOS(cl_object);
 
-typedef void (*ecl_init_function_t)(cl_object block);
-
 /* all_functions.d */
 
 extern const struct {

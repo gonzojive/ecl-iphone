@@ -33,6 +33,8 @@ typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 #endif
 
+typedef void (*ecl_init_function_t)(cl_object block);
+
 #include <config.h>
 
 #ifdef ECL_THREADS
