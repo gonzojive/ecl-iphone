@@ -110,6 +110,9 @@ into the structure at their position.  For example,
 	`(a b ,.c d e) expands to (list* 'a 'b (nconc c '(d e)))"
   '(OR CONS NULL))
 
+(deftype proper-list ()
+  '(OR (CONS T PROPER-LIST) NULL))
+
 (deftype atom ()
   "An ATOM is an object that is not a CONS."
   '(NOT CONS))
@@ -184,6 +187,7 @@ has no fill-pointer, and is not adjustable."
 	     (FUNCTION . FUNCTIONP)
 	     (HASH-TABLE . HASH-TABLE-P)
 	     (INTEGER . INTEGERP)
+	     (FIXNUM . SI::FIXNUMP)
 	     (KEYWORD . KEYWORDP)
 	     (LIST . LISTP)
 	     (LOGICAL-PATHNAME . LOGICAL-PATHNAME-P)
@@ -290,8 +294,7 @@ Returns T if X belongs to TYPE; NIL otherwise."
     (SATISFIES (funcall (car i) object))
     ((T) t)
     ((NIL) nil)
-    (FIXNUM (eq (type-of object) 'FIXNUM))
-    (BIGNUM (eq (type-of object) 'BIGNUM))
+    (BIGNUM (and (integerp object) (not (si::fixnump object))))
     (RATIO (eq (type-of object) 'RATIO))
     (STANDARD-CHAR
      (and (characterp object) (standard-char-p object)))
@@ -852,7 +855,9 @@ if not possible."
 ;;
 (defun canonical-complex-type (real-type)
   (declare (si::c-local))
-  (canonical-type `(COMPLEX ,(upgraded-complex-part-type (or real-type 'REAL)))))
+  (canonical-type `(COMPLEX ,(if (eq real-type '*)
+				 'REAL
+				 (upgraded-complex-part-type (or real-type 'REAL))))))
 
 ;;----------------------------------------------------------------------
 ;; CONS types. Only (CONS T T) and variants, as well as (CONS NIL *), etc

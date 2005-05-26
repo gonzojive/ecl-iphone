@@ -100,8 +100,41 @@ cl_object
 make_pathname(cl_object host, cl_object device, cl_object directory,
 	      cl_object name, cl_object type, cl_object version)
 {
-	cl_object x;
+	cl_object x, p, component;
 
+	p = cl_alloc_object(t_pathname);
+	if (type_of(host) == t_string)
+		p->pathname.logical = logical_hostname_p(host);
+	else if (host == Cnil)
+		p->pathname.logical = FALSE;
+	else {
+		x = directory;
+		component = @':host';
+		goto ERROR;
+	}
+	if (device != Cnil && device != @':unspecific' &&
+	    !(!p->pathname.logical && type_of(device) == t_string)) {
+		x = device;
+		component = @':device';
+		goto ERROR;
+	}
+	if (name != Cnil && name != @':wild' && type_of(name) != t_string) {
+		x = name;
+		component = @':name';
+		goto ERROR;
+	}
+	if (type != Cnil && type != @':wild' && type_of(type) != t_string) {
+		x = type;
+		component = @':type';
+		goto ERROR;
+	}
+	if (version != @':unspecific' && version != @':newest' &&
+	    version != @':wild' && version != Cnil && !FIXNUMP(version))
+	{
+		x = version;
+		component = @':version';
+	ERROR:	FEerror("~s is not a valid pathname-~a component", 2, x, component);
+	}
 	switch (type_of(directory)) {
 	case t_string:
 		directory = cl_list(2, @':absolute', directory);
@@ -113,50 +146,26 @@ make_pathname(cl_object host, cl_object device, cl_object directory,
 			directory = cl_list(2, @':absolute', @':wild-inferiors');
 			break;
 		}
+		component = @':directory';
 		goto ERROR;
-	case t_cons: {
-		cl_object aux = destructively_check_directory(cl_copy_list(directory), 1);
-		if (aux != @':error') {
-			directory = aux;
-			break;
-		}
-	}
+	case t_cons:
+		directory = cl_copy_list(directory);
+		break;
 	default:
+		x = directory;
+		component = @':directory';
 		goto ERROR;
 	}
-	x = cl_alloc_object(t_pathname);
-	if (type_of(host) == t_string)
-		x->pathname.logical = logical_hostname_p(host);
-	else if (host == Cnil)
-		x->pathname.logical = FALSE;
-	else
-		goto ERROR;
-	if (device != Cnil && device != @':unspecific' &&
-	    !(!x->pathname.logical && type_of(device) == t_string))
-		goto ERROR;
-	if (name != Cnil && name != @':wild' && type_of(name) != t_string)
-		goto ERROR;
-	if (type != Cnil && type != @':wild' && type_of(type) != t_string)
-		goto ERROR;
-	if (version != @':unspecific' && version != @':newest' &&
-	    version != @':wild' && version != Cnil && !FIXNUMP(version))
-	{
-	ERROR:	cl_error(3, @'file-error', @':pathname',
-			 cl_list(13, @'make-pathname',
-				 @':host', host,
-				 @':device', device,
-				 @':directory', directory,
-				 @':name', name,
-				 @':type', type,
-				 @':version', version));
+	p->pathname.host = ensure_simple_string(host);
+	p->pathname.device = ensure_simple_string(device);
+	p->pathname.directory = directory;
+	p->pathname.name = ensure_simple_string(name);
+	p->pathname.type = ensure_simple_string(type);
+	p->pathname.version = ensure_simple_string(version);
+	if (destructively_check_directory(directory, 1) == @':error') {
+		cl_error(3, @'file-error', @':pathname', p);
 	}
-	x->pathname.host = ensure_simple_string(host);
-	x->pathname.device = ensure_simple_string(device);
-	x->pathname.directory = directory;
-	x->pathname.name = ensure_simple_string(name);
-	x->pathname.type = ensure_simple_string(type);
-	x->pathname.version = ensure_simple_string(version);
-	return(x);
+	return(p);
 }
 
 static cl_object
@@ -856,7 +865,8 @@ ecl_namestring(cl_object x, int truncate_if_unreadable)
 		} else if (y != @':back') {
 			si_do_write_sequence(y, buffer, MAKE_FIXNUM(0), Cnil);
 		} else {
-			FEerror("Directory :back has no namestring representation",0);
+			/* Directory :back has no namestring representation */
+			return Cnil;
 		}
 		ecl_write_char(logical? ';' : DIR_SEPARATOR, buffer);
 	}

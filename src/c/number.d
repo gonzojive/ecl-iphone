@@ -59,7 +59,8 @@ fixnnint(cl_object x)
 	cl_error(9, @'simple-type-error', @':format-control',
 		    make_constant_string("Not a non-negative fixnum ~S"),
 		    @':format-arguments', cl_list(1,x),
-		    @':expected-type', @'fixnum', @':datum', x);
+		    @':expected-type', cl_list(3, @'integer', MAKE_FIXNUM(0), MAKE_FIXNUM(MOST_POSITIVE_FIXNUM)),
+		    @':datum', x);
 }
 
 cl_object

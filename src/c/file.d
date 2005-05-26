@@ -248,7 +248,7 @@ not_an_input_stream(cl_object strm)
 		 make_constant_string("~A is not an input stream"),
 		 @':format-arguments', cl_list(1, strm),
 		 @':expected-type', cl_list(2, @'satisfies', @'input-stream-p'),
-		 @':datum', cl_stream_element_type(strm));
+		 @':datum', strm);
 }
 
 static void
@@ -258,7 +258,7 @@ not_an_output_stream(cl_object strm)
 		 make_constant_string("~A is not an output stream"),
 		 @':format-arguments', cl_list(1, strm),
 		 @':expected-type', cl_list(2, @'satisfies', @'output-stream-p'),
-		 @':datum', cl_stream_element_type(strm));
+		 @':datum', strm);
 }
 
 static void

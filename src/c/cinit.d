@@ -16,6 +16,12 @@
 #include "ecl.h"
 #include "internal.h"
 
+extern cl_object
+cl_array_dimensions(int narg, cl_object array, ...)
+{
+	return funcall(2, @'ARRAY-DIMENSIONS', array);
+}
+
 static cl_object si_simple_toplevel ()
 {
 	cl_object sentence;

@@ -1334,6 +1334,10 @@ si_write_ugly_object(cl_object x, cl_object stream)
 			if (ecl_print_readably())
 				FEprint_not_readable(x);
 			namestring = ecl_namestring(x, 1);
+			if (namestring == Cnil) {
+				write_str("#<Unprintable pathname>", stream);
+				break;
+			}
 		}
 		if (ecl_print_escape() || ecl_print_readably())
 			write_str("#P", stream);

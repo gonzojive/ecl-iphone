@@ -88,6 +88,8 @@ cl_apply_from_stack(cl_index narg, cl_object x)
 				     fun->cclosure.env, cl_env.stack_top - narg);
 #ifdef CLOS
 	case t_instance:
+		if (!fun->instance.isgf)
+			goto ERROR;
 		fun = compute_method(narg, fun, cl_env.stack_top - narg);
 		goto AGAIN;
 #endif
@@ -99,6 +101,7 @@ cl_apply_from_stack(cl_index narg, cl_object x)
 	case t_bytecodes:
 		return lambda_apply(narg, fun);
 	default:
+	ERROR:
 		FEinvalid_function(x);
 	}
 }
@@ -144,6 +147,8 @@ link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_va_lis
 		break;
 #ifdef CLOS
 	case t_instance: {
+		if (!fun->instance.isgf)
+			goto ERROR;
 		fun = compute_method(narg, fun, cl_env.stack + sp);
 		pLK = NULL;
 		goto AGAIN;
@@ -156,7 +161,8 @@ link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_va_lis
 	case t_bytecodes:
 		out = lambda_apply(narg, fun);
 		break;
-	default: ERROR:
+	default:
+	ERROR:
 		FEinvalid_function(fun);
 	}
 	if (!args[0].sp)
@@ -213,6 +219,8 @@ si_unlink_symbol(cl_object s)
 		break;
 #ifdef CLOS
 	case t_instance:
+		if (!fun->instance.isgf)
+			goto ERROR;
 		fun = compute_method(narg, fun, cl_env.stack + sp);
 		goto AGAIN;
 #endif
@@ -225,6 +233,7 @@ si_unlink_symbol(cl_object s)
 		out = lambda_apply(narg, fun);
 		break;
 	default:
+	ERROR:
 		FEinvalid_function(fun);
 	}
 	if (!funargs[0].sp)

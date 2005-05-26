@@ -126,6 +126,15 @@ cl_function_lambda_expression(cl_object fun)
 		lex = Ct;
 		output = Cnil;
 		break;
+#ifdef CLOS
+	case t_instance:
+		if (fun->instance.isgf) {
+			name = Cnil;
+			lex = Cnil;
+			output = Cnil;
+			break;
+		}
+#endif
 	default:
 		FEinvalid_function(fun);
 	}

@@ -248,7 +248,7 @@ E:
 		@(return x)
 
 	default:
-		FEwrong_type_argument(@'sequence', x);
+		FEwrong_type_argument(@'sequence', sequence);
 	}
 
 ILLEGAL_START_END:

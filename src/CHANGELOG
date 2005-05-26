@@ -24,6 +24,43 @@ ECL 0.9g
  - DEF-FOREIGN-VAR rewritten to make variables visible from other files and to
    dereference also arrays and pointers. (M. Pasternacki)
 
+* Errors fixed:
+
+ - When ECASE or CTYPECASE signal a TYPE-EROR the TYPE-ERROR-DATUM is the value
+   that originated the error.
+
+ - FDEFINITION did not signal a type error when passed things like '(SETF A B).
+
+ - FUNCTION-LAMBDA-EXPRESSION does not fail, but does nothing useful, when
+   passed a generic function.
+
+ - Trying to execute an instance object that is not a generic function does no
+   longer crashes ECL.
+
+ - When signalling a READER-ERROR, the field reader-error-stream was not bound.
+
+* ANSI compatibility:
+
+ - Several functions that signaled type-errors did not set the right values
+   on the field TYPE-ERROR-EXPECTED-TYPE. We now use the following types:
+	* valid function names => (SATISFIES EXT:VALID-FUNCTION-NAME-P)
+	* proper list	       => PROPER-LIST = (OR (CONS T PROPER-LIST) NULL)
+	* positive fixnum      => (INTEGER 0 MOST-POSITIVE-FIXNUM)
+	* nonnegative integer  => (INTEGER 0 *)
+	* index in a seq       => (INTEGER 0 L) where L is (1- (length sequence))
+
+ - (COMPLEX *) is now recognized as valid type identifier by subtypep.
+
+ - TYPE-OF now returns more precise type names, so that if (TYPE-OF x) = t1 and
+   (TYPEP x t2) = T then (SUBTYPEP t1 t2) = T.
+
+ - MAKE-PATHNAME now signals ordinary errors when the arguments do not have
+   the required type, but signals a file error when it finds something like
+   a wrong directory (i.e. '(:ABSOLUTE :UP)).
+
+ - Pathnames which contain :BACK in the directory, now print as unreadable
+   objects, instead of signaling an error when printing.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

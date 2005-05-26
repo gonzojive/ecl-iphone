@@ -57,7 +57,7 @@ FEtype_error_proper_list(cl_object x) {
 	cl_error(9, @'simple-type-error', @':format-control',
 		    make_constant_string("Not a proper list ~D"),
 		    @':format-arguments', cl_list(1, x),
-		    @':expected-type', @'list',
+		    @':expected-type', c_string_to_object("si::proper-list"),
 		    @':datum', x);
 }
 
@@ -89,7 +89,7 @@ FEtype_error_index(cl_object seq, cl_object ndx)
 	cl_error(9, @'simple-type-error', @':format-control',
 		    make_constant_string("~S is not a valid index into the object ~S"),
 		    @':format-arguments', cl_list(2, seq, ndx),
-		    @':expected-type', @'fixnum',
+		    @':expected-type', cl_list(3, @'integer', MAKE_FIXNUM(0), MAKE_FIXNUM(length(seq)-1)),
 		    @':datum', ndx);
 }
 
@@ -127,7 +127,7 @@ assert_type_non_negative_integer(cl_object p)
 		if (big_sign(p) >= 0)
 			return;
 	}
-	FEwrong_type_argument(c_string_to_object("(REAL 0 *)"), p);
+	FEwrong_type_argument(cl_list(3,@'integer',MAKE_FIXNUM(0),@'*'), p);
 }
 
 void
@@ -230,11 +230,16 @@ cl_type_of(cl_object x)
 		break;
 	}
 #endif
+#if 1
+	case t_fixnum:
+	case t_bignum:
+		t = cl_list(3, @'integer', x, x); break;
+#else
 	case t_fixnum:
 		t = @'fixnum'; break;
-
 	case t_bignum:
 		t = @'bignum'; break;
+#endif
 
 	case t_ratio:
 		t = @'ratio'; break;
@@ -283,16 +288,21 @@ cl_type_of(cl_object x)
 			t = @'array';
 		else
 			t = @'simple-array';
+		t = cl_list(3, t, ecl_elttype_to_symbol(array_elttype(x)), cl_array_dimensions(1, x));
 		break;
 
 	case t_vector:
 		if (x->vector.adjustable ||
-		    x->vector.hasfillp ||
-		    !Null(CAR(x->vector.displaced)) ||
-		    (cl_elttype)x->vector.elttype != aet_object)
-			t = @'vector';
-		else
-			t = @'simple-vector';
+		    !Null(CAR(x->vector.displaced))) {
+			t = cl_list(3, @'vector', ecl_elttype_to_symbol(array_elttype(x)),
+				    MAKE_FIXNUM(x->vector.dim));
+		} else if (x->vector.hasfillp ||
+			   (cl_elttype)x->vector.elttype != aet_object) {
+			t = cl_list(3, @'simple-array', ecl_elttype_to_symbol(array_elttype(x)),
+				    cl_array_dimensions(1, x));
+		} else {
+			t = cl_list(2, @'simple-vector', MAKE_FIXNUM(x->vector.dim));
+		}
 		break;
 
 	case t_string:
@@ -302,6 +312,7 @@ cl_type_of(cl_object x)
 			t = @'string';
 		else
 			t = @'simple-string';
+		t = cl_list(2, t, MAKE_FIXNUM(x->string.dim));
 		break;
 
 	case t_bitvector:
@@ -311,6 +322,7 @@ cl_type_of(cl_object x)
 			t = @'bit-vector';
 		else
 			t = @'simple-bit-vector';
+		t = cl_list(2, t, MAKE_FIXNUM(x->vector.dim));
 		break;
 
 #ifndef CLOS
@@ -344,7 +356,7 @@ cl_type_of(cl_object x)
 	case t_bytecodes:
 	case t_cfun:
 	case t_cclosure:
-		t = @'function'; break;
+		t = @'compiled-function'; break;
 
 	case t_foreign:
 		t = @'si::foreign-data'; break;

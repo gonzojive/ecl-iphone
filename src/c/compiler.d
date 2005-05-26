@@ -2469,7 +2469,7 @@ si_valid_function_name_p(cl_object name)
 		output = Ct;
 	else if (CONSP(name) && CAR(name) == @'setf') {
 		name = CDR(name);
-		if (CONSP(name) && SYMBOLP(CAR(name)) && endp(CDR(name)))
+		if (CONSP(name) && SYMBOLP(CAR(name)) && CDR(name) == Cnil)
 			output = Ct;
 	}
 	@(return output);

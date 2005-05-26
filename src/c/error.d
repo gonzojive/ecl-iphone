@@ -121,7 +121,7 @@ FEreader_error(const char *s, cl_object stream, int narg, ...)
 	funcall(4, @'si::universal-error-handler',
 		Cnil,                    /*  not correctable  */
 		@'si::simple-reader-error', /*  condition name  */
-		cl_list(4, @':format-control', make_constant_string(s),
+		cl_list(6, @':format-control', make_constant_string(s),
 			@':format-arguments', cl_grab_rest_args(args),
 			@':stream', stream));
 }
@@ -210,7 +210,7 @@ FEinvalid_function_name(cl_object fname)
 	cl_error(9, @'simple-type-error', @':format-control',
 		 make_constant_string("Not a valid function name ~D"),
 		 @':format-arguments', cl_list(1, fname),
-		 @':expected-type', Ct,
+		 @':expected-type', cl_list(2, @'satisfies', @'si::valid-function-name-p'),
 		 @':datum', fname);
 }
 

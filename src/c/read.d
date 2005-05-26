@@ -1676,9 +1676,10 @@ si_readtable_case_set(cl_object r, cl_object mode)
 	} else if (mode == @':invert') {
 		r->readtable.read_case = ecl_case_invert;
 	} else {
-		FEwrong_type_argument(mode, cl_list(5, @'member', @':upcase',
-						    @':downcase', @':preserve',
-						    @':invert'));
+		FEwrong_type_argument(cl_list(5, @'member', @':upcase',
+					      @':downcase', @':preserve',
+					      @':invert'),
+				      mode);
 	}
 	@(return mode)
 }

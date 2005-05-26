@@ -54,7 +54,7 @@ cl_fboundp(cl_object fname)
 	} else if (CONSP(fname)) {
 		if (CAR(fname) == @'setf') {
 			cl_object sym = CDR(fname);
-			if (CONSP(sym)) {
+			if (CONSP(sym) && CDR(sym) == Cnil) {
 				sym = CAR(sym);
 				if (SYMBOLP(sym))
 					@(return si_get_sysprop(sym, @'si::setf-symbol'))
@@ -77,19 +77,25 @@ ecl_fdefinition(cl_object fun)
 		if (fun->symbol.isform || fun->symbol.mflag)
 			FEundefined_function(fun);
 	} else if (t == t_cons) {
-		if (!CONSP(CDR(fun)))
+		cl_object sym = CDR(fun);
+		if (!CONSP(sym))
 			FEinvalid_function_name(fun);
 		if (CAR(fun) == @'setf') {
-			output = si_get_sysprop(CADR(fun), @'si::setf-symbol');
+			if (CDR(sym) != Cnil)
+				FEinvalid_function_name(fun);
+			sym = CAR(sym);
+			if (type_of(sym) != t_symbol)
+				FEinvalid_function_name(fun);
+			output = si_get_sysprop(sym, @'si::setf-symbol');
 			if (Null(output))
 				FEundefined_function(fun);
 		} else if (CAR(fun) == @'lambda') {
-			return si_make_lambda(Cnil, CDR(fun));
+			return si_make_lambda(Cnil, sym);
 		} else {
-			FEinvalid_function(fun);
+			FEinvalid_function_name(fun);
 		}
 	} else {
-		FEinvalid_function(fun);
+		FEinvalid_function_name(fun);
 	}
 	return output;
 }

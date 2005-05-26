@@ -100,9 +100,9 @@ for the error message and ARGs are arguments to the format string."
 	    (list-is-atom-p (push keys l))
 	    (t (setq l (append keys l)))))))
 
-(defun ecase-error (keyform &rest values)
+(defun ecase-error (keyform value values)
   (error 'CASE-FAILURE :name 'ECASE
-	 :datum keyform
+	 :datum value
 	 :expected-type (cons 'MEMBER values)
 	 :possibilities values))
 
@@ -113,8 +113,10 @@ KEYFORM.  If found, then evaluates FORMs that follow the KEY (or the key list
 that contains the KEY) and returns all values of the last FORM.  If not,
 signals an error."
   (setq clauses (remove-otherwise-from-clauses clauses))
-  `(case ,keyform ,@clauses
-    (t (si::ecase-error ',keyform ',(accumulate-cases 'ECASE clauses nil)))))
+  (let ((key (gensym)))
+    `(let ((,key ,keyform))
+       (case ,key ,@clauses
+	 (t (si::ecase-error ',keyform ,key ',(accumulate-cases 'ECASE clauses nil)))))))
 
 (defun ccase-error (keyform key values)
   (restart-case (error 'CASE-FAILURE
@@ -201,7 +203,7 @@ the last FORM.  If not, signals an error."
 (defun ctypecase-error (keyplace value types)
   (restart-case (error 'CASE-FAILURE
 		       :name 'CTYPECASE
-		       :datum keyplace
+		       :datum value
 		       :expected-type (cons 'OR types)
 		       :possibilities types)
     (store-value (value)
