@@ -248,7 +248,7 @@ main(int argc, char **argv)
 	     (setq item (pathname-name item))
 	     (push (init-function-name item) submodules))))
     (setq c-file (open c-name :direction :output))
-    (format c-file +lisp-program-header+ submodules)
+    (format c-file +lisp-program-header+ (if (eq :fasl target) nil submodules))
     (cond (shared-data-file
 	   (data-init shared-data-file)
 	   (format c-file "
@@ -325,8 +325,11 @@ static cl_object VV[VM];
 	 (setf output-name (compile-file-pathname output-name :type :fasl)))
        (unless init-name
 	 (setf init-name (init-function-name "CODE" nil)))
-       (format c-file +lisp-program-init+ init-name prologue-code
-	       shared-data-file submodules epilogue-code)
+       (format c-file +lisp-program-init+ init-name prologue-code shared-data-file 
+               (mapcar #'(lambda (sm)
+                        (format nil "((ecl_init_function_t) ecl_library_symbol(Cblock, \"~A\"))" sm))
+                    submodules)
+               epilogue-code)
        (close c-file)
        (compiler-cc c-name o-name)
        (apply #'bundle-cc output-name o-name ld-flags)))
