@@ -1138,6 +1138,7 @@ cl_symbols[] = {
 {SYS_ "MEMQ", SI_ORDINARY, si_memq, 2, OBJNULL},
 {SYS_ "MKDIR", SI_ORDINARY, si_mkdir, 2, OBJNULL},
 {SYS_ "MKSTEMP", SI_ORDINARY, si_mkstemp, 1, OBJNULL},
+{SYS_ "RMDIR", SI_ORDINARY, si_rmdir, 1, OBJNULL},
 {SYS_ "OPEN-PIPE", SI_ORDINARY, si_open_pipe, 1, OBJNULL},
 {SYS_ "OUTPUT-STREAM-STRING", SI_ORDINARY, si_output_stream_string, 1, OBJNULL},
 {SYS_ "PACKAGE-LOCK", SI_ORDINARY, si_package_lock, 2, OBJNULL},

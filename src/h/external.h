@@ -1454,6 +1454,7 @@ extern cl_object si_mkdir(cl_object directory, cl_object mode);
 extern cl_object cl_directory _ARGS((cl_narg narg, cl_object directory, ...));
 extern cl_object cl_user_homedir_pathname _ARGS((cl_narg narg, ...));
 extern cl_object si_mkstemp(cl_object templ);
+extern cl_object si_rmdir(cl_object directory);
 
 extern const char *expand_pathname(const char *name);
 extern cl_object ecl_string_to_pathname(char *s);

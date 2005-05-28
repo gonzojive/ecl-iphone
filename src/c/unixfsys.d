@@ -792,3 +792,12 @@ si_mkstemp(cl_object template)
 	close(fd);
 	@(return cl_truename(output))
 }
+
+cl_object
+si_rmdir(cl_object directory)
+{
+	directory = si_coerce_to_filename(directory);
+        if ( rmdir(directory->string.self) != 0 )
+             FElibc_error("Can't remove directory ~A.", 1, directory);
+        @(return Cnil)
+}

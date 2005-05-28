@@ -5,14 +5,6 @@ ECL 0.9g
 
  - Fixed the flags used when linking ECL against the shared library on Mac OSX.
 
-* Errors fixed:
-
- - Now .o files compiled with :SYSTEM-P T with dash in filename load
-   correctly. (M. Pasternacki)
-
- - Incorrectly loaded files are now unloaded without falling into infinite
-   loop.  (M. Pasternacki)
-
 * Foreign function interface (FFI):
 
  - Added nickname UFFI for FFI package; functions ALLOCATE-FOREIGN-STRING,
@@ -25,6 +17,12 @@ ECL 0.9g
    dereference also arrays and pointers. (M. Pasternacki)
 
 * Errors fixed:
+
+ - Now .o files compiled with :SYSTEM-P T with dash in filename load
+   correctly. (M. Pasternacki)
+
+ - Incorrectly loaded files are now unloaded without falling into infinite
+   loop.  (M. Pasternacki)
 
  - When ECASE or CTYPECASE signal a TYPE-EROR the TYPE-ERROR-DATUM is the value
    that originated the error.
@@ -60,6 +58,10 @@ ECL 0.9g
 
  - Pathnames which contain :BACK in the directory, now print as unreadable
    objects, instead of signaling an error when printing.
+
+* New features:
+
+ - Added function si:rmdir (M. Pasternacki)
 
 ;;; Local Variables: ***
 ;;; mode:text ***
