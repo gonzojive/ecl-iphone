@@ -206,3 +206,13 @@
   (rem-sysprop symbol ':inline-safe)
   (rem-sysprop symbol 'lfun))
   
+(defun lisp-to-c-name (obj)
+  "Translate Lisp object prin1 representation to valid C identifier name"
+  (and obj 
+       (map 'string 
+            #'(lambda (c)
+                (let ((cc (char-code c)))
+                  (if (or (<= #.(char-code #\a) cc #.(char-code #\z))
+                          (<= #.(char-code #\0) cc #.(char-code #\9)))
+                      c #\_)))
+            (string-downcase (prin1-to-string obj)))))
