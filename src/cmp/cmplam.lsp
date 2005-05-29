@@ -86,7 +86,7 @@
     (setf (fun-lambda fun) lambda-expr)
     (if global
 	(multiple-value-setq (cfun exported) (exported-fname name))
-	(setf cfun (next-cfun "LC~D") exported nil))
+	(setf cfun (next-cfun "LC~D~A" name) exported nil))
     (if exported
 	;; Check whether the function was proclaimed to have a certain
 	;; number of arguments, and otherwise produce a function with

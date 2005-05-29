@@ -43,9 +43,9 @@
 
 (defun next-lcl () (list 'LCL (incf *lcl*)))
 
-(defun next-cfun (&optional (prefix "L~D"))
+(defun next-cfun (&optional (prefix "L~D~A") (lisp-name nil))
   (let ((code (incf *next-cfun*)))
-    (format nil prefix code)))
+    (format nil prefix code (lisp-to-c-name lisp-name))))
 
 (defun next-temp ()
   (prog1 *temp*

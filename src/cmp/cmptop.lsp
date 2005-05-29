@@ -235,9 +235,10 @@
   (mapcar #'t3expr args))
 
 (defun exported-fname (name)
-  (if (and (symbolp name) (setf name (get-sysprop name 'Lfun)))
-      (values name t)
-      (values (next-cfun "L~D") nil)))
+  (let (cname)
+    (if (and (symbolp name) (setf cname (get-sysprop name 'Lfun)))
+        (values cname t)
+        (values (next-cfun "L~D~A" name) nil))))
 
 (defun t1defun (args)
   (check-args-number 'DEFUN args 2)

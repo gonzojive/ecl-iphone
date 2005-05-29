@@ -216,11 +216,12 @@
   (let ((fun (second (assoc fname *linking-calls*))))
     (unless fun
       (let* ((i (length *linking-calls*))
-	     (var-name (format nil "LK~d" i))
-	     (c-name (format nil "LKF~d" i)))
+             (c-id (lisp-to-c-name fname))
+	     (var-name (format nil "LK~d~A" i c-id))
+	     (c-name (format nil "LKF~d~A" i c-id)))
 	(cmpnote "Emitting linking call for ~a" fname)
 	(setf fun (make-fun :name fname :global t :lambda 'NIL
-			    :cfun (format nil "(*LK~d)" i)
+			    :cfun (format nil "(*~A)" var-name)
 			    :minarg 0 :maxarg call-arguments-limit))
 	(setf *linking-calls* (cons (list fname fun (add-symbol fname) c-name var-name)
 				    *linking-calls*))))
