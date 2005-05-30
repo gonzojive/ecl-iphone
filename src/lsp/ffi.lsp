@@ -141,7 +141,7 @@
 	  separator-string (string separator-string))
     (dolist (item values-list)
       (cond ((symbolp item)
-	     (setf field (string item))
+	     (setf field item)
 	     (incf value))
 	    ((and (consp item)
 		  (symbolp (setf field (first item)))
@@ -152,7 +152,7 @@
       (setf field (concatenate 'string
 			       (symbol-name name)
 			       separator-string
-			       field))
+			       (string field)))
       (push `(defconstant ,(intern field (symbol-package name))
 	       ',value)
 	    forms))
