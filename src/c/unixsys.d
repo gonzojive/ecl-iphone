@@ -175,9 +175,13 @@ stream_to_handle(cl_object s, bool output)
 		/* The child inherits a duplicate of our input
 		   handle. Creating a duplicate avoids problems when
 		   the child closes it */
-		DuplicateHandle(current, GetStdHandle(STD_INPUT_HANDLE),
-				current, &child_stdin, 0, TRUE,
-				DUPLICATE_SAME_ACCESS);
+		int stream_handle = stream_to_handle(SYM_VAL(@'*standard-input*'), 0);
+		if (stream_handle >= 0)
+			DuplicateHandle(current, _get_osfhandle(stream_handle) /*GetStdHandle(STD_INPUT_HANDLE)*/,
+					current, &child_stdin, 0, TRUE,
+					DUPLICATE_SAME_ACCESS);
+		else
+			child_stdin = NULL;
 	} else {
 		child_stdin = NULL;
 		/*child_stdin = open("/dev/null", O_RDONLY);*/
@@ -203,9 +207,13 @@ stream_to_handle(cl_object s, bool output)
 		/* The child inherits a duplicate of our output
 		   handle. Creating a duplicate avoids problems when
 		   the child closes it */
-		DuplicateHandle(current, GetStdHandle(STD_OUTPUT_HANDLE),
-				current, &child_stdout, 0, TRUE,
-				DUPLICATE_SAME_ACCESS);
+		int stream_handle = stream_to_handle(SYM_VAL(@'*standard-output*'), 1);
+		if (stream_handle >= 0)
+			DuplicateHandle(current, _get_osfhandle(stream_handle) /*GetStdHandle(STD_OUTPUT_HANDLE)*/,
+					current, &child_stdout, 0, TRUE,
+					DUPLICATE_SAME_ACCESS);
+		else
+			child_stdout = NULL;
 	} else {
 		child_stdout = NULL;
 		/*child_stdout = open("/dev/null", O_WRONLY);*/
@@ -220,9 +228,13 @@ stream_to_handle(cl_object s, bool output)
 		/* The child inherits a duplicate of our output
 		   handle. Creating a duplicate avoids problems when
 		   the child closes it */
-		DuplicateHandle(current, GetStdHandle(STD_ERROR_HANDLE),
-				current, &child_stderr, 0, TRUE,
-				DUPLICATE_SAME_ACCESS);
+		int stream_handle = stream_to_handle(SYM_VAL(@'*error-output*'), 1);
+		if (stream_handle >= 0)
+			DuplicateHandle(current, _get_osfhandle(stream_handle) /*GetStdHandle(STD_ERROR_HANDLE)*/,
+					current, &child_stderr, 0, TRUE,
+					DUPLICATE_SAME_ACCESS);
+		else
+			child_stderr = NULL;
 	} else {
 		child_stderr = NULL;
 		/*child_stderr = open("/dev/null", O_WRONLY);*/
@@ -240,7 +252,7 @@ stream_to_handle(cl_object s, bool output)
 			   NULL, NULL, /* lpProcess/ThreadAttributes */
 			   TRUE, /* Inherit handles (for files) */
 			   /*CREATE_NEW_CONSOLE |*/
-			   0,
+			   0 /*(input == Ct || output == Ct || error == Ct ? 0 : CREATE_NO_WINDOW)*/,
 			   NULL, /* Inherit environment */
 			   NULL, /* Current directory */
 			   &st_info, /* Startup info */
