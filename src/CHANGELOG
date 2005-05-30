@@ -45,6 +45,8 @@ ECL 0.9g
 
  - When signalling a READER-ERROR, the field reader-error-stream was not bound.
 
+ - The random number generator assumed 32-bit integers.
+
 * ANSI compatibility:
 
  - Several functions that signaled type-errors did not set the right values

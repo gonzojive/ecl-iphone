@@ -76,6 +76,7 @@ advance_random_state(cl_object rs)
 	+ (rs->random.value<<2)
 	+ (rs->random.value<<17)
 	+ (rs->random.value<<27);
+	rs->random.value = rs->random.value & 0xffffffff;
 }
 
 
