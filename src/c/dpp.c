@@ -136,12 +136,14 @@ int nres;
 put_lineno(void)
 {
 	static int flag = 0;
+#if 0
 	if (flag)
 		fprintf(out, "#line %d\n", lineno);
 	else {
 		flag++;
 		fprintf(out, "#line %d \"%s\"\n", lineno, filename);
 	}
+#endif
 }
 
 error(char *s)

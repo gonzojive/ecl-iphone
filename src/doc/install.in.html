@@ -15,20 +15,6 @@ href="#msvc">the appropiate section</a>.
 chapter</a> on how to pre-configure, write down a configuration file
 and finish the compilation.
 
-<h3><a name="msvc">Microsoft C++</a></h3>
-<ul>
-<li>Change to the <tt>msvc</tt> directory.
-
-<li>Run <tt>nmake</tt> to build ECL.
-
-<li>Run <tt>nmake flatinstall prefix=d:\Software\ECL</tt> where the
-<tt>prefix</tt> is the directory where you want to install ECL.
-
-<li>Optionally, if you want to build a self-installing executable, you can install NSIS
-and run <tt>nmake windows-nsi</tt>.
-</ul>
-
-
 <h3><a name="configure">Autoconf based configuration</a></h3>
 
 <ul>
@@ -39,21 +25,21 @@ and run <tt>nmake windows-nsi</tt>.
 
 <li>Run the configuration file.
 <pre>
-	cd ecl-@VERSION@
+	cd ecl-@PACKAGE_VERSION@
 	./configure
 </pre>
 The previous step creates a directory with the name <b>build</b>, and
 stores a bunch of makefiles in it.
 
-<li>Use GNU make to invoke the compilation
+<li>Use GNU make to begin building ECL
 <pre>
 	make
 </pre>
 
-<li>If you want to test the fresh new executable before installing. You you
-should invoke ECL from withing the build directory using the "-dir ./"
-argument to advice him about the right place to find header files, libraries,
-etc.  For instance, under linux the build directory is "linux" and we would do
+<li>If you want to test the fresh new executable before installing,
+you can do it. You should invoke ECL from withing the build directory
+using the "-dir ./" argument to advice it about the right place to
+find header files, libraries, etc
 <pre>
 	$ ./configure --prefix=$HOME
 	[...]
@@ -63,10 +49,41 @@ etc.  For instance, under linux the build directory is "linux" and we would do
 	$ ./ecl -dir ./
 </pre>
 
-<li>Install it in the desired location
+<li>Install it in the preconfigured location
 <pre>
 	make install
 </pre>
+</ul>
+
+<h3><a name="msvc">Microsoft C++</a></h3>
+
+<p>If you have a commercial version of Microsoft Visual Studio, the
+steps are simple:
+<ul>
+<li>Change to the <tt>msvc</tt> directory.
+
+<li>Run <tt>nmake</tt> to build ECL.
+
+<li>Run <tt>nmake flatinstall prefix=d:\Software\ECL</tt> where the
+<tt>prefix</tt> is the directory where you want to install ECL.
+
+<li>Optionally, if you want to build a self-installing executable, you can install <a href="http://nsis.sourceforge.net">NSIS</a>
+and run <tt>nmake windows-nsi</tt>.
+</ul>
+
+<p>If you want to build ECL using the free Microsoft Visual C++
+Toolkit 2003, you should follow these before building ECL:
+<ul>
+<li> Download and install <a href="http://msdn.microsoft.com/visualc/vctoolkit2003/">Microsoft Visual C++ Toolkit</a>.
+<li> Download and install the <a href="http://www.microsoft.com/msdownload/platformsdk/sdkupdate/">Microsoft Platform SDK</a>
+<li> Download NMAKE and install. There is an old version in <a href="http://download.microsoft.com/download/vc15/Patch/1.52/W95/EN-US/Nmake15.exe">Microsoft's download page</a>.
+<li> Download and install the .NET Framework SDK. Copy the files msvcrt.lib an msvcrtd.lib from this toolkit to the directory where the Visual C++ Toolkit keeps it libraries. Afterwards you can uninstall the .NET SDK.
+<li> Make sure that
+<ul>
+<li><tt>%PATH%</tt> includes the directories <tt>bin</tt> of both the C++ Toolkit, NMAKE and the SDK.
+<li><tt>%INCLUDE%</tt> includes the directories <tt>include</tt> of both the C++ Toolkit and the SDK.
+<li><tt>%LIB%</tt>includes the directories <tt>lib</tt> of both the C++ Toolkit and the SDK.
+</ul>
 </ul>
 
 

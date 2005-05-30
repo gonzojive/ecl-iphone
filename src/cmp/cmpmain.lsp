@@ -301,7 +301,7 @@ static cl_object VV[VM];
            (with-open-file (f "static_lib.tmp" :direction :output :if-does-not-exist :create :if-exists :supersede)
              (format f "/DEBUGTYPE:CV /OUT:~A ~A ~{\"~&~A\"~}"
                      output-name o-name ld-flags))
-           (safe-system "lib @static_lib.tmp"))
+           (safe-system "link -lib @static_lib.tmp"))
          (when (probe-file "static_lib.tmp")
            (cmp-delete-file "static_lib.tmp")))
        )

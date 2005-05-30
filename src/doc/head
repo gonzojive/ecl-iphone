@@ -26,7 +26,6 @@
    <tr><td><a href="clx/index.html"><b>CLX manual</b></a></td></tr>
    <tr><td><a href="benchmark.html"><b>Benchmarks</b></a></td></tr>
    <tr><td><a href="download.html"><b>Distribution</b></a></td></tr>
-   <tr><td><a href="patch-current-exp.gz"><b>Experimental<br>Patches</b></a></td></tr>
    <tr><td><a
    href="http://lists.sourceforge.net/mailman/listinfo/ecls-list"><b>Mailing list</b></a></td></tr>
    <tr><td><a href="http://cvs.sourceforge.net/cgi-bin/viewcvs.cgi/ecls/ecls"><b>Browse CVS</b></a></td></tr>

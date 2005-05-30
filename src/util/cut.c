@@ -18,6 +18,8 @@ sed_emulator(int narg, char **patterns)
     for (i = 0; i < narg; i+=2) {
       char *b3, *b4;
       while ((b3 = strstr(b1, patterns[i]))) {
+	if (strcmp(patterns[i+1], "/DELETE/") == 0)
+	  goto GO_ON;
 	b3[0] = 0;
 	strcpy(b2, b1);
 	strcat(b2, patterns[i+1]);
@@ -26,6 +28,7 @@ sed_emulator(int narg, char **patterns)
       }
     }
     puts(b1);
+  GO_ON:;
   }
 }
 

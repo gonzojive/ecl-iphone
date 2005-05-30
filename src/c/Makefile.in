@@ -92,11 +92,11 @@ clean:
 
 # Build rules
 
-$(DPP): $(srcdir)/dpp.c symbols_list2.h
+$(DPP): $(srcdir)/dpp.c $(srcdir)/symbols_list2.h
 	if test -f ../CROSS-DPP; then touch dpp; else \
 	$(TRUE_CC) @CFLAGS@ @ECL_CFLAGS@ -I../h -I./ -I$(HDIR) $(DEFS) $(srcdir)/dpp.c  -o $@ ; \
 	fi
-symbols_list2.h: $(srcdir)/symbols_list.h Makefile
+$(srcdir)/symbols_list2.h: $(srcdir)/symbols_list.h Makefile
 	cat $(srcdir)/symbols_list.h | \
 	sed -e 's%{\([A-Z ]*.*".*"\),[^,]*,[ ]*NULL,.*}%{\1,NULL}%g' \
 	    -e 's%{\([A-Z ]*.*".*"\),[^,]*,[ ]*\([^,]*\),.*}%{\1,"\2"}%g' \

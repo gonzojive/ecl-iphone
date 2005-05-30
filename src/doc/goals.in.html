@@ -67,27 +67,28 @@ improvement in this area.
 
 <li><b>Embedability.</b>
 
-<p>In a near future <a href="http://ecls.sourceforge.net">ECL</a> will be
-shipped as a library that can be linked against arbitrary C
-programs. Currently, arbitrary C code can be linked against <a
-href="http://ecls.sourceforge.net">ECL</a>, either statically or at runtime.
+<p><a href="http://ecls.sourceforge.net">ECL</a> is shipped as a
+library that can be linked against arbitrary C programs. Arbitrary
+C/C++ code can be linked against <a
+href="http://ecls.sourceforge.net">ECL</a>, either statically or at
+runtime.
 
 <li><b>Portability to arbitrary environments.</b>
 
 <p><a href="http://ecls.sourceforge.net">ECL</a> is currently supported in
 <ul>
-<li>Debian and Redhat Linux on Intel</li>
-<li>Debian Linux on PowerPC</li>
-<li>FreeBSD 4.x</li>
-<li>Cygwin on Intel Windows (statically linked)</li>
-<li>MacOSX (statically linked)</li>
+<li>Linux on Intel, PowerPC, Alpha and Opteron</li>
+<li>FreeBSD on Intel</li>
+<li>NetBSD on Intel and Alpha</li>
+<li>Microsoft Windows</li>
+<li>MacOSX (currently broken)</li>
 </ul>
-Most of the code is portable. The parts
-which change from operating system to operating system are about the
-filesystem, sockets, signals and the allocation of big chunks of memory, but in
-all it is well below 1000 lines. The worst part is related to word-size and
-endianness. Work is in progress to port <a
-href="http://ecls.sourceforge.net">ECL</a> to 64-bit environments.
+Most of the code is portable and clean from issues like endianness and
+word size (<a href="http://ecls.sourceforge.net">ECL</a> works on 64
+bit architectures). The parts which change from operating system to
+operating system are about the filesystem, sockets, signals and the
+allocation of big chunks of memory, but in all it is well below 1000
+lines.
 
 <li><b>Compilation via an ANSI C compiler.</b>
 

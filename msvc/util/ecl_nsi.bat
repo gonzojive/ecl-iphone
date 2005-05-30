@@ -1,4 +1,4 @@
-@ECHO off
+REM @ECHO off
 REM Converted from ecl_nsi.sh
 
 SETLOCAL
@@ -7,17 +7,17 @@ SET source=%1
 SET where=%2
 CD %where%
 SET dest=ecl.nsi
-SET where=%CD%
-ECHO %where%
 
-REM set -x
-
-sed -e "/!@INSTALLFILES@/,$d" -e "s,@ECLDIR@,%where:\=\\%," %source% > %dest%
-DIR /B /A:-D | sed -e "/^.*ecl.exe.*$/d" -e "/^.*ecl.nsi.*$/d" -e "s,^%where:\=\\%\\,,g" -e "s,^\(.*\)$,  File \"${ECLDIR}\\\1\",g" >> %dest%
-DIR /B /A:D | sed -e "s,^%where:\=\\%\\,,g" -e "s,^\(.*\)$,  File /r \"${ECLDIR}\\\1\",g" >> %dest%
-sed -e "1,/!@INSTALLFILES@/d;/!@DELETEFILES@/,$d" %source% >> %dest%
-DIR /B /A:-D | sed -e "/^.*ecl.exe.*$/d" -e "/^.*ecl.nsi.*$/d" -e "s,^%where:\=\\%\\,,g" -e "s,^\(.*\)$,  Delete \"$INSTDIR\\\1\",g" >> %dest%
-DIR /B /A:D | sed -e "s,^%where:\=\\%\\,,g" -e "s,^\(.*\)$,  RMDir /r \"$INSTDIR\\\1\",g" >> %dest%
-sed -e "1,/!@DELETEFILES@/d" %source% >> %dest%
+type %source%1 | ..\c\cut.exe "@ECLDIR@" "%where%" > %dest%
+dir /s /b /a:-d | ..\c\cut.exe "ecl.exe" "/DELETE/" "ecl.nsi" "/DELETE/" "%where%\\" "" > ../aux_files
+dir /s /b /a:d | ..\c\cut.exe "ecl.exe" "/DELETE/" "ecl.nsi" "/DELETE/" "%where%\\" "" > ../aux_dirs
+echo HOLA
+for /f %%i in (../aux_dirs) do @echo %%i
+for /f %%i in (../aux_dirs) do @echo File /r "${ECLDIR}\%%i" >> %dest%
+for /f %%i in (../aux_files) do @echo File "${ECLDIR}\%%i" >> %dest%
+type %source%2 >> %dest%
+for /f %%i in (../aux_files) do @echo Delete "$INSTDIR\%%i" >> %dest%
+for /f %%i in (../aux_dirs) do @echo RMDir /r "$INSTDIR\%%i" >> %dest%
+type %source%3 >> %dest%
 
 ENDLOCAL
