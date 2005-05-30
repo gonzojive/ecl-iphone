@@ -485,8 +485,13 @@ member_char(int c, cl_object char_bag)
 	case t_bitvector:
 		return(FALSE);
 
+	case t_symbol:
+		if (Null(char_bag))
+			return(FALSE);
+		FEwrong_type_argument(@'sequence', char_bag);
+
 	default:
-		FEerror("~S is not a sequence.", 1, char_bag);
+		FEwrong_type_argument(@'sequence', char_bag);
 	}
 }
 
