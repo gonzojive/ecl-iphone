@@ -903,8 +903,8 @@ package."
     (tpl :commands (adjoin break-commands *tpl-commands*))))
 
 (defun invoke-debugger (condition)
-  (let* ((old-hook *debugger-hook*)
-	 (*debugger-hook* nil))
-    (if old-hook
-      (funcall old-hook condition old-hook)
-      (default-debugger condition))))
+  (when *debugger-hook*
+    (let* ((old-hook *debugger-hook*)
+	   (*debugger-hook* nil))
+      (funcall old-hook condition old-hook)))
+  (default-debugger condition))
