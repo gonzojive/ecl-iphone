@@ -964,9 +964,9 @@ cl_namestring(cl_object x)
 			goto OUTPUT;
 		}
 	}
-	if (host != Cnil && output->pathname.host != host) {
+	if (host != Cnil && !equal(output->pathname.host, host)) {
 		FEerror("The pathname ~S does not contain the required host ~S.",
-			1, thing, host);
+			2, thing, host);
 	}
   OUTPUT:
 	@(return output start)
