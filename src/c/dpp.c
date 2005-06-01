@@ -136,7 +136,7 @@ int nres;
 put_lineno(void)
 {
 	static int flag = 0;
-#if 0
+#if 1
 	if (flag)
 		fprintf(out, "#line %d\n", lineno);
 	else {
