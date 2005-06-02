@@ -1525,6 +1525,7 @@ cl_symbols[] = {
 
 {SYS_ "CL-FIXNUM-BITS",NULL},
 {EXT_ "CL-FIXNUM",NULL},
+{EXT_ "CL-INDEX",NULL},
 
 /* Tag for end of list */
 {NULL,NULL}};

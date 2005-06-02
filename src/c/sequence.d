@@ -195,6 +195,7 @@ E:
 		switch ((cl_elttype)sequence->vector.elttype) {
 		case aet_object:
 		case aet_fix:
+		case aet_index:
 		case aet_sf:
 			for (i = s, j = 0;  i < e;  i++, j++)
 				x->vector.self.t[j] = sequence->vector.self.t[i];
@@ -325,6 +326,7 @@ cl_reverse(cl_object seq)
 		switch ((cl_elttype)x->vector.elttype) {
 		case aet_object:
 		case aet_fix:
+		case aet_index:
 		case aet_sf:
 			for (j = k - 1, i = 0;  j >=0;  --j, i++)
 				y->vector.self.t[j] = x->vector.self.t[i];
@@ -401,6 +403,7 @@ cl_nreverse(cl_object seq)
 		switch ((cl_elttype)x->vector.elttype) {
 		case aet_object:
 		case aet_fix:
+		case aet_index:
 			for (i = 0, j = k - 1;  i < j;  i++, --j) {
 				y = x->vector.self.t[i];
 				x->vector.self.t[i] = x->vector.self.t[j];

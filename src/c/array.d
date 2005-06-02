@@ -108,6 +108,9 @@ aref(cl_object x, cl_index index)
   case aet_fix:
     return make_integer(x->array.self.fix[index]);
 
+  case aet_index:
+    return make_unsigned_integer(x->array.self.index[index]);
+
   case aet_sf:
     return(make_shortfloat(x->array.self.sf[index]));
 
@@ -211,7 +214,11 @@ aset(cl_object x, cl_index index, cl_object value)
     break;
   }
   case aet_fix:
-    x->array.self.fix[index] = object_to_fixnum(value);
+    x->array.self.fix[index] = fixint(value);
+    break;
+
+  case aet_index:
+    x->array.self.index[index] = fixnnint(value);
     break;
 
   case aet_sf:
@@ -390,6 +397,14 @@ array_allocself(cl_object x)
 		x->array.self.fix = elts;
 		break;
 	      }
+	case aet_index: {
+		cl_fixnum *elts;
+		elts = (cl_fixnum *)cl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
+		for (i = 0;  i < d;  i++)
+			elts[i] = 0;
+		x->array.self.fix = elts;
+		break;
+	      }
 	case aet_sf: {
 		float *elts;
 		elts = (float *)cl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
@@ -436,6 +451,8 @@ ecl_symbol_to_elttype(cl_object x)
 		return(aet_bit);
 	else if (x == @'ext::cl-fixnum')
 		return(aet_fix);
+	else if (x == @'ext::cl-index')
+		return(aet_index);
 	else if (x == @'single-float' || x == @'short-float')
 		return(aet_sf);
 	else if (x == @'long-float' || x == @'double-float')
@@ -459,6 +476,7 @@ ecl_elttype_to_symbol(cl_elttype aet)
 	case aet_ch:		output = @'base-char'; break;
 	case aet_bit:		output = @'bit'; break;
 	case aet_fix:		output = @'ext::cl-fixnum'; break;
+	case aet_index:		output = @'ext::cl-index'; break;
 	case aet_sf:		output = @'short-float'; break;
 	case aet_lf:		output = @'long-float'; break;
 	case aet_b8:		output = @'ext::byte8'; break;
@@ -474,6 +492,8 @@ array_address(cl_object x, cl_index inc)
 	case aet_object:
 		return x->array.self.t + inc;
 	case aet_fix:
+		return x->array.self.fix + inc;
+	case aet_index:
 		return x->array.self.fix + inc;
 	case aet_sf:
 		return x->array.self.t + inc;
@@ -677,6 +697,9 @@ cl_array_displacement(cl_object a)
 			offset = offset * CHAR_BIT + a->array.offset;
 			break;
 		case aet_fix:
+			offset = a->array.self.fix - to_array->array.self.fix;
+			break;
+		case aet_index:
 			offset = a->array.self.fix - to_array->array.self.fix;
 			break;
 		case aet_sf:

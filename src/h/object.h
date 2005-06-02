@@ -206,7 +206,8 @@ typedef enum {			/*  array element type  */
 	aet_sf,			/*  short-float      */
 	aet_lf,			/*  long-float       */
 	aet_bit,		/*  bit              */
-	aet_fix,		/*  fixnum           */
+	aet_fix,		/*  cl_fixnum        */
+	aet_index,		/*  cl_index         */
 	/* Below here, list types accepted by streams (i.e. OPEN) */
 	aet_b8,			/*  byte8	     */
 	aet_i8,			/*  integer8	     */
@@ -221,6 +222,7 @@ union ecl_array_data {
 	float *sf;
 	double *lf;
 	cl_fixnum *fix;
+	cl_index *index;
 	byte *bit;
 };
 
