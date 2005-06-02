@@ -248,7 +248,9 @@ main(int argc, char **argv)
 	     (setq item (pathname-name item))
 	     (push (init-function-name item) submodules))))
     (setq c-file (open c-name :direction :output))
-    (format c-file +lisp-program-header+ (if (eq :fasl target) nil submodules))
+    (format c-file +lisp-program-header+ 
+            #-(or :win32 :mingw32) (if (eq :fasl target) nil submodules)
+            #+(or :win32 :mingw32) submodules)
     (cond (shared-data-file
 	   (data-init shared-data-file)
 	   (format c-file "
