@@ -106,7 +106,7 @@ aref(cl_object x, cl_index index)
     else
       return(MAKE_FIXNUM(0));
   case aet_fix:
-    return(MAKE_FIXNUM(x->array.self.fix[index]));
+    return make_integer(x->array.self.fix[index]);
 
   case aet_sf:
     return(make_shortfloat(x->array.self.sf[index]));
@@ -211,7 +211,7 @@ aset(cl_object x, cl_index index, cl_object value)
     break;
   }
   case aet_fix:
-    x->array.self.fix[index] = fixint(value);
+    x->array.self.fix[index] = object_to_fixnum(value);
     break;
 
   case aet_sf:
@@ -434,7 +434,7 @@ ecl_symbol_to_elttype(cl_object x)
 		return(aet_ch);
 	else if (x == @'bit')
 		return(aet_bit);
-	else if (x == @'fixnum')
+	else if (x == @'ext::cl-fixnum')
 		return(aet_fix);
 	else if (x == @'single-float' || x == @'short-float')
 		return(aet_sf);
@@ -458,7 +458,7 @@ ecl_elttype_to_symbol(cl_elttype aet)
 	case aet_object:	output = Ct; break;
 	case aet_ch:		output = @'base-char'; break;
 	case aet_bit:		output = @'bit'; break;
-	case aet_fix:		output = @'fixnum'; break;
+	case aet_fix:		output = @'ext::cl-fixnum'; break;
 	case aet_sf:		output = @'short-float'; break;
 	case aet_lf:		output = @'long-float'; break;
 	case aet_b8:		output = @'ext::byte8'; break;

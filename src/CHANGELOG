@@ -76,6 +76,9 @@ ECL 0.9g
 
  - Added function si:rmdir (M. Pasternacki)
 
+ - There are now specialized arrays for 32 or 64 bits data, depending on the
+   size of words in the platform.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

@@ -57,6 +57,7 @@ bignums."
 
 (deftype ext::byte8 () `(INTEGER 0 255))
 (deftype ext::integer8 () `(INTEGER -128 127))
+(deftype ext::cl-fixnum () `(SIGNED-BYTE #.CL-FIXNUM-BITS))
 
 (deftype real (&rest foo) '(OR RATIONAL FLOAT))
 
@@ -213,7 +214,7 @@ has no fill-pointer, and is not adjustable."
   (put-sysprop (car l) 'TYPE-PREDICATE (cdr l)))
 
 (defconstant +upgraded-array-element-types+
-  '(BASE-CHAR BIT EXT::BYTE8 EXT::INTEGER8 FIXNUM SHORT-FLOAT LONG-FLOAT T))
+  '(BASE-CHAR BIT EXT::BYTE8 EXT::INTEGER8 EXT::CL-FIXNUM SHORT-FLOAT LONG-FLOAT T))
 
 (defun upgraded-array-element-type (element-type &optional env)
   (dolist (v +upgraded-array-element-types+ 'T)
@@ -1061,7 +1062,7 @@ if not possible."
 	       ((VECTOR BASE-CHAR) (ARRAY BASE-CHAR (*)))
 	       ((VECTOR EXT::BYTE8) (ARRAY EXT::BYTE8 (*)))
 	       ((VECTOR EXT::INTEGER8) (ARRAY EXT::INTEGER8 (*)))
-	       ((VECTOR FIXNUM) (ARRAY FIXNUM (*)))
+	       ((VECTOR EXT::CL-FIXNUM) (ARRAY EXT::CL-FIXNUM (*)))
 	       ((VECTOR SHORT-FLOAT) (ARRAY SHORT-FLOAT (*)))
 	       ((VECTOR LONG-FLOAT) (ARRAY LONG-FLOAT (*)))
 	       ((VECTOR T) (ARRAY T (*)))

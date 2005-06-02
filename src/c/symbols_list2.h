@@ -1523,6 +1523,9 @@ cl_symbols[] = {
 {CLOS_ "SLOT-DEFINITION-DOCUMENTATION",NULL},
 #endif
 
+{SYS_ "CL-FIXNUM-BITS",NULL},
+{EXT_ "CL-FIXNUM",NULL},
+
 /* Tag for end of list */
 {NULL,NULL}};
 
