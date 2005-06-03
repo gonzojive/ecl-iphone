@@ -86,6 +86,24 @@ object_to_fixnum(cl_object x)
 	}
 }
 
+cl_index
+object_to_unsigned_integer(cl_object x)
+{
+	switch (type_of(x)) {
+	case t_fixnum:
+	case t_bignum:
+		return fixnnint(x);
+	case t_ratio:
+		return (cl_index)number_to_double(x);
+	case t_shortfloat:
+		return (cl_index)sf(x);
+	case t_longfloat:
+		return (cl_index)lf(x);
+	default:
+		FEerror("~S cannot be coerced to a C unsigned int.", 1, x);
+	}
+}
+
 float
 object_to_float(cl_object x)
 {

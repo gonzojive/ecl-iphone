@@ -374,6 +374,7 @@ extern cl_fixnum ifloor(cl_fixnum x, cl_fixnum y);
 extern cl_fixnum imod(cl_fixnum x, cl_fixnum y);
 extern char object_to_char(cl_object x);
 extern cl_fixnum object_to_fixnum(cl_object x);
+extern cl_index object_to_unsigned_integer(cl_object x);
 extern float object_to_float(cl_object x);
 extern double object_to_double(cl_object x);
 extern int aref_bv(cl_object x, cl_index index);

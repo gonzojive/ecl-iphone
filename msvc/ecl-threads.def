@@ -159,6 +159,7 @@ EXPORTS
 	imod
 	object_to_char
 	object_to_fixnum
+	object_to_unsigned_integer
 	object_to_float
 	object_to_double
 	aref_bv

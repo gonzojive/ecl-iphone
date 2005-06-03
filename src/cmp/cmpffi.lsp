@@ -134,7 +134,7 @@
 	(wt loc)
 	(return-from wt-coerce-loc))
       (case dest-rep-type
-	((:int :unsigned-int :long :unsigned-long :byte :unsigned-byte :fixnum)
+	((:int :long :byte :fixnum)
 	 (case loc-rep-type
 	   ((:int :unsigned-int :long :unsigned-long :byte :unsigned-byte :fixnum
 		  :float :double)
@@ -142,6 +142,17 @@
 	   ((:object)
 	    (ensure-valid-object-type dest-type)
 	    (wt (if (subtypep (loc-type loc) 'fixnum) "fix(" "object_to_fixnum(")
+		loc ")"))
+	   (otherwise
+	    (coercion-error))))
+	((:unsigned-int :unsigned-long :unsigned-byte)
+	 (case loc-rep-type
+	   ((:int :unsigned-int :long :unsigned-long :byte :unsigned-byte :fixnum
+		  :float :double)
+	    (wt "((" (rep-type-name dest-rep-type) ")" loc ")"))
+	   ((:object)
+	    (ensure-valid-object-type dest-type)
+	    (wt (if (subtypep (loc-type loc) 'fixnum) "fix(" "object_to_unsigned_integer(")
 		loc ")"))
 	   (otherwise
 	    (coercion-error))))
@@ -178,8 +189,10 @@
 	    (coercion-error))))
 	((:object)
 	 (case loc-rep-type
-	   ((:int :unsigned-int :long :unsigned-long)
+	   ((:int :long)
 	    (wt "make_integer(" loc ")"))
+	   ((:unsigned-int :unsigned-long)
+	    (wt "make_unsigned_integer(" loc ")"))
 	   ((:byte :unsigned-byte :fixnum)
 	    (wt "MAKE_FIXNUM(" loc ")"))
 	   ((:float)
