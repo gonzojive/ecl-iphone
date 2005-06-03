@@ -15,19 +15,19 @@
 (defun error-sequence-type (type)
   (declare (si::c-local))
   (error 'simple-type-error
-	 :datum type
-	 :expected-type 'sequence
+	 :datum (vector) ;; Any sequence object will do, because it does not belong to TYPE
+	 :expected-type type
 	 :format-control "~S does not specify a sequence type"
 	 :format-arguments (list type)))
 
-(defun error-sequence-length (type size)
+(defun error-sequence-length (object type size)
   (declare (si::c-local))
   (error 'simple-type-error
 	 :format-control
 	 "Cannot create a sequence of size ~S which matches type ~S."
 	 :format-arguments (list size type)
 	 :expected-type type
-	 :datum NIL))
+	 :datum object))
 
 (defun closest-vector-type (type)
   (let (elt-type length name args)
@@ -77,11 +77,7 @@
 		    ;; Does this have to be a type-error?
 		    ;; 17.3 for MAKE-SEQUENCE says it should be an error,
 		    ;; but does not specialize what kind.
-		    (error 'simple-type-error
-			   :datum type
-			   :expected-type 'sequence
-			   :format-control "Cannot find the element type in sequence type ~S"
-			   :format-arguments (list type))
+		    (error "Cannot find the element type in vector type ~S" type)
 		    (error-sequence-type type)))
 	  (when (subtypep type (car i))
 	    (setq elt-type (cdr i) length '*)
@@ -95,30 +91,26 @@ ELEMENT is given, then it becomes the elements of the created sequence.  The
 default value of INITIAL-ELEMENT depends on TYPE."
   (if (subtypep type 'LIST)
       (progn
-	(cond ((subtypep 'LIST type)
-	       (make-list size :initial-element initial-element))
-	      ((subtypep type 'NIL)
-	       (error-sequence-type type))
-	      ((subtypep type 'NULL)
-	       (unless (zerop size)
-		 (error-sequence-length type size)))
-	      ((subtypep type 'CONS)
-	       (when (zerop size)
-		 (error-sequence-length type size))))
-	(make-list size :initial-element initial-element))
+	(when (subtypep type 'NIL)
+	  (error-sequence-type type))
+	(setq sequence (make-list size :initial-element initial-element))
+	(unless (subtypep 'LIST type)
+	  (when (or (and (subtypep type 'NULL) (plusp size))
+		    (and (subtypep type 'CONS) (zerop size)))
+	    (error-sequence-length (make-list size :initial-element initial-element) type 0))))
       (multiple-value-bind (element-type length)
 	  (closest-vector-type type)
 	(setq sequence (sys:make-vector (if (eq element-type '*) T element-type)
 					size nil nil nil nil))
-	(unless (or (eql length '*) (eql length size))
-	  (error-sequence-length type size))
 	(when iesp
 	  (do ((i 0 (1+ i))
 	       (size size))
 	      ((>= i size))
 	    (declare (fixnum i size))
 	    (setf (elt sequence i) initial-element)))
-	sequence)))
+	(unless (or (eql length '*) (eql length size))
+	  (error-sequence-length sequence type size))))
+  sequence)
 
 (defun make-seq-iterator (sequence &optional (start 0))
   (cond ((null start)
