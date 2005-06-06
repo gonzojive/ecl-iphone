@@ -249,8 +249,8 @@ main(int argc, char **argv)
 	     (push (init-function-name item) submodules))))
     (setq c-file (open c-name :direction :output))
     (format c-file +lisp-program-header+ 
-            #-(or :win32 :mingw32) (if (eq :fasl target) nil submodules)
-            #+(or :win32 :mingw32) submodules)
+            #-(or :win32 :mingw32 :darwin) (if (eq :fasl target) nil submodules)
+            #+(or :win32 :mingw32 :darwin) submodules)
     (cond (shared-data-file
 	   (data-init shared-data-file)
 	   (format c-file "
@@ -323,11 +323,12 @@ static cl_object VV[VM];
        (apply #'shared-cc output-name o-name ld-flags))
       #+dlopen
       (:fasl
+       (print init-name)
        (when (or (symbolp output-name) (stringp output-name))
 	 (setf output-name (compile-file-pathname output-name :type :fasl)))
        (unless init-name
 	 (setf init-name (init-function-name "CODE" nil)))
-       #-(or :win32 :mingw32)
+       #-(or :win32 :mingw32 :darwin)
        (setf submodules
 	     (mapcar #'(lambda (sm)
 			 (format nil "((ecl_init_function_t) ecl_library_symbol(Cblock, \"~A\"))" sm))
@@ -335,6 +336,7 @@ static cl_object VV[VM];
        (format c-file +lisp-program-init+ init-name prologue-code shared-data-file
 	       submodules epilogue-code)
        (close c-file)
+       (si:system (format nil "cat ~s" c-file))
        (compiler-cc c-name o-name)
        (apply #'bundle-cc output-name o-name ld-flags)))
     (cmp-delete-file c-name)

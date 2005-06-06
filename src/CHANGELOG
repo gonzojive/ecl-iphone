@@ -3,7 +3,7 @@ ECL 0.9g
 
 * Platforms:
 
- - Fixed the flags used when linking ECL against the shared library on Mac OSX.
+ - Fixed the broken port for MacOSX. It should work with any release >= 10.2
 
 * Foreign function interface (FFI):
 

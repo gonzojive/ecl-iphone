@@ -1140,6 +1140,8 @@ static const char *GC_dyld_name_for_hdr(struct mach_header *hdr) {
 static void GC_dyld_image_add(struct mach_header* hdr, unsigned long slide) {
     unsigned long start,end,i;
     const struct section *sec;
+    if (GC_no_dls)
+	return;
     for(i=0;i<sizeof(GC_dyld_sections)/sizeof(GC_dyld_sections[0]);i++) {
         sec = getsectbynamefromheader(
             hdr,GC_dyld_sections[i].seg,GC_dyld_sections[i].sect);
