@@ -103,6 +103,7 @@ all:	$(TARGETS) doc ecl-config.bat
 c\cut$(EXE):
 	cd c
 	$(MAKE) cut$(EXE)
+	cd ..
 
 $(TARGETS): ecl_min$(EXE) compile.lsp sysfun.lsp
 	.\ecl_min < compile.lsp
