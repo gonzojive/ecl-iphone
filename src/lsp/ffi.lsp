@@ -417,6 +417,7 @@
 	cl_index size = lisp_string->string.fillp;
 	cl_object output = ecl_allocate_foreign_data(@(* :char), size+1);
 	memcpy(output->foreign.data, lisp_string->string.self, size);
+	output->foreign.data[size] = '\\0';
 	@(return) = output;
 	}"
 	:one-liner nil
