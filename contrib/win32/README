@@ -1,0 +1,19 @@
+In this directory you will find an interesting example of an application built
+using ECL's implementation of the UFFI specification.
+
+This example consists on several files:
+
+ * win32.lsp: This is a lisp interface to the Microsoft Windows API
+   for the graphical user interface. It is not finished but it suffices
+   to demonstrate the most important ingredients you will need in a
+   real-world application.
+
+ * txtedit.lsp: A simple text editor written using the previous library.
+
+ * compile-and-run.lsp: This lisp script builds the Win32 library and
+   runs the text editor using it.
+
+This library has been contributed by Michael Goffioul (michael dot goffioul at
+swing dot be). Feel free to experiment with it and share your experience at
+the ECL mailing list.
+
