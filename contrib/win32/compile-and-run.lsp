@@ -14,5 +14,10 @@
 (let ((c::*ld-format* (concatenate 'string c::*ld-format* " user32.lib kernel32.lib gdi32.lib comdlg32.lib")))
   (compile-file "win32.lisp" :c-file t))
 
-(load "txtedit.lsp")
+(load "txtedit.lisp")
 
+(format t "
+
+** Run (WIN32::TXTEDIT [FILENAME]) to launch the application example.
+
+")

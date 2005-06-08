@@ -35,14 +35,18 @@
 
 (define-win-constant *WM_CLOSE* "WM_CLOSE")
 (define-win-constant *WM_COMMAND* "WM_COMMAND")
+(define-win-constant *WM_COPY* "WM_COPY")
 (define-win-constant *WM_CREATE* "WM_CREATE")
+(define-win-constant *WM_CUT* "WM_CUT")
 (define-win-constant *WM_DESTROY* "WM_DESTROY")
 (define-win-constant *WM_GETFONT* "WM_GETFONT")
 (define-win-constant *WM_GETMINMAXINFO* "WM_GETMINMAXINFO")
+(define-win-constant *WM_PASTE* "WM_PASTE")
 (define-win-constant *WM_QUIT* "WM_QUIT")
 (define-win-constant *WM_SETFOCUS* "WM_SETFOCUS")
 (define-win-constant *WM_SETFONT* "WM_SETFONT")
 (define-win-constant *WM_SIZE* "WM_SIZE")
+(define-win-constant *WM_UNDO* "WM_UNDO")
 
 (define-win-constant *WS_BORDER* "WS_BORDER")
 (define-win-constant *WS_CHILD* "WS_CHILD")
@@ -73,6 +77,9 @@
 (define-win-constant *ES_LEFT* "ES_LEFT")
 (define-win-constant *ES_MULTILINE* "ES_MULTILINE")
 
+(define-win-constant *EM_CANUNDO* "EM_CANUNDO")
+(define-win-constant *EM_SETSEL* "EM_SETSEL")
+(define-win-constant *EM_UNDO* "EM_UNDO")
 (define-win-constant *EN_CHANGE* "EN_CHANGE")
 
 (define-win-constant *SW_SHOWNORMAL* "SW_SHOWNORMAL")
@@ -114,6 +121,14 @@
 (define-win-constant *OFN_OVERWRITEPROMPT* "OFN_OVERWRITEPROMPT")
 (define-win-constant *OFN_PATHMUSTEXIST* "OFN_PATHMUSTEXIST")
 (define-win-constant *OFN_READONLY* "OFN_READONLY")
+
+(define-win-constant *FVIRTKEY* "FVIRTKEY")
+(define-win-constant *FNOINVERT* "FNOINVERT")
+(define-win-constant *FSHIFT* "FSHIFT")
+(define-win-constant *FCONTROL* "FCONTROL")
+(define-win-constant *FALT* "FALT")
+
+(define-win-constant *VK_F1* "VK_F1")
 
 (defconstant *NULL* (make-null-pointer :pointer-void))
 
@@ -187,6 +202,7 @@
 			 (nMaxFileTitle :unsigned-int) (lpstrInitialDir LPCSTR) (lpstrTitle LPCSTR) (Flags :unsigned-int) (nFileOffset :unsigned-short)
 			 (nFileExtension :unsigned-short) (lpstrDefExt LPCSTR) (lCustData :int) (lpfnHook HANDLE) (lpTemplateName LPCSTR)
 			 (pvReserved :pointer-void) (dwReserved :unsigned-int) (FlagsEx :unsigned-int))
+(def-struct ACCEL (fVirt :byte) (key :unsigned-short) (cmd :unsigned-short))
 
 ;; Windows functions
 
@@ -298,16 +314,23 @@ LRESULT CALLBACK WndProc_proxy(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 (def-function ("CreateMenu" createmenu) nil :returning HANDLE)
 (def-function ("CreatePopupMenu" createpopupmenu) nil :returning HANDLE)
 (def-function ("AppendMenu" appendmenu) ((hMenu HANDLE) (uFlags :unsigned-int) (uIDNewItem :unsigned-int) (lpNewItem LPCSTR)) :returning :int)
+(def-function ("CreateAcceleratorTable" createacceleratortable) ((lpaccl (* ACCEL)) (cEntries :int)) :returning HANDLE)
+(def-function ("TranslateAccelerator" translateaccelerator) ((hWnd HANDLE) (hAccTable HANDLE) (lpMsg (* MSG))) :returning :int)
+(def-function ("DestroyAcceleratorTable" destroyacceleratortable) ((hAccTable HANDLE)) :returning :int)
 
-(defun event-loop ()
+(defun event-loop (&key (accelTable *NULL*) (accelMain *NULL*))
   (with-foreign-object (msg 'MSG)
     (loop for bRet = (getmessage msg *NULL* 0 0)
 	  when (= bRet 0) return bRet
 	  if (= bRet -1)
 	        do (error "GetMessage failed!!!")
 	  else
-	        do (translatemessage msg)
-	    and do (dispatchmessage msg))))
+	    do (or (and (not (null-pointer-p accelTable))
+			(not (null-pointer-p accelMain))
+			(/= (translateaccelerator accelMain accelTable msg) 0))
+		   (progn
+		     (translatemessage msg)
+		     (dispatchmessage msg))))))
 
 (defun y-or-no-p (&optional control &rest args)
   (let ((s (coerce (apply #'format nil control args) 'simple-string)))
@@ -332,6 +355,8 @@ LRESULT CALLBACK WndProc_proxy(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 	  (setf (get-slot-value ofn 'OPENFILENAME 'lpstrFilter) filter))
 	(unless (= (funcall dlgfn ofn) 0)
 	  (pathname (string-trim (string #\Null) fn)))))))
+
+(provide "WIN32")
 
 ;;; Test code
 

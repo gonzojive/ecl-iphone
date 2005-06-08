@@ -10,6 +10,8 @@
 ;;; SAMPLE TEXT EDITOR APPLICATION USING THE WIN32 API
 ;;;
 
+(require "WIN32" "win32")
+
 (in-package "WIN32")
 
 (defvar *txtedit-class-registered* nil)
@@ -25,25 +27,67 @@
 (defparameter +IDM_SAVE+ 102)
 (defparameter +IDM_SAVEAS+ 103)
 (defparameter +IDM_NEW+ 104)
+(defparameter +IDM_CUT+ 105)
+(defparameter +IDM_COPY+ 106)
+(defparameter +IDM_PASTE+ 107)
+(defparameter +IDM_UNDO+ 108)
+(defparameter +IDM_SELECTALL+ 109)
+(defparameter +IDM_ABOUT+ 110)
 (defparameter +EDITCTL_ID+  1000)
+
+(defparameter *txtedit-about-text*
+"Text Editor for ECL.
+
+This application serves as a demonstrator
+for the WIN32 FFI interface of ECL.
+
+Copyright (C), Michael Goffioul, 2005.")
 
 (defun create-menus ()
   ;(return *NULL*)
   (let ((bar (createmenu))
 	(file_pop (createpopupmenu))
-	(edit_pop (createpopupmenu)))
+	(edit_pop (createpopupmenu))
+	(help_pop (createpopupmenu)))
     ;; File menu
-    (appendmenu bar (logior *MF_STRING* *MF_POPUP*) (make-wparam file_pop) "File")
-    (appendmenu file_pop *MF_STRING* +IDM_NEW+ "New")
-    (appendmenu file_pop *MF_STRING* +IDM_OPEN+ "Open...")
+    (appendmenu bar (logior *MF_STRING* *MF_POPUP*) (make-wparam file_pop) "&File")
+    (appendmenu file_pop *MF_STRING* +IDM_NEW+ "&New	Ctrl+N")
+    (appendmenu file_pop *MF_STRING* +IDM_OPEN+ "&Open...	Ctrl+O")
     (appendmenu file_pop *MF_SEPARATOR* 0 "")
-    (appendmenu file_pop *MF_STRING* +IDM_SAVE+ "Save")
-    (appendmenu file_pop *MF_STRING* +IDM_SAVEAS+ "Save As...")
+    (appendmenu file_pop *MF_STRING* +IDM_SAVE+ "&Save	Ctrl+S")
+    (appendmenu file_pop *MF_STRING* +IDM_SAVEAS+ "Save &As...")
     (appendmenu file_pop *MF_SEPARATOR* 0 "")
-    (appendmenu file_pop *MF_STRING* +IDM_QUIT+ "Exit")
+    (appendmenu file_pop *MF_STRING* +IDM_QUIT+ "&Exit	Ctrl+Q")
     ;; Edit menu
-    (appendmenu bar (logior *MF_STRING* *MF_POPUP*) (make-wparam edit_pop) "Edit")
+    (appendmenu bar (logior *MF_STRING* *MF_POPUP*) (make-wparam edit_pop) "&Edit")
+    (appendmenu edit_pop *MF_STRING* +IDM_UNDO+ "&Undo	Ctrl+Z")
+    (appendmenu edit_pop *MF_SEPARATOR* 0 "")
+    (appendmenu edit_pop *MF_STRING* +IDM_CUT+ "&Cut	Ctrl+X")
+    (appendmenu edit_pop *MF_STRING* +IDM_COPY+ "Cop&y	Ctrl+C")
+    (appendmenu edit_pop *MF_STRING* +IDM_PASTE+ "&Paste	Ctrl+V")
+    (appendmenu edit_pop *MF_SEPARATOR* 0 "")
+    (appendmenu edit_pop *MF_STRING* +IDM_SELECTALL+ "&Select All	Ctrl+A")
+    ;; Help menu
+    (appendmenu bar (logior *MF_STRING* *MF_POPUP*) (make-wparam help_pop) "&Help")
+    (appendmenu help_pop *MF_STRING* +IDM_ABOUT+ "&About...")
     bar))
+
+(defun create-accels ()
+  (macrolet ((add-accel (key ID accTable pos)
+	       `(with-foreign-object (a 'ACCEL)
+		  (setf (get-slot-value a 'ACCEL 'fVirt) (logior *FCONTROL* *FVIRTKEY*))
+		  (setf (get-slot-value a 'ACCEL 'key) (char-code ,key))
+		  (setf (get-slot-value a 'ACCEL 'cmd) ,ID)
+		  (setf (deref-array ,accTable '(* ACCEL) ,pos) a))))
+    (let ((accTable (allocate-foreign-object 'ACCEL 5)))
+      (add-accel #\Q +IDM_QUIT+ accTable 0)
+      (add-accel #\N +IDM_NEW+ accTable 1)
+      (add-accel #\O +IDM_OPEN+ accTable 2)
+      (add-accel #\S +IDM_SAVE+ accTable 3)
+      (add-accel #\A +IDM_SELECTALL+ accTable 4)
+      (prog1
+	(createacceleratortable accTable 5)
+	(free-foreign-object accTable)))))
 
 (defun is-default-title (hwnd)
   (string= (string-right-trim "*" (getwindowtext hwnd)) *txtedit-default-title*))
@@ -145,6 +189,19 @@
 		 ((= ctrl-ID +IDM_NEW+)
 		  (setwindowtext *txtedit-edit* "")
 		  (setwindowtext hwnd *txtedit-default-title*))
+		 ((= ctrl-ID +IDM_CUT+)
+		  (sendmessage *txtedit-edit* *WM_CUT* 0 0))
+		 ((= ctrl-ID +IDM_COPY+)
+		  (sendmessage *txtedit-edit* *WM_COPY* 0 0))
+		 ((= ctrl-ID +IDM_PASTE+)
+		  (sendmessage *txtedit-edit* *WM_PASTE* 0 0))
+		 ((= ctrl-ID +IDM_UNDO+)
+		  (unless (= (sendmessage *txtedit-edit* *EM_CANUNDO* 0 0) 0)
+		    (sendmessage *txtedit-edit* *EM_UNDO* 0 0)))
+		 ((= ctrl-ID +IDM_SELECTALL+)
+		  (sendmessage *txtedit-edit* *EM_SETSEL* 0 -1))
+		 ((= ctrl-ID +IDM_ABOUT+)
+		  (messagebox hwnd *txtedit-about-text* "About" (logior *MB_OK* *MB_ICONINFORMATION*)))
 		 (t
 		   )))
 	 0)
@@ -173,11 +230,13 @@
 			 *WS_OVERLAPPEDWINDOW*
 			 *CW_USEDEFAULT* *CW_USEDEFAULT*
 			 *txtedit-width* *txtedit-height*
-			 *NULL* (create-menus) *NULL* fname-str)))
+			 *NULL* (create-menus) *NULL* fname-str))
+	 (accTable (create-accels)))
     (showwindow w *SW_SHOWNORMAL*)
     (updatewindow w)
-    (event-loop)
+    (event-loop :accelTable accTable :accelMain w)
     (setq *txtedit-edit* *NULL*)
+    (destroyacceleratortable accTable)
     (unless (null-pointer-p fname-str)
       (free-foreign-object fname-str))
     (unregister-txtedit-class)
