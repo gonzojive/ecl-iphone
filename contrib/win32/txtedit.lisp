@@ -41,7 +41,7 @@
 This application serves as a demonstrator
 for the WIN32 FFI interface of ECL.
 
-Copyright (C), Michael Goffioul, 2005.")
+Copyright (c) 2005, Michael Goffioul.")
 
 (defun create-menus ()
   ;(return *NULL*)
