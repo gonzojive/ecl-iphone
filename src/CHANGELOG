@@ -48,7 +48,9 @@ ECL 0.9g
  - The random number generator assumed 32-bit integers.
 
  - ext:run-program looks into *standard-input/output* and *error-output* for handle
-   duplicatio also under Win32.
+   duplication also under Win32.
+ 
+ - FEtype_error_index() had format arguments in wrong order (M. Goffioul).
 
 * ANSI compatibility:
 

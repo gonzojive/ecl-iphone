@@ -88,7 +88,7 @@ FEtype_error_index(cl_object seq, cl_object ndx)
 {
 	cl_error(9, @'simple-type-error', @':format-control',
 		    make_constant_string("~S is not a valid index into the object ~S"),
-		    @':format-arguments', cl_list(2, seq, ndx),
+		    @':format-arguments', cl_list(2, ndx, seq),
 		    @':expected-type', cl_list(3, @'integer', MAKE_FIXNUM(0), MAKE_FIXNUM(length(seq)-1)),
 		    @':datum', ndx);
 }
