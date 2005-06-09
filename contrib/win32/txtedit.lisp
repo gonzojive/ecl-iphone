@@ -40,6 +40,8 @@
 (defparameter +IDM_NEXTWINDOW+ 111)
 (defparameter +IDM_PREVWINDOW+ 112)
 (defparameter +IDM_CLOSE+ 113)
+(defparameter +IDM_WINDOW_FIRST+ 500)
+(defparameter +IDM_WINDOW_LAST+ 600)
 
 (defparameter +EDITCTL_ID+  1000)
 (defparameter +TABCTL_ID+ 1001)
@@ -107,12 +109,9 @@ Copyright (c) 2005, Michael Goffioul.")
 	(createacceleratortable accTable 8)
 	(free-foreign-object accTable)))))
 
-(defun is-default-title (hwnd)
-  (string= (string-right-trim "*" (getwindowtext hwnd)) *txtedit-default-title*))
-
 (defun update-caption (hwnd)
   (let ((str (tab-name (current-editor) #'identity nil)))
-    (setwindowtext hwnd (format nil "~@[~A - ~]ECL Text Editor~C" str #\Null))))
+    (setwindowtext hwnd (format nil "~@[~A - ~]~A~C" str *txtedit-default-title* #\Null))))
 
 (defun current-editor ()
   (nth *txtedit-current* *txtedit-edit*))
@@ -283,6 +282,22 @@ Copyright (c) 2005, Michael Goffioul.")
 		   (t
 		     ))))
 	 0)
+	((= umsg *WM_INITMENUPOPUP*)
+	 (when (= (loword lparam) 2)
+	   (let* ((wMenu (make-handle wparam))
+		  (nPos (loword lparam))
+		  (nItems (getmenuitemcount wMenu)))
+	     (dotimes (j (- nItems 2))
+	       (deletemenu wMenu 2 *MF_BYPOSITION*))
+	     (when *txtedit-edit*
+	       (appendmenu wMenu *MF_SEPARATOR* 0 "")
+	       (loop for e in *txtedit-edit*
+		     for k from 0
+		     do (progn
+			  (appendmenu wMenu *MF_STRING* (+ +IDM_WINDOW_FIRST+ k) (tab-name e))
+			  (when (= k *txtedit-current*)
+			    (checkmenuitem wMenu (+ k 3) (logior *MF_BYPOSITION* *MF_CHECKED*))))))))
+	 0)
 	((= umsg *WM_COMMAND*)
 	 (let ((ctrl-ID (loword wparam))
 	       (nmsg (hiword wparam))
@@ -339,6 +354,9 @@ Copyright (c) 2005, Michael Goffioul.")
 		  (if (= (length *txtedit-edit*) 1)
 		    (sendmessage hwnd *WM_CLOSE* 0 0)
 		    (close-editor *txtedit-current* hwnd)))
+		 ((<= +IDM_WINDOW_FIRST+ ctrl-ID +IDM_WINDOW_LAST+)
+		  (set-current-editor (- ctrl-ID +IDM_WINDOW_FIRST+) hwnd)
+		  0)
 		 (t
 		   )))
 	 0)
