@@ -1109,6 +1109,7 @@ type_of(#0)==t_bitvector"))
     find-all-symbols apropos apropos-list
     ;; predlib.lsp
     upgraded-array-element-type upgraded-complex-part-type typep subtypep coerce
+    do-deftype
     ;; seq.lsp
     make-sequence concatenate map some every notany notevery map-into
     ;; seqlib.lsp

@@ -1527,6 +1527,10 @@ cl_symbols[] = {
 {EXT_ "CL-FIXNUM",NULL},
 {EXT_ "CL-INDEX",NULL},
 
+{SYS_ "DO-DEFTYPE","ECL_NAME(si_do_deftype)"},
+{SYS_ "CREATE-TYPE-NAME",NULL},
+{SYS_ "*ALIEN-DECLARATIONS*",NULL},
+
 /* Tag for end of list */
 {NULL,NULL}};
 

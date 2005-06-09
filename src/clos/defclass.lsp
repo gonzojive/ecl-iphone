@@ -106,7 +106,9 @@
 		 (not (eq (class-name old-class) name)))
 	(setf old-class nil)))
     (setf new-class (apply #'ensure-class-using-class old-class name initargs))
-    (when name (setf (find-class name) new-class))
+    (when name
+      (si:create-type-name name)
+      (setf (find-class name) new-class))
     new-class))
 
 #+cross

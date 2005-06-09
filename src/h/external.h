@@ -1586,6 +1586,7 @@ extern cl_object cl_apropos_list _ARGS((cl_narg arg, cl_object V1, ...));
 
 /* predlib.lsp */
 
+extern cl_object si_do_deftype _ARGS((cl_narg narg, cl_object V1, cl_object V2, cl_object V3, ...));
 extern cl_object cl_upgraded_array_element_type _ARGS((cl_narg narg, cl_object V1, ...));
 extern cl_object cl_upgraded_complex_part_type _ARGS((cl_narg narg, cl_object V1, ...));
 extern cl_object cl_typep _ARGS((cl_narg narg, cl_object V1, cl_object V2, ...));

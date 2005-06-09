@@ -12,6 +12,25 @@
 
 (in-package "SYSTEM")
 
+(defun create-type-name (name)
+  (when (member name *alien-declarations*)
+    (error "Symbol ~s is a declaration specifier and cannot be used to name a new type" name))
+  (dolist (x '(DEFTYPE-FORM DEFTYPE-DEFINITION
+	       DEFSTRUCT-FORM IS-A-STRUCTURE
+	       STRUCTURE-SLOT-DESCRIPTIONS STRUCTURE-INCLUDE
+	       STRUCTURE-PRINT-FUNCTION STRUCTURE-TYPE
+	       STRUCTURE-NAMED STRUCTURE-OFFSET STRUCTURE-CONSTRUCTORS))
+    (rem-sysprop name x))
+  (remhash name si:*class-name-hash-table*))
+
+(defun do-deftype (name form function)
+  (unless (symbolp name)
+    (error "~s is not a valid type specifier" name))
+  (create-type-name name)
+  (put-sysprop name 'DEFTYPE-FORM form)
+  (put-sysprop name 'DEFTYPE-DEFINITION function)
+  name)
+
 ;;; DEFTYPE macro.
 (defmacro deftype (name lambda-list &rest body)
   "Syntax: (deftype name lambda-list {decl | doc}* {form}*)
@@ -35,10 +54,8 @@ by (documentation 'NAME 'type)."
 	(when (symbolp variable)
 	  (setf (first l) `(,variable '*)))))
     `(eval-when (:compile-toplevel :load-toplevel :execute)
-      (put-sysprop ',name 'DEFTYPE-FORM '(DEFTYPE ,name ,lambda-list ,@body))
-      (put-sysprop ',name 'DEFTYPE-DEFINITION #'(LAMBDA ,lambda-list ,@body))
-      ,@(si::expand-set-documentation name 'type doc)
-      ',name)))
+       ,@(si::expand-set-documentation name 'type doc)
+       (do-deftype ',name '(DEFTYPE ,name ,lambda-list ,@body) #'(LAMBDA ,lambda-list ,@body)))))
 
 
 ;;; Some DEFTYPE definitions.

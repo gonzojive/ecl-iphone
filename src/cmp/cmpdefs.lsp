@@ -323,7 +323,6 @@ The default value is NIL.")
 ;;;
 (defvar *function-declarations* nil)
 (defvar *allow-c-local-declaration* t)
-(defvar *alien-declarations* nil)
 (defvar *notinline* nil)
 
 ;;; --cmpexit.lsp--

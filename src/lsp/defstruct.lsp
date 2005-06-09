@@ -271,6 +271,7 @@
 (defun define-structure (name conc-name type named slots slot-descriptions
 			 copier include print-function print-object constructors
 			 offset name-offset documentation predicate)
+  (create-type-name name)
   ;; We are going to modify this list!!!
   (setf slot-descriptions (copy-tree slot-descriptions))
   ;; FIXME! We could do the same with ENSURE-CLASS!

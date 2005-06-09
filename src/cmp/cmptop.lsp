@@ -466,7 +466,7 @@
   (if (null decls)
       (t1progn body)
       (let* ((*function-declarations* *function-declarations*)
-	     (*alien-declarations* *alien-declarations*)
+	     (si:*alien-declarations* si:*alien-declarations*)
 	     (*notinline* *notinline*)
 	     (*safety* *safety*)
 	     (*space* *space*)

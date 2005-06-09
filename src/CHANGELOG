@@ -72,6 +72,8 @@ ECL 0.9g
  - Pathnames which contain :BACK in the directory, now print as unreadable
    objects, instead of signaling an error when printing.
 
+ - Declaration names cannot be used to define new type names and viceversa.
+
 * New features:
 
  - Added function si:rmdir (M. Pasternacki)

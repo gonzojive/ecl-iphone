@@ -177,7 +177,7 @@
      (dolist (var (cdr decl))
        (if (symbolp var)
            (sys:*make-special var)
-           (warn "The variable name ~s is not a symbol." var))))
+           (error "Syntax error in proclamation ~s" decl))))
     (OPTIMIZE
      (dolist (x (cdr decl))
        (when (symbolp x) (setq x (list x 3)))
@@ -196,7 +196,7 @@
     (TYPE
      (if (consp (cdr decl))
          (proclaim-var (second decl) (cddr decl))
-         (warn "The type declaration ~s is illegal." decl)))
+         (error "Syntax error in proclamation ~s" decl)))
     (FTYPE
      (let (ftype)
        (cond ((and (consp (cdr decl))
@@ -204,27 +204,24 @@
 		   (eq (first ftype) 'FUNCTION))
 	      (dolist (v (cddr decl))
 		(add-function-proclamation v (rest ftype))))
-	     (t (cmpwarn "Bad function proclamation ~a" decl)))))
+	     (t (error "Syntax error in proclamation ~a" decl)))))
     (INLINE
      (dolist (fun (cdr decl))
-               (if (si::valid-function-name-p fun)
-		   (rem-sysprop fun 'CMP-NOTINLINE)
-		   (warn "Not a valid function name ~s" fun))))
+       (if (si::valid-function-name-p fun)
+	   (rem-sysprop fun 'CMP-NOTINLINE)
+	   (error "Not a valid function name ~s in proclamation ~s" fun decl))))
     (NOTINLINE
      (dolist (fun (cdr decl))
-               (if (si::valid-function-name-p fun)
-		   (put-sysprop fun 'CMP-NOTINLINE t)
-		   (warn "Not a valid function name ~s" fun))))
+       (if (si::valid-function-name-p fun)
+	   (put-sysprop fun 'CMP-NOTINLINE t)
+	   (error "Not a valid function name ~s in proclamation ~s" fun decl))))
     ((OBJECT IGNORE DYNAMIC-EXTENT IGNORABLE)
      ;; FIXME! IGNORED!
      (dolist (var (cdr decl))
        (unless (si::valid-function-name-p var)
-	 (warn "Not a valid function name ~s" fun))))
+	 (error "Not a valid function name ~s in ~s proclamation" fun (car decl)))))
     (DECLARATION
-     (dolist (x (cdr decl))
-       (if (symbolp x)
-           (pushnew x *alien-declarations*)
-           (warn "The declaration specifier ~s is not a symbol." x))))
+     (do-declaration (rest decl) #'error))
     (SI::C-EXPORT-FNAME
      (dolist (x (cdr decl))
        (if (symbolp x)
@@ -233,7 +230,7 @@
 	   (if found
 	     (warn "The function ~s is already in the runtime." x)
 	     (put-sysprop x 'Lfun fname)))
-	 (warn "The function name ~ is not a symbol." x))))
+	 (error "Syntax error in proclamation ~s" decl))))
     ((ARRAY ATOM BASE-CHAR BIGNUM BIT BIT-VECTOR CHARACTER COMPILED-FUNCTION
       COMPLEX CONS DOUBLE-FLOAT EXTENDED-CHAR FIXNUM FLOAT HASH-TABLE INTEGER KEYWORD LIST
       LONG-FLOAT NIL NULL NUMBER PACKAGE PATHNAME RANDOM-STATE RATIO RATIONAL
@@ -242,14 +239,29 @@
       SYMBOL T VECTOR SIGNED-BYTE UNSIGNED-BYTE FUNCTION)
      (proclaim-var (car decl) (cdr decl)))
     (otherwise
-     (unless (member (car decl) *alien-declarations*)
-             (warn "The declaration specifier ~s is unknown." (car decl)))
+     (unless (member (car decl) si:*alien-declarations*)
+       (warn "The declaration specifier ~s is unknown." (car decl)))
      (and (functionp (get-sysprop (car decl) :proclaim))
 	  (dolist (v (cdr decl))
 		    (funcall (get-sysprop (car decl) :proclaim) v))))
     )
   nil
   )
+
+(defun type-name-p (name)
+  (or (get-sysprop name 'SI::DEFTYPE-DEFINITION)
+      (find-class name nil)
+      (get-sysprop name 'SI::STRUCTURE-TYPE)))
+
+(defun do-declaration (names-list error)
+  (declare (si::c-local))
+  (dolist (new-declaration names-list)
+    (unless (symbolp new-declaration)
+      (funcall error "The declaration ~s is not a symbol" new-declaration))
+    (when (type-name-p new-declaration)
+      (funcall error "Symbol name ~S cannot be both the name of a type and of a declaration"
+	       new-declaration))
+    (pushnew new-declaration si:*alien-declarations*)))
 
 (defun proclaim-var (type vl)
   (setq type (type-filter type))
@@ -286,35 +298,31 @@
       (push form all-declarations)
       (dolist (decl (cdr form))
         (cmpck (or (not (consp decl)) (not (symbolp (car decl))))
-               "The declaration ~s is illegal." (cons form decl))
+               "Syntax error in declaration ~s" (cons form decl))
         (case (car decl)
           (SPECIAL
            (dolist (var (cdr decl))
              (cmpck (not (symbolp var))
-                    "The special declaration ~s contains a non-symbol ~s."
-                    decl var)
+                    "Syntax error in declaration ~s" decl)
              (push var ss)))
           (IGNORE
            (dolist (var (cdr decl))
              (cmpck (not (symbolp var))
-                    "The ignore declaration ~s contains a non-symbol ~s."
-                    decl var)
+                    "Syntax error in declaration ~s" decl)
              (push var is)))
           (TYPE
            (cmpck (endp (cdr decl))
-                  "The type declaration ~s is illegal." decl)
+                  "Syntax error in declaration ~s" decl)
            (let ((type (type-filter (second decl))))
                 (when type
                       (dolist (var (cddr decl))
                         (cmpck (not (symbolp var))
-                          "The type declaration ~s contains a non-symbol ~s."
-                          decl var)
+			       "Syntax error in declaration ~s" decl)
                         (push (cons var type) ts)))))
           (OBJECT
            (dolist (var (cdr decl))
              (cmpck (not (symbolp var))
-                    "The object declaration ~s contains a non-symbol ~s."
-                    decl var)
+                    "Syntax error in declaration ~s" decl)
              (push (cons var 'OBJECT) ts)))
 	  ;; read-only variable treatment. Beppe
 	  (:READ-ONLY
@@ -337,8 +345,7 @@
                 (when type
                       (dolist (var (cdr decl))
                         (cmpck (not (symbolp var))
-                          "The type declaration ~s contains a non-symbol ~s."
-                          decl var)
+			       "Syntax error in declaration ~s" decl)
                         (push (cons var type) ts)))))
           (otherwise (push decl others))
           )))
@@ -359,14 +366,13 @@
 		 (not (consp (cdr x)))
 		 (not (numberp (second x)))
 		 (not (<= 0 (second x) 3)))
-	   (warn "The OPTIMIZE proclamation ~s is illegal." x)
+	   (cmpwarn "The OPTIMIZE proclamation ~s is illegal." x)
 	   (case (car x)
 	     (DEBUG)
 	     (SAFETY (setq *safety* (second x)))
 	     (SPACE (setq *space* (second x)))
 	     ((SPEED COMPILATION-SPEED))
-	     (t (warn "The OPTIMIZE quality ~s is unknown."
-		      (car x)))))))
+	     (t (cmpwarn "The OPTIMIZE quality ~s is unknown." (car x)))))))
       (FTYPE
        (let (ftype)
 	 (cond ((and (consp (cdr decl))
@@ -374,39 +380,34 @@
 		     (eq (first ftype) 'FUNCTION))
 		(dolist (v (cddr decl))
 		  (add-function-declaration v (second ftype) (cddr ftype))))
-	       (t (cmpwarn "The function declaration ~a is illegal" decl)))))
+	       (t (cmpwarn "Syntax error in declaration ~s" decl)))))
       (INLINE
        (push decl dl)
        (dolist (fun (cdr decl))
 	 (if (symbolp fun)
 	   (setq *notinline* (remove fun *notinline*))
-	   (warn "The function name ~s is not a symbol." fun))))
+	   (cmperr "Not a valid function name ~s in declaration ~s" fun decl))))
       (NOTINLINE
        (push decl dl)
        (dolist (fun (cdr decl))
 	 (if (symbolp fun)
 	   (push fun *notinline*)
-	   (warn "The function name ~s is not a symbol." fun))))
+	   (cmperr "Not a valid function name ~s in declaration ~s" fun decl))))
       (DECLARATION
-       (dolist (x (cdr decl))
-	 (if (symbolp x)
-	   (pushnew x *alien-declarations*)
-	   (warn "The declaration specifier ~s is not a symbol."
-		 x))))
+       (do-declaration (rest decl) #'cmperr))
       (SI::C-LOCAL)
       ((DYNAMIC-EXTENT IGNORABLE)
        ;; FIXME! SOME ARE IGNORED!
        )
       (otherwise
-       (unless (member (car decl) *alien-declarations*)
-	 (warn "The declaration specifier ~s is unknown."
-	       (car decl)))))))
+       (unless (member (car decl) si:*alien-declarations*)
+	 (cmpwarn "The declaration specifier ~s is unknown." (car decl)))))))
 
 (defun c1decl-body (decls body)
   (if (null decls)
       (c1progn body)
       (let* ((*function-declarations* *function-declarations*)
-	     (*alien-declarations* *alien-declarations*)
+	     (si:*alien-declarations* si:*alien-declarations*)
 	     (*notinline* *notinline*)
 	     (*safety* *safety*)
 	     (*space* *space*)
