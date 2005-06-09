@@ -10,7 +10,7 @@ srcdir	= ..\src
 
 SHORT_SITE_NAME   =
 LONG_SITE_NAME    =
-ECL_VERSION       = 0.9f
+ECL_VERSION       = 0.9g
 ARCHITECTURE      = PENTIUM4
 MACHINE_INSTANCE  = localhost
 MACHINE           =
