@@ -14,14 +14,7 @@
 
 (defun create-type-name (name)
   (when (member name *alien-declarations*)
-    (error "Symbol ~s is a declaration specifier and cannot be used to name a new type" name))
-  (dolist (x '(DEFTYPE-FORM DEFTYPE-DEFINITION
-	       DEFSTRUCT-FORM IS-A-STRUCTURE
-	       STRUCTURE-SLOT-DESCRIPTIONS STRUCTURE-INCLUDE
-	       STRUCTURE-PRINT-FUNCTION STRUCTURE-TYPE
-	       STRUCTURE-NAMED STRUCTURE-OFFSET STRUCTURE-CONSTRUCTORS))
-    (rem-sysprop name x))
-  (remhash name si:*class-name-hash-table*))
+    (error "Symbol ~s is a declaration specifier and cannot be used to name a new type" name)))
 
 (defun do-deftype (name form function)
   (unless (symbolp name)
