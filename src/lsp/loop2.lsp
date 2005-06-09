@@ -1179,11 +1179,16 @@ collected result will be returned as the value of the LOOP."
 
 (defun loop-typed-init (data-type)
   (declare (si::c-local))
-  (when (and data-type (subtypep data-type 'number))
-    (if (or (subtypep data-type 'float) (subtypep data-type '(complex float)))
-	(coerce 0 data-type)
-	0)))
-
+  (cond ((null data-type)
+	 nil)
+	((subtypep data-type 'character)
+	 #\0)
+	((not (subtypep data-type 'number))
+	 nil)
+	((subtypep data-type '(or float (complex float)))
+	 (coerce 0 data-type))
+	(t
+	 0)))
 
 (defun loop-optional-type (&optional variable)
   (declare (si::c-local))
