@@ -4,12 +4,15 @@
 if you use ECL on a unix-like platform, such as
 <ul>
 <li>Linux, NetBSD, FreeBSD, Solaris.
-<li>OSX
+<li>OSX (See <a href="#osx">below</a>)
 <li>Cygwin or Mingw32 on Windows.
 </ul>
 
 <p>If you want to compile ECL using Microsoft C++ you should read <a
 href="#msvc">the appropiate section</a>.
+
+<p>For OSX you should also read a section which specifies <a href="#osx">how
+to build</a> ECL for different versions of the operating system.
 
 <p>If you want to cross-compile ECL, there is also <a href="#cross">a
 chapter</a> on how to pre-configure, write down a configuration file
@@ -86,6 +89,18 @@ Toolkit 2003, you should follow these before building ECL:
 </ul>
 </ul>
 
+<h3><a name="osx">Mac OSX</a></h3>
+
+<p>ECL is known to build and work on all versions of OSX, including
+Tiger. The steps for building ECL are the ones shown in the <a
+href="configure">Autoconf</a> section.
+
+<p>There is a caveat, though, which is that ECL currently cannot be built
+using GCC 4.0. Hence, if you have OSX Tiger (>= 10.4) and XCode (>= 2) you
+should instruct <tt>configure</tt> to use a different compiler, as in
+<pre>
+$ CC=gcc-3.3 ./configure --prefix=/opt/local
+</pre>
 
 <h3><a name="cross">Cross compiling ECL</a></h3>
 
