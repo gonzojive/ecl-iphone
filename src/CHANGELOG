@@ -24,6 +24,9 @@ ECL 0.9g
  - ECL now compiles with the free Microsoft Visual C++ Toolkit
    2003. Instructions are provided on how to do it.
 
+ - Unless SI:*KEEP-DOCUMENTATION* = NIL, the documentation of functions is
+   stored in the compiled files.
+
 * Errors fixed:
 
  - Now .o files compiled with :SYSTEM-P T with dash in filename load
