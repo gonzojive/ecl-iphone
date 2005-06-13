@@ -25,7 +25,9 @@ FILTER = sed 's,@VERSION@,$(VERSION),g'
 
 ECL = ../ecl
 
-all: $(INFO_FILES) $(HTML_FILES) developers_manual user_manual
+all: $(INFO_FILES)
+
+html: $(HTML_FILES)
 
 ecl.dvi: $(srcdir)/user.txi $(srcdir)/macros.txi clisp.sty ecl.sty
 	tex $(srcdir)/user.txi
@@ -55,7 +57,7 @@ install: all
 	done
 	$(mkinstalldirs) $(DESTDIR)$(mandir)/man$(manext)
 	$(INSTALL_DATA) ecl.man $(DESTDIR)$(mandir)/man$(manext)/ecl.$(manext)
-flatinstall: all
+flatinstall: all $(HTML_FILES)
 	$(mkinstalldirs) $(DESTDIR)$(docdir)
 	for k in $(INFO_FILES); do $(INSTALL_DATA) $$k $(DESTDIR)$(docdir); done
 	if [ -f user.html ]; then \
