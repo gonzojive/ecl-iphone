@@ -438,8 +438,7 @@ q (or Q):             quits the inspection.~%~
 	     (documentation c t)
 	     (si::get-documentation object doc-type))))
       (function
-       (if (fboundp object)
-	   (documentation (fdefinition object) doc-type)
+       (or (and (fboundp object) (documentation (fdefinition object) doc-type))
 	   (si::get-documentation object doc-type)))
       (otherwise
        (si::get-documentation object doc-type)))))

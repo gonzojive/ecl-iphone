@@ -48,9 +48,13 @@ ECL 0.9g
  - The random number generator assumed 32-bit integers.
 
  - ext:run-program looks into *standard-input/output* and *error-output* for handle
-   duplication also under Win32.
- 
- - FEtype_error_index() had format arguments in wrong order (M. Goffioul).
+   duplicatio also under Win32.
+
+ - In the LOOP macro, variables are initialized with values of their type, no
+   longer producing code like (LET ((C NIL)) (DECLARE (CHARACTER C)) ...)
+
+ - The compiler now advertises itself with PROVIDE so that issuing (REQUIRE
+   'CMP) twice does not cause the compiler to be loaded twice.
 
 * ANSI compatibility:
 

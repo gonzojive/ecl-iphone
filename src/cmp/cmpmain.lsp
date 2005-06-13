@@ -746,3 +746,4 @@ Cannot compile ~a."
 #-ecl-min
 (load "sys:sysfun")
 
+(provide 'cmp)

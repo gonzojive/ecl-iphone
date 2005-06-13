@@ -31,6 +31,46 @@
 		  `(slot-makunbound ,object ',slot-name))
 	      initialization)))))
 
+(defun need-to-make-load-form-p (object)
+  (typecase object
+    ((or character number symbol pathname string bit-vector)
+     nil)
+    ((array)
+     (unless (subtypep (array-element-type object) '(or character number))
+       (dotimes (i (array-total-size object) nil)
+	 (when (need-to-make-load-form-p (row-major-aref object i))
+	   (return-from need-to-make-load-form-p t)))))
+    ((cons)
+     (or (need-to-make-load-form-p (car object))
+	 (and (cdr object)
+	      (need-to-make-load-form-p (cdr object)))))
+    (t
+     t)))
+
+(defmethod make-load-form ((object t) &optional environment)
+  (unless (need-to-make-load-form-p object)
+    (return-from make-load-form (if (consp object) `',object object)))
+  (typecase object
+    ((array)
+     `(make-array ,(array-dimensions object)
+		  :element-type ,(array-element-type object)
+		  :adjustable ,(array-adjustable-p object)
+		  :initial-data
+		  ,(loop for i from 0 by (array-total-size object)
+			 collect (make-load-form (row-major-aref object i)))))
+    ((cons)
+     (do* ((x object)
+	   (out '()))
+	 ((atom x)
+	  (progn
+	    (setf out (mapcar #'make-load-form (nreverse out)))
+	    (if x
+		`(list* ,out ,(make-load-form x))
+	      `(list ,out))))
+       (push x out)))
+    (t
+     (error "Cannot externalize object ~a" object))))
+
 (defmethod make-load-form ((object standard-object) &optional environment)
   (make-load-form-saving-slots object))
 
