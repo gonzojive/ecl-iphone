@@ -22,6 +22,7 @@
 (defvar *txtedit-tab* *NULL*)
 (defvar *txtedit-tab-proc* *NULL*)
 (defvar *txtedit-current* nil)
+(defvar *txtedit-rich-p* nil)
 (defstruct txtedit (handle *NULL*) title dirty)
 
 (defvar *txtedit-default-title* "ECL Text Editor")
@@ -169,7 +170,7 @@ Copyright (c) 2005, Michael Goffioul.")
   (with-foreign-object (r 'RECT)
     (getclientrect parent r)
     (sendmessage *txtedit-tab* *TCM_ADJUSTRECT* *FALSE* (make-lparam r))
-    (let ((new-editor (make-txtedit :handle (createwindowex *WS_EX_CLIENTEDGE* "EDIT" ""
+    (let ((new-editor (make-txtedit :handle (createwindowex *WS_EX_CLIENTEDGE* (if *txtedit-rich-p* *RICHEDIT_CLASS* "EDIT") ""
 							    (logior *WS_CHILD* *WS_HSCROLL* *WS_VSCROLL* *WS_VISIBLE* *WS_CLIPSIBLINGS*
 								    *ES_AUTOHSCROLL* *ES_AUTOVSCROLL* *ES_MULTILINE* *ES_LEFT*)
 							    (get-slot-value r 'RECT 'left)
@@ -178,6 +179,7 @@ Copyright (c) 2005, Michael Goffioul.")
 							    (- (get-slot-value r 'RECT 'bottom) (get-slot-value r 'RECT 'top))
 							    *txtedit-tab* (make-ID +EDITCTL_ID+) *NULL* *NULL*))))
       (sendmessage (txtedit-handle new-editor) *WM_SETFONT* (make-wparam (getstockobject *SYSTEM_FIXED_FONT*)) 0)
+      (and *txtedit-rich-p* (sendmessage (txtedit-handle new-editor) *EM_SETEVENTMASK* 0 *ENM_CHANGE*))
       (with-foreign-object (tab 'TCITEM)
         (setf (get-slot-value tab 'TCITEM 'mask) *TCIF_TEXT*)
 	(setf (get-slot-value tab 'TCITEM 'pszText) (tab-name new-editor))
@@ -283,20 +285,24 @@ Copyright (c) 2005, Michael Goffioul.")
 		     ))))
 	 0)
 	((= umsg *WM_INITMENUPOPUP*)
-	 (when (= (loword lparam) 2)
-	   (let* ((wMenu (make-handle wparam))
-		  (nPos (loword lparam))
-		  (nItems (getmenuitemcount wMenu)))
-	     (dotimes (j (- nItems 2))
-	       (deletemenu wMenu 2 *MF_BYPOSITION*))
-	     (when *txtedit-edit*
-	       (appendmenu wMenu *MF_SEPARATOR* 0 "")
-	       (loop for e in *txtedit-edit*
-		     for k from 0
-		     do (progn
-			  (appendmenu wMenu *MF_STRING* (+ +IDM_WINDOW_FIRST+ k) (tab-name e))
-			  (when (= k *txtedit-current*)
-			    (checkmenuitem wMenu (+ k 3) (logior *MF_BYPOSITION* *MF_CHECKED*))))))))
+	 (case (loword lparam)
+	   (2 (let* ((wMenu (make-handle wparam))
+		     (nPos (loword lparam))
+		     (nItems (getmenuitemcount wMenu)))
+		(dotimes (j (- nItems 2))
+		  (deletemenu wMenu 2 *MF_BYPOSITION*))
+		(when *txtedit-edit*
+		  (appendmenu wMenu *MF_SEPARATOR* 0 "")
+		  (loop for e in *txtedit-edit*
+			for k from 0
+			do (progn
+			     (appendmenu wMenu *MF_STRING* (+ +IDM_WINDOW_FIRST+ k) (tab-name e))
+			     (when (= k *txtedit-current*)
+			       (checkmenuitem wMenu (+ k 3) (logior *MF_BYPOSITION* *MF_CHECKED*))))))
+		(enablemenuitem wMenu +IDM_PREVWINDOW+ (if (= *txtedit-current* 0) *MF_GRAYED* *MF_ENABLED*))
+		(enablemenuitem wMenu +IDM_NEXTWINDOW+ (if (< *txtedit-current* (1- (length *txtedit-edit*))) *MF_ENABLED* *MF_GRAYED*))
+		))
+	   )
 	 0)
 	((= umsg *WM_COMMAND*)
 	 (let ((ctrl-ID (loword wparam))
@@ -366,6 +372,8 @@ Copyright (c) 2005, Michael Goffioul.")
 
 (defun register-txtedit-class ()
   (unless *txtedit-class-registered*
+    (when (and *txtedit-rich-p* (null-pointer-p (loadlibrary "riched20.dll")))
+      (error "Cannot load WIN32 library: riched20.dll"))
     (make-wndclass "SimpleTextEditor"
 		   :lpfnWndProc #'txtedit-proc)
     (setq *txtedit-class-registered* t)))
@@ -373,9 +381,10 @@ Copyright (c) 2005, Michael Goffioul.")
 (defun unregister-txtedit-class ()
   (when *txtedit-class-registered*
     (unregisterclass "SimpleTextEditor" *NULL*)
+    (and *txtedit-rich-p* (freelibrary (getmodulehandle "riched20.dll")))
     (setq *txtedit-class-registered* nil)))
 
-(defun txtedit (&optional fname)
+(defun txtedit (&optional fname &key rich-p &aux (*txtedit-rich-p* rich-p))
   (register-txtedit-class)
   (let* ((fname-str (if fname
 		      (convert-to-foreign-string (coerce fname 'simple-string))

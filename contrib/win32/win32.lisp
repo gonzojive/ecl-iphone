@@ -19,6 +19,7 @@
 (clines "#define WINVER 0x500")
 (clines "#include <windows.h>")
 (clines "#include <commctrl.h>")
+(clines "#include <richedit.h>")
 
 ;; Windows types
 
@@ -67,6 +68,7 @@
 
 (define-win-constant *WS_EX_CLIENTEDGE* "WS_EX_CLIENTEDGE")
 
+(define-win-constant *RICHEDIT_CLASS* "RICHEDIT_CLASS" LPCSTR)
 (define-win-constant *WC_LISTVIEW* "WC_LISTVIEW" LPCSTR)
 (define-win-constant *WC_TABCONTROL* "WC_TABCONTROL" LPCSTR)
 
@@ -96,9 +98,11 @@
 (define-win-constant *ES_MULTILINE* "ES_MULTILINE")
 
 (define-win-constant *EM_CANUNDO* "EM_CANUNDO")
+(define-win-constant *EM_SETEVENTMASK* "EM_SETEVENTMASK")
 (define-win-constant *EM_SETSEL* "EM_SETSEL")
 (define-win-constant *EM_UNDO* "EM_UNDO")
 (define-win-constant *EN_CHANGE* "EN_CHANGE")
+(define-win-constant *ENM_CHANGE* "ENM_CHANGE")
 
 (define-win-constant *TCIF_IMAGE* "TCIF_IMAGE")
 (define-win-constant *TCIF_PARAM* "TCIF_PARAM")
@@ -162,6 +166,7 @@
 (define-win-constant *MF_CHECKED* "MF_CHECKED")
 (define-win-constant *MF_DISABLED* "MF_DISABLED")
 (define-win-constant *MF_ENABLED* "MF_ENABLED")
+(define-win-constant *MF_GRAYED* "MF_GRAYED")
 (define-win-constant *MF_MENUBREAK* "MF_MENUBREAK")
 (define-win-constant *MF_POPUP* "MF_POPUP")
 (define-win-constant *MF_SEPARATOR* "MF_SEPARATOR")
@@ -261,7 +266,7 @@
 	                 (nMaxFilter :unsigned-int) (nFilterIndex :unsigned-int) (lpstrFile LPCSTR) (nMaxFile :unsigned-int) (lpstrFileTitle LPCSTR)
 			 (nMaxFileTitle :unsigned-int) (lpstrInitialDir LPCSTR) (lpstrTitle LPCSTR) (Flags :unsigned-int) (nFileOffset :unsigned-short)
 			 (nFileExtension :unsigned-short) (lpstrDefExt LPCSTR) (lCustData :int) (lpfnHook HANDLE) (lpTemplateName LPCSTR)
-			 (pvReserved :pointer-void) (dwReserved :unsigned-int) (FlagsEx :unsigned-int))
+			 #|(pvReserved :pointer-void) (dwReserved :unsigned-int) (FlagsEx :unsigned-int)|#)
 (def-struct ACCEL (fVirt :byte) (key :unsigned-short) (cmd :unsigned-short))
 (def-struct TCITEM (mask :unsigned-int) (dwState :unsigned-int) (dwStateMask :unsigned-int)
 	           (pszText :cstring) (cchTextMax :int) (iImage :int) (lParam :long))
@@ -316,6 +321,9 @@ LRESULT CALLBACK WndProc_proxy(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
   `(let ((,var (make-pointer ,ptr ',type))) ,@body))
 
 (def-function ("ZeroMemory" zeromemory) ((Destination :pointer-void) (Length :unsigned-int)) :returning :void)
+(def-function ("LoadLibrary" loadlibrary) ((lpLibFileName LPCSTR)) :returning HANDLE)
+(def-function ("FreeLibrary" freelibrary) ((hLibModule HANDLE)) :returning :int)
+(def-function ("GetModuleHandle" getmodulehandle) ((lpModuleName LPCSTR)) :returning HANDLE)
 (def-function ("GetStockObject" getstockobject) ((fnObject :int)) :returning HANDLE)
 (def-function ("GetTextMetrics" gettextmetrics) ((hdc HANDLE) (lptm (* TEXTMETRIC))) :returning :int)
 (def-function ("GetDC" getdc) ((hWnd HANDLE)) :returning HANDLE)
@@ -399,6 +407,7 @@ LRESULT CALLBACK WndProc_proxy(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 (def-function ("RemoveMenu" removemenu) ((hMenu HANDLE) (uPosition :unsigned-int) (uFlags :unsigned-int)) :returning :int)
 (def-function ("GetMenuItemCount" getmenuitemcount) ((hMenu HANDLE)) :returning :int)
 (def-function ("CheckMenuItem" checkmenuitem) ((hMenu HANDLE) (uIDCheckItem :unsigned-int) (uCheck :unsigned-int)) :returning :int)
+(def-function ("EnableMenuItem" enablemenuitem) ((hMenu HANDLE) (uIDCheckItem :unsigned-int) (uCheck :unsigned-int)) :returning :int)
 (def-function ("CreateAcceleratorTable" createacceleratortable) ((lpaccl (* ACCEL)) (cEntries :int)) :returning HANDLE)
 (def-function ("TranslateAccelerator" translateaccelerator) ((hWnd HANDLE) (hAccTable HANDLE) (lpMsg (* MSG))) :returning :int)
 (def-function ("DestroyAcceleratorTable" destroyacceleratortable) ((hAccTable HANDLE)) :returning :int)
