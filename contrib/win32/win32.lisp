@@ -18,6 +18,7 @@
 
 (clines "#define WINVER 0x500")
 (clines "#include <windows.h>")
+(clines "#include <windowsx.h>")
 (clines "#include <commctrl.h>")
 (clines "#include <richedit.h>")
 
@@ -37,6 +38,7 @@
 
 (define-win-constant *WM_CLOSE* "WM_CLOSE")
 (define-win-constant *WM_COMMAND* "WM_COMMAND")
+(define-win-constant *WM_CONTEXTMENU* "WM_CONTEXTMENU")
 (define-win-constant *WM_COPY* "WM_COPY")
 (define-win-constant *WM_CREATE* "WM_CREATE")
 (define-win-constant *WM_CUT* "WM_CUT")
@@ -110,13 +112,22 @@
 (define-win-constant *TCIF_STATE* "TCIF_STATE")
 (define-win-constant *TCIF_TEXT* "TCIF_TEXT")
 
+(define-win-constant *TCHT_NOWHERE* "TCHT_NOWHERE")
+(define-win-constant *TCHT_ONITEM* "TCHT_ONITEM")
+(define-win-constant *TCHT_ONITEMICON* "TCHT_ONITEMICON")
+(define-win-constant *TCHT_ONITEMLABEL* "TCHT_ONITEMLABEL")
+
 (define-win-constant *TCM_ADJUSTRECT* "TCM_ADJUSTRECT")
 (define-win-constant *TCM_DELETEITEM* "TCM_DELETEITEM")
 (define-win-constant *TCM_GETCURSEL* "TCM_GETCURSEL")
+(define-win-constant *TCM_HITTEST* "TCM_HITTEST")
 (define-win-constant *TCM_INSERTITEM* "TCM_INSERTITEM")
 (define-win-constant *TCM_SETCURSEL* "TCM_SETCURSEL")
 (define-win-constant *TCM_SETITEM* "TCM_SETITEM")
 (define-win-constant *TCN_SELCHANGE* "TCN_SELCHANGE" :unsigned-int)
+
+(define-win-constant *NM_CLICK* "NM_CLICK" :unsigned-int)
+(define-win-constant *NM_RCLICK* "NM_RCLICK" :unsigned-int)
 
 (define-win-constant *SW_HIDE* "SW_HIDE")
 (define-win-constant *SW_SHOW* "SW_SHOW")
@@ -172,6 +183,17 @@
 (define-win-constant *MF_SEPARATOR* "MF_SEPARATOR")
 (define-win-constant *MF_STRING* "MF_STRING")
 (define-win-constant *MF_UNCHECKED* "MF_UNCHECKED")
+
+(define-win-constant *TPM_CENTERALIGN* "TPM_CENTERALIGN")
+(define-win-constant *TPM_LEFTALIGN* "TPM_LEFTALIGN")
+(define-win-constant *TPM_RIGHTALIGN* "TPM_RIGHTALIGN")
+(define-win-constant *TPM_BOTTOMALIGN* "TPM_BOTTOMALIGN")
+(define-win-constant *TPM_TOPALIGN* "TPM_TOPALIGN")
+(define-win-constant *TPM_VCENTERALIGN* "TPM_VCENTERALIGN")
+(define-win-constant *TPM_NONOTIFY* "TPM_NONOTIFY")
+(define-win-constant *TPM_RETURNCMD* "TPM_RETURNCMD")
+(define-win-constant *TPM_LEFTBUTTON* "TPM_LEFTBUTTON")
+(define-win-constant *TPM_RIGHTBUTTON* "TPM_RIGHTBUTTON")
 
 (define-win-constant *OFN_FILEMUSTEXIST* "OFN_FILEMUSTEXIST")
 (define-win-constant *OFN_OVERWRITEPROMPT* "OFN_OVERWRITEPROMPT")
@@ -271,6 +293,8 @@
 (def-struct TCITEM (mask :unsigned-int) (dwState :unsigned-int) (dwStateMask :unsigned-int)
 	           (pszText :cstring) (cchTextMax :int) (iImage :int) (lParam :long))
 (def-struct NMHDR (hwndFrom HANDLE) (idFrom :unsigned-int) (code :unsigned-int))
+(def-struct TCHITTESTINFO (pt POINT) (flag :unsigned-int))
+(def-struct TPMPARAMS (cbSize :unsigned-int) (rcExclude RECT))
 
 ;; Windows functions
 
@@ -393,6 +417,9 @@ LRESULT CALLBACK WndProc_proxy(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 (def-function ("CallWindowProc" callwindowproc) ((wndProc HANDLE) (hWnd HANDLE) (uMsg :unsigned-int) (wParam :unsigned-int) (lParam :int)) :returning :int)
 (def-function ("HIWORD" hiword) ((dWord :unsigned-int)) :returning :unsigned-int)
 (def-function ("LOWORD" loword) ((dWord :unsigned-int)) :returning :unsigned-int)
+(def-function ("GET_X_LPARAM" get-x-lparam) ((lParam :int)) :returning :int)
+(def-function ("GET_Y_LPARAM" get-y-lparam) ((lParam :int)) :returning :int)
+(def-function ("ScreenToClient" screentoclient) ((hWnd HANDLE) (pt (* POINT))) :returning :int)
 (def-function ("MessageBox" messagebox) ((hWnd HANDLE) (lpText LPCSTR) (lpCaption LPCSTR) (uType :unsigned-int)) :returning :int)
 (def-function ("GetOpenFileName" getopenfilename) ((lpofn (* OPENFILENAME))) :returning :int)
 (def-function ("GetSaveFileName" getsavefilename) ((lpofn (* OPENFILENAME))) :returning :int)
@@ -401,6 +428,7 @@ LRESULT CALLBACK WndProc_proxy(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 (def-function ("DispatchMessage" dispatchmessage) ((lpMsg (* MSG))) :returning :int)
 (def-function ("CreateMenu" createmenu) nil :returning HANDLE)
 (def-function ("CreatePopupMenu" createpopupmenu) nil :returning HANDLE)
+(def-function ("DestroyMenu" destroymenu) ((hMenu HANDLE)) :returning :int)
 (def-function ("AppendMenu" appendmenu) ((hMenu HANDLE) (uFlags :unsigned-int) (uIDNewItem :unsigned-int) (lpNewItem LPCSTR)) :returning :int)
 (def-function ("GetSubMenu" getsubmenu) ((hMenu HANDLE) (nPos :int)) :returning HANDLE)
 (def-function ("DeleteMenu" deletemenu) ((hMenu HANDLE) (uPosition :unsigned-int) (uFlags :unsigned-int)) :returning :int)
@@ -408,6 +436,10 @@ LRESULT CALLBACK WndProc_proxy(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 (def-function ("GetMenuItemCount" getmenuitemcount) ((hMenu HANDLE)) :returning :int)
 (def-function ("CheckMenuItem" checkmenuitem) ((hMenu HANDLE) (uIDCheckItem :unsigned-int) (uCheck :unsigned-int)) :returning :int)
 (def-function ("EnableMenuItem" enablemenuitem) ((hMenu HANDLE) (uIDCheckItem :unsigned-int) (uCheck :unsigned-int)) :returning :int)
+(def-function ("TrackPopupMenu" trackpopupmenu) ((hMenu HANDLE) (uFlags :unsigned-int) (x :int) (y :int)
+						 (nReserved :int) (hWnd HANDLE) (prcRect HANDLE)) :returning :int)
+(def-function ("TrackPopupMenuEx" trackpopupmenuex) ((hMenu HANDLE) (fuFlags :unsigned-int) (x :int) (y :int)
+						     (hWnd HANDLE) (lptpl (* TPMPARAMS))) :returning :int)
 (def-function ("CreateAcceleratorTable" createacceleratortable) ((lpaccl (* ACCEL)) (cEntries :int)) :returning HANDLE)
 (def-function ("TranslateAccelerator" translateaccelerator) ((hWnd HANDLE) (hAccTable HANDLE) (lpMsg (* MSG))) :returning :int)
 (def-function ("DestroyAcceleratorTable" destroyacceleratortable) ((hAccTable HANDLE)) :returning :int)
