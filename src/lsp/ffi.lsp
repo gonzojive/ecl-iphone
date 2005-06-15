@@ -612,7 +612,7 @@
 (si::fset 'clines
 	  #'(lambda (&rest x)
 	      (error "The special form ~S cannot be used in the interpreter"
-		     fname)))
+		     (cons 'clines x))))
 
 (defmacro definline (fun arg-types type code)
   `(eval-when (compile load eval)
