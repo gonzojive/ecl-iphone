@@ -249,7 +249,7 @@
 	 (no-entry nil)
 	 (doc nil))
     (multiple-value-bind (decl body doc)
-	(si::process-declarations (rest lambda-list-and-body) nil)
+	(si::process-declarations (rest lambda-list-and-body) t)
       (cond ((and *allow-c-local-declaration* (assoc 'si::c-local decl))
 	     (setq no-entry t))
 	    #+ecl-min
