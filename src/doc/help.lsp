@@ -560,6 +560,7 @@ If FORMAT-STRING is non-NIL, it is used as the format string to be output to
 *ERROR-OUTPUT* before entering the break loop.  ARGs are arguments to the
 format string.")
 
+#|
 (docfun compiler:build-ecl function (program-name &rest components) "
 
 Builds a standalone executable using the object files, libraries and flags
@@ -582,6 +583,7 @@ with the ECL compiler (You must explicitely mention the compiler if you want
 it). Finally, the X-Windows dynamically linked libraries are also included
 because \"my-code.lsp\" uses the foreign function interface to do some
 graphics.")
+|#
 
 (docfun butlast function (list &optional (n 1)) "
 Returns a copy of LIST with the last N elements removed.")
