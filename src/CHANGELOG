@@ -61,6 +61,10 @@ ECL 0.9g
  - The compiler now advertises itself with PROVIDE so that issuing (REQUIRE
    'CMP) twice does not cause the compiler to be loaded twice.
 
+ - Fix error message of interpreted FFI:CLINES form (M. Goffioul).
+
+ - Remove obsolete C::BUILD-ECL documentation (M. Goffioul).
+
 * ANSI compatibility:
 
  - Several functions that signaled type-errors did not set the right values
