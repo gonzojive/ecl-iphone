@@ -438,7 +438,10 @@ q (or Q):             quits the inspection.~%~
 	     (documentation c t)
 	     (si::get-documentation object doc-type))))
       (function
-       (or (and (fboundp object) (documentation (fdefinition object) doc-type))
+       (or (and (fboundp object)
+		(documentation (or (macro-function object)
+				   (fdefinition object))
+			       doc-type))
 	   (si::get-documentation object doc-type)))
       (otherwise
        (si::get-documentation object doc-type)))))
@@ -456,7 +459,7 @@ q (or Q):             quits the inspection.~%~
 	     (si::set-documentation object doc-type new-value))))
       (function
        (if (fboundp object)
-	   (let ((c (fdefinition object)))
+	   (let ((c (or (macro-function object) (fdefinition object))))
 	     (si::set-documentation c 'function nil)
 	     (setf (documentation c 'function) new-value))
 	   (si::set-documentation object doc-type new-value)))
