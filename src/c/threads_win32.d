@@ -12,7 +12,7 @@
     See file '../Copyright' for full details.
 */
 /*
- * IMPORTANT!!!! IF YOU EDIT THIS FILE, CHANGE ALSO threads_win32.d
+ * IMPORTANT!!!! IF YOU EDIT THIS FILE, CHANGE ALSO threads.d
  */
 
 #include <signal.h>
