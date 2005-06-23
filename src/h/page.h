@@ -21,6 +21,9 @@ extern "C" {
  *****************************/
 
 #ifdef GBC_BOEHM
+#ifdef ECL_THREADS
+#define GC_THREADS
+#endif
 #include "gc.h"
 
 extern struct typemanager {

@@ -18,6 +18,7 @@
 #include <signal.h>
 #include "ecl.h"
 #include "internal.h"
+#define GC_THREADS
 #include "gc.h"
 
 /* This is should be done automatically by gc.h: */
