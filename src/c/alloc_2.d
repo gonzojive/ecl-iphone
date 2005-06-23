@@ -18,6 +18,9 @@
 #include "ecl.h"
 #include "internal.h"
 #include "page.h"
+#ifdef ECL_THREADS
+#define GC_THREADS
+#endif
 #ifdef _MSC_VER
 #include "gc.h"
 #include "private/gc_priv.h"
@@ -256,8 +259,8 @@ ecl_mark_env(struct cl_env_struct *env)
 	/*memset(env->values[env->nvalues], 0, (64-env->nvalues)*sizeof(cl_object));*/
 #ifdef ECL_THREADS
 	/* When using threads, "env" is a pointer to memory allocated by ECL. */
-	GC_push_conditional(env, env + 1, 1);
-	GC_set_mark_bit(env);
+	GC_push_conditional((void *)env, (void *)(env + 1), 1);
+	GC_set_mark_bit((void *)env);
 #else
 	/* When not using threads, "env" is a statically allocated structure. */
 	GC_push_all((ptr_t)env, (ptr_t)(env + 1));
