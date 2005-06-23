@@ -280,13 +280,18 @@ mp_free(void *ptr, size_t size)
 		cl_dealloc(x,size);
 }
 
-void
-init_big(void)
+void init_big_registers(void)
 {
 	int i;
 	for (i = 0; i < 3; i++) {
 		cl_env.big_register[i] = cl_alloc_object(t_bignum);
 		big_register_free(cl_env.big_register[i]);
 	}
+}
+
+void
+init_big(void)
+{
+	init_big_registers();
 	mp_set_memory_functions(mp_alloc, mp_realloc, mp_free);
 }
