@@ -17,6 +17,10 @@
 
 #include <pthread.h>
 #include <signal.h>
+
+#define GC_THREADS
+#include "gc/gc.h"
+
 #include "ecl.h"
 #include "internal.h"
 
@@ -29,7 +33,11 @@ extern void ecl_init_env(struct cl_env_struct *env);
 struct cl_env_struct *
 ecl_process_env(void)
 {
-	return pthread_getspecific(cl_env_key);
+	struct cl_env_struct *rv = pthread_getspecific(cl_env_key);
+        if (rv)
+		return rv;
+        FElibc_error("pthread_getspecific() failed.", 0);
+        return NULL;
 }
 
 cl_object
@@ -73,8 +81,10 @@ thread_entry_point(cl_object process)
 {
 	/* 1) Setup the environment for the execution of the thread */
 	pthread_cleanup_push(thread_cleanup, (void *)process->process.env);
-	pthread_setspecific(cl_env_key, process->process.env);
+	if (pthread_setspecific(cl_env_key, process->process.env))
+		FElibc_error("pthread_setcspecific() failed.", 0);
 	ecl_init_env(process->process.env);
+        init_big_registers();
 
 	/* 2) Execute the code. The CATCH_ALL point is the destination
 	*     provides us with an elegant way to exit the thread: we just
@@ -141,14 +151,16 @@ mp_interrupt_process(cl_object process, cl_object function)
 	if (mp_process_active_p(process) == Cnil)
 		FEerror("Cannot interrupt the inactive process ~A", 1, process);
 	process->process.interrupt = function;
-	pthread_kill(process->process.thread, SIGUSR1);
-	@(return Ct)
+	if ( pthread_kill(process->process.thread, SIGUSR1) )
+		FElibc_error("pthread_kill() failed.", 0);
+        @(return Ct)
 }
 
 cl_object
 mp_process_kill(cl_object process)
 {
 	mp_interrupt_process(process, @'mp::exit-process');
+        @(return Ct)
 }
 
 cl_object
@@ -164,7 +176,7 @@ mp_process_enable(cl_object process)
 	if (!code) {
 		/* If everything went ok, add the thread to the list. */
 		cl_core.processes = CONS(process, cl_core.processes);
-	}
+	} /* FIXME: how to do FElibc_error() without leaving a lock? */
 	THREAD_OP_UNLOCK();
 	@(return (code? Cnil : process))
 }
@@ -188,6 +200,7 @@ mp_exit_process(void)
 cl_object
 mp_all_processes(void)
 {
+     /* Isn't it a race condition? */
 	@(return cl_copy_list(cl_core.processes))
 }
 
