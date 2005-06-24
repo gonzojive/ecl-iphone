@@ -80,6 +80,7 @@ thread_entry_point(cl_object process)
 	/* 1) Setup the environment for the execution of the thread */
 	TlsSetValue(cl_env_key, (void *)process->process.env);
 	ecl_init_env(process->process.env);
+        init_big_registers();
 
 	/* 2) Execute the code. The CATCH_ALL point is the destination
 	*     provides us with an elegant way to exit the thread: we just
