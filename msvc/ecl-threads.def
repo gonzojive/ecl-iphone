@@ -1316,6 +1316,7 @@ EXPORTS
 	cl_typep
 	cl_coerce
 	cl_subtypep
+	si_do_deftype
 
 	; seq.lsp
 
