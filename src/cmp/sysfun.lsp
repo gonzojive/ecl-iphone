@@ -56,6 +56,9 @@
   (rem-sysprop fname ':inline-always)
   (rem-sysprop fname ':inline-safe)
   (rem-sysprop fname ':inline-unsafe)
+  (when (or (keywordp never-change-special-var-p)
+	    (keywordp predicate))
+    (format t "~%Error in ~A" fname))
   (do ((scan optimizers (cddr scan))
        (safety) (inline-info))
       ((null scan))
@@ -173,10 +176,10 @@
 		"(#1)->array.self.fix[#2]= #0")
 	:inline-unsafe ((fixnum (array bit) fixnum) fixnum t nil
 		"aset_bv(#1,#2,#0)"))
-(ROW-MAJOR-AREF (array fixnum) t
+(ROW-MAJOR-AREF (array fixnum) t nil nil
 	:inline-always ((array fixnum) t nil t "aref(#0,#1)"))
-(SI::ROW-MAJOR-ASET (array fixnum t) t
-	:inline-always ((array fixnum t) t nil t "aset(#0,#1,#2)"))
+(SI::ROW-MAJOR-ASET (array fixnum t) t nil nil
+	:inline-always ((array fixnum t) t t nil "aset(#0,#1,#2)"))
 (ARRAY-ELEMENT-TYPE (array) T)
 (ARRAY-RANK (array) fixnum)
 (ARRAY-DIMENSION (array fixnum) fixnum)

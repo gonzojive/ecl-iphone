@@ -44,6 +44,7 @@ contiguous block."
   (setq element-type (upgraded-array-element-type element-type))
 
   (let (x)
+    (declare (array x))
     (cond ((or (integerp dimensions)
 	       (when (= (length dimensions) 1)
 		 (setq dimensions (first dimensions))))
@@ -67,7 +68,8 @@ contiguous block."
 (defun fill-array (array initial-contents)
   (declare (si::c-local))
   (labels ((iterate-over-contents (array contents dims written)
-	     (declare (fixnum written))
+	     (declare (fixnum written)
+		      (array array))
 	     (when (/= (length contents) (first dims))
 	       (error "In MAKE-ARRAY: the elements in :INITIAL-CONTENTS do not match the array dimensions"))
 	     (if (= (length dims) 1)

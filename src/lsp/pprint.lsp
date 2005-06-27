@@ -1224,7 +1224,8 @@
       (write-object (aref vector i) stream))))
 
 (defun pprint-array-contents (stream array)
-  (declare (si::c-local))
+  (declare (si::c-local)
+	   (array array))
   (labels ((output-guts (stream index dimensions)
 	       (if (null dimensions)
 		   (write-object (row-major-aref array index) stream)
