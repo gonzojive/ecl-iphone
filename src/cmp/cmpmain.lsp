@@ -365,7 +365,7 @@ static cl_object VV[VM];
       :type ,ext)))
 
 (defun compile-file (input-pathname
-                      &key (output-file 'T)
+                      &key
 		      (verbose *compile-verbose*)
 		      (print *compile-print*)
 		      (c-file nil)
@@ -374,6 +374,7 @@ static cl_object VV[VM];
 		      (shared-data-file nil)
 		      (system-p nil)
 		      (load nil)
+		      (output-file (compile-file-pathname input-pathname :type (if system-p :object :fasl)))
                       &aux (*standard-output* *standard-output*)
                            (*error-output* *error-output*)
                            (*compiler-in-use* *compiler-in-use*)
@@ -394,16 +395,15 @@ static cl_object VV[VM];
 ~%;;; Therefore, COMPILE-FILE without :SYSTEM-P T is unsupported.~
 ~%;;;"))
 
-  (setq *compile-file-pathname* (make-pathname :type "lsp" :defaults input-pathname))
+  (setq *compile-file-pathname* input-pathname)
   (unless (probe-file *compile-file-pathname*)
-    (setq *compile-file-pathname* (make-pathname :type "lisp" :defaults input-pathname))
+    (setq *compile-file-pathname* (make-pathname :type "lsp" :defaults input-pathname))
     (unless (probe-file *compile-file-pathname*)
-      (setq *compile-file-pathname* (make-pathname :type NIL :defaults input-pathname))
+      (setq *compile-file-pathname* (make-pathname :type "lisp" :defaults input-pathname))
       (unless (probe-file *compile-file-pathname*)
-	(format t "~&;;; The source file ~a is not found.~%"
-		(namestring input-pathname))
-	(setq *error-p* t)
-	(return-from compile-file (values nil t t)))))
+	(setq *compile-file-pathname* (make-pathname :type NIL :defaults input-pathname))
+	(unless (probe-file *compile-file-pathname*)
+	  (error 'file-error :pathname input-pathname)))))
   (setq *compile-file-truename* (truename *compile-file-pathname*))
 
   #+PDE (setq sys:*source-pathname* *compile-file-truename*)
@@ -427,9 +427,11 @@ Cannot compile ~a."
 
   (let* ((eof '(NIL))
 	 (*load-time-values* nil) ;; Load time values are compiled
-	 (o-pathname (get-output-pathname input-pathname output-file :object))
+	 (o-pathname (or #+dlopen (and system-p output-file)
+			 #-dlopen output-file
+			 (compile-file-pathname input-pathname :type :object)))
 	 #+dlopen
-         (so-pathname (unless system-p (compile-file-pathname o-pathname)))
+	 (so-pathname (unless system-p output-file))
          (c-pathname (get-output-pathname o-pathname c-file :c))
          (h-pathname (get-output-pathname o-pathname h-file :h))
          (data-pathname (get-output-pathname o-pathname data-file :data))
@@ -503,11 +505,9 @@ Cannot compile ~a."
 	    (cmp-delete-file data-pathname))
 	  #+dlopen
 	  (unless system-p (cmp-delete-file o-pathname))
-	  #+dlopen
-	  (if system-p o-pathname so-pathname)
-	  #-dlopen
-	  (values o-pathname nil nil))
-
+	  (values (truename #+dlopen (if system-p o-pathname so-pathname)
+			    #-dlopen o-pathname)
+		  nil nil))
         (progn
           (when (probe-file c-pathname) (cmp-delete-file c-pathname))
           (when (probe-file h-pathname) (cmp-delete-file h-pathname))

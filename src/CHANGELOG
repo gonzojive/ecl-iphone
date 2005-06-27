@@ -30,6 +30,11 @@ ECL 0.9g
  - Unless SI:*KEEP-DOCUMENTATION* = NIL, the documentation of functions is
    stored in the compiled files.
 
+ - COMPILE-FILE now honors the value of :OUTPUT-FILE given by the user, even if
+   they do no have the usual extension (.fas). Furthermore, LOAD will now try
+   to load files with strange extensions (.fas, .fasl, etc) as binary files and
+   only if this fails, use the source-file loader.
+
 * Errors fixed:
 
  - Now .o files compiled with :SYSTEM-P T with dash in filename load

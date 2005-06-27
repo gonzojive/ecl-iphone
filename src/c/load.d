@@ -355,10 +355,15 @@ NOT_A_FILENAME:
 	bds_bind(@'*readtable*', symbol_value(@'*readtable*'));
 	bds_bind(@'*load-pathname*', cl_pathname(filename));
 	bds_bind(@'*load-truename*', cl_truename(filename));
-	if (Null(function))
-		ok = si_load_source(filename, verbose, print);
-	else
+	if (!Null(function)) {
 		ok = funcall(4, function, filename, verbose, print);
+	} else {
+#ifdef ENABLE_DLOPEN
+		ok = si_load_binary(filename, verbose, print);
+		if (!Null(ok))
+#endif
+		ok = si_load_source(filename, verbose, print);
+	}
 	bds_unwind_n(4);
 	if (!Null(ok))
 		FEerror("LOAD: Could not load file ~S (Error: ~S)",
