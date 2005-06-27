@@ -5,6 +5,9 @@ ECL 0.9g
 
  - Fixed the broken port for MacOSX. It should work with any release >= 10.2
 
+ - Based on version 6.5 of Boehm-Weiser garbage collector, which fixes some
+   problems related to the OSX port.
+
 * Foreign function interface (FFI):
 
  - Added nickname UFFI for FFI package; functions ALLOCATE-FOREIGN-STRING,
