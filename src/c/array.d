@@ -955,6 +955,7 @@ ecl_reverse_subarray(cl_object x, cl_index i0, cl_index i1)
 				x->array.self.bit[j/CHAR_BIT]
 				&= ~(0200>>j%CHAR_BIT);
 		}
+		break;
 	default:
 		FEerror("Bad array type", 0);
 	}
