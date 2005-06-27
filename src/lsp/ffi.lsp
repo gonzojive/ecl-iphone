@@ -609,29 +609,30 @@
 ;;; COMPATIBILITY WITH OLDER FFI
 ;;;
 
-(si::fset 'clines
-	  #'(lambda (&rest x)
-	      (error "The special form ~S cannot be used in the interpreter"
-		     (cons 'clines x))))
+(defmacro clines (&rest args))
+
+(eval-when (:load-toplevel)
+  (defmacro c-inline (&rest args)
+    '(error "The special form c-inline cannot be used in the interpreter.")))
 
 (defmacro definline (fun arg-types type code)
-  `(eval-when (compile load eval)
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
               ;; defCbody must go first, because it clears symbol-plist of fun
               (defCbody ,fun ,arg-types ,type ,code)
-              (proclaim '(function ,fun ,arg-types ,type))
+              (declaim (ftype (function ,arg-types ,type) ,fun))
               (setf (get ',fun ':inline-always)
                     '((,arg-types ,type
                        t                ; side-effect-p
                        nil ,code)))))
 
 (defmacro defla (&rest body)
-  `(eval-when (:load-toplevel :execute)
+  `(eval-when (:execute)
      (defun ,@body)))
 
-(defmacro defcbody (name args-types result-type C-expr)
+(defmacro defcbody (name arg-types result-type C-expr)
   (let ((args (mapcar #'(lambda (x) (gensym)) arg-types)))
   `(defun ,name ,args
-     (c-inline ,args ,args-types ,result-type
+     (c-inline ,args ,arg-types ,result-type
 	       ,C-expr :one-liner t))))
 
 (defmacro defentry (name arg-types c-name)
