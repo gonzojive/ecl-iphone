@@ -155,7 +155,7 @@ asm_end(cl_index beginning) {
 	bytecodes = cl_alloc_object(t_bytecodes);
 	bytecodes->bytecodes.code_size = code_size;
 	bytecodes->bytecodes.data_size = data_size;
-	bytecodes->bytecodes.code = cl_alloc(code_size * sizeof(cl_opcode));
+	bytecodes->bytecodes.code = cl_alloc_atomic(code_size * sizeof(cl_opcode));
 	bytecodes->bytecodes.data = (cl_object*)cl_alloc(data_size * sizeof(cl_object));
 	bytecodes->bytecodes.lex = Cnil;
 	for (i = 0, code = (cl_opcode *)bytecodes->bytecodes.code; i < code_size; i++) {

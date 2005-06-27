@@ -744,7 +744,7 @@ sharp_Y_reader(cl_object in, cl_object c, cl_object d)
         rv->bytecodes.definition = CAR(x); x = CDR(x);
 
         rv->bytecodes.code_size = fixint(cl_list_length(CAR(x)));
-        rv->bytecodes.code = cl_alloc(rv->bytecodes.code_size * sizeof(uint16_t));
+        rv->bytecodes.code = cl_alloc_atomic(rv->bytecodes.code_size * sizeof(uint16_t));
         for ( i=0, nth=CAR(x) ; !endp(nth) ; i++, nth=CDR(nth) )
              ((cl_opcode*)(rv->bytecodes.code))[i] = fixint(CAR(nth));
         x = CDR(x);
