@@ -877,7 +877,7 @@ ecl_copy_subarray(cl_object dest, cl_index i0, cl_object orig, cl_index i1, cl_i
 		       l * elt_size);
 	} else {
 		FEerror("Bad array type", 0);
-	}		
+	}
 }
 
 void
@@ -885,6 +885,9 @@ ecl_reverse_subarray(cl_object x, cl_index i0, cl_index i1)
 {
 	cl_elttype t = array_elttype(x);
 	cl_index i, j;
+	if (x->array.dim == 0) {
+		return;
+	}
 	if (i1 >= x->array.dim) {
 		i1 = x->array.dim;
 	}
@@ -892,49 +895,49 @@ ecl_reverse_subarray(cl_object x, cl_index i0, cl_index i1)
 	case aet_object:
 	case aet_fix:
 	case aet_index:
-		for (i = 0, j = i1-1;  i < j;  i++, --j) {
+		for (i = i0, j = i1-1;  i < j;  i++, --j) {
 			cl_object y = x->vector.self.t[i];
 			x->vector.self.t[i] = x->vector.self.t[j];
 			x->vector.self.t[j] = y;
 		}
 		break;
 	case aet_sf:
-		for (i = 0, j = i1-1;  i < j;  i++, --j) {
+		for (i = i0, j = i1-1;  i < j;  i++, --j) {
 			float y = x->array.self.sf[i];
 			x->array.self.sf[i] = x->array.self.sf[j];
 			x->array.self.sf[j] = y;
 		}
 		break;
 	case aet_lf:
-		for (i = 0, j = i1-1;  i < j;  i++, --j) {
+		for (i = i0, j = i1-1;  i < j;  i++, --j) {
 			double y = x->array.self.lf[i];
 			x->array.self.lf[i] = x->array.self.lf[j];
 			x->array.self.lf[j] = y;
 		}
 		break;
 	case aet_b8:
-		for (i = 0, j = i1-1;  i < j;  i++, --j) {
+		for (i = i0, j = i1-1;  i < j;  i++, --j) {
 			uint8_t y = x->array.self.b8[i];
 			x->array.self.b8[i] = x->array.self.b8[j];
 			x->array.self.b8[j] = y;
 		}
 		break;
 	case aet_i8:
-		for (i = 0, j = i1-1;  i < j;  i++, --j) {
+		for (i = i0, j = i1-1;  i < j;  i++, --j) {
 			int8_t y = x->array.self.i8[i];
 			x->array.self.i8[i] = x->array.self.i8[j];
 				x->array.self.i8[j] = y;
 		}
 		break;
 	case aet_ch:
-		for (i = 0, j = i1-1;  i < j;  i++, --j) {
+		for (i = i0, j = i1-1;  i < j;  i++, --j) {
 			unsigned char y = x->array.self.ch[i];
 			x->array.self.ch[i] = x->array.self.ch[j];
 				x->array.self.ch[j] = y;
 		}
 		break;
 	case aet_bit:
-		for (i = x->vector.offset,
+		for (i = i0 + x->vector.offset,
 		     j = i1 + x->vector.offset - 1;
 		     i < j;
 		     i++, --j) {
