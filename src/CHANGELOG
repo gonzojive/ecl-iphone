@@ -68,6 +68,9 @@ ECL 0.9g
 
  - Remove obsolete C::BUILD-ECL documentation (M. Goffioul).
 
+ - The conversion from ratio to float works now even if the numerator/denominator
+   are themselves too large to fit a float.
+
 * ANSI compatibility:
 
  - Several functions that signaled type-errors did not set the right values

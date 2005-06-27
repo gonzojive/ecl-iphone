@@ -214,10 +214,24 @@ number_to_double(cl_object x)
 	case t_bignum:
 		return(big_to_double(x));
 
-	case t_ratio:
-		return(number_to_double(x->ratio.num) /
-		       number_to_double(x->ratio.den));
-
+	case t_ratio: {
+		double output;
+		mpq_t aux;
+		mpq_init(aux);
+		if (FIXNUMP(x->ratio.num)) {
+			mpz_set_si(mpq_numref(aux), fix(x->ratio.num));
+		} else {
+			mpz_set(mpq_numref(aux), x->ratio.num->big.big_num);
+		}
+		if (FIXNUMP(x->ratio.den)) {
+			mpz_set_si(mpq_denref(aux), fix(x->ratio.den));
+		} else {
+			mpz_set(mpq_denref(aux), x->ratio.den->big.big_num);
+		}
+		output = mpq_get_d(aux);
+		mpq_clear(aux);
+		return output;
+	}
 	case t_shortfloat:
 		return((double)(sf(x)));
 
