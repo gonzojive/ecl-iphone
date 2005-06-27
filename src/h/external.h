@@ -271,6 +271,8 @@ extern void adjust_displaced(cl_object x, ptrdiff_t diff);
 extern cl_elttype array_elttype(cl_object x);
 extern cl_elttype ecl_symbol_to_elttype(cl_object x);
 extern cl_object ecl_elttype_to_symbol(cl_elttype aet);
+extern void ecl_copy_subarray(cl_object dest, cl_index i0, cl_object orig, cl_index i1, cl_index l);
+extern void ecl_reverse_subarray(cl_object dest, cl_index i0, cl_index i1);
 
 
 /* assignment.c */
@@ -1189,7 +1191,7 @@ extern cl_object cl_nreverse(cl_object x);
 extern cl_object cl_subseq _ARGS((cl_narg narg, cl_object sequence, cl_object start, ...));
 
 extern cl_object cl_alloc_simple_vector(cl_index l, cl_elttype aet);
-extern cl_object cl_alloc_simple_bitvector(cl_index l);
+#define cl_alloc_simple_bitvector(l) cl_alloc_simple_vector((l), aet_bit)
 extern cl_object elt(cl_object seq, cl_fixnum index);
 extern cl_object elt_set(cl_object seq, cl_fixnum index, cl_object val);
 extern cl_fixnum length(cl_object x);

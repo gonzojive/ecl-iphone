@@ -26,28 +26,26 @@ cl_alloc_simple_vector(cl_index l, cl_elttype aet)
 {
 	cl_object x;
 
-	x = cl_alloc_object(t_vector);
-	x->vector.hasfillp = FALSE;
-	x->vector.adjustable = FALSE;
-	x->vector.displaced = Cnil;
-	x->vector.dim = x->vector.fillp = l;
-	x->vector.self.t = NULL;
-	x->vector.elttype = (short)aet;
-	return(x);
-}
-
-cl_object
-cl_alloc_simple_bitvector(cl_index l)
-{
-	cl_object x;
-
-	x = cl_alloc_object(t_bitvector);
-	x->vector.hasfillp = FALSE;
-	x->vector.adjustable = FALSE;
-	x->vector.displaced = Cnil;
-	x->vector.dim = x->vector.fillp = l;
-	x->vector.offset = 0;
-	x->vector.self.bit = NULL;
+	if (aet == aet_ch)
+		return cl_alloc_simple_string(l);
+	if (aet == aet_bit) {
+		x = cl_alloc_object(t_bitvector);
+		x->vector.hasfillp = FALSE;
+		x->vector.adjustable = FALSE;
+		x->vector.displaced = Cnil;
+		x->vector.dim = x->vector.fillp = l;
+		x->vector.offset = 0;
+		x->vector.self.bit = NULL;
+	} else {
+		x = cl_alloc_object(t_vector);
+		x->vector.hasfillp = FALSE;
+		x->vector.adjustable = FALSE;
+		x->vector.displaced = Cnil;
+		x->vector.dim = x->vector.fillp = l;
+		x->vector.self.t = NULL;
+		x->vector.elttype = (short)aet;
+	}
+	array_allocself(x);
 	return(x);
 }
 
@@ -184,68 +182,16 @@ E:
 		@(return x)
 
 	case t_vector:
-		if (s > sequence->vector.fillp)
-			goto ILLEGAL_START_END;
-		if (e < 0)
-			e = sequence->vector.fillp;
-		else if (e < s || e > sequence->vector.fillp)
-			goto ILLEGAL_START_END;
-		x = cl_alloc_simple_vector(e - s, (cl_elttype)sequence->vector.elttype);
-		array_allocself(x);
-		switch ((cl_elttype)sequence->vector.elttype) {
-		case aet_object:
-		case aet_fix:
-		case aet_index:
-		case aet_sf:
-			for (i = s, j = 0;  i < e;  i++, j++)
-				x->vector.self.t[j] = sequence->vector.self.t[i];
-			break;
-
-		case aet_lf:
-			for (i = s, j = 0;  i < e;  i++, j++)
-				x->array.self.lf[j] =
-				sequence->array.self.lf[i];
-			break;
-		case aet_b8:
-		case aet_i8:
-			for (i = s, j = 0;  i < e;  i++, j++)
-				x->vector.self.b8[j] = sequence->vector.self.b8[i];
-			break;
-		default:
-			internal_error("subseq");
-		}
-		@(return x)
-
-	case t_string:
-		if (s > sequence->string.fillp)
-			goto ILLEGAL_START_END;
-		if (e < 0)
-			e = sequence->string.fillp;
-		else if (e < s || e > sequence->string.fillp)
-			goto ILLEGAL_START_END;
-		x = cl_alloc_simple_string(e - s);
-		for (i = s, j = 0;  i < e;  i++, j++)
-			x->string.self[j] = sequence->string.self[i];
-		@(return x)
-
 	case t_bitvector:
+	case t_string:
 		if (s > sequence->vector.fillp)
 			goto ILLEGAL_START_END;
 		if (e < 0)
 			e = sequence->vector.fillp;
 		else if (e < s || e > sequence->vector.fillp)
 			goto ILLEGAL_START_END;
-		x = cl_alloc_simple_bitvector(e - s);
-		x->vector.self.bit = (byte *)cl_alloc_atomic((e-s+CHAR_BIT-1)/CHAR_BIT);
-		s += sequence->vector.offset;
-		e += sequence->vector.offset;
-		for (i = s, j = 0;  i < e;  i++, j++)
-			if (sequence->vector.self.bit[i/CHAR_BIT]&(0200>>i%CHAR_BIT))
-				x->vector.self.bit[j/CHAR_BIT]
-				|= 0200>>j%CHAR_BIT;
-			else
-				x->vector.self.bit[j/CHAR_BIT]
-				&= ~(0200>>j%CHAR_BIT);
+		x = cl_alloc_simple_vector(e - s, array_elttype(sequence));
+		ecl_copy_subarray(x, 0, sequence, s, e-s);
 		@(return x)
 
 	default:
@@ -301,92 +247,44 @@ length(cl_object x)
 cl_object
 cl_reverse(cl_object seq)
 {
-	cl_object x, y;
-	cl_fixnum i, j, k;
+	cl_object output, x;
 
 	switch (type_of(seq)) {
 	case t_symbol:
 		if (Null(seq))
-			y = Cnil;
+			output = Cnil;
 		else
 			FEwrong_type_argument(@'sequence', seq);
 		break;
-
-	case t_cons:
-		y = Cnil;
-		for (x = seq;  !endp(x);  x = CDR(x))
-			y = CONS(CAR(x), y);
+	case t_cons: {
+		for (x = seq, output = Cnil;  !endp(x);  x = CDR(x))
+			output = CONS(CAR(x), output);
 		break;
-
+	}
 	case t_vector:
-		x = seq;
-		k = x->vector.fillp;
-		y = cl_alloc_simple_vector(k, (cl_elttype)x->vector.elttype);
-		array_allocself(y);
-		switch ((cl_elttype)x->vector.elttype) {
-		case aet_object:
-		case aet_fix:
-		case aet_index:
-		case aet_sf:
-			for (j = k - 1, i = 0;  j >=0;  --j, i++)
-				y->vector.self.t[j] = x->vector.self.t[i];
-			break;
-		case aet_lf:
-			for (j = k - 1, i = 0;  j >=0;  --j, i++)
-				y->array.self.lf[j] = x->array.self.lf[i];
-			break;
-		case aet_b8:
-			for (j = k - 1, i = 0;  j >=0;  --j, i++)
-				y->array.self.b8[j] = x->array.self.b8[i];
-			break;
-		case aet_i8:
-			for (j = k - 1, i = 0;  j >=0;  --j, i++)
-				y->array.self.i8[j] = x->array.self.i8[i];
-			break;
-		default:
-			internal_error("reverse");
-		}
-		break;
-
-	case t_string:
-		x = seq;
-		y = cl_alloc_simple_string(x->string.fillp);
-		for (j = x->string.fillp - 1, i = 0;  j >=0;  --j, i++)
-			y->string.self[j] = x->string.self[i];
-		break;
-
 	case t_bitvector:
-		x = seq;
-		y = cl_alloc_simple_bitvector(x->vector.fillp);
-		y->vector.self.bit = (byte *)cl_alloc_atomic((x->vector.fillp+CHAR_BIT-1)/CHAR_BIT);
-		for (j = x->vector.fillp - 1, i = x->vector.offset;
-		     j >=0;
-		     --j, i++)
-			if (x->vector.self.bit[i/CHAR_BIT]&(0200>>i%CHAR_BIT))
-				y->vector.self.bit[j/CHAR_BIT] |= 0200>>j%CHAR_BIT;
-			else
-				y->vector.self.bit[j/CHAR_BIT] &= ~(0200>>j%CHAR_BIT);
+	case t_string:
+		output = cl_alloc_simple_vector(seq->vector.fillp, array_elttype(seq));
+		ecl_copy_subarray(output, 0, seq, 0, seq->vector.fillp);
+		ecl_reverse_subarray(output, 0, seq->vector.fillp);
 		break;
 
 	default:
 		FEwrong_type_argument(@'sequence', seq);
 	}
-	@(return y)
+	@(return output)
 }
 
 cl_object
 cl_nreverse(cl_object seq)
 {
-	cl_object x, y, z;
-	cl_fixnum i, j, k;
-
 	switch (type_of(seq)) {
 	case t_symbol:
 		if (!Null(seq))
 			FEwrong_type_argument(@'sequence', seq);
 		break;
-
-	case t_cons:
+	case t_cons: {
+		cl_object x, y, z;
 		for (x = Cnil, y = seq;  !endp(CDR(y));) {
 			z = y;
 			y = CDR(y);
@@ -396,82 +294,11 @@ cl_nreverse(cl_object seq)
 		CDR(y) = x;
 		seq = y;
 		break;
-
+	}
 	case t_vector:
-		x = seq;
-		k = x->vector.fillp;
-		switch ((cl_elttype)x->vector.elttype) {
-		case aet_object:
-		case aet_fix:
-		case aet_index:
-			for (i = 0, j = k - 1;  i < j;  i++, --j) {
-				y = x->vector.self.t[i];
-				x->vector.self.t[i] = x->vector.self.t[j];
-				x->vector.self.t[j] = y;
-			}
-			break;
-		case aet_sf:
-			for (i = 0, j = k - 1;  i < j;  i++, --j) {
-				float y = x->array.self.sf[i];
-				x->array.self.sf[i] = x->array.self.sf[j];
-				x->array.self.sf[j] = y;
-			}
-			break;
-		case aet_lf:
-			for (i = 0, j = k - 1;  i < j;  i++, --j) {
-				double y = x->array.self.lf[i];
-				x->array.self.lf[i] = x->array.self.lf[j];
-				x->array.self.lf[j] = y;
-			}
-			break;
-		case aet_b8:
-			for (i = 0, j = k - 1;  i < j;  i++, --j) {
-				uint8_t y = x->array.self.b8[i];
-				x->array.self.b8[i] = x->array.self.b8[j];
-				x->array.self.b8[j] = y;
-			}
-			break;
-		case aet_i8:
-			for (i = 0, j = k - 1;  i < j;  i++, --j) {
-				int8_t y = x->array.self.i8[i];
-				x->array.self.i8[i] = x->array.self.i8[j];
-				x->array.self.i8[j] = y;
-			}
-			break;
-		default:
-			internal_error("subseq");
-		}
-		break;
-
 	case t_string:
-		x = seq;
-		for (i = 0, j = x->string.fillp - 1;  i < j;  i++, --j) {
-			k = x->string.self[i];
-			x->string.self[i] = x->string.self[j];
-			x->string.self[j] = k;
-		}
-		break;
-
 	case t_bitvector:
-		x = seq;
-		for (i = x->vector.offset,
-		     j = x->vector.fillp + x->vector.offset - 1;
-		     i < j;
-		     i++, --j) {
-			k = x->vector.self.bit[i/CHAR_BIT]&(0200>>i%CHAR_BIT);
-			if (x->vector.self.bit[j/CHAR_BIT]&(0200>>j%CHAR_BIT))
-				x->vector.self.bit[i/CHAR_BIT]
-				|= 0200>>i%CHAR_BIT;
-			else
-				x->vector.self.bit[i/CHAR_BIT]
-				&= ~(0200>>i%CHAR_BIT);
-			if (k)
-				x->vector.self.bit[j/CHAR_BIT]
-				|= 0200>>j%CHAR_BIT;
-			else
-				x->vector.self.bit[j/CHAR_BIT]
-				&= ~(0200>>j%CHAR_BIT);
-		}
+		ecl_reverse_subarray(seq, 0, seq->vector.fillp);
 		break;
 	default:
 		FEwrong_type_argument(@'sequence', seq);

@@ -212,6 +212,7 @@ typedef enum {			/*  array element type  */
 	aet_b8,			/*  byte8	     */
 	aet_i8,			/*  integer8	     */
 	aet_ch,			/*  string-char      */
+	aet_last_type = aet_ch
 } cl_elttype;
 
 union ecl_array_data {

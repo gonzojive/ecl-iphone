@@ -87,30 +87,6 @@ contiguous block."
 	  (iterate-over-contents array initial-contents dims 0)
 	  (setf (aref array) initial-contents)))))
 
-(defun increment-cursor (cursor dimensions)
-  (declare (si::c-local))
-  (if (null cursor)
-      t
-      (let ((carry (increment-cursor (cdr cursor) (cdr dimensions))))
-	(if carry
-	    (cond ((>= (the fixnum (1+ (the fixnum (car cursor))))
-	               (the fixnum (car dimensions)))
-		   (rplaca cursor 0)
-		   t)
-		  (t
-		   (rplaca cursor
-		           (the fixnum (1+ (the fixnum (car cursor)))))
-		   nil))
-	    nil))))
-
-
-(defun sequence-cursor (sequence cursor)
-  (declare (si::c-local))
-  (if (null cursor)
-      sequence
-      (sequence-cursor (elt sequence (the fixnum (car cursor)))
-                       (cdr cursor))))
-
 
 (defun vector (&rest objects)
   "Args: (&rest objects)
@@ -280,25 +256,17 @@ Replaces ITEM for the element of VECTOR that is pointed to by the fill-pointer
 of VECTOR and then increments the fill-pointer by one.  If the new value of
 the fill-pointer becomes too large, extends VECTOR for N more elements.
 Returns the new value of the fill-pointer."
-  (let ((fp (fill-pointer vector)))
-    (declare (fixnum fp))
-    (cond ((< fp (the fixnum (array-dimension vector 0)))
-	   (sys:aset new-element vector fp)
-	   (sys:fill-pointer-set vector (the fixnum (1+ fp)))
-	   fp)
-	  (t
-	   (adjust-array vector
-	                 (list (+ (array-dimension vector 0)
-				  (or extension
-				      (if (> (array-dimension vector 0)  0)
-					  (array-dimension vector 0)
-					5))))
-	                 :element-type (array-element-type vector)
-			 :fill-pointer fp)
-	   (sys:aset new-element vector fp)
-	   (sys:fill-pointer-set vector (the fixnum (1+ fp)))
-	   fp))))
-
+  (let ((fp (fill-pointer vector))
+	(d (array-dimension vector 0)))
+    (declare (fixnum fp d))
+    (unless (< fp d)
+      (adjust-array vector
+		    (list (+ d (or extension (max d 4))))
+		    :element-type (array-element-type vector)
+		    :fill-pointer fp))
+    (sys:aset new-element vector fp)
+    (sys:fill-pointer-set vector (the fixnum (1+ fp)))
+    fp))
 
 (defun vector-pop (vector)
   "Args: (vector)
@@ -312,6 +280,38 @@ pointer is 0 already."
     (sys:fill-pointer-set vector (the fixnum (1- fp)))
     (aref vector (the fixnum (1- fp)))))
 
+(defun copy-array-contents (dest orig)
+  (declare (si::c-local))
+  (labels
+      ((do-copy (dest orig dims1 dims2 start1 start2)
+	 (declare (array dest orig))
+	 (let* ((d1 (pop dims1))
+		(d2 (pop dims2))
+		(l (min d1 d2))
+		(step1 (apply #'* dims1))
+		(step2 (apply #'* dims2))
+		(i1 start1)
+		(i2 start2))
+	   (declare (fixnum d1 d2 l step1 step2 i1 i2))
+	   (if (null dims1)
+	       #+ecl-min
+	       (dotimes (i l)
+		 (declare (fixnum i))
+		 (row-major-aset dest i1 (row-major-aref orig i2))
+		 (incf i1)
+		 (incf i2))
+	       #-ecl-min
+	       (ffi::c-inline (dest i1 orig i2 l)
+			      (array :fixnum array :fixnum :fixnum) :void
+			      "ecl_copy_subarray(#0, #1, #2, #3, #4)"
+			      :one-liner t
+			      :side-effects t)
+	       (dotimes (i l)
+		 (declare (fixnum i))
+		 (do-copy dest orig dims1 dims2 i1 i2)
+		 (incf i1 step1)
+		 (incf i2 step2))))))
+    (do-copy dest orig (array-dimensions dest) (array-dimensions orig) 0 0)))
 
 (defun adjust-array (array new-dimensions
                      &rest r
@@ -339,11 +339,6 @@ adjustable array."
   (let ((x (apply #'make-array new-dimensions :adjustable t :element-type element-type r)))
     (declare (array x))
     (unless (or displaced-to initial-contents)
-      (do ((cursor (make-list (length new-dimensions) :initial-element 0)))
-	  (nil)
-	(when (apply #'array-in-bounds-p array cursor)
-	  (apply #'aset (apply #'aref array cursor) x cursor))
-	(when (increment-cursor cursor new-dimensions)
-	  (return nil))))
+      (copy-array-contents x array))
     (sys:replace-array array x)
     ))

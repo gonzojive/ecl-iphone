@@ -801,7 +801,6 @@ sharp_left_parenthesis_reader(cl_object in, cl_object c, cl_object d)
 		}
 	} else if (fixed_size) {
 		v = cl_alloc_simple_vector(dim, aet_object);
-		v->vector.self.t = (cl_object *)cl_alloc_align(dim * sizeof(cl_object), sizeof(cl_object));
 		for (i = 0; i < dim; i++) {
 			if (in != OBJNULL) {
 				x = read_object_with_delimiter(in, ')');
@@ -871,7 +870,6 @@ sharp_asterisk_reader(cl_object in, cl_object c, cl_object d)
 		dim = dimcount;
 	}
 	x = cl_alloc_simple_bitvector(dim);
-	x->vector.self.bit = (byte *)cl_alloc_atomic((dim + CHAR_BIT - 1)/CHAR_BIT);
 	for (i = 0; i < dim; i++) {
 		elt = (i < dimcount) ? cl_env.stack[sp+i] : last;
 		if (elt == MAKE_FIXNUM(0))

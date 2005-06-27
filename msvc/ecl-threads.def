@@ -57,6 +57,8 @@ EXPORTS
 	array_elttype
 	ecl_symbol_to_elttype
 	ecl_elttype_to_symbol
+	ecl_copy_subarray
+	ecl_reverse_subarray
 
 
 	; assignment.c

@@ -778,6 +778,8 @@
 		"@0;type_of(#0)==t_vector||
 type_of(#0)==t_string||
 type_of(#0)==t_bitvector"))
+(VECTOR-PUSH (T VECTOR) FIXNUM T NIL)
+(VECTOR-PUSH-EXTEND (T VECTOR) FIXNUM T NIL)
 (SIMPLE-STRING-P (T) T NIL T)
 (SIMPLE-BIT-VECTOR-P (T) T NIL T)
 (SIMPLE-VECTOR-P (T) T NIL T)

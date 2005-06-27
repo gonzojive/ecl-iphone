@@ -15,7 +15,20 @@
 */
 
 #include <limits.h>
+#include <string.h>
 #include "ecl.h"
+
+static const cl_index ecl_aet_size[] = {
+  sizeof(cl_object),          /* aet_object */
+  sizeof(float),              /* aet_sf */
+  sizeof(double),             /* aet_lf */
+  0,                          /* aet_bit: cannot be handled with this code */
+  sizeof(cl_fixnum),          /* aet_fix */
+  sizeof(cl_index),           /* aet_index */
+  sizeof(uint8_t),            /* aet_b8 */
+  sizeof(int8_t),             /* aet_i8 */
+  sizeof(unsigned char)       /* aet_ch */
+};
 
 static void displace (cl_object from, cl_object to, cl_object offset);
 static void check_displaced (cl_object dlist, cl_object orig, cl_index newdim);
@@ -841,4 +854,105 @@ si_replace_array(cl_object olda, cl_object newa)
 	olda->array.displaced = displaced;
  OUTPUT:
 	@(return olda)
+}
+
+void
+ecl_copy_subarray(cl_object dest, cl_index i0, cl_object orig, cl_index i1, cl_index l)
+{
+	cl_elttype t = array_elttype(dest);
+	if (i0 + l > dest->array.dim) {
+		l = dest->array.dim - i0;
+	}
+	if (i1 + l > orig->array.dim) {
+		l = orig->array.dim - i1;
+	}
+	if (t != array_elttype(orig) || t == aet_bit) {
+		while (l--) {
+			aset(dest, i0++, aref(orig, i1++));
+		}
+	} else if (t >= 0 && t <= aet_last_type) {
+		cl_index elt_size = ecl_aet_size[t];
+		memcpy(dest->array.self.ch + i0 * elt_size,
+		       orig->array.self.ch + i1 * elt_size,
+		       l * elt_size);
+	} else {
+		FEerror("Bad array type", 0);
+	}		
+}
+
+void
+ecl_reverse_subarray(cl_object x, cl_index i0, cl_index i1)
+{
+	cl_elttype t = array_elttype(x);
+	cl_index i, j;
+	if (i1 >= x->array.dim) {
+		i1 = x->array.dim;
+	}
+	switch (t) {
+	case aet_object:
+	case aet_fix:
+	case aet_index:
+		for (i = 0, j = i1-1;  i < j;  i++, --j) {
+			cl_object y = x->vector.self.t[i];
+			x->vector.self.t[i] = x->vector.self.t[j];
+			x->vector.self.t[j] = y;
+		}
+		break;
+	case aet_sf:
+		for (i = 0, j = i1-1;  i < j;  i++, --j) {
+			float y = x->array.self.sf[i];
+			x->array.self.sf[i] = x->array.self.sf[j];
+			x->array.self.sf[j] = y;
+		}
+		break;
+	case aet_lf:
+		for (i = 0, j = i1-1;  i < j;  i++, --j) {
+			double y = x->array.self.lf[i];
+			x->array.self.lf[i] = x->array.self.lf[j];
+			x->array.self.lf[j] = y;
+		}
+		break;
+	case aet_b8:
+		for (i = 0, j = i1-1;  i < j;  i++, --j) {
+			uint8_t y = x->array.self.b8[i];
+			x->array.self.b8[i] = x->array.self.b8[j];
+			x->array.self.b8[j] = y;
+		}
+		break;
+	case aet_i8:
+		for (i = 0, j = i1-1;  i < j;  i++, --j) {
+			int8_t y = x->array.self.i8[i];
+			x->array.self.i8[i] = x->array.self.i8[j];
+				x->array.self.i8[j] = y;
+		}
+		break;
+	case aet_ch:
+		for (i = 0, j = i1-1;  i < j;  i++, --j) {
+			unsigned char y = x->array.self.ch[i];
+			x->array.self.ch[i] = x->array.self.ch[j];
+				x->array.self.ch[j] = y;
+		}
+		break;
+	case aet_bit:
+		for (i = x->vector.offset,
+		     j = i1 + x->vector.offset - 1;
+		     i < j;
+		     i++, --j) {
+			int k = x->array.self.bit[i/CHAR_BIT]&(0200>>i%CHAR_BIT);
+			if (x->array.self.bit[j/CHAR_BIT]&(0200>>j%CHAR_BIT))
+				x->array.self.bit[i/CHAR_BIT]
+				|= 0200>>i%CHAR_BIT;
+			else
+				x->array.self.bit[i/CHAR_BIT]
+				&= ~(0200>>i%CHAR_BIT);
+			if (k)
+				x->array.self.bit[j/CHAR_BIT]
+				|= 0200>>j%CHAR_BIT;
+			else
+				x->array.self.bit[j/CHAR_BIT]
+				&= ~(0200>>j%CHAR_BIT);
+		}
+	default:
+		FEerror("Bad array type", 0);
+	}
 }
