@@ -19,6 +19,9 @@ ECL 0.9g
  - DEF-FOREIGN-VAR rewritten to make variables visible from other files and to
    dereference also arrays and pointers. (M. Pasternacki)
 
+ - When creating a C-STRING, characters after the fill pointer are discarded,
+   according to people's expectations.
+
 * Compiler changes:
 
  - Generated C functions now have readable names corresponding to appropriate

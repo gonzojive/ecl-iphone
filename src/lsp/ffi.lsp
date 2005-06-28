@@ -372,13 +372,16 @@
   object)
 
 (defmacro convert-to-cstring (object)
-  object)
+  ;; This enforces that the string contains only as many characters as the
+  ;; fill-pointer determines Since ECL always sets a 0 character after the
+  ;; last element of a string, this way, the string is always zero-terminated
+  (copy-seq object))
 
 (defmacro free-cstring (object)
   object)
 
 (defmacro with-cstring ((cstring string) &body body)
-  `(let ((,cstring ,string)) ,@body))
+  `(let ((,cstring (copy-seq ,string))) ,@body))
 
 (defmacro with-cstrings (bindings &rest body)
   (if bindings
