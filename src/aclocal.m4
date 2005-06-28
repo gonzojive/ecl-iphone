@@ -88,13 +88,19 @@ EOF
   if test "${ECL_TO_RUN}" = "failed"; then
     AC_MSG_ERROR(The program ECL is not installed in your system)
   fi
+  ECL_MIN_TO_RUN=`${ECL_TO_RUN} -eval '(progn (print (truename "sys:ecl_min")) (quit))' \
+	| grep '\#\P' | sed 's,#P"\(.*\)",\1,'`
+  if test -z "${ECL_MIN_TO_RUN}" -o "${ECL_MIN_TO_RUN}" = "failed"  ; then
+    AC_MSG_ERROR(The program ECL-MIN is not installed in your system)
+  fi
   DPP_TO_RUN=`${ECL_TO_RUN} -eval '(progn (print (truename "sys:dpp")) (quit))' \
 	| grep '\#\P' | sed 's,#P"\(.*\)",\1,'`
   if test -z "${DPP_TO_RUN}" -o "${DPP_TO_RUN}" = "failed"  ; then
     AC_MSG_ERROR(The program DPP is not installed in your system)
   fi
-  (echo '#!/bin/sh'; echo ${ECL_TO_RUN} -eval "'"'(push :cross *features*)'"'" '$''*') > CROSS-COMPILER
-  (echo '#!/bin/sh'; echo ${DPP_TO_RUN} '$''*') > CROSS-DPP
+  dnl (echo '#!/bin/sh'; echo exec ${ECL_TO_RUN} -eval "'"'(push :cross *features*)'"'" '$''*') > CROSS-COMPILER
+  (echo '#!/bin/sh'; echo exec ${ECL_MIN_TO_RUN} '$''*') > CROSS-COMPILER
+  (echo '#!/bin/sh'; echo exec ${DPP_TO_RUN} '$''*') > CROSS-DPP
   chmod +x CROSS-COMPILER CROSS-DPP
 fi
 ])
