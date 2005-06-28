@@ -49,7 +49,7 @@ ecl_string_pointer_safe(cl_object f)
 
 	if (type_of(f) != t_string)
 		FEwrong_type_argument(@'string', f);
-#ifdef USE_BOEHM
+#ifdef GBC_BOEHM
 	/* This function is only used in CMPFFI.LSP as to convert lisp objects
 	 * to a null terminated string. This code is safe with the
 	 * Boehm-Weiser garbage collector because the pointer is stored in the
