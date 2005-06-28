@@ -73,14 +73,14 @@ install: $(HFILES)
 	sed '/-CUT-/,$$d' ../h/config.h > ../h/config-install.h
 	$(INSTALL_DATA) ../h/*.h $(DESTDIR)$(libdir)/h/
 	rm $(DESTDIR)$(libdir)/h/config.h
-	mv $(DESTDIR)$(libdir)/h/config-install.h $(libdir)/h/config.h
+	mv $(DESTDIR)$(libdir)/h/config-install.h $(DESTDIR)$(libdir)/h/config.h
 
 flatinstall: $(HFILES)
 	for i in $(HFILES); do $(INSTALL_DATA) $$i $(DESTDIR)$(prefix)/h/; done
 	sed '/-CUT-/,$$d' ../h/config.h > ../h/config-install.h
 	$(INSTALL_DATA) ../h/*.h $(DESTDIR)$(prefix)/h/
 	rm $(DESTDIR)$(prefix)/h/config.h
-	mv $(DESTDIR)$(prefix)/h/config-install.h $(prefix)/h/config.h
+	mv $(DESTDIR)$(prefix)/h/config-install.h $(DESTDIR)$(prefix)/h/config.h
 
 ../libeclmin.a: $(OBJS) all_symbols.o all_symbols2.o
 	$(RM) $@
