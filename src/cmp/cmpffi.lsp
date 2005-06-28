@@ -225,9 +225,7 @@
 	((:cstring)
 	 (case loc-rep-type
 	   ((:object)
-	    (if (safe-compile)
-		(wt "ecl_string_pointer_safe(" loc ")")
-	        (wt "(" loc ")->string.self")))
+	    (wt "ecl_string_pointer_safe(" loc ")"))
 	   ((:pointer-void)
 	    (wt "(char *)(" loc ")"))
 	   (otherwise

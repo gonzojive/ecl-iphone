@@ -45,8 +45,26 @@ ecl_foreign_data_pointer_safe(cl_object f)
 char *
 ecl_string_pointer_safe(cl_object f)
 {
+	cl_index l;
+
 	if (type_of(f) != t_string)
 		FEwrong_type_argument(@'string', f);
+#ifdef USE_BOEHM
+	/* This function is only used in CMPFFI.LSP as to convert lisp objects
+	 * to a null terminated string. This code is safe with the
+	 * Boehm-Weiser garbage collector because the pointer is stored in the
+	 * stack as part of the argument list and cannot be lost. We still have to
+	 * figure out what to do with the older garbage collector.
+	 */
+	if (f->string.hasfillp && ((l = f->string.fillp) < f->string.dim)) {
+		unsigned char *s = cl_alloc_atomic(l + 1);
+		memcpy(s, f->string.self, l);
+		s[l] = 0;
+		return s;
+	}
+#else
+# error "ecl_string_pointer_safe does not work with the old garbage collector"
+#endif
 	return f->string.self;
 }
 
