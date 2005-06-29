@@ -84,7 +84,7 @@ by (DOCUMENTATION 'SYMBOL 'SETF)."
 	  (setq args (cons env args))
 	  (push `(declare (ignore ,env)) body))))
   `(eval-when (compile load eval)
-	  (put-sysprop ',access-fn 'SETF-METHOD #'(lambda ,args ,@body))
+	  (put-sysprop ',access-fn 'SETF-METHOD #'(ext::lambda-block ,access-fn ,args ,@body))
           (rem-sysprop ',access-fn 'SETF-LAMBDA)
           (rem-sysprop ',access-fn 'SETF-UPDATE-FN)
 	  (rem-sysprop ',access-fn 'SETF-SYMBOL)

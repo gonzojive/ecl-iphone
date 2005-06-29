@@ -8,9 +8,6 @@ ECL 0.9g
  - Based on version 6.5 of Boehm-Weiser garbage collector, which fixes some
    problems related to the OSX port.
 
- - Cross-compilation now uses ecl_min instead of ecl, which is now installed by
-   default. (M. Pasternacki)
-
 * Foreign function interface (FFI):
 
  - Added nickname UFFI for FFI package; functions ALLOCATE-FOREIGN-STRING,
@@ -117,6 +114,9 @@ ECL 0.9g
  - Declaration names cannot be used to define new type names and viceversa.
 
  - #\Space has constituent trait "invalid".
+
+ - DEFINE-SETF-EXPANDER encloses the form in an implicit block with the name of
+   the SETF function.
 
 * New features:
 
