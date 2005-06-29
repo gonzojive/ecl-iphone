@@ -126,7 +126,7 @@ BEGIN:
 	external_symbol = colon = 0;
 	cl_env.token->string.fillp = 0;
 	for (;;) {
-		if (c == ':') {
+		if (c == ':' && a == cat_constituent) {
 			colon++;
 			goto NEXT;
 		}
@@ -1699,7 +1699,7 @@ read_table_entry(cl_object rdtbl, cl_object c)
 bool
 ecl_invalid_character_p(int c)
 {
-	return (c < 32) || (c == 127);
+	return (c <= 32) || (c == 127);
 }
 
 @(defun set_syntax_from_char (tochr fromchr
