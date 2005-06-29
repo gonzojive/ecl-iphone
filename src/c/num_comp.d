@@ -45,7 +45,7 @@ number_equalp(cl_object x, cl_object y)
 		case t_ratio:
 			return 0;
 		case t_shortfloat:
-			return fix(x) == sf(y);
+			return fix(x) == (double)sf(y);
 		case t_longfloat:
 			return fix(x) == lf(y);
 		case t_complex:
