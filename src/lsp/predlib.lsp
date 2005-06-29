@@ -41,14 +41,17 @@ by (documentation 'NAME 'type)."
   (multiple-value-bind (body doc)
       (remove-documentation body)
     (setf lambda-list (copy-list lambda-list))
-    (do ((l (rest (member '&optional lambda-list)) (rest l)))
-	((null l))
-      (let ((variable (first l)))
-	(when (symbolp variable)
-	  (setf (first l) `(,variable '*)))))
+    (dolist (x '(&optional &key))
+      (do ((l (rest (member x lambda-list)) (rest l)))
+	  ((null l))
+	(let ((variable (first l)))
+	  (when (and (symbolp variable)
+		     (not (member variable lambda-list-keywords)))
+	    (setf (first l) `(,variable '*))))))
     `(eval-when (:compile-toplevel :load-toplevel :execute)
        ,@(si::expand-set-documentation name 'type doc)
-       (do-deftype ',name '(DEFTYPE ,name ,lambda-list ,@body) #'(LAMBDA ,lambda-list ,@body)))))
+       (do-deftype ',name '(DEFTYPE ,name ,lambda-list ,@body)
+		   #'(LAMBDA-BLOCK ,name ,lambda-list ,@body)))))
 
 
 ;;; Some DEFTYPE definitions.
