@@ -344,3 +344,27 @@ adjustable array."
       (copy-array-contents x array))
     (sys:replace-array array x)
     ))
+
+;;; Copied from cmuci-compat.lisp of CLSQL by Kevin M. Rosenberg (LLGPL-licensed)
+(defmacro shrink-vector (vec len)
+  "Shrinks a vector. Optimized if vector has a fill pointer.
+Needs to be a macro to overwrite value of VEC."
+  (let ((new-vec (gensym)))
+    `(cond
+      ((adjustable-array-p ,vec)
+       (adjust-array ,vec ,len))
+      ((typep ,vec 'simple-array)
+       (let ((,new-vec (make-array ,len :element-type
+				   (array-element-type ,vec))))
+	 (check-type ,len fixnum)
+	 (locally (declare (optimize (speed 3) (safety 0) (space 0)) )
+	   (dotimes (i ,len)
+	     (declare (fixnum i))
+	     (setf (aref ,new-vec i) (aref ,vec i))))
+	 (setq ,vec ,new-vec)))
+      ((typep ,vec 'vector)
+	(setf (fill-pointer ,vec) ,len)
+	,vec)
+      (t
+       (error "Unable to shrink vector ~S which is type-of ~S" ,vec (type-of ,vec))) 
+       )))
