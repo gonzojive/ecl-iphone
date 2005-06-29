@@ -8,6 +8,11 @@ ECL 0.9g
  - Based on version 6.5 of Boehm-Weiser garbage collector, which fixes some
    problems related to the OSX port.
 
+ - The latest version of Mingw32's GCC is broken. It silently ignores pathnames
+   which end in '/'.  The include options in ECL have been modified to take
+   this into account but this intrinsic bug of Mingw might influence ECL's
+   behavior in some other unexpected ways.
+
 * Foreign function interface (FFI):
 
  - Added nickname UFFI for FFI package; functions ALLOCATE-FOREIGN-STRING,
