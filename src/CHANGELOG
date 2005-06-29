@@ -82,6 +82,16 @@ ECL 0.9g
  - The conversion from ratio to float works now even if the numerator/denominator
    are themselves too large to fit a float.
 
+ - Fixnums and short-floats were compared using the "float" C type. This led to
+   loss of precision and caused
+	 (= (1+ (ceiling (rational -3.781832e7))) -3.781832e7) => T
+
+ - Keyword arguments in a type defined with DEFTYPE, for which a default value
+   is not given, default to '*. Also the DEFTYPE form are enclosed in a block
+   with the name of the type.
+
+ - The syntax of #\: can now be changed.
+
 * ANSI compatibility:
 
  - Several functions that signaled type-errors did not set the right values
@@ -105,6 +115,8 @@ ECL 0.9g
    objects, instead of signaling an error when printing.
 
  - Declaration names cannot be used to define new type names and viceversa.
+
+ - #\Space has constituent trait "invalid".
 
 * New features:
 
