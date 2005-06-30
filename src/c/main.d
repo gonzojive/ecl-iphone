@@ -347,6 +347,8 @@ cl_boot(int argc, char **argv)
 #endif
 		CONS(make_constant_string("lsp"), @'si::load-source'),
 		CONS(make_constant_string("lisp"), @'si::load-source'),
+		CONS(make_constant_string("LSP"), @'si::load-source'),
+		CONS(make_constant_string("LISP"), @'si::load-source'),
 		CONS(Cnil, @'si::load-source'));
 	ECL_SET(@'si::*load-hooks*', aux);
 #ifdef PDE
