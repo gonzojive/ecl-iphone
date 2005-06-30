@@ -374,7 +374,7 @@ static cl_object VV[VM];
 		      (shared-data-file nil)
 		      (system-p nil)
 		      (load nil)
-		      (output-file (compile-file-pathname input-pathname :type (if system-p :object :fasl)))
+		      (output-file 'T output-file-p)
                       &aux (*standard-output* *standard-output*)
                            (*error-output* *error-output*)
                            (*compiler-in-use* *compiler-in-use*)
@@ -394,6 +394,9 @@ static cl_object VV[VM];
 ~%;;; This system does not support loading dynamically linked libraries.~
 ~%;;; Therefore, COMPILE-FILE without :SYSTEM-P T is unsupported.~
 ~%;;;"))
+
+  (when (eq output-file 'T)
+    (setf output-file (compile-file-pathname input-pathname :type (if system-p :object :fasl))))
 
   (setq *compile-file-pathname* input-pathname)
   (unless (probe-file *compile-file-pathname*)
