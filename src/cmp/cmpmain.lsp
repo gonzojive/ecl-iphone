@@ -402,7 +402,7 @@ static cl_object VV[VM];
   (unless (probe-file *compile-file-pathname*)
     (dolist (ext '("lsp" "LSP" "lisp" "LISP")
 	     (error 'file-error :pathname input-pathname))
-      (setq *compile-file-pathname* (make-pathname :type exit :defaults input-pathname))
+      (setq *compile-file-pathname* (make-pathname :type ext :defaults input-pathname))
       (when (probe-file *compile-file-pathname*)
 	(return))))
   (setq *compile-file-truename* (truename *compile-file-pathname*))
