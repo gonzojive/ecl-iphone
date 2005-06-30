@@ -186,6 +186,8 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #undef HAVE_MACH_O_DYLD_H
 /* POSIX signals							*/
 #undef HAVE_SIGPROCMASK
+/* isatty() checks whether a file is connected to a			*/
+#undef HAVE_ISATTY
 
 /* what characters are used to mark beginning of new line		*/
 #undef ECL_NEWLINE_IS_CRLF

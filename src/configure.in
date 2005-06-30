@@ -331,7 +331,7 @@ AC_CHECK_FUNCS( [floor getcwd gethostbyaddr gethostbyname getpagesize] \
 dnl !!! end autoscan
 
 AC_CHECK_FUNCS( [nanosleep alarm times isnanf select setenv putenv] \
-                [lstat mkstemp sigprocmask] )
+                [lstat mkstemp sigprocmask isatty] )
 
 dnl =====================================================================
 dnl Checks for system services
