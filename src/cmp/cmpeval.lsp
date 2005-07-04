@@ -28,9 +28,7 @@
 		      (c1var form)))
 		 (t (c1var form))))
 	  ((consp form)
-	   (let ((fun (car form))
-		 ;; #+cltl2
-		 setf-symbol)
+	   (let ((fun (car form)))
 	     (cond ((symbolp fun)
 		    (c1call-symbol fun (cdr form)))
 		   ((and (consp fun) (eq (car fun) 'LAMBDA))
@@ -152,9 +150,9 @@
   )
 
 (defun c1progn (forms)
-  (cond ((endp forms) (c1nil))
-	((endp (cdr forms)) (c1expr (car forms)))
-	(t (let* ((fl (mapcar #'c1expr forms))
+  (cond ((endp forms) (t1/c1expr 'NIL))
+	((endp (cdr forms)) (t1/c1expr (car forms)))
+	(t (let* ((fl (mapcar #'t1/c1expr forms))
 		  (output-form (first (last fl)))
 		  (output-type (and output-form (c1form-type output-form))))
 	     (make-c1form* 'PROGN :type output-type :args fl)))))

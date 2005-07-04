@@ -33,7 +33,6 @@
 	    output-list))))
 
 (defmacro defclass (&whole form &rest args)
-  (declare (si::c-local))
   (let* (name superclasses slots options
 	 metaclass-name default-initargs documentation
 	 (processed-options '())

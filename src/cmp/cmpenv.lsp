@@ -35,6 +35,7 @@
   (setq *reservations* nil)
   (setq *top-level-forms* nil)
   (setq *compile-time-too* nil)
+  (setq *clines-string-list* '())
   (setq *function-declarations* nil)
   (setq *inline-functions* nil)
   (setq *inline-blocks* 0)
@@ -395,7 +396,7 @@
 	   (cmperr "Not a valid function name ~s in declaration ~s" fun decl))))
       (DECLARATION
        (do-declaration (rest decl) #'cmperr))
-      (SI::C-LOCAL)
+      ((SI::C-LOCAL SI::C-GLOBAL))
       ((DYNAMIC-EXTENT IGNORABLE)
        ;; FIXME! SOME ARE IGNORED!
        )

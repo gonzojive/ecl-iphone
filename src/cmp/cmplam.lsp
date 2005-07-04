@@ -66,7 +66,7 @@
   fun)
 
 (defun c1compile-function (lambda-list-and-body &key (fun (make-fun))
-			   (name (fun-name fun)) global (CB/LB 'CB))
+			   (name (fun-name fun)) (CB/LB 'CB))
   (setf (fun-name fun) name
 	(fun-parent fun) *current-function*)
   (when *current-function*
@@ -77,9 +77,12 @@
 	 (*blocks* (cons CB/LB *blocks*))
 	 (*tags* (cons CB/LB *tags*))
 	 (setjmps *setjmps*)
+	 (decl (si::process-declarations (rest lambda-list-and-body)))
 	 (lambda-expr (c1lambda-expr lambda-list-and-body
 				     (si::function-block-name name)))
 	 (children (fun-child-funs fun))
+	 (global (and (assoc 'SI::C-GLOBAL decl) 'T))
+	 (no-entry (and (assoc 'SI::C-LOCAL decl) 'T))
 	 cfun exported minarg maxarg)
     (unless (eql setjmps *setjmps*)
       (setf (c1form-volatile lambda-expr) t))
@@ -87,6 +90,9 @@
     (if global
 	(multiple-value-setq (cfun exported) (exported-fname name))
 	(setf cfun (next-cfun "LC~D~A" name) exported nil))
+    #+ecl-min
+    (when (member name c::*in-all-symbols-functions*)
+      (setf no-entry t))
     (if exported
 	;; Check whether the function was proclaimed to have a certain
 	;; number of arguments, and otherwise produce a function with
@@ -103,7 +109,8 @@
 	  (fun-closure fun) nil
 	  (fun-minarg fun) minarg
 	  (fun-maxarg fun) maxarg
-	  (fun-description fun) name)
+	  (fun-description fun) name
+	  (fun-no-entry fun) no-entry)
     (reduce #'add-referred-variables-to-function
 	    (mapcar #'fun-referred-vars children)
 	    :initial-value fun)
@@ -117,10 +124,12 @@
 	(when (compute-fun-closure-type f)
 	  (setf finish nil))))
     (compute-fun-closure-type fun)
-    (when (and global (fun-closure fun))
-      (error "Function ~A is global but is closed over some variables.~%~
+    (when global
+      (when (fun-closure fun)
+	(error "Function ~A is global but is closed over some variables.~%~
 ~{~A ~}"
-	     (fun-name fun) (mapcar #'var-name (fun-referred-vars fun)))))
+	       (fun-name fun) (mapcar #'var-name (fun-referred-vars fun))))
+      (new-defun fun (fun-no-entry fun))))
   fun)
 
 (defun c1lambda-expr (lambda-expr

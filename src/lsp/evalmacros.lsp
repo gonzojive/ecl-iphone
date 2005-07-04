@@ -23,16 +23,18 @@ The complete syntax of a lambda-list is:
 The doc-string DOC, if supplied, is saved as a FUNCTION doc and can be
 retrieved by (documentation 'NAME 'function)."
   (multiple-value-setq (body doc-string) (remove-documentation body))
-  (let* ((block-name (if (and (consp name)
-			      (eq (first name) 'setf))
-			 (second name)
-			 name))
-	 (function `#'(ext::lambda-block ,block-name ,vl ,@body)))
+  (let* ((function `#'(ext::lambda-block ,name ,vl ,@body))
+	 (global-function `#'(ext::lambda-block ,name ,vl
+			       (declare (si::c-global))
+			       ,@body)))
     (when *dump-defun-definitions*
       (print function)
       (setq function `(si::bc-disassemble ,function)))
   `(progn
-    (si::fset ',name ,function)
+     (eval-when (:execute)
+       (si::fset ',name ,function))
+     (eval-when (:load-toplevel)
+       (si::fset ',name ,global-function))
     ,@(si::expand-set-documentation name 'function doc-string)
     ',name)))
 

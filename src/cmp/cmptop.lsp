@@ -32,20 +32,29 @@
 		   (member fun *toplevel-forms-to-print*))
 	  (print-current-form))
 	(cond
-            ((symbolp fun)
-             (cond ((setq fd (get-sysprop fun 'T1))
-                    (funcall fd args))
-                   ((get-sysprop fun 'C1) (t1ordinary form))
-                   ((setq fd (macro-function fun))
-                    (t1expr* (cmp-expand-macro fd fun (cdr form))))
-		   ((and (setq fd (assoc fun *funs*))
-			 (eq (second fd) 'MACRO))
-		    (t1expr* (cmp-expand-macro (third fd) fun (cdr form))))
-                   (t (t1ordinary form))
-                   ))
             ((consp fun) (t1ordinary form))
-            (t (cmperr "~s is illegal function." fun)))
-           ))))
+            ((not (symbolp fun))
+	     (cmperr "~s is illegal function." fun))
+	    ((eq fun 'QUOTE)
+	     (t1ordinary 'NIL))
+	    ((setq fd (get-sysprop fun 'T1))
+	     (funcall fd args))
+	    ((get-sysprop fun 'C1) (t1ordinary form))
+	    ((setq fd (macro-function fun))
+	     (t1expr* (cmp-expand-macro fd fun (cdr form))))
+	    ((and (setq fd (assoc fun *funs*))
+		  (eq (second fd) 'MACRO))
+	     (t1expr* (cmp-expand-macro (third fd) fun (cdr form))))
+	    (t (t1ordinary form))
+	   )))))
+
+(defun t1/c1expr (form)
+  (cond ((not *compile-toplevel*)
+	 (c1expr form))
+	((atom form)
+	 (t1ordinary form))
+	(t
+	 (t1expr* form))))	
 
 (defun t2expr (form)
   (when form
@@ -76,15 +85,6 @@
 	   ;; so disassemble can redefine it
 	   (t3local-fun (first lfs)))))))
 
-(defun t3expr (form)
-  (when form
-    (emit-local-funs)
-    (let ((def (get-sysprop (c1form-name form) 'T3)))
-      (when def
-	;; new local functions get pushed into *local-funs*
-	(apply def (c1form-args form))))
-    (emit-local-funs)))
-
 (defun ctop-write (name h-pathname data-pathname
 		        &key system-p shared-data
 			&aux def top-output-string
@@ -93,6 +93,14 @@
   ;(let ((*print-level* 3)) (pprint *top-level-forms*))
   (setq *top-level-forms* (nreverse *top-level-forms*))
   (wt-nl1 "#include \"" (si::coerce-to-filename h-pathname) "\"")
+  ;; All lines from CLINES statements are grouped at the beginning of the header
+  ;; Notice that it does not make sense to guarantee that c-lines statements
+  ;; are produced in-between the function definitions, because two functions
+  ;; might be collapsed into one, or we might not produce that function at all
+  ;; and rather inline it.
+  (do ()
+      ((null *clines-string-list*))
+    (wt-h (pop *clines-string-list*)))
   (wt-h "#ifdef __cplusplus")
   (wt-h "extern \"C\" {")
   (wt-h "#endif")
@@ -143,7 +151,7 @@
 	    (*env* 0) (*level* 0) (*temp* 0))
 	  (t2expr form))
       (let ((*compiler-output1* c-output-file))
-	(t3expr form)))
+	(emit-local-funs)))
     (wt-function-epilogue)
     (wt-nl1 "}")
     (setq top-output-string (get-output-stream-string *compiler-output1*)))
@@ -190,76 +198,43 @@
   (wt-h "#endif")
   (wt-nl top-output-string))
 
-(defun t1eval-when (args &aux (load-flag nil) (compile-flag nil))
+(defun c1eval-when (args)
   (check-args-number 'EVAL-WHEN args 1)
-  (dolist (situation (car args))
-    (case situation
-      ((LOAD :LOAD-TOPLEVEL) (setq load-flag t))
-      ((COMPILE :COMPILE-TOPLEVEL) (setq compile-flag t))
-      ((EVAL :EXECUTE))
-      (otherwise (cmperr "The EVAL-WHEN situation ~s is illegal."
-			 situation))))
-  (let ((*compile-time-too* compile-flag))
-    (cond (load-flag
-	   (t1progn (rest args)))
+  (let ((load-flag nil)
+	(compile-flag nil)
+	(execute-flag nil))
+    (dolist (situation (car args))
+      (case situation
+	((LOAD :LOAD-TOPLEVEL) (setq load-flag t))
+	((COMPILE :COMPILE-TOPLEVEL) (setq compile-flag t))
+	((EVAL :EXECUTE)
+	 (if *compile-toplevel*
+	     (setq compile-flag (or *compile-time-too* compile-flag))
+	     (setq execute-flag t)))
+	(otherwise (cmperr "The EVAL-WHEN situation ~s is illegal."
+			   situation))))
+    (cond ((not *compile-toplevel*)
+	   (c1progn (and execute-flag (rest args))))
+	  (load-flag
+	   (let ((*compile-time-too* compile-flag))
+	     (c1progn (rest args))))
 	  (compile-flag
-	   (cmp-eval (cons 'PROGN (cdr args)))
-	   (make-c1form* 'PROGN :args NIL)))))
+	   (cmp-eval (cons 'PROGN (rest args)))
+	   (c1progn 'NIL))
+	  (t
+	   (c1progn 'NIL)))))
 
-(defun t1compiler-let (args &aux (symbols nil) (values nil))
-  (check-args-number 'COMPILER-LET args 1)
-  (dolist (spec (car args))
-    (cond ((consp spec)
-           (cmpck (not (and (symbolp (car spec))
-                            (or (endp (cdr spec))
-                                (endp (cddr spec)))))
-                  "The variable binding ~s is illegal." spec)
-           (push (car spec) symbols)
-           (push (if (endp (cdr spec)) nil (eval (second spec))) values))
-          ((symbolp spec)
-           (push spec symbols)
-           (push nil values))
-          (t (cmperr "The variable binding ~s is illegal." spec))))
-  (setq symbols (nreverse symbols))
-  (setq values (nreverse values))
-  (setq args (progv symbols values (t1progn (cdr args))))
-  )
-
-(defun t1progn (args)
-  (make-c1form* 'PROGN :args (mapcar #'t1expr* args)))
+(defun t2compiler-let (symbols values body)
+  (progv symbols values (c2expr body)))
 
 (defun t2progn (args)
   (mapcar #'t2expr args))
-
-(defun t3progn (args)
-  (mapcar #'t3expr args))
 
 (defun exported-fname (name)
   (let (cname)
     (if (and (symbolp name) (setf cname (get-sysprop name 'Lfun)))
         (values cname t)
         (values (next-cfun "L~D~A" name) nil))))
-
-(defun t1defun (args)
-  (check-args-number 'DEFUN args 2)
-  (when *compile-time-too* (cmp-eval (cons 'DEFUN args)))
-  (let* ((fname (first args))
-	 (lambda-list-and-body (rest args))
-	 (fun (c1compile-function lambda-list-and-body :name fname :global t))
-	 (no-entry nil)
-	 (doc nil))
-    (multiple-value-bind (decl body doc)
-	(si::process-declarations (rest lambda-list-and-body) t)
-      (cond ((and *allow-c-local-declaration* (assoc 'si::c-local decl))
-	     (setq no-entry t))
-	    #+ecl-min
-	    ((member fname c::*in-all-symbols-functions*)
-	     (setq no-entry t))
-	    ((setq doc (si::expand-set-documentation fname 'function doc))
-	     (t1expr `(progn ,@doc)))))
-    (add-load-time-values)
-    (setq output (new-defun fun no-entry))
-    output))
 
 ;;; Mechanism for sharing code:
 ;;; FIXME! Revise this 'DEFUN stuff.
@@ -276,8 +251,7 @@
 	      (fun-minarg new) (fun-minarg old)
 	      (fun-maxarg new) (fun-maxarg old))
 	(return))))
-  (push new *global-funs*)
-  (make-c1form* 'DEFUN :args new no-entry))
+  (push new *global-funs*))
 
 (defun print-function (x)
   (format t "~%<a FUN: ~A, CLOSURE: ~A, LEVEL: ~A, ENV: ~A>"
@@ -329,22 +303,6 @@
 	   (C1FORM (similar-c1form x y))
 	   (SEQUENCE (and (every #'similar x y)))
 	   (T (equal x y))))))
-
-(defun t2defun (fun no-entry)
-  (declare (ignore sp funarg-vars))
-  ;; If the function is not shared, emit it.
-  (when (fun-lambda fun)
-    (push fun *local-funs*))
-  (unless no-entry
-    (let* ((fname (fun-name fun))
-	   (vv (add-object fname))
-	   (cfun (fun-cfun fun))
-	   (minarg (fun-minarg fun))
-	   (maxarg (fun-maxarg fun))
-	   (narg (if (= minarg maxarg) maxarg nil)))
-      (if narg
-	(wt-nl "cl_def_c_function(" vv ",(void*)" cfun "," narg ");")
-	(wt-nl "cl_def_c_function_va(" vv ",(void*)" cfun ");")))))
 
 (defun wt-function-prolog (&optional sp local-entry)
   (wt " VT" *reservation-cmacro*
@@ -429,15 +387,18 @@
 
 (defun t1ordinary (form)
   (when *compile-time-too* (cmp-eval form))
-  (setq form (c1expr form))
-  (add-load-time-values)
-  (make-c1form* 'ORDINARY :args form))
+  (let ((*compile-toplevel* nil)
+	(*compile-time-too* nil))
+    (setq form (c1expr form))
+    (add-load-time-values)
+    (make-c1form* 'ORDINARY :args form)))
 
 (defun t2ordinary (form)
-  (let* ((*exit* (next-label)) (*unwind-exit* (list *exit*))
+  (let* ((*exit* (next-label))
+	 (*unwind-exit* (list *exit*))
          (*destination* 'TRASH))
-        (c2expr form)
-        (wt-label *exit*)))
+    (c2expr form)
+    (wt-label *exit*)))
 
 (defun add-load-time-values ()
   (when (listp *load-time-values*)
@@ -462,18 +423,6 @@
     (c2expr form)
     (wt-label *exit*)))
 
-(defun t1decl-body (decls body)
-  (if (null decls)
-      (t1progn body)
-      (let* ((*function-declarations* *function-declarations*)
-	     (si:*alien-declarations* si:*alien-declarations*)
-	     (*notinline* *notinline*)
-	     (*safety* *safety*)
-	     (*space* *space*)
-	     (*speed* *speed*)
-	     (dl (c1add-declarations decls)))
-	(make-c1form* 'DECL-BODY :args dl (t1progn body)))))
-
 (defun t2decl-body (decls body)
   (let ((*safety* *safety*)
 	(*space* *space*)
@@ -482,47 +431,12 @@
     (c1add-declarations decls)
     (t2expr body)))
 
-(defun t3decl-body (decls body)
-  (let ((*safety* *safety*)
-        (*space* *space*)
-	(*speed* *speed*)
-        (*notinline* *notinline*))
-    (c1add-declarations decls)
-    (t3expr body)))
-
-(defun t1locally (args)
-  (multiple-value-bind (body ss ts is other-decl)
-      (c1body args t)
-    (c1declare-specials ss)
-    (check-vdecl nil ts is)
-    (t1decl-body other-decl body)))
-
-(defun t1macrolet (args &aux (*funs* *funs*))
-  (check-args-number 'MACROLET args 1)
-  (dolist (def (car args))
-    (cmpck (or (endp def) (not (symbolp (car def))) (endp (cdr def)))
-           "The macro definition ~s is illegal." def)
-    (push (list (car def)
-		'MACRO
-		(si::make-lambda (car def)
-				 (cdr (sys::expand-defmacro (car def) (second def) (cddr def)))))
-          *funs*))
-  (t1locally (cdr args)))
-
-(defun t1symbol-macrolet (args &aux (*vars* *vars*))
-  (check-args-number 'SYMBOL-MACROLET args 1)
-  (dolist (def (car args))
-    (cmpck (or (endp def) (not (symbolp (car def))) (endp (cdr def)))
-           "The symbol-macro definition ~s is illegal." def)
-    (push def *vars*))
-  (t1locally (cdr args)))
-
-(defun t1clines (args)
+(defmacro ffi:clines (&rest args)
   (dolist (s args)
-    (cmpck (not (stringp s)) "The argument to CLINES, ~s, is not a string." s))
-  (make-c1form* 'CLINES :args args))
-
-(defun t3clines (ss) (dolist (s ss) (wt-nl1 s)))
+    (unless (stringp s)
+      (error "The argument to CLINES, ~s, is not a string." s)))
+  `(eval-when (:compile-toplevel)
+     (setf *clines-string-list* (nconc *clines-string-list* (copy-list ',args)))))
 
 (defun parse-cvspecs (x &aux (cvspecs nil))
   (dolist (cvs x (nreverse cvspecs))
@@ -650,31 +564,51 @@
   )
 
 ;;; ----------------------------------------------------------------------
-;;; Optimizer for FSET. Should remove the need for a special handling of
-;;; DEFUN as a toplevel form.
+;;; Optimizer for FSET. Removes the need for a special handling of DEFUN as a
+;;; toplevel form and also allows optimizing calls to DEFUN or DEFMACRO which
+;;; are not toplevel, but which create no closures.
+;;;
+;;; The idea is as follows: when the function or macro to be defined is not a
+;;; closure, we can use the auxiliary C functions c_def_c_*() instead of
+;;; creating a closure and invoking si_fset(). However until the C2 phase of
+;;; the compiler we do not know whether a function is a closure, hence the need
+;;; for a c2fset.
 ;;;
 (defun c1fset (args)
-  ;; When the function or macro to be defined is not a closure, we can use the
-  ;; auxiliary C functions c_def_c_*() instead of creating a closure and
-  ;; invoking si_fset(). However until the C2 phase of the compiler we do not
-  ;; know whether a function is a closure, hence the need for a c2fset.
   (destructuring-bind (fname def &optional (macro nil) (pprint nil))
       args
-    (let* ((args (mapcar #'c1expr args))
-	   (fun (second args)))
-      (if (and (eq (c1form-name fun) 'FUNCTION)
-	       (not (eq (c1form-arg 0 fun) 'GLOBAL))
-	       (typep macro 'boolean)
-	       (typep pprint '(or integer null)))
-	  (make-c1form* 'SI:FSET :args
-			(c1form-arg 2 fun) ;; Function object
-			(c1expr fname)
-			macro
-			pprint
-			args) ;; The c1form, when we do not optimize
-	  (c1call-global 'SI:FSET (list fname def macro pprint))))))
+    (let* ((fun-form (c1expr def)))
+      (if (and (eq (c1form-name fun-form) 'FUNCTION)
+	       (not (eq (c1form-arg 0 fun-form) 'GLOBAL)))
+	  (let ((fun-object (c1form-arg 2 fun-form)))
+	    (when (fun-no-entry fun-object)
+	      (when macro
+		(cmperr "Declaration C-LOCAL used in macro ~a" (fun-name fun)))
+	      (return-from c1fset
+		(make-c1form* 'SI:FSET :args fun-object nil nil nil nil)))
+	    (when (and (typep macro 'boolean)
+		       (typep pprint '(or integer null)))
+	      (return-from c1fset
+		(make-c1form* 'SI:FSET :args
+			      fun-object ;; Function object
+			      (c1expr fname)
+			      macro
+			      pprint
+			      ;; The c1form, when we do not optimize
+			      (list (c1expr fname)
+				    fun-form
+				    (c1expr macro)
+				    (c1expr pprint))))))))
+    (c1call-global 'SI:FSET (list fname def macro pprint))))
 
 (defun c2fset (fun fname macro pprint c1forms)
+  (when (fun-no-entry fun)
+    (wt-nl "(void)0; /* No entry created for "
+	   (format nil "~A" (fun-name fun))
+	   " */")
+    ;; FIXME! Look at c2function!
+    (new-local fun)
+    (return-from c2fset))
   (unless (and (not (fun-closure fun))
 	       (eq *destination* 'TRASH))
     (return-from c2fset
@@ -701,28 +635,20 @@
 
 ;;; Pass 1 top-levels.
 
-(put-sysprop 'COMPILER-LET 'T1 #'t1compiler-let)
-(put-sysprop 'EVAL-WHEN 'T1 #'t1eval-when)
-(put-sysprop 'PROGN 'T1 #'t1progn)
-(put-sysprop 'DEFUN 'T1 #'t1defun)
-(put-sysprop 'MACROLET 'T1 #'t1macrolet)
-(put-sysprop 'LOCALLY 'T1 #'t1locally)
-(put-sysprop 'SYMBOL-MACROLET 'T1 #'t1symbol-macrolet)
-(put-sysprop 'CLINES 'T1 't1clines)
+(put-sysprop 'COMPILER-LET 'T1 #'c1compiler-let)
+(put-sysprop 'EVAL-WHEN 'T1 #'c1eval-when)
+(put-sysprop 'PROGN 'T1 #'c1progn)
+(put-sysprop 'MACROLET 'T1 #'c1macrolet)
+(put-sysprop 'LOCALLY 'T1 #'c1locally)
+(put-sysprop 'SYMBOL-MACROLET 'T1 #'c1symbol-macrolet)
 (put-sysprop 'LOAD-TIME-VALUE 'C1 'c1load-time-value)
 (put-sysprop 'SI:FSET 'C1 'c1fset)
 
 ;;; Pass 2 initializers.
 
+(put-sysprop 'COMPILER-LET 'T2 #'t2compiler-let)
 (put-sysprop 'DECL-BODY 't2 #'t2decl-body)
 (put-sysprop 'PROGN 'T2 #'t2progn)
-(put-sysprop 'DEFUN 'T2 #'t2defun)
 (put-sysprop 'ORDINARY 'T2 #'t2ordinary)
 (put-sysprop 'LOAD-TIME-VALUE 'T2 't2load-time-value)
 (put-sysprop 'SI:FSET 'C2 'c2fset)
-
-;;; Pass 2 C function generators.
-
-(put-sysprop 'DECL-BODY 't3 #'t3decl-body)
-(put-sysprop 'PROGN 'T3 #'t3progn)
-(put-sysprop 'CLINES 'T3 't3clines)

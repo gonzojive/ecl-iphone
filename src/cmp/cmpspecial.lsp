@@ -17,15 +17,6 @@
   (check-args-number 'QUOTE args 1 1)
   (c1constant-value (car args) t))
 
-(defun c1eval-when (args)
-  (check-args-number 'EVAL-WHEN args 1)
-  (dolist (situation (car args) (c1nil))
-    (case situation
-      ((EVAL :EXECUTE) (return-from c1eval-when (c1progn (cdr args))))
-      ((LOAD COMPILE :LOAD-TOPLEVEL :COMPILE-TOPLEVEL))
-      (otherwise
-       (cmperr "The situation ~s is illegal." situation)))))
-
 (defun c1declare (args)
   (cmperr "The declaration ~s was found in a bad place." (cons 'DECLARE args)))
 
@@ -82,7 +73,7 @@
                   "The lambda expression ~s is illegal." fun)
            (let* ((name (and (eq (first fun) 'EXT::LAMBDA-BLOCK)
 			    (first (setf fun (rest fun)))))
-		  (fun (c1compile-function (rest fun) :name name :global nil))
+		  (fun (c1compile-function (rest fun) :name name))
 		  (lambda-form (fun-lambda fun)))
 	     (make-c1form 'FUNCTION lambda-form 'CLOSURE lambda-form fun)))
 	  (t (cmperr "The function ~s is illegal." fun)))))

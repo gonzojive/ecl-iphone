@@ -1,21 +1,6 @@
 GOODIES:
 ========
 
-* In local functions, remove unused arguments.
-
-* It should be possible, in local functions that do not reference variables
-  from the enclosing code, and do not call any other functions that do it,
-  to remove the "lex*" arguments.
-
-* Inline local functions which are only referenced once.
-
-* Optimize out (multiple-value-call ... (values ...)).
-
-* Implement memory collection based on mmap()
-
-* Improve the garbage collector using kernel information about dirty
-  pages.
-
 * Improve fixnum_times.
 
 * expand parse_namestring() to accept scaped strings, spaces, etc.
@@ -29,9 +14,30 @@ GOODIES:
   them in the printer, so that both PRINT, PRINC, etc and FORMAT produce
   exactly the same representation of floating point numbers.
 
-* Better integration between core streams and CLOS streams.
-
 * Implemment type checking in structure slot setters.
+
+COMPILER:
+=========
+
+! Use conditions to signal warnings and errors.
+
+* In local functions, remove unused arguments.
+
+* It should be possible, in local functions that do not reference variables
+  from the enclosing code, and do not call any other functions that do it,
+  to remove the "lex*" arguments.
+
+* Optimize out (multiple-value-call ... (values ...)).
+
+* Implement memory collection based on mmap()
+
+* Improve the garbage collector using kernel information about dirty
+  pages.
+
+* In the list of objects *.data, remove those which are not referenced.
+  This requires major changes to the way locations are produced since
+  right now they are assigned in the C1 phase, while some objects are
+  discarded late in the C2 phase.
 
 THREADS:
 ========

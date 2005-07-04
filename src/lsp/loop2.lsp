@@ -468,7 +468,6 @@ code to be loaded.
 
 
 (defmacro loop-store-table-data (symbol table datum)
-  (declare (si::c-local))
   `(setf (gethash (symbol-name ,symbol) ,table) ,datum))
 
 
@@ -796,7 +795,6 @@ a LET-like macro, and a SETQ-like macro, which perform LOOP-style destructuring.
 		     after-loop
 		     epilogue
 		     &aux rbefore rafter flagvar)
-  (declare (si::c-local))
   (unless (= (length before-loop) (length after-loop))
     (error "LOOP-BODY called with non-synched before- and after-loop lists."))
   ;;All our work is done from these copies, working backwards from the end:

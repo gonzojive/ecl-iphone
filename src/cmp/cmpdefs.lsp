@@ -149,6 +149,9 @@
   (env 0)     		;;; Size of env of closure.
   (global nil)		;;; Global lisp function.
   (exported nil)	;;; Its C name can be seen outside the module.
+  (no-entry nil)	;;; NIL if declared as C-LOCAL. Then we create no
+			;;; function object and the C function is called
+			;;; directly
   closure		;;; During Pass2, T if env is used inside the function
   var			;;; the variable holding the funob
   description		;;; Text for the object, in case NAME == NIL.
@@ -377,6 +380,14 @@ The default value is NIL.")
 ;;;
 (defvar *volatile*)
 (defvar *setjmps* 0)
+
+(defvar *compile-toplevel* T
+  "Holds NIL or T depending on whether we are compiling a toplevel form.")
+
+(defvar *clines-string-list* '()
+  "List of strings containing C/C++ statements which are directly inserted
+in the translated C/C++ file. Notice that it is unspecified where these
+lines are inserted, but the order is preserved")
 
 (defvar *compile-time-too* nil)
 (defvar *not-compile-time* nil)
