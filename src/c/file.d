@@ -2755,6 +2755,9 @@ cl_interactive_stream_p(cl_object strm)
 	case smm_synonym:
 		strm = symbol_value(strm->stream.object0);
 		goto BEGIN;
+	case smm_two_way:
+		strm = strm->stream.object0;
+		goto BEGIN;
 	case smm_input:
 	case smm_io:
 #ifdef HAVE_ISATTY
