@@ -28,6 +28,9 @@
 /* Userland threads?							*/
 #undef ECL_THREADS
 
+/* __thread thread-local variables?                                     */
+#undef WITH___THREAD
+
 /* Network streams							*/
 #undef TCP
 #if defined(TCP) && (defined(_MSC_VER) || defined(mingw32))

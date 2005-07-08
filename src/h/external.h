@@ -104,8 +104,13 @@ struct cl_env_struct {
 #define __attribute__(x)
 #endif
 #if defined(ECL_THREADS)
+# ifdef WITH___THREAD
+extern __thread struct cl_env_struct * cl_env_p;
+#define cl_env (*cl_env_p)
+# else
 #define cl_env (*ecl_process_env())
 extern struct cl_env_struct *ecl_process_env(void) __attribute__((const));
+# endif
 #else
 #if defined(mingw32) || defined(_MSC_VER) || defined(cygwin)
 __declspec(dllimport)

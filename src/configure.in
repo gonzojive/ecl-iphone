@@ -72,6 +72,12 @@ AC_ARG_ENABLE(local-gmp,
     [--with-local-gmp is deprecated, use --with-system-gmp instead!])
    with_system_gmp="${enableval}"])
 
+AC_ARG_WITH(__thread,
+  AS_HELP_STRING( [--with-__thread],
+                  [Enable __thread thread-local variables]
+                  [(supported by NPTL-aware glibc and maybe Windows)] ),
+  [], [])
+
 AC_ARG_ENABLE(opcode8,
   AS_HELP_STRING( [--enable-opcode8],
                   [interpreter uses 8-bit codes]
@@ -198,6 +204,9 @@ if test "${enable_threads}" = "yes" ; then
     LIBS="${THREAD_LIBS} ${LIBS}"
     CFLAGS="${CFLAGS} ${THREAD_CFLAGS}"
     AC_DEFINE( [ECL_THREADS], [1], [Userland threads?])
+    if test "${with___thread}" = "yes" ; then
+      AC_DEFINE( [WITH___THREAD], [1], [__thread thread-local variables?] )
+    fi
   fi
 else
   boehm_configure_flags="${boehm_configure_flags} --disable-threads"

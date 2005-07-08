@@ -29,6 +29,8 @@
 bool ecl_booted = 0;
 #if !defined(ECL_THREADS)
 struct cl_env_struct cl_env;
+#elif defined(WITH___THREAD)
+__thread struct cl_env_struct * cl_env_p;
 #endif
 struct cl_core_struct cl_core;
 const char *ecl_self;

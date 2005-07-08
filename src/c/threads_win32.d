@@ -26,17 +26,21 @@
 #define CreateThread GC_CreateThread
 #endif
 
+#ifndef WITH___THREAD
 DWORD cl_env_key;
+#endif
 
 static DWORD main_thread;
 
 extern void ecl_init_env(struct cl_env_struct *env);
 
+#ifndef WITH___THREAD
 struct cl_env_struct *
 ecl_process_env(void)
 {
 	return TlsGetValue(cl_env_key);
 }
+#endif
 
 cl_object
 mp_current_process(void)
@@ -78,7 +82,11 @@ static DWORD WINAPI
 thread_entry_point(cl_object process)
 {
 	/* 1) Setup the environment for the execution of the thread */
+#ifdef WITH___THREAD
+	cl_env_p = process->process.env
+#else
 	TlsSetValue(cl_env_key, (void *)process->process.env);
+#endif
 	ecl_init_env(process->process.env);
         init_big_registers();
 
@@ -95,7 +103,7 @@ thread_entry_point(cl_object process)
 	process->process.active = 0;
 
 	/* 3) If everything went right, we should be exiting the thread
-         *    through this point.
+	 *    through this point.
 	 */
 	thread_cleanup(TlsGetValue(cl_env_key));
 	return 1;
@@ -318,8 +326,12 @@ init_threads()
 	process->process.thread = GetCurrentThread();
 	process->process.env = env = (struct cl_env_struct*)cl_alloc(sizeof(*env));
 
+#ifdef WITH___THREAD
+	cl_env_p = env
+#else
 	cl_env_key = TlsAlloc();
 	TlsSetValue(cl_env_key, env);
+#endif
 	env->own_process = process;
 
 	cl_core.processes = CONS(process, Cnil);

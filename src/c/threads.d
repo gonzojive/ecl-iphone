@@ -24,12 +24,15 @@
 #include "ecl.h"
 #include "internal.h"
 
+#ifndef WITH___THREAD
 static pthread_key_t cl_env_key;
+#endif
 
 static pthread_t main_thread;
 
 extern void ecl_init_env(struct cl_env_struct *env);
 
+#ifndef WITH___THREAD
 struct cl_env_struct *
 ecl_process_env(void)
 {
@@ -39,6 +42,7 @@ ecl_process_env(void)
         FElibc_error("pthread_getspecific() failed.", 0);
         return NULL;
 }
+#endif
 
 cl_object
 mp_current_process(void)
@@ -81,8 +85,12 @@ thread_entry_point(cl_object process)
 {
 	/* 1) Setup the environment for the execution of the thread */
 	pthread_cleanup_push(thread_cleanup, (void *)process->process.env);
+#ifdef WITH___THREAD
+	cl_env_p = process->process.env;
+#else
 	if (pthread_setspecific(cl_env_key, process->process.env))
 		FElibc_error("pthread_setcspecific() failed.", 0);
+#endif
 	ecl_init_env(process->process.env);
         init_big_registers();
 
@@ -309,8 +317,12 @@ init_threads()
 	process->process.thread = pthread_self();
 	process->process.env = env = cl_alloc(sizeof(*env));
 
+#ifdef WITH___THREAD
+        cl_env_p = env;
+#else
 	pthread_key_create(&cl_env_key, NULL);
 	pthread_setspecific(cl_env_key, env);
+#endif
 	env->own_process = process;
 
 	cl_core.processes = CONS(process, Cnil);
