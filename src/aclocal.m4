@@ -29,6 +29,7 @@ dnl Set up a configuration file for the case when we are cross-
 dnl compiling
 dnl
 AC_DEFUN(ECL_CROSS_CONFIG,[
+PUSH_CROSS_FEATURES=''
 if test "x${cross_compiling}" = "xyes"; then
   if test -n "${with_cross_config}" -a -f "${with_cross_config}"; then
     . ${with_cross_config}
@@ -102,7 +103,9 @@ EOF
   (echo '#!/bin/sh'; echo exec ${ECL_MIN_TO_RUN} '$''*') > CROSS-COMPILER
   (echo '#!/bin/sh'; echo exec ${DPP_TO_RUN} '$''*') > CROSS-DPP
   chmod +x CROSS-COMPILER CROSS-DPP
+  PUSH_CROSS_FEATURES='(setq *features* (cons :cross *features*))'
 fi
+AC_SUBST(PUSH_CROSS_FEATURES)
 ])
 
 dnl --------------------------------------------------------------
