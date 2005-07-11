@@ -403,11 +403,11 @@ init_stacks(int *new_cs_org)
 	cl_index size;
 
 	cl_env.frs_size = size = FRSSIZE + 2*FRSGETA;
-	cl_env.frs_org = (ecl_frame_ptr)cl_alloc(size * sizeof(*cl_env.frs_org));
+	cl_env.frs_org = (ecl_frame_ptr)cl_alloc_atomic(size * sizeof(*cl_env.frs_org));
 	cl_env.frs_top = cl_env.frs_org-1;
 	cl_env.frs_limit = &cl_env.frs_org[size - 2*FRSGETA];
 	cl_env.bds_size = size = BDSSIZE + 2*BDSGETA;
-	cl_env.bds_org = (bds_ptr)cl_alloc(size * sizeof(*cl_env.bds_org));
+	cl_env.bds_org = (bds_ptr)cl_alloc_atomic(size * sizeof(*cl_env.bds_org));
 	cl_env.bds_top = cl_env.bds_org-1;
 	cl_env.bds_limit = &cl_env.bds_org[size - 2*BDSGETA];
 

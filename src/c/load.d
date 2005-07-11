@@ -76,7 +76,10 @@ ecl_library_open(cl_object filename) {
 	if (libraries->vector.fillp == libraries->vector.dim) {
 		cl_object nvector = cl_alloc_object(t_vector);
 		nvector->vector = libraries->vector;
-		libraries->vector.dim *= 2;
+		if (libraries->vector.dim == 0)
+		    libraries->vector.dim = 16;
+		else
+		    libraries->vector.dim *= 2;
 		libraries->vector.self.t =
 			cl_alloc_atomic(libraries->vector.dim *
 					sizeof(cl_object));

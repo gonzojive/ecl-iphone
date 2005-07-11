@@ -37,7 +37,7 @@ cl_stack_set_size(cl_index new_size)
 
 	start_critical_section();
 
-	new_stack = (cl_object *)cl_alloc(new_size * sizeof(cl_object));
+	new_stack = (cl_object *)cl_alloc_atomic(new_size * sizeof(cl_object));
 	memcpy(new_stack, cl_env.stack, cl_env.stack_size * sizeof(cl_object));
 
 #ifdef BOEHM_GBC

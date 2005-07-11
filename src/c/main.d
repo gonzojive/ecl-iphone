@@ -285,7 +285,7 @@ cl_boot(int argc, char **argv)
 	cl_core.gentemp_prefix = make_constant_string("T");
 	cl_core.gentemp_counter = MAKE_FIXNUM(0);
 
-	cl_core.libraries = si_make_vector(@'t', MAKE_FIXNUM(128),
+	cl_core.libraries = si_make_vector(@'t', MAKE_FIXNUM(0),
 					   @'nil', MAKE_FIXNUM(0),
 					   @'nil', @'nil');
 
