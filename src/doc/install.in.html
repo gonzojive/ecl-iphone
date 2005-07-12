@@ -3,7 +3,7 @@
 <p>You should read the <a href="#configure">Autoconf based configuration</a>
 if you use ECL on a unix-like platform, such as
 <ul>
-<li>Linux, NetBSD, FreeBSD, Solaris.
+<li>Linux, NetBSD, FreeBSD, Sola.
 <li>OSX (See <a href="#osx">below</a>)
 <li>Cygwin or Mingw32 on Windows.
 </ul>
@@ -32,7 +32,13 @@ and finish the compilation.
 	./configure
 </pre>
 The previous step creates a directory with the name <b>build</b>, and
-stores a bunch of makefiles in it.
+stores a bunch of makefiles in it. <b>Note:</b> If you are building
+under Solaris, you should rather use
+<pre>
+	./configure --enable-slow-conf
+</pre>
+because otherwise ECL will fail to detect the 64-bit capabilities of
+the operating system.
 
 <li>Use GNU make to begin building ECL
 <pre>

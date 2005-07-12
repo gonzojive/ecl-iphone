@@ -25,43 +25,14 @@ echo Switching to directory "\`${buildir}'" to continue configuration.
 # we let it configure itself and later on retrieve the appropiate flags
 #
 if ( echo $* | grep guess-host-cflags ); then
-  #
-  # In some architectures/OS, a flag is required to select the ABI. GMP
-  # guesses these flags, and stores them in CFLAGS and GMP_LDFLAGS.
-  #
-  echo ====
-  echo ==== Using the configuration process of GMP to retrieve the best
-  echo ==== flags and a precise host type.
-  echo ====
-  cd ${buildir}
-  rm -rf tmp; mkdir tmp; cd tmp;
-  ${srcdir}/gmp/configure --srcdir=${srcdir}/gmp --prefix=${builddir}
-  CFLAGS=`grep '^s,@CFLAGS@' config.status| sed 's&s,@CFLAGS@,\(.*\),;t t&\1&'`
-  GMP_LDFLAGS=`grep '^s,@GMP_LDFLAGS@' config.status| sed 's&s,@GMP_LDFLAGS@,\(.*\),;t t&\1&'`;
-  # Notice that GMP_LDFLAGS is designed to be passed to libtool, and therefore
-  # some options could be prefixed by -Wc, which means "flag for the compiler".
-  LDFLAGS=`grep '^s,@LDFLAGS@' config.status| sed 's&s,@LDFLAGS@,\(.*\),;t t&\1&'`;
-  LDFLAGS=`echo ${LDFLAGS} ${GMP_LDFLAGS} | sed 's%-Wc,%%'`
-  #host=`grep '^s,@host@' config.status | sed 's&s,@host@,\(.*\),;t t&\1&'`
-  echo Guessed values:
-  echo CFLAGS:  ${CFLAGS}
-  echo LDFLAGS: ${LDFLAGS}
-  #echo host:    ${host}
-  cd .. && rm -rf tmp
-  echo ====
-  echo ==== Configuring ECL
-  echo ====
-  # GMP knows more chiptset names than usual FSF configuration tools. We
-  # therefore need to use its config* files when configuring either ECL
-  # or the Boehm-Weiser garbage collector.
-  #for i in config.sub configfsf.sub config.guess configfsf.guess; do
-  #    cp ${srcdir}/gmp/$i ${srcdir}/
-  #    cp ${srcdir}/gmp/$i ${srcdir}/gc/
-  #done;
-  LDFLAGS="${LDFLAGS}" CFLAGS="${CFLAGS}" \
-  ${srcdir}/configure --srcdir=${srcdir} $*
-else
-  cd ${buildir}
-  ${srcdir}/configure --srcdir=${srcdir} $*
+  echo ****
+  echo **** The flag --enable-guest-host-cflags has been removed. Instead try
+  echo ****   $* --enable-slow-conf
+  echo ****
+  exit 1
 fi
+
+cd ${buildir}
+${srcdir}/configure --srcdir=${srcdir} $*
+
 echo Configuration complete. To build ECL, issue 'make' in this directory.

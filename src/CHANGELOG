@@ -13,6 +13,9 @@ ECL 0.9g
    this into account but this intrinsic bug of Mingw might influence ECL's
    behavior in some other unexpected ways.
 
+ - The configuration in Solaris should now proceed with the flag
+   --enable-slow-conf.
+
 * Foreign function interface (FFI):
 
  - Added nickname UFFI for FFI package; functions ALLOCATE-FOREIGN-STRING,

@@ -464,3 +464,30 @@ AC_SUBST(INSTALL_INFO)
 AC_PATH_PROG(INSTALL_INFO, install-info, [/sbin/install-info],
 [$PATH:/usr/bin:/usr/sbin:/usr/etc:/usr/libexec])
 ])
+
+dnl
+dnl ------------------------------------------------------------
+dnl Use the configuration scripts in the GMP library for
+dnl configuring ECL in a compatible way.
+dnl
+AC_DEFUN(ECL_GMP_BASED_CONFIG,[
+AC_MSG_CHECKING([Using the GMP library to guess good compiler/linker flags])
+(rm -rf tmp; \
+ mkdir tmp; \
+ aux=`cd ${srcdir}/gmp; pwd`;
+ cd tmp; \
+ ${aux}/configure --srcdir=${aux} --prefix=${builddir} >/dev/null 2>&1)
+GMP_CFLAGS=`grep '^s,@CFLAGS@' tmp/config.status| sed 's&s,@CFLAGS@,\(.*\),;t t&\1&'`
+GMP_LDFLAGS=`grep '^s,@GMP_LDFLAGS@' tmp/config.status| sed 's&s,@GMP_LDFLAGS@,\(.*\),;t t&\1&'`;
+rm -rf tmp
+# Notice that GMP_LDFLAGS is designed to be passed to libtool, and therefore
+# some options could be prefixed by -Wc, which means "flag for the compiler".
+LDFLAGS=`grep '^s,@LDFLAGS@' config.status| sed 's&s,@LDFLAGS@,\(.*\),;t t&\1&'`;
+LDFLAGS=`echo ${LDFLAGS} ${GMP_LDFLAGS} | sed 's%-Wc,%%'`
+CFLAGS="${CFLAGS} ${GMP_CFLAGS}"
+#host=`grep '^s,@host@' config.status | sed 's&s,@host@,\(.*\),;t t&\1&'`
+AC_MSG_CHECKING([C/C++ compiler flags])
+AC_MSG_RESULT([${CFLAGS}])
+AC_MSG_CHECKING([Linker flags])
+AC_MSG_RESULT([${LDFLAGS}])
+])

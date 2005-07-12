@@ -50,6 +50,12 @@ AC_ARG_ENABLE(local-boehm,
     [--enable-local-boehm is deprecated, use --enable-boehm=system instead!])
    test ${withval} = "no" || enable_boehm="system"])
 
+AC_ARG_ENABLE(slow-config,
+  AS_HELP_STRING( [--enable-slow-config],
+		  [use GMP to guess compiler/linker flags]
+		  [(no|yes, default=NO)]),
+  [], [enable_slow_config=NO] )
+
 AC_ARG_WITH(system-boehm,
   AS_HELP_STRING( [--with-system-boehm], [Deprecated! See --enable-boehm] ),
   [AC_MSG_WARN(
@@ -159,6 +165,12 @@ AC_PROG_RANLIB        # sets variable RANLIB
 AC_PROG_INSTALL       # sets variables INSTALL, INSTALL_DATA, INSTALL_PROGRAM
 AC_PROG_LN_S          # sets variable LN_S
 AC_PROG_MAKE_SET      # set $(MAKE) if needed
+
+dnl -----------------------------------------------------------------------
+dnl GMP-based search of C/C++ compiler and linker flags
+if test "${enable_slow_config}" = "yes"; then
+ECL_GMP_BASED_CONFIG
+fi
 
 dnl -----------------------------------------------------------------------
 dnl Checks which do not come with autoconf (must be after AC_PROG_CC)
