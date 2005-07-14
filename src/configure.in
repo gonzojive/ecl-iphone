@@ -428,7 +428,7 @@ if test ${enable_boehm} = "included"; then
   AC_MSG_NOTICE([Configuring included Boehm GC library:])
   test -d gc && rm -rf gc
   if mkdir gc; then
-     (destdir=`${PWDCMD}`; cd gc; }
+     (destdir=`${PWDCMD}`; cd gc; \
       CC="${CC} ${PICFLAG}" CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}" \
         $srcdir/gc/configure --disable-shared --prefix=${destdir} \
 	--includedir=${destdir}/h --libdir=${destdir} --build=${build_alias} \
