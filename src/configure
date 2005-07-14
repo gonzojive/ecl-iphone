@@ -1430,7 +1430,7 @@ if test "${enable_slow_config+set}" = set; then
   enableval="$enable_slow_config"
 
 else
-  enable_slow_config=NO
+  enable_slow_config=no
 fi;
 
 

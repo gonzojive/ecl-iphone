@@ -54,7 +54,7 @@ AC_ARG_ENABLE(slow-config,
   AS_HELP_STRING( [--enable-slow-config],
 		  [use GMP to guess compiler/linker flags]
 		  [(no|yes, default=NO)]),
-  [], [enable_slow_config=NO] )
+  [], [enable_slow_config=no] )
 
 AC_ARG_WITH(system-boehm,
   AS_HELP_STRING( [--with-system-boehm], [Deprecated! See --enable-boehm] ),
@@ -428,7 +428,8 @@ if test ${enable_boehm} = "included"; then
   AC_MSG_NOTICE([Configuring included Boehm GC library:])
   test -d gc && rm -rf gc
   if mkdir gc; then
-     (destdir=`${PWDCMD}`; cd gc; CC="${CC} ${PICFLAG}" \
+     (destdir=`${PWDCMD}`; cd gc; }
+      CC="${CC} ${PICFLAG}" CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}" \
         $srcdir/gc/configure --disable-shared --prefix=${destdir} \
 	--includedir=${destdir}/h --libdir=${destdir} --build=${build_alias} \
 	--host=${host_alias} ${boehm_configure_flags})
