@@ -105,8 +105,10 @@ install: BUILD-STAMP install-base
 	cd doc; $(MAKE) prefix=$(prefix) DESTDIR=$(DESTDIR) install
 install-base:
 	$(mkinstalldirs) $(DESTDIR)$(bindir) $(DESTDIR)$(libdir)/h
+	# Here we would use the option -s but the install program in sourceforge-solaris
+	# is broken.
 	for i in $(TARGETS); do \
-	  $(INSTALL_PROGRAM) -s $$i $(DESTDIR)$(bindir); \
+	  $(INSTALL_PROGRAM) $$i $(DESTDIR)$(bindir); \
 	done;
 	$(INSTALL_SCRIPT) ecl-config $(DESTDIR)$(bindir)
 	for i in BUILD-STAMP help.doc ; do \
