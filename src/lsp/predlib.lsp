@@ -67,6 +67,8 @@ by (documentation 'NAME 'type)."
 MOST-POSITIVE-FIXNUM (= 2^29 - 1 in ECL) inclusive.  Other integers are
 bignums."
   `(INTEGER #.most-negative-fixnum #.most-positive-fixnum))
+(deftype bignum ()
+  '(OR (INTEGER * (#.most-negative-fixnum)) (INTEGER (#.most-positive-fixnum) *)))
 
 (deftype ext::byte8 () `(INTEGER 0 255))
 (deftype ext::integer8 () `(INTEGER -128 127))
@@ -92,8 +94,6 @@ bignums."
 (deftype mod (n)
   `(INTEGER 0 ,(1- n)))
 
-(deftype compiled-function () 'FUNCTION)
-
 (deftype signed-byte (&optional s)
   "As a type specifier, (SIGNED-BYTE n) specifies those integers that can be
 represented with N bits in 2's complement representation."
@@ -108,6 +108,7 @@ can be represented with N bits."
       '(INTEGER 0 *)
       `(INTEGER 0 ,(1- (expt 2 s)))))
 
+(deftype null () '(MEMBER NIL))
 (deftype sequence () '(OR CONS NULL (ARRAY * (*))))
 (deftype list ()
   "As a type specifier, LIST is used to specify the type consisting of NIL and
@@ -572,6 +573,7 @@ if not possible."
 (defun update-types (type-mask new-tag)
   (maybe-save-types)
   (dolist (i *elementary-types*)
+    (declare (cons i))
     (unless (zerop (logand (cdr i) type-mask))
       (setf (cdr i) (logior new-tag (cdr i))))))
 
@@ -594,6 +596,7 @@ if not possible."
 	 (disjoint-tag 0)
 	 (supertype-tag (if minimize-super -1 0)))
     (dolist (i *elementary-types*)
+      (declare (cons i))
       (let ((other-type (car i))
 	    (other-tag (cdr i)))
 	(when (funcall in-our-family-p other-type)
@@ -625,7 +628,7 @@ if not possible."
 	  (find-type-bounds type in-our-family-p type-<= nil)
 	(let ((tag (logior (new-type-tag) tag-sub)))
 	  (update-types (logandc2 tag-super tag-sub) tag)
-	  (push (cons type tag) *elementary-types*)
+	  (push-type type tag)
 	  tag))))
 
 ;;----------------------------------------------------------------------
@@ -653,6 +656,14 @@ if not possible."
 		(setf (cdr i) (logior tag (cdr i))))))
 	  tag))))
 
+(defun push-type (type tag)
+  (declare (si::c-local))
+  (dolist (i *member-types*)
+    (declare (cons i))
+    (when (typep (car i) type)
+      (setq tag (logior tag (cdr i)))))
+  (push (cons type tag) *elementary-types*))
+
 ;;----------------------------------------------------------------------
 ;; SATISFIES types. Here we should signal some error which is caught
 ;; somewhere up, to denote failure of the decision procedure.
@@ -673,7 +684,8 @@ if not possible."
       (let* ((name (class-name class)))
 	(and name
 	     (eq class (find-class name 'nil))
-	     (if (eq name 'T) -1 (find-registered-tag name))))
+	     (or (find-registered-tag name)
+		 (find-built-in-tag name))))
       (register-type class
 		     #'(lambda (c) (or (si::instancep c) (symbolp c)))
 		     #'(lambda (c1 c2)
@@ -715,10 +727,9 @@ if not possible."
   (declare (si::c-local))
   (if (eql type '*)
       '*
-      (let* ((tag (or (canonical-type type) -1)))
-	(dolist (other-type +upgraded-array-element-types+ 'T)
-	  (when (zerop (logand tag (lognot (canonical-type other-type))))
-	    (return other-type))))))
+      (dolist (other-type +upgraded-array-element-types+ 'T)
+	(when (fast-subtypep type other-type)
+	  (return other-type)))))
 
 ;;
 ;; This canonicalizes the array type into the form
@@ -798,7 +809,7 @@ if not possible."
 	(let ((tag (new-type-tag)))
 	  (update-types (logandc2 tag-super tag-sub) tag)
 	  (setq tag (logior tag tag-sub))
-	  (push (cons type tag) *elementary-types*)
+	  (push-type type tag)
 	  tag))))
 
 (defun register-interval-type (interval)
@@ -827,7 +838,7 @@ if not possible."
 			   (ceiling low)))))
 	 (tag (logandc2 tag-low tag-high)))
     (unless (eq high '*)
-      (push (cons interval tag) *elementary-types*))
+      (push-type interval tag))
     tag))
 
 ;; All comparisons between intervals operations may be defined in terms of
@@ -870,9 +881,17 @@ if not possible."
 ;;
 (defun canonical-complex-type (real-type)
   (declare (si::c-local))
-  (canonical-type `(COMPLEX ,(if (eq real-type '*)
-				 'REAL
-				 (upgraded-complex-part-type (or real-type 'REAL))))))
+  (case real-type
+    ((SHORT-FLOAT LONG-FLOAT INTEGER RATIO)
+     (let ((tag (new-type-tag)))
+       (push-type `(COMPLEX ,real-type) tag)
+       tag))
+    ((RATIONAL) (canonical-type '(OR (COMPLEX INTEGER) (COMPLEX RATIO))))
+    ((FLOAT) (canonical-type '(OR (COMPLEX SHORT-FLOAT) (COMPLEX LONG-FLOAT))))
+    ((* NIL REAL) (canonical-type
+		   '(OR (COMPLEX INTEGER) (COMPLEX RATIO)
+		        (COMPLEX SHORT-FLOAT) (COMPLEX LONG-FLOAT))))
+    (otherwise (canonical-complex-type (upgraded-complex-part-type real-type)))))
 
 ;;----------------------------------------------------------------------
 ;; CONS types. Only (CONS T T) and variants, as well as (CONS NIL *), etc
@@ -889,6 +908,136 @@ if not possible."
 	   (throw '+canonical-type-failure+ 'cons)))))
 
 ;;----------------------------------------------------------------------
+;; FIND-BUILT-IN-TAG
+;;
+;; This function computes the tags for all builtin types. We used to
+;; do this computation and save it. However, for most cases it seems
+;; faster if we just repeat it every time we need it, because the list of
+;; *elementary-types* is kept smaller and *highest-type-tag* may be just
+;; a fixnum.
+;;
+;; Note 1: There is some redundancy between this and the built-in
+;; classes definitions. REGISTER-CLASS knows this and calls
+;; FIND-BUILT-IN-TAG, which has priority. This is because some built-in
+;; classes are also interpreted as intervals, arrays, etc.
+;;
+;; Note 2: All built in types listed here have to be symbols.
+;;
+#+ecl-min
+(defconstant +built-in-types+
+	     '((SYMBOL)
+	       (KEYWORD NIL SYMBOL)
+	       (PACKAGE)
+	       (COMPILED-FUNCTION)
+	       (FUNCTION (OR COMPILED-FUNCTION GENERIC-FUNCTION))
+
+	       (INTEGER (INTEGER * *))
+	       (SHORT-FLOAT (SHORT-FLOAT * *))
+	       (LONG-FLOAT (LONG-FLOAT * *))
+	       (RATIO (RATIO * *))
+
+	       (RATIONAL (OR INTEGER RATIO))
+	       (FLOAT (OR SHORT-FLOAT LONG-FLOAT))
+	       (REAL (OR INTEGER SHORT-FLOAT LONG-FLOAT RATIO))
+	       (COMPLEX (COMPLEX REAL))
+
+	       (NUMBER (OR REAL COMPLEX))
+
+	       (CHARACTER)
+	       (BASE-CHAR CHARACTER)
+	       (STANDARD-CHAR NIL BASE-CHAR)
+
+	       (CONS)
+	       (NULL (MEMBER NIL))
+	       (LIST (OR CONS (MEMBER NIL)))
+
+	       (ARRAY (ARRAY * *))
+ 	       (SIMPLE-ARRAY (SIMPLE-ARRAY * *))
+	       (SIMPLE-VECTOR (SIMPLE-ARRAY T (*)))
+	       (SIMPLE-BIT-VECTOR (SIMPLE-ARRAY BIT (*)))
+	       (VECTOR (ARRAY * (*)))
+	       (STRING (ARRAY CHARACTER (*)))
+	       (SIMPLE-STRING (SIMPLE-ARRAY CHARACTER (*)))
+	       (BIT-VECTOR (ARRAY BIT (*)))
+
+	       (SEQUENCE (OR CONS (MEMBER NIL) (ARRAY * (*))))
+
+	       (HASH-TABLE)
+	       (PATHNAME)
+	       (LOGICAL-PATHNAME NIL PATHNAME)
+
+	       (BROADCAST-STREAM)
+	       (CONCATENATED-STREAM)
+	       (ECHO-STREAM)
+	       (FILE-STREAM)
+	       (STRING-STREAM)
+	       (SYNONYM-STREAM)
+ 	       (TWO-WAY-STREAM)
+	       (STREAM (OR BROADCAST-STREAM CONCATENATED-STREAM ECHO-STREAM
+			   FILE-STREAM STRING-STREAM SYNONYM-STREAM TWO-WAY-STREAM))
+
+	       (READTABLE)
+	       #+threads (MP::PROCESS)
+	       #+threads (MP::LOCK)
+	       ))
+
+(defun find-built-in-tag (name)
+  (when (eq name T)
+    (return-from find-built-in-tag -1))
+  (dolist (i '#.+built-in-types+)
+    (declare (cons i))
+    (when (eq name (first i))
+      (let* ((alias (second i))
+	     (strict-supertype (or (third i) 'T))
+	     (tag))
+	(if alias
+	    (setq tag (canonical-type alias))
+	    (let* ((strict-supertype-tag (canonical-type strict-supertype)))
+	      (setq tag (new-type-tag))
+	      (unless (eq strict-supertype 't)
+		(extend-type-tag tag strict-supertype-tag))))
+	(push-type name tag)
+	(return-from find-built-in-tag tag)
+	)))
+  nil)
+
+(defun extend-type-tag (tag minimal-supertype-tag)
+  (declare (si::c-local))
+  (dolist (type *elementary-types*)
+    (let ((other-tag (cdr type)))
+      (when (zerop (logandc2 minimal-supertype-tag other-tag))
+	(setf (cdr type) (logior tag other-tag))))))
+
+;;----------------------------------------------------------------------
+;; CANONICALIZE (removed)
+;;
+;; This function takes a type tag and produces a more or less human
+;; readable representation of the type in terms of elementary types,
+;; intervals, arrays and classes.
+;;
+#+nil
+(defun canonicalize (type)
+  (let ((*highest-type-tag* *highest-type-tag*)
+	(*save-types-database* t)
+	(*member-types* *member-types*)
+	(*elementary-types* *elementary-types*))
+    (let ((tag (canonical-type type))
+	  (out))
+      (setq tag (canonical-type type))
+      ;;(print-types-database *elementary-types*)
+      ;;(print-types-database *member-types*)
+      (dolist (i *member-types*)
+	(unless (zerop (logand (cdr i) tag))
+	  (push (car i) out)))
+      (when out
+	(setq out `((MEMBER ,@out))))
+      (dolist (i *elementary-types*)
+	(unless (zerop (logand (cdr i) tag))
+	  ;;(print (list tag (cdr i) (logand tag (cdr i))))
+	  (push (car i) out)))
+	(values tag `(OR ,@out)))))
+
+;;----------------------------------------------------------------------
 ;; (CANONICAL-TYPE TYPE)
 ;;
 ;; This function registers all types mentioned in the given expression,
@@ -903,12 +1052,13 @@ if not possible."
 	((eq type 'NIL) 0)
         ((symbolp type)
 	 (let ((expander (get-sysprop type 'DEFTYPE-DEFINITION)))
-	   (if expander
-	       (canonical-type (funcall expander))
-	       (let ((class (find-class type nil)))
-		 (if class
-		     (register-class class)
-		     (throw '+canonical-type-failure+ nil))))))
+	   (cond (expander
+		  (canonical-type (funcall expander)))
+		 ((find-built-in-tag type))
+		 (t (let ((class (find-class type nil)))
+		      (if class
+			  (register-class class)
+			  (throw '+canonical-type-failure+ nil)))))))
 	((consp type)
 	 (case (first type)
 	   (AND (apply #'logand (mapcar #'canonical-type (rest type))))
@@ -929,7 +1079,9 @@ if not possible."
 	   ((RATIONAL)
 	    (canonical-type `(OR (INTEGER ,@(rest type))
 			      (RATIO ,@(rest type)))))
-	   (COMPLEX (canonical-complex-type (second type)))
+	   (COMPLEX
+	    (or (find-built-in-tag type)
+		(canonical-complex-type (second type))))
 	   (CONS (apply #'register-cons-type (rest type)))
 	   ((ARRAY SIMPLE-ARRAY) (register-array-type type))
 	   ;;(FUNCTION (register-function-type type))
@@ -953,14 +1105,10 @@ if not possible."
   (catch '+canonical-type-failure+
     (canonical-type type)))
 
-(defun subtypep (t1 t2 &optional env)
+(defun fast-subtypep (t1 t2)
   (when (eq t1 t2)
-    (return-from subtypep (values t t)))
-  (let* ((*highest-type-tag* *highest-type-tag*)
-	 (*save-types-database* t)
-	 (*member-types* *member-types*)
-	 (*elementary-types* *elementary-types*)
-	 (tag1 (safe-canonical-type t1))
+    (return-from fast-subtypep (values t t)))
+  (let* ((tag1 (safe-canonical-type t1))
 	 (tag2 (safe-canonical-type t2)))
     (cond ((and (numberp tag1) (numberp tag2))
 	   (values (zerop (logandc2 (safe-canonical-type t1)
@@ -975,153 +1123,11 @@ if not possible."
 	  (t
 	   (values nil nil)))))
 
-;;----------------------------------------------------------------------
-;; BOOTSTRAP
-;;
-#+ecl-min
-(progn
-  (defun canonicalize (type)
-    (let ((*highest-type-tag* *highest-type-tag*)
-	  (*save-types-database* t)
-	  (*member-types* *member-types*)
-	  (*elementary-types* *elementary-types*))
-      (let ((tag (canonical-type type))
-	    (out))
-	(setq tag (canonical-type type))
-	;(print-types-database *elementary-types*)
-	;(print-types-database *member-types*)
-	(dolist (i *member-types*)
-	(unless (zerop (logand (cdr i) tag))
-	  (push (car i) out)))
-	(when out
-	  (setq out `((MEMBER ,@out))))
-	(dolist (i *elementary-types*)
-	  (unless (zerop (logand (cdr i) tag))
-	    ;(print (list tag (cdr i) (logand tag (cdr i))))
-	    (push (car i) out)))
-	(values tag `(OR ,@out)))))
-
-  (defun print-types-database (types)
-    (format t "~%-------------------------")
-    (dolist (i types)
-      (format t "~%~20A~%~79,' B" (car i) (cdr i))))
-
-  (defun extend-type-tag (tag minimal-supertype-tag)
-    (dolist (type *elementary-types*)
-      (let ((other-tag (cdr type)))
-	(when (zerop (logandc2 minimal-supertype-tag other-tag))
-	  (setf (cdr type) (logior tag other-tag))))))
-
-  ;; FIXME! We should include here some important classes, such as
-  ;; GENERIC-FUNCTION, etc.
-  (dolist (i '((SYMBOL)
-	       (KEYWORD NIL SYMBOL)
-	       (PACKAGE)
-	       (FUNCTION)
-	       (COMPILED-FUNCTION NIL FUNCTION)
-
-	       (INTEGER (INTEGER * *))
-	       (SHORT-FLOAT (SHORT-FLOAT * *))
-	       (LONG-FLOAT (LONG-FLOAT * *))
-	       (RATIO (RATIO * *))
-
-	       (RATIONAL (OR INTEGER RATIO))
-	       (FLOAT (OR SHORT-FLOAT LONG-FLOAT))
-	       (REAL (OR INTEGER SHORT-FLOAT LONG-FLOAT RATIO))
-	       ((COMPLEX SHORT-FLOAT))
-	       ((COMPLEX LONG-FLOAT))
-	       ((COMPLEX INTEGER))
-	       ((COMPLEX RATIO))
-	       ((COMPLEX RATIONAL) (OR (COMPLEX INTEGER) (COMPLEX RATIO)))
-	       ((COMPLEX FLOAT) (OR (COMPLEX SHORT-FLOAT) (COMPLEX LONG-FLOAT)))
-	       ((COMPLEX REAL) (OR (COMPLEX RATIONAL) (COMPLEX FLOAT)))
-	       (COMPLEX (COMPLEX REAL))
-
-	       (NUMBER (OR REAL COMPLEX))
-
-	       (FIXNUM (INTEGER #.MOST-NEGATIVE-FIXNUM #.MOST-POSITIVE-FIXNUM))
-	       (BIGNUM (AND INTEGER (NOT FIXNUM)))
-	       (BIT (INTEGER 0 1))
-	       (EXT::BYTE8 (INTEGER 0 255))
-	       (EXT::INTEGER8 (INTEGER -128 127))
-
-	       (CHARACTER)
-	       (BASE-CHAR CHARACTER)
-	       (STANDARD-CHAR NIL BASE-CHAR)
-
-	       (CONS)
-	       (NULL (MEMBER NIL))
-	       (LIST (OR CONS NULL))
-
-	       ((ARRAY EXT::BYTE8 *))
-	       ((ARRAY EXT::INTEGER8 *))
-	       ((ARRAY FIXNUM *))
-	       ((ARRAY CHARACTER *))
-	       ((ARRAY SHORT-FLOAT *))
-	       ((ARRAY LONG-FLOAT *))
-	       ((ARRAY T *))
-	       (ARRAY (ARRAY * *))
-;; 	       ((SIMPLE-ARRAY EXT::BYTE8 *) NIL (ARRAY EXT::BYTE8 *))
-;; 	       ((SIMPLE-ARRAY EXT::INTEGER8 *) NIL (ARRAY EXT::INTEGER8 *))
-;; 	       ((SIMPLE-ARRAY FIXNUM *) NIL (ARRAY FIXNUM *))
-;; 	       ((SIMPLE-ARRAY CHARACTER *) NIL (ARRAY CHARACTER *))
-;; 	       ((SIMPLE-ARRAY SHORT-FLOAT *) NIL (ARRAY SHORT-FLOAT *))
-;; 	       ((SIMPLE-ARRAY LONG-FLOAT *) NIL (ARRAY LONG-FLOAT *))
-;; 	       ((SIMPLE-ARRAY T *) NIL (ARRAY T *))
- 	       (SIMPLE-ARRAY (SIMPLE-ARRAY * *))
-	       (SIMPLE-VECTOR (SIMPLE-ARRAY T (*)))
-	       (SIMPLE-BIT-VECTOR (SIMPLE-ARRAY BIT (*)))
-	       (VECTOR (ARRAY * (*)))
-	       ((VECTOR BIT) (ARRAY BIT (*)))
-	       ((VECTOR BASE-CHAR) (ARRAY BASE-CHAR (*)))
-	       ((VECTOR EXT::BYTE8) (ARRAY EXT::BYTE8 (*)))
-	       ((VECTOR EXT::INTEGER8) (ARRAY EXT::INTEGER8 (*)))
-	       ((VECTOR EXT::CL-FIXNUM) (ARRAY EXT::CL-FIXNUM (*)))
-	       ((VECTOR EXT::CL-INDEX) (ARRAY EXT::CL-INDEX (*)))
-	       ((VECTOR SHORT-FLOAT) (ARRAY SHORT-FLOAT (*)))
-	       ((VECTOR LONG-FLOAT) (ARRAY LONG-FLOAT (*)))
-	       ((VECTOR T) (ARRAY T (*)))
-	       (STRING (ARRAY CHARACTER (*)))
-	       (SIMPLE-STRING (SIMPLE-ARRAY CHARACTER (*)))
-	       (BIT-VECTOR (VECTOR BIT))
-
-	       (SEQUENCE (OR LIST VECTOR))
-
-	       (HASH-TABLE)
-	       (PATHNAME)
-	       (LOGICAL-PATHNAME NIL PATHNAME)
-
-	       (BROADCAST-STREAM)
-	       (CONCATENATED-STREAM)
-	       (ECHO-STREAM)
-	       (FILE-STREAM)
-	       (STRING-STREAM)
-	       (SYNONYM-STREAM)
- 	       (TWO-WAY-STREAM)
-	       (STREAM (OR BROADCAST-STREAM CONCATENATED-STREAM ECHO-STREAM
-			   FILE-STREAM STRING-STREAM SYNONYM-STREAM TWO-WAY-STREAM))
-
-	       (READTABLE)
-	       #+threads (MP::PROCESS)
-	       #+threads (MP::LOCK)
-	       ))
-    (let* ((type (first i))
-	   (alias (second i))
-	   (strict-supertype (or (third i) 'T))
-	   (tag))
-      (if alias
-	  (setq tag (canonical-type alias))
-	  (let* ((strict-supertype-tag (canonical-type strict-supertype)))
-	    (setq tag (new-type-tag))
-	    (unless (eq strict-supertype 't)
-	      (extend-type-tag tag strict-supertype-tag))))
-      (push (let ((*print-base* 2)) (cons type tag)) *elementary-types*)
-      ))
-  #+nil
-  (let ((tag (new-type-tag)))
-    (extend-type-tag tag (canonical-type 'symbol))
-    (setq *member-types* (acons 'NIL tag *member-types*))
-    (push (cons 'NULL tag) *elementary-types*))
-  ;(print-types-database *elementary-types*)
-  ;(format t "~%~70B" *highest-type-tag*)
-); ngorp
+(defun subtypep (t1 t2 &optional env)
+  (when (eq t1 t2)
+    (return-from subtypep (values t t)))
+  (let* ((*highest-type-tag* *highest-type-tag*)
+	 (*save-types-database* t)
+	 (*member-types* *member-types*)
+	 (*elementary-types* *elementary-types*))
+    (fast-subtypep t1 t2)))

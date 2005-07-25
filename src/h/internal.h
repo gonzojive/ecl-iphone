@@ -48,14 +48,6 @@ extern void ecl_init_env(struct cl_env_struct *);
 extern void init_LSP(cl_object);
 extern void init_CLOS(cl_object);
 
-/* all_functions.d */
-
-extern const struct {
-	const char *name;
-	cl_object (*f)(int, ...);
-	short type;
-} all_functions[];
-
 /* alloc.d/alloc_2.d */
 
 extern cl_object ecl_alloc_bytecodes(cl_index data_size, cl_index code_size);

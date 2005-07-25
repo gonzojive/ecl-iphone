@@ -343,9 +343,9 @@ cl_boot(int argc, char **argv)
 #endif
 	aux = cl_list(
 #ifdef ENABLE_DLOPEN
-		4,CONS(make_constant_string("fas"), @'si::load-binary'),
+		6,CONS(make_constant_string("fas"), @'si::load-binary'),
 #else
-		3,
+		5,
 #endif
 		CONS(make_constant_string("lsp"), @'si::load-source'),
 		CONS(make_constant_string("lisp"), @'si::load-source'),

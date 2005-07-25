@@ -13,6 +13,7 @@
 (in-package "SYSTEM")
 
 (defun check-stores-number (context stores-list n)
+  (declare (si::c-local))
   (unless (= (length stores-list) n)
     (error "~d store-variables expected in setf form ~a." n context)))
 

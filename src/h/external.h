@@ -1323,41 +1323,6 @@ extern cl_object ecl_get(cl_object s, cl_object p, cl_object d);
 extern bool keywordp(cl_object s);
 
 
-/* tclBasic.c */
-
-#ifdef TK
-extern cl_object TkWidgetType;
-extern Tcl_Interp *ECL_interp;
-extern int Tcl_GlobalEval(Tcl_Interp *interp, char *s);
-extern int Tcl_Eval(Tcl_Interp *interp, char *s);
-extern int Tcl_VarEval(Tcl_Interp *interp, ...);
-extern char *Tcl_GetVar(Tcl_Interp *interp, char *var, int flags);
-extern char *Tcl_GetVar2(Tcl_Interp *interp, char *name1, char *name2, int flags);
-extern char *Tcl_SetVar(Tcl_Interp *interp, char *var, char *val, int flags);
-extern char *Tcl_SetVar2(Tcl_Interp *interp, char *name1, char *name2, char *val, int flags);
-extern int Tcl_DeleteCommand(Tcl_Interp *interp, char *cmdName);
-extern int tclMethodDispatch(cl_narg narg, cl_object env, ...);
-extern void Tcl_CreateCommand(Tcl_Interp *interp, char *cmdName, Tcl_CmdProc *proc, ClientData clientData, Tcl_CmdDeleteProc *deleteProc);
-extern int Tcl_GetCommandInfo(Tcl_Interp *interp, char *cmdName, Tcl_CmdInfo *infoPtr);
-extern Tcl_Interp *Tcl_CreateInterp(void);
-extern void Tcl_DeleteInterp(Tcl_Interp *interp);
-extern int init_tk(void);
-extern int Tcl_Init(Tcl_Interp *interp);
-extern void Tcl_CallWhenDeleted(Tcl_Interp *interp, Tcl_InterpDeleteProc *proc, ClientData clientData);
-extern void Tcl_DontCallWhenDeleted(Tcl_Interp *interp, Tcl_InterpDeleteProc *proc, ClientData clientData);
-extern int Tcl_SetCommandInfo(Tcl_Interp *interp, char *cmdName, Tcl_CmdInfo *infoPtr);
-extern Tcl_Trace Tcl_CreateTrace(Tcl_Interp *interp, int level, Tcl_CmdTraceProc *proc, ClientData clientData);
-extern void Tcl_DeleteTrace(Tcl_Interp *interp, Tcl_Trace trace);
-extern void Tcl_AddErrorInfo(Tcl_Interp *interp, char *message);
-extern int Tcl_SetRecursionLimit(Tcl_Interp *interp, int depth);
-extern int Tcl_TraceVar(Tcl_Interp *interp, char *varName, int flags, Tcl_VarTraceProc *proc, ClientData clientData);
-extern int Tcl_TraceVar2(Tcl_Interp *interp, char *part1, char *part2, int flags, Tcl_VarTraceProc *proc, ClientData clientData);
-extern void Tcl_UntraceVar(Tcl_Interp *interp, char *varName, int flags, Tcl_VarTraceProc *proc, ClientData clientData);
-extern void Tcl_UntraceVar2(Tcl_Interp *interp, char *part1, char *part2, int flags, Tcl_VarTraceProc *proc, ClientData clientData);
-extern void Tcl_ChangeValue(char *var);
-#endif
-
-
 /* tcp.c */
 
 #ifdef TCP
@@ -1401,16 +1366,6 @@ extern cl_object si_get_local_time_zone(void);
 extern cl_object si_daylight_saving_time_p _ARGS((cl_narg narg, ...));
 
 extern cl_object UTC_time_to_universal_time(cl_fixnum i);
-
-
-/* tkMain.c */
-
-#ifdef TK
-extern Tcl_Interp *ECL_interp;
-extern int Tk_initialized;
-extern cl_object Tk_root_window;
-extern void Tk_main(int synchronize, char *name, char *fileName, char *Xdisplay, char *geometry);
-#endif
 
 
 /* typespec.c */

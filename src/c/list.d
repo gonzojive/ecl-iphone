@@ -49,9 +49,27 @@ test_compare_not(struct cl_test *t, cl_object x)
 }
 
 static bool
+test_eq(struct cl_test *t, cl_object x)
+{
+	return (t->item_compared == (t->key_c_function)(t, x));
+}
+
+static bool
 test_eql(struct cl_test *t, cl_object x)
 {
 	return eql(t->item_compared, (t->key_c_function)(t, x));
+}
+
+static bool
+test_equal(struct cl_test *t, cl_object x)
+{
+	return equal(t->item_compared, (t->key_c_function)(t, x));
+}
+
+static bool
+test_equalp(struct cl_test *t, cl_object x)
+{
+	return equalp(t->item_compared, (t->key_c_function)(t, x));
 }
 
 static cl_object
@@ -74,10 +92,20 @@ setupTEST(struct cl_test *t, cl_object item, cl_object test,
 	if (test != Cnil) {
 		if (test_not != Cnil)
 		    FEerror("Both :TEST and :TEST-NOT are specified.", 0);
-		t->test_function = test;
-		t->test_c_function = test_compare;
+		t->test_function = si_coerce_to_function(test);
+		if (t->test_function == SYM_FUN(@'eq')) {
+			t->test_c_function = test_eq;
+		} else if (t->test_function == SYM_FUN(@'eql')) {
+			t->test_c_function = test_eql;
+		} else if (t->test_function == SYM_FUN(@'equal')) {
+			t->test_c_function = test_equal;
+		} else if (t->test_function == SYM_FUN(@'equalp')) {
+			t->test_c_function = test_equalp;
+		} else {
+			t->test_c_function = test_compare;
+		}
 	} else if (test_not != Cnil) {
-		t->test_function = test_not;
+		t->test_function = si_coerce_to_function(test_not);
 		t->test_c_function = test_compare_not;
 	} else {
 		t->test_c_function = test_eql;

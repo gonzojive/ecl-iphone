@@ -365,64 +365,94 @@
 
 ; file list.d
 (CAR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CAR(#0)")
 	:inline-unsafe ((t) t nil nil "CAR(#0)"))
 (CDR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CDR(#0)")
 	:inline-unsafe ((t) t nil nil "CDR(#0)"))
 (CAAR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CAAR(#0)")
 	:inline-unsafe ((t) t nil nil "CAAR(#0)"))
 (CADR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CADR(#0)")
 	:inline-unsafe ((t) t nil nil "CADR(#0)"))
 (CDAR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CDAR(#0)")
 	:inline-unsafe ((t) t nil nil "CDAR(#0)"))
 (CDDR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CDDR(#0)")
 	:inline-unsafe ((t) t nil nil "CDDR(#0)"))
 (CAAAR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CAAAR(#0)")
 	:inline-unsafe ((t) t nil nil "CAAAR(#0)"))
 (CAADR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CAADR(#0)")
 	:inline-unsafe ((t) t nil nil "CAADR(#0)"))
 (CADAR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CADAR(#0)")
 	:inline-unsafe ((t) t nil nil "CADAR(#0)"))
 (CADDR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CADDR(#0)")
 	:inline-unsafe ((t) t nil nil "CADDR(#0)"))
 (CDAAR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CDAAR(#0)")
 	:inline-unsafe ((t) t nil nil "CDAAR(#0)"))
 (CDADR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CDADR(#0)")
 	:inline-unsafe ((t) t nil nil "CDADR(#0)"))
 (CDDAR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CDDAR(#0)")
 	:inline-unsafe ((t) t nil nil "CDDAR(#0)"))
 (CDDDR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CDDDR(#0)")
 	:inline-unsafe ((t) t nil nil "CDDDR(#0)"))
 (CAAAAR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CAAAAR(#0)")
 	:inline-unsafe ((t) t nil nil "CAAAAR(#0)"))
 (CAAADR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CAAADR(#0)")
 	:inline-unsafe ((t) t nil nil "CAAADR(#0)"))
 (CAADAR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CAADAR(#0)")
 	:inline-unsafe ((t) t nil nil "CAADAR(#0)"))
 (CAADDR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CAADDR(#0)")
 	:inline-unsafe ((t) t nil nil "CAADDR(#0)"))
 (CADAAR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CADAAR(#0)")
 	:inline-unsafe ((t) t nil nil "CADAAR(#0)"))
 (CADADR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CADADR(#0)")
 	:inline-unsafe ((t) t nil nil "CADADR(#0)"))
 (CADDAR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CADDAR(#0)")
 	:inline-unsafe ((t) t nil nil "CADDAR(#0)"))
 (CADDDR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CADDDR(#0)")
 	:inline-unsafe ((t) t nil nil "CADDDR(#0)"))
 (CDAAAR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CDAAAR(#0)")
 	:inline-unsafe ((t) t nil nil "CDAAAR(#0)"))
 (CDAADR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CDAADR(#0)")
 	:inline-unsafe ((t) t nil nil "CDAADR(#0)"))
 (CDADAR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CDADAR(#0)")
 	:inline-unsafe ((t) t nil nil "CDADAR(#0)"))
 (CDADDR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CDADDR(#0)")
 	:inline-unsafe ((t) t nil nil "CDADDR(#0)"))
 (CDDAAR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CDDAAR(#0)")
 	:inline-unsafe ((t) t nil nil "CDDAAR(#0)"))
 (CDDADR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CDDADR(#0)")
 	:inline-unsafe ((t) t nil nil "CDDADR(#0)"))
 (CDDDAR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CDDDAR(#0)")
 	:inline-unsafe ((t) t nil nil "CDDDAR(#0)"))
 (CDDDDR (T) T NIL NIL
+	:inline-always ((cons) t nil nil "CDDDDR(#0)")
 	:inline-unsafe ((t) t nil nil "CDDDDR(#0)"))
 (CONS (T T) T NIL NIL
 	:inline-always ((t t) t nil t "CONS(#0,#1)"))

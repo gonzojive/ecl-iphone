@@ -609,10 +609,17 @@ check_displaced(cl_object dlist, cl_object orig, cl_index newdim)
 */
 void adjust_displaced(cl_object x, ptrdiff_t diff)
 {
-	if (x->array.self.t != NULL)
-		x->array.self.t = (cl_object *)((char*)(x->array.self.t) + diff);
-	for (x = CDR(x->array.displaced);  x != Cnil;  x = CDR(x))
-		adjust_displaced(CAR(x), diff);
+	if (x->array.self.t != NULL) {
+		if (array_elttype(x) == aet_bit) {
+			ptrdiff_t aux = diff + x->array.offset;
+			x->array.offset = aux % CHAR_BIT;
+			x->array.self.bit += aux / CHAR_BIT;
+		} else {
+			x->array.self.t = (cl_object *)((char*)(x->array.self.t) + diff);
+		}
+		for (x = CDR(x->array.displaced);  x != Cnil;  x = CDR(x))
+			adjust_displaced(CAR(x), diff);
+	}
 }
 
 cl_elttype
@@ -834,6 +841,9 @@ si_replace_array(cl_object olda, cl_object newa)
 		goto OUTPUT;
 	}
 	diff = (char*)(newa->array.self.t) - (char*)(olda->array.self.t);
+	if (array_elttype(newa) == aet_bit) {
+		diff = diff * CHAR_BIT + (newa->array.offset - olda->array.offset);
+	}
 	dlist = CDR(olda->array.displaced);
 	displaced = CONS(CAR(newa->array.displaced), dlist);
 	check_displaced(dlist, olda, newa->array.dim);

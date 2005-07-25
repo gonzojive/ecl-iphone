@@ -280,11 +280,13 @@ SECOND-FORM."
                                                  &aux (temp (gensym)) decl)
   (multiple-value-setq (decl body)
     (find-declarations body))
-  `(DO* ((,temp ,form (cdr ,temp)) (,var))
+    ;; Since ENDP did not complain, this is definitely a (CDR ,temp) is safe
+  `(DO* ((,temp ,form (CDR (THE CONS ,temp))) (,var))
 	((ENDP ,temp) ,val)
     ,@decl
     (SETQ ,var (CAR ,temp))
-    ,@body))
+    ,@body
+    ))
 
 (defmacro dotimes ((var form &optional (val nil)) &rest body
                                                   &aux (temp (gensym)))

@@ -80,7 +80,7 @@
 	(INTEGER (if (subtypep type 'FIXNUM) 'FIXNUM t))
 	((SHORT-FLOAT SINGLE-FLOAT) 'SHORT-FLOAT)
 	((LONG-FLOAT DOUBLE-FLOAT) 'LONG-FLOAT)
-	((STREAM) 'STREAM)	; Beppe
+	((STREAM CONS) type-name) ; Juanjo
 	(t (cond ((eq type-name 'VALUES)
 		  (unless values-allowed
 		    (error "VALUES type found in a place where it is not allowed."))

@@ -194,6 +194,7 @@
 ;;;
 
 (defun compute-applicable-methods (gf args)
+  (declare (optimize (safety 0) (speed 3)))
   (let* ((methods (generic-function-methods gf))
 	 applicable-list
 	 args-specializers)
