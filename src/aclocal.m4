@@ -89,12 +89,12 @@ EOF
   if test "${ECL_TO_RUN}" = "failed"; then
     AC_MSG_ERROR(The program ECL is not installed in your system)
   fi
-  ECL_MIN_TO_RUN=`${ECL_TO_RUN} -eval '(progn (print (truename "sys:ecl_min")) (quit))' \
+  ECL_MIN_TO_RUN=`${ECL_TO_RUN} -eval '(progn (print (truename "sys:ecl_min")) (si:quit))' \
 	| grep '\#\P' | sed 's,#P"\(.*\)",\1,'`
   if test -z "${ECL_MIN_TO_RUN}" -o "${ECL_MIN_TO_RUN}" = "failed"  ; then
     AC_MSG_ERROR(The program ECL-MIN is not installed in your system)
   fi
-  DPP_TO_RUN=`${ECL_TO_RUN} -eval '(progn (print (truename "sys:dpp")) (quit))' \
+  DPP_TO_RUN=`${ECL_TO_RUN} -eval '(progn (print (truename "sys:dpp")) (si:quit))' \
 	| grep '\#\P' | sed 's,#P"\(.*\)",\1,'`
   if test -z "${DPP_TO_RUN}" -o "${DPP_TO_RUN}" = "failed"  ; then
     AC_MSG_ERROR(The program DPP is not installed in your system)
