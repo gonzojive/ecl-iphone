@@ -33,26 +33,19 @@
         (setf (logical-pathname-translations host) (read in-str)))
       t)))
 
-
-(defmacro time (form)
-  "Syntax: (time form)
-Evaluates FORM, outputs the realtime and runtime used for the evaluation to
-*TRACE-OUTPUT*, and then returns all values of FORM."
-  (let*((real-start (gensym))
-	(real-end (gensym))
-	(run-start (gensym))
-	(run-end (gensym))
-	#-boehm-gc(gc-start (gensym))
-	(gc-end (gensym))
-	(x (gensym)))
-    `(let*((,real-start (get-internal-real-time))
-	   (,run-start (get-internal-run-time))
-	   #-boehm-gc(,gc-start (sys:gc-time))
-	   ,real-end ,run-end ,gc-end ,x)
-      (setq ,x (multiple-value-list ,form))
-      (setq ,run-end (get-internal-run-time))
-      (setq ,real-end (get-internal-real-time))
-      #-boehm-gc(setq ,gc-end (sys:gc-time))
+(defun do-time (closure)
+  (let* ((real-start (get-internal-real-time))
+	 (run-start (get-internal-run-time))
+	 #-boehm-gc (gc-start (si::gc-time))
+	 real-end
+	 run-end
+	 gc-end)
+    (multiple-value-prog1
+	(funcall closure)
+      (setq run-end (get-internal-run-time)
+	    real-end (get-internal-real-time))
+      #-boehm-gc
+      (setq gc-end (si::gc-end))
       (fresh-line *trace-output*)
       (format *trace-output*
        #-boehm-gc
@@ -62,13 +55,15 @@ Evaluates FORM, outputs the realtime and runtime used for the evaluation to
        #+boehm-gc
              "real time : ~,3F secs~%~
               run time  : ~,3F secs~%"
-       (/ (- ,real-end ,real-start) internal-time-units-per-second)
-       (/ (- ,run-end ,run-start) internal-time-units-per-second)
-       #-boehm-gc(/ (- ,gc-end ,gc-start) internal-time-units-per-second))
-      (values-list ,x))))
+       (/ (- real-end real-start) internal-time-units-per-second)
+       (/ (- run-end run-start) internal-time-units-per-second)
+       #-boehm-gc(/ (- gc-end gc-start) internal-time-units-per-second)))))
 
-
-(defconstant seconds-per-day #.(* 24 3600))
+(defmacro time (form)
+  "Syntax: (time form)
+Evaluates FORM, outputs the realtime and runtime used for the evaluation to
+*TRACE-OUTPUT*, and then returns all values of FORM."
+  `(do-time #'(lambda () ,form)))
 
 (defun leap-year-p (y)
   (declare (si::c-local))

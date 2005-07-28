@@ -110,7 +110,7 @@ is used."
 Executes STATEMENTs once for each symbol in PACKAGE (which defaults to the
 current package), with VAR bound to the symbol.  Then evaluates RESULT (which
 defaults to NIL) and returns all values."
-  (expand-do-symbols var package result-form body '(:external :internal :inherited)))
+  (expand-do-symbols var package result-form body '(:inherited :internal :external)))
 
 (defmacro do-external-symbols
           ((var &optional (package '*package*) (result-form nil)) &rest body)
@@ -127,17 +127,7 @@ values."
 Establishes a NIL block and executes STATEMENTs once for each symbol in each
 package, with VAR bound to the symbol.  Then evaluates RESULT (which defaults
 to NIL) and returns all values."
-  (expand-do-symbols var '(list-all-packages) result-form body '(:external :internal)))
-
-(defun substringp (sub str)
-  (do ((i (the fixnum (- (length str) (length sub))))
-       (l (length sub))
-       (j 0 (1+ j)))
-      ((> j i) nil)
-    (declare (fixnum l j))
-    (when (string-equal sub str :start2 j :end2 (the fixnum (+ j l)))
-          (return t))))
-
+  (expand-do-symbols var '(list-all-packages) result-form body '(:internal :external)))
 
 (defun print-symbol-apropos (symbol)
   (prin1 symbol)
@@ -162,16 +152,16 @@ PACKAGE is non-NIL, then only the specified PACKAGE is searched."
   (setq string (string string))
   (cond (package
          (do-symbols (symbol package)
-           (when (substringp string (string symbol))
+           (when (search string (string symbol))
                  (print-symbol-apropos symbol)))
          (do ((p (package-use-list package) (cdr p)))
              ((null p))
            (do-external-symbols (symbol (car p))
-             (when (substringp string (string symbol))
+             (when (search string (string symbol))
                    (print-symbol-apropos symbol)))))
         (t
          (do-all-symbols (symbol)
-           (when (substringp string (string symbol))
+           (when (search string (string symbol))
                  (print-symbol-apropos symbol)))))
   (values))
 
@@ -184,15 +174,15 @@ If PACKAGE is non-NIL, then only the specified PACKAGE is searched."
   (setq string (string string))
   (cond (package
          (do-symbols (symbol package)
-           (when (substringp string (string symbol))
+           (when (search string (string symbol))
                  (setq list (cons symbol list))))
          (do ((p (package-use-list package) (cdr p)))
              ((null p))
            (do-symbols (symbol (car p))
-             (when (substringp string (string symbol))
+             (when (search string (string symbol))
                    (setq list (cons symbol list))))))
         (t
          (do-all-symbols (symbol)
-           (when (substringp string (string symbol))
+           (when (search string (string symbol))
                  (setq list (cons symbol list))))))
   list)

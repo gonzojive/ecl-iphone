@@ -907,6 +907,23 @@ extern int number_compare(cl_object x, cl_object y);
 
 /* num_log.c */
 
+#define ECL_BOOLCLR		0
+#define ECL_BOOLAND		01
+#define ECL_BOOLANDC2		02
+#define ECL_BOOL1		03
+#define ECL_BOOLANDC1		04
+#define ECL_BOOL2		05
+#define ECL_BOOLXOR		06
+#define ECL_BOOLIOR		07
+#define ECL_BOOLNOR		010
+#define ECL_BOOLEQV		011
+#define ECL_BOOLC2		012
+#define ECL_BOOLORC2		013
+#define ECL_BOOLC1		014
+#define ECL_BOOLORC1		015
+#define ECL_BOOLNAND		016
+#define ECL_BOOLSET		017
+
 extern cl_object cl_lognand(cl_object x, cl_object y);
 extern cl_object cl_lognor(cl_object x, cl_object y);
 extern cl_object cl_logandc1(cl_object x, cl_object y);
@@ -925,6 +942,7 @@ extern cl_object cl_logxor _ARGS((cl_narg narg, ...));
 extern cl_object cl_logand _ARGS((cl_narg narg, ...));
 extern cl_object cl_logeqv _ARGS((cl_narg narg, ...));
 
+extern cl_object ecl_boole(int op, cl_object x, cl_object y);
 extern cl_object ecl_ash(cl_object x, cl_fixnum w);
 extern int ecl_fixnum_bit_length(cl_fixnum l);
 

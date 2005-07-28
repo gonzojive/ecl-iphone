@@ -48,6 +48,8 @@ ECL 0.9g
 
  - .LSP/.LISP are now recognized lisp source extensions.
 
+ - We now provide inline expansions for all logical operators.
+
 * Errors fixed:
 
  - Now .o files compiled with :SYSTEM-P T with dash in filename load

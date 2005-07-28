@@ -298,16 +298,21 @@ SECOND-FORM."
 ;; Declarations
 (defmacro declaim (&rest decl-specs)
   (if (cdr decl-specs)
-    `(eval-when (compile load eval) (mapcar #'proclaim ',decl-specs))
-    `(eval-when (compile load eval) (proclaim ',(car decl-specs)))))
+    `(eval-when (:compile-toplevel :load-toplevel :execute)
+       (mapcar #'proclaim ',decl-specs))
+    `(eval-when (:compile-toplevel :load-toplevel :execute)
+       (proclaim ',(car decl-specs)))))
 
 (defmacro c-declaim (&rest decl-specs)
   (if (cdr decl-specs)
-    `(eval-when (compile) (mapcar #'proclaim ',decl-specs))
-    `(eval-when (compile) (proclaim ',(car decl-specs)))))
+    `(eval-when (:compile-toplevel)
+       (mapcar #'proclaim ',decl-specs))
+    `(eval-when (:compile-toplevel)
+       (proclaim ',(car decl-specs)))))
 
 (defmacro in-package (name)
-  `(eval-when (eval compile load) (si::select-package ,(string name))))
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (si::select-package ,(string name))))
 
 ;; FIXME!
 (defmacro the (type value)

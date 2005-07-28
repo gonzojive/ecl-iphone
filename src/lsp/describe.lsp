@@ -64,7 +64,6 @@
                 ?:                      prints this.~%~%"))
 
 (defun read-inspect-command (label object allow-recursive)
-  (declare (si::c-local))
   (unless *inspect-mode*
     (inspect-indent-1)
     (if allow-recursive
@@ -112,6 +111,7 @@
         (inspect-read-line))
       )))
 
+#+ecl-min
 (defmacro inspect-recursively (label object &optional place)
   (if place
       `(multiple-value-bind (update-flag new-value)
@@ -121,6 +121,7 @@
              (princ "Not updated.")
              (terpri))))
 
+#+ecl-min
 (defmacro inspect-print (label object &optional place)
   (if place
       `(multiple-value-bind (update-flag new-value)
@@ -468,7 +469,7 @@ inspect commands, or type '?' to the inspector."
                    "~&-----------------------------------------------------------------------------~%~53S~24@A~%~A"
                    symbol ind doc))
          (good-package ()
-           (if (eq (symbol-package symbol) (find-package "LISP"))
+           (if (eq (symbol-package symbol) (find-package "CL"))
                (find-package "SYSTEM")
                *package*)))
 
@@ -539,14 +540,14 @@ inspect commands, or type '?' to the inspector."
                  (format t "~&No documentation for ~:@(~S~)." symbol))
              (values))))
 
-(defun apropos-doc (string &optional (package 'LISP) &aux (f nil))
+(defun apropos-doc (string &optional (package "CL") &aux (f nil))
   (setq string (string string))
   (if package
       (do-symbols (symbol package)
-        (when (substringp string (string symbol))
+        (when (search string (string symbol))
           (setq f (or (print-doc symbol t) f))))
       (do-all-symbols (symbol)
-        (when (substringp string (string symbol))
+        (when (search string (string symbol))
           (setq f (or (print-doc symbol t) f)))))
   (if f
       (format t "~&-----------------------------------------------------------------------------")

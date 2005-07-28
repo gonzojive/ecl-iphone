@@ -181,6 +181,7 @@
 
 
 (defun make-predicate (name type named name-offset)
+  (declare (si::c-local))
   (cond ((null type)
 	 #'(lambda (x)
 	     (structure-subtype-p x name)))

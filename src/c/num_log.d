@@ -264,8 +264,6 @@ static bignum_bit_operator bignum_operations[16] = {
 	mpz_b_set_op};
 
 
-static cl_object log_op2(cl_object x, cl_object y, int op);
-
 static cl_object
 log_op(cl_narg narg, int op, cl_va_list ARGS)
 {
@@ -278,7 +276,7 @@ log_op(cl_narg narg, int op, cl_va_list ARGS)
 	} else {
 		do {
 			y = cl_va_arg(ARGS);
-			x = log_op2(x, y, op);
+			x = ecl_boole(op, x, y);
 		} while (--narg);
 	}
 	return x;
@@ -344,8 +342,8 @@ BIG_OP:
 #endif
 }
 
-static cl_object
-log_op2(cl_object x, cl_object y, int op)
+cl_object
+ecl_boole(int op, cl_object x, cl_object y)
 {
 	switch (type_of(x)) {
 	case t_fixnum:
@@ -483,7 +481,7 @@ ecl_fixnum_bit_length(cl_fixnum i)
 	if (narg == 0)
 		@(return MAKE_FIXNUM(0))
 	/* INV: log_op() checks types and outputs first argument as default. */
-	@(return log_op(narg, BOOLIOR, nums))
+	@(return log_op(narg, ECL_BOOLIOR, nums))
 @)
 
 @(defun logxor (&rest nums)
@@ -491,7 +489,7 @@ ecl_fixnum_bit_length(cl_fixnum i)
 	if (narg == 0)
 		@(return MAKE_FIXNUM(0))
 	/* INV: log_op() checks types and outputs first argument as default. */
-	@(return log_op(narg, BOOLXOR, nums))
+	@(return log_op(narg, ECL_BOOLXOR, nums))
 @)
 
 @(defun logand (&rest nums)
@@ -499,7 +497,7 @@ ecl_fixnum_bit_length(cl_fixnum i)
 	if (narg == 0)
 		@(return MAKE_FIXNUM(-1))
 	/* INV: log_op() checks types and outputs first argument as default. */
-	@(return log_op(narg, BOOLAND, nums))
+	@(return log_op(narg, ECL_BOOLAND, nums))
 @)
 
 @(defun logeqv (&rest nums)
@@ -507,43 +505,43 @@ ecl_fixnum_bit_length(cl_fixnum i)
 	if (narg == 0)
 		@(return MAKE_FIXNUM(-1))
 	/* INV: log_op() checks types and outputs first argument as default. */
-	@(return log_op(narg, BOOLEQV, nums))
+	@(return log_op(narg, ECL_BOOLEQV, nums))
 @)
 
 cl_object
 cl_lognand(cl_object x, cl_object y)
 {
-	@(return log_op2(x, y, BOOLNAND))
+	@(return ecl_boole(ECL_BOOLNAND, x, y))
 }
 
 cl_object
 cl_lognor(cl_object x, cl_object y)
 {
-	@(return log_op2(x, y, BOOLNOR))
+	@(return ecl_boole(ECL_BOOLNOR, x, y))
 }
 
 cl_object
 cl_logandc1(cl_object x, cl_object y)
 {
-	@(return log_op2(x, y, BOOLANDC1))
+	@(return ecl_boole(ECL_BOOLANDC1, x, y))
 }
 
 cl_object
 cl_logandc2(cl_object x, cl_object y)
 {
-	@(return log_op2(x, y, BOOLANDC2))
+	@(return ecl_boole(ECL_BOOLANDC2, x, y))
 }
 
 cl_object
 cl_logorc1(cl_object x, cl_object y)
 {
-	@(return log_op2(x, y, BOOLORC1))
+	@(return ecl_boole(ECL_BOOLORC1, x, y))
 }
 
 cl_object
 cl_logorc2(cl_object x, cl_object y)
 {
-	@(return log_op2(x, y, BOOLORC2))
+	@(return ecl_boole(ECL_BOOLORC2, x, y))
 }
 
 static int
@@ -551,7 +549,7 @@ coerce_to_logical_operator(cl_object o)
 {
 	cl_fixnum op;
 	op = fixint(o);
-	if (op < 0 || op > BOOLSET)
+	if (op < 0 || op > ECL_BOOLSET)
 		FEerror("~S is an invalid logical operator.", 1, o);
 	return op;
 }
@@ -560,7 +558,7 @@ cl_object
 cl_boole(cl_object o, cl_object x, cl_object y)
 {
 	/* INV: log_op2() checks types */
-	@(return log_op2(x, y, coerce_to_logical_operator(o)))
+	@(return ecl_boole(coerce_to_logical_operator(o), x, y))
 }
 
 cl_object

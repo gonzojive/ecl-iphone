@@ -364,154 +364,154 @@
 (SI::HASH-SET NIL T)
 
 ; file list.d
-(CAR (T) T NIL NIL
+(CAR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CAR(#0)")
 	:inline-unsafe ((t) t nil nil "CAR(#0)"))
-(CDR (T) T NIL NIL
+(CDR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CDR(#0)")
 	:inline-unsafe ((t) t nil nil "CDR(#0)"))
-(CAAR (T) T NIL NIL
+(CAAR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CAAR(#0)")
 	:inline-unsafe ((t) t nil nil "CAAR(#0)"))
-(CADR (T) T NIL NIL
+(CADR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CADR(#0)")
 	:inline-unsafe ((t) t nil nil "CADR(#0)"))
-(CDAR (T) T NIL NIL
+(CDAR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CDAR(#0)")
 	:inline-unsafe ((t) t nil nil "CDAR(#0)"))
-(CDDR (T) T NIL NIL
+(CDDR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CDDR(#0)")
 	:inline-unsafe ((t) t nil nil "CDDR(#0)"))
-(CAAAR (T) T NIL NIL
+(CAAAR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CAAAR(#0)")
 	:inline-unsafe ((t) t nil nil "CAAAR(#0)"))
-(CAADR (T) T NIL NIL
+(CAADR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CAADR(#0)")
 	:inline-unsafe ((t) t nil nil "CAADR(#0)"))
-(CADAR (T) T NIL NIL
+(CADAR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CADAR(#0)")
 	:inline-unsafe ((t) t nil nil "CADAR(#0)"))
-(CADDR (T) T NIL NIL
+(CADDR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CADDR(#0)")
 	:inline-unsafe ((t) t nil nil "CADDR(#0)"))
-(CDAAR (T) T NIL NIL
+(CDAAR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CDAAR(#0)")
 	:inline-unsafe ((t) t nil nil "CDAAR(#0)"))
-(CDADR (T) T NIL NIL
+(CDADR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CDADR(#0)")
 	:inline-unsafe ((t) t nil nil "CDADR(#0)"))
-(CDDAR (T) T NIL NIL
+(CDDAR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CDDAR(#0)")
 	:inline-unsafe ((t) t nil nil "CDDAR(#0)"))
-(CDDDR (T) T NIL NIL
+(CDDDR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CDDDR(#0)")
 	:inline-unsafe ((t) t nil nil "CDDDR(#0)"))
-(CAAAAR (T) T NIL NIL
+(CAAAAR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CAAAAR(#0)")
 	:inline-unsafe ((t) t nil nil "CAAAAR(#0)"))
-(CAAADR (T) T NIL NIL
+(CAAADR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CAAADR(#0)")
 	:inline-unsafe ((t) t nil nil "CAAADR(#0)"))
-(CAADAR (T) T NIL NIL
+(CAADAR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CAADAR(#0)")
 	:inline-unsafe ((t) t nil nil "CAADAR(#0)"))
-(CAADDR (T) T NIL NIL
+(CAADDR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CAADDR(#0)")
 	:inline-unsafe ((t) t nil nil "CAADDR(#0)"))
-(CADAAR (T) T NIL NIL
+(CADAAR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CADAAR(#0)")
 	:inline-unsafe ((t) t nil nil "CADAAR(#0)"))
-(CADADR (T) T NIL NIL
+(CADADR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CADADR(#0)")
 	:inline-unsafe ((t) t nil nil "CADADR(#0)"))
-(CADDAR (T) T NIL NIL
+(CADDAR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CADDAR(#0)")
 	:inline-unsafe ((t) t nil nil "CADDAR(#0)"))
-(CADDDR (T) T NIL NIL
+(CADDDR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CADDDR(#0)")
 	:inline-unsafe ((t) t nil nil "CADDDR(#0)"))
-(CDAAAR (T) T NIL NIL
+(CDAAAR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CDAAAR(#0)")
 	:inline-unsafe ((t) t nil nil "CDAAAR(#0)"))
-(CDAADR (T) T NIL NIL
+(CDAADR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CDAADR(#0)")
 	:inline-unsafe ((t) t nil nil "CDAADR(#0)"))
-(CDADAR (T) T NIL NIL
+(CDADAR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CDADAR(#0)")
 	:inline-unsafe ((t) t nil nil "CDADAR(#0)"))
-(CDADDR (T) T NIL NIL
+(CDADDR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CDADDR(#0)")
 	:inline-unsafe ((t) t nil nil "CDADDR(#0)"))
-(CDDAAR (T) T NIL NIL
+(CDDAAR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CDDAAR(#0)")
 	:inline-unsafe ((t) t nil nil "CDDAAR(#0)"))
-(CDDADR (T) T NIL NIL
+(CDDADR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CDDADR(#0)")
 	:inline-unsafe ((t) t nil nil "CDDADR(#0)"))
-(CDDDAR (T) T NIL NIL
+(CDDDAR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CDDDAR(#0)")
 	:inline-unsafe ((t) t nil nil "CDDDAR(#0)"))
-(CDDDDR (T) T NIL NIL
+(CDDDDR (LIST) T NIL NIL
 	:inline-always ((cons) t nil nil "CDDDDR(#0)")
 	:inline-unsafe ((t) t nil nil "CDDDDR(#0)"))
-(CONS (T T) T NIL NIL
+(CONS (T T) CONS NIL NIL
 	:inline-always ((t t) t nil t "CONS(#0,#1)"))
 (TREE-EQUAL (T T *) T NIL T)
-(ENDP (T) T NIL T
+(ENDP (LIST) T NIL T
 	:inline-safe ((t) :bool nil nil "endp(#0)")
 	:inline-unsafe ((t) :bool nil nil "#0==Cnil"))
-(LIST-LENGTH (T) T NIL NIL)
-(NTH (T T) T NIL NIL
+(LIST-LENGTH (LIST) (OR NIL (INTEGER 0 *)) NIL NIL)
+(NTH (INTEGER LIST) T NIL NIL
 	:inline-always ((t t) t nil nil "nth(fixint(#0),#1)")
 	:inline-always ((fixnum t) t nil nil "nth(#0,#1)")
 	:inline-unsafe ((t t) t nil nil "nth(fix(#0),#1)")
 	:inline-unsafe ((fixnum t) t nil nil "nth(#0,#1)"))
-(FIRST (T) T NIL NIL
-;	:inline-safe ((t) t nil nil "cl_car(#0)")
+(FIRST (LIST) T NIL NIL
+	:inline-always ((cons) t nil nil "CAR(#0)")
 	:inline-unsafe ((t) t nil nil "CAR(#0)"))
-(SECOND (T) T nil nil
-;	:inline-safe ((t) t nil nil "cl_cadr(#0)")
+(SECOND (LIST) T nil nil
+	:inline-always ((cons) t nil nil "CADR(#0)")
 	:inline-unsafe ((t) t nil nil "CADR(#0)"))
-(THIRD (T) T nil nil
-;	:inline-safe ((t) t nil nil "cl_caddr(#0)")
+(THIRD (LIST) T nil nil
+	:inline-always ((cons) t nil nil "CADDR(#0)")
 	:inline-unsafe ((t) t nil nil "CADDR(#0)"))
-(FOURTH (T) T nil nil
-;	:inline-safe ((t) t nil nil "cl_cadddr(#0)")
+(FOURTH (LIST) T nil nil
+	:inline-always ((cons) t nil nil "CADDDR(#0)")
 	:inline-unsafe ((t) t nil nil "CADDDR(#0)"))
-(FIFTH (T) T)
-(SIXTH (T) T)
-(SEVENTH (T) T)
-(EIGHTH (T) T)
-(NINTH (T) T)
-(TENTH (T) T)
-(REST (T) T NIL NIL
-;	:inline-safe ((t) t nil nil "cl_cdr(#0)")
+(FIFTH (LIST) T)
+(SIXTH (LIST) T)
+(SEVENTH (LIST) T)
+(EIGHTH (LIST) T)
+(NINTH (LIST) T)
+(TENTH (LIST) T)
+(REST (LIST) T NIL NIL
+	:inline-always ((cons) t nil nil "CDR(#0)")
 	:inline-unsafe ((t) t nil nil "CDR(#0)"))
-(NTHCDR (fixnum t) T nil nil
+(NTHCDR (fixnum LIST) T nil nil
 	:inline-always ((t t) t nil nil "nthcdr(fixint(#0),#1)")
 	:inline-always ((fixnum t) t nil nil "nthcdr(#0,#1)")
 	:inline-unsafe ((t t) t nil nil "nthcdr(fix(#0),#1)")
 	:inline-unsafe ((fixnum t) t nil nil "nthcdr(#0,#1)"))
-(LAST (T) T)
+(LAST (LIST) T)
 (LIST (*) LIST NIL NIL
 	:inline-always (nil t nil nil "Cnil")
 	:inline-always ((t) t nil t "CONS(#0,Cnil)"))
 (LIST* (T *) LIST NIL NIL
 	:inline-always ((t) t nil nil "#0")
 	:inline-always ((t t) t nil t "CONS(#0,#1)"))
-(MAKE-LIST (fixnum *) T)
-(APPEND (*) T NIL NIL
+(MAKE-LIST (fixnum *) LIST)
+(APPEND (*) LIST NIL NIL
 	:inline-always ((t t) t nil t "append(#0,#1)"))
-(COPY-LIST (T) LIST)
-(COPY-ALIST (T) LIST)
-(COPY-TREE (T) LIST)
-(REVAPPEND (T T) T)
+(COPY-LIST (LIST) LIST)
+(COPY-ALIST (LIST) LIST)
+(COPY-TREE (T) T)
+(REVAPPEND (LIST T) T)
 (NCONC (*) T NIL NIL
 	:inline-always ((t t) t t nil "nconc(#0,#1)"))
-(NRECONC (T T) T)
-(BUTLAST (T *) T)
-(NBUTLAST (T *) T)
-(LDIFF (T T) T)
+(NRECONC (LIST T) T)
+(BUTLAST (LIST *) LIST)
+(NBUTLAST (LIST *) LIST)
+(LDIFF (LIST T) LIST)
 (RPLACA (cons T) CONS)
 (RPLACD (cons T) CONS)
 (SUBST (T T T *) T)
@@ -520,22 +520,22 @@
 (NSUBST (T T T *) T)
 (NSUBST-IF (T T T *) T)
 (NSUBST-IF-NOT (T T T *) T)
-(SUBLIS (T T *) T)
-(NSUBLIS (T T *) T)
-(MEMBER (T T *) T)
-(MEMBER-IF (T T *) T)
-(MEMBER-IF-NOT (T T *) T)
+(SUBLIS (LIST T *) T)
+(NSUBLIS (LIST T *) T)
+(MEMBER (T LIST *) LIST)
+(MEMBER-IF (T LIST *) LIST)
+(MEMBER-IF-NOT (T LIST *) LIST)
 (MEMBER1 (T T T T T) T)
-(TAILP (T T) T NIL T)
-(ADJOIN (T T *) T)
-(ACONS (T T T) T)
-(PAIRLIS (T T *) T)
-(ASSOC (T T *) LIST)
-(ASSOC-IF (T T) LIST)
-(ASSOC-IF-NOT (T T) LIST)
-(RASSOC (T T *) LIST)
-(RASSOC-IF (T T) LIST)
-(RASSOC-IF-NOT (T T) LIST)
+(TAILP (T LIST) T NIL T)
+(ADJOIN (T LIST *) LIST)
+(ACONS (T T LIST) LIST)
+(PAIRLIS (LIST LIST *) LIST)
+(ASSOC (T LIST *) LIST)
+(ASSOC-IF (T LIST *) LIST)
+(ASSOC-IF-NOT (T LIST *) LIST)
+(RASSOC (T LIST *) LIST)
+(RASSOC-IF (T LIST *) LIST)
+(RASSOC-IF-NOT (T LIST *) LIST)
 (si::MEMQ (T T T) T)
 
 ; file lwp.c
@@ -673,13 +673,50 @@
 (MIN (T *) T NIL NIL
 	:inline-always ((t t) t nil nil "@01;(number_compare(#0,#1)<=0?#0:#1)")
 	:inline-always ((fixnum fixnum) fixnum nil nil "@01;(#0)<=(#1)?#0:#1"))
-(LOGIOR (*) T NIL NIL
-	:inline-always ((fixnum fixnum) fixnum nil nil "((#0) | (#1))"))
-(LOGXOR (*) T NIL NIL)
-(LOGAND (*) T NIL NIL
+(LOGAND (*) INTEGER NIL NIL
+	:inline-always (() t nil nil "MAKE_FIXNUM(-1)")
+	:inline-always (() fixnum nil nil "-1")
+	:inline-always ((t t) t nil nil "ecl_boole(ECL_BOOLAND,(#0),(#1))")
 	:inline-always ((fixnum fixnum) fixnum nil nil "((#0) & (#1))"))
-(LOGEQV (*) T NIL NIL)
-(BOOLE (T T T) T NIL NIL)
+(LOGANDC1 (INTEGER INTEGER) INTEGER NIL NIL
+	:inline-always ((t t) t nil nil "ecl_boole(ECL_BOOLANDC1,(#0),(#1))")
+	:inline-always ((fixnum fixnum) fixnum nil nil "(~(#0) & (#1))"))
+(LOGANDC2 (INTEGER INTEGER) INTEGER NIL NIL
+	:inline-always ((t t) t nil nil "ecl_boole(ECL_BOOLANDC2,(#0),(#1))")
+	:inline-always ((fixnum fixnum) fixnum nil nil "((#0) & ~(#1))"))
+(LOGEQV (*) INTEGER NIL NIL
+	:inline-always (() t nil nil "MAKE_FIXNUM(-1)")
+	:inline-always (() fixnum nil nil "-1")
+	:inline-always ((t t) t nil nil "ecl_boole(ECL_BOOLEQV,(#0),(#1))")
+	:inline-always ((fixnum fixnum) fixnum nil nil "(~( (#0) ^ (#1) ))"))
+(LOGIOR (*) INTEGER NIL NIL
+	:inline-always (() t nil nil "MAKE_FIXNUM(0)")
+	:inline-always (() fixnum nil nil "0")
+	:inline-always ((t t) t nil nil "ecl_boole(ECL_BOOLIOR,(#0),(#1))")
+	:inline-always ((fixnum fixnum) fixnum nil nil "((#0) | (#1))"))
+(LOGNAND (INTEGER INTEGER) INTEGER NIL NIL
+	:inline-always ((t t) t nil nil "ecl_boole(ECL_BOOLNAND,(#0),(#1))")
+	:inline-always ((fixnum fixnum) fixnum nil nil "(~( (#0) & (#1) ))"))
+(LOGNOR (INTEGER INTEGER) INTEGER NIL NIL
+	:inline-always ((t t) t nil nil "ecl_boole(ECL_BOOLNOR,(#0),(#1))")
+	:inline-always ((fixnum fixnum) fixnum nil nil "(~( (#0) | (#1) ))"))
+(LOGNOT (INTEGER) INTEGER NIL NIL
+	:inline-always ((t) t nil nil "ecl_boole(ECL_BOOLXOR,(#0),MAKE_FIXNUM(-1))")
+	:inline-always ((fixnum) fixnum nil nil "(~(#0))"))
+(LOGORC1 (INTEGER INTEGER) INTEGER NIL NIL
+	:inline-always ((t t) t nil nil "ecl_boole(ECL_BOOLORC1,(#0),(#1))")
+	:inline-always ((fixnum fixnum) fixnum nil nil "(~(#0) | (#1))"))
+(LOGORC2 (INTEGER INTEGER) INTEGER NIL NIL
+	:inline-always ((t t) t nil nil "ecl_boole(ECL_BOOLORC2,(#0),(#1))")
+	:inline-always ((fixnum fixnum) fixnum nil nil "((#0) | ~(#1))"))
+(LOGXOR (*) INTEGER NIL NIL
+	:inline-always (() t nil nil "MAKE_FIXNUM(0)")
+	:inline-always (() fixnum nil nil "0")
+	:inline-always ((t t) t nil nil "ecl_boole(ECL_BOOLXOR,(#0),(#1))")
+	:inline-always ((fixnum fixnum) fixnum nil nil "((#0) ^ (#1))"))
+(BOOLE (T T T) T NIL NIL
+	:inline-always ((fixnum t t) t nil nil "ecl_boole((#0),(#1),(#2))")
+)
 (LOGBITP (T T) T NIL T
 ;	:inline-always ((fixnum fixnum) :bool nil nil "(#1 >> #0) & 1")
 	:inline-always (((integer #.(- (integer-length most-negative-fixnum))
@@ -1060,10 +1097,6 @@ type_of(#0)==t_bitvector"))
 
 ;;; AKCL additions:
 (SI::COPY-STREAM (T T) T)
-
-;; file numlib.lsp:
-(LOGNOT (integer) integer NIL NIL
-	:inline-always ((fixnum) fixnum nil nil "(~(#0))"))
 
 ;; file seq.lsp
 

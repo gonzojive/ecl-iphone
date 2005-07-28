@@ -92,6 +92,7 @@ for the error message and ARGs are arguments to the format string."
              (go ,tag)))))))
 
 (defun accumulate-cases (macro-name cases list-is-atom-p)
+  (declare (si::c-local))
   (do ((c cases (cdr c))
        (l '()))
       ((null c) (nreverse l))

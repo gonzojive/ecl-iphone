@@ -53,7 +53,7 @@
 	       :test 'eq)))
 
 (defmacro def-foreign-type (name definition)
-  `(eval-when (compile load eval)
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
      (setf (gethash ',name ffi::*ffi-types*) ',definition)))
 
 (defmacro def-type (name definition)
@@ -549,7 +549,7 @@
                                     ,(format nil "ecl_make_foreign_data(@~S, ~A, &~A)"
                                              type (size-of-foreign-type type) c-name)
                                     :side-effects t :one-liner t))
-             (eval-when (load compile eval)
+             (eval-when (:compile-toplevel :load-toplevel :execute)
                (define-symbol-macro ,lisp-name
                  (ffi:deref-pointer (get-sysprop ',lisp-name 'ffi-foreign-var) ',type)
                  )))
@@ -595,18 +595,20 @@
 
 (defvar +loaded-libraries+ nil)
 
+(defun do-load-foreign-library (tmp)
+  (let* ((filename (if (pathnamep tmp) (namestring tmp) (string tmp)))
+	 (pack (find-package "COMPILER")))
+    (unless (find filename ffi::+loaded-libraries+ :test #'string-equal)
+      (setf (symbol-value (intern "*LD-FLAGS*" pack)) (concatenate 'string (symbol-value (intern "*LD-FLAGS*" pack)) " " filename))
+      (setf (symbol-value (intern "*LD-BUNDLE-FLAGS*" pack)) (concatenate 'string (symbol-value (intern "*LD-BUNDLE-FLAGS*" pack)) " " filename))
+      (setf (symbol-value (intern "*LD-SHARED-FLAGS*" pack)) (concatenate 'string (symbol-value (intern "*LD-SHARED-FLAGS*" pack)) " " filename))
+      (push filename ffi::+loaded-libraries+))
+    t))
+
 (defmacro load-foreign-library (filename &key module supporting-libraries force-load)
-  (declare (ignore module force-load))
-  `(eval-when (compile)
-     (let* ((tmp ,filename)
-            (filename (if (pathnamep tmp) (namestring tmp) (string tmp)))
-	    (pack (find-package "COMPILER")))
-       (unless (find filename ffi::+loaded-libraries+ :test #'string-equal)
-         (setf (symbol-value (intern "*LD-FLAGS*" pack)) (concatenate 'string (symbol-value (intern "*LD-FLAGS*" pack)) " " filename))
-         (setf (symbol-value (intern "*LD-BUNDLE-FLAGS*" pack)) (concatenate 'string (symbol-value (intern "*LD-BUNDLE-FLAGS*" pack)) " " filename))
-         (setf (symbol-value (intern "*LD-SHARED-FLAGS*" pack)) (concatenate 'string (symbol-value (intern "*LD-SHARED-FLAGS*" pack)) " " filename))
-         (push filename ffi::+loaded-libraries+))
-       t)))
+  (declare (ignore module force-load supporting-libraries))
+  `(eval-when (:compile-toplevel)
+     (do-load-foreign-library ,filename)))
 
 ;;;----------------------------------------------------------------------
 ;;; COMPATIBILITY WITH OLDER FFI

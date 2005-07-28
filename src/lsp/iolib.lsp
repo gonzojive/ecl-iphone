@@ -282,7 +282,6 @@ the one defined in the ANSI standard. *print-base* is 10, *print-array* is t,
 	  ((object stream &key type identity) &body body)
   (if body
       `(flet ((.print-unreadable-object-body. () ,@body))
-	 (declare (:dynamic-extent function))
 	 (print-unreadable-object-function
 	   ,object ,stream ,type ,identity #'.print-unreadable-object-body.))
     `(print-unreadable-object-function ,object ,stream ,type ,identity nil)))

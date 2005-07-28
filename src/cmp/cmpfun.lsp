@@ -286,45 +286,31 @@
 (setf (symbol-function 'shift<<) #'ash)
 (setf (symbol-function 'shift>>) #'ash)
 
-;----------------------------------------------------------------------
+;;----------------------------------------------------------------------
+;; We transform BOOLE into the individual operations, which have
+;; inliners
+;;
 
-;;;
-;;; FIXME! We should replace this with a compiler macro + inliner for each
-;;; logical operation.
-;;;
-
-(defun co1boole (args)
-   (and (not (endp (cddr args)))
-	(endp (cdddr args))
-	(let ((op-code (first args))
-	      c1args string)
-	  (and (constantp op-code)
-	       (sys:fixnump (setq op-code (eval op-code)))
-	       (setq c1args (c1args* (rest args)))
-	       (eq 'FIXNUM (c1form-primary-type (first c1args)))
-	       (eq 'FIXNUM (c1form-primary-type (second c1args)))
-	       (c1expr `(c-inline ,(rest args) (FIXNUM FIXNUM) (FIXNUM)
-				  ,(boole-inline-string op-code)
-				  :side-effects nil :one-liner t))))))
-
-(defun boole-inline-string (op-code)
-  (ecase op-code
-    (#. boole-clr "(0)")
-    (#. boole-set "(-1)")
-    (#. boole-1 "(#0)")
-    (#. boole-2 "(#1)")
-    (#. boole-c1 "(~(#0))")
-    (#. boole-c2 "(~(#1))")
-    (#. boole-and "((#0) & (#1))")
-    (#. boole-ior "((#0) | (#1))")
-    (#. boole-xor "((#0) ^ (#1))")
-    (#. boole-eqv   "(~((#0) ^ (#1)))")
-    (#. boole-nand "(~((#0) & (#1)))")
-    (#. boole-nor   "(~((#0)|(#1)))")
-    (#. boole-andc1 "((~(#0))&(#1))")
-    (#. boole-andc2 "(((#0))&(~(#1)))")
-    (#. boole-orc1  "(~(#0) | (#1))")
-    (#. boole-orc2  "((#0) | (~(#1)))")))
+(define-compiler-macro boole (&whole form op-code op1 op2)
+  (or (and (constantp op-code)
+	   (case (eval op-code)
+	     (#. boole-clr `(progn ,op1 ,op2 0))
+	     (#. boole-set `(progn ,op1 ,op2 -1))
+	     (#. boole-1 `(prog1 ,op1 ,op2))
+	     (#. boole-2 `(progn ,op1 ,op2))
+	     (#. boole-c1 `(prog1 (lognot ,op1) ,op2))
+	     (#. boole-c2 `(progn ,op1 (lognot ,op2)))
+	     (#. boole-and `(logand ,op1 ,op2))
+	     (#. boole-ior `(logior ,op1 ,op2))
+	     (#. boole-xor `(logxor ,op1 ,op2))
+	     (#. boole-eqv `(logeqv ,op1 ,op2))
+	     (#. boole-nand `(lognand ,op1 ,op2))
+	     (#. boole-nor `(lognor ,op1 ,op2))
+	     (#. boole-andc1 `(logandc1 ,op1 ,op2))
+	     (#. boole-andc2 `(logandc2 ,op1 ,op2))
+	     (#. boole-orc1 `(logorc1 ,op1 ,op2))
+	     (#. boole-orc2 `(logorc2 ,op1 ,op2))))
+      form))
 
 ;----------------------------------------------------------------------
 
@@ -439,8 +425,6 @@
 (put-sysprop 'list-nth-immediate 'C2 'c2list-nth-immediate)
 
 (put-sysprop 'ash 'C1CONDITIONAL 'co1ash)
-(put-sysprop 'boole 'C2 'c2boole)
-(put-sysprop 'boole 'C1CONDITIONAL 'co1boole)
 (put-sysprop 'coerce 'C1CONDITIONAL 'co1coerce)
 (put-sysprop 'cons 'C1CONDITIONAL 'co1cons)
 (put-sysprop 'ldb 'C1CONDITIONAL 'co1ldb)

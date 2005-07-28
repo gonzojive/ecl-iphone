@@ -982,6 +982,7 @@ if not possible."
 	       ))
 
 (defun find-built-in-tag (name)
+  (declare (si::c-local))
   (when (eq name T)
     (return-from find-built-in-tag -1))
   (dolist (i '#.+built-in-types+)
@@ -1106,6 +1107,7 @@ if not possible."
     (canonical-type type)))
 
 (defun fast-subtypep (t1 t2)
+  (declare (si::c-local))
   (when (eq t1 t2)
     (return-from fast-subtypep (values t t)))
   (let* ((tag1 (safe-canonical-type t1))

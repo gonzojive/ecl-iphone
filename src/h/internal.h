@@ -81,25 +81,6 @@ extern cl_object si_formatter_aux _ARGS((cl_narg narg, cl_object strm, cl_object
 /* hash.d */
 extern void ecl_extend_hashtable(cl_object hashtable);
 
-/* num_log.d */
-
-#define BOOLCLR		0
-#define BOOLAND		01
-#define BOOLANDC2	02
-#define BOOL1		03
-#define BOOLANDC1	04
-#define BOOL2		05
-#define BOOLXOR		06
-#define BOOLIOR		07
-#define BOOLNOR		010
-#define BOOLEQV		011
-#define BOOLC2		012
-#define BOOLORC2	013
-#define BOOLC1		014
-#define BOOLORC1	015
-#define BOOLNAND	016
-#define BOOLSET		017
-
 /* gfun.d, kernel.lsp */
 
 #define GFUN_NAME(x) ((x)->instance.slots[0])
