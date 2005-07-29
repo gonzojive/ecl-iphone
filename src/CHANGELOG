@@ -104,6 +104,9 @@ ECL 0.9g
  - Adjusting displaced bit-vectors failed to take the displace-offset into
    account.
 
+ - Variable SI::*GC-VERBOSE* controls whether ECL emits messages when FASL
+   libraries are garbage colleced.
+
 * ANSI compatibility:
 
  - Several functions that signaled type-errors did not set the right values

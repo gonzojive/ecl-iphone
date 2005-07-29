@@ -137,6 +137,7 @@ ecl_library_error(cl_object block) {
 void
 ecl_library_close(cl_object block) {
 	const char *filename;
+	bool verbose = SYM_VAL(@'si::*gc-verbose*') != Cnil;
 	cl_object libraries = cl_core.libraries;
 	int i;
 
@@ -146,20 +147,24 @@ ecl_library_close(cl_object block) {
 		filename = "<anonymous>";
 
         if (block->cblock.handle != NULL) {
-             printf("\n;;; Freeing library %s\n", filename);
+		if (verbose) {
+			fprintf(stderr, ";;; Freeing library %s\n", filename);
+		}
 #ifdef HAVE_DLFCN_H
-             dlclose(block->cblock.handle);
+		dlclose(block->cblock.handle);
 #endif
 #ifdef HAVE_MACH_O_DYLD_H
-             NSUnLinkModule(block->cblock.handle, NSUNLINKMODULE_OPTION_NONE);
+		NSUnLinkModule(block->cblock.handle, NSUNLINKMODULE_OPTION_NONE);
 #endif
 #if defined(mingw32) || defined(_MSC_VER)
-             FreeLibrary(block->cblock.handle);
+		FreeLibrary(block->cblock.handle);
 #endif
         }
 
 	if (block->cblock.self_destruct) {
-		printf("\n;;; Removing file %s\n", filename);
+		if (verbose) {
+			fprintf(stderr, ";;; Removing file %s\n", filename);
+		}
 		unlink(filename);
         }
 	for (i = 0; i <= libraries->vector.fillp; i++) {
