@@ -152,6 +152,8 @@
   (no-entry nil)	;;; NIL if declared as C-LOCAL. Then we create no
 			;;; function object and the C function is called
 			;;; directly
+  (shares-with nil)	;;; T if this function shares the C code with another one.
+			;;; In that case we need not emit this one.
   closure		;;; During Pass2, T if env is used inside the function
   var			;;; the variable holding the funob
   description		;;; Text for the object, in case NAME == NIL.

@@ -246,8 +246,8 @@
       (when (similar (fun-lambda new) (fun-lambda old))
 	(cmpnote "Sharing code among functions ~A and ~A"
 		 (fun-name new) (fun-name old))
-	(setf (fun-cfun new) (fun-cfun old)
-	      (fun-lambda new) nil
+	(setf (fun-shares-with new) old
+	      (fun-cfun new) (fun-cfun old)
 	      (fun-minarg new) (fun-minarg old)
 	      (fun-maxarg new) (fun-maxarg old))
 	(return))))
@@ -475,6 +475,9 @@
 		    ((eq (fun-closure fun) 'CLOSURE) "closure ")
 		    (t "local function "))
 	      (or (fun-name fun) (fun-description fun) 'CLOSURE))
+  (when (fun-shares-with fun)
+    (wt-comment "... shares definition with " (fun-name (fun-shares-with fun)))
+    (return-from t3local-fun))
   (cond ((fun-exported fun)
 	 (wt-h #+(and msvc (not ecl-min)) "__declspec(dllexport) " "cl_object " cfun "(")
 	 (wt-nl1 "cl_object " cfun "("))
