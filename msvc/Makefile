@@ -156,6 +156,7 @@ compile.lsp: bare.lsp $(srcdir)/compile.lsp.in Makefile
 	    "@DEF@" "$(DEF)" \
 	    "@ECL_MODULES@" "$(ECL_MODULES)" \
             "@RANLIB@" "ranlib" \
+	    "@PUSH_CROSS_FEATURES@" "" \
 	    < $(srcdir)\compile.lsp.in > compile.lsp
 bare.lsp: $(srcdir)/bare.lsp.in lsp/load.lsp clos/load.lsp cmp/load.lsp cmp/cmpcfg.lsp
 	c\cut "@true_srcdir@" "$(srcdir:\=/)" \

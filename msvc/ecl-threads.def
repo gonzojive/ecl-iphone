@@ -664,6 +664,7 @@ EXPORTS
 	cl_logand
 	cl_logeqv
 
+	ecl_boole
 	ecl_ash
 	ecl_fixnum_bit_length
 
@@ -927,7 +928,6 @@ EXPORTS
 	cl_subseq
 
 	cl_alloc_simple_vector
-	cl_alloc_simple_bitvector
 	elt
 	elt_set
 	length
