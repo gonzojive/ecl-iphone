@@ -185,9 +185,11 @@ libraries, standalone executable programs, or larger FASL files.
 @node Building standalone executables, Building libraries, Compiling files, Building programs
 @section Building standalone executables
 
-To build an executable you need a working @ecl{} image with the compiler. The
-function to build customized images is @var{c::build-program}. The description of
-this function is as follows.
+To build an executable you need a working @ecl{} image with the
+compiler. The function to build customized images is
+@var{c::build-program}. The description of this function is as
+follows. Care should be taken that @var{image-name} differs from any
+filename in @var{lisp-files}.
 
 @defun {c:build-program} @{@var{image-name} @keys{} @var{lisp-files} @var{ld-flags} @var{prologue-code} @var{epilogue-code}@}
 
