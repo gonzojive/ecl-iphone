@@ -41,7 +41,7 @@ coprocessor).")
 (defvar *ld-bundle-flags* "")
 
 (defun safe-system (string)
-  (format *error-output* "~&;;; Invoking external command: ~A~%" string)
+  (cmpnote "~&;;; Invoking external command: ~A~%" string)
   (let ((result (si:system string)))
     (unless (zerop result)
       (cerror "Continues anyway."
