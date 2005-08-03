@@ -1456,13 +1456,11 @@ copy_list_wildcards(cl_object *wilds, cl_object to)
 	out->pathname.type = d;
 
 	/* Match version */
-	if (to->pathname.version == @':wild') {
-		if (out->pathname.version == @':wild')
-			out->pathname.version = source->pathname.version;
-		else
-			goto error2;
-	} else {
-		out->pathname.version = to->pathname.version;
+	out->pathname.version = to->pathname.version;
+	if (source->pathname.version == @':wild') {
+		if (to->pathname.version == @':wild') {
+			out->pathname.version = from->pathname.version;
+		}
 	}
 	return out;
 
