@@ -1413,8 +1413,11 @@ copy_list_wildcards(cl_object *wilds, cl_object to)
 @(defun translate-pathname (source from to &key)
 	cl_object wilds, out, d;
 @
+	/* The pathname from which we get the data */
 	source = cl_pathname(source);
+	/* The mask applied to the source pathname */
 	from = cl_pathname(from);
+	/* The pattern which says what the output should look like */
 	to = cl_pathname(to);
 
 	if (source->pathname.logical != from->pathname.logical)
@@ -1457,9 +1460,9 @@ copy_list_wildcards(cl_object *wilds, cl_object to)
 
 	/* Match version */
 	out->pathname.version = to->pathname.version;
-	if (source->pathname.version == @':wild') {
+	if (from->pathname.version == @':wild') {
 		if (to->pathname.version == @':wild') {
-			out->pathname.version = from->pathname.version;
+			out->pathname.version = source->pathname.version;
 		}
 	}
 	return out;
