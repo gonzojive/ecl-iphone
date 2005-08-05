@@ -614,7 +614,14 @@
 ;;; COMPATIBILITY WITH OLDER FFI
 ;;;
 
-(defmacro clines (&rest args))
+(defmacro clines (&rest args)
+  (when (find-package :c)
+    (dolist (s args)
+      (unless (stringp s)
+        (error "The argument to CLINES, ~s, is not a string." s)))
+    (let ((csl (find-symbol :*clines-string-list* (find-package :c))))
+      `(eval-when (:compile-toplevel)
+        (setf ,csl (nconc ,csl (copy-list ',args)))))))
 
 (eval-when (:load-toplevel)
   (defmacro c-inline (&rest args)
@@ -647,7 +654,8 @@
 	(setf output-type (first c-name)
 	      c-name (second c-name)))
     (setf c-name (string c-name))
-    `(defun name ,args
+    `(defun ,name ,args
        (c-inline ,args ,arg-types ,output-type
-		 :one-liner ,(produce-function-call c-name (length arg-types))))))
+                 ,(produce-function-call c-name (length arg-types))
+		 :one-liner t))))
 

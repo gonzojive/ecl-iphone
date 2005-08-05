@@ -409,29 +409,6 @@
 	(otherwise
 	 (write-char c *compiler-output1*))))))
 
-;; ----------------------------------------------------------------------
-;; SIMPLIFIED INTERFACES TO C-INLINE
-;;
-
-(defmacro defentry (lisp-name c-types c-name)
-  (let ((out-type (if (consp c-name) (first c-name) :object))
-	(arg-names (mapcar #'(lambda (x) (gensym)) c-types)))
-    (when (consp c-name)
-      (setq c-name (second c-name)))
-    (cond ((symbolp c-name)
-	   (setq c-name (string-downcase (symbol-name c-name))))
-	  ((not (stringp c-name))
-	   (error "~S is not a valid C/C++ function name" c-name)))
-  `(defun ,lisp-name ,arg-names
-     (c-inline ,arg-names ,c-types ,out-type
-       ,(with-output-to-string (s)
-	  (format s "~a(" c-name)
-	  (do ((l c-types (cdr l))
-	       (i 0 (1+ i)))
-	      ((endp l) (princ #\) s))
-	    (format s "#~d~:[~;,~]" i (cdr l))))
-      :one-liner t))))
-
 (put-sysprop 'C-INLINE 'C1SPECIAL #'c1c-inline)
 (put-sysprop 'C-INLINE 'C2 #'c2c-inline)
 (put-sysprop 'C-INLINE 'WT-LOC #'wt-c-inline-loc)

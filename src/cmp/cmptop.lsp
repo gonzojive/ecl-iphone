@@ -431,13 +431,6 @@
     (c1add-declarations decls)
     (t2expr body)))
 
-(defmacro ffi:clines (&rest args)
-  (dolist (s args)
-    (unless (stringp s)
-      (error "The argument to CLINES, ~s, is not a string." s)))
-  `(eval-when (:compile-toplevel)
-     (setf *clines-string-list* (nconc *clines-string-list* (copy-list ',args)))))
-
 (defun parse-cvspecs (x &aux (cvspecs nil))
   (dolist (cvs x (nreverse cvspecs))
     (cond ((symbolp cvs)
