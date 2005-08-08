@@ -632,10 +632,7 @@
               ;; defCbody must go first, because it clears symbol-plist of fun
               (defCbody ,fun ,arg-types ,type ,code)
               (declaim (ftype (function ,arg-types ,type) ,fun))
-              (setf (get ',fun ':inline-always)
-                    '((,arg-types ,type
-                       t                ; side-effect-p
-                       nil ,code)))))
+	      (def-inline ,fun :always ,arg-types ,type ,code)))
 
 (defmacro defla (&rest body)
   `(eval-when (:execute)

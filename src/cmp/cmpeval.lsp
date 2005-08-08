@@ -125,7 +125,7 @@
 			 "In a call to ~a" fname)
 	  (pop arg-types))))
     (make-c1form* 'CALL-GLOBAL
-		  :sp-change (not (get-sysprop fname 'NO-SP-CHANGE))
+		  :sp-change (function-may-change-sp fname)
 		  :type return-type
 		  :args fname forms)))
 

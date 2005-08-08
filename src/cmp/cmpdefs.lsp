@@ -210,6 +210,14 @@
   (volatile nil)	;;; whether there is a possible setjmp. Beppe
   )
 
+(defstruct (inline-info)
+  arg-rep-types		;;; List of representation types for the arguments
+  return-rep-type	;;; Representation type for the output
+  arg-types		;;; List of lisp types for the arguments
+  return-type		;;; Lisp type for the output
+  expansion		;;; C template containing the expansion
+)
+
 ;;;
 ;;; VARIABLES
 ;;;

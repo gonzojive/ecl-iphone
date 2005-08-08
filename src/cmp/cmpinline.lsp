@@ -18,7 +18,7 @@
 ;;;  :INLINE-UNSAFE	non-safe-compile only
 ;;;
 ;;; Each property is a list of 'inline-info's, where each inline-info is:
-;;; ( types { type | boolean } side-effect new-object { string | function } ).
+;;; ( types { type | boolean } { string | function } ).
 ;;;
 ;;; For each open-codable function, open coding will occur only if there exits
 ;;; an appropriate property with the argument types equal to 'types' and with
@@ -173,16 +173,17 @@
        (let* ((ii (get-inline-info fname (mapcar #'first inlined-locs)
 				   (type-and return-type (destination-type)))))
 	 (when ii
-	   (let* ((arg-types (first ii))
-		  (out-rep-type (lisp-type->rep-type (second ii)))
-		  (out-type (rep-type->lisp-type (second ii)))
-		  (side-effects-p (third ii))
-		  (fun (fifth ii))
+	   (let* ((arg-types (inline-info-arg-types ii))
+		  (out-rep-type (inline-info-return-rep-type ii))
+		  (out-type (inline-info-return-type ii))
+		  (side-effects-p (function-may-have-side-effects fname))
+		  (fun (inline-info-expansion ii))
 		  (one-liner t))
 	     (produce-inline-loc inlined-locs arg-types (list out-rep-type)
 				 fun side-effects-p one-liner))))))
 
 (defun get-inline-info (fname types return-type &aux ii iia)
+  (declare (si::c-local))
   (dolist (x *inline-functions*)
     (when (and (eq (car x) fname)
 	       (setq ii (inline-type-matches (cdr x) types return-type)))
@@ -196,10 +197,20 @@
     (when (setq iia (inline-type-matches x types return-type))
       (return)))
   (if (and ii iia)
-      (if (and (every #'type>= (first ii) (first iia))
-	       (type>= (second ii) (second iia)) ; no contravariance here
-	       (not (and (every #'equal (first ii) (first iia))
-			 (equal (second iia) (second ii))))) iia ii)
+      ;; Choose the most specific inline form if two available
+      (if (and (every #'type>=
+		      (inline-info-arg-types ii)
+		      (inline-info-arg-types iia))
+	       ;; no contravariance here
+	       (type>= (inline-info-return-type ii)
+		       (inline-info-return-type iia))
+	       (not (and (every #'equal
+				(inline-info-arg-types ii)
+				(inline-info-arg-types iia))
+			 (equal (inline-info-return-type iia)
+				(inline-info-return-type ii)))))
+	  iia
+	  ii)
       (or ii iia))
   )
 
@@ -207,8 +218,8 @@
                                         &aux (rts nil)
 					(number-max nil)
 					(inline-return-type
-					 (rep-type->lisp-type
-					  (second inline-info))))
+					 (inline-info-return-type
+					  inline-info)))
   ;; In sysfun.lsp optimizers must be listed with most specific cases last.
   (flet ((float-type-max (t1 t2)
 	   (if t1
@@ -221,7 +232,7 @@
 		       'FIXNUM))
 	       t2)))
     (if (and (do ((arg-types arg-types (cdr arg-types))
-		  (types (car inline-info) (cdr types))
+		  (types (inline-info-arg-types inline-info) (cdr types))
 		  (arg-type)
 		  (type))
 		 ((or (endp arg-types) (endp types))
@@ -242,7 +253,7 @@
 		     ((type>= (rep-type->lisp-type type) arg-type)
 		      (push type rts))
 		     (t (return nil))))
-	     (or (eq (second inline-info) :bool)
+	     (or (eq (inline-info-return-rep-type inline-info) :bool)
 		 (if number-max
 		     ;; for arithmetic operators we take the maximal type
 		     ;; as possible result type
@@ -250,7 +261,10 @@
 			  (type>= number-max inline-return-type))
 		     ;; no contravariance
 		     (type>= inline-return-type return-type))))
-	(cons (nreverse rts) (cdr inline-info))
+	(let ((inline-info (copy-structure inline-info)))
+	  (setf (inline-info-arg-types inline-info)
+		(nreverse rts))
+	  inline-info)
 	nil))
   )
 
@@ -268,15 +282,8 @@
 	(CALL-GLOBAL
 	 (let ((fname (c1form-arg 0 form))
 	       (args (c1form-arg 1 form)))
-	   (when (or (not (inline-possible fname))
-		     (null (setq ii (get-inline-info
-				     fname
-				     (mapcar #'c1form-primary-type args)
-				     (c1form-primary-type form))))
-		     (third ii)
-		     (fourth ii)
-		     (need-to-protect args))
-	     (setq res t))))
+	   (or (function-may-have-side-effects fname)
+	       (need-to-protect args))))
 	(SYS:STRUCTURE-REF
 	 (when (need-to-protect (list (c1form-arg 0 form)))
 	   (setq res t)))
@@ -291,18 +298,19 @@
     ((LOCATION VAR SYS:STRUCTURE-REF #+clos SYS:INSTANCE-REF)
      nil)
     (CALL-GLOBAL
-     (let* ((form-args (c1form-args form))
-	    (fname (first form-args))
-	    (args (second form-args))
-	    ii)
-       (not (and (inline-possible fname)
-		 (notany #'form-causes-side-effect args)
-		 (setq ii (get-inline-info
-			   fname (mapcar #'c1form-primary-type args)
-			   (c1form-primary-type form)))
-		 (not (third ii))	; no side-effectp
-		 ))))
+     (let ((fname (c1form-arg 0 form))
+	   (args (c1form-arg 1 form)))
+       (or (function-may-have-side-effects fname)
+	   (args-cause-side-effect args))))
     (t t)))
 
 (defun args-cause-side-effect (forms)
   (some #'form-causes-side-effect forms))
+
+(defun function-may-have-side-effects (fname)
+  (declare (si::c-local))
+  (not (get-sysprop fname 'no-side-effects)))
+
+(defun function-may-change-sp (fname)
+  (not (or (get-sysprop fname 'no-side-effects)
+	   (get-sysprop fname 'no-sp-change))))

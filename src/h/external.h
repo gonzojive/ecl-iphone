@@ -1249,6 +1249,7 @@ extern cl_object new_frame_id(void);
 /* string.c */
 
 extern cl_object cl_char(cl_object s, cl_object i);
+#define cl_schar(x,y) cl_char(x,y)
 extern cl_object si_char_set(cl_object str, cl_object index, cl_object c);
 extern cl_object cl_string_trim(cl_object char_bag, cl_object strng);
 extern cl_object cl_string_left_trim(cl_object char_bag, cl_object strng);

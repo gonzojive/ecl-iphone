@@ -722,9 +722,6 @@
 
 ;;; Force the compiler into optimizing use of gethash inside methods:
 (setf (symbol-function 'SLOT-INDEX) (symbol-function 'GETHASH))
-(put-sysprop 'SLOT-INDEX ':INLINE-ALWAYS
-	     '(((T T) FIXNUM NIL NIL "fix(gethash(#0,#1))")
-	       ((T T) T NIL NIL "gethash_safe(#0,#1,Cnil)")))
 
 (defun reduce-constant (old)
   (let ((new (eval old)))

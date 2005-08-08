@@ -50,6 +50,11 @@ ECL 0.9g
 
  - We now provide inline expansions for all logical operators.
 
+ - We have changed the syntax both for function proclamantions and for inline
+   expansions in sysfun.lsp Additionally, the checks for functions having side
+   effects have been improved and inline expansions are now stored with a
+   special-purpose structure INLINE-INFO.
+
 * Errors fixed:
 
  - Now .o files compiled with :SYSTEM-P T with dash in filename load

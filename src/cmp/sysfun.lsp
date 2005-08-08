@@ -1,1150 +1,1311 @@
 ;;; CMPSYSFUN   Database for system functions.
 ;;;
+;;; Copyright (c) 2003, Juan Jose Garcia Ripoll
 ;;; Copyright (c) 1991, Giuseppe Attardi. All rights reserved.
 ;;;    Copying of this file is authorized to users who have executed the true
 ;;;    and proper "License Agreement for ECoLisp".
-
 ;;;
-;;; For each system function it provides:
+;;; DATABASE OF FUNCTION PROCLAMATIONS AND INLINE EXPANSIONS
 ;;;
-;;; 	name		of corresponding C function
-;;;	argtypes	(list of types of arguments, * means optionals)
-;;;	return-type
-;;;	never-change-special-var-p
-;;;	predicate
-;;;	optimizers
+;;; What follows is the complete list of function type proclamations for the
+;;; most important functions in the ECL core library, together with some useful
+;;; inline expansions.
 ;;;
-;;; An optimizer is a property list:
-;;;	{ property inline-info }*
+;;; The function proclamations are created with PROCLAIM-FUNCTION, as in
 ;;;
-;;; Valid property names are:
-;;;  :INLINE-ALWAYS
-;;;  :INLINE-SAFE	safe-compile only
-;;;  :INLINE-UNSAFE	non-safe-compile only
+;;;	(PROCLAIM-FUNCTION function-name ([arg-type]*) return-type
+;;;		&key no-sp-change predicate no-side-effects)
 ;;;
-;;; An inline-info is:
-;;; ( types { type | boolean } side-effect new-object { string | function } ).
-;;; string is:
-;;; [@i..;]Cexpr(#0, ..., #n)
-;;; where #0 indicates the first argument. The optional @i indicates an
-;;; argument to be saved into a variable before evaluating Cexpr.
-
-;;; The following flag:
-;;;	side-effect-p
-;;; which is repeated in each optimizer, could be supplied just once
-;;; per function, while
-;;;	allocates-new-storage
-;;; could be just eliminated since we use a conservative GC.
+;;; with the following interpretation: ARG-TYPE and RETURN-TYPE denote the most
+;;; general types for the input and output values of this function. If the
+;;; compiler detects that some of the values passed to this function does not
+;;; match these types, it will generate an error. NO-SP-CHANGE should be
+;;; supplied if the function is known to not change any special variable. A more
+;;; strict declaration is NO-SIDE-EFFECTS which means that the function's output
+;;; does only depend in the input values, that these input values are not
+;;; changed, and that under normal conditions (i.e. no error signaled) the
+;;; function has no side effect (i.e. does not change global variables, does not
+;;; perform input/output, etc). Notice that allocating memory and creating new
+;;; elementary objects (i.e. conses, floats, integers, etc) is not considered a
+;;; side effect, while creating other objects (classes, streams, structures) is.
+;;;
+;;; Inline expansions, on the other hand, have the following syntax
+;;;
+;;;	(DEF-INLINE function-name kind ([arg-type]*) return-rep-type
+;;;		expansion-string)
+;;;
+;;; Here, ARG-TYPE is the list of argument types belonging to the lisp family,
+;;; while RETURN-REP-TYPE is a representation type, i.e. the C type of the
+;;; output expression. EXPANSION-STRING is a C/C++ expression template, like the
+;;; ones used by C-INLINE. Finally, KIND can be :ALWAYS, :SAFE or :UNSAFE,
+;;; depending on whether the inline expression should be applied always, in safe
+;;; or in unsafe compilation mode, respectively.
+;;;
 
 (in-package "COMPILER")
 
-(defun defsysfun (fname &optional
-		  arg-types return-type
-		  never-change-special-var-p predicate
-		  &rest optimizers)
-  ;; The value NIL for each parameter except for fname means "not known".
-  ;; optimizers is a list of alternating {safety inline-info}* as above.
-  (when arg-types
-    (put-sysprop fname 'arg-types
+(defmacro proclaim-function (name arg-types return-type
+			     &key no-sp-change predicate no-side-effects)
+  (unless (or (null arg-types)
+	      (equal arg-types '(*)))
+    (put-sysprop name 'arg-types
 		 (mapcar #'(lambda (x) (if (eql x '*) '* (type-filter x)))
 			 arg-types)))
   (when (and return-type (not (eq 'T return-type)))
-    (put-sysprop fname 'return-type
+    (put-sysprop name 'return-type
 		 (if (eql return-type '*) '* (type-filter return-type t))))
-  (when never-change-special-var-p (put-sysprop fname 'no-sp-change t))
-  (when predicate (put-sysprop fname 'predicate t))
-  (rem-sysprop fname ':inline-always)
-  (rem-sysprop fname ':inline-safe)
-  (rem-sysprop fname ':inline-unsafe)
-  (when (or (keywordp never-change-special-var-p)
-	    (keywordp predicate))
-    (format t "~%Error in ~A" fname))
-  (do ((scan optimizers (cddr scan))
-       (safety) (inline-info))
-      ((null scan))
-    (unless (member (first scan) '(:inline-always :inline-safe :inline-unsafe))
-      (format t ";;; ~%Wrong entry in file sys:sysfun.lsp for function ~A~%;;; ~A" fname
-	      optimizers)
-      #+nil
-      (error "Wrong entry in file sys:sysfun.lsp for function ~A" fname))
-    (setq safety (first scan)
-	  inline-info (second scan))
-    (put-sysprop fname safety (cons inline-info (get-sysprop fname safety)))))
+  (when no-sp-change
+    (put-sysprop name 'no-sp-change t))
+  (when predicate
+    (put-sysprop name 'predicate t))
+  (when no-side-effects
+    (put-sysprop name 'no-side-effects t))
+  (rem-sysprop name ':inline-always)
+  (rem-sysprop name ':inline-safe)
+  (rem-sysprop name ':inline-unsafe)
+  nil)
 
-; file alloc.c
-#-boehm-gc
-(mapcar #'(lambda (x) (apply #'defsysfun x)) '(
-(si::ALLOC)
-(si::NPAGE)
-(si::MAXPAGE)
-(si::ALLOC-CONTPAGE)
-(si::NCBPAGE)
-(si::MAXCBPAGE)
-(si::ALLOC-RELPAGE)
-(si::NRBPAGE)
-(si::GET-HOLE-SIZE)
-(si::SET-HOLE-SIZE)))
+(defmacro def-inline (name safety arg-types return-rep-type expansion
+		      &aux arg-rep-types)
+  (setf safety
+	(case safety
+	  (:unsafe :inline-unsafe)
+	  (:safe :inline-safe)
+	  (:always :inline-always)
+	  (t (error "In DEF-INLINE, wrong value of SAFETY"))))
+  (setf arg-rep-types
+	(mapcar #'(lambda (x) (if (eq x '*) x (lisp-type->rep-type x)))
+		arg-types))
+  (let ((inline-info
+	 (make-inline-info :arg-rep-types arg-rep-types
+			   :return-rep-type return-rep-type
+			   :return-type (rep-type->lisp-type return-rep-type)
+			   :arg-types arg-types
+;			   :side-effects (not (get-sysprop name 'no-side-effects))
+			   :expansion expansion)))
+    (put-sysprop name safety (cons inline-info (get-sysprop name safety))))
+  nil)
 
-(mapcar #'(lambda (x) (apply #'defsysfun x)) '(
-(si::LIST-NTH nil T)
-(si::MAKE-PURE-ARRAY nil array)
-(si::MAKE-VECTOR nil vector)
-;(si::MAKE-BITVECTOR nil bit-vector nil nil)
-(AREF (array *) T NIL NIL
-	:inline-unsafe ((t t t) t nil t
-		"@0;aref(#0,fix(#1)*(#0)->array.dims[1]+fix(#2))")
-	:inline-unsafe (((array t) t t) t nil nil
-		"@0;(#0)->array.self.t[fix(#1)*(#0)->array.dims[1]+fix(#2)]")
-	:inline-unsafe (((array bit) t t) fixnum nil nil
-		"@0;aref_bv(#0,fix(#1)*(#0)->array.dims[1]+fix(#2))")
-	:inline-unsafe (((array t) fixnum fixnum) t nil nil
-		"@0;(#0)->array.self.t[#1*(#0)->array.dims[1]+#2]")
-	:inline-unsafe (((array bit) fixnum fixnum) fixnum nil nil
-		"@0;aref_bv(#0,(#1)*(#0)->array.dims[1]+#2)")
-	:inline-unsafe (((array base-char) fixnum fixnum) character nil nil
-		"@0;(#0)->string.self[#1*(#0)->array.dims[1]+#2]")
-	:inline-unsafe (((array long-float) fixnum fixnum) long-float nil nil
-		"@0;(#0)->array.self.lf[#1*(#0)->array.dims[1]+#2]")
-	:inline-unsafe (((array short-float) fixnum fixnum) short-float nil nil
-		"@0;(#0)->array.self.sf[#1*(#0)->array.dims[1]+#2]")
-	:inline-unsafe (((array fixnum) fixnum fixnum) fixnum nil nil
-		"@0;(#0)->array.self.fix[#1*(#0)->array.dims[1]+#2]")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; ALL FUNCTION DECLARATIONS AND INLINE FORMS
+;;;
 
-	:inline-always ((t t) t nil t "aref1(#0,fixint(#1))")
-	:inline-always ((t fixnum) t nil t "aref1(#0,#1)")
-	:inline-unsafe ((t t) t nil t "aref1(#0,fix(#1))")
-	:inline-unsafe ((t fixnum) t nil t "aref1(#0,#1)")
-	:inline-unsafe (((array bit) t) fixnum nil nil "aref_bv(#0,fix(#1))")
-	:inline-unsafe (((array bit) fixnum) fixnum nil nil "aref_bv(#0,#1)")
-	:inline-unsafe (((array base-char) fixnum) t nil nil
-		"CODE_CHAR((#0)->string.self[#1])")
-	:inline-unsafe (((array long-float) fixnum) t nil nil
-		"make_longfloat((#0)->array.self.lf[#1])")
-	:inline-unsafe (((array short-float) fixnum) t nil nil
-		"make_shortfloat((#0)->array.self.sf[#1])")
-	:inline-unsafe (((array fixnum) fixnum) t nil nil
-		"MAKE_FIXNUM((#0)->array.self.fix[#1])")
-	:inline-unsafe (((array base-char) fixnum) fixnum nil nil
-		"(#0)->string.self[#1]")
-	:inline-unsafe (((array base-char) fixnum) character nil nil
-		"(#0)->string.self[#1]")
-	:inline-unsafe (((array long-float) fixnum) long-float nil nil
-		"(#0)->array.self.lf[#1]")
-	:inline-unsafe (((array short-float) fixnum) short-float nil nil
-		"(#0)->array.self.sf[#1]")
-	:inline-unsafe (((array fixnum) fixnum) fixnum nil nil
-		"(#0)->array.self.fix[#1]")
-)
-(SI::ASET (T ARRAY *) NIL NIL NIL
-	:inline-unsafe ((t t t t) t t nil
-		"@0;aset(#1,fix(#2)*(#1)->array.dims[1]+fix(#3),#0)")
-	:inline-unsafe ((t t fixnum fixnum) t t nil
-		"@0;aset(#1,(#2)*(#1)->array.dims[1]+(#3),#0)")
-	:inline-unsafe ((t (array t) fixnum fixnum) t t nil
-		"@1;(#1)->array.self.t[#2*(#1)->array.dims[1]+#3]= #0")
-	:inline-unsafe ((t (array bit) fixnum fixnum) fixnum t nil
-		"@0;aset_bv(#1,(#2)*(#1)->array.dims[1]+(#3),fix(#0))")
+(proclaim-function si:list-nth (*) t)
+(proclaim-function si:make-pure-array (*) array)
+(proclaim-function si:make-vector (*) vector)
+(proclaim-function aref (array *) t :no-side-effects t)
+(def-inline aref :unsafe (t t t) t
+ "@0;aref(#0,fix(#1)*(#0)->array.dims[1]+fix(#2))")
+(def-inline aref :unsafe ((array t) t t) t
+ "@0;(#0)->array.self.t[fix(#1)*(#0)->array.dims[1]+fix(#2)]")
+(def-inline aref :unsafe ((array bit) t t) :fixnum
+ "@0;aref_bv(#0,fix(#1)*(#0)->array.dims[1]+fix(#2))")
+(def-inline aref :unsafe ((array t) fixnum fixnum) t
+ "@0;(#0)->array.self.t[#1*(#0)->array.dims[1]+#2]")
+(def-inline aref :unsafe ((array bit) fixnum fixnum) :fixnum
+ "@0;aref_bv(#0,(#1)*(#0)->array.dims[1]+#2)")
+(def-inline aref :unsafe ((array base-char) fixnum fixnum) :char
+ "@0;(#0)->string.self[#1*(#0)->array.dims[1]+#2]")
+(def-inline aref :unsafe ((array long-float) fixnum fixnum) :double
+ "@0;(#0)->array.self.lf[#1*(#0)->array.dims[1]+#2]")
+(def-inline aref :unsafe ((array short-float) fixnum fixnum) :float
+ "@0;(#0)->array.self.sf[#1*(#0)->array.dims[1]+#2]")
+(def-inline aref :unsafe ((array fixnum) fixnum fixnum) :fixnum
+ "@0;(#0)->array.self.fix[#1*(#0)->array.dims[1]+#2]")
+(def-inline aref :always (t t) t "aref1(#0,fixint(#1))")
+(def-inline aref :always (t fixnum) t "aref1(#0,#1)")
+(def-inline aref :unsafe (t t) t "aref1(#0,fix(#1))")
+(def-inline aref :unsafe (t fixnum) t "aref1(#0,#1)")
+(def-inline aref :unsafe ((array bit) t) :fixnum "aref_bv(#0,fix(#1))")
+(def-inline aref :unsafe ((array bit) fixnum) :fixnum "aref_bv(#0,#1)")
+(def-inline aref :unsafe ((array base-char) fixnum) t
+ "CODE_CHAR((#0)->string.self[#1])")
+(def-inline aref :unsafe ((array long-float) fixnum) t
+ "make_longfloat((#0)->array.self.lf[#1])")
+(def-inline aref :unsafe ((array short-float) fixnum) t
+ "make_shortfloat((#0)->array.self.sf[#1])")
+(def-inline aref :unsafe ((array fixnum) fixnum) t
+ "MAKE_FIXNUM((#0)->array.self.fix[#1])")
+(def-inline aref :unsafe ((array base-char) fixnum) :fixnum
+ "(#0)->string.self[#1]")
+(def-inline aref :unsafe ((array base-char) fixnum) :char
+ "(#0)->string.self[#1]")
+(def-inline aref :unsafe ((array long-float) fixnum) :double
+ "(#0)->array.self.lf[#1]")
+(def-inline aref :unsafe ((array short-float) fixnum) :float
+ "(#0)->array.self.sf[#1]")
+(def-inline aref :unsafe ((array fixnum) fixnum) :fixnum
+ "(#0)->array.self.fix[#1]")
 
-	:inline-unsafe
-	((character (array base-char) fixnum fixnum) character t nil
-		"@1;(#1)->string.self[#2*(#1)->array.dims[1]+#3]= #0")
-	:inline-unsafe 
-	((long-float (array long-float) fixnum fixnum) long-float t nil
-		"@1;(#1)->array.self.lf[#2*(#1)->array.dims[1]+#3]= #0")
-	:inline-unsafe
-	((short-float (array short-float) fixnum fixnum) short-float t nil
-		"@1;(#1)->array.self.sf[#2*(#1)->array.dims[1]+#3]= #0")
-	:inline-unsafe
-	((fixnum (array fixnum) fixnum fixnum) fixnum t nil
-		"@1;(#1)->array.self.fix[#2*(#1)->array.dims[1]+#3]= #0")
-	:inline-unsafe ((fixnum (array bit) fixnum fixnum) fixnum t nil
-		"@0;aset_bv(#1,(#2)*(#1)->array.dims[1]+(#3),#0)")
+(proclaim-function si:aset (t array *) nil)
+(def-inline si:aset :unsafe (t t t t) t
+ "@0;aset(#1,fix(#2)*(#1)->array.dims[1]+fix(#3),#0)")
+(def-inline si:aset :unsafe (t t fixnum fixnum) t
+ "@0;aset(#1,(#2)*(#1)->array.dims[1]+(#3),#0)")
+(def-inline si:aset :unsafe (t (array t) fixnum fixnum) t
+ "@1;(#1)->array.self.t[#2*(#1)->array.dims[1]+#3]= #0")
+(def-inline si:aset :unsafe (t (array bit) fixnum fixnum) :fixnum
+ "@0;aset_bv(#1,(#2)*(#1)->array.dims[1]+(#3),fix(#0))")
+(def-inline si:aset :unsafe (character (array base-char) fixnum fixnum) :char
+ "@1;(#1)->string.self[#2*(#1)->array.dims[1]+#3]= #0")
+(def-inline si:aset :unsafe (long-float (array long-float) fixnum fixnum)
+ :double "@1;(#1)->array.self.lf[#2*(#1)->array.dims[1]+#3]= #0")
+(def-inline si:aset :unsafe (short-float (array short-float) fixnum fixnum)
+ :float "@1;(#1)->array.self.sf[#2*(#1)->array.dims[1]+#3]= #0")
+(def-inline si:aset :unsafe (fixnum (array fixnum) fixnum fixnum) :fixnum
+ "@1;(#1)->array.self.fix[#2*(#1)->array.dims[1]+#3]= #0")
+(def-inline si:aset :unsafe (fixnum (array bit) fixnum fixnum) :fixnum
+ "@0;aset_bv(#1,(#2)*(#1)->array.dims[1]+(#3),#0)")
+(def-inline si:aset :always (t t t) t "aset1(#1,fixint(#2),#0)")
+(def-inline si:aset :always (t t fixnum) t "aset1(#1,#2,#0)")
+(def-inline si:aset :unsafe (t t t) t "aset1(#1,fix(#2),#0)")
+(def-inline si:aset :unsafe (t (array t) fixnum) t
+ "(#1)->vector.self.t[#2]= #0")
+(def-inline si:aset :unsafe (t (array bit) fixnum) :fixnum
+ "aset_bv(#1,#2,fix(#0))")
+(def-inline si:aset :unsafe (character (array base-char) fixnum) :char
+ "(#1)->string.self[#2]= #0")
+(def-inline si:aset :unsafe (long-float (array long-float) fixnum) :double
+ "(#1)->array.self.lf[#2]= #0")
+(def-inline si:aset :unsafe (short-float (array short-float) fixnum) :float
+ "(#1)->array.self.sf[#2]= #0")
+(def-inline si:aset :unsafe (fixnum (array fixnum) fixnum) :fixnum
+ "(#1)->array.self.fix[#2]= #0")
+(def-inline si:aset :unsafe (fixnum (array bit) fixnum) :fixnum
+ "aset_bv(#1,#2,#0)")
 
-	:inline-always ((t t t) t t nil "aset1(#1,fixint(#2),#0)")
-	:inline-always ((t t fixnum) t t nil "aset1(#1,#2,#0)")
+(proclaim-function row-major-aref (array fixnum) t :no-side-effects t)
+(def-inline row-major-aref :always (array fixnum) t "aref(#0,#1)")
 
-	:inline-unsafe ((t t t) t t nil "aset1(#1,fix(#2),#0)")
-	:inline-unsafe ((t (array t) fixnum) t t nil "(#1)->vector.self.t[#2]= #0")
-	:inline-unsafe ((t (array bit) fixnum) fixnum t nil "aset_bv(#1,#2,fix(#0))")
-	:inline-unsafe ((character (array base-char) fixnum) character t nil
-		"(#1)->string.self[#2]= #0")
-	:inline-unsafe ((long-float (array long-float) fixnum) long-float t nil
-		"(#1)->array.self.lf[#2]= #0")
-	:inline-unsafe ((short-float (array short-float) fixnum) short-float t nil
-		"(#1)->array.self.sf[#2]= #0")
-	:inline-unsafe ((fixnum (array fixnum) fixnum) fixnum t nil
-		"(#1)->array.self.fix[#2]= #0")
-	:inline-unsafe ((fixnum (array bit) fixnum) fixnum t nil
-		"aset_bv(#1,#2,#0)"))
-(ROW-MAJOR-AREF (array fixnum) t nil nil
-	:inline-always ((array fixnum) t nil t "aref(#0,#1)"))
-(SI::ROW-MAJOR-ASET (array fixnum t) t nil nil
-	:inline-always ((array fixnum t) t t nil "aset(#0,#1,#2)"))
-(ARRAY-ELEMENT-TYPE (array) T)
-(ARRAY-RANK (array) fixnum)
-(ARRAY-DIMENSION (array fixnum) fixnum)
-(ARRAY-TOTAL-SIZE (array) T nil nil
-	:inline-unsafe ((t) fixnum nil nil "((#0)->string.dim)"))
-(ADJUSTABLE-ARRAY-P (array) T nil t)
-(ARRAY-DISPLACEMENT (array) (VALUES T FIXNUM) nil t)
-(SVREF (simple-vector fixnum) T nil nil
-	:inline-always ((t t) t nil t "aref1(#0,fixint(#1))")
-	:inline-always ((t fixnum) t nil t "aref1(#0,#1)")
-	:inline-unsafe ((t t) t nil nil "(#0)->vector.self.t[fix(#1)]")
-	:inline-unsafe ((t fixnum) t nil nil "(#0)->vector.self.t[#1]"))
-(si::SVSET (simple-vector fixnum t) T nil nil
-	:inline-always ((t t t) t t nil "aset1(#0,fixint(#1),#2)")
-	:inline-always ((t fixnum t) t t nil "aset1(#0,#1,#2)")
-	:inline-unsafe ((t t t) t t nil "((#0)->vector.self.t[fix(#1)]=(#2))")
-	:inline-unsafe ((t fixnum t) t t nil "(#0)->vector.self.t[#1]= #2"))
-(ARRAY-HAS-FILL-POINTER-P nil T nil t)
-(FILL-POINTER (vector) fixnum nil nil
-	:inline-unsafe ((t) fixnum nil nil "((#0)->string.fillp)"))
-(si::FILL-POINTER-SET (vector fixnum) fixnum nil nil
-	:inline-unsafe ((t fixnum) fixnum t nil "((#0)->string.fillp)=(#1)"))
-(si::REPLACE-ARRAY nil T nil nil)
-;(si::ASET-BY-CURSOR nil T nil nil)
+(proclaim-function si:row-major-aset (array fixnum t) t)
+(def-inline si:row-major-aset :always (array fixnum t) t "aset(#0,#1,#2)")
 
-; file assignment.c
-(SET (symbol t) T)
-(si::FSET (symbol t) T)
-(MAKUNBOUND (symbol) T)
-(FMAKUNBOUND (symbol) T)
-(si::CLEAR-COMPILER-PROPERTIES nil T)
+(proclaim-function array-element-type (array) t)
+(proclaim-function array-rank (array) fixnum)
+(proclaim-function array-dimension (array fixnum) fixnum)
+(proclaim-function array-total-size (array) t :no-side-effects t)
+(def-inline array-total-size :unsafe (t) :fixnum "((#0)->string.dim)")
 
-; file catch.c
-;#-clcs (SI::ERROR-SET (T) * NIL NIL)
+(proclaim-function adjustable-array-p (array) t :predicate t)
+(proclaim-function array-displacement (array) (values t fixnum) :predicate t)
+(proclaim-function svref (simple-vector fixnum) t :no-side-effects t)
+(def-inline svref :always (t t) t "aref1(#0,fixint(#1))")
+(def-inline svref :always (t fixnum) t "aref1(#0,#1)")
+(def-inline svref :unsafe (t t) t "(#0)->vector.self.t[fix(#1)]")
+(def-inline svref :unsafe (t fixnum) t "(#0)->vector.self.t[#1]")
 
-; file cfun.c
-(si::COMPILED-FUNCTION-NAME nil T)
+(proclaim-function si:svset (simple-vector fixnum t) t)
+(def-inline si:svset :always (t t t) t "aset1(#0,fixint(#1),#2)")
+(def-inline si:svset :always (t fixnum t) t "aset1(#0,#1,#2)")
+(def-inline si:svset :unsafe (t t t) t "((#0)->vector.self.t[fix(#1)]=(#2))")
+(def-inline si:svset :unsafe (t fixnum t) t "(#0)->vector.self.t[#1]= #2")
 
-; file character.c
-(STANDARD-CHAR-P (character) T nil t)
-(GRAPHIC-CHAR-P (character) T nil t)
-(ALPHA-CHAR-P (character) T nil t
-	:inline-always ((character) :bool nil nil "isalpha(#0)"))
-(UPPER-CASE-P (character) T nil t
-	:inline-always ((character) :bool nil nil "isupper(#0)"))
-(LOWER-CASE-P (character) T nil t
-	:inline-always ((character) :bool nil nil "islower(#0)"))
-(BOTH-CASE-P (character) T nil t
-	:inline-always ((character) :bool nil nil "(islower(#0)||isupper(#0))"))
-(DIGIT-CHAR-P (character *) T nil nil
-	:inline-always
-	((character) :bool nil nil "@0; ((#0) <= '9' && (#0) >= '0')"))
-(ALPHANUMERICP (character) T nil t
-	:inline-always ((character) :bool nil nil "isalnum(#0)"))
-(CHARACTER (T) CHARACTER)
-(CHAR= (character *) T nil t
-	:inline-always ((character character) :bool nil nil "(#0)==(#1)")
-	:inline-always ((t t) :bool nil nil "char_code(#0)==char_code(#1)"))
-(CHAR/= (character *) T nil t
-	:inline-always ((character character) :bool nil nil "(#0)!=(#1)")
-	:inline-always ((t t) :bool nil nil "char_code(#0)!=char_code(#1)"))
-(CHAR< (character *) T nil t
-	:inline-always ((character character) :bool nil nil "(#0)<(#1)"))
-(CHAR> (character *) T nil t
-	:inline-always ((character character) :bool nil nil "(#0)>(#1)"))
-(CHAR<= (character *) T nil t
-	:inline-always ((character character) :bool nil nil "(#0)<=(#1)"))
-(CHAR>= (character *) T nil t
-	:inline-always ((character character) :bool nil nil "(#0)>=(#1)"))
-(CHAR-EQUAL (character *) T nil t)
-(CHAR-NOT-EQUAL (character *) T nil t)
-(CHAR-LESSP (character *) T nil t)
-(CHAR-GREATERP (character *) T nil t)
-(CHAR-NOT-GREATERP (character *) T nil t)
-(CHAR-NOT-LESSP (character *) T nil t)
-(CHARACTER nil character nil nil)
-(CHAR-CODE (character) fixnum nil nil
-	:inline-always ((character) fixnum nil nil "#0"))
-(CODE-CHAR (fixnum) character nil nil
-	:inline-always ((fixnum) character nil nil "#0"))
-(CHAR-UPCASE (character) character nil nil
-	:inline-always ((character) character nil nil "toupper(#0)"))
-(CHAR-DOWNCASE (character) character nil nil
-	:inline-always ((character) character nil nil "tolower(#0)"))
-(DIGIT-CHAR (fixnum *) (or character null) nil nil)
-(CHAR-INT (character) fixnum nil nil
-	:inline-always ((character) fixnum nil nil "#0"))
-(CHAR-NAME (character) (or string null))
-(NAME-CHAR (string) (or character null))
+(proclaim-function array-has-fill-pointer-p (*) t :predicate t)
+(proclaim-function fill-pointer (vector) fixnum :no-side-effects t)
+(def-inline fill-pointer :unsafe (t) :fixnum "((#0)->string.fillp)")
 
-; ; file error.c
-#-clcs
-(ERROR (T *) T nil nil)
-#-clcs
-(CERROR (T T *) T nil nil)
+(proclaim-function si:fill-pointer-set (vector fixnum) fixnum)
+(def-inline si:fill-pointer-set :unsafe (t fixnum) :fixnum
+ "((#0)->string.fillp)=(#1)")
 
-(si::IHS-TOP (T) T)
-(si::IHS-FUN)
-(si::IHS-ENV)
-(si::FRS-TOP)
-(si::FRS-VS)
-(si::FRS-BDS)
-(si::FRS-CLASS)
-(si::FRS-TAG)
-(si::FRS-IHS)
-(si::BDS-TOP)
-(si::BDS-VAR)
-(si::BDS-VAL)
-(si::VS-TOP)
-(si::VS)
-(si::SCH-FRS-BASE)
+(proclaim-function si:replace-array (*) t)
 
-; file eval.c
-(APPLY (T T *) T)
-(FUNCALL (T *) T)
-(EVAL (T) T)
-(EVALHOOK (T T T *) T)
-(APPLYHOOK (T T T T *) T)
-(CONSTANTP (T) T NIL T)
-(si::UNLINK-SYMBOL nil T)
-(si::LINK-ENABLE nil T)
+;; file assignment.d
 
-; file file.d
-(MAKE-SYNONYM-STREAM (T) T)
-(MAKE-BROADCAST-STREAM (*) T)
-(MAKE-CONCATENATED-STREAM nil T)
-(MAKE-TWO-WAY-STREAM (T T) T)
-(MAKE-ECHO-STREAM (T T) T)
-(MAKE-STRING-INPUT-STREAM nil T)
-(MAKE-STRING-OUTPUT-STREAM (*) T)
-(GET-OUTPUT-STREAM-STRING nil T)
-(SI::OUTPUT-STREAM-STRING (T) T)
-(STREAMP (T) T NIL T)
-(INPUT-STREAM-P (T) T NIL T)
-(OUTPUT-STREAM-P (T) T NIL T)
-(STREAM-ELEMENT-TYPE (T) T)
-(CLOSE (T *) T)
-;#-clcs (OPEN (T *) T)
-(FILE-POSITION (T *) T)
-(FILE-LENGTH (T) T)
-;#-clcs (LOAD (T *) T)
-(si::GET-STRING-INPUT-STREAM-INDEX nil T)
-(si::MAKE-STRING-OUTPUT-STREAM-FROM-STRING nil T)
+(proclaim-function set (symbol t) t)
+(proclaim-function si:fset (symbol t) t)
+(proclaim-function makunbound (symbol) t)
+(proclaim-function fmakunbound (symbol) t)
+(proclaim-function si:clear-compiler-properties (*) t)
 
-; file gbc.c
-(si::ROOM-REPORT nil T)
-(si::RESET-GBC-COUNT nil T)
-(GBC nil T)
+;; file cfun.d
 
-; file unixfsys.c
-(TRUENAME (T) T)
-(RENAME-FILE (T T) T)
-(SI::SPECIALP (T) T NIL T)
-(DELETE-FILE (T) T)
-(PROBE-FILE (T) T)
-(FILE-WRITE-DATE (T) T)
-(FILE-AUTHOR (T) T)
-(PATHNAME (T) T)
-(USER-HOMEDIR-PATHNAME (*) T)
-(DIRECTORY (T) T)
-(SI::CHDIR (T *) PATHNAME)
-(SI::GETCWD () PATHNAME)
-(SI::MKDIR (T FIXNUM) STRING)
+(proclaim-function si:compiled-function-name (*) t)
 
-; file unixint.c
-(SI::CATCH-BAD-SIGNALS nil T)
-(SI::UNCATCH-BAD-SIGNALS nil T)
+;; file character.d
 
-; file format.c
-(FORMAT (T string *) T)
+(proclaim-function standard-char-p (character) t :predicate t)
+(proclaim-function graphic-char-p (character) t :predicate t)
+(proclaim-function alpha-char-p (character) t :predicate t :no-side-effects t)
+(def-inline alpha-char-p :always (character) :bool "isalpha(#0)")
 
-; file hash.d
-(MAKE-HASH-TABLE (*) T)
-(HASH-TABLE-P (T) T NIL T)
-(VALUES (*) *)
-(GETHASH (T T *) (VALUES T T))
-(REMHASH (T T) T)
-(MAPHASH (T T) T)
-(CLRHASH (T) T)
-(HASH-TABLE-COUNT (T) T)
-(SXHASH (T) FIXNUM)
-(SI::HASH-SET NIL T)
+(proclaim-function upper-case-p (character) t :predicate t :no-side-effects t)
+(def-inline upper-case-p :always (character) :bool "isupper(#0)")
 
-; file list.d
-(CAR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CAR(#0)")
-	:inline-unsafe ((t) t nil nil "CAR(#0)"))
-(CDR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CDR(#0)")
-	:inline-unsafe ((t) t nil nil "CDR(#0)"))
-(CAAR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CAAR(#0)")
-	:inline-unsafe ((t) t nil nil "CAAR(#0)"))
-(CADR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CADR(#0)")
-	:inline-unsafe ((t) t nil nil "CADR(#0)"))
-(CDAR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CDAR(#0)")
-	:inline-unsafe ((t) t nil nil "CDAR(#0)"))
-(CDDR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CDDR(#0)")
-	:inline-unsafe ((t) t nil nil "CDDR(#0)"))
-(CAAAR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CAAAR(#0)")
-	:inline-unsafe ((t) t nil nil "CAAAR(#0)"))
-(CAADR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CAADR(#0)")
-	:inline-unsafe ((t) t nil nil "CAADR(#0)"))
-(CADAR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CADAR(#0)")
-	:inline-unsafe ((t) t nil nil "CADAR(#0)"))
-(CADDR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CADDR(#0)")
-	:inline-unsafe ((t) t nil nil "CADDR(#0)"))
-(CDAAR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CDAAR(#0)")
-	:inline-unsafe ((t) t nil nil "CDAAR(#0)"))
-(CDADR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CDADR(#0)")
-	:inline-unsafe ((t) t nil nil "CDADR(#0)"))
-(CDDAR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CDDAR(#0)")
-	:inline-unsafe ((t) t nil nil "CDDAR(#0)"))
-(CDDDR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CDDDR(#0)")
-	:inline-unsafe ((t) t nil nil "CDDDR(#0)"))
-(CAAAAR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CAAAAR(#0)")
-	:inline-unsafe ((t) t nil nil "CAAAAR(#0)"))
-(CAAADR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CAAADR(#0)")
-	:inline-unsafe ((t) t nil nil "CAAADR(#0)"))
-(CAADAR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CAADAR(#0)")
-	:inline-unsafe ((t) t nil nil "CAADAR(#0)"))
-(CAADDR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CAADDR(#0)")
-	:inline-unsafe ((t) t nil nil "CAADDR(#0)"))
-(CADAAR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CADAAR(#0)")
-	:inline-unsafe ((t) t nil nil "CADAAR(#0)"))
-(CADADR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CADADR(#0)")
-	:inline-unsafe ((t) t nil nil "CADADR(#0)"))
-(CADDAR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CADDAR(#0)")
-	:inline-unsafe ((t) t nil nil "CADDAR(#0)"))
-(CADDDR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CADDDR(#0)")
-	:inline-unsafe ((t) t nil nil "CADDDR(#0)"))
-(CDAAAR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CDAAAR(#0)")
-	:inline-unsafe ((t) t nil nil "CDAAAR(#0)"))
-(CDAADR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CDAADR(#0)")
-	:inline-unsafe ((t) t nil nil "CDAADR(#0)"))
-(CDADAR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CDADAR(#0)")
-	:inline-unsafe ((t) t nil nil "CDADAR(#0)"))
-(CDADDR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CDADDR(#0)")
-	:inline-unsafe ((t) t nil nil "CDADDR(#0)"))
-(CDDAAR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CDDAAR(#0)")
-	:inline-unsafe ((t) t nil nil "CDDAAR(#0)"))
-(CDDADR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CDDADR(#0)")
-	:inline-unsafe ((t) t nil nil "CDDADR(#0)"))
-(CDDDAR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CDDDAR(#0)")
-	:inline-unsafe ((t) t nil nil "CDDDAR(#0)"))
-(CDDDDR (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CDDDDR(#0)")
-	:inline-unsafe ((t) t nil nil "CDDDDR(#0)"))
-(CONS (T T) CONS NIL NIL
-	:inline-always ((t t) t nil t "CONS(#0,#1)"))
-(TREE-EQUAL (T T *) T NIL T)
-(ENDP (LIST) T NIL T
-	:inline-safe ((t) :bool nil nil "endp(#0)")
-	:inline-unsafe ((t) :bool nil nil "#0==Cnil"))
-(LIST-LENGTH (LIST) (OR NIL (INTEGER 0 *)) NIL NIL)
-(NTH (INTEGER LIST) T NIL NIL
-	:inline-always ((t t) t nil nil "nth(fixint(#0),#1)")
-	:inline-always ((fixnum t) t nil nil "nth(#0,#1)")
-	:inline-unsafe ((t t) t nil nil "nth(fix(#0),#1)")
-	:inline-unsafe ((fixnum t) t nil nil "nth(#0,#1)"))
-(FIRST (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CAR(#0)")
-	:inline-unsafe ((t) t nil nil "CAR(#0)"))
-(SECOND (LIST) T nil nil
-	:inline-always ((cons) t nil nil "CADR(#0)")
-	:inline-unsafe ((t) t nil nil "CADR(#0)"))
-(THIRD (LIST) T nil nil
-	:inline-always ((cons) t nil nil "CADDR(#0)")
-	:inline-unsafe ((t) t nil nil "CADDR(#0)"))
-(FOURTH (LIST) T nil nil
-	:inline-always ((cons) t nil nil "CADDDR(#0)")
-	:inline-unsafe ((t) t nil nil "CADDDR(#0)"))
-(FIFTH (LIST) T)
-(SIXTH (LIST) T)
-(SEVENTH (LIST) T)
-(EIGHTH (LIST) T)
-(NINTH (LIST) T)
-(TENTH (LIST) T)
-(REST (LIST) T NIL NIL
-	:inline-always ((cons) t nil nil "CDR(#0)")
-	:inline-unsafe ((t) t nil nil "CDR(#0)"))
-(NTHCDR (fixnum LIST) T nil nil
-	:inline-always ((t t) t nil nil "nthcdr(fixint(#0),#1)")
-	:inline-always ((fixnum t) t nil nil "nthcdr(#0,#1)")
-	:inline-unsafe ((t t) t nil nil "nthcdr(fix(#0),#1)")
-	:inline-unsafe ((fixnum t) t nil nil "nthcdr(#0,#1)"))
-(LAST (LIST) T)
-(LIST (*) LIST NIL NIL
-	:inline-always (nil t nil nil "Cnil")
-	:inline-always ((t) t nil t "CONS(#0,Cnil)"))
-(LIST* (T *) LIST NIL NIL
-	:inline-always ((t) t nil nil "#0")
-	:inline-always ((t t) t nil t "CONS(#0,#1)"))
-(MAKE-LIST (fixnum *) LIST)
-(APPEND (*) LIST NIL NIL
-	:inline-always ((t t) t nil t "append(#0,#1)"))
-(COPY-LIST (LIST) LIST)
-(COPY-ALIST (LIST) LIST)
-(COPY-TREE (T) T)
-(REVAPPEND (LIST T) T)
-(NCONC (*) T NIL NIL
-	:inline-always ((t t) t t nil "nconc(#0,#1)"))
-(NRECONC (LIST T) T)
-(BUTLAST (LIST *) LIST)
-(NBUTLAST (LIST *) LIST)
-(LDIFF (LIST T) LIST)
-(RPLACA (cons T) CONS)
-(RPLACD (cons T) CONS)
-(SUBST (T T T *) T)
-(SUBST-IF (T T T *) T)
-(SUBST-IF-NOT (T T T *) T)
-(NSUBST (T T T *) T)
-(NSUBST-IF (T T T *) T)
-(NSUBST-IF-NOT (T T T *) T)
-(SUBLIS (LIST T *) T)
-(NSUBLIS (LIST T *) T)
-(MEMBER (T LIST *) LIST)
-(MEMBER-IF (T LIST *) LIST)
-(MEMBER-IF-NOT (T LIST *) LIST)
-(MEMBER1 (T T T T T) T)
-(TAILP (T LIST) T NIL T)
-(ADJOIN (T LIST *) LIST)
-(ACONS (T T LIST) LIST)
-(PAIRLIS (LIST LIST *) LIST)
-(ASSOC (T LIST *) LIST)
-(ASSOC-IF (T LIST *) LIST)
-(ASSOC-IF-NOT (T LIST *) LIST)
-(RASSOC (T LIST *) LIST)
-(RASSOC-IF (T LIST *) LIST)
-(RASSOC-IF-NOT (T LIST *) LIST)
-(si::MEMQ (T T T) T)
+(proclaim-function lower-case-p (character) t :predicate t :no-side-effects t)
+(def-inline lower-case-p :always (character) :bool "islower(#0)")
 
-; file lwp.c
-;to do
+(proclaim-function both-case-p (character) t :predicate t :no-side-effects t)
+(def-inline both-case-p :always (character) :bool "(islower(#0)||isupper(#0))")
 
-; file macros.c
-(si::DEFINE-MACRO nil T)
-(MACROEXPAND (T *) (VALUES T T))
-(MACROEXPAND-1 (T *) (VALUES T T))
+(proclaim-function digit-char-p (character *) t :no-side-effects t)
+(def-inline digit-char-p :always (character) :bool
+ "@0; ((#0) <= '9' && (#0) >= '0')")
 
-; file main.c
-(QUIT nil T)
-(IDENTITY (T) T)
-(si::ARGC nil T)
-(si::ARGV nil T)
-(si::GETENV nil T)
-(si::RESET-STACK-LIMITS nil T)
-#-sparc
-(si::INIT-SYSTEM nil T)
-(si::POINTER nil T)
+(proclaim-function alphanumericp (character) t :predicate t :no-side-effects t)
+(def-inline alphanumericp :always (character) :bool "isalnum(#0)")
 
-; file mapfun.c
-(MAPCAR (T T *) T)
-(MAPLIST (T T *) T)
-(MAPC (T T *) T)
-(MAPL (T T *) T)
-(MAPCAN (T T *) T)
-(MAPCON (T T *) T)
+(proclaim-function character (t) character)
+(proclaim-function char= (character *) t :predicate t :no-side-effects t)
+(def-inline char= :always (character character) :bool "(#0)==(#1)")
+(def-inline char= :always (t t) :bool "char_code(#0)==char_code(#1)")
 
-; file multival.c
-(VALUES nil T)
-(VALUES-LIST (T) *)
+(proclaim-function char/= (character *) t :predicate t :no-side-effects t)
+(def-inline char/= :always (character character) :bool "(#0)!=(#1)")
+(def-inline char/= :always (t t) :bool "char_code(#0)!=char_code(#1)")
 
-; file num_arith.c
-(+ (*) T NIL NIL
-	:inline-always ((t t) t nil t "number_plus(#0,#1)")
-	:inline-always ((fixnum-float fixnum-float) long-float nil nil
-		"(double)(#0)+(double)(#1)")
-	:inline-always ((fixnum-float fixnum-float) short-float nil nil
-		"(float)(#0)+(float)(#1)")
-	:inline-always ((fixnum fixnum) fixnum nil nil "(#0)+(#1)"))
-(- (T *) T NIL NIL
-	:inline-always ((t) t nil t "number_negate(#0)")
-	:inline-always ((t t) t nil t "number_minus(#0,#1)")
-	:inline-always ((fixnum-float fixnum-float) long-float nil nil
-		"(double)(#0)-(double)(#1)")
-	:inline-always ((fixnum-float fixnum-float) short-float nil nil
-		"(float)(#0)-(float)(#1)")
-	:inline-always ((fixnum fixnum) fixnum nil nil "(#0)-(#1)")
+(proclaim-function char< (character *) t :predicate t :no-side-effects t)
+(def-inline char< :always (character character) :bool "(#0)<(#1)")
 
-	:inline-always ((fixnum-float) long-float nil nil "-(double)(#0)")
-	:inline-always ((fixnum-float) short-float nil nil "-(float)(#0)")
-	:inline-always ((fixnum) fixnum nil nil "-(#0)")) 
-(* (*) T NIL NIL
-	:inline-always ((t t) t nil t "number_times(#0,#1)")
-	:inline-always ((fixnum-float fixnum-float) long-float nil nil
-		"(double)(#0)*(double)(#1)")
-	:inline-always ((fixnum-float fixnum-float) short-float nil nil
-		"(float)(#0)*(float)(#1)")
-	:inline-always ((fixnum fixnum) t nil nil "fixnum_times(#0,#1)")
-	:inline-always ((fixnum fixnum) fixnum nil nil "(#0)*(#1)"))
-(/ (T *) T NIL NIL
-	:inline-always ((t t) t nil t "number_divide(#0,#1)")
-	:inline-always ((fixnum-float fixnum-float) long-float nil nil
-		"(double)(#0)/(double)(#1)")
-	:inline-always ((fixnum-float fixnum-float) short-float nil nil
-		"(float)(#0)/(float)(#1)")
-	:inline-always ((fixnum fixnum) fixnum nil nil "(#0)/(#1)"))
-(1+ (T) T NIL NIL
-	:inline-always ((t) t nil t "one_plus(#0)")
-	:inline-always ((fixnum-float) long-float nil nil "(double)(#0)+1")
-	:inline-always ((fixnum-float) short-float nil nil "(float)(#0)+1")
-	:inline-always ((fixnum) fixnum nil nil "(#0)+1"))
-(1- (T) T NIL NIL
-	:inline-always ((t) t nil t "one_minus(#0)")
-	:inline-always ((fixnum-float) long-float nil nil "(double)(#0)-1")
-	:inline-always ((fixnum-float) short-float nil nil "(float)(#0)-1")
-	:inline-always ((fixnum) fixnum nil nil "(#0)-1"))
-(CONJUGATE (T) T)
-(GCD (*) T)
-(LCM (T *) T)
+(proclaim-function char> (character *) t :predicate t :no-side-effects t)
+(def-inline char> :always (character character) :bool "(#0)>(#1)")
 
-; file num_co.c
-(FLOAT (T *) T NIL NIL
-;	:inline-always ((T) short-float nil nil "(Lfloat(1,#0),sf(VALUES(0)))")
-	:inline-always ((T short-float) short-float nil nil "number_to_double(#0)")
-	:inline-always ((T long-float) long-float nil nil "number_to_double(#0)")
-	:inline-always ((fixnum-float) long-float nil nil "((double)(#0))")
-	:inline-always ((fixnum-float) short-float nil nil "((float)(#0))"))
-(NUMERATOR (T) T)
-(DENOMINATOR (T) T)
-(FLOOR (T *) (VALUES T T) NIL NIL
-	:inline-always ((fixnum fixnum) fixnum nil nil
-		"@01;(#0>=0&&#1>0?(#0)/(#1):ifloor(#0,#1))"))
-(CEILING (T *) (VALUES T T) NIL NIL)
-(TRUNCATE (T *) (VALUES T T) NIL NIL
-	:inline-always ((fixnum-float) fixnum nil nil "(cl_fixnum)(#0)"))
-(ROUND (T *) (VALUES T T))
-(MOD (T T) T NIL NIL
-	:inline-always ((fixnum fixnum) fixnum nil nil
-		"@01;(#0>=0&&#1>0?(#0)%(#1):imod(#0,#1))"))
-(REM (T T) T NIL NIL
-	:inline-always ((fixnum fixnum) fixnum nil nil "(#0)%(#1)"))
-(DECODE-FLOAT (T) (VALUES T T T))
-(SCALE-FLOAT (T T) T)
-(FLOAT-RADIX (T) FIXNUM)
-(FLOAT-SIGN (T *) T)
-(FLOAT-DIGITS (T) FIXNUM)
-(FLOAT-PRECISION (T) FIXNUM)
-(INTEGER-DECODE-FLOAT (T) (VALUES T T T))
-(COMPLEX (T *) T)
-(REALPART (T) T)
-(IMAGPART (T) T)
-(= (T *) T NIL T
-	:inline-always ((t t) :bool nil nil "number_equalp(#0,#1)")
-	:inline-always ((fixnum-float fixnum-float) :bool nil nil "(#0)==(#1)"))
-(/= (T *) T nil t
-	:inline-always ((t t) :bool nil nil "!number_equalp(#0,#1)")
-	:inline-always ((fixnum-float fixnum-float) :bool nil nil "(#0)!=(#1)"))
-(< (T *) T nil t
-	:inline-always ((t t) :bool nil nil "number_compare(#0,#1)<0")
-	:inline-always ((fixnum-float fixnum-float) :bool nil nil "(#0)<(#1)"))
-(> (T *) T nil t
-	:inline-always ((t t) :bool nil nil "number_compare(#0,#1)>0")
-	:inline-always ((fixnum-float fixnum-float) :bool nil nil "(#0)>(#1)"))
-(<= (T *) T nil t
-	:inline-always ((t t) :bool nil nil "number_compare(#0,#1)<=0")
-	:inline-always ((fixnum-float fixnum-float) :bool nil nil "(#0)<=(#1)"))
-(>= (T *) T nil t
-	:inline-always ((t t) :bool nil nil "number_compare(#0,#1)>=0")
-	:inline-always ((fixnum-float fixnum-float) :bool nil nil "(#0)>=(#1)"))
-(MAX (T *) T NIL NIL
-	:inline-always ((t t) t nil nil "@01;(number_compare(#0,#1)>=0?#0:#1)")
-	:inline-always ((fixnum fixnum) fixnum nil nil "@01;(#0)>=(#1)?#0:#1"))
-(MIN (T *) T NIL NIL
-	:inline-always ((t t) t nil nil "@01;(number_compare(#0,#1)<=0?#0:#1)")
-	:inline-always ((fixnum fixnum) fixnum nil nil "@01;(#0)<=(#1)?#0:#1"))
-(LOGAND (*) INTEGER NIL NIL
-	:inline-always (() t nil nil "MAKE_FIXNUM(-1)")
-	:inline-always (() fixnum nil nil "-1")
-	:inline-always ((t t) t nil nil "ecl_boole(ECL_BOOLAND,(#0),(#1))")
-	:inline-always ((fixnum fixnum) fixnum nil nil "((#0) & (#1))"))
-(LOGANDC1 (INTEGER INTEGER) INTEGER NIL NIL
-	:inline-always ((t t) t nil nil "ecl_boole(ECL_BOOLANDC1,(#0),(#1))")
-	:inline-always ((fixnum fixnum) fixnum nil nil "(~(#0) & (#1))"))
-(LOGANDC2 (INTEGER INTEGER) INTEGER NIL NIL
-	:inline-always ((t t) t nil nil "ecl_boole(ECL_BOOLANDC2,(#0),(#1))")
-	:inline-always ((fixnum fixnum) fixnum nil nil "((#0) & ~(#1))"))
-(LOGEQV (*) INTEGER NIL NIL
-	:inline-always (() t nil nil "MAKE_FIXNUM(-1)")
-	:inline-always (() fixnum nil nil "-1")
-	:inline-always ((t t) t nil nil "ecl_boole(ECL_BOOLEQV,(#0),(#1))")
-	:inline-always ((fixnum fixnum) fixnum nil nil "(~( (#0) ^ (#1) ))"))
-(LOGIOR (*) INTEGER NIL NIL
-	:inline-always (() t nil nil "MAKE_FIXNUM(0)")
-	:inline-always (() fixnum nil nil "0")
-	:inline-always ((t t) t nil nil "ecl_boole(ECL_BOOLIOR,(#0),(#1))")
-	:inline-always ((fixnum fixnum) fixnum nil nil "((#0) | (#1))"))
-(LOGNAND (INTEGER INTEGER) INTEGER NIL NIL
-	:inline-always ((t t) t nil nil "ecl_boole(ECL_BOOLNAND,(#0),(#1))")
-	:inline-always ((fixnum fixnum) fixnum nil nil "(~( (#0) & (#1) ))"))
-(LOGNOR (INTEGER INTEGER) INTEGER NIL NIL
-	:inline-always ((t t) t nil nil "ecl_boole(ECL_BOOLNOR,(#0),(#1))")
-	:inline-always ((fixnum fixnum) fixnum nil nil "(~( (#0) | (#1) ))"))
-(LOGNOT (INTEGER) INTEGER NIL NIL
-	:inline-always ((t) t nil nil "ecl_boole(ECL_BOOLXOR,(#0),MAKE_FIXNUM(-1))")
-	:inline-always ((fixnum) fixnum nil nil "(~(#0))"))
-(LOGORC1 (INTEGER INTEGER) INTEGER NIL NIL
-	:inline-always ((t t) t nil nil "ecl_boole(ECL_BOOLORC1,(#0),(#1))")
-	:inline-always ((fixnum fixnum) fixnum nil nil "(~(#0) | (#1))"))
-(LOGORC2 (INTEGER INTEGER) INTEGER NIL NIL
-	:inline-always ((t t) t nil nil "ecl_boole(ECL_BOOLORC2,(#0),(#1))")
-	:inline-always ((fixnum fixnum) fixnum nil nil "((#0) | ~(#1))"))
-(LOGXOR (*) INTEGER NIL NIL
-	:inline-always (() t nil nil "MAKE_FIXNUM(0)")
-	:inline-always (() fixnum nil nil "0")
-	:inline-always ((t t) t nil nil "ecl_boole(ECL_BOOLXOR,(#0),(#1))")
-	:inline-always ((fixnum fixnum) fixnum nil nil "((#0) ^ (#1))"))
-(BOOLE (T T T) T NIL NIL
-	:inline-always ((fixnum t t) t nil nil "ecl_boole((#0),(#1),(#2))")
-)
-(LOGBITP (T T) T NIL T
-;	:inline-always ((fixnum fixnum) :bool nil nil "(#1 >> #0) & 1")
-	:inline-always (((integer #.(- (integer-length most-negative-fixnum))
-				 #.(integer-length most-positive-fixnum))
-			 fixnum)
-			:bool nil nil "(#1 >> #0) & 1")
-)
-(ASH (T T) T)
-(LOGCOUNT (T) T)
-(INTEGER-LENGTH (T) FIXNUM)
-(si::BIT-ARRAY-OP nil T)
-(ZEROP (T) T NIL T
-	:inline-always ((t) :bool nil nil "number_zerop(#0)")
-	:inline-always ((fixnum-float) :bool nil nil "(#0)==0"))
-(PLUSP (T) T NIL T
-	:inline-always ((t) :bool nil nil "number_plusp(#0)")
-	:inline-always ((fixnum-float) :bool nil nil "(#0)>0"))
-(MINUSP (T) T NIL T
-	:inline-always ((t) :bool nil nil "number_minusp(#0)")
-	:inline-always ((fixnum-float) :bool nil nil "(#0)<0"))
-(ODDP (T) T NIL T
-	:inline-always ((t) :bool nil nil "number_oddp(#0)")
-	:inline-always ((fixnum fixnum) :bool nil nil "(#0) & 1"))
-(EVENP (T) T NIL T
-	:inline-always ((t) :bool nil nil "number_evenp(#0)")
-	:inline-always ((fixnum fixnum) :bool nil nil "~(#0) & 1"))
-(RANDOM (T *) T)
-(MAKE-RANDOM-STATE (*) T)
-(RANDOM-STATE-P (T) T NIL T)
-;(EXP (T) T NIL NIL :inline-always ((number) t nil t "cl_exp(#0)"))
-(EXPT (T T) T NIL NIL
-	:inline-always ((t t) t nil t "cl_expt(#0,#1)")
-	:inline-always (((integer 2 2) (integer 0 #.(integer-length most-positive-fixnum)))
-		       fixnum nil nil "(1<<(#1))")
-	:inline-always (((integer 0 0) t) fixnum nil t "0")
-	:inline-always (((integer 1 1) t) fixnum nil t "1")
-;	:inline-always ((fixnum fixnum) fixnum nil nil "fixnum_expt(#0,#1)")
-)
-(LOG (T *) T NIL NIL
-	:inline-always ((fixnum-float) long-float nil t "log((double)(#0))")
-	:inline-always ((fixnum-float) short-float nil nil
-		"(float)log((double)(#0))"))
-(SQRT (T) T NIL NIL
-	:inline-always ((fixnum-float) long-float nil t "sqrt((double)(#0))")
-	:inline-always ((fixnum-float) short-float nil nil
-		"(float)sqrt((double)(#0))"))
-(SIN (T) T NIL NIL
-	:inline-always ((fixnum-float) long-float nil nil "sin((double)(#0))")
-	:inline-always ((fixnum-float) short-float nil nil
-		"(float)sin((double)(#0))"))
-(COS (T) T NIL NIL
-	:inline-always ((fixnum-float) long-float nil nil "cos((double)(#0))")
-	:inline-always ((fixnum-float) short-float nil nil
-		"(float)cos((double)(#0))"))
-(tan (number) number nil nil
-	:inline-always ((fixnum-float) long-float nil nil "tan((double)(#0))")
-	:inline-always ((fixnum-float) short-float nil nil
-		"(float)tan((double)(#0))"))
-(ATAN (T *) T)
+(proclaim-function char<= (character *) t :predicate t :no-side-effects t)
+(def-inline char<= :always (character character) :bool "(#0)<=(#1)")
 
-; file package.d
-(MAKE-PACKAGE (T *) T)
-(si::SELECT-PACKAGE (T) T)
-(FIND-PACKAGE (T) T)
-(PACKAGE-NAME (T) T)
-(PACKAGE-NICKNAMES (T) T)
-(RENAME-PACKAGE (T T *) T)
-(PACKAGE-USE-LIST (T) T)
-(PACKAGE-USED-BY-LIST (T) T)
-(PACKAGE-SHADOWING-SYMBOLS (T) T)
-(LIST-ALL-PACKAGES NIL T)
-(INTERN (string *) (VALUES T T))
-(FIND-SYMBOL (string *) (VALUES T T))
-(UNINTERN (symbol t) T)
-(EXPORT (T *) T)
-(UNEXPORT (T *) T)
-(IMPORT (T *) T)
-(SHADOWING-IMPORT (T *) T)
-(SHADOW (T *) T)
-(USE-PACKAGE (T *) T)
-(UNUSE-PACKAGE (T *) T)
-(si::PACKAGE-INTERNAL nil T)
-(si::PACKAGE-EXTERNAL nil T)
-(PATHNAME (T) T)
-(PARSE-NAMESTRING (T *) T)
-(MERGE-PATHNAMES (T *) T)
-(MAKE-PATHNAME (*) T)
-(PATHNAMEP (T) T NIL T)
-(PATHNAME-HOST (T) T)
-(PATHNAME-DEVICE (T) T)
-(PATHNAME-DIRECTORY (T) T)
-(PATHNAME-NAME (T) T)
-(PATHNAME-TYPE (T) T)
-(PATHNAME-VERSION (T) T)
-(WILD-PATHNAME-P (T *) T)
-(NAMESTRING (T) string NIL NIL)
-(FILE-NAMESTRING (T) STRING)
-(DIRECTORY-NAMESTRING (T) STRING)
-(HOST-NAMESTRING (T) STRING)
-(ENOUGH-NAMESTRING (T *) STRING)
-(NULL (T) T NIL T
-	:inline-always ((t) :bool nil nil "#0==Cnil"))
-(SYMBOLP (T) T NIL T
-	:inline-always ((t) :bool nil nil "SYMBOLP(#0)"))
-(ATOM (T) T NIL T
-	:inline-always ((t) :bool nil nil "ATOM(#0)"))
-(CONSP (T) T NIL T
-	:inline-always ((t) :bool nil nil "CONSP(#0)"))
-(LISTP (T) T NIL T
-	:inline-always ((t) :bool nil nil "@0;LISTP(#0)"))
-(NUMBERP (T) T NIL T
-	:inline-always ((t) :bool nil nil "numberp(#0)"))
-(INTEGERP (T) T NIL T
-	:inline-always ((t) :bool nil nil
-		"@0;type_of(#0)==t_fixnum||type_of(#0)==t_bignum"))
-(RATIONALP (T) T nil t)
-(FLOATP (T) T NIL T
-	:inline-always ((t) :bool nil nil
-		"@0;type_of(#0)==t_shortfloat||type_of(#0)==t_longfloat"))
-(COMPLEXP (T) T NIL T)
-(CHARACTERP (T) T NIL T
-	:inline-always ((t) :bool nil nil "CHARACTERP(#0)"))
-(STRINGP (T) T NIL T
-	:inline-always ((t) :bool nil nil "type_of(#0)==t_string"))
-(BIT-VECTOR-P (T) T NIL T
-	:inline-always ((t) :bool nil nil "(type_of(#0)==t_bitvector)"))
-(VECTORP (T) T NIL T
-	:inline-always ((t) :bool nil nil
-		"@0;type_of(#0)==t_vector||
+(proclaim-function char>= (character *) t :predicate t :no-side-effects t)
+(def-inline char>= :always (character character) :bool "(#0)>=(#1)")
+
+(proclaim-function char-equal (character *) t :predicate t)
+(proclaim-function char-not-equal (character *) t :predicate t)
+(proclaim-function char-lessp (character *) t :predicate t)
+(proclaim-function char-greaterp (character *) t :predicate t)
+(proclaim-function char-not-greaterp (character *) t :predicate t)
+(proclaim-function char-not-lessp (character *) t :predicate t)
+(proclaim-function character (*) character)
+(proclaim-function char-code (character) fixnum :no-side-effects t)
+(def-inline char-code :always (character) :fixnum "#0")
+
+(proclaim-function code-char (fixnum) character :no-side-effects t)
+(def-inline code-char :always (fixnum) :char "#0")
+
+(proclaim-function char-upcase (character) character :no-side-effects t)
+(def-inline char-upcase :always (character) :char "toupper(#0)")
+
+(proclaim-function char-downcase (character) character :no-side-effects t)
+(def-inline char-downcase :always (character) :char "tolower(#0)")
+
+(proclaim-function digit-char (fixnum *) (or character null))
+(proclaim-function char-int (character) fixnum :no-side-effects t)
+(def-inline char-int :always (character) :fixnum "#0")
+
+(proclaim-function char-name (character) (or string null))
+(proclaim-function name-char (string) (or character null))
+
+;; file error.d
+
+(proclaim-function error (t *) t)
+(proclaim-function cerror (t t *) t)
+
+;; file stacks.d
+
+(proclaim-function si:ihs-top (t) t)
+(proclaim-function si:ihs-fun (*) t)
+(proclaim-function si:ihs-env (*) t)
+(proclaim-function si:frs-top (*) t)
+(proclaim-function si::frs-vs (*) t)
+(proclaim-function si:frs-bds (*) t)
+(proclaim-function si:frs-class (*) t)
+(proclaim-function si:frs-tag (*) t)
+(proclaim-function si:frs-ihs (*) t)
+(proclaim-function si:bds-top (*) t)
+(proclaim-function si:bds-var (*) t)
+(proclaim-function si:bds-val (*) t)
+(proclaim-function si::vs-top (*) t)
+(proclaim-function si::vs (*) t)
+(proclaim-function si:sch-frs-base (*) t)
+
+;; file eval.d
+
+(proclaim-function apply (t t *) t)
+(proclaim-function funcall (t *) t)
+(proclaim-function eval (t) t)
+(proclaim-function evalhook (t t t *) t)
+(proclaim-function applyhook (t t t t *) t)
+(proclaim-function constantp (t) t :predicate t)
+(proclaim-function si:unlink-symbol (*) t)
+(proclaim-function si::link-enable (*) t)
+
+;; file file.d
+
+(proclaim-function make-synonym-stream (t) t)
+(proclaim-function make-broadcast-stream (*) t)
+(proclaim-function make-concatenated-stream (*) t)
+(proclaim-function make-two-way-stream (t t) t)
+(proclaim-function make-echo-stream (t t) t)
+(proclaim-function make-string-input-stream (*) t)
+(proclaim-function make-string-output-stream (*) t)
+(proclaim-function get-output-stream-string (*) t)
+(proclaim-function si:output-stream-string (t) t)
+(proclaim-function streamp (t) t :predicate t)
+(proclaim-function input-stream-p (t) t :predicate t)
+(proclaim-function output-stream-p (t) t :predicate t)
+(proclaim-function stream-element-type (t) t)
+(proclaim-function close (t *) t)
+(proclaim-function file-position (t *) t)
+(proclaim-function file-length (t) t)
+(proclaim-function si:get-string-input-stream-index (*) t)
+(proclaim-function si:make-string-output-stream-from-string (*) t)
+
+;; file gbc.d / alloc_2.d
+
+(proclaim-function si::room-report (*) t)
+(proclaim-function si::reset-gbc-count (*) t)
+(proclaim-function gbc (*) t)
+
+;; file unixfsys.d
+
+(proclaim-function truename (t) t)
+(proclaim-function rename-file (t t) t)
+(proclaim-function si:specialp (t) t :predicate t)
+(proclaim-function delete-file (t) t)
+(proclaim-function probe-file (t) t)
+(proclaim-function file-write-date (t) t)
+(proclaim-function file-author (t) t)
+(proclaim-function pathname (t) t)
+(proclaim-function user-homedir-pathname (*) t)
+(proclaim-function directory (t) t)
+(proclaim-function si:chdir (t *) pathname)
+(proclaim-function si:getcwd (*) pathname)
+(proclaim-function si:mkdir (t fixnum) string)
+
+;; file unixint.d
+
+(proclaim-function si:catch-bad-signals (*) t)
+(proclaim-function si:uncatch-bad-signals (*) t)
+
+;; file format.d
+
+(proclaim-function format (t string *) t)
+
+;; file hash.d
+
+(proclaim-function make-hash-table (*) t)
+(proclaim-function hash-table-p (t) t :predicate t)
+(proclaim-function values (*) *)
+(proclaim-function gethash (t t *) (values t t))
+(proclaim-function remhash (t t) t)
+(proclaim-function maphash (t t) t)
+(proclaim-function clrhash (t) t)
+(proclaim-function hash-table-count (t) t)
+(proclaim-function sxhash (t) fixnum)
+(proclaim-function si:hash-set (*) t)
+
+;; file list.d
+
+(proclaim-function car (list) t :no-side-effects t)
+(def-inline car :always (cons) t "CAR(#0)")
+(def-inline car :unsafe (t) t "CAR(#0)")
+
+(proclaim-function cdr (list) t :no-side-effects t)
+(def-inline cdr :always (cons) t "CDR(#0)")
+(def-inline cdr :unsafe (t) t "CDR(#0)")
+
+(proclaim-function caar (list) t :no-side-effects t)
+(def-inline caar :always (cons) t "CAAR(#0)")
+(def-inline caar :unsafe (t) t "CAAR(#0)")
+
+(proclaim-function cadr (list) t :no-side-effects t)
+(def-inline cadr :always (cons) t "CADR(#0)")
+(def-inline cadr :unsafe (t) t "CADR(#0)")
+
+(proclaim-function cdar (list) t :no-side-effects t)
+(def-inline cdar :always (cons) t "CDAR(#0)")
+(def-inline cdar :unsafe (t) t "CDAR(#0)")
+
+(proclaim-function cddr (list) t :no-side-effects t)
+(def-inline cddr :always (cons) t "CDDR(#0)")
+(def-inline cddr :unsafe (t) t "CDDR(#0)")
+
+(proclaim-function caaar (list) t :no-side-effects t)
+(def-inline caaar :always (cons) t "CAAAR(#0)")
+(def-inline caaar :unsafe (t) t "CAAAR(#0)")
+
+(proclaim-function caadr (list) t :no-side-effects t)
+(def-inline caadr :always (cons) t "CAADR(#0)")
+(def-inline caadr :unsafe (t) t "CAADR(#0)")
+
+(proclaim-function cadar (list) t :no-side-effects t)
+(def-inline cadar :always (cons) t "CADAR(#0)")
+(def-inline cadar :unsafe (t) t "CADAR(#0)")
+
+(proclaim-function caddr (list) t :no-side-effects t)
+(def-inline caddr :always (cons) t "CADDR(#0)")
+(def-inline caddr :unsafe (t) t "CADDR(#0)")
+
+(proclaim-function cdaar (list) t :no-side-effects t)
+(def-inline cdaar :always (cons) t "CDAAR(#0)")
+(def-inline cdaar :unsafe (t) t "CDAAR(#0)")
+
+(proclaim-function cdadr (list) t :no-side-effects t)
+(def-inline cdadr :always (cons) t "CDADR(#0)")
+(def-inline cdadr :unsafe (t) t "CDADR(#0)")
+
+(proclaim-function cddar (list) t :no-side-effects t)
+(def-inline cddar :always (cons) t "CDDAR(#0)")
+(def-inline cddar :unsafe (t) t "CDDAR(#0)")
+
+(proclaim-function cdddr (list) t :no-side-effects t)
+(def-inline cdddr :always (cons) t "CDDDR(#0)")
+(def-inline cdddr :unsafe (t) t "CDDDR(#0)")
+
+(proclaim-function caaaar (list) t :no-side-effects t)
+(def-inline caaaar :always (cons) t "CAAAAR(#0)")
+(def-inline caaaar :unsafe (t) t "CAAAAR(#0)")
+
+(proclaim-function caaadr (list) t :no-side-effects t)
+(def-inline caaadr :always (cons) t "CAAADR(#0)")
+(def-inline caaadr :unsafe (t) t "CAAADR(#0)")
+
+(proclaim-function caadar (list) t :no-side-effects t)
+(def-inline caadar :always (cons) t "CAADAR(#0)")
+(def-inline caadar :unsafe (t) t "CAADAR(#0)")
+
+(proclaim-function caaddr (list) t :no-side-effects t)
+(def-inline caaddr :always (cons) t "CAADDR(#0)")
+(def-inline caaddr :unsafe (t) t "CAADDR(#0)")
+
+(proclaim-function cadaar (list) t :no-side-effects t)
+(def-inline cadaar :always (cons) t "CADAAR(#0)")
+(def-inline cadaar :unsafe (t) t "CADAAR(#0)")
+
+(proclaim-function cadadr (list) t :no-side-effects t)
+(def-inline cadadr :always (cons) t "CADADR(#0)")
+(def-inline cadadr :unsafe (t) t "CADADR(#0)")
+
+(proclaim-function caddar (list) t :no-side-effects t)
+(def-inline caddar :always (cons) t "CADDAR(#0)")
+(def-inline caddar :unsafe (t) t "CADDAR(#0)")
+
+(proclaim-function cadddr (list) t :no-side-effects t)
+(def-inline cadddr :always (cons) t "CADDDR(#0)")
+(def-inline cadddr :unsafe (t) t "CADDDR(#0)")
+
+(proclaim-function cdaaar (list) t :no-side-effects t)
+(def-inline cdaaar :always (cons) t "CDAAAR(#0)")
+(def-inline cdaaar :unsafe (t) t "CDAAAR(#0)")
+
+(proclaim-function cdaadr (list) t :no-side-effects t)
+(def-inline cdaadr :always (cons) t "CDAADR(#0)")
+(def-inline cdaadr :unsafe (t) t "CDAADR(#0)")
+
+(proclaim-function cdadar (list) t :no-side-effects t)
+(def-inline cdadar :always (cons) t "CDADAR(#0)")
+(def-inline cdadar :unsafe (t) t "CDADAR(#0)")
+
+(proclaim-function cdaddr (list) t :no-side-effects t)
+(def-inline cdaddr :always (cons) t "CDADDR(#0)")
+(def-inline cdaddr :unsafe (t) t "CDADDR(#0)")
+
+(proclaim-function cddaar (list) t :no-side-effects t)
+(def-inline cddaar :always (cons) t "CDDAAR(#0)")
+(def-inline cddaar :unsafe (t) t "CDDAAR(#0)")
+
+(proclaim-function cddadr (list) t :no-side-effects t)
+(def-inline cddadr :always (cons) t "CDDADR(#0)")
+(def-inline cddadr :unsafe (t) t "CDDADR(#0)")
+
+(proclaim-function cdddar (list) t :no-side-effects t)
+(def-inline cdddar :always (cons) t "CDDDAR(#0)")
+(def-inline cdddar :unsafe (t) t "CDDDAR(#0)")
+
+(proclaim-function cddddr (list) t :no-side-effects t)
+(def-inline cddddr :always (cons) t "CDDDDR(#0)")
+(def-inline cddddr :unsafe (t) t "CDDDDR(#0)")
+
+(proclaim-function cons (t t) cons :no-side-effects t)
+(def-inline cons :always (t t) t "CONS(#0,#1)")
+
+(proclaim-function tree-equal (t t *) t :predicate t)
+(proclaim-function endp (list) t :predicate t :no-side-effects t)
+(def-inline endp :safe (t) :bool "endp(#0)")
+(def-inline endp :unsafe (t) :bool "#0==Cnil")
+
+(proclaim-function list-length (list) (or nil (integer 0 *)))
+(proclaim-function nth (integer list) t :no-side-effects t)
+(def-inline nth :always (t t) t "nth(fixint(#0),#1)")
+(def-inline nth :always (fixnum t) t "nth(#0,#1)")
+(def-inline nth :unsafe (t t) t "nth(fix(#0),#1)")
+(def-inline nth :unsafe (fixnum t) t "nth(#0,#1)")
+
+(proclaim-function first (list) t :no-side-effects t)
+(def-inline first :always (cons) t "CAR(#0)")
+(def-inline first :unsafe (t) t "CAR(#0)")
+
+(proclaim-function second (list) t :no-side-effects t)
+(def-inline second :always (cons) t "CADR(#0)")
+(def-inline second :unsafe (t) t "CADR(#0)")
+
+(proclaim-function third (list) t :no-side-effects t)
+(def-inline third :always (cons) t "CADDR(#0)")
+(def-inline third :unsafe (t) t "CADDR(#0)")
+
+(proclaim-function fourth (list) t :no-side-effects t)
+(def-inline fourth :always (cons) t "CADDDR(#0)")
+(def-inline fourth :unsafe (t) t "CADDDR(#0)")
+
+(proclaim-function fifth (list) t)
+(proclaim-function sixth (list) t)
+(proclaim-function seventh (list) t)
+(proclaim-function eighth (list) t)
+(proclaim-function ninth (list) t)
+(proclaim-function tenth (list) t)
+(proclaim-function rest (list) t :no-side-effects t)
+(def-inline rest :always (cons) t "CDR(#0)")
+(def-inline rest :unsafe (t) t "CDR(#0)")
+
+(proclaim-function nthcdr (fixnum list) t :no-side-effects t)
+(def-inline nthcdr :always (t t) t "nthcdr(fixint(#0),#1)")
+(def-inline nthcdr :always (fixnum t) t "nthcdr(#0,#1)")
+(def-inline nthcdr :unsafe (t t) t "nthcdr(fix(#0),#1)")
+(def-inline nthcdr :unsafe (fixnum t) t "nthcdr(#0,#1)")
+
+(proclaim-function last (list) t)
+(proclaim-function list (*) list :no-side-effects t)
+(def-inline list :always nil t "Cnil")
+(def-inline list :always (t) t "CONS(#0,Cnil)")
+
+(proclaim-function list* (t *) list :no-side-effects t)
+(def-inline list* :always (t) t "#0")
+(def-inline list* :always (t t) t "CONS(#0,#1)")
+
+(proclaim-function make-list (fixnum *) list)
+(proclaim-function append (*) list :no-side-effects t)
+(def-inline append :always (t t) t "append(#0,#1)")
+
+(proclaim-function copy-list (list) list)
+(proclaim-function copy-alist (list) list)
+(proclaim-function copy-tree (t) t)
+(proclaim-function revappend (list t) t)
+(proclaim-function nconc (*) t)
+(def-inline nconc :always (t t) t "nconc(#0,#1)")
+
+(proclaim-function nreconc (list t) t)
+(proclaim-function butlast (list *) list)
+(proclaim-function nbutlast (list *) list)
+(proclaim-function ldiff (list t) list)
+(proclaim-function rplaca (cons t) cons)
+(proclaim-function rplacd (cons t) cons)
+(proclaim-function subst (t t t *) t)
+(proclaim-function subst-if (t t t *) t)
+(proclaim-function subst-if-not (t t t *) t)
+(proclaim-function nsubst (t t t *) t)
+(proclaim-function nsubst-if (t t t *) t)
+(proclaim-function nsubst-if-not (t t t *) t)
+(proclaim-function sublis (list t *) t)
+(proclaim-function nsublis (list t *) t)
+(proclaim-function member (t list *) list)
+(proclaim-function member-if (t list *) list)
+(proclaim-function member-if-not (t list *) list)
+(proclaim-function member1 (t t t t t) t)
+(proclaim-function tailp (t list) t :predicate t)
+(proclaim-function adjoin (t list *) list)
+(proclaim-function acons (t t list) list)
+(proclaim-function pairlis (list list *) list)
+(proclaim-function assoc (t list *) list)
+(proclaim-function assoc-if (t list *) list)
+(proclaim-function assoc-if-not (t list *) list)
+(proclaim-function rassoc (t list *) list)
+(proclaim-function rassoc-if (t list *) list)
+(proclaim-function rassoc-if-not (t list *) list)
+(proclaim-function si:memq (t t t) t)
+
+;; file macros.d
+
+(proclaim-function si::define-macro (*) t)
+(proclaim-function macroexpand (t *) (values t t))
+(proclaim-function macroexpand-1 (t *) (values t t))
+
+;; file main.d
+
+(proclaim-function quit (*) t)
+(proclaim-function identity (t) t)
+(proclaim-function si:argc (*) t)
+(proclaim-function si:argv (*) t)
+(proclaim-function si:getenv (*) t)
+(proclaim-function si:reset-stack-limits (*) t)
+(proclaim-function si:pointer (*) t)
+
+;; file mapfun.d
+
+(proclaim-function mapcar (t t *) t)
+(proclaim-function maplist (t t *) t)
+(proclaim-function mapc (t t *) t)
+(proclaim-function mapl (t t *) t)
+(proclaim-function mapcan (t t *) t)
+(proclaim-function mapcon (t t *) t)
+
+;; file multival.d
+
+(proclaim-function values (*) t)
+(proclaim-function values-list (t) *)
+
+;; file num_arith.d
+
+(proclaim-function + (*) t :no-side-effects t)
+(def-inline + :always (t t) t "number_plus(#0,#1)")
+(def-inline + :always (fixnum-float fixnum-float) :double
+ "(double)(#0)+(double)(#1)")
+(def-inline + :always (fixnum-float fixnum-float) :float
+ "(float)(#0)+(float)(#1)")
+(def-inline + :always (fixnum fixnum) :fixnum "(#0)+(#1)")
+
+(proclaim-function - (t *) t :no-side-effects t)
+(def-inline - :always (t) t "number_negate(#0)")
+(def-inline - :always (t t) t "number_minus(#0,#1)")
+(def-inline - :always (fixnum-float fixnum-float) :double
+ "(double)(#0)-(double)(#1)")
+(def-inline - :always (fixnum-float fixnum-float) :float
+ "(float)(#0)-(float)(#1)")
+(def-inline - :always (fixnum fixnum) :fixnum "(#0)-(#1)")
+(def-inline - :always (fixnum-float) :double "-(double)(#0)")
+(def-inline - :always (fixnum-float) :float "-(float)(#0)")
+(def-inline - :always (fixnum) :fixnum "-(#0)")
+
+(proclaim-function * (*) t :no-side-effects t)
+(def-inline * :always (t t) t "number_times(#0,#1)")
+(def-inline * :always (fixnum-float fixnum-float) :double
+ "(double)(#0)*(double)(#1)")
+(def-inline * :always (fixnum-float fixnum-float) :float
+ "(float)(#0)*(float)(#1)")
+(def-inline * :always (fixnum fixnum) t "fixnum_times(#0,#1)")
+(def-inline * :always (fixnum fixnum) :fixnum "(#0)*(#1)")
+
+(proclaim-function / (t *) t :no-side-effects t)
+(def-inline / :always (t t) t "number_divide(#0,#1)")
+(def-inline / :always (fixnum-float fixnum-float) :double
+ "(double)(#0)/(double)(#1)")
+(def-inline / :always (fixnum-float fixnum-float) :float
+ "(float)(#0)/(float)(#1)")
+(def-inline / :always (fixnum fixnum) :fixnum "(#0)/(#1)")
+
+(proclaim-function 1+ (t) t :no-side-effects t)
+(def-inline 1+ :always (t) t "one_plus(#0)")
+(def-inline 1+ :always (fixnum-float) :double "(double)(#0)+1")
+(def-inline 1+ :always (fixnum-float) :float "(float)(#0)+1")
+(def-inline 1+ :always (fixnum) :fixnum "(#0)+1")
+
+(proclaim-function 1- (t) t :no-side-effects t)
+(def-inline 1- :always (t) t "one_minus(#0)")
+(def-inline 1- :always (fixnum-float) :double "(double)(#0)-1")
+(def-inline 1- :always (fixnum-float) :float "(float)(#0)-1")
+(def-inline 1- :always (fixnum) :fixnum "(#0)-1")
+
+(proclaim-function conjugate (t) t)
+(proclaim-function gcd (*) t)
+(proclaim-function lcm (t *) t)
+
+;; file num_co.d
+
+(proclaim-function float (t *) t :no-side-effects t)
+(def-inline float :always (t short-float) :float "number_to_double(#0)")
+(def-inline float :always (t long-float) :double "number_to_double(#0)")
+(def-inline float :always (fixnum-float) :double "((double)(#0))")
+(def-inline float :always (fixnum-float) :float "((float)(#0))")
+
+(proclaim-function numerator (t) t)
+(proclaim-function denominator (t) t)
+(proclaim-function floor (t *) (values t t) :no-side-effects t)
+(def-inline floor :always (fixnum fixnum) :fixnum
+ "@01;(#0>=0&&#1>0?(#0)/(#1):ifloor(#0,#1))")
+
+(proclaim-function ceiling (t *) (values t t))
+(proclaim-function truncate (t *) (values t t) :no-side-effects t)
+(def-inline truncate :always (fixnum-float) :fixnum "(cl_fixnum)(#0)")
+
+(proclaim-function round (t *) (values t t))
+(proclaim-function mod (t t) t :no-side-effects t)
+(def-inline mod :always (fixnum fixnum) :fixnum
+ "@01;(#0>=0&&#1>0?(#0)%(#1):imod(#0,#1))")
+
+(proclaim-function rem (t t) t :no-side-effects t)
+(def-inline rem :always (fixnum fixnum) :fixnum "(#0)%(#1)")
+
+(proclaim-function decode-float (t) (values t t t))
+(proclaim-function scale-float (t t) t)
+(proclaim-function float-radix (t) fixnum)
+(proclaim-function float-sign (t *) t)
+(proclaim-function float-digits (t) fixnum)
+(proclaim-function float-precision (t) fixnum)
+(proclaim-function integer-decode-float (t) (values t t t))
+(proclaim-function complex (t *) t)
+(proclaim-function realpart (t) t)
+(proclaim-function imagpart (t) t)
+(proclaim-function = (t *) t :predicate t :no-side-effects t)
+(def-inline = :always (t t) :bool "number_equalp(#0,#1)")
+(def-inline = :always (fixnum-float fixnum-float) :bool "(#0)==(#1)")
+
+(proclaim-function /= (t *) t :predicate t :no-side-effects t)
+(def-inline /= :always (t t) :bool "!number_equalp(#0,#1)")
+(def-inline /= :always (fixnum-float fixnum-float) :bool "(#0)!=(#1)")
+
+(proclaim-function < (t *) t :predicate t :no-side-effects t)
+(def-inline < :always (t t) :bool "number_compare(#0,#1)<0")
+(def-inline < :always (fixnum-float fixnum-float) :bool "(#0)<(#1)")
+
+(proclaim-function > (t *) t :predicate t :no-side-effects t)
+(def-inline > :always (t t) :bool "number_compare(#0,#1)>0")
+(def-inline > :always (fixnum-float fixnum-float) :bool "(#0)>(#1)")
+
+(proclaim-function <= (t *) t :predicate t :no-side-effects t)
+(def-inline <= :always (t t) :bool "number_compare(#0,#1)<=0")
+(def-inline <= :always (fixnum-float fixnum-float) :bool "(#0)<=(#1)")
+
+(proclaim-function >= (t *) t :predicate t :no-side-effects t)
+(def-inline >= :always (t t) :bool "number_compare(#0,#1)>=0")
+(def-inline >= :always (fixnum-float fixnum-float) :bool "(#0)>=(#1)")
+
+(proclaim-function max (t *) t :no-side-effects t)
+(def-inline max :always (t t) t "@01;(number_compare(#0,#1)>=0?#0:#1)")
+(def-inline max :always (fixnum fixnum) :fixnum "@01;(#0)>=(#1)?#0:#1")
+
+(proclaim-function min (t *) t :no-side-effects t)
+(def-inline min :always (t t) t "@01;(number_compare(#0,#1)<=0?#0:#1)")
+(def-inline min :always (fixnum fixnum) :fixnum "@01;(#0)<=(#1)?#0:#1")
+
+;; file num_log.d
+
+(proclaim-function logand (*) integer :no-side-effects t)
+(def-inline logand :always nil t "MAKE_FIXNUM(-1)")
+(def-inline logand :always nil :fixnum "-1")
+(def-inline logand :always (t t) t "ecl_boole(ECL_BOOLAND,(#0),(#1))")
+(def-inline logand :always (fixnum fixnum) :fixnum "((#0) & (#1))")
+
+(proclaim-function logandc1 (integer integer) integer :no-side-effects t)
+(def-inline logandc1 :always (t t) t "ecl_boole(ECL_BOOLANDC1,(#0),(#1))")
+(def-inline logandc1 :always (fixnum fixnum) :fixnum "(~(#0) & (#1))")
+
+(proclaim-function logandc2 (integer integer) integer :no-side-effects t)
+(def-inline logandc2 :always (t t) t "ecl_boole(ECL_BOOLANDC2,(#0),(#1))")
+(def-inline logandc2 :always (fixnum fixnum) :fixnum "((#0) & ~(#1))")
+
+(proclaim-function logeqv (*) integer :no-side-effects t)
+(def-inline logeqv :always nil t "MAKE_FIXNUM(-1)")
+(def-inline logeqv :always nil :fixnum "-1")
+(def-inline logeqv :always (t t) t "ecl_boole(ECL_BOOLEQV,(#0),(#1))")
+(def-inline logeqv :always (fixnum fixnum) :fixnum "(~( (#0) ^ (#1) ))")
+
+(proclaim-function logior (*) integer :no-side-effects t)
+(def-inline logior :always nil t "MAKE_FIXNUM(0)")
+(def-inline logior :always nil :fixnum "0")
+(def-inline logior :always (t t) t "ecl_boole(ECL_BOOLIOR,(#0),(#1))")
+(def-inline logior :always (fixnum fixnum) :fixnum "((#0) | (#1))")
+
+(proclaim-function lognand (integer integer) integer :no-side-effects t)
+(def-inline lognand :always (t t) t "ecl_boole(ECL_BOOLNAND,(#0),(#1))")
+(def-inline lognand :always (fixnum fixnum) :fixnum "(~( (#0) & (#1) ))")
+
+(proclaim-function lognor (integer integer) integer :no-side-effects t)
+(def-inline lognor :always (t t) t "ecl_boole(ECL_BOOLNOR,(#0),(#1))")
+(def-inline lognor :always (fixnum fixnum) :fixnum "(~( (#0) | (#1) ))")
+
+(proclaim-function lognot (integer) integer :no-side-effects t)
+(def-inline lognot :always (t) t "ecl_boole(ECL_BOOLXOR,(#0),MAKE_FIXNUM(-1))")
+(def-inline lognot :always (fixnum) :fixnum "(~(#0))")
+
+(proclaim-function logorc1 (integer integer) integer :no-side-effects t)
+(def-inline logorc1 :always (t t) t "ecl_boole(ECL_BOOLORC1,(#0),(#1))")
+(def-inline logorc1 :always (fixnum fixnum) :fixnum "(~(#0) | (#1))")
+
+(proclaim-function logorc2 (integer integer) integer :no-side-effects t)
+(def-inline logorc2 :always (t t) t "ecl_boole(ECL_BOOLORC2,(#0),(#1))")
+(def-inline logorc2 :always (fixnum fixnum) :fixnum "((#0) | ~(#1))")
+
+(proclaim-function logxor (*) integer :no-side-effects t)
+(def-inline logxor :always nil t "MAKE_FIXNUM(0)")
+(def-inline logxor :always nil :fixnum "0")
+(def-inline logxor :always (t t) t "ecl_boole(ECL_BOOLXOR,(#0),(#1))")
+(def-inline logxor :always (fixnum fixnum) :fixnum "((#0) ^ (#1))")
+
+(proclaim-function boole (t t t) t :no-side-effects t)
+(def-inline boole :always (fixnum t t) t "ecl_boole((#0),(#1),(#2))")
+
+(proclaim-function logbitp (t t) t :predicate t :no-side-effects t)
+(def-inline logbitp :always ((integer -29 29) fixnum) :bool "(#1 >> #0) & 1")
+
+(proclaim-function ash (t t) t)
+(proclaim-function logcount (t) t)
+(proclaim-function integer-length (t) fixnum)
+(proclaim-function si:bit-array-op (*) t)
+(proclaim-function zerop (t) t :predicate t :no-side-effects t)
+(def-inline zerop :always (t) :bool "number_zerop(#0)")
+(def-inline zerop :always (fixnum-float) :bool "(#0)==0")
+
+(proclaim-function plusp (t) t :predicate t :no-side-effects t)
+(def-inline plusp :always (t) :bool "number_plusp(#0)")
+(def-inline plusp :always (fixnum-float) :bool "(#0)>0")
+
+(proclaim-function minusp (t) t :predicate t :no-side-effects t)
+(def-inline minusp :always (t) :bool "number_minusp(#0)")
+(def-inline minusp :always (fixnum-float) :bool "(#0)<0")
+
+(proclaim-function oddp (t) t :predicate t :no-side-effects t)
+(def-inline oddp :always (t) :bool "number_oddp(#0)")
+(def-inline oddp :always (fixnum fixnum) :bool "(#0) & 1")
+
+(proclaim-function evenp (t) t :predicate t :no-side-effects t)
+(def-inline evenp :always (t) :bool "number_evenp(#0)")
+(def-inline evenp :always (fixnum fixnum) :bool "~(#0) & 1")
+
+(proclaim-function random (t *) t)
+(proclaim-function make-random-state (*) t)
+(proclaim-function random-state-p (t) t :predicate t)
+(proclaim-function expt (t t) t :no-side-effects t)
+(def-inline expt :always (t t) t "cl_expt(#0,#1)")
+(def-inline expt :always ((integer 2 2) (integer 0 29)) :fixnum "(1<<(#1))")
+(def-inline expt :always ((integer 0 0) t) :fixnum "0")
+(def-inline expt :always ((integer 1 1) t) :fixnum "1")
+
+(proclaim-function log (t *) t :no-side-effects t)
+(def-inline log :always (fixnum-float) :double "log((double)(#0))")
+(def-inline log :always (fixnum-float) :float "(float)log((double)(#0))")
+
+(proclaim-function sqrt (t) t :no-side-effects t)
+(def-inline sqrt :always (fixnum-float) :double "sqrt((double)(#0))")
+(def-inline sqrt :always (fixnum-float) :float "(float)sqrt((double)(#0))")
+
+(proclaim-function sin (t) t :no-side-effects t)
+(def-inline sin :always (fixnum-float) :double "sin((double)(#0))")
+(def-inline sin :always (fixnum-float) :float "(float)sin((double)(#0))")
+
+(proclaim-function cos (t) t :no-side-effects t)
+(def-inline cos :always (fixnum-float) :double "cos((double)(#0))")
+(def-inline cos :always (fixnum-float) :float "(float)cos((double)(#0))")
+
+(proclaim-function tan (number) number :no-side-effects t)
+(def-inline tan :always (fixnum-float) :double "tan((double)(#0))")
+(def-inline tan :always (fixnum-float) :float "(float)tan((double)(#0))")
+
+(proclaim-function atan (t *) t)
+
+;; file package.d
+
+(proclaim-function make-package (t *) t)
+(proclaim-function si:select-package (t) t)
+(proclaim-function find-package (t) t)
+(proclaim-function package-name (t) t)
+(proclaim-function package-nicknames (t) t)
+(proclaim-function rename-package (t t *) t)
+(proclaim-function package-use-list (t) t)
+(proclaim-function package-used-by-list (t) t)
+(proclaim-function package-shadowing-symbols (t) t)
+(proclaim-function list-all-packages (*) t)
+(proclaim-function intern (string *) (values t t))
+(proclaim-function find-symbol (string *) (values t t))
+(proclaim-function unintern (symbol t) t)
+(proclaim-function export (t *) t)
+(proclaim-function unexport (t *) t)
+(proclaim-function import (t *) t)
+(proclaim-function shadowing-import (t *) t)
+(proclaim-function shadow (t *) t)
+(proclaim-function use-package (t *) t)
+(proclaim-function unuse-package (t *) t)
+(proclaim-function si::package-internal (*) t)
+(proclaim-function si::package-external (*) t)
+
+;; file pathname.d
+
+(proclaim-function pathname (t) t)
+(proclaim-function parse-namestring (t *) t)
+(proclaim-function merge-pathnames (t *) t)
+(proclaim-function make-pathname (*) t)
+(proclaim-function pathnamep (t) t :predicate t)
+(proclaim-function pathname-host (t) t)
+(proclaim-function pathname-device (t) t)
+(proclaim-function pathname-directory (t) t)
+(proclaim-function pathname-name (t) t)
+(proclaim-function pathname-type (t) t)
+(proclaim-function pathname-version (t) t)
+(proclaim-function wild-pathname-p (t *) t)
+(proclaim-function namestring (t) string)
+(proclaim-function file-namestring (t) string)
+(proclaim-function directory-namestring (t) string)
+(proclaim-function host-namestring (t) string)
+(proclaim-function enough-namestring (t *) string)
+
+(proclaim-function null (t) t :predicate t :no-side-effects t)
+(def-inline null :always (t) :bool "#0==Cnil")
+
+(proclaim-function symbolp (t) t :predicate t :no-side-effects t)
+(def-inline symbolp :always (t) :bool "SYMBOLP(#0)")
+
+(proclaim-function atom (t) t :predicate t :no-side-effects t)
+(def-inline atom :always (t) :bool "ATOM(#0)")
+
+(proclaim-function consp (t) t :predicate t :no-side-effects t)
+(def-inline consp :always (t) :bool "CONSP(#0)")
+
+(proclaim-function listp (t) t :predicate t :no-side-effects t)
+(def-inline listp :always (t) :bool "@0;LISTP(#0)")
+
+(proclaim-function numberp (t) t :predicate t :no-side-effects t)
+(def-inline numberp :always (t) :bool "numberp(#0)")
+
+(proclaim-function integerp (t) t :predicate t :no-side-effects t)
+(def-inline integerp :always (t) :bool
+ "@0;type_of(#0)==t_fixnum||type_of(#0)==t_bignum")
+
+(proclaim-function rationalp (t) t :predicate t)
+(proclaim-function floatp (t) t :predicate t :no-side-effects t)
+(def-inline floatp :always (t) :bool
+ "@0;type_of(#0)==t_shortfloat||type_of(#0)==t_longfloat")
+
+(proclaim-function complexp (t) t :predicate t)
+(proclaim-function characterp (t) t :predicate t :no-side-effects t)
+(def-inline characterp :always (t) :bool "CHARACTERP(#0)")
+
+(proclaim-function stringp (t) t :predicate t :no-side-effects t)
+(def-inline stringp :always (t) :bool "type_of(#0)==t_string")
+
+(proclaim-function bit-vector-p (t) t :predicate t :no-side-effects t)
+(def-inline bit-vector-p :always (t) :bool "(type_of(#0)==t_bitvector)")
+
+(proclaim-function vectorp (t) t :predicate t :no-side-effects t)
+(def-inline vectorp :always (t) :bool "@0;type_of(#0)==t_vector||
 type_of(#0)==t_string||
-type_of(#0)==t_bitvector"))
-(VECTOR-PUSH (T VECTOR) FIXNUM T NIL)
-(VECTOR-PUSH-EXTEND (T VECTOR) FIXNUM T NIL)
-(SIMPLE-STRING-P (T) T NIL T)
-(SIMPLE-BIT-VECTOR-P (T) T NIL T)
-(SIMPLE-VECTOR-P (T) T NIL T)
-(ARRAYP (T) T NIL T
-	:inline-always ((t) :bool nil nil "@0;ARRAYP(#0)"))
-(PACKAGEP (T) T NIL T)
-(FUNCTIONP (T) T NIL T)
-(COMPILED-FUNCTION-P (T) T NIL T)
-(EQ (T T) T NIL T
-	:inline-always ((t t) :bool nil nil "(#0)==(#1)")
-	:inline-always ((fixnum fixnum) :bool nil nil "(#0)==(#1)"))
-(EQL (T T) T NIL T
-	:inline-always ((t t) :bool nil nil "eql(#0,#1)")
-	:inline-always ((character t) :bool nil nil	; Beppe
-		"(CHARACTERP(#1) && (#0)==CHAR_CODE(#1))")
-	:inline-always ((t character) :bool nil nil	; Beppe
-		"(CHARACTERP(#0) && CHAR_CODE(#0)==(#1))")
-	:inline-always ((character character) :bool nil nil "(#0)==(#1)")
-	:inline-always (((not (or complex bignum ratio float)) t) :bool nil nil
-			"(#0)==(#1)")
-	:inline-always ((t (not (or complex bignum ratio float))) :bool nil nil
-			"(#0)==(#1)")
-	:inline-always ((fixnum fixnum) :bool nil nil "(#0)==(#1)"))
-(EQUAL (T T) T nil t
-	:inline-always ((t t) :bool nil nil "equal(#0,#1)")
-	:inline-always ((fixnum fixnum) :bool nil nil "(#0)==(#1)"))
-(EQUALP (T T) T NIL T
-	:inline-always ((t t) :bool nil nil "equalp(#0,#1)")
-	:inline-always ((fixnum fixnum) :bool nil nil "(#0)==(#1)"))
-(NOT (T) T NIL T
-	:inline-always ((t) :bool nil nil "(#0)==Cnil"))
+type_of(#0)==t_bitvector")
 
-; file print.d
-(CLEAR-OUTPUT (*) T)
-(FINISH-OUTPUT (*) T)
-(FORCE-OUTPUT (*) T)
-(FRESH-LINE (*) T)
-(LISTEN (*) T)
-(PEEK-CHAR (*) T)
-(PPRINT (T *) T)
-(PRIN1 (T *) T NIL NIL
-	:inline-always ((t t) t t nil "prin1(#0,#1)")
-	:inline-always ((t) t t nil "prin1(#0,Cnil)"))
-(PRINC (T *) T NIL NIL
-	:inline-always ((t t) t t nil "princ(#0,#1)")
-	:inline-always ((t) t t nil "princ(#0,Cnil)"))
-(PRINT (T *) T NIL NIL
-	:inline-always ((t t) t t nil "print(#0,#1)")
-	:inline-always ((t) t t nil "print(#0,Cnil)"))
-(PROBE-FILE (T) T NIL T)
-(UNREAD-CHAR (T *) T)
-(READ (*) T)
-(READ-CHAR (*) T)
-(READ-DELIMITED-LIST (T *) T)
-(READ-LINE (*) (VALUES T T))
-(READ-PRESERVING-WHITESPACE nil T)
-(TERPRI (*) T NIL T
-	:inline-always ((t) t t nil "terpri(#0)")
-	:inline-always (nil t t nil "terpri(Cnil)"))
-(WRITE (T *) T)
-(WRITE-BYTE (fixnum stream) T)
-(WRITE-CHAR (T *) T NIL NIL
-	:inline-always ((t) t t nil "@0;(princ_char(char_code(#0),Cnil),(#0))"))
-(WRITE-LINE (T *) T)
-(WRITE-STRING (T *) T)
-(READ-CHAR-NO-HANG (*) T)
-(CLEAR-INPUT (*) T)
-(PARSE-INTEGER (T *))
-(READ-BYTE (T *) T)
-(COPY-READTABLE (*) T NIL NIL
-	:inline-always ((null null) t nil nil "standard_readtable"))
-(READTABLEP (T) T NIL T)
-(SET-SYNTAX-FROM-CHAR (T T *) T)
-(SET-MACRO-CHARACTER (T T *) T)
-(GET-MACRO-CHARACTER (T *) T)
-(MAKE-DISPATCH-MACRO-CHARACTER nil T)
-(SET-DISPATCH-MACRO-CHARACTER nil T)
-(GET-DISPATCH-MACRO-CHARACTER nil T)
-(SI::STRING-TO-OBJECT (T) T)
-(si::STANDARD-READTABLE (T) T)
-(SYMBOL-FUNCTION (T) T NIL NIL)
-(FBOUNDP (symbol) T nil t)
-(SYMBOL-VALUE (symbol) T)
-(BOUNDP (symbol) T nil t
-	:inline-always ((symbol) :bool nil nil "SYM_VAL(#0)!=OBJNULL"))
-(MACRO-FUNCTION (symbol) T)
-(SPECIAL-OPERATOR-P (symbol) T nil t)
+(proclaim-function vector-push (t vector) fixnum :no-sp-change t)
+(proclaim-function vector-push-extend (t vector) fixnum :no-sp-change t)
+(proclaim-function simple-string-p (t) t :predicate t)
+(proclaim-function simple-bit-vector-p (t) t :predicate t)
+(proclaim-function simple-vector-p (t) t :predicate t)
+(proclaim-function arrayp (t) t :predicate t :no-side-effects t)
+(def-inline arrayp :always (t) :bool "@0;ARRAYP(#0)")
 
-; file unixsave.c
-(SAVE (T) T)
+(proclaim-function packagep (t) t :predicate t)
+(proclaim-function functionp (t) t :predicate t)
+(proclaim-function compiled-function-p (t) t :predicate t)
+(proclaim-function eq (t t) t :predicate t :no-side-effects t)
+(def-inline eq :always (t t) :bool "(#0)==(#1)")
+(def-inline eq :always (fixnum fixnum) :bool "(#0)==(#1)")
 
-; file unixsys.c
-(si::SYSTEM nil T)
+(proclaim-function eql (t t) t :predicate t :no-side-effects t)
+(def-inline eql :always (t t) :bool "eql(#0,#1)")
+(def-inline eql :always (character t) :bool
+ "(CHARACTERP(#1) && (#0)==CHAR_CODE(#1))")
+(def-inline eql :always (t character) :bool
+ "(CHARACTERP(#0) && CHAR_CODE(#0)==(#1))")
+(def-inline eql :always (character character) :bool "(#0)==(#1)")
+(def-inline eql :always ((not (or complex bignum ratio float)) t) :bool
+ "(#0)==(#1)")
+(def-inline eql :always (t (not (or complex bignum ratio float))) :bool
+ "(#0)==(#1)")
+(def-inline eql :always (fixnum fixnum) :bool "(#0)==(#1)")
 
-; file sequence.d
-(ELT (sequence fixnum) T nil nil
-	:inline-always ((t t) t nil t "elt(#0,fixint(#1))")
-	:inline-always ((t fixnum) t nil t "elt(#0,#1)")
-	:inline-unsafe ((t t) t nil t "elt(#0,fix(#1))")
-	:inline-unsafe ((t fixnum) t nil t "elt(#0,#1)"))
-(si::ELT-SET (sequence fixnum t) T nil nil
-	:inline-always ((t t t) t t nil "elt_set(#0,fixint(#1),#2)")
-	:inline-always ((t fixnum t) t t nil "elt_set(#0,#1,#2)")
-	:inline-unsafe ((t t t) t t nil "elt_set(#0,fix(#1),#2)"))
-(SUBSEQ (sequence fixnum *) sequence)
-(COPY-SEQ (sequence) sequence)
-(LENGTH (sequence) fixnum t nil
-	:inline-always ((t) t nil nil "cl_length(#0)")
-	:inline-always ((t) fixnum nil nil "length(#0)")
-	:inline-unsafe (((array t)) fixnum nil nil "(#0)->vector.fillp")
-	:inline-unsafe ((string) fixnum nil nil "(#0)->string.fillp"))
-(REVERSE (sequence) sequence nil nil)
-(NREVERSE (sequence) sequence nil nil)
+(proclaim-function equal (t t) t :predicate t :no-side-effects t)
+(def-inline equal :always (t t) :bool "equal(#0,#1)")
+(def-inline equal :always (fixnum fixnum) :bool "(#0)==(#1)")
 
-; file character.d
-(CHAR (string fixnum) character nil nil
-	:inline-always ((t t) t nil t "cl_char(#0,#1)")
-	:inline-always ((t fixnum) t nil t "aref1(#0,#1)")
-	:inline-unsafe ((t t) t nil nil "CODE_CHAR((#0)->string.self[fix(#1)])")
-	:inline-unsafe ((t fixnum) fixnum nil nil "(#0)->string.self[#1]")
-	:inline-unsafe ((t fixnum) character nil nil "(#0)->string.self[#1]"))
-(si::CHAR-SET
-	(string fixnum character) character nil nil
-	:inline-always ((t t t) t t nil "si_char_set(#0,#1,#2)")
-	:inline-always ((t fixnum t) t t nil "aset1(#0,#1,#2)")
-	:inline-unsafe ((t t t) t t nil
-		"@2;((#0)->string.self[fix(#1)]=char_code(#2),(#2))")
-	:inline-unsafe ((t fixnum character) character t nil
-		"(#0)->string.self[#1]= #2"))
-(SCHAR (string fixnum) character nil nil
-	:inline-always ((t t) t nil t "elt(#0,fixint(#1))")
-	:inline-always ((t fixnum) t nil t "elt(#0,#1)")
-	:inline-unsafe ((t t) t nil nil "CODE_CHAR((#0)->string.self[fix(#1)])")
-	:inline-unsafe ((t t) fixnum nil nil "(#0)->string.self[fix(#1)]")
-	:inline-unsafe ((t fixnum) fixnum nil nil "(#0)->string.self[#1]")
-	:inline-unsafe ((t fixnum) character nil nil "(#0)->string.self[#1]"))
-(si::SCHAR-SET
-	(string fixnum character) character nil nil
-	:inline-always ((t t t) t t nil "elt_set(#0,fixint(#1),#2)")
-	:inline-always ((t fixnum t) t t nil "elt_set(#0,#1,#2)")
-	:inline-unsafe ((t t t) t t nil
-		"@2;((#0)->string.self[fix(#1)]=char_code(#2),(#2))")
-	:inline-unsafe ((t fixnum character) character t nil
-		"(#0)->string.self[#1]= #2"))
-(STRING= (string string *) T nil t
-	:inline-always ((string  string) :bool nil nil "string_eq(#0,#1)"))
-(STRING-EQUAL (string string *) T nil t
-	:inline-always ((string  string) :bool nil nil "string_equal(#0,#1)"))
-(STRING< (string string *) T nil t)
-(STRING> (string string *) T nil t)
-(STRING<= (string string *) T nil t)
-(STRING>= (string string *) T nil t)
-(STRING/= (string string *) T nil t)
-(STRING-LESSP (string string *) T nil t)
-(STRING-GREATERP (string string *) T nil t)
-(STRING-NOT-LESSP (string string *) T nil t)
-(STRING-NOT-GREATERP (string string *) T nil t)
-(STRING-NOT-EQUAL (string string *) T nil t)
-(MAKE-STRING (fixnum *) string)
-(STRING-TRIM (t string) string)
-(STRING-LEFT-TRIM (t string) string)
-(STRING-RIGHT-TRIM (t string) string)
-(STRING-UPCASE (string *) string)
-(STRING-DOWNCASE (string *) string)
-(STRING-CAPITALIZE (string *) string)
-(NSTRING-UPCASE (string *) string)
-(NSTRING-DOWNCASE (string *) string)
-(NSTRING-CAPITALIZE (string *) string)
-(STRING (T) string nil t)
-(STRING-CONCATENATE (T) string nil nil)
+(proclaim-function equalp (t t) t :predicate t :no-side-effects t)
+(def-inline equalp :always (t t) :bool "equalp(#0,#1)")
+(def-inline equalp :always (fixnum fixnum) :bool "(#0)==(#1)")
 
-; file structure.d
-(si::MAKE-STRUCTURE (T *) T)
-(COPY-STRUCTURE (T) T)
-(SI::STRUCTURE-NAME (T) SYMBOL NIL NIL
-	:inline-always ((structure) symbol nil nil "SNAME(#0)"))
-(si::STRUCTURE-REF (t t fixnum) T nil nil
-	:inline-always ((t t fixnum) t nil nil "structure_ref(#0,#1,#2)"))
-(si::STRUCTURE-SET (t t fixnum t) T nil nil
-	:inline-always ((t t fixnum t) t T nil "structure_set(#0,#1,#2,#3)"))
-#+clos
-(SI::STRUCTUREP (T) T NIL T)
-#-clos
-(SI::STRUCTUREP (T) T NIL T
-	:inline-always ((t) :bool nil nil "type_of(#0)==t_structure"))
-(SI::STRUCTURE-SUBTYPE-P (T T) T NIL T)
-(si::RPLACA-NTHCDR (T T T) T)
-(si::LIST-NTH (T T) T nil t)
+(proclaim-function not (t) t :predicate t :no-side-effects t)
+(def-inline not :always (t) :bool "(#0)==Cnil")
 
-; file toplevel.c
-(si::*MAKE-SPECIAL nil T)
-(si::*MAKE-CONSTANT nil T)
+;; file print.d, read.d
 
-; file symbol.d
-(GET (symbol t *) T nil nil
-	:inline-always ((t t t) t nil nil "ecl_get(#0,#1,#2)")
-	:inline-always ((t t) t nil nil "ecl_get(#0,#1,Cnil)"))
-(REMPROP (symbol t) T nil nil)
-(SYMBOL-PLIST (symbol) T nil T
-	:inline-always ((t) t nil nil "((#0)->symbol.plist)"))
-(GETF (T T *) T)
-(GET-PROPERTIES (T T) *)
-(SYMBOL-NAME (symbol) string nil nil
-	:inline-always ((symbol) t nil t "((#0)->symbol.name)")
-;	:inline-always ((t) t nil t "cl_symbol_name(#0)")
-)
-(MAKE-SYMBOL (string) symbol)
-(COPY-SYMBOL (symbol *) symbol)
-(GENSYM (*) symbol)
-(GENTEMP (*) symbol)
-(SYMBOL-PACKAGE (symbol) T)
-(KEYWORDP (T) T NIL T
-;  :inline-always ((t) :bool nil nil
-;        "@0;(type_of(#0)==t_symbol&&(#0)->symbol.hpack==cl_core.keyword_package)")
- )
-(SI::PUT-F NIL (T T))
-(SI::REM-F NIL (T T))
-(si::SET-SYMBOL-PLIST (symbol t) T)
-(SI::PUTPROP (T T T) T NIL NIL)
-(SI::PUT-SYSPROP (T T T) T NIL NIL)
-(SI::GET-SYSPROP (T T T) T NIL NIL)
-(SI::REM-SYSPROP (T T) T NIL NIL)
+(proclaim-function clear-output (*) t)
+(proclaim-function finish-output (*) t)
+(proclaim-function force-output (*) t)
+(proclaim-function fresh-line (*) t)
+(proclaim-function listen (*) t)
+(proclaim-function peek-char (*) t)
+(proclaim-function pprint (t *) t)
+(proclaim-function prin1 (t *) t)
+(def-inline prin1 :always (t t) t "prin1(#0,#1)")
+(def-inline prin1 :always (t) t "prin1(#0,Cnil)")
 
-; file tcp.c
-(si::OPEN-TCP-STREAM (T T) T)
+(proclaim-function princ (t *) t)
+(def-inline princ :always (t t) t "princ(#0,#1)")
+(def-inline princ :always (t) t "princ(#0,Cnil)")
 
-; file unixfasl.c
-(si::READ-EXTERNALS nil T)
-(si::SET-UP-COMBINED nil T)
-(si::BUILD-SYMBOL-TABLE nil T)
+(proclaim-function print (t *) t)
+(def-inline print :always (t t) t "print(#0,#1)")
+(def-inline print :always (t) t "print(#0,Cnil)")
 
-; file unixtime.c
-(si::DAYLIGHT-SAVING-TIME-P nil T nil t)
-(GET-UNIVERSAL-TIME nil T)
-(GET-INTERNAL-RUN-TIME nil T)
-(GET-INTERNAL-REAL-TIME nil T)
-(si::GET-LOCAL-TIME-ZONE nil T)
-(SLEEP (real) T)
+(proclaim-function probe-file (t) t :predicate t)
+(proclaim-function unread-char (t *) t)
+(proclaim-function read (*) t)
+(proclaim-function read-char (*) t)
+(proclaim-function read-delimited-list (t *) t)
+(proclaim-function read-line (*) (values t t))
+(proclaim-function read-preserving-whitespace (*) t)
+(proclaim-function terpri (*) t :predicate t)
+(def-inline terpri :always (t) t "terpri(#0)")
+(def-inline terpri :always nil t "terpri(Cnil)")
 
-(TYPE-OF (T) T NIL NIL)
+(proclaim-function write (t *) t)
+(proclaim-function write-byte (fixnum stream) t)
+(proclaim-function write-char (t *) t)
+(def-inline write-char :always (t) t "@0;(princ_char(char_code(#0),Cnil),(#0))")
 
-;;; Beppe's additions
-(READ-BYTES (stream vector fixnum fixnum) T)
-(WRITE-BYTES (stream vector fixnum fixnum) T)
+(proclaim-function write-line (t *) t)
+(proclaim-function write-string (t *) t)
+(proclaim-function read-char-no-hang (*) t)
+(proclaim-function clear-input (*) t)
+(proclaim-function parse-integer (t *) t)
+(proclaim-function read-byte (t *) t)
+(proclaim-function copy-readtable (*) t :no-side-effects t)
+(def-inline copy-readtable :always (null null) t "standard_readtable")
 
-;;; AKCL additions:
-(SI::COPY-STREAM (T T) T)
+(proclaim-function readtablep (t) t :predicate t)
+(proclaim-function set-syntax-from-char (t t *) t)
+(proclaim-function set-macro-character (t t *) t)
+(proclaim-function get-macro-character (t *) t)
+(proclaim-function make-dispatch-macro-character (*) t)
+(proclaim-function set-dispatch-macro-character (*) t)
+(proclaim-function get-dispatch-macro-character (*) t)
+(proclaim-function si:string-to-object (t) t)
+(proclaim-function si:standard-readtable (t) t)
+(proclaim-function symbol-function (t) t)
+(proclaim-function fboundp (symbol) t :predicate t)
+(proclaim-function symbol-value (symbol) t)
+(proclaim-function boundp (symbol) t :predicate t :no-side-effects t)
+(def-inline boundp :always (symbol) :bool "SYM_VAL(#0)!=OBJNULL")
+
+(proclaim-function macro-function (symbol) t)
+(proclaim-function special-operator-p (symbol) t :predicate t)
+
+;; file unixsys.d
+
+(proclaim-function si:system (*) t)
+
+;; file sequence.d
+
+(proclaim-function elt (sequence fixnum) t :no-side-effects t)
+(def-inline elt :always (t t) t "elt(#0,fixint(#1))")
+(def-inline elt :always (t fixnum) t "elt(#0,#1)")
+(def-inline elt :unsafe (t t) t "elt(#0,fix(#1))")
+(def-inline elt :unsafe (t fixnum) t "elt(#0,#1)")
+
+(proclaim-function si:elt-set (sequence fixnum t) t)
+(def-inline si:elt-set :always (t t t) t "elt_set(#0,fixint(#1),#2)")
+(def-inline si:elt-set :always (t fixnum t) t "elt_set(#0,#1,#2)")
+(def-inline si:elt-set :unsafe (t t t) t "elt_set(#0,fix(#1),#2)")
+
+(proclaim-function subseq (sequence fixnum *) sequence)
+(proclaim-function copy-seq (sequence) sequence)
+(proclaim-function length (sequence) fixnum :no-side-effects t)
+(def-inline length :always (t) t "cl_length(#0)")
+(def-inline length :always (t) :fixnum "length(#0)")
+(def-inline length :unsafe ((array t)) :fixnum "(#0)->vector.fillp")
+(def-inline length :unsafe (string) :fixnum "(#0)->string.fillp")
+
+(proclaim-function reverse (sequence) sequence)
+(proclaim-function nreverse (sequence) sequence)
+
+;; file character.d
+
+(proclaim-function char (string fixnum) character :no-side-effects t)
+(def-inline char :always (t t) t "cl_char(#0,#1)")
+(def-inline char :always (t fixnum) t "aref1(#0,#1)")
+(def-inline char :unsafe (t t) t "CODE_CHAR((#0)->string.self[fix(#1)])")
+(def-inline char :unsafe (t fixnum) :fixnum "(#0)->string.self[#1]")
+(def-inline char :unsafe (t fixnum) :char "(#0)->string.self[#1]")
+
+(proclaim-function si:char-set (string fixnum character) character)
+(def-inline si:char-set :always (t t t) t "si_char_set(#0,#1,#2)")
+(def-inline si:char-set :always (t fixnum t) t "aset1(#0,#1,#2)")
+(def-inline si:char-set :unsafe (t t t) t
+ "@2;((#0)->string.self[fix(#1)]=char_code(#2),(#2))")
+(def-inline si:char-set :unsafe (t fixnum character) :char
+ "(#0)->string.self[#1]= #2")
+
+(proclaim-function schar (string fixnum) character :no-side-effects t)
+(def-inline schar :always (t t) t "elt(#0,fixint(#1))")
+(def-inline schar :always (t fixnum) t "elt(#0,#1)")
+(def-inline schar :unsafe (t t) t "CODE_CHAR((#0)->string.self[fix(#1)])")
+(def-inline schar :unsafe (t t) :fixnum "(#0)->string.self[fix(#1)]")
+(def-inline schar :unsafe (t fixnum) :fixnum "(#0)->string.self[#1]")
+(def-inline schar :unsafe (t fixnum) :char "(#0)->string.self[#1]")
+
+(proclaim-function si:schar-set (string fixnum character) character)
+(def-inline si:schar-set :always (t t t) t "elt_set(#0,fixint(#1),#2)")
+(def-inline si:schar-set :always (t fixnum t) t "elt_set(#0,#1,#2)")
+(def-inline si:schar-set :unsafe (t t t) t
+ "@2;((#0)->string.self[fix(#1)]=char_code(#2),(#2))")
+(def-inline si:schar-set :unsafe (t fixnum character) :char
+ "(#0)->string.self[#1]= #2")
+
+(proclaim-function string= (string string *) t :predicate t :no-side-effects t)
+(def-inline string= :always (string string) :bool "string_eq(#0,#1)")
+
+(proclaim-function string-equal (string string *) t :predicate t
+ :no-side-effects t)
+(def-inline string-equal :always (string string) :bool "string_equal(#0,#1)")
+
+(proclaim-function string< (string string *) t :predicate t)
+(proclaim-function string> (string string *) t :predicate t)
+(proclaim-function string<= (string string *) t :predicate t)
+(proclaim-function string>= (string string *) t :predicate t)
+(proclaim-function string/= (string string *) t :predicate t)
+(proclaim-function string-lessp (string string *) t :predicate t)
+(proclaim-function string-greaterp (string string *) t :predicate t)
+(proclaim-function string-not-lessp (string string *) t :predicate t)
+(proclaim-function string-not-greaterp (string string *) t :predicate t)
+(proclaim-function string-not-equal (string string *) t :predicate t)
+(proclaim-function make-string (fixnum *) string)
+(proclaim-function string-trim (t string) string)
+(proclaim-function string-left-trim (t string) string)
+(proclaim-function string-right-trim (t string) string)
+(proclaim-function string-upcase (string *) string)
+(proclaim-function string-downcase (string *) string)
+(proclaim-function string-capitalize (string *) string)
+(proclaim-function nstring-upcase (string *) string)
+(proclaim-function nstring-downcase (string *) string)
+(proclaim-function nstring-capitalize (string *) string)
+(proclaim-function string (t) string :predicate t)
+(proclaim-function string-concatenate (t) string)
+
+;; file structure.d
+
+(proclaim-function si:make-structure (t *) t)
+(proclaim-function copy-structure (t) t)
+(proclaim-function si:structure-name (t) symbol :no-side-effects t)
+(def-inline si:structure-name :always (structure) symbol "SNAME(#0)")
+
+(proclaim-function si:structure-ref (t t fixnum) t :no-side-effects t)
+(def-inline si:structure-ref :always (t t fixnum) t "structure_ref(#0,#1,#2)")
+
+(proclaim-function si:structure-set (t t fixnum t) t)
+(def-inline si:structure-set :always (t t fixnum t) t
+ "structure_set(#0,#1,#2,#3)")
+
+(proclaim-function si:structurep (t) t :predicate t)
+(proclaim-function si:structure-subtype-p (t t) t :predicate t)
+(proclaim-function si:rplaca-nthcdr (t t t) t)
+(proclaim-function si:list-nth (t t) t :predicate t)
+
+(proclaim-function si:*make-special (*) t)
+(proclaim-function si:*make-constant (*) t)
+
+;; file symbol.d
+
+(proclaim-function get (symbol t *) t :no-side-effects t)
+(def-inline get :always (t t t) t "ecl_get(#0,#1,#2)")
+(def-inline get :always (t t) t "ecl_get(#0,#1,Cnil)")
+
+(proclaim-function remprop (symbol t) t)
+(proclaim-function symbol-plist (symbol) t :predicate t :no-side-effects t)
+(def-inline symbol-plist :always (t) t "((#0)->symbol.plist)")
+
+(proclaim-function getf (t t *) t)
+(proclaim-function get-properties (t t) *)
+(proclaim-function symbol-name (symbol) string :no-side-effects t)
+(def-inline symbol-name :always (symbol) t "((#0)->symbol.name)")
+
+(proclaim-function make-symbol (string) symbol)
+(proclaim-function copy-symbol (symbol *) symbol)
+(proclaim-function gensym (*) symbol)
+(proclaim-function gentemp (*) symbol)
+(proclaim-function symbol-package (symbol) t)
+(proclaim-function keywordp (t) t :predicate t)
+(proclaim-function si:put-f (*) (t t))
+(proclaim-function si:rem-f (*) (t t))
+(proclaim-function si:set-symbol-plist (symbol t) t)
+(proclaim-function si:putprop (t t t) t)
+(proclaim-function si:put-sysprop (t t t) t)
+(proclaim-function si:get-sysprop (t t t) t)
+(proclaim-function si:rem-sysprop (t t) t)
+
+;; file tcp.d
+
+(proclaim-function si::open-tcp-stream (t t) t)
+
+;; file unixtime.d
+
+(proclaim-function si:daylight-saving-time-p (*) t :predicate t)
+(proclaim-function get-universal-time (*) t)
+(proclaim-function get-internal-run-time (*) t)
+(proclaim-function get-internal-real-time (*) t)
+(proclaim-function si:get-local-time-zone (*) t)
+(proclaim-function sleep (real) t)
+
+;; file typeof.d
+
+(proclaim-function type-of (t) t)
+
+;; AKCL addition
+
+(proclaim-function si:copy-stream (t t) t)
 
 ;; file seq.lsp
 
-(MAKE-SEQ-ITERATOR (T *) T T NIL)
-(SEQ-ITERATOR-REF (SEQUENCE T) T T NIL)
-(SEQ-ITERATOR-SET (SEQUENCE T T) T T NIL)
-(SEQ-ITERATOR-NEXT (SEQUENCE T) T T NIL)
+(proclaim-function make-seq-iterator (t *) t :no-sp-change t)
+(proclaim-function seq-iterator-ref (sequence t) t :no-sp-change t)
+(proclaim-function seq-iterator-set (sequence t t) t :no-sp-change t)
+(proclaim-function seq-iterator-next (sequence t) t :no-sp-change t)
 
-;;; file cmpfun.lsp:
-;;; The following functions are introduced by the compiler in pass 1 
+;; Additions used by the compiler.
+;; The following functions do not exist. They are always expanded into the
+;; given C code. References to these functions are generated in the C1 phase.
 
-(shift>> nil nil NIL NIL
-	:inline-always ((fixnum fixnum) fixnum nil nil "((#0) >> (- (#1)))"))
-(shift<< nil nil NIL NIL
-	:inline-always ((fixnum fixnum) fixnum nil nil "((#0) << (#1))"))
-(short-float-p nil nil T T
-	:inline-always ((t) :bool nil nil "type_of(#0)==t_shortfloat"))
-(long-float-p nil nil T T
-	:inline-always ((t) :bool nil nil "type_of(#0)==t_longfloat"))
-(si:fixnump nil nil T T
-	:inline-always ((t) :bool nil nil "FIXNUMP(#0)")
-	:inline-always ((fixnum) :bool nil nil "1"))
-(si::put-properties (*) nil T)
-)) ; end of inlines
+(proclaim-function shift>> (*) nil :no-side-effects t)
+(def-inline shift>> :always (fixnum fixnum) :fixnum "((#0) >> (- (#1)))")
 
-#+clos
-(mapcar #'(lambda (x) (apply #'defsysfun x)) '(
-; file instance.c
-(si::ALLOCATE-RAW-INSTANCE (t t fixnum) T)
-(si::INSTANCE-REF-SAFE (t fixnum) T nil nil)
-(si::INSTANCE-REF (t fixnum) T nil nil
-	:inline-always ((t fixnum) t nil nil "instance_ref((#0),(#1))")
-	:inline-unsafe ((standard-object fixnum) t nil nil
-		"(#0)->instance.slots[#1]"))
-(si::INSTANCE-SET (t fixnum t) T nil nil
-	:inline-unsafe ((t fixnum t) t t nil "instance_set((#0),(#1),(#2))")
-	:inline-unsafe ((standard-object fixnum t) t t nil
-		"(#0)->instance.slots[#1]=(#2)"))
-(si::INSTANCE-CLASS (t) T nil nil
-	:inline-always ((standard-object) t nil nil "CLASS_OF(#0)"))
-(si::INSTANCE-CLASS-SET (t t) T)
-(si::INSTANCEP (t) T nil t)
-(si::UNBOUND nil T nil t
-	:inline-always (nil T nil nil "ECL_UNBOUND"))
-(si::SL-BOUNDP (t) T nil t
-	:inline-always ((t) :bool nil nil "(#0)!=ECL_UNBOUND"))
-(si::SL-MAKUNBOUND (t fixnum) T nil t)
-)) ; end of of #+clos
+(proclaim-function shift<< (*) nil :no-side-effects t)
+(def-inline shift<< :always (fixnum fixnum) :fixnum "((#0) << (#1))")
+
+(proclaim-function short-float-p (*) nil :predicate t :no-side-effects t)
+(def-inline short-float-p :always (t) :bool "type_of(#0)==t_shortfloat")
+
+(proclaim-function long-float-p (*) nil :predicate t :no-side-effects t)
+(def-inline long-float-p :always (t) :bool "type_of(#0)==t_longfloat")
+
+(proclaim-function si:fixnump (*) nil :predicate t :no-side-effects t)
+(def-inline si:fixnump :always (t) :bool "FIXNUMP(#0)")
+(def-inline si:fixnump :always (fixnum) :bool "1")
+
+(proclaim-function si:put-properties (*) nil :no-sp-change t)
+
+(proclaim-function c::ldb1 (fixnum fixnum fixnum) fixnum :no-side-effects t)
+(def-inline c::ldb1 :always (fixnum fixnum fixnum) :fixnum
+ "((((~(-1 << (#0))) << (#1)) & (#2)) >> (#1))")
+(def-inline c::ldb1 :always (fixnum fixnum fixnum) t
+ "MAKE_FIXNUM((((~(-1 << (#0))) << (#1)) & (#2)) >> (#1))")
+
+;; Functions only available with CLOS
+
+#+clos(progn
+(proclaim-function si:allocate-raw-instance (t t fixnum) t)
+(proclaim-function si:instance-ref-safe (t fixnum) t)
+(proclaim-function si:instance-ref (t fixnum) t :no-side-effects t)
+(def-inline si:instance-ref :always (t fixnum) t "instance_ref((#0),(#1))")
+(def-inline si:instance-ref :unsafe (standard-object fixnum) t
+ "(#0)->instance.slots[#1]")
+
+(proclaim-function si:instance-set (t fixnum t) t)
+(def-inline si:instance-set :unsafe (t fixnum t) t
+ "instance_set((#0),(#1),(#2))")
+(def-inline si:instance-set :unsafe (standard-object fixnum t) t
+ "(#0)->instance.slots[#1]=(#2)")
+
+(proclaim-function si:instance-class (t) t :no-side-effects t)
+(def-inline si:instance-class :always (standard-object) t "CLASS_OF(#0)")
+
+(proclaim-function si:instance-class-set (t t) t)
+(proclaim-function si:instancep (t) t :predicate t)
+(proclaim-function si:unbound (*) t :predicate t :no-side-effects t)
+(def-inline si:unbound :always nil t "ECL_UNBOUND")
+
+(proclaim-function si:sl-boundp (t) t :predicate t :no-side-effects t)
+(def-inline si:sl-boundp :always (t) :bool "(#0)!=ECL_UNBOUND")
+
+(proclaim-function si:sl-makunbound (t fixnum) t :predicate t)
+)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; FUNCTIONS WHICH CAN BE CALLED FROM C
+;;;
+;;; The following two lists contain all functions in the core library which do
+;;; not belong to the C part of the library, but which should have an exported C
+;;; name that users (and compiled code) can refer to. This means, for instance, that
+;;; MAKE-ARRAY will be compiled to a function called cl_make_array, etc.
+;;;
 
 (in-package "SI")
 
@@ -1153,7 +1314,7 @@ type_of(#0)==t_bitvector"))
     make-array vector array-dimensions array-in-bounds-p array-row-major-index
     bit sbit bit-and bit-ior bit-xor bit-eqv bit-nand bit-nor bit-andc1
     bit-andc2 bit-orc1 bit-orc2 bit-not
-    vector-push vector-push-extend vector-pop adjust-array 
+    vector-push vector-push-extend vector-pop adjust-array
     ;; iolib.lsp
     read-from-string write-to-string prin1-to-string princ-to-string
     y-or-n-p yes-or-no-p

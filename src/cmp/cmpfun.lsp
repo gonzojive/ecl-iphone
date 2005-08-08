@@ -358,6 +358,8 @@
 
 ;----------------------------------------------------------------------
 
+;;; Look for inline expansion of LDB1 in sysfun.lsp
+
 (defun co1ldb (args &aux (arg1 (first args))
 		    (len (integer-length most-positive-fixnum))
 		    size pos)
@@ -368,12 +370,6 @@
 	 (<= (+ size pos) len)
 	 (subtypep (result-type (second args)) 'FIXNUM)
 	 (c1expr `(the fixnum (ldb1 ,size ,pos ,(second args))))))
-
-(put-sysprop 'ldb1 :INLINE-ALWAYS
-	     '(((fixnum fixnum fixnum) fixnum nil nil
-		"((((~(-1 << (#0))) << (#1)) & (#2)) >> (#1))")
-	       ((fixnum fixnum fixnum) T nil nil
-		"MAKE_FIXNUM((((~(-1 << (#0))) << (#1)) & (#2)) >> (#1))")))
 
 ;----------------------------------------------------------------------
 
