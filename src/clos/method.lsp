@@ -53,7 +53,7 @@
 	  (INSTALL-METHOD
 	     ',name
 	     ',qualifiers
-	     ',specializers
+	     ,(list 'si::quasiquote specializers)
 	     ',specialized-lambda-list
 	     ',doc
 	     ',plist
@@ -456,10 +456,15 @@
 	      arg))
       (push (if (listp arg) (first arg) arg) parameters)
       (push (if (listp arg) (first arg) arg) lambda-list)
-      (push (if (listp arg) (if (consp (second arg))
-				`(eql ,(eval (cadadr arg)))
-				(second arg))
-		())
+      (push (cond ((atom arg) '())
+		  ((atom (setf arg (second arg))) arg)
+		  ((not (eql (first arg) 'EQL))
+		   (error 'simple-program-error
+			  "Syntax error in method specializer ~A" arg))
+		  ((constantp (setf arg (second arg)))
+		   `(eql ,arg))
+		  (t
+		   (list 'eql (list 'si::unquote arg))))
 	    specializers))
     (when (eq (first arglist) '&OPTIONAL)
       (push (pop arglist) lambda-list)
