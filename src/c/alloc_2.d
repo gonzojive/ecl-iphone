@@ -51,7 +51,9 @@ finalize(GC_PTR _o, GC_PTR _data)
 	switch (type_of(o)) {
 #ifdef ENABLE_DLOPEN
 	case t_codeblock:
-		cl_mapc(2, @'si::unlink-symbol', o->cblock.links);
+		if (o->cblock.links) {
+			cl_mapc(2, @'si::unlink-symbol', o->cblock.links);
+		}
 #ifdef ECL_DYNAMIC_VV
 		/* GC_free(o->cblock.data); */
 #endif
@@ -107,17 +109,24 @@ cl_alloc_object(cl_type t)
 	obj = (cl_object)GC_MALLOC(tm->tm_size);
 	obj->d.t = t;
 	/* GC_MALLOC already resets objects */
-	if (t == t_stream
+	switch (t) {
 #ifdef ENABLE_DLOPEN
-	    || t == t_codeblock
+	case t_codeblock:
+		obj->cblock.links = Cnil;
+		obj->cblock.name = Cnil;
+		obj->cblock.next = Cnil;
+		obj->cblock.data_text = obj->cblock.data = NULL;
+		obj->cblock.data_text_size = obj->cblock.data_size = 0;
+		obj->cblock.handle = NULL;
 #endif
 #ifdef ENABLE_THREADS
-	    || t == t_lock
+	case t_lock:
 #endif
-	) {
+	case t_stream: {
 		GC_finalization_proc ofn;
 		void *odata;
 		GC_register_finalizer_no_order(obj, finalize, NULL, &ofn, &odata);
+	}
 	}
 	return obj;
 }

@@ -45,8 +45,6 @@ ecl_library_open(cl_object filename) {
 	cl_object block;
 	cl_object libraries = cl_core.libraries;
 	block = cl_alloc_object(t_codeblock);
-	block->cblock.data = NULL;
-	block->cblock.data_size = 0;
 	block->cblock.name = filename;
 #ifdef HAVE_DLFCN_H
 	block->cblock.handle = dlopen(filename->string.self,

@@ -1966,9 +1966,10 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 	cl_object in;
 	cl_object *VV;
 
-	if (block == NULL)
+	if (block == NULL) {
 		block = cl_alloc_object(t_codeblock);
-	block->cblock.links = Cnil;
+	}
+	block->cblock.entry = entry_point;
 
 	in = OBJNULL;
 	CL_UNWIND_PROTECT_BEGIN {
