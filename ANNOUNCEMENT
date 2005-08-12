@@ -10,9 +10,10 @@ which allows to produce libraries (static or dynamic) that can be called from C
 programs. Furthermore, ECL can produce standalone executables from your lisp
 code.
 
-ECL supports the operating systems Linux, FreeBSD, NetBSD, Solaris, Microsoft
-Windows and OSX, running on top of the Intel, Sparc, Alpha and PowerPC
-processors. Porting to other architectures should be rather easy.
+ECL supports the operating systems Linux, FreeBSD, NetBSD, Solaris (at least
+v. 9), Microsoft Windows and OSX (including 10.4.2), running on top of the
+Intel, Sparc, Alpha and PowerPC processors. Porting to other architectures
+should be rather easy.
 
 ECL is currently hosted at SourceForge. The home page of the project is
 http://ecls.sourceforge.net, and in it you will find source code releases, a
@@ -21,214 +22,170 @@ CVS tree and an up to date documentation.
 Notes for this release
 ======================
 
-The highlights of these release are the two new contributed modules: a port of
-the ASDF system definition, and a port of SBCL's socket libraries, including
-TCP and unix sockets and, only on Windows, named pipes.
+This release includes many bug fixes, as well as performance improvements. A
+noticeable speed up happens at boot time, due to changes in the implementation
+of SUBTYPEP, which make type comparisons much faster.
 
-ECL 0.9f
+We have also introduced several bug fixes which seem to make ECL more friendly
+towards GCC 4.0 At least this means ECL now builds on my iBook without
+additional configuration flags. Please report if you experience any
+difficulties.
+
+ECL 0.9g
 ========
 
 * Platforms:
 
- - Cygwin support has been fixed and it now supports DLLs (M. Goffioul).
+ - Fixed the broken port for MacOSX. It should work with any release >= 10.2
 
-* Errors fixed:
+ - Based on version 6.5 of Boehm-Weiser garbage collector, which fixes some
+   problems related to the OSX port.
 
- - The reader macros for lists, ##, #C, #P and #' did not behave as expected
-   when *read-suppress* = t.
+ - The latest version of Mingw32's GCC is broken. It silently ignores pathnames
+   which end in '/'.  The include options in ECL have been modified to take
+   this into account but this intrinsic bug of Mingw might influence ECL's
+   behavior in some other unexpected ways.
 
- - No comments were allowed between the last list element and the parenthesis
-   in a dotted lists. In other words, this:
-	(1 . 2 ;; just a comment
-	)
-   produced an error.
-
- - All strings in a pathname must be valid C strings, with a null terminating
-   character and no fill pointer.
-
- - "+nan" is no longer parsed as a number.
-
- - Where available, ECL now uses _setjmp/_longjmp for control structures. These
-   functions are faster, as they do not save signals.
-
- - (EXPT 10.0l0 308) failed because the routine EXPT computed too many powers
-   of 10.0l0, some of which (in particular 10^512) were not required and
-   overflowed the machine accuracy.
-
- - make_stream_from_fd() did not accept smm_io.
-
- - Fixed the optimizer for slot access, which now only operates if the
-   variables have been declared of type STANDARD-OBJECT.
-
- - Pipes are now opened in character mode (M. Pasternacki)
-
- - (DOCUMENTATION 'F 'FUNCTION) did not work with generic functions.
-
- - ADJUST-ARRAY did not work with strings.
-
- - DEFMACRO admits again lambda lists of the form (a . b).
-
- - EXPT failed when the exponent was a complex number equal to zero.
-
- - Setting the property lists of the symbol NIL no longer breaks ECL.
-
- - Fixed (documentation) and (setf documentation) behaviour. (M. Pasternacki)
-
-* Compiler errors:
-
- - In compiled code, discarded (VALUES ...) forms did not trigger all the
-   required unwinding forms, so that (TAGBODY (CATCH 'FOO (VALUES 0))) produced
-   wrong code.
-
- - In compiled code, the init-form for keyword and optional arguments could
-   reference the variable that it was going to initialize, as in
-	(LAMBDA (&OPTIONAL (FOO (1+ FOO))) ...)
-
- - Globals declared with DEFPARAMETER toplevel forms were not recognized by
-   the compiler as special variables.
-
- - The code for handling closure variables has been changed and now encloses
-   the whole of the function in a C block.
-
- - Values of MOST-POSTIVE-LONG-FLOAT, and similar constants, are now taken from
-   the float.h header, instead of referencing the lisp variables themselves.
-
- - A typo made the check for proper tail recursion always succeed.
+ - The configuration in Solaris should now proceed with the flag
+   --enable-slow-conf.
 
 * Foreign function interface (FFI):
 
- - ext:c-uint-max and ext:c-ulong-max did not have the right bignum value.
+ - Added nickname UFFI for FFI package; functions ALLOCATE-FOREIGN-STRING,
+   WITH-FOREIGN-STRING, WITH-FOREIGN-STRINGS, and FOREIGN-STRING-LENGTH are now
+   exported. (M. Pasternacki)
 
- - C-INLINE forms now can output multiple values. For instance
-	> (compile nil '(lambda (x)
-			  (ffi::c-inline (x) (:int) (values :int :int)
-				 "@;@(return 0)=#0+2; @(return 1)=#0+3;")))
-	[...]
-	#<compiled-function 0815b318>
-	NIL
-	NIL
-	> (funcall * 2)
-	4
-	5
+ - Ecl now accepts :CSTRING UFFI primitive type. (M. Pasternacki)
 
- - C-INLINE forms are now understood by the walker in clos/walk.lsp
+ - DEF-FOREIGN-VAR rewritten to make variables visible from other files and to
+   dereference also arrays and pointers. (M. Pasternacki)
 
- - DEFENTRY, DEFCBODY and DEFLA have been reimplemented. The current status
-   of the FFI is now better described in the documentation, with a reference
-   to the UFFI package for further details.
+ - When creating a C-STRING, characters after the fill pointer are discarded,
+   according to people's expectations.
 
-* Visible changes:
+* Compiler changes:
 
- - Boehm-Weiser garbage collector v 6.4
+ - Generated C functions now have readable names corresponding to appropriate
+   Lisp function names (M. Pasternacki)
 
- - GNU MP library v 4.1.4
+ - ECL now compiles with the free Microsoft Visual C++ Toolkit
+   2003. Instructions are provided on how to do it.
 
- - Multithreaded ECL now in Windows, either with Microsoft VC++
-   or Mingw32 (M. Goffioul).
+ - Unless SI:*KEEP-DOCUMENTATION* = NIL, the documentation of functions is
+   stored in the compiled files.
 
- - Improvements in the efficiency of macro readers for #a() and #()
+ - COMPILE-FILE now honors the value of :OUTPUT-FILE given by the user, even if
+   they do no have the usual extension (.fas). Furthermore, LOAD will now try
+   to load files with strange extensions (.fas, .fasl, etc) as binary files and
+   only if this fails, use the source-file loader.
 
- - When supplied an :INITIAL-CONTENTS, MAKE-ARRAY now uses a more efficient
-   algorithm.
+ - .LSP/.LISP are now recognized lisp source extensions.
 
- - Optimized some routines that iterate over sequences: SOME, EVERY,
-   NOTANY, NOTEVERY (M. Goffioul)
+ - We now provide inline expansions for all logical operators.
 
- - A new global variable SI::*EXIT-HOOKS* is used to store closures that
-   will be invoked when exiting ECL by cl_shutdown().
+ - We have changed the syntax both for function proclamantions and for inline
+   expansions in sysfun.lsp Additionally, the checks for functions having side
+   effects have been improved and inline expansions are now stored with a
+   special-purpose structure INLINE-INFO.
 
- - Slight rewrite of configuration help.
+* Errors fixed:
 
- - Configure option --with-clos-streams now defaults to true.
+ - Now .o files compiled with :SYSTEM-P T with dash in filename load
+   correctly. (M. Pasternacki)
 
- - When closing a composite stream, all references to its elements are now erased.
+ - Incorrectly loaded files are now unloaded without falling into infinite
+   loop.  (M. Pasternacki)
 
- - Backquote forms are now translated into lists containing the macros
-   EXT:QUASIQUOTE, EXT:UNQUOTE, EXT:UNQUOTE-SPLICE and EXT:UNQUOTE-NSPLICE.
-   At evaluation/compilation time, the macroexpander for QUASIQUOTE transforms
-   the tree into the appropiate lisp expression. Otherwise, the print
-   representation is preserved:
-	(format nil '`(foo ,@a)) => "`(foo ,@a)"
+ - When ECASE or CTYPECASE signal a TYPE-EROR the TYPE-ERROR-DATUM is the value
+   that originated the error.
 
- - Our implementation of CLOS streams now builds on the Gray streams proposal
-   except for the generic functions CLOSE, STREAM-ELEMENT-TYPE, INPUT-STREAM-P,
-   OUTPUT-STREAM-P and OPEN-STREAM-P. We rather keep these as normal functions
-   that call the user extensible EXT:STREAM-{CLOSE, ELT-TYPE, INPUT-P,
-   OUTPUT-P, OPEN-P}. Care has been taken to ensure compatibility with previous
-   versions of ECL.
+ - FDEFINITION did not signal a type error when passed things like '(SETF A B).
 
- - The configuration and build process have been cleaned, making it closer to
-   GNU guidelines and improving things like naming of variables. The flags
-   --with-system-{gmp,boehm} now take an optional argument which can be "auto",
-   for automatic detection of the libraries (M. Pasternacki).
+ - FUNCTION-LAMBDA-EXPRESSION does not fail, but does nothing useful, when
+   passed a generic function.
 
- - By default, the size of binary streams is rounded to a multiple of 8. If you
-   want other behavior, pass :USE-HEADER-P T to the function OPEN.
+ - Trying to execute an instance object that is not a generic function does no
+   longer crashes ECL.
 
- - ECL now accepts a double dash, '--', as a command line option. Anything
-   after the double dash is interpreted as a lisp command.
+ - When signalling a READER-ERROR, the field reader-error-stream was not bound.
 
- - Bytecode functions can now be printed readably as #Y(...). The appropiate
-   reader macro has been also implemented (M. Pasternacki)
+ - The random number generator assumed 32-bit integers.
 
- - *ERROR-OUTPUT* is now properly set to the C error stream.
+ - ext:run-program looks into *standard-input/output* and *error-output* for handle
+   duplication also under Win32.
 
- - EXT:RUN-PROCESS can now duplicate the *STANDARD-OUTPUT* and *ERROR-OUTPUT*
-   even if they are not the files set at the beginning of the process
-	> (let ((*standard-output* (open "foo.txt" :direction :output
-					  :if-does-not-exist :create :if-exists :supersede)))
-	      (ext:run-program "echo" '("hola!") :output t))
-	#<two-way stream 0868a708>
-	> (si::system "cat foo.txt")
-	hola!
-	0
+ - FEtype_error_index() had format arguments in wrong order (M. Goffioul).
 
-* ANSI Compatibility:
+ - In the LOOP macro, variables are initialized with values of their type, no
+   longer producing code like (LET ((C NIL)) (DECLARE (CHARACTER C)) ...)
 
- - DEFSETF forms are enclosed in a block with the name of the accessor.
+ - The compiler now advertises itself with PROVIDE so that issuing (REQUIRE
+   'CMP) twice does not cause the compiler to be loaded twice.
 
- - When supplied a compiled function as second argument, COMPILE returns
-   this function. And also when the function is interpreted but we have
-   lost its original definition.
+ - Fix error message of interpreted FFI:CLINES form (M. Goffioul).
 
- - Now an error is signaled for unmatched parenthesis as in "(1 2 3))".
-   The only exception is in the toplevel, where only a warning is issued.
+ - Remove obsolete C::BUILD-ECL documentation (M. Goffioul).
 
- - The stream argument for DESCRIBE-OBJECT is now a required one, instead of
-   an optional.
+ - The conversion from ratio to float works now even if the numerator/denominator
+   are themselves too large to fit a float.
 
- - When *PRINT-READABLY*=T, vectors just print as arrays.
+ - Fixnums and short-floats were compared using the "float" C type. This led to
+   loss of precision and caused
+	 (= (1+ (ceiling (rational -3.781832e7))) -3.781832e7) => T
 
- - When used as macro characters, upper and lowercase letters share the same
-   dispatcher, so that if the user defines a dispatcher for #f, it is
-   automagically set for #F and viceversa.
+ - Keyword arguments in a type defined with DEFTYPE, for which a default value
+   is not given, default to '*. Also the DEFTYPE form are enclosed in a block
+   with the name of the type.
 
-* MOP Compatibility:
+ - The syntax of #\: can now be changed.
 
- - We have implemented the *-SLOT-DEFINITION classes, as well as the protocol
-   for computing effective slot definitions from direct ones, and the methods
-   DIRECT/EFFECTIVE-SLOT-DEFINITION-CLASS. (Position field in slot-def. objects
-   still missing).
+ - Adjusting displaced bit-vectors failed to take the displace-offset into
+   account.
 
- - CLASS-PROTOTYPE is now only a reader.
+ - Variable SI::*GC-VERBOSE* controls whether ECL emits messages when FASL
+   libraries are garbage colleced.
 
-* Contributed modules:
+ - Values of EQL specializers are now evaluated in the lexical environment
+   in which the DEFMETHOD is enclosed. This makes it now possible to write
+	(defmethod foo (x) (defmethod bar ((f (eql x)))))
 
- - MIT test unit rt.lisp is now available as #p"sys:rt"
+ - Fixes in the C code to comply with gcc 4.0.
 
- - SBCL sockets have been ported to unix (J. Stecklina) and to windows
-   (M. Goffioul) and are built when using the configuration option --with-tcp.
-   Both INET and Unix sockets are implemented. Under windows Unix sockets are
-   simulated the cygwin way (i.e. creating a file with the address and port
-   of a INET socket), and we also offer the possibility of creating named
-   pipes.
+* ANSI compatibility:
 
- - SBCL's implementation of PROVIDE/REQUIRE is now in ECL. By default, modules
-   are searched in the #P"SYS:" path, but you can add your own searching
-   functions to *module-provider-functions*. (J. Stecklina)
+ - Several functions that signaled type-errors did not set the right values
+   on the field TYPE-ERROR-EXPECTED-TYPE. We now use the following types:
+	* valid function names => (SATISFIES EXT:VALID-FUNCTION-NAME-P)
+	* proper list	       => PROPER-LIST = (OR (CONS T PROPER-LIST) NULL)
+	* positive fixnum      => (INTEGER 0 MOST-POSITIVE-FIXNUM)
+	* nonnegative integer  => (INTEGER 0 *)
+	* index in a seq       => (INTEGER 0 L) where L is (1- (length sequence))
 
- - ASDF is now provided together with ECL. Hopefully, in a near future we will
-   be able to customize it to produce shared libraries out of definition files.
+ - (COMPLEX *) is now recognized as valid type identifier by subtypep.
+
+ - TYPE-OF now returns more precise type names, so that if (TYPE-OF x) = t1 and
+   (TYPEP x t2) = T then (SUBTYPEP t1 t2) = T.
+
+ - MAKE-PATHNAME now signals ordinary errors when the arguments do not have
+   the required type, but signals a file error when it finds something like
+   a wrong directory (i.e. '(:ABSOLUTE :UP)).
+
+ - Pathnames which contain :BACK in the directory, now print as unreadable
+   objects, instead of signaling an error when printing.
+
+ - Declaration names cannot be used to define new type names and viceversa.
+
+ - #\Space has constituent trait "invalid".
+
+ - DEFINE-SETF-EXPANDER encloses the form in an implicit block with the name of
+   the SETF function.
+
+* New features:
+
+ - Added function si:rmdir (M. Pasternacki)
+
+ - There are now specialized arrays for 32 or 64 bits data, depending on the
+   size of words in the platform.
 
 ;;; Local Variables: ***
 ;;; mode:text ***
