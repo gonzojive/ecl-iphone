@@ -860,7 +860,8 @@ interpret(cl_object bytecodes, void *pc) {
 	case OP_PFCALL: {
 		cl_fixnum n = GET_OPARG(vector);
 		cl_object fun = cl_env.stack_top[-n-1];
-		cl_env.stack_top[-1] = interpret_funcall(n, fun);
+		cl_object reg0 = interpret_funcall(n, fun);
+		cl_env.stack_top[-1] = reg0;
 		break;
 	}
 

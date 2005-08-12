@@ -462,7 +462,7 @@
 		   (error 'simple-program-error
 			  "Syntax error in method specializer ~A" arg))
 		  ((constantp (setf arg (second arg)))
-		   `(eql ,arg))
+		   `(eql ,(eval arg)))
 		  (t
 		   (list 'eql (list 'si::unquote arg))))
 	    specializers))

@@ -48,11 +48,11 @@
 			     &key no-sp-change predicate no-side-effects)
   (unless (or (null arg-types)
 	      (equal arg-types '(*)))
-    (put-sysprop name 'arg-types
+    (put-sysprop name 'proclaimed-arg-types
 		 (mapcar #'(lambda (x) (if (eql x '*) '* (type-filter x)))
 			 arg-types)))
   (when (and return-type (not (eq 'T return-type)))
-    (put-sysprop name 'return-type
+    (put-sysprop name 'proclaimed-return-type
 		 (if (eql return-type '*) '* (type-filter return-type t))))
   (when no-sp-change
     (put-sysprop name 'no-sp-change t))
@@ -861,15 +861,15 @@
 (def-inline log :always (fixnum-float) :double "log((double)(#0))")
 (def-inline log :always (fixnum-float) :float "(float)log((double)(#0))")
 
-(proclaim-function sqrt (t) t :no-side-effects t)
+(proclaim-function sqrt (number) number :no-side-effects t)
 (def-inline sqrt :always (fixnum-float) :double "sqrt((double)(#0))")
 (def-inline sqrt :always (fixnum-float) :float "(float)sqrt((double)(#0))")
 
-(proclaim-function sin (t) t :no-side-effects t)
+(proclaim-function sin (number) number :no-side-effects t)
 (def-inline sin :always (fixnum-float) :double "sin((double)(#0))")
 (def-inline sin :always (fixnum-float) :float "(float)sin((double)(#0))")
 
-(proclaim-function cos (t) t :no-side-effects t)
+(proclaim-function cos (number) number :no-side-effects t)
 (def-inline cos :always (fixnum-float) :double "cos((double)(#0))")
 (def-inline cos :always (fixnum-float) :float "(float)cos((double)(#0))")
 
@@ -967,7 +967,7 @@ type_of(#0)==t_string||
 type_of(#0)==t_bitvector")
 
 (proclaim-function vector-push (t vector) fixnum :no-sp-change t)
-(proclaim-function vector-push-extend (t vector) fixnum :no-sp-change t)
+(proclaim-function vector-push-extend (t vector *) fixnum :no-sp-change t)
 (proclaim-function simple-string-p (t) t :predicate t)
 (proclaim-function simple-bit-vector-p (t) t :predicate t)
 (proclaim-function simple-vector-p (t) t :predicate t)

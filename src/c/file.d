@@ -1519,7 +1519,7 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 		stream = stream->stream.object1;
 		goto AGAIN;
 	} else {
-		unsigned char *p;
+		char *p;
 		for (p= seq->vector.self.ch; start < end; start++) {
 			ecl_write_char(p[start], stream);
 		}
@@ -1602,7 +1602,7 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 		stream = stream->stream.object0;
 		goto AGAIN;
 	} else {
-		unsigned char *p;
+		char *p;
 		for (p = seq->vector.self.ch; start < end; start++) {
 			int c = ecl_read_char(stream);
 			if (c == EOF)

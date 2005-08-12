@@ -68,10 +68,11 @@
 	((SIMPLE-ARRAY ARRAY)
 	 (cond ((endp type-args) '(ARRAY *))		; Beppe
 	       ((eq '* (car type-args)) t)
-	       (t (let ((element-type (upgraded-array-element-type (car type-args))))
-		    (if (and (cdr type-args)
-			     (not (eq (second type-args) '*))
-			     (= (length (second type-args)) 1))
+	       (t (let ((element-type (upgraded-array-element-type (car type-args)))
+			(dimensions (if (cdr type-args) (second type-args) '*)))
+		    (if (and (not (eq dimensions '*))
+			     (or (numberp dimensions)
+				 (= (length dimensions) 1)))
 		      (case element-type
 			(BASE-CHAR 'STRING)
 			(BIT 'BIT-VECTOR)
@@ -355,3 +356,41 @@
        (every* #'subtypep (values-type-required v1) (values-type-required v2))
        (every* #'subtypep (values-type-optional v1) (values-type-optional v2))
        (subtypep (values-type-rest v1) (values-type-rest v2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; TYPE PROPAGATORS
+;;;
+
+(in-package "COMPILER")
+
+(defun simple-type-propagator (fname &rest form-types)
+  (let ((arg-types (get-arg-types fname))
+	(return-type (or (get-return-type fname) '(VALUES &REST T))))
+    (values arg-types return-type)))
+
+(defun propagate-types (fname forms lisp-forms)
+  (multiple-value-bind (arg-types return-type)
+      (apply (or (get-sysprop fname 'C1TYPE-PROPAGATOR)
+		 #'simple-type-propagator)
+	     fname
+	     forms)
+    (when arg-types
+      (do ((fl forms (rest fl))
+	   (al lisp-forms (rest al))
+	   (i 1 (1+ i)))
+	  ((endp fl))
+	(unless (endp arg-types)
+	  ;; Check the type of the arguments.
+	  (let ((new (and-form-type (pop arg-types) (first fl) (first al)
+				    :safe "In the argument ~d of a call to ~a" i fname)))
+	    ;; In unsafe mode, we assume that the type of the
+	    ;; argument is going to be the right one.
+	    (when (zerop *safety*)
+	      (setf (car fl) new))))))
+    return-type))
+
+(defmacro def-type-propagator (fname lambda-list &body body)
+  `(put-sysprop ',fname 'C1TYPE-PROPAGATOR
+    #'(ext:lambda-block ,fname ,lambda-list ,body)))
+

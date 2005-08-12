@@ -445,7 +445,7 @@ extern void FEreader_error(const char *s, cl_object stream, int narg, ...) /*__a
 extern void FEerror(const char *s, int narg, ...) /*__attribute__((noreturn))*/;
 extern void FEcannot_open(cl_object fn) /*__attribute__((noreturn))*/;
 extern void FEend_of_file(cl_object strm) /*__attribute__((noreturn))*/;
-extern void FEclosed_stream(cl_object strm) __attribute__ ((noreturn));
+extern void FEclosed_stream(cl_object strm) /*__attribute__ ((noreturn))*/;
 extern void FEwrong_type_argument(cl_object type, cl_object value) /*__attribute__((noreturn))*/;
 extern void FEwrong_num_arguments(cl_object fun) /*__attribute__((noreturn))*/;
 extern void FEwrong_num_arguments_anonym(void) /*__attribute__((noreturn))*/;
@@ -1482,7 +1482,7 @@ extern cl_object cl_bit_andc2 _ARGS((cl_narg narg, cl_object V1, cl_object V2, .
 extern cl_object cl_bit_orc1 _ARGS((cl_narg narg, cl_object V1, cl_object V2, ...));
 extern cl_object cl_bit_orc2 _ARGS((cl_narg narg, cl_object V1, cl_object V2, ...));
 extern cl_object cl_bit_not _ARGS((cl_narg narg, cl_object V1, ...));
-extern cl_object cl_vector_push _ARGS((cl_narg narg, cl_object V1, cl_object V2, ...));
+extern cl_object cl_vector_push _ARGS((cl_object V1, cl_object V2));
 extern cl_object cl_vector_push_extend _ARGS((cl_narg narg, cl_object V1, cl_object V2, ...));
 extern cl_object cl_vector_pop _ARGS((cl_narg narg, cl_object V1, ...));
 extern cl_object cl_adjust_array _ARGS((cl_narg narg, cl_object V1, cl_object V2, ...));

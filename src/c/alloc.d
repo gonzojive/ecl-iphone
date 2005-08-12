@@ -381,6 +381,7 @@ ONCE_MORE:
 	  obj->cblock.data_text = NULL;
 	  obj->cblock.data_text_size = 0;
 	  obj->cblock.links = Cnil;
+	  obj->cblock.next = Cnil;
 	  break;
 	case t_foreign:
 	  obj->foreign.tag = Cnil;

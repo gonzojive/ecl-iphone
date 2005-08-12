@@ -120,25 +120,17 @@
 	    *function-declarations*)
       (warn "In (DECLARE (FTYPE ...)): ~s is not a valid function name" fname)))
 
-(defun get-arg-types (fname &aux x)
-  (if (setq x (assoc fname *function-declarations*))
-      (second x)
-      (get-sysprop fname 'PROCLAIMED-ARG-TYPES)))
+(defun get-arg-types (fname)
+  (let ((x (assoc fname *function-declarations*)))
+    (if x
+	(second x)
+	(get-sysprop fname 'PROCLAIMED-ARG-TYPES))))
 
 (defun get-return-type (fname)
-  (let* ((x (assoc fname *function-declarations*))
-         (type1 (if x (caddr x) (get-sysprop fname 'PROCLAIMED-RETURN-TYPE))))
-        (cond (type1
-               (let ((type (get-sysprop fname 'RETURN-TYPE)))
-                    (cond (type
-                           (cond ((setq type (type-and type type1)) type)
-                                 (t
-                                  (cmpwarn
-                                   "The return type of ~s was badly declared."
-                                   fname))))
-                          (t type1))))
-              (t (get-sysprop fname 'RETURN-TYPE)))
-        ))
+  (let ((x (assoc fname *function-declarations*)))
+    (if x
+	(second x)
+	(get-sysprop fname 'PROCLAIMED-RETURN-TYPE))))
 
 (defun get-local-arg-types (fun &aux x)
   (if (setq x (assoc fun *function-declarations*))
@@ -155,7 +147,7 @@
       (get-sysprop fun 'PROCLAIMED-ARG-TYPES)
     (if found
       (let ((minarg (length x)))
-	(if (eq (last x) '*)
+	(if (eq (first (last x)) '*)
 	  (setf minarg (1- minarg)
 		maxarg call-arguments-limit)
 	  (setf maxarg minarg))

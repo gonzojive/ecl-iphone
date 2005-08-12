@@ -2492,7 +2492,7 @@ si_make_lambda(cl_object name, cl_object rest)
 }
 
 @(defun si::eval-with-env (form &optional (env Cnil) (stepping Cnil))
-	volatile struct cl_compiler_env *old_c_env = ENV;
+	struct cl_compiler_env *old_c_env = ENV;
 	struct cl_compiler_env new_c_env;
 	volatile cl_index handle;
 	struct ihs_frame ihs;

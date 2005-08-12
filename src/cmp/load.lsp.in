@@ -28,6 +28,7 @@
   "src:cmp;cmpwt.lsp"
   "src:cmp;cmpffi.lsp"
   "src:cmp;cmpct.lsp"
+  "src:cmp;cmpnum.lsp"
   "build:cmp;cmpcfg.lsp"
   "src:cmp;cmpmain.lsp"))
 

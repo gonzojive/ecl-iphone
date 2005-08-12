@@ -101,29 +101,7 @@
 
 (defun c1call-global (fname args)
   (let* ((forms (c1args* args))
-	 (return-type (or (get-return-type fname) '(VALUES &REST T))))
-    (let ((arg-types (get-arg-types fname)))
-      ;; Add type information to the arguments.
-      (when arg-types
-	(do ((fl forms (cdr fl))
-	     (fl1 nil)
-	     (al args (cdr al)))
-	    ((endp fl)
-	     (setq forms (nreverse fl1)))
-	  (cond ((endp arg-types) (push (car fl) fl1))
-		(t (push (and-form-type (car arg-types) (car fl) (car al)
-					:safe "In a call to ~a" fname)
-			 fl1)
-		   (pop arg-types))))))
-    (let ((arg-types (get-sysprop fname 'ARG-TYPES)))
-      ;; Check argument types.
-      (when arg-types
-	(do ((fl forms (cdr fl))
-	     (al args (cdr al)))
-	    ((or (endp arg-types) (endp fl)))
-	  (and-form-type (car arg-types) (car fl) (car al) :safe
-			 "In a call to ~a" fname)
-	  (pop arg-types))))
+	 (return-type (propagate-types fname forms args)))
     (make-c1form* 'CALL-GLOBAL
 		  :sp-change (function-may-change-sp fname)
 		  :type return-type

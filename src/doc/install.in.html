@@ -3,8 +3,8 @@
 <p>You should read the <a href="#configure">Autoconf based configuration</a>
 if you use ECL on a unix-like platform, such as
 <ul>
-<li>Linux, NetBSD, FreeBSD, Sola.
-<li>OSX (See <a href="#osx">below</a>)
+<li>Linux, NetBSD, FreeBSD, Solaris 9
+<li>Mac OSX (See <a href="#osx">below</a>)
 <li>Cygwin or Mingw32 on Windows.
 </ul>
 
@@ -33,9 +33,9 @@ and finish the compilation.
 </pre>
 The previous step creates a directory with the name <b>build</b>, and
 stores a bunch of makefiles in it. <b>Note:</b> If you are building
-under Solaris, you should rather use
+under Solaris 9, you should rather use
 <pre>
-	./configure --enable-slow-config
+	./configure --enable-slow-config --with-system-gmp=no
 </pre>
 because otherwise ECL will fail to detect the 64-bit capabilities of
 the operating system.
@@ -97,13 +97,13 @@ Toolkit 2003, you should follow these before building ECL:
 
 <h3><a name="osx">Mac OSX</a></h3>
 
-<p>ECL is known to build and work on all versions of OSX, including
-Tiger. The steps for building ECL are the ones shown in the <a
-href="configure">Autoconf</a> section.
+<p>ECL now compiles with GCC 4.0. You need not specify any particular
+options. But if you still experience some strange behaviour, try
+compiling with a previous version of the compiler before reporting the
+bug.
 
-<p>There is a caveat, though, which is that ECL currently cannot be built
-using GCC 4.0. Hence, if you have OSX Tiger (>= 10.4) and XCode (>= 2) you
-should instruct <tt>configure</tt> to use a different compiler, as in
+<p>For compiling with GCC 3.3 (shipped with XCode >= 2) you
+must instruct <tt>configure</tt> to use a different compiler, as in
 <pre>
 $ CC=gcc-3.3 ./configure --prefix=/opt/local
 </pre>
