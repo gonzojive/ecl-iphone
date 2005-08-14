@@ -34,7 +34,7 @@
 ;;;
 (setf sys::*gc-verbose* nil)
 (print *features*)
-#+(or (and wants-clos ecl-min) cross)
+#+(or ecl-min cross)
 (load "clos/load.lsp")
 #+cmu-format
 (load "src:lsp;format.lsp" :verbose nil)
