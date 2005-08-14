@@ -62,18 +62,6 @@ main(int argc, char **args)
 #endif
 	SYM_VAL(@'*package*') = cl_core.system_package;
 	SYM_VAL(@'*features*') = CONS(make_keyword("ECL-MIN"), SYM_VAL(@'*features*'));
-#ifdef CLOS
-	SYM_VAL(@'*features*') = CONS(make_keyword("WANTS-CLOS"), SYM_VAL(@'*features*'));
-#endif
-#ifndef RUNTIME
-	SYM_VAL(@'*features*') = CONS(make_keyword("WANTS-CMP"), SYM_VAL(@'*features*'));
-#endif
-#ifdef CLX
-	SYM_VAL(@'*features*') = CONS(make_keyword("WANTS-CLX"), SYM_VAL(@'*features*'));
-#endif
-#ifdef TCP
-	SYM_VAL(@'*features*') = CONS(make_keyword("WANTS-SOCKETS"), SYM_VAL(@'*features*'));
-#endif
 	top_level = _intern("TOP-LEVEL", cl_core.system_package);
 	cl_def_c_function(top_level, si_simple_toplevel, 0);
 	funcall(1, top_level);

@@ -121,6 +121,11 @@ AC_ARG_WITH(asdf,
                   [(default=YES if shared library support is on)]),
   [], [with_asdf=${enable_shared}])
 
+AC_ARG_WITH(cmp,
+  AS_HELP_STRING( [--with-cmp],
+                  [build in the compiler (default=YES)] ),
+  [], [with_cmp=yes])
+
 dnl -----------------------------------------------------------------------
 dnl Installation directories
 libdir="${libdir}/ecl"
@@ -147,6 +152,7 @@ AC_SUBST(TARGETS, ['ecl$(EXE)'])dnl Versions of ECL to be built
 AC_SUBST(SUBDIRS, [c])          dnl Subdirectories that make should process
 AC_SUBST(LIBRARIES, [])         dnl GMP, Boehm's GC, etc
 AC_SUBST(LSP_LIBRARIES)         dnl Libraries produced by lisp translator
+AC_SUBST(LSP_FEATURES, ['*features*']) dnl Symbols to add to *FEATURES* for conditional compilation
 AC_SUBST(ECL_MODULES, [])       dnl Contributed modules to be built in
 
 
@@ -399,20 +405,20 @@ if test "${with_clos_streams}" = "yes"; then
              [Allow STREAM operations to work on arbitrary objects])
 fi
 
-ECL_ADD_LISP_LIBRARY([cmp], [sysfun.lsp])
+if test "${with_cmp}" = "yes"; then
+  ECL_ADD_LISP_LIBRARY([cmp], [sysfun.lsp])
+fi
 
 AC_SUBST(CLX_INFO)
 if test ${with_clx} = "yes"; then
   tcp="yes"
   ECL_ADD_LISP_LIBRARY([clx])
-  AC_DEFINE(CLX, [1], [CLX support])
   CLX_INFO="clx.${INFOEXT}"
 else
   CLX_INFO=""
 fi
 
 if test "${with_tcp}" = "yes"; then
-  AC_DEFINE(TCP, [1], [Network streams])
   EXTRA_OBJS="${EXTRA_OBJS} tcp.${OBJEXT}"
   ECL_ADD_LISP_MODULE([sockets], [yes])
   LIBS="${LIBS} ${TCPLIBS}"

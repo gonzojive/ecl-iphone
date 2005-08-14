@@ -10,7 +10,7 @@
 ;;;
 
 (setq *package* (find-package "SYSTEM"))
-@PUSH_CROSS_FEATURES@
+(setq *features* @LSP_FEATURES@)
 
 ;;;
 ;;; * Ensure that we have the whole of Common-Lisp to compile

@@ -310,7 +310,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS docdir ECL_CFLAGS FASL_LIBS CORE_LIBS SHARED_LDFLAGS BUNDLE_LDFLAGS SHORT_SITE_NAME LONG_SITE_NAME EXTRA_OBJS TARGETS SUBDIRS LIBRARIES LSP_LIBRARIES ECL_MODULES build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CXX CXXFLAGS ac_ct_CXX CPP RANLIB ac_ct_RANLIB INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA LN_S SET_MAKE true_srcdir true_builddir PUSH_CROSS_FEATURES CP RM MV EXE_SUFFIX ARCHITECTURE SOFTWARE_TYPE SOFTWARE_VERSION MACHINE_INSTANCE MACHINE_VERSION LDRPATH LIBPREFIX LIBEXT SHAREDEXT SHAREDPREFIX INSTALL_TARGET thehost INFOEXT INSTALL_INFO EGREP ECL_SETJMP ECL_LONGJMP ECL_FILE_CNT CL_FIXNUM_TYPE CL_FIXNUM_BITS CL_FIXNUM_MAX CL_FIXNUM_MIN LIBOBJS POW_LIB ECL_CC CLX_INFO LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS docdir ECL_CFLAGS FASL_LIBS CORE_LIBS SHARED_LDFLAGS BUNDLE_LDFLAGS SHORT_SITE_NAME LONG_SITE_NAME EXTRA_OBJS TARGETS SUBDIRS LIBRARIES LSP_LIBRARIES LSP_FEATURES ECL_MODULES build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CXX CXXFLAGS ac_ct_CXX CPP RANLIB ac_ct_RANLIB INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA LN_S SET_MAKE true_srcdir true_builddir CP RM MV EXE_SUFFIX ARCHITECTURE SOFTWARE_TYPE SOFTWARE_VERSION MACHINE_INSTANCE MACHINE_VERSION LDRPATH LIBPREFIX LIBEXT SHAREDEXT SHAREDPREFIX INSTALL_TARGET thehost INFOEXT INSTALL_INFO EGREP ECL_SETJMP ECL_LONGJMP ECL_FILE_CNT CL_FIXNUM_TYPE CL_FIXNUM_BITS CL_FIXNUM_MAX CL_FIXNUM_MIN LIBOBJS POW_LIB ECL_CC CLX_INFO LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -887,6 +887,7 @@ Optional Packages:
   --with-cmuformat        use CMUCL's FORMAT routine (default=YES)
   --with-asdf             include ASDF building facility (default=YES if
                           shared library support is on)
+  --with-cmp              build in the compiler (default=YES)
   --with-x                use the X Window System
 
 Some influential environment variables:
@@ -1535,6 +1536,15 @@ else
   with_asdf=${enable_shared}
 fi;
 
+
+# Check whether --with-cmp or --without-cmp was given.
+if test "${with_cmp+set}" = set; then
+  withval="$with_cmp"
+
+else
+  with_cmp=yes
+fi;
+
 libdir="${libdir}/ecl"
 includedir="${libdir}/ecl/h"
 test -z "${docdir}" && docdir="${datadir}/doc/ecl"
@@ -1544,6 +1554,7 @@ boehm_configure_flags=""
 
                                                                                                                                               TARGETS='ecl$(EXE)'
 SUBDIRS=c
+                            LSP_FEATURES='*features*'
 
 
 # Make sure we can run config.sub.
@@ -3367,7 +3378,6 @@ else
 fi
 
 
-PUSH_CROSS_FEATURES=''
 if test "x${cross_compiling}" = "xyes"; then
   if test -n "${with_cross_config}" -a -f "${with_cross_config}"; then
     . ${with_cross_config}
@@ -3448,9 +3458,10 @@ echo "$as_me: error: The program DPP is not installed in your system" >&2;}
     (echo '#!/bin/sh'; echo exec ${ECL_MIN_TO_RUN} '$''*') > CROSS-COMPILER
   (echo '#!/bin/sh'; echo exec ${DPP_TO_RUN} '$''*') > CROSS-DPP
   chmod +x CROSS-COMPILER CROSS-DPP
-  PUSH_CROSS_FEATURES='(setq *features* (cons :cross *features*))'
-fi
 
+LSP_FEATURES="(cons :cross ${LSP_FEATURES})"
+
+fi
 
 
 #### Some command variations:
@@ -9601,11 +9612,16 @@ _ACEOF
 
 fi
 
+if test "${with_cmp}" = "yes"; then
 
 if test ${enable_shared} = "yes" ; then
   LSP_LIBRARIES="${LSP_LIBRARIES} cmp.fas sysfun.lsp"
+
+LSP_FEATURES="(cons :wants-cmp ${LSP_FEATURES})"
+
 else
   LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}cmp.${LIBEXT} sysfun.lsp"
+fi
 fi
 
 
@@ -9614,31 +9630,30 @@ if test ${with_clx} = "yes"; then
 
 if test ${enable_shared} = "yes" ; then
   LSP_LIBRARIES="${LSP_LIBRARIES} clx.fas "
+
+LSP_FEATURES="(cons :wants-clx ${LSP_FEATURES})"
+
 else
   LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}clx.${LIBEXT} "
 fi
-
-cat >>confdefs.h <<\_ACEOF
-#define CLX 1
-_ACEOF
-
   CLX_INFO="clx.${INFOEXT}"
 else
   CLX_INFO=""
 fi
 
 if test "${with_tcp}" = "yes"; then
-
-cat >>confdefs.h <<\_ACEOF
-#define TCP 1
-_ACEOF
-
   EXTRA_OBJS="${EXTRA_OBJS} tcp.${OBJEXT}"
 
   if test ${enable_shared} = "yes" ; then
     ECL_MODULES="${ECL_MODULES} sockets"
+
+LSP_FEATURES="(cons :wants-sockets ${LSP_FEATURES})"
+
   elif test yes; then
     LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}sockets.${LIBEXT}"
+
+LSP_FEATURES="(cons :wants-sockets ${LSP_FEATURES})"
+
   else
     { { echo "$as_me:$LINENO: error: Can't compile in sockets without shared library support!" >&5
 echo "$as_me: error: Can't compile in sockets without shared library support!" >&2;}
@@ -9651,8 +9666,14 @@ if test "${with_asdf}" = "yes"; then
 
   if test ${enable_shared} = "yes" ; then
     ECL_MODULES="${ECL_MODULES} asdf"
+
+LSP_FEATURES="(cons :wants-asdf ${LSP_FEATURES})"
+
   elif test ; then
     LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}asdf.${LIBEXT}"
+
+LSP_FEATURES="(cons :wants-asdf ${LSP_FEATURES})"
+
   else
     { { echo "$as_me:$LINENO: error: Can't compile in asdf without shared library support!" >&5
 echo "$as_me: error: Can't compile in asdf without shared library support!" >&2;}
@@ -10330,6 +10351,7 @@ s,@TARGETS@,$TARGETS,;t t
 s,@SUBDIRS@,$SUBDIRS,;t t
 s,@LIBRARIES@,$LIBRARIES,;t t
 s,@LSP_LIBRARIES@,$LSP_LIBRARIES,;t t
+s,@LSP_FEATURES@,$LSP_FEATURES,;t t
 s,@ECL_MODULES@,$ECL_MODULES,;t t
 s,@build@,$build,;t t
 s,@build_cpu@,$build_cpu,;t t
@@ -10359,7 +10381,6 @@ s,@LN_S@,$LN_S,;t t
 s,@SET_MAKE@,$SET_MAKE,;t t
 s,@true_srcdir@,$true_srcdir,;t t
 s,@true_builddir@,$true_builddir,;t t
-s,@PUSH_CROSS_FEATURES@,$PUSH_CROSS_FEATURES,;t t
 s,@CP@,$CP,;t t
 s,@RM@,$RM,;t t
 s,@MV@,$MV,;t t
