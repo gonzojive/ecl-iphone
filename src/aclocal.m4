@@ -25,7 +25,6 @@ dnl libraries.
 dnl
 AC_DEFUN([ECL_ADD_LISP_MODULE], [
   if test ${enable_shared} = "yes" ; then
-    ECL_MODULES="${ECL_MODULES} $1"
     ECL_ADD_FEATURE([wants-$1])
   elif test $2; then
     LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}$1.${LIBEXT}"

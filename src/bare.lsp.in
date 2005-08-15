@@ -42,6 +42,11 @@
 ;;;
 ;;; * Load the compiler.
 ;;;
+
+;; Make sure compiler sees what it should see.
+#-:wants-dlopen (setq *features* (delete :dlopen *features*))
+#+:wants-dlopen (push :dlopen *features*)
+
 #-threads
 (defmacro c::with-lock ((lock) &body body)
   `(progn ,@body))
@@ -67,15 +72,16 @@
 		object))
 	  sources))
 
+(defvar *static-modules* nil)
+
 (defun build-module (name sources &key (dir "build:") ((:prefix si::*init-function-prefix*) "EXT"))
   (proclaim '(optimize (safety 2) (speed 1)))
   (let* ((objects (compile-if-old dir sources :system-p t :c-file t :data-file t :h-file t))
 	 (name (string-downcase name)))
-    #-dlopen
-    (warn "~%Unable to build module ~A because dynamic linking is not available on this platform"
-	  name)
-    #+dlopen
-    (c::build-fasl name :lisp-files objects)))
+    (#-:wants-dlopen c::build-static-library 
+     #+:wants-dlopen c::build-fasl
+     name :lisp-files objects)
+    #-:wants-dlopen (push (intern name) *static-modules*))) ; kludge?
 
 
 ;;;

@@ -1499,10 +1499,6 @@ cl_symbols[] = {
 {SYS_ "RESET-GC-COUNT","si_reset_gc_count"},
 #endif /* !GBC_BOEHM */
 
-#ifdef ENABLE_DLOPEN
-{SYS_ "LOAD-BINARY","si_load_binary"},
-#endif
-
 #ifdef ECL_THREADS
 {MP_ "PROCESS",NULL},
 {MP_ "LOCK",NULL},
@@ -1551,6 +1547,10 @@ cl_symbols[] = {
 {SYS_ "DO-DEFTYPE","ECL_NAME(si_do_deftype)"},
 {SYS_ "CREATE-TYPE-NAME",NULL},
 {SYS_ "*ALIEN-DECLARATIONS*",NULL},
+
+#ifdef ENABLE_DLOPEN
+{SYS_ "LOAD-BINARY","si_load_binary"},
+#endif
 
 /* Tag for end of list */
 {NULL,NULL}};

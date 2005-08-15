@@ -46,10 +46,10 @@
       c::*ld-format*
       #-msvc "~A -o ~S -L\"@true_builddir@\"~* ~{~S ~} ~@?"
       #+msvc "~A -Zi -Fe~S~* ~{~S ~} ~@?")
-#-dlopen 
+#-:wants-dlopen 
 (setf c::*ld-flags*
       "@LDFLAGS@ @LDRPATH@ @LIBPREFIX@ecl.@LIBEXT@ @CORE_LIBS@ @LIBS@ @FASL_LIBS@")
-#+dlopen
+#+:wants-dlopen
 (setf c::*ld-flags*
       "@LDFLAGS@ @LDRPATH@ @SHAREDPREFIX@ecl.@SHAREDEXT@ @LIBS@"
       c::*ld-shared-flags*
@@ -84,7 +84,7 @@
 			   ;;:shared-data-file "build:ecl.sdat"
 			   ))
 
-#-dlopen
+#-:wants-dlopen
 (si::system "sh -c 'mkdir tmp; rm -f tmp/*;
 cp @LIBPREFIX@eclmin.@LIBEXT@ @LIBPREFIX@ecl.@LIBEXT@;
 cd tmp; ar -x ../@LIBPREFIX@lsp.@LIBEXT@;
@@ -92,7 +92,7 @@ for i in *.@OBJEXT@; do mv $i lsp_`basename $i`; done;
 ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@ ../c/all_symbols2.@OBJEXT@; rm *.@OBJEXT@;
 @RANLIB@ ../@LIBPREFIX@ecl.@LIBEXT@'")
 
-#+dlopen
+#+:wants-dlopen
 ;;;
 ;;; We do not need the -rpath flag for the library, nor -lecl.
 ;;;
@@ -114,28 +114,19 @@ ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@ ../c/all_symbols2.@OBJEXT@; rm *.@OB
 
 (si::pathname-translations "SYS" '(("**;*.*.*" "@ecldir@/**/*.*")))
 
-(setq si::*init-function-prefix* "CMP")
-
 #+(and (not cross) (or (not stage1) WANTS-CMP))
-(let ((objects (compile-if-old "build:cmp;" +cmp-module-files+
-				:system-p t :c-file t :data-file t :h-file t
-				;;:shared-data-file "build:cmp.sdat"
-				)))
-  (#-dlopen c::build-static-library
-   #+dlopen c::build-fasl "cmp" :lisp-files objects
-   ;;:shared-data-file "build:cmp.sdat"
-   ))
+(build-module "cmp" +cmp-module-files+ :dir "build:cmp;" :prefix "CMP")
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; EXTENSIONS
 ;;;
 
-(defvar *ecl-modules* '(@ECL_MODULES@))
-
 ;;;
 ;;; * ASDF
 ;;;
+#+WANTS-ASDF
 (when (member 'asdf *ecl-modules*)
   (build-module "asdf"
 		'("ext:asdf;asdf.lisp")
@@ -193,7 +184,5 @@ ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@ ../c/all_symbols2.@OBJEXT@; rm *.@OB
 (compiler::build-program
  #+(or cross stage1) "ecl"
  #-(or cross stage1) "ecl2"
- :lisp-files '(#+(and (not dlopen) WANTS-CMP) cmp
-	       #+(and (not dlopen) WANTS-SOCKETS) sockets
-	       #+(and (not dlopen) WANTS-CLX) clx)
+ :lisp-files *static-modules*
  :ld-flags '(#-msvc "-L./"))
