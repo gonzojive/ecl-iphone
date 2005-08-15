@@ -127,11 +127,10 @@ ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@ ../c/all_symbols2.@OBJEXT@; rm *.@OB
 ;;; * ASDF
 ;;;
 #+WANTS-ASDF
-(when (member 'asdf *ecl-modules*)
-  (build-module "asdf"
-		'("ext:asdf;asdf.lisp")
-		:dir "build:ext;"
-		:prefix "EXT"))
+(build-module "asdf"
+              '("ext:asdf;asdf.lisp")
+              :dir "build:ext;"
+              :prefix "EXT")
 
 ;;;
 ;;; * Sockets library.
