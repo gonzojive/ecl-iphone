@@ -64,9 +64,7 @@ on the first line of the file to be executed, and then ECL will be
 automatically invoked.
 .TP
 .B \-norc
-Do not try to load the files
-.I ~/.ecl
-or
+Do not try to load the file
 .I ~/.eclrc
 at startup.
 .TP
