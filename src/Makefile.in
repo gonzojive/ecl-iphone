@@ -42,7 +42,6 @@ mkinstalldirs = $(SHELL) $(top_srcdir)/gc/mkinstalldirs
 SUBDIRS = @SUBDIRS@
 LIBRARIES = @LIBRARIES@
 LSP_LIBRARIES = @LSP_LIBRARIES@
-ECL_MODULES = @ECL_MODULES@
 TARGETS = @TARGETS@
 
 all:	$(TARGETS) ecl-config doc
@@ -117,8 +116,8 @@ install-base:
 	for i in $(LSP_LIBRARIES) $(LIBRARIES) c/dpp* ecl_min*; do \
 	  test -s $$i && $(INSTALL_PROGRAM) $$i $(DESTDIR)$(libdir) || : ; \
 	done
-	for i in $(ECL_MODULES); do \
-	  $(INSTALL_PROGRAM) $$i.fas $(DESTDIR)$(libdir); \
+	for i in `cat MODULES`; do \
+	  $(INSTALL_PROGRAM) $$i $(DESTDIR)$(libdir); \
 	done
 flatinstall: BUILD-STAMP
 	$(MAKE) DESTDIR=$(DESTDIR) bindir=$(prefix) libdir=$(prefix) install-base

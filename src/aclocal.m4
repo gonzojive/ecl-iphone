@@ -5,33 +5,14 @@ AC_DEFUN([ECL_ADD_FEATURE], [
 LSP_FEATURES="(cons :$1 ${LSP_FEATURES})"
 ])
 
-
-dnl --------------------------------------------------------------
-dnl Add Lisp library to compile in.  Second argument is a hack
-dnl to add sysfun.lsp.
-dnl
-AC_DEFUN([ECL_ADD_LISP_LIBRARY], [
-if test ${enable_shared} = "yes" ; then
-  LSP_LIBRARIES="${LSP_LIBRARIES} $1.fas $2"
-  ECL_ADD_FEATURE([wants-$1])
-else
-  LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}$1.${LIBEXT} $2"
-fi ])
-
 dnl --------------------------------------------------------------
 dnl Add lisp module to compile; if second argument is given,
 dnl compile module into Lisp library if we don't support shared
 dnl libraries.
 dnl
 AC_DEFUN([ECL_ADD_LISP_MODULE], [
-  if test ${enable_shared} = "yes" ; then
-    ECL_ADD_FEATURE([wants-$1])
-  elif test $2; then
-    LSP_LIBRARIES="${LSP_LIBRARIES} ${LIBPREFIX}$1.${LIBEXT}"
-    ECL_ADD_FEATURE([wants-$1])
-  else
-    AC_MSG_ERROR([Can't compile in $1 without shared library support!])
-  fi ])
+  ECL_ADD_FEATURE([wants-$1])
+])
 
 dnl --------------------------------------------------------------
 dnl Set up a configuration file for the case when we are cross-

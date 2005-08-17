@@ -114,8 +114,9 @@ ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@ ../c/all_symbols2.@OBJEXT@; rm *.@OB
 
 (si::pathname-translations "SYS" '(("**;*.*.*" "@ecldir@/**/*.*")))
 
-#+(and (not cross) (or (not stage1) WANTS-CMP))
-(build-module "cmp" +cmp-module-files+ :dir "build:cmp;" :prefix "CMP")
+#+WANTS-CMP
+(build-module "cmp" +cmp-module-files+ 
+              :dir "build:cmp;" :prefix "CMP" :additional-files '("sysfun.lsp"))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -183,5 +184,9 @@ ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@ ../c/all_symbols2.@OBJEXT@; rm *.@OB
 (compiler::build-program
  #+(or cross stage1) "ecl"
  #-(or cross stage1) "ecl2"
- :lisp-files *static-modules*
+ :lisp-files *module-symbols*
  :ld-flags '(#-msvc "-L./"))
+
+(with-open-file (modules-list #P"build:MODULES" :direction :output)
+  (dolist (module-file *module-files*)
+    (format modules-list "~A~%" module-file)))
