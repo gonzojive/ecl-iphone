@@ -29,9 +29,16 @@ GMP_TYPE      = gc
 # Set it to non-empty to include Win32 thread support
 ECL_THREADS   =
 
-# Add the extensions to include in the build process. Current
-# extensions are: asdf
-ECL_MODULES   = asdf
+# Add the extensions to include in the build process. Comment any
+# of the following lines to remove a feature from the build process
+# LISP->C compiled
+ECL_CMP     =
+# ASDF support
+ECL_ASDF    =
+# TCP support
+ECL_SOCKETS =
+# X Windows support
+ECL_CLX     =
 
 # <END> (ECL configuration)
 # =============================================================
@@ -78,7 +85,6 @@ mkinstalldirs = $(SHELL) $(top_srcdir)/gc/mkinstalldirs
 #
 SUBDIR        = c gc gmp
 LIBRARIES     =
-LSP_LIBRARIES = cmp.fas clx.fas sockets.fas sysfun.lsp
 TARGETS       = ecl$(EXE)
 DEF           = ecl.def
 
@@ -91,6 +97,30 @@ ENV_EXPORT = ecl_process_env
 CFLAGS     = $(CFLAGS) -DECL_THREADS
 DEF        = ecl-threads.def
 !endif
+
+# Additional modules
+# 
+ECL_MODULES  =
+ECL_FEATURES = (cons :wants-dlopen *features*)
+!ifdef ECL_CMP
+ECL_MODULES  = $(ECL_MODULES) cmp
+ECL_FEATURES = (cons :wants-cmp $(ECL_FEATURES))
+!endif
+!ifdef ECL_ASDF
+ECL_MODULES  = $(ECL_MODULES) asdf
+ECL_FEATURES = (cons :wants-asdf $(ECL_FEATURES))
+!endif
+!ifdef ECL_SOCKETS
+ECL_MODULES  = $(ECL_MODULES) sockets
+ECL_FEATURES = (cons :wants-sockets $(ECL_FEATURES))
+!endif
+!ifdef ECL_CLX
+ECL_MODULES  = $(ECL_MODULES) clx
+ECL_FEATURES = (cons :wants-clx $(ECL_FEATURES))
+!endif
+
+!MESSAGE $(ECL_MODULES)
+!MESSAGE $(ECL_FEATURES)
 
 # Build rules
 # 
@@ -154,9 +184,8 @@ compile.lsp: bare.lsp $(srcdir)/compile.lsp.in Makefile
 	    "@EXEEXT@" ".exe" \
 	    "@LDINSTALLNAME@" "" \
 	    "@DEF@" "$(DEF)" \
-	    "@ECL_MODULES@" "$(ECL_MODULES)" \
             "@RANLIB@" "ranlib" \
-	    "@PUSH_CROSS_FEATURES@" "" \
+	    "@LSP_FEATURES@" "$(ECL_FEATURES)" \
 	    < $(srcdir)\compile.lsp.in > compile.lsp
 bare.lsp: $(srcdir)/bare.lsp.in lsp/load.lsp clos/load.lsp cmp/load.lsp cmp/cmpcfg.lsp
 	c\cut "@true_srcdir@" "$(srcdir:\=/)" \
@@ -237,8 +266,8 @@ install-base:
 	for %i in ($(TARGETS) ecl.dll) do $(CP) %i $(bindir)\%i
 	IF EXIST $(bindir)\ecl2$(EXE) $(MV) $(bindir)\ecl2$(EXE) $(bindir)\ecl$(EXE)
 	$(CP) ecl-config.bat $(bindir)\ecl-config.bat
-	for %i in ($(LSP_LIBRARIES) $(LIBRARIES) c\dpp.exe help.doc ecl.lib) do $(CP) %i $(libdir)
-	for %i in ($(ECL_MODULES)) do $(CP) %i.fas $(libdir)
+	for %i in ($(LIBRARIES) c\dpp.exe help.doc ecl.lib) do $(CP) %i $(libdir)
+	for /f %i in ('type MODULES') do $(CP) %i $(libdir)
 	for %i in (ecl-static.lib) do IF EXIST %i $(CP) %i $(libdir)
 	$(CP) h\config.h $(libdir)\h
 flatinstall:
@@ -290,9 +319,10 @@ clean_ecl:
 	-$(MAKE) "ECL_THREADS = $(ECL_THREADS)" clean
 	cd ..
 clean_lisp:
-	-for %i in (lsp cmp clos clx tk $(ECL_MODULES) sockets) do for %k in (%i.lib %i.fas %i.ilk %i.c %i.obj %i.pdb) do $(RM) %k
-	-for %i in (lsp cmp clos clx tk ext) do $(RMDIR) %i
+	-for %i in (lsp clos $(ECL_MODULES)) do for %k in (%i.lib %i.fas %i.ilk %i.c %i.obj %i.pdb) do $(RM) %k
+	-for %i in (lsp clos ext $(ECL_MODULES)) do $(RMDIR) %i
 	-$(RM) help.doc
+	-$(RM) MODULES
 clean_doc:
 	cd doc
 	-$(MAKE) "ECL_THREADS = $(ECL_THREADS)" clean
