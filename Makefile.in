@@ -53,7 +53,7 @@ TAR_CONTENTS=Makefile.in README.1st LGPL ANNOUNCEMENT Copyright doc \
 	configure src/c src/cmp src/clos src/CHANGELOG src/lsp src/doc \
 	src/h  src/gmp src/config* src/install.sh src/Makefile.in \
 	src/util contrib/ src/clx src/gc src/*.in src/*.m4 src/gabriel \
-	src/tests/Makefile.in src/ansi-tests/Makefile.in
+	src/tests/Makefile.in src/ansi-tests/Makefile.in msvc
 
 # ==================== Utility Programs for the Build ====================
 
@@ -132,7 +132,7 @@ TAR_DIR=ecl-$(VERSION)
 
 doc: build/doc/index.html
 	-mkdir doc
-	cp build/doc/*.html doc
+	(cd build/doc; make html); cp build/doc/*.html doc
 build/doc/index.html:
 	cd build/doc; $(MAKE)
 
