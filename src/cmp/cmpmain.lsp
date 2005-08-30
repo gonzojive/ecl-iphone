@@ -323,7 +323,6 @@ static cl_object VV[VM];
        (apply #'shared-cc output-name o-name ld-flags))
       #+dlopen
       (:fasl
-       (print init-name)
        (when (or (symbolp output-name) (stringp output-name))
 	 (setf output-name (compile-file-pathname output-name :type :fasl)))
        (unless init-name
@@ -336,7 +335,6 @@ static cl_object VV[VM];
        (format c-file +lisp-program-init+ init-name prologue-code shared-data-file
 	       submodules epilogue-code)
        (close c-file)
-       (si:system (format nil "cat ~s" c-file))
        (compiler-cc c-name o-name)
        (apply #'bundle-cc output-name o-name ld-flags)))
     (cmp-delete-file c-name)
@@ -607,7 +605,6 @@ Cannot compile ~a."
         (progn
           (when *compile-verbose*
 	    (format t "~&;;; Calling the C compiler... "))
-	  ;;(si::system (format nil "cat ~A" (namestring c-pathname)))
           (compiler-cc c-pathname o-pathname)
 	  (bundle-cc (si::coerce-to-filename so-pathname)
 		     (si::coerce-to-filename o-pathname))
