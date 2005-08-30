@@ -161,27 +161,27 @@ cl_stack_push_list(cl_object list)
 static void
 bind_var(register cl_object var, register cl_object val)
 {
-	cl_env.lex_env = CONS(var, CONS(val, cl_env.lex_env));
+	cl_env.lex_env = CONS(CONS(var, val), cl_env.lex_env);
 }
 
 static void
 bind_function(cl_object name, cl_object fun)
 {
-	cl_env.lex_env = CONS(@':function', CONS(CONS(name, fun), cl_env.lex_env));
+	cl_env.lex_env = CONS(CONS(fun, name), cl_env.lex_env);
 }
 
 static cl_object
 bind_tagbody()
 {
 	cl_object id = new_frame_id();
-	cl_env.lex_env = CONS(@':tag', CONS(id, cl_env.lex_env));
+	cl_env.lex_env = CONS(CONS(id, MAKE_FIXNUM(0)), cl_env.lex_env);
 	return id;
 }
 
 static void
 bind_block(cl_object name, cl_object id)
 {
-	cl_env.lex_env = CONS(@':block', CONS(CONS(name, id), cl_env.lex_env));
+	cl_env.lex_env = CONS(CONS(id, name), cl_env.lex_env);
 }
 
 static void
@@ -191,22 +191,18 @@ bind_special(register cl_object var, register cl_object val)
 }
 
 static cl_object
-search_local(register int s) {
+ecl_lex_env_get_record(register int s) {
 	cl_object x;
-	for (x = cl_env.lex_env; s-- > 0 && !Null(x); x = CDDR(x));
+	for (x = cl_env.lex_env; s-- > 0; x = CDR(x));
 	if (Null(x))
 		FEerror("Internal error: local not found.", 0);
-	return CADR(x);
+	return CAR(x);
 }
 
-static void
-setq_local(register int s, register cl_object v) {
-	cl_object x;
-	for (x = cl_env.lex_env; s-- > 0 && !Null(x); x = CDDR(x));
-	if (Null(x))
-		FEerror("Internal error: local ~S not found.", 1, s);
-	CADR(x) = v;
-}
+#define ecl_lex_env_get_var(x) CDR(ecl_lex_env_get_record(x))
+#define ecl_lex_env_set_var(x,v) (CDR(ecl_lex_env_get_record(x)) = (v))
+#define ecl_lex_env_get_fun(x) CAR(ecl_lex_env_get_record(x))
+#define ecl_lex_env_get_tag(x) CAR(ecl_lex_env_get_record(x))
 
 /* -------------------- LAMBDA FUNCTIONS -------------------- */
 
@@ -641,9 +637,9 @@ interpret_labels(cl_object bytecodes, cl_opcode *vector) {
 
 	/* 2) Update the closures so that all functions can call each other */
 	for (i=0, l=cl_env.lex_env; i<nfun; i++) {
-		cl_object record = CADR(l);
-		CDR(record) = close_around(CDR(record), cl_env.lex_env);
-		l = CDDR(l);
+		cl_object record = CAR(l);
+		CAR(record) = close_around(CAR(record), cl_env.lex_env);
+		l = CDR(l);
 	}
 	return vector;
 }
@@ -668,7 +664,7 @@ interpret_msetq(cl_object bytecodes, cl_opcode *vector)
 		cl_fixnum var = GET_OPARG(vector);
 		value = (i < NVALUES) ? VALUES(i) : Cnil;
 		if (var >= 0)
-			setq_local(var, value);
+			ecl_lex_env_set_var(var, value);
 		else {
 			cl_object name = bytecodes->bytecodes.data[-1-var];
 			if (name->symbol.stype == stp_constant)
@@ -735,7 +731,7 @@ interpret(cl_object bytecodes, void *pc) {
 	*/
 	case OP_VAR: {
 		int lex_env_index = GET_OPARG(vector);
-		reg0 = search_local(lex_env_index);
+		reg0 = ecl_lex_env_get_var(lex_env_index);
 		break;
 	}
 
@@ -761,7 +757,7 @@ interpret(cl_object bytecodes, void *pc) {
 	*/
 	case OP_PUSHV: {
 		int lex_env_index = GET_OPARG(vector);
-		cl_stack_push(search_local(lex_env_index));
+		cl_stack_push(ecl_lex_env_get_var(lex_env_index));
 		break;
 	}
 
@@ -885,8 +881,8 @@ interpret(cl_object bytecodes, void *pc) {
 	*/
 	case OP_LFUNCTION: {
 		int lex_env_index = GET_OPARG(vector);
-		cl_object fun_record = search_local(lex_env_index);
-		reg0 = CDR(fun_record);
+		cl_object fun_record = ecl_lex_env_get_record(lex_env_index);
+		reg0 = CAR(fun_record);
 		break;
 	}
 
@@ -916,7 +912,7 @@ interpret(cl_object bytecodes, void *pc) {
 		purposes.
 	*/
 	case OP_GO: {
-		cl_object id = search_local(GET_OPARG(vector));
+		cl_object id = ecl_lex_env_get_tag(GET_OPARG(vector));
 		cl_object tag_name = GET_DATA(vector, bytecodes);
 		cl_go(id, tag_name);
 		break;
@@ -927,9 +923,9 @@ interpret(cl_object bytecodes, void *pc) {
 	*/
 	case OP_RETURN: {
 		int lex_env_index = GET_OPARG(vector);
-		cl_object block_record = search_local(lex_env_index);
-		cl_object block_name = CAR(block_record);
-		cl_object id = CDR(block_record);
+		cl_object block_record = ecl_lex_env_get_record(lex_env_index);
+		cl_object id = CAR(block_record);
+		cl_object block_name = CDR(block_record);
 		cl_return_from(id, block_name);
 		break;
 	}
@@ -993,7 +989,7 @@ interpret(cl_object bytecodes, void *pc) {
 	case OP_UNBIND: {
 		cl_index n = GET_OPARG(vector);
 		while (n--)
-			cl_env.lex_env = CDDR(cl_env.lex_env);
+			cl_env.lex_env = CDR(cl_env.lex_env);
 		break;
 	}
 	/* OP_UNBINDS	n{arg}
@@ -1057,7 +1053,7 @@ interpret(cl_object bytecodes, void *pc) {
 	*/
 	case OP_SETQ: {
 		int lex_env_index = GET_OPARG(vector);
-		setq_local(lex_env_index, reg0);
+		ecl_lex_env_set_var(lex_env_index, reg0);
 		break;
 	}
 	case OP_SETQS: {
@@ -1069,7 +1065,7 @@ interpret(cl_object bytecodes, void *pc) {
 	}
 	case OP_PSETQ: {
 		int lex_env_index = GET_OPARG(vector);
-		setq_local(lex_env_index, cl_stack_pop());
+		ecl_lex_env_set_var(lex_env_index, cl_stack_pop());
 		break;
 	}
 	case OP_PSETQS: {
@@ -1184,7 +1180,7 @@ interpret(cl_object bytecodes, void *pc) {
 		break;
 	}
 	case OP_EXIT_TAGBODY:
-		cl_env.lex_env = CDDR(cl_env.frs_top->frs_lex);
+		cl_env.lex_env = CDR(cl_env.frs_top->frs_lex);
 		frs_pop();
 		cl_stack_pop();
 	case OP_NIL:

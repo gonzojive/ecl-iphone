@@ -380,18 +380,20 @@ c_new_env(struct cl_compiler_env *new_c_env, cl_object env)
 		return;
 	}
 	ENV->lexical_level = 1;
-	for (env = @revappend(env, Cnil); !Null(env); env = CDDR(env))
+	for (env = @revappend(env, Cnil); !Null(env); env = CDR(env))
 	{
-		cl_object tag = CADR(env);
-		cl_object what = CAR(env);
-		if (tag == @':tag')
+		cl_object record = CAR(env);
+		cl_object record0 = CAR(record);
+		cl_object record1 = CDR(record);
+		if (SYMBOLP(record0)) {
+			c_register_var(record0, FALSE, TRUE);
+		} else if (!FIXNUMP(record0)) {
+			c_register_function(record1);
+		} else if (record1 == MAKE_FIXNUM(0)) {
 			c_register_tags(Cnil);
-		else if (tag == @':block')
-			c_register_block(CAR(what));
-		else if (tag == @':function')
-			c_register_function(CAR(what));
-		else
-			c_register_var(tag, FALSE, TRUE);
+		} else {
+			c_register_block(record1);
+		}
 	}
 }
 

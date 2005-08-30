@@ -147,19 +147,18 @@ extern ecl_frame_ptr _frs_push(register cl_object val);
  * LEXICAL ENVIRONMENT STACK
  *****************************/
 /*
-
-cl_env.lex_env ------> ( tag0 value0 tag1 value1 ... )
-
-	tag:		variable-name (symbol)
-	value:		variable-value (any lisp object)
-
-	tag:		:function
-	value:		(function-name . function-object)
-
-	tag:		:block
-	value:		(block-name . frame-id)
-
-*/
+ * A lexical environment is a list of pairs, each one containing either
+ * a variable definition, a tagbody or block tag, or a local function
+ * definition.
+ *
+ *	lex_env ---> ( { record }* )
+ *	record = variable | function | block_tag | tagbody_tag
+ *
+ *	variable = ( var_name[symbol] . value )
+ *	function = ( function[bytecodes] . fun_name[symbol] )
+ *	block_tag = ( tag[fixnum] . block_name[symbol] )
+ *	tagbody_tag = ( tag[fixnum] . 0 )
+ */
 
 /*********************************
  * HIGH LEVEL CONTROL STRUCTURES *
