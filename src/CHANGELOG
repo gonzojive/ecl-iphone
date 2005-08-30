@@ -8,6 +8,9 @@ ECL 0.9h
  - Reworked the structure of the lexical environment to accelerate access to
    variables.
 
+ - New hash routine, similar to SBCL's one, faster and leading to fewer
+   collisions between similar strings.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

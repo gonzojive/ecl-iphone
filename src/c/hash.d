@@ -20,109 +20,173 @@
 #include <ctype.h>
 #include "internal.h"
 
-/*******************
- * CRC-32 ROUTINES *
- *******************/
+/********************
+ * HASHING ROUTINES *
+ ********************/
+
+/*
+ * SBCL'S old mashing function. Leads to many collisions.
+ */
+
+#if FIXNUM_BITS > 32
 
 #define mash(h,n) ((((h) << 5) | ((h) >> (FIXNUM_BITS - 5))) ^ (n))
+#define hash_word(h,x) mash(h,(cl_index)x)
 
 static cl_hashkey
-hash_string(const char *buf, cl_index len)
+hash_string(cl_hashkey h, const unsigned char *buf, cl_index len)
 {
-	cl_hashkey h;
-	for (h = 0; len; len--) {
+	for (; len; len--) {
 		h = mash(h, (*buf++));
 	}
 	return h;
 }
+
+#else
+
+/*
+ * SBCL's newest algorithm. Leads to few collisions, is fast, but
+ * limited to 32 bits.
+ */
+
+#define mix(a,b,c) \
+{ \
+  a -= b; a -= c; a ^= (c>>13); \
+  b -= c; b -= a; b ^= (a<<8); \
+  c -= a; c -= b; c ^= (b>>13); \
+  a -= b; a -= c; a ^= (c>>12);  \
+  b -= c; b -= a; b ^= (a<<16); \
+  c -= a; c -= b; c ^= (b>>5); \
+  a -= b; a -= c; a ^= (c>>3);  \
+  b -= c; b -= a; b ^= (a<<10); \
+  c -= a; c -= b; c ^= (b>>15); \
+}
+
+static uint32_t
+hash_string(uint32_t initval, const unsigned char *k, cl_index len)
+{
+  uint32_t a = 0, b = 0, c = initval;
+  for (; len > 12; ) {
+    a += (k[0] +((uint32_t)k[1]<<8) +((uint32_t)k[2]<<16) +((uint32_t)k[3]<<24));
+    b += (k[4] +((uint32_t)k[5]<<8) +((uint32_t)k[6]<<16) +((uint32_t)k[7]<<24));
+    c += (k[8] +((uint32_t)k[9]<<8) +((uint32_t)k[10]<<16)+((uint32_t)k[11]<<24));
+    mix(a,b,c);
+    k += 12; len -= 12;
+  }
+
+  /*------------------------------------- handle the last 11 bytes */
+  c += len;
+  switch(len) {
+    /* all the case statements fall through */
+  case 11: c+=((uint32_t)k[10]<<24);
+  case 10: c+=((uint32_t)k[9]<<16);
+  case 9 : c+=((uint32_t)k[8]<<8);
+    /* the first byte of c is reserved for the length */
+  case 8 : b+=((uint32_t)k[7]<<24);
+  case 7 : b+=((uint32_t)k[6]<<16);
+  case 6 : b+=((uint32_t)k[5]<<8);
+  case 5 : b+=k[4];
+  case 4 : a+=((uint32_t)k[3]<<24);
+  case 3 : a+=((uint32_t)k[2]<<16);
+  case 2 : a+=((uint32_t)k[1]<<8);
+  case 1 : a+=k[0];
+    /* case 0: nothing left to add */
+  }
+  mix(a,b,c);
+  /*-------------------------------------------- report the result */
+  return c;
+}
+
+static uint32_t hash_word(uint32_t c, uint32_t a)
+{
+	uint32_t b = 0;
+	mix(a, b, c);
+	return c;
+}
+
+#endif
 
 static void corrupted_hash(cl_object hashtable) /*__attribute__((noreturn))*/;
 
 static void
 corrupted_hash(cl_object hashtable)
 {
-  FEerror("internal error, corrupted hashtable ~S", 1, hashtable);
+	FEerror("internal error, corrupted hashtable ~S", 1, hashtable);
 }
 
-cl_hashkey
-hash_eql(cl_object x)
+static cl_hashkey
+_hash_eql(cl_hashkey h, cl_object x)
 {
  BEGIN:
 	switch (type_of(x)) {
 	case t_bignum:
-		return hash_string((char*)x->big.big_limbs,
+		return hash_string(h, (unsigned char*)x->big.big_limbs,
 				   labs(x->big.big_size) * sizeof(mp_limb_t));
-		break;
-	case t_ratio: {
-		cl_hashkey h = hash_eql(x->ratio.num);
-		return mash(h, hash_eql(x->ratio.den));
-	}
+	case t_ratio:
+		h = _hash_eql(h, x->ratio.num);
+		return _hash_eql(h, x->ratio.den);
 	case t_shortfloat:
-		return hash_string((char*)&sf(x), sizeof(sf(x)));
+		return hash_string(h, (unsigned char*)&sf(x), sizeof(sf(x)));
 	case t_longfloat:
-		return hash_string((char*)&lf(x), sizeof(lf(x)));
-	case t_complex: {
-		cl_hashkey h = hash_eql(x->complex.real);
-		return mash(h, hash_eql(x->complex.imag));
-	}
+		return hash_string(h, (unsigned char*)&lf(x), sizeof(lf(x)));
+	case t_complex:
+		h = _hash_eql(h, x->complex.real);
+		return _hash_eql(h, x->complex.imag);
 	case t_character:
-		return CHAR_CODE(x);
+		return hash_word(h, CHAR_CODE(x));
 	default:
-		return (cl_hashkey)x >> 2;
+		return hash_word(h, ((cl_hashkey)x >> 2));
 	}
 }
 
 static cl_hashkey
-_hash_equal(int depth, cl_object x)
+_hash_equal(int depth, cl_hashkey h, cl_object x)
 {
 	switch (type_of(x)) {
 	case t_cons:
 		if (depth++ > 3) {
 			return 0;
-		} else {
-			cl_hashkey h = _hash_equal(depth, CAR(x));
-			return mash(h, _hash_equal(depth, CDR(x)));
 		}
+		h = _hash_equal(depth, h, CAR(x));
+		return _hash_equal(depth, h, CDR(x));
 	case t_symbol:
 		x = x->symbol.name;
 	case t_string:
-		return hash_string(x->string.self, x->string.fillp);
-	case t_pathname: {
-		cl_hashkey h = _hash_equal(depth, x->pathname.host);
-		h = mash(h, _hash_equal(depth, x->pathname.device));
-		h = mash(h, _hash_equal(depth, x->pathname.directory));
-		h = mash(h, _hash_equal(depth, x->pathname.name));
-		h = mash(h, _hash_equal(depth, x->pathname.type));
-		return mash(h, _hash_equal(depth, x->pathname.name));
-	}
+		return hash_string(h, x->string.self, x->string.fillp);
+	case t_pathname:
+		h = _hash_equal(depth, h, x->pathname.host);
+		h = _hash_equal(depth, h, x->pathname.device);
+		h = _hash_equal(depth, h, x->pathname.directory);
+		h = _hash_equal(depth, h, x->pathname.name);
+		h = _hash_equal(depth, h, x->pathname.type);
+		return _hash_equal(depth, h, x->pathname.name);
 	case t_random:
-		return x->random.value;
+		return hash_word(h, x->random.value);
 	case t_bitvector:
 		/* Notice that we may round out some bits. We must do this
 		 * because the fill pointer may be set in the middle of a byte.
 		 * If so, the extra bits _must_ _not_ take part in the hash,
 		 * because otherwise we two bit arrays which are EQUAL might
 		 * have different hash keys. */
-		return hash_string(x->vector.self.ch, x->vector.fillp / 8);
+		return hash_string(h, x->vector.self.ch, x->vector.fillp / 8);
 	default:
-		return hash_eql(x);
+		return _hash_eql(h, x);
 	}
 }
 
 static cl_hashkey
-_hash_equalp(int depth, cl_object x)
+_hash_equalp(int depth, cl_hashkey h, cl_object x)
 {
 	cl_index i, len;
 	switch (type_of(x)) {
 	case t_character:
-		return toupper(CHAR_CODE(x));
+		return hash_word(h, toupper(CHAR_CODE(x)));
 	case t_cons:
 		if (depth++ > 3) {
 			return 0;
-		} else {
-			cl_hashkey h = _hash_equalp(depth, CAR(x));
-			return mash(h, _hash_equalp(depth, CDR(x)));
 		}
+		h = _hash_equalp(depth, h, CAR(x));
+		return _hash_equalp(depth, h, CDR(x));
 	case t_string:
 	case t_vector:
 	case t_bitvector:
@@ -132,44 +196,34 @@ _hash_equalp(int depth, cl_object x)
 		len = x->vector.dim;
 SCAN:		if (depth++ >= 3) {
 			return 0;
-		} else {
-			cl_hashkey h = 0;
-			for (i = 0; i < len; i++) {
-				h = mash(h,_hash_equalp(depth, aref(x, i)));
-			}
-			return h;
 		}
-		break;
+		for (i = 0; i < len; i++) {
+			h = _hash_equalp(depth, h, aref(x, i));
+		}
+		return h;
 	case t_fixnum:
-		return fix(x);
+		return hash_word(h, fix(x));
 	case t_shortfloat:
 		/* FIXME! We should be more precise here! */
-		return (cl_index)sf(x);
+		return hash_word(h, (cl_index)sf(x));
 	case t_longfloat:
 		/* FIXME! We should be more precise here! */
-		return (cl_index)lf(x);
+		return hash_word(h, (cl_index)lf(x));
 	case t_bignum:
 		/* FIXME! We should be more precise here! */
-	case t_ratio: {
-		cl_hashkey h = _hash_equalp(depth, x->ratio.num);
-		return mash(h, _hash_equalp(depth, x->ratio.den));
-	}
-	case t_complex: {
-		cl_hashkey h = _hash_equalp(depth, x->complex.real);
-		return mash(h, _hash_equalp(depth, x->complex.imag));
-	}
+	case t_ratio:
+		h = _hash_equalp(depth, h, x->ratio.num);
+		return _hash_equalp(depth, h, x->ratio.den);
+	case t_complex:
+		h = _hash_equalp(depth, h, x->complex.real);
+		return _hash_equalp(depth, h, x->complex.imag);
 	case t_instance:
 	case t_hashtable:
-		return 42;
+		/* FIXME! We should be more precise here! */
+		return hash_word(h, 42);
 	default:
-		return _hash_equal(depth, x);
+		return _hash_equal(depth, h, x);
 	}
-}
-
-cl_hashkey
-hash_equal(cl_object key)
-{
-	return _hash_equal(0, key);
 }
 
 struct ecl_hashtable_entry *
@@ -187,10 +241,10 @@ ecl_search_hash(cl_object key, cl_object hashtable)
 	j = hsize;
 	switch (htest) {
 	case htt_eq:	h = (cl_hashkey)key >> 2; break;
-	case htt_eql:	h = hash_eql(key); break;
-	case htt_equal:	h = _hash_equal(0, key); break;
-	case htt_equalp:h = _hash_equalp(0, key); break;
-	case htt_pack:	h = _hash_equal(0, key);
+	case htt_eql:	h = _hash_eql(0, key); break;
+	case htt_equal:	h = _hash_equal(0, 0, key); break;
+	case htt_equalp:h = _hash_equalp(0, 0, key); break;
+	case htt_pack:	h = _hash_equal(0, 0, key);
 			ho = MAKE_FIXNUM(h & 0xFFFFFFF);
 			break;
 	default:	corrupted_hash(hashtable);
@@ -267,10 +321,10 @@ add_new_to_hash(cl_object key, cl_object hashtable, cl_object value)
 	hsize = hashtable->hash.size;
 	switch (htest) {
 	case htt_eq:	h = (cl_hashkey)key >> 2; break;
-	case htt_eql:	h = hash_eql(key); break;
-	case htt_equal:	h = _hash_equal(0, key); break;
-	case htt_equalp:h = _hash_equalp(0, key); break;
-	case htt_pack:	h = _hash_equal(0, key); break;
+	case htt_eql:	h = _hash_eql(0, key); break;
+	case htt_equal:	h = _hash_equal(0, 0, key); break;
+	case htt_equalp:h = _hash_equalp(0, 0, key); break;
+	case htt_pack:	h = _hash_equal(0, 0, key); break;
 	default:	corrupted_hash(hashtable);
 	}
 	e = hashtable->hash.data;
@@ -572,7 +626,7 @@ cl_hash_table_rehash_threshold(cl_object ht)
 cl_object
 cl_sxhash(cl_object key)
 {
-	cl_index output = _hash_equal(0, key);
+	cl_index output = _hash_equal(0, 0, key);
 	const cl_index mask = ((cl_index)1 << (FIXNUM_BITS - 3)) - 1;
 	@(return MAKE_FIXNUM(output & mask))
 }

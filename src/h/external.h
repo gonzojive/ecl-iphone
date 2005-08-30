@@ -636,9 +636,6 @@ extern cl_object cl_make_hash_table _ARGS((cl_narg narg, ...));
 extern cl_object cl_gethash _ARGS((cl_narg narg, cl_object key, cl_object ht, ...));
 extern cl_object si_copy_hash_table(cl_object orig);
 
-extern cl_hashkey hash_eq(cl_object x);
-extern cl_hashkey hash_eql(cl_object x);
-extern cl_hashkey hash_equal(cl_object x);
 extern void sethash(cl_object key, cl_object hashtable, cl_object value);
 extern cl_object gethash(cl_object key, cl_object hash);
 extern cl_object gethash_safe(cl_object key, cl_object hash, cl_object def);
