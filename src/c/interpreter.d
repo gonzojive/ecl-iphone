@@ -158,37 +158,14 @@ cl_stack_push_list(cl_object list)
 
 /* ------------------------------ LEXICAL ENV. ------------------------------ */
 
-static void
-bind_var(register cl_object var, register cl_object val)
-{
-	cl_env.lex_env = CONS(CONS(var, val), cl_env.lex_env);
-}
-
-static void
-bind_function(cl_object name, cl_object fun)
-{
-	cl_env.lex_env = CONS(CONS(fun, name), cl_env.lex_env);
-}
-
-static cl_object
-bind_tagbody()
-{
-	cl_object id = new_frame_id();
-	cl_env.lex_env = CONS(CONS(id, MAKE_FIXNUM(0)), cl_env.lex_env);
-	return id;
-}
-
-static void
-bind_block(cl_object name, cl_object id)
-{
-	cl_env.lex_env = CONS(CONS(id, name), cl_env.lex_env);
-}
-
-static void
-bind_special(register cl_object var, register cl_object val)
-{
-	bds_bind(var, val);
-}
+#define bind_var(var, val) \
+	(cl_env.lex_env = CONS(CONS(var, val), cl_env.lex_env))
+#define bind_function(name, fun) \
+	(cl_env.lex_env = CONS(CONS(fun, name), cl_env.lex_env))
+#define bind_block(name, id) \
+	(cl_env.lex_env = CONS(CONS(id, name), cl_env.lex_env))
+#define bind_tagbody(id) \
+	(cl_env.lex_env = CONS(CONS(id, MAKE_FIXNUM(0)), cl_env.lex_env))
 
 static cl_object
 ecl_lex_env_get_record(register int s) {
@@ -212,7 +189,7 @@ lambda_bind_var(cl_object var, cl_object val, cl_object specials)
 	if (!member_eq(var, specials))
 		bind_var(var, val);
 	else
-		bind_special(var, val);
+		bds_bind(var, val);
 }
 
 static void
@@ -713,7 +690,7 @@ interpret_progv(cl_object bytecodes, cl_opcode *vector) {
 void *
 interpret(cl_object bytecodes, void *pc) {
 	cl_opcode *vector = pc;
-	cl_object reg0 = VALUES(0);
+	cl_object reg0 = VALUES(0), reg1;
 	static int i = 0;
 	i++;
  BEGIN:
@@ -1027,20 +1004,20 @@ interpret(cl_object bytecodes, void *pc) {
 	}
 	case OP_BINDS: {
 		cl_object var_name = GET_DATA(vector, bytecodes);
-		bind_special(var_name, reg0);
+		bds_bind(var_name, reg0);
 		break;
 	}
 	case OP_PBINDS: {
 		cl_object var_name = GET_DATA(vector, bytecodes);
 		cl_object value = cl_stack_pop();
-		bind_special(var_name, value);
+		bds_bind(var_name, value);
 		break;
 	}
 	case OP_VBINDS: {
 		cl_index n = GET_OPARG(vector);
 		cl_object var_name = GET_DATA(vector, bytecodes);
 		cl_object value = (n < NVALUES) ? VALUES(n) : Cnil;
-		bind_special(var_name, value);
+		bds_bind(var_name, value);
 		break;
 	}
 	/* OP_SETQ	n{arg}
@@ -1084,48 +1061,10 @@ interpret(cl_object bytecodes, void *pc) {
 	   Executes the enclosed code in a named block.
 	   LABEL points to the first instruction after OP_EXIT.
 	*/
-	case OP_BLOCK: {
-		cl_object name;
-		cl_object id = new_frame_id();
-		cl_opcode *exit;
-		/* FIXME! */
-		name = GET_DATA(vector, bytecodes);
-		GET_LABEL(exit, vector);
-		cl_stack_push((cl_object)exit);
-		if (frs_push(id) == 0) {
-			bind_block(name, id);
-		} else {
-			reg0 = VALUES(0);
-			cl_env.lex_env = cl_env.frs_top->frs_lex;
-			frs_pop();
-			vector = (cl_opcode *)cl_stack_pop();
-		}
-		break;
-	}
-	/* OP_DO	label
-	     ...	; code executed within a NIL block
-	   OP_EXIT_FRAME
-	   label:
-
-	   High level construct for the DO and BLOCK forms.
-	*/
-	case OP_DO: {
-		cl_object name = Cnil;
-		cl_object id = new_frame_id();
-		cl_opcode *exit;
-		/* FIXME! */
-		GET_LABEL(exit, vector);
-		cl_stack_push((cl_object)exit);
-		if (frs_push(id) == 0) {
-			bind_block(name, id);
-		} else {
-			reg0 = VALUES(0);
-			cl_env.lex_env = cl_env.frs_top->frs_lex;
-			frs_pop();
-			vector = (cl_opcode *)cl_stack_pop(); /* FIXME! */
-		}
-		break;
-	}
+	case OP_BLOCK:
+		reg0 = GET_DATA(vector, bytecodes);
+		reg1 = new_frame_id();
+		goto DO_BLOCK;
 	/* OP_CATCH	label{arg}
 	   ...
 	   OP_EXIT_FRAME
@@ -1134,18 +1073,39 @@ interpret(cl_object bytecodes, void *pc) {
 	   Sets a catch point using the tag in VALUES(0). LABEL points to the
 	   first instruction after the end (OP_EXIT) of the block
 	*/
-	case OP_CATCH: {
+	case OP_CATCH:
+		reg1 = reg0;
+		goto DO_BLOCK;
+	/* OP_DO	label
+	     ...	; code executed within a NIL block
+	   OP_EXIT_FRAME
+	   label:
+
+	   High level construct for the DO and BLOCK forms.
+	*/
+	case OP_DO:
+		reg0 = Cnil;
+		reg1 = new_frame_id();
+	DO_BLOCK: {
 		cl_opcode *exit;
 		GET_LABEL(exit, vector);
 		cl_stack_push((cl_object)exit);
-		if (frs_push(reg0) != 0) {
+		if (frs_push(reg1) == 0) {
+			cl_env.lex_env = CONS(CONS(reg1, reg0), cl_env.lex_env);
+		} else {
 			reg0 = VALUES(0);
 			cl_env.lex_env = cl_env.frs_top->frs_lex;
 			frs_pop();
 			vector = (cl_opcode *)cl_stack_pop(); /* FIXME! */
 		}
 		break;
-	}
+		}
+	case OP_EXIT_FRAME:
+		bds_unwind(cl_env.frs_top->frs_bds_top);
+		cl_env.lex_env = cl_env.frs_top->frs_lex;
+		frs_pop();
+		cl_stack_pop();
+		break;
 	/* OP_TAGBODY	n{arg}
 	     label1
 	     ...
@@ -1159,10 +1119,12 @@ interpret(cl_object bytecodes, void *pc) {
 	   High level construct for the TAGBODY form.
 	*/
 	case OP_TAGBODY: {
+		cl_object id = new_frame_id();
 		int n = GET_OPARG(vector);
 		/* Here we save the location of the jump table */
 		cl_stack_push((cl_object)vector); /* FIXME! */
-		if (frs_push(bind_tagbody()) == 0) {
+		bind_tagbody(id);
+		if (frs_push(id) == 0) {
 			/* The first time, we "name" the tagbody and
 			 * skip the jump table */
 			vector += n * OPARG_SIZE;
@@ -1196,12 +1158,6 @@ interpret(cl_object bytecodes, void *pc) {
 	case OP_NOP:
 		VALUES(0) = reg0 = Cnil;
 		NVALUES = 0;
-		break;
-	case OP_EXIT_FRAME:
-		bds_unwind(cl_env.frs_top->frs_bds_top);
-		cl_env.lex_env = cl_env.frs_top->frs_lex;
-		frs_pop();
-		cl_stack_pop();
 		break;
 	case OP_DOLIST:
 		vector = interpret_dolist(bytecodes, vector);

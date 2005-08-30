@@ -810,9 +810,13 @@ c_case(cl_object clause, int flags) {
 static int
 c_catch(cl_object args, int flags) {
 	cl_index labelz;
+	cl_object old_env;
 
 	/* Compile evaluation of tag */
 	compile_form(pop(&args), FLAG_REG0);
+
+	old_env = ENV->variables;
+	c_register_block(MAKE_FIXNUM(0));
 
 	/* Compile jump point */
 	labelz = asm_jmp(OP_CATCH);
@@ -822,6 +826,7 @@ c_catch(cl_object args, int flags) {
 	asm_op(OP_EXIT_FRAME);
 	asm_complete(OP_CATCH, labelz);
 
+	ENV->variables = old_env;
 	return FLAG_VALUES;
 }
 
