@@ -1096,7 +1096,7 @@ interpret(cl_object bytecodes, void *pc) {
 		name = GET_DATA(vector, bytecodes);
 		GET_LABEL(exit, vector);
 		cl_stack_push((cl_object)exit);
-		if (frs_push(FRS_CATCH, id) == 0) {
+		if (frs_push(id) == 0) {
 			bind_block(name, id);
 		} else {
 			reg0 = VALUES(0);
@@ -1120,7 +1120,7 @@ interpret(cl_object bytecodes, void *pc) {
 		/* FIXME! */
 		GET_LABEL(exit, vector);
 		cl_stack_push((cl_object)exit);
-		if (frs_push(FRS_CATCH, id) == 0) {
+		if (frs_push(id) == 0) {
 			bind_block(name, id);
 		} else {
 			reg0 = VALUES(0);
@@ -1142,7 +1142,7 @@ interpret(cl_object bytecodes, void *pc) {
 		cl_opcode *exit;
 		GET_LABEL(exit, vector);
 		cl_stack_push((cl_object)exit);
-		if (frs_push(FRS_CATCH, reg0) != 0) {
+		if (frs_push(reg0) != 0) {
 			reg0 = VALUES(0);
 			cl_env.lex_env = cl_env.frs_top->frs_lex;
 			frs_pop();
@@ -1166,7 +1166,7 @@ interpret(cl_object bytecodes, void *pc) {
 		int n = GET_OPARG(vector);
 		/* Here we save the location of the jump table */
 		cl_stack_push((cl_object)vector); /* FIXME! */
-		if (frs_push(FRS_CATCH, bind_tagbody()) == 0) {
+		if (frs_push(bind_tagbody()) == 0) {
 			/* The first time, we "name" the tagbody and
 			 * skip the jump table */
 			vector += n * OPARG_SIZE;
@@ -1309,7 +1309,7 @@ interpret(cl_object bytecodes, void *pc) {
 		cl_opcode *exit;
 		GET_LABEL(exit, vector);
 		cl_stack_push((cl_object)exit);
-		if (frs_push(FRS_PROTECT,Cnil) != 0) {
+		if (frs_push(ECL_PROTECT_TAG) != 0) {
 			cl_env.lex_env = cl_env.frs_top->frs_lex;
 			frs_pop();
 			vector = (cl_opcode *)cl_stack_pop();

@@ -306,7 +306,6 @@
 (proclaim-function si:frs-top (*) t)
 (proclaim-function si::frs-vs (*) t)
 (proclaim-function si:frs-bds (*) t)
-(proclaim-function si:frs-class (*) t)
 (proclaim-function si:frs-tag (*) t)
 (proclaim-function si:frs-ihs (*) t)
 (proclaim-function si:bds-top (*) t)

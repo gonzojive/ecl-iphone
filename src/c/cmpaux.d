@@ -166,7 +166,7 @@ aset_bv(cl_object x, cl_index index, int value)
 void
 cl_throw(cl_object tag)
 {
-  ecl_frame_ptr fr = frs_sch_catch(tag);
+  ecl_frame_ptr fr = frs_sch(tag);
   if (fr == NULL)
     FEcontrol_error("THROW: The catch ~S is undefined.", 1, tag);
   unwind(fr);

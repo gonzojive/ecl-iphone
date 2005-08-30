@@ -255,13 +255,12 @@ frs_overflow(void)		/* used as condition in list.d */
 }
 
 ecl_frame_ptr
-_frs_push(register enum fr_class clas, register cl_object val)
+_frs_push(register cl_object val)
 {
 	ecl_frame_ptr output = ++cl_env.frs_top;
 	if (output >= cl_env.frs_limit) frs_overflow();
 	output->frs_lex = cl_env.lex_env;
 	output->frs_bds_top = cl_env.bds_top;
-	output->frs_class = clas;
 	output->frs_val = val;
 	output->frs_ihs = cl_env.ihs_top;
 	output->frs_sp = cl_stack_index();
@@ -272,7 +271,7 @@ void
 unwind(ecl_frame_ptr fr)
 {
 	cl_env.nlj_fr = fr;
-	while (cl_env.frs_top != fr && cl_env.frs_top->frs_class == FRS_CATCH)
+	while (cl_env.frs_top != fr && cl_env.frs_top->frs_val != ECL_PROTECT_TAG)
 		--cl_env.frs_top;
 	cl_env.lex_env = cl_env.frs_top->frs_lex;
 	cl_env.ihs_top = cl_env.frs_top->frs_ihs;
@@ -288,20 +287,8 @@ frs_sch (cl_object frame_id)
 	ecl_frame_ptr top;
 
 	for (top = cl_env.frs_top;  top >= cl_env.frs_org;  top--)
-		if (top->frs_val == frame_id && top->frs_class == FRS_CATCH)
+		if (top->frs_val == frame_id)
 			return(top);
-	return(NULL);
-}
-
-ecl_frame_ptr
-frs_sch_catch(cl_object frame_id)
-{
-	ecl_frame_ptr top;
-
-	for(top = cl_env.frs_top;  top >= cl_env.frs_org  ;top--)
-	  if ((top->frs_val == frame_id && top->frs_class == FRS_CATCH)
-	      || top->frs_class == FRS_CATCHALL)
-	    return(top);
 	return(NULL);
 }
 
@@ -328,20 +315,6 @@ cl_object
 si_frs_bds(cl_object arg)
 {
 	@(return MAKE_FIXNUM(get_frame_ptr(arg)->frs_bds_top - cl_env.bds_org))
-}
-
-cl_object
-si_frs_class(cl_object arg)
-{
-	enum fr_class c;
-	cl_object output;
-
-	c = get_frame_ptr(arg)->frs_class;
-	if (c == FRS_CATCH) output = @':catch';
-	else if (c == FRS_PROTECT) output = @':protect';
-	else if (c == FRS_CATCHALL) output = @':catchall';
-	else FEerror("Unknown frs class was detected.", 0);
-	@(return output)
 }
 
 cl_object

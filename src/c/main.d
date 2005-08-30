@@ -128,12 +128,11 @@ cl_shutdown(void)
 {
 	cl_object l = SYM_VAL(@'si::*exit-hooks*');
 	while (CONSP(l)) {
-		if (!frs_push(FRS_CATCHALL, Cnil)) {
+		CL_CATCH_ALL_BEGIN
 			bds_bind(@'si::*ignore-errors*', Ct);
 			funcall(1, CAR(l));
 			bds_unwind1();
-		}
-		frs_pop();
+		CL_CATCH_ALL_END;
 		l = CDR(l);
 	}
 #ifdef ENABLE_DLOPEN

@@ -252,14 +252,13 @@ cl_safe_eval(cl_object form, cl_object env, cl_object err_value)
 {
 	cl_object output;
 
-	if (frs_push(FRS_CATCHALL, Cnil)) {
-		output = err_value;
-	} else {
+	CL_CATCH_ALL_BEGIN
 		bds_bind(@'si::*ignore-errors*', Ct);
 		output = si_eval_with_env(2, form, env);
 		bds_unwind1();
-	}
-	frs_pop();
+	CL_CATCH_ALL_IF_CAUGHT
+		output = err_value;
+	CL_CATCH_ALL_END;
 	return output;
 }
 

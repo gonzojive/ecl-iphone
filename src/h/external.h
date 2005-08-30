@@ -1229,7 +1229,6 @@ extern cl_object si_ihs_next(cl_object arg);
 extern cl_object si_ihs_prev(cl_object arg);
 extern cl_object si_frs_top(void);
 extern cl_object si_frs_bds(cl_object arg);
-extern cl_object si_frs_class(cl_object arg);
 extern cl_object si_frs_tag(cl_object arg);
 extern cl_object si_frs_ihs(cl_object arg);
 extern cl_object si_bds_top(void);

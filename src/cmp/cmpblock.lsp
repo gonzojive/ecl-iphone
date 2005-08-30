@@ -62,7 +62,7 @@
 	    (wt-nl "volatile cl_object env" (incf *env-lvl*)
 		   " = env" env-lvl ";")))
 	(bind "new_frame_id()" blk-var)
-	(wt-nl "if (frs_push(FRS_CATCH," blk-var ")!=0) {")
+	(wt-nl "if (frs_push(" blk-var ")!=0) {")
 	(let ((*unwind-exit* (cons 'FRAME *unwind-exit*)))
 	  (unwind-exit 'VALUES)
 	  (wt-nl "} else {")

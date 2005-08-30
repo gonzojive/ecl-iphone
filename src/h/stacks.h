@@ -92,40 +92,38 @@ extern cl_object ihs_top_function_name(void);
 /***************
  * FRAME STACK
  ***************/
-/*
-frs_class |            frs_value                 |  frs_prev
-----------+--------------------------------------+--------------
-CATCH     | frame-id, i.e.                       |
-	  |    throw-tag,                        |
-	  |    block-id (uninterned symbol), or  | value of ihs_top
-	  |    tagbody-id (uninterned symbol)    | when the frame
-----------+--------------------------------------| was pushed
-CATCHALL  |               NIL                    |
-----------+--------------------------------------|
-PROTECT   |               NIL                    |
-----------------------------------------------------------------
-*/
-
-enum fr_class {
-	FRS_CATCH,		/* for catch,block,tabbody */
-	FRS_CATCHALL,		/* for catchall */
-	FRS_PROTECT		/* for protect-all */
-};
+/* Frames signal points in the code to which we can at any time jump.
+ * Frames are established, for instance, by CATCH, BLOCK, TAGBODY,
+ * LAMBDA, UNWIND-PROTECT, etc.
+ *
+ * Frames are established by frs_push(). For each call to frs_push()
+ * there must be a corresponding frs_pop(). More precisely, since our
+ * frame mechanism relies on the C stack and on the setjmp/longjmp
+ * functions, any function that creates a frame must also destroy it
+ * with frs_pop() before returning.
+ *
+ * Frames are identified by a value frs_val. This can be either a
+ * unique identifier, created for each CATCH, BLOCK, etc, or a common
+ * one ECL_PROTECT_TAG, used by UNWIND-PROTECT forms. The first type
+ * of frames can be target of a search frs_sch() and thus one can jump
+ * to them. The second type of frames are like barriers designed to
+ * intercept the jumps to the outer frames and are called
+ * automatically by the function unwind() whenever it jumps to a frame
+ * which is beyond one of these barriers.
+ */
 
 typedef struct ecl_frame {
 	jmp_buf		frs_jmpbuf;
+	cl_object	frs_val;
 	cl_object	frs_lex;
 	bds_ptr		frs_bds_top;
-	enum fr_class	frs_class;
-	cl_object	frs_val;
 	ihs_ptr		frs_ihs;
 	cl_index	frs_sp;
 } *ecl_frame_ptr;
 
-extern ecl_frame_ptr _frs_push(register enum fr_class clas, register cl_object val);
-
-#define frs_push(class, val)  ecl_setjmp(_frs_push(class, val)->frs_jmpbuf)
-
+#define ECL_PROTECT_TAG OBJNULL
+extern ecl_frame_ptr _frs_push(register cl_object val);
+#define frs_push(val)  ecl_setjmp(_frs_push(val)->frs_jmpbuf)
 #define frs_pop() (cl_env.frs_top--)
 
 /*******************
@@ -178,7 +176,7 @@ cl_env.lex_env ------> ( tag0 value0 tag1 value1 ... )
 #define CL_UNWIND_PROTECT_BEGIN {\
 	bool __unwinding; ecl_frame_ptr __next_fr; \
 	cl_index __nr; \
-	if (frs_push(FRS_PROTECT,Cnil)) { \
+	if (frs_push(ECL_PROTECT_TAG)) { \
 		__unwinding=1; __next_fr=cl_env.nlj_fr; \
 	} else {
 
@@ -193,19 +191,19 @@ cl_env.lex_env ------> ( tag0 value0 tag1 value1 ... )
 
 #define CL_BLOCK_BEGIN(id) { \
 	cl_object id = new_frame_id(); \
-	if (frs_push(FRS_CATCH,id) == 0)
+	if (frs_push(id) == 0)
 
 #define CL_BLOCK_END } \
 	frs_pop()
 
 #define CL_CATCH_BEGIN(tag) \
-	if (frs_push(FRS_CATCH,tag) == 0) {
+	if (frs_push(tag) == 0) {
 
 #define CL_CATCH_END } \
 	frs_pop();
 
 #define CL_CATCH_ALL_BEGIN \
-	if (frs_push(FRS_CATCH,Cnil) == 0) {
+	if (frs_push(ECL_PROTECT_TAG) == 0) {
 
 #define CL_CATCH_ALL_IF_CAUGHT } else {
 
