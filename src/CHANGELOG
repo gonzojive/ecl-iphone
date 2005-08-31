@@ -11,6 +11,14 @@ ECL 0.9h
  - New hash routine, similar to SBCL's one, faster and leading to fewer
    collisions between similar strings.
 
+* Visible changes:
+
+ - The code for handling command line options has been redesigned. Now multiple
+   -compile options are allowed; the -o/-c/-h/-data options have to come before
+   the associated -compile; we introduce a new -rc option to force loading
+   initialization files; errors during initialization are intercepted and cause
+   ECL to abort.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

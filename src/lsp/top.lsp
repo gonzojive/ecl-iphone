@@ -19,10 +19,7 @@
 (in-package "SYSTEM")
 
 (export '(*break-readtable* *break-on-warnings* *break-enable*
-	  *lisp-init-file-list* *tpl-evalhook*))
-
-(defvar *lisp-init-file-list* '("~/.ecl" "~/.eclrc")
-  "List of files automatically loaded when ECL is invoked.")
+	  *tpl-evalhook*))
 
 (defvar *quit-tag* (cons nil nil))
 (defvar *quit-tags* nil)
@@ -335,91 +332,6 @@ value of this variable is non-NIL.")
       )
   )
 
-(eval-when (compile eval)
-  (defmacro notinline (form)
-    `(locally (declare (notinline ,(car form)))
-	      ,form)))
-
-(defun process-command-args (&aux (load-rc t) (commands nil) (quit nil))
-  #-ecl-min
-  (do ((load-rc t)
-       (commands nil)
-       (quit nil)
-       (stop-processing nil)
-       (i 1 (1+ i))
-       (argc (argc)))
-      ((or (>= i argc)
-	   stop-processing)
-       (when load-rc
-	 (dolist (file *lisp-init-file-list*)
-	   (when (load file :if-does-not-exist nil :search-list nil :verbose nil)
-	     (return))))
-       (eval `(progn ,@(nreverse commands)))
-       (when quit (quit))
-       )
-    (labels
-	((get-argument (n k default)
-	   (do ((j (1+ n) (1+ j))
-		(argc (argc)))
-	       ((>= j argc) default)
-	     (when (string= k (argv j))
-	       (incf j)
-	       (return
-		 (or (= j argc)
-		     (eql (schar (argv j) 0) #\-)
-		     (let ((arg (argv j)))
-		       (if (string-equal "nil" arg)
-			   NIL
-			   (or (string-equal "t" arg) arg))))))))
-	 (help-message (stream)
-	   (princ "Usage: ecl [-? | --help]
-           [-dir dir] [-load file] [-shell file] [-eval expr] [-norc]
-           [-compile file [-o ofile] [-c [cfile]] [-h [hfile]]
-                          [-data [datafile]] [-s] [-q]]
-"
-		  stream))
-	 (pop-arg (option)
-	   (when (= (incf i) argc)
-	     (format *error-output* "Missing argument to command line option ~A.~%" option)
-	     (help-message *error-output*)
-	     (quit 1))
-	   (argv i)))
-      (let ((option (argv i)))
-	(cond
-	  ((string= "-dir" option)
-	   (setf (logical-pathname-translations "SYS")
-		 `(("**;*.*" ,(merge-pathnames "**/*.*" (truename (pop-arg "-dir")))))))
-	  ((string= "-compile" option)
-	   (if (nth-value 3
-			  (compile-file
-			   (pop-arg "-compile")
-			   :output-file (get-argument i "-o" T)
-			   :c-file  (get-argument i "-c" NIL)
-			   :h-file  (get-argument i "-h" NIL)
-			   :data-file (get-argument i "-data" NIL)
-			   :verbose (not (get-argument i "-q" NIL))
-			   :system-p  (get-argument i "-s" NIL)))
-	       (quit 1)
-	       (quit 0)))
-	  ((string= "-load" option)
-	   (push `(load ,(pop-arg "-load") :verbose t) commands))
-	  ((string= "-shell" option)
-	   (push `(load ,(pop-arg "-shell") :verbose nil) commands)
-	   (setf quit t load-rc nil))
-	  ((string= "-eval" option)
-	   (push (read-from-string (pop-arg "-eval")) commands))
-	  ((string= "-norc" option)
-	   (setf load-rc nil))
-	  ((or (string= "-?" option) (string= "--help" option))
-	   (help-message t)
-	   (quit 0))
-	  ((string= "--" option)
-	   (setq stop-processing t))
-	  (t
-	   (format *error-output* "Unknown command line option ~A.~%" option)
-	   (help-message *error-output*)
-	   (quit 1)))))))
-
 (defvar *lisp-initialized* nil)
 
 (defun top-level ()
@@ -436,7 +348,7 @@ file.  When the saved image is invoked, it will start the redefined top-level."
       (catch *quit-tag*
 	(let ((*break-enable* nil))
 	  ;; process command arguments
-	  (notinline (process-command-args))))
+	  (process-command-args)))
 
       (format t "ECL (Embeddable Common-Lisp) ~A" (lisp-implementation-version))
       (format t "~%Copyright (C) 1984 Taiichi Yuasa and Masami Hagiya~@
@@ -484,7 +396,7 @@ file.  When the saved image is invoked, it will start the redefined top-level."
 	   (reset-stack-limits))
      (when (catch *quit-tag*
 	     (tpl-prompt)
-	     (setq - (notinline (tpl-read)))
+	     (setq - (locally (declare (notinline tpl-read)) (tpl-read)))
 	     (setq values
 		   (multiple-value-list
 		    (eval-with-env - *break-env*)))

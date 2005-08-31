@@ -38,6 +38,7 @@
   "src:lsp;tk-init.lsp"
   "build:lsp;config.lsp"
   "src:lsp;module.lsp"
+  "src:lsp;cmdline.lsp"
   "src:lsp;top.lsp"
 #+threads
   "src:lsp;mp.lsp"
