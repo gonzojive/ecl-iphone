@@ -222,8 +222,8 @@ To build a library you proceed more or less the same way as with standalone
 executables. There are two different functions depending on whether you need
 to build static or shared libraries.
 
-@defun {c:build-static-library} @{@var{library-name} @keys{} @var{lisp-files} @var{prologue-code} @var{epilogue-code}@}
-@defunx {c:build-shared-library} @{@var{library-name} @keys{} @var{lisp-files} @var{prologue-code} @var{epilogue-code} @var{ld-flags}@}
+@defun {c:build-static-library} @{@var{library-name} @keys{} @var{lisp-files} @var{prologue-code} @var{epilogue-code} @var{init-name}@}
+@defunx {c:build-shared-library} @{@var{library-name} @keys{} @var{lisp-files} @var{prologue-code} @var{epilogue-code} @var{ld-flags} @var{init-name}@}
 
 This function builds a library file up from the object files listed in
 @var{lisp-files}. Each of the arguments to @var{lisp-file} must name a single
@@ -239,6 +239,10 @@ executed before and after initializing the library, respectively. For
 dynamically linked libraries you can also provide a list of strings in 
 @var{ld-flags}. These strings are additional parameters for the linker and
 their purpose is to link C/C++ extensions into the library.
+
+@var{init-name} gives the initialization function of the library a
+user-specified name. Thus a the generated library may be used and/or
+linked to a C application.
 @end defun
 
 @c ----------------------------------------------------------------------
