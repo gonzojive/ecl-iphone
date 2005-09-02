@@ -383,8 +383,8 @@ EXPORTS
 	si_copy_hash_table
 
 	;hash_eq
-	hash_eql
-	hash_equal
+	;hash_eql
+	;hash_equal
 	sethash
 	gethash
 	gethash_safe
@@ -942,9 +942,9 @@ EXPORTS
 	si_ihs_prev
 	si_frs_top
 	si_frs_bds
-	si_frs_class
 	si_frs_tag
 	si_frs_ihs
+	;si_frs_class
 	si_bds_top
 	si_bds_var
 	si_bds_val
@@ -956,7 +956,7 @@ EXPORTS
 	bds_unwind
 	unwind
 	frs_sch
-	frs_sch_catch
+	;frs_sch_catch
 	new_frame_id
 	_frs_push
 
@@ -1157,6 +1157,7 @@ EXPORTS
 	cl_directory
 	cl_user_homedir_pathname
 	si_mkstemp
+	si_rmdir
 
 	expand_pathname
 	ecl_string_to_pathname
