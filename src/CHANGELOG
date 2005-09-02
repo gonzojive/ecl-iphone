@@ -19,6 +19,12 @@ ECL 0.9h
    initialization files; errors during initialization are intercepted and cause
    ECL to abort.
 
+* Foreign function interface (FFI):
+
+ - Foreign function return type is now correctly handled, when it is specified
+   with a user-defined foreign type that is an alias for a primitive type
+   (M. Goffioul)
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

@@ -516,10 +516,10 @@
 	   (return-type (%convert-to-return-type returning))
 	   (nargs (length arguments))
 	   (c-string (produce-function-call c-name nargs))
-	   (casting-required (not (or (member returning '(:void :cstring))
-				      (foreign-elt-type-p returning))))
+	   (casting-required (not (or (member return-type '(:void :cstring))
+				      (foreign-elt-type-p return-type))))
 	   (inline-form `(c-inline ,arguments ,arg-types
-				   ,(if casting-required :pointer-void returning)
+				   ,(if casting-required :pointer-void return-type)
 				   ,c-string
 				   :one-liner t
 				   :side-effects t)))
