@@ -1,5 +1,5 @@
 #
-#		Makefile for ECoLisp
+#		Makefile for ECL
 #
 top_srcdir= ..\src
 srcdir	= ..\src
