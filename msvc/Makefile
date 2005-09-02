@@ -85,7 +85,7 @@ mkinstalldirs = $(SHELL) $(top_srcdir)/gc/mkinstalldirs
 #
 SUBDIR        = c gc gmp
 LIBRARIES     =
-TARGETS       = ecl$(EXE)
+TARGETS       = ecl2$(EXE)
 DEF           = ecl.def
 
 # Additional configuration for thread support

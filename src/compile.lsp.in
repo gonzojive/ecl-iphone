@@ -182,8 +182,9 @@ ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@ ../c/all_symbols2.@OBJEXT@; rm *.@OB
 (setq si::*init-function-prefix* "ECL")
 
 (compiler::build-program
+ #+:msvc "ecl2"
  #+(or cross stage1) "ecl"
- #-(or cross stage1) "ecl2"
+ #-(or cross stage1 msvc) "ecl2"
  :lisp-files *module-symbols*
  :ld-flags '(#-msvc "-L./"))
 
