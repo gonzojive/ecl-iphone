@@ -419,6 +419,7 @@ else
 fi
 
 if test "${with_tcp}" = "yes"; then
+  AC_DEFINE(TCP, [1], [Network streams])
   EXTRA_OBJS="${EXTRA_OBJS} tcp.${OBJEXT}"
   ECL_ADD_LISP_MODULE([sockets])
   LIBS="${LIBS} ${TCPLIBS}"
