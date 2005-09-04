@@ -203,7 +203,7 @@ init_alloc(void)
 	init_tm(t_cons, "CONS", sizeof(struct ecl_cons)); /* 12 */
 	init_tm(t_longfloat, "LONG-FLOAT", /* 16 */
 		sizeof(struct ecl_longfloat));
-	init_tm(t_bytecodes, "bBYTECODES", sizeof(struct ecl_bytecodes));
+	init_tm(t_bytecodes, "BYTECODES", sizeof(struct ecl_bytecodes));
 	init_tm(t_string, "STRING", sizeof(struct ecl_string)); /* 20 */
 	init_tm(t_array, "ARRAY", sizeof(struct ecl_array)); /* 24 */
 	init_tm(t_pathname, "PATHNAME", sizeof(struct ecl_pathname)); /* 28 */
