@@ -101,9 +101,7 @@ Usage: ecl [-? | --help]
 		   (command-arg-error
 		    "Missing argument after command line option ~A.~%"
 		    option))
-		 (print pattern)
 		 (nsubst (pop option-list) 1 pattern))
-	       (print pattern)
 	       (push pattern commands)))))))
 
 (defun process-command-args (&optional (args (rest (command-args))))
