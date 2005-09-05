@@ -84,33 +84,19 @@
 			   ;;:shared-data-file "build:ecl.sdat"
 			   ))
 
-#-(or win32 wants-dlopen)
+#-:wants-dlopen
 (si::system "sh -c 'mkdir tmp; rm -f tmp/*;
 cp @LIBPREFIX@eclmin.@LIBEXT@ @LIBPREFIX@ecl.@LIBEXT@;
 cd tmp; ar -x ../@LIBPREFIX@lsp.@LIBEXT@;
 for i in *.@OBJEXT@; do mv $i lsp_`basename $i`; done;
 ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@ ../c/all_symbols2.@OBJEXT@; rm *.@OBJEXT@;
 @RANLIB@ ../@LIBPREFIX@ecl.@LIBEXT@'")
-#-(or (not win32) wants-dlopen)
-(progn
-  (with-open-file (s "tmp.bat" :direction :output)
-    (write-string "if not exist tmp mkdir tmp" s)(terpri s)
-    (write-string "del /Q tmp\\*" s)(terpri s)
-    (write-string "copy eclmin.lib ecl.lib" s)(terpri s)
-    (write-string "cd tmp" s)(terpri s)
-    (write-string "for /f %%i in ('lib /nologo /list ..\\lsp.lib') do lib /nologo /extract:%%i /out:lsp_%%~nxi ..\\lsp.lib" s)(terpri s)
-    (write-string "copy ..\\c\\all_symbols2.obj ." s)(terpri s)
-    (write-string "lib ..\\ecl.lib *.obj" s)(terpri s)
-    (write-string "cd .." s)(terpri s)
-    (write-string "rmdir /Q /S tmp" s)(terpri s))
-  (si::system "cmd /E:ON /C tmp.bat")
-  (delete-file "tmp.bat"))
 
 #+:wants-dlopen
 ;;;
 ;;; We do not need the -rpath flag for the library, nor -lecl.
 ;;;
-(let ((c::*ld-shared-flags* #-msvc (concatenate 'string "@SHARED_LDFLAGS@ @LDFLAGS@ @CORE_LIBS@ @LIBS@ @FASL_LIBS@" #+cygwin " -Wl,--out-implib=libecl.a")
+(let ((c::*ld-shared-flags* #-msvc "@SHARED_LDFLAGS@ @LDFLAGS@ @CORE_LIBS@ @LIBS@ @FASL_LIBS@"
 			    #+msvc "@SHARED_LDFLAGS@ @LDFLAGS@ @STATICLIBS@ @CLIBS@ /DEF:@DEF@")
       (c::*cc-flags* (concatenate 'string "-I@true_builddir@/c " c::*cc-flags*)))
   (c::shared-cc (compile-file-pathname "ecl" :type :dll)
