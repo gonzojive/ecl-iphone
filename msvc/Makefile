@@ -10,7 +10,7 @@ srcdir	= ..\src
 
 SHORT_SITE_NAME   =
 LONG_SITE_NAME    =
-ECL_VERSION       = 0.9g
+ECL_VERSION       = 0.9h
 ARCHITECTURE      = PENTIUM4
 MACHINE_INSTANCE  = localhost
 MACHINE           =
@@ -28,6 +28,9 @@ GMP_TYPE      = gc
 
 # Set it to non-empty to include Win32 thread support
 ECL_THREADS   =
+
+# Set it to non-empty to enable Win32 debug support
+ECL_DEBUG   = 1
 
 # Add the extensions to include in the build process. Comment any
 # of the following lines to remove a feature from the build process
@@ -49,9 +52,10 @@ TAR_DIR = %%CD%%\ecl-$(ECL_VERSION)
 #
 
 CC	= cl
-CFLAGS  = /MD /DGC_NOT_DLL
+CFLAGS  = -MD -DGC_NOT_DLL -nologo
 LIBS	= eclgc.lib eclgmp.lib user32.lib ws2_32.lib
-LDFLAGS	= -MD -Zi
+LDFLAGS	= -MD
+SHARED_LDFLAGS = -LD
 RM	= del
 RMDIR   = rmdir /Q /S
 MKDIR   = mkdir
@@ -87,6 +91,14 @@ SUBDIR        = c gc gmp
 LIBRARIES     =
 TARGETS       = ecl2$(EXE)
 DEF           = ecl.def
+
+# Enable debug information
+#
+!if "$(ECL_DEBUG)" != ""
+CFLAGS = $(CFLAGS) -Zi
+LDFLAGS = $(LDFLAGS) -Zi
+SHARED_LDFLAGS = -LDd
+!endif
 
 # Additional configuration for thread support
 #
@@ -168,9 +180,9 @@ compile.lsp: bare.lsp $(srcdir)/compile.lsp.in Makefile
 	    "@ECL_CFLAGS@" "" \
 	    "@CPPFLAGS@" "" \
 	    "@LDRPATH@" "" \
-	    "@LDFLAGS@" "/MD /link /LIBPATH:~S" \
-	    "@SHARED_LDFLAGS@" "/LDd" \
-	    "@BUNDLE_LDFLAGS@" "/LDd" \
+	    "@LDFLAGS@" "$(LDFLAGS) /link /LIBPATH:~S" \
+	    "@SHARED_LDFLAGS@" "$(SHARED_LDFLAGS)" \
+	    "@BUNDLE_LDFLAGS@" "$(SHARED_LDFLAGS)" \
 	    "@CLIBS@" "user32.lib ws2_32.lib" \
 	    "@STATICLIBS@" "eclgmp.lib eclgc.lib" \
 	    "@LIBS@" "user32.lib ws2_32.lib" \
@@ -204,9 +216,9 @@ cmp/cmpcfg.lsp: $(srcdir)/cmp/cmpcfg.lsp.in Makefile
 	    "@ECL_CFLAGS@" "" \
 	    "@CPPFLAGS@" "" \
 	    "@LDRPATH@" "" \
-	    "@LDFLAGS@" "/MD /link /LIBPATH:~S" \
-	    "@SHARED_LDFLAGS@" "/LDd" \
-	    "@BUNDLE_LDFLAGS@" "/LDd" \
+	    "@LDFLAGS@" "$(LDFLAGS) /link /LIBPATH:~S" \
+	    "@SHARED_LDFLAGS@" "$(SHARED_LDFLAGS)" \
+	    "@BUNDLE_LDFLAGS@" "$(SHARED_LDFLAGS)" \
 	    "@CLIBS@" "user32.lib ws2_32.lib" \
 	    "@STATICLIBS@" "eclgmp.lib eclgc.lib" \
 	    "@OBJEXT@" "obj" \
@@ -220,7 +232,7 @@ ecl-config.bat: util\ecl-config.bat Makefile
 	c\cut "~A" "$(libdir:\=/)"\
 	    "~*" "" \
 	    "@ECL_CFLAGS@" "$(CFLAGS)" \
-	    "@LDFLAGS@" "" \
+	    "@LDFLAGS@" "$(LDFLAGS)" \
 	    "@CLIBS@" "" \
 	    "@libdir@" "$(libdir:\=/)" \
 	    "@includedir@" "$(libdir:\=/)/h" \
@@ -229,7 +241,7 @@ ecl-config.bat: util\ecl-config.bat Makefile
 
 eclmin.lib: eclgmp.lib eclgc.lib lsp/config.lsp
 	cd c
-	$(MAKE) "ECL_THREADS = $(ECL_THREADS)"
+	$(MAKE) "ECL_THREADS = $(ECL_THREADS)" "ECL_CFLAGS = $(CFLAGS)"
 	cd ..
 eclgc.lib:
 	cd gc

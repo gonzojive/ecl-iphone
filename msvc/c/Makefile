@@ -16,7 +16,7 @@ THREADS_FLAGS=
 #
 TRUE_CC = cl
 CC	= cl
-CFLAGS	= -c -MD -Zi -I./ -I$(srcdir) -I$(HDIR) -I../h -I$(top_srcdir)/gc/include -DHAVE_ISATTY $(THREADS_FLAGS) -DGC_NOT_DLL
+CFLAGS	= -c $(ECL_CFLAGS) -I./ -I$(srcdir) -I$(HDIR) -I../h -I$(top_srcdir)/gc/include -DHAVE_ISATTY $(THREADS_FLAGS)
 #	  -Wall -W -Wfloat-equal -Wundef -Wendif-labels -Wpointer-arith -Wcast-align \
 #	  -Wwrite-strings -Wconversion -Wsign-compare -Wmissing-prototypes -Wredundant-decls \
 #	  -Wunreachable-code -Winline
