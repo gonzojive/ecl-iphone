@@ -11,7 +11,8 @@ set -e
 #  srcdir=`pwd`/src
 #fi
 srcdir=`pwd`/src
-buildir=build
+[ "x$buildir" = "x" ] && buildir=build
+export buildir
 
 if [ ! -d ${buildir} ] ; then
    echo Creating directory "\`${buildir}'"

@@ -138,6 +138,7 @@ dnl Initialize variables.
 boehm_configure_flags=""
 
 AC_EXEEXT dnl			Guess whether .exe is needed for executables
+AC_SUBST(buildir)               dnl For top-level Makefile.in
 AC_SUBST(ECL_CFLAGS)            dnl Similar, but specific to ECL (see src/util/ecl-config)
 AC_SUBST(FASL_LIBS)             dnl Libraries to link into all ecl code but not
                                 dnl into helper programs.
