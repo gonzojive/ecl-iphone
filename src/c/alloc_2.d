@@ -117,7 +117,7 @@ cl_alloc_object(cl_type t)
 		obj->cblock.next = Cnil;
 		obj->cblock.data_text = NULL;
 		obj->cblock.data = NULL;
-		obj->cblock.data_text_size = NULL;
+		obj->cblock.data_text_size = 0;
 		obj->cblock.data_size = 0;
 		obj->cblock.handle = NULL;
 #endif
