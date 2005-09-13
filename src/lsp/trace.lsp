@@ -12,6 +12,7 @@
 
 (defvar *trace-level* 0)
 (defvar *trace-list* nil)
+(defvar *trace-max-indent* 20)
 (defconstant +tracing-block+ (gensym))
 
 (defmacro trace (&rest r)
@@ -137,7 +138,7 @@ SI::ARGS."
   (cons fname nil)))
 
 (defun trace-print (direction fname vals &rest extras)
-  (let ((indent (min (* (1- *trace-level*) 2) 20)))
+  (let ((indent (min (* (1- *trace-level*) 2) *trace-max-indent*)))
     (fresh-line *trace-output*)
     (case direction
       (ENTER
