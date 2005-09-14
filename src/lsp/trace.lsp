@@ -144,7 +144,7 @@ SI::ARGS."
       (ENTER
        (multiple-value-bind (bars rem)
 	   (floor indent 4)
-	 (dotimes (i bars) (princ "|   " *trace-output*))
+	 (dotimes (i bars) (princ (if (< i 10) "|   " "|    ") *trace-output*))
 	 (when (plusp rem) (format *trace-output* "~V,,,' A" rem "|")))
        (format *trace-output*
 	       "~D> (~S~{ ~S~})~%"
