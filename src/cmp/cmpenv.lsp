@@ -129,7 +129,7 @@
 (defun get-return-type (fname)
   (let ((x (assoc fname *function-declarations*)))
     (if x
-	(second x)
+	(third x)
 	(get-sysprop fname 'PROCLAIMED-RETURN-TYPE))))
 
 (defun get-local-arg-types (fun &aux x)
