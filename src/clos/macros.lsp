@@ -8,7 +8,7 @@
 ;;;;    See file '../Copyright' for full details.
 
 (defpackage "CLOS"
-  (:use "WALKER" "CL")
+  (:use "CL")
   (:import-from "SI" "UNBOUND" "GET-SYSPROP" "PUT-SYSPROP" "REM-SYSPROP"
 		"COMPUTE-EFFECTIVE-METHOD" "SIMPLE-PROGRAM-ERROR"))
 

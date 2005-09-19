@@ -1,8 +1,7 @@
 ;;; @configure_input@
 
 (defconstant +clos-module-files+
-'("src:clos;walk.lsp"
-  "src:clos;macros.lsp"
+'("src:clos;macros.lsp"
   "src:clos;kernel.lsp"
   "src:clos;method.lsp"
   "src:clos;slot.lsp"

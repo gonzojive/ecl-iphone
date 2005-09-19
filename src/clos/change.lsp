@@ -14,12 +14,6 @@
 (defclass forward-referenced-class (class) ())
 
 ;;; ----------------------------------------------------------------------
-
-(defmethod OPTIMIZE-SLOT-VALUE ((class class) form) form)
-
-(defmethod OPTIMIZE-SET-SLOT-VALUE ((class class) form) form)
-
-;;; ----------------------------------------------------------------------
 ;;; INSTANCE UPDATE PROTOCOL
 ;;;
 ;;;

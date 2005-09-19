@@ -1548,6 +1548,8 @@ cl_symbols[] = {
 {SYS_ "LOAD-BINARY", SI_ORDINARY, si_load_binary, 3, OBJNULL},
 #endif
 
+{SYS_ "*CODE-WALKER*", SI_SPECIAL, NULL, -1, OBJNULL},
+
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1, OBJNULL}};
 

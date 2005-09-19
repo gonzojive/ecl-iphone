@@ -93,10 +93,6 @@
     (setf (slot-value class 'prototype) (allocate-instance class)))
   (slot-value class 'prototype))
 
-(defmethod OPTIMIZE-SLOT-VALUE ((prototype t) form) form)
-
-(defmethod OPTIMIZE-SET-SLOT-VALUE ((prototype t) form) form)
-
 ;;; ----------------------------------------------------------------------
 ;;; SLOTS READING AND WRITING
 ;;;

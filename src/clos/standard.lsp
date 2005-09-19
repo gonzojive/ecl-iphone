@@ -589,22 +589,6 @@ because it contains a reference to the undefined class~%  ~A"
     val))
 
 ;;; ----------------------------------------------------------------------
-;;;                                                             optimizers
-
-(defmethod OPTIMIZE-SLOT-VALUE ((prototype standard-object) form)
-  (let* ((instance (second form))
-	 (slot-name (third form)))
-    `(standard-instance-access ,instance
-			       ',(reduce-constant slot-name) . ,(cdddr form))))
-
-(defmethod OPTIMIZE-SET-SLOT-VALUE ((prototype standard-object) form)
-  (let* ((instance (cadadr form))
-	 (slot-name (caddr (second form)))
-	 (new-value (third form)))
-    `(standard-instance-access ,instance
-			       ',(reduce-constant slot-name) ,new-value)))
-
-;;; ----------------------------------------------------------------------
 ;;; Methods
 
 (defmethod describe-object ((obj standard-class) (stream t))

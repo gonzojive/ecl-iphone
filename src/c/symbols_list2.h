@@ -1548,6 +1548,8 @@ cl_symbols[] = {
 {SYS_ "LOAD-BINARY","si_load_binary"},
 #endif
 
+{SYS_ "*CODE-WALKER*",NULL},
+
 /* Tag for end of list */
 {NULL,NULL}};
 

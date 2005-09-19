@@ -91,6 +91,8 @@ ecl_fdefinition(cl_object fun)
 				FEundefined_function(fun);
 		} else if (CAR(fun) == @'lambda') {
 			return si_make_lambda(Cnil, sym);
+		} else if (CAR(fun) == @'ext::lambda-block') {
+			return si_make_lambda(CAR(sym), CDR(sym));
 		} else {
 			FEinvalid_function_name(fun);
 		}

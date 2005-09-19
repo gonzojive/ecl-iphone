@@ -1868,6 +1868,7 @@ c_values(cl_object args, int flags) {
 
 static int
 compile_form(cl_object stmt, int flags) {
+	cl_object code_walker = SYM_VAL(@'si::*code-walker*');
 	compiler_record *l;
 	cl_object function;
 	bool push = flags & FLAG_PUSH;
@@ -1875,6 +1876,10 @@ compile_form(cl_object stmt, int flags) {
 
 	/* FIXME! We should protect this region with error handling */
  BEGIN:
+	if (code_walker != OBJNULL) {
+		stmt = funcall(3, SYM_VAL(@'si::*code-walker*'), stmt,
+			       CONS(ENV->variables, ENV->macros));
+	}
 	/*
 	 * First try with variable references and quoted constants
 	 */

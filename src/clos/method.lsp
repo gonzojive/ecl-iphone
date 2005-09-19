@@ -123,15 +123,10 @@
 	     (aux-bindings ())		; Suffice to say that &aux is one of
 					; damndest things to have put in a
 					; language.
-	     (slots (mapcar #'list required-parameters))
-					; records for each class:
-					; - slot-index-table
-					; - slot-indexes for each slot
-					; See optimize-standard-instance-access.
 	     (plist ()))
 	(multiple-value-bind (walked-lambda call-next-method-p
 			      save-original-args next-method-p-p)
-	    (walk-method-lambda method-lambda required-parameters env slots)
+	    (walk-method-lambda method-lambda required-parameters env)
 
 	  ;; Scan the lambda list to determine whether this method
 	  ;; takes &mumble arguments.  If it does, we set applyp and
@@ -161,9 +156,6 @@
 	      (sys::find-declarations (cdddr walked-lambda) t)
 	    (declare (ignore ignore))
 
-	    (when (some #'cdr slots)	; there are optimized slot accesses
-	      (setq walked-lambda-body
-		    (add-index-binding walked-lambda-body slots)))
 	    (when (or next-method-p-p call-next-method-p)
 	      (setq plist (list* :needs-next-methods-p 'T plist)))
 
@@ -190,111 +182,34 @@
 	     documentation
 	     plist)))))))
 
-(defun walk-method-lambda (method-lambda required-parameters env slots)
+(defun walk-method-lambda (method-lambda required-parameters env)
   (declare (si::c-local))
-  (let ((call-next-method-p nil);flag indicating that call-next-method
-				;should be in the method definition
-	(next-method-p-p nil)	;flag indicating that next-method-p
-				;should be in the method definition
-	(save-original-args nil);flag indicating whether or not the
-				;original arguments to the method
-				;must be preserved.  This happens
-				;for two reasons:
-				; - the method takes &mumble args,
-				;   so one of the lexical functions
-				;   might be used in a default value
-				;   form
-				; - call-next-method is used without
-				;   arguments at least once in the
-				;   body of the method
-	(closurep nil)		;flag indicating whether #'call-next-method
-				;was seen in the code
-	)
-    (flet ((walk-function (form context env)
-	     (cond ((not (eq context ':EVAL)) form)
-		   ((not (listp form)) form)
-		   ((eq (car form) 'CALL-NEXT-METHOD)
-		    (setq call-next-method-p 'T
-			  save-original-args (not (cdr form)))
-		    form)
-		   ((eq (car form) 'NEXT-METHOD-P)
-		    (setq next-method-p-p 'T)
-		    form)
-		   ((and (eq (car form) 'FUNCTION)
-			 (case (second form)
-			   (CALL-NEXT-METHOD
-			    (setq call-next-method-p 'T
-				  closurep 'T
-				  save-original-args 'T)
-			    form)
-			   (NEXT-METHOD-P
-			    (setq next-method-p-p 'T)
-			    form)
-			   (t nil))))
-		   ((and (eq (car form) 'SLOT-VALUE)
-			 (symbolp (second form))
-			 (constantp (third form)))
-		    (multiple-value-bind (ignore prototype)
-			(can-optimize-access (second form) env)
-		      (if prototype
-			  (optimize-slot-value prototype form)
-			  form)))
-		   ;; does not work for (push x (slot-value y 's))
-		   ;; and similia, since push is turned into
-		   ;; (|(setf slot-value)| (cons (slot-value y 's) x) x 's)
-		   ((eq (car form) 'SETF)
-		    (if (cdddr form)
-			(do* ((setf-list (cdr form) (cddr setf-list))
-			      (instance-access)
-			      (value)
-			      (result))
-			     ((null setf-list)
-			      (cons 'PROGN (nreverse result)))
-			  (setq instance-access (car setf-list)
-				value (second setf-list))
-			  (push
-			   (if (and instance-access
-				    (listp instance-access)
-				    (eq (car instance-access)
-					'SLOT-VALUE)
-				    (symbolp (second instance-access))
-				    (constantp (third instance-access)))
-			       (multiple-value-bind (ignore prototype)
-				   (can-optimize-access
-				    (second instance-access) env)
-				 (let ((new-form
-					(list 'SETF instance-access
-					      value)))
-				   (if prototype
-				       (optimize-set-slot-value prototype
-								new-form)
-				       new-form)))
-			       (list 'SETF instance-access value))
-			   result))
-			(if (and (cdr form)
-				 (second form)
-				 (listp (second form))
-				 (eq (caadr form) 'SLOT-VALUE)
-				 (symbolp (cadadr form))
-				 (constantp (third (second form))))
-			    (multiple-value-bind (ignore class)
-				(can-optimize-access (cadadr form) env)
-			      (if class
-				  (optimize-set-slot-value class form)
-				  form))
-			    form)))
-		   ((eq (car form) 'STANDARD-INSTANCE-ACCESS)
-		    (multiple-value-bind (parameter prototype)
-			(can-optimize-access (second form) env)
-		      (if prototype
-			  (optimize-standard-instance-access
-			   (class-of prototype) parameter form slots)
-			  form)))
-		   (t form))))
-      (values (walk-form method-lambda env #'walk-function)
-	      (if closurep 'FUNCTION call-next-method-p)
-	      save-original-args
-	      next-method-p-p))))
+  (let ((call-next-method-p nil)
+	(next-method-p-p nil)
+	(save-original-args-p nil))
+    (flet ((code-walker (form env)
+	     (unless (atom form)
+	       (let ((name (first form)))
+		 (case name
+		   (CALL-NEXT-METHOD
+		    (setf call-next-method-p
+			  (or call-next-method-p T))
+		    (unless (rest form)
+		      (setf save-original-args-p t)))
+		   (NEXT-METHOD-P
+		    (setf next-method-p-p t))
+		   (FUNCTION
+		    (when (eq (second form) 'CALL-NEXT-METHOD)
+		      (setf save-original-args-p t
+			    call-next-method-p 'FUNCTION))
+		    (when (eq (second form) 'NEXT-METHOD-P)
+		      (setf next-method-p-p 'FUNCTION))))))
+	     form))
+      (let ((si::*code-walker* #'code-walker))
+	(coerce method-lambda 'function)))
+    (values method-lambda call-next-method-p
+	    save-original-args-p
+	    next-method-p-p)))
 
 (defun add-lexical-functions-to-method-lambda (walked-declarations
 					       walked-lambda-body
@@ -626,125 +541,5 @@
     `(let ((,temp ,instance-form))
        (symbol-macrolet ,accessors ,@body))))
 
-
-;;; ----------------------------------------------------------------------
-;;;                                                             optimizers
-
-(defun can-optimize-access (var env)
-  (declare (si::c-local))
-  ;; (values required-parameter class)
-  (let ((required-parameter?
-	 (or (third (variable-declaration 'VARIABLE-REBINDING var env))
-		  var))
-	(class-prototype nil))
-    (when required-parameter?
-      (let ((class (find-class (variable-class required-parameter? env) 'NIL)))
-	(when class
-	  (setf class-prototype (class-prototype class)))))
-    (values required-parameter? class-prototype)))
-
-
-(defun optimize-standard-instance-access (class parameter form slots)
-  (declare (si::c-local))
-  ;; Returns an optimized form corresponding to FORM.
-  ;; SLOTS is a list of:
-  ;;	(parameter [(class . class-index-table) {(slot-name . slot-index)}+])
-  ;; parameters of the same class share the cdr of such list.
-  ;;
-  (let* ((instance (second form))
-	 (slot-name (reduce-constant (third form)))
-	 (new (fourth form))
-	 (entry (assoc parameter slots :test #'eq))
-	 slot)
-    (unless entry
-      (error "Can't optimize instance access.  Report this as a bug."))
-    (setq slot (find slot-name (slot-value class 'SLOTS)
-		     :key #'slot-definition-name))
-    (if (and slot (eq :INSTANCE (slot-definition-allocation slot)))
-	(let* (slot-entry slot-index)
-	  (unless (cdr entry)
-	    ;; there is just one index-table for each different class
-	    (let ((class-slot-info (find class slots :key #'caadr :test #'eq)))
-	      (setf (cdr entry)
-		    (if class-slot-info
-			(cdr class-slot-info)
-			;; create variable for index-table
-			(list (cons class (gensym)))))))
-	  (setq slot-entry (assoc slot-name (cddr entry) :test #'eq))
-	  (if slot-entry
-	      (setq slot-index (cdr slot-entry))
-	      (push (cons slot-name (setq slot-index (gensym)))
-		    (cddr entry)))
-	  (if new
-	      `(si:instance-set ,instance ,slot-index ,new)
-	      `(the ,(slot-definition-type slot)
-		(si:instance-ref-safe ,instance ,slot-index))))
-	;; dont'optimize shared slots
-	(if new
-	    `(standard-instance-set ,new ,instance ',slot-name)
-	    `(standard-instance-get ,instance ',slot-name)))))
-
-;(defun get-slot-definition-type (class slot)
-;  (slot-definition-type (find slot (slot-value class 'SLOTS) :key #'slot-definition-name)))
-
-(defun signal-slot-unbound (instance slot-name)
-  (declare (si::c-local))
-  (slot-unbound (si:instance-class instance) instance slot-name))
-
-(defun add-index-binding (method-body isl)
-  (declare (si::c-local))
-  (let* (class-index-bindings
-	 slot-index-bindings
-	 slot-index-declarations)
-
-    ;; don't forget setf! Chicca
-    (setf class-index-bindings
-	  (dolist (entry isl (nreverse class-index-bindings))
-	    ;; check if the entry provides the information needed! Chicca
-	    (when (cdr entry)
-	      (unless (assoc (cdadr entry) class-index-bindings :test #'eq)
-		(push `(,(cdadr entry)
-			(let ((class (si:instance-class ,(first entry))))
-			  (declare (type standard-class class))
-			  (slot-index-table class)))
-		      class-index-bindings)))))
-
-    ;; don't forget setf! Chicca
-    (setf slot-index-bindings 
-	  (dolist (entry isl (nreverse slot-index-bindings))
-	    (dolist (slot-entry (cddr entry))
-	      (push `(,(cdr slot-entry)
-		      (slot-index ',(first slot-entry) ,(cdadr entry)))
-		    slot-index-bindings)
-	      (push `(fixnum ,(cdr slot-entry))
-		    slot-index-declarations))))
-
-    `((let ,class-index-bindings
-	(let ,slot-index-bindings
-	  (declare . ,slot-index-declarations)
-	  . ,method-body)))))
-
-
 ;;; Force the compiler into optimizing use of gethash inside methods:
 (setf (symbol-function 'SLOT-INDEX) (symbol-function 'GETHASH))
-
-(defun reduce-constant (old)
-  (let ((new (eval old)))
-    (if (eq new old)
-	new
-	(if (constantp new)
-	    (reduce-constant new)
-	    new))))
-
-;;; ----------------------------------------------------------------------
-;;;                                                                 walker
-
-;;; Inform the walker of the kind of declarations to consider:
-
-(pushnew 'TYPE *variable-declarations*)
-(pushnew 'VARIABLE-REBINDING *variable-declarations*)
-
-(defun variable-class (var env)
-  (second (variable-declaration 'TYPE var env)))
-
-;;; ----------------------------------------------------------------------
