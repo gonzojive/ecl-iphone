@@ -92,7 +92,9 @@ struct cl_env_struct {
 	/* Note: if you change the size of these registers, change also
 	   BIGNUM_REGISTER_SIZE in config.h */
 	cl_object big_register[3];
+#ifdef WITH_GMP
 	mp_limb_t big_register_limbs[3][16];
+#endif /* WITH_GMP */
 
 #ifdef ECL_THREADS
 	cl_object own_process;
@@ -301,7 +303,11 @@ extern cl_object big_register_copy(cl_object x);
 extern cl_object big_register_normalize(cl_object x);
 extern void big_register_free(cl_object x);
 extern cl_object bignum1(cl_fixnum val);
+#ifdef WITH_GMP
 extern cl_object bignum2(mp_limb_t hi, mp_limb_t lo);
+#else  /* WITH_GMP */
+extern cl_object bignum2(cl_fixnum hi, cl_fixnum lo);
+#endif /* WITH_GMP */
 extern cl_object big_set_fixnum(cl_object x, cl_object fix);
 extern cl_object big_copy(cl_object x);
 extern cl_object big_minus(cl_object x);

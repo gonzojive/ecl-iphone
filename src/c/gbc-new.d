@@ -133,6 +133,7 @@ BEGIN:
 	switch (type_of(x)) {
 
 	case t_bignum:
+#ifdef WITH_GMP
 		if (collect_blocks) {
 		  /* GMP may set num.alloc before actually allocating anything.
 		     With these checks we make sure we do not move anything
@@ -143,6 +144,7 @@ BEGIN:
 		  size_t size = x->big.big_dim * sizeof(mp_limb_t);
 		  if (size) mark_contblock(limbs, size);
 		}
+#endif /* WITH_GMP */
 		break;
 
 	case t_ratio:

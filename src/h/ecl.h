@@ -54,7 +54,9 @@ typedef unsigned short uint16_t;
 # define end_critical_section()
 #endif
 
+#ifdef WITH_GMP
 #include <gmp.h>
+#endif /* WITH_GMP */
 #include <object.h>
 #include <stacks.h>
 #ifndef _ARGS

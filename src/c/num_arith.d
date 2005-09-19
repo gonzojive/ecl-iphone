@@ -32,8 +32,12 @@ fixnum_times(cl_fixnum i, cl_fixnum j)
 {
 	cl_object x = big_register0_get();
 
+#ifdef WITH_GMP
 	mpz_set_si(x->big.big_num, i);
 	mpz_mul_si(x->big.big_num, x->big.big_num, (long int)j);
+#else  /* WITH_GMP */
+        x->big.big_num = (big_num_t)i * (big_num_t)j;
+#endif /* WITH_GMP */
 	return big_register_normalize(x);
 }
 
@@ -47,7 +51,11 @@ big_times_fix(cl_object b, cl_fixnum i)
 	if (i == -1)
 		return(big_minus(b));
 	z = big_register0_get();
+#ifdef WITH_GMP
 	mpz_mul_si(z->big.big_num, b->big.big_num, (long int)i);
+#else  /* WITH_GMP */
+        z->big.big_num = b->big.big_num * i;
+#endif /* WITH_GMP */
 	z = big_register_normalize(z);
 	return(z);
 }
@@ -57,7 +65,11 @@ big_times_big(cl_object x, cl_object y)
 {
 	cl_object z;
 	z = big_register0_get();
+#ifdef WITH_GMP
 	mpz_mul(z->big.big_num, x->big.big_num, y->big.big_num);
+#else  /* WITH_GMP */
+        z->big.big_num = x->big.big_num * y->big.big_num;
+#endif /* WITH_GMP */
 	z = big_register_normalize(z);
 	return(z);
 }
@@ -212,10 +224,14 @@ number_plus(cl_object x, cl_object y)
 			if ((i = fix(x)) == 0)
 				return(y);
 			z = big_register0_get();
+#ifdef WITH_GMP
 			if (i > 0)
 				mpz_add_ui(z->big.big_num, y->big.big_num, (unsigned long)i);
 			else
 				mpz_sub_ui(z->big.big_num, y->big.big_num, (unsigned long)(-i));
+#else  /* WITH_GMP */
+                        z->big.big_num = y->big.big_num + i;
+#endif /* WITH_GMP */
 		  	z = big_register_normalize(z);
 			return(z);
 		case t_ratio:
@@ -240,10 +256,14 @@ number_plus(cl_object x, cl_object y)
 			if ((j = fix(y)) == 0)
 				return(x);
 			z = big_register0_get();
+#ifdef WITH_GMP
 			if (j > 0)
 				mpz_add_ui(z->big.big_num, x->big.big_num, (unsigned long)j);
 			else
 				mpz_sub_ui(z->big.big_num, x->big.big_num, (unsigned long)(-j));
+#else  /* WITH_GMP */
+                        z->big.big_num = x->big.big_num + j;
+#endif /* WITH_GMP */
 			z = big_register_normalize(z);
 			return(z);
 		case t_bignum:
@@ -365,10 +385,14 @@ number_minus(cl_object x, cl_object y)
 		case t_bignum:
 			z = big_register0_get();
 			i = fix(x);
+#ifdef WITH_GMP
 			if (i > 0)
 				mpz_sub_ui(z->big.big_num, y->big.big_num, (unsigned long)i);
 			else
 				mpz_add_ui(z->big.big_num, y->big.big_num, (unsigned long)(-i));
+#else  /* WITH_GMP */
+                        z->big.big_num = (big_num_t)i - y->big.big_num;
+#endif /* WITH_GMP */
 			big_complement(z);
 			z = big_register_normalize(z);
 			return(z);
@@ -392,10 +416,14 @@ number_minus(cl_object x, cl_object y)
 			if ((j = fix(y)) == 0)
 				return(x);
 			z = big_register0_get();
+#ifdef WITH_GMP
 			if (j > 0)
 				mpz_sub_ui(z->big.big_num, x->big.big_num, (unsigned long)j);
 			else
 				mpz_add_ui(z->big.big_num, x->big.big_num, (unsigned long)(-j));
+#else  /* WITH_GMP */
+                        z->big.big_num = x->big.big_num - j;
+#endif /* WITH_GMP */
 			z = big_register_normalize(z);
 			return(z);
 		case t_bignum:
@@ -528,7 +556,11 @@ number_negate(cl_object x)
 	}
 	case t_bignum:
 		z = big_register0_get();
+#ifdef WITH_GMP
 		mpz_neg(z->big.big_num, x->big.big_num);
+#else  /* WITH_GMP */
+                z->big.big_num = -(x->big.big_num);
+#endif /* WITH_GMP */
 		return big_register_normalize(z);
 
 	case t_ratio:
@@ -703,10 +735,14 @@ integer_divide(cl_object x, cl_object y)
 			 * MOST_NEGATIVE_FIXNUM = - MOST_POSITIVE_FIXNUM.
 			 */
 			if (-MOST_NEGATIVE_FIXNUM > MOST_POSITIVE_FIXNUM) {
+#ifdef WITH_GMP
 				if (mpz_cmp_si(y->big.big_num, -fix(x)))
 					return MAKE_FIXNUM(0);
 				else
 					return MAKE_FIXNUM(-1);
+#else  /* WITH_GMP */
+                                return y->big.big_num != -fix(x) ? MAKE_FIXNUM(0) : MAKE_FIXNUM(-1);
+#endif /* WITH_GMP */
 			} else {
 				return MAKE_FIXNUM(0);
 			}
@@ -716,12 +752,20 @@ integer_divide(cl_object x, cl_object y)
 	if (tx == t_bignum) {
 		cl_object q = big_register0_get();
 		if (ty == t_bignum) {
+#ifdef WITH_GMP
 			mpz_tdiv_q(q->big.big_num, x->big.big_num, y->big.big_num);
+#else  /* WITH_GMP */
+                        q->big.big_num = x->big.big_num / y->big.big_num;
+#endif /* WITH_GMP */
 		} else if (ty == t_fixnum) {
 			long j = fix(y);
+#ifdef WITH_GMP
 			mpz_tdiv_q_ui(q->big.big_num, x->big.big_num, (unsigned long)labs(j));
 			if (j < 0)
 				mpz_neg(q->big.big_num, q->big.big_num);
+#else  /* WITH_GMP */
+                        q->big.big_num = x->big.big_num / j;
+#endif /* WITH_GMP */
 		} else {
 			FEtype_error_integer(y);
 		}
@@ -785,7 +829,28 @@ get_gcd(cl_object x, cl_object y)
 		y = bignum1(fix(y));
 	case t_bignum:
 		gcd = big_register0_get();
-		mpz_gcd(gcd->big.big_num, x->big.big_num, y->big.big_num);
+#ifdef WITH_GMP
+                mpz_gcd(gcd->big.big_num, x->big.big_num, y->big.big_num); /* FIXME!!! */
+#else  /* WITH_GMP */
+                {
+                        big_num_t i = x->big.big_num, j = y->big.big_num;
+                        while ( 1 ) {
+                                big_num_t k;
+                                if ( i<j ) {
+                                        k = i;
+                                        i = j;
+                                        j = k;
+                                }
+                                if ( j == 0 ) {
+                                        gcd->big.big_num = k;
+                                        break;
+                                }
+                                k = i % j;
+                                i = j;
+                                j = k;
+                        }
+                }
+#endif /* WITH_GMP */
 		gcd = big_register_normalize(gcd);
 		return(gcd);
 	default:

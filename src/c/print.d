@@ -596,6 +596,8 @@ write_double(double d, int e, bool shortp, cl_object stream)
 }
 
 
+#ifdef WITH_GMP
+
 struct powers {
 	cl_object number;
 	cl_index n_digits;
@@ -660,6 +662,29 @@ write_bignum(cl_object x, cl_object stream)
 	} CL_UNWIND_PROTECT_END;
 #endif
 }
+
+#else  /* WITH_GMP */
+
+static void
+write_positive_bignum(big_num_t x, cl_object stream)
+{
+	/* The maximum number of digits is achieved for base 2 and it
+	   is always < 8*sizeof(big_num_t) */
+	int base = ecl_print_base();
+	short digits[8*sizeof(big_num_t)];
+	int j = 0;
+	if (x == (big_num_t)0) {
+		digits[j++] = '0';
+	} else do {
+		digits[j++] = ecl_digit_char((cl_fixnum)(x % (big_num_t)base), base);
+		x /= base;
+	} while (x > (big_num_t)0);
+	/* while (len-- > j)
+           write_ch('0', stream); */
+	while (j-- > 0)
+		write_ch(digits[j], stream);
+}
+#endif /* WITH_GMP */
 
 static bool
 all_dots(cl_object s)
@@ -981,7 +1006,19 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		int print_base = ecl_print_base();
 		if (print_radix && print_base != 10)
 			write_base(print_base, stream);
+#ifdef WITH_GMP
 		write_bignum(x, stream);
+#else  /* WITH_GMP */
+                if ( big_zerop(x) ) {
+                        write_ch('0', stream);
+                } else if ( big_sign(x) < 0 ) {
+                        write_ch('-', stream);
+                        write_positive_bignum(-(x->big.big_num), stream);
+                } else {
+                        write_positive_bignum(x->big.big_num, stream);
+                }
+#endif /* WITH_GMP */
+
 		if (print_radix && print_base == 10)
 			write_ch('.', stream);
 		break;

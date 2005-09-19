@@ -377,15 +377,18 @@ cl_boot(int argc, char **argv)
 		cl_list(8, @'&optional', @'&rest', @'&key', @'&allow-other-keys',
 			@'&aux', @'&whole', @'&environment', @'&body'));
 
-	features = cl_list(5,
+	features = cl_list(4,
 			   make_keyword("ECL"),
 			   make_keyword("COMMON"),
-			   make_keyword("ANSI-CL"),
-			   make_keyword("COMMON-LISP"),
 			   make_keyword(ECL_ARCHITECTURE),
 			   make_keyword("FFI"));
 
 #define ADD_FEATURE(name) features = CONS(make_keyword(name),features)
+
+#ifdef WITH_GMP
+        ADD_FEATURE("COMMON-LISP");
+        ADD_FEATURE("ANSI-CL");
+#endif /* WITH_GMP */
 
 #if defined(GBC_BOEHM)
 	ADD_FEATURE("BOEHM-GC");

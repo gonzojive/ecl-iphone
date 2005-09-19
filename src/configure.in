@@ -64,7 +64,8 @@ AC_ARG_WITH(system-boehm,
 
 AC_ARG_WITH(gmp,
   AS_HELP_STRING( [--with-gmp=args],
-                  [supply arguments for configuring GMP library]))
+                  [supply arguments for configuring GMP library]
+  [], [with_gmp=""])
 
 AC_ARG_WITH(system-gmp,
   AS_HELP_STRING( [--with-system-gmp],
@@ -261,23 +262,24 @@ fi
 
 dnl ----------------------------------------------------------------------
 dnl GNU multiprecision library
-if test ${with_system_gmp} = "auto"; then
-  AC_CHECK_LIB( [gmp], [__gmpz_init],
-                [with_system_gmp=yes], [with_system_gmp=no] )
-fi
-
-if test "${with_system_gmp}" = "yes"; then
-  AC_CHECK_LIB( [gmp], [__gmpz_init],
-    [FASL_LIBS="${FASL_LIBS} -lgmp"],
-    [AC_MSG_ERROR([System gmp library requested but not found.])])
-else
-  SUBDIRS="${SUBDIRS} gmp"
-  CORE_LIBS="-leclgmp ${CORE_LIBS}"
-  if test ${enable_shared} = "no"; then
-    LIBRARIES="${LIBRARIES} ${LIBPREFIX}eclgmp.${LIBEXT}"
+if test "x${with_gmp}" != "xno"; then
+  if test ${with_system_gmp} = "auto"; then
+     AC_CHECK_LIB( [gmp], [__gmpz_init],
+                   [with_system_gmp=yes], [with_system_gmp=no] )
   fi
-fi
 
+  if test "${with_system_gmp}" = "yes"; then
+    AC_CHECK_LIB( [gmp], [__gmpz_init],
+      [FASL_LIBS="${FASL_LIBS} -lgmp"],
+      [AC_MSG_ERROR([System gmp library requested but not found.])])
+  else
+    SUBDIRS="${SUBDIRS} gmp"
+    CORE_LIBS="-leclgmp ${CORE_LIBS}"
+    if test ${enable_shared} = "no"; then
+      LIBRARIES="${LIBRARIES} ${LIBPREFIX}eclgmp.${LIBEXT}"
+    fi
+  fi
+fi  
 
 dnl =====================================================================
 dnl Checks for header files
@@ -306,6 +308,7 @@ AC_TYPE_SIZE_T                  dnl !!! DNLed
 AC_STRUCT_TM
 AC_C_VOLATILE
 AC_CHECK_TYPES([ptrdiff_t])
+AC_C_LONG_LONG
 dnl !!! end autoscan
 
 dnl !!! dnled in original
@@ -446,8 +449,13 @@ fi
 
 dnl ----------------------------------------------------------------------
 dnl Configure local GMP if needed
-if test "${with_system_gmp}" = "no" ; then
+if test "${with_gmp}" = "no" ; then
+  AC_MSG_NOTICE(Not using GMP library at all.  Are you sure?)
+  EXTRA_OBJS="${EXTRA_OBJS} big_ll.o"
+elif test "${with_system_gmp}" = "no" ; then
   AC_MSG_NOTICE(Configuring included GMP library:)
+  EXTRA_OBJS="${EXTRA_OBJS} big.o"
+  AC_DEFINE( [WITH_GMP], [1], [Use GMP for bignums] )
   test -d gmp && rm -rf gmp
   if mkdir gmp; then
    (destdir=`${PWDCMD}`; cd gmp; CC="${CC} ${PICFLAG}" \

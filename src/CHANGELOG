@@ -29,6 +29,10 @@ ECL 0.9h
  - The code walker is no longer needed and has been removed from the core.
    It will be available in the contributed packages.
 
+ - Possibility of configure --without-gmp when cross-compiling (there are no
+   true bignums then, just long long int if possible; doesn't work with native
+   compilation because compiler needs true bignums).
+
 * Visible changes:
 
  - The code for handling command line options has been redesigned. Now multiple

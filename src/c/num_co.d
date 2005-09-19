@@ -47,7 +47,11 @@ double_to_integer(double d)
 		return MAKE_FIXNUM((cl_fixnum)d);
 	else {
 		cl_object x = big_register0_get();
+#ifdef WITH_GMP
 		mpz_set_d(x->big.big_num, d);
+#else  /* WITH_GMP */
+                x->big.big_num = (big_num_t)d;
+#endif /* WITH_GMP */
 		return big_register_copy(x);
 	}
 }
@@ -59,7 +63,11 @@ float_to_integer(float d)
 		return MAKE_FIXNUM((cl_fixnum)d);
 	else {
 		cl_object x = big_register0_get();
+#ifdef WITH_GMP
 		mpz_set_d(x->big.big_num, d);
+#else  /* WITH_GMP */
+                x->big.big_num = (big_num_t)d;
+#endif /* WITH_GMP */
 		return big_register_copy(x);
 	}
 }
@@ -213,9 +221,14 @@ floor2(cl_object x, cl_object y)
 		   */
 		  cl_object q = big_register0_get();
 		  cl_object r = big_register1_get();
+#ifdef WITH_GMP
 		  cl_object j = big_register2_get();
 		  mpz_set_si(j->big.big_num, fix(x));
 		  mpz_fdiv_qr(q->big.big_num, r->big.big_num, j->big.big_num, y->big.big_num);
+#else  /* WITH_GMP */
+                  q->big.big_num = (big_num_t)fix(x) / y->big.big_num;
+                  r->big.big_num = (big_num_t)fix(x) % y->big.big_num;
+#endif /* WITH_GMP */
 		  VALUES(0) = big_register_normalize(q);
 		  VALUES(1) = big_register_normalize(r);
 		  break;
@@ -249,9 +262,14 @@ floor2(cl_object x, cl_object y)
 		case t_fixnum: {	/* BIG / FIX */
 		  cl_object q = big_register0_get();
 		  cl_object r = big_register1_get();
+#ifdef WITH_GMP
 		  cl_object j = big_register2_get();
 		  mpz_set_si(j->big.big_num, fix(y));
 		  mpz_fdiv_qr(q->big.big_num, r->big.big_num, x->big.big_num, j->big.big_num);
+#else  /* WITH_GMP */
+                  q->big.big_num = x->big.big_num / fix(y);
+                  r->big.big_num = x->big.big_num % fix(y);
+#endif /* WITH_GMP */
 		  VALUES(0) = big_register_normalize(q);
 		  VALUES(1) = big_register_normalize(r);
 		  break;
@@ -259,7 +277,12 @@ floor2(cl_object x, cl_object y)
 		case t_bignum: {	/* BIG / BIG */
 		  cl_object q = big_register0_get();
 		  cl_object r = big_register1_get();
+#ifdef WITH_GMP
 		  mpz_fdiv_qr(q->big.big_num, r->big.big_num, x->big.big_num, y->big.big_num);
+#else  /* WITH_GMP */
+                  q = x->big.big_num / y->big.big_num;
+                  r = x->big.big_num % y->big.big_num;
+#endif /* WITH_GMP */
 		  VALUES(0) = big_register_normalize(q);
 		  VALUES(1) = big_register_normalize(r);
 		  break;
@@ -392,9 +415,14 @@ ceiling2(cl_object x, cl_object y)
 		   */
 		  cl_object q = big_register0_get();
 		  cl_object r = big_register1_get();
+#ifdef WITH_GMP
 		  cl_object j = big_register2_get();
 		  mpz_set_si(j->big.big_num, fix(x));
 		  mpz_cdiv_qr(q->big.big_num, r->big.big_num, j->big.big_num, y->big.big_num);
+#else  /* WITH_GMP */
+                  q = (big_num_t)fix(x) / y->big.big_num;
+                  r = (big_num_t)fix(x) % y->big.big_num;
+#endif /* WITH_GMP */
 		  VALUES(0) = big_register_normalize(q);
 		  VALUES(1) = big_register_normalize(r);
 		  break;
@@ -428,9 +456,14 @@ ceiling2(cl_object x, cl_object y)
 		case t_fixnum: {	/* BIG / FIX */
 		  cl_object q = big_register0_get();
 		  cl_object r = big_register1_get();
+#ifdef WITH_GMP
 		  cl_object j = big_register2_get();
 		  mpz_set_si(j->big.big_num, fix(y));
 		  mpz_cdiv_qr(q->big.big_num, r->big.big_num, x->big.big_num, j->big.big_num);
+#else  /* WITH_GMP */
+                  q = x->big.big_num / fix(y);
+                  r = x->big.big_num % fix(y);
+#endif /* WITH_GMP */
 		  VALUES(0) = big_register_normalize(q);
 		  VALUES(1) = big_register_normalize(r);
 		  break;
@@ -438,7 +471,12 @@ ceiling2(cl_object x, cl_object y)
 		case t_bignum: {	/* BIG / BIG */
 		  cl_object q = big_register0_get();
 		  cl_object r = big_register1_get();
+#ifdef WITH_GMP
 		  mpz_cdiv_qr(q->big.big_num, r->big.big_num, x->big.big_num, y->big.big_num);
+#else  /* WITH_GMP */
+                  q->big.big_num = x->big.big_num / y->big.big_num;
+                  r->big.big_num = x->big.big_num % y->big.big_num;
+#endif /* WITH_GMP */
 		  VALUES(0) = big_register_normalize(q);
 		  VALUES(1) = big_register_normalize(r);
 		  break;

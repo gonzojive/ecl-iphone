@@ -25,6 +25,9 @@
 #define ECL_DYNAMIC_VV
 #endif
 
+/* Use GNU Multiple Precision library for bignums                       */
+#undef WITH_GMP
+
 /* Userland threads?							*/
 #undef ECL_THREADS
 
@@ -191,6 +194,8 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #undef HAVE_SIGPROCMASK
 /* isatty() checks whether a file is connected to a			*/
 #undef HAVE_ISATTY
+/* compiler understands long long                                       */
+#undef HAVE_LONG_LONG
 
 /* what characters are used to mark beginning of new line		*/
 #undef ECL_NEWLINE_IS_CRLF

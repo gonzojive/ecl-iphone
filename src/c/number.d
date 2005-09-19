@@ -37,9 +37,14 @@ fixint(cl_object x)
 	if (FIXNUMP(x))
 		return fix(x);
 	if (type_of(x) == t_bignum) {
+#ifdef WITH_GMP
 		if (mpz_fits_slong_p(x->big.big_num)) {
 			return mpz_get_si(x->big.big_num);
 		}
+#else  /* WITH_GMP */
+                if ( !((cl_fixnum)x->big.big_num < x->big.big_num) )
+                        return (cl_fixnum)x->big.big_num;
+#endif /* WITH_GMP */
 	}
 	FEwrong_type_argument(@'fixnum', x);
 }
@@ -52,9 +57,15 @@ fixnnint(cl_object x)
 		if (i >= 0)
 			return i;
 	} else if (type_of(x) == t_bignum) {
+#ifdef WITH_GMP
 		if (mpz_fits_ulong_p(x->big.big_num)) {
 			return mpz_get_ui(x->big.big_num);
 		}
+#else  /* WITH_GMP */
+                if ( x->big.big_num >= 0
+                     && !((cl_fixnum)x->big.big_num < x->big.big_num) )
+                        return (cl_fixnum)x->big.big_num;
+#endif /* WITH_GMP */
 	}
 	cl_error(9, @'simple-type-error', @':format-control',
 		    make_constant_string("Not a non-negative fixnum ~S"),
@@ -68,7 +79,11 @@ make_integer(cl_fixnum l)
 {
 	if (l > MOST_POSITIVE_FIXNUM || l < MOST_NEGATIVE_FIXNUM) {
 		cl_object z = cl_alloc_object(t_bignum);
+#ifdef WITH_GMP
 		mpz_init_set_si(z->big.big_num, l);
+#else  /* WITH_GMP */
+                z->big.big_num = l;
+#endif /* WITH_GMP */
 		return z;
 	}
 	return MAKE_FIXNUM(l);
@@ -79,7 +94,11 @@ make_unsigned_integer(cl_index l)
 {
 	if (l > MOST_POSITIVE_FIXNUM) {
 		cl_object z = cl_alloc_object(t_bignum);
+#ifdef WITH_GMP
 		mpz_init_set_ui(z->big.big_num, l);
+#else  /* WITH_GMP */
+                z->big.big_num = l;
+#endif /* WITH_GMP */
 		return z;
 	}
 	return MAKE_FIXNUM(l);
@@ -215,8 +234,9 @@ number_to_double(cl_object x)
 		return(big_to_double(x));
 
 	case t_ratio: {
+#ifdef WITH_GMP	
 		double output;
-		mpq_t aux;
+                mpq_t aux;
 		mpq_init(aux);
 		if (FIXNUMP(x->ratio.num)) {
 			mpz_set_si(mpq_numref(aux), fix(x->ratio.num));
@@ -231,6 +251,11 @@ number_to_double(cl_object x)
 		output = mpq_get_d(aux);
 		mpq_clear(aux);
 		return output;
+#else  /* WITH_GMP */
+                return (double)(FIXNUMP(x->ratio.num) ? fix(x->ratio.num) : x->ratio.num->big.big_num) /
+                     (double)(FIXNUMP(x->ratio.den) ? fix(x->ratio.den) : x->ratio.den->big.big_num);
+#endif /* WITH_GMP */
+                
 	}
 	case t_shortfloat:
 		return((double)(sf(x)));

@@ -92,6 +92,8 @@ struct ecl_longfloat {
 };
 #define	lf(obje)	(obje)->LF.LFVAL
 
+#ifdef WITH_GMP
+
 struct ecl_bignum {
 	HEADER;
 	mpz_t big_num;
@@ -99,6 +101,21 @@ struct ecl_bignum {
 #define big_dim		big_num->_mp_alloc
 #define big_size	big_num->_mp_size
 #define big_limbs	big_num->_mp_d
+
+#else  /* WITH_GMP */
+
+# ifdef HAVE_LONG_LONG
+     typedef long long int big_num_t;
+# else  /* HAVE_LONG_LONG */
+     typedef long int big_num_t; /* would it work? */
+# endif /* HAVE_LONG_LONG */
+
+struct ecl_bignum {
+	HEADER;
+        big_num_t big_num;
+};
+
+#endif /* WITH_GMP */
 
 struct ecl_ratio {
 	HEADER;

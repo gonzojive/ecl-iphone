@@ -31,7 +31,11 @@ ior_op(cl_fixnum i, cl_fixnum j)
 static void
 mpz_ior_op(cl_object i, cl_object j)
 {
+#ifdef WITH_GMP
 	mpz_ior(i->big.big_num, i->big.big_num, j->big.big_num);
+#else  /* WITH_GMP */
+        i->big.big_num |= j->big.big_num;
+#endif /* WITH_GMP */
 }
 
 static cl_fixnum
@@ -43,7 +47,11 @@ xor_op(cl_fixnum i, cl_fixnum j)
 static void
 mpz_xor_op(cl_object i, cl_object j)
 {
+#ifdef WITH_GMP
 	mpz_xor(i->big.big_num, i->big.big_num, j->big.big_num);
+#else  /* WITH_GMP */
+        i->big.big_num ^= j->big.big_num;
+#endif /* WITH_GMP */
 }
 
 static cl_fixnum
@@ -55,7 +63,11 @@ and_op(cl_fixnum i, cl_fixnum j)
 static void
 mpz_and_op(cl_object i, cl_object j)
 {
+#ifdef WITH_GMP
 	mpz_and(i->big.big_num, i->big.big_num, j->big.big_num);
+#else  /* WITH_GMP */
+        i->big.big_num &= j->big.big_num;
+#endif /* WITH_GMP */
 }
 
 static cl_fixnum
@@ -67,8 +79,12 @@ eqv_op(cl_fixnum i, cl_fixnum j)
 static void
 mpz_eqv_op(cl_object i, cl_object j)
 {
+#ifdef WITH_GMP
 	mpz_xor(i->big.big_num, i->big.big_num, j->big.big_num);
 	mpz_com(i->big.big_num, i->big.big_num);
+#else  /* WITH_GMP */
+        i->big.big_num = ~(i->big.big_num ^ j->big.big_num);
+#endif /* WITH_GMP */
 }
 
 static cl_fixnum
@@ -80,8 +96,12 @@ nand_op(cl_fixnum i, cl_fixnum j)
 static void
 mpz_nand_op(cl_object i, cl_object j)
 {
+#ifdef WITH_GMP
 	mpz_and(i->big.big_num, i->big.big_num, j->big.big_num);
 	mpz_com(i->big.big_num, i->big.big_num);
+#else  /* WITH_GMP */
+        i->big.big_num = ~(i->big.big_num & j->big.big_num);
+#endif /* WITH_GMP */
 }
 
 static cl_fixnum
@@ -93,8 +113,12 @@ nor_op(cl_fixnum i, cl_fixnum j)
 static void
 mpz_nor_op(cl_object i, cl_object j)
 {
+#ifdef WITH_GMP
 	mpz_ior(i->big.big_num, i->big.big_num, j->big.big_num);
 	mpz_com(i->big.big_num, i->big.big_num);
+#else  /* WITH_GMP */
+        i->big.big_num = ~(i->big.big_num | j->big.big_num);
+#endif /* WITH_GMP */
 }
 
 static cl_fixnum
@@ -106,8 +130,12 @@ andc1_op(cl_fixnum i, cl_fixnum j)
 static void
 mpz_andc1_op(cl_object i, cl_object j)
 {
+#ifdef WITH_GMP
 	mpz_com(i->big.big_num, i->big.big_num);
 	mpz_and(i->big.big_num, i->big.big_num, j->big.big_num);
+#else  /* WITH_GMP */
+        i->big.big_num = (~i->big.big_num) & (big_num_t)j;
+#endif /* WITH_GMP */
 }
 
 static cl_fixnum
@@ -121,9 +149,13 @@ static void mpz_orc1_op(cl_object, cl_object);
 static void
 mpz_andc2_op(cl_object i, cl_object j)
 {
+#ifdef WITH_GMP
 	/* (i & ~j) = ~((~i) | j) */
 	mpz_orc1_op(i, j);
 	mpz_com(i->big.big_num, i->big.big_num);
+#else  /* WITH_GMP */
+        i->big.big_num = i->big.big_num & (~j->big.big_num);
+#endif /* WITH_GMP */
 }
 
 static cl_fixnum
@@ -135,8 +167,12 @@ orc1_op(cl_fixnum i, cl_fixnum j)
 static void
 mpz_orc1_op(cl_object i, cl_object j)
 {
+#ifdef WITH_GMP
 	mpz_com(i->big.big_num, i->big.big_num);
 	mpz_ior(i->big.big_num, i->big.big_num, j->big.big_num);
+#else  /* WITH_GMP */
+        i->big.big_num = (~i->big.big_num) | j->big.big_num;
+#endif /* WITH_GMP */
 }
 
 static cl_fixnum
@@ -148,9 +184,13 @@ orc2_op(cl_fixnum i, cl_fixnum j)
 static void
 mpz_orc2_op(cl_object i, cl_object j)
 {
+#ifdef WITH_GMP
 	/* (i | ~j) = ~((~i) & j) */
 	mpz_andc1_op(i, j);
 	mpz_com(i->big.big_num, i->big.big_num);
+#else  /* WITH_GMP */
+        i->big.big_num = i->big.big_num | (~j->big.big_num);
+#endif /* WITH_GMP */
 }
 
 static cl_fixnum
@@ -162,7 +202,11 @@ b_clr_op(cl_fixnum i, cl_fixnum j)
 static void
 mpz_b_clr_op(cl_object i, cl_object j)
 {
+#ifdef WITH_GMP
 	mpz_set_si(i->big.big_num, 0);
+#else  /* WITH_GMP */
+        i->big.big_num = 0ll;
+#endif /* WITH_GMP */
 }
 
 static cl_fixnum
@@ -174,7 +218,11 @@ b_set_op(cl_fixnum i, cl_fixnum j)
 static void
 mpz_b_set_op(cl_object i, cl_object j)
 {
+#ifdef WITH_GMP
 	mpz_set_si(i->big.big_num, -1);
+#else  /* WITH_GMP */
+        i->big.big_num = -1ll;
+#endif /* WITH_GMP */
 }
 
 static cl_fixnum
@@ -197,7 +245,11 @@ b_2_op(cl_fixnum i, cl_fixnum j)
 static void
 mpz_b_2_op(cl_object i, cl_object j)
 {
+#ifdef WITH_GMP
 	mpz_set(i->big.big_num, j->big.big_num);
+#else  /* WITH_GMP */
+        i->big.big_num = j->big.big_num;
+#endif /* WITH_GMP */
 }
 
 static cl_fixnum
@@ -209,7 +261,11 @@ b_c1_op(cl_fixnum i, cl_fixnum j)
 static void
 mpz_b_c1_op(cl_object i, cl_object j)
 {
+#ifdef WITH_GMP
 	mpz_com(i->big.big_num, i->big.big_num);
+#else  /* WITH_GMP */
+        i->big.big_num = ~i->big.big_num;
+#endif /* WITH_GMP */
 }
 
 static cl_fixnum
@@ -221,7 +277,11 @@ b_c2_op(cl_fixnum i, cl_fixnum j)
 static void
 mpz_b_c2_op(cl_object i, cl_object j)
 {
+#ifdef WITH_GMP
 	mpz_com(i->big.big_num, j->big.big_num);
+#else  /* WITH_GMP */
+        i->big.big_num = ~j->big.big_num;
+#endif /* WITH_GMP */
 }
 
 typedef cl_fixnum (*bit_operator)(cl_fixnum, cl_fixnum);
@@ -371,7 +431,11 @@ ecl_boole(int op, cl_object x, cl_object y)
 		switch (type_of(y)) {
 		case t_fixnum: {
 			cl_object z = big_register1_get();
+#ifdef WITH_GMP
 			mpz_set_si(z->big.big_num, fix(y));
+#else  /* WITH_GMP */
+                        z->big.big_num = fix(y);
+#endif /* WITH_GMP */
 			(*big_log_op)(x, z);
 			big_register_free(z);
 			break;
@@ -410,6 +474,7 @@ count_bits(cl_object x)
 		break;
 	}
 	case t_bignum:
+#ifdef WITH_GMP
 		if (big_sign(x) >= 0)
 			count = mpz_popcount(x->big.big_num);
 		else {
@@ -418,6 +483,15 @@ count_bits(cl_object x)
 			count = mpz_popcount(z->big.big_num);
 			big_register_free(z);
 		}
+#else  /* WITH_GMP */
+                {
+                     big_num_t i = x->big.big_num;
+                     if ( i<0 ) 
+                          i = ~i;
+                     for ( count=0 ; i ; i >>= 1 )
+                          if ( i&1 ) count++;
+                }
+#endif /* WITH_GMP */
 		break;
 	default:
 		FEtype_error_integer(x);
@@ -454,13 +528,22 @@ ecl_ash(cl_object x, cl_fixnum w)
 			}
 			return MAKE_FIXNUM(y);
 		}
+#ifdef WITH_GMP
 		mpz_div_2exp(y->big.big_num, x->big.big_num, bits);
+#else  /* WITH_GMP */
+                y->big.big_num = x->big.big_num >> bits;
+#endif /* WITH_GMP */
 	} else {
+#ifdef WITH_GMP
 		if (FIXNUMP(x)) {
 			mpz_set_si(y->big.big_num, fix(x));
 			x = y;
 		}
 		mpz_mul_2exp(y->big.big_num, x->big.big_num, (unsigned long)w);
+#else  /* WITH_GMP */
+                y->big.big_num = FIXNUMP(x) ? fix(x) : x->big.big_num;
+                y->big.big_num <<= w;
+#endif /* WITH_GMP */
 	}
 	return(big_register_normalize(y));
 }
@@ -577,7 +660,15 @@ cl_logbitp(cl_object p, cl_object x)
 				i = ((y >> n) & 1);
 			}
 		} else {
+#ifdef WITH_GMP
 			i = mpz_tstbit(x->big.big_num, n);
+#else  /* WITH_GMP */
+                        if ( n >= 8*sizeof(big_num_t) ) {
+                                i = (x->big.big_num < 0);
+                        } else {
+                                i = (x->big.big_num >> n) & 1;
+                        }
+#endif /* WITH_GMP */
 		}
 	} else {
 		assert_type_non_negative_integer(p);
@@ -645,9 +736,17 @@ cl_integer_length(cl_object x)
 		count = ecl_fixnum_bit_length(i);
 		break;
 	case t_bignum:
-		if (mpz_sgn(x->big.big_num) < 0)
+		if (big_sign(x) < 0)
 			x = cl_lognot(x);
+#ifdef WITH_GMP
 		count = mpz_sizeinbase(x->big.big_num, 2);
+#else  /* WITH_GMP */
+                for ( i=(8*sizeof(big_num_t))-1 ; i>0 ; i-- )
+                        if ( (x->big.big_num >> i) & 1 ) {
+                                count = i;
+                                break;
+                        }
+#endif /* WITH_GMP */
 		break;
 	default:
 		FEtype_error_integer(x);
