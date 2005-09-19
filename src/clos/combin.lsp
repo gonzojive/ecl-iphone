@@ -9,244 +9,79 @@
 
 (in-package "CLOS")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; COMPILING EFFECTIVE METHODS
 ;;;
-;;; Convert an effective method form to a compiled effective method function.
-;;; The strategy is to have compiled functions around which are are templates
-;;; for effective method functions.  Then the effective method functions we
-;;; generate are closures over the particular methods in the effective method
-;;; form.  This strategy has the advantage that we don't have to call the
-;;; compiler when we combine new methods.  It also has the advantage that
-;;; same shape effective methods share the same code vector.  It is of course
-;;; predicated on the assumption that funcalling compiled closures is fast.
+;;; The following functions take care of transforming the forms
+;;; produced by the method combinations into effective methods. In
+;;; ECL effective methods are nothing but directly callable functions.
+;;; Hence, this compilation should ideally just produce new compiled
+;;; functions. However, we do not want to cons a lot of functions, and
+;;; therefore we use closures.
 ;;;
-;;; *effective-method-templates* is a list of effective-method template
-;;; entries.  Each entry is itself a list of the form:
-;;;
-;;;   (<template> <match-function> <make-code-function> <when> <count>)
-;;;
-;;; The match function is simple-effective-method-match-p.
-;;;
-;;;
-
-(defvar *effective-method-templates* ())
-
-(defun make-effective-method-function (form)
-  (if (and (listp form)
-	   (eq (first form) 'CALL-METHOD)
-	   (method-p (second form))
-	   (every #'method-p (third form)))
-      ;; The effective method is just a call to call-method.  This opens
-      ;; up a possibility of just using the method function of the method
-      ;; being called as the effective method function.
-      ;;
-      ;; But we have to be careful.  We must be sure to communicate the
-      ;; next methods to the method if it needs them.  If there are no
-      ;; next methods we must communicate that fact to prevent the leaky
-      ;; next methods bug.
-      (let ((method-function (method-function (second form))))
-	(if (method-needs-next-methods-p (second form))
-	      (let ((next-method-functions
-		     (mapcar #'method-function (third form))))
-		#'(lambda (&rest .combined-method-args.)
-		    (let ((*next-methods* next-method-functions))
-		      (apply method-function .combined-method-args.))))
-	  method-function))
-      ;; lookup or add an entry to *effective-method-templates*
-      (let (entry)
-	(dolist (e *effective-method-templates*)
-	  (let ((matchp (funcall (symbol-function (second e)) (first e) form)))
-	    (when matchp (return (setq entry e)))))
-	(unless entry
-	  ;; None of the recorded entries match.  Have to generate a new entry.
-	  (setq entry
-		(multiple-value-bind (template predicate constructor)
-		    (compile-effective-method-template-entry form)
-		  (list template predicate
-			#+ecl(coerce constructor 'function)
-			#-ecl(compile () constructor)
-			'ON-THE-FLY 0)))
-	  (add-effective-method-template-entry entry))
-	(incf (fifth entry))
-	(funcall (third entry) form))))
-
-(defun add-effective-method-template-entry (entry)
-  ;; We keep the list of entries sorted so that the entries with complex
-  ;; match functions stay at the end.  This prevents a newly defined
-  ;; complex match function from slowing down all the more common cases.
-  ;;
-  (setq *effective-method-templates*
-	(merge 'list
-	       *effective-method-templates*
-	       (list entry)
-	       #'(lambda (a b)
-		   (and (eq a 'SIMPLE-EFFECTIVE-METHOD-MATCH-P)
-			(not (eq a b))))
-	       :key #'second)))
-
-(defmacro precompile-effective-method-template
-    (effective-method &optional (when 'PRE-MADE))
-  (multiple-value-bind (template predicate constructor)
-      (compile-effective-method-template-entry effective-method)
-    `(EVAL-WHEN (LOAD)
-      (ADD-EFFECTIVE-METHOD-TEMPLATE-ENTRY
-       (LIST ',template ',predicate (FUNCTION ,constructor) ',when 0)))))
-
-
-(defun compile-effective-method-template-entry (form)
-  (values (walk-form form
-		     nil
-		     #'(lambda (f c e)
-			 (declare (ignore c e))
-			 (if (not (consp f))
-			     f
-			     (if (eq (first f) 'CALL-METHOD)
-				 (if (= (length f) 3)
-				     '(_CALL-METHOD_)
-				     (error "Wrong number of arguments to ~
-                                                call-method."))
-				 f))))
-	  'SIMPLE-EFFECTIVE-METHOD-MATCH-P
-	  (make-simple-effective-method-code-constructor form)))
-
-(defun simple-effective-method-match-p (template form)
-  (labels ((every* (fn l1 l2)
-	     ;; This version of every is slightly different. It
-	     ;; returns NIL if it reaches the end of one of the
-	     ;; lists before reaching the end of the other.
-	     (do ((t1 l1 (rest t1))
-		  (t2 l2 (rest t2)))
-		 (())
-	       (cond ((null t1) (return (null t2)))
-		     ((null t2) (return (null t1)))
-		     ((funcall fn (first t1) (first t2)))
-		     (t (return nil)))))
-	   (walk (tm fm)
-	     (cond ((eq tm fm) t)
-		   ((and (listp tm)
-			 (listp fm))
-		    (if (eq (first fm) 'CALL-METHOD)
-			(eq (first tm) '_CALL-METHOD_)
-			(every* #'walk tm fm)))
-		   ((and (stringp tm)
-			 (stringp fm))
-		    (string-equal tm fm))
-		   (t nil))))
-    (walk template form)))
-
-(defun simple-code-walker (form env walk-function)
-  (if (consp form)
-      (catch form
-	(let ((new (funcall walk-function form :eval nil)))
-	  (walker::recons
-	   new
-	   (simple-code-walker (first new) env walk-function)
-	   (simple-code-walker (rest new) env walk-function))))
-      form))
+;;; Formerly we used to keep a list of precompiled effective methods
+;;; and made a structural comparison between the current method and
+;;; the precompiled ones, so as to save memory. This only causes
+;;; improvements in declarative combinations. For standard combinations
+;;; it should be enough with a couple of different closures and hence
+;;; the structural comparison is a loss of time.
 
 ;;;
-;;; These two functions must to pass the symbols which name the functions
-;;; not the actual functions.  This is done this way because we are going
-;;; to have to compile forms which include them as constants.  Before the
-;;; symbols are actually applied, symbol function is used to get the actual
-;;; function.
-;;; 
-(defun make-simple-effective-method-code-constructor (form)
-  (make-code-constructor form))
+;;; This function produces an effective method associated to the form
+;;;	(CALL-METHOD-FUNCTION method rest-methods)
+;;;
+(defun combine-method-functions (method rest-methods)
+  (declare (si::c-local))
+  (setf method (effective-method-function method)
+	rest-methods (mapcar #'effective-method-function rest-methods))
+  #'(lambda (&rest .combined-method-args.)
+      (let ((*next-methods* rest-methods))
+	(apply method .combined-method-args.))))
 
-(defvar *combined-method-next-methods-gensyms* ())
-(defvar *combined-method-method-function-gensyms* ())
-
-(eval-when (eval load)
-  (dotimes (i 10)
-    (push (make-symbol (format nil ".METHOD-~A-NEXT-METHODS." (- 9 i)))
-	  *combined-method-next-methods-gensyms*)
-    (push (make-symbol (format nil ".METHOD-~A-FUNCTION." (- 9 i)))
-	  *combined-method-method-function-gensyms*)))
-    
-
-(defun make-code-constructor (form)
-  (let* ((method-vars ())
-	 (code-body nil)
-	 (next-method-gensyms *combined-method-next-methods-gensyms*)
-	 (method-function-gensyms *combined-method-method-function-gensyms*))
-    (flet ((convert-function (f c e)
-	     (declare (ignore e))
-	     (cond ((and (listp f)
-			 (eq c ':eval))
-		    (if (or (eq (first f) '_CALL-METHOD_)
-			    (eq (first f) 'CALL-METHOD))
-			(let*((gensym1 (or (pop method-function-gensyms)
-					   (gensym)))
-			      (gensym2 (or (pop next-method-gensyms)
-					   (gensym))))
-			  (push gensym1 method-vars)
-			  (push gensym2 method-vars)
-			  `(LET ((*NEXT-METHODS* ,gensym2))
-			     (DECLARE (SPECIAL *NEXT-METHODS*))
-			     (APPLY ,gensym1 .COMBINED-METHOD-ARGS.)))
-			f))
-		   ((method-p f)
-		    (error "Effective method body must be malformed."))
-		   (t f))))
-      (setq code-body (simple-code-walker form nil #'convert-function))
-      ;;
-      ;; This is written in a slightly screwey way because of a bug in the
-      ;; 3600 compiler.  Basically, if both of the funargs in the compiled
-      ;; up function close over method-vars the 3600 compiler loses.
-      ;; 
-      `(LAMBDA (.FORM.)
-	 (LET ((METHODS NIL) ,@method-vars)
-	   (SIMPLE-CODE-WALKER
-	    .FORM.
-	    NIL
-	    #'(lambda (f c e)
-		(declare (ignore e))
-		(if (and (eq c ':eval)
-			 (listp f)
-			 (eq (first f) 'CALL-METHOD))
-		    (progn 
-		      (push (method-function (second f)) methods)
-		      (PUSH (THIRD F) methods)
-		      (throw f f))
-		    f)
-		f))
-	   ,@(do ((mvs method-vars (cddr mvs))
-		  (setqs))
-		 ((null mvs) (nreverse setqs))
-		 (push `(SETQ ,(first mvs)
-			      (mapcar #'convert-effective-method
-				      (pop methods)))
-		       setqs)
-		 (push `(SETQ ,(second mvs) (pop methods)) setqs))
-	   #'(LAMBDA (&REST .COMBINED-METHOD-ARGS.)
-	       ,code-body))))))
-
-
-
-(defun convert-effective-method (effective-method)
-  (cond ((method-p effective-method)
-	 (method-function effective-method))
-	((and (listp effective-method)
-	      (eq (first effective-method) 'MAKE-METHOD))
-	 (make-effective-method-function
-	   (make-progn (second effective-method))))
+;;;
+;;; This is the core routine. It produces effective methods (i.e.
+;;; functions) out of the forms generated by the method combinators.
+;;; We consider the following cases:
+;;;  1) Ordinary methods. The function of the method is extracted.
+;;;  2) Functions. They map to themselves. This only happens in
+;;;     when these functions have been generated by previous calls
+;;;     to EFFECTIVE-METHOD-FUNCTION.
+;;;  3) (CALL-METHOD method rest-methods) A closure is
+;;;	generated that invokes the current method while informing
+;;;	it about the rest methods.
+;;;  4) (MAKE-METHOD form) A function is created that takes the
+;;;	list of arguments of the generic function and evaluates
+;;;	the forms in a null environment. This is the only form
+;;;	that may lead to consing of new bytecodes objects. Nested
+;;;	CALL-METHOD are handled via the global macro CALL-METHOD.
+;;;
+(defun effective-method-function (form)
+  (if (atom form)
+      (cond ((method-p form)
+	     (method-function form))
+	    ((functionp form)
+	     form)
+	    (t
+	     (error "Malformed effective method form:~%~A" form)))
+      (case (first form)
+	(CALL-METHOD
+	 (combine-method-functions (second form) (third form)))
+	(MAKE-METHOD
+	 (setq form (second form))
+	 (coerce `(lambda (&rest .combined-method-args.) ,form)
+		 'function))
 	(t
-	 (error "Effective-method form is malformed."))))
+	 (coerce `(lambda (&rest .combined-method-args.) ,form)
+		 'function)))))
+
+(defmacro call-method (method rest-methods)
+  (setq method (effective-method-function method)
+	rest-methods (mapcar #'effective-method-function rest-methods))
+  `(let ((*next-methods* ,rest-methods))
+     (apply ,method .combined-method-args.)))
 
 (defun make-method-call (method &optional next-methods)
   `(CALL-METHOD ,method ,next-methods))
-
-(defun make-progn (&rest forms)
-  (let ((progn-form nil))
-    (labels ((collect-forms (forms)
-	       (when forms
-		 (collect-forms (rest forms))
-		 (if (and (listp (first forms))
-			  (eq (caar forms) 'PROGN))
-		     (collect-forms (cdar forms))
-		     (push (first forms) progn-form)))))
-      (collect-forms forms)
-      (cons 'PROGN progn-form))))
 
 (defun error-qualifier (m qualifier)
   (declare (si::c-local))
@@ -254,6 +89,24 @@
           per method, either :BEFORE, :AFTER, or :AROUND; while ~
           a method with ~S was found."
 	 m qualifier))
+
+#+nil
+(defun standard-main-effective-method (before primary after)
+  (setf before (mapcar #'effective-method-function before)
+	after (mapcar #'effective-method-function after)
+	primary (mapcar #'effective-method-function primary))
+  #'(lambda (&rest .combined-method-args.)
+      (let ((*next-methods* nil))
+	(declare (special *next-methods*))
+	(dolist (i before)
+	  (apply i .combined-method-args.))
+	(multiple-value-prog1
+	    (progn
+	      (setf *next-methods* (rest primary))
+	      (apply (first primary) .combined-method-args.))
+	  (setf *next-methods* nil)
+	  (dolist (i after)
+	    (apply i .combined-method-args.))))))
 
 (defun standard-compute-effective-method (gf methods)
   (declare (ignore gf))
@@ -280,24 +133,23 @@
 	  after after		   ;; least-specific-first order (ANSI 7.6.6.2)
 	  primary (nreverse primary)
 	  around (nreverse around))
-    (make-effective-method-function
-     (if (and (null before)
-	      (null after))
-	 (if (null around)
-	     ;; By returning a single call-method `form' here we enable
-	     ;; an important implementation-specific optimization.
-	     `(CALL-METHOD ,(first primary) ,(rest primary))
-	     `(CALL-METHOD ,(first around) ,(append (rest around) primary)))
-	 (let ((main-effective-method
-		`(PROGN ,@(mapcar #'make-method-call before)
-		  (MULTIPLE-VALUE-PROG1
-		      (CALL-METHOD ,(first primary) ,(rest primary))
-		    ,@(mapcar #'make-method-call after)))))
-	   (if around
-	       `(CALL-METHOD ,(first around)
-		 (,@(rest around)
-		  (MAKE-METHOD ,main-effective-method)))
-	       main-effective-method))))))
+    (if (and (null before)
+	     (null after))
+	(if (null around)
+	    ;; By returning a single call-method `form' here we enable
+	    ;; an important implementation-specific optimization.
+	    (combine-method-functions (first primary) (rest primary))
+	    (combine-method-functions (first around)
+				      (append (rest around) primary)))
+	(let ((main (effective-method-function
+		     `(PROGN ,@(mapcar #'make-method-call before)
+			     (MULTIPLE-VALUE-PROG1
+				 (CALL-METHOD ,(first primary) ,(rest primary))
+			       ,@(mapcar #'make-method-call after))))))
+	  (if around
+	      (combine-method-functions (first around)
+					(append (rest around) main))
+	      main)))))
 
 ;; ----------------------------------------------------------------------
 ;; DEFINE-METHOD-COMBINATION
@@ -404,7 +256,7 @@
 			     "Method qualifiers ~S are not allowed in the method~
 			      combination ~S." .method-qualifiers. ,name)))))
 	      ,@group-after
-	      (make-effective-method-function ,@body))))
+	      (effective-method-function ,@body))))
       )))
 
 (defmacro define-method-combination (name &body body)

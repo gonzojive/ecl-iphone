@@ -7,7 +7,6 @@
   "src:clos;method.lsp"
   "src:clos;slot.lsp"
   "src:clos;combin.lsp"
-  "src:clos;precomp.lsp"
   "src:clos;boot.lsp"
   "src:clos;defclass.lsp"
   "src:clos;standard.lsp"
