@@ -15,15 +15,17 @@ THREADS_OBJ=
 THREADS_FLAGS=
 !endif
 
+MFLAGS = /MD
+
 OBJS= alloc.obj reclaim.obj allchblk.obj misc.obj mach_dep.obj os_dep.obj mark_rts.obj headers.obj mark.obj obj_map.obj blacklst.obj finalize.obj new_hblk.obj dbg_mlc.obj malloc.obj stubborn.obj dyn_load.obj typd_mlc.obj ptr_chck.obj gc_cpp.obj mallocx.obj $(THREADS_OBJ)
 
 all: gctest.exe cord\de.exe test_cpp.exe
 
 {$(srcdir)}.c{}.obj:
-	$(cc) $(cdebug) $(cflags) $(cvarsdll) -I$(srcdir)\include -DSILENT -DALL_INTERIOR_POINTERS -D__STDC__ -DGC_NOT_DLL $(THREADS_FLAGS) $< /Fo$*.obj
+	$(cc) $(MFLAGS) $(cdebug) $(cflags) $(cvars) -I$(srcdir)\include -DSILENT -DALL_INTERIOR_POINTERS -D__STDC__ -DGC_NOT_DLL $(THREADS_FLAGS) $< /Fo$*.obj
 
 .cpp.obj:
-	$(cc) /MD $(cdebug) $(cflags) $(cvarsdll) -I$(srcdir)\include -DSILENT -DALL_INTERIOR_POINTERS -DGC_NOT_DLL $(THREADS_FLAGS) $*.CPP /Fo$*.obj
+	$(cc) $(MFLAGS) $(cdebug) $(cflags) $(cvars) -I$(srcdir)\include -DSILENT -DALL_INTERIOR_POINTERS -DGC_NOT_DLL $(THREADS_FLAGS) $*.CPP /Fo$*.obj
 
 $(OBJS) tests\test.obj: $(srcdir)\include\private\gc_priv.h $(srcdir)\include\private\gc_hdrs.h $(srcdir)\include\gc.h $(srcdir)\include\private\gcconfig.h $(srcdir)\include\private\gc_locks.h $(srcdir)\include\private\gc_pmark.h $(srcdir)\include\gc_mark.h
 

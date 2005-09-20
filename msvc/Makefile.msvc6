@@ -79,7 +79,7 @@ mkinstalldirs = $(SHELL) $(top_srcdir)/gc/mkinstalldirs
 SUBDIR        = c gc gmp
 LIBRARIES     =
 LSP_LIBRARIES = cmp.fas clx.fas sockets.fas sysfun.lsp
-TARGETS       = ecl$(EXE)
+TARGETS       = ecl2$(EXE)
 DEF           = ecl.def
 
 # Additional configuration for thread support

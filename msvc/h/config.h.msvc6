@@ -25,6 +25,9 @@
 #define ECL_DYNAMIC_VV
 #endif
 
+/* Use GNU Multiple Precision library for bignums                       */ 
+#define WITH_GMP 1
+
 /* Userland threads?							*/
 /* #undef ECL_THREADS */
 
@@ -186,6 +189,10 @@ typedef unsigned int cl_hashkey;
 /* #undef HAVE_MACH_O_DYLD_H */
 /* POSIX signals							*/
 /* #undef HAVE_SIGPROCMASK */
+/* isatty() checks whether a file is connected to a                     */ 
+#define HAVE_ISATTY  1 
+/* compiler understands long long                                       */ 
+#define HAVE_LONG_LONG 1
 
 /* what characters are used to mark beginning of new line		*/
 #define ECL_NEWLINE_IS_CRLF 1

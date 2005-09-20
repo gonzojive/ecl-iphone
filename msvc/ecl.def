@@ -1369,7 +1369,7 @@ EXPORTS
 	cl_slot_value
 
 	; clos\combin.lsp
-	clos_simple_code_walker
+	;clos_simple_code_walker
 	cl_method_combination_error
 	cl_invalid_method_error
 

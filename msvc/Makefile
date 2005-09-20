@@ -52,10 +52,12 @@ TAR_DIR = %%CD%%\ecl-$(ECL_VERSION)
 #
 
 CC	= cl
-CFLAGS  = -MD -DGC_NOT_DLL -nologo
+MFLAGS  = -MD
+CFLAGS  = -DGC_NOT_DLL -nologo
 LIBS	= eclgc.lib eclgmp.lib user32.lib ws2_32.lib
-LDFLAGS	= -MD
+LDFLAGS	=
 SHARED_LDFLAGS = -LD
+GCFLAGS = nodebug=1
 RM	= del
 RMDIR   = rmdir /Q /S
 MKDIR   = mkdir
@@ -95,9 +97,11 @@ DEF           = ecl.def
 # Enable debug information
 #
 !if "$(ECL_DEBUG)" != ""
-CFLAGS = $(CFLAGS) -Zi
-LDFLAGS = $(LDFLAGS) -Zi
+CFLAGS = -Zi $(CFLAGS)
+LDFLAGS = -Zi $(LDFLAGS)
 SHARED_LDFLAGS = -LDd
+MFLAGS = -MDd
+GCFLAGS =
 !endif
 
 # Additional configuration for thread support
@@ -133,6 +137,9 @@ ECL_FEATURES = (cons :wants-clx $(ECL_FEATURES))
 
 !MESSAGE $(ECL_MODULES)
 !MESSAGE $(ECL_FEATURES)
+
+CFLAGS  = $(MFLAGS) $(CFLAGS)
+LDFLAGS = $(MFLAGS) $(LDFLAGS)
 
 # Build rules
 # 
@@ -245,7 +252,7 @@ eclmin.lib: eclgmp.lib eclgc.lib lsp/config.lsp
 	cd ..
 eclgc.lib:
 	cd gc
-	$(MAKE) nodebug=1 "ECL_THREADS = $(ECL_THREADS)" gc.lib
+	$(MAKE) $(GCFLAGS) "ECL_THREADS = $(ECL_THREADS)" "MFLAGS = $(MFLAGS)" gc.lib
 	$(CP) gc.lib ..\eclgc.lib
 	cd ..
 	for %h in (gc.h gc_local_alloc.h gc_pthread_redirects.h \
@@ -253,7 +260,7 @@ eclgc.lib:
 	    do $(CP) $(srcdir)\gc\include\%h h\%h
 eclgmp.lib:
 	cd gmp
-	$(MAKE) "MPN_TYPE = $(GMP_TYPE)"
+	$(MAKE) "MPN_TYPE = $(GMP_TYPE)" "MFLAGS = $(MFLAGS)"
 	$(CP) gmp.lib ..\eclgmp.lib
 	$(CP) gmp.h ..\h\gmp.h
 	cd ..
