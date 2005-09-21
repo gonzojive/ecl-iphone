@@ -452,16 +452,18 @@ dnl Configure local GMP if needed
 if test "${with_gmp}" = "no" ; then
   AC_MSG_NOTICE(Not using GMP library at all.  Are you sure?)
   EXTRA_OBJS="${EXTRA_OBJS} big_ll.o"
-elif test "${with_system_gmp}" = "no" ; then
-  AC_MSG_NOTICE(Configuring included GMP library:)
-  EXTRA_OBJS="${EXTRA_OBJS} big.o"
+else
   AC_DEFINE( [WITH_GMP], [1], [Use GMP for bignums] )
-  test -d gmp && rm -rf gmp
-  if mkdir gmp; then
-   (destdir=`${PWDCMD}`; cd gmp; CC="${CC} ${PICFLAG}" \
-     $srcdir/gmp/configure --disable-shared --prefix=${destdir} \
+  EXTRA_OBJS="${EXTRA_OBJS} big.o"
+  if test "${with_system_gmp}" = "no" ; then
+    AC_MSG_NOTICE(Configuring included GMP library:)
+    test -d gmp && rm -rf gmp
+    if mkdir gmp; then
+     (destdir=`${PWDCMD}`; cd gmp; CC="${CC} ${PICFLAG}" \
+       $srcdir/gmp/configure --disable-shared --prefix=${destdir} \
 	--infodir=${destdir}/doc --includedir=${destdir}/h \
         --libdir=${destdir} --build=${build_alias} --host=${host_alias} $with_gmp)
+    fi
   fi
 fi
 
