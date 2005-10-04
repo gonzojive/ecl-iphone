@@ -100,7 +100,7 @@ DEF           = ecl.def
 CFLAGS = -Zi $(CFLAGS)
 LDFLAGS = -Zi $(LDFLAGS)
 SHARED_LDFLAGS = -LDd
-MFLAGS = -MDd
+#MFLAGS = -MDd
 GCFLAGS =
 !endif
 
