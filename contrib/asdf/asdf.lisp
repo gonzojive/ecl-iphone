@@ -1109,6 +1109,7 @@ output to *verbose-out*.  Returns the shell's exit code."
 	(when system
 	  (asdf:operate 'asdf:load-op name)
 	  t))))
+  #+win32 (push '("asd" . si::load-source) si::*load-hooks*)
   (pushnew 'module-provide-asdf ext:*module-provider-functions*))
 
 (provide 'asdf)
