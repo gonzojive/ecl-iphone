@@ -1429,7 +1429,7 @@ cl_symbols[] = {
 #endif
 
 {SYS_ "ALLOCATE-FOREIGN-DATA","si_allocate_foreign_data"},
-{SYS_ "FIND-FOREIGN-VAR","si_find_foreign_symbol"},
+{SYS_ "FIND-FOREIGN-SYMBOL","si_find_foreign_symbol"},
 {SYS_ "FOREIGN-DATA",NULL},
 {SYS_ "FOREIGN-DATA-ADDRESS","si_foreign_data_address"},
 {SYS_ "FOREIGN-DATA-POINTER","si_foreign_data_pointer"},

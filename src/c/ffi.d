@@ -407,5 +407,5 @@ OUTPUT:
 	if (type_of(output) == t_foreign)
 		@(return output)
 	else
-		FEerror("FIND-FOREIGN-VAR: Could not load foreign variable ~S from modeul ~S (Error: ~S)", 3, var, module, output);
+		FEerror("FIND-FOREIGN-SYMBOL: Could not load foreign variable ~S from modeul ~S (Error: ~S)", 3, var, module, output);
 }

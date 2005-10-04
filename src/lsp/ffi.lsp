@@ -546,7 +546,7 @@
                           (and (consp ffi-type)
                                (member (first ffi-type) '(* :array)))))
 	   (inline-form (cond (module
-			       `(si::find-foreign-var ,c-name ,module ,type ,(size-of-foreign-type type)))
+			       `(si::find-foreign-symbol ,c-name ,module ,type ,(size-of-foreign-type type)))
 			      (t
 			       `(c-inline () () :object
 					  ,(format nil "ecl_make_foreign_data(@~S, ~A, &~A)"
