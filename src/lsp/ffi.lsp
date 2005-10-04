@@ -509,6 +509,9 @@
 		  0 (max 0 (1- (* nargs 3))))))
 
 (defmacro def-function (name args &key module (returning :void))
+  (cond ((and module (macro-function (find-symbol "DEF-LIB-FUNCTION" "FFI")))
+	 `(def-lib-function ,name ,args :returning ,returning :module ,module))
+	(t
   (multiple-value-bind (c-name lisp-name)
       (lisp-to-c-name name)
     (let* ((arguments (mapcar #'first args))
@@ -532,31 +535,31 @@
 	(error "FFI can only handle C functions with up to 36 arguments"))
       `(defun ,lisp-name (,@arguments)
 	 ,inline-form)
-      )))
+      )))))
 
 (defmacro def-foreign-var (name type module)
-  (declare (ignore module))
+  ;(declare (ignore module))
   (multiple-value-bind (c-name lisp-name)
       (lisp-to-c-name name)
     (let* ((ffi-type (%convert-to-ffi-type type))
            (can-deref (or (foreign-elt-type-p ffi-type)
                           (and (consp ffi-type)
-                               (member (first ffi-type) '(* :array))))))
+                               (member (first ffi-type) '(* :array)))))
+	   (inline-form (cond (module
+			       `(si::find-foreign-var ,c-name ,module ,type ,(size-of-foreign-type type)))
+			      (t
+			       `(c-inline () () :object
+					  ,(format nil "ecl_make_foreign_data(@~S, ~A, &~A)"
+						   type (size-of-foreign-type type) c-name)
+					  :side-effects t :one-liner t)))))
       (if can-deref
           `(progn
-             (put-sysprop ',lisp-name 'ffi-foreign-var
-                          (c-inline () () :object
-                                    ,(format nil "ecl_make_foreign_data(@~S, ~A, &~A)"
-                                             type (size-of-foreign-type type) c-name)
-                                    :side-effects t :one-liner t))
+             (put-sysprop ',lisp-name 'ffi-foreign-var ,inline-form)
              (eval-when (:compile-toplevel :load-toplevel :execute)
                (define-symbol-macro ,lisp-name
                  (ffi:deref-pointer (get-sysprop ',lisp-name 'ffi-foreign-var) ',type)
                  )))
-          `(defvar ,lisp-name (c-inline () () :object
-                             ,(format nil "ecl_make_foreign_data(@~S, ~A, &~A)"
-                                      type (size-of-foreign-type type) c-name)
-                             :side-effects t :one-liner t)))
+          `(defvar ,lisp-name ,inline-form))
       )))
 
 (defun find-foreign-library (names directories &key drive-letters types)

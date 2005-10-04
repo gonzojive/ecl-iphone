@@ -361,3 +361,51 @@ si_foreign_data_recast(cl_object f, cl_object size, cl_object tag)
 	f->foreign.tag = tag;
 	@(return f)
 }
+
+cl_object
+ecl_library_get_or_open(cl_object filename)
+{
+	cl_object libraries = cl_core.libraries;
+	int i;
+
+	for (i=0; i<libraries->vector.fillp; i++)
+		if (cl_stringE(2, libraries->vector.self.t[i]->cblock.name, filename) != Cnil)
+			return libraries->vector.self.t[i];
+	
+	return ecl_library_open(filename);
+}
+
+cl_object
+si_find_foreign_symbol(cl_object var, cl_object module, cl_object type, cl_object size)
+{
+	cl_object block;
+	cl_object output;
+	void *sym;
+
+#ifdef ECL_THREADS
+	mp_get_lock(1, symbol_value(@'mp::+load-compile-lock+'));
+	CL_UNWIND_PROTECT_BEGIN {
+#endif
+	block = ecl_library_get_or_open(module);
+	if (block->cblock.handle == NULL) {
+		output = ecl_library_error(block);
+		goto OUTPUT;
+	}
+	sym = ecl_library_symbol(block, ecl_string_pointer_safe(var));
+	if (sym == NULL) {
+		output = ecl_library_error(block);
+		goto OUTPUT;
+	}
+	output = ecl_make_foreign_data(type, object_to_fixnum(size), sym);
+OUTPUT:
+#ifdef ECL_THREADS
+	(void)0; /* MSVC complains about missing ';' before '}' */
+	} CL_UNWIND_PROTECT_EXIT {
+	mp_giveup_lock(symbol_value(@'mp::+load-compile-lock+'));
+	} CL_UNWIND_PROTECT_END;
+#endif
+	if (type_of(output) == t_foreign)
+		@(return output)
+	else
+		FEerror("FIND-FOREIGN-VAR: Could not load foreign variable ~S from modeul ~S (Error: ~S)", 3, var, module, output);
+}

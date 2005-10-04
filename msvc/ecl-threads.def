@@ -261,6 +261,7 @@ EXPORTS
 	; ffi.c
 
 	si_allocate_foreign_data
+	si_find_foreign_symbol
 	si_foreign_data_address
 	si_foreign_data_pointer
 	si_foreign_data_ref
