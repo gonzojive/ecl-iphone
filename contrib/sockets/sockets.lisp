@@ -47,6 +47,7 @@
  "#define MSG_WAITALL 0")
 #+:wsock
 (clines
+ #+(and :msvc (not :threads))
  "#include <winsock2.h>"
  "typedef unsigned int uint32_t;"
  #-:mingw32
@@ -511,8 +512,9 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
 	(socket-error "bind"))))
 
 (defmethod socket-accept ((socket inet-socket))
-  (multiple-value-bind (fd vector)
-      (c-inline ((socket-file-descriptor socket)) (:int) (values :int :object)
+  (let ((sfd (socket-file-descriptor socket)))
+    (multiple-value-bind (fd vector)
+      (c-inline (sfd) (:int) (values :int :object)
 "{
         struct sockaddr_in sockaddr;
         int addr_len = sizeof(struct sockaddr_in);
@@ -533,16 +535,16 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
 		@(return 1) = vector;
 	}
 }")
-    (cond
-      ((= fd -1)
-       (socket-error "accept"))
-      (t
-       (values
-	(make-instance (class-of socket)
-		       :type (socket-type socket)
-		       :protocol (socket-protocol socket)
-		       :descriptor fd)
-	vector)))))
+      (cond
+	((= fd -1)
+	 (socket-error "accept"))
+	(t
+	 (values
+	   (make-instance (class-of socket)
+			  :type (socket-type socket)
+			  :protocol (socket-protocol socket)
+			  :descriptor fd)
+	   vector))))))
 
 (defmethod socket-connect ((socket inet-socket) &rest address)
   (let ((ip (first address))
