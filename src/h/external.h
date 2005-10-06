@@ -503,6 +503,7 @@ extern cl_object si_foreign_data_recast(cl_object f, cl_object size, cl_object t
 extern cl_object si_free_foreign_data(cl_object x);
 extern cl_object si_null_pointer_p(cl_object f);
 extern cl_object si_size_of_foreign_elt_type(cl_object tag);
+extern cl_object si_load_foreign_module(cl_object module);
 extern cl_object si_find_foreign_symbol(cl_object var, cl_object module, cl_object type, cl_object size);
 
 extern cl_object ecl_make_foreign_data(cl_object tag, cl_index size, void *data);

@@ -1440,6 +1440,7 @@ cl_symbols[] = {
 {SYS_ "FOREIGN-DATA-SET-ELT","si_foreign_data_set_elt"},
 {SYS_ "FOREIGN-DATA-TAG","si_foreign_data_tag"},
 {SYS_ "FREE-FOREIGN-DATA","si_free_foreign_data"},
+{SYS_ "LOAD-FOREIGN-MODULE", "si_load_foreign_module"},
 {SYS_ "NULL-POINTER-P","si_null_pointer_p"},
 {SYS_ "SIZE-OF-FOREIGN-ELT-TYPE","si_size_of_foreign_elt_type"},
 {KEY_ "BYTE",NULL},

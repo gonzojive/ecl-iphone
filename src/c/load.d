@@ -36,6 +36,7 @@
 #  include <windows.h>
 #  include <windef.h>
 #  include <winbase.h>
+#  include <tlhelp32.h>
 #  define INIT_PREFIX "init_"
 # endif
 #endif
@@ -93,20 +94,41 @@ ecl_library_open(cl_object filename) {
 
 void *
 ecl_library_symbol(cl_object block, const char *symbol) {
+	if (block == @':default') {
+#if defined(mingw32) || defined(_MSC_VER)
+		HANDLE hndSnap = NULL;
+		HANDLE hnd = NULL;
+		hndSnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, GetCurrentProcessId());
+		if (hndSnap != INVALID_HANDLE_VALUE)
+		{
+			MODULEENTRY32 me32;
+			me32.dwSize = sizeof(MODULEENTRY32);
+			if (Module32First(hndSnap, &me32))
+			{
+				do
+					hnd = GetProcAddress(me32.hModule, symbol);
+				while (hnd == NULL && Module32Next(hndSnap, &me32));
+			}
+			CloseHandle(hndSnap);
+		}
+		return hnd;
+#endif
+	} else {
 #ifdef HAVE_DLFCN_H
-	return dlsym(block->cblock.handle, symbol);
+		return dlsym(block->cblock.handle, symbol);
 #endif
 #if defined(mingw32) || defined(_MSC_VER)
-	HMODULE h = (HMODULE)(block->cblock.handle);
-	return GetProcAddress(h, symbol);
+		HMODULE h = (HMODULE)(block->cblock.handle);
+		return GetProcAddress(h, symbol);
 #endif
 #ifdef HAVE_MACH_O_DYLD_H
-	NSSymbol sym;
-	sym = NSLookupSymbolInModule((NSModule)(block->cblock.handle),
-				     symbol);
-	if (sym == 0) return 0;
-	return (void*)NSAddressOfSymbol(sym);
+		NSSymbol sym;
+		sym = NSLookupSymbolInModule((NSModule)(block->cblock.handle),
+					     symbol);
+		if (sym == 0) return 0;
+		return (void*)NSAddressOfSymbol(sym);
 #endif
+	}
 }
 
 cl_object

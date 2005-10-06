@@ -363,16 +363,40 @@ si_foreign_data_recast(cl_object f, cl_object size, cl_object tag)
 }
 
 cl_object
-ecl_library_get_or_open(cl_object filename)
+si_load_foreign_module(cl_object filename)
 {
-	cl_object libraries = cl_core.libraries;
+	cl_object libraries;
+	cl_object output;
 	int i;
 
+#ifdef ECL_THREADS
+	mp_get_lock(1, symbol_value(@'mp::+load-compile-lock+'));
+	CL_UNWIND_PROTECT_BEGIN {
+#endif
+	libraries = cl_core.libraries;
 	for (i=0; i<libraries->vector.fillp; i++)
 		if (cl_stringE(2, libraries->vector.self.t[i]->cblock.name, filename) != Cnil)
-			return libraries->vector.self.t[i];
-	
-	return ecl_library_open(filename);
+		{
+			output = libraries->vector.self.t[i];
+			goto OUTPUT;
+		}
+	output = ecl_library_open(filename);
+	if (output->cblock.handle == NULL)
+	{
+		output = ecl_library_error(output);
+		ecl_library_close(output);
+	}
+OUTPUT:
+#ifdef ECL_THREADS
+	(void)0; /* MSVC complains about missing ';' before '}' */
+	} CL_UNWIND_PROTECT_EXIT {
+	mp_giveup_lock(symbol_value(@'mp::+load-compile-lock+'));
+	} CL_UNWIND_PROTECT_END;
+#endif
+	if (type_of(output) == t_codeblock)
+		@(return output)
+	else
+		FEerror("LOAD-FOREIGN-MODULE: Could not load foreign module ~S (Error: ~S)", 2, filename, output);
 }
 
 cl_object
@@ -382,30 +406,17 @@ si_find_foreign_symbol(cl_object var, cl_object module, cl_object type, cl_objec
 	cl_object output;
 	void *sym;
 
-#ifdef ECL_THREADS
-	mp_get_lock(1, symbol_value(@'mp::+load-compile-lock+'));
-	CL_UNWIND_PROTECT_BEGIN {
-#endif
-	block = ecl_library_get_or_open(module);
-	if (block->cblock.handle == NULL) {
-		output = ecl_library_error(block);
-		goto OUTPUT;
-	}
+	block = (module == @':default' ? module : si_load_foreign_module(module));
 	sym = ecl_library_symbol(block, ecl_string_pointer_safe(var));
 	if (sym == NULL) {
-		output = ecl_library_error(block);
+		if (block != @':default')
+			output = ecl_library_error(block);
 		goto OUTPUT;
 	}
 	output = ecl_make_foreign_data(type, object_to_fixnum(size), sym);
 OUTPUT:
-#ifdef ECL_THREADS
-	(void)0; /* MSVC complains about missing ';' before '}' */
-	} CL_UNWIND_PROTECT_EXIT {
-	mp_giveup_lock(symbol_value(@'mp::+load-compile-lock+'));
-	} CL_UNWIND_PROTECT_END;
-#endif
 	if (type_of(output) == t_foreign)
 		@(return output)
 	else
-		FEerror("FIND-FOREIGN-SYMBOL: Could not load foreign variable ~S from modeul ~S (Error: ~S)", 3, var, module, output);
+		FEerror("FIND-FOREIGN-SYMBOL: Could not load foreign symbol ~S from module ~S (Error: ~S)", 3, var, module, output);
 }

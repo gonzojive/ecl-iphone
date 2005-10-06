@@ -271,6 +271,7 @@ EXPORTS
 	si_foreign_data_tag
 	si_foreign_data_recast
 	si_free_foreign_data
+	si_load_foreign_module
 	si_null_pointer_p
 	si_size_of_foreign_elt_type
 
