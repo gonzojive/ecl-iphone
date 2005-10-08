@@ -52,6 +52,8 @@ ecl_init_env(struct cl_env_struct *env)
 
 	env->lex_env = Cnil;
 
+	env->c_env = NULL;
+
 	env->token = cl_alloc_adjustable_string(LISP_PAGESIZE);
 
 	env->stack = NULL;

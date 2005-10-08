@@ -49,15 +49,6 @@
 #define FLAG_IGNORE		0
 #define FLAG_USEFUL		(FLAG_PUSH | FLAG_VALUES | FLAG_REG0)
 
-struct cl_compiler_env {
-	cl_object variables;
-	cl_object macros;
-	cl_fixnum lexical_level;
-	cl_object constants;
-	bool coalesce;
-	bool stepping;
-};
-
 #define ENV cl_env.c_env
 
 /********************* PRIVATE ********************/
@@ -2097,6 +2088,8 @@ compile_body(cl_object body, int flags) {
 	@(return declarations body documentation specials)
 @)
 
+static size_t si_process_lambda_ctr = 0;
+
 cl_object
 si_process_lambda(cl_object lambda)
 {
@@ -2112,6 +2105,7 @@ si_process_lambda(cl_object lambda)
 	documentation = VALUES(2);
 	specials = VALUES(3);
 
+	si_process_lambda_ctr++;
 
 	VALUES(0) = si_process_lambda_list(lambda_list, @'function');
 	VALUES(NVALUES++) = documentation;

@@ -47,26 +47,24 @@ char *
 ecl_string_pointer_safe(cl_object f)
 {
 	cl_index l;
-
-	if (type_of(f) != t_string)
-		FEwrong_type_argument(@'string', f);
-#ifdef GBC_BOEHM
-	/* This function is only used in CMPFFI.LSP as to convert lisp objects
-	 * to a null terminated string. This code is safe with the
-	 * Boehm-Weiser garbage collector because the pointer is stored in the
-	 * stack as part of the argument list and cannot be lost. We still have to
-	 * figure out what to do with the older garbage collector.
-	 */
-	if (f->string.hasfillp && ((l = f->string.fillp) < f->string.dim)) {
-		unsigned char *s = cl_alloc_atomic(l + 1);
-		memcpy(s, f->string.self, l);
-		s[l] = 0;
-		return s;
+	unsigned char *s;
+	assert_type_string(f);
+	s = f->string.self;
+	if (f->string.hasfillp && s[f->string.fillp] != 0) {
+		FEerror("Cannot coerce a string with fill pointer to (char *)", 0);
 	}
-#else
-# error "ecl_string_pointer_safe does not work with the old garbage collector"
-#endif
-	return f->string.self;
+	return (char *)s;
+}
+
+cl_object
+ecl_null_terminated_string(cl_object f)
+{
+	assert_type_string(f);
+	if (f->string.hasfillp && f->string.self[f->string.fillp] != 0) {
+		return cl_copy_seq(f);
+	} else {
+		return f;
+	}
 }
 
 cl_object
@@ -407,7 +405,8 @@ si_find_foreign_symbol(cl_object var, cl_object module, cl_object type, cl_objec
 	void *sym;
 
 	block = (module == @':default' ? module : si_load_foreign_module(module));
-	sym = ecl_library_symbol(block, ecl_string_pointer_safe(var));
+	var = ecl_null_terminated_string(var);
+	sym = ecl_library_symbol(block, var->string.self);
 	if (sym == NULL) {
 		if (block != @':default')
 			output = ecl_library_error(block);

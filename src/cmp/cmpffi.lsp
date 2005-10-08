@@ -37,6 +37,7 @@
     :void (nil "void")
     :pointer-void (foreign-data "void*")
     :cstring (string "char*")
+    :char* (string "char*")
     :short ((integer #.si:c-short-min #.si:c-short-max) "short")
     :unsigned-short ((integer 0 #.si:c-short-max) "unsigned short")
     ))
@@ -223,6 +224,8 @@
 	   (otherwise
 	    (coercion-error))))
 	((:cstring)
+	 (coercion error))
+	((:char*)
 	 (case loc-rep-type
 	   ((:object)
 	    (wt "ecl_string_pointer_safe(" loc ")"))
@@ -241,12 +244,27 @@
 (defun c1c-inline (args)
   ;; We are on the safe side by assuming that the form has side effects
   (destructuring-bind (arguments arg-types output-type c-expression
+				 &rest rest
 				 &key (side-effects t) one-liner
 				 &aux output-rep-type)
       args
     (unless (= (length arguments) (length arg-types))
       (cmperr "In a C-INLINE form the number of declare arguments and the number of supplied ones do not match:~%~S"
 	      `(C-INLINE ,@args)))
+    ;; We cannot handle :cstrings as input arguments. :cstrings are
+    ;; null-terminated strings, but not all of our lisp strings will
+    ;; be null terminated. In particular, those with a fill pointer
+    ;; will not.
+    (let ((ndx (position :cstring arguments)))
+      (when ndx
+	(let* ((var (gensym))
+	       (value (elt ndx arguments)))
+	  (setf (elt ndx arguments) var
+		(elt ndx arg-types) :char*)
+	  (return-from c1c-inline
+	    `(with-ctring (,var ,value)
+	      (c1c-inline ,arguments ,arg-types ,output-type ,c-expression
+	       ,@rest))))))
     ;; Find out the output types of the inline form. The syntax is rather relax
     ;; 	output-type = lisp-type | c-type | (values {lisp-type | c-type}*)
     (flet ((produce-type-pair (type)

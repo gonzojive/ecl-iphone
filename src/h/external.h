@@ -510,6 +510,7 @@ extern cl_object ecl_make_foreign_data(cl_object tag, cl_index size, void *data)
 extern cl_object ecl_allocate_foreign_data(cl_object tag, cl_index size);
 extern void *ecl_foreign_data_pointer_safe(cl_object f);
 extern char *ecl_string_pointer_safe(cl_object f);
+extern cl_object ecl_null_terminated_string(cl_object s);
 
 /* file.c */
 

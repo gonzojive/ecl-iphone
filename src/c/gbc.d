@@ -162,8 +162,8 @@ BEGIN:
 		mark_object(x->symbol.hpack);
 		mark_object(x->symbol.name);
 		mark_object(x->symbol.plist);
-		mark_object(SYM_FUN(x));
-		mark_next(SYM_VAL(x));
+		mark_object(x->symbol.gfdef);
+		mark_next(x->symbol.value);
 		break;
 
 	case t_package:
@@ -350,6 +350,7 @@ BEGIN:
 	case t_process:
 /* Already marked by malloc: x->process.env
  */
+		mark_object(x->process.name);
 		mark_object(x->process.interrupt);
 		mark_object(x->process.function);
 		mark_cl_env(x->process.env);
@@ -361,7 +362,8 @@ BEGIN:
 #endif /* THREADS */
 #ifdef CLOS
 	case t_instance:
-		mark_object(CLASS_OF(x));
+		mark_object(x->instance.clas);
+		mark_object(x->instance.sig);
 		p = x->instance.slots;
 		i = x->instance.length;
 		goto MARK_DATA;
@@ -432,7 +434,8 @@ mark_cl_env(struct cl_env_struct *env)
 	int i;
 	cl_object where;
 	bds_ptr bdp;
-	frame_ptr frp;
+	ecl_frame_ptr frp;
+	struct ihs_frame *ihs;
 
 	mark_contblock(env, sizeof(*env));
 
@@ -441,19 +444,25 @@ mark_cl_env(struct cl_env_struct *env)
 	mark_contblock(env->stack, env->stack_size * sizeof(cl_object));
 	mark_stack_conservative((cl_ptr)env->stack, (cl_ptr)env->stack_top);
 
-	if (bdp = env->bds_org) {
+	if ((bdp = env->bds_org)) {
 		mark_contblock(bdp, env->bds_size * sizeof(*bdp));
 		for (;  bdp <= env->bds_top;  bdp++) {
 			mark_object(bdp->symbol);
 			mark_object(bdp->value);
 		}
 	}
+	mark_object(env->bindings_hash);
 
-	if (frp = env->frs_org) {
+	if ((frp = env->frs_org)) {
 		mark_contblock(frp, env->frs_size * sizeof(*frp));
 		for (;  frp <= env->frs_top;  frp++) {
 			mark_object(frp->frs_val);
 		}
+	}
+
+	for (ihs = env->ihs_top; ihs; ihs = ihs->next) {
+		mark_object(ihs->function);
+		mark_object(ihs->lex_env);
 	}
 
 	for (i=0; i<env->nvalues; i++)
@@ -461,9 +470,11 @@ mark_cl_env(struct cl_env_struct *env)
 
 	mark_object(env->token);
 
-/*	mark_object(env->c_env->variables);
-	mark_object(env->c_env->macros);
-	mark_object(env->c_env->constants); */
+	if (env->c_env) {
+		mark_object(env->c_env->variables);
+		mark_object(env->c_env->macros);
+		mark_object(env->c_env->constants);
+	}
 
 	mark_object(env->fmt_aux_stream);
 
@@ -491,6 +502,10 @@ mark_phase(void)
 {
 	int i;
 
+	/* save registers on the stack */
+	jmp_buf volatile registers;
+	ecl_setjmp(registers);
+
 	/* mark registered symbols & keywords */
 	for (i=0; i<cl_num_symbols_in_core; i++) {
 		cl_object s = (cl_object)(cl_symbols + i);
@@ -501,8 +516,13 @@ mark_phase(void)
 		mark_object(s);
 	}
 
+	/* We mark everything, but we do not want to get the loaded
+	 * libraries to be marked unless they are referenced somewhere
+	 * else (function definition. etc) */
+	cl_core.libraries->vector.elttype = aet_fix;
 	mark_stack_conservative((cl_ptr)&cl_core.packages,
-				(cl_ptr)(&cl_core.system_properties + 1));
+				(cl_ptr)(&cl_core.libraries + 1));
+	cl_core.libraries->vector.elttype = aet_object;
 
 	/* mark roots */
 	for (i = 0; i < gc_roots;  i++)
@@ -571,12 +591,23 @@ sweep_phase(void)
 				break;
 #endif
 			case t_stream:
+#if defined(ECL_WSOCK)
+				if (x->stream.mode == smm_input_wsock
+				    || x->stream.mode == smm_output_wsock
+				    || x->stream.mode == smm_io_wsock) {
+					closesocket((int)x->stream.file);
+				} else
+#endif
 				if (x->stream.file != NULL)
 					fclose(x->stream.file);
 				x->stream.file = NULL;
 #ifdef ECL_THREADS
 			case t_lock:
+#if defined(_MSC_VER) || defined(mingw32)
+				CloseHandle(x->lock.mutex);
+#else
 				pthread_mutex_destroy(&x->lock.mutex);
+#endif
 				break;
 #endif
 			default:;

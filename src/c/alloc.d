@@ -271,6 +271,7 @@ ONCE_MORE:
 	  obj->symbol.gfdef = OBJNULL;
 	  obj->symbol.value = OBJNULL;
 	  obj->symbol.name = OBJNULL;
+	  obj->symbol.hpack = OBJNULL;
 	  break;
 	case t_package:
 	  obj->pack.name = OBJNULL;
@@ -291,6 +292,7 @@ ONCE_MORE:
 	  obj->hash.data = NULL;
 	  break;
 	case t_array:
+	  obj->array.dims = NULL;
 	  obj->array.displaced = Cnil;
 	  obj->array.elttype = (short)aet_object;
 	  obj->array.self.t = NULL;
@@ -358,8 +360,11 @@ ONCE_MORE:
 */
 #ifdef ECL_THREADS
 	case t_process:
-	  obj->process.env = OBJNULL;
-	  obj->process.thread = OBJNULL;
+	  obj->process.name = OBJNULL;
+	  obj->process.function = OBJNULL;
+	  obj->process.args = OBJNULL;
+	  obj->process.env = NULL;
+	  obj->process.interrupt = OBJNULL;
 	  break;
 	case t_lock:
 	  obj->lock.mutex = OBJNULL;
@@ -367,7 +372,9 @@ ONCE_MORE:
 #endif
 #ifdef CLOS
 	case t_instance:
+	  obj->instance.length = 0;
 	  CLASS_OF(obj) = OBJNULL;
+	  obj->instance.sig = Cnil;
 	  obj->instance.isgf = 0;
 	  obj->instance.slots = NULL;
 	  break;
@@ -582,7 +589,10 @@ cl_alloc_align(cl_index size, cl_index align)
 	void *output;
 	start_critical_section();
 	align--;
-	output = (void*)(((cl_index)cl_alloc(size + align) + align - 1) & ~align)
+	if (align)
+	  output = (void*)(((cl_index)cl_alloc(size + align) + align - 1) & ~align);
+	else
+	  output = cl_alloc(size);
 	end_critical_section();
 	return output;
 }
@@ -698,7 +708,7 @@ init_alloc(void)
 	init_tm(t_foreign, "LFOREIGN", sizeof(struct ecl_foreign), 1);
 #ifdef ECL_THREADS
 	init_tm(t_process, "tPROCESS", sizeof(struct ecl_process), 2);
-	init_tm(t_process, "tLOCK", sizeof(struct ecl_lock), 2);
+	init_tm(t_lock, "tLOCK", sizeof(struct ecl_lock), 2);
 #endif /* THREADS */
 
 	ncb = 0;

@@ -22,6 +22,12 @@ cl_array_dimensions(cl_narg narg, cl_object array, ...)
 	return funcall(2, @'ARRAY-DIMENSIONS', array);
 }
 
+extern cl_object
+cl_vector_push(cl_object elt, cl_object vector)
+{
+	return funcall(2, @'VECTOR-PUSH', vector, elt);
+}
+
 static cl_object si_simple_toplevel ()
 {
 	cl_object sentence;

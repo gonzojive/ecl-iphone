@@ -73,22 +73,7 @@ ecl_library_open(cl_object filename) {
 	/* INV: We can modify "libraries" in a multithread
 	   environment because we have already taken the
 	   +load-compile-lock+ */
-	if (libraries->vector.fillp == libraries->vector.dim) {
-		cl_object nvector = cl_alloc_object(t_vector);
-		nvector->vector = libraries->vector;
-		if (libraries->vector.dim == 0)
-		    libraries->vector.dim = 16;
-		else
-		    libraries->vector.dim *= 2;
-		libraries->vector.self.t =
-			cl_alloc_atomic(libraries->vector.dim *
-					sizeof(cl_object));
-		memcpy(libraries->vector.self.t,
-		       nvector->vector.self.t,
-		       nvector->vector.fillp * sizeof(cl_object));
-	}
-	libraries->vector.self.t[libraries->vector.fillp++]
-		= block;
+	cl_vector_push(block, libraries);
 	return block;
 }
 

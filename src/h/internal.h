@@ -52,6 +52,17 @@ extern void init_CLOS(cl_object);
 
 extern cl_object ecl_alloc_bytecodes(cl_index data_size, cl_index code_size);
 
+/* compiler.d */
+
+struct cl_compiler_env {
+	cl_object variables;
+	cl_object macros;
+	cl_fixnum lexical_level;
+	cl_object constants;
+	bool coalesce;
+	bool stepping;
+};
+
 /* interpreter.d */
 
 #define cl_stack_ref(n) cl_env.stack[n]
