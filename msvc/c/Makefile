@@ -58,7 +58,7 @@ OBJS	= main.obj symbol.obj package.obj list.obj\
 	time.obj unixint.obj\
 	mapfun.obj multival.obj hash.obj format.obj pathname.obj\
 	structure.obj load.obj unixfsys.obj unixsys.obj \
-	ffi.obj alloc_2.obj tcp.obj $(THREADS_OBJ)
+	ffi.obj alloc_2.obj tcp.obj $(THREADS_OBJ) ffi_x86.obj
 
 all:	$(DPP) external.h ..\eclmin.lib ..\cinit.obj
 
@@ -66,6 +66,10 @@ all:	$(DPP) external.h ..\eclmin.lib ..\cinit.obj
 
 {$(srcdir:\=/)}.d{}.c:
 	$(DPP) $< $@
+
+{$(srcdir:\=/)/arch}.d{}.c:
+	$(DPP) $< $@
+
 #.d.c:
 #	$(DPP) $< $@
 .c.obj:

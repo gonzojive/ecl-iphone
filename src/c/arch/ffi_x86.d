@@ -54,6 +54,19 @@ ecl_fficall_push_arg(union ecl_ffi_values *data, enum ecl_ffi_tag type)
 void
 ecl_fficall_execute(void *f_ptr, struct ecl_fficall *fficall, enum ecl_ffi_tag return_type)
 {
+#ifdef _MSC_VER
+	int bufsize = fficall->buffer_size;
+	char* buf = fficall->buffer;
+
+	__asm
+	{
+		sub	esp,bufsize
+		mov	esi,buf
+		mov	edi,esp
+		mov	ecx,bufsize
+		rep	movsb
+	}
+#else
 	register char *sp asm("esp");
 	char *p1, *p2;
 	int i;
@@ -61,6 +74,7 @@ ecl_fficall_execute(void *f_ptr, struct ecl_fficall *fficall, enum ecl_ffi_tag r
 	for (p1 = sp, p2 = fficall->buffer, i = fficall->buffer_size; i; i--) {
 		*(p1++) = *(p2++);
 	}
+#endif
 	if (return_type <= ECL_FFI_UNSIGNED_LONG) {
 		fficall->output.i = ((int (*)())f_ptr)();
 	} else if (return_type == ECL_FFI_POINTER_VOID) {
@@ -76,5 +90,9 @@ ecl_fficall_execute(void *f_ptr, struct ecl_fficall *fficall, enum ecl_ffi_tag r
 	} else {
 		((void (*)())f_ptr)();
 	}
+#ifdef _MSC_VER
+	__asm add esp,bufsize
+#else
 	sp += fficall->buffer_size;
+#endif
 }
