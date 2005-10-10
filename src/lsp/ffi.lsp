@@ -517,9 +517,9 @@
     (let* ((return-type (ffi::%convert-to-return-type returning))
 	   (return-required (not (eq return-type :void)))
 	   (argtypes (mapcar #'(lambda (a) (ffi::%convert-to-arg-type (second a))) args)))
-      `(let ((c-fun (find-foreign-symbol ,c-name ,module :pointer-void 0)))
+      `(let ((c-fun (si::find-foreign-symbol ,c-name ,module :pointer-void 0)))
 	(defun ,lisp-name ,(mapcar #'first args)
-	  (call-cfun c-fun ',return-type ',argtypes (list ,@(mapcar #'first args))))))))
+	  (si::call-cfun c-fun ',return-type ',argtypes (list ,@(mapcar #'first args))))))))
 
 (defmacro def-function (name args &key module (returning :void))
   #+DFFI
