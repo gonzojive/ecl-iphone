@@ -224,7 +224,7 @@
 	   (otherwise
 	    (coercion-error))))
 	((:cstring)
-	 (coercion error))
+	 (coercion-error))
 	((:char*)
 	 (case loc-rep-type
 	   ((:object)
@@ -232,7 +232,7 @@
 	   ((:pointer-void)
 	    (wt "(char *)(" loc ")"))
 	   (otherwise
-	    (coercion error))))
+	    (coercion-error))))
 	(t
 	 (coercion-error))))))
 
