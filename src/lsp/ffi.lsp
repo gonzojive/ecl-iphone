@@ -508,10 +508,24 @@
 	  (subseq "#0,#1,#2,#3,#4,#5,#6,#7,#8,#9,#a,#b,#c,#d,#e,#f,#g,#h,#i,#j,#k,#l,#m,#n,#o,#p,#q,#r,#s,#t,#u,#v,#w,#x,#y,#z"
 		  0 (max 0 (1- (* nargs 3))))))
 
+;;; FIXME! We should turn this into a closure generator that produces no code.
+#+DFFI
+(defmacro def-lib-function (name args &key returning module)
+  (multiple-value-bind (c-name lisp-name) (if (consp name)
+					    (values-list name)
+					    (values (string name) name))
+    (let* ((return-type (ffi::%convert-to-return-type returning))
+	   (return-required (not (eq return-type :void)))
+	   (argtypes (mapcar #'(lambda (a) (ffi::%convert-to-arg-type (second a))) args)))
+      `(let ((c-fun (find-foreign-symbol ,c-name ,module :pointer-void 0)))
+	(defun ,lisp-name ,(mapcar #'first args)
+	  (call-cfun c-fun ',return-type ',argtypes (list ,@(mapcar #'first args))))))))
+
 (defmacro def-function (name args &key module (returning :void))
-  (cond ((and module (macro-function (find-symbol "DEF-LIB-FUNCTION" "FFI")))
-	 `(def-lib-function ,name ,args :returning ,returning :module ,module))
-	(t
+  #+DFFI
+  (when module
+    (return-from def-function
+      `(def-lib-function ,name ,args :returning ,returning :module ,module)))
   (multiple-value-bind (c-name lisp-name)
       (lisp-to-c-name name)
     (let* ((arguments (mapcar #'first args))
@@ -535,7 +549,7 @@
 	(error "FFI can only handle C functions with up to 36 arguments"))
       `(defun ,lisp-name (,@arguments)
 	 ,inline-form)
-      )))))
+      )))
 
 (defmacro def-foreign-var (name type module)
   ;(declare (ignore module))
@@ -628,9 +642,10 @@
       `(eval-when (:compile-toplevel)
         (setf ,csl (nconc ,csl (copy-list ',args)))))))
 
-(eval-when (:load-toplevel)
-  (defmacro c-inline (&rest args)
-    '(error "The special form c-inline cannot be used in the interpreter.")))
+(eval-when (:load-toplevel :execute)
+  (defmacro c-inline (args arg-types ret-type &rest others)
+    `(error "The special form c-inline cannot be used in the interpreter: ~A"
+      (list (list ,@args) ',arg-types ',ret-type ,@others))))
 
 (defmacro definline (fun arg-types type code)
   `(eval-when (:compile-toplevel :load-toplevel :execute)

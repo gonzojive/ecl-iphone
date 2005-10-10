@@ -6795,6 +6795,28 @@ rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
 
 
+echo "$as_me:$LINENO: checking whether we can dynamically build calls to C functions" >&5
+echo $ECHO_N "checking whether we can dynamically build calls to C functions... $ECHO_C" >&6
+case "${host_cpu}" in
+   i686 |i586 | pentium* | athlon* )
+	EXTRA_OBJS="${EXTRA_OBJS} ffi_x86.o"
+	dynamic_ffi=yes
+	;;
+   *)
+	dynamic_ffi=no
+	;;
+esac
+echo "$as_me:$LINENO: result: ${dynamic_ffi}" >&5
+echo "${ECHO_T}${dynamic_ffi}" >&6
+if test "$dynamic_ffi" = "yes" ; then
+
+cat >>confdefs.h <<\_ACEOF
+#define ECL_DYNAMIC_FFI 1
+_ACEOF
+
+fi
+
+
 
   echo "$as_me:$LINENO: checking whether stack growns downwards" >&5
 echo $ECHO_N "checking whether stack growns downwards... $ECHO_C" >&6

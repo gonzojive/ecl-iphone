@@ -497,3 +497,25 @@ AC_MSG_RESULT([${CFLAGS}])
 AC_MSG_CHECKING([Linker flags])
 AC_MSG_RESULT([${LDFLAGS}])
 ])
+
+dnl
+dnl ------------------------------------------------------------
+dnl Do we have a non-portable implementation of calls to foreign
+dnl functions?
+dnl
+AC_DEFUN([ECL_FFI],[
+AC_MSG_CHECKING([whether we can dynamically build calls to C functions])
+case "${host_cpu}" in
+   i686 |i586 | pentium* | athlon* )
+	EXTRA_OBJS="${EXTRA_OBJS} ffi_x86.o"
+	dynamic_ffi=yes
+	;;
+   *)
+	dynamic_ffi=no
+	;;
+esac
+AC_MSG_RESULT([${dynamic_ffi}])
+if test "$dynamic_ffi" = "yes" ; then
+  AC_DEFINE(ECL_DYNAMIC_FFI, 1, [we can build calls to foreign functions])
+fi
+])

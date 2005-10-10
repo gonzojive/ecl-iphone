@@ -149,6 +149,10 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 /* Bytecodes and arguments are 8 and 16 bits large, respectively	*/
 #undef ECL_SMALL_BYTECODES
 
+/* We have non-portable implementation of FFI calls			*/
+#undef ECL_DYNAMIC_FFI
+
+
 /*
  * SYSTEM FEATURES:
  */

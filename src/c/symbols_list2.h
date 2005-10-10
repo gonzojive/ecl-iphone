@@ -1552,6 +1552,8 @@ cl_symbols[] = {
 
 {SYS_ "*CODE-WALKER*",NULL},
 
+{SYS_ "CALL-CFUN","si_call_cfun"},
+
 /* Tag for end of list */
 {NULL,NULL}};
 

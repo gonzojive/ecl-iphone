@@ -14,6 +14,43 @@
 
 #include <string.h>
 #include "ecl.h"
+#include "internal.h"
+
+static const cl_object ecl_foreign_type_table[] = {
+	@':char',
+	@':unsigned-char',
+	@':byte',
+	@':unsigned-byte',
+	@':short',
+	@':unsigned-short',
+	@':int',
+	@':unsigned-int',
+	@':long',
+	@':unsigned-long',
+	@':pointer-void',
+	@':cstring',
+	@':object',
+	@':float',
+	@':double',
+	@':void'};
+
+static unsigned int ecl_foreign_type_size[] = {
+	sizeof(char),
+	sizeof(unsigned char),
+	sizeof(int8_t),
+	sizeof(uint8_t),
+	sizeof(short),
+	sizeof(unsigned short),
+	sizeof(int),
+	sizeof(unsigned int),
+	sizeof(long),
+	sizeof(unsigned long),
+	sizeof(void *),
+	sizeof(char *),
+	sizeof(cl_object),
+	sizeof(float),
+	sizeof(double),
+	0};
 
 cl_object
 ecl_make_foreign_data(cl_object tag, cl_index size, void *data)
@@ -170,176 +207,148 @@ si_foreign_data_set(cl_object f, cl_object andx, cl_object value)
 	@(return value)
 }
 
-cl_object
-si_foreign_data_ref_elt(cl_object f, cl_object andx, cl_object tag)
+enum ecl_ffi_tag
+ecl_foreign_type_code(cl_object type)
 {
-	cl_object output;
-	cl_index ndx = fixnnint(andx);
-	cl_index limit = f->foreign.size;
-	void *p;
-
-	if (type_of(f) != t_foreign) {
-		FEwrong_type_argument(@'si::foreign-data', f);
+	int i;
+	for (i = 0; i <= ECL_FFI_VOID; i++) {
+		if (type == ecl_foreign_type_table[i])
+			return (enum ecl_ffi_tag)i;
 	}
-	if (ndx >= limit) {
-	ERROR:	FEerror("Out of bounds reference into foreign data type ~A.", 1, f);
-	}
-	p = (void*)(f->foreign.data + ndx);
-	if (tag == @':byte') {
-		if (ndx + sizeof(int8_t) > limit) goto ERROR;
-		output = MAKE_FIXNUM(*(int8_t *)p);
-	} else if (tag == @':unsigned-byte') {
-		if (ndx + sizeof(uint8_t) > limit) goto ERROR;
-		output = MAKE_FIXNUM(*(uint8_t *)p);
-	} else if (tag == @':char') {
-		if (ndx + sizeof(char) > limit) goto ERROR;
-		output = CODE_CHAR(*(char *)p);
-	} else if (tag == @':unsigned-char') {
-		if (ndx + sizeof(unsigned char) > limit) goto ERROR;
-		output = CODE_CHAR(*(unsigned char *)p);
-	} else if (tag == @':short') {
-		if (ndx + sizeof(short) > limit) goto ERROR;
-		output = MAKE_FIXNUM(*(short *)p);
-	} else if (tag == @':unsigned-short') {
-		if (ndx + sizeof(unsigned short) > limit) goto ERROR;
-		output = MAKE_FIXNUM(*(unsigned short *)p);
-	} else if (tag == @':int') {
-		if (ndx + sizeof(int) > limit) goto ERROR;
-		output = make_integer(*(int *)p);
-	} else if (tag == @':unsigned-int') {
-		if (ndx + sizeof(unsigned int) > limit) goto ERROR;
-		output = make_unsigned_integer(*(unsigned int *)p);
-	} else if (tag == @':long') {
-		if (ndx + sizeof(long) > limit) goto ERROR;
-		output = make_integer(*(long *)p);
-	} else if (tag == @':unsigned-long') {
-		if (ndx + sizeof(unsigned long) > limit) goto ERROR;
-		output = make_unsigned_integer(*(unsigned long *)p);
-	} else if (tag == @':pointer-void') {
-		if (ndx + sizeof(void *) > limit) goto ERROR;
-		output = ecl_make_foreign_data(@':pointer-void', 0, *(void **)p);
-	} else if (tag == @':cstring') {
-		if (ndx + sizeof(char *) > limit) goto ERROR;
-		output = *(char **)p ? make_simple_string(*(char **)p) : Cnil;
-	} else if (tag == @':object') {
-		if (ndx + sizeof(cl_object) > limit) goto ERROR;
-		output = *(cl_object *)p;
-	} else if (tag == @':float') {
-		if (ndx + sizeof(float) > limit) goto ERROR;
-		output = make_shortfloat(*(float *)p);
-	} else if (tag == @':double') {
-		if (ndx + sizeof(double) > limit) goto ERROR;
-		output = make_longfloat(*(double *)p);
-	} else {
-		FEerror("~A does not denote a foreign type.", 1, tag);
-	}
-	@(return output)
+	FEerror("~A does not denote an elementary foreign type.", 1, type);
+	return ECL_FFI_VOID;
 }
 
 cl_object
-si_foreign_data_set_elt(cl_object f, cl_object andx, cl_object tag, cl_object value)
+ecl_foreign_data_ref_elt(void *p, enum ecl_ffi_tag tag)
+{
+	switch (tag) {
+	case ECL_FFI_CHAR:
+		return CODE_CHAR(*(char *)p);
+	case ECL_FFI_UNSIGNED_CHAR:
+		return CODE_CHAR(*(unsigned char *)p);
+	case ECL_FFI_BYTE:
+		return MAKE_FIXNUM(*(int8_t *)p);
+	case ECL_FFI_UNSIGNED_BYTE:
+		return MAKE_FIXNUM(*(uint8_t *)p);
+	case ECL_FFI_SHORT:
+		return MAKE_FIXNUM(*(short *)p);
+	case ECL_FFI_UNSIGNED_SHORT:
+		return MAKE_FIXNUM(*(unsigned short *)p);
+	case ECL_FFI_INT:
+		return make_integer(*(int *)p);
+	case ECL_FFI_UNSIGNED_INT:
+		return make_unsigned_integer(*(unsigned int *)p);
+	case ECL_FFI_LONG:
+		return make_integer(*(long *)p);
+	case ECL_FFI_UNSIGNED_LONG:
+		return make_unsigned_integer(*(unsigned long *)p);
+	case ECL_FFI_POINTER_VOID:
+		return ecl_make_foreign_data(@':pointer-void', 0, *(void **)p);
+	case ECL_FFI_CSTRING:
+		return *(char **)p ? make_simple_string(*(char **)p) : Cnil;
+	case ECL_FFI_OBJECT:
+		return *(cl_object *)p;
+	case ECL_FFI_FLOAT:
+		return make_shortfloat(*(float *)p);
+	case ECL_FFI_DOUBLE:
+		return make_longfloat(*(double *)p);
+	case ECL_FFI_VOID:
+		return Cnil;
+	}
+}
+
+void
+ecl_foreign_data_set_elt(void *p, enum ecl_ffi_tag tag, cl_object value)
+{
+	switch (tag) {
+	case ECL_FFI_CHAR:
+		*(char *)p = char_code(value);
+		break;
+	case ECL_FFI_UNSIGNED_CHAR:
+		*(unsigned char*)p = char_code(value);
+		break;
+	case ECL_FFI_BYTE:
+		*(int8_t *)p = fixint(value);
+		break;
+	case ECL_FFI_UNSIGNED_BYTE:
+		*(uint8_t *)p = fixnnint(value);
+		break;
+	case ECL_FFI_SHORT:
+		*(short *)p = fixint(value);
+		break;
+	case ECL_FFI_UNSIGNED_SHORT:
+		*(unsigned short *)p = fixnnint(value);
+		break;
+	case ECL_FFI_INT:
+		*(int *)p = fixint(value);
+		break;
+	case ECL_FFI_UNSIGNED_INT:
+		*(unsigned int *)p = fixnnint(value);
+		break;
+	case ECL_FFI_LONG:
+		*(long *)p = fixint(value);
+		break;
+	case ECL_FFI_UNSIGNED_LONG:
+		*(unsigned long *)p = fixnnint(value);
+		break;
+	case ECL_FFI_POINTER_VOID:
+		*(void **)p = ecl_foreign_data_pointer_safe(value);
+		break;
+	case ECL_FFI_CSTRING:
+		*(char **)p = value == Cnil ? NULL : value->string.self;
+		break;
+	case ECL_FFI_OBJECT:
+		*(cl_object *)p = value;
+		break;
+	case ECL_FFI_FLOAT:
+		*(float *)p = object_to_float(value);
+		break;
+	case ECL_FFI_DOUBLE:
+		*(double *)p = object_to_double(value);
+		break;
+	case ECL_FFI_VOID:
+		break;
+	}
+}
+
+cl_object
+si_foreign_data_ref_elt(cl_object f, cl_object andx, cl_object type)
+{
+	cl_index ndx = fixnnint(andx);
+	cl_index limit = f->foreign.size;
+	enum ecl_ffi_tag tag = ecl_foreign_type_code(type);
+	if (ndx >= limit || (ndx + ecl_foreign_type_size[tag] > limit)) {
+		FEerror("Out of bounds reference into foreign data type ~A.", 1, f);
+	}
+	if (type_of(f) != t_foreign) {
+		FEwrong_type_argument(@'si::foreign-data', f);
+	}
+	@(return ecl_foreign_data_ref_elt((void*)(f->foreign.data + ndx), tag))
+}
+
+cl_object
+si_foreign_data_set_elt(cl_object f, cl_object andx, cl_object type, cl_object value)
 {
 	cl_index ndx = fixnnint(andx);
 	cl_index limit = f->foreign.size;
 	void *p;
-
+	enum ecl_ffi_tag tag = ecl_foreign_type_code(type);
+	if (ndx >= limit || ndx + ecl_foreign_type_size[tag] > limit) {
+		FEerror("Out of bounds reference into foreign data type ~A.", 1, f);
+	}
 	if (type_of(f) != t_foreign) {
 		FEwrong_type_argument(@'si::foreign-data', f);
 	}
-	if (ndx >= limit) {
-	ERROR:	FEerror("Out of bounds reference into foreign data type ~A.", 1, f);
-	}
-	p = (void*)(f->foreign.data + ndx);
-	if (tag == @':byte') {
-		if (ndx + sizeof(int8_t) > limit) goto ERROR;
-		*(int8_t *)p = fixint(value);
-	} else if (tag == @':unsigned-byte') {
-		if (ndx + sizeof(uint8_t) > limit) goto ERROR;
-		*(uint8_t *)p = fixnnint(value);
-	} else if (tag == @':char') {
-		if (ndx + sizeof(char) > limit) goto ERROR;
-		*(char *)p = char_code(value);
-	} else if (tag == @':unsigned-char') {
-		if (ndx + sizeof(unsigned char) > limit) goto ERROR;
-		*(unsigned char*)p = char_code(value);
-	} else if (tag == @':short') {
-		if (ndx + sizeof(short) > limit) goto ERROR;
-		*(short *)p = fixint(value);
-	} else if (tag == @':unsigned-short') {
-		if (ndx + sizeof(unsigned short) > limit) goto ERROR;
-		*(unsigned short *)p = fixnnint(value);
-	} else if (tag == @':int') {
-		if (ndx + sizeof(int) > limit) goto ERROR;
-		*(int *)p = fixint(value);
-	} else if (tag == @':unsigned-int') {
-		if (ndx + sizeof(unsigned int) > limit) goto ERROR;
-		*(unsigned int *)p = fixnnint(value);
-	} else if (tag == @':long') {
-		if (ndx + sizeof(long) > limit) goto ERROR;
-		*(long *)p = fixint(value);
-	} else if (tag == @':unsigned-long') {
-		if (ndx + sizeof(unsigned long) > limit) goto ERROR;
-		*(unsigned long *)p = fixnnint(value);
-	} else if (tag == @':pointer-void') {
-		if (ndx + sizeof(void *) > limit) goto ERROR;
-		*(void **)p = ecl_foreign_data_pointer_safe(value);
-	} else if (tag == @':cstring') {
-		if (ndx + sizeof(void *) > limit) goto ERROR;
-		*(char **)p = value == Cnil ? NULL : value->string.self;
-	} else if (tag == @':object') {
-		if (ndx + sizeof(cl_object) > limit) goto ERROR;
-		*(cl_object *)p = value;
-	} else if (tag == @':float') {
-		if (ndx + sizeof(float) > limit) goto ERROR;
-		*(float *)p = object_to_float(value);
-	} else if (tag == @':double') {
-		if (ndx + sizeof(double) > limit) goto ERROR;
-		*(double *)p = object_to_double(value);
-	} else {
-		FEerror("~A does not denote a foreign type.", 1, tag);
-	}
+	ecl_foreign_data_set_elt((void*)(f->foreign.data + ndx), tag, value);
 	@(return value)
 }
 
 cl_object
-si_size_of_foreign_elt_type(cl_object tag)
+si_size_of_foreign_elt_type(cl_object type)
 {
-	cl_fixnum size;
-
-	if (tag == @':byte') {
-		size = sizeof(int8_t);
-	} else if (tag == @':unsigned-byte') {
-		size = sizeof(uint8_t);
-	} else if (tag == @':char') {
-		size = sizeof(char);
-	} else if (tag == @':unsigned-char') {
-		size = sizeof(unsigned char);
-	} else if (tag == @':short') {
-		size = sizeof(short);
-	} else if (tag == @':unsigned-short') {
-		size = sizeof(unsigned short);
-	} else if (tag == @':int') {
-		size = sizeof(int);
-	} else if (tag == @':unsigned-int') {
-		size = sizeof(unsigned int);
-	} else if (tag == @':long') {
-		size = sizeof(long);
-	} else if (tag == @':unsigned-long') {
-		size = sizeof(unsigned long);
-	} else if (tag == @':pointer-void') {
-		size = sizeof(void *);
-        } else if (tag == @':cstring') {
-		size = sizeof(char*);
-	} else if (tag == @':object') {
-		size = sizeof(cl_object);
-	} else if (tag == @':float') {
-		size = sizeof(float);
-	} else if (tag == @':double') {
-		size = sizeof(double);
-	} else {
-		FEerror("~A does not denote a foreign type.", 1, tag);
-	}
-	@(return MAKE_FIXNUM(size))
+	enum ecl_ffi_tag tag = ecl_foreign_type_code(type);
+	@(return MAKE_FIXNUM(ecl_foreign_type_size[tag]))
 }
 
 cl_object
@@ -419,3 +428,95 @@ OUTPUT:
 	else
 		FEerror("FIND-FOREIGN-SYMBOL: Could not load foreign symbol ~S from module ~S (Error: ~S)", 3, var, module, output);
 }
+
+#ifdef ECL_DYNAMIC_FFI
+
+static void
+ecl_fficall_overflow()
+{
+	FEerror("Stack overflow on SI:CALL-CFUN", 0);
+}
+
+void
+ecl_fficall_prepare(cl_object return_type, cl_object arg_type)
+{
+	struct ecl_fficall *fficall = cl_env.fficall;
+	fficall->buffer_sp = fficall->buffer;
+	fficall->buffer_size = 0;
+	fficall->cstring = Cnil;
+}
+
+void
+ecl_fficall_push_bytes(void *data, size_t bytes)
+{
+	struct ecl_fficall *fficall = cl_env.fficall;
+	fficall->buffer_size += bytes;
+	if (fficall->buffer_size >= ECL_FFICALL_LIMIT)
+		ecl_fficall_overflow();
+	memcpy(fficall->buffer_sp, (char*)data, bytes);
+	fficall->buffer_sp += bytes;
+}
+
+void
+ecl_fficall_push_int(int data)
+{
+	ecl_fficall_push_bytes(&data, sizeof(int));
+}
+
+void
+ecl_fficall_align(int data)
+{
+	struct ecl_fficall *fficall = cl_env.fficall;
+	if (data == 1)
+		return;
+	else {
+		size_t sp = fficall->buffer_sp - fficall->buffer;
+		size_t mask = data - 1;
+		size_t new_sp = (sp + mask) & ~mask;
+		if (new_sp >= ECL_FFICALL_LIMIT)
+			ecl_fficall_overflow();
+		fficall->buffer_sp = fficall->buffer + new_sp;
+		fficall->buffer_size = new_sp;
+	}
+}
+
+cl_object
+si_call_cfun(cl_object fun, cl_object return_type, cl_object arg_types,
+	     cl_object args)
+{
+	struct ecl_fficall *fficall = cl_env.fficall;
+	void *cfun = ecl_foreign_data_pointer_safe(fun);
+	cl_object object;
+	enum ecl_ffi_tag return_type_tag = ecl_foreign_type_code(return_type);
+
+	ecl_fficall_prepare(return_type, arg_types);
+	while (CONSP(arg_types)) {
+		enum ecl_ffi_tag type;
+		if (!CONSP(args)) {
+			FEerror("In SI:CALL-CFUN, mismatch between argument types and argument list: ~A vs ~A", 0);
+		}
+		type = ecl_foreign_type_code(CAR(arg_types));
+		if (type == ECL_FFI_CSTRING) {
+			object = ecl_null_terminated_string(CAR(args));
+			if (CAR(args) != object)
+				fficall->cstring =
+					CONS(object, fficall->cstring);
+		} else {
+			object = CAR(args);
+		}
+		ecl_foreign_data_set_elt(&fficall->output, type, object);
+		ecl_fficall_push_arg(&fficall->output, type);
+		arg_types = CDR(arg_types);
+		args = CDR(args);
+	}
+	ecl_fficall_execute(cfun, fficall, return_type_tag);
+	object = ecl_foreign_data_ref_elt(&fficall->output, return_type_tag);
+
+	fficall->buffer_size = 0;
+	fficall->buffer_sp = fficall->buffer;
+	fficall->cstring = Cnil;
+
+	@(return object)
+}
+
+#endif /* ECL_DYNAMIC_FFI */

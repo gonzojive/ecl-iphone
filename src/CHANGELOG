@@ -51,6 +51,15 @@ ECL 0.9h
    with a user-defined foreign type that is an alias for a primitive type
    (M. Goffioul)
 
+ - C-INLINE forms which contain :CSTRING as argument are now automatically
+   rewritten in terms of WITH-CSTRING. This way, the null terminated strings
+   that are generated at run time will not be garbage collected.
+
+ - There is a primitive implementation of run-time automatic generation of
+   interfaces to C functions. This allows us to call functions in shared
+   libraries without need of the compiler. The current implementation only
+   works on the intel architecture with GCC, but should be easily extended.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

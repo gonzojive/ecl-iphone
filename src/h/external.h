@@ -100,6 +100,9 @@ struct cl_env_struct {
 	cl_object own_process;
 #endif
 	int interrupt_pending;
+
+	/* foreign function interface */
+	void *fficall;
 };
 
 #ifndef __GNUC__
@@ -505,6 +508,7 @@ extern cl_object si_null_pointer_p(cl_object f);
 extern cl_object si_size_of_foreign_elt_type(cl_object tag);
 extern cl_object si_load_foreign_module(cl_object module);
 extern cl_object si_find_foreign_symbol(cl_object var, cl_object module, cl_object type, cl_object size);
+extern cl_object si_call_cfun(cl_object fun, cl_object return_type, cl_object arg_types, cl_object args);
 
 extern cl_object ecl_make_foreign_data(cl_object tag, cl_index size, void *data);
 extern cl_object ecl_allocate_foreign_data(cl_object tag, cl_index size);

@@ -79,6 +79,10 @@ ecl_init_env(struct cl_env_struct *env)
 # endif /* THREADS */
 #endif /* !GBC_BOEHM */
 
+#ifdef ECL_DYNAMIC_FFI
+	env->fficall = malloc(sizeof(struct ecl_fficall));
+#endif
+
 	init_stacks(&i);
 }
 
@@ -433,6 +437,9 @@ cl_boot(int argc, char **argv)
 #endif
 #ifdef ECL_CLOS_STREAMS
 	ADD_FEATURE("CLOS-STREAMS");
+#endif
+#ifdef ECL_DYNAMIC_FFI
+	ADD_FEATURE("DFFI");
 #endif
 	/* This is assumed in all systems */
 	ADD_FEATURE("IEEE-FLOATING-POINT");

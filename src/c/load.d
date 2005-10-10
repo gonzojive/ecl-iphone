@@ -98,6 +98,9 @@ ecl_library_symbol(cl_object block, const char *symbol) {
 		}
 		return hnd;
 #endif
+#ifdef HAVE_DLFCN_H
+		return dlsym(0, symbol);
+#endif
 	} else {
 #ifdef HAVE_DLFCN_H
 		return dlsym(block->cblock.handle, symbol);

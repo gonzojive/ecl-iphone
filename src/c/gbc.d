@@ -495,6 +495,11 @@ mark_cl_env(struct cl_env_struct *env)
 	mark_stack_conservative((cl_ptr)env->cs_org, (cl_ptr)(&where));
 # endif /* DOWN_STACK */
 #endif /* THREADS */
+
+#ifdef ECL_FFICALL
+	mark_contblock(env->fficall, sizeof(struct ecl_fficall));
+	mark_object(((struct ecl_fficall*)env->fficall)->cstring);
+#endif
 }
 
 static void

@@ -255,16 +255,17 @@
     ;; null-terminated strings, but not all of our lisp strings will
     ;; be null terminated. In particular, those with a fill pointer
     ;; will not.
-    (let ((ndx (position :cstring arguments)))
+    (let ((ndx (position :cstring arg-types)))
       (when ndx
 	(let* ((var (gensym))
-	       (value (elt ndx arguments)))
-	  (setf (elt ndx arguments) var
-		(elt ndx arg-types) :char*)
+	       (value (elt arguments ndx)))
+	  (setf (elt arguments ndx) var
+		(elt arg-types ndx) :char*)
 	  (return-from c1c-inline
-	    `(with-ctring (,var ,value)
-	      (c1c-inline ,arguments ,arg-types ,output-type ,c-expression
-	       ,@rest))))))
+	    (c1expr
+	     `(ffi::with-ctring (,var ,value)
+	       (c1c-inline ,arguments ,arg-types ,output-type ,c-expression
+		,@rest)))))))
     ;; Find out the output types of the inline form. The syntax is rather relax
     ;; 	output-type = lisp-type | c-type | (values {lisp-type | c-type}*)
     (flet ((produce-type-pair (type)
