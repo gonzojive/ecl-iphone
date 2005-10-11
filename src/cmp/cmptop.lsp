@@ -193,9 +193,17 @@
       (wt-nl1 "static cl_object " c-name "(cl_narg narg, ...)"
 	      "{TRAMPOLINK(narg," lisp-name ",&" var-name ",Cblock);}")))
 
+  ;;; Callbacks
+  (when *callbacks*
+    (wt-h "#include <internal.h>")
+    (dolist (x *callbacks*)
+      (apply #'t3-defcallback x)))
+
   (wt-h "#ifdef __cplusplus")
   (wt-h "}")
   (wt-h "#endif")
+
+
   (wt-nl top-output-string))
 
 (defun c1eval-when (args)

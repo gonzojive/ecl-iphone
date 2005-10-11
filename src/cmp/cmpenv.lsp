@@ -17,6 +17,7 @@
 ;;; included in the compiled code.  The default value is OFF.
 
 (defun init-env ()
+  (setq *callbacks* nil)
   (setq *max-temp* 0)
   (setq *temp* 0)
   (setq *next-cmacro* 0)

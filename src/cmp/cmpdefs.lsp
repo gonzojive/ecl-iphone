@@ -276,6 +276,12 @@ The default value is NIL.")
 ;;;
 (defvar *blocks* nil)
 
+;;; --cmpcbk.lsp--
+;;;
+;;; List of callbacks to be generated
+;;;
+(defvar *callbacks* nil)
+
 ;;; --cmpcall.lsp--
 ;;;
 ;;; Whether to use linking calls.

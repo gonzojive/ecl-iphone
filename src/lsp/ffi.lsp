@@ -12,6 +12,7 @@
 (defpackage "FFI"
   (:nicknames "UFFI")
   (:export "CLINES" "DEFENTRY" "DEFLA" "DEFCBODY" "DEFINLINE" "C-INLINE"
+	   "DEFCALLBACK" "CALLBACK"
 
 	   "VOID" "OBJECT" "CHAR*" "INT" "DOUBLE"
 
@@ -628,6 +629,19 @@
     (error "~&LOAD-FOREIGN-LIBRARY: ~A is not a constant expression. This is currently not supported." filename))
   `(eval-when (:compile-toplevel)
      (do-load-foreign-library ,filename)))
+
+;;;----------------------------------------------------------------------
+;;; CALLBACKS
+;;;
+
+(defmacro defcallback (&rest args)
+  (error "DEFCALLBACK cannot be used in interpreted forms"))
+
+(defun callback (name)
+  (let ((x (si::get-sysprop name :callback)))
+    (unless x
+      (error "There is no callback with name ~a" name))
+    x))
 
 ;;;----------------------------------------------------------------------
 ;;; COMPATIBILITY WITH OLDER FFI
