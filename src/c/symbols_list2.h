@@ -1553,7 +1553,7 @@ cl_symbols[] = {
 {SYS_ "*CODE-WALKER*",NULL},
 
 {SYS_ "CALL-CFUN","si_call_cfun"},
-{KEY_ ":CALLBACK",NULL},
+{KEY_ "CALLBACK",NULL},
 
 /* Tag for end of list */
 {NULL,NULL}};
