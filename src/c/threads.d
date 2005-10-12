@@ -114,10 +114,9 @@ thread_entry_point(cl_object process)
 }
 
 @(defun mp::make-process (&key name ((:initial-bindings initial_bindings) Ct))
-@
 	cl_object process;
 	cl_object hash;
-
+@
 	process = cl_alloc_object(t_process);
 	process->process.active = 0;
 	process->process.name = name;
@@ -257,6 +256,7 @@ mp_process_run_function(cl_narg narg, cl_object name, cl_object function, ...)
 
 @(defun mp::make-lock (&key name)
 	pthread_mutexattr_t attr;
+	cl_object output;
 @
 	pthread_mutexattr_init(&attr);
 #if defined(__APPLE__)
@@ -264,7 +264,7 @@ mp_process_run_function(cl_narg narg, cl_object name, cl_object function, ...)
 #else
 	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP);
 #endif
-	cl_object output = cl_alloc_object(t_lock);
+	output = cl_alloc_object(t_lock);
 	output->lock.name = name;
 	pthread_mutex_init(&output->lock.mutex, &attr);
 	pthread_mutexattr_destroy(&attr);
