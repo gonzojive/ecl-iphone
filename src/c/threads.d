@@ -113,6 +113,26 @@ thread_entry_point(cl_object process)
 	return NULL;
 }
 
+void
+ecl_import_current_thread(cl_object name, cl_object bindings)
+{
+	cl_object process = mp_make_process(4, @':name', name, @':initial-bindings', bindings);
+#ifdef WITH___THREAD
+	cl_env_p = process->process.env;
+#else
+	if (pthread_setspecific(cl_env_key, process->process.env))
+		FElibc_error("pthread_setcspecific() failed.", 0);
+#endif
+	ecl_init_env(&cl_env);
+        init_big_registers();
+}
+
+void
+ecl_release_current_thread(void)
+{
+	thread_cleanup(&cl_env);
+}
+
 @(defun mp::make-process (&key name ((:initial-bindings initial_bindings) Ct))
 	cl_object process;
 	cl_object hash;

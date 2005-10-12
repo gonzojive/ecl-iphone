@@ -37,6 +37,13 @@ ECL 0.9h
 
  - ECL's own conservative garbage collector works again.
 
+ - It is possible now to execute lisp code from threads that have been created
+   by external C applications. The functions
+	ecl_import_current_thread(cl_object name, cl_object bindings)
+   should be called to register the current thread with the lisp world, while
+	ecl_release_current_thread()
+   should be invoked before the current thread exits.
+
 * Visible changes:
 
  - The code for handling command line options has been redesigned. Now multiple

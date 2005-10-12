@@ -1381,6 +1381,9 @@ extern cl_object mp_process_whostate(cl_object process);
 extern cl_object mp_make_lock _ARGS((cl_narg narg, ...));
 extern cl_object mp_get_lock _ARGS((cl_narg narg, cl_object lock, ...));
 extern cl_object mp_giveup_lock(cl_object lock);
+
+extern void ecl_import_current_thread(cl_object process_name, cl_object process_binding);
+extern void ecl_release_current_thread(void);
 #endif
 
 

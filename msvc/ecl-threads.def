@@ -1092,7 +1092,8 @@ EXPORTS
 	bds_bind
 	ecl_symbol_slot
 	ecl_set_symbol
-
+	ecl_import_current_thread
+	ecl_release_current_thread
 
 	; time.c
 
