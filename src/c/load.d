@@ -73,7 +73,7 @@ ecl_library_open(cl_object filename) {
 	/* INV: We can modify "libraries" in a multithread
 	   environment because we have already taken the
 	   +load-compile-lock+ */
-	cl_vector_push(block, libraries);
+	cl_vector_push_extend(2, block, libraries);
 	return block;
 }
 

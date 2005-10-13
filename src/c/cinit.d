@@ -28,6 +28,12 @@ cl_vector_push(cl_object elt, cl_object vector)
 	return funcall(2, @'VECTOR-PUSH', vector, elt);
 }
 
+extern cl_object
+cl_vector_push_extend(cl_narg narg, cl_object elt, cl_object vector, ...)
+{
+	return funcall(2, @'VECTOR-PUSH-EXTEND', vector, elt);
+}
+
 static cl_object si_simple_toplevel ()
 {
 	cl_object sentence;
