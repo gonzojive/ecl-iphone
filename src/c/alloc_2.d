@@ -112,6 +112,7 @@ cl_alloc_object(cl_type t)
 	switch (t) {
 #ifdef ENABLE_DLOPEN
 	case t_codeblock:
+		obj->cblock.locked = 0;
 		obj->cblock.links = Cnil;
 		obj->cblock.name = Cnil;
 		obj->cblock.next = Cnil;
@@ -282,8 +283,23 @@ ecl_mark_env(struct cl_env_struct *env)
 static void
 stacks_scanner()
 {
+	cl_object l;
+	l = cl_core.libraries;
+	if (l) {
+		int i;
+		for (i = 0; i < l->vector.fillp; i++) {
+			cl_object dll = l->vector.self.t[i];
+			if (dll->cblock.locked) {
+				GC_push_conditional((ptr_t)dll, (ptr_t)(&dll->cblock + 1), 1);
+				GC_set_mark_bit(dll);
+			}
+		}
+		GC_set_mark_bit(l->vector.self.t);
+	}
+	GC_push_all((ptr_t)(&cl_core), (ptr_t)(&cl_core + 1));
+	GC_push_all((ptr_t)cl_symbols, (ptr_t)(cl_symbols + cl_num_symbols_in_core));
 #ifdef ECL_THREADS
-	cl_object l = cl_core.processes;
+	l = cl_core.processes;
 	struct cl_env_struct cl_env_ptr;
 	if (l == OBJNULL) {
 		ecl_mark_env(&cl_env);
@@ -297,8 +313,6 @@ stacks_scanner()
 #else
 	ecl_mark_env(&cl_env);
 #endif
-	GC_push_all((ptr_t)&cl_core, (ptr_t)(&cl_core + 1));
-	GC_push_all((ptr_t)cl_symbols, (ptr_t)(cl_symbols + cl_num_symbols_in_core));
 	if (old_GC_push_other_roots)
 		(*old_GC_push_other_roots)();
 }

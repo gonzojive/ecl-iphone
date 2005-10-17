@@ -127,6 +127,8 @@ void ecl_foreign_data_set_elt(void *p, enum ecl_ffi_tag type, cl_object value);
 
 void ecl_fficall_push_arg(union ecl_ffi_values *data, enum ecl_ffi_tag type);
 void ecl_fficall_execute(void *f_ptr, struct ecl_fficall *fficall, enum ecl_ffi_tag return_type);
+void ecl_dynamic_callback_call(cl_object callback_info, char* buffer);
+void* ecl_dynamic_callback_make(cl_object data);
 
 /* file.d */
 

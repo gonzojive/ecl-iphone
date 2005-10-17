@@ -506,6 +506,7 @@ static void
 mark_phase(void)
 {
 	int i;
+	cl_object s;
 
 	/* save registers on the stack */
 	jmp_buf volatile registers;
@@ -513,22 +514,30 @@ mark_phase(void)
 
 	/* mark registered symbols & keywords */
 	for (i=0; i<cl_num_symbols_in_core; i++) {
-		cl_object s = (cl_object)(cl_symbols + i);
+		s = (cl_object)(cl_symbols + i);
 		s->symbol.m = FALSE;
 	}
 	for (i=0; i<cl_num_symbols_in_core; i++) {
-		cl_object s = (cl_object)(cl_symbols + i);
+		s = (cl_object)(cl_symbols + i);
 		mark_object(s);
 	}
 
 	/* We mark everything, but we do not want to get the loaded
 	 * libraries to be marked unless they are referenced somewhere
 	 * else (function definition. etc) */
-	cl_core.libraries->vector.elttype = aet_fix;
-	mark_stack_conservative((cl_ptr)&cl_core.packages,
-				(cl_ptr)(&cl_core.libraries + 1));
-	cl_core.libraries->vector.elttype = aet_object;
-
+	s = cl_core.libraries;
+	if (s) {
+		for (i = 0; i < s->vector.fillp; i++) {
+			cl_object dll = s->vector.self.t[i];
+			if (dll->cblock.locked) {
+				mark_object(dll);
+			}
+		}
+		s->vector.elttype = aet_fix;
+		mark_object(s);
+		s->vector.elttype = aet_object;
+	}
+	mark_stack_conservative((cl_ptr)&cl_core, (cl_ptr)(&cl_core + 1));
 	/* mark roots */
 	for (i = 0; i < gc_roots;  i++)
 		mark_object(*gc_root[i]);

@@ -13,6 +13,7 @@
 */
 
 #include <ecl.h>
+#include <string.h>
 #include <internal.h>
 
 void
@@ -95,4 +96,116 @@ ecl_fficall_execute(void *f_ptr, struct ecl_fficall *fficall, enum ecl_ffi_tag r
 #else
 	sp += fficall->buffer_size;
 #endif
+}
+
+static void
+ecl_dynamic_callback_execute(cl_object cbk_info, char *arg_buffer)
+{
+	cl_object fun, rtype, argtypes;
+	cl_object result;
+	cl_index i, size;
+	union ecl_ffi_values output;
+	enum ecl_ffi_tag tag;
+
+	fun = CAR(cbk_info);
+	rtype = CADR(cbk_info);
+	argtypes = CADDR(cbk_info);
+
+	arg_buffer += 4; /* Skip return address */
+	for (i=0; !endp(argtypes); argtypes = CDR(argtypes), i++) {
+		tag = ecl_foreign_type_code(CAR(argtypes));
+		size = fix(si_size_of_foreign_elt_type(CAR(argtypes)));
+		result = ecl_foreign_data_ref_elt(arg_buffer, tag);
+		cl_stack_push(result);
+		{
+			int mask = 3;
+			int sp = (size + mask) & ~mask;
+			arg_buffer += (size+sp);
+		}
+	}
+
+	result = cl_apply_from_stack(i, fun);
+	cl_stack_pop_n(i);
+
+	tag = ecl_foreign_type_code(rtype);
+	memset(&output, 0, sizeof(output));
+	ecl_foreign_data_set_elt(&output, tag, result);
+
+	switch (tag) {
+	case ECL_FFI_CHAR: i = output.c; goto INT;
+	case ECL_FFI_UNSIGNED_CHAR: i = output.uc; goto INT;
+	case ECL_FFI_BYTE: i = output.b; goto INT;
+	case ECL_FFI_UNSIGNED_BYTE: i = output.ub; goto INT;
+	case ECL_FFI_SHORT: i = output.s; goto INT;
+	case ECL_FFI_UNSIGNED_SHORT: i = output.us; goto INT;
+	case ECL_FFI_POINTER_VOID:
+	case ECL_FFI_OBJECT:
+	case ECL_FFI_CSTRING:
+	case ECL_FFI_INT:
+	case ECL_FFI_UNSIGNED_INT:
+	case ECL_FFI_LONG:
+	case ECL_FFI_UNSIGNED_LONG:
+		i = output.i;
+INT:
+#ifdef _MSC_VER
+		__asm mov eax,i
+#else
+		{
+		register int eax asm("eax");
+		eax = i;
+		return;
+		}
+#endif
+	case ECL_FFI_DOUBLE: {
+#ifdef _MSC_VER
+		__asm fld output.d
+#else
+		{
+		asm("fldl (%0)" :: "a" (&output.d));
+		return;
+		}
+#endif
+	}
+	case ECL_FFI_FLOAT: {
+#ifdef _MSC_VER
+		__asm fld output.f
+#else
+		{
+		asm("flds (%0)" :: "a" (&output.f));
+		return;
+		}
+#endif
+		return;
+	}
+	case ECL_FFI_VOID:
+		return;
+	}
+}
+
+void*
+ecl_dynamic_callback_make(cl_object data)
+{
+	/*
+	 *	push	%esp				54
+	 *	pushl	<data>				68 <addr32>
+	 *	call	ecl_dynamic_callback_call	E8 <disp32>
+	 * [ Here we could use also lea 4(%esp), %esp, but %ecx seems to be free ]
+	 *	pop	%ecx				59
+	 *	pop	%ecx				59
+	 *	ret					c3
+	 *	nop					90
+	 *	nop					90
+	 */
+	char *buf = (char*)cl_alloc_atomic_align(sizeof(char)*16, 4);
+	*(char*) (buf+0)  = 0x54;
+	*(char*) (buf+1)  = 0x68;
+	*(long*) (buf+2)  = (long)data;
+	*(char*) (buf+6)  = 0xE8;
+	*(long*) (buf+7)  = (long)ecl_dynamic_callback_execute - (long)(buf+11);
+	*(char*) (buf+11) = 0x59;
+	*(char*) (buf+12) = 0x59;
+	*(char*) (buf+13) = 0xc3;
+	*(short*)(buf+14) = 0x9090;
+
+	return buf;
 }

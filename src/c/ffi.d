@@ -415,7 +415,7 @@ si_find_foreign_symbol(cl_object var, cl_object module, cl_object type, cl_objec
 
 	block = (module == @':default' ? module : si_load_foreign_module(module));
 	var = ecl_null_terminated_string(var);
-	sym = ecl_library_symbol(block, var->string.self);
+	sym = ecl_library_symbol(block, var->string.self, 1);
 	if (sym == NULL) {
 		if (block != @':default')
 			output = ecl_library_error(block);
@@ -518,5 +518,16 @@ si_call_cfun(cl_object fun, cl_object return_type, cl_object arg_types,
 
 	@(return object)
 }
+
+cl_object
+si_make_dynamic_callback(cl_object fun, cl_object sym, cl_object rtype, cl_object argtypes)
+{
+	cl_object data = CONS(fun, CONS(rtype, CONS(argtypes, Cnil)));
+	cl_object cbk  = ecl_make_foreign_data(@':pointer-void', 0, ecl_dynamic_callback_make(data));
+
+	si_put_sysprop(sym, @':callback', CONS(cbk, data));
+	@(return cbk)
+}
+
 
 #endif /* ECL_DYNAMIC_FFI */

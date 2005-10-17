@@ -78,9 +78,22 @@ ecl_library_open(cl_object filename) {
 }
 
 void *
-ecl_library_symbol(cl_object block, const char *symbol) {
+ecl_library_symbol(cl_object block, const char *symbol, bool lock) {
+	void *p;
 	if (block == @':default') {
+		cl_object l = cl_core.libraries;
+		if (l) {
+			cl_index i;
+			for (i = 0; i < l->vector.fillp; i++) {
+				cl_object block = l->vector.self.t[i];
+				p = ecl_library_symbol(block, symbol, lock);
+				if (p) {
+					return p;
+				}
+			}
+		}
 #if defined(mingw32) || defined(_MSC_VER)
+ 		{
 		HANDLE hndSnap = NULL;
 		HANDLE hnd = NULL;
 		hndSnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, GetCurrentProcessId());
@@ -97,25 +110,39 @@ ecl_library_symbol(cl_object block, const char *symbol) {
 			CloseHandle(hndSnap);
 		}
 		return hnd;
+		}
 #endif
 #ifdef HAVE_DLFCN_H
 		return dlsym(0, symbol);
 #endif
+#if !defined(mingw32) && !defined(_MSC_VER) && !defined(HAVE_DLFCN_H)
+		return 0;
+#endif
 	} else {
 #ifdef HAVE_DLFCN_H
-		return dlsym(block->cblock.handle, symbol);
+		p = dlsym(block->cblock.handle, symbol);
 #endif
 #if defined(mingw32) || defined(_MSC_VER)
 		HMODULE h = (HMODULE)(block->cblock.handle);
-		return GetProcAddress(h, symbol);
+		p = GetProcAddress(h, symbol);
 #endif
 #ifdef HAVE_MACH_O_DYLD_H
 		NSSymbol sym;
 		sym = NSLookupSymbolInModule((NSModule)(block->cblock.handle),
 					     symbol);
-		if (sym == 0) return 0;
-		return (void*)NSAddressOfSymbol(sym);
+		if (sym == 0) {
+			p = 0;
+		} else {
+			p = NSAddressOfSymbol(sym);
+		}
 #endif
+		/* Libraries whose symbols are being referenced by the FFI should not
+		 * get garbage collected. Until we find a better solution we simply lock
+		 * them for the rest of the runtime */
+		if (p) {
+			block->cblock.locked |= lock;
+		}
+		return p;
 	}
 }
 
@@ -226,7 +253,7 @@ si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 	}
 
 	/* Fist try to call "init_CODE()" */
-	block->cblock.entry = ecl_library_symbol(block, INIT_PREFIX "CODE");
+	block->cblock.entry = ecl_library_symbol(block, INIT_PREFIX "CODE", 0);
 	if (block->cblock.entry != NULL)
 		goto GO_ON;
 
@@ -241,7 +268,7 @@ si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 						 make_constant_string("_"));
 	basename = cl_pathname_name(1,filename);
 	basename = @si::string-concatenate(2, prefix, @string-upcase(1, funcall(4, @'nsubstitute', CODE_CHAR('_'), CODE_CHAR('-'), basename)));
-	block->cblock.entry = ecl_library_symbol(block, basename->string.self);
+	block->cblock.entry = ecl_library_symbol(block, basename->string.self, 0);
 
 	if (block->cblock.entry == NULL) {
 		output = ecl_library_error(block);

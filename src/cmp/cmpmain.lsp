@@ -330,7 +330,7 @@ static cl_object VV[VM];
        #-(or :win32 :mingw32 :darwin)
        (setf submodules
 	     (mapcar #'(lambda (sm)
-			 (format nil "((ecl_init_function_t) ecl_library_symbol(Cblock, \"~A\"))" sm))
+			 (format nil "((ecl_init_function_t) ecl_library_symbol(Cblock, \"~A\", 0))" sm))
 		     submodules))
        (format c-file +lisp-program-init+ init-name prologue-code shared-data-file
 	       submodules epilogue-code)

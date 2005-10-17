@@ -1,6 +1,12 @@
 ECL 0.9h
 ========
 
+* Errors fixed:
+
+ - The garbage collection of FASL files had been deactivated by the use of
+   high level routines (VECTOR-PUSH-EXTEND) to handle the vector of weak
+   pointers to the files.
+
 * Design:
 
  - Simplified the structure of the frame stack, removing redundant fields.
@@ -52,6 +58,10 @@ ECL 0.9h
    initialization files; errors during initialization are intercepted and cause
    ECL to abort.
 
+ - Replacing GC_malloc with GC_malloc_ignore_offset() makes ECL use less
+   memory. A 30% reduction observed when running the ANSI compatibility test
+   suite.
+
 * Foreign function interface (FFI):
 
  - Foreign function return type is now correctly handled, when it is specified
@@ -71,6 +81,9 @@ ECL 0.9h
    that of CFFI:
 	(ffi:defcallback foo :int ((a :int))
 	   (1+ a))
+
+ - On the intel x86 architecture we also have the possibility of creating
+   callbacks dynamically, at run time, without the compiler.
 
 ;;; Local Variables: ***
 ;;; mode:text ***

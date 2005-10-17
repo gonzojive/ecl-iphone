@@ -168,11 +168,11 @@ struct cl_core_struct {
 
 	cl_object system_properties;
 
-	cl_object libraries;
 #ifdef ECL_THREADS
 	cl_object processes;
 	pthread_mutex_t global_lock;
 #endif
+	cl_object libraries;
 };
 
 #if defined(mingw32) || defined(_MSC_VER) || defined(cygwin)
@@ -190,16 +190,16 @@ extern void cl_dealloc(void *p, cl_index s);
 extern cl_object si_gc(cl_object area);
 extern cl_object si_gc_dump(void);
 #ifdef _MSC_VER
-extern char *GC_malloc(size_t size);
+extern char *GC_malloc_ignore_off_page(size_t size);
 extern char *GC_malloc_atomic_ignore_off_page(size_t size);
 #else
-extern void *GC_malloc(size_t size);
+extern void *GC_malloc_ignore_off_page(size_t size);
 extern void *GC_malloc_atomic_ignore_off_page(size_t size);
 #endif
 extern void GC_free(void *);
-#define cl_alloc GC_malloc
+#define cl_alloc GC_malloc_ignore_off_page
 #define cl_alloc_atomic GC_malloc_atomic_ignore_off_page
-#define cl_alloc_align(s,d) GC_malloc(s)
+#define cl_alloc_align(s,d) GC_malloc_ignore_off_page(s)
 #define cl_alloc_atomic_align(s,d) GC_malloc_atomic_ignore_off_page(s)
 #define cl_dealloc(p,s)
 #define ecl_register_static_root(x) ecl_register_root(x)
@@ -509,6 +509,7 @@ extern cl_object si_size_of_foreign_elt_type(cl_object tag);
 extern cl_object si_load_foreign_module(cl_object module);
 extern cl_object si_find_foreign_symbol(cl_object var, cl_object module, cl_object type, cl_object size);
 extern cl_object si_call_cfun(cl_object fun, cl_object return_type, cl_object arg_types, cl_object args);
+extern cl_object si_make_dynamic_callback(cl_object fun, cl_object sym, cl_object return_type, cl_object arg_types);
 
 extern cl_object ecl_make_foreign_data(cl_object tag, cl_index size, void *data);
 extern cl_object ecl_allocate_foreign_data(cl_object tag, cl_index size);
@@ -777,7 +778,7 @@ extern void ecl_delete_eq(cl_object x, cl_object *l);
 /* load.c */
 
 extern cl_object ecl_library_open(cl_object filename);
-extern void *ecl_library_symbol(cl_object block, const char *symbol);
+extern void *ecl_library_symbol(cl_object block, const char *symbol, bool lock);
 extern cl_object ecl_library_error(cl_object block);
 extern void ecl_library_close(cl_object block);
 extern void ecl_library_close_all(void);

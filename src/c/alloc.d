@@ -380,6 +380,7 @@ ONCE_MORE:
 	  break;
 #endif /* CLOS */
 	case t_codeblock:
+	  obj->cblock.locked = 0;
 	  obj->cblock.name = Cnil;
 	  obj->cblock.handle = NULL;
 	  obj->cblock.entry = NULL;

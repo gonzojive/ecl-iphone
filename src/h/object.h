@@ -394,7 +394,8 @@ struct ecl_pathname {
 };
 
 struct ecl_codeblock {
-	HEADER1(self_destruct);		/*  delete DLL after gc */
+	HEADER2(self_destruct,locked);	/*  delete DLL after gc */
+					/*  do not garbage collect this library */
 	void	*handle;		/*  handle returned by dlopen  */
 	void	*entry;			/*  entry point  */
  	cl_object *data;		/*  data vector  */

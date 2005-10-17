@@ -23,15 +23,12 @@ cl_array_dimensions(cl_narg narg, cl_object array, ...)
 }
 
 extern cl_object
-cl_vector_push(cl_object elt, cl_object vector)
-{
-	return funcall(2, @'VECTOR-PUSH', vector, elt);
-}
-
-extern cl_object
 cl_vector_push_extend(cl_narg narg, cl_object elt, cl_object vector, ...)
 {
-	return funcall(2, @'VECTOR-PUSH-EXTEND', vector, elt);
+	if (narg != 2) {
+		FEerror("Too many arguments to interim cl_vector_push_extend (cinit.d)", 0);
+	}
+	return funcall(2, @'VECTOR-PUSH-EXTEND', elt, vector);
 }
 
 static cl_object si_simple_toplevel ()

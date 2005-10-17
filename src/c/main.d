@@ -290,6 +290,8 @@ cl_boot(int argc, char **argv)
 	cl_core.gentemp_prefix = make_constant_string("T");
 	cl_core.gentemp_counter = MAKE_FIXNUM(0);
 
+	/* LIBRARIES is an adjustable vector of objects. It behaves as a vector of
+	   weak pointers thanks to the magic in gbc.d/alloc_2.d */
 	cl_core.libraries = si_make_vector(@'t', MAKE_FIXNUM(0),
 					   @'t', MAKE_FIXNUM(0),
 					   @'nil', @'nil');

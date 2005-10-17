@@ -634,14 +634,23 @@
 ;;; CALLBACKS
 ;;;
 
+#-dffi
 (defmacro defcallback (&rest args)
   (error "DEFCALLBACK cannot be used in interpreted forms"))
+
+#+dffi
+(defmacro defcallback (name ret-type arg-desc &body body)
+  (let ((arg-types (mapcar #'second arg-desc))
+	(arg-names (mapcar #'first arg-desc)))
+  `(si::make-dynamic-callback
+    #'(ext::lambda-block ,name ,arg-names ,@body)
+    ',name ',ret-type ',arg-types)))
 
 (defun callback (name)
   (let ((x (si::get-sysprop name :callback)))
     (unless x
       (error "There is no callback with name ~a" name))
-    x))
+    (first x)))
 
 ;;;----------------------------------------------------------------------
 ;;; COMPATIBILITY WITH OLDER FFI
