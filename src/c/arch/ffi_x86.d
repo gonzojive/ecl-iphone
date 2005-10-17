@@ -120,7 +120,7 @@ ecl_dynamic_callback_execute(cl_object cbk_info, char *arg_buffer)
 		{
 			int mask = 3;
 			int sp = (size + mask) & ~mask;
-			arg_buffer += (size+sp);
+			arg_buffer += (sp);
 		}
 	}
 
@@ -153,18 +153,18 @@ INT:
 		{
 		register int eax asm("eax");
 		eax = i;
-		return;
 		}
 #endif
+		return;
 	case ECL_FFI_DOUBLE: {
 #ifdef _MSC_VER
 		__asm fld output.d
 #else
 		{
 		asm("fldl (%0)" :: "a" (&output.d));
-		return;
 		}
 #endif
+		return;
 	}
 	case ECL_FFI_FLOAT: {
 #ifdef _MSC_VER
@@ -172,7 +172,6 @@ INT:
 #else
 		{
 		asm("flds (%0)" :: "a" (&output.f));
-		return;
 		}
 #endif
 		return;
