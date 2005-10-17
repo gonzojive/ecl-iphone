@@ -264,7 +264,7 @@
 	  (return-from c1c-inline
 	    (c1expr
 	     `(ffi::with-ctring (,var ,value)
-	       (c1c-inline ,arguments ,arg-types ,output-type ,c-expression
+	       (c-inline ,arguments ,arg-types ,output-type ,c-expression
 		,@rest)))))))
     ;; Find out the output types of the inline form. The syntax is rather relax
     ;; 	output-type = lisp-type | c-type | (values {lisp-type | c-type}*)
