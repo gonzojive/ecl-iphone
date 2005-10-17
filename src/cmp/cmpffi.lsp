@@ -263,7 +263,7 @@
 		(elt arg-types ndx) :char*)
 	  (return-from c1c-inline
 	    (c1expr
-	     `(ffi::with-ctring (,var ,value)
+	     `(ffi::with-cstring (,var ,value)
 	       (c-inline ,arguments ,arg-types ,output-type ,c-expression
 		,@rest)))))))
     ;; Find out the output types of the inline form. The syntax is rather relax
