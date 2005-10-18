@@ -29,11 +29,11 @@
 		    (add-object type))
 		arg-type-constants)))
       (push (list name c-name (add-object name)
-		  return-type arg-types arg-type-constants)
+		  return-type (reverse arg-types) (reverse arg-type-constants))
 	    *callbacks*)
       (c1expr
        `(progn
-	 (defun ,name ,arg-variables ,@body)
+	 (defun ,name ,(reverse arg-variables) ,@body)
 	 (si::put-sysprop ',name :callback
 	  (list
 	  (ffi:c-inline () () :object
@@ -98,6 +98,7 @@
 		     ct "," (ffi:size-of-foreign-type type) "));")))
     (wt-nl "aux = cl_apply_from_stack(" (length arg-types)
 	   ",ecl_fdefinition(" c-name-constant "));")
+    (wt-nl "cl_stack_pop_n(" (length arg-types) ");")
     (wt-nl "ecl_foreign_data_set_elt(&output,"
 	   (foreign-elt-type-code return-type) ",aux);")
     (wt-nl "return output;")
