@@ -300,7 +300,6 @@ stacks_scanner()
 	GC_push_all((ptr_t)cl_symbols, (ptr_t)(cl_symbols + cl_num_symbols_in_core));
 #ifdef ECL_THREADS
 	l = cl_core.processes;
-	struct cl_env_struct cl_env_ptr;
 	if (l == OBJNULL) {
 		ecl_mark_env(&cl_env);
 	} else {
