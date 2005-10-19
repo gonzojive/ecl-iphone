@@ -511,7 +511,7 @@
 
 ;;; FIXME! We should turn this into a closure generator that produces no code.
 #+DFFI
-(defmacro def-lib-function (name args &key returning module)
+(defmacro def-lib-function (name args &key returning module (call :cdecl))
   (multiple-value-bind (c-name lisp-name) (if (consp name)
 					    (values-list name)
 					    (values (string name) name))
@@ -520,13 +520,13 @@
 	   (argtypes (mapcar #'(lambda (a) (ffi::%convert-to-arg-type (second a))) args)))
       `(let ((c-fun (si::find-foreign-symbol ,c-name ,module :pointer-void 0)))
 	(defun ,lisp-name ,(mapcar #'first args)
-	  (si::call-cfun c-fun ',return-type ',argtypes (list ,@(mapcar #'first args))))))))
+	  (si::call-cfun c-fun ',return-type ',argtypes (list ,@(mapcar #'first args)) ,call))))))
 
-(defmacro def-function (name args &key module (returning :void))
+(defmacro def-function (name args &key module (returning :void) (call :cdecl))
   #+DFFI
   (when module
     (return-from def-function
-      `(def-lib-function ,name ,args :returning ,returning :module ,module)))
+      `(def-lib-function ,name ,args :returning ,returning :module ,module :call ,call)))
   (multiple-value-bind (c-name lisp-name)
       (lisp-to-c-name name)
     (let* ((arguments (mapcar #'first args))
@@ -640,11 +640,14 @@
 
 #+dffi
 (defmacro defcallback (name ret-type arg-desc &body body)
-  (let ((arg-types (mapcar #'second arg-desc))
-	(arg-names (mapcar #'first arg-desc)))
-  `(si::make-dynamic-callback
-    #'(ext::lambda-block ,name ,arg-names ,@body)
-    ',name ',ret-type ',arg-types)))
+  (multiple-value-bind (name call-type) (if (consp name)
+					  (values-list name)
+					  (values name :cdecl))
+    (let ((arg-types (mapcar #'second arg-desc))
+	  (arg-names (mapcar #'first arg-desc)))
+      `(si::make-dynamic-callback
+	 #'(ext::lambda-block ,name ,arg-names ,@body)
+	 ',name ',ret-type ',arg-types ,call-type))))
 
 (defun callback (name)
   (let ((x (si::get-sysprop name :callback)))

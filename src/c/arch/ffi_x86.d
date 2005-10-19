@@ -91,11 +91,14 @@ ecl_fficall_execute(void *f_ptr, struct ecl_fficall *fficall, enum ecl_ffi_tag r
 	} else {
 		((void (*)())f_ptr)();
 	}
+
+	if (fficall->cc == ECL_FFI_CC_CDECL) {
 #ifdef _MSC_VER
-	__asm add esp,bufsize
+		__asm add esp,bufsize
 #else
-	sp += fficall->buffer_size;
+		sp += fficall->buffer_size;
 #endif
+	}
 }
 
 static void
@@ -182,7 +185,7 @@ INT:
 }
 
 void*
-ecl_dynamic_callback_make(cl_object data)
+ecl_dynamic_callback_make(cl_object data, enum ecl_ffi_calling_convention cc_type)
 {
 	/*
 	 *	push	%esp				54
@@ -203,8 +206,23 @@ ecl_dynamic_callback_make(cl_object data)
 	*(long*) (buf+7)  = (long)ecl_dynamic_callback_execute - (long)(buf+11);
 	*(char*) (buf+11) = 0x59;
 	*(char*) (buf+12) = 0x59;
-	*(char*) (buf+13) = 0xc3;
-	*(short*)(buf+14) = 0x9090;
+	if (cc_type == ECL_FFI_CC_CDECL) {
+		*(char*) (buf+13) = 0xc3;
+		*(short*)(buf+14) = 0x9090;
+	} else {
+		cl_object arg_types = CADDR(data);
+		int byte_size = 0;
+		int mask = 3;
+
+		while (CONSP(arg_types)) {
+			int sz = fix(si_size_of_foreign_elt_type(CAR(arg_types)));
+			byte_size += ((sz+mask)&(~mask));
+			arg_types = CDR(arg_types);
+		}
+
+		*(char*) (buf+13) = 0xc2;
+		*(short*)(buf+14) = (short)byte_size;
+	}
 
 	return buf;
 }

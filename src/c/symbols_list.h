@@ -1553,10 +1553,12 @@ cl_symbols[] = {
 {SYS_ "*CODE-WALKER*", SI_SPECIAL, NULL, -1, OBJNULL},
 
 #ifdef ECL_DYNAMIC_FFI
-{SYS_ "CALL-CFUN", SI_ORDINARY, si_call_cfun, 4, OBJNULL},
+{SYS_ "CALL-CFUN", SI_ORDINARY, si_call_cfun, -1, OBJNULL},
 {KEY_ "CALLBACK", KEYWORD, NULL, -1, OBJNULL},
-{SYS_ "MAKE-DYNAMIC-CALLBACK", SI_ORDINARY, si_make_dynamic_callback, 4, OBJNULL},
+{SYS_ "MAKE-DYNAMIC-CALLBACK", SI_ORDINARY, si_make_dynamic_callback, -1, OBJNULL},
 #endif
+{KEY_ "CDECL", KEYWORD, NULL, -1, OBJNULL},
+{KEY_ "STDCALL", KEYWORD, NULL, -1, OBJNULL},
 
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1, OBJNULL}};

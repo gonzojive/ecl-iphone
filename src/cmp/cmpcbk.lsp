@@ -17,7 +17,9 @@
     (let ((arg-types '())
 	  (arg-type-constants '())
 	  (arg-variables '())
-	  (c-name (format nil "ecl_callback_~d" (length *callbacks*))))
+	  (c-name (format nil "ecl_callback_~d" (length *callbacks*)))
+	  (name (if (consp name) (first name) name))
+	  (call-type (if (consp name) (second name) :cdecl)))
       (dolist (i arg-list)
 	(unless (consp i)
 	  (cmperr "Syntax error in CALLBACK form: C type is missing in argument ~A "i))
@@ -29,7 +31,7 @@
 		    (add-object type))
 		arg-type-constants)))
       (push (list name c-name (add-object name)
-		  return-type (reverse arg-types) (reverse arg-type-constants))
+		  return-type (reverse arg-types) (reverse arg-type-constants) call-type)
 	    *callbacks*)
       (c1expr
        `(progn
@@ -66,7 +68,7 @@
     (cdr x)))
 
 (defun t3-defcallback (lisp-name c-name c-name-constant return-type
-		       arg-types arg-type-constants)
+		       arg-types arg-type-constants call-type)
   (cond ((ffi::foreign-elt-type-p return-type))
 	((and (consp return-type)
 	      (member (first return-type) '(* array)))
@@ -74,8 +76,13 @@
 	(t
 	 (cmperr "DEFCALLBACK does not support complex return types such as ~A"
 		 return-type)))
-  (let ((return-type-name (rep-type-name (ffi::%convert-to-arg-type return-type))))
-    (wt-nl1 return-type-name " " c-name "(")
+  (let ((return-type-name (rep-type-name (ffi::%convert-to-arg-type return-type)))
+	(fmod (case call-type
+		(:cdecl "")
+		(:stdcall "__stdcall ")
+		(t (cmperr "DEFCALLBACK does not support ~A as calling convention"
+			   call-type)))))
+    (wt-nl1 return-type-name " " fmod c-name "(")
     (loop for n from 0
 	  and type in arg-types
 	  with comma = ""

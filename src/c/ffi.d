@@ -34,6 +34,11 @@ static const cl_object ecl_foreign_type_table[] = {
 	@':double',
 	@':void'};
 
+static const cl_object ecl_foreign_cc_table[] = {
+	@':cdecl',
+	@':stdcall'
+};
+
 static unsigned int ecl_foreign_type_size[] = {
 	sizeof(char),
 	sizeof(unsigned char),
@@ -217,6 +222,18 @@ ecl_foreign_type_code(cl_object type)
 	}
 	FEerror("~A does not denote an elementary foreign type.", 1, type);
 	return ECL_FFI_VOID;
+}
+
+enum ecl_ffi_calling_convention
+ecl_foreign_cc_code(cl_object cc)
+{
+	int i;
+	for (i = 0; i <= ECL_FFI_CC_STDCALL; i++) {
+		if (cc == ecl_foreign_cc_table[i])
+			return (enum ecl_ffi_calling_convention)i;
+	}
+	FEerror("~A does no denote a valid calling convention.", 1, cc);
+	return ECL_FFI_CC_CDECL;
 }
 
 cl_object
@@ -438,12 +455,13 @@ ecl_fficall_overflow()
 }
 
 void
-ecl_fficall_prepare(cl_object return_type, cl_object arg_type)
+ecl_fficall_prepare(cl_object return_type, cl_object arg_type, cl_object cc_type)
 {
 	struct ecl_fficall *fficall = cl_env.fficall;
 	fficall->buffer_sp = fficall->buffer;
 	fficall->buffer_size = 0;
 	fficall->cstring = Cnil;
+	fficall->cc = ecl_foreign_cc_code(cc_type);
 }
 
 void
@@ -480,16 +498,14 @@ ecl_fficall_align(int data)
 	}
 }
 
-cl_object
-si_call_cfun(cl_object fun, cl_object return_type, cl_object arg_types,
-	     cl_object args)
-{
+@(defun si::call-cfun (fun return_type arg_types args &optional (cc_type @':cdecl'))
 	struct ecl_fficall *fficall = cl_env.fficall;
 	void *cfun = ecl_foreign_data_pointer_safe(fun);
 	cl_object object;
 	enum ecl_ffi_tag return_type_tag = ecl_foreign_type_code(return_type);
+@
 
-	ecl_fficall_prepare(return_type, arg_types);
+	ecl_fficall_prepare(return_type, arg_types, cc_type);
 	while (CONSP(arg_types)) {
 		enum ecl_ffi_tag type;
 		if (!CONSP(args)) {
@@ -517,17 +533,18 @@ si_call_cfun(cl_object fun, cl_object return_type, cl_object arg_types,
 	fficall->cstring = Cnil;
 
 	@(return object)
-}
+@)
 
-cl_object
-si_make_dynamic_callback(cl_object fun, cl_object sym, cl_object rtype, cl_object argtypes)
-{
-	cl_object data = CONS(fun, CONS(rtype, CONS(argtypes, Cnil)));
-	cl_object cbk  = ecl_make_foreign_data(@':pointer-void', 0, ecl_dynamic_callback_make(data));
+@(defun si::make-dynamic-callback (fun sym rtype argtypes &optional (cctype @':cdecl'))
+	cl_object data;
+	cl_object cbk;
+@
+	data = CONS(fun, CONS(rtype, CONS(argtypes, Cnil)));
+	cbk  = ecl_make_foreign_data(@':pointer-void', 0, ecl_dynamic_callback_make(data, ecl_foreign_cc_code(cctype)));
 
 	si_put_sysprop(sym, @':callback', CONS(cbk, data));
 	@(return cbk)
-}
+@)
 
 
 #endif /* ECL_DYNAMIC_FFI */
