@@ -118,7 +118,7 @@ struct ecl_fficall {
 	char *buffer_sp;
 	size_t buffer_size;
 	union ecl_ffi_values output;
-	enum ecl_ffi_calling_conventions cc;
+	enum ecl_ffi_calling_convention cc;
 	char buffer[ECL_FFICALL_LIMIT];
 	cl_object cstring;
 };
