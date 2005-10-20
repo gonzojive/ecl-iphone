@@ -81,7 +81,7 @@ int connect_to_server(char *host, int port)
   struct sockaddr *addr;	/* address to connect to */
   struct hostent *host_ptr;
   int addrlen;			/* length of address */
-#ifndef _MSC_VER
+#if !defined(_MSC_VER) && !defined(mingw32)
   extern char *getenv();
   extern struct hostent *gethostbyname();
 #endif
