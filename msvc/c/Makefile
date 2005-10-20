@@ -45,7 +45,7 @@ HFILES	= ..\h\config.h $(HDIR)\ecl.h $(HDIR)\ecl-cmp.h\
 	$(HDIR)\object.h $(HDIR)\cs.h $(HDIR)\stacks.h\
 	$(HDIR)\external.h $(HDIR)\eval.h\
 	$(HDIR)\number.h $(HDIR)\page.h $(HDIR)\unify.h\
-	$(HDIR)\lwp.h
+	$(HDIR)\lwp.h $(HDIR)\internal.h
 OBJS	= main.obj symbol.obj package.obj list.obj\
 	apply.obj eval.obj interpreter.obj compiler.obj disassembler.obj \
 	instance.obj gfun.obj reference.obj character.obj\
