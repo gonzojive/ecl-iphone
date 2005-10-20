@@ -472,7 +472,6 @@ fi
 AC_CONFIG_FILES([
   bare.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp
   ../Makefile Makefile c/Makefile doc/Makefile doc/ecl.man
-  tests/Makefile ansi-tests/Makefile gabriel/Makefile
   h/configpre.h:h/config.h.in ecl-config.pre:util/ecl-config
   lsp/config.pre:lsp/config.lsp.in compile.pre:compile.lsp.in ])
 AC_CONFIG_HEADERS([h/config.h:h/configpre.h]) # FIXME
