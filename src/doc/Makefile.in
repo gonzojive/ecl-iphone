@@ -118,11 +118,11 @@ install.html: $(srcdir)/install.in.html head
 news.html: head
 	(cat head; echo '<pre>'; cat $(srcdir)/../../ANNOUNCEMENT| sed -e '1d'; echo '</pre>' \
 	 cat $(srcdir)/end) | $(FILTER) > $@
-benchmark.html: $(srcdir)/benchmark.in.html ../gabriel/BENCHMARK head
+benchmark.html: $(srcdir)/benchmark.in.html BENCHMARK head
 	(cat head; cat $(srcdir)/benchmark.in.html; \
-	 echo '<pre>'; cat ../gabriel/BENCHMARK; echo '</pre>'; \
+	 echo '<pre>'; cat BENCHMARK; echo '</pre>'; \
 	 cat $(srcdir)/end) | $(FILTER) > $@
-../gabriel/BENCHMARK:
+BENCHMARK:
 	echo "No benchmarks available" > $@
 license.html: $(top_srcdir)/../Copyright head
 	(cat head; \
