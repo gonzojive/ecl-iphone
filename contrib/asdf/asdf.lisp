@@ -179,6 +179,7 @@ and NIL NAME and TYPE components"
   ((name :accessor component-name :initarg :name :documentation
 	 "Component name: designator for a string composed of portable pathname characters")
    (version :accessor component-version :initarg :version)
+   (original-depends-on :accessor component-original-depends-on :initarg :original-depends-on :initform nil)
    (in-order-to :initform nil :initarg :in-order-to)
    ;;; XXX crap name
    (do-first :initform nil :initarg :do-first)
@@ -688,6 +689,7 @@ system."))
 
 (defclass compile-op (operation)
   ((proclamations :initarg :proclamations :accessor compile-op-proclamations :initform nil)
+   (system-p :initarg :system-p :accessor compile-op-system-p :initform nil)
    (on-warnings :initarg :on-warnings :accessor operation-on-warnings
 		:initform *compile-file-warnings-behaviour*)
    (on-failure :initarg :on-failure :accessor operation-on-failure
@@ -708,7 +710,8 @@ system."))
 	(output-file (car (output-files operation c))))
     (multiple-value-bind (output warnings-p failure-p)
 	(compile-file source-file
-		      :output-file output-file)
+		      :output-file output-file
+		      :system-p (compile-op-system-p operation))
       ;(declare (ignore output))
       (when warnings-p
 	(case (operation-on-warnings operation)
@@ -946,6 +949,7 @@ Returns the new tree (which probably shares structure with the old one)"
 	     :name (coerce-name name)
 	     :pathname pathname
 	     :parent parent
+	     :original-depends-on depends-on
 	     other-args)
       (when (typep ret 'module)
 	(setf (module-default-component-class ret)

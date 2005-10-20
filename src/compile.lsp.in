@@ -129,7 +129,8 @@ ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@ ../c/all_symbols2.@OBJEXT@; rm *.@OB
 ;;;
 #+WANTS-ASDF
 (build-module "asdf"
-              '("ext:asdf;asdf.lisp")
+              '("ext:asdf;asdf.lisp"
+		"ext:asdf;asdf-ecl.lisp")
               :dir "build:ext;"
               :prefix "EXT")
 
