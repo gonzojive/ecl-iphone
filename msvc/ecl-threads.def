@@ -274,11 +274,14 @@ EXPORTS
 	si_load_foreign_module
 	si_null_pointer_p
 	si_size_of_foreign_elt_type
+	si_call_cfun
 
 	ecl_make_foreign_data
 	ecl_allocate_foreign_data
 	ecl_foreign_data_pointer_safe
 	ecl_string_pointer_safe
+	ecl_foreign_data_ref_elt
+	ecl_foreign_data_set_elt
 
 	; file.c
 
