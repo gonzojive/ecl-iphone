@@ -232,10 +232,19 @@ main(int argc, char **argv)
 	funcall(1,_intern(\"TOP-LEVEL\",cl_core.system_package));
 	cl_shutdown();
 	return 0;" "")))
-  (let* ((c-name (si::coerce-to-filename
-		  (compile-file-pathname output-name :type :c)))
+  ;;
+  ;; When a module is built out of several object files, we have to
+  ;; create an additional object file that initializes those ones.
+  ;; This routine is responsible for creating this file.
+  ;;
+  ;; To avoid name clashes, this object file will have a temporary
+  ;; file name (tmp-name).
+  ;;
+  (let* ((tmp-name (si::mkstemp #P"TMP:ECLINIT"))
+	 (c-name (si::coerce-to-filename
+		  (compile-file-pathname tmp-name :type :c)))
 	 (o-name (si::coerce-to-filename
-		  (compile-file-pathname output-name :type :object)))
+		  (compile-file-pathname tmp-name :type :object)))
 	 submodules
 	 c-file)
     (dolist (item (reverse lisp-files))
