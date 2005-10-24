@@ -427,7 +427,7 @@ cl_object
 si_find_foreign_symbol(cl_object var, cl_object module, cl_object type, cl_object size)
 {
 	cl_object block;
-	cl_object output;
+	cl_object output = Cnil;
 	void *sym;
 
 	block = (module == @':default' ? module : si_load_foreign_module(module));
