@@ -213,6 +213,7 @@ NIL, then all packages are searched."
 
 ;;; (At boot we don't have setf yet)
 
+#-cmu-format
 (mapc #'(lambda (x) (put-sysprop (first x) 'sys::pretty-print-format (second x)))
       '((block 1)
 	(case 1)

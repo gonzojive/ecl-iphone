@@ -1143,7 +1143,9 @@ cl_symbols[] = {
 {SYS_ "PACKAGE-HASH-TABLES","si_package_hash_tables"},
 {SYS_ "PATHNAME-TRANSLATIONS","si_pathname_translations"},
 {SYS_ "POINTER","si_pointer"},
+#ifndef ECL_CMU_FORMAT
 {SYS_ "PRETTY-PRINT-FORMAT",NULL},
+#endif
 {SYS_ "PROCESS-DECLARATIONS","si_process_declarations"},
 {SYS_ "PROCESS-LAMBDA","si_process_lambda"},
 {SYS_ "PROCESS-LAMBDA-LIST","si_process_lambda_list"},

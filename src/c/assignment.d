@@ -43,10 +43,12 @@ cl_set(cl_object var, cl_object val)
 		sym->symbol.mflag = mflag;
 		SYM_FUN(sym) = def;
 		clear_compiler_properties(sym);
+#ifndef ECL_CMU_FORMAT
 		if (pprint == Cnil)
 			si_rem_sysprop(sym, @'si::pretty-print-format');
 		else
 			si_put_sysprop(sym, @'si::pretty-print-format', pprint);
+#endif
 	} else {
 		if (mflag)
 			FEerror("~S is not a valid name for a macro.", 1, fname);
