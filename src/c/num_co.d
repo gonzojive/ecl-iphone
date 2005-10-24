@@ -320,7 +320,7 @@ floor2(cl_object x, cl_object y)
 		  break;
 		default:		/* RAT / ANY */
 		  floor2(x->ratio.num, number_times(x->ratio.den, y));
-		  VALUES(1) = make_ratio(VALUES(1), x->ratio.den);
+		  VALUES(1) = number_divide(VALUES(1), x->ratio.den);
 		}
 		break;
 	case t_shortfloat: {		/* SF / ANY */
