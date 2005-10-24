@@ -1368,7 +1368,7 @@ static int
 c_multiple_value_setq(cl_object orig_args, int flags) {
 	cl_object args = orig_args;
 	cl_object orig_vars;
-	cl_object vars = Cnil;
+	cl_object vars = Cnil, values;
 	cl_object old_variables = ENV->variables;
 	cl_index nvars = 0;
 
@@ -1394,12 +1394,14 @@ c_multiple_value_setq(cl_object orig_args, int flags) {
 	}
 
 	/* Compile values */
-	compile_form(pop(&args), FLAG_VALUES);
+	values = pop(&args);
 	if (args != Cnil)
 		FEprogram_error("MULTIPLE-VALUE-SETQ: Too many arguments.", 0);
-	if (nvars == 0)
+	if (nvars == 0) {
 		/* No variables */
-		return flags;
+		return compile_form(cl_list(2, @'values', values), flags);
+	}
+	compile_form(values, FLAG_VALUES);
 
 	/* Compile variables */
 	asm_op2(OP_MSETQ, nvars);

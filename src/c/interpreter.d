@@ -540,7 +540,10 @@ interpret_msetq(cl_object bytecodes, cl_opcode *vector)
 				ECL_SETQ(name, value);
 		}
 	}
-	if (NVALUES > 1) NVALUES = 1;
+	if (NVALUES == 0) {
+		VALUES(0) = Cnil;
+	}
+	NVALUES = 1;
 	return vector;
 }
 
