@@ -47,7 +47,7 @@
  "#define MSG_WAITALL 0")
 #+:wsock
 (clines
- #+(and :msvc (not :threads))
+ #+(and (or :msvc :mingw32) (not :threads))
  "#include <winsock2.h>"
  "typedef unsigned int uint32_t;"
  #-:mingw32
