@@ -190,6 +190,7 @@ dnl Checks which do not come with autoconf (must be after AC_PROG_CC)
 ECL_MAKE_ABSOLUTE_SRCDIR
 ECL_CROSS_CONFIG
 ECL_GUESS_HOST_OS
+ECL___THREAD
 
 AC_SUBST(INFOEXT)
 AC_SUBST(INSTALL_INFO)
@@ -229,7 +230,7 @@ if test "${enable_threads}" = "yes" ; then
     LIBS="${THREAD_LIBS} ${LIBS}"
     CFLAGS="${CFLAGS} ${THREAD_CFLAGS}"
     AC_DEFINE( [ECL_THREADS], [1], [Userland threads?])
-    if test "${with___thread}" = "yes" ; then
+    if test "${ac_cv_ecl___thread}" = "yes" ; then
       AC_DEFINE( [WITH___THREAD], [1], [__thread thread-local variables?] )
     fi
   fi
