@@ -1553,7 +1553,7 @@ if test "${with_rt+set}" = set; then
   withval="$with_rt"
 
 else
-  with_rt=
+  with_rt=${enable_shared}
 fi;
 
 libdir="${libdir}/ecl"
@@ -9759,7 +9759,7 @@ LSP_FEATURES="(cons :wants-asdf ${LSP_FEATURES})"
 
 fi
 
-if test "" = "yes"; then
+if test "${with_rt}" = "yes"; then
 
 
 LSP_FEATURES="(cons :wants-rt ${LSP_FEATURES})"

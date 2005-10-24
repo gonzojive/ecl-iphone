@@ -131,7 +131,7 @@ AC_ARG_WITH(rt,
   AS_HELP_STRING( [--with-rt],
                   [include MIT-RT testing environment]
                   [(default=YES)]),
-  [], [with_rt=])
+  [], [with_rt=${enable_shared}])
 
 dnl -----------------------------------------------------------------------
 dnl Installation directories
@@ -441,7 +441,7 @@ if test "${with_asdf}" = "yes"; then
   ECL_ADD_LISP_MODULE([asdf])
 fi
 
-if test "" = "yes"; then
+if test "${with_rt}" = "yes"; then
   ECL_ADD_LISP_MODULE([rt])
 fi
 
