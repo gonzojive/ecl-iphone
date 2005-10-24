@@ -195,6 +195,8 @@ init_alloc(void)
 #if 0
 	GC_init_explicit_typing();
 #endif
+	GC_clear_roots();
+	GC_disable();
 
 	init_tm(t_shortfloat, "SHORT-FLOAT", /* 8 */
 		sizeof(struct ecl_shortfloat));
@@ -232,6 +234,7 @@ init_alloc(void)
 
 	old_GC_push_other_roots = GC_push_other_roots;
 	GC_push_other_roots = stacks_scanner;
+	GC_enable();
 }
 
 /**********************************************************
