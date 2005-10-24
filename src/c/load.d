@@ -333,12 +333,14 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 		   (if_does_not_exist @':error')
 	           (search_list symbol_value(@'si::*load-search-list*'))
 	      &aux pathname pntype hooks filename function ok)
+	bool not_a_filename = 0;
 @
 	/* If source is a stream, read conventional lisp code from it */
-	if (type_of(source) != t_pathname &&  type_of(source) != t_string) {
+	if (type_of(source) != t_pathname && type_of(source) != t_string) {
 		/* INV: if "source" is not a valid stream, file.d will complain */
 		filename = source;
 		function = Cnil;
+		not_a_filename = 1;
 		goto NOT_A_FILENAME;
 	}
 	/* INV: coerce_to_file_pathname() creates a fresh new pathname object */
@@ -397,13 +399,17 @@ NOT_A_FILENAME:
 	}
 	bds_bind(@'*package*', symbol_value(@'*package*'));
 	bds_bind(@'*readtable*', symbol_value(@'*readtable*'));
-	bds_bind(@'*load-pathname*', cl_pathname(filename));
-	bds_bind(@'*load-truename*', cl_truename(filename));
+	bds_bind(@'*load-pathname*', not_a_filename? Cnil : cl_pathname(filename));
+	bds_bind(@'*load-truename*', not_a_filename? Cnil : cl_truename(filename));
 	if (!Null(function)) {
 		ok = funcall(4, function, filename, verbose, print);
 	} else {
 #ifdef ENABLE_DLOPEN
-		ok = si_load_binary(filename, verbose, print);
+		if (not_a_filename) {
+			ok = Ct;
+		} else {
+			ok = si_load_binary(filename, verbose, print);
+		}
 		if (!Null(ok))
 #endif
 		ok = si_load_source(filename, verbose, print);

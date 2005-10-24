@@ -12,6 +12,8 @@ ECL 0.9h
  - MAKE-CONDITION now accepts type specifiers such as '(AND SIMPLE-CONDITION
    TYPE-ERROR).
 
+ - LOAD can now load code from streams which are not associated to files.
+
 * Design:
 
  - Simplified the structure of the frame stack, removing redundant fields.
