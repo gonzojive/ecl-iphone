@@ -127,6 +127,12 @@ AC_ARG_WITH(cmp,
                   [build in the compiler (default=YES)] ),
   [], [with_cmp=yes])
 
+AC_ARG_WITH(rt,
+  AS_HELP_STRING( [--with-rt],
+                  [include MIT-RT testing environment]
+                  [(default=YES)]),
+  [], [with_rt=])
+
 dnl -----------------------------------------------------------------------
 dnl Installation directories
 libdir="${libdir}/ecl"
@@ -432,6 +438,10 @@ fi
 
 if test "${with_asdf}" = "yes"; then
   ECL_ADD_LISP_MODULE([asdf])
+fi
+
+if test "" = "yes"; then
+  ECL_ADD_LISP_MODULE([rt])
 fi
 
 dnl ----------------------------------------------------------------------

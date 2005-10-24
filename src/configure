@@ -889,6 +889,7 @@ Optional Packages:
   --with-asdf             include ASDF building facility (default=YES if
                           shared library support is on)
   --with-cmp              build in the compiler (default=YES)
+  --with-rt               include MIT-RT testing environment (default=YES)
   --with-x                use the X Window System
 
 Some influential environment variables:
@@ -1544,6 +1545,15 @@ if test "${with_cmp+set}" = set; then
 
 else
   with_cmp=yes
+fi;
+
+
+# Check whether --with-rt or --without-rt was given.
+if test "${with_rt+set}" = set; then
+  withval="$with_rt"
+
+else
+  with_rt=
 fi;
 
 libdir="${libdir}/ecl"
@@ -9689,6 +9699,14 @@ if test "${with_asdf}" = "yes"; then
 
 
 LSP_FEATURES="(cons :wants-asdf ${LSP_FEATURES})"
+
+
+fi
+
+if test "" = "yes"; then
+
+
+LSP_FEATURES="(cons :wants-rt ${LSP_FEATURES})"
 
 
 fi

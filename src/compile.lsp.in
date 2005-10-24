@@ -145,6 +145,15 @@ ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@ ../c/all_symbols2.@OBJEXT@; rm *.@OB
 	      :prefix "EXT")
 
 ;;;
+;;; * Test suite
+;;;
+#+WANTS-RT
+(build-module "rt"
+	      '("ext:rt;rt.lisp")
+	      :dir "build:ext;"
+	      :prefix "EXT")
+
+;;;
 ;;; * Compile the portable CLX library.
 ;;;
 
