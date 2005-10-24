@@ -194,7 +194,7 @@ printed.  If FORMAT-STRING is NIL, however, no prompt will appear."
 (defvar *dribble-namestring* nil)
 (defvar *dribble-saved-terminal-io* nil)
 
-(defun dribble (&optional (pathname "DRIBBLE.LOG" psp) (f :supersede))
+(defun dribble (&optional (pathname "DRIBBLE.LOG" psp))
   "Args: (&optional filespec)
 If FILESPEC is given, starts recording the interaction to the specified file.
 FILESPEC may be a symbol, a string, a pathname, or a file stream.  If FILESPEC
@@ -213,7 +213,7 @@ is not given, ends the recording."
         (t
          (let* ((namestring (namestring pathname))
                 (stream (open pathname :direction :output
-                                       :if-exists f
+                                       :if-exists :supersede
                                        :if-does-not-exist :create)))
            (setq *dribble-namestring* namestring
                  *dribble-stream* stream
