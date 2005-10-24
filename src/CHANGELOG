@@ -17,6 +17,9 @@ ECL 0.9h
  - DISASSEMBLE now signals a TYPE-ERROR condition when the argument is neither
    an extended function designator nor a lambda expression.
 
+ - The block name of a function does not involve the the forms in the lambda
+   list: i.e. (LAMBDA-EXT F (&aux (X (RETURN-FROM F 2)))) is no longer valid.
+
 * Design:
 
  - Simplified the structure of the frame stack, removing redundant fields.

@@ -2348,9 +2348,6 @@ make_lambda(cl_object name, cl_object lambda) {
 
 	ENV->coalesce = TRUE;
 
-	if (!Null(name))
-		c_register_block(si_function_block_name(name));
-
 	if ((current_pc() - label) == OPARG_SIZE)
 		set_pc(handle);
 	else
@@ -2361,9 +2358,13 @@ make_lambda(cl_object name, cl_object lambda) {
 		compile_form(value, FLAG_REG0);
 		c_bind(var, specials);
 	}
-
 	c_declare_specials(specials);
-	compile_body(body, FLAG_VALUES);
+	if (!Null(name)) {
+		compile_form(@list*(3, @'block', si_function_block_name(name),
+				    body), FLAG_VALUES);
+	} else {
+		compile_body(body, FLAG_VALUES);
+	}
 	asm_op(OP_EXIT);
 
 	output = asm_end(handle);

@@ -337,16 +337,7 @@ lambda_apply(cl_narg narg, cl_object fun)
 	VALUES(0) = Cnil;
 	NVALUES = 0;
 	name = fun->bytecodes.name;
-	if (Null(name))
-		interpret(fun, fun->bytecodes.code);
-	else {
-		/* Accept (SETF name) */
-		if (CONSP(name)) name = CADR(name);
-		CL_BLOCK_BEGIN(id) {
-			bind_block(name, id);
-			interpret(fun, fun->bytecodes.code);
-		} CL_BLOCK_END;
-	}
+	interpret(fun, fun->bytecodes.code);
 	bds_unwind(old_bds_top);
 	ihs_pop();
 	returnn(VALUES(0));

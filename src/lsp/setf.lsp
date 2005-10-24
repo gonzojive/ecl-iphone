@@ -183,7 +183,7 @@ Does not check if the third gang is a single-element list."
 (defsetf symbol-value set)
 (defsetf symbol-function sys:fset)
 (defsetf fdefinition sys:fset)
-(defsetf macro-function (s) (v) `(sys:fset ,s ,v t))
+(defsetf macro-function (s &optional env) (v) `(sys:fset ,s ,v t))
 (defsetf aref (a &rest il) (v) `(sys:aset ,v ,a ,@il))
 (defsetf row-major-aref (a i) (v) `(sys:row-major-aset ,a ,i ,v))
 (defsetf get (s p &optional d) (v)
