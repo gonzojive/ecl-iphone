@@ -46,7 +46,22 @@ cl_object
 ecl_library_open(cl_object filename) {
 	cl_object block;
 	cl_object libraries = cl_core.libraries;
+	bool self_destruct = 0;
+	cl_index i;
+#ifdef HAVE_LSTAT
+	for (i = 0; i < libraries->vector.fillp; i++) {
+		if (string_eq(libraries->vector.self.t[i]->cblock.name, filename)) {
+			cl_object copy = make_constant_string("TMP:ECL");
+			copy = si_coerce_to_filename(si_mkstemp(copy));
+			unlink(copy->string.self);
+			symlink(filename->string.self, copy->string.self);
+			filename = copy;
+			self_destruct = 1;
+		}
+	}
+#endif
 	block = cl_alloc_object(t_codeblock);
+	block->cblock.self_destruct = self_destruct;
 	block->cblock.name = filename;
 #ifdef HAVE_DLFCN_H
 	block->cblock.handle = dlopen(filename->string.self,

@@ -247,6 +247,8 @@ cl_boot(int argc, char **argv)
 	cl_import2(Ct, cl_core.lisp_package);
 	cl_export2(Ct, cl_core.lisp_package);
 
+	/* At exit, clean up */
+	atexit((void*)cl_shutdown);
 
 	/* These must come _after_ the packages and NIL/T have been created */
 	init_all_symbols();
@@ -471,7 +473,6 @@ cl_boot(int argc, char **argv)
 	if (!FIXNUMP(code))
 		FEerror("Illegal exit code: ~S.", 1, code);
 	i = fix(code);
-	cl_shutdown();
 	exit(i);
 @)
 
