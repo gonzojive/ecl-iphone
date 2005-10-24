@@ -647,11 +647,10 @@ Cannot compile ~a."
           (setq *error-p* t)
           (values name t t)))))
 
-(defun disassemble (&optional (thing nil)
-			      &key (h-file nil) (data-file nil)
-			      &aux def disassembled-form
-			      (*compiler-in-use* *compiler-in-use*)
-			      (*print-pretty* nil))
+(defun disassemble (thing &key (h-file nil) (data-file nil)
+		    &aux def disassembled-form
+		    (*compiler-in-use* *compiler-in-use*)
+		    (*print-pretty* nil))
   (when (si::valid-function-name-p thing)
     (setq thing (fdefinition thing)))
   (cond ((null thing))
@@ -659,9 +658,22 @@ Cannot compile ~a."
 	 (unless (si::bc-disassemble thing)
 	   (warn "Cannot disassemble the binary function ~S because I do not have its source code." thing)
 	   (return-from disassemble nil)))
-	((and (consp thing) (eq (car thing) 'LAMBDA))
+	((atom thing)
+	 (error 'simple-type-error
+		:datum thing
+		:expected-type '(OR FUNCTION (SATISFIES SI:VALID-FUNCTION-NAME-P))
+		:format-control "DISASSEMBLE cannot accept ~A"
+		:format-arguments (list thing)))
+	((eq (car thing) 'LAMBDA)
 	 (setq disassembled-form `(defun gazonk ,@(cdr thing))))
-	(t (setq disassembled-form thing)))
+	((eq (car thing) 'EXT:LAMBDA-BLOCK)
+	 (setq disassembled-form `(defun ,@(rest thing))))
+	(t
+	 (error 'simple-type-error
+		:datum thing
+		:expected-type '(OR FUNCTION (SATISFIES SI:VALID-FUNCTION-NAME-P))
+		:format-control "DISASSEMBLE cannot accept ~A"
+		:format-arguments (list thing))))
   (when *compiler-in-use*
     (format t "~&;;; The compiler was called recursively.~
                    ~%Cannot disassemble ~a." thing)
