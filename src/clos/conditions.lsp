@@ -288,13 +288,19 @@ strings."
       ',NAME)))
 
 (defun make-condition (type &rest slot-initializations)
-  (unless (subtypep type 'CONDITION)
-    (error 'SIMPLE-TYPE-ERROR
-	   :DATUM type
-	   :EXPECTED-TYPE 'CONDITION
-	   :FORMAT-CONTROL "Not a condition type: ~S"
-	   :FORMAT-ARGUMENTS (list type)))
-  (apply #'make-instance type slot-initializations))
+  (labels ((try-class (class)
+	     (if (subtypep class type)
+		 class
+		 (some #'try-class (clos::class-direct-subclasses class)))))
+    (let ((class (or (and (symbolp type) (find-class type nil))
+		     (try-class (find-class 'condition)))))
+      (unless class
+	(error 'SIMPLE-TYPE-ERROR
+	       :DATUM type
+	       :EXPECTED-TYPE 'CONDITION
+	       :FORMAT-CONTROL "Not a condition type: ~S"
+	       :FORMAT-ARGUMENTS (list type)))    
+      (apply #'make-instance class slot-initializations))))
 
 #| For the moment, do not redefine these. Beppe.
 (eval-when (eval compile load)
