@@ -68,8 +68,10 @@
     (cdr x)))
 
 (defun t3-defcallback (lisp-name c-name c-name-constant return-type
-		       arg-types arg-type-constants call-type)
+		       arg-types arg-type-constants call-type &aux (return-p t))
   (cond ((ffi::foreign-elt-type-p return-type))
+	((member return-type '(nil :void))
+	 (setf return-p nil))
 	((and (consp return-type)
 	      (member (first return-type) '(* array)))
 	 (setf return-type :pointer-void))
@@ -92,7 +94,8 @@
 	    (setf comma ",")))
     (wt ")")
     (wt-nl1 "{")
-    (wt-nl return-type-name " output;")
+    (when return-p
+      (wt-nl return-type-name " output;"))
     (wt-nl "cl_object aux;")
     (loop for n from 0
 	  and type in arg-types
@@ -106,9 +109,10 @@
     (wt-nl "aux = cl_apply_from_stack(" (length arg-types)
 	   ",ecl_fdefinition(" c-name-constant "));")
     (wt-nl "cl_stack_pop_n(" (length arg-types) ");")
-    (wt-nl "ecl_foreign_data_set_elt(&output,"
-	   (foreign-elt-type-code return-type) ",aux);")
-    (wt-nl "return output;")
+    (when return-p
+      (wt-nl "ecl_foreign_data_set_elt(&output,"
+	     (foreign-elt-type-code return-type) ",aux);")
+      (wt-nl "return output;"))
     (wt-nl1 "}")))
 
 (put-sysprop 'FFI:DEFCALLBACK 'C1 #'c1-defcallback)

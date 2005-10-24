@@ -18,8 +18,8 @@
 (defconstant +representation-types+
   '(;; These types can be used by ECL to unbox data
     ;; They are sorted from the most specific, to the least specific one.
-    :byte ((signed-byte 8) "byte")
-    :unsigned-byte ((unsigned-byte 8) "unsigned byte")
+    :byte ((signed-byte 8) "int8_t")
+    :unsigned-byte ((unsigned-byte 8) "uint8_t")
     :fixnum (fixnum "cl_fixnum")
     :int ((integer #.si:c-int-min #.si:c-int-max) "int")
     :unsigned-int ((integer 0 #.si:c-uint-max) "unsigned int")
