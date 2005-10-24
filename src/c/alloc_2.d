@@ -18,9 +18,6 @@
 #include "ecl.h"
 #include "internal.h"
 #include "page.h"
-#ifdef ECL_THREADS
-#define GC_THREADS
-#endif
 #ifdef _MSC_VER
 #include "gc.h"
 #include "private/gc_priv.h"
