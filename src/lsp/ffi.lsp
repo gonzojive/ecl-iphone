@@ -625,10 +625,12 @@
 
 (defmacro load-foreign-library (filename &key module supporting-libraries force-load)
   (declare (ignore module force-load supporting-libraries))
-  (unless (constantp filename)
-    (error "~&LOAD-FOREIGN-LIBRARY: ~A is not a constant expression. This is currently not supported." filename))
-  `(eval-when (:compile-toplevel)
-     (do-load-foreign-library ,filename)))
+  (let ((compile-form (and (constantp filename)
+			   `((eval-when (:compile-toplevel)
+			       (do-load-foreign-library ,filename)))))
+	(dyn-form #-dffi nil
+		  #+dffi `((si:load-foreign-module ,filename))))
+    `(progn ,@compile-form ,@dyn-form)))
 
 ;;;----------------------------------------------------------------------
 ;;; CALLBACKS
