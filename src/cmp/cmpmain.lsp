@@ -346,6 +346,7 @@ static cl_object VV[VM];
        (close c-file)
        (compiler-cc c-name o-name)
        (apply #'bundle-cc output-name o-name ld-flags)))
+    (cmp-delete-file tmp-name)
     (cmp-delete-file c-name)
     (cmp-delete-file o-name)
     output-name))
