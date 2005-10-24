@@ -161,12 +161,12 @@ si_readlink(cl_object filename) {
  * current directory
  */
 cl_object
-cl_truename(cl_object pathname)
+cl_truename(cl_object orig_pathname)
 {
 	cl_object dir;
 	cl_object previous = current_dir();
 
-	pathname = coerce_to_file_pathname(pathname);
+	cl_object pathname = coerce_to_file_pathname(orig_pathname);
 	assert_non_wild_pathname(pathname);
 	if (pathname->pathname.directory == Cnil)
 		pathname = merge_pathnames(previous, pathname, @':newest');
@@ -184,7 +184,7 @@ cl_truename(cl_object pathname)
 		filename = si_coerce_to_filename(pathname);
 		kind = file_kind(filename->string.self, FALSE);
 		if (kind == Cnil) {
-			FEcannot_open(pathname);
+			FEcannot_open(orig_pathname);
 #ifdef HAVE_LSTAT
 		} else if (kind == @':link') {
 			filename = si_readlink(filename);

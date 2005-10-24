@@ -693,12 +693,14 @@ coerce_to_file_pathname(cl_object pathname)
 {
 	pathname = coerce_to_physical_pathname(pathname);
 	pathname = cl_merge_pathnames(1, pathname);
+#if 0
 #if !defined(cygwin) && !defined(mingw32) && !defined(_MSC_VER)
 	if (pathname->pathname.device != Cnil)
 		FEerror("Device ~S not yet supported.", 1,
 			pathname->pathname.device);
 	if (pathname->pathname.host != Cnil)
 		FEerror("Access to remote files not yet supported.", 0);
+#endif
 #endif
 	return pathname;
 }
