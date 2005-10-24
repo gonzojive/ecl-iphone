@@ -62,7 +62,8 @@
 	collect (car (output-files (make-instance 'build-op) c))))
 
 (defmethod output-files ((o build-op) (c system))
-  (list (compile-file-pathname (component-name c) :type (build-op-type o))))
+  (list (merge-pathnames (component-pathname c)
+			 (compile-file-pathname (component-name c) :type (build-op-type o)))))
 
 (defmethod input-files ((o build-op) (c system))
   (append (get-object-files c)
