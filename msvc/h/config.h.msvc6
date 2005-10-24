@@ -30,6 +30,9 @@
 
 /* Userland threads?							*/
 /* #undef ECL_THREADS */
+#ifdef ECL_THREADS
+# define GC_THREADS
+#endif
 
 /* Network streams							*/
 #define TCP 1
