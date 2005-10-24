@@ -446,116 +446,6 @@ interpret_funcall(cl_narg narg, cl_object fun) {
 
 /* -------------------- THE INTERPRETER -------------------- */
 
-/* OP_DOLIST	labelz, labelo
-   ...		; code to bind the local variable
-   OP_EXIT
-   ...		; code executed on each iteration
-   OP_EXIT
-   labelo:
-   ...		; code executed at the end
-   OP_EXIT
-   labelz:
-
-	High level construct for the DOLIST iterator. The list over which
-	we iterate is stored in VALUES(0).
-*/
-static cl_opcode *
-interpret_dolist(cl_object bytecodes, cl_opcode *vector) {
-	cl_opcode *volatile exit;
-	cl_opcode *output;
-
-	GET_LABEL(exit, vector);
-	GET_LABEL(output, vector);
-
-	/* 1) Set NIL block */
-	CL_BLOCK_BEGIN(id) {
-		cl_object list = VALUES(0);
-
-		bind_block(Cnil, id);
-
-		/* 2) Build list & bind variable*/
-		vector = interpret(bytecodes, vector);
-
-		/* 3) Repeat until list is exahusted */
-		while (!endp(list)) {
-			NVALUES = 1;
-			VALUES(0) = CAR(list);
-			interpret(bytecodes, vector);
-			list = CDR(list);
-		}
-		VALUES(0) = Cnil;
-		NVALUES = 1;
-		interpret(bytecodes, output);
-
-		/* 4) Restore environment */
-		cl_env.lex_env = cl_env.frs_top->frs_lex;
-		bds_unwind(cl_env.frs_top->frs_bds_top);
-	} CL_BLOCK_END;
-	return exit;
-}
-
-/* OP_TIMES	labelz, labelo
-   ...		; code to bind the local variable
-   OP_EXIT
-   ...		; code executed on each iteration
-   OP_EXIT
-   labelo:
-   ...		; code executed at the end
-   OP_EXIT
-   labelz:
-
-	High level construct for the DOTIMES iterator. The number of times
-	we iterate is stored in VALUES(0).
-*/
-static cl_opcode *
-interpret_dotimes(cl_object bytecodes, cl_opcode *vector) {
-	cl_opcode *volatile exit;
-	cl_opcode *output;
-
-	GET_LABEL(exit, vector);
-	GET_LABEL(output, vector);
-
-	CL_BLOCK_BEGIN(id) {
-		cl_object length = VALUES(0);
-
-		/* 1) Set up a nil block */
-		bind_block(Cnil, id);
-
-		/* 2) Retrieve number and bind variables */
-		vector = interpret(bytecodes, vector);
-
-		if (FIXNUMP(length)) {
-		    cl_fixnum i, l = fix(length);
-		    /* 3) Loop while needed */
-		    for (i = 0; i < l; i++) {
-			NVALUES = 1;
-			VALUES(0) = MAKE_FIXNUM(i);
-			interpret(bytecodes, vector);
-		    }
-		    length = MAKE_FIXNUM(i);
-		} else {
-		    cl_object i;
-		    for (i = MAKE_FIXNUM(0);
-			 number_compare(i, length) < 0;
-			 i = one_plus(i))
-		    {
-			NVALUES = 1;
-			VALUES(0) = i;
-			interpret(bytecodes, vector);
-		    }
-		    length = i;
-		}
-		NVALUES = 1;
-		VALUES(0) = length;
-		interpret(bytecodes, output);
-
-		/* 4) Restore environment */
-		cl_env.lex_env = cl_env.frs_top->frs_lex;
-		bds_unwind(cl_env.frs_top->frs_bds_top);
-	} CL_BLOCK_END;
-	return exit;
-}
-
 static cl_object
 close_around(cl_object fun, cl_object lex) {
 	cl_object v = cl_alloc_object(t_bytecodes);
@@ -569,7 +459,7 @@ close_around(cl_object fun, cl_object lex) {
    ...
    funn{object}
    ...
-   OP_EXIT
+   OP_UNBIND n
 
 	Executes the enclosed code in a lexical enviroment extended with
 	the functions "fun1" ... "funn".
@@ -591,12 +481,12 @@ interpret_flet(cl_object bytecodes, cl_opcode *vector) {
 	return vector;
 }
 
-/* OP_FLET	nfun{arg}
+/* OP_LABELS	nfun{arg}
    fun1{object}
    ...
    funn{object}
    ...
-   OP_EXIT
+   OP_UNBIND n
 
 	Executes the enclosed code in a lexical enviroment extended with
 	the functions "fun1" ... "funn".
@@ -1055,7 +945,7 @@ interpret(cl_object bytecodes, void *pc) {
 
 	/* OP_BLOCK	label{arg}
 	   ...
-	   OP_EXIT
+	   OP_EXIT_FRAME
 	 label:
 
 	   Executes the enclosed code in a named block.
@@ -1114,7 +1004,7 @@ interpret(cl_object bytecodes, void *pc) {
 	     ...
 	   labeln:
 	     ...
-	   OP_EXIT
+	   OP_EXIT_TAGBODY
 
 	   High level construct for the TAGBODY form.
 	*/
@@ -1158,14 +1048,6 @@ interpret(cl_object bytecodes, void *pc) {
 	case OP_NOP:
 		VALUES(0) = reg0 = Cnil;
 		NVALUES = 0;
-		break;
-	case OP_DOLIST:
-		vector = interpret_dolist(bytecodes, vector);
-		reg0 = VALUES(0);
-		break;
-	case OP_DOTIMES:
-		vector = interpret_dotimes(bytecodes, vector);
-		reg0 = VALUES(0);
 		break;
 	case OP_MSETQ:
 		vector = interpret_msetq(bytecodes, vector);
@@ -1246,10 +1128,10 @@ interpret(cl_object bytecodes, void *pc) {
 	}
 	/* OP_PROTECT	label
 	     ...	; code to be protected and whose value is output
-	   OP_EXIT
+	   OP_PROTECT_NORMAL
 	   label:
 	     ...	; code executed at exit
-	   OP_EXIT
+	   OP_PROTECT_EXIT
 
 	  High level construct for UNWIND-PROTECT. The first piece of code is
 	  executed and its output value is saved. Then the second piece of code

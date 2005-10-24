@@ -41,6 +41,56 @@
 ;; This is also needed for booting ECL. In particular it is required in
 ;; defmacro.lsp.
 ;;
+(let ((f #'(ext::lambda-block dolist (whole env)
+	   (let (body pop finished control var expr exit)
+	     (setq body (rest whole))
+	     (when (endp body)
+	       (simple-program-error "Syntax error in ~A:~%~A" 'DOLIST whole))
+	     (setq control (first body) body (rest body))
+	     (when (endp control)
+	       (simple-program-error "Syntax error in ~A:~%~A" 'DOLIST whole))
+	     (setq var (first control) control (rest control))
+	     (if (<= 1 (length control) 2)
+		 (setq expr (first control) exit (rest control))
+		 (simple-program-error "Syntax error in ~A:~%~A" 'DOLIST whole))
+	     (multiple-value-bind (declarations body)
+		 (process-declarations body nil)
+	       `(block nil
+		 (let* ((%dolist-var ,expr)
+			,var)
+		   (declare ,@declarations)
+		   (si::while %dolist-var
+		      (setq ,var (first %dolist-var))
+		      ,@body
+		      (setq %dolist-var (rest %dolist-var)))
+		   ,(when exit `(setq ,var nil))
+		   ,@exit)))))))
+  (si::fset 'dolist f t))
+
+(let ((f #'(ext::lambda-block dotimes (whole env)
+	   (let (body pop finished control var expr exit)
+	     (setq body (rest whole))
+	     (when (endp body)
+	       (simple-program-error "Syntax error in ~A:~%~A" 'DOTIMES whole))
+	     (setq control (first body) body (rest body))
+	     (when (endp control)
+	       (simple-program-error "Syntax error in ~A:~%~A" 'DOTIMES whole))
+	     (setq var (first control) control (rest control))
+	     (if (<= 1 (length control) 2)
+		 (setq expr (first control) exit (rest control))
+		 (simple-program-error "Syntax error in ~A:~%~A" 'DOTIMES whole))
+	     (multiple-value-bind (declarations body)
+		 (process-declarations body nil)
+	       `(block nil
+		 (let* ((%dotimes-var ,expr)
+			(,var 0))
+		   (declare ,@declarations)
+		   (si::while (< ,var %dotimes-var)
+		     ,@body
+		     (setq ,var (1+ ,var)))
+		   ,@exit)))))))
+  (si::fset 'dotimes f t))
+
 (let ((f #'(ext::lambda-block do/do*-expand (whole env)
            (let (do/do* control test result vl step let psetq body)
 	     (setq do/do* (first whole) body (rest whole))
@@ -48,13 +98,13 @@
 		 (setq let 'LET psetq 'PSETQ)
 		 (setq let 'LET* psetq 'SETQ))
 	     (when (endp body)
-	       (simple-program-error "Syntax error in DO/DO* body:~%~A" whole))
+	       (simple-program-error "Syntax error in ~A:~%~A" do/do* whole))
 	     (setq control (first body) body (rest body))
 	     (when (endp body)
-	       (simple-program-error "Syntax error in DO/DO* body:~%~A" whole))
+	       (simple-program-error "Syntax error in ~A:~%~A" do/do* whole))
 	     (setq test (first body) body (rest body))
 	     (when (endp test)
-	       (simple-program-error "Syntax error in DO/DO* body:~%~A" whole))
+	       (simple-program-error "Syntax error in ~A:~%~A" do/do* whole))
 	     (setq result (rest test) test (first test))
 	     (dolist (c control)
 	       (when (symbolp c) (setq c (list c)))
@@ -65,15 +115,15 @@
 		  (setq vl (cons (butlast c) vl)
 			step (list* (third c) (first c) step)))
 		 (t
-		  (simple-program-error "Syntax error in DO/DO* body:~%~A" whole))))
-	     (multiple-value-bind (declarations real-body doc)
+		  (simple-program-error "Syntax error in ~A:~%~A" do/do* whole))))
+	     (multiple-value-bind (declarations real-body)
 		 (process-declarations body nil)
 	       `(BLOCK NIL
 		 (,let ,(nreverse vl)
 		   (declare ,@declarations)
-		   (sys::while ,test
-			       ,@real-body
-			       ,@(when step (list (cons psetq (nreverse step)))))
+		   (sys::until ,test
+		      ,@real-body
+		      ,@(when step (list (cons psetq (nreverse step)))))
 		   ,@(or result '(nil)))))))))
   (si::fset 'do f t)
   (si::fset 'do* f t))

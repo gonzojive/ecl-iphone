@@ -1524,6 +1524,7 @@ cl_symbols[] = {
 #endif
 
 {SYS_ "WHILE",NULL},
+{SYS_ "UNTIL",NULL},
 {SYS_ "QUASIQUOTE",NULL},
 {SYS_ "*EXIT-HOOKS*",NULL},
 

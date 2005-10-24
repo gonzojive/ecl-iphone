@@ -71,8 +71,6 @@ static int c_case(cl_object args, int flags);
 static int c_catch(cl_object args, int flags);
 static int c_compiler_let(cl_object args, int flags);
 static int c_cond(cl_object args, int flags);
-static int c_dolist(cl_object args, int flags);
-static int c_dotimes(cl_object args, int flags);
 static int c_eval_when(cl_object args, int flags);
 static int c_flet(cl_object args, int flags);
 static int c_funcall(cl_object args, int flags);
@@ -102,6 +100,7 @@ static int c_tagbody(cl_object args, int flags);
 static int c_throw(cl_object args, int flags);
 static int c_unwind_protect(cl_object args, int flags);
 static int c_while(cl_object args, int flags);
+static int c_until(cl_object args, int flags);
 static int compile_body(cl_object args, int flags);
 static int compile_form(cl_object args, int push);
 
@@ -232,8 +231,6 @@ static compiler_record database[] = {
   {@'catch', c_catch, 1},
   {@'ext::compiler-let', c_compiler_let, 0},
   {@'cond', c_cond, 1},
-  {@'dolist', c_dolist, 1},
-  {@'dotimes', c_dotimes, 1},
   {@'eval-when', c_eval_when, 0},
   {@'flet', c_flet, 1},
   {@'function', c_function, 1},
@@ -265,6 +262,7 @@ static compiler_record database[] = {
   {@'unwind-protect', c_unwind_protect, 1},
   {@'values', c_values, 1},
   {@'si::while', c_while, 0},
+  {@'si::until', c_until, 0},
   {NULL, NULL, 1}
 };
 
@@ -922,7 +920,7 @@ c_cond(cl_object args, int flags) {
 
 */
 static int
-c_while(cl_object body, int flags) {
+c_while_until(cl_object body, int flags, bool is_while) {
 	cl_object test = pop(&body);
 	cl_index labelt, labelb;
 
@@ -938,99 +936,20 @@ c_while(cl_object body, int flags) {
 	/* Compile test */
 	asm_complete(OP_JMP, labelt);
 	compile_form(test, FLAG_VALUES);
-	asm_op(OP_JNIL);
+	asm_op(is_while? OP_JT : OP_JNIL);
 	asm_arg(labelb - current_pc());
 
 	return flags;
 }
 
-/*
-	The OP_DOLIST & OP_DOTIMES operators save the lexical
-	environment and establishes a NIL block to execute the
-	enclosed forms, which iterate over the elements in a list or
-	over a range of integer numbers. At the exit of the block,
-	either by means of a OP_RETFROM jump or because of normal
-	termination, the lexical environment is restored, and all
-	bindings undone.
-
-		[OP_DOTIMES/OP_DOLIST + labelz + labelo]
-		...	; bindings
-		OP_EXIT
-		...	; body
-		...	; stepping forms
-		OP_EXIT
-	labelo:	...	; output form
-		OP_EXIT
-	labelz:
-
- */
-
 static int
-c_dolist_dotimes(int op, cl_object args, int flags) {
-	cl_object head = pop(&args);
-	cl_object var = pop(&head);
-	cl_object list = pop(&head);
-	cl_object specials, body;
-	cl_index labelz, labelo;
-	cl_object old_variables = ENV->variables;
-
-	body = c_process_declarations(args);
-	specials = VALUES(3);
-
-	if (!SYMBOLP(var))
-		FEillegal_variable_name(var);
-
-	/* Compute list and enter loop */
-	compile_form(list, FLAG_VALUES);
-	labelz = asm_jmp(op);
-	labelo = current_pc(); asm_arg(0);
-
-	/* Bind block */
-	c_register_block(Cnil);
-
-	/* Initialize the variable */
-	compile_form((op == OP_DOLIST)? Cnil : MAKE_FIXNUM(0), FLAG_REG0);
-	c_bind(var, specials);
-	asm_op(OP_EXIT);
-
-	/* From here on, declarations apply */
-	c_declare_specials(specials);
-
-	/* Variable assignment and iterated body */
-	compile_setq(OP_SETQ, var);
-	c_tagbody(body, 0);
-	asm_op(OP_EXIT);
-
-	/* Output */
-	asm_complete(0, labelo);
-	if (head != Cnil && CDR(head) != Cnil)
-		FEprogram_error("DOLIST: Too many output forms.", 0);
-	flags = maybe_values(flags);
-	if (Null(head)) {
-		compile_body(Cnil, flags);
-	} else {
-		compile_setq(OP_SETQ, var);
-		compile_form(pop(&head), flags);
-	}
-	asm_op(OP_EXIT);
-
-	/* Exit point for block */
-	asm_complete(op, labelz);
-
-	ENV->variables = old_variables;
-
-	return flags;
-}
-
-
-static int
-c_dolist(cl_object args, int flags) {
-	return c_dolist_dotimes(OP_DOLIST, args, flags);
+c_while(cl_object body, int flags) {
+	return c_while_until(body, flags, 1);
 }
 
 static int
-c_dotimes(cl_object args, int flags) {
-	return c_dolist_dotimes(OP_DOTIMES, args, flags);
+c_until(cl_object body, int flags) {
+	return c_while_until(body, flags, 0);
 }
 
 static int
@@ -1053,7 +972,7 @@ c_eval_when(cl_object args, int flags) {
 		...
 		fun2
 		...
-		OP_EXIT
+		OP_UNBIND n
 	labelz:
 */
 static cl_index

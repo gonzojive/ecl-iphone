@@ -110,70 +110,6 @@ NO_ARGS:
 
 /* -------------------- DISASSEMBLER CORE -------------------- */
 
-/* OP_DOLIST	labelz, labelo
-   ...		; code to bind the local variable
-   OP_EXIT
-   ...		; code executed on each iteration
-   OP_EXIT
-   labelo:
-   ...		; code executed at the end
-   OP_EXIT
-   labelz:
-
-	High level construct for the DOLIST iterator. The list over which
-	we iterate is stored in VALUES(0).
-*/
-static cl_opcode *
-disassemble_dolist(cl_object bytecodes, cl_opcode *vector) {
-	cl_opcode *exit, *output;
-	cl_object lex_old = cl_env.lex_env;
-
-	GET_LABEL(exit, vector);
-	GET_LABEL(output, vector);
-	print_oparg("DOLIST\t", exit-base);
-	vector = disassemble(bytecodes, vector);
-	print_noarg("\t\t; dolist binding");
-	vector = disassemble(bytecodes, vector);
-	print_noarg("\t\t; dolist body");
-	vector = disassemble(bytecodes, vector);
-	print_noarg("\t\t; dolist");
-
-	cl_env.lex_env = lex_old;
-	return vector;
-}
-
-/* OP_TIMES	labelz, labelo
-   ...		; code to bind the local variable
-   OP_EXIT
-   ...		; code executed on each iteration
-   OP_EXIT
-   labelo:
-   ...		; code executed at the end
-   OP_EXIT
-   labelz:
-
-	High level construct for the DOTIMES iterator. The number of times
-	we iterate is stored in VALUES(0).
-*/
-static cl_opcode *
-disassemble_dotimes(cl_object bytecodes, cl_opcode *vector) {
-	cl_opcode *exit, *output;
-	cl_object lex_old = cl_env.lex_env;
-
-	GET_LABEL(exit, vector);
-	GET_LABEL(output, vector);
-	print_oparg("DOTIMES\t", exit-base);
-	vector = disassemble(bytecodes, vector);
-	print_noarg("\t\t; dotimes times");
-	vector = disassemble(bytecodes, vector);
-	print_noarg("\t\t; dotimes body");
-	vector = disassemble(bytecodes, vector);
-	print_noarg("\t\t; dotimes");
-
-	cl_env.lex_env = lex_old;
-	return vector;
-}
-
 /* OP_FLET	nfun{arg}
    fun1{object}
    ...
@@ -474,7 +410,7 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 	case OP_CATCH:		string = "CATCH\t";
 				goto JMP;
 	/* OP_EXIT
-		Marks the end of a high level construct (DOLIST, DOTIMES...)
+		Marks the end of a high level construct
 	*/
 	case OP_EXIT:		print_noarg("EXIT");
 				return vector;
@@ -655,10 +591,6 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 	*/
 	case OP_NTHVAL:		string = "NTHVAL\t";
 				goto NOARG;
-	case OP_DOLIST:		vector = disassemble_dolist(bytecodes, vector);
-				break;
-	case OP_DOTIMES:	vector = disassemble_dotimes(bytecodes, vector);
-				break;
 	/* OP_DO	label
 	     ...	; code executed within a NIL block
 	   OP_EXIT_FRAME

@@ -247,7 +247,8 @@ SECOND-FORM."
 (defmacro multiple-value-bind (vars form &rest body)
   `(multiple-value-call #'(lambda (&optional ,@(mapcar #'list vars)) ,@body) ,form))
 
-(defmacro sys::while (test &body body)
+(defun while-until (test body jmp-op)
+  (declare (si::c-local))
   (let ((label (gensym))
 	(exit (gensym)))
     `(TAGBODY
@@ -255,7 +256,13 @@ SECOND-FORM."
       ,label
         ,@body
       ,exit
-	(UNLESS ,test (GO ,label)))))
+	(,jmp-op ,test (GO ,label)))))
+
+(defmacro sys::while (test &body body)
+  (while-until test body 'when))
+
+(defmacro sys::until (test &body body)
+  (while-until test body 'unless))
 
 (defmacro case (keyform &rest clauses &aux (form nil) (key (gensym)))
   (dolist (clause (reverse clauses)
@@ -275,25 +282,6 @@ SECOND-FORM."
   )
 
 (defmacro return (&optional (val nil)) `(RETURN-FROM NIL ,val))
-
-(defmacro dolist ((var form &optional (val nil)) &rest body
-                                                 &aux (temp (gensym)) decl)
-  (multiple-value-setq (decl body)
-    (find-declarations body))
-    ;; Since ENDP did not complain, this is definitely a (CDR ,temp) is safe
-  `(DO* ((,temp ,form (CDR (THE CONS ,temp))) (,var))
-	((ENDP ,temp) ,val)
-    ,@decl
-    (SETQ ,var (CAR ,temp))
-    ,@body
-    ))
-
-(defmacro dotimes ((var form &optional (val nil)) &rest body
-                                                  &aux (temp (gensym)))
-  `(DO* ((,temp ,form) (,var 0 (1+ ,var)))
-        ((>= ,var ,temp) ,val)
-        (DECLARE (FIXNUM ,var)) ; Beppe  (:READ-ONLY ,temp)
-        ,@body))
 
 ;; Declarations
 (defmacro declaim (&rest decl-specs)
