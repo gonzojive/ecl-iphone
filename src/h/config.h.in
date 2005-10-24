@@ -30,6 +30,9 @@
 
 /* Userland threads?							*/
 #undef ECL_THREADS
+#ifdef ECL_THREADS
+# define GC_THREADS
+#endif
 
 /* __thread thread-local variables?                                     */
 #undef WITH___THREAD

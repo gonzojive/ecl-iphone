@@ -113,16 +113,48 @@ thread_entry_point(cl_object process)
 	return NULL;
 }
 
+static cl_object
+alloc_process(cl_object name)
+{
+	cl_object process = cl_alloc_object(t_process);
+	process->process.active = 0;
+	process->process.name = name;
+	process->process.function = Cnil;
+	process->process.args = Cnil;
+	process->process.interrupt = Cnil;
+	process->process.env = cl_alloc(sizeof(*process->process.env));
+	process->process.env->own_process = process;
+	return process;
+}
+
+static void
+initialize_process_bindings(cl_object process, cl_object initial_bindings)
+{
+	cl_object hash;
+	/* FIXME! Here we should either use INITIAL-BINDINGS or copy lexical
+	 * bindings */
+	if (initial_bindings != OBJNULL) {
+		hash = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024),
+					   make_shortfloat(1.5),
+					   make_shortfloat(0.7),
+					   Cnil); /* no need for locking */
+	} else {
+		hash = si_copy_hash_table(cl_env.bindings_hash);
+	}
+	process->process.env->bindings_hash = hash;
+}
+
 void
 ecl_import_current_thread(cl_object name, cl_object bindings)
 {
-	cl_object process = mp_make_process(4, @':name', name, @':initial-bindings', bindings);
+	cl_object process = alloc_process(name);
 #ifdef WITH___THREAD
 	cl_env_p = process->process.env;
 #else
 	if (pthread_setspecific(cl_env_key, process->process.env))
 		FElibc_error("pthread_setcspecific() failed.", 0);
 #endif
+	initialize_process_bindings(process, bindings);
 	ecl_init_env(&cl_env);
         init_big_registers();
 }
@@ -135,27 +167,9 @@ ecl_release_current_thread(void)
 
 @(defun mp::make-process (&key name ((:initial-bindings initial_bindings) Ct))
 	cl_object process;
-	cl_object hash;
 @
-	process = cl_alloc_object(t_process);
-	process->process.active = 0;
-	process->process.name = name;
-	process->process.function = Cnil;
-	process->process.args = Cnil;
-	process->process.interrupt = Cnil;
-	process->process.env = cl_alloc(sizeof(*process->process.env));
-	/* FIXME! Here we should either use INITIAL-BINDINGS or copy lexical
-	 * bindings */
-	if (initial_bindings != OBJNULL) {
-		hash = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024),
-					   make_shortfloat(1.5),
-					   make_shortfloat(0.7),
-					   Cnil); /* no need for locking */
-	} else {
-		hash = si_copy_hash_table(cl_env.bindings_hash);
-	}
-	process->process.env->bindings_hash = hash;
-	process->process.env->own_process = process;
+	process = alloc_process(name);
+	initialize_process_bindings(process, initial_bindings);
 	@(return process)
 @)
 
