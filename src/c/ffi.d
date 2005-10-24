@@ -417,8 +417,10 @@ OUTPUT:
 	mp_giveup_lock(symbol_value(@'mp::+load-compile-lock+'));
 	} CL_UNWIND_PROTECT_END;
 #endif
-	if (type_of(output) == t_codeblock)
+	if (type_of(output) == t_codeblock) {
+		output->cblock.locked |= 1;
 		@(return output)
+	}
 	else
 		FEerror("LOAD-FOREIGN-MODULE: Could not load foreign module ~S (Error: ~S)", 2, filename, output);
 }
