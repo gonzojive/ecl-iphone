@@ -493,7 +493,7 @@ cl_nreconc(cl_object l, cl_object y)
 		y = z;
 	}
 	if (x != Cnil)
-		FEtype_error_proper_list(l);
+		FEtype_error_list(x);
 	@(return y)
 }
 
