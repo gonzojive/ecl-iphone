@@ -70,6 +70,7 @@
       (si:instance-class-set gfun (find-class 'STANDARD-GENERIC-FUNCTION))
       (si::instance-sig-set gfun)
       (setf (generic-function-method-class gfun) standard-method-class)
+      (setf (slot-value gfun 'documentation) nil)
       )
     (dolist (method (cdr method-info))
       ;; complete the method object
