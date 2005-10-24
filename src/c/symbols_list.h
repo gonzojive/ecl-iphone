@@ -1563,6 +1563,8 @@ cl_symbols[] = {
 {KEY_ "CDECL", KEYWORD, NULL, -1, OBJNULL},
 {KEY_ "STDCALL", KEYWORD, NULL, -1, OBJNULL},
 
+{SYS_ "TRAP-FPE", SI_ORDINARY, si_trap_fpe, 2, OBJNULL},
+
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1, OBJNULL}};
 

@@ -299,7 +299,7 @@ AC_HEADER_STDC
 AC_HEADER_TIME
 AC_CHECK_HEADERS( [fcntl.h inttypes.h limits.h netdb.h netinet/in.h] \
                   [stddef.h stdlib.h string.h sys/param.h] \
-                  [sys/socket.h sys/time.h unistd.h] )
+                  [sys/socket.h sys/time.h unistd.h fenv.h] )
 dnl !!! end autoscan
 
 AC_CHECK_HEADERS( [sys/resource.h sys/utsname.h float.h pwd.h dlfcn.h link.h] \
@@ -369,7 +369,7 @@ AC_CHECK_FUNCS( [floor getcwd gethostbyaddr gethostbyname getpagesize] \
 dnl !!! end autoscan
 
 AC_CHECK_FUNCS( [nanosleep alarm times isnanf select setenv putenv] \
-                [lstat mkstemp sigprocmask isatty] )
+                [lstat mkstemp sigprocmask isatty feenableexcept] )
 
 dnl =====================================================================
 dnl Checks for system services

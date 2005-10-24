@@ -1463,6 +1463,7 @@ extern cl_object homedir_pathname(cl_object user);
 extern cl_object si_catch_bad_signals(void);
 extern cl_object si_uncatch_bad_signals(void);
 extern cl_object si_check_pending_interrupts(void);
+extern cl_object si_trap_fpe(cl_object condition, cl_object flag);
 
 
 /* unixsys.c */

@@ -203,6 +203,10 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #undef HAVE_ISATTY
 /* compiler understands long long                                       */
 #undef HAVE_LONG_LONG
+/* can manipulate floating point environment				*/
+#undef HAVE_FENV_H
+/* can activate individual traps in floating point environment		*/
+#undef HAVE_FEENABLEEXCEPT
 
 /* what characters are used to mark beginning of new line		*/
 #undef ECL_NEWLINE_IS_CRLF

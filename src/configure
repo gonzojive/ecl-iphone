@@ -5485,9 +5485,10 @@ fi
 
 
 
+
 for ac_header in fcntl.h inttypes.h limits.h netdb.h netinet/in.h \
                   stddef.h stdlib.h string.h sys/param.h \
-                  sys/socket.h sys/time.h unistd.h
+                  sys/socket.h sys/time.h unistd.h fenv.h
 do
 as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`
 if eval "test \"\${$as_ac_Header+set}\" = set"; then
@@ -9560,8 +9561,9 @@ done
 
 
 
+
 for ac_func in nanosleep alarm times isnanf select setenv putenv \
-                lstat mkstemp sigprocmask isatty
+                lstat mkstemp sigprocmask isatty feenableexcept
 do
 as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`
 echo "$as_me:$LINENO: checking for $ac_func" >&5

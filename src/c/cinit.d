@@ -66,6 +66,9 @@ main(int argc, char **args)
 	/* This should be always the first call */
 	cl_boot(argc, args);
 
+	/* We are computing unnormalized numbers at some point */
+	si_trap_fpe(Ct, Cnil);
+
 #ifdef ECL_CMU_FORMAT
 	SYM_VAL(@'*load-verbose*') = Cnil;
 #endif

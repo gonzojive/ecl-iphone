@@ -14,6 +14,26 @@
     See file '../Copyright' for full details.
 */
 
+#include <config.h>
+#ifdef HAVE_FENV_H
+# define _GNU_SOURCE
+# include <fenv.h>
+# ifndef FE_UNDERFLOW
+#  define FE_UNDERFLOW 0
+# endif
+# ifndef FE_OVERFLOW
+#  define FE_OVERFLOW 0
+# endif
+# ifndef FE_INVALID
+#  define FE_INVALID 0
+# endif
+# ifndef FE_DIVBYZERO
+#  define FE_DIVBYZERO 0
+# endif
+# ifndef FE_INEXACT
+#  define FE_INEXACT 0
+# endif
+#endif
 #include "ecl.h"
 #include "internal.h"
 #include <signal.h>
@@ -28,8 +48,27 @@
 
 bool ecl_interrupt_enable;
 
+#ifdef HAVE_SIGPROCMASK
 static void
+mysignal(int code, void *handler)
+{
+	struct sigaction new_action, old_action;
+
+	new_action.sa_sigaction = handler;
+	sigemptyset(&new_action.sa_mask);
+	new_action.sa_flags = SA_SIGINFO;
+	sigaction(code, &new_action, &old_action);
+}
+#else
+#define mysignal(x,y) signal(x,y)
+#endif
+
+static void
+#ifdef SA_SIGINFO
+handle_signal(int sig, siginfo_t *info, void *aux)
+#else
 handle_signal(int sig)
+#endif
 {
 	switch (sig) {
 #if defined(ECL_THREADS) && !defined(_MSC_VER) && !defined(mingw32)
@@ -40,9 +79,35 @@ handle_signal(int sig)
 	case SIGINT:
 		funcall(2, @'si::terminal-interrupt', Ct);
 		break;
-	case SIGFPE:
-		FEerror("Floating-point exception.", 0);
+	case SIGFPE: {
+		cl_object condition = @'arithmetic-error';
+#if defined(HAVE_FENV_H)
+		int bits = fetestexcept(FE_ALL_EXCEPT);
+		if (bits & FE_DIVBYZERO)
+			condition = @'division-by-zero';
+		if (bits & FE_OVERFLOW)
+			condition = @'floating-point-overflow';
+		if (bits & FE_UNDERFLOW)
+			condition = @'floating-point-underflow';
+		if (bits & FE_INEXACT)
+			condition = @'floating-point-inexact';
+		if (bits & FE_INVALID)
+			condition = @'floating-point-invalid-operation';
+#endif
+#ifdef SA_SIGINFO
+		if (info) {
+			if (info->si_code == FPE_INTDIV || info->si_code == FPE_FLTDIV)
+				condition = @'division-by-zero';
+			if (info->si_code == FPE_FLTOVF)
+				condition = @'floating-point-overflow';
+			if (info->si_code == FPE_FLTUND)
+				condition = @'floating-point-underflow';
+		}
+#endif
+		si_trap_fpe(@'last', Ct);
+		cl_error(1, condition);
 		break;
+	}
 	case SIGSEGV:
 		FEerror("Segmentation violation.", 0);
 		break;
@@ -56,7 +121,11 @@ handle_signal(int sig)
  * handle stack overflows gracefully.
  */
 static void
+#ifdef SA_SIGINFO
+signal_catcher(int sig, siginfo_t *siginfo, void *data)
+#else
 signal_catcher(int sig)
+#endif
 {
 	if (!ecl_interrupt_enable ||
 	    symbol_value(@'si::*interrupt-enable*') == Cnil) {
@@ -64,10 +133,10 @@ signal_catcher(int sig)
 		cl_env.interrupt_pending = sig;
 		return;
 	}
-	signal(sig, signal_catcher);
+	mysignal(sig, signal_catcher);
 #ifdef HAVE_SIGPROCMASK
 	CL_UNWIND_PROTECT_BEGIN {
-		handle_signal(sig);
+		handle_signal(sig, siginfo, data);
 	} CL_UNWIND_PROTECT_EXIT {
 		sigset_t block_mask;
 		sigemptyset(&block_mask);
@@ -88,26 +157,26 @@ si_check_pending_interrupts(void)
 {
 	int what = cl_env.interrupt_pending;
 	cl_env.interrupt_pending = 0;
-	handle_signal(what);
+	handle_signal(what, 0, 0);
 	@(return)
 }
 
 cl_object
 si_catch_bad_signals()
 {
-	signal(SIGILL, signal_catcher);
+	mysignal(SIGILL, signal_catcher);
 #ifndef GBC_BOEHM
-	signal(SIGBUS, signal_catcher);
+	mysignal(SIGBUS, signal_catcher);
 #endif
-	signal(SIGSEGV, signal_catcher);
+	mysignal(SIGSEGV, signal_catcher);
 #ifdef SIGIOT
-	signal(SIGIOT, signal_catcher);
+	mysignal(SIGIOT, signal_catcher);
 #endif
 #ifdef SIGEMT
-	signal(SIGEMT, signal_catcher);
+	mysignal(SIGEMT, signal_catcher);
 #endif
 #ifdef SIGSYS
-	signal(SIGSYS, signal_catcher);
+	mysignal(SIGSYS, signal_catcher);
 #endif
 	@(return Ct)
 }
@@ -115,19 +184,19 @@ si_catch_bad_signals()
 cl_object
 si_uncatch_bad_signals()
 {
-	signal(SIGILL, SIG_DFL);
+	mysignal(SIGILL, SIG_DFL);
 #ifndef GBC_BOEHM
-	signal(SIGBUS, SIG_DFL);
+	mysignal(SIGBUS, SIG_DFL);
 #endif
-	signal(SIGSEGV, SIG_DFL);
+	mysignal(SIGSEGV, SIG_DFL);
 #ifdef SIGIOT
-	signal(SIGIOT, SIG_DFL);
+	mysignal(SIGIOT, SIG_DFL);
 #endif
 #ifdef SIGEMT
-	signal(SIGEMT, SIG_DFL);
+	mysignal(SIGEMT, SIG_DFL);
 #endif
 #ifdef SIGSYS
-	signal(SIGSYS, SIG_DFL);
+	mysignal(SIGSYS, SIG_DFL);
 #endif
 	@(return Ct)
 }
@@ -182,13 +251,43 @@ BOOL WINAPI W32_console_ctrl_handler(DWORD type)
 }
 #endif
 
+cl_object
+si_trap_fpe(cl_object condition, cl_object flag)
+{
+#if defined(HAVE_FENV_H) && defined(HAVE_FEENABLEEXCEPT)
+	static int last_bits = 0;
+	int bits = 0;
+	if (condition == @'division-by-zero')
+		bits = FE_DIVBYZERO;
+	else if (condition == @'floating-point-overflow')
+		bits = FE_OVERFLOW;
+	else if (condition == @'floating-point-underflow')
+		bits = FE_UNDERFLOW;
+	else if (condition == Ct)
+		bits = FE_DIVBYZERO | FE_OVERFLOW | FE_UNDERFLOW;
+	else if (condition == @'last')
+		bits = last_bits;
+	if (bits) {
+		if (flag == Cnil) {
+			fedisableexcept(bits);
+			last_bits &= ~bits;
+		} else {
+			feenableexcept(bits);
+			last_bits |= bits;
+		}
+	}
+#endif
+	@(return flag)
+}	
+
 void
 init_unixint(void)
 {
-	signal(SIGFPE, signal_catcher);
-	signal(SIGINT, signal_catcher);
+	mysignal(SIGFPE, signal_catcher);
+	si_trap_fpe(Ct, Ct);
+	mysignal(SIGINT, signal_catcher);
 #if defined(ECL_THREADS) && !defined(_MSC_VER) && !defined(mingw32)
-	signal(SIGUSR1, signal_catcher);
+	mysignal(SIGUSR1, signal_catcher);
 #endif
 #ifdef _MSC_VER
 	SetUnhandledExceptionFilter(W32_exception_filter);

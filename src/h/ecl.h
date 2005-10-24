@@ -33,7 +33,9 @@ typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 #endif
 
+#ifndef FIXNUM_BITS
 #include <config.h>
+#endif
 
 #ifdef ECL_THREADS
 # if defined(_MSC_VER) || defined(mingw32)
