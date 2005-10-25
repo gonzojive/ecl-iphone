@@ -217,6 +217,18 @@ extern cl_fixnum ecl_runtime(void);
 
 extern bool ecl_interrupt_enable;
 
+#if defined(_MSC_VER) || defined(mingw32)
+# include <float.h>
+# define FE_DIVBYZERO EM_ZERODIVIDE
+# define FE_OVERFLOW  EM_OVERFLOW
+# define FE_UNDERFLOW EM_UNDERFLOW
+# define feenableexcept(bits) { int cw = _controlfp(0,0); cw &= ~(bits); _controlfp(cw,MCW_EM); }
+# define fedisableexcept(bits) { int cw = _controlfp(0,0); cw |= (bits); _controlfp(cw,MCW_EM); }
+# define feholdexcept(bits) { *(bits) = _controlfp(0,0); _controlfp(0xffffffff, MCW_EM); }
+# define fesetenv(bits) _controlfp(*(bits), MCW_EM)
+typedef int fenv_t;
+#endif
+
 /* unixfsys.d */
 
 #if defined(_MSC_VER) || defined(mingw32)

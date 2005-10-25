@@ -15,7 +15,7 @@
 */
 
 #include <config.h>
-#ifdef HAVE_FENV_H
+#if defined(HAVE_FENV_H)
 # define _GNU_SOURCE
 # include <fenv.h>
 # ifndef FE_UNDERFLOW
@@ -39,6 +39,7 @@
 #include <signal.h>
 #if defined(mingw32) || defined(_MSC_VER)
 # include <windows.h>
+void handle_fpe_signal(int,int);
 #endif
 #if !defined(_MSC_VER)
 # include <unistd.h>
@@ -129,7 +130,7 @@ signal_catcher(int sig)
 {
 	if (!ecl_interrupt_enable ||
 	    symbol_value(@'si::*interrupt-enable*') == Cnil) {
-		signal(sig, signal_catcher);
+		mysignal(sig, signal_catcher);
 		cl_env.interrupt_pending = sig;
 		return;
 	}
@@ -148,6 +149,11 @@ signal_catcher(int sig)
 #endif
 	} CL_UNWIND_PROTECT_END;
 #else
+#if defined (_MSC_VER)
+	if (sig == SIGFPE) {
+		handle_fpe_signal(sig, _fpecode);
+	}
+#endif
 	handle_signal(sig);
 #endif
 }
@@ -242,6 +248,26 @@ LONG WINAPI W32_exception_filter(struct _EXCEPTION_POINTERS* ep)
 	return excpt_result;
 }
 
+void handle_fpe_signal(int sig, int num)
+{
+	cl_object condition = @'arithmetic-error';
+
+	switch (num) {
+	case _FPE_OVERFLOW:
+		condition = @'floating-point-overflow';
+		break;
+	case _FPE_UNDERFLOW:
+		condition = @'floating-point-underflow';
+		break;
+	case _FPE_ZERODIVIDE:
+		condition = @'division-by-zero';
+		break;
+	}
+
+	si_trap_fpe(@'last', Ct);
+	cl_error(1, condition);
+}
+
 BOOL WINAPI W32_console_ctrl_handler(DWORD type)
 {
 	switch (type)
@@ -258,7 +284,7 @@ BOOL WINAPI W32_console_ctrl_handler(DWORD type)
 cl_object
 si_trap_fpe(cl_object condition, cl_object flag)
 {
-#if defined(HAVE_FENV_H) && defined(HAVE_FEENABLEEXCEPT)
+#if (defined(HAVE_FENV_H) && defined(HAVE_FEENABLEEXCEPT)) || defined(_MSC_VER) || defined(mingw32)
 	static int last_bits = 0;
 	int bits = 0;
 	if (condition == @'division-by-zero')
@@ -271,6 +297,9 @@ si_trap_fpe(cl_object condition, cl_object flag)
 		bits = FE_DIVBYZERO | FE_OVERFLOW | FE_UNDERFLOW;
 	else if (condition == @'last')
 		bits = last_bits;
+#if defined(_MSC_VER) || defined (mingw32)
+	_fpreset();
+#endif
 	if (bits) {
 		if (flag == Cnil) {
 			fedisableexcept(bits);

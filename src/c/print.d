@@ -483,6 +483,10 @@ edit_double(int n, double d, int *sp, char *s, int *ep)
 {
 	char *exponent, *p, buff[DBL_SIZE + 1];
 	int length;
+#if defined(HAVE_FENV_H) || defined(_MSC_VER) || defined(mingw32)
+	fenv_t env;
+	feholdexcept(&env);
+#endif
 
 	if (isnan(d) || !finite(d))
 		FEerror("Can't print a non-number.", 0);
@@ -530,6 +534,9 @@ edit_double(int n, double d, int *sp, char *s, int *ep)
 			s[i] = '0';
 	}
 	s[n] = '\0';
+#if defined(HAVE_FENV_H) || defined(_MSC_VER) || defined(mingw32)
+	fesetenv(&env);
+#endif
 	return length;
 }
 
