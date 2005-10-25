@@ -42,6 +42,8 @@ ECL_ASDF    =
 ECL_SOCKETS =
 # X Windows support
 ECL_CLX     =
+# Regression Tests support
+ECL_RT      =
 
 # <END> (ECL configuration)
 # =============================================================
@@ -53,7 +55,7 @@ TAR_DIR = %%CD%%\ecl-$(ECL_VERSION)
 
 CC	= cl
 MFLAGS  = -MD
-CFLAGS  = -DGC_NOT_DLL -nologo
+CFLAGS  = -GX -DGC_NOT_DLL -nologo
 LIBS	= eclgc.lib eclgmp.lib user32.lib ws2_32.lib
 LDFLAGS	=
 SHARED_LDFLAGS = -LD
@@ -133,6 +135,10 @@ ECL_FEATURES = (cons :wants-sockets $(ECL_FEATURES))
 !ifdef ECL_CLX
 ECL_MODULES  = $(ECL_MODULES) clx
 ECL_FEATURES = (cons :wants-clx $(ECL_FEATURES))
+!endif
+!ifdef ECL_RT
+ECL_MODULES  = $(ECL_MODULES) rt
+ECL_FEATURES = (cons :wants-rt $(ECL_FEATURES))
 !endif
 
 !MESSAGE $(ECL_MODULES)
