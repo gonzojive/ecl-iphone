@@ -132,7 +132,7 @@
       (wt-nl "flag->cblock.data = VV;")
       (wt-nl "#endif")
       (when *self-destructing-fasl*
-	(wt-nl "flag->cblock.self_destruct=1"))
+	(wt-nl "flag->cblock.self_destruct=1;"))
       (wt-nl "flag->cblock.data_size = VM;")
       (wt-nl "flag->cblock.data_text = compiler_data_text;")
       (wt-nl "flag->cblock.data_text_size = compiler_data_text_size;")
