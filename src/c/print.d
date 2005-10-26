@@ -22,10 +22,10 @@
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
-#ifdef HAVE_FENV_H
-#include <fenv.h>
-#endif
 #include "ecl.h"
+#if defined(HAVE_FENV_H)
+# include <fenv.h>
+#endif
 #include "internal.h"
 #include "bytecodes.h"
 
