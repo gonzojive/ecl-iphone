@@ -32,21 +32,17 @@ rando(cl_object x, cl_object rs)
 	d = number_to_double(x) * d;
 	if (tx == t_fixnum) {
 		z = MAKE_FIXNUM((cl_fixnum)d);
-		return(z);
 	} else if (tx == t_bignum) {
 		z = double_to_integer(d);
-		return(z);
 	} else if (tx == t_shortfloat) {
-		z = cl_alloc_object(t_shortfloat);
-		sf(z) = (float)d;
-		return(z);
+		z = make_shortfloat((float)d);
 	} else if (tx == t_longfloat) {
-		z = cl_alloc_object(t_longfloat);
-		lf(z) = d;
-		return(z);
-	} else
+		z = make_longfloat(d);
+	} else {
 		FEerror("~S is not an integer nor a floating-point number.",
 			1, x);
+	}
+	return z;
 }
 
 cl_object
