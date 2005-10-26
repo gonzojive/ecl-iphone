@@ -614,7 +614,7 @@
 (defvar +loaded-libraries+ nil)
 
 (defun do-load-foreign-library (tmp)
-  (let* ((filename (if (pathnamep tmp) (namestring tmp) (string tmp)))
+  (let* ((filename (namestring (compile-file-pathname tmp :type :lib)))
 	 (pack (find-package "COMPILER")))
     (unless (find filename ffi::+loaded-libraries+ :test #'string-equal)
       (setf (symbol-value (intern "*LD-FLAGS*" pack)) (concatenate 'string (symbol-value (intern "*LD-FLAGS*" pack)) " " filename))
