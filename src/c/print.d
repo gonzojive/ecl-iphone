@@ -22,6 +22,9 @@
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
+#ifdef HAVE_FENV_H
+#include <fenv.h>
+#endif
 #include "ecl.h"
 #include "internal.h"
 #include "bytecodes.h"
@@ -544,6 +547,10 @@ static void
 write_double(double d, int e, bool shortp, cl_object stream)
 {
 	int exp;
+#if defined(HAVE_FENV_H) || defined(_MSC_VER) || defined(mingw32)
+	fenv_t env;
+	feholdexcept(&env);
+#endif
 	if (d < 0) {
 		write_ch('-', stream);
 		d = -d;
@@ -600,6 +607,9 @@ write_double(double d, int e, bool shortp, cl_object stream)
 		}
 		write_decimal(exp, stream);
 	}
+#if defined(HAVE_FENV_H) || defined(_MSC_VER) || defined(mingw32)
+	fesetenv(&env);
+#endif
 }
 
 
