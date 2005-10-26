@@ -109,6 +109,14 @@ typedef unsigned int cl_hashkey;
  */
 #define ECL_SLOTS_LIMIT	32768
 
+/* Missing integer types */
+typedef char int8_t;
+typedef short int16_t;
+typedef int int32_t;
+typedef unsigned char uint8_t;
+typedef unsigned short uint16_t;
+typedef unsigned int uint32_t;
+
 /* -CUT-: Everything below this mark will not be installed		*/
 /* -------------------------------------------------------------------- *
  *	BUILD OPTIONS WHICH NEED NOT BE EXPORTED			*
@@ -268,13 +276,5 @@ typedef unsigned int cl_hashkey;
 #define isnan _isnan
 #define finite _finite
 #define sleep _sleep
-
-/* Missing integer types */
-typedef char int8_t;
-typedef short int16_t;
-typedef int int32_t;
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
 
 #include "@ECL_FPE_CODE@"

@@ -155,7 +155,7 @@ all:	$(TARGETS) doc ecl-config.bat
 %Makefile: $(srcdir)/%Makefile.in config.status
 	./config.status
 
-c\cut$(EXE):
+c\cut$(EXE): $(top_srcdir)\util\cut.c
 	cd c
 	$(MAKE) cut$(EXE)
 	cd ..

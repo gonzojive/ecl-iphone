@@ -48,7 +48,7 @@ main(int narg, char **argv) {
     }
     if (narg == 0) {
       /* This is used to remove part of config.h */
-      if (strstr(buffer, "/-CUT-/")) {
+      if (strstr(buffer, "-CUT-")) {
 	exit(0);
       }
     } else if (strstr(buffer, "declspec(dllimport)")) {
