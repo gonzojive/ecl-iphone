@@ -58,9 +58,11 @@ ecl_fficall_execute(void *f_ptr, struct ecl_fficall *fficall, enum ecl_ffi_tag r
 #ifdef _MSC_VER
 	int bufsize = fficall->buffer_size;
 	char* buf = fficall->buffer;
+	char* stack_p;
 
 	__asm
 	{
+		mov	stack_p,esp
 		sub	esp,bufsize
 		mov	esi,buf
 		mov	edi,esp
@@ -92,13 +94,11 @@ ecl_fficall_execute(void *f_ptr, struct ecl_fficall *fficall, enum ecl_ffi_tag r
 		((void (*)())f_ptr)();
 	}
 
-	if (fficall->cc == ECL_FFI_CC_CDECL) {
 #ifdef _MSC_VER
-		__asm add esp,bufsize
+	__asm mov esp,stack_p
 #else
-		sp += fficall->buffer_size;
+	sp += fficall->buffer_size;
 #endif
-	}
 }
 
 static void
