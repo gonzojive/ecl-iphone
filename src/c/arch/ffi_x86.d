@@ -55,11 +55,10 @@ ecl_fficall_push_arg(union ecl_ffi_values *data, enum ecl_ffi_tag type)
 void
 ecl_fficall_execute(void *f_ptr, struct ecl_fficall *fficall, enum ecl_ffi_tag return_type)
 {
-#ifdef _MSC_VER
 	int bufsize = fficall->buffer_size;
 	char* buf = fficall->buffer;
 	char* stack_p;
-
+#ifdef _MSC_VER
 	__asm
 	{
 		mov	stack_p,esp
@@ -70,13 +69,12 @@ ecl_fficall_execute(void *f_ptr, struct ecl_fficall *fficall, enum ecl_ffi_tag r
 		rep	movsb
 	}
 #else
-	register char *sp asm("esp");
-	char *p1, *p2;
-	int i;
-	sp -= fficall->buffer_size;
-	for (p1 = sp, p2 = fficall->buffer, i = fficall->buffer_size; i; i--) {
-		*(p1++) = *(p2++);
-	}
+	asm volatile (
+	"movl	%%esp, %0\n\t"
+	"subl	%1, %%esp\n\t"
+	"movl	%2, %%esi\n\t"
+	"movl	%%esp, %%edi\n\t"
+	"rep	movsb\n\t": "=a" (stack_p) : "c" (bufsize), "d" (buf) : "%edi", "%esi");
 #endif
 	if (return_type <= ECL_FFI_UNSIGNED_LONG) {
 		fficall->output.i = ((int (*)())f_ptr)();
@@ -93,11 +91,10 @@ ecl_fficall_execute(void *f_ptr, struct ecl_fficall *fficall, enum ecl_ffi_tag r
 	} else {
 		((void (*)())f_ptr)();
 	}
-
 #ifdef _MSC_VER
 	__asm mov esp,stack_p
 #else
-	sp += fficall->buffer_size;
+	asm volatile ("mov %0,%%esp" :: "a" (stack_p));
 #endif
 }
 
