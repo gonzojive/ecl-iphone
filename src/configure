@@ -310,7 +310,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS docdir buildir ECL_CFLAGS FASL_LIBS CORE_LIBS SHARED_LDFLAGS BUNDLE_LDFLAGS SHORT_SITE_NAME LONG_SITE_NAME EXTRA_OBJS TARGETS SUBDIRS LIBRARIES LSP_LIBRARIES LSP_FEATURES build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CXX CXXFLAGS ac_ct_CXX CPP RANLIB ac_ct_RANLIB INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA LN_S SET_MAKE true_srcdir true_builddir CP RM MV EXE_SUFFIX ARCHITECTURE SOFTWARE_TYPE SOFTWARE_VERSION MACHINE_INSTANCE MACHINE_VERSION LDRPATH LIBPREFIX LIBEXT SHAREDEXT SHAREDPREFIX INSTALL_TARGET thehost INFOEXT INSTALL_INFO EGREP ECL_SETJMP ECL_LONGJMP ECL_FILE_CNT CL_FIXNUM_TYPE CL_FIXNUM_BITS CL_FIXNUM_MAX CL_FIXNUM_MIN LIBOBJS POW_LIB ECL_CC CLX_INFO LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS docdir buildir ECL_CFLAGS FASL_LIBS CORE_LIBS SHARED_LDFLAGS BUNDLE_LDFLAGS SHORT_SITE_NAME LONG_SITE_NAME EXTRA_OBJS TARGETS SUBDIRS LIBRARIES LSP_LIBRARIES LSP_FEATURES build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CXX CXXFLAGS ac_ct_CXX CPP RANLIB ac_ct_RANLIB INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA LN_S SET_MAKE true_srcdir true_builddir CP RM MV EXE_SUFFIX ARCHITECTURE SOFTWARE_TYPE SOFTWARE_VERSION MACHINE_INSTANCE MACHINE_VERSION LDRPATH LIBPREFIX LIBEXT SHAREDEXT SHAREDPREFIX INSTALL_TARGET thehost INFOEXT INSTALL_INFO EGREP ECL_SETJMP ECL_LONGJMP ECL_FILE_CNT ECL_FPE_CODE CL_FIXNUM_TYPE CL_FIXNUM_BITS CL_FIXNUM_MAX CL_FIXNUM_MIN LIBOBJS POW_LIB ECL_CC CLX_INFO LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -6881,6 +6881,22 @@ _ACEOF
 
 fi
 
+echo "$as_me:$LINENO: checking for code to detect FP exceptions" >&5
+echo $ECHO_N "checking for code to detect FP exceptions... $ECHO_C" >&6
+case "${host_cpu}" in
+   i686 |i586 | pentium* | athlon* )
+	ECL_FPE_CODE="${srcdir}/c/arch/fpe_x86.c"
+	echo "$as_me:$LINENO: result: x86" >&5
+echo "${ECHO_T}x86" >&6
+	;;
+   *)
+        ECL_FPE_CODE="${srcdir}/c/arch/fpe_none.c"
+	echo "$as_me:$LINENO: result: not available" >&5
+echo "${ECHO_T}not available" >&6
+	;;
+esac
+
+
 
 
   echo "$as_me:$LINENO: checking whether stack growns downwards" >&5
@@ -10498,6 +10514,7 @@ s,@EGREP@,$EGREP,;t t
 s,@ECL_SETJMP@,$ECL_SETJMP,;t t
 s,@ECL_LONGJMP@,$ECL_LONGJMP,;t t
 s,@ECL_FILE_CNT@,$ECL_FILE_CNT,;t t
+s,@ECL_FPE_CODE@,$ECL_FPE_CODE,;t t
 s,@CL_FIXNUM_TYPE@,$CL_FIXNUM_TYPE,;t t
 s,@CL_FIXNUM_BITS@,$CL_FIXNUM_BITS,;t t
 s,@CL_FIXNUM_MAX@,$CL_FIXNUM_MAX,;t t

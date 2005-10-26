@@ -136,10 +136,15 @@ make_shortfloat(float f)
 {
 	cl_object x;
 
+	ecl_detect_fpe();
 	if (f == (float)0.0)
 		return(cl_core.shortfloat_zero);
-	if (isnanf(f) || !finite(f))
-		FEerror("Not a number.",0);
+	if (isnanf(f)) {
+		cl_error(1, @'division-by-zero');
+	}
+	if (!finite(f)) {
+		cl_error(1, @'floating-point-overflow');
+	}
 	x = cl_alloc_object(t_shortfloat);
 	sf(x) = f;
 	return(x);
@@ -150,10 +155,15 @@ make_longfloat(double f)
 {
 	cl_object x;
 
+	ecl_detect_fpe();
 	if (f == (double)0.0)
 		return(cl_core.longfloat_zero);
-	if (isnan(f) || !finite(f))
-		FEerror("Not a number.",0);
+	if (isnan(f)) {
+		cl_error(1, @'division-by-zero');
+	}
+	if (!finite(f)) {
+		cl_error(1, @'floating-point-overflow');
+	}
 	x = cl_alloc_object(t_longfloat);
 	lf(x) = f;
 	return(x);

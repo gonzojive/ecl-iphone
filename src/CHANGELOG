@@ -67,9 +67,9 @@ ECL 0.9h
    applications must be compiled and linked against ECL so that the
    appropiate replacements for pthread_create()/CreateThread() are used.
 
- - On systems with GNU libc, we are able to signal and trap floating point
+ - On some systems we are able to signal and trap floating point
    exceptions of the following kinds: overflow, underflow and division by zero.
-   Trapping of these exceptions can be disabled with (SI::TRAP-FPE NIL). In
+   Trapping of these exceptions can be disabled with (SI::TRAP-FPE T NIL). In
    practice this means overflows in routines like EXP, EXPT, etc, are now
    detected.
 

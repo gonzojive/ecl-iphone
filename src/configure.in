@@ -338,6 +338,7 @@ ECL_LINEFEED_MODE
 ECL_FIND_SETJMP
 ECL_FILE_STRUCTURE
 ECL_FFI
+ECL_FPE_MODEL
 
 dnl -----------------------------------------------------------------------
 dnl Study the call conventions

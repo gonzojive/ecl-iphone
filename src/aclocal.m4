@@ -531,3 +531,22 @@ AC_TRY_COMPILE(,[static __thread void *data;],
 dnl We deactivate this test because it seems to slow down ECL A LOT!!!
 ac_cv_ecl___thread=no
 ])
+
+dnl ----------------------------------------------------------------------
+dnl Choose the type of code to detect floating point exceptions and
+dnl raise them.
+dnl
+AC_DEFUN([ECL_FPE_MODEL],
+[AC_MSG_CHECKING([for code to detect FP exceptions])
+case "${host_cpu}" in
+   i686 |i586 | pentium* | athlon* )
+	ECL_FPE_CODE="${srcdir}/c/arch/fpe_x86.c"
+	AC_MSG_RESULT([x86])
+	;;
+   *)
+        ECL_FPE_CODE="${srcdir}/c/arch/fpe_none.c"
+	AC_MSG_RESULT([not available])
+	;;
+esac
+AC_SUBST(ECL_FPE_CODE)
+])

@@ -275,3 +275,5 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #endif /* MSDOS */
 
 #define ECL_ARCHITECTURE "@ARCHITECTURE@"
+
+#include "@ECL_FPE_CODE@"
