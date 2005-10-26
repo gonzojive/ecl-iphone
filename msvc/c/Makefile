@@ -118,8 +118,9 @@ clean:
 
 $(DPP): $(srcdir)/dpp.c $(srcdir)/symbols_list2.h ../h/config.h
 	$(TRUE_CC) -I../h -I./ -I$(HDIR) $(DEFS) $(srcdir)/dpp.c  -o $@
-../h/config.h: ../h/config.h.msvc6
-	$(CP) ..\h\config.h.msvc6 ..\h\config.h
+../h/config.h: ../h/config.h.msvc6 Makefile
+	cut.exe "@ECL_FPE_CODE@" "$(srcdir:\=/)/arch/fpe_x86.c" \
+	        < ..\h\config.h.msvc6 > $@
 
 #
 # GCC might break this code

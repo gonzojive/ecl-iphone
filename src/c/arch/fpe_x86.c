@@ -16,7 +16,7 @@
  * See fpe_none.c for a description
  */
 
-#ifdef _MSVC
+#ifdef _MSC_VER
 #define ecl_detect_fpe() __asm fwait
 #endif
 
