@@ -389,6 +389,9 @@ si_foreign_data_recast(cl_object f, cl_object size, cl_object tag)
 cl_object
 si_load_foreign_module(cl_object filename)
 {
+#if !defined(ENABLE_DLOPEN)
+	FEerror("SI:LOAD-FOREIGN-MODULE does not work when ECL is statically linked", 0);
+#else
 	cl_object libraries;
 	cl_object output;
 	int i;
@@ -423,11 +426,15 @@ OUTPUT:
 	}
 	else
 		FEerror("LOAD-FOREIGN-MODULE: Could not load foreign module ~S (Error: ~S)", 2, filename, output);
+#endif
 }
 
 cl_object
 si_find_foreign_symbol(cl_object var, cl_object module, cl_object type, cl_object size)
 {
+#if !defined(ENABLE_DLOPEN)
+	FEerror("SI:FIND-FOREIGN-SYMBOL does not work when ECL is statically linked", 0);
+#else
 	cl_object block;
 	cl_object output = Cnil;
 	void *sym;
@@ -446,6 +453,7 @@ OUTPUT:
 		@(return output)
 	else
 		FEerror("FIND-FOREIGN-SYMBOL: Could not load foreign symbol ~S from module ~S (Error: ~S)", 3, var, module, output);
+#endif
 }
 
 #ifdef ECL_DYNAMIC_FFI
