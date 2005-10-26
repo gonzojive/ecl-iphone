@@ -87,6 +87,12 @@
   nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; AUXILIARY TYPES
+;;
+
+(deftype string-designator () '(or string symbol character))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; ALL FUNCTION DECLARATIONS AND INLINE FORMS
 ;;;
@@ -1113,7 +1119,7 @@ type_of(#0)==t_bitvector")
 (def-inline si:char-set :unsafe (t fixnum character) :char
  "(#0)->string.self[#1]= #2")
 
-(proclaim-function schar (string fixnum) character :no-side-effects t)
+(proclaim-function schar (simple-string fixnum) character :no-side-effects t)
 (def-inline schar :always (t t) t "elt(#0,fixint(#1))")
 (def-inline schar :always (t fixnum) t "elt(#0,#1)")
 (def-inline schar :unsafe (t t) t "CODE_CHAR((#0)->string.self[fix(#1)])")
@@ -1129,30 +1135,30 @@ type_of(#0)==t_bitvector")
 (def-inline si:schar-set :unsafe (t fixnum character) :char
  "(#0)->string.self[#1]= #2")
 
-(proclaim-function string= (string string *) t :predicate t :no-side-effects t)
+(proclaim-function string= (string-designator string-designator *) t :predicate t :no-side-effects t)
 (def-inline string= :always (string string) :bool "string_eq(#0,#1)")
 
-(proclaim-function string-equal (string string *) t :predicate t
+(proclaim-function string-equal (string-designator string-designator *) t :predicate t
  :no-side-effects t)
 (def-inline string-equal :always (string string) :bool "string_equal(#0,#1)")
 
-(proclaim-function string< (string string *) t :predicate t)
-(proclaim-function string> (string string *) t :predicate t)
-(proclaim-function string<= (string string *) t :predicate t)
-(proclaim-function string>= (string string *) t :predicate t)
-(proclaim-function string/= (string string *) t :predicate t)
-(proclaim-function string-lessp (string string *) t :predicate t)
-(proclaim-function string-greaterp (string string *) t :predicate t)
-(proclaim-function string-not-lessp (string string *) t :predicate t)
-(proclaim-function string-not-greaterp (string string *) t :predicate t)
-(proclaim-function string-not-equal (string string *) t :predicate t)
+(proclaim-function string< (string-designator string-designator *) t :predicate t)
+(proclaim-function string> (string-designator string-designator *) t :predicate t)
+(proclaim-function string<= (string-designator string-designator *) t :predicate t)
+(proclaim-function string>= (string-designator string-designator *) t :predicate t)
+(proclaim-function string/= (string-designator string-designator *) t :predicate t)
+(proclaim-function string-lessp (string-designator string-designator *) t :predicate t)
+(proclaim-function string-greaterp (string-designator string-designator *) t :predicate t)
+(proclaim-function string-not-lessp (string-designator string-designator *) t :predicate t)
+(proclaim-function string-not-greaterp (string-designator string-designator *) t :predicate t)
+(proclaim-function string-not-equal (string-designator string-designator *) t :predicate t)
 (proclaim-function make-string (fixnum *) string)
-(proclaim-function string-trim (t string) string)
-(proclaim-function string-left-trim (t string) string)
-(proclaim-function string-right-trim (t string) string)
-(proclaim-function string-upcase (string *) string)
-(proclaim-function string-downcase (string *) string)
-(proclaim-function string-capitalize (string *) string)
+(proclaim-function string-trim (t string-designator) string)
+(proclaim-function string-left-trim (t string-designator) string)
+(proclaim-function string-right-trim (t string-designator) string)
+(proclaim-function string-upcase (string-designator *) string)
+(proclaim-function string-downcase (string-designator *) string)
+(proclaim-function string-capitalize (string-designator *) string)
 (proclaim-function nstring-upcase (string *) string)
 (proclaim-function nstring-downcase (string *) string)
 (proclaim-function nstring-capitalize (string *) string)

@@ -20,6 +20,9 @@ ECL 0.9h
  - The block name of a function does not involve the the forms in the lambda
    list: i.e. (LAMBDA-EXT F (&aux (X (RETURN-FROM F 2)))) is no longer valid.
 
+ - Many of the STRING* functions (STRING=, STRING<, etc) were proclaimed to
+   work only on strings, instead of string-designators.
+
 * Design:
 
  - Simplified the structure of the frame stack, removing redundant fields.
