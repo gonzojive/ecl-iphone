@@ -13,6 +13,7 @@ EXPORTS
 	GC_malloc_atomic_ignore_off_page
 	GC_free
 	GC_dont_gc		DATA
+	GC_CreateThread
 
 	; all_symbols
 
