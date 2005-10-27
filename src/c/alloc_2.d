@@ -148,6 +148,7 @@ cl_alloc_object(cl_type t)
 #endif
 #ifdef THREADS
 	case t_process:
+        case t_lock:
 #endif
 	case t_foreign:
 		obj = (cl_object)GC_MALLOC(type_size[t]);
