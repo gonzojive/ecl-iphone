@@ -67,7 +67,7 @@ Usage: ecl [-? | --help]
     ("-h" 1 (setq h-file 1))
     ("-data" 1 (setq data-file 1))
     ("-q" 0 (setq verbose nil))
-    ("-s" 1 (setq system-p t))))
+    ("-s" 0 (setq system-p t))))
 
 (defun produce-init-code (option-list)
   (declare (si::c-local))
