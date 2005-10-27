@@ -32,8 +32,6 @@
  *		OBJECT ALLOCATION			  *
  **********************************************************/
 
-struct typemanager tm_table[(int)t_end];
-
 #ifdef alloc_object
 #undef alloc_object
 #endif
@@ -84,31 +82,22 @@ finalize(GC_PTR _o, GC_PTR _data)
 	} CL_NEWENV_END;
 }
 
+static size_t type_size[t_end];
+
 cl_object
 cl_alloc_object(cl_type t)
 {
-	register cl_object obj;
-	register struct typemanager *tm;
+	cl_object obj;
 
+	/* GC_MALLOC already resets objects */
 	switch (t) {
 	case t_fixnum:
 		return MAKE_FIXNUM(0); /* Immediate fixnum */
 	case t_character:
 		return CODE_CHAR(' '); /* Immediate character */
-	default:;
-	}
-	if (t < t_start || t >= t_end) {
-		printf("\ttype = %d\n", t);
-		error("alloc botch.");
-	}
-	tm = tm_of(t);
-
-	obj = (cl_object)GC_MALLOC(tm->tm_size);
-	obj->d.t = t;
-	/* GC_MALLOC already resets objects */
-	switch (t) {
 #ifdef ENABLE_DLOPEN
 	case t_codeblock:
+		obj = (cl_object)GC_MALLOC(sizeof(struct ecl_codeblock));
 		obj->cblock.locked = 0;
 		obj->cblock.links = Cnil;
 		obj->cblock.name = Cnil;
@@ -118,16 +107,56 @@ cl_alloc_object(cl_type t)
 		obj->cblock.data_text_size = 0;
 		obj->cblock.data_size = 0;
 		obj->cblock.handle = NULL;
+		goto FINALIZE;
 #endif
 #ifdef ENABLE_THREADS
 	case t_lock:
 #endif
-	case t_stream: {
+	case t_stream:
+		obj = (cl_object)GC_MALLOC(type_size[t]);
+	FINALIZE:
+		{
 		GC_finalization_proc ofn;
 		void *odata;
 		GC_register_finalizer_no_order(obj, finalize, NULL, &ofn, &odata);
+		break;
 	}
+	case t_shortfloat:
+	case t_longfloat:
+		obj = (cl_object)GC_MALLOC_ATOMIC(type_size[t]);
+		break;
+	case t_bignum:
+	case t_ratio:
+	case t_complex:
+	case t_symbol:
+	case t_package:
+	case t_hashtable:
+	case t_array:
+	case t_vector:
+	case t_string:
+	case t_bitvector:
+	case t_random:
+	case t_readtable:
+	case t_pathname:
+	case t_bytecodes:
+	case t_cfun:
+	case t_cclosure:
+#ifdef CLOS
+	case t_instance:
+#else
+	case t_structure:
+#endif
+#ifdef THREADS
+	case t_process:
+#endif
+	case t_foreign:
+		obj = (cl_object)GC_MALLOC(type_size[t]);
+		break;
+	default:
+		printf("\ttype = %d\n", t);
+		error("alloc botch.");
 	}
+	obj->d.t = t;
 	return obj;
 }
 
@@ -170,14 +199,6 @@ ecl_free_uncollectable(void *pointer)
 	return GC_FREE(pointer);
 }
 
-static void
-init_tm(cl_type t, const char *name, cl_index elsize)
-{
-	struct typemanager *tm = &tm_table[(int)t];
-	tm->tm_name = name;
-	tm->tm_size = elsize;
-}
-
 static int alloc_initialized = FALSE;
 
 extern void (*GC_push_other_roots)();
@@ -187,6 +208,7 @@ static void stacks_scanner();
 void
 init_alloc(void)
 {
+	int i;
 	if (alloc_initialized) return;
 	alloc_initialized = TRUE;
 
@@ -198,6 +220,10 @@ init_alloc(void)
 	GC_clear_roots();
 	GC_disable();
 
+#define init_tm(x,y,z) type_size[x] = (z)
+	for (i = 0; i < t_end; i++) {
+		type_size[i] = 0;
+	}
 	init_tm(t_shortfloat, "SHORT-FLOAT", /* 8 */
 		sizeof(struct ecl_shortfloat));
 	init_tm(t_cons, "CONS", sizeof(struct ecl_cons)); /* 12 */
@@ -291,10 +317,10 @@ stacks_scanner()
 			cl_object dll = l->vector.self.t[i];
 			if (dll->cblock.locked) {
 				GC_push_conditional((ptr_t)dll, (ptr_t)(&dll->cblock + 1), 1);
-				GC_set_mark_bit(dll);
+				GC_set_mark_bit((ptr_t)dll);
 			}
 		}
-		GC_set_mark_bit(l->vector.self.t);
+		GC_set_mark_bit((ptr_t)l->vector.self.t);
 	}
 	GC_push_all((ptr_t)(&cl_core), (ptr_t)(&cl_core + 1));
 	GC_push_all((ptr_t)cl_symbols, (ptr_t)(cl_symbols + cl_num_symbols_in_core));
