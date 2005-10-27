@@ -62,11 +62,7 @@ typedef unsigned short uint16_t;
 #include <object.h>
 #include <stacks.h>
 #ifdef GBC_BOEHM
-# ifdef _MSC_VER
-#  include <gc.h>
-# else
-#  include <gc/gc.h>
-# endif
+# include <gc.h>
 #endif
 #include <external.h>
 #include <eval.h>

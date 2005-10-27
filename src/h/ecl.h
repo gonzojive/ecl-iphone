@@ -68,11 +68,7 @@ typedef unsigned short uint16_t;
 # define _ARGS(x) x
 #endif
 #ifdef GBC_BOEHM
-# ifdef _MSC_VER
-#  include <gc.h>
-# else
-#  include <gc/gc.h>
-# endif
+# include <gc.h>
 #endif
 #include <external.h>
 /*#include "ecl-inl.h"*/

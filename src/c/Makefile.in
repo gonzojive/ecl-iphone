@@ -9,7 +9,8 @@ VPATH	= @srcdir@
 #
 TRUE_CC = @CC@
 CC	= @CC@
-CFLAGS	= -c -I. -I$(srcdir) -I$(HDIR) -I../h @CPPFLAGS@ @CFLAGS@ @ECL_CFLAGS@ \
+CFLAGS	= -c -I. -I$(srcdir) -I$(srcdir)/gc -I$(HDIR) -I../h @CPPFLAGS@ @CFLAGS@ \
+	  @ECL_CFLAGS@ \
 #	  -Wall -W -Wfloat-equal -Wundef -Wendif-labels -Wpointer-arith -Wcast-align \
 #	  -Wwrite-strings -Wconversion -Wsign-compare -Wmissing-prototypes -Wredundant-decls \
 #	  -Wunreachable-code -Winline
