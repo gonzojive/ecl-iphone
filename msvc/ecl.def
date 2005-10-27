@@ -9,10 +9,6 @@ EXPORTS
 	make_cons
 	si_gc
 	si_gc_dump
-	GC_malloc
-	GC_malloc_atomic_ignore_off_page
-	GC_free
-	GC_dont_gc		DATA
 
 	; all_symbols
 
@@ -355,7 +351,6 @@ EXPORTS
 
 	; gbc.c
 
-	GC_dont_gc		DATA
 	ecl_register_root
 
 

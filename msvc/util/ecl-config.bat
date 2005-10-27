@@ -6,7 +6,7 @@ IF %1 == --cflags (
 	ECHO @ECL_CFLAGS@ -I@includedir@
 	GOTO END
 ) ELSE IF %1 == --libs (
-	ECHO /LIBDIR:@libdir@ ecl.lib @LDFLAGS@ @CLIBS@
+	ECHO @LDFLAGS@ /link /LIBPATH:@libdir@ ecl.lib @CLIBS@
 	GOTO END
 )
 

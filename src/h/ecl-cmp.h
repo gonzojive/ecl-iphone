@@ -40,6 +40,9 @@ typedef unsigned short uint16_t;
    typedef HANDLE pthread_t;
    typedef HANDLE pthread_mutex_t;
 #  undef ERROR
+#  ifdef GBC_BOEHM
+#   define CreateThread GC_CreateThread
+#  endif
 # else
 #  include <pthread.h>
 #  if defined(__APPLE__) || defined(freebsd)
@@ -58,6 +61,13 @@ typedef unsigned short uint16_t;
 #endif /* WITH_GMP */
 #include <object.h>
 #include <stacks.h>
+#ifdef GBC_BOEHM
+# ifdef _MSC_VER
+#  include <gc.h>
+# else
+#  include <gc/gc.h>
+# endif
+#endif
 #include <external.h>
 #include <eval.h>
 #include <number.h>

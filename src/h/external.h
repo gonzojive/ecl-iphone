@@ -189,14 +189,6 @@ extern void cl_dealloc(void *p, cl_index s);
 #ifdef GBC_BOEHM
 extern cl_object si_gc(cl_object area);
 extern cl_object si_gc_dump(void);
-#ifdef _MSC_VER
-extern char *GC_malloc_ignore_off_page(size_t size);
-extern char *GC_malloc_atomic_ignore_off_page(size_t size);
-#else
-extern void *GC_malloc_ignore_off_page(size_t size);
-extern void *GC_malloc_atomic_ignore_off_page(size_t size);
-#endif
-extern void GC_free(void *);
 #define cl_alloc GC_malloc_ignore_off_page
 #define cl_alloc_atomic GC_malloc_atomic_ignore_off_page
 #define cl_alloc_align(s,d) GC_malloc_ignore_off_page(s)
@@ -612,10 +604,6 @@ extern void ecl_gc(cl_type t);
 #define GC_enabled() (!GC_dont_gc)
 #define GC_enable() GC_dont_gc = FALSE;
 #define GC_disable() GC_dont_gc = TRUE;
-#if defined(mingw32) || defined(_MSC_VER) || defined(cygwin)
-__declspec(dllimport)
-#endif
-extern int GC_dont_gc;
 extern void ecl_register_root(cl_object *p);
 #endif /* GBC_BOEHM */
 

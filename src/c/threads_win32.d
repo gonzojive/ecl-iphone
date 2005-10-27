@@ -18,13 +18,6 @@
 #include <signal.h>
 #include "ecl.h"
 #include "internal.h"
-#define GC_THREADS
-#include "gc.h"
-
-/* This is should be done automatically by gc.h: */
-#ifdef GBC_BOEHM
-#define CreateThread GC_CreateThread
-#endif
 
 #ifndef WITH___THREAD
 DWORD cl_env_key;

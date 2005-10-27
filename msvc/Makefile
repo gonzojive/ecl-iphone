@@ -27,7 +27,7 @@ THEHOST           = win32
 GMP_TYPE      = gc
 
 # Set it to non-empty to include Win32 thread support
-ECL_THREADS   =
+ECL_THREADS   = 1
 
 # Set it to non-empty to enable Win32 debug support
 ECL_DEBUG   = 1
@@ -41,7 +41,7 @@ ECL_ASDF    =
 # TCP support
 ECL_SOCKETS =
 # X Windows support
-ECL_CLX     =
+#ECL_CLX     =
 # Regression Tests support
 ECL_RT      =
 
@@ -55,7 +55,7 @@ TAR_DIR = %%CD%%\ecl-$(ECL_VERSION)
 
 CC	= cl
 MFLAGS  = -MD
-CFLAGS  = -GX -DGC_NOT_DLL -nologo
+CFLAGS  = -GX -DGC_DLL -nologo
 LIBS	= eclgc.lib eclgmp.lib user32.lib ws2_32.lib
 LDFLAGS	=
 SHARED_LDFLAGS = -LD
@@ -189,7 +189,7 @@ compile.lsp: bare.lsp $(srcdir)/compile.lsp.in Makefile
 	c\cut "@ecldir@" "$(libdir:\=/)" \
 	    "@true_srcdir@" "$(srcdir:\=/)" \
 	    "@true_builddir@" "$(MAKEDIR:\=/)" \
-	    "@CFLAGS@" "$(CFLAGS)" \
+	    "@CFLAGS@" "$(CFLAGS) -DGC_BUILD" \
 	    "@ECL_CFLAGS@" "" \
 	    "@CPPFLAGS@" "" \
 	    "@LDRPATH@" "" \
@@ -247,14 +247,14 @@ ecl-config.bat: util\ecl-config.bat Makefile
 	    "@ECL_CFLAGS@" "$(CFLAGS)" \
 	    "@LDFLAGS@" "$(LDFLAGS)" \
 	    "@CLIBS@" "" \
-	    "@libdir@" "$(libdir:\=/)" \
-	    "@includedir@" "$(libdir:\=/)/h" \
+	    "@libdir@" "$(prefix:\=/)" \
+	    "@includedir@" "$(prefix:\=/)/h" \
 	    < util\ecl-config.bat > ecl-config.bat
 
 
 eclmin.lib: eclgmp.lib eclgc.lib lsp/config.lsp
 	cd c
-	$(MAKE) "ECL_THREADS = $(ECL_THREADS)" "ECL_CFLAGS = $(CFLAGS)"
+	$(MAKE) "ECL_THREADS = $(ECL_THREADS)" "ECL_CFLAGS = $(CFLAGS) -DGC_BUILD"
 	cd ..
 eclgc.lib:
 	cd gc

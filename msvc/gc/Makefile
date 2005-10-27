@@ -9,7 +9,7 @@ srcdir = ..\..\src\gc
 
 !if "$(ECL_THREADS)" != ""
 THREADS_OBJ= win32_threads.obj
-THREADS_FLAGS= -DGC_WIN32_THREADS
+THREADS_FLAGS= -DGC_THREADS
 !else
 THREADS_OBJ=
 THREADS_FLAGS=
@@ -22,10 +22,10 @@ OBJS= alloc.obj reclaim.obj allchblk.obj misc.obj mach_dep.obj os_dep.obj mark_r
 all: gctest.exe cord\de.exe test_cpp.exe
 
 {$(srcdir)}.c{}.obj:
-	$(cc) $(MFLAGS) $(cdebug) $(cflags) $(cvars) -I$(srcdir)\include -DSILENT -DALL_INTERIOR_POINTERS -D__STDC__ -DGC_NOT_DLL -DLARGE_CONFIG $(THREADS_FLAGS) $< /Fo$*.obj
+	$(cc) $(MFLAGS) $(cdebug) $(cflags) $(cvars) -I$(srcdir)\include -DSILENT -DALL_INTERIOR_POINTERS -D__STDC__ -DGC_DLL -DGC_BUILD -DLARGE_CONFIG $(THREADS_FLAGS) $< /Fo$*.obj
 
 .cpp.obj:
-	$(cc) $(MFLAGS) $(cdebug) $(cflags) $(cvars) -I$(srcdir)\include -DSILENT -DALL_INTERIOR_POINTERS -DGC_NOT_DLL -DLARGE_CONFIG $(THREADS_FLAGS) $*.CPP /Fo$*.obj
+	$(cc) $(MFLAGS) $(cdebug) $(cflags) $(cvars) -I$(srcdir)\include -DSILENT -DALL_INTERIOR_POINTERS -DGC_DLL -DGC_BUILD -DLARGE_CONFIG $(THREADS_FLAGS) $*.CPP /Fo$*.obj
 
 $(OBJS) tests\test.obj: $(srcdir)\include\private\gc_priv.h $(srcdir)\include\private\gc_hdrs.h $(srcdir)\include\gc.h $(srcdir)\include\private\gcconfig.h $(srcdir)\include\private\gc_locks.h $(srcdir)\include\private\gc_pmark.h $(srcdir)\include\gc_mark.h
 

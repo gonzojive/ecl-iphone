@@ -6,7 +6,7 @@ srcdir	= ..\..\src\c
 
 !if "$(ECL_THREADS)" != ""
 THREADS_OBJ= threads_win32.obj
-THREADS_FLAGS= -DECL_THREADS -DGC_WIN32_THREADS
+THREADS_FLAGS= -DECL_THREADS
 !else
 THREADS_OBJ=
 THREADS_FLAGS=
@@ -16,7 +16,7 @@ THREADS_FLAGS=
 #
 TRUE_CC = cl
 CC	= cl
-CFLAGS	= -c $(ECL_CFLAGS) -I./ -I$(srcdir) -I$(HDIR) -I../h -I$(top_srcdir)/gc/include $(THREADS_FLAGS)
+CFLAGS	= -c $(ECL_CFLAGS) -I./ -I$(srcdir) -I$(HDIR) -I../h -I$(top_srcdir)/gc/include
 #	  -Wall -W -Wfloat-equal -Wundef -Wendif-labels -Wpointer-arith -Wcast-align \
 #	  -Wwrite-strings -Wconversion -Wsign-compare -Wmissing-prototypes -Wredundant-decls \
 #	  -Wunreachable-code -Winline
