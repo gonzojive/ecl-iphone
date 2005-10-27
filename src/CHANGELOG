@@ -23,6 +23,8 @@ ECL 0.9h
  - Many of the STRING* functions (STRING=, STRING<, etc) were proclaimed to
    work only on strings, instead of string-designators.
 
+ - The command line option "-s" does not take any arguments.
+
 * Design:
 
  - Simplified the structure of the frame stack, removing redundant fields.
