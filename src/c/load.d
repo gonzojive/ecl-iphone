@@ -218,12 +218,11 @@ ecl_library_close(cl_object block) {
 		}
 		unlink(filename);
         }
-	for (i = 0; i <= libraries->vector.fillp; i++) {
+	for (i = 0; i < libraries->vector.fillp; i++) {
 		if (libraries->vector.self.t[i] == block) {
-			memcpy(libraries->vector.self.t+i,
-			       libraries->vector.self.t+i+1,
-			       (libraries->vector.fillp-i) *
-			       sizeof(cl_object));
+			memmove(libraries->vector.self.t+i,
+				libraries->vector.self.t+i+1,
+				(libraries->vector.fillp-i-1) * sizeof(cl_object));
 			libraries->vector.fillp--;
 			break;
 		}
