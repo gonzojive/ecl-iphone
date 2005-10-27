@@ -608,8 +608,6 @@ file.  When the saved image is invoked, it will start the redefined top-level."
 	      (*print-level* 2)
 	      (*print-length* 4)
 	      (*print-pretty* t))
-	  (when (ihs-visible i)
-	    (print-ihs i))
 	  (do () ((or (> j *frs-top*) (> (frs-ihs j) i)))
 	    (print-frs j)
 	    (incf j)))))
