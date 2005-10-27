@@ -27,7 +27,7 @@ THEHOST           = win32
 GMP_TYPE      = gc
 
 # Set it to non-empty to include Win32 thread support
-ECL_THREADS   = 1
+ECL_THREADS   =
 
 # Set it to non-empty to enable Win32 debug support
 ECL_DEBUG   = 1
@@ -41,7 +41,7 @@ ECL_ASDF    =
 # TCP support
 ECL_SOCKETS =
 # X Windows support
-#ECL_CLX     =
+ECL_CLX     =
 # Regression Tests support
 ECL_RT      =
 
