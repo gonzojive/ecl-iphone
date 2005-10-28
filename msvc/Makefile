@@ -149,7 +149,7 @@ LDFLAGS = $(MFLAGS) $(LDFLAGS)
 
 # Build rules
 # 
-all:	$(TARGETS) doc ecl-config.bat
+all:	$(TARGETS) doc ecl-config.bat ecl-cc.bat
 .PHONY:	all
 
 %Makefile: $(srcdir)/%Makefile.in config.status
@@ -250,6 +250,13 @@ ecl-config.bat: util\ecl-config.bat Makefile
 	    "@libdir@" "$(prefix:\=/)" \
 	    "@includedir@" "$(prefix:\=/)/h" \
 	    < util\ecl-config.bat > ecl-config.bat
+ecl-cc.bat: util\ecl-cc.bat Makefile
+	c\cut "@ECL_CFLAGS@" "$(CFLAGS)" \
+	      "@LDFLAGS@" "$(LDFLAGS)" \
+	      "@CLIBS@" "" \
+	      "@libdir@" "$(prefix:\=/)" \
+	      "@includedir@" "$(prefix:\=/)/h" \
+	      < util\ecl-cc.bat > ecl-cc.bat
 
 
 eclmin.lib: eclgmp.lib eclgc.lib lsp/config.lsp
@@ -291,6 +298,7 @@ install-base:
 	for %i in ($(TARGETS) ecl.dll) do $(CP) %i $(bindir)\%i
 	IF EXIST $(bindir)\ecl2$(EXE) $(MV) $(bindir)\ecl2$(EXE) $(bindir)\ecl$(EXE)
 	$(CP) ecl-config.bat $(bindir)\ecl-config.bat
+	$(CP) ecl-cc.bat $(bindir)\ecl-cc.bat
 	for %i in ($(LIBRARIES) c\dpp.exe help.doc ecl.lib) do $(CP) %i $(libdir)
 	for /f %i in ('type MODULES') do $(CP) %i $(libdir)
 	for %i in (ecl-static.lib) do IF EXIST %i $(CP) %i $(libdir)
