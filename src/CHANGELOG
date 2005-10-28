@@ -28,6 +28,10 @@ ECL 0.9h
  - In ECL, all complex types are upgraded to (COMPLEX REAL). However, parts
    SUBTYPEP did not apply this.
 
+ - When reading 1/0, the reader must signal a READER-ERROR, because it is
+   a syntax error to have a denominator full of zeros (CLHS 2.2 end plus
+   2.3.2.1.2).
+
 * Design:
 
  - Simplified the structure of the frame stack, removing redundant fields.

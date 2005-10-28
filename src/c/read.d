@@ -264,6 +264,9 @@ MAYBE_NUMBER:
 	if ((base <= 10) && isalpha(cl_env.token->string.self[0]))
 		goto SYMBOL;
 	x = parse_number(cl_env.token->string.self, cl_env.token->string.fillp, &i, base);
+	if (x == Cnil)
+		FEreader_error("Syntax error when reading number.~%Offending string: ~S.",
+			       in, 1, cl_env.token);
 	if (x != OBJNULL && length == i)
 		return x;
 
@@ -341,10 +344,13 @@ parse_number(const char *s, cl_index end, cl_index *ep, int radix)
 			i++;
 			den = parse_number(s+i, end-i, ep, radix);
 			*ep += i;
-			if (num == OBJNULL || (*ep < end) ||
-			    (!FIXNUMP(num) && type_of(num) != t_bignum))
+			if (den == OBJNULL || (*ep < end) ||
+			   (!FIXNUMP(den) && type_of(den) != t_bignum))
 			{
 				return OBJNULL;
+			}
+			if (den == MAKE_FIXNUM(0)) {
+				return Cnil;
 			}
 			return make_ratio(num, den);
 		} else if (c == '.') {
@@ -951,45 +957,42 @@ sharp_dot_reader(cl_object in, cl_object c, cl_object d)
 }
 
 static cl_object
-sharp_B_reader(cl_object in, cl_object c, cl_object d)
+read_number(cl_object in, int radix, cl_object macro_char)
 {
 	cl_index i;
 	cl_object x;
+	if (!read_constituent(in)) {
+		x = Cnil;
+	} else {
+		x = parse_number(cl_env.token->string.self, cl_env.token->string.fillp,
+				 &i, radix);
+		if (x == OBJNULL || x == Cnil || i != cl_env.token->string.fillp) {
+			FEreader_error("Cannot parse the #~A readmacro.", in, 1,
+				       macro_char);
+		}
+		if (type_of(x) == t_shortfloat ||
+		    type_of(x) == t_longfloat) {
+			FEreader_error("The float ~S appeared after the #~A readmacro.",
+				       in, 2, x, macro_char);
+		}
+	}
+	return x;
+}
 
+static cl_object
+sharp_B_reader(cl_object in, cl_object c, cl_object d)
+{
 	if(d != Cnil && !read_suppress)
 		extra_argument('B', in, d);
-	if (!read_constituent(in)) {
-		@(return Cnil);
-	}
-	x = parse_number(cl_env.token->string.self, cl_env.token->string.fillp, &i, 2);
-	if (x == OBJNULL || i != cl_env.token->string.fillp)
-		FEreader_error("Cannot parse the #B readmacro.", in, 0);
-	if (type_of(x) == t_shortfloat ||
-	    type_of(x) == t_longfloat)
-		FEreader_error("The float ~S appeared after the #B readmacro.",
-			       in, 1, x);
-	@(return x)
+	@(return (read_number(in, 2, CODE_CHAR('B'))))
 }
 
 static cl_object
 sharp_O_reader(cl_object in, cl_object c, cl_object d)
 {
-	cl_index i;
-	cl_object x;
-
 	if(d != Cnil && !read_suppress)
 		extra_argument('O', in, d);
-	if (!read_constituent(in)) {
-		@(return Cnil);
-	}
-	x = parse_number(cl_env.token->string.self, cl_env.token->string.fillp, &i, 8);
-	if (x == OBJNULL || i != cl_env.token->string.fillp)
-		FEreader_error("Cannot parse the #O readmacro.", in, 0);
-	if (type_of(x) == t_shortfloat ||
-	    type_of(x) == t_longfloat)
-		FEreader_error("The float ~S appeared after the #O readmacro.",
-			       in, 1, x);
-	@(return x)
+	@(return (read_number(in, 8, CODE_CHAR('O'))))
 }
 
 static cl_object
@@ -1000,45 +1003,23 @@ sharp_X_reader(cl_object in, cl_object c, cl_object d)
 
 	if(d != Cnil && !read_suppress)
 		extra_argument('X', in, d);
-	if (!read_constituent(in)) {
-		@(return Cnil);
-	}
-	x = parse_number(cl_env.token->string.self, cl_env.token->string.fillp, &i, 16);
-	if (x == OBJNULL || i != cl_env.token->string.fillp)
-		FEreader_error("Cannot parse the #X readmacro.", in, 0);
-	if (type_of(x) == t_shortfloat ||
-	    type_of(x) == t_longfloat)
-		FEreader_error("The float ~S appeared after the #X readmacro.",
-			       in, 1, x);
-	@(return x)
+	@(return (read_number(in, 16, CODE_CHAR('X'))))
 }
 
 static cl_object
 sharp_R_reader(cl_object in, cl_object c, cl_object d)
 {
 	int radix;
-	cl_index i;
-	cl_object x;
-
 	if (read_suppress)
 		radix = 10;
 	else if (FIXNUMP(d)) {
 		radix = fix(d);
 		if (radix > 36 || radix < 2)
 			FEreader_error("~S is an illegal radix.", in, 1, d);
-	} else
+	} else {
 		FEreader_error("No radix was supplied in the #R readmacro.", in, 0);
-	if (!read_constituent(in)) {
-		@(return Cnil);
 	}
-	x = parse_number(cl_env.token->string.self, cl_env.token->string.fillp, &i, radix);
-	if (x == OBJNULL || i != cl_env.token->string.fillp)
-		FEreader_error("Cannot parse the #R readmacro.", in, 0);
-	if (type_of(x) == t_shortfloat ||
-	    type_of(x) == t_longfloat)
-		FEreader_error("The float ~S appeared after the #R readmacro.",
-			       in, 1, x);
-	@(return x)
+	@(return (read_number(in, radix, CODE_CHAR('R'))))
 }
 
 #define sharp_A_reader void_reader
