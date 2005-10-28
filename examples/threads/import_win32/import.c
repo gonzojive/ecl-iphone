@@ -14,8 +14,10 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>
-#include <pthread.h>
+#ifndef _MSC_VER
+# include <unistd.h>
+# include <pthread.h>
+#endif
 
 /*
  * GOAL:	To execute lisp code from threads which have not
@@ -99,8 +101,8 @@ int main(int narg, char **argv)
                 cl_object form = cl_list(2, sym_print, MAKE_FIXNUM(i));
                 code = (HANDLE)CreateThread(NULL, 0, thread_entry_point, form, 0,
                                             &child_thread);
-                if (code) {
-                        printf("Unable to create thread. Code: %d\n", code);
+                if (code == NULL) {
+                        printf("Unable to create thread. Code: %d\n", GetLastError());
                         exit(1);
                 }
         }
