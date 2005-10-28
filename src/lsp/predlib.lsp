@@ -881,6 +881,15 @@ if not possible."
 ;;
 (defun canonical-complex-type (real-type)
   (declare (si::c-local))
+  ;; UPGRADE-COMPLEX-PART-TYPE will signal an error if REAL-TYPE
+  ;; is not a subtype of REAL.
+  (unless (eq real-type '*)
+    (upgraded-complex-part-type real-type))
+  (or (find-registered-tag '(COMPLEX REAL))
+      (let ((tag (new-type-tag)))
+	(push-type '(COMPLEX REAL) tag)
+	tag))
+  #+(or)
   (case real-type
     ((SHORT-FLOAT LONG-FLOAT INTEGER RATIO)
      (let ((tag (new-type-tag)))
