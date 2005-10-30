@@ -45,6 +45,8 @@
 
 (defvar *ffi-types* (make-hash-table :size 128))
 
+#+dffi (defvar si::*use-dffi* t)
+
 (defun foreign-elt-type-p (name)
   (and (symbolp name)
        (member name '(:byte :unsigned-byte :short :unsigned-short
@@ -109,6 +111,8 @@
 	         (setf align field-align)))))
 	  ((eq name '*)
 	   (setf size (si::size-of-foreign-elt-type :pointer-void)))
+          ((eq name 'quote)
+           (size-of-foreign-type (second type)))
 	  (t
 	   (error "~A does not denote a foreign type" name)))
     (unless align
@@ -483,8 +487,9 @@
 ;;;
 
 (defun lisp-to-c-name (name)
-  (cond ((stringp name)
-	 (values name (intern (string-upcase (substitute #\- #\_ name)))))
+  (cond ((or (stringp name)
+             (symbolp name))
+	 (values name (intern (string-upcase (substitute #\- #\_ (string name))))))
 	((and (consp name)
 	      (= (length name) 2))
 	 (values (first name) (second name)))))
@@ -512,9 +517,7 @@
 ;;; FIXME! We should turn this into a closure generator that produces no code.
 #+DFFI
 (defmacro def-lib-function (name args &key returning module (call :cdecl))
-  (multiple-value-bind (c-name lisp-name) (if (consp name)
-					    (values-list name)
-					    (values (string name) name))
+  (multiple-value-bind (c-name lisp-name) (lisp-to-c-name name)
     (let* ((return-type (ffi::%convert-to-return-type returning))
 	   (return-required (not (eq return-type :void)))
 	   (argtypes (mapcar #'(lambda (a) (ffi::%convert-to-arg-type (second a))) args)))
@@ -523,8 +526,8 @@
 	  (si::call-cfun c-fun ',return-type ',argtypes (list ,@(mapcar #'first args)) ,call))))))
 
 (defmacro def-function (name args &key module (returning :void) (call :cdecl))
-  #+DFFI
-  (when module
+  #+DFFI 
+  (when (and module si::*use-dffi*)
     (return-from def-function
       `(def-lib-function ,name ,args :returning ,returning :module ,module :call ,call)))
   (multiple-value-bind (c-name lisp-name)
@@ -560,7 +563,8 @@
            (can-deref (or (foreign-elt-type-p ffi-type)
                           (and (consp ffi-type)
                                (member (first ffi-type) '(* :array)))))
-	   (inline-form (cond (module
+	   (inline-form (cond #+dffi
+                              ((and module si::*use-dffi*)
 			       `(si::find-foreign-symbol ,c-name ,module ,type ,(size-of-foreign-type type)))
 			      (t
 			       `(c-inline () () :object
@@ -628,8 +632,9 @@
   (let ((compile-form (and (constantp filename)
 			   `((eval-when (:compile-toplevel)
 			       (do-load-foreign-library ,filename)))))
-	(dyn-form #-dffi nil
-		  #+dffi `((si:load-foreign-module ,filename))))
+	(dyn-form #+dffi (when si::*use-dffi*
+                           `((si:load-foreign-module ,filename)))
+                  #-dffi nil))
     `(progn ,@compile-form ,@dyn-form)))
 
 ;;;----------------------------------------------------------------------
@@ -642,14 +647,16 @@
 
 #+dffi
 (defmacro defcallback (name ret-type arg-desc &body body)
-  (multiple-value-bind (name call-type) (if (consp name)
-					  (values-list name)
-					  (values name :cdecl))
-    (let ((arg-types (mapcar #'second arg-desc))
-	  (arg-names (mapcar #'first arg-desc)))
-      `(si::make-dynamic-callback
-	 #'(ext::lambda-block ,name ,arg-names ,@body)
-	 ',name ',ret-type ',arg-types ,call-type))))
+  (if si::*use-dffi*
+      (multiple-value-bind (name call-type) (if (consp name)
+                                                (values-list name)
+                                                (values name :cdecl))
+        (let ((arg-types (mapcar #'second arg-desc))
+              (arg-names (mapcar #'first arg-desc)))
+          `(si::make-dynamic-callback
+            #'(ext::lambda-block ,name ,arg-names ,@body)
+            ',name ',ret-type ',arg-types ,call-type)))
+      (error "DEFCALLBACK cannot be used in interpreted forms when DFFI is disabled.")))
 
 (defun callback (name)
   (let ((x (si::get-sysprop name :callback)))

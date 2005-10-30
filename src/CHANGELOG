@@ -108,6 +108,8 @@ ECL 0.9h
    interfaces to C functions. This allows us to call functions in shared
    libraries without need of the compiler. The current implementation only
    works on the intel architecture with GCC, but should be easily extended.
+   It can be turned on/off for individual compilations with variable
+   SI::*USE-DFFI* (default is on if supported).
 
  - There is now a simple implementation of callbacks, with a syntax similar to
    that of CFFI:
