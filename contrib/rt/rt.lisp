@@ -20,6 +20,7 @@
  |----------------------------------------------------------------------------|#
 
 (defpackage :sb-rt
+  (:nicknames :rt)
   (:use #:cl)
   (:export #:*do-tests-when-defined* #:*test* #:continue-testing
 	   #:deftest #:do-test #:do-tests #:get-test #:pending-tests
