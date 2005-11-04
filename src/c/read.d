@@ -552,20 +552,27 @@ read_constituent(cl_object in)
 {
 	int store = !read_suppress;
 	cl_object rtbl = ecl_current_readtable();
+	bool not_first = 0;
 
 	cl_env.token->string.fillp = 0;
 	for (;;) {
 		int c = ecl_read_char(in);
+		enum ecl_chattrib c_cat;
 		if (c == EOF) {
 			break;
 		}
-		if (cat(rtbl, c) != cat_constituent) {
+		c_cat = cat(rtbl, c);
+		if (c_cat == cat_constituent ||
+		    ((c_cat == cat_non_terminating) && not_first))
+		{
+			if (store) {
+				ecl_string_push_extend(cl_env.token, c);
+			}
+		} else {
 			ecl_unread_char(c, in);
 			break;
 		}
-		if (store) {
-			ecl_string_push_extend(cl_env.token, c);
-		}
+		not_first = 1;
 	}
 	return store;
 }
