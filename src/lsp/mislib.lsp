@@ -79,14 +79,31 @@ Evaluates FORM, outputs the realtime and runtime used for the evaluation to
 
 (defconstant month-startdays #(0 31 59 90 120 151 181 212 243 273 304 334 365))
 
-(defun decode-universal-time (ut &optional tz)
+(defun recode-universal-time (sec min hour day month year tz dst)
+  (declare (si::c-local))
+  (let ((days (+ (if (and (leap-year-p year) (> month 2)) 1 0)
+		 (1- day)
+		 (svref month-startdays (1- month))
+		 (number-of-days-from-1900 year))))
+    (+ sec (* 60 (+ min (* 60 (+ tz dst hour (* 24 days))))))))
+
+(defun safe-daylight-saving-time-p (sec min hour day month year tz dst)
+  (declare (si::c-local))
+  (cond ((< 2004 year)
+	 (setf year 2004))
+	((< year 1970)
+	 (setf year 1970)))
+  (si::daylight-saving-time-p
+   (recode-universal-time sec min hour day month year tz dst)))
+
+(defun decode-universal-time (orig-ut &optional (tz nil tz-p) &aux (dstp nil))
   "Args: (integer &optional (timezone (si::get-local-time-zone)))
 Returns as nine values the day-and-time represented by INTEGER.  See GET-
 DECODED-TIME."
-  (let* (sec min hour day month year dow days dstp)
+(loop
+  (let* ((ut orig-ut) sec min hour day month year dow days)
     (unless tz
-      (setq tz (get-local-time-zone)
-	    dstp (daylight-saving-time-p ut)))
+      (setq tz (get-local-time-zone)))
     (decf ut (round (* (+ tz (if dstp -1 0)) 3600)))
     (multiple-value-setq (ut sec) (floor ut 60))
     (multiple-value-setq (ut min) (floor ut 60))
@@ -99,41 +116,38 @@ DECODED-TIME."
          (setq day (1+ x)))
       (incf year))
     (when (leap-year-p year)
-      (when (= day 60)
-	(return-from decode-universal-time
-	  (values sec min hour 29 2 year dow dstp tz)))
-      (when (> day 60) (decf day)))
-    (setq month (position day month-startdays :test #'<=)
-	  day (- day (svref month-startdays (1- month))))
-    (values sec min hour day month year dow dstp tz)))
+      (cond ((= day 60) (setf month 2 day 29))
+	    ((> day 60) (decf day))))
+    (unless month
+      (setq month (position day month-startdays :test #'<=)
+	    day (- day (svref month-startdays (1- month)))))
+    (if (and (not tz-p)
+	     (safe-daylight-saving-time-p sec min hour day month year tz -1))
+	(setf tz-p t dstp t)
+	(return (values sec min hour day month year dow dstp tz))))))
 
-(defun encode-universal-time (sec min h d m y &optional tz)
+(defun encode-universal-time (sec min hour day month year &optional tz)
   "Args: (second minute hour date month year
        &optional (timezone (si::get-local-time-zone)))
 Returns an integer that represents the given day-and-time.  See
 GET-DECODED-TIME."
-  (when (<= 0 y 99)
+  (when (<= 0 year 99)
     ;; adjust to year in the century within 50 years of this year
-    (multiple-value-bind (sec min h d m this-year dow dstp tz)
+    (multiple-value-bind (sec min hour day month this-year dow dstp tz)
 	(get-decoded-time)
-      (declare (ignore sec min h d m dow dstp tz))
-      (incf y (* 100 (ceiling (- this-year y 50) 100)))))
-  (when (and (leap-year-p y) (> m 2))
-    (incf d))
-  (let* ((hours (+ (* 24 (+ (number-of-days-from-1900 y)
-			    (svref month-startdays (1- m)) (1- d))) h))
-	 (dst 0))
+      (declare (ignore sec min hour day month dow dstp tz))
+      (incf year (* 100 (ceiling (- this-year year 50) 100)))))
+  (let ((dst 0))
     (unless tz
       (setq tz (rational (get-local-time-zone)))
-      (when (daylight-saving-time-p
-	     (+ sec (* 60 (+ min (* 60 (+ tz -1 hours))))))
+      (when (safe-daylight-saving-time-p sec min hour day month year tz -1)
 	;; assume DST applies, and check if at corresponging UT it applies.
 	;; There is an ambiguity between midnight and 1 o'clock on the day
 	;; when time reverts from DST to solar:
 	;; 12:01 on that day could be either 11:01 UT (before the switch) or
 	;; 12:01 UT (after the switch). We opt for the former.
-	(setq dst -1)))
-    (+ sec (* 60 (+ min (* 60 (+ tz dst hours)))))))
+	(setf dst -1)))
+    (recode-universal-time sec min hour day month year tz dst)))
 
 (defun get-decoded-time ()
   "Args: ()

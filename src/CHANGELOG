@@ -40,6 +40,10 @@ ECL 0.9h
  - Fixed several type propagations: for instance, the compiler assumed that
    SQRT of a real number is always real.
 
+ - DECODE/ENCODE-UNIVERSAL-TIME now work with very big dates, although the
+   accuracy for determining whether a time belongs to DAY-SAVING-TIME might
+   depend on the implementation of the C library.
+
 * Design:
 
  - Simplified the structure of the frame stack, removing redundant fields.

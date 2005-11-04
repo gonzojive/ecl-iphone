@@ -154,7 +154,7 @@ si_get_local_time_zone()
 		when = time(0);
 	} else { /* narg == 1 */
 		cl_object UTC = number_minus(UT, cl_core.Jan1st1970UT);
-		when = fixint(UTC);
+		when = object_to_fixnum(UTC);
 	}
 	ltm = localtime(&when);
 	@(return (ltm->tm_isdst ? Ct : Cnil))
