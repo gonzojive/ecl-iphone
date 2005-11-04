@@ -677,14 +677,15 @@ sharp_backslash_reader(cl_object in, cl_object c, cl_object d)
 		    fix(d) != 0)
 			FEreader_error("~S is an illegal CHAR-FONT.", in, 1, d);
 			/*  assuming that CHAR-FONT-LIMIT is 1  */
+	bds_bind(@'*readtable*', cl_core.standard_readtable);
 	ecl_unread_char('\\', in);
-	if (read_suppress) {
-		(void)read_object(in);
-		@(return Cnil)
-	}
-	ECL_SETQ(@'*read-suppress*', Ct);
+	bds_bind(@'*read-suppress*', Ct);
 	(void)read_object(in);
-	ECL_SETQ(@'*read-suppress*', Cnil);
+	bds_unwind_n(2);
+	if (read_suppress) {
+		c = Cnil;
+		goto OUTPUT;
+	}
 	c = cl_env.token;
 	if (c->string.fillp == 1)
 		c = CODE_CHAR(c->string.self[0]);
@@ -705,6 +706,7 @@ sharp_backslash_reader(cl_object in, cl_object c, cl_object d)
 		if (Null(nc)) FEreader_error("~S is an illegal character name.", in, 1, copy_simple_string(c));
 		c = nc;
 	}
+ OUTPUT:
 	@(return c)
 }
 
@@ -722,6 +724,7 @@ sharp_single_quote_reader(cl_object in, cl_object c, cl_object d)
 	} else {
 		c = cl_list(2, @'function', c);
 	}
+ OUTPUT:
 	@(return c)
 }
 
@@ -1597,6 +1600,7 @@ CANNOT_PARSE:
 		else
 			FEend_of_file(binary_input_stream);
 	}
+ OUTPUT:
 	@(return c)
 @)
 
