@@ -78,12 +78,12 @@ is used."
   (if conditions
       (let ((aux (set-difference conditions '(:external :internal :inherited))))
 	(when aux
-	  (error 'simple-program-error
-		 :format-control "Clauses ~{~S~} are not allowed."
-		 :format-arguments aux)))
-      (error 'simple-program-error
-	     :format-control "Must supply at least one of :inherited, :external~
-			    or :internal"))
+	  (signal-simple-error 'program-error nil "Clauses ~{~S~} are not allowed."
+			       (list aux))))
+      (signal-simple-error 'program-error
+			   nil
+			   "Must supply at least one of :inherited, :external~or :internal"
+			   nil))
   `(let ((,iterator (packages-iterator ,package-list ',conditions t)))
     (macrolet ((,iterator () (list 'funcall ',iterator)))
       ,@body)))
