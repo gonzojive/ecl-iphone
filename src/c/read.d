@@ -731,7 +731,6 @@ sharp_single_quote_reader(cl_object in, cl_object c, cl_object d)
 	} else {
 		c = cl_list(2, @'function', c);
 	}
- OUTPUT:
 	@(return c)
 }
 
@@ -1607,7 +1606,6 @@ CANNOT_PARSE:
 		else
 			FEend_of_file(binary_input_stream);
 	}
- OUTPUT:
 	@(return c)
 @)
 
