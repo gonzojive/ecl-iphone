@@ -229,7 +229,7 @@ has no fill-pointer, and is not adjustable."
   (put-sysprop (car l) 'TYPE-PREDICATE (cdr l)))
 
 (defconstant +upgraded-array-element-types+
-  '(BASE-CHAR BIT EXT::BYTE8 EXT::INTEGER8 EXT::CL-FIXNUM EXT::CL-INDEX SHORT-FLOAT LONG-FLOAT T))
+  '(NIL BASE-CHAR BIT EXT::BYTE8 EXT::INTEGER8 EXT::CL-FIXNUM EXT::CL-INDEX SHORT-FLOAT LONG-FLOAT T))
 
 (defun upgraded-array-element-type (element-type &optional env)
   (dolist (v +upgraded-array-element-types+ 'T)

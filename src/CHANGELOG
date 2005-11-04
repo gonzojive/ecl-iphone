@@ -102,6 +102,8 @@ ECL 0.9h
    memory. A 30% reduction observed when running the ANSI compatibility test
    suite.
 
+ - Creating arrays with element type NIL now raises an error.
+
 * Foreign function interface (FFI):
 
  - Foreign function return type is now correctly handled, when it is specified

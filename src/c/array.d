@@ -290,6 +290,9 @@ aset1(cl_object v, cl_index index, cl_object val)
   cl_index r, s, i, j;
   cl_object x;
 @
+  if (etype == Cnil) {
+    FEerror("ECL does not support creating arrays with element type NIL", 0);
+  }
   r = narg - 4;
   x = cl_alloc_object(t_array);
   x->array.displaced = Cnil;
@@ -331,6 +334,9 @@ si_make_vector(cl_object etype, cl_object dim, cl_object adj,
   cl_object x;
   cl_elttype aet;
 
+  if (etype == Cnil) {
+    FEerror("ECL does not support creating arrays with element type NIL", 0);
+  }
   aet = ecl_symbol_to_elttype(etype);
   if ((d = fixnnint(dim)) > ADIMLIM)
     FEerror("The vector dimension, ~D, is too large.", 1, dim);
