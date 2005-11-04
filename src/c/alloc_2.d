@@ -95,7 +95,6 @@ cl_alloc_object(cl_type t)
 		return MAKE_FIXNUM(0); /* Immediate fixnum */
 	case t_character:
 		return CODE_CHAR(' '); /* Immediate character */
-#ifdef ENABLE_DLOPEN
 	case t_codeblock:
 		obj = (cl_object)GC_MALLOC(sizeof(struct ecl_codeblock));
 		obj->cblock.locked = 0;
@@ -107,7 +106,10 @@ cl_alloc_object(cl_type t)
 		obj->cblock.data_text_size = 0;
 		obj->cblock.data_size = 0;
 		obj->cblock.handle = NULL;
+#ifdef ENABLE_DLOPEN
 		goto FINALIZE;
+#else
+		break;
 #endif
 #ifdef ENABLE_THREADS
 	case t_lock:
