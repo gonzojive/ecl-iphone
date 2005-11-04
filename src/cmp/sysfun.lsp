@@ -867,8 +867,8 @@
 (def-inline log :always (fixnum-float) :float "(float)log((double)(#0))")
 
 (proclaim-function sqrt (number) number :no-side-effects t)
-(def-inline sqrt :always (fixnum-float) :double "sqrt((double)(#0))")
-(def-inline sqrt :always (fixnum-float) :float "(float)sqrt((double)(#0))")
+(def-inline sqrt :always ((or (long-float 0.0 *) (double-float 0.0 *))) :double "sqrt((double)(#0))")
+(def-inline sqrt :always ((or (single-float 0.0 *) (short-float 0.0 *))) :float "(float)sqrt((double)(#0))")
 
 (proclaim-function sin (number) number :no-side-effects t)
 (def-inline sin :always (fixnum-float) :double "sin((double)(#0))")
