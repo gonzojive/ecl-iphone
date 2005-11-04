@@ -40,12 +40,12 @@ FEpackage_error(const char *message, cl_object package, int narg, ...)
 {
 	cl_va_list args;
 	cl_va_start(args, narg, narg, 0);
-	cl_error(7,
-		 @'si::simple-package-error',
-		 @':format-control', make_constant_string(message),
-		 @':format-arguments',
-		 narg? cl_grab_rest_args(args) : cl_list(1,package),
-		 @':package', package);
+	si_signal_simple_error(6,
+			       @'package-error',
+			       Cnil, /* not correctable */
+			       make_constant_string(message), /* format control */
+			       narg? cl_grab_rest_args(args) : cl_list(1,package), /* format args */
+			       @':package', package); /* extra arguments */
 }
 
 static void
@@ -53,13 +53,12 @@ CEpackage_error(const char *message, const char *continue_message, cl_object pac
 {
 	cl_va_list args;
 	cl_va_start(args, narg, narg, 0);
-	cl_cerror(8,
-		  make_constant_string(continue_message),
-		  @'si::simple-package-error',
-		  @':format-control', make_constant_string(message),
-		  @':format-arguments',
-		  narg? cl_grab_rest_args(args) : cl_list(1,package),
-		  @':package', package);
+	si_signal_simple_error(6,
+			       @'package-error',
+			       make_constant_string(continue_message),
+			       make_constant_string(message), /* format control */
+			       narg? cl_grab_rest_args(args) : cl_list(1,package),
+			       @':package', package);
 }
 
 static bool
@@ -128,13 +127,9 @@ make_package(cl_object name, cl_object nicknames, cl_object use_list)
 	/* 2) Otherwise, try to build a new package */
 	if ((other = ecl_find_package_nolock(name)) != Cnil) {
 	ERROR:	PACKAGE_OP_UNLOCK();
-		cl_cerror(8,
-			  make_constant_string("Return existing package"),
-			  @'si::simple-package-error',
-			  @':format-control',
-			  make_constant_string("A package with the name ~A already exists."),
-			  @':format-arguments', cl_list(1,name),
-			  @':package', other);
+		CEpackage_error("A package with the name ~A already exists.",
+				"Return existing package",
+				other, 1, name);
 		return other;
 	}
 	x = cl_alloc_object(t_package);

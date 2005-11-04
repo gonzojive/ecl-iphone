@@ -1330,7 +1330,7 @@ type_of(#0)==t_bitvector")
     ;; mislib.lsp
     logical-pathname-translations load-logical-pathname-translations decode-universal-time
     encode-universal-time get-decoded-time get-universal-time
-    ensure-directories-exist si::simple-program-error
+    ensure-directories-exist si::simple-program-error si::signal-simple-error
     ;; module.lsp
     provide require
     ;; numlib.lsp

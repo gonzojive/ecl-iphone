@@ -94,11 +94,11 @@ FEprogram_error(const char *s, int narg, ...)
 {
 	cl_va_list args;
 	cl_va_start(args, narg, narg, 0);
-	funcall(4, @'si::universal-error-handler',
-		Cnil,                    /*  not correctable  */
-		@'si::simple-program-error', /*  condition name  */
-		cl_list(4, @':format-control', make_constant_string(s),
-			@':format-arguments', cl_grab_rest_args(args)));
+	si_signal_simple_error(4, 
+			       @'program-error', /* condition name */
+			       Cnil, /* not correctable */
+			       make_constant_string(s), /* format control */
+			       cl_grab_rest_args(args)); /* format args */
 }
 
 void
@@ -106,11 +106,11 @@ FEcontrol_error(const char *s, int narg, ...)
 {
 	cl_va_list args;
 	cl_va_start(args, narg, narg, 0);
-	funcall(4, @'si::universal-error-handler',
-		Cnil,                    /*  not correctable  */
-		@'si::simple-control-error', /*  condition name  */
-		cl_list(4, @':format-control', make_constant_string(s),
-			@':format-arguments', cl_grab_rest_args(args)));
+	si_signal_simple_error(4,
+			       @'control-error', /* condition name */
+			       Cnil, /* not correctable */
+			       make_constant_string(s), /* format control */
+			       cl_grab_rest_args(args)); /* format args */
 }
 
 void
@@ -118,12 +118,12 @@ FEreader_error(const char *s, cl_object stream, int narg, ...)
 {
 	cl_va_list args;
 	cl_va_start(args, narg, narg, 0);
-	funcall(4, @'si::universal-error-handler',
-		Cnil,                    /*  not correctable  */
-		@'si::simple-reader-error', /*  condition name  */
-		cl_list(6, @':format-control', make_constant_string(s),
-			@':format-arguments', cl_grab_rest_args(args),
-			@':stream', stream));
+	si_signal_simple_error(6,
+			       @'reader-error', /* condition name */
+			       Cnil, /* not correctable */
+			       make_constant_string(s), /* format control */
+			       cl_grab_rest_args(args), /* format args */
+			       @':stream', stream);
 }
 
 

@@ -1525,6 +1525,7 @@ extern cl_object cl_get_universal_time _ARGS((cl_narg narg, ...));
 extern cl_object cl_get_decoded_time _ARGS((cl_narg narg, ...));
 extern cl_object cl_ensure_directories_exist _ARGS((cl_narg narg, cl_object V1, ...));
 extern cl_object si_simple_program_error _ARGS((cl_narg narg, cl_object format, ...)) /*__attribute__((noreturn))*/;
+extern cl_object si_signal_simple_error _ARGS((cl_narg narg, cl_object condition, cl_object continuable, cl_object format, cl_object args, ...)) /*__attribute__((noreturn))*/;
 
 /* module.lsp */
 

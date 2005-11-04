@@ -129,9 +129,9 @@ strings."
 (defun find-restart-never-fail (restart &optional condition)
   (declare (si::c-local))
   (or (find-restart restart condition)
-      (error 'simple-control-error
-	     :format-control "Restart ~S is not active."
-	     :format-arguments (list restart))))
+      (signal-simple-error 'control-error nil
+	     "Restart ~S is not active."
+	     (list restart))))
 
 (defun invoke-restart (restart &rest values)
   (let ((real-restart (find-restart-never-fail restart)))
@@ -533,8 +533,6 @@ returns with NIL."
 
 (define-condition control-error (error) ())
 
-(define-condition simple-control-error (simple-condition control-error) ())
-
 (define-condition stream-error (error)
   ((stream :INITARG :STREAM :READER stream-error-stream)))
 
@@ -555,8 +553,6 @@ returns with NIL."
 
 (define-condition package-error (error)
   ((package :INITARG :PACKAGE :READER package-error-package)))
-
-(define-condition simple-package-error (simple-condition package-error) ())
 
 (define-condition cell-error (error)
   ((name :INITARG :NAME :READER cell-error-name)))
@@ -608,8 +604,6 @@ returns with NIL."
 
 (define-condition reader-error (parse-error stream-error) ())
 
-(define-condition simple-reader-error (simple-condition reader-error) ())
-
 #+nil
 (defun simple-condition-class-p (type)
   (typep type 'SIMPLE-CONDITION-CLASS))
@@ -617,7 +611,18 @@ returns with NIL."
 ;;;
 ;;; Additions by ECL
 ;;;
-(define-condition simple-program-error (simple-condition program-error) ())
+(defun signal-simple-error (base-condition continue-message format-control format-args
+			    &rest args)
+  (let ((simple-error-name (intern (concatenate 'string "SIMPLE-" (string base-condition))
+				   (find-package "SI"))))
+    (unless (find-class simple-error-name nil)
+      (eval `(defclass ,simple-error-name (simple-error ,base-condition) ())))
+    (if continue-message
+	(apply #'cerror continue-message simple-error-name :format-control format-control
+	       :format-arguments format-args args)
+	(apply #'error simple-error-name :format-control format-control
+	       :format-arguments format-args args))))
+	   
 
 (define-condition format-error (simple-error)
   ((format-control :initarg :complaint)

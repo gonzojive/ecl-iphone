@@ -246,5 +246,4 @@ Sunday is the *last* day of the week!!"
 (set-dispatch-macro-character #\# #\! 'sharp-!-reader)
 
 (defun si::simple-program-error (message &rest datum)
-  (error 'simple-program-error :format-control message
-	 :format-arguments datum))
+  (signal-simple-error 'program-error nil message datum))
