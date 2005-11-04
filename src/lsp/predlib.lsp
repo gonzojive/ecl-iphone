@@ -642,7 +642,7 @@ if not possible."
 	;; We convert number into intervals, so that (AND INTEGER (NOT
 	;; (EQL 10))) is detected as a subtype of (OR (INTEGER * 9)
 	;; (INTEGER 11 *)).
-	(and (numberp object)
+	(and (realp object)
 	     (let* ((base-type (if (integerp object) 'INTEGER (type-of object)))
 		    (type (list base-type object object)))
 	       (or (find-registered-tag type)
