@@ -103,7 +103,11 @@
 
 (defmethod print-object ((m standard-method) stream)
   (print-unreadable-object (m stream :type t)
-    (format stream "~A ~A" (generic-function-name (method-generic-function m))
+    (format stream "~A ~A"
+	    (let ((gf (method-generic-function m)))
+	      (if gf
+		  (generic-function-name gf)
+		  'UNNAMED))
 	    (method-specializers m)))
   m)
 

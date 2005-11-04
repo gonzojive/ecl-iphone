@@ -32,6 +32,9 @@ ECL 0.9h
    a syntax error to have a denominator full of zeros (CLHS 2.2 end plus
    2.3.2.1.2).
 
+ - When a DEFMETHOD form had an incongruent lambda list, an internal error
+   prevented ECL from writing the proper error message.
+
 * Design:
 
  - Simplified the structure of the frame stack, removing redundant fields.
