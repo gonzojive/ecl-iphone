@@ -445,7 +445,7 @@ cl_symbols[] = {
 {"GET-OUTPUT-STREAM-STRING","cl_get_output_stream_string"},
 {"GET-PROPERTIES","cl_get_properties"},
 {"GET-SETF-EXPANSION",NULL},
-{"GET-UNIVERSAL-TIME","cl_get_universal_time"},
+{"GET-UNIVERSAL-TIME","ECL_NAME(cl_get_universal_time)"},
 {"GETF","cl_getf"},
 {"GETHASH","cl_gethash"},
 {"GO",NULL},
@@ -1081,7 +1081,6 @@ cl_symbols[] = {
 {SYS_ "COMPILED-FUNCTION-BLOCK","si_compiled_function_block"},
 {SYS_ "COMPILED-FUNCTION-NAME","si_compiled_function_name"},
 {SYS_ "COPY-STREAM","si_copy_stream"},
-{SYS_ "DAYLIGHT-SAVING-TIME-P","si_daylight_saving_time_p"},
 {SYS_ "DO-READ-SEQUENCE","si_do_read_sequence"},
 {SYS_ "DO-WRITE-SEQUENCE","si_do_write_sequence"},
 {SYS_ "ELT-SET","si_elt_set"},
@@ -1106,7 +1105,6 @@ cl_symbols[] = {
 #if defined(_MSC_VER) || defined(mingw32)
 {SYS_ "GET-LIBRARY-PATHNAME","si_get_library_pathname"},
 #endif
-{SYS_ "GET-LOCAL-TIME-ZONE","si_get_local_time_zone"},
 {SYS_ "GET-SYSPROP","si_get_sysprop"},
 {SYS_ "GET-STRING-INPUT-STREAM-INDEX","si_get_string_input_stream_index"},
 {SYS_ "GETENV","si_getenv"},

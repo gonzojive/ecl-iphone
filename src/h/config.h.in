@@ -207,6 +207,8 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #undef HAVE_FENV_H
 /* can activate individual traps in floating point environment		*/
 #undef HAVE_FEENABLEEXCEPT
+/* the tzset() function gets the current time zone			*/
+#undef HAVE_TZSET
 
 /* what characters are used to mark beginning of new line		*/
 #undef ECL_NEWLINE_IS_CRLF

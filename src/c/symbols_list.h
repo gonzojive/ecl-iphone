@@ -445,7 +445,7 @@ cl_symbols[] = {
 {"GET-OUTPUT-STREAM-STRING", CL_ORDINARY, cl_get_output_stream_string, 1, OBJNULL},
 {"GET-PROPERTIES", CL_ORDINARY, cl_get_properties, 2, OBJNULL},
 {"GET-SETF-EXPANSION", CL_ORDINARY, NULL, -1, OBJNULL},
-{"GET-UNIVERSAL-TIME", CL_ORDINARY, cl_get_universal_time, 0, OBJNULL},
+{"GET-UNIVERSAL-TIME", CL_ORDINARY, ECL_NAME(cl_get_universal_time), -1, OBJNULL},
 {"GETF", CL_ORDINARY, cl_getf, -1, OBJNULL},
 {"GETHASH", CL_ORDINARY, cl_gethash, -1, OBJNULL},
 {"GO", CL_FORM, NULL, -1, OBJNULL},
@@ -1081,7 +1081,6 @@ cl_symbols[] = {
 {SYS_ "COMPILED-FUNCTION-BLOCK", SI_ORDINARY, si_compiled_function_block, 1, OBJNULL},
 {SYS_ "COMPILED-FUNCTION-NAME", SI_ORDINARY, si_compiled_function_name, 1, OBJNULL},
 {SYS_ "COPY-STREAM", SI_ORDINARY, si_copy_stream, 1, OBJNULL},
-{SYS_ "DAYLIGHT-SAVING-TIME-P", SI_ORDINARY, si_daylight_saving_time_p, -1, OBJNULL},
 {SYS_ "DO-READ-SEQUENCE", SI_ORDINARY, si_do_read_sequence, 4, OBJNULL},
 {SYS_ "DO-WRITE-SEQUENCE", SI_ORDINARY, si_do_write_sequence, 4, OBJNULL},
 {SYS_ "ELT-SET", SI_ORDINARY, si_elt_set, 3, OBJNULL},
@@ -1106,7 +1105,6 @@ cl_symbols[] = {
 #if defined(_MSC_VER) || defined(mingw32)
 {SYS_ "GET-LIBRARY-PATHNAME", SI_ORDINARY, si_get_library_pathname, 0, OBJNULL},
 #endif
-{SYS_ "GET-LOCAL-TIME-ZONE", SI_ORDINARY, si_get_local_time_zone, 0, OBJNULL},
 {SYS_ "GET-SYSPROP", SI_ORDINARY, si_get_sysprop, 2, OBJNULL},
 {SYS_ "GET-STRING-INPUT-STREAM-INDEX", SI_ORDINARY, si_get_string_input_stream_index, 1, OBJNULL},
 {SYS_ "GETENV", SI_ORDINARY, si_getenv, 1, OBJNULL},

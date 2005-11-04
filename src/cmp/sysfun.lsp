@@ -1222,11 +1222,10 @@ type_of(#0)==t_bitvector")
 
 ;; file unixtime.d
 
-(proclaim-function si:daylight-saving-time-p (*) t :predicate t)
-(proclaim-function get-universal-time (*) t)
-(proclaim-function get-internal-run-time (*) t)
-(proclaim-function get-internal-real-time (*) t)
-(proclaim-function si:get-local-time-zone (*) t)
+(proclaim-function get-universal-time () t)
+(proclaim-function get-decoded-time () *)
+(proclaim-function get-internal-run-time () t)
+(proclaim-function get-internal-real-time () t)
 (proclaim-function sleep (real) t)
 
 ;; file typeof.d
@@ -1330,7 +1329,7 @@ type_of(#0)==t_bitvector")
     nsubst-if nsubst-if-not
     ;; mislib.lsp
     logical-pathname-translations load-logical-pathname-translations decode-universal-time
-    encode-universal-time get-decoded-time
+    encode-universal-time get-decoded-time get-universal-time
     ensure-directories-exist si::simple-program-error
     ;; module.lsp
     provide require

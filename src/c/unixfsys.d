@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include "ecl.h"
 #include "ecl-inl.h"
+#include "internal.h"
 #ifdef HAVE_DIRENT_H
 # include <dirent.h>
 #else

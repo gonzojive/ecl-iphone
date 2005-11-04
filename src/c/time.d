@@ -58,18 +58,6 @@ ecl_runtime(void)
 }
 
 cl_object
-UTC_time_to_universal_time(cl_fixnum i)
-{
-	return number_plus(bignum1(i), cl_core.Jan1st1970UT);
-}
-
-cl_object
-cl_get_universal_time()
-{
-	@(return UTC_time_to_universal_time(time(0)))
-}
-
-cl_object
 cl_sleep(cl_object z)
 {
 	double r;
@@ -115,50 +103,6 @@ cl_get_internal_real_time()
 {
 	@(return MAKE_FIXNUM((time(0) - beginning)*HZ))
 }
-
-/*
- * Return the hours west of Greenwich for the current timezone.
- *
- * Based on Lott's get_timezone() function from CMU Common Lisp.
- */
-cl_object
-si_get_local_time_zone()
-{
-  struct tm ltm, gtm;
-  int mw;
-  time_t when = 0L;
-
-  ltm = *localtime(&when);
-  gtm = *gmtime(&when);
-
-  mw = (gtm.tm_min + 60 * gtm.tm_hour) - (ltm.tm_min + 60 * ltm.tm_hour);
-
-  if ((gtm.tm_wday + 1) % 7 == ltm.tm_wday)
-    mw -= 24*60;
-  else if (gtm.tm_wday == (ltm.tm_wday + 1) % 7)
-    mw += 24*60;
-
-  @(return make_ratio(MAKE_FIXNUM(mw), MAKE_FIXNUM(60)))
-}
-
-/*
- * Return T if daylight saving is in effect at Universal Time UT, which
- * defaults to current time.
- *
- */
-@(defun si::daylight-saving-time-p (&optional UT)
-	struct tm *ltm;
-	time_t when;
-@
-	if (narg == 0) {
-		when = time(0);
-	} else { /* narg == 1 */
-		cl_object UTC = number_minus(UT, cl_core.Jan1st1970UT);
-		when = object_to_fixnum(UTC);
-	}
-	ltm = localtime(&when);
-	@(return (ltm->tm_isdst ? Ct : Cnil))
-@)
 
 void
 init_unixtime(void)

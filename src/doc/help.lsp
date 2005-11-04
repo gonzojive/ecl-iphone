@@ -1042,11 +1042,6 @@ Returns the number of elements in SEQUENCE satisfying TEST.")
             (start 0) (end (length sequence)) (from-end nil)) "
 Returns the number of elements in SEQUENCE not satisfying TEST.")
 
-(docfun si::daylight-saving-time-p function (&optional UT) "
-ECL specific.
-Returns T if Daylight Saving Time applies to the local time zone at
-Universal Time UT, which defaults to the current time.")
-
 (docfun declare special "(declare {decl-spec}*)" "
 Gives declarations.  Possible DECL-SPECs are:
   (SPECIAL {var}*)
@@ -1585,10 +1580,6 @@ Returns the time (in 1/100 seconds) since the invocation of ECL.")
 
 (docfun get-internal-run-time function () "
 Returns the CPU time (in 1/100 seconds) since the invocation of ECL.")
-
-(docfun si::get-local-time-zone function () "
-ECL specific.
-Returns the number of hours West of Greenwich for the local time zone.")
 
 (docfun get-macro-character function (char &optional (readtable *readtable*)) "
 Returns the read macro associated with the macro character CHAR in READTABLE.
