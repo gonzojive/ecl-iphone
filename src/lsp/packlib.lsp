@@ -82,7 +82,7 @@ is used."
 			       (list aux))))
       (signal-simple-error 'program-error
 			   nil
-			   "Must supply at least one of :inherited, :external~or :internal"
+			   "Must supply at least one of :inherited, :external or :internal"
 			   nil))
   `(let ((,iterator (packages-iterator ,package-list ',conditions t)))
     (macrolet ((,iterator () (list 'funcall ',iterator)))
