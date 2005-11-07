@@ -1099,11 +1099,6 @@ EXPORTS
 	cl_sleep
 	cl_get_internal_run_time
 	cl_get_internal_real_time
-	si_get_local_time_zone
-	si_daylight_saving_time_p
-
-	UTC_time_to_universal_time
-
 
 	; tkMain.c
 
