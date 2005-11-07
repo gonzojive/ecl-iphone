@@ -24,6 +24,9 @@
 #  undef HAVE_LINK_H
 #  include <mach-o/dyld.h>
 #  define INIT_PREFIX "_init_"
+#  ifdef bool
+#   undef bool
+#  endif
 # endif
 # ifdef HAVE_DLFCN_H
 #  include <dlfcn.h>

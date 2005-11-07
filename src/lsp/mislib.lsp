@@ -91,7 +91,7 @@ Evaluates FORM, outputs the realtime and runtime used for the evaluation to
   (ffi::c-inline () () :object "
 {
   cl_fixnum mw;
-#ifdef HAVE_TZSET
+#if 0 && defined(HAVE_TZSET)
   tzset();
   mw = timezone/60;
 #else
