@@ -57,7 +57,7 @@ CC	= cl
 MFLAGS  = -MD
 CFLAGS  = -GX -DGC_DLL -nologo
 LIBS	= eclgc.lib eclgmp.lib user32.lib ws2_32.lib
-LDFLAGS	=
+LDFLAGS	= /link /nodefaultlib:libcmt
 SHARED_LDFLAGS = -LD
 GCFLAGS = nodebug=1
 RM	= del
@@ -167,7 +167,7 @@ ecl-static.lib: $(TARGETS)
 	link -lib -out:$@ eclmin.lib c\all_symbols2.obj lsp.lib eclgmp.lib eclgc.lib
 
 ecl_min$(EXE): $(LIBRARIES) eclmin.lib
-	$(CC) $(LDFLAGS) /Fe$@ cinit.obj c\all_symbols.obj eclmin.lib $(LIBS)
+	$(CC) /Fe$@ cinit.obj c\all_symbols.obj eclmin.lib $(LDFLAGS) $(LIBS)
 
 .gdbinit: $(srcdir)\util\gdbinit
 	$(CP) $(srcdir)\util\gdbinit $@
@@ -193,7 +193,7 @@ compile.lsp: bare.lsp $(srcdir)/compile.lsp.in Makefile
 	    "@ECL_CFLAGS@" "" \
 	    "@CPPFLAGS@" "" \
 	    "@LDRPATH@" "" \
-	    "@LDFLAGS@" "$(LDFLAGS) /link /LIBPATH:~S" \
+	    "@LDFLAGS@" "$(LDFLAGS) /LIBPATH:~S" \
 	    "@SHARED_LDFLAGS@" "$(SHARED_LDFLAGS)" \
 	    "@BUNDLE_LDFLAGS@" "$(SHARED_LDFLAGS)" \
 	    "@CLIBS@" "user32.lib ws2_32.lib" \
@@ -229,7 +229,7 @@ cmp/cmpcfg.lsp: $(srcdir)/cmp/cmpcfg.lsp.in Makefile
 	    "@ECL_CFLAGS@" "" \
 	    "@CPPFLAGS@" "" \
 	    "@LDRPATH@" "" \
-	    "@LDFLAGS@" "$(LDFLAGS) /link /LIBPATH:~S" \
+	    "@LDFLAGS@" "$(LDFLAGS) /LIBPATH:~S" \
 	    "@SHARED_LDFLAGS@" "$(SHARED_LDFLAGS)" \
 	    "@BUNDLE_LDFLAGS@" "$(SHARED_LDFLAGS)" \
 	    "@CLIBS@" "user32.lib ws2_32.lib" \
@@ -331,7 +331,8 @@ doc: $(TARGETS)
 	cd ..
 
 clean: clean_ecl clean_lisp clean_doc
-	-$(RM) .gdbinit
+	-$(RM) .gdbinit cinit.lib ecl_min.lib
+	-$(RM) gc\*.pdb
 	cd gc
 	-$(MAKE) "ECL_THREADS = $(ECL_THREADS)" clean
 	cd ..
