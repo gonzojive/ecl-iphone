@@ -219,6 +219,9 @@ BEGIN:
 		case aet_fix:
 			j = x->array.dim * sizeof(cl_fixnum);
 			break;
+		case aet_index:
+			j = x->array.dim * sizeof(cl_index);
+			break;
 		case aet_sf:
 			j = x->array.dim * sizeof(float);
 			break;
