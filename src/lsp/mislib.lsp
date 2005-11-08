@@ -45,7 +45,7 @@
       (setq run-end (get-internal-run-time)
 	    real-end (get-internal-real-time))
       #-boehm-gc
-      (setq gc-end (si::gc-end))
+      (setq gc-end (si::gc-time))
       (fresh-line *trace-output*)
       (format *trace-output*
        #-boehm-gc
