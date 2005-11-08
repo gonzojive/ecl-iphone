@@ -1,6 +1,10 @@
 ECL 0.9h
 ========
 
+* Platforms:
+
+ - Ported to OpenBSD/x86. Might also work on other architectures.
+
 * Errors fixed:
 
  - The garbage collection of FASL files had been deactivated by the use of
