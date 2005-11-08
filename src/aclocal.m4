@@ -541,11 +541,11 @@ AC_DEFUN([ECL_FPE_MODEL],
 [AC_MSG_CHECKING([for code to detect FP exceptions])
 case "${host_cpu}" in
    i686 |i586 | pentium* | athlon* )
-	ECL_FPE_CODE="${srcdir}/c/arch/fpe_x86.c"
+	ECL_FPE_CODE="arch/fpe_x86.c"
 	AC_MSG_RESULT([x86])
 	;;
    *)
-        ECL_FPE_CODE="${srcdir}/c/arch/fpe_none.c"
+        ECL_FPE_CODE="arch/fpe_none.c"
 	AC_MSG_RESULT([not available])
 	;;
 esac

@@ -97,7 +97,7 @@ clean:
 
 $(DPP): $(srcdir)/dpp.c $(srcdir)/symbols_list2.h
 	if test -f ../CROSS-DPP; then touch dpp; else \
-	$(TRUE_CC) @CFLAGS@ @ECL_CFLAGS@ -I../h -I./ -I$(HDIR) $(DEFS) $(srcdir)/dpp.c  -o $@ ; \
+	$(TRUE_CC) @CFLAGS@ @ECL_CFLAGS@ -I$(srcdir) -I../h -I./ -I$(HDIR) $(DEFS) $(srcdir)/dpp.c  -o $@ ; \
 	fi
 $(srcdir)/symbols_list2.h: $(srcdir)/symbols_list.h Makefile
 	cat $(srcdir)/symbols_list.h | \

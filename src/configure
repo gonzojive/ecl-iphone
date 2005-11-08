@@ -6886,12 +6886,12 @@ echo "$as_me:$LINENO: checking for code to detect FP exceptions" >&5
 echo $ECHO_N "checking for code to detect FP exceptions... $ECHO_C" >&6
 case "${host_cpu}" in
    i686 |i586 | pentium* | athlon* )
-	ECL_FPE_CODE="${srcdir}/c/arch/fpe_x86.c"
+	ECL_FPE_CODE="arch/fpe_x86.c"
 	echo "$as_me:$LINENO: result: x86" >&5
 echo "${ECHO_T}x86" >&6
 	;;
    *)
-        ECL_FPE_CODE="${srcdir}/c/arch/fpe_none.c"
+        ECL_FPE_CODE="arch/fpe_none.c"
 	echo "$as_me:$LINENO: result: not available" >&5
 echo "${ECHO_T}not available" >&6
 	;;

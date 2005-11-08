@@ -297,7 +297,7 @@ si_trap_fpe(cl_object condition, cl_object flag)
 		bits = FE_DIVBYZERO | FE_OVERFLOW | FE_UNDERFLOW;
 	else if (condition == @'last')
 		bits = last_bits;
-#if defined(_MSC_VER) || defined (mingw32)
+#if defined(_MSC_VER) || defined(mingw32)
 	_fpreset();
 #endif
 	if (bits) {

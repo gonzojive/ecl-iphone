@@ -38,8 +38,8 @@
 ;;;   with an already installed copy of ECL.
 ;;;
 (setq c::*cc-flags*
-      #-msvc "@CPPFLAGS@ @CFLAGS@ @ECL_CFLAGS@ -I\"@true_srcdir@\"/h -I\"@true_srcdir@\"/gmp -I\"@true_builddir@\"/h"
-      #+msvc "@CFLAGS@ @ECL_CFLAGS@ -I\"@true_srcdir@\"/h -I\"@true_builddir@\"/h"
+      #-msvc "@CPPFLAGS@ @CFLAGS@ @ECL_CFLAGS@ -I\"@true_srcdir@\"/c -I\"@true_srcdir@\"/h -I\"@true_srcdir@\"/gmp -I\"@true_builddir@\"/h"
+      #+msvc "@CFLAGS@ @ECL_CFLAGS@ -I\"@true_srcdir@\"/c -I\"@true_srcdir@\"/h -I\"@true_builddir@\"/h"
       c::*cc-format*
       #-msvc "~A ~A ~:[~*~;~A~] -I\"@true_builddir@\"/h~* -w -c ~S -o ~S"
       #+msvc "~A ~A ~:[~*~;~A~] -I\"@true_builddir@\"/h~* -w -c ~S -Fo~S"
