@@ -888,6 +888,8 @@ Optional Packages:
   --with-cmuformat        use CMUCL's FORMAT routine (default=YES)
   --with-asdf             include ASDF building facility (default=YES if
                           shared library support is on)
+  --with-defsystem        include DEFSYSTEM building facility (default=YES if
+                          shared library support is on)
   --with-cmp              build in the compiler (default=YES)
   --with-rt               include MIT-RT testing environment (default=YES)
   --with-x                use the X Window System
@@ -1536,6 +1538,15 @@ if test "${with_asdf+set}" = set; then
 
 else
   with_asdf=${enable_shared}
+fi;
+
+
+# Check whether --with-defsystem or --without-defsystem was given.
+if test "${with_defsystem+set}" = set; then
+  withval="$with_defsystem"
+
+else
+  with_defsystem=${enable_shared}
 fi;
 
 
@@ -9774,6 +9785,14 @@ if test "${with_asdf}" = "yes"; then
 
 
 LSP_FEATURES="(cons :wants-asdf ${LSP_FEATURES})"
+
+
+fi
+
+if test "${with_defsystem}" = "yes"; then
+
+
+LSP_FEATURES="(cons :wants-defsystem ${LSP_FEATURES})"
 
 
 fi

@@ -112,6 +112,9 @@ ECL 0.9h
 
  - Creating arrays with element type NIL now raises an error.
 
+ - The DEFSYSTEM system definition facility v 3.4 is now distributed with ECL
+   in the directory of external packages (contrib/defsystem).
+
 * Foreign function interface (FFI):
 
  - Foreign function return type is now correctly handled, when it is specified

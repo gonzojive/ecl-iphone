@@ -122,6 +122,12 @@ AC_ARG_WITH(asdf,
                   [(default=YES if shared library support is on)]),
   [], [with_asdf=${enable_shared}])
 
+AC_ARG_WITH(defsystem,
+  AS_HELP_STRING( [--with-defsystem],
+                  [include DEFSYSTEM building facility]
+                  [(default=YES if shared library support is on)]),
+  [], [with_defsystem=${enable_shared}])
+
 AC_ARG_WITH(cmp,
   AS_HELP_STRING( [--with-cmp],
                   [build in the compiler (default=YES)] ),
@@ -440,6 +446,10 @@ fi
 
 if test "${with_asdf}" = "yes"; then
   ECL_ADD_LISP_MODULE([asdf])
+fi
+
+if test "${with_defsystem}" = "yes"; then
+  ECL_ADD_LISP_MODULE([defsystem])
 fi
 
 if test "${with_rt}" = "yes"; then

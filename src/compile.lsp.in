@@ -125,6 +125,15 @@ ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@ ../c/all_symbols2.@OBJEXT@; rm *.@OB
 ;;;
 
 ;;;
+;;; * DEFSYSTEM
+;;;
+#+WANTS-DEFSYSTEM
+(build-module "defsystem"
+              '("ext:defsystem;defsystem.lisp")
+              :dir "build:ext;"
+              :prefix "EXT")
+
+;;;
 ;;; * ASDF
 ;;;
 #+WANTS-ASDF
