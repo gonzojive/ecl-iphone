@@ -198,6 +198,7 @@ case "${host_os}" in
 		;;
 	freebsd*)
 		thehost='freebsd'
+		THREAD_LIBS='-lpthread'
 		SHARED_LDFLAGS="-shared ${LDFLAGS}"
 		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
 		LDRPATH="-Wl,--rpath,~A"

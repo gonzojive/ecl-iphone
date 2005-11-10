@@ -293,11 +293,7 @@ mp_process_run_function(cl_narg narg, cl_object name, cl_object function, ...)
 	cl_object output;
 @
 	pthread_mutexattr_init(&attr);
-#if defined(__APPLE__)
-	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-#else
 	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP);
-#endif
 	output = cl_alloc_object(t_lock);
 	output->lock.name = name;
 	pthread_mutex_init(&output->lock.mutex, &attr);

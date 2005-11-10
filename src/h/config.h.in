@@ -279,3 +279,11 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #define ECL_ARCHITECTURE "@ARCHITECTURE@"
 
 #include "@ECL_FPE_CODE@"
+
+#if defined(ECL_THREADS)
+# if defined(darwin) || defined(freebsd)
+#  define PTHREAD_MUTEX_ERRORCHECK_NP PTHREAD_MUTEX_ERRORCHECK
+#  define PTHREAD_MUTEX_RECURSIVE_NP PTHREAD_MUTEX_RECURSIVE
+#  define PTHREAD_MUTEX_NORMAL_NP PTHREAD_MUTEX_NORMAL
+# endif
+#endif

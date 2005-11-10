@@ -48,9 +48,6 @@ typedef unsigned short uint16_t;
 #  endif
 # else
 #  include <pthread.h>
-#  if defined(__APPLE__) || defined(freebsd)
-#   define PTHREAD_MUTEX_ERROR_CHECK_NP PTHREAD_MUTEX_ERROR_CHECK_NP
-#  endif
 # endif
 # define start_critical_section()
 # define end_critical_section()
