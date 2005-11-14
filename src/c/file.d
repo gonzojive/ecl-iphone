@@ -2820,6 +2820,7 @@ ecl_make_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm)
 #endif
    stream->stream.object1 = fname; /* not really used */
    stream->stream.int0 = stream->stream.int1 = 0;
+   setbuf(fp, NULL);
 #if !defined(GBC_BOEHM)
    setbuf(fp, NULL);
    setbuf(fp, stream->stream.buffer = cl_alloc_atomic(BUFSIZ)); 
