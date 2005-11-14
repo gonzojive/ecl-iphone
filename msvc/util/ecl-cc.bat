@@ -15,7 +15,7 @@ IF %CMDTYPE% == --compile (
 	cl @ECL_CFLAGS@ -I@includedir@ %CMDARGS%
 	GOTO END
 ) ELSE IF %CMDTYPE% == --link (
-	cl @LDFLAGS@ %CMDARGS% @libdir@/ecl.lib
+	cl %CMDARGS% @LDFLAGS@ @libdir@/ecl.lib
 	GOTO END
 )
 
