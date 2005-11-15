@@ -210,6 +210,19 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 /* the tzset() function gets the current time zone			*/
 #undef HAVE_TZSET
 
+/*
+ * we do not manage to get proper signal handling of floating point
+ * arithmetics in the Alpha chips.
+ */
+#if defined(__alpha__)
+# ifdef HAVE_FENV_H
+#  undef HAVE_FENV_H
+# endif
+# ifdef HAVE_FEENABLEEXCEPT
+#  undef HAVE_FEENABLEEXCEPT
+# endif
+#endif
+
 /* what characters are used to mark beginning of new line		*/
 #undef ECL_NEWLINE_IS_CRLF
 #undef ECL_NEWLINE_IS_LFCR
