@@ -267,6 +267,10 @@ case "${host_os}" in
 		shared="no"
 		;;
 esac
+case "${host_cpu}" in
+	alpha*)
+		CFLAGS="${CFLAGS} -mieee";;
+esac
 ECL_CFLAGS="-D${thehost}"
 AC_MSG_CHECKING(for ld flags when building shared libraries)
 if test "${enable_shared}" = "yes"; then
