@@ -454,7 +454,7 @@
 				:format-control "Too few arguments for lambda form ~S"
 				:format-arguments (cons 'LAMBDA lambda-form)))))
 	    let-vars))
-    (do ((scan (cdr optionals) (cdddr optionals)))
+    (do ((scan (cdr optionals) (cdddr scan)))
 	((endp scan))
       (let ((opt-var (first scan))
 	    (opt-flag (third scan))
@@ -466,7 +466,7 @@
 			    let-vars)))
 	      (apply-p
 	       (setf let-vars
-		     (list* `(,opt-var (if ,opt-flag
+		     (list* `(,opt-var (if ,apply-var
 					   (pop ,apply-var)
 					   ,opt-value))
 			    `(,opt-flag ,apply-var)
@@ -503,7 +503,7 @@
 		extra-stmts))))
     (when (and key-flag (not allow-other-keys))
       (push `(si::check-keyword ,rest ',all-keys) extra-stmts))
-    `(let* ,(nreverse let-vars)
+    `(let* ,(nreverse (delete-if-not #'first let-vars))
       ,@(multiple-value-bind (decl body)
 	   (si::find-declarations (rest lambda-form))
 	 (append decl extra-stmts body)))))
