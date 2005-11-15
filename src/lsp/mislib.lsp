@@ -120,25 +120,6 @@ Evaluates FORM, outputs the realtime and runtime used for the evaluation to
 		 (number-of-days-from-1900 year))))
     (+ sec (* 60 (+ min (* 60 (+ tz dst hour (* 24 days))))))))
 
-(defun daylight-saving-time-p (sec min hour day month year tz dst)
-  "Returns T if Daylight Saving Time applies to the local time zone at
-Universal Time UT, which defaults to the current time."
-  (declare (si::c-local))
-  (cond ((< 2004 year)
-	 (setf year 2004))
-	((< year 1970)
-	 (setf year 1970)))
-  #-ecl-min
-  (ffi::c-inline ((recode-universal-time sec min hour day month year tz dst))
-		 (:object) :bool "
-{
-	cl_object UTC = number_minus(#0, cl_core.Jan1st1970UT);
-	time_t when = object_to_fixnum(UTC);
-	struct tm *ltm = localtime(&when);
-	@(return) = ltm->tm_isdst;
-}"
-		 :one-liner nil))
-
 (defun decode-universal-time (orig-ut &optional (tz nil tz-p) &aux (dstp nil))
   "Args: (integer &optional (timezone (si::get-local-time-zone)))
 Returns as nine values the day-and-time represented by INTEGER.  See GET-
@@ -164,8 +145,7 @@ DECODED-TIME."
     (unless month
       (setq month (position day month-startdays :test #'<=)
 	    day (- day (svref month-startdays (1- month)))))
-    (if (and (not tz-p)
-	     (daylight-saving-time-p sec min hour day month year tz -1))
+    (if (and (not tz-p) (daylight-saving-time-p orig-ut year))
 	(setf tz-p t dstp t)
 	(return (values sec min hour day month year dow dstp tz))))))
 
@@ -183,7 +163,7 @@ GET-DECODED-TIME."
   (let ((dst 0))
     (unless tz
       (setq tz (rational (get-local-time-zone)))
-      (when (daylight-saving-time-p sec min hour day month year tz -1)
+      (when (daylight-saving-time-p (recode-universal-time sec min hour day month year tz -1) year)
 	;; assume DST applies, and check if at corresponging UT it applies.
 	;; There is an ambiguity between midnight and 1 o'clock on the day
 	;; when time reverts from DST to solar:
@@ -191,6 +171,40 @@ GET-DECODED-TIME."
 	;; 12:01 UT (after the switch). We opt for the former.
 	(setf dst -1)))
     (recode-universal-time sec min hour day month year tz dst)))
+
+(defun daylight-saving-time-p (universal-time year)
+  "Returns T if Daylight Saving Time applies to the local time zone at
+Universal Time UT, which defaults to the current time."
+  (declare (si::c-local))
+  ;; Some systems cannot deal with dates before 1-1-1970 and no POSIX
+  ;; system will be able to handle dates beyond 2038. We must
+  ;; therefore restrict the time to the interval that can handled by
+  ;; the timezone database.
+  (let* ((utc-1-1-1970 2208988800)
+	 (unix-time (- universal-time utc-1-1-1970)))
+    (cond ((minusp unix-time)
+	   ;; For dates before 1970 we shift to 1980/81 to guess the daylight
+	   ;; saving times.
+	   (setf unix-time
+		 (+ (if (leap-year-p year)
+			#.(encode-universal-time 0 0 0 1 1 1980 0)
+			#.(encode-universal-time 0 0 0 1 1 1981 0))
+		    (- universal-time (encode-universal-time 0 0 0 1 1 year 0)))))
+	  ((not (fixnump unix-time))
+	   ;; Same if date is too big: we shift to year 2035/36, like SBCL does.
+	   (setf unix-time
+		 (+ (if (leap-year-p year)
+			#.(encode-universal-time 0 0 0 1 1 2032 0)
+			#.(encode-universal-time 0 0 0 1 1 2033 0))
+		    (- universal-time (encode-universal-time 0 0 0 1 1 year 0))))))
+    #-ecl-min
+    (ffi::c-inline (unix-time) (:unsigned-long) :bool "
+{
+	time_t when = (#0);
+	struct tm *ltm = localtime(&when);
+	@(return) = ltm->tm_isdst;
+}"
+		 :one-liner nil)))
 
 (defun get-universal-time ()
   #-ecl-min

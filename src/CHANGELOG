@@ -48,6 +48,10 @@ ECL 0.9h
    accuracy for determining whether a time belongs to DAY-SAVING-TIME might
    depend on the implementation of the C library.
 
+ - Most systems do not support dates before 1970 or after 2038. For guessing
+   the daylight saving time property we shift the dates to equivalent years
+   within this range.
+
 * Design:
 
  - Simplified the structure of the frame stack, removing redundant fields.
