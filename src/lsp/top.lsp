@@ -343,6 +343,8 @@ level of ECL, redefine SI::TOP-LEVEL and save the core image into a program
 file.  When the saved image is invoked, it will start the redefined top-level."
   (let* (+ ++ +++ - * ** *** / // ///)
 
+    (in-package "CL-USER")
+
     (unless *lisp-initialized*
 
       (catch *quit-tag*
@@ -359,8 +361,6 @@ file.  When the saved image is invoked, it will start the redefined top-level."
       (format *standard-output* "~%Type :h for Help.  ")
 
       (setq *lisp-initialized* t))
-
-    (in-package "CL-USER")
 
     (catch *quit-tag*
       (let ((*tpl-level* -1))
