@@ -40,7 +40,6 @@ WWW=http://ecls.sourceforge.net/
 #  Where to find the source code.
 #  This is set by the configure script's `--srcdir' option.
 srcdir=@srcdir@
-buildir=@buildir@
 
 prefix=@prefix@
 exec_prefix=@exec_prefix@
@@ -54,7 +53,7 @@ TAR_CONTENTS=Makefile.in README.1st LGPL ANNOUNCEMENT Copyright doc \
 	configure src/c src/cmp src/clos src/CHANGELOG src/lsp src/doc \
 	src/h  src/gmp src/config* src/install.sh src/Makefile.in \
 	src/util contrib/ src/clx src/gc src/*.in src/*.m4 src/gabriel \
-	src/tests/Makefile.in src/ansi-tests/Makefile.in msvc
+	src/tests/Makefile.in src/ansi-tests/Makefile.in msvc examples
 
 # ==================== Utility Programs for the Build ====================
 
@@ -66,21 +65,21 @@ INSTALL_DATA = @INSTALL_DATA@
 
 # ============================= Build ==============================
 
-all: $(buildir)/Makefile
-	cd $(buildir); $(MAKE)
+all: build/Makefile
+	cd build; $(MAKE)
 .PHONY:	all
 
-Makefile: Makefile.in $(buildir)/config.status
-	(cd $(buildir); ./config.status)
+Makefile: Makefile.in build/config.status
+	(cd build; ./config.status)
 
 # ==================== Installation ====================
 
 INSTALL_TARGET = @INSTALL_TARGET@
 
-install: $(buildir)/Makefile
-	cd $(buildir); $(MAKE) $(INSTALL_TARGET)
+install: build/Makefile
+	cd build; $(MAKE) $(INSTALL_TARGET)
 uninstall:
-	cd $(buildir); $(MAKE) uninstall
+	cd build; $(MAKE) uninstall
 
 # ==================== Documentation ====================
 
@@ -99,7 +98,7 @@ dvi:
 #        with them.
 #
 clean:
-	cd $(buildir); $(MAKE) clean
+	cd build; $(MAKE) clean
 
 #   `distclean'
 #        Delete all files from the current directory that are created by
@@ -109,7 +108,7 @@ clean:
 #        distribution.
 
 distclean: clean
-	rm -fr $(buildir)/config.status
+	rm -fr build/config.status
 	rm -f Makefile
 
 #   `realclean'
@@ -127,15 +126,15 @@ TAGS tags:
 	 etags c/*.[cd] h/*.h)
 
 check test:
-	cd $(buildir); $(MAKE) test
+	cd build; $(MAKE) test
 
 TAR_DIR=ecl-$(VERSION)
 
-doc: $(buildir)/doc/index.html
+doc: build/doc/index.html
 	-mkdir doc
-	(cd $(buildir)/doc; make html); cp $(buildir)/doc/*.html doc
-$(buildir)/doc/index.html:
-	cd $(buildir)/doc; $(MAKE)
+	(cd build/doc; make html); cp build/doc/*.html doc
+build/doc/index.html:
+	cd build/doc; $(MAKE)
 
 source-dist: $(TAR_DIR).tgz $(TAR_DIR)-tests.tgz
 
@@ -172,20 +171,20 @@ binary-dist: all
 	for i in tmp$(bindir) tmp$(infodir) tmp$(mandir) tmp$(libdir); do \
 	(echo $$i; IFS="/"; \for k in $$i; do echo $$k; (test -d $$k || mkdir $$k); chmod 755 $$k; cd $$k; done); \
 	done
-	prefix=`pwd`/tmp; cd $(buildir); $(MAKE) install prefix=$(prefix)
+	prefix=`pwd`/tmp; cd build; $(MAKE) install prefix=$(prefix)
 	su -c "chown -R root.root tmp && cd tmp; tar czf ../ecl-$(VERSION)-$(MACHINE).tgz * && cd .. && rm -rf tmp"
 
 # This creates a ZIP file with a flattened directory structure
 windows-dist: all
-	cd $(buildir); rm -rf $(TAR_DIR); mkdir $(TAR_DIR); \
+	cd build; rm -rf $(TAR_DIR); mkdir $(TAR_DIR); \
 	$(MAKE) flatinstall prefix=`pwd`/$(TAR_DIR); \
 	zip -r $(TAR_DIR).zip $(TAR_DIR)
 windows-nsi: all
-	cd $(buildir); rm -rf $(TAR_DIR); mkdir $(TAR_DIR); \
+	cd build; rm -rf $(TAR_DIR); mkdir $(TAR_DIR); \
 	$(MAKE) flatinstall prefix=`pwd`/$(TAR_DIR)
-	`pwd`/src/util/ecl_nsi.sh `pwd`/src/util/ecl.nsi $(buildir)/$(TAR_DIR)
-	makensis.exe $(buildir)/$(TAR_DIR)/ecl.nsi
-	mv $(buildir)/$(TAR_DIR)/Setup.exe ecl-$(VERSION).exe
+	`pwd`/src/util/ecl_nsi.sh `pwd`/src/util/ecl.nsi build/$(TAR_DIR)
+	makensis.exe build/$(TAR_DIR)/ecl.nsi
+	mv build/$(TAR_DIR)/Setup.exe ecl-$(VERSION).exe
 
 dist:
 	cd dist; make-dist
