@@ -119,6 +119,13 @@ ECL 0.9h
  - The DEFSYSTEM system definition facility v 3.4 is now distributed with ECL
    in the directory of external packages (contrib/defsystem).
 
+ - The version of ASDF distributed with ECL supports building single FASL
+   files, shared libraries and standalone executable files from a single
+   definition file.
+
+ - The test suites are now part of a separate project, ecls-test, that is only
+   distributed via CVS from Sourceforge.
+
 * Foreign function interface (FFI):
 
  - Foreign function return type is now correctly handled, when it is specified
