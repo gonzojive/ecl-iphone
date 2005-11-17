@@ -189,14 +189,14 @@ Universal Time UT, which defaults to the current time."
 		 (+ (if (leap-year-p year)
 			#.(encode-universal-time 0 0 0 1 1 1980 0)
 			#.(encode-universal-time 0 0 0 1 1 1981 0))
-		    (- universal-time (encode-universal-time 0 0 0 1 1 year 0)))))
+		    (- universal-time (encode-universal-time 0 0 0 1 1 year 0) utc-1-1-1970))))
 	  ((not (fixnump unix-time))
 	   ;; Same if date is too big: we shift to year 2035/36, like SBCL does.
 	   (setf unix-time
 		 (+ (if (leap-year-p year)
 			#.(encode-universal-time 0 0 0 1 1 2032 0)
 			#.(encode-universal-time 0 0 0 1 1 2033 0))
-		    (- universal-time (encode-universal-time 0 0 0 1 1 year 0))))))
+		    (- universal-time (encode-universal-time 0 0 0 1 1 year 0) utc-1-1-1970)))))
     #-ecl-min
     (ffi::c-inline (unix-time) (:unsigned-long) :bool "
 {
