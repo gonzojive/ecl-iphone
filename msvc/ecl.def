@@ -276,6 +276,7 @@ EXPORTS
 	ecl_allocate_foreign_data
 	ecl_foreign_data_pointer_safe
 	ecl_string_pointer_safe
+	ecl_null_terminated_string
 	ecl_foreign_data_ref_elt
 	ecl_foreign_data_set_elt
 
