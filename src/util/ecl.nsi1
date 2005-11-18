@@ -2,7 +2,7 @@
 
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "ECL"
-!define PRODUCT_VERSION "0.9d"
+!define PRODUCT_VERSION "@ECLVERSION@"
 !define PRODUCT_PUBLISHER "Juan Jose Garcia Ripoll"
 !define PRODUCT_WEB_SITE "http://ecls.sourceforge.net"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\ecl.exe"

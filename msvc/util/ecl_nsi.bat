@@ -7,10 +7,11 @@ SET source=%1
 SET where=%2
 CD %where%
 SET dest=ecl.nsi
+SET version=%3
 
-type %source%1 | ..\c\cut.exe "@ECLDIR@" "%where%" > %dest%
-dir /s /b /a:-d | ..\c\cut.exe "ecl.exe" "/DELETE/" "ecl.nsi" "/DELETE/" "%where%\\" "" > ../aux_files
-dir /s /b /a:d | ..\c\cut.exe "ecl.exe" "/DELETE/" "ecl.nsi" "/DELETE/" "%where%\\" "" > ../aux_dirs
+type %source%1 | ..\c\cut.exe "@ECLDIR@" "%where%" "@ECLVERSION@" "%version%" > %dest%
+dir /b /a:-d | ..\c\cut.exe "ecl.exe" "/DELETE/" "ecl.nsi" "/DELETE/" "%where%\\" "" > ../aux_files
+dir /b /a:d | ..\c\cut.exe "ecl.exe" "/DELETE/" "ecl.nsi" "/DELETE/" "%where%\\" "" > ../aux_dirs
 echo HOLA
 for /f %%i in (../aux_dirs) do @echo %%i
 for /f %%i in (../aux_dirs) do @echo File /r "${ECLDIR}\%%i" >> %dest%

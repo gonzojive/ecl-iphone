@@ -321,7 +321,7 @@ windows-nsi:
 	IF EXIST $(TAR_DIR) $(RMDIR) $(TAR_DIR)
 	$(MKDIR) $(TAR_DIR)
 	$(MAKE) flatinstall prefix=$(TAR_DIR)
-	util\ecl_nsi.bat %%CD%%\$(srcdir)\util\ecl.nsi $(TAR_DIR)
+	util\ecl_nsi.bat %%CD%%\$(srcdir)\util\ecl.nsi $(TAR_DIR) $(ECL_VERSION)
 	$(MKNSI) $(TAR_DIR)/ecl.nsi
 	$(MV) $(TAR_DIR)\Setup.exe ecl-$(ECL_VERSION).exe
 	$(RMDIR) $(TAR_DIR)
