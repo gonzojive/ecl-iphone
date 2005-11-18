@@ -44,6 +44,8 @@ ECL_SOCKETS =
 ECL_CLX     =
 # Regression Tests support
 ECL_RT      =
+# Defsystem support
+ECL_DEFSYS  =
 
 # <END> (ECL configuration)
 # =============================================================
@@ -139,6 +141,10 @@ ECL_FEATURES = (cons :wants-clx $(ECL_FEATURES))
 !ifdef ECL_RT
 ECL_MODULES  = $(ECL_MODULES) rt
 ECL_FEATURES = (cons :wants-rt $(ECL_FEATURES))
+!endif
+!ifdef ECL_DEFSYS
+ECL_MODULES  = $(ECL_MODULES) defsystem
+ECL_FEATURES = (cons :wants-defsystem $(ECL_FEATURES))
 !endif
 
 !MESSAGE $(ECL_MODULES)
