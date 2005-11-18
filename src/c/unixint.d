@@ -113,7 +113,7 @@ handle_signal(int sig)
 		FEerror("Segmentation violation.", 0);
 		break;
 	default:
-		FEerror("Serious signal ~D caught.", 0, MAKE_FIXNUM(sig));
+		FEerror("Serious signal ~D caught.", 1, MAKE_FIXNUM(sig));
 	}
 }
 
