@@ -298,7 +298,7 @@ EXPORTS
 	cl_stream_element_type
 	cl_stream_external_format
 	cl_file_length
-	si_get_string_input_stream_index
+	;si_get_string_input_stream_index
 	si_make_string_output_stream_from_string
 	si_copy_stream
 	cl_open_stream_p
