@@ -59,7 +59,7 @@ CC	= cl
 MFLAGS  = -MD
 CFLAGS  = -GX -DGC_DLL -nologo
 LIBS	= eclgc.lib eclgmp.lib user32.lib ws2_32.lib
-LDFLAGS	= /link /nodefaultlib:libcmt /nodefaultlib:libc
+LDFLAGS	= /link /nodefaultlib:libcmt /nodefaultlib:libc /nodefaultlib:libd
 SHARED_LDFLAGS = -LD
 GCFLAGS = nodebug=1
 RM	= del
