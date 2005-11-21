@@ -292,7 +292,6 @@ EXPORTS
 	cl_echo_stream_output_stream
 	cl_make_string_output_stream
 	cl_get_output_stream_string
-	si_output_stream_string
 	cl_streamp
 	cl_input_stream_p
 	cl_output_stream_p
@@ -317,16 +316,11 @@ EXPORTS
 	si_file_column
 	cl_interactive_stream_p
 
-	input_stream_p
-	output_stream_p
-	;stream_element_type
-	open_stream
-	close_stream
-	make_two_way_stream
-	make_string_input_stream
-	make_string_output_stream
-	make_string_output_stream_from_string
-	get_output_stream_string
+	ecl_input_stream_p
+	ecl_output_stream_p
+	ecl_open_stream
+	ecl_make_string_input_stream
+	ecl_make_string_output_stream
 	ecl_read_byte
 	ecl_write_byte
 	ecl_read_char_noeof
@@ -335,14 +329,14 @@ EXPORTS
 	ecl_peek_char
 	ecl_write_char
 	writestr_stream
-	flush_stream
-	clear_input_stream
-	clear_output_stream
+	ecl_force_output
+	ecl_clear_input
+	ecl_clear_output
 	ecl_listen_stream
 	ecl_file_position
 	ecl_file_position_set
 	cl_file_length
-	file_column
+	ecl_file_column
 	ecl_make_stream_from_fd
 
 

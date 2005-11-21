@@ -96,7 +96,7 @@ get_aux_stream(void)
 
 	start_critical_section();
 	if (cl_env.fmt_aux_stream == Cnil)
-		stream = make_string_output_stream(64);
+		stream = ecl_make_string_output_stream(64);
 	else {
 		stream = cl_env.fmt_aux_stream;
 		cl_env.fmt_aux_stream = Cnil;
@@ -316,8 +316,8 @@ static void
 fmt_prepare_aux_stream(format_stack fmt)
 {
 	fmt->aux_string->string.fillp = 0;
-	fmt->aux_stream->stream.int0 = file_column(fmt->stream);
-	fmt->aux_stream->stream.int1 = file_column(fmt->stream);
+	fmt->aux_stream->stream.int0 = ecl_file_column(fmt->stream);
+	fmt->aux_stream->stream.int1 = ecl_file_column(fmt->stream);
 }
 
 
@@ -335,8 +335,8 @@ fmt_ascii(format_stack fmt, bool colon, bool atsign)
 	padchar = set_param(fmt, 3, CHAR, ' ');
 
 	fmt->aux_string->string.fillp = 0;
-	fmt->aux_stream->stream.int0 = file_column(fmt->stream);
-	fmt->aux_stream->stream.int1 = file_column(fmt->stream);
+	fmt->aux_stream->stream.int0 = ecl_file_column(fmt->stream);
+	fmt->aux_stream->stream.int1 = ecl_file_column(fmt->stream);
 	x = fmt_advance(fmt);
 	if (colon && Null(x))
 		writestr_stream("()", fmt->aux_stream);
@@ -1245,7 +1245,7 @@ fmt_ampersand(format_stack fmt, bool colon, bool atsign)
 	fmt_not_atsign(fmt, atsign);
 	if (n == 0)
 		return;
-	if (file_column(fmt->stream) != 0)
+	if (ecl_file_column(fmt->stream) != 0)
 		ecl_write_char('\n', fmt->stream);
 	while (--n > 0)
 		ecl_write_char('\n', fmt->stream);
@@ -1303,7 +1303,7 @@ fmt_tabulate(format_stack fmt, bool colon, bool atsign)
 	colnum = set_param(fmt, 0, INT, 1);
 	colinc = set_param(fmt, 1, INT, 1);
 	if (!atsign) {
-		c = file_column(fmt->stream);
+		c = ecl_file_column(fmt->stream);
 		if (c < 0) {
 			writestr_stream("  ", fmt->stream);
 			return;
@@ -1317,7 +1317,7 @@ fmt_tabulate(format_stack fmt, bool colon, bool atsign)
 	} else {
 		for (i = colnum;  i > 0;  --i)
 			ecl_write_char(' ', fmt->stream);
-		c = file_column(fmt->stream);
+		c = ecl_file_column(fmt->stream);
 		if (c < 0 || colinc <= 0)
 			return;
 		colnum = 0;
@@ -1397,7 +1397,7 @@ fmt_case(format_stack fmt, bool colon, bool atsign)
 	int up_colon;
 	bool b;
 
-	x = make_string_output_stream(64);
+	x = ecl_make_string_output_stream(64);
 	i = fmt->ctl_index;
 	j = fmt_skip(fmt);
 	if (fmt->ctl_str[--j] != ')' || fmt->ctl_str[--j] != '~')
@@ -1675,7 +1675,7 @@ fmt_justification(format_stack fmt, volatile bool colon, bool atsign)
 
 	fields = Cnil;
 	for (;;) {
-		cl_object this_field = make_string_output_stream(64);
+		cl_object this_field = ecl_make_string_output_stream(64);
 		i = fmt->ctl_index;
 		j0 = j = fmt_skip(fmt);
 		while (fmt->ctl_str[--j] != '~')
@@ -1752,7 +1752,7 @@ fmt_justification(format_stack fmt, volatile bool colon, bool atsign)
 		;
 	l = mincol + k * colinc;
 	if (special != Cnil &&
-	    file_column(fmt->stream) + l + spare_spaces > line_length)
+	    ecl_file_column(fmt->stream) + l + spare_spaces > line_length)
 		princ(special, fmt->stream);
 	/*
 	 * Output the text with the padding segments. The total number of
@@ -1827,7 +1827,7 @@ doformat(cl_narg narg, cl_object strm, cl_object string, cl_va_list args, bool i
 	fmt_set_arg_list(&fmt, output);
 	fmt.jmp_buf = &fmt_jmp_buf0;
 	if (symbol_value(@'si::*indent-formatted-output*') != Cnil)
-		fmt.indents = file_column(strm);
+		fmt.indents = ecl_file_column(strm);
 	else
 		fmt.indents = 0;
 	fmt.string = string;
@@ -1838,7 +1838,7 @@ doformat(cl_narg narg, cl_object strm, cl_object string, cl_va_list args, bool i
 			fmt_error(&fmt, "illegal ~:^");
 	} else {
 		format(&fmt, string->string.self, string->string.fillp);
-		flush_stream(strm);
+		ecl_force_output(strm);
 	}
 	cl_env.fmt_aux_stream = fmt.aux_stream;
 	if (!in_formatter)
@@ -2086,7 +2086,7 @@ DIRECTIVE:
 				 @':control-string', string,
 				 @':offset', MAKE_FIXNUM(0));
 			}
-		strm = make_string_output_stream(0);
+		strm = ecl_make_string_output_stream(0);
 		strm->stream.object0 = output;
 		if (null_strm == 0)
 			output = Cnil;

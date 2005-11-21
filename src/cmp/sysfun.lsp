@@ -334,24 +334,29 @@
 
 ;; file file.d
 
-(proclaim-function make-synonym-stream (t) t)
-(proclaim-function make-broadcast-stream (*) t)
-(proclaim-function make-concatenated-stream (*) t)
-(proclaim-function make-two-way-stream (t t) t)
-(proclaim-function make-echo-stream (t t) t)
-(proclaim-function make-string-input-stream (*) t)
-(proclaim-function make-string-output-stream (*) t)
-(proclaim-function get-output-stream-string (*) t)
-(proclaim-function si:output-stream-string (t) t)
+(proclaim-function make-synonym-stream (symbol) synonym-stream)
+(proclaim-function make-broadcast-stream (*) broadcast-stream)
+(proclaim-function make-concatenated-stream (*) concatenated-stream)
+(proclaim-function make-two-way-stream (stream stream) two-way-stream)
+(proclaim-function make-echo-stream (stream stream) echo-stream)
+(proclaim-function make-string-input-stream (*) string-stream)
+(proclaim-function make-string-output-stream (*) string-stream)
+(def-inline make-string-output-stream :always () string-stream
+ "ecl_make_string_output_stream(128)")
+
+(proclaim-function get-output-stream-string (string-stream) string)
 (proclaim-function streamp (t) t :predicate t)
-(proclaim-function input-stream-p (t) t :predicate t)
+(proclaim-function input-stream-p (stream) t :predicate t)
+(def-inline input-stream-p :always (stream) :bool "ecl_input_stream_p(#0)")
+
 (proclaim-function output-stream-p (t) t :predicate t)
+(def-inline input-stream-p :always (stream) :bool "ecl_output_stream_p(#0)")
+
 (proclaim-function stream-element-type (t) t)
-(proclaim-function close (t *) t)
-(proclaim-function file-position (t *) t)
-(proclaim-function file-length (t) t)
-(proclaim-function si:get-string-input-stream-index (*) t)
-(proclaim-function si:make-string-output-stream-from-string (*) t)
+(proclaim-function close (stream *) t)
+(proclaim-function file-position (stream *) t)
+(proclaim-function file-length (stream) t)
+(proclaim-function si:make-string-output-stream-from-string (string) string-stream)
 
 ;; file gbc.d / alloc_2.d
 
@@ -1012,9 +1017,15 @@ type_of(#0)==t_bitvector")
 
 ;; file print.d, read.d
 
-(proclaim-function clear-output (*) t)
-(proclaim-function finish-output (*) t)
-(proclaim-function force-output (*) t)
+(proclaim-function clear-output (*) NULL)
+(def-inline clear-output :always (stream) NULL "(ecl_clear_output(#0),Cnil)")
+
+(proclaim-function finish-output (*) NULL)
+(def-inline finish-output :always (stream) NULL "(ecl_finish_output(#0),Cnil)")
+
+(proclaim-function force-output (*) NULL)
+(def-inline finish-output :always (stream) NULL "(ecl_force_output(#0),Cnil)")
+
 (proclaim-function fresh-line (*) t)
 (proclaim-function listen (*) t)
 (proclaim-function peek-char (*) t)
@@ -1050,7 +1061,9 @@ type_of(#0)==t_bitvector")
 (proclaim-function write-line (t *) t)
 (proclaim-function write-string (t *) t)
 (proclaim-function read-char-no-hang (*) t)
-(proclaim-function clear-input (*) t)
+(proclaim-function clear-input (*) NULL)
+(def-inline clear-input :always (stream) NULL "(ecl_clear_input(#0),Cnil)")
+
 (proclaim-function parse-integer (t *) t)
 (proclaim-function read-byte (t *) t)
 (proclaim-function copy-readtable (*) t :no-side-effects t)

@@ -1550,7 +1550,7 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 @(defun clear_input (&optional (strm Cnil))
 @
 	strm = stream_or_default_input(strm);
-	clear_input_stream(strm);
+	ecl_clear_input(strm);
 	@(return Cnil)
 @)
 
@@ -1810,7 +1810,7 @@ si_string_to_object(cl_object x)
 	cl_object in;
 
 	assert_type_string(x);
-	in = make_string_input_stream(x, 0, x->string.fillp);
+	in = ecl_make_string_input_stream(x, 0, x->string.fillp);
 	x = read_object(in);
 	if (x == OBJNULL)
 		FEend_of_file(in);
@@ -1980,8 +1980,8 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 		if ((len == 0) || (block->cblock.data_text == 0)) goto NO_DATA_LABEL;
 
 		/* Read all data for the library */
-		in=make_string_input_stream(make_constant_string(block->cblock.data_text),
-					    0, block->cblock.data_text_size);
+		in=ecl_make_string_input_stream(make_constant_string(block->cblock.data_text),
+						0, block->cblock.data_text_size);
 		bds_bind(@'*read-base*', MAKE_FIXNUM(10));
 		bds_bind(@'*read-default-float-format*', @'single-float');
 		bds_bind(@'*read-suppress*', Cnil);
@@ -2016,7 +2016,7 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 		bds_unwind1();
 	} CL_UNWIND_PROTECT_EXIT {
 		if (in != OBJNULL)
-			close_stream(in, 0);
+			cl_close(1,in);
 	} CL_UNWIND_PROTECT_END;
 
 	return block;

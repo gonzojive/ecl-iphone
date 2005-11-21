@@ -318,7 +318,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 		/* INV: if "source" is not a valid stream, file.d will complain */
 		strm = source;
 	} else {
-		strm = open_stream(source, smm_input, Cnil, Cnil, 8, 1, 1);
+		strm = ecl_open_stream(source, smm_input, Cnil, Cnil, 8, 1, 1);
 		if (Null(strm))
 			@(return Cnil)
 	}
@@ -339,7 +339,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 		   try to close the stream, and then jump to next catch
 		   point */
 		if (strm != source)
-			close_stream(strm, TRUE);
+			cl_close(3, strm, @':abort', @'t');
 	} CL_UNWIND_PROTECT_END;
 	@(return Cnil)
 }

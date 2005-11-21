@@ -397,6 +397,6 @@ stream_to_handle(cl_object s, bool output)
 		stream_read = cl_core.null_stream;
 	}
 	@(return ((parent_read || parent_write)?
-		  make_two_way_stream(stream_read, stream_write) :
+		  cl_make_two_way_stream(stream_read, stream_write) :
 		  Cnil))
 @)

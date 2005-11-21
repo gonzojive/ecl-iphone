@@ -260,13 +260,13 @@ cl_symbol_name(cl_object x)
 		FEwrong_type_argument(cl_list(3, @'or', @'string', @'integer'),
 				      prefix);
 	}
-	output = make_string_output_stream(64);
+	output = ecl_make_string_output_stream(64);
 	bds_bind(@'*print-base*', MAKE_FIXNUM(10));
 	bds_bind(@'*print-radix*', Cnil);
 	princ(prefix, output);
 	princ(counter, output);
 	bds_unwind_n(2);
-	output = make_symbol(get_output_stream_string(output));
+	output = make_symbol(cl_get_output_stream_string(output));
 	if (increment)
 		ECL_SETQ(@'*gensym-counter*',one_plus(counter));
 	@(return output)
@@ -279,14 +279,14 @@ cl_symbol_name(cl_object x)
 	assert_type_string(prefix);
 	pack = si_coerce_to_package(pack);
 ONCE_MORE:
-	output = make_string_output_stream(64);
+	output = ecl_make_string_output_stream(64);
 	bds_bind(@'*print-base*', MAKE_FIXNUM(10));
 	bds_bind(@'*print-radix*', Cnil);
 	princ(prefix, output);
 	princ(cl_core.gentemp_counter, output);
 	bds_unwind_n(2);
 	cl_core.gentemp_counter = one_plus(cl_core.gentemp_counter);
-	s = intern(get_output_stream_string(output), pack, &intern_flag);
+	s = intern(cl_get_output_stream_string(output), pack, &intern_flag);
 	if (intern_flag != 0)
 		goto ONCE_MORE;
 	@(return s)

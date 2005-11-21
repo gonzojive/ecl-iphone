@@ -45,7 +45,7 @@
 static int flisten(FILE *fp);
 
 /*----------------------------------------------------------------------
- *	Input_stream_p(strm) answers
+ *	ecl_input_stream_p(strm) answers
  *	if stream strm is an input stream or not.
  *	It does not check if it really is possible to read
  *	from the stream,
@@ -53,7 +53,7 @@ static int flisten(FILE *fp);
  *----------------------------------------------------------------------
  */
 bool
-input_stream_p(cl_object strm)
+ecl_input_stream_p(cl_object strm)
 {
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
@@ -93,7 +93,7 @@ BEGIN:
 }
 
 /*----------------------------------------------------------------------
- *	Output_stream_p(strm) answers
+ *	ecl_output_stream_p(strm) answers
  *	if stream strm is an output stream.
  *	It does not check if it really is possible to write
  *	to the stream,
@@ -101,7 +101,7 @@ BEGIN:
  *----------------------------------------------------------------------
  */
 bool
-output_stream_p(cl_object strm)
+ecl_output_stream_p(cl_object strm)
 {
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
@@ -299,14 +299,15 @@ wsock_error( const char *err_msg, cl_object strm )
 #endif
 
 /*----------------------------------------------------------------------
- *	Open_stream(fn, smm, if_exists, if_does_not_exist)
+ *	ecl_open_stream(fn, smm, if_exists, if_does_not_exist)
  *	opens file fn with mode smm.
  *	Fn is a pathname designator.
  *----------------------------------------------------------------------
  */
 cl_object
-open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
-	    cl_object if_does_not_exist, cl_fixnum byte_size, bool char_stream_p, bool use_header_p)
+ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
+		cl_object if_does_not_exist, cl_fixnum byte_size,
+		bool char_stream_p, bool use_header_p)
 {
 	cl_object x;
 	FILE *fp;
@@ -461,7 +462,8 @@ open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 #endif
 
 	if (smm == smm_probe)
-		close_stream(x, 0);
+		cl_close
+(1, x);
 	else if (!char_stream_p) {
 		/* Set file pointer to the correct position */
 		if (appending) {
@@ -479,27 +481,19 @@ static void ecl_write_byte8(int c, cl_object strm);
 static int ecl_read_byte8(cl_object strm);
 static void flush_output_stream_binary(cl_object strm);
 
-/*----------------------------------------------------------------------
- *	Close_stream(strm, abort_flag) closes stream strm.
- *	The abort_flag is not used now.
- *----------------------------------------------------------------------
- */
-void
-close_stream(cl_object strm, bool abort_flag)        /*  Not used now!  */
-{
+@(defun close (strm &key (abort @'nil'))
 	FILE *fp;
-
+@
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		funcall(2, @'ext::stream-close', strm);
-		return;
+		return funcall(2, @'ext::stream-close', strm);
 	}
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
 	/* It is permissible to close a closed file */
 	if (strm->stream.closed)
-		return;
+		@(return Ct);
 	fp = strm->stream.file;
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_output:
@@ -516,7 +510,7 @@ close_stream(cl_object strm, bool abort_flag)        /*  Not used now!  */
 			wrong_file_handler(strm);
 		/* FIXME: the check for probe stream is only here because *
 		 *        output_stream_p is not defined for such streams */
-		if (strm->stream.mode != smm_probe && !strm->stream.char_stream_p && output_stream_p(strm)) {
+		if (strm->stream.mode != smm_probe && !strm->stream.char_stream_p && ecl_output_stream_p(strm)) {
 			if ((strm->stream.byte_size & 7))
 				/* buffered binary output stream -> flush any pending bits */
 				flush_output_stream_binary(strm);
@@ -566,25 +560,11 @@ close_stream(cl_object strm, bool abort_flag)        /*  Not used now!  */
 	}
 	strm->stream.closed = 1;
 	strm->stream.file = NULL;
-}
+	@(return Ct);
+@)
 
 cl_object
-make_two_way_stream(cl_object istrm, cl_object ostrm)
-{
-	cl_object strm;
-
-	strm = cl_alloc_object(t_stream);
-	strm->stream.mode = (short)smm_two_way;
-	strm->stream.closed = 0;
-	strm->stream.file = NULL;
-	strm->stream.object0 = istrm;
-	strm->stream.object1 = ostrm;
-	strm->stream.int0 = strm->stream.int1 = 0;
-	return(strm);
-}
-
-cl_object
-make_string_input_stream(cl_object strng, cl_index istart, cl_index iend)
+ecl_make_string_input_stream(cl_object strng, cl_index istart, cl_index iend)
 {
 	cl_object strm;
 
@@ -603,41 +583,10 @@ make_string_input_stream(cl_object strng, cl_index istart, cl_index iend)
 }
 
 cl_object
-make_string_output_stream(cl_index line_length)
+ecl_make_string_output_stream(cl_index line_length)
 {
 	cl_object s = cl_alloc_adjustable_string(line_length);
-	return make_string_output_stream_from_string(s);
-}
-
-cl_object
-make_string_output_stream_from_string(cl_object s)
-{
-	cl_object strm;
-
-	if (type_of(s) != t_string || !s->string.hasfillp)
-		FEerror("~S is not a string with a fill-pointer.", 1, s);
-	strm = cl_alloc_object(t_stream);
-	strm->stream.mode = (short)smm_string_output;
-	strm->stream.closed = 0;
-	strm->stream.file = NULL;
-	strm->stream.object0 = s;
-	strm->stream.object1 = OBJNULL;
-	strm->stream.int0 = s->string.fillp;
-	strm->stream.int1 = 0;
-	strm->stream.char_stream_p = 1;
-	strm->stream.byte_size = 8;
-	strm->stream.signed_bytes = 0;
-	return strm;
-}
-
-cl_object
-get_output_stream_string(cl_object strm)
-{
-	cl_object strng;
-
-	strng = copy_simple_string(strm->stream.object0);
-	strm->stream.object0->string.fillp = 0;
-	return(strng);
+	return si_make_string_output_stream_from_string(s);
 }
 
 
@@ -945,7 +894,7 @@ BEGIN:
 	}
 	case smm_two_way:
 		if (strm == cl_core.terminal_io)
-			flush_stream(cl_core.terminal_io->stream.object1);
+			ecl_force_output(cl_core.terminal_io->stream.object1);
 		strm->stream.int1 = 0;
 		strm = strm->stream.object0;
 		goto BEGIN;
@@ -1111,7 +1060,7 @@ BEGIN:
 	}
 	case smm_two_way:
 		if (strm == cl_core.terminal_io)
-			flush_stream(cl_core.terminal_io->stream.object1);
+			ecl_force_output(cl_core.terminal_io->stream.object1);
 		strm->stream.int1 = 0;
 		strm = strm->stream.object0;
 		goto BEGIN;
@@ -1226,7 +1175,7 @@ BEGIN:
 	}
 	case smm_two_way:
 		if (strm == cl_core.terminal_io)
-			flush_stream(cl_core.terminal_io->stream.object1);
+			ecl_force_output(cl_core.terminal_io->stream.object1);
 		strm->stream.int1 = 0;
 		strm = strm->stream.object0;
 		goto BEGIN;
@@ -1615,7 +1564,7 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 }
 
 void
-flush_stream(cl_object strm)
+ecl_force_output(cl_object strm)
 {
 	cl_object x;
 
@@ -1656,7 +1605,7 @@ BEGIN:
 
 	case smm_broadcast:
 		for (x = strm->stream.object0; !endp(x); x = CDR(x))
-			flush_stream(CAR(x));
+			ecl_force_output(CAR(x));
 		break;
 
 	case smm_two_way:
@@ -1683,7 +1632,7 @@ BEGIN:
 }
 
 void
-clear_input_stream(cl_object strm)
+ecl_clear_input(cl_object strm)
 {
 	cl_object x;
 	FILE *fp;
@@ -1733,7 +1682,7 @@ BEGIN:
 
 	case smm_broadcast:
 		for (x = strm->stream.object0; !endp(x); x = CDR(x))
-			flush_stream(CAR(x));
+			ecl_force_output(CAR(x));
 		break;
 
 	case smm_two_way:
@@ -1757,7 +1706,7 @@ BEGIN:
 }
 
 void
-clear_output_stream(cl_object strm)
+ecl_clear_output(cl_object strm)
 {
 	cl_object x;
 	FILE *fp;
@@ -1798,7 +1747,7 @@ BEGIN:
 
 	case smm_broadcast:
 		for (x = strm->stream.object0; !endp(x); x = CDR(x))
-			flush_stream(CAR(x));
+			ecl_force_output(CAR(x));
 		break;
 
 	case smm_two_way:
@@ -2130,7 +2079,7 @@ BEGIN:
 		if (fseek(fp, disp, 0) != 0)
 			return Cnil;
 		if (extra != 0) {
-			if (input_stream_p(strm)) {
+			if (ecl_input_stream_p(strm)) {
 				/* prepare the buffer for reading */
 				int c = ecl_read_byte8(strm);
 				if (c == EOF)
@@ -2270,11 +2219,11 @@ BEGIN:
 
 cl_object si_file_column(cl_object strm)
 {
-	@(return MAKE_FIXNUM(file_column(strm)))
+	@(return MAKE_FIXNUM(ecl_file_column(strm)))
 }
 
 int
-file_column(cl_object strm)
+ecl_file_column(cl_object strm)
 {
 
 BEGIN:
@@ -2362,7 +2311,7 @@ cl_synonym_stream_symbol(cl_object strm)
 	streams = Cnil;
 	for (i = 0; i < narg; i++) {
 		x = cl_va_arg(ap);
-		if (!output_stream_p(x))
+		if (!ecl_output_stream_p(x))
 			not_an_output_stream(x);
 		streams = CONS(x, streams);
 	}
@@ -2391,7 +2340,7 @@ cl_broadcast_stream_streams(cl_object strm)
 	streams = Cnil;
 	for (i = 0; i < narg; i++) {
 		x = cl_va_arg(ap);
-		if (!input_stream_p(x))
+		if (!ecl_input_stream_p(x))
 			not_an_input_stream(x);
 		streams = CONS(x, streams);
 	}
@@ -2414,13 +2363,21 @@ cl_concatenated_stream_streams(cl_object strm)
 }
 
 cl_object
-cl_make_two_way_stream(cl_object strm1, cl_object strm2)
+cl_make_two_way_stream(cl_object istrm, cl_object ostrm)
 {
-	if (!input_stream_p(strm1))
-		not_an_input_stream(strm1);
-	if (!output_stream_p(strm2))
-		not_an_output_stream(strm2);
-	@(return make_two_way_stream(strm1, strm2))
+	cl_object strm;
+	if (!ecl_input_stream_p(istrm))
+		not_an_input_stream(istrm);
+	if (!ecl_output_stream_p(ostrm))
+		not_an_output_stream(ostrm);
+	strm = cl_alloc_object(t_stream);
+	strm->stream.mode = (short)smm_two_way;
+	strm->stream.closed = 0;
+	strm->stream.file = NULL;
+	strm->stream.object0 = istrm;
+	strm->stream.object1 = ostrm;
+	strm->stream.int0 = strm->stream.int1 = 0;
+	@(return strm)
 }
 
 cl_object
@@ -2443,11 +2400,11 @@ cl_object
 cl_make_echo_stream(cl_object strm1, cl_object strm2)
 {
 	cl_object output;
-	if (!input_stream_p(strm1))
+	if (!ecl_input_stream_p(strm1))
 		not_an_input_stream(strm1);
-	if (!output_stream_p(strm2))
+	if (!ecl_output_stream_p(strm2))
 		not_an_output_stream(strm2);
-	output = make_two_way_stream(strm1, strm2);
+	output = cl_make_two_way_stream(strm1, strm2);
 	output->stream.mode = smm_echo;
 	@(return output)
 }
@@ -2486,7 +2443,7 @@ cl_echo_stream_output_stream(cl_object strm)
 		e = (cl_index)fix(iend);
 	if (e > strng->string.fillp || s > e)
 		goto E;
-	@(return (make_string_input_stream(strng, s, e)))
+	@(return (ecl_make_string_input_stream(strng, s, e)))
 
 E:
 	FEerror("~S and ~S are illegal as :START and :END~%\
@@ -2500,32 +2457,19 @@ for the string ~S.",
 		FEerror("In MAKE-STRING-OUTPUT-STREAM, the argument :ELEMENT-TYPE (~A) must be a subtype of character",
 			1, element_type);
 	}
-	@(return make_string_output_stream(128))
+	@(return ecl_make_string_output_stream(128))
 @)
 
 cl_object
 cl_get_output_stream_string(cl_object strm)
 {
+	cl_object strng;
 	if (type_of(strm) != t_stream ||
 	    (enum ecl_smmode)strm->stream.mode != smm_string_output)
 		FEerror("~S is not a string-output stream.", 1, strm);
-	@(return get_output_stream_string(strm))
-}
-
-/*----------------------------------------------------------------------
- *	(SI:OUTPUT-STREAM-STRING string-output-stream)
- *
- *		extracts the string associated with the given
- *		string-output-stream.
- *----------------------------------------------------------------------
- */
-cl_object
-si_output_stream_string(cl_object strm)
-{
-	if (type_of(strm) != t_stream ||
-	    (enum ecl_smmode)strm->stream.mode != smm_string_output)
-		FEerror("~S is not a string-output stream.", 1, strm);
-	@(return strm->stream.object0)
+	strng = copy_simple_string(strm->stream.object0);
+	strm->stream.object0->string.fillp = 0;
+	@(return strng)
 }
 
 cl_object
@@ -2537,20 +2481,14 @@ cl_streamp(cl_object strm)
 cl_object
 cl_input_stream_p(cl_object strm)
 {
-	@(return (input_stream_p(strm) ? Ct : Cnil))
+	@(return (ecl_input_stream_p(strm) ? Ct : Cnil))
 }
 
 cl_object
 cl_output_stream_p(cl_object strm)
 {
-	@(return (output_stream_p(strm) ? Ct : Cnil))
+	@(return (ecl_output_stream_p(strm) ? Ct : Cnil))
 }
-
-@(defun close (strm &key abort)
-@
-	close_stream(strm, abort != Cnil);
-	@(return Ct)
-@)
 
 static cl_fixnum
 normalize_stream_element_type(cl_object element_type)
@@ -2595,7 +2533,7 @@ normalize_stream_element_type(cl_object element_type)
 	if (external_format != @':default')
 		FEerror("~S is not a valid stream external format.", 1,
 			external_format);
-	/* INV: open_stream() checks types */
+	/* INV: ecl_open_stream() checks types */
 	if (direction == @':input') {
 		smm = smm_input;
 		if (!idnesp)
@@ -2646,8 +2584,9 @@ normalize_stream_element_type(cl_object element_type)
 		char_stream_p = 0;
 		byte_size = normalize_stream_element_type(element_type);
 	}
-	strm = open_stream(filename, smm, if_exists, if_does_not_exist,
-			   byte_size, char_stream_p, (use_header_p != Cnil));
+	strm = ecl_open_stream(filename, smm, if_exists, if_does_not_exist,
+			       byte_size, char_stream_p,
+			       (use_header_p != Cnil));
 	@(return strm)
 @)
 
@@ -2712,17 +2651,24 @@ cl_open_stream_p(cl_object strm)
 }
 
 cl_object
-si_get_string_input_stream_index(cl_object strm)
-{
-	if ((enum ecl_smmode)strm->stream.mode != smm_string_input)
-		FEerror("~S is not a string-input stream.", 1, strm);
-	@(return MAKE_FIXNUM(strm->stream.int0))
-}
-
-cl_object
 si_make_string_output_stream_from_string(cl_object s)
 {
-	@(return make_string_output_stream_from_string(s))
+	cl_object strm;
+
+	if (type_of(s) != t_string || !s->string.hasfillp)
+		FEerror("~S is not a string with a fill-pointer.", 1, s);
+	strm = cl_alloc_object(t_stream);
+	strm->stream.mode = (short)smm_string_output;
+	strm->stream.closed = 0;
+	strm->stream.file = NULL;
+	strm->stream.object0 = s;
+	strm->stream.object1 = OBJNULL;
+	strm->stream.int0 = s->string.fillp;
+	strm->stream.int1 = 0;
+	strm->stream.char_stream_p = 1;
+	strm->stream.byte_size = 8;
+	strm->stream.signed_bytes = 0;
+	@(return strm)
 }
 
 cl_object
@@ -2732,7 +2678,7 @@ si_copy_stream(cl_object in, cl_object out)
 	for (c = ecl_read_char(in); c != EOF; c = ecl_read_char(in)) {
 		ecl_write_char(c, out);
 	}
-	flush_stream(out);
+	ecl_force_output(out);
 	@(return Ct)
 }
 
@@ -2878,7 +2824,7 @@ init_file(void)
 	error_output->stream.signed_bytes = 0;
 
 	cl_core.terminal_io = standard
-	= make_two_way_stream(standard_input, standard_output);
+	= cl_make_two_way_stream(standard_input, standard_output);
 
 	ECL_SET(@'*terminal-io*', standard);
 

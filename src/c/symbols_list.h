@@ -1106,7 +1106,6 @@ cl_symbols[] = {
 {SYS_ "GET-LIBRARY-PATHNAME", SI_ORDINARY, si_get_library_pathname, 0, OBJNULL},
 #endif
 {SYS_ "GET-SYSPROP", SI_ORDINARY, si_get_sysprop, 2, OBJNULL},
-{SYS_ "GET-STRING-INPUT-STREAM-INDEX", SI_ORDINARY, si_get_string_input_stream_index, 1, OBJNULL},
 {SYS_ "GETENV", SI_ORDINARY, si_getenv, 1, OBJNULL},
 {SYS_ "GETCWD", SI_ORDINARY, si_getcwd, 0, OBJNULL},
 {SYS_ "GETPID", SI_ORDINARY, si_getpid, 0, OBJNULL},
@@ -1136,7 +1135,6 @@ cl_symbols[] = {
 {SYS_ "MKSTEMP", SI_ORDINARY, si_mkstemp, 1, OBJNULL},
 {SYS_ "RMDIR", SI_ORDINARY, si_rmdir, 1, OBJNULL},
 {SYS_ "OPEN-PIPE", SI_ORDINARY, si_open_pipe, 1, OBJNULL},
-{SYS_ "OUTPUT-STREAM-STRING", SI_ORDINARY, si_output_stream_string, 1, OBJNULL},
 {SYS_ "PACKAGE-LOCK", SI_ORDINARY, si_package_lock, 2, OBJNULL},
 {SYS_ "PACKAGE-HASH-TABLES", SI_ORDINARY, si_package_hash_tables, 1, OBJNULL},
 {SYS_ "PATHNAME-TRANSLATIONS", SI_ORDINARY, si_pathname_translations, -1, OBJNULL},

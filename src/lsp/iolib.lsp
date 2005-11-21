@@ -37,7 +37,7 @@ Possible keywords are :INDEX, :START, and :END."
            (UNWIND-PROTECT
              (MULTIPLE-VALUE-PROG1
 	      (PROGN ,@b)
-	      (SETF ,index (SYS:GET-STRING-INPUT-STREAM-INDEX ,var)))
+	      (SETF ,index (FILE-POSITION ,var)))
              (CLOSE ,var))))
       `(LET ((,var (MAKE-STRING-INPUT-STREAM ,string ,start ,end)))
          ,@body)))
@@ -70,9 +70,9 @@ object's representation."
   (let ((stream (make-string-input-stream string start end)))
     (if preserve-whitespace
         (values (read-preserving-whitespace stream eof-error-p eof-value)
-                (sys::get-string-input-stream-index stream))
+                (file-position stream))
         (values (read stream eof-error-p eof-value)
-                (sys::get-string-input-stream-index stream)))))
+                (file-position stream)))))
 
 (defun write-to-string (object &rest rest
                         &aux (stream (make-string-output-stream)))

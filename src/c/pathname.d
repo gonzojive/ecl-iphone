@@ -821,7 +821,7 @@ ecl_namestring(cl_object x, int truncate_if_unreadable)
 	 * or using make_pathname(). In all of these cases ECL will complain
 	 * at creation time if the pathname has wrong components.
 	 */
-	buffer = make_string_output_stream(128);
+	buffer = ecl_make_string_output_stream(128);
 	logical = x->pathname.logical;
 	host = x->pathname.host;
 	if (logical) {
@@ -927,7 +927,7 @@ NO_DIRECTORY:
 			return Cnil;
 		}
 	}
-	return get_output_stream_string(buffer);
+	return cl_get_output_stream_string(buffer);
 }
 
 cl_object

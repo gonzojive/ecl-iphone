@@ -525,7 +525,6 @@ extern cl_object cl_echo_stream_input_stream(cl_object strm);
 extern cl_object cl_echo_stream_output_stream(cl_object strm);
 extern cl_object cl_make_string_output_stream _ARGS((cl_narg narg, ...));
 extern cl_object cl_get_output_stream_string(cl_object strm);
-extern cl_object si_output_stream_string(cl_object strm);
 extern cl_object cl_streamp(cl_object strm);
 extern cl_object cl_input_stream_p(cl_object strm);
 extern cl_object cl_output_stream_p(cl_object strm);
@@ -550,17 +549,11 @@ extern cl_object si_do_read_sequence(cl_object string, cl_object stream, cl_obje
 extern cl_object si_file_column(cl_object strm);
 extern cl_object cl_interactive_stream_p(cl_object strm);
 
-extern bool input_stream_p(cl_object strm);
-extern bool output_stream_p(cl_object strm);
-extern cl_object stream_element_type(cl_object strm);
-extern cl_object open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists, cl_object if_does_not_exist,
-			     cl_fixnum byte_size, bool char_stream_p, bool use_header_p);
-extern void close_stream(cl_object strm, bool abort_flag);
-extern cl_object make_two_way_stream(cl_object istrm, cl_object ostrm);
-extern cl_object make_string_input_stream(cl_object strng, cl_index istart, cl_index iend);
-extern cl_object make_string_output_stream(cl_index line_length);
-extern cl_object make_string_output_stream_from_string(cl_object s);
-extern cl_object get_output_stream_string(cl_object strm);
+extern bool ecl_input_stream_p(cl_object strm);
+extern bool ecl_output_stream_p(cl_object strm);
+extern cl_object ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists, cl_object if_does_not_exist, cl_fixnum byte_size, bool char_stream_p, bool use_header_p);
+extern cl_object ecl_make_string_input_stream(cl_object strng, cl_index istart, cl_index iend);
+extern cl_object ecl_make_string_output_stream(cl_index line_length);
 extern cl_object ecl_read_byte(cl_object strm);
 extern void ecl_write_byte(cl_object byte, cl_object strm);
 extern int ecl_read_char_noeof(cl_object strm);
@@ -569,13 +562,14 @@ extern void ecl_unread_char(int c, cl_object strm);
 extern int ecl_peek_char(cl_object strm);
 extern int ecl_write_char(int c, cl_object strm);
 extern void writestr_stream(const char *s, cl_object strm);
-extern void flush_stream(cl_object strm);
-extern void clear_input_stream(cl_object strm);
-extern void clear_output_stream(cl_object strm);
+#define ecl_finish_output(x) ecl_force_output(x)
+extern void ecl_force_output(cl_object strm);
+extern void ecl_clear_input(cl_object strm);
+extern void ecl_clear_output(cl_object strm);
 extern bool ecl_listen_stream(cl_object strm);
 extern cl_object ecl_file_position(cl_object strm);
 extern cl_object ecl_file_position_set(cl_object strm, cl_object disp);
-extern int file_column(cl_object strm);
+extern int ecl_file_column(cl_object strm);
 extern cl_object ecl_make_stream_from_fd(cl_object host, int fd, enum ecl_smmode smm);
 
 

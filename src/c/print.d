@@ -92,15 +92,15 @@ BEGIN:
 		else if (c == UNMARK)
 			cl_env.isp -= 2;
 		else if (c == SET_INDENT)
-			cl_env.indent_stack[cl_env.isp] = file_column(stream);
+			cl_env.indent_stack[cl_env.isp] = ecl_file_column(stream);
 		else if (c == INDENT) {
 			goto DO_INDENT;
 		} else if (c == INDENT1) {
-			i = file_column(stream)-cl_env.indent_stack[cl_env.isp];
+			i = ecl_file_column(stream)-cl_env.indent_stack[cl_env.isp];
 			if (i < 8 && cl_env.indent_stack[cl_env.isp] < LINE_LENGTH/2) {
 				ecl_write_char(' ', stream);
 				cl_env.indent_stack[cl_env.isp]
-				= file_column(stream);
+				= ecl_file_column(stream);
 			} else {
 				if (cl_env.indent_stack[cl_env.isp] < LINE_LENGTH/2) {
 					cl_env.indent_stack[cl_env.isp]
@@ -118,7 +118,7 @@ BEGIN:
 	return;
 
 DO_MARK:
-	k = LINE_LENGTH - 1 - file_column(stream);
+	k = LINE_LENGTH - 1 - ecl_file_column(stream);
 	for (i = 1, j = 0, l = 1;  l > 0 && i < cl_env.qc && j < k;  i++) {
 		c = cl_env.queue[mod(cl_env.qh + i)];
 		if (c == MARK)
@@ -139,14 +139,14 @@ DO_MARK:
 	if (cl_env.isp >= ECL_PPRINT_INDENTATION_STACK_SIZE-2)
 		FEerror("Can't pretty-print.", 0);
 	cl_env.isp+=2;
-	cl_env.indent_stack[cl_env.isp-1] = file_column(stream);
+	cl_env.indent_stack[cl_env.isp-1] = ecl_file_column(stream);
 	cl_env.indent_stack[cl_env.isp] = cl_env.indent_stack[cl_env.isp-1];
 	goto BEGIN;
 
 DO_INDENT:
 	if (cl_env.iisp > cl_env.isp)
 		goto PUT_INDENT;
-	k = LINE_LENGTH - 1 - file_column(stream);
+	k = LINE_LENGTH - 1 - ecl_file_column(stream);
 	for (i0 = 0, i = 1, j = 0, l = 1;  i < cl_env.qc && j < k;  i++) {
 		c = cl_env.queue[mod(cl_env.qh + i)];
 		if (c == MARK)
@@ -1712,7 +1712,7 @@ potential_number_p(cl_object strng, int base)
 
 	strm = stream_or_default_output(strm);
 	si_write_object(x, strm);
-	flush_stream(strm);
+	ecl_force_output(strm);
 
 	bds_unwind_n(15);
 	@(return x)
@@ -1737,7 +1737,7 @@ potential_number_p(cl_object strng, int base)
 	bds_bind(@'*print-pretty*', Ct);
 	ecl_write_char('\n', strm);
 	si_write_object(obj, strm);
-	flush_stream(strm);
+	ecl_force_output(strm);
 	bds_unwind_n(2);
 	@(return)
 @)
@@ -1775,7 +1775,7 @@ potential_number_p(cl_object strng, int base)
 	strm = stream_or_default_output(strm);
 	si_do_write_sequence(strng, strm, start, end);
 	ecl_write_char('\n', strm);
-	flush_stream(strm);
+	ecl_force_output(strm);
 	@(return strng)
 @)
 
@@ -1793,10 +1793,10 @@ potential_number_p(cl_object strng, int base)
 		return funcall(2, @'ext::stream-fresh-line', strm);
 	}
 #endif
-	if (file_column(strm) == 0)
+	if (ecl_file_column(strm) == 0)
 		@(return Cnil)
 	ecl_write_char('\n', strm);
-	flush_stream(strm);
+	ecl_force_output(strm);
 	@(return Ct)
 @)
 
@@ -1808,21 +1808,21 @@ potential_number_p(cl_object strng, int base)
 		return funcall(2, @'ext::stream-finish-output', strm);
 	}
 #endif
-	flush_stream(strm);
+	ecl_force_output(strm);
 	@(return Cnil)
 @)
 
 @(defun force-output (&o strm)
 @
  	strm = stream_or_default_output(strm);
-	flush_stream(strm);
+	ecl_force_output(strm);
 	@(return Cnil)
 @)
 
 @(defun clear-output (&o strm)
 @
  	strm = stream_or_default_output(strm);
-	clear_output_stream(strm);
+	ecl_clear_output(strm);
 	@(return Cnil)
 @)
 
@@ -1860,7 +1860,7 @@ prin1(cl_object obj, cl_object strm)
 	strm = stream_or_default_output(strm);
 	bds_bind(@'*print-escape*', Ct);
 	si_write_object(obj, strm);
-	flush_stream(strm);
+	ecl_force_output(strm);
 	bds_unwind1();
 	return obj;
 }
@@ -1885,7 +1885,7 @@ terpri(cl_object strm)
 	}
 #endif
 	ecl_write_char('\n', strm);
-	flush_stream(strm);
+	ecl_force_output(strm);
 	return(Cnil);
 }
 
@@ -1898,7 +1898,7 @@ write_string(cl_object strng, cl_object strm)
 	assert_type_string(strng);
 	for (i = 0;  i < strng->string.fillp;  i++)
 		ecl_write_char(strng->string.self[i], strm);
-	flush_stream(strm);
+	ecl_force_output(strm);
 }
 
 /*
@@ -1916,6 +1916,7 @@ princ_char(int c, cl_object strm)
 {
 	strm = stream_or_default_output(strm);
 	ecl_write_char(c, strm);
-	if (c == '\n')
-		flush_stream(strm);
+	if (c == '\n') {
+		ecl_force_output(strm);
+	}
 }
