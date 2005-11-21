@@ -59,9 +59,8 @@
 (defun tmp-destination (loc)
   (case loc
     (VALUES 'VALUES)
-    (RETURN 'RETURN)
     (TRASH 'TRASH)
-    (T 'VALUE0)))
+    (T 'RETURN)))
 
 (defun set-loc (loc &aux fd
 		    (is-call (and (consp loc)
