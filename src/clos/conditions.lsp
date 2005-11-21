@@ -287,20 +287,25 @@ strings."
 		  (SETF (DOCUMENTATION ',name 'TYPE) ',documentation))))
       ',NAME)))
 
+(defun find-subclasses-of-type (type class)
+  ;; Find all subclasses of CLASS that are subtypes of the given TYPE.
+  (declare (si::c-local))
+  (if (subtypep class type)
+      (list class)
+      (loop for c in (clos::class-direct-subclasses class)
+	    nconc (find-subclasses-of-type type c))))
+
 (defun make-condition (type &rest slot-initializations)
-  (labels ((try-class (class)
-	     (if (subtypep class type)
-		 class
-		 (some #'try-class (clos::class-direct-subclasses class)))))
-    (let ((class (or (and (symbolp type) (find-class type nil))
-		     (try-class (find-class 'condition)))))
-      (unless class
-	(error 'SIMPLE-TYPE-ERROR
-	       :DATUM type
-	       :EXPECTED-TYPE 'CONDITION
-	       :FORMAT-CONTROL "Not a condition type: ~S"
-	       :FORMAT-ARGUMENTS (list type)))    
-      (apply #'make-instance class slot-initializations))))
+  (let ((class (or (and (symbolp type) (find-class type nil))
+		   (first (last (sort (find-subclasses-of-type type (find-class 'condition))
+				      #'clos::subclassp))))))
+    (unless class
+      (error 'SIMPLE-TYPE-ERROR
+	     :DATUM type
+	     :EXPECTED-TYPE 'CONDITION
+	     :FORMAT-CONTROL "Not a condition type: ~S"
+	     :FORMAT-ARGUMENTS (list type)))
+    (apply #'make-instance class slot-initializations)))
 
 #| For the moment, do not redefine these. Beppe.
 (eval-when (eval compile load)
