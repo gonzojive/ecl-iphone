@@ -9,6 +9,23 @@ ECL 0.9i
  - Several functions with duplicate functionality (make_two_way_streams,
    make_string_output_stream_from_string, close_stream, etc) have been removed.
 
+ - A new global variable EXT:*ACTION-ON-UNDEFINED-VARIABLE* controls whether
+   the interpreter complains when you try to assign a value to a symbol that
+   has not been defined as variable. An example
+
+	> (SETQ S 1)	; No complain
+	1
+	> (SETQ EXT:*ACTION-ON-UNDEFINED-VARIABLE* 'ERROR)
+	ERROR
+	> (SETQ X 1)	; Ooops, X had not been defined before!
+	Undefined variable referenced in interpreted code.
+	Name: X
+	>> :q
+	> (DEFVAR X 1)
+	X
+	> (SETQ X 1)
+	1
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

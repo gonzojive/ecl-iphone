@@ -49,6 +49,9 @@
 #define FLAG_IGNORE		0
 #define FLAG_USEFUL		(FLAG_PUSH | FLAG_VALUES | FLAG_REG0)
 
+#define ECL_SPECIAL_VAR_REF	-2
+#define ECL_UNDEFINED_VAR_REF	-1
+
 #define ENV cl_env.c_env
 
 /********************* PRIVATE ********************/
@@ -64,7 +67,7 @@ static cl_object asm_end(cl_index handle);
 static cl_index asm_jmp(register int op);
 static void asm_complete(register int op, register cl_index original);
 
-static cl_fixnum c_var_ref(cl_object var, int allow_symbol_macro);
+static cl_fixnum c_var_ref(cl_object var, int allow_symbol_macro, bool ensure_defined);
 
 static int c_block(cl_object args, int flags);
 static int c_case(cl_object args, int flags);
@@ -347,7 +350,7 @@ c_register_var(register cl_object var, bool special, bool bound)
 {
 	/* If this is just a declaration, ensure that the variable was not
 	 * declared before as special, to save memory. */
-	if (bound || (c_var_ref(var, 0) >= 0)) {
+	if (bound || (c_var_ref(var, 0, FALSE) >= ECL_UNDEFINED_VAR_REF)) {
 		ENV->variables = CONS(cl_list(3, var,
 					      special? @'special' : Cnil,
 					      bound? Ct : Cnil),
@@ -415,7 +418,7 @@ c_tag_ref(cl_object the_tag, cl_object the_type)
 }
 
 static cl_fixnum
-c_var_ref(cl_object var, int allow_symbol_macro)
+c_var_ref(cl_object var, int allow_symbol_macro, bool ensure_defined)
 {
 	cl_fixnum n = 0;
 	cl_object l;
@@ -436,10 +439,17 @@ c_var_ref(cl_object var, int allow_symbol_macro)
 			FEprogram_error("Internal error: symbol macro ~S used as variable",
 					1, var);
 		} else {
-			return Null(special)? n : -2;
+			return Null(special)? n : ECL_SPECIAL_VAR_REF;
 		}
 	}
-	return -1;
+	if (ensure_defined) {
+		l = SYM_VAL(@'si::*action-on-undefined-variable*');
+		if (l != Cnil) {
+			funcall(3, l, make_simple_string("Undefined variable referenced in interpreted code.~%Name: ~A"),
+				var);
+		}
+	}
+	return ECL_UNDEFINED_VAR_REF;
 }
 
 static bool
@@ -452,8 +462,10 @@ static void
 c_declare_specials(cl_object specials)
 {
 	while (!Null(specials)) {
+		int ndx;
 		cl_object var = pop(&specials);
-		if (c_var_ref(var,0) >= 0)
+		ndx = c_var_ref(var,0,FALSE);
+		if (ndx >= 0 || ndx == ECL_UNDEFINED_VAR_REF)
 			c_register_var(var, TRUE, FALSE);
 	}
 }
@@ -534,10 +546,11 @@ compile_setq(int op, cl_object var)
 
 	if (!SYMBOLP(var))
 		FEillegal_variable_name(var);
-	ndx = c_var_ref(var,0);
+	ndx = c_var_ref(var,0,TRUE);
 	if (ndx < 0) { /* Not a lexical variable */
-		if (var->symbol.stype == stp_constant)
+		if (var->symbol.stype == stp_constant) {
 			FEassignment_to_constant(var);
+		}
 		ndx = c_register_constant(var);
 		op = (op == OP_SETQ)? OP_SETQS : OP_PSETQS;
 	}
@@ -1408,7 +1421,7 @@ c_multiple_value_setq(cl_object orig_args, int flags) {
 	vars = cl_nreverse(vars);
 	while (nvars--) {
 		cl_object var = pop(&vars);
-		cl_fixnum ndx = c_var_ref(var,0);
+		cl_fixnum ndx = c_var_ref(var,0,TRUE);
 		if (ndx < 0) { /* Global variable */
 			if (var->symbol.stype == stp_constant)
 				FEassignment_to_constant(var);
@@ -1644,7 +1657,7 @@ c_symbol_macrolet(cl_object args, int flags)
 		cl_object arglist = cl_list(2, @gensym(0), @gensym(0));
 		cl_object function;
 		if (name->symbol.stype != stp_ordinary ||
-		    c_var_ref(name,1) == -2)
+		    c_var_ref(name,1,FALSE) == -2)
 		{
 			FEprogram_error("SYMBOL-MACROLET: Symbol ~A cannot be \
 declared special and appear in a symbol-macrolet.", 1, name);
@@ -1803,7 +1816,7 @@ compile_form(cl_object stmt, int flags) {
 				stmt = stmt1;
 				goto BEGIN;
 			}
-			index = c_var_ref(stmt,0);
+			index = c_var_ref(stmt,0,FALSE);
 			if (index >= 0) {
 				asm_op2(push? OP_PUSHV : OP_VAR, index);
 			} else {

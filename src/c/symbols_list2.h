@@ -1559,6 +1559,8 @@ cl_symbols[] = {
 
 {SYS_ "TRAP-FPE","si_trap_fpe"},
 
+{SYS_ "*ACTION-ON-UNDEFINED-VARIABLE*",NULL},
+
 /* Tag for end of list */
 {NULL,NULL}};
 
