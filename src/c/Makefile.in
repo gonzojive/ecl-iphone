@@ -52,16 +52,16 @@ OBJS	= main.o symbol.o package.o list.o\
 	ffi.o @EXTRA_OBJS@
 
 .SUFFIXES: .c .o .d
-
-%.o: %.c $(HFILES)
-	$(CC) $(CFLAGS) -o $@ $<
-%.c: %.d $(DPP) $(HFILES)
-	if test -f ../CROSS-DPP ; then ../CROSS-DPP $< $@ ; else $(DPP) $< $@ ; fi
-%.c: arch/%.d $(DPP) $(HFILES)
-	if test -f ../CROSS-DPP ; then ../CROSS-DPP $< $@ ; else $(DPP) $< $@ ; fi
+.PHONY: all
 
 all:	$(DPP) external.h ../libeclmin.a ../cinit.o
-.PHONY:	all
+
+.c.o: $(HFILES)
+	$(CC) $(CFLAGS) -o $@ $<
+.d.c: $(DPP) $(HFILES)
+	if test -f ../CROSS-DPP ; then ../CROSS-DPP $< $@ ; else $(DPP) $< $@ ; fi
+ffi_x86.c: arch/ffi_x86.d $(DPP) $(HFILES)
+	if test -f ../CROSS-DPP ; then ../CROSS-DPP $< $@ ; else $(DPP) $< $@ ; fi
 
 #
 # When compiling the library itself, we have to remove the dllimport
