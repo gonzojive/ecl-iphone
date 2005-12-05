@@ -33,7 +33,8 @@
 
 (defclass build-op (compile-op)
   ((type :initarg :type :initform :fasl :accessor build-op-type)
-   (monolithic :initarg :monolithic :initform t :accessor build-op-monolithic)))
+   (monolithic :initarg :monolithic :initform t :accessor build-op-monolithic)
+   (args :initarg :args :initform nil :accessor build-op-args)))
 
 (defmethod initialize-instance :after ((instance build-op) &rest initargs &key &allow-other-keys)
   (setf (slot-value instance 'system-p) t)
@@ -81,7 +82,7 @@
 	    (append (loop for d in deps
 			  collect (make-symbol d))
 		    obj-files)))
-    (c::builder (build-op-type o) out-file :lisp-files obj-files)))
+    (apply #'c::builder (build-op-type o) out-file :lisp-files obj-files (build-op-args o))))
 
 (defmethod traverse ((o build-op) (c system))
   (let* ((load-tree (traverse (make-instance 'load-source-op :parent o) c))
