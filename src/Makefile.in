@@ -138,7 +138,7 @@ clean: clean_lisp
 	$(RM) config.version config.log config.cache
 	$(RM) *.c *.o *.a *.h *.data *.fas
 clean_lisp:
-	for i in lsp cmp clos clx tk; do $(RM) lib$$i.a $$i/?*.{o,data,c,sdat,h,fas}; done
+	for i in lsp cmp clos clx tk ext; do $(RM) lib$$i.a $$i/?*.{o,data,c,sdat,h,fas}; done
 	$(RM) help.doc
 distclean: clean
 realclean: distclean
