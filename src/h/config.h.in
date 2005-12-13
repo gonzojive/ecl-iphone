@@ -134,9 +134,6 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 /* Program Development Environment					*/
 #undef PDE
 
-/* Tcl/Tk library							*/
-#undef TK
-
 /* Allow loading dynamically linked code				*/
 #undef ENABLE_DLOPEN
 

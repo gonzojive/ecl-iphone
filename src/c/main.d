@@ -20,9 +20,6 @@
 #include <limits.h>
 #include "ecl.h"
 #include "internal.h"
-#ifdef TK
-# include "tk.h"
-#endif
 
 /******************************* EXPORTS ******************************/
 
@@ -228,10 +225,6 @@ cl_boot(int argc, char **argv)
 #ifdef CLOS
 	cl_core.clos_package = make_package(make_constant_string("CLOS"),
 					    Cnil, CONS(cl_core.lisp_package, Cnil));
-#endif
-#ifdef TK
-	cl_core.tk_package = make_package(make_constant_string("TK"),
-					  Cnil, CONS(cl_core.lisp_package, Cnil));
 #endif
 #ifdef ECL_THREADS
 	cl_core.mp_package = make_package(make_constant_string("MP"),

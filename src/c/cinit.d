@@ -47,9 +47,6 @@ static cl_object si_simple_toplevel ()
 	/* Simple minded top level loop */
 	printf(";*** Lisp core booted ****\nECL (Embeddable Common Lisp)  %d pages\n", MAXPAGE);
 	fflush(stdout);
-#ifdef TK
-	StdinResume();
-#endif
 	for (i = 1; i<fix(si_argc()); i++) {
 	  cl_object arg = si_argv(MAKE_FIXNUM(i));
 	  cl_load(1, arg);
@@ -60,9 +57,6 @@ static cl_object si_simple_toplevel ()
 	  if (sentence == OBJNULL)
 	    @(return);
 	  prin1(si_eval_with_env(1, sentence), Cnil);
-#ifdef TK
-	  StdinResume();
-#endif
 	}
 }
 
