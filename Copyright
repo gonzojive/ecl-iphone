@@ -13,36 +13,16 @@ Summary:
   WE MAKE NO WARRANTY AND ACCEPT NO LIABILITY FOR THIS PROGRAM.
 
   This license covers all of the ECL program except for the files
-	contrib/*.*		; User contributed extensions
 	src/lsp/loop2.lsp	; Symbolic's LOOP macro
-	src/ansi-tests2/*.*	; Test suite grabbed from CLOCC
-	src/tests/*.*		; Test suite grabbed from GNU Clisp
+	src/lsp/pprint.lsp	; CMUCL's pretty printer
+	src/lsp/format.lsp	; CMUCL's format
+  and the directories
+	contrib/		; User contributed extensions
+	src/clx/		; portable CLX library from Telent
   Look the precise copyright of these extensions in the corresponding
   files.
 
 In detail:
-
-  1. Permission to use, copy, modify this software and its documentation
-     for any purpose is hereby granted without fee, provided that
-     - the above copyright notice appears in all copies,
-     - both that copyright notice and this permission notice appears in
-       supporting documentation, and that
-     - you cause modified files to carry prominent notices stating that
-       you changed the files and the date of any change.
-
-  2. Please notify us if you are going to sell this software or its
-     documentation for profit.
-
-  3. WE DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING ALL
-     IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL
-     WE BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR
-     ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
-     WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
-     ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
-     SOFTWARE.
-
-
-Additionally:
 
   ECL is free software; you can redistribute it and/or modify it
   under the terms of the GNU Library General Public License as published
