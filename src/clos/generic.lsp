@@ -235,7 +235,7 @@
 		 (apply #'ensure-generic-function-using-class gfun name args)))
 	  ;; a generic function already exists
 	  ((si::instancep (or gfun (setf gfun (fdefinition name))))
-	   gfun)
+	   (apply #'reinitialize-instance gfun args))
 	  ((special-operator-p name)
 	   (simple-program-error "The special operator ~A is not a valid name for a generic function" name))
 	  ((macro-function name)
