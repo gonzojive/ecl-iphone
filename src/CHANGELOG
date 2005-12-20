@@ -26,6 +26,9 @@ ECL 0.9i
 	> (SETQ X 1)
 	1
 
+ - Adding a new method to a generic function does no longer result in a warning
+   when the function belongs to a locked package.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
