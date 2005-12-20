@@ -709,6 +709,7 @@ EXPORTS
 
 	; package.c
 
+	CEpackage_error
 	si_select_package
 	cl_find_package
 	cl_package_name
