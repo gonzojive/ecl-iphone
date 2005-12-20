@@ -48,7 +48,7 @@ FEpackage_error(const char *message, cl_object package, int narg, ...)
 			       @':package', package); /* extra arguments */
 }
 
-static void
+void
 CEpackage_error(const char *message, const char *continue_message, cl_object package, int narg, ...)
 {
 	cl_va_list args;

@@ -33,8 +33,10 @@ cl_set(cl_object var, cl_object val)
 @
 	if (Null(cl_functionp(def)))
 		FEinvalid_function(def);
-	if (sym->symbol.hpack != Cnil && sym->symbol.hpack->pack.locked)
-		funcall(3, @'warn', make_constant_string("~S is being redefined."), fname);
+	if (sym->symbol.hpack != Cnil && sym->symbol.hpack->pack.locked) {
+		CEpackage_error("Attempt to redefine function ~S in locked package.",
+				"Ignore lock and proceed", fname->symbol.hpack, 1, fname);
+	}
 	mflag = !Null(macro);
 	if (sym->symbol.isform && !mflag)
 		FEerror("Given that ~S is a special form, ~S cannot be defined as a function.",
@@ -72,15 +74,16 @@ cl_makunbound(cl_object sym)
 	ECL_SET(sym, OBJNULL);
 	@(return sym)
 }
-	
+
 cl_object
 cl_fmakunbound(cl_object fname)
 {
 	cl_object sym = si_function_block_name(fname);
 
-	if (sym->symbol.hpack != Cnil && sym->symbol.hpack->pack.locked)
-		funcall(3, @'warn', make_constant_string("~S is being redefined."),
-			fname);
+	if (sym->symbol.hpack != Cnil && sym->symbol.hpack->pack.locked) {
+		CEpackage_error("Attempt to remove definition of function ~S in locked package.",
+				"Ignore lock and proceed", fname->symbol.hpack, 1, fname);
+	}
 	if (SYMBOLP(fname)) {
 		clear_compiler_properties(sym);
 #ifdef PDE

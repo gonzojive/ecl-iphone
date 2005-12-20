@@ -29,6 +29,9 @@ ECL 0.9i
  - Adding a new method to a generic function does no longer result in a warning
    when the function belongs to a locked package.
 
+ - Trying to change the function definition of a symbol in a locked package
+   results in a correctable error.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
