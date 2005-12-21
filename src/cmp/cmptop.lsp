@@ -99,7 +99,7 @@
 
   ;(let ((*print-level* 3)) (pprint *top-level-forms*))
   (setq *top-level-forms* (nreverse *top-level-forms*))
-  (wt-nl1 "#include \"" (si::coerce-to-filename h-pathname) "\"")
+  (wt-nl1 "#include \"" (si::coerce-to-filename (truename h-pathname)) "\"")
   ;; All lines from CLINES statements are grouped at the beginning of the header
   ;; Notice that it does not make sense to guarantee that c-lines statements
   ;; are produced in-between the function definitions, because two functions
@@ -122,7 +122,7 @@
 	 (*compiler-declared-globals* (make-hash-table))
 	 #+PDE (optimize-space (>= *space* 3)))
     (unless shared-data
-      (wt-nl1 "#include \"" (si::coerce-to-filename data-pathname) "\""))
+      (wt-nl1 "#include \"" (si::coerce-to-filename (truename data-pathname)) "\""))
     (wt-nl1 "#ifdef __cplusplus")
     (wt-nl1 "extern \"C\"")
     (wt-nl1 "#endif")

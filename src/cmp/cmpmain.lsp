@@ -440,7 +440,7 @@ Cannot compile ~a."
 	 (*load-time-values* nil) ;; Load time values are compiled
 	 (o-pathname (or #+dlopen (and system-p output-file)
 			 #-dlopen output-file
-			 (compile-file-pathname input-pathname :type :object)))
+			 (compile-file-pathname (or output-file input-pathname) :type :object)))
 	 #+dlopen
 	 (so-pathname (unless system-p output-file))
          (c-pathname (get-output-pathname o-pathname c-file :c))
