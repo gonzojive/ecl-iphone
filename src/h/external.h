@@ -985,6 +985,7 @@ extern cl_object cl_log _ARGS((cl_narg narg, cl_object x, ...));
 
 /* package.c */
 
+extern void CEpackage_error(const char *message, const char *continue_message, cl_object package, int narg, ...);
 extern cl_object si_select_package(cl_object pack_name);
 extern cl_object cl_find_package(cl_object p);
 extern cl_object cl_package_name(cl_object p);
