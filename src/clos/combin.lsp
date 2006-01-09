@@ -276,17 +276,15 @@
 
 (defun compute-effective-method (gf method-combination applicable-methods)
   (declare (ignore method-combination-type method-combination-args))
-  (if (not applicable-methods)
-      (no-applicable-method gf)
-      (let* ((method-combination-name (car method-combination))
-	     (method-combination-args (cdr method-combination)))
-	(if (eq method-combination-name 'STANDARD)
-	    (standard-compute-effective-method gf applicable-methods)
-	    (apply (or (getf *method-combinations* method-combination-name)
-		       (error "~S is not a valid method combination object"
-			      method-combination))
-		   gf applicable-methods
-		   method-combination-args)))))
+  (let* ((method-combination-name (car method-combination))
+	 (method-combination-args (cdr method-combination)))
+    (if (eq method-combination-name 'STANDARD)
+	(standard-compute-effective-method gf applicable-methods)
+	(apply (or (getf *method-combinations* method-combination-name)
+		   (error "~S is not a valid method combination object"
+			  method-combination))
+	       gf applicable-methods
+	       method-combination-args))))
 
 ;;
 ;; These method combinations are bytecompiled, for simplicity.

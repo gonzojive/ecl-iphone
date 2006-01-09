@@ -91,6 +91,8 @@ cl_apply_from_stack(cl_index narg, cl_object x)
 		if (!fun->instance.isgf)
 			goto ERROR;
 		fun = compute_method(narg, fun, cl_env.stack_top - narg);
+		if (fun == NULL)
+			return VALUES(0);
 		goto AGAIN;
 #endif
 	case t_symbol:
@@ -151,6 +153,10 @@ link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_va_lis
 			goto ERROR;
 		fun = compute_method(narg, fun, cl_env.stack + sp);
 		pLK = NULL;
+		if (fun == NULL) {
+			out = VALUES(0);
+			break;
+		}
 		goto AGAIN;
 	}
 #endif /* CLOS */
@@ -222,6 +228,10 @@ si_unlink_symbol(cl_object s)
 		if (!fun->instance.isgf)
 			goto ERROR;
 		fun = compute_method(narg, fun, cl_env.stack + sp);
+		if (fun == NULL) {
+			out = VALUES(0);
+			break;
+		}
 		goto AGAIN;
 #endif
 	case t_symbol:

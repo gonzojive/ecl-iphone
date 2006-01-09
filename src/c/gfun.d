@@ -133,6 +133,11 @@ compute_method(cl_narg narg, cl_object gf, cl_object *args)
 		}
 		methods = funcall(3, @'compute-applicable-methods', gf,
 				  arglist);
+		if (methods == Cnil) {
+			VALUES(0) = funcall(3, @'no-applicable-method', gf,
+					    arglist);
+			return NULL;
+		}
 		func = funcall(4, @'si::compute-effective-method', gf,
 			       GFUN_COMB(gf), methods);
 		/* update cache */

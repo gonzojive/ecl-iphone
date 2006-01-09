@@ -50,6 +50,9 @@ ECL 0.9i
    doing the real work of (re)defining generic functions. This means E-G-F now
    handles :METHOD-CLASS and :GENERIC-FUNCTION-CLASS properly.
 
+ - Implemented the standard behavior of NO-APPLICABLE-METHOD. Before, ECL
+   expected this function to simply fail and never return.
+
 * Notes:
 
  [1] Both bugs are related.

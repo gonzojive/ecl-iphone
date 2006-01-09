@@ -396,6 +396,10 @@ interpret_funcall(cl_narg narg, cl_object fun) {
 		if (!fun->instance.isgf)
 			goto ERROR;
 		fun = compute_method(narg, fun, args);
+		if (fun == NULL) {
+			x = VALUES(0);
+			break;
+		}
 		goto AGAIN;
 #endif
 	case t_bytecodes:
