@@ -687,6 +687,7 @@ cl_logical_pathname(cl_object x)
  * for a file which is accesible in our filesystem.
  * INV: Wildcards are allowed.
  * INV: A fresh new copy of the pathname is created.
+ * INV: The pathname is absolute.
  */
 cl_object
 coerce_to_file_pathname(cl_object pathname)
@@ -702,6 +703,12 @@ coerce_to_file_pathname(cl_object pathname)
 		FEerror("Access to remote files not yet supported.", 0);
 #endif
 #endif
+	if (pathname->pathname.directory == Cnil ||
+	    CAR(pathname->pathname.directory) == @':relative') {
+		pathname = cl_merge_pathnames(2, pathname,
+					      si_getcwd());
+
+	}
 	return pathname;
 }
 

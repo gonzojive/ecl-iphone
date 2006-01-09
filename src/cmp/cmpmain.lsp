@@ -403,9 +403,6 @@ static cl_object VV[VM];
 ~%;;; Therefore, COMPILE-FILE without :SYSTEM-P T is unsupported.~
 ~%;;;"))
 
-  (when (eq output-file 'T)
-    (setf output-file (compile-file-pathname input-pathname :type (if system-p :object :fasl))))
-
   (setq *compile-file-pathname* input-pathname)
   (unless (probe-file *compile-file-pathname*)
     (if (pathname-type input-pathname)
@@ -416,6 +413,9 @@ static cl_object VV[VM];
 	  (when (probe-file *compile-file-pathname*)
 	    (return)))))
   (setq *compile-file-truename* (truename *compile-file-pathname*))
+
+  (when (eq output-file 'T)
+    (setf output-file (compile-file-pathname *compile-file-truename* :type (if system-p :object :fasl))))
 
   #+PDE (setq sys:*source-pathname* *compile-file-truename*)
 
