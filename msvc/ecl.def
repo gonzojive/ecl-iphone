@@ -1091,7 +1091,6 @@ EXPORTS
 	assert_type_vector
 	assert_type_list
 	assert_type_proper_list
-	assert_non_wild_pathname
 	cl_type_of
 
 	FEtype_error_character

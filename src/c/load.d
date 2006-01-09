@@ -361,6 +361,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 		goto NOT_A_FILENAME;
 	}
 	/* INV: coerce_to_file_pathname() creates a fresh new pathname object */
+	source   = cl_merge_pathnames(1, source);
 	pathname = coerce_to_file_pathname(source);
 	pntype   = pathname->pathname.type;
 
@@ -416,7 +417,7 @@ NOT_A_FILENAME:
 	}
 	bds_bind(@'*package*', symbol_value(@'*package*'));
 	bds_bind(@'*readtable*', symbol_value(@'*readtable*'));
-	bds_bind(@'*load-pathname*', not_a_filename? Cnil : cl_pathname(filename));
+	bds_bind(@'*load-pathname*', not_a_filename? Cnil : source);
 	bds_bind(@'*load-truename*', not_a_filename? Cnil : cl_truename(filename));
 	if (!Null(function)) {
 		ok = funcall(4, function, filename, verbose, print);

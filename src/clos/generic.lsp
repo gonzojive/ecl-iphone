@@ -233,9 +233,8 @@
           ((not (fboundp name))
 	   (setf (fdefinition (or traced name))
 		 (apply #'ensure-generic-function-using-class gfun name args)))
-	  ;; a generic function already exists
-	  ((si::instancep (or gfun (setf gfun (fdefinition name))))
-	   (apply #'reinitialize-instance gfun args))
+          ((si::instancep (or gfun (setf gfun (fdefinition name))))
+	   (apply #'ensure-generic-function-using-class gfun name args))
 	  ((special-operator-p name)
 	   (simple-program-error "The special operator ~A is not a valid name for a generic function" name))
 	  ((macro-function name)

@@ -732,14 +732,15 @@ coerce_to_physical_pathname(cl_object x)
  * INV: No wildcards are allowed.
  */
 cl_object
-si_coerce_to_filename(cl_object pathname)
+si_coerce_to_filename(cl_object pathname_orig)
 {
-	cl_object namestring;
+	cl_object namestring, pathname;
 
 	/* We always go through the pathname representation and thus
 	 * cl_namestring() always outputs a fresh new string */
-	pathname = coerce_to_file_pathname(pathname);
-	assert_non_wild_pathname(pathname);
+	pathname = coerce_to_file_pathname(pathname_orig);
+	if (cl_wild_pathname_p(1,pathname) != Cnil)
+		cl_error(3, @'file-error', @':pathname', pathname_orig);
 	namestring = coerce_to_simple_string(cl_namestring(pathname));
 	if (namestring->string.fillp >= MAXPATHLEN - 16)
 		FEerror("Too long filename: ~S.", 1, namestring);

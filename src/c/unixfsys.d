@@ -168,7 +168,6 @@ cl_truename(cl_object orig_pathname)
 	cl_object previous = current_dir();
 
 	cl_object pathname = coerce_to_file_pathname(orig_pathname);
-	assert_non_wild_pathname(pathname);
 	if (pathname->pathname.directory == Cnil)
 		pathname = merge_pathnames(previous, pathname, @':newest');
 
