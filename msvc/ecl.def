@@ -167,7 +167,6 @@ EXPORTS
 	cl_go
 	cl_parse_key
 	cl_grab_rest_args
-	check_other_key
 
 	; compiler.c
 

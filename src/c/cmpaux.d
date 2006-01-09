@@ -258,35 +258,3 @@ cl_parse_key(
        supplied_allow_other_keys == OBJNULL))
     FEprogram_error("Unknown keyword ~S", 1, unknown_keyword);
 }
-
-/* Used in compiled macros */
-void
-check_other_key(cl_object l, int n, ...)
-{
-	cl_object other_key = OBJNULL;
-	cl_object k;
-	int i;
-	bool allow_other_keys = FALSE;
-
-	for (;  !endp(l);  l = CDDR(l)) {
-		k = CAR(l);
-		if (!keywordp(k))
-			FEprogram_error("~S is not a keyword.", 1, k);
-		if (endp(CDR(l)))
-			FEprogram_error("Odd number of arguments for keywords.",0);
-		if (k == @':allow-other-keys' && CADR(l) != Cnil) {
-			allow_other_keys = TRUE;
-		} else {
-			va_list ktab;
-			va_start(ktab, n); /* extracting arguments */
-			for (i = 0;  i < n;  i++)
-				if (va_arg(ktab,cl_object) == k)
-					break;
-			va_end(ktab);
-			if (i >= n) other_key = k;
-		}
-	}
-	if (other_key != OBJNULL && !allow_other_keys)
-		FEprogram_error("The keyword ~S is not allowed or is duplicated.",
-				1, other_key);
-}

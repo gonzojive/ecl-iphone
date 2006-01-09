@@ -392,7 +392,6 @@ extern void cl_return_from(cl_object block_id, cl_object block_name) /*__attribu
 extern void cl_go(cl_object tag_id, cl_object label) /*__attribute__((noreturn))*/;
 extern void cl_parse_key(cl_va_list args, int nkey, cl_object *keys, cl_object *vars, cl_object *rest, bool allow_other_keys);
 extern cl_object cl_grab_rest_args(cl_va_list args);
-extern void check_other_key(cl_object l, int n, ...);
 
 /* compiler.c */
 
