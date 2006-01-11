@@ -109,8 +109,7 @@ document @emph{only} the differences with @bibcite{ANSI}.
 @menu
 * Credits::                     
 * Copyright::                   
-* Installation::                Installing a binary distribution.  
-* Rebuilding ECL::              Building @ecl{} from sources.
+* Building ECL::                Building @ecl{} from sources.
 * Invoking ECL::                Basic skills.
 @end menu
 
@@ -167,7 +166,7 @@ The @ecl{} project also owes a lot to the people who have tested this program
 and contributed with suggestions and error messages: Eric Marsden, Hannu
 Koivisto and Jeff Bowden, and others whose name I may have omitted.
 
-@node Copyright, Installation, Credits, Introduction
+@node Copyright, Building ECL, Credits, Introduction
 @section Copyright
 
 @noindent
@@ -244,40 +243,8 @@ Address for reporting bugs, comments, suggestions:
 @end quotation
 
 
-@node Installation, Rebuilding ECL, Copyright, Introduction
-@section Installation
-
-***
-*** Building of binary distributions has been discontinued. The
-*** following paragraphs do not apply
-***
-
-Usually I build current binaries for the platforms I have access to,
-and these are placed in
-@table @asis
-@item Linux
-@uref{http://www.arrakis.es/~worm/ecl-linux.tgz}
-@item FreeBSD (>= 4.0)
-@uref{http://www.arrakis.es/~worm/ecl-freebsd.tgz}
-@end table
-
-To install them you need only unpack them on the root directory,
-and the program will install itself under
-@example
-/usr/local/bin		ecl program
-/usr/local/lib/ecl	libraries and headers
-/usr/local/man/man1     ecl.1 manual page
-/usr/local/info         ecl.info user guide
-@end example
-
-The flags which I used to build the program are summarized in
-@file{/usr/local/lib/ecl/BUILD-STAMP}. You should check that they
-correspond to your needs before using @ecl{} --i.e., it could be a too
-old version, garbage collector might not be the right one or TCP/IP
-support could have been removed.
-
-@node Rebuilding ECL, Invoking ECL, Installation, Introduction
-@section Rebuilding ECL
+@node Building ECL, Invoking ECL, Copyright, Introduction
+@section Building ECL
 
 @enumerate
 @item Obtain the distribution from @uref{http://ecls.sourceforge.net}.
@@ -289,15 +256,15 @@ ECL.  In the following examples, we suppose that the @emph{ECL
 directory} is @file{/usr/local/ecl}.
 
 @item  Extract the content from the compressed tar file.
-@example
-zcat ecl.tgz | tar xf -
-@end example
+@smallformat
+$ zcat ecl.tgz | tar xf -
+@end smallformat
 
 @item An auto configuration mechanism allows you to perform a standard
 installation with the following commands:
-@example
-./configure
-@end example
+@smallformat
+$ ./configure
+@end smallformat
 This example will prepare to install executable files, manual pages and
 info files in standard directories like @file{/usr/local/bin},
 @file{/usr/local/man/man1}, @file{/usr/local/info}.
@@ -306,9 +273,9 @@ info files in standard directories like @file{/usr/local/bin},
 give to configure alternate places.  Try @code{./configure -help} for
 instructions on how to supply this information to configure, but
 a good starting point is
-@example
-./configure --prefix=$HOME
-@end example
+@smallformat
+$ ./configure --prefix=$HOME
+@end smallformat
 
 @item Make sure everything went OK with the configuration.
 The configuration script figures out the machine where it is running and
@@ -317,53 +284,51 @@ program fails to recognize the machine, you will have to check whether it is
 one of the supported machines present in @code{src/h/machine.h}.
 
 @item Next you must build the program and install it
-@example
-make
-make install
-@end example
+@smallformat
+$ make
+$ make install
+@end smallformat
 @end enumerate
 
 At the end of installation, the destination directories will contain
 several files. If you have not modified these directories when
 invoking @file{configure} the layout should be
 
-@example 
-Executable files:
-    /usr/local/bin/ecl               the @ecl{} interpreter and compiler
-
-Help documents:
-    /usr/local/lib/ecl/help.doc      data for the online help
-    /usr/local/man/man1/ecl.1        manual page for @ecl{}
-    /usr/local/info/ecl.info         this manual you are reading
-
-Library files and headers:
-    /usr/local/lib/ecl/libecl.a      the core library in C
-    /usr/local/lib/ecl/libgmp.a      GNU library for bignums
-    /usr/local/lib/ecl/libgc.a       Boehm-Weiser garbage collector
-    /usr/local/lib/ecl/*.a           Other lisp compiled code
-    /usr/local/lib/ecl/h/            Header files
-@end example
+@multitable @columnfractions .5 .5
+@headitem Executable files: @tab 
+@item @file{$HOME/bin/ecl}          @tab the @ecl{} interpreter and compiler
+@headitem Help documents: @tab
+@item @file{$HOME/lib/ecl/help.doc} @tab data for the online help
+@item @file{$HOME/man/man1/ecl.1}   @tab manual page for @ecl{}
+@item @file{$HOME/info/ecl.info}    @tab this manual you are reading
+@headitem Library files and headers: @tab 
+@item @file{$HOME/lib/ecl/libecl.a} @tab the core library in C
+@item @file{$HOME/lib/ecl/libgmp.a} @tab GNU library for bignums
+@item @file{$HOME/lib/ecl/libgc.a}  @tab Boehm-Weiser garbage collector
+@item @file{$HOME/lib/ecl/*.a}      @tab Other lisp compiled code
+@item @file{$HOME/lib/ecl/h/}       @tab Header files
+@end multitable
 
 You can remove all intermediate files produced during installation with the
 command @code{make clean}.
 
 
-@node Invoking ECL,  , Rebuilding ECL, Introduction
+@node Invoking ECL,  , Building ECL, Introduction
 @section Entering and leaving @ecl{}
  
 @ecl{} is invoked by the command @code{ecl}.
 
-@example
+@smallformat
 % ecl
 ECL (Embeddable Common-Lisp) 0.0e
 Copyright (C) 1984 Taiichi Yuasa and Masami Hagiya
 Copyright (C) 1993 Giuseppe Attardi
 Copyright (C) 2000 Juan J. Garcia-Ripoll
-        ECL is free software, and you are welcome to redistribute it@c 
+        ECL is free software, and you are welcome to redistribute it
 under certain conditions; see file 'Copyright' for details.
 Type :h for Help.  Top level.
 > 
-@end example
+@end smallformat
 
 When invoked, @ecl{} will print the banner and initialize the system.  The
 date in the @ecl{} banner identifies the revision of @ecl{}.  @code{Version
@@ -378,10 +343,10 @@ system initialization.  The user may set up his or her own @ecl{} environment
 After the initialization, @ecl{} enters the @dfn{top-level loop} and prints
 the prompt `@code{>}'.
 
-@example
+@smallformat
 Type :h for Help.  Top level.
 >
-@end example
+@end smallformat
 
 The prompt indicates that @ecl{} is now ready to receive a form from the
 terminal and to evaluate it.
@@ -391,34 +356,34 @@ package, and the prompt appears as above.  If, however, the current package is
 other than the user package, then the prompt will be prefixed by the package
 name.
 
-@example
+@smallformat
 > (in-package 'cl)
 #<"COMMON-LISP" package>
 COMMON-LISP> (in-package 'system)
 #<"SYSTEM" package>
 SYSTEM>
-@end example
+@end smallformat
 
 To exit from @ecl{}, call the function @code{quit}.
 
-@example
+@smallformat
 >(quit)
 Bye.
 %
-@end example
+@end smallformat
 
-Alternatively, you may type @ctrl{D}, i.e. press the key @key{D} while pressing
+Alternatively, you may type @myctrl{D}, i.e. press the key @key{D} while pressing
 down the control key (@key{Ctrl}).
 
-@example
->@ctrl{D}Bye.
+@smallformat
+>@myctrl{D}Bye.
 %
-@end example
+@end smallformat
 
-You can disable @ctrl{D} as the exit command by setting to @code{T} the
+You can disable @myctrl{D} as the exit command by setting to @code{T} the
 following variable:
 @defvr {System} {*ignore-eof-on-terminal-io*}
-This variable controls whether an end of file character (normally @ctrl{D})
+This variable controls whether an end of file character (normally @myctrl{D})
 should terminate the session. The default value is @nil{}.
 @end defvr
 
@@ -427,17 +392,17 @@ The top-level loop of @ecl{} is almost the same as that defined in Section
 mode, each top-level form should be followed by a newline.  If more than one
 value is returned by the evaluation of the top-level form, the values will be
 printed successively.  If no value is returned, then nothing will be printed.
-@example
+@smallformat
 >(values 1 2)
 1
 2
 >(values)
 
 >
-@end example
+@end smallformat
 
 When an error is signalled, control will enter the break loop.
-@example
+@smallformat
 >(defun foo (x) (bar x))
 foo
 
@@ -450,7 +415,7 @@ Error signalled by BAR.
 
 Broken at BAR.
 >>
-@end example
+@end smallformat
 
 @c @vskip 1em
 
@@ -460,34 +425,34 @@ current package is other than the @code{user} package.
 
 To go back to the top-level loop, type @code{:q}
 
-@example
+@smallformat
 >>:q
 
 Top level.
 >
-@end example
+@end smallformat
 
 @c @vskip 1em
 
 See Section 5.4 for the details of the break loop.
 
-The terminal interrupt (usually caused by typing @ctrl{C} (Control-@code{C}))
+The terminal interrupt (usually caused by typing @myctrl{C} (Control-@code{C}))
 is a kind of error.  It breaks the running program and calls the break level
 loop.
 
 Example:
-@example
+@smallformat
 >(defun foo () (do () (nil)))
 foo
 
 >(foo)
-@ctrl{C}
+@myctrl{C}
 Correctable error: Console interrupt.
 Signalled by DO.
 
 Broken at FOO.
 >>
-@end example
+@end smallformat
 
 @node Standards, Input and output, Introduction, Top
 @chapter Standards
@@ -514,7 +479,6 @@ in Chapter 2 of @bibcite{Steele:84}, with the same section title.
 * Functions::                   
 * Unreadable data objects::     
 * Overlap of types::            
-* ANSI-CL compliance::          
 @end menu
 
 
@@ -597,66 +561,15 @@ floating-point numbers are assumed to be of @emph{single} or @emph{double}
 format.
 
 The floating-point precisions and exponent sizes are:
-
-@example
-Format    precision exponent    
----------------------------- 
-Short      24 bits    8 bits
-Single     24 bits    8 bits
-Double     53 bits   11 bits
-Long       53 bits   11 bits
-@end example
+@multitable
+@headitem Format @tab precision @tab exponent
+@item Short  @tab 24 bits @tab 8 bits
+@item Single @tab 24 bits @tab 8 bits
+@item Double @tab 53 bits @tab 11 bits
+@item Long   @tab 32 bits @tab 11 bits
+@end multitable
 
 There is no ``minus zero.'' @code{(eql 0.0 -0.0)} is true.
-
-
-@clisp{} constants related to floating-point numbers have the following values
-in @ecl{}.
-@example
-most-positive-short-float
-  = most-positive-single-float
-  = - most-negative-short-float
-  = - most-negative-single-float
-  = 3.402823s38
-
-least-positive-short-float
-  = least-positive-single-float
-  = - least-negative-short-float
-  = - least-negative-single-float
-  = 1.401298s-45
-
-most-positive-long-float
-  = most-positive-double-float
-  = - most-negative-long-float
-  = - most-negative-double-float
-  = 1.797693134862315f308
-
-least-positive-long-float
-  = least-positive-double-float
-  = - least-negative-long-float
-  = - least-negative-double-float
-  = 4.940656458412469f-324
-
-short-float-epsilon
-  = 2.980232s-8
-
-short-float-negative-epsilon
-  = 2.980232s-8
-
-long-float-epsilon
-  = double-float-epsilon
-  = single-float-epsilon
-  = 5.5511151231257827f-17
-
-long-float-negative-epsilon
-  = double-float-negative-epsilon
-  = single-float-negative-epsilon
-  = 5.5511151231257827f-17
-
-pi = 3.141592653589793
-@end example
-
-See Chapter 12 of @bibcite{Steele:84} for their meanings.
 
 @node Complex numbers,  , Floating-point numbers, Numbers
 @subsection Complex Numbers
@@ -691,19 +604,18 @@ are implemented using 8-bit codes.
 @ecl{} supports all standard and semi-standard characters listed in Section
 2.2.1 of @bibcite{Steele:84}.  Non-printing characters have the following
 character codes.
-@example
-Character        Code  (in octal)
---------------------------------
-#@back{}Null                  000
-#@back{}Space                 040
-#@back{}Newline               012
-#@back{}Backspace             010
-#@back{}Tab                   011
-#@back{}Linefeed              012
-#@back{}Page                  014
-#@back{}Return                015
-#@back{}Rubout                177
-@end example
+@multitable {Character} {Code (in octal)}
+@headitem Character     @tab Code (in octal)
+@item #@back{}Null      @tab  000
+@item #@back{}Space     @tab  040
+@item #@back{}Newline   @tab  012
+@item #@back{}Backspace @tab  010
+@item #@back{}Tab       @tab  011
+@item #@back{}Linefeed  @tab  012
+@item #@back{}Page      @tab  014
+@item #@back{}Return    @tab  015
+@item #@back{}Rubout    @tab  177
+@end multitable
 
 Note that @code{#@back{}Linefeed} is synonymous with @code{#@back{}Newline} and
 thus is a member of @code{standard-char}.  Other semi-standard characters are
@@ -751,21 +663,19 @@ There are no implementation-dependent features for lists and conses.
 @node Arrays, Hash tables, List and conses, Standards
 @section Arrays
 
-@ecl{} arrays can have up to 64 ranks.
-
 When the value of the @clisp{} variable @code{*print-array*} (see Section
 22.1.6 of @bibcite{Steele:84}) is @nil{}, then bit-vectors are printed as
 @code{#<a bit-vector @var{address}>}, other vectors are printed as @code{#<a
 vector @var{address}>}, and other arrays are printed as @code{#<an array
 @var{address}>}. The default value for @code{*print-array*} is @nil{}.
 
+@ecl{} arrays can have up to 64 dimensions.
 @clisp{} constants related to arrays have the following values in @ecl{}.
-
-@example
-    array-dimension-limit = 16777216
-    array-rank-limit = 64
-    array-total-size-limit = 16777216
-@end example
+@multitable {array-total-size-limit} {array-dimension-limit}
+@item array-rank-limit @tab 64
+@item array-dimension-limit @tab most-positive-fixnum
+@item array-total-size-limit @tab array-dimension-limit
+@end multitable
 
 See Section 17.1 of @bibcite{Steele:84} for their meanings.
 
@@ -782,17 +692,21 @@ See Section 17.1 of @bibcite{Steele:84} for their meanings.
 In @ecl{}, array elements are represented in one of six ways depending on the
 type of the @code{array}.
 
-@example
-
-Array Type                               Element Representation
----------------------------------------------------------------
-(array t) and (vector t)                      a cell pointer
-(array fixnum) and (vector fixnum)            32 bit signed integer
-(array string-char) and string                8 bit code
-(array short-float) and (vector short-float)  32 bit floating point
-(array long-float) and (vector long-float)    64 bit floating point
-(array bit) and bit-vector                    1 bit bit
-@end example
+@multitable
+@headitem Array Type @tab Element Representation
+@item (array t) and (vector t)
+        @tab a cell pointer
+@item (array fixnum) and (vector fixnum)
+        @tab 32 bit signed integer
+@item (array string-char) and string
+        @tab 8 bit code
+@item (array short-float) and (vector short-float)
+        @tab 32 bit floating point
+@item (array long-float) and (vector long-float)
+        @tab 64 bit floating point
+@item (array bit) and bit-vector
+        @tab 1 bit bit
+@end multitable
 
 
 @node Strings, Bit-Vectors, Vectors, Arrays
@@ -845,10 +759,8 @@ For instance, the @code{system} package has two nicknames @code{sys} and
 @code{si:symbol}.
 
 Depending on the configuration option by which @ecl{} has been built,
-additional packages may be available:
-@example
-compiler clos xlib
-@end example
+additional packages may be available: @code{compiler}, @code{clos} and
+@code{xlib}.
 
 The @code{compiler} package contains symbols used by the @ecl{} compiler.
 Other packages are described in Section 11.6 of @bibcite{Steele:84}.  The
@@ -878,13 +790,13 @@ host, device, directory, name, type and version.
 Let me briefly explain how @ecl{} converts a namestring into a
 pathname. First @ecl{} tries parsing the namestring using the logical
 pathnames syntax, which is as follows
-@example
+@verbatim
         [hostname:][;][directory-item;]*[name][.type[.version]]
         hostname = word
         directory-item = wildcard-word
 	type, name = wildcard-word without dots
 	version = NEWEST, newest or a number
-@end example
+@end verbatim
 @noindent
 Here, @var{word} is a sequence of one or more characters excluding
 the @code{#\Null} character and the asterisk `*'. And
@@ -894,12 +806,12 @@ allowed).
 
 If @var{hostname} is not found or it is not a logical hostname, then
 @ecl{} tries the physical pathname syntax,
-@example
+@verbatim
         [device:][[//hostname]/][directory-item/]*[name][.type]
         device, hostname = word
         directory-item, type = wildcard-word
 	name = a wildcard-word with maybe a single leading dot
-@end example
+@end verbatim
 @noindent
 If this syntax also fails, then the namestring is not a valid
 pathname string.
@@ -914,7 +826,7 @@ The following rules apply to both physical and logical namestrings.
 First, if a namestring contains one or more periods `.', the last period
 separates the namestring into the file name and the filetype.
 
-@example
+@verbatim
      "foo.lsp"
          name:          "foo" 
          type:          "lsp"
@@ -922,32 +834,32 @@ separates the namestring into the file name and the filetype.
      "a.b.c" 
          name:          "a.b" 
          type:          "c" 
-@end example
+@end verbatim
 
 If a namestring ends with a period, the filetype becomes the null string.
-@example
+@verbatim
      "foo." 
           name:          "foo" 
           type:          ""  (null string)
-@end example
+@end verbatim
 
 If a namestring begins with a period, the file name becomes @nil{}.
-@example
+@verbatim
      ".lsp" 
           name:          nil 
           type:          "lsp" 
-@end example
+@end verbatim
 
 If a namestring contains no period, the filetype is @nil{}.
-@example
+@verbatim
     "foo" 
           name:          "foo" 
           type:          nil 
-@end example
+@end verbatim
 
 In a pathname, the file directory is represented as a list which
 always begins with either @code{:relative} or @code{:absolute}
-@example
+@verbatim
      "common/demo/foo.lsp" 
      ";common;demo;foo.lsp" 
           directory:     (:relative "common"   "demo") 
@@ -958,21 +870,21 @@ always begins with either @code{:relative} or @code{:absolute}
           directory:     (:absolute "common"   "demo") 
           name:          "foo" 
           type:          "lsp"
-@end example
+@end verbatim
 
 If a namestring does not contain a directory, the directory component
 of the pathname is @nil{}.
-@example
+@verbatim
      "foo.lsp" 
           directory:     nil 
           name:          "foo" 
           type:          "lsp" 
-@end example
+@end verbatim
 
 The abbreviation symbols `@code{.}' and `@code{..}' may be used in a
 namestring, but only the second one is translated to a standard
 keyword
-@example
+@verbatim
      "./demo/queen.lsp" 
           directory:     (:relative "." "demo") 
           name:          "queen" 
@@ -982,13 +894,13 @@ keyword
           directory:     (:relative @pxlref{:up} :up "demo") 
           name:          "queen" 
           type:          "lsp" 
-@end example
+@end verbatim
 
 The part of a namestring after the last directory separator (`@code{/}'
 or `@code{;}') is always regarded as representing the file name and the
 filetype.  In order to represent a pathname with both the name and the
 filetype @nil{}, end the pathname with a slash. 
-@example
+@verbatim
      "/usr/common/" 
           directory:     (:absolute "usr" "common") 
           name:          nil 
@@ -998,10 +910,10 @@ filetype @nil{}, end the pathname with a slash.
           directory:     (:absolute "usr" "common") 
           name:          ".lsp"
           type:          nil
-@end example
+@end verbatim
 
 `@code{*}' in the place of file name or filetype becomes  @code{:wild}
-@example
+@verbatim
      "*.lsp" 
           name:          :wild
           type:          "lsp" 
@@ -1009,7 +921,7 @@ filetype @nil{}, end the pathname with a slash.
      "foo.*" 
           name:          "foo" 
           type:          :wild 
-@end example
+@end verbatim
 
 
 @node Streams, Random-states, Pathnames, Standards
@@ -1067,17 +979,17 @@ There are no implementation-dependent features for structures.
 All functions in @ecl{} are either compiled into bytecodes to be interpreted,
 or they are translated into C and then compiled using a native C compiler.
 Interpreted functions are printed using the formats
-@example
-#<interpreted-function @var{name}>
-#<interpreted-function @code{address}>
-@end example
+@verbatim
+     #<interpreted-function @var{name}>
+     #<interpreted-function @code{address}>
+@end verbatim
 @noindent
 Compiled functions (including compiled macro-expansion functions)
 are printed in the following formats.
-@example
-#<compiled-function @var{name}>
-#<compiled-closure nil>
-@end example
+@verbatim
+     #<compiled-function @var{name}>
+     #<compiled-closure nil>
+@end verbatim
 
 The output of @code{(symbol-function @var{fun})} is a list, is either a
 function object if @code{'fun} is has a function definition,
@@ -1092,14 +1004,13 @@ should issue @code{(setq si:*keep-definitions* t)} at the beginning of
 your session.
 
 @clisp{} constants related to functions have the following values in @ecl{}.
-
-@example
-call-arguments-limit = 64
-lambda-list-keywords = (@optional{} @rest{} @keys{} @allow{}
-                        @aux{} &whole &environment &body)
-lambda-parameters-limit = 64
-multiple-values-limit = 32
-@end example
+@verbatim
+     call-arguments-limit = 64
+     lambda-list-keywords = (@optional{} @rest{} @keys{} @allow{}
+                               @aux{} &whole &environment &body)
+     lambda-parameters-limit = 64
+      multiple-values-limit = 32
+@end verbatim
 
 Refer to @bibcite{Steele:84} for their meanings.
 
@@ -1110,100 +1021,11 @@ Refer to @bibcite{Steele:84} for their meanings.
 There are no implementation-dependent features for unreadable data objects.
 
 
-@node Overlap of types, ANSI-CL compliance, Unreadable data objects, Standards
+@node Overlap of types,  , Unreadable data objects, Standards
 @section Overlap types
 
 In @ecl{}, the types @code{number} and @code{array} are certainly subtypes of
 @code{common}, since @ecl{} does not extend the set of objects of these types.
-
-
-@node ANSI-CL compliance,  , Overlap of types, Standards
-@section ANSI-CL compliance
-
-In this section we have documented the how much @ecl{} implements of
-each section in @bibcite{ANSI}, and which are the most important
-implementation-dependent features.
-
-5. Data and control flow
-
-@itemize
-@item nth-value
-@end itemize
-
-10. Symbols:
-
-@itemize
-@item make-symbol: string becomes part of symbol
-@item symbol-name, copy-symbol
-@item gensym, fails for numeric argument >= MOST-POSITIVE-FIXNUM
-@item *gensym-counter*
-@end itemize
-
-11. Packages:
-
-@itemize
-@item package-name
-@item intern accepts any string designator, not only strings.
-@end itemize
-
-12. Numbers:
-
-@itemize
-@item floor, ceiling, truncate, round
-@item float, complex, realpart, imagpart, numerator, denominator
-@item zerop, plusp, minusp, evenp, oddp
-@item =, /=, <=, >=, <, >, +, -, *, /, 1+, 1- but they do not fail for single
-      non numeric argument
-@item max, min, but they do not contagiate floating-point nature.
-@item minusp, plusp, zerop
-@item sin, cos, tan
-@item pi
-@end itemize
-@itemize
-@item existence and behavior of -0.0 is not assured, with all failures
-      of compliance that it implies.
-@item since we do not have conditions, mathematical errors are simple
-      errors.
-@end itemize
-
-13. Characters: complete
-
-@itemize
-@item character = base-char > standard-char
-@item empty-char is an empty type
-@end itemize
-
-14. Conses:
-
-@itemize
-@item last
-@end itemize
-
-16. Strings: complete
-
-@itemize
-@item string-char = base-char
-@item simple-string-char = simple-base-char
-@item When :start1 or :start2 parameters are NIL they are taken as 0.
-@end itemize
-
-
-19. Filenames: complete, but simplistic
-
-@itemize
-@item :wild-inferiors is not supported
-@item of the possible wildcard combinations, only @code{:wild} works as expected.
-@item in @code{#'pathname-match-p} a @code{nil} directory is not regarded as @code{:wild}.
-@item enough-namestring does not return optimal namestring
-@end itemize
-
-20. Files:
-
-@itemize
-@item truename
-@item rename-file
-@item directory
-@end itemize
 
 
 @node Input and output, Memory management, Standards, Top
@@ -1420,7 +1242,7 @@ Initiates the emptying of the internal buffers on the CLOS stream @var{object}
 and returns @nil{}.
 @end deffn
 
-@node CLOS Stream common, , CLOS Stream Output, CLOS streams
+@node CLOS Stream common,  , CLOS Stream Output, CLOS streams
 @subsection CLOS Stream common
 
 The following functions should be available for all CLOS streams.
@@ -1463,8 +1285,9 @@ generic functions of CLOS.
 @center Table 4-1  Implementation Types
 @c @vspace{1 em}
 @multitable {@emph{Implementation Type}} {@emph{@clisp{} Data Type}}
+@headitem @emph{Implementation Type} @tab @emph{@clisp{} Data Type}
 @item @code{cons} @tab @code{cons}
-@item @tindexed{fixnum} @tab @tindexed{fixnum}
+@item @code{fixnum} @tab @code{fixnum}
 @item @code{bignum} @tab @code{bignum}
 @item @code{ratio} @tab @code{ratio}
 @item @code{short-float} @tab @code{short-float}
@@ -1586,12 +1409,12 @@ areas.
 
 @center Figure 4-1  Heap and Relocatable Area
 @c @vspace{1 em}
-@example
-Lower address                         Higher address
-+--------------+-------------------+---------------+
-+ HEAP         |   HOLE            | RELOCATABLE   |
-+--------------+-------------------+---------------+
-@end example
+@verbatim
+    Lower address                         Higher address
+    +--------------+-------------------+---------------+
+    + HEAP         |   HOLE            | RELOCATABLE   |
+    +--------------+-------------------+---------------+
+@end verbatim
 
 @node The garbage collector, Allocation functions, Heap and relocatable areas, Memory management
 @section The Garbage Collector
@@ -1719,8 +1542,7 @@ continue the execution of the program by typing @kwd{r}.
 
 Example:
 
-@example
-
+@smallformat
 >(make-list 100000)
 
 Correctable error: The storage for CONS is exhausted.
@@ -1735,8 +1557,8 @@ t
 >>:r
 
 (nil nil nil nil nil nil nil nil nil nil ............
-@end example
- 
+@end smallformat
+
 The user can also reset the maximum number of pages for relocatable blocks and
 for contiguous blocks in a similar manner.  On the other hand, if the value of
 @code{(si::ignore-maximum-pages)} is non-@nil{}, then @ecl{} automatically
@@ -1787,7 +1609,7 @@ allocated for the type class to which cons belongs, but only 16.9 percent of
 the cells are actually used.  The garbage collector was once invoked to collect
 cells in this type class.
 
-@example
+@smallformat
 > (room)
  200/200   48.4%    CONS BIGNUM RATIO COMPLEX STRUCTURE
    1/5      7.4%    SHORT-FLOAT RANDOM-STATE READTABLE
@@ -1807,7 +1629,7 @@ cells in this type class.
 14709 pages available
  1230 pages in heap but not gc'd + pages needed for gc marking
 16384 maximum pages
-@end example
+@end smallformat
 
 
 @node Program development, The interpreter, Memory management, Top
@@ -1825,8 +1647,8 @@ cells in this type class.
 
 @node The tracer, The stepper, Program development, Program development
 @section The Tracer
- 
-The Tracer causes selected @code{functions} to be traced.  When such a traced  
+
+The Tracer causes selected @code{functions} to be traced.  When such a traced
 @code{function} is invoked, it prints
 @example
   @var{level} > (@var{name   arg1   ...   argn}) 
@@ -1834,7 +1656,7 @@ The Tracer causes selected @code{functions} to be traced.  When such a traced
 
 On return from a traced @code{function}, it prints
 @example
-  < @var{level}  (@var{name   value1   ...   valuen}) 
+  < @var{level}  (@var{name   value1   ...   valuen})
 @end example
 
 @var{name} is the name of the traced @code{function}, @var{args} are the
@@ -2195,17 +2017,17 @@ package object, a symbol, or a string.
 
 Example:
 
-@example
+@smallformat
 > (defun fact (x) (if (= x 0) one (* x (fact (1- x)))))
-fact                    ;;;  Wrong definition for  fact, the factorial. 
-        
-> (fact 6)              ;;;  Tries to calculate factorial 6. 
+fact                    ;;;  Wrong definition for  fact, the factorial.
+
+> (fact 6)              ;;;  Tries to calculate factorial 6.
 
 Error: The variable ONE is unbound.
 Error signalled by IF.
 
-Broken at IF:           ;;;  Enters the break-loop. 
->> :h                   ;;;  Help. 
+Broken at IF:           ;;;  Enters the break-loop.
+>> :h                   ;;;  Help.
 
 Break commands:
 :q(uit)         Return to some previous break level.
@@ -2266,7 +2088,7 @@ Block names: FACT.
 720                     ;;;  Now the correct answer. 
 
 >                      ;;;  Top-level.
-@end example
+@end smallformat
 
 
 @node Describe and inspect, The profiler, The break loop, Program development
@@ -2301,7 +2123,7 @@ field.
 @item @code{p}
 Print. Pretty-prints the field and prompts again.
 
-@item @code{u} @var{form}]
+@item @code{u} @var{form}
 Update. The @var{form} is evaluated and the field is replaced by the resulting
 value.  If the field cannot be updated, the message @code{Not updated.}  will
 be printed.
@@ -2391,12 +2213,12 @@ entry point is the lisp function @code{SI::MAKE-LAMBDA}, which takes a
 name for the function and the body of the lambda lists, and produces a
 lisp object that can be invoked. For instance,
 
-@example
+@smallformat
 > (defvar fun (si::make-lambda 'f '((x) (1+ x))))
 *FUN*
 > (funcall fun 2)
 3
-@end example
+@end smallformat
 
 @ecl{} can only execute bytecodes. When a list is passed to @code{EVAL} it
 must be first compiled to bytecodes and, if the process succeeds, then the
@@ -2408,7 +2230,7 @@ object.
 The fact that @ecl{} performs this eager compilation means that changes on
 a macro are not immediately seen in code which was already compiled. This has
 subtle implications. Take the following code:
-@example
+@smallformat
 > (defmacro f (a b) `(+ ,a ,b))
 F
 > (defun g (x y) (f x y))
@@ -2419,7 +2241,7 @@ G
 F
 > (g 1 2)
 3
-@end example
+@end smallformat
 
 @noindent
 The last statement always outputs @code{3} while in former
@@ -2451,17 +2273,17 @@ This command requires the file name of the source file as its
 argument. @code{ecl} simply adds @code{.lsp} to the file name argument to
 obtain the full name of the source file.
 
-@example
+@smallformat
         $ ecl @var{filename}
-@end example
+@end smallformat
 
 @noindent
 has the same effect as the compiler invocation @code{(compile-file
 @var{filename})} from within @ecl{}, and
 
-@example
+@smallformat
         $ ecl -C @var{filename}
-@end example
+@end smallformat
 
 has the same effects as @code{(compile-file @var{filename}
 :c-file t :h-file t :data-file t)}.
@@ -2578,7 +2400,7 @@ intermediate data-file is specified by the keyword parameter @kwd{data-file}.
 
 @node Declarations, OS interface, The compiler, Top
 @chapter Declarations
- 
+
 @ecl{} supports all kinds of declarations described in the
 @bibcite{Steele:84}.  Any valid declaration will affect the @ecl{} environment
 in some way or another, although information obtained by declarations, other
@@ -2596,14 +2418,14 @@ the construct that surrounds the declaration.
 
 In the following nonsensical example borrowed from Chapter 9 of
 @bibcite{Steele:84},
-@example
+@lisp
 (defun nonsense (k x z)
    (foo z x)
    (let ((j (foo k x))
          (x (* k k)))
         (declare (inline foo) (special x z))
      (foo x j z)))
-@end example
+@end lisp
 @noindent
 the @code{inline} and the special declarations both remain in effect within the
 surrounding @code{let} form.  In this case, we say that the @code{let} form is
@@ -2617,21 +2439,21 @@ signals an error if the value does not.  The type checking is performed by
 the function @code{typep}.  For example,
 @end defspec
 
-@example
+@lisp
 (the fixnum (foo))
-@end example
+@end lisp
 
 @noindent
 is equivalent to
 
-@example
+@lisp
 (let ((values (multiple-value-list (foo))))
    (cond ((endp values) (error ``Too few return values."))
          ((not (endp (cdr values)))
           (error ``Too many return values."))
          ((typep (car values) 'fixnum) (car values))
          (t (error ``~s is not of type fixnum." (car values)))))
-@end example
+@end lisp
 
 On the other hand, the @ecl{} compiler uses the special form to
 obtain type information for compiled code optimization. No code for
@@ -2649,7 +2471,7 @@ runtime type-checking is embedded in the compiled code.
 
 @node Declaration specifiers, Type specifiers, Declarations, Declarations
 @section Declaration Specifiers
- 
+
 @ecl{} recognizes all declaration specifiers defined in @bibcite{Steele:84}.
 The syntax of each such declaration specifier is exactly the same as defined in
 @bibcite{Steele:84}.  In addition, @ecl{} recognizes the @code{object}
@@ -2674,7 +2496,7 @@ wrong @code{type} declarations at compile time.
 @end deffn
 
 For example,
-@example
+@smallformat
 >(defun foo (x y)
    (declare (fixnum x) (character y))
    (setq x y)
@@ -2685,7 +2507,7 @@ foo
 
 ; (defun foo ...) is being compiled.
 ;; Warning: Type mismatches between x and y.
-@end example
+@end smallformat
 
 See Section 7.3 for further information on @code{type} declarations.
 
@@ -2703,11 +2525,11 @@ call forms.  That is, a @code{function} declaration specifies the argument and
 the return types of each form that calls the named function.
 @end deffn
 
-@example
+@lisp
 (defun foo ()
   (declare (function bar (character) fixnum))
   (+ (bar (atcholi1)) (bar (atcholi2))))
-@end example
+@end lisp
 
 In this example, the @code{function} declaration specifies that the two
 functions @code{atcholi1} and @code{atcholi2} both return character objects
@@ -2720,7 +2542,7 @@ code.  The behavior of the compiled code is unpredictable if a wrong
 
 For example,
 
-@example 
+@smallformat
 >(defun foo (x)
    (declare (fixnum x)
             (function bar (character) fixnum))
@@ -2731,17 +2553,17 @@ foo
 
 ; (defun foo ...) is being compiled.
 ;; Warning: The type of the form x is not character.
-@end example
+@end smallformat
 
 However, the compiler does not check the number of arguments, and thus, the
 following function definition will be compiled successfully without any
 warnings.
 
-@example 
+@lisp
 (defun foo ()
   (declare (function bar (character character) fixnum))
   (+ (bar (atcholi1)) (bar (atcholi2) (atcholi3) (atcholi4))))
-@end example
+@end lisp
 
 For this definition, the compiler assumes that the three functions
 @code{atcholi1}, @code{atcholi2}, and @code{atcholi3} will return fixnum
@@ -2749,7 +2571,7 @@ objects.  The return type of @code{atcholi4} is unknown at compile time.
 
 The complete syntax of a function declaration is:
 
-@example 
+@example
 (function  function-name
   (@{type@}* [@{@optional{} | @rest{} | @keys{}@} @{thing@}*])
   @{(values @{type@}* ) | @{type@}*@}
@@ -2791,29 +2613,24 @@ proclamations, and a local @code{inline} declaration locally shadows currently
 effective @code{notinline} declarations.
 @end deffn
 
-@example
+@smallformat
 >(defun foo (x)
    (cons (car x)
          (locally (declare (inline car)) (car x))))
 foo
-
 >(defun bar (x)
    (cons (car x)
          (locally (declare (inline car)) (car x))))
 foo
-
 >(proclaim '(notinline car))
 nil
-
 >(compile 'foo)
 ...
-
 >(proclaim '(inline car))
 nil
-
 >(compile 'bar)
 ...
-@end example
+@end smallformat
 
 Usually, primitive functions such as @code{car} are compiled in-line.
 Therefore, in this example, only the first call to @code{car} within @code{foo}
@@ -2879,19 +2696,18 @@ by the surrounding construct. @code{object} proclamations are simply ignored.
 Whenever a declaration is encountered, each type specifier (if any) in the
 declaration is converted to one of the following type specifiers, which are
 collectively called the @emph{significant type specifiers}.
-
-@example
-          |------------   fixnum 
-          |------------   character 
-          |------------   short-float 
-          |------------   long-float 
-      t --|----   (array t)  --------------  (vector t) 
-          |----   (array fixnum)  ---------  (vector fixnum) 
-          |----   (array string-char)   ---  string 
-          |----   (array short-float)   ---  (vector short-float) 
-          |----   (array long-float)    ---  (vector long-float) 
-          |----   (array bit)   -----------   bit-vector 
-@end example
+@verbatim
+          |------------   fixnum
+          |------------   character
+          |------------   short-float
+          |------------   long-float
+      t --|----   (array t)  --------------  (vector t)
+          |----   (array fixnum)  ---------  (vector fixnum)
+          |----   (array string-char)   ---  string
+          |----   (array short-float)   ---  (vector short-float)
+          |----   (array long-float)    ---  (vector long-float)
+          |----   (array bit)   -----------   bit-vector
+@end verbatim
 
 Here, the lines indicate subtype relations; the right type is a subtype of the
 left type.  For instance, @code{(vector t)} is a subtype of @code{(array t)}
@@ -2911,28 +2727,26 @@ Because of this type specifier conversion, @ecl{} may sometimes regard two
 seemingly distinct declarations as the same.  For example, the following
 @code{type} declarations are completely equivalent, internally in @ecl{}.
 
-@example
-declare (type fixnum x))
+@lisp
+(declare (type fixnum x)))
 
-declare (type (mod 3) x))
+(declare (type (mod 3) x))
 
-declare (type (member 0 1) x))
-@end example
- 
+(declare (type (member 0 1) x))
+@end lisp
+
 Type specifiers in declaration specifications passed to the @ecl{} specific
 function @code{proclamation} are also converted to significant type specifiers.
 Thus, for example,
 
-@example
+@smallformat
 >(proclaim '(function foo (fixnum) fixnum))
 nil
-
 >(proclamation '(function foo ((mod 3)) (member 0 1)))
 t
-
 >(proclamation '(function foo (number) character))
 nil
-@end example
+@end smallformat
 
 The first call to @code{proclamation} returns @true{} because both @code{(mod
 3)} and @code{(member 0 1)} are converted to @tindexed{fixnum} before the
@@ -2941,7 +2755,7 @@ function type of @code{foo} is checked.
 
 @node Type declarations, Variable allocations, Type specifiers, Declarations
 @section Treatment of Type Declarations
- 
+
 @ecl{} uses several runtime stacks.
 
 Arguments to functions, lexical and temporary variables are allocated on the C
@@ -2971,13 +2785,13 @@ case, the variable always has a cell pointer as its value.  The user is
 strongly recommended to make sure that objects stored in such an @code{object}
 variable may never be garbage collected unexpectedly.  For example,
 
-@example
+@lisp
 (do ((x (foo) (cdr x)))
     ((endp x))
     (let ((y (car x)))
          (declare (object y))
       (bar y)))
-@end example
+@end lisp
 
 @noindent
 this @code{object} declaration is completely safe because the value of the
@@ -2989,12 +2803,12 @@ form above.  On the other hand, the result of evaluation of the following form
 is unpredictable, because the cons cell pointed to from the @code{object}
 variable @var{z} may be garbage collected before @code{bar} is called.
 
-@example
+@lisp
 (let ((z (cons x y)))
      (declare (object z))
   (foo (cons x y))
   (bar z))
-@end example
+@end lisp
 
 Lexical variables that are not declared to be of @tindexed{fixnum},
 @tindexed{character}, @tindexed{short-float}, @tindexed{long-float}, or their
@@ -3010,14 +2824,14 @@ Some built-in @clisp{} functions can directly operate on raw data, if
 appropriate declarations are supplied.  The addition function @code{+} is among
 such functions.
 
-@example
+@lisp
 (let ((x 1))
      (declare (fixnum x))
   ...
   (setq x (+ x 2))
   ...
   )
-@end example
+@end lisp
 
 In the compiled code for this @code{let} form, the raw fixnum datum (i.e., the
 32 bit signed integer) stored in @var{x} is simply incremented by 2 and the
@@ -3034,16 +2848,16 @@ following form, for example, the compiler cannot be sure that the return value
 of the multiplication is a fixnum or that the arguments of the addition are
 fixnums.
 
-@example
+@lisp
 (setq x (+ (* x 3) 2))
-@end example
+@end lisp
 
 In order to obtain the optimal code, a @code{the} special form should
 surround the multiplication.
 
-@example
+@lisp
 (setq x (+ (the fixnum (* x 3)) 2))
-@end example
+@end lisp
 
 Built-in @clisp{} functions that can directly operate on raw data are:
 
@@ -3075,7 +2889,7 @@ ways depending on the type of the array.  By supplying appropriate array type
 declarations, array access and update operations can handle raw data stored in
 arrays.  For example,
 
-@example
+@lisp
 (let ((a (make-array n :element-type 'fixnum))
       (sum 0))
      (declare (type (array fixnum) a)
@@ -3089,7 +2903,7 @@ arrays.  For example,
      (setq sum (+ (aref a i) sum)))
   ....
   )
-@end example
+@end lisp
 
 The @code{setf} form replaces the @code{i-th} element of the array a by the raw
 fixnum value of @code{i}.  The @code{aref} form retrieves the raw fixnum datum
@@ -3119,7 +2933,7 @@ the function, the resulting value is cast into a Lisp data type.
 
 A good example of this follows.
 
-@example
+@lisp
 (eval-when (compile)
   (proclaim '(function tak (fixnum fixnum fixnum) fixnum)))
 
@@ -3132,7 +2946,7 @@ A good example of this follows.
            (tak (1- z) x y))))
 
 ;;; Call (tak 18 12 6).
-@end example
+@end lisp
 
 When @code{tak} is called with the arguments @code{18, 12}, and @code{6}, the
 raw fixnum data of the arguments are set to the parameters @code{x}, @code{y},
@@ -3189,7 +3003,7 @@ The complete syntax of a defmacro lambda-list is:
 ( [&whole @var{var}]
   [&environment @var{var}]
   [@var{pseudo-var}]
-  [@optional{} @{var | ( pseudo-var [initform [pseudo-var]] )@}Ç]
+  [@optional{} @{var | ( pseudo-var [initform [pseudo-var]] )@}]
   @{[@{@rest{} | &body@} pseudo-var]
    [@keys{} @{var
           | (@{var | (keyword pseudo-var)@} [initform [pseudo-var]])@}*
@@ -3220,13 +3034,13 @@ top-level, first in the defmacro lambda-list.  It is not allowed within
 @var{pseudo-var}.  Use of the @code{&whole} keyword does not affect the
 processing of the rest of the defmacro lambda-list:
 
-@example
+@lisp
 (defmacro foo (&whole w x y) ...)
-@end example
+@end lisp
 and
-@example 
+@lisp 
 (defmacro foo (x y) ...)
-@end example
+@end lisp
 
 @noindent
 both bind the variables @code{x} and @code{y} to the second and the

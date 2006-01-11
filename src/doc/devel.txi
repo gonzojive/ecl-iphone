@@ -58,7 +58,7 @@ differs from standards.
 * The interpreter::             Understanding the interpreter.
 * The compiler::                How the Lisp2C translator works.
 * The Garbage Collector::       Get the GC to do the right thing
-* Porting @ecl{}::              Porting @ecl{} to other architectures.
+* Porting ECL::                 Porting @ecl{} to other architectures.
 @end menu
 
 @c ---------------------------------------------------------------------
@@ -95,7 +95,7 @@ efficiency.
 In this chapter we describe how you can use @ecl{} to build programs and
 loadable extensions that you can later on distribute to other people. 
 @menu
-* What can @ecl{} do?::         
+* What can ECL do?::            
 * Compiling files::             
 * Building standalone executables::  
 * Building libraries::          
@@ -103,7 +103,7 @@ loadable extensions that you can later on distribute to other people.
 * Compiler examples::           
 @end menu
 
-@node What can @ecl{} do?, Compiling files, Building programs, Building programs
+@node What can ECL do?, Compiling files, Building programs, Building programs
 @section What can @ecl{} do?
 
 Some day for some reasons you will be in the need to distribute code that
@@ -151,7 +151,7 @@ are explained in the following sections.
 
 @c ---------------------------------------------------------------------
 
-@node Compiling files, Building standalone executables, What can @ecl{} do?, Building programs
+@node Compiling files, Building standalone executables, What can ECL do?, Building programs
 @section Compiling files
 
 @ecl{} supports two types of compilation. One is bytecodes compilation. This
@@ -274,14 +274,14 @@ An executable produced with @code{c:build-program}.
 @end table
 
 The output of this function is system specific. For example, under FreeBSD
-@example
+@smallformat
 > (compile-file-pathname "/this/path/mylib" :type :lib)
 #P"/this/path/libmylib.a"
 > (compile-file-pathname "/this/path/mylib" :type :dll)
 #P"/this/path/libmylib.so"
 > (compile-file-pathname "/this/path/mycode")
 #P"/this/path/mycode.fas"
-@end example
+@end smallformat
 @end defun
 
 @c ---------------------------------------------------------------------
@@ -292,16 +292,15 @@ The output of this function is system specific. For example, under FreeBSD
 @subsection The @file{hello.lisp} file
 In the following examples we will use the same lisp program. You have to
 create a file called @file{hello.lisp} which contains the following lines
-
-@example
+@lisp
 (princ "Hello world!")
 (terpri)
 (quit)
-@end example
+@end lisp
 @noindent
 If you start @ecl{} and load this file in the Common-Lisp environment you
 will see the @code{"Hello world!"} message and the interpreter will be closed.
-@example
+@smallformat
 ECL (Embeddable Common-Lisp) 0.9d
 Copyright (C) 1984 Taiichi Yuasa and Masami Hagiya
 Copyright (C) 1993 Giuseppe Attardi
@@ -312,26 +311,26 @@ Type :h for Help.  Top level.
 > @b{(load "hello.lisp")}
 ;;; Loading "hello.lisp"
 Hello World!
-@end example
+@end smallformat
 
 @subsection Example of loadable object file
 You can only perform the example in this section if your @ecl{} image supports
 dynamically loading of object files. This is true if you find the keyword
 @kwd{dlopen} in the @var{*features*} variable. This is true, for instance,
 in a typical FreeBSD or Linux box,
-@example
+@smallformat
 Type :h for Help.  Top level.
 > @b{*features*}
 (:IEEE-FLOATING-POINT :IBM-PC :I386 :BSD :UNIX :DLOPEN :ANSI-CL :CLOS
     :BOEHM-GC :ECL :COMMON)
-@end example
+@end smallformat
 
 In this example we build a loadable extension which prints the @code{"Hello
 world!"} message. First you need to create a the @file{hello.lisp} file. Next
 you have to enter the @ecl{} environment and type @code{(compile-file
 "hello.lisp")}. This produces a loadable object file.
 
-@example
+@smallformat
 Type :h for Help.  Top level.
 > @b{(compile-file "hello.lisp")}
 ;;; Loading #P"/usr/lib/ecl/cmp.fas"
@@ -348,7 +347,7 @@ Top level.
 > @b{(load "hello")}
 ;;; Loading #P"hello.fas"
 Hello World!
-@end example
+@end smallformat
 
 @subsection Example of standalone program
 In this example we build a standalone program which prints the @code{"Hello
@@ -357,7 +356,7 @@ world!"} message and does nothing else. First you must create the
 environment and type @code{(compile-file "hello.lisp" :system-p t)}. This
 produces an object file that can be linked against the @ecl{} core image.
 
-@example
+@smallformat
 Type :h for Help.  Top level.
 > @b{(compile-file "hello.lisp" :system-p t)}
 ;;; Loading #P"/usr/lib/ecl/cmp.fas"
@@ -369,25 +368,25 @@ Type :h for Help.  Top level.
 ;;; OPTIMIZE levels: Safety=2, Space=0, Speed=3
 ;;; Finished compiling hello.lisp.
 #P"hello.o"
-@end example
+@end smallformat
 
 @noindent
 The final step is to build the executable using the @code{c:build-program}
 instruction.
-@example
+@smallformat
 > @b{(c:build-program "myecl" :lisp-files '("hello.o"))}
 ;;; Invoking external command: gcc -O2 -march=i686 -pipe -fomit-frame-pointer -fPIC -fstrict-aliasing -Dlinux -O "-I/usr/lib/ecl//h" -w -c "myecl.c" -o "myecl.o"
 ;;; Invoking external command: gcc -o "myecl" -L"/usr/lib/ecl/" "myecl.o" "hello.o"  -Wl,--rpath,/usr/lib/ecl/  -lecl -lgmp -lgc -ldl -lm 
 #P"myecl"
 Top level.
-@end example
+@end smallformat
 @noindent
 Now you can execute this program from your favorite shell.
 
-@example
+@smallformat
 % @b{./myecl}
 Hello world!
-@end example
+@end smallformat
 
 @subsection Combining files into a larger FASL
 You can only perform the example in this section if your @ecl{} image supports
@@ -398,7 +397,7 @@ have to enter the @ecl{} environment and type @code{(compile-file "hello.lisp"
 :system-p t)}. This produces an object file that can be linked to form a loadable
 library.
 
-@example
+@smallformat
 Type :h for Help.  Top level.
 > (compile-file "hello.lisp" :system-p t)
 ;;; Loading #P"/usr/lib/ecl/cmp.fas"
@@ -410,28 +409,28 @@ Type :h for Help.  Top level.
 ;;; OPTIMIZE levels: Safety=2, Space=0, Speed=3
 ;;; Finished compiling hello.lisp.
 #P"hello.o"
-@end example
+@end smallformat
 
 @noindent
 The final step is to build the library using the @code{c:build-shared-library}
 instruction.
-@example
+@smallformat
 > (c:build-shared-library "myecl" :lisp-files '("hello.o"))
 ;;; Invoking external command: gcc -O2 -march=i686 -pipe -fomit-frame-pointer -fPIC -fstrict-aliasing -Dlinux -O "-I/usr/lib/ecl//h" -w -c "myecl.c" -o "myecl.o"
 ;;; Invoking external command: gcc -o "libmyecl.so" -L"/usr/lib/ecl/" "myecl.o" "hello.o"  -Wl,--rpath,/usr/lib/ecl/ -shared   -lecl -lgmp -lgc -ldl -lm 
 #P"libmyecl.so"
-@end example
+@end smallformat
 @noindent
 Now you can load this extension from any @ecl{} image, even those you produce
 with @code{c:build-program}.
 
-@example
+@smallformat
 <<<<<<<< THIS EXAMPLE IS WRONG?! >>>>>>>>>
 > (load "myecl")
 ;;; Loading myecl.fas
 Hello world!
 Bye.
-@end example
+@end smallformat
 
 @c ---------------------------------------------------------------------
 
@@ -464,7 +463,7 @@ type is a word which is long enough to host both an integer and a pointer. The
 least significant bits of this word, also called the tag bits, determine
 whether it is a pointer to a C structure representing a complex object, or
 whether it is an immediate data, such as a fixnum or a character.
-@example
+@verbatim
 	|-------------------|--| 
 	|    Fixnum value   |01|
 	|-------------------|--| 
@@ -478,7 +477,7 @@ whether it is an immediate data, such as a fixnum or a character.
 	|----------------------|     |--------|--------|-----|--------|
 	| ...................00|     |    actual data of the object   |
 	|----------------------|     |--------------------------------|
-@end example
+@end verbatim
 
 The fixnums and characters are called immediate datatypes, because they require
 no more than the @code{cl_object} datatype to store all information.  All other
@@ -493,7 +492,7 @@ non-immediate datatypes, the first byte in the cell contains the secondary type
 indicator, and distinguishes between different types of non immediate data. The
 use of the remaining bytes differs for each type of object.  For instance, a
 cons cell consists of three words:
-@example
+@verbatim
 	|---------|----------| 
 	|CONS|    |          |
 	|---------|----------| 
@@ -501,7 +500,7 @@ cons cell consists of three words:
 	|--------------------| 
 	|     cdr-pointer    |
 	|--------------------| 
-@end example
+@end verbatim
 
 There is one important function which tells the type of an object, plus several
 macros which group several tests.
@@ -515,18 +514,18 @@ guessed with the macro @code{type_of}.
 For example, if @var{x} is of type @code{cl_object}, and it is of type fixnum,
 we may retrieve its value
 @example
-        if (type_of(x) == t_fixnum)
-        	printf("Integer value: %d\n", fix(x));
+if (type_of(x) == t_fixnum)
+       	printf("Integer value: %d\n", fix(x));
 @end example
 @noindent
 If @var{x} is of type @code{cl_object} and it does not contain an immediate
 datatype, you may inspect the cell associated to the lisp object using @var{x}
 as a pointer. For example,
 @example
-        if (type_of(x) == t_cons)
-                printf("CAR = %x, CDR = %x\n", x->cons.car, x->cons.cdr);
-        else if (type_of(x) == t_string)
-                printf("String: %s\n", x->string.self);
+if (type_of(x) == t_cons)
+        printf("CAR = %x, CDR = %x\n", x->cons.car, x->cons.cdr);
+else if (type_of(x) == t_string)
+        printf("String: %s\n", x->string.self);
 @end example
 @noindent
 You should see the following sections and the header @file{object.h} to learn
@@ -783,11 +782,11 @@ elements are accessed with one index, @var{index}, as in the lisp function
 @code{ROW-MAJOR-AREF}. For example
 
 @example
-        cl_object array = c_string_to_object("#2A((1 2) (3 4))");
-        cl_object x = aref(array, 3);
-        clLprint(1, x);	/* Outputs 4 */
-        aset(array, 3, MAKE_FIXNUM(5));
-        clLprint(1, array); /* Outputs #2A((1 2) (3 5)) */
+cl_object array = c_string_to_object("#2A((1 2) (3 4))");
+cl_object x = aref(array, 3);
+cl_print(1, x);	/* Outputs 4 */
+aset(array, 3, MAKE_FIXNUM(5));
+cl_print(1, array); /* Outputs #2A((1 2) (3 5)) */
 @end example
 @end deftypefun
 
@@ -796,11 +795,11 @@ elements are accessed with one index, @var{index}, as in the lisp function
 These functions are similar to @code{aref} and @code{aset}, but they operate on
 vectors.
 @example
-        cl_object array = c_string_to_object("#(1 2 3 4)");
-        cl_object x = aref1(array, 3);
-        clLprint(1, x);	/* Outputs 4 */
-        aset1(array, 3, MAKE_FIXNUM(5));
-        clLprint(1, array); /* Outputs #(1 2 3 5) */
+cl_object array = c_string_to_object("#(1 2 3 4)");
+cl_object x = aref1(array, 3);
+cl_print(1, x);	/* Outputs 4 */
+aset1(array, 3, MAKE_FIXNUM(5));
+cl_print(1, array); /* Outputs #(1 2 3 5) */
 @end example
 @end deftypefun
 
@@ -869,35 +868,35 @@ be bytecompiled. @code{cl_eval} is the equivalent of @code{cl_safe_eval} but
 without environment and with @var{err_value} set to @var{nil}. It exists only
 for compatibility with previous versions.
 @example
-	cl_object form = c_string_to_object("(print 1)");
-	cl_safe_eval(form,Cnil);
-	cl_safe_eval(form, Cnil);
+cl_object form = c_string_to_object("(print 1)");
+cl_safe_eval(form,Cnil);
+cl_safe_eval(form, Cnil);
 @end example
 @end deftypefun
 
 @deftypefun cl_object si_make_lambda (cl_object @var{name}, cl_object @var{def})
 Builds an interpreted lisp function with name given by the symbol @var{name}
 and body given by @var{def}. For instance, we would achieve the equivalent of
-@example
-        (funcall #'(lambda (x y) (block foo (+ x y)))
-                 1 2)
-@end example
+@lisp
+(funcall #'(lambda (x y) (block foo (+ x y)))
+         1 2)
+@end lisp
 @noindent
 with the following code
 @example
-        cl_object def = c_string_to_object("((x y) (+ x y))");
-        cl_object name = _intern("foo")
-        cl_object fun = si_make_lambda(name, def);
-        return funcall(fun, MAKE_FIXNUM(1), MAKE_FIXNUM(2));
+cl_object def = c_string_to_object("((x y) (+ x y))");
+cl_object name = _intern("foo")
+cl_object fun = si_make_lambda(name, def);
+return funcall(fun, MAKE_FIXNUM(1), MAKE_FIXNUM(2));
 @end example
 @noindent Notice that @code{si_safe_lambda} performs a bytecodes compilation
 of the definition and thus it may signal some errors. Such errors are not
 handled by the routine itself you might consider using @code{cl_safe_eval}
 or @code{cl_eval} instead:
 @example
-        cl_object def = c_string_to_object("#'(lambda-block foo (x y) (+ x y))");
-        cl_object fun = cl_eval(def);
-        return funcall(fun, MAKE_FIXNUM(1), MAKE_FIXNUM(2));
+cl_object def = c_string_to_object("#'(lambda-block foo (x y) (+ x y))");
+cl_object fun = cl_eval(def);
+return funcall(fun, MAKE_FIXNUM(1), MAKE_FIXNUM(2));
 @end example
 @end deftypefun
 
@@ -907,14 +906,14 @@ or @code{cl_eval} instead:
 @chapter The interpreter
 
 @menu
-* @ecl{} stacks::               
+* ECL stacks::                  
 * Procedure Call Conventions::  
 * The lexical environment::     
 * The interpreter stack::       
 @end menu
 
 
-@node @ecl{} stacks, Procedure Call Conventions, The interpreter, The interpreter
+@node ECL stacks, Procedure Call Conventions, The interpreter, The interpreter
 @section @ecl{} stacks
 
 @ecl{} uses the following stacks:
@@ -936,7 +935,7 @@ temporary values, and function invocation.
 @end table
 
 
-@node Procedure Call Conventions, The lexical environment, @ecl{} stacks, The interpreter
+@node Procedure Call Conventions, The lexical environment, ECL stacks, The interpreter
 @section Procedure Call Conventions
  
 @ecl{} employs standard C calling conventions to achieve efficiency and
@@ -951,7 +950,7 @@ To show the argument/value passing mechanism, here we list the actual
 code for the @clisp{} function @code{cons}.
 
 @example
-clLcons(int narg, object car, object cdr)
+cl_cons(int narg, object car, object cdr)
 @{       object x;
         check_arg(2);
         x = alloc_object(t_cons);
@@ -969,7 +968,7 @@ the @clisp{} function.  (Strictly speaking, `@code{-}' and `@code{*}' in the
 @clisp{} function name are replaced by `@code{_}' and `@code{A}', respectively,
 to obey the syntax of C.)
 
-@code{check_arg(2)} in the code of @code{clLcons} checks that exactly two
+@code{check_arg(2)} in the code of @code{cl_cons} checks that exactly two
 arguments are supplied to @code{cons}.  That is, it checks that @code{narg} is
 2, and otherwise, it causes an error.  @code{allocate_object(t_cons)} allocates
 a cons cell in the heap and returns the pointer to the cell.  After the
@@ -981,7 +980,7 @@ In general, if one is to play with the C kernel of @ecl{} there is no need to
 know about all these conventions. There is a preprocessor that takes care of
 the details, by using a lisp representation of the statements that output
 values, and of the function definitions. For instance, the actual source code
-for @code{clLcons} in @file{src/c/lists.d}
+for @code{cl_cons} in @file{src/c/lists.d}
 
 @example
 @@(defun cons (car cdr)
@@ -1018,11 +1017,11 @@ keeping arguments to FORMAT, etc.
 However, one of the most important roles of the Interpreter Stack is to keep a
 log of the functions which are called during the execution of bytecodes. For
 each function invoked, the interpreter keeps three lisp objects on the stack:
-@example
-+----------+------------------------------------------------+
-| function | lexical environment | index to previous record |
-+----------+---------------------+--------------------------+
-@end example
+@verbatim
+    +----------+------------------------------------------------+
+    | function | lexical environment | index to previous record |
+    +----------+---------------------+--------------------------+
+@end verbatim
 
 The first item is the object which is funcalled. It can be a bytecodes object,
 a compiled function or a generic function. In the last two cases the lexical
@@ -1031,8 +1030,7 @@ the lexical environment on which the code is executed. Each of these records
 are popped out of the stack after function invocation.
 
 Let us see how these invocation records are used for debugging.
-
-@example
+@smallformat
 >(defun fact (x)                ;;;  Wrong definition of the 
    (if (= x 0)                  ;;;  factorial function. 
        one                      ;;;  one  should be  1. 
@@ -1101,7 +1099,7 @@ Block names: FACT.          ;;;  The block  FACT  is established.
                             ;;;  The execution is resumed and 
 >                           ;;;  the value  6  is returned. 
                             ;;;  Again at the top-level loop. 
-@end example
+@end smallformat
 
 @c ---------------------------------------------------------------------
 
@@ -1176,10 +1174,10 @@ same as the hand-coded C code of the @ecl{} source programs.  For example,
 supposing that the Lisp source file contains the
 following function definition:
 
-@example
-	(defvar *delta* 2)
-	(defun add1 (x) (+ *delta* x))
-@end example
+@lisp
+(defvar *delta* 2)
+(defun add1 (x) (+ *delta* x))
+@end lisp
 
 @noindent
 The compiler generates the following intermediate C code.
@@ -1282,7 +1280,7 @@ Let us see an example.  Suppose the following function has been compiled.
 by one, whereas the second closure increments @var{x} by the initial value of
 @var{x}.  Both closures return the incremented value of @var{x}.
 
-@example
+@smallformat
 >(multiple-value-setq (f g) (foo 10))
 #<compiled-closure nil>
 
@@ -1293,11 +1291,10 @@ by one, whereas the second closure increments @var{x} by the initial value of
 21
 
 >
-@end example
+@end smallformat
 
 After this, the two compiled closures look like:
-
-@example
+@verbatim
 second closure       y:                     x:
 |-------|------|      |-------|------|       |------|------| 
 |  **   |    --|----->|  10   |    --|------>|  21  | nil  |
@@ -1310,7 +1307,7 @@ second closure       y:                     x:
 
  * : address of the compiled code for #'(lambda () (incf x))
 ** : address of the compiled code for #'(lambda () (incf x y))
-@end example
+@end verbatim
 
 
 @node Use of Declarations to Improve Efficiency, Inspecting generated C code, Implementation of Compiled Closures, The compiler
@@ -1373,7 +1370,7 @@ the C code generated by the @ecl{} compiler.  Thus the disassemble
 function in @ecl{} accepts not-yet-compiled functions only and displays
 the translated C code.
 
-@example
+@smallformat
 > (defun add1 (x) (1+ x))
 ADD1
 > (disassemble *)
@@ -1387,7 +1384,7 @@ TTL:
         VALUES(0) = one_plus((V1));
         RETURN(1);
 @}
-@end example
+@end smallformat
 
 
 @node Embedding C code, The C language interface, Inspecting generated C code, The compiler
@@ -1466,7 +1463,7 @@ false), the form has to be output using @code{@@(return)
 @@(return 1)=...;}. Finally, Lisp constants may be used in the C code
 making use of the prefix @code{@@}.
 
-@example
+@lisp
 (use-package "FFI")
 
 (Clines "
@@ -1488,7 +1485,7 @@ double foo (double x, double y) @{
 	@@(return) = foo(#0,object_to_float(x));@}"
     :side-effects nil
     :one-liner nil))
-@end example
+@end lisp
 @end defmac
 
 
@@ -1508,7 +1505,7 @@ UFFI, and also for compatibility with older versions of the @ecl{} environment,
 we provide additional toplevel forms, which are listed in the next section.
 
 
-@node The old C language interface, , The C language interface, The compiler
+@node The old C language interface,  , The C language interface, The compiler
 @section The old C language interface
 
 In this section we list several macros and toplevel forms which are provided
@@ -1543,9 +1540,9 @@ is called.
 
 @end defmac
 
-@example
+@lisp
 (defentry tak (:int :int :int) (:int tak))
-@end example
+@end lisp
 
 The Lisp function @code{tak} defined by this @code{defentry} form requires
 three arguments.  The arguments are converted to @code{int} values before they
@@ -1571,7 +1568,7 @@ single Lisp source file; one in the C language and the other in Lisp.
 
 Suppose you have a Lisp source file whose contents are:
 
-@example
+@lisp
 (use-package "FFI")
 
 ;;; C version of TAK.
@@ -1596,7 +1593,7 @@ Suppose you have a Lisp source file whose contents are:
        (tak (tak (1- x) y z)
             (tak (1- y) z x)
             (tak (1- z) x y))))
-@end example
+@end lisp
 
 When this file is loaded into @ecl{}, the interpreter uses the Lisp version of
 the @code{tak} definition.  Once this file has been compiled, and when the
@@ -1616,9 +1613,9 @@ interpreter.
 @end defun
 
 For example, the logical AND of two integers could be defined as:
-@example
+@lisp
 (defCbody logand (fixnum fixnum) fixnum "(#0) & (#1)")
-@end example
+@end lisp
 
 @defun {definline} @{name args-types result-type C-expr@}
 @code{definline} behaves exactly as @code{defCbody}.  Moreover, after a
@@ -1634,10 +1631,10 @@ interpreter.
 For example, a function to access the n-th byte of a string and return it as an
 integer can be defined as follows:
 
-@example
+@lisp
 (definline aref-byte (string fixnum) fixnum
    "(#0)->ust.ust_self[#1]")
-@end example
+@end lisp
 
 The definitions of the C data structures used to represent \clisp objects can
 be found in file @code{ecl.h} in the directory @code{"src/h"} of the source
@@ -1656,7 +1653,7 @@ float,} and @code{double} become the equivalent Lisp @code{character},
 Here we list the complete syntax of @code{Clines}, @code{defentry},
 @code{definline} and @code{defCbody} macro forms.
 
-@example
+@verbatim
 Clines-form:
         (Clines @{string@}*)
 
@@ -1676,11 +1673,11 @@ C-expr:
 	string
 C-type:
         @{ object | int | char | float | double @}
-@end example
+@end verbatim
 
 @c ---------------------------------------------------------------------
 
-@node The Garbage Collector, Porting @ecl{}, The compiler, Top
+@node The Garbage Collector, Porting ECL, The compiler, Top
 @chapter The Garbage Collector
 
 Using @ecl{} in existing application sometimes involves keeping Lisp
@@ -1690,7 +1687,7 @@ objects where the garbage collector normally cannot see them.
 
 @c ---------------------------------------------------------------------
 
-@node Porting @ecl{},  , The Garbage Collector, Top
+@node Porting ECL,  , The Garbage Collector, Top
 @chapter Porting @ecl{}
 
 To port @ecl{} to a new architecture, the following steps are required:

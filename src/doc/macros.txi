@@ -1,3 +1,6 @@
+@macro myctrl {a}
+^\a\@c
+@end macro
 @rmacro mopt {a}
 [\a\]@c
 @end rmacro

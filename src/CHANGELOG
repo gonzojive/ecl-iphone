@@ -53,6 +53,10 @@ ECL 0.9i
  - Implemented the standard behavior of NO-APPLICABLE-METHOD. Before, ECL
    expected this function to simply fail and never return.
 
+* Documentation:
+
+ - The HTML manuals now use CSS for a more appealing look.
+
 * Notes:
 
  [1] Both bugs are related.

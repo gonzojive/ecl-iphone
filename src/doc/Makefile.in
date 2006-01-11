@@ -135,13 +135,13 @@ lgpl.html: $(top_srcdir)/../LGPL head
 user_manual: $(srcdir)/user.txi $(srcdir)/macros.txi
 	echo "Producing ecl.html; ignore error messages."
 	test -d ecl || mkdir ecl; \
-	(makeinfo -I $(srcdir) --html $(srcdir)/user.txi || \
+	(makeinfo --output-indent=0 -I $(srcdir) --css-include=$(srcdir)/basic.css --html $(srcdir)/user.txi || \
 	 texi2html -I=$(srcdir) -subdir=ecl -split=chapter $(srcdir)/user.txi)  \
 	&& touch user_manual
 developers_manual: $(srcdir)/devel.txi $(srcdir)/macros.txi
 	echo "Producing ecldev.html; ignore error messages."
 	test -d ecldev || mkdir ecldev; \
-	(makeinfo -I $(srcdir) --html $(srcdir)/devel.txi || \
+	(makeinfo --output-indent=0 -I $(srcdir) --css-include=$(srcdir)/basic.css --html $(srcdir)/devel.txi || \
 	 texi2html -I=$(srcdir) -subdir=ecldev -split=chapter $(srcdir)/devel.txi) \
 	&& touch developers_manual
 clean:
