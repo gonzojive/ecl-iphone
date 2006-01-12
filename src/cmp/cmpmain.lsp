@@ -61,7 +61,7 @@ coprocessor).")
       (:h (setf extension "h"))
       (:object (setf extension #.+object-file-extension+))
       (:program (setf format #.+executable-file-format+))
-      (:fasl (setf extension "fas")))
+      ((:fasl :fas) (setf extension "fas")))
     (if format
 	(merge-pathnames (format nil format (pathname-name output-file))
 			 output-file)
@@ -228,10 +228,32 @@ main(int argc, char **argv)
 (defun builder (target output-name &key lisp-files ld-flags shared-data-file
 		(init-name nil)
 		(prologue-code "")
-		(epilogue-code (if (eq target :program) "
-	funcall(1,_intern(\"TOP-LEVEL\",cl_core.system_package));
-	cl_shutdown();
-	return 0;" "")))
+		(epilogue-code (when (eq target :program) '(SI::TOP-LEVEL))))
+  ;;
+  ;; The epilogue-code can be either a string made of C code, or a
+  ;; lisp form.  In the latter case we add some additional C code to
+  ;; clean up, and the lisp form is stored in a text representation,
+  ;; to avoid using the compiler.
+  ;;
+  (cond ((null epilogue-code)
+	 (setf epilogue-code ""))
+	((stringp epilogue-code)
+	 )
+	(t
+	 (with-standard-io-syntax
+	   (setq epilogue-code
+		 (with-output-to-string (stream)
+		   (princ "{ const char *lisp_code = " stream)
+		   (wt-filtered-data (write-to-string epilogue-code) stream)
+		   (princ ";
+cl_object output;
+si_select_package(make_simple_string(\"CL-USER\"));
+output = cl_safe_eval(c_string_to_object(lisp_code), Cnil, OBJNULL);
+" stream)
+		   (when (eq target :program)
+		     (princ "cl_shutdown(); return (output != OBJNULL);" stream))
+		   (princ #\} stream)
+		   )))))
   ;;
   ;; When a module is built out of several object files, we have to
   ;; create an additional object file that initializes those ones.

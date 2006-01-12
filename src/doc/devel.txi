@@ -210,7 +210,9 @@ lisp environment. You can customize the initialization process by suppling code
 to be executed before (@var{prologue-code}) or after (@var{epilogue-code})
 setting up the lisp environment. Typically @var{prologue-code} defaults to an
 empty string, while @var{epilogue-code} invokes the classical lisp
-@var{top-level}.
+@var{top-level}. Additionally, as a convenience, @var{epilogue-code} can
+be either a string with C code or also a list with a lisp form, which
+will be interpreted at run time.
 @end defun
 
 @c ---------------------------------------------------------------------
