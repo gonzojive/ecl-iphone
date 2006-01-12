@@ -561,7 +561,7 @@ floating-point numbers are assumed to be of @emph{single} or @emph{double}
 format.
 
 The floating-point precisions and exponent sizes are:
-@multitable
+@multitable {Format} {precision} {exponent}
 @headitem Format @tab precision @tab exponent
 @item Short  @tab 24 bits @tab 8 bits
 @item Single @tab 24 bits @tab 8 bits
@@ -692,7 +692,7 @@ See Section 17.1 of @bibcite{Steele:84} for their meanings.
 In @ecl{}, array elements are represented in one of six ways depending on the
 type of the @code{array}.
 
-@multitable
+@multitable {(array short-float) and (vector short-float)} {64 bit floating point}
 @headitem Array Type @tab Element Representation
 @item (array t) and (vector t)
         @tab a cell pointer
