@@ -50,7 +50,18 @@ all:	$(TARGETS) ecl-config doc
 %Makefile: $(srcdir)/%Makefile.in config.status
 	./config.status
 
-ecl$(EXE): ecl_min$(EXE) compile.lsp sysfun.lsp
+#
+# When compiling the library itself, we have to remove the dllimport
+# declarations, because the variables that they mark are in the
+# in the library and can be referenced without indirection.
+#
+c/external.h: $(top_srcdir)/h/external.h
+	sed 's,__declspec(dllimport),,g' $(top_srcdir)/h/external.h > $@
+h/external.h: c/external.h
+	cp $(srcdir)/h/*.h h/
+	if grep 'undef ENABLE_DLOPEN' h/config.h; then cp c/external.h h; fi
+
+ecl$(EXE): ecl_min$(EXE) compile.lsp sysfun.lsp h/external.h
 	if [ -f CROSS-COMPILER ]; then \
 		./CROSS-COMPILER < compile.lsp; \
 	else \
@@ -77,7 +88,7 @@ ecl-config: ecl-config.pre
 	    -e 's,@includedir\\@,$(libdir)/h,' ecl-config.pre > ecl-config
 
 
-@LIBPREFIX@eclmin.@LIBEXT@: @LIBPREFIX@eclgmp.@LIBEXT@ @LIBPREFIX@eclgc.@LIBEXT@ lsp/config.lsp
+@LIBPREFIX@eclmin.@LIBEXT@: @LIBPREFIX@eclgmp.@LIBEXT@ @LIBPREFIX@eclgc.@LIBEXT@ lsp/config.lsp h/external.h
 	cd c; $(MAKE)
 @LIBPREFIX@eclgc.@LIBEXT@:
 	if (echo $(SUBDIRS) | grep gc); then \

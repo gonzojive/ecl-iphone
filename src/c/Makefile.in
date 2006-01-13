@@ -31,7 +31,7 @@ libdir=@libdir@
 
 # Files
 
-HDIR	= $(top_srcdir)/h
+HDIR	= ../h
 HFILES	= ../h/config.h $(HDIR)/ecl.h $(HDIR)/ecl-cmp.h\
 	$(HDIR)/object.h $(HDIR)/cs.h $(HDIR)/stacks.h\
 	$(HDIR)/external.h $(HDIR)/eval.h\
@@ -54,7 +54,7 @@ OBJS	= main.o symbol.o package.o list.o\
 .SUFFIXES: .c .o .d
 .PHONY: all
 
-all:	$(DPP) external.h ../libeclmin.a ../cinit.o
+all:	$(DPP) ../libeclmin.a ../cinit.o
 
 .c.o: $(HFILES)
 	$(CC) $(CFLAGS) -o $@ $<
@@ -62,14 +62,6 @@ all:	$(DPP) external.h ../libeclmin.a ../cinit.o
 	if test -f ../CROSS-DPP ; then ../CROSS-DPP $< $@ ; else $(DPP) $< $@ ; fi
 ffi_x86.c: arch/ffi_x86.d $(DPP) $(HFILES)
 	if test -f ../CROSS-DPP ; then ../CROSS-DPP $< $@ ; else $(DPP) $< $@ ; fi
-
-#
-# When compiling the library itself, we have to remove the dllimport
-# declarations, because the variables that they mark are in the
-# in the library and can be referenced without indirection.
-#
-external.h: $(top_srcdir)/h/external.h
-	sed 's,__declspec(dllimport),,g' $(top_srcdir)/h/external.h > $@
 
 install: $(HFILES)
 	for i in $(HFILES); do $(INSTALL_DATA) $$i $(DESTDIR)$(libdir)/h/; done

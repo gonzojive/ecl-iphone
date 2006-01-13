@@ -38,7 +38,7 @@
 ;;;   with an already installed copy of ECL.
 ;;;
 (setq c::*cc-flags*
-      #-msvc "@CPPFLAGS@ @CFLAGS@ @ECL_CFLAGS@ -I\"@true_srcdir@\"/c -I\"@true_srcdir@\"/h -I\"@true_srcdir@\"/gmp -I\"@true_builddir@\"/h"
+      #-msvc "@CPPFLAGS@ @CFLAGS@ @ECL_CFLAGS@ -I\"@true_srcdir@\"/c -I\"@true_srcdir@\"/gmp -I\"@true_builddir@\"/h"
       #+msvc "@CFLAGS@ @ECL_CFLAGS@ -I\"@true_srcdir@\"/c -I\"@true_srcdir@\"/h -I\"@true_builddir@\"/h"
       c::*cc-format*
       #-msvc "~A ~A ~:[~*~;~A~] -I\"@true_builddir@\"/h~* -w -c ~S -o ~S"
@@ -85,12 +85,14 @@
 			   ))
 
 #-:wants-dlopen
-(si::system "sh -c 'mkdir tmp; rm -f tmp/*;
-cp @LIBPREFIX@eclmin.@LIBEXT@ @LIBPREFIX@ecl.@LIBEXT@;
-cd tmp; ar -x ../@LIBPREFIX@lsp.@LIBEXT@;
-for i in *.@OBJEXT@; do mv $i lsp_`basename $i`; done;
-ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@ ../c/all_symbols2.@OBJEXT@; rm *.@OBJEXT@;
-@RANLIB@ ../@LIBPREFIX@ecl.@LIBEXT@'")
+(c::safe-system
+	(concatenate 'string
+"sh -c 'rm -rf tmp; mkdir tmp;"
+"cp @LIBPREFIX@eclmin.@LIBEXT@ @LIBPREFIX@ecl.@LIBEXT@;"
+"cd tmp; ar -x ../@LIBPREFIX@lsp.@LIBEXT@;"
+"for i in *.@OBJEXT@; do mv $i lsp_`basename $i`; done;"
+"ar -r ../@LIBPREFIX@ecl.@LIBEXT@ *.@OBJEXT@ ../c/all_symbols2.@OBJEXT@; rm *.@OBJEXT@;"
+"@RANLIB@ ../@LIBPREFIX@ecl.@LIBEXT@'"))
 
 #+:wants-dlopen
 ;;;
