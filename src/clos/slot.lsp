@@ -12,10 +12,19 @@
 ;;; ----------------------------------------------------------------------
 ;;; SLOT descriptors
 ;;;
-
-(defconstant +initform-unsupplied+ '+initform-unsupplied+)
-
-(defvar *slot-initform-lambdas* nil)
+;;; We need slot definition objects both during bootstrap and also at
+;;; runtime. Here we set up a dual definition: if the class
+;;; SLOT-DEFINITION has been defined, we use it; otherwise we work
+;;; with slot definitions as by the effective structure
+;;;
+;;;	(defstruct (slot-definition (:type list))
+;;;	  name initform initfunction type allocation initargs
+;;;	   readers writers documentation)
+;;;
+;;; However, this structure is not defined explicitely, to save
+;;; memory. We rather create a constructor
+;;; CANONICAL-SLOT-TO-DIRECT-SLOT and several accessors (closures)
+;;; down there.
 
 (defconstant +slot-definition-slots+
   '((name :initarg :name :initform nil :accessor slot-definition-name)
@@ -28,11 +37,6 @@
     (writers :initarg :writers :initform nil :accessor slot-definition-writers)
     (documentation :initarg :documentation :initform nil :accessor slot-definition-documentation)
     ))
-
-#|
-(defstruct (slot-definition (:type list))
-  name initform initfunction type allocation initargs readers writers documentation)
-|#
 
 (defun make-simple-slotd (&key name initform initfunction type allocation initargs readers writers documentation)
   (list name initform initfunction type allocation initargs readers writers documentation))
@@ -53,6 +57,14 @@
 	    #'(lambda (x) (if (consp x) (nth position x) (slot-value x name))))
       (setf (fdefinition `(setf ,f))
 	    #'(lambda (v x) (if (consp x) (setf (nth position x) v) (setf (slot-value x name) v)))))))
+
+;;; ----------------------------------------------------------------------
+;;;
+;;; (PARSE-SLOTS slot-definition-form) => slot-definition-object
+;;;
+;;; This routine is the one responsible for parsing the definition of
+;;; a slot in DEFCLASS.
+;;;
 
 (defun PARSE-SLOT (slot)
   (declare (si::c-local))
