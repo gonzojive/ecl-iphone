@@ -9,6 +9,8 @@
 
 (in-package "CLOS")
 
+(defconstant +initform-unsupplied+ '+initiform-unsupplied+)
+
 ;;; ----------------------------------------------------------------------
 ;;; SLOT descriptors
 ;;;
