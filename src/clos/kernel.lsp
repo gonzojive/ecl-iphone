@@ -7,6 +7,11 @@
 ;;;;
 ;;;;    See file '../Copyright' for full details.
 
+(defpackage "CLOS"
+  (:use "CL")
+  (:import-from "SI" "UNBOUND" "GET-SYSPROP" "PUT-SYSPROP" "REM-SYSPROP"
+		"COMPUTE-EFFECTIVE-METHOD" "SIMPLE-PROGRAM-ERROR"))
+
 (in-package "CLOS")
 
 (defconstant *default-method-cache-size* 64 "Size of hash tables for methods")
@@ -129,10 +134,44 @@
 #.(create-accessors +standard-method-slots+ 'standard-method)
 
 ;;; ----------------------------------------------------------------------
+;;;
+;;; FIND-CLASS  naming classes.
+;;;
+;;;
+;;; (FIND-CLASS <name>) returns the class named <name>.  setf can be used
+;;; with find-class to set the class named <name>.  These are "extrinsic"
+;;; names.  Neither find-class nor setf of find-class do anything with the
+;;; name slot of the class, they only lookup and change the association from
+;;; name to class.
+;;; 
+;;; This is only used during boot. The real one is in built-in.
+(eval-when (compile)
+  (defun setf-find-class (new-value class &optional errorp env)
+    (warn "Ignoring class definition for ~S" class)))
+
+(defun setf-find-class (new-value name &optional errorp env)
+  (let ((old-class (find-class name nil)))
+    (cond
+      ((and old-class
+	    (or (typep old-class 'built-in-class)
+		(member name '(class built-in-class) :test #'eq)))
+       (error "The class associated to the CL specifier ~S cannot be changed."
+	      name))
+      ((classp new-value)
+       (setf (gethash name si:*class-name-hash-table*) new-value))
+      ((null new-value) (remhash name si:*class-name-hash-table*))
+      (t (error "~A is not a class." new-value))))
+  new-value)
+
+(defsetf find-class (&rest x) (v) `(setf-find-class ,v ,@x))
 
 (defun classp (obj)
   (and (si:instancep obj)
-       (si::subclassp (si::instance-class obj) (find-class 'CLASS))
+       (let ((topmost (find-class 'CLASS nil)))
+	 ;; All instances can be classes until the class CLASS has
+	 ;; been installed. Otherwise, we check the parents.
+	 (or (null topmost)
+	     (si::subclassp (si::instance-class obj) topmost)))
        t))
 
 ;;; ----------------------------------------------------------------------

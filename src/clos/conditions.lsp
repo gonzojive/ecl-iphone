@@ -463,8 +463,6 @@ strings."
 		      :FORMAT-ARGUMENTS format-arguments)))
   nil)
 
-(define-condition warning () ())
-
 (defun warn (datum &rest arguments)
   "Args: (format-string &rest args)
 Formats FORMAT-STRING and ARGs to *ERROR-OUTPUT* as a warning message.  Enters
@@ -484,24 +482,34 @@ returns with NIL."
     nil))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; ALL CONDITIONS
+;;;
+;;; Instead of compiling each condition definition, we store them in a
+;;; list and evaluate them at run time. Besides, there are multiple
+;;; SIMPLE-* conditions which inherit from SIMPLE-ERROR and which are
+;;; only created when the error is signaled.
+;;;
+
+#+ecl-min
+(defconstant +all-conditions+ (mapcar #'cdr '(
+(define-condition warning () ())
 
 (define-condition serious-condition () ())
 
 (define-condition error (serious-condition) ())
-
-(defun simple-condition-printer (condition stream)
-  (format stream "~?" (simple-condition-format-control condition)
-	  (simple-condition-format-arguments condition)))
 
 (define-condition simple-condition ()
   ((format-control :INITARG :FORMAT-CONTROL :INITFORM ""
 		   :ACCESSOR simple-condition-format-control)
    (format-arguments :INITARG :FORMAT-ARGUMENTS :INITFORM NIL
 		     :ACCESSOR simple-condition-format-arguments))
-  (:REPORT simple-condition-printer))
+  (:REPORT
+   (lambda (condition stream)
+     (format stream "~?" (simple-condition-format-control condition)
+	     (simple-condition-format-arguments condition)))))
 
-(define-condition simple-warning (simple-condition warning)
-  () (:REPORT simple-condition-printer))
+(define-condition simple-warning (simple-condition warning) ())
 
 (define-condition style-warning (warning) ())
 
@@ -609,25 +617,6 @@ returns with NIL."
 
 (define-condition reader-error (parse-error stream-error) ())
 
-#+nil
-(defun simple-condition-class-p (type)
-  (typep type 'SIMPLE-CONDITION-CLASS))
-
-;;;
-;;; Additions by ECL
-;;;
-(defun signal-simple-error (base-condition continue-message format-control format-args
-			    &rest args)
-  (let ((simple-error-name (intern (concatenate 'string "SIMPLE-" (string base-condition))
-				   (find-package "SI"))))
-    (unless (find-class simple-error-name nil)
-      (eval `(defclass ,simple-error-name (simple-error ,base-condition) ())))
-    (if continue-message
-	(apply #'cerror continue-message simple-error-name :format-control format-control
-	       :format-arguments format-args args)
-	(apply #'error simple-error-name :format-control format-control
-	       :format-arguments format-args args))))
-	   
 
 (define-condition format-error (simple-error)
   ((format-control :initarg :complaint)
@@ -650,6 +639,24 @@ returns with NIL."
 			(simple-condition-format-arguments condition)
 			(format-error-control-string condition)
 			(format-error-offset condition)))))
+)))
+
+(dolist (expression '#.+all-conditions+)
+  (eval (list* 'define-condition expression)))
+
+
+(defun signal-simple-error (base-condition continue-message format-control format-args
+			    &rest args)
+  (let ((simple-error-name (intern (concatenate 'string "SIMPLE-" (string base-condition))
+				   (find-package "SI"))))
+    (unless (find-class simple-error-name nil)
+      (eval `(defclass ,simple-error-name (simple-error ,base-condition) ())))
+    (if continue-message
+	(apply #'cerror continue-message simple-error-name :format-control format-control
+	       :format-arguments format-args args)
+	(apply #'error simple-error-name :format-control format-control
+	       :format-arguments format-args args))))
+	   
 
 
 (defmacro handler-case (form &rest cases)

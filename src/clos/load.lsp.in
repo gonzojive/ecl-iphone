@@ -1,8 +1,8 @@
 ;;; @configure_input@
 
-(defconstant +clos-module-files+
-'("src:clos;macros.lsp"
-  "src:clos;kernel.lsp"
+(defvar +clos-module-files+
+'("src:clos;kernel.lsp"
+  "src:clos;macros.lsp"
   "src:clos;method.lsp"
   "src:clos;slot.lsp"
   "src:clos;combin.lsp"
@@ -24,3 +24,5 @@
   ))
 
 (mapc #'(lambda (x) (load x :verbose nil)) +clos-module-files+)
+
+(setf +clos-module-files+ (remove "src:clos;macros.lsp" +clos-module-files+ :test #'equalp))

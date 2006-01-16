@@ -7,63 +7,15 @@
 ;;;;
 ;;;;    See file '../Copyright' for full details.
 
-(defpackage "CLOS"
-  (:use "CL")
-  (:import-from "SI" "UNBOUND" "GET-SYSPROP" "PUT-SYSPROP" "REM-SYSPROP"
-		"COMPUTE-EFFECTIVE-METHOD" "SIMPLE-PROGRAM-ERROR"))
-
 (in-package "CLOS")
 
-;;; ----------------------------------------------------------------------
-
-;(proclaim '(DECLARATION VARIABLE-REBINDING))
-;;; Make this stable:
-(declaim (DECLARATION VARIABLE-REBINDING))
-(eval-when (compile eval)
-(defmacro doplist ((key val) plist &body body)
-  `(let* ((.plist-tail. ,plist) ,key ,val)
-     (loop (when (null .plist-tail.) (return nil))
-	   (setq ,key (pop .plist-tail.))
-	   (when (null .plist-tail.)
-	     (error "Malformed plist in doplist, odd number of elements."))
-	   (setq ,val (pop .plist-tail.))
-	   (progn ,@body))))
-)
-
-;;;
-;;;;;; FIND-CLASS  naming classes.
-;;;
-;;;
-;;; (FIND-CLASS <name>) returns the class named <name>.  setf can be used
-;;; with find-class to set the class named <name>.  These are "extrinsic"
-;;; names.  Neither find-class nor setf of find-class do anything with the
-;;; name slot of the class, they only lookup and change the association from
-;;; name to class.
-;;; 
-
-;(defvar *class-name-hash-table* (make-hash-table :test #'eq)
-; "The hash table containing all classes")
-
-;;; This is only used during boot. The real one is in built-in.
-(eval-when (compile)
-  (defun setf-find-class (new-value class &optional errorp env)
-    (warn "Ignoring class definition for ~S" class)))
-
-(defun setf-find-class (new-value name &optional errorp env)
-  (if (si:instancep new-value)
-      (progn
-	(setf (gethash name si:*class-name-hash-table*) new-value))
-    (error "~A is not a class." new-value)))
-
-(defsetf find-class (&rest x) (v) `(setf-find-class ,v ,@x))
-
-;;; ----------------------------------------------------------------------
-
-(defun mapappend (fun &rest args)
-  (reduce #'append (apply #'mapcar fun args)))
+(defmacro mapappend (fun &rest args)
+  `(reduce #'append (mapcar ,fun ,@args)))
 
 (defmacro ensure-up-to-date-instance (instance)
   `(let ((i ,instance))
     (unless (or (si::structurep i) (eq (si::instance-sig i) (class-slots (si::instance-class i))))
       (update-instance i))))
+
+
 
