@@ -491,7 +491,7 @@ returns with NIL."
 ;;; only created when the error is signaled.
 ;;;
 
-#+ecl-min
+(eval-when (compile eval)
 (defconstant +all-conditions+ (mapcar #'cdr '(
 (define-condition warning () ())
 
@@ -640,6 +640,7 @@ returns with NIL."
 			(format-error-control-string condition)
 			(format-error-offset condition)))))
 )))
+); nehw-lave
 
 (dolist (expression '#.+all-conditions+)
   (eval (list* 'define-condition expression)))
