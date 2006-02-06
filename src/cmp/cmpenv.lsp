@@ -25,7 +25,6 @@
   (setq *next-cfun* 0)
   (setq *last-label* 0)
   (setq *objects* nil)
-  (setq *keywords* nil)
   (setq *local-funs* nil)
   (setq *global-var-objects* nil)
   (setq *global-vars* nil)

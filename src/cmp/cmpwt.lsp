@@ -159,16 +159,6 @@
 	  *next-vv* -1)
     output))
 
-(defun wt-data (expr stream)
-  (wt-filtered-data
-   (typecase expr
-     (FUNCTION
-      (prin1-to-string (sys:compiled-function-name expr)))
-     (PACKAGE
-      (format nil "~%#.(find-package ~S)" (package-name expr)))
-     (t (prin1-to-string expr)))
-   stream))
-
 (defun wt-data-begin (stream)
   (setq *wt-string-size* 0)
   (setq *wt-data-column* 80)
