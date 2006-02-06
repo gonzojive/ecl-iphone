@@ -1332,6 +1332,8 @@ type_of(#0)==t_bitvector")
     bit sbit bit-and bit-ior bit-xor bit-eqv bit-nand bit-nor bit-andc1
     bit-andc2 bit-orc1 bit-orc2 bit-not
     vector-push vector-push-extend vector-pop adjust-array
+    ;; conditions.lsp
+    si::safe-eval
     ;; iolib.lsp
     read-from-string write-to-string prin1-to-string princ-to-string
     y-or-n-p yes-or-no-p
@@ -1387,7 +1389,8 @@ type_of(#0)==t_bitvector")
     si::closest-vector-type si::packages-iterator
     si::pprint-logical-block-helper si::pprint-pop-helper
     si::make-seq-iterator si::seq-iterator-ref si::seq-iterator-set si::seq-iterator-next
-    si::assert-slot-type si::define-structure .
+    si::assert-slot-type si::define-structure
+    .
     #-clos
     nil
     #+clos

@@ -130,12 +130,10 @@ int
 cl_shutdown(void)
 {
 	cl_object l = SYM_VAL(@'si::*exit-hooks*');
+	cl_object form = cl_list(2, @'funcall', Cnil);
 	while (CONSP(l)) {
-		CL_CATCH_ALL_BEGIN
-			bds_bind(@'si::*ignore-errors*', Ct);
-			funcall(1, CAR(l));
-			bds_unwind1();
-		CL_CATCH_ALL_END;
+		CADR(form) = CAR(l);
+		si_safe_eval(3, form, Cnil, OBJNULL);
 		l = CDR(l);
 	}
 #ifdef ENABLE_DLOPEN

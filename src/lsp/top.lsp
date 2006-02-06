@@ -34,7 +34,6 @@
 (defvar *tpl-prompt-hook* nil)
 (defvar *eof* (cons nil nil))
 
-(defvar *ignore-errors-tag* (gensym))	; return tag for ignorable error
 (defvar *last-error* nil)
 
 (defvar *break-enable* t
@@ -44,10 +43,6 @@ this variable is non-NIL.  The initial value is T, but ECL automatically
 rebinds this variable to NIL when control enters a break loop.")
 
 (defvar *break-message* nil)
-
-(defvar *break-on-warnings* nil
-  "When the function WARN is called, control enters to a break loop only if the
-value of this variable is non-NIL.")
 
 (defvar *break-readtable* nil)
 (defvar *tpl-level* -1)			; nesting level of top-level loops
@@ -337,33 +332,27 @@ value of this variable is non-NIL.")
 (defun top-level ()
   "Args: ()
 ECL specific.
-The top-level loop of ECL.
-When ECL is invoked, it evaluates (FUNCALL 'SI::TOP-LEVEL).  To change the top-
-level of ECL, redefine SI::TOP-LEVEL and save the core image into a program
-file.  When the saved image is invoked, it will start the redefined top-level."
-  (let* (+ ++ +++ - * ** *** / // ///)
+The top-level loop of ECL. It is called by default when ECL is invoked."
+  (catch *quit-tag*
+    (let* (+ ++ +++ - * ** *** / // ///)
 
-    (in-package "CL-USER")
+      (in-package "CL-USER")
 
-    (unless *lisp-initialized*
-
-      (catch *quit-tag*
+      (unless *lisp-initialized*
 	(let ((*break-enable* nil))
 	  ;; process command arguments
-	  (process-command-args)))
+	  (process-command-args))
+	(format t "ECL (Embeddable Common-Lisp) ~A" (lisp-implementation-version))
+	(format t "~%Copyright (C) 1984 Taiichi Yuasa and Masami Hagiya~@
+Copyright (C) 1993 Giuseppe Attardi~@
+Copyright (C) 2000 Juan J. Garcia-Ripoll
+ECL is free software, and you are welcome to redistribute it~@
+under certain conditions; see file 'Copyright' for details.")
+	(format *standard-output* "~%Type :h for Help.  ")
+	(setq *lisp-initialized* t))
 
-      (format t "ECL (Embeddable Common-Lisp) ~A" (lisp-implementation-version))
-      (format t "~%Copyright (C) 1984 Taiichi Yuasa and Masami Hagiya~@
-	Copyright (C) 1993 Giuseppe Attardi~@
-	Copyright (C) 2000 Juan J. Garcia-Ripoll
-	ECL is free software, and you are welcome to redistribute it~@
-	under certain conditions; see file 'Copyright' for details.")
-      (format *standard-output* "~%Type :h for Help.  ")
-
-      (setq *lisp-initialized* t))
-
-    (catch *quit-tag*
-      (let ((*tpl-level* -1))
+      (let ((*break-enable* t)
+	    (*tpl-level* -1))
 	(tpl)))))
 
 (defun terminal-interrupt (correctablep)
@@ -820,3 +809,11 @@ package."
 	   (*debugger-hook* nil))
       (funcall old-hook condition old-hook)))
   (default-debugger condition))
+
+(defun safe-eval (form env err-value)
+  (catch 'si::protect-tag
+    (let* ((*debugger-hook*
+	    #'(lambda (condition old-hooks)
+		(throw 'si::protect-tag condition))))
+      (return-from safe-eval (eval-with-env form env))))
+  err-value)

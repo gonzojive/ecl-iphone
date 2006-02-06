@@ -16,6 +16,22 @@
 #include "ecl.h"
 #include "internal.h"
 
+/*
+ * HOOKS.
+ *
+ * The following functions are only used to bootstrap ECL. They divert
+ * the calls to the interpreted code which is loaded by bare.lsp. Once
+ * the whole of ECL is built, the file cinit.o will be replaced by the
+ * actual initialization code, and the compiled function will be
+ * called instead.
+ */
+
+extern cl_object
+si_safe_eval(cl_narg arg, cl_object form, cl_object env, cl_object error_value, ...)
+{
+	return cl_funcall(4, @'si::safe-eval', form, env, error_value);
+}
+
 extern cl_object
 si_signal_simple_error(cl_narg narg, cl_object condition, cl_object continuable, cl_object format, cl_object format_args, ...)
 {

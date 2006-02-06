@@ -141,6 +141,7 @@ enum ecl_stype {		/*  symbol type  */
 #define	Cnil			((cl_object)cl_symbols)
 #define	Ct			((cl_object)(cl_symbols+1))
 #define ECL_UNBOUND		((cl_object)(cl_symbols+2))
+#define ECL_PROTECT_TAG		((cl_object)(cl_symbols+3))
 
 struct ecl_symbol {
 	HEADER4(stype, mflag, isform, dynamic);

@@ -42,10 +42,6 @@ strings."
   (declare (inline apply) ;; So as not to get bogus frames in debugger
 	   (ignore error-name))
   (let ((condition (coerce-to-condition datum args 'simple-error 'error)))
-    (when *ignore-errors*
-      (setq *ignore-errors* nil)
-      (setq *last-error* condition)
-      (throw *ignore-errors-tag* 'ERROR))
     (if continue-string
       (with-simple-restart
 	  (continue "~A" (format nil "~?" continue-string args))
@@ -471,9 +467,6 @@ returns with NIL."
   (let ((condition
 	  (coerce-to-condition datum arguments 'SIMPLE-WARNING 'WARN)))
     (check-type condition warning "a warning condition")
-    (if *break-on-warnings*
-	(break "~A~%Break entered because of *BREAK-ON-WARNINGS*."
-	       condition))
     (restart-case (signal condition)
       (muffle-warning ()
 	  :REPORT "Skip warning."

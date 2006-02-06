@@ -251,7 +251,6 @@ EXPORTS
 
 	cl_apply_from_stack
 	link_call
-	cl_safe_eval
 
 	; ffi.c
 

@@ -121,7 +121,6 @@ typedef struct ecl_frame {
 	cl_index	frs_sp;
 } *ecl_frame_ptr;
 
-#define ECL_PROTECT_TAG OBJNULL
 extern ecl_frame_ptr _frs_push(register cl_object val);
 #define frs_push(val)  ecl_setjmp(_frs_push(val)->frs_jmpbuf)
 #define frs_pop() (cl_env.frs_top--)

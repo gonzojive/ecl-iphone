@@ -468,7 +468,8 @@ extern void FEwin32_error(const char *msg, int narg, ...) /*__attribute__((noret
 
 extern cl_object cl_funcall _ARGS((cl_narg narg, cl_object fun, ...));
 extern cl_object cl_apply _ARGS((cl_narg narg, cl_object fun, cl_object arg, ...));
-extern cl_object si_safe_eval _ARGS((cl_narg narg, cl_object form, ...));
+extern cl_object si_safe_eval _ARGS((cl_narg narg, cl_object form, cl_object env, cl_object value, ...));
+#define cl_safe_eval(form,env,value) si_safe_eval(3,form,env,value)
 
 #define cl_va_start(a,p,n,k) (va_start(a[0].args,p),a[0].narg=n,cl__va_start(a,k))
 extern void cl__va_start(cl_va_list args, int args_before);
@@ -481,7 +482,6 @@ extern cl_object cl_constantp(cl_narg narg, cl_object arg, ...);
 #define funcall cl_funcall
 extern cl_object cl_apply_from_stack(cl_index narg, cl_object fun);
 extern cl_object link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_va_list args);
-extern cl_object cl_safe_eval(cl_object form, cl_object env, cl_object err_value);
 
 /* ffi.c */
 

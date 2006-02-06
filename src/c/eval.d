@@ -257,26 +257,6 @@ cl_eval(cl_object form)
 	return si_eval_with_env(1, form);
 }
 
-cl_object
-cl_safe_eval(cl_object form, cl_object env, cl_object err_value)
-{
-	cl_object output;
-
-	CL_CATCH_ALL_BEGIN
-		bds_bind(@'si::*ignore-errors*', Ct);
-		output = si_eval_with_env(2, form, env);
-		bds_unwind1();
-	CL_CATCH_ALL_IF_CAUGHT
-		output = err_value;
-	CL_CATCH_ALL_END;
-	return output;
-}
-
-@(defun si::safe-eval (form &optional (err_value @'error') env)
-@
-	return cl_safe_eval(form, env, err_value);
-@)
-
 @(defun constantp (arg &optional env)
 	cl_object flag;
 @

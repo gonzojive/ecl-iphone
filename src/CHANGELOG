@@ -49,6 +49,14 @@ ECL 0.9i
  - COMPILE-FILE-PATHNAME now accepts both :FASL and :FAS as type. They are
    synonyms.
 
+ - cl_safe_eval() can now be used to invoke #'TOP-LEVEL because it uses a safer
+   way to intercept errors, based on rebinding *debugger-hook*. The actual
+   implementation is in top.lsp and made in lisp and can be used from lisp code
+	> (si::safe-eval '(cos 'A) 'nil '2)
+   Notice, though, that SAFE-EVAL ignores all enclosing handlers!
+	> (handler-case (si:safe-eval '(cos 'A) nil 12)
+	  (error (c) c))
+
 * Errors fixed:
 
  - The intermediate output of the compiler is written in the directory in which
@@ -58,7 +66,7 @@ ECL 0.9i
    doing the real work of (re)defining generic functions. This means E-G-F now
    handles :METHOD-CLASS and :GENERIC-FUNCTION-CLASS properly.
 
- - Implemented the standard behavior of NO-APPLICABLE-METHOD. Before, ECL
+ - Implemented the standard behavior of NO-APPLICABLE-METHOD. Formerly, ECL
    expected this function to simply fail and never return.
 
  - --disable-shared works again in Mingw. The header file external.h has to be
