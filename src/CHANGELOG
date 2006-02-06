@@ -57,6 +57,9 @@ ECL 0.9i
 	> (handler-case (si:safe-eval '(cos 'A) nil 12)
 	  (error (c) c))
 
+ - When passed the option --help, -h or -?, ECL no longer loads the rc file
+   (which is typically ~/.ecl or ~/.eclrc)
+
 * Errors fixed:
 
  - The intermediate output of the compiler is written in the directory in which

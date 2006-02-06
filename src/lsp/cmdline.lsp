@@ -43,6 +43,7 @@ Usage: ecl [-? | --help]
 (defconstant +command-arg-rules+
   '(("--help" 0 #0=(progn (help-message *standard-output*) (quit)))
     ("-?" 0 #0#)
+    ("-h" 0 #0#)
     ("-eval" 1 (eval (read-from-string 1)))
     ("-shell" 1 (progn (setq quit 0) (load 1 :verbose nil)))
     ("-load" 1 (load 1 :verbose verbose))
@@ -88,7 +89,7 @@ Usage: ecl [-? | --help]
 	   (rule (assoc option +command-arg-rules+ :test #'string=)))
       (cond ((string= option "-rc")
 	     (setq loadrc t))
-	    ((string= option "-norc")
+	    ((member option '("--help" "-h" "-?" "-norc") :test #'string=)
 	     (setq loadrc nil))
 	    ((string= option "--")
 	     (setf option-list nil))
