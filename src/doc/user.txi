@@ -295,13 +295,13 @@ several files. If you have not modified these directories when
 invoking @file{configure} the layout should be
 
 @multitable @columnfractions .5 .5
-@headitem Executable files: @tab 
+@item @b{Executable files:} @tab 
 @item @file{$HOME/bin/ecl}          @tab the @ecl{} interpreter and compiler
-@headitem Help documents: @tab
+@item @b{Help documents:} @tab
 @item @file{$HOME/lib/ecl/help.doc} @tab data for the online help
 @item @file{$HOME/man/man1/ecl.1}   @tab manual page for @ecl{}
 @item @file{$HOME/info/ecl.info}    @tab this manual you are reading
-@headitem Library files and headers: @tab 
+@item @b{Library files and headers:} @tab 
 @item @file{$HOME/lib/ecl/libecl.a} @tab the core library in C
 @item @file{$HOME/lib/ecl/libgmp.a} @tab GNU library for bignums
 @item @file{$HOME/lib/ecl/libgc.a}  @tab Boehm-Weiser garbage collector
@@ -562,7 +562,7 @@ format.
 
 The floating-point precisions and exponent sizes are:
 @multitable {Format} {precision} {exponent}
-@headitem Format @tab precision @tab exponent
+@item @b{Format} @tab @b{precision} @tab @b{exponent}
 @item Short  @tab 24 bits @tab 8 bits
 @item Single @tab 24 bits @tab 8 bits
 @item Double @tab 53 bits @tab 11 bits
@@ -605,7 +605,7 @@ are implemented using 8-bit codes.
 2.2.1 of @bibcite{Steele:84}.  Non-printing characters have the following
 character codes.
 @multitable {Character} {Code (in octal)}
-@headitem Character     @tab Code (in octal)
+@item @b{Character}     @tab @b{Code (in octal)}
 @item #@back{}Null      @tab  000
 @item #@back{}Space     @tab  040
 @item #@back{}Newline   @tab  012
@@ -693,7 +693,7 @@ In @ecl{}, array elements are represented in one of six ways depending on the
 type of the @code{array}.
 
 @multitable {(array short-float) and (vector short-float)} {64 bit floating point}
-@headitem Array Type @tab Element Representation
+@item @b{Array Type} @tab @b{Element Representation}
 @item (array t) and (vector t)
         @tab a cell pointer
 @item (array fixnum) and (vector fixnum)
@@ -1285,7 +1285,7 @@ generic functions of CLOS.
 @center Table 4-1  Implementation Types
 @c @vspace{1 em}
 @multitable {@emph{Implementation Type}} {@emph{@clisp{} Data Type}}
-@headitem @emph{Implementation Type} @tab @emph{@clisp{} Data Type}
+@item @b{@emph{Implementation Type}} @tab @b{@emph{@clisp{} Data Type}}
 @item @code{cons} @tab @code{cons}
 @item @code{fixnum} @tab @code{fixnum}
 @item @code{bignum} @tab @code{bignum}
