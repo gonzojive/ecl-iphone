@@ -334,7 +334,8 @@ rebinds this variable to NIL when control enters a break loop.")
 ECL specific.
 The top-level loop of ECL. It is called by default when ECL is invoked."
   (catch *quit-tag*
-    (let* (+ ++ +++ - * ** *** / // ///)
+    (let* ((*debugger-hook* nil)
+	   + ++ +++ - * ** *** / // ///)
 
       (in-package "CL-USER")
 
