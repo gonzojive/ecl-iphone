@@ -21,6 +21,7 @@
 ;;;	var-object
 ;;;	( VALUE i )			VALUES(i)
 ;;;	( VV vv-index )
+;;;	( VV-temp vv-index )
 ;;;	( LCL lcl )			local variable, type unboxed
 ;;;	( TEMP temp )			local variable, type object
 ;;;	( CALL c-fun-name args fname )	locs are locations containing the arguments
@@ -146,6 +147,11 @@
     (wt "VV[" vv "]")
     (wt vv)))
 
+(defun wt-vv-temp (vv)
+  (if (numberp vv)
+    (wt "VVtemp[" vv "]")
+    (wt vv)))
+
 (defun wt-lcl-loc (lcl)
   (wt-lcl lcl))
 
@@ -181,6 +187,7 @@
 (put-sysprop 'TEMP 'WT-LOC #'wt-temp)
 (put-sysprop 'LCL 'WT-LOC #'wt-lcl-loc)
 (put-sysprop 'VV 'WT-LOC #'wt-vv)
+(put-sysprop 'VV-temp 'WT-LOC #'wt-vv-temp)
 (put-sysprop 'CAR 'WT-LOC #'wt-car)
 (put-sysprop 'CDR 'WT-LOC #'wt-cdr)
 (put-sysprop 'CADR 'WT-LOC #'wt-cadr)

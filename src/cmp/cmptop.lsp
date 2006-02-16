@@ -81,7 +81,8 @@
 
 (defun emit-local-funs ()
   ;; Local functions and closure functions
-  (do ()
+  (do ((*compile-time-too* nil)
+       (*compile-toplevel* nil))
       ;; repeat until t3local-fun generates no more
       ((eq *emitted-local-funs* *local-funs*))
     ;; scan *local-funs* backwards
@@ -129,6 +130,7 @@
     (wt-nl1 "void " (init-function-name name) "(cl_object flag)")
     (wt-nl1 "{ VT" *reservation-cmacro* " CLSR" *reservation-cmacro*)
     (wt-nl "cl_object value0;")
+    (wt-nl "cl_object *VVtemp;")
     (when shared-data
       (wt-nl "Cblock=flag;")
       (wt-nl "VV = flag->cblock.data;"))
@@ -141,6 +143,7 @@
       (when *self-destructing-fasl*
 	(wt-nl "flag->cblock.self_destruct=1;"))
       (wt-nl "flag->cblock.data_size = VM;")
+      (wt-nl "flag->cblock.temp_data_size = VMtemp;")
       (wt-nl "flag->cblock.data_text = compiler_data_text;")
       (wt-nl "flag->cblock.data_text_size = compiler_data_text_size;")
       (wt-nl "return;}")
@@ -152,6 +155,8 @@
 	     (nth-value 1 (si::mangle-name '*compiler-constants* nil))
 	     ");")
       (wt-nl "memcpy(VV, data->vector.self.t, VM*sizeof(cl_object));}"))
+    (wt-nl "VVtemp = Cblock->cblock.temp_data;")
+
     ;; useless in initialization.
     (dolist (form *top-level-forms*)
       (let ((*compile-to-linking-call* nil)
@@ -173,10 +178,12 @@
 	  (wt-h "#undef ECL_DYNAMIC_VV")
 	  (wt-h "#define compiler_data_text \"\"")
 	  (wt-h "#define compiler_data_text_size 0")
-	  (wt-h "#define VM " num-objects 0)
+	  (wt-h "#define VM 0")
+	  (wt-h "#define VMtemp 0")
 	  (wt-h "#define VV NULL"))
 	(progn
-	  (wt-h "#define VM " num-objects)
+	  (wt-h "#define VM " (data-permanent-storage-size))
+	  (wt-h "#define VMtemp "  (data-temporary-storage-size))
 	  (wt-h "#ifdef ECL_DYNAMIC_VV")
 	  (wt-h "static cl_object *VV;")
 	  (wt-h "#else")

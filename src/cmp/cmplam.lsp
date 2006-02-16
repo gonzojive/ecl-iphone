@@ -136,6 +136,7 @@
                       &optional (block-name nil block-it)
                       &aux doc body ss is ts
                            other-decls
+			   (*permanent-data* t)
                            (*vars* *vars*)
 		           (old-vars *vars*))
   (declare (si::c-local))
@@ -249,6 +250,7 @@
 		 (nkey (/ (length keywords) 4))
 		 (varargs (or optionals rest keywords allow-other-keys))
 		 simple-varargs
+		 (*permanent-data* t)
 		 (*unwind-exit* *unwind-exit*)
 		 (*env* *env*)
 		 (block-p nil)

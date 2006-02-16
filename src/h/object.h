@@ -401,6 +401,8 @@ struct ecl_codeblock {
 	void	*entry;			/*  entry point  */
  	cl_object *data;		/*  data vector  */
 	int	data_size;
+	cl_object *temp_data;		/*  data vector for toplevel forms */
+	int	temp_data_size;
 	const char *data_text;		/*  string with objects to be defined  */
 	int	data_text_size;
 	cl_object next;			/*  next codeblock within same library */

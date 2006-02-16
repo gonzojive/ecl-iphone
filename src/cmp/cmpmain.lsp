@@ -292,7 +292,7 @@ static cl_object *VV;
 static cl_object VV[VM];
 #endif
 #define ECL_SHARED_DATA_FILE 1
-" (data-size))
+" (data-permanent-storage-size))
 	   (data-dump c-file))
 	  (t
 	   (format c-file "

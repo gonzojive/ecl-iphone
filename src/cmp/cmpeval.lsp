@@ -22,7 +22,7 @@
 		 ((eq form t) (c1t))
 		 ((keywordp form)
 		  (make-c1form* 'LOCATION :type (object-type form)
-				:args (list 'VV (add-object form))))
+				:args (add-symbol form)))
 		 ((constantp form)
 		  (or (c1constant-value (symbol-value form) nil)
 		      (c1var form)))

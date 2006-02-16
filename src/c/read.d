@@ -1952,9 +1952,9 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 {
 	volatile cl_object old_eptbc = cl_core.packages_to_be_created;
 	volatile cl_object x;
-	cl_index i, len;
+	cl_index i, len, perm_len, temp_len;
 	cl_object in;
-	cl_object *VV;
+	cl_object *VV, *VVtemp;
 
 	if (block == NULL) {
 		block = cl_alloc_object(t_codeblock);
@@ -1971,13 +1971,17 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 		 * back the amount of data to be processed.
 		 */
 		(*entry_point)(block);
-		len = block->cblock.data_size;
+		perm_len = block->cblock.data_size;
+		temp_len = block->cblock.temp_data_size;
+		len = perm_len + temp_len;
 #ifdef ECL_DYNAMIC_VV
-		VV = block->cblock.data = len? (cl_object *)cl_alloc(len * sizeof(cl_object)) : NULL;
+		VV = block->cblock.data = perm_len? (cl_object *)cl_alloc(perm_len * sizeof(cl_object)) : NULL;
 #else
 		VV = block->cblock.data;
 #endif
 		if ((len == 0) || (block->cblock.data_text == 0)) goto NO_DATA_LABEL;
+		VVtemp = temp_len? (cl_object *)cl_alloc(temp_len * sizeof(cl_object)) : NULL;
+		block->cblock.temp_data = VVtemp;
 
 		/* Read all data for the library */
 		in=ecl_make_string_input_stream(make_constant_string(block->cblock.data_text),
@@ -1992,11 +1996,18 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 			x = read_object(in);
 			if (x == OBJNULL)
 				break;
-			VV[i] = x;
+			if (i < perm_len)
+				VV[i] = x;
+			else
+				VVtemp[i-perm_len] = x;
 		}
 		if (!Null(SYM_VAL(@'si::*sharp-eq-context*'))) {
 			while (i--) {
-				VV[i] = patch_sharp(VV[i]);
+				if (i < perm_len) {
+					VV[i] = patch_sharp(VV[i]);
+				} else {
+					VVtemp[i-perm_len] = patch_sharp(VVtemp[i-perm_len]);
+				}
 			}
 		}
 		bds_unwind_n(6);
@@ -2013,6 +2024,13 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 				2, block->cblock.name, CAR(x));
 			}
 		} end_loop_for_on;
+		if (VVtemp) {
+			cl_index bytes = sizeof(*VVtemp) * temp_len;
+			block->cblock.temp_data = NULL;
+			block->cblock.temp_data_size = 0;
+			memset(VVtemp, 0, bytes);
+			cl_dealloc(VVtemp, bytes);
+		}
 		bds_unwind1();
 	} CL_UNWIND_PROTECT_EXIT {
 		if (in != OBJNULL)

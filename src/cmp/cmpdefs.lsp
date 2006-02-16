@@ -319,7 +319,6 @@ The default value is NIL.")
 (defvar *env-lvl* 0)		; number of levels of environments
 
 (defvar *next-cmacro* 0)	; holds the last cmacro number used.
-(defvar *next-vv* -1)		; holds the last VV index used.
 (defvar *next-cfun* 0)		; holds the last cfun used.
 
 ;;;
@@ -408,7 +407,10 @@ lines are inserted, but the order is preserved")
 (defvar *compile-time-too* nil)
 (defvar *not-compile-time* nil)
 
-(defvar *objects* nil)			; holds { ( object text vv-index ) }*
+(defvar *permanent-data* nil)		; detemines whether we use *permanent-objects*
+					; or *temporary-objects*
+(defvar *permanent-objects* nil)	; holds { ( object (VV vv-index) ) }*
+(defvar *temporary-objects* nil)	; holds { ( object (VV vv-index) ) }*
 (defvar *load-time-values* nil)		; holds { ( vv-index form ) }*,
 ;;;  where each vv-index should be given an object before
 ;;;  defining the current function during loading process.

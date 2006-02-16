@@ -50,8 +50,7 @@
 	((eql string #\Newline) (c2call-global 'TERPRI (list stream) nil t))
 	(t (c2call-global
 	    'PRINC
-	    (list (make-c1form 'LOCATION *info*
-			       (list 'VV (add-object string)))
+	    (list (make-c1form 'LOCATION *info* (add-object string))
 		  stream) nil t))))
 
 (defun c1terpri (args &aux stream)

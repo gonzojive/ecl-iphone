@@ -107,16 +107,27 @@
 ;;; DATA FILES
 ;;;
 
-(defun data-init (&optional filename)
-  (if (and filename (probe-file filename))
-    (with-open-file (s filename :direction :input)
-      (setf *objects* (read s)
-	    *next-vv* (read s)))
-    (setf *objects* '()
-	  *next-vv* -1)))
+(defun data-permanent-storage-size ()
+  (length *permanent-objects*))
+
+(defun data-temporary-storage-size ()
+  (length *temporary-objects*))
 
 (defun data-size ()
-  (1+ *next-vv*))
+  (+ (data-permanent-storage-size)
+     (data-temporary-storage-size)))
+
+(defun data-init (&optional filename)
+  (if (and filename (probe-file filename))
+      (with-open-file (s filename :direction :input)
+	(setf *permanent-objects* (read s)
+	      *temporary-objects* (read s)))
+      (setf *permanent-objects* (make-array 128 :adjustable t :fill-pointer 0)
+	    *temporary-objects* (make-array 128 :adjustable t :fill-pointer 0))))
+
+(defun data-get-all-objects ()
+  (nconc (map 'list #'first *permanent-objects*)
+	 (map 'list #'first *temporary-objects*)))
 
 (defun data-dump (stream &optional as-lisp-file &aux must-close)
   (etypecase stream
@@ -140,23 +151,20 @@
 	(sys::*print-structure* t)
 	(output nil))
     (cond (as-lisp-file
-	   (print *objects* stream)
-	   (print *next-vv* stream))
+	   (print *permanent-objects* stream)
+	   (print *temporary-objects* stream))
 	  (*compiler-constants*
 	   (format stream "~%#define compiler_data_text NULL~%#define compiler_data_text_size 0~%")
-	   (setf output (make-sequence 'vector (data-size)))
-	   (dolist (record *objects*)
-	     (setf (aref output (third record)) (first record))))
+	   (setf output (concatenate 'vector (data-get-all-objects))))
 	  ((plusp (data-size))
 	   (wt-data-begin stream)
 	   (wt-filtered-data
-	    (subseq (prin1-to-string (nreverse (mapcar #'car *objects*))) 1)
+	    (subseq (prin1-to-string (data-get-all-objects)) 1)
 	    stream)
 	   (wt-data-end stream)))
     (when must-close
       (close must-close))
-    (setf *objects* nil
-	  *next-vv* -1)
+    (data-init)
     output))
 
 (defun wt-data-begin (stream)
@@ -171,32 +179,38 @@
   (setf *wt-string-size* 0))
 
 (defun data-empty-loc ()
-  (let ((x `(VV ,(incf *next-vv*))))
-    (push (list 0 x *next-vv*) *objects*)
-    x))
+  (add-object 0 :duplicate t :permanent t))
 
-(defun add-object (object &optional (duplicate nil))
+(defun add-object (object &key (duplicate nil)
+		   (permanent (or (symbolp object) *permanent-data*)))
   (when (and (not *compiler-constants*) (typep object '(or function package)))
     (error "Object ~S cannot be externalized" object))
   (let* ((test (if *compiler-constants* 'eq 'equal))
-	 (x (assoc object *objects* :test test))
-	 (found nil))
+	 (array (if permanent *permanent-objects* *temporary-objects*))
+	 (vv (if permanent 'VV 'VV-temp))
+	 (x (or (and (not permanent)
+		     (find object *permanent-objects* :test test
+			   :key #'first))
+		(find object array :test test :key #'first)))
+	 (next-ndx (length array))
+	 found)
     (cond ((and x duplicate)
-	   (setq found `(VV ,(incf *next-vv*)))
-	   (push (list object found *next-vv* (- (1+ (third x)))) *objects*)
-	   found)
+	   (setq x (list vv next-ndx))
+	   (vector-push-extend (list object x next-ndx) array)
+	   x)
 	  (x
 	   (second x))
 	  ((and (not duplicate)
 		(symbolp object)
 		(multiple-value-setq (found x) (si::mangle-name object)))
 	   x)
-	  (t (setq x `(VV ,(incf *next-vv*)))
-	     (push (list object x *next-vv*) *objects*)
-	     x))))
+	  (t
+	   (setq x (list vv next-ndx))
+	   (vector-push-extend (list object x next-ndx) array)
+	   x))))
 
 (defun add-symbol (symbol)
-  (add-object symbol))
+  (add-object symbol :duplicate nil :permanent t))
 
 (defun add-keywords (keywords)
   ;; We have to build, in the vector VV[], a sequence with all
@@ -206,12 +220,13 @@
   ;; keywords lists from other functions when they coincide with ours.
   ;; We search for keyword lists that are similar. However, the list
   ;; *OBJECTS* contains elements in decreasing order!!!
-  (let ((x (search (reverse keywords) *objects*
-		   :test #'(lambda (k rec) (eq k (first rec))))))
+  (let ((x (search keywords *permanent-objects*
+		   :test #'(lambda (k record) (eq k (first record))))))
     (if x
 	(progn
 	  (cmpnote "Reusing keywords lists for ~S" keywords)
-	  (second (elt *objects* (+ x (length keywords) -1))))
-	(let ((x (add-object (first keywords) t)))
-	  (dolist (k (rest keywords) x)
-	    (add-object k t))))))
+	  (second (elt *permanent-objects* x)))
+	(prog1
+	    (add-object (pop keywords) :duplicate t :permanent t)
+	  (dolist (k keywords)
+	    (add-object k :duplicate t :permanent t))))))

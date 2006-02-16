@@ -414,7 +414,7 @@
 		 (t
 		  (when (and (consp object) (eq (first object) 'QUOTE))
 		    (setq object (second object)))
-		  (wt (add-object object))))))
+		  (wt (add-object object :permanent t))))))
 	(#\#
 	 (let* ((k (read-char s))
 		(next-char (peek-char nil s nil nil))
