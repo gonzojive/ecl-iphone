@@ -83,7 +83,7 @@ ECL 0.9i
  - It is now possible to define subclasses of STANDARD-CLASS. Before, some
    slots were not properly inherited by subclasses, causing errors when doing
    something like
-	> (defclass foo (standard-class) () ())
+	> (defclass foo (standard-class) ())
 	> (defclass faa () () (:metaclass foo))
 
 * Documentation:
