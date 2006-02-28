@@ -89,6 +89,9 @@ ECL 0.9i
 	> (defclass foo (standard-class) ())
 	> (defclass faa () () (:metaclass foo))
 
+ - Callback functions are now 'static' so that the same names can be used
+   in different files.
+
 * Documentation:
 
  - The HTML manuals now use CSS for a more appealing look.

@@ -84,7 +84,7 @@
 		(:stdcall "__stdcall ")
 		(t (cmperr "DEFCALLBACK does not support ~A as calling convention"
 			   call-type)))))
-    (wt-nl1 return-type-name " " fmod c-name "(")
+    (wt-nl1 "static " return-type-name " " fmod c-name "(")
     (loop for n from 0
 	  and type in arg-types
 	  with comma = ""
