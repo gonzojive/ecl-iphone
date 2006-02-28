@@ -19,6 +19,9 @@
 #include <stdlib.h>
 #include <float.h>
 #include <math.h>
+#ifdef _MSC_VER
+# undef complex
+#endif
 #include <ctype.h>
 #ifndef _MSC_VER
 #include <unistd.h>

@@ -1023,7 +1023,7 @@ BEGIN:
 #if defined(ECL_WSOCK)
 	case smm_io_wsock:
 	case smm_input_wsock: {
-		int fp = strm->stream.file;
+		int fp = (int)strm->stream.file;
 		if (!strm->stream.char_stream_p)
 			not_a_character_stream(strm);
 		if ( fp == INVALID_SOCKET )

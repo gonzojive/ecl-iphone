@@ -62,7 +62,7 @@ ecl/external.h: c/external.h
 	cp $(srcdir)/h/*.h ecl/
 	if grep 'undef ENABLE_DLOPEN' ecl/config.h; then cp c/external.h h; fi
 
-bin/ecl$(EXE): ecl_min$(EXE) compile.lsp sysfun.lsp ecl/external.h
+bin/ecl$(EXE): ecl_min$(EXE) compile.lsp sysfun.lsp ecl/external.h BUILD-STAMP
 	if [ -f CROSS-COMPILER ]; then \
 		./CROSS-COMPILER < compile.lsp; \
 	else \
@@ -116,7 +116,7 @@ rt.lisp:
 BUILD-STAMP: config.status
 	echo "#" `uname -a` > $@
 	head -8 config.log | tail -6 >> $@
-install: BUILD-STAMP install-base
+install: install-base
 	cd c; $(MAKE) prefix=$(prefix) DESTDIR=$(DESTDIR) install
 	cd doc; $(MAKE) prefix=$(prefix) DESTDIR=$(DESTDIR) install
 install-base:

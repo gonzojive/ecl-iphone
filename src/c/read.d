@@ -18,12 +18,17 @@
 #include <limits.h>
 #include <float.h>
 #include <math.h>
+#ifdef _MSC_VER
+# undef complex
+#endif
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ecl/internal.h>
 #include <ecl/ecl-inl.h>
 #include <ecl/bytecodes.h>
+
+#undef _complex
 
 #define	cat(rtbl,c)	((rtbl)->readtable.table[c].syntax_type)
 #define read_suppress (SYM_VAL(@'*read-suppress*') != Cnil)
@@ -384,7 +389,7 @@ parse_number(const char *s, cl_index end, cl_index *ep, int radix)
 #ifdef __GNUC__
 		char buffer[end+1];
 #else
-		char *buffer = cl_alloc_atomic(end+1);
+		char *buffer = (char*)cl_alloc_atomic(end+1);
 #endif
 		char *parse_end;
 		char exp_marker;

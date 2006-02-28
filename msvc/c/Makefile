@@ -16,7 +16,7 @@ THREADS_FLAGS=
 #
 TRUE_CC = cl
 CC	= cl
-CFLAGS	= -c $(ECL_CFLAGS) -I./ -I$(srcdir) -I$(HDIR) -I../h -I$(top_srcdir)/gc/include
+CFLAGS	= -c $(ECL_CFLAGS) -I./ -I../ -I$(srcdir) -I$(top_srcdir)/gc/include
 #	  -Wall -W -Wfloat-equal -Wundef -Wendif-labels -Wpointer-arith -Wcast-align \
 #	  -Wwrite-strings -Wconversion -Wsign-compare -Wmissing-prototypes -Wredundant-decls \
 #	  -Wunreachable-code -Winline
@@ -45,7 +45,9 @@ HFILES	= ..\ecl\config.h $(HDIR)\ecl.h $(HDIR)\ecl-cmp.h\
 	$(HDIR)\object.h $(HDIR)\cs.h $(HDIR)\stacks.h\
 	$(HDIR)\external.h $(HDIR)\eval.h\
 	$(HDIR)\number.h $(HDIR)\page.h $(HDIR)\unify.h\
-	$(HDIR)\lwp.h $(HDIR)\internal.h
+	$(HDIR)\lwp.h $(HDIR)\internal.h $(HDIR)\ecl-inl.h\
+	$(HDIR)\bytecodes.h
+
 OBJS	= main.obj symbol.obj package.obj list.obj\
 	apply.obj eval.obj interpreter.obj compiler.obj disassembler.obj \
 	instance.obj gfun.obj reference.obj character.obj\
@@ -60,7 +62,7 @@ OBJS	= main.obj symbol.obj package.obj list.obj\
 	structure.obj load.obj unixfsys.obj unixsys.obj \
 	ffi.obj alloc_2.obj tcp.obj $(THREADS_OBJ) ffi_x86.obj
 
-all:	$(DPP) external.h ..\eclmin.lib ..\cinit.obj
+all:	$(DPP) ecl\external.h ..\eclmin.lib ..\cinit.obj
 
 .SUFFIXES: .obj .c .d
 
@@ -82,7 +84,7 @@ all:	$(DPP) external.h ..\eclmin.lib ..\cinit.obj
 # declarations, because the variables that they mark are in the
 # in the library and can be referenced without indirection.
 #
-external.h: $(top_srcdir)/h/external.h Makefile
+ecl\external.h: $(top_srcdir)/h/external.h Makefile
 	cut.exe removedecl < $(top_srcdir)/h/external.h > $@
 
 cut.exe: $(top_srcdir)/util/cut.c
@@ -106,7 +108,7 @@ flatinstall: $(HFILES)
 	$(LINK) -lib -out:$@ $(OBJS)
 
 clean:
-	-for %f in (..\ecl\config.h dpp dpp.obj $(DPP) external.h \
+	-for %f in (..\ecl\config.h dpp dpp.obj $(DPP) ecl\external.h \
 	            ..\eclmin.lib ..\cinit.obj cinit.c \
 		    symbols_list2.h) \
 	     do $(RM) %f
@@ -116,9 +118,10 @@ clean:
 
 # Build rules
 
-$(DPP): $(srcdir)/dpp.c $(srcdir)/symbols_list2.h ../h/config.h
-	$(TRUE_CC) -I../h -I./ -I$(HDIR) $(DEFS) $(srcdir)/dpp.c  -o $@
-../h/config.h: ../h/config.h.msvc6 Makefile
+$(DPP): $(srcdir)/dpp.c $(srcdir)/symbols_list2.h ../ecl/config.h ecl\external.h
+	$(TRUE_CC) -I.. -I./ $(DEFS) $(srcdir)/dpp.c  -o $@
+../ecl/config.h: ../ecl/config.h.msvc6 Makefile
+	for %i in ($(HFILES)) do $(CP) %i ..\ecl
 	cut.exe "@ECL_FPE_CODE@" "$(srcdir:\=/)/arch/fpe_x86.c" \
 	        < ..\ecl\config.h.msvc6 > $@
 
@@ -136,12 +139,12 @@ apply.o: apply.c $(HFILES) $(HDIR)/cs.h
 # These files are interrelated
 #
 all_symbols.obj: all_symbols.c
-	$(CC) $(CFLAGS) -Fo$@ -I./ all_symbols.c
+	$(CC) $(CFLAGS) -Fo$@ -I../ -I./ all_symbols.c
 all_symbols2.obj: all_symbols.c
-	$(CC) $(CFLAGS) -DECL_FINAL -Fo$@ -I./ all_symbols.c
+	$(CC) $(CFLAGS) -DECL_FINAL -Fo$@ -I../ -I./ all_symbols.c
 #
 # This is in another directory
 #
 ../cinit.obj: cinit.c
-	$(CC) $(CFLAGS) -I./ -o cinit.obj cinit.c
+	$(CC) $(CFLAGS) -I../ -I./ -o cinit.obj cinit.c
 	$(MV) cinit.obj ..\

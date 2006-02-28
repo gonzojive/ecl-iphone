@@ -59,7 +59,7 @@ CC	= cl
 MFLAGS  = -MD
 CFLAGS  = -GX -DGC_DLL -nologo
 LIBS	= eclgc.lib eclgmp.lib user32.lib ws2_32.lib
-LDFLAGS	= /link /nodefaultlib:libcmt /nodefaultlib:libc /nodefaultlib:libd
+LDFLAGS	= /link /nodefaultlib:libcmt /nodefaultlib:libcmtd /nodefaultlib:libc /nodefaultlib:libd
 SHARED_LDFLAGS = -LD
 GCFLAGS = nodebug=1
 RM	= del
@@ -166,8 +166,10 @@ c\cut$(EXE): $(top_srcdir)\util\cut.c
 	$(MAKE) cut$(EXE)
 	cd ..
 
-$(TARGETS): ecl_min$(EXE) compile.lsp sysfun.lsp
+$(TARGETS): ecl_min$(EXE) compile.lsp sysfun.lsp BUILD-STAMP
 	.\ecl_min < compile.lsp
+BUILD-STAMP: Makefile
+	date /t > $@
 
 ecl-static.lib: $(TARGETS)
 	link -lib -out:$@ eclmin.lib c\all_symbols2.obj lsp.lib eclgmp.lib eclgc.lib
@@ -229,7 +231,7 @@ clos/load.lsp: $(srcdir)/clos/load.lsp.in
 cmp/load.lsp: $(srcdir)/cmp/load.lsp.in
 	if not exist cmp $(MKDIR) cmp
 	$(CP) $(srcdir)\cmp\load.lsp.in cmp\load.lsp
-cmp/cmpcdefs.lsp: $(srcdir)/cmp/cmpdefs.lsp Makefile
+cmp/cmpdefs.lsp: $(srcdir)/cmp/cmpdefs.lsp Makefile
 	c\cut "@ECL_CC@" "$(CC)" \
 	    "@CFLAGS@" "$(CFLAGS)" \
 	    "@ECL_CFLAGS@" "" \
@@ -278,8 +280,9 @@ eclgc.lib:
 	$(CP) gc.lib ..\eclgc.lib
 	cd ..
 	for %h in (gc.h gc_local_alloc.h gc_pthread_redirects.h \
-	           gc_config_macros.h leak_detector.h gc_typed.h) \
-	    do $(CP) $(srcdir)\gc\include\%h ecl\%h
+	           gc_config_macros.h leak_detector.h gc_typed.h \
+	           private\gc_priv.h private\gcconfig.h gc_mark.h) \
+	    do $(CP) $(srcdir)\gc\include\%h ecl\gc\%h
 eclgmp.lib:
 	cd gmp
 	$(MAKE) "MPN_TYPE = $(GMP_TYPE)" "MFLAGS = $(MFLAGS)"
@@ -294,7 +297,8 @@ rt.lisp:
 
 install: install-base
 	for %h in (gc.h gc_local_alloc.h gc_pthread_redirects.h \
-	           gc_config_macros.h leak_detector.h gc_typed.h) \
+	           gc_config_macros.h leak_detector.h gc_typed.h \
+	           gc_mark.h private\gc_priv.h private\gcconfig.h) \
 	    do $(CP) ecl\%h $(libdir)\ecl
 	$(CP) ecl\gmp.h $(libdir)\ecl\gmp.h
 	cd c
@@ -346,8 +350,9 @@ clean: clean_ecl clean_lisp clean_doc
 	-$(MAKE) "ECL_THREADS = $(ECL_THREADS)" clean
 	cd ..
 	-for %h in (gc.h gc_local_alloc.h gc_pthread_redirects.h \
-	            gc_config_macros.h leak_detector.h gc_typed.h) \
-	     do $(RM) ecl\%h
+	            gc_config_macros.h leak_detector.h gc_typed.h \
+		    gc_mark.h private\gc_priv.h private\gcconfig.h) \
+	     do $(RM) ecl\gc\%h
 	cd gmp
 	$(MAKE) "ECL_THREADS = $(ECL_THREADS)" clean
 	cd ..

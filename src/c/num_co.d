@@ -24,6 +24,9 @@
 #include <ecl/ecl.h>
 #include <float.h>
 #include <math.h>
+#ifdef _MSC_VER
+# undef complex
+#endif
 #ifndef HAVE_ISOC99
 # define floorf floor
 # define ceilf ceil

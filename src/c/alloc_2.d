@@ -18,8 +18,8 @@
 #include <ecl/ecl.h>
 #include <ecl/internal.h>
 #include <ecl/page.h>
-#include <ecl/gc/gc.h>
-#include <ecl/gc/private/gc_priv.h>
+#include <gc.h>
+#include <private/gc_priv.h>
 
 #ifdef GBC_BOEHM
 

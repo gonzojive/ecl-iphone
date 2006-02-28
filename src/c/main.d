@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <ecl/internal.h>
+extern int GC_dont_gc;
 
 /******************************* EXPORTS ******************************/
 

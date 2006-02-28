@@ -16,6 +16,9 @@
 
 #include <ecl/ecl.h>
 #include <math.h>
+#ifdef _MSC_VER
+# undef complex
+#endif
 #include <float.h>
 #include <ecl/internal.h>
 

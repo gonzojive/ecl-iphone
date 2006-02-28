@@ -16,12 +16,15 @@
 
 #include <ecl/ecl.h>
 #include <math.h>
+#ifdef _MSC_VER
+# undef complex
+#endif
 #include <time.h>
 #ifdef HAVE_TIMES
-#include <sys/times.h>
+# include <sys/times.h>
 #endif
 #ifndef _MSC_VER
-#include <unistd.h>
+# include <unistd.h>
 #endif
 #include <ecl/internal.h>
 
