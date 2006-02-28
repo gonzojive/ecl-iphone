@@ -41,8 +41,8 @@ AC_ARG_ENABLE(threads,
 AC_ARG_ENABLE(boehm,
   AS_HELP_STRING( [--enable-boehm],
                   [use the Boehm-Weiser garbage collector]
-                  [(no|included|system|auto, default=auto)] ),
-  [], [enable_boehm=auto] )
+                  [(no|included|system|auto, default=included)] ),
+  [], [enable_boehm=included] )
 
 AC_ARG_ENABLE(local-boehm,
   AS_HELP_STRING( [--enable-local-boehm], [Deprecated! See --enable-boehm] ),

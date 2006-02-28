@@ -863,7 +863,7 @@ Optional Features:
   --enable-threads        support for native threads (yes|no|auto,
                           default=NO).
   --enable-boehm          use the Boehm-Weiser garbage collector
-                          (no|included|system|auto, default=auto)
+                          (no|included|system|auto, default=included)
   --enable-local-boehm    Deprecated! See --enable-boehm
   --enable-slow-config    use GMP to guess compiler/linker flags (no|yes,
                           default=NO)
@@ -1419,7 +1419,7 @@ if test "${enable_boehm+set}" = set; then
   enableval="$enable_boehm"
 
 else
-  enable_boehm=auto
+  enable_boehm=included
 fi;
 
 # Check whether --enable-local-boehm or --disable-local-boehm was given.
