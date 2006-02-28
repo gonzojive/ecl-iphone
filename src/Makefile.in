@@ -56,9 +56,10 @@ all:	$(TARGETS) bin/ecl-config doc
 # declarations, because the variables that they mark are in the
 # in the library and can be referenced without indirection.
 #
-c/external.h: $(top_srcdir)/h/external.h
+c/ecl/external.h: $(top_srcdir)/h/external.h
+	-mkdir c/ecl
 	sed 's,__declspec(dllimport),,g' $(top_srcdir)/h/external.h > $@
-ecl/external.h: c/external.h
+ecl/external.h: c/ecl/external.h c/ecl/external.h
 	cp $(srcdir)/h/*.h ecl/
 	if grep 'undef ENABLE_DLOPEN' ecl/config.h; then cp c/external.h h; fi
 
