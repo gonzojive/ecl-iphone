@@ -1,4 +1,4 @@
-;;;;  command-line.lsp -- command line processing
+;;;;  cmdline.lsp -- command line processing
 ;;;;
 ;;;;  Copyright (c) 2005, Juan Jose Garcia-Ripoll
 ;;;;
@@ -12,7 +12,7 @@
 
 (in-package "SYSTEM")
 
-(export '(*lisp-init-file-list* command-args))
+(export '(*lisp-init-file-list* command-args process-command-args))
 
 (defvar *lisp-init-file-list* '("~/.ecl" "~/.eclrc")
   "List of files automatically loaded when ECL is invoked.")
@@ -41,9 +41,11 @@ Usage: ecl [-? | --help]
   (quit 1))
 
 (defconstant +command-arg-rules+
-  '(("--help" 0 #0=(progn (help-message *standard-output*) (quit)))
-    ("-?" 0 #0#)
-    ("-h" 0 #0#)
+  '(("--help" 0 #0=(progn (help-message *standard-output*) (quit)) :noloadrc)
+    ("-?" 0 #0# :noloadrc)
+    ("-h" 0 #0# :noloadrc)
+    ("-norc" 0 nil :noloadrc)
+    ("--" 0 nil :stop)
     ("-eval" 1 (eval (read-from-string 1)))
     ("-shell" 1 (progn (setq quit 0) (load 1 :verbose nil)))
     ("-load" 1 (load 1 :verbose verbose))
@@ -70,7 +72,7 @@ Usage: ecl [-? | --help]
     ("-q" 0 (setq verbose nil))
     ("-s" 0 (setq system-p t))))
 
-(defun produce-init-code (option-list)
+(defun produce-init-code (option-list rules error-on-unknown)
   (declare (si::c-local))
   (do* ((commands '())
 	(loadrc t))
@@ -86,28 +88,52 @@ Usage: ecl [-? | --help]
 		   (when quit (quit 0)))
 		loadrc))
     (let* ((option (pop option-list))
-	   (rule (assoc option +command-arg-rules+ :test #'string=)))
-      (cond ((string= option "-rc")
-	     (setq loadrc t))
-	    ((member option '("--help" "-h" "-?" "-norc") :test #'string=)
-	     (setq loadrc nil))
-	    ((string= option "--")
-	     (setf option-list nil))
-	    ((null rule)
-	     (command-arg-error "Unknown command line option ~A.~%" option))
-	    (t
-	     (let ((pattern (copy-tree (third rule))))
-	       (unless (zerop (second rule))
-		 (when (null option-list)
-		   (command-arg-error
-		    "Missing argument after command line option ~A.~%"
-		    option))
-		 (nsubst (pop option-list) 1 pattern))
-	       (push pattern commands)))))))
+	   (rule (assoc option rules :test #'string=)))
+      (if (null rule)
+	  (if error-on-unknown
+	      (command-arg-error "Unknown command line option ~A.~%" option)
+	      (setf option-list nil))
+	  (let ((pattern (copy-tree (third rule))))
+	    (case (fourth rule)
+	      (:noloadrc (setf loadrc nil))
+	      (:loadrc (setf loadrc t))
+	      (:stop (setf option-list nil)))
+	    (let ((pattern (copy-tree (third rule))))
+	      (unless (zerop (second rule))
+		(when (null option-list)
+		  (command-arg-error
+		   "Missing argument after command line option ~A.~%"
+		   option))
+		(nsubst (pop option-list) 1 pattern))
+	      (push pattern commands)))))))
 
-(defun process-command-args (&optional (args (rest (command-args))))
+(defun process-command-args (&key
+			     (args (rest (command-args)))
+			     (rules +command-arg-rules+)
+			     (error-on-unknown t))
+"PROCESS-COMMAND-ARGS takes a list of arguments and processes according
+to a set of rules. These rules are of the format
+
+	(option-name nargs template [ :stop | :noloadrc | :loadrc ] )
+
+OPTION-NAME is a string containing the command line option. NARGS is
+the number of arguments that this option takes. TEMPLATE is a lisp
+form where numbers from 0 to NARGS will be substituted by the
+arguments, and which will be evaluated afterwards. The flags :STOP,
+:NOLOADRC and :LOADRC denote whether to stop processing the command
+line after this option and whether the initialization file will be
+loaded before evaluating all forms.
+
+An excerpt of the rules used by ECL:
+'((\"--help\" 0 #0=(progn (help-message *standard-output*) (quit)) :noloadrc)
+  (\"-?\" 0 #0# :noloadrc)
+  (\"-h\" 0 #0# :noloadrc)
+  (\"-norc\" 0 nil :noloadrc)
+  (\"--\" 0 nil :stop)
+  (\"-eval\" 1 (eval (read-from-string 1))))
+"
   (multiple-value-bind (commands loadrc)
-      (produce-init-code args)
+      (produce-init-code args rules error-on-unknown)
     (handler-case
 	(progn
 	  (when loadrc
