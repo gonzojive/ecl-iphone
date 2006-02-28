@@ -60,6 +60,9 @@ ECL 0.9i
  - When passed the option --help, -h or -?, ECL no longer loads the rc file
    (which is typically ~/.ecl or ~/.eclrc)
 
+ - Header files are now included with a prefix, as in #include <ecl/ecl.h>
+   or #include <ecl/config.h> to avoid collisions with other system files.
+
 * Errors fixed:
 
  - The intermediate output of the compiler is written in the directory in which

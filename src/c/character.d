@@ -14,7 +14,7 @@
 */
 
 
-#include "ecl.h"
+#include <ecl/ecl.h>
 #include <ctype.h>
 
 cl_fixnum

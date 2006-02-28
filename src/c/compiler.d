@@ -26,10 +26,10 @@
     are marked with flag [1].
 */
 #include <string.h>
-#include "ecl.h"
-#include "ecl-inl.h"
-#include "internal.h"
-#include "bytecodes.h"
+#include <ecl/ecl.h>
+#include <ecl/ecl-inl.h>
+#include <ecl/internal.h>
+#include <ecl/bytecodes.h>
 
 /********************* EXPORTS *********************/
 

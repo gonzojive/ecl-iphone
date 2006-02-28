@@ -14,16 +14,16 @@
     See file '../Copyright' for full details.
 */
 
+#include <ecl/ecl.h>
 #include <limits.h>
 #include <float.h>
 #include <math.h>
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
-#include "ecl.h"
-#include "internal.h"
-#include "ecl-inl.h"
-#include "bytecodes.h"
+#include <ecl/internal.h>
+#include <ecl/ecl-inl.h>
+#include <ecl/bytecodes.h>
 
 #define	cat(rtbl,c)	((rtbl)->readtable.table[c].syntax_type)
 #define read_suppress (SYM_VAL(@'*read-suppress*') != Cnil)

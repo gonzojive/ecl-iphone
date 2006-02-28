@@ -14,7 +14,7 @@
 */
 
 
-#include "ecl.h"
+#include <ecl/ecl.h>
 
 cl_object
 APPLY(cl_narg n, cl_objectfn fn, cl_object *x)

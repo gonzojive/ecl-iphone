@@ -14,8 +14,8 @@
     See file '../Copyright' for full details.
 */
 
+#include <ecl/ecl.h>
 #include <string.h>
-#include "ecl.h"
 
 /******************************* ------- ******************************/
 

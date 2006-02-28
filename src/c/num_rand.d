@@ -14,7 +14,7 @@
     See file '../Copyright' for full details.
 */
 
-#include "ecl.h"
+#include <ecl/ecl.h>
 #include <time.h>
 
 static cl_object

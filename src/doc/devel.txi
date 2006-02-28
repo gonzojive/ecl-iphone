@@ -340,7 +340,7 @@ Type :h for Help.  Top level.
 ;;; Compiling hello.lisp.
 ;;; End of Pass 1.  
 ;;; Calling the C compiler... 
-;;; Invoking external command: gcc -O2 -march=i686 -pipe -fomit-frame-pointer -fPIC -fstrict-aliasing -Dlinux -O "-I/usr/lib/ecl//h" -w -c "hello.c" -o "hello.o"
+;;; Invoking external command: gcc -O2 -march=i686 -pipe -fomit-frame-pointer -fPIC -fstrict-aliasing -Dlinux -O "-I/usr/lib/ecl/" -w -c "hello.c" -o "hello.o"
 ;;; Invoking external command: gcc -o "hello.fas" -L"/usr/lib/ecl/" "hello.o"  -Wl,--rpath,/usr/lib/ecl/ -shared   -lecl -lgmp -lgc -ldl -lm 
 ;;; OPTIMIZE levels: Safety=2, Space=0, Speed=3
 ;;; Finished compiling hello.lisp.
@@ -366,7 +366,7 @@ Type :h for Help.  Top level.
 ;;; Compiling hello.lisp.
 ;;; End of Pass 1.  
 ;;; Calling the C compiler... 
-;;; Invoking external command: gcc -O2 -march=i686 -pipe -fomit-frame-pointer -fPIC -fstrict-aliasing -Dlinux -O "-I/usr/lib/ecl//h" -w -c "hello.c" -o "hello.o"
+;;; Invoking external command: gcc -O2 -march=i686 -pipe -fomit-frame-pointer -fPIC -fstrict-aliasing -Dlinux -O "-I/usr/lib/ecl/" -w -c "hello.c" -o "hello.o"
 ;;; OPTIMIZE levels: Safety=2, Space=0, Speed=3
 ;;; Finished compiling hello.lisp.
 #P"hello.o"
@@ -377,7 +377,7 @@ The final step is to build the executable using the @code{c:build-program}
 instruction.
 @smallformat
 > @b{(c:build-program "myecl" :lisp-files '("hello.o"))}
-;;; Invoking external command: gcc -O2 -march=i686 -pipe -fomit-frame-pointer -fPIC -fstrict-aliasing -Dlinux -O "-I/usr/lib/ecl//h" -w -c "myecl.c" -o "myecl.o"
+;;; Invoking external command: gcc -O2 -march=i686 -pipe -fomit-frame-pointer -fPIC -fstrict-aliasing -Dlinux -O "-I/usr/lib/ecl/" -w -c "myecl.c" -o "myecl.o"
 ;;; Invoking external command: gcc -o "myecl" -L"/usr/lib/ecl/" "myecl.o" "hello.o"  -Wl,--rpath,/usr/lib/ecl/  -lecl -lgmp -lgc -ldl -lm 
 #P"myecl"
 Top level.
@@ -407,7 +407,7 @@ Type :h for Help.  Top level.
 ;;; Compiling hello.lisp.
 ;;; End of Pass 1.  
 ;;; Calling the C compiler... 
-;;; Invoking external command: gcc -O2 -march=i686 -pipe -fomit-frame-pointer -fPIC -fstrict-aliasing -Dlinux -O "-I/usr/lib/ecl//h" -w -c "hello.c" -o "hello.o"
+;;; Invoking external command: gcc -O2 -march=i686 -pipe -fomit-frame-pointer -fPIC -fstrict-aliasing -Dlinux -O "-I/usr/lib/ecl/" -w -c "hello.c" -o "hello.o"
 ;;; OPTIMIZE levels: Safety=2, Space=0, Speed=3
 ;;; Finished compiling hello.lisp.
 #P"hello.o"
@@ -418,7 +418,7 @@ The final step is to build the library using the @code{c:build-shared-library}
 instruction.
 @smallformat
 > (c:build-shared-library "myecl" :lisp-files '("hello.o"))
-;;; Invoking external command: gcc -O2 -march=i686 -pipe -fomit-frame-pointer -fPIC -fstrict-aliasing -Dlinux -O "-I/usr/lib/ecl//h" -w -c "myecl.c" -o "myecl.o"
+;;; Invoking external command: gcc -O2 -march=i686 -pipe -fomit-frame-pointer -fPIC -fstrict-aliasing -Dlinux -O "-I/usr/lib/ecl/" -w -c "myecl.c" -o "myecl.o"
 ;;; Invoking external command: gcc -o "libmyecl.so" -L"/usr/lib/ecl/" "myecl.o" "hello.o"  -Wl,--rpath,/usr/lib/ecl/ -shared   -lecl -lgmp -lgc -ldl -lm 
 #P"libmyecl.so"
 @end smallformat

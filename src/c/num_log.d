@@ -14,9 +14,9 @@
     See file '../Copyright' for full details.
 */
 
-#include "ecl.h"
+#include <ecl/ecl.h>
 #include <stdlib.h>
-#include "internal.h"
+#include <ecl/internal.h>
 
 /*
  * BIT OPERATIONS FOR FIXNUMS

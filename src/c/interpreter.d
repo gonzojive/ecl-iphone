@@ -12,10 +12,10 @@
     See file '../Copyright' for full details.
 */
 
+#include <ecl/ecl.h>
 #include <string.h>
-#include "ecl.h"
-#include "ecl-inl.h"
-#include "bytecodes.h"
+#include <ecl/ecl-inl.h>
+#include <ecl/bytecodes.h>
 
 #undef frs_pop
 #define frs_pop() { \

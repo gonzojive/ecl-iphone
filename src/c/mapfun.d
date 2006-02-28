@@ -14,7 +14,7 @@
 */
 
 
-#include "ecl.h"
+#include <ecl/ecl.h>
 
 static cl_index
 prepare_map(cl_va_list lists, cl_index *cdrs_sp)

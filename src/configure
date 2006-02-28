@@ -310,7 +310,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS docdir buildir ECL_CFLAGS FASL_LIBS CORE_LIBS SHARED_LDFLAGS BUNDLE_LDFLAGS SHORT_SITE_NAME LONG_SITE_NAME EXTRA_OBJS TARGETS SUBDIRS LIBRARIES LSP_LIBRARIES LSP_FEATURES build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CXX CXXFLAGS ac_ct_CXX CPP RANLIB ac_ct_RANLIB INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA LN_S SET_MAKE true_srcdir true_builddir CP RM MV EXE_SUFFIX ARCHITECTURE SOFTWARE_TYPE SOFTWARE_VERSION MACHINE_INSTANCE MACHINE_VERSION LDRPATH LIBPREFIX LIBEXT SHAREDEXT SHAREDPREFIX INSTALL_TARGET thehost INFOEXT INSTALL_INFO EGREP ECL_SETJMP ECL_LONGJMP ECL_FILE_CNT ECL_FPE_CODE CL_FIXNUM_TYPE CL_FIXNUM_BITS CL_FIXNUM_MAX CL_FIXNUM_MIN LIBOBJS POW_LIB ECL_CC CLX_INFO LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS docdir buildir ECL_CFLAGS FASL_LIBS CORE_LIBS SHARED_LDFLAGS BUNDLE_LDFLAGS SHORT_SITE_NAME LONG_SITE_NAME EXTRA_OBJS TARGETS SUBDIRS LIBRARIES LSP_LIBRARIES LSP_FEATURES build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CXX CXXFLAGS ac_ct_CXX CPP RANLIB ac_ct_RANLIB INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA LN_S SET_MAKE true_srcdir true_builddir CP RM MV EXE_SUFFIX ARCHITECTURE SOFTWARE_TYPE SOFTWARE_VERSION MACHINE_INSTANCE MACHINE_VERSION LDRPATH LIBPREFIX LIBEXT SHAREDEXT SHAREDPREFIX INSTALL_TARGET thehost INFOEXT INSTALL_INFO EGREP ECL_SETJMP ECL_LONGJMP ECL_FILE_CNT ECL_FPE_CODE CL_FIXNUM_TYPE CL_FIXNUM_BITS CL_FIXNUM_MAX CL_FIXNUM_MIN LIBOBJS POW_LIB ECL_CC CLX_INFO ECL_BOEHM_GC_HEADER ECL_GMP_HEADER LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1568,13 +1568,13 @@ else
 fi;
 
 libdir="${libdir}/ecl"
-includedir="${libdir}/ecl/h"
+includedir="${libdir}"
 test -z "${docdir}" && docdir="${datadir}/doc/ecl"
 
 
 boehm_configure_flags=""
 
-                                                                                                                                                             TARGETS='ecl$(EXE)'
+                                                                                                                                                             TARGETS='bin/ecl$(EXE)'
 SUBDIRS=c
                             LSP_FEATURES='*features*'
 
@@ -4120,7 +4120,6 @@ echo $ECHO_N "checking if we need to copy GC private headers ... $ECHO_C" >&6
   else
     enable_boehm="included"
     SUBDIRS="${SUBDIRS} gc"
-    CFLAGS="-I../include ${CFLAGS}"
     CORE_LIBS="-leclgc ${CORE_LIBS}"
     if test "${enable_shared}" = "no"; then
       LIBRARIES="${LIBRARIES} ${LIBPREFIX}eclgc.${LIBEXT}"
@@ -9809,6 +9808,7 @@ LSP_FEATURES="(cons :wants-rt ${LSP_FEATURES})"
 
 fi
 
+
 if test ${enable_boehm} = "included"; then
   { echo "$as_me:$LINENO: Configuring included Boehm GC library:" >&5
 echo "$as_me: Configuring included Boehm GC library:" >&6;}
@@ -9819,13 +9819,24 @@ echo "$as_me: Configuring included Boehm GC library:" >&6;}
         $srcdir/gc/configure --disable-shared --prefix=${destdir} \
 	--includedir=${destdir}/h --libdir=${destdir} --build=${build_alias} \
 	--host=${host_alias} ${boehm_configure_flags})
+     ECL_BOEHM_GC_HEADER='ecl/gc.h'
+  else
+     if test -f /usr/include/gc/gc.h -o test -f /usr/local/include/gc/gc.h; then
+        ECL_BOEHM_GC_HEADER='gc/gc.h'
+     else
+        ECL_BOEHM_GC_HEADER='gc.h'
+     fi
   fi
+else
+  ECL_BOEHM_GC_HEADER='none'
 fi
+
 
 if test "${with_gmp}" = "no" ; then
   { echo "$as_me:$LINENO: Not using GMP library at all.  Are you sure?" >&5
 echo "$as_me: Not using GMP library at all.  Are you sure?" >&6;}
   EXTRA_OBJS="${EXTRA_OBJS} big_ll.o"
+  ECL_GMP_HEADER='nofile'
 else
 
 cat >>confdefs.h <<\_ACEOF
@@ -9833,11 +9844,13 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
   EXTRA_OBJS="${EXTRA_OBJS} big.o"
+  ECL_GMP_HEADER='gmp.h'
   if test "${with_system_gmp}" = "no" ; then
     { echo "$as_me:$LINENO: Configuring included GMP library:" >&5
 echo "$as_me: Configuring included GMP library:" >&6;}
     test -d gmp && rm -rf gmp
     if mkdir gmp; then
+     ECL_GMP_HEADER='ecl/gmp.h'
      (destdir=`${PWDCMD}`; cd gmp; CC="${CC} ${PICFLAG}" \
        $srcdir/gmp/configure --disable-shared --prefix=${destdir} \
 	--infodir=${destdir}/doc --includedir=${destdir}/h \
@@ -9847,9 +9860,9 @@ echo "$as_me: Configuring included GMP library:" >&6;}
 fi
 
 
-                                                                                                                                            ac_config_files="$ac_config_files bare.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp ../Makefile Makefile c/Makefile doc/Makefile doc/ecl.man h/configpre.h:h/config.h.in ecl-config.pre:util/ecl-config lsp/config.pre:lsp/config.lsp.in compile.pre:compile.lsp.in"
+                                                                                                                                            ac_config_files="$ac_config_files bare.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp ../Makefile Makefile c/Makefile doc/Makefile doc/ecl.man ecl/configpre.h:h/config.h.in bin/ecl-config.pre:util/ecl-config lsp/config.pre:lsp/config.lsp.in compile.pre:compile.lsp.in cmp/cmpdefs.pre:cmp/cmpdefs.lsp"
 
-          ac_config_headers="$ac_config_headers h/config.h:h/configpre.h"
+          ac_config_headers="$ac_config_headers ecl/config.h:ecl/configpre.h"
  # FIXME
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -10377,7 +10390,6 @@ do
   case "$ac_config_target" in
   # Handling of arguments.
   "bare.lsp" ) CONFIG_FILES="$CONFIG_FILES bare.lsp" ;;
-  "cmp/cmpcfg.lsp" ) CONFIG_FILES="$CONFIG_FILES cmp/cmpcfg.lsp" ;;
   "lsp/load.lsp" ) CONFIG_FILES="$CONFIG_FILES lsp/load.lsp" ;;
   "clos/load.lsp" ) CONFIG_FILES="$CONFIG_FILES clos/load.lsp" ;;
   "cmp/load.lsp" ) CONFIG_FILES="$CONFIG_FILES cmp/load.lsp" ;;
@@ -10386,11 +10398,12 @@ do
   "c/Makefile" ) CONFIG_FILES="$CONFIG_FILES c/Makefile" ;;
   "doc/Makefile" ) CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;
   "doc/ecl.man" ) CONFIG_FILES="$CONFIG_FILES doc/ecl.man" ;;
-  "h/configpre.h" ) CONFIG_FILES="$CONFIG_FILES h/configpre.h:h/config.h.in" ;;
-  "ecl-config.pre" ) CONFIG_FILES="$CONFIG_FILES ecl-config.pre:util/ecl-config" ;;
+  "ecl/configpre.h" ) CONFIG_FILES="$CONFIG_FILES ecl/configpre.h:h/config.h.in" ;;
+  "bin/ecl-config.pre" ) CONFIG_FILES="$CONFIG_FILES bin/ecl-config.pre:util/ecl-config" ;;
   "lsp/config.pre" ) CONFIG_FILES="$CONFIG_FILES lsp/config.pre:lsp/config.lsp.in" ;;
   "compile.pre" ) CONFIG_FILES="$CONFIG_FILES compile.pre:compile.lsp.in" ;;
-  "h/config.h" ) CONFIG_HEADERS="$CONFIG_HEADERS h/config.h:h/configpre.h" ;;
+  "cmp/cmpdefs.pre" ) CONFIG_FILES="$CONFIG_FILES cmp/cmpdefs.pre:cmp/cmpdefs.lsp" ;;
+  "ecl/config.h" ) CONFIG_HEADERS="$CONFIG_HEADERS ecl/config.h:ecl/configpre.h" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
    { (exit 1); exit 1; }; };;
@@ -10549,6 +10562,8 @@ s,@LIBOBJS@,$LIBOBJS,;t t
 s,@POW_LIB@,$POW_LIB,;t t
 s,@ECL_CC@,$ECL_CC,;t t
 s,@CLX_INFO@,$CLX_INFO,;t t
+s,@ECL_BOEHM_GC_HEADER@,$ECL_BOEHM_GC_HEADER,;t t
+s,@ECL_GMP_HEADER@,$ECL_GMP_HEADER,;t t
 s,@LTLIBOBJS@,$LTLIBOBJS,;t t
 CEOF
 

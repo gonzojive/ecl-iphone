@@ -14,7 +14,7 @@
     See file '../Copyright' for full details.
 */
 
-#include "ecl.h"
+#include <ecl/ecl.h>
 
 cl_object
 cl_identity(cl_object x)

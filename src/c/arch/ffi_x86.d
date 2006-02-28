@@ -12,9 +12,9 @@
     See file '../Copyright' for full details.
 */
 
-#include <ecl.h>
+#include <ecl/ecl.h>
 #include <string.h>
-#include <internal.h>
+#include <ecl/internal.h>
 
 void
 ecl_fficall_push_arg(union ecl_ffi_values *data, enum ecl_ffi_tag type)

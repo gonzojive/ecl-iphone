@@ -41,7 +41,7 @@ libdir=$(prefix)\lib\ecl
 # Files
 
 HDIR	= $(top_srcdir)\h
-HFILES	= ..\h\config.h $(HDIR)\ecl.h $(HDIR)\ecl-cmp.h\
+HFILES	= ..\ecl\config.h $(HDIR)\ecl.h $(HDIR)\ecl-cmp.h\
 	$(HDIR)\object.h $(HDIR)\cs.h $(HDIR)\stacks.h\
 	$(HDIR)\external.h $(HDIR)\eval.h\
 	$(HDIR)\number.h $(HDIR)\page.h $(HDIR)\unify.h\
@@ -89,24 +89,24 @@ cut.exe: $(top_srcdir)/util/cut.c
 	$(CC) $(LDFLAGS) /Fecut.exe $(top_srcdir)/util/cut.c
 
 install: $(HFILES)
-	for %i in ($(HFILES)) do $(CP) %i $(libdir)\h
-	cut.exe < ..\h\config.h > $(libdir)\h\config-install.h
-	$(RM) $(libdir)\h\config.h
-	$(MV) $(libdir)\h\config-install.h $(libdir)\h\config.h
+	for %i in ($(HFILES)) do $(CP) %i $(libdir)\ecl
+	cut.exe < ..\ecl\config.h > $(libdir)\ecl\config-install.h
+	$(RM) $(libdir)\ecl\config.h
+	$(MV) $(libdir)\ecl\config-install.h $(libdir)\ecl\config.h
 
 flatinstall: $(HFILES)
-	for %i in ($(HFILES)) do $(CP) %i $(prefix)\h
-	cut.exe < ..\h\config.h > $(prefix)\h\config-install.h
-	for %h in (..\h\*.h) do $(CP) %h $(prefix)\h
-	$(RM) $(prefix)\h\config.h
-	$(MV) $(prefix)\h\config-install.h $(prefix)\h\config.h
+	for %i in ($(HFILES)) do $(CP) %i $(prefix)\ecl
+	cut.exe < ..\ecl\config.h > $(prefix)\ecl\config-install.h
+	for %h in (..\ecl\*.h) do $(CP) %h $(prefix)\ecl
+	$(RM) $(prefix)\ecl\config.h
+	$(MV) $(prefix)\ecl\config-install.h $(prefix)\ecl\config.h
 
 ..\eclmin.lib: $(OBJS:.obj=.c) all_symbols.c $(OBJS) all_symbols.obj all_symbols2.obj
 	-$(RM) $@
 	$(LINK) -lib -out:$@ $(OBJS)
 
 clean:
-	-for %f in (..\h\config.h dpp dpp.obj $(DPP) external.h \
+	-for %f in (..\ecl\config.h dpp dpp.obj $(DPP) external.h \
 	            ..\eclmin.lib ..\cinit.obj cinit.c \
 		    symbols_list2.h) \
 	     do $(RM) %f
@@ -120,7 +120,7 @@ $(DPP): $(srcdir)/dpp.c $(srcdir)/symbols_list2.h ../h/config.h
 	$(TRUE_CC) -I../h -I./ -I$(HDIR) $(DEFS) $(srcdir)/dpp.c  -o $@
 ../h/config.h: ../h/config.h.msvc6 Makefile
 	cut.exe "@ECL_FPE_CODE@" "$(srcdir:\=/)/arch/fpe_x86.c" \
-	        < ..\h\config.h.msvc6 > $@
+	        < ..\ecl\config.h.msvc6 > $@
 
 #
 # GCC might break this code

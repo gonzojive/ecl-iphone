@@ -1,7 +1,7 @@
 ;;; @configure_input@
 
 (defconstant +cmp-module-files+
-'("src:cmp;cmpdefs.lsp"
+'("build:cmp;cmpdefs.lsp"
   "src:cmp;cmpmac.lsp"
   "src:cmp;cmpinline.lsp"
   "src:cmp;cmputil.lsp"
@@ -30,7 +30,6 @@
   "src:cmp;cmpcbk.lsp"
   "src:cmp;cmpct.lsp"
   "src:cmp;cmpnum.lsp"
-  "build:cmp;cmpcfg.lsp"
   "src:cmp;cmpmain.lsp"))
 
 (let ((si::*keep-documentation* nil))

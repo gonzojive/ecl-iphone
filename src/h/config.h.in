@@ -23,10 +23,14 @@
 #undef GBC_BOEHM
 #ifdef GBC_BOEHM
 #define ECL_DYNAMIC_VV
+#include "@ECL_BOEHM_GC_HEADER@"
 #endif
 
 /* Use GNU Multiple Precision library for bignums                       */
 #undef WITH_GMP
+#ifdef WITH_GMP
+#include "@ECL_GMP_HEADER@"
+#endif
 
 /* Userland threads?							*/
 #undef ECL_THREADS

@@ -14,8 +14,7 @@
     See file '../Copyright' for full details.
 */
 
-#include "ecl.h"
-
+#include <ecl/ecl.h>
 
 void
 FEtype_error_character(cl_object x) {

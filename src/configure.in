@@ -142,7 +142,7 @@ AC_ARG_WITH(rt,
 dnl -----------------------------------------------------------------------
 dnl Installation directories
 libdir="${libdir}/ecl"
-includedir="${libdir}/ecl/h"
+includedir="${libdir}"
 test -z "${docdir}" && docdir="${datadir}/doc/ecl"
 AC_SUBST([docdir])
 
@@ -162,7 +162,7 @@ AC_SUBST(BUNDLE_LDFLAGS)        dnl Flags for FASL files linker
 AC_SUBST(SHORT_SITE_NAME)       dnl Short name for the machine we built this on
 AC_SUBST(LONG_SITE_NAME)        dnl Long name for the machine we built this on
 AC_SUBST(EXTRA_OBJS)            dnl Extra *.o files to be compiled into libecl.a
-AC_SUBST(TARGETS, ['ecl$(EXE)'])dnl Versions of ECL to be built 
+AC_SUBST(TARGETS, ['bin/ecl$(EXE)'])dnl Versions of ECL to be built 
 AC_SUBST(SUBDIRS, [c])          dnl Subdirectories that make should process
 AC_SUBST(LIBRARIES, [])         dnl GMP, Boehm's GC, etc
 AC_SUBST(LSP_LIBRARIES)         dnl Libraries produced by lisp translator
@@ -262,7 +262,6 @@ else
   else
     enable_boehm="included"
     SUBDIRS="${SUBDIRS} gc"
-    CFLAGS="-I../include ${CFLAGS}"
     CORE_LIBS="-leclgc ${CORE_LIBS}"
     if test "${enable_shared}" = "no"; then
       LIBRARIES="${LIBRARIES} ${LIBPREFIX}eclgc.${LIBEXT}"
@@ -384,8 +383,9 @@ dnl Checks for system services
 dnl =====================================================================
 dnl Final pass over configuration files
 dnl
-dnl Notice that we build ${builddir}/h/configpre.h from ${srcdir}/h/config.h.in,
-dnl and then use all AC_DEF* to build h/config.h from h/configpre.h
+dnl Notice that we build ${builddir}/ecl/configpre.h from
+dnl ${srcdir}/ecl/config.h.in, and then use all AC_DEF* to build
+dnl ecl/config.h from ecl/configpre.h
 
 dnl ----------------------------------------------------------------------
 dnl Do we use C or C++ compiler to compile ecl?
@@ -458,6 +458,7 @@ fi
 
 dnl ----------------------------------------------------------------------
 dnl Configure included Boehm GC if needed
+AC_SUBST(ECL_BOEHM_GC_HEADER)
 if test ${enable_boehm} = "included"; then
   AC_MSG_NOTICE([Configuring included Boehm GC library:])
   test -d gc && rm -rf gc
@@ -467,21 +468,34 @@ if test ${enable_boehm} = "included"; then
         $srcdir/gc/configure --disable-shared --prefix=${destdir} \
 	--includedir=${destdir}/h --libdir=${destdir} --build=${build_alias} \
 	--host=${host_alias} ${boehm_configure_flags})
+     ECL_BOEHM_GC_HEADER='ecl/gc.h'
+  else
+     if test -f /usr/include/gc/gc.h -o test -f /usr/local/include/gc/gc.h; then
+        ECL_BOEHM_GC_HEADER='gc/gc.h'
+     else
+        ECL_BOEHM_GC_HEADER='gc.h'
+     fi
   fi
+else
+  ECL_BOEHM_GC_HEADER='none'
 fi
 
 dnl ----------------------------------------------------------------------
 dnl Configure local GMP if needed
+AC_SUBST(ECL_GMP_HEADER)
 if test "${with_gmp}" = "no" ; then
   AC_MSG_NOTICE(Not using GMP library at all.  Are you sure?)
   EXTRA_OBJS="${EXTRA_OBJS} big_ll.o"
+  ECL_GMP_HEADER='nofile'
 else
   AC_DEFINE( [WITH_GMP], [1], [Use GMP for bignums] )
   EXTRA_OBJS="${EXTRA_OBJS} big.o"
+  ECL_GMP_HEADER='gmp.h'
   if test "${with_system_gmp}" = "no" ; then
     AC_MSG_NOTICE(Configuring included GMP library:)
     test -d gmp && rm -rf gmp
     if mkdir gmp; then
+     ECL_GMP_HEADER='ecl/gmp.h'
      (destdir=`${PWDCMD}`; cd gmp; CC="${CC} ${PICFLAG}" \
        $srcdir/gmp/configure --disable-shared --prefix=${destdir} \
 	--infodir=${destdir}/doc --includedir=${destdir}/h \
@@ -492,9 +506,11 @@ fi
 
 
 AC_CONFIG_FILES([
-  bare.lsp cmp/cmpcfg.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp
+  bare.lsp lsp/load.lsp clos/load.lsp cmp/load.lsp
   ../Makefile Makefile c/Makefile doc/Makefile doc/ecl.man
-  h/configpre.h:h/config.h.in ecl-config.pre:util/ecl-config
-  lsp/config.pre:lsp/config.lsp.in compile.pre:compile.lsp.in ])
-AC_CONFIG_HEADERS([h/config.h:h/configpre.h]) # FIXME
+  ecl/configpre.h:h/config.h.in bin/ecl-config.pre:util/ecl-config
+  lsp/config.pre:lsp/config.lsp.in compile.pre:compile.lsp.in
+  cmp/cmpdefs.pre:cmp/cmpdefs.lsp
+ ])
+AC_CONFIG_HEADERS([ecl/config.h:ecl/configpre.h]) # FIXME
 AC_OUTPUT

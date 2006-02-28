@@ -15,16 +15,11 @@
 #if defined(ECL_THREADS) && !defined(_MSC_VER)
 #include <pthread.h>
 #endif
-#include "ecl.h"
-#include "internal.h"
-#include "page.h"
-#ifdef _MSC_VER
-#include "gc.h"
-#include "private/gc_priv.h"
-#else
-#include "gc/gc.h"
-#include "gc/private/gc_priv.h"
-#endif
+#include <ecl/ecl.h>
+#include <ecl/internal.h>
+#include <ecl/page.h>
+#include <ecl/gc/gc.h>
+#include <ecl/gc/private/gc_priv.h>
 
 #ifdef GBC_BOEHM
 

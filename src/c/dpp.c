@@ -73,7 +73,7 @@
 #include <string.h>
 
 #define DPP
-#include "config.h"
+#include <ecl/config.h>
 #include "symbols_list2.h"
 
 #define POOLSIZE        2048

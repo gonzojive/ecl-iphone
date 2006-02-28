@@ -12,9 +12,9 @@
     See file '../Copyright' for full details.
 */
 
-#include "ecl.h"
-#include "ecl-inl.h"
-#include "bytecodes.h"
+#include <ecl/ecl.h>
+#include <ecl/ecl-inl.h>
+#include <ecl/bytecodes.h>
 
 static cl_opcode *disassemble(cl_object bytecodes, cl_opcode *vector);
 

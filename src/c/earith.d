@@ -39,7 +39,7 @@
 	represented as 32 bit non-negative integer.
 */
 
-#include "ecl.h"
+#include <ecl/ecl.h>
 
 #ifdef CONVEX
 

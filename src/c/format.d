@@ -14,10 +14,10 @@
     See file '../Copyright' for full details.
 */
 
+#include <ecl/ecl.h>
 #include <ctype.h>
 #include <limits.h>
-#include "ecl.h"
-#include "internal.h"
+#include <ecl/internal.h>
 
 #if !defined(ECL_CMU_FORMAT)
 #define FMT_MAX_PARAM	8

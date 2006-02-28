@@ -15,8 +15,8 @@
 */
 
 #include <limits.h>
-#include "ecl.h"
-#include "ecl-inl.h"
+#include <ecl/ecl.h>
+#include <ecl/ecl-inl.h>
 
 cl_object
 si_specialp(cl_object sym)

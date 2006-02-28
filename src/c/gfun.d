@@ -12,8 +12,8 @@
     See file '../Copyright' for full details.
 */
 
-#include "ecl.h"
-#include "internal.h"
+#include <ecl/ecl.h>
+#include <ecl/internal.h>
 
 cl_object
 si_set_funcallable(cl_object instance, cl_object flag)

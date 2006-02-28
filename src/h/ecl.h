@@ -34,7 +34,7 @@ typedef unsigned short uint16_t;
 #endif
 
 #ifndef FIXNUM_BITS
-#include <config.h>
+#include <ecl/config.h>
 #endif
 
 #ifdef ECL_THREADS
@@ -56,23 +56,16 @@ typedef unsigned short uint16_t;
 # define end_critical_section()
 #endif
 
-#ifdef WITH_GMP
-#include <gmp.h>
-#endif /* WITH_GMP */
-#include <object.h>
-#include <stacks.h>
+#include <ecl/object.h>
+#include <ecl/stacks.h>
 #ifndef _ARGS
 # define _ARGS(x) x
 #endif
-#ifdef GBC_BOEHM
-# include <gc.h>
-#endif
-#include <external.h>
-/*#include "ecl-inl.h"*/
-#include <eval.h>
-#include <number.h>
+#include <ecl/external.h>
+#include <ecl/eval.h>
+#include <ecl/number.h>
 #ifdef LOCATIVE
-#include <unify.h>
+#include <ecl/unify.h>
 #endif
 
 typedef void (*ecl_init_function_t)(cl_object block);

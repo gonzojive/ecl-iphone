@@ -14,8 +14,8 @@
     See file '../Copyright' for full details.
 */
 
-#include "ecl.h"
-#include "internal.h"
+#include <ecl/ecl.h>
+#include <ecl/internal.h>
 
 /******************************* REQUIRES ******************************/
 

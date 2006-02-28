@@ -10,38 +10,10 @@
 
 ;;;; CMPMAIN  Compiler main program.
 
-;;;		**** Caution ****
-;;;	This file is machine/OS dependant.
-;;;		*****************
-
-
 (in-package "COMPILER")
 
-(defvar *cmpinclude* "<ecl-cmp.h>")
-;;; This is copied into each .h file generated, EXCEPT for system-p calls.
-;;; The constant string *include-string* is the content of file "ecl.h".
-;;; Here we use just a placeholder: it will be replaced with sed.
-
-(defvar *cc* "cc"
-  "This variable controls how the C compiler is invoked by ECL.
-The default value is \"cc -I. -I/usr/local/include/\".
-The second -I option names the directory where the file ECL.h has been installed.
-One can set the variable appropriately adding for instance flags which the 
-C compiler may need to exploit special hardware features (e.g. a floating point
-coprocessor).")
-
-(defvar *cc-flags* "-g -I.")
-(defvar *cc-optimize* "-O")		; C compiler otimization flag
-(defvar *cc-format* "~A ~A ~:[~*~;~A~] \"-I~A/h\" -w -c \"~A\" -o \"~A\"")
-(defvar *ld-flags* "")
-(defvar *ld-format* "~A -o ~S -L~S ~{~S ~} ~@?")
-#+dlopen
-(defvar *ld-shared-flags* "")
-#+dlopen
-(defvar *ld-bundle-flags* "")
-
 (defun safe-system (string)
-  (cmpnote "~&;;; Invoking external command: ~A~%" string)
+  (cmpnote "Invoking external command:~%;;; ~A~%" string)
   (let ((result (si:system string)))
     (unless (zerop result)
       (cerror "Continues anyway."
@@ -53,14 +25,14 @@ coprocessor).")
   (let ((format '())
 	(extension '()))
     (case type
-      ((:shared-library :dll) (setf format #.+shared-library-format+))
-      ((:static-library :library :lib) (setf format #.+static-library-format+))
+      ((:shared-library :dll) (setf format +shared-library-format+))
+      ((:static-library :library :lib) (setf format +static-library-format+))
       (:data (setf extension "data"))
       (:sdata (setf extension "sdat"))
       (:c (setf extension "c"))
       (:h (setf extension "h"))
-      (:object (setf extension #.+object-file-extension+))
-      (:program (setf format #.+executable-file-format+))
+      (:object (setf extension +object-file-extension+))
+      (:program (setf format +executable-file-format+))
       ((:fasl :fas) (setf extension "fas")))
     (if format
 	(merge-pathnames (format nil format (pathname-name output-file))
@@ -90,9 +62,9 @@ coprocessor).")
 	   *ld-format*
 	   *cc*
 	   (si::coerce-to-filename o-pathname)
-	   (namestring (translate-logical-pathname "SYS:"))
+	   (ecl-library-directory)
 	   options
-	   *ld-flags* (namestring (translate-logical-pathname "SYS:")))))
+	   *ld-flags* (ecl-library-directory))))
 
 #+dlopen
 (defun shared-cc (o-pathname &rest options)
@@ -102,20 +74,19 @@ coprocessor).")
 	   *ld-format*
 	   *cc*
 	   (si::coerce-to-filename o-pathname)
-	   (namestring (translate-logical-pathname "SYS:"))
+	   (ecl-library-directory)
 	   options
-	   *ld-shared-flags*
-	   (namestring (translate-logical-pathname "SYS:"))))
+	   *ld-shared-flags* (ecl-library-directory)))
   #+(or mingw32)
   (let ((lib-file (compile-file-pathname o-pathname :type :lib)))
     (safe-system
      (format nil
 	     "dllwrap --export-all-symbols -o ~S -L~S ~{~S ~} ~@?"
 	     (si::coerce-to-filename o-pathname)
-	     (namestring (translate-logical-pathname "SYS:"))
+	     (ecl-library-directory)
 	     options
 	     *ld-shared-flags*
-	     (namestring (translate-logical-pathname "SYS:"))))))
+	     (ecl-library-directory)))))
 
 #+dlopen
 (defun bundle-cc (o-pathname &rest options)
@@ -125,23 +96,23 @@ coprocessor).")
 	   *ld-format*
 	   *cc*
 	   (si::coerce-to-filename o-pathname)
-	   (namestring (translate-logical-pathname "SYS:"))
+	   (ecl-library-directory)
 	   options
 	   #-msvc *ld-bundle-flags*
 	   #+msvc (concatenate 'string *ld-bundle-flags* " /EXPORT:init_CODE")
-	   (namestring (translate-logical-pathname "SYS:"))))
+	   (ecl-library-directory)))
   #+(or mingw32)
   (safe-system
    (format nil
 	   "dllwrap -o ~A --export-all-symbols -L~S ~{~S ~} ~@?"
 	   (si::coerce-to-filename o-pathname)
-	   (namestring (translate-logical-pathname "SYS:"))
+	   (ecl-library-directory)
 	   options
 	   *ld-bundle-flags*
-	   (namestring (translate-logical-pathname "SYS:")))))
+	   (ecl-library-directory))))
 
 (defconstant +lisp-program-header+ "
-#include <ecl.h>
+#include <ecl/ecl.h>
 
 #ifdef __cplusplus
 #define ECL_CPP_TAG \"C\"
@@ -317,7 +288,7 @@ static cl_object VV[VM];
 	 (setf output-name (compile-file-pathname output-name :type :lib)))
        (unless init-name
 	 ;; Remove the leading "lib"
-	 (setf init-name (subseq (pathname-name output-name) #.(length +static-library-prefix+)))
+	 (setf init-name (subseq (pathname-name output-name) (length +static-library-prefix+)))
 	 (setf init-name (init-function-name init-name nil)))
        (format c-file +lisp-program-init+ init-name prologue-code
 	       shared-data-file submodules epilogue-code)
@@ -345,7 +316,7 @@ static cl_object VV[VM];
        (unless init-name
 	 ;; Remove the leading "lib"
 	 (setf init-name (subseq (pathname-name output-name)
-				 #.(length +static-library-prefix+)))
+				 (length +static-library-prefix+)))
 	 (setf init-name (init-function-name init-name nil)))
        (format c-file +lisp-program-init+ init-name prologue-code
 	       shared-data-file submodules epilogue-code)
@@ -748,12 +719,33 @@ Cannot compile ~a."
       (terpri *compiler-output1*)
       (terpri *compiler-output2*))))
 
+(defun ecl-include-directory ()
+  "Finds the directory in which the header files were installed."
+  (cond ((and *ecl-include-directory*
+	      (probe-file (merge-pathnames "ecl/config.h" *ecl-include-directory*)))
+	 *ecl-include-directory*)
+	((probe-file "SYS:ecl;config.h")
+	 (setf *ecl-include-directory* (namestring (translate-logical-pathname "SYS:"))))
+	((error "Unable to find include directory"))))
+
+(defun ecl-library-directory ()
+  "Finds the directory in which the ECL core library was installed."
+  (cond ((and *ecl-library-directory*
+	      (probe-file (merge-pathnames (compile-file-pathname "ecl" :type
+					    #+dlopen :shared-library
+					    #-dlopen :static-library)
+					   *ecl-library-directory*)))
+	 *ecl-library-directory*)
+	((probe-file "SYS:BUILD-STAMP")
+	 (setf *ecl-library-directory* (namestring (translate-logical-pathname "SYS:"))))
+	((error "Unable to find library directory"))))
+
 (defun compiler-cc (c-pathname o-pathname)
   (safe-system
    (format nil
 	   *cc-format*
 	   *cc* *cc-flags* (>= *speed* 2) *cc-optimize*
-	   (namestring (translate-logical-pathname "SYS:"))
+	   (ecl-include-directory)
 	   (si::coerce-to-filename c-pathname)
 	   (si::coerce-to-filename o-pathname))
 ; Since the SUN4 assembler loops with big files, you might want to use this:
@@ -780,7 +772,7 @@ Cannot compile ~a."
       nil)))
 
 #+dlopen
-(push (cons #.+object-file-extension+ #'load-o-file) si::*load-hooks*)
+(push (cons +object-file-extension+ #'load-o-file) si::*load-hooks*)
 
 (defmacro with-compilation-unit (options &rest body)
   `(progn ,@body))

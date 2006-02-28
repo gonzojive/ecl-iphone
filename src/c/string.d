@@ -15,10 +15,10 @@
 */
 
 
-#include "ecl.h"
+#include <ecl/ecl.h>
 #include <ctype.h>
 #include <string.h>
-#include "ecl-inl.h"
+#include <ecl/ecl-inl.h>
 
 @(defun make_string (size &key (initial_element CODE_CHAR(' '))
 		     (element_type @'character')

@@ -14,9 +14,9 @@
     See file '../Copyright' for full details.
 */
 
+#include <ecl/ecl.h>
 #include <limits.h>
-#include "ecl.h"
-#include "ecl-inl.h"
+#include <ecl/ecl-inl.h>
 
 /*
 	I know the following name is not good.

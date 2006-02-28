@@ -32,9 +32,9 @@ for i in $*; do
 done
 
 if test "$echo_cflags" = "yes"; then
-  echo "@ECL_CFLAGS@ -I@includedir\@"
+  echo "@ECL_CFLAGS@ -I@eclincludedir\@"
 fi
 
 if test "$echo_ldflags" = "yes"; then
-  echo "@LDRPATH@ -L@libdir\@ $LDFLAGS @LDFLAGS@ @LIBS@"
+  echo "@LDRPATH@ -L@ecllibdir\@ $LDFLAGS @LDFLAGS@ @LIBS@"
 fi

@@ -14,7 +14,7 @@
     See file '../Copyright' for full details.
 */
 
-#include <config.h>
+#include <ecl/ecl.h>
 #if defined(HAVE_FENV_H)
 # define _GNU_SOURCE
 # include <fenv.h>
@@ -34,8 +34,6 @@
 #  define FE_INEXACT 0
 # endif
 #endif
-#include "ecl.h"
-#include "internal.h"
 #include <signal.h>
 #if defined(mingw32) || defined(_MSC_VER)
 # include <windows.h>
@@ -44,6 +42,7 @@ void handle_fpe_signal(int,int);
 #if !defined(_MSC_VER)
 # include <unistd.h>
 #endif
+#include <ecl/internal.h>
 
 /******************************* ------- ******************************/
 

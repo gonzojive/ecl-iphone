@@ -9,7 +9,7 @@ VPATH	= @srcdir@
 #
 TRUE_CC = @CC@
 CC	= @CC@
-CFLAGS	= -c -I. -I$(srcdir) -I$(srcdir)/gc -I$(HDIR) -I../h @CPPFLAGS@ @CFLAGS@ \
+CFLAGS	= -c -I. -I$(srcdir) -I$(srcdir)/gc -I../ @CPPFLAGS@ @CFLAGS@ \
 	  @ECL_CFLAGS@ \
 #	  -Wall -W -Wfloat-equal -Wundef -Wendif-labels -Wpointer-arith -Wcast-align \
 #	  -Wwrite-strings -Wconversion -Wsign-compare -Wmissing-prototypes -Wredundant-decls \
@@ -28,11 +28,12 @@ INSTALL_DATA = @INSTALL_DATA@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
+includedir=@includedir@
 
 # Files
 
-HDIR	= ../h
-HFILES	= ../h/config.h $(HDIR)/ecl.h $(HDIR)/ecl-cmp.h\
+HDIR	= ../ecl
+HFILES	= ../ecl/config.h $(HDIR)/ecl.h $(HDIR)/ecl-cmp.h\
 	$(HDIR)/object.h $(HDIR)/cs.h $(HDIR)/stacks.h\
 	$(HDIR)/external.h $(HDIR)/eval.h\
 	$(HDIR)/number.h $(HDIR)/page.h $(HDIR)/unify.h\
@@ -64,18 +65,14 @@ ffi_x86.c: arch/ffi_x86.d $(DPP) $(HFILES)
 	if test -f ../CROSS-DPP ; then ../CROSS-DPP $< $@ ; else $(DPP) $< $@ ; fi
 
 install: $(HFILES)
-	for i in $(HFILES); do $(INSTALL_DATA) $$i $(DESTDIR)$(libdir)/h/; done
-	sed '/-CUT-/,$$d' ../h/config.h > ../h/config-install.h
-	$(INSTALL_DATA) ../h/*.h $(DESTDIR)$(libdir)/h/
-	rm $(DESTDIR)$(libdir)/h/config.h
-	mv $(DESTDIR)$(libdir)/h/config-install.h $(DESTDIR)$(libdir)/h/config.h
+	for i in $(HFILES); do $(INSTALL_DATA) $$i $(DESTDIR)$(includedir)/ecl/; done
+	sed '/-CUT-/,$$d' ../ecl/config.h > ../ecl/config-install.h
+	$(INSTALL_DATA) ../ecl/*.h $(DESTDIR)$(includedir)/ecl
+	rm $(DESTDIR)$(includedir)/ecl/config.h
+	mv $(DESTDIR)$(includedir)/ecl/config-install.h $(DESTDIR)$(includedir)/ecl/config.h
 
 flatinstall: $(HFILES)
-	for i in $(HFILES); do $(INSTALL_DATA) $$i $(DESTDIR)$(prefix)/h/; done
-	sed '/-CUT-/,$$d' ../h/config.h > ../h/config-install.h
-	$(INSTALL_DATA) ../h/*.h $(DESTDIR)$(prefix)/h/
-	rm $(DESTDIR)$(prefix)/h/config.h
-	mv $(DESTDIR)$(prefix)/h/config-install.h $(DESTDIR)$(prefix)/h/config.h
+	make includedir=$(DESTDIR)$(prefix) install
 
 ../libeclmin.a: $(OBJS) all_symbols.o all_symbols2.o
 	$(RM) $@
@@ -89,7 +86,7 @@ clean:
 
 $(DPP): $(srcdir)/dpp.c $(srcdir)/symbols_list2.h
 	if test -f ../CROSS-DPP; then touch dpp; else \
-	$(TRUE_CC) @CFLAGS@ @ECL_CFLAGS@ -I$(srcdir) -I../h -I./ -I$(HDIR) $(DEFS) $(srcdir)/dpp.c  -o $@ ; \
+	$(TRUE_CC) @CFLAGS@ @ECL_CFLAGS@ -I$(srcdir) -I../ -I./ $(DEFS) $(srcdir)/dpp.c  -o $@ ; \
 	fi
 $(srcdir)/symbols_list2.h: $(srcdir)/symbols_list.h Makefile
 	cat $(srcdir)/symbols_list.h | \

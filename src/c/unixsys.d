@@ -14,15 +14,15 @@
     See file '../Copyright' for full details.
 */
 
+#include <ecl/ecl.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include "ecl.h"
-#include "internal.h"
+#include <ecl/internal.h>
 #ifdef mingw32
-#include "w32api.h"
-#include "wtypes.h"
-#include "winbase.h"
-#include "io.h"
+#include <w32api.h>
+#include <wtypes.h>
+#include <winbase.h>
+#include <io.h>
 #endif
 #ifdef _MSC_VER
 #include <windows.h>

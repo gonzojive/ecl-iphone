@@ -14,6 +14,7 @@
     See file '../Copyright' for full details.
 */
 
+#include <ecl/ecl.h>
 #include <string.h>
 #include <stdlib.h>
 #include <float.h>
@@ -22,12 +23,11 @@
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
-#include "ecl.h"
 #if defined(HAVE_FENV_H)
 # include <fenv.h>
 #endif
-#include "internal.h"
-#include "bytecodes.h"
+#include <ecl/internal.h>
+#include <ecl/bytecodes.h>
 
 #if defined(ECL_CMU_FORMAT)
 # define si_write_object_recursive(x,y) si_write_object(x,y)

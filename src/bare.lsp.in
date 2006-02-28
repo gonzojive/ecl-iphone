@@ -33,7 +33,6 @@
 ;;; * Load PCL-based Common-Lisp Object System
 ;;;
 (setf sys::*gc-verbose* nil)
-(print *features*)
 #+(or ecl-min cross)
 (load "clos/load.lsp")
 #+cmu-format

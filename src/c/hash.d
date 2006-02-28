@@ -14,11 +14,11 @@
     See file '../Copyright' for full details.
 */
 
-#include "ecl.h"
+#include <ecl/ecl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "internal.h"
+#include <ecl/internal.h>
 
 /********************
  * HASHING ROUTINES *

@@ -14,7 +14,7 @@
     See file '../Copyright' for full details.
 */
 
-#include "ecl.h"
+#include <ecl/ecl.h>
 
 @(defun = (num &rest nums)
 	int i;

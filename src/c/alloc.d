@@ -34,9 +34,9 @@
 
 #include <unistd.h>
 #include <string.h>
-#include "ecl.h"
-#include "internal.h"
-#include "page.h"
+#include <ecl/ecl.h>
+#include <ecl/internal.h>
+#include <ecl/page.h>
 
 #define USE_MMAP
 #if defined(USE_MMAP)

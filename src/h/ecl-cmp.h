@@ -32,7 +32,7 @@ typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 #endif
 
-#include <config.h>
+#include <ecl/config.h>
 
 #ifdef ECL_THREADS
 # if defined(_MSC_VER) || defined(mingw32)
@@ -56,19 +56,13 @@ typedef unsigned short uint16_t;
 # define end_critical_section()
 #endif
 
-#ifdef WITH_GMP
-#include <gmp.h>
-#endif /* WITH_GMP */
-#include <object.h>
-#include <stacks.h>
-#ifdef GBC_BOEHM
-# include <gc.h>
-#endif
-#include <external.h>
-#include <eval.h>
-#include <number.h>
+#include <ecl/object.h>
+#include <ecl/stacks.h>
+#include <ecl/external.h>
+#include <ecl/eval.h>
+#include <ecl/number.h>
 #ifdef LOCATIVE
-#include <unify.h>
+#include <ecl/unify.h>
 #endif
 
 #undef cs_check

@@ -17,10 +17,10 @@
 #ifdef ECL_THREADS
 #include <pthread.h>
 #endif
-#include "ecl.h"
-#include "page.h"
-#include "internal.h"
-#include "bytecodes.h"
+#include <ecl/ecl.h>
+#include <ecl/page.h>
+#include <ecl/internal.h>
+#include <ecl/bytecodes.h>
 
 /******************************* EXPORTS ******************************/
 

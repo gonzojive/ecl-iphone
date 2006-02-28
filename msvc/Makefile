@@ -218,7 +218,7 @@ compile.lsp: bare.lsp $(srcdir)/compile.lsp.in Makefile
             "@RANLIB@" "ranlib" \
 	    "@LSP_FEATURES@" "$(ECL_FEATURES)" \
 	    < $(srcdir)\compile.lsp.in > compile.lsp
-bare.lsp: $(srcdir)/bare.lsp.in lsp/load.lsp clos/load.lsp cmp/load.lsp cmp/cmpcfg.lsp
+bare.lsp: $(srcdir)/bare.lsp.in lsp/load.lsp clos/load.lsp cmp/load.lsp cmp/cmpdefs.lsp
 	c\cut "@true_srcdir@" "$(srcdir:\=/)" \
 	    "@true_builddir@" "$(MAKEDIR:\=/)" < $(srcdir)\bare.lsp.in > bare.lsp
 lsp/load.lsp: $(srcdir)/lsp/load.lsp.in
@@ -229,7 +229,7 @@ clos/load.lsp: $(srcdir)/clos/load.lsp.in
 cmp/load.lsp: $(srcdir)/cmp/load.lsp.in
 	if not exist cmp $(MKDIR) cmp
 	$(CP) $(srcdir)\cmp\load.lsp.in cmp\load.lsp
-cmp/cmpcfg.lsp: $(srcdir)/cmp/cmpcfg.lsp.in Makefile
+cmp/cmpcdefs.lsp: $(srcdir)/cmp/cmpdefs.lsp Makefile
 	c\cut "@ECL_CC@" "$(CC)" \
 	    "@CFLAGS@" "$(CFLAGS)" \
 	    "@ECL_CFLAGS@" "" \
@@ -246,7 +246,10 @@ cmp/cmpcfg.lsp: $(srcdir)/cmp/cmpcfg.lsp.in Makefile
 	    "@LIBPREFIX@" "" \
 	    "@LIBEXT@" "lib" \
 	    "@EXEEXT@" ".exe" \
-	    < $(srcdir)\cmp\cmpcfg.lsp.in > cmp\cmpcfg.lsp
+	    "@ecldir@" "NIL" \
+	    "@ecllibdir@" "NIL" \
+	    "@eclincludedir@" "NIL" \
+	    < $(srcdir)\cmp\cmpdefs.lsp > cmp\cmpdefs.lsp
 ecl-config.bat: util\ecl-config.bat Makefile
 	c\cut "~A" "$(libdir:\=/)"\
 	    "~*" "" \
@@ -254,14 +257,14 @@ ecl-config.bat: util\ecl-config.bat Makefile
 	    "@LDFLAGS@" "$(LDFLAGS)" \
 	    "@CLIBS@" "" \
 	    "@libdir@" "$(prefix:\=/)" \
-	    "@includedir@" "$(prefix:\=/)/h" \
+	    "@includedir@" "$(prefix:\=/)/ecl" \
 	    < util\ecl-config.bat > ecl-config.bat
 ecl-cc.bat: util\ecl-cc.bat Makefile
 	c\cut "@ECL_CFLAGS@" "$(CFLAGS)" \
 	      "@LDFLAGS@" "$(LDFLAGS)" \
 	      "@CLIBS@" "" \
 	      "@libdir@" "$(prefix:\=/)" \
-	      "@includedir@" "$(prefix:\=/)/h" \
+	      "@includedir@" "$(prefix:\=/)/ecl" \
 	      < util\ecl-cc.bat > ecl-cc.bat
 
 
@@ -276,12 +279,12 @@ eclgc.lib:
 	cd ..
 	for %h in (gc.h gc_local_alloc.h gc_pthread_redirects.h \
 	           gc_config_macros.h leak_detector.h gc_typed.h) \
-	    do $(CP) $(srcdir)\gc\include\%h h\%h
+	    do $(CP) $(srcdir)\gc\include\%h ecl\%h
 eclgmp.lib:
 	cd gmp
 	$(MAKE) "MPN_TYPE = $(GMP_TYPE)" "MFLAGS = $(MFLAGS)"
 	$(CP) gmp.lib ..\eclgmp.lib
-	$(CP) gmp.h ..\h\gmp.h
+	$(CP) gmp.h ..\ecl\gmp.h
 	cd ..
 sysfun.lsp:
 	$(CP) $(srcdir)\cmp\sysfun.lsp .\
@@ -292,15 +295,15 @@ rt.lisp:
 install: install-base
 	for %h in (gc.h gc_local_alloc.h gc_pthread_redirects.h \
 	           gc_config_macros.h leak_detector.h gc_typed.h) \
-	    do $(CP) h\%h $(libdir)\h
-	$(CP) h\gmp.h $(libdir)\h\gmp.h
+	    do $(CP) ecl\%h $(libdir)\ecl
+	$(CP) ecl\gmp.h $(libdir)\ecl\gmp.h
 	cd c
 	$(MAKE) install "prefix=$(prefix)"
 	cd ..\doc
 	$(MAKE) install "prefix=$(prefix)"
 install-base:
 	IF NOT EXIST $(bindir) $(MKDIR) $(bindir)
-	IF NOT EXIST $(libdir)\h $(MKDIR) $(libdir)\h
+	IF NOT EXIST $(libdir)\ecl $(MKDIR) $(libdir)\ecl
 	for %i in ($(TARGETS) ecl.dll) do $(CP) %i $(bindir)\%i
 	IF EXIST $(bindir)\ecl2$(EXE) $(MV) $(bindir)\ecl2$(EXE) $(bindir)\ecl$(EXE)
 	$(CP) ecl-config.bat $(bindir)\ecl-config.bat
@@ -308,7 +311,7 @@ install-base:
 	for %i in ($(LIBRARIES) c\dpp.exe help.doc ecl.lib) do $(CP) %i $(libdir)
 	for /f %i in ('type MODULES') do $(CP) %i $(libdir)
 	for %i in (ecl-static.lib) do IF EXIST %i $(CP) %i $(libdir)
-	$(CP) h\config.h $(libdir)\h
+	$(CP) ecl\config.h $(libdir)\ecl
 flatinstall:
 	$(MAKE) bindir=$(prefix) libdir=$(prefix) install-base
 	cd c
@@ -344,14 +347,14 @@ clean: clean_ecl clean_lisp clean_doc
 	cd ..
 	-for %h in (gc.h gc_local_alloc.h gc_pthread_redirects.h \
 	            gc_config_macros.h leak_detector.h gc_typed.h) \
-	     do $(RM) h\%h
+	     do $(RM) ecl\%h
 	cd gmp
 	$(MAKE) "ECL_THREADS = $(ECL_THREADS)" clean
 	cd ..
-	-$(RM) h\gmp.h
+	-$(RM) ecl\gmp.h
 clean_ecl:
 	-for %i in (eclgc.lib eclgmp.lib lsp\config.lsp compile.lsp bare.lsp \
-	            lsp\load.lsp clos\load.lsp cmp\load.lsp cmp\cmpcfg.lsp \
+	            lsp\load.lsp clos\load.lsp cmp\load.lsp cmp\cmpdefs.lsp \
 		    ecl.lib ecl.dll ecl_min$(EXE) eclmin.lib help.doc sysfun.lsp \
 		    $(TARGETS) *.exp *.ilk *.pdb *.c *.obj ecl-config.bat ecl-static.lib) \
 	     do $(RM) %i

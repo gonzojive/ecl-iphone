@@ -13,8 +13,8 @@
 */
 
 #include <string.h>
-#include "ecl.h"
-#include "internal.h"
+#include <ecl/ecl.h>
+#include <ecl/internal.h>
 
 static const cl_object ecl_foreign_type_table[] = {
 	@':char',

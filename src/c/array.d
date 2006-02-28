@@ -16,7 +16,7 @@
 
 #include <limits.h>
 #include <string.h>
-#include "ecl.h"
+#include <ecl/ecl.h>
 
 static const cl_index ecl_aet_size[] = {
   sizeof(cl_object),          /* aet_object */

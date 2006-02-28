@@ -27,6 +27,7 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 bindir=@bindir@
 libdir=@libdir@
+includedir=@includedir@
 
 # Programs used by "make install":
 #
@@ -44,7 +45,7 @@ LIBRARIES = @LIBRARIES@
 LSP_LIBRARIES = @LSP_LIBRARIES@
 TARGETS = @TARGETS@
 
-all:	$(TARGETS) ecl-config doc
+all:	$(TARGETS) bin/ecl-config doc
 .PHONY:	all
 
 %Makefile: $(srcdir)/%Makefile.in config.status
@@ -57,11 +58,11 @@ all:	$(TARGETS) ecl-config doc
 #
 c/external.h: $(top_srcdir)/h/external.h
 	sed 's,__declspec(dllimport),,g' $(top_srcdir)/h/external.h > $@
-h/external.h: c/external.h
-	cp $(srcdir)/h/*.h h/
-	if grep 'undef ENABLE_DLOPEN' h/config.h; then cp c/external.h h; fi
+ecl/external.h: c/external.h
+	cp $(srcdir)/h/*.h ecl/
+	if grep 'undef ENABLE_DLOPEN' ecl/config.h; then cp c/external.h h; fi
 
-ecl$(EXE): ecl_min$(EXE) compile.lsp sysfun.lsp h/external.h
+bin/ecl$(EXE): ecl_min$(EXE) compile.lsp sysfun.lsp ecl/external.h
 	if [ -f CROSS-COMPILER ]; then \
 		./CROSS-COMPILER < compile.lsp; \
 	else \
@@ -80,21 +81,26 @@ ecl_min$(EXE): $(LIBRARIES) .gdbinit @LIBPREFIX@eclmin.@LIBEXT@
 
 lsp/config.lsp: lsp/config.pre
 	sed -e 's,@ecldir@,$(libdir),g' < lsp/config.pre > lsp/config.lsp
+cmp/cmpdefs.lsp: cmp/cmpdefs.pre
+	sed -e 's,@ecldir@,"$(libdir)",g' \
+	    -e 's,@ecllibdir@,"$(libdir)",g' \
+	    -e 's,@eclincludedir@,"$(includedir)",g' < cmp/cmpdefs.pre > $@
 compile.lsp: compile.pre
 	sed -e 's,@ecldir@,$(libdir),g' < compile.pre > compile.lsp
-ecl-config: ecl-config.pre
+bin/ecl-config: bin/ecl-config.pre
 	sed -e 's,~A,$(libdir),;s,~\*,,' \
-	    -e 's,@libdir\\@,$(libdir),' \
-	    -e 's,@includedir\\@,$(libdir)/h,' ecl-config.pre > ecl-config
+	    -e 's,@ecllibdir\\@,$(libdir),' \
+	    -e 's,@ecincludedir\\@,$(includedir),' bin/ecl-config.pre > bin/ecl-config
 
 
-@LIBPREFIX@eclmin.@LIBEXT@: @LIBPREFIX@eclgmp.@LIBEXT@ @LIBPREFIX@eclgc.@LIBEXT@ lsp/config.lsp h/external.h
+@LIBPREFIX@eclmin.@LIBEXT@: @LIBPREFIX@eclgmp.@LIBEXT@ @LIBPREFIX@eclgc.@LIBEXT@ lsp/config.lsp cmp/cmpdefs.lsp ecl/external.h
 	cd c; $(MAKE)
 @LIBPREFIX@eclgc.@LIBEXT@:
 	if (echo $(SUBDIRS) | grep gc); then \
 	  cd gc; $(MAKE) install; \
-	  cp -rf $(srcdir)/gc/include/private ../h/gc/; \
-	  mv ../@LIBPREFIX@gc.@LIBEXT@ ../@LIBPREFIX@eclgc.@LIBEXT@; \
+	  cd ..; rm -rf ecl/gc; mv h/* ecl/; \
+	  cp -rf $(srcdir)/gc/include/private ecl/gc/; \
+	  mv @LIBPREFIX@gc.@LIBEXT@ @LIBPREFIX@eclgc.@LIBEXT@; \
 	fi
 @LIBPREFIX@eclgmp.@LIBEXT@:
 	if (echo $(SUBDIRS) | grep gmp); then \
@@ -114,13 +120,13 @@ install: BUILD-STAMP install-base
 	cd c; $(MAKE) prefix=$(prefix) DESTDIR=$(DESTDIR) install
 	cd doc; $(MAKE) prefix=$(prefix) DESTDIR=$(DESTDIR) install
 install-base:
-	$(mkinstalldirs) $(DESTDIR)$(bindir) $(DESTDIR)$(libdir)/h
+	$(mkinstalldirs) $(DESTDIR)$(bindir) $(DESTDIR)$(libdir) $(DESTDIR)$(includedir)/ecl
 	# Here we would use the option -s but the install program in sourceforge-solaris
 	# is broken.
 	for i in $(TARGETS); do \
 	  $(INSTALL_PROGRAM) $$i $(DESTDIR)$(bindir); \
 	done;
-	$(INSTALL_SCRIPT) ecl-config $(DESTDIR)$(bindir)
+	$(INSTALL_SCRIPT) bin/ecl-config $(DESTDIR)$(bindir)
 	for i in BUILD-STAMP help.doc ; do \
 	  $(INSTALL_DATA) $$i $(DESTDIR)$(libdir); \
 	done
@@ -145,7 +151,7 @@ doc: $(TARGETS)
 
 clean: clean_lisp
 	for i in $(SUBDIRS); do (cd $$i; $(MAKE) clean); done
-	$(RM) ecl_min$(EXE) ecl$(EXE) help.doc core a.out
+	$(RM) ecl_min$(EXE) bin/ecl$(EXE) help.doc core a.out
 	$(RM) config.version config.log config.cache
 	$(RM) *.c *.o *.a *.h *.data *.fas
 clean_lisp:

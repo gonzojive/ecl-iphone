@@ -14,8 +14,7 @@
     See file '../Copyright' for full details.
 */
 
-#include "ecl.h"
-#include "internal.h"
+#include <ecl/ecl.h>
 #include <math.h>
 #include <time.h>
 #ifdef HAVE_TIMES
@@ -24,6 +23,7 @@
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
+#include <ecl/internal.h>
 
 #if defined(mingw32) || defined(_MSC_VER)
 /* The function sleep() in MinGW is bogus: it counts millisecons! */

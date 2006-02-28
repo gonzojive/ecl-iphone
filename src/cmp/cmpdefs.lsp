@@ -385,6 +385,58 @@ The default value is NIL.")
 (defvar *debug-compiler* nil)
 (defvar *files-to-be-deleted* '())
 
+;;; This is copied into each .h file generated, EXCEPT for system-p calls.
+;;; The constant string *include-string* is the content of file "ecl.h".
+;;; Here we use just a placeholder: it will be replaced with sed.
+(defvar *cmpinclude* "<ecl/ecl-cmp.h>")
+
+(defvar *cc* "@ECL_CC@"
+"This variable controls how the C compiler is invoked by ECL.
+The default value is \"cc -I. -I/usr/local/include/\".
+The second -I option names the directory where the file ECL.h has been installed.
+One can set the variable appropriately adding for instance flags which the 
+C compiler may need to exploit special hardware features (e.g. a floating point
+coprocessor).")
+
+(defvar *cc-flags* "@CPPFLAGS@ @CFLAGS@ @ECL_CFLAGS@")
+
+(defvar *cc-optimize* #-msvc "-O"
+                      #+msvc "-O2")
+
+(defvar *ld-format* #-msvc "~A -o ~S -L~S ~{~S ~} ~@?"
+                    #+msvc "~A -Fe~S~* ~{~S ~} ~@?")
+
+(defvar *cc-format* #-msvc "~A ~A ~:[~*~;~A~] \"-I~A\" -w -c \"~A\" -o \"~A\""
+                    #+msvc "~A ~A ~:[~*~;~A~] -I\"~A\" -w -c \"~A\" -Fo\"~A\"")
+
+#-dlopen
+(defvar *ld-flags* "@LDRPATH@ @LDFLAGS@ -lecl @CORE_LIBS@ @LIBS@ @FASL_LIBS@")
+#+dlopen
+(defvar *ld-flags* #-msvc "@LDRPATH@ @LDFLAGS@ -lecl @LIBS@ @FASL_LIBS@"
+                   #+msvc "@LDRPATH@ @LDFLAGS@ ecl.lib @CLIBS@")
+#+dlopen
+(defvar *ld-shared-flags* #-msvc "@LDRPATH@ @SHARED_LDFLAGS@ @LDFLAGS@ -lecl @LIBS@ @FASL_LIBS@"
+                          #+msvc "@LDRPATH@ @SHARED_LDFLAGS@ @LDFLAGS@ ecl.lib @CLIBS@")
+#+dlopen
+(defvar *ld-bundle-flags* #-msvc "@LDRPATH@ @BUNDLE_LDFLAGS@ @LDFLAGS@ -lecl @LIBS@ @FASL_LIBS@"
+                          #+msvc "@LDRPATH@ @BUNDLE_LDFLAGS@ @LDFLAGS@ ecl.lib @CLIBS@")
+
+(defvar +shared-library-prefix+ "@SHAREDPREFIX@")
+(defvar +shared-library-extension+ "@SHAREDEXT@")
+(defvar +shared-library-format+ "@SHAREDPREFIX@~a.@SHAREDEXT@")
+(defvar +static-library-prefix+ "@LIBPREFIX@")
+(defvar +static-library-extension+ "@LIBEXT@")
+(defvar +static-library-format+ "@LIBPREFIX@~a.@LIBEXT@")
+(defvar +object-file-extension+ "@OBJEXT@")
+(defvar +executable-file-format+ "~a@EXEEXT@")
+
+(defvar *ecl-include-directory* @eclincludedir@)
+(defvar *ecl-library-directory* @ecllibdir@)
+
+;;;
+;;; Compiler program and flags.
+;;;
+
 ;;; --cmptag.lsp--
 ;;;
 ;;; List of tags with marks for closure boundaries.

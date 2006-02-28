@@ -14,8 +14,8 @@
     See file '../Copyright' for full details.
 */
 
-#include "ecl.h"
-#include "ecl-inl.h"
+#include <ecl/ecl.h>
+#include <ecl/ecl-inl.h>
 
 struct cl_test {
 	bool (*test_c_function)(struct cl_test *, cl_object);

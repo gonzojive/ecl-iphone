@@ -13,10 +13,10 @@
     See file '../Copyright' for full details.
 */
 
+#include <ecl/ecl.h>
 #include <string.h>
-#include "ecl.h"
-#include "ecl-inl.h"
-#include "internal.h"
+#include <ecl/ecl-inl.h>
+#include <ecl/internal.h>
 
 #ifdef ENABLE_DLOPEN
 # ifdef HAVE_MACH_O_DYLD_H

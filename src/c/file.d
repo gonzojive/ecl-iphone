@@ -21,12 +21,12 @@
 	by accessing the FILE structure of C.
 */
 
+#include <ecl/ecl.h>
 #include <fcntl.h>
 #include <string.h>
 #include <stdio.h>
-#include <ecl.h>
-#include "ecl-inl.h"
-#include "internal.h"
+#include <ecl/ecl-inl.h>
+#include <ecl/internal.h>
 
 #ifdef HAVE_SELECT
 #include <sys/select.h>

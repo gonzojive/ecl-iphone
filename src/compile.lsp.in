@@ -9,8 +9,9 @@
 ;;;	- On a second stage, using the final ECL executable, to test it.
 ;;;
 
-(setq *package* (find-package "SYSTEM"))
-(setq *features* @LSP_FEATURES@)
+(progn
+  (setq *package* (find-package "SYSTEM"))
+  (setq *features* @LSP_FEATURES@))
 
 ;;;
 ;;; * Ensure that we have the whole of Common-Lisp to compile
@@ -38,11 +39,11 @@
 ;;;   with an already installed copy of ECL.
 ;;;
 (setq c::*cc-flags*
-      #-msvc "@CPPFLAGS@ @CFLAGS@ @ECL_CFLAGS@ -I\"@true_srcdir@\"/c -I\"@true_srcdir@\"/gmp -I\"@true_builddir@\"/h"
-      #+msvc "@CFLAGS@ @ECL_CFLAGS@ -I\"@true_srcdir@\"/c -I\"@true_srcdir@\"/h -I\"@true_builddir@\"/h"
+      #-msvc "@CPPFLAGS@ @CFLAGS@ @ECL_CFLAGS@ -I\"@true_srcdir@\"/c -I\"@true_srcdir@\"/gmp -I\"@true_builddir@\""
+      #+msvc "@CFLAGS@ @ECL_CFLAGS@ -I\"@true_srcdir@\"/c -I\"@true_srcdir@\"/h -I\"@true_builddir@\""
       c::*cc-format*
-      #-msvc "~A ~A ~:[~*~;~A~] -I\"@true_builddir@\"/h~* -w -c ~S -o ~S"
-      #+msvc "~A ~A ~:[~*~;~A~] -I\"@true_builddir@\"/h~* -w -c ~S -Fo~S"
+      #-msvc "~A ~A ~:[~*~;~A~] -I\"@true_builddir@\"~* -w -c ~S -o ~S"
+      #+msvc "~A ~A ~:[~*~;~A~] -I\"@true_builddir@\"~* -w -c ~S -Fo~S"
       c::*ld-format*
       #-msvc "~A -o ~S -L\"@true_builddir@\"~* ~{~S ~} ~@?"
       #+msvc "~A -Fe~S~* ~{~S ~} ~@?")
@@ -204,7 +205,7 @@
 
 (compiler::build-program
  #+:msvc "ecl2"
- #+(and (or cross stage1) (not msvc)) "ecl"
+ #+(and (or cross stage1) (not msvc)) "bin/ecl"
  #-(or cross stage1 msvc) "ecl2"
  :lisp-files *module-symbols*
  :ld-flags '(#-msvc "-L./"))

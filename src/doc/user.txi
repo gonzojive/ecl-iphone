@@ -306,7 +306,7 @@ invoking @file{configure} the layout should be
 @item @file{$HOME/lib/ecl/libgmp.a} @tab GNU library for bignums
 @item @file{$HOME/lib/ecl/libgc.a}  @tab Boehm-Weiser garbage collector
 @item @file{$HOME/lib/ecl/*.a}      @tab Other lisp compiled code
-@item @file{$HOME/lib/ecl/h/}       @tab Header files
+@item @file{$HOME/lib/ecl/ecl/}     @tab Header files
 @end multitable
 
 You can remove all intermediate files produced during installation with the

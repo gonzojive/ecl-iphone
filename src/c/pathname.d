@@ -20,8 +20,8 @@
 	This file contains those functions that interpret namestrings.
 */
 
+#include <ecl/ecl.h>
 #include <string.h>
-#include "ecl.h"
 #include <ctype.h>
 #ifdef _MSC_VER
 #define MAXPATHLEN 512

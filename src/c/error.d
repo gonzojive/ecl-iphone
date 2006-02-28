@@ -14,8 +14,7 @@
     See file '../Copyright' for full details.
 */
 
-#include "ecl.h"
-#include "internal.h"
+#include <ecl/ecl.h>
 #include <string.h>
 #include <errno.h>
 #include <signal.h>
@@ -23,6 +22,7 @@
 #if defined(mingw32) || defined(_MSC_VER)
 #include <windows.h>
 #endif
+#include <ecl/internal.h>
 
 void
 cs_overflow(void)

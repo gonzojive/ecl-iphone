@@ -14,6 +14,7 @@
     See file '../Copyright' for full details.
 */
 
+#include <ecl/ecl.h>
 #include <string.h>
 #ifndef _MSC_VER
 # include <unistd.h>
@@ -28,9 +29,8 @@
 #endif
 #include <sys/stat.h>
 #include <stdlib.h>
-#include "ecl.h"
-#include "ecl-inl.h"
-#include "internal.h"
+#include <ecl/ecl-inl.h>
+#include <ecl/internal.h>
 #ifdef HAVE_DIRENT_H
 # include <dirent.h>
 #else

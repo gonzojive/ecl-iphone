@@ -14,8 +14,8 @@
 */
 
 #include <string.h>
-#include "ecl.h"
-#include "internal.h"
+#include <ecl/ecl.h>
+#include <ecl/internal.h>
 
 /* 
  * Using GMP multiple precision integers:

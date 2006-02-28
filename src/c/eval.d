@@ -15,8 +15,8 @@
 */
 
 
-#include "ecl.h"
-#include "ecl-inl.h"
+#include <ecl/ecl.h>
+#include <ecl/ecl-inl.h>
 
 /* Calling conventions:
    Compiled C code calls lisp function supplying #args, and args.

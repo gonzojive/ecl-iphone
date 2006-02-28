@@ -14,7 +14,7 @@
     See file '../Copyright' for full details.
 */
 
-#include "ecl.h"
+#include <ecl/ecl.h>
 #ifdef HAVE_SYS_RESOURCE_H
 # include <sys/time.h>
 # include <sys/resource.h>

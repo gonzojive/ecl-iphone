@@ -16,10 +16,10 @@
 
 /******************************** IMPORTS *****************************/
 
+#include <ecl/ecl.h>
 #include <stdlib.h>
 #include <limits.h>
-#include "ecl.h"
-#include "internal.h"
+#include <ecl/internal.h>
 
 /******************************* EXPORTS ******************************/
 

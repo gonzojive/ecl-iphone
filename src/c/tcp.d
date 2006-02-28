@@ -12,6 +12,8 @@
     See file '../Copyright' for full details.
 */
 
+#include <ecl/ecl.h>
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <errno.h>
@@ -31,8 +33,6 @@
 #else
 #include <sys/ioctl.h>
 #endif
-
-#include "ecl.h"
 
 /* Maximum length for a unix socket pathname */
 #define UNIX_MAX_PATH	107

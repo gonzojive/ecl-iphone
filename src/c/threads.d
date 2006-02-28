@@ -19,10 +19,8 @@
 #include <signal.h>
 
 #define GC_THREADS
-#include "gc/gc.h"
-
-#include "ecl.h"
-#include "internal.h"
+#include <ecl/ecl.h>
+#include <ecl/internal.h>
 
 #ifndef WITH___THREAD
 static pthread_key_t cl_env_key;
