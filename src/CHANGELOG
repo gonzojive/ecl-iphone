@@ -80,6 +80,12 @@ ECL 0.9i
    not support in the statically linked code. MSVC++ does not seem to have a
    problem with it, though.
 
+ - It is now possible to define subclasses of STANDARD-CLASS. Before, some
+   slots were not properly inherited by subclasses, causing errors when doing
+   something like
+	> (defclass foo (standard-class) () ())
+	> (defclass faa () () (:metaclass foo))
+
 * Documentation:
 
  - The HTML manuals now use CSS for a more appealing look.

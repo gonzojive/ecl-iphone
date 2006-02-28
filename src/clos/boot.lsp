@@ -62,7 +62,7 @@
 	(class-direct-slots        the-class) class-slots
 	(class-slots               standard-class) standard-slots
 	(slot-index-table          standard-class) hash-table
-	(class-direct-slots        standard-class) class-slots)
+	(class-direct-slots        standard-class) (set-difference standard-slots class-slots))
 
   ;; 3) Fix the class hierarchy
   (setf (class-direct-superclasses the-t) nil
