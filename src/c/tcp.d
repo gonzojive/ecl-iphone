@@ -19,8 +19,9 @@
 #include <errno.h>
 
 #if defined(_MSC_VER) || defined(mingw32)
-#include <winsock2.h>
+#include <winsock.h>
 #else
+extern int errno;
 #include <netinet/in.h>
 #include <netdb.h> 
 #include <sys/socket.h>
@@ -36,8 +37,6 @@
 
 /* Maximum length for a unix socket pathname */
 #define UNIX_MAX_PATH	107
-
-extern int errno;
 
 #if defined(_MSC_VER) || defined(mingw32)
 WSADATA wsadata;
@@ -216,7 +215,7 @@ create_server_port(int port)
     FElibc_error("Binding TCP socket", 0);
   if (listen(request, 1))
     FElibc_error("TCP listening", 0);
-#ifdef ECL_THREADS
+#if 0 && defined(ECL_THREADS)
   /* Don't make this file-descriptor non-blocking
    * just block on it before we attempt to accept from it
    * Think _hard_ about moving this out of here, into somewhere sane
