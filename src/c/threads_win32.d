@@ -16,8 +16,19 @@
  */
 
 #include <signal.h>
-#include "ecl.h"
-#include "internal.h"
+#include <ecl/ecl.h>
+#include <ecl/internal.h>
+
+/*
+ * We have to put this explicit definition here because Boehm GC
+ * is designed to produce a DLL and we rather want a static
+ * reference
+ */
+#include <gc.h>
+extern HANDLE WINAPI GC_CreateThread(
+    LPSECURITY_ATTRIBUTES lpThreadAttributes, 
+    DWORD dwStackSize, LPTHREAD_START_ROUTINE lpStartAddress, 
+    LPVOID lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId );
 
 #ifndef WITH___THREAD
 DWORD cl_env_key;
