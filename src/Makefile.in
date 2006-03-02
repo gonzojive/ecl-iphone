@@ -91,7 +91,7 @@ compile.lsp: compile.pre
 bin/ecl-config: bin/ecl-config.pre
 	sed -e 's,~A,$(libdir),;s,~\*,,' \
 	    -e 's,@ecllibdir\\@,$(libdir),' \
-	    -e 's,@ecincludedir\\@,$(includedir),' bin/ecl-config.pre > bin/ecl-config
+	    -e 's,@eclincludedir\\@,$(includedir),' bin/ecl-config.pre > bin/ecl-config
 
 
 @LIBPREFIX@eclmin.@LIBEXT@: @LIBPREFIX@eclgmp.@LIBEXT@ @LIBPREFIX@eclgc.@LIBEXT@ lsp/config.lsp cmp/cmpdefs.lsp ecl/external.h
