@@ -216,7 +216,7 @@ create_server_port(int port)
     FElibc_error("Binding TCP socket", 0);
   if (listen(request, 1))
     FElibc_error("TCP listening", 0);
-#ifdef THREADS
+#ifdef ECL_THREADS
   /* Don't make this file-descriptor non-blocking
    * just block on it before we attempt to accept from it
    * Think _hard_ about moving this out of here, into somewhere sane

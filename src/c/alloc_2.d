@@ -106,9 +106,6 @@ cl_alloc_object(cl_type t)
 #else
 		break;
 #endif
-#ifdef ENABLE_THREADS
-	case t_lock:
-#endif
 	case t_stream:
 		obj = (cl_object)GC_MALLOC(type_size[t]);
 	FINALIZE:
@@ -143,7 +140,7 @@ cl_alloc_object(cl_type t)
 #else
 	case t_structure:
 #endif
-#ifdef THREADS
+#ifdef ECL_THREADS
 	case t_process:
         case t_lock:
 #endif

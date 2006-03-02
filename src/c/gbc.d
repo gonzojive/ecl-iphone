@@ -488,7 +488,7 @@ mark_cl_env(struct cl_env_struct *env)
 	mark_object(env->big_register[1]);
 	mark_object(env->big_register[2]);
 
-#ifdef THREADS
+#ifdef ECL_THREADS
 /* We should mark the stacks of the threads somehow!!! */
 #error "The old garbage collector does not support threads"
 #else
@@ -545,7 +545,7 @@ mark_phase(void)
 	for (i = 0; i < gc_roots;  i++)
 		mark_object(*gc_root[i]);
 
-#ifdef THREADS
+#ifdef ECL_THREADS
 	mark_object(cl_core.processes);
 #else
 	mark_cl_env(&cl_env);
