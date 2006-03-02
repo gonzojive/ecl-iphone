@@ -27,6 +27,7 @@
 
 /* Use GNU Multiple Precision library for bignums                       */ 
 #define WITH_GMP 1
+#include <ecl/gmp.h>
 
 /* Userland threads?							*/
 /* #undef ECL_THREADS */

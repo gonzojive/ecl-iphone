@@ -17,9 +17,6 @@ THREADS_FLAGS=
 TRUE_CC = cl
 CC	= cl
 CFLAGS	= -c $(ECL_CFLAGS) -I./ -I../ -I$(srcdir) -I$(top_srcdir)/gc/include
-#	  -Wall -W -Wfloat-equal -Wundef -Wendif-labels -Wpointer-arith -Wcast-align \
-#	  -Wwrite-strings -Wconversion -Wsign-compare -Wmissing-prototypes -Wredundant-decls \
-#	  -Wunreachable-code -Winline
 DEFS    = $(THREADS_FLAGS)
 
 SHELL	= /bin/sh
