@@ -43,10 +43,10 @@
 (defun make-simple-slotd (&key name initform initfunction type allocation initargs readers writers documentation)
   (list name initform initfunction type allocation initargs readers writers documentation))
 
-(defun canonical-slot-to-direct-slot (slotd)
+(defun canonical-slot-to-direct-slot (class slotd)
   (if (find-class 'slot-definition nil)
       (apply #'make-instance
-	     (apply #'direct-slot-definition-class 'standard-direct-slot-definition slotd)
+	     (apply #'direct-slot-definition-class class slotd)
 	     slotd)
       (apply #'make-simple-slotd slotd)))
 
@@ -98,7 +98,7 @@
 		   (when (and (member option '(:allocation :initform :type :documentation))
 			      (getf options option))
 		     (si::simple-program-error
-		      "In the slot descrition ~S,~%the option ~S is duplicated"
+		      "In the slot description ~S,~%the option ~S is duplicated"
 		      slot option))
                    (case option
                      (:initarg    (push value initargs))
