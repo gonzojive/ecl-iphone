@@ -68,6 +68,8 @@
 ;;; a slot in DEFCLASS.
 ;;;
 
+;;; FIXME! This can be hugely simplified. We do not need all this checking.
+
 (defun PARSE-SLOT (slot)
   (declare (si::c-local))
   (let*((name nil)
@@ -77,7 +79,8 @@
         (writers ())
         (allocation ':INSTANCE)
         (type 'T)				; default
-	(documentation nil))
+	(documentation nil)
+	(extra nil))
     (cond ((symbolp slot)     (setq name slot))
           ((null (cdr slot))  (setq name (car slot)))
           (t
@@ -87,10 +90,6 @@
 		 (value nil))
              (loop (when (null options) (return t))
 		   (setq option (pop options))
-		   (unless (legal-slot-option-p option)
-		     (si::simple-program-error
-		      "In the slot description ~S,~%the option ~S is not legal"
-		      slot option))
 		   (if (endp options)
 		     (si::simple-program-error
 		      "In the slot description ~S,~%the option ~S is missing an argument"
@@ -109,10 +108,11 @@
                      (:writer     (push value writers))
                      (:allocation (setq allocation value))
                      (:type       (setq type value))
-                     (:documentation     (push value documentation)))))))
-    (list :name name :initform initform :initfunction nil :initargs initargs
-	  :readers readers :writers writers :allocation allocation
-	  :documentation documentation)))
+                     (:documentation     (push value documentation))
+		     (otherwise	  (setf extra (list* value option extra))))))))
+    (list* :name name :initform initform :initfunction nil :initargs initargs
+	   :readers readers :writers writers :allocation allocation
+	   :documentation documentation (nreverse extra))))
 
 (defun PARSE-SLOTS (slots)
   (do ((scan slots (cdr scan))
@@ -125,11 +125,5 @@
 	 "A definition for the slot ~S appeared twice in a DEFCLASS form"
 	 name))
       (push slotd collect))))
-
-(defun LEGAL-SLOT-OPTION-P (option)
-  (declare (si::c-local))
-  (member option
-	  '(:accessor :reader :writer :allocation :initarg :initform :type
-		      :documentation)))
 
 ;;; ----------------------------------------------------------------------
