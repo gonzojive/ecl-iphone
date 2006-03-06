@@ -3556,6 +3556,8 @@ case "${host_os}" in
 		thehost='cygwin'
 		shared='yes'
 		THREAD_OBJ=''
+		THREAD_CFLAGS='-D_THREAD_SAFE'
+		THREAD_LIBS='-lpthread'
 		SHARED_LDFLAGS="-shared ${LDFLAGS}"
 		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
 		SHAREDPREFIX=''
