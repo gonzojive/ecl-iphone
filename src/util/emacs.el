@@ -224,7 +224,6 @@
 "c/alloc_2.d"
 "c/dosdummy.d"
 "c/package.d"
-"c/tkMain.d"
 "c/apply.d"
 "c/dostimes.d"
 "c/list.d"
