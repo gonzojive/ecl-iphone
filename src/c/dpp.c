@@ -245,7 +245,9 @@ search_symbol(char *name)
 	for (i = 0; cl_symbols[i].name != NULL; i++) {
 		if (!strcasecmp(name, cl_symbols[i].name)) {
 			name = poolp;
-			pushstr("(cl_object)(cl_symbols+");
+			pushstr("ECL_SYM(\"");
+			pushstr(cl_symbols[i].name);
+			pushstr("\",");
 			if (i >= 1000)
 				pushc((i / 1000) % 10 + '0');
 			if (i >= 100)

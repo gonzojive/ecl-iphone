@@ -235,6 +235,8 @@ __declspec(dllimport)
 extern cl_symbol_initializer cl_symbols[];
 extern cl_index cl_num_symbols_in_core;
 
+#define ECL_SYM(name,code) ((cl_object)(cl_symbols+(code)))
+
 /* apply.c */
 
 extern cl_object APPLY_fixed(cl_narg n, cl_object (*f)(), cl_object *x);
