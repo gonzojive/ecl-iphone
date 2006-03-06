@@ -57,6 +57,7 @@ install: all
 	done
 	$(mkinstalldirs) $(DESTDIR)$(mandir)/man$(manext)
 	$(INSTALL_DATA) ecl.man $(DESTDIR)$(mandir)/man$(manext)/ecl.$(manext)
+	$(INSTALL_DATA) ecl-config.man $(DESTDIR)$(mandir)/man$(manext)/ecl-config.$(manext)
 flatinstall: all $(HTML_FILES)
 	$(mkinstalldirs) $(DESTDIR)$(docdir)
 	for k in $(INFO_FILES); do $(INSTALL_DATA) $$k $(DESTDIR)$(docdir); done
