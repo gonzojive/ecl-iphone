@@ -138,7 +138,7 @@ compute_method(cl_narg narg, cl_object gf, cl_object *args)
 					    arglist);
 			return NULL;
 		}
-		func = funcall(4, @'si::compute-effective-method', gf,
+		func = funcall(4, @'clos::compute-effective-method', gf,
 			       GFUN_COMB(gf), methods);
 		/* update cache */
 		set_meth_hash(argtype, spec_no, table, func);

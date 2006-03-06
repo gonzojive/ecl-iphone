@@ -10,7 +10,7 @@
 (defpackage "CLOS"
   (:use "CL")
   (:import-from "SI" "UNBOUND" "GET-SYSPROP" "PUT-SYSPROP" "REM-SYSPROP"
-		"COMPUTE-EFFECTIVE-METHOD" "SIMPLE-PROGRAM-ERROR"))
+		"SIMPLE-PROGRAM-ERROR"))
 
 (in-package "CLOS")
 

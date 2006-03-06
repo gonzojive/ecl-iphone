@@ -70,6 +70,10 @@ ECL 0.9i
    macro, as in ECL_SYM("SI::*EXIT-HOOKS*",1379) (Thanks to Douglas R. Miles
    for the idea).
 
+ - The symbols from the AMOP are now exported from the CLOS package. This does
+   not mean that everything has been implemented, but it makes the implemented
+   options accessible.
+
 * Errors fixed:
 
  - The intermediate output of the compiler is written in the directory in which
