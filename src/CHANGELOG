@@ -109,6 +109,9 @@ ECL 0.9i
 
  - New slot options are now allowed, as well as new metaclass options.
 
+ - SLOT-{VALUE,BOUNDP,MAKUNBOUND}-USING-CLASS now are also specialized for
+   standard-effective-slot-definition (Thanks to D. Corkill)
+
 * Documentation:
 
  - The HTML manuals now use CSS for a more appealing look.
