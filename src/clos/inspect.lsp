@@ -524,3 +524,12 @@ q (or Q):             quits the inspection.~%~
 (defmethod (setf documentation) (new-value (object function) doc-type)
   (when (member doc-type '(t function))
     (si::set-documentation object doc-type new-value)))
+
+(defmethod documentation ((object slot-definition) doc-type)
+  (when (member doc-type '(t function))
+    (slot-value object 'documentation)))
+
+(defmethod (setf documentation) (new-value (object slot-definition) doc-type)
+  (when (member doc-type '(t function))
+    (setf (slot-value object 'documentation) new-value)))
+
