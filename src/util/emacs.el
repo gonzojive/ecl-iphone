@@ -214,7 +214,6 @@
 "c/cmpaux.d"
 "c/instance.d"
 "c/num_rand.d"
-"c/tclBasic.d"
 "c/all_symbols.d"
 "c/symbols_list.h"
 "c/num_sfun.d"
