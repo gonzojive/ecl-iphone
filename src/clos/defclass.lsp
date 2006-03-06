@@ -83,8 +83,7 @@
 		 (setf option-name :direct-default-initargs)
 		 (parse-default-initargs (rest option)))
 		(otherwise
-		 (si:simple-program-error "~S is not a valid DEFCLASS option"
-					  option-name))))
+		 (or (last option-name 0) (last option-name)))))
 	(setf options (list* option-name option-value options))))
     `(eval-when (compile load eval)
       (ensure-class ',name :direct-superclasses ',superclasses
