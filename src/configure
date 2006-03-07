@@ -9819,9 +9819,9 @@ echo "$as_me: Configuring included Boehm GC library:" >&6;}
      (destdir=`${PWDCMD}`; cd gc; \
       CC="${CC} ${PICFLAG}" CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}" \
         $srcdir/gc/configure --disable-shared --prefix=${destdir} \
-	--includedir=${destdir}/h --libdir=${destdir} --build=${build_alias} \
+	--includedir=${destdir}/ecl/gc/ --libdir=${destdir} --build=${build_alias} \
 	--host=${host_alias} ${boehm_configure_flags})
-     ECL_BOEHM_GC_HEADER='ecl/gc.h'
+     ECL_BOEHM_GC_HEADER='ecl/gc/gc.h'
   else
      if test -f /usr/include/gc/gc.h -o test -f /usr/local/include/gc/gc.h; then
         ECL_BOEHM_GC_HEADER='gc/gc.h'
@@ -9855,7 +9855,7 @@ echo "$as_me: Configuring included GMP library:" >&6;}
      ECL_GMP_HEADER='ecl/gmp.h'
      (destdir=`${PWDCMD}`; cd gmp; CC="${CC} ${PICFLAG}" \
        $srcdir/gmp/configure --disable-shared --prefix=${destdir} \
-	--infodir=${destdir}/doc --includedir=${destdir}/h \
+	--infodir=${destdir}/doc --includedir=${destdir}/ecl \
         --libdir=${destdir} --build=${build_alias} --host=${host_alias} $with_gmp)
     fi
   fi

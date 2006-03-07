@@ -9,8 +9,7 @@ VPATH	= @srcdir@
 #
 TRUE_CC = @CC@
 CC	= @CC@
-CFLAGS	= -c -I. -I@true_builddir@ -I$(srcdir) -I$(srcdir)/gc -I../ecl/gc\
-	  @CPPFLAGS@ @CFLAGS@ @ECL_CFLAGS@ \
+CFLAGS	= -c -I. -I@true_builddir@ -I$(srcdir) -I../ecl/gc @CPPFLAGS@ @CFLAGS@ @ECL_CFLAGS@ \
 #	  -Wall -W -Wfloat-equal -Wundef -Wendif-labels -Wpointer-arith -Wcast-align \
 #	  -Wwrite-strings -Wconversion -Wsign-compare -Wmissing-prototypes -Wredundant-decls \
 #	  -Wunreachable-code -Winline
@@ -63,16 +62,6 @@ all:	$(DPP) ../libeclmin.a ../cinit.o
 	if test -f ../CROSS-DPP ; then ../CROSS-DPP $< $@ ; else $(DPP) $< $@ ; fi
 ffi_x86.c: arch/ffi_x86.d $(DPP) $(HFILES)
 	if test -f ../CROSS-DPP ; then ../CROSS-DPP $< $@ ; else $(DPP) $< $@ ; fi
-
-install: $(HFILES)
-	for i in $(HFILES); do $(INSTALL_DATA) $$i $(DESTDIR)$(includedir)/ecl/; done
-	sed '/-CUT-/,$$d' ../ecl/config.h > ../ecl/config-install.h
-	$(INSTALL_DATA) ../ecl/*.h $(DESTDIR)$(includedir)/ecl
-	rm $(DESTDIR)$(includedir)/ecl/config.h
-	mv $(DESTDIR)$(includedir)/ecl/config-install.h $(DESTDIR)$(includedir)/ecl/config.h
-
-flatinstall: $(HFILES)
-	make includedir=$(DESTDIR)$(prefix) install
 
 ../libeclmin.a: $(OBJS) all_symbols.o all_symbols2.o
 	$(RM) $@

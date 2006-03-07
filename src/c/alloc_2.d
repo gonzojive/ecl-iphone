@@ -19,6 +19,7 @@
 #include <ecl/internal.h>
 #include <ecl/page.h>
 #include <gc.h>
+#include <gc_mark.h>
 #include <private/gc_priv.h>
 
 #ifdef GBC_BOEHM

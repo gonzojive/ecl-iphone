@@ -98,9 +98,9 @@ bin/ecl-config: bin/ecl-config.pre
 	cd c; $(MAKE)
 @LIBPREFIX@eclgc.@LIBEXT@:
 	if (echo $(SUBDIRS) | grep gc); then \
-	  cd gc; $(MAKE) install; \
-	  cd ..; rm -rf ecl/gc; mv h/* ecl/; \
-	  cp -rf $(srcdir)/gc/include/private ecl/gc/; \
+	  cd gc && $(MAKE) install && cd .. && \
+	  cp -rf $(srcdir)/gc/include/gc_mark.h ecl/gc/ && \
+	  mkdir ecl/gc/private && cp -rf $(srcdir)/gc/include/private/*.h ecl/gc/private/ && \
 	  mv @LIBPREFIX@gc.@LIBEXT@ @LIBPREFIX@eclgc.@LIBEXT@; \
 	fi
 @LIBPREFIX@eclgmp.@LIBEXT@:
@@ -118,15 +118,21 @@ BUILD-STAMP: config.status
 	echo "#" `uname -a` > $@
 	head -8 config.log | tail -6 >> $@
 install: install-base
-	cd c; $(MAKE) prefix=$(prefix) DESTDIR=$(DESTDIR) install
 	cd doc; $(MAKE) prefix=$(prefix) DESTDIR=$(DESTDIR) install
 install-base:
-	$(mkinstalldirs) $(DESTDIR)$(bindir) $(DESTDIR)$(libdir) $(DESTDIR)$(includedir)/ecl
 	# Here we would use the option -s but the install program in sourceforge-solaris
 	# is broken.
+	$(mkinstalldirs) $(DESTDIR)$(bindir) $(DESTDIR)$(libdir)
 	for i in $(TARGETS); do \
 	  $(INSTALL_PROGRAM) $$i $(DESTDIR)$(bindir); \
 	done;
+	$(mkinstalldirs) $(DESTDIR)$(includedir)/ecl/gc/private
+	sed '/-CUT-/,$$d' ./ecl/config.h > ./ecl/config-install.h
+	$(INSTALL_DATA) ./ecl/*.h $(DESTDIR)$(includedir)/ecl
+	$(INSTALL_DATA) ./ecl/gc/*.h $(DESTDIR)$(includedir)/ecl/gc
+	$(INSTALL_DATA) ./ecl/gc/private/*.h $(DESTDIR)$(includedir)/ecl/gc/private
+	rm $(DESTDIR)$(includedir)/ecl/config.h
+	mv $(DESTDIR)$(includedir)/ecl/config-install.h $(DESTDIR)$(includedir)/ecl/config.h
 	$(INSTALL_SCRIPT) bin/ecl-config $(DESTDIR)$(bindir)
 	for i in BUILD-STAMP help.doc ; do \
 	  $(INSTALL_DATA) $$i $(DESTDIR)$(libdir); \
@@ -138,8 +144,7 @@ install-base:
 	  $(INSTALL_PROGRAM) $$i $(DESTDIR)$(libdir); \
 	done
 flatinstall: BUILD-STAMP
-	$(MAKE) DESTDIR=$(DESTDIR) bindir=$(prefix) libdir=$(prefix) install-base
-	cd c; $(MAKE) DESTDIR=$(DESTDIR) prefix=$(prefix) flatinstall
+	$(MAKE) DESTDIR=$(DESTDIR) bindir=$(prefix) libdir=$(prefix) includedir=$(prefix) install-base
 	cd doc; $(MAKE) DESTDIR=$(DESTDIR) prefix=$(prefix) docdir=$(prefix)/doc flatinstall
 
 uninstall:
