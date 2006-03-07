@@ -314,7 +314,7 @@ install-base:
 	IF EXIST $(bindir)\ecl2$(EXE) $(MV) $(bindir)\ecl2$(EXE) $(bindir)\ecl$(EXE)
 	$(CP) ecl-config.bat $(bindir)\ecl-config.bat
 	$(CP) ecl-cc.bat $(bindir)\ecl-cc.bat
-	for %i in ($(LIBRARIES) c\dpp.exe help.doc ecl.lib) do $(CP) %i $(libdir)
+	for %i in ($(LIBRARIES) c\dpp.exe BUILD-STAMP help.doc ecl.lib) do $(CP) %i $(libdir)
 	for /f %i in ('type MODULES') do $(CP) %i $(libdir)
 	for %i in (ecl-static.lib) do IF EXIST %i $(CP) %i $(libdir)
 	$(CP) ecl\config.h $(libdir)\ecl
@@ -362,7 +362,7 @@ clean: clean_ecl clean_lisp clean_doc
 clean_ecl:
 	-for %i in (eclgc.lib eclgmp.lib lsp\config.lsp compile.lsp bare.lsp \
 	            lsp\load.lsp clos\load.lsp cmp\load.lsp cmp\cmpdefs.lsp \
-		    ecl.lib ecl.dll ecl_min$(EXE) eclmin.lib help.doc sysfun.lsp \
+		    ecl.lib ecl.dll ecl_min$(EXE) eclmin.lib help.doc sysfun.lsp BUILD-STAMP \
 		    $(TARGETS) *.exp *.ilk *.pdb *.c *.obj ecl-config.bat ecl-static.lib) \
 	     do $(RM) %i
 	cd c
