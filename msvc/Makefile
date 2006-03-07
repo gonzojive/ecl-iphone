@@ -317,7 +317,10 @@ install-base:
 	for %i in ($(LIBRARIES) c\dpp.exe BUILD-STAMP help.doc ecl.lib) do $(CP) %i $(libdir)
 	for /f %i in ('type MODULES') do $(CP) %i $(libdir)
 	for %i in (ecl-static.lib) do IF EXIST %i $(CP) %i $(libdir)
-	$(CP) ecl\config.h $(libdir)\ecl
+	IF NOT EXIST $(libdir)\ecl $(MKDIR) $(libdir)\ecl
+	IF NOT EXIST $(libdir)\ecl\gc $(MKDIR) $(libdir)\ecl\gc
+	IF NOT EXIST $(libdir)\ecl\gc\private $(MKDIR) $(libdir)\ecl\gc\private
+	for %i in (ecl\*.h ecl\gc\*.h ecl\gc\private\*.h) do $(CP) %i $(libdir)\%i
 flatinstall:
 	$(MAKE) bindir=$(prefix) libdir=$(prefix) install-base
 	cd c
