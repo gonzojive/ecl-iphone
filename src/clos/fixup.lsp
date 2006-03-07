@@ -58,22 +58,6 @@
   (eval (print `(defclass slot-definition ()
 		 ,(mapcar #'(lambda (x) (butlast x 2)) +slot-definition-slots+)))))
 
-(defmethod slot-value-using-class ((class standard-class) instance
-                                   (slot standard-effective-slot-definition))
-  (slot-value-using-class class instance (slot-definition-name slot)))
-
-(defmethod slot-boundp-using-class ((class standard-class) instance
-                                    (slot standard-effective-slot-definition))
-  (slot-boundp-using-class class instance (slot-definition-name slot)))
-
-(defmethod (setf slot-value-using-class) (val (class standard-class) instance
-                                          (slot standard-effective-slot-definition))
-  (standard-instance-set val instance (slot-definition-name slot)))
-
-(defmethod slot-makunbound-using-class ((class standard-class) instance
-                                        (slot standard-effective-slot-definition))
-  (slot-makunbound-using-class class instance (slot-definition-name slot)))
-
 ;;; ----------------------------------------------------------------------
 ;;; Fixup
 
@@ -235,3 +219,24 @@ their lambda lists ~A and ~A are not congruent."
       (t (error "~A is not a class." new-value))))
   new-value)
 )
+
+;;; ----------------------------------------------------------------------
+;;; Slot accessors
+;;;
+
+(defmethod slot-value-using-class ((class standard-class) instance
+                                   (slot standard-effective-slot-definition))
+  (slot-value-using-class class instance (slot-definition-name slot)))
+
+(defmethod slot-boundp-using-class ((class standard-class) instance
+                                    (slot standard-effective-slot-definition))
+  (slot-boundp-using-class class instance (slot-definition-name slot)))
+
+(defmethod (setf slot-value-using-class) (val (class standard-class) instance
+                                          (slot standard-effective-slot-definition))
+  (standard-instance-set val instance (slot-definition-name slot)))
+
+(defmethod slot-makunbound-using-class ((class standard-class) instance
+                                        (slot standard-effective-slot-definition))
+  (slot-makunbound-using-class class instance (slot-definition-name slot)))
+
