@@ -44,9 +44,12 @@
        (standard-object (make-empty-standard-class 'STANDARD-OBJECT standard-class))
        (the-class (make-empty-standard-class 'CLASS standard-class))
        (the-t (make-empty-standard-class 'T the-class))
-       (class-slots (mapcar #'canonical-slot-to-direct-slot (parse-slots '#.+class-slots+)))
-       (standard-slots (mapcar #'canonical-slot-to-direct-slot
-				  (parse-slots '#.+standard-class-slots+)))
+       ;; It does not matter that we pass NIL instead of a class object,
+       ;; because CANONICAL-SLOT-TO-DIRECT-SLOT will make simple slots.
+       (class-slots (loop for s in (parse-slots '#.+class-slots+)
+			  collect (canonical-slot-to-direct-slot nil s)))
+       (standard-slots (loop for s in (parse-slots '#.+standard-class-slots+)
+			     collect (canonical-slot-to-direct-slot nil s)))
        (hash-table (make-hash-table :size 24)))
 
   ;; 2) STANDARD-CLASS and CLASS are the only classes with slots. Create a

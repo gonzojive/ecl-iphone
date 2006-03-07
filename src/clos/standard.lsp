@@ -152,7 +152,8 @@
 
   ;; the list of direct slots is converted to direct-slot-definitions
   (setf (class-direct-slots class)
-	(mapcar #'canonical-slot-to-direct-slot direct-slots))
+	(loop for s in direct-slots
+	      collect (canonical-slot-to-direct-slot class s)))
 
   ;; set up inheritance checking that it makes sense
   (dolist (l (setf (class-direct-superclasses class)
