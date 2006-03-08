@@ -57,7 +57,7 @@ all:	$(TARGETS) bin/ecl-config doc
 # in the library and can be referenced without indirection.
 #
 c/ecl/external.h: $(top_srcdir)/h/external.h
-	-mkdir c/ecl
+	test -d c/ecl || mkdir c/ecl
 	sed 's,__declspec(dllimport),,g' $(top_srcdir)/h/external.h > $@
 ecl/external.h: c/ecl/external.h c/ecl/external.h
 	cp $(srcdir)/h/*.h ecl/
@@ -97,10 +97,12 @@ bin/ecl-config: bin/ecl-config.pre
 @LIBPREFIX@eclmin.@LIBEXT@: @LIBPREFIX@eclgmp.@LIBEXT@ @LIBPREFIX@eclgc.@LIBEXT@ lsp/config.lsp cmp/cmpdefs.lsp ecl/external.h
 	cd c; $(MAKE)
 @LIBPREFIX@eclgc.@LIBEXT@:
+	test -d ecl/gc || mkdir ecl/gc
+	test -d ecl/gc/private || mkdir ecl/gc/private
 	if (echo $(SUBDIRS) | grep gc); then \
 	  cd gc && $(MAKE) install && cd .. && \
 	  cp -rf $(srcdir)/gc/include/gc_mark.h ecl/gc/ && \
-	  mkdir ecl/gc/private && cp -rf $(srcdir)/gc/include/private/*.h ecl/gc/private/ && \
+	  cp -rf $(srcdir)/gc/include/private/*.h ecl/gc/private/ && \
 	  mv @LIBPREFIX@gc.@LIBEXT@ @LIBPREFIX@eclgc.@LIBEXT@; \
 	fi
 @LIBPREFIX@eclgmp.@LIBEXT@:
@@ -179,7 +181,7 @@ test2:
 	$(MAKE) ecl
 	for i in lsp clos cmp; do diff --exclude=\*.o $$i old/$$i; done
 test3:
-	-mkdir stage2
+	test -d stage2 || mkdir stage2
 	cp -rf lsp clos cmp stage2
 	-for i in lsp cmp clos clx tk; do test -f lib$$i.a && mv lib$$i.a stage2; done
 	$(MAKE) clean_lisp
