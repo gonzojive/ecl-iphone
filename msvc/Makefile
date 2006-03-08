@@ -279,8 +279,8 @@ eclgc.lib:
 	$(MAKE) $(GCFLAGS) "ECL_THREADS = $(ECL_THREADS)" "MFLAGS = $(MFLAGS)" gc.lib
 	$(CP) gc.lib ..\eclgc.lib
 	cd ..
-	mkdir ecl\gc
-	mkdir ecl\gc\private
+	if not exist ecl\gc $(MKDIR) ecl\gc
+	if not exist ecl\gc\private $(MKDIR) ecl\gc\private
 	for %h in (gc.h gc_local_alloc.h gc_pthread_redirects.h \
 	           gc_config_macros.h leak_detector.h gc_typed.h \
 	           private\gc_priv.h private\gcconfig.h gc_mark.h) \
