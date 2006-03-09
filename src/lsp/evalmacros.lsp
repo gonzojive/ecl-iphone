@@ -101,6 +101,8 @@ as a VARIABLE doc and can be retrieved by (documentation 'NAME 'variable)."
   `(PROGN (SYS:*MAKE-CONSTANT ',var ,form)
     ,@(si::expand-set-documentation var 'variable doc-string)
     #+PDE (SYS:RECORD-SOURCE-PATHNAME ',var 'defconstant)
+    (eval-when (:compile-toplevel)
+      (si::register-global ',var))
     ',var))
 
 ;;;

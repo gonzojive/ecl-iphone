@@ -112,6 +112,10 @@ ECL 0.9i
  - SLOT-{VALUE,BOUNDP,MAKUNBOUND}-USING-CLASS now are also specialized for
    standard-effective-slot-definition (Thanks to D. Corkill)
 
+ - Constants are now implicitely declared global in the file in which they are
+   defined, so that the compiler no longer issues warnings when they are
+   referenced.
+
 * Documentation:
 
  - The HTML manuals now use CSS for a more appealing look.
