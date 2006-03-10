@@ -119,7 +119,7 @@
 
 (eval-when (compile eval)
   (defparameter +standard-method-slots+
-    '((generic-function :initarg :generic-function
+    '((generic-function :initarg :generic-function :initform nil
        :accessor method-generic-function)
       (lambda-list :initarg :lambda-list
        :accessor method-lambda-list)

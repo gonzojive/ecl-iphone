@@ -116,6 +116,9 @@ ECL 0.9i
    defined, so that the compiler no longer issues warnings when they are
    referenced.
 
+ - The slot GENERIC-FUNCTION of a method is initially set to NIL instead of
+   left unbound.
+
 * Documentation:
 
  - The HTML manuals now use CSS for a more appealing look.
