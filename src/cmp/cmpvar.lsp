@@ -291,7 +291,7 @@
       (setf var (make-var :name name :kind kind :type type :loc (add-symbol name))))
     (push var *global-var-objects*)
     (when warn
-      (unless (or (sys:specialp name) (check-global name))
+      (unless (or (sys:specialp name) (constantp name) (check-global name))
 	(undefined-variable name)
 	(push var *undefined-vars*)))
     var))
