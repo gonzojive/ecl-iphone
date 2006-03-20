@@ -93,6 +93,8 @@ ECL 0.9i
    or use SLOT-VALUE. It should be set to NIL when one intends to redefine the
    SLOT-*-USING-CLASS methods.
 
+ - Implemented [FUNCALLABLE-]STANDARD-INSTANCE-ACCESS.
+
 * Errors fixed:
 
  - The intermediate output of the compiler is written in the directory in which

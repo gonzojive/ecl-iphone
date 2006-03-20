@@ -58,6 +58,8 @@ SESF		STANDARD-EFFECTIVE-SLOT-DEFINITION
 
 [F] (STANDARD-INSTANCE-ACCESS instance location)
 
+[F] (FUNCALLABLE-STANDARD-INSTANCE-ACCESS instance location)
+
 ;;
 ;; 2.B) CLASS-DEFINITION
 ;;      ----------------

@@ -1312,6 +1312,16 @@ type_of(#0)==t_bitvector")
 (def-inline si:sl-boundp :always (t) :bool "(#0)!=ECL_UNBOUND")
 
 (proclaim-function si:sl-makunbound (t fixnum) t :predicate t)
+
+(proclaim-function standard-instance-access (standard-object fixnum) t :no-side-effects t)
+(def-inline standard-instance-access :always (standard-object fixnum) t "instance_ref((#0),(#1))")
+(def-inline standard-instance-access :unsafe (standard-object fixnum) t
+ "(#0)->instance.slots[#1]")
+
+(proclaim-function funcallable-standard-instance-access (funcallable-standard-object fixnum) t :no-side-effects t)
+(def-inline funcallable-standard-instance-access :always (funcallable-standard-object fixnum) t "instance_ref((#0),(#1))")
+(def-inline funcallable-standard-instance-access :unsafe (funcallable-standard-object fixnum) t
+ "(#0)->instance.slots[#1]")
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
