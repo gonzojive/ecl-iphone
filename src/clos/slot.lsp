@@ -38,10 +38,11 @@
     (readers :initarg :readers :initform nil :accessor slot-definition-readers)
     (writers :initarg :writers :initform nil :accessor slot-definition-writers)
     (documentation :initarg :documentation :initform nil :accessor slot-definition-documentation)
+    (location :initarg :documentation :initform nil :accessor slot-definition-location)
     ))
 
-(defun make-simple-slotd (&key name initform initfunction type allocation initargs readers writers documentation)
-  (list name initform initfunction type allocation initargs readers writers documentation))
+(defun make-simple-slotd (&key name initform initfunction type allocation initargs readers writers documentation location)
+  (list name initform initfunction type allocation initargs readers writers documentation location))
 
 (defun canonical-slot-to-direct-slot (class slotd)
   (if (find-class 'slot-definition nil)

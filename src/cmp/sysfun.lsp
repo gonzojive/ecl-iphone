@@ -1412,9 +1412,7 @@ type_of(#0)==t_bitvector")
      clos::class-direct-subclasses
      clos::class-slots
      clos::class-precedence-list
-     clos::slot-index-table
      clos::class-direct-slots
-     clos::class-shared-slots
      clos::default-initargs-of
      clos::generic-function-lambda-list
      clos::generic-function-argument-precedence-order

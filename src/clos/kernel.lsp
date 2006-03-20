@@ -73,8 +73,7 @@
 (eval-when (compile eval)
   (defparameter +standard-class-slots+
     (append +class-slots+
-	    '((slot-index-table :accessor slot-index-table)
-	      (shared-slots :initform nil :accessor class-shared-slots)
+	    '((slot-table :accessor slot-table)
 	      (forward)))))
 
 #.(create-accessors +standard-class-slots+ 'standard-class)

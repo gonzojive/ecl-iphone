@@ -234,9 +234,16 @@ because it contains a reference to the undefined class~%  ~A"
 			   :direct-superclasses (class-direct-superclasses subclass)))
   )
 
+(defun std-create-slots-table (class)
+  (let* ((all-slots (class-slots class))
+	 (table (make-hash-table :size (max 32 (length all-slots)))))
+    (dolist (slotd (class-slots class))
+      (setf (gethash (slot-definition-name slotd) table) slotd))
+    (setf (slot-table class) table)))
+
 (defmethod finalize-inheritance ((class standard-class))
   (call-next-method)
-  (std-class-allocate-slots class)
+  (std-create-slots-table class)
   (std-class-generate-accessors class))
 
 (defmethod compute-class-precedence-list ((class class))
@@ -346,38 +353,44 @@ because it contains a reference to the undefined class~%  ~A"
 	  (list* :direct-superclasses direct-superclasses options)))
 
 ;;; ----------------------------------------------------------------------
-;;; Slots hashing for standard classes
+;;; Around methods for COMPUTE-SLOTS which assign locations to each slot.
 ;;;
 
-(defun std-class-allocate-slots (class)
+(defun class-compute-slots (class slots)
+  (let ((local-index -1))
+    (declare (fixnum local-index))
+    (dolist (slotd slots)
+      (when (eq (slot-definition-allocation slotd) :instance)
+	(setf (slot-definition-location slotd) (incf local-index))))
+    slots))
+
+(defmethod compute-slots :around ((class class))
+  (class-compute-slots class (call-next-method)))
+
+(defun std-class-compute-slots (class slots)
   (declare (si::c-local))
-  (let* ((slots (class-slots class))
-	 (direct-slots (class-direct-slots class))
-	 (slot-instance-count (count-instance-slots class))
-	 (table (make-hash-table :size (max 32 (* 2 slot-instance-count))))
-	 (local-index -1)
-	 (shared-index -1))
-    (declare (fixnum local-index shared-index))
-    (dolist (slot slots)
-      (let* ((name (slot-definition-name slot))
-	     (allocation (slot-definition-allocation slot))
-	     location)
-	(cond ((eq allocation :INSTANCE) ; local slot
-	       (setq location (incf local-index)))
+  (let* ((direct-slots (class-direct-slots class)))
+    (dolist (slotd slots)
+      (let* ((name (slot-definition-name slotd))
+	     (allocation (slot-definition-allocation slotd)))
+	(cond ((not (eq (slot-definition-allocation slotd) :class)))
 	      ((find name direct-slots :key #'slot-definition-name) ; new shared slot
-	       (setq location (cons class (incf shared-index))))
+	       (setf (slot-definition-location slotd) (list (unbound))))
 	      (t			; inherited shared slot
 	       (dolist (c (class-precedence-list class))
-		 (when (and
-			(not (eql c class))
-			(typep c 'STANDARD-CLASS)
-			(setq location
-			      (gethash name (slot-value c 'SLOT-INDEX-TABLE))))
-		   (return)))))
-	(setf (gethash name table) location)))
-    (setf (class-shared-slots class)
-	  (make-array (1+ shared-index) :initial-element (unbound))
-	  (slot-index-table class) table)))
+		 (unless (eql c class)
+		   (let ((other (find (slot-definition-name slotd)
+				      (class-slots c)
+				      :key #'slot-definition-name)))
+		     (when (and other
+				(eq (slot-definition-allocation other) allocation)
+				(setf (slot-definition-location slotd)
+				      (slot-definition-location other)))
+		       (return)))))))))
+    slots))
+
+(defmethod compute-slots :around ((class standard-class))
+  (std-class-compute-slots class (call-next-method)))
 
 ;;; ----------------------------------------------------------------------
 ;;; Optional accessors
@@ -391,28 +404,26 @@ because it contains a reference to the undefined class~%  ~A"
   ;; the liberty of using SI:INSTANCE-REF because they know the class of
   ;; the instance.
   ;;
-  (do* ((slots (class-slots standard-class) (cdr slots))
-	(i 0))
-    ((endp slots))
-    (declare (fixnum i))
-    (let* ((slotd (first slots))
-	   (slot-name (slot-definition-name slotd))
-	   (index i)
+  (dolist (slotd (class-slots standard-class))
+    (let* ((slot-name (slot-definition-name slotd))
+	   (index (slot-definition-location slotd))
 	   reader setter)
       (declare (fixnum index))
-      (if (eql (slot-definition-allocation slotd) :instance)
+      (if (and (eql (slot-definition-allocation slotd) :instance)
+	       (si:fixnump index))
 	  (setf reader #'(lambda (self)
 			   (let ((value (si:instance-ref self index)))
 			     (if (si:sl-boundp value)
 				 value
 				 (values (slot-unbound (class-of self) self slot-name)))))
 		setter #'(lambda (value self)
-			   (si:instance-set self index value))
-		i (1+ i))
+			   (si:instance-set self index value)))
 	  (setf reader #'(lambda (self)
-			   (slot-value self slot-name))
+			   (slot-value-using-class (si:instance-class self)
+						   self slotd))
 		setter #'(lambda (value self)
-			   (setf (slot-value self slot-name) value))))
+			   (setf (slot-value-using-class (si:instance-class self)
+							 self slotd) value))))
       (dolist (fname (slot-definition-readers slotd))
 	(install-method fname nil `(,standard-class) '(self) nil nil
 			reader))
@@ -425,48 +436,6 @@ because it contains a reference to the undefined class~%  ~A"
 ;;;
 ;;; Standard-object has no slots and inherits only from t:
 ;;; (defclass standard-object (t) ())
-
-(defmethod slot-value-using-class ((class standard-class) instance slot-name)
-  (multiple-value-bind (val condition)
-      (standard-instance-get instance slot-name)
-    (case condition
-      (:VALUE val)
-      (:UNBOUND (values (slot-unbound (si:instance-class instance) instance
-				      slot-name)))
-      (:MISSING (values (slot-missing (si:instance-class instance) instance
-				      slot-name 'SLOT-VALUE)))
-      )))
-
-(defmethod slot-boundp-using-class ((class standard-class) instance slot-name)
-  (multiple-value-bind (val condition)
-      (standard-instance-get instance slot-name)
-    (declare (ignore val))
-    (case condition
-      (:VALUE t)
-      (:UNBOUND nil)
-      (:MISSING (values (slot-missing (si:instance-class instance) instance
-				      slot-name 'SLOT-BOUNDP)))
-      )))
-
-(defmethod (setf slot-value-using-class) (val (class standard-class) instance
-					  slot-name)
-  (standard-instance-set val instance slot-name))
-
-(defmethod slot-exists-p-using-class ((class standard-class) instance slot-name)
-  (and (nth-value 0 (gethash slot-name (slot-index-table class) nil))
-       t))
-
-(defmethod slot-makunbound-using-class ((class standard-class) instance slot-name)
-  (let* ((index (slot-index slot-name (slot-index-table class))))
-    (if index
-	(if (atom index)
-	    (si:sl-makunbound instance (the fixnum index))
-	    ;; else it is a shared slot
-	    (setf (svref (class-shared-slots (car index)) (cdr index))
-		  (unbound)))
-	(slot-missing (si:instance-class instance) instance slot-name
-		      'SLOT-MAKUNBOUND)))
-  instance)
 
 (defmethod describe-object ((obj standard-object) (stream t))
   (let* ((class (si:instance-class obj))
@@ -555,39 +524,6 @@ because it contains a reference to the undefined class~%  ~A"
 	      ((find name slots :test #'member :key #'slot-definition-initargs))
 	      (t
 	       (setf unknown-key name)))))))
-
-;;; ----------------------------------------------------------------------
-;;; Basic access to instances
-
-(defun standard-instance-get (instance slot-name)
-  (ensure-up-to-date-instance instance)
-  (let* ((class (si:instance-class instance))
-	 (index (gethash slot-name (slot-index-table class))))
-    (declare (type standard-class class))
-    (if (null index)
-	(values nil :MISSING)
-	(let ((val (if (atom index)
-		       ;; local slot
-		       (si:instance-ref instance (the fixnum index))
-		       ;; shared slot
-		       (svref (class-shared-slots (car index)) (cdr index)))))
-	  (if (si:sl-boundp val)
-	      (values val :VALUE)
-	      (values nil :UNBOUND))))))
-
-(defun standard-instance-set (val instance slot-name)
-  (ensure-up-to-date-instance instance)
-  (let* ((class (si:instance-class instance))
-	 (index (gethash slot-name (slot-index-table class))))
-    (declare (type standard-class class))
-    (if index
-	(if (atom index)
-	    (si:instance-set instance (the fixnum index) val)
-	    ;; else it is a shared slot
-	    (setf (svref (class-shared-slots (car index)) (cdr index)) val))
-	(slot-missing (si:instance-class instance) instance slot-name
-		      'SETF val))
-    val))
 
 ;;; ----------------------------------------------------------------------
 ;;; Methods

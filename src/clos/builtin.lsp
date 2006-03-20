@@ -102,19 +102,19 @@
 (defmethod make-instance ((class-name symbol) &rest initargs)
   (apply #'make-instance (find-class class-name) initargs))
 
-(defmethod slot-makunbound-using-class ((class built-in-class) self slot-name)
+(defmethod slot-makunbound-using-class ((class built-in-class) self slotd)
   (error "SLOT-MAKUNBOUND-USING-CLASS cannot be applied on built-in objects"))
 
-(defmethod slot-boundp-using-class ((class built-in-class) self slot-name)
+(defmethod slot-boundp-using-class ((class built-in-class) self slotd)
   (error "SLOT-BOUNDP-USING-CLASS cannot be applied on built-in objects"))
 
-(defmethod slot-value-using-class ((class built-in-class) self slot-name)
+(defmethod slot-value-using-class ((class built-in-class) self slotd)
   (error "SLOT-VALUE-USING-CLASS cannot be applied on built-in objects"))
 
-(defmethod (setf slot-value-using-class) (val (class built-in-class) self slot-name)
+(defmethod (setf slot-value-using-class) (val (class built-in-class) self slotd)
   (error "SLOT-VALUE-USING-CLASS cannot be applied on built-in objects"))
 
-(defmethod slot-exists-p-using-class ((class built-in-class) self slot-name)
+(defmethod slot-exists-p-using-class ((class built-in-class) self slotd)
   nil)
 
 ;;; ======================================================================
