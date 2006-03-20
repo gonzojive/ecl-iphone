@@ -82,7 +82,7 @@ all:	$(DPP) ecl\external.h ..\eclmin.lib ..\cinit.obj
 # in the library and can be referenced without indirection.
 #
 ecl\external.h: $(top_srcdir)/h/external.h Makefile
-	mkdir ecl
+	if not exist ecl mkdir ecl
 	cut.exe removedecl < $(top_srcdir)/h/external.h > $@
 
 cut.exe: $(top_srcdir)/util/cut.c
