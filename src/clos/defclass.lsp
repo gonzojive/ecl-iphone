@@ -83,7 +83,7 @@
 		 (setf option-name :direct-default-initargs)
 		 (parse-default-initargs (rest option)))
 		(otherwise
-		 (or (last option-name 0) (last option-name)))))
+		 (list 'quote (rest option)))))
 	(setf options (list* option-name option-value options))))
     `(eval-when (compile load eval)
       (ensure-class ',name :direct-superclasses ',superclasses
