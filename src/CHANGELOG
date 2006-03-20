@@ -88,6 +88,11 @@ ECL 0.9i
    COMPUTE-SLOTS assign a location to each slot definition that has allocation
    :INSTANCE or :CLASS.
 
+ - A new defclass option, :optimize-slot-access, which defaults to T, controls
+   whether the slots accessors should address directly the values in the class
+   or use SLOT-VALUE. It should be set to NIL when one intends to redefine the
+   SLOT-*-USING-CLASS methods.
+
 * Errors fixed:
 
  - The intermediate output of the compiler is written in the directory in which

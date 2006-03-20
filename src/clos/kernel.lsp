@@ -74,6 +74,7 @@
   (defparameter +standard-class-slots+
     (append +class-slots+
 	    '((slot-table :accessor slot-table)
+	      (optimize-slot-access :initarg :optimize-slot-access :initform t)
 	      (forward)))))
 
 #.(create-accessors +standard-class-slots+ 'standard-class)
