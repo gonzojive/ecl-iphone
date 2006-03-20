@@ -23,12 +23,9 @@
       (let* ((output `(ensure-generic-function ',function-specifier
 		       :delete-methods t ,@option-list)))
 	(if method-list
-	    `(prog1 ,output
-	      ,@(mapcar #'(lambda (m)
-			  `(setf (method-from-defgeneric-p
-				    (defmethod ,function-specifier ,@m))
-			         t))
-		      method-list))
+	    `(associate-methods-to-gfun ,output
+	      ,@(mapcar #'(lambda (m) `(defmethod ,function-specifier ,@m))
+			method-list))
 	    output))
       )))
 
@@ -179,6 +176,11 @@
   (compute-g-f-spec-list gfun)
   gfun)
 
+(defun associate-methods-to-gfun (gfun &rest methods)
+  (dolist (method methods)
+    (setf (getf (method-plist method) :method-from-defgeneric-p) t))
+  gfun)
+
 (defmethod ensure-generic-function-using-class
     ((gfun generic-function) name &rest args &key (method-class 'STANDARD-METHOD)
      (generic-function-class (class-of gfun))
@@ -199,7 +201,7 @@
 	   generic-function-class))
   (when delete-methods
     (dolist (m (copy-list (generic-function-methods gfun)))
-      (when (method-from-defgeneric-p m)
+      (when (getf (method-plist m) :method-from-defgeneric-p)
 	(remove-method gfun m))))
   (unless (classp method-class)
     (setf args (list* :method-class (find-class method-class) args)))

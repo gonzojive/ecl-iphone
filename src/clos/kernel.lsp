@@ -127,9 +127,7 @@
       (qualifiers :initform nil :initarg :qualifiers :accessor method-qualifiers)
       (function :initarg :function :accessor method-function)
       (documentation :initform nil :initarg documentation)
-      (declarations :initform nil)
-      (plist :initform nil :initarg :plist :accessor method-plist)
-      (from-defgeneric-p :initform nil :accessor method-from-defgeneric-p))))
+      (plist :initform nil :initarg :plist :accessor method-plist))))
 
 #.(create-accessors +standard-method-slots+ 'standard-method)
 

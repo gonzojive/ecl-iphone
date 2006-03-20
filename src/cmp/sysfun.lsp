@@ -1322,6 +1322,8 @@ type_of(#0)==t_bitvector")
 (def-inline funcallable-standard-instance-access :always (funcallable-standard-object fixnum) t "instance_ref((#0),(#1))")
 (def-inline funcallable-standard-instance-access :unsafe (funcallable-standard-object fixnum) t
  "(#0)->instance.slots[#1]")
+
+(proclaim-function associate-methods-to-gfun (generic-function *) generic-function)
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1386,7 +1388,10 @@ type_of(#0)==t_bitvector")
     #+clos
     (;; combin.lsp
      method-combination-error
-     invalid-method-error)
+     invalid-method-error
+     #-(or) standard-instance-access ; this function is a synonym for si:instance-ref
+     #-(or) funcallable-standard-instance-access ; same for this one
+     )
 ))
 
 (proclaim
@@ -1435,6 +1440,7 @@ type_of(#0)==t_bitvector")
      clos::method-qualifiers
      clos::method-function
      clos::method-plist
+     clos::associate-methods-to-gfun
      ;; method.lsp
      clos::pop-next-method
      )))
