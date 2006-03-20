@@ -115,27 +115,14 @@
   ;; we compute the value and add it to the list of initargs.
   (dolist (scan (class-default-initargs class))
     (let ((initarg (first scan))
-	  (value (third scan)))
-      (when (eql (si::search-keyword initargs initarg) 'si::failed)
+	  (value (third scan))
+	  (supplied-value (si::search-keyword initargs initarg)))
+      (when (or (eq supplied-value '+initform-unsupplied+)
+		(eq supplied-value 'si::failed))
+	(when (eq supplied-value '+initform-unsupplied+)
+	  (remf initargs initarg))
 	(setf value (if (functionp value) (funcall value) value)
 	      initargs (append initargs (list initarg value))))))
-  #+nil
-  (dolist (slotd (class-slots class))
-    (let ((found nil)
-	  (defaults '())
-	  (slot-definition-initargs (slot-definition-initargs slotd)))
-      (dolist (key slot-definition-initargs)
-	(unless (eql (si::search-keyword initargs key) 'si::failed)
-	  (setq found t)))
-      (unless found
-	(dolist (scan (class-default-initargs class))
-	  (let ((initarg (first scan))
-		(value (third scan)))
-	    (when (member initarg slot-definition-initargs)
-	      (setf initargs
-		    (list* initarg (if (functionp value) (funcall value) value)
-			   initargs))
-	      (return)))))))
   initargs)
 
 (defmethod direct-slot-definition-class ((class T) &rest canonicalized-slot)
