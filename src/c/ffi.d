@@ -134,6 +134,25 @@ si_free_foreign_data(cl_object f)
 }
 
 cl_object
+si_make_foreign_data_from_array(cl_object array)
+{
+	cl_object tag = Cnil;
+	if (type_of(array) != t_array && type_of(array) != t_vector) {
+		FEwrong_type_argument(@'array', array);
+	}
+	switch (array->array.elttype) {
+	case aet_sf: tag = @':float'; break;
+	case aet_lf: tag = @':double'; break;
+	case aet_fix: tag = @':int'; break;
+	case aet_index: tag = @':unsigned-int'; break;
+	default:
+		FEerror("Cannot make foreign object from array with element type ~S.", 1, ecl_elttype_to_symbol(array->array.elttype));
+		break;
+	}
+	@(return ecl_make_foreign_data(tag, 0, array->array.self.ch));
+}
+
+cl_object
 si_foreign_data_address(cl_object f)
 {
 	if (type_of(f) != t_foreign) {

@@ -497,6 +497,7 @@ extern cl_object si_foreign_data_set_elt(cl_object f, cl_object ndx, cl_object t
 extern cl_object si_foreign_data_tag(cl_object x);
 extern cl_object si_foreign_data_recast(cl_object f, cl_object size, cl_object tag);
 extern cl_object si_free_foreign_data(cl_object x);
+extern cl_object si_make_foreign_data_from_array(cl_object x);
 extern cl_object si_null_pointer_p(cl_object f);
 extern cl_object si_size_of_foreign_elt_type(cl_object tag);
 extern cl_object si_load_foreign_module(cl_object module);
