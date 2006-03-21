@@ -1374,8 +1374,6 @@ EXPORTS
 	clos_class_slots
 	clos_class_precedence_list
 	clos_class_direct_slots
-	clos_slot_index_table
-	clos_class_shared_slots
 	clos_generic_function_method_combination
 	clos_generic_function_lambda_list
 	clos_generic_function_argument_precedence_order
