@@ -151,6 +151,10 @@
       (finalize-inheritance class))
 )
 
+(defmethod shared-initialize :after ((class standard-class) slot-names &rest initargs &key
+			      (optimize-slot-access (list *optimize-slot-access*)))
+  (setf (slot-value class 'optimize-slot-access) (first optimize-slot-access)))
+
 (defmethod add-direct-subclass ((parent class) child)
   (pushnew child (class-direct-subclasses parent)))
 
