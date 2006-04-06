@@ -74,7 +74,9 @@ ecl_fficall_execute(void *f_ptr, struct ecl_fficall *fficall, enum ecl_ffi_tag r
 	"subl	%1, %%esp\n\t"
 	"movl	%2, %%esi\n\t"
 	"movl	%%esp, %%edi\n\t"
-	"rep	movsb\n\t": "=a" (stack_p) : "c" (bufsize), "d" (buf) : "%edi", "%esi");
+	"rep\n\t"
+        "movsb\n\t"
+        : "=a" (stack_p) : "c" (bufsize), "d" (buf) : "%edi", "%esi");
 #endif
 	if (return_type <= ECL_FFI_UNSIGNED_LONG) {
 		fficall->output.i = ((int (*)())f_ptr)();

@@ -1,6 +1,11 @@
 ECL 0.9i
 ========
 
+* New platforms:
+
+ - Patches in assembler code and GC headers to build ECL on Mac OSX/Intel
+   contributed by Brad Beveridge.
+
 * Visible changes:
 
  - Many functions have got now the prefix "ecl_" so as to avoid namespace
@@ -88,10 +93,11 @@ ECL 0.9i
    COMPUTE-SLOTS assign a location to each slot definition that has allocation
    :INSTANCE or :CLASS.
 
- - A new defclass option, :optimize-slot-access, which defaults to T, controls
-   whether the slots accessors should address directly the values in the class
-   or use SLOT-VALUE. It should be set to NIL when one intends to redefine the
-   SLOT-*-USING-CLASS methods.
+ - A new defclass option, :OPTIMIZE-SLOT-ACCESS, which defaults to the value of
+   CLOS:*OPTIMIZE-SLOT-ACCESS*, controls whether the slots accessors should
+   address directly the values in the class or use SLOT-VALUE. It should be set
+   to NIL when one intends to redefine the SLOT-*-USING-CLASS methods, and
+   to T when trying to get the most of the speed.
 
  - Implemented [FUNCALLABLE-]STANDARD-INSTANCE-ACCESS. They are synonyms for
    SI:INSTANCE-REF and are, as such, inlined and _very_ unsafe. Use with care.
