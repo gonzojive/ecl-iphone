@@ -1,0 +1,28 @@
+<h2>CVS repository</h2>
+
+<p>Beginning on March, ECL partially moved to the common-lisp.net
+server. If you keep up to date with the latest improvements and fixes of
+the ECL environment, you can use CVS to pull the latest sources from
+there.
+
+<p>If you have a modern version of the CVS program, such as the one
+shipped with Mingw or with any Linux distribution, the command to get
+the development sources is
+<pre>
+# ADDRESS=anonymous@common-lisp.net:/project/ecl/cvsroot
+# cvs -z3 -d :pserver:anonymous:$ADDRESS co ecl
+</pre>
+<p>Additionally you can test ECL with Paul Dietz's ANSI test
+suite. For that you need to download some additional files using
+<pre>
+# cvs -z3 -d :pserver:anonymous:$ADDRESS co ecl-test
+</pre>
+<p>Typing <tt>make</tt> from the top of the <tt>ecl-test</tt>
+directory will download the latest version of the test suite and run
+it using the version of ECL which is available on your machine.
+
+<h2>Browsing CVS</h2>
+
+<p>Additionally you can browse the ECL source code and download
+tarballs using <a
+href="http://common-lisp.net/cgi-bin/viewcvs.cgi/?root=ecl">this address</a>.

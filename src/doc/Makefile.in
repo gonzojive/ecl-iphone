@@ -17,7 +17,7 @@ INSTALL_INFO = @INSTALL_INFO@
 mkinstalldirs = $(SHELL) $(top_srcdir)/gc/mkinstalldirs
 INFO_FILES = ecl.$(INFOEXT) ecldev.$(INFOEXT) @CLX_INFO@
 HTML_FILES = index.html license.html lgpl.html news.html benchmark.html \
-	install.html download.html
+	install.html download.html cvs.html
 
 VERSION=@PACKAGE_VERSION@
 
@@ -114,6 +114,8 @@ download.html: $(srcdir)/download.in.html head
 	cat head $(srcdir)/download.in.html $(srcdir)/end | $(FILTER) > $@
 index.html: $(srcdir)/index.in.html head
 	cat head $(srcdir)/index.in.html $(srcdir)/end | $(FILTER) > $@
+cvs.html: $(srcdir)/cvs.in.html head
+	cat head $(srcdir)/cvs.in.html $(srcdir)/end | $(FILTER) > $@
 install.html: $(srcdir)/install.in.html head
 	cat head $(srcdir)/install.in.html $(srcdir)/end | $(FILTER) > $@
 news.html: head
