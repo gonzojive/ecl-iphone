@@ -236,7 +236,7 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
  * Memory limits for the old garbage collector.
  */
 #define	LISP_PAGESIZE	2048	/* Page size in bytes			*/
-#define MAXPAGE	16384		/* Maximum Memory Size			*/
+#define MAXPAGE	65536		/* Maximum Memory Size			*/
 
 /*
  * The lisp environment has several stacks. These are their limits:

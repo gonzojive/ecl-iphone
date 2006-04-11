@@ -132,8 +132,10 @@ install-base:
 	$(mkinstalldirs) $(DESTDIR)$(includedir)/ecl/gc/private
 	sed '/-CUT-/,$$d' ./ecl/config.h > ./ecl/config-install.h
 	$(INSTALL_DATA) ./ecl/*.h $(DESTDIR)$(includedir)/ecl
-	$(INSTALL_DATA) ./ecl/gc/*.h $(DESTDIR)$(includedir)/ecl/gc
-	$(INSTALL_DATA) ./ecl/gc/private/*.h $(DESTDIR)$(includedir)/ecl/gc/private
+	if (echo $(SUBDIRS) | grep gc); then \
+	  $(INSTALL_DATA) ./ecl/gc/*.h $(DESTDIR)$(includedir)/ecl/gc; \
+	  $(INSTALL_DATA) ./ecl/gc/private/*.h $(DESTDIR)$(includedir)/ecl/gc/private; \
+	fi
 	rm $(DESTDIR)$(includedir)/ecl/config.h
 	mv $(DESTDIR)$(includedir)/ecl/config-install.h $(DESTDIR)$(includedir)/ecl/config.h
 	$(INSTALL_SCRIPT) bin/ecl-config $(DESTDIR)$(bindir)

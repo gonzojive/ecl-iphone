@@ -146,6 +146,10 @@ ECL 0.9i
  - The slot GENERIC-FUNCTION of a method is initially set to NIL instead of
    left unbound.
 
+ - The old conservative garbage collector works again. It now supports 64-bit
+   architectures, though the memory is still limited to 32Mb of lisp data. In
+   any case, this collector is only intended for small setups and OpenBSD.
+
 * Documentation:
 
  - The HTML manuals now use CSS for a more appealing look.

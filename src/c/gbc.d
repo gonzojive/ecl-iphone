@@ -375,6 +375,13 @@ BEGIN:
 		mark_object(x->cblock.name);
 		mark_object(x->cblock.next);
 		mark_object(x->cblock.links);
+		p = x->cblock.temp_data;
+		if (p) {
+			i = x->cblock.temp_data_size;
+			mark_contblock(p, i * sizeof(cl_object));
+			while (i-- > 0)
+				mark_object(p[i]);
+		}
 		i = x->cblock.data_size;
 		p = x->cblock.data;
 		goto MARK_DATA;
@@ -700,6 +707,8 @@ ecl_gc(cl_type t)
 	if (!GC_enabled())
 		return;
 
+	GC_disable();
+
 	CL_NEWENV_BEGIN {
 	if (SYM_VAL(@'si::*gc-verbose*') != Cnil) {
 		printf("\n[GC ..");
@@ -745,7 +754,7 @@ ecl_gc(cl_type t)
 		*/
 		int mark_table_size = maxpage * (LISP_PAGESIZE / 32);
 		extern void cl_resize_hole(cl_index);
-		
+
 		if (holepage < mark_table_size*sizeof(int)/LISP_PAGESIZE + 1)
 			new_holepage = mark_table_size*sizeof(int)/LISP_PAGESIZE + 1;
 		if (new_holepage < HOLEPAGE)
@@ -785,7 +794,7 @@ ecl_gc(cl_type t)
 		if (debug)
 			printf("contblock sweep ended (%d)\n", ecl_runtime() - tm);
 	}
-	
+
 	if (debug) {
 		for (i = 0, j = 0;  i < (int)t_end;  i++) {
 			if (tm_table[i].tm_type == (cl_type)i) {
@@ -813,6 +822,8 @@ ecl_gc(cl_type t)
 		(*GC_exit_hook)();
 
 	} CL_NEWENV_END;
+
+	GC_enable();
 
 #ifdef THREADS
 #error "We need to activate all other threads again"

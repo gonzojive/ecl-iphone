@@ -1984,9 +1984,12 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 #else
 		VV = block->cblock.data;
 #endif
+		memset(VV, 0, perm_len * sizeof(*VV));
+
 		if ((len == 0) || (block->cblock.data_text == 0)) goto NO_DATA_LABEL;
-		VVtemp = temp_len? (cl_object *)cl_alloc(temp_len * sizeof(cl_object)) : NULL;
-		block->cblock.temp_data = VVtemp;
+
+		VVtemp = block->cblock.temp_data = temp_len? (cl_object *)cl_alloc(temp_len * sizeof(cl_object)) : NULL;
+		memset(VVtemp, 0, temp_len * sizeof(*VVtemp));
 
 		/* Read all data for the library */
 		in=ecl_make_string_input_stream(make_constant_string(block->cblock.data_text),

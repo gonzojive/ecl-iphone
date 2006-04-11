@@ -155,7 +155,7 @@ cl_resize_hole(cl_index n)
 		holepage = 0;
 		e = sbrk(n * LISP_PAGESIZE + (data_end - e));
 	}
-	if ((int)e < 0)
+	if ((cl_fixnum)e < 0)
 		error("Can't allocate.  Good-bye!");
 	data_end = e;
 	holepage += n;
@@ -603,6 +603,11 @@ init_tm(cl_type t, const char *name, cl_index elsize, cl_index maxpage)
 {
 	int i, j;
 	struct typemanager *tm = &tm_table[(int)t];
+
+	if (elsize < 2*sizeof(cl_index)) {
+		// A free list cell does not fit into this type
+		elsize = 2*sizeof(cl_index);
+	}
 
 	tm->tm_name = name;
 	for (i = (int)t_start, j = i-1;  i < (int)t_end;  i++)

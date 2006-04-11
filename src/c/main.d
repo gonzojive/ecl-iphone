@@ -244,12 +244,6 @@ cl_boot(int argc, char **argv)
 
 	/* These must come _after_ the packages and NIL/T have been created */
 	init_all_symbols();
-	GC_enable();
-
-#if !defined(GBC_BOEHM)
-	/* We need this because a lot of stuff is to be created */
-	init_GC();
-#endif
 
 	/*
 	 * 2) Initialize constants (strings, numbers and time).
@@ -306,6 +300,12 @@ cl_boot(int argc, char **argv)
 	 *    frame stack immediately (for instance SI:PATHNAME-TRANSLATIONS).
 	 */
 	ecl_init_env(&cl_env);
+#if !defined(GBC_BOEHM)
+	/* We need this because a lot of stuff is to be created */
+	init_GC();
+#endif
+	GC_enable();
+
 #ifdef ECL_THREADS
 	cl_env.bindings_hash = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024),
 						   make_shortfloat(1.5f),
