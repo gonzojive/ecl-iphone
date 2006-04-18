@@ -76,12 +76,14 @@
   (declare (si::c-local))
   #'(lambda (&rest .combined-method-args.)
       (let ((*next-methods* rest-methods))
+	(declare (special *next-methods*))
 	(apply method .combined-method-args.))))
 
 (defmacro call-method (method rest-methods)
   (setq method (effective-method-function method)
 	rest-methods (mapcar #'effective-method-function rest-methods))
   `(let ((*next-methods* ,rest-methods))
+     (declare (special *next-methods*))
      (apply ,method .combined-method-args.)))
 
 (defun error-qualifier (m qualifier)
