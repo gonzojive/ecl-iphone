@@ -89,6 +89,9 @@ ECL 0.9i
 
  - NIL is no longer a valid specializer in a method.
 
+ - New SOCKET-SEND function, compatible with the SBCL one (contributed by
+   Dmitri Hrapof).
+
 * MOP compatibility:
 
  - SLOT-VALUE, SLOT-BOUNDP, etc, together with MOP SLOT*-USING-CLASS generic

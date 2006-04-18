@@ -21,7 +21,7 @@
 	   "SOCKET-FAMILY" "SOCKET-PROTOCOL" "SOCKET-TYPE"
 	   "SOCKET-ERROR" "NAME-SERVICE-ERROR" "NON-BLOCKING-MODE"
 	   "HOST-ENT-NAME" "HOST-ENT-ALIASES" "HOST-ENT-ADDRESS-TYPE"
-	   "HOST-ENT-ADDRESSES" "HOST-ENT" "HOST-ENT-ADDRESS"))
+	   "HOST-ENT-ADDRESSES" "HOST-ENT" "HOST-ENT-ADDRESS" "SOCKET-SEND"))
 (in-package "SB-BSD-SOCKETS")
 
 ;; Obviously this requires the one or other form of BSD compatible
@@ -348,6 +348,18 @@ that sent it, as multiple values.  On datagram sockets, sets MSG_TRUNC
 so that the actual packet length is returned even if the buffer was too
 small"))
 
+(defgeneric socket-send (socket buffer length 
+			 &key 
+                         address external-format oob eor dontroute dontwait 
+			 nosignal confirm more)
+  (:documentation "Send length octets from buffer into socket, using sendto(2).
+If buffer is a string, it will converted to octets according to external-format&
+If length is nil, the length of the octet buffer is used. The format of address
+depends on the socket type (for example for inet domain sockets it would be a 
+list of an ip address and a port). If no socket address is provided, send(2) 
+will be called instead. Returns the number of octets written."))
+
+
 (defgeneric socket-close (socket)
   (:documentation "Close SOCKET.  May throw any kind of error that write(2) would have
 thrown.  If SOCKET-MAKE-STREAM has been called, calls CLOSE on that
@@ -620,6 +632,77 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
 #+:wsock
 (defmethod socket-close-low-level ((socket inet-socket))
   (ff-closesocket (socket-file-descriptor socket)))
+
+(defmethod socket-send ((socket socket) buffer length
+			   &key address external-format oob eor dontroute dontwait nosignal confirm more)
+  (declare (ignore external-format more))
+  (assert (or (stringp buffer)
+		(typep buffer 'vector)))
+  (let (;eh, here goes string->octet convertion... 
+	;When will ecl support Unicode?
+	(length (or length (length buffer)))
+	(fd (socket-file-descriptor socket)))
+    (let ((len-sent
+	   (if address
+	       (progn
+		 (assert (= 2 (length address)))
+		 (c-inline (fd buffer length 
+			       (second address)
+			       (aref (first address) 0)
+			       (aref (first address) 1)
+			       (aref (first address) 2)
+			       (aref (first address) 3)
+			       oob eor dontroute dontwait nosignal confirm)
+		     (:int :object :int
+			   :int :int :int :int :int
+			   :bool :bool :bool :bool :bool :bool)
+		     :long
+		     "
+{
+        int flags = ( #8 ? MSG_OOB : 0 )  |
+                    ( #9 ? MSG_EOR : 0 ) |
+                    ( #a ? MSG_DONTROUTE : 0 ) |
+                    ( #b ? MSG_DONTWAIT : 0 ) |
+                    ( #c ? MSG_NOSIGNAL : 0 ) |
+                    ( #d ? MSG_CONFIRM : 0 );
+        cl_type type = type_of(#1);
+        struct sockaddr_in sockaddr;
+
+	fill_inet_sockaddr(&sockaddr, #3, #4, #5, #6, #7);
+
+        ssize_t len = sendto(#0,( type == t_vector ? #1->vector.self.ch :
+                                ( type == t_string ? #1->string.self : NULL )),
+                             #2, flags,(struct sockaddr*)&sockaddr, 
+                             sizeof(struct sockaddr_in));
+        @(return) = len;
+}
+"
+		     :one-liner nil))
+	       (c-inline (fd buffer length 
+			     oob eor dontroute dontwait nosignal confirm)
+		     (:int :object :int
+			   :bool :bool :bool :bool :bool :bool)
+		     :long
+		     "
+{
+        int flags = ( #3 ? MSG_OOB : 0 )  |
+                    ( #4 ? MSG_EOR : 0 ) |
+                    ( #5 ? MSG_DONTROUTE : 0 ) |
+                    ( #6 ? MSG_DONTWAIT : 0 ) |
+                    ( #7 ? MSG_NOSIGNAL : 0 ) |
+                    ( #8 ? MSG_CONFIRM : 0 );
+        cl_type type = type_of(#1);
+
+        ssize_t len = send(#0,( type == t_vector ? #1->vector.self.ch :
+                                ( type == t_string ? #1->string.self : NULL )),
+                             #2, flags);
+        @(return) = len;
+}
+"
+		     :one-liner nil))))
+      (if (= len-sent -1)
+	  (socket-error "send")
+	  len-sent))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
