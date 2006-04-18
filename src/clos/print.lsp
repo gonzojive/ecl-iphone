@@ -51,14 +51,14 @@
   (unless (need-to-make-load-form-p object)
     (return-from make-load-form (if (consp object) `',object object)))
   (typecase object
-    ((array)
+    (array
      `(make-array ,(array-dimensions object)
 		  :element-type ,(array-element-type object)
 		  :adjustable ,(array-adjustable-p object)
 		  :initial-data
 		  ,(loop for i from 0 by (array-total-size object)
 			 collect (make-load-form (row-major-aref object i)))))
-    ((cons)
+    (cons
      (do* ((x object)
 	   (out '()))
 	 ((atom x)
@@ -68,6 +68,14 @@
 		`(list* ,out ,(make-load-form x))
 	      `(list ,out))))
        (push x out)))
+    (hash-table
+     (values
+      `(make-hash-table :size ,(hash-table-size object)
+	:rehash-size ,(hash-table-rehash-size object)
+	:rehash-threshold ,(hash-table-rehash-threshold object)
+	:test ',(hash-table-test object))
+      `(dolist (i ,(maphash (lambda (key obj) (cons key obj)) object))
+	(setf (gethash (car i) ,object) (cdr i)))))
     (t
      (error "Cannot externalize object ~a" object))))
 
