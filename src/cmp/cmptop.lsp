@@ -209,7 +209,7 @@
 
   ;;; Callbacks
   (when *callbacks*
-    (wt-h "#include <internal.h>")
+    (wt-h "#include <ecl/internal.h>")
     (dolist (x *callbacks*)
       (apply #'t3-defcallback x)))
 
