@@ -2052,9 +2052,9 @@ si_process_lambda(cl_object lambda)
 /*
  * (si::process-lambda-list lambda-list context)
  *
- * Parses different types of lambda lists. CONTEXT may be MACRO, FTYPE,
- * FUNCTION or DESTRUCTURING-BIND, and determines the valid sytax. The output
- * is made of several values:
+ * Parses different types of lambda lists. CONTEXT may be MACRO,
+ * FTYPE, FUNCTION, METHOD or DESTRUCTURING-BIND, and determines the
+ * valid sytax. The output is made of several values:
  *
  * VALUES(0) = (N req1 ... )			; required values
  * VALUES(1) = (N opt1 init1 flag1 ... )	; optional values

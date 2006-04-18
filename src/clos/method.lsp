@@ -28,159 +28,142 @@
 ;;; ----------------------------------------------------------------------
 ;;; DEFMETHOD
 ;;;
-;;; For setf methods the syntax is:
-;;;    (defmethod (setf foo) ((nv type) (x1 type1) ... (xn typen))
-;;;       ...)
-;;; where nv is the new value to be assigned.
 
 (defmacro defmethod (&rest args &environment env)
-
-  ;; args = name {method-qualifier}* specialized-lambda-list &body body
-
-  (multiple-value-bind (name qualifiers lambda-list body)
-    (parse-defmethod args)
-    (multiple-value-bind (fn-form specializers doc plist)
-      (expand-defmethod name qualifiers lambda-list body env)
-      (multiple-value-bind (parameters specialized-lambda-list specializers)
-	(parse-specialized-lambda-list lambda-list nil)
-	(declare (ignore parameters))
+  (multiple-value-bind (name qualifiers specialized-lambda-list body)
+      (parse-defmethod args)
+    (multiple-value-bind (lambda-list required-parameters specializers)
+	(parse-specialized-lambda-list specialized-lambda-list)
+      (multiple-value-bind (fn-form doc plist)
+	  (expand-defmethod name qualifiers lambda-list
+			    required-parameters specializers body env)
+	(declare (ignore required-parameters))
 	`(PROGN
 	  #+PDE
-	  (EVAL-WHEN
-	      (LOAD)
+	  (EVAL-WHEN (LOAD)
 	    (SI:RECORD-SOURCE-PATHNAME
 	     ',name '(DEFMETHOD ',qualifiers ',specializers)))
 	  (INSTALL-METHOD
-	     ',name
-	     ',qualifiers
-	     ,(list 'si::quasiquote specializers)
-	     ',specialized-lambda-list
-	     ',doc
-	     ',plist
-	     ,fn-form)
-	    )))))
+	   ',name
+	   ',qualifiers
+	   ,(list 'si::quasiquote specializers)
+	   ',lambda-list
+	   ',doc
+	   ',plist
+	   ,fn-form)
+	  )))))
 
 
 ;;; ----------------------------------------------------------------------
 ;;;                                                  method body expansion
 
-(defun expand-defmethod
-    (generic-function-name qualifiers specialized-lambda-list body env)
-  ;; (values fn-form specializers doc)
+(defun expand-defmethod (generic-function-name qualifiers lambda-list
+			 required-parameters specializers body env)
   (declare (ignore qualifiers)
 	   (si::c-local))
   (multiple-value-bind (declarations real-body documentation)
       (sys::find-declarations body)
-    (multiple-value-bind (parameters lambda-list specializers)
-	(parse-specialized-lambda-list specialized-lambda-list 't)
-
-      ;; FIXME!! This deactivates the checking of keyword arguments
-      ;; inside methods. The reason is that this checking must be
-      ;; supplemented the knowledge of the keyword arguments of all
-      ;; applicable methods (X3J13 7.6.5). Therefore, we should insert
-      ;; that check, either in the method itself so that it is done
-      ;; incrementally, or in COMPUTE-EFFECTIVE-METHOD.
-      (when (and (member '&key lambda-list)
-		 (not (member '&allow-other-keys lambda-list)))
-	(let ((x (position '&aux lambda-list)))
-	  (setf lambda-list
+    ;; FIXME!! This deactivates the checking of keyword arguments
+    ;; inside methods. The reason is that this checking must be
+    ;; supplemented the knowledge of the keyword arguments of all
+    ;; applicable methods (X3J13 7.6.5). Therefore, we should insert
+    ;; that check, either in the method itself so that it is done
+    ;; incrementally, or in COMPUTE-EFFECTIVE-METHOD.
+    (when (and (member '&key lambda-list)
+	       (not (member '&allow-other-keys lambda-list)))
+      (let ((x (position '&aux lambda-list)))
+	(setf lambda-list
 		(append (subseq lambda-list 0 x)
 			'(&allow-other-keys)
 			(and x (subseq lambda-list x))))))
-      (let* ((required-parameters
-	      (mapcar #'(lambda (r s) (declare (ignore s)) r)
-		      parameters
-		      specializers))
-	     (class-declarations
-	      `(declare
-		,@(mapcan #'(lambda (p s) (and (symbolp s) s
-					       (not (eq s 't))
-					       `((type ,s ,p))))
-			  parameters
-			  specializers)))
-	     (method-lambda
-	      ;; Remove the documentation string and insert the
-	      ;; appropriate class declarations.  The documentation
-	      ;; string is removed to make it easy for us to insert
-	      ;; new declarations later, they will just go after the
-	      ;; second of the method lambda.  The class declarations
-	      ;; are inserted to communicate the class of the method's
-	      ;; arguments to the code walk.
-	      `(ext::lambda-block ,generic-function-name
-		,lambda-list
-		,class-declarations
-		,@declarations
-		,@real-body))
+    (let* ((class-declarations
+	    (nconc (mapcan #'(lambda (p s) (and (symbolp s) s
+						(not (eq s 't))
+						`((type ,s ,p))))
+			   required-parameters
+			   specializers)
+		   (cdar declarations)))
+	   (method-lambda
+	    ;; Remove the documentation string and insert the
+	    ;; appropriate class declarations.  The documentation
+	    ;; string is removed to make it easy for us to insert
+	    ;; new declarations later, they will just go after the
+	    ;; second of the method lambda.  The class declarations
+	    ;; are inserted to communicate the class of the method's
+	    ;; arguments to the code walk.
+	    `(ext::lambda-block ,generic-function-name
+	      ,lambda-list
+	      ,@(and class-declarations `((declare ,@class-declarations)))
+	      ,@real-body))
+	   
+	   (original-args ())
+	   (applyp nil)		; flag indicating whether or not the
+				; method takes &mumble arguments. If
+				; it does, it means call-next-method
+				; without arguments must be APPLY'd
+				; to original-args.  If this gets set
+				; true, save-original-args is set so
+				; as well
+	   (aux-bindings ())	; Suffice to say that &aux is one of
+				; damndest things to have put in a
+				; language.
+	   (plist ()))
+      (multiple-value-bind (walked-lambda call-next-method-p
+					  save-original-args next-method-p-p)
+	  (walk-method-lambda method-lambda required-parameters env)
 
-	     (original-args ())
-	     (applyp nil)		; flag indicating whether or not the
-					; method takes &mumble arguments. If
-					; it does, it means call-next-method
-					; without arguments must be APPLY'd
-					; to original-args.  If this gets set
-					; true, save-original-args is set so
-					; as well
-	     (aux-bindings ())		; Suffice to say that &aux is one of
-					; damndest things to have put in a
-					; language.
-	     (plist ()))
-	(multiple-value-bind (walked-lambda call-next-method-p
-			      save-original-args next-method-p-p)
-	    (walk-method-lambda method-lambda required-parameters env)
+	;; Scan the lambda list to determine whether this method
+	;; takes &mumble arguments.  If it does, we set applyp and
+	;; save-original-args true.
+	;;
+	;; This is also the place where we construct the original
+	;; arguments lambda list if there has to be one.
+	(dolist (p lambda-list)
+	  (if (member p '(&OPTIONAL &REST &KEY &ALLOW-OTHER-KEYS &AUX)
+		      :test #'eq)	; cant use lambda-list-keywords
+	      (if (eq p '&aux)
+		  (progn
+		    (setq aux-bindings (cdr (member '&AUX lambda-list
+						    :test #'eq)))
+		    (return nil))
+		  (progn
+		    (setq applyp t
+			  save-original-args t)
+		    (push '&REST original-args)
+		    (push (make-symbol "AMPERSAND-ARGS") original-args)
+		    (return nil)))
+	      (push (make-symbol (symbol-name p)) original-args)))
+	(setq original-args (when save-original-args
+			      (nreverse original-args)))
 
-	  ;; Scan the lambda list to determine whether this method
-	  ;; takes &mumble arguments.  If it does, we set applyp and
-	  ;; save-original-args true.
-	  ;;
-	  ;; This is also the place where we construct the original
-	  ;; arguments lambda list if there has to be one.
-	  (dolist (p lambda-list)
-	    (if (member p '(&OPTIONAL &REST &KEY &ALLOW-OTHER-KEYS &AUX)
-			:test #'eq)	; cant use lambda-list-keywords
-		(if (eq p '&aux)
-		    (progn
-		      (setq aux-bindings (cdr (member '&AUX lambda-list
-						      :test #'eq)))
-		      (return nil))
-		    (progn
-		      (setq applyp t
-			    save-original-args t)
-		      (push '&REST original-args)
-		      (push (make-symbol "AMPERSAND-ARGS") original-args)
-		      (return nil)))
-		(push (make-symbol (symbol-name p)) original-args)))
-	  (setq original-args (when save-original-args
-				(nreverse original-args)))
+	(multiple-value-bind (walked-declarations walked-lambda-body)
+	    (sys::find-declarations (cdddr walked-lambda) t)
+	  (declare (ignore ignore))
 
-	  (multiple-value-bind (walked-declarations walked-lambda-body)
-	      (sys::find-declarations (cdddr walked-lambda) t)
-	    (declare (ignore ignore))
+	  (when (or next-method-p-p call-next-method-p)
+	    (setq plist (list* :needs-next-methods-p 'T plist)))
 
-	    (when (or next-method-p-p call-next-method-p)
-	      (setq plist (list* :needs-next-methods-p 'T plist)))
-
-	    (values
-	     (let ((walked-lambda `(ext::lambda-block ,(second walked-lambda)
-				    ,lambda-list
-				    ,@walked-declarations
-				    ,.walked-lambda-body)))
-	       (if (or call-next-method-p next-method-p-p)
-		   `(function ,(add-lexical-functions-to-method-lambda
-				walked-declarations
-				walked-lambda-body
-				generic-function-name
-				walked-lambda
-				original-args
-				lambda-list
-				save-original-args
-				applyp
-				aux-bindings
-				call-next-method-p
-				next-method-p-p))
-		   `(function ,walked-lambda)))
-	     specializers
-	     documentation
-	     plist)))))))
+	  (values
+	   (let ((walked-lambda `(ext::lambda-block ,(second walked-lambda)
+				  ,lambda-list
+				  ,@walked-declarations
+				  ,.walked-lambda-body)))
+	     (if (or call-next-method-p next-method-p-p)
+		 `(function ,(add-lexical-functions-to-method-lambda
+			      walked-declarations
+			      walked-lambda-body
+			      generic-function-name
+			      walked-lambda
+			      original-args
+			      lambda-list
+			      save-original-args
+			      applyp
+			      aux-bindings
+			      call-next-method-p
+			      next-method-p-p))
+		 `(function ,walked-lambda)))
+	   documentation
+	   plist))))))
 
 (defun walk-method-lambda (method-lambda required-parameters env)
   (declare (si::c-local))
@@ -239,8 +222,10 @@
 	 ;;
 	 `(ext::lambda-block ,generic-function-name ,lambda-list
 	    ,@walked-declarations
+	   (declare (special *next-methods*))
 	    (let* ((.next-method. (car *next-methods*))
 		   (*next-methods* (cdr *next-methods*)))
+	      (declare (special *next-methods*))
 	      (flet (,@(and call-next-method-p
 			    '((CALL-NEXT-METHOD (&REST CNM-ARGS)
 				;; (declare (static-extent cnm-args))
@@ -279,8 +264,10 @@
 	 ;; is with no arguments.
 	 ;;
 	 `(ext::lambda-block ,generic-function-name ,original-args
+	    (declare (special *next-methods*))
 	    (let* ((.next-method. (car *next-methods*))
 		   (*next-methods* (cdr *next-methods*)))
+	      (declare (special *next-methods*))
 	      (flet (,@(and call-next-method-p
                             `((call-next-method (&rest cnm-args)
 				;; (declare (static-extent cnm-args))
@@ -307,8 +294,10 @@
 	 ;; allow for call-next-method being called with no arguments.
 	 ;;
 	 `(lambda ,original-args
+	    (declare (special *next-methods*))
 	    (let* ((.next-method. (car *next-methods*))
 		   (*next-methods* (cdr *next-methods*)))
+	      (declare (special *next-methods*))
 	      (flet (,@(and call-next-method-p
 			    `((call-next-method (&rest cnm-args)
 				;; (declare (static-extent cnm-args))
@@ -354,86 +343,50 @@
 	 (values name (nreverse qualifiers) (first args) (rest args)))
       (push (pop args) qualifiers))))
 
-(defun parse-specialized-lambda-list (arglist warningp)
+(defun parse-specialized-lambda-list (specialized-lambda-list)
+  "This function takes a method lambda list and outputs the list of required
+arguments, the list of specializers and a new lambda list where the specializer
+have disappeared."
   (declare (si::c-local))
-  ;; This function has been modified to get an easy control on the
-  ;; correctness of the specialized-lambda-list. Furthermore it has became
-  ;; an iterative function.
-  ;; -- Daniele --
-  (let* (parameters lambda-list specializers)
-    (do ((arg (first arglist) (first arglist)))
-	((or (null arglist)
-	     (member arg '(&OPTIONAL &REST &KEY &ALLOW-OTHER-KEYS &AUX))))
-      (pop arglist)
-      (when (and warningp (member arg lambda-list-keywords))
-	(warn "Unrecognized lambda-list keyword ~S in arglist.~%~
-                        Assume this keyword as a required parameter."
-	      arg))
-      (push (if (listp arg) (first arg) arg) parameters)
-      (push (if (listp arg) (first arg) arg) lambda-list)
-      (push (cond ((atom arg) '())
-		  ((atom (setf arg (second arg))) arg)
-		  ((not (eql (first arg) 'EQL))
-		   (error 'simple-program-error
-			  "Syntax error in method specializer ~A" arg))
-		  ((constantp (setf arg (second arg)))
-		   `(eql ,(eval arg)))
-		  (t
-		   (list 'eql (list 'si::unquote arg))))
-	    specializers))
-    (when (eq (first arglist) '&OPTIONAL)
-      (push (pop arglist) lambda-list)
-      (do ((arg (first arglist) (first arglist)))
-	  ((or (null arglist)
-	       (member arg '(&OPTIONAL &REST &KEY &ALLOW-OTHER-KEYS
-			     &AUX))))
-	(pop arglist)
-	(when (and warningp (member arg lambda-list-keywords))
-	  (warn "Unrecognized lambda-list keyword ~S in arglist.~%~
-                           Assume this keyword as an optional parameter."
-		arg))
-	(push (if (listp arg) (first arg) arg) parameters)
-	(push arg lambda-list)))
-    (when (eq (first arglist) '&REST)
-      (push (pop arglist) lambda-list)
-      (when (not (symbolp (first arglist)))
-	(error "~S in the lambda-list is not a symbol."
-	       (first arglist)))
-      (push (pop arglist) lambda-list))
-    (when (eq (first arglist) '&KEY)
-      (push (pop arglist) lambda-list)
-      (do ((arg (first arglist) (first arglist)))
-	  ((or (null arglist)
-	       (member arg '(&OPTIONAL &REST &KEY &AUX))))
-	(pop arglist)
-	(when (eq arg '&ALLOW-OTHER-KEYS)
-	  (push arg lambda-list)
-	  (return))
-	(when (and warningp (member arg lambda-list-keywords))
-	  (warn "Unrecognized lambda-list keyword ~S in arglist.~%~
-                           Assume this keyword as a keyword parameter."
-		arg))
-	(push (if (listp arg) (first arg) arg) parameters)
-	(push arg lambda-list)))
-    (when (eq (first arglist) '&AUX)
-      (push (pop arglist) lambda-list)
-      (do ((arg (first arglist) (first arglist)))
-	  ((or (null arglist)
-	       (member arg '(&OPTIONAL &REST &KEY &ALLOW-OTHER-KEYS
-			     &AUX))))
-	(pop arglist)
-	(when (and warningp (member arg lambda-list-keywords))
-	  (warn "Unrecognized lambda-list keyword ~S in arglist.~%~
-                           Assume this keyword as an aux parameter."
-		arg))
-	(push (if (listp arg) (first arg) arg) parameters)
-	(push arg lambda-list)))
-    (when arglist (error "The position of the lambda-list keyword ~S~%~
-                             is not correct."
-			 (first arglist)))
-    (values (nreverse parameters)
-	    (nreverse lambda-list)
-	    (nreverse specializers))))
+  ;; SI:PROCESS-LAMBDA-LIST will ensure that the lambda list is
+  ;; syntactically correct and will output as a first argument the
+  ;; list of required arguments. We use this list to extract the
+  ;; specializers and build a lambda list without specializers.
+  (do* ((arglist (rest (si::process-lambda-list specialized-lambda-list 'METHOD))
+		 (rest arglist))
+	(lambda-list (copy-list specialized-lambda-list))
+	(ll lambda-list (rest ll))
+	(required-parameters '())
+	(specializers '())
+	arg variable specializer)
+       ((null arglist)
+	(values lambda-list
+		(nreverse required-parameters)
+		(nreverse specializers)))
+    (setf arg (first arglist))
+    (cond ((atom arg)
+	   (setf variable arg specializer NIL))
+	  ((not (endp (cddr arg)))
+	   (si::simple-program-error
+	    "Syntax error in method specializer ~A" arg))
+	  ((null (setf variable (first arg)
+		       specializer (second arg)))
+	   (si::simple-program-error
+	    "NIL is not a valid specializer in a method lambda list"))
+	  ((atom specializer))
+	  ((not (and (eql (first specializer) 'EQL)
+		     (endp (cddr specializer))))
+	   (si::simple-program-error
+	    "Syntax error in method specializer ~A" arg))
+	  (t
+	   (let ((value (second specializer)))
+	     (setf specializer
+		   `(eql ,(if (constantp value)
+			      (eval value)
+			      (list 'si::unquote value)))))))
+    (setf (first ll) variable)
+    (push variable required-parameters)
+    (push specializer specializers)))
 
 (defun declaration-specializers (arglist declarations)
   (declare (si::c-local))
