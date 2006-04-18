@@ -133,9 +133,10 @@
   fun)
 
 (defun c1lambda-expr (lambda-expr
-                      &optional (block-name nil block-it)
+                      &optional (block-name nil)
                       &aux doc body ss is ts
                            other-decls
+		           new-variables
 			   (*permanent-data* t)
                            (*vars* *vars*)
 		           (old-vars *vars*))
@@ -147,9 +148,7 @@
   (multiple-value-setq (body ss ts is other-decls doc all-declarations)
                        (c1body (cdr lambda-expr) t))
 
-  (when block-it (setq body (list (cons 'BLOCK (cons block-name body)))))
-
-  (c1declare-specials ss)
+  (when block-name (setq body (list (cons 'BLOCK (cons block-name body)))))
 
   (multiple-value-bind (requireds optionals rest key-flag keywords
 			allow-other-keys aux-vars)
@@ -157,12 +156,13 @@
 
     (do ((specs (setq requireds (cdr requireds)) (cdr specs)))
 	((endp specs))
-      (let* ((var (first specs)))
-	(push-vars (setf (first specs) (c1make-var var ss is ts)))))
+      (let* ((name (first specs)))
+	(push-vars (setf (first specs) (c1make-var name ss is ts)))))
 
     (do ((specs (setq optionals (cdr optionals)) (cdddr specs)))
 	((endp specs))
-      (let* ((var (c1make-var (first specs) ss is ts))
+      (let* ((name (first specs))
+	     (var (c1make-var name ss is ts))
 	     (init (second specs))
 	     (flag (third specs)))
 	(setq init (if init
@@ -182,7 +182,8 @@
     (do ((specs (setq keywords (cdr keywords)) (cddddr specs)))
 	((endp specs))
       (let* ((key (first specs))
-	     (var (c1make-var (second specs) ss is ts))
+	     (name (second specs))
+	     (var (c1make-var name ss is ts))
 	     (init (third specs))
 	     (flag (fourth specs)))
 	(setq init (if init
@@ -196,21 +197,40 @@
 	      (third specs) init
 	      (fourth specs) flag)))
 
-    (when aux-vars
-      (let ((let nil))
-	(do ((specs aux-vars (cddr specs)))
-	    ((endp specs))
-	  (let ((var (first specs))
-		(init (second specs)))
-	    (setq let (cons (if init (list var init) var) let))))
-	(setq body `((let* ,(nreverse let) ,@all-declarations ,@body)))))
-
-    (let ((new-vars (ldiff *vars* old-vars)))
-      (setq body (c1decl-body other-decls body))
-      (dolist (var new-vars)
+    ;; After creating all variables and processing the initalization
+    ;; forms, we wil process the body. However, all free declarations,
+    ;; that is declarations which do not refer to the function
+    ;; arguments, have to be applied to the body. At the same time, we
+    ;; replace &aux variables with a LET* form that defines them.
+    (let* ((declarations other-decls)
+	   (new-variables (ldiff *vars* old-vars))
+	   (new-variable-names (mapcar #'var-name new-variables)))
+      (when (setq ss (set-difference ss new-variable-names))
+	(push `(special ,@ss) declarations))
+      (when (setq is (set-difference is new-variable-names))
+	(push `(ignorable ,@is) declarations))
+      (loop for (var . type) in ts
+	    unless (member var new-variable-names)
+	    do (push (list type var) declarations))
+      (setq body
+	    (cond (aux-vars
+		   (let ((let nil))
+		     (do ((specs aux-vars (cddr specs)))
+			 ((endp specs))
+		       (let ((var (first specs))
+			     (init (second specs)))
+			 (setq let (cons (if init (list var init) var) let))))
+		     (c1expr `(let* ,(nreverse let)
+			       (declare ,@declarations)
+			       ,@body))))
+		  (declarations
+		   (c1expr `(locally (declare ,@declarations) ,@body)))
+		  (t
+		   (c1progn body))))
+      (dolist (var new-variables)
 	(check-vref var))
       (make-c1form* 'LAMBDA
-		    :local-vars new-vars
+		    :local-vars new-variables
  		    :args (list requireds optionals rest key-flag keywords
 				allow-other-keys)
 		    doc body))))
