@@ -294,7 +294,7 @@ strings."
 (defun make-condition (type &rest slot-initializations)
   (let ((class (or (and (symbolp type) (find-class type nil))
 		   (first (last (sort (find-subclasses-of-type type (find-class 'condition))
-				      #'clos::subclassp))))))
+				      #'si::subclassp))))))
     (unless class
       (error 'SIMPLE-TYPE-ERROR
 	     :DATUM type
