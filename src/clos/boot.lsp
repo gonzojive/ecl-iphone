@@ -63,7 +63,7 @@
   (dolist (slotd class-slots)
     (setf (slot-definition-location slotd)
 	  (slot-definition-location (gethash (slot-definition-name slotd) hash-table))))
-  (setf (class-slots               the-class) class-slots
+  (setf (class-slots               the-class) (copy-list class-slots)
 	(slot-table                the-class) hash-table
 	(class-direct-slots        the-class) class-slots
 	(class-slots               standard-class) standard-slots
@@ -163,7 +163,7 @@
 	   ;; shared slot
 	   (car location))
 	  (t
-	   (error "Effective slot definition lacks a valid location:~%~A"
+ 	   (error "Effective slot definition lacks a valid location:~%~A"
 		  slotd)))))
 
 (defun standard-instance-set (val instance slotd)

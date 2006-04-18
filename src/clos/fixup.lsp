@@ -25,38 +25,43 @@
 |#
 
 (defun convert-one-class (class)
-  (dolist (l (class-direct-slots class))
-    (let ((x (first l)))
-      (when (consp x)
-	(setf (first l)
-	      (apply #'make-instance 'standard-direct-slot-definition
-		     (slot-definition-to-list x))))))
-  (dolist (l (class-slots class))
-    (let ((x (first l)))
-      (when (consp x)
-	(setf (first l)
-	      (apply #'make-instance 'standard-effective-slot-definition
-		     (slot-definition-to-list x))))))
+  (let* ((direct-slots (class-direct-slots class))
+	 (effective-slots (class-slots class))
+	 (new-direct-slots
+	  (loop for x in direct-slots
+		collect (if (consp x)
+			    (apply #'make-instance 'standard-direct-slot-definition
+				   (slot-definition-to-list x))
+			    x)))
+	 (new-effective-slots
+	  (loop for x in effective-slots
+		collect (if (consp x)
+			    (apply #'make-instance 'standard-effective-slot-definition
+				   (slot-definition-to-list x))
+			    x))))
+    (map-into direct-slots #'identity new-direct-slots)
+    (map-into effective-slots #'identity new-effective-slots)
+    (when (typep class 'standard-class)
+      (std-create-slots-table class)))
   (mapc #'convert-one-class (class-direct-subclasses class)))
 
-(progn
-  (eval `(defclass slot-definition ()
-	  ,(mapcar #'(lambda (x) (butlast x 2)) +slot-definition-slots+)))
-  (defclass standard-slot-definition (slot-definition) ())
-  (defclass direct-slot-definition (slot-definition) ())
-  (defclass effective-slot-definition (slot-definition) ())
-  (defclass standard-direct-slot-definition (standard-slot-definition direct-slot-definition) ())
-  (defclass standard-effective-slot-definition (standard-slot-definition effective-slot-definition) ())
-  #|
-  (convert-one-class (find-class 'slot-definition))
-  (convert-one-class (find-class 'standard-class))
-  (convert-one-class (find-class 't))
-  |#
+;;;
+;;; We cannot redefine the class for slot definitions because this
+;;; causes an infinite loop. Hence, we avoid evaluating the following
+;;; forms at compile time.
+;;;
+(eval-when (:load-toplevel :execute)
+  (eval
+   `(progn
+     (defclass slot-definition ()
+       ,(mapcar #'(lambda (x) (butlast x 2)) +slot-definition-slots+))
+     (defclass standard-slot-definition (slot-definition) ())
+     (defclass direct-slot-definition (slot-definition) ())
+     (defclass effective-slot-definition (slot-definition) ())
+     (defclass standard-direct-slot-definition (standard-slot-definition direct-slot-definition) ())
+     (defclass standard-effective-slot-definition (standard-slot-definition effective-slot-definition) ())))
   (make-instances-obsolete (find-class 't))
-  (convert-one-class (find-class 't))
-  #+nil
-  (eval (print `(defclass slot-definition ()
-		 ,(mapcar #'(lambda (x) (butlast x 2)) +slot-definition-slots+)))))
+  (convert-one-class (find-class 't)))
 
 ;;; ----------------------------------------------------------------------
 ;;; Fixup

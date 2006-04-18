@@ -270,7 +270,8 @@ because it contains a reference to the undefined class~%  ~A"
 	:initargs (slot-definition-initargs slotd)
 	:readers (slot-definition-readers slotd)
 	:writers (slot-definition-writers slotd)
-	:documentation (slot-definition-documentation slotd)))
+	:documentation (slot-definition-documentation slotd)
+	:location (slot-definition-location slotd)))
 
 (defmethod compute-effective-slot-definition ((class class) name direct-slots)
   (flet ((direct-to-effective (old-slot)
@@ -420,7 +421,7 @@ because it contains a reference to the undefined class~%  ~A"
 	(install-method fname nil `(,standard-class) '(self) nil nil
 			reader))
       (dolist (fname (slot-definition-writers slotd))
-	(install-method fname nil `(nil ,standard-class) '(value self)
+	(install-method fname nil `(,(find-class t) ,standard-class) '(value self)
 			nil nil setter)))))
 
 ;;; ======================================================================

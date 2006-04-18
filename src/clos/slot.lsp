@@ -38,7 +38,7 @@
     (readers :initarg :readers :initform nil :accessor slot-definition-readers)
     (writers :initarg :writers :initform nil :accessor slot-definition-writers)
     (documentation :initarg :documentation :initform nil :accessor slot-definition-documentation)
-    (location :initarg :documentation :initform nil :accessor slot-definition-location)
+    (location :initarg :location :initform nil :accessor slot-definition-location)
     ))
 
 (defun make-simple-slotd (&key name initform initfunction type allocation initargs readers writers documentation location)
@@ -57,9 +57,10 @@
 	  (position i)
 	  (f (nth i accessors)))
       (setf (fdefinition f)
-	    #'(lambda (x) (if (consp x) (nth position x) (slot-value x name))))
+	    #'(lambda (x)
+		(if (consp x) (nth position x) (si:instance-ref x position))))
       (setf (fdefinition `(setf ,f))
-	    #'(lambda (v x) (if (consp x) (setf (nth position x) v) (setf (slot-value x name) v)))))))
+	    #'(lambda (v x) (if (consp x) (setf (nth position x) v) (si:instance-set x position v)))))))
 
 ;;; ----------------------------------------------------------------------
 ;;;
