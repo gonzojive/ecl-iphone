@@ -414,10 +414,10 @@ Type :h for Help.  Top level.
 @end smallformat
 
 @noindent
-The final step is to build the library using the @code{c:build-shared-library}
+The final step is to build the library using the @code{c:build-fasl}
 instruction.
 @smallformat
-> (c:build-shared-library "myecl" :lisp-files '("hello.o"))
+> (c:build-fasl "myecl" :lisp-files '("hello.o"))
 ;;; Invoking external command: gcc -O2 -march=i686 -pipe -fomit-frame-pointer -fPIC -fstrict-aliasing -Dlinux -O "-I/usr/lib/ecl/" -w -c "myecl.c" -o "myecl.o"
 ;;; Invoking external command: gcc -o "libmyecl.so" -L"/usr/lib/ecl/" "myecl.o" "hello.o"  -Wl,--rpath,/usr/lib/ecl/ -shared   -lecl -lgmp -lgc -ldl -lm 
 #P"libmyecl.so"
