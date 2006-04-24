@@ -2460,7 +2460,7 @@
 	    "~:T" "~:@T")))
 
 (defun check-output-layout-mode (mode)
-  (declare (si::cl-local))
+  (declare (si::c-local))
   (when (and *output-layout-mode*
 	     (not (eql *output-layout-mode* mode)))
     (error 'format-error

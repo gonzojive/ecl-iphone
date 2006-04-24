@@ -103,7 +103,7 @@
 		 :allow-other-keys t))
 
 (defun all-keywords (l)
-  (declare (si::cl-local))
+  (declare (si::c-local))
   (let ((all-keys '()))
     (do ((l (rest l) (cddddr l)))
 	((null l)

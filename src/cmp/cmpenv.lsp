@@ -290,58 +290,54 @@
      ((and (consp form) (eq (car form) 'DECLARE))
       (push form all-declarations)
       (dolist (decl (cdr form))
-        (cmpck (or (not (consp decl)) (not (symbolp (car decl))))
-               "Syntax error in declaration ~s" (cons form decl))
-        (case (car decl)
-          (SPECIAL
-           (dolist (var (cdr decl))
-             (cmpck (not (symbolp var))
-                    "Syntax error in declaration ~s" decl)
-             (push var ss)))
-          (IGNORE
-           (dolist (var (cdr decl))
-             (cmpck (not (symbolp var))
-                    "Syntax error in declaration ~s" decl)
-             (push var is)))
-          (TYPE
-           (cmpck (endp (cdr decl))
-                  "Syntax error in declaration ~s" decl)
-           (let ((type (type-filter (second decl))))
-                (when type
-                      (dolist (var (cddr decl))
-                        (cmpck (not (symbolp var))
-			       "Syntax error in declaration ~s" decl)
-                        (push (cons var type) ts)))))
-          (OBJECT
-           (dolist (var (cdr decl))
-             (cmpck (not (symbolp var))
-                    "Syntax error in declaration ~s" decl)
-             (push (cons var 'OBJECT) ts)))
-	  ;; read-only variable treatment. Beppe
-	  (:READ-ONLY
-#| obsolete
-           (dolist (var (cdr decl))
-	      (cmpck (not (symbolp var))
-		     "In the :read-only declaration ~s, ~s is not a symbol."
-		     decl var)
-	      (push (cons var 'READ-ONLY) ts))
-|#
-	      )
-          ((FIXNUM BASE-CHAR EXTENDED-CHAR CHARACTER DOUBLE-FLOAT SHORT-FLOAT ARRAY ATOM BIGNUM BIT
-            BIT-VECTOR COMPILED-FUNCTION COMPLEX CONS FLOAT HASH-TABLE
-            INTEGER KEYWORD LIST LONG-FLOAT NIL NULL NUMBER PACKAGE PATHNAME
-            RANDOM-STATE RATIO RATIONAL READTABLE SEQUENCE SIMPLE-ARRAY
-            SIMPLE-BIT-VECTOR SIMPLE-STRING SIMPLE-VECTOR SINGLE-FLOAT
-            STANDARD-CHAR STREAM STRING SYMBOL T VECTOR
-            SIGNED-BYTE UNSIGNED-BYTE FUNCTION)
-           (let ((type (type-filter (car decl))))
-                (when type
-                      (dolist (var (cdr decl))
-                        (cmpck (not (symbolp var))
-			       "Syntax error in declaration ~s" decl)
-                        (push (cons var type) ts)))))
-          (otherwise (push decl others))
-          )))
+        (cmpassert (and (proper-list-p decl) (symbolp (first decl)))
+		   "Syntax error in declaration ~s" form)
+	(let* ((decl-name (first decl))
+	       (decl-args (rest decl)))
+	  (flet ((declare-variables (type var-list)
+		   (cmpassert (proper-list-p var-list #'symbolp)
+			      "Syntax error in declaration ~s" decl)
+		   (when type
+		     (dolist (var var-list)
+		       (push (cons var type) ts)))))
+	    (case decl-name
+	      (SPECIAL
+	       (cmpassert (proper-list-p decl-args #'symbolp)
+			  "Syntax error in declaration ~s" decl)
+	       (setf ss (append decl-args ss)))
+	      (IGNORE
+	       (cmpassert (proper-list-p decl-args #'symbolp)
+			  "Syntax error in declaration ~s" decl)
+	       (setf is (append decl-args is)))
+	      (TYPE
+	       (cmpassert decl-args "Syntax error in declaration ~s" decl)
+	       (declare-variables (type-filter (first decl-args))
+				  (rest decl-args)))
+	      (OBJECT
+	       (declare-variables 'OBJECT decl-args))
+	      ;; read-only variable treatment. obsolete!
+	      (:READ-ONLY)
+	      ((OPTIMIZE FTYPE INLINE NOTINLINE DECLARATION SI::C-LOCAL SI::C-GLOBAL
+		DYNAMIC-EXTENT IGNORABLE VALUES)
+	       (push decl others))
+	      ((FIXNUM BASE-CHAR EXTENDED-CHAR CHARACTER DOUBLE-FLOAT SHORT-FLOAT ARRAY ATOM BIGNUM BIT
+		BIT-VECTOR COMPILED-FUNCTION COMPLEX CONS FLOAT HASH-TABLE
+		INTEGER KEYWORD LIST LONG-FLOAT NIL NULL NUMBER PACKAGE PATHNAME
+		RANDOM-STATE RATIO RATIONAL READTABLE SEQUENCE SIMPLE-ARRAY
+		SIMPLE-BIT-VECTOR SIMPLE-STRING SIMPLE-VECTOR SINGLE-FLOAT
+		STANDARD-CHAR STREAM STRING SYMBOL T VECTOR
+		SIGNED-BYTE UNSIGNED-BYTE FUNCTION)
+	       (declare-variables (type-filter decl-name) decl-args))
+	      (otherwise
+	       #+nil
+	       (push decl others)
+	       (if (member decl-name si::*alien-declarations*)
+		 (push decl others)
+		 (multiple-value-bind (ok type)
+		     (valid-type-specifier decl-name)
+		   (cmpassert ok "The declaration specifier ~s is unknown." decl-name)
+		   (declare-variables type decl-args))))
+	      )))))
      (t (return)))
     (pop body)
     )

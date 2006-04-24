@@ -108,6 +108,13 @@
 		       (get-sysprop (car type-args) 'TYPE-FILTER)))
 		 (t t))))))
 
+(defun valid-type-specifier (type)
+  (handler-case
+     (if (subtypep type 'T)
+	 (values t (type-filter type))
+         (values nil nil))
+    (error (c) (values nil nil))))
+
 (defun type-and (t1 t2)
   ;; FIXME! Should we allow "*" as type name???
   (when (or (eq t1 t2) (eq t2 '*))

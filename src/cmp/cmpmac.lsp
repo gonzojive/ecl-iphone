@@ -30,6 +30,9 @@
 (defmacro cmpck (condition string &rest args)
   `(if ,condition (cmperr ,string ,@args)))
 
+(defmacro cmpassert (condition string &rest args)
+  `(unless ,condition (error ,string ,@args)))
+
 ;;; from cmpwt.lsp
 (defmacro wt (&rest forms &aux (fl nil))
   (dolist (form forms (cons 'progn (nreverse (cons nil fl))))

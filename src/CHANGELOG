@@ -92,6 +92,8 @@ ECL 0.9i
  - New SOCKET-SEND function, compatible with the SBCL one (contributed by
    Dmitri Hrapof).
 
+ - ECL's compiler will complain sooner about unknown declarations.
+
 * MOP compatibility:
 
  - SLOT-VALUE, SLOT-BOUNDP, etc, together with MOP SLOT*-USING-CLASS generic
