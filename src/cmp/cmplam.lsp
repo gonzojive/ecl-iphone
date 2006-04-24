@@ -211,7 +211,7 @@
 	(push `(ignorable ,@is) declarations))
       (loop for (var . type) in ts
 	    unless (member var new-variable-names)
-	    do (push (list type var) declarations))
+	    do (push `(type ,type ,var) declarations))
       (setq body
 	    (cond (aux-vars
 		   (let ((let nil))
