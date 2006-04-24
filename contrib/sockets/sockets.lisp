@@ -60,10 +60,6 @@
  "typedef int ssize_t;"
  "typedef int socklen_t;"
  "#define MSG_WAITALL 0"
- "#define MSG_EOR 0"
- "#define MSG_DONTWAIT 0"
- "#define MSG_CONFIRM 0"
- "#define MSG_NOSIGNAL 0"
  "#include <errno.h>"
  "#include <fcntl.h>"
  "#include <stdio.h>")
@@ -677,14 +673,13 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
                     ( #d ? MSG_CONFIRM : 0 );
         cl_type type = type_of(#1);
         struct sockaddr_in sockaddr;
-	ssize_t len;
 
 	fill_inet_sockaddr(&sockaddr, #3, #4, #5, #6, #7);
 
-        len = sendto(#0,( type == t_vector ? #1->vector.self.ch :
-                        ( type == t_string ? #1->string.self : NULL )),
-                       #2, flags,(struct sockaddr*)&sockaddr, 
-                       sizeof(struct sockaddr_in));
+        ssize_t len = sendto(#0,( type == t_vector ? #1->vector.self.ch :
+                                ( type == t_string ? #1->string.self : NULL )),
+                             #2, flags,(struct sockaddr*)&sockaddr, 
+                             sizeof(struct sockaddr_in));
         @(return) = len;
 }
 "
