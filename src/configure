@@ -3588,6 +3588,10 @@ case "${host_os}" in
 		LDRPATH=''
 		THREAD_CFLAGS='-D_THREAD_SAFE'
 		THREAD_LIBS='-lpthread'
+		# The GMP library has not yet been ported to Intel-OSX
+		if test `uname -m` = i386; then
+		  gmp_build=none-apple-${host_os}
+		fi
 		;;
 	*)
 		thehost="$host_os"
@@ -9851,12 +9855,15 @@ _ACEOF
     { echo "$as_me:$LINENO: Configuring included GMP library:" >&5
 echo "$as_me: Configuring included GMP library:" >&6;}
     test -d gmp && rm -rf gmp
+    if test -z "$gmp_build"; then
+      gmp_build="${build_alias}"
+    fi
     if mkdir gmp; then
      ECL_GMP_HEADER='ecl/gmp.h'
      (destdir=`${PWDCMD}`; cd gmp; CC="${CC} ${PICFLAG}" \
        $srcdir/gmp/configure --disable-shared --prefix=${destdir} \
 	--infodir=${destdir}/doc --includedir=${destdir}/ecl \
-        --libdir=${destdir} --build=${build_alias} --host=${host_alias} $with_gmp)
+        --libdir=${destdir} --build=${gmp_build} --host=${host_alias} $with_gmp)
     fi
   fi
 fi

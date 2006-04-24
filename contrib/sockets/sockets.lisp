@@ -44,7 +44,13 @@
  "#include <fcntl.h>"
  "#include <stdio.h>"
  #+:cygwin
- "#define MSG_WAITALL 0")
+ "#define MSG_WAITALL 0"
+ "#ifndef MSG_CONFIRM"
+ "#define MSG_CONFIRM 0"
+ "#endif"
+ "#ifndef MSG_NOSIGNAL"
+ "#define MSG_NOSIGNAL 0"
+ "#endif")
 #+:wsock
 (clines
  #+(and (or :msvc :mingw32) (not :threads))

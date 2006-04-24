@@ -263,9 +263,13 @@ case "${host_os}" in
 		LDRPATH=''
 		THREAD_CFLAGS='-D_THREAD_SAFE'
 		THREAD_LIBS='-lpthread'
+		# The GMP library has not yet been ported to Intel-OSX
+		if test `uname -m` = i386; then
+		  gmp_build=none-apple-${host_os}
+		fi
 		;;
 	*)
-		thehost="$host_os"
+		Thehost="$host_os"
 		shared="no"
 		;;
 esac

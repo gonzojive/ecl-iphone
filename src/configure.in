@@ -494,12 +494,15 @@ else
   if test "${with_system_gmp}" = "no" ; then
     AC_MSG_NOTICE(Configuring included GMP library:)
     test -d gmp && rm -rf gmp
+    if test -z "$gmp_build"; then
+      gmp_build="${build_alias}"
+    fi
     if mkdir gmp; then
      ECL_GMP_HEADER='ecl/gmp.h'
      (destdir=`${PWDCMD}`; cd gmp; CC="${CC} ${PICFLAG}" \
        $srcdir/gmp/configure --disable-shared --prefix=${destdir} \
 	--infodir=${destdir}/doc --includedir=${destdir}/ecl \
-        --libdir=${destdir} --build=${build_alias} --host=${host_alias} $with_gmp)
+        --libdir=${destdir} --build=${gmp_build} --host=${host_alias} $with_gmp)
     fi
   fi
 fi
