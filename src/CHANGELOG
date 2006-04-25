@@ -94,6 +94,15 @@ ECL 0.9i
 
  - ECL's compiler will complain sooner about unknown declarations.
 
+ - It is now possible to change the buffering mode of non-Gray streams using
+   the SI::SET-BUFFERING-MODE function that takes a stream and the mode as
+   arguments. This is only guaranteed to work if the stream has not yet been
+   written/read to. The buffering mode can be NIL (no buffer), T or
+   :FULL-BUFFERED, or :LINE-BUFFERED.
+
+ - SOCKET-MAKE-STREAM now takes an argument :BUFFERING-MODE with the same
+   effect as SI::SET-BUFFERING-MODE's argument.
+
 * MOP compatibility:
 
  - SLOT-VALUE, SLOT-BOUNDP, etc, together with MOP SLOT*-USING-CLASS generic
