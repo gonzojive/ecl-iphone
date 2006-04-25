@@ -212,7 +212,6 @@ case "${host_os}" in
 		clibs=""
 		;;
 	openbsd*)
-		enable_boehm=no
 		thehost='openbsd'
 		SHARED_LDFLAGS="-shared ${LDFLAGS}"
 		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
