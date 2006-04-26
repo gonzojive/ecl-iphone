@@ -1064,7 +1064,7 @@ also known as unix-domain sockets."))
 ;;; the sockets will be closed upon garbage collection)
 ;;;
 
-(defun make-stream-from-fd (fd mode &optional (name "FD-STREAM"))
+(defun make-stream-from-fd (fd mode buffering &optional (name "FD-STREAM"))
   (assert (stringp name) (name) "name must be a string.")
   (c-inline (name fd (ecase mode
 		       (:input (c-constant "smm_input"))
@@ -1076,44 +1076,37 @@ also known as unix-domain sockets."))
 		       (:output-wsock (c-constant "smm_output_wsock"))
 		       #+:wsock
 		       (:input-output-wsock (c-constant "smm_io_wsock"))
-		       ))
-	    (t :int :int)
+		       )
+		  buffering)
+	    (t :int :int :object)
 	    t
-	    "ecl_make_stream_from_fd(#0,#1,#2)"
+	    "si_set_buffering_mode(ecl_make_stream_from_fd(#0,#1,#2), #3)"
 	    :one-liner t))
 
-(defgeneric socket-make-stream (socket  &rest args)
-    (:documentation "Find or create a STREAM that can be used for IO
-on SOCKET (which must be connected).  ARGS are ignored."))
-
-(defmethod socket-make-stream ((socket socket)  &rest args)
+(defmethod socket-make-stream ((socket socket)  &rest args &key (buffering-mode NIL))
   (declare (ignore args))
   (let ((stream (and (slot-boundp socket 'stream)
 		     (slot-value socket 'stream))))
     (unless stream
       (setf stream (let ((fd (socket-file-descriptor socket)))
-		     (make-stream-from-fd fd #-:wsock :input-output #+:wsock :input-output-wsock)))
+		     (make-stream-from-fd fd #-:wsock :input-output #+:wsock :input-output-wsock
+					  buffering-mode)))
       (setf (slot-value socket 'stream) stream)
       #+ ignore
       (sb-ext:cancel-finalization socket))
     stream))
 
 #+:wsock
-(defmethod socket-make-stream ((socket named-pipe-socket) &rest args)
+(defmethod socket-make-stream ((socket named-pipe-socket) &rest args &key (buffering-mode NIL))
   (declare (ignore args))
   (let ((stream (and (slot-boundp socket 'stream)
 		     (slot-value socket 'stream))))
     (unless stream
-      (setf stream (let ((fd (socket-file-descriptor socket)))
-		     (c-inline (fd) (:int) t
-		               "
-{
-	cl_object in_strm, out_strm;
-	in_strm = ecl_make_stream_from_fd(make_simple_string(\"FD-STREAM\"), #0, smm_input);
-	out_strm = ecl_make_stream_from_fd(make_simple_string(\"FD-STREAM\"), #0, smm_output);
-	@(return) = cl_make_two_way_stream(in_strm, out_strm);
-}"
-                               :one-liner nil)))
+      (setf stream
+	    (let* ((fd (socket-file-descriptor socket))
+		   (in (make-stream-from-fd fd :smm-input buffering-mode))
+		   (out (make-stream-from-fd fd :smm-output buffering-mode)))
+	      (make-two-way-stream in out)))
       (setf (slot-value socket 'stream) stream)
       #+ ignore
       (sb-ext:cancel-finalization socket))
