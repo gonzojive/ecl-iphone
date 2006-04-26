@@ -18,6 +18,9 @@
 #include <ecl/ecl.h>
 #include <ecl/internal.h>
 #include <ecl/page.h>
+#ifdef ECL_WSOCK
+#include <winsock.h>
+#endif
 
 #ifdef GBC_BOEHM
 
