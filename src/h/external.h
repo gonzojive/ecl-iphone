@@ -550,6 +550,7 @@ extern cl_object si_do_write_sequence(cl_object string, cl_object stream, cl_obj
 extern cl_object si_do_read_sequence(cl_object string, cl_object stream, cl_object start, cl_object end);
 extern cl_object si_file_column(cl_object strm);
 extern cl_object cl_interactive_stream_p(cl_object strm);
+extern cl_object si_set_buffering_mode(cl_object strm, cl_object mode);
 
 extern bool ecl_input_stream_p(cl_object strm);
 extern bool ecl_output_stream_p(cl_object strm);

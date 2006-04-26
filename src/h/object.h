@@ -336,9 +336,7 @@ struct ecl_stream {
 	cl_object object1;	/*  some object */
 	cl_fixnum int0;		/*  some int  */
 	cl_fixnum int1;		/*  some int  */
-#if !defined(GBC_BOEHM)
 	char	*buffer;	/*  file buffer  */
-#endif
 	cl_index byte_size;	/*  size of byte in binary streams  */
 	unsigned char bit_buffer;
 	uint8_t bits_left;

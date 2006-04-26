@@ -313,6 +313,7 @@ EXPORTS
 	si_do_read_sequence
 	si_file_column
 	cl_interactive_stream_p
+	si_set_buffering_mode
 
 	ecl_input_stream_p
 	ecl_output_stream_p

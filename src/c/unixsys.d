@@ -69,9 +69,7 @@ si_open_pipe(cl_object cmd)
 	stream->stream.char_stream_p = 1;
 	stream->stream.object1 = @'si::open-pipe';
 	stream->stream.int0 = stream->stream.int1 = 0;
-#if !defined(GBC_BOEHM)
-	setbuf(ptr, stream->stream.buffer = cl_alloc_atomic(BUFSIZ));
-#endif
+	si_set_buffering_mode(stream, @':line-buffered');
 	@(return stream)
 #endif
 }

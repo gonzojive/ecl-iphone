@@ -1636,6 +1636,10 @@ cl_symbols[] = {
 
 {SYS_ "*ACTION-ON-UNDEFINED-VARIABLE*",NULL},
 
+{SYS_ "SET-BUFFERING-MODE","si_set_buffering_mode"},
+{KEY_ "LINE-BUFFERED",NULL},
+{KEY_ "FULLY-BUFFERED",NULL},
+
 /* Tag for end of list */
 {NULL,NULL}};
 

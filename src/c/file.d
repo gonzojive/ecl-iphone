@@ -457,9 +457,7 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	}
 	x->stream.object1 = fn;
 	x->stream.int0 = x->stream.int1 = 0;
-#if !defined(GBC_BOEHM)
-	setbuf(fp, x->stream.buffer = cl_alloc(BUFSIZ));
-#endif
+	si_set_buffering_mode(x, char_stream_p? @':line-buffered' : @':fully-buffered');
 
 	if (smm == smm_probe)
 		cl_close
@@ -786,6 +784,38 @@ ecl_read_byte8(cl_object strm)
 		error("illegal stream mode");
 	}
 	return c;
+}
+
+cl_object
+si_set_buffering_mode(cl_object stream, cl_object buffer_mode_symbol)
+{
+	enum ecl_smmode mode = stream->stream.mode;
+	int buffer_mode;
+
+	if (type_of(stream) != t_stream) {
+		FEerror("Cannot set buffer of ~A", 1, stream);
+	}
+	if (buffer_mode_symbol == Cnil) {
+		buffer_mode = _IONBF;
+	} else if (buffer_mode_symbol == Ct || buffer_mode_symbol == @':fully-buffered') {
+		buffer_mode = _IOFBF;
+	} else if (buffer_mode_symbol == @':line-buffered') {
+		buffer_mode = _IOLBF;
+	} else {
+		FEerror("Not a valid buffering mode: ~A", 1, buffer_mode_symbol);
+	}
+	if (mode == smm_output || mode == smm_io || mode == smm_input) {
+		FILE *fp = stream->stream.file;
+		char *new_buffer = 0;
+		setvbuf(fp, 0, _IONBF, 0);
+		if (buffer_mode != _IONBF) {
+			char *new_buffer;
+			cl_index buffer_size = BUFSIZ;
+			new_buffer = stream->stream.buffer = cl_alloc_atomic(buffer_size);
+			setvbuf(fp, new_buffer, buffer_mode, buffer_size);
+		}
+	}
+	@(return stream)
 }
 
 static void
@@ -2720,61 +2750,56 @@ cl_interactive_stream_p(cl_object strm)
 cl_object
 ecl_make_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm)
 {
-   cl_object stream;
-   char *mode;			/* file open mode */
-   FILE *fp;			/* file pointer */
+	cl_object stream;
+	char *mode;			/* file open mode */
+	FILE *fp;			/* file pointer */
 
-   switch(smm) {
-    case smm_input:
-      mode = "r";
-      break;
-    case smm_output:
-      mode = "w";
-      break;
-    case smm_io:
-      mode = "w+";
-      break;
+	switch(smm) {
+	case smm_input:
+		mode = "r";
+		break;
+	case smm_output:
+		mode = "w";
+		break;
+	case smm_io:
+		mode = "w+";
+		break;
 #if defined(ECL_WSOCK)
-    case smm_input_wsock:
-    case smm_output_wsock:
-    case smm_io_wsock:
-      break;
+	case smm_input_wsock:
+	case smm_output_wsock:
+	case smm_io_wsock:
+		break;
 #endif
-    default:
-      FEerror("make_stream: wrong mode", 0);
-   }
+	default:
+		FEerror("make_stream: wrong mode", 0);
+	}
 #if defined(ECL_WSOCK)
-   if ( smm == smm_input_wsock || smm == smm_output_wsock || smm == smm_io_wsock )
-     fp = ( FILE* )fd;
-   else
-     fp = fdopen( fd, mode );
+	if ( smm == smm_input_wsock || smm == smm_output_wsock || smm == smm_io_wsock )
+		fp = ( FILE* )fd;
+	else
+		fp = fdopen( fd, mode );
 #else
-   fp = fdopen(fd, mode);
+	fp = fdopen(fd, mode);
 #endif
 
-   stream = cl_alloc_object(t_stream);
-   stream->stream.mode = (short)smm;
-   stream->stream.closed = 0;
-   stream->stream.file = fp;
+	stream = cl_alloc_object(t_stream);
+	stream->stream.mode = (short)smm;
+	stream->stream.closed = 0;
+	stream->stream.file = fp;
 #if defined (ECL_WSOCK)
-   if ( smm == smm_input_wsock || smm == smm_io_wsock )
-     stream->stream.object0 = Cnil;
-   else
-     stream->stream.object0 = @'base-char';
+	if ( smm == smm_input_wsock || smm == smm_io_wsock )
+		stream->stream.object0 = Cnil;
+	else
+		stream->stream.object0 = @'base-char';
 #else
-   stream->stream.object0 = @'base-char';
+	stream->stream.object0 = @'base-char';
 #endif
-   stream->stream.object1 = fname; /* not really used */
-   stream->stream.int0 = stream->stream.int1 = 0;
-   setbuf(fp, NULL);
-#if !defined(GBC_BOEHM)
-   setbuf(fp, NULL);
-   setbuf(fp, stream->stream.buffer = cl_alloc_atomic(BUFSIZ)); 
-#endif
-   stream->stream.char_stream_p = 1;
-   stream->stream.byte_size = 8;
-   stream->stream.signed_bytes = 0;
-   return(stream);
+	stream->stream.object1 = fname; /* not really used */
+	stream->stream.int0 = stream->stream.int1 = 0;
+	stream->stream.char_stream_p = 1;
+	stream->stream.byte_size = 8;
+	stream->stream.signed_bytes = 0;
+	return(stream);
 }
 
 
