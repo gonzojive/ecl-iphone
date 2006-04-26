@@ -24,7 +24,6 @@ extern "C" {
 #ifdef ECL_THREADS
 #define GC_THREADS
 #endif
-#include "gc.h"
 
 extern struct typemanager {
 	const char *tm_name;

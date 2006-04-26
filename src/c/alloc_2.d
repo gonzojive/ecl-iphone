@@ -18,9 +18,6 @@
 #include <ecl/ecl.h>
 #include <ecl/internal.h>
 #include <ecl/page.h>
-#include <gc.h>
-#include <gc_mark.h>
-#include <private/gc_priv.h>
 
 #ifdef GBC_BOEHM
 
@@ -63,6 +60,7 @@ finalize(GC_PTR _o, GC_PTR _data)
 		if (o->stream.file != NULL)
 			fclose(o->stream.file);
 		o->stream.file = NULL;
+		o->stream.buffer = NULL;
 		break;
 #ifdef ECL_THREADS
 	case t_lock:
@@ -268,16 +266,16 @@ ecl_mark_env(struct cl_env_struct *env)
 {
 #if 1
 	if (env->stack) {
-		GC_push_conditional((ptr_t)env->stack, (ptr_t)env->stack_top, 1);
-		GC_set_mark_bit((ptr_t)env->stack);
+		GC_push_conditional((GC_PTR)env->stack, (GC_PTR)env->stack_top, 1);
+		GC_set_mark_bit((GC_PTR)env->stack);
 	}
 	if (env->frs_top) {
-		GC_push_conditional((ptr_t)env->frs_org, (ptr_t)(env->frs_top+1), 1);
-		GC_set_mark_bit((ptr_t)env->frs_org);
+		GC_push_conditional((GC_PTR)env->frs_org, (GC_PTR)(env->frs_top+1), 1);
+		GC_set_mark_bit((GC_PTR)env->frs_org);
 	}
 	if (env->bds_top) {
-		GC_push_conditional((ptr_t)env->bds_org, (ptr_t)(env->bds_top+1), 1);
-		GC_set_mark_bit((ptr_t)env->bds_org);
+		GC_push_conditional((GC_PTR)env->bds_org, (GC_PTR)(env->bds_top+1), 1);
+		GC_set_mark_bit((GC_PTR)env->bds_org);
 	}
 #endif
 #if 0
@@ -297,7 +295,7 @@ ecl_mark_env(struct cl_env_struct *env)
 	GC_set_mark_bit((void *)env);
 #else
 	/* When not using threads, "env" is a statically allocated structure. */
-	GC_push_all((ptr_t)env, (ptr_t)(env + 1));
+	GC_push_all((GC_PTR)env, (GC_PTR)(env + 1));
 #endif
 #endif
 }
@@ -312,14 +310,14 @@ stacks_scanner()
 		for (i = 0; i < l->vector.fillp; i++) {
 			cl_object dll = l->vector.self.t[i];
 			if (dll->cblock.locked) {
-				GC_push_conditional((ptr_t)dll, (ptr_t)(&dll->cblock + 1), 1);
-				GC_set_mark_bit((ptr_t)dll);
+				GC_push_conditional((GC_PTR)dll, (GC_PTR)(&dll->cblock + 1), 1);
+				GC_set_mark_bit((GC_PTR)dll);
 			}
 		}
-		GC_set_mark_bit((ptr_t)l->vector.self.t);
+		GC_set_mark_bit((GC_PTR)l->vector.self.t);
 	}
-	GC_push_all((ptr_t)(&cl_core), (ptr_t)(&cl_core + 1));
-	GC_push_all((ptr_t)cl_symbols, (ptr_t)(cl_symbols + cl_num_symbols_in_core));
+	GC_push_all((GC_PTR)(&cl_core), (GC_PTR)(&cl_core + 1));
+	GC_push_all((GC_PTR)cl_symbols, (GC_PTR)(cl_symbols + cl_num_symbols_in_core));
 #ifdef ECL_THREADS
 	l = cl_core.processes;
 	if (l == OBJNULL) {

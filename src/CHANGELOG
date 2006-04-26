@@ -103,6 +103,11 @@ ECL 0.9i
  - SOCKET-MAKE-STREAM now takes an argument :BUFFERING-MODE with the same
    effect as SI::SET-BUFFERING-MODE's argument.
 
+ - ECL can be built against locally installed copies of the Boehm-Weiser
+   garbage collector, as far as they are recent. This has been checked with
+   OpenBSD & Ubuntu. You may need to supply appropiate LDFLAGS & CFLAGS for the
+   configuration to detect the headers.
+
 * MOP compatibility:
 
  - SLOT-VALUE, SLOT-BOUNDP, etc, together with MOP SLOT*-USING-CLASS generic
