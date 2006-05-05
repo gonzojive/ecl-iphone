@@ -364,26 +364,31 @@ have disappeared."
 		(nreverse required-parameters)
 		(nreverse specializers)))
     (setf arg (first arglist))
-    (cond ((atom arg)
-	   (setf variable arg specializer NIL))
-	  ((not (endp (cddr arg)))
-	   (si::simple-program-error
-	    "Syntax error in method specializer ~A" arg))
-	  ((null (setf variable (first arg)
-		       specializer (second arg)))
-	   (si::simple-program-error
-	    "NIL is not a valid specializer in a method lambda list"))
-	  ((atom specializer))
-	  ((not (and (eql (first specializer) 'EQL)
-		     (endp (cddr specializer))))
-	   (si::simple-program-error
-	    "Syntax error in method specializer ~A" arg))
-	  (t
-	   (let ((value (second specializer)))
-	     (setf specializer
-		   `(eql ,(if (constantp value)
-			      (eval value)
-			      (list 'si::unquote value)))))))
+    (cond
+      ;; Just a variable
+      ((atom arg)
+       (setf variable arg specializer T))
+      ;; List contains more elements than variable and specializer
+      ((not (endp (cddr arg)))
+       (si::simple-program-error "Syntax error in method specializer ~A" arg))
+      ;; Specializer is NIL
+      ((null (setf variable (first arg)
+		   specializer (second arg)))
+       (si::simple-program-error
+	"NIL is not a valid specializer in a method lambda list"))
+      ;; Specializer is a class name
+      ((atom specializer))
+      ;; Specializer is (EQL value)
+      ((and (eql (first specializer) 'EQL)
+	    (endp (cddr specializer)))
+       (let ((value (second specializer)))
+	 (setf specializer
+	       `(eql ,(if (constantp value)
+			  (eval value)
+			  (list 'si::unquote value))))))
+      ;; Otherwise, syntax error
+      (t
+       (si::simple-program-error "Syntax error in method specializer ~A" arg)))
     (setf (first ll) variable)
     (push variable required-parameters)
     (push specializer specializers)))
