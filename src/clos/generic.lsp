@@ -75,7 +75,7 @@
 		       (otherwise
 			(simple-program-error "~S is not a legal defgeneric option"
 					      option-name))))
-	       (setf arg-list `(,option-name ',option-value ,@arg-list))))))
+	       (setf arg-list `(',option-name ',option-value ,@arg-list))))))
     (values `(:lambda-list ',lambda-list ,@arg-list
 	      ,@(when declarations `(:declarations ',declarations)))
 	    method-list)))

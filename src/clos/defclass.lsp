@@ -35,8 +35,7 @@
 (defmacro defclass (&whole form &rest args)
   (let* (name superclasses slots options
 	 metaclass-name default-initargs documentation
-	 (processed-options '())
-	 options)
+	 (processed-options '()))
     (unless (>= (length args) 3)
       (si::simple-program-error "Illegal defclass form: the class name, the superclasses and the slots should always be provided"))
     (setq name (first args)
@@ -84,7 +83,7 @@
 		 (parse-default-initargs (rest option)))
 		(otherwise
 		 (list 'quote (rest option)))))
-	(setf options (list* option-name option-value options))))
+	(setf options (list* `',option-name option-value options))))
     `(eval-when (compile load eval)
       (ensure-class ',name :direct-superclasses ',superclasses
        :direct-slots ,slots ,@options))))
