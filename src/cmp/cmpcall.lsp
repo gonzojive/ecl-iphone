@@ -79,10 +79,10 @@
 	   (*temp* *temp*))
        (unless loc
 	 (setf loc (maybe-save-value form args)))
-       (c2call-unknown-global nil loc
-			      narg (if (eq args 'ARGS-PUSHED)
-				       args
-				       (inline-args args)))
+       (unwind-exit (call-unknown-global-loc nil loc narg
+					     (if (eq args 'ARGS-PUSHED)
+						 args
+						 (inline-args args))))
        (close-inline-blocks)))))
 
 (defun maybe-push-args (args)
@@ -155,6 +155,14 @@
 		 return-type)
     (close-inline-blocks)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; CALL LOCATIONS
+;;;
+
+(defun call-global (&rest args)
+  (unwind-exit (apply #'call-global-loc args)))
+
 ;;;
 ;;; call-global:
 ;;;   FNAME: the name of the function
@@ -163,56 +171,56 @@
 ;;;   ARGS: 'ARGS-PUSHED or a list of typed locs with arguments
 ;;;   RETURN-TYPE: the type to which the output is coerced
 ;;;
-(defun call-global (fname loc narg args return-type &aux found fd minarg maxarg)
-   (cond
-     ;; Check whether it is a global function that we cannot call directly.
+(defun call-global-loc (fname loc narg args return-type &aux found fd minarg maxarg)
+  (cond
+    ;; Check whether it is a global function that we cannot call directly.
      ((and (or (null loc) (fun-global loc)) (not (inline-possible fname)))
       (if *compile-to-linking-call*
-	  (emit-linking-call fname narg args)
-	  (c2call-unknown-global fname nil narg args)))
+	  (call-linking-loc fname narg args)
+	  (call-unknown-global-loc fname nil narg args)))
 
      ;; Open-codable function call.
      ((and (not (eq 'ARGS-PUSHED args))
 	   (or (null loc) (fun-global loc))
 	   (setq loc (inline-function fname args return-type)))
-      (unwind-exit loc))
+      loc)
 
      ;; Call to a function defined in the same file.
      ((fun-p loc)
-      (unwind-exit (call-loc fname loc narg args)))
+      (call-loc fname loc narg args))
 
      ((and (null loc) (setf loc (find fname *global-funs* :test #'same-fname-p
 				      :key #'fun-name)))
-      (unwind-exit (call-loc fname loc narg args)))
+      (call-loc fname loc narg args))
 
      ;; Call to a global (SETF ...) function
      ((not (symbolp fname))
-      (c2call-unknown-global fname loc narg args))
+      (call-unknown-global-loc fname loc narg args))
 
      ;; Call to a function whose C language function name is known,
      ;; either because it has been proclaimed so, or because it belongs
      ;; to the runtime.
      ((and (setf fd (get-sysprop fname 'Lfun))
 	   (multiple-value-setq (minarg maxarg) (get-proclaimed-narg fname)))
-      (call-exported-function fname narg args fd minarg maxarg
-			      #-ecl-min nil
-			      #+ecl-min (member fname *in-all-symbols-functions*)))
+      (call-exported-function-loc fname narg args fd minarg maxarg
+				  #-ecl-min nil
+				  #+ecl-min (member fname *in-all-symbols-functions*)))
 
      ((multiple-value-setq (found fd minarg maxarg) (si::mangle-name fname t))
-      (call-exported-function fname narg args fd minarg maxarg t))
+      (call-exported-function-loc fname narg args fd minarg maxarg t))
 
      ;; Linking calls can only be made to symbols
      (*compile-to-linking-call*
-      (emit-linking-call fname narg args))
+      (call-linking-loc fname narg args))
 
-     (t (c2call-unknown-global fname loc narg args))))
+     (t (call-unknown-global-loc fname loc narg args))))
 
 (defun call-loc (fname loc narg args)
   (if (eq args 'ARGS-PUSHED)
       `(CALL-ARGS-PUSHED ,fname ,loc ,narg)
       `(CALL-NORMAL ,loc ,(coerce-locs args))))
 
-(defun emit-linking-call (fname narg args &aux i)
+(defun call-linking-loc (fname narg args &aux i)
   (let ((fun (second (assoc fname *linking-calls*))))
     (unless fun
       (let* ((i (length *linking-calls*))
@@ -225,9 +233,9 @@
 			    :minarg 0 :maxarg call-arguments-limit))
 	(setf *linking-calls* (cons (list fname fun (add-symbol fname) c-name var-name)
 				    *linking-calls*))))
-    (unwind-exit (call-loc fname fun narg args))))
+    (call-loc fname fun narg args)))
 
-(defun call-exported-function (fname narg args fun-c-name minarg maxarg in-core)
+(defun call-exported-function-loc (fname narg args fun-c-name minarg maxarg in-core)
   (unless in-core
     ;; We only write declarations for functions which are not in lisp_external.h
     (multiple-value-bind (val declared)
@@ -249,7 +257,28 @@
 	(setf (gethash fun-c-name *compiler-declared-globals*) 1))))
   (let ((fun (make-fun :name fname :global t :cfun fun-c-name :lambda 'NIL
 		       :minarg minarg :maxarg maxarg)))
-    (unwind-exit (call-loc fname fun narg args))))
+    (call-loc fname fun narg args)))
+
+;;;
+;;; call-unknown-global-loc
+;;;   LOC is NIL or location containing function
+;;;   ARGS is either the list of typed locations for arguments or 'ARGS-PUSHED
+;;;   NARG is a location containing the number of ARGS-PUSHED
+;;;
+(defun call-unknown-global-loc (fname loc narg args)
+  (unless loc
+    (setq loc
+	  (if (and (symbolp fname)
+		   (not (eql (symbol-package fname) (find-package "CL"))))
+	      (progn
+		(cmpnote "Emiting FUNCALL for ~S" fname)
+		(add-symbol fname))
+	      (progn
+		(cmpnote "Emiting FDEFINITION for ~S" fname)
+		(setq loc (list 'FDEFINITION fname))))))
+  (if (eq args 'ARGS-PUSHED)
+      `(CALL "cl_apply_from_stack" (,narg ,loc) ,fname)
+      `(CALL "funcall" (,(1+ (length args)) ,loc ,@(coerce-locs args)) ,fname)))
 
 ;;; Functions that use MAYBE-SAVE-VALUE should rebind *temp*.
 (defun maybe-save-value (value &optional (other-forms nil other-forms-flag))
@@ -331,28 +360,6 @@
 	(wt "((" narg "!=" maxarg ")&&FEwrong_num_arguments_anonym(),"
 	    "APPLY_fixed(" narg "," fun-c-name "," `(STACK-POINTER ,narg) "))"))
     (when fun-lisp-name (wt-comment fun-lisp-name))))
-
-;;;
-;;; c2call-unknown-global
-;;;   LOC is NIL or location containing function
-;;;   ARGS is either the list of typed locations for arguments or 'ARGS-PUSHED
-;;;   NARG is a location containing the number of ARGS-PUSHED
-;;;
-(defun c2call-unknown-global (fname loc narg args)
-  (unless loc
-    (setq loc
-	  (if (and (symbolp fname)
-		   (not (eql (symbol-package fname) (find-package "CL"))))
-	      (progn
-		(cmpnote "Emiting FUNCALL for ~S" fname)
-		(add-symbol fname))
-	      (progn
-		(cmpnote "Emiting FDEFINITION for ~S" fname)
-		(setq loc (list 'FDEFINITION fname))))))
-  (unwind-exit
-   (if (eq args 'ARGS-PUSHED)
-       `(CALL "cl_apply_from_stack" (,narg ,loc) ,fname)
-       `(CALL "funcall" (,(1+ (length args)) ,loc ,@(coerce-locs args)) ,fname))))
 
 ;;; ----------------------------------------------------------------------
 
