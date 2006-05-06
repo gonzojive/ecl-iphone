@@ -65,9 +65,9 @@ ecl/external.h: c/ecl/external.h c/ecl/external.h
 
 bin/ecl$(EXE): ecl_min$(EXE) compile.lsp sysfun.lsp ecl/external.h BUILD-STAMP
 	if [ -f CROSS-COMPILER ]; then \
-		./CROSS-COMPILER < compile.lsp; \
+		./CROSS-COMPILER compile; \
 	else \
-		./ecl_min < compile.lsp; \
+		./ecl_min compile; \
 	fi
 
 ecl_min$(EXE): $(LIBRARIES) .gdbinit @LIBPREFIX@eclmin.@LIBEXT@
@@ -188,7 +188,7 @@ test3:
 	cp -rf lsp clos cmp stage2
 	-for i in lsp cmp clos clx tk; do test -f lib$$i.a && mv lib$$i.a stage2; done
 	$(MAKE) clean_lisp
-	./ecl < compile.lsp
+	./ecl compile
 	-for i in lsp clos cmp clx tk; do test -d $$i && diff --exclude=\*.o $$i stage2/$$i; done | less
 test:
 	$(MAKE) -C tests

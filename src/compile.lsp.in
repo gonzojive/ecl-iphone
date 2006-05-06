@@ -213,3 +213,5 @@
 (with-open-file (modules-list #P"build:MODULES" :direction :output)
   (dolist (module-file *module-files*)
     (format modules-list "~A~%" module-file)))
+
+(quit)
