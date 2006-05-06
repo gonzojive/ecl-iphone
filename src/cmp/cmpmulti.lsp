@@ -157,7 +157,7 @@
 
 (defun c1form-values-number (form)
   (let ((type (c1form-type form)))
-    (cond ((eq type 'T)
+    (cond ((or (eq type 'T) (eq type '*))
 	   (values 0 MULTIPLE-VALUES-LIMIT))
 	  ((or (atom type) (not (eq (first type) 'VALUES)))
 	   (values 1 1))
