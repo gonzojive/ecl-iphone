@@ -80,7 +80,7 @@
     (when (and deps (build-op-monolithic o))
       (setq obj-files
 	    (append (loop for d in deps
-			  collect (make-symbol d))
+			  collect (if (symbolp d) d (make-symbol d)))
 		    obj-files)))
     (apply #'c::builder (build-op-type o) out-file :lisp-files obj-files (build-op-args o))))
 
