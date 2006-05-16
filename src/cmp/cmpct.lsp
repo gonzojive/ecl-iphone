@@ -13,7 +13,7 @@
 
 (defvar +optimizable-constant+ '())
 
-(defun c1constant-value (val always-p)
+(defun c1constant-value (val &key always only-small-values)
   (cond
    ((let ((x (assoc val +optimizable-constant+)))
       (and x (c1expr (cdr x)))))
@@ -30,9 +30,10 @@
    ((typep val 'SHORT-FLOAT)
     (make-c1form* 'LOCATION :type 'SHORT-FLOAT
 		  :args (list 'SHORT-FLOAT-VALUE val (add-object val))))
-   (always-p
+   (always
     (make-c1form* 'LOCATION :type (object-type val)
 		  :args (list 'VV (add-object val))))
+   (only-small-values nil)
    (t nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

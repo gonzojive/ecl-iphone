@@ -445,6 +445,8 @@ coprocessor).")
 
 ;;; --cmptop.lsp--
 ;;;
+(defvar *compiler-phase* nil)
+
 (defvar *volatile*)
 (defvar *setjmps* 0)
 
@@ -463,6 +465,7 @@ lines are inserted, but the order is preserved")
 					; or *temporary-objects*
 (defvar *permanent-objects* nil)	; holds { ( object (VV vv-index) ) }*
 (defvar *temporary-objects* nil)	; holds { ( object (VV vv-index) ) }*
+(defvar *load-objects* nil)		; hash with association object -> vv-location
 (defvar *load-time-values* nil)		; holds { ( vv-index form ) }*,
 ;;;  where each vv-index should be given an object before
 ;;;  defining the current function during loading process.
@@ -480,6 +483,9 @@ lines are inserted, but the order is preserved")
 (defvar *linking-calls* nil)		; holds { ( global-fun-name fun symbol c-fun-name var-name ) }*
 (defvar *local-funs* nil)		; holds { fun }*
 (defvar *top-level-forms* nil)		; holds { top-level-form }*
+(defvar *make-forms* nil)		; holds { top-level-form }*
+(defvar *init-forms* nil)		; holds { top-level-form }*
+
 ;;;
 ;;;     top-level-form:
 ;;;	  ( 'DEFUN'     fun-name cfun lambda-expr doc-vv sp )

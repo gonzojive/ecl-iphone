@@ -12,6 +12,11 @@
 ;;; ----------------------------------------------------------------------
 ;;; Load forms
 ;;;
+;;; ECL extends the ANSI specification by allowing to use MAKE-LOAD-FORM on any
+;;; kind of lisp object. The only caveats is that ECL currently does not
+;;; support circularity when the object has to be externalized using lisp
+;;; forms. For instance something like #1=(#<a class> #1#).
+;;;
 
 (defun make-load-form-saving-slots (object &key slot-names environment)
   (declare (ignore environment))
@@ -32,42 +37,66 @@
 	      initialization)))))
 
 (defun need-to-make-load-form-p (object)
-  (typecase object
-    ((or character number symbol pathname string bit-vector)
-     nil)
-    ((array)
-     (unless (subtypep (array-element-type object) '(or character number))
-       (dotimes (i (array-total-size object) nil)
-	 (when (need-to-make-load-form-p (row-major-aref object i))
-	   (return-from need-to-make-load-form-p t)))))
-    ((cons)
-     (or (need-to-make-load-form-p (car object))
-	 (and (cdr object)
-	      (need-to-make-load-form-p (cdr object)))))
-    (t
-     t)))
+  "Return T if the object cannot be externalized using the lisp
+printer and we should rather use MAKE-LOAD-FORM."
+  (let ((*load-form-cache* nil))
+    (declare (special *load-form-cache*))
+    (labels ((recursive-test (object)
+	       ;; For simple, atomic objects we just return NIL. There is no need to
+	       ;; call MAKE-LOAD-FORM on them
+	       (when (typep object '(or character number symbol pathname string bit-vector))
+		 (return-from recursive-test nil))
+	       ;; For complex objects we set up a cache and run through the
+	       ;; objects content looking for data that might require
+	       ;; MAKE-LOAD-FORM to be externalized.  The cache is used to
+	       ;; solve the problem of circularity and of EQ references.  The
+	       ;; solution is however bad: we cannot have circular structrures
+	       ;; and at the same time use MAKE-LOAD-FORM.
+	       (let ((output 'null))
+		 (if *load-form-cache*
+		     (setf output (gethash object *load-form-cache* 'null))
+		     (setf *load-form-cache* (make-hash-table :size 128 :test #'eql)))
+		 (cond ((eq output nil)
+			(return-from recursive-test nil))
+		       ((eq output t)
+			(error "MAKE-LOAD-FORM cannot handle circular structures")
+			(return-from recursive-test t))
+		       ((typep object 'array)
+			(unless (subtypep (array-element-type object) '(or character number))
+			  (dotimes (i (array-total-size object) (setf output nil))
+			    (when (need-to-make-load-form-p (row-major-aref object i))
+			      (setf output t)
+			      (return)))))
+		       ((consp object)
+			(setf output (or (recursive-test (car object))
+					 (and (cdr object) (recursive-test (cdr object))))))
+		       (t
+			(setf output t)))
+		 (setf (gethash object *load-form-cache*) output)
+		 output)))
+      (recursive-test object))))
 
 (defmethod make-load-form ((object t) &optional environment)
   (unless (need-to-make-load-form-p object)
     (return-from make-load-form (if (consp object) `',object object)))
   (typecase object
     (array
-     `(make-array ,(array-dimensions object)
-		  :element-type ,(array-element-type object)
-		  :adjustable ,(array-adjustable-p object)
-		  :initial-data
-		  ,(loop for i from 0 by (array-total-size object)
+     `(make-array ',(array-dimensions object)
+		  :element-type ',(array-element-type object)
+		  :adjustable ',(adjustable-array-p object)
+		  :initial-contents
+		  ',(loop for i from 0 below (array-total-size object)
 			 collect (make-load-form (row-major-aref object i)))))
     (cons
-     (do* ((x object)
+     (do* ((x object (rest x))
 	   (out '()))
 	 ((atom x)
 	  (progn
-	    (setf out (mapcar #'make-load-form (nreverse out)))
+	    (setf out (mapcar #'(lambda (form) `',form) (nreverse out)))
 	    (if x
-		`(list* ,out ,(make-load-form x))
-	      `(list ,out))))
-       (push x out)))
+		`(list* ,@out ',x)
+		`(list ,@out))))
+       (push (first x) out)))
     (hash-table
      (values
       `(make-hash-table :size ,(hash-table-size object)

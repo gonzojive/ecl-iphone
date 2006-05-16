@@ -17,12 +17,16 @@
 ;;; included in the compiled code.  The default value is OFF.
 
 (defun init-env ()
+  (setq *compiler-phase* 't1)
   (setq *callbacks* nil)
   (setq *max-temp* 0)
   (setq *temp* 0)
   (setq *next-cmacro* 0)
   (setq *next-cfun* 0)
   (setq *last-label* 0)
+  (setq *load-objects* (make-hash-table :size 128 :test #'eql))
+  (setq *make-forms* nil)
+  (setq *init-forms* nil)
   (setq *permanent-objects* nil)
   (setq *temporary-objects* nil)
   (setq *local-funs* nil)

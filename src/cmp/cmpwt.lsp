@@ -126,8 +126,13 @@
 	    *temporary-objects* (make-array 128 :adjustable t :fill-pointer 0))))
 
 (defun data-get-all-objects ()
-  (nconc (map 'list #'first *permanent-objects*)
-	 (map 'list #'first *temporary-objects*)))
+  ;; We collect all objects that are to be externalized, but filter out
+  ;; those which will be created by a lisp form.
+  (loop for i in (nconc (map 'list #'first *permanent-objects*)
+			(map 'list #'first *temporary-objects*))
+	collect (if (gethash i *load-objects*)
+		    0
+		    i)))
 
 (defun data-dump (stream &optional as-lisp-file &aux must-close)
   (etypecase stream
@@ -181,6 +186,20 @@
 (defun data-empty-loc ()
   (add-object 0 :duplicate t :permanent t))
 
+(defun add-load-form (object location)
+  (when (and (not (gethash object *load-objects*))
+	     (clos::need-to-make-load-form-p object))
+    (if (not (eq *compiler-phase* 't1))
+	(cmperr "Unable to internalize complex object ~A in ~a phase" object *compiler-phase*)
+	(multiple-value-bind (make-form init-form) (make-load-form object)
+	  (setf (gethash object *load-objects*) location)
+	  (let* ((make (and make-form
+			    (make-c1form* 'MAKE-FORM :args location (c1expr make-form))))
+		 (init (and init-form
+			    (make-c1form* 'INIT-FORM :args location (c1expr init-form)))))
+	    (push make *make-forms*)
+	    (push init *init-forms*))))))
+
 (defun add-object (object &key (duplicate nil)
 		   (permanent (or (symbolp object) *permanent-data*)))
   (when (and (not *compiler-constants*) (typep object '(or function package)))
@@ -207,6 +226,8 @@
 	  (t
 	   (setq x (list vv next-ndx))
 	   (vector-push-extend (list object x next-ndx) array)
+	   (unless *compiler-constants*
+	     (add-load-form object x))
 	   x))))
 
 (defun add-symbol (symbol)

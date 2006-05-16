@@ -157,8 +157,10 @@
       (wt-nl "memcpy(VV, data->vector.self.t, VM*sizeof(cl_object));}"))
     (wt-nl "VVtemp = Cblock->cblock.temp_data;")
 
+    (setq *compiler-phase* 't2)
+
     ;; useless in initialization.
-    (dolist (form *top-level-forms*)
+    (dolist (form (append (nreverse *make-forms*) (nreverse *init-forms*) *top-level-forms*))
       (let ((*compile-to-linking-call* nil)
 	    (*env* 0) (*level* 0) (*temp* 0))
 	  (t2expr form))
@@ -206,6 +208,8 @@
 	   (lisp-name (third l)))
       (wt-nl1 "static cl_object " c-name "(cl_narg narg, ...)"
 	      "{TRAMPOLINK(narg," lisp-name ",&" var-name ",Cblock);}")))
+
+  (setq *compiler-phase* 't3)
 
   ;;; Callbacks
   (when *callbacks*
@@ -445,6 +449,18 @@
     (c2expr form)
     (wt-label *exit*)))
 
+(defun t2make-form (vv-loc form)
+  (let* ((*exit* (next-label)) (*unwind-exit* (list *exit*))
+         (*destination* vv-loc))
+    (c2expr form)
+    (wt-label *exit*)))
+
+(defun t2init-form (vv-loc form)
+  (let* ((*exit* (next-label)) (*unwind-exit* (list *exit*))
+         (*destination* 'TRASH))
+    (c2expr form)
+    (wt-label *exit*)))
+
 (defun t2decl-body (decls body)
   (let ((*safety* *safety*)
 	(*space* *space*)
@@ -669,4 +685,6 @@
 (put-sysprop 'PROGN 'T2 #'t2progn)
 (put-sysprop 'ORDINARY 'T2 #'t2ordinary)
 (put-sysprop 'LOAD-TIME-VALUE 'T2 't2load-time-value)
+(put-sysprop 'MAKE-FORM 'T2 't2make-form)
+(put-sysprop 'INIT-FORM 'T2 't2init-form)
 (put-sysprop 'SI:FSET 'C2 'c2fset)

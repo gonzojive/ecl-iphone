@@ -15,7 +15,7 @@
 
 (defun c1quote (args)
   (check-args-number 'QUOTE args 1 1)
-  (c1constant-value (car args) t))
+  (c1constant-value (car args) :always t))
 
 (defun c1declare (args)
   (cmperr "The declaration ~s was found in a bad place." (cons 'DECLARE args)))

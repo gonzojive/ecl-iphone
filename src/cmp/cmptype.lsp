@@ -201,7 +201,7 @@
 				 (long-float . 0.0L1) (short-float . 0.0S1))
 			       :test #'subtypep))))
     (if new-value
-	(c1constant-value new-value nil)
+	(c1constant-value new-value :only-small-values t)
         (c1nil))))
 
 ;;----------------------------------------------------------------------
