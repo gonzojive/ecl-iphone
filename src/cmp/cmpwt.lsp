@@ -187,23 +187,25 @@
   (add-object 0 :duplicate t :permanent t))
 
 (defun add-load-form (object location)
-  (when (and (not (gethash object *load-objects*))
-	     (clos::need-to-make-load-form-p object))
+  (when (clos::need-to-make-load-form-p object)
     (if (not (eq *compiler-phase* 't1))
 	(cmperr "Unable to internalize complex object ~A in ~a phase" object *compiler-phase*)
 	(multiple-value-bind (make-form init-form) (make-load-form object)
 	  (setf (gethash object *load-objects*) location)
-	  (let* ((make (and make-form
-			    (make-c1form* 'MAKE-FORM :args location (c1expr make-form))))
-		 (init (and init-form
-			    (make-c1form* 'INIT-FORM :args location (c1expr init-form)))))
-	    (push make *make-forms*)
-	    (push init *init-forms*))))))
+	  (when make-form
+	    (push (make-c1form* 'MAKE-FORM :args location (c1expr make-form)) *make-forms*))
+	  (when init-form
+	    (push (make-c1form* 'INIT-FORM :args location (c1expr init-form)) *make-forms*))))))
 
 (defun add-object (object &key (duplicate nil)
 		   (permanent (or (symbolp object) *permanent-data*)))
   (when (and (not *compiler-constants*) (typep object '(or function package)))
     (error "Object ~S cannot be externalized" object))
+  ;; FIXME! Currently we have two data vectors and, when compiling
+  ;; files, it may happen that a constant is duplicated and stored
+  ;; both in VV and VVtemp. This would not be a problem if the
+  ;; constant were readable, but due to using MAKE-LOAD-FORM we may
+  ;; end up having two non-EQ objects created for the same value.
   (let* ((test (if *compiler-constants* 'eq 'equal))
 	 (array (if permanent *permanent-objects* *temporary-objects*))
 	 (vv (if permanent 'VV 'VV-temp))

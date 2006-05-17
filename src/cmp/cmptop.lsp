@@ -160,7 +160,7 @@
     (setq *compiler-phase* 't2)
 
     ;; useless in initialization.
-    (dolist (form (append (nreverse *make-forms*) (nreverse *init-forms*) *top-level-forms*))
+    (dolist (form (nconc (nreverse *make-forms*) *top-level-forms*))
       (let ((*compile-to-linking-call* nil)
 	    (*env* 0) (*level* 0) (*temp* 0))
 	  (t2expr form))

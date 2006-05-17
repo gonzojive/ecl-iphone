@@ -12,10 +12,8 @@
 ;;; ----------------------------------------------------------------------
 ;;; Load forms
 ;;;
-;;; ECL extends the ANSI specification by allowing to use MAKE-LOAD-FORM on any
-;;; kind of lisp object. The only caveats is that ECL currently does not
-;;; support circularity when the object has to be externalized using lisp
-;;; forms. For instance something like #1=(#<a class> #1#).
+;;; ECL extends the ANSI specification by allowing to use
+;;; MAKE-LOAD-FORM on almost any kind of lisp object.
 ;;;
 
 (defun make-load-form-saving-slots (object &key slot-names environment)
@@ -42,71 +40,62 @@ printer and we should rather use MAKE-LOAD-FORM."
   (let ((*load-form-cache* nil))
     (declare (special *load-form-cache*))
     (labels ((recursive-test (object)
-	       ;; For simple, atomic objects we just return NIL. There is no need to
-	       ;; call MAKE-LOAD-FORM on them
-	       (when (typep object '(or character number symbol pathname string bit-vector))
-		 (return-from recursive-test nil))
-	       ;; For complex objects we set up a cache and run through the
-	       ;; objects content looking for data that might require
-	       ;; MAKE-LOAD-FORM to be externalized.  The cache is used to
-	       ;; solve the problem of circularity and of EQ references.  The
-	       ;; solution is however bad: we cannot have circular structrures
-	       ;; and at the same time use MAKE-LOAD-FORM.
-	       (let ((output 'null))
-		 (if *load-form-cache*
-		     (setf output (gethash object *load-form-cache* 'null))
-		     (setf *load-form-cache* (make-hash-table :size 128 :test #'eql)))
-		 (cond ((eq output nil)
-			(return-from recursive-test nil))
-		       ((eq output t)
-			(error "MAKE-LOAD-FORM cannot handle circular structures")
-			(return-from recursive-test t))
-		       ((typep object 'array)
-			(unless (subtypep (array-element-type object) '(or character number))
-			  (dotimes (i (array-total-size object) (setf output nil))
-			    (when (need-to-make-load-form-p (row-major-aref object i))
-			      (setf output t)
-			      (return)))))
-		       ((consp object)
-			(setf output (or (recursive-test (car object))
-					 (and (cdr object) (recursive-test (cdr object))))))
-		       (t
-			(setf output t)))
-		 (setf (gethash object *load-form-cache*) output)
-		 output)))
-      (recursive-test object))))
+	       (loop
+		;; For simple, atomic objects we just return NIL. There is no need to
+		;; call MAKE-LOAD-FORM on them
+		(when (typep object '(or character number symbol pathname string bit-vector))
+		  (return nil))
+		;; For complex objects we set up a cache and run through the
+		;; objects content looking for data that might require
+		;; MAKE-LOAD-FORM to be externalized.  The cache is used to
+		;; solve the problem of circularity and of EQ references.
+		(unless *load-form-cache*
+		  (setf *load-form-cache* (make-hash-table :size 128 :test #'eq)))
+		(when (gethash object *load-form-cache*)
+		  (return nil))
+		(setf (gethash object *load-form-cache*) t)
+		(cond ((arrayp object)
+		       (unless (subtypep (array-element-type object) '(or character number))
+			 (dotimes (i (array-total-size object))
+			   (recursive-test (row-major-aref object i))))
+		       (return nil))
+		      ((consp object)
+		       (recursive-test (car object))
+		       (setf object (rest object)))
+		      (t
+		       (throw 'need-to-make-load-form t))))))
+      (catch 'need-to-make-load-form
+	(recursive-test object)
+	nil))))
 
 (defmethod make-load-form ((object t) &optional environment)
-  (unless (need-to-make-load-form-p object)
-    (return-from make-load-form (if (consp object) `',object object)))
-  (typecase object
-    (array
-     `(make-array ',(array-dimensions object)
-		  :element-type ',(array-element-type object)
-		  :adjustable ',(adjustable-array-p object)
-		  :initial-contents
-		  ',(loop for i from 0 below (array-total-size object)
-			 collect (make-load-form (row-major-aref object i)))))
-    (cons
-     (do* ((x object (rest x))
-	   (out '()))
-	 ((atom x)
-	  (progn
-	    (setf out (mapcar #'(lambda (form) `',form) (nreverse out)))
-	    (if x
-		`(list* ,@out ',x)
-		`(list ,@out))))
-       (push (first x) out)))
-    (hash-table
-     (values
-      `(make-hash-table :size ,(hash-table-size object)
-	:rehash-size ,(hash-table-rehash-size object)
-	:rehash-threshold ,(hash-table-rehash-threshold object)
-	:test ',(hash-table-test object))
-      `(dolist (i ,(maphash (lambda (key obj) (cons key obj)) object))
-	(setf (gethash (car i) ,object) (cdr i)))))
-    (t
-     (error "Cannot externalize object ~a" object))))
+  (flet ((maybe-quote (object)
+	   (if (or (consp object) (symbolp object))
+	       (list 'quote object)
+	       object)))
+    (unless (need-to-make-load-form-p object)
+      (return-from make-load-form (maybe-quote object)))
+    (typecase object
+      (array
+       (values `(make-array ',(array-dimensions object)
+		 :element-type ',(array-element-type object)
+		 :adjustable ',(adjustable-array-p object)
+		 :initial-contents ',(loop for i from 0 below (array-total-size object)
+					   collect (row-major-aref object i)))
+	       init))
+      (cons
+       (values `(cons ,(maybe-quote (car object)) nil)
+	       (and (rest object) `(rplacd ,(maybe-quote object) ,(maybe-quote (cdr object))))))
+      (hash-table
+       (values
+	`(make-hash-table :size ,(hash-table-size object)
+	  :rehash-size ,(hash-table-rehash-size object)
+	  :rehash-threshold ,(hash-table-rehash-threshold object)
+	  :test ',(hash-table-test object))
+	`(dolist (i ,(maphash (lambda (key obj) (cons key obj)) object))
+	  (setf (gethash (car i) ,object) (cdr i)))))
+      (t
+       (error "Cannot externalize object ~a" object)))))
 
 (defmethod make-load-form ((object standard-object) &optional environment)
   (make-load-form-saving-slots object))

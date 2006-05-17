@@ -484,7 +484,6 @@ lines are inserted, but the order is preserved")
 (defvar *local-funs* nil)		; holds { fun }*
 (defvar *top-level-forms* nil)		; holds { top-level-form }*
 (defvar *make-forms* nil)		; holds { top-level-form }*
-(defvar *init-forms* nil)		; holds { top-level-form }*
 
 ;;;
 ;;;     top-level-form:
