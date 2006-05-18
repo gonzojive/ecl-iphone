@@ -1367,6 +1367,10 @@ EXPORTS
 
 	clos_ensure_class
 
+	; close\generic.lsp
+
+	clos_associate_methods_to_gfun
+
 	; clos\kernel.lsp
 
 	clos_class_id
