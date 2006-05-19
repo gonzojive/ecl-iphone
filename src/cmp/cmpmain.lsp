@@ -465,7 +465,7 @@ Cannot compile ~a."
 	(when *compile-verbose* (format t "~&;;; End of Pass 1.  "))
 	(compiler-pass2 c-pathname h-pathname data-pathname system-p
 			(if system-p
-			    (pathname-name input-pathname)
+			    (pathname-name output-file)
 			    "code")
 			shared-data-file))
 
