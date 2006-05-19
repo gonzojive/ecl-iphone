@@ -72,6 +72,16 @@ AC_ARG_WITH(system-gmp,
                   [use already installed GMP library (default=auto)]),
   [], [with_system_gmp="auto"])
 
+AC_ARG_WITH(gmp-incdir,
+  AS_HELP_STRING( [--with-gmp-incdir=path],
+		  [path to system GMP includes] ),
+  [GMP_CFLAGS="-I$withval"; CFLAGS="$CFLAGS $GMP_CFLAGS"], [])
+
+AC_ARG_WITH(gmp-libdir,
+  AS_HELP_STRING( [--with-gmp-libdir=path],
+		  [path to system GMP libraries] ),
+  [GMP_LDFLAGS="-L$withval"; LDFLAGS="$LDFLAGS $GMP_LDFLAGS"], [])
+
 AC_ARG_ENABLE(local-gmp,
   AS_HELP_STRING( [--enable-local-gmp],
                   [Deprecated! See --with-system-gmp]),
@@ -84,6 +94,12 @@ AC_ARG_WITH(__thread,
                   [Enable __thread thread-local variables]
                   [(supported by NPTL-aware glibc and maybe Windows)] ),
   [], [])
+
+AC_ARG_ENABLE(debug,
+  AS_HELP_STRING( [--enable-debug],
+                  [enable various debugging features]
+                  [(default=NO)]),
+  [DEBUG_CFLAGS="-g -O0"; CFLAGS="$CFLAGS -g -O0"],[])
 
 AC_ARG_ENABLE(opcode8,
   AS_HELP_STRING( [--enable-opcode8],
@@ -153,6 +169,9 @@ boehm_configure_flags=""
 AC_EXEEXT dnl			Guess whether .exe is needed for executables
 AC_SUBST(buildir)               dnl For top-level Makefile.in
 AC_SUBST(ECL_CFLAGS)            dnl Similar, but specific to ECL (see src/util/ecl-config)
+AC_SUBST(DEBUG_CFLAGS)		dnl Additional flags when debugging
+AC_SUBST(GMP_CFLAGS)		dnl CFLAGS needed for compiling with system GMP library
+AC_SUBST(GMP_LDFLAGS)		dnl LDFLAGS needed for compiling with system GMP library
 AC_SUBST(FASL_LIBS)             dnl Libraries to link into all ecl code but not
                                 dnl into helper programs.
 AC_SUBST(CORE_LIBS, [])         dnl Locally compiled libs to link into
