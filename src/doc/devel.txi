@@ -140,7 +140,7 @@ libraries. Briefly, you have to organize your code as follows
 @item Build a function, say @code{mymain()}, in which the initialization phase
 for your library is performed.
 @item Group the code that interfaces to Lisp in separate C files, all of which
-should include @code{#include <ecl.h>} at the beginning.
+should include @code{#include <ecl/ecl.h>} at the beginning.
 @item Compile your lisp source files.
 @item Let @ecl{} build the final executable or library.
 @end enumerate
