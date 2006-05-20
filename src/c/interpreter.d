@@ -393,8 +393,6 @@ interpret_funcall(cl_narg narg, cl_object fun) {
 	}
 #ifdef CLOS
 	case t_instance:
-		if (!fun->instance.isgf)
-			goto ERROR;
 		fun = compute_method(narg, fun, args);
 		if (fun == NULL) {
 			x = VALUES(0);

@@ -12,23 +12,50 @@
     See file '../Copyright' for full details.
 */
 
+#include <string.h>
 #include <ecl/ecl.h>
 #include <ecl/internal.h>
 
-cl_object
-si_set_funcallable(cl_object instance, cl_object flag)
+static void
+reshape_instance(cl_object x, int delta)
 {
-	if (type_of(instance) != t_instance)
-		FEwrong_type_argument(@'ext::instance', instance);
-	instance->instance.isgf = !Null(flag);
-	@(return instance)
+	cl_fixnum size = x->instance.length + delta;
+	cl_object aux = ecl_allocate_instance(CLASS_OF(x), size);
+	memcpy(aux->instance.slots, x->instance.slots,
+	       (delta < 0 ? aux->instance.length : x->instance.length) *
+	       sizeof(cl_object));
+	x->instance = aux->instance;
 }
 
 cl_object
-si_generic_function_p(cl_object instance)
+clos_set_funcallable_instance_function(cl_object x, cl_object function_or_t)
 {
-	@(return (((type_of(instance) != t_instance) &&
-		   (instance->instance.isgf))? Ct : Cnil))
+	if (type_of(x) != t_instance)
+		FEwrong_type_argument(@'ext::instance', x);
+	if (x->instance.isgf == ECL_USER_DISPATCH) {
+		reshape_instance(x, -1);
+		x->instance.isgf = ECL_NOT_FUNCALLABLE;
+	}
+	if (function_or_t == Ct)
+	{
+		x->instance.isgf = ECL_STANDARD_DISPATCH;
+	} else if (function_or_t == Cnil) {
+		x->instance.isgf = ECL_NOT_FUNCALLABLE;
+	} else if (Null(cl_functionp(function_or_t))) {
+		FEwrong_type_argument(@'function', function_or_t);
+	} else {
+		reshape_instance(x, +1);
+		x->instance.slots[x->instance.length - 1] = function_or_t;
+		x->instance.isgf = ECL_USER_DISPATCH;
+	}
+	@(return x)
+}
+
+cl_object
+si_generic_function_p(cl_object x)
+{
+	@(return (((type_of(x) != t_instance) &&
+		   (x->instance.isgf))? Ct : Cnil))
 }
 
 /*
@@ -92,22 +119,14 @@ set_meth_hash(cl_object *keys, int argno, cl_object hashtable, cl_object value)
 	e->value = value;
 }
 
-cl_object
-compute_method(cl_narg narg, cl_object gf, cl_object *args)
+static cl_object
+standard_dispatch(cl_narg narg, cl_object gf, cl_object *args)
 {
-	cl_object func;
 	int i, spec_no;
 	struct ecl_hashtable_entry *e;
 	cl_object spec_how_list = GFUN_SPEC(gf);
 	cl_object table = GFUN_HASH(gf);
-#ifdef __GNUC__
-	cl_object argtype[narg]; /* __GNUC__ */
-#else
-#define ARGTYPE_MAX 64
-	cl_object argtype[ARGTYPE_MAX];
-	if (narg > ARGTYPE_MAX)
-	  FEerror("compute_method: Too many arguments, limited to ~A.", 1, MAKE_FIXNUM(ARGTYPE_MAX));
-#endif
+	cl_object argtype[LAMBDA_PARAMETERS_LIMIT];
 
 	for (spec_no = 0; spec_how_list != Cnil;) {
 		cl_object spec_how = CAR(spec_how_list);
@@ -125,28 +144,42 @@ compute_method(cl_narg narg, cl_object gf, cl_object *args)
 
 	e = get_meth_hash(argtype, spec_no, table);
 
-	if (e->key == OBJNULL) {
+	if (e->key != OBJNULL) {
+		return e->value;
+	} else {
 		/* method not cached */
-		cl_object methods, arglist;
+		cl_object methods, arglist, func;
 		for (i = narg, arglist = Cnil; i-- > 0; ) {
 			arglist = CONS(args[i], arglist);
 		}
+		
 		methods = funcall(3, @'compute-applicable-methods', gf,
 				  arglist);
 		if (methods == Cnil) {
-			VALUES(0) = funcall(3, @'no-applicable-method', gf,
-					    arglist);
-			return NULL;
+			func = funcall(3, @'no-applicable-method', gf,
+				       arglist);
+			args[0] = 0;
+			return func;
 		}
 		func = funcall(4, @'clos::compute-effective-method', gf,
 			       GFUN_COMB(gf), methods);
 		/* update cache */
 		set_meth_hash(argtype, spec_no, table, func);
-	} else {
-		/* method is already cached */
-		func = e->value;
+		return func;
 	}
-	return func;
+}
+
+cl_object
+compute_method(cl_narg narg, cl_object gf, cl_object *args)
+{
+	switch (gf->instance.isgf) {
+	case ECL_STANDARD_DISPATCH:
+		return standard_dispatch(narg, gf, args);
+	case ECL_USER_DISPATCH:
+		return gf->instance.slots[gf->instance.length - 1];
+	default:
+		FEinvalid_function(gf);
+	}
 }
 
 cl_object

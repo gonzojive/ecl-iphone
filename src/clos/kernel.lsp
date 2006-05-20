@@ -221,7 +221,7 @@
 	(when l-l-p
 	  (setf (generic-function-argument-precedence-order gfun)
 		(rest (si::process-lambda-list lambda-list t))))
-	(si::set-funcallable gfun t)
+	(set-funcallable-instance-function gfun t)
 	(setf (fdefinition name) gfun)
 	gfun)))
 

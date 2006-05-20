@@ -88,8 +88,6 @@ cl_apply_from_stack(cl_index narg, cl_object x)
 				     fun->cclosure.env, cl_env.stack_top - narg);
 #ifdef CLOS
 	case t_instance:
-		if (!fun->instance.isgf)
-			goto ERROR;
 		fun = compute_method(narg, fun, cl_env.stack_top - narg);
 		if (fun == NULL)
 			return VALUES(0);
@@ -149,8 +147,6 @@ link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_va_lis
 		break;
 #ifdef CLOS
 	case t_instance: {
-		if (!fun->instance.isgf)
-			goto ERROR;
 		fun = compute_method(narg, fun, cl_env.stack + sp);
 		pLK = NULL;
 		if (fun == NULL) {
@@ -225,8 +221,6 @@ si_unlink_symbol(cl_object s)
 		break;
 #ifdef CLOS
 	case t_instance:
-		if (!fun->instance.isgf)
-			goto ERROR;
 		fun = compute_method(narg, fun, cl_env.stack + sp);
 		if (fun == NULL) {
 			out = VALUES(0);

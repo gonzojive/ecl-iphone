@@ -476,6 +476,9 @@ struct ecl_lock {
 #define CLASS_INFERIORS(x)	(x)->instance.slots[2]
 #define CLASS_SLOTS(x)		(x)->instance.slots[3]
 #define CLASS_CPL(x)		(x)->instance.slots[4]
+#define ECL_NOT_FUNCALLABLE	0
+#define ECL_STANDARD_DISPATCH	1
+#define ECL_USER_DISPATCH	2
 
 struct ecl_instance {		/*  instance header  */
 	HEADER1(isgf);

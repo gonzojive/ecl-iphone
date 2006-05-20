@@ -608,7 +608,7 @@ extern void ecl_register_root(cl_object *p);
 /* gfun.c */
 
 #ifdef CLOS
-extern cl_object si_set_funcallable(cl_object instance, cl_object flag);
+extern cl_object clos_set_funcallable_instance_function(cl_object x, cl_object function_or_t);
 extern cl_object si_generic_function_p(cl_object instance);
 extern cl_object si_set_compiled_function_name(cl_object keylist, cl_object table);
 

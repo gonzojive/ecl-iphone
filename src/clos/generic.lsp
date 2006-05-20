@@ -221,9 +221,9 @@
   (remf args :delete-methods)
   (unless (classp method-class)
     (setf args (list* :method-class (find-class method-class) args)))
-  (si::set-funcallable (apply #'make-instance generic-function-class
-			      :name name args)
-		       t))
+  (set-funcallable-instance-function
+   (apply #'make-instance generic-function-class :name name args)
+   t))
 
 (defun ensure-generic-function (name &rest args &key &allow-other-keys)
   (let ((gfun nil)
