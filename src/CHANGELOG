@@ -204,6 +204,8 @@ ECL 0.9i
  - The compiler now admits THE forms with type (VALUES ...), though they are
    ignored.
 
+ - (DEFPACKAGE ... (:IMPORT NIL)) failed to import symbol NIL.
+
 * Documentation:
 
  - The HTML manuals now use CSS for a more appealing look.

@@ -207,7 +207,9 @@
     (dolist (item imported-from-symbol-names-list)
       (let ((package (find-package (first item))))
 	(dolist (name (rest item))
-	  (import (find-or-make-symbol name package)))))
+	  ;; IMPORT can accept a list as argument, hence if we want to
+	  ;; import symbol NIL, we have to enclose it in a list.
+	  (import (or (find-or-make-symbol name package) (list NIL))))))
     (mapc #'intern interned-symbol-names)
     (export (mapcar #'intern exported-symbol-names))
     (dolist (package exported-from-package-names)
