@@ -211,6 +211,17 @@ ECL 0.9i
 
  - (DEFPACKAGE ... (:IMPORT NIL)) failed to import symbol NIL.
 
+ - The compiler and the interpreter now share the same environment
+   structure. This is important for issues like shadowing. Take the
+   following code:
+	(defmacro foo () 2)
+	(defmacro test (symbol &environment env)
+		(and (macro-function symbol env) t))
+	(defun doit () (flet ((foo () 1)) (test foo))))
+   If interpreted, DOIT is properly defined to return NIL, because the function
+   FOO shadows the global macro definition. If compiled, MACRO-FUNCTION was
+   unable to detect the shadowing definition. (B. Spilsbury)
+
 * Documentation:
 
  - The HTML manuals now use CSS for a more appealing look.

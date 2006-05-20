@@ -17,11 +17,29 @@
 #include <ecl/ecl.h>
 #include <ecl/internal.h>
 
-/******************************* REQUIRES ******************************/
-
-/* Requires expand-defmacro, from lsp/defmacro.lsp */
-
 /******************************* ------- ******************************/
+/*
+ * The are two kinds of lisp environments. One of them is by the interpreter
+ * when executing bytecodes and it contains local variable and function
+ * definitions.
+ *
+ * The other environment is shared by the bytecodes compiler and by the C
+ * compiler and it contains information for the compiler, including local
+ * variable definitions, and local function and macro definitions. The
+ * structure is as follows:
+ *
+ *	env -> ( var-list . fun-list )
+ *	fun-list -> ( { definition | atomic-marker }* )
+ *	definition -> ( macro-name SI::MACRO { extra-data }* )
+ *		    | ( function-name FUNCTION { extra-data }* )
+ *		    | ( a-symbol anything { extra-data }* )
+ *	atomic-marker -> CB | LB
+ *
+ * The main difference between the bytecode and C compilers is on the extra
+ * information. On the other hand, both environments are similar enough that
+ * the functions MACROEXPAND-1, MACROEXPAND and MACRO-FUNCTION can find the
+ * required information.
+ */
 
 static cl_object
 search_symbol_macro(cl_object name, cl_object env)
@@ -41,13 +59,19 @@ search_macro_function(cl_object name, cl_object env)
 	if (!SYMBOLP(name))
 		FEtype_error_symbol(name);
 	if (env != Cnil) {
-		cl_object record = assq(name, CDR(env));
-		if (CONSP(record)) {
-			cl_object tag = CADR(record);
-			if (tag == @'si::macro')
-				return CADDR(record);
-			if (tag == @'function')
-				return Cnil;
+		/* When the environment has been produced by the
+		   compiler, there might be atoms/symbols signalling
+		   closure and block boundaries. */
+		while (!Null(env = CDR(env))) {
+			cl_object record = CAR(env);
+			if (CONSP(record) && CAR(record) == name) {
+				cl_object tag = CADR(record);
+				if (tag == @'si::macro')
+					return CADDR(record);
+				if (tag == @'function')
+					return Cnil;
+				break;
+			}
 		}
 	}
 	if (name->symbol.mflag) {

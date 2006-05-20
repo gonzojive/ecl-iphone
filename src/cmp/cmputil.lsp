@@ -128,56 +128,53 @@
 		form)))))
 
 
-(defun cmp-macroexpand (form &aux env (throw-flag t))
-  ;; Obtain the local macro environment for expansion.
-  (dolist (v *funs*)
-    (when (consp v) (push v env)))
-  (when env (setq env (cons nil (nreverse env))))
-  (unwind-protect
-      (prog1
-	  (cmp-toplevel-eval `(macroexpand ',form ',env))
-	(setq throw-flag nil))
-    (when throw-flag
-      (let ((*print-case* :upcase))
-	(print-current-form)
-	(format t
-		"~&;;; The macro form ~s was not expanded successfully.~
-                   ~%;;; You are recommended to compile again.~%"
-		form)))))
-
-(defun cmp-expand-macro (fd fname args &aux env (throw-flag t))
-  (dolist (v *funs*)
-    (when (consp v) (push v env)))
-  (when env (setq env (cons nil (nreverse env))))
-  (unwind-protect
-      (prog1
-	  (cmp-toplevel-eval
-	   `(funcall *macroexpand-hook* ',fd ',(cons fname args) ',env))
-	(setq throw-flag nil))
-    (if throw-flag
-        (let ((*print-case* :upcase))
-          (print-current-form)
-          (format t
-		  "~&;;; The macro form (~s ...) was not expanded successfully.~
-                   ~%;;; You are recommended to compile again.~%"
-		  fname)))))
-
-(defun cmp-expand-compiler-macro (fd fname args &aux env (throw-flag t))
-  (dolist (v *funs*)
-    (when (consp v) (push v env)))
-  (when env (setq env (cons nil (nreverse env))))
-  (let ((form (cons fname args)))
+(defun cmp-macroexpand (form)
+  ;; Obtain the local macro/function environment for expansion.
+  (let ((env (and *funs* (cons nil *funs*)))
+	(throw-flag t))
     (unwind-protect
-	 (let ((new-form (cmp-toplevel-eval `(funcall *macroexpand-hook* ',fd ',form ',env))))
-	   (setq throw-flag nil)
-	   (values new-form (not (eql new-form form))))
+	(prog1
+	    (cmp-toplevel-eval `(macroexpand ',form ',env))
+	  (setq throw-flag nil))
       (when throw-flag
+	(let ((*print-case* :upcase))
+	  (print-current-form)
+	  (format t
+		  "~&;;; The macro form ~s was not expanded successfully.~
+                   ~%;;; You are recommended to compile again.~%"
+		  form))))))
+
+(defun cmp-expand-macro (fd fname args)
+  (let ((env (and *funs* (cons nil *funs*)))
+	(throw-flag t))
+    (unwind-protect
+	(prog1
+	    (cmp-toplevel-eval
+	     `(funcall *macroexpand-hook* ',fd ',(cons fname args) ',env))
+	  (setq throw-flag nil))
+      (if throw-flag
 	  (let ((*print-case* :upcase))
 	    (print-current-form)
 	    (format t
 		    "~&;;; The macro form (~s ...) was not expanded successfully.~
                    ~%;;; You are recommended to compile again.~%"
 		    fname))))))
+
+(defun cmp-expand-compiler-macro (fd fname args)
+  (let ((env (and *funs* (cons nil *funs*)))
+	(throw-flag t)
+	(form (cons fname args)))
+    (unwind-protect
+	(let ((new-form (cmp-toplevel-eval `(funcall *macroexpand-hook* ',fd ',form ',env))))
+	  (setq throw-flag nil)
+	  (values new-form (not (eql new-form form))))
+      (when throw-flag
+	(let ((*print-case* :upcase))
+	  (print-current-form)
+	  (format t
+		  "~&;;; The macro form (~s ...) was not expanded successfully.~
+                   ~%;;; You are recommended to compile again.~%"
+		  fname))))))
 
 (defun cmp-toplevel-eval (form)
    (let*

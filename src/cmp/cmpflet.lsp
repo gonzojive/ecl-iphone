@@ -38,7 +38,7 @@
       (let* ((name (car def))
 	     (var (make-var :name name :kind :object))
 	     (fun (make-fun :name name :var var)))
-	(push fun new-funs)
+	(push (list (fun-name fun) 'FUNCTION fun) new-funs)
 	(push (cons fun (cdr def)) defs)))
 
     ;; Now we compile the functions, either in an empty environment
@@ -60,10 +60,10 @@
 	    (add-referred-variables-to-function f2 vars)))))
 
     ;; Now we can compile the body itself.
-    (multiple-value-bind (body ss ts is other-decl)
-	(c1body (rest args) t)
-      (let ((*vars* *vars*)
-	    (*funs* new-funs))
+    (let ((*vars* *vars*)
+          (*funs* new-funs))
+      (multiple-value-bind (body ss ts is other-decl)
+	  (c1body (rest args) t)
 	(c1declare-specials ss)
 	(check-vdecl nil ts is)
 	(setq body-c1form (c1decl-body other-decl body))))
@@ -217,29 +217,38 @@
 
 (defun local-function-ref (fname &optional build-object &aux (ccb nil) (clb nil))
   (dolist (fun *funs*)
-    (cond ((eq fun 'CB) (setq ccb t))
-	  ((eq fun 'LB) (setq clb t))
-	  ((and (consp fun) (equal fname (first fun))) ; macro
+    (cond ((eq fun 'CB)
+           (setq ccb t))
+	  ((eq fun 'LB)
+           (setq clb t))
+	  ((and (consp fun)
+                (equal fname (first fun))
+                (eq (second fun) 'MACRO))
+           ;; a macro
 	   (when build-object
 	     (cmperr "The name of a macro ~A was found in a call to FUNCTION."
 		     fname))
 	   (return nil))
-          ((and (fun-p fun) (same-fname-p (fun-name fun) fname))
-	   (incf (fun-ref fun))
-	   (cond (build-object
-		  (setf (fun-ref-ccb fun) t))
-		 (*current-function*
-		  (push fun (fun-referred-funs *current-function*))))
-	   ;; we introduce a variable to hold the funob
-	   (let ((var (fun-var fun)))
-	     (cond (ccb (when build-object
-			  (setf (var-ref-ccb var) t
-				(var-kind var) 'CLOSURE))
-			(setf (fun-ref-ccb fun) t))
-		   (clb (when build-object 
-			  (setf (var-ref-clb var) t
-				(var-kind var) 'LEXICAL)))))
-	   (return fun)))))
+          ((and (consp fun)
+                (same-fname-p (first fun) fname)
+                (eq (second fun) 'FUNCTION))
+            ;; it is a function definition -- extract the actual function record
+            (let ((fun (third fun)))
+	      (incf (fun-ref fun))
+	      (cond (build-object
+		     (setf (fun-ref-ccb fun) t))
+		    (*current-function*
+		     (push fun (fun-referred-funs *current-function*))))
+	      ;; we introduce a variable to hold the funob
+	      (let ((var (fun-var fun)))
+	        (cond (ccb (when build-object
+			     (setf (var-ref-ccb var) t
+				   (var-kind var) 'CLOSURE))
+			   (setf (fun-ref-ccb fun) t))
+		      (clb (when build-object 
+			     (setf (var-ref-clb var) t
+				   (var-kind var) 'LEXICAL)))))
+	       (return fun))))))
 
 (defun sch-local-fun (fname)
   ;; Returns fun-ob for the local function (not locat macro) named FNAME,
