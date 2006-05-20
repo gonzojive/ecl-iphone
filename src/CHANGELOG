@@ -113,6 +113,11 @@ ECL 0.9i
    constants. The only case where this fail is when the "unreadable" constant
    is part of a circular structure (contributed by Brian Spilsbury).
 
+ - The second value of MACROEXPAND-1 is true whenever a macroexpansion
+   happened; in other words, whenever an macro function was called. MACROEXPAND
+   on the additionally checks whether the macroexpanded form is eq to the
+   original one and complains of the infinite loop that results.
+
 * MOP compatibility:
 
  - SLOT-VALUE, SLOT-BOUNDP, etc, together with MOP SLOT*-USING-CLASS generic

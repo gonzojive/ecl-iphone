@@ -776,10 +776,7 @@ extern cl_object cl_load _ARGS((cl_narg narg, cl_object pathname, ...));
 
 extern cl_object cl_macroexpand _ARGS((cl_narg narg, cl_object form, ...));
 extern cl_object cl_macroexpand_1 _ARGS((cl_narg narg, cl_object form, ...));
-
-extern cl_object search_macro(cl_object name, cl_object env);
-extern cl_object macro_expand1(cl_object form, cl_object env);
-extern cl_object macro_expand(cl_object form, cl_object env);
+extern cl_object cl_macro_function _ARGS((cl_narg narg, cl_object sym, ...));
 
 
 /* main.c */
@@ -1196,8 +1193,6 @@ extern cl_object si_coerce_to_function(cl_object form);
 extern cl_object cl_symbol_value(cl_object sym);
 extern cl_object cl_boundp(cl_object sym);
 extern cl_object cl_special_operator_p(cl_object form);
-extern cl_object cl_macro_function _ARGS((cl_narg narg, cl_object sym, ...));
-
 extern cl_object ecl_fdefinition(cl_object fname);
 
 /* sequence.c */

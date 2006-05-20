@@ -329,7 +329,7 @@ c_register_function(cl_object name)
 static cl_object
 c_macro_expand1(cl_object stmt)
 {
-	return macro_expand1(stmt, CONS(ENV->variables, ENV->macros));
+	return cl_macroexpand_1(2, stmt, CONS(ENV->variables, ENV->macros));
 }
 
 static void

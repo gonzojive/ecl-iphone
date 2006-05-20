@@ -514,10 +514,7 @@ EXPORTS
 
 	cl_macroexpand
 	cl_macroexpand_1
-
-	search_macro
-	macro_expand1
-	macro_expand
+	cl_macro_function
 
 
 	; main.c
@@ -909,7 +906,6 @@ EXPORTS
 	cl_symbol_value
 	cl_boundp
 	cl_special_operator_p
-	cl_macro_function
 
 	ecl_fdefinition
 

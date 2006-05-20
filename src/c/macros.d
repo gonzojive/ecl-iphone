@@ -23,11 +23,6 @@
 
 /******************************* ------- ******************************/
 
-/*
-	MACRO_DEF is an internal function which, given a form, returns
-	the expansion function if the form is a macro form.  Otherwise,
-	MACRO_DEF returns NIL.
-*/
 static cl_object
 search_symbol_macro(cl_object name, cl_object env)
 {
@@ -40,93 +35,80 @@ search_symbol_macro(cl_object name, cl_object env)
 		return Cnil;
 }
 
-cl_object
-search_macro(cl_object name, cl_object env)
-{
-	cl_object record = assq(name, CDR(env));
-	if (CONSP(record) && CADR(record) == @'si::macro')
-		return CADDR(record);
-	return Cnil;
-}
-
 static cl_object
-macro_def(cl_object form, cl_object env)
+search_macro_function(cl_object name, cl_object env)
 {
-	cl_object head, fd;
-
-	if (ATOM(form)) {
-		if (!SYMBOLP(form))
-			return Cnil;
-		/* First look for SYMBOL-MACROLET definitions */
-		fd = search_symbol_macro(form, env);
-		return fd;
+	if (!SYMBOLP(name))
+		FEtype_error_symbol(name);
+	if (env != Cnil) {
+		cl_object record = assq(name, CDR(env));
+		if (CONSP(record)) {
+			cl_object tag = CADR(record);
+			if (tag == @'si::macro')
+				return CADDR(record);
+			if (tag == @'function')
+				return Cnil;
+		}
 	}
-	head = CAR(form);
-	if (!SYMBOLP(head))
-		return(Cnil);
-	fd = search_macro(head, env);
-	if (!Null(fd))
-		return fd;
-	else if (head->symbol.mflag)
-		return(SYM_FUN(head));
-	else
-		return(Cnil);
+	if (name->symbol.mflag) {
+		return SYM_FUN(name);
+	} else {
+		return Cnil;
+	}
 }
 
-@(defun macroexpand (form &optional (env Cnil))
-	cl_object new_form = OBJNULL;
-	cl_object done = Cnil;
+@(defun macro_function (sym &optional env)
 @
-	new_form = macro_expand1(form, env);
-	while (new_form != form) {
-		done = Ct;
-		form = new_form;
-		new_form = macro_expand(form, env);
-	}
-	@(return new_form done)
+	@(return (search_macro_function(sym, env)))
 @)
+
+/*
+	Analyze a form and expand it once if it is a macro form.
+	VALUES(0) contains either the expansion or the original form.
+	VALUES(1) is true when there was a macroexpansion.
+*/
 
 @(defun macroexpand_1 (form &optional (env Cnil))
-	cl_object new_form;
+	cl_object exp_fun = Cnil;
 @
-	new_form = macro_expand1(form, env);
-	@(return new_form (new_form == form? Cnil : Ct))
+	if (ATOM(form)) {
+		if (SYMBOLP(form))
+			exp_fun = search_symbol_macro(form, env);
+	} else {
+		cl_object head = CAR(form);
+		if (SYMBOLP(head))
+			exp_fun = search_macro_function(head, env);
+	}
+	if (!Null(exp_fun)) {
+		cl_object hook = symbol_value(@'*macroexpand-hook*');
+		if (hook == @'funcall')
+			form = funcall(3, exp_fun, form, env);
+		else
+			form = funcall(4, hook, exp_fun, form, env);
+	}
+	@(return form exp_fun)
 @)
 
 /*
-	MACRO_EXPAND1 is an internal function which simply applies the
-	function EXP_FUN to FORM.  On return, the expanded form is stored
-	in VALUES(0).
+	Expands a form as many times as possible and returns the
+	finally expanded form.
 */
-cl_object
-macro_expand1(cl_object form, cl_object env)
-{
-	cl_object hook, exp_fun;
-
-	exp_fun = macro_def(form, env);
-	if (Null(exp_fun))
-		return form;
-	hook = symbol_value(@'*macroexpand-hook*');
-	if (hook == @'funcall')
-		return funcall(3, exp_fun, form, env);
-	else
-		return funcall(4, hook, exp_fun, form, env);
-}
-
-/*
-	MACRO_EXPAND expands a form as many times as possible and returns
-	the finally expanded form.
-*/
-cl_object
-macro_expand(cl_object form, cl_object env)
-{
-	cl_object new_form;
-
-	for (new_form = OBJNULL; new_form != form; form = new_form) {
-		new_form = macro_expand1(form, env);
-	}
-	return new_form;
-}
+@(defun macroexpand (form &optional env)
+	cl_object done, old_form;
+@
+	done = Cnil;
+	do {
+		form = cl_macroexpand_1(2, old_form = form, env);
+		if (VALUES(1) == Cnil) {
+			break;
+		} else if (old_form == form) {
+			FEerror("Infinite loop when expanding macro form ~A", 1, old_form);
+		} else {
+			done = Ct;
+		}
+	} while (1);
+	@(return form done)
+@)
 
 static cl_object
 or_macro(cl_object whole, cl_object env)

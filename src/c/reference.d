@@ -134,22 +134,6 @@ cl_boundp(cl_object sym)
 	@(return ((SYM_VAL(sym) == OBJNULL)? Cnil : Ct))
 }
 
-@(defun macro_function (sym &optional env)
-	cl_object fd;
-@
-	if (!SYMBOLP(sym))
-		FEtype_error_symbol(sym);
-	if (Null(env))
-		fd = Cnil;
-	else {
-		fd = search_macro(sym, env);
-		if (!Null(fd)) @(return fd)
-	}
-	if (sym->symbol.mflag)
-		fd = SYM_FUN(sym);
-	@(return fd)
-@)
-
 cl_object
 cl_special_operator_p(cl_object form)
 {
