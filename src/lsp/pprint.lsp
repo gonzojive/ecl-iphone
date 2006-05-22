@@ -104,10 +104,10 @@
 		 ))
 
 (defmethod print-object ((pretty-stream pretty-stream) stream)
-  (print-unreadable-object (pstream stream :type t :identity t))
+  (print-unreadable-object (pretty-stream stream :type t :identity t))
   #+nil
   (format stream "#<pretty stream {~8,'0X}>"
-	  (kernel:get-lisp-obj-address pstream)))
+	  (kernel:get-lisp-obj-address pretty-stream)))
 
 (declaim (inline index-posn posn-index posn-column))
 (defun index-posn (index stream)
