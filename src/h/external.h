@@ -360,7 +360,7 @@ extern cl_object cl_name_char(cl_object s);
 extern cl_object cl_standard_char_p(cl_object c);
 extern cl_object cl_upper_case_p(cl_object c);
 
-extern int ecl_string_case(cl_object s);
+extern int ecl_base_string_case(cl_object s);
 extern cl_fixnum char_code(cl_object c);
 extern int digitp(int i, int r);
 extern bool char_eq(cl_object x, cl_object y);
@@ -508,8 +508,8 @@ extern cl_object si_make_dynamic_callback(cl_narg, cl_object fun, cl_object sym,
 extern cl_object ecl_make_foreign_data(cl_object tag, cl_index size, void *data);
 extern cl_object ecl_allocate_foreign_data(cl_object tag, cl_index size);
 extern void *ecl_foreign_data_pointer_safe(cl_object f);
-extern char *ecl_string_pointer_safe(cl_object f);
-extern cl_object ecl_null_terminated_string(cl_object s);
+extern char *ecl_base_string_pointer_safe(cl_object f);
+extern cl_object ecl_null_terminated_base_string(cl_object s);
 
 /* file.c */
 
@@ -1073,6 +1073,7 @@ extern cl_object cl_null(cl_object x);
 #define cl_not cl_null
 extern cl_object cl_symbolp(cl_object x);
 extern cl_object cl_atom(cl_object x);
+extern cl_object cl_base_char_p(cl_object x);
 extern cl_object cl_consp(cl_object x);
 extern cl_object cl_listp(cl_object x);
 extern cl_object cl_numberp(cl_object x);
@@ -1086,6 +1087,9 @@ extern cl_object cl_stringp(cl_object x);
 extern cl_object cl_bit_vector_p(cl_object x);
 extern cl_object cl_vectorp(cl_object x);
 extern cl_object cl_simple_string_p(cl_object x);
+#ifdef ECL_UNICODE
+extern cl_object cl_simple_base_string_p(cl_object x);
+#endif
 extern cl_object cl_simple_bit_vector_p(cl_object x);
 extern cl_object cl_simple_vector_p(cl_object x);
 extern cl_object cl_arrayp(cl_object x);
@@ -1246,6 +1250,10 @@ extern cl_object cl_string_trim(cl_object char_bag, cl_object strng);
 extern cl_object cl_string_left_trim(cl_object char_bag, cl_object strng);
 extern cl_object cl_string_right_trim(cl_object char_bag, cl_object strng);
 extern cl_object cl_string(cl_object x);
+#ifdef ECL_UNICODE
+extern cl_object cl_base_string(cl_object x);
+extern cl_object cl_extended_string(cl_object x);
+#endif
 extern cl_object cl_make_string _ARGS((cl_narg narg, cl_object size, ...));
 extern cl_object cl_stringE _ARGS((cl_narg narg, cl_object string1, cl_object string2, ...));
 extern cl_object cl_string_equal _ARGS((cl_narg narg, cl_object string1, cl_object string2, ...));
@@ -1265,21 +1273,31 @@ extern cl_object cl_string_capitalize _ARGS((cl_narg narg, ...));
 extern cl_object cl_nstring_upcase _ARGS((cl_narg narg, ...));
 extern cl_object cl_nstring_downcase _ARGS((cl_narg narg, ...));
 extern cl_object cl_nstring_capitalize _ARGS((cl_narg narg, ...));
-extern cl_object si_string_concatenate _ARGS((cl_narg narg, ...));
+extern cl_object si_base_string_concatenate _ARGS((cl_narg narg, ...));
+#ifdef ECL_UNICODE
+extern cl_object si_extended_string_concatenate _ARGS((cl_narg narg, ...));
+#endif
 
-extern cl_object cl_alloc_simple_string(cl_index l);
-extern cl_object cl_alloc_adjustable_string(cl_index l);
-extern cl_object make_simple_string(char *s);
-#define make_constant_string(s) (make_simple_string((char *)s))
-extern cl_object make_string_copy(const char *s);
-extern cl_object ecl_cstring_to_string_or_nil(const char *s);
-extern cl_object copy_simple_string(cl_object x);
+extern cl_object cl_alloc_simple_base_string(cl_index l);
+#ifdef ECL_UNICODE
+extern cl_object cl_alloc_simple_extended_string(cl_index l);
+#endif
+extern cl_object cl_alloc_adjustable_base_string(cl_index l);
+extern cl_object make_simple_base_string(char *s);
+#define make_constant_base_string(s) (make_simple_base_string((char *)s))
+extern cl_object make_base_string_copy(const char *s);
+extern cl_object ecl_cstring_to_base_string_or_nil(const char *s);
+extern cl_object copy_simple_base_string(cl_object x);
 extern cl_object coerce_to_simple_string(cl_object x);
+extern cl_object coerce_to_simple_base_string(cl_object x);
+#ifdef ECL_UNICODE
+extern cl_object coerce_to_simple_extended_string(cl_object x);
+#endif
 extern bool string_eq(cl_object x, cl_object y);
 extern bool string_equal(cl_object x, cl_object y);
 extern bool member_char(int c, cl_object char_bag);
-extern int ecl_string_push_extend(cl_object s, int c);
-extern void get_string_start_end(cl_object s, cl_object start, cl_object end, cl_index *ps, cl_index *pe);
+extern int ecl_base_string_push_extend(cl_object s, int c);
+extern void get_base_string_start_end(cl_object s, cl_object start, cl_object end, cl_index *ps, cl_index *pe);
 
 
 /* structure.c */
@@ -1383,7 +1401,7 @@ extern void assert_type_non_negative_integer(cl_object p);
 extern void assert_type_character(cl_object p);
 extern void assert_type_symbol(cl_object p);
 extern void assert_type_package(cl_object p);
-extern void assert_type_string(cl_object p);
+extern void assert_type_base_string(cl_object p);
 extern void assert_type_cons(cl_object p);
 extern void assert_type_readtable(cl_object p);
 extern void assert_type_hash_table(cl_object p);
@@ -1405,7 +1423,7 @@ extern void FEtype_error_alist(cl_object x) /*__attribute__((noreturn))*/;
 extern void FEtype_error_stream(cl_object x) /*__attribute__((noreturn))*/;
 extern void FEcircular_list(cl_object x) /*__attribute__((noreturn))*/;
 extern void FEtype_error_index(cl_object seq, cl_object ndx) /*__attribute__((noreturn))*/;
-extern void FEtype_error_string(cl_object x) /*__attribute__((noreturn))*/;
+extern void FEtype_error_base_string(cl_object x) /*__attribute__((noreturn))*/;
 extern void FEdivision_by_zero(cl_object x, cl_object y) /*__attribute__((noreturn))*/;
 
 /* unixfsys.c */
@@ -1427,7 +1445,7 @@ extern cl_object si_mkstemp(cl_object templ);
 extern cl_object si_rmdir(cl_object directory);
 
 extern const char *expand_pathname(const char *name);
-extern cl_object ecl_string_to_pathname(char *s);
+extern cl_object ecl_base_string_to_pathname(char *s);
 extern FILE *backup_fopen(const char *filename, const char *option);
 extern cl_object ecl_file_len(FILE *fp);
 extern cl_object homedir_pathname(cl_object user);

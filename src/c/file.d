@@ -245,7 +245,7 @@ static void
 not_an_input_stream(cl_object strm)
 {
 	cl_error(9, @'simple-type-error', @':format-control',
-		 make_constant_string("~A is not an input stream"),
+		 make_constant_base_string("~A is not an input stream"),
 		 @':format-arguments', cl_list(1, strm),
 		 @':expected-type', cl_list(2, @'satisfies', @'input-stream-p'),
 		 @':datum', strm);
@@ -255,7 +255,7 @@ static void
 not_an_output_stream(cl_object strm)
 {
 	cl_error(9, @'simple-type-error', @':format-control',
-		 make_constant_string("~A is not an output stream"),
+		 make_constant_base_string("~A is not an output stream"),
 		 @':format-arguments', cl_list(1, strm),
 		 @':expected-type', cl_list(2, @'satisfies', @'output-stream-p'),
 		 @':datum', strm);
@@ -265,7 +265,7 @@ static void
 not_a_character_stream(cl_object s)
 {
 	cl_error(9, @'simple-type-error', @':format-control',
-		 make_constant_string("~A is not a character stream"),
+		 make_constant_base_string("~A is not a character stream"),
 		 @':format-arguments', cl_list(1, s),
 		 @':expected-type', @'character',
 		 @':datum', cl_stream_element_type(s));
@@ -292,7 +292,7 @@ wsock_error( const char *err_msg, cl_object strm )
 	cl_object msg_obj;
 	FormatMessage( FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER,
 		       0, WSAGetLastError(), 0, ( void* )&msg, 0, NULL );
-	msg_obj = make_string_copy( msg );
+	msg_obj = make_base_string_copy( msg );
 	LocalFree( msg );
 	FEerror( err_msg, 2, strm, msg_obj );
 }
@@ -312,7 +312,7 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	cl_object x;
 	FILE *fp;
 	cl_object filename = si_coerce_to_filename(fn);
-	char *fname = filename->string.self;
+	char *fname = filename->base_string.self;
 	bool signed_bytes, appending = FALSE;
 	uint8_t binary_header = 0, bit_buffer = 0, bits_left = 0;
 
@@ -396,7 +396,7 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 			} else if (if_exists == @':overwrite' || if_exists == @':append') {
 				/* We cannot use "w+b" because it truncates.
 				   We cannot use "a+b" because writes jump to the end. */
-				int f = open(filename->string.self, (smm == smm_output)?
+				int f = open(filename->base_string.self, (smm == smm_output)?
 					     (O_WRONLY|O_CREAT) : (O_RDWR|O_CREAT));
 				if (f < 0)
 					FEcannot_open(fn);
@@ -583,7 +583,7 @@ ecl_make_string_input_stream(cl_object strng, cl_index istart, cl_index iend)
 cl_object
 ecl_make_string_output_stream(cl_index line_length)
 {
-	cl_object s = cl_alloc_adjustable_string(line_length);
+	cl_object s = cl_alloc_adjustable_base_string(line_length);
 	return si_make_string_output_stream_from_string(s);
 }
 
@@ -778,7 +778,7 @@ ecl_read_byte8(cl_object strm)
 		if (strm->stream.int0 >= strm->stream.int1)
 			c = EOF;
 		else
-			c = strm->stream.object0->string.self[strm->stream.int0++];
+			c = strm->stream.object0->base_string.self[strm->stream.int0++];
 		break;
 	default:
 		error("illegal stream mode");
@@ -858,14 +858,14 @@ flush_output_stream_binary(cl_object strm)
 				/* write-only stream: need to reopen the file for reading *
 				 * the byte to merge, then reopen it back for writing     */
 				cl_object fn = si_coerce_to_filename(strm->stream.object1);
-				if (freopen(fn->string.self, OPEN_R, strm->stream.file) == NULL ||
+				if (freopen(fn->base_string.self, OPEN_R, strm->stream.file) == NULL ||
 				    fseek(strm->stream.file, current_offset, SEEK_SET) != 0)
 					io_error(strm);
 				/* cannot use ecl_read_byte8 here, because strm hasn't the right mode */
 				b |= (unsigned char)(getc(strm->stream.file) & ~MAKE_BIT_MASK(nb));
 				/* need special trick to re-open the file for writing, avoiding truncation */
 				fclose(strm->stream.file);
-				strm->stream.file = fdopen(open(fn->string.self, O_WRONLY), OPEN_W);
+				strm->stream.file = fdopen(open(fn->base_string.self, O_WRONLY), OPEN_W);
 				if (strm->stream.file == NULL || fseek(strm->stream.file, current_offset, SEEK_SET) != 0)
 					io_error(strm);
 			}
@@ -1109,7 +1109,7 @@ BEGIN:
 		if (strm->stream.int0 >= strm->stream.int1)
 			c = EOF;
 		else
-			c = strm->stream.object0->string.self[strm->stream.int0++];
+			c = strm->stream.object0->base_string.self[strm->stream.int0++];
 		break;
 
 	case smm_output:
@@ -1218,7 +1218,7 @@ BEGIN:
 		if (strm->stream.int0 >= strm->stream.int1)
 			c = EOF;
 		else
-			c = strm->stream.object0->string.self[strm->stream.int0];
+			c = strm->stream.object0->base_string.self[strm->stream.int0];
 		break;
 
 	case smm_output:
@@ -1301,7 +1301,7 @@ BEGIN:
 		break;
 
 	case smm_string_input:
-		if (strm->stream.int0 <= 0 || (int)strm->stream.object0->string.self[strm->stream.int0-1] != c)
+		if (strm->stream.int0 <= 0 || (int)strm->stream.object0->base_string.self[strm->stream.int0-1] != c)
 			goto UNREAD_ERROR;
 		--strm->stream.int0;
 		break;
@@ -1469,7 +1469,7 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 		} end_loop_for_in;
 		goto OUTPUT;
 	}
-	if (t != t_string &&
+	if (t != t_base_string &&
 	    !(t == t_vector &&
 	      (seq->vector.elttype == aet_b8 || seq->vector.elttype == aet_i8)))
 	{
@@ -1547,7 +1547,7 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 		} end_loop_for_in;
 		goto OUTPUT;
 	}
-	if (t != t_string &&
+	if (t != t_base_string &&
 	    !(t == t_vector &&
 	      (seq->vector.elttype == aet_b8 || seq->vector.elttype == aet_i8)))
 	{
@@ -1645,7 +1645,7 @@ BEGIN:
 
 	case smm_string_output: {
 	  	cl_object strng = strm->stream.object0;
-		strng->string.self[strng->string.fillp] = '\0';
+		strng->base_string.self[strng->base_string.fillp] = '\0';
 		break;
 	      }
 	case smm_input:
@@ -2019,7 +2019,7 @@ BEGIN:
 	}
 	case smm_string_output:
 		/* INV: The size of a string never exceeds a fixnum. */
-		output = MAKE_FIXNUM(strm->stream.object0->string.fillp);
+		output = MAKE_FIXNUM(strm->stream.object0->base_string.fillp);
 		break;
 	case smm_string_input:
 		/* INV: The size of a string never exceeds a fixnum. */
@@ -2127,11 +2127,11 @@ BEGIN:
 	case smm_string_output: {
 		/* INV: byte_size == 8 */
 		disp = fixnnint(large_disp);
-		if (disp < strm->stream.object0->string.fillp) {
-			strm->stream.object0->string.fillp = disp;
+		if (disp < strm->stream.object0->base_string.fillp) {
+			strm->stream.object0->base_string.fillp = disp;
 			strm->stream.int0 = disp;
 		} else {
-			disp -= strm->stream.object0->string.fillp;
+			disp -= strm->stream.object0->base_string.fillp;
 			while (disp-- > 0)
 				ecl_write_char(' ', strm);
 		}
@@ -2458,7 +2458,7 @@ cl_echo_stream_output_stream(cl_object strm)
 @(defun make_string_input_stream (strng &o istart iend)
 	cl_index s, e;
 @
-	assert_type_string(strng);
+	assert_type_base_string(strng);
 	if (Null(istart))
 		s = 0;
 	else if (!FIXNUMP(istart) || FIXNUM_MINUSP(istart))
@@ -2466,12 +2466,12 @@ cl_echo_stream_output_stream(cl_object strm)
 	else
 		s = (cl_index)fix(istart);
 	if (Null(iend))
-		e = strng->string.fillp;
+		e = strng->base_string.fillp;
 	else if (!FIXNUMP(iend) || FIXNUM_MINUSP(iend))
 		goto E;
 	else
 		e = (cl_index)fix(iend);
-	if (e > strng->string.fillp || s > e)
+	if (e > strng->base_string.fillp || s > e)
 		goto E;
 	@(return (ecl_make_string_input_stream(strng, s, e)))
 
@@ -2497,8 +2497,8 @@ cl_get_output_stream_string(cl_object strm)
 	if (type_of(strm) != t_stream ||
 	    (enum ecl_smmode)strm->stream.mode != smm_string_output)
 		FEerror("~S is not a string-output stream.", 1, strm);
-	strng = copy_simple_string(strm->stream.object0);
-	strm->stream.object0->string.fillp = 0;
+	strng = copy_simple_base_string(strm->stream.object0);
+	strm->stream.object0->base_string.fillp = 0;
 	@(return strng)
 }
 
@@ -2656,8 +2656,8 @@ cl_file_string_length(cl_object stream, cl_object string)
 			@(return MAKE_FIXNUM(1))
 	}
 	switch (type_of(string)) {
-	case t_string:
-		l = string->string.fillp;
+	case t_base_string:
+		l = string->base_string.fillp;
 		break;
 	case t_character:
 		l = 1;
@@ -2685,7 +2685,7 @@ si_make_string_output_stream_from_string(cl_object s)
 {
 	cl_object strm;
 
-	if (type_of(s) != t_string || !s->string.hasfillp)
+	if (type_of(s) != t_base_string || !s->base_string.hasfillp)
 		FEerror("~S is not a string with a fill-pointer.", 1, s);
 	strm = cl_alloc_object(t_stream);
 	strm->stream.mode = (short)smm_string_output;
@@ -2693,7 +2693,7 @@ si_make_string_output_stream_from_string(cl_object s)
 	strm->stream.file = NULL;
 	strm->stream.object0 = s;
 	strm->stream.object1 = OBJNULL;
-	strm->stream.int0 = s->string.fillp;
+	strm->stream.int0 = s->base_string.fillp;
 	strm->stream.int1 = 0;
 	strm->stream.char_stream_p = 1;
 	strm->stream.byte_size = 8;
@@ -2817,7 +2817,7 @@ init_file(void)
 	standard_input->stream.closed = 0;
 	standard_input->stream.file = stdin;
 	standard_input->stream.object0 = @'base-char';
-	standard_input->stream.object1 = make_constant_string("stdin");
+	standard_input->stream.object1 = make_constant_base_string("stdin");
 	standard_input->stream.int0 = 0;
 	standard_input->stream.int1 = 0;
 	standard_input->stream.char_stream_p = 1;
@@ -2829,7 +2829,7 @@ init_file(void)
 	standard_output->stream.closed = 0;
 	standard_output->stream.file = stdout;
 	standard_output->stream.object0 = @'base-char';
-	standard_output->stream.object1= make_constant_string("stdout");
+	standard_output->stream.object1= make_constant_base_string("stdout");
 	standard_output->stream.int0 = 0;
 	standard_output->stream.int1 = 0;
 	standard_output->stream.char_stream_p = 1;
@@ -2841,7 +2841,7 @@ init_file(void)
 	error_output->stream.closed = 0;
 	error_output->stream.file = stderr;
 	error_output->stream.object0 = @'base-char';
-	error_output->stream.object1= make_constant_string("stderr");
+	error_output->stream.object1= make_constant_base_string("stderr");
 	error_output->stream.int0 = 0;
 	error_output->stream.int1 = 0;
 	error_output->stream.char_stream_p = 1;

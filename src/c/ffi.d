@@ -90,9 +90,9 @@ ecl_string_pointer_safe(cl_object f)
 {
 	cl_index l;
 	unsigned char *s;
-	assert_type_string(f);
-	s = f->string.self;
-	if (f->string.hasfillp && s[f->string.fillp] != 0) {
+	assert_type_base_string(f);
+	s = f->base_string.self;
+	if (f->base_string.hasfillp && s[f->base_string.fillp] != 0) {
 		FEerror("Cannot coerce a string with fill pointer to (char *)", 0);
 	}
 	return (char *)s;
@@ -101,8 +101,8 @@ ecl_string_pointer_safe(cl_object f)
 cl_object
 ecl_null_terminated_string(cl_object f)
 {
-	assert_type_string(f);
-	if (f->string.hasfillp && f->string.self[f->string.fillp] != 0) {
+	assert_type_base_string(f);
+	if (f->base_string.hasfillp && f->base_string.self[f->base_string.fillp] != 0) {
 		return cl_copy_seq(f);
 	} else {
 		return f;
@@ -282,7 +282,7 @@ ecl_foreign_data_ref_elt(void *p, enum ecl_ffi_tag tag)
 	case ECL_FFI_POINTER_VOID:
 		return ecl_make_foreign_data(@':pointer-void', 0, *(void **)p);
 	case ECL_FFI_CSTRING:
-		return *(char **)p ? make_simple_string(*(char **)p) : Cnil;
+		return *(char **)p ? make_simple_base_string(*(char **)p) : Cnil;
 	case ECL_FFI_OBJECT:
 		return *(cl_object *)p;
 	case ECL_FFI_FLOAT:
@@ -332,7 +332,7 @@ ecl_foreign_data_set_elt(void *p, enum ecl_ffi_tag tag, cl_object value)
 		*(void **)p = ecl_foreign_data_pointer_safe(value);
 		break;
 	case ECL_FFI_CSTRING:
-		*(char **)p = value == Cnil ? NULL : value->string.self;
+		*(char **)p = value == Cnil ? NULL : value->base_string.self;
 		break;
 	case ECL_FFI_OBJECT:
 		*(cl_object *)p = value;
@@ -460,7 +460,7 @@ si_find_foreign_symbol(cl_object var, cl_object module, cl_object type, cl_objec
 
 	block = (module == @':default' ? module : si_load_foreign_module(module));
 	var = ecl_null_terminated_string(var);
-	sym = ecl_library_symbol(block, var->string.self, 1);
+	sym = ecl_library_symbol(block, var->base_string.self, 1);
 	if (sym == NULL) {
 		if (block != @':default')
 			output = ecl_library_error(block);

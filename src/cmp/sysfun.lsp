@@ -112,7 +112,7 @@
 (def-inline aref :unsafe ((array bit) fixnum fixnum) :fixnum
  "@0;aref_bv(#0,(#1)*(#0)->array.dims[1]+#2)")
 (def-inline aref :unsafe ((array base-char) fixnum fixnum) :char
- "@0;(#0)->string.self[#1*(#0)->array.dims[1]+#2]")
+ "@0;(#0)->base_string.self[#1*(#0)->array.dims[1]+#2]")
 (def-inline aref :unsafe ((array long-float) fixnum fixnum) :double
  "@0;(#0)->array.self.lf[#1*(#0)->array.dims[1]+#2]")
 (def-inline aref :unsafe ((array short-float) fixnum fixnum) :float
@@ -126,7 +126,10 @@
 (def-inline aref :unsafe ((array bit) t) :fixnum "aref_bv(#0,fix(#1))")
 (def-inline aref :unsafe ((array bit) fixnum) :fixnum "aref_bv(#0,#1)")
 (def-inline aref :unsafe ((array base-char) fixnum) t
- "CODE_CHAR((#0)->string.self[#1])")
+ "CODE_CHAR((#0)->base_string.self[#1])")
+#+unicode
+(def-inline aref :unsafe ((array character) fixnum fixnum) t
+ "@0;(#0)->string.self[#1*(#0)->array.dims[1]+#2]")
 (def-inline aref :unsafe ((array long-float) fixnum) t
  "make_longfloat((#0)->array.self.lf[#1])")
 (def-inline aref :unsafe ((array short-float) fixnum) t
@@ -134,9 +137,12 @@
 (def-inline aref :unsafe ((array fixnum) fixnum) t
  "MAKE_FIXNUM((#0)->array.self.fix[#1])")
 (def-inline aref :unsafe ((array base-char) fixnum) :fixnum
- "(#0)->string.self[#1]")
+ "(#0)->base_string.self[#1]")
+#+unicode
+(def-inline aref :unsafe ((array character) fixnum) :fixnum
+ "CHAR_CODE((#0)->base_string.self[#1])")
 (def-inline aref :unsafe ((array base-char) fixnum) :char
- "(#0)->string.self[#1]")
+ "(#0)->base_string.self[#1]")
 (def-inline aref :unsafe ((array long-float) fixnum) :double
  "(#0)->array.self.lf[#1]")
 (def-inline aref :unsafe ((array short-float) fixnum) :float
@@ -154,7 +160,7 @@
 (def-inline si:aset :unsafe (t (array bit) fixnum fixnum) :fixnum
  "@0;aset_bv(#1,(#2)*(#1)->array.dims[1]+(#3),fix(#0))")
 (def-inline si:aset :unsafe (character (array base-char) fixnum fixnum) :char
- "@1;(#1)->string.self[#2*(#1)->array.dims[1]+#3]= #0")
+ "@1;(#1)->base_string.self[#2*(#1)->array.dims[1]+#3]= #0")
 (def-inline si:aset :unsafe (long-float (array long-float) fixnum fixnum)
  :double "@1;(#1)->array.self.lf[#2*(#1)->array.dims[1]+#3]= #0")
 (def-inline si:aset :unsafe (short-float (array short-float) fixnum fixnum)
@@ -171,6 +177,9 @@
 (def-inline si:aset :unsafe (t (array bit) fixnum) :fixnum
  "aset_bv(#1,#2,fix(#0))")
 (def-inline si:aset :unsafe (character (array base-char) fixnum) :char
+ "(#1)->base_string.self[#2]= #0")
+#+unicode
+(def-inline si:aset :unsafe (character (array character) fixnum) t
  "(#1)->string.self[#2]= #0")
 (def-inline si:aset :unsafe (long-float (array long-float) fixnum) :double
  "(#1)->array.self.lf[#2]= #0")
@@ -191,7 +200,7 @@
 (proclaim-function array-rank (array) fixnum)
 (proclaim-function array-dimension (array fixnum) fixnum)
 (proclaim-function array-total-size (array) t :no-side-effects t)
-(def-inline array-total-size :unsafe (t) :fixnum "((#0)->string.dim)")
+(def-inline array-total-size :unsafe (t) :fixnum "((#0)->array.dim)")
 
 (proclaim-function adjustable-array-p (array) t :predicate t)
 (proclaim-function array-displacement (array) (values t fixnum) :predicate t)
@@ -209,11 +218,11 @@
 
 (proclaim-function array-has-fill-pointer-p (*) t :predicate t)
 (proclaim-function fill-pointer (vector) fixnum :no-side-effects t)
-(def-inline fill-pointer :unsafe (t) :fixnum "((#0)->string.fillp)")
+(def-inline fill-pointer :unsafe (t) :fixnum "((#0)->vector.fillp)")
 
 (proclaim-function si:fill-pointer-set (vector fixnum) fixnum)
 (def-inline si:fill-pointer-set :unsafe (t fixnum) :fixnum
- "((#0)->string.fillp)=(#1)")
+ "((#0)->vector.fillp)=(#1)")
 
 (proclaim-function si:replace-array (*) t)
 
@@ -965,14 +974,29 @@
 (proclaim-function characterp (t) t :predicate t :no-side-effects t)
 (def-inline characterp :always (t) :bool "CHARACTERP(#0)")
 
+#+unicode #+unicode
+(proclaim-function base-char-p (t) t :predicate t :no-side-effects t)
+(def-inline base-char-p :always (t) :bool "BASE_CHAR_P(#0)")
+
 (proclaim-function stringp (t) t :predicate t :no-side-effects t)
-(def-inline stringp :always (t) :bool "type_of(#0)==t_string")
+#-unicode
+(def-inline stringp :always (t) :bool "type_of(#0)==t_base_string")
+#+unicode
+(def-inline base-string-p :always (t) :bool "type_of(#0)==t_base_string")
+#+unicode
+(def-inline stringp :always (t) :bool "(type_of(#0)==t_base_string||type_of(#0)==t_string)")
 
 (proclaim-function bit-vector-p (t) t :predicate t :no-side-effects t)
 (def-inline bit-vector-p :always (t) :bool "(type_of(#0)==t_bitvector)")
 
 (proclaim-function vectorp (t) t :predicate t :no-side-effects t)
+#-unicode
 (def-inline vectorp :always (t) :bool "@0;type_of(#0)==t_vector||
+type_of(#0)==t_base_string||
+type_of(#0)==t_bitvector")
+#+unicode
+(def-inline vectorp :always (t) :bool "@0;type_of(#0)==t_vector||
+type_of(#0)==t_base_string||
 type_of(#0)==t_string||
 type_of(#0)==t_bitvector")
 
@@ -1110,7 +1134,7 @@ type_of(#0)==t_bitvector")
 (def-inline length :always (t) t "cl_length(#0)")
 (def-inline length :always (t) :fixnum "length(#0)")
 (def-inline length :unsafe ((array t)) :fixnum "(#0)->vector.fillp")
-(def-inline length :unsafe (string) :fixnum "(#0)->string.fillp")
+(def-inline length :unsafe (string) :fixnum "(#0)->base_string.fillp")
 
 (proclaim-function reverse (sequence) sequence)
 (proclaim-function nreverse (sequence) sequence)
@@ -1120,33 +1144,33 @@ type_of(#0)==t_bitvector")
 (proclaim-function char (string fixnum) character :no-side-effects t)
 (def-inline char :always (t t) t "cl_char(#0,#1)")
 (def-inline char :always (t fixnum) t "aref1(#0,#1)")
-(def-inline char :unsafe (t t) t "CODE_CHAR((#0)->string.self[fix(#1)])")
-(def-inline char :unsafe (t fixnum) :fixnum "(#0)->string.self[#1]")
-(def-inline char :unsafe (t fixnum) :char "(#0)->string.self[#1]")
+(def-inline char :unsafe (t t) t "CODE_CHAR((#0)->base_string.self[fix(#1)])")
+(def-inline char :unsafe (t fixnum) :fixnum "(#0)->base_string.self[#1]")
+(def-inline char :unsafe (t fixnum) :char "(#0)->base_string.self[#1]")
 
 (proclaim-function si:char-set (string fixnum character) character)
 (def-inline si:char-set :always (t t t) t "si_char_set(#0,#1,#2)")
 (def-inline si:char-set :always (t fixnum t) t "aset1(#0,#1,#2)")
 (def-inline si:char-set :unsafe (t t t) t
- "@2;((#0)->string.self[fix(#1)]=char_code(#2),(#2))")
+ "@2;((#0)->base_string.self[fix(#1)]=char_code(#2),(#2))")
 (def-inline si:char-set :unsafe (t fixnum character) :char
- "(#0)->string.self[#1]= #2")
+ "(#0)->base_string.self[#1]= #2")
 
 (proclaim-function schar (simple-string fixnum) character :no-side-effects t)
 (def-inline schar :always (t t) t "elt(#0,fixint(#1))")
 (def-inline schar :always (t fixnum) t "elt(#0,#1)")
-(def-inline schar :unsafe (t t) t "CODE_CHAR((#0)->string.self[fix(#1)])")
-(def-inline schar :unsafe (t t) :fixnum "(#0)->string.self[fix(#1)]")
-(def-inline schar :unsafe (t fixnum) :fixnum "(#0)->string.self[#1]")
-(def-inline schar :unsafe (t fixnum) :char "(#0)->string.self[#1]")
+(def-inline schar :unsafe (t t) t "CODE_CHAR((#0)->base_string.self[fix(#1)])")
+(def-inline schar :unsafe (t t) :fixnum "(#0)->base_string.self[fix(#1)]")
+(def-inline schar :unsafe (t fixnum) :fixnum "(#0)->base_string.self[#1]")
+(def-inline schar :unsafe (t fixnum) :char "(#0)->base_string.self[#1]")
 
 (proclaim-function si:schar-set (string fixnum character) character)
 (def-inline si:schar-set :always (t t t) t "elt_set(#0,fixint(#1),#2)")
 (def-inline si:schar-set :always (t fixnum t) t "elt_set(#0,#1,#2)")
 (def-inline si:schar-set :unsafe (t t t) t
- "@2;((#0)->string.self[fix(#1)]=char_code(#2),(#2))")
+ "@2;((#0)->base_string.self[fix(#1)]=char_code(#2),(#2))")
 (def-inline si:schar-set :unsafe (t fixnum character) :char
- "(#0)->string.self[#1]= #2")
+ "(#0)->base_string.self[#1]= #2")
 
 (proclaim-function string= (string-designator string-designator *) t :predicate t :no-side-effects t)
 (def-inline string= :always (string string) :bool "string_eq(#0,#1)")

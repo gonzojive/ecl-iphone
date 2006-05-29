@@ -55,6 +55,8 @@
 	    (array)
 	      (vector array sequence)
 	        (string vector)
+                #+unicode
+	        (base-string string vector)
 	        (bit-vector vector)
 	    (stream)
 		(file-stream stream)

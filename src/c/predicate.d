@@ -106,10 +106,23 @@ cl_characterp(cl_object x)
 	@(return (CHARACTERP(x) ? Ct : Cnil))
 }
 
+#ifdef ECL_UNICODE
+cl_object
+cl_base_char_p(cl_object x)
+{
+	@(return (BASE_CHAR_P(x) ? Ct : Cnil))
+}
+#endif
+
 cl_object
 cl_stringp(cl_object x)
 {
-	@(return ((type_of(x) == t_string) ? Ct : Cnil))
+#ifdef ECL_UNICODE
+	cl_type t = type_of(x);
+	@(return (((t == t_base_string) || (t == t_string)) ? Ct : Cnil))
+#else
+	@(return ((type_of(x) == t_base_string) ? Ct : Cnil))
+#endif
 }
 
 cl_object
@@ -122,17 +135,42 @@ cl_object
 cl_vectorp(cl_object x)
 {
 	cl_type t = type_of(x);
-	@(return ((t == t_vector || t == t_string || t == t_bitvector) ? Ct : Cnil))
+#ifdef ECL_UNICODE
+	@(return ((t == t_vector || t == t_string || t == t_base_string || t == t_bitvector) ? Ct : Cnil))
+#else
+	@(return ((t == t_vector || t == t_base_string || t == t_bitvector) ? Ct : Cnil))
+#endif
 }
 
 cl_object
 cl_simple_string_p(cl_object x)
 {
-	@(return ((type_of(x) == t_string &&
+#ifdef ECL_UNICODE
+	cl_type t = type_of(x);
+	@(return (((t == t_base_string || (t == t_string)) &&
 		     !x->string.adjustable &&
 		     !x->string.hasfillp &&
 		     Null(CAR(x->string.displaced))) ? Ct : Cnil))
+#else
+	@(return ((type_of(x) == t_base_string &&
+		     !x->base_string.adjustable &&
+		     !x->base_string.hasfillp &&
+		     Null(CAR(x->base_string.displaced))) ? Ct : Cnil))
+#endif
+
 }
+
+#ifdef ECL_UNICODE
+cl_object
+cl_simple_base_string_p(cl_object x)
+{
+	cl_type t = type_of(x);
+	@(return (((t == t_base_string &&
+		     !x->base_string.adjustable &&
+		     !x->base_string.hasfillp &&
+		     Null(CAR(x->base_string.displaced))) ? Ct : Cnil)))
+}
+#endif
 
 cl_object
 cl_simple_bit_vector_p(cl_object x)
@@ -279,7 +317,10 @@ BEGIN:
 	case t_longfloat:
 		return(x->LF.LFVAL==y->LF.LFVAL);
 
+#ifdef ECL_UNICODE
 	case t_string:
+#endif
+	case t_base_string:
 		return(string_eq(x, y));
 
 	case t_bitvector: {
@@ -381,9 +422,12 @@ BEGIN:
 			return FALSE;
 
 	case t_vector:
+#ifdef ECL_UNICODE
 	case t_string:
+#endif
+	case t_base_string:
 	case t_bitvector:
-		if (ty == t_vector || ty == t_string || ty == t_bitvector) {
+		if (ty == t_vector || ty == t_base_string || ty == t_bitvector) {
 		  j = x->vector.fillp;
 		  if (j != y->vector.fillp)
 		    return FALSE;

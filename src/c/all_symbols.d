@@ -67,9 +67,9 @@ mangle_name(cl_object output, char *source, int l)
 		} else {
 			return NULL;
 		}
-		output->string.self[output->string.fillp++] = c;
+		output->base_string.self[output->base_string.fillp++] = c;
 	}
-	return &output->string.self[output->string.fillp];
+	return &output->base_string.self[output->base_string.fillp];
 }
 
 @(defun si::mangle-name (symbol &optional as_function)
@@ -88,14 +88,14 @@ mangle_name(cl_object output, char *source, int l)
 		cl_fixnum p;
 
 		if (symbol == Cnil)
-			@(return Ct make_constant_string("Cnil"))
+			@(return Ct make_constant_base_string("Cnil"))
 		else if (symbol == Ct)
-			@(return Ct make_constant_string("Ct"))
+			@(return Ct make_constant_base_string("Ct"))
 		p  = (cl_symbol_initializer*)symbol - cl_symbols;
 		if (p >= 0 && p <= cl_num_symbols_in_core) {
 			found = Ct;
 			output = cl_format(4, Cnil,
-					   make_constant_string("ECL_SYM(~S,~D)"),
+					   make_constant_base_string("ECL_SYM(~S,~D)"),
 					   symbol->symbol.name, MAKE_FIXNUM(p));
 			@(return found output maxarg)
 		}
@@ -120,17 +120,17 @@ mangle_name(cl_object output, char *source, int l)
 	}
 	package= symbol->symbol.hpack;
 	if (package == cl_core.lisp_package)
-		package = make_constant_string("cl");
+		package = make_constant_base_string("cl");
 	else if (package == cl_core.system_package)
-		package = make_constant_string("si");
+		package = make_constant_base_string("si");
 	else if (package == cl_core.keyword_package)
 		package = Cnil;
 	else
 		package = package->pack.name;
 	symbol = symbol->symbol.name;
-	l      = symbol->string.fillp;
-	source = symbol->string.self;
-	output = cl_alloc_simple_string(length(package) + l + 1);
+	l      = symbol->base_string.fillp;
+	source = symbol->base_string.self;
+	output = cl_alloc_simple_base_string(length(package) + l + 1);
 	if (is_symbol && source[0] == '*') {
 		if (l > 2 && source[l-1] == '*') l--;
 		c = 'V';
@@ -147,11 +147,11 @@ mangle_name(cl_object output, char *source, int l)
 	} else {
 		c = 'S';
 	}
-	output->string.fillp = 0;
+	output->base_string.fillp = 0;
 	if (!Null(package))
-		if (!mangle_name(output, package->string.self, package->string.fillp))
+		if (!mangle_name(output, package->base_string.self, package->base_string.fillp))
 			@(return Cnil Cnil maxarg)
-	output->string.self[output->string.fillp++] = c;
+	output->base_string.self[output->base_string.fillp++] = c;
 	if (!(dest = mangle_name(output, source, l)))
 		@(return Cnil Cnil maxarg)
 	if (dest[-1] == '_')
@@ -196,7 +196,7 @@ make_this_symbol(int i, cl_object s, int code, const char *name,
 	s->symbol.mflag = FALSE;
 	s->symbol.isform = FALSE;
 	s->symbol.hpack = package;
-	s->symbol.name = make_constant_string(name);
+	s->symbol.name = make_constant_base_string(name);
 	if (package == cl_core.keyword_package) {
 		sethash(s->symbol.name, package->pack.external, s);
 		ECL_SET(s, s);

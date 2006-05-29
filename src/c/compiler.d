@@ -445,7 +445,7 @@ c_var_ref(cl_object var, int allow_symbol_macro, bool ensure_defined)
 	if (ensure_defined) {
 		l = SYM_VAL(@'si::*action-on-undefined-variable*');
 		if (l != Cnil) {
-			funcall(3, l, make_simple_string("Undefined variable referenced in interpreted code.~%Name: ~A"),
+			funcall(3, l, make_simple_base_string("Undefined variable referenced in interpreted code.~%Name: ~A"),
 				var);
 		}
 	}
@@ -1993,7 +1993,7 @@ compile_body(cl_object body, int flags) {
 	for (; !endp(body); body = CDR(body)) {
 	  form = CAR(body);
 
-	  if (!Null(doc) && type_of(form) == t_string && !endp(CDR(body))) {
+	  if (!Null(doc) && type_of(form) == t_base_string && !endp(CDR(body))) {
 	    if (documentation == Cnil)
 	      documentation = form;
 	    else

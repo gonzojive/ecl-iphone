@@ -23,7 +23,7 @@ static void FEtype_error_plist(cl_object x) /*__attribute__((noreturn))*/;
 cl_object
 cl_make_symbol(cl_object str)
 {
-	assert_type_string(str);
+	assert_type_base_string(str);
 	@(return make_symbol(str))
 }
 
@@ -34,7 +34,7 @@ make_symbol(cl_object st)
 
 	x = cl_alloc_object(t_symbol);
 	/* FIXME! Should we copy? */
-	x->symbol.name = copy_simple_string(st);
+	x->symbol.name = copy_simple_base_string(st);
 	x->symbol.dynamic = 0;
 	ECL_SET(x,OBJNULL);
 	SYM_FUN(x) = Cnil;
@@ -71,7 +71,7 @@ static void
 FEtype_error_plist(cl_object x)
 {
 	cl_error(9, @'simple-type-error', @':format-control',
-		 make_constant_string("Not a valid property list ~D"),
+		 make_constant_base_string("Not a valid property list ~D"),
 		 @':format-arguments', cl_list(1, x),
 		 @':expected-type', @'list',
 		 @':datum', x);
@@ -249,7 +249,7 @@ cl_symbol_name(cl_object x)
 	bool increment;
 @
 	t = type_of(prefix);
-	if (t == t_string) {
+	if (t == t_base_string) {
 		counter = SYM_VAL(@'*gensym-counter*');
 		increment = 1;
 	} else if (t == t_fixnum || t == t_bignum) {
@@ -276,7 +276,7 @@ cl_symbol_name(cl_object x)
 	cl_object output, s;
 	int intern_flag;
 @
-	assert_type_string(prefix);
+	assert_type_base_string(prefix);
 	pack = si_coerce_to_package(pack);
 ONCE_MORE:
 	output = ecl_make_string_output_stream(64);

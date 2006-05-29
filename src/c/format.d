@@ -109,7 +109,7 @@ static void
 fmt_error(format_stack fmt, const char *s)
 {
 	cl_error(7, @'si::format-error',
-		 @':format-control', make_constant_string(s),
+		 @':format-control', make_constant_base_string(s),
 		 @':control-string', fmt->string,
 		 @':offset', MAKE_FIXNUM(&fmt->ctl_str[fmt->ctl_index] -
 					 (char *)fmt->string->string.self));
@@ -1359,7 +1359,7 @@ fmt_indirection(format_stack fmt, bool colon, bool atsign)
 	ensure_param(fmt, 0);
 	fmt_not_colon(fmt, colon);
 	s = fmt_advance(fmt);
-	if (type_of(s) != t_string)
+	if (type_of(s) != t_base_string)
 		fmt_error(fmt, "control string expected");
 	if (atsign) {
 		fmt_copy(&fmt_old, fmt);
@@ -1822,7 +1822,7 @@ doformat(cl_narg narg, cl_object strm, cl_object string, cl_va_list args, bool i
 	jmp_buf fmt_jmp_buf0;
 	int colon;
 	cl_object output = cl_grab_rest_args(args);
-	assert_type_string(string);
+	assert_type_base_string(string);
 	fmt.stream = strm;
 	fmt_set_arg_list(&fmt, output);
 	fmt.jmp_buf = &fmt_jmp_buf0;
@@ -2071,17 +2071,17 @@ DIRECTIVE:
 	int null_strm = 0;
 @
 	if (Null(strm)) {
-		strm = cl_alloc_adjustable_string(64);
+		strm = cl_alloc_adjustable_base_string(64);
 		null_strm = 1;
 	} else if (strm == Ct) {
 		strm = symbol_value(@'*standard-output*');
 	}
-	if (type_of(strm) == t_string) {
+	if (type_of(strm) == t_base_string) {
 		output = strm;
-		if (!output->string.hasfillp) {
+		if (!output->base_string.hasfillp) {
 			cl_error(7, @'si::format-error',
 				 @':format-control',
-				 make_constant_string(
+				 make_constant_base_string(
 "Cannot output to a non adjustable string."),
 				 @':control-string', string,
 				 @':offset', MAKE_FIXNUM(0));

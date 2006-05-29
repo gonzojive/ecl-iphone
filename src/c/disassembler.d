@@ -175,12 +175,12 @@ disassemble_msetq(cl_object bytecodes, cl_opcode *vector)
 			newline = TRUE;
 		if (var >= 0) {
 			cl_format(4, Ct,
-				  make_constant_string("MSETQ\t~D,VALUES(~D)"),
+				  make_constant_base_string("MSETQ\t~D,VALUES(~D)"),
 				  MAKE_FIXNUM(var), MAKE_FIXNUM(i));
 		} else {
 			cl_object name = bytecodes->bytecodes.data[-1-var];
 			cl_format(4, Ct,
-				  make_constant_string("MSETQS\t~A,VALUES(~D)"),
+				  make_constant_base_string("MSETQS\t~A,VALUES(~D)"),
 				  name, MAKE_FIXNUM(i));
 		}
 	}
@@ -224,7 +224,7 @@ disassemble_tagbody(cl_object bytecodes, cl_opcode *vector) {
 	for (i=0; i<ntags; i++) {
 		GET_LABEL(destination, vector);
 		cl_format(4, Ct,
-			  make_constant_string("\n\tTAG\t~D @@ ~D"),
+			  make_constant_base_string("\n\tTAG\t~D @@ ~D"),
 			  MAKE_FIXNUM(i), MAKE_FIXNUM(destination-base));
 	}
 	vector = disassemble(bytecodes, vector);
@@ -239,7 +239,7 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 	const char *string;
 	cl_object o;
 	cl_fixnum n;
-	cl_object line_format = make_constant_string("~%~4d\t");
+	cl_object line_format = make_constant_base_string("~%~4d\t");
 
  BEGIN:
 	cl_format(3, Ct, line_format, MAKE_FIXNUM(vector-base));

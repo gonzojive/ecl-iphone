@@ -77,7 +77,7 @@ ecl_string_case(cl_object s)
 	int upcase;
 	cl_index i;
 	const char *text;
-	for (i = 0, upcase = 0, text = s->string.self; i <= s->string.dim; i++) {
+	for (i = 0, upcase = 0, text = s->base_string.self; i <= s->base_string.dim; i++) {
 		if (isupper(text[i])) {
 			if (upcase < 0)
 				return 0;
@@ -320,9 +320,9 @@ cl_character(cl_object x)
 		break;
 	case t_symbol:
 		x = x->symbol.name;
-	case t_string:
-		if (x->string.fillp == 1)
-			x = CODE_CHAR(x->string.self[0]);
+	case t_base_string:
+		if (x->base_string.fillp == 1)
+			x = CODE_CHAR(x->base_string.self[0]);
 		break;
 	default:
 		FEtype_error_character(x);
@@ -405,16 +405,20 @@ cl_char_int(cl_object c)
 	return1(MAKE_FIXNUM(char_code(c)));
 }
 
+/* here we give every character an implicit name of the form 'u#' where # is a hexadecimal number,
+   corresponding to a unicode code point.
+   #\u14ea should work, for example
+*/
+
 cl_object
 cl_char_name(cl_object c)
 {
 	cl_index code = char_code(c);
 	cl_object output;
 	if (code > 127) {
-		char name[] = "A00";
-		name[2] = ecl_digit_char(code & 0xF, 16);
-		name[1] = ecl_digit_char(code / 16, 16);
-		output = make_string_copy(name);
+		char name[20]; /* cleanup */
+		sprintf(name, "u%04x", code);
+		output = make_base_string_copy(name);
 	} else {
 		output = gethash_safe(c, cl_core.char_names, Cnil);
 	}
@@ -425,15 +429,9 @@ cl_object
 cl_name_char(cl_object name)
 {
 	cl_object c = gethash_safe((name = cl_string(name)), cl_core.char_names, Cnil);
-	if (c == Cnil && length(name) == 3) {
-		char *s = name->string.self;
-		if (s[0] == 'A' || s[0] == 'a') {
-			int d2 = digitp(s[2], 16);
-			int d1 = digitp(s[1], 16);
-			if (d1 >= 0 && d2 >= 0) {
-				c = CODE_CHAR(d1 * 16 + d2);
-			}
-		}
+	if (c == Cnil && name->base_string.self[0] == 'u') {
+                /* more error checking? FIXME */
+		c = CODE_CHAR(strtol(&name->base_string.self[1], NULL, 16));
 	}
 	@(return c);
 }

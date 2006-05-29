@@ -234,8 +234,15 @@ cl_class_of(cl_object x)
 		t = @'array'; break;
 	case t_vector:
 		t = @'vector'; break;
+#ifdef ECL_UNICODE
 	case t_string:
 		t = @'string'; break;
+	case t_base_string:
+		t = @'base-string'; break;
+#else
+	case t_base_string:
+		t = @'string'; break;
+#endif
 	case t_bitvector:
 		t = @'bit-vector'; break;
 	case t_stream:

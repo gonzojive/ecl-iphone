@@ -410,8 +410,8 @@
   (c-inline (foreign-string length) (t fixnum) string
        "{
 	cl_index length = #1;
-	cl_object output = cl_alloc_simple_string(length);
-	memcpy(output->string.self, (#0)->foreign.data, length);
+	cl_object output = cl_alloc_simple_base_string(length);
+	memcpy(output->base_string.self, (#0)->foreign.data, length);
 	@(return) = output;
 	}"
        :one-liner nil
@@ -422,9 +422,9 @@
     (c-inline (lisp-string) (t) t
        "{
 	cl_object lisp_string = #0;
-	cl_index size = lisp_string->string.fillp;
+	cl_index size = lisp_string->base_string.fillp;
 	cl_object output = ecl_allocate_foreign_data(@(* :char), size+1);
-	memcpy(output->foreign.data, lisp_string->string.self, size);
+	memcpy(output->foreign.data, lisp_string->base_string.self, size);
 	output->foreign.data[size] = '\\0';
 	@(return) = output;
 	}"

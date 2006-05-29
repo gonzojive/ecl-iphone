@@ -37,9 +37,17 @@
 typedef int (*delim_fn)(int);
 
 static cl_object
-ensure_simple_string(cl_object s)
+ensure_simple_base_string(cl_object s)
 {
-	return (type_of(s) == t_string)? coerce_to_simple_string(s) : s;
+	switch(type_of(s)) {
+#ifdef ECL_UNICODE
+	case t_string:
+#endif
+	case t_base_string:
+		return coerce_to_simple_base_string(s);
+	default:
+		return s;
+	}
 }
 
 static cl_object
@@ -77,15 +85,15 @@ destructively_check_directory(cl_object directory, bool logical)
 		} else if (item == @':relative' || item == @':absolute') {
 			if (i > 0)
 				return @':error';
-		} else if (type_of(item) == t_string) {
-			CAR(ptr) = copy_simple_string(item);
+		} else if (type_of(item) == t_base_string) {
+			CAR(ptr) = copy_simple_base_string(item);
 			if (logical)
 				continue;
-			if (strcmp(item->string.self,".")==0) {
+			if (strcmp(item->base_string.self,".")==0) {
 				if (i == 0)
 					return @':error';
 				CDR(nthcdr(i-1, directory)) = CDR(ptr);
-			} else if (strcmp(item->string.self,"..") == 0) {
+			} else if (strcmp(item->base_string.self,"..") == 0) {
 				CAR(directory) = @':back';
 				goto BEGIN;
 			}
@@ -103,7 +111,7 @@ make_pathname(cl_object host, cl_object device, cl_object directory,
 	cl_object x, p, component;
 
 	p = cl_alloc_object(t_pathname);
-	if (type_of(host) == t_string)
+	if (type_of(host) == t_base_string)
 		p->pathname.logical = logical_hostname_p(host);
 	else if (host == Cnil)
 		p->pathname.logical = FALSE;
@@ -113,17 +121,17 @@ make_pathname(cl_object host, cl_object device, cl_object directory,
 		goto ERROR;
 	}
 	if (device != Cnil && device != @':unspecific' &&
-	    !(!p->pathname.logical && type_of(device) == t_string)) {
+	    !(!p->pathname.logical && type_of(device) == t_base_string)) {
 		x = device;
 		component = @':device';
 		goto ERROR;
 	}
-	if (name != Cnil && name != @':wild' && type_of(name) != t_string) {
+	if (name != Cnil && name != @':wild' && type_of(name) != t_base_string) {
 		x = name;
 		component = @':name';
 		goto ERROR;
 	}
-	if (type != Cnil && type != @':wild' && type_of(type) != t_string) {
+	if (type != Cnil && type != @':wild' && type_of(type) != t_base_string) {
 		x = type;
 		component = @':type';
 		goto ERROR;
@@ -136,7 +144,7 @@ make_pathname(cl_object host, cl_object device, cl_object directory,
 	ERROR:	FEerror("~s is not a valid pathname-~a component", 2, x, component);
 	}
 	switch (type_of(directory)) {
-	case t_string:
+	case t_base_string:
 		directory = cl_list(2, @':absolute', directory);
 		break;
 	case t_symbol:
@@ -156,12 +164,12 @@ make_pathname(cl_object host, cl_object device, cl_object directory,
 		component = @':directory';
 		goto ERROR;
 	}
-	p->pathname.host = ensure_simple_string(host);
-	p->pathname.device = ensure_simple_string(device);
+	p->pathname.host      = ensure_simple_base_string(host);
+	p->pathname.device    = ensure_simple_base_string(device);
 	p->pathname.directory = directory;
-	p->pathname.name = ensure_simple_string(name);
-	p->pathname.type = ensure_simple_string(type);
-	p->pathname.version = ensure_simple_string(version);
+	p->pathname.name      = ensure_simple_base_string(name);
+	p->pathname.type      = ensure_simple_base_string(type);
+	p->pathname.version   = ensure_simple_base_string(version);
 	if (destructively_check_directory(directory, 1) == @':error') {
 		cl_error(3, @'file-error', @':pathname', p);
 	}
@@ -177,9 +185,9 @@ tilde_expand(cl_object directory)
 	if (endp(directory))
 		goto RET;
 	head = CADR(directory);
-	if (type_of(head) != t_string)
+	if (type_of(head) != t_base_string)
 		goto RET;
-	if (head->string.fillp == 0 || head->string.self[0] != '~')
+	if (head->base_string.fillp == 0 || head->base_string.self[0] != '~')
 		goto RET;
 	prefix = homedir_pathname(head)->pathname.directory;
 	directory = append(prefix, CDDR(directory));
@@ -196,8 +204,8 @@ tilde_expand(cl_object directory)
 static cl_object
 make_one(const char *s, cl_index end)
 {
-	cl_object x = cl_alloc_simple_string(end);
-	memcpy(x->string.self, s, end);
+	cl_object x = cl_alloc_simple_base_string(end);
+	memcpy(x->base_string.self, s, end);
 	return(x);
 }
 
@@ -216,7 +224,7 @@ static cl_object
 translate_common_case(cl_object str)
 {
 	int string_case;
-	if (type_of(str) != t_string) {
+	if (type_of(str) != t_base_string) {
 		/* Pathnames may contain some other objects, such as symbols,
 		 * numbers, etc, which need not be translated */
 		return str;
@@ -393,7 +401,7 @@ parse_directories(const char *s, int flags, cl_index start, cl_index end,
 bool
 logical_hostname_p(cl_object host)
 {
-	if (type_of(host) != t_string)
+	if (type_of(host) != t_base_string)
 		return FALSE;
 	return !Null(@assoc(4, host, cl_core.pathname_translations, @':test', @'string-equal'));
 }
@@ -486,7 +494,7 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 	} else {
 		version = cl_parse_integer(3, aux, @':junk-allowed', Ct);
 		if (cl_integerp(version) != Cnil && number_plusp(version) &&
-		    fix(VALUES(1)) == aux->string.fillp)
+		    fix(VALUES(1)) == aux->base_string.fillp)
 			;
 		else if (string_equal(aux, (@':newest')->symbol.name))
 			version = @':newest';
@@ -505,9 +513,9 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 	if (device == @':error')
 		device = Cnil;
 	else if (device != Cnil) {
-		if (type_of(device) != t_string)
+		if (type_of(device) != t_base_string)
 			return Cnil;
-		if (strcmp(device->string.self, "file") == 0)
+		if (strcmp(device->base_string.self, "file") == 0)
 			device = Cnil;
 	}
 	start = *ep;
@@ -523,7 +531,7 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 	if (host == @':error')
 		host = Cnil;
 	else if (host != Cnil) {
-		if (type_of(host) != t_string)
+		if (type_of(host) != t_base_string)
 			return Cnil;
 	}
 	path = parse_directories(s, 0, *ep, end, ep);
@@ -566,7 +574,7 @@ si_default_pathname_defaults(void)
 	 * not enter an infinite loop when using PARSE-NAMESTRING, because
 	 * this routine might itself try to use the value of this variable. */
 	cl_object path = symbol_value(@'*default-pathname-defaults*');
-	if (type_of(path) == t_string) {
+	if (type_of(path) == t_base_string) {
 		/* Avoids infinite loop by giving a third argument to
 		 * parse-namestring */
 		path = cl_parse_namestring(3, path, Cnil, Cnil);
@@ -581,7 +589,7 @@ cl_pathname(cl_object x)
 {
 L:
 	switch (type_of(x)) {
-	case t_string:
+	case t_base_string:
 		x = cl_parse_namestring(1, x);
 
 	case t_pathname:
@@ -620,7 +628,7 @@ cl_logical_pathname(cl_object x)
 	x = cl_pathname(x);
 	if (!x->pathname.logical) {
 		cl_error(9, @'simple-type-error', @':format-control',
-			 make_constant_string("~S cannot be coerced to a logical pathname."),
+			 make_constant_base_string("~S cannot be coerced to a logical pathname."),
 			 @':format-arguments', cl_list(1, x),
 			 @':expected-type', @'logical-pathname',
 			 @':datum', x);
@@ -741,8 +749,8 @@ si_coerce_to_filename(cl_object pathname_orig)
 	pathname = coerce_to_file_pathname(pathname_orig);
 	if (cl_wild_pathname_p(1,pathname) != Cnil)
 		cl_error(3, @'file-error', @':pathname', pathname_orig);
-	namestring = coerce_to_simple_string(cl_namestring(pathname));
-	if (namestring->string.fillp >= MAXPATHLEN - 16)
+	namestring = coerce_to_simple_base_string(cl_namestring(pathname));
+	if (namestring->base_string.fillp >= MAXPATHLEN - 16)
 		FEerror("Too long filename: ~S.", 1, namestring);
 	return namestring;
 }
@@ -806,7 +814,7 @@ static void
 push_string(cl_object buffer, cl_object string)
 {
 	string = cl_string(string);
-	push_c_string(buffer, string->string.self, string->string.fillp);
+	push_c_string(buffer, string->base_string.self, string->base_string.fillp);
 }
 
 /*
@@ -953,7 +961,7 @@ cl_namestring(cl_object x)
 	if (host != Cnil) {
 		host = cl_string(host);
 	}
-	if (type_of(thing) != t_string) {
+	if (type_of(thing) != t_base_string) {
 		output = cl_pathname(thing);
 	} else {
 		cl_object default_host = host;
@@ -962,7 +970,7 @@ cl_namestring(cl_object x)
 			default_host = defaults->pathname.host;
 		}
 		get_string_start_end(thing, start, end, &s, &e);
-		output = parse_namestring(thing->string.self, s, e - s, &ee,
+		output = parse_namestring(thing->base_string.self, s, e - s, &ee,
 					  default_host);
 		start = MAKE_FIXNUM(s + ee);
 		if (output == Cnil || ee != e - s) {
@@ -1157,11 +1165,11 @@ path_item_match(cl_object a, cl_object mask) {
 		return TRUE;
 	/* If a component in the tested path is a wildcard field, this
 	   can only be matched by the same wildcard field in the mask */
-	if (type_of(a) != t_string || mask == Cnil)
+	if (type_of(a) != t_base_string || mask == Cnil)
 		return (a == mask);
-	if (type_of(mask) != t_string)
+	if (type_of(mask) != t_base_string)
 		FEerror("~S is not supported as mask for pathname-match-p", 1, mask);
-	return do_path_item_match(a->string.self, mask->string.self);
+	return do_path_item_match(a->base_string.self, mask->base_string.self);
 }
 
 static bool
@@ -1231,7 +1239,7 @@ static cl_object
 coerce_to_from_pathname(cl_object x, cl_object host)
 {
 	switch (type_of(x)) {
-	case t_string:
+	case t_base_string:
 		x = cl_parse_namestring(2, x, host);
 	case t_pathname:
 		if (x->pathname.logical)
@@ -1246,11 +1254,11 @@ coerce_to_from_pathname(cl_object x, cl_object host)
 	cl_object pair, l;
 @
 	/* Check that host is a valid host name */
-	assert_type_string(host);
-	length = host->string.fillp;
-	parse_word(host->string.self, is_null, WORD_LOGICAL, 0, length,
+	assert_type_base_string(host);
+	length = host->base_string.fillp;
+	parse_word(host->base_string.self, is_null, WORD_LOGICAL, 0, length,
 		   &parsed_length);
-	if (parsed_length < host->string.fillp)
+	if (parsed_length < host->base_string.fillp)
 		FEerror("Wrong host syntax ~S", 1, host);
 
 	/* Find its translation list */
@@ -1282,15 +1290,15 @@ find_wilds(cl_object l, cl_object source_item, cl_object match)
 
 	if (match == @':wild')
 		return CONS(source_item, Cnil);
-	if (type_of(match) != t_string || type_of(source_item) != t_string) {
+	if (type_of(match) != t_base_string || type_of(source_item) != t_base_string) {
 		if (match != source_item)
 			return @':error';
 		return l;
 	}
-	a  = source_item->string.self;
-	ia = source_item->string.fillp;
-	b  = match->string.self;
-	ib = match->string.fillp;
+	a  = source_item->base_string.self;
+	ia = source_item->base_string.fillp;
+	b  = match->base_string.self;
+	ib = match->base_string.fillp;
 	for(i = j = 0; i < ia && j < ib; ) {
 		if (b[j] == '*') {
 			for (j++, k = i; k < ia && a[k] != b[j]; k++)
@@ -1359,13 +1367,13 @@ copy_wildcards(cl_object *wilds_list, cl_object pattern)
 	}
 	if (pattern == @':wild-inferiors')
 		return @':error';
-	if (type_of(pattern) != t_string)
+	if (type_of(pattern) != t_base_string)
 		return pattern;
 
 	new_string = FALSE;
-	s = pattern->string.self;
-	l = pattern->string.fillp;
-	cl_env.token->string.fillp = 0;
+	s = pattern->base_string.self;
+	l = pattern->base_string.fillp;
+	cl_env.token->base_string.fillp = 0;
 
 	for (j = i = 0; i < l; ) {
 		if (s[i] != '*') {
@@ -1383,7 +1391,7 @@ copy_wildcards(cl_object *wilds_list, cl_object pattern)
 	}
 	/* Only create a new string when needed */
 	if (new_string)
-		pattern = copy_simple_string(cl_env.token);
+		pattern = copy_simple_base_string(cl_env.token);
 	*wilds_list = wilds;
 	return pattern;
 }

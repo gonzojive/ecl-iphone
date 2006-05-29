@@ -218,7 +218,7 @@ main(int argc, char **argv)
 		   (wt-filtered-data (write-to-string epilogue-code) stream)
 		   (princ ";
 cl_object output;
-si_select_package(make_simple_string(\"CL-USER\"));
+si_select_package(make_simple_base_string(\"CL-USER\"));
 output = cl_safe_eval(c_string_to_object(lisp_code), Cnil, OBJNULL);
 " stream)
 		   (when (eq target :program)

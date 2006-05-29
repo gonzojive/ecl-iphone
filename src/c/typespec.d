@@ -54,7 +54,7 @@ FEtype_error_list(cl_object x) {
 void
 FEtype_error_proper_list(cl_object x) {
 	cl_error(9, @'simple-type-error', @':format-control',
-		    make_constant_string("Not a proper list ~D"),
+		    make_constant_base_string("Not a proper list ~D"),
 		    @':format-arguments', cl_list(1, x),
 		    @':expected-type', c_string_to_object("si::proper-list"),
 		    @':datum', x);
@@ -64,7 +64,7 @@ void
 FEtype_error_alist(cl_object x)
 {
 	cl_error(9, @'simple-type-error', @':format-control',
-		    make_constant_string("Not a valid association list ~D"),
+		    make_constant_base_string("Not a valid association list ~D"),
 		    @':format-arguments', cl_list(1, x),
 		    @':expected-type', @'list',
 		    @':datum', x);
@@ -76,7 +76,7 @@ FEcircular_list(cl_object x)
 	/* FIXME: Is this the right way to rebind it? */
 	bds_bind(@'*print-circle*', Ct);
 	cl_error(9, @'simple-type-error', @':format-control',
-		    make_constant_string("Circular list ~D"),
+		    make_constant_base_string("Circular list ~D"),
 		    @':format-arguments', cl_list(1, x),
 		    @':expected-type', @'list',
 		    @':datum', x);
@@ -86,7 +86,7 @@ void
 FEtype_error_index(cl_object seq, cl_object ndx)
 {
 	cl_error(9, @'simple-type-error', @':format-control',
-		    make_constant_string("~S is not a valid index into the object ~S"),
+		    make_constant_base_string("~S is not a valid index into the object ~S"),
 		    @':format-arguments', cl_list(2, ndx, seq),
 		    @':expected-type', cl_list(3, @'integer', MAKE_FIXNUM(0), MAKE_FIXNUM(length(seq)-1)),
 		    @':datum', ndx);
@@ -150,12 +150,44 @@ assert_type_package(cl_object p)
 		FEwrong_type_argument(@'package', p);
 }
 
+#ifdef ECL_UNICODE
 void
 assert_type_string(cl_object p)
+{
+	cl_type t = type_of(p);
+
+	if (t != t_base_string && t != t_string)
+		FEtype_error_string(p);
+}
+
+void
+assert_type_base_string(cl_object p)
+{
+	if (type_of(p) != t_base_string)
+		FEtype_error_string(p);
+}
+
+void
+assert_type_extended_string(cl_object p)
 {
 	if (type_of(p) != t_string)
 		FEtype_error_string(p);
 }
+#else
+void
+assert_type_string(cl_object p)
+{
+	if (type_of(p) != t_base_string)
+		FEtype_error_string(p);
+}
+
+void
+assert_type_base_string(cl_object p)
+{
+	if (type_of(p) != t_base_string)
+		FEtype_error_string(p);
+}
+#endif
 
 void
 assert_type_cons(cl_object p)
@@ -297,6 +329,7 @@ cl_type_of(cl_object x)
 		}
 		break;
 
+#ifdef ECL_UNICODE
 	case t_string:
 		if (x->string.adjustable ||
 		    x->string.hasfillp ||
@@ -305,6 +338,17 @@ cl_type_of(cl_object x)
 		else
 			t = @'simple-string';
 		t = cl_list(2, t, MAKE_FIXNUM(x->string.dim));
+		break;
+#endif
+
+	case t_base_string:
+		if (x->base_string.adjustable ||
+		    x->base_string.hasfillp ||
+		    !Null(CAR(x->base_string.displaced)))
+			t = @'base-string';
+		else
+			t = @'simple-base-string';
+		t = cl_list(2, t, MAKE_FIXNUM(x->base_string.dim));
 		break;
 
 	case t_bitvector:

@@ -52,7 +52,7 @@ ecl_init_env(struct cl_env_struct *env)
 
 	env->c_env = NULL;
 
-	env->token = cl_alloc_adjustable_string(LISP_PAGESIZE);
+	env->token = cl_alloc_adjustable_base_string(LISP_PAGESIZE);
 
 	env->stack = NULL;
 	env->stack_top = NULL;
@@ -179,7 +179,7 @@ cl_boot(int argc, char **argv)
 	Cnil->symbol.t = (short)t_symbol;
 	Cnil->symbol.dynamic = 0;
 	Cnil->symbol.value = Cnil;
-	Cnil->symbol.name = make_constant_string("NIL");
+	Cnil->symbol.name = make_constant_base_string("NIL");
 	Cnil->symbol.gfdef = Cnil;
 	Cnil->symbol.plist = Cnil;
 	Cnil->symbol.hpack = Cnil;
@@ -191,7 +191,7 @@ cl_boot(int argc, char **argv)
 	Ct->symbol.t = (short)t_symbol;
 	Ct->symbol.dynamic = 0;
 	Ct->symbol.value = Ct;
-	Ct->symbol.name = make_constant_string("T");
+	Ct->symbol.name = make_constant_base_string("T");
 	Ct->symbol.gfdef = Cnil;
 	Ct->symbol.plist = Cnil;
 	Ct->symbol.hpack = Cnil;
@@ -204,30 +204,30 @@ cl_boot(int argc, char **argv)
 	cl_core.packages_to_be_created = OBJNULL;
 
 	cl_core.lisp_package =
-	    make_package(make_constant_string("COMMON-LISP"),
-			 CONS(make_constant_string("CL"),
-			      CONS(make_constant_string("LISP"),Cnil)),
+	    make_package(make_constant_base_string("COMMON-LISP"),
+			 CONS(make_constant_base_string("CL"),
+			      CONS(make_constant_base_string("LISP"),Cnil)),
 			 Cnil);
 	cl_core.user_package =
-	    make_package(make_constant_string("COMMON-LISP-USER"),
-			 CONS(make_constant_string("CL-USER"),
-			      CONS(make_constant_string("USER"),Cnil)),
+	    make_package(make_constant_base_string("COMMON-LISP-USER"),
+			 CONS(make_constant_base_string("CL-USER"),
+			      CONS(make_constant_base_string("USER"),Cnil)),
 			 CONS(cl_core.lisp_package, Cnil));
-	cl_core.keyword_package = make_package(make_constant_string("KEYWORD"),
+	cl_core.keyword_package = make_package(make_constant_base_string("KEYWORD"),
 					       Cnil, Cnil);
-	cl_core.system_package = make_package(make_constant_string("SI"),
-					      CONS(make_constant_string("SYSTEM"),
-						   CONS(make_constant_string("SYS"),
-							CONS(make_constant_string("EXT"),
+	cl_core.system_package = make_package(make_constant_base_string("SI"),
+					      CONS(make_constant_base_string("SYSTEM"),
+						   CONS(make_constant_base_string("SYS"),
+							CONS(make_constant_base_string("EXT"),
 							     Cnil))),
 					      CONS(cl_core.lisp_package, Cnil));
 #ifdef CLOS
-	cl_core.clos_package = make_package(make_constant_string("CLOS"),
+	cl_core.clos_package = make_package(make_constant_base_string("CLOS"),
 					    Cnil, CONS(cl_core.lisp_package, Cnil));
 #endif
 #ifdef ECL_THREADS
-	cl_core.mp_package = make_package(make_constant_string("MP"),
-					  CONS(make_constant_string("MULTIPROCESSING"), Cnil),
+	cl_core.mp_package = make_package(make_constant_base_string("MP"),
+					  CONS(make_constant_base_string("MULTIPROCESSING"), Cnil),
 					  CONS(cl_core.lisp_package, Cnil));
 #endif
 
@@ -258,13 +258,13 @@ cl_boot(int argc, char **argv)
 				make_shortfloat(0.5f), /* rehash-threshold */
 				Cnil); /* thread-safe */
 	for (i = 0; char_names[i].code >= 0; i++) {
-		cl_object name = make_constant_string(char_names[i].name);
+		cl_object name = make_constant_base_string(char_names[i].name);
 		cl_object code = CODE_CHAR(char_names[i].code);
 		sethash(name, aux, code);
 		sethash(code, aux, name);
 	}
 
-	cl_core.null_string = make_constant_string("");
+	cl_core.null_string = make_constant_base_string("");
 
 	cl_core.null_stream = @make_broadcast_stream(0);
 
@@ -274,8 +274,8 @@ cl_boot(int argc, char **argv)
 				make_shortfloat(0.75f), /* rehash-threshold */
 				Ct); /* thread-safe */
 
-	cl_core.gensym_prefix = make_constant_string("G");
-	cl_core.gentemp_prefix = make_constant_string("T");
+	cl_core.gensym_prefix = make_constant_base_string("G");
+	cl_core.gentemp_prefix = make_constant_base_string("T");
 	cl_core.gentemp_counter = MAKE_FIXNUM(0);
 
 	/* LIBRARIES is an adjustable vector of objects. It behaves as a vector of
@@ -331,9 +331,9 @@ cl_boot(int argc, char **argv)
 		make_pathname(Cnil, Cnil, Cnil, Cnil, Cnil, Cnil));
 #endif
 
-	@si::pathname-translations(2,make_constant_string("SYS"),
-				   cl_list(1,cl_list(2,make_constant_string("*.*"),
-						     make_constant_string("./*.*"))));
+	@si::pathname-translations(2,make_constant_base_string("SYS"),
+				   cl_list(1,cl_list(2,make_constant_base_string("*.*"),
+						     make_constant_base_string("./*.*"))));
 
 	/*
 	 * 5) Set up hooks for LOAD, errors and macros.
@@ -344,14 +344,14 @@ cl_boot(int argc, char **argv)
 #endif
 	aux = cl_list(
 #ifdef ENABLE_DLOPEN
-		6,CONS(make_constant_string("fas"), @'si::load-binary'),
+		6,CONS(make_constant_base_string("fas"), @'si::load-binary'),
 #else
 		5,
 #endif
-		CONS(make_constant_string("lsp"), @'si::load-source'),
-		CONS(make_constant_string("lisp"), @'si::load-source'),
-		CONS(make_constant_string("LSP"), @'si::load-source'),
-		CONS(make_constant_string("LISP"), @'si::load-source'),
+		CONS(make_constant_base_string("lsp"), @'si::load-source'),
+		CONS(make_constant_base_string("lisp"), @'si::load-source'),
+		CONS(make_constant_base_string("LSP"), @'si::load-source'),
+		CONS(make_constant_base_string("LISP"), @'si::load-source'),
 		CONS(Cnil, @'si::load-source'));
 	ECL_SET(@'si::*load-hooks*', aux);
 #ifdef PDE
@@ -437,6 +437,9 @@ cl_boot(int argc, char **argv)
 #ifdef ECL_DYNAMIC_FFI
 	ADD_FEATURE("DFFI");
 #endif
+#ifdef ECL_UNICODE
+	ADD_FEATURE("UNICODE");
+#endif
 	/* This is assumed in all systems */
 	ADD_FEATURE("IEEE-FLOATING-POINT");
 
@@ -481,7 +484,7 @@ si_argv(cl_object index)
 
 	if (!FIXNUMP(index) || (i = fix(index)) < 0 || i >= ARGC)
 		FEerror("Illegal argument index: ~S.", 1, index);
-	@(return make_string_copy(ARGV[i]))
+	@(return make_base_string_copy(ARGV[i]))
 }
 
 cl_object
@@ -489,9 +492,9 @@ si_getenv(cl_object var)
 {
 	const char *value;
 
-	assert_type_string(var);
-	value = getenv(var->string.self);
-	@(return ((value == NULL)? Cnil : make_string_copy(value)))
+	assert_type_base_string(var);
+	value = getenv(var->base_string.self);
+	@(return ((value == NULL)? Cnil : make_base_string_copy(value)))
 }
 
 #if defined(HAVE_SETENV) || defined(HAVE_PUTENV)
@@ -500,32 +503,32 @@ si_setenv(cl_object var, cl_object value)
 {
 	cl_fixnum ret_val;
 
-	assert_type_string(var);
+	assert_type_base_string(var);
 	if (value == Cnil) {
 #ifdef HAVE_SETENV
 		/* Remove the variable when setting to nil, so that
 		 * (si:setenv "foo" nil), then (si:getenv "foo) returns
 		 * the right thing. */
-		unsetenv(var->string.self);
+		unsetenv(var->base_string.self);
 #else
 #if defined(_MSC_VER) || defined(mingw32)
-		si_setenv(var, make_simple_string(""));
+		si_setenv(var, make_simple_base_string(""));
 #else
-		putenv(var->string.self);
+		putenv(var->base_string.self);
 #endif
 #endif
 		ret_val = 0;
 	} else {
 #ifdef HAVE_SETENV
-		assert_type_string(value);
-		ret_val = setenv(var->string.self, value->string.self, 1);
+		assert_type_base_string(value);
+		ret_val = setenv(var->base_string.self, value->base_string.self, 1);
 #else
 		cl_object temp =
-		  cl_format(4, Cnil, make_constant_string("~A=~A"), var,
+		  cl_format(4, Cnil, make_constant_base_string("~A=~A"), var,
 			    value);
-		if (temp->string.hasfillp && temp->string.fillp < temp->string.dim)
-		  temp->string.self[temp->string.fillp] = '\0';
-		putenv(temp->string.self);
+		if (temp->base_string.hasfillp && temp->base_string.fillp < temp->base_string.dim)
+		  temp->base_string.self[temp->base_string.fillp] = '\0';
+		putenv(temp->base_string.self);
 #endif
 	}
 	if (ret_val == -1)

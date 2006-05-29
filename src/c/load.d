@@ -54,10 +54,10 @@ ecl_library_open(cl_object filename) {
 #ifdef HAVE_LSTAT
 	for (i = 0; i < libraries->vector.fillp; i++) {
 		if (string_eq(libraries->vector.self.t[i]->cblock.name, filename)) {
-			cl_object copy = make_constant_string("TMP:ECL");
+			cl_object copy = make_constant_base_string("TMP:ECL");
 			copy = si_coerce_to_filename(si_mkstemp(copy));
-			unlink(copy->string.self);
-			symlink(filename->string.self, copy->string.self);
+			unlink(copy->base_string.self);
+			symlink(filename->base_string.self, copy->base_string.self);
 			filename = copy;
 			self_destruct = 1;
 		}
@@ -67,18 +67,18 @@ ecl_library_open(cl_object filename) {
 	block->cblock.self_destruct = self_destruct;
 	block->cblock.name = filename;
 #ifdef HAVE_DLFCN_H
-	block->cblock.handle = dlopen(filename->string.self,
+	block->cblock.handle = dlopen(filename->base_string.self,
 				      RTLD_NOW|RTLD_GLOBAL);
 #endif
 #ifdef HAVE_MACH_O_DYLD_H
 	{
 	NSObjectFileImage file;
         static NSObjectFileImageReturnCode code;
-	code = NSCreateObjectFileImageFromFile(filename->string.self, &file);
+	code = NSCreateObjectFileImageFromFile(filename->base_string.self, &file);
 	if (code != NSObjectFileImageSuccess) {
 		block->cblock.handle = NULL;
 	} else {
-		NSModule out = NSLinkModule(file, filename->string.self,
+		NSModule out = NSLinkModule(file, filename->base_string.self,
 					    NSLINKMODULE_OPTION_PRIVATE|
 					    NSLINKMODULE_OPTION_BINDNOW|
 					    NSLINKMODULE_OPTION_RETURN_ON_ERROR);
@@ -86,7 +86,7 @@ ecl_library_open(cl_object filename) {
 	}}
 #endif
 #if defined(mingw32) || defined(_MSC_VER)
-	block->cblock.handle = LoadLibrary(filename->string.self);
+	block->cblock.handle = LoadLibrary(filename->base_string.self);
 #endif
 	/* INV: We can modify "libraries" in a multithread
 	   environment because we have already taken the
@@ -181,11 +181,11 @@ ecl_library_error(cl_object block) {
 	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
 		      FORMAT_MESSAGE_ALLOCATE_BUFFER,
 		      0, GetLastError(), 0, (void*)&message, 0, NULL);
-	output = make_string_copy(message);
+	output = make_base_string_copy(message);
 	LocalFree(message);
 	return output;
 #endif
-	return make_string_copy(message);
+	return make_base_string_copy(message);
 }
 
 void
@@ -196,7 +196,7 @@ ecl_library_close(cl_object block) {
 	int i;
 
 	if (block->cblock.name)
-		filename = block->cblock.name->string.self;
+		filename = block->cblock.name->base_string.self;
 	else
 		filename = "<anonymous>";
 
@@ -277,15 +277,15 @@ si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 	/* Next try to call "init_FILE()" where FILE is the file name */
 	prefix = symbol_value(@'si::*init-function-prefix*');
 	if (Null(prefix))
-		prefix = make_constant_string(INIT_PREFIX);
+		prefix = make_constant_base_string(INIT_PREFIX);
 	else
-		prefix = @si::string-concatenate(3,
-						 make_constant_string(INIT_PREFIX),
+		prefix = @si::base-string-concatenate(3,
+						 make_constant_base_string(INIT_PREFIX),
 						 prefix,
-						 make_constant_string("_"));
+						 make_constant_base_string("_"));
 	basename = cl_pathname_name(1,filename);
-	basename = @si::string-concatenate(2, prefix, @string-upcase(1, funcall(4, @'nsubstitute', CODE_CHAR('_'), CODE_CHAR('-'), basename)));
-	block->cblock.entry = ecl_library_symbol(block, basename->string.self, 0);
+	basename = @si::base-string-concatenate(2, prefix, @string-upcase(1, funcall(4, @'nsubstitute', CODE_CHAR('_'), CODE_CHAR('-'), basename)));
+	block->cblock.entry = ecl_library_symbol(block, basename->base_string.self, 0);
 
 	if (block->cblock.entry == NULL) {
 		output = ecl_library_error(block);
@@ -314,7 +314,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 	cl_object x, strm;
 
 	/* Source may be either a stream or a filename */
-	if (type_of(source) != t_pathname && type_of(source) != t_string) {
+	if (type_of(source) != t_pathname && type_of(source) != t_base_string) {
 		/* INV: if "source" is not a valid stream, file.d will complain */
 		strm = source;
 	} else {
@@ -353,7 +353,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 	bool not_a_filename = 0;
 @
 	/* If source is a stream, read conventional lisp code from it */
-	if (type_of(source) != t_pathname && type_of(source) != t_string) {
+	if (type_of(source) != t_pathname && type_of(source) != t_base_string) {
 		/* INV: if "source" is not a valid stream, file.d will complain */
 		filename = source;
 		function = Cnil;
@@ -412,7 +412,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 	}
 NOT_A_FILENAME:
 	if (verbose != Cnil) {
-		cl_format(3, Ct, make_constant_string("~&;;; Loading ~s~%"),
+		cl_format(3, Ct, make_constant_base_string("~&;;; Loading ~s~%"),
 			  filename);
 	}
 	bds_bind(@'*package*', symbol_value(@'*package*'));
@@ -437,7 +437,7 @@ NOT_A_FILENAME:
 		FEerror("LOAD: Could not load file ~S (Error: ~S)",
 			2, filename, ok);
 	if (print != Cnil) {
-		cl_format(3, Ct, make_constant_string("~&;;; Loading ~s~%"),
+		cl_format(3, Ct, make_constant_base_string("~&;;; Loading ~s~%"),
 			  filename);
 	}
 	@(return filename)

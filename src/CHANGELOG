@@ -9,6 +9,11 @@ ECL 0.9i
 
  - ECL compiles and passes tests in OpenBSD/x86.
 
+* Unicode support: (contributed by Brian Spilsbury)
+
+ - Unicode strings (24-bits characters) are now supported as data structure,
+   though they do not print and read properly.
+
 * Visible changes:
 
  - Many functions have got now the prefix "ecl_" so as to avoid namespace

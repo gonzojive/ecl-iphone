@@ -26,8 +26,8 @@ cl_alloc_simple_vector(cl_index l, cl_elttype aet)
 {
 	cl_object x;
 
-	if (aet == aet_ch)
-		return cl_alloc_simple_string(l);
+	if (aet == aet_bc)
+		return cl_alloc_simple_base_string(l);
 	if (aet == aet_bit) {
 		x = cl_alloc_object(t_bitvector);
 		x->vector.hasfillp = FALSE;
@@ -74,16 +74,19 @@ elt(cl_object seq, cl_fixnum index)
 			goto E;
 		return(CAR(l));
 
+#ifdef ECL_UNICODE
+	case t_string:
+#endif
 	case t_vector:
 	case t_bitvector:
 		if (index >= seq->vector.fillp)
 			goto E;
 		return(aref(seq, index));
 
-	case t_string:
-		if (index >= seq->string.fillp)
+	case t_base_string:
+		if (index >= seq->base_string.fillp)
 			goto E;
-		return(CODE_CHAR(seq->string.self[index]));
+		return(CODE_CHAR(seq->base_string.self[index]));
 
 	case t_symbol:
 		if (Null(seq))
@@ -120,17 +123,20 @@ elt_set(cl_object seq, cl_fixnum index, cl_object val)
 			goto E;
 		return(CAR(l) = val);
 
+#ifdef ECL_UNICODE
+	case t_string:
+#endif
 	case t_vector:
 	case t_bitvector:
 		if (index >= seq->vector.fillp)
 			goto E;
 		return(aset(seq, index, val));
 
-	case t_string:
-		if (index >= seq->string.fillp)
+	case t_base_string:
+		if (index >= seq->base_string.fillp)
 			goto E;
 		/* INV: char_code() checks the type of `val' */
-		seq->string.self[index] = char_code(val);
+		seq->base_string.self[index] = char_code(val);
 		return(val);
 
 	default:
@@ -181,9 +187,12 @@ E:
 		}
 		@(return x)
 
+#ifdef ECL_UNICODE
+	case t_string:
+#endif
 	case t_vector:
 	case t_bitvector:
-	case t_string:
+	case t_base_string:
 		if (s > sequence->vector.fillp)
 			goto ILLEGAL_START_END;
 		if (e < 0)
@@ -234,8 +243,11 @@ length(cl_object x)
 		} end_loop_for_in;
 		return(i);
 
-	case t_vector:
+#ifdef ECL_UNICODE
 	case t_string:
+#endif
+	case t_vector:
+	case t_base_string:
 	case t_bitvector:
 		return(x->vector.fillp);
 
@@ -261,9 +273,12 @@ cl_reverse(cl_object seq)
 			output = CONS(CAR(x), output);
 		break;
 	}
+#ifdef ECL_UNICODE
+	case t_string:
+#endif
 	case t_vector:
 	case t_bitvector:
-	case t_string:
+	case t_base_string:
 		output = cl_alloc_simple_vector(seq->vector.fillp, array_elttype(seq));
 		ecl_copy_subarray(output, 0, seq, 0, seq->vector.fillp);
 		ecl_reverse_subarray(output, 0, seq->vector.fillp);
@@ -295,8 +310,11 @@ cl_nreverse(cl_object seq)
 		seq = y;
 		break;
 	}
-	case t_vector:
+#ifdef ECL_UNICODE
 	case t_string:
+#endif
+	case t_vector:
+	case t_base_string:
 	case t_bitvector:
 		ecl_reverse_subarray(seq, 0, seq->vector.fillp);
 		break;

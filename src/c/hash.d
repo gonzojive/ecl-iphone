@@ -155,8 +155,8 @@ _hash_equal(int depth, cl_hashkey h, cl_object x)
 		return _hash_equal(depth, h, CDR(x));
 	case t_symbol:
 		x = x->symbol.name;
-	case t_string:
-		return hash_string(h, x->string.self, x->string.fillp);
+	case t_base_string:
+		return hash_string(h, x->base_string.self, x->base_string.fillp);
 	case t_pathname:
 		h = _hash_equal(depth, h, x->pathname.host);
 		h = _hash_equal(depth, h, x->pathname.device);
@@ -191,7 +191,7 @@ _hash_equalp(int depth, cl_hashkey h, cl_object x)
 		}
 		h = _hash_equalp(depth, h, CAR(x));
 		return _hash_equalp(depth, h, CDR(x));
-	case t_string:
+	case t_base_string:
 	case t_vector:
 	case t_bitvector:
 		len = x->vector.fillp;

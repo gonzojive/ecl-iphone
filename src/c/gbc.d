@@ -195,6 +195,9 @@ BEGIN:
 
 	case t_array:
 		mark_contblock(x->array.dims, sizeof(x->array.dims[0])*x->array.rank);
+#ifdef ECL_UNICODE
+	case t_string:
+#endif
 	case t_vector:
 		if ((y = x->array.displaced) != Cnil)
 			mark_displaced(y);
@@ -202,6 +205,9 @@ BEGIN:
 		if (cp == NULL)
 			break;
 		switch ((cl_elttype)x->array.elttype) {
+#ifdef ECL_UNICODE
+		case aet_ch:
+#endif
 		case aet_object:
 			if (x->array.displaced == Cnil || CAR(x->array.displaced) == Cnil) {
 				i = x->vector.dim;
@@ -210,7 +216,7 @@ BEGIN:
 			}
 			j = sizeof(cl_object)*x->array.dim;
 			break;
-		case aet_ch:
+		case aet_bc:
 			j = x->array.dim;
 			break;
 		case aet_bit:
@@ -238,13 +244,13 @@ BEGIN:
 			error("Allocation botch: unknown array element type");
 		}
 		goto COPY_ARRAY;
-	case t_string:
-		if ((y = x->string.displaced) != Cnil)
+	case t_base_string:
+		if ((y = x->base_string.displaced) != Cnil)
 			mark_displaced(y);
-		cp = x->string.self;
+		cp = x->base_string.self;
 		if (cp == NULL)
 			break;
-		j = x->string.dim+1;
+		j = x->base_string.dim+1;
 	COPY_ARRAY:
 		mark_contblock(cp, j);
 		break;

@@ -25,7 +25,11 @@ extern "C" {
 #define	TRUE		1	/*  boolean true value  */
 #define	FALSE		0	/*  boolean false value  */
 
-#define	CHAR_CODE_LIMIT	256	/*  ASCII character code limit  */
+#ifdef ECL_UNICODE
+#define	CHAR_CODE_LIMIT	1114111	/*  unicode character code limit  */
+#else
+#define	CHAR_CODE_LIMIT	256	/*  unicode character code limit  */
+#endif
 
 #if !defined(__cplusplus) && !defined(bool)
 typedef int bool;
@@ -65,8 +69,14 @@ typedef cl_object (*cl_objectfn_fixed)();
 /* Immediate characters:	*/
 #define CHARACTER_TAG		2
 #define CHARACTERP(obje)	(((cl_fixnum)(obje)) & 2)
-#define	CODE_CHAR(c)		((cl_object)(((cl_fixnum)((unsigned char)c) << 2)|CHARACTER_TAG))
+#ifdef ECL_UNICODE
+#define BASE_CHAR_P(obje)	((((cl_fixnum)(obje)) & 0xFFFFFD02) == 2)
+#define	CODE_CHAR(c)		((cl_object)(((cl_fixnum)(c << 2)|CHARACTER_TAG)))
+#define	CHAR_CODE(obje)		(((cl_fixnum)(obje)) >> 2)
+#else
+#define	CODE_CHAR(c)		((cl_object)(((cl_fixnum)((c & 0xff) << 2)|CHARACTER_TAG)))
 #define	CHAR_CODE(obje)		((((cl_fixnum)(obje)) >> 2) & 0xff)
+#endif
 
 #define NUMBER_TYPE(t)	(t == t_fixnum || (t >= t_bignum && t <= t_complex))
 #define REAL_TYPE(t)	(t == t_fixnum || (t >= t_bignum && t < t_complex))
@@ -229,20 +239,23 @@ typedef enum {			/*  array element type  */
 	/* Below here, list types accepted by streams (i.e. OPEN) */
 	aet_b8,			/*  byte8	     */
 	aet_i8,			/*  integer8	     */
-	aet_ch,			/*  string-char      */
-	aet_last_type = aet_ch
+#ifdef ECL_UNICODE
+	aet_ch,			/*  character        */
+#endif
+	aet_bc,			/*  base-char        */
+	aet_last_type = aet_bc
 } cl_elttype;
 
 union ecl_array_data {
-	cl_object *t;
+	cl_object     *t;
         unsigned char *ch;
-	uint8_t *b8;
-	int8_t *i8;
-	float *sf;
-	double *lf;
-	cl_fixnum *fix;
-	cl_index *index;
-	byte *bit;
+	uint8_t       *b8;
+	int8_t        *i8;
+	float         *sf;
+	double        *lf;
+	cl_fixnum     *fix;
+	cl_index      *index;
+	byte          *bit;
 };
 
 struct ecl_array {			/*  array header  */
@@ -271,7 +284,7 @@ struct ecl_vector {			/*  vector header  */
 	byte	offset;
 };
 
-struct ecl_string {			/*  string header  */
+struct ecl_base_string {	/*  string header  */
 				/*  adjustable flag  */
 				/*  has-fill-pointer flag  */
 	HEADER2(adjustable,hasfillp);
@@ -283,6 +296,21 @@ struct ecl_string {			/*  string header  */
 				/*  st_fillp is equal to st_dim-1.  */
 	unsigned char *self;	/*  pointer to the string  */
 };
+
+#ifdef ECL_UNICODE
+struct ecl_string {		/*  string header  */
+				/*  adjustable flag  */
+				/*  has-fill-pointer flag  */
+	HEADER2(adjustable,hasfillp);
+	cl_object displaced;	/*  displaced  */
+	cl_index dim;       	/*  dimension  */
+				/*  string length  */
+	cl_index fillp;		/*  fill pointer  */
+				/*  For simple strings,  */
+				/*  st_fillp is equal to st_dim-1.  */
+	cl_object *self;	/*  pointer to the string  */
+};
+#endif
 
 #ifdef CLOS
 #define T_STRUCTURE	t_instance
@@ -493,38 +521,41 @@ struct ecl_instance {		/*  instance header  */
 	Definition of lispunion.
 */
 union cl_lispunion {
-	struct ecl_bignum	big;	/*  bignum  */
-	struct ecl_ratio	ratio;	/*  ratio  */
-	struct ecl_shortfloat	SF; /*  short floating-point number  */
-	struct ecl_longfloat	LF; /*  long floating-point number  */
-	struct ecl_complex	complex;/*  complex number  */
-	struct ecl_symbol	symbol;	/*  symbol  */
-	struct ecl_package	pack;	/*  package  */
-	struct ecl_cons		cons;	/*  cons  */
-	struct ecl_hashtable	hash;	/*  hash table  */
-	struct ecl_array	array;	/*  array  */
-	struct ecl_vector	vector;	/*  vector  */
-	struct ecl_string	string;	/*  string  */
-	struct ecl_stream	stream;	/*  stream  */
-	struct ecl_random	random;	/*  random-states  */
-	struct ecl_readtable	readtable; /*  read table  */
-	struct ecl_pathname	pathname; /*  path name  */
-	struct ecl_bytecodes	bytecodes; /*  bytecompiled closure */
-	struct ecl_cfun		cfun;	/*  compiled function  */
-	struct ecl_cclosure	cclosure; /*  compiled closure  */
+	struct ecl_bignum	big;		/*  bignum  */
+	struct ecl_ratio	ratio;		/*  ratio  */
+	struct ecl_shortfloat	SF; 		/*  short floating-point number  */
+	struct ecl_longfloat	LF; 		/*  long floating-point number  */
+	struct ecl_complex	complex;	/*  complex number  */
+	struct ecl_symbol	symbol;		/*  symbol  */
+	struct ecl_package	pack;		/*  package  */
+	struct ecl_cons		cons;		/*  cons  */
+	struct ecl_hashtable	hash;		/*  hash table  */
+	struct ecl_array	array;		/*  array  */
+	struct ecl_vector	vector;		/*  vector  */
+	struct ecl_base_string	base_string;	/*  base-string  */
+#ifdef ECL_UNICODE
+	struct ecl_string	string;		/*  string  */
+#endif
+	struct ecl_stream	stream;		/*  stream  */
+	struct ecl_random	random;		/*  random-states  */
+	struct ecl_readtable	readtable; 	/*  read table  */
+	struct ecl_pathname	pathname; 	/*  path name  */
+	struct ecl_bytecodes	bytecodes; 	/*  bytecompiled closure */
+	struct ecl_cfun		cfun;		/*  compiled function  */
+	struct ecl_cclosure	cclosure; 	/*  compiled closure  */
 
-	struct ecl_dummy	d;	/*  dummy  */
+	struct ecl_dummy	d;		/*  dummy  */
 #ifdef CLOS
-	struct ecl_instance	instance; /*  clos instance */
+	struct ecl_instance	instance; 	/*  clos instance */
 #else
-	struct ecl_structure	str;	/*  structure  */
+	struct ecl_structure	str;		/*  structure  */
 #endif /* CLOS */
 #ifdef ECL_THREADS
-	struct ecl_process	process; /*  process  */
-	struct ecl_lock		lock; /*  lock  */
+	struct ecl_process	process; 	/*  process  */
+	struct ecl_lock		lock; 		/*  lock  */
 #endif
-	struct ecl_codeblock	cblock; /*  codeblock  */
-	struct ecl_foreign	foreign; /* user defined data type */
+	struct ecl_codeblock	cblock;		/*  codeblock  */
+	struct ecl_foreign	foreign; 	/* user defined data type */
 };
 
 /*
@@ -547,7 +578,10 @@ typedef enum {
 	t_hashtable,		/* b */
 	t_array,		/* c */
 	t_vector,		/* d */
+#ifdef ECL_UNICODE
 	t_string,		/* e */
+#endif
+	t_base_string,		/* e */
 	t_bitvector,		/* f */
 	t_stream,		/* 10 */
 	t_random,		/* 11 */

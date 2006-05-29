@@ -70,7 +70,7 @@ FEerror(const char *s, int narg, ...)
 	cl_va_start(args, narg, narg, 0);
 	funcall(4, @'si::universal-error-handler',
 		Cnil,                    /*  not correctable  */
-		make_constant_string(s),	 /*  condition text  */
+		make_constant_base_string(s),	 /*  condition text  */
 		cl_grab_rest_args(args));
 }
 
@@ -81,7 +81,7 @@ CEerror(const char *err, int narg, ...)
 	cl_va_start(args, narg, narg, 0);
 	return funcall(4, @'si::universal-error-handler',
 		       Ct,			/*  correctable  */
-		       make_constant_string(err),	/*  continue-format-string  */
+		       make_constant_base_string(err),	/*  continue-format-string  */
 		       cl_grab_rest_args(args));
 }
 
@@ -97,7 +97,7 @@ FEprogram_error(const char *s, int narg, ...)
 	si_signal_simple_error(4, 
 			       @'program-error', /* condition name */
 			       Cnil, /* not correctable */
-			       make_constant_string(s), /* format control */
+			       make_constant_base_string(s), /* format control */
 			       cl_grab_rest_args(args)); /* format args */
 }
 
@@ -109,7 +109,7 @@ FEcontrol_error(const char *s, int narg, ...)
 	si_signal_simple_error(4,
 			       @'control-error', /* condition name */
 			       Cnil, /* not correctable */
-			       make_constant_string(s), /* format control */
+			       make_constant_base_string(s), /* format control */
 			       cl_grab_rest_args(args)); /* format args */
 }
 
@@ -121,7 +121,7 @@ FEreader_error(const char *s, cl_object stream, int narg, ...)
 	si_signal_simple_error(6,
 			       @'reader-error', /* condition name */
 			       Cnil, /* not correctable */
-			       make_constant_string(s), /* format control */
+			       make_constant_base_string(s), /* format control */
 			       cl_grab_rest_args(args), /* format args */
 			       @':stream', stream);
 }
@@ -208,7 +208,7 @@ void
 FEinvalid_function_name(cl_object fname)
 {
 	cl_error(9, @'simple-type-error', @':format-control',
-		 make_constant_string("Not a valid function name ~D"),
+		 make_constant_base_string("Not a valid function name ~D"),
 		 @':format-arguments', cl_list(1, fname),
 		 @':expected-type', cl_list(2, @'satisfies', @'si::valid-function-name-p'),
 		 @':datum', fname);
@@ -257,8 +257,8 @@ FElibc_error(const char *msg, int narg, ...)
 	cl_va_start(args, narg, narg, 0);
 	rest = cl_grab_rest_args(args);
 
-	FEerror("~?~%Explanation: ~A.", 3, make_constant_string(msg), rest,
-		make_constant_string(strerror(errno)));
+	FEerror("~?~%Explanation: ~A.", 3, make_constant_base_string(msg), rest,
+		make_constant_base_string(strerror(errno)));
 }
 
 #if defined(mingw32) || defined(_MSC_VER)
@@ -274,13 +274,13 @@ FEwin32_error(const char *msg, int narg, ...)
 
 	if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_ALLOCATE_BUFFER,
 	                  0, GetLastError(), 0, (void*)&win_msg, 0, NULL) == 0)
-		win_msg_obj = make_simple_string("[Unable to get error message]");
+		win_msg_obj = make_simple_base_string("[Unable to get error message]");
 	else {
-		win_msg_obj = make_string_copy(win_msg);
+		win_msg_obj = make_base_string_copy(win_msg);
 		LocalFree(win_msg);
 	}
 
-	FEerror("~?~%Explanation: ~A.", 3, make_constant_string(msg), rest,
+	FEerror("~?~%Explanation: ~A.", 3, make_constant_base_string(msg), rest,
 		win_msg_obj);
 }
 #endif

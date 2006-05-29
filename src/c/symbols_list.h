@@ -156,7 +156,12 @@ cl_symbols[] = {
 {"ATANH", CL_ORDINARY, ECL_NAME(cl_atanh), -1, OBJNULL},
 {"ATOM", CL_ORDINARY, cl_atom, 1, OBJNULL},
 {"BASE-CHAR", CL_ORDINARY, NULL, -1, OBJNULL},
+{"BASE-CHAR-P", CL_ORDINARY, cl_base_char_p, 1, OBJNULL},
+#ifdef ECL_UNICODE
+{"BASE-STRING", CL_ORDINARY, cl_base_string, 1, OBJNULL},
+#else
 {"BASE-STRING", CL_ORDINARY, NULL, -1, OBJNULL},
+#endif
 {"BIGNUM", CL_ORDINARY, NULL, -1, OBJNULL},
 {"BIT", CL_ORDINARY, ECL_NAME(cl_bit), -1, OBJNULL},
 {"BIT-AND", CL_ORDINARY, ECL_NAME(cl_bit_and), -1, OBJNULL},
@@ -800,6 +805,9 @@ cl_symbols[] = {
 {"SIGNUM", CL_ORDINARY, ECL_NAME(cl_signum), -1, OBJNULL},
 {"SIMPLE-ARRAY", CL_ORDINARY, NULL, -1, OBJNULL},
 {"SIMPLE-BASE-STRING", CL_ORDINARY, NULL, -1, OBJNULL},
+#ifdef ECL_UNICODE
+{"SIMPLE-BASE-STRING-P", CL_ORDINARY, cl_simple_base_string_p, 1, OBJNULL},
+#endif
 {"SIMPLE-BIT-VECTOR", CL_ORDINARY, NULL, -1, OBJNULL},
 {"SIMPLE-BIT-VECTOR-P", CL_ORDINARY, cl_simple_bit_vector_p, 1, OBJNULL},
 {"SIMPLE-CONDITION", CL_ORDINARY, NULL, -1, OBJNULL},
@@ -841,8 +849,8 @@ cl_symbols[] = {
 {"STREAM-EXTERNAL-FORMAT", CL_ORDINARY, cl_stream_external_format, 1, OBJNULL},
 {"STREAMP", CL_ORDINARY, cl_streamp, 1, OBJNULL},
 {"STRING", CL_ORDINARY, cl_string, 1, OBJNULL},
-{"STRING-CAPITALIZE", CL_ORDINARY, cl_string_capitalize, -1, OBJNULL},
 {"STRING-DOWNCASE", CL_ORDINARY, cl_string_downcase, -1, OBJNULL},
+{"STRING-CAPITALIZE", CL_ORDINARY, cl_string_capitalize, -1, OBJNULL},
 {"STRING-EQUAL", CL_ORDINARY, cl_string_equal, -1, OBJNULL},
 {"STRING-GREATERP", CL_ORDINARY, cl_string_greaterp, -1, OBJNULL},
 {"STRING-LEFT-TRIM", CL_ORDINARY, cl_string_left_trim, 2, OBJNULL},
@@ -1078,6 +1086,7 @@ cl_symbols[] = {
 {SYS_ "COERCE-TO-FILENAME", SI_ORDINARY, si_coerce_to_filename, 1, OBJNULL},
 {SYS_ "COERCE-TO-FUNCTION", SI_ORDINARY, si_coerce_to_function, 1, OBJNULL},
 {SYS_ "COERCE-TO-PACKAGE", SI_ORDINARY, si_coerce_to_package, 1, OBJNULL},
+{SYS_ "COERCE-TO-SIMPLE-BASE-STRING", SI_ORDINARY, coerce_to_simple_base_string, 1, OBJNULL},
 {SYS_ "COMPILED-FUNCTION-BLOCK", SI_ORDINARY, si_compiled_function_block, 1, OBJNULL},
 {SYS_ "COMPILED-FUNCTION-NAME", SI_ORDINARY, si_compiled_function_name, 1, OBJNULL},
 {SYS_ "COPY-STREAM", SI_ORDINARY, si_copy_stream, 1, OBJNULL},
@@ -1177,7 +1186,10 @@ cl_symbols[] = {
 {SYS_ "SPECIALP", SI_ORDINARY, si_specialp, 1, OBJNULL},
 {SYS_ "STANDARD-READTABLE", SI_ORDINARY, si_standard_readtable, 0, OBJNULL},
 {SYS_ "STEPPER", SI_ORDINARY, OBJNULL, -1, OBJNULL},
-{SYS_ "STRING-CONCATENATE", SI_ORDINARY, si_string_concatenate, -1, OBJNULL},
+{SYS_ "BASE-STRING-CONCATENATE", SI_ORDINARY, si_base_string_concatenate, -1, OBJNULL},
+#ifdef ECL_UNICODE
+{SYS_ "EXTENDED-STRING-CONCATENATE", SI_ORDINARY, si_extended_string_concatenate, -1, OBJNULL},
+#endif
 {SYS_ "STRING-TO-OBJECT", SI_ORDINARY, si_string_to_object, 1, OBJNULL},
 {SYS_ "STRUCTURE-NAME", SI_ORDINARY, si_structure_name, 1, OBJNULL},
 {SYS_ "STRUCTURE-PRINT-FUNCTION", SI_ORDINARY, NULL, -1, OBJNULL},

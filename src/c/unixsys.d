@@ -33,11 +33,10 @@ si_system(cl_object cmd)
 {
 	volatile int code;
 
-	assert_type_string(cmd);
-	cmd = copy_simple_string(cmd);
-	code = system((const char *)(cmd->string.self));
+	cmd = coerce_to_simple_base_string(cmd);
+	code = system((const char *)(cmd->base_string.self));
 	/* FIXME! Are there any limits for system()? */
-	/* if (cmd->string.fillp >= 1024)
+	/* if (cmd->base_string.fillp >= 1024)
 		FEerror("Too long command line: ~S.", 1, cmd);*/
 	/* FIXME! This is a non portable way of getting the exit code */
 	@(return MAKE_FIXNUM(code >> 8))
@@ -58,8 +57,8 @@ si_open_pipe(cl_object cmd)
 	FILE *ptr;
 	cl_object stream;
 
-	assert_type_string(cmd);
-	ptr = popen(cmd->string.self, "r");
+	cmd = coerce_to_simple_base_string(cmd);
+	ptr = popen(cmd->base_string.self, "r");
 	if (ptr == NULL)
 		@(return Cnil);
 	stream = cl_alloc_object(t_stream);
@@ -129,8 +128,8 @@ stream_to_handle(cl_object s, bool output)
 	cl_object stream_write;
 	cl_object stream_read;
 @{
-	command = cl_string(command);
-	argv = cl_mapcar(2, @'string', argv);
+	command = coerce_to_simple_base_string(command);
+	argv = cl_mapcar(2, @'si::coerce-to-simple-base-string', argv);
 #if defined(mingw32) || defined (_MSC_VER)
 {
 	BOOL ok;
@@ -146,7 +145,7 @@ stream_to_handle(cl_object s, bool output)
 	   arguments or file names have spaces */
 	command =
 		cl_format(4, Cnil,
-			  make_simple_string("~S~{ ~S~}"),
+			  make_simple_base_string("~S~{ ~S~}"),
 			  command, argv);
 
 	attr.nLength = sizeof(SECURITY_ATTRIBUTES);
@@ -246,7 +245,7 @@ stream_to_handle(cl_object s, bool output)
 	st_info.hStdOutput = child_stdout;
 	st_info.hStdError = child_stderr;
 	ZeroMemory(&pr_info, sizeof(PROCESS_INFORMATION));
-	ok = CreateProcess(NULL, command->string.self,
+	ok = CreateProcess(NULL, command->base_string.self,
 			   NULL, NULL, /* lpProcess/ThreadAttributes */
 			   TRUE, /* Inherit handles (for files) */
 			   /*CREATE_NEW_CONSOLE |*/
@@ -255,7 +254,7 @@ stream_to_handle(cl_object s, bool output)
 			   NULL, /* Current directory */
 			   &st_info, /* Startup info */
 			   &pr_info); /* Process info */
-#else
+#else /* 1 */
 	saved_stdin = GetStdHandle(STD_INPUT_HANDLE);
 	saved_stdout = GetStdHandle(STD_OUTPUT_HANDLE);
 	saved_stderr = GetStdHandle(STD_ERROR_HANDLE);
@@ -265,7 +264,7 @@ stream_to_handle(cl_object s, bool output)
 	ZeroMemory(&st_info, sizeof(STARTUPINFO));
 	st_info.cb = sizeof(STARTUPINFO);
 	ZeroMemory(&pr_info, sizeof(PROCESS_INFORMATION));
-	ok = CreateProcess(NULL, command->string.self,
+	ok = CreateProcess(NULL, command->base_string.self,
 			   NULL, NULL, /* lpProcess/ThreadAttributes */
 			   TRUE, /* Inherit handles (for files) */
 			   /*CREATE_NEW_CONSOLE |*/
@@ -277,7 +276,7 @@ stream_to_handle(cl_object s, bool output)
 	SetStdHandle(STD_INPUT_HANDLE, saved_stdin);
 	SetStdHandle(STD_OUTPUT_HANDLE, saved_stdout);
 	SetStdHandle(STD_ERROR_HANDLE, saved_stderr);
-#endif
+#endif /* 1 */
 	if (ok) {
 		CloseHandle(pr_info.hProcess);
 		CloseHandle(pr_info.hThread);
@@ -297,7 +296,7 @@ stream_to_handle(cl_object s, bool output)
 		child_pid = -1;
 	}
 }
-#else
+#else /* mingw */
 {
 	int child_stdin, child_stdout, child_stderr;
 	argv = CONS(command, nconc(argv, CONS(Cnil, Cnil)));
@@ -360,10 +359,10 @@ stream_to_handle(cl_object s, bool output)
 			if (arg == Cnil) {
 				argv_ptr[j] = NULL;
 			} else {
-				argv_ptr[j] = arg->string.self;
+				argv_ptr[j] = arg->base_string.self;
 			}
 		}
-		execvp(command->string.self, argv_ptr);
+		execvp(command->base_string.self, argv_ptr);
 		/* at this point exec has failed */
 		perror("exec");
 		abort();
@@ -372,7 +371,7 @@ stream_to_handle(cl_object s, bool output)
 	close(child_stdout);
 	close(child_stderr);
 }
-#endif
+#endif /* mingw */
 	if (child_pid < 0) {
 		if (parent_write) close(parent_write);
 		if (parent_read) close(parent_read);

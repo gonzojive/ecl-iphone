@@ -42,12 +42,13 @@
 
 ;;; Check if THING is an object of the type TYPE.
 ;;; Depends on the implementation of TYPE-OF.
+;;; (only used for saving constants?)
 (defun object-type (thing)
   (let ((type (if thing (type-of thing) 'SYMBOL)))
     (case type
       ((FIXNUM SHORT-FLOAT LONG-FLOAT SYMBOL NULL) type)
       ((BASE-CHAR STANDARD-CHAR CHARACTER EXTENDED-CHAR) 'CHARACTER)
-      ((STRING BIT-VECTOR) type)
+      ((STRING BASE-STRING BIT-VECTOR) type)
       (VECTOR (list 'VECTOR (array-element-type thing)))
       (ARRAY (list 'ARRAY (array-element-type thing)))
       #+clos

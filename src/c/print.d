@@ -710,8 +710,8 @@ static bool
 all_dots(cl_object s)
 {
 	cl_index i;
-	for (i = 0;  i < s->string.fillp;  i++)
-		if (s->string.self[i] != '.')
+	for (i = 0;  i < s->base_string.fillp;  i++)
+		if (s->base_string.self[i] != '.')
 			return 0;
 	return 1;
 }
@@ -730,8 +730,8 @@ needs_to_be_escaped(cl_object s, cl_object readtable, cl_object print_case)
 	 * a character cannot be read with the standard readtable) or if the
 	 * string has to be escaped according to readtable case and the rules
 	 * of 22.1.3.3.2. */
-	for (i = 0; i < s->string.fillp;  i++) {
-		int c = s->string.self[i] & 0377;
+	for (i = 0; i < s->base_string.fillp;  i++) {
+		int c = s->base_string.self[i] & 0377;
 		int syntax = readtable->readtable.table[c].syntax_type;
 		if (syntax != cat_constituent || ecl_invalid_character_p(c) || (c) == ':')
 			return 1;
@@ -758,8 +758,8 @@ write_symbol_string(cl_object s, int action, cl_object print_case,
 	if (escape)
 		write_ch('|', stream);
 	capitalize = 1;
-	for (i = 0;  i < s->string.fillp;  i++) {
-		int c = s->string.self[i];
+	for (i = 0;  i < s->base_string.fillp;  i++) {
+		int c = s->base_string.self[i];
 		if (escape) {
 			if (c == '|' || c == '\\') {
 				write_ch('\\', stream);
@@ -851,11 +851,13 @@ write_character(int i, cl_object stream)
 		write_str("#\\", stream);
 		if (i < 32 || i == 127) {
 			cl_object name = cl_char_name(CODE_CHAR(i));
-			write_str(name->string.self, stream);
+			write_str(name->base_string.self, stream);
 		} else if (i >= 128) {
-			write_ch('A', stream);
-			write_ch(ecl_digit_char(i / 16, 16), stream);
-			write_ch(ecl_digit_char(i & 0xF, 16), stream);
+                        int  index = 0;
+			char name[20];
+			sprintf(name, "u%x", i); /* cleanup */
+                        while(name[index])
+				write_ch(name[index++], stream);
 		} else {
 			write_ch(i, stream);
 		}
@@ -1078,8 +1080,9 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		write_ch(')', stream);
 		break;
 
-	case t_character:
+	case t_character: {
 		write_character(CHAR_CODE(x), stream);
+		}
 		break;
 
 	case t_symbol:
@@ -1090,19 +1093,36 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		write_array(0, x, stream);
 		break;
 
-	case t_vector:
-		write_array(1, x, stream);
-		break;
-
+#ifdef ECL_UNICODE
 	case t_string:
 		if (!ecl_print_escape() && !ecl_print_readably()) {
 			for (ndx = 0;  ndx < x->string.fillp;  ndx++)
-				write_ch(x->string.self[ndx], stream);
+				write_ch(CHAR_CODE(x->string.self[ndx]), stream);
 			break;
 		}
 		write_ch('"', stream);
 		for (ndx = 0;  ndx < x->string.fillp;  ndx++) {
-			int c = x->string.self[ndx];
+			int c = CHAR_CODE(x->string.self[ndx]);
+			if (c == '"' || c == '\\')
+				write_ch('\\', stream);
+			write_ch(c, stream);
+		}
+		write_ch('"', stream);
+		break;
+#endif
+	case t_vector:
+		write_array(1, x, stream);
+		break;
+
+	case t_base_string:
+		if (!ecl_print_escape() && !ecl_print_readably()) {
+			for (ndx = 0;  ndx < x->base_string.fillp;  ndx++)
+				write_ch(x->base_string.self[ndx], stream);
+			break;
+		}
+		write_ch('"', stream);
+		for (ndx = 0;  ndx < x->base_string.fillp;  ndx++) {
+			int c = x->base_string.self[ndx];
 			if (c == '"' || c == '\\')
 				write_ch('\\', stream);
 			write_ch(c, stream);
@@ -1334,9 +1354,9 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		case smm_string_input:
 			write_str("string-input stream from \"", stream);
 			y = x->stream.object0;
-			k = y->string.fillp;
+			k = y->base_string.fillp;
 			for (ndx = 0;  ndx < k && ndx < 16;  ndx++)
-				write_ch(y->string.self[ndx], stream);
+				write_ch(y->base_string.self[ndx], stream);
 			if (k > 16)
 				write_str("...", stream);
 			write_ch('"', stream);
@@ -1648,10 +1668,10 @@ potential_number_p(cl_object strng, int base)
 	int i, l, c;
 	char *s;
 
-	l = strng->string.fillp;
+	l = strng->base_string.fillp;
 	if (l == 0)
 		return FALSE;
-	s = strng->string.self;
+	s = strng->base_string.self;
 	c = s[0];
 
 	/* A potential number must begin with a digit, sign or extension character (^ _) */
@@ -1898,9 +1918,21 @@ write_string(cl_object strng, cl_object strm)
 	cl_index i;
 
 	strm = stream_or_default_output(strm);
-	assert_type_string(strng);
-	for (i = 0;  i < strng->string.fillp;  i++)
-		ecl_write_char(strng->string.self[i], strm);
+	switch(type_of(strng)) {
+#ifdef ECL_UNICODE
+	case t_string:
+		for (i = 0;  i < strng->string.fillp;  i++)
+			ecl_write_char(CHAR_CODE(strng->string.self[i]), strm);
+		break;
+#endif
+	case t_base_string:
+		for (i = 0;  i < strng->base_string.fillp;  i++)
+			ecl_write_char(strng->base_string.self[i], strm);
+		break;
+	default:
+		FEtype_error_string(strng);
+	}
+		
 	ecl_force_output(strm);
 }
 

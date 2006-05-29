@@ -80,8 +80,8 @@ fast_alloc_object(enum type t)
     x = GC_malloc(sizeof(struct array)); break;
   case t_vector:
     x = GC_malloc(sizeof(struct vector)); break;
-  case t_string:
-    x = GC_malloc(sizeof(struct string)); break;
+  case t_base_string:
+    x = GC_malloc(sizeof(struct base_string)); break;
   case t_bitvector:
     x = GC_malloc(sizeof(struct bitvector)); break;
   case t_stream:

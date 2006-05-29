@@ -129,7 +129,10 @@ cl_alloc_object(cl_type t)
 	case t_hashtable:
 	case t_array:
 	case t_vector:
+	case t_base_string:
+#ifdef ECL_UNICODE
 	case t_string:
+#endif
 	case t_bitvector:
 	case t_random:
 	case t_readtable:
@@ -227,7 +230,10 @@ init_alloc(void)
 	init_tm(t_longfloat, "LONG-FLOAT", /* 16 */
 		sizeof(struct ecl_longfloat));
 	init_tm(t_bytecodes, "BYTECODES", sizeof(struct ecl_bytecodes));
-	init_tm(t_string, "STRING", sizeof(struct ecl_string)); /* 20 */
+	init_tm(t_base_string, "BASE-STRING", sizeof(struct ecl_base_string)); /* 20 */
+#ifdef ECL_UNICODE
+	init_tm(t_string, "STRING", sizeof(struct ecl_string));
+#endif
 	init_tm(t_array, "ARRAY", sizeof(struct ecl_array)); /* 24 */
 	init_tm(t_pathname, "PATHNAME", sizeof(struct ecl_pathname)); /* 28 */
 	init_tm(t_symbol, "SYMBOL", sizeof(struct ecl_symbol)); /* 32 */

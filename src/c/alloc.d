@@ -297,14 +297,17 @@ ONCE_MORE:
 	  obj->array.elttype = (short)aet_object;
 	  obj->array.self.t = NULL;
 	  break;
+#ifdef ECL_UNICODE
+	case t_string:
+#endif
 	case t_vector:
 	  obj->array.displaced = Cnil;
 	  obj->array.elttype = (short)aet_object;
 	  obj->array.self.t = NULL;
 	  break;
-	case t_string:
-	  obj->string.displaced = Cnil;
-	  obj->string.self = NULL;
+	case t_base_string:
+	  obj->base_string.displaced = Cnil;
+	  obj->base_string.self = NULL;
 	  break;
 	case t_bitvector:
 	  obj->vector.displaced = Cnil;
@@ -417,7 +420,7 @@ CALL_GC:
 		goto ONCE_MORE;
 	}
 	GC_disable();
-	{ cl_object s = make_simple_string(tm_table[(int)t].tm_name+1);
+	{ cl_object s = make_simple_base_string(tm_table[(int)t].tm_name+1);
 	GC_enable();
 	CEerror("The storage for ~A is exhausted.~%\
 Currently, ~D pages are allocated.~%\
@@ -689,7 +692,10 @@ init_alloc(void)
 	init_tm(t_longfloat, "LLONG-FLOAT", /* 16 */
 		sizeof(struct ecl_longfloat), 1);
 	init_tm(t_bytecodes, "bBYTECODES", sizeof(struct ecl_bytecodes), 64);
-	init_tm(t_string, "\"STRING", sizeof(struct ecl_string), 64); /* 20 */
+	init_tm(t_base_string, "\"BASE-STRING", sizeof(struct ecl_base_string), 64); /* 20 */
+#ifdef ECL_UNICODE
+	init_tm(t_string, "\"STRING", sizeof(struct ecl_string), 64);
+#endif
 	init_tm(t_array, "aARRAY", sizeof(struct ecl_array), 64); /* 24 */
 	init_tm(t_pathname, "pPATHNAME", sizeof(struct ecl_pathname), 1); /* 28 */
 	init_tm(t_symbol, "|SYMBOL", sizeof(struct ecl_symbol), 64); /* 32 */
@@ -735,7 +741,7 @@ t_from_type(cl_object type)
    for (t = (int)t_start ; t < (int)t_end ; t++) {
      struct typemanager *tm = &tm_table[t];
      if (tm->tm_name &&
-	 strncmp((tm->tm_name)+1, type->string.self, type->string.fillp) == 0)
+	 strncmp((tm->tm_name)+1, type->base_string.self, type->base_string.fillp) == 0)
        return(t);
    }
    FEerror("Unrecognized type", 0);
@@ -755,7 +761,7 @@ t_from_type(cl_object type)
 	if (available_pages() < tm->tm_maxpage - tm->tm_npage ||
 	    (pp = alloc_page(tm->tm_maxpage - tm->tm_npage)) == NULL)
 	  FEerror("Can't allocate ~D pages for ~A.", 2, type,
-		  make_constant_string(tm->tm_name+1));
+		  make_constant_base_string(tm->tm_name+1));
 	for (;  tm->tm_npage < tm->tm_maxpage;  pp += LISP_PAGESIZE)
 	  add_page_to_freelist(pp, tm);
 	@(return Ct)
@@ -849,10 +855,10 @@ malloc(size_t size)
   if (!GC_enabled() && !alloc_initialized)
     init_alloc();
 
-  x = alloc_simple_string(size-1);
-  x->string.self = (char *)cl_alloc(size);
+  x = alloc_simple_base_string(size-1);
+  x->base_string.self = (char *)cl_alloc(size);
   malloc_list = make_cons(x, malloc_list);
-  return(x->string.self);
+  return(x->base_string.self);
 }
 
 void
@@ -862,9 +868,9 @@ free(void *ptr)
 
   if (ptr) {
     for (p = &malloc_list;  !endp(*p);  p = &(CDR((*p))))
-      if ((CAR((*p)))->string.self == ptr) {
-	cl_dealloc(CAR((*p))->string.self, CAR((*p))->string.dim+1);
-	CAR((*p))->string.self = NULL;
+      if ((CAR((*p)))->base_string.self == ptr) {
+	cl_dealloc(CAR((*p))->base_string.self, CAR((*p))->base_string.dim+1);
+	CAR((*p))->base_string.self = NULL;
 	*p = CDR((*p));
 	return;
       }
@@ -881,18 +887,18 @@ realloc(void *ptr, size_t size)
   if (ptr == NULL)
     return malloc(size);
   for (x = malloc_list;  !endp(x);  x = CDR(x))
-    if (CAR(x)->string.self == ptr) {
+    if (CAR(x)->base_string.self == ptr) {
       x = CAR(x);
-      if (x->string.dim >= size) {
-	x->string.fillp = size;
+      if (x->base_string.dim >= size) {
+	x->base_string.fillp = size;
 	return(ptr);
       } else {
-	j = x->string.dim;
-	x->string.self = (char *)cl_alloc(size);
-	x->string.fillp = x->string.dim = size;
-	memcpy(x->string.self, ptr, j);
+	j = x->base_string.dim;
+	x->base_string.self = (char *)cl_alloc(size);
+	x->base_string.fillp = x->base_string.dim = size;
+	memcpy(x->base_string.self, ptr, j);
 	cl_dealloc(ptr, j);
-	return(x->string.self);
+	return(x->base_string.self);
       }
     }
   FEerror("realloc(3) error.", 0);
@@ -925,9 +931,9 @@ void cfree(void *ptr)
 
 void *
 memalign(size_t align, size_t size)
-{ cl_object x = alloc_simple_string(size);
+{ cl_object x = alloc_simple_base_string(size);
   malloc_list = make_cons(x, malloc_list);
-  return x->string.self;
+  return x->base_string.self;
 }
 
 # ifdef WANT_VALLOC

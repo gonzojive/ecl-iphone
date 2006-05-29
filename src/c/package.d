@@ -43,7 +43,7 @@ FEpackage_error(const char *message, cl_object package, int narg, ...)
 	si_signal_simple_error(6,
 			       @'package-error',
 			       Cnil, /* not correctable */
-			       make_constant_string(message), /* format control */
+			       make_constant_base_string(message), /* format control */
 			       narg? cl_grab_rest_args(args) : cl_list(1,package), /* format args */
 			       @':package', package); /* extra arguments */
 }
@@ -55,8 +55,8 @@ CEpackage_error(const char *message, const char *continue_message, cl_object pac
 	cl_va_start(args, narg, narg, 0);
 	si_signal_simple_error(6,
 			       @'package-error',
-			       make_constant_string(continue_message),
-			       make_constant_string(message), /* format control */
+			       make_constant_base_string(continue_message),
+			       make_constant_base_string(message), /* format control */
 			       narg? cl_grab_rest_args(args) : cl_list(1,package),
 			       @':package', package);
 }
@@ -275,7 +275,7 @@ cl_object
 _intern(const char *s, cl_object p)
 {
 	int intern_flag;
-	cl_object str = make_constant_string(s);
+	cl_object str = make_constant_base_string(s);
 	return intern(str, p, &intern_flag);
 }
 
@@ -284,7 +284,11 @@ intern(cl_object name, cl_object p, int *intern_flag)
 {
 	cl_object s, ul;
 
-	assert_type_string(name);
+#ifdef ECL_UNICODE
+	name = coerce_to_simple_base_string(name);
+#else
+	assert_type_base_string(name);
+#endif
 	p = si_coerce_to_package(p);
  TRY_AGAIN_LABEL:
 	PACKAGE_LOCK(p);
@@ -338,7 +342,7 @@ ecl_find_symbol_nolock(cl_object name, cl_object p, int *intern_flag)
 {
 	cl_object s, ul;
 
-	assert_type_string(name);
+	assert_type_base_string(name);
 	s = gethash_safe(name, p->pack.external, OBJNULL);
 	if (s != OBJNULL) {
 		*intern_flag = EXTERNAL;
@@ -926,7 +930,7 @@ BEGIN:
 @
 BEGIN:
 	switch (type_of(symbols)) {
-	case t_string:
+	case t_base_string:
 	case t_symbol:
 	case t_character:
 		/* Arguments to SHADOW may be: string designators ... */
@@ -941,7 +945,7 @@ BEGIN:
 			shadow(CAR(l), pack);
 		break;
 	default:
-		assert_type_string(symbols);
+		assert_type_base_string(symbols);
 		goto BEGIN;
 	}
 	@(return Ct)
@@ -956,7 +960,7 @@ BEGIN:
 		if (Null(pack))
 			break;
 	case t_character:
-	case t_string:
+	case t_base_string:
 	case t_package:
 		use_package(pack, pa);
 		break;
@@ -983,7 +987,7 @@ BEGIN:
 		if (Null(pack))
 			break;
 	case t_character:
-	case t_string:
+	case t_base_string:
 	case t_package:
 		unuse_package(pack, pa);
 		break;

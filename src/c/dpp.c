@@ -76,7 +76,8 @@
 #include <ecl/config.h>
 #include "symbols_list2.h"
 
-#define POOLSIZE        2048
+/* #define POOLSIZE        2048 */
+#define POOLSIZE        4096
 #define MAXREQ          16
 #define MAXOPT          16
 #define MAXKEY          16

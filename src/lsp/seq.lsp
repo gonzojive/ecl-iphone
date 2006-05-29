@@ -44,8 +44,17 @@
       ((SIMPLE-VECTOR)
        (setq elt-type 'T
 	     length (if (endp args) '* (first args))))
+      #-unicode
       ((STRING SIMPLE-STRING)
        (setq elt-type 'BASE-CHAR
+	     length (if (endp args) '* (first args))))
+      #+unicode
+      ((BASE-STRING BASE-SIMPLE-STRING)
+       (setq elt-type 'BASE-CHAR
+	     length (if (endp args) '* (first args))))
+      #+unicode
+      ((STRING SIMPLE-STRING)
+       (setq elt-type 'CHARACTER
 	     length (if (endp args) '* (first args))))
       ((BIT-VECTOR SIMPLE-BIT-VECTOR)
        (setq elt-type 'BIT
@@ -64,8 +73,19 @@
        ;; Furthermore, we also give up trying to find if the element
        ;; type is *. Instead we just compare with some specialized
        ;; types and otherwise fail.
-       (dolist (i '((SIMPLE-STRING . BASE-CHAR)
+       (dolist (i '(
+                    #-unicode
+                    (SIMPLE-STRING . BASE-CHAR)
+                    #-unicode
 		    (STRING . BASE-CHAR)
+                    #+unicode
+                    (SIMPLE-BASE-STRING . BASE-CHAR)
+                    #+unicode
+                    (BASE-STRING . BASE-CHAR)
+                    #+unicode
+                    (SIMPLE-STRING . CHARACTER)
+                    #+unicode
+                    (STRING . CHARACTER)
 		    (BIT-VECTOR . BIT)
 		    ((VECTOR EXT::BYTE8) . EXT::BYTE8)
 		    ((VECTOR EXT::INTEGER8) . EXT::INTEGER8)

@@ -156,7 +156,12 @@ cl_symbols[] = {
 {"ATANH","ECL_NAME(cl_atanh)"},
 {"ATOM","cl_atom"},
 {"BASE-CHAR",NULL},
+{"BASE-CHAR-P","cl_base_char_p"},
+#ifdef ECL_UNICODE
+{"BASE-STRING","cl_base_string"},
+#else
 {"BASE-STRING",NULL},
+#endif
 {"BIGNUM",NULL},
 {"BIT","ECL_NAME(cl_bit)"},
 {"BIT-AND","ECL_NAME(cl_bit_and)"},
@@ -800,6 +805,9 @@ cl_symbols[] = {
 {"SIGNUM","ECL_NAME(cl_signum)"},
 {"SIMPLE-ARRAY",NULL},
 {"SIMPLE-BASE-STRING",NULL},
+#ifdef ECL_UNICODE
+{"SIMPLE-BASE-STRING-P","cl_simple_base_string_p"},
+#endif
 {"SIMPLE-BIT-VECTOR",NULL},
 {"SIMPLE-BIT-VECTOR-P","cl_simple_bit_vector_p"},
 {"SIMPLE-CONDITION",NULL},
@@ -841,8 +849,8 @@ cl_symbols[] = {
 {"STREAM-EXTERNAL-FORMAT","cl_stream_external_format"},
 {"STREAMP","cl_streamp"},
 {"STRING","cl_string"},
-{"STRING-CAPITALIZE","cl_string_capitalize"},
 {"STRING-DOWNCASE","cl_string_downcase"},
+{"STRING-CAPITALIZE","cl_string_capitalize"},
 {"STRING-EQUAL","cl_string_equal"},
 {"STRING-GREATERP","cl_string_greaterp"},
 {"STRING-LEFT-TRIM","cl_string_left_trim"},
@@ -1078,6 +1086,7 @@ cl_symbols[] = {
 {SYS_ "COERCE-TO-FILENAME","si_coerce_to_filename"},
 {SYS_ "COERCE-TO-FUNCTION","si_coerce_to_function"},
 {SYS_ "COERCE-TO-PACKAGE","si_coerce_to_package"},
+{SYS_ "COERCE-TO-SIMPLE-BASE-STRING","coerce_to_simple_base_string"},
 {SYS_ "COMPILED-FUNCTION-BLOCK","si_compiled_function_block"},
 {SYS_ "COMPILED-FUNCTION-NAME","si_compiled_function_name"},
 {SYS_ "COPY-STREAM","si_copy_stream"},
@@ -1177,7 +1186,10 @@ cl_symbols[] = {
 {SYS_ "SPECIALP","si_specialp"},
 {SYS_ "STANDARD-READTABLE","si_standard_readtable"},
 {SYS_ "STEPPER","OBJNULL"},
-{SYS_ "STRING-CONCATENATE","si_string_concatenate"},
+{SYS_ "BASE-STRING-CONCATENATE","si_base_string_concatenate"},
+#ifdef ECL_UNICODE
+{SYS_ "EXTENDED-STRING-CONCATENATE","si_extended_string_concatenate"},
+#endif
 {SYS_ "STRING-TO-OBJECT","si_string_to_object"},
 {SYS_ "STRUCTURE-NAME","si_structure_name"},
 {SYS_ "STRUCTURE-PRINT-FUNCTION",NULL},

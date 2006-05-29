@@ -268,16 +268,16 @@ si_open_client_stream(cl_object host, cl_object port)
    cl_object stream;
 
    /* Ensure "host" is a string that we can pass to a C function */
-   host = coerce_to_simple_string(host);
+   host = coerce_to_simple_base_string(host);
 
    /* The port number is not negative */
    p = fixnnint(port);
 
-   if (host->string.fillp > BUFSIZ - 1)
+   if (host->base_string.fillp > BUFSIZ - 1)
      FEerror("~S is a too long file name.", 1, host);
 
    start_critical_section();
-   fd = connect_to_server(host->string.self, fix(port)); 
+   fd = connect_to_server(host->base_string.self, fix(port)); 
    end_critical_section();
 
    if (fd == 0)
@@ -324,9 +324,9 @@ si_open_unix_socket_stream(cl_object path)
 	cl_object stream;
 	struct sockaddr_un addr;
 
-	if (type_of(path) != t_string)
+	if (type_of(path) != t_base_string)
 		FEwrong_type_argument(@'string', path);
-	if (path->string.fillp > UNIX_MAX_PATH-1)
+	if (path->base_string.fillp > UNIX_MAX_PATH-1)
 		FEerror("~S is a too long file name.", 1, path);
 
 	fd = socket(PF_UNIX, SOCK_STREAM, 0);
@@ -335,8 +335,8 @@ si_open_unix_socket_stream(cl_object path)
 		@(return Cnil)
 	}
 
-	memcpy(addr.sun_path, path->string.self, path->string.fillp);
-	addr.sun_path[path->string.fillp] = 0;
+	memcpy(addr.sun_path, path->base_string.self, path->base_string.fillp);
+	addr.sun_path[path->base_string.fillp] = 0;
 	addr.sun_family = AF_UNIX;
 
 	if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
@@ -364,9 +364,9 @@ si_lookup_host_entry(cl_object host_or_address)
 	INIT_TCP
 
 	switch (type_of(host_or_address)) {
-	case t_string:
-		host_or_address = coerce_to_simple_string(host_or_address);
-		he = gethostbyname(host_or_address->string.self);
+	case t_base_string:
+		host_or_address = coerce_to_simple_base_string(host_or_address);
+		he = gethostbyname(host_or_address->base_string.self);
 		break;
 	case t_fixnum:
 		l = fix(host_or_address);
@@ -385,10 +385,10 @@ si_lookup_host_entry(cl_object host_or_address)
 	}
 	if (he == NULL)
 		@(return Cnil Cnil Cnil)
-	name = make_string_copy(he->h_name);
+	name = make_base_string_copy(he->h_name);
 	aliases = Cnil;
 	for (i = 0; he->h_aliases[i] != 0; i++)
-		aliases = CONS(make_string_copy(he->h_aliases[i]), aliases);
+		aliases = CONS(make_base_string_copy(he->h_aliases[i]), aliases);
 	addresses = Cnil;
 	for (i = 0; he->h_addr_list[i]; i++) {
 		unsigned long *s = (unsigned long*)(he->h_addr_list[i]);

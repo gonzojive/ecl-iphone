@@ -19,6 +19,9 @@
 /* Always use CLOS							*/
 #define CLOS
 
+/* put this into configure where it belongs */
+#define ECL_UNICODE
+
 /* Use Boehm's garbage collector					*/
 #undef GBC_BOEHM
 #ifdef GBC_BOEHM

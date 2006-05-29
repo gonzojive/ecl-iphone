@@ -192,7 +192,7 @@
 				  (if from-end ,from-end-form ,normal-form)))))))
     (do-defseq ,f ,args ,countp ,everywherep)
     ,@(if variantsp
-	   `((defun ,(intern (si:string-concatenate (string f) "-IF")
+	   `((defun ,(intern (si:base-string-concatenate (string f) "-IF")
 			     (symbol-package f))
 		 (,@args predicate sequence
 			 &key from-end
@@ -205,7 +205,7 @@
 		   :start start :end end
 		   ,@(if countp '(:count count))
 		   :key key))
-	     (defun ,(intern (si:string-concatenate (string f) "-IF-NOT")
+	     (defun ,(intern (si:base-string-concatenate (string f) "-IF-NOT")
 			     (symbol-package f))
 		 (,@args predicate sequence
 			 &key from-end (start 0) end

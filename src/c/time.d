@@ -70,7 +70,7 @@ cl_sleep(cl_object z)
 	/* INV: number_minusp() makes sure `z' is real */
 	if (number_minusp(z))
 		cl_error(9, @'simple-type-error', @':format-control',
-			    make_constant_string("Not a non-negative number ~S"),
+			    make_constant_base_string("Not a non-negative number ~S"),
 			    @':format-arguments', cl_list(1, z),
 			    @':expected-type', @'real', @':datum', z);
 #ifdef HAVE_NANOSLEEP

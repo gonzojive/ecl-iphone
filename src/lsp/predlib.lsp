@@ -193,8 +193,12 @@ has no fill-pointer, and is not adjustable."
 
 (dolist (l '((ARRAY . ARRAYP)
 	     (ATOM . ATOM)
+             #-unicode
 	     (EXTENDED-CHAR . CONSTANTLY-NIL)
+             #-unicode
 	     (BASE-CHAR . CHARACTERP)
+             #+unicode
+	     (BASE-CHAR . BASE-CHAR-P)
 	     (CHARACTER . CHARACTERP)
 	     (COMPILED-FUNCTION . COMPILED-FUNCTION-P)
 	     (COMPLEX . COMPLEXP)
@@ -229,7 +233,7 @@ has no fill-pointer, and is not adjustable."
   (put-sysprop (car l) 'TYPE-PREDICATE (cdr l)))
 
 (defconstant +upgraded-array-element-types+
-  '(NIL BASE-CHAR BIT EXT::BYTE8 EXT::INTEGER8 EXT::CL-FIXNUM EXT::CL-INDEX SHORT-FLOAT LONG-FLOAT T))
+  '(NIL BASE-CHAR CHARACTER BIT EXT::BYTE8 EXT::INTEGER8 EXT::CL-FIXNUM EXT::CL-INDEX SHORT-FLOAT LONG-FLOAT T))
 
 (defun upgraded-array-element-type (element-type &optional env)
   (dolist (v +upgraded-array-element-types+ 'T)
@@ -341,11 +345,21 @@ Returns T if X belongs to TYPE; NIL otherwise."
     (STRING
      (and (stringp object)
           (or (null i) (match-dimensions object i))))
+    #+unicode
+    (BASE-STRING
+     (and (stringp object)
+	  (typep (array-element-type object) 'base-char)
+          (or (null i) (match-dimensions object i))))
     (BIT-VECTOR
      (and (bit-vector-p object)
           (or (null i) (match-dimensions object i))))
     (SIMPLE-STRING
      (and (simple-string-p object)
+          (or (null i) (match-dimensions object i))))
+    #+unicode
+    (SIMPLE-BASE-STRING
+     (and (simple-base-string-p object)
+	  (typep (array-element-type object) 'base-char)
           (or (null i) (match-dimensions object i))))
     (SIMPLE-BIT-VECTOR
      (and (simple-bit-vector-p object)
@@ -472,7 +486,7 @@ if not possible."
 	   ((DOUBLE-FLOAT LONG-FLOAT) (float object 0.0L0))
 	   (COMPLEX (complex (realpart object) (imagpart object)))
 	   (FUNCTION (coerce-to-function object))
-	   ((VECTOR SIMPLE-VECTOR SIMPLE-STRING STRING BIT-VECTOR SIMPLE-BIT-VECTOR)
+	   ((VECTOR SIMPLE-VECTOR #+unicode SIMPLE-BASE-STRING SIMPLE-STRING #+unicode BASE-STRING STRING BIT-VECTOR SIMPLE-BIT-VECTOR)
 	    (concatenate type object))
 	   (t
 	    (if (or (listp object) (vector object))
@@ -953,7 +967,10 @@ if not possible."
 	       (NUMBER (OR REAL COMPLEX))
 
 	       (CHARACTER)
+               #-unicode
 	       (BASE-CHAR CHARACTER)
+               #+unicode
+	       (BASE-CHAR NIL CHARACTER)
 	       (STANDARD-CHAR NIL BASE-CHAR)
 
 	       (CONS)
@@ -966,7 +983,11 @@ if not possible."
 	       (SIMPLE-BIT-VECTOR (SIMPLE-ARRAY BIT (*)))
 	       (VECTOR (ARRAY * (*)))
 	       (STRING (ARRAY CHARACTER (*)))
+               #+unicode
+	       (BASE-STRING (ARRAY BASE-CHAR (*)))
 	       (SIMPLE-STRING (SIMPLE-ARRAY CHARACTER (*)))
+               #+unicode
+	       (SIMPLE-BASE-STRING (SIMPLE-ARRAY BASE-CHAR (*)))
 	       (BIT-VECTOR (ARRAY BIT (*)))
 
 	       (SEQUENCE (OR CONS (MEMBER NIL) (ARRAY * (*))))
