@@ -684,6 +684,7 @@ sharp_C_reader(cl_object in, cl_object c, cl_object d)
 static cl_object
 sharp_backslash_reader(cl_object in, cl_object c, cl_object d)
 {
+	cl_object nc;
 	if (d != Cnil && !read_suppress)
 		if (!FIXNUMP(d) ||
 		    fix(d) != 0)
@@ -699,18 +700,17 @@ sharp_backslash_reader(cl_object in, cl_object c, cl_object d)
 		goto OUTPUT;
 	}
 	c = cl_env.token;
-	if (c->base_string.fillp == 1)
+	if (c->base_string.fillp == 1) {
 		c = CODE_CHAR(c->base_string.self[0]);
-	/*	#\^x	*/
-	else if (c->base_string.fillp == 2 && c->base_string.self[0] == '^')
+	} else if (c->base_string.fillp == 2 && c->base_string.self[0] == '^') {
+		/*	#\^x	*/
 		c = CODE_CHAR(c->base_string.self[1] & 037);
-	else if (c->base_string.self[0] =='u' && c->base_string.fillp > 1) {
-                /* this is a bit ugly */
-                c->base_string.self[c->base_string.fillp] = '\0';
-		c = CODE_CHAR(strtoul(&c->base_string.self[1], NULL, 16));
 	} else {
 		cl_object nc = cl_name_char(c);
-		if (Null(nc)) FEreader_error("~S is an illegal character name.", in, 1, si_copy_to_simple_base_string(c));
+		if (Null(nc)) {
+			FEreader_error("~S is an illegal character name.", in,
+				       1, si_copy_to_simple_base_string(c));
+		}
 		c = nc;
 	}
  OUTPUT:

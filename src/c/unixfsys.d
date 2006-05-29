@@ -58,7 +58,7 @@
  * string_to_pathanme, to be used when s is a real pathname
  */
 cl_object
-ecl_string_to_pathname(char *s)
+ecl_cstring_to_pathname(char *s)
 {
 	cl_object string = make_simple_base_string(s);
 	return cl_parse_namestring(1, string);

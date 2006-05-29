@@ -1276,7 +1276,7 @@ extern cl_object ecl_cstring_to_base_string_or_nil(const char *s);
 extern bool string_eq(cl_object x, cl_object y);
 extern bool member_char(int c, cl_object char_bag);
 extern int ecl_base_string_push_extend(cl_object s, int c);
-extern void get_base_string_start_end(cl_object s, cl_object start, cl_object end, cl_index *ps, cl_index *pe);
+extern void get_string_start_end(cl_object s, cl_object start, cl_object end, cl_index *ps, cl_index *pe);
 
 
 /* structure.c */
@@ -1380,6 +1380,7 @@ extern void assert_type_non_negative_integer(cl_object p);
 extern void assert_type_character(cl_object p);
 extern void assert_type_symbol(cl_object p);
 extern void assert_type_package(cl_object p);
+extern void assert_type_string(cl_object p);
 extern void assert_type_base_string(cl_object p);
 extern void assert_type_cons(cl_object p);
 extern void assert_type_readtable(cl_object p);
@@ -1402,7 +1403,7 @@ extern void FEtype_error_alist(cl_object x) /*__attribute__((noreturn))*/;
 extern void FEtype_error_stream(cl_object x) /*__attribute__((noreturn))*/;
 extern void FEcircular_list(cl_object x) /*__attribute__((noreturn))*/;
 extern void FEtype_error_index(cl_object seq, cl_object ndx) /*__attribute__((noreturn))*/;
-extern void FEtype_error_base_string(cl_object x) /*__attribute__((noreturn))*/;
+extern void FEtype_error_string(cl_object x) /*__attribute__((noreturn))*/;
 extern void FEdivision_by_zero(cl_object x, cl_object y) /*__attribute__((noreturn))*/;
 
 /* unixfsys.c */
@@ -1424,7 +1425,7 @@ extern cl_object si_mkstemp(cl_object templ);
 extern cl_object si_rmdir(cl_object directory);
 
 extern const char *expand_pathname(const char *name);
-extern cl_object ecl_base_string_to_pathname(char *s);
+extern cl_object ecl_cstring_to_pathname(char *s);
 extern FILE *backup_fopen(const char *filename, const char *option);
 extern cl_object ecl_file_len(FILE *fp);
 extern cl_object homedir_pathname(cl_object user);

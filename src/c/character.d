@@ -417,7 +417,7 @@ cl_char_name(cl_object c)
 	cl_object output;
 	if (code > 127) {
 		char name[20]; /* cleanup */
-		sprintf(name, "u%04x", code);
+		sprintf(name, "U%04x", code);
 		output = make_base_string_copy(name);
 	} else {
 		output = gethash_safe(c, cl_core.char_names, Cnil);
@@ -429,7 +429,7 @@ cl_object
 cl_name_char(cl_object name)
 {
 	cl_object c = gethash_safe((name = cl_string(name)), cl_core.char_names, Cnil);
-	if (c == Cnil && name->base_string.self[0] == 'u') {
+	if (c == Cnil && (name->base_string.self[0] == 'u' || name->base_string.self[0] == 'U')) {
                 /* more error checking? FIXME */
 		c = CODE_CHAR(strtol(&name->base_string.self[1], NULL, 16));
 	}

@@ -135,7 +135,7 @@ EXPORTS
 	cl_standard_char_p
 	cl_upper_case_p
 
-	ecl_string_case
+	ecl_base_string_case
 	char_code
 	digitp
 	char_eq
@@ -274,8 +274,8 @@ EXPORTS
 	ecl_make_foreign_data
 	ecl_allocate_foreign_data
 	ecl_foreign_data_pointer_safe
-	ecl_string_pointer_safe
-	ecl_null_terminated_string
+	ecl_base_string_pointer_safe
+	ecl_null_terminated_base_string
 	ecl_foreign_data_ref_elt
 	ecl_foreign_data_set_elt
 
@@ -919,7 +919,7 @@ EXPORTS
 	cl_nreverse
 	cl_subseq
 
-	cl_alloc_simple_vector
+	ecl_alloc_simple_vector
 	elt
 	elt_set
 	length
@@ -979,19 +979,17 @@ EXPORTS
 	cl_nstring_upcase
 	cl_nstring_downcase
 	cl_nstring_capitalize
-	si_string_concatenate
+	si_base_string_concatenate
 
-	cl_alloc_simple_string
-	cl_alloc_adjustable_string
-	make_simple_string
-	make_string_copy
-	ecl_cstring_to_string_or_nil
-	copy_simple_string
-	coerce_to_simple_string
+	cl_alloc_simple_base_string
+	cl_alloc_adjustable_base_string
+	make_simple_base_string
+	make_base_string_copy
+	ecl_cstring_to_base_string_or_nil
+	si_copy_to_simple_base_string
 	string_eq
-	string_equal
 	member_char
-	ecl_string_push_extend
+	ecl_base_string_push_extend
 	get_string_start_end
 
 
@@ -1123,7 +1121,7 @@ EXPORTS
 	si_rmdir
 
 	expand_pathname
-	ecl_string_to_pathname
+	ecl_cstring_to_pathname
 	backup_fopen
 	ecl_file_len
 	homedir_pathname
@@ -1391,3 +1389,6 @@ EXPORTS
 	; clos\standard.lsp
 
 	clos_standard_instance_set
+	assert_type_base_string
+	; unicode
+	; si_extended_string_concatenate

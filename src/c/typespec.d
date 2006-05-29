@@ -150,44 +150,25 @@ assert_type_package(cl_object p)
 		FEwrong_type_argument(@'package', p);
 }
 
-#ifdef ECL_UNICODE
 void
 assert_type_string(cl_object p)
 {
 	cl_type t = type_of(p);
-
+#ifdef ECL_UNICODE
 	if (t != t_base_string && t != t_string)
 		FEtype_error_string(p);
-}
-
-void
-assert_type_base_string(cl_object p)
-{
-	if (type_of(p) != t_base_string)
-		FEtype_error_string(p);
-}
-
-void
-assert_type_extended_string(cl_object p)
-{
-	if (type_of(p) != t_string)
-		FEtype_error_string(p);
-}
 #else
-void
-assert_type_string(cl_object p)
-{
-	if (type_of(p) != t_base_string)
+	if (t != t_base_string)
 		FEtype_error_string(p);
+#endif
 }
 
 void
 assert_type_base_string(cl_object p)
 {
 	if (type_of(p) != t_base_string)
-		FEtype_error_string(p);
+		FEwrong_type_argument(@'base-string',p);
 }
-#endif
 
 void
 assert_type_cons(cl_object p)
