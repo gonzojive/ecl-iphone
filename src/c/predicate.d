@@ -108,7 +108,7 @@ cl_characterp(cl_object x)
 
 #ifdef ECL_UNICODE
 cl_object
-cl_base_char_p(cl_object x)
+si_base_char_p(cl_object x)
 {
 	@(return (BASE_CHAR_P(x) ? Ct : Cnil))
 }
@@ -162,13 +162,9 @@ cl_simple_string_p(cl_object x)
 
 #ifdef ECL_UNICODE
 cl_object
-cl_simple_base_string_p(cl_object x)
+si_base_string_p(cl_object x)
 {
-	cl_type t = type_of(x);
-	@(return (((t == t_base_string &&
-		     !x->base_string.adjustable &&
-		     !x->base_string.hasfillp &&
-		     Null(CAR(x->base_string.displaced))) ? Ct : Cnil)))
+	@(return (type_of(x) == t_base_string))
 }
 #endif
 

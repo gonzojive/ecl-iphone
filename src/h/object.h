@@ -25,12 +25,6 @@ extern "C" {
 #define	TRUE		1	/*  boolean true value  */
 #define	FALSE		0	/*  boolean false value  */
 
-#ifdef ECL_UNICODE
-#define	CHAR_CODE_LIMIT	1114111	/*  unicode character code limit  */
-#else
-#define	CHAR_CODE_LIMIT	256	/*  unicode character code limit  */
-#endif
-
 #if !defined(__cplusplus) && !defined(bool)
 typedef int bool;
 #endif

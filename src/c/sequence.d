@@ -22,13 +22,18 @@
 	I know the following name is not good.
 */
 cl_object
-cl_alloc_simple_vector(cl_index l, cl_elttype aet)
+ecl_alloc_simple_vector(cl_index l, cl_elttype aet)
 {
 	cl_object x;
 
-	if (aet == aet_bc)
+	switch (aet) {
+	case aet_bc:
 		return cl_alloc_simple_base_string(l);
-	if (aet == aet_bit) {
+#ifdef ECL_UNICODE
+	case aet_ch:
+		return cl_alloc_simple_extended_string(l);
+#endif
+	case aet_bit:
 		x = cl_alloc_object(t_bitvector);
 		x->vector.hasfillp = FALSE;
 		x->vector.adjustable = FALSE;
@@ -36,7 +41,8 @@ cl_alloc_simple_vector(cl_index l, cl_elttype aet)
 		x->vector.dim = x->vector.fillp = l;
 		x->vector.offset = 0;
 		x->vector.self.bit = NULL;
-	} else {
+		break;
+	default:
 		x = cl_alloc_object(t_vector);
 		x->vector.hasfillp = FALSE;
 		x->vector.adjustable = FALSE;
@@ -199,7 +205,7 @@ E:
 			e = sequence->vector.fillp;
 		else if (e < s || e > sequence->vector.fillp)
 			goto ILLEGAL_START_END;
-		x = cl_alloc_simple_vector(e - s, array_elttype(sequence));
+		x = ecl_alloc_simple_vector(e - s, array_elttype(sequence));
 		ecl_copy_subarray(x, 0, sequence, s, e-s);
 		@(return x)
 
@@ -279,7 +285,7 @@ cl_reverse(cl_object seq)
 	case t_vector:
 	case t_bitvector:
 	case t_base_string:
-		output = cl_alloc_simple_vector(seq->vector.fillp, array_elttype(seq));
+		output = ecl_alloc_simple_vector(seq->vector.fillp, array_elttype(seq));
 		ecl_copy_subarray(output, 0, seq, 0, seq->vector.fillp);
 		ecl_reverse_subarray(output, 0, seq->vector.fillp);
 		break;

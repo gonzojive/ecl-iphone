@@ -178,11 +178,11 @@ weird stuff - see gethostbyname(3) for grisly details."
                 cl_object addr_list = Cnil;
                 int length = hostent->h_length;
 
-		funcall(3,#2,make_simple_string(hostent->h_name),#1);
+		funcall(3,#2,make_simple_base_string(hostent->h_name),#1);
                 funcall(3,#4,make_integer(hostent->h_addrtype),#1);
 
                 for (aliases = hostent->h_aliases; *aliases != NULL; aliases++) {
-                        aliases_list = CONS(make_simple_string(*aliases),aliases_list);
+                        aliases_list = CONS(make_simple_base_string(*aliases),aliases_list);
                 }
                 funcall(3,#3,aliases_list,#1);
 
@@ -232,11 +232,11 @@ weird stuff - see gethostbyname(3) for grisly details."
                 cl_object addr_list = Cnil;
                 int length = hostent->h_length;
 
-		funcall(3,#2,make_simple_string(hostent->h_name),#1);
+		funcall(3,#2,make_simple_base_string(hostent->h_name),#1);
                 funcall(3,#4,make_integer(hostent->h_addrtype),#1);
 
                 for (aliases = hostent->h_aliases; *aliases != NULL; aliases++) {
-                        aliases_list = CONS(make_simple_string(*aliases),aliases_list);
+                        aliases_list = CONS(make_simple_base_string(*aliases),aliases_list);
                 }
                 funcall(3,#3,aliases_list,#1);
 
@@ -422,6 +422,30 @@ SB-SYS:MAKE-FD-STREAM."))
 	     (socket-error "close")))
       (setf (slot-value socket 'file-descriptor) -1))))
 
+(ffi::clines "
+static void *
+safe_buffer_pointer(cl_object x, cl_index size)
+{
+	cl_type t = type_of(x);
+	int ok = 0;
+	if (t == t_base_string) {
+		ok = (size < x->base_string.dim);
+	} else if (t == t_vector) {
+		cl_elttype aet = x->vector.elttype;
+		if (aet == aet_b8 || aet == aet_i8 || aet == aet_bc) {
+			ok = (size < x->vector.dim);
+		} else if (aet == aet_fix || aet == aet_index) {
+			size /= sizeof(cl_index);
+			ok = (size < x->vector.dim);
+		}
+	}
+	if (!ok) {
+		FEerror(\"Lisp object is not a valid socket buffer: ~A\", 1, x);
+	}
+	return (void *)x->vector.self.ch;
+}
+")
+
 ;; FIXME: How bad is manipulating fillp directly?
 (defmethod socket-receive ((socket socket) buffer length
 			   &key oob peek waitall element-type)
@@ -429,8 +453,6 @@ SB-SYS:MAKE-FD-STREAM."))
   (let ((buffer (or buffer (make-array length :element-type element-type)))
 	(length (or length (length buffer)))
 	(fd (socket-file-descriptor socket)))
-    (assert (or (stringp buffer)
-		(typep buffer 'vector)))
     (let ((len-recv
 	   (c-inline (fd buffer length
 		      oob peek waitall)
@@ -443,12 +465,11 @@ SB-SYS:MAKE-FD-STREAM."))
                     ( #5 ? MSG_WAITALL : 0 );
         cl_type type = type_of(#1);
 
-        ssize_t len = recvfrom(#0,( type == t_vector ? #1->vector.self.ch :
-                                  ( type == t_string ? #1->string.self : NULL )),
+        ssize_t len = recvfrom(#0, safe_buffer_pointer(#1, #2),
                                #2, flags, NULL,NULL);
         if (len >= 0) {
                if (type == t_vector) { #1->vector.fillp = len; }
-               else if (type == t_string) { #1->string.fillp = len; }
+               else if (type == t_string) { #1->base_string.fillp = len; }
         }
         @(return) = len;
 }
@@ -681,10 +702,9 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
 
 	fill_inet_sockaddr(&sockaddr, #3, #4, #5, #6, #7);
 
-        len = sendto(#0,( type == t_vector ? #1->vector.self.ch :
-                                ( type == t_string ? #1->string.self : NULL )),
-                             #2, flags,(struct sockaddr*)&sockaddr, 
-                             sizeof(struct sockaddr_in));
+        len = sendto(#0, safe_buffer_pointer(#1,#2),
+                     #2, flags,(struct sockaddr*)&sockaddr, 
+                     sizeof(struct sockaddr_in));
         @(return) = len;
 }
 "
@@ -704,9 +724,7 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
                     ( #8 ? MSG_CONFIRM : 0 );
         cl_type type = type_of(#1);
 
-        ssize_t len = send(#0,( type == t_vector ? #1->vector.self.ch :
-                                ( type == t_string ? #1->string.self : NULL )),
-                             #2, flags);
+        ssize_t len = send(#0, safe_buffer_pointer(#1,#2), #2, flags);
         @(return) = len;
 }
 "
@@ -760,7 +778,7 @@ also known as unix-domain sockets."))
         int addr_len = sizeof(struct sockaddr_un);
         int new_fd = accept(#0, &sockaddr, &addr_len);
 	@(return 0) = new_fd;
-	@(return 1) = (new_fd == -1) ? Cnil : make_string_copy(&sockaddr.sun_path);
+	@(return 1) = (new_fd == -1) ? Cnil : make_base_string_copy(&sockaddr.sun_path);
 }")
     (cond
       ((= fd -1)
@@ -805,7 +823,7 @@ also known as unix-domain sockets."))
         int ret = getpeername(#0,&name,&len);
 
         if (ret == 0) {
-                @(return) = make_string_copy(&name.sun_path);
+                @(return) = make_base_string_copy(&name.sun_path);
         } else {
                 @(return) = Cnil;
         }
@@ -1133,7 +1151,7 @@ also known as unix-domain sockets."))
 	    (LPTSTR)&lpMsgBuf,
 	    0,
 	    NULL);
-	  msg = make_string_copy(lpMsgBuf);
+	  msg = make_base_string_copy(lpMsgBuf);
 	  LocalFree(lpMsgBuf);
 	  @(return) = msg;}"
 	  :one-liner nil))

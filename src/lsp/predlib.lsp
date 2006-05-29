@@ -358,8 +358,8 @@ Returns T if X belongs to TYPE; NIL otherwise."
           (or (null i) (match-dimensions object i))))
     #+unicode
     (SIMPLE-BASE-STRING
-     (and (simple-base-string-p object)
-	  (typep (array-element-type object) 'base-char)
+     (and (simple-string-p object)
+	  (base-string-p object)
           (or (null i) (match-dimensions object i))))
     (SIMPLE-BIT-VECTOR
      (and (simple-bit-vector-p object)

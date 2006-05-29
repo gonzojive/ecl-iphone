@@ -19,9 +19,6 @@
 /* Always use CLOS							*/
 #define CLOS
 
-/* put this into configure where it belongs */
-#define ECL_UNICODE
-
 /* Use Boehm's garbage collector					*/
 #undef GBC_BOEHM
 #ifdef GBC_BOEHM
@@ -53,6 +50,9 @@
 /* Foreign functions interface						*/
 #undef ECL_FFI
 
+/* Support for Unicode strings */
+#undef ECL_UNICODE
+
 /*
  * C TYPES AND SYSTEM LIMITS
  */
@@ -75,7 +75,11 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 /*
  * The character type
  */
-#define	CHAR_CODE_LIMIT		256
+#ifdef ECL_UNICODE
+#define	CHAR_CODE_LIMIT	1114111	/*  unicode character code limit  */
+#else
+#define	CHAR_CODE_LIMIT	256	/*  unicode character code limit  */
+#endif
 
 /*
  * Array limits

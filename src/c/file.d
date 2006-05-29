@@ -1643,11 +1643,8 @@ BEGIN:
 		strm = strm->stream.object1;
 		goto BEGIN;
 
-	case smm_string_output: {
-	  	cl_object strng = strm->stream.object0;
-		strng->base_string.self[strng->base_string.fillp] = '\0';
+	case smm_string_output:
 		break;
-	      }
 	case smm_input:
 #if defined(ECL_WSOCK)
 	case smm_input_wsock:
@@ -2458,7 +2455,8 @@ cl_echo_stream_output_stream(cl_object strm)
 @(defun make_string_input_stream (strng &o istart iend)
 	cl_index s, e;
 @
-	assert_type_base_string(strng);
+	/* FIXME! We cannot read from extended strings*/
+	strng = si_coerce_to_base_string(strng);
 	if (Null(istart))
 		s = 0;
 	else if (!FIXNUMP(istart) || FIXNUM_MINUSP(istart))
@@ -2686,7 +2684,7 @@ si_make_string_output_stream_from_string(cl_object s)
 	cl_object strm;
 
 	if (type_of(s) != t_base_string || !s->base_string.hasfillp)
-		FEerror("~S is not a string with a fill-pointer.", 1, s);
+		FEerror("~S is not a base-string with a fill-pointer.", 1, s);
 	strm = cl_alloc_object(t_stream);
 	strm->stream.mode = (short)smm_string_output;
 	strm->stream.closed = 0;

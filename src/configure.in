@@ -155,6 +155,11 @@ AC_ARG_WITH(rt,
                   [(default=YES)]),
   [], [with_rt=${enable_shared}])
 
+AC_ARG_ENABLE(unicode,
+  AS_HELP_STRING( [--enable-unicode],
+                  [enable support for unicode (default=NO)]),
+  [], [enable_unicode=no])
+
 dnl -----------------------------------------------------------------------
 dnl Installation directories
 libdir="${libdir}/ecl"
@@ -473,6 +478,10 @@ fi
 
 if test "${with_rt}" = "yes"; then
   ECL_ADD_LISP_MODULE([rt])
+fi
+
+if test "${enable_unicode}" = "yes"; then
+   AC_DEFINE(ECL_UNICODE, [1], [Support for Unicode])
 fi
 
 dnl ----------------------------------------------------------------------

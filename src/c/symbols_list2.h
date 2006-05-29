@@ -156,12 +156,7 @@ cl_symbols[] = {
 {"ATANH","ECL_NAME(cl_atanh)"},
 {"ATOM","cl_atom"},
 {"BASE-CHAR",NULL},
-{"BASE-CHAR-P","cl_base_char_p"},
-#ifdef ECL_UNICODE
-{"BASE-STRING","cl_base_string"},
-#else
 {"BASE-STRING",NULL},
-#endif
 {"BIGNUM",NULL},
 {"BIT","ECL_NAME(cl_bit)"},
 {"BIT-AND","ECL_NAME(cl_bit_and)"},
@@ -805,9 +800,6 @@ cl_symbols[] = {
 {"SIGNUM","ECL_NAME(cl_signum)"},
 {"SIMPLE-ARRAY",NULL},
 {"SIMPLE-BASE-STRING",NULL},
-#ifdef ECL_UNICODE
-{"SIMPLE-BASE-STRING-P","cl_simple_base_string_p"},
-#endif
 {"SIMPLE-BIT-VECTOR",NULL},
 {"SIMPLE-BIT-VECTOR-P","cl_simple_bit_vector_p"},
 {"SIMPLE-CONDITION",NULL},
@@ -1072,6 +1064,8 @@ cl_symbols[] = {
 {SYS_ "ARGC","si_argc"},
 {SYS_ "ARGV","si_argv"},
 {SYS_ "ASET","si_aset"},
+{SYS_ "BASE-CHAR-P","si_base_char_p"},
+{SYS_ "BASE-STRING-P","si_base_string_p"},
 {SYS_ "BC-DISASSEMBLE","si_bc_disassemble"},
 {SYS_ "BC-SPLIT","si_bc_split"},
 {SYS_ "BDS-TOP","si_bds_top"},
@@ -1083,6 +1077,8 @@ cl_symbols[] = {
 {SYS_ "CHDIR","si_chdir"},
 {SYS_ "CLEAR-COMPILER-PROPERTIES","cl_identity"},
 {SYS_ "CLOSE-PIPE","si_close_pipe"},
+{SYS_ "COERCE-TO-BASE-STRING","si_coerce_to_base_string"},
+{SYS_ "COERCE-TO-EXTENDED-STRING","si_coerce_to_extended_string"},
 {SYS_ "COERCE-TO-FILENAME","si_coerce_to_filename"},
 {SYS_ "COERCE-TO-FUNCTION","si_coerce_to_function"},
 {SYS_ "COERCE-TO-PACKAGE","si_coerce_to_package"},

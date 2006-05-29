@@ -156,12 +156,7 @@ cl_symbols[] = {
 {"ATANH", CL_ORDINARY, ECL_NAME(cl_atanh), -1, OBJNULL},
 {"ATOM", CL_ORDINARY, cl_atom, 1, OBJNULL},
 {"BASE-CHAR", CL_ORDINARY, NULL, -1, OBJNULL},
-{"BASE-CHAR-P", CL_ORDINARY, cl_base_char_p, 1, OBJNULL},
-#ifdef ECL_UNICODE
-{"BASE-STRING", CL_ORDINARY, cl_base_string, 1, OBJNULL},
-#else
 {"BASE-STRING", CL_ORDINARY, NULL, -1, OBJNULL},
-#endif
 {"BIGNUM", CL_ORDINARY, NULL, -1, OBJNULL},
 {"BIT", CL_ORDINARY, ECL_NAME(cl_bit), -1, OBJNULL},
 {"BIT-AND", CL_ORDINARY, ECL_NAME(cl_bit_and), -1, OBJNULL},
@@ -805,9 +800,6 @@ cl_symbols[] = {
 {"SIGNUM", CL_ORDINARY, ECL_NAME(cl_signum), -1, OBJNULL},
 {"SIMPLE-ARRAY", CL_ORDINARY, NULL, -1, OBJNULL},
 {"SIMPLE-BASE-STRING", CL_ORDINARY, NULL, -1, OBJNULL},
-#ifdef ECL_UNICODE
-{"SIMPLE-BASE-STRING-P", CL_ORDINARY, cl_simple_base_string_p, 1, OBJNULL},
-#endif
 {"SIMPLE-BIT-VECTOR", CL_ORDINARY, NULL, -1, OBJNULL},
 {"SIMPLE-BIT-VECTOR-P", CL_ORDINARY, cl_simple_bit_vector_p, 1, OBJNULL},
 {"SIMPLE-CONDITION", CL_ORDINARY, NULL, -1, OBJNULL},
@@ -1072,6 +1064,8 @@ cl_symbols[] = {
 {SYS_ "ARGC", SI_ORDINARY, si_argc, 0, OBJNULL},
 {SYS_ "ARGV", SI_ORDINARY, si_argv, 1, OBJNULL},
 {SYS_ "ASET", SI_ORDINARY, si_aset, -1, OBJNULL},
+{SYS_ "BASE-CHAR-P", SI_ORDINARY, si_base_char_p, 1, OBJNULL},
+{SYS_ "BASE-STRING-P", SI_ORDINARY, si_base_string_p, 1, OBJNULL},
 {SYS_ "BC-DISASSEMBLE", SI_ORDINARY, si_bc_disassemble, 1, OBJNULL},
 {SYS_ "BC-SPLIT", SI_ORDINARY, si_bc_split, 1, OBJNULL},
 {SYS_ "BDS-TOP", SI_ORDINARY, si_bds_top, 0, OBJNULL},
@@ -1083,6 +1077,8 @@ cl_symbols[] = {
 {SYS_ "CHDIR", SI_ORDINARY, si_chdir, -1, OBJNULL},
 {SYS_ "CLEAR-COMPILER-PROPERTIES", SI_ORDINARY, cl_identity, 1, OBJNULL},
 {SYS_ "CLOSE-PIPE", SI_ORDINARY, si_close_pipe, 1, OBJNULL},
+{SYS_ "COERCE-TO-BASE-STRING", SI_ORDINARY, si_coerce_to_base_string, 1, OBJNULL},
+{SYS_ "COERCE-TO-EXTENDED-STRING", SI_ORDINARY, si_coerce_to_extended_string, 1, OBJNULL},
 {SYS_ "COERCE-TO-FILENAME", SI_ORDINARY, si_coerce_to_filename, 1, OBJNULL},
 {SYS_ "COERCE-TO-FUNCTION", SI_ORDINARY, si_coerce_to_function, 1, OBJNULL},
 {SYS_ "COERCE-TO-PACKAGE", SI_ORDINARY, si_coerce_to_package, 1, OBJNULL},

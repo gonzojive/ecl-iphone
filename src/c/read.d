@@ -815,7 +815,7 @@ sharp_left_parenthesis_reader(cl_object in, cl_object c, cl_object d)
 					    cl_list(2, @'quote', @'vector'), x));
 		}
 	} else if (fixed_size) {
-		v = cl_alloc_simple_vector(dim, aet_object);
+		v = ecl_alloc_simple_vector(dim, aet_object);
 		for (i = 0; i < dim; i++) {
 			if (in != OBJNULL) {
 				x = read_object_with_delimiter(in, ')');
@@ -884,7 +884,7 @@ sharp_asterisk_reader(cl_object in, cl_object c, cl_object d)
 	} else {
 		dim = dimcount;
 	}
-	x = cl_alloc_simple_bitvector(dim);
+	x = ecl_alloc_simple_vector(dim, aet_bit);
 	for (i = 0; i < dim; i++) {
 		elt = (i < dimcount) ? cl_env.stack[sp+i] : last;
 		if (elt == MAKE_FIXNUM(0))

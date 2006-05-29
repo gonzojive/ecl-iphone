@@ -336,7 +336,7 @@ cl_string(cl_object x)
 
 #ifdef ECL_UNICODE
 cl_object
-cl_base_string(cl_object x)
+si_coerce_to_base_string(cl_object x)
 {
 	cl_object y;
 
@@ -368,7 +368,7 @@ cl_base_string(cl_object x)
 
 #ifdef ECL_UNICODE
 cl_object
-cl_extended_string(cl_object x)
+si_coerce_to_extended_string(cl_object x)
 {
 	cl_object y;
 
@@ -1401,7 +1401,7 @@ nstring_case(cl_narg narg, int (*casefun)(int, bool *), cl_va_list ARGS)
 #endif
 	/* FIXME! We should use cl_va_start() instead of this ugly trick */
 	for (i = 0, l = 0;  i < narg;  i++) {
-		strings[i] = cl_base_string(cl_va_arg(args));
+		strings[i] = si_coerce_to_base_string(cl_va_arg(args));
 		l += strings[i]->base_string.fillp;
 	}
 	v = cl_alloc_simple_base_string(l);
@@ -1430,7 +1430,7 @@ nstring_case(cl_narg narg, int (*casefun)(int, bool *), cl_va_list ARGS)
 #endif
 	/* FIXME! We should use cl_va_start() instead of this ugly trick */
 	for (i = 0, l = 0;  i < narg;  i++) {
-		strings[i] = cl_extended_string(cl_va_arg(args));
+		strings[i] = si_coerce_to_extended_string(cl_va_arg(args));
 		l += strings[i]->string.fillp;
 	}
 	v = cl_alloc_simple_extended_string(l);
