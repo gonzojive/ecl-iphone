@@ -162,151 +162,53 @@ ecl_cstring_to_base_string_or_nil(const char *s)
 }
 
 
-/*
-	Copy_simple_base_string(x) copies string x to a simple base-string.
-*/
 cl_object
-copy_simple_base_string(cl_object x)
+si_copy_to_simple_base_string(cl_object x)
 {
 	cl_object y;
-	cl_index l = x->base_string.fillp;
-
-	y = cl_alloc_simple_base_string(l);
-	memcpy(y->base_string.self, x->base_string.self, l);
-	return(y);
-}
-
-#ifdef ECL_UNICODE
-cl_object
-copy_simple_string(cl_object x)
-{
-	cl_object y;
-	cl_index length = x->vector.fillp;
-
+ AGAIN:
 	switch(type_of(x)) {
-	case t_string:
-		y = cl_alloc_simple_extended_string(length);
-		memcpy(y->string.self, x->string.self, length * sizeof (cl_object));
-		return(y);
-	case t_base_string:
+	case t_symbol:
+		x = x->symbol.name;
+		goto AGAIN;
+	case t_character:
+		x = cl_string(x);
+		goto AGAIN;
+#ifdef ECL_UNICODE
+	case t_string: {
+		cl_index index, length = x->string.fillp;
+		y = cl_alloc_simple_base_string(length);
+		for (index=0; index < length; index++) {
+			cl_object c = x->string.self[index];
+			if (!BASE_CHAR_P(c))
+				FEerror("Cannot coerce string ~A to a base-string", 1, x);
+			y->base_string.self[index] = CHAR_CODE(c);
+		}
+		break;
+	}
+#endif
+	case t_base_string: {
+		cl_index length = x->base_string.fillp;
 		y = cl_alloc_simple_base_string(length);
 		memcpy(y->base_string.self, x->base_string.self, length);
-		return(y);
+		break;
 	}
-}
-#endif
-
-#ifdef ECL_UNICODE
-cl_object
-coerce_to_simple_base_string(cl_object source)
-{
-AGAIN:
-	switch(type_of(source)) {
-	case t_string: {
-		cl_index  index;
-		cl_index  length      = source->string.fillp;
-		cl_object destination = cl_alloc_simple_base_string(length);
-		for(index=0; index<length; index++) {
-			/* this will smash extended-chars arbitrarily ... checkme */
-			destination->base_string.self[index] = CHAR_CODE(source->string.self[index]);
-			}
-		return destination;
-		}
-	case t_base_string:
-		return source->base_string.adjustable? copy_simple_base_string(source) : source;
-	case t_symbol:
-		source = source->symbol.name;
-		goto AGAIN;
 	default:
-		FEtype_error_string(source);
+		/* This will signal a type error */
+		assert_type_string(x);
 	}
+	@(return y)
 }
-
-cl_object
-coerce_to_simple_extended_string(cl_object source)
-{
-AGAIN:
-	switch(type_of(source)) {
-	case t_string:
-		return source->string.adjustable? copy_simple_string(source) : source;
-	case t_base_string: {
-		cl_index  index;
-		cl_index  length      = source->string.fillp;
-		cl_object destination = cl_alloc_simple_extended_string(length);
-		for(index=0; index<length; index++) {
-			/* this will smash extended-chars arbitrarily ... checkme */
-			destination->string.self[index] = CODE_CHAR(source->base_string.self[index]);
-			}
-		return destination;
-		}
-	case t_symbol:
-		source = source->symbol.name;
-		goto AGAIN;
-	default:
-		FEtype_error_string(source);
-	}
-}
-
-cl_object
-coerce_to_simple_string(cl_object source)
-{
-AGAIN:
-	switch(type_of(source)) {
-	case t_string:
-		return source->base_string.adjustable? copy_simple_string(source) : source;
-	case t_base_string:
-		return source->base_string.adjustable? copy_simple_base_string(source) : source;
-	case t_symbol:
-		source = source->symbol.name;
-		goto AGAIN;
-	default:
-		FEtype_error_string(source);
-	}
-}
-#else
-cl_object
-coerce_to_simple_base_string(cl_object source)
-{
-AGAIN:
-	switch(type_of(source)) {
-	case t_base_string:
-		return source->base_string.adjustable? copy_simple_base_string(source) : source;
-	case t_symbol:
-		source = source->symbol.name;
-		goto AGAIN;
-	default:
-		FEtype_error_string(source);
-	}
-}
-
-cl_object
-coerce_to_simple_string(cl_object source)
-{
-AGAIN:
-	switch(type_of(source)) {
-	case t_string:
-		return source->base_string.adjustable? copy_simple_string(source) : source;
-	case t_base_string:
-		return source->base_string.adjustable? copy_simple_base_string(source) : source;
-	case t_symbol:
-		source = source->symbol.name;
-		goto AGAIN;
-	default:
-		FEtype_error_string(source);
-	}
-}
-#endif
 
 cl_object
 cl_string(cl_object x)
 {
-	cl_object y;
-
 	switch (type_of(x)) {
 	case t_symbol:
 		x = x->symbol.name;
 		break;
-	case t_character:
+	case t_character: {
+		cl_object y;
 #ifdef ECL_UNICODE
 		if (BASE_CHAR_P(x)) {
 			y = cl_alloc_simple_base_string(1);
@@ -323,6 +225,7 @@ cl_string(cl_object x)
 		x = y;
 		break;
 #endif
+	}
 #ifdef ECL_UNICODE
 	case t_string:
 #endif
@@ -338,40 +241,16 @@ cl_string(cl_object x)
 cl_object
 si_coerce_to_base_string(cl_object x)
 {
-	cl_object y;
-
-	switch (type_of(x)) {
-	case t_symbol:
-		x = x->symbol.name;
-		break;
-	case t_character:
-		/* truncates extended chars ... */
-		y = cl_alloc_simple_base_string(1);
-		y->base_string.self[0] = CHAR_CODE(x);
-		x = y;
-		break;
-	case t_string: {
-		cl_index index;
-		y = cl_alloc_simple_base_string(x->string.fillp);
-		for(index=0; index<x->string.fillp; index++)
-			y->base_string.self[index] = CHAR_CODE(x->string.self[index]);
-		x = y;
-		}
-	case t_base_string:
-		break;
-	default:
-		FEtype_error_string(x);
+	if (type_of(x) != t_base_string) {
+		x = si_copy_to_simple_base_string(x);
 	}
 	@(return x)
 }
-#endif
 
-#ifdef ECL_UNICODE
 cl_object
 si_coerce_to_extended_string(cl_object x)
 {
 	cl_object y;
-
 AGAIN:
 	switch (type_of(x)) {
 	case t_symbol:
@@ -380,21 +259,22 @@ AGAIN:
 	case t_character:
 		y = cl_alloc_simple_extended_string(1);
 		y->string.self[0] = x;
-		x = y;
 		break;
 	case t_base_string: {
-		cl_index index;
+		cl_index index, len = x->base_string.dim;
 		y = cl_alloc_simple_extended_string(x->base_string.fillp);
-		for(index=0; index<x->base_string.fillp; index++)
+		for(index=0; index < len; index++) {
 			y->string.self[index] = CODE_CHAR(x->base_string.self[index]);
-		x = y;
 		}
+		y->string.fillp = x->base_string.fillp;
+	}
 	case t_string:
+		y = x;
 		break;
 	default:
 		FEtype_error_string(x);
 	}
-	@(return x)
+	@(return y)
 }
 #endif
 
@@ -1230,7 +1110,7 @@ string_case(cl_narg narg, int (*casefun)(int c, bool *bp), cl_va_list ARGS)
 	cl_parse_key(ARGS, 2, KEYS, KEY_VARS, NULL, FALSE);
 
 	strng = cl_string(strng);
-	conv  = copy_simple_string(strng);
+	conv  = cl_copy_seq(strng);
 	if (startp == Cnil)
 		start = MAKE_FIXNUM(0);
 	get_string_start_end(conv, start, end, &s, &e);

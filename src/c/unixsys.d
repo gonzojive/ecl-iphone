@@ -29,12 +29,10 @@
 #endif
 
 cl_object
-si_system(cl_object cmd)
+si_system(cl_object cmd_string)
 {
-	volatile int code;
-
-	cmd = coerce_to_simple_base_string(cmd);
-	code = system((const char *)(cmd->base_string.self));
+	cl_object cmd = si_copy_to_simple_base_string(cmd_string);
+	int code = system((const char *)(cmd->base_string.self));
 	/* FIXME! Are there any limits for system()? */
 	/* if (cmd->base_string.fillp >= 1024)
 		FEerror("Too long command line: ~S.", 1, cmd);*/
@@ -49,15 +47,14 @@ si_getpid(void)
 }
 
 cl_object
-si_open_pipe(cl_object cmd)
+si_open_pipe(cl_object cmd_string)
 {
 #ifdef _MSC_VER
 	FEerror("Pipes are not supported under Win32/MSVC", 0);
 #else
 	FILE *ptr;
 	cl_object stream;
-
-	cmd = coerce_to_simple_base_string(cmd);
+	cl_object cmd = si_copy_to_simple_base_string(cmd);
 	ptr = popen(cmd->base_string.self, "r");
 	if (ptr == NULL)
 		@(return Cnil);
@@ -128,8 +125,8 @@ stream_to_handle(cl_object s, bool output)
 	cl_object stream_write;
 	cl_object stream_read;
 @{
-	command = coerce_to_simple_base_string(command);
-	argv = cl_mapcar(2, @'si::coerce-to-simple-base-string', argv);
+	command = si_copy_to_simple_base_string(command);
+	argv = cl_mapcar(2, @'si::copy-to-simple-base-string', argv);
 #if defined(mingw32) || defined (_MSC_VER)
 {
 	BOOL ok;

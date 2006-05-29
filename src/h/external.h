@@ -1265,6 +1265,7 @@ extern cl_object cl_nstring_upcase _ARGS((cl_narg narg, ...));
 extern cl_object cl_nstring_downcase _ARGS((cl_narg narg, ...));
 extern cl_object cl_nstring_capitalize _ARGS((cl_narg narg, ...));
 extern cl_object si_base_string_concatenate _ARGS((cl_narg narg, ...));
+extern cl_object si_copy_to_simple_base_string(cl_object s);
 
 extern cl_object cl_alloc_simple_base_string(cl_index l);
 extern cl_object cl_alloc_adjustable_base_string(cl_index l);
@@ -1272,9 +1273,6 @@ extern cl_object make_simple_base_string(char *s);
 #define make_constant_base_string(s) (make_simple_base_string((char *)s))
 extern cl_object make_base_string_copy(const char *s);
 extern cl_object ecl_cstring_to_base_string_or_nil(const char *s);
-extern cl_object copy_simple_base_string(cl_object x);
-extern cl_object coerce_to_simple_string(cl_object x);
-extern cl_object coerce_to_simple_base_string(cl_object x);
 extern bool string_eq(cl_object x, cl_object y);
 extern bool string_equal(cl_object x, cl_object y);
 extern bool member_char(int c, cl_object char_bag);
@@ -1458,7 +1456,6 @@ extern cl_object si_coerce_to_base_string(cl_object x);
 extern cl_object si_coerce_to_extended_string(cl_object x);
 extern cl_object si_extended_string_concatenate _ARGS((cl_narg narg, ...));
 extern cl_object cl_alloc_simple_extended_string(cl_index l);
-extern cl_object coerce_to_simple_extended_string(cl_object x);
 #else
 #define si_base_char_p cl_characterp
 #define si_base_string_p cl_stringp

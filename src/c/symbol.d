@@ -23,7 +23,7 @@ static void FEtype_error_plist(cl_object x) /*__attribute__((noreturn))*/;
 cl_object
 cl_make_symbol(cl_object str)
 {
-	assert_type_base_string(str);
+	str = si_copy_to_simple_base_string(str);
 	@(return make_symbol(str))
 }
 
@@ -34,7 +34,7 @@ make_symbol(cl_object st)
 
 	x = cl_alloc_object(t_symbol);
 	/* FIXME! Should we copy? */
-	x->symbol.name = copy_simple_base_string(st);
+	x->symbol.name = si_copy_to_simple_base_string(st);
 	x->symbol.dynamic = 0;
 	ECL_SET(x,OBJNULL);
 	SYM_FUN(x) = Cnil;

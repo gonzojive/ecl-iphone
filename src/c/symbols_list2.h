@@ -1082,7 +1082,7 @@ cl_symbols[] = {
 {SYS_ "COERCE-TO-FILENAME","si_coerce_to_filename"},
 {SYS_ "COERCE-TO-FUNCTION","si_coerce_to_function"},
 {SYS_ "COERCE-TO-PACKAGE","si_coerce_to_package"},
-{SYS_ "COERCE-TO-SIMPLE-BASE-STRING","coerce_to_simple_base_string"},
+{SYS_ "COPY-TO-SIMPLE-BASE-STRING","si_copy_to_simple_base_string"},
 {SYS_ "COMPILED-FUNCTION-BLOCK","si_compiled_function_block"},
 {SYS_ "COMPILED-FUNCTION-NAME","si_compiled_function_name"},
 {SYS_ "COPY-STREAM","si_copy_stream"},

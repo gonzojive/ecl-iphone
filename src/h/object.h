@@ -64,7 +64,7 @@ typedef cl_object (*cl_objectfn_fixed)();
 #define CHARACTER_TAG		2
 #define CHARACTERP(obje)	(((cl_fixnum)(obje)) & 2)
 #ifdef ECL_UNICODE
-#define BASE_CHAR_P(obje)	((((cl_fixnum)(obje)) & 0xFFFFFD02) == 2)
+#define BASE_CHAR_P(obje)	((((cl_fixnum)(obje)) & 0xFFFFFC03) == 2)
 #define	CODE_CHAR(c)		((cl_object)(((cl_fixnum)(c << 2)|CHARACTER_TAG)))
 #define	CHAR_CODE(obje)		(((cl_fixnum)(obje)) >> 2)
 #else

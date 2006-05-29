@@ -2495,7 +2495,7 @@ cl_get_output_stream_string(cl_object strm)
 	if (type_of(strm) != t_stream ||
 	    (enum ecl_smmode)strm->stream.mode != smm_string_output)
 		FEerror("~S is not a string-output stream.", 1, strm);
-	strng = copy_simple_base_string(strm->stream.object0);
+	strng = si_copy_to_simple_base_string(strm->stream.object0);
 	strm->stream.object0->base_string.fillp = 0;
 	@(return strng)
 }

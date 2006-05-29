@@ -268,7 +268,7 @@ si_open_client_stream(cl_object host, cl_object port)
    cl_object stream;
 
    /* Ensure "host" is a string that we can pass to a C function */
-   host = coerce_to_simple_base_string(host);
+   host = si_copy_to_simple_base_string(host);
 
    /* The port number is not negative */
    p = fixnnint(port);
@@ -365,7 +365,7 @@ si_lookup_host_entry(cl_object host_or_address)
 
 	switch (type_of(host_or_address)) {
 	case t_base_string:
-		host_or_address = coerce_to_simple_base_string(host_or_address);
+		host_or_address = si_copy_to_simple_base_string(host_or_address);
 		he = gethostbyname(host_or_address->base_string.self);
 		break;
 	case t_fixnum:

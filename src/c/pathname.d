@@ -39,12 +39,12 @@ typedef int (*delim_fn)(int);
 static cl_object
 ensure_simple_base_string(cl_object s)
 {
-	switch(type_of(s)) {
+	switch (type_of(s)) {
 #ifdef ECL_UNICODE
 	case t_string:
 #endif
 	case t_base_string:
-		return coerce_to_simple_base_string(s);
+		return si_copy_to_simple_base_string(s);
 	default:
 		return s;
 	}
@@ -86,7 +86,7 @@ destructively_check_directory(cl_object directory, bool logical)
 			if (i > 0)
 				return @':error';
 		} else if (type_of(item) == t_base_string) {
-			CAR(ptr) = copy_simple_base_string(item);
+			CAR(ptr) = si_copy_to_simple_base_string(item);
 			if (logical)
 				continue;
 			if (strcmp(item->base_string.self,".")==0) {
@@ -749,7 +749,11 @@ si_coerce_to_filename(cl_object pathname_orig)
 	pathname = coerce_to_file_pathname(pathname_orig);
 	if (cl_wild_pathname_p(1,pathname) != Cnil)
 		cl_error(3, @'file-error', @':pathname', pathname_orig);
-	namestring = coerce_to_simple_base_string(cl_namestring(pathname));
+	namestring = cl_namestring(pathname);
+	if (namestring == Cnil) {
+		FEerror("Pathname ~A does not have a physical namestring",
+			1, pathname_orig);
+	}
 	if (namestring->base_string.fillp >= MAXPATHLEN - 16)
 		FEerror("Too long filename: ~S.", 1, namestring);
 	return namestring;
@@ -1391,7 +1395,7 @@ copy_wildcards(cl_object *wilds_list, cl_object pattern)
 	}
 	/* Only create a new string when needed */
 	if (new_string)
-		pattern = copy_simple_base_string(cl_env.token);
+		pattern = si_copy_to_simple_base_string(cl_env.token);
 	*wilds_list = wilds;
 	return pattern;
 }

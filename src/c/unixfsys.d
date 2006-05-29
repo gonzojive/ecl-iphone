@@ -390,7 +390,7 @@ homedir_pathname(cl_object user)
 		char *p;
 		/* This ensures that our string has the right length
 		   and it is terminated with a '\0' */
-		user = coerce_to_simple_base_string(cl_string(user));
+		user = si_copy_to_simple_base_string(user);
 		p = user->base_string.self;
 		i = user->base_string.fillp;
 		if (i > 0 && *p == '~') {

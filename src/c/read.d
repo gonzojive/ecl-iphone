@@ -164,7 +164,7 @@ BEGIN:
 				   allow it, but later on in read_VV we make sure that
 				   all referenced packages have been properly built.
 				*/
-				cl_object name = copy_simple_base_string(cl_env.token);
+				cl_object name = si_copy_to_simple_base_string(cl_env.token);
 				if (cl_core.packages_to_be_created == OBJNULL) {
 					FEerror("There is no package with the name ~A.",
 						1, name);
@@ -290,7 +290,7 @@ SYMBOL:
 		x = ecl_find_symbol(cl_env.token, p, &intern_flag);
 		if (intern_flag != EXTERNAL) {
 			FEerror("Cannot find the external symbol ~A in ~S.",
-				2, copy_simple_base_string(cl_env.token), p);
+				2, si_copy_to_simple_base_string(cl_env.token), p);
 		}
 		return x;
 	}
@@ -586,7 +586,7 @@ static cl_object
 double_quote_reader(cl_object in, cl_object c)
 {
 	read_string(CHAR_CODE(c), in);
-	@(return copy_simple_base_string(cl_env.token))
+	@(return si_copy_to_simple_base_string(cl_env.token))
 }
 
 static cl_object
@@ -710,7 +710,7 @@ sharp_backslash_reader(cl_object in, cl_object c, cl_object d)
 		c = CODE_CHAR(strtoul(&c->base_string.self[1], NULL, 16));
 	} else {
 		cl_object nc = cl_name_char(c);
-		if (Null(nc)) FEreader_error("~S is an illegal character name.", in, 1, copy_simple_base_string(c));
+		if (Null(nc)) FEreader_error("~S is an illegal character name.", in, 1, si_copy_to_simple_base_string(c));
 		c = nc;
 	}
  OUTPUT:
@@ -1448,7 +1448,7 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 #ifdef ECL_NEWLINE_IS_LFCR	/* From \n\r, ignore \r */
 	ecl_read_char(strm);
 #endif
-	@(return copy_simple_base_string(cl_env.token) (c == EOF? Ct : Cnil))
+	@(return si_copy_to_simple_base_string(cl_env.token) (c == EOF? Ct : Cnil))
 @)
 
 @(defun read-char (&optional (strm Cnil) (eof_errorp Ct) eof_value recursivep)

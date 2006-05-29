@@ -285,7 +285,7 @@ intern(cl_object name, cl_object p, int *intern_flag)
 	cl_object s, ul;
 
 #ifdef ECL_UNICODE
-	name = coerce_to_simple_base_string(name);
+	name = si_copy_to_simple_base_string(name);
 #else
 	assert_type_base_string(name);
 #endif
