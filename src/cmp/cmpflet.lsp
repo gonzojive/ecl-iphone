@@ -267,18 +267,9 @@
 
 (defun c2call-local (fun args &optional narg)
   (declare (type fun fun))
-  (multiple-value-bind (*unwind-exit* args narg)
-      (maybe-push-args args)
-    (when narg
-      (c2call-local fun args narg)
-      (wt-nl "}")
-      (return-from c2call-local)))
   (unless (c2try-tail-recursive-call fun args)
     (let ((*inline-blocks* 0))
-      (unwind-exit
-       (if (eq args 'ARGS-PUSHED)
-	   (list 'CALL-ARGS-PUSHED fun narg)
-	   (list 'CALL-NORMAL fun (coerce-locs (inline-args args)))))
+      (unwind-exit (list 'CALL-NORMAL fun (coerce-locs (inline-args args))))
       (close-inline-blocks))))
 
 ;;; ----------------------------------------------------------------------

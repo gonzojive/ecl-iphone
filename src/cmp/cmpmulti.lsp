@@ -12,6 +12,9 @@
 
 (in-package "COMPILER")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(progn
 (defun c1multiple-value-call (args &aux forms)
   (check-args-number 'MULTIPLE-VALUE-CALL args 1)
   (cond
@@ -23,43 +26,28 @@
 	 (eq 'VALUES (first forms)))
     (c1funcall (list* (first args) (rest forms))))
    ;; More complicated case.
-   (t (let ((funob (c1expr (first args))))
-	;; FIXME! The type should be more precise
-	(make-c1form* 'MULTIPLE-VALUE-CALL :type T
-		      :args funob (c1args* (rest args)))))))
-
-(defun c2multiple-value-call (funob forms)
-  (let* ((tot (make-lcl-var :rep-type :cl-index))
-	 (*temp* *temp*)
-	 (loc (maybe-save-value funob forms)))
-    (wt-nl "{ cl_index " tot "=0;")
-    (let ((*unwind-exit* `((STACK ,tot) ,@*unwind-exit*)))
-      (let ((*destination* 'VALUES))
-	(dolist (form forms)
-	  (c2expr* form)
-	  (wt-nl tot "+=cl_stack_push_values();")))
-      (c2funcall funob 'ARGS-PUSHED loc tot))
-    (wt "}"))
-  )
+   (t
+    (c1expr
+     (let ((function (gensym))
+	   (nargs (gensym)))
+     `(with-stack
+       (let* ((,function ,(first args))
+	      (,nargs  (+ ,@(loop for i in (rest args)
+				  collect `(stack-push-values ,i)))))
+	 (declare (fixnum ,nargs))
+	 (apply-from-stack ,nargs ,function))))))))
 
 (defun c1multiple-value-prog1 (args)
   (check-args-number 'MULTIPLE-VALUE-PROG1 args 1)
-  (make-c1form* 'MULTIPLE-VALUE-PROG1 :args (c1expr (first args))
-		(c1args* (rest args))))
+  (c1expr (let ((l (gensym)))
+	    `(with-stack
+	      (let ((,l (stack-push-values ,(first args))))
+		(declare (fixnum ,l))
+		,@(rest args)
+		(stack-pop ,l))))))
+)
 
-(defun c2multiple-value-prog1 (form forms)
-  (if (eq 'TRASH *destination*)
-      ;; dont bother saving values
-      (c2progn (cons form forms))
-      (let ((nr (make-lcl-var :type :cl-index)))
-	(let ((*destination* 'VALUES)) (c2expr* form))
-	(wt-nl "{ cl_index " nr "=cl_stack_push_values();")
-	(let ((*destination* 'TRASH)
-	      (*unwind-exit* `((STACK ,nr) ,@*unwind-exit*)))
-	  (dolist (form forms)
-	    (c2expr* form)))
-	(wt-nl "cl_stack_pop_values(" nr ");}")
-	(unwind-exit 'VALUES))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; Beppe:
 ;;; this is the WRONG way to handle 1 value problem.

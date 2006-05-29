@@ -26,7 +26,6 @@
 ;;;	( TEMP temp )			local variable, type object
 ;;;	( CALL c-fun-name args fname )	locs are locations containing the arguments
 ;;;	( CALL-NORMAL fun locs)		similar as CALL, but number of arguments is fixed
-;;;	( CALL-ARGS-PUSHED fun narg )
 ;;;	( C-INLINE output-type fun/string locs side-effects output-var )
 ;;;	( COERCE-LOC representation-type location)
 ;;;	( CAR lcl )
@@ -65,8 +64,7 @@
 
 (defun set-loc (loc &aux fd
 		    (is-call (and (consp loc)
-				  (member (car loc) '(CALL CALL-NORMAL CALL-ARGS-PUSHED)
-					  :test #'eq))))
+				  (member (car loc) '(CALL CALL-NORMAL)  :test #'eq))))
   (when (eql *destination* loc)
     (return-from set-loc))
   (case *destination*

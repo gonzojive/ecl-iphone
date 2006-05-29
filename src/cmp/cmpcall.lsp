@@ -47,7 +47,12 @@
 	  ;; (FUNCALL lisp-expression ...)
 	  ((not (and (consp fun)
 		     (eq (first fun) 'FUNCTION)))
-	   (make-c1form* 'FUNCALL :args (c1expr fun) (c1args* arguments)))
+	   (let ((l (length args)))
+	     (if (< (1- l) si::c-arguments-limit)
+		 (make-c1form* 'FUNCALL :args (c1expr fun) (c1args* arguments))
+		 (c1expr `(with-stack
+			   ,@(loop for i in (rest args) collect `(stack-push ,i))
+			   (apply-from-stack ,l ,(first args)))))))
 	  ;; (FUNCALL #'GENERALIZED-FUNCTION-NAME ...)
 	  ((si::valid-function-name-p (setq fun (second fun)))
 	   (or (c1call-local fun arguments)
@@ -64,10 +69,8 @@
 
 (defun c2funcall (form args &optional loc narg)
   ;; Usually, ARGS holds a list of forms, which are arguments to the
-  ;; function.  If, however, the arguments are on VALUES,
-  ;; ARGS should be set to the symbol ARGS-PUSHED, and NARG to a location
-  ;; containing the number of arguments.
-  ;; LOC is the location of the function object (created by save-funob).
+  ;; function. LOC is the location of the function object (created by
+  ;; save-funob).
   (case (c1form-name form)
     (GLOBAL (c2call-global (c1form-arg 0 form) args loc t narg))
     (LOCAL (c2call-local (c1form-arg 0 form) args narg))
@@ -79,70 +82,46 @@
 	   (*temp* *temp*))
        (unless loc
 	 (setf loc (maybe-save-value form args)))
-       (unwind-exit (call-unknown-global-loc nil loc narg
-					     (if (eq args 'ARGS-PUSHED)
-						 args
-						 (inline-args args))))
+       (unwind-exit (call-unknown-global-loc nil loc narg (inline-args args)))
        (close-inline-blocks)))))
-
-(defun maybe-push-args (args)
-  (when (or (eq args 'ARGS-PUSHED)
-	    (< (length args) SI::C-ARGUMENTS-LIMIT))
-    (return-from maybe-push-args (values nil nil nil)))
-  (let* ((narg (make-lcl-var :type :cl-index)))
-    (wt-nl "{cl_index " narg "=0;")
-    (let* ((*temp* *temp*)
-	   (temp (make-temp-var))
-	   (*destination* temp))
-      (dolist (expr args)
-	(c2expr* expr)
-	(wt-nl "cl_stack_push(" temp "); " narg "++;")))
-    (values `((STACK ,narg) ,@*unwind-exit*) 'ARGS-PUSHED narg)))
 
 ;;;
 ;;; c2call-global:
-;;;   ARGS is either the list of arguments or 'ARGS-PUSHED
+;;;   ARGS is the list of arguments
 ;;;   NARG is a location containing the number of ARGS-PUSHED
 ;;;   LOC is either NIL or the location of the function object
 ;;;
 (defun c2call-global (fname args loc return-type &optional narg)
-  (multiple-value-bind (*unwind-exit* args narg)
-      (maybe-push-args args)
-    (when narg
-      (c2call-global fname args loc return-type narg)
-      (wt-nl "}")
-      (return-from c2call-global)))
-  (unless (eq 'ARGS-PUSHED args)
-    (case fname
-      (AREF
-       (let (etype (elttype (c1form-primary-type (car args))))
-	 (when (or (and (eq elttype 'STRING)
-			(setq elttype 'CHARACTER))
-		   (and (consp elttype)
-			(or (eq (car elttype) 'ARRAY)
-			    (eq (car elttype) 'VECTOR))
-			(setq elttype (second elttype))))
-	   (setq etype (type-and return-type elttype))
-	   (unless etype
-	     (cmpwarn "Type mismatch found in AREF. Expected output type ~s, array element type ~s." return-type elttype)
-	     (setq etype T))		; assume no information
-	   (setf return-type etype))))
-      (SYS:ASET				; (sys:aset value array i0 ... in)
-       (let (etype
-	     (valtype (c1form-primary-type (first args)))
-	     (elttype (c1form-primary-type (second args))))
-	 (when (or (and (eq elttype 'STRING)
-			(setq elttype 'CHARACTER))
-		   (and (consp elttype)
-			(or (eq (car elttype) 'ARRAY)
-			    (eq (car elttype) 'VECTOR))
-			(setq elttype (second elttype))))
-	   (setq etype (type-and return-type (type-and valtype elttype)))
-	   (unless etype
-	     (cmpwarn "Type mismatch found in (SETF AREF). Expected output type ~s, array element type ~s, value type ~s." return-type elttype valtype)
-	     (setq etype T))
-	   (setf return-type etype)
-	   (setf (c1form-type (first args)) etype))))))
+  (case fname
+    (AREF
+     (let (etype (elttype (c1form-primary-type (car args))))
+       (when (or (and (eq elttype 'STRING)
+		      (setq elttype 'CHARACTER))
+		 (and (consp elttype)
+		      (or (eq (car elttype) 'ARRAY)
+			  (eq (car elttype) 'VECTOR))
+		      (setq elttype (second elttype))))
+	 (setq etype (type-and return-type elttype))
+	 (unless etype
+	   (cmpwarn "Type mismatch found in AREF. Expected output type ~s, array element type ~s." return-type elttype)
+	   (setq etype T))		; assume no information
+	 (setf return-type etype))))
+    (SYS:ASET				; (sys:aset value array i0 ... in)
+     (let (etype
+	   (valtype (c1form-primary-type (first args)))
+	   (elttype (c1form-primary-type (second args))))
+       (when (or (and (eq elttype 'STRING)
+		      (setq elttype 'CHARACTER))
+		 (and (consp elttype)
+		      (or (eq (car elttype) 'ARRAY)
+			  (eq (car elttype) 'VECTOR))
+		      (setq elttype (second elttype))))
+	 (setq etype (type-and return-type (type-and valtype elttype)))
+	 (unless etype
+	   (cmpwarn "Type mismatch found in (SETF AREF). Expected output type ~s, array element type ~s, value type ~s." return-type elttype valtype)
+	   (setq etype T))
+	 (setf return-type etype)
+	 (setf (c1form-type (first args)) etype)))))
   (when (null loc)
     (let ((fun (find fname *global-funs* :key #'fun-name :test #'same-fname-p)))
       (when fun
@@ -150,9 +129,7 @@
 	  (return-from c2call-global))
 	(setf loc fun))))
   (let ((*inline-blocks* 0))
-    (call-global fname loc
-		 narg (if (eq args 'ARGS-PUSHED) args (inline-args args))
-		 return-type)
+    (call-global fname loc narg (inline-args args) return-type)
     (close-inline-blocks)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -168,7 +145,7 @@
 ;;;   FNAME: the name of the function
 ;;;   LOC: either a function object or NIL
 ;;;   NARG: a location containing the number of ARGS-PUSHED
-;;;   ARGS: 'ARGS-PUSHED or a list of typed locs with arguments
+;;;   ARGS: a list of typed locs with arguments
 ;;;   RETURN-TYPE: the type to which the output is coerced
 ;;;
 (defun call-global-loc (fname loc narg args return-type &aux found fd minarg maxarg)
@@ -180,8 +157,7 @@
 	  (call-unknown-global-loc fname nil narg args)))
 
      ;; Open-codable function call.
-     ((and (not (eq 'ARGS-PUSHED args))
-	   (or (null loc) (fun-global loc))
+     ((and (or (null loc) (fun-global loc))
 	   (setq loc (inline-function fname args return-type)))
       loc)
 
@@ -216,9 +192,7 @@
      (t (call-unknown-global-loc fname loc narg args))))
 
 (defun call-loc (fname loc narg args)
-  (if (eq args 'ARGS-PUSHED)
-      `(CALL-ARGS-PUSHED ,fname ,loc ,narg)
-      `(CALL-NORMAL ,loc ,(coerce-locs args))))
+  `(CALL-NORMAL ,loc ,(coerce-locs args)))
 
 (defun call-linking-loc (fname narg args &aux i)
   (let ((fun (second (assoc fname *linking-calls*))))
@@ -262,7 +236,7 @@
 ;;;
 ;;; call-unknown-global-loc
 ;;;   LOC is NIL or location containing function
-;;;   ARGS is either the list of typed locations for arguments or 'ARGS-PUSHED
+;;;   ARGS is the list of typed locations for arguments
 ;;;   NARG is a location containing the number of ARGS-PUSHED
 ;;;
 (defun call-unknown-global-loc (fname loc narg args)
@@ -276,9 +250,7 @@
 	      (progn
 		(cmpnote "Emiting FDEFINITION for ~S" fname)
 		(setq loc (list 'FDEFINITION fname))))))
-  (if (eq args 'ARGS-PUSHED)
-      `(CALL "cl_apply_from_stack" (,narg ,loc) ,fname)
-      `(CALL "funcall" (,(1+ (length args)) ,loc ,@(coerce-locs args)) ,fname)))
+  `(CALL "funcall" (,(1+ (length args)) ,loc ,@(coerce-locs args)) ,fname))
 
 ;;; Functions that use MAYBE-SAVE-VALUE should rebind *temp*.
 (defun maybe-save-value (value &optional (other-forms nil other-forms-flag))
@@ -344,23 +316,6 @@
       (push narg args))
     (wt-call fun-c-name args fun-lisp-name)))
 
-(defun wt-call-args-pushed (fname fun narg)
-  (let* ((lex-lvl (fun-level fun))
-	 (fun-c-name (fun-cfun fun))
-	 (fun-lisp-name (fun-name fun)))
-    (when (fun-closure fun)
-      (error "WT-CALL-ARGS-PUSHED used with lexical closure.")
-      (when (fun-closure fun)
-	(wt "cl_stack_push(env~d" *env-lvl* ")," narg "++,"))
-      (dotimes (n lex-lvl)
-	(let ((j (- lex-lvl n 1)))
-	  (wt "cl_stack_push(lex" j ")," narg "++,"))))
-    (if (fun-needs-narg fun)
-	(wt "APPLY(" narg "," fun-c-name "," `(STACK-POINTER ,narg) ")")
-	(wt "((" narg "!=" maxarg ")&&FEwrong_num_arguments_anonym(),"
-	    "APPLY_fixed(" narg "," fun-c-name "," `(STACK-POINTER ,narg) "))"))
-    (when fun-lisp-name (wt-comment fun-lisp-name))))
-
 ;;; ----------------------------------------------------------------------
 
 (put-sysprop 'funcall 'C1 #'c1funcall)
@@ -369,5 +324,3 @@
 
 (put-sysprop 'CALL 'WT-LOC #'wt-call)
 (put-sysprop 'CALL-NORMAL 'WT-LOC #'wt-call-normal)
-(put-sysprop 'CALL-ARGS-PUSHED 'WT-LOC #'wt-call-args-pushed)
-(put-sysprop 'STACK-POINTER 'WT-LOC #'wt-stack-pointer)

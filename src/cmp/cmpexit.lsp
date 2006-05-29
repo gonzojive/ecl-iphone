@@ -12,20 +12,17 @@
 
 (in-package "COMPILER")
 
-(defun unwind-bds (bds-lcl bds-bind stack-pop)
+(defun unwind-bds (bds-lcl bds-bind stack-sp)
   (declare (fixnum bds-bind))
-  (when stack-pop
-    (wt-nl "cl_stack_pop_n(" (car stack-pop))
-    (dolist (f (cdr stack-pop))
-      (wt "+" f))
-    (wt ");"))
-  (when bds-lcl (wt-nl "bds_unwind(" bds-lcl ");"))
+  (when stack-sp
+    (wt-nl "cl_stack_set_index(" stack-sp ");"))
+  (when bds-lcl
+    (wt-nl "bds_unwind(" bds-lcl ");"))
   (if (< bds-bind 4)
       (dotimes (n bds-bind) (declare (fixnum n)) (wt-nl "bds_unwind1();"))
       (wt-nl "bds_unwind_n(" bds-bind ");")))
 
-(defun unwind-exit (loc &optional (jump-p nil)
-                        &aux (bds-lcl nil) (bds-bind 0) (stack-pop nil))
+(defun unwind-exit (loc &optional (jump-p nil) &aux (bds-lcl nil) (bds-bind 0) (stack-sp nil))
   (declare (fixnum bds-bind))
   (when (consp *destination*)
     (case (car *destination*)
@@ -40,7 +37,7 @@
     (cond
       ((consp ue)		    ; ( label# . ref-flag )| (STACK n) |(LCL n)
        (cond ((eq (car ue) 'STACK)
-	      (push (second ue) stack-pop))
+	      (setf stack-sp (second ue)))
 	     ((eq (car ue) 'LCL)
 	      (setq bds-lcl ue bds-bind 0))
 	     ((eq ue *exit*)
@@ -48,8 +45,8 @@
 	      (cond ((and (consp *destination*)
 			  (or (eq (car *destination*) 'JUMP-TRUE)
 			      (eq (car *destination*) 'JUMP-FALSE)))
-		     (unwind-bds bds-lcl bds-bind stack-pop))
-		    ((not (or bds-lcl (plusp bds-bind) stack-pop))
+		     (unwind-bds bds-lcl bds-bind stack-sp))
+		    ((not (or bds-lcl (plusp bds-bind) stack-sp))
 		     (set-loc loc))
 		    ;; Save the value if LOC may possibly refer
 		    ;; to special binding.
@@ -59,11 +56,11 @@
 			    (temp (make-temp-var)))
 		       (let ((*destination* temp))
 			 (set-loc loc)) ; temp <- loc
-		       (unwind-bds bds-lcl bds-bind stack-pop)
+		       (unwind-bds bds-lcl bds-bind stack-sp)
 		       (set-loc temp))) ; *destination* <- temp
 		    (t
 		     (set-loc loc)
-		     (unwind-bds bds-lcl bds-bind stack-pop)))
+		     (unwind-bds bds-lcl bds-bind stack-sp)))
 	      (when jump-p (wt-nl) (wt-go *exit*))
 	      (return))
 	     (t (setq jump-p t))))
@@ -76,16 +73,16 @@
 	     ;; *destination* must be either RETURN or TRASH.
 	     (cond ((eq loc 'VALUES)
 		    ;; from multiple-value-prog1 or values
-		    (unwind-bds bds-lcl bds-bind stack-pop)
+		    (unwind-bds bds-lcl bds-bind stack-sp)
 		    (wt-nl "return VALUES(0);"))
 		   ((eq loc 'RETURN)
 		    ;; from multiple-value-prog1 or values
-		    (unwind-bds bds-lcl bds-bind stack-pop)
+		    (unwind-bds bds-lcl bds-bind stack-sp)
 		    (wt-nl "return value0;"))      
 		   (t
 		    (let* ((*destination* 'RETURN))
 		      (set-loc loc))
-		    (unwind-bds bds-lcl bds-bind stack-pop)
+		    (unwind-bds bds-lcl bds-bind stack-sp)
 		    (wt-nl "return value0;")))
 	     (return))
 	   ((RETURN-FIXNUM RETURN-CHARACTER RETURN-LONG-FLOAT
@@ -103,7 +100,7 @@
 	      (if (or bds-lcl (plusp bds-bind))
 		  (let ((lcl (make-lcl-var :type (second loc))))
 		    (wt-nl "{cl_fixnum " lcl "= " loc ";")
-		    (unwind-bds bds-lcl bds-bind stack-pop)
+		    (unwind-bds bds-lcl bds-bind stack-sp)
 		    (wt-nl "return(" lcl ");}"))
 		  (progn
 		    (wt-nl "return(" loc ");")))
@@ -119,22 +116,22 @@
   ;;; Never reached
   )
 
-(defun unwind-no-exit (exit &aux (bds-lcl nil) (bds-bind 0) (stack-pop nil))
+(defun unwind-no-exit (exit &aux (bds-lcl nil) (bds-bind 0) (stack-sp nil))
   (declare (fixnum bds-bind))
   (dolist (ue *unwind-exit* (baboon))
     (cond
        ((consp ue)
 	(cond ((eq ue exit)
-	       (unwind-bds bds-lcl bds-bind stack-pop)
+	       (unwind-bds bds-lcl bds-bind stack-sp)
 	       (return))
 	      ((eq (first ue) 'STACK)
-	       (push (second ue) stack-pop))))
+	       (setf stack-sp (second ue)))))
        ((numberp ue) (setq bds-lcl ue bds-bind 0))
        ((eq ue 'BDS-BIND) (incf bds-bind))
        ((member ue '(RETURN RETURN-OBJECT RETURN-FIXNUM RETURN-CHARACTER
                             RETURN-LONG-FLOAT RETURN-SHORT-FLOAT))
         (if (eq exit ue)
-          (progn (unwind-bds bds-lcl bds-bind stack-pop)
+          (progn (unwind-bds bds-lcl bds-bind stack-sp)
                  (return))
           (baboon))
         ;;; Never reached
@@ -142,7 +139,7 @@
        ((eq ue 'FRAME) (wt-nl "frs_pop();"))
        ((eq ue 'TAIL-RECURSION-MARK)
         (if (eq exit 'TAIL-RECURSION-MARK)
-          (progn (unwind-bds bds-lcl bds-bind stack-pop)
+          (progn (unwind-bds bds-lcl bds-bind stack-sp)
                  (return))
           (baboon))
         ;;; Never reached
@@ -176,8 +173,7 @@
           (t (baboon)))))
 
 (defun c2try-tail-recursive-call (fun args)
-  (when (and (listp args) ;; ARGS can be also 'ARGS-PUSHED
-	     *tail-recursion-info*
+  (when (and *tail-recursion-info*
 	     (eq fun (first *tail-recursion-info*))
 	     (last-call-p)
 	     (tail-recursion-possible)

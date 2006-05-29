@@ -275,6 +275,8 @@
       (cond ((eq output-type ':void)
 	     (setf output-rep-type '()
 		   output-type 'NIL))
+	    ((equal output-type '(VALUES &REST t))
+	     (setf output-rep-type '(VALUES &REST t)))
 	    ((and (consp output-type) (eql (first output-type) 'VALUES))
 	     (when one-liner
 	       (cmpwarn "A FFI:C-INLINE form cannot be :ONE-LINER and output more than one value: ~A"
@@ -325,8 +327,9 @@
     (when (null output-rep-type)
       (if side-effects
 	  (progn
+	    (wt-nl)
 	    (wt-c-inline-loc output-rep-type c-expression coerced-arguments t nil)
-	    (wt ";"))
+	    (when one-liner (wt ";")))
 	  (cmpwarn "Ignoring form ~S" c-expression))
       (return-from produce-inline-loc NIL))
 
@@ -335,6 +338,12 @@
     (when one-liner
       (return-from produce-inline-loc
 	`(C-INLINE ,output-rep-type ,c-expression ,coerced-arguments ,side-effects NIL)))
+
+    ;; If the output is a in the VALUES vector, just write down the form and output
+    ;; the location of the data.
+    (when (equalp output-rep-type '(VALUES &REST T))
+      (wt-c-inline-loc output-rep-type c-expression coerced-arguments side-effects 'VALUES)
+      (return-from produce-inline-loc 'VALUES))
 
     ;; Otherwise we have to set up variables for holding the output.
     (flet ((make-output-var (type)
@@ -405,12 +414,14 @@
 	(#\@
 	 (let ((object (read s)))
 	   (cond ((and (consp object) (equal (first object) 'RETURN))
-		  (let ((ndx (or (second object) 0))
-			(l (length output-vars)))
-		    (if (< ndx l)
-			(wt (nth ndx output-vars))
-			(cmperr "Used @(RETURN ~D) in a C-INLINE form with ~D output values"
-				ndx l))))
+		  (if (eq output-vars 'VALUES)
+		      (cmperr "User @(RETURN ...) in a C-INLINE form with no output values")
+		      (let ((ndx (or (second object) 0))
+			    (l (length output-vars)))
+			(if (< ndx l)
+			    (wt (nth ndx output-vars))
+			  (cmperr "Used @(RETURN ~D) in a C-INLINE form with ~D output values"
+				  ndx l)))))
 		 (t
 		  (when (and (consp object) (eq (first object) 'QUOTE))
 		    (setq object (second object)))

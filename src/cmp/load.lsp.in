@@ -20,6 +20,7 @@
   "src:cmp;cmplet.lsp"
   "src:cmp;cmploc.lsp"
   "src:cmp;cmpmap.lsp"
+  "src:cmp;cmpstack.lsp"
   "src:cmp;cmpmulti.lsp"
   "src:cmp;cmpspecial.lsp"
   "src:cmp;cmptag.lsp"

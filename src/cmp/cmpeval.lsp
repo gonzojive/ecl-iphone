@@ -82,6 +82,12 @@
 (defun c1call-local (fname args)
   (let ((fun (local-function-ref fname)))
     (when fun
+      (let ((l (length args)))
+	(when (>= l si::c-arguments-limit)
+	  (return-from c1call-local
+	    (c1expr `(with-stack
+		      ,@(loop for i in args collect `(stack-push ,i))
+		      (apply-from-stack ,l #',fname))))))
       (let* ((forms (c1args* args))
 	     (lambda-form (fun-lambda fun))
 	     (return-type (or (get-local-return-type fun) 'T))
@@ -101,12 +107,17 @@
 		      :args fun forms)))))
 
 (defun c1call-global (fname args)
-  (let* ((forms (c1args* args))
-	 (return-type (propagate-types fname forms args)))
-    (make-c1form* 'CALL-GLOBAL
-		  :sp-change (function-may-change-sp fname)
-		  :type return-type
-		  :args fname forms)))
+  (let ((l (length args)))
+    (if (>= l si::c-arguments-limit)
+	(c1expr `(with-stack
+		  ,@(loop for i in args collect `(stack-push ,i))
+		  (apply-from-stack ,l #',fname)))
+	(let* ((forms (c1args* args))
+	       (return-type (propagate-types fname forms args)))
+	  (make-c1form* 'CALL-GLOBAL
+			:sp-change (function-may-change-sp fname)
+			:type return-type
+			:args fname forms)))))
 
 (defun c2expr (form &aux (name (c1form-name form)) (args (c1form-args form)))
   (if (eq name 'CALL-GLOBAL)
