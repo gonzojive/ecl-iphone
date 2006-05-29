@@ -17,12 +17,14 @@
 #include <ecl/ecl.h>
 
 /******************************* ------- ******************************/
+/* FIXME! CURRENTLY SYMBOLS ARE RESTRICTED TO HAVE NON-UNICODE NAMES */
 
 static void FEtype_error_plist(cl_object x) /*__attribute__((noreturn))*/;
 
 cl_object
 cl_make_symbol(cl_object str)
 {
+	assert_type_string(str);
 	str = si_copy_to_simple_base_string(str);
 	@(return make_symbol(str))
 }

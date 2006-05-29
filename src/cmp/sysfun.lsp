@@ -1175,15 +1175,13 @@ type_of(#0)==t_bitvector")
 (proclaim-function string= (string-designator string-designator *) t :predicate t :no-side-effects t)
 (def-inline string= :always (string string) :bool "string_eq(#0,#1)")
 
-(proclaim-function string-equal (string-designator string-designator *) t :predicate t
- :no-side-effects t)
-(def-inline string-equal :always (string string) :bool "string_equal(#0,#1)")
-
 (proclaim-function string< (string-designator string-designator *) t :predicate t)
 (proclaim-function string> (string-designator string-designator *) t :predicate t)
 (proclaim-function string<= (string-designator string-designator *) t :predicate t)
 (proclaim-function string>= (string-designator string-designator *) t :predicate t)
 (proclaim-function string/= (string-designator string-designator *) t :predicate t)
+(proclaim-function string-equal (string-designator string-designator *) t :predicate t
+ :no-side-effects t)
 (proclaim-function string-lessp (string-designator string-designator *) t :predicate t)
 (proclaim-function string-greaterp (string-designator string-designator *) t :predicate t)
 (proclaim-function string-not-lessp (string-designator string-designator *) t :predicate t)

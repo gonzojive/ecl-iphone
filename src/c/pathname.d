@@ -496,7 +496,7 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 		if (cl_integerp(version) != Cnil && number_plusp(version) &&
 		    fix(VALUES(1)) == aux->base_string.fillp)
 			;
-		else if (string_equal(aux, (@':newest')->symbol.name))
+		else if (cl_string_equal(2, aux, @':newest') != Cnil)
 			version = @':newest';
 		else
 			return Cnil;
@@ -1448,7 +1448,7 @@ copy_list_wildcards(cl_object *wilds, cl_object to)
 	out->pathname.logical = to->pathname.logical;
 
 	/* Match host names */
-	if (!cl_string_equal(2, source->pathname.host, from->pathname.host))
+	if (cl_string_equal(2, source->pathname.host, from->pathname.host) == Cnil)
 		goto error;
 	out->pathname.host = to->pathname.host;
 

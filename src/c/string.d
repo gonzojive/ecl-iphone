@@ -354,6 +354,105 @@ E:
 for the string designator ~S.", 3, start, end, string);
 }
 
+#ifdef ECL_UNICODE
+static int
+compare_extended(cl_object *s1, cl_index l1, cl_object *s2, cl_index l2,
+		 int case_sensitive, cl_index *m)
+{
+	cl_index l, c1, c2;
+	for (l = 0; l < l1; l++, s1++, s2++) {
+		if (l == l2) { /* s1 is longer than s2, therefore s2 < s1 */
+			*m = l;
+			return +1;
+		}
+		c1 = CHAR_CODE(*s1);
+		c2 = CHAR_CODE(*s2);
+		if (!case_sensitive) {
+			c1 = toupper(c1);
+			c2 = toupper(c2);
+		}
+		if (c1 < c2) {
+			*m = l;
+			return -1;
+		} else if (c1 > c2) {
+			*m = l;
+			return +1;
+		}
+	}
+	*m = l;
+	if (l1 == l2)
+		return 0;
+	else { /* s1 is shorter than s2, hence s1 < s2 */
+		return -1;
+	}
+}
+#endif
+
+#ifdef ECL_UNICODE
+static int
+compare_mixed(cl_object *s1, cl_index l1, char *s2, cl_index l2,
+	      int case_sensitive, cl_index *m)
+{
+	cl_index l, c1, c2;
+	for (l = 0; l < l1; l++, s1++, s2++) {
+		if (l == l2) { /* s1 is longer than s2, therefore s2 < s1 */
+			*m = l;
+			return +1;
+		}
+		c1 = CHAR_CODE(*s1);
+		c2 = *s2;
+		if (!case_sensitive) {
+			c1 = toupper(c1);
+			c2 = toupper(c2);
+		}
+		if (c1 < c2) {
+			*m = l;
+			return -1;
+		} else if (c1 > c2) {
+			*m = l;
+			return +1;
+		}
+	}
+	*m = l;
+	if (l1 == l2)
+		return 0;
+	else { /* s1 is shorter than s2, hence s1 < s2 */
+		return -1;
+	}
+}
+#endif
+
+static int
+compare_base(char *s1, cl_index l1, char *s2, cl_index l2, int case_sensitive, cl_index *m)
+{
+	cl_index l, c1, c2;
+	for (l = 0; l < l1; l++, s1++, s2++) {
+		if (l == l2) { /* s1 is longer than s2, therefore s2 < s1 */
+			*m = l;
+			return +1;
+		}
+		c1 = *s1;
+		c2 = *s2;
+		if (!case_sensitive) {
+			c1 = toupper(c1);
+			c2 = toupper(c2);
+		}
+		if (c1 < c2) {
+			*m = l;
+			return -1;
+		} else if (c1 > c2) {
+			*m = l;
+			return +1;
+		}
+	}
+	*m = l;
+	if (l1 == l2) 
+		return 0;
+	else { /* s1 is shorter than s2, hence s1 < s2 */
+		return -1;
+	}
+}
+
 @(defun string= (string1 string2 &key (start1 MAKE_FIXNUM(0)) end1
 		                      (start2 MAKE_FIXNUM(0)) end2)
 	cl_index s1, e1, s2, e2;
@@ -382,6 +481,7 @@ for the string designator ~S.", 3, start, end, string);
 		default:
 			FEtype_error_string(string2);
 		}
+		break;
 	case t_base_string:
 		switch(type_of(string2)) {
 		case t_string:
@@ -397,6 +497,7 @@ for the string designator ~S.", 3, start, end, string);
 		default:
 			FEtype_error_string(string2);
 		}
+		break;
 	default:
 		FEtype_error_string(string1);
 	}
@@ -420,6 +521,7 @@ string_eq(cl_object x, cl_object y)
 	j = y->base_string.fillp;
 	if (i != j) return 0;
 #ifdef ECL_UNICODE
+AGAIN:
 	switch(type_of(x)) {
 	case t_string:
 		switch(type_of(y)) {
@@ -432,19 +534,24 @@ string_eq(cl_object x, cl_object y)
 					return 0;
 			return 1;
 			}
+		default:
+			FEtype_error_string(y);
 		}
+		break;
 	case t_base_string:
 		switch(type_of(y)) {
 		case t_string: {
-			cl_index index;
-			for(index=0; index<i; index++)
-				if (CODE_CHAR(x->base_string.self[index]) != y->string.self[index])
-					return 0;
-			return 1;
-			}
+			cl_object z = x; x = y; y = z;
+			goto AGAIN;
+		}
 		case t_base_string:
 			return memcmp(x->base_string.self, y->base_string.self, i) == 0;
+		default:
+			FEtype_error_string(y);
 		}
+		break;
+	default:
+		FEtype_error_string(x);
 	}
 #else
 	return memcmp(x->base_string.self, y->base_string.self, i) == 0;
@@ -452,10 +559,10 @@ string_eq(cl_object x, cl_object y)
 }
 
 
-#ifdef ECL_UNICODE
 @(defun string_equal (string1 string2 &key (start1 MAKE_FIXNUM(0)) end1
 		                           (start2 MAKE_FIXNUM(0)) end2)
 	cl_index s1, e1, s2, e2;
+	int output;
 @
 	string1 = cl_string(string1);
 	string2 = cl_string(string2);
@@ -463,152 +570,59 @@ string_eq(cl_object x, cl_object y)
 	get_string_start_end(string2, start2, end2, &s2, &e2);
 	if (e1 - s1 != e2 - s2)
 		@(return Cnil)
-
 #ifdef ECL_UNICODE
 	switch(type_of(string1)) {
 	case t_string:
 		switch(type_of(string2)) {
 		case t_string:
-			while (s1 < e1)
-				if (toupper(CHAR_CODE(string1->string.self[s1++])) != toupper(CHAR_CODE(string2->string.self[s2++])))
-					@(return Cnil)
-			@(return Ct)
+			output = compare_extended(string1->string.self + s1, e1 - s1,
+						  string2->string.self + s2, e2 - s2,
+						  0, &e1);
+			break;
 		case t_base_string:
-			while (s1 < e1)
-				if (toupper(CHAR_CODE(string1->string.self[s1++])) != toupper(string2->base_string.self[s2++]))
-					@(return Cnil)
-			@(return Ct)
+			output = compare_mixed(string1->string.self + s1, e1 - s1,
+					       string2->base_string.self + s2, e2 - s2,
+					       0, &e1);
+			break;
 		default:
 			FEtype_error_string(string2);
 		}
+		break;
 	case t_base_string:
 		switch(type_of(string2)) {
 		case t_string:
-			while (s1 < e1)
-				if (toupper(string1->base_string.self[s1++]) != toupper(CHAR_CODE(string2->string.self[s2++])))
-					@(return Cnil)
-			@(return Ct)
+			output = compare_mixed(string2->string.self + s2, e2 - s2,
+					       string1->base_string.self + s1, e1 - s1,
+					       0, &e1);
+			break;
 		case t_base_string:
-			while (s1 < e1)
-				if (toupper(string1->base_string.self[s1++]) != toupper(string2->base_string.self[s2++]))
-					@(return Cnil)
-			@(return Ct)
+			output = compare_base(string1->base_string.self + s1, e1 - s1,
+					      string2->base_string.self + s2, e2 - s2,
+					      0, &e1);
+			break;
 		default:
 			FEtype_error_string(string2);
 		}
+		break;
 	default:
 		FEtype_error_string(string1);
 	}
 #else
-	while (s1 < e1)
-		if (string1->base_string.self[s1++] !=
-		    string2->base_string.self[s2++])
-			@(return Cnil)
+	output = compare_base(string1->base_string.self + s1, e1 - s1,
+			      string2->base_string.self + s2, e2 - s2,
+			      0, &e1);
 #endif
-	@(return Ct)
+	@(return ((output == 0)? Ct : Cnil))
 @)
-#else
-@(defun string_equal (string1 string2 &key (start1 MAKE_FIXNUM(0)) end1
-		      (start2 MAKE_FIXNUM(0)) end2)
-	cl_index s1, e1, s2, e2;
-	char i1, i2;
-@
-	string1 = cl_string(string1);
-	string2 = cl_string(string2);
-	get_string_start_end(string1, start1, end1, &s1, &e1);
-	get_string_start_end(string2, start2, end2, &s2, &e2);
-	if (e1 - s1 != e2 - s2)
-		@(return Cnil)
-	while (s1 < e1) {
-		i1 = string1->base_string.self[s1++];
-		i2 = string2->base_string.self[s2++];
-		if (toupper(i1) != toupper(i2))
-			@(return Cnil)
-	}
-	@(return Ct)
-@)
-#endif
 
-/*
-	This corresponds to string-equal
-	(string equality ignoring the case).
-*/
-#ifdef ECL_UNICODE
-bool
-string_equal(cl_object x, cl_object y)
-{
-	cl_index i, j;
-
-	/* INV: Works with symbols ands strings */
-	i = x->base_string.fillp;
-	j = y->base_string.fillp;
-
-	if (i != j) return(FALSE);
-
-	switch(type_of(x)) {
-	case t_string:
-		switch(type_of(x)) {
-		case t_string:
-			for (i = 0;  i < j;  i++)
-				if (toupper(CHAR_CODE(x->string.self[i])) != toupper(CHAR_CODE(y->string.self[i])))
-					return(FALSE);
-			break;
-		case t_base_string:
-			for (i = 0;  i < j;  i++)
-				if (toupper(CHAR_CODE(x->string.self[i])) != toupper(y->base_string.self[i]))
-					return(FALSE);
-			break;
-		}
-	case t_base_string:
-		switch(type_of(x)) {
-		case t_string:
-			for (i = 0;  i < j;  i++)
-				if (toupper(x->base_string.self[i]) != toupper(CHAR_CODE(y->string.self[i])))
-					return(FALSE);
-			break;
-		case t_base_string: {
-			register char *p, *q;
-			p = x->base_string.self;
-			q = y->base_string.self;
-
-			for (i = 0;  i < j;  i++)
-				if (toupper(p[i]) != toupper(q[i]))
-					return(FALSE);
-			break;
-			}
-		}
-	}
-	return(TRUE);
-}
-#else
-bool
-string_equal(cl_object x, cl_object y)
-{
-	cl_index i, j;
-	register char *p, *q;
-
-	/* INV: Works with symbols ands strings */
-	i = x->base_string.fillp;
-	j = y->base_string.fillp;
-	if (i != j)
-		return(FALSE);
-	p = x->base_string.self;
-	q = y->base_string.self;
-	for (i = 0;  i < j;  i++)
-		if (toupper(p[i]) != toupper(q[i]))
-			return(FALSE);
-	return(TRUE);
-}
-#endif
-
-#ifdef ECL_UNICODE
 static cl_object
-string_cmp(cl_narg narg, int sign, int boundary, cl_va_list ARGS)
+string_compare(cl_narg narg, int sign1, int sign2, int case_sensitive, cl_va_list ARGS)
 {
 	cl_object string1 = cl_va_arg(ARGS);
 	cl_object string2 = cl_va_arg(ARGS);
 	cl_index s1, e1, s2, e2;
-	int s, i1, i2;
+	int output;
+	cl_object result;
 	cl_object KEYS[4];
 #define start1 KEY_VARS[0]
 #define end1 KEY_VARS[1]
@@ -631,169 +645,47 @@ string_cmp(cl_narg narg, int sign, int boundary, cl_va_list ARGS)
 	if (start2p == Cnil) start2 = MAKE_FIXNUM(0);
 	get_string_start_end(string1, start1, end1, &s1, &e1);
 	get_string_start_end(string2, start2, end2, &s2, &e2);
+#ifdef ECL_UNICODE
 	switch(type_of(string1)) {
 	case t_string:
 		switch(type_of(string2)) {
 		case t_string:
-			while (s1 < e1) {
-				if (s2 == e2)
-		  			return1(sign>0 ? Cnil : MAKE_FIXNUM(s1));
-				i1 = CHAR_CODE(string1->string.self[s1]);
-				i2 = CHAR_CODE(string2->string.self[s2]);
-				if (sign == 0) {
-					if (i1 != i2)
-			  			return1(MAKE_FIXNUM(s1));
-				} else {
-					s = sign*(i2-i1);
-					if (s > 0)
-			  			return1(MAKE_FIXNUM(s1));
-					if (s < 0)
-			  			return1(Cnil);
-				}
-				s1++;
-				s2++;
-			}
-
-			if (s2 == e2)
-	  			return1(boundary==0 ? MAKE_FIXNUM(s1) : Cnil);
-			else
-	  			return1(sign>=0 ? MAKE_FIXNUM(s1) : Cnil);
+			output = compare_extended(string1->string.self + s1, e1 - s1,
+						  string2->string.self + s2, e2 - s2,
+						  case_sensitive, &e1);
+			break;
 		case t_base_string:
-			while (s1 < e1) {
-				if (s2 == e2)
-		  			return1(sign>0 ? Cnil : MAKE_FIXNUM(s1));
-				i1 = CHAR_CODE(string1->string.self[s1]);
-				i2 = string2->base_string.self[s2];
-				if (sign == 0) {
-					if (i1 != i2)
-			  			return1(MAKE_FIXNUM(s1));
-				} else {
-					s = sign*(i2-i1);
-					if (s > 0)
-			  			return1(MAKE_FIXNUM(s1));
-					if (s < 0)
-			  			return1(Cnil);
-				}
-				s1++;
-				s2++;
-			}
-
-			if (s2 == e2)
-	  			return1(boundary==0 ? MAKE_FIXNUM(s1) : Cnil);
-			else
-	  			return1(sign>=0 ? MAKE_FIXNUM(s1) : Cnil);
+			output = compare_mixed(string1->string.self + s1, e1 - s1,
+					       string2->base_string.self + s2, e2 - s2,
+					       case_sensitive, &e1);
+			break;
 		}
 	case t_base_string:
 		switch(type_of(string2)) {
 		case t_string:
-			while (s1 < e1) {
-				if (s2 == e2)
-		  			return1(sign>0 ? Cnil : MAKE_FIXNUM(s1));
-				i1 = string1->base_string.self[s1];
-				i2 = CHAR_CODE(string2->string.self[s2]);
-				if (sign == 0) {
-					if (i1 != i2)
-			  			return1(MAKE_FIXNUM(s1));
-				} else {
-					s = sign*(i2-i1);
-					if (s > 0)
-			  			return1(MAKE_FIXNUM(s1));
-					if (s < 0)
-			  			return1(Cnil);
-				}
-				s1++;
-				s2++;
-			}
-
-			if (s2 == e2)
-	  			return1(boundary==0 ? MAKE_FIXNUM(s1) : Cnil);
-			else
-	  			return1(sign>=0 ? MAKE_FIXNUM(s1) : Cnil);
+			output = compare_mixed(string2->string.self + s2, e2 - s2,
+					       string1->base_string.self + s1, e1 - s1,
+					       case_sensitive, &e1);
+			output = - output;
+			break;
 		case t_base_string:
-			while (s1 < e1) {
-				if (s2 == e2)
-		  			return1(sign>0 ? Cnil : MAKE_FIXNUM(s1));
-				i1 = string1->base_string.self[s1];
-				i2 = string2->base_string.self[s2];
-				if (sign == 0) {
-					if (i1 != i2)
-			  			return1(MAKE_FIXNUM(s1));
-				} else {
-					s = sign*(i2-i1);
-					if (s > 0)
-			  			return1(MAKE_FIXNUM(s1));
-					if (s < 0)
-			  			return1(Cnil);
-				}
-				s1++;
-				s2++;
-			}
-
-			if (s2 == e2)
-	  			return1(boundary==0 ? MAKE_FIXNUM(s1) : Cnil);
-			else
-	  			return1(sign>=0 ? MAKE_FIXNUM(s1) : Cnil);
+			output = compare_base(string1->base_string.self + s1, e1 - s1,
+					      string2->base_string.self + s2, e2 - s2,
+					      case_sensitive, &e1);
+			break;
 		}
 	}
-#undef start1p
-#undef start2p
-#undef start1
-#undef end1
-#undef start2
-#undef end2
-}
 #else
-static cl_object
-string_cmp(cl_narg narg, int sign, int boundary, cl_va_list ARGS)
-{
-	cl_object string1 = cl_va_arg(ARGS);
-	cl_object string2 = cl_va_arg(ARGS);
-	cl_index s1, e1, s2, e2;
-	int s, i1, i2;
-	cl_object KEYS[4];
-#define start1 KEY_VARS[0]
-#define end1 KEY_VARS[1]
-#define start2 KEY_VARS[2]
-#define end2 KEY_VARS[3]
-#define start1p KEY_VARS[4]
-#define start2p KEY_VARS[6]
-	cl_object KEY_VARS[8];
-
-	if (narg < 2) FEwrong_num_arguments_anonym();
-	KEYS[0]=@':start1';
-	KEYS[1]=@':end1';
-	KEYS[2]=@':start2';
-	KEYS[3]=@':end2';
-	cl_parse_key(ARGS, 4, KEYS, KEY_VARS, NULL, FALSE);
-
-	string1 = cl_string(string1);
-	string2 = cl_string(string2);
-	if (start1p == Cnil) start1 = MAKE_FIXNUM(0);
-	if (start2p == Cnil) start2 = MAKE_FIXNUM(0);
-	get_string_start_end(string1, start1, end1, &s1, &e1);
-	get_string_start_end(string2, start2, end2, &s2, &e2);
-	while (s1 < e1) {
-		if (s2 == e2)
-		  return1(sign>0 ? Cnil : MAKE_FIXNUM(s1));
-		i1 = string1->base_string.self[s1];
-		i2 = string2->base_string.self[s2];
-		if (sign == 0) {
-			if (i1 != i2)
-			  return1(MAKE_FIXNUM(s1));
-		} else {
-			s = sign*(i2-i1);
-			if (s > 0)
-			  return1(MAKE_FIXNUM(s1));
-			if (s < 0)
-			  return1(Cnil);
-		}
-		s1++;
-		s2++;
+	output = compare_base(string1->base_string.self + s1, e1 - s1,
+			      string2->base_string.self + s2, e2 - s2,
+			      case_sensitive, &e1);
+#endif
+	if (output == sign1 || output == sign2) {
+		result = MAKE_FIXNUM(e1 + s1);
+	} else {
+		result = Cnil;
 	}
-	if (s2 == e2)
-	  return1(boundary==0 ? MAKE_FIXNUM(s1) : Cnil);
-	else
-	  return1(sign>=0 ? MAKE_FIXNUM(s1) : Cnil);
+	@(return result)
 #undef start1p
 #undef start2p
 #undef start1
@@ -801,202 +693,55 @@ string_cmp(cl_narg narg, int sign, int boundary, cl_va_list ARGS)
 #undef start2
 #undef end2
 }
-#endif
 
 @(defun string< (&rest args)
 @
-	return string_cmp(narg, 1, 1, args);
+	return string_compare(narg, -1, -1, 1, args);
 @)
 
 @(defun string> (&rest args)
 @
-	return string_cmp(narg,-1, 1, args);
+	return string_compare(narg, +1, +1, 1, args);
 @)
 
 @(defun string<= (&rest args)
 @
-	return string_cmp(narg, 1, 0, args);
+	return string_compare(narg, -1, 0, 1, args);
 @)
 
 @(defun string>= (&rest args)
 @
-	return string_cmp(narg,-1, 0, args);
+	return string_compare(narg, 0, +1, 1, args);
 @)
 
 @(defun string/= (&rest args)
 @
-	return string_cmp(narg, 0, 1, args);
+	return string_compare(narg, -1, +1, 1, args);
 @)
-
-static cl_object
-string_compare(cl_narg narg, int sign, int boundary, cl_va_list ARGS)
-{
-	cl_object string1 = cl_va_arg(ARGS);
-	cl_object string2 = cl_va_arg(ARGS);
-	cl_index s1, e1, s2, e2;
-	int i1, i2, s;
-
-	cl_object KEYS[4];
-#define start1 KEY_VARS[0]
-#define end1 KEY_VARS[1]
-#define start2 KEY_VARS[2]
-#define end2 KEY_VARS[3]
-#define start1p KEY_VARS[4]
-#define start2p KEY_VARS[6]
-	cl_object KEY_VARS[8];
-
-	if (narg < 2) FEwrong_num_arguments_anonym();
-	KEYS[0]=@':start1';
-	KEYS[1]=@':end1';
-	KEYS[2]=@':start2';
-	KEYS[3]=@':end2';
-	cl_parse_key(ARGS, 4, KEYS, KEY_VARS, NULL, FALSE);
-
-	string1 = cl_string(string1);
-	string2 = cl_string(string2);
-	if (start1p == Cnil) start1 = MAKE_FIXNUM(0);
-	if (start2p == Cnil) start2 = MAKE_FIXNUM(0);
-	get_string_start_end(string1, start1, end1, &s1, &e1);
-	get_string_start_end(string2, start2, end2, &s2, &e2);
-	switch(type_of(string1)) {
-	case t_string:
-		switch(type_of(string2)) {
-		case t_string:
-			while (s1 < e1) {
-				if (s2 == e2)
-		  			return1(sign>0 ? Cnil : MAKE_FIXNUM(s1));
-				i1 = CHAR_CODE(string1->string.self[s1]);
-				i1 = toupper(i1);
-				i2 = CHAR_CODE(string2->string.self[s2]);
-				i2 = toupper(i2);
-				if (sign == 0) {
-					if (i1 != i2)
-			  			return1(MAKE_FIXNUM(s1));
-				} else {
-					s = sign*(i2-i1);
-					if (s > 0)
-			  			return1(MAKE_FIXNUM(s1));
-					if (s < 0)
-			  			return1(Cnil);
-				}
-				s1++;
-				s2++;
-			}
-			if (s2 == e2)
-				return1(boundary==0 ? MAKE_FIXNUM(s1) : Cnil);
-			else
-				return1(sign>=0 ? MAKE_FIXNUM(s1) : Cnil);
-		case t_base_string:
-			while (s1 < e1) {
-				if (s2 == e2)
-		  			return1(sign>0 ? Cnil : MAKE_FIXNUM(s1));
-				i1 = CHAR_CODE(string1->string.self[s1]);
-				i1 = toupper(i1);
-				i2 = string2->base_string.self[s2];
-				i2 = toupper(i2);
-				if (sign == 0) {
-					if (i1 != i2)
-			  			return1(MAKE_FIXNUM(s1));
-				} else {
-					s = sign*(i2-i1);
-					if (s > 0)
-			  			return1(MAKE_FIXNUM(s1));
-					if (s < 0)
-			  			return1(Cnil);
-				}
-				s1++;
-				s2++;
-			}
-			if (s2 == e2)
-				return1(boundary==0 ? MAKE_FIXNUM(s1) : Cnil);
-			else
-				return1(sign>=0 ? MAKE_FIXNUM(s1) : Cnil);
-		}
-	case t_base_string:
-		switch(type_of(string2)) {
-		case t_string:
-			while (s1 < e1) {
-				if (s2 == e2)
-		  			return1(sign>0 ? Cnil : MAKE_FIXNUM(s1));
-				i1 = string1->base_string.self[s1];
-				i1 = toupper(i1);
-				i2 = CHAR_CODE(string2->string.self[s2]);
-				i2 = toupper(i2);
-				if (sign == 0) {
-					if (i1 != i2)
-			  			return1(MAKE_FIXNUM(s1));
-				} else {
-					s = sign*(i2-i1);
-					if (s > 0)
-			  			return1(MAKE_FIXNUM(s1));
-					if (s < 0)
-			  			return1(Cnil);
-				}
-				s1++;
-				s2++;
-			}
-			if (s2 == e2)
-				return1(boundary==0 ? MAKE_FIXNUM(s1) : Cnil);
-			else
-				return1(sign>=0 ? MAKE_FIXNUM(s1) : Cnil);
-		case t_base_string:
-			while (s1 < e1) {
-				if (s2 == e2)
-		  			return1(sign>0 ? Cnil : MAKE_FIXNUM(s1));
-				i1 = string1->base_string.self[s1];
-				i1 = toupper(i1);
-				i2 = string2->base_string.self[s2];
-				i2 = toupper(i2);
-				if (sign == 0) {
-					if (i1 != i2)
-			  			return1(MAKE_FIXNUM(s1));
-				} else {
-					s = sign*(i2-i1);
-					if (s > 0)
-			  			return1(MAKE_FIXNUM(s1));
-					if (s < 0)
-			  			return1(Cnil);
-				}
-				s1++;
-				s2++;
-			}
-			if (s2 == e2)
-				return1(boundary==0 ? MAKE_FIXNUM(s1) : Cnil);
-			else
-				return1(sign>=0 ? MAKE_FIXNUM(s1) : Cnil);
-		}
-	}
-#undef start1p
-#undef start2p
-#undef start1
-#undef end1
-#undef start2
-#undef end2
-}
 
 @(defun string-lessp (&rest args)
 @
-	return string_compare(narg, 1, 1, args);
+	return string_compare(narg, -1, -1, 0, args);
 @)
 
 @(defun string-greaterp (&rest args)
 @
-	return string_compare(narg,-1, 1, args);
+	return string_compare(narg, +1, +1, 0, args);
 @)
 
 @(defun string-not-greaterp (&rest args)
 @
-	return string_compare(narg, 1, 0, args);
+	return string_compare(narg, -1, 0, 0, args);
 @)
 
 @(defun string-not-lessp (&rest args)
 @
-	return string_compare(narg,-1, 0, args);
+	return string_compare(narg, 0, +1, 0, args);
 @)
 
 @(defun string-not-equal (&rest args)
 @
-	return string_compare(narg, 0, 1, args);
+	return string_compare(narg, -1, +1, 0, args);
 @)
 
 bool

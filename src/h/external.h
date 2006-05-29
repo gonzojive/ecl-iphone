@@ -1274,7 +1274,6 @@ extern cl_object make_simple_base_string(char *s);
 extern cl_object make_base_string_copy(const char *s);
 extern cl_object ecl_cstring_to_base_string_or_nil(const char *s);
 extern bool string_eq(cl_object x, cl_object y);
-extern bool string_equal(cl_object x, cl_object y);
 extern bool member_char(int c, cl_object char_bag);
 extern int ecl_base_string_push_extend(cl_object s, int c);
 extern void get_base_string_start_end(cl_object s, cl_object start, cl_object end, cl_index *ps, cl_index *pe);

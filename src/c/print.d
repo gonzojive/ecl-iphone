@@ -855,7 +855,7 @@ write_character(int i, cl_object stream)
 		} else if (i >= 128) {
                         int  index = 0;
 			char name[20];
-			sprintf(name, "u%x", i); /* cleanup */
+			sprintf(name, "u%04x", i); /* cleanup */
                         while(name[index])
 				write_ch(name[index++], stream);
 		} else {

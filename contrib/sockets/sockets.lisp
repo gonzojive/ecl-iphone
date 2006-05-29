@@ -469,7 +469,7 @@ safe_buffer_pointer(cl_object x, cl_index size)
                                #2, flags, NULL,NULL);
         if (len >= 0) {
                if (type == t_vector) { #1->vector.fillp = len; }
-               else if (type == t_string) { #1->base_string.fillp = len; }
+               else if (type == t_base_string) { #1->base_string.fillp = len; }
         }
         @(return) = len;
 }
