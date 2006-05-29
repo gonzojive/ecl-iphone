@@ -77,12 +77,19 @@ printer and we should rather use MAKE-LOAD-FORM."
       (return-from make-load-form (maybe-quote object)))
     (typecase object
       (array
-       (values `(make-array ',(array-dimensions object)
-		 :element-type ',(array-element-type object)
-		 :adjustable ',(adjustable-array-p object)
-		 :initial-contents ',(loop for i from 0 below (array-total-size object)
-					   collect (row-major-aref object i)))
-	       init))
+       (let ((init-forms '()))
+	 (values `(make-array ',(array-dimensions object)
+		   :element-type ',(array-element-type object)
+		   :adjustable ',(adjustable-array-p object)
+		   :initial-contents
+		   ',(loop for i from 0 below (array-total-size object)
+			   collect (let ((x (row-major-aref object i)))
+				     (if (need-to-make-load-form-p x)
+					 (progn (push `(setf (row-major-aref ,object ,i) ,x)
+						      init-forms)
+						0)
+					 x))))
+		 (and init-forms `(progn ,@init-forms)))))
       (cons
        (values `(cons ,(maybe-quote (car object)) nil)
 	       (and (rest object) `(rplacd ,(maybe-quote object) ,(maybe-quote (cdr object))))))
