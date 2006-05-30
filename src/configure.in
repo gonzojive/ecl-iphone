@@ -72,15 +72,20 @@ AC_ARG_WITH(system-gmp,
                   [use already installed GMP library (default=auto)]),
   [], [with_system_gmp="auto"])
 
+AC_ARG_WITH(gmp-prefix,
+  AS_HELP_STRING( [--with-gmp-prefix=path],
+                  [prefix for system GMP includes and libraries] ),
+  [GMP_CFLAGS="-I$withval/include"; GMP_LDFLAGS="-L$withval/lib"], [])
+
 AC_ARG_WITH(gmp-incdir,
   AS_HELP_STRING( [--with-gmp-incdir=path],
-		  [path to system GMP includes] ),
-  [GMP_CFLAGS="-I$withval"; CFLAGS="$CFLAGS $GMP_CFLAGS"], [])
+		  [path to system GMP includes (overrides prefix)] ),
+  [GMP_CFLAGS="-I$withval"], [])
 
 AC_ARG_WITH(gmp-libdir,
   AS_HELP_STRING( [--with-gmp-libdir=path],
-		  [path to system GMP libraries] ),
-  [GMP_LDFLAGS="-L$withval"; LDFLAGS="$LDFLAGS $GMP_LDFLAGS"], [])
+		  [path to system GMP libraries (overrides prefix)] ),
+  [GMP_LDFLAGS="-L$withval"], [])
 
 AC_ARG_ENABLE(local-gmp,
   AS_HELP_STRING( [--enable-local-gmp],
@@ -299,7 +304,12 @@ fi
 dnl ----------------------------------------------------------------------
 dnl GNU multiprecision library
 if test "x${with_gmp}" != "xno"; then
+
+  CFLAGS="$CFLAGS $GMP_CFLAGS"
+  LDFLAGS="$LDFLAGS $GMP_LDFLAGS"
+
   if test ${with_system_gmp} = "auto"; then
+
      AC_CHECK_LIB( [gmp], [__gmpz_init],
                    [with_system_gmp=yes], [with_system_gmp=no] )
   fi
