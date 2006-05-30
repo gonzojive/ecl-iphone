@@ -270,18 +270,19 @@ info files in standard directories like @file{/usr/local/bin},
 @file{/usr/local/man/man1}, @file{/usr/local/info}.
 
 @item If you don't have access rights to these directories, you should
-give to configure alternate places.  Try @code{./configure -help} for
+give to configure alternate places.  Try @code{./configure --help} for
 instructions on how to supply this information to configure, but
 a good starting point is
 @smallformat
 $ ./configure --prefix=$HOME
 @end smallformat
 
-@item Make sure everything went OK with the configuration.
-The configuration script figures out the machine where it is running and
-creates a directory @code{machine} where to perform the installation.  If the
-program fails to recognize the machine, you will have to check whether it is
-one of the supported machines present in @code{src/h/machine.h}.
+@c FIXME: This information seems wrong!
+@c @item Make sure everything went OK with the configuration.
+@c The configuration script figures out the machine where it is running and
+@c creates a directory @code{machine} where to perform the installation.  If the
+@c program fails to recognize the machine, you will have to check whether it is
+@c one of the supported machines present in @code{src/h/machine.h}.
 
 @item Next you must build the program and install it
 @smallformat
