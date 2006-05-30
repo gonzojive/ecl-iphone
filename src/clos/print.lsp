@@ -85,7 +85,7 @@ printer and we should rather use MAKE-LOAD-FORM."
 		   ',(loop for i from 0 below (array-total-size object)
 			   collect (let ((x (row-major-aref object i)))
 				     (if (need-to-make-load-form-p x)
-					 (progn (push `(setf (row-major-aref ,object ,i) ,x)
+					 (progn (push `(setf (row-major-aref ,object ,i) ',x)
 						      init-forms)
 						0)
 					 x))))
