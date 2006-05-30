@@ -119,8 +119,8 @@ AC_ARG_WITH(cxx,
 
 AC_ARG_WITH(tcp,
   AS_HELP_STRING( [--with-tcp],
-                  [include socket interface (default=NO)]),
-  [], [with_tcp=no])
+                  [include socket interface (default=YES)]),
+  [], [with_tcp=yes])
 
 AC_ARG_WITH(clx,
   AS_HELP_STRING( [--with-clx],

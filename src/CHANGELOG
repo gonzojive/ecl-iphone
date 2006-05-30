@@ -123,6 +123,8 @@ ECL 0.9i
    on the additionally checks whether the macroexpanded form is eq to the
    original one and complains of the infinite loop that results.
 
+ - Configuration flag --with-tcp defaults to true.
+
 * MOP compatibility:
 
  - SLOT-VALUE, SLOT-BOUNDP, etc, together with MOP SLOT*-USING-CLASS generic

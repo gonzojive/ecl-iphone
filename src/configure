@@ -887,7 +887,7 @@ Optional Packages:
   --with-__thread         Enable __thread thread-local variables (supported by
                           NPTL-aware glibc and maybe Windows)
   --with-cxx              build ECL using C++ compiler (default=NO)
-  --with-tcp              include socket interface (default=NO)
+  --with-tcp              include socket interface (default=YES)
   --with-clx              include CLX library (default=NO)
   --with-clos-streams     user defined stream objects (default=YES)
   --with-cmuformat        use CMUCL's FORMAT routine (default=YES)
@@ -1533,7 +1533,7 @@ if test "${with_tcp+set}" = set; then
   withval="$with_tcp"
 
 else
-  with_tcp=no
+  with_tcp=yes
 fi;
 
 
