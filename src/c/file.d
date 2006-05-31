@@ -1569,7 +1569,7 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
  AGAIN:
 	if ((t = type_of(stream)) == t_stream &&
 	    (stream->stream.mode == smm_io ||
-	     stream->stream.mode == smm_output))
+	     stream->stream.mode == smm_input))
 	{
 		size_t toread = end - start;
 		size_t n = fread(seq->vector.self.ch + start, sizeof(char),
