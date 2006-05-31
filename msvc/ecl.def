@@ -135,7 +135,7 @@ EXPORTS
 	cl_standard_char_p
 	cl_upper_case_p
 
-	ecl_base_string_case
+	;ecl_base_string_case
 	char_code
 	digitp
 	char_eq
@@ -274,8 +274,8 @@ EXPORTS
 	ecl_make_foreign_data
 	ecl_allocate_foreign_data
 	ecl_foreign_data_pointer_safe
-	ecl_base_string_pointer_safe
-	ecl_null_terminated_base_string
+	;ecl_base_string_pointer_safe
+	;ecl_null_terminated_base_string
 	ecl_foreign_data_ref_elt
 	ecl_foreign_data_set_elt
 
@@ -351,7 +351,7 @@ EXPORTS
 
 	; gfun.c
 
-	si_set_funcallable
+	;si_set_funcallable
 	si_generic_function_p
 	si_set_compiled_function_name
 
@@ -989,7 +989,7 @@ EXPORTS
 	si_copy_to_simple_base_string
 	string_eq
 	member_char
-	ecl_base_string_push_extend
+	;ecl_base_string_push_extend
 	get_string_start_end
 
 
