@@ -125,6 +125,11 @@ ECL 0.9i
 
  - Configuration flag --with-tcp defaults to true.
 
+ - [Win32] Add a :SYSTEM key argument to C::BUILDER, used when building a program,
+   to specify the type of executable. Possible values are :CONSOLE, to build a
+   console program, and :WINDOWS, to build a Windows program. The second case makes
+   only sense when the program contains some GUI (M. Goffioul).
+
 * MOP compatibility:
 
  - SLOT-VALUE, SLOT-BOUNDP, etc, together with MOP SLOT*-USING-CLASS generic

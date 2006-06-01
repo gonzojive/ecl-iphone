@@ -174,6 +174,19 @@ main(int argc, char **argv)
 	~A
 }")
 
+#+:win32
+(defconstant +lisp-program-winmain+ "
+#include <windows.h>
+int
+WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+	char *fake_argv = \"ecl.exe\";
+	~A
+	cl_boot(1, &fake_argv);
+	read_VV(OBJNULL, ~A);
+	~A
+}")
+
 (defun init-function-name (s &optional (si::*init-function-prefix* si::*init-function-prefix*))
   (flet ((translate-char (c)
 	   (cond ((and (char>= c #\a) (char<= c #\z))
@@ -199,7 +212,8 @@ main(int argc, char **argv)
 (defun builder (target output-name &key lisp-files ld-flags shared-data-file
 		(init-name nil)
 		(prologue-code "")
-		(epilogue-code (when (eq target :program) '(SI::TOP-LEVEL))))
+		(epilogue-code (when (eq target :program) '(SI::TOP-LEVEL)))
+		#+:win32 (system :console))
   ;;
   ;; The epilogue-code can be either a string made of C code, or a
   ;; lisp form.  In the latter case we add some additional C code to
@@ -279,7 +293,10 @@ static cl_object VV[VM];
 	 (setf init-name (init-function-name (pathname-name output-name) nil)))
        (format c-file +lisp-program-init+ init-name "" shared-data-file
 	       submodules "")
-       (format c-file +lisp-program-main+ prologue-code init-name epilogue-code)
+       (format c-file #+:win32 (ecase system (:console +lisp-program-main+)
+				             (:windows +lisp-program-winmain+))
+	              #-:win32 +lisp-program-main+
+		      prologue-code init-name epilogue-code)
        (close c-file)
        (compiler-cc c-name o-name)
        (apply #'linker-cc output-name (namestring o-name) ld-flags))
