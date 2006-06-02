@@ -988,7 +988,7 @@ EXPORTS
 	si_copy_to_simple_base_string
 	string_eq
 	member_char
-	ecl_base_string_push_extend
+	ecl_string_push_extend
 	get_string_start_end
 
 
@@ -1038,10 +1038,6 @@ EXPORTS
 	ecl_getf
 	ecl_get
 	keywordp
-
-
-	; tclBasic.c
-
 
 
 	; tcp.c

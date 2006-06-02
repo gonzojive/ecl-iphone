@@ -86,7 +86,7 @@ ecl_foreign_data_pointer_safe(cl_object f)
 }
 
 char *
-ecl_string_pointer_safe(cl_object f)
+ecl_base_string_pointer_safe(cl_object f)
 {
 	cl_index l;
 	unsigned char *s;
@@ -99,7 +99,7 @@ ecl_string_pointer_safe(cl_object f)
 }
 
 cl_object
-ecl_null_terminated_string(cl_object f)
+ecl_null_terminated_base_string(cl_object f)
 {
 	assert_type_base_string(f);
 	if (f->base_string.hasfillp && f->base_string.self[f->base_string.fillp] != 0) {
@@ -459,7 +459,7 @@ si_find_foreign_symbol(cl_object var, cl_object module, cl_object type, cl_objec
 	void *sym;
 
 	block = (module == @':default' ? module : si_load_foreign_module(module));
-	var = ecl_null_terminated_string(var);
+	var = ecl_null_terminated_base_string(var);
 	sym = ecl_library_symbol(block, var->base_string.self, 1);
 	if (sym == NULL) {
 		if (block != @':default')
@@ -542,7 +542,7 @@ ecl_fficall_align(int data)
 		}
 		type = ecl_foreign_type_code(CAR(arg_types));
 		if (type == ECL_FFI_CSTRING) {
-			object = ecl_null_terminated_string(CAR(args));
+			object = ecl_null_terminated_base_string(CAR(args));
 			if (CAR(args) != object)
 				fficall->cstring =
 					CONS(object, fficall->cstring);

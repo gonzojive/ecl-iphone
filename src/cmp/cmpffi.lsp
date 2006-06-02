@@ -228,7 +228,7 @@
 	((:char*)
 	 (case loc-rep-type
 	   ((:object)
-	    (wt "ecl_string_pointer_safe(" loc ")"))
+	    (wt "ecl_base_string_pointer_safe(" loc ")"))
 	   ((:pointer-void)
 	    (wt "(char *)(" loc ")"))
 	   (otherwise
