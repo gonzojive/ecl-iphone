@@ -239,7 +239,7 @@
 
 (defun c1multiple-value-bind (args &aux (vars nil) (vnames nil) init-form
                                    ss is ts body other-decls
-                                   (*vars* *vars*))
+                                   (*cmp-env* (cmp-env-copy)))
   (check-args-number 'MULTIPLE-VALUE-BIND args 2)
 
   (multiple-value-setq (body ss ts is other-decls) (c1body (cddr args) nil))

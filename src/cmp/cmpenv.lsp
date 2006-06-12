@@ -438,12 +438,29 @@
 (defmacro cmp-env-functions (&optional (env '*cmp-env*))
   `(cdr ,env))
 
+(defun cmp-env-register-var (var &optional (env *cmp-env*) (boundp t))
+  (push (list (var-name var)
+	      (if (member (var-kind var) '(special global))
+		  :special
+		  t)
+	      boundp
+	      var)
+	(cmp-env-variables)))
+
+(defun cmp-env-declare-special (name &optional (env *cmp-env*))
+  (cmp-env-register-var (c1make-global-variable name :warn nil :kind 'SPECIAL)
+			env nil))
+
 (defun cmp-env-register-function (fun &optional (env *cmp-env*))
   (push (list (fun-name fun) 'function fun)
 	(cmp-env-functions env)))
 
 (defun cmp-env-register-macro (name function &optional (env *cmp-env*))
   (push (list name 'si::macro function)
+	(cmp-env-functions env)))
+
+(defun cmp-env-register-symbol-macro (name form &optional (env *cmp-env*))
+  (push (list name 'si::symbol-macro #'(lambda (whole env) form))
 	(cmp-env-functions env)))
 
 (defun cmp-env-register-block (blk &optional (env *cmp-env*))
@@ -524,3 +541,9 @@
 (defun cmp-env-mark (mark &optional (env *cmp-env*))
   (cons (cons mark (car env))
 	(cons mark (cdr env))))
+
+(defun cmp-env-new-variables (new-env old-env)
+  (loop for i in (ldiff (cmp-env-variables *cmp-env*)
+			(cmp-env-variables old-env))
+	when (and (consp i) (var-p (fourth i)))
+	collect (fourth i)))

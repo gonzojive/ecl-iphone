@@ -72,7 +72,6 @@
   (when *current-function*
     (push fun (fun-child-funs *current-function*)))
   (let* ((*current-function* fun)
-	 (*vars* (cons CB/LB *vars*))
 	 (*cmp-env* (cmp-env-mark CB/LB))
 	 (setjmps *setjmps*)
 	 (decl (si::process-declarations (rest lambda-list-and-body)))
@@ -136,8 +135,8 @@
                            other-decls
 		           new-variables
 			   (*permanent-data* t)
-                           (*vars* *vars*)
-		           (old-vars *vars*))
+			   (old-env *cmp-env*)
+                           (*cmp-env* (cmp-env-copy)))
   (declare (si::c-local))
 
   (cmpck (endp lambda-expr)
@@ -201,7 +200,7 @@
     ;; arguments, have to be applied to the body. At the same time, we
     ;; replace &aux variables with a LET* form that defines them.
     (let* ((declarations other-decls)
-	   (new-variables (ldiff *vars* old-vars))
+	   (new-variables (cmp-env-new-variables *cmp-env* old-env))
 	   (new-variable-names (mapcar #'var-name new-variables)))
       (when (setq ss (set-difference ss new-variable-names))
 	(push `(special ,@ss) declarations))

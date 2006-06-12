@@ -104,32 +104,14 @@
 ;;;
 ;;; Check if the symbol has a symbol macro
 ;;;
-(defun chk-symbol-macrolet (symbol)
-  (do ((form symbol))
-      ((not (symbolp form)) form)
-    (dolist (v *vars*
-	     ;; At the end, loof for a DEFINE-SYMBOL-MACRO definition
-	     (let ((expansion (get-sysprop form 'si::symbol-macro)))
-	       (if expansion
-		 (setq form (funcall expansion form nil))
-		 (return-from chk-symbol-macrolet form))))
-      ;; Search for a SYMBOL-MACROLET definition
-      (cond ((consp v)
-	     (when (eq (first v) form)
-	       (setq form (second v))
-	       (return)))
-	    ((symbolp v))
-	    ((eq (var-name v) form)
-	     ;; Any macro definition has been shadowed by LET/LET*, etc.
-	     (return-from chk-symbol-macrolet form))))))
-
-;;; During Pass 1, *vars* emulates the environment: it holds a list of var
-;;; objects and the symbols 'CB' (Closure Boundary) and 'LB' (Level Boundary).
-;;; 'CB' is pushed on *vars* when the compiler begins to process a closure.
-;;; 'LB' is pushed on *vars* when *level* is incremented.
-;;; *GLOBALS* holds a list of var objects for those variables that are
-;;; not defined.  This list is used only to suppress duplicated warnings when
-;;; undefined variables are detected.
+(defun chk-symbol-macrolet (form)
+  (loop
+   (when (not (symbolp form))
+     (return form))
+   (let ((new-form (macroexpand-1 form *cmp-env*)))
+     (when (eq new-form form)
+       (return form))
+     (setf form new-form))))
 
 (defun c1make-var (name specials ignores types)
   (cmpck (not (symbolp name)) "The variable ~s is not a symbol." name)
@@ -187,16 +169,16 @@
 ;;; A variable reference (vref for short) is a list: pair
 ;;;	( var-object ) Beppe(ccb) ccb-reference )
 
-(defun c1vref (name &aux (ccb nil) (clb nil))
-  (dolist (var *vars*)
-    (declare (type var var))
-    (cond ((eq var 'CB) (setq ccb t))	; closure boundary
-          ((eq var 'LB) (setq clb t))	; level boundary
-	  ((consp var)
-	   (when (eq (first var) name) ; symbol macrolet
-	     (baboon)
-	     (return-from c1vref (c1expr (second var)))))
-          ((eq (var-name var) name)
+(defun c1vref (name)
+  (multiple-value-bind (var ccb clb unw)
+      (cmp-env-search-var name)
+    (cond ((null var)
+	   (c1make-global-variable name :warn t
+				   :type (or (get-sysprop name 'CMP-TYPE) t)))
+	  ((not (var-p var))
+	   ;; symbol-macrolet
+	   (baboon))
+	  (t
            (when (minusp (var-ref var)) ; IGNORE.
              (cmpwarn "The ignored variable ~s is used." name)
              (setf (var-ref var) 0))
@@ -208,18 +190,11 @@
 		   (clb (setf (var-ref-clb var) t
 			      (var-loc var) 'OBJECT))))
            (incf (var-ref var))
-           (return-from c1vref var)))) ; ccb
-  (c1make-global-variable name :warn t
-			  :type (or (get-sysprop name 'CMP-TYPE) t)))
+	   var))))
 
-
-;;; At each variable binding, the variable is added to *vars* which
-;;; emulates the environment.
-;;; The index is computed, which is used by similar to compare functions.
-;;;
 (defun push-vars (v)
-  (setf (var-index v) (length *vars*))
-  (push v *vars*))
+  (setf (var-index v) (length (cmp-env-variables)))
+  (cmp-env-register-var v))
 
 (defun unboxed (var)
   (not (eq (var-rep-type var) :object)))
@@ -297,8 +272,7 @@
     var))
 
 (defun c1declare-specials (globals)
-  (dolist (v globals)
-    (push (c1make-global-variable v :warn nil :kind 'SPECIAL) *vars*)))
+  (mapc #'cmp-env-declare-special globals))
 
 (defun si::register-global (name)
   (unless (check-global name)

@@ -13,8 +13,7 @@
 (in-package "COMPILER")
 
 (defun t1expr (form)
-  (let ((*vars* nil)
-	(*cmp-env* (cmp-env-new)))
+  (let ((*cmp-env* (cmp-env-new)))
     (push (t1expr* form) *top-level-forms*)))
 
 (defvar *toplevel-forms-to-print*

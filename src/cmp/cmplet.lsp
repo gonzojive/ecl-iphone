@@ -15,7 +15,7 @@
 (defun c1let (args &aux	(setjmps *setjmps*)
                         (forms nil) (vars nil) (vnames nil)
                         ss is ts body other-decls
-                        (*vars* *vars*))
+			(*cmp-env* (cmp-env-copy)))
   (check-args-number 'LET args 1)
 
   (multiple-value-setq (body ss ts is other-decls) (c1body (cdr args) nil))
@@ -243,7 +243,7 @@
 (defun c1let* (args &aux (forms nil) (vars nil) (vnames nil)
                     (setjmps *setjmps*)
                     ss is ts body other-decls
-                    (*vars* *vars*))
+                    (*cmp-env* (cmp-env-copy)))
   (check-args-number 'LET* args 1)
 
   (multiple-value-setq (body ss ts is other-decls) (c1body (cdr args) nil))

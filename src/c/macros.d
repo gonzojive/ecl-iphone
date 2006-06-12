@@ -44,13 +44,15 @@
 static cl_object
 search_symbol_macro(cl_object name, cl_object env)
 {
-	cl_object record = assq(name, CAR(env));
-	if (Null(record))
-		return si_get_sysprop(name, @'si::symbol-macro');
-	else if (CADR(record) == @'si::symbol-macro')
-		return CADDR(record);
-	else
-		return Cnil;
+	for (env = CAR(env); env != Cnil; env = CDR(env)) {
+		cl_object record = CAR(env);
+		if (CONSP(record) && CAR(record) == name) {
+			if (CADR(record) == @'si::symbol-macro')
+				return CADDR(record);
+			return Cnil;
+		}
+	}
+	return si_get_sysprop(name, @'si::symbol-macro');
 }
 
 static cl_object

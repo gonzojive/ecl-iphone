@@ -514,5 +514,4 @@ instance during garbage collection), the associated file will be
 deleted. We need this for #'COMPILE because windows DLLs cannot
 be deleted if they have been opened with LoadLibrary.")
 
-(defvar *vars* nil)
 (defvar *undefined-vars* nil)

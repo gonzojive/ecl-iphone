@@ -60,8 +60,7 @@
 	    (add-referred-variables-to-function f2 vars)))))
 
     ;; Now we can compile the body itself.
-    (let ((*vars* *vars*)
-          (*cmp-env* new-env))
+    (let ((*cmp-env* new-env))
       (multiple-value-bind (body ss ts is other-decl)
 	  (c1body (rest args) t)
 	(c1declare-specials ss)
@@ -206,13 +205,15 @@
 		    (si::eval-with-env (sys::expand-defmacro name (second def) (cddr def))))))
     (c1locally (cdr args))))
 
-(defun c1symbol-macrolet (args &aux (*vars* *vars*))
+(defun c1symbol-macrolet (args)
   (check-args-number 'SYMBOL-MACROLET args 1)
-  (dolist (def (car args))
-    (cmpck (or (endp def) (not (symbolp (car def))) (endp (cdr def)))
-           "The symbol-macro definition ~s is illegal." def)
-    (push def *vars*))
-  (c1locally (cdr args)))
+  (let ((*cmp-env* (cmp-env-copy)))
+    (dolist (def (car args))
+      (let ((name (first def)))	    
+	(cmpck (or (endp def) (not (symbolp name)) (endp (cdr def)))
+	     "The symbol-macro definition ~s is illegal." def)
+	(cmp-env-register-symbol-macro name (second def))))
+    (c1locally (cdr args))))
 
 (defun local-function-ref (fname &optional build-object)
   (multiple-value-bind (fun ccb clb unw)
