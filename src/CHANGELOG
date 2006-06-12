@@ -109,11 +109,11 @@ ECL 0.9i
    effect as SI::SET-BUFFERING-MODE's argument.
 
  - ECL can be built against locally installed copies of the Boehm-Weiser
-   garbage collector, as far as they are recent. This has been checked with
-   OpenBSD & Ubuntu. You may need to supply appropiate LDFLAGS & CFLAGS for the
+   garbage collector, if they are recent. This has been checked with OpenBSD &
+   Ubuntu. You may need to supply appropiate LDFLAGS & CFLAGS for the
    configuration to detect the headers.
 
- - ECL now can compile files with constants that do not print readably, such as
+ - ECL can now compile files with constants that do not print readably, such as
    CLOS objects. In those cases, MAKE-LOAD-FORM is used to recreate these
    constants. The only case where this fail is when the "unreadable" constant
    is part of a circular structure (contributed by Brian Spilsbury).
@@ -129,6 +129,8 @@ ECL 0.9i
    to specify the type of executable. Possible values are :CONSOLE, to build a
    console program, and :WINDOWS, to build a Windows program. The second case makes
    only sense when the program contains some GUI (M. Goffioul).
+
+ - The compiler is slightly faster by avoiding use of EVAL.
 
 * MOP compatibility:
 
