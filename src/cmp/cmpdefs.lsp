@@ -361,7 +361,31 @@ The default value is NIL.")
 
 (defvar *current-function* nil)
 
-(defvar *cmp-env* (cons nil nil))
+(defvar *cmp-env* (cons nil nil)
+"The compiler environment consists of a pair or cons of two
+lists, one containing variable records, the other one macro and
+function recors:
+
+variable-record = (:block block-name) |
+                  (:tag ({tag-name}*)) |
+                  (:function function-name) |
+                  (var-name {:special | nil} bound-p) |
+                  (symbol si::symbol-macro macro-function) |
+                  CB | LB | UNWIND-PROTECT
+macro-record =	(function-name function) |
+                (macro-name si::macro macro-function)
+                CB | LB | UNWIND-PROTECT
+
+A *-NAME is a symbol. A TAG-ID is either a symbol or a number. A
+MACRO-FUNCTION is a function that provides us with the expansion
+for that local macro or symbol macro. BOUND-P is true when the
+variable has been bound by an enclosing form, while it is NIL if
+the variable-record corresponds just to a special declaration.
+CB, LB and UNWIND-PROTECT are only used by the C compiler and
+they denote closure, lexical environment and unwind-protect
+boundaries. Note that compared with the bytecodes compiler, these
+records contain an additional variable, block, tag or function
+object at the end.")
 
 ;;; --cmplog.lsp--
 ;;;
@@ -429,12 +453,6 @@ coprocessor).")
 ;;; Compiler program and flags.
 ;;;
 
-;;; --cmptag.lsp--
-;;;
-;;; List of tags with marks for closure boundaries.
-;;;
-(defvar *tags* nil)
-
 ;;; --cmptop.lsp--
 ;;;
 (defvar *compiler-phase* nil)
@@ -493,19 +511,14 @@ lines are inserted, but the order is preserved")
 ;;; *reservations* holds (... ( cmacro . value ) ...).
 ;;; *reservation-cmacro* holds the cmacro current used as vs reservation.
 
+;;; *global-entries* holds (... ( fname cfun return-types arg-type ) ...).
 (defvar *global-entries* nil)
 
-;;; *self-destructing-fasl* = T means that, when a FASL module is
-;;; being unloaded (for instance during garbage collection), the
-;;; associated file will be deleted. We need this because on windows
-;;; DLLs cannot be deleted if they have been opened with LoadLibrary.
-;;; Thus, (COMPILE ...) cannot create a DLL, load it and delete it
-;;; while it is being used.
-(defvar *self-destructing-fasl* nil)
+(defvar *self-destructing-fasl* '()
+"A value T means that, when a FASL module is being unloaded (for
+instance during garbage collection), the associated file will be
+deleted. We need this for #'COMPILE because windows DLLs cannot
+be deleted if they have been opened with LoadLibrary.")
 
-;;; *global-entries* holds (... ( fname cfun return-types arg-type ) ...).
-
-;;; --cmpvar.lsp--
-;;;
 (defvar *vars* nil)
 (defvar *undefined-vars* nil)

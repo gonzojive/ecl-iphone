@@ -50,7 +50,7 @@
   (let (form)
     (let ((*blocks* (cons 'UNWIND-PROTECT *blocks*))
 	  ;;(*vars* (cons 'LB *vars*))
-	  (*tags* (cons 'UNWIND-PROTECT *tags*)))
+	  (*cmp-env* (cmp-env-mark 'UNWIND-PROTECT)))
       (setq form (c1expr (first args))))
     (make-c1form* 'UNWIND-PROTECT :type (c1form-type form) :sp-change t
 		  :args form (c1progn (rest args)))))

@@ -13,12 +13,6 @@
 
 (in-package "COMPILER")
 
-;;; During Pass 1, *tags* holds a list of tag objects and the symbols 'CB'
-;;; (Closure Boundary), 'LB' (Level Boundary) or 'UNWIND-PROTECT'.
-;;; 'CB' will be pushed on *tags* when the compiler begins to process
-;;;  a closure.
-;;; 'LB' will be pushed on *tags* when *level* is incremented.
-;;; 'UNWIND-PROTECT' is pushed when entering an unwind-protect.
 ;;;  A dummy variable is created to hold the tag identifier and one tag
 ;;;  structure (containing reference to such variable) is created for each
 ;;;  label in the body.
@@ -71,7 +65,7 @@
 	    (setq end w)))))))
 
 ;; FIXME! The variable name should not be a usable one!
-(defun c1tagbody (body &aux (*tags* *tags*)
+(defun c1tagbody (body &aux (*cmp-env* (cmp-env-copy))
                        (tag-var (make-var :name 'TAGBODY :kind NIL))
 		       (tag-index 0))
   ;;; Establish tags.
@@ -80,7 +74,7 @@
          #'(lambda (x)
              (if (not (consp x))
                (let ((tag (make-tag :name x :var tag-var :index tag-index)))
-                 (push tag *tags*)
+                 (cmp-env-register-tag tag)
 		 (incf tag-index)
                  tag)
                x))
@@ -176,33 +170,25 @@
 
 (defun c1go (args)
   (check-args-number 'GO args 1 1)
-  (unless (or (symbolp (car args)) (integerp (car args)))
-    (cmperr "The tag name ~s is not a symbol nor an integer." (car args)))
-  (do ((tags *tags* (cdr tags))
-       (name (car args))
-       (ccb) (clb) (unw) (tag) (var))
-      ((endp tags) (cmperr "The tag ~s is undefined." name))
-    (declare (type var var))
-    (setq tag (car tags))
-    (case tag
-      (CB (setq ccb t))
-      (LB (setq clb t))
-      (UNWIND-PROTECT (setq unw T))
-      (T (when (eql (tag-name tag) name)
-	   (setq var (tag-var tag))
-	   (cond (ccb (setf (tag-ref-ccb tag) t
-			    (var-ref-ccb var) T
-			    (var-kind var) 'CLOSURE))
-		 (clb (setf (tag-ref-clb tag) t
-			    (var-ref-clb var) t
-			    (var-kind var) 'LEXICAL))
-		 (unw (unless (var-kind var)
-			(setf (var-kind var) :OBJECT))))
-	   (incf (var-ref var))
-	   (incf (tag-ref tag))
-	   (return (add-to-read-nodes var (make-c1form* 'GO :args tag
-							(or ccb clb unw))))
-	   )))))
+  (let ((name (first args)))
+    (unless (or (symbolp name) (integerp name))
+      (cmperr "The tag name ~s is not a symbol nor an integer." name))
+    (multiple-value-bind (tag ccb clb unw)
+	(cmp-env-search-tag name)
+      (unless tag
+	(cmperr "Undefined tag ~A" name))
+      (setq var (tag-var tag))
+      (cond (ccb (setf (tag-ref-ccb tag) t
+		       (var-ref-ccb var) T
+		       (var-kind var) 'CLOSURE))
+	    (clb (setf (tag-ref-clb tag) t
+		       (var-ref-clb var) t
+		       (var-kind var) 'LEXICAL))
+	    (unw (unless (var-kind var)
+		   (setf (var-kind var) :OBJECT))))
+      (incf (var-ref var))
+      (incf (tag-ref tag))
+      (add-to-read-nodes var (make-c1form* 'GO :args tag (or ccb clb unw))))))
 
 (defun c2go (tag nonlocal)
   (if nonlocal

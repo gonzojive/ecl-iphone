@@ -75,7 +75,6 @@
 	 (*vars* (cons CB/LB *vars*))
 	 (*cmp-env* (cmp-env-mark CB/LB))
 	 (*blocks* (cons CB/LB *blocks*))
-	 (*tags* (cons CB/LB *tags*))
 	 (setjmps *setjmps*)
 	 (decl (si::process-declarations (rest lambda-list-and-body)))
 	 (lambda-expr (c1lambda-expr lambda-list-and-body
