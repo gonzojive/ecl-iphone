@@ -18,7 +18,7 @@
 
 (defun c1labels/flet (origin args)
   (check-args-number origin args 1)
-  (let ((new-funs *funs*)
+  (let ((new-env (cmp-env-copy))
 	(defs '())
 	(local-funs '())
 	(fnames '())
@@ -38,12 +38,12 @@
       (let* ((name (car def))
 	     (var (make-var :name name :kind :object))
 	     (fun (make-fun :name name :var var)))
-	(push (list (fun-name fun) 'FUNCTION fun) new-funs)
+	(cmp-env-register-function fun new-env)
 	(push (cons fun (cdr def)) defs)))
 
     ;; Now we compile the functions, either in an empty environment
     ;; in which there are no new functions
-    (let ((*funs* (if (eq origin 'FLET) *funs* new-funs)))
+    (let ((*cmp-env* (cmp-env-copy (if (eq origin 'FLET) *cmp-env* new-env))))
       (dolist (def (nreverse defs))
 	(let ((fun (first def)))
 	  ;; The closure type will be fixed later on by COMPUTE-...
@@ -61,7 +61,7 @@
 
     ;; Now we can compile the body itself.
     (let ((*vars* *vars*)
-          (*funs* new-funs))
+          (*cmp-env* new-env))
       (multiple-value-bind (body ss ts is other-decl)
 	  (c1body (rest args) t)
 	(c1declare-specials ss)
@@ -195,16 +195,16 @@
     (check-vdecl nil ts is)
     (c1decl-body other-decl body)))
 
-(defun c1macrolet (args &aux (*funs* *funs*))
+(defun c1macrolet (args)
   (check-args-number 'MACROLET args 1)
-  (dolist (def (car args))
-    (let ((name (first def)))
-      (cmpck (or (endp def) (not (symbolp name)) (endp (cdr def)))
-	     "The macro definition ~s is illegal." def)
-      (push (list name 'MACRO
-		  (si::eval-with-env (sys::expand-defmacro name (second def) (cddr def))))
-	    *funs*)))
-  (c1locally (cdr args)))
+  (let ((*cmp-env* (cmp-env-copy)))
+    (dolist (def (car args))
+      (let ((name (first def)))
+	(cmpck (or (endp def) (not (symbolp name)) (endp (cdr def)))
+	       "The macro definition ~s is illegal." def)
+	(cmp-env-register-macro name
+		    (si::eval-with-env (sys::expand-defmacro name (second def) (cddr def))))))
+    (c1locally (cdr args))))
 
 (defun c1symbol-macrolet (args &aux (*vars* *vars*))
   (check-args-number 'SYMBOL-MACROLET args 1)
@@ -214,55 +214,25 @@
     (push def *vars*))
   (c1locally (cdr args)))
 
-(defun local-function-ref (fname &optional build-object &aux (ccb nil) (clb nil))
-  (dolist (fun *funs*)
-    (cond ((eq fun 'CB)
-           (setq ccb t))
-	  ((eq fun 'LB)
-           (setq clb t))
-	  ((and (consp fun)
-                (equal fname (first fun))
-                (eq (second fun) 'MACRO))
-           ;; a macro
-	   (when build-object
-	     (cmperr "The name of a macro ~A was found in a call to FUNCTION."
-		     fname))
-	   (return nil))
-          ((and (consp fun)
-                (same-fname-p (first fun) fname)
-                (eq (second fun) 'FUNCTION))
-            ;; it is a function definition -- extract the actual function record
-            (let ((fun (third fun)))
-	      (incf (fun-ref fun))
-	      (cond (build-object
-		     (setf (fun-ref-ccb fun) t))
-		    (*current-function*
-		     (push fun (fun-referred-funs *current-function*))))
-	      ;; we introduce a variable to hold the funob
-	      (let ((var (fun-var fun)))
-	        (cond (ccb (when build-object
-			     (setf (var-ref-ccb var) t
-				   (var-kind var) 'CLOSURE))
-			   (setf (fun-ref-ccb fun) t))
-		      (clb (when build-object 
-			     (setf (var-ref-clb var) t
-				   (var-kind var) 'LEXICAL)))))
-	       (return fun))))))
-
-(defun sch-local-fun (fname)
-  ;; Returns fun-ob for the local function (not locat macro) named FNAME,
-  ;; if any.  Otherwise, returns FNAME itself.
-  (dolist (fun *funs* fname)
-    (when (and (not (eq fun 'CB))
-               (not (consp fun))
-               (same-fname-p (fun-name fun) fname))
-          (return fun))))
-
-(defun sch-local-macro (fname)
-  (dolist (fun *funs*)
-    (when (and (consp fun)
-               (eq (first fun) fname))
-          (return (third fun)))))
+(defun local-function-ref (fname &optional build-object)
+  (multiple-value-bind (fun ccb clb unw)
+      (cmp-env-search-function fname *cmp-env* (not build-object))
+    (when fun
+      (incf (fun-ref fun))
+      (cond (build-object
+	     (setf (fun-ref-ccb fun) t))
+	    (*current-function*
+	     (push fun (fun-referred-funs *current-function*))))
+      ;; we introduce a variable to hold the funob
+      (let ((var (fun-var fun)))
+	(cond (ccb (when build-object
+		     (setf (var-ref-ccb var) t
+			   (var-kind var) 'CLOSURE))
+		   (setf (fun-ref-ccb fun) t))
+	      (clb (when build-object 
+		     (setf (var-ref-clb var) t
+			   (var-kind var) 'LEXICAL))))))
+    fun))
 
 (defun c2call-local (fun args &optional narg)
   (declare (type fun fun))

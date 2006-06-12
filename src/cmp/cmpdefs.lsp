@@ -359,17 +359,9 @@ The default value is NIL.")
 (defvar *exit*)
 (defvar *unwind-exit*)
 
-;;; --cmpflet.lsp--
-;;;
-;;; During Pass 1, *funs* holds a list of fun objects, local macro definitions
-;;; and the symbol 'CB' (Closure Boundary) or 'LB' (Level Boundary).
-;;; 'CB' will be pushed on *funs* when the compiler begins to process a closure.
-;;; 'LB' will be pushed on *funs* when the compiler begins to process a local
-;;; function.
-;;; A local macro definition is a list ( macro-name expansion-function).
-
-(defvar *funs* nil)
 (defvar *current-function* nil)
+
+(defvar *cmp-env* (cons nil nil))
 
 ;;; --cmplog.lsp--
 ;;;

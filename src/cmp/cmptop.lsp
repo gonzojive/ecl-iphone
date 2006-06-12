@@ -14,7 +14,7 @@
 
 (defun t1expr (form)
   (let ((*vars* nil)
-	(*funs* nil)
+	(*cmp-env* (cmp-env-new))
 	(*blocks* nil)
 	(*tags* nil))
     (push (t1expr* form) *top-level-forms*)))
@@ -47,11 +47,8 @@
 		      (cmp-expand-macro fd form))
 		    success))
 	     (t1expr* fd))
-	    ((setq fd (macro-function fun))
+	    ((setq fd (cmp-macro-function fun))
 	     (t1expr* (cmp-expand-macro fd form)))
-	    ((and (setq fd (assoc fun *funs*))
-		  (eq (second fd) 'MACRO))
-	     (t1expr* (cmp-expand-macro (third fd) form)))
 	    (t (t1ordinary form))
 	   )))))
 

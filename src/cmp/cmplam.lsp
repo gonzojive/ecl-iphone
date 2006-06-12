@@ -73,7 +73,7 @@
     (push fun (fun-child-funs *current-function*)))
   (let* ((*current-function* fun)
 	 (*vars* (cons CB/LB *vars*))
-	 (*funs* (cons CB/LB *funs*))
+	 (*cmp-env* (cmp-env-mark CB/LB))
 	 (*blocks* (cons CB/LB *blocks*))
 	 (*tags* (cons CB/LB *tags*))
 	 (setjmps *setjmps*)

@@ -117,10 +117,13 @@
 
 (defun add-function-declaration (fname arg-types return-types)
   (if (si::valid-function-name-p fname)
-      (push (list (sch-local-fun fname)
-		  (function-arg-types arg-types)
-		  (function-return-type return-types))
-	    *function-declarations*)
+      (let ((fun (cmp-env-search-function fname *cmp-env* t)))
+	(if (functionp fun)
+	    (warn "Found function declaration for local macro ~A" fname)
+	    (push (list fun
+			(function-arg-types arg-types)
+			(function-return-type return-types))
+		  *function-declarations*)))
       (warn "In (DECLARE (FTYPE ...)): ~s is not a valid function name" fname)))
 
 (defun get-arg-types (fname)
@@ -417,3 +420,58 @@
     (unless (member x vnames)
       (cmpwarn "Ignore declaration was found for not bound variable ~s." x)))
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; COMPILER ENVIRONMENT
+;;;
+
+(defmacro cmp-env-new ()
+  '(cons nil nil))
+
+(defun cmp-env-copy (&optional (env *cmp-env*))
+  (cons (car env) (cdr env)))
+
+(defmacro cmp-env-variables (&optional (env '*cmp-env*))
+  `(car ,env))
+
+(defmacro cmp-env-functions (&optional (env '*cmp-env*))
+  `(cdr ,env))
+
+(defun cmp-env-register-function (fun &optional (env *cmp-env*))
+  (push (list (fun-name fun) 'function fun)
+	(cmp-env-functions env)))
+
+(defun cmp-env-register-macro (name function &optional (env *cmp-env*))
+  (push (list name 'si::macro function)
+	(cmp-env-functions env)))
+
+(defun cmp-env-search-function (name &optional (env *cmp-env*) macro-allowed)
+  (let ((ccb nil)
+	(clb nil)
+	(unw nil)
+	(found nil))
+    (dolist (record (cmp-env-functions env))
+      (cond ((eq record 'CB)
+	     (setf ccb t))
+	    ((eq record 'LB)
+	     (setf clb t))
+	    ((eq record 'UNWIND-PROTECT)
+	     (setf unw t))
+	    ((atom record)
+	     (baboon))
+	    ((eq (first record) name)
+	     (setf found (first (last record)))
+	     (when (and (functionp found) (not macro-allowed))
+	       ;; Macro definition appears in #'.... This should not happen.
+	       (cmperr "The name of a macro ~A was found in special form FUNCTION." name))
+	     (return))))
+    (values found ccb clb unw)))
+
+(defun cmp-env-search-macro (name &optional (env *cmp-env*))
+  (let ((f (cmp-env-search-function name env t)))
+    (if (functionp f) f nil)))
+
+(defun cmp-env-mark (mark &optional (env *cmp-env*))
+  (cons (cons mark (car env))
+	(cons mark (cdr env))))
