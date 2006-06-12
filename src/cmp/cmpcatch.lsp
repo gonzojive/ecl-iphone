@@ -48,9 +48,7 @@
   (check-args-number 'UNWIND-PROTECT args 1)
   (incf *setjmps*)
   (let (form)
-    (let ((*blocks* (cons 'UNWIND-PROTECT *blocks*))
-	  ;;(*vars* (cons 'LB *vars*))
-	  (*cmp-env* (cmp-env-mark 'UNWIND-PROTECT)))
+    (let ((*cmp-env* (cmp-env-mark 'UNWIND-PROTECT)))
       (setq form (c1expr (first args))))
     (make-c1form* 'UNWIND-PROTECT :type (c1form-type form) :sp-change t
 		  :args form (c1progn (rest args)))))

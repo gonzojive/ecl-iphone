@@ -12,19 +12,14 @@
 
 (in-package "COMPILER")
 
-;;; During Pass 1, *blocks* holds a list of blk objects and the
-;;; symbols 'CB' (Closure Boundary), 'LB' (Level Boundary) or
-;;; 'UNWIND-PROTECT'.  'CB' will be pushed on *blocks* when the
-;;; compiler begins to process a closure.  'LB' will be pushed on
-;;; *blocks* when *level* is incremented.  'UNWIND-PROTECT' is pushed
-;;; when entering an unwind-protect.  A dummy variable is created to
-;;; hold the block identifier.  When a reference to the block (via
-;;; return-from) is found, the var-ref count for that variable is
-;;; incremented only if the reference appears across a boundary (CB,
-;;; LB or UNWIND-PROTECT), while the blk-ref is always incremented.
-;;; Therefore blk-ref represents whether the block is used at all and
-;;; var-ref for the dummy variable represents whether a block
-;;; identifier must be created and stored in such variable.
+;;; A dummy variable is created to hold the block identifier.  When a
+;;; reference to the block (via return-from) is found, the var-ref
+;;; count for that variable is incremented only if the reference
+;;; appears across a boundary (CB, LB or UNWIND-PROTECT), while the
+;;; blk-ref is always incremented.  Therefore blk-ref represents
+;;; whether the block is used at all and var-ref for the dummy
+;;; variable represents whether a block identifier must be created and
+;;; stored in such variable.
 
 (defun c1block (args)
   (check-args-number 'BLOCK args 1)
@@ -33,8 +28,9 @@
       (cmperr "The block name ~s is not a symbol." block-name))
     (let* ((blk-var (make-var :name block-name :kind 'LEXICAL))
 	   (blk (make-blk :var blk-var :name block-name))
-	   (*blocks* (cons blk *blocks*))
-	   (body (c1progn (rest args))))
+	   (body (let ((*cmp-env* (cmp-env-copy)))
+		   (cmp-env-register-block blk)
+		   (c1progn (rest args)))))
       (when (or (blk-ref-ccb blk) (blk-ref-clb blk))
 	(incf *setjmps*))
       (if (plusp (blk-ref blk))
@@ -78,36 +74,30 @@
 
 (defun c1return-from (args)
   (check-args-number 'RETURN-FROM args 1 2)
-  (unless (symbolp (car args))
-    (cmperr "The block name ~s is not a symbol." (car args)))
-  (do ((blks *blocks* (cdr blks))
-       (name (car args))
-       (ccb) (clb) (unw) (blk) (type T))
-      ((endp blks)
-       (cmperr "The block ~s is undefined." name))
-    (setq blk (car blks))
-    (case blk
-      (CB (setq ccb t))
-      (LB (setq clb t))
-      (UNWIND-PROTECT (setq unw T))
-      (t (when (eq (blk-name blk) name)
-	   (let* ((val (c1expr (second args)))
-		  (var (blk-var blk)))
-             (cond (ccb (setf (blk-ref-ccb blk) t
-			      type 'CCB
-			      (var-kind var) 'CLOSURE
-			      (var-ref-ccb var) T)
-			(incf (var-ref var)))
-		   (clb (setf (blk-ref-clb blk) t
-			      type 'CLB)
-			(incf (var-ref var)))
-		   (unw (setf type 'UNWIND-PROTECT)
-			(incf (var-ref var))))
-	     (incf (blk-ref blk))
-	     (setf (blk-type blk) (type-or (blk-type blk) (c1form-primary-type val)))
-             (return (add-to-read-nodes var (make-c1form* 'RETURN-FROM :type 'T
-							  :args blk type val))))
-	   )))))
+  (let ((name (first args)))
+    (unless (symbolp name)
+      (cmperr "The block name ~s is not a symbol." name))
+    (multiple-value-bind (blk ccb clb unw)
+	(cmp-env-search-block name)
+      (unless blk
+	(cmperr "The block ~s is undefined." name))
+      (let* ((val (c1expr (second args)))
+	     (var (blk-var blk))
+	     (type T))
+	(cond (ccb (setf (blk-ref-ccb blk) t
+			 type 'CCB
+			 (var-kind var) 'CLOSURE
+			 (var-ref-ccb var) T)
+		   (incf (var-ref var)))
+	      (clb (setf (blk-ref-clb blk) t
+			 type 'CLB)
+		   (incf (var-ref var)))
+	      (unw (setf type 'UNWIND-PROTECT)
+		   (incf (var-ref var))))
+	(incf (blk-ref blk))
+	(setf (blk-type blk) (type-or (blk-type blk) (c1form-primary-type val)))
+	(add-to-read-nodes var (make-c1form* 'RETURN-FROM :type 'T
+					     :args blk type val))))))
 
 (defun c2return-from (blk type val)
   (case type

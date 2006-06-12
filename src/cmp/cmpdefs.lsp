@@ -270,12 +270,6 @@ The default value is NIL.")
 (defvar *compiler-output1*)
 (defvar *compiler-output2*)
 
-;;; --cmpblock.lsp--
-;;;
-;;; List of defined blocks, including marks for boundaries of closures
-;;;
-(defvar *blocks* nil)
-
 ;;; --cmpcbk.lsp--
 ;;;
 ;;; List of callbacks to be generated

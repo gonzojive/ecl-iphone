@@ -14,8 +14,7 @@
 
 (defun t1expr (form)
   (let ((*vars* nil)
-	(*cmp-env* (cmp-env-new))
-	(*blocks* nil))
+	(*cmp-env* (cmp-env-new)))
     (push (t1expr* form) *top-level-forms*)))
 
 (defvar *toplevel-forms-to-print*
