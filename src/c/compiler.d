@@ -425,6 +425,8 @@ c_new_env(struct cl_compiler_env *new_c_env, cl_object env)
 		for (env = ENV->variables; !Null(env); env = CDR(env)) {
 			cl_object record = CAR(env);
 			if (SYMBOLP(CAR(record)) && CADR(record) != @'si::symbol-macro') {
+				continue;
+			} else {
 				ENV->lexical_level = 1;
 				break;
 			}
