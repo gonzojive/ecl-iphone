@@ -116,13 +116,16 @@
 )
 
 (defmacro with-cmp-protection (main-form error-form)
-  `(let* ((sys::*ihs-base* sys::*ihs-top*)
-	  (sys::*ihs-top* (sys::ihs-top 'cmp-toplevel-eval))
-	  (*break-enable* *compiler-break-enable*)
-	  (sys::*break-hidden-packages*
-	   (cons (find-package 'compiler)
-		 sys::*break-hidden-packages*))
-	  (throw-flag t))
+  `(let* #+nil
+     ((sys::*ihs-base* sys::*ihs-top*)
+      (sys::*ihs-top* (sys::ihs-top 'cmp-toplevel-eval))
+      (*break-enable* *compiler-break-enable*)
+      (sys::*break-hidden-packages*
+       (cons (find-package 'compiler)
+	     sys::*break-hidden-packages*))
+      (throw-flag t))
+     ((*break-enable* *compiler-break-enable*)
+      (throw-flag t))
      (unwind-protect
 	 (multiple-value-prog1 ,main-form
 	   (setf throw-flag nil))

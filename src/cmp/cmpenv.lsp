@@ -117,7 +117,7 @@
 
 (defun add-function-declaration (fname arg-types return-types)
   (if (si::valid-function-name-p fname)
-      (let ((fun (cmp-env-search-function fname *cmp-env* t)))
+      (let ((fun (cmp-env-search-function fname)))
 	(if (functionp fun)
 	    (warn "Found function declaration for local macro ~A" fname)
 	    (push (list fun
@@ -446,7 +446,11 @@
   (push (list name 'si::macro function)
 	(cmp-env-functions env)))
 
-(defun cmp-env-search-function (name &optional (env *cmp-env*) macro-allowed)
+(defun cmp-env-register-block (blk &optional (env *cmp-env*))
+  (push (list :block (blk-name blk) blk)
+	(cmp-env-variables env)))
+
+(defun cmp-env-search-function (name &optional (env *cmp-env*))
   (let ((ccb nil)
 	(clb nil)
 	(unw nil)
@@ -462,14 +466,53 @@
 	     (baboon))
 	    ((eq (first record) name)
 	     (setf found (first (last record)))
-	     (when (and (functionp found) (not macro-allowed))
-	       ;; Macro definition appears in #'.... This should not happen.
-	       (cmperr "The name of a macro ~A was found in special form FUNCTION." name))
 	     (return))))
     (values found ccb clb unw)))
 
+(defun cmp-env-search-variables (type name env)
+  (let ((ccb nil)
+	(clb nil)
+	(unw nil)
+	(found nil))
+    (dolist (record (cmp-env-variables env))
+      (cond ((eq record 'CB)
+	     (setf ccb t))
+	    ((eq record 'LB)
+	     (setf clb t))
+	    ((eq record 'UNWIND-PROTECT)
+	     (setf unw t))
+	    ((atom record)
+	     (baboon))
+	    ((not (eq (first record) type)))
+	    ((and (eq type :block) (eq name (second record)))
+	     (setf found record)
+	     (return))
+	    ((and (eq type :tag) (member name (second record)))
+	     (setf found record)
+	     (return))
+	    ((eq (second record) 'si::symbol-macro)
+	     (when (eq name 'si::symbol-macro)
+	       (setf found record))
+	     (return))
+	    (t
+	     (setf found record)
+	     (return))))
+    (values (first (last found)) ccb clb unw)))
+
+(defun cmp-env-search-block (name &optional (env *cmp-env*))
+  (cmp-env-search-variables :block name env))
+
+(defun cmp-env-search-tag (name &optional (env *cmp-env*))
+  (cmp-env-search-variables :tag name env))
+
+(defun cmp-env-search-symbol-macro (name &optional (env *cmp-env*))
+  (cmp-env-search-variables name 'si::symbol-macro env))
+
+(defun cmp-env-search-var (name &optional (env *cmp-env*))
+  (cmp-env-search-variables name t env))
+
 (defun cmp-env-search-macro (name &optional (env *cmp-env*))
-  (let ((f (cmp-env-search-function name env t)))
+  (let ((f (cmp-env-search-function name env)))
     (if (functionp f) f nil)))
 
 (defun cmp-env-mark (mark &optional (env *cmp-env*))
