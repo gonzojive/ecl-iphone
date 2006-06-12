@@ -307,6 +307,29 @@ asm_op2c(register int code, register cl_object o) {
 	asm_op2(code, c_register_constant(o));
 }
 
+/*
+ * The compiler environment consists of two lists, one stored in
+ * env->variables, the other one stored in env->macros.
+ *
+ * variable-record =	(:block block-name) |
+ *			(:tag ({tag-name}*)) |
+ *			(:function function-name) |
+ *			(var-name {:special | nil} bound-p) |
+ *			(symbol si::symbol-macro macro-function) |
+ *			CB | LB | UNWIND-PROTECT
+ * macro-record =	(function-name function) |
+ *			(macro-name si::macro macro-function)
+ *			CB | LB | UNWIND-PROTECT
+ *
+ * A *-NAME is a symbol. A TAG-ID is either a symbol or a number. A
+ * MACRO-FUNCTION is a function that provides us with the expansion
+ * for that local macro or symbol macro. BOUND-P is true when the
+ * variable has been bound by an enclosing form, while it is NIL if
+ * the variable-record corresponds just to a special declaration.
+ * CB, LB and UNWIND-PROTECT are only used by the C compiler and they
+ * denote closure, lexical environment and unwind-protect boundaries.
+ */
+
 static void
 c_register_block(cl_object name)
 {
@@ -358,23 +381,19 @@ c_register_var(register cl_object var, bool special, bool bound)
 	}
 }
 
-static void
-c_new_env(struct cl_compiler_env *new_c_env, cl_object env)
+static cl_object
+guess_environment(cl_object interpreter_env)
 {
-	ENV = new_c_env;
-	ENV->stepping = 0;
-	ENV->coalesce = TRUE;
-	ENV->constants = Cnil;
-	ENV->variables = Cnil;
-	ENV->macros = Cnil;
-	if (Null(env)) {
-		ENV->lexical_level = 0;
-		return;
-	}
-	ENV->lexical_level = 1;
-	for (env = @revappend(env, Cnil); !Null(env); env = CDR(env))
+	/*
+	 * Given the environment of an interpreted function, we guess a
+	 * suitable compiler enviroment to compile forms that access the
+	 * variables and local functions of this interpreted code.
+	 */
+	for (interpreter_env = @revappend(interpreter_env, Cnil);
+	     !Null(interpreter_env);
+	     interpreter_env = CDR(interpreter_env))
 	{
-		cl_object record = CAR(env);
+		cl_object record = CAR(interpreter_env);
 		cl_object record0 = CAR(record);
 		cl_object record1 = CDR(record);
 		if (SYMBOLP(record0)) {
@@ -385,6 +404,30 @@ c_new_env(struct cl_compiler_env *new_c_env, cl_object env)
 			c_register_tags(Cnil);
 		} else {
 			c_register_block(record1);
+		}
+	}
+}
+
+static void
+c_new_env(struct cl_compiler_env *new_c_env, cl_object env)
+{
+	ENV = new_c_env;
+	ENV->stepping = 0;
+	ENV->coalesce = TRUE;
+	ENV->macros = Cnil;
+	ENV->lexical_level = 0;
+	if (Null(env)) {
+		ENV->constants = Cnil;
+		ENV->variables = Cnil;
+	} else {
+		ENV->variables = CAR(env);
+		ENV->macros = CDR(env);
+		for (env = ENV->variables; !Null(env); env = CDR(env)) {
+			cl_object record = CAR(env);
+			if (SYMBOLP(CAR(record)) && CADR(record) != @'si::symbol-macro') {
+				ENV->lexical_level = 1;
+				break;
+			}
 		}
 	}
 }
@@ -2432,18 +2475,26 @@ si_make_lambda(cl_object name, cl_object rest)
 	@(return lambda)
 }
 
-@(defun si::eval-with-env (form &optional (env Cnil) (stepping Cnil))
+@(defun si::eval-with-env (form &optional (env Cnil) (stepping Cnil) (compiler_env_p Cnil))
 	struct cl_compiler_env *old_c_env = ENV;
 	struct cl_compiler_env new_c_env;
 	volatile cl_index handle;
 	struct ihs_frame ihs;
-	cl_object bytecodes;
+	cl_object bytecodes, interpreter_env, compiler_env;
 @
 	/*
 	 * Compile to bytecodes.
 	 */
 	ENV = &new_c_env;
-	c_new_env(&new_c_env, env);
+	if (compiler_env_p == Cnil) {
+		interpreter_env = env;
+		compiler_env = Cnil;
+	} else {
+		interpreter_env = Cnil;
+		compiler_env = env;
+	}
+	c_new_env(&new_c_env, compiler_env);
+	guess_environment(interpreter_env);
 	cl_env.lex_env = env;
 	ENV->stepping = stepping != Cnil;
 	handle = asm_begin();
@@ -2461,7 +2512,7 @@ si_make_lambda(cl_object name, cl_object rest)
 	 * Interpret using the given lexical environment.
 	 */
 	ihs_push(&ihs, @'eval');
-	cl_env.lex_env = env;
+	cl_env.lex_env = interpreter_env;
 	VALUES(0) = Cnil;
 	NVALUES = 0;
 	interpret(bytecodes, bytecodes->bytecodes.code);
