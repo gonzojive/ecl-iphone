@@ -198,13 +198,12 @@
 (defun c1macrolet (args &aux (*funs* *funs*))
   (check-args-number 'MACROLET args 1)
   (dolist (def (car args))
-    (cmpck (or (endp def) (not (symbolp (car def))) (endp (cdr def)))
-           "The macro definition ~s is illegal." def)
-    (push (list (car def)
-		'MACRO
-		(si::make-lambda (car def)
-				 (cdr (sys::expand-defmacro (car def) (second def) (cddr def)))))
-          *funs*))
+    (let ((name (first def)))
+      (cmpck (or (endp def) (not (symbolp name)) (endp (cdr def)))
+	     "The macro definition ~s is illegal." def)
+      (push (list name 'MACRO
+		  (si::eval-with-env (sys::expand-defmacro name (second def) (cddr def))))
+	    *funs*)))
   (c1locally (cdr args)))
 
 (defun c1symbol-macrolet (args &aux (*vars* *vars*))

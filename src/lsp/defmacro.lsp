@@ -274,7 +274,7 @@
   (multiple-value-bind (ppn whole *dl* *key-check* *arg-check*)
       (destructure vl t)
     (setq body (nconc decls (append *arg-check* *key-check* body)))
-    (values (list* 'LAMBDA (list* whole env '&aux *dl*) body)
+    (values `(ext::lambda-block ,name (,whole ,env &aux ,@*dl*) ,@body)
 	    ppn
 	    doc)))
 
@@ -284,9 +284,9 @@
 		     (vl (third def))
 		     (body (cdddr def))
 		     (function))
-		(multiple-value-bind (expr pprint doc)
+		(multiple-value-bind (function pprint doc)
 		    (sys::expand-defmacro name vl body)
-		  (setq function `#'(ext::lambda-block ,name ,@(cdr expr)))
+		  (setq function `(function ,function))
 		  (when *dump-defmacro-definitions*
 		    (print function)
 		    (setq function `(si::bc-disassemble ,function)))

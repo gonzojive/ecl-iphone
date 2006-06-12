@@ -1291,7 +1291,7 @@ c_macrolet(cl_object args, int flags)
 		cl_object macro, function;
 		macro = funcall(4, @'si::expand-defmacro', name, arglist,
 				definition);
-		function = make_lambda(name, CDR(macro));
+		function = make_lambda(name, CDDR(macro));
 		c_register_macro(name, function);
 	}
 	/* Remove declarations */

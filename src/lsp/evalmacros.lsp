@@ -55,16 +55,16 @@ or
 The doc-string DOC, if supplied, is saved as a FUNCTION doc and can be
 retrieved by (documentation 'NAME 'function).  See LIST for the backquote
 macro useful for defining macros."
-  (multiple-value-bind (expr pprint doc-string)
+  (multiple-value-bind (function pprint doc-string)
       (sys::expand-defmacro name vl body)
-    (let* ((function `#'(lambda-block ,name ,@(cdr expr))))
-      (when *dump-defun-definitions*
-	(print function)
-	(setq function `(si::bc-disassemble ,function)))
-      `(eval-when (:compile-toplevel :load-toplevel :execute)
-	(si::fset ',name ,function t ,pprint)
-	,@(si::expand-set-documentation name 'function doc-string)
-	',name))))
+    (setq function `(function ,function))
+    (when *dump-defun-definitions*
+      (print function)
+      (setq function `(si::bc-disassemble ,function)))
+    `(eval-when (:compile-toplevel :load-toplevel :execute)
+       (si::fset ',name ,function t ,pprint)
+       ,@(si::expand-set-documentation name 'function doc-string)
+       ',name)))
 
 (defmacro defvar (var &optional (form nil form-sp) doc-string)
   "Syntax: (defvar name [form [doc]])
@@ -109,16 +109,16 @@ as a VARIABLE doc and can be retrieved by (documentation 'NAME 'variable)."
 ;;; This is a no-op unless the compiler is installed
 ;;;
 (defmacro define-compiler-macro (name vl &rest body)
-  (multiple-value-bind (expr pprint doc-string)
+  (multiple-value-bind (function pprint doc-string)
       (sys::expand-defmacro name vl body)
-    (let* ((function `#'(lambda-block ,name ,@(cdr expr))))
-      (when *dump-defun-definitions*
-	(print function)
-	(setq function `(si::bc-disassemble ,function)))
-      `(progn
-	 (put-sysprop ',name 'sys::compiler-macro ,function)
-	 ,@(si::expand-set-documentation name 'function doc-string)
-	 ',name))))
+    (setq function `(function ,function))
+    (when *dump-defun-definitions*
+      (print function)
+      (setq function `(si::bc-disassemble ,function)))
+    `(progn
+       (put-sysprop ',name 'sys::compiler-macro ,function)
+       ,@(si::expand-set-documentation name 'function doc-string)
+       ',name)))
 
 (defun compiler-macro-function (name &optional env)
   (declare (ignore env))
