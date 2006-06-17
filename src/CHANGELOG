@@ -251,8 +251,14 @@ ECL 0.9i
 	(a) => 1
    This has been achieved by merging the C and bytecodes compiler environments.
    We have tried to implement this questionable feaure in the safest way, so
-   that references to local variables and functions cause an error at least in
-   compiled forms.
+   that references to local variables, functions, blocks and tags cause an error.
+	> (defun a (x)
+	   (macrolet ((m () x))
+	     (m)))
+	In a MACROLET function you tried to access a local variable, X,
+	from the function in which it appears.
+	Top level.
+	>>
 
 * Documentation:
 

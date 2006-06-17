@@ -397,6 +397,7 @@ extern cl_object cl_grab_rest_args(cl_va_list args);
 
 /* compiler.c */
 
+extern cl_object si_macrolet_function(cl_object form, cl_object env);
 extern cl_object si_process_lambda_list(cl_object lambda_list, cl_object context);
 extern cl_object si_process_lambda(cl_object lambda);
 extern cl_object si_make_lambda(cl_object name, cl_object body);

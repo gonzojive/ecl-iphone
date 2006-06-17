@@ -329,3 +329,66 @@
     (list* 'let* (cons (list whole list) *dl*) body)))
 
 (defun warn (&rest foo) nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; MACROLET HELPER
+;;;
+
+(defun cmp-env-for-bytecodes (old-env)
+  "Produce an environment which is safe to pass to the bytecodes
+compiler. We remove all blocks and tags and ensure that
+references to local variables will cause an error. This
+environment can be used to bytecompile the functions in MACROLET
+or SYMBOL-MACRO forms, and also to evaluate other forms."
+  (declare (si::c-local))
+  (flet ((local-var-error-function (name)
+	  #'(lambda (whole env)
+	      (error
+"In a MACROLET function you tried to access a local variable, ~A,
+from the function in which it appears." name)))
+	 (local-fun-error-function (name)
+	  #'(lambda (whole env)
+	      (error
+"In a MACROLET function you tried to access a local function, ~A,
+from the function in which it appears." name))))
+    (cons (do ((env (car old-env) (cdr env))
+	       (variables '()))
+	      ((endp env) (nreverse variables))
+	    (let ((i (car env)))
+	      (if (consp i)
+		(let ((name (first i)))
+		  (if (not (keywordp name))
+		      (push (if (second i)
+				i
+			      (list name 'si::symbol-macro (local-var-error-function name)))
+			    variables))))))
+	  (do ((env (cdr old-env) (cdr env))
+	       (macros '()))
+	      ((endp env) (nreverse macros))
+	    (let ((i (car env)))
+	      (if (consp i)
+		(push (if (eq (second i) 'SI::MACRO)
+			  i
+			(list (first i) 'SI:MACRO (local-fun-error-function (first i))))
+		      macros)))))))
+
+(defun macrolet-functions (definitions old-env)
+  (declare (si::c-local))
+  (let ((env (cmp-env-for-bytecodes old-env)))
+    (si::eval-with-env
+     (cons 'list
+	   (mapcar #'(lambda (x)
+		       (let* ((name (first x))
+			      (llist (second x))
+			      (def (cddr x)))
+			 `(list ',name ,(si::expand-defmacro name llist def))))
+		   definitions))
+     env nil t)))
+
+(defun cmp-env-register-macrolet (definitions old-env)
+  (let ((macros (cdr old-env)))
+    (dolist (record (macrolet-functions definitions old-env))
+      (push (list (first record) 'si::macro (second record))
+	    macros))
+    (rplacd old-env macros)))

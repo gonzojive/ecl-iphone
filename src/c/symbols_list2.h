@@ -1646,6 +1646,8 @@ cl_symbols[] = {
 {KEY_ "LINE-BUFFERED",NULL},
 {KEY_ "FULLY-BUFFERED",NULL},
 
+{SYS_ "CMP-ENV-REGISTER-MACROLET",NULL},
+
 /* Tag for end of list */
 {NULL,NULL}};
 

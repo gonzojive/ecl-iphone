@@ -308,7 +308,8 @@ asm_op2c(register int code, register cl_object o) {
 }
 
 /*
- * Note: the following should match the definitions in cmpenv.lsp
+ * Note: the following should match the definitions in cmp/cmpenv.lsp, as
+ * well as CMP-ENV-REGISTER-MACROLET (lsp/defmacro.lsp)
  *
  * The compiler environment consists of two lists, one stored in
  * env->variables, the other one stored in env->macros.
@@ -1334,28 +1335,15 @@ c_locally(cl_object args, int flags) {
 static int
 c_macrolet(cl_object args, int flags)
 {
-	cl_object def_list;
-	cl_object old_macros = ENV->macros;
-
-	/* Pop the list of definitions */
-	for (def_list = pop(&args); !endp(def_list); ) {
-		cl_object definition = pop(&def_list);
-		cl_object name = pop(&definition);
-		cl_object arglist = pop(&definition);
-		cl_object macro, function;
-		macro = funcall(4, @'si::expand-defmacro', name, arglist,
-				definition);
-		function = make_lambda(name, CDDR(macro));
-		c_register_macro(name, function);
-	}
-	/* Remove declarations */
+	cl_object old_env = ENV->macros;
+	cl_object env = funcall(3, @'si::cmp-env-register-macrolet', pop(&args),
+				CONS(ENV->variables, ENV->macros));
+	ENV->macros = CDR(env);
 	args = c_process_declarations(args);
 	flags = compile_body(args, flags);
-	ENV->macros = old_macros;
-
+	ENV->macros = old_env;
 	return flags;
 }
-
 
 static int
 c_multiple_value_bind(cl_object args, int flags)
