@@ -139,14 +139,14 @@
                  ~%;;; You are recommended to compile again.~%"
 	      form))))
 
-(defun cmp-macroexpand (form &optional (env (cons nil (cdr *cmp-env*))))
+(defun cmp-macroexpand (form &optional (env *cmp-env*))
   (with-cmp-protection (macroexpand form env)
     (let ((*print-case* :upcase))
       (print-current-form)
       (format t "~&;;; The macro form ~S was not expanded successfully.~
                  ~%;;; You are recommended to compile again.~%" form))))
 
-(defun cmp-expand-macro (fd form &optional (env (cons nil (cdr *cmp-env*))))
+(defun cmp-expand-macro (fd form &optional (env *cmp-env*))
   (with-cmp-protection
     (let ((new-form (funcall *macroexpand-hook* fd form env)))
       (values new-form (not (eql new-form form))))

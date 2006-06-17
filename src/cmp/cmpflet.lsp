@@ -196,13 +196,15 @@
 
 (defun c1macrolet (args)
   (check-args-number 'MACROLET args 1)
-  (let ((*cmp-env* (cmp-env-copy)))
+  (let ((old-cmp-env *cmp-env*)
+	(*cmp-env* (cmp-env-copy)))	
     (dolist (def (car args))
       (let ((name (first def)))
 	(cmpck (or (endp def) (not (symbolp name)) (endp (cdr def)))
 	       "The macro definition ~s is illegal." def)
-	(cmp-env-register-macro name
-		    (si::eval-with-env (sys::expand-defmacro name (second def) (cddr def))))))
+	(let* ((form (si::expand-defmacro name (second def) (cddr def)))
+	       (fun (si::eval-with-env form old-cmp-env nil t)))
+	  (cmp-env-register-macro name fun))))
     (c1locally (cdr args))))
 
 (defun c1symbol-macrolet (args)

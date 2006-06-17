@@ -461,7 +461,7 @@
 
 (defun cmp-env-register-symbol-macro (name form &optional (env *cmp-env*))
   (push (list name 'si::symbol-macro #'(lambda (whole env) form))
-	(cmp-env-functions env)))
+	(cmp-env-variables env)))
 
 (defun cmp-env-register-block (blk &optional (env *cmp-env*))
   (push (list :block (blk-name blk) blk)

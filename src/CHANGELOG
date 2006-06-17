@@ -241,6 +241,16 @@ ECL 0.9i
    code for multiple value calls and other structures such as unwind-protect
    forms.
 
+ - The functions created by MACROLET must be compiled taking into account other
+   enclosing MACROLET and SYMBOL-MACRO definitions. This allows one to write
+   something like
+	(defun a ()
+	  (symbol-macro ((x 1))
+	    (macrolet ((m () x))
+	      (m))))
+	(a) => 1
+   This has been achieved by merging the C and bytecodes compiler environments.
+
 * Documentation:
 
  - The HTML manuals now use CSS for a more appealing look.

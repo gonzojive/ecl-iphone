@@ -416,14 +416,17 @@ c_new_env(struct cl_compiler_env *new_c_env, cl_object env)
 	ENV->coalesce = TRUE;
 	ENV->macros = Cnil;
 	ENV->lexical_level = 0;
+	ENV->constants = Cnil;
 	if (Null(env)) {
-		ENV->constants = Cnil;
+		ENV->macros = Cnil;
 		ENV->variables = Cnil;
 	} else {
 		ENV->variables = CAR(env);
 		ENV->macros = CDR(env);
 		for (env = ENV->variables; !Null(env); env = CDR(env)) {
 			cl_object record = CAR(env);
+			if (ATOM(record))
+				continue;
 			if (SYMBOLP(CAR(record)) && CADR(record) != @'si::symbol-macro') {
 				continue;
 			} else {
@@ -438,11 +441,13 @@ static cl_object
 c_tag_ref(cl_object the_tag, cl_object the_type)
 {
 	cl_fixnum n = 0;
-	cl_object l;
+	cl_object l, record, type, name;
 	for (l = ENV->variables; CONSP(l); l = CDR(l)) {
-		cl_object record = CAR(l);
-		cl_object type = CAR(record);
-		cl_object name = CADR(record);
+		record = CAR(l);
+		if (ATOM(record))
+			continue;
+		type = CAR(record);
+		name = CADR(record);
 		if (type == @':tag') {
 			if (type == the_type && !Null(assql(the_tag, name)))
 				return CONS(MAKE_FIXNUM(n),
@@ -466,11 +471,13 @@ static cl_fixnum
 c_var_ref(cl_object var, int allow_symbol_macro, bool ensure_defined)
 {
 	cl_fixnum n = 0;
-	cl_object l;
+	cl_object l, record, special, name;
 	for (l = ENV->variables; CONSP(l); l = CDR(l)) {
-		cl_object record = CAR(l);
-		cl_object name = CAR(record);
-		cl_object special = CADR(record);
+		record = CAR(l);
+		if (ATOM(record))
+			continue;
+		name = CAR(record);
+		special = CADR(record);
 		if (name == @':block' || name == @':tag' || name == @':function')
 			n++;
 		else if (name != var) {
