@@ -544,10 +544,10 @@ inspect commands, or type '?' to the inspector."
   (setq string (string string))
   (if package
       (do-symbols (symbol package)
-        (when (search string (string symbol))
+        (when (search string (string symbol) :test #'char-equal)
           (setq f (or (print-doc symbol t) f))))
       (do-all-symbols (symbol)
-        (when (search string (string symbol))
+        (when (search string (string symbol) :test #'char-equal)
           (setq f (or (print-doc symbol t) f)))))
   (if f
       (format t "~&-----------------------------------------------------------------------------")
