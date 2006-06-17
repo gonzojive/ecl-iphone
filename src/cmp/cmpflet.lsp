@@ -196,19 +196,8 @@
 
 (defun c1macrolet (args)
   (check-args-number 'MACROLET args 1)
-  ;; We have to compile each function in the MACROLET and install them
-  ;; in our enviroment as macros. Note that when compiling these forms
-  ;; we have to do it using an environment that contains all enclosing
-  ;; symbol-macro and macrolet forms! Hence the CMP-ENV-FOR-BYTECODES.
-  (let ((old-cmp-env (cmp-env-for-bytecodes *cmp-env*))
-	(*cmp-env* (cmp-env-copy)))
-    (dolist (def (car args))
-      (let ((name (first def)))
-	(cmpck (or (endp def) (not (symbolp name)) (endp (cdr def)))
-	       "The macro definition ~s is illegal." def)
-	(let* ((form (si::expand-defmacro name (second def) (cddr def)))
-	       (fun (si::eval-with-env form old-cmp-env nil t)))
-	  (cmp-env-register-macro name fun))))
+  (let ((*cmp-env* (cmp-env-copy)))
+    (cmp-env-register-macrolet (first args) *cmp-env*)
     (c1locally (cdr args))))
 
 (defun c1symbol-macrolet (args)
