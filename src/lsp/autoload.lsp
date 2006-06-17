@@ -187,22 +187,13 @@ Welcome to ECL. Here are the few functions you should learn first.
 
 	(QUIT) ends the current ECL session.
 
-For the precise language specification, refere to Guy Steele's \"Common Lisp,
+For the precise language specification, refer to Guy Steele's \"Common Lisp,
 the Language\" and our \"ECL Manual\".  \"ECL Dictionary\", the hard-copied
 version of ECL online documentation, will be useful as a handbook.
 
 Good luck!
 "
   (print-doc symbol))
-
-(defun help* (string &optional (package (find-package "CL")))
-  "Args: (string &optional (package-spec 'lisp))
-ECL specific.
-Prints the documentation associated with those symbols in the specified
-package whose print names contain STRING as substring.  STRING may be a
-symbol, in which case the print-name of that symbol is used.  If PACKAGE is
-NIL, then all packages are searched."
-  (apropos-doc string package))
 
 ;;; Pretty-print-formats.
 ;;;

@@ -540,20 +540,20 @@ inspect commands, or type '?' to the inspector."
                  (format t "~&No documentation for ~:@(~S~)." symbol))
              (values))))
 
-(defun apropos-doc (string &optional (package "CL") &aux (f nil))
-  (setq string (string string))
-  (if package
-      (do-symbols (symbol package)
-        (when (search string (string symbol) :test #'char-equal)
-          (setq f (or (print-doc symbol t) f))))
-      (do-all-symbols (symbol)
-        (when (search string (string symbol) :test #'char-equal)
-          (setq f (or (print-doc symbol t) f)))))
-  (if f
-      (format t "~&-----------------------------------------------------------------------------")
-      (format t "~&No documentation for ~S in ~:[any~;~A~] package."
-              string package
-              (and package (package-name (coerce-to-package package)))))
+(defun help* (string &optional (package "CL"))
+  "Args: (string &optional (package-spec 'lisp))
+ECL specific.
+Prints the documentation associated with those symbols in the specified
+package whose print names contain STRING as substring.  STRING may be a
+symbol, in which case the print-name of that symbol is used.  If PACKAGE is
+NIL, then all packages are searched."
+  (do* ((f nil)
+	(l (apropos-list string package) (cdr l)))
+      ((endp l)
+       (format t (if f
+		     "~&-----------------------------------------------------------------------------"
+		     "~&No documentation for ~S in ~:[any~;~A~] package.")
+	       string package (and package (package-name (coerce-to-package package)))))
+    (when (print-doc (first l) t)
+      (setf f t)))
   (values))
-
-;(provide 'describe)

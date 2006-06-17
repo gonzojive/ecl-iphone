@@ -150,39 +150,24 @@ to NIL) and returns all values."
 Prints those symbols whose print-names contain STRING as substring.  If
 PACKAGE is non-NIL, then only the specified PACKAGE is searched."
   (setq string (string string))
-  (cond (package
-         (do-symbols (symbol package)
-           (when (search string (string symbol))
-                 (print-symbol-apropos symbol)))
-         (do ((p (package-use-list package) (cdr p)))
-             ((null p))
-           (do-external-symbols (symbol (car p))
-             (when (search string (string symbol))
-                   (print-symbol-apropos symbol)))))
-        (t
-         (do-all-symbols (symbol)
-           (when (search string (string symbol))
-                 (print-symbol-apropos symbol)))))
+  (mapc #'print-symbol-apropos (apropos-list string package))
   (values))
 
 
-(defun apropos-list (string &optional package &aux list)
+(defun apropos-list (string &optional package)
   "Args: (string &optional (package nil))
 Returns a list of all symbols whose print-names contain STRING as substring.
 If PACKAGE is non-NIL, then only the specified PACKAGE is searched."
-  (setq list nil)
-  (setq string (string string))
-  (cond (package
-         (do-symbols (symbol package)
-           (when (search string (string symbol))
-                 (setq list (cons symbol list))))
-         (do ((p (package-use-list package) (cdr p)))
-             ((null p))
-           (do-symbols (symbol (car p))
-             (when (search string (string symbol))
-                   (setq list (cons symbol list))))))
-        (t
-         (do-all-symbols (symbol)
-           (when (search string (string symbol))
-                 (setq list (cons symbol list))))))
-  list)
+  (let* ((list '())
+	 (string (string string)))
+    (cond (package
+	   (dolist (p (package-use-list package))
+	     (setf list (nconc (apropos-list string p) list)))
+	   (do-symbols (symbol package)
+	     (when (search string (string symbol) :test #'char-equal)
+	       (setq list (cons symbol list)))))
+	  (t
+	   (do-all-symbols (symbol)
+	     (when (search string (string symbol) :test #'char-equal)
+	       (setq list (cons symbol list))))))
+    list))
