@@ -250,6 +250,9 @@ ECL 0.9i
 	      (m))))
 	(a) => 1
    This has been achieved by merging the C and bytecodes compiler environments.
+   We have tried to implement this questionable feaure in the safest way, so
+   that references to local variables and functions cause an error at least in
+   compiled forms.
 
 * Documentation:
 

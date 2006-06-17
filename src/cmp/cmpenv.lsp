@@ -547,3 +547,39 @@
 			(cmp-env-variables old-env))
 	when (and (consp i) (var-p (fourth i)))
 	collect (fourth i)))
+
+(defun cmp-env-for-bytecodes (old-env)
+  "Produce an environment which is safe to pass to the bytecodes
+compiler. We remove all blocks and tags and ensure that
+references to local variables will cause an error. This
+environment can be used to bytecompile the functions in MACROLET
+or SYMBOL-MACRO forms, and also to evaluate other forms."
+  (labels
+      ((local-var-error-function (name)
+	  #'(lambda (whole env)
+	      (error
+"In a MACROLET function you tried to access a local variable, ~A~%
+from the function in which it appears." name)))
+       (filter-var-definition (i)
+	 (unless (atom i)
+	   (let ((name (first i)))
+	     (unless (keywordp name)
+	       (case (second i)
+		 (si::symbol-macro i)
+		 (:special i)
+		 (t (list name 'si::symbol-macro (local-var-error-function name))))))))
+       (local-fun-error-function (name)
+	  #'(lambda (whole env)
+	      (error
+"In a MACROLET function you tried to access a local function, ~A~%
+from the function in which it appears." name)))
+       (filter-fun-definition (i)
+	 (unless (atom i)
+	   (if (eq (second i 'SI::MACRO))
+	       i
+	       (list (first i) 'SI:MACRO (local-fun-error-function (first i)))))))
+    (cons (loop for i in (car old-env)
+		with x
+		when (setf x (filter-var-definition i))
+		collect x)
+	  (cdr old-env))))

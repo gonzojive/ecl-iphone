@@ -308,6 +308,8 @@ asm_op2c(register int code, register cl_object o) {
 }
 
 /*
+ * Note: the following should match the definitions in cmpenv.lsp
+ *
  * The compiler environment consists of two lists, one stored in
  * env->variables, the other one stored in env->macros.
  *
