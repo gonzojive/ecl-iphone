@@ -262,6 +262,9 @@ ECL 0.9i
 	Top level.
 	>>
 
+  - ecl_listen_stream (used in LISTEN or READ-CHAR-NO-HANG) now returns the
+    correct value when applied on a CLOS stream (M. Goffioul)
+
 * Documentation:
 
  - The HTML manuals now use CSS for a more appealing look.

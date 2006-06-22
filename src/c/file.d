@@ -1905,7 +1905,7 @@ BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
 		cl_object flag = funcall(2, @'ext::stream-listen', strm);
-		return !(strm == Cnil);
+		return !(flag == Cnil);
 	}
 #endif
 	if (type_of(strm) != t_stream) 
