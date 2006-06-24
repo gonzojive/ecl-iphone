@@ -68,7 +68,7 @@
 ;;;
 (setq si::*keep-documentation* nil)
 (proclaim '(optimize (safety 2) (space 3)))
-(let* ((c::*cc-flags* (concatenate 'string "-I@true_builddir@/c " c::*cc-flags*))
+(let* ((c::*cc-flags* (concatenate 'string "-I\"@true_builddir@/c\" " c::*cc-flags*))
        (lsp-objects (compile-if-old "build:lsp;" +lisp-module-files+
 				    :system-p t :c-file t :data-file t :h-file t
 				    ;;:shared-data-file "build:ecl.sdat"
