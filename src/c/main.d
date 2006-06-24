@@ -130,19 +130,23 @@ static const struct {
 int
 cl_shutdown(void)
 {
-	cl_object l = SYM_VAL(@'si::*exit-hooks*');
-	cl_object form = cl_list(2, @'funcall', Cnil);
-	while (CONSP(l)) {
-		CADR(form) = CAR(l);
-		si_safe_eval(3, form, Cnil, OBJNULL);
-		l = CDR(l);
-	}
+	if (ecl_booted > 0) {
+		cl_object l = SYM_VAL(@'si::*exit-hooks*');
+		cl_object form = cl_list(2, @'funcall', Cnil);
+		while (CONSP(l)) {
+			CADR(form) = CAR(l);
+			si_safe_eval(3, form, Cnil, OBJNULL);
+			l = CDR(l);
+			ECL_SET(@'si::*exit-hooks*', l);
+		}
 #ifdef ENABLE_DLOPEN
-	ecl_library_close_all();
+		ecl_library_close_all();
 #endif
 #ifdef TCP
-	ecl_tcp_close_all();
+		ecl_tcp_close_all();
 #endif
+	}
+	ecl_booted = -1;
 	return 1;
 }
 
@@ -152,6 +156,14 @@ cl_boot(int argc, char **argv)
 	cl_object aux;
 	cl_object features;
 	int i;
+
+	if (ecl_booted) {
+		if (ecl_booted < 0) {
+			/* We have called cl_shutdown and want to use ECL again. */
+			ecl_booted = 1;
+		}
+		return;
+	}
 
 #if !defined(GBC_BOEHM)
 	setbuf(stdin,  stdin_buf);
