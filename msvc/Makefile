@@ -312,6 +312,8 @@ install-base:
 	IF NOT EXIST $(libdir)\ecl $(MKDIR) $(libdir)\ecl
 	for %i in ($(TARGETS) ecl.dll) do $(CP) %i $(bindir)\%i
 	IF EXIST $(bindir)\ecl2$(EXE) $(MV) $(bindir)\ecl2$(EXE) $(bindir)\ecl$(EXE)
+	IF EXIST ecl2$(EXE).manifest $(CP) ecl2$(EXE).manifest $(bindir)\ecl$(EXE).manifest
+	IF EXIST ecl.dll.manifest $(CP) ecl.dll.manifest $(bindir)
 	$(CP) ecl-config.bat $(bindir)\ecl-config.bat
 	$(CP) ecl-cc.bat $(bindir)\ecl-cc.bat
 	for %i in ($(LIBRARIES) c\dpp.exe BUILD-STAMP help.doc ecl.lib) do $(CP) %i $(libdir)
