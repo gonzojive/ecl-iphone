@@ -267,6 +267,11 @@ ECL 0.9i
 
   - Calling cl_shutdown() or cl_boot() multiple times is now safe.
 
+  - EXT::RUN-PROGRAM now makes sure the command is null-terminated to avoid
+    garbage characters (M. Goffioul)
+
+  - [Win32] EXT::RUN-PROGRAM does not show a command window anymore (M. Goffioul)
+
 * Documentation:
 
  - The HTML manuals now use CSS for a more appealing look.

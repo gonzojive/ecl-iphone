@@ -144,6 +144,7 @@ stream_to_handle(cl_object s, bool output)
 		cl_format(4, Cnil,
 			  make_simple_base_string("~S~{ ~S~}"),
 			  command, argv);
+	command = ecl_null_terminated_base_string(command);
 
 	attr.nLength = sizeof(SECURITY_ATTRIBUTES);
 	attr.lpSecurityDescriptor = NULL;
@@ -237,7 +238,8 @@ stream_to_handle(cl_object s, bool output)
 	ZeroMemory(&st_info, sizeof(STARTUPINFO));
 	st_info.cb = sizeof(STARTUPINFO);
 	st_info.lpTitle = NULL; /* No window title, just exec name */
-	st_info.dwFlags = STARTF_USESTDHANDLES; /* Specify std{in,out,err} */
+	st_info.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW; /* Specify std{in,out,err} */
+	st_info.wShowWindow = SW_HIDE;
 	st_info.hStdInput = child_stdin;
 	st_info.hStdOutput = child_stdout;
 	st_info.hStdError = child_stderr;
