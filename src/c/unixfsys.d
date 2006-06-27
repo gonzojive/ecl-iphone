@@ -187,7 +187,12 @@ cl_truename(cl_object orig_pathname)
 			FEcannot_open(orig_pathname);
 #ifdef HAVE_LSTAT
 		} else if (kind == @':link') {
-			filename = si_readlink(filename);
+			/* The link might be a relative pathname. In that case we have
+			 * to merge with the original pathname */
+			filename = cl_merge_pathnames(2, si_readlink(filename),
+						      make_pathname(Cnil, Cnil,
+								    cl_pathname_directory(1,filename),
+								    Cnil, Cnil, Cnil));
 #endif
 		} else {
 			filename = OBJNULL;

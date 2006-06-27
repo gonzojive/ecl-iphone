@@ -272,6 +272,10 @@ ECL 0.9i
 
   - [Win32] EXT::RUN-PROGRAM does not show a command window anymore (M. Goffioul)
 
+  - When a file is actually a symbolic link and this symbolic link contains a
+    relative pathname, the truename is obtained by merging the symbolic link
+    with the original pathname.
+
 * Documentation:
 
  - The HTML manuals now use CSS for a more appealing look.
