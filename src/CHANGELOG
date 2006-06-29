@@ -16,6 +16,8 @@ ECL 0.9i
 
 * Visible changes:
 
+ - Compiled functions can have more than 64 required arguments.
+
  - Many functions have got now the prefix "ecl_" so as to avoid namespace
    collisions with C/C++ code.
 

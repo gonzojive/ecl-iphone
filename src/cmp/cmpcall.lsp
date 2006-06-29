@@ -48,7 +48,7 @@
 	  ((not (and (consp fun)
 		     (eq (first fun) 'FUNCTION)))
 	   (let ((l (length args)))
-	     (if (< (1- l) si::c-arguments-limit)
+	     (if (<= l si::c-arguments-limit)
 		 (make-c1form* 'FUNCALL :args (c1expr fun) (c1args* arguments))
 		 (c1expr `(with-stack
 			   ,@(loop for i in (rest args) collect `(stack-push ,i))

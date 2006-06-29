@@ -56,8 +56,16 @@
   (first (c1form-args form)))
 
 (defun fun-needs-narg (fun)
-  (or (eq (fun-closure fun) 'CLOSURE)
-      (/= (fun-minarg fun) (fun-maxarg fun))))
+  (not (fun-fixed-narg fun)))
+
+(defun fun-fixed-narg (fun)
+  "Returns true if the function has a fixed number of arguments and it is not a closure.
+The function thus belongs to the type of functions that cl_make_cfun accepts."
+  (let (narg)
+    (and (not (eq (fun-closure fun) 'CLOSURE))
+	 (= (fun-minarg fun) (setf narg (fun-maxarg fun)))
+	 (<= narg si::c-arguments-limit)
+	 narg)))
 
 (defun add-referred-variables-to-function (fun var-list)
   (setf (fun-referred-vars fun)
@@ -301,6 +309,18 @@
 	  (unless (or rest keywords allow-other-keys)
 	    (wt-nl "if(narg>" (+ nreq nopt) ") FEwrong_num_arguments_anonym();"))))
     (wt-nl "{"))
+
+  ;; If the number of required arguments exceeds the number of variables we
+  ;; want to pass on the C stack, we pass some of the arguments to the list
+  ;; of optionals, which will eventually get passed in the lisp stack.
+  (when (> nreq si::c-arguments-limit)
+    (setf nopt (+ nopt (- nreq si::c-arguments-limit))
+	  nreq si::c-arguments-limit)
+    (setf optionals (nconc (reduce #'nconc (mapcar #'(lambda (var) (list var *c1nil* NIL))
+						   (subseq requireds si::c-arguments-limit)))
+				  (rest optionals))
+	  required (subseq requireds 0 si::c-arguments-limit)
+	  varargs t))
 
   ;; For each variable, set its var-loc.
   ;; For optional and keyword parameters, and lexical variables which

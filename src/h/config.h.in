@@ -98,13 +98,13 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
  *
  * In general, any of these limits must fit in a "signed int".
  */
-/*	Maximum number of function arguments 				*/
+/*	Maximum number of function arguments (arbitrary)		*/
 #define CALL_ARGUMENTS_LIMIT 65536
 
 /*	Maximum number of required arguments				*/
-#define LAMBDA_PARAMETERS_LIMIT 64
+#define LAMBDA_PARAMETERS_LIMIT CALL_ARGUMENTS_LIMIT
 
-/*	Numb. of args. which can be passed using the C stack		*/
+/*	Numb. of args. which will be passed using the C stack		*/
 /*	See cmplam.lsp if you change this value				*/
 #define C_ARGUMENTS_LIMIT 64
 

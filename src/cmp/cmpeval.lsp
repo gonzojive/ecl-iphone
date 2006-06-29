@@ -83,7 +83,7 @@
   (let ((fun (local-function-ref fname)))
     (when fun
       (let ((l (length args)))
-	(when (>= l si::c-arguments-limit)
+	(when (> l si::c-arguments-limit)
 	  (return-from c1call-local
 	    (c1expr `(with-stack
 		      ,@(loop for i in args collect `(stack-push ,i))
@@ -108,7 +108,7 @@
 
 (defun c1call-global (fname args)
   (let ((l (length args)))
-    (if (>= l si::c-arguments-limit)
+    (if (> l si::c-arguments-limit)
 	(c1expr `(with-stack
 		  ,@(loop for i in args collect `(stack-push ,i))
 		  (apply-from-stack ,l #',fname)))

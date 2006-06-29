@@ -135,16 +135,14 @@
 (defun wt-make-closure (fun &aux (cfun (fun-cfun fun)))
   (declare (type fun fun))
   (let* ((closure (fun-closure fun))
-	 (minarg (fun-minarg fun))
-	 (maxarg (fun-maxarg fun))
-	 (narg (if (= minarg maxarg) maxarg nil)))
+	 narg)
     (cond ((eq closure 'CLOSURE)
 	   (wt "cl_make_cclosure_va((void*)" cfun ","
 	       (environment-accessor fun)
 	       ",Cblock)"))
 	  ((eq closure 'LEXICAL)
 	   (baboon))
-	  (narg ; empty environment fixed number of args
+	  ((setf narg (fun-fixed-narg fun)) ; empty environment fixed number of args
 	   (wt "cl_make_cfun((void*)" cfun ",Cnil,Cblock," narg ")"))
 	  (t ; empty environment variable number of args
 	   (wt "cl_make_cfun_va((void*)" cfun ",Cnil,Cblock)")))))
