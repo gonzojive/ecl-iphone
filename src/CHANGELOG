@@ -4,22 +4,21 @@ ECL 0.9i
 * New platforms:
 
  - Patches in assembler code and GC headers to build ECL on Mac OSX/Intel
-   contributed by Brad Beveridge. This port relies on the version of the
-   GNU MP library shipped with DarwinPorts.
+   contributed by Brad Beveridge.
 
  - ECL compiles and passes tests in OpenBSD/x86.
 
 * Unicode support: (contributed by Brian Spilsbury)
 
  - Unicode strings (24-bits characters) are now supported as data structure,
-   though they do not print and read properly.
+   though they have no printed representation.
 
 * Visible changes:
 
  - Compiled functions can have more than 64 required arguments.
 
  - Many functions have got now the prefix "ecl_" so as to avoid namespace
-   collisions with C/C++ code.
+   collisions with C/C++ code (still work to be done in this front).
 
  - Several functions with duplicate functionality (make_two_way_streams,
    make_string_output_stream_from_string, close_stream, etc) have been removed.
@@ -120,17 +119,18 @@ ECL 0.9i
    constants. The only case where this fail is when the "unreadable" constant
    is part of a circular structure (contributed by Brian Spilsbury).
 
- - The second value of MACROEXPAND-1 is true whenever a macroexpansion
-   happened; in other words, whenever an macro function was called. MACROEXPAND
-   on the additionally checks whether the macroexpanded form is eq to the
-   original one and complains of the infinite loop that results.
+ - The second value of MACROEXPAND-1 is true whenever a macroexpansion happened
+   or, in other words, whenever an macro function was called. MACROEXPAND
+   additionally checks whether the macroexpanded form is eq to the original one
+   and complains of the infinite loop that results.
 
  - Configuration flag --with-tcp defaults to true.
 
- - [Win32] Add a :SYSTEM key argument to C::BUILDER, used when building a program,
-   to specify the type of executable. Possible values are :CONSOLE, to build a
-   console program, and :WINDOWS, to build a Windows program. The second case makes
-   only sense when the program contains some GUI (M. Goffioul).
+ - [Win32] Add a :SYSTEM key argument to C::BUILDER, used when building a
+   program, to specify the type of executable. Possible values are :CONSOLE, to
+   build a console program, and :WINDOWS, to build a Windows program. The
+   second case makes only sense when the program contains some GUI
+   (M. Goffioul).
 
  - The compiler is slightly faster by avoiding use of EVAL.
 
@@ -148,8 +148,8 @@ ECL 0.9i
  - A new defclass option, :OPTIMIZE-SLOT-ACCESS, which defaults to the value of
    CLOS:*OPTIMIZE-SLOT-ACCESS*, controls whether the slots accessors should
    address directly the values in the class or use SLOT-VALUE. It should be set
-   to NIL when one intends to redefine the SLOT-*-USING-CLASS methods, and
-   to T when trying to get the most of the speed.
+   to NIL when one intends to redefine the SLOT-*-USING-CLASS methods, and to T
+   when trying to get the most of the speed.
 
  - Implemented [FUNCALLABLE-]STANDARD-INSTANCE-ACCESS. They are synonyms for
    SI:INSTANCE-REF and are, as such, inlined and _very_ unsafe. Use with care.
@@ -186,8 +186,8 @@ ECL 0.9i
 	> (defclass foo (standard-class) ())
 	> (defclass faa () () (:metaclass foo))
 
- - Callback functions are now 'static' so that the same names can be used
-   in different files.
+ - Callback functions are now C 'static' functions so that the same names can
+   be used in different files.
 
  - New method for DOCUMENTATION to operate on slot-definition objects.
 
@@ -208,7 +208,7 @@ ECL 0.9i
    any case, this collector is only intended for small setups and OpenBSD.
 
  - The compiler transformed &AUX variables into a LET* form. In doing so, all
-   declarations were propageted to the body of the LET* form, even those for
+   declarations were propagated to the body of the LET* form, even those for
    non-&AUX variables. This could lead to spurious warnings about IGNORE
    declarations.
 
