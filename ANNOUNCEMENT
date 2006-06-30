@@ -1,46 +1,49 @@
 Announcement of ECL v0.9i
 =========================
 
-ECL stands for Embeddable Common-Lisp. The ECL project aims to produce an
-implementation of the Common-Lisp language which complies to the ANSI X3J13
-definition of the language.
+ECL stands for Embeddable Common-Lisp. The ECL project aims to produce
+an implementation of the Common-Lisp language which complies to the ANSI
+X3J13 definition of the language.
 
-The term embeddable refers to the fact that ECL includes a lisp to C compiler,
-which produces libraries (static or dynamic) that can be called from C
-programs. Furthermore, ECL can produce standalone executables from your lisp
-code and can itself be linked to your programs as a shared library.
+The term embeddable refers to the fact that ECL includes a lisp to C
+compiler, which produces libraries (static or dynamic) that can be
+called from C programs. Furthermore, ECL can produce standalone
+executables from your lisp code and can itself be linked to your
+programs as a shared library.
 
-ECL supports the operating systems Linux, FreeBSD, NetBSD, OpenBSD, Solaris (at
-least v. 9), Microsoft Windows and OSX, running on top of the Intel, Sparc,
-Alpha and PowerPC processors. Porting to other architectures should be rather
-easy.
+ECL supports the operating systems Linux, FreeBSD, NetBSD, OpenBSD,
+Solaris (at least v. 9), Microsoft Windows and OSX, running on top of
+the Intel, Sparc, Alpha and PowerPC processors. Porting to other
+architectures should be rather easy.
 
-ECL is currently hosted at SourceForge. The home page of the project is
-http://ecls.sourceforge.net, and in it you will find source code releases, a
-CVS tree and some useful documentation.
+ECL is currently hosted at Common-Lisp.net and SourceForge. The home
+page of the project is http://ecls.sourceforge.net, and in it you will
+find source code releases, a CVS tree and some useful documentation.
 
 Notes for this release
 ======================
 
-This version adds one port: OSX on Intel/x86. The port uses the latest version
-of the Boehm-Weiser garbage collector and an unoptimized version of the GMP
-library (because the developers refuse to port the Intel/x86 assembler code to
-this platform).
+This version adds one port: OSX on Intel/x86. The port uses the latest
+version of the Boehm-Weiser garbage collector and an unoptimized version
+of the GMP library (because the developers refuse to port the Intel/x86
+assembler code to this platform).
 
-Apart from that, this release contains mostly bug fixes. Some of them are very
-important. For instance, ECL can now compiled code with constants that have no
-printed representation, such as CLOS classes and objects, but also hash tables
-and arrays with circular references.
+Apart from that, this release contains mostly bug fixes. Some of them
+are very important. For instance, ECL can now compiled code with
+constants that have no printed representation, such as CLOS classes and
+objects, but also hash tables and arrays with circular references.
 
 ECL can also be built with support for strings and symbols with unicode
-characters (patches by B. Spilsbury). However, since the reader still does not
-understand external formats, there is some way until we can claim that ECL
-supports unicode.
+characters (patches by B. Spilsbury). However, since the reader still
+does not understand external formats, there is some way until we can
+claim that ECL supports unicode.
 
 Changes since 0.9h
 ==================
 
-See file src/CHANGELOG.
+See file src/CHANGELOG or browse online version:
+
+http://common-lisp.net/cgi-bin/viewcvs.cgi/ecl/src/CHANGELOG?rev=1.298&root=ecl&view=auto
 
 
 ;;; Local Variables: ***
