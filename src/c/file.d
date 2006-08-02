@@ -2505,8 +2505,9 @@ cl_streamp(cl_object strm)
 {
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		cl_object strm_class = CLASS_OF(strm);
-		cl_object test = funcall(3, @'subtypep', strm_class, @'stream');
+		cl_object this_class = CLASS_OF(strm);
+		cl_object stream_class = cl_find_class(1, @'stream');
+		cl_object test = funcall(3, @'si::subclassp', this_class, stream_class);
 		@(return (Null(test)? Cnil : Ct))
 	}
 #endif

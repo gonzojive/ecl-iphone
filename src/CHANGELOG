@@ -3,7 +3,7 @@ ECL 1.0:
 
 * Bugs fixed:
 
- - STREAMP returned NIL for Gray streams.
+ - STREAMP signals an error for Gray streams.
 
 
 ;;; Local Variables: ***
