@@ -1111,31 +1111,47 @@ cl_host_namestring(cl_object pname)
 	@(return pname)
 }
 
+#define EN_MATCH(p1,p2,el) (equalp(p1->pathname.el, p2->pathname.el)? Cnil : p1->pathname.el)
+
 @(defun enough_namestring (path
 	&o (defaults si_default_pathname_defaults()))
-	cl_object newpath;
+	cl_object newpath, pathdir, defaultdir, fname;
 @
 	defaults = cl_pathname(defaults);
 	path = cl_pathname(path);
+	pathdir = path->pathname.directory;
+	defaultdir = defaults->pathname.directory;
+	if (Null(pathdir)) {
+		pathdir = CONS(@':relative', Cnil);
+	} else if (Null(defaultdir)) {
+		/* The defaults pathname does not have a directory. */
+	} else if (CAR(pathdir) == @':relative') {
+		/* The pathname is relative to the default one one, so we just output the
+		   original one */
+	} else {
+		/* The new pathname is an absolute one. We compare it with the defaults
+		   and if they have some common elements, we just output the remaining ones. */
+		cl_index begin;
+		cl_object dir_begin = funcall(5, @'mismatch', pathdir, defaultdir,
+					      @':test', @'equal');
+		if (dir_begin != Cnil && (dir_begin == cl_length(defaultdir))) {
+			pathdir = funcall(3, @'subseq', pathdir, dir_begin);
+			pathdir = CONS(@':relative', pathdir);
+		}
+	}
+	fname = EN_MATCH(path, defaults, name);
+	if (fname == Cnil) fname = path->pathname.name;
+	/* Create a path with all elements that do not match the default */
 	newpath
-	= make_pathname(equalp(path->pathname.host, defaults->pathname.host) ?
-			Cnil : path->pathname.host,
-	                equalp(path->pathname.device,
-			       defaults->pathname.device) ?
-			Cnil : path->pathname.device,
-	                equalp(path->pathname.directory,
-			       defaults->pathname.directory) ?
-			Cnil : path->pathname.directory,
-	                equalp(path->pathname.name, defaults->pathname.name) ?
-			Cnil : path->pathname.name,
-	                equalp(path->pathname.type, defaults->pathname.type) ?
-			Cnil : path->pathname.type,
-	                equalp(path->pathname.version,
-			       defaults->pathname.version) ?
-			Cnil : path->pathname.version);
+	= make_pathname(EN_MATCH(path, defaults, host),
+			EN_MATCH(path, defaults, device),
+			pathdir, fname,
+			EN_MATCH(path, defaults, type),
+			EN_MATCH(path, defaults, version));
 	newpath->pathname.logical = path->pathname.logical;
 	@(return ecl_namestring(newpath, 1))
 @)
+#undef EN_MATCH
 
 /* --------------- PATHNAME MATCHING ------------------ */
 
