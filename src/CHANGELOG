@@ -1,6 +1,10 @@
 ECL 1.0:
 ========
 
+* New platforms:
+
+ - Support for GNU/kFreeBSD
+
 * Bugs fixed:
 
  - STREAMP signals an error for Gray streams.
