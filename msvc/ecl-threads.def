@@ -135,7 +135,7 @@ EXPORTS
 	cl_standard_char_p
 	cl_upper_case_p
 
-	ecl_base_string_case
+	;ecl_base_string_case
 	char_code
 	digitp
 	char_eq
@@ -350,7 +350,7 @@ EXPORTS
 
 	; gfun.c
 
-	si_set_funcallable
+	;si_set_funcallable
 	si_generic_function_p
 	si_set_compiled_function_name
 
