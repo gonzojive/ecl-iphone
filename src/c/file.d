@@ -2503,6 +2503,13 @@ cl_get_output_stream_string(cl_object strm)
 cl_object
 cl_streamp(cl_object strm)
 {
+#ifdef ECL_CLOS_STREAMS
+	if (type_of(strm) == t_instance) {
+		cl_object strm_class = CLASS_OF(strm);
+		cl_object test = funcall(3, @'subtypep', strm_class, @'stream');
+		@(return (Null(test)? Cnil : Ct))
+	}
+#endif
 	@(return ((type_of(strm) == t_stream) ? Ct : Cnil))
 }
 
