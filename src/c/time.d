@@ -29,9 +29,7 @@
 #include <ecl/internal.h>
 
 #if defined(mingw32) || defined(_MSC_VER)
-/* The function sleep() in MinGW is bogus: it counts millisecons! */
 #include <windows.h>
-#define sleep(x) Sleep(x*1000)
 #endif
 
 #ifndef HZ			/* usually from <sys/param.h> */
@@ -79,12 +77,17 @@ cl_sleep(cl_object z)
 	tm.tv_nsec = (long)((r - floor(r)) * 1e9);
 	nanosleep(&tm, NULL);
 #else
+#if defined (mingw32) || defined(_MSC_VER)
+	r = object_to_double(z) * 1000;
+	Sleep((long)r);
+#else
 	z = round1(z);
 	if (FIXNUMP(z))
 		sleep(fix(z));
 	else
 		for(;;)
 			sleep(1000);
+#endif
 #endif
 	@(return Cnil)
 }
