@@ -11,6 +11,8 @@ ECL 1.0:
 
  - ENOUGH-NAMESTRING provided too large directory names (Contributed by Tim S)
 
+ - ADJUST-ARRAY accepted a fill-pointer even for arrays that did not have any.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

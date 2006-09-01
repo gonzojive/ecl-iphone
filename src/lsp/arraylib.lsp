@@ -336,8 +336,15 @@ adjustable array."
   (when (integerp new-dimensions)
         (setq new-dimensions (list new-dimensions)))
   ;; FILL-POINTER = NIL means use the old value of the fill pointer
-  (when (and (null fill-pointer) (array-has-fill-pointer-p array))
-    (setf r (list* :fill-pointer (fill-pointer array) r)))
+  ;; Cannot set a fill pointer for an array that does not have any.
+  (if (array-has-fill-pointer-p array)
+      (unless fill-pointer
+	(setf r (list* :fill-pointer (fill-pointer array) r)))
+      (when fill-pointer
+	(error 'simple-type-error
+	       :datum array
+	       :expected-type '(satisfies array-has-fill-pointer-p)
+	       :format-control "You supplied a fill pointer for an array without it.")))
   (let ((x (apply #'make-array new-dimensions :adjustable t :element-type element-type r)))
     (declare (array x))
     (unless (or displaced-to initial-contents)
