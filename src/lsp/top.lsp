@@ -446,6 +446,8 @@ under certain conditions; see file 'Copyright' for details.")
 	 (if (eq name :newline)		; special handling for Newline.
 	     nil
 	   `(tpl-unknown-command ',name)))
+    ((eq (third c) :restart)
+     `(invoke-restart-interactively ,(second c))) 
 	((eq (third c) :eval)
 	 `(,(second c) . ,(tpl-parse-forms line)))
 	((eq (third c) :string)
@@ -802,8 +804,40 @@ package."
     (when (listen *debug-io*)
       (clear-input *debug-io*))
     (princ *break-message*)
-    (tpl :commands (adjoin break-commands *tpl-commands*))))
+    ; restart commands
+    ;
+    (let ((commands (adjoin (restart-commands condition) (adjoin break-commands *tpl-commands*))))
+      ;(print commands)
+      (tpl :commands commands))))
 
+(defun restart-commands (condition)
+  "Builds a list of restart commands that can be invoked from the debugger"
+  `("Restart commands"
+    ,@(mapcar 
+      (lambda (iterator-restart)
+        (let*
+          ((iterator (first iterator-restart))
+           (restart (second iterator-restart))
+           (user-command (format nil "r~A" iterator))
+           (helpstring (princ-to-string restart)))
+          (list 
+             (list (intern (string-upcase user-command) :keyword))
+             restart :restart
+             (format nil ":~A~16T~A~24T~A" user-command helpstring (string (restart-name restart)) )
+             (format nil ":~A~48T~A~& ~&~A~&Restarts program using~&(INVOKE-RESTART-INTERACTIVELY '~A)" (string-downcase user-command) "[Restart command]" helpstring (restart-name restart) ))))
+      (enumerate (compute-restarts condition)))))
+
+(defun enumerate (list)
+  "Given a list of (a b c) returns a list of ((1 a) (2 b) (3 c))"  
+  (declare (si::c-local))
+  (let
+    ((iterator 0)
+     (result nil))
+    (dolist (item list)
+      (incf iterator)
+      (setf result (cons (list iterator item) result)))
+    (reverse result)))
+      
 (defun invoke-debugger (condition)
   (when *debugger-hook*
     (let* ((old-hook *debugger-hook*)

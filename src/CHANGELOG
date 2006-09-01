@@ -5,6 +5,11 @@ ECL 1.0:
 
  - Support for GNU/kFreeBSD
 
+* New features:
+
+ - New commands, :RESTART, :R1, :R2, etc, allow invoking restarts (contributed
+   by Chui Tey).
+
 * Bugs fixed:
 
  - STREAMP signals an error for Gray streams.
