@@ -39,7 +39,7 @@
     :cstring (string "char*")
     :char* (string "char*")
     :short ((integer #.si:c-short-min #.si:c-short-max) "short")
-    :unsigned-short ((integer 0 #.si:c-short-max) "unsigned short")
+    :unsigned-short ((integer 0 #.si:c-ushort-max) "unsigned short")
     ))
 
 
