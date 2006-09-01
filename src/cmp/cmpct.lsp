@@ -24,12 +24,12 @@
    ((characterp val)
     (make-c1form* 'LOCATION :type 'CHARACTER
 		  :args (list 'CHARACTER-VALUE (char-code val))))
-   ((typep val 'LONG-FLOAT)
-    (make-c1form* 'LOCATION :type 'LONG-FLOAT
-		  :args (list 'LONG-FLOAT-VALUE val (add-object val))))
-   ((typep val 'SHORT-FLOAT)
-    (make-c1form* 'LOCATION :type 'SHORT-FLOAT
-		  :args (list 'SHORT-FLOAT-VALUE val (add-object val))))
+   ((typep val 'DOUBLE-FLOAT)
+    (make-c1form* 'LOCATION :type 'DOUBLE-FLOAT
+		  :args (list 'DOUBLE-FLOAT-VALUE val (add-object val))))
+   ((typep val 'SINGLE-FLOAT)
+    (make-c1form* 'LOCATION :type 'SINGLE-FLOAT
+		  :args (list 'SINGLE-FLOAT-VALUE val (add-object val))))
    (always
     (make-c1form* 'LOCATION :type (object-type val)
 		  :args (list 'VV (add-object val))))

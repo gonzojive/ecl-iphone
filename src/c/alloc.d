@@ -259,8 +259,8 @@ ONCE_MORE:
 	  obj->ratio.num = OBJNULL;
 	  obj->ratio.den = OBJNULL;
 	  break;
-	case t_shortfloat:
-	case t_longfloat:
+	case t_singlefloat:
+	case t_doublefloat:
 	  break;
 	case t_complex:
 	  obj->complex.imag = OBJNULL;
@@ -686,11 +686,11 @@ init_alloc(void)
 		type_map[i] = (char)t_other;
 
 /*	Initialization must be done in increasing size order:	*/
-	init_tm(t_shortfloat, "FSHORT-FLOAT", /* 8 */
-		sizeof(struct ecl_shortfloat), 1);
+	init_tm(t_singlefloat, "FSINGLE-FLOAT", /* 8 */
+		sizeof(struct ecl_singlefloat), 1);
 	init_tm(t_cons, ".CONS", sizeof(struct ecl_cons), 384); /* 12 */
-	init_tm(t_longfloat, "LLONG-FLOAT", /* 16 */
-		sizeof(struct ecl_longfloat), 1);
+	init_tm(t_doublefloat, "LDOUBLE-FLOAT", /* 16 */
+		sizeof(struct ecl_doublefloat), 1);
 	init_tm(t_bytecodes, "bBYTECODES", sizeof(struct ecl_bytecodes), 64);
 	init_tm(t_base_string, "\"BASE-STRING", sizeof(struct ecl_base_string), 64); /* 20 */
 #ifdef ECL_UNICODE

@@ -580,8 +580,8 @@ EXPORTS
 	make_integer
 	make_unsigned_integer
 	make_ratio
-	make_shortfloat
-	make_longfloat
+	make_singlefloat
+	make_doublefloat
 	make_complex
 	cl_rational
 	number_to_double

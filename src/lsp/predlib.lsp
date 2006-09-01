@@ -77,15 +77,15 @@ bignums."
 
 (deftype real (&rest foo) '(OR RATIONAL FLOAT))
 
-(deftype single-float (&rest args)
+(deftype short-float (&rest args)
   (if args
-      `(short-float ,@args)
-      'short-float))
+      `(single-float ,@args)
+      'single-float))
 
-(deftype double-float (&rest args)
+(deftype long-float (&rest args)
   (if args
-      `(long-float ,@args)
-      'long-float))
+      `(double-float ,@args)
+      'double-float))
 
 (deftype bit ()
   "A BIT is either integer 0 or 1."
@@ -233,7 +233,7 @@ has no fill-pointer, and is not adjustable."
   (put-sysprop (car l) 'TYPE-PREDICATE (cdr l)))
 
 (defconstant +upgraded-array-element-types+
-  '(NIL BASE-CHAR CHARACTER BIT EXT::BYTE8 EXT::INTEGER8 EXT::CL-FIXNUM EXT::CL-INDEX SHORT-FLOAT LONG-FLOAT T))
+  '(NIL BASE-CHAR CHARACTER BIT EXT::BYTE8 EXT::INTEGER8 EXT::CL-FIXNUM EXT::CL-INDEX SINGLE-FLOAT DOUBLE-FLOAT T))
 
 (defun upgraded-array-element-type (element-type &optional env)
   (dolist (v +upgraded-array-element-types+ 'T)
@@ -243,7 +243,7 @@ has no fill-pointer, and is not adjustable."
 (defun upgraded-complex-part-type (real-type &optional env)
   ;; ECL does not have specialized complex types. If we had them, the
   ;; code would look as follows
-  ;;   (dolist (v '(INTEGER RATIO RATIONAL SHORT-FLOAT LONG-FLOAT FLOAT REAL)
+  ;;   (dolist (v '(INTEGER RATIO RATIONAL SINGLE-FLOAT DOUBLE-FLOAT FLOAT REAL)
   ;; 	   (error "~S is not a valid part type for a complex." real-type))
   ;;     (when (subtypep real-type v)
   ;;       (return v))))
@@ -327,9 +327,9 @@ Returns T if X belongs to TYPE; NIL otherwise."
     (REAL
      (and (or (rationalp object) (floatp object)) (in-interval-p object i)))
     ((SINGLE-FLOAT SHORT-FLOAT)
-     (and (eq (type-of object) 'SHORT-FLOAT) (in-interval-p object i)))
+     (and (eq (type-of object) 'SINGLE-FLOAT) (in-interval-p object i)))
     ((DOUBLE-FLOAT LONG-FLOAT)
-     (and (eq (type-of object) 'LONG-FLOAT) (in-interval-p object i)))
+     (and (eq (type-of object) 'DOUBLE-FLOAT) (in-interval-p object i)))
     (COMPLEX
      (and (complexp object)
           (or (null i)
@@ -482,8 +482,8 @@ if not possible."
 	        ((null io) l)))
 	   ((CHARACTER BASE-CHAR) (character object))
 	   (FLOAT (float object))
-	   ((SINGLE-FLOAT SHORT-FLOAT) (float object 0.0S0))
-	   ((DOUBLE-FLOAT LONG-FLOAT) (float object 0.0L0))
+	   ((SINGLE-FLOAT SHORT-FLOAT) (float object 0.0F0))
+	   ((DOUBLE-FLOAT LONG-FLOAT) (float object 0.0D0))
 	   (COMPLEX (complex (realpart object) (imagpart object)))
 	   (FUNCTION (coerce-to-function object))
 	   ((VECTOR SIMPLE-VECTOR #+unicode SIMPLE-BASE-STRING SIMPLE-STRING #+unicode BASE-STRING STRING BIT-VECTOR SIMPLE-BIT-VECTOR)
@@ -905,15 +905,15 @@ if not possible."
 	tag))
   #+(or)
   (case real-type
-    ((SHORT-FLOAT LONG-FLOAT INTEGER RATIO)
+    ((SINGLE-FLOAT DOUBLE-FLOAT INTEGER RATIO)
      (let ((tag (new-type-tag)))
        (push-type `(COMPLEX ,real-type) tag)
        tag))
     ((RATIONAL) (canonical-type '(OR (COMPLEX INTEGER) (COMPLEX RATIO))))
-    ((FLOAT) (canonical-type '(OR (COMPLEX SHORT-FLOAT) (COMPLEX LONG-FLOAT))))
+    ((FLOAT) (canonical-type '(OR (COMPLEX SINGLE-FLOAT) (COMPLEX DOUBLE-FLOAT))))
     ((* NIL REAL) (canonical-type
 		   '(OR (COMPLEX INTEGER) (COMPLEX RATIO)
-		        (COMPLEX SHORT-FLOAT) (COMPLEX LONG-FLOAT))))
+		        (COMPLEX SINGLE-FLOAT) (COMPLEX DOUBLE-FLOAT))))
     (otherwise (canonical-complex-type (upgraded-complex-part-type real-type)))))
 
 ;;----------------------------------------------------------------------
@@ -955,13 +955,13 @@ if not possible."
 	       (FUNCTION (OR COMPILED-FUNCTION GENERIC-FUNCTION))
 
 	       (INTEGER (INTEGER * *))
-	       (SHORT-FLOAT (SHORT-FLOAT * *))
-	       (LONG-FLOAT (LONG-FLOAT * *))
+	       (SINGLE-FLOAT (SINGLE-FLOAT * *))
+	       (DOUBLE-FLOAT (DOUBLE-FLOAT * *))
 	       (RATIO (RATIO * *))
 
 	       (RATIONAL (OR INTEGER RATIO))
-	       (FLOAT (OR SHORT-FLOAT LONG-FLOAT))
-	       (REAL (OR INTEGER SHORT-FLOAT LONG-FLOAT RATIO))
+	       (FLOAT (OR SINGLE-FLOAT DOUBLE-FLOAT))
+	       (REAL (OR INTEGER SINGLE-FLOAT DOUBLE-FLOAT RATIO))
 	       (COMPLEX (COMPLEX REAL))
 
 	       (NUMBER (OR REAL COMPLEX))
@@ -1097,16 +1097,16 @@ if not possible."
 	   (NOT (lognot (canonical-type (second type))))
 	   ((EQL MEMBER) (apply #'logior (mapcar #'register-member-type (rest type))))
 	   (SATISFIES (register-satisfies-type type))
-	   ((INTEGER SHORT-FLOAT LONG-FLOAT RATIO)
+	   ((INTEGER SINGLE-FLOAT DOUBLE-FLOAT RATIO)
 	    (register-interval-type type))
 	   ((FLOAT)
-	    (canonical-type `(OR (SHORT-FLOAT ,@(rest type))
-			      (LONG-FLOAT ,@(rest type)))))
+	    (canonical-type `(OR (SINGLE-FLOAT ,@(rest type))
+			      (DOUBLE-FLOAT ,@(rest type)))))
 	   ((REAL)
 	    (canonical-type `(OR (INTEGER ,@(rest type))
 			      (RATIO ,@(rest type))
-			      (SHORT-FLOAT ,@(rest type))
-			      (LONG-FLOAT ,@(rest type)))))
+			      (SINGLE-FLOAT ,@(rest type))
+			      (DOUBLE-FLOAT ,@(rest type)))))
 	   ((RATIONAL)
 	    (canonical-type `(OR (INTEGER ,@(rest type))
 			      (RATIO ,@(rest type)))))

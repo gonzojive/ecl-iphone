@@ -129,10 +129,10 @@ _hash_eql(cl_hashkey h, cl_object x)
 	case t_ratio:
 		h = _hash_eql(h, x->ratio.num);
 		return _hash_eql(h, x->ratio.den);
-	case t_shortfloat:
+	case t_singlefloat:
 		return hash_string(h, (unsigned char*)&sf(x), sizeof(sf(x)));
-	case t_longfloat:
-		return hash_string(h, (unsigned char*)&lf(x), sizeof(lf(x)));
+	case t_doublefloat:
+		return hash_string(h, (unsigned char*)&df(x), sizeof(df(x)));
 	case t_complex:
 		h = _hash_eql(h, x->complex.real);
 		return _hash_eql(h, x->complex.imag);
@@ -207,12 +207,12 @@ SCAN:		if (depth++ >= 3) {
 		return h;
 	case t_fixnum:
 		return hash_word(h, fix(x));
-	case t_shortfloat:
+	case t_singlefloat:
 		/* FIXME! We should be more precise here! */
 		return hash_word(h, (cl_index)sf(x));
-	case t_longfloat:
+	case t_doublefloat:
 		/* FIXME! We should be more precise here! */
-		return hash_word(h, (cl_index)lf(x));
+		return hash_word(h, (cl_index)df(x));
 	case t_bignum:
 		/* FIXME! We should be more precise here! */
 	case t_ratio:
@@ -378,10 +378,10 @@ ecl_extend_hashtable(cl_object hashtable)
 	old_size = hashtable->hash.size;
 	if (FIXNUMP(hashtable->hash.rehash_size))
 		new_size = old_size + fix(hashtable->hash.rehash_size);
-	else if (type_of(hashtable->hash.rehash_size) == t_shortfloat)
+	else if (type_of(hashtable->hash.rehash_size) == t_singlefloat)
 		new_size = (cl_index)(old_size * sf(hashtable->hash.rehash_size));
-	else if (type_of(hashtable->hash.rehash_size) == t_longfloat)
-		new_size = (cl_index)(old_size * lf(hashtable->hash.rehash_size));
+	else if (type_of(hashtable->hash.rehash_size) == t_doublefloat)
+		new_size = (cl_index)(old_size * df(hashtable->hash.rehash_size));
 	else
 		corrupted_hash(hashtable);
 	if (new_size <= old_size)
@@ -408,8 +408,8 @@ ecl_extend_hashtable(cl_object hashtable)
 
 @(defun make_hash_table (&key (test @'eql')
 			      (size MAKE_FIXNUM(1024))
-			      (rehash_size make_shortfloat(1.5))
-			      (rehash_threshold make_shortfloat(0.7))
+			      (rehash_size make_singlefloat(1.5))
+			      (rehash_threshold make_singlefloat(0.7))
 			      (lockable Cnil))
 @
 	@(return cl__make_hash_table(test, size, rehash_size, rehash_threshold,
@@ -446,14 +446,14 @@ cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 		hsize = 16;
 
 	t = type_of(rehash_size);
-	if ((t != t_fixnum && t != t_shortfloat && t != t_longfloat) ||
+	if ((t != t_fixnum && t != t_singlefloat && t != t_doublefloat) ||
 	    (number_compare(rehash_size, MAKE_FIXNUM(1)) < 0)) {
 		FEerror("~S is an illegal hash-table rehash-size.",
 			1, rehash_size);
 	}
 	factor = -1.0;
 	t = type_of(rehash_threshold);
-	if (t == t_fixnum || t == t_ratio || t == t_shortfloat || t == t_longfloat) {
+	if (t == t_fixnum || t == t_ratio || t == t_singlefloat || t == t_doublefloat) {
 		factor = number_to_double(rehash_threshold);
 	}
 	if (factor < 0.0 || factor > 1.0) {

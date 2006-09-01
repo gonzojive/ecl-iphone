@@ -21,7 +21,7 @@
 static const cl_index ecl_aet_size[] = {
   sizeof(cl_object),          /* aet_object */
   sizeof(float),              /* aet_sf */
-  sizeof(double),             /* aet_lf */
+  sizeof(double),             /* aet_df */
   0,                          /* aet_bit: cannot be handled with this code */
   sizeof(cl_fixnum),          /* aet_fix */
   sizeof(cl_index),           /* aet_index */
@@ -134,10 +134,10 @@ aref(cl_object x, cl_index index)
     return make_unsigned_integer(x->array.self.index[index]);
 
   case aet_sf:
-    return(make_shortfloat(x->array.self.sf[index]));
+    return(make_singlefloat(x->array.self.sf[index]));
 
-  case aet_lf:
-    return(make_longfloat(x->array.self.lf[index]));
+  case aet_df:
+    return(make_doublefloat(x->array.self.df[index]));
 
   case aet_b8:
     return(MAKE_FIXNUM(x->array.self.b8[index]));
@@ -256,8 +256,8 @@ aset(cl_object x, cl_index index, cl_object value)
     x->array.self.sf[index] = object_to_float(value);
     break;
 
-  case aet_lf:
-    x->array.self.lf[index] = object_to_double(value);
+  case aet_df:
+    x->array.self.df[index] = object_to_double(value);
     break;
 
   case aet_b8: {
@@ -466,12 +466,12 @@ array_allocself(cl_object x)
 		x->array.self.sf = elts;
 		break;
 	      }
-	case aet_lf: {
+	case aet_df: {
 		double *elts;
 		elts = (double *)cl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
 		for (i = 0;  i < d;  i++)
 			elts[i] = 0.0;
-		x->array.self.lf = elts;
+		x->array.self.df = elts;
 		break;
 	      }
 	case aet_b8: {
@@ -513,7 +513,7 @@ ecl_symbol_to_elttype(cl_object x)
 	else if (x == @'single-float' || x == @'short-float')
 		return(aet_sf);
 	else if (x == @'long-float' || x == @'double-float')
-		return(aet_lf);
+		return(aet_df);
 	else if (x == @'ext::byte8')
 		return(aet_b8);
 	else if (x == @'ext::integer8')
@@ -537,8 +537,8 @@ ecl_elttype_to_symbol(cl_elttype aet)
 	case aet_bit:		output = @'bit'; break;
 	case aet_fix:		output = @'ext::cl-fixnum'; break;
 	case aet_index:		output = @'ext::cl-index'; break;
-	case aet_sf:		output = @'short-float'; break;
-	case aet_lf:		output = @'long-float'; break;
+	case aet_sf:		output = @'single-float'; break;
+	case aet_df:		output = @'double-float'; break;
 	case aet_b8:		output = @'ext::byte8'; break;
 	case aet_i8:		output = @'ext::integer8'; break;
 	}
@@ -562,8 +562,8 @@ array_address(cl_object x, cl_index inc)
 		return x->array.self.t + inc;
 	case aet_bc:
 		return x->base_string.self + inc;
-	case aet_lf:
-		return x->array.self.lf + inc;
+	case aet_df:
+		return x->array.self.df + inc;
 	case aet_b8:
 		return x->array.self.b8 + inc;
 	case aet_i8:
@@ -786,8 +786,8 @@ cl_array_displacement(cl_object a)
 		case aet_sf:
 			offset = a->array.self.sf - to_array->array.self.sf;
 			break;
-		case aet_lf:
-			offset = a->array.self.lf - to_array->array.self.lf;
+		case aet_df:
+			offset = a->array.self.df - to_array->array.self.df;
 			break;
 		case aet_b8:
 		case aet_i8:
@@ -988,11 +988,11 @@ ecl_reverse_subarray(cl_object x, cl_index i0, cl_index i1)
 			x->array.self.sf[j] = y;
 		}
 		break;
-	case aet_lf:
+	case aet_df:
 		for (i = i0, j = i1-1;  i < j;  i++, --j) {
-			double y = x->array.self.lf[i];
-			x->array.self.lf[i] = x->array.self.lf[j];
-			x->array.self.lf[j] = y;
+			double y = x->array.self.df[i];
+			x->array.self.df[i] = x->array.self.df[j];
+			x->array.self.df[j] = y;
 		}
 		break;
 	case aet_b8:

@@ -537,7 +537,7 @@ how to use the different fields of a @code{cl_object} pointer.
 @deftp {C type} cl_type
 Enumeration type which distinguishes the different types of lisp objects.  The
 most important values are t_cons, t_fixnum, t_character, t_bignum, t_ratio,
-t_shortfloat, t_longfloat, t_complex, t_symbol, t_package, t_hashtable,
+t_singlefloat, t_doublefloat, t_complex, t_symbol, t_package, t_hashtable,
 t_array, t_vector, t_string, t_bitvector, t_stream, t_random, t_readtable,
 t_pathname, t_bytecodes, t_cfun, t_cclosure, t_gfun, t_instance, t_foreign and
 t_thread.
@@ -763,10 +763,10 @@ together with the C constant that denotes that type:
 @code{aet_fix}
 @item BIT
 @code{aet_bit}
-@item SHORT-FLOAT
+@item SINGLE-FLOAT
 @code{aet_sf}
-@item LONG-FLOAT
-@code{aet_lf}
+@item DOUBLE-FLOAT
+@code{aet_df}
 @end table
 
 @deftypefun cl_elttype array_elttype (cl_object @var{o})
@@ -1646,11 +1646,11 @@ distribution.
 function @code{coerce}: For the C-type @code{int} (or @code{char}), the object
 is first coerced to a Lisp integer and the least significant 32-bit (or 8-bit)
 field is used as the C @code{int} (or @code{char}).  For the C-type
-@code{float} (or @code{double}), the object is coerced to a short-float (or a
-long-float) and this value is used as the @code{C float} (or @code{double}).
+@code{float} (or @code{double}), the object is coerced to a single-float (or a
+double-float) and this value is used as the @code{C float} (or @code{double}).
 Conversion from a C data into a Lisp object is obvious: @code{C char, int,
 float,} and @code{double} become the equivalent Lisp @code{character},
-@code{fixnum}, @code{short-float}, and @code{long-float}, respectively.
+@code{fixnum}, @code{single-float}, and @code{double-float}, respectively.
 
 Here we list the complete syntax of @code{Clines}, @code{defentry},
 @code{definline} and @code{defCbody} macro forms.

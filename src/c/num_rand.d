@@ -34,10 +34,10 @@ rando(cl_object x, cl_object rs)
 		z = MAKE_FIXNUM((cl_fixnum)d);
 	} else if (tx == t_bignum) {
 		z = double_to_integer(d);
-	} else if (tx == t_shortfloat) {
-		z = make_shortfloat((float)d);
-	} else if (tx == t_longfloat) {
-		z = make_longfloat(d);
+	} else if (tx == t_singlefloat) {
+		z = make_singlefloat((float)d);
+	} else if (tx == t_doublefloat) {
+		z = make_doublefloat(d);
 	} else {
 		FEerror("~S is not an integer nor a floating-point number.",
 			1, x);

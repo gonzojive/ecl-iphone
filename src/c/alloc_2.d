@@ -117,8 +117,8 @@ cl_alloc_object(cl_type t)
 		GC_register_finalizer_no_order(obj, finalize, NULL, &ofn, &odata);
 		break;
 	}
-	case t_shortfloat:
-	case t_longfloat:
+	case t_singlefloat:
+	case t_doublefloat:
 		obj = (cl_object)GC_MALLOC_ATOMIC(type_size[t]);
 		break;
 	case t_bignum:
@@ -224,11 +224,11 @@ init_alloc(void)
 	for (i = 0; i < t_end; i++) {
 		type_size[i] = 0;
 	}
-	init_tm(t_shortfloat, "SHORT-FLOAT", /* 8 */
-		sizeof(struct ecl_shortfloat));
+	init_tm(t_singlefloat, "SINGLE-FLOAT", /* 8 */
+		sizeof(struct ecl_singlefloat));
 	init_tm(t_cons, "CONS", sizeof(struct ecl_cons)); /* 12 */
-	init_tm(t_longfloat, "LONG-FLOAT", /* 16 */
-		sizeof(struct ecl_longfloat));
+	init_tm(t_doublefloat, "DOUBLE-FLOAT", /* 16 */
+		sizeof(struct ecl_doublefloat));
 	init_tm(t_bytecodes, "BYTECODES", sizeof(struct ecl_bytecodes));
 	init_tm(t_base_string, "BASE-STRING", sizeof(struct ecl_base_string)); /* 20 */
 #ifdef ECL_UNICODE

@@ -157,8 +157,8 @@ struct cl_core_struct {
 	cl_object imag_unit;
 	cl_object minus_imag_unit;
 	cl_object imag_two;
-	cl_object shortfloat_zero;
-	cl_object longfloat_zero;
+	cl_object singlefloat_zero;
+	cl_object doublefloat_zero;
 
 	cl_object gensym_prefix;
 	cl_object gentemp_prefix;
@@ -843,8 +843,8 @@ extern cl_index  fixnnint(cl_object x);
 extern cl_object make_integer(cl_fixnum i);
 extern cl_object make_unsigned_integer(cl_index i);
 extern cl_object make_ratio(cl_object num, cl_object den);
-extern cl_object make_shortfloat(float f);
-extern cl_object make_longfloat(double f);
+extern cl_object make_singlefloat(float f);
+extern cl_object make_doublefloat(double f);
 extern cl_object make_complex(cl_object r, cl_object i);
 extern cl_object cl_rational(cl_object x);
 #define cl_rationalize cl_rational

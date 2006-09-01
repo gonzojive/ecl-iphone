@@ -223,19 +223,19 @@ Same as FLOOR, but returns a float as the first value."
   (multiple-value-bind (i r) (floor x y)
     (values (if (floatp r) (float i r) (float i)) r)))
 
-(defun fceiling (x &optional (y 1.0s0))
+(defun fceiling (x &optional (y 1.0f0))
   "Args: (number &optional (divisor 1))
 Same as CEILING, but returns a float as the first value."
   (multiple-value-bind (i r) (ceiling x y)
     (values (if (floatp r) (float i r) (float i)) r)))
 
-(defun ftruncate (x &optional (y 1.0s0))
+(defun ftruncate (x &optional (y 1.0f0))
   "Args: (number &optional (divisor 1))
 Same as TRUNCATE, but returns a float as the first value."
   (multiple-value-bind (i r) (truncate x y)
     (values (if (floatp r) (float i r) (float i)) r)))
 
-(defun fround (x &optional (y 1.0s0))
+(defun fround (x &optional (y 1.0f0))
   "Args: (number &optional (divisor 1))
 Same as ROUND, but returns a float as the first value."
   (multiple-value-bind (i r) (round x y)

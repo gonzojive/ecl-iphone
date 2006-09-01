@@ -222,15 +222,17 @@
 					  inline-info)))
   ;; In sysfun.lsp optimizers must be listed with most specific cases last.
   (flet ((float-type-max (t1 t2)
-	   (if t1
-	       (if (or (subtypep t1 'LONG-FLOAT)
-		       (subtypep t2 'LONG-FLOAT))
-		   'LONG-FLOAT
-		   (if (or (subtypep t1 'SHORT-FLOAT)
-			   (subtypep t2 'SHORT-FLOAT))
-		       'SHORT-FLOAT
-		       'FIXNUM))
-	       t2)))
+	   (cond
+	     ((null t1)
+	      t2)
+	     ((or (subtypep t1 'DOUBLE-FLOAT)
+		  (subtypep t2 'DOUBLE-FLOAT))
+	      'DOUBLE-FLOAT)
+	     ((or (subtypep t1 'SINGLE-FLOAT)
+		  (subtypep t2 'SINGLE-FLOAT))
+	      'SINGLE-FLOAT)
+	     (t
+	      'FIXNUM))))
     (if (and (do ((arg-types arg-types (cdr arg-types))
 		  (types (inline-info-arg-types inline-info) (cdr types))
 		  (arg-type)
@@ -242,10 +244,10 @@
 	       (cond ((eq type 'FIXNUM-FLOAT)
 		      (cond ((type>= 'FIXNUM arg-type)
 			     (push 'FIXNUM rts))
-			    ((type>= 'LONG-FLOAT arg-type)
-			     (push 'LONG-FLOAT rts))
-			    ((type>= 'SHORT-FLOAT arg-type)
-			     (push 'SHORT-FLOAT rts))
+			    ((type>= 'DOUBLE-FLOAT arg-type)
+			     (push 'DOUBLE-FLOAT rts))
+			    ((type>= 'SINGLE-FLOAT arg-type)
+			     (push 'SINGLE-FLOAT rts))
 			    (t (return nil)))
 		      ;; compute max of FIXNUM-FLOAT arguments types
 		      (setq number-max

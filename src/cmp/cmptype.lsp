@@ -18,12 +18,12 @@
 ;;;
 ;;;				T(BOOLEAN)
 ;;;
-;;;	FIXNUM  CHARACTER  SHORT-FLOAT  LONG-FLOAT
+;;;	FIXNUM  CHARACTER  SINGLE-FLOAT  DOUBLE-FLOAT
 ;;;	(VECTOR T)  STRING  BIT-VECTOR  (VECTOR FIXNUM)
-;;;	(VECTOR SHORT-FLOAT)  (VECTOR LONG-FLOAT)
+;;;	(VECTOR SINGLE-FLOAT)  (VECTOR DOUBLE-FLOAT)
 ;;;	(ARRAY T)  (ARRAY BASE-CHAR)  (ARRAY BIT)
 ;;;	(ARRAY FIXNUM)
-;;;	(ARRAY SHORT-FLOAT)  (ARRAY LONG-FLOAT)
+;;;	(ARRAY SINGLE-FLOAT)  (ARRAY DOUBLE-FLOAT)
 ;;;	STANDARD-OBJECT STRUCTURE-OBJECT
 ;;;	SYMBOL
 ;;;	UNKNOWN
@@ -34,8 +34,8 @@
 ;;; immediate-type:
 ;;;	FIXNUM		int
 ;;;	CHARACTER	char
-;;;	SHORT-FLOAT	float
-;;;	LONG-FLOAT	double
+;;;	SINGLE-FLOAT	float
+;;;	DOUBLE-FLOAT	double
 
 (defun member-type (type disjoint-supertypes)
   (member type disjoint-supertypes :test #'subtypep))
@@ -46,7 +46,7 @@
 (defun object-type (thing)
   (let ((type (if thing (type-of thing) 'SYMBOL)))
     (case type
-      ((FIXNUM SHORT-FLOAT LONG-FLOAT SYMBOL NULL) type)
+      ((FIXNUM SINGLE-FLOAT DOUBLE-FLOAT SYMBOL NULL) type)
       ((BASE-CHAR STANDARD-CHAR CHARACTER EXTENDED-CHAR) 'CHARACTER)
       ((STRING BASE-STRING BIT-VECTOR) type)
       (VECTOR (list 'VECTOR (array-element-type thing)))
@@ -60,9 +60,9 @@
 (defun type-filter (type &optional values-allowed)
   (multiple-value-bind (type-name type-args) (sys::normalize-type type)
     (case type-name
-        ((FIXNUM CHARACTER SHORT-FLOAT LONG-FLOAT SYMBOL) type-name)
-        (SINGLE-FLOAT 'SHORT-FLOAT)
-        (DOUBLE-FLOAT 'LONG-FLOAT)
+        ((FIXNUM CHARACTER SINGLE-FLOAT DOUBLE-FLOAT SYMBOL) type-name)
+        (SHORT-FLOAT 'SINGLE-FLOAT)
+        (LONG-FLOAT 'DOUBLE-FLOAT)
         ((SIMPLE-STRING STRING) 'STRING)
         ((SIMPLE-BIT-VECTOR BIT-VECTOR) 'BIT-VECTOR)
 	((NIL T) t)
@@ -80,8 +80,8 @@
 			(t (list 'VECTOR element-type)))
 		      (list 'ARRAY element-type))))))
 	(INTEGER (if (subtypep type 'FIXNUM) 'FIXNUM t))
-	((SHORT-FLOAT SINGLE-FLOAT) 'SHORT-FLOAT)
-	((LONG-FLOAT DOUBLE-FLOAT) 'LONG-FLOAT)
+	((SHORT-FLOAT SINGLE-FLOAT) 'SINGLE-FLOAT)
+	((LONG-FLOAT DOUBLE-FLOAT) 'DOUBLE-FLOAT)
 	((STREAM CONS) type-name) ; Juanjo
 	(t (cond ((eq type-name 'VALUES)
 		  (unless values-allowed
@@ -96,12 +96,12 @@
 		 ((subtypep type 'STANDARD-OBJECT) type)
 		 #+clos
 		 ((subtypep type 'STRUCTURE-OBJECT) type) 
-		 ((dolist (v '(FIXNUM CHARACTER SHORT-FLOAT LONG-FLOAT
+		 ((dolist (v '(FIXNUM CHARACTER SINGLE-FLOAT DOUBLE-FLOAT
 			       (VECTOR T) STRING BIT-VECTOR
-			       (VECTOR FIXNUM) (VECTOR SHORT-FLOAT)
-			       (VECTOR LONG-FLOAT) (ARRAY BASE-CHAR)
+			       (VECTOR FIXNUM) (VECTOR SINGLE-FLOAT)
+			       (VECTOR DOUBLE-FLOAT) (ARRAY BASE-CHAR)
 			       (ARRAY BIT) (ARRAY FIXNUM)
-			       (ARRAY SHORT-FLOAT) (ARRAY LONG-FLOAT)
+			       (ARRAY SINGLE-FLOAT) (ARRAY DOUBLE-FLOAT)
 			       (ARRAY T))) ; Beppe
 		    (when (subtypep type v) (return v))))
 		 ((and (eq type-name 'SATISFIES) ; Beppe
@@ -199,7 +199,7 @@
 (defun default-init (var &optional warn)
   (let ((new-value (cdr (assoc (var-type var)
 			       '((fixnum . 0) (character . #\space)
-				 (long-float . 0.0L1) (short-float . 0.0S1))
+				 (double-float . 0.0D1) (single-float . 0.0F1))
 			       :test #'subtypep))))
     (if new-value
 	(c1constant-value new-value :only-small-values t)

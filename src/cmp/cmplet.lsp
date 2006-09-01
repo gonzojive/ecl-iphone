@@ -109,7 +109,7 @@
 	  (go continue))
 	)
       #+nil
-      (when (member-type form-type '(FIXNUM CHARACTER LONG-FLOAT SHORT-FLOAT))
+      (when (member-type form-type '(FIXNUM CHARACTER DOUBLE-FLOAT SINGLE-FLOAT))
 	(incf (var-ref var)))		; force unboxing
       (check-vref var)
       (push var used-vars)
@@ -342,7 +342,7 @@
       #+nil
       ;; Force unboxing
       (when (member-type (c1form-primary-type form)
-			 '(FIXNUM CHARACTER LONG-FLOAT SHORT-FLOAT))
+			 '(FIXNUM CHARACTER DOUBLE-FLOAT SINGLE-FLOAT))
 	(incf (var-ref var)))
       (check-vref var)
       (push var used-vars)

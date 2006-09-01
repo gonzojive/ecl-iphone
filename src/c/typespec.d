@@ -249,11 +249,11 @@ cl_type_of(cl_object x)
 	case t_ratio:
 		t = @'ratio'; break;
 
-	case t_shortfloat:
-		t = @'short-float'; break;
+	case t_singlefloat:
+		t = @'single-float'; break;
 
-	case t_longfloat:
-		t = @'long-float'; break;
+	case t_doublefloat:
+		t = @'double-float'; break;
 
 	case t_complex:
 		t = @'complex'; break;

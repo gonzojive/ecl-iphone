@@ -85,14 +85,14 @@
 		    (unwind-bds bds-lcl bds-bind stack-sp)
 		    (wt-nl "return value0;")))
 	     (return))
-	   ((RETURN-FIXNUM RETURN-CHARACTER RETURN-LONG-FLOAT
-	     RETURN-SHORT-FLOAT RETURN-OBJECT)
+	   ((RETURN-FIXNUM RETURN-CHARACTER RETURN-DOUBLE-FLOAT
+	     RETURN-SINGLE-FLOAT RETURN-OBJECT)
 	    (when (eq *exit* ue)
 	      ;; *destination* must be RETURN-FIXNUM
 	      (setq loc (list 'COERCE-LOC
 			      (getf '(RETURN-FIXNUM :fixnum
 				      RETURN-CHARACTER :char
-				      RETURN-LONG-FLOAT :float
+				      RETURN-SINGLE-FLOAT :float
 				      RETURN-DOUBLE-FLOAT :double
 				      RETURN-OBJECT :object)
 				    ue)
@@ -129,7 +129,7 @@
        ((numberp ue) (setq bds-lcl ue bds-bind 0))
        ((eq ue 'BDS-BIND) (incf bds-bind))
        ((member ue '(RETURN RETURN-OBJECT RETURN-FIXNUM RETURN-CHARACTER
-                            RETURN-LONG-FLOAT RETURN-SHORT-FLOAT))
+                            RETURN-DOUBLE-FLOAT RETURN-SINGLE-FLOAT))
         (if (eq exit ue)
           (progn (unwind-bds bds-lcl bds-bind stack-sp)
                  (return))

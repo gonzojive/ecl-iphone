@@ -142,7 +142,7 @@ si_make_foreign_data_from_array(cl_object array)
 	}
 	switch (array->array.elttype) {
 	case aet_sf: tag = @':float'; break;
-	case aet_lf: tag = @':double'; break;
+	case aet_df: tag = @':double'; break;
 	case aet_fix: tag = @':int'; break;
 	case aet_index: tag = @':unsigned-int'; break;
 	default:
@@ -286,9 +286,9 @@ ecl_foreign_data_ref_elt(void *p, enum ecl_ffi_tag tag)
 	case ECL_FFI_OBJECT:
 		return *(cl_object *)p;
 	case ECL_FFI_FLOAT:
-		return make_shortfloat(*(float *)p);
+		return make_singlefloat(*(float *)p);
 	case ECL_FFI_DOUBLE:
-		return make_longfloat(*(double *)p);
+		return make_doublefloat(*(double *)p);
 	case ECL_FFI_VOID:
 		return Cnil;
 	}

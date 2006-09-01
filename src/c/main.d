@@ -266,8 +266,8 @@ cl_boot(int argc, char **argv)
 	 */
 	cl_core.char_names = aux =
 	    cl__make_hash_table(@'equalp', MAKE_FIXNUM(128), /* size */
-				make_shortfloat(1.5f), /* rehash-size */
-				make_shortfloat(0.5f), /* rehash-threshold */
+				make_singlefloat(1.5f), /* rehash-size */
+				make_singlefloat(0.5f), /* rehash-threshold */
 				Cnil); /* thread-safe */
 	for (i = 0; char_names[i].code >= 0; i++) {
 		cl_object name = make_constant_base_string(char_names[i].name);
@@ -282,8 +282,8 @@ cl_boot(int argc, char **argv)
 
 	cl_core.system_properties =
 	    cl__make_hash_table(@'equal', MAKE_FIXNUM(1024), /* size */
-				make_shortfloat(1.5f), /* rehash-size */
-				make_shortfloat(0.75f), /* rehash-threshold */
+				make_singlefloat(1.5f), /* rehash-size */
+				make_singlefloat(0.75f), /* rehash-threshold */
 				Ct); /* thread-safe */
 
 	cl_core.gensym_prefix = make_constant_base_string("G");
@@ -320,8 +320,8 @@ cl_boot(int argc, char **argv)
 
 #ifdef ECL_THREADS
 	cl_env.bindings_hash = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024),
-						   make_shortfloat(1.5f),
-						   make_shortfloat(0.75f),
+						   make_singlefloat(1.5f),
+						   make_singlefloat(0.75f),
 						   Cnil); /* no locking */
 	ECL_SET(@'mp::*current-process*', cl_env.own_process);
 #endif
@@ -378,8 +378,8 @@ cl_boot(int argc, char **argv)
 #ifdef CLOS
 	ECL_SET(@'si::*class-name-hash-table*',
 		cl__make_hash_table(@'eq', MAKE_FIXNUM(1024), /* size */
-				    make_shortfloat(1.5f), /* rehash-size */
-				    make_shortfloat(0.75f), /* rehash-threshold */
+				    make_singlefloat(1.5f), /* rehash-size */
+				    make_singlefloat(0.75f), /* rehash-threshold */
 				    Ct)); /* thread safe */
 #endif
 

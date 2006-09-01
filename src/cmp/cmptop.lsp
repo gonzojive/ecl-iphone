@@ -378,8 +378,8 @@
     (wt-nl "return " (case return-type
                             (FIXNUM "MAKE_FIXNUM")
                             (CHARACTER "CODE_CHAR")
-                            (LONG-FLOAT "make_longfloat")
-                            (SHORT-FLOAT "make_shortfloat")
+                            (DOUBLE-FLOAT "make_doublefloat")
+                            (SINGLE-FLOAT "make_singlefloat")
                             (otherwise ""))
            "(LI" cfun "(")
     (do ((types arg-types (cdr types))
@@ -389,8 +389,8 @@
       (wt (case (car types)
             (FIXNUM "fix")
             (CHARACTER "char_code")
-            (LONG-FLOAT "lf")
-            (SHORT-FLOAT "sf")
+            (DOUBLE-FLOAT "df")
+            (SINGLE-FLOAT "sf")
             (otherwise "")) "(")
         (wt-lcl n) (wt ")")
         (unless (endp (cdr types)) (wt ",")))
@@ -401,8 +401,8 @@
   (case type
     (FIXNUM "cl_fixnum ")
     (CHARACTER "unsigned char ")
-    (SHORT-FLOAT "float ")
-    (LONG-FLOAT "double ")
+    (SINGLE-FLOAT "float ")
+    (DOUBLE-FLOAT "double ")
     (otherwise "cl_object ")))
 
 (defun t1ordinary (form)

@@ -88,8 +88,8 @@ make_package_hashtable()
 	h->hash.lockable = 0;
 	h->hash.test = htt_pack;
 	h->hash.size = hsize;
-	h->hash.rehash_size = make_shortfloat(1.5f);
-	h->hash.threshold = make_shortfloat(0.75f);
+	h->hash.rehash_size = make_singlefloat(1.5f);
+	h->hash.threshold = make_singlefloat(0.75f);
 	h->hash.factor = 0.7;
 	h->hash.entries = 0;
 	h->hash.data = NULL; /* for GC sake */

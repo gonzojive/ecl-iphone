@@ -135,40 +135,40 @@ make_ratio(cl_object num, cl_object den)
 }
 
 cl_object
-make_shortfloat(float f)
+make_singlefloat(float f)
 {
 	cl_object x;
 
 	ecl_detect_fpe();
 	if (f == (float)0.0)
-		return(cl_core.shortfloat_zero);
+		return(cl_core.singlefloat_zero);
 	if (isnanf(f)) {
 		cl_error(1, @'division-by-zero');
 	}
 	if (!finite(f)) {
 		cl_error(1, @'floating-point-overflow');
 	}
-	x = cl_alloc_object(t_shortfloat);
+	x = cl_alloc_object(t_singlefloat);
 	sf(x) = f;
 	return(x);
 }
 
 cl_object
-make_longfloat(double f)
+make_doublefloat(double f)
 {
 	cl_object x;
 
 	ecl_detect_fpe();
 	if (f == (double)0.0)
-		return(cl_core.longfloat_zero);
+		return(cl_core.doublefloat_zero);
 	if (isnan(f)) {
 		cl_error(1, @'division-by-zero');
 	}
 	if (!finite(f)) {
 		cl_error(1, @'floating-point-overflow');
 	}
-	x = cl_alloc_object(t_longfloat);
-	lf(x) = f;
+	x = cl_alloc_object(t_doublefloat);
+	df(x) = f;
 	return(x);
 }
 
@@ -189,39 +189,39 @@ make_complex(cl_object r, cl_object i)
 		case t_bignum:
 		case t_ratio:
 			break;
-		case t_shortfloat:
-			r = make_shortfloat((float)number_to_double(r));
+		case t_singlefloat:
+			r = make_singlefloat((float)number_to_double(r));
 			break;
-		case t_longfloat:
-			r = make_longfloat(number_to_double(r));
-			break;
-		default:
-			FEtype_error_real(i);
-		}
-		break;
-	case t_shortfloat:
-		switch (type_of(i)) {
-		case t_fixnum:
-		case t_bignum:
-		case t_ratio:
-			i = make_shortfloat((float)number_to_double(i));
-		case t_shortfloat:
-			break;
-		case t_longfloat:
-			r = make_longfloat((double)(sf(r)));
+		case t_doublefloat:
+			r = make_doublefloat(number_to_double(r));
 			break;
 		default:
 			FEtype_error_real(i);
 		}
 		break;
-	case t_longfloat:
+	case t_singlefloat:
 		switch (type_of(i)) {
 		case t_fixnum:
 		case t_bignum:
 		case t_ratio:
-		case t_shortfloat:
-			i = make_longfloat(number_to_double(i));
-		case t_longfloat:
+			i = make_singlefloat((float)number_to_double(i));
+		case t_singlefloat:
+			break;
+		case t_doublefloat:
+			r = make_doublefloat((double)(sf(r)));
+			break;
+		default:
+			FEtype_error_real(i);
+		}
+		break;
+	case t_doublefloat:
+		switch (type_of(i)) {
+		case t_fixnum:
+		case t_bignum:
+		case t_ratio:
+		case t_singlefloat:
+			i = make_doublefloat(number_to_double(i));
+		case t_doublefloat:
 			break;
 		default:
 			FEtype_error_real(i);
@@ -270,11 +270,11 @@ number_to_double(cl_object x)
 #endif /* WITH_GMP */
                 
 	}
-	case t_shortfloat:
+	case t_singlefloat:
 		return((double)(sf(x)));
 
-	case t_longfloat:
-		return(lf(x));
+	case t_doublefloat:
+		return(df(x));
 
 	default:
 		FEtype_error_real(x);
@@ -291,11 +291,11 @@ cl_rational(cl_object x)
 	case t_bignum:
 	case t_ratio:
 		break;
-	case t_shortfloat:
+	case t_singlefloat:
 		d = sf(x);
 		goto GO_ON;
-	case t_longfloat:
-		d = lf(x);
+	case t_doublefloat:
+		d = df(x);
 	GO_ON:	if (d == 0.0) {
 			x = MAKE_FIXNUM(0);
 		} else {
@@ -319,60 +319,60 @@ init_number(void)
 {
 	cl_object num;
 
-	num = make_shortfloat(FLT_MAX);
+	num = make_singlefloat(FLT_MAX);
 	ECL_SET(@'MOST-POSITIVE-SHORT-FLOAT', num);
 	ECL_SET(@'MOST-POSITIVE-SINGLE-FLOAT', num);
 
-	num = make_shortfloat(-FLT_MAX);
+	num = make_singlefloat(-FLT_MAX);
 	ECL_SET(@'MOST-NEGATIVE-SHORT-FLOAT', num);
 	ECL_SET(@'MOST-NEGATIVE-SINGLE-FLOAT', num);
 
-	num = make_shortfloat(FLT_MIN);
+	num = make_singlefloat(FLT_MIN);
 	ECL_SET(@'LEAST-POSITIVE-SHORT-FLOAT', num);
 	ECL_SET(@'LEAST-POSITIVE-SINGLE-FLOAT', num);
 	ECL_SET(@'LEAST-POSITIVE-NORMALIZED-SHORT-FLOAT', num);
 	ECL_SET(@'LEAST-POSITIVE-NORMALIZED-SINGLE-FLOAT', num);
 
-	num = make_shortfloat(-FLT_MIN);
+	num = make_singlefloat(-FLT_MIN);
 	ECL_SET(@'LEAST-NEGATIVE-SHORT-FLOAT', num);
 	ECL_SET(@'LEAST-NEGATIVE-SINGLE-FLOAT', num);
 	ECL_SET(@'LEAST-NEGATIVE-NORMALIZED-SHORT-FLOAT', num);
 	ECL_SET(@'LEAST-NEGATIVE-NORMALIZED-SINGLE-FLOAT', num);
 
-	num = make_longfloat(DBL_MAX);
+	num = make_doublefloat(DBL_MAX);
 	ECL_SET(@'MOST-POSITIVE-DOUBLE-FLOAT', num);
 	ECL_SET(@'MOST-POSITIVE-LONG-FLOAT', num);
 
-	num = make_longfloat(-DBL_MAX);
+	num = make_doublefloat(-DBL_MAX);
 	ECL_SET(@'MOST-NEGATIVE-DOUBLE-FLOAT', num);
 	ECL_SET(@'MOST-NEGATIVE-LONG-FLOAT', num);
 
-	num = make_longfloat(DBL_MIN);
+	num = make_doublefloat(DBL_MIN);
 	ECL_SET(@'LEAST-POSITIVE-DOUBLE-FLOAT', num);
 	ECL_SET(@'LEAST-POSITIVE-LONG-FLOAT', num);
 	ECL_SET(@'LEAST-POSITIVE-NORMALIZED-DOUBLE-FLOAT', num);
 	ECL_SET(@'LEAST-POSITIVE-NORMALIZED-LONG-FLOAT', num);
 
-	num = make_longfloat(-DBL_MIN);
+	num = make_doublefloat(-DBL_MIN);
 	ECL_SET(@'LEAST-NEGATIVE-DOUBLE-FLOAT', num);
 	ECL_SET(@'LEAST-NEGATIVE-LONG-FLOAT', num);
 	ECL_SET(@'LEAST-NEGATIVE-NORMALIZED-DOUBLE-FLOAT', num);
 	ECL_SET(@'LEAST-NEGATIVE-NORMALIZED-LONG-FLOAT', num);
 
- 	cl_core.shortfloat_zero = cl_alloc_object(t_shortfloat);
- 	sf(cl_core.shortfloat_zero) = (float)0.0;
- 	cl_core.longfloat_zero = cl_alloc_object(t_longfloat);
- 	lf(cl_core.longfloat_zero) = (double)0.0;
+ 	cl_core.singlefloat_zero = cl_alloc_object(t_singlefloat);
+ 	sf(cl_core.singlefloat_zero) = (float)0.0;
+ 	cl_core.doublefloat_zero = cl_alloc_object(t_doublefloat);
+ 	df(cl_core.doublefloat_zero) = (double)0.0;
 	cl_core.plus_half = make_ratio(MAKE_FIXNUM(1), MAKE_FIXNUM(2));
 	cl_core.minus_half = make_ratio(MAKE_FIXNUM(-1), MAKE_FIXNUM(2));
 	cl_core.imag_unit =
-	    make_complex(make_shortfloat(0.0), make_shortfloat(1.0));
+	    make_complex(make_singlefloat(0.0), make_singlefloat(1.0));
 	cl_core.minus_imag_unit =
-	    make_complex(make_shortfloat(0.0), make_shortfloat(-1.0));
+	    make_complex(make_singlefloat(0.0), make_singlefloat(-1.0));
 	cl_core.imag_two =
-	    make_complex(make_shortfloat(0.0), make_shortfloat(2.0));
+	    make_complex(make_singlefloat(0.0), make_singlefloat(2.0));
 
-	ECL_SET(@'pi', make_longfloat(M_PI));
+	ECL_SET(@'pi', make_doublefloat(M_PI));
 
 	init_big();
 

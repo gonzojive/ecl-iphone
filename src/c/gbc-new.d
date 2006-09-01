@@ -152,8 +152,8 @@ BEGIN:
 		mark_next(x->ratio.den);
 		break;
 
-	case t_shortfloat:
-	case t_longfloat:
+	case t_singlefloat:
+	case t_doublefloat:
 		break;
 
 	case t_complex:
@@ -238,7 +238,7 @@ BEGIN:
 		case aet_sf:
 			j = x->array.dim * sizeof(float);
 			break;
-		case aet_lf:
+		case aet_df:
 			j = x->array.dim * sizeof(double);
 			break;
 		default:

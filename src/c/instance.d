@@ -208,10 +208,10 @@ cl_class_of(cl_object x)
 		t = @'integer'; break;
 	case t_ratio:
 		t = @'ratio'; break;
-	case t_shortfloat:
-	case t_longfloat:
+	case t_singlefloat:
+	case t_doublefloat:
 		t = @'float'; break;
-		t = @'long-float'; break;
+		/* XXX t = @'long-float'; break; */
 	case t_complex:
 		t = @'complex'; break;
 	case t_character:

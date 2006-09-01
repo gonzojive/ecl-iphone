@@ -27,11 +27,11 @@ number_zerop(cl_object x)
 	case t_ratio:
 		return(0);
 
-	case t_shortfloat:
+	case t_singlefloat:
 		return(sf(x) == 0.0);
 
-	case t_longfloat:
-		return(lf(x) == 0.0);
+	case t_doublefloat:
+		return(df(x) == 0.0);
 
 	case t_complex:
 		return(number_zerop(x->complex.real) &&
@@ -58,11 +58,11 @@ number_plusp(cl_object x)
 		x = x->ratio.num;
 		goto RESTART;
 
-	case t_shortfloat:
+	case t_singlefloat:
 		return(sf(x) > 0.0);
 
-	case t_longfloat:
-		return(lf(x) > 0.0);
+	case t_doublefloat:
+		return(df(x) > 0.0);
 
 	default:
 		FEtype_error_real(x);
@@ -85,11 +85,11 @@ number_minusp(cl_object x)
 		x = x->ratio.num;
 		goto RESTART;
 
-	case t_shortfloat:
+	case t_singlefloat:
 		return(sf(x) < 0.0);
 
-	case t_longfloat:
-		return(lf(x) < 0.0);
+	case t_doublefloat:
+		return(df(x) < 0.0);
 
 	default:
 		FEtype_error_real(x);

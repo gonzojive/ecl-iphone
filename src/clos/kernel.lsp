@@ -92,7 +92,7 @@
 		  ;; use fixnums as limits for efficiency:
 		  :size *default-method-cache-size*
 		  :rehash-size #.(/ *default-method-cache-size* 2)
-		  :rehash-threshold 0.5s0))
+		  :rehash-threshold 0.5f0))
       (spec-list :initform nil :accessor generic-function-spec-list)
       (method-combination 
        :initarg :method-combination :initform '(standard)
@@ -208,7 +208,7 @@
 		   ;; use fixnums as limits for efficiency:
 		   :size *default-method-cache-size*
 		   :rehash-size #.(/ *default-method-cache-size* 2)
-		   :rehash-threshold 0.5s0)))
+		   :rehash-threshold 0.5f0)))
 	(declare (type standard-object gfun))
 	;; create a new gfun
 	(si::instance-sig-set gfun)

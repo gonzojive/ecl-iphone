@@ -18,6 +18,10 @@ ECL 1.0:
 
  - ADJUST-ARRAY accepted a fill-pointer even for arrays that did not have any.
 
+ - Instead of using SHORT-FLOAT and LONG-FLOAT as basic floating point types,
+   we use SINGLE-FLOAT and DOUBLE-FLOAT now. The names of the C functions have
+   changed accordingly (Contributed by Lars Brinkhoff).
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

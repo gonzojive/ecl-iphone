@@ -64,10 +64,12 @@ fast_alloc_object(enum type t)
     x = GC_malloc(sizeof(struct bignum)); break;
   case t_ratio:
     x = GC_malloc(sizeof(struct ratio)); break;
-  case t_shortfloat:
-    x = GC_malloc_atomic(sizeof(struct shortfloat_struct)); break;
-  case t_longfloat:
-    x = GC_malloc_atomic(sizeof(struct longfloat_struct)); break;
+  case t_singlefloat:
+    /* struct ecl_singlefloat? */
+    x = GC_malloc_atomic(sizeof(struct singlefloat_struct)); break;
+  case t_doublefloat:
+    /* struct ecl_doublefloat? */
+    x = GC_malloc_atomic(sizeof(struct doublefloat_struct)); break;
   case t_complex:
     x = GC_malloc(sizeof(struct complex)); break;
   case t_symbol:

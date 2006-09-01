@@ -53,7 +53,7 @@
   (typecase form
     ((or STRING INTEGER CHARACTER)
      (princ form *compiler-output1*))
-    ((or LONG-FLOAT SHORT-FLOAT)
+    ((or DOUBLE-FLOAT SINGLE-FLOAT)
      (format *compiler-output1* "~10,,,,,,'eG" form))
     (VAR (wt-var form))
     (t (wt-loc form)))

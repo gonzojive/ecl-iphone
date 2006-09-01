@@ -84,7 +84,7 @@ cl_object
 cl_floatp(cl_object x)
 {
 	cl_type t = type_of(x);
-	@(return ((t == t_longfloat || t == t_shortfloat) ? Ct : Cnil))
+	@(return ((t == t_doublefloat || t == t_singlefloat) ? Ct : Cnil))
 }
 
 cl_object
@@ -253,11 +253,11 @@ eql(cl_object x, cl_object y)
 		return(eql(x->ratio.num, y->ratio.num) &&
 		       eql(x->ratio.den, y->ratio.den));
 
-	case t_shortfloat:
+	case t_singlefloat:
 		return(sf(x) == sf(y));
 
-	case t_longfloat:
-		return(lf(x) == lf(y));
+	case t_doublefloat:
+		return(df(x) == df(y));
 
 	case t_complex:
 		if (eql(x->complex.real, y->complex.real) &&
@@ -307,11 +307,11 @@ BEGIN:
 	case t_fixnum:
 		return(fix(x)==fix(y));
 
-	case t_shortfloat:
-		return(x->SF.SFVAL==y->SF.SFVAL);
+	case t_singlefloat:
+		return(sf(x)==sf(y));
 
-	case t_longfloat:
-		return(x->LF.LFVAL==y->LF.LFVAL);
+	case t_doublefloat:
+		return(df(x)==df(y));
 
 #ifdef ECL_UNICODE
 	case t_string:
@@ -407,11 +407,11 @@ BEGIN:
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-	case t_shortfloat:
-	case t_longfloat:
+	case t_singlefloat:
+	case t_doublefloat:
 	case t_complex:
 		if (ty == t_fixnum || ty == t_bignum || ty == t_ratio ||
-		    ty == t_shortfloat || ty == t_longfloat ||
+		    ty == t_singlefloat || ty == t_doublefloat ||
 		    ty == t_complex)
 			return number_equalp(x, y);
 		else

@@ -84,13 +84,13 @@ cl_exp(cl_object x)
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		return1(make_shortfloat(expf(number_to_double(x))));
+		return1(make_singlefloat(expf(number_to_double(x))));
 
-	case t_shortfloat:
-		return1(make_shortfloat(expf(sf(x))));
+	case t_singlefloat:
+		return1(make_singlefloat(expf(sf(x))));
 
-	case t_longfloat:
-		return1(make_longfloat(exp(lf(x))));
+	case t_doublefloat:
+		return1(make_doublefloat(exp(df(x))));
 
 	case t_complex: {
 		cl_object y, y1;
@@ -124,10 +124,10 @@ cl_expt(cl_object x, cl_object y)
 		case t_bignum:
 		case t_ratio:
 			z = MAKE_FIXNUM(1); break;
-		case t_shortfloat:
-			z = make_shortfloat(1.0); break;
-		case t_longfloat:
-			z = make_longfloat(1.0); break;
+		case t_singlefloat:
+			z = make_singlefloat(1.0); break;
+		case t_doublefloat:
+			z = make_doublefloat(1.0); break;
 		case t_complex:
 			z = cl_expt((tx == t_complex)? x->complex.real : x,
 				    (ty == t_complex)? y->complex.real : y);
@@ -183,13 +183,13 @@ cl_log1(cl_object x)
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		return1(make_shortfloat(logf(number_to_double(x))));
+		return1(make_singlefloat(logf(number_to_double(x))));
 
-	case t_shortfloat:
-		return1(make_shortfloat(logf(sf(x))));
+	case t_singlefloat:
+		return1(make_singlefloat(logf(sf(x))));
 
-	case t_longfloat:
-		return1(make_longfloat(log(lf(x))));
+	case t_doublefloat:
+		return1(make_doublefloat(log(df(x))));
 
 	default:
 		FEtype_error_number(x);
@@ -226,13 +226,13 @@ cl_sqrt(cl_object x)
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		return1(make_shortfloat(sqrtf(number_to_double(x))));
+		return1(make_singlefloat(sqrtf(number_to_double(x))));
 
-	case t_shortfloat:
-		return1(make_shortfloat(sqrtf(sf(x))));
+	case t_singlefloat:
+		return1(make_singlefloat(sqrtf(sf(x))));
 
-	case t_longfloat:
-		return1(make_longfloat(sqrt(lf(x))));
+	case t_doublefloat:
+		return1(make_doublefloat(sqrt(df(x))));
 
 	default:
 		FEtype_error_number(x);
@@ -273,10 +273,10 @@ cl_atan2(cl_object y, cl_object x)
 			dz = M_PI;
 		else
 			dz = -M_PI + atan(-dy / -dx);
-	if (type_of(x) == t_longfloat || type_of(y) == t_longfloat)
-		z = make_longfloat(dz);
+	if (type_of(x) == t_doublefloat || type_of(y) == t_doublefloat)
+		z = make_doublefloat(dz);
 	else
-		z = make_shortfloat(dz);
+		z = make_singlefloat(dz);
 	return1(z);
 }
 
@@ -313,11 +313,11 @@ cl_sin(cl_object x)
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		return1(make_shortfloat(sinf(number_to_double(x))));
-	case t_shortfloat:
-		return1(make_shortfloat(sinf(sf(x))));
-	case t_longfloat:
-		return1(make_longfloat(sin(lf(x))));
+		return1(make_singlefloat(sinf(number_to_double(x))));
+	case t_singlefloat:
+		return1(make_singlefloat(sinf(sf(x))));
+	case t_doublefloat:
+		return1(make_doublefloat(sin(df(x))));
 	case t_complex: {
 		/*
 		  z = x + I y
@@ -328,9 +328,9 @@ cl_sin(cl_object x)
 		double dy = number_to_double(x->complex.imag);
 		double a = sin(dx) * cosh(dy);
 		double b = cos(dx) * sinh(dy);
-		if (type_of(x->complex.real) != t_longfloat)
-			return1(make_complex(make_shortfloat(a), make_shortfloat(b)));
-		return1(make_complex(make_longfloat(a), make_longfloat(b)));
+		if (type_of(x->complex.real) != t_doublefloat)
+			return1(make_complex(make_singlefloat(a), make_singlefloat(b)));
+		return1(make_complex(make_doublefloat(a), make_doublefloat(b)));
 	}
 	default:
 		FEtype_error_number(x);
@@ -344,11 +344,11 @@ cl_cos(cl_object x)
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		return1(make_shortfloat(cosf(number_to_double(x))));
-	case t_shortfloat:
-		return1(make_shortfloat(cosf(sf(x))));
-	case t_longfloat:
-		return1(make_longfloat(cos(lf(x))));
+		return1(make_singlefloat(cosf(number_to_double(x))));
+	case t_singlefloat:
+		return1(make_singlefloat(cosf(sf(x))));
+	case t_doublefloat:
+		return1(make_doublefloat(cos(df(x))));
 	case t_complex: {
 		/*
 		  z = x + I y
@@ -358,9 +358,9 @@ cl_cos(cl_object x)
 		double dy = number_to_double(x->complex.imag);
 		double a =  cos(dx) * cosh(dy);
 		double b = -sin(dx) * sinh(dy);
-		if (type_of(x->complex.real) != t_longfloat)
-			return1(make_complex(make_shortfloat(a), make_shortfloat(b)));
-		return1(make_complex(make_longfloat(a), make_longfloat(b)));
+		if (type_of(x->complex.real) != t_doublefloat)
+			return1(make_complex(make_singlefloat(a), make_singlefloat(b)));
+		return1(make_complex(make_doublefloat(a), make_doublefloat(b)));
 	}
 	default:
 		FEtype_error_number(x);
@@ -374,11 +374,11 @@ cl_tan(cl_object x)
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		return1(make_shortfloat(tanf(number_to_double(x))));
-	case t_shortfloat:
-		return1(make_shortfloat(tanf(sf(x))));
-	case t_longfloat:
-		return1(make_longfloat(tan(lf(x))));
+		return1(make_singlefloat(tanf(number_to_double(x))));
+	case t_singlefloat:
+		return1(make_singlefloat(tanf(sf(x))));
+	case t_doublefloat:
+		return1(make_doublefloat(tan(df(x))));
 	case t_complex: {
 		cl_object a = cl_sin(x);
 		cl_object b = cl_cos(x);
@@ -397,11 +397,11 @@ cl_sinh(cl_object x)
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		return1(make_shortfloat(sinhf(number_to_double(x))));
-	case t_shortfloat:
-		return1(make_shortfloat(sinhf(sf(x))));
-	case t_longfloat:
-		return1(make_longfloat(sinh(lf(x))));
+		return1(make_singlefloat(sinhf(number_to_double(x))));
+	case t_singlefloat:
+		return1(make_singlefloat(sinhf(sf(x))));
+	case t_doublefloat:
+		return1(make_doublefloat(sinh(df(x))));
 	case t_complex: {
 		/*
 		  z = x + I y
@@ -413,9 +413,9 @@ cl_sinh(cl_object x)
 		double dy = number_to_double(x->complex.imag);
 		double a = sinh(dx) * cos(dy);
 		double b = cosh(dx) * sin(dy);
-		if (type_of(x->complex.real) != t_longfloat)
-			return1(make_complex(make_shortfloat(a), make_shortfloat(b)));
-		return1(make_complex(make_longfloat(a), make_longfloat(b)));
+		if (type_of(x->complex.real) != t_doublefloat)
+			return1(make_complex(make_singlefloat(a), make_singlefloat(b)));
+		return1(make_complex(make_doublefloat(a), make_doublefloat(b)));
 	}
 	default:
 		FEtype_error_number(x);
@@ -429,11 +429,11 @@ cl_cosh(cl_object x)
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		return1(make_shortfloat(coshf(number_to_double(x))));
-	case t_shortfloat:
-		return1(make_shortfloat(coshf(sf(x))));
-	case t_longfloat:
-		return1(make_longfloat(cosh(lf(x))));
+		return1(make_singlefloat(coshf(number_to_double(x))));
+	case t_singlefloat:
+		return1(make_singlefloat(coshf(sf(x))));
+	case t_doublefloat:
+		return1(make_doublefloat(cosh(df(x))));
 	case t_complex: {
 		/*
 		  z = x + I y
@@ -445,9 +445,9 @@ cl_cosh(cl_object x)
 		double dy = number_to_double(x->complex.imag);
 		double a = cosh(dx) * cos(dy);
 		double b = sinh(dx) * sin(dy);
-		if (type_of(x->complex.real) != t_longfloat)
-			return1(make_complex(make_shortfloat(a), make_shortfloat(b)));
-		return1(make_complex(make_longfloat(a), make_longfloat(b)));
+		if (type_of(x->complex.real) != t_doublefloat)
+			return1(make_complex(make_singlefloat(a), make_singlefloat(b)));
+		return1(make_complex(make_doublefloat(a), make_doublefloat(b)));
 	}
 	default:
 		FEtype_error_number(x);
@@ -461,11 +461,11 @@ cl_tanh(cl_object x)
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		return1(make_shortfloat(tanhf(number_to_double(x))));
-	case t_shortfloat:
-		return1(make_shortfloat(tanhf(sf(x))));
-	case t_longfloat:
-		return1(make_longfloat(tanh(lf(x))));
+		return1(make_singlefloat(tanhf(number_to_double(x))));
+	case t_singlefloat:
+		return1(make_singlefloat(tanhf(sf(x))));
+	case t_doublefloat:
+		return1(make_doublefloat(tanh(df(x))));
 	case t_complex: {
 		cl_object a = cl_sinh(x);
 		cl_object b = cl_cosh(x);

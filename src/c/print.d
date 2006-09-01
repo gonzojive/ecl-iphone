@@ -1056,7 +1056,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		bds_unwind1();
 		break;
 
-	case t_shortfloat:
+	case t_singlefloat:
 		r = symbol_value(@'*read-default-float-format*');
 		if (r == @'single-float' || r == @'short-float')
 			write_double((double)sf(x), 0, TRUE, stream);
@@ -1064,12 +1064,12 @@ si_write_ugly_object(cl_object x, cl_object stream)
 			write_double((double)sf(x), 'f', TRUE, stream);
 		break;
 
-	case t_longfloat:
+	case t_doublefloat:
 		r = symbol_value(@'*read-default-float-format*');
 		if (r == @'long-float' || r == @'double-float')
-			write_double(lf(x), 0, FALSE, stream);
+			write_double(df(x), 0, FALSE, stream);
 		else
-			write_double(lf(x), 'd', FALSE, stream);
+			write_double(df(x), 'd', FALSE, stream);
 		break;
 
 	case t_complex:
@@ -1540,8 +1540,8 @@ si_write_object_recursive(cl_object x, cl_object stream)
 			cl_object hash =
 				cl__make_hash_table(@'eq',
 						    MAKE_FIXNUM(1024),
-						    make_shortfloat(1.5f),	
-						    make_shortfloat(0.75f), Cnil);
+						    make_singlefloat(1.5f),	
+						    make_singlefloat(0.75f), Cnil);
 			bds_bind(@'si::*circle-counter*', Ct);
 			bds_bind(@'si::*circle-stack*', hash);
 			si_write_object(x, cl_core.null_stream);

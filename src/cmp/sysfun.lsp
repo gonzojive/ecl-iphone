@@ -113,9 +113,9 @@
  "@0;aref_bv(#0,(#1)*(#0)->array.dims[1]+#2)")
 (def-inline aref :unsafe ((array base-char) fixnum fixnum) :char
  "@0;(#0)->base_string.self[#1*(#0)->array.dims[1]+#2]")
-(def-inline aref :unsafe ((array long-float) fixnum fixnum) :double
- "@0;(#0)->array.self.lf[#1*(#0)->array.dims[1]+#2]")
-(def-inline aref :unsafe ((array short-float) fixnum fixnum) :float
+(def-inline aref :unsafe ((array double-float) fixnum fixnum) :double
+ "@0;(#0)->array.self.df[#1*(#0)->array.dims[1]+#2]")
+(def-inline aref :unsafe ((array single-float) fixnum fixnum) :float
  "@0;(#0)->array.self.sf[#1*(#0)->array.dims[1]+#2]")
 (def-inline aref :unsafe ((array fixnum) fixnum fixnum) :fixnum
  "@0;(#0)->array.self.fix[#1*(#0)->array.dims[1]+#2]")
@@ -130,10 +130,10 @@
 #+unicode
 (def-inline aref :unsafe ((array character) fixnum fixnum) t
  "@0;(#0)->string.self[#1*(#0)->array.dims[1]+#2]")
-(def-inline aref :unsafe ((array long-float) fixnum) t
- "make_longfloat((#0)->array.self.lf[#1])")
-(def-inline aref :unsafe ((array short-float) fixnum) t
- "make_shortfloat((#0)->array.self.sf[#1])")
+(def-inline aref :unsafe ((array double-float) fixnum) t
+ "make_doublefloat((#0)->array.self.df[#1])")
+(def-inline aref :unsafe ((array single-float) fixnum) t
+ "make_singlefloat((#0)->array.self.sf[#1])")
 (def-inline aref :unsafe ((array fixnum) fixnum) t
  "MAKE_FIXNUM((#0)->array.self.fix[#1])")
 (def-inline aref :unsafe ((array base-char) fixnum) :fixnum
@@ -143,9 +143,9 @@
  "CHAR_CODE((#0)->base_string.self[#1])")
 (def-inline aref :unsafe ((array base-char) fixnum) :char
  "(#0)->base_string.self[#1]")
-(def-inline aref :unsafe ((array long-float) fixnum) :double
- "(#0)->array.self.lf[#1]")
-(def-inline aref :unsafe ((array short-float) fixnum) :float
+(def-inline aref :unsafe ((array double-float) fixnum) :double
+ "(#0)->array.self.df[#1]")
+(def-inline aref :unsafe ((array single-float) fixnum) :float
  "(#0)->array.self.sf[#1]")
 (def-inline aref :unsafe ((array fixnum) fixnum) :fixnum
  "(#0)->array.self.fix[#1]")
@@ -161,9 +161,9 @@
  "@0;aset_bv(#1,(#2)*(#1)->array.dims[1]+(#3),fix(#0))")
 (def-inline si:aset :unsafe (character (array base-char) fixnum fixnum) :char
  "@1;(#1)->base_string.self[#2*(#1)->array.dims[1]+#3]= #0")
-(def-inline si:aset :unsafe (long-float (array long-float) fixnum fixnum)
- :double "@1;(#1)->array.self.lf[#2*(#1)->array.dims[1]+#3]= #0")
-(def-inline si:aset :unsafe (short-float (array short-float) fixnum fixnum)
+(def-inline si:aset :unsafe (double-float (array double-float) fixnum fixnum)
+ :double "@1;(#1)->array.self.df[#2*(#1)->array.dims[1]+#3]= #0")
+(def-inline si:aset :unsafe (single-float (array single-float) fixnum fixnum)
  :float "@1;(#1)->array.self.sf[#2*(#1)->array.dims[1]+#3]= #0")
 (def-inline si:aset :unsafe (fixnum (array fixnum) fixnum fixnum) :fixnum
  "@1;(#1)->array.self.fix[#2*(#1)->array.dims[1]+#3]= #0")
@@ -181,9 +181,9 @@
 #+unicode
 (def-inline si:aset :unsafe (character (array character) fixnum) t
  "(#1)->string.self[#2]= #0")
-(def-inline si:aset :unsafe (long-float (array long-float) fixnum) :double
- "(#1)->array.self.lf[#2]= #0")
-(def-inline si:aset :unsafe (short-float (array short-float) fixnum) :float
+(def-inline si:aset :unsafe (double-float (array double-float) fixnum) :double
+ "(#1)->array.self.df[#2]= #0")
+(def-inline si:aset :unsafe (single-float (array single-float) fixnum) :float
  "(#1)->array.self.sf[#2]= #0")
 (def-inline si:aset :unsafe (fixnum (array fixnum) fixnum) :fixnum
  "(#1)->array.self.fix[#2]= #0")
@@ -718,8 +718,8 @@
 ;; file num_co.d
 
 (proclaim-function float (t *) t :no-side-effects t)
-(def-inline float :always (t short-float) :float "number_to_double(#0)")
-(def-inline float :always (t long-float) :double "number_to_double(#0)")
+(def-inline float :always (t single-float) :float "number_to_double(#0)")
+(def-inline float :always (t double-float) :double "number_to_double(#0)")
 (def-inline float :always (fixnum-float) :double "((double)(#0))")
 (def-inline float :always (fixnum-float) :float "((float)(#0))")
 
@@ -968,7 +968,7 @@
 (proclaim-function rationalp (t) t :predicate t)
 (proclaim-function floatp (t) t :predicate t :no-side-effects t)
 (def-inline floatp :always (t) :bool
- "@0;type_of(#0)==t_shortfloat||type_of(#0)==t_longfloat")
+ "@0;type_of(#0)==t_singlefloat||type_of(#0)==t_doublefloat")
 
 (proclaim-function complexp (t) t :predicate t)
 (proclaim-function characterp (t) t :predicate t :no-side-effects t)
@@ -1289,10 +1289,16 @@ type_of(#0)==t_bitvector")
 (def-inline shift<< :always (fixnum fixnum) :fixnum "((#0) << (#1))")
 
 (proclaim-function short-float-p (*) nil :predicate t :no-side-effects t)
-(def-inline short-float-p :always (t) :bool "type_of(#0)==t_shortfloat")
+(def-inline short-float-p :always (t) :bool "type_of(#0)==t_singlefloat")
+
+(proclaim-function single-float-p (*) nil :predicate t :no-side-effects t)
+(def-inline single-float-p :always (t) :bool "type_of(#0)==t_singlefloat")
+
+(proclaim-function double-float-p (*) nil :predicate t :no-side-effects t)
+(def-inline double-float-p :always (t) :bool "type_of(#0)==t_doublefloat")
 
 (proclaim-function long-float-p (*) nil :predicate t :no-side-effects t)
-(def-inline long-float-p :always (t) :bool "type_of(#0)==t_longfloat")
+(def-inline long-float-p :always (t) :bool "type_of(#0)==t_doublefloat")
 
 (proclaim-function si:fixnump (*) nil :predicate t :no-side-effects t)
 (def-inline si:fixnump :always (t) :bool "FIXNUMP(#0)")

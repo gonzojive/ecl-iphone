@@ -60,7 +60,7 @@
   read-nodes		;;; Nodes (c1forms) in which the reference occurs
 )
 
-(deftype OBJECT () `(not (or fixnum character short-float long-float)))
+(deftype OBJECT () `(not (or fixnum character single-float double-float)))
 
 (defstruct (var (:include ref) (:constructor %make-var) (:print-object print-var))
 ;  name		;;; Variable name.
@@ -342,7 +342,7 @@ The default value is NIL.")
 ;;; *last-label* holds the label# of the last used label.
 ;;; *exit* holds an 'exit', which is
 ;;	( label# . ref-flag ) or one of RETURNs (i.e. RETURN, RETURN-FIXNUM,
-;;	RETURN-CHARACTER, RETURN-LONG-FLOAT, RETURN-SHORT-FLOAT, or
+;;	RETURN-CHARACTER, RETURN-DOUBLE-FLOAT, RETURN-SINGLE-FLOAT, or
 ;;	RETURN-OBJECT).
 ;;; *unwind-exit* holds a list consisting of:
 ;;	( label# . ref-flag ), one of RETURNs, TAIL-RECURSION-MARK, FRAME,

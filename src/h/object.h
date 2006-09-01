@@ -84,17 +84,17 @@ typedef cl_object (*cl_objectfn_fixed)();
 #define HEADER3(field1,flag2,flag3) int8_t t, m, field1; uint8_t flag2:4, flag3:4
 #define HEADER4(field1,flag2,flag3,flag4) int8_t t, m, field1; uint8_t flag2:4, flag3:2, flag4:2
 
-struct ecl_shortfloat {
+struct ecl_singlefloat {
 	HEADER;
-	float SFVAL;	/*  shortfloat value  */
+	float SFVAL;	/*  singlefloat value  */
 };
 #define	sf(obje)	(obje)->SF.SFVAL
 
-struct ecl_longfloat {
+struct ecl_doublefloat {
 	HEADER;
-	double LFVAL;	/*  longfloat value  */
+	double DFVAL;	/*  doublefloat value  */
 };
-#define	lf(obje)	(obje)->LF.LFVAL
+#define	df(obje)	(obje)->DF.DFVAL
 
 #ifdef WITH_GMP
 
@@ -225,8 +225,8 @@ struct ecl_hashtable {		/*  hash table header  */
 
 typedef enum {			/*  array element type  */
 	aet_object,		/*  t                */
-	aet_sf,			/*  short-float      */
-	aet_lf,			/*  long-float       */
+	aet_sf,			/*  single-float     */
+	aet_df,			/*  double-float     */
 	aet_bit,		/*  bit              */
 	aet_fix,		/*  cl_fixnum        */
 	aet_index,		/*  cl_index         */
@@ -246,7 +246,7 @@ union ecl_array_data {
 	uint8_t       *b8;
 	int8_t        *i8;
 	float         *sf;
-	double        *lf;
+	double        *df;
 	cl_fixnum     *fix;
 	cl_index      *index;
 	byte          *bit;
@@ -517,8 +517,8 @@ struct ecl_instance {		/*  instance header  */
 union cl_lispunion {
 	struct ecl_bignum	big;		/*  bignum  */
 	struct ecl_ratio	ratio;		/*  ratio  */
-	struct ecl_shortfloat	SF; 		/*  short floating-point number  */
-	struct ecl_longfloat	LF; 		/*  long floating-point number  */
+	struct ecl_singlefloat	SF; 		/*  single floating-point number  */
+	struct ecl_doublefloat	DF; 		/*  double floating-point number  */
 	struct ecl_complex	complex;	/*  complex number  */
 	struct ecl_symbol	symbol;		/*  symbol  */
 	struct ecl_package	pack;		/*  package  */
@@ -564,8 +564,8 @@ typedef enum {
 	t_character,		/* 2 immediate character */
 	t_bignum = 4,		/* 4 */
 	t_ratio,		/* 5 */
-	t_shortfloat,		/* 6 */
-	t_longfloat,		/* 7 */
+	t_singlefloat,		/* 6 */
+	t_doublefloat,		/* 7 */
 	t_complex,		/* 8 */
 	t_symbol,		/* 9 */
 	t_package,		/* a */

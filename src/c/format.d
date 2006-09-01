@@ -750,14 +750,14 @@ fmt_fix_float(format_stack fmt, bool colon, bool atsign)
 	if (FIXNUMP(x) ||
 	    type_of(x) == t_bignum ||
 	    type_of(x) == t_ratio)
-		x = make_shortfloat(object_to_float(x));
+		x = make_singlefloat(object_to_float(x));
 	if (!REAL_TYPE(type_of(x))) {
 		if (fmt->nparam > 1) fmt->nparam = 1;
 		fmt_back_up(fmt);
 		fmt_decimal(fmt, colon, atsign);
 		return;
 	}
-	if (type_of(x) == t_longfloat)
+	if (type_of(x) == t_doublefloat)
 		n = 16;
 	else
 		n = 7;
@@ -923,14 +923,14 @@ fmt_exponential_float(format_stack fmt, bool colon, bool atsign)
 	if (FIXNUMP(x) ||
 	    type_of(x) == t_bignum ||
 	    type_of(x) == t_ratio)
-		x = make_shortfloat(object_to_float(x));
+		x = make_singlefloat(object_to_float(x));
 	if (!REAL_TYPE(type_of(x))) {
 		if (fmt->nparam > 1) fmt->nparam = 1;
 		fmt_back_up(fmt);
 		fmt_decimal(fmt, colon, atsign);
 		return;
 	}
-	if (type_of(x) == t_longfloat)
+	if (type_of(x) == t_doublefloat)
 		n = 16;
 	else
 		n = 7;
@@ -1042,15 +1042,15 @@ fmt_exponential_float(format_stack fmt, bool colon, bool atsign)
 	y = symbol_value(@'*read-default-float-format*');
 	if (exponentchar < 0) {
 		if (y == @'long-float' || y == @'double-float')
-			t = t_longfloat;
+			t = t_doublefloat;
 		else
-			t = t_shortfloat;
+			t = t_singlefloat;
 		if (type_of(x) == t)
 			exponentchar = 'E';
-		else if (type_of(x) == t_shortfloat)
-			exponentchar = 'S';
+		else if (type_of(x) == t_singlefloat)
+			exponentchar = 'F';
 		else
-			exponentchar = 'L';
+			exponentchar = 'D';
 	}
 	ecl_write_char(exponentchar, fmt->stream);
 	if (exp < 0)
@@ -1096,7 +1096,7 @@ fmt_general_float(format_stack fmt, bool colon, bool atsign)
 		fmt_decimal(fmt, colon, atsign);
 		return;
 	}
-	if (type_of(x) == t_longfloat)
+	if (type_of(x) == t_doublefloat)
 		q = 16;
 	else
 		q = 7;
@@ -1170,7 +1170,7 @@ fmt_dollars_float(format_stack fmt, bool colon, bool atsign)
 		return;
 	}
 	q = 7;
-	if (type_of(x) == t_longfloat)
+	if (type_of(x) == t_doublefloat)
 		q = 16;
 	f = number_to_double(x);
 	edit_double(q, f, &sign, buff, &exp);

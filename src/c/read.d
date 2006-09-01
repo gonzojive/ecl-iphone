@@ -409,7 +409,7 @@ parse_number(const char *s, cl_index end, cl_index *ep, int radix)
 			output = OBJNULL;
 			goto OUTPUT;
 		}
-		/* make_{short|long}float signals an error when an overflow
+		/* make_{single|double}float signals an error when an overflow
 		   occurred while reading the number. Thus, no safety check
 		   is required here. */
 	MAKE_FLOAT:
@@ -418,10 +418,10 @@ parse_number(const char *s, cl_index end, cl_index *ep, int radix)
 			exp_marker = ecl_current_read_default_float_format();
 			goto MAKE_FLOAT;
 		case 'f':  case 'F':  case 's':  case 'S':
-			output = make_shortfloat(d);
+			output = make_singlefloat(d);
 			break;
 		case 'd':  case 'D':  case 'l':  case 'L':
-			output = make_longfloat(d);
+			output = make_doublefloat(d);
 			break;
 		default:
 			output = OBJNULL;
@@ -979,8 +979,8 @@ read_number(cl_object in, int radix, cl_object macro_char)
 			FEreader_error("Cannot parse the #~A readmacro.", in, 1,
 				       macro_char);
 		}
-		if (type_of(x) == t_shortfloat ||
-		    type_of(x) == t_longfloat) {
+		if (type_of(x) == t_singlefloat ||
+		    type_of(x) == t_doublefloat) {
 			FEreader_error("The float ~S appeared after the #~A readmacro.",
 				       in, 2, x, macro_char);
 		}
@@ -1294,7 +1294,7 @@ ecl_current_read_default_float_format(void)
 	/* INV: *READ-DEFAULT-FLOAT-FORMAT* is always bound to something */
 	x = SYM_VAL(@'*read-default-float-format*');
 	if (x == @'single-float' || x == @'short-float')
-		return 'S';
+		return 'F';
 	if (x == @'double-float' || x == @'long-float')
 		return 'D';
 	ECL_SETQ(@'*read-default-float-format*', @'single-float');
