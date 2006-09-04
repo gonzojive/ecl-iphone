@@ -188,7 +188,7 @@ rebinds this variable to NIL when control enters a break loop.")
  	function, its lexical environment is available for inspection and~@
 	becomes the environment for evaluating user input forms.~@
 	~@
-	See also: :backtrace, :next, previous, :variables.~%")
+	See also: :backtrace, :next, previous, :disassemble, :variables.~%")
       ((:p :previous) tpl-previous nil
        ":p(revious)	Go to previous function"
        ":previous &optional (n 1)			[Break command]~@
@@ -232,6 +232,13 @@ rebinds this variable to NIL when control enters a break loop.")
 	The match is case insensitive.~@
 	~@
 	See also: :backtrace, :function, :previous.~%")
+      ((:d :disassemble) tpl-disassemble-command nil
+       ":d(isassemble)	Disassemble current function"
+       ":disassemble					[Break command]~@
+	:d						[Abbreviation]~@
+	~@
+	Disassemble the current function. Currently, only interpreted functions~@
+	can be disassembled.~%")
       ((:v :variables) tpl-variables-command nil
        ":v(ariables)	Show local variables, functions, blocks, and tags"
        ":variables &optional no-values			[Break command]~@
@@ -533,6 +540,17 @@ under certain conditions; see file 'Copyright' for details.")
     (princ *break-message*)
     (terpri))
   (values))
+
+(defun tpl-disassemble-command (&optional no-values)
+  (let*((*print-level* 2)
+	(*print-length* 4)
+	(*print-pretty* t)
+	(*print-readably* nil)
+	(functions) (blocks) (variables))
+    (unless (si::bc-disassemble (ihs-fun *ihs-current*))
+      (tpl-print-current)
+      (format t " Function cannot be disassembled.~%"))
+    (values)))
 
 (defun tpl-variables-command (&optional no-values)
   (let*((*print-level* 2)
