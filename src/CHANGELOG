@@ -25,6 +25,9 @@ ECL 1.0:
    we use SINGLE-FLOAT and DOUBLE-FLOAT now. The names of the C functions have
    changed accordingly (Contributed by Lars Brinkhoff).
 
+ - There was a problem with the variable capture when creating accessors
+   methods for classes.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

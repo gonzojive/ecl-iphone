@@ -417,12 +417,15 @@ because it contains a reference to the undefined class~%  ~A"
 				 (values (slot-unbound (class-of self) self slot-name)))))
 		setter #'(lambda (value self)
 			   (si:instance-set self index value)))
-	  (setf reader #'(lambda (self)
-			   (slot-value-using-class (si:instance-class self)
-						   self slotd))
-		setter #'(lambda (value self)
-			   (setf (slot-value-using-class (si:instance-class self)
-							 self slotd) value))))
+	  (let ((slotd slotd))
+	    ;; Note that in order to save this value in the closure we have to copy
+	    ;; the variable, because the value of SLOTD is going to change!
+	    (setf reader #'(lambda (self)
+			     (slot-value-using-class (si:instance-class self)
+						     self slotd))
+		  setter #'(lambda (value self)
+			     (setf (slot-value-using-class (si:instance-class self)
+							   self slotd) value)))))
       (dolist (fname (slot-definition-readers slotd))
 	(install-method fname nil `(,standard-class) '(self) nil nil
 			reader))
