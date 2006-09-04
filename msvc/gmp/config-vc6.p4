@@ -409,7 +409,7 @@ MA 02111-1307, USA. */
 #define HAVE_STRING_H		1
 
 /* Define if you have the `strnlen' function. */
-#undef HAVE_STRNLEN
+#define HAVE_STRNLEN		1
 
 /* Define if you have the `strtoul' function. */
 #define HAVE_STRTOUL		1
