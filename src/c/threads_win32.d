@@ -229,7 +229,7 @@ mp_process_enable(cl_object process)
 		FEerror("Cannot enable the running process ~A.", 1, process);
 	THREAD_OP_LOCK();
 	code = (HANDLE)CreateThread(NULL, 0, thread_entry_point, process, 0, &threadId);
-	if (!code) {
+	if (code) {
 		/* If everything went ok, add the thread to the list. */
 		cl_core.processes = CONS(process, cl_core.processes);
 	}

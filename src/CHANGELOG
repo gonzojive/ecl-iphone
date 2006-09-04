@@ -28,6 +28,8 @@ ECL 1.0:
  - There was a problem with the variable capture when creating accessors
    methods for classes.
 
+ - [Win32] Processes are now correctly listed with MP:ALL-PROCESSES (M. Goffioul)
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
