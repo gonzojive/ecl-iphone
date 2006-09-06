@@ -33,6 +33,8 @@ ECL 1.0:
 
  - [Win32] Processes are now correctly listed with MP:ALL-PROCESSES (M. Goffioul)
 
+ - [Win32] DIRECTORY now lists root directory correctly (M. Goffioul)
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

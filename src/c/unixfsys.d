@@ -72,6 +72,9 @@ static cl_object
 current_dir(void) {
 	cl_object output;
 	const char *ok;
+#ifdef _MSC_VER
+	char *c;
+#endif
 	cl_index size = 128;
 
 	do {
@@ -86,8 +89,15 @@ current_dir(void) {
 	  strcpy(other->base_string.self, output->base_string.self);
 	  output = other;
 	}
-	output->base_string.self[size++] = '/';
-	output->base_string.self[size] = 0;
+#ifdef _MSC_VER
+	for (c=output->base_string.self; *c; c++)
+		if (*c == '\\')
+			*c = '/';
+#endif
+	if (output->base_string.self[size-1] != '/') {
+		output->base_string.self[size++] = '/';
+		output->base_string.self[size] = 0;
+	}
 	output->base_string.fillp = size;
 	return output;
 }
