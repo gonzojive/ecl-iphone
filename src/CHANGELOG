@@ -35,6 +35,15 @@ ECL 1.0:
 
  - [Win32] DIRECTORY now lists root directory correctly (M. Goffioul)
 
+ - DIRECTORY behaves more according to people's expectations
+	(DIRECTORY "*/") => List all directories in current path
+	(DIRECTORY "*.*") => List all files in current path
+   This means you need to make two calls to DIRECTORY to get all the content of
+   it, but it allows you to select whether you want to list files or
+   not. Furthermore, the paths returned by DIRECTORY are more or less
+   guaranteed to match the mask -- the exception are links, for whose the
+   truename is returned.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

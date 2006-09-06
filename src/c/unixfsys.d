@@ -72,9 +72,6 @@ static cl_object
 current_dir(void) {
 	cl_object output;
 	const char *ok;
-#ifdef _MSC_VER
-	char *c;
-#endif
 	cl_index size = 128;
 
 	do {
@@ -89,15 +86,8 @@ current_dir(void) {
 	  strcpy(other->base_string.self, output->base_string.self);
 	  output = other;
 	}
-#ifdef _MSC_VER
-	for (c=output->base_string.self; *c; c++)
-		if (*c == '\\')
-			*c = '/';
-#endif
-	if (output->base_string.self[size-1] != '/') {
-		output->base_string.self[size++] = '/';
-		output->base_string.self[size] = 0;
-	}
+	output->base_string.self[size++] = '/';
+	output->base_string.self[size] = 0;
 	output->base_string.fillp = size;
 	return output;
 }
@@ -581,45 +571,33 @@ static cl_object
 dir_files(cl_object basedir, cl_object pathname)
 {
 	cl_object all_files, output = Cnil;
-	cl_object mask, name, type;
-
-	name = pathname->pathname.name;
-	type = pathname->pathname.type;
-	if (name != Cnil || type != Cnil) {
-		mask = make_pathname(Cnil, Cnil, Cnil, name, type,
-				     pathname->pathname.version);
-	} else {
-		mask = Cnil;
+	cl_object mask;
+	cl_object name = pathname->pathname.name;
+	cl_object type = pathname->pathname.type;
+	if (name == Cnil && type == Cnil) {
+		return cl_list(1, basedir);
 	}
+	mask = make_pathname(Cnil, Cnil, Cnil, name, type, pathname->pathname.version);
 	all_files = list_current_directory(NULL, FALSE);
 	loop_for_in(all_files) {
-		char *text = CAR(all_files)->base_string.self;
-		if (file_kind(text, TRUE) == @':directory') {
-			if (mask == Cnil) {
-				cl_object new = nconc(cl_copy_list(basedir->pathname.directory),
-						      CONS(CAR(all_files), Cnil));
-				new = make_pathname(basedir->pathname.host,
-						    basedir->pathname.device,
-						    new, Cnil, Cnil, Cnil);
-				output = CONS(new, output);
-			}
-		} else {
-			cl_object new = cl_pathname(CAR(all_files));
-			if (mask != Cnil && Null(cl_pathname_match_p(new, mask)))
-				continue;
+		cl_object new = CAR(all_files);
+		char *text = new->base_string.self;
+		if (file_kind(text, TRUE) == @':directory')
+			continue;
+		new = cl_pathname(new);
+		if (Null(cl_pathname_match_p(new, mask)))
+			continue;
 #ifdef HAVE_LSTAT
-			if (file_kind(text, FALSE) == @':link')
-#else
-			if (0)
+		if (file_kind(text, FALSE) == @':link') {
+			new = cl_truename(new);
+		} else
 #endif
-				new = cl_truename(CAR(all_files));
-			else {
-				new->pathname.host = basedir->pathname.host;
-				new->pathname.device = basedir->pathname.device;
-				new->pathname.directory = basedir->pathname.directory;
-			}
-			output = CONS(new, output);
+		{
+			new->pathname.host = basedir->pathname.host;
+			new->pathname.device = basedir->pathname.device;
+			new->pathname.directory = basedir->pathname.directory;
 		}
+		output = CONS(new, output);
 	} end_loop_for_in;
 	return output;
 }
