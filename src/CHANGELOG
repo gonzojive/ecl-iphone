@@ -13,6 +13,9 @@ ECL 1.0:
  - Interpreted functions can now be disassembled in the debugger. The commands
    are :D and :DISASSEMBLE.
 
+ - New (private) function EXT::FUNCTION-LAMBDA-LIST, returns the lambda list of
+   a function whenever it was recorded.
+
 * Bugs fixed:
 
  - STREAMP signals an error for Gray streams.

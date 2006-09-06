@@ -552,6 +552,54 @@ under certain conditions; see file 'Copyright' for details.")
       (format t " Function cannot be disassembled.~%"))
     (values)))
 
+(defun reconstruct-bytecodes-lambda-list (data)
+  (declare (si::c-local data))
+  (let ((output '()))
+    (dotimes (n (pop data))	;; required values
+      (declare (fixnum n))
+      (push (pop data) output))
+    (let ((l (pop data)))	;; optional values
+      (declare (fixnum l))
+      (unless (zerop l)
+	(push '&optional output)
+	(dotimes (n l)
+	  (push (first data) output)
+	  (setf data (cdddr data)))))
+    (let ((rest (pop data)))	;; &rest value
+      (when rest
+	(push '&rest output)
+	(push rest output)))
+    (let* ((allow-other-keys (pop data))) ;; &keys and &allow-other-keys
+      (unless (eql allow-other-keys 0)
+	(push '&key output)
+	(let ((l (pop data)))
+	  (declare (fixnum l))
+	  (dotimes (n l)
+	    (let* ((key (first data))
+		   (var (second data)))
+	      (unless (and (keywordp key) (string= key var))
+		(setf var (list (list key var))))
+	      (push var output))))
+	(when allow-other-keys
+	  (push '&allow-other-keys output))))
+    (nreverse output)))
+
+(defun function-lambda-list (function)
+  (cond
+    ((typep function 'generic-function)
+     (generic-function-lambda-list function))
+    ((not (typep function 'compiled-function))
+     (function-lambda-list (fdefinition function)))
+    ((let ((f (function-lambda-expression function)))
+       (when f
+	 (if (eq (first f) 'lambda)
+	     (second f)
+	     (third f)))))
+    ((multiple-value-bind (lex-env bytecodes data)
+	 (si::bc-split function)
+       (when bytecodes
+	 (reconstruct-bytecodes-lambda-list (coerce data 'list)))))))
+
 (defun tpl-variables-command (&optional no-values)
   (let*((*print-level* 2)
 	(*print-length* 4)
