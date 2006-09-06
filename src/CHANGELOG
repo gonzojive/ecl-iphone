@@ -33,8 +33,6 @@ ECL 1.0:
 
  - [Win32] Processes are now correctly listed with MP:ALL-PROCESSES (M. Goffioul)
 
- - [Win32] DIRECTORY now lists root directory correctly (M. Goffioul)
-
  - DIRECTORY behaves more according to people's expectations
 	(DIRECTORY "*/") => List all directories in current path
 	(DIRECTORY "*.*") => List all files in current path
@@ -43,6 +41,8 @@ ECL 1.0:
    not. Furthermore, the paths returned by DIRECTORY are more or less
    guaranteed to match the mask -- the exception are links, for whose the
    truename is returned.
+
+ - [Win32] DIRECTORY did not take the drive letter into account.
 
 ;;; Local Variables: ***
 ;;; mode:text ***

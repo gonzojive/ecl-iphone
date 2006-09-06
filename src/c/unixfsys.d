@@ -54,6 +54,23 @@
 # endif
 #endif
 
+#if defined(_MSC_VER) || defined(mingw32)
+static void
+change_drive(cl_object pathname)
+{
+	if (pathname->pathname.device != Cnil) {
+		char device[3] = {'\0', ':', '\0'};
+		device[0] = pathname->pathname.device->base_string.self[0];
+		if (chdir(device) < 0) {
+			FElibc_error("Can't change the current drive to ~S",
+				     1, pathname->pathname.device);
+		}
+	}
+}
+#else
+#define change_drive(x) (void)0
+#endif
+
 /*
  * string_to_pathanme, to be used when s is a real pathname
  */
@@ -207,15 +224,7 @@ cl_truename(cl_object orig_pathname)
 		} else {
 			filename = OBJNULL;
 		}
-#if defined(_MSC_VER) || defined(mingw32)
-		if (pathname->pathname.device != Cnil)
-		{
-			char device[3] = {'\0', ':', '\0'};
-			device[0] = pathname->pathname.device->base_string.self[0];
-			if (chdir( device ) < 0)
-				goto ERROR;
-		}
-#endif
+		change_drive(pathname);
 		for (dir = pathname->pathname.directory;
 		     !Null(dir);
 		     dir = CDR(dir))
@@ -708,6 +717,7 @@ dir_recursive(cl_object pathname, cl_object directory)
 	CL_UNWIND_PROTECT_BEGIN {
 		prev_dir = current_dir();
 		mask = coerce_to_file_pathname(mask);
+		change_drive(mask);
 		output = dir_recursive(mask, mask->pathname.directory);
 	} CL_UNWIND_PROTECT_EXIT {
 		if (prev_dir != Cnil)
