@@ -590,15 +590,17 @@ under certain conditions; see file 'Copyright' for details.")
      (generic-function-lambda-list function))
     ((not (typep function 'compiled-function))
      (function-lambda-list (fdefinition function)))
-    ((let ((f (function-lambda-expression function)))
-       (when f
-	 (if (eq (first f) 'lambda)
-	     (second f)
-	     (third f)))))
+    ;; Reconstruct the lambda list from the bytecodes
     ((multiple-value-bind (lex-env bytecodes data)
 	 (si::bc-split function)
        (when bytecodes
-	 (reconstruct-bytecodes-lambda-list (coerce data 'list)))))))
+	 (reconstruct-bytecodes-lambda-list (coerce data 'list)))))
+    ;; Convert the lambda form into bytecodes and reconstruct lambda
+    ;; list The reason for doing this is to strip information such as
+    ;; default values, &aux, etc. It also makes the output of
+    ;; FUNCTION-LAMDBA-LIST more uniform.
+    ((let ((f (function-lambda-expression function)))
+       (function-lambda-list (eval f))))))
 
 (defun tpl-variables-command (&optional no-values)
   (let*((*print-level* 2)
