@@ -590,17 +590,22 @@ under certain conditions; see file 'Copyright' for details.")
      (generic-function-lambda-list function))
     ((not (typep function 'compiled-function))
      (function-lambda-list (fdefinition function)))
+    ;; Use the lambda list from the function definition, if available,
+    ;; but remove &aux arguments.
+    ((let ((f (function-lambda-expression function)))
+       (when f
+	 (let* ((list (if (eql (first f) 'LAMBDA)
+			  (second f)
+			  (third f)))
+		(ndx (position '&aux list)))
+	   (if ndx
+	       (subseq list 0 (1- ndx))
+	       list)))))
     ;; Reconstruct the lambda list from the bytecodes
     ((multiple-value-bind (lex-env bytecodes data)
 	 (si::bc-split function)
        (when bytecodes
-	 (reconstruct-bytecodes-lambda-list (coerce data 'list)))))
-    ;; Convert the lambda form into bytecodes and reconstruct lambda
-    ;; list The reason for doing this is to strip information such as
-    ;; default values, &aux, etc. It also makes the output of
-    ;; FUNCTION-LAMDBA-LIST more uniform.
-    ((let ((f (function-lambda-expression function)))
-       (function-lambda-list (eval f))))))
+	 (reconstruct-bytecodes-lambda-list (coerce data 'list)))))))
 
 (defun tpl-variables-command (&optional no-values)
   (let*((*print-level* 2)
