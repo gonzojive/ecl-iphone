@@ -309,7 +309,7 @@ mp_process_run_function(cl_narg narg, cl_object name, cl_object function, ...)
 	output = cl_alloc_object(t_lock);
 	output->lock.name = name;
 	output->lock.mutex = CreateMutex(NULL, FALSE, NULL);
-        si_set_finalizer(x, Ct);
+        si_set_finalizer(output, Ct);
 	@(return output)
 @)
 
