@@ -49,7 +49,7 @@ OBJS	= main.o symbol.o package.o list.o\
 	time.o unixint.o\
 	mapfun.o multival.o hash.o format.o pathname.o\
 	structure.o load.o unixfsys.o unixsys.o \
-	ffi.o finalize.o @EXTRA_OBJS@
+	ffi.o @EXTRA_OBJS@
 
 .SUFFIXES: .c .o .d
 .PHONY: all
