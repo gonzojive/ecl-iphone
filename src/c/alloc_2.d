@@ -245,12 +245,11 @@ static void
 queueing_finalizer(cl_object o, cl_object finalizer)
 {
 	if (finalizer != Cnil && finalizer != NULL) {
-		//funcall(2, finalizer, o);
-		cl_core.to_be_finalized = CONS(CONS(o,finalizer),
-					       cl_core.to_be_finalized);
-		return;
+		/* Only nonstandard finalizers are queued */
 		if (finalizer == Ct) {
-			standard_finalizer(o);
+			CL_NEWENV_BEGIN {
+				standard_finalizer(o);
+			} CL_NEWENV_END;
 		} else {
 			cl_core.to_be_finalized = CONS(CONS(o,finalizer),
 						       cl_core.to_be_finalized);
