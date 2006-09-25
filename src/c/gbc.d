@@ -484,7 +484,7 @@ mark_cl_env(struct cl_env_struct *env)
 	for (i=0; i<env->nvalues; i++)
 		mark_object(env->values[i]);
 
-	mark_object(env->token);
+	mark_object(env->string_pool);
 
 	if (env->c_env) {
 		mark_object(env->c_env->variables);

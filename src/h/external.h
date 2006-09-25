@@ -74,7 +74,7 @@ struct cl_env_struct {
 
 	/* Private variables used by different parts of ECL: */
 	/* ... the reader ... */
-	cl_object token;
+	cl_object string_pool;
 
 	/* ... the compiler ... */
 	struct cl_compiler_env *c_env;
@@ -1154,6 +1154,8 @@ extern int init_profile(void);
 
 /* read.c */
 
+extern cl_object si_get_buffer_string();
+extern cl_object si_put_buffer_string(cl_object string);
 extern cl_object cl_read_sequence _ARGS((cl_narg narg, cl_object seq, cl_object stream, ...));
 extern cl_object cl_readtablep(cl_object readtable);
 extern cl_object si_string_to_object(cl_object str);

@@ -885,6 +885,8 @@ EXPORTS
 	cl_make_dispatch_macro_character
 	cl_set_dispatch_macro_character
 	cl_get_dispatch_macro_character
+	si_get_buffer_string
+	si_put_buffer_string
 
 	read_object_non_recursive
 	read_object

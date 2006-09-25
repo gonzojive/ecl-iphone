@@ -750,16 +750,16 @@ put_return(void)
 	  put_tabs(t);
 	  for (i = 0;  i < nres;  i++) {
 		put_tabs(t);
-		fprintf(out, "cl_object value%d = %s;\n", i, result[i]);
+		fprintf(out, "cl_object __value%d = %s;\n", i, result[i]);
 	  }
 	  put_tabs(t);
 	  fprintf(out, "NVALUES = %d;\n", nres);
 	  for (i = nres-1;  i > 0;  i--) {
 		put_tabs(t);
-		fprintf(out, "VALUES(%d) = value%d;\n", i, i);
+		fprintf(out, "VALUES(%d) = __value%d;\n", i, i);
 	  }
 	  put_tabs(t);
-	  fprintf(out, "return value0;\n");
+	  fprintf(out, "return __value0;\n");
 	  put_tabs(tab_save);
 	  fprintf(out, "}\n");
 	}

@@ -1376,7 +1376,7 @@ copy_wildcards(cl_object *wilds_list, cl_object pattern)
 	char *s;
 	cl_index i, l, j;
 	bool new_string;
-	cl_object wilds = *wilds_list;
+	cl_object wilds = *wilds_list, token;
 
 	if (pattern == @':wild') {
 		if (endp(wilds))
@@ -1393,25 +1393,25 @@ copy_wildcards(cl_object *wilds_list, cl_object pattern)
 	new_string = FALSE;
 	s = pattern->base_string.self;
 	l = pattern->base_string.fillp;
-	cl_env.token->base_string.fillp = 0;
-
+	token = si_get_buffer_string();
 	for (j = i = 0; i < l; ) {
 		if (s[i] != '*') {
 			i++;
 			continue;
 		}
 		if (i != j)
-			push_c_string(cl_env.token, &s[j], i-j);
+			push_c_string(token, &s[j], i-j);
 		new_string = TRUE;
 		if (endp(wilds))
 			return @':error';
-		push_string(cl_env.token, CAR(wilds));
+		push_string(token, CAR(wilds));
 		wilds = CDR(wilds);
 		j = i++;
 	}
 	/* Only create a new string when needed */
 	if (new_string)
-		pattern = si_copy_to_simple_base_string(cl_env.token);
+		pattern = si_copy_to_simple_base_string(token);
+	si_put_buffer_string(token);
 	*wilds_list = wilds;
 	return pattern;
 }

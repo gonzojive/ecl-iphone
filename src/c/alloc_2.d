@@ -338,7 +338,7 @@ ecl_mark_env(struct cl_env_struct *env)
 #endif
 #if 0
 	GC_push_all(&(env->lex_env), &(env->lex_env)+1);
-	GC_push_all(&(env->token), &(env->print_base));
+	GC_push_all(&(env->string_pool), &(env->print_base));
 #if !defined(ECL_CMU_FORMAT)
 	GC_push_all(&(env->queue), &(env->qh));
 #endif

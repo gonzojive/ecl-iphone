@@ -55,6 +55,10 @@ ECL 1.0:
 
  - [Win32] si_trap_fpe is now exported by ecl.dll
 
+ - Instead of sharing a single string buffer (cl_env.token), ECL now has a pool
+   of small strings which can be used for temporary operations. This fixes a
+   number of problems with the reader.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

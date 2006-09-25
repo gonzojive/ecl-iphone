@@ -35,6 +35,43 @@
 
 /* FIXME! *READ-EVAL* is not taken into account */
 
+cl_object
+si_get_buffer_string()
+{
+	cl_object pool = cl_env.string_pool;
+	cl_object output;
+	if (pool == Cnil) {
+		output = cl_alloc_adjustable_base_string(ECL_BUFFER_STRING_SIZE);
+	} else {
+		output = CAR(pool);
+		cl_env.string_pool = CDR(pool);
+	}
+	output->base_string.fillp = 0;
+	@(return output)
+}
+
+cl_object
+si_put_buffer_string(cl_object string)
+{
+	if (string != Cnil) {
+		cl_object pool = cl_env.string_pool;
+		cl_index l = 0;
+		if (pool != Cnil) {
+			/* We store the size of the pool in the string index */
+			l = CAR(pool)->base_string.fillp;
+		}
+		if (l < ECL_MAX_STRING_POOL_SIZE) {
+			if (string->base_string.dim > ECL_BUFFER_STRING_SIZE) {
+				/* String has been enlarged. Cut it. */
+				string = cl_alloc_adjustable_base_string(ECL_BUFFER_STRING_SIZE);
+			}
+			string->base_string.fillp = l+1;
+			cl_env.string_pool = CONS(string, pool);
+		}
+	}
+	@(return)
+}
+
 static void extra_argument (int c, cl_object stream, cl_object d);
 static cl_object patch_sharp(cl_object x);
 static cl_object do_read_delimited_list(int d, cl_object strm, bool proper_list);
@@ -94,9 +131,9 @@ invert_buffer_case(cl_object x, cl_object escape_list, int sign)
 }
 
 static cl_object
-read_object_with_delimiter(cl_object in, int delimiter)
+read_object_with_delimiter(cl_object in, int delimiter, bool only_token)
 {
-	cl_object x;
+	cl_object x, token;
 	int c, base;
 	enum ecl_chattrib a;
 	cl_object p;
@@ -118,7 +155,7 @@ BEGIN:
 			FEend_of_file(in);
 		a = cat(rtbl, c);
 	} while (a == cat_whitespace);
-	if (a == cat_terminating || a == cat_non_terminating) {
+	if ((a == cat_terminating || a == cat_non_terminating) && !only_token) {
 		cl_object x = rtbl->readtable.table[c].macro;
 		cl_object o = funcall(3, x, in, CODE_CHAR(c));
 		if (NVALUES == 0) goto BEGIN;
@@ -129,34 +166,34 @@ BEGIN:
 	p = escape_list = Cnil;
 	upcase = count = length = 0;
 	external_symbol = colon = 0;
-	cl_env.token->base_string.fillp = 0;
+	token = si_get_buffer_string();
 	for (;;) {
-		if (c == ':' && a == cat_constituent) {
+		if (c == ':' && !only_token && a == cat_constituent) {
 			colon++;
 			goto NEXT;
 		}
 		if (colon > 2) {
 			while (colon--) {
-				ecl_string_push_extend(cl_env.token, ':');
+				ecl_string_push_extend(token, ':');
 				length++;
 			}
 		} else if (colon) {
 			external_symbol = (colon == 1);
-			cl_env.token->base_string.self[length] = '\0';
+			token->base_string.self[length] = '\0';
 			/* If the readtable case was :INVERT and all non-escaped characters
 			 * had the same case, we revert their case. */
 			if (read_case == ecl_case_invert) {
 				if (upcase == count) {
-					invert_buffer_case(cl_env.token, escape_list, -1);
+					invert_buffer_case(token, escape_list, -1);
 				} else if (upcase == -count) {
-					invert_buffer_case(cl_env.token, escape_list, +1);
+					invert_buffer_case(token, escape_list, +1);
 				}
 			}
 			if (length == 0) {
 				p = cl_core.keyword_package;
 				external_symbol = 0;
 			} else {
-				p = ecl_find_package_nolock(cl_env.token);
+				p = ecl_find_package_nolock(token);
 			}
 			if (Null(p)) {
 				/* When loading binary files, we sometimes must create
@@ -164,7 +201,7 @@ BEGIN:
 				   allow it, but later on in read_VV we make sure that
 				   all referenced packages have been properly built.
 				*/
-				cl_object name = si_copy_to_simple_base_string(cl_env.token);
+				cl_object name = si_copy_to_simple_base_string(token);
 				if (cl_core.packages_to_be_created == OBJNULL) {
 					FEerror("There is no package with the name ~A.",
 						1, name);
@@ -177,7 +214,7 @@ BEGIN:
 						cl_acons(name, p, cl_core.packages_to_be_created);
 				}
 			}
-			cl_env.token->base_string.fillp = length = 0;
+			token->base_string.fillp = length = 0;
 			upcase = count = colon = 0;
 			escape_list = Cnil;
 		}
@@ -191,7 +228,7 @@ BEGIN:
 			} else {
 				escape_list = Ct;
 			}
-			ecl_string_push_extend(cl_env.token, c);
+			ecl_string_push_extend(token, c);
 			length++;
 			goto NEXT;
 		}
@@ -205,7 +242,7 @@ BEGIN:
 					a = cat_constituent;
 				} else if (a == cat_multiple_escape)
 					break;
-				ecl_string_push_extend(cl_env.token, c);
+				ecl_string_push_extend(token, c);
 				length++;
 			}
 			if (read_case == ecl_case_invert) {
@@ -237,7 +274,7 @@ BEGIN:
 					c = toupper(c);
 			}
 		}
-		ecl_string_push_extend(cl_env.token, c);
+		ecl_string_push_extend(token, c);
 		length++;
 	NEXT:
 		c = ecl_read_char(in);
@@ -246,59 +283,65 @@ BEGIN:
 		a = cat(rtbl, c);
 	}
 
-	if (read_suppress)
-		return(Cnil);
+	if (read_suppress) {
+		x = Cnil;
+		goto OUTPUT;
+	}
 
 	/* If there are some escaped characters, it must be a symbol */
-	if (p != Cnil || escape_list != Cnil || length == 0)
+	if (only_token || p != Cnil || escape_list != Cnil || length == 0)
 		goto SYMBOL;
 
 	/* The case in which the buffer is full of dots has to be especial cased */
-	if (length == 1 && cl_env.token->base_string.self[0] == '.') {
-		return @'si::.';
+	if (length == 1 && token->base_string.self[0] == '.') {
+		x = @'si::.';
+		goto OUTPUT;
 	} else {
 		for (i = 0;  i < length;  i++)
-			if (cl_env.token->base_string.self[i] != '.')
+			if (token->base_string.self[i] != '.')
 				goto MAYBE_NUMBER;
 		FEreader_error("Dots appeared illegally.", in, 0);
 	}
 
-MAYBE_NUMBER:
+ MAYBE_NUMBER:
 	/* Here we try to parse a number from the content of the buffer */
 	base = ecl_current_read_base();
-	if ((base <= 10) && isalpha(cl_env.token->base_string.self[0]))
+	if ((base <= 10) && isalpha(token->base_string.self[0]))
 		goto SYMBOL;
-	x = parse_number(cl_env.token->base_string.self, cl_env.token->base_string.fillp, &i, base);
+	x = parse_number(token->base_string.self, token->base_string.fillp, &i, base);
 	if (x == Cnil)
 		FEreader_error("Syntax error when reading number.~%Offending string: ~S.",
-			       in, 1, cl_env.token);
+			       in, 1, token);
 	if (x != OBJNULL && length == i)
-		return x;
-
-SYMBOL:
-	cl_env.token->base_string.self[length] = '\0';
+		goto OUTPUT;
+ SYMBOL:
+	token->base_string.self[length] = '\0';
  	/* If the readtable case was :INVERT and all non-escaped characters
 	 * had the same case, we revert their case. */
 	if (read_case == ecl_case_invert) {
 		if (upcase == count) {
-			invert_buffer_case(cl_env.token, escape_list, -1);
+			invert_buffer_case(token, escape_list, -1);
 		} else if (upcase == -count) {
-			invert_buffer_case(cl_env.token, escape_list, +1);
+			invert_buffer_case(token, escape_list, +1);
 		}
 	}
-	if (external_symbol) {
-		x = ecl_find_symbol(cl_env.token, p, &intern_flag);
+	if (only_token) {
+		return token;
+	} else if (external_symbol) {
+		x = ecl_find_symbol(token, p, &intern_flag);
 		if (intern_flag != EXTERNAL) {
 			FEerror("Cannot find the external symbol ~A in ~S.",
-				2, si_copy_to_simple_base_string(cl_env.token), p);
+				2, si_copy_to_simple_base_string(token), p);
 		}
-		return x;
+	} else {
+		if (p == Cnil) {
+			p = current_package();
+		}
+		/* INV: make_symbol() copies the string */
+		x = intern(token, p, &intern_flag);
 	}
-	if (p == Cnil) {
-		p = current_package();
-	}
-	/* INV: make_symbol() copies the string */
-	x = intern(cl_env.token, p, &intern_flag);
+ OUTPUT:
+	si_put_buffer_string(token);
 	return x;
 }
 
@@ -309,7 +352,7 @@ SYMBOL:
 cl_object
 read_object(cl_object in)
 {
-	return read_object_with_delimiter(in, EOF);
+	return read_object_with_delimiter(in, EOF, 0);
 }
 
 #define	ecl_exponent_marker_p(i)	\
@@ -523,44 +566,19 @@ cl_object backquote_reader(cl_object in, cl_object c)
 #endif
 }
 
-
-/*
-	read_string(delim, in) reads
-	a simple string	terminated by character code delim
-	and places it in token.
-	Delim is not included in the string but discarded.
-*/
-static void
-read_string(int delim, cl_object in)
-{
-	int c;
-	cl_object rtbl = ecl_current_readtable();
-
-	cl_env.token->base_string.fillp = 0;
-	for (;;) {
-		c = ecl_read_char_noeof(in);
-		if (c == delim)
-			break;
-		else if (cat(rtbl, c) == cat_single_escape)
-			c = ecl_read_char_noeof(in);
-		ecl_string_push_extend(cl_env.token, c);
-	}
-}
-
 /*
 	read_constituent(in) reads a sequence of constituent characters from
-	stream in and places it in cl_env.token.  As a help, it returns TRUE
+	stream in and places it in token.  As a help, it returns TRUE
 	or FALSE depending on the value of *READ-SUPPRESS*.
 */
-static int
+static cl_object
 read_constituent(cl_object in)
 {
 	int store = !read_suppress;
 	cl_object rtbl = ecl_current_readtable();
 	bool not_first = 0;
-
-	cl_env.token->base_string.fillp = 0;
-	for (;;) {
+	cl_object token = si_get_buffer_string();
+	do {
 		int c = ecl_read_char(in);
 		enum ecl_chattrib c_cat;
 		if (c == EOF) {
@@ -571,22 +589,35 @@ read_constituent(cl_object in)
 		    ((c_cat == cat_non_terminating) && not_first))
 		{
 			if (store) {
-				ecl_string_push_extend(cl_env.token, c);
+				ecl_string_push_extend(token, c);
 			}
 		} else {
 			ecl_unread_char(c, in);
 			break;
 		}
 		not_first = 1;
-	}
-	return store;
+	} while(1);
+	return (read_suppress)? Cnil : token;
 }
 
 static cl_object
 double_quote_reader(cl_object in, cl_object c)
 {
-	read_string(CHAR_CODE(c), in);
-	@(return si_copy_to_simple_base_string(cl_env.token))
+	int delim = CHAR_CODE(c);
+	cl_object rtbl = ecl_current_readtable();
+	cl_object token = si_get_buffer_string();
+	cl_object output;
+	for (;;) {
+		int c = ecl_read_char_noeof(in);
+		if (c == delim)
+			break;
+		else if (cat(rtbl, c) == cat_single_escape)
+			c = ecl_read_char_noeof(in);
+		ecl_string_push_extend(token, c);
+	}
+	output = si_copy_to_simple_base_string(token);
+	si_put_buffer_string(token);
+	@(return output)
 }
 
 static cl_object
@@ -684,7 +715,7 @@ sharp_C_reader(cl_object in, cl_object c, cl_object d)
 static cl_object
 sharp_backslash_reader(cl_object in, cl_object c, cl_object d)
 {
-	cl_object nc;
+	cl_object nc, token;
 	if (d != Cnil && !read_suppress)
 		if (!FIXNUMP(d) ||
 		    fix(d) != 0)
@@ -692,28 +723,24 @@ sharp_backslash_reader(cl_object in, cl_object c, cl_object d)
 			/*  assuming that CHAR-FONT-LIMIT is 1  */
 	bds_bind(@'*readtable*', cl_core.standard_readtable);
 	ecl_unread_char('\\', in);
-	bds_bind(@'*read-suppress*', Ct);
-	(void)read_object(in);
-	bds_unwind_n(2);
-	if (read_suppress) {
+	token = read_object_with_delimiter(in, EOF, 1);
+	bds_unwind_n(1);
+	if (token == Cnil) {
 		c = Cnil;
-		goto OUTPUT;
-	}
-	c = cl_env.token;
-	if (c->base_string.fillp == 1) {
-		c = CODE_CHAR(c->base_string.self[0]);
-	} else if (c->base_string.fillp == 2 && c->base_string.self[0] == '^') {
+	} else if (token->base_string.fillp == 1) {
+		c = CODE_CHAR(token->base_string.self[0]);
+	} else if (token->base_string.fillp == 2 && token->base_string.self[0] == '^') {
 		/*	#\^x	*/
-		c = CODE_CHAR(c->base_string.self[1] & 037);
+		c = CODE_CHAR(token->base_string.self[1] & 037);
 	} else {
-		cl_object nc = cl_name_char(c);
+		cl_object nc = cl_name_char(token);
 		if (Null(nc)) {
-			FEreader_error("~S is an illegal character name.", in,
-				       1, si_copy_to_simple_base_string(c));
+			FEreader_error("~S is an illegal character name.", in, 1, token);
 		}
 		c = nc;
 	}
  OUTPUT:
+	si_put_buffer_string(token);
 	@(return c)
 }
 
@@ -818,7 +845,7 @@ sharp_left_parenthesis_reader(cl_object in, cl_object c, cl_object d)
 		v = ecl_alloc_simple_vector(dim, aet_object);
 		for (i = 0; i < dim; i++) {
 			if (in != OBJNULL) {
-				x = read_object_with_delimiter(in, ')');
+				x = read_object_with_delimiter(in, ')', 0);
 				if (x == OBJNULL) {
 					if (i == 0) {
 						x = Cnil;
@@ -903,16 +930,17 @@ sharp_colon_reader(cl_object in, cl_object ch, cl_object d)
 	enum ecl_chattrib a;
 	bool escape_flag;
 	int c;
+	cl_object output, token;
 
 	if (d != Cnil && !read_suppress)
 		extra_argument(':', in, d);
 	c = ecl_read_char_noeof(in);
 	a = cat(rtbl, c);
 	escape_flag = FALSE;
-	cl_env.token->base_string.fillp = 0;
+	token = si_get_buffer_string();
 	goto L;
 	for (;;) {
-		ecl_string_push_extend(cl_env.token, c);
+		ecl_string_push_extend(token, c);
 	K:
 		c = ecl_read_char(in);
 		if (c == EOF)
@@ -933,7 +961,7 @@ sharp_colon_reader(cl_object in, cl_object ch, cl_object d)
 					a = cat_constituent;
 				} else if (a == cat_multiple_escape)
 					break;
-				ecl_string_push_extend(cl_env.token, c);
+				ecl_string_push_extend(token, c);
 			}
 			goto K;
 		} else if (islower(c))
@@ -944,9 +972,13 @@ sharp_colon_reader(cl_object in, cl_object ch, cl_object d)
 	ecl_unread_char(c, in);
 
 M:
-	if (read_suppress)
-		@(return Cnil)
-	@(return make_symbol(cl_env.token))
+	if (read_suppress) {
+		output = Cnil;
+	} else {
+		output = make_symbol(token);
+	}
+	si_put_buffer_string(token);
+	@(return output)
 }
 
 static cl_object
@@ -970,12 +1002,12 @@ read_number(cl_object in, int radix, cl_object macro_char)
 {
 	cl_index i;
 	cl_object x;
-	if (!read_constituent(in)) {
+	cl_object token = read_constituent(in);
+	if (token == Cnil) {
 		x = Cnil;
 	} else {
-		x = parse_number(cl_env.token->base_string.self, cl_env.token->base_string.fillp,
-				 &i, radix);
-		if (x == OBJNULL || x == Cnil || i != cl_env.token->base_string.fillp) {
+		x = parse_number(token->base_string.self, token->base_string.fillp, &i, radix);
+		if (x == OBJNULL || x == Cnil || i != token->base_string.fillp) {
 			FEreader_error("Cannot parse the #~A readmacro.", in, 1,
 				       macro_char);
 		}
@@ -984,6 +1016,7 @@ read_number(cl_object in, int radix, cl_object macro_char)
 			FEreader_error("The float ~S appeared after the #~A readmacro.",
 				       in, 2, x, macro_char);
 		}
+		si_put_buffer_string(token);
 	}
 	return x;
 }
@@ -1366,7 +1399,7 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 	cl_object x, y = Cnil;
 	cl_object *p = &y;
 	do {
-		x = read_object_with_delimiter(in, d);
+		x = read_object_with_delimiter(in, d, 0);
 		if (x == OBJNULL) {
 			/* End of the list. */
 			if (after_dot == 1) {
@@ -1422,6 +1455,7 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 
 @(defun read_line (&optional (strm Cnil) (eof_errorp Ct) eof_value recursivep)
 	int c;
+	cl_object token, value0, value1;
 @
 	strm = stream_or_default_input(strm);
 #ifdef ECL_CLOS_STREAMS
@@ -1429,26 +1463,32 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 		return funcall(2, @'ext::stream-read-line', strm);
 	}
 #endif
-	for (cl_env.token->base_string.fillp = 0;;) {
+	token = si_get_buffer_string();
+	do {
 		c = ecl_read_char(strm);
 		if (c == EOF || c == '\n')
 			break;
-		ecl_string_push_extend(cl_env.token, c);
-	}
-	if (c == EOF && cl_env.token->base_string.fillp == 0) {
+		ecl_string_push_extend(token, c);
+	} while(1);
+	if (c == EOF && token->base_string.fillp == 0) {
 		if (!Null(eof_errorp) || !Null(recursivep))
 			FEend_of_file(strm);
-		@(return eof_value Ct)
-	}
+		value0 = eof_value;
+		value1 = Ct;
+	} else {
 #ifdef ECL_NEWLINE_IS_CRLF	/* From \r\n, ignore \r */
-	if (cl_env.token->base_string.fillp > 0 &&
-	    cl_env.token->base_string.self[cl_env.token->base_string.fillp-1] == '\r')
-		cl_env.token->base_string.fillp--;
+		if (token->base_string.fillp > 0 &&
+		    token->base_string.self[token->base_string.fillp-1] == '\r')
+			token->base_string.fillp--;
 #endif
 #ifdef ECL_NEWLINE_IS_LFCR	/* From \n\r, ignore \r */
-	ecl_read_char(strm);
+		ecl_read_char(strm);
 #endif
-	@(return si_copy_to_simple_base_string(cl_env.token) (c == EOF? Ct : Cnil))
+		value0 = si_copy_to_simple_base_string(token);
+		value1 = (c == EOF? Ct : Cnil);
+	}
+	si_put_buffer_string(token);
+	@(return value0 value1)
 @)
 
 @(defun read-char (&optional (strm Cnil) (eof_errorp Ct) eof_value recursivep)
