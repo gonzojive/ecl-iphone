@@ -16,6 +16,11 @@ ECL 1.0:
  - New (private) function EXT::FUNCTION-LAMBDA-LIST, returns the lambda list of
    a function whenever it was recorded.
 
+ - Implemented finalization on the lisp level. Only available for the Boehm
+   Weiser GC. Finalizers are closures which can be attached to objects
+   using SI:SET-FINALIZER and SI:GET-FINALIZER. Only one closure per
+   object is allowed.
+
 * Bugs fixed:
 
  - STREAMP signals an error for Gray streams.
