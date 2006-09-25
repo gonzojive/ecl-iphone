@@ -59,6 +59,11 @@ ECL 1.0:
    of small strings which can be used for temporary operations. This fixes a
    number of problems with the reader.
 
+ - DIRECTORY would always match NIL entries, independent of the mask. Now, the
+   following two statements differ:
+	(directory "foo*")       => ("foo")
+	(directory "foo*.*")     => ("foo" "foo.log")
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

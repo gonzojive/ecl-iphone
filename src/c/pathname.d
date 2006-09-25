@@ -1159,24 +1159,26 @@ static bool path_item_match(cl_object a, cl_object mask);
 
 static bool
 do_path_item_match(const char *s, const char *p) {
-	const char *next;
-	while (*s) {
+	while (*p) {
 	  if (*p == '*') {
 	    /* Match any group of characters */
-	    next = p+1;
+	    const char *next;
+	    for (next = p+1; *next == '*'; next++)
+	      ;
 	    while (*s && *s != *next) s++;
 	    if (do_path_item_match(s,next))
 	      return TRUE;
 	    /* starts back from the '*' */
 	    if (!*s)
 	      return FALSE;
-	    s++;
-	  } else if (*s != *p)
+	    p++;
+	  } else if (*s != *p) {
 	    return FALSE;
-	  else
+	  } else {
 	    s++, p++;
+	  }
 	}
-	return (*p == 0);
+	return 1;
 }
 
 static bool
@@ -1240,11 +1242,9 @@ cl_pathname_match_p(cl_object path, cl_object mask)
 	if (!Null(mask->pathname.directory) &&
 	    !path_list_match(path->pathname.directory, mask->pathname.directory))
 		goto OUTPUT;
-	if (!Null(mask->pathname.name) &&
-	    !path_item_match(path->pathname.name, mask->pathname.name))
+	if (!path_item_match(path->pathname.name, mask->pathname.name))
 		goto OUTPUT;
-	if (!Null(mask->pathname.type) &&
-	    !path_item_match(path->pathname.type, mask->pathname.type))
+	if (!path_item_match(path->pathname.type, mask->pathname.type))
 		goto OUTPUT;
 	if (Null(mask->pathname.version) ||
 	    path_item_match(path->pathname.version, mask->pathname.version))
