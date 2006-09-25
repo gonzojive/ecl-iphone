@@ -566,3 +566,23 @@ si_pointer(cl_object x)
 {
 	@(return make_unsigned_integer((cl_index)x))
 }
+
+#if defined(_MSC_VER) || defined(mingw32)
+void
+ecl_get_commandline_args(int* argc, char*** argv) {
+	LPWSTR *wArgs;
+	int i;
+
+	if (argc == NULL || argv == NULL)
+		return;
+
+	wArgs = CommandLineToArgvW(GetCommandLineW(), argc);
+	*argv = (char**)malloc(sizeof(char*)*(*argc));
+	for (i=0; i<*argc; i++) {
+		int len = wcslen(wArgs[i]);
+		(*argv)[i] = (char*)malloc(2*(len+1));
+		wcstombs((*argv)[i], wArgs[i], len+1);
+	}
+	LocalFree(wArgs);
+}
+#endif

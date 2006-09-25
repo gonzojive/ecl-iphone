@@ -9,6 +9,8 @@ EXPORTS
 	make_cons
 	si_gc
 	si_gc_dump
+	si_set_finalizer
+	si_get_finalizer
 
 	; all_symbols
 
@@ -530,6 +532,7 @@ EXPORTS
 	ecl_self		DATA
 	cl_boot
 	cl_shutdown
+	ecl_get_commandline_args
 
 
 	; mapfun.c
@@ -1151,6 +1154,7 @@ EXPORTS
 	si_catch_bad_signals
 	si_uncatch_bad_signals
 	si_check_pending_interrupts
+	si_trap_fpe
 
 
 	; unixsys.c

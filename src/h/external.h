@@ -798,6 +798,9 @@ extern bool ecl_booted;
 extern const char *ecl_self;
 extern int cl_boot(int argc, char **argv);
 extern int cl_shutdown(void);
+#if defined(_MSC_VER) || defined(mingw32)
+extern void ecl_get_commandline_args(int* argc, char*** argv);
+#endif
 
 
 /* mapfun.c */

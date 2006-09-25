@@ -180,9 +180,11 @@ main(int argc, char **argv)
 int
 WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-	char *fake_argv = \"ecl.exe\";
+	char **argv;
+	int argc;
 	~A
-	cl_boot(1, &fake_argv);
+	ecl_get_commandline_args(&argc, &argv);
+	cl_boot(argc, argv);
 	read_VV(OBJNULL, ~A);
 	~A
 }")
