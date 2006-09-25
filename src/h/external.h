@@ -173,6 +173,7 @@ struct cl_core_struct {
 	pthread_mutex_t global_lock;
 #endif
 	cl_object libraries;
+	cl_object to_be_finalized;
 };
 
 #if defined(mingw32) || defined(_MSC_VER) || defined(cygwin)
@@ -576,6 +577,10 @@ extern cl_object ecl_file_position_set(cl_object strm, cl_object disp);
 extern int ecl_file_column(cl_object strm);
 extern cl_object ecl_make_stream_from_fd(cl_object host, int fd, enum ecl_smmode smm);
 
+/* finalize.c */
+
+cl_object si_get_finalizer(cl_object o);
+cl_object si_set_finalizer(cl_object o, cl_object finalizer);
 
 /* format.c */
 

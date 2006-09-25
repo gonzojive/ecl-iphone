@@ -1958,6 +1958,7 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 
 	if (block == NULL) {
 		block = cl_alloc_object(t_codeblock);
+		si_set_finalizer(block, Ct);
 	}
 	block->cblock.entry = entry_point;
 

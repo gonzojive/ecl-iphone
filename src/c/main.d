@@ -276,6 +276,23 @@ cl_boot(int argc, char **argv)
 		sethash(code, aux, name);
 	}
 
+	/* LIBRARIES is an adjustable vector of objects. It behaves as
+	   a vector of weak pointers thanks to the magic in
+	   gbc.d/alloc_2.d */
+	cl_core.libraries = si_make_vector(@'t', MAKE_FIXNUM(0),
+					   @'t', MAKE_FIXNUM(0),
+					   @'nil', @'nil');
+#if 0
+	/* FINALIZERS and FINALIZABLE_OBJECTS are also like LIBRARIES */
+	cl_core.finalizable_objects = si_make_vector(@'t', MAKE_FIXNUM(512),
+						     @'t', MAKE_FIXNUM(0),
+						     @'nil', @'nil');
+	cl_core.finalizers = si_make_vector(@'t', MAKE_FIXNUM(512),
+					    @'t', MAKE_FIXNUM(0),
+					    @'nil', @'nil');
+#endif
+	cl_core.to_be_finalized = Cnil;
+
 	cl_core.null_string = make_constant_base_string("");
 
 	cl_core.null_stream = @make_broadcast_stream(0);
@@ -289,12 +306,6 @@ cl_boot(int argc, char **argv)
 	cl_core.gensym_prefix = make_constant_base_string("G");
 	cl_core.gentemp_prefix = make_constant_base_string("T");
 	cl_core.gentemp_counter = MAKE_FIXNUM(0);
-
-	/* LIBRARIES is an adjustable vector of objects. It behaves as a vector of
-	   weak pointers thanks to the magic in gbc.d/alloc_2.d */
-	cl_core.libraries = si_make_vector(@'t', MAKE_FIXNUM(0),
-					   @'t', MAKE_FIXNUM(0),
-					   @'nil', @'nil');
 
 	ECL_SET(@'si::c-int-max', make_integer(INT_MAX));
 	ECL_SET(@'si::c-int-min', make_integer(INT_MIN));

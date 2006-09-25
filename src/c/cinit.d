@@ -49,10 +49,17 @@ cl_array_dimensions(cl_narg narg, cl_object array, ...)
 extern cl_object
 cl_vector_push_extend(cl_narg narg, cl_object elt, cl_object vector, ...)
 {
+	cl_index fp;
 	if (narg != 2) {
 		FEerror("Too many arguments to interim cl_vector_push_extend (cinit.d)", 0);
 	}
-	return funcall(2, @'VECTOR-PUSH-EXTEND', elt, vector);
+	fp = vector->vector.fillp;
+	if (fp < vector->vector.dim) {
+		vector->vector.fillp = fp+1;
+		vector->vector.self.t[fp+1] = elt;
+		@(return MAKE_FIXNUM(fp))
+	}
+	return funcall(3, @'VECTOR-PUSH-EXTEND', elt, vector);
 }
 
 static cl_object si_simple_toplevel ()

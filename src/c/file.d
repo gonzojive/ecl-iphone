@@ -458,17 +458,18 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	x->stream.object1 = fn;
 	x->stream.int0 = x->stream.int1 = 0;
 	si_set_buffering_mode(x, char_stream_p? @':line-buffered' : @':fully-buffered');
-
-	if (smm == smm_probe)
-		cl_close
-(1, x);
-	else if (!char_stream_p) {
-		/* Set file pointer to the correct position */
-		if (appending) {
-			if (bits_left != 0)
-				fseek(fp, -1, SEEK_END);
-		} else {
-			fseek(fp, (use_header_p ? 1 : 0), SEEK_SET);
+	if (smm == smm_probe) {
+		cl_close(1, x);
+	} else {
+		si_set_finalizer(x, Ct);
+		if (!char_stream_p) {
+			/* Set file pointer to the correct position */
+			if (appending) {
+				if (bits_left != 0)
+					fseek(fp, -1, SEEK_END);
+			} else {
+				fseek(fp, (use_header_p ? 1 : 0), SEEK_SET);
+			}
 		}
 	}
 	return(x);
@@ -2805,6 +2806,7 @@ ecl_make_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm)
 	stream->stream.char_stream_p = 1;
 	stream->stream.byte_size = 8;
 	stream->stream.signed_bytes = 0;
+	si_set_finalizer(stream, Ct);
 	return(stream);
 }
 

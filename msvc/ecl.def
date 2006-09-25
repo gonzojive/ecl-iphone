@@ -144,6 +144,12 @@ EXPORTS
 	char_compare
 	ecl_digit_char
 
+	; cleanup.c
+
+	ecl_finalize_queued
+	si_get_finalizer
+	si_set_finalizer
+
 	; clos.c
 
 	cl_find_class

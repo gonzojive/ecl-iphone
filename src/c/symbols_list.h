@@ -1648,6 +1648,9 @@ cl_symbols[] = {
 
 {SYS_ "CMP-ENV-REGISTER-MACROLET", SI_ORDINARY, NULL, -1, OBJNULL},
 
+{SYS_ "GET-FINALIZER", SI_ORDINARY, si_get_finalizer, 1, OBJNULL},
+{SYS_ "SET-FINALIZER", SI_ORDINARY, si_set_finalizer, 2, OBJNULL},
+
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1, OBJNULL}};
 

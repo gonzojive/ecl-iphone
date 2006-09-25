@@ -91,6 +91,7 @@ ecl_library_open(cl_object filename) {
 	/* INV: We can modify "libraries" in a multithread
 	   environment because we have already taken the
 	   +load-compile-lock+ */
+	si_set_finalizer(block, Ct);
 	cl_vector_push_extend(2, block, libraries);
 	return block;
 }
@@ -199,7 +200,9 @@ ecl_library_close(cl_object block) {
 		filename = block->cblock.name->base_string.self;
 	else
 		filename = "<anonymous>";
-
+	if (block->cblock.links) {
+		cl_mapc(2, @'si::unlink-symbol', block->cblock.links);
+	}
         if (block->cblock.handle != NULL) {
 		if (verbose) {
 			fprintf(stderr, ";;; Freeing library %s\n", filename);
@@ -214,7 +217,6 @@ ecl_library_close(cl_object block) {
 		FreeLibrary(block->cblock.handle);
 #endif
         }
-
 	if (block->cblock.self_destruct) {
 		if (verbose) {
 			fprintf(stderr, ";;; Removing file %s\n", filename);

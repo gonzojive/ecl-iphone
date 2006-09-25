@@ -24,6 +24,8 @@
 
 #ifdef GBC_BOEHM
 
+static void finalize_queued();
+
 /**********************************************************
  *		OBJECT ALLOCATION			  *
  **********************************************************/
@@ -31,53 +33,6 @@
 #ifdef alloc_object
 #undef alloc_object
 #endif
-
-static void
-finalize(GC_PTR _o, GC_PTR _data)
-{
-	cl_object o = (cl_object)_o;
-	cl_object data = (cl_object)_data;
-
-	CL_NEWENV_BEGIN {
-	switch (type_of(o)) {
-#ifdef ENABLE_DLOPEN
-	case t_codeblock:
-		if (o->cblock.links) {
-			cl_mapc(2, @'si::unlink-symbol', o->cblock.links);
-		}
-#ifdef ECL_DYNAMIC_VV
-		/* GC_free(o->cblock.data); */
-#endif
-		ecl_library_close(o);
-		break;
-#endif
-	case t_stream:
-#if defined(ECL_WSOCK)
-		if (o->stream.mode == smm_input_wsock
-		    || o->stream.mode == smm_output_wsock
-		    || o->stream.mode == smm_io_wsock)
-		{
-			closesocket((int)o->stream.file);
-		} else
-#endif
-		if (o->stream.file != NULL)
-			fclose(o->stream.file);
-		o->stream.file = NULL;
-		o->stream.buffer = NULL;
-		break;
-#ifdef ECL_THREADS
-	case t_lock:
-#if defined(_MSC_VER) || defined(mingw32)
-		CloseHandle(o->lock.mutex);
-#else
-		pthread_mutex_destroy(&o->lock.mutex);
-#endif
-		break;
-#endif
-	default:;
-	}
-	} CL_NEWENV_END;
-}
 
 static size_t type_size[t_end];
 
@@ -103,20 +58,7 @@ cl_alloc_object(cl_type t)
 		obj->cblock.data_text_size = 0;
 		obj->cblock.data_size = 0;
 		obj->cblock.handle = NULL;
-#ifdef ENABLE_DLOPEN
-		goto FINALIZE;
-#else
 		break;
-#endif
-	case t_stream:
-		obj = (cl_object)GC_MALLOC(type_size[t]);
-	FINALIZE:
-		{
-		GC_finalization_proc ofn;
-		void *odata;
-		GC_register_finalizer_no_order(obj, finalize, NULL, &ofn, &odata);
-		break;
-	}
 	case t_singlefloat:
 	case t_doublefloat:
 		obj = (cl_object)GC_MALLOC_ATOMIC(type_size[t]);
@@ -134,6 +76,7 @@ cl_alloc_object(cl_type t)
 	case t_string:
 #endif
 	case t_bitvector:
+	case t_stream:
 	case t_random:
 	case t_readtable:
 	case t_pathname:
@@ -202,6 +145,7 @@ ecl_free_uncollectable(void *pointer)
 static int alloc_initialized = FALSE;
 
 extern void (*GC_push_other_roots)();
+extern void (*GC_start_call_back)();
 static void (*old_GC_push_other_roots)();
 static void stacks_scanner();
 
@@ -263,8 +207,114 @@ init_alloc(void)
 
 	old_GC_push_other_roots = GC_push_other_roots;
 	GC_push_other_roots = stacks_scanner;
+	GC_start_call_back = (void (*)())finalize_queued;
+	GC_java_finalization = 1;
 	GC_enable();
 }
+
+/**********************************************************
+ *		FINALIZATION				  *
+ **********************************************************/
+
+static void
+standard_finalizer(cl_object o)
+{
+	switch (o->d.t) {
+#ifdef ENABLE_DLOPEN
+	case t_codeblock:
+		ecl_library_close(o);
+		break;
+#endif
+	case t_stream:
+		cl_close(1, o);
+		break;
+#ifdef ECL_THREADS
+	case t_lock:
+#if defined(_MSC_VER) || defined(mingw32)
+		CloseHandle(o->lock.mutex);
+#else
+		pthread_mutex_destroy(&o->lock.mutex);
+#endif
+		break;
+#endif
+	default:;
+	}
+}
+
+static void
+queueing_finalizer(cl_object o, cl_object finalizer)
+{
+	if (finalizer != Cnil && finalizer != NULL) {
+		//funcall(2, finalizer, o);
+		cl_core.to_be_finalized = CONS(CONS(o,finalizer),
+					       cl_core.to_be_finalized);
+		return;
+		if (finalizer == Ct) {
+			standard_finalizer(o);
+		} else {
+			cl_core.to_be_finalized = CONS(CONS(o,finalizer),
+						       cl_core.to_be_finalized);
+		}
+	}
+}
+
+cl_object
+si_get_finalizer(cl_object o)
+{
+	cl_object output;
+	GC_finalization_proc ofn;
+	void *odata;
+	GC_register_finalizer_no_order(o, (GC_finalization_proc)0, 0, &ofn, &odata);
+	if (ofn == 0) {
+		output = Cnil;
+	} else if (ofn == (GC_finalization_proc)queueing_finalizer) {
+		output = (cl_object)odata;
+	} else {
+		output = Cnil;
+	}
+	GC_register_finalizer_no_order(o, ofn, odata, &ofn, &odata);
+	@(return output)
+}
+
+cl_object
+si_set_finalizer(cl_object o, cl_object finalizer)
+{
+	GC_finalization_proc ofn;
+	void *odata;
+	if (finalizer == Cnil) {
+		GC_register_finalizer_no_order(o, (GC_finalization_proc)0, 0, &ofn, &odata);
+	} else {
+		GC_register_finalizer_no_order(o, (GC_finalization_proc)queueing_finalizer, finalizer, &ofn, &odata);
+	}
+	@(return)
+}
+
+/*
+ * This procedure is invoked after garbage collection. It invokes
+ * finalizers for all objects that are to be reclaimed by the
+ * colector.
+ */
+static void
+finalize_queued()
+{
+	cl_object l = cl_core.to_be_finalized;
+	if (l == Cnil)
+		return;
+	CL_NEWENV_BEGIN {
+		cl_core.to_be_finalized = Cnil;
+		do {
+			cl_object record = CAR(l);
+			cl_object o = CAR(record);
+			cl_object procedure = CDR(record);
+			l = CDR(l);
+			if (procedure != Ct) {
+				funcall(2, procedure, o);
+			}
+			standard_finalizer(o);
+		} while (l != Cnil);
+	} CL_NEWENV_END;
+}
+
 
 /**********************************************************
  *		GARBAGE COLLECTOR			  *
