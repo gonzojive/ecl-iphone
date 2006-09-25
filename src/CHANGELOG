@@ -21,6 +21,7 @@ ECL 1.0:
    using SI:SET-FINALIZER and SI:GET-FINALIZER. Only one closure per
    object is allowed.
 
+
 * Bugs fixed:
 
  - STREAMP signals an error for Gray streams.
