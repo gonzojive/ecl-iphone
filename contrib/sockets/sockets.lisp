@@ -437,7 +437,7 @@ safe_buffer_pointer(cl_object x, cl_index size)
 	if (t == t_base_string) {
 		ok = (size < x->base_string.dim);
 	} else if (t == t_vector) {
-		cl_elttype aet = x->vector.elttype;
+		cl_elttype aet = (cl_elttype)x->vector.elttype;
 		if (aet == aet_b8 || aet == aet_i8 || aet == aet_bc) {
 			ok = (size < x->vector.dim);
 		} else if (aet == aet_fix || aet == aet_index) {
@@ -566,7 +566,7 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
       (c-inline (sfd) (:int) (values :int :object)
 "{
         struct sockaddr_in sockaddr;
-        int addr_len = sizeof(struct sockaddr_in);
+        socklen_t addr_len = (socklen_t)sizeof(struct sockaddr_in);
         int new_fd = accept(#0, (struct sockaddr*)&sockaddr, &addr_len);
 
 	@(return 0) = new_fd;
@@ -769,10 +769,10 @@ also known as unix-domain sockets."))
         sockaddr.sun_len = sizeof(struct sockaddr_un);
 #endif
         sockaddr.sun_family = #2;
-        strncpy(&sockaddr.sun_path,#1,sizeof(sockaddr.sun_path));
+        strncpy(sockaddr.sun_path,#1,sizeof(sockaddr.sun_path));
 	sockaddr.sun_path[sizeof(sockaddr.sun_path)-1] = '\0';
 
-        @(return) = bind(#0,&sockaddr, sizeof(struct sockaddr_un));
+        @(return) = bind(#0,(struct sockaddr*)&sockaddr, sizeof(struct sockaddr_un));
 }"))
 	(socket-error "bind"))))
 
@@ -781,10 +781,10 @@ also known as unix-domain sockets."))
       (c-inline ((socket-file-descriptor socket)) (:int) (values :int :object)
 "{
         struct sockaddr_un sockaddr;
-        int addr_len = sizeof(struct sockaddr_un);
-        int new_fd = accept(#0, &sockaddr, &addr_len);
+        socklen_t addr_len = (socklen_t)sizeof(struct sockaddr_un);
+        int new_fd = accept(#0, (struct sockaddr *)&sockaddr, &addr_len);
 	@(return 0) = new_fd;
-	@(return 1) = (new_fd == -1) ? Cnil : make_base_string_copy(&sockaddr.sun_path);
+	@(return 1) = (new_fd == -1) ? Cnil : make_base_string_copy(sockaddr.sun_path);
 }")
     (cond
       ((= fd -1)
@@ -812,10 +812,10 @@ also known as unix-domain sockets."))
         sockaddr.sun_len = sizeof(struct sockaddr_un);
 #endif
         sockaddr.sun_family = #1;
-        strncpy(&sockaddr.sun_path,#2,sizeof(sockaddr.sun_path));
+        strncpy(sockaddr.sun_path,#2,sizeof(sockaddr.sun_path));
 	sockaddr.sun_path[sizeof(sockaddr.sun_path)-1] = '\0';
 
-        @(return) = connect(#0,&sockaddr, sizeof(struct sockaddr_un));
+        @(return) = connect(#0,(struct sockaddr*)&sockaddr, sizeof(struct sockaddr_un));
 }"))
 	(socket-error "connect"))))
 
@@ -826,10 +826,10 @@ also known as unix-domain sockets."))
 {
         struct sockaddr_un name;
         socklen_t len = sizeof(struct sockaddr_un);
-        int ret = getpeername(#0,&name,&len);
+        int ret = getpeername(#0,(struct sockaddr*)&name,&len);
 
         if (ret == 0) {
-                @(return) = make_base_string_copy(&name.sun_path);
+                @(return) = make_base_string_copy(name.sun_path);
         } else {
                 @(return) = Cnil;
         }
@@ -1104,7 +1104,7 @@ also known as unix-domain sockets."))
 		  buffering)
 	    (t :int :int :object)
 	    t
-	    "si_set_buffering_mode(ecl_make_stream_from_fd(#0,#1,#2), #3)"
+	    "si_set_buffering_mode(ecl_make_stream_from_fd(#0,#1,(ecl_smmode)#2), #3)"
 	    :one-liner t))
 
 (defmethod socket-make-stream ((socket socket)  &rest args &key (buffering-mode NIL))

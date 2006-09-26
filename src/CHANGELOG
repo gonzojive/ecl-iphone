@@ -64,6 +64,10 @@ ECL 1.0:
 	(directory "foo*")       => ("foo")
 	(directory "foo*.*")     => ("foo" "foo.log")
 
+ - The code in contrib/sockets.lisp was not compatible with C++ because of
+   multiple implicit pointer conversions, and additionally it had some pointer
+   miscalculations.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
