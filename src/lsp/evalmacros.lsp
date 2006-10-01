@@ -129,11 +129,17 @@ as a VARIABLE doc and can be retrieved by (documentation 'NAME 'variable)."
 ;;; dolist), some not at all (e.g. defun).
 ;;; Thus their names need not be exported.
 
+(let ()
+  ;; We enclose the macro in a LET form so that it is no longer
+  ;; a toplevel form. This solves the problem of this simple LOOP
+  ;; replacing the more complex form in loop2.lsp when evalmacros.lsp
+  ;; gets compiled.
 (defmacro loop (&rest body &aux (tag (gensym)))
   "Syntax: (loop {form}*)
 Establishes a NIL block and executes FORMs repeatedly.  The loop is normally
 terminated by a non-local exit."
   `(BLOCK NIL (TAGBODY ,tag (PROGN ,@body) (GO ,tag))))
+)
 
 (defmacro lambda (&rest body)
   `(function (lambda ,@body)))

@@ -24,6 +24,8 @@ ECL 1.0:
  - [Win32] Command-line arguments are now available for programs compiled with
    :SYSTEM set to :WINDOWS (M. Goffioul)
 
+ - MAPCAR, MAPLIST, MAPC, MAPL, MAPCAN, MAPCON have now compiler macro functions
+   which create equivalent inlined forms.
 
 * Bugs fixed:
 

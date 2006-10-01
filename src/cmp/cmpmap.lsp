@@ -12,76 +12,51 @@
 
 (in-package "COMPILER")
 
-#+nil
-(progn
+(defun expand-mapcar (whole)
+  (when (< (length whole) 3)
+    (si::signal-simple-error
+     #'program-error nil "Too few arguments to function ~A in form: ~A"
+     (firt whole) whole))
+  (let ((which (first whole)))
+    (when (eq which 'FUNCALL)
+      (setf whole (rest whole)
+	    which (first whole))
+      (when (consp which)
+	(if (eq (first which) 'FUNCTION)
+	    (setf which (second which))
+	    (return-from expand-mapcar whole))))
+    (let* ((function (second whole))
+	   (args (cddr whole))
+	   iterators for-statements
+	   (in-or-on :IN)
+	   (do-or-collect :COLLECT))
+      (case which
+	(MAPCAR)
+	(MAPLIST (setf in-or-on :ON))
+	(MAPC (setf do-or-collect :DO))
+	(MAPL (setf in-or-on :ON do-or-collect :DO))
+	(MAPCAN (setf do-or-collect 'NCONC))
+	(MAPCON (setf in-or-on :ON do-or-collect 'NCONC)))
+      (loop for arg in (reverse args)
+	    do (let ((var (gensym)))
+		 (setf iterators (cons var iterators)
+		       for-statements (list* :for var in-or-on arg for-statements))))
+      `(loop ,@for-statements ,do-or-collect (funcall ,function ,@iterators)))))
 
-(defun map-apply-function (fname args)
-  (mapcar #'(lambda (x) `(,fname ,x)) args))
+(define-compiler-macro mapcar (&whole whole &rest r)
+  (expand-mapcar whole))
 
-(defun expand-mapcar (function args car-p)
-  (let* ((handy (gensym))
-	 (output (gensym))
-	 (handies (mapcar #'(lambda (x) (gensym)) args))
-	 (test-end `(OR ,@(map-apply-function 'ENDP handies)))
-	 (values (if car-p (map-apply-function 'CAR handies) handies))
-	 (cdrs (map-apply-function 'CDR handies)))
-    (my-pprint
-    `(do* ((,output (cons nil nil))
-	   (,handy ,output)
-	   ,@(mapcar #'list handies args cdrs))
-      (,test-end (cdr ,output))
-      (setf ,handy (setf (cdr ,handy) (cons nil nil)))
-      (setf (car ,handy) (funcall ,function ,@values))
-      )))
-)
+(define-compiler-macro mapc (&whole whole &rest r)
+  (expand-mapcar whole))
 
-(define-compiler-macro mapcar (fname first-arg &rest args)
-  (expand-mapcar fname (list* first-arg args) t))
+(define-compiler-macro mapcan (&whole whole &rest r)
+  (expand-mapcar whole))
 
-(define-compiler-macro maplist (fname first-arg &rest args)
-  (expand-mapcar fname (list* first-arg args) nil))
+(define-compiler-macro maplist (&whole whole &rest r)
+  (expand-mapcar whole))
 
-(defun expand-mapc (function args car-p)
-  (let* ((output (gensym))
-	 (handies (mapcar #'(lambda (x) (gensym)) args))
-	 (test-end `(OR ,@(map-apply-function 'ENDP handies)))
-	 (values (if car-p (map-apply-function 'CAR handies) handies))
-	 (cdrs (map-apply-function 'CDR handies)))
-    (my-pprint
-    `(do* (,@(mapcar #'list handies args cdrs)
-	   (output ,(first handies)))
-        (,test-end output)
-      (funcall ,function ,@values))))
-)
+(define-compiler-macro mapl (&whole whole &rest r)
+  (expand-mapcar whole))
 
-(define-compiler-macro mapc (fname first-arg &rest args)
-  (expand-mapc fname (list* first-arg args) t))
-
-(define-compiler-macro mapl (fname first-arg &rest args)
-  (expand-mapc fname (list* first-arg args) nil))
-
-(defun expand-mapcan (function args car-p)
-  (let* ((handy (gensym))
-	 (value (gensym))
-	 (output (gensym))
-	 (handies (mapcar #'(lambda (x) (gensym)) args))
-	 (test-end `(OR ,@(map-apply-function 'ENDP handies)))
-	 (values (if car-p (map-apply-function 'CAR handies) handies)))
-    (my-pprint
-    `(do* (,value
-	   (,output (cons nil nil))
-	   (,handy ,output)
-	   ,@(mapcar #'list handies args))
-      (,test-end (cdr ,output))
-      (when (setf value (funcall ,function ,@values))
-	(setf (cdr ,handy) ,value)
-	(setf ,handy (last ,value))))))
-)
-
-(define-compiler-macro mapcan (fname first-arg &rest args)
-  (expand-mapcan fname (list* first-arg args) t))
-
-(define-compiler-macro mapcon (fname first-arg &rest args)
-  (expand-mapcan fname (list* first-arg args) nil))
-
-)
+(define-compiler-macro mapcon (&whole whole &rest r)
+  (expand-mapcar whole))
