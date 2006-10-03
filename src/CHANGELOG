@@ -70,6 +70,9 @@ ECL 1.0:
    multiple implicit pointer conversions, and additionally it had some pointer
    miscalculations.
 
+ - GET-INTERNAL-REAL-TIME now works on Windows with 1/60s precision
+   (contributed by Dustin Long)
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

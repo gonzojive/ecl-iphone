@@ -39,7 +39,11 @@
 #undef HAVE_NANOSLEEP
 #endif
 
+#if defined(mingw32) || defined(_MSC_VER)
+static DWORD beginning;
+#else
 static time_t beginning;
+#endif
 
 cl_fixnum
 ecl_runtime(void)
@@ -107,13 +111,21 @@ cl_get_internal_run_time()
 cl_object
 cl_get_internal_real_time()
 {
+#if defined(mingw32) || defined(_MSC_VER)
+	@(return MAKE_FIXNUM((cl_fixnum)((GetTickCount(0) - beginning)/1000.0*HZ)))
+#else
 	@(return MAKE_FIXNUM((time(0) - beginning)*HZ))
+#endif
 }
 
 void
 init_unixtime(void)
 {
+#if defined(mingw32) || defined(_MSC_VER)
+	beginning = GetTickCount();
+#else
 	beginning = time(0);
+#endif
 
 	ECL_SET(@'internal-time-units-per-second', MAKE_FIXNUM(HZ));
 
