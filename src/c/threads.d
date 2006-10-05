@@ -296,7 +296,7 @@ mp_process_run_function(cl_narg narg, cl_object name, cl_object function, ...)
 	output->lock.name = name;
 	pthread_mutex_init(&output->lock.mutex, &attr);
 	pthread_mutexattr_destroy(&attr);
-        si_set_finalizer(x, Ct);
+        si_set_finalizer(output, Ct);
 	@(return output)
 @)
 
