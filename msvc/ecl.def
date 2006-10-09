@@ -148,9 +148,8 @@ EXPORTS
 
 	; cleanup.c
 
-	ecl_finalize_queued
-	si_get_finalizer
-	si_set_finalizer
+	;si_get_finalizer
+	;si_set_finalizer
 
 	; clos.c
 
@@ -1240,6 +1239,7 @@ EXPORTS
 	cl_get_decoded_time
 	cl_ensure_directories_exist
 	si_simple_program_error
+	si_signal_simple_error
 
 	; module.lsp
 

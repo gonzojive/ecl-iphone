@@ -1257,6 +1257,7 @@ EXPORTS
 	cl_get_decoded_time
 	cl_ensure_directories_exist
 	si_simple_program_error
+	si_signal_simple_error
 
 	; module.lsp
 
