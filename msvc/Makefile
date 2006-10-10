@@ -10,7 +10,7 @@ srcdir	= ..\src
 
 SHORT_SITE_NAME   =
 LONG_SITE_NAME    =
-ECL_VERSION       = 0.9h
+ECL_VERSION       = 0.9i
 ARCHITECTURE      = PENTIUM4
 MACHINE_INSTANCE  = localhost
 MACHINE           =
@@ -58,7 +58,7 @@ TAR_DIR = %%CD%%\ecl-$(ECL_VERSION)
 CC	= cl
 MFLAGS  = -MD
 CFLAGS  = -GX -DGC_DLL -nologo
-LIBS	= eclgc.lib eclgmp.lib user32.lib ws2_32.lib
+LIBS	= eclgc.lib eclgmp.lib user32.lib ws2_32.lib shell32.lib
 LDFLAGS	= /link /nodefaultlib:libcmt /nodefaultlib:libcmtd /nodefaultlib:libc /nodefaultlib:libd
 SHARED_LDFLAGS = -LD
 GCFLAGS = nodebug=1
@@ -204,9 +204,9 @@ compile.lsp: bare.lsp $(srcdir)/compile.lsp.in Makefile
 	    "@LDFLAGS@" "$(LDFLAGS) /LIBPATH:~S" \
 	    "@SHARED_LDFLAGS@" "$(SHARED_LDFLAGS)" \
 	    "@BUNDLE_LDFLAGS@" "$(SHARED_LDFLAGS)" \
-	    "@CLIBS@" "user32.lib ws2_32.lib" \
+	    "@CLIBS@" "user32.lib ws2_32.lib shell32.lib" \
 	    "@STATICLIBS@" "eclgmp.lib eclgc.lib" \
-	    "@LIBS@" "user32.lib ws2_32.lib" \
+	    "@LIBS@" "user32.lib ws2_32.lib shell32.lib" \
 	    "@CORE_LIBS@" "" \
 	    "@FASL_LIBS@" "" \
 	    "@OBJEXT@" "obj" \
@@ -240,7 +240,7 @@ cmp/cmpdefs.lsp: $(srcdir)/cmp/cmpdefs.lsp Makefile
 	    "@LDFLAGS@" "$(LDFLAGS) /LIBPATH:~S" \
 	    "@SHARED_LDFLAGS@" "$(SHARED_LDFLAGS)" \
 	    "@BUNDLE_LDFLAGS@" "$(SHARED_LDFLAGS)" \
-	    "@CLIBS@" "user32.lib ws2_32.lib" \
+	    "@CLIBS@" "user32.lib ws2_32.lib shell32.lib" \
 	    "@STATICLIBS@" "eclgmp.lib eclgc.lib" \
 	    "@OBJEXT@" "obj" \
 	    "@SHAREDPREFIX@" "" \
