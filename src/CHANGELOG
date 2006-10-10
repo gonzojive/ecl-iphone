@@ -73,6 +73,12 @@ ECL 1.0:
  - GET-INTERNAL-REAL-TIME now works on Windows with 1/60s precision
    (contributed by Dustin Long)
 
+ - When :INITFORM was a constant variable but not self evaluating (i.e. not T,
+   NIL, or a keyword), it was not processed properly
+	(defclass a () ((a :initform most-positive-fixnum)))
+	(slot-value (make-instance a) 'a) => most-positive-fixnum
+
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
