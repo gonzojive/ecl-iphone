@@ -251,8 +251,11 @@ queueing_finalizer(cl_object o, cl_object finalizer)
 				standard_finalizer(o);
 			} CL_NEWENV_END;
 		} else {
-			cl_core.to_be_finalized = CONS(CONS(o,finalizer),
-						       cl_core.to_be_finalized);
+			/* Notice the way in which we do this. The inner calls to GC_alloc
+			 * may cause other finalizers to be invoked. */
+			volatile cl_object aux = ACONS(o, finalizer, Cnil);
+			CDR(aux) = cl_core.to_be_finalized;
+			cl_core.to_be_finalized = aux;
 		}
 	}
 }
