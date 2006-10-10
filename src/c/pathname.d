@@ -199,7 +199,8 @@ tilde_expand(cl_object directory)
 #define WORD_ALLOW_ASTERISK  2
 #define WORD_EMPTY_IS_NIL 4
 #define WORD_LOGICAL 8
-#define WORD_ALLOW_LEADING_DOT 16
+#define WORD_SEARCH_LAST_DOT 16
+#define WORD_ALLOW_LEADING_DOT 32
 
 static cl_object
 make_one(const char *s, cl_index end)
@@ -298,14 +299,22 @@ static cl_object
 parse_word(const char *s, delim_fn delim, int flags, cl_index start,
 	   cl_index end, cl_index *end_of_word)
 {
-	cl_index i, j;
+	cl_index i, j, last_delim = end;
 	bool wild_inferiors = FALSE;
 
 	i = j = start;
-	if ((flags & WORD_ALLOW_LEADING_DOT) && (i < end) && delim(s[i]))
-		i++;
-	for (; i < end && !delim(s[i]); i++) {
+	for (; i < end; i++) {
 		char c = s[i];
+		if (delim(c)) {
+			if ((i == start) && (flags & WORD_ALLOW_LEADING_DOT)) {
+				/* Leading dot is included */
+				continue;
+			}
+			last_delim = i;
+			if (!(flags & WORD_SEARCH_LAST_DOT)) {
+				break;
+			}
+		}
 		bool valid_char;
 		if (c == '*') {
 			if (!(flags & WORD_ALLOW_ASTERISK))
@@ -325,6 +334,10 @@ parse_word(const char *s, delim_fn delim, int flags, cl_index start,
 			*end_of_word = start;
 			return @':error';
 		}
+	}
+	if (i > last_delim) {
+		/* Go back to the position of the last delimiter */
+		i = last_delim;
 	}
 	if (i < end)
 		*end_of_word = i+1;
@@ -543,12 +556,13 @@ parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep,
 	}
 	if (path == @':error')
 		return Cnil;
-	name = parse_word(s, is_dot, WORD_ALLOW_LEADING_DOT |
+	start = *ep;
+	name = parse_word(s, is_dot, WORD_ALLOW_LEADING_DOT | WORD_SEARCH_LAST_DOT |
 			  WORD_ALLOW_ASTERISK | WORD_EMPTY_IS_NIL,
-			  *ep, end, ep);
+			  start, end, ep);
 	if (name == @':error')
 		return Cnil;
-	if (*ep == start || s[*ep-1] != '.') {
+	if ((*ep - start) <= 1 || s[*ep-1] != '.') {
 		type = Cnil;
 	} else {
 		type = parse_word(s, is_null, WORD_ALLOW_ASTERISK, *ep, end, ep);

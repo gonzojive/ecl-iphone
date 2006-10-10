@@ -78,6 +78,11 @@ ECL 1.0:
 	(defclass a () ((a :initform most-positive-fixnum)))
 	(slot-value (make-instance a) 'a) => most-positive-fixnum
 
+ - The namestring "." was improperly parsed has having file type "".
+
+ - Now the file type is determined by the last dot in the name.
+	(pathname-type "foo.mpq.txt") => "txt"
+
 
 ;;; Local Variables: ***
 ;;; mode:text ***
