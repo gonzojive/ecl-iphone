@@ -404,7 +404,8 @@ static cl_object VV[VM];
 			   (*compile-file-pathname* nil)
 			   (*compile-file-truename* nil)
 			   (*compile-verbose* verbose)
-			   (*suppress-compiler-notes* (not verbose))
+			   (*suppress-compiler-notes* (or *suppress-compiler-notes* (not verbose)))
+			   (*suppress-compiler-warnings* (or *suppress-compiler-warnings* (not verbose)))
 			   #+PDE sys:*source-pathname*)
   (declare (notinline compiler-cc))
 
@@ -557,6 +558,8 @@ Cannot compile ~a."
 #+dlopen
 (defun compile (name &optional (def nil supplied-p)
                       &aux form data-pathname
+                      (*suppress-compiler-warnings* (or *suppress-compiler-warnings* (not *compile-verbose*)))
+                      (*suppress-compiler-notes* (or *suppress-compiler-notes* (not *compile-verbose*)))
                       (*compiler-in-use* *compiler-in-use*)
                       (*standard-output* *standard-output*)
                       (*error-output* *error-output*)

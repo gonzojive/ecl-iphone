@@ -86,6 +86,10 @@ ECL 1.0:
  - When iterating over a hash table we now check that the argument is really a
    hash table.
 
+ - *COMPILE-VERBOSE* and *COMPILE-PRINT* now also have effect when compiling
+   isolated lambda forms using COMPILE. Additionally, these variables are
+   defined even without the compiler loaded.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

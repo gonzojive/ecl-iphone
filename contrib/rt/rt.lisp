@@ -20,7 +20,7 @@
  |----------------------------------------------------------------------------|#
 
 (defpackage :sb-rt
-  (:nicknames :rt)
+  (:nicknames :rt :regression-test)
   (:use #:cl)
   (:export #:*do-tests-when-defined* #:*test* #:continue-testing
 	   #:deftest #:do-test #:do-tests #:get-test #:pending-tests
@@ -162,15 +162,17 @@
 	      (flet ((%do
 		      ()
 		      (if *compile-tests*
+			  (let ((*compile-verbose* nil)
+				(*compile-print* nil))
+			    (multiple-value-list
+			     (funcall (compile
+				       nil
+				       `(lambda ()
+					 (declare
+					  (optimize ,@*optimization-settings*))
+					 ,(form entry))))))
 			  (multiple-value-list
-			   (funcall (compile
-				     nil
-				     `(lambda ()
-					(declare
-					 (optimize ,@*optimization-settings*))
-					,(form entry)))))
-			(multiple-value-list
-			 (eval (form entry))))))
+			   (eval (form entry))))))
 		(if *catch-errors*
 		    (handler-bind
 			((style-warning #'muffle-warning)
@@ -196,7 +198,11 @@
 		  (vals entry))
 	  (format s "Actual value~P: ~
                       ~{~S~^~%~15t~}.~%"
-		  (length r) r)))))
+		  (length r) r)
+	  (let ((x (first r)))
+	    (when (typep x 'condition)
+	      (format s "~&Condition: ~A" x)))
+	  ))))
   (when (not (pend entry)) *test*))
 
 (defun continue-testing ()
