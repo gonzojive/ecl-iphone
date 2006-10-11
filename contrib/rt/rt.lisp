@@ -162,15 +162,13 @@
 	      (flet ((%do
 		      ()
 		      (if *compile-tests*
-			  (let ((*compile-verbose* nil)
-				(*compile-print* nil))
-			    (multiple-value-list
-			     (funcall (compile
-				       nil
-				       `(lambda ()
-					 (declare
-					  (optimize ,@*optimization-settings*))
-					 ,(form entry))))))
+			  (multiple-value-list
+			   (funcall (compile
+				     nil
+				     `(lambda ()
+				       (declare
+					(optimize ,@*optimization-settings*))
+				       ,(form entry)))))
 			  (multiple-value-list
 			   (eval (form entry))))))
 		(if *catch-errors*
