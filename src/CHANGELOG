@@ -83,6 +83,8 @@ ECL 1.0:
  - Now the file type is determined by the last dot in the name.
 	(pathname-type "foo.mpq.txt") => "txt"
 
+ - When iterating over a hash table we now check that the argument is really a
+   hash table.
 
 ;;; Local Variables: ***
 ;;; mode:text ***
