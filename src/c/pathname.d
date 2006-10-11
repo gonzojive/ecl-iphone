@@ -304,6 +304,7 @@ parse_word(const char *s, delim_fn delim, int flags, cl_index start,
 
 	i = j = start;
 	for (; i < end; i++) {
+		bool valid_char;
 		char c = s[i];
 		if (delim(c)) {
 			if ((i == start) && (flags & WORD_ALLOW_LEADING_DOT)) {
@@ -315,7 +316,6 @@ parse_word(const char *s, delim_fn delim, int flags, cl_index start,
 				break;
 			}
 		}
-		bool valid_char;
 		if (c == '*') {
 			if (!(flags & WORD_ALLOW_ASTERISK))
 				valid_char = FALSE; /* Asterisks not allowed in this word */
