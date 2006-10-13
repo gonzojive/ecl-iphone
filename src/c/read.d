@@ -1029,7 +1029,7 @@ read_number(cl_object in, int radix, cl_object macro_char)
 			FEreader_error("Cannot parse the #~A readmacro.", in, 1,
 				       macro_char);
 		}
-		if (type_of(x) != t_fixnum && type_of(x) != t_bignum) {
+		if (cl_rationalp(x) == Cnil) {
 			FEreader_error("The float ~S appeared after the #~A readmacro.",
 				       in, 2, x, macro_char);
 		}
