@@ -1102,7 +1102,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 #else
 	case t_doublefloat:
 		r = symbol_value(@'*read-default-float-format*');
-		write_double(df(x), (r == @'double-float' || r == @'short-float')? 0 : 'd', DBL_SIG, stream);
+		write_double(df(x), (r == @'double-float' || r == @'long-float')? 0 : 'd', DBL_SIG, stream);
 		break;
 #endif
 	case t_complex:
