@@ -60,7 +60,7 @@
   read-nodes		;;; Nodes (c1forms) in which the reference occurs
 )
 
-(deftype OBJECT () `(not (or fixnum character single-float double-float)))
+(deftype OBJECT () `(not (or fixnum character float)))
 
 (defstruct (var (:include ref) (:constructor %make-var) (:print-object print-var))
 ;  name		;;; Variable name.

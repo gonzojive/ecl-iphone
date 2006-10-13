@@ -231,6 +231,14 @@
 	     ((or (subtypep t1 'SINGLE-FLOAT)
 		  (subtypep t2 'SINGLE-FLOAT))
 	      'SINGLE-FLOAT)
+	     #+short-float
+	     ((or (subtypep t1 'SHORT-FLOAT)
+		  (subtypep t2 'SHORT-FLOAT))
+	      'SHORT-FLOAT)
+	     #+long-float
+	     ((or (subtypep t1 'LONG-FLOAT)
+		  (subtypep t2 'LONG-FLOAT))
+	      'LONG-FLOAT)
 	     (t
 	      'FIXNUM))))
     (if (and (do ((arg-types arg-types (cdr arg-types))
@@ -248,6 +256,12 @@
 			     (push 'DOUBLE-FLOAT rts))
 			    ((type>= 'SINGLE-FLOAT arg-type)
 			     (push 'SINGLE-FLOAT rts))
+			    #+short-float
+			    ((type>= 'SHORT-FLOAT arg-type)
+			     (push 'SHORT-FLOAT rts))
+			    #+long-float
+			    ((type>= 'LONG-FLOAT arg-type)
+			     (push 'LONG-FLOAT rts))
 			    (t (return nil)))
 		      ;; compute max of FIXNUM-FLOAT arguments types
 		      (setq number-max

@@ -460,10 +460,19 @@ parse_number(const char *s, cl_index end, cl_index *ep, int radix)
 		case 'e':  case 'E':
 			exp_marker = ecl_current_read_default_float_format();
 			goto MAKE_FLOAT;
-		case 'f':  case 'F':  case 's':  case 'S':
+		case 's':  case 'S':
+#ifdef ECL_SHORT_FLOAT
+			output = make_shortfloat(d);
+#endif
+		case 'f':  case 'F':
 			output = make_singlefloat(d);
 			break;
-		case 'd':  case 'D':  case 'l':  case 'L':
+		case 'l':  case 'L':
+#ifdef ECL_LONG_FLOAT
+			output = make_longfloat(d);
+			break;
+#endif
+		case 'd':  case 'D':
 			output = make_doublefloat(d);
 			break;
 		default:
@@ -1011,8 +1020,7 @@ read_number(cl_object in, int radix, cl_object macro_char)
 			FEreader_error("Cannot parse the #~A readmacro.", in, 1,
 				       macro_char);
 		}
-		if (type_of(x) == t_singlefloat ||
-		    type_of(x) == t_doublefloat) {
+		if (type_of(x) != t_fixnum && type_of(x) != t_bignum) {
 			FEreader_error("The float ~S appeared after the #~A readmacro.",
 				       in, 2, x, macro_char);
 		}

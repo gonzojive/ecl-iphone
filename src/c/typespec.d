@@ -249,12 +249,19 @@ cl_type_of(cl_object x)
 	case t_ratio:
 		t = @'ratio'; break;
 
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+		t = @'short-float'; break;
+#endif
 	case t_singlefloat:
 		t = @'single-float'; break;
 
 	case t_doublefloat:
 		t = @'double-float'; break;
-
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+		t = @'long-float'; break;
+#endif
 	case t_complex:
 		t = @'complex'; break;
 

@@ -27,6 +27,10 @@ ECL 1.0:
  - MAPCAR, MAPLIST, MAPC, MAPL, MAPCAN, MAPCON have now compiler macro functions
    which create equivalent inlined forms.
 
+ - Support for C "long double" as lisp long-double datatype (originated from
+   a patch by Lars Brinkhoff). Still missing compiler support for unboxed
+   long double types.
+
 * Bugs fixed:
 
  - STREAMP signals an error for Gray streams.

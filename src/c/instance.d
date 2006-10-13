@@ -208,8 +208,14 @@ cl_class_of(cl_object x)
 		t = @'integer'; break;
 	case t_ratio:
 		t = @'ratio'; break;
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+#endif
 	case t_singlefloat:
 	case t_doublefloat:
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+#endif
 		t = @'float'; break;
 		/* XXX t = @'long-float'; break; */
 	case t_complex:

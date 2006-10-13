@@ -77,11 +77,13 @@ bignums."
 
 (deftype real (&rest foo) '(OR RATIONAL FLOAT))
 
+#-short-float
 (deftype short-float (&rest args)
   (if args
       `(single-float ,@args)
       'single-float))
 
+#-long-float
 (deftype long-float (&rest args)
   (if args
       `(double-float ,@args)
@@ -326,10 +328,16 @@ Returns T if X belongs to TYPE; NIL otherwise."
      (and (floatp object) (in-interval-p object i)))
     (REAL
      (and (or (rationalp object) (floatp object)) (in-interval-p object i)))
-    ((SINGLE-FLOAT SHORT-FLOAT)
+    ((SINGLE-FLOAT #-short-float SHORT-FLOAT)
      (and (eq (type-of object) 'SINGLE-FLOAT) (in-interval-p object i)))
-    ((DOUBLE-FLOAT LONG-FLOAT)
+    ((DOUBLE-FLOAT #-long-float LONG-FLOAT)
      (and (eq (type-of object) 'DOUBLE-FLOAT) (in-interval-p object i)))
+    #+long-float
+    (LONG-FLOAT
+     (and (eq (type-of object) 'LONG-FLOAT) (in-interval-p object i)))
+    #+short-float
+    (SHORT-FLOAT
+     (and (eq (type-of object) 'SHORT-FLOAT) (in-interval-p object i)))
     (COMPLEX
      (and (complexp object)
           (or (null i)
@@ -482,8 +490,10 @@ if not possible."
 	        ((null io) l)))
 	   ((CHARACTER BASE-CHAR) (character object))
 	   (FLOAT (float object))
-	   ((SINGLE-FLOAT SHORT-FLOAT) (float object 0.0F0))
-	   ((DOUBLE-FLOAT LONG-FLOAT) (float object 0.0D0))
+	   (SINGLE-FLOAT (float object 0.0F0))
+	   (SHORT-FLOAT (float object 0.0S0))
+	   (DOUBLE-FLOAT (float object 0.0D0))
+	   (LONG-FLOAT (float object 0.0L0))
 	   (COMPLEX (complex (realpart object) (imagpart object)))
 	   (FUNCTION (coerce-to-function object))
 	   ((VECTOR SIMPLE-VECTOR #+unicode SIMPLE-BASE-STRING SIMPLE-STRING #+unicode BASE-STRING STRING BIT-VECTOR SIMPLE-BIT-VECTOR)
@@ -905,15 +915,21 @@ if not possible."
 	tag))
   #+(or)
   (case real-type
-    ((SINGLE-FLOAT DOUBLE-FLOAT INTEGER RATIO)
+    ((SINGLE-FLOAT DOUBLE-FLOAT INTEGER RATIO #+long-float LONG-FLOAT
+      #+short-float SHORTF-FLOAT)
      (let ((tag (new-type-tag)))
        (push-type `(COMPLEX ,real-type) tag)
        tag))
     ((RATIONAL) (canonical-type '(OR (COMPLEX INTEGER) (COMPLEX RATIO))))
-    ((FLOAT) (canonical-type '(OR (COMPLEX SINGLE-FLOAT) (COMPLEX DOUBLE-FLOAT))))
+    ((FLOAT) (canonical-type '(OR (COMPLEX SINGLE-FLOAT) (COMPLEX DOUBLE-FLOAT)
+			       #+long-float (COMPLEX LONG-FLOAT)
+			       #+short-float (COMPLEX SHORT-FLOAT))))
     ((* NIL REAL) (canonical-type
 		   '(OR (COMPLEX INTEGER) (COMPLEX RATIO)
-		        (COMPLEX SINGLE-FLOAT) (COMPLEX DOUBLE-FLOAT))))
+		        (COMPLEX SINGLE-FLOAT) (COMPLEX DOUBLE-FLOAT)
+		     #+long-float (COMPLEX LONG-FLOAT)
+		     #+short-float (COMPLEX SHORT-FLOAT)
+		     )))
     (otherwise (canonical-complex-type (upgraded-complex-part-type real-type)))))
 
 ;;----------------------------------------------------------------------
@@ -955,12 +971,18 @@ if not possible."
 	       (FUNCTION (OR COMPILED-FUNCTION GENERIC-FUNCTION))
 
 	       (INTEGER (INTEGER * *))
+	       #+short-float
+	       (SHORT-FLOAT (SHORT-FLOAT * *))
 	       (SINGLE-FLOAT (SINGLE-FLOAT * *))
 	       (DOUBLE-FLOAT (DOUBLE-FLOAT * *))
+	       #+long-float
+	       (LONG-FLOAT (LONG-FLOAT * *))
 	       (RATIO (RATIO * *))
 
 	       (RATIONAL (OR INTEGER RATIO))
-	       (FLOAT (OR SINGLE-FLOAT DOUBLE-FLOAT))
+	       (FLOAT (OR SINGLE-FLOAT DOUBLE-FLOAT
+                       #+long-float LONG-FLOAT
+                       #+short-float SHORT-FLOAT))
 	       (REAL (OR INTEGER SINGLE-FLOAT DOUBLE-FLOAT RATIO))
 	       (COMPLEX (COMPLEX REAL))
 
@@ -1097,7 +1119,8 @@ if not possible."
 	   (NOT (lognot (canonical-type (second type))))
 	   ((EQL MEMBER) (apply #'logior (mapcar #'register-member-type (rest type))))
 	   (SATISFIES (register-satisfies-type type))
-	   ((INTEGER SINGLE-FLOAT DOUBLE-FLOAT RATIO)
+	   ((INTEGER SINGLE-FLOAT DOUBLE-FLOAT RATIO
+	     #+long-float LONG-FLOAT #+short-float SHORT-FLOAT)
 	    (register-interval-type type))
 	   ((FLOAT)
 	    (canonical-type `(OR (SINGLE-FLOAT ,@(rest type))

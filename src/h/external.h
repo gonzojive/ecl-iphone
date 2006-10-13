@@ -159,6 +159,9 @@ struct cl_core_struct {
 	cl_object imag_two;
 	cl_object singlefloat_zero;
 	cl_object doublefloat_zero;
+#ifdef ECL_LONG_FLOAT
+	cl_object longfloat_zero;
+#endif
 
 	cl_object gensym_prefix;
 	cl_object gentemp_prefix;
@@ -857,6 +860,13 @@ extern cl_object make_complex(cl_object r, cl_object i);
 extern cl_object cl_rational(cl_object x);
 #define cl_rationalize cl_rational
 extern double number_to_double(cl_object x);
+#ifdef ECL_SHORT_FLOAT
+extern cl_object make_shortfloat(float f);
+extern float ecl_short_float(cl_object o);
+#endif
+#ifdef ECL_LONG_FLOAT
+extern cl_object make_longfloat(long double f);
+#endif
 
 /* num_co.c */
 
@@ -1107,6 +1117,7 @@ extern cl_object cl_equal(cl_object x, cl_object y);
 extern cl_object cl_equalp(cl_object x, cl_object y);
 extern cl_object si_fixnump(cl_object x);
 
+extern bool floatp(cl_object x);
 extern bool numberp(cl_object x);
 extern bool eql(cl_object x, cl_object y);
 extern bool equal(register cl_object x, cl_object y);

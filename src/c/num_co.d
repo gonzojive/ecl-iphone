@@ -89,36 +89,48 @@ number_remainder(cl_object x, cl_object y, cl_object q)
    otherwise coerce to same float type as second arg */
 
 @(defun float (x &optional (y OBJNULL))
-	cl_type t = t_singlefloat;
+	cl_type t, tx;
+	double d;
+  /* TODO: LONG_FLOAT SHORT_FLOAT */
 @
 	if (y != OBJNULL) {
 		t = type_of(y);
-		if (t != t_singlefloat && t != t_doublefloat)
-			FEtype_error_float(y);
+	} else {
+		t = t_singlefloat;
 	}
-	switch (type_of(x)) {
-	case t_fixnum:
-		if (t == t_singlefloat)
-			x = make_singlefloat(fix(x));
-		else
-			x = make_doublefloat(fix(x));
-		break;
-	case t_bignum:
-	case t_ratio: {
-		double d = number_to_double(x);
-		if (t == t_singlefloat)
-			x = make_singlefloat(d);
-		else
-			x = make_doublefloat(d);		
-		break;
-	}
+	switch (tx = type_of(x)) {
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+#endif
 	case t_singlefloat:
-		if (y && t == t_doublefloat)
-			x = make_doublefloat(sf(x));
-		break;
 	case t_doublefloat:
-		if (y && t == t_singlefloat)
-			x = make_singlefloat(df(x));
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+#endif
+		if (y == OBJNULL || t == tx)
+			break;
+	case t_fixnum:
+	case t_bignum:
+	case t_ratio:
+		switch (t) {
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			x = make_shortfloat(number_to_double(x)); break;
+#endif
+		case t_singlefloat:
+			x = make_singlefloat(number_to_double(x)); break;
+		case t_doublefloat:
+			x = make_doublefloat(number_to_double(x)); break;
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat: {
+			/* FIXME! We lose precision! */
+			volatile double y = number_to_double(x);
+			x = make_longfloat(y); break;
+		}
+#endif
+		default:
+			FEtype_error_float(y);
+		}
 		break;
 	default:
 		FEtype_error_real(x);
@@ -177,6 +189,15 @@ floor1(cl_object x)
 		VALUES(0) = floor2(x->ratio.num, x->ratio.den);
 		VALUES(1) = make_ratio(VALUES(1), x->ratio.den);
 		break;
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat: {
+		float d = ecl_short_float(x);
+		float y = floorf(d);
+		VALUES(0) = float_to_integer(y);
+		VALUES(1) = make_shortfloat(d - y);
+		break;
+	}
+#endif
 	case t_singlefloat: {
 		float d = sf(x);
 		float y = floorf(d);
@@ -191,6 +212,15 @@ floor1(cl_object x)
 		VALUES(1) = make_doublefloat(d - y);
 		break;
 	}
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat: {
+		long double d = ecl_long_float(x);
+		long double y = floorl(d);
+		VALUES(0) = double_to_integer(y);
+		VALUES(1) = make_longfloat(d - y);
+		break;
+	}
+#endif
 	default:
 		FEtype_error_real(x);
 	}
@@ -240,6 +270,16 @@ floor2(cl_object x, cl_object y)
 		  floor2(number_times(x, y->ratio.den), y->ratio.num);
 		  VALUES(1) = make_ratio(VALUES(1), y->ratio.den);
 		  break;
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat: {	/* FIX / SF */
+		  float n = ecl_short_float(y);
+		  float p = fix(x) / n;
+		  float q = floorf(p);
+		  VALUES(0) = float_to_integer(q);
+		  VALUES(1) = make_shortfloat((p - q)*n);
+		  break;
+		}
+#endif
 		case t_singlefloat: {	/* FIX / SF */
 		  float n = sf(y);
 		  float p = fix(x) / n;
@@ -256,6 +296,16 @@ floor2(cl_object x, cl_object y)
 		  VALUES(1) = make_doublefloat((p - q)*n);
 		  break;
 		}
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat: {	/* FIX / SF */
+		  long double n = ecl_long_float(y);
+		  long double p = fix(x) / n;
+		  long double q = floorl(p);
+		  VALUES(0) = float_to_integer(q);
+		  VALUES(1) = make_longfloat((p - q)*n);
+		  break;
+		}
+#endif
 		default:
 		  FEtype_error_real(y);
 		}
@@ -294,6 +344,16 @@ floor2(cl_object x, cl_object y)
 		  floor2(number_times(x, y->ratio.den), y->ratio.num);
 		  VALUES(1) = make_ratio(VALUES(1), y->ratio.den);
 		  break;
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat: {	/* BIG / SF */
+		  float n = ecl_short_float(y);
+		  float p = big_to_double(x) / n;
+		  float q = floorf(p);
+		  VALUES(0) = float_to_integer(q);
+		  VALUES(1) = make_shortfloat((p - q)*n);
+		  break;
+		}
+#endif
 		case t_singlefloat: {	/* BIG / SF */
 		  float n = sf(y);
 		  float p = big_to_double(x) / n;
@@ -310,6 +370,16 @@ floor2(cl_object x, cl_object y)
 		  VALUES(1) = make_doublefloat((p - q)*n);
 		  break;
 		}
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat: {	/* BIG / DF */
+		  long double n = ecl_long_float(y);
+		  long double p = big_to_double(x) / n;
+		  long double q = floorl(p);
+		  VALUES(0) = double_to_integer(q);
+		  VALUES(1) = make_longfloat((p - q)*n);
+		  break;
+		}
+#endif
 		default:
 		  FEtype_error_real(y);
 		}
@@ -326,6 +396,16 @@ floor2(cl_object x, cl_object y)
 		  VALUES(1) = number_divide(VALUES(1), x->ratio.den);
 		}
 		break;
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat: {		/* SF / ANY */
+		float n = number_to_double(y);
+		float p = sf(x)/n;
+		float q = floorf(p);
+		VALUES(0) = float_to_integer(q);
+		VALUES(1) = make_shortfloat((p - q)*n);
+		break;
+	}
+#endif
 	case t_singlefloat: {		/* SF / ANY */
 		float n = number_to_double(y);
 		float p = sf(x)/n;
@@ -342,13 +422,23 @@ floor2(cl_object x, cl_object y)
 		VALUES(1) = make_doublefloat((p - q)*n);
 		break;
 	}
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat: {		/* LF / ANY */
+		float n = number_to_double(y);
+		float p = sf(x)/n;
+		float q = floorl(p);
+		VALUES(0) = float_to_integer(q);
+		VALUES(1) = make_longfloat((p - q)*n);
+		break;
+	}
+#endif
 	default:
 		FEtype_error_real(x);
 	}
 	NVALUES = 2;
 	return VALUES(0);
 }
-  
+
 @(defun floor (x &optional (y OBJNULL))
 @
 	if (narg == 1)
@@ -371,6 +461,15 @@ ceiling1(cl_object x)
 		VALUES(0) = ceiling2(x->ratio.num, x->ratio.den);
 		VALUES(1) = make_ratio(VALUES(1), x->ratio.den);
 		break;
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat: {
+		float d = ecl_short_float(x);
+		float y = ceilf(d);
+		VALUES(0) = float_to_integer(y);
+		VALUES(1) = make_shortfloat(d - y);
+		break;
+	}
+#endif
 	case t_singlefloat: {
 		float d = sf(x);
 		float y = ceilf(d);
@@ -385,6 +484,15 @@ ceiling1(cl_object x)
 		VALUES(1) = make_doublefloat(d - y);
 		break;
 	}
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat: {
+		long double d = ecl_long_float(x);
+		long double y = ceill(d);
+		VALUES(0) = double_to_integer(y);
+		VALUES(1) = make_longfloat(d - y);
+		break;
+	}
+#endif
 	default:
 		FEtype_error_real(x);
 	}
@@ -434,6 +542,16 @@ ceiling2(cl_object x, cl_object y)
 		  ceiling2(number_times(x, y->ratio.den), y->ratio.num);
 		  VALUES(1) = make_ratio(VALUES(1), y->ratio.den);
 		  break;
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat: {	/* FIX / SF */
+		  float n = ecl_short_float(y);
+		  float p = fix(x)/n;
+		  float q = ceilf(p);
+		  VALUES(0) = float_to_integer(q);
+		  VALUES(1) = make_singlefloat((p - q)*n);
+		  break;
+		}
+#endif
 		case t_singlefloat: {	/* FIX / SF */
 		  float n = sf(y);
 		  float p = fix(x)/n;
@@ -450,6 +568,16 @@ ceiling2(cl_object x, cl_object y)
 		  VALUES(1) = make_doublefloat((p - q)*n);
 		  break;
 		}
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat: {	/* FIX / DF */
+		  long double n = ecl_long_float(y);
+		  long double p = fix(x)/n;
+		  long double q = ceill(p);
+		  VALUES(0) = double_to_integer(q);
+		  VALUES(1) = make_longfloat((p - q)*n);
+		  break;
+		}
+#endif
 		default:
 		  FEtype_error_real(y);
 		}
@@ -488,6 +616,16 @@ ceiling2(cl_object x, cl_object y)
 		  ceiling2(number_times(x, y->ratio.den), y->ratio.num);
 		  VALUES(1) = make_ratio(VALUES(1), y->ratio.den);
 		  break;
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat: {	/* BIG / SF */
+		  float n = ecl_short_float(y);
+		  float p = big_to_double(x)/n;
+		  float q = ceilf(p);
+		  VALUES(0) = float_to_integer(q);
+		  VALUES(1) = make_shortfloat((p - q)*n);
+		  break;
+		}
+#endif
 		case t_singlefloat: {	/* BIG / SF */
 		  float n = sf(y);
 		  float p = big_to_double(x)/n;
@@ -504,6 +642,16 @@ ceiling2(cl_object x, cl_object y)
 		  VALUES(1) = make_doublefloat((p - q)*n);
 		  break;
 		}
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat: {	/* BIG / DF */
+		  long double n = ecl_long_float(y);
+		  long double p = big_to_double(x)/n;
+		  long double q = ceill(p);
+		  VALUES(0) = double_to_integer(q);
+		  VALUES(1) = make_longfloat((p - q)*n);
+		  break;
+		}
+#endif
 		default:
 		  FEtype_error_real(y);
 		}
@@ -520,6 +668,16 @@ ceiling2(cl_object x, cl_object y)
 		  VALUES(1) = number_divide(VALUES(1), x->ratio.den);
 		}
 		break;
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat: {		/* SF / ANY */
+		float n = number_to_double(y);
+		float p = sf(x)/n;
+		float q = ceilf(p);
+		VALUES(0) = float_to_integer(q);
+		VALUES(1) = make_shortfloat((p - q)*n);
+		break;
+	}
+#endif
 	case t_singlefloat: {		/* SF / ANY */
 		float n = number_to_double(y);
 		float p = sf(x)/n;
@@ -536,13 +694,23 @@ ceiling2(cl_object x, cl_object y)
 		VALUES(1) = make_doublefloat((p - q)*n);
 		break;
 	}
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat: {		/* DF / ANY */
+		long double n = number_to_double(y);
+		long double p = df(x)/n;
+		long double q = ceill(p);
+		VALUES(0) = double_to_integer(q);
+		VALUES(1) = make_longfloat((p - q)*n);
+		break;
+	}
+#endif
 	default:
 		FEtype_error_real(x);
 	}
 	NVALUES = 2;
 	return VALUES(0);
 }
-  
+
 @(defun ceiling (x &optional (y OBJNULL))
 @
 	if (narg == 1)
@@ -565,6 +733,15 @@ truncate1(cl_object x)
 		VALUES(0) = truncate2(x->ratio.num, x->ratio.den);
 		VALUES(1) = make_ratio(VALUES(1), x->ratio.den);
 		break;
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat: {
+		float d = ecl_short_float(x);
+		float y = d > 0? floorf(d) : ceilf(d);
+		VALUES(0) = float_to_integer(y);
+		VALUES(1) = make_shortfloat(d - y);
+		break;
+	}
+#endif
 	case t_singlefloat: {
 		float d = sf(x);
 		float y = d > 0? floorf(d) : ceilf(d);
@@ -579,6 +756,15 @@ truncate1(cl_object x)
 		VALUES(1) = make_doublefloat(d - y);
 		break;
 	}
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat: {
+		long double d = ecl_long_float(x);
+		long double y = d > 0? floorl(d) : ceill(d);
+		VALUES(0) = double_to_integer(y);
+		VALUES(1) = make_longfloat(d - y);
+		break;
+	}
+#endif
 	default:
 		FEtype_error_real(x);
 	}
@@ -607,6 +793,8 @@ truncate2(cl_object x, cl_object y)
 cl_object
 round1(cl_object x)
 {
+	float f;
+	double d;
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
@@ -617,8 +805,14 @@ round1(cl_object x)
 		VALUES(0) = round2(x->ratio.num, x->ratio.den);
 		VALUES(1) = make_ratio(VALUES(1), x->ratio.den);
 		break;
-	case t_singlefloat: {
-		float d = sf(x);
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+		f = ecl_short_float(x);
+		goto FLOAT;
+#endif
+	case t_singlefloat:
+		f = sf(x);
+	FLOAT: {
 		cl_object q = float_to_integer(d + (d>=0? 0.5 : -0.5));
 		d -= number_to_double(q);
 		if (d == 0.5) {
@@ -636,8 +830,14 @@ round1(cl_object x)
 		VALUES(1) = make_singlefloat(d);
 		break;
 	}
-	case t_doublefloat: {
-		double d = df(x);
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+		d = ecl_long_float(x);
+		goto DOUBLE;
+#endif
+	case t_doublefloat:
+		d = df(x);
+	DOUBLE: {
 		cl_object q = double_to_integer(d + (d>=0? 0.5 : -0.5));
 		d -= number_to_double(q);
 		if (d == 0.5) {
@@ -730,10 +930,18 @@ cl_decode_float(cl_object x)
 {
 	int e, s;
 	cl_type tx = type_of(x);
+	float f;
+	double d;
 
 	switch (tx) {
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+		f = ecl_short_float(x);
+		goto FLOAT;
+#endif
 	case t_singlefloat: {
-		float d = sf(x);
+		f = sf(x);
+	FLOAT:
 		if (d >= 0.0)
 			s = 1;
 		else {
@@ -756,6 +964,20 @@ cl_decode_float(cl_object x)
 		x = make_doublefloat(d);
 		break;
 	}
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat: {
+		long double d = ecl_long_float(x);
+		if (d >= 0.0)
+			s = 1;
+		else {
+			d = -d;
+			s = 0;
+		}
+		d = frexpl(d, &e);
+		x = make_longfloat(d);
+		break;
+	}
+#endif
 	default:
 		FEtype_error_float(x);
 	}
@@ -772,12 +994,22 @@ cl_scale_float(cl_object x, cl_object y)
 	else
 		FEerror("~S is an illegal exponent.", 1, y);
 	switch (type_of(x)) {
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+		x = make_shortfloat(ldexpf(ecl_short_float(x), k));
+		break;
+#endif
 	case t_singlefloat:
 		x = make_singlefloat(ldexpf(sf(x), k));
 		break;
 	case t_doublefloat:
 		x = make_doublefloat(ldexp(df(x), k));
 		break;
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+		x = make_longfloat(ldexpl(ecl_long_float(x), k));
+		break;
+#endif
 	default:
 		FEtype_error_float(x);
 	}
@@ -787,9 +1019,7 @@ cl_scale_float(cl_object x, cl_object y)
 cl_object
 cl_float_radix(cl_object x)
 {
-	cl_type t = type_of(x);
-
-	if (t != t_singlefloat && t != t_doublefloat)
+	if (cl_floatp(x) != Ct)
 		FEtype_error_float(x);
 	@(return MAKE_FIXNUM(FLT_RADIX))
 }
@@ -798,14 +1028,28 @@ cl_float_radix(cl_object x)
 	int negativep;
 @
 	switch (type_of(x)) {
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+		negativep = ecl_short_float(x) < 0; break;
+#endif
 	case t_singlefloat:
 		negativep = sf(x) < 0; break;
 	case t_doublefloat:
 		negativep = df(x) < 0; break;
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+		negativep = ecl_long_float(x) < 0; break;
+#endif
 	default:
 		FEtype_error_float(x);
 	}
 	switch (type_of(y)) {
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat: {
+		float f = ecl_short_float(y);
+		@(return make_shortfloat(negativep? -fabsf(f) : fabsf(f)))
+	}
+#endif
 	case t_singlefloat: {
 		float f = sf(y);
 		@(return make_singlefloat(negativep? -fabsf(f) : fabsf(f)))
@@ -814,6 +1058,12 @@ cl_float_radix(cl_object x)
 		double f = df(y);
 		@(return make_doublefloat(negativep? -fabs(f) : fabs(f)))
 	}
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat: {
+		long double f = ecl_long_float(y);
+		@(return make_longfloat(negativep? -fabsl(f) : fabsl(f)))
+	}
+#endif
 	default:
 		FEtype_error_float(x);
 	}
@@ -823,12 +1073,19 @@ cl_object
 cl_float_digits(cl_object x)
 {
 	switch (type_of(x)) {
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+#endif
 	case t_singlefloat:
 		x = MAKE_FIXNUM(FLT_MANT_DIG);
 		break;
 	case t_doublefloat:
 		x = MAKE_FIXNUM(DBL_MANT_DIG);
 		break;
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+		x = MAKE_FIXNUM(LDBL_MANT_DIG);
+#endif
 	default:
 		FEtype_error_float(x);
 	}
@@ -839,9 +1096,27 @@ cl_object
 cl_float_precision(cl_object x)
 {
 	int precision;
+	float f; double d;
 	switch (type_of(x)) {
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat: {
+		f = ecl_short_float(x);
+		if (f == 0.0) {
+			precision = 0;
+		} else {
+			int exp;
+			frexpf(f, &exp);
+			if (exp >= FLT_MIN_EXP) {
+				precision = FLT_MANT_DIG;
+			} else {
+				precision = FLT_MANT_DIG - (FLT_MIN_EXP - exp);
+			}
+		}
+		break;
+	}
+#endif
 	case t_singlefloat: {
-		float f = sf(x);
+		f = sf(x);
 		if (f == 0.0) {
 			precision = 0;
 		} else {
@@ -870,6 +1145,23 @@ cl_float_precision(cl_object x)
 		}
 		break;
 	}
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat: {
+		long double f = ecl_long_float(x);
+		if (f == 0.0) {
+			precision = 0;
+		} else {
+			int exp;
+			frexp(f, &exp);
+			if (exp >= LDBL_MIN_EXP) {
+				precision = LDBL_MANT_DIG;
+			} else {
+				precision = LDBL_MANT_DIG - (LDBL_MIN_EXP - exp);
+			}
+		}
+		break;
+	}
+#endif
 	default:
 		FEtype_error_float(x);
 	}
@@ -882,6 +1174,28 @@ cl_integer_decode_float(cl_object x)
 	int e, s;
 
 	switch (type_of(x)) {
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat: {
+		long double d = ecl_long_float(x);
+		if (d == 0.0) {
+			e = 0;
+			s = 1;
+			x = MAKE_FIXNUM(0);
+		} else {
+			if (d < 0.0) {
+				s = -1;
+				d = frexpl(-d, &e);
+			} else {
+				s = 1;
+				d = frexpl(d, &e);
+			}
+			/* FIXME! Loss of precision! */
+			x = double_to_integer(ldexpl(d, LDBL_MANT_DIG));
+			e -= LDBL_MANT_DIG;
+		}
+		break;
+	}
+#endif
 	case t_doublefloat: {
 		double d = df(x);
 		if (d == 0.0) {
@@ -920,6 +1234,27 @@ cl_integer_decode_float(cl_object x)
 		}
 		break;
 	}
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat: {
+		float d = ecl_short_float(x);
+		if (d == 0.0) {
+			e = 0;
+			s = 1;
+			x = MAKE_FIXNUM(0);
+		} else {
+			if (d < 0.0) {
+				s = -1;
+				d = frexpf(-d, &e);
+			} else {
+				s = 1;
+				d = frexpf(d, &e);
+			}
+			x = double_to_integer(ldexp(d, FLT_MANT_DIG));
+			e -= FLT_MANT_DIG;
+		}
+		break;
+	}
+#endif
 	default:
 		FEtype_error_float(x);
 	}
@@ -960,12 +1295,21 @@ cl_imagpart(cl_object x)
 	case t_ratio:
 		x = MAKE_FIXNUM(0);
 		break;
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+		x = make_shortfloat(0.0);
+		break;
+#endif
 	case t_singlefloat:
 		x = cl_core.singlefloat_zero;
 		break;
 	case t_doublefloat:
 		x = cl_core.doublefloat_zero;
 		break;
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+		x = make_longfloat(0.0);
+#endif
 	case t_complex:
 		x = x->complex.imag;
 		break;

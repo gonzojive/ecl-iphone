@@ -38,7 +38,18 @@ rando(cl_object x, cl_object rs)
 		z = make_singlefloat((float)d);
 	} else if (tx == t_doublefloat) {
 		z = make_doublefloat(d);
-	} else {
+	}
+#ifdef ECL_LONG_FLOAT
+	else if (tx == t_longfloat) {
+		z = make_longfloat(d);
+	}
+#endif
+#ifdef ECL_SHORT_FLOAT
+	else if (tx == t_shortfloat) {
+		z = make_shortfloat(d);
+	}
+#endif
+	else {
 		FEerror("~S is not an integer nor a floating-point number.",
 			1, x);
 	}

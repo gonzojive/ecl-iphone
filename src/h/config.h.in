@@ -123,6 +123,12 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
  */
 #define ECL_SLOTS_LIMIT	32768
 
+/* compiler understands long double                                     */
+#undef HAVE_LONG_DOUBLE
+/* compiler understands complex                                         */
+#undef HAVE_DOUBLE_COMPLEX
+#undef HAVE_FLOAT_COMPLEX
+
 /* -CUT-: Everything below this mark will not be installed		*/
 /* -------------------------------------------------------------------- *
  *	BUILD OPTIONS WHICH NEED NOT BE EXPORTED			*

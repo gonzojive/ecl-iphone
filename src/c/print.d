@@ -1055,23 +1055,28 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		si_write_ugly_object(x->ratio.den, stream);
 		bds_unwind1();
 		break;
-
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+		r = symbol_value(@'*read-default-float-format*');
+		write_double((double)ecl_short_float(x), (r == @'short-float')? 0 : 'f', TRUE, stream);
+		break;
+#endif
 	case t_singlefloat:
 		r = symbol_value(@'*read-default-float-format*');
-		if (r == @'single-float' || r == @'short-float')
-			write_double((double)sf(x), 0, TRUE, stream);
-		else
-			write_double((double)sf(x), 'f', TRUE, stream);
+		write_double((double)sf(x), (r == @'single-float')? 0 : 's', TRUE, stream);
 		break;
 
 	case t_doublefloat:
 		r = symbol_value(@'*read-default-float-format*');
-		if (r == @'long-float' || r == @'double-float')
-			write_double(df(x), 0, FALSE, stream);
-		else
-			write_double(df(x), 'd', FALSE, stream);
+		write_double((double)df(x), (r == @'double-float')? 0 : 'd', TRUE, stream);
 		break;
 
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+		r = symbol_value(@'*read-default-float-format*');
+		write_double(ecl_long_float(x), (r == @'long-float')? 0 : 'l', TRUE, stream);
+		break;
+#endif
 	case t_complex:
 		write_str("#C(", stream);
 		si_write_ugly_object(x->complex.real, stream);

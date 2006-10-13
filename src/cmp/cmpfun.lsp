@@ -322,8 +322,11 @@
 	      (case (second type)
 		((CHARACTER BASE-CHAR) (c1expr `(CHARACTER ,expr)))
 		(FLOAT (c1expr `(FLOAT ,expr)))
-		((SINGLE-FLOAT SHORT-FLOAT) (c1expr `(FLOAT ,expr 0.0F0)))
-		((DOUBLE-FLOAT LONG-FLOAT) (c1expr `(FLOAT ,expr 0.0D0))))))))
+		(SHORT-FLOAT (c1expr `(FLOAT ,expr 0.0S0)))
+		(SINGLE-FLOAT (c1expr `(FLOAT ,expr 0.0F0)))
+		(DOUBLE-FLOAT (c1expr `(FLOAT ,expr 0.0D0)))
+		(LONG-FLOAT (c1expr `(FLOAT ,expr 0.0L0)))
+                )))))
 
 ;----------------------------------------------------------------------
 ;; turn repetitious cons's into a list*

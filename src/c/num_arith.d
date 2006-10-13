@@ -90,10 +90,18 @@ number_times(cl_object x, cl_object y)
 			z = number_times(x, y->ratio.num);
 			z = make_ratio(z, y->ratio.den);
 			return(z);
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			return make_shortfloat(fix(x) * ecl_short_float(y));
+#endif
 		case t_singlefloat:
 			return make_singlefloat(fix(x) * sf(y));
 		case t_doublefloat:
 			return make_doublefloat(fix(x) * df(y));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(fix(x) * ecl_long_float(y));
+#endif
 		case t_complex:
 			goto COMPLEX;
 		default:
@@ -109,10 +117,18 @@ number_times(cl_object x, cl_object y)
 			z = number_times(x, y->ratio.num);
 			z = make_ratio(z, y->ratio.den);
 			return(z);
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			return make_shortfloat(number_to_double(x) * ecl_short_float(y));
+#endif
 		case t_singlefloat:
 			return make_singlefloat(number_to_double(x) * sf(y));
 		case t_doublefloat:
 			return make_doublefloat(number_to_double(x) * df(y));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(number_to_double(x) * ecl_long_float(y));
+#endif
 		case t_complex:
 			goto COMPLEX;
 		default:
@@ -130,42 +146,94 @@ number_times(cl_object x, cl_object y)
 			z1 = number_times(x->ratio.den,y->ratio.den);
 			z = make_ratio(z, z1);
 			return(z);
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			return make_shortfloat(number_to_double(x) * ecl_short_float(y));
+#endif
 		case t_singlefloat:
 			return make_singlefloat(number_to_double(x) * sf(y));
 		case t_doublefloat:
 			return make_doublefloat(number_to_double(x) * df(y));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(number_to_double(x) * ecl_long_float(y));
+#endif
 		case t_complex:
 			goto COMPLEX;
 		default:
 			FEtype_error_number(y);
 		}
-	case t_singlefloat:
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat: {
+		float fx = ecl_short_float(x);
 		switch (type_of(y)) {
 		case t_fixnum:
-			return make_singlefloat(fix(y) * sf(x));
+			return make_shortfloat(fx * fix(y));
 		case t_bignum:
 		case t_ratio:
-			return make_singlefloat(number_to_double(y) * sf(x));
+			return make_shortfloat(fx * number_to_double(y));
+		case t_shortfloat:
+			return make_shortfloat(fx * ecl_short_float(y));
 		case t_singlefloat:
-			return make_singlefloat(sf(y) * sf(x));
+			return make_shortfloat(fx * sf(y));
 		case t_doublefloat:
-			return make_doublefloat(df(y) * sf(x));
+			return make_doublefloat(fx * sf(x));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(fx * ecl_long_float(y));
+#endif
 		case t_complex:
 			goto COMPLEX;
 		default:
 			FEtype_error_number(y);
 		}
-	case t_doublefloat:
+	}
+#endif
+	case t_singlefloat: {
+		float fx = sf(x);
 		switch (type_of(y)) {
 		case t_fixnum:
-			return make_doublefloat(fix(y) * df(x));
+			return make_singlefloat(fx * fix(y));
 		case t_bignum:
 		case t_ratio:
-			return make_doublefloat(number_to_double(y) * df(x));
+			return make_singlefloat(fx * number_to_double(y));
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			return make_singlefloat(fx * ecl_short_float(y));
+#endif
 		case t_singlefloat:
-			return make_doublefloat(sf(y) * df(x));
+			return make_singlefloat(fx * sf(y));
 		case t_doublefloat:
-			return make_doublefloat(df(y) * df(x));
+			return make_doublefloat(fx * df(y));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(fx * ecl_long_float(y));
+#endif
+		case t_complex:
+			goto COMPLEX;
+		default:
+			FEtype_error_number(y);
+		}
+	}
+	case t_doublefloat: {
+		switch (type_of(y)) {
+		case t_fixnum:
+			return make_doublefloat(df(x) * fix(y));
+		case t_bignum:
+		case t_ratio:
+			return make_doublefloat(df(x) * number_to_double(y));
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			return make_doublefloat(df(x) * ecl_short_float(y));
+#endif
+		case t_singlefloat:
+			return make_doublefloat(df(x) * sf(y));
+		case t_doublefloat:
+			return make_doublefloat(df(x) * df(y));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(df(x) * ecl_long_float(y));
+#endif
 		case t_complex: {
 		COMPLEX: /* INV: x is real, y is complex */
 			return make_complex(number_times(x, y->complex.real),
@@ -174,6 +242,33 @@ number_times(cl_object x, cl_object y)
 		default:
 			FEtype_error_number(y);
 		}
+	}
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat: {
+		long double lx = ecl_long_float(x);
+		switch (type_of(y)) {
+		case t_fixnum:
+			return make_longfloat(lx * fix(y));
+		case t_bignum:
+		case t_ratio:
+			return make_longfloat(lx * number_to_double(y));
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			return make_longfloat(lx * ecl_short_float(y));
+#endif
+		case t_singlefloat:
+			return make_longfloat(lx * sf(y));
+		case t_doublefloat:
+			return make_longfloat(lx * df(y));
+		case t_longfloat:
+			return make_longfloat(lx * ecl_long_float(y));
+		case t_complex:
+			goto COMPLEX;
+		default:
+			FEtype_error_number(y);
+		}
+	}
+#endif
 	case t_complex:
 	{
 		cl_object z11, z12, z21, z22;
@@ -209,7 +304,7 @@ number_plus(cl_object x, cl_object y)
 {
 	cl_fixnum i, j;
 	cl_object z, z1;
-	
+
 	switch (type_of(x)) {
 	case t_fixnum:
 	        switch (type_of(y)) {
@@ -239,10 +334,18 @@ number_plus(cl_object x, cl_object y)
 			z = number_plus(z, y->ratio.num);
 			z = make_ratio(z, y->ratio.den);
 			return(z);
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			return make_shortfloat(fix(x) + ecl_short_float(y));
+#endif
 		case t_singlefloat:
 			return make_singlefloat(fix(x) + sf(y));
 		case t_doublefloat:
 			return make_doublefloat(fix(x) + df(y));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(fix(x) + ecl_long_float(y));
+#endif
 		case t_complex:
 		COMPLEX: /* INV: x is real, y is complex */
 			return make_complex(number_plus(x, y->complex.real),
@@ -275,10 +378,18 @@ number_plus(cl_object x, cl_object y)
 			z = number_plus(z, y->ratio.num);
 			z = make_ratio(z, y->ratio.den);
 			return(z);
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			return make_shortfloat(number_to_double(x) + ecl_short_float(y));
+#endif
 		case t_singlefloat:
 			return make_singlefloat(number_to_double(x) + sf(y));
 		case t_doublefloat:
 			return make_doublefloat(number_to_double(x) + df(y));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(number_to_double(x) + ecl_long_float(y));
+#endif
 		case t_complex:
 			goto COMPLEX;
 		default:
@@ -299,26 +410,66 @@ number_plus(cl_object x, cl_object y)
 			z1 = number_times(x->ratio.den,y->ratio.den);
 			z = make_ratio(z, z1);
 			return(z);
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			return make_shortfloat(number_to_double(x) + ecl_short_float(y));
+#endif
 		case t_singlefloat:
 			return make_singlefloat(number_to_double(x) + sf(y));
 		case t_doublefloat:
 			return make_doublefloat(number_to_double(x) + df(y));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(number_to_double(x) + ecl_long_float(y));
+#endif
 		case t_complex:
 			goto COMPLEX;
 		default:
 			FEtype_error_number(y);
 		}
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+		switch (type_of(y)) {
+		case t_fixnum:
+			return make_shortfloat(ecl_short_float(x) + fix(y));
+		case t_bignum:
+		case t_ratio:
+			return make_shortfloat(ecl_short_float(x) + number_to_double(y));
+		case t_shortfloat:
+			return make_shortfloat(ecl_short_float(x) + ecl_short_float(y));
+		case t_singlefloat:
+			return make_shortfloat(ecl_short_float(x) + sf(y));
+		case t_doublefloat:
+			return make_doublefloat(ecl_short_float(x) + df(y));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(ecl_short_float(x) + ecl_long_float(y));
+#endif
+		case t_complex:
+			goto COMPLEX;
+		default:
+			FEtype_error_number(y);
+		}
+#endif
 	case t_singlefloat:
 		switch (type_of(y)) {
 		case t_fixnum:
-			return make_singlefloat(fix(y) + sf(x));
+			return make_singlefloat(sf(x) + fix(y));
 		case t_bignum:
 		case t_ratio:
-			return make_singlefloat(number_to_double(y) + sf(x));
+			return make_singlefloat(sf(x) + number_to_double(y));
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			return make_shortfloat(sf(x) + ecl_short_float(y));
+#endif
 		case t_singlefloat:
-			return make_singlefloat(sf(y) + sf(x));
+			return make_singlefloat(sf(x) + sf(y));
 		case t_doublefloat:
-			return make_doublefloat(df(y) + sf(x));
+			return make_doublefloat(sf(x) + df(y));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(sf(x) + ecl_long_float(y));
+#endif
 		case t_complex:
 			goto COMPLEX;
 		default:
@@ -327,19 +478,51 @@ number_plus(cl_object x, cl_object y)
 	case t_doublefloat:
 		switch (type_of(y)) {
 		case t_fixnum:
-			return make_doublefloat(fix(y) + df(x));
+			return make_doublefloat(df(x) + fix(y));
 		case t_bignum:
 		case t_ratio:
-			return make_doublefloat(number_to_double(y) + df(x));
+			return make_doublefloat(df(x) + number_to_double(y));
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			return make_doublefloat(df(x) + ecl_short_float(y));
+#endif
 		case t_singlefloat:
-			return make_doublefloat(sf(y) + df(x));
+			return make_doublefloat(df(x) + sf(y));
 		case t_doublefloat:
-			return make_doublefloat(df(y) + df(x));
+			return make_doublefloat(df(x) + df(y));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(df(x) + ecl_long_float(y));
+#endif
 		case t_complex:
 			goto COMPLEX;
 		default:
 			FEtype_error_number(y);
 		}
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+		switch (type_of(y)) {
+		case t_fixnum:
+			return make_longfloat(ecl_long_float(x) + fix(y));
+		case t_bignum:
+		case t_ratio:
+			return make_longfloat(ecl_long_float(x) + number_to_double(y));
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			return make_longfloat(ecl_long_float(x) + ecl_short_float(y));
+#endif
+		case t_singlefloat:
+			return make_longfloat(ecl_long_float(x) + sf(y));
+		case t_doublefloat:
+			return make_longfloat(ecl_long_float(x) + df(y));
+		case t_longfloat:
+			return make_longfloat(ecl_long_float(x) + ecl_long_float(y));
+		case t_complex:
+			goto COMPLEX;
+		default:
+			FEtype_error_number(y);
+		}
+#endif
 	case t_complex:
 		if (type_of(y) != t_complex) {
 			cl_object aux = x;
@@ -372,7 +555,7 @@ number_minus(cl_object x, cl_object y)
 {
 	cl_fixnum i, j, k;
 	cl_object z, z1;
-	
+
 	switch (type_of(x)) {
 	case t_fixnum:
 		switch(type_of(y)) {
@@ -401,10 +584,18 @@ number_minus(cl_object x, cl_object y)
 			z = number_minus(z, y->ratio.num);
 			z = make_ratio(z, y->ratio.den);
 			return(z);
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			return make_shortfloat(fix(x) - ecl_short_float(y));
+#endif
 		case t_singlefloat:
 			return make_singlefloat(fix(x) - sf(y));
 		case t_doublefloat:
 			return make_doublefloat(fix(x) - df(y));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(fix(x) - ecl_long_float(y));
+#endif
 		case t_complex:
 			goto COMPLEX;
 		default:
@@ -436,10 +627,18 @@ number_minus(cl_object x, cl_object y)
 			z = number_minus(z, y->ratio.num);
 			z = make_ratio(z, y->ratio.den);
 			return(z);
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			return make_shortfloat(number_to_double(x) - ecl_short_float(y));
+#endif
 		case t_singlefloat:
 			return make_singlefloat(number_to_double(x) - sf(y));
 		case t_doublefloat:
 			return make_doublefloat(number_to_double(x) - df(y));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(number_to_double(x) - ecl_long_float(y));
+#endif
 		case t_complex:
 			goto COMPLEX;
 		default:
@@ -460,15 +659,47 @@ number_minus(cl_object x, cl_object y)
 			z1 = number_times(x->ratio.den,y->ratio.den);
 			z = make_ratio(z, z1);
 			return(z);
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			return make_shortfloat(number_to_double(x) - ecl_short_float(y));
+#endif
 		case t_singlefloat:
 			return make_singlefloat(number_to_double(x) - sf(y));
 		case t_doublefloat:
 			return make_doublefloat(number_to_double(x) - df(y));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(number_to_double(x) - ecl_long_float(y));
+#endif
 		case t_complex:
 			goto COMPLEX;
 		default:
 			FEtype_error_number(y);
 		}
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+		switch (type_of(y)) {
+		case t_fixnum:
+			return make_shortfloat(ecl_short_float(x) - fix(y));
+		case t_bignum:
+		case t_ratio:
+			return make_shortfloat(ecl_short_float(x) - number_to_double(y));
+		case t_shortfloat:
+			return make_shortfloat(ecl_short_float(x) - ecl_short_float(y));
+		case t_singlefloat:
+			return make_shortfloat(ecl_short_float(x) - sf(y));
+		case t_doublefloat:
+			return make_doublefloat(ecl_short_float(x) - df(y));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(ecl_short_float(x) - ecl_long_float(y));
+#endif
+		case t_complex:
+			goto COMPLEX;
+		default:
+			FEtype_error_number(y);
+		}
+#endif
 	case t_singlefloat:
 		switch (type_of(y)) {
 		case t_fixnum:
@@ -476,10 +707,18 @@ number_minus(cl_object x, cl_object y)
 		case t_bignum:
 		case t_ratio:
 			return make_singlefloat(sf(x) - number_to_double(y));
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			return make_shortfloat(sf(x) - ecl_short_float(y));
+#endif
 		case t_singlefloat:
 			return make_singlefloat(sf(x) - sf(y));
 		case t_doublefloat:
 			return make_doublefloat(sf(x) - df(y));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(sf(x) - ecl_long_float(y));
+#endif
 		case t_complex:
 			goto COMPLEX;
 		default:
@@ -492,15 +731,47 @@ number_minus(cl_object x, cl_object y)
 		case t_bignum:
 		case t_ratio:
 			return make_doublefloat(df(x) - number_to_double(y));
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			return make_doublefloat(df(x) - ecl_short_float(y));
+#endif
 		case t_singlefloat:
 			return make_doublefloat(df(x) - sf(y));
 		case t_doublefloat:
 			return make_doublefloat(df(x) - df(y));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(df(x) - ecl_long_float(y));
+#endif
 		case t_complex:
 			goto COMPLEX;
 		default:
 			FEtype_error_number(y);
 		}
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+		switch (type_of(y)) {
+		case t_fixnum:
+			return make_longfloat(ecl_long_float(x) - fix(y));
+		case t_bignum:
+		case t_ratio:
+			return make_longfloat(ecl_long_float(x) - number_to_double(y));
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			return make_longfloat(ecl_long_float(x) - ecl_short_float(y));
+#endif
+		case t_singlefloat:
+			return make_longfloat(ecl_long_float(x) - sf(y));
+		case t_doublefloat:
+			return make_longfloat(ecl_long_float(x) - df(y));
+		case t_longfloat:
+			return make_longfloat(ecl_long_float(x) - ecl_long_float(y));
+		case t_complex:
+			goto COMPLEX;
+		default:
+			FEtype_error_number(y);
+		}
+#endif
 	COMPLEX:
 		return make_complex(number_minus(x, y->complex.real),
 				    number_negate(y->complex.imag));
@@ -570,6 +841,10 @@ number_negate(cl_object x)
 		z->ratio.den = x->ratio.den;
 		return(z);
 
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+		return make_shortfloat(-ecl_shortfloat(x));
+#endif
 	case t_singlefloat:
 		z = cl_alloc_object(t_singlefloat);
 		sf(z) = -sf(x);
@@ -579,7 +854,10 @@ number_negate(cl_object x)
 		z = cl_alloc_object(t_doublefloat);
 		df(z) = -df(x);
 		return(z);
-
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+		return make_longfloat(-ecl_long_float(x));
+#endif
 	case t_complex:
 		z = number_negate(x->complex.real);
 		z1 = number_negate(x->complex.imag);
@@ -627,10 +905,18 @@ number_divide(cl_object x, cl_object y)
 			z = number_times(x, y->ratio.den);
 			z = make_ratio(z, y->ratio.num);
 			return(z);
+#ifdef ECL_SHORT_FLAOT
+		case t_shortfloat:
+			return make_shortfloat(number_to_double(x) / ecl_short_float(y));
+#endif
 		case t_singlefloat:
 			return make_singlefloat(number_to_double(x) / sf(y));
 		case t_doublefloat:
 			return make_doublefloat(number_to_double(x) / df(y));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(number_to_double(x) / ecl_long_float(y));
+#endif
 		case t_complex:
 			goto COMPLEX;
 		default:
@@ -648,15 +934,47 @@ number_divide(cl_object x, cl_object y)
 			z1 = number_times(x->ratio.den,y->ratio.num);
 			z = make_ratio(z, z1);
 			return(z);
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			return make_shortfloat(number_to_double(x) / ecl_short_float(y));
+#endif
 		case t_singlefloat:
 			return make_singlefloat(number_to_double(x) / sf(y));
 		case t_doublefloat:
 			return make_doublefloat(number_to_double(x) / df(y));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(number_to_double(x) / ecl_long_float(y));
+#endif
 		case t_complex:
 			goto COMPLEX;
 		default:
 			FEtype_error_number(y);
 		}
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+		switch (type_of(y)) {
+		case t_fixnum:
+			return make_shortfloat(ecl_short_float(x) / fix(y));
+		case t_bignum:
+		case t_ratio:
+			return make_shortfloat(ecl_short_float(x) / number_to_double(y));
+		case t_shortfloat:
+			return make_shortfloat(ecl_short_float(x) / ecl_short_float(y));
+		case t_singlefloat:
+			return make_shortfloat(ecl_short_float(x) / sf(y));
+		case t_doublefloat:
+			return make_doublefloat(ecl_short_float(x) / df(y));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(ecl_short_float(x) / ecl_long_float(y));
+#endif
+		case t_complex:
+			goto COMPLEX;
+		default:
+			FEtype_error_number(y);
+		}
+#endif
 	case t_singlefloat:
 		switch (type_of(y)) {
 		case t_fixnum:
@@ -664,10 +982,18 @@ number_divide(cl_object x, cl_object y)
 		case t_bignum:
 		case t_ratio:
 			return make_singlefloat(sf(x) / number_to_double(y));
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			return make_shortfloat(sf(x) / ecl_short_float(y));
+#endif
 		case t_singlefloat:
 			return make_singlefloat(sf(x) / sf(y));
 		case t_doublefloat:
 			return make_doublefloat(sf(x) / df(y));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(sf(x) / ecl_long_float(y));
+#endif
 		case t_complex:
 			goto COMPLEX;
 		default:
@@ -680,15 +1006,47 @@ number_divide(cl_object x, cl_object y)
 		case t_bignum:
 		case t_ratio:
 			return make_doublefloat(df(x) / number_to_double(y));
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			return make_doublefloat(df(x) / ecl_short_float(y));
+#endif
 		case t_singlefloat:
 			return make_doublefloat(df(x) / sf(y));
 		case t_doublefloat:
 			return make_doublefloat(df(x) / df(y));
+#ifdef ECL_LONG_FLOAT
+		case t_longfloat:
+			return make_longfloat(df(x) / ecl_long_float(y));
+#endif
 		case t_complex:
 			goto COMPLEX;
 		default:
 			FEtype_error_number(y);
 		}
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+		switch (type_of(y)) {
+		case t_fixnum:
+			return make_longfloat(ecl_long_float(x) / fix(y));
+		case t_bignum:
+		case t_ratio:
+			return make_longfloat(ecl_long_float(x) / number_to_double(y));
+#ifdef ECL_SHORT_FLOAT
+		case t_shortfloat:
+			return make_longfloat(ecl_long_float(x) / ecl_short_float(y));
+#endif
+		case t_singlefloat:
+			return make_longfloat(ecl_long_float(x) / sf(y));
+		case t_doublefloat:
+			return make_longfloat(ecl_long_float(x) / df(y));
+		case t_longfloat:
+			return make_longfloat(ecl_long_float(x) / ecl_long_float(y));
+		case t_complex:
+			goto COMPLEX;
+		default:
+			FEtype_error_number(y);
+		}
+#endif
 	case t_complex:
 		if (type_of(y) != t_complex) {
 			z1 = number_divide(x->complex.real, y);
@@ -871,7 +1229,7 @@ cl_object
 one_plus(cl_object x)
 {
 	cl_object z;
-	
+
 	switch (type_of(x)) {
 
 	case t_fixnum:
@@ -886,6 +1244,10 @@ one_plus(cl_object x)
 		z = make_ratio(z, x->ratio.den);
 		return(z);
 
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+		return make_shortfloat(1.0 + ecl_short_float(x));
+#endif
 	case t_singlefloat:
 		z = cl_alloc_object(t_singlefloat);
 		sf(z) = sf(x) + 1.0;
@@ -895,6 +1257,11 @@ one_plus(cl_object x)
 		z = cl_alloc_object(t_doublefloat);
 		df(z) = df(x) + 1.0;
 		return(z);
+
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+		return make_longfloat(1.0 + ecl_long_float(x));
+#endif
 
 	case t_complex:
 		z = one_plus(x->complex.real);
@@ -933,6 +1300,11 @@ one_minus(cl_object x)
 		z = make_ratio(z, x->ratio.den);
 		return(z);
 
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+		return make_shortfloat(ecl_short_float(x) - 1.0);
+#endif
+
 	case t_singlefloat:
 		z = cl_alloc_object(t_singlefloat);
 		sf(z) = sf(x) - 1.0;
@@ -942,6 +1314,11 @@ one_minus(cl_object x)
 		z = cl_alloc_object(t_doublefloat);
 		df(z) = df(x) - 1.0;
 		return(z);
+
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+		return make_longfloat(ecl_long_float(x) - 1.0);
+#endif
 
 	case t_complex:
 		z = one_minus(x->complex.real);

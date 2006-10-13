@@ -220,6 +220,10 @@ cl_alloc_object(cl_type t)
 	  return MAKE_FIXNUM(0); /* Immediate fixnum */
 	case t_character:
 	  return CODE_CHAR('\0'); /* Immediate character */
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+	  return make_shortfloat(0.0); /* Immediate float */
+#endif
 	default:;
 	}
 
@@ -261,6 +265,9 @@ ONCE_MORE:
 	  break;
 	case t_singlefloat:
 	case t_doublefloat:
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+#endif
 	  break;
 	case t_complex:
 	  obj->complex.imag = OBJNULL;
@@ -722,6 +729,9 @@ init_alloc(void)
 	init_tm(t_process, "tPROCESS", sizeof(struct ecl_process), 2);
 	init_tm(t_lock, "tLOCK", sizeof(struct ecl_lock), 2);
 #endif /* THREADS */
+#ifdef ECL_LONG_FLOAT
+	init_tm(t_longfloat, "tLONGFLOAT", sizeof(struct ecl_long_float), 2);
+#endif
 
 	ncb = 0;
 	ncbpage = 0;

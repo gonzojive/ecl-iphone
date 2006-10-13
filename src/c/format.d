@@ -1041,14 +1041,35 @@ fmt_exponential_float(format_stack fmt, bool colon, bool atsign)
 	writestr_stream(b, fmt->stream);
 	y = symbol_value(@'*read-default-float-format*');
 	if (exponentchar < 0) {
-		if (y == @'long-float' || y == @'double-float')
+		if (y == @'long-float') {
+#ifdef ECL_LONG_FLOAT
+			t = t_longfloat;
+#else
 			t = t_doublefloat;
-		else
+#endif
+		} else if (y == @'double-float') {
+			t = t_doublefloat;
+		} else if (y == @'single-float') {
 			t = t_singlefloat;
+		} else {
+#ifdef ECL_SHORT_FLOAT
+			t = t_shortfloat;
+#else
+			t = t_singlefloat;
+#endif
+		}
 		if (type_of(x) == t)
 			exponentchar = 'E';
 		else if (type_of(x) == t_singlefloat)
 			exponentchar = 'F';
+#ifdef ECL_SHORT_FLOAT
+		else if (type_of(x) == t_shortfloat)
+			exponentchar = 'S';
+#endif
+#ifdef ECL_LONG_FLOAT
+		else if (type_of(x) == t_longfloat)
+			exponentchar = 'L';
+#endif
 		else
 			exponentchar = 'D';
 	}

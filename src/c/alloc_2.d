@@ -59,6 +59,12 @@ cl_alloc_object(cl_type t)
 		obj->cblock.data_size = 0;
 		obj->cblock.handle = NULL;
 		break;
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+#endif
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+#endif
 	case t_singlefloat:
 	case t_doublefloat:
 		obj = (cl_object)GC_MALLOC_ATOMIC(type_size[t]);
@@ -203,6 +209,9 @@ init_alloc(void)
 #ifdef ECL_THREADS
 	init_tm(t_process, "PROCESS", sizeof(struct ecl_process));
 	init_tm(t_lock, "LOCK", sizeof(struct ecl_lock));
+#endif
+#ifdef ECL_LONG_FLOAT
+	init_tm(t_longfloat, "LONG-FLOAT", sizeof(struct ecl_long_float));
 #endif
 
 	old_GC_push_other_roots = GC_push_other_roots;

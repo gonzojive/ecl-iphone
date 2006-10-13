@@ -129,10 +129,22 @@ _hash_eql(cl_hashkey h, cl_object x)
 	case t_ratio:
 		h = _hash_eql(h, x->ratio.num);
 		return _hash_eql(h, x->ratio.den);
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat: {
+		float f = ecl_short_float(x);
+		return hash_string(h, (unsigned char*)&f, sizeof(f));
+	}
+#endif
 	case t_singlefloat:
 		return hash_string(h, (unsigned char*)&sf(x), sizeof(sf(x)));
 	case t_doublefloat:
 		return hash_string(h, (unsigned char*)&df(x), sizeof(df(x)));
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat: {
+		long double d = ecl_long_float(x);
+		return hash_string(h, (unsigned char*)&d, sizeof(d));
+	}
+#endif
 	case t_complex:
 		h = _hash_eql(h, x->complex.real);
 		return _hash_eql(h, x->complex.imag);
@@ -207,6 +219,16 @@ SCAN:		if (depth++ >= 3) {
 		return h;
 	case t_fixnum:
 		return hash_word(h, fix(x));
+#ifdef HAVE_SHORT_FLOAT
+	case t_shortfloat: {
+		/* FIXME! We should be more precise here! */
+		return hash_word(h, (cl_index)sf(x));
+		union { float f; cl_index w; } x;
+		x.w = 0;
+		x.f = ecl_short_float(x);
+		return hash_word(h, x.w);
+	}
+#endif
 	case t_singlefloat:
 		/* FIXME! We should be more precise here! */
 		return hash_word(h, (cl_index)sf(x));
@@ -373,19 +395,24 @@ ecl_extend_hashtable(cl_object hashtable)
 {
 	cl_object old, key;
 	cl_index old_size, new_size, i;
+	cl_object new_size_obj;
 
 	assert_type_hash_table(hashtable);
 	old_size = hashtable->hash.size;
-	if (FIXNUMP(hashtable->hash.rehash_size))
-		new_size = old_size + fix(hashtable->hash.rehash_size);
-	else if (type_of(hashtable->hash.rehash_size) == t_singlefloat)
-		new_size = (cl_index)(old_size * sf(hashtable->hash.rehash_size));
-	else if (type_of(hashtable->hash.rehash_size) == t_doublefloat)
-		new_size = (cl_index)(old_size * df(hashtable->hash.rehash_size));
-	else
-		corrupted_hash(hashtable);
-	if (new_size <= old_size)
-		new_size = old_size + 1;
+	/* We do the computation with lisp datatypes, just in case the sizes contain
+	 * weird numbers */
+	if (FIXNUMP(hashtable->hash.rehash_size)) {
+		new_size_obj = number_plus(hashtable->hash.rehash_size, MAKE_FIXNUM(old_size));
+	} else {
+		new_size_obj = number_times(hashtable->hash.rehash_size, MAKE_FIXNUM(old_size));
+		new_size_obj = ceiling1(new_size_obj);
+	}
+	if (!FIXNUMP(new_size_obj)) {
+		/* New size is too large */
+		new_size = old_size * 2;
+	} else {
+		new_size = fix(new_size_obj);
+	}
 	old = cl_alloc_object(t_hashtable);
 	old->hash = hashtable->hash;
 	hashtable->hash.data = NULL; /* for GC sake */
@@ -446,26 +473,28 @@ cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 		hsize = 16;
 
 	t = type_of(rehash_size);
-	if ((t != t_fixnum && t != t_singlefloat && t != t_doublefloat) ||
-	    (number_compare(rehash_size, MAKE_FIXNUM(1)) < 0)) {
+	if (t != t_fixnum) {
+		rehash_size = make_doublefloat(number_to_double(rehash_size));
+		t = t_doublefloat;
+	}
+	if ((number_compare(rehash_size, MAKE_FIXNUM(1)) < 0)) {
 		FEerror("~S is an illegal hash-table rehash-size.",
 			1, rehash_size);
 	}
-	factor = -1.0;
 	t = type_of(rehash_threshold);
-	if (t == t_fixnum || t == t_ratio || t == t_singlefloat || t == t_doublefloat) {
-		factor = number_to_double(rehash_threshold);
-	}
-	if (factor < 0.0 || factor > 1.0) {
+	if (!numberp(rehash_threshold) || number_minusp(rehash_threshold) ||
+	    number_compare(rehash_threshold, MAKE_FIXNUM(1)) > 0)
+	{
 		FEerror("~S is an illegal hash-table rehash-threshold.",
 			1, rehash_threshold);
 	}
+	rehash_threshold = cl_max(2, rehash_threshold, make_singlefloat(0.1));
 	h = cl_alloc_object(t_hashtable);
 	h->hash.test = htt;
 	h->hash.size = hsize;
 	h->hash.rehash_size = rehash_size;
 	h->hash.threshold = rehash_threshold;
-	h->hash.factor = factor;
+	h->hash.factor = number_to_double(rehash_threshold);
         h->hash.entries = 0;
 	h->hash.data = NULL;	/* for GC sake */
 	h->hash.data = (struct ecl_hashtable_entry *)

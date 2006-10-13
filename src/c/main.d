@@ -463,6 +463,12 @@ cl_boot(int argc, char **argv)
 #ifdef ECL_UNICODE
 	ADD_FEATURE("UNICODE");
 #endif
+#ifdef ECL_LONG_FLOAT
+	ADD_FEATURE("LONG-FLOAT");
+#endif
+#ifdef ECL_SHORT_FLOAT
+	ADD_FEATURE("SHORT-FLOAT");
+#endif
 	/* This is assumed in all systems */
 	ADD_FEATURE("IEEE-FLOATING-POINT");
 

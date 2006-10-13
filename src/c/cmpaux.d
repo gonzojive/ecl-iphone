@@ -77,10 +77,18 @@ object_to_fixnum(cl_object x)
 /*	case t_character: return (cl_fixnum)CHAR_CODE(x); */
 	case t_ratio:
 		return (cl_fixnum)number_to_double(x);
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+		return (cl_fixnum)ecl_short_float(x);
+#endif
 	case t_singlefloat:
 		return (cl_fixnum)sf(x);
 	case t_doublefloat:
 		return (cl_fixnum)df(x);
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+		return (cl_fixnum)ecl_long_float(x);
+#endif
 	default:
 		FEerror("~S cannot be coerced to a C int.", 1, x);
 	}
@@ -95,10 +103,18 @@ object_to_unsigned_integer(cl_object x)
 		return fixnnint(x);
 	case t_ratio:
 		return (cl_index)number_to_double(x);
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+		return (cl_index)ecl_short_float(x);
+#endif
 	case t_singlefloat:
 		return (cl_index)sf(x);
 	case t_doublefloat:
 		return (cl_index)df(x);
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+		return (cl_index)ecl_long_float(x);
+#endif
 	default:
 		FEerror("~S cannot be coerced to a C unsigned int.", 1, x);
 	}
@@ -115,10 +131,18 @@ object_to_float(cl_object x)
 	case t_bignum:
 	case t_ratio:
 		return number_to_double(x);
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+		return ecl_short_float(x);
+#endif
 	case t_singlefloat:
 		return sf(x);
 	case t_doublefloat:
 		return df(x);
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+		return ecl_long_float(x);
+#endif
 	default:
 		FEtype_error_real(x);
 	}
@@ -136,10 +160,18 @@ object_to_double(cl_object x)
 	case t_bignum:
 	case t_ratio:
 		return number_to_double(x);
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+		return ecl_short_float(x);
+#endif
 	case t_singlefloat:
 		return sf(x);
 	case t_doublefloat:
 		return df(x);
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+		return ecl_long_float(x);
+#endif
 	default:
 		FEtype_error_real(x);
 	}

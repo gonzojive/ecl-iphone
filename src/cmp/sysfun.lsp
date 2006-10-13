@@ -967,8 +967,7 @@
 
 (proclaim-function rationalp (t) t :predicate t)
 (proclaim-function floatp (t) t :predicate t :no-side-effects t)
-(def-inline floatp :always (t) :bool
- "@0;type_of(#0)==t_singlefloat||type_of(#0)==t_doublefloat")
+(def-inline floatp :always (t) :bool "floatp(#0)")
 
 (proclaim-function complexp (t) t :predicate t)
 (proclaim-function characterp (t) t :predicate t :no-side-effects t)
@@ -1289,7 +1288,10 @@ type_of(#0)==t_bitvector")
 (def-inline shift<< :always (fixnum fixnum) :fixnum "((#0) << (#1))")
 
 (proclaim-function short-float-p (*) nil :predicate t :no-side-effects t)
+#-short-float
 (def-inline short-float-p :always (t) :bool "type_of(#0)==t_singlefloat")
+#+short-float
+(def-inline short-float-p :always (t) :bool "type_of(#0)==t_shortfloat")
 
 (proclaim-function single-float-p (*) nil :predicate t :no-side-effects t)
 (def-inline single-float-p :always (t) :bool "type_of(#0)==t_singlefloat")
@@ -1298,7 +1300,10 @@ type_of(#0)==t_bitvector")
 (def-inline double-float-p :always (t) :bool "type_of(#0)==t_doublefloat")
 
 (proclaim-function long-float-p (*) nil :predicate t :no-side-effects t)
+#-long-float
 (def-inline long-float-p :always (t) :bool "type_of(#0)==t_doublefloat")
+#+long-float
+(def-inline long-float-p :always (t) :bool "type_of(#0)==t_longfloat")
 
 (proclaim-function si:fixnump (*) nil :predicate t :no-side-effects t)
 (def-inline si:fixnump :always (t) :bool "FIXNUMP(#0)")

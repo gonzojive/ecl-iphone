@@ -559,7 +559,7 @@ array_address(cl_object x, cl_index inc)
 	case aet_index:
 		return x->array.self.fix + inc;
 	case aet_sf:
-		return x->array.self.t + inc;
+		return x->array.self.sf + inc;
 	case aet_bc:
 		return x->base_string.self + inc;
 	case aet_df:

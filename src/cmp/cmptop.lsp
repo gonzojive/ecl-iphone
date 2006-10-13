@@ -380,6 +380,8 @@
                             (CHARACTER "CODE_CHAR")
                             (DOUBLE-FLOAT "make_doublefloat")
                             (SINGLE-FLOAT "make_singlefloat")
+			    #+long-float
+                            (LONG-FLOAT "make_longfloat")
                             (otherwise ""))
            "(LI" cfun "(")
     (do ((types arg-types (cdr types))
@@ -391,6 +393,8 @@
             (CHARACTER "char_code")
             (DOUBLE-FLOAT "df")
             (SINGLE-FLOAT "sf")
+	    #+long-float
+	    (LONG-FLOAT "ecl_long_float")
             (otherwise "")) "(")
         (wt-lcl n) (wt ")")
         (unless (endp (cdr types)) (wt ",")))

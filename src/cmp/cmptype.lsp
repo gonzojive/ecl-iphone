@@ -46,7 +46,7 @@
 (defun object-type (thing)
   (let ((type (if thing (type-of thing) 'SYMBOL)))
     (case type
-      ((FIXNUM SINGLE-FLOAT DOUBLE-FLOAT SYMBOL NULL) type)
+      ((FIXNUM SHORT-FLOAT SINGLE-FLOAT DOUBLE-FLOAT LONG-FLOAT SYMBOL NULL) type)
       ((BASE-CHAR STANDARD-CHAR CHARACTER EXTENDED-CHAR) 'CHARACTER)
       ((STRING BASE-STRING BIT-VECTOR) type)
       (VECTOR (list 'VECTOR (array-element-type thing)))
@@ -61,8 +61,8 @@
   (multiple-value-bind (type-name type-args) (sys::normalize-type type)
     (case type-name
         ((FIXNUM CHARACTER SINGLE-FLOAT DOUBLE-FLOAT SYMBOL) type-name)
-        (SHORT-FLOAT 'SINGLE-FLOAT)
-        (LONG-FLOAT 'DOUBLE-FLOAT)
+        (SHORT-FLOAT #-short-float 'SINGLE-FLOAT #+short-float 'SHORT-FLOAT)
+        (LONG-FLOAT #-long-float 'DOUBLE-FLOAT #+long-float 'LONG-FLOAT)
         ((SIMPLE-STRING STRING) 'STRING)
         ((SIMPLE-BIT-VECTOR BIT-VECTOR) 'BIT-VECTOR)
 	((NIL T) t)
@@ -80,8 +80,6 @@
 			(t (list 'VECTOR element-type)))
 		      (list 'ARRAY element-type))))))
 	(INTEGER (if (subtypep type 'FIXNUM) 'FIXNUM t))
-	((SHORT-FLOAT SINGLE-FLOAT) 'SINGLE-FLOAT)
-	((LONG-FLOAT DOUBLE-FLOAT) 'DOUBLE-FLOAT)
 	((STREAM CONS) type-name) ; Juanjo
 	(t (cond ((eq type-name 'VALUES)
 		  (unless values-allowed
@@ -95,8 +93,9 @@
 		 #+clos
 		 ((subtypep type 'STANDARD-OBJECT) type)
 		 #+clos
-		 ((subtypep type 'STRUCTURE-OBJECT) type) 
+		 ((subtypep type 'STRUCTURE-OBJECT) type)
 		 ((dolist (v '(FIXNUM CHARACTER SINGLE-FLOAT DOUBLE-FLOAT
+                               #+short-float SHORT-FLOAT #+long-float LONG-FLOAT
 			       (VECTOR T) STRING BIT-VECTOR
 			       (VECTOR FIXNUM) (VECTOR SINGLE-FLOAT)
 			       (VECTOR DOUBLE-FLOAT) (ARRAY BASE-CHAR)
@@ -199,6 +198,7 @@
 (defun default-init (var &optional warn)
   (let ((new-value (cdr (assoc (var-type var)
 			       '((fixnum . 0) (character . #\space)
+                                 #+long-float (long-float 0.0L1)
 				 (double-float . 0.0D1) (single-float . 0.0F1))
 			       :test #'subtypep))))
     (if new-value

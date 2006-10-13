@@ -53,7 +53,7 @@ typedef cl_object (*cl_objectfn_fixed)();
 #define IMMEDIATE_TAG		3
 
 /* Immediate fixnums:		*/
-#define FIXNUM_TAG		1
+#define FIXNUM_TAG		2
 #define MAKE_FIXNUM(n)		((cl_object)(((cl_fixnum)(n) << 2) | FIXNUM_TAG))
 #define FIXNUM_MINUSP(n)	((cl_fixnum)(n) < 0)
 #define FIXNUM_PLUSP(n)		((cl_fixnum)(n) >= (cl_fixnum)MAKE_FIXNUM(0))
@@ -61,10 +61,10 @@ typedef cl_object (*cl_objectfn_fixed)();
 #define FIXNUMP(obje)		(((cl_fixnum)(obje)) & FIXNUM_TAG)
 
 /* Immediate characters:	*/
-#define CHARACTER_TAG		2
-#define CHARACTERP(obje)	(((cl_fixnum)(obje)) & 2)
+#define CHARACTER_TAG		1
+#define CHARACTERP(obje)	(((cl_fixnum)(obje)) & CHARACTER_TAG)
 #ifdef ECL_UNICODE
-#define BASE_CHAR_P(obje)	((((cl_fixnum)(obje)) & 0xFFFFFC03) == 2)
+#define BASE_CHAR_P(obje)	((((cl_fixnum)(obje)) & 0xFFFFFC03) == CHARACTER_TAG)
 #define	CODE_CHAR(c)		((cl_object)(((cl_fixnum)(c << 2)|CHARACTER_TAG)))
 #define	CHAR_CODE(obje)		(((cl_fixnum)(obje)) >> 2)
 #else
@@ -72,11 +72,11 @@ typedef cl_object (*cl_objectfn_fixed)();
 #define	CHAR_CODE(obje)		((((cl_fixnum)(obje)) >> 2) & 0xff)
 #endif
 
-#define NUMBER_TYPE(t)	(t == t_fixnum || (t >= t_bignum && t <= t_complex))
-#define REAL_TYPE(t)	(t == t_fixnum || (t >= t_bignum && t < t_complex))
-#define ARRAY_TYPE(t)	(t >= t_array && t <= t_bitvector)
-#define ARRAYP(x)	((IMMEDIATE(x) == 0) && (x)->d.t >= t_array && (x)->d.t <= t_bitvector)
-#define VECTORP(x)	((IMMEDIATE(x) == 0) && (x)->d.t >= t_vector && (x)->d.t <= t_bitvector)
+#define NUMBER_TYPE(t)		(t >= t_fixnum && t <= t_complex)
+#define REAL_TYPE(t)		(t >= t_fixnum && t < t_complex)
+#define ARRAY_TYPE(t)		(t >= t_array && t <= t_bitvector)
+#define ARRAYP(x)		((IMMEDIATE(x) == 0) && (x)->d.t >= t_array && (x)->d.t <= t_bitvector)
+#define VECTORP(x)		((IMMEDIATE(x) == 0) && (x)->d.t >= t_vector && (x)->d.t <= t_bitvector)
 
 #define HEADER			int8_t t, m, padding[2]
 #define HEADER1(field)		int8_t t, m, field, padding
@@ -84,17 +84,35 @@ typedef cl_object (*cl_objectfn_fixed)();
 #define HEADER3(field1,flag2,flag3) int8_t t, m, field1; uint8_t flag2:4, flag3:4
 #define HEADER4(field1,flag2,flag3,flag4) int8_t t, m, field1; uint8_t flag2:4, flag3:2, flag4:2
 
+#ifdef ECL_SHORT_FLOAT
+#undef FIXNUMP
+#define FIXNUMP(o)		(IMMEDIATE(o) == FIXNUM_TAG)
+#undef CHARACTERP
+#define CHARACTERP(o)		(IMMEDIATE(o) == CHARACTER_TAG)
+#endif
+
 struct ecl_singlefloat {
 	HEADER;
 	float SFVAL;	/*  singlefloat value  */
 };
 #define	sf(obje)	(obje)->SF.SFVAL
+#define ecl_single_float(o) ((o)->singlefloat.value)
 
 struct ecl_doublefloat {
 	HEADER;
 	double DFVAL;	/*  doublefloat value  */
 };
 #define	df(obje)	(obje)->DF.DFVAL
+#define ecl_double_float(o) ((o)->doublefloat.value)
+
+#ifdef HAVE_LONG_DOUBLE
+#define ECL_LONG_FLOAT
+struct ecl_long_float {
+	HEADER;
+	long double value;
+};
+#define ecl_long_float(o) ((o)->longfloat.value)
+#endif
 
 #ifdef WITH_GMP
 
@@ -519,6 +537,9 @@ union cl_lispunion {
 	struct ecl_ratio	ratio;		/*  ratio  */
 	struct ecl_singlefloat	SF; 		/*  single floating-point number  */
 	struct ecl_doublefloat	DF; 		/*  double floating-point number  */
+#ifdef ECL_LONG_FLOAT
+	struct ecl_long_float	longfloat;	/*  long-float */
+#endif
 	struct ecl_complex	complex;	/*  complex number  */
 	struct ecl_symbol	symbol;		/*  symbol  */
 	struct ecl_package	pack;		/*  package  */
@@ -560,41 +581,47 @@ typedef enum {
 	t_start = 0,
 	/* The most specific numeric types come first. Assumed by
 	   some routines, like cl_expt */
-	t_fixnum,		/* 1 immediate fixnum */
-	t_character,		/* 2 immediate character */
-	t_bignum = 4,		/* 4 */
-	t_ratio,		/* 5 */
-	t_singlefloat,		/* 6 */
-	t_doublefloat,		/* 7 */
-	t_complex,		/* 8 */
-	t_symbol,		/* 9 */
-	t_package,		/* a */
-	t_hashtable,		/* b */
-	t_array,		/* c */
-	t_vector,		/* d */
-#ifdef ECL_UNICODE
-	t_string,		/* e */
+	t_character,		/* immediate character */
+	t_fixnum,		/* immediate fixnum */
+#ifdef ECL_SHORT_FLOAT
+	t_shortfloat,
 #endif
-	t_base_string,		/* e */
-	t_bitvector,		/* f */
-	t_stream,		/* 10 */
-	t_random,		/* 11 */
-	t_readtable,		/* 12 */
-	t_pathname,		/* 13 */
-	t_bytecodes,		/* 14 */
-	t_cfun,			/* 15 */
-	t_cclosure,		/* 16 */
+	t_bignum = 4,
+	t_ratio,
+	t_singlefloat,
+	t_doublefloat,
+#ifdef ECL_LONG_FLOAT
+	t_longfloat,
+#endif
+	t_complex,
+	t_symbol,
+	t_package,
+	t_hashtable,
+	t_array,
+	t_vector,
+#ifdef ECL_UNICODE
+	t_string,
+#endif
+	t_base_string,
+	t_bitvector,
+	t_stream,
+	t_random,
+	t_readtable,
+	t_pathname,
+	t_bytecodes,
+	t_cfun,
+	t_cclosure,
 #ifdef CLOS
-	t_instance,		/* 17 */
+	t_instance,
 #else
-	t_structure,		/* 17 */
+	t_structure,
 #endif /* CLOS */
 #ifdef ECL_THREADS
 	t_process,
 	t_lock,
 #endif
-	t_codeblock,		/* 21 */
-	t_foreign,		/* 22 */
+	t_codeblock,
+	t_foreign,
 	t_end,
 	t_other,
 	t_contiguous,		/*  contiguous block  */
