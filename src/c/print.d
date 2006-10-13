@@ -472,20 +472,35 @@ write_base(int base, cl_object stream)
  * Notice that we leave some extra margin, to ensure that reading the number
  * again will produce the same floating point number.
  */
-#define DBL_MAX_DIGITS (DBL_SIG + 3)
+#ifdef ECL_LONG_FLOAT
+# define LDBL_SIG ((int)(LDBL_MANT_DIG * LOG10_2 + 1))
+# define DBL_MAX_DIGITS (LDBL_SIG + 3)
+# define DBL_EXPONENT_SIZE (1 + 1 + 4)
+#else
+# define DBL_MAX_DIGITS (DBL_SIG + 3)
+# define DBL_EXPONENT_SIZE (1 + 1 + 3) /* Exponent marker 'e' + sign + digits .*/
+#endif
 
-/* The sinificant digits + the possible sign + the decimal dot.
-*/
+/* The sinificant digits + the possible sign + the decimal dot. */
 #define DBL_MANTISSA_SIZE (DBL_MAX_DIGITS + 1 + 1)
-
-/* The exponent marker, 'e', plus the sign and the digits of the exponent.
-*/
-#define DBL_EXPONENT_SIZE (1 + 1 + 3)
-
+/* Total estimated size that a floating point number can take. */
 #define DBL_SIZE (DBL_MANTISSA_SIZE + DBL_EXPONENT_SIZE)
 
-int
-edit_double(int n, double d, int *sp, char *s, int *ep)
+#ifdef ECL_LONG_FLOAT
+#define EXP_STRING "Le"
+#define G_EXP_STRING "Lg"
+#define DBL_TYPE long double
+#define strtod strtold
+#define isnan isnanl
+#define finite finitel
+extern long double strtold(const char *nptr, char **endptr);
+#else
+#define EXP_STRING "e"
+#define G_EXP_STRING "g"
+#define DBL_TYPE double
+#endif
+
+int edit_double(int n, DBL_TYPE d, int *sp, char *s, int *ep)
 {
 	char *exponent, *p, buff[DBL_SIZE + 1];
 	int length;
@@ -499,19 +514,22 @@ edit_double(int n, double d, int *sp, char *s, int *ep)
 	if (n < -DBL_MAX_DIGITS)
 		n = DBL_MAX_DIGITS;
 	if (n < 0) {
-		double aux;
+		DBL_TYPE aux;
 		n = -n;
 		do {
-			sprintf(buff, "%- *.*e", n + 1 + 1 + DBL_EXPONENT_SIZE,
-				(n-1), d);
+			sprintf(buff, "%- *.*" EXP_STRING, n + 1 + 1 + DBL_EXPONENT_SIZE, n-1, d);
 			aux = strtod(buff, NULL);
+#ifdef ECL_LONG_FLOAT
+			if (n < LDBL_SIG)
+				aux = (double) aux;
+#endif
 			if (n < DBL_SIG)
 				aux = (float)aux;
 			n++;
 		} while (d != aux && n <= DBL_MAX_DIGITS);
 		n--;
 	} else {
-		sprintf(buff, "%- *.*e", DBL_SIZE,
+		sprintf(buff, "%- *.*" EXP_STRING, DBL_SIZE,
 			(n <= DBL_MAX_DIGITS)? (n-1) : (DBL_MAX_DIGITS-1), d);
 	}
 	exponent = strchr(buff, 'e');
@@ -547,7 +565,7 @@ edit_double(int n, double d, int *sp, char *s, int *ep)
 }
 
 static void
-write_double(double d, int e, bool shortp, cl_object stream)
+write_double(DBL_TYPE d, int e, int n, cl_object stream)
 {
 	int exp;
 #if defined(HAVE_FENV_H) || defined(_MSC_VER) || defined(mingw32)
@@ -563,7 +581,6 @@ write_double(double d, int e, bool shortp, cl_object stream)
 		exp = 0;
 	} else if (d < 1e-3 || d > 1e7) {
 		int sign;
-		int n = shortp? FLT_SIG : DBL_SIG;
 		char buff[DBL_MANTISSA_SIZE + 1];
 		n = edit_double(-n, d, &sign, buff, &exp);
 		write_ch(buff[0], stream);
@@ -577,15 +594,18 @@ write_double(double d, int e, bool shortp, cl_object stream)
 		write_str(buff+1, stream);
 	} else {
 		char buff[DBL_MANTISSA_SIZE + 1];
-		int i, n = shortp? FLT_SIG : DBL_SIG;
-		double aux;
+		int i;
+		DBL_TYPE aux;
 		/* Print in fixed point notation with enough number of
 		 * digits to preserve all information when reading again
 		 */
 		do {
-			sprintf(buff, "%0*.*g", DBL_MANTISSA_SIZE, n, d);
+			sprintf(buff, "%0*.*" G_EXP_STRING, DBL_MANTISSA_SIZE, n, d);
 			aux = strtod(buff, NULL);
-			if (shortp) aux = (float)aux;
+#ifdef LDBL_SIG
+			if (n < LDBL_SIG) aux = (double)aux;
+#endif
+			if (n < DBL_SIG) aux = (float)aux;
 			n++;
 		} while (aux != d && n <= DBL_MAX_DIGITS);
 		n--;
@@ -1058,23 +1078,31 @@ si_write_ugly_object(cl_object x, cl_object stream)
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
 		r = symbol_value(@'*read-default-float-format*');
-		write_double((double)ecl_short_float(x), (r == @'short-float')? 0 : 'f', TRUE, stream);
+		write_double(ecl_short_float(x), (r == @'short-float')? 0 : 'f', FLT_SIG, stream);
 		break;
-#endif
 	case t_singlefloat:
 		r = symbol_value(@'*read-default-float-format*');
-		write_double((double)sf(x), (r == @'single-float')? 0 : 's', TRUE, stream);
+		write_double(sf(x), (r == @'single-float')? 0 : 's', FLT_SIG, stream);
 		break;
-
+#else
+	case t_singlefloat:
+		r = symbol_value(@'*read-default-float-format*');
+		write_double(sf(x), (r == @'single-float' || r == @'short-float')? 0 : 's', FLT_SIG, stream);
+		break;
+#endif
+#ifdef ECL_LONG_FLOAT
 	case t_doublefloat:
 		r = symbol_value(@'*read-default-float-format*');
-		write_double((double)df(x), (r == @'double-float')? 0 : 'd', TRUE, stream);
+		write_double(df(x), (r == @'double-float')? 0 : 'd', DBL_SIG, stream);
 		break;
-
-#ifdef ECL_LONG_FLOAT
 	case t_longfloat:
 		r = symbol_value(@'*read-default-float-format*');
-		write_double(ecl_long_float(x), (r == @'long-float')? 0 : 'l', TRUE, stream);
+		write_double(ecl_long_float(x), (r == @'long-float')? 0 : 'l', LDBL_SIG, stream);
+		break;
+#else
+	case t_doublefloat:
+		r = symbol_value(@'*read-default-float-format*');
+		write_double(df(x), (r == @'double-float' || r == @'short-float')? 0 : 'd', DBL_SIG, stream);
 		break;
 #endif
 	case t_complex:

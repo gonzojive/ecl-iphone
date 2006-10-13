@@ -318,6 +318,18 @@ make_complex(cl_object r, cl_object i)
 	return(c);
 }
 
+#ifdef ECL_LONG_FLOAT
+long double
+number_to_long_double(cl_object x)
+{
+	if (type_of(x) == t_longfloat) {
+		return ecl_long_float(x);
+	} else {
+		return number_to_double(x);
+	}
+}
+#endif
+
 double
 number_to_double(cl_object x)
 {
@@ -411,9 +423,11 @@ cl_rational(cl_object x)
 			d = frexpl(d, &e);
 			e -= LDBL_MANT_DIG;
 			x = double_to_integer(ldexp(d, LDBL_MANT_DIG));
-			x = number_times(cl_expt(MAKE_FIXNUM(FLT_RADIX),
-						 MAKE_FIXNUM(e)),
-					 x);
+			if (e != 0) {
+				x = number_times(cl_expt(MAKE_FIXNUM(FLT_RADIX),
+							 MAKE_FIXNUM(e)),
+						 x);
+			}
 		}
 		break;
 	}
@@ -422,6 +436,74 @@ cl_rational(cl_object x)
 		FEtype_error_number(x);
 	}
 	@(return x)
+}
+
+#ifdef ECL_LONG_FLOAT
+cl_object
+long_double_to_integer(long double d)
+{
+	if (d <= MOST_POSITIVE_FIXNUM && d >= MOST_NEGATIVE_FIXNUM) {
+		return MAKE_FIXNUM((cl_fixnum)d);
+	} else if (-DBL_MAX <= d && d <= DBL_MAX) {
+		return double_to_integer(d);
+	} else {
+		extern long double sqrtl(long double x);
+		extern long double roundl(long double x);
+		long double d1, d2;
+		cl_object out;
+		int e = 0;
+		d = frexpl(d, &e);
+		if (e < 0) {
+			return MAKE_FIXNUM(0);
+		}
+		e -= LDBL_MANT_DIG;
+		d1 = floor(ldexp(d, LDBL_MANT_DIG/2));
+		d2 = ldexp(d, LDBL_MANT_DIG) - ldexp(d1, +LDBL_MANT_DIG/2);
+		out = number_plus(cl_ash(long_double_to_integer(d1), MAKE_FIXNUM(LDBL_MANT_DIG/2)),
+				  long_double_to_integer(d2));
+		if (e > 0) {
+			if (FLT_RADIX == 2) {
+				out = ecl_ash(out, e);
+			} else {
+				out = number_times(cl_expt(MAKE_FIXNUM(FLT_RADIX), MAKE_FIXNUM(e)),
+						   out);
+			}
+		}
+		return out;
+	}
+}
+#endif
+
+cl_object
+double_to_integer(double d)
+{
+	if (d <= MOST_POSITIVE_FIXNUM && d >= MOST_NEGATIVE_FIXNUM)
+		return MAKE_FIXNUM((cl_fixnum)d);
+	else {
+		cl_object x = big_register0_get();
+#ifdef WITH_GMP
+		mpz_set_d(x->big.big_num, d);
+#else  /* WITH_GMP */
+                x->big.big_num = (big_num_t)d;
+#endif /* WITH_GMP */
+		return big_register_copy(x);
+	}
+}
+
+cl_object
+float_to_integer(float d)
+{
+	if (d <= MOST_POSITIVE_FIXNUM && d >= MOST_NEGATIVE_FIXNUM)
+		return MAKE_FIXNUM((cl_fixnum)d);
+	else {
+		cl_object x = big_register0_get();
+#ifdef WITH_GMP
+		mpz_set_d(x->big.big_num, d);
+#else  /* WITH_GMP */
+                x->big.big_num = (big_num_t)d;
+#endif /* WITH_GMP */
+		return big_register_copy(x);
+	}
 }
 
 void

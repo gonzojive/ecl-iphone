@@ -130,7 +130,7 @@
       `(when (read-inspect-command ,label ,object nil)
              (princ "Not updated.")
              (terpri))))
-          
+
 (defun inspect-indent ()
   (declare (si::c-local))
   (fresh-line)
@@ -181,7 +181,7 @@
           (inspect-print (format nil "property ~:@(~S~):~%   ~~S" (car pl))
                          (cadr pl)
                          (get symbol (car pl))))))
-  
+
   (when (print-doc symbol t)
         (format t "~&-----------------------------------------------------------------------------~%"))
   )
@@ -209,31 +209,22 @@
 
 (defun inspect-number (number)
   (declare (si::c-local))
-  (case (type-of number)
-    (FIXNUM (format t "~S - fixnum (32 bits)" number))
-    (BIGNUM (format t "~S - bignum" number))
-    (RATIO
-     (format t "~S - ratio" number)
-     (inspect-recursively "numerator:" (numerator number))
-     (inspect-recursively "denominator:" (denominator number)))
-    (COMPLEX
-     (format t "~S - complex" number)
-     (inspect-recursively "real part:" (realpart number))
-     (inspect-recursively "imaginary part:" (imagpart number)))
-    ((SHORT-FLOAT SINGLE-FLOAT)
-     (format t "~S - short-float" number)
-     (multiple-value-bind (signif expon sign)
-          (integer-decode-float number)
-       (declare (ignore sign))
-       (inspect-print "exponent:  ~D" expon)
-       (inspect-print "mantissa:  ~D" signif)))
-    ((LONG-FLOAT DOUBLE-FLOAT)
-     (format t "~S - long-float" number)
-     (multiple-value-bind (signif expon sign)
-          (integer-decode-float number)
-       (declare (ignore sign))
-       (inspect-print "exponent:  ~D" expon)
-       (inspect-print "mantissa:  ~D" signif)))))
+  (let ((type (type-of number)))
+    (format t "~S - ~a" number (string-downcase type))
+    (case t
+      (INTEGER)
+      (RATIO
+       (inspect-recursively "numerator:" (numerator number))
+       (inspect-recursively "denominator:" (denominator number)))
+      (COMPLEX
+       (inspect-recursively "real part:" (realpart number))
+       (inspect-recursively "imaginary part:" (imagpart number)))
+      ((SHORT-FLOAT SINGLE-FLOAT LONG-FLOAT DOUBLE-FLOAT)
+       (multiple-value-bind (signif expon sign)
+	   (integer-decode-float number)
+	 (declare (ignore sign))
+	 (inspect-print "exponent:  ~D" expon)
+	 (inspect-print "mantissa:  ~D" signif))))))
 
 (defun inspect-cons (cons)
   (declare (si::c-local))

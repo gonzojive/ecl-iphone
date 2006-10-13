@@ -43,38 +43,6 @@
 # define tanhf tanh
 #endif
 
-cl_object
-double_to_integer(double d)
-{
-	if (d <= MOST_POSITIVE_FIXNUM && d >= MOST_NEGATIVE_FIXNUM)
-		return MAKE_FIXNUM((cl_fixnum)d);
-	else {
-		cl_object x = big_register0_get();
-#ifdef WITH_GMP
-		mpz_set_d(x->big.big_num, d);
-#else  /* WITH_GMP */
-                x->big.big_num = (big_num_t)d;
-#endif /* WITH_GMP */
-		return big_register_copy(x);
-	}
-}
-
-cl_object
-float_to_integer(float d)
-{
-	if (d <= MOST_POSITIVE_FIXNUM && d >= MOST_NEGATIVE_FIXNUM)
-		return MAKE_FIXNUM((cl_fixnum)d);
-	else {
-		cl_object x = big_register0_get();
-#ifdef WITH_GMP
-		mpz_set_d(x->big.big_num, d);
-#else  /* WITH_GMP */
-                x->big.big_num = (big_num_t)d;
-#endif /* WITH_GMP */
-		return big_register_copy(x);
-	}
-}
-
 static cl_object
 number_remainder(cl_object x, cl_object y, cl_object q)
 {
@@ -216,7 +184,7 @@ floor1(cl_object x)
 	case t_longfloat: {
 		long double d = ecl_long_float(x);
 		long double y = floorl(d);
-		VALUES(0) = double_to_integer(y);
+		VALUES(0) = long_double_to_integer(y);
 		VALUES(1) = make_longfloat(d - y);
 		break;
 	}
@@ -297,11 +265,11 @@ floor2(cl_object x, cl_object y)
 		  break;
 		}
 #ifdef ECL_LONG_FLOAT
-		case t_longfloat: {	/* FIX / SF */
+		case t_longfloat: {	/* FIX / LF */
 		  long double n = ecl_long_float(y);
 		  long double p = fix(x) / n;
 		  long double q = floorl(p);
-		  VALUES(0) = float_to_integer(q);
+		  VALUES(0) = long_double_to_integer(q);
 		  VALUES(1) = make_longfloat((p - q)*n);
 		  break;
 		}
@@ -371,11 +339,11 @@ floor2(cl_object x, cl_object y)
 		  break;
 		}
 #ifdef ECL_LONG_FLOAT
-		case t_longfloat: {	/* BIG / DF */
+		case t_longfloat: {	/* BIG / LF */
 		  long double n = ecl_long_float(y);
 		  long double p = big_to_double(x) / n;
 		  long double q = floorl(p);
-		  VALUES(0) = double_to_integer(q);
+		  VALUES(0) = long_double_to_integer(q);
 		  VALUES(1) = make_longfloat((p - q)*n);
 		  break;
 		}
@@ -424,10 +392,10 @@ floor2(cl_object x, cl_object y)
 	}
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat: {		/* LF / ANY */
-		float n = number_to_double(y);
-		float p = sf(x)/n;
-		float q = floorl(p);
-		VALUES(0) = float_to_integer(q);
+		long double n = number_to_long_double(y);
+		long double p = ecl_long_float(x)/n;
+		long double q = floorl(p);
+		VALUES(0) = long_double_to_integer(q);
 		VALUES(1) = make_longfloat((p - q)*n);
 		break;
 	}
@@ -488,7 +456,7 @@ ceiling1(cl_object x)
 	case t_longfloat: {
 		long double d = ecl_long_float(x);
 		long double y = ceill(d);
-		VALUES(0) = double_to_integer(y);
+		VALUES(0) = long_double_to_integer(y);
 		VALUES(1) = make_longfloat(d - y);
 		break;
 	}
@@ -569,11 +537,11 @@ ceiling2(cl_object x, cl_object y)
 		  break;
 		}
 #ifdef ECL_LONG_FLOAT
-		case t_longfloat: {	/* FIX / DF */
+		case t_longfloat: {	/* FIX / LF */
 		  long double n = ecl_long_float(y);
 		  long double p = fix(x)/n;
 		  long double q = ceill(p);
-		  VALUES(0) = double_to_integer(q);
+		  VALUES(0) = long_double_to_integer(q);
 		  VALUES(1) = make_longfloat((p - q)*n);
 		  break;
 		}
@@ -643,11 +611,11 @@ ceiling2(cl_object x, cl_object y)
 		  break;
 		}
 #ifdef ECL_LONG_FLOAT
-		case t_longfloat: {	/* BIG / DF */
+		case t_longfloat: {	/* BIG / LF */
 		  long double n = ecl_long_float(y);
 		  long double p = big_to_double(x)/n;
 		  long double q = ceill(p);
-		  VALUES(0) = double_to_integer(q);
+		  VALUES(0) = long_double_to_integer(q);
 		  VALUES(1) = make_longfloat((p - q)*n);
 		  break;
 		}
@@ -695,11 +663,11 @@ ceiling2(cl_object x, cl_object y)
 		break;
 	}
 #ifdef ECL_LONG_FLOAT
-	case t_longfloat: {		/* DF / ANY */
-		long double n = number_to_double(y);
-		long double p = df(x)/n;
+	case t_longfloat: {		/* LF / ANY */
+		long double n = number_to_long_double(y);
+		long double p = ecl_long_float(x)/n;
 		long double q = ceill(p);
-		VALUES(0) = double_to_integer(q);
+		VALUES(0) = long_double_to_integer(q);
 		VALUES(1) = make_longfloat((p - q)*n);
 		break;
 	}
@@ -760,7 +728,7 @@ truncate1(cl_object x)
 	case t_longfloat: {
 		long double d = ecl_long_float(x);
 		long double y = d > 0? floorl(d) : ceill(d);
-		VALUES(0) = double_to_integer(y);
+		VALUES(0) = long_double_to_integer(y);
 		VALUES(1) = make_longfloat(d - y);
 		break;
 	}
@@ -790,11 +758,49 @@ truncate2(cl_object x, cl_object y)
 	returnn(VALUES(0));
 @)
 
+static double
+round_double(double d)
+{
+	if (d > 0) {
+		double q = floor(q + 0.5);
+		d -= q;
+		if (d == 0.5) {
+			double x = q / 10;
+			int i = (int)(10 * (x - floor(x)));
+			if (i & 1) {
+				return q+1;
+			}
+		}
+		return q;
+	} else {
+		return -round_double(-d);
+	}
+}
+
+#ifdef ECL_LONG_FLOAT
+static long double
+round_long_double(long double d)
+{
+	if (d > 0) {
+		long double q = floorl(q + 0.5);
+		d -= q;
+		if (d == 0.5) {
+			long double x = q / 10;
+			int i = (int)(10 * (x - floorl(x)));
+			if (i & 1) {
+				return q+1;
+			}
+		}
+		return q;
+	} else {
+		return -round_long_double(-d);
+	}
+}
+#endif
+
 cl_object
 round1(cl_object x)
 {
-	float f;
-	double d;
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
@@ -810,51 +816,29 @@ round1(cl_object x)
 		f = ecl_short_float(x);
 		goto FLOAT;
 #endif
-	case t_singlefloat:
-		f = sf(x);
-	FLOAT: {
-		cl_object q = float_to_integer(d + (d>=0? 0.5 : -0.5));
-		d -= number_to_double(q);
-		if (d == 0.5) {
-		  if (number_oddp(q)) {
-			q = one_plus(q);
-			d = -0.5;
-		  }
-		} else if (d == -0.5) {
-		  if (number_oddp(q)) {
-			q = one_minus(q);
-			d = 0.5;
-		  }
-		}
-		VALUES(0) = q;
-		VALUES(1) = make_singlefloat(d);
+	case t_singlefloat: {
+		float d = sf(x);
+		float q = round_double(d);
+		VALUES(0) = float_to_integer(q);
+		VALUES(1) = make_singlefloat(d - q);
+		break;
+	}
+	case t_doublefloat: {
+		double d = df(x);
+		double q = round_double(d);
+		VALUES(0) = double_to_integer(q);
+		VALUES(1) = make_doublefloat(d - q);
 		break;
 	}
 #ifdef ECL_LONG_FLOAT
-	case t_longfloat:
-		d = ecl_long_float(x);
-		goto DOUBLE;
-#endif
-	case t_doublefloat:
-		d = df(x);
-	DOUBLE: {
-		cl_object q = double_to_integer(d + (d>=0? 0.5 : -0.5));
-		d -= number_to_double(q);
-		if (d == 0.5) {
-		  if (number_oddp(q)) {
-			q = one_plus(q);
-			d = -0.5;
-		  }
-		} else if (d == -0.5) {
-		  if (number_oddp(q)) {
-			q = one_minus(q);
-			d = 0.5;
-		  }
-		}
-		VALUES(0) = q;
-		VALUES(1) = make_doublefloat(d);
+	case t_longfloat: {
+		long double d = ecl_long_float(x);
+		long double q = round_long_double(d);
+		VALUES(0) = long_double_to_integer(q);
+		VALUES(1) = make_longfloat(d - q);
 		break;
 	}
+#endif
 	default:
 		FEtype_error_real(x);
 	}
@@ -1085,6 +1069,7 @@ cl_float_digits(cl_object x)
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
 		x = MAKE_FIXNUM(LDBL_MANT_DIG);
+		break;
 #endif
 	default:
 		FEtype_error_float(x);
@@ -1274,8 +1259,14 @@ cl_realpart(cl_object x)
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
+#ifdef ECL_SHORT_FLOAT
+	case t_longfloat:
+#endif
 	case t_singlefloat:
 	case t_doublefloat:
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+#endif
 		break;
 	case t_complex:
 		x = x->complex.real;
@@ -1308,7 +1299,7 @@ cl_imagpart(cl_object x)
 		break;
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
-		x = make_longfloat(0.0);
+		x = cl_core.longfloat_zero;
 #endif
 	case t_complex:
 		x = x->complex.imag;

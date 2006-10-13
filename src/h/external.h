@@ -865,7 +865,13 @@ extern cl_object make_shortfloat(float f);
 extern float ecl_short_float(cl_object o);
 #endif
 #ifdef ECL_LONG_FLOAT
+extern long double number_to_long_double(cl_object x);
 extern cl_object make_longfloat(long double f);
+#endif
+extern cl_object double_to_integer(double d);
+extern cl_object float_to_integer(float d);
+#ifdef ECL_LONG_FLOAT
+extern cl_object long_double_to_integer(long double d);
 #endif
 
 /* num_co.c */
@@ -890,8 +896,6 @@ extern cl_object cl_round _ARGS((cl_narg narg, cl_object x, ...));
 extern cl_object cl_float_sign _ARGS((cl_narg narg, cl_object x, ...));
 extern cl_object cl_complex _ARGS((cl_narg narg, cl_object r, ...));
 
-extern cl_object double_to_integer(double d);
-extern cl_object float_to_integer(float d);
 extern cl_object floor1(cl_object x);
 extern cl_object ceiling1(cl_object x);
 extern cl_object truncate1(cl_object x);

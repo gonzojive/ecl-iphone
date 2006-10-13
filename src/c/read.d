@@ -437,7 +437,12 @@ parse_number(const char *s, cl_index end, cl_index *ep, int radix)
 		char *parse_end;
 		char exp_marker;
 		cl_object output;
+#ifdef ECL_LONG_FLOAT
+		extern long double strtold(const char *nptr, char **endptr);
+		long double d;
+#else
 		double d;
+#endif
 		memcpy(buffer, s, end);
 		buffer[end] = '\0';
 		if (exp_marker_loc) {
@@ -446,7 +451,11 @@ parse_number(const char *s, cl_index end, cl_index *ep, int radix)
 		} else {
 			exp_marker = ecl_current_read_default_float_format();
 		}
+#ifdef ECL_LONG_FLOAT
+		d = strtold(buffer, &parse_end);
+#else
 		d = strtod(buffer, &parse_end);
+#endif
 		*ep = (parse_end - buffer);
 		if (*ep == 0) {
 			output = OBJNULL;

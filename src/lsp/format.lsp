@@ -117,8 +117,8 @@
     ;;Rational arithmetic avoids loss of precision in subsequent calculations.
     (cond ((> exponent 0)
 	   (setq r (ash fraction exponent))
-	   (setq m- (ash 1 exponent))	   
-	   (setq m+ m-))                   
+	   (setq m- (ash 1 exponent))
+	   (setq m+ m-))
 	  ((< exponent 0)
 	   (setq s (ash 1 (- exponent)))))
     ;;adjust the error bounds m+ and m- for unequal gaps

@@ -177,7 +177,11 @@ extern cl_object ecl_find_symbol_nolock(cl_object name, cl_object p, int *intern
 #define ECL_PPRINT_QUEUE_SIZE			128
 #define ECL_PPRINT_INDENTATION_STACK_SIZE	256
 
+#ifdef ECL_LONG_FLOAT
+extern int edit_double(int n, long double d, int *sp, char *s, int *ep);
+#else
 extern int edit_double(int n, double d, int *sp, char *s, int *ep);
+#endif
 extern void cl_write_object(cl_object x, cl_object stream);
 
 /* global locks */
@@ -245,6 +249,52 @@ typedef int fenv_t;
 extern cl_object si_get_library_pathname(void);
 #endif
 
+/*
+ * Fake several ISO C99 mathematical functions
+ */
+#ifndef HAVE_EXPF
+# define expf(x) exp((float)x)
+#endif
+#ifndef HAVE_LOGF
+# define logf(x) log((float)x)
+#endif
+#ifndef HAVE_SQRTF
+# define sqrtf(x) sqrt((float)x)
+#endif
+#ifndef HAVE_SINF
+# define sinf(x) sin((float)x)
+#endif
+#ifndef HAVE_COSF
+# define cosf(x) cos((float)x)
+#endif
+#ifndef HAVE_TANF
+# define tanf(x) tan((float)x)
+#endif
+#ifndef HAVE_SINHF
+# define sinhf(x) sinh((float)x)
+#endif
+#ifndef HAVE_COSHF
+# define coshf(x) cosh((float)x)
+#endif
+#ifndef HAVE_TANHF
+# define tanhf(x) tanh((float)x)
+#endif
+
+#ifndef HAVE_CEILF
+# define ceilf(x) ceil((float)x)
+#endif
+#ifndef HAVE_FLOORF
+# define floorf(x) floor((float)x)
+#endif
+#ifndef HAVE_FABSF
+# define fabsf(x) fabs((float)x)
+#endif
+#ifndef HAVE_FREXPF
+# define frexpf(x,y) frexp((float)x,y)
+#endif
+#ifndef HAVE_LDEXPF
+# define ldexpf(x,y) ldexp((float)x,y)
+#endif
 
 #ifdef __cplusplus
 }

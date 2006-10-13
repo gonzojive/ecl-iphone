@@ -223,6 +223,21 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #undef HAVE_FEENABLEEXCEPT
 /* the tzset() function gets the current time zone			*/
 #undef HAVE_TZSET
+/* several floating point functions (ISO C99)				*/
+#undef HAVE_EXPF
+#undef HAVE_LOGF
+#undef HAVE_SQRTF
+#undef HAVE_COSF
+#undef HAVE_SINF
+#undef HAVE_TANF
+#undef HAVE_SINHF
+#undef HAVE_COSHF
+#undef HAVE_TANHF
+#undef HAVE_FLOORF
+#undef HAVE_CEILF
+#undef HAVE_FABSF
+#undef HAVE_FREXPF
+#undef HAVE_LDEXPF
 
 /*
  * we do not manage to get proper signal handling of floating point

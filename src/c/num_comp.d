@@ -206,11 +206,13 @@ number_compare(cl_object x, cl_object y)
 #ifdef ECL_LONG_FLOAT
 	long double ldx, ldy;
 #endif
+	cl_type ty;
  BEGIN:
+	ty = type_of(y);
 	switch (type_of(x)) {
 	case t_fixnum:
 	  	ix = fix(x);
-		switch (type_of(y)) {
+		switch (ty) {
 		case t_fixnum:
 		  	iy = fix(y);
 			if (ix < iy)
@@ -239,15 +241,15 @@ number_compare(cl_object x, cl_object y)
 			goto DOUBLEFLOAT;
 #ifdef ECL_LONG_FLOAT
 		case t_longfloat:
-			dx = (long double)(ix);
-			dy = ecl_long_float(y);
+			ldx = (long double)(ix);
+			ldy = ecl_long_float(y);
 			goto LONGFLOAT;
 #endif
 		default:
 			FEtype_error_real(y);
 		}
 	case t_bignum:
-		switch (type_of(y)) {
+		switch (ty) {
 		case t_fixnum:
 			return big_sign(x) < 0 ? -1 : 1;
 		case t_bignum:
@@ -270,7 +272,7 @@ number_compare(cl_object x, cl_object y)
 			FEtype_error_real(y);
 		}
 	case t_ratio:
-		switch (type_of(y)) {
+		switch (ty) {
 		case t_fixnum:
 		case t_bignum:
 			y = number_times(y, x->ratio.den);
@@ -305,7 +307,7 @@ number_compare(cl_object x, cl_object y)
 	case t_doublefloat:
 		dx = df(x);
 	DOUBLEFLOAT0:
-		switch (type_of(y)) {
+		switch (ty) {
 		case t_fixnum:
 			dy = (double)(fix(y));
 			break;
@@ -322,7 +324,7 @@ number_compare(cl_object x, cl_object y)
 #ifdef ECL_LONG_FLOAT
 		case t_longfloat:
 			ldx = dx;
-			ldy = dy;
+			ldy = ecl_long_float(y);
 			goto LONGFLOAT;
 #endif
 		default:
@@ -338,9 +340,9 @@ number_compare(cl_object x, cl_object y)
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
 		ldx = ecl_long_float(x);
-		switch (type_of(y)) {
+		switch (ty) {
 		case t_fixnum:
-			ldy = (double)(fix(y));
+			ldy = (long double)fix(y);
 			break;
 		case t_bignum:
 		case t_ratio:
@@ -348,27 +350,28 @@ number_compare(cl_object x, cl_object y)
 			goto BEGIN;
 #ifdef ECL_SHORT_FLOAT
 		case t_shortfloat:
-			ldy = (long double)ecl_short_float(y);
-			goto LONGFLOAT;
+			ldy = ecl_short_float(y);
+			break;
 #endif
 		case t_singlefloat:
-			ldy = (long double)sf(y);
-			goto LONGFLOAT;
+			ldy = sf(y);
+			break;
 		case t_doublefloat:
-			ldy = (long double)df(y);
-			goto LONGFLOAT;
+			ldy = df(y);
+			break;
 		case t_longfloat:
 			ldy = ecl_long_float(y);
-		LONGFLOAT:
-			if (ldx == ldy)
-				return 0;
-			else if (ldx < ldy)
-				return -1;
-			else
-				return 1;
+			break;
 		default:
 			FEtype_error_real(y);
 		}
+	LONGFLOAT:
+		if (ldx == ldy)
+			return 0;
+		else if (ldx < ldy)
+			return -1;
+		else
+			return 1;
 		break;
 #endif
 	default:

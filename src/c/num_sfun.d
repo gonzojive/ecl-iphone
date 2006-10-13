@@ -19,18 +19,7 @@
 #ifdef _MSC_VER
 # undef complex
 #endif
-#ifndef HAVE_ISOC99
-# define expf exp
-# define logf log
-# define sqrtf sqrt
-# define cosf cos
-# define sinf sin
-# define tanf tan
-# define sinhf sinh
-# define coshf cosh
-# define tanhf tanh
-#endif
-
+#include "ecl/internal.h"
 #ifndef M_PI
 # ifdef PI
 #  define M_PI PI
