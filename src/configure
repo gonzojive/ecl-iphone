@@ -6992,7 +6992,7 @@ esac
 
 
 
-if test "$enable_longdouble" != "no" ; then
+if test "$longdouble" != "no" ; then
 echo "$as_me:$LINENO: checking for long double" >&5
 echo $ECHO_N "checking for long double... $ECHO_C" >&6
 if test "${ac_cv_type_long_double+set}" = set; then
@@ -7058,7 +7058,7 @@ _ACEOF
 fi
 
 fi
-if test "$enable_c99complex" != "no" ; then
+if test "$c99complex" != "no" ; then
 echo "$as_me:$LINENO: checking for double complex" >&5
 echo $ECHO_N "checking for double complex... $ECHO_C" >&6
 if test "${ac_cv_type_double_complex+set}" = set; then

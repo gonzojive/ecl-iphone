@@ -391,10 +391,10 @@ ECL_FILE_STRUCTURE
 ECL_FFI
 ECL_FPE_MODEL
 
-if test "$enable_longdouble" != "no" ; then
+if test "$longdouble" != "no" ; then
 AC_CHECK_TYPES([long double])
 fi
-if test "$enable_c99complex" != "no" ; then
+if test "$c99complex" != "no" ; then
 AC_CHECK_TYPES([double complex, float complex],[],[],[#include <complex.h>])
 fi
 
