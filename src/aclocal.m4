@@ -194,7 +194,7 @@ case "${host_os}" in
 		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
 		LDRPATH='-Wl,--rpath,~A'
 		clibs="-ldl"
-		# Maybe CFLAGS="-D_ISOC99_SOURCE ${CFLAGS}" ???
+		CFLAGS="-D_GNU_SOURCE ${CFLAGS}"
 		;;
 	kfreebsd*-gnu)
 		thehost='kfreebsd'
@@ -204,7 +204,7 @@ case "${host_os}" in
 		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
 		LDRPATH='-Wl,--rpath,/usr/lib/ecl/'
 		clibs="-ldl"
-		# Maybe CFLAGS="-D_ISOC99_SOURCE ${CFLAGS}" ???
+		CFLAGS="-D_GNU_SOURCE ${CFLAGS}"
 		;;
 	freebsd*)
 		thehost='freebsd'

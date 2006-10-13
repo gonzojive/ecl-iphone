@@ -186,7 +186,7 @@ cl_log1(cl_object x)
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		return1(make_singlefloat(logf(number_to_double(x))));
+		return1(make_singlefloat(log(number_to_double(x))));
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
 		return1(make_shortfloat(logf(ecl_short_float(x))));
