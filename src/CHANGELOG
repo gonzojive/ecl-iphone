@@ -94,6 +94,8 @@ ECL 1.0:
    isolated lambda forms using COMPILE. Additionally, these variables are
    defined even without the compiler loaded.
 
+ - DESCRIBE was not prepare for the number range types returned by TYPE-OF.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

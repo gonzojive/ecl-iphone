@@ -210,8 +210,10 @@
 (defun inspect-number (number)
   (declare (si::c-local))
   (let ((type (type-of number)))
+    (when (consp type) ;; Range types, as (INTEGER 0 0)
+     (setf type (first type)))
     (format t "~S - ~a" number (string-downcase type))
-    (case t
+    (case type
       (INTEGER)
       (RATIO
        (inspect-recursively "numerator:" (numerator number))
