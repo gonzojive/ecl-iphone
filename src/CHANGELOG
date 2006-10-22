@@ -96,6 +96,16 @@ ECL 1.0:
 
  - DESCRIBE was not prepare for the number range types returned by TYPE-OF.
 
+* Visible changes:
+
+ - EXT:PROCESS-COMMAND-ARGS now allows for a default rule.
+
+ - Variable EXT:*HELP-MESSAGE* and EXT:+DEFAULT-COMMAND-ARG-RULES+ exported.
+
+* Contributed code:
+
+ - New examples: cmdline/ls.lsp
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

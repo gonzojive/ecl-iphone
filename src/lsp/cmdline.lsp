@@ -12,36 +12,38 @@
 
 (in-package "SYSTEM")
 
-(export '(*lisp-init-file-list* command-args process-command-args))
+(export '(*lisp-init-file-list*
+          *help-message*
+          +default-command-arg-rules+
+          command-args
+          process-command-args))
 
 (defvar *lisp-init-file-list* '("~/.ecl" "~/.eclrc")
   "List of files automatically loaded when ECL is invoked.")
 
-(defun command-args ()
-  "Returns the command line arguments as list"
-  (loop for i from 0 below (argc)
-	collect (argv i)))
-
-(defun help-message (stream)
-  "Prints a help message about command line arguments of ECL"
-  (princ "
+(defvar *help-message* "
 Usage: ecl [-? | --help]
            [-dir dir] [-load file] [-shell file] [-eval expr] [-rc | -norc]
            [[-o ofile] [-c [cfile]] [-h [hfile]] [-data [datafile]] [-s] [-q]
             -compile file]
 
 "
-	 stream))
+ "Prints a help message about command line arguments of ECL")
+
+(defun command-args ()
+  "Returns the command line arguments as list"
+  (loop for i from 0 below (argc)
+	collect (argv i)))
 
 (defun command-arg-error (str &rest fmt-args)
   ;; Format an error message and quit
   (declare (si::c-local))
   (apply #'format *error-output* str fmt-args)
-  (help-message *error-output*)
+  (princ *help-message* *error-output*)
   (quit 1))
 
-(defconstant +command-arg-rules+
-  '(("--help" 0 #0=(progn (help-message *standard-output*) (quit)) :noloadrc)
+(defconstant +default-command-arg-rules+
+  '(("--help" 0 #0=(progn (princ *help-message* *standard-output*) (quit)) :noloadrc)
     ("-?" 0 #0# :noloadrc)
     ("-h" 0 #0# :noloadrc)
     ("-norc" 0 nil :noloadrc)
@@ -72,11 +74,11 @@ Usage: ecl [-? | --help]
     ("-q" 0 (setq verbose nil))
     ("-s" 0 (setq system-p t))))
 
-(defun produce-init-code (option-list rules error-on-unknown)
-  (declare (si::c-local))
+(defun produce-init-code (option-list rules)
   (do* ((commands '())
+        (stop nil)
 	(loadrc t))
-       ((null option-list)
+       ((or stop (null option-list))
 	(values `(let ((output-file t)
 		       (c-file nil)
 		       (h-file nil)
@@ -86,31 +88,35 @@ Usage: ecl [-? | --help]
 		       (quit nil))
 		   ,@(nreverse commands)
 		   (when quit (quit 0)))
-		loadrc))
+		loadrc
+		option-list))
     (let* ((option (pop option-list))
 	   (rule (assoc option rules :test #'string=)))
-      (if (null rule)
-	  (if error-on-unknown
-	      (command-arg-error "Unknown command line option ~A.~%" option)
-	      (setf option-list nil))
-	  (let ((pattern (copy-tree (third rule))))
-	    (case (fourth rule)
-	      (:noloadrc (setf loadrc nil))
-	      (:loadrc (setf loadrc t))
-	      (:stop (setf option-list nil)))
-	    (let ((pattern (copy-tree (third rule))))
-	      (unless (zerop (second rule))
-		(when (null option-list)
-		  (command-arg-error
-		   "Missing argument after command line option ~A.~%"
-		   option))
-		(nsubst (pop option-list) 1 pattern))
-	      (push pattern commands)))))))
+      (unless rule
+	;; If there is a default rule, group all remaining arguments
+	;; including the unmatched one, and pass them to this rule.
+	(setf rule (assoc "*DEFAULT*" rules :test #'string=)
+	      option-list `('(,option ,@option-list))
+	      stop t)
+	(unless rule
+	  (command-arg-error "Unknown command line option ~A.~%" option)))
+      (let ((pattern (copy-tree (third rule))))
+	(case (fourth rule)
+	  (:noloadrc (setf loadrc nil))
+	  (:loadrc (setf loadrc t))
+	  (:stop (setf option-list nil)))
+	(let ((pattern (copy-tree (third rule))))
+	  (unless (zerop (second rule))
+	    (when (null option-list)
+	      (command-arg-error
+	       "Missing argument after command line option ~A.~%"
+	       option))
+	    (nsubst (pop option-list) 1 pattern))
+	  (push pattern commands))))))
 
 (defun process-command-args (&key
 			     (args (rest (command-args)))
-			     (rules +command-arg-rules+)
-			     (error-on-unknown t))
+			     (rules +default-command-arg-rules+))
 "PROCESS-COMMAND-ARGS takes a list of arguments and processes according
 to a set of rules. These rules are of the format
 
@@ -125,7 +131,8 @@ line after this option and whether the initialization file will be
 loaded before evaluating all forms.
 
 An excerpt of the rules used by ECL:
-'((\"--help\" 0 #0=(progn (help-message *standard-output*) (quit)) :noloadrc)
+'((\"--help\" 0 #0=(progn (princ *help-message* *standard-output*) (quit))
+               :noloadrc)
   (\"-?\" 0 #0# :noloadrc)
   (\"-h\" 0 #0# :noloadrc)
   (\"-norc\" 0 nil :noloadrc)
@@ -133,7 +140,7 @@ An excerpt of the rules used by ECL:
   (\"-eval\" 1 (eval (read-from-string 1))))
 "
   (multiple-value-bind (commands loadrc)
-      (produce-init-code args rules error-on-unknown)
+      (produce-init-code args rules)
     (handler-case
 	(progn
 	  (when loadrc
