@@ -762,7 +762,7 @@ static double
 round_double(double d)
 {
 	if (d > 0) {
-		double q = floor(q + 0.5);
+		double q = floor(d + 0.5);
 		d -= q;
 		if (d == 0.5) {
 			double x = q / 10;
@@ -782,7 +782,7 @@ static long double
 round_long_double(long double d)
 {
 	if (d > 0) {
-		long double q = floorl(q + 0.5);
+		long double q = floorl(d + 0.5);
 		d -= q;
 		if (d == 0.5) {
 			long double x = q / 10;
