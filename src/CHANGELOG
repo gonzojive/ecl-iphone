@@ -102,6 +102,11 @@ ECL 1.0:
 
  - Variable EXT:*HELP-MESSAGE* and EXT:+DEFAULT-COMMAND-ARG-RULES+ exported.
 
+ - C:BUILD-PROGRAM now uses a unique prefix for the initialization function,
+   init_ECL_PROGRAM, to avoid collisions when both the program and a component
+   have the same name:
+	(C:BUILD-PROGRAM "ls" :lisp-files '("ls.o"))
+
 * Contributed code:
 
  - New examples: cmdline/ls.lsp

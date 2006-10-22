@@ -292,7 +292,7 @@ static cl_object VV[VM];
        (when (or (symbolp output-name) (stringp output-name))
 	 (setf output-name (compile-file-pathname output-name :type :program)))
        (unless init-name
-	 (setf init-name (init-function-name (pathname-name output-name) nil)))
+        (setf init-name (init-function-name "ECL_PROGRAM" nil)))
        (format c-file +lisp-program-init+ init-name "" shared-data-file
 	       submodules "")
        (format c-file #+:win32 (ecase system (:console +lisp-program-main+)
