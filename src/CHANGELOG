@@ -109,7 +109,7 @@ ECL 1.0:
 
 * Contributed code:
 
- - New examples: cmdline/ls.lsp
+ - New examples: cmdline/ls.lsp, ffi/uffi.lsp
 
 ;;; Local Variables: ***
 ;;; mode:text ***
