@@ -2810,6 +2810,36 @@ ecl_make_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm)
 	return(stream);
 }
 
+int
+ecl_stream_to_handle(cl_object s, bool output)
+{
+	FILE *f;
+ BEGIN:
+	if (type_of(s) != t_stream)
+		return -1;
+	switch ((enum ecl_smmode)s->stream.mode) {
+	case smm_input:
+		if (output) return -1;
+		f = s->stream.file;
+		break;
+	case smm_output:
+		if (!output) return -1;
+		f = s->stream.file;
+		break;
+	case smm_io:
+		f = s->stream.file;
+		break;
+	case smm_synonym:
+		s = symbol_value(s->stream.object0);
+		goto BEGIN;
+	case smm_two_way:
+		s = output? s->stream.object1 : s->stream.object0;
+		goto BEGIN;
+	default:
+		error("illegal stream mode");
+	}
+	return fileno(f);
+}
 
 void
 init_file(void)

@@ -116,6 +116,8 @@ ECL 1.0:
 	  (ffi:clines "#include <math.h>")
 	  (ffi:c-inline (x) (:double) :double "sin(#0)" :one-liner t))
 
+ - Function ecl_stream_to_handle() now exported.
+
 * Contributed code:
 
  - New examples: cmdline/ls.lsp, ffi/uffi.lsp

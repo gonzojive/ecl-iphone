@@ -87,37 +87,6 @@ si_close_pipe(cl_object stream)
 #endif
 }
 
-static int
-stream_to_handle(cl_object s, bool output)
-{
-	FILE *f;
- BEGIN:
-	if (type_of(s) != t_stream)
-		return -1;
-	switch ((enum ecl_smmode)s->stream.mode) {
-	case smm_input:
-		if (output) return -1;
-		f = s->stream.file;
-		break;
-	case smm_output:
-		if (!output) return -1;
-		f = s->stream.file;
-		break;
-	case smm_io:
-		f = s->stream.file;
-		break;
-	case smm_synonym:
-		s = symbol_value(s->stream.object0);
-		goto BEGIN;
-	case smm_two_way:
-		s = output? s->stream.object1 : s->stream.object0;
-		goto BEGIN;
-	default:
-		error("illegal stream mode");
-	}
-	return fileno(f);
-}
-
 @(defun ext::run-program (command argv &key (input @':stream') (output @':stream')
 	  		  (error @'t'))
 	int parent_write = 0, parent_read = 0;
@@ -170,7 +139,7 @@ stream_to_handle(cl_object s, bool output)
 		/* The child inherits a duplicate of our input
 		   handle. Creating a duplicate avoids problems when
 		   the child closes it */
-		int stream_handle = stream_to_handle(SYM_VAL(@'*standard-input*'), 0);
+		int stream_handle = ecl_stream_to_handle(SYM_VAL(@'*standard-input*'), 0);
 		if (stream_handle >= 0)
 			DuplicateHandle(current, _get_osfhandle(stream_handle) /*GetStdHandle(STD_INPUT_HANDLE)*/,
 					current, &child_stdin, 0, TRUE,
@@ -202,7 +171,7 @@ stream_to_handle(cl_object s, bool output)
 		/* The child inherits a duplicate of our output
 		   handle. Creating a duplicate avoids problems when
 		   the child closes it */
-		int stream_handle = stream_to_handle(SYM_VAL(@'*standard-output*'), 1);
+		int stream_handle = ecl_stream_to_handle(SYM_VAL(@'*standard-output*'), 1);
 		if (stream_handle >= 0)
 			DuplicateHandle(current, _get_osfhandle(stream_handle) /*GetStdHandle(STD_OUTPUT_HANDLE)*/,
 					current, &child_stdout, 0, TRUE,
@@ -223,7 +192,7 @@ stream_to_handle(cl_object s, bool output)
 		/* The child inherits a duplicate of our output
 		   handle. Creating a duplicate avoids problems when
 		   the child closes it */
-		int stream_handle = stream_to_handle(SYM_VAL(@'*error-output*'), 1);
+		int stream_handle = ecl_stream_to_handle(SYM_VAL(@'*error-output*'), 1);
 		if (stream_handle >= 0)
 			DuplicateHandle(current, _get_osfhandle(stream_handle) /*GetStdHandle(STD_ERROR_HANDLE)*/,
 					current, &child_stderr, 0, TRUE,
@@ -308,7 +277,7 @@ stream_to_handle(cl_object s, bool output)
 	} else {
 		child_stdin = -1;
 		if (input == @'t')
-			child_stdin = stream_to_handle(SYM_VAL(@'*standard-input*'), 0);
+			child_stdin = ecl_stream_to_handle(SYM_VAL(@'*standard-input*'), 0);
 		if (child_stdin >= 0)
 			child_stdin = dup(child_stdin);
 		else
@@ -322,7 +291,7 @@ stream_to_handle(cl_object s, bool output)
 	} else {
 		child_stdout = -1;
 		if (output == @'t')
-			child_stdout = stream_to_handle(SYM_VAL(@'*standard-output*'), 1);
+			child_stdout = ecl_stream_to_handle(SYM_VAL(@'*standard-output*'), 1);
 		if (child_stdout >= 0)
 			child_stdout = dup(child_stdout);
 		else
@@ -331,7 +300,7 @@ stream_to_handle(cl_object s, bool output)
 	if (error == @':output') {
 		child_stderr = child_stdout;
 	} else if (error == @'t') {
-		child_stderr = stream_to_handle(SYM_VAL(@'*error-output*'), 1);
+		child_stderr = ecl_stream_to_handle(SYM_VAL(@'*error-output*'), 1);
 	} else {
 		child_stderr = -1;
 	}

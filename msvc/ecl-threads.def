@@ -339,6 +339,7 @@ EXPORTS
 	cl_file_length
 	ecl_file_column
 	ecl_make_stream_from_fd
+	ecl_stream_to_handle
 
 
 	; format.c

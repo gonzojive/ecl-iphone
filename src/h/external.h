@@ -579,6 +579,7 @@ extern cl_object ecl_file_position(cl_object strm);
 extern cl_object ecl_file_position_set(cl_object strm, cl_object disp);
 extern int ecl_file_column(cl_object strm);
 extern cl_object ecl_make_stream_from_fd(cl_object host, int fd, enum ecl_smmode smm);
+extern int ecl_stream_to_handle(cl_object s, bool output);
 
 /* finalize.c */
 
