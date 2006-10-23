@@ -13,20 +13,13 @@
     See file '../Copyright' for full details.
 */
 
-#ifndef _MSC_VER
-#include <sys/param.h>		/* includes <sys/signal.h> and <sys/types.h> */
-#else
-#include <limits.h>
-#endif
-#include <sys/types.h>		/* for EMX */
-#include <stddef.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <setjmp.h>
+#include <sys/types.h>		/* size_t, pthread_t, pthread_mutex_t */
+#include <stddef.h>		/* NULL, ptrdiff_t */
+#include <stdarg.h> 		/* va_list */
+#include <setjmp.h> 		/* setjmp and buffers */
 #if !defined(cygwin) && !defined(_MSC_VER)
-#include <inttypes.h>
-#endif
-#ifdef _MSC_VER
+#include <stdint.h> 		/* int8_t and friends */
+#else
 typedef char int8_t;
 typedef short int16_t;
 typedef unsigned char uint8_t;
@@ -46,8 +39,6 @@ typedef unsigned short uint16_t;
 #  ifdef GBC_BOEHM
 #   define CreateThread GC_CreateThread
 #  endif
-# else
-#  include <pthread.h>
 # endif
 # define start_critical_section()
 # define end_critical_section()
@@ -58,9 +49,6 @@ typedef unsigned short uint16_t;
 
 #include <ecl/object.h>
 #include <ecl/stacks.h>
-#ifndef _ARGS
-# define _ARGS(x) x
-#endif
 #include <ecl/external.h>
 #include <ecl/eval.h>
 #include <ecl/number.h>

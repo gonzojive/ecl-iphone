@@ -34,6 +34,7 @@
 
 #include <unistd.h>
 #include <string.h>
+#include <stdio.h>
 #include <ecl/ecl.h>
 #include <ecl/internal.h>
 #include <ecl/page.h>

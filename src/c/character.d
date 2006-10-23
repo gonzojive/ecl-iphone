@@ -13,7 +13,7 @@
     See file '../Copyright' for full details.
 */
 
-
+#include <stdio.h>
 #include <ecl/ecl.h>
 #include <ctype.h>
 

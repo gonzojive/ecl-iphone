@@ -15,6 +15,7 @@
 
 #include <ecl/ecl.h>
 #include <string.h>
+#include <stdio.h>
 #include <ecl/ecl-inl.h>
 #include <ecl/internal.h>
 

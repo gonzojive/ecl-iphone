@@ -371,7 +371,7 @@ struct ecl_stream {
 	HEADER4(mode,closed,char_stream_p,signed_bytes);
 				/*  stream mode of enum smmode  */
 				/*  stream element type  */
-	FILE	*file;		/*  file pointer  */
+	void	*file;		/*  file pointer  */
 	cl_object object0;	/*  some object  */
 	cl_object object1;	/*  some object */
 	cl_fixnum int0;		/*  some int  */

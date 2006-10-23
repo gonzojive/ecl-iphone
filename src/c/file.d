@@ -438,7 +438,7 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	x = cl_alloc_object(t_stream);
 	x->stream.mode = (short)smm;
 	x->stream.closed = 0;
-	x->stream.file = fp;
+	x->stream.file = (void*)fp;
 	x->stream.char_stream_p = char_stream_p;
 	/* Michael, touch this to reactivate support for odd bit sizes! */
 	if (!use_header_p) {
@@ -493,7 +493,7 @@ static void flush_output_stream_binary(cl_object strm);
 	/* It is permissible to close a closed file */
 	if (strm->stream.closed)
 		@(return Ct);
-	fp = strm->stream.file;
+	fp = (FILE*)strm->stream.file;
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_output:
 		if (fp == stdout)
@@ -515,7 +515,7 @@ static void flush_output_stream_binary(cl_object strm);
 				flush_output_stream_binary(strm);
 			/* write header */
 			if (strm->stream.header != 0xFF) {
-				if (fseek(strm->stream.file, 0, SEEK_SET) != 0)
+				if (fseek(fp, 0, SEEK_SET) != 0)
 					io_error(strm);
 				ecl_write_byte8(strm->stream.header, strm);
 			}
@@ -606,7 +606,7 @@ ecl_write_byte8(int c, cl_object strm)
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_output:
 	case smm_io: {
-		FILE *fp = strm->stream.file;
+		FILE *fp = (FILE *)strm->stream.file;
 		if (fp == NULL)
 			wrong_file_handler(strm);
 		if (putc(c, fp) == EOF)
@@ -706,12 +706,12 @@ BEGIN:
 		if (strm->stream.buffer_state == 1) {
 			/* buffer is prepared for reading: re-read (8-nb) bits and throw the rest */
 			int c0;
-			fseek(strm->stream.file, -1, SEEK_CUR);
+			fseek((FILE*)strm->stream.file, -1, SEEK_CUR);
 			c0 = ecl_read_byte8(strm);
 			if (c0 == EOF)
 				/* this should not happen !!! */
 				io_error(strm);
-			fseek(strm->stream.file, -1, SEEK_CUR);
+			fseek((FILE*)strm->stream.file, -1, SEEK_CUR);
 			b = (unsigned char)(c0 & MAKE_BIT_MASK(8-nb));
 			nb = (8-nb);
 		}
@@ -745,7 +745,7 @@ ecl_read_byte8(cl_object strm)
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_input:
 	case smm_io: {
-		FILE *fp = strm->stream.file;
+		FILE *fp = (FILE*)strm->stream.file;
 		if (fp == NULL)
 			wrong_file_handler(strm);
 		c = getc(fp);
@@ -806,7 +806,7 @@ si_set_buffering_mode(cl_object stream, cl_object buffer_mode_symbol)
 		FEerror("Not a valid buffering mode: ~A", 1, buffer_mode_symbol);
 	}
 	if (mode == smm_output || mode == smm_io || mode == smm_input) {
-		FILE *fp = stream->stream.file;
+		FILE *fp = (FILE*)stream->stream.file;
 		char *new_buffer = 0;
 		setvbuf(fp, 0, _IONBF, 0);
 		if (buffer_mode != _IONBF) {
@@ -827,12 +827,13 @@ flush_output_stream_binary(cl_object strm)
 		unsigned char b = strm->stream.bit_buffer;
 		cl_index nb = strm->stream.bits_left;
 		bool do_merging = FALSE;
+		FILE *fp = (FILE*)strm->stream.file;
 
 		/* do we need to merge with existing byte? */
-		long current_offset = ftell(strm->stream.file), diff_offset;
-		if (fseek(strm->stream.file, 0, SEEK_END) != 0)
+		long current_offset = ftell(fp), diff_offset;
+		if (fseek(fp, 0, SEEK_END) != 0)
 			io_error(strm);
-		switch ((diff_offset = ftell(strm->stream.file)-current_offset)) {
+		switch ((diff_offset = ftell(fp)-current_offset)) {
 			case 0: break;
 			case 1:
 				/* (EOF-1): merge only if less bits left than header tells us */
@@ -842,7 +843,7 @@ flush_output_stream_binary(cl_object strm)
 				do_merging = (diff_offset > 1);
 				break;
 		}
-		if (fseek(strm->stream.file, current_offset, SEEK_SET) != 0)
+		if (fseek(fp, current_offset, SEEK_SET) != 0)
 			io_error(strm);
 
 		/* do merging, if required */
@@ -853,21 +854,21 @@ flush_output_stream_binary(cl_object strm)
 				if (c != EOF)
 					b |= (unsigned char)(c & ~MAKE_BIT_MASK(nb));
 				/* rewind stream */
-				if (fseek(strm->stream.file, -1, SEEK_CUR) != 0)
+				if (fseek(fp, -1, SEEK_CUR) != 0)
 					io_error(strm);
 			} else {
 				/* write-only stream: need to reopen the file for reading *
 				 * the byte to merge, then reopen it back for writing     */
 				cl_object fn = si_coerce_to_filename(strm->stream.object1);
-				if (freopen(fn->base_string.self, OPEN_R, strm->stream.file) == NULL ||
-				    fseek(strm->stream.file, current_offset, SEEK_SET) != 0)
+				if (freopen(fn->base_string.self, OPEN_R, fp) == NULL ||
+				    fseek(fp, current_offset, SEEK_SET) != 0)
 					io_error(strm);
 				/* cannot use ecl_read_byte8 here, because strm hasn't the right mode */
-				b |= (unsigned char)(getc(strm->stream.file) & ~MAKE_BIT_MASK(nb));
+				b |= (unsigned char)(getc(fp) & ~MAKE_BIT_MASK(nb));
 				/* need special trick to re-open the file for writing, avoiding truncation */
-				fclose(strm->stream.file);
+				fclose(fp);
 				strm->stream.file = fdopen(open(fn->base_string.self, O_WRONLY), OPEN_W);
-				if (strm->stream.file == NULL || fseek(strm->stream.file, current_offset, SEEK_SET) != 0)
+				if (strm->stream.file == NULL || fseek(fp, current_offset, SEEK_SET) != 0)
 					io_error(strm);
 			}
 		} else {
@@ -877,7 +878,7 @@ flush_output_stream_binary(cl_object strm)
 
 		/* flush byte w/o changing file pointer */
 		ecl_write_byte8(b, strm);
-		fseek(strm->stream.file, -1, SEEK_CUR);
+		fseek(fp, -1, SEEK_CUR);
 	}
 }
 
@@ -1041,7 +1042,7 @@ BEGIN:
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_input:
 	case smm_io: {
-		FILE *fp = strm->stream.file;
+		FILE *fp = (FILE*)strm->stream.file;
 		if (!strm->stream.char_stream_p)
 			not_a_character_stream(strm);
 		if (fp == NULL)
@@ -1153,7 +1154,7 @@ BEGIN:
 		FEtype_error_stream(strm);
 	if (strm->stream.closed)
 		FEclosed_stream(strm);
-	fp = strm->stream.file;
+	fp = (FILE*)strm->stream.file;
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_input:
 	case smm_io:
@@ -1261,7 +1262,7 @@ BEGIN:
 		FEtype_error_stream(strm);
 	if (strm->stream.closed)
 		FEclosed_stream(strm);
-	fp = strm->stream.file;
+	fp = (FILE*)strm->stream.file;
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_input:
 	case smm_io:
@@ -1341,7 +1342,7 @@ BEGIN:
 		FEtype_error_stream(strm);
 	if (strm->stream.closed)
 		FEclosed_stream(strm);
-	fp = strm->stream.file;
+	fp = (FILE*)strm->stream.file;
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_output:
 	case smm_io:
@@ -1492,7 +1493,7 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 	{
 		size_t towrite = end - start;
 		if (fwrite(seq->vector.self.ch + start, sizeof(char),
-			   towrite, stream->stream.file) < towrite) {
+			   towrite, (FILE*)stream->stream.file) < towrite) {
 			io_error(stream);
 		}
 	} else if (t == t_stream && stream->stream.mode == smm_two_way) {
@@ -1575,7 +1576,7 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 		size_t toread = end - start;
 		size_t n = fread(seq->vector.self.ch + start, sizeof(char),
 				 toread, stream->stream.file);
-		if (n < toread && ferror(stream->stream.file))
+		if (n < toread && ferror((FILE*)stream->stream.file))
 			io_error(stream);
 		start += n;
 	} else if (t == t_stream && stream->stream.mode == smm_two_way) {
@@ -1613,7 +1614,7 @@ BEGIN:
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_output:
 	case smm_io: {
-		FILE *fp = strm->stream.file;
+		FILE *fp = (FILE*)strm->stream.file;
 		if (fp == NULL)
 			wrong_file_handler(strm);
 		if ((strm->stream.byte_size & 7) && strm->stream.buffer_state == -1) {
@@ -1676,7 +1677,7 @@ BEGIN:
 		FEtype_error_stream(strm);
 	if (strm->stream.closed)
 		FEclosed_stream(strm);
-	fp = strm->stream.file;
+	fp = (FILE*)strm->stream.file;
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_input:
 		if (fp == NULL)
@@ -1750,7 +1751,7 @@ BEGIN:
 		FEtype_error_stream(strm);
 	if (strm->stream.closed)
 		FEclosed_stream(strm);
-	fp = strm->stream.file;
+	fp = (FILE*)strm->stream.file;
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_output:
 #if 0
@@ -1916,7 +1917,7 @@ BEGIN:
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_input:
 	case smm_io:
-		fp = strm->stream.file;
+		fp = (FILE*)strm->stream.file;
 		if (fp == NULL)
 			wrong_file_handler(strm);
 		return flisten(fp);
@@ -1924,7 +1925,7 @@ BEGIN:
 #if defined(ECL_WSOCK)
 	case smm_io_wsock:
 	case smm_input_wsock:
-		fp = strm->stream.file;
+		fp = (FILE*)strm->stream.file;
 		if ( ( int )fp == INVALID_SOCKET )
 			wrong_file_handler( strm );
 		else
@@ -2006,7 +2007,7 @@ BEGIN:
 	case smm_input: {
 		/* FIXME! This does not handle large file sizes */
 		cl_fixnum small_offset;
-		FILE *fp = strm->stream.file;
+		FILE *fp = (FILE*)strm->stream.file;
 		if (fp == NULL)
 			wrong_file_handler(strm);
 		small_offset = ftell(fp);
@@ -2088,7 +2089,7 @@ BEGIN:
 	case smm_input:
 	case smm_output:
 	case smm_io: {
-		FILE *fp = strm->stream.file;
+		FILE *fp = (FILE*)strm->stream.file;
 		if (!strm->stream.char_stream_p) {
 			large_disp = floor2(number_times(large_disp, MAKE_FIXNUM(strm->stream.byte_size)),
 					    MAKE_FIXNUM(8));
@@ -2193,7 +2194,7 @@ BEGIN:
 	case smm_input:
 	case smm_output:
 	case smm_io: {
-		FILE *fp = strm->stream.file;
+		FILE *fp = (FILE*)strm->stream.file;
 		cl_index bs;
 		if (fp == NULL)
 			wrong_file_handler(strm);
@@ -2746,7 +2747,7 @@ cl_interactive_stream_p(cl_object strm)
 #ifdef HAVE_ISATTY
 		/* Here we should check for the type of file descriptor,
 		 * and whether it is connected to a tty. */
-		output = isatty(fileno(strm->stream.file))? Ct : Cnil;
+		output = isatty(fileno((FILE*)strm->stream.file))? Ct : Cnil;
 #endif
 		break;
 	default:;
@@ -2820,14 +2821,14 @@ ecl_stream_to_handle(cl_object s, bool output)
 	switch ((enum ecl_smmode)s->stream.mode) {
 	case smm_input:
 		if (output) return -1;
-		f = s->stream.file;
+		f = (FILE*)s->stream.file;
 		break;
 	case smm_output:
 		if (!output) return -1;
-		f = s->stream.file;
+		f = (FILE*)s->stream.file;
 		break;
 	case smm_io:
-		f = s->stream.file;
+		f = (FILE*)s->stream.file;
 		break;
 	case smm_synonym:
 		s = symbol_value(s->stream.object0);

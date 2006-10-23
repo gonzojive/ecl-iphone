@@ -2,10 +2,6 @@
 extern "C" {
 #endif
 
-#ifndef _ARGS
-#define _ARGS(x) (cl_narg n, ...)
-#endif
-#undef _ARGS
 #define _ARGS(x) x
 
 /*
@@ -1453,8 +1449,8 @@ extern cl_object si_rmdir(cl_object directory);
 
 extern const char *expand_pathname(const char *name);
 extern cl_object ecl_cstring_to_pathname(char *s);
-extern FILE *backup_fopen(const char *filename, const char *option);
-extern cl_object ecl_file_len(FILE *fp);
+extern void *ecl_backup_fopen(const char *filename, const char *option);
+extern cl_object ecl_file_len(void *fp);
 extern cl_object homedir_pathname(cl_object user);
 
 

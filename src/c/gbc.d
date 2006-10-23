@@ -17,6 +17,7 @@
 #ifdef ECL_THREADS
 #include <pthread.h>
 #endif
+#include <stdio.h>
 #include <ecl/ecl.h>
 #include <ecl/page.h>
 #include <ecl/internal.h>

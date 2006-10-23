@@ -15,6 +15,7 @@
 #if defined(ECL_THREADS) && !defined(_MSC_VER)
 #include <pthread.h>
 #endif
+#include <stdio.h>
 #include <ecl/ecl.h>
 #include <ecl/internal.h>
 #include <ecl/page.h>
