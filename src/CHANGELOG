@@ -110,6 +110,12 @@ ECL 1.0:
    have the same name:
 	(C:BUILD-PROGRAM "ls" :lisp-files '("ls.o"))
 
+ - FFI:CLINES is no longer restricted to appear as a toplevel form. The
+   following code is thus valid:
+	(defun c-sin (x)
+	  (ffi:clines "#include <math.h>")
+	  (ffi:c-inline (x) (:double) :double "sin(#0)" :one-liner t))
+
 * Contributed code:
 
  - New examples: cmdline/ls.lsp, ffi/uffi.lsp

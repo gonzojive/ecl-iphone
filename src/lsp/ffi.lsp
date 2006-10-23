@@ -671,14 +671,9 @@
 ;;; COMPATIBILITY WITH OLDER FFI
 ;;;
 
-(defmacro clines (&rest args)
-  (when (find-package :c)
-    (dolist (s args)
-      (unless (stringp s)
-        (error "The argument to CLINES, ~s, is not a string." s)))
-    (let ((csl (find-symbol :*clines-string-list* (find-package :c))))
-      `(eval-when (:compile-toplevel)
-        (setf ,csl (nconc ,csl (copy-list ',args)))))))
+(defun clines (&rest args)
+  (error "The special form clines cannot be used in the interpreter: ~A"
+	 args))
 
 (eval-when (:load-toplevel :execute)
   (defmacro c-inline (args arg-types ret-type &rest others)

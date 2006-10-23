@@ -236,6 +236,15 @@
 	(t
 	 (coercion-error))))))
 
+;; ----------------------------------------------------------------------
+;; C/C++ DECLARATIONS AND HEADERS
+;;
+
+(defun c1clines (args)
+  (unless (every #'stringp args)
+    (cmperr "The argument to CLINES, ~s, is not a list of strings." args))
+  (setf *clines-string-list* (nconc *clines-string-list* (copy-list args)))
+  (c1expr '(progn)))
 
 ;; ----------------------------------------------------------------------
 ;; C/C++ INLINE CODE
@@ -439,7 +448,8 @@
 	(otherwise
 	 (write-char c *compiler-output1*))))))
 
-(put-sysprop 'C-INLINE 'C1SPECIAL #'c1c-inline)
-(put-sysprop 'C-INLINE 'C2 #'c2c-inline)
-(put-sysprop 'C-INLINE 'WT-LOC #'wt-c-inline-loc)
+(put-sysprop 'FFI:CLINES 'C1SPECIAL #'c1clines)
+(put-sysprop 'FFI:C-INLINE 'C1SPECIAL #'c1c-inline)
+(put-sysprop 'FFI:C-INLINE 'C2 #'c2c-inline)
+(put-sysprop 'FFI:C-INLINE 'WT-LOC #'wt-c-inline-loc)
 (put-sysprop 'COERCE-LOC 'WT-LOC #'wt-coerce-loc)
