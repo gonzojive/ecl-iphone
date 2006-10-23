@@ -16,6 +16,7 @@
 
 #include <ecl/ecl.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <fcntl.h>
 #include <ecl/internal.h>
 #ifdef mingw32

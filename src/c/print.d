@@ -17,6 +17,7 @@
 #include <ecl/ecl.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <float.h>
 #include <math.h>
 #ifdef _MSC_VER

@@ -16,7 +16,9 @@
 (defun c1constant-value (val &key always only-small-values)
   (cond
    ((let ((x (assoc val +optimizable-constant+)))
-      (and x (c1expr (cdr x)))))
+      (when x
+       (pushnew "#include <float.h>" *clines-string-list*)
+       (c1expr (cdr x)))))
    ((eq val nil) (c1nil))
    ((eq val t) (c1t))
    ((sys::fixnump val)

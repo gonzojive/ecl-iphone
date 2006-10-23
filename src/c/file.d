@@ -380,9 +380,9 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 			if (if_exists == @':error')
 				FEcannot_open(fn);
 			else if (if_exists == @':rename') {
-				fp = backup_fopen(fname, (smm == smm_output)
-						  ? OPEN_W
-						  : OPEN_RW);
+				fp = ecl_backup_fopen(fname, (smm == smm_output)
+						      ? OPEN_W
+						      : OPEN_RW);
 				if (fp == NULL)
 					FEcannot_open(fn);
 			} else if (if_exists == @':rename_and_delete' ||

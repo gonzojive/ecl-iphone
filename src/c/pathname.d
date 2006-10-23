@@ -21,6 +21,7 @@
 */
 
 #include <ecl/ecl.h>
+#include <limits.h>
 #include <string.h>
 #include <ctype.h>
 #ifdef _MSC_VER

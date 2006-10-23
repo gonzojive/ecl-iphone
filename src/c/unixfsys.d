@@ -16,6 +16,7 @@
 
 #include <ecl/ecl.h>
 #include <string.h>
+#include <stdio.h>
 #ifndef _MSC_VER
 # include <unistd.h>
 #else
@@ -263,8 +264,8 @@ ERROR:					FElibc_error("Can't change the current directory to ~S",
 	@(return pathname)
 }
 
-FILE *
-backup_fopen(const char *filename, const char *option)
+void *
+ecl_backup_fopen(const char *filename, const char *option)
 {
 	char backupfilename[MAXPATHLEN];
 
@@ -281,11 +282,11 @@ backup_fopen(const char *filename, const char *option)
 }
 
 cl_object
-ecl_file_len(FILE *fp)
+ecl_file_len(void *fp)
 {
 	struct stat filestatus;
 
-	fstat(fileno(fp), &filestatus);
+	fstat(fileno((FILE*)fp), &filestatus);
 	return make_integer(filestatus.st_size);
 }
 

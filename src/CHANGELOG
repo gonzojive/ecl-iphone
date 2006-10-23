@@ -118,6 +118,11 @@ ECL 1.0:
 
  - Function ecl_stream_to_handle() now exported.
 
+ - Function backup_fopen() renamed to ecl_backup_fopen().
+
+ - Minimized the number of headers included by ecl/ecl.h. In particular,
+   stdio.h, inittypes.h and pthread.h are no longer used.
+
 * Contributed code:
 
  - New examples: cmdline/ls.lsp, ffi/uffi.lsp

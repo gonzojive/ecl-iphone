@@ -1129,7 +1129,7 @@ EXPORTS
 
 	expand_pathname
 	ecl_cstring_to_pathname
-	backup_fopen
+	ecl_backup_fopen
 	ecl_file_len
 	homedir_pathname
 

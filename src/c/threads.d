@@ -17,7 +17,6 @@
 
 #include <pthread.h>
 #include <signal.h>
-
 #define GC_THREADS
 #include <ecl/ecl.h>
 #include <ecl/internal.h>

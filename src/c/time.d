@@ -112,7 +112,7 @@ cl_object
 cl_get_internal_real_time()
 {
 #if defined(mingw32) || defined(_MSC_VER)
-	@(return MAKE_FIXNUM((cl_fixnum)((GetTickCount(0) - beginning)/1000.0*HZ)))
+	@(return MAKE_FIXNUM((cl_fixnum)((GetTickCount() - beginning)/1000.0*HZ)))
 #else
 	@(return MAKE_FIXNUM((time(0) - beginning)*HZ))
 #endif
