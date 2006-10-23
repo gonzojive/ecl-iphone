@@ -19,18 +19,20 @@
 #include <ecl/internal.h>
 
 #ifdef ENABLE_DLOPEN
-# ifdef HAVE_MACH_O_DYLD_H
-#  undef HAVE_DLFCN_H
-#  undef HAVE_LINK_H
-#  include <mach-o/dyld.h>
-#  define INIT_PREFIX "_init_"
-#  ifdef bool
-#   undef bool
-#  endif
-# endif
 # ifdef HAVE_DLFCN_H
 #  include <dlfcn.h>
 #  define INIT_PREFIX "init_"
+# endif
+# ifdef HAVE_MACH_O_DYLD_H
+#  ifndef HAVE_DLFCN_H
+#   include <mach-o/dyld.h>
+#   define INIT_PREFIX "_init_"
+#  else
+#   undef HAVE_MACH_O_DYLD_H
+#  endif
+#  ifdef bool
+#   undef bool
+#  endif
 # endif
 # ifdef HAVE_LINK_H
 #  include <link.h>

@@ -96,6 +96,9 @@ ECL 1.0:
 
  - DESCRIBE was not prepare for the number range types returned by TYPE-OF.
 
+ - In OS X, ECL can now load shared libraries (Extension *.dylib) thanks
+   to using dlopen() instead of the obsolete NSLinkModule() function.
+
 * Visible changes:
 
  - EXT:PROCESS-COMMAND-ARGS now allows for a default rule.
