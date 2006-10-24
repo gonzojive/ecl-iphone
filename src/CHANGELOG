@@ -123,6 +123,11 @@ ECL 1.0:
  - Minimized the number of headers included by ecl/ecl.h. In particular,
    stdio.h, inittypes.h and pthread.h are no longer used.
 
+ - When a compiler finds a literal standard object, the load and initialization
+   forms it generates are now closer to the first reference to the object. This
+   allows to have, in the same file, a class definition and a constant which
+   is an object of that class.
+
 * Contributed code:
 
  - New examples: cmdline/ls.lsp, ffi/uffi.lsp

@@ -428,7 +428,11 @@
 (defun add-load-time-values ()
   (when (listp *load-time-values*)
     (setq *top-level-forms* (nconc *load-time-values* *top-level-forms*))
-    (setq *load-time-values* nil)))
+    (setq *load-time-values* nil))
+  (when (listp *make-forms*)
+    (setq *top-level-forms*
+	  (nconc (nreverse *make-forms*) *top-level-forms*))
+    (setq *make-forms* nil)))
 
 (defun c1load-time-value (args)
   (check-args-number 'LOAD-TIME-VALUE args 1 2)
