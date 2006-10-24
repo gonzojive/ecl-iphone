@@ -17,6 +17,7 @@
 #include <ecl/ecl.h>
 #include <string.h>
 #include <stdio.h>
+#include <limits.h>
 #ifndef _MSC_VER
 # include <unistd.h>
 #else
