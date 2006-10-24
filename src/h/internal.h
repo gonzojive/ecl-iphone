@@ -191,6 +191,11 @@ extern void cl_write_object(cl_object x, cl_object stream);
 #  define pthread_mutex_lock(x) \
 	 (WaitForSingleObject(*(HANDLE*)(x), INFINITE) != WAIT_OBJECT_0)
 #  define pthread_mutex_unlock(x) (ReleaseMutex(*(HANDLE*)(x)) == 0)
+# else
+#  include <pthread.h>
+#  if defined(__APPLE__) || defined(freebsd)
+#   define PTHREAD_MUTEX_ERROR_CHECK_NP PTHREAD_MUTEX_ERROR_CHECK_NP
+#  endif
 # endif
 # define HASH_TABLE_LOCK(h) if ((h)->hash.lockable) if (pthread_mutex_lock(&(h)->hash.lock)) internal_error("")
 # define PACKAGE_LOCK(p) if (pthread_mutex_lock(&(p)->pack.lock)) internal_error("")

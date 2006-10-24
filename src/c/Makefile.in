@@ -35,8 +35,7 @@ HDIR	= ../ecl
 HFILES	= ../ecl/config.h $(HDIR)/ecl.h $(HDIR)/ecl-cmp.h\
 	$(HDIR)/object.h $(HDIR)/cs.h $(HDIR)/stacks.h\
 	$(HDIR)/external.h $(HDIR)/eval.h\
-	$(HDIR)/number.h $(HDIR)/page.h $(HDIR)/unify.h\
-	$(HDIR)/lwp.h
+	$(HDIR)/number.h $(HDIR)/page.h $(HDIR)/unify.h
 OBJS	= main.o symbol.o package.o list.o\
 	apply.o eval.o interpreter.o compiler.o disassembler.o \
 	instance.o gfun.o reference.o character.o\
