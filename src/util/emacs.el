@@ -240,7 +240,6 @@
 "c/backq.d"
 "c/error.d"
 "c/macros.d"
-"c/profile.d"
 "c/unixfsys.d"
 "c/big.d"
 "c/eval.d"
