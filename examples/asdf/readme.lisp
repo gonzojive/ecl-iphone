@@ -18,10 +18,9 @@
 
 (require 'asdf)
 (require 'cmp)
-(use-package :asdf)
 
 (setf *load-verbose* nil)
-(setf c::*compile-verbose* nil)
+(setf *compile-verbose* nil)
 (setf c::*suppress-compiler-warnings* t)
 (setf c::*suppress-compiler-notes* t)
 
@@ -31,21 +30,6 @@
 ;;; to build anything from executables to shared libraries.
 ;;;
 ;;(trace c::builder)
-
-;;;
-;;; Next we create a definition containing the files in our project.
-;;; Notice that file2.lisp depends on file1.lisp, hence the ":serial t"
-;;;
-(princ "
-
-Loading definition file.
-
-")
-
-(defsystem #:example
-    :serial t
-    :components ((:file "file1")
-		 (:file "file2")))
 
 ;;;
 ;;; Now we attempt building a single FASL file containing all those files.
@@ -79,7 +63,7 @@ Loading FASL file example.fas
 Building standalone executable 'example' ('example.exe' in Windows)
 
 ")
-(asdf:make-build :example :type :program)
+(asdf:make-build :example :type :program :args (list :epilogue-code '(ext:quit 0)))
 
 ;;;
 ;;; Test the program
