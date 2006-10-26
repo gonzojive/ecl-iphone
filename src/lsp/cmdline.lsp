@@ -23,7 +23,7 @@
 
 (defvar *help-message* "
 Usage: ecl [-? | --help]
-           [-dir dir] [-load file] [-shell file] [-eval expr] [-rc | -norc]
+           [-dir dir] [-load file] [-shell file] [-eval expr] [-rc | -norc] [-hp | -nohp]
            [[-o ofile] [-c [cfile]] [-h [hfile]] [-data [datafile]] [-s] [-q]
             -compile file]
 
@@ -72,6 +72,8 @@ Usage: ecl [-? | --help]
     ("-h" 1 (setq h-file 1))
     ("-data" 1 (setq data-file 1))
     ("-q" 0 (setq verbose nil))
+    ("-hp" 0 (setf *relative-package-names* t))
+    ("-nohp" 0 (setf *relative-package-names* nil))
     ("-s" 0 (setq system-p t))))
 
 (defun produce-init-code (option-list rules)

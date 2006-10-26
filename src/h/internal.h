@@ -257,7 +257,6 @@ extern cl_object si_get_library_pathname(void);
 /*
  * Fake several ISO C99 mathematical functions
  */
-#define _GNU_SOURCE
 
 #ifndef HAVE_EXPF
 # define expf(x) exp((float)x)

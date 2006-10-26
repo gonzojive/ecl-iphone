@@ -1651,6 +1651,14 @@ cl_symbols[] = {
 {SYS_ "GET-FINALIZER","si_get_finalizer"},
 {SYS_ "SET-FINALIZER","si_set_finalizer"},
 
+#ifdef ECL_RELATIVE_PACKAGE_NAMES
+{SYS_ "*RELATIVE-PACKAGE-NAMES*",NULL},
+{KEY_ "RELATIVE-PACKAGE-NAMES",NULL},
+{SYS_ "FIND-RELATIVE-PACKAGE","si_find_relative_package"},
+{SYS_ "PACKAGE-PARENT",NULL},
+{SYS_ "PACKAGE-CHILDREN",NULL},
+#endif
+
 /* Tag for end of list */
 {NULL,NULL}};
 

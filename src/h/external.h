@@ -1594,6 +1594,7 @@ extern cl_object cl_deposit_field _ARGS((cl_narg narg, cl_object V1, cl_object V
 extern cl_object cl_find_all_symbols _ARGS((cl_narg, cl_object V1, ...));
 extern cl_object cl_apropos _ARGS((cl_narg arg, cl_object V1, ...));
 extern cl_object cl_apropos_list _ARGS((cl_narg arg, cl_object V1, ...));
+extern cl_object si_find_relative_package _ARGS((cl_narg narg, cl_object pack_name, ...));
 
 /* predlib.lsp */
 

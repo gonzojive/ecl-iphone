@@ -1400,6 +1400,7 @@ type_of(#0)==t_bitvector")
     deposit-field
     ;; packlib.lsp
     find-all-symbols apropos apropos-list
+    find-relative-package package-parent package-children
     ;; predlib.lsp
     upgraded-array-element-type upgraded-complex-part-type typep subtypep coerce
     do-deftype

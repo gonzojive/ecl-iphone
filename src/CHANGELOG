@@ -128,6 +128,8 @@ ECL 1.0:
    allows to have, in the same file, a class definition and a constant which
    is an object of that class.
 
+ - Support for hierarchical package names, as in Allegro Common-Lisp.
+
 * Contributed code:
 
  - New examples: cmdline/ls.lsp, ffi/uffi.lsp

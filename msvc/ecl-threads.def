@@ -1297,6 +1297,7 @@ EXPORTS
 	cl_apropos
 	cl_apropos_list
 	si_packages_iterator
+	si_find_relative_package
 
 	; predlib.lsp
 

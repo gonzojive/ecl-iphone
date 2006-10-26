@@ -469,6 +469,10 @@ cl_boot(int argc, char **argv)
 #ifdef ECL_SHORT_FLOAT
 	ADD_FEATURE("SHORT-FLOAT");
 #endif
+#ifdef ECL_RELATIVE_PACKAGE_NAMES
+	ADD_FEATURE("RELATIVE-PACKAGE-NAMES");
+	ECL_SET(@'SI::*RELATIVE-PACKAGE-NAMES*', Ct);
+#endif
 	/* This is assumed in all systems */
 	ADD_FEATURE("IEEE-FLOATING-POINT");
 

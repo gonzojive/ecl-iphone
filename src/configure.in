@@ -166,16 +166,22 @@ AC_ARG_ENABLE(unicode,
   [], [enable_unicode=no])
 
 AC_ARG_ENABLE(longdouble,
-  AS_HELP_STRING( [--enable-long-double],
+  AS_HELP_STRING( [--enable-longdouble],
                   [include support for long double]
                   [(default=NO)]),
-  [longdouble=${enableval}], [longdouble=no])
+  [enable_longdouble=${enableval}], [enable_longdouble=no])
 
 AC_ARG_ENABLE(c99complex,
   AS_HELP_STRING( [--enable-c99-complex],
                   [include support for C complex type]
                   [(default=NO)]),
-  [c99complex=${enableval}], [c99complex=no])
+  [enable_c99complex=${enableval}], [enable_c99complex=no])
+
+AC_ARG_ENABLE(hpack,
+  AS_HELP_STRING( [--enable-hierarchical-packages],
+                  [hierarchical package names]
+                  [(default=YES)]),
+  [enable_hpack=${enableval}], [enable_hpack=yes])
 
 dnl -----------------------------------------------------------------------
 dnl Installation directories
@@ -391,13 +397,12 @@ ECL_FILE_STRUCTURE
 ECL_FFI
 ECL_FPE_MODEL
 
-if test "$longdouble" != "no" ; then
+if test "$enable_longdouble" != "no" ; then
 AC_CHECK_TYPES([long double])
 fi
-if test "$c99complex" != "no" ; then
+if test "$enable_c99complex" != "no" ; then
 AC_CHECK_TYPES([double complex, float complex],[],[],[#include <complex.h>])
 fi
-
 
 dnl -----------------------------------------------------------------------
 dnl Study the call conventions
@@ -515,6 +520,10 @@ fi
 
 if test "${enable_unicode}" = "yes"; then
    AC_DEFINE(ECL_UNICODE, [1], [Support for Unicode])
+fi
+
+if test "${enable_hpack}" = "yes"; then
+   AC_DEFINE(ECL_RELATIVE_PACKAGE_NAMES, [1], [Hierarchical package names])
 fi
 
 dnl ----------------------------------------------------------------------

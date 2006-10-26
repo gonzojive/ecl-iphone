@@ -63,6 +63,12 @@ cl_vector_push_extend(cl_narg narg, cl_object elt, cl_object vector, ...)
 	return funcall(3, @'VECTOR-PUSH-EXTEND', elt, vector);
 }
 
+extern cl_object
+si_find_relative_package(cl_narg narg, cl_object package, ...)
+{
+	@(return Cnil);
+}
+
 static cl_object si_simple_toplevel ()
 {
 	cl_object sentence;

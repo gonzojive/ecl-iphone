@@ -171,3 +171,112 @@ If PACKAGE is non-NIL, then only the specified PACKAGE is searched."
 	     (when (search string (string symbol) :test #'char-equal)
 	       (setq list (cons symbol list))))))
     list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; HIERARCHICAL PACKAGE NAMES
+;;
+;; Code provided by Franz Inc. to the public domain and adapted for ECL.
+;;
+
+(defun find-relative-package (name)
+  ;; Given a package name, a string, do a relative package name lookup.
+  ;;
+  ;; It is intended that this function will be called from find-package.
+  ;; In Allegro, find-package calls package-name-to-package, and the latter
+  ;; function calls this function when it does not find the package.
+  ;;
+  ;; Because this function is called via the reader, we want it to be as
+  ;; fast as possible.
+  (declare (optimize speed))
+  (flet ((relative-to (package name)
+	   (if (string= "" name)
+	       package
+	       (find-package (concatenate 'simple-string (package-name package) "." name))))
+	 (find-non-dot (name)
+	   (do* ((len (length name))
+		 (i 0 (1+ i)))
+	       ((= i len) nil)
+	     (declare (fixnum len i))
+	     (when (char/= #\. (schar name i)) (return i)))))
+    (when (char= #\. (char name 0))
+      (let* ((last-dot-position (or (find-non-dot name) (length name)))
+	     (n-dots last-dot-position)
+	     (name (subseq name last-dot-position)))
+	(cond ((= 1 n-dots)
+	       ;; relative to current package
+	       (relative-to *package* name))
+	      (t
+	       ;; relative to our (- n-dots 1)'th parent
+	       (let ((p *package*)
+		     tmp)
+		 (dotimes (i (1- n-dots))
+		   (when (not (setq tmp (package-parent p)))
+		     (error "The parent of ~a does not exist." p))
+		   (setq p tmp))
+		 (relative-to p name))))))))
+
+(defun package-parent (package-specifier)
+  ;; Given package-specifier, a package, symbol or string, return the
+  ;; parent package.  If there is not a parent, signal an error.
+  ;;
+  ;; Because this function is called via the reader, we want it to be as
+  ;; fast as possible.
+  (declare (optimize speed))
+  (flet ((find-last-dot (name)
+	   (do* ((len (1- (length name)))
+		 (i len (1- i)))
+	       ((= i -1) nil)
+	     (declare (fixnum len i))
+	     (when (char= #\. (schar name i)) (return i)))))
+    (let* ((child (cond ((packagep package-specifier)
+			 (package-name package-specifier))
+			((symbolp package-specifier)
+			 (symbol-name package-specifier))
+			((stringp package-specifier) package-specifier)
+			(t (error "Illegal package specifier: ~s."
+				  package-specifier))))
+	   (dot-position (find-last-dot child)))
+      (cond (dot-position
+	     (let ((parent (subseq child 0 dot-position)))
+	       (or (package-name-to-package parent)
+		   (error "The parent of ~a does not exist." child))))
+	    (t (error "There is no parent of ~a." child))))))
+
+(defun package-children (package-specifier &key (recurse t))
+  ;; Given package-specifier, a package, symbol or string, return all the
+  ;; packages which are in the hierarchy "under" the given package.  If
+  ;; :recurse is nil, then only return the immediate children of the
+  ;; package.
+  ;;
+  ;; While this function is not called via the reader, we do want it to be
+  ;; fast.
+  (declare (optimize speed))
+  (let* ((res ())
+         (parent (cond ((packagep package-specifier)
+                        (package-name package-specifier))
+		       ((symbolp package-specifier)
+			(symbol-name package-specifier))
+		       ((stringp package-specifier) package-specifier)
+		       (t (error "Illegal package specifier: ~s." package-specifier))))
+	 (parent-prefix (concatenate 'simple-string parent ".")))
+    (labels
+	((string-prefix-p (prefix string)
+	   ;; Return length of `prefix' if `string' starts with `prefix'.
+	   ;; We don't use `search' because it does much more than we need
+	   ;; and this version is about 10x faster than calling `search'.
+	   (let ((prefix-len (length prefix))
+		 (seq-len (length string)))
+	     (declare (fixnum prefix-len seq-len))
+	     (when (>= prefix-len seq-len)
+	       (return-from string-prefix-p nil))
+	     (do* ((i 0 (1+ i)))
+		 ((= i prefix-len) prefix-len)
+	       (declare (fixnum i))
+	       (when (not (char= (schar prefix i) (schar string i)))
+		 (return nil))))))
+      (dolist (package (list-all-packages))
+	(let* ((package-name (package-name package))
+	       (prefix (string-prefix-p parent-prefix package-name)))
+	  (when (and prefix (or recurse (not (find #\. package-name :start prefix))))
+	    (pushnew package res)))))))

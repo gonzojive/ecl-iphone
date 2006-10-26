@@ -169,6 +169,8 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 /* We have non-portable implementation of FFI calls			*/
 #undef ECL_DYNAMIC_FFI
 
+/* We use hierarchical package names, like in Allegro CL                */
+#undef ECL_RELATIVE_PACKAGE_NAMES
 
 /*
  * SYSTEM FEATURES:

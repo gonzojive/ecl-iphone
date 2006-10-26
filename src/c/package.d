@@ -239,6 +239,13 @@ ecl_find_package_nolock(cl_object name)
 		if (member_string_eq(name, p->pack.nicknames))
 			return p;
 	}
+#ifdef ECL_RELATIVE_PACKAGE_NAMES
+	/* Note that this function may actually be called _before_ symbols are set up
+	 * and bound! */
+	if (ecl_booted && SYM_VAL(@'si::*relative-package-names*') != Cnil) {
+		return si_find_relative_package(1, name);
+	}
+#endif
 	return Cnil;
 }
 
