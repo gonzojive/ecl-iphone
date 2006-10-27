@@ -18,56 +18,72 @@
 #include <ctype.h>
 
 cl_fixnum
-char_code(cl_object c)
+ecl_char_code(cl_object c)
 {
 	if (CHARACTERP(c))
 		return CHAR_CODE(c);
 	FEtype_error_character(c);
 }
 
+int
+ecl_base_char_code(cl_object c)
+{
+#ifdef ECL_UNICODE
+	if (CHARACTERP(c)) {
+		cl_fixnum c = CHAR_CODE(c);
+		if (c <= 255) {
+			return (int)c;
+		}
+	}
+	FEtype_error_character(c);
+#else
+	return ecl_char_code(c);
+#endif
+}
+
 cl_object
 cl_standard_char_p(cl_object c)
 {
-	/* INV: char_code() checks the type */
-	cl_fixnum i = char_code(c);
+	/* INV: ecl_char_code() checks the type */
+	cl_fixnum i = ecl_char_code(c);
 	@(return (((' ' <= i && i < '\177') || i == '\n')? Ct : Cnil))
 }
 
 cl_object
 cl_graphic_char_p(cl_object c)
 {
-	/* INV: char_code() checks the type */
-	cl_fixnum i = char_code(c);     /* ' ' < '\177'  ??? Beppe*/
+	/* INV: ecl_char_code() checks the type */
+	cl_fixnum i = ecl_char_code(c);     /* ' ' < '\177'  ??? Beppe*/
 	@(return ((' ' <= i && i < '\177')? Ct : Cnil))
 }
 
 cl_object
 cl_alpha_char_p(cl_object c)
 {
-	/* INV: char_code() checks the type */
-	cl_fixnum i = char_code(c);
+	/* INV: ecl_char_code() checks the type */
+	cl_fixnum i = ecl_char_code(c);
 	@(return (isalpha(i)? Ct : Cnil))
 }
 
 cl_object
 cl_upper_case_p(cl_object c)
 {
-	/* INV: char_code() checks the type */
-	@(return (isupper(char_code(c))? Ct : Cnil))
+	/* INV: ecl_char_code() checks the type */
+	@(return (isupper(ecl_char_code(c))? Ct : Cnil))
 }
 
 cl_object
 cl_lower_case_p(cl_object c)
 {
-	/* INV: char_code() checks the type */
-	@(return (islower(char_code(c))? Ct : Cnil))
+	/* INV: ecl_char_code() checks the type */
+	@(return (islower(ecl_char_code(c))? Ct : Cnil))
 }
 
 cl_object
 cl_both_case_p(cl_object c)
 {
-	/* INV: char_code() checks the type */
-	cl_fixnum code = char_code(c);
+	/* INV: ecl_char_code() checks the type */
+	cl_fixnum code = ecl_char_code(c);
 	@(return ((isupper(code) || islower(code)) ? Ct : Cnil))
 }
 
@@ -96,12 +112,12 @@ ecl_string_case(cl_object s)
 @(defun digit_char_p (c &optional (r MAKE_FIXNUM(10)))
 	cl_object output;
 @
-	/* INV: char_code() checks `c' and fixnnint() checks `r' */
+	/* INV: ecl_char_code() checks `c' and fixnnint() checks `r' */
 	if (type_of(r) == t_bignum) {
 		output = Cnil;
 	} else {
 		cl_fixnum d = fixnnint(r);
-		if (!basep(d) || (d = digitp(char_code(c), d)) < 0)
+		if (!basep(d) || (d = digitp(ecl_char_code(c), d)) < 0)
 			output = Cnil;
 		else
 			output = MAKE_FIXNUM(d);
@@ -129,8 +145,8 @@ digitp(int i, int r)
 cl_object
 cl_alphanumericp(cl_object c)
 {
-	/* INV: char_code() checks type of `c' */
-	cl_fixnum i = char_code(c);
+	/* INV: ecl_char_code() checks type of `c' */
+	cl_fixnum i = ecl_char_code(c);
 	@(return (isalnum(i)? Ct : Cnil))
 }
 
@@ -146,7 +162,7 @@ cl_alphanumericp(cl_object c)
 bool
 char_eq(cl_object x, cl_object y)
 {
-	return char_code(x) == char_code(y);
+	return ecl_char_code(x) == ecl_char_code(y);
 }
 
 @(defun char/= (&rest cs)
@@ -187,10 +203,10 @@ Lchar_cmp(cl_narg narg, int s, int t, cl_va_list args)
 int
 char_cmp(cl_object x, cl_object y)
 {
-	/* char_code(x) returns an integer which is well in the range
+	/* ecl_char_code(x) returns an integer which is well in the range
 	 * of positive fixnums. Therefore, this subtraction never
 	 * oveflows. */
-	return char_code(x) - char_code(y);
+	return ecl_char_code(x) - ecl_char_code(y);
 }
 
 @(defun char< (&rest args)
@@ -227,8 +243,8 @@ char_cmp(cl_object x, cl_object y)
 bool
 char_equal(cl_object x, cl_object y)
 {
-	cl_fixnum i = char_code(x);
-	cl_fixnum j = char_code(y);
+	cl_fixnum i = ecl_char_code(x);
+	cl_fixnum j = ecl_char_code(y);
 
 	if (islower(i))
 		i = toupper(i);
@@ -276,8 +292,8 @@ Lchar_compare(cl_narg narg, int s, int t, cl_va_list args)
 int
 char_compare(cl_object x, cl_object y)
 {
-	cl_fixnum i = char_code(x);
-	cl_fixnum j = char_code(y);
+	cl_fixnum i = ecl_char_code(x);
+	cl_fixnum j = ecl_char_code(y);
 
 	if (islower(i))
 		i = toupper(i);
@@ -333,8 +349,8 @@ cl_character(cl_object x)
 cl_object
 cl_char_code(cl_object c)
 {
-	/* INV: char_code() checks the type of `c' */
-	@(return MAKE_FIXNUM(char_code(c)))
+	/* INV: ecl_char_code() checks the type of `c' */
+	@(return MAKE_FIXNUM(ecl_char_code(c)))
 }
 
 cl_object
@@ -361,16 +377,16 @@ cl_code_char(cl_object c)
 cl_object
 cl_char_upcase(cl_object c)
 {
-	/* INV: char_code() checks the type of `c' */
-	cl_fixnum code = char_code(c);
+	/* INV: ecl_char_code() checks the type of `c' */
+	cl_fixnum code = ecl_char_code(c);
 	@(return (islower(code) ? CODE_CHAR(toupper(code)) : c))
 }
 
 cl_object
 cl_char_downcase(cl_object c)
 {
-	/* INV: char_code() checks the type of `c' */
-	cl_fixnum code = char_code(c);
+	/* INV: ecl_char_code() checks the type of `c' */
+	cl_fixnum code = ecl_char_code(c);
 	@(return (isupper(code) ? CODE_CHAR(tolower(code)) : c))
 }
 
@@ -401,8 +417,8 @@ ecl_digit_char(cl_fixnum w, cl_fixnum r)
 cl_object
 cl_char_int(cl_object c)
 {
-	/* INV: char_code() checks the type of `c' */
-	return1(MAKE_FIXNUM(char_code(c)));
+	/* INV: ecl_char_code() checks the type of `c' */
+	return1(MAKE_FIXNUM(ecl_char_code(c)));
 }
 
 /* here we give every character an implicit name of the form 'u#' where # is a hexadecimal number,
@@ -413,7 +429,7 @@ cl_char_int(cl_object c)
 cl_object
 cl_char_name(cl_object c)
 {
-	cl_index code = char_code(c);
+	cl_index code = ecl_char_code(c);
 	cl_object output;
 	if (code > 127) {
 		char name[20]; /* cleanup */

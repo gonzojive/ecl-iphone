@@ -391,7 +391,7 @@
       (declare (fixnum n))
       (wt (case (car types)
             (FIXNUM "fix")
-            (CHARACTER "char_code")
+            (CHARACTER "ecl_char_code")
             (DOUBLE-FLOAT "df")
             (SINGLE-FLOAT "sf")
 	    #+long-float

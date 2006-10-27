@@ -82,7 +82,7 @@ ECL 1.0:
 	(defclass a () ((a :initform most-positive-fixnum)))
 	(slot-value (make-instance a) 'a) => most-positive-fixnum
 
- - The namestring "." was improperly parsed has having file type "".
+ - The namestring "." was improperly parsed as having file type "".
 
  - Now the file type is determined by the last dot in the name.
 	(pathname-type "foo.mpq.txt") => "txt"
@@ -99,7 +99,15 @@ ECL 1.0:
  - In OS X, ECL can now load shared libraries (Extension *.dylib) thanks
    to using dlopen() instead of the obsolete NSLinkModule() function.
 
-* Visible changes:
+* Unicode:
+
+ - MAKE-STRING only allowed :ELEMENT-TYPE to be one of CHARACTER, BASE-CHAR, or
+   STANDARD-CHAR.
+
+ - The FFI will signal a type error when converting extended characters to
+   the C types "char" or "unsigned char".
+
+* Other visible changes:
 
  - EXT:PROCESS-COMMAND-ARGS now allows for a default rule.
 
@@ -130,9 +138,10 @@ ECL 1.0:
 
  - Lisp functions which disappear: si-set-compiled-function-name.
 
- - New C functions: ecl_stream_to_handle()
+ - New C functions: ecl_stream_to_handle(), ecl_base_char_code().
 
  - Functions renamed: backup_fopen() -> ecl_backup_fopen()
+   char_code() -> ecl_char_code()
 
 * Contributed code:
 

@@ -141,8 +141,8 @@ elt_set(cl_object seq, cl_fixnum index, cl_object val)
 	case t_base_string:
 		if (index >= seq->base_string.fillp)
 			goto E;
-		/* INV: char_code() checks the type of `val' */
-		seq->base_string.self[index] = char_code(val);
+		/* INV: ecl_char_code() checks the type of `val' */
+		seq->base_string.self[index] = ecl_char_code(val);
 		return(val);
 
 	default:

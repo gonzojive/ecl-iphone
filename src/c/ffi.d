@@ -299,10 +299,10 @@ ecl_foreign_data_set_elt(void *p, enum ecl_ffi_tag tag, cl_object value)
 {
 	switch (tag) {
 	case ECL_FFI_CHAR:
-		*(char *)p = char_code(value);
+		*(char *)p = (char)ecl_base_char_code(value);
 		break;
 	case ECL_FFI_UNSIGNED_CHAR:
-		*(unsigned char*)p = char_code(value);
+		*(unsigned char*)p = (unsigned char)ecl_base_char_code(value);
 		break;
 	case ECL_FFI_BYTE:
 		*(int8_t *)p = fixint(value);

@@ -264,11 +264,11 @@
 (proclaim-function character (t) character)
 (proclaim-function char= (character *) t :predicate t :no-side-effects t)
 (def-inline char= :always (character character) :bool "(#0)==(#1)")
-(def-inline char= :always (t t) :bool "char_code(#0)==char_code(#1)")
+(def-inline char= :always (t t) :bool "ecl_char_code(#0)==ecl_char_code(#1)")
 
 (proclaim-function char/= (character *) t :predicate t :no-side-effects t)
 (def-inline char/= :always (character character) :bool "(#0)!=(#1)")
-(def-inline char/= :always (t t) :bool "char_code(#0)!=char_code(#1)")
+(def-inline char/= :always (t t) :bool "ecl_char_code(#0)!=ecl_char_code(#1)")
 
 (proclaim-function char< (character *) t :predicate t :no-side-effects t)
 (def-inline char< :always (character character) :bool "(#0)<(#1)")
@@ -1079,7 +1079,7 @@ type_of(#0)==t_bitvector")
 (proclaim-function write (t *) t)
 (proclaim-function write-byte (fixnum stream) t)
 (proclaim-function write-char (t *) t)
-(def-inline write-char :always (t) t "@0;(princ_char(char_code(#0),Cnil),(#0))")
+(def-inline write-char :always (t) t "@0;(princ_char(ecl_char_code(#0),Cnil),(#0))")
 
 (proclaim-function write-line (t *) t)
 (proclaim-function write-string (t *) t)
@@ -1151,7 +1151,7 @@ type_of(#0)==t_bitvector")
 (def-inline si:char-set :always (t t t) t "si_char_set(#0,#1,#2)")
 (def-inline si:char-set :always (t fixnum t) t "aset1(#0,#1,#2)")
 (def-inline si:char-set :unsafe (t t t) t
- "@2;((#0)->base_string.self[fix(#1)]=char_code(#2),(#2))")
+ "@2;((#0)->base_string.self[fix(#1)]=ecl_char_code(#2),(#2))")
 (def-inline si:char-set :unsafe (t fixnum character) :char
  "(#0)->base_string.self[#1]= #2")
 
@@ -1167,7 +1167,7 @@ type_of(#0)==t_bitvector")
 (def-inline si:schar-set :always (t t t) t "elt_set(#0,fixint(#1),#2)")
 (def-inline si:schar-set :always (t fixnum t) t "elt_set(#0,#1,#2)")
 (def-inline si:schar-set :unsafe (t t t) t
- "@2;((#0)->base_string.self[fix(#1)]=char_code(#2),(#2))")
+ "@2;((#0)->base_string.self[fix(#1)]=ecl_char_code(#2),(#2))")
 (def-inline si:schar-set :unsafe (t fixnum character) :char
  "(#0)->base_string.self[#1]= #2")
 

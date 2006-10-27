@@ -647,7 +647,7 @@ dispatch_reader_fun(cl_object in, cl_object dc)
 	int d, c;
 	cl_object rtbl = ecl_current_readtable();
 
-	if (rtbl->readtable.table[char_code(dc)].dispatch_table == NULL)
+	if (rtbl->readtable.table[ecl_char_code(dc)].dispatch_table == NULL)
 		FEreader_error("~C is not a dispatching macro character", in, 1, dc);
 
 	c = ecl_read_char_noeof(in);
@@ -663,7 +663,7 @@ dispatch_reader_fun(cl_object in, cl_object dc)
 	} else
 		y = Cnil;
 
-	x = rtbl->readtable.table[char_code(dc)].dispatch_table[c];
+	x = rtbl->readtable.table[ecl_char_code(dc)].dispatch_table[c];
 	return funcall(4, x, in, CODE_CHAR(c), y);
 }
 
@@ -1455,7 +1455,7 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 	cl_object l;
 	int delimiter;
 @
-	delimiter = char_code(d);
+	delimiter = ecl_char_code(d);
 	strm = stream_or_default_input(strm);
 	if (Null(recursivep)) {
 		l = do_read_delimited_list(delimiter, strm, 1);
@@ -1528,7 +1528,7 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 @
 	/* INV: unread_char() checks the type `c' */
 	strm = stream_or_default_input(strm);
-	ecl_unread_char(char_code(c), strm);
+	ecl_unread_char(ecl_char_code(c), strm);
 	@(return Cnil)
 @)
 
@@ -1739,9 +1739,9 @@ cl_readtablep(cl_object readtable)
 static struct ecl_readtable_entry*
 read_table_entry(cl_object rdtbl, cl_object c)
 {
-	/* INV: char_code() checks the type of `c' */
+	/* INV: ecl_char_code() checks the type of `c' */
 	assert_type_readtable(rdtbl);
-	return &(rdtbl->readtable.table[char_code(c)]);
+	return &(rdtbl->readtable.table[ecl_char_code(c)]);
 }
 
 bool
@@ -1758,7 +1758,7 @@ ecl_invalid_character_p(int c)
 	/* INV: read_table_entry() checks all values */
 	if (Null(fromrdtbl))
 		fromrdtbl = cl_core.standard_readtable;
-	/* INV: char_code() checks the types of `tochar',`fromchar' */
+	/* INV: ecl_char_code() checks the types of `tochar',`fromchar' */
 	torte = read_table_entry(tordtbl, tochr);
 	fromrte = read_table_entry(fromrdtbl, fromchr);
 	torte->syntax_type = fromrte->syntax_type;
@@ -1830,7 +1830,7 @@ ecl_invalid_character_p(int c)
 	entry = read_table_entry(rdtbl, dspchr);
 	if (entry->macro != cl_core.dispatch_reader || entry->dispatch_table == NULL)
 		FEerror("~S is not a dispatch character.", 1, dspchr);
-	subcode = char_code(subchr);
+	subcode = ecl_char_code(subchr);
 	entry->dispatch_table[subcode] = fnc;
 	if (islower(subcode)) {
 		entry->dispatch_table[toupper(subcode)] = fnc;
@@ -1850,7 +1850,7 @@ ecl_invalid_character_p(int c)
 	entry = read_table_entry(rdtbl, dspchr);
 	if (entry->macro != cl_core.dispatch_reader || entry->dispatch_table == NULL)
 		FEerror("~S is not a dispatch character.", 1, dspchr);
-	subcode = char_code(subchr);
+	subcode = ecl_char_code(subchr);
 	if (digitp(subcode, 10) >= 0)
 		@(return Cnil)
 	@(return entry->dispatch_table[subcode])

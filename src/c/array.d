@@ -229,8 +229,8 @@ aset(cl_object x, cl_index index, cl_object value)
     break;
 
   case aet_bc:
-    /* INV: char_code() checks the type of `value' */
-    x->base_string.self[index] = char_code(value);
+    /* INV: ecl_char_code() checks the type of `value' */
+    x->base_string.self[index] = ecl_char_code(value);
     break;
 
   case aet_bit: {
@@ -290,8 +290,8 @@ aset1(cl_object v, cl_index index, cl_object val)
   case t_base_string:
     if (index >= v->base_string.dim)
       FEerror("The index, ~D, is too large", 1, MAKE_FIXNUM(index));
-    /* INV: char_code() checks the type of `val' */
-    v->base_string.self[index] = char_code(val);
+    /* INV: ecl_char_code() checks the type of `val' */
+    v->base_string.self[index] = ecl_char_code(val);
     return(val);
 
   default:

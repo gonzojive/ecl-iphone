@@ -1479,7 +1479,7 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 		while (start < end) {
 			cl_object elt = aref(seq, start++);
 			if (ischar) {
-				ecl_write_char(char_code(elt), stream);
+				ecl_write_char(ecl_char_code(elt), stream);
 			} else {
 				ecl_write_byte(elt, stream);
 			}

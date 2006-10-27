@@ -20,60 +20,55 @@
 #include <string.h>
 #include <ecl/ecl-inl.h>
 
-
-#ifdef ECL_UNICODE
-/* TODO: add a special variable to allow make-string to default to base-char rather than character. */
-/* should be @'character' -- FIXME */
-
-@(defun make_string (size &key (initial_element CODE_CHAR(' '))
-		     (element_type @'character')
-		     &aux x)
-	cl_index i, s, code;
-@
-	/* INV: char_code() checks the type of initial_element() */
-	code = char_code(initial_element);
-	s = object_to_index(size);
-
-	/* this code should use subtypep */
-	/* handle base-char strings */
-	if (element_type == @'base-char' || element_type == @'standard-char') {
-		x = cl_alloc_simple_base_string(s);
-		for (i = 0;  i < s;  i++)
-			x->base_string.self[i] = code;
-		@(return x)
-	}
-
-	if (element_type != @'character'
-            && (funcall(3, @'subtypep', element_type, @'character') == Cnil))
-	    FEerror("The type ~S is not a valid string char type.", 1, element_type);
-
-	x = cl_alloc_simple_extended_string(s);
-	for (i = 0;  i < s;  i++)
-		x->string.self[i] = CODE_CHAR(code);
-	@(return x)
-@)
-#else
-@(defun make_string (size &key (initial_element CODE_CHAR(' '))
-		     (element_type @'character')
-		     &aux x)
-	cl_index i, s, code;
-@
-	if (element_type != @'character'
-	    && element_type != @'base-char'
-	    && element_type != @'standard-char') {
-	  if (funcall(3, @'subtypep', element_type, @'character') == Cnil)
-	    FEerror("The type ~S is not a valid string char type.",
-		    1, element_type);
-	}
-	/* INV: char_code() checks the type of initial_element() */
-	code = char_code(initial_element);
-	s = object_to_index(size);
-	x = cl_alloc_simple_base_string(s);
+static cl_object
+do_make_base_string(cl_index s, int code)
+{
+	cl_object x = cl_alloc_simple_base_string(s);
+	cl_index i;
 	for (i = 0;  i < s;  i++)
 		x->base_string.self[i] = code;
+	return x;
+}
+
+#ifdef ECL_UNICODE
+static cl_object
+do_make_string(cl_index s, cl_index code)
+{
+	cl_objext x = cl_alloc_simple_base_string(s);
+	cl_index i;
+	for (i = 0;  i < s;  i++)
+		x->base_string.self[i] = code;
+	return x;
+}
+#else
+#define do_make_string do_make_base_string
+#endif
+
+@(defun make_string (size &key (initial_element CODE_CHAR(' '))
+		     (element_type @'character'))
+	cl_index s;
+	cl_object x;
+@
+	s = object_to_index(size);
+	/* INV: ecl_[base_]char_code() checks the type of initial_element() */
+	if (element_type == @'base-char' || element_type == @'standard-char') {
+		int code = ecl_base_char_code(initial_element);
+		x = do_make_base_string(s, code);
+	} else if (element_type == @'character') {
+		cl_index code = ecl_char_code(initial_element);
+		x = do_make_string(s, code);
+	} else if (funcall(3, @'subtypep', element_type, @'base-char') == Ct) {
+		int code = ecl_base_char_code(initial_element);
+		x = do_make_base_string(s, code);
+	} else if (funcall(3, @'subtypep', element_type, @'character') == Ct) {
+		cl_index code = ecl_char_code(initial_element);
+		x = do_make_string(s, code);
+	} else {
+		FEerror("The type ~S is not a valid string char type.",
+			1, element_type);
+	}
 	@(return x)
 @)
-#endif
 
 cl_object
 cl_alloc_simple_base_string(cl_index length)
@@ -318,8 +313,8 @@ si_char_set(cl_object object, cl_object index, cl_object value)
 	case t_base_string:
 		if (position >= object->base_string.dim)
 			illegal_index(object, index);
-		/* INV: char_code() checks type of value */
-		object->base_string.self[position] = char_code(value);
+		/* INV: ecl_char_code() checks type of value */
+		object->base_string.self[position] = ecl_char_code(value);
 		@(return value)
 	default:
 		FEtype_error_string(object);

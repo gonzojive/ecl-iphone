@@ -138,7 +138,8 @@ EXPORTS
 	cl_upper_case_p
 
 	;ecl_base_string_case
-	char_code
+	ecl_char_code
+	ecl_base_char_code
 	digitp
 	char_eq
 	char_cmp

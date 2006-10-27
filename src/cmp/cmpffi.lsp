@@ -163,7 +163,7 @@
 	    (wt "((" (rep-type-name dest-rep-type) ")" loc ")"))
 	   ((:object)
 	    (ensure-valid-object-type dest-type)
-	    (wt "char_code(" loc ")"))
+	    (wt "ecl_char_code(" loc ")"))
 	   (otherwise
 	    (coercion-error))))
 	((:float :double)

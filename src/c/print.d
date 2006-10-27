@@ -1807,9 +1807,9 @@ potential_number_p(cl_object strng, int base)
 
 @(defun write-char (c &optional strm)
 @
-	/* INV: char_code() checks the type of `c' */
+	/* INV: ecl_char_code() checks the type of `c' */
  	strm = stream_or_default_output(strm);
-	ecl_write_char(char_code(c), strm);
+	ecl_write_char(ecl_char_code(c), strm);
 	@(return c)
 @)
 

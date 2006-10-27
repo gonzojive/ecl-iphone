@@ -361,7 +361,8 @@ extern cl_object cl_standard_char_p(cl_object c);
 extern cl_object cl_upper_case_p(cl_object c);
 
 extern int ecl_base_string_case(cl_object s);
-extern cl_fixnum char_code(cl_object c);
+extern cl_fixnum ecl_char_code(cl_object c);
+extern int ecl_base_char_code(cl_object c);
 extern int digitp(int i, int r);
 extern bool char_eq(cl_object x, cl_object y);
 extern int char_cmp(cl_object x, cl_object y);
