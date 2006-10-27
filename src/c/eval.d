@@ -41,6 +41,20 @@ cl__va_start(cl_va_list args, int narg_before)
 	}
 }
 
+void
+cl_va_copy(cl_va_list dest, cl_va_list orig)
+{
+	dest[0].narg = orig[0].narg;
+	dest[0].sp = orig[0].sp;
+	va_copy(dest[0].args, orig[0].args);
+}
+
+void
+cl_va_end(cl_va_list args)
+{
+	va_end(args[0].args);
+}
+
 cl_object
 cl_va_arg(cl_va_list args)
 {

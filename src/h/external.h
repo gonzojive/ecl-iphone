@@ -477,6 +477,8 @@ extern cl_object si_safe_eval _ARGS((cl_narg narg, cl_object form, cl_object env
 
 #define cl_va_start(a,p,n,k) (va_start(a[0].args,p),a[0].narg=n,cl__va_start(a,k))
 extern void cl__va_start(cl_va_list args, int args_before);
+extern void cl_va_copy(cl_va_list dest, cl_va_list orig);
+#define cl_va_end(args) (va_end((args)[0].args))
 extern cl_object cl_va_arg(cl_va_list args);
 
 extern cl_object si_unlink_symbol(cl_object s);
@@ -1477,7 +1479,6 @@ extern cl_object si_base_char_p(cl_object x);
 extern cl_object si_base_string_p(cl_object x);
 extern cl_object si_coerce_to_base_string(cl_object x);
 extern cl_object si_coerce_to_extended_string(cl_object x);
-extern cl_object si_extended_string_concatenate _ARGS((cl_narg narg, ...));
 extern cl_object cl_alloc_simple_extended_string(cl_index l);
 #else
 #define si_base_char_p cl_characterp

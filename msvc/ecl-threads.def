@@ -1419,4 +1419,3 @@ EXPORTS
 	clos_standard_instance_set
 	assert_type_base_string
 	; unicode
-	; si_extended_string_concatenate

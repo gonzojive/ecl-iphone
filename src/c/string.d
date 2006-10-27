@@ -1007,60 +1007,26 @@ nstring_case(cl_narg narg, int (*casefun)(int, bool *), cl_va_list ARGS)
 @(defun si::base_string_concatenate (&rest args)
 	cl_index l;
 	int i;
-	char *vself;
-#ifdef __GNUC__
-	cl_object v, strings[narg];
-#else
-#define NARG_MAX 64
-	cl_object v, strings[NARG_MAX];
-#endif
+	cl_object output;
 @
-#ifndef __GNUC__
-	if (narg > NARG_MAX)
-		FEerror("si::string_concatenate: Too many arguments, limited to ~A", 1, MAKE_FIXNUM(NARG_MAX));
-#endif
-	/* FIXME! We should use cl_va_start() instead of this ugly trick */
-	for (i = 0, l = 0;  i < narg;  i++) {
-		strings[i] = si_coerce_to_base_string(cl_va_arg(args));
-		l += strings[i]->base_string.fillp;
+	/* Compute final size and store NONEMPTY coerced strings. */
+	for (i = 0, l = 0; i < narg; i++) {
+		cl_object s = si_coerce_to_base_string(cl_va_arg(args));
+		if (s->base_string.fillp) {
+			cl_stack_push(s);
+			l += s->base_string.fillp;
+		}
 	}
-	v = cl_alloc_simple_base_string(l);
-	for (i = 0, vself = v->base_string.self;  i < narg;  i++, vself += l) {
-		l = strings[i]->base_string.fillp;
-		memcpy(vself, strings[i]->base_string.self, l);
+	/* Do actual copying by recovering those strings */
+	output = cl_alloc_simple_base_string(l);
+	while (l) {
+		cl_object s = cl_stack_pop();
+		size_t bytes = s->base_string.fillp;
+		l -= bytes;
+		memcpy(output->base_string.self + l, s->base_string.self, bytes);
 	}
-	@(return v)
+	@(return output);
 @)
-
-#ifdef ECL_UNICODE
-@(defun si::extended_string_concatenate (&rest args)
-	cl_index l;
-	int i;
-	char *vself;
-#ifdef __GNUC__
-	cl_object v, strings[narg];
-#else
-#define NARG_MAX 64
-	cl_object v, strings[NARG_MAX];
-#endif
-@
-#ifndef __GNUC__
-	if (narg > NARG_MAX)
-		FEerror("si::string_concatenate: Too many arguments, limited to ~A", 1, MAKE_FIXNUM(NARG_MAX));
-#endif
-	/* FIXME! We should use cl_va_start() instead of this ugly trick */
-	for (i = 0, l = 0;  i < narg;  i++) {
-		strings[i] = si_coerce_to_extended_string(cl_va_arg(args));
-		l += strings[i]->string.fillp;
-	}
-	v = cl_alloc_simple_extended_string(l);
-	for (i = 0, vself = v->string.self;  i < narg;  i++, vself += l) {
-		l = strings[i]->string.fillp;
-		memcpy(vself, strings[i]->string.self, l);
-	}
-	@(return v)
-@)
-#endif
 
 #ifdef ECL_UNICODE
 int

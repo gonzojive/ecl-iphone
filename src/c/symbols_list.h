@@ -1183,9 +1183,6 @@ cl_symbols[] = {
 {SYS_ "STANDARD-READTABLE", SI_ORDINARY, si_standard_readtable, 0, OBJNULL},
 {SYS_ "STEPPER", SI_ORDINARY, OBJNULL, -1, OBJNULL},
 {SYS_ "BASE-STRING-CONCATENATE", SI_ORDINARY, si_base_string_concatenate, -1, OBJNULL},
-#ifdef ECL_UNICODE
-{SYS_ "EXTENDED-STRING-CONCATENATE", SI_ORDINARY, si_extended_string_concatenate, -1, OBJNULL},
-#endif
 {SYS_ "STRING-TO-OBJECT", SI_ORDINARY, si_string_to_object, 1, OBJNULL},
 {SYS_ "STRUCTURE-NAME", SI_ORDINARY, si_structure_name, 1, OBJNULL},
 {SYS_ "STRUCTURE-PRINT-FUNCTION", SI_ORDINARY, NULL, -1, OBJNULL},
