@@ -116,10 +116,6 @@ ECL 1.0:
 	  (ffi:clines "#include <math.h>")
 	  (ffi:c-inline (x) (:double) :double "sin(#0)" :one-liner t))
 
- - Function ecl_stream_to_handle() now exported.
-
- - Function backup_fopen() renamed to ecl_backup_fopen().
-
  - Minimized the number of headers included by ecl/ecl.h. In particular,
    stdio.h, inittypes.h and pthread.h are no longer used.
 
@@ -130,9 +126,17 @@ ECL 1.0:
 
  - Support for hierarchical package names, as in Allegro Common-Lisp.
 
+ - C functions which disappear: si_set_compiled_function_name()
+
+ - Lisp functions which disappear: si-set-compiled-function-name.
+
+ - New C functions: ecl_stream_to_handle()
+
+ - Functions renamed: backup_fopen() -> ecl_backup_fopen()
+
 * Contributed code:
 
- - New examples: cmdline/ls.lsp, ffi/uffi.lsp
+ - New examples: cmdline/ls.lsp, ffi/uffi.lsp, ffi/cffi.lsp
 
 ;;; Local Variables: ***
 ;;; mode:text ***

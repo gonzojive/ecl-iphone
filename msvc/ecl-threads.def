@@ -355,7 +355,6 @@ EXPORTS
 
 	;si_set_funcallable
 	si_generic_function_p
-	si_set_compiled_function_name
 
 	compute_method
 

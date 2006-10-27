@@ -616,7 +616,6 @@ extern void ecl_register_root(cl_object *p);
 #ifdef CLOS
 extern cl_object clos_set_funcallable_instance_function(cl_object x, cl_object function_or_t);
 extern cl_object si_generic_function_p(cl_object instance);
-extern cl_object si_set_compiled_function_name(cl_object keylist, cl_object table);
 
 extern cl_object compute_method(cl_narg narg, cl_object fun, cl_object *args);
 #endif /* CLOS */

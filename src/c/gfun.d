@@ -213,15 +213,3 @@ compute_method(cl_narg narg, cl_object gf, cl_object *args)
 		FEinvalid_function(gf);
 	}
 }
-
-cl_object
-si_set_compiled_function_name(cl_object fn, cl_object new_name)
-{
-	cl_type t = type_of(fn);
-
-	if (t == t_cfun)
-		@(return (fn->cfun.name = new_name))
-	if (t == t_bytecodes)
-		@(return (fn->bytecodes.name = new_name))
-	FEerror("~S is not a compiled-function.", 1, fn);
-}

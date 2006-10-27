@@ -1219,7 +1219,6 @@ cl_symbols[] = {
 {SYS_ "INSTANCE-CLASS","si_instance_class"},
 {SYS_ "INSTANCE-CLASS-SET","si_instance_class_set"},
 {SYS_ "INSTANCEP","si_instancep"},
-{SYS_ "SET-COMPILED-FUNCTION-NAME","si_set_compiled_function_name"},
 {SYS_ "SL-BOUNDP","si_sl_boundp"},
 {SYS_ "SL-MAKUNBOUND","si_sl_makunbound"},
 {SYS_ "SUBCLASSP",NULL},
