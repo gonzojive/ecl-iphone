@@ -182,15 +182,9 @@ If PACKAGE is non-NIL, then only the specified PACKAGE is searched."
 (defun find-relative-package (name)
   ;; Given a package name, a string, do a relative package name lookup.
   ;;
-  ;; It is intended that this function will be called from find-package.
-  ;; In Allegro, find-package calls package-name-to-package, and the latter
-  ;; function calls this function when it does not find the package.
-  ;;
-  ;; Because this function is called via the reader, we want it to be as
-  ;; fast as possible.
   (declare (optimize speed))
   (flet ((relative-to (package name)
-	   (if (string= "" name)
+	   (if (zerop (length name))
 	       package
 	       (find-package (concatenate 'simple-string (package-name package) "." name))))
 	 (find-non-dot (name)
@@ -198,23 +192,20 @@ If PACKAGE is non-NIL, then only the specified PACKAGE is searched."
 		 (i 0 (1+ i)))
 	       ((= i len) nil)
 	     (declare (fixnum len i))
-	     (when (char/= #\. (schar name i)) (return i)))))
+	     (when (char/= #\. (char name i)) (return i)))))
     (when (char= #\. (char name 0))
       (let* ((last-dot-position (or (find-non-dot name) (length name)))
-	     (n-dots last-dot-position)
+	     (n-dots (the 'fixnum last-dot-position))
 	     (name (subseq name last-dot-position)))
-	(cond ((= 1 n-dots)
-	       ;; relative to current package
-	       (relative-to *package* name))
-	      (t
-	       ;; relative to our (- n-dots 1)'th parent
-	       (let ((p *package*)
-		     tmp)
-		 (dotimes (i (1- n-dots))
-		   (when (not (setq tmp (package-parent p)))
-		     (error "The parent of ~a does not exist." p))
-		   (setq p tmp))
-		 (relative-to p name))))))))
+	;; relative to our (- n-dots 1)'th parent
+	(let ((p *package*))
+	  (dotimes (i (1- n-dots))
+	    (declare (fixnum i))
+	    (let ((tmp (package-parent p)))
+	      (unless tmp
+		(error "The parent of ~a does not exist." p))
+	      (setq p tmp)))
+	  (relative-to p name))))))
 
 (defun package-parent (package-specifier)
   ;; Given package-specifier, a package, symbol or string, return the
@@ -228,7 +219,7 @@ If PACKAGE is non-NIL, then only the specified PACKAGE is searched."
 		 (i len (1- i)))
 	       ((= i -1) nil)
 	     (declare (fixnum len i))
-	     (when (char= #\. (schar name i)) (return i)))))
+	     (when (char= #\. (char name i)) (return i)))))
     (let* ((child (cond ((packagep package-specifier)
 			 (package-name package-specifier))
 			((symbolp package-specifier)
@@ -237,11 +228,11 @@ If PACKAGE is non-NIL, then only the specified PACKAGE is searched."
 			(t (error "Illegal package specifier: ~s."
 				  package-specifier))))
 	   (dot-position (find-last-dot child)))
-      (cond (dot-position
-	     (let ((parent (subseq child 0 dot-position)))
-	       (or (package-name-to-package parent)
-		   (error "The parent of ~a does not exist." child))))
-	    (t (error "There is no parent of ~a." child))))))
+      (if dot-position
+	  (let ((parent (subseq child 0 dot-position)))
+	    (or (find-package parent)
+		(error "The parent of ~a does not exist." child))))
+	  (error "There is no parent of ~a." child))))
 
 (defun package-children (package-specifier &key (recurse t))
   ;; Given package-specifier, a package, symbol or string, return all the
@@ -273,7 +264,7 @@ If PACKAGE is non-NIL, then only the specified PACKAGE is searched."
 	     (do* ((i 0 (1+ i)))
 		 ((= i prefix-len) prefix-len)
 	       (declare (fixnum i))
-	       (when (not (char= (schar prefix i) (schar string i)))
+	       (when (not (char= (char prefix i) (char string i)))
 		 (return nil))))))
       (dolist (package (list-all-packages))
 	(let* ((package-name (package-name package))
