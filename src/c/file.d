@@ -2226,7 +2226,6 @@ BEGIN:
 		strm = CAR(strm);
 		goto BEGIN;
 
-	/* FIXME! Should signal an error of type-error */
 #if defined(ECL_WSOCK)
 	case smm_input_wsock:
 	case smm_output_wsock:
@@ -2258,8 +2257,9 @@ BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
 		cl_object col = funcall(2, @'ext::stream-line-column', strm);
-		/* FIXME! The Gray streams specifies NIL is a valid value but means
-		 * "unknown". Should we make it zero? */
+		/* FIXME! The Gray streams specifies NIL is a valid
+		 * value but means "unknown". Should we make it
+		 * zero? */
 		if (col == Cnil)
 			return 0;
 		else
@@ -2456,8 +2456,13 @@ cl_echo_stream_output_stream(cl_object strm)
 @(defun make_string_input_stream (strng &o istart iend)
 	cl_index s, e;
 @
-	/* FIXME! We cannot read from extended strings*/
 	strng = si_coerce_to_base_string(strng);
+#ifdef ECL_UNICODE
+	if (type_of(strng) == t_string) {
+		FEerror("Reading from extended strings is not supported: ~A",
+			1, strng);
+	}
+#endif
 	if (Null(istart))
 		s = 0;
 	else if (!FIXNUMP(istart) || FIXNUM_MINUSP(istart))
