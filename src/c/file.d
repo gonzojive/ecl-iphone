@@ -112,6 +112,7 @@ BEGIN:
 		FEtype_error_stream(strm);
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_input:
+	case smm_probe:
 #if defined(ECL_WSOCK)
 	case smm_input_wsock:
 #endif
@@ -507,9 +508,7 @@ static void flush_output_stream_binary(cl_object strm);
 	case smm_probe:
 		if (fp == NULL)
 			wrong_file_handler(strm);
-		/* FIXME: the check for probe stream is only here because *
-		 *        output_stream_p is not defined for such streams */
-		if (strm->stream.mode != smm_probe && !strm->stream.char_stream_p && ecl_output_stream_p(strm)) {
+		if (!strm->stream.char_stream_p && ecl_output_stream_p(strm)) {
 			if ((strm->stream.byte_size & 7))
 				/* buffered binary output stream -> flush any pending bits */
 				flush_output_stream_binary(strm);

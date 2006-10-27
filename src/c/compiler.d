@@ -1767,7 +1767,6 @@ c_tagbody(cl_object args, int flags)
 */
 static int
 c_throw(cl_object stmt, int flags) {
-	/* FIXME! Do we apply the right protocol here? */
 	cl_object tag = pop(&stmt);
 	cl_object form = pop(&stmt);
 	if (stmt != Cnil)
@@ -1841,7 +1840,6 @@ compile_form(cl_object stmt, int flags) {
 	bool push = flags & FLAG_PUSH;
 	int new_flags;
 
-	/* FIXME! We should protect this region with error handling */
  BEGIN:
 	if (code_walker != OBJNULL) {
 		stmt = funcall(3, SYM_VAL(@'si::*code-walker*'), stmt,
