@@ -113,12 +113,15 @@ make_package(cl_object name, cl_object nicknames, cl_object use_list)
 	if (cl_core.packages_to_be_created != OBJNULL) {
 		cl_object *p = &cl_core.packages_to_be_created;
 		for (x = *p; x != Cnil; ) {
-			if (equal(CAAR(x), name)) {
+			cl_object other_name = CAAR(x);
+			if (equal(other_name, name) ||
+			    funcall(5, @'member', other_name, nicknames,
+				    @':test', @'string=') != Cnil)
+			{
 				*p = CDR(x);
 				x = CDAR(x);
 				goto INTERN;
 			}
-			/* FIXME! We should also check the nicknames */
 			p = &CDR(x);
 			x = *p;
 		}
