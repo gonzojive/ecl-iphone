@@ -36,6 +36,24 @@ static const cl_index ecl_aet_size[] = {
 static void displace (cl_object from, cl_object to, cl_object offset);
 static void check_displaced (cl_object dlist, cl_object orig, cl_index newdim);
 
+static void
+FEbad_aet()
+{
+	FEerror(
+"A routine from ECL got an object with a bad array element type.\n"
+"If you are running a standard copy of ECL, please report this bug.\n"
+"If you are embedding ECL into an application, please ensure you\n"
+"passed the right value to the array creation routines.\n",0);
+}
+
+static cl_object
+ecl_out_of_bounds_error(cl_object fun, const char *place, cl_object value,
+			cl_object min, cl_object max)
+{
+	cl_object type = cl_list(3, @'integer', min, max);
+	return ecl_type_error(fun, place, value, type);
+}
+
 cl_index
 object_to_index(cl_object n)
 {
@@ -68,107 +86,113 @@ si_row_major_aset(cl_object x, cl_object indx, cl_object val)
 }
 
 @(defun aref (x &rest indx)
-  cl_index r, s, i, j;
-  cl_object index;
-@
-  r = narg - 1;
-  switch (type_of(x)) {
-  case t_array:
-    if (r != x->array.rank)
-      FEerror("Wrong number of indices.", 0);
-    for (i = j = 0;  i < r;  i++) {
-      index = cl_va_arg(indx);
-      if ((s = fixnnint(index)) >= x->array.dims[i])
-        FEerror("The ~:R index, ~S, to the array~%\
+@ {
+	cl_index s, i, j;
+	cl_object index;
+	cl_index r = narg - 1;
+  AGAIN:
+	switch (type_of(x)) {
+	case t_array:
+		if (r != x->array.rank)
+			FEerror("Wrong number of indices.", 0);
+		for (i = j = 0;  i < r;  i++) {
+			index = cl_va_arg(indx);
+			if ((s = fixnnint(index)) >= x->array.dims[i])
+				FEerror("The ~:R index, ~S, to the array~%\
 ~S is too large.", 3, MAKE_FIXNUM(i+1), index, x);
-      j = j*(x->array.dims[i]) + s;
-    }
-    break;
-
-  case t_vector:
+			j = j*(x->array.dims[i]) + s;
+		}
+		break;
+	case t_vector:
 #ifdef ECL_UNICODE
-  case t_string:
+	case t_string:
 #endif
-  case t_base_string:
-  case t_bitvector:
-    if (r != 1)
-      FEerror("Wrong number of indices.", 0);
-    index = cl_va_arg(indx);
-    j = fixnnint(index);
-    if (j >= x->vector.dim)
-      FEerror("The first index, ~S, to the array ~S is too large.",
-              2, index, x);
-    break;
-
-  default:
-    FEwrong_type_argument(@'array', x);
-  }
-  @(return aref(x, j))
-@)
+	case t_base_string:
+	case t_bitvector:
+		if (r != 1)
+			FEerror("Wrong number of indices.", 0);
+		index = cl_va_arg(indx);
+		j = fixnnint(index);
+		if (j >= x->vector.dim)
+			FEerror("The first index, ~S, to the array ~S is too large.",
+				2, index, x);
+		break;
+	default:
+		x = ecl_type_error(@'aref',"argument",x,@'array');
+		goto AGAIN;
+	}
+	@(return aref(x, j));
+} @)
 
 cl_object
 aref(cl_object x, cl_index index)
 {
-  if (index >= x->array.dim)
-    FEerror("The index, ~D, is too large.", 1, MAKE_FIXNUM(index));
-  switch ((cl_elttype)array_elttype(x)) {
-  case aet_object:
+ AGAIN:
+	if (index >= x->array.dim) {
+		cl_object i;
+		i = ecl_out_of_bounds_error(@'row-major-aref', "index",
+					    MAKE_FIXNUM(index), MAKE_FIXNUM(0),
+					    MAKE_FIXNUM(x->array.dim));
+		index = fix(i);
+		goto AGAIN;
+	}
+	switch ((cl_elttype)array_elttype(x)) {
+	case aet_object:
 #ifdef ECL_UNICODE
-  case aet_ch:
+	case aet_ch:
 #endif
-    return(x->array.self.t[index]);
-
-  case aet_bc:
-    return(CODE_CHAR(x->base_string.self[index]));
-
-  case aet_bit:
-    index += x->vector.offset;
-    if (x->vector.self.bit[index/CHAR_BIT] & (0200>>index%CHAR_BIT))
-      return(MAKE_FIXNUM(1));
-    else
-      return(MAKE_FIXNUM(0));
-  case aet_fix:
-    return make_integer(x->array.self.fix[index]);
-
-  case aet_index:
-    return make_unsigned_integer(x->array.self.index[index]);
-
-  case aet_sf:
-    return(make_singlefloat(x->array.self.sf[index]));
-
-  case aet_df:
-    return(make_doublefloat(x->array.self.df[index]));
-
-  case aet_b8:
-    return(MAKE_FIXNUM(x->array.self.b8[index]));
-
-  case aet_i8:
-    return(MAKE_FIXNUM(x->array.self.i8[index]));
-
-  default:
-    internal_error("aref");
-  }
+		return(x->array.self.t[index]);
+	case aet_bc:
+		return(CODE_CHAR(x->base_string.self[index]));
+	case aet_bit:
+		index += x->vector.offset;
+		if (x->vector.self.bit[index/CHAR_BIT] & (0200>>index%CHAR_BIT))
+			return(MAKE_FIXNUM(1));
+		else
+			return(MAKE_FIXNUM(0));
+	case aet_fix:
+		return make_integer(x->array.self.fix[index]);
+	case aet_index:
+		return make_unsigned_integer(x->array.self.index[index]);
+	case aet_sf:
+		return(make_singlefloat(x->array.self.sf[index]));
+	case aet_df:
+		return(make_doublefloat(x->array.self.df[index]));
+	case aet_b8:
+		return(MAKE_FIXNUM(x->array.self.b8[index]));
+	case aet_i8:
+		return(MAKE_FIXNUM(x->array.self.i8[index]));
+	default:
+		FEbad_aet();
+	}
 }
 
 cl_object
 aref1(cl_object v, cl_index index)
 {
-  switch (type_of(v)) {
+ AGAIN:
+	switch (type_of(v)) {
 #ifdef ECL_UNICODE
-  case t_string:
+	case t_string:
 #endif
-  case t_vector:
-  case t_bitvector:
-    return(aref(v, index));
-
-  case t_base_string:
-    if (index >= v->base_string.dim)
-      FEerror("The index, ~D, is too large.", 1, MAKE_FIXNUM(index));
-    return(CODE_CHAR(v->base_string.self[index]));
-
-  default:
-    FEerror("~S is not a vector.", 1, v);
-  }
+	case t_vector:
+	case t_bitvector:
+		return aref(v, index);
+	case t_base_string:
+		if (index >= v->base_string.dim) {
+			cl_object i;
+			i = ecl_out_of_bounds_error(@'row-major-aref',"index",
+						    MAKE_FIXNUM(index),
+						    MAKE_FIXNUM(0),
+						    MAKE_FIXNUM(v->base_string.dim));
+			index = fix(i);
+			goto AGAIN;
+		}
+		return CODE_CHAR(v->base_string.self[index]);
+	default:
+		v = ecl_type_error(@'row-major-aref',"argument",v,@'vector');
+		goto AGAIN;
+	}
 }
 
 /*
@@ -177,127 +201,136 @@ aref1(cl_object v, cl_index index)
 		(si:aset value array dim0 ... dimN)
 */
 @(defun si::aset (v x &rest dims)
-  cl_index r, s, i, j;
-  cl_object index;
-@
-  r = narg - 2;
-  switch (type_of(x)) {
-  case t_array:
-    if (r != x->array.rank)
-      FEerror("Wrong number of indices.", 0);
-    for (i = j = 0;  i < r;  i++) {
-      index = cl_va_arg(dims);
-      if ((s = fixnnint(index)) >= x->array.dims[i])
-	FEerror("The ~:R index, ~S, to the array ~S is too large.",
-		3, MAKE_FIXNUM(i+1), index, x);
-      j = j*(x->array.dims[i]) + s;
-    }
-    break;
-
-  case t_vector:
+@ {
+	cl_index s, i, j;
+	cl_object index;
+	cl_index r = narg - 2;
+  AGAIN:
+	switch (type_of(x)) {
+	case t_array:
+		if (r != x->array.rank)
+			FEerror("Wrong number of indices.", 0);
+		for (i = j = 0;  i < r;  i++) {
+			index = cl_va_arg(dims);
+			if ((s = fixnnint(index)) >= x->array.dims[i])
+				FEerror("The ~:R index, ~S, to the array ~S is too large.",
+					3, MAKE_FIXNUM(i+1), index, x);
+			j = j*(x->array.dims[i]) + s;
+		}
+		break;
+	case t_vector:
 #ifdef ECL_UNICODE
-  case t_string:
+	case t_string:
 #endif
-  case t_base_string:
-  case t_bitvector:
-    if (r != 1)
-      FEerror("Wrong number of indices.", 0);
-    index = cl_va_arg(dims);
-    j = fixnnint(index);
-    if (j >= x->vector.dim)
-      FEerror("The first index, ~S, to the array ~S is too large.",
-	      2, index, x);
-    break;
-
-  default:
-    FEwrong_type_argument(@'array', x);
-  }
-  @(return aset(x, j, v))
-@)
+	case t_base_string:
+	case t_bitvector:
+		if (r != 1)
+			FEerror("Wrong number of indices.", 0);
+		index = cl_va_arg(dims);
+		j = fixnnint(index);
+		if (j >= x->vector.dim)
+			FEerror("The first index, ~S, to the array ~S is too large.",
+				2, index, x);
+		break;
+	default:
+		x = ecl_type_error(@'si::aset',"destination",v,@'array');
+		goto AGAIN;
+	}
+	@(return aset(x, j, v))
+} @)
 
 cl_object
 aset(cl_object x, cl_index index, cl_object value)
 {
-  if (index >= x->array.dim)
-    FEerror("The index, ~D, too large.", 1, MAKE_FIXNUM(index));
-  switch (array_elttype(x)) {
-  case aet_object:
+	if (index >= x->array.dim)
+		FEerror("The index, ~D, too large.", 1, MAKE_FIXNUM(index));
+	switch (array_elttype(x)) {
+	case aet_object:
 #ifdef ECL_UNICODE
-  case aet_ch:
+	case aet_ch:
 #endif
-    x->array.self.t[index] = value;
-    break;
-
-  case aet_bc:
-    /* INV: ecl_char_code() checks the type of `value' */
-    x->base_string.self[index] = ecl_char_code(value);
-    break;
-
-  case aet_bit: {
-    cl_fixnum i = fixint(value);
-    if (i != 0 && i != 1)
-      FEerror("~S is not a bit.", 1, value);
-    index += x->vector.offset;
-    if (i == 0)
-      x->vector.self.bit[index/CHAR_BIT] &= ~(0200>>index%CHAR_BIT);
-    else
-      x->vector.self.bit[index/CHAR_BIT] |= 0200>>index%CHAR_BIT;
-    break;
-  }
-  case aet_fix:
-    x->array.self.fix[index] = fixint(value);
-    break;
-
-  case aet_index:
-    x->array.self.index[index] = fixnnint(value);
-    break;
-
-  case aet_sf:
-    x->array.self.sf[index] = object_to_float(value);
-    break;
-
-  case aet_df:
-    x->array.self.df[index] = object_to_double(value);
-    break;
-
-  case aet_b8: {
-    cl_index i = fixnnint(value);
-    if (i > 0xFF) FEerror("~S is not a (INTEGER 0 255)",1,value);
-    x->array.self.b8[index] = i;
-    break;
-  }
-  case aet_i8: {
-    cl_fixnum i = fixint(value);
-    if (i > 127 || i < -128) FEerror("~S is not a (INTEGER -128 127)",1,value);
-    x->array.self.i8[index] = i;
-    break;
-  }
-  }
-  return(value);
+		x->array.self.t[index] = value;
+		break;
+	case aet_bc:
+		/* INV: ecl_char_code() checks the type of `value' */
+		x->base_string.self[index] = ecl_char_code(value);
+		break;
+	case aet_bit: {
+		cl_fixnum i = fixint(value);
+		if (i != 0 && i != 1)
+			FEerror("~S is not a bit.", 1, value);
+		index += x->vector.offset;
+		if (i == 0)
+			x->vector.self.bit[index/CHAR_BIT] &= ~(0200>>index%CHAR_BIT);
+		else
+			x->vector.self.bit[index/CHAR_BIT] |= 0200>>index%CHAR_BIT;
+		break;
+	}
+	case aet_fix:
+		x->array.self.fix[index] = fixint(value);
+		break;
+	case aet_index:
+		x->array.self.index[index] = fixnnint(value);
+		break;
+	case aet_sf:
+		x->array.self.sf[index] = object_to_float(value);
+		break;
+	case aet_df:
+		x->array.self.df[index] = object_to_double(value);
+		break;
+	case aet_b8: {
+		cl_index i = fixnnint(value);
+		while (i > 0xFF) {
+			value = ecl_out_of_bounds_error(@'si::row-major-aset',
+							"value",value,
+							MAKE_FIXNUM(0),
+							MAKE_FIXNUM(255));
+		}
+		x->array.self.b8[index] = i;
+		break;
+	}
+	case aet_i8: {
+		cl_fixnum i = fixint(value);
+		while (i > 127 || i < -128) {
+			value = ecl_out_of_bounds_error(@'si::row-major-aset',
+							"value",value,
+							MAKE_FIXNUM(-128),
+							MAKE_FIXNUM(127));
+		}
+		x->array.self.i8[index] = i;
+		break;
+	}
+	}
+	return(value);
 }
 
 cl_object
 aset1(cl_object v, cl_index index, cl_object val)
 {
-  switch (type_of(v)) {
+ AGAIN:
+	switch (type_of(v)) {
 #ifdef ECL_UNICODE
-  case t_string:
+	case t_string:
 #endif
-  case t_vector:
-  case t_bitvector:
-    return(aset(v, index, val));
-
-  case t_base_string:
-    if (index >= v->base_string.dim)
-      FEerror("The index, ~D, is too large", 1, MAKE_FIXNUM(index));
-    /* INV: ecl_char_code() checks the type of `val' */
-    v->base_string.self[index] = ecl_char_code(val);
-    return(val);
-
-  default:
-    FEerror("~S is not a vector.", 1, v);
-  }
-
+	case t_vector:
+	case t_bitvector:
+		return(aset(v, index, val));
+	case t_base_string:
+		while (index >= v->base_string.dim) {
+			cl_object i = ecl_out_of_bounds_error(@'si::row-major-aset',
+							      "index",
+							      MAKE_FIXNUM(index),
+							      MAKE_FIXNUM(0),
+							      MAKE_FIXNUM(v->base_string.dim));
+			index = fix(i);
+		}
+		/* INV: ecl_char_code() checks the type of `val' */
+		v->base_string.self[index] = ecl_char_code(val);
+		return(val);
+	default:
+		v = ecl_type_error(@'row-major-aref',"argument",v,@'vector');
+		goto AGAIN;
+	}
 }
 
 /*
@@ -308,38 +341,36 @@ aset1(cl_object v, cl_index index, cl_object val)
 			            dim0 dim1 ... )
 */
 @(defun si::make_pure_array (etype adj displ disploff &rest dims)
-  cl_index r, s, i, j;
-  cl_object x;
-@
-  if (etype == Cnil) {
-    FEerror("ECL does not support creating arrays with element type NIL", 0);
-  }
-  r = narg - 4;
-  x = cl_alloc_object(t_array);
-  x->array.displaced = Cnil;
-  x->array.self.t = NULL;		/* for GC sake */
-  x->array.rank = r;
-  x->array.elttype = (short)ecl_symbol_to_elttype(etype);
-  x->array.dims = (cl_index *)cl_alloc_atomic_align(sizeof(cl_index)*r, sizeof(cl_index));
-  if (r >= ARANKLIM)
-    FEerror("The array rank, ~R, is too large.", 1, MAKE_FIXNUM(r));
-  for (i = 0, s = 1;  i < r;  i++) {
-    cl_object index = cl_va_arg(dims);
-    if ((j = fixnnint(index)) > ADIMLIM)
-      FEerror("The ~:R array dimension, ~D, is too large.",
-	      2, MAKE_FIXNUM(i+1), index);
-    s *= (x->array.dims[i] = j);
-    if (s > ATOTLIM)
-      FEerror("The array total size, ~D, is too large.", 1, MAKE_FIXNUM(s));
-  }
-  x->array.dim = s;
-  x->array.adjustable = adj != Cnil;
-  if (Null(displ))
-    array_allocself(x);
-  else
-    displace(x, displ, disploff);
-  @(return x)
-@)
+@ {
+	cl_index r, s, i, j;
+	cl_object x;
+	r = narg - 4;
+	x = cl_alloc_object(t_array);
+	x->array.displaced = Cnil;
+	x->array.self.t = NULL;		/* for GC sake */
+	x->array.rank = r;
+	x->array.elttype = (short)ecl_symbol_to_elttype(etype);
+	x->array.dims = (cl_index *)cl_alloc_atomic_align(sizeof(cl_index)*r, sizeof(cl_index));
+	if (r >= ARANKLIM) {
+		FEerror("The array rank, ~R, is too large.", 1, MAKE_FIXNUM(r));
+	}
+	for (i = 0, s = 1;  i < r;  i++) {
+		cl_object index = cl_va_arg(dims);
+		if ((j = fixnnint(index)) > ADIMLIM)
+			FEerror("The ~:R array dimension, ~D, is too large.",
+				2, MAKE_FIXNUM(i+1), index);
+		s *= (x->array.dims[i] = j);
+		if (s > ATOTLIM)
+			FEerror("The array total size, ~D, is too large.", 1, MAKE_FIXNUM(s));
+	}
+	x->array.dim = s;
+	x->array.adjustable = adj != Cnil;
+	if (Null(displ))
+		array_allocself(x);
+	else
+		displace(x, displ, disploff);
+	@(return x);
+} @)
 
 /*
 	Internal function for making vectors:
@@ -351,49 +382,46 @@ cl_object
 si_make_vector(cl_object etype, cl_object dim, cl_object adj,
 	       cl_object fillp, cl_object displ, cl_object disploff)
 {
-  cl_index d, f;
-  cl_object x;
-  cl_elttype aet;
+	cl_index d, f;
+	cl_object x;
+	cl_elttype aet;
 
-  if (etype == Cnil) {
-    FEerror("ECL does not support creating arrays with element type NIL", 0);
-  }
-  aet = ecl_symbol_to_elttype(etype);
-  if ((d = fixnnint(dim)) > ADIMLIM)
-    FEerror("The vector dimension, ~D, is too large.", 1, dim);
-  f = d;
-  if (aet == aet_bc) {
-    x = cl_alloc_object(t_base_string);
-  } else if (aet == aet_bit) {
-    x = cl_alloc_object(t_bitvector);
+	aet = ecl_symbol_to_elttype(etype);
+	if ((d = fixnnint(dim)) > ADIMLIM)
+		FEerror("The vector dimension, ~D, is too large.", 1, dim);
+	f = d;
+	if (aet == aet_bc) {
+		x = cl_alloc_object(t_base_string);
+	} else if (aet == aet_bit) {
+		x = cl_alloc_object(t_bitvector);
 #ifdef ECL_UNICODE
-  } else if (aet == aet_ch) {
-    x = cl_alloc_object(t_string);
+	} else if (aet == aet_ch) {
+		x = cl_alloc_object(t_string);
 #endif
-  } else {
-    x = cl_alloc_object(t_vector);
-    x->vector.elttype = (short)aet;
-  }
-  x->vector.self.t = NULL;		/* for GC sake */
-  x->vector.displaced = Cnil;
-  x->vector.dim = d;
-  x->vector.adjustable = adj != Cnil;
+	} else {
+		x = cl_alloc_object(t_vector);
+		x->vector.elttype = (short)aet;
+	}
+	x->vector.self.t = NULL;		/* for GC sake */
+	x->vector.displaced = Cnil;
+	x->vector.dim = d;
+	x->vector.adjustable = adj != Cnil;
 
-  if (Null(fillp))
-    x->vector.hasfillp = FALSE;
-  else if (fillp == Ct)
-    x->vector.hasfillp = TRUE;
-  else if ((f = fixnnint(fillp)) > d)
-    FEerror("The fill-pointer ~S is too large.", 1, fillp);
-  else
-    x->vector.hasfillp = TRUE;
-  x->vector.fillp = f;
+	if (Null(fillp))
+		x->vector.hasfillp = FALSE;
+	else if (fillp == Ct)
+		x->vector.hasfillp = TRUE;
+	else if ((f = fixnnint(fillp)) > d)
+		FEerror("The fill-pointer ~S is too large.", 1, fillp);
+	else
+		x->vector.hasfillp = TRUE;
+	x->vector.fillp = f;
 
-  if (Null(displ))
-    array_allocself(x);
-  else
-    displace(x, displ, disploff);
-  @(return x)
+	if (Null(displ))
+		array_allocself(x);
+	else
+		displace(x, displ, disploff);
+	@(return x)
 }
 
 void
@@ -520,6 +548,9 @@ ecl_symbol_to_elttype(cl_object x)
 		return(aet_i8);
 	else if (x == @'t')
 		return(aet_object);
+	else if (x == Cnil) {
+		FEerror("ECL does not support arrays with element type NIL", 0);
+	}
 	x = cl_funcall(2, @'upgraded-array-element-type', x);
 	goto BEGIN;
 }
@@ -569,7 +600,7 @@ array_address(cl_object x, cl_index inc)
 	case aet_i8:
 		return x->array.self.i8 + inc;
 	default:
-		FEerror("Bad array type", 0);
+		FEbad_aet();
 	}
 }
 
@@ -679,18 +710,14 @@ array_elttype(cl_object x)
 	case t_array:
 	case t_vector:
 		return((cl_elttype)x->array.elttype);
-
 #ifdef ECL_UNICODE
 	case t_string:
 		return(aet_ch);
 #endif
-
 	case t_base_string:
 		return(aet_bc);
-
 	case t_bitvector:
 		return(aet_bit);
-
 	default:
 		FEwrong_type_argument(@'array', x);
 	}
@@ -708,12 +735,17 @@ cl_object
 cl_array_dimension(cl_object a, cl_object index)
 {
 	cl_index i, dim;
-
+ AGAIN:
 	i = fixnnint(index);
 	switch (type_of(a)) {
 	case t_array:
-		if (i >= a->array.rank)
-			goto ILLEGAL;
+		if (i >= a->array.rank) {
+			index = ecl_out_of_bounds_error(@'array-dimension',
+							"dimension", index,
+							MAKE_FIXNUM(0),
+							MAKE_FIXNUM(a->array.rank));
+			goto AGAIN;
+		}
 		dim  = a->array.dims[i];
 		break;
 #ifdef ECL_UNICODE
@@ -722,13 +754,18 @@ cl_array_dimension(cl_object a, cl_object index)
 	case t_base_string:
 	case t_vector:
 	case t_bitvector:
-		if (i != 0)
-ILLEGAL:		FEerror("~S is an illegal axis-number to the array ~S.",
-				2, index, a);
+		if (i != 0) {
+			index = ecl_out_of_bounds_error(@'array-dimension',
+							"dimension", index,
+							MAKE_FIXNUM(0),
+							MAKE_FIXNUM(0));
+			goto AGAIN;
+		}
 		dim = a->vector.dim;
 		break;
 	default:
-		FEwrong_type_argument(@'array', a);
+		a = ecl_type_error(@'array-dimension',"argument",a,@'array');
+		goto AGAIN;
 	}
 	@(return MAKE_FIXNUM(dim))
 }
@@ -791,9 +828,10 @@ cl_array_displacement(cl_object a)
 			break;
 		case aet_b8:
 		case aet_i8:
-		default:
 			offset = a->array.self.b8 - to_array->array.self.b8;
 			break;
+		default:
+			FEbad_aet();
 		}
 	}
 	@(return to_array MAKE_FIXNUM(offset));
@@ -802,40 +840,44 @@ cl_array_displacement(cl_object a)
 cl_object
 cl_svref(cl_object x, cl_object index)
 {
-  cl_index i;
+	cl_index i;
 
-  if (type_of(x) != t_vector ||
-      x->vector.adjustable ||
-      x->vector.hasfillp ||
-      CAR(x->vector.displaced) != Cnil ||
-      (cl_elttype)x->vector.elttype != aet_object)
-    FEwrong_type_argument(@'simple-vector', x);
-  if ((i = fixnnint(index)) >= x->vector.dim)
-    illegal_index(x, index);
-  @(return x->vector.self.t[i])
+	while (type_of(x) != t_vector ||
+	       x->vector.adjustable ||
+	       x->vector.hasfillp ||
+	       CAR(x->vector.displaced) != Cnil ||
+	       (cl_elttype)x->vector.elttype != aet_object)
+	{
+		x = ecl_type_error(@'svref',"argument",x,@'simple-vector');
+	}
+	if ((i = fixnnint(index)) >= x->vector.dim)
+		illegal_index(x, index);
+	@(return x->vector.self.t[i])
 }
 
 cl_object
 si_svset(cl_object x, cl_object index, cl_object v)
 {
-  cl_index i;
+	cl_index i;
 
-  if (type_of(x) != t_vector ||
-      x->vector.adjustable ||
-      x->vector.hasfillp ||
-      CAR(x->vector.displaced) != Cnil ||
-      (cl_elttype)x->vector.elttype != aet_object)
-    FEwrong_type_argument(@'simple-vector', x);
-  if ((i = fixnnint(index)) >= x->vector.dim)
-    illegal_index(x, index);
-  @(return (x->vector.self.t[i] = v))
+	while (type_of(x) != t_vector ||
+	       x->vector.adjustable ||
+	       x->vector.hasfillp ||
+	       CAR(x->vector.displaced) != Cnil ||
+	       (cl_elttype)x->vector.elttype != aet_object)
+	{
+		x = ecl_type_error(@'si::svset',"argument",x,@'simple-vector');
+	}
+	if ((i = fixnnint(index)) >= x->vector.dim)
+		illegal_index(x, index);
+	@(return (x->vector.self.t[i] = v))
 }
 
 cl_object
 cl_array_has_fill_pointer_p(cl_object a)
 {
 	cl_object r;
-
+ AGAIN:
 	switch (type_of(a)) {
 	case t_array:
 		r = Cnil; break;
@@ -848,7 +890,9 @@ cl_array_has_fill_pointer_p(cl_object a)
 		r = a->vector.hasfillp? Ct : Cnil;
 		break;
 	default:
-		FEwrong_type_argument(@'array', a);
+		a = ecl_type_error(@'array-has-fill-pointer-p',"argument",
+				   a, @'array');
+		goto AGAIN;
 	}
 	@(return r)
 }
@@ -857,9 +901,10 @@ cl_object
 cl_fill_pointer(cl_object a)
 {
 	assert_type_vector(a);
-	if (!a->vector.hasfillp)
-		FEwrong_type_argument(c_string_to_object("(AND VECTOR (SATISFIES ARRAY-HAS-FILL-POINTER-P))"),
-				      a);
+	if (!a->vector.hasfillp) {
+		a = ecl_type_error(@'fill-pointer', "argument",
+				   a, c_string_to_object("(AND VECTOR (SATISFIES ARRAY-HAS-FILL-POINTER-P))"));
+	}
 	@(return MAKE_FIXNUM(a->vector.fillp))
 }
 
@@ -869,18 +914,24 @@ cl_fill_pointer(cl_object a)
 cl_object
 si_fill_pointer_set(cl_object a, cl_object fp)
 {
-  cl_index i;
-
-  assert_type_vector(a);
-  i = fixnnint(fp);
-  if (a->vector.hasfillp)
-    if (i > a->vector.dim)
-      FEerror("The fill-pointer ~S is too large", 1, fp);
-    else
-      a->vector.fillp = i;
-  else
-    FEerror("The vector ~S has no fill pointer.", 1, a);
-  @(return fp)
+	cl_index i;
+	assert_type_vector(a);
+ AGAIN:
+	i = fixnnint(fp);
+	if (a->vector.hasfillp) {
+		if (i > a->vector.dim) {
+			fp = ecl_out_of_bounds_error(@'si::fill-pointer-set',
+						     "fill-pointer", fp,
+						     MAKE_FIXNUM(0),
+						     MAKE_FIXNUM(a->vector.dim));
+			goto AGAIN;
+		} else {
+			a->vector.fillp = i;
+		}
+	} else {
+		FEerror("The vector ~S has no fill pointer.", 1, a);
+	}
+	@(return fp)
 }
 
 /*
@@ -926,7 +977,8 @@ si_replace_array(cl_object olda, cl_object newa)
 		break;
 	default:
 	CANNOT:
-		FEerror("Cannot replace the array ~S by the array ~S.", 2, olda, newa);
+		FEerror("Cannot replace the array ~S by the array ~S.",
+			2, olda, newa);
 	}
 	olda->array.displaced = displaced;
  OUTPUT:
@@ -934,7 +986,8 @@ si_replace_array(cl_object olda, cl_object newa)
 }
 
 void
-ecl_copy_subarray(cl_object dest, cl_index i0, cl_object orig, cl_index i1, cl_index l)
+ecl_copy_subarray(cl_object dest, cl_index i0, cl_object orig,
+		  cl_index i1, cl_index l)
 {
 	cl_elttype t = array_elttype(dest);
 	if (i0 + l > dest->array.dim) {
@@ -953,7 +1006,7 @@ ecl_copy_subarray(cl_object dest, cl_index i0, cl_object orig, cl_index i1, cl_i
 		       orig->array.self.ch + i1 * elt_size,
 		       l * elt_size);
 	} else {
-		FEerror("Bad array type", 0);
+		FEbad_aet();
 	}
 }
 
@@ -1037,6 +1090,6 @@ ecl_reverse_subarray(cl_object x, cl_index i0, cl_index i1)
 		}
 		break;
 	default:
-		FEerror("Bad array type", 0);
+		FEbad_aet();
 	}
 }
