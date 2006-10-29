@@ -698,11 +698,11 @@ EXPORTS
 	fixnum_expt
 	cl_exp
 	cl_expt
-	cl_log1
-	cl_log2
+	ecl_log1
+	ecl_log2
 	cl_sqrt
-	cl_atan2
-	cl_atan1
+	ecl_atan2
+	ecl_atan1
 	cl_sin
 	cl_cos
 	cl_tan
@@ -1108,6 +1108,7 @@ EXPORTS
 	FEtype_error_index
 	FEtype_error_string
 	FEdivision_by_zero
+	ecl_type_error
 
 	; unixfsys.c
 
