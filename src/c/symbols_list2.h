@@ -1655,6 +1655,8 @@ cl_symbols[] = {
 {SYS_ "PACKAGE-CHILDREN",NULL},
 #endif
 
+{SYS_ "WRONG-TYPE-ARGUMENT",NULL},
+
 /* Tag for end of list */
 {NULL,NULL}};
 

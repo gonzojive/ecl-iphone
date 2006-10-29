@@ -14,6 +14,21 @@
   (format *query-io* "~&Type a form to be evaluated:~%")
   (list (eval (read *query-io*))))
 
+(defun wrong-type-argument (object type &optional place function)
+  (tagbody again
+     (restart-case
+	 (error 'simple-type-error
+		:format-control "In ~:[an anonymous function~;~:*function ~A~], ~:[found object~;~:*the value of ~A is~]~%~8t~S~%which is not of expected type ~A"
+		:format-arguments (list function place object type))
+       (store-value (value)
+	 :report (lambda (stream)
+		   (format stream "Supply a new value ~@[of ~A~]." place))
+	 :interactive read-evaluated-form
+	 (setf object value)
+	 (unless (typep object type)
+	   (go again)))))
+  object)
+
 (defmacro check-type (place type &optional type-string)
   "Args: (check-type place typespec [string-form])
 Signals a continuable error, if the value of PLACE is not of the specified

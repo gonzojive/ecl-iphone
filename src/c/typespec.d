@@ -104,6 +104,15 @@ FEtype_error_stream(cl_object strm)
 	FEwrong_type_argument(@'stream', strm);
 }
 
+cl_object
+ecl_type_error(cl_object function, const char *place, cl_object o,
+	       cl_object type)
+{
+	return funcall(5, @'si::wrong-type-argument', o, type,
+		       (*place? make_constant_base_string(place) : Cnil),
+		       function);
+}
+
 /**********************************************************************/
 
 void

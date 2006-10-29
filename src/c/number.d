@@ -198,8 +198,9 @@ cl_object
 make_complex(cl_object r, cl_object i)
 {
 	cl_object c;
-	cl_type ti = type_of(i);
-
+	cl_type ti;
+ AGAIN:
+	ti = type_of(i);
 	/* Both R and I are promoted to a common type */
 	switch (type_of(r)) {
 	case t_fixnum:
@@ -229,7 +230,8 @@ make_complex(cl_object r, cl_object i)
 			break;
 #endif
 		default:
-			FEtype_error_real(i);
+			i = ecl_type_error(@'complex',"imaginary part", i, @'real');
+			goto AGAIN;
 		}
 		break;
 #ifdef ECL_SHORT_FLOAT
@@ -253,7 +255,8 @@ make_complex(cl_object r, cl_object i)
 			break;
 #endif
 		default:
-			FEtype_error_real(i);
+			i = ecl_type_error(@'complex',"imaginary part", i, @'real');
+			goto AGAIN;
 		}
 		break;
 #endif
@@ -280,7 +283,8 @@ make_complex(cl_object r, cl_object i)
 			break;
 #endif
 		default:
-			FEtype_error_real(i);
+			i = ecl_type_error(@'complex',"imaginary part", i, @'real');
+			goto AGAIN;
 		}
 		break;
 	case t_doublefloat:
@@ -301,7 +305,8 @@ make_complex(cl_object r, cl_object i)
 			break;
 #endif
 		default:
-			FEtype_error_real(i);
+			i = ecl_type_error(@'complex',"imaginary part", i, @'real');
+			goto AGAIN;
 		}
 		break;
 #ifdef ECL_LONG_FLOAT
@@ -311,7 +316,9 @@ make_complex(cl_object r, cl_object i)
 		break;
 #endif
 	default:
-		FEtype_error_real(r);
+		r = ecl_type_error(@'complex',"real part", r, @'real');
+		goto AGAIN;
+
 	}
 	c = cl_alloc_object(t_complex);
 	c->complex.real = r;

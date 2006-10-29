@@ -137,13 +137,16 @@ ECL 1.0:
 
  - Support for hierarchical package names, as in Allegro Common-Lisp.
 
+ - The debugger now prints a list of available restarts.
+
  - C functions which disappear: si_set_compiled_function_name(),
    si_extended_string_concatenate()
 
  - Lisp functions which disappear: si:set-compiled-function-name,
-   si:extended-string-concatenate.
+   si:extended-string-concatenate, si:wrong-type-argument.
 
- - New C functions: ecl_stream_to_handle(), ecl_base_char_code().
+ - New C functions: ecl_stream_to_handle(), ecl_base_char_code(),
+   ecl_type_error().
 
  - Functions renamed: backup_fopen() -> ecl_backup_fopen()
    char_code() -> ecl_char_code()
