@@ -72,7 +72,7 @@ typedef cl_object (*cl_objectfn_fixed)();
 #define	CHAR_CODE(obje)		((((cl_fixnum)(obje)) >> 2) & 0xff)
 #endif
 
-#define NUMBER_TYPE(t)		(t >= t_fixnum && t <= t_complex)
+#define ECL_NUMBER_TYPE_P(t)	(t >= t_fixnum && t <= t_complex)
 #define REAL_TYPE(t)		(t >= t_fixnum && t < t_complex)
 #define ARRAY_TYPE(t)		(t >= t_array && t <= t_bitvector)
 #define ARRAYP(x)		((IMMEDIATE(x) == 0) && (x)->d.t >= t_array && (x)->d.t <= t_bitvector)

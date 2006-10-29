@@ -859,6 +859,7 @@ extern cl_object make_complex(cl_object r, cl_object i);
 extern cl_object cl_rational(cl_object x);
 #define cl_rationalize cl_rational
 extern double number_to_double(cl_object x);
+#define number_to_float(x) ((float)number_to_double(x))
 #ifdef ECL_SHORT_FLOAT
 extern cl_object make_shortfloat(float f);
 extern float ecl_short_float(cl_object o);
@@ -990,11 +991,7 @@ extern cl_object make_random_state(cl_object rs);
 extern cl_fixnum fixnum_expt(cl_fixnum x, cl_fixnum y);
 extern cl_object cl_exp(cl_object x);
 extern cl_object cl_expt(cl_object x, cl_object y);
-extern cl_object cl_log1(cl_object x);
-extern cl_object cl_log2(cl_object x, cl_object y);
 extern cl_object cl_sqrt(cl_object x);
-extern cl_object cl_atan2(cl_object y, cl_object x);
-extern cl_object cl_atan1(cl_object y);
 extern cl_object cl_sin(cl_object x);
 extern cl_object cl_cos(cl_object x);
 extern cl_object cl_tan(cl_object x);
@@ -1003,6 +1000,11 @@ extern cl_object cl_cosh(cl_object x);
 extern cl_object cl_tanh(cl_object x);
 extern cl_object cl_atan _ARGS((cl_narg narg, cl_object x, ...));
 extern cl_object cl_log _ARGS((cl_narg narg, cl_object x, ...));
+
+extern cl_object ecl_log1(cl_object x);
+extern cl_object ecl_log2(cl_object x, cl_object y);
+extern cl_object ecl_atan2(cl_object y, cl_object x);
+extern cl_object ecl_atan1(cl_object y);
 
 
 /* package.c */

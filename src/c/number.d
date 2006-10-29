@@ -392,7 +392,7 @@ cl_object
 cl_rational(cl_object x)
 {
 	double d;
-
+ AGAIN:
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
@@ -441,7 +441,8 @@ cl_rational(cl_object x)
 	}
 #endif
 	default:
-		FEtype_error_number(x);
+		x = ecl_type_error(@'rational',"argument",x,@'number');
+		goto AGAIN;
 	}
 	@(return x)
 }

@@ -57,14 +57,13 @@ number_remainder(cl_object x, cl_object y, cl_object q)
    otherwise coerce to same float type as second arg */
 
 @(defun float (x &optional (y OBJNULL))
-	cl_type t, tx;
-	double d;
-  /* TODO: LONG_FLOAT SHORT_FLOAT */
+	cl_type ty, tx;
 @
+  AGAIN:
 	if (y != OBJNULL) {
-		t = type_of(y);
+		ty = type_of(y);
 	} else {
-		t = t_singlefloat;
+		ty = t_singlefloat;
 	}
 	switch (tx = type_of(x)) {
 #ifdef ECL_SHORT_FLOAT
@@ -75,12 +74,12 @@ number_remainder(cl_object x, cl_object y, cl_object q)
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
 #endif
-		if (y == OBJNULL || t == tx)
+		if (y == OBJNULL || ty == tx)
 			break;
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		switch (t) {
+		switch (ty) {
 #ifdef ECL_SHORT_FLOAT
 		case t_shortfloat:
 			x = make_shortfloat(number_to_double(x)); break;
@@ -90,18 +89,17 @@ number_remainder(cl_object x, cl_object y, cl_object q)
 		case t_doublefloat:
 			x = make_doublefloat(number_to_double(x)); break;
 #ifdef ECL_LONG_FLOAT
-		case t_longfloat: {
-			/* FIXME! We lose precision! */
-			volatile double y = number_to_double(x);
-			x = make_longfloat(y); break;
-		}
+		case t_longfloat:
+			x = make_longfloat(number_to_long_double(x)); break;
 #endif
 		default:
-			FEtype_error_float(y);
+			y = ecl_type_error(@'float',"prototype",y,@'float');
+			goto AGAIN;
 		}
 		break;
 	default:
-		FEtype_error_real(x);
+		x = ecl_type_error(@'float',"argument",x,@'real');
+		goto AGAIN;
 	}
 	@(return x)
 @)
@@ -109,44 +107,44 @@ number_remainder(cl_object x, cl_object y, cl_object q)
 cl_object
 cl_numerator(cl_object x)
 {
-	cl_object out;
-
+ AGAIN:
 	switch (type_of(x)) {
 	case t_ratio:
-		out = x->ratio.num;
+		x = x->ratio.num;
 		break;
 	case t_fixnum:
 	case t_bignum:
-		out = x;
 		break;
 	default:
-		FEwrong_type_argument(@'rational', x);
+		x = ecl_type_error(@'numerator',"argument",x,@'rational');
+		goto AGAIN;
 	}
-	@(return out)
+	@(return x)
 }
 
 cl_object
 cl_denominator(cl_object x)
 {
-	cl_object out;
-
+ AGAIN:
 	switch (type_of(x)) {
 	case t_ratio:
-		out = x->ratio.den;
+		x = x->ratio.den;
 		break;
 	case t_fixnum:
 	case t_bignum:
-		out = MAKE_FIXNUM(1);
+		x = MAKE_FIXNUM(1);
 		break;
 	default:
-		FEwrong_type_argument(@'rational', x);
+		x = ecl_type_error(@'numerator',"argument",x,@'rational');
+		goto AGAIN;
 	}
-	@(return out)
+	@(return x)
 }
 
 cl_object
 floor1(cl_object x)
 {
+ AGAIN:
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
@@ -190,7 +188,8 @@ floor1(cl_object x)
 	}
 #endif
 	default:
-		FEtype_error_real(x);
+		x = ecl_type_error(@'floor',"argument",x,@'real');
+		goto AGAIN;
 	}
 	NVALUES = 2;
 	return VALUES(0);
@@ -199,9 +198,14 @@ floor1(cl_object x)
 cl_object
 floor2(cl_object x, cl_object y)
 {
+	cl_type ty;
+ AGAIN:
+	while ((ty = type_of(y), !ECL_NUMBER_TYPE_P(ty))) {
+		y = ecl_type_error(@'floor',"divisor",y,@'real');
+	}
 	switch(type_of(x)) {
 	case t_fixnum:
-		switch(type_of(y)) {
+		switch(ty) {
 		case t_fixnum: {	/* FIX / FIX */
 		  cl_fixnum a = fix(x), b = fix(y);
 		  cl_fixnum q = a / b,  r = a % b;
@@ -275,11 +279,11 @@ floor2(cl_object x, cl_object y)
 		}
 #endif
 		default:
-		  FEtype_error_real(y);
+		  (void)0; /* Never reached */
 		}
 		break;
 	case t_bignum:
-		switch(type_of(y)) {
+		switch(ty) {
 		case t_fixnum: {	/* BIG / FIX */
 		  cl_object q = big_register0_get();
 		  cl_object r = big_register1_get();
@@ -349,11 +353,11 @@ floor2(cl_object x, cl_object y)
 		}
 #endif
 		default:
-		  FEtype_error_real(y);
+		  (void)0; /* Never reached */
 		}
 		break;
 	case t_ratio:
-		switch(type_of(y)) {
+		switch(ty) {
 		case t_ratio:		/* RAT / RAT */
 		  floor2(number_times(x->ratio.num, y->ratio.den),
 			 number_times(x->ratio.den, y->ratio.num));
@@ -401,7 +405,8 @@ floor2(cl_object x, cl_object y)
 	}
 #endif
 	default:
-		FEtype_error_real(x);
+		x = ecl_type_error(@'floor',"argument",x,@'real');
+		goto AGAIN;
 	}
 	NVALUES = 2;
 	return VALUES(0);
@@ -419,6 +424,7 @@ floor2(cl_object x, cl_object y)
 cl_object
 ceiling1(cl_object x)
 {
+ AGAIN:
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
@@ -462,7 +468,8 @@ ceiling1(cl_object x)
 	}
 #endif
 	default:
-		FEtype_error_real(x);
+		x = ecl_type_error(@'ceiling',"argument",x,@'real');
+		goto AGAIN;
 	}
 	NVALUES = 2;
 	return VALUES(0);
@@ -471,9 +478,14 @@ ceiling1(cl_object x)
 cl_object
 ceiling2(cl_object x, cl_object y)
 {
+	cl_type ty;
+ AGAIN:
+	while ((ty = type_of(y), !ECL_NUMBER_TYPE_P(ty))) {
+		y = ecl_type_error(@'ceiling',"divisor",y,@'real');
+	}
 	switch(type_of(x)) {
 	case t_fixnum:
-		switch(type_of(y)) {
+		switch(ty) {
 		case t_fixnum: {	/* FIX / FIX */
 		  cl_fixnum a = fix(x); cl_fixnum b = fix(y);
 		  cl_fixnum q = a / b;  cl_fixnum r = a % b;
@@ -547,7 +559,7 @@ ceiling2(cl_object x, cl_object y)
 		}
 #endif
 		default:
-		  FEtype_error_real(y);
+		  (void)0; /*Never reached */
 		}
 		break;
 	case t_bignum:
@@ -621,7 +633,7 @@ ceiling2(cl_object x, cl_object y)
 		}
 #endif
 		default:
-		  FEtype_error_real(y);
+		  (void)0; /*Never reached */
 		}
 		break;
 	case t_ratio:
@@ -673,7 +685,8 @@ ceiling2(cl_object x, cl_object y)
 	}
 #endif
 	default:
-		FEtype_error_real(x);
+		x = ecl_type_error(@'ceiling',"argument",x,@'real');
+		goto AGAIN;
 	}
 	NVALUES = 2;
 	return VALUES(0);
@@ -691,6 +704,7 @@ ceiling2(cl_object x, cl_object y)
 cl_object
 truncate1(cl_object x)
 {
+ AGAIN:
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
@@ -734,7 +748,8 @@ truncate1(cl_object x)
 	}
 #endif
 	default:
-		FEtype_error_real(x);
+		x = ecl_type_error(@'truncate',"argument",x,@'real');
+		goto AGAIN;
 	}
 	NVALUES = 2;
 	return VALUES(0);
@@ -801,6 +816,7 @@ round_long_double(long double d)
 cl_object
 round1(cl_object x)
 {
+ AGAIN:
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
@@ -840,7 +856,8 @@ round1(cl_object x)
 	}
 #endif
 	default:
-		FEtype_error_real(x);
+		x = ecl_type_error(@'round',"argument",x,@'real');
+		goto AGAIN;
 	}
 	NVALUES = 2;
 	return VALUES(0);
@@ -916,7 +933,7 @@ cl_decode_float(cl_object x)
 	cl_type tx = type_of(x);
 	float f;
 	double d;
-
+ AGAIN:
 	switch (tx) {
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
@@ -963,7 +980,8 @@ cl_decode_float(cl_object x)
 	}
 #endif
 	default:
-		FEtype_error_float(x);
+		x = ecl_type_error(@'decode-float',"argument",x,@'float');
+		goto AGAIN;
 	}
 	@(return x MAKE_FIXNUM(e) make_singlefloat(s))
 }
@@ -972,11 +990,13 @@ cl_object
 cl_scale_float(cl_object x, cl_object y)
 {
 	cl_fixnum k;
-
-	if (FIXNUMP(y))
+ AGAIN:
+	if (FIXNUMP(y)) {
 		k = fix(y);
-	else
-		FEerror("~S is an illegal exponent.", 1, y);
+	} else {
+		y = ecl_type_error(@'scale-float',"exponent",y,@'fixnum');
+		goto AGAIN;
+	}
 	switch (type_of(x)) {
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
@@ -995,7 +1015,8 @@ cl_scale_float(cl_object x, cl_object y)
 		break;
 #endif
 	default:
-		FEtype_error_float(x);
+		x = ecl_type_error(@'scale-float',"argument",x,@'float');
+		goto AGAIN;
 	}
 	@(return x)
 }
@@ -1003,14 +1024,16 @@ cl_scale_float(cl_object x, cl_object y)
 cl_object
 cl_float_radix(cl_object x)
 {
-	if (cl_floatp(x) != Ct)
-		FEtype_error_float(x);
+	while (cl_floatp(x) != Ct) {
+		x = ecl_type_error(@'float-radix',"argument",x,@'float');
+	}
 	@(return MAKE_FIXNUM(FLT_RADIX))
 }
 
 @(defun float_sign (x &optional (y x))
 	int negativep;
 @
+  AGAIN:
 	switch (type_of(x)) {
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
@@ -1025,37 +1048,45 @@ cl_float_radix(cl_object x)
 		negativep = ecl_long_float(x) < 0; break;
 #endif
 	default:
-		FEtype_error_float(x);
+		x = ecl_type_error(@'float-sign',"argument",x,@'float');
+		goto AGAIN;
 	}
 	switch (type_of(y)) {
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat: {
 		float f = ecl_short_float(y);
-		@(return make_shortfloat(negativep? -fabsf(f) : fabsf(f)))
+		x = make_shortfloat(negativep? -fabsf(f) : fabsf(f));
+		break;
 	}
 #endif
 	case t_singlefloat: {
 		float f = sf(y);
-		@(return make_singlefloat(negativep? -fabsf(f) : fabsf(f)))
+		x = make_singlefloat(negativep? -fabsf(f) : fabsf(f));
+		break;
 	}
 	case t_doublefloat: {
 		double f = df(y);
-		@(return make_doublefloat(negativep? -fabs(f) : fabs(f)))
+		x = make_doublefloat(negativep? -fabs(f) : fabs(f));
+		break;
 	}
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat: {
 		long double f = ecl_long_float(y);
-		@(return make_longfloat(negativep? -fabsl(f) : fabsl(f)))
+		x = make_longfloat(negativep? -fabsl(f) : fabsl(f));
+		break;
 	}
 #endif
 	default:
-		FEtype_error_float(x);
+		y = ecl_type_error(@'float-sign',"prototype",y,@'float');
+		goto AGAIN;
 	}
+	@(return x);
 @)
 
 cl_object
 cl_float_digits(cl_object x)
 {
+ AGAIN:
 	switch (type_of(x)) {
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
@@ -1072,7 +1103,8 @@ cl_float_digits(cl_object x)
 		break;
 #endif
 	default:
-		FEtype_error_float(x);
+		x = ecl_type_error(@'float-digits',"argument",x,@'float');
+		goto AGAIN;
 	}
 	@(return x)
 }
@@ -1082,6 +1114,7 @@ cl_float_precision(cl_object x)
 {
 	int precision;
 	float f; double d;
+ AGAIN:
 	switch (type_of(x)) {
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat: {
@@ -1148,7 +1181,8 @@ cl_float_precision(cl_object x)
 	}
 #endif
 	default:
-		FEtype_error_float(x);
+		x = ecl_type_error(@'float-precision',"argument",x,@'float');
+		goto AGAIN;
 	}
 	@(return MAKE_FIXNUM(precision))
 }
@@ -1157,7 +1191,7 @@ cl_object
 cl_integer_decode_float(cl_object x)
 {
 	int e, s;
-
+ AGAIN:
 	switch (type_of(x)) {
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat: {
@@ -1241,7 +1275,8 @@ cl_integer_decode_float(cl_object x)
 	}
 #endif
 	default:
-		FEtype_error_float(x);
+		x = ecl_type_error(@'integer-decode-float',"argument",x,@'float');
+		goto AGAIN;
 	}
 	@(return x MAKE_FIXNUM(e) MAKE_FIXNUM(s))
 }
@@ -1255,6 +1290,7 @@ cl_integer_decode_float(cl_object x)
 cl_object
 cl_realpart(cl_object x)
 {
+ AGAIN:
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
@@ -1272,7 +1308,8 @@ cl_realpart(cl_object x)
 		x = x->complex.real;
 		break;
 	default:
-		FEtype_error_number(x);
+		x = ecl_type_error(@'realpart',"argument",x,@'number');
+		goto AGAIN;
 	}
 	@(return x)
 }
@@ -1280,6 +1317,7 @@ cl_realpart(cl_object x)
 cl_object
 cl_imagpart(cl_object x)
 {
+ AGAIN:
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
@@ -1305,7 +1343,8 @@ cl_imagpart(cl_object x)
 		x = x->complex.imag;
 		break;
 	default:
-		FEtype_error_number(x);
+		x = ecl_type_error(@'imagpart',"argument",x,@'number');
+		goto AGAIN;
 	}
 	@(return x)
 }

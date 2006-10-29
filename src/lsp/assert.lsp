@@ -19,10 +19,13 @@
      (restart-case
 	 (error 'simple-type-error
 		:format-control "In ~:[an anonymous function~;~:*function ~A~], ~:[found object~;~:*the value of ~A is~]~%~8t~S~%which is not of expected type ~A"
-		:format-arguments (list function place object type))
-       (store-value (value)
+		:format-arguments (list function place object type)
+		:datum object
+		:expected-type type
+		)
+       (use-value (value)
 	 :report (lambda (stream)
-		   (format stream "Supply a new value ~@[of ~A~]." place))
+		   (format stream "Supply a new value of type ~A." type))
 	 :interactive read-evaluated-form
 	 (setf object value)
 	 (unless (typep object type)

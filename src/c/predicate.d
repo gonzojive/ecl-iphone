@@ -56,14 +56,14 @@ cl_object
 cl_numberp(cl_object x)
 {
 	cl_type t = type_of(x);
-	@(return (NUMBER_TYPE(t) ? Ct : Cnil))
+	@(return (ECL_NUMBER_TYPE_P(t) ? Ct : Cnil))
 }
 
 /*	Used in compiled code		*/
 bool numberp(cl_object x)
 {
   cl_type t = type_of(x);
-  return(NUMBER_TYPE(t));
+  return ECL_NUMBER_TYPE_P(t);
 }
 
 cl_object
@@ -442,7 +442,7 @@ BEGIN:
 	case t_longfloat:
 #endif
 	case t_complex:
-		if (NUMBER_TYPE(ty))
+		if (ECL_NUMBER_TYPE_P(ty))
 			return number_equalp(x, y);
 		else
 			return FALSE;
