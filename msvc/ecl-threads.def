@@ -1100,7 +1100,6 @@ EXPORTS
 	assert_type_integer
 	assert_type_non_negative_integer
 	assert_type_package
-	assert_type_string
 	assert_type_cons
 	assert_type_readtable
 	assert_type_hash_table
@@ -1109,6 +1108,8 @@ EXPORTS
 	assert_type_list
 	assert_type_proper_list
 	cl_type_of
+	ecl_check_cl_type
+	ecl_check_type_string
 
 	FEtype_error_character
 	FEtype_error_cons
