@@ -115,6 +115,105 @@ ecl_type_error(cl_object function, const char *place, cl_object o,
 
 /**********************************************************************/
 
+static cl_object
+ecl_type_to_symbol(cl_type t)
+{
+	switch(t) {
+	case t_character:
+		return @'character';
+	case t_fixnum:
+		return @'fixnum';
+	case t_bignum:
+		return @'bignum';
+	case t_ratio:
+		return @'ratio';
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+		return @'short-float';
+#endif
+	case t_singlefloat:
+		return @'single-float';
+	case t_doublefloat:
+		return @'double-float';
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+		return @'long-float';
+#endif
+	case t_complex:
+		return @'complex';
+	case t_symbol:
+		return @'symbol';
+	case t_package:
+		return @'package';
+	case t_cons:
+		return @'cons';
+	case t_hashtable:
+		return @'hash-table';
+	case t_array:
+		return @'array';
+	case t_vector:
+		return @'vector';
+	case t_bitvector:
+		return @'bit-vector';
+#ifdef ECL_UNICODE
+	case t_string:
+		return @'string';
+#endif
+	case t_base_string:
+		return @'base-string';
+	case t_stream:
+		return @'stream';
+	case t_readtable:
+		return @'readtable';
+	case t_pathname:
+		return @'pathname';
+	case t_random:
+		return @'random-state';
+	case t_bytecodes:
+	case t_cfun:
+	case t_cclosure:
+		return @'compiled-function';
+	case t_foreign:
+		return @'si::foreign-data';
+#ifdef ECL_THREADS
+	case t_process:
+		return @'mp::process';
+	case t_lock:
+		return @'mp::lock';
+#endif
+	default:
+		error("not a lisp data object");
+	}
+}
+
+cl_object
+ecl_check_cl_type(cl_object fun, cl_object p, cl_type t)
+{
+	while (type_of(p) != t) {
+		p = ecl_type_error(fun, "argument", p, ecl_type_to_symbol(t));
+	}
+	return p;
+}
+
+cl_object
+ecl_check_type_string(cl_object fun, cl_object p)
+{
+	cl_type t;
+ AGAIN:
+	t = type_of(p);
+	if (t != t_base_string) {
+#ifdef ECL_UNICODE
+		if (t != t_string) 
+#endif
+			{
+			p = ecl_type_error(fun,"",p,@'string');
+			goto AGAIN;
+			}
+	}
+	return p;
+}
+
+
 void
 assert_type_integer(cl_object p)
 {
@@ -139,44 +238,10 @@ assert_type_non_negative_integer(cl_object p)
 }
 
 void
-assert_type_character(cl_object p)
-{
-	if (!CHARACTERP(p))
-		FEtype_error_character(p);
-}
-
-void
-assert_type_symbol(cl_object p)
-{
-	if (!SYMBOLP(p))
-		FEwrong_type_argument(@'symbol', p);
-}
-
-void
 assert_type_package(cl_object p)
 {
 	if (type_of(p) != t_package)
 		FEwrong_type_argument(@'package', p);
-}
-
-void
-assert_type_string(cl_object p)
-{
-	cl_type t = type_of(p);
-#ifdef ECL_UNICODE
-	if (t != t_base_string && t != t_string)
-		FEtype_error_string(p);
-#else
-	if (t != t_base_string)
-		FEtype_error_string(p);
-#endif
-}
-
-void
-assert_type_base_string(cl_object p)
-{
-	if (type_of(p) != t_base_string)
-		FEwrong_type_argument(@'base-string',p);
 }
 
 void
@@ -234,7 +299,8 @@ cl_object
 cl_type_of(cl_object x)
 {
 	cl_object t;
-	switch (type_of(x)) {
+	cl_type tx = type_of(x);
+	switch (tx) {
 #ifdef CLOS
         case t_instance: {
 		cl_object cl = CLASS_OF(x);
@@ -248,32 +314,7 @@ cl_type_of(cl_object x)
 	case t_fixnum:
 	case t_bignum:
 		t = cl_list(3, @'integer', x, x); break;
-#else
-	case t_fixnum:
-		t = @'fixnum'; break;
-	case t_bignum:
-		t = @'bignum'; break;
 #endif
-
-	case t_ratio:
-		t = @'ratio'; break;
-
-#ifdef ECL_SHORT_FLOAT
-	case t_shortfloat:
-		t = @'short-float'; break;
-#endif
-	case t_singlefloat:
-		t = @'single-float'; break;
-
-	case t_doublefloat:
-		t = @'double-float'; break;
-#ifdef ECL_LONG_FLOAT
-	case t_longfloat:
-		t = @'long-float'; break;
-#endif
-	case t_complex:
-		t = @'complex'; break;
-
 	case t_character: {
 		int i = CHAR_CODE(x);
 		if ((' ' <= i && i < '\177') || i == '\n')
@@ -293,16 +334,6 @@ cl_type_of(cl_object x)
 		else
 			t = @'symbol';
 		break;
-
-	case t_package:
-		t = @'package'; break;
-
-	case t_cons:
-		t = @'cons'; break;
-
-	case t_hashtable:
-		t = @'hash-table'; break;
-
 	case t_array:
 		if (x->array.adjustable ||
 		    !Null(CAR(x->array.displaced)))
@@ -311,7 +342,6 @@ cl_type_of(cl_object x)
 			t = @'simple-array';
 		t = cl_list(3, t, ecl_elttype_to_symbol(array_elttype(x)), cl_array_dimensions(1, x));
 		break;
-
 	case t_vector:
 		if (x->vector.adjustable ||
 		    !Null(CAR(x->vector.displaced))) {
@@ -325,7 +355,6 @@ cl_type_of(cl_object x)
 			t = cl_list(2, @'simple-vector', MAKE_FIXNUM(x->vector.dim));
 		}
 		break;
-
 #ifdef ECL_UNICODE
 	case t_string:
 		if (x->string.adjustable ||
@@ -337,7 +366,6 @@ cl_type_of(cl_object x)
 		t = cl_list(2, t, MAKE_FIXNUM(x->string.dim));
 		break;
 #endif
-
 	case t_base_string:
 		if (x->base_string.adjustable ||
 		    x->base_string.hasfillp ||
@@ -347,7 +375,6 @@ cl_type_of(cl_object x)
 			t = @'simple-base-string';
 		t = cl_list(2, t, MAKE_FIXNUM(x->base_string.dim));
 		break;
-
 	case t_bitvector:
 		if (x->vector.adjustable ||
 		    x->vector.hasfillp ||
@@ -357,12 +384,10 @@ cl_type_of(cl_object x)
 			t = @'simple-bit-vector';
 		t = cl_list(2, t, MAKE_FIXNUM(x->vector.dim));
 		break;
-
 #ifndef CLOS
 	case t_structure:
 		t = x->str.name; break;
 #endif
-
 	case t_stream:
 		switch (x->stream.mode) {
 		case smm_synonym:	t = @'synonym-stream'; break;
@@ -375,32 +400,11 @@ cl_type_of(cl_object x)
 		default:		t = @'file-stream'; break;
 		}
 		break;
-
-	case t_readtable:
-		t = @'readtable'; break;
-
 	case t_pathname:
 		t = x->pathname.logical? @'logical-pathname' : @'pathname';
 		break;
-
-	case t_random:
-		t = @'random-state'; break;
-
-	case t_bytecodes:
-	case t_cfun:
-	case t_cclosure:
-		t = @'compiled-function'; break;
-
-	case t_foreign:
-		t = @'si::foreign-data'; break;
-#ifdef ECL_THREADS
-	case t_process:
-		t = @'mp::process'; break;
-	case t_lock:
-		t = @'mp::lock'; break;
-#endif
 	default:
-		error("not a lisp data object");
+		t = ecl_type_to_symbol(tx);
 	}
-	return1(t);
+	@(return t)
 }

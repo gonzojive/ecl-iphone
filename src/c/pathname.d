@@ -1289,7 +1289,8 @@ coerce_to_from_pathname(cl_object x, cl_object host)
 	cl_object pair, l;
 @
 	/* Check that host is a valid host name */
-	assert_type_base_string(host);
+	/* FIXME! Hosts restricted to base string */
+	host = ecl_check_cl_type(@'si::pathname-translations',host,t_base_string);
 	length = host->base_string.fillp;
 	parse_word(host->base_string.self, is_null, WORD_LOGICAL, 0, length,
 		   &parsed_length);

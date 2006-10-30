@@ -1621,7 +1621,8 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 	cl_index s, e, ep;
 	cl_object rtbl = ecl_current_readtable();
 @
-	assert_type_base_string(strng);
+	/* FIXME! PARSE-INTEGER restricted to base-strings */
+	strng = ecl_check_cl_type(@'parse-integer', strng, t_base_string);
 	get_string_start_end(strng, start, end, &s, &e);
 	if (!FIXNUMP(radix) ||
 	    fix(radix) < 2 || fix(radix) > 36)
@@ -1867,7 +1868,8 @@ si_string_to_object(cl_object x)
 {
 	cl_object in;
 
-	assert_type_base_string(x);
+	/* FIXME! Restricted to base string */
+	x = ecl_check_cl_type(@'si::string-to-object', x, t_base_string);
 	in = ecl_make_string_input_stream(x, 0, x->base_string.fillp);
 	x = read_object(in);
 	if (x == OBJNULL)

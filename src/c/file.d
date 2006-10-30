@@ -2313,7 +2313,7 @@ cl_make_synonym_stream(cl_object sym)
 {
 	cl_object x;
 
-	assert_type_symbol(sym);
+	sym = ecl_check_cl_type(@'make-synonym-stream',sym,t_symbol);
 	x = cl_alloc_object(t_stream);
 	x->stream.mode = (short)smm_synonym;
 	x->stream.closed = 0;

@@ -189,8 +189,8 @@ si_copy_to_simple_base_string(cl_object x)
 		break;
 	}
 	default:
-		/* This will signal a type error */
-		assert_type_string(x);
+		x = ecl_type_error(@'si::copy-to-simple-base-string',"",x,@'string');
+		goto AGAIN;
 	}
 	@(return y)
 }
@@ -198,6 +198,7 @@ si_copy_to_simple_base_string(cl_object x)
 cl_object
 cl_string(cl_object x)
 {
+ AGAIN:
 	switch (type_of(x)) {
 	case t_symbol:
 		x = x->symbol.name;
@@ -227,7 +228,8 @@ cl_string(cl_object x)
 	case t_base_string:
 		break;
 	default:
-		FEtype_error_string(x);
+		x = ecl_type_error(@'string',"",x,@'string');
+		goto AGAIN;
 	}
 	@(return x)
 }
@@ -267,7 +269,8 @@ AGAIN:
 		y = x;
 		break;
 	default:
-		FEtype_error_string(x);
+		x = ecl_type_error(@'si:coerce-to-extended-string',"",x,@'string');
+		goto AGAIN;
 	}
 	@(return y)
 }
@@ -278,7 +281,7 @@ cl_char(cl_object object, cl_object index)
 {
 	cl_index position = object_to_index(index);
 	/* CHAR bypasses fill pointers when accessing strings */
-
+ AGAIN:
 	switch(type_of(object)) {
 #ifdef ECL_UNICODE
 	case t_string:
@@ -291,7 +294,8 @@ cl_char(cl_object object, cl_object index)
 			illegal_index(object, index);
 		@(return CODE_CHAR(object->base_string.self[position]))
 	default:
-		FEtype_error_string(object);
+		object = ecl_type_error(@'char',"",object,@'string');
+		goto AGAIN;
 	}
 }
 
@@ -299,7 +303,7 @@ cl_object
 si_char_set(cl_object object, cl_object index, cl_object value)
 {
 	cl_index position = object_to_index(index);
-
+ AGAIN:
 	/* CHAR bypasses fill pointers when accessing strings */
 	switch(type_of(object)) {
 #ifdef ECL_UNICODE
@@ -317,7 +321,8 @@ si_char_set(cl_object object, cl_object index, cl_object value)
 		object->base_string.self[position] = ecl_char_code(value);
 		@(return value)
 	default:
-		FEtype_error_string(object);
+		object = ecl_type_error(@'si::char-set', "", object, @'string');
+		goto AGAIN;
 	}
 }
 
@@ -452,13 +457,13 @@ compare_base(char *s1, cl_index l1, char *s2, cl_index l2, int case_sensitive, c
 		                      (start2 MAKE_FIXNUM(0)) end2)
 	cl_index s1, e1, s2, e2;
 @
+  AGAIN:
 	string1 = cl_string(string1);
 	string2 = cl_string(string2);
 	get_string_start_end(string1, start1, end1, &s1, &e1);
 	get_string_start_end(string2, start2, end2, &s2, &e2);
 	if (e1 - s1 != e2 - s2)
 		@(return Cnil)
-
 #ifdef ECL_UNICODE
 	switch(type_of(string1)) {
 	case t_string:
@@ -473,8 +478,6 @@ compare_base(char *s1, cl_index l1, char *s2, cl_index l2, int case_sensitive, c
 				if (CHAR_CODE(string1->string.self[s1++]) != string2->base_string.self[s2++])
 					@(return Cnil)
 			@(return Ct)
-		default:
-			FEtype_error_string(string2);
 		}
 		break;
 	case t_base_string:
@@ -489,13 +492,9 @@ compare_base(char *s1, cl_index l1, char *s2, cl_index l2, int case_sensitive, c
 				if (string1->base_string.self[s1++] != string2->base_string.self[s2++])
 					@(return Cnil)
 			@(return Ct)
-		default:
-			FEtype_error_string(string2);
 		}
 		break;
-	default:
-		FEtype_error_string(string1);
-	}
+ 	}
 #else
 	while (s1 < e1)
 		if (string1->base_string.self[s1++] !=
@@ -512,6 +511,7 @@ bool
 string_eq(cl_object x, cl_object y)
 {
 	cl_index i, j;
+ AGAIN:
 	i = x->base_string.fillp;
 	j = y->base_string.fillp;
 	if (i != j) return 0;
@@ -530,7 +530,8 @@ AGAIN:
 			return 1;
 			}
 		default:
-			FEtype_error_string(y);
+			y = ecl_type_error(@'string=',"",y,@'string');
+			goto AGAIN;
 		}
 		break;
 	case t_base_string:
@@ -542,11 +543,13 @@ AGAIN:
 		case t_base_string:
 			return memcmp(x->base_string.self, y->base_string.self, i) == 0;
 		default:
-			FEtype_error_string(y);
+			y = ecl_type_error(@'string=',"",y,@'string');
+			goto AGAIN;
 		}
 		break;
 	default:
-		FEtype_error_string(x);
+		x = ecl_type_error(@'string=',"",x,@'string');
+		goto AGAIN;
 	}
 #else
 	return memcmp(x->base_string.self, y->base_string.self, i) == 0;
@@ -559,6 +562,7 @@ AGAIN:
 	cl_index s1, e1, s2, e2;
 	int output;
 @
+AGAIN:
 	string1 = cl_string(string1);
 	string2 = cl_string(string2);
 	get_string_start_end(string1, start1, end1, &s1, &e1);
@@ -579,8 +583,6 @@ AGAIN:
 					       string2->base_string.self + s2, e2 - s2,
 					       0, &e1);
 			break;
-		default:
-			FEtype_error_string(string2);
 		}
 		break;
 	case t_base_string:
@@ -595,12 +597,8 @@ AGAIN:
 					      string2->base_string.self + s2, e2 - s2,
 					      0, &e1);
 			break;
-		default:
-			FEtype_error_string(string2);
 		}
 		break;
-	default:
-		FEtype_error_string(string1);
 	}
 #else
 	output = compare_base(string1->base_string.self + s1, e1 - s1,
@@ -743,7 +741,7 @@ bool
 member_char(int c, cl_object char_bag)
 {
 	cl_index i, f;
-
+ AGAIN:
 	switch (type_of(char_bag)) {
 	case t_cons:
 		loop_for_in(char_bag) {
@@ -752,7 +750,6 @@ member_char(int c, cl_object char_bag)
 				return(TRUE);
 		} end_loop_for_in;
 		return(FALSE);
-
 	case t_vector:
 		for (i = 0, f = char_bag->vector.fillp;  i < f;  i++) {
 			cl_object other = char_bag->vector.self.t[i];
@@ -760,7 +757,6 @@ member_char(int c, cl_object char_bag)
 				return(TRUE);
 		}
 		return(FALSE);
-
 #ifdef ECL_UNICODE
 	case t_string:
 		for (i = 0, f = char_bag->string.fillp;  i < f;  i++) {
@@ -769,24 +765,21 @@ member_char(int c, cl_object char_bag)
 		}
 		return(FALSE);
 #endif
-
 	case t_base_string:
 		for (i = 0, f = char_bag->base_string.fillp;  i < f;  i++) {
 			if (c == char_bag->base_string.self[i])
 				return(TRUE);
 		}
 		return(FALSE);
-
 	case t_bitvector:
 		return(FALSE);
-
 	case t_symbol:
 		if (Null(char_bag))
 			return(FALSE);
-		FEwrong_type_argument(@'sequence', char_bag);
-
+		/* falls through */
 	default:
-		FEwrong_type_argument(@'sequence', char_bag);
+		char_bag = ecl_type_error(@'member',"",char_bag,@'sequence');
+		goto AGAIN;
 	}
 }
 
@@ -921,9 +914,8 @@ char_capitalize(int c, bool *bp)
 @)
 
 
-#ifdef ECL_UNICODE
 static cl_object
-nstring_case(cl_narg narg, int (*casefun)(int, bool *), cl_va_list ARGS)
+nstring_case(cl_narg narg, cl_object fun, int (*casefun)(int, bool *), cl_va_list ARGS)
 {
 	cl_object strng = cl_va_arg(ARGS);
 	cl_index s, e, i;
@@ -939,69 +931,41 @@ nstring_case(cl_narg narg, int (*casefun)(int, bool *), cl_va_list ARGS)
 	KEYS[1]=@':end';
 	cl_parse_key(ARGS, 2, KEYS, KEY_VARS, NULL, FALSE);
 
-	assert_type_string(strng);
+	strng = ecl_check_type_string(fun,strng);
 	if (startp == Cnil) start = MAKE_FIXNUM(0);
 	get_string_start_end(strng, start, end, &s, &e);
 	b = TRUE;
-	switch(type_of(strng)) {
-	case t_string:
+#ifdef ECL_UNICODE
+	if (type_of(strng) == t_string) {
 		for (i = s;  i < e;  i++)
 			strng->string.self[i] = CODE_CHAR((*casefun)(CHAR_CODE(strng->string.self[i]), &b));
-		break;
-	case t_base_string:
+	} else {
 		for (i = s;  i < e;  i++)
 			strng->base_string.self[i] = (*casefun)(strng->base_string.self[i], &b);
-		break;
 	}
-	@(return strng)
-#undef startp
-#undef start
-#undef end
-}
 #else
-static cl_object
-nstring_case(cl_narg narg, int (*casefun)(int, bool *), cl_va_list ARGS)
-{
-	cl_object strng = cl_va_arg(ARGS);
-	cl_index s, e, i;
-	bool b;
-	cl_object KEYS[2];
-#define start KEY_VARS[0]
-#define end KEY_VARS[1]
-#define startp KEY_VARS[2]
-	cl_object KEY_VARS[4];
-
-	if (narg < 1) FEwrong_num_arguments_anonym();
-	KEYS[0]=@':start';
-	KEYS[1]=@':end';
-	cl_parse_key(ARGS, 2, KEYS, KEY_VARS, NULL, FALSE);
-
-	assert_type_base_string(strng);
-	if (startp == Cnil) start = MAKE_FIXNUM(0);
-	get_string_start_end(strng, start, end, &s, &e);
-	b = TRUE;
 	for (i = s;  i < e;  i++)
 		strng->base_string.self[i] = (*casefun)(strng->base_string.self[i], &b);
+#endif
 	@(return strng)
 #undef startp
 #undef start
 #undef end
 }
-#endif
 
 @(defun nstring-upcase (&rest args)
 @
-	return nstring_case(narg, char_upcase, args);
+	return nstring_case(narg, @'nstring-upcase', char_upcase, args);
 @)
 
 @(defun nstring-downcase (&rest args)
 @
-	return nstring_case(narg, char_downcase, args);
+	return nstring_case(narg, @'nstring-downcase', char_downcase, args);
 @)
 
 @(defun nstring-capitalize (&rest args)
 @
-	return nstring_case(narg, char_capitalize, args);
+	return nstring_case(narg, @'nstring-capitalize', char_capitalize, args);
 @)
 
 @(defun si::base_string_concatenate (&rest args)
@@ -1028,13 +992,13 @@ nstring_case(cl_narg narg, int (*casefun)(int, bool *), cl_va_list ARGS)
 	@(return output);
 @)
 
-#ifdef ECL_UNICODE
 int
 ecl_string_push_extend(cl_object s, int c)
 {
 	cl_index new_length;
-
+ AGAIN:
 	switch(type_of(s)) {
+#ifdef ECL_UNICODE
 	case t_string:
 		if (s->string.fillp >= s->string.dim) {
 			cl_object *p;
@@ -1053,6 +1017,7 @@ ecl_string_push_extend(cl_object s, int c)
 		}
 		s->string.self[s->string.fillp++] = CODE_CHAR(c);
 		return c;
+#endif
 	case t_base_string:
 		if (s->base_string.fillp >= s->base_string.dim) {
 			char *p;
@@ -1072,33 +1037,7 @@ ecl_string_push_extend(cl_object s, int c)
 		s->base_string.self[s->base_string.fillp++] = c;
 		return c;
 	default:
-		FEtype_error_string(s);
+		s = ecl_type_error(@'vector-push-extend',"",s,@'string');
+		goto AGAIN;
 	}
 }
-#else
-int
-ecl_string_push_extend(cl_object s, int c)
-{
-	char *p;
-	cl_index new_length;
-
-	if (type_of(s) != t_base_string) {
-		FEtype_error_string(s);
-	} else if (s->base_string.fillp >= s->base_string.dim) {
-		if (!s->base_string.adjustable)
-			FEerror("string-push-extend: the string ~S is not adjustable.",
-				1, s);
-		start_critical_section(); /* avoid losing p */
-		if (s->base_string.dim >= ADIMLIM/2)
-			FEerror("Can't extend the string.", 0);
-		new_length = (s->base_string.dim + 1) * 2;
-		p = (char *)cl_alloc_atomic(new_length+1); p[new_length] = 0;
-		memcpy(p, s->base_string.self, s->base_string.dim * sizeof(char));
-		s->base_string.dim = new_length;
-		adjust_displaced(s, p - (char *)s->base_string.self);
-		end_critical_section();
-	}
-	s->base_string.self[s->base_string.fillp++] = c;
-	return c;
-}
-#endif

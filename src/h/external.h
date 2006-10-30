@@ -1404,11 +1404,8 @@ extern cl_object cl_get_internal_real_time(void);
 
 extern void assert_type_integer(cl_object p);
 extern void assert_type_non_negative_integer(cl_object p);
-extern void assert_type_character(cl_object p);
-extern void assert_type_symbol(cl_object p);
 extern void assert_type_package(cl_object p);
 extern void assert_type_string(cl_object p);
-extern void assert_type_base_string(cl_object p);
 extern void assert_type_cons(cl_object p);
 extern void assert_type_readtable(cl_object p);
 extern void assert_type_hash_table(cl_object p);
@@ -1433,6 +1430,9 @@ extern void FEtype_error_index(cl_object seq, cl_object ndx) /*__attribute__((no
 extern void FEtype_error_string(cl_object x) /*__attribute__((noreturn))*/;
 extern void FEdivision_by_zero(cl_object x, cl_object y) /*__attribute__((noreturn))*/;
 extern cl_object ecl_type_error(cl_object function, const char *place, cl_object o, cl_object type);
+extern cl_object ecl_check_cl_type(cl_object fun, cl_object p, cl_type t);
+extern cl_object ecl_check_type_string(cl_object fun, cl_object p);
+
 
 /* unixfsys.c */
 

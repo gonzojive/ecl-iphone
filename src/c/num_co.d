@@ -776,7 +776,7 @@ truncate2(cl_object x, cl_object y)
 static double
 round_double(double d)
 {
-	if (d > 0) {
+	if (d >= 0) {
 		double q = floor(d + 0.5);
 		d -= q;
 		if (d == 0.5) {
@@ -796,7 +796,7 @@ round_double(double d)
 static long double
 round_long_double(long double d)
 {
-	if (d > 0) {
+	if (d >= 0) {
 		long double q = floorl(d + 0.5);
 		d -= q;
 		if (d == 0.5) {

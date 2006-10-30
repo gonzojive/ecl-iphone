@@ -1815,7 +1815,7 @@ potential_number_p(cl_object strng, int base)
 
 @(defun write-string (strng &o strm &k (start MAKE_FIXNUM(0)) end)
 @
-	assert_type_string(strng);
+	strng = ecl_check_type_string(@'write-string', strng);
 	strm = stream_or_default_output(strm);
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) != t_stream)
@@ -1828,7 +1828,7 @@ potential_number_p(cl_object strng, int base)
 
 @(defun write-line (strng &o strm &k (start MAKE_FIXNUM(0)) end)
 @
-	assert_type_string(strng);
+	strng = ecl_check_type_string(@'write-line', strng);
 	strm = stream_or_default_output(strm);
 	si_do_write_sequence(strng, strm, start, end);
 	ecl_write_char('\n', strm);

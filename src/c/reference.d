@@ -28,7 +28,7 @@ cl_symbol_function(cl_object sym)
 {
 	cl_object output;
 
-	assert_type_symbol(sym);
+	sym = ecl_check_cl_type(@'symbol-function',sym,t_symbol);
 	if (sym->symbol.isform)
 		output = @'special';
 	else if (SYM_FUN(sym) == Cnil)

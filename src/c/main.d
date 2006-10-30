@@ -525,7 +525,7 @@ si_getenv(cl_object var)
 {
 	const char *value;
 
-	assert_type_base_string(var);
+	var = ecl_check_cl_type(@'si::getenv', var, t_base_string);
 	value = getenv(var->base_string.self);
 	@(return ((value == NULL)? Cnil : make_base_string_copy(value)))
 }
@@ -536,7 +536,7 @@ si_setenv(cl_object var, cl_object value)
 {
 	cl_fixnum ret_val;
 
-	assert_type_base_string(var);
+	var = ecl_check_cl_type(@'si::setenv', var, t_base_string);
 	if (value == Cnil) {
 #ifdef HAVE_SETENV
 		/* Remove the variable when setting to nil, so that
@@ -553,7 +553,7 @@ si_setenv(cl_object var, cl_object value)
 		ret_val = 0;
 	} else {
 #ifdef HAVE_SETENV
-		assert_type_base_string(value);
+		value = ecl_check_cl_type(@'intern', value, t_base_string);
 		ret_val = setenv(var->base_string.self, value->base_string.self, 1);
 #else
 		cl_object temp =

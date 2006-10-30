@@ -294,11 +294,8 @@ intern(cl_object name, cl_object p, int *intern_flag)
 {
 	cl_object s, ul;
 
-#ifdef ECL_UNICODE
-	name = si_copy_to_simple_base_string(name);
-#else
-	assert_type_base_string(name);
-#endif
+	/* FIXME! Symbols restricted to base string */
+	name = ecl_check_cl_type(@'intern', name, t_base_string);
 	p = si_coerce_to_package(p);
  TRY_AGAIN_LABEL:
 	PACKAGE_LOCK(p);
@@ -352,7 +349,8 @@ ecl_find_symbol_nolock(cl_object name, cl_object p, int *intern_flag)
 {
 	cl_object s, ul;
 
-	assert_type_base_string(name);
+	/* FIXME! Symbols restricted to base string */
+	name = ecl_check_cl_type(@'find-symbol', name, t_base_string);
 	s = gethash_safe(name, p->pack.external, OBJNULL);
 	if (s != OBJNULL) {
 		*intern_flag = EXTERNAL;
@@ -396,7 +394,8 @@ unintern(cl_object s, cl_object p)
 	cl_object x, y, l, hash;
 	bool output = FALSE;
 
-	assert_type_symbol(s);
+	s = ecl_check_cl_type(@'unintern', s, t_symbol);
+
 	p = si_coerce_to_package(p);
 
  TRY_AGAIN_LABEL:
@@ -450,7 +449,7 @@ cl_export2(cl_object s, cl_object p)
 	cl_object x, l, hash = OBJNULL;
 	int intern_flag;
 
-	assert_type_symbol(s);
+	s = ecl_check_cl_type(@'export', s, t_symbol);
 	p = si_coerce_to_package(p);
 
 	if (p->pack.locked)
@@ -554,7 +553,7 @@ cl_unexport2(cl_object s, cl_object p)
 	int intern_flag;
 	cl_object x;
 
-	assert_type_symbol(s);
+	s = ecl_check_cl_type(@'unexport', s, t_symbol);
 	p = si_coerce_to_package(p);
 	if (p == cl_core.keyword_package)
 		FEpackage_error("Cannot unexport a symbol from the keyword package.",
@@ -586,7 +585,7 @@ cl_import2(cl_object s, cl_object p)
 	int intern_flag;
 	cl_object x;
 
-	assert_type_symbol(s);
+	s = ecl_check_cl_type(@'import', s, t_symbol);
 	p = si_coerce_to_package(p);
 	if (p->pack.locked)
 		CEpackage_error("Cannot import symbol ~S into locked package ~S.",
@@ -618,7 +617,7 @@ shadowing_import(cl_object s, cl_object p)
 	int intern_flag;
 	cl_object x;
 
-	assert_type_symbol(s);
+	s = ecl_check_cl_type(@'shadowing-import', s, t_symbol);
 	p = si_coerce_to_package(p);
 	if (p->pack.locked)
 		CEpackage_error("Cannot shadowing-import symbol ~S into locked package ~S.",
@@ -857,7 +856,8 @@ BEGIN:
 		break;
 
 	default:
-		assert_type_symbol(symbols);
+		symbols = ecl_type_error(@'export',"argument",symbols,
+					 cl_list(3,@'or',@'symbol',@'list'));
 		goto BEGIN;
 	}
 	@(return Ct)
@@ -881,7 +881,8 @@ BEGIN:
 		break;
 
 	default:
-		assert_type_symbol(symbols);
+		symbols = ecl_type_error(@'unexport',"argument",symbols,
+					 cl_list(3,@'or',@'symbol',@'list'));
 		goto BEGIN;
 	}
 	@(return Ct)
@@ -905,7 +906,8 @@ BEGIN:
 		break;
 
 	default:
-		assert_type_symbol(symbols);
+		symbols = ecl_type_error(@'import',"argument",symbols,
+					 cl_list(3,@'or',@'symbol',@'list'));
 		goto BEGIN;
 	}
 	@(return Ct)
@@ -929,7 +931,8 @@ BEGIN:
 		break;
 
 	default:
-		assert_type_symbol(symbols);
+		symbols = ecl_type_error(@'shadowing-import',"argument",symbols,
+					 cl_list(3,@'or',@'symbol',@'list'));
 		goto BEGIN;
 	}
 	@(return Ct)
@@ -955,7 +958,8 @@ BEGIN:
 			shadow(CAR(l), pack);
 		break;
 	default:
-		assert_type_base_string(symbols);
+		symbols = ecl_type_error(@'shadow',"",symbols,
+					 cl_list(3,@'or',@'symbol',@'list'));
 		goto BEGIN;
 	}
 	@(return Ct)

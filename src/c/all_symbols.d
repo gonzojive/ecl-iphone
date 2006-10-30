@@ -82,7 +82,7 @@ mangle_name(cl_object output, char *source, int l)
 	cl_object minarg = MAKE_FIXNUM(0);
 	bool is_symbol;
 @
-	assert_type_symbol(symbol);
+	symbol = ecl_check_cl_type(@'si::mangle-name', symbol, t_symbol);
 	is_symbol = Null(as_function);
 	if (is_symbol) {
 		cl_fixnum p;

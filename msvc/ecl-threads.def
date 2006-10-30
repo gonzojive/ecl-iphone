@@ -1099,8 +1099,6 @@ EXPORTS
 
 	assert_type_integer
 	assert_type_non_negative_integer
-	assert_type_character
-	assert_type_symbol
 	assert_type_package
 	assert_type_string
 	assert_type_cons
@@ -1418,5 +1416,4 @@ EXPORTS
 	; clos\standard.lsp
 
 	clos_standard_instance_set
-	assert_type_base_string
 	; unicode

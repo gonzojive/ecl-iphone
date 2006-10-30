@@ -24,7 +24,7 @@ static void FEtype_error_plist(cl_object x) /*__attribute__((noreturn))*/;
 cl_object
 cl_make_symbol(cl_object str)
 {
-	assert_type_string(str);
+	str = ecl_check_type_string(@'make-symbol',str);
 	str = si_copy_to_simple_base_string(str);
 	@(return make_symbol(str))
 }
@@ -178,21 +178,21 @@ keywordp(cl_object s)
 
 @(defun get (sym indicator &optional deflt)
 @
-	assert_type_symbol(sym);
+	sym = ecl_check_cl_type(@'get', sym, t_symbol);
 	@(return ecl_getf(sym->symbol.plist, indicator, deflt))
 @)
 
 cl_object
 cl_remprop(cl_object sym, cl_object prop)
 {
-	assert_type_symbol(sym);
+	sym = ecl_check_cl_type(@'remprop', sym, t_symbol);
 	@(return (remf(&sym->symbol.plist, prop)? Ct: Cnil))
 }
 
 cl_object
 cl_symbol_plist(cl_object sym)
 {
-	assert_type_symbol(sym);
+	sym = ecl_check_cl_type(@'symbol-plist', sym, t_symbol);
 	@(return sym->symbol.plist)
 }
 
@@ -225,13 +225,13 @@ cl_get_properties(cl_object place, cl_object indicator_list)
 cl_object
 cl_symbol_name(cl_object x)
 {
-	assert_type_symbol(x);
+	x = ecl_check_cl_type(@'symbol-name', x, t_symbol);
 	@(return x->symbol.name)
 }
 
 @(defun copy_symbol (sym &optional cp &aux x)
 @
-	assert_type_symbol(sym);
+	x = ecl_check_cl_type(@'copy-symbol', x, t_symbol);
 	x = make_symbol(sym->symbol.name);
 	if (Null(cp))
 		@(return x)
@@ -278,7 +278,8 @@ cl_symbol_name(cl_object x)
 	cl_object output, s;
 	int intern_flag;
 @
-	assert_type_base_string(prefix);
+	/* FIXME! Symbols restricted to base string */
+	prefix = ecl_check_cl_type(@'gentemp', prefix, t_base_string);
 	pack = si_coerce_to_package(pack);
 ONCE_MORE:
 	output = ecl_make_string_output_stream(64);
@@ -297,7 +298,7 @@ ONCE_MORE:
 cl_object
 cl_symbol_package(cl_object sym)
 {
-	assert_type_symbol(sym);
+	sym = ecl_check_cl_type(@'symbol-package', sym, t_symbol);
 	@(return sym->symbol.hpack)
 }
 
@@ -328,7 +329,7 @@ si_rem_f(cl_object plist, cl_object indicator)
 cl_object
 si_set_symbol_plist(cl_object sym, cl_object plist)
 {
-	assert_type_symbol(sym);
+	sym = ecl_check_cl_type(@'si::set-symbol-plist', sym, t_symbol);
 	sym->symbol.plist = plist;
 	@(return plist)
 }
@@ -336,7 +337,7 @@ si_set_symbol_plist(cl_object sym, cl_object plist)
 cl_object
 si_putprop(cl_object sym, cl_object value, cl_object indicator)
 {
-	assert_type_symbol(sym);
+	sym = ecl_check_cl_type(@'si::putprop', sym, t_symbol);
 	sym->symbol.plist = si_put_f(sym->symbol.plist, value, indicator);
 	@(return value)
 }
@@ -355,7 +356,7 @@ si_putprop(cl_object sym, cl_object value, cl_object indicator)
 cl_object
 @si::*make_special(cl_object sym)
 {
-	assert_type_symbol(sym);
+	sym = ecl_check_cl_type(@'defvar', sym, t_symbol);
 	if ((enum ecl_stype)sym->symbol.stype == stp_constant)
 		FEerror("~S is a constant.", 1, sym);
 	sym->symbol.stype = (short)stp_special;
@@ -366,7 +367,7 @@ cl_object
 cl_object
 @si::*make_constant(cl_object sym, cl_object val)
 {
-	assert_type_symbol(sym);
+	sym = ecl_check_cl_type(@'defconstant', sym, t_symbol);
 	if ((enum ecl_stype)sym->symbol.stype == stp_special)
 		FEerror(
 		 "The argument ~S to DEFCONSTANT is a special variable.",

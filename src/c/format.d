@@ -709,7 +709,7 @@ fmt_character(format_stack fmt, bool colon, bool atsign)
 
 	ensure_param(fmt, 0);
 	x = fmt_advance(fmt);
-	assert_type_character(x);
+	x = ecl_check_cl_type(@'format',x,t_character);
 	if (!colon && !atsign) {
 		ecl_write_char(CHAR_CODE(x), fmt->stream);
 	} else {
@@ -1843,7 +1843,8 @@ doformat(cl_narg narg, cl_object strm, cl_object string, cl_va_list args, bool i
 	jmp_buf fmt_jmp_buf0;
 	int colon;
 	cl_object output = cl_grab_rest_args(args);
-	assert_type_base_string(string);
+	/* FIXME! Restricted to base-string */
+	string = ecl_check_cl_type(@'format', string, t_base_string);
 	fmt.stream = strm;
 	fmt_set_arg_list(&fmt, output);
 	fmt.jmp_buf = &fmt_jmp_buf0;

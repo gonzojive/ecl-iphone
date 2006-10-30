@@ -272,6 +272,13 @@ static compiler_record database[] = {
 /* ----------------- LEXICAL ENVIRONMENT HANDLING -------------------- */
 
 static void
+assert_type_symbol(cl_object v)
+{
+	if (type_of(v) != t_symbol)
+		FEprogram_error("Expected a symbol, found ~S.", 1, v);
+}
+
+static void
 FEillegal_variable_name(cl_object v)
 {
 	FEprogram_error("Not a valid variable name ~S.", 1, v);
