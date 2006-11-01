@@ -379,18 +379,30 @@ cl_char_downcase(cl_object c)
 	@(return (isupper(code) ? CODE_CHAR(tolower(code)) : c))
 }
 
-@(defun digit_char (w &optional (r MAKE_FIXNUM(10)))
-	cl_object output;
-@
-	/* INV: fixnnint() checks the types of `w' and `r' */
-	if (type_of(w) == t_bignum) {
-		output = Cnil;
-	} else {
-		int dw = ecl_digit_char(fixnnint(w), fixnnint(r));
-		output = (dw < 0)? Cnil : CODE_CHAR(dw);
+@(defun digit_char (weight &optional (radix MAKE_FIXNUM(10)))
+@ {
+	cl_fixnum basis = ecl_fixnum_in_range(@'digit-char',"radix",radix,2,36);
+	cl_object output = Cnil;
+  AGAIN:
+	switch (type_of(weight)) {
+	case t_fixnum: {
+		cl_fixnum value = fix(weight);
+		if (value >= 0) {
+			int dw = ecl_digit_char(value, basis);
+			if (dw >= 0) {
+				output = CODE_CHAR(dw);
+			}
+		}
+		break;
+	}
+	case t_bignum:
+		break;
+	default:
+		weight = ecl_type_error(@'digit-char',"weight",weight,@'integer');
+		goto AGAIN;
 	}
 	@(return output)
-@)
+} @)
 
 short
 ecl_digit_char(cl_fixnum w, cl_fixnum r)
