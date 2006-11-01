@@ -581,6 +581,7 @@ EXPORTS
 
 	fixint
 	fixnnint
+	ecl_fixnum_in_range
 	make_integer
 	make_unsigned_integer
 	make_ratio

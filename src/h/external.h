@@ -850,6 +850,8 @@ extern cl_object one_minus(cl_object x);
 
 extern cl_fixnum fixint(cl_object x);
 extern cl_index  fixnnint(cl_object x);
+extern cl_fixnum ecl_fixnum_in_range(cl_object fun, const char *what, cl_object value,
+				     cl_fixnum min, cl_fixnum max);
 extern cl_object make_integer(cl_fixnum i);
 extern cl_object make_unsigned_integer(cl_index i);
 extern cl_object make_ratio(cl_object num, cl_object den);

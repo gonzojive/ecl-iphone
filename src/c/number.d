@@ -78,6 +78,23 @@ fixnnint(cl_object x)
 		    @':datum', x);
 }
 
+cl_fixnum
+ecl_fixnum_in_range(cl_object fun, const char *what, cl_object value,
+		    cl_fixnum min, cl_fixnum max)
+{
+	do {
+		if (FIXNUMP(value)) {
+			cl_fixnum output = value;
+			if ((min <= output) && (output <= max)) {
+				return output;
+			}
+		}
+		value = ecl_type_error(fun, what, value,
+				       cl_list(3,@'integer',MAKE_FIXNUM(min),
+					       MAKE_FIXNUM(max)));
+	} while(1);
+}
+
 cl_object
 make_integer(cl_fixnum l)
 {
