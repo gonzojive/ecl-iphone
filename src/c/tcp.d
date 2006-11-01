@@ -269,8 +269,7 @@ si_open_client_stream(cl_object host, cl_object port)
    /* Ensure "host" is a string that we can pass to a C function */
    host = si_copy_to_simple_base_string(host);
 
-   /* The port number is not negative */
-   p = fixnnint(port);
+   p = ecl_fixnum_in_range(@'si::open-client-stream',"port",port,0,65535);
 
    if (host->base_string.fillp > BUFSIZ - 1)
      FEerror("~S is a too long file name.", 1, host);
@@ -295,10 +294,12 @@ cl_object
 si_open_server_stream(cl_object port)
 {
    int fd;			/* file descriptor */
+   cl_index p;
    cl_object output;
 
    start_critical_section();
-   fd = create_server_port(fixnnint(port));
+   p = ecl_fixnum_in_range(@'si::open-client-stream',"port",port,0,65535);
+   fd = create_server_port(p);
    end_critical_section();
 
    if (fd == 0)
