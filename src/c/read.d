@@ -836,22 +836,16 @@ static cl_object
 sharp_left_parenthesis_reader(cl_object in, cl_object c, cl_object d)
 {
 	extern int _cl_backq_car(cl_object *);
-	bool fixed_size;
-	cl_index dim, i, a;
-	cl_object x, v = Cnil;
-	bool suppress = read_suppress;
-
-	if (Null(d) || suppress) {
-		fixed_size = FALSE;
-	} else {
-		fixed_size = TRUE;
-		dim = fixnnint(d);
-	}
+	cl_object v;
 	if (fix(SYM_VAL(@'si::*backq-level*')) > 0) {
-		x = do_read_delimited_list(')', in, 1);
-		a = _cl_backq_car(&x);
+		/* First case: ther might be unquoted elements in the vector.
+		 * Then we just create a form that generates the vector.
+		 */
+		cl_object x = do_read_delimited_list(')', in, 1);
+		cl_index a = _cl_backq_car(&x);
 		if (a == APPEND || a == NCONC)
-			FEreader_error(",at or ,. has appeared in an illegal position.", in, 0);
+			FEreader_error("A ,@ or ,. appeared in an illegal position.",
+				       in, 0);
 		if (a == QUOTE) {
 			v = funcall(4, @'make-array', cl_list(1, cl_length(x)),
 				    @':initial-contents', x);
@@ -860,26 +854,37 @@ sharp_left_parenthesis_reader(cl_object in, cl_object c, cl_object d)
 				    cl_list(3, @'apply',
 					    cl_list(2, @'quote', @'vector'), x));
 		}
-	} else if (fixed_size) {
-		v = ecl_alloc_simple_vector(dim, aet_object);
-		for (i = 0; i < dim; i++) {
-			if (in != OBJNULL) {
-				x = read_object_with_delimiter(in, ')', 0);
-				if (x == OBJNULL) {
-					if (i == 0) {
-						x = Cnil;
-					} else {
-						x = aref1(v, i-1);
-					}
-					in = OBJNULL;
-				}
-			}
-			aset1(v, i, x);
-		}
+	} else if (read_suppress) {
+		/* Second case: *read-suppress* = t, we ignore the data */
+		do_read_delimited_list(')', in, 1);
+		v = Cnil;
+	} else if (Null(d)) {
+		/* Third case: no dimension provided. Read a list and
+		   coerce it to vector. */
+		cl_object x = do_read_delimited_list(')', in, 1);
+		v = funcall(4, @'make-array', cl_list(1, cl_length(x)),
+			    @':initial-contents', x);
 	} else {
-		x = do_read_delimited_list(')', in, 1);
-		if (!suppress)
-			v = funcall(4, @'make-array', cl_list(1, cl_length(x)), @':initial-contents', x);
+		/* Finally: Both dimension and data are provided. The
+		   amount of data cannot exceed the length, but it may
+		   be smaller, and in that case...*/
+		cl_index dim = ecl_fixnum_in_range(@'make-array',"size",d,0,ADIMLIM);
+		cl_object last;
+		cl_index i;
+		v = ecl_alloc_simple_vector(dim, aet_object);
+		for (i = 0, last = Cnil;; i++) {
+			cl_object aux = read_object_with_delimiter(in, ')', 0);
+			if (aux == OBJNULL)
+				break;
+			if (i >= dim) {
+				FEreader_error("Vector larger than specified length, ~D.", 1, d);
+			}
+			aset1(v, i, last = aux);
+		}
+		/* ... we fill the vector with the last element read (or NIL). */
+		for (; i < dim; i++) {
+			aset1(v, i, last);
+		}
 	}
 	@(return v)
 }

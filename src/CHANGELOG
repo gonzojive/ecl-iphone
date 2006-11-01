@@ -102,6 +102,11 @@ ECL 1.0:
  - (CONCATENATE 'STRING ...) does no longer have an ad-hoc limit in the number
    of strings.
 
+ - Reader for #( did not always read the last parenthesis, what lead to a warning:
+	> #3(1 2 3)
+	#(1 2 3)
+	> ;;; Warning: Ignoring an unmatched right parenthesis.
+
 * Unicode:
 
  - MAKE-STRING only allowed :ELEMENT-TYPE to be one of CHARACTER, BASE-CHAR, or
