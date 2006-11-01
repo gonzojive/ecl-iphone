@@ -451,8 +451,9 @@ cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 	cl_index hsize;
 	cl_object h;
 	double factor;
-	cl_type t;
-
+	/*
+	 * Argument checking
+	 */
 	if (test == @'eq' || test == SYM_FUN(@'eq'))
 		htt = htt_eq;
 	else if (test == @'eql' || test == SYM_FUN(@'eql'))
@@ -464,41 +465,53 @@ cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 	else
 		FEerror("~S is an illegal hash-table test function.",
 			1, test);
-  	if (!FIXNUMP(size) || FIXNUM_MINUSP(size))
-		FEerror("~S is an illegal hash-table size.", 1, size);
-
-	/* Do not allow hashtables of size 0 */
-	hsize = fixnnint(size);
-	if (hsize < 16)
+	hsize = ecl_fixnum_in_range(@'make-hash-table',"size",size,0,ATOTLIM);;
+	if (hsize < 16) {
 		hsize = 16;
-
-	t = type_of(rehash_size);
-	if (t != t_fixnum) {
+	}
+ AGAIN:
+	if (number_minusp(rehash_size)) {
+	ERROR1:
+		rehash_size =
+			ecl_type_error(@'make-hash-table',"rehash-size",
+				       rehash_size,
+				       c_string_to_object("(OR (INTEGER 1 *) (FLOAT 0 (1)))"));
+		goto AGAIN;
+	}
+	if (floatp(rehash_size)) {
+		if (number_compare(rehash_size, MAKE_FIXNUM(1)) < 0 ||
+		    number_minusp(rehash_size)) {
+			goto ERROR1;
+		}
 		rehash_size = make_doublefloat(number_to_double(rehash_size));
-		t = t_doublefloat;
+	} else if (!FIXNUMP(rehash_size)) {
+		goto ERROR1;
 	}
-	if ((number_compare(rehash_size, MAKE_FIXNUM(1)) < 0)) {
-		FEerror("~S is an illegal hash-table rehash-size.",
-			1, rehash_size);
-	}
-	t = type_of(rehash_threshold);
-	if (!numberp(rehash_threshold) || number_minusp(rehash_threshold) ||
-	    number_compare(rehash_threshold, MAKE_FIXNUM(1)) > 0)
+	while (!numberp(rehash_threshold) ||
+	       number_minusp(rehash_threshold) ||
+	       number_compare(rehash_threshold, MAKE_FIXNUM(1)) > 0)
 	{
-		FEerror("~S is an illegal hash-table rehash-threshold.",
-			1, rehash_threshold);
+		rehash_threshold =
+			ecl_type_error(@'make-hash-table',"rehash-threshold",
+				       rehash_threshold,
+				       c_string_to_object("(REAL 0 1)"));
 	}
-	rehash_threshold = cl_max(2, rehash_threshold, make_singlefloat(0.1));
+	/*
+	 * Build actual hash.
+	 */
 	h = cl_alloc_object(t_hashtable);
 	h->hash.test = htt;
 	h->hash.size = hsize;
 	h->hash.rehash_size = rehash_size;
 	h->hash.threshold = rehash_threshold;
 	h->hash.factor = number_to_double(rehash_threshold);
+	if (h->hash.factor < 0.1) {
+		h->hash.factor = 0.1;
+	}
         h->hash.entries = 0;
 	h->hash.data = NULL;	/* for GC sake */
 	h->hash.data = (struct ecl_hashtable_entry *)
-	cl_alloc(hsize * sizeof(struct ecl_hashtable_entry));
+		cl_alloc(hsize * sizeof(struct ecl_hashtable_entry));
 	h->hash.lockable = !Null(lockable);
 #ifdef ECL_THREADS
 	if (h->hash.lockable)
