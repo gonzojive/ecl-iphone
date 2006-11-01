@@ -384,7 +384,7 @@ si_make_vector(cl_object etype, cl_object dim, cl_object adj,
 	} else if (fillp == Ct) {
 		x->vector.hasfillp = TRUE;
 		f = d;
-	} else if (FIXNUMP(fillp) && ((f = fixnnint(fillp)) <= d) && (f >= 0)) {
+	} else if (FIXNUMP(fillp) && ((f = fix(fillp)) <= d) && (f >= 0)) {
 		x->vector.hasfillp = TRUE;
 	} else {
 		fillp = ecl_type_error(@'make-array',"fill pointer",fillp,
