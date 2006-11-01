@@ -1440,21 +1440,23 @@ writestr_stream(const char *s, cl_object strm)
 cl_object
 si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 {
-	cl_fixnum start = fixnnint(s);
-	cl_fixnum limit = length(seq);
-	cl_fixnum end = (e == Cnil)? limit : fixnnint(e);
-	cl_type t = type_of(seq);
+	cl_fixnum start,limit,end;
+	cl_type t;
 
 	/* Since we have called length(), we know that SEQ is a valid
 	   sequence. Therefore, we only need to check the type of the
 	   object, and seq == Cnil i.f.f. t = t_symbol */
-	if (start > limit) {
-		FEtype_error_index(seq, MAKE_FIXNUM(start));
-	} else if (end > limit) {
-		FEtype_error_index(seq, MAKE_FIXNUM(end));
-	} else if (end <= start) {
+	limit = length(seq);
+	start = ecl_fixnum_in_range(@'write-sequence',"start",s,0,limit);
+	if (e == Cnil) {
+		end = limit;
+	} else {
+		end = ecl_fixnum_in_range(@'write-sequence',"end",e,0,limit);
+	}
+	if (end <= start) {
 		goto OUTPUT;
 	}
+	t = type_of(seq);
 	if (t == t_cons || t == t_symbol) {
 		bool ischar = cl_stream_element_type(stream) == @'base-char';
 		cl_object s = nthcdr(start, seq);
@@ -1511,21 +1513,23 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 cl_object
 si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 {
-	cl_fixnum start = fixnnint(s);
-	cl_fixnum limit = length(seq);
-	cl_fixnum end = (e == Cnil)? limit : fixnnint(e);
-	cl_type t = type_of(seq);
+	cl_fixnum start,limit,end;
+	cl_type t;
 
 	/* Since we have called length(), we know that SEQ is a valid
 	   sequence. Therefore, we only need to check the type of the
 	   object, and seq == Cnil i.f.f. t = t_symbol */
-	if (start > limit) {
-		FEtype_error_index(seq, MAKE_FIXNUM(start));
-	} else if (end > limit) {
-		FEtype_error_index(seq, MAKE_FIXNUM(end));
-	} else if (end <= start) {
+	limit = length(seq);
+	start = ecl_fixnum_in_range(@'read-sequence',"start",s,0,limit);
+	if (e == Cnil) {
+		end = limit;
+	} else {
+		end = ecl_fixnum_in_range(@'read-sequence',"end",e,0,limit);
+	}
+	if (end <= start) {
 		goto OUTPUT;
 	}
+	t = type_of(seq);
 	if (t == t_cons || t == t_symbol) {
 		bool ischar = cl_stream_element_type(stream) == @'base-char';
 		seq = nthcdr(start, seq);
