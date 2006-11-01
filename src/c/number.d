@@ -84,7 +84,7 @@ ecl_fixnum_in_range(cl_object fun, const char *what, cl_object value,
 {
 	do {
 		if (FIXNUMP(value)) {
-			cl_fixnum output = value;
+			cl_fixnum output = fix(value);
 			if ((min <= output) && (output <= max)) {
 				return output;
 			}

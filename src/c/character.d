@@ -107,23 +107,12 @@ ecl_string_case(cl_object s)
 	return upcase;
 }
 
-#define basep(d)	(d <= 36)
-
-@(defun digit_char_p (c &optional (r MAKE_FIXNUM(10)))
-	cl_object output;
-@
-	/* INV: ecl_char_code() checks `c' and fixnnint() checks `r' */
-	if (type_of(r) == t_bignum) {
-		output = Cnil;
-	} else {
-		cl_fixnum d = fixnnint(r);
-		if (!basep(d) || (d = digitp(ecl_char_code(c), d)) < 0)
-			output = Cnil;
-		else
-			output = MAKE_FIXNUM(d);
-	}
-	@(return output)
-@)
+@(defun digit_char_p (c &optional (radix MAKE_FIXNUM(10)))
+@ {
+	cl_fixnum basis = ecl_fixnum_in_range(@'digit-char-p',"radix", radix, 2, 36);
+	cl_fixnum value = digitp(ecl_char_code(c), basis);
+	@(return ((value < 0)? Cnil: MAKE_FIXNUM(value)));
+} @)
 
 /*
 	Digitp(i, r) returns the weight of code i

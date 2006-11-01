@@ -145,6 +145,9 @@ ECL 1.0:
    SCALE-FLOAT, FLOAT-RADIX, FLOAT-DIGITS, INTEGER-DECODE-FLOAT, REALPART,
    IMAGPART, COMPLEX, etc
 
+ - DIGIT-CHAR-P will signal an error if the radix is not an integer value
+   between 2 and 36, both included.
+
  - C functions which disappear: si_set_compiled_function_name(),
    si_extended_string_concatenate(), assert_type_string(),
    assert_type_character(), assert_type_symbol().
