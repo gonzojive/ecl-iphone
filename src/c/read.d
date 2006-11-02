@@ -892,7 +892,6 @@ sharp_left_parenthesis_reader(cl_object in, cl_object c, cl_object d)
 static cl_object
 sharp_asterisk_reader(cl_object in, cl_object c, cl_object d)
 {
-	bool fixed_size;
 	cl_object last, elt, x;
 	cl_index dim, dimcount, i;
 	cl_index sp = cl_stack_index();
@@ -902,12 +901,6 @@ sharp_asterisk_reader(cl_object in, cl_object c, cl_object d)
 	if (read_suppress) {
 		read_constituent(in);
 		@(return Cnil)
-	}
-	if (Null(d))
-		fixed_size = FALSE;
-	else {
-		dim = fixnnint(d);
-		fixed_size = TRUE;
 	}
 	for (dimcount = 0 ;; dimcount++) {
 	 	int x = ecl_read_char(in);
@@ -926,14 +919,15 @@ sharp_asterisk_reader(cl_object in, cl_object c, cl_object d)
 		}
 		cl_stack_push(MAKE_FIXNUM(x == '1'));
 	}
-	if (fixed_size) {
+	if (Null(d)) {
+		dim = dimcount;
+	} else {
+		dim = ecl_fixnum_in_range(@'make-array',"dimension",d,0,ADIMLIM);
 		if (dimcount > dim)
 			FEreader_error("Too many elements in #*....", in, 0);
 		if (dim && (dimcount == 0))
 			FEreader_error("Cannot fill the bit-vector #*.", in, 0);
 		else last = cl_env.stack_top[-1];
-	} else {
-		dim = dimcount;
 	}
 	x = ecl_alloc_simple_vector(dim, aet_bit);
 	for (i = 0; i < dim; i++) {

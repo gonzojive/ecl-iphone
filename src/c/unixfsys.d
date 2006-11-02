@@ -772,7 +772,7 @@ si_mkdir(cl_object directory, cl_object mode)
 	cl_index modeint;
 
 	filename = si_coerce_to_filename(directory);
-	modeint = fixnnint(mode);
+	modeint = ecl_fixnum_in_range(@'si::mkdir',"mode",mode,0,0777);
 	if (filename->base_string.fillp)
 	    filename->base_string.self[--filename->base_string.fillp] = 0;
 #ifdef mingw32
