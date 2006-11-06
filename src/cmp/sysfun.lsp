@@ -97,7 +97,6 @@
 ;;; ALL FUNCTION DECLARATIONS AND INLINE FORMS
 ;;;
 
-(proclaim-function si:list-nth (*) t)
 (proclaim-function si:make-pure-array (*) array)
 (proclaim-function si:make-vector (*) vector)
 (proclaim-function aref (array *) t :no-side-effects t)
@@ -1215,8 +1214,6 @@ type_of(#0)==t_bitvector")
 
 (proclaim-function si:structurep (t) t :predicate t)
 (proclaim-function si:structure-subtype-p (t t) t :predicate t)
-(proclaim-function si:rplaca-nthcdr (t t t) t)
-(proclaim-function si:list-nth (t t) t :predicate t)
 
 (proclaim-function si:*make-special (*) t)
 (proclaim-function si:*make-constant (*) t)

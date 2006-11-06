@@ -201,66 +201,6 @@
 		 (6 (list 'CDDR (cons 'CDDDDR (cdr args))))
 		 (7 (list 'CDDDR (cons 'CDDDDR (cdr args))))))))
 
-(defun c1rplaca-nthcdr (args)
-  (check-args-number 'SYS:RPLACA-NTHCDR args 3 3)
-  (if (and (numberp (second args)) (<= 0 (second args) 10))
-      (make-c1form* 'RPLACA-NTHCDR-IMMEDIATE
-		    :args (second args)
-		    (c1args* (list (car args) (third args))))
-      (c1call-global 'SYS:RPLACA-NTHCDR args)))
-
-(defun c2rplaca-nthcdr-immediate (index args
-					&aux (*inline-blocks* 0))
-  (declare (fixnum index))
-  (setq args (coerce-locs (inline-args args)))
-  (if (safe-compile)
-      (progn
-       (wt-nl "{cl_object l= ")
-       (dotimes (i index) (declare (fixnum i)) (wt "cl_cdr("))
-       (wt (car args))
-       (dotimes (i index)(declare (fixnum i)) (wt ")"))
-       (wt ";")
-       (wt-nl "if(ATOM(l)) FEtype_error_cons(l);")
-       (wt-nl "CAR(l)= " (second args) ";}"))
-      (progn
-	(wt-nl "CAR(")
-       (dotimes (i index) (declare (fixnum i)) (wt "CDR("))
-       (wt (car args))
-       (dotimes (i index) (declare (fixnum i)) (wt ")"))
-       (wt ")= " (second args) ";")))
-  (unwind-exit (second args))
-  (close-inline-blocks))
-
-(defun c1list-nth (args)
-  (check-args-number 'LIST-NTH args 2 2)
-  (if (and (numberp (car args)) (<= 0 (car args) 10))
-      (make-c1form* 'LIST-NTH-IMMEDIATE
-		    :args (car args) (c1args* (list (second args))))
-      (c1call-global 'SYS:LIST-NTH args)))
-
-(defun c2list-nth-immediate (index args &aux (l (make-lcl-var))
-					     (*inline-blocks* 0))
-  (declare (fixnum index))
-  (setq args (coerce-locs (inline-args args)))
-  (wt-nl "{cl_object " l "= ")
-  (if (safe-compile)
-      (progn
-       (dotimes (i index) (declare (fixnum i)) (wt "cl_cdr("))
-       (wt (car args))
-       (dotimes (i index) (declare (fixnum i)) (wt ")"))
-       (wt ";")
-       (wt-nl "if(ATOM(" l "))")
-       (wt-nl " FEtype_error_cons(" l ");")
-       )
-      (progn
-       (dotimes (i index) (declare (fixnum i)) (wt "CDR("))
-       (wt (car args))
-       (dotimes (i index) (declare (fixnum i)) (wt ")"))
-       (wt ";")))
-  (unwind-exit (list 'CAR l))
-  (wt "}")
-  (close-inline-blocks))
-
 ;----------------------------------------------------------------------
 
 (defun co1ash (args)
@@ -417,10 +357,6 @@
 
 (put-sysprop 'nth 'C1CONDITIONAL 'co1nth)
 (put-sysprop 'nthcdr 'C1CONDITIONAL 'co1nthcdr)
-(put-sysprop 'sys:rplaca-nthcdr 'C1 'c1rplaca-nthcdr)
-(put-sysprop 'rplaca-nthcdr-immediate 'C2 'c2rplaca-nthcdr-immediate)
-(put-sysprop 'sys:list-nth 'C1 'c1list-nth)
-(put-sysprop 'list-nth-immediate 'C2 'c2list-nth-immediate)
 
 (put-sysprop 'ash 'C1CONDITIONAL 'co1ash)
 (put-sysprop 'coerce 'C1CONDITIONAL 'co1coerce)

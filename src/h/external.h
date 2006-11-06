@@ -1316,8 +1316,6 @@ extern cl_object si_structure_name(cl_object s);
 extern cl_object si_structure_ref(cl_object x, cl_object type, cl_object index);
 extern cl_object si_structure_set(cl_object x, cl_object type, cl_object index, cl_object val);
 extern cl_object si_structurep(cl_object s);
-extern cl_object si_rplaca_nthcdr(cl_object x, cl_object idx, cl_object v);
-extern cl_object si_list_nth(cl_object idx, cl_object x);
 extern cl_object si_make_structure _ARGS((cl_narg narg, cl_object type, ...));
 
 #ifndef CLOS

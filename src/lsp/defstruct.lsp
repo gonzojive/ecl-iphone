@@ -39,14 +39,10 @@
            ;;  the slot is at the offset in the structure-body.
 	   (fset access-function #'(lambda (x)
 				     (sys:structure-ref x name offset))))
-          ((subtypep type 'VECTOR)
-	   ;; If TYPE is VECTOR or (VECTOR ... ), ELT is used.
+          ((subtypep type '(OR LIST VECTOR))
+	   ;; If TYPE is VECTOR, (VECTOR ... ) or LIST, ELT is used.
            (fset access-function
 		 #'(lambda (x) (elt x offset))))
-          ((eq type 'LIST)
-           ;; If TYPE is LIST, NTH is used.
-	   (fset access-function
-		 #'(lambda (x) (sys:list-nth offset x))))
           (t (error "~S is an illegal structure type." type)))
     (if read-only
 	(progn

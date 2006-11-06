@@ -1013,8 +1013,6 @@ EXPORTS
 	si_structure_ref
 	si_structure_set
 	si_structurep
-	si_rplaca_nthcdr
-	si_list_nth
 	si_make_structure
 
 	structure_ref

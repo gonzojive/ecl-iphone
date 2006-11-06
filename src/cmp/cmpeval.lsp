@@ -73,7 +73,7 @@
 	      (endp (cdr args)))
 	 (case (car fd)
 	   (VECTOR (c1expr `(svref ,(car args) ,(cdr fd)))) ; Beppe3
-	   (LIST (c1expr `(sys:list-nth ,(cdr fd) ,(car args))))
+	   (LIST (c1expr `(elt ,(cdr fd) ,(car args))))
 	   (t (c1structure-ref1 (car args) (car fd) (cdr fd)))
 	   )
 	 )
