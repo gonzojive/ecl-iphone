@@ -25,6 +25,11 @@ typedef short int16_t;
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 #endif
+/* Microsoft VC++ does not have va_copy() */
+#if defined(_MSC_VER) || !defined(va_copy)
+#define va_copy(dst, src) \
+   ((void) memcpy(&(dst), &(src), sizeof(va_list)))
+#endif
 
 #ifndef FIXNUM_BITS
 #include <ecl/config.h>
