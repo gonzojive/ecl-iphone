@@ -34,10 +34,11 @@ do_make_base_string(cl_index s, int code)
 static cl_object
 do_make_string(cl_index s, cl_index code)
 {
-	cl_object x = cl_alloc_simple_base_string(s);
+	cl_object x = cl_alloc_simple_extended_string(s);
+	cl_object c = CODE_CHAR(code);
 	cl_index i;
 	for (i = 0;  i < s;  i++)
-		x->base_string.self[i] = code;
+		x->string.self[i] = c;
 	return x;
 }
 #else
