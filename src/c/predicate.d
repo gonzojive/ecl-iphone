@@ -421,7 +421,6 @@ BEGIN:
 		if (ty != t_vector && ty != t_base_string && ty != t_bitvector)
 			return FALSE;
 #endif
-
 		j = x->vector.fillp;
 		if (j != y->vector.fillp)
 			return FALSE;
