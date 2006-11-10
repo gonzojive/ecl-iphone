@@ -832,7 +832,7 @@ EXPORTS
 	eql
 	equal
 	equalp
-
+	ecl_stringp
 
 	; print.c
 

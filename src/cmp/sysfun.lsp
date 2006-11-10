@@ -982,7 +982,7 @@
 #+unicode
 (def-inline base-string-p :always (t) :bool "type_of(#0)==t_base_string")
 #+unicode
-(def-inline stringp :always (t) :bool "(type_of(#0)==t_base_string||type_of(#0)==t_string)")
+(def-inline stringp :always (t) :bool "ecl_stringp(#0)")
 
 (proclaim-function bit-vector-p (t) t :predicate t :no-side-effects t)
 (def-inline bit-vector-p :always (t) :bool "(type_of(#0)==t_bitvector)")

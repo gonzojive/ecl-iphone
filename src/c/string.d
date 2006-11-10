@@ -34,7 +34,7 @@ do_make_base_string(cl_index s, int code)
 static cl_object
 do_make_string(cl_index s, cl_index code)
 {
-	cl_objext x = cl_alloc_simple_base_string(s);
+	cl_object x = cl_alloc_simple_base_string(s);
 	cl_index i;
 	for (i = 0;  i < s;  i++)
 		x->base_string.self[i] = code;
@@ -269,7 +269,7 @@ AGAIN:
 		y = x;
 		break;
 	default:
-		x = ecl_type_error(@'si:coerce-to-extended-string',"",x,@'string');
+		x = ecl_type_error(@'si::coerce-to-extended-string',"",x,@'string');
 		goto AGAIN;
 	}
 	@(return y)
@@ -516,7 +516,6 @@ string_eq(cl_object x, cl_object y)
 	j = y->base_string.fillp;
 	if (i != j) return 0;
 #ifdef ECL_UNICODE
-AGAIN:
 	switch(type_of(x)) {
 	case t_string:
 		switch(type_of(y)) {

@@ -127,15 +127,21 @@ si_base_char_p(cl_object x)
 }
 #endif
 
+bool
+ecl_stringp(cl_object x)
+{
+	cl_type t = type_of(x);
+#ifdef ECL_UNICODE
+	return t == t_base_string || t == t_string;
+#else
+	return t == t_base_string;
+#endif
+}
+
 cl_object
 cl_stringp(cl_object x)
 {
-#ifdef ECL_UNICODE
-	cl_type t = type_of(x);
-	@(return (((t == t_base_string) || (t == t_string)) ? Ct : Cnil))
-#else
-	@(return ((type_of(x) == t_base_string) ? Ct : Cnil))
-#endif
+	@(return (ecl_stringp(x)? Ct : Cnil))
 }
 
 cl_object
